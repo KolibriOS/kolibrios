@@ -41,7 +41,7 @@ server_parser:
         ret
 
   .got_cmd:
-        jmp     dword[edi] 
+        jmp     dword[edi]
 
 
 server_commands:
@@ -431,6 +431,7 @@ ctcp_reply:
 
 
 cmd_part:
+        add     esi, 5  ; skip 'PART '
 
 ; Is it me who parted?
         mov     edi, servercommand+1
@@ -460,11 +461,19 @@ cmd_part:
         pop     esi
         call    print_text2
 
+        mov     esi, str_newline
+        call    print_text2
+
+;;; TODO: dec [window.users], remove username from the userlist
+
+
         ret
 
 
 
 cmd_join:
+        add     esi, 5  ; skip 'JOIN '
+
 ; compare nick: did we join a channel?
         mov     edi, servercommand+1
         call    compare_to_nick
@@ -493,7 +502,6 @@ cmd_join:
         mov     [ebx + window.type], WINDOWTYPE_CHANNEL
         mov     [ebx + window.flags], 0
 
-        add     esi, 5  ; skip 'JOIN '  ; FIXME: perhaps scan for spaces instead?
         call    window_set_name
 
         mov     [window_open], ebx
@@ -538,12 +546,16 @@ cmd_join:
         mov     esi, str_newline
         call    print_text2
 
+;;; TODO: inc [window.users], add username to the userlist
+
         ret
 
 
 
 
 cmd_nick:       ; FIXME
+
+        add     esi, 5  ; skip 'NICK '
 
         push    esi
 ; test for change of my nick
@@ -699,6 +711,7 @@ cmd_nick:       ; FIXME
 
 
 cmd_kick:
+        add     esi, 5  ; skip 'KICK '
 ; Is it me who got kicked?
         mov     edi, servercommand+1
         call    compare_to_nick
@@ -722,6 +735,8 @@ cmd_kick:
         pop     esi
         call    print_text2
 
+;;; TODO: dec [window.users], remove username from the userlist
+
         ret
 
 
@@ -738,11 +753,15 @@ cmd_quit:
         mov     esi, has_quit_irc
         call    print_text2
 
+;;; TODO: dec [window.users], remove username from the userlist
+
         ret
 
 
 
 cmd_mode:
+
+        add     esi, 5  ; skip 'MODE '
 
         push    esi
         mov     esi, action_header_short
@@ -761,10 +780,14 @@ cmd_mode:
         mov     esi, str_newline
         call    print_text2
 
+;;; TODO: change username if needed
+
         ret
 
 
 cmd_353:        ; channel usernames reply
+
+        add     esi, 4  ; skip '353 '
 
 ; TODO: mark a bit that we are receiving names
 
@@ -781,8 +804,9 @@ cmd_353:        ; channel usernames reply
   .got_channel:
 ;        call    find_channel   ;;;; ASSUME current channel for now
         mov     ebx, [window_print]
-        mov     ebx, [ebx + window.data_ptr]
-        lea     edi, [ebx + window_data.names]
+        mov     [ebx + window.users], 0              ;;; FIXME: Only if we have just set the receiving names bit
+        mov     eax, [ebx + window.data_ptr]
+        lea     edi, [eax + window_data.names]
         lea     edx, [edi + MAX_NICK_LEN]
 
 ; now find the semicolon separating channelname and usernames
@@ -806,16 +830,35 @@ cmd_353:        ; channel usernames reply
         jmp     .namesloop
 
   .next:
+        inc     [ebx + window.users]
         mov     edi, edx
         add     edx, MAX_NICK_LEN
 
-;;;        cmp     edi, ..      ; Check for buffer overflow
+;;;        cmp     edi, ..              ; TODO: Check for buffer overflow
         jmp     .namesloop
 
   .done:
+        call    users_calculate
         call    print_channel_list
 
         ret
+
+
+users_calculate:
+
+        mov     eax, [ysize]
+        sub     eax, TEXT_Y + 35 + 10 ;;;;
+        xor     edx, edx
+        mov     ecx, 10
+        div     ecx
+        mov     [scroll1.max_area], eax
+
+        mov     ebx, [window_print]
+        mov     eax, [ebx + window.users]
+        mov     [scroll1.max_area], eax
+        ; TODO: check if cur pos isnt greater then max
+        ret
+
 
 
 
@@ -829,6 +872,8 @@ cmd_366:        ; channel usernames end
 
 
 cmd_topic:
+
+        add     esi, 4  ; skip '332 '
 
   .loop:
         lodsb
@@ -855,6 +900,8 @@ cmd_topic:
 
 
 cmd_333:
+
+        add     esi, 4  ; skip '333 '
 
 ; TODO: check channelname and change pointer accordingly
 

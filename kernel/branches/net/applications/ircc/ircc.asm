@@ -67,6 +67,8 @@ WINDOW_BTN_START        = 100
 
 SCROLLBAR_WIDTH         = 12
 
+USERLIST_X              = 98
+
 
 format binary as ""
 
@@ -95,13 +97,14 @@ struct  window
         flags           db ?
         type            db ?
         name            rb MAX_WINDOWNAME_LEN
+        users           dd ?
+        users_scroll    dd ?
 ends
 
 struct  window_data
         text            rb 120*60
         title           rb 256
         names           rb 1200
-        namespos        dd ?
         usertext        rb 256
         usertextlen     dd ?
 ends
@@ -284,6 +287,9 @@ mouse:
         push    dword scroll1
         call    [scrollbar_v_mouse]
 
+; TODO: check if scrollbar moved
+        call    print_channel_list ;;;
+
         jmp     still
 
 
@@ -407,7 +413,7 @@ usercommand     db '/server chat.freenode.net', 0
 I_END:
 
         ;         width, left, top
-edit1   edit_box  0, 5, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_focus, 25, 25
+edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, max, cur, pos, bgcol, frcol, linecol
 scroll1 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 5
 

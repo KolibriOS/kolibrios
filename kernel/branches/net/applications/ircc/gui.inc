@@ -51,7 +51,7 @@ draw_window:
         jne     .not_channel
 
         mov     ebx, [xsize]
-        sub     ebx, 100
+        sub     ebx, USERLIST_X + SCROLLBAR_WIDTH + 3
         push    bx
         shl     ebx, 16
         pop     bx
@@ -74,7 +74,6 @@ draw_window:
         mov     [edit1.top], eax
 
         mov     eax, [xsize]
-        sub     eax, 10 ;;;;;;
         mov     [edit1.width], eax
 
         push    dword edit1
@@ -107,33 +106,46 @@ print_channel_list:
 
         pusha
 
-        mov     eax, 13                 ; draw rectangle (clear list)
+        mov     eax, 13                         ; draw rectangle (clear list)
 
         mov     ebx, [xsize]
-        sub     ebx, 95
+        sub     ebx, USERLIST_X + SCROLLBAR_WIDTH
         shl     ebx, 16
         push    ebx
-        mov     bx,  90                         ; x size ;;; FIXME
-        mov     ecx, TEXT_Y shl 16 + 12*10      ; y size ;;; FIXME
+        mov     bx, USERLIST_X
+        mov     ecx, [ysize]
+        add     ecx, TEXT_Y shl 16 - (TEXT_Y + 35 + 10 )        ;;;;;
         mov     edx, [colors.work]
         mcall
 
-        mov     eax, 4                  ; draw text
+        mov     eax, [scroll1.position]
+        xor     edx, edx
+        mov     ecx, MAX_NICK_LEN
+        mul     ecx
+        mov     edx, eax
+        mov     eax, [window_open]
+        add     edx, [eax + window.data_ptr]
+        add     edx, window_data.names
+
         pop     ebx
         mov     bx, TEXT_Y
         mov     ecx, [colors.work_text]
-        or      ecx, 0x80000000         ; ASCIIZ string
-        mov     edx, [window_open]
-        mov     edx, [edx + window.data_ptr]
-        add     edx, window_data.names
-        mov     edi, MAX_CHANNELS
+        or      ecx, 0x80000000                 ; ASCIIZ string
+        mov     eax, 4                          ; draw text
+
+        mov     edi, [ysize]                    ; Calculate how many names will fit on screen
+        sub     edi, TEXT_Y + 35 + 10           ;;;;;
   .loop:
+        ; TODO: check if name is selected and highlight background color if so
+        cmp     byte[edx], ' '                  ; end of list?
+        je      .done
         mcall
 
-        add     edx, MAX_NICK_LEN       ; next name
-        add     ebx, 10                 ; height distance between lines
-        dec     edi
-        jnz     .loop
+        add     edx, MAX_NICK_LEN               ; next name
+        add     ebx, 10                         ; height distance between lines
+        sub     edi, 10
+        ja      .loop
+  .done:
 
         popa
 
