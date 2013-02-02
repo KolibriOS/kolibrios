@@ -41,7 +41,7 @@ UTF8                    = 2
 USERCMD_MAX_SIZE        = 400
 
 WIN_MIN_X               = 600
-WIN_MIN_Y               = 200
+WIN_MIN_Y               = 180
 
 TEXT_X                  = 5
 TEXT_Y                  = 45

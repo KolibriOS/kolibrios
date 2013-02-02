@@ -36,7 +36,7 @@ draw_window:
 
         mov     ebx, [xsize]
         mov     ecx, [ysize]
-        sub     cx, 35
+        sub     cx, 15 ;;;;
         push    cx
         shl     ecx, 16
         pop     cx
@@ -56,13 +56,34 @@ draw_window:
         shl     ebx, 16
         pop     bx
         mov     ecx, [ysize]
-        add     ecx, TOP_Y SHL 16 -(15+20)
+        add     ecx, TOP_Y SHL 16 -(15) ;;;;
         mcall
 
         call    print_channel_list
 
-  .not_channel:
+; scrollbar
 
+        mov     eax, [ysize]
+        sub     eax, TOP_Y + 15 ;;;;
+        push    eax
+        mov     [scroll1.y_size], ax
+
+        mov     eax, [xsize]
+        sub     eax, SCROLLBAR_WIDTH
+        mov     [scroll1.x_pos], ax
+
+        pop     eax             ; scrollbar height
+        xor     edx, edx
+        mov     ecx, 10
+        div     ecx
+        mov     [scroll1.cur_area], eax
+
+        mov     [scroll1.all_redraw], 1
+
+        push    dword scroll1
+        call    [scrollbar_v_draw]
+
+  .not_channel:
         mov     edx, [edi + window.data_ptr]
         add     edx, window_data.text
         call    draw_channel_text
@@ -70,7 +91,7 @@ draw_window:
 ; editbox
 
         mov     eax, [ysize]
-        sub     eax, 30 ;;;;;;
+        sub     eax, 12 ;;;;;;
         mov     [edit1.top], eax
 
         mov     eax, [xsize]
@@ -79,20 +100,7 @@ draw_window:
         push    dword edit1
         call    [edit_box_draw]
 
-; scrollbar
-
-        mov     eax, [ysize]
-        sub     eax, TOP_Y + 35 ;;;;
-        mov     [scroll1.y_size], ax
-
-        mov     eax, [xsize]
-        sub     eax, SCROLLBAR_WIDTH
-        mov     [scroll1.x_pos], ax
-
-        mov     [scroll1.all_redraw], 1
-
-        push    dword scroll1
-        call    [scrollbar_v_draw]
+; tabs
 
         call    draw_windownames
 
@@ -114,7 +122,7 @@ print_channel_list:
         push    ebx
         mov     bx, USERLIST_X
         mov     ecx, [ysize]
-        add     ecx, TEXT_Y shl 16 - (TEXT_Y + 35 + 10 )        ;;;;;
+        add     ecx, TEXT_Y shl 16 - (TEXT_Y + 15)        ;;;;;   + 10???
         mov     edx, [colors.work]
         mcall
 
@@ -134,7 +142,7 @@ print_channel_list:
         mov     eax, 4                          ; draw text
 
         mov     edi, [ysize]                    ; Calculate how many names will fit on screen
-        sub     edi, TEXT_Y + 35 + 10           ;;;;;
+        sub     edi, TEXT_Y + 15 ;+ 10           ;;;;;
   .loop:
         ; TODO: check if name is selected and highlight background color if so
         cmp     byte[edx], ' '                  ; end of list?

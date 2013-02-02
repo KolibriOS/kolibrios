@@ -807,18 +807,26 @@ cmd_353:        ; channel usernames reply
         mov     [ebx + window.users], 0              ;;; FIXME: Only if we have just set the receiving names bit
         mov     eax, [ebx + window.data_ptr]
         lea     edi, [eax + window_data.names]
-        lea     edx, [edi + MAX_NICK_LEN]
+        mov     edx, edi
 
 ; now find the semicolon separating channelname and usernames
   .loop2:
         lodsb
         cmp     al, ':'
-        je      .namesloop
+        je      .newname
         test    al, al
         jnz     .loop2
 
         ret
 
+  .next:
+        add     edx, MAX_NICK_LEN
+        mov     edi, edx
+;;;        cmp     edi, ..              ; TODO: Check for buffer overflow
+        jmp     .namesloop            ;;;;
+
+  .newname:
+        inc     [ebx + window.users]
   .namesloop:
 ; now the names list begins, separated with spaces
         lodsb
@@ -827,14 +835,6 @@ cmd_353:        ; channel usernames reply
         cmp     al, ' '
         jz      .next
         stosb
-        jmp     .namesloop
-
-  .next:
-        inc     [ebx + window.users]
-        mov     edi, edx
-        add     edx, MAX_NICK_LEN
-
-;;;        cmp     edi, ..              ; TODO: Check for buffer overflow
         jmp     .namesloop
 
   .done:
@@ -846,17 +846,16 @@ cmd_353:        ; channel usernames reply
 
 users_calculate:
 
-        mov     eax, [ysize]
-        sub     eax, TEXT_Y + 35 + 10 ;;;;
-        xor     edx, edx
-        mov     ecx, 10
-        div     ecx
-        mov     [scroll1.max_area], eax
-
         mov     ebx, [window_print]
         mov     eax, [ebx + window.users]
         mov     [scroll1.max_area], eax
         ; TODO: check if cur pos isnt greater then max
+
+        ; OK, now redraw the scrollbar
+        mov     [scroll1.all_redraw], 1
+        push    dword scroll1
+        call    [scrollbar_v_draw]
+
         ret
 
 
