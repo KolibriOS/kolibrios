@@ -222,13 +222,15 @@ read_incoming_data:
         jnc     .nextpacket                             ; if CF is set, we need more data
         cmp     al, 10
         je      .got_command
+        cmp     al, 13
+        je      .got_command
         stosb
         jmp     .byteloop
 
 ; we have a command, call the serverparser
 
   .got_command:
-        mov     byte[edi-1], 0                          ; mark the end of the command
+        mov     byte[edi], 0                            ; mark the end of the command
         push    esi edx
         call    server_parser
         pop     edx esi

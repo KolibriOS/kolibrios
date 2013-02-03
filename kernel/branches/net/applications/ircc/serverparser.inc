@@ -534,7 +534,7 @@ cmd_join:
         call    print_text2
 
         mov     eax, servercommand+1
-        mov     dl, ' '
+        mov     dl, '!'
         call    print_text
 
         mov     esi, joins_channel
@@ -553,157 +553,52 @@ cmd_join:
 
 
 
-cmd_nick:       ; FIXME
+cmd_nick:
 
         add     esi, 5  ; skip 'NICK '
 
         push    esi
-; test for change of my nick
-        mov     esi, servercommand+1
-        mov     edi, user_nick
-        mov     ecx, MAX_NICK_LEN
-        rep     cmpsb
-        cmp     byte[edi-1], 0
-        jne     .notmy
-        cmp     byte[esi-1], '!'
-        jne     .notmy
-
-; yes, this is my nick, set to new
-        pop     esi
-        or      ecx, -1
-        mov     edi, esi
-        xor     eax, eax
-        repne   scasb
-        neg     ecx
-        cmp     ecx, MAX_NICK_LEN
-        jb      @f
-        mov     ecx, MAX_NICK_LEN
-      @@:
-        mov     edi, user_nick
-        rep     movsb
-  .notmy:
-
-; replace nick in all lists of users
-        mov     ebx, windows
-  .channels:
-        mov     esi, [ebx + window.data_ptr]
-        lea     esi, [esi + window_data.names]
-;;;;;        mov     edx, [esi + window_data.nameslen]
-        add     edx, esi
-  .nicks:
+; Is it me who changed nick?
         mov     edi, servercommand+1
-        cmp     byte[esi], '@'
-        jne     @f
-        inc     esi
+        call    compare_to_nick
+        jne     .not_me
 
-  @@:
-        cmp     esi, edx
-        jae     .srcdone
-        lodsb
-        cmp     al, ' '
-        je      .srcdone
-        scasb
-        je      @b
-
-  @@:
-        cmp     esi, edx
-        jae     .nextchannel
-        lodsb
-        cmp     al, ' '
-        jne     @b
-
-  .nextnick:
-        cmp     esi, edx
-        jae     .nextchannel
-        lodsb
-        cmp     al, ' '
-        jz      .nextnick
-        dec     esi
-        jmp     .nicks
-
-
-  .srcdone:
-        cmp     byte [edi], '!'
-        jne     .nextnick
-
-; here we have esi -> end of nick which must be replaced to [servercommand_position]+6
-        lea     edx, [edi-servercommand-1]
-        sub     esi, edx
-        or      ecx, -1
-        xor     eax, eax
-;        mov     edi, [servercommand_position]        ;;;;; FIXME
-        repnz   scasb
-        not     ecx
-        dec     ecx
-        push    ecx
-        cmp     ecx, edx
-        jb      .decrease
-        jz      .copy
-  .increase:
-
-; new nick is longer than the old
+        mov     ecx, MAX_NICK_LEN-1
         push    esi
-        lea     edi, [ebx+120*10] ;;;;;;
-        lea     esi, [edi+edx]
-        sub     esi, ecx
-        mov     ecx, esi
-        sub     ecx, [esp]
-        dec     esi
-        dec     edi
-        std
-        rep     movsb
-        cld
-        pop     esi
-        jmp     .copy
-  .decrease:
-; new nick is shorter than the old
-        push    esi
-        lea     edi, [esi+ecx]
-        add     esi, edx
-        lea     ecx, [ebx+120*10]
-        sub     ecx, edi
-        rep     movsb
-        pop     esi
-  .copy:
-; copy nick
-        mov     edi, esi
-        dec     edi
-;        mov     esi, [servercommand_position]        ;;;;; FIXME
-        pop     ecx
-        sub     edx, ecx
-        sub     [ebx-4], edx
-        rep     movsb
-        mov     al, ' '
+  .copyloop:
+        lodsb
+        test    al, al
+        jz      .copydone
+        cmp     al, ' '
+        je      .copydone
         stosb
+        dec     ecx
+        jnz     .copyloop
+  .copydone:
+        xor     al, al
+        stosb
+        pop     esi
 
-  .nextchannel:
-        add     ebx, sizeof.window
-        cmp     ebx, windows + sizeof.window*MAX_WINDOWS
-        jb      .channels
+  .not_me:
 
-;        mov  [text_start], window_text + 120*80
- new_all_channels3:
+; TODO: if we reach here: change nick in userlist(s)
 
+        push    esi
         mov     esi, action_header_short
         call    print_text2
 
         mov     eax, servercommand+1
-        mov     dl,'!'
+        mov     dl, '!'
         call    print_text
 
-        mov     esi,is_now_known_as
+        mov     esi, is_now_known_as
         call    print_text2
 
-;       mov     esi,[servercommand_position]        ;;;;; FIXME
+        pop     esi
         call    print_text2
 
-;;;        call    notify_channel_thread
-
-; go to next window (and check if its a channel!)
-
-;        add     [text_start], 120*80
-;        cmp     [text_start], I_END+120*80*20
-;        jb      new_all_channels3
+        mov     esi, str_newline
+        call    print_text2
 
         ret
 
@@ -726,13 +621,16 @@ cmd_kick:
         call    print_text2
 
         mov     eax, servercommand+1
-        mov     dl,'!'
+        mov     dl, '!'
         call    print_text
 
         mov     esi, kicked
         call    print_text2
 
         pop     esi
+        call    print_text2
+
+        mov     esi, str_newline
         call    print_text2
 
 ;;; TODO: dec [window.users], remove username from the userlist
@@ -789,8 +687,6 @@ cmd_353:        ; channel usernames reply
 
         add     esi, 4  ; skip '353 '
 
-; TODO: mark a bit that we are receiving names
-
 ; first, find the channel name
   .loop1:
         lodsb
@@ -798,46 +694,67 @@ cmd_353:        ; channel usernames reply
         je      .got_channel
         test    al, al
         jnz     .loop1
-
         ret
 
   .got_channel:
-;        call    find_channel   ;;;; ASSUME current channel for now
-        mov     ebx, [window_print]
-        mov     [ebx + window.users], 0              ;;; FIXME: Only if we have just set the receiving names bit
-        mov     eax, [ebx + window.data_ptr]
-        lea     edi, [eax + window_data.names]
-        mov     edx, edi
 
 ; now find the semicolon separating channelname and usernames
   .loop2:
         lodsb
         cmp     al, ':'
-        je      .newname
+        je      .got_list
         test    al, al
         jnz     .loop2
-
         ret
 
+  .got_list:
+
+; now find window ptr and check if this is the first 353 message
+        mov     ebx, [window_print]
+        test    [ebx + window.flags], FLAG_RECEIVING_NAMES
+        jnz     .start
+
+        or      [ebx + window.flags], FLAG_RECEIVING_NAMES
+        mov     [ebx + window.users], 0
+
+  .start:
+        mov     eax, [ebx + window.users]
+        xor     edx, edx
+        mov     ecx, MAX_NICK_LEN
+        mul     ecx
+        ; eax is now offset
+        add     eax, [ebx + window.data_ptr]
+        lea     edi, [eax + window_data.names]
+        mov     edx, edi
+
+        lea     ecx, [eax + window_data.names]
+        add     ecx, MAX_NICK_LEN + MAX_USERS
+
+  .newname:
+        cmp     edi, ecx                ; check buffer overflow
+        jae     .done
+        inc     [ebx + window.users]
+  .namesloop:
+        lodsb
+        test    al, al
+        jz      .done
+        cmp     al, ' '                 ; names list is separated with spaces
+        je      .next
+        stosb
+        jmp     .namesloop
   .next:
         add     edx, MAX_NICK_LEN
         mov     edi, edx
-;;;        cmp     edi, ..              ; TODO: Check for buffer overflow
-
-  .newname:
-        inc     [ebx + window.users]
-  .namesloop:
-; now the names list begins, separated with spaces
+  .loop3:
         lodsb
         test    al, al
         jz      .done
         cmp     al, ' '
-        jz      .next
+        je      .loop3
         stosb
-        jmp     .namesloop
+        jmp     .newname
 
   .done:
-
         call    redraw_channel_list
 
         ret
@@ -848,7 +765,8 @@ cmd_353:        ; channel usernames reply
 
 cmd_366:        ; channel usernames end
 
-; TODO: clear the bit that we are receiving names
+        mov     ebx, [window_print]
+        and     [ebx + window.flags], not FLAG_RECEIVING_NAMES
 
 
         ret

@@ -24,6 +24,7 @@ STATUS_CONNECTED        = 3
 ; window flags
 FLAG_UPDATED            = 1 shl 0
 FLAG_CLOSE              = 1 shl 1
+FLAG_RECEIVING_NAMES    = 1 shl 2
 
 ; window types
 WINDOWTYPE_SERVER       = 0
@@ -49,6 +50,7 @@ TEXT_Y                  = 45
 TOP_Y                   = 40
 
 MAX_WINDOWS             = 20
+MAX_USERS               = 4096
 
 MAX_NICK_LEN            = 32
 MAX_REAL_LEN            = 32    ; realname
@@ -104,7 +106,7 @@ ends
 struct  window_data
         text            rb 120*60
         title           rb 256
-        names           rb 1200
+        names           rb MAX_NICK_LEN * MAX_USERS
         usertext        rb 256
         usertextlen     dd ?
 ends
@@ -311,7 +313,7 @@ ctcp_time               db '] TIME',10,0
 has_left_channel        db ' has left ', 0
 joins_channel           db ' has joined ', 0
 is_now_known_as         db ' is now known as ', 0
-has_quit_irc            db ' has quit IRC', 0
+has_quit_irc            db ' has quit IRC', 10, 0
 sets_mode               db ' sets mode ', 0
 kicked                  db ' is kicked from ', 0
 str_talking             db 'Now talking in ',0
