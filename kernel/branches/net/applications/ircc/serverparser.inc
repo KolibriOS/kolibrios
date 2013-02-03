@@ -823,7 +823,6 @@ cmd_353:        ; channel usernames reply
         add     edx, MAX_NICK_LEN
         mov     edi, edx
 ;;;        cmp     edi, ..              ; TODO: Check for buffer overflow
-        jmp     .namesloop            ;;;;
 
   .newname:
         inc     [ebx + window.users]
@@ -838,23 +837,8 @@ cmd_353:        ; channel usernames reply
         jmp     .namesloop
 
   .done:
-        call    users_calculate
-        call    print_channel_list
 
-        ret
-
-
-users_calculate:
-
-        mov     ebx, [window_print]
-        mov     eax, [ebx + window.users]
-        mov     [scroll1.max_area], eax
-        ; TODO: check if cur pos isnt greater then max
-
-        ; OK, now redraw the scrollbar
-        mov     [scroll1.all_redraw], 1
-        push    dword scroll1
-        call    [scrollbar_v_draw]
+        call    redraw_channel_list
 
         ret
 

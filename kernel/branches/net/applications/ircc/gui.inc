@@ -33,6 +33,7 @@ draw_window:
         add     edx, 0x33000000
         mov     edi, str_programname
         mcall
+        mcall   12, 2 ;; when do we actually need this??
 
         mov     ebx, [xsize]
         mov     ecx, [ysize]
@@ -50,6 +51,7 @@ draw_window:
         cmp     [edi + window.type], WINDOWTYPE_CHANNEL
         jne     .not_channel
 
+        ; draw a vertical separator line
         mov     ebx, [xsize]
         sub     ebx, USERLIST_X + SCROLLBAR_WIDTH + 3
         push    bx
@@ -59,29 +61,7 @@ draw_window:
         add     ecx, TOP_Y SHL 16 -(15) ;;;;
         mcall
 
-        call    print_channel_list
-
-; scrollbar
-
-        mov     eax, [ysize]
-        sub     eax, TOP_Y + 15 ;;;;
-        push    eax
-        mov     [scroll1.y_size], ax
-
-        mov     eax, [xsize]
-        sub     eax, SCROLLBAR_WIDTH
-        mov     [scroll1.x_pos], ax
-
-        pop     eax             ; scrollbar height
-        xor     edx, edx
-        mov     ecx, 10
-        div     ecx
-        mov     [scroll1.cur_area], eax
-
-        mov     [scroll1.all_redraw], 1
-
-        push    dword scroll1
-        call    [scrollbar_v_draw]
+        call    redraw_channel_list
 
   .not_channel:
         mov     edx, [edi + window.data_ptr]
@@ -104,15 +84,59 @@ draw_window:
 
         call    draw_windownames
 
-        mcall   12, 2
         popa
         ret
 
 
 
+redraw_channel_list:
+
+; First, calculate scrollbar
+
+        mov     ebx, [window_open]
+        mov     eax, [ebx + window.users]       ; number of users in the open window
+        mov     [scroll1.max_area], eax
+
+        mov     eax, [ysize]
+        sub     eax, TOP_Y + 15 ;;;;
+        push    eax
+        mov     [scroll1.y_size], ax
+
+        mov     eax, [xsize]
+        sub     eax, SCROLLBAR_WIDTH
+        mov     [scroll1.x_pos], ax
+
+        pop     eax                             ; scrollbar height
+        xor     edx, edx
+        mov     ecx, 10
+        div     ecx
+        mov     [scroll1.cur_area], eax
+
+        ; Do we need a scrollbar?
+        cmp     eax, [scroll1.max_area]
+        jae     .noscroll
+
+        ; Is the current position greater then the max position?
+        cmp     eax, [scroll1.position]
+        ja      @f
+        mov     [scroll1.position], eax
+  @@:
+
+        ; OK, draw the scrollbar
+        mov     [scroll1.all_redraw], 1
+
+        push    dword scroll1
+        call    [scrollbar_v_draw]
+
+        jmp     print_channel_list
+
+  .noscroll:
+        mov     [scroll1.position], 0
+
 print_channel_list:
 
         pusha
+; Now, draw the usernames themselves
 
         mov     eax, 13                         ; draw rectangle (clear list)
 

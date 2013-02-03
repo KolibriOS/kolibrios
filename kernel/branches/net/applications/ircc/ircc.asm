@@ -284,11 +284,12 @@ mouse:
         push    dword edit1
         call    [edit_box_mouse]
 
+; TODO: check if scrollbar is active
         push    dword scroll1
         call    [scrollbar_v_mouse]
 
 ; TODO: check if scrollbar moved
-        call    print_channel_list ;;;
+        call    print_channel_list
 
         jmp     still
 
@@ -415,7 +416,7 @@ I_END:
         ;         width, left, top
 edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, max, cur, pos, bgcol, frcol, linecol
-scroll1 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 5
+scroll1 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 1
 
 
 main_PID        dd ?       ; identifier of main thread
