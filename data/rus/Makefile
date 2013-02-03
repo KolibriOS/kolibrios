@@ -286,14 +286,14 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \
- media/imgF/imgF:MEDIA/ImgF/ImgF \
- media/imgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
- media/imgF/dither.obj:MEDIA/ImgF/dither.obj \
- media/imgF/emb.obj:MEDIA/ImgF/emb.obj \
- media/imgF/FE.obj:MEDIA/ImgF/FE.obj \
- media/imgF/fl.obj:MEDIA/ImgF/fl.obj \
- media/imgF/invFE.obj:MEDIA/ImgF/invFE.obj \
- media/imgF/invSol.obj:MEDIA/ImgF/invSol.obj \
+ media/ImgF/ImgF:MEDIA/ImgF/ImgF \
+ media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
+ media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
+ media/ImgF/emb.obj:MEDIA/ImgF/emb.obj \
+ media/ImgF/FE.obj:MEDIA/ImgF/FE.obj \
+ media/ImgF/fl.obj:MEDIA/ImgF/fl.obj \
+ media/ImgF/invFE.obj:MEDIA/ImgF/invFE.obj \
+ media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
