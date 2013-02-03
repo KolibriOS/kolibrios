@@ -286,6 +286,14 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \
+ media/imgf/imgf:MEDIA/ImgF/ImgF \
+ media/imgf/cEdg.obj:MEDIA/ImgF/cEdg.obj \
+ media/imgf/dither.obj:MEDIA/ImgF/dither.obj \
+ media/imgf/emb.obj:MEDIA/ImgF/emb.obj \
+ media/imgf/FE.obj:MEDIA/ImgF/FE.obj \
+ media/imgf/fl.obj:MEDIA/ImgF/fl.obj \
+ media/imgf/invFE.obj:MEDIA/ImgF/invFE.obj \
+ media/imgf/invSol.obj:MEDIA/ImgF/invSol.obj \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT

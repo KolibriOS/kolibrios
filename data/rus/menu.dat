@@ -72,6 +72,8 @@ FlatWave                  /rd/1/3d/flatwav
 #6    **** GRAPHICS ****
 Просмотр изображений      /rd/1/media/kiv
 Редактор Animage          /rd/1/media/animage
+Редактор zSea             /rd/1/media/zSea
+Наложение фильтров        /rd/1/media/imgf/imgf
 Палитра                   /rd/1/media/palitra
 #7    **** AUDIO ****
 Midi-плеер                /rd/1/media/midamp
