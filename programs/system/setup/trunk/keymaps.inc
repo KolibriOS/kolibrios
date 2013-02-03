@@ -200,3 +200,44 @@ et_keymap_shift:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+
+
+be_keymap:
+
+     db   '6',27
+     db   '&é"',39,'(§è!çà)-',8,9
+     db   'azertyuiop^$',13
+     db   '~qsdfghjklmùµ<',0,'wxcvbn,;:=',0,'45 '
+     db   '@234567890123',180,178,184,'6',176,'7'
+     db   179,'8',181,177,183,185,182
+     db   'AB<D',255,'FGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+be_keymap_shift:
+
+     db   '6',27
+     db   '1234567890°_',8,9
+     db   'AZERTYUIOP¨*',13
+     db   '~QSDFGHJKLM%£>',0,'WXCVBN?./+',0,'45 '
+     db   '@234567890123',180,178,184,'6',176,'7'
+     db   179,'8',181,177,183,185,182
+     db   'AB>D',255,'FGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+be_keymap_alt_gr:
+
+     db   '6',27
+     db   28,'|@#',0,'^',0,0,'{}',0,0,8,9
+     db   'azertyuiop[]',13
+     db   '~qsdfghjklm´`\',0,'wxcvbn',0,0,0,'~',0,'45 '
+     db   '@234567890123',180,178,184,'6',176,'7'
+     db   179,'8',181,177,183,185,182
+     db   'AB<D',255,'FGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
