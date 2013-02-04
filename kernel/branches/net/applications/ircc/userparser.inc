@@ -24,6 +24,12 @@ user_parser:
 
 ; Ok, we said something, print it to our textbox
 
+; TODO: dont send if it's a server window?
+
+        push    [window_open]   ; print to the current window
+        pop     [window_print]
+        call    window_refresh
+
         if      TIMESTAMP
         call    print_timestamp
         end     if
@@ -53,7 +59,7 @@ user_parser:
         mov     dword[packetbuf], 'priv'
         mov     dword[packetbuf+4], 'msg '
 
-        mov     esi, [window_print]
+        mov     esi, [window_open]
         add     esi, window.name
         mov     edi, packetbuf+8
         mov     ecx, MAX_WINDOWNAME_LEN

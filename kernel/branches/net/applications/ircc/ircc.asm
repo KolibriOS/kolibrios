@@ -84,7 +84,7 @@ use32
         dd      I_END                   ; program image size
         dd      IM_END+2048             ; required amount of memory
         dd      IM_END+2048
-        dd      0
+        dd      param
         dd      path
 
 include "../macros.inc"
@@ -332,7 +332,7 @@ default_nick            db 'kolibri_user', 0
 default_real            db 'Kolibri User', 0
 
 str_welcome             db 10
-                        db '.______________________          .__  .__               __',10
+                        db ' ______________________           __   __               __',10
                         db '|   \______   \_   ___ \    ____ |  | |__| ____   _____/  |_',10
                         db '|   ||       _/    \  \/  _/ ___\|  | |  |/ __ \ /    \   __\',10
                         db '|   ||    |   \     \____ \  \___|  |_|  \  ___/|   |  \  |',10
@@ -400,7 +400,7 @@ import  network,\
 
 import  libini,\
         ini.get_str,    'ini_get_str',\
-        ini.get_int,     'ini_get_int'
+        ini.get_int,    'ini_get_int'
 
 import  boxlib,\
         edit_box_draw    ,'edit_box'            ,\
@@ -421,13 +421,14 @@ edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, userco
 scroll1 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 1
 
 
-main_PID        dd ?       ; identifier of main thread
-utf8_bytes_rest dd ?       ; bytes rest in current UTF8 sequence
-utf8_char       dd ?       ; first bits of current UTF8 character
-gai_reqdata     rb 32      ; buffer for getaddrinfo_start/process
-ip_list         dd ?       ; will be filled as pointer to addrinfo list
-packetbuf       rb 1024    ; buffer for packets to server
+main_PID        dd ?            ; identifier of main thread
+utf8_bytes_rest dd ?            ; bytes rest in current UTF8 sequence
+utf8_char       dd ?            ; first bits of current UTF8 character
+gai_reqdata     rb 32           ; buffer for getaddrinfo_start/process
+ip_list         dd ?            ; will be filled as pointer to addrinfo list
+packetbuf       rb 1024         ; buffer for packets to server
 path            rb 1024
+param           rb 1024
 
 socketnum       dd ?
 

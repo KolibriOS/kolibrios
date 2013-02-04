@@ -46,7 +46,7 @@ window_set_name:    ; esi = ptr to name, ebx = window ptr
         mov     ecx, MAX_WINDOWNAME_LEN
   .loop:
         lodsb
-        cmp     al, 10
+        cmp     al, 0x20
         jbe     .addzero
         stosb
         dec     ecx
@@ -63,17 +63,6 @@ window_set_name:    ; esi = ptr to name, ebx = window ptr
 
 
 
-window_find:                            ; esi is ptr to windowname
-
-;        mov     [current_window],
-;        call    reset_gui
-
-  .fail:
-        ret
-
-
-
-
 window_refresh:
 
 ; set the correct buffer pointers       ; FIXME: what is it good for?
@@ -81,7 +70,7 @@ window_refresh:
         imul    eax, 11                 ;
         mov     [pos], eax              ;
 
-        mov     eax, [window_open]
+        mov     eax, [window_print]
         mov     eax, [eax + window.data_ptr]
         add     eax, window_data.text
         mov     [text_start], eax

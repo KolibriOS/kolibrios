@@ -67,6 +67,8 @@ server_commands:
 
         .number = ($ - server_commands) / 8
 
+
+align 4
 compare_to_nick:
 
         push    esi
@@ -106,11 +108,81 @@ compare_to_nick:
         pop     esi
         ret
 
+align 4
+skip_nick:
+
+; First: skip the NICK (maybe we should verify it?)
+  .nick:
+        lodsb
+        cmp     al, ' '
+        je      .skip
+        cmp     al, ':'
+        je      .skip
+        jmp     .nick
+
+; skip all leading spaces and semicolons
+  .skip:
+        lodsb
+        cmp     al, ' '
+        je      .skip
+        cmp     al, ':'
+        je      .skip
+        dec     esi
+
+        ret
 
 
-find_window:
+align 4
+find_window:                            ; esi is ptr to windowname
 
-;        mov     [window_print],
+; TODO: if the window in question does not exist, create it ???
+
+; now search for window in list
+        mov     ebx, windows
+        mov     [window_print], ebx     ; set first window (server window) as default output window
+  .scanloop:
+        cmp     [ebx + window.data_ptr], 0
+        je      .just_skip
+        push    esi
+        lea     edi, [ebx + window.name]
+        mov     ecx, MAX_WINDOWNAME_LEN
+        repe    cmpsb
+        cmp     byte[edi-1], 0
+        je      .got_it
+        pop     esi
+        add     ebx, sizeof.window
+        ; TODO: check buffer limits ?
+        jmp     .scanloop
+
+; window not found, just skip this name
+  .just_skip:
+        lodsb
+        test    al, al
+        jz      .quit
+        cmp     al, ' '
+        jne     .just_skip
+        dec     esi
+        jmp     .done
+
+; found it!
+  .got_it:
+        add     esp, 4
+        mov     [window_print], ebx
+        dec     esi
+
+; now skip trailing spaces and semicolons
+  .done:
+        lodsb
+        test    al, al
+        jz      .quit
+        cmp     al, ' '
+        je      .done
+        cmp     al, ':'
+        je      .done
+        dec     esi
+
+  .quit:
+        call    window_refresh
 
         ret
 
@@ -146,8 +218,6 @@ cmd_notice:
         inc     esi
         cmp     byte [esi], 0
         je      .fail
-;        cmp     byte [esi], 10  ; newline
-;        je      server_parser.parse
         cmp     byte [esi], ' '
         jne     .loop
 
@@ -195,37 +265,13 @@ cmd_ping:
 
 cmd_privmsg:
 
-        add     esi, 8  ; skip 'PRIVMSG '
+        add     esi, 8          ; skip 'PRIVMSG '
+        call    find_window     ; esi now points to end of destination name
 
-; Check if it was destined for me privately
-        mov     edi, servercommand+1
-        call    compare_to_nick
-;;;        je      .private
-
-; If not, find the correct window ???
-
-; now find the end of nick
-        mov     edi, esi
-  .loop:
-        inc     edi
-        cmp     byte [edi], 0
-        je      .fail
-        cmp     byte [edi], ' '
-        jne     .loop
-
-  .loop2:
-        inc     edi
-        cmp     byte [edi], 0
-        je      .fail
-        cmp     byte [edi], ' '
-        je      .loop2
-        cmp     byte [edi], ':'
-        je      .loop2
-        cmp     byte [edi], 1
+        cmp     byte[esi], 1
         je      cmd_ctcp
 
-; Action?
-        cmp     dword[edi+1], 'ACTI'
+        cmp     dword[esi], 'ACTI'      ; Action?
         je      .action
 
 ; nope, just plain old privmsg
@@ -233,7 +279,7 @@ if TIMESTAMP
         call    print_timestamp
 end if
 
-        push    edi
+        push    esi
         mov     bl, '<'
         call    print_character
 
@@ -257,7 +303,7 @@ end if
         ret
 
   .action:
-        push    edi
+        push    esi
         if TIMESTAMP
         call    print_timestamp
         end if
@@ -282,22 +328,22 @@ end if
         ret
 
 cmd_ctcp:
+        inc     esi
 
-        cmp     dword[edi+1], 'VERS'
+        cmp     dword[esi], 'VERS'
         je      .version
 
-        cmp     dword[edi+1], 'TIME'
+        cmp     dword[esi], 'TIME'
         je      .time
 
-        cmp     dword[edi+1], 'PING'
+        cmp     dword[esi], 'PING'
         je      .ping
 
         ret
 
   .time:
-        lea     esi, [edi+1]
-        mov     byte [edi+5], ' '
-        add     edi, 6
+        mov     byte [esi+4], ' '
+        lea     edi, [esi+5]
 
         ; TODO: add system date (fn 29) in human readable format
 
@@ -363,7 +409,6 @@ cmd_ctcp:
         ret
 
   .ping:
-        lea     esi, [edi+1]
         call    ctcp_reply
 
         if TIMESTAMP
@@ -432,6 +477,10 @@ ctcp_reply:
 
 cmd_part:
         add     esi, 5  ; skip 'PART '
+        push    esi
+        call    skip_nick
+        call    find_window
+        pop     esi
 
 ; Is it me who parted?
         mov     edi, servercommand+1
@@ -528,7 +577,7 @@ cmd_join:
 
   .no_new_window:
         push    esi
-        call    window_set_name
+        call    find_window
 
         mov     esi, action_header
         call    print_text2
@@ -554,7 +603,7 @@ cmd_join:
 
 
 cmd_nick:
-
+; NOTE: This command applies to a user, and thus has no specific channel
         add     esi, 5  ; skip 'NICK '
 
         push    esi
@@ -617,6 +666,9 @@ cmd_kick:
   .not_me:
 ; find the channel user has been kicked from
         push    esi
+        call    skip_nick
+        call    find_window
+
         mov     esi, action_header_short
         call    print_text2
 
@@ -640,6 +692,7 @@ cmd_kick:
 
 
 cmd_quit:
+; NOTE: This command applies to a user, and thus has no specific channel
 
         mov     esi, action_header
         call    print_text2
@@ -683,31 +736,13 @@ cmd_mode:
         ret
 
 
-cmd_353:        ; channel usernames reply
+cmd_353:                ; channel usernames reply
 
         add     esi, 4  ; skip '353 '
-
-; first, find the channel name
-  .loop1:
-        lodsb
-        cmp     al, '#'
-        je      .got_channel
-        test    al, al
-        jnz     .loop1
-        ret
-
-  .got_channel:
-
-; now find the semicolon separating channelname and usernames
-  .loop2:
-        lodsb
-        cmp     al, ':'
-        je      .got_list
-        test    al, al
-        jnz     .loop2
-        ret
-
-  .got_list:
+        call    skip_nick
+        inc     esi     ; channel type '*', '=' or '@'
+        inc     esi     ; ' '
+        call    find_window
 
 ; now find window ptr and check if this is the first 353 message
         mov     ebx, [window_print]
@@ -765,6 +800,10 @@ cmd_353:        ; channel usernames reply
 
 cmd_366:        ; channel usernames end
 
+        add     esi, 4          ; skip '366 '
+        call    skip_nick
+        call    find_window
+
         mov     ebx, [window_print]
         and     [ebx + window.flags], not FLAG_RECEIVING_NAMES
 
@@ -775,13 +814,8 @@ cmd_366:        ; channel usernames end
 cmd_topic:
 
         add     esi, 4  ; skip '332 '
-
-  .loop:
-        lodsb
-        test    al, al
-        je      .fail
-        cmp     al, ':'
-        jne     .loop
+        call    skip_nick
+        call    find_window
 
         push    esi
         mov     esi, action_header
@@ -803,18 +837,18 @@ cmd_topic:
 cmd_333:
 
         add     esi, 4  ; skip '333 '
+        call    skip_nick               ;;;;
+        call    find_window
 
-; TODO: check channelname and change pointer accordingly
-
-        mov     ecx, 3  ; number of spaces to find
-  .loop:
-        lodsb
-        test    al, al
-        je      .fail
-        cmp     al, ' '
-        jne     .loop
-        dec     ecx
-        jnz     .loop   ; find some more spaces
+;        mov     ecx, 2  ; number of spaces to find    ;;; CHECKME
+;  .loop:
+;        lodsb
+;        test    al, al
+;        je      .fail
+;        cmp     al, ' '
+;        jne     .loop
+;        dec     ecx
+;        jnz     .loop   ; find some more spaces
 
         push    esi
         mov     esi, action_header
