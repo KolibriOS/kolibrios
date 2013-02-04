@@ -1,25 +1,27 @@
 //#include "strings.h"
 
-void DrawRectangle(dword x,y,width,height,color1)
+void DrawRectangle(dword x,y,w,h,color1)
 {
-	DrawBar(x,y,width,1,color1);
-	DrawBar(x,y+height,width,1,color1);
-	DrawBar(x,y,1,height,color1);
-	DrawBar(x+width,y,1,height+1,color1);
+	if (w<=0) || (h<=0) return;
+	DrawBar(x,y,w,1,color1);
+	DrawBar(x,y+h,w,1,color1);
+	DrawBar(x,y,1,h,color1);
+	DrawBar(x+w,y,1,h+1,color1);
 }
 
-void DrawRectangle3D(dword x,y,width,height,color1,color2)
+void DrawRectangle3D(dword x,y,w,h,color1,color2)
 {
-	DrawBar(x,y,width+1,1,color1);
-	DrawBar(x,y+1,1,height-1,color1);
-	DrawBar(x+width,y+1,1,height,color2);
-	DrawBar(x,y+height,width,1,color2);
+	if (w<=0) || (h<=0) return;
+	DrawBar(x,y,w+1,1,color1);
+	DrawBar(x,y+1,1,h-1,color1);
+	DrawBar(x+w,y+1,1,h,color2);
+	DrawBar(x,y+h,w,1,color2);
 }
 
-void DrawCaptButton(dword x,y,width,height,id,color_b, color_t,text)
+void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 {
-	DefineButton(x,y,width,height,id,color_b);
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,color_t,text);
+	DefineButton(x,y,w,h,id,color_b);
+	WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
 }
 
 void DrawCircle(int x, y, r)
@@ -60,15 +62,20 @@ void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
 
 void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent, status_text)
 {
-	int progress_w = progress_percent * st_w / 100 - 3;
+	int progress_w;
 	static int fill_old;
 	    
-	if (!progress_percent) {DrawBar(st_x,st_y, st_x + st_y + fill_old + 15,st_h+1, col_fon);  return;}
+	if (progress_percent<=0) {DrawBar(st_x,st_y, st_x + st_w + fill_old + 15,st_h+1, col_fon); fill_old=0; return;}
 	
 	DrawRectangle(st_x, st_y, st_w,st_h, col_border);
 	DrawRectangle3D(st_x+1, st_y+1, st_w-2,st_h-2, 0xFFFfff, 0xFFFfff);
-	if (progress_percent) DrawBar(st_x+2, st_y+2, progress_w, st_h-3, col_fill);
-	if (progress_percent<100) DrawBar(st_x+2+progress_w, st_y+2, st_w-progress_w-3, st_h-3, 0xFFFfff);
+
+	if (progress_percent>0) && (progress_percent<=100)
+	{
+		progress_w = st_w - 3 * progress_percent / 100;
+		DrawBar(st_x+2, st_y+2, progress_w, st_h-3, col_fill);
+		DrawBar(st_x+2+progress_w, st_y+2, st_w-progress_w-3, st_h-3, 0xFFFfff);
+	}
 	
 	if (status_text)
 	{

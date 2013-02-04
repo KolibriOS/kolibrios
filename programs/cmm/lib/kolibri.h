@@ -465,7 +465,7 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 
 void DrawBar(dword x,y,w,h,EDX)
 {
-	if (h<=0) || (h>65000) return; //bad boy :)
+	if (h<=0) || (h>60000) || (w<=0) || (w>60000) return; //bad boy :)
 	EAX = 13;
 	EBX = x<<16+w;
 	ECX = y<<16+h;

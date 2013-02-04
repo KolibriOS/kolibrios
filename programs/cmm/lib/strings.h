@@ -210,11 +210,11 @@ dword strstri(dword searchin, usestr_s)
 }
 
 
-void strcpyb(dword searchin, copyin, startstr, endstr)
+void strcpyb(dword search_in, copyin, startstr, endstr)
 {
 	dword startp, endp;
-	startp = strstr(searchin, startstr) + strlen(startstr);
-	endp = strstr(startp, endstr);
+	startp = strstr(search_in, startstr) + strlen(startstr);
+	endp = strstri(startp, endstr);
 	if (startp==endp) return;
 	do
 	{ 

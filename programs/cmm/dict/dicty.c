@@ -120,14 +120,14 @@ void Draw_Window()
 	edit1.width=Form.width-edit1.left-edit1.left-9;
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
 	DefineButton(edit1.left+edit1.width-80,35, 80,20, 10, sc.work_button);
-	WriteText(edit1.left+edit1.width-80+14,35+7,0x80,sc.work_button_text,#translate_caption, 0);
+	WriteText(edit1.left+edit1.width-80+14,35+7,0x80,sc.work_button_text,#translate_caption);
 	DrawBar(0, 69, Form.width-9, 1, sc.work_graph);
 	
-	WriteText(edit1.left,35+7,0x80,sc.work_text,#direction, 0);
+	WriteText(edit1.left,35+7,0x80,sc.work_text,#direction);
 	DefineButton(edit1.left+130,35, 120,20, 11, sc.work_button);
-		WriteText(edit1.left+130+112,35+7,0x80,sc.work_button_text,"\x19", 0);
+		WriteText(edit1.left+130+112,35+7,0x80,sc.work_button_text,"\x19");
 	DrawBar(edit1.left+130+1,36,  107,19, 0xFFFFFF);
-		WriteText(edit1.left+130+8,35+7,0x80,0x000000,#cur_dict, 0);
+		WriteText(edit1.left+130+8,35+7,0x80,0x000000,#cur_dict);
 
 
 	DrawTranslation();
@@ -169,14 +169,14 @@ void ShowDictList()
 	ReadDir(fcount, files_buf, #program_path);
 	
 	fcount-=2;
-	mem_Move(files_buf,files_buf+608,fcount*304);
+	memmov(files_buf,files_buf+608,fcount*304);
 		
 	
 	DefineButton(0,0, Form.width,Form.height, 12+BT_HIDE+BT_NOFRAME, sc.work_button);
 	for (j=0; j<fcount; j++;)
 	{
 		DefineButton(edit1.left+130,j+1*20+35, 107,20, 20+j, sc.work_button);
-		WriteText(edit1.left+130+8,j+1*20+35+7,0x80,sc.work_button_text, j*304+files_buf+72, 0);
+		WriteText(edit1.left+130+8,j+1*20+35+7,0x80,sc.work_button_text, j*304+files_buf+72);
 	}
 }
 
@@ -250,20 +250,20 @@ void DrawTranslation()
 	
 	DrawBar(0, y_pos, Form.width-9, Form.height - y_pos-skin_height-4, 0xFFFFFF);
 	strttl(#draw_buf);
-	WriteText(10+1, y_pos+8, 0x90, 0x800080, #search_word, 0);
-	WriteText(10  , y_pos+8, 0x90, 0x800080, #search_word, 0);
+	WriteText(10+1, y_pos+8, 0x90, 0x800080, #search_word);
+	WriteText(10  , y_pos+8, 0x90, 0x800080, #search_word);
 	while (draw_buf)
 	{
 		text_break= Form.width/6-6;
 		if (text_break>strlen(#draw_buf))
 		{
-			WriteText(10, y_pos+21, 0x80, 0, #draw_buf, 0);
+			WriteText(10, y_pos+21, 0x80, 0, #draw_buf);
 			return;
 		}
 		while (draw_buf[text_break]<>' ') && (text_break>0) text_break--;
 		strcpy(#tt, #draw_buf+text_break+1);
 		draw_buf[text_break]=0x0;
-		WriteText(10, y_pos+21, 0x80, 0, #draw_buf, 0);
+		WriteText(10, y_pos+21, 0x80, 0, #draw_buf);
 		strcpy(#draw_buf, #tt);
 		y_pos+=12;
 		if (y_pos+24+skin_height+12>Form.height) return; //чтоб не залезало на нижний ободок
