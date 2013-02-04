@@ -68,6 +68,7 @@ Gears                     /rd/1/3d/gears
 #6   **** GRAPHICS ****
 Image viewer              /rd/1/media/kiv
 Animage                   /rd/1/media/animage
+Image Filtering           /rd/1/media/imgf/imgf
 Palitra                   /rd/1/media/palitra
 #7   **** AUDIO ****
 MidAMP                    /rd/1/media/midamp
