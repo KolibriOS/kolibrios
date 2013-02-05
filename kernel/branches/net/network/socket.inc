@@ -31,7 +31,7 @@ struct  SOCKET
         Type                    dd ? ; RAW/STREAM/DGRAP
         Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
         errorcode               dd ?
-        device                  dd ?
+        device                  dd ? ; driver pointer, socket pointer if it's an UNIX socket
 
         options                 dd ?
         state                   dd ?
@@ -275,6 +275,7 @@ sys_socket:
         dd      SOCKET_receive  ; 7
         dd      SOCKET_set_opt  ; 8
         dd      SOCKET_get_opt  ; 9
+        dd      SOCKET_pair     ; 10
   .number = ($ - .table) / 4 - 1
 
 s_error:
@@ -282,8 +283,6 @@ s_error:
         mov     dword [esp+32], -1
 
         ret
-
-
 
 ;-----------------------------------------------------------------
 ;
@@ -360,7 +359,7 @@ align 4
   .tcp:
         mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_tcp
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
 
         TCP_init_socket eax
         ret
@@ -835,9 +834,9 @@ SOCKET_receive_dgram:
 
 
 align 4
-SOCKET_receive_tcp:
+SOCKET_receive_stream:
 
-        DEBUGF  1,"SOCKET_receive: TCP\n"
+        DEBUGF  1,"SOCKET_receive: STREAM\n"
 
         mov     ecx, esi
         mov     edi, edx
@@ -948,6 +947,28 @@ SOCKET_send_pppoe:
         ret
 
 
+
+align 4
+SOCKET_send_unix:
+
+        DEBUGF  1,"SOCKET_send: UNIX\n"
+
+        call    SOCKET_check
+        jz      s_error
+        mov     eax, [eax + SOCKET.device]
+        call    SOCKET_check
+        jz      s_error
+
+        push    eax
+        add     eax, STREAM_SOCKET.rcv
+        call    SOCKET_ring_write
+        pop     eax
+
+        mov     [esp+32], ecx
+
+        call    SOCKET_notify_owner
+
+        ret
 
 
 ;-----------------------------------------------------------------
@@ -1073,6 +1094,63 @@ SOCKET_set_opt:
         ret
 
 
+
+;-----------------------------------------------------------------
+;
+; SOCKET_pair
+;
+; Allocates a pair of linked UNIX domain sockets
+;
+; IN: /
+; OUT: eax is socket1 num, -1 on error
+;      ebx is socket2 num
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_pair:
+
+        DEBUGF  1,"SOCKET_pair\n"
+
+        call    SOCKET_alloc
+        jz      s_error
+        mov     [esp+32], edi   ; application's eax
+
+        mov     [eax + SOCKET.Domain], AF_UNIX
+        mov     [eax + SOCKET.Type], SOCK_STREAM
+        mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_unix
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+        mov     ebx, eax
+
+        call    SOCKET_alloc
+        jz      .error
+        mov     [esp+24], edi   ; application's ebx
+
+        mov     [eax + SOCKET.Domain], AF_UNIX
+        mov     [eax + SOCKET.Type], SOCK_STREAM
+        mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_unix
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+
+        ; Link the two sockets to eachother
+        mov     [eax + SOCKET.device], ebx
+        mov     [ebx + SOCKET.device], eax
+
+        lea     eax, [eax + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_create
+
+        lea     eax, [ebx + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_create
+        pop     eax
+
+
+
+        ret
+
+  .error:
+        mov     eax, ebx
+        call    SOCKET_free
+        jmp     s_error
 
 
 
