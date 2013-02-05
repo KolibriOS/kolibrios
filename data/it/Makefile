@@ -293,10 +293,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  media/ImgF/ImgF:MEDIA/ImgF/ImgF \
  media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
  media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
- media/ImgF/emb.obj:MEDIA/ImgF/emb.obj \
- media/ImgF/FE.obj:MEDIA/ImgF/FE.obj \
- media/ImgF/fl.obj:MEDIA/ImgF/fl.obj \
- media/ImgF/invFE.obj:MEDIA/ImgF/invFE.obj \
  media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
