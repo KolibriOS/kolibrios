@@ -953,19 +953,31 @@ SOCKET_send_unix:
 
         DEBUGF  1,"SOCKET_send: UNIX\n"
 
-        call    SOCKET_check
-        jz      s_error
+        ; does this socket have a PID yet?
+        cmp     [eax + SOCKET.PID], 0
+        jne     @f
+
+        ; Change PID to that of current process
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        mov     [eax + SOCKET.PID], ebx
+      @@:
+
+        ; get the other side's socket and check if it still exists
         mov     eax, [eax + SOCKET.device]
         call    SOCKET_check
         jz      s_error
 
+        ; allright, shove in the data!
         push    eax
         add     eax, STREAM_SOCKET.rcv
         call    SOCKET_ring_write
         pop     eax
 
+        ; return the number of written bytes (or errorcode) to application
         mov     [esp+32], ecx
 
+        ; and notify the other end
         call    SOCKET_notify_owner
 
         ret
