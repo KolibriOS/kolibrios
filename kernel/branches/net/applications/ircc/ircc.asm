@@ -287,11 +287,14 @@ mouse:
         call    [edit_box_mouse]
 
 ; TODO: check if scrollbar is active
+        push    [scroll1.position]
         push    dword scroll1
         call    [scrollbar_v_mouse]
-
-; TODO: check if scrollbar moved
+        pop     eax
+        cmp     eax, [scroll1.position] ; did the scrollbar move?
+        je      @f
         call    print_channel_list
+  @@:
 
         jmp     still
 
