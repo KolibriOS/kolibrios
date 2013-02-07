@@ -2845,6 +2845,10 @@ fat_Delete:
         mov     eax, esi
         call    get_FAT
         jc      .err1
+        cmp     eax, 2
+        jb      .error_fat
+        cmp     eax, [ebp+FAT.fatRESERVED]
+        jae     .empty
         mov     esi, eax
         xor     ecx, ecx
 @@:
@@ -2863,6 +2867,13 @@ fat_Delete:
         pop     edi
         call    fat_unlock
         push    ERROR_DEVICE
+        pop     eax
+        ret
+.error_fat:
+        popad
+        pop     edi
+        call    fat_unlock
+        push    ERROR_FAT_TABLE
         pop     eax
         ret
 .notempty:

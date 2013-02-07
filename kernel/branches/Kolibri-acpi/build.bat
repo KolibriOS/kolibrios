@@ -2,7 +2,7 @@
 cls
 set languages=en ru ge et
 set drivers=com_mouse emu10k1x fm801 infinity sis sound viasound vt823x
-set targets=all kernel drivers skins clean
+set targets=all kernel drivers clean
 
 call :Check_Target %1
 for %%a in (all kernel) do if %%a==%target% call :Check_Lang %2
@@ -59,7 +59,6 @@ goto :eof
 :Target_all
    call :Target_kernel
    call :Target_drivers
-   call :Target_skins
 goto :eof
 
 
@@ -101,16 +100,6 @@ if "%res%"=="y" (
 )
 goto :eof
 
-
-:Target_skins
-   echo *** building skins ...
-
-   if not exist bin\skins mkdir bin\skins
-   cd skin
-   fasm -m 65536 default.asm ..\bin\skins\default.skn
-   if not %errorlevel%==0 goto :Error_FasmFailed
-   cd ..
-goto :eof
 
 :Target_clean
    echo *** cleaning ...

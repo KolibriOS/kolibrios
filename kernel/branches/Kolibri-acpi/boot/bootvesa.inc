@@ -217,7 +217,7 @@ calc_vmodes_table:
         test    [es:mi.ModeAttributes], 10000000b  ;LFB ?
         jz      @f
 
-        cmp     [es:mi.BitsPerPixel], 24	;It show only videomodes to have support 24 and 32 bpp
+        cmp     [es:mi.BitsPerPixel], 32   ;It show only videomodes to have support 24 and 32 bpp
         jb      @f
 
 ;        cmp     [es:mi.BitsPerPixel],16

@@ -202,12 +202,16 @@ purge .dy1
 
 align 4
 blit_32:
-        xchg bx, bx
+
+.x_y        equ  72
+.tmp_x_y    equ  76
+
+
         push    ebp
         push    edi
         push    esi
         push    ebx
-        sub     esp, 72
+        sub     esp, 80
 
         mov     eax, [TASK_BASE]
         mov     ebx, [eax-twdw + WDATA.box.width]
@@ -254,7 +258,7 @@ blit_32:
         mov     ecx, esp
         call    blit_clip
         test    eax, eax
-        jne     .L57
+        jne     .done
 
         mov     eax, [TASK_BASE]
 
@@ -264,16 +268,13 @@ blit_32:
         add     ebp, [eax-twdw + WDATA.box.top]
 
         mov     ecx, ebx
-        add     ecx, [esp+BLITTER.w]
         shl     ecx, 16
         mov     cx, bp
-        add     ecx, [esp+BLITTER.h]
+        mov     [esp+.x_y], ecx
 
         mov     edi, ebp
 
-;        imul    edi, [_display.pitch]
         mov     edi, [BPSLine_calc_area+edi*4]
-;        imul    ebp, [_display.width]
         mov     ebp, [d_width_calc_area+ebp*4]
 
         add     ebp, ebx
@@ -285,38 +286,56 @@ blit_32:
         lea     esi, [eax+esi*4]
         add     esi, [esp+BLITTER.bitmap]
 
-        mov     eax, ecx
         mov     ecx, [esp+BLITTER.h]
         mov     edx, [esp+BLITTER.w]
 
         test    ecx, ecx    ;FIXME check clipping
-        jz      .L57
+        jz      .done
 
         test    edx, edx
-        jz      .L57
-
-        cmp     [_display.bpp], 32
-        jne     .core_24
+        jz      .done
 
         lea     edi, [edi+ebx*4]
 
-        mov     ebx, 1
-        test    [esp+72], dword 0x10
-        jnz     @F
+;        xchg bx, bx
 
         mov     ebx, [CURRENT_TASK]
-@@:
+        mov     ecx, [esp+80]
+        shr     ecx, 4
+        and     ecx, 3
+
+        jmp     dword [.tbl_32+ecx*4]
 
 align 4
-.outer32:
-        xor     ecx, ecx
+.tbl_32 dd blit_copy_32
+        dd blit_copy_32_bgr
+        dd blit_trans_32
+        dd blit_trans_32_bgr
 
+.done:
+        add     esp, 80
+        pop     ebx
+        pop     esi
+        pop     edi
+        pop     ebp
+        ret
+
+align 4
+blit_copy_32_bgr:
+       mov      ebx, 1
+
+align 4
+blit_copy_32:
+
+.outer32:
+        mov     eax, [esp+.x_y]
+        mov     [esp+.tmp_x_y], eax
+        xor     ecx, ecx
 align 4
 .inner32:
         cmp     [ebp+ecx], bl
         jne     .skip
 ;--------------------------------------
-        push    eax
         mov     eax, [esi+ecx*4]
 
 ; check for hardware cursor
@@ -328,12 +347,70 @@ align 4
 align 4
 @@:
         push    ecx
+        mov     ecx, [esp+4+.tmp_x_y]
 
-        mov     ecx, [esp+4]
-        ror     ecx, 16
-        sub     ecx, edx
-        rol     ecx, 16
-        sub     ecx, [esp+BLITTER.h + 8]
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+
+;--------------------------------------
+align 4
+.no_mouseunder:
+; store to real LFB
+        mov     [LFB_BASE+edi+ecx*4], eax
+;--------------------------------------
+align 4
+.skip:
+        add     [esp+.tmp_x_y], dword 0x10000
+        inc     ecx
+        dec     edx
+        jnz     .inner32
+
+        add     esi, [esp+BLITTER.stride]
+        add     edi, [_display.pitch]
+        add     ebp, [_display.width]
+        inc     dword [esp+.x_y]
+
+        mov     edx, [esp+BLITTER.w]
+        dec     [esp+BLITTER.h]
+        jnz     .outer32
+
+        jmp     blit_32.done
+
+
+align 4
+blit_trans_32_bgr:
+       mov  ebx, 1
+
+align 4
+blit_trans_32:
+
+.outer32:
+        mov     eax, [esp+.x_y]
+        mov     [esp+.tmp_x_y], eax
+        xor     ecx, ecx
+
+align 4
+.inner32:
+
+        cmp     [ebp+ecx], bl
+        jne     .skip
+;--------------------------------------
+        mov     eax, [esi+ecx*4]
+        test    eax, 0xFF000000
+        jz      .skip
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
+        push    ecx
+
+        mov     ecx, [esp+4+.tmp_x_y]
 
 ; check mouse area for putpixel
         call    [_display.check_mouse]
@@ -343,10 +420,10 @@ align 4
 .no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edi+ecx*4], eax
-        pop     eax
 ;--------------------------------------
 align 4
 .skip:
+        add     [esp+.tmp_x_y], dword 0x10000
         inc     ecx
         dec     edx
         jnz     .inner32
@@ -354,88 +431,10 @@ align 4
         add     esi, [esp+BLITTER.stride]
         add     edi, [_display.pitch]
         add     ebp, [_display.width]
+        inc     dword [esp+.x_y]
 
         mov     edx, [esp+BLITTER.w]
         dec     [esp+BLITTER.h]
         jnz     .outer32
 
-.done:
-;        call    [draw_pointer]
-;        call    __sys_draw_pointer
-.L57:
-        add     esp, 72
-        pop     ebx
-        pop     esi
-        pop     edi
-        pop     ebp
-        ret
-
-.core_24:
-        lea     ebx, [ebx+ebx*2]
-        lea     edi, [LFB_BASE+edi+ebx]
-        mov     ebx, 1
-        test    [esp+72], dword 0x10
-        jnz     @F
-
-        mov     ebx, [CURRENT_TASK]
-@@:
-
-align 4
-.outer24:
-        mov     [esp+64], edi
-        xor     ecx, ecx
-
-align 4
-.inner24:
-        cmp     [ebp+ecx], bl
-        jne     .skip_1
-;--------------------------------------
-        push    eax
-        mov     eax, [esi+ecx*4]
-
-        lea     edi, [edi+ecx*2]
-
-; check for hardware cursor
-        cmp     [_display.select_cursor], select_cursor
-        je      @f
-        cmp     [_display.select_cursor], 0
-        jne     .no_mouseunder_1
-;--------------------------------------
-align 4
-@@:
-        push    ecx
-
-        mov     ecx, [esp+4]
-        ror     ecx, 16
-        sub     ecx, edx
-        rol     ecx, 16
-        sub     ecx, [esp+BLITTER.h + 8]
-
-; check mouse area for putpixel
-        call    [_display.check_mouse]
-        pop     ecx
-;--------------------------------------
-align 4
-.no_mouseunder_1:
-        mov     [edi+ecx], ax
-        shr     eax, 16
-        mov     [edi+ecx+2], al
-
-        pop     eax
-;--------------------------------------
-align 4
-.skip_1:
-        mov     edi, [esp+64]
-        inc     ecx
-        dec     edx
-        jnz     .inner24
-
-        add     esi, [esp+BLITTER.stride]
-        add     edi, [_display.pitch]
-        add     ebp, [_display.width]
-
-        mov     edx, [esp+BLITTER.w]
-        dec     [esp+BLITTER.h]
-        jnz     .outer24
-
-        jmp     .done
+        jmp     blit_32.done

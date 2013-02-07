@@ -134,13 +134,10 @@ msg_module     db 'in module ',0
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR         db  13,10,0
-aHDA           db 'INTEL_HDA',0
 
 intel_str      db "GenuineIntel",0
 AMD_str        db "AuthenticAMD",0
 
-;szSound        db 'SOUND',0
-;szInfinity     db 'INFINITY',0
 szHwMouse       db 'ATI2D',0
 szPS2MDriver    db 'PS2MOUSE',0
 ;szCOM_MDriver   db 'COM_MOUSE',0

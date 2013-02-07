@@ -311,8 +311,6 @@ B32:
 
 ; ENABLE PAGING
 
-        xchg bx, bx
-
         mov     eax, sys_pgdir-OS_BASE
         mov     cr3, eax
 
@@ -482,7 +480,7 @@ high_code:
 
         call    calculate_fast_getting_offset_for_WinMapAddress
 ; for Qemu or non standart video cards
-; Unfortunately [BytesPerScanLine] does not always 
+; Unfortunately [BytesPerScanLine] does not always
 ;                             equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
 
@@ -711,8 +709,8 @@ no_mode_0x12:
 
         call    LAPIC_init
 
-        mov     eax, 1
-        call    start_ap
+;        mov     eax, 1
+;        call    start_ap
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer

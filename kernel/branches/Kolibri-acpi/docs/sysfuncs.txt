@@ -4592,7 +4592,6 @@ Remarks:
   * This function terminates the current thread. Other thread can be
     killed by call to subfunction 2 of function 18.
 
-
 ======================================================================
 =========================== List of events ===========================
 ======================================================================

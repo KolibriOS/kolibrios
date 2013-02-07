@@ -50,12 +50,12 @@ run_test2:
 	ret
 
 run_test3:
-; 1024000 times run random operation.
+; 1024 times run random operation.
 ; Randomly select malloc(random size from 1 to 1023)
 ; or free(random of previously allocated areas)
 	mov	edi, 0x12345678
 	xor	esi, esi	; 0 areas allocated
-	mov	ebx, 1024000
+        mov     ebx, 1024
 .loop:
 	imul	edi, 1103515245
 	add	edi, 12345
@@ -78,7 +78,11 @@ run_test3:
 	push	eax
 ;	mov	ecx, [saved_state_num]
 ;	mov	[saved_state+ecx*8], eax
+        push    edi
 	call	malloc_with_test
+        pop     ecx
+        cmp     ecx, edi
+        jnz     edi_destroyed
 ;	mov	ecx, [saved_state_num]
 ;	mov	[saved_state+ecx*8+4], eax
 ;	inc	[saved_state_num]
@@ -113,7 +117,11 @@ run_test3:
 	jnz	memory_destroyed
 	pop	eax edi
 	push	ebx edx
+        push    edi
 	call	free
+        pop     ecx
+        cmp     ecx, edi
+        jnz     edi_destroyed
 	pop	edx ebx
 	dec	esi
 	pop	eax ecx
@@ -150,9 +158,15 @@ malloc_with_test:
 	ret
 
 ; Stubs for kernel procedures used by heap code
-wait_mutex:
-	inc	dword [ebx]
+mutex_init:
+        and     dword [ecx], 0
+        ret
+mutex_lock:
+        inc     dword [ecx]
 	ret
+mutex_unlock:
+        dec     dword [ecx]
+        ret
 
 kernel_alloc:
 	cmp	dword [esp+4], bufsize
@@ -174,7 +188,7 @@ generic_malloc_fail:
 	jmp	error_with_code
 
 check_mutex:
-	cmp	[mst.mutex], 0
+        cmp     dword [mst.mutex], 0
 	jnz	@f
 	ret
 @@:
@@ -195,6 +209,10 @@ memory_destroyed:
 	mov	eax, 5
 	jmp	error_with_code
 
+edi_destroyed:
+        mov     eax, 6
+        jmp     error_with_code
+
 error_with_code:
 	mov	edx, saved_state_num
 ; eax = error code
@@ -208,6 +226,7 @@ error_with_code:
 
 ; Include main heap code
 include '../proc32.inc'
+include '../struct.inc'
 include '../const.inc'
 include 'malloc.inc'
 

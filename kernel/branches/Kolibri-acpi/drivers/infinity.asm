@@ -875,8 +875,8 @@ endp
 
 
 ; flags reserved
-;  RESET_INPUT  equ 1   ;reserved reset and clear input buffer
-;  RESET_OUTPUT equ 2   ;reserved reset and clear output buffer
+;  RESET_INPUT  equ 1   ;reset and clear input buffer
+;  RESET_OUTPUT equ 2   ;reset and clear output buffer
 ;  RESET_ALL    equ 3
 
 
@@ -913,6 +913,33 @@ proc ResetBuffer stdcall, str:dword, flags:dword
         mov     [edx+STREAM.out_wp], ebx
         mov     [edx+STREAM.out_rp], ebx
         mov     [edx+STREAM.out_count], eax
+
+        mov     dword [edx+STREAM.time_base], eax
+        mov     dword [edx+STREAM.time_base+4], eax
+
+        mov     dword [edx+STREAM.time_stamp], eax
+        mov     dword [edx+STREAM.time_stamp+4], eax
+        mov     dword [edx+STREAM.last_ts], eax
+
+
+        mov     eax, [edx+STREAM.r_silence]
+        test    [flags], 1
+        jz      @F
+
+        mov     ecx, [edx+STREAM.in_top]
+        mov     edi, [edx+STREAM.in_base]
+        sub     ecx, edi
+        shr     ecx, 2
+        cld
+        rep stosd
+@@:
+        test    [flags], 2
+        jz      @F
+
+        mov     edi, [edx+STREAM.out_base]
+        mov     ecx, (64*1024)/4
+        rep stosd
+@@:
         ret
 .fail:
         or      eax, -1
@@ -1152,8 +1179,6 @@ proc stop_buffer stdcall, str:dword
         jz      .fail
 
         mov     [edx+STREAM.flags], SND_STOP
-
-;           stdcall [ServiceHandler], [hSound], dword DEV_STOP, 0
 
         mov     eax, [edx+STREAM.notify_event]
         mov     ebx, [edx+STREAM.notify_id]

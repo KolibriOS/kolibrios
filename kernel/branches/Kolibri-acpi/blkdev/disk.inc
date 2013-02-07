@@ -459,7 +459,9 @@ disk_dereference:
 	stdcall disk_call_driver
 ; 3b. Free the structure.
 	xchg	eax, esi
+        push    ebx
 	call	free
+        pop     ebx
 ; 4. Return.
 .nothing:
 	ret
@@ -626,8 +628,8 @@ disk_default_flush:
 
 ; The default implementation of DISKFUNC.adjust_cache_size.
 disk_default_adjust_cache_size:
-	mov	eax, [esp+4]
-	ret	4
+        mov     eax, [esp+8]
+        ret     8
 
 ; This is an internal function called from 'disk_media_changed' when a new media
 ; is detected. It creates the list of partitions for the media.
