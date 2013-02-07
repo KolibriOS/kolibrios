@@ -303,6 +303,7 @@ end if
         ret
 
   .action:
+        add     esi, 8
         push    esi
         if TIMESTAMP
         call    print_timestamp
@@ -319,7 +320,6 @@ end if
         call    print_character
 
         pop     esi
-        add     esi, 8
         call    print_text2
 
         mov     bl, 10
@@ -513,8 +513,9 @@ cmd_part:
         mov     esi, str_newline
         call    print_text2
 
-;;; TODO: dec [window.users], remove username from the userlist
-
+        mov     ebx, [window_print]
+        mov     esi, servercommand+1
+        call    user_remove
 
         ret
 
@@ -595,7 +596,9 @@ cmd_join:
         mov     esi, str_newline
         call    print_text2
 
-;;; TODO: inc [window.users], add username to the userlist
+        mov     ebx, [window_print]
+        mov     esi, servercommand+1
+        call    user_add
 
         ret
 
@@ -606,10 +609,27 @@ cmd_nick:
 ; NOTE: This command applies to a user, and thus has no specific channel
         add     esi, 5  ; skip 'NICK '
 
+        cmp     byte[esi], ':'          ; TODO: skip all spaces and semicolons?
+        jne     @f
+        inc     esi
+       @@:
+
+; Change the nick in the current userlist. TODO: check other channels too!
         push    esi
+        mov     ebx, [window_print]
+
+        mov     esi, servercommand+1
+        call    user_remove
+
+        mov     esi, [esp]
+        call    user_add
+
+        call    redraw_channel_list
+
 ; Is it me who changed nick?
         mov     edi, servercommand+1
         call    compare_to_nick
+        pop     esi
         jne     .not_me
 
         mov     ecx, MAX_NICK_LEN-1
@@ -627,11 +647,9 @@ cmd_nick:
         xor     al, al
         stosb
         pop     esi
-
   .not_me:
 
-; TODO: if we reach here: change nick in userlist(s)
-
+; Now print a message on the current channel
         push    esi
         mov     esi, action_header_short
         call    print_text2
@@ -685,7 +703,9 @@ cmd_kick:
         mov     esi, str_newline
         call    print_text2
 
-;;; TODO: dec [window.users], remove username from the userlist
+        mov     ebx, [window_print]
+        mov     esi, servercommand+1
+        call    user_remove
 
         ret
 
@@ -704,7 +724,10 @@ cmd_quit:
         mov     esi, has_quit_irc
         call    print_text2
 
-;;; TODO: dec [window.users], remove username from the userlist
+; TODO: check other channels on same server too!
+        mov     ebx, [window_print]
+        mov     esi, servercommand+1
+        call    user_remove
 
         ret
 
@@ -747,47 +770,24 @@ cmd_353:                ; channel usernames reply
 ; now find window ptr and check if this is the first 353 message
         mov     ebx, [window_print]
         test    [ebx + window.flags], FLAG_RECEIVING_NAMES
-        jnz     .start
+        jnz     .add
 
         or      [ebx + window.flags], FLAG_RECEIVING_NAMES
-        mov     [ebx + window.users], 0
+;        mov     [ebx + window.users], 0
+        ; TODO: remove all users?
 
-  .start:
-        mov     eax, [ebx + window.users]
-        xor     edx, edx
-        mov     ecx, MAX_NICK_LEN
-        mul     ecx
-        ; eax is now offset
-        add     eax, [ebx + window.data_ptr]
-        lea     edi, [eax + window_data.names]
-        mov     edx, edi
+  .add:
+        push    esi
+        call    user_add
+        pop     esi
 
-        lea     ecx, [eax + window_data.names]
-        add     ecx, MAX_NICK_LEN + MAX_USERS
-
-  .newname:
-        cmp     edi, ecx                ; check buffer overflow
-        jae     .done
-        inc     [ebx + window.users]
   .namesloop:
         lodsb
         test    al, al
         jz      .done
         cmp     al, ' '                 ; names list is separated with spaces
-        je      .next
-        stosb
-        jmp     .namesloop
-  .next:
-        add     edx, MAX_NICK_LEN
-        mov     edi, edx
-  .loop3:
-        lodsb
-        test    al, al
-        jz      .done
-        cmp     al, ' '
-        je      .loop3
-        stosb
-        jmp     .newname
+        jne     .namesloop
+        jmp     .add
 
   .done:
         call    redraw_channel_list
@@ -807,13 +807,14 @@ cmd_366:        ; channel usernames end
         mov     ebx, [window_print]
         and     [ebx + window.flags], not FLAG_RECEIVING_NAMES
 
-
         ret
+
+
 
 
 cmd_topic:
 
-        add     esi, 4  ; skip '332 '
+        add     esi, 4          ; skip '332 '
         call    skip_nick
         call    find_window
 
@@ -830,13 +831,12 @@ cmd_topic:
         mov     esi, str_newline
         call    print_text2
 
-  .fail:
         ret
 
 
 cmd_333:
 
-        add     esi, 4  ; skip '333 '
+        add     esi, 4          ; skip '333 '
         call    skip_nick               ;;;;
         call    find_window
 
@@ -857,8 +857,12 @@ cmd_333:
         mov     esi, str_setby
         call    print_text2
 
-        pop     esi
-        call    print_text2
+;        pop     esi
+;        call    print_text2
+
+        pop     eax
+        mov     dl, '!'
+        call    print_text
 
         mov     esi, str_newline
         call    print_text2

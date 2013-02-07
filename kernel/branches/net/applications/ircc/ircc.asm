@@ -117,6 +117,7 @@ include "serverparser.inc"
 include "userparser.inc"
 include "socket.inc"
 include "gui.inc"
+include "users.inc"
 
 
 START:
@@ -154,7 +155,6 @@ START:
         rep     stosd
 
 ; allocate window data block
-
         call    window_create
         mov     ebx, windows
         mov     [ebx + window.data_ptr], eax
@@ -343,8 +343,8 @@ str_welcome             db 10
                         db 10
                         db 'Type /help for help',10,0
 
-str_nickchange          db 10,'Nickname is now ',0
-str_realchange          db 10,'Real name is now ',0
+str_nickchange          db 'Nickname is now ',0
+str_realchange          db 'Real name is now ',0
 str_dotnewline          db '.',10, 0
 str_newline             db 10, 0
 str_connecting          db 10,'* Connecting to ',0

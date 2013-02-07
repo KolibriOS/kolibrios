@@ -261,7 +261,7 @@ draw_windownames:
         inc     edx
         add     ebx, 125 shl 16
         add     edi, sizeof.window
-        cmp     [edi + + window.data_ptr], 0
+        cmp     [edi + window.data_ptr], 0
         jne     .more_btn
 
         mov     eax, 4
