@@ -60,7 +60,6 @@ virtual at ebx
         .pci_bus          dd ?
         .pci_dev          dd ?
         .irq_line         db ?
-		rb 3 ; alignment
 
         .size = $ - device
 
@@ -535,7 +534,12 @@ probe:
         DEBUGF  1,"Vendor id: 0x%x\n", ax
 
         cmp     ax, 0x1011
-        jne     .notfound
+        je      .dec
+        cmp     ax, 0x1317
+        je      .admtek
+        jmp     .notfound
+
+  .dec:
         shr     eax, 16
         DEBUGF  1,"Vendor ok!, device id: 0x%x\n", ax                 ; TODO: use another method to detect chip!
 
@@ -544,6 +548,13 @@ probe:
 
         cmp     ax, 0x0019
         je      .supported_device2
+
+  .admtek:
+        shr     eax, 16
+        DEBUGF  1,"Vendor ok!, device id: 0x%x\n", ax
+
+        cmp     ax, 0x0985
+        je      .supported_device
 
   .notfound:
         DEBUGF  1,"Device not supported!\n"
