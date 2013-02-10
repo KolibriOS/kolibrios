@@ -325,8 +325,8 @@ tp_obj tp_import_(TP) {
 
 void tp_builtins(TP) {
     struct {const char *s;void *f;} b[] = {
-    {"print",tp_print}, {"range",tp_range}, {"min",tp_min},
-    {"max",tp_max}, {"bind",tp_bind}, {"copy",tp_copy},
+    {"print",tp_print}, {"range",tp_range}, {"raw_input", tp_raw_input},
+    {"min",tp_min}, {"max",tp_max}, {"bind",tp_bind}, {"copy",tp_copy},
     {"import",tp_import_}, {"len",tp_len_}, {"assert",tp_assert},
     {"str",tp_str2}, {"float",tp_float}, {"system",tp_system},
     {"istype",tp_istype}, {"chr",tp_chr}, {"save",tp_save},

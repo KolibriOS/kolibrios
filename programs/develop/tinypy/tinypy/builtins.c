@@ -10,6 +10,19 @@ tp_obj tp_print(TP) {
     return tp_None;
 }
 
+#define BUF_SIZE 2048
+tp_obj tp_raw_input(TP) {
+    tp_obj prompt;
+    char *buf = malloc(BUF_SIZE);
+    if (tp->params.list.val->len)
+    {
+        prompt = TP_OBJ();
+        con_printf("%s", TP_CSTR(prompt));
+    }
+    con_gets(buf, BUF_SIZE);
+    return tp_string(buf);
+}
+
 tp_obj tp_bind(TP) {
     tp_obj r = TP_OBJ();
     tp_obj self = TP_OBJ();
