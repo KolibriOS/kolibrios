@@ -1,0 +1,8 @@
+Kolibri OS 0.7.7.0+ night build.
+
+Modifiche e revisioni in confronto a  Kolibri 0.7.7.0 sono descritte nel
+readme.txt. Si trova nella cartella dei Documenti e nel docpak.
+
+Le istruzioni per installare il sistema su diversi dispositivi e i
+requisiti minimi si possono trovare nel file install.txt, mentre le
+informazioni relative alla configurazione si trovano nel file config.txt
