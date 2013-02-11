@@ -472,6 +472,7 @@ $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 $(BUILD_DIR)/distr.lst: $(BUILD_DIR)/kolibri.img $(distribution_extra_targets)
 	rm -rf distribution_kit
 	$(call respace,$(make_distribution_dirs))
+	ln -sr $(BUILD_DIR)/kolibri.img distribution_kit/kolibri.img
 	$(call respace,$(make_distribution_links))
 
 # Special targets to modify behaviour of make.
