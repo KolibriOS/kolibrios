@@ -9,8 +9,8 @@ REPOSITORY:=../..
 KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
-# The main goal: build kolibri.img and kolibri.iso
-all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+# The main goal: build kolibri.img, kolibri.iso and list for creating a distribution kit
+all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/distr.lst
 
 # Docpak requires some documents; we place them
 # into 'docs' subdir and communicate with FASM
@@ -299,16 +299,14 @@ Makefile.skins: $(REPOSITORY)/skins/authors.txt $(REPOSITORY)/data/generate_make
 	cut -f1 $< | $(SHELL) $(REPOSITORY)/data/generate_makefile_skins.sh > $@
 include Makefile.skins
 
-# Extra targets for LiveCD image in the syntax of mkisofs
-MKISOFS_EXTRA:=\
+# Extra targets for the distribution kit and LiveCD image in the syntax of mkisofs
+EXTRA:=\
  emu/e80/e80=e80 \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
- /=distr_data/readme.txt \
- /=distr_data/readme_dos.txt \
  Skins/=$(REPOSITORY)/skins/authors.txt \
  Docs/cp866/config.txt=docs/CONFIG.TXT \
  Docs/cp866/gnu.txt=docs/GNU.TXT \
@@ -355,10 +353,21 @@ MKISOFS_EXTRA:=\
  games/fara=games/fara \
  games/soko/soko=games/soko \
 #end of list
+DISTRIBUTION_EXTRA:=\
+ $(EXTRA) \
+ /readme.txt=distr_data/readme_distr.txt \
+ /readme_dos.txt=distr_data/readme_dos_distr.txt \
+#end of list
+MKISOFS_EXTRA:=\
+ $(EXTRA) \
+ /=distr_data/readme.txt \
+ /=distr_data/readme_dos.txt \
+#end of list
 
 # Text files which need to be recoded to cp1251 from native aka cp866
 RECODE_TEXT_FILES:=\
   distr_data/readme.txt:distr_data/readme_dos.txt \
+  distr_data/readme_distr.txt:distr_data/readme_dos_distr.txt \
   docs/CONFIG.WIN.TXT:docs/CONFIG.TXT \
   docs/GNU.WIN.TXT:docs/GNU.TXT \
   docs/HISTORY.WIN.TXT:docs/HISTORY.TXT \
@@ -411,11 +420,23 @@ define newline
 endef
 mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
-# add skins to MKISOFS_EXTRA
-MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(foreach f,$(SKIN_SOURCES),$(call imagepart,$(f))=$(call binarypart,$(f)))
+# add skins to MKISOFS_EXTRA and DISTRIBUTION_EXTRA
+allskins:=$(foreach f,$(SKIN_SOURCES),$(call imagepart,$(f))=$(call binarypart,$(f)))
+MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins)
+DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins)
 # dependencies of MKISOFS_EXTRA; we iterate through $(MKISOFS_EXTRA),
 # substitute "=" with space, get the 2nd word and join all results
 mkisofs_extra_targets:=$(call respace,$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f)))))
+distribution_extra_targets:=$(call respace,$(foreach f,$(DISTRIBUTION_EXTRA),$(word 2,$(subst =, ,$(f)))))
+
+# Define a command for creating a symlink for an item in DISTRIBUTION_EXTRA.
+makelink_item_command=ln -sr $(word 2,$(subst =, ,$(f))) distribution_kit/$(word 1,$(subst =, ,$(f)))
+# Join all $(makelink_command) for all items from DISTRIBUTION_EXTRA.
+make_distribution_links:=$(foreach f,$(DISTRIBUTION_EXTRA),$(makelink_item_command)$(newline))
+# Define a command for creating all directories for DISTRIBUTION_EXTRA.
+# Note that $(sort) removes duplicate entries.
+distribution_dirs:=$(sort $(foreach f,$(DISTRIBUTION_EXTRA),$(dir distribution_kit/$(word 1,$(subst =, ,$(f))))))
+make_distribution_dirs:=$(foreach f,$(distribution_dirs),mkdir -p $(f)$(newline))
 
 # The first goal: floppy image.
 $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
@@ -446,6 +467,12 @@ $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points \
 	-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
 	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(call respace,$(MKISOFS_EXTRA)) 2>&1
+
+# The third goal: distribution list.
+$(BUILD_DIR)/distr.lst: $(BUILD_DIR)/kolibri.img $(distribution_extra_targets)
+	rm -rf distribution_kit
+	$(call respace,$(make_distribution_dirs))
+	$(call respace,$(make_distribution_links))
 
 # Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
