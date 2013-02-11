@@ -21,8 +21,38 @@ ERROR_FS_FAIL        = 9
 ERROR_ACCESS_DENIED  = 10
 ERROR_DEVICE         = 11
 
+; Errors specific to fn.70.7 - program start
+
+ERROR_MEMORY_NOT_ENOUGH    = 30
+ERROR_INVALID_HEADER       = 31
+ERROR_TOO_MANY_PROCESSES   = 32
+ERROR_WRONG_HEADER_VERSION = 33  ; the version of the header is lower than needed for specific feature.
+
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20
+
+
+struc FileInfoBlock {
+  .sub_fn    dd ?
+  .offset    dd ?
+  .flags     dd ?
+  .size      dd ?
+  .ptr_buff  dd ?
+  .filename  rb 1
+  .pFilename dd ?
+
+; variants
+
+  label .execFlags  dword at .offset
+  label .execPtrArg dword at .flags
+  label .execStdIO  dword at .size
+  label .execStdErr dword at .ptr_buff
+}
+
+virtual at 0
+  FileInfoBlock FileInfoBlock
+end virtual
+
 
 ; System function 70 - files with long names (LFN)
 ; diamond, 2006
@@ -103,6 +133,8 @@ fs_additional_handlers:
         dd      0
 
 endg
+
+
 file_system_lfn:
 ; in: ebx->fileinfo block
 ; operation codes:
@@ -118,11 +150,11 @@ file_system_lfn:
 ; 9 : create directory
 
 ; parse file name
-        lea     esi, [ebx+20]
+        lea     esi, [ebx+FileInfoBlock.filename]
         lodsb
         test    al, al
         jnz     @f
-        mov     esi, [esi]
+        mov     esi, [esi]      ; FileInfoBlock.pFilename actually.
         lodsb
 @@:
         cmp     al, '/'
@@ -142,13 +174,18 @@ file_system_lfn:
         call    process_replace_file_name
 .parse_normal:
         cmp     dword [ebx], 7
-        jne     @F
-        mov     edx, [ebx+4]
-        mov     ebx, [ebx+8]
-        call    fs_execute; esi+ebp, ebx, edx
+        jne     .not_execute
+
+        mov     eax, [ebx+FileInfoBlock.execStdIO]    ; or NULL if not needed.
+        mov     ecx, [ebx+FileInfoBlock.execStdErr]   ; or NULL if not needed.
+        mov     edx, [ebx+FileInfoBlock.execFlags]    ; now only debug flag
+        mov     ebx, [ebx+FileInfoBlock.execPtrArg]   ; pointer to string with command line arguments.
+
+        call    fs_execute              ; esi+ebp, ebx, edx
         mov     [image_of_eax], eax
         ret
-@@:
+
+.not_execute:
         mov     edi, rootdirs-8
         xor     ecx, ecx
         push    esi
@@ -181,8 +218,8 @@ file_system_lfn:
         cmp     dword [ebx], 1
         jnz     .access_denied
         xor     eax, eax
-        mov     ebp, [ebx+12]                   ;количество блоков для считывания
-        mov     edx, [ebx+16]                   ;куда записывать рузельтат
+        mov     ebp, [ebx+12]                   ; block count to be read.
+        mov     edx, [ebx+16]                   ; where to write the result.
     ;    add     edx, std_application_base_address
         push    dword [ebx+4]   ; first block
         mov     ebx, [ebx+8]    ; flags

@@ -31,6 +31,24 @@ struct  APP_HEADER_01_
 ends
 
 
+hdrVersion1       = 1   ; it is the old version of the header, without console fields
+hdrVersionConsole = 2   ; it is the new version of the header, containing 2 mode dword fields
+
+struct  APP_HEADER_02_
+        banner          dq ?    ; 'MENUET01'
+        version         dd ?    ;+8     ; == hdrVersionConsole
+        start           dd ?    ;+12
+        i_end           dd ?    ;+16
+        mem_size        dd ?    ;+20
+        stack_top       dd ?    ;+24
+        i_param         dd ?    ;+28
+        i_icon          dd ?    ;+32
+
+        stdio           dd ?
+        stderr          dd ?
+ends
+
+
 struct  APP_PARAMS
         app_cmdline     dd ?    ;0x00
         app_path        dd ?    ;0x04
@@ -39,28 +57,31 @@ struct  APP_PARAMS
         app_mem         dd ?    ;0x10
 ends
 
-macro _clear_ op
-{  mov ecx, op/4
-        xor     eax, eax
-        cld
-        rep stosd
-}
+; not needed
+;macro _clear_ op
+;{  mov ecx, op/4
+;        xor     eax, eax
+;        cld
+;        rep stosd
+;}
 
 fs_execute_from_sysdir:
-        xor     ebx, ebx
+        xor     ebx, ebx        ; command line arguments.
 fs_execute_from_sysdir_param:
-        xor     edx, edx
+        xor     eax, eax        ; no STDIO
+        xor     ecx, ecx        ; no STDERR
+
+        xor     edx, edx        ; flags (currently only debug flag).
         mov     esi, sysdir_path
 
 align 4
 proc fs_execute
-
-;fn_read:dword, file_size:dword, cluster:dword
+; eax - STDIO handle
+; ecx - STDERR handle
 
 ; ebx - cmdline
 ; edx - flags
 ; ebp - full filename
-; [esp+4] = procedure DoRead, [esp+8] = filesize & [esp+12]... - arguments for it
 
        locals
          cmdline       rd 64    ;256/4
@@ -80,18 +101,26 @@ proc fs_execute
          hdr_esp       dd ? ;0x0C
          hdr_mem       dd ? ;0x10
          hdr_i_end     dd ? ;0x14
+
+         hdr_stdio     dd ?
+         hdr_stderr    dd ?
        endl
 
         pushad
 
+        mov     [hdr_stdio], eax
+        mov     [hdr_stderr], ecx
+
         cmp     [SCR_MODE], word 0x13
         jbe     @f
+
         pushad
         stdcall set_cursor, [def_cursor_clock]
         mov     [handle], eax
         mov     [redrawmouse_unconditional], 1
         call    __sys_draw_pointer
         popad
+
 @@:
         mov     [flags], edx
 
@@ -148,9 +177,27 @@ proc fs_execute
 
         lea     ebx, [hdr_cmdline]
         call    test_app_header
-        mov     esi, -0x1F
+        mov     esi, -ERROR_INVALID_HEADER
         test    eax, eax
         jz      .err_hdr
+
+; The header is OK, so check for the version and if == hdrVersionConsole, patch the header with
+; the handles of the console IO socket handlers.
+        mov     edx, [hdr_stdio]
+        mov     ecx, [hdr_stderr]
+
+        cmp     [eax+APP_HEADER_02_.version], hdrVersionConsole
+        jae     .patch_header
+
+        or      edx, ecx
+        jz      .wait_lock
+
+        mov     esi, -ERROR_WRONG_HEADER_VERSION
+        jmp     .err_hdr
+
+.patch_header:
+        mov     [eax+APP_HEADER_02_.stdio], edx
+        mov     [eax+APP_HEADER_02_.stderr], ecx
 
 .wait_lock:
         cmp     [application_table_status], 0
@@ -168,7 +215,7 @@ proc fs_execute
 
         call    get_new_process_place
         test    eax, eax
-        mov     esi, -0x20 ; too many processes
+        mov     esi, -ERROR_TOO_MANY_PROCESSES
         jz      .err
 
         mov     [slot], eax
@@ -176,7 +223,12 @@ proc fs_execute
         add     eax, SLOT_BASE
         mov     [slot_base], eax
         mov     edi, eax
-       _clear_ 256     ;clean extended information about process
+
+;_clear_ 256     ;clean extended information about process
+        mov     ecx, 256/4
+        xor     eax, eax
+        cld
+        rep stosd
 
 ; write application name
         lea     eax, [filename]
@@ -203,7 +255,7 @@ proc fs_execute
         mov     [save_cr3], ebx
 
         stdcall create_app_space, [hdr_mem], [file_base], [file_size]
-        mov     esi, -30; no memory
+        mov     esi, -ERROR_MEMORY_NOT_ENOUGH  ; no memory
         test    eax, eax
         jz      .failed
 
@@ -255,6 +307,7 @@ end if
 .failed:
         mov     eax, [save_cr3]
         call    set_cr3
+
 .err:
 .err_hdr:
         stdcall kernel_free, [file_base]
