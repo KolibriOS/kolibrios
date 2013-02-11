@@ -474,6 +474,7 @@ $(BUILD_DIR)/distr.lst: $(BUILD_DIR)/kolibri.img $(distribution_extra_targets)
 	$(call respace,$(make_distribution_dirs))
 	ln -sr $(BUILD_DIR)/kolibri.img distribution_kit/kolibri.img
 	$(call respace,$(make_distribution_links))
+	touch $(BUILD_DIR)/distr.lst
 
 # Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
