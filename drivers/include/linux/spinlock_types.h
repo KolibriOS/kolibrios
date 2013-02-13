@@ -17,7 +17,7 @@
 
 #include <linux/lockdep.h>
 
-typedef struct {
+typedef struct spinlock {
 	raw_spinlock_t raw_lock;
 #ifdef CONFIG_GENERIC_LOCKBREAK
 	unsigned int break_lock;

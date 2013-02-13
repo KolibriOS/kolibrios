@@ -33,7 +33,6 @@
 #include "i915_drv.h"
 #include "intel_drv.h"
 
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
@@ -384,26 +383,36 @@ void intel_detect_pch(struct drm_device *dev)
     pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, NULL);
     if (pch) {
         if (pch->vendor == PCI_VENDOR_ID_INTEL) {
-            int id;
+			unsigned short id;
             id = pch->device & INTEL_PCH_DEVICE_ID_MASK;
+			dev_priv->pch_id = id;
 
             if (id == INTEL_PCH_IBX_DEVICE_ID_TYPE) {
                 dev_priv->pch_type = PCH_IBX;
 				dev_priv->num_pch_pll = 2;
                 DRM_DEBUG_KMS("Found Ibex Peak PCH\n");
+				WARN_ON(!IS_GEN5(dev));
             } else if (id == INTEL_PCH_CPT_DEVICE_ID_TYPE) {
                 dev_priv->pch_type = PCH_CPT;
 				dev_priv->num_pch_pll = 2;
                 DRM_DEBUG_KMS("Found CougarPoint PCH\n");
+				WARN_ON(!(IS_GEN6(dev) || IS_IVYBRIDGE(dev)));
             } else if (id == INTEL_PCH_PPT_DEVICE_ID_TYPE) {
                 /* PantherPoint is CPT compatible */
                 dev_priv->pch_type = PCH_CPT;
 				dev_priv->num_pch_pll = 2;
                 DRM_DEBUG_KMS("Found PatherPoint PCH\n");
+				WARN_ON(!(IS_GEN6(dev) || IS_IVYBRIDGE(dev)));
 			} else if (id == INTEL_PCH_LPT_DEVICE_ID_TYPE) {
 				dev_priv->pch_type = PCH_LPT;
 				dev_priv->num_pch_pll = 0;
 				DRM_DEBUG_KMS("Found LynxPoint PCH\n");
+				WARN_ON(!IS_HASWELL(dev));
+			} else if (id == INTEL_PCH_LPT_LP_DEVICE_ID_TYPE) {
+				dev_priv->pch_type = PCH_LPT;
+				dev_priv->num_pch_pll = 0;
+				DRM_DEBUG_KMS("Found LynxPoint LP PCH\n");
+				WARN_ON(!IS_HASWELL(dev));
             }
 			BUG_ON(dev_priv->num_pch_pll > I915_NUM_PLLS);
         }
@@ -449,7 +458,7 @@ int i915_init(void)
     struct intel_device_info *intel_info =
         (struct intel_device_info *) ent->driver_data;
 
-    if (intel_info->is_haswell || intel_info->is_valleyview)
+	if (intel_info->is_valleyview)
         if(!i915_preliminary_hw_support) {
             DRM_ERROR("Preliminary hardware support disabled\n");
             return -ENODEV;
@@ -473,6 +482,8 @@ int i915_init(void)
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
     struct drm_device *dev;
+    static struct drm_driver driver;
+
     int ret;
 
     dev = kzalloc(sizeof(*dev), 0);
@@ -502,6 +513,8 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     spin_lock_init(&dev->count_lock);
     mutex_init(&dev->struct_mutex);
     mutex_init(&dev->ctxlist_mutex);
+
+    dev->driver = &driver;
 
     ret = i915_driver_load(dev, ent->driver_data );
 
@@ -609,12 +622,40 @@ static bool IS_DISPLAYREG(u32 reg)
 	if (reg == GEN6_GDRST)
 		return false;
 
+	switch (reg) {
+	case _3D_CHICKEN3:
+	case IVB_CHICKEN3:
+	case GEN7_COMMON_SLICE_CHICKEN1:
+	case GEN7_L3CNTLREG1:
+	case GEN7_L3_CHICKEN_MODE_REGISTER:
+	case GEN7_ROW_CHICKEN2:
+	case GEN7_L3SQCREG4:
+	case GEN7_SQ_CHICKEN_MBCUNIT_CONFIG:
+	case GEN7_HALF_SLICE_CHICKEN1:
+	case GEN6_MBCTL:
+	case GEN6_UCGCTL2:
+		return false;
+	default:
+		break;
+	}
+
 	return true;
+}
+
+static void
+ilk_dummy_write(struct drm_i915_private *dev_priv)
+{
+	/* WaIssueDummyWriteToWakeupFromRC6: Issue a dummy write to wake up the
+	 * chip from rc6 before touching it for real. MI_MODE is masked, hence
+	 * harmless to write 0 into. */
+	I915_WRITE_NOTRACE(MI_MODE, 0);
 }
 
 #define __i915_read(x, y) \
 u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
 	u##x val = 0; \
+	if (IS_GEN5(dev_priv->dev)) \
+		ilk_dummy_write(dev_priv); \
 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
 		unsigned long irqflags; \
 		spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
@@ -644,6 +685,12 @@ void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
 	trace_i915_reg_rw(true, reg, val, sizeof(val)); \
 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
 		__fifo_ret = __gen6_gt_wait_for_fifo(dev_priv); \
+	} \
+	if (IS_GEN5(dev_priv->dev)) \
+		ilk_dummy_write(dev_priv); \
+	if (IS_HASWELL(dev_priv->dev) && (I915_READ_NOTRACE(GEN7_ERR_INT) & ERR_INT_MMIO_UNCLAIMED)) { \
+		DRM_ERROR("Unknown unclaimed register before writing to %x\n", reg); \
+		I915_WRITE_NOTRACE(GEN7_ERR_INT, ERR_INT_MMIO_UNCLAIMED); \
 	} \
 	if (IS_VALLEYVIEW(dev_priv->dev) && IS_DISPLAYREG(reg)) { \
 		write##y(val, dev_priv->regs + reg + 0x180000);		\

@@ -9,6 +9,7 @@
 #include <linux/list.h>
 #include <linux/compiler.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 
 
 

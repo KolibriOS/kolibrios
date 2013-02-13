@@ -135,8 +135,10 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 		if (connector->funcs->force)
 			connector->funcs->force(connector);
 	} else {
+//        dbgprintf("call detect funcs %p ", connector->funcs);
+//        dbgprintf("detect %p\n", connector->funcs->detect);
 		connector->status = connector->funcs->detect(connector, true);
-//		drm_kms_helper_poll_enable(dev);
+//        dbgprintf("status %x\n", connector->status);
 	}
 
 	if (connector->status == connector_status_disconnected) {
@@ -296,7 +298,6 @@ void drm_helper_disable_unused_functions(struct drm_device *dev)
 			crtc->fb = NULL;
 		}
 	}
-
 }
 EXPORT_SYMBOL(drm_helper_disable_unused_functions);
 

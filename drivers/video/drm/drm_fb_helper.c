@@ -61,8 +61,6 @@ int drm_fb_helper_single_add_all_connectors(struct drm_fb_helper *fb_helper)
 	struct drm_connector *connector;
 	int i;
 
-    ENTER();
-
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		struct drm_fb_helper_connector *fb_helper_connector;
 
@@ -73,7 +71,6 @@ int drm_fb_helper_single_add_all_connectors(struct drm_fb_helper *fb_helper)
 		fb_helper_connector->connector = connector;
 		fb_helper->connector_info[fb_helper->connector_count++] = fb_helper_connector;
 	}
-    LEAVE();
 	return 0;
 fail:
 	for (i = 0; i < fb_helper->connector_count; i++) {
@@ -81,7 +78,6 @@ fail:
 		fb_helper->connector_info[i] = NULL;
 	}
 	fb_helper->connector_count = 0;
-    FAIL();
     return -ENOMEM;
 }
 EXPORT_SYMBOL(drm_fb_helper_single_add_all_connectors);
@@ -194,26 +190,18 @@ int drm_fb_helper_init(struct drm_device *dev,
 	struct drm_crtc *crtc;
 	int i;
 
-    ENTER();
-
-    dbgprintf("crtc_count %d max_conn_count %d\n", crtc_count, max_conn_count);
-
 	fb_helper->dev = dev;
 
 	INIT_LIST_HEAD(&fb_helper->kernel_fb_list);
 
 	fb_helper->crtc_info = kcalloc(crtc_count, sizeof(struct drm_fb_helper_crtc), GFP_KERNEL);
 	if (!fb_helper->crtc_info)
-    {
-        FAIL();
 		return -ENOMEM;
-    };
 
 	fb_helper->crtc_count = crtc_count;
 	fb_helper->connector_info = kcalloc(dev->mode_config.num_connector, sizeof(struct drm_fb_helper_connector *), GFP_KERNEL);
 	if (!fb_helper->connector_info) {
 		kfree(fb_helper->crtc_info);
-        FAIL();
 		return -ENOMEM;
 	}
 	fb_helper->connector_count = 0;
@@ -235,11 +223,9 @@ int drm_fb_helper_init(struct drm_device *dev,
 		i++;
 	}
 
-    LEAVE();
 	return 0;
 out_free:
 	drm_fb_helper_crtc_free(fb_helper);
-    FAIL();
 	return -ENOMEM;
 }
 EXPORT_SYMBOL(drm_fb_helper_init);
@@ -599,8 +585,8 @@ int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
 	if (new_fb) {
 		info->var.pixclock = 0;
 
-		printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
-		       info->fix.id);
+		dev_info(fb_helper->dev->dev, "fb%d: %s frame buffer device\n",
+				info->node, info->fix.id);
 
 	} else {
 		drm_fb_helper_set_par(info);
@@ -996,9 +982,6 @@ bool drm_fb_helper_initial_config(struct drm_fb_helper *fb_helper, int bpp_sel)
 {
 	struct drm_device *dev = fb_helper->dev;
 	int count = 0;
-    bool ret;
-
-    ENTER();
 
 	/* disable all the possible outputs/crtcs before entering KMS mode */
 	drm_helper_disable_unused_functions(fb_helper->dev);
@@ -1016,8 +999,7 @@ bool drm_fb_helper_initial_config(struct drm_fb_helper *fb_helper, int bpp_sel)
 
 	drm_setup_crtcs(fb_helper);
 
-    ret = drm_fb_helper_single_fb_probe(fb_helper, bpp_sel);
-    LEAVE();
+	return drm_fb_helper_single_fb_probe(fb_helper, bpp_sel);
 }
 EXPORT_SYMBOL(drm_fb_helper_initial_config);
 

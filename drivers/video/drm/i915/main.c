@@ -53,8 +53,8 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
+//        strcpy(log, "/tmp1/1/i915.log");
         strcpy(log, "/RD/1/DRIVERS/i915.log");
-//        strcpy(log, "/BD1/2/i915.log");
 
         if(!dbg_open(log))
         {
@@ -62,7 +62,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("i915 preview #08\n cmdline: %s\n", cmdline);
+    dbgprintf("i915 RC 10\n cmdline: %s\n", cmdline);
 
     cpu_detect();
     dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -153,20 +153,20 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_CREATE_SURFACE:
 //            check_input(8);
-            retval = create_surface(main_device, (struct io_call_10*)inp);
+//            retval = create_surface(main_device, (struct io_call_10*)inp);
             break;
 
         case SRV_LOCK_SURFACE:
-            retval = lock_surface((struct io_call_12*)inp);
+//            retval = lock_surface((struct io_call_12*)inp);
             break;
 
         case SRV_RESIZE_SURFACE:
-            retval = resize_surface((struct io_call_14*)inp);
+//            retval = resize_surface((struct io_call_14*)inp);
             break;
 
-        case SRV_BLIT_BITMAP:
-            srv_blit_bitmap( inp[0], inp[1], inp[2],
-                        inp[3], inp[4], inp[5], inp[6]);
+//        case SRV_BLIT_BITMAP:
+//            srv_blit_bitmap( inp[0], inp[1], inp[2],
+//                        inp[3], inp[4], inp[5], inp[6]);
 
 //            blit_tex( inp[0], inp[1], inp[2],
 //                    inp[3], inp[4], inp[5], inp[6]);
@@ -277,5 +277,28 @@ void cpu_detect()
     {
         x86_clflush_size = ((misc >> 8) & 0xff) * 8;
     }
+}
+
+
+int get_driver_caps(hwcaps_t *caps)
+{
+    int ret = 0;
+
+    switch(caps->idx)
+    {
+        case 0:
+            caps->opt[0] = 0;
+            caps->opt[1] = 0;
+            break;
+
+        case 1:
+            caps->cap1.max_tex_width  = 4096;
+            caps->cap1.max_tex_height = 4096;
+            break;
+        default:
+            ret = 1;
+    };
+    caps->idx = 1;
+    return ret;
 }
 

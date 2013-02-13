@@ -19,6 +19,7 @@ struct intel_gtt {
 	unsigned int do_idle_maps : 1;
 	/* Share the scratch page dma with ppgtts. */
 	dma_addr_t scratch_page_dma;
+	struct page *scratch_page;
 	/* for ppgtt PDE access */
 	u32 __iomem *gtt;
 	/* needed for ioremap in drm/i915 */
@@ -32,7 +33,8 @@ void intel_gmch_remove(void);
 bool intel_enable_gtt(void);
 
 void intel_gtt_chipset_flush(void);
-void intel_gtt_insert_sg_entries(struct pagelist *st, unsigned int pg_start,
+void intel_gtt_insert_sg_entries(struct sg_table *st,
+				 unsigned int pg_start,
 				 unsigned int flags);
 void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries);
 

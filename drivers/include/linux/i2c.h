@@ -172,6 +172,7 @@ extern struct i2c_client *i2c_verify_client(struct device *dev);
  * @platform_data: stored in i2c_client.dev.platform_data
  * @archdata: copied into i2c_client.dev.archdata
  * @of_node: pointer to OpenFirmware device node
+ * @acpi_node: ACPI device node
  * @irq: stored in i2c_client.irq
  *
  * I2C doesn't actually support hardware probing, although controllers and

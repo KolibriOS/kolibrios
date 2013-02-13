@@ -1,2 +1,3 @@
 
+#include <errno.h>
 // stub

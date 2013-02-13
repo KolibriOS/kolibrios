@@ -516,11 +516,11 @@ static inline int power_supply_is_system_supplied(void) { return -1; }
 #define RWSEM_ACTIVE_WRITE_BIAS         (RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
 
 
-static void init_rwsem(struct rw_semaphore *sem)
-{
-    sem->count = RWSEM_UNLOCKED_VALUE;
-    spin_lock_init(&sem->wait_lock);
-    INIT_LIST_HEAD(&sem->wait_list);
-}
+//static void init_rwsem(struct rw_semaphore *sem)
+//{
+//    sem->count = RWSEM_UNLOCKED_VALUE;
+//    spin_lock_init(&sem->wait_lock);
+//    INIT_LIST_HEAD(&sem->wait_list);
+//}
 
 #endif

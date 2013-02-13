@@ -368,7 +368,9 @@ int init_display_kms(struct drm_device *dev)
 
     main_device = dev;
 
+#ifdef __HWA__
     err = init_bitmaps();
+#endif
 
     return 0;
 };
@@ -624,7 +626,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 
 
 
-
+#ifdef __HWA__
 
 extern struct hmm bm_mm;
 
@@ -655,9 +657,9 @@ static u32_t get_display_map()
 
 #define XY_COLOR_BLT                ((2<<29)|(0x50<<22)|(0x4))
 #define XY_SRC_COPY_BLT_CMD         ((2<<29)|(0x53<<22)|6)
-#define XY_SRC_COPY_CHROMA_CMD     ((2<<29)|(0x73<<22)|8)
-#define ROP_COPY_SRC               0xCC
-#define FORMAT8888                 3
+#define XY_SRC_COPY_CHROMA_CMD      ((2<<29)|(0x73<<22)|8)
+#define ROP_COPY_SRC                0xCC
+#define FORMAT8888                  3
 
 #define BLT_WRITE_ALPHA             (1<<21)
 #define BLT_WRITE_RGB               (1<<20)
@@ -697,7 +699,7 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
     u32_t      br13, cmd, slot_mask, *b;
     u32_t      offset;
     u8         slot;
-    int      n=0;
+    int        n=0;
     int        ret;
 
     if(unlikely(hbitmap==0))
@@ -1312,7 +1314,7 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
 #endif
 
 
-
+#endif
 
 
 
@@ -1322,8 +1324,8 @@ void __stdcall run_workqueue(struct workqueue_struct *cwq)
 {
     unsigned long irqflags;
 
-//    dbgprintf("wq: %x head %x, next %x\n",
-//               cwq, &cwq->worklist, cwq->worklist.next);
+    dbgprintf("wq: %x head %x, next %x\n",
+               cwq, &cwq->worklist, cwq->worklist.next);
 
     spin_lock_irqsave(&cwq->lock, irqflags);
 
@@ -1333,8 +1335,8 @@ void __stdcall run_workqueue(struct workqueue_struct *cwq)
                                         struct work_struct, entry);
         work_func_t f = work->func;
         list_del_init(cwq->worklist.next);
-//        dbgprintf("head %x, next %x\n",
-//                  &cwq->worklist, cwq->worklist.next);
+        dbgprintf("head %x, next %x\n",
+                  &cwq->worklist, cwq->worklist.next);
 
         spin_unlock_irqrestore(&cwq->lock, irqflags);
         f(work);
@@ -1351,8 +1353,8 @@ int __queue_work(struct workqueue_struct *wq,
 {
     unsigned long flags;
 
-//    dbgprintf("wq: %x, work: %x\n",
-//               wq, work );
+    dbgprintf("wq: %x, work: %x\n",
+               wq, work );
 
     if(!list_empty(&work->entry))
         return 0;
@@ -1365,8 +1367,8 @@ int __queue_work(struct workqueue_struct *wq,
     list_add_tail(&work->entry, &wq->worklist);
 
     spin_unlock_irqrestore(&wq->lock, flags);
-//    dbgprintf("wq: %x head %x, next %x\n",
-//               wq, &wq->worklist, wq->worklist.next);
+   dbgprintf("wq: %x head %x, next %x\n",
+               wq, &wq->worklist, wq->worklist.next);
 
     return 1;
 };
@@ -1376,8 +1378,8 @@ void __stdcall delayed_work_timer_fn(unsigned long __data)
     struct delayed_work *dwork = (struct delayed_work *)__data;
     struct workqueue_struct *wq = dwork->work.data;
 
-//    dbgprintf("wq: %x, work: %x\n",
-//               wq, &dwork->work );
+    dbgprintf("wq: %x, work: %x\n",
+               wq, &dwork->work );
 
     __queue_work(wq, &dwork->work);
 }
@@ -1398,8 +1400,8 @@ int queue_delayed_work(struct workqueue_struct *wq,
 {
     u32  flags;
 
-//    dbgprintf("wq: %x, work: %x\n",
-//               wq, &dwork->work );
+   dbgprintf("wq: %x, work: %x\n",
+               wq, &dwork->work );
 
     if (delay == 0)
         return __queue_work(wq, &dwork->work);

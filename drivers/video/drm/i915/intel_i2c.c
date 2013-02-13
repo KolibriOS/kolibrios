@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2006 Dave Airlie <airlied@linux.ie>
  * Copyright © 2006-2008,2010 Intel Corporation
  *   Jesse Barnes <jesse.barnes@intel.com>
@@ -210,15 +210,15 @@ gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
 	u16 len = msg->len;
 	u8 *buf = msg->buf;
 
-			I915_WRITE(GMBUS1 + reg_offset,
+	I915_WRITE(GMBUS1 + reg_offset,
 		   gmbus1_index |
 		   GMBUS_CYCLE_WAIT |
-				   (len << GMBUS_BYTE_COUNT_SHIFT) |
+		   (len << GMBUS_BYTE_COUNT_SHIFT) |
 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
-				   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
+		   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
 	while (len) {
 		int ret;
-				u32 val, loop = 0;
+		u32 val, loop = 0;
 		u32 gmbus2;
 
 		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
@@ -229,11 +229,11 @@ gmbus_xfer_read(struct drm_i915_private *dev_priv, struct i2c_msg *msg,
 		if (gmbus2 & GMBUS_SATOER)
 			return -ENXIO;
 
-				val = I915_READ(GMBUS3 + reg_offset);
-				do {
-					*buf++ = val & 0xff;
-					val >>= 8;
-				} while (--len && ++loop < 4);
+		val = I915_READ(GMBUS3 + reg_offset);
+		do {
+			*buf++ = val & 0xff;
+			val >>= 8;
+		} while (--len && ++loop < 4);
 	}
 
 	return 0;
@@ -245,30 +245,30 @@ gmbus_xfer_write(struct drm_i915_private *dev_priv, struct i2c_msg *msg)
 	int reg_offset = dev_priv->gpio_mmio_base;
 	u16 len = msg->len;
 	u8 *buf = msg->buf;
-			u32 val, loop;
+	u32 val, loop;
 
-			val = loop = 0;
+	val = loop = 0;
 	while (len && loop < 4) {
 		val |= *buf++ << (8 * loop++);
 		len -= 1;
 	}
 
-			I915_WRITE(GMBUS3 + reg_offset, val);
-			I915_WRITE(GMBUS1 + reg_offset,
+	I915_WRITE(GMBUS3 + reg_offset, val);
+	I915_WRITE(GMBUS1 + reg_offset,
 		   GMBUS_CYCLE_WAIT |
 		   (msg->len << GMBUS_BYTE_COUNT_SHIFT) |
 		   (msg->addr << GMBUS_SLAVE_ADDR_SHIFT) |
-				   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
-			while (len) {
+		   GMBUS_SLAVE_WRITE | GMBUS_SW_RDY);
+	while (len) {
 		int ret;
 		u32 gmbus2;
 
-				val = loop = 0;
-				do {
-					val |= *buf++ << (8 * loop);
-				} while (--len && ++loop < 4);
+		val = loop = 0;
+		do {
+			val |= *buf++ << (8 * loop);
+		} while (--len && ++loop < 4);
 
-				I915_WRITE(GMBUS3 + reg_offset, val);
+		I915_WRITE(GMBUS3 + reg_offset, val);
 
 		ret = wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
 			       (GMBUS_SATOER | GMBUS_HW_RDY),
@@ -338,7 +338,7 @@ gmbus_xfer(struct i2c_adapter *adapter,
 	if (bus->force_bit) {
 		ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
 		goto out;
-			}
+	}
 
 	reg_offset = dev_priv->gpio_mmio_base;
 
@@ -432,7 +432,7 @@ timeout:
 	I915_WRITE(GMBUS0 + reg_offset, 0);
 
 	/* Hardware may not support GMBUS over these pins? Try GPIO bitbanging instead. */
-	bus->force_bit = true;
+	bus->force_bit = 1;
 	ret = i2c_bit_algo.master_xfer(adapter, msgs, num);
 
 out:
@@ -491,10 +491,13 @@ int intel_setup_gmbus(struct drm_device *dev)
 
 		/* gmbus seems to be broken on i830 */
 		if (IS_I830(dev))
-			bus->force_bit = true;
+			bus->force_bit = 1;
 
 		intel_gpio_setup(bus, port);
 
+		ret = i2c_add_adapter(&bus->adapter);
+		if (ret)
+			goto err;
 	}
 
 	intel_i2c_reset(dev_priv->dev);
@@ -502,10 +505,10 @@ int intel_setup_gmbus(struct drm_device *dev)
 	return 0;
 
 err:
-//   while (--i) {
-//       struct intel_gmbus *bus = &dev_priv->gmbus[i];
-//       i2c_del_adapter(&bus->adapter);
-//   }
+	while (--i) {
+		struct intel_gmbus *bus = &dev_priv->gmbus[i];
+		i2c_del_adapter(&bus->adapter);
+	}
 	return ret;
 }
 
@@ -529,7 +532,10 @@ void intel_gmbus_force_bit(struct i2c_adapter *adapter, bool force_bit)
 {
 	struct intel_gmbus *bus = to_intel_gmbus(adapter);
 
-	bus->force_bit = force_bit;
+	bus->force_bit += force_bit ? 1 : -1;
+	DRM_DEBUG_KMS("%sabling bit-banging on %s. force bit now %d\n",
+		      force_bit ? "en" : "dis", adapter->name,
+		      bus->force_bit);
 }
 
 void intel_teardown_gmbus(struct drm_device *dev)
@@ -539,6 +545,6 @@ void intel_teardown_gmbus(struct drm_device *dev)
 
 	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
-//       i2c_del_adapter(&bus->adapter);
+		i2c_del_adapter(&bus->adapter);
 	}
 }

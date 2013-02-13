@@ -60,6 +60,7 @@
 //#include <linux/file.h>
 #include <linux/pci.h>
 #include <linux/jiffies.h>
+#include <linux/irqreturn.h> 
 //#include <linux/smp_lock.h>    /* For (un)lock_kernel */
 //#include <linux/dma-mapping.h>
 //#include <linux/mm.h>
@@ -170,7 +171,7 @@ int drm_err(const char *func, const char *format, ...);
 /** \name Begin the DRM... */
 /*@{*/
 
-#define DRM_DEBUG_CODE 2   /**< Include debugging code if > 1, then
+#define DRM_DEBUG_CODE 0   /**< Include debugging code if > 1, then
 				     also include looping detection. */
 
 #define DRM_MAGIC_HASH_ORDER  4  /**< Size of key hash table. Must be power of 2. */
@@ -965,6 +966,15 @@ struct drm_driver {
 
 #endif
 
+#define DRM_IRQ_ARGS            int irq, void *arg 
+
+struct drm_driver {
+    irqreturn_t (*irq_handler) (DRM_IRQ_ARGS);
+    void (*irq_preinstall) (struct drm_device *dev);
+    int (*irq_postinstall) (struct drm_device *dev);
+}; 
+
+
 #define DRM_MINOR_UNASSIGNED 0
 #define DRM_MINOR_LEGACY 1
 #define DRM_MINOR_CONTROL 2
@@ -1172,7 +1182,7 @@ struct drm_device {
 //   struct drm_sigdata sigdata;    /**< For block_all_signals */
 //   sigset_t sigmask;
 
-//   struct drm_driver *driver;
+	struct drm_driver *driver;
 //   struct drm_local_map *agp_buffer_map;
 //   unsigned int agp_buffer_token;
 //   struct drm_minor *control;      /**< Control node for card */

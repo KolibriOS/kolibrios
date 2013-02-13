@@ -6,7 +6,9 @@
 #include "hmm.h"
 #include "bitmap.h"
 
-#define DRIVER_CAPS_0   HW_BIT_BLIT;
+//#define DRIVER_CAPS_0   HW_BIT_BLIT;
+
+#define DRIVER_CAPS_0   0
 #define DRIVER_CAPS_1   0
 
 struct context *context_map[256];
@@ -231,7 +233,7 @@ int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
     if (ret)
         goto err5;
 
-    obj->mapped = uaddr ;
+    obj->mapped    = uaddr ;
 
     bitmap->handle = handle;
     bitmap->uaddr  = uaddr;
@@ -394,7 +396,7 @@ int resize_surface(struct io_call_14 *pbitmap)
 
             FreePage(pages[i]);
             pages[i] = 0;
-    };
+        };
 
         DRM_DEBUG("%s release %d pages\n", __FUNCTION__,
                   bitmap->page_count - page_count);
