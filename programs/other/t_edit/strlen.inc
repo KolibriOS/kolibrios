@@ -51,9 +51,9 @@ strlen:
 linlen:
 	push	ecx edi
 	pushfd
-	cld				; !
+	cld
 	mov	ecx,eax
- inc ecx
+	inc ecx
 	mov	edi,esi 		; find terminating zero
 	mov	al,13
 	repne	scasb
@@ -63,5 +63,31 @@ linlen:
 	popfd
 	pop	edi ecx
 	ret
-;%endif
+
+;description:
+; проверяет содержится ли строка str1 в строке str0
+; проверка делается только начиная с первых символов, указанных в str0 и str1
+; пример 1: если str0='aaabbbccc', str1='bbb' совпадения не будет
+; пример 2: если str0='aaabbbccc', str1='aaa' совпадение будет
+;output:
+; al = 0 если строка str1 содержится в str0
+; al != 0 если строка str1 не содержится в str0
+align 4
+proc str_instr uses edi esi, str0:dword, str1:dword
+	;xor eax,eax
+	mov edi,[str0]
+	mov esi,[str1]
+	cld
+	@@:
+		mov al,[esi]
+		cmp al,0
+		je .e1
+		inc esi
+		scasb ;сравниваем символы
+	jz @b ;если совпали, то переходим к сравнению следующих
+	;сюда попадаем если строки не совпали
+	sub al,[edi-1]
+	.e1: ;сюда попадаем если строка str1 (esi) закончилась
+	ret
+endp
 

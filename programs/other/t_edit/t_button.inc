@@ -341,7 +341,12 @@ but_replace:
 ; функция поиска информации в списке ключевых слов
 align 4
 but_find_key_w:
-	; пока не сделано
+	cmp byte[wnd_k_words_run],0
+	jne @f
+		pushad
+		mcall 51,1,prop_start,thread_coords
+		popad
+	@@:
 	ret
 
 ;description:

@@ -33,6 +33,7 @@ include 't_data.inc'
 include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
 include 't_button.inc' ;text work functions
+include 'wnd_k_words.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
@@ -93,7 +94,7 @@ start:
   jz button.exit
 
   mcall 66,1,1 ;scan code
-  mcall 40,0x27
+  mcall 40,0xC0000027
 
   mov esi,file_name
   call strlen
@@ -182,6 +183,7 @@ mov ecx,ebx
 	mov [wScr.type],eax
 	mov [hScr.type],eax
 	mov [ws_dir_lbox.type],eax
+    mov [w_scr_t3.type],eax
 	;symbol size
 	stdcall dword[ini_get_int],file_name,ini_sec_window,key_symbol_w,ini_def_symbol_w
 	mov dword[tedit0.rec.width],eax
@@ -239,9 +241,6 @@ still:
 	jz button
 	cmp al,6 ;мышь
 	jne @f
-		mcall 9,procinfo,-1
-		cmp ax,word[procinfo+4]
-		jne @f ;окно не активно
 		jmp mouse
 	@@:
 	jmp still
@@ -576,11 +575,12 @@ i_end:
 	buf rb BUF_SIZE ;буфер для копирования и вставки
 	buf_find rb 302 ;буфер для поиска текста
 IncludeUGlobals
-	rb 1024
 	align 16
 	procinfo process_information
 		rb 1024
 	thread:
+	rb 1024
+    thread_coords:
 	rb 1024
 stacktop:
 	sys_path:

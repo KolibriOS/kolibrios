@@ -59,6 +59,7 @@ import_box_lib:
 	edit_box_draw  dd aEdit_box_draw
 	edit_box_key   dd aEdit_box_key
 	edit_box_mouse dd aEdit_box_mouse
+	;edit_box_set_text dd aEdit_box_set_text
 	;version_ed     dd aVersion_ed
 
 	scrollbar_ver_draw  dd aScrollbar_ver_draw
@@ -126,6 +127,7 @@ dd 0,0
 	aEdit_box_draw	db 'edit_box',0
 	aEdit_box_key	db 'edit_box_key',0
 	aEdit_box_mouse db 'edit_box_mouse',0
+	;aEdit_box_set_text db 'edit_box_set_text',0
 	;aVersion_ed    db 'version_ed',0
 
 	aScrollbar_ver_draw  db 'scrollbar_v_draw',0
@@ -250,17 +252,7 @@ wScr:
 .delta	  dw   0 ;+44
 .delta2   dw   0 ;+46
 .run_x:
-.r_size_x  dw 0 ;+48
-.r_start_x dw 0 ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 2+2+2+2+4+4+4+4+4+4
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------
@@ -284,17 +276,7 @@ hScr:
 .delta	    dw 0  ;+44
 .delta2     dw 0  ;+46
 .run_x:
-.r_size_x   dw 0  ;+48
-.r_start_x  dw 0  ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 2+2+2+2+4+4+4+4+4+4
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------   
@@ -318,17 +300,7 @@ ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .delta	    dw 0  ;+44
 .delta2     dw 0  ;+46
 .run_x:
-.r_size_x   dw 0  ;+48
-.r_start_x  dw 0  ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 2+2+2+2+4+4+4+4+4+4
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------
@@ -514,7 +486,7 @@ tree_file_struct:
 
 if lang eq ru
 
-hed db 'Текстовый редактор 10.07.12',0 ;подпись окна
+hed db 'Текстовый редактор 14.02.13',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -632,7 +604,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 10.07.12',0
+hed db 'Text editor 14.02.13',0
 
 menu_text_area:
 db 'File',0
