@@ -3,9 +3,9 @@ const command_t COMMANDS[]=
 {
 	{"about",   "  Displays information about Shell\n\r", &cmd_about},
 	{"alias",   "  Allows the user view the current aliases\n\r", &cmd_alias},
-	{"ccpuid",  "  Displays CPU information\n\r", &cmd_ccpuid},
 	{"cd",      "  Changes current directory. Usage:\n\r    cd <directory name>\n\r", &cmd_cd},
 	{"clear",   "  Clears the screen\n\r", &cmd_clear},
+	{"cp",      "  Copies file\n\r", &cmd_cp},
 	{"date",    "  Returns the current date and time\n\r", &cmd_date},
 	{"echo",    "  Echoes the data to the screen. Usage:\n\r    echo <data>\n\r", &cmd_echo},
 	{"exit",    "  Exits from Shell\n\r", &cmd_exit},
@@ -26,5 +26,5 @@ const command_t COMMANDS[]=
 	{"sleep",   "  Stops the shell for the desired period. Usage:\n\r    sleep <time in the 1/100 of second>\n\r  Example:\n\r    sleep 500 ;pause for 5sec.\n\r", &cmd_sleep},
 	{"touch",   "  Creates an empty file or updates the time/date stamp on a file. Usage:\n\r    touch <file name>\n\r", &cmd_touch},
 	{"uptime",  "  Displays the uptime\n\r", &cmd_uptime},
-	{"ver",     "  Displays version. Usage:\n\r    ver ;Shell version\n\r    ver kernel ;version of KolibriOS kernel\n\r", &cmd_ver},
+	{"ver",     "  Displays version. Usage:\n\r    ver ;Shell version\n\r    ver kernel ;version of KolibriOS kernel\n\r    ver cpu ;information about CPU\n\r", &cmd_ver},
 };

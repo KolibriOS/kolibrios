@@ -80,7 +80,7 @@ for (i = 0; i < 30;  i++)
 				#if LANG_ENG
 					printf ("  Error in console application.\n\r");
 				#elif LANG_RUS
-					printf ("  Îøèáêà â êîíñîëüíîì ïðèëîæåíèè.\n\r");
+					printf ("  Žè¨¡ª  ¢ ª®­á®«ì­®¬ ¯à¨«®¦¥­¨¨.\n\r");
 				#endif
 				return 0;
 			};

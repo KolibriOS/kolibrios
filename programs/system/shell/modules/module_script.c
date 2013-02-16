@@ -11,7 +11,7 @@ k70.p00 = 0;
 k70.p04 = 0;
 k70.p08 = 0;
 k70.p12 = 4; // читать 4 байта
-k70.p16 = buf;
+k70.p16 = (unsigned) buf;
 k70.p20 = 0;
 k70.p21 = file;
 
@@ -35,7 +35,7 @@ char		*buf; //буфер, куда копируется скрипт
 
 k70.p00 = 5;
 k70.p04 = k70.p08 = k70.p12 = 0;
-k70.p16 = &bdvk;
+k70.p16 = (unsigned) &bdvk;
 k70.p20 = 0;
 k70.p21 = exec;
 
@@ -54,7 +54,7 @@ buf[filesize]=0;
 k70.p00 = 0;
 k70.p04 = k70.p08 = 0;
 k70.p12 = filesize;
-k70.p16 = buf;
+k70.p16 = (unsigned) buf;
 k70.p20 = 0;
 k70.p21 = exec;
 

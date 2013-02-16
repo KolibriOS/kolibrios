@@ -37,12 +37,12 @@
 #include "cmd/cmd_alias.c"
 #include "cmd/cmd_more.c"
 #include "cmd/cmd_clear.c"
-#include "cmd/cmd_ccpuid.c"
 #include "cmd/cmd_sleep.c"
 #include "cmd/cmd_shutdown.c"
 #include "cmd/cmd_uptime.c"
 #include "cmd/cmd_killall.c"
 #include "cmd/cmd_history.c"
+#include "cmd/cmd_cp.c"
 
 #include "modules/module_command.c"
 #include "modules/module_program_console.c"
@@ -50,5 +50,6 @@
 #include "modules/module_script.c"
 #include "modules/module_executable.c"
 #include "modules/module_alias.c"
+#include "modules/module_parameters.c"
 
 /// ===========================================================

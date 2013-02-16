@@ -45,7 +45,7 @@ else
 
 k70.p00 = 5;
 k70.p04 = k70.p08 = k70.p12 = 0;
-k70.p16 = &bdvk;
+k70.p16 = (unsigned) &bdvk;
 k70.p20 = 0;
 k70.p21 = temp;
 
@@ -67,7 +67,7 @@ for (pos=0;pos<filesize;pos+=80)
 	k70.p04 = pos;
 	k70.p08 = 0;
 	k70.p12 = 80;
-	k70.p16 = buf;
+	k70.p16 = (unsigned) buf;
 	k70.p20 = 0;
 	k70.p21 = temp;
 

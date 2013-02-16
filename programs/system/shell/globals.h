@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.5.4"
+#define SHELL_VERSION "0.6"
 
 extern char	PATH[256];
 extern char	PARAM[256];
@@ -14,7 +14,7 @@ unsigned	ALIAS_NUM = 0;
 
 /// ===========================================================
 
-#define CMD_HISTORY_NUM 5
+#define CMD_HISTORY_NUM 10
 
 char		CMD[256];
 char		CMD_HISTORY[CMD_HISTORY_NUM][256];
@@ -44,7 +44,6 @@ typedef struct
 
 int cmd_about(char arg[]);
 int cmd_alias(char arg[]);
-int cmd_ccpuid(char dir[]);
 int cmd_cd(char dir[]);
 int cmd_clear(char arg[]);
 int cmd_date(char arg[]);
@@ -68,6 +67,8 @@ int cmd_shutdown(char arg[]);
 int cmd_uptime(char param[]);
 int cmd_killall(char process_name[]);
 int cmd_history(char arg[]);
+int cmd_cp(char param[]);
+
 
 /// ===========================================================
 

@@ -17,9 +17,19 @@ if (	(0 != strcmp( CMD_HISTORY[0], CMD)) &&
 	(0 != strcmp( CMD_HISTORY[1], CMD)) &&
 	(0 != strcmp( CMD_HISTORY[2], CMD)) &&
 	(0 != strcmp( CMD_HISTORY[3], CMD)) &&
-	(0 != strcmp( CMD_HISTORY[4], CMD)) )
+        (0 != strcmp( CMD_HISTORY[4], CMD)) &&
+        (0 != strcmp( CMD_HISTORY[5], CMD)) &&
+        (0 != strcmp( CMD_HISTORY[6], CMD)) &&
+        (0 != strcmp( CMD_HISTORY[7], CMD)) &&
+        (0 != strcmp( CMD_HISTORY[8], CMD)) &&
+	(0 != strcmp( CMD_HISTORY[9], CMD)) )
 
 	{
+        strcpy(CMD_HISTORY[9], CMD_HISTORY[8]);
+        strcpy(CMD_HISTORY[8], CMD_HISTORY[7]);
+	strcpy(CMD_HISTORY[7], CMD_HISTORY[6]);
+        strcpy(CMD_HISTORY[6], CMD_HISTORY[5]);
+	strcpy(CMD_HISTORY[5], CMD_HISTORY[4]);
 	strcpy(CMD_HISTORY[4], CMD_HISTORY[3]);
 	strcpy(CMD_HISTORY[3], CMD_HISTORY[2]);
 	strcpy(CMD_HISTORY[2], CMD_HISTORY[1]);
@@ -100,7 +110,7 @@ for (;;)
 		switch (key)
 			{
 
-			case 72: // UP
+			case 80: // Down
 				for (hist = 0; hist < CMD_HISTORY_NUM; hist++)
 					{
 					command_clear();
@@ -118,7 +128,7 @@ for (;;)
 
 				break;
 
-			case 80: // DOWN
+			case 72: // Up
 				for (hist = 0; hist < CMD_HISTORY_NUM; hist++)
 					{
 					command_clear();
@@ -150,9 +160,16 @@ for (;;)
 
 int command_get_cmd(char cmd[])
 {
-unsigned i;
-for (i=0;;i++)
-	{
+unsigned i, len;
+int quote = 0;
+
+if (CMD[0]=='"')
+   quote = 1;
+
+if (quote == 0)
+   {
+   for (i=0;;i++)
+       	{
 	cmd[i] = CMD[i];
 	if (0 == cmd[i])
 		{
@@ -161,11 +178,33 @@ for (i=0;;i++)
 		}
 	if ( iswhite(cmd[i]) )
 		{
-		cmd[i] = '\0';
-		break;
+                cmd[i] = '\0';
+                break;
 		}
 	}
-return i+1;
+   return i+1;
+   }
+   else
+   {
+   len = 0;
+   for (i=1;;i++)
+       	{
+	cmd[len] = CMD[i];
+	if (0 == cmd[len])
+		{
+		len = -2;
+		break;
+		}
+	if ( cmd[len] == '"' )
+		{
+                cmd[len] = '\0';
+                break;
+		}
+        len++;
+	}
+   trim(cmd);
+   return len+2;
+   }
 }
 
 /// ===========================================================

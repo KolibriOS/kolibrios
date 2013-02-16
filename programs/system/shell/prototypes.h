@@ -25,4 +25,9 @@ int alias_add(char alias[]);
 int alias_split (char alias[], char s1[], char s2[]);
 void alias_list();
 
+int parameters_prepare(char *param, char* argv[]);
+void parameters_free(int argc, char* argv[]);
+
+void print_error(void);
+
 /// ===========================================================

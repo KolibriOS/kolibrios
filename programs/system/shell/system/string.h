@@ -16,3 +16,4 @@ char*  strchr(const char* string, int c);
 void    _itoa(int i, char *s);
 void  reverse(char *s);
 void     itoa(int i, char *s);
+int _atoi ( char *s );
