@@ -23,9 +23,6 @@
 
 $Revision$
 
-__DEBUG_LEVEL_OLD__     equ __DEBUG_LEVEL__     ; use seperate debug level for network part of kernel
-__DEBUG_LEVEL__         equ 1
-
 uglobal
         net_10ms        dd ?
         net_tmr_count   dw ?
@@ -164,6 +161,7 @@ macro pseudo_random reg {
         rol     reg, 9
 }
 
+; Network to Hardware byte order (dword)
 macro ntohd reg {
 
         rol     word reg, 8
@@ -172,6 +170,7 @@ macro ntohd reg {
 
 }
 
+; Network to Hardware byte order (word)
 macro ntohw reg {
 
         rol     word reg, 8
@@ -741,6 +740,3 @@ sys_protocols:
   .return:
         mov     [esp+28+4], eax                 ; return eax value to the program
         ret
-
-
-__DEBUG_LEVEL__ equ __DEBUG_LEVEL_OLD__
