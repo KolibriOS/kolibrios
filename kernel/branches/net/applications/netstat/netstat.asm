@@ -76,12 +76,6 @@ redraw:
         add     ebx, 18
         mov     edx, str_MAC
         mcall
-        add     ebx, 18
-        mov     edx, str_queue_in
-        mcall
-        add     ebx, 18
-        mov     edx, str_queue_out
-        mcall
 
         mov     ebx, API_ETH + 4
         mov     bh, [device]
@@ -196,33 +190,12 @@ draw_stats:
         cmp     bl, 3
         jbe     @r
 
-        inc     bl   ;5
-        inc     bl   ;6
-
-  @@:
-        push    ebx
-        mcall   76
-        pop     ebx
-
-        push    eax
-        inc     bl
-        cmp     bl, 7
-        jbe     @r
-
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 6*18
+        mov     edx, 135 shl 16 + 75 + 3*18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
-
-        sub     edx, 18
-        pop     ecx
-        mcall
-
-        sub     edx, 2*18
-        pop     ecx
-        mcall
 
         sub     edx, 18
         pop     ecx
@@ -577,8 +550,6 @@ str_packets_rx  db 'Packets received:', 0
 str_bytes_tx    db 'Bytes sent:', 0
 str_bytes_rx    db 'Bytes received:', 0
 str_MAC         db 'MAC address:', 0
-str_queue_in    db 'IN-queue size:', 0
-str_queue_out   db 'OUT-queue size:', 0
 str_ip          db 'IP address:', 0
 str_dns         db 'DNS address:', 0
 str_subnet      db 'Subnet mask:', 0
