@@ -13,7 +13,7 @@ if (NULL == file)
 	#elif LANG_RUS
 		printf ("  rm <имя файла>\n\r");
 	#endif
-	return FALSE;
+	return TRUE;
 	}
 
 if ( '/' == file[0])
@@ -52,3 +52,4 @@ else
 	return FALSE;
 
 }
+

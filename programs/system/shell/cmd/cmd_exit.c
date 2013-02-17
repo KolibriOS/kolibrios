@@ -6,3 +6,4 @@ _exit(1);
 kol_exit();
 return TRUE;
 }
+

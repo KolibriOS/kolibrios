@@ -13,7 +13,7 @@ if (NULL == dir)
 	#elif LANG_RUS
 		printf("  mkdir <директория>\n\r");
 	#endif	
-	return FALSE;
+	return TRUE;
 	}
 
 
@@ -46,3 +46,4 @@ else
 	return FALSE;
 
 }
+

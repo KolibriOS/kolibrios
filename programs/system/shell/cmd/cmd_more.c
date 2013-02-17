@@ -16,7 +16,7 @@ if (strlen(file)<1)
 	#elif LANG_RUS
 		printf ("  more <имя файла>\n\r");
 	#endif
-	return FALSE;
+	return TRUE;
 	}
 
 if ( '/' == file[0])
@@ -93,3 +93,4 @@ con_set_flags(flags);
 printf ("\n\r");
 return TRUE;
 }
+

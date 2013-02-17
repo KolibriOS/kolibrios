@@ -13,7 +13,7 @@ if (NULL == file)
 	#elif LANG_RUS
 		printf("  touch <имя файла>\n\r");
 	#endif
-	return FALSE;
+	return TRUE;
 	}
 
 if (  ( 0 == strcmp(file, ".") ) || ( 0 == strcmp(file, "..") ) || ( 0 == strcmp(cur_dir, "/")) ) 

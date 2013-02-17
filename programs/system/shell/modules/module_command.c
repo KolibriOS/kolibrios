@@ -89,8 +89,8 @@ for (;;)
 				if (CMD_POS < 255)
 					{
 					
-					if ( kol_key_control() & 0x40 ) // åñëè âêëþ÷¸í CapsLock
-						if ( (kol_key_control() & 1) || (kol_key_control() & 2)) // åñëè íàæàòû øèôòû 
+					if ( kol_key_control() & 0x40 ) // ¥á«¨ ¢ª«îçñ­ CapsLock
+						if ( (kol_key_control() & 1) || (kol_key_control() & 2)) // ¥á«¨ ­ ¦ âë è¨äâë 
 							key = tolower(key);
 						else
 							key = toupper(key);
@@ -102,7 +102,7 @@ for (;;)
 					break;
 			};
 		}
-	else	// îáðàáîòêà ðàñøèðåííûõ êëàâèø
+	else	// ®¡à ¡®âª  à áè¨à¥­­ëå ª« ¢¨è
 		{
 		key = (key>>8)&0xff;
 //		printf ("%d\n\r", key);
@@ -209,7 +209,7 @@ if (quote == 0)
 
 /// ===========================================================
 
-typedef void (*handler1_t)(char* arg);
+typedef int (*handler1_t)(char* arg);
 
 /// ===========================================================
 
@@ -219,6 +219,7 @@ char cmd[256];
 char args[256];
 unsigned arg;
 int i;
+int result;
 
 trim(CMD);
 arg = command_get_cmd(cmd);
@@ -233,7 +234,15 @@ for (i = 0; i < NUM_OF_CMD; i++)
 	{
 	if (!strcmp(cmd, COMMANDS[i].name))
 		{
-		((handler1_t)COMMANDS[i].handler)(args);
+		result = ((handler1_t)COMMANDS[i].handler)(args);
+                if (result != TRUE)
+                   {
+                   #if LANG_ENG
+                       printf("  Error!\n\r");
+                   #elif LANG_RUS
+                       printf("  Žè¨¡ª !\n\r");
+                   #endif
+                    }
 		return;
 		}
 	}
@@ -251,3 +260,4 @@ executable_run(cmd, args);
 }
 
 /// ===========================================================
+

@@ -47,3 +47,4 @@ for (i = 0; i < num_of_file; i++)
 free((void*)k70.p16);
 return TRUE;
 }
+

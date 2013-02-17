@@ -40,7 +40,6 @@
 #include "cmd/cmd_sleep.c"
 #include "cmd/cmd_shutdown.c"
 #include "cmd/cmd_uptime.c"
-#include "cmd/cmd_killall.c"
 #include "cmd/cmd_history.c"
 #include "cmd/cmd_cp.c"
 

@@ -13,7 +13,7 @@ if (NULL == dir)
 	#elif LANG_ENG
 		printf("  rmdir <директория>\n\r");
 	#endif
-	return FALSE;
+	return TRUE;
 	}
 
 if ( ( 0 == strcmp(dir, ".") ) || ( 0 == strcmp(dir, "..") ) || ( 0 == strcmp(cur_dir, "/")) ) 
@@ -48,3 +48,4 @@ else
 	return FALSE;
 
 }
+

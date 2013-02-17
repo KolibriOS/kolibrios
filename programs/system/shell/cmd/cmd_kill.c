@@ -1,22 +1,32 @@
 
 
-int cmd_kill(char process[])
+int cmd_kill(char param[])
 {
 
-unsigned proc;
+unsigned process;
 int result;
+int i;
 
-if (NULL == process)
+if ( strlen(param) == 0 )
 	{
 	printf("  kill <PID>\n\r");
-	return FALSE;
+	return TRUE;
 	}
+
+if (!strcmp(param, "all"))
+	{
+	for (i = 2;i<256;i++)
+		{
+		kol_kill_process(i);
+		}
+	return TRUE;
+        }
 else
 	{
-	proc = _atoi(process);
-	if ( 0 != proc )
+	process = _atoi(param);
+	if ( 0 != process )
 		{
-		result = kol_process_kill_pid(proc);
+		result = kol_process_kill_pid(process);
 		if (result < 0)
 			return FALSE;
 		else
@@ -25,3 +35,4 @@ else
 	}
 
 }
+

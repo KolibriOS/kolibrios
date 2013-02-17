@@ -12,8 +12,7 @@ const command_t COMMANDS[]=
 	{"free",    "  Displays total, free and used memory\n\r", &cmd_memory},
 	{"help",    "  Gives help on commands. Usage:\n\r    help ;it lists all builtins\n\r    help <command> ;help on command\n\r", &cmd_help},
 	{"history", "  Lists used commands\n\r", &cmd_history},	
-	{"kill",    "  Stops a running process. Usage:\n\r    kill <PID of process>\n\r", &cmd_kill},
-	{"killall", "  Kills all running processes\n\r", &cmd_killall},
+	{"kill",    "  Stops a running process. Usage:\n\r    kill <PID of process>\n\r    kill all\n\r", &cmd_kill},
 	{"ls",      "  Lists the files in a directory. Usage:\n\r    ls ;lists the files in current directory\n\r    ls <directory> ;lists the files at specified folder\n\r", &cmd_ls},
 	{"mkdir",   "  Makes directory. Usage:\n\r    mkdir <folder name> ;creates the folder in working directory\n\r    mkdir <path><folder name> ;create folder by specified path\n\r", &cmd_mkdir},
 	{"more",    "  Displays a file data to the screen. Usage:\n\r    more <file name>\n\r", &cmd_more},
@@ -28,3 +27,4 @@ const command_t COMMANDS[]=
 	{"uptime",  "  Displays the uptime\n\r", &cmd_uptime},
 	{"ver",     "  Displays version. Usage:\n\r    ver ;Shell version\n\r    ver kernel ;version of KolibriOS kernel\n\r    ver cpu ;information about CPU\n\r", &cmd_ver},
 };
+

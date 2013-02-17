@@ -17,3 +17,4 @@ up_millisecs = (time_tick*10)%100;
 #endif
 return TRUE;
 }
+

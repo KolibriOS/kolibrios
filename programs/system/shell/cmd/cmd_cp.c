@@ -1,15 +1,4 @@
 
-void print_error(void)
-{
-
-#if LANG_ENG
-    printf("  Error!\n\r");
-#elif LANG_RUS
-    printf("  Ошибка!\n\r");
-#endif
-
-}
-
 int cmd_cp(char param[])
 {
 
@@ -40,7 +29,7 @@ if (argc != 2)
 
       parameters_free(argc, argv);
 
-      return FALSE;
+      return TRUE;
    }
 
 filename_in  = (char*) malloc(4096);
@@ -80,12 +69,10 @@ k70_in.p21 = filename_in;
 result = kol_file_70(&k70_in); // получаем информацию о файле
 if ( 0 != result )
        {
-       print_error();
-
        parameters_free(argc, argv);
        free(filename_in);
        free(filename_out);
-       return FALSE;
+       return TRUE;
        }
 
 filesize = bdvk.p32[0]; // получаем размер файла  (ограничение - 4 Гбайта)
@@ -115,8 +102,6 @@ for ( i = 0; i < n; i++)
     result = kol_file_70(&k70_in); // чтение
     if (result != 0)
        {
-       print_error();
-
        parameters_free(argc, argv);
        free(filename_in);
        free(filename_out);
@@ -128,8 +113,6 @@ for ( i = 0; i < n; i++)
     result = kol_file_70(&k70_out); // запись
     if (result != 0)
        {
-       print_error();
-
        parameters_free(argc, argv);
        free(filename_in);
        free(filename_out);
@@ -152,8 +135,6 @@ if ( (filesize%4096) != 0 ) // если размер файла не кратен 4 кБайтам
    result = kol_file_70(&k70_in); // чтение
    if (result != 0)
        {
-       print_error();
-
        parameters_free(argc, argv);
        free(filename_in);
        free(filename_out);
@@ -165,8 +146,6 @@ if ( (filesize%4096) != 0 ) // если размер файла не кратен 4 кБайтам
     result = kol_file_70(&k70_out); // запись
     if (result != 0)
        {
-       print_error();
-
        parameters_free(argc, argv);
        free(filename_in);
        free(filename_out);
@@ -175,7 +154,6 @@ if ( (filesize%4096) != 0 ) // если размер файла не кратен 4 кБайтам
        }
 
    }
-
 
 
 parameters_free(argc, argv);

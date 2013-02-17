@@ -12,7 +12,7 @@ if (NULL == dir)
 	#elif LANG_RUS
 		printf("  cd <директория>\n\r");
 	#endif
-	return FALSE;
+	return TRUE;
 	}
 
 if ( 0 == strcmp(dir, ".") )

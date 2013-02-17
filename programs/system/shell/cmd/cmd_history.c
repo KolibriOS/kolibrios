@@ -11,3 +11,4 @@ for (i = 0; i < CMD_HISTORY_NUM_REAL; i++)
 
 return TRUE;
 }
+

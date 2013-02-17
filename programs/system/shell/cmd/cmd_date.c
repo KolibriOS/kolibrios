@@ -29,3 +29,4 @@ time = kol_system_time_get();
 
 return TRUE;
 }
+

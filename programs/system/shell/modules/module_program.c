@@ -14,3 +14,4 @@ k70.p21 = cmd;
 
 return kol_file_70(&k70);
 }
+

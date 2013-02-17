@@ -1,6 +1,7 @@
 
 int cmd_ver(char param[])
 {
+
 if (!strcmp(param, "kernel"))
 	{
 	char		*kvbuf;
@@ -63,3 +64,4 @@ if (!strcmp(param, "cpu"))
 printf ("  Shell v%s\n\r", SHELL_VERSION);
 return TRUE;
 }
+
