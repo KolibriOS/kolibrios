@@ -23,7 +23,7 @@ $Revision$
 ;       Add a segment to the incoming TCP queue
 ;
 ;  IN:  [esp] = ptr to buffer
-;       [esp+4] = buffer size
+;       [esp+4] = buffer size (dont care)
 ;       ebx = ptr to device struct
 ;       ecx = segment size
 ;       esi = ptr to TCP segment
@@ -36,14 +36,16 @@ $Revision$
 align 4
 TCP_input:
 
+; record the current time
+        mov     eax, [timer_ticks]      ; in 1/100 seconds
+        mov     [esp + 4], eax
+
         push    ebx ecx esi edi         ; mind the order
         mov     esi, esp
 
         pushf
         cli
-
         add_to_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .fail
-
         popf
 
         add     esp, sizeof.TCP_queue_entry
@@ -78,7 +80,7 @@ TCP_process_input:
 ;-----------------------------------------------------------------
 ;
 ;  IN:  [esp] = ptr to buffer
-;       [esp+4] = buffer size           - actually, we dont care
+;       [esp+4] = timestamp when segment was received
 ;       ebx = ptr to device struct
 ;       ecx = segment size
 ;       esi = ptr to TCP segment
@@ -90,11 +92,7 @@ TCP_process_input:
 
         DEBUGF  1,"TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
 
-; First, record the current time
-        mov     eax, [timer_ticks]      ; in 1/100 seconds
-        mov     [esp + 4], eax          ; from now on, we'll call this TCP_now
-
-; then, re-calculate the checksum (if not already done by hw)
+; re-calculate the checksum (if not already done by hw)
 ;        test    [ebx + NET_DEVICE.hwacc], HWACC_TCP_IPv4_IN
 ;        jnz     .checksum_ok
 
@@ -247,7 +245,7 @@ TCP_process_input:
 ;--------------------
 ; Process TCP options
 
-                push    ecx
+        push    ecx     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
         movzx   ecx, [edx + TCP_header.DataOffset]
         cmp     ecx, sizeof.TCP_header                  ; Does header contain any options?
@@ -366,8 +364,11 @@ TCP_process_input:
 
         mov     eax, [esp+4+4]                          ; tcp_now
         sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
+
+        pop     ecx
         cmp     eax, TCP_PAWS_IDLE
         jle     .drop_after_ack                         ; TODO: update stats
+        push    ecx
 
         mov     [ebx + TCP_SOCKET.ts_recent], 0         ; timestamp was invalid, fix it.
   .no_paws:
@@ -375,7 +376,7 @@ TCP_process_input:
 
   .no_options:
 
-        pop     ecx
+        pop     ecx;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;-----------------------------------------------------------------------
 ; Time to do some header prediction (Original Principle by Van Jacobson)
@@ -1537,6 +1538,7 @@ align 4
 
   .need_output:
         DEBUGF  1,"TCP_input: need output\n"
+
         call    TCP_output
 
   .dumpit:
