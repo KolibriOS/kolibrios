@@ -111,7 +111,7 @@ local   .loop, .next
         jmp     .done
 
   .died:
-        DEBUGF 1,"Fragment slot timed-out!\n"
+        DEBUGF  2,"IPv4 Fragment slot timed-out!\n"
 ;;; TODO: clear all entry's of timed-out slot
         jmp     .next
 
@@ -204,10 +204,10 @@ macro IPv4_checksum ptr {
 align 4
 IPv4_input:                                                     ; TODO: add IPv4 raw sockets support
 
-        DEBUGF  1,"IPv4_input, packet from: %u.%u.%u.%u ",\
+        DEBUGF  2,"IPv4_input, packet from: %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
         [edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
-        DEBUGF  1,"to: %u.%u.%u.%u\n",\
+        DEBUGF  2,"to: %u.%u.%u.%u\n",\
         [edx + IPv4_header.DestinationAddress + 0]:1,[edx + IPv4_header.DestinationAddress + 1]:1,\
         [edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
 
@@ -302,7 +302,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         DEBUGF  2,"IPv4_input: unknown protocol %u\n", al
 
   .dump:
-        DEBUGF  2,"IPv4_input: dumping\n"
+        DEBUGF  1,"IPv4_input: dumping\n"
 ;        inc     [dumped_rx_count]                              ;;; TODO
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
@@ -408,11 +408,11 @@ IPv4_input:                                                     ; TODO: add IPv4
   .count_bytes:
         cmp     [esi + FRAGMENT_entry.PrevPtr], edi
         jne     .destroy_slot_pop                                               ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
-        mov     cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]       ; Add total length
+        mov     cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]     ; Add total length
         xchg    cl, ch
         DEBUGF  1,"IPv4_input: Packet size=%u\n", cx
         add     ax, cx
-        movzx   cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]     ; Sub Header length
+        movzx   cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]   ; Sub Header length
         and     cx, 0x000F
         shl     cx, 2
         DEBUGF  1,"IPv4_input: Header size=%u\n", cx
@@ -423,12 +423,12 @@ IPv4_input:                                                     ; TODO: add IPv4
         jne     .count_bytes
 
         mov     esi, [esp+4]
-        mov     [edi + FRAGMENT_entry.NextPtr], esi                            ; Add this packet to the chain, this simplifies the following code
+        mov     [edi + FRAGMENT_entry.NextPtr], esi                             ; Add this packet to the chain, this simplifies the following code
         mov     [esi + FRAGMENT_entry.NextPtr], -1
         mov     [esi + FRAGMENT_entry.PrevPtr], edi
         mov     [esi + FRAGMENT_entry.Owner], ebx
 
-        mov     cx, [edx + IPv4_header.TotalLength]                            ; Note: This time we dont substract Header length
+        mov     cx, [edx + IPv4_header.TotalLength]                             ; Note: This time we dont substract Header length
         xchg    cl, ch
         DEBUGF  1,"IPv4_input: Packet size=%u\n", cx
         add     ax, cx
@@ -613,23 +613,23 @@ IPv4_output:
 
         IPv4_checksum edi
         add     edi, sizeof.IPv4_header
-        DEBUGF  1,"IPv4_output: success!\n"
+        DEBUGF  2,"IPv4_output: success!\n"
         ret
 
   .eth_error:
-        DEBUGF  1,"IPv4_output: ethernet error\n"
+        DEBUGF  2,"IPv4_output: ethernet error\n"
         add     esp, 3*4+2+6
         xor     edi, edi
         ret
 
   .arp_error:
-        DEBUGF  1,"IPv4_output: ARP error=%x\n", eax
+        DEBUGF  2,"IPv4_output: ARP error=%x\n", eax
         add     esp, 3*4+2
         xor     edi, edi
         ret
 
   .too_large:
-        DEBUGF  1,"IPv4_output: Packet too large!\n"
+        DEBUGF  2,"IPv4_output: Packet too large!\n"
         xor     edi, edi
         ret
 
@@ -712,7 +712,7 @@ IPv4_output_raw:
 
         IPv4_checksum edi                       ;;;; todo: checksum for IP packet with options!
         add     edi, sizeof.IPv4_header
-        DEBUGF  1,"IPv4_output_raw: device=%x\n", ebx
+        DEBUGF  2,"IPv4_output_raw: device=%x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         ret
 
@@ -721,7 +721,7 @@ IPv4_output_raw:
   .arp_error:
         add     esp, 8+4+4
   .too_large:
-        DEBUGF  1,"IPv4_output_raw: Failed\n"
+        DEBUGF  2,"IPv4_output_raw: Failed\n"
         sub     edi, edi
         ret
 

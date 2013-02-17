@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -48,7 +48,7 @@ PPP_IPV6                = 0x5780
 
 ;Protocol family
 AF_UNSPEC               = 0
-AF_UNIX                 = 1
+AF_LOCAL                = 1
 AF_INET4                = 2
 AF_INET6                = 10
 AF_PPP                  = 777
@@ -258,6 +258,8 @@ stack_handler:
 
         cmp     [NET_RUNNING], 0
         je      .exit
+
+        call    TCP_process_input       ; de-queue TCP ragments and process them
 
         ; Test for 10ms tick
         mov     eax, [timer_ticks]
@@ -587,7 +589,7 @@ checksum_2:
   .not_zero:
         xchg    dl, dh
 
-        DEBUGF 1,"Checksum: %x\n", dx
+        DEBUGF  1,"Checksum: %x\n", dx
 
         ret
 

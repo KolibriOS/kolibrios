@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -27,15 +27,15 @@ struct  SOCKET
         mutex                   MUTEX
 
         PID                     dd ? ; application process id
-        Domain                  dd ? ; INET/UNIX/..
+        Domain                  dd ? ; INET/LOCAL/..
         Type                    dd ? ; RAW/STREAM/DGRAP
         Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
         errorcode               dd ?
-        device                  dd ? ; driver pointer, socket pointer if it's an UNIX socket
+        device                  dd ? ; driver pointer, socket pointer if it's an LOCAL socket
 
         options                 dd ?
         state                   dd ?
-        backlog                 dw ? ; how many incomming connections that can be queued
+        backlog                 dw ? ; how many incoming connections that can be queued
 
         snd_proc                dd ?
         rcv_proc                dd ?
@@ -183,7 +183,7 @@ ends
 
 SOCKETBUFFSIZE          = 4096     ; in bytes
 
-SOCKET_QUEUE_SIZE       = 10       ; maximum number ofincoming packets queued for 1 socket
+SOCKET_QUEUE_SIZE       = 10       ; maximum number of incoming packets queued for 1 socket
 ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
 SOCKET_QUEUE_LOCATION   = (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
 
@@ -279,7 +279,7 @@ sys_socket:
   .number = ($ - .table) / 4 - 1
 
 s_error:
-        DEBUGF  1,"socket error\n"
+        DEBUGF  2,"SOCKET: error\n"
         mov     dword [esp+32], -1
 
         ret
@@ -297,7 +297,7 @@ s_error:
 align 4
 SOCKET_open:
 
-        DEBUGF  1,"SOCKET_open: domain=%u type=%u protocol=%x\n", ecx, edx, esi
+        DEBUGF  2,"SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
 
         push    ecx edx esi
         call    SOCKET_alloc
@@ -305,6 +305,7 @@ SOCKET_open:
         jz      s_error
 
         mov     [esp+32], edi                   ; return socketnumber
+        DEBUGF  2,"socknum=%u\n", edi
 
         mov     [eax + SOCKET.Domain], ecx
         mov     [eax + SOCKET.Type], edx
@@ -330,6 +331,7 @@ SOCKET_open:
         je      .pppoe
 
   .no_ppp:
+        DEBUGF  2,"Unknown socket family/protocol\n"
         ret
 
 align 4
@@ -402,7 +404,7 @@ align 4
 align 4
 SOCKET_bind:
 
-        DEBUGF  1,"SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+        DEBUGF  2,"SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -413,12 +415,12 @@ SOCKET_bind:
         cmp     word [edx], AF_INET4
         je      .af_inet4
 
-        cmp     word [edx], AF_UNIX
-        je      .af_unix
+        cmp     word [edx], AF_LOCAL
+        je      .af_local
 
         jmp     s_error
 
-  .af_unix:
+  .af_local:
         ; TODO: write code here
 
         mov     dword [esp+32], 0
@@ -475,7 +477,7 @@ SOCKET_bind:
 align 4
 SOCKET_connect:
 
-        DEBUGF  1,"SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+        DEBUGF  2,"SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -624,7 +626,7 @@ align 4
 align 4
 SOCKET_listen:
 
-        DEBUGF  1,"SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
+        DEBUGF  2,"SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -676,7 +678,7 @@ SOCKET_listen:
 align 4
 SOCKET_accept:
 
-        DEBUGF  1,"SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+        DEBUGF  2,"SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -722,7 +724,7 @@ SOCKET_accept:
 align 4
 SOCKET_close:
 
-        DEBUGF  1,"SOCKET_close: %u\n", ecx
+        DEBUGF  2,"SOCKET_close: socknum=%u\n", ecx
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -777,7 +779,7 @@ SOCKET_close:
 align 4
 SOCKET_receive:
 
-        DEBUGF  1,"SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
+        DEBUGF  2,"SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -826,7 +828,7 @@ SOCKET_receive_dgram:
 
   .too_small:
 
-        DEBUGF  1,"SOCKET_receive: Buffer too small\n"
+        DEBUGF  2,"SOCKET_receive: Buffer too small\n"
         jmp     s_error
 
   .block:
@@ -870,7 +872,7 @@ SOCKET_receive_stream:
 align 4
 SOCKET_send:
 
-        DEBUGF  1,"SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
+        DEBUGF  2,"SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -949,9 +951,9 @@ SOCKET_send_pppoe:
 
 
 align 4
-SOCKET_send_unix:
+SOCKET_send_local:
 
-        DEBUGF  1,"SOCKET_send: UNIX\n"
+        DEBUGF  1,"SOCKET_send: LOCAL\n"
 
         ; does this socket have a PID yet?
         cmp     [eax + SOCKET.PID], 0
@@ -1000,7 +1002,7 @@ SOCKET_send_unix:
 align 4
 SOCKET_get_opt:
 
-        DEBUGF  1,"SOCKET_get_opt\n"
+        DEBUGF  2,"SOCKET_get_opt\n"
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -1050,7 +1052,7 @@ SOCKET_get_opt:
 align 4
 SOCKET_set_opt:
 
-        DEBUGF  1,"SOCKET_set_opt\n"
+        DEBUGF  2,"SOCKET_set_opt\n"
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -1111,7 +1113,7 @@ SOCKET_set_opt:
 ;
 ; SOCKET_pair
 ;
-; Allocates a pair of linked UNIX domain sockets
+; Allocates a pair of linked LOCAL domain sockets
 ;
 ; IN: /
 ; OUT: eax is socket1 num, -1 on error
@@ -1121,16 +1123,16 @@ SOCKET_set_opt:
 align 4
 SOCKET_pair:
 
-        DEBUGF  1,"SOCKET_pair\n"
+        DEBUGF  2,"SOCKET_pair\n"
 
         call    SOCKET_alloc
         jz      s_error
         mov     [esp+32], edi   ; application's eax
 
-        mov     [eax + SOCKET.Domain], AF_UNIX
+        mov     [eax + SOCKET.Domain], AF_LOCAL
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_unix
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_local
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
         mov     ebx, eax
 
@@ -1138,10 +1140,10 @@ SOCKET_pair:
         jz      .error
         mov     [esp+24], edi   ; application's ebx
 
-        mov     [eax + SOCKET.Domain], AF_UNIX
+        mov     [eax + SOCKET.Domain], AF_LOCAL
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_unix
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_local
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
 
         ; Link the two sockets to eachother
@@ -1154,8 +1156,6 @@ SOCKET_pair:
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
         pop     eax
-
-
 
         ret
 
@@ -1180,7 +1180,7 @@ SOCKET_pair:
 align 4
 SOCKET_debug:
 
-;        DEBUGF  1,"SOCKET_debug\n"
+        DEBUGF  1,"SOCKET_debug\n"
 
         mov     edi, edx
 
@@ -1229,7 +1229,7 @@ SOCKET_debug:
 align 4
 SOCKET_find_port:
 
-        DEBUGF  1,"SOCKET_find_port\n"
+        DEBUGF  2,"SOCKET_find_port\n"
 
         push    ebx esi ecx
 
@@ -1290,7 +1290,7 @@ SOCKET_find_port:
 align 4
 SOCKET_check_port:
 
-        DEBUGF  1,"SOCKET_check_port: "
+        DEBUGF  2,"SOCKET_check_port: "
 
         mov     ecx, [eax + SOCKET.Protocol]
         mov     edx, [eax + IP_SOCKET.LocalIP]
@@ -1310,11 +1310,11 @@ SOCKET_check_port:
         cmp     [esi + UDP_SOCKET.LocalPort], bx
         jne     .next_socket
 
-        DEBUGF  1,"local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
+        DEBUGF  2,"local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
         ret
 
   .port_ok:
-        DEBUGF  1,"local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
+        DEBUGF  2,"local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.LocalPort], bx
         or      bx, bx                                  ; clear the zero-flag
         ret
@@ -1341,7 +1341,7 @@ SOCKET_check_port:
 align 4
 SOCKET_input:
 
-        DEBUGF  1,"SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
+        DEBUGF  2,"SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
 
         mov     [esp+4], ecx
         push    esi
@@ -1349,7 +1349,7 @@ SOCKET_input:
 
         add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, SOCKET_input.full
 
-        DEBUGF  1,"SOCKET_input: queued packet successfully\n"
+        DEBUGF  1,"SOCKET_input: success\n"
         add     esp, sizeof.socket_queue_entry
 
         pusha

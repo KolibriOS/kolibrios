@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -20,6 +20,8 @@ $Revision$
 ;
 ; TCP_input:
 ;
+;       Add a segment to the incoming TCP queue
+;
 ;  IN:  [esp] = ptr to buffer
 ;       [esp+4] = buffer size
 ;       ebx = ptr to device struct
@@ -34,14 +36,63 @@ $Revision$
 align 4
 TCP_input:
 
-        pushfd
+        push    ebx ecx esi edi         ; mind the order
+        mov     esi, esp
+
+        pushf
         cli
+
+        add_to_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .fail
+
+        popf
+
+        add     esp, sizeof.TCP_queue_entry
+        ret
+
+  .fail:
+        DEBUGF  2, "TCP incoming queue is full, discarding packet!\n"
+
+        add     esp, sizeof.TCP_queue_entry - 8
+        call    kernel_free
+        add     esp, 4
+  .done:
+        ret
+
+
+
+align 4
+TCP_process_input:
+
+  .loop:
+        get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, TCP_input.done
+
+        push    .loop
+        push    [esi + TCP_queue_entry.buffer_size]
+        push    [esi + TCP_queue_entry.buffer_ptr]
+
+        mov     ebx, [esi + TCP_queue_entry.device_ptr]
+        mov     ecx, [esi + TCP_queue_entry.segment_size]
+        mov     edi, [esi + TCP_queue_entry.ip_ptr]
+        mov     esi, [esi + TCP_queue_entry.segment_ptr]                ; change esi last
+
+;-----------------------------------------------------------------
+;
+;  IN:  [esp] = ptr to buffer
+;       [esp+4] = buffer size           - actually, we dont care
+;       ebx = ptr to device struct
+;       ecx = segment size
+;       esi = ptr to TCP segment
+;       edi = ptr to ipv4 source address, followed by ipv4 dest address
+;
+;  OUT: /
+;
+;-----------------------------------------------------------------
 
         DEBUGF  1,"TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
 
 ; First, record the current time
         mov     eax, [timer_ticks]      ; in 1/100 seconds
-        mov     [esp+8], eax
+        mov     [esp + 4], eax          ; from now on, we'll call this TCP_now
 
 ; then, re-calculate the checksum (if not already done by hw)
 ;        test    [ebx + NET_DEVICE.hwacc], HWACC_TCP_IPv4_IN
@@ -313,7 +364,7 @@ TCP_input:
 
         DEBUGF  1,"TCP_input: PAWS: detected an old segment\n"
 
-        mov     eax, [esp+4+4+4]                        ; tcp_now
+        mov     eax, [esp+4+4]                          ; tcp_now
         sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
         cmp     eax, TCP_PAWS_IDLE
         jle     .drop_after_ack                         ; TODO: update stats
@@ -402,7 +453,7 @@ TCP_input:
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp_rtt
-        mov     eax, [esp + 4+4]                         ; timestamp when this segment was received
+        mov     eax, [esp + 4]                          ; timestamp when this segment was received
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    TCP_xmit_timer
@@ -669,7 +720,7 @@ TCP_input:
 
         DEBUGF  1,"Recording timestamp\n"
 
-        mov     eax, [esp + 4+4]                                ; tcp_now
+        mov     eax, [esp + 4]                                  ; tcp_now
         mov     [ebx + TCP_SOCKET.ts_recent_age], eax
         mov     eax, [ebx + TCP_SOCKET.ts_val]
         mov     [ebx + TCP_SOCKET.ts_recent], eax
@@ -918,7 +969,7 @@ TCP_input:
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
         jz      .timestamp_not_present
-        mov     eax, [esp+4+4]
+        mov     eax, [esp+4]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    TCP_xmit_timer
@@ -1025,7 +1076,7 @@ TCP_input:
 
   .wakeup:
 
-        pushf
+        pushf                   ; Why?
         mov     eax, ebx
         call    SOCKET_notify_owner
 
@@ -1491,7 +1542,6 @@ align 4
   .dumpit:
         DEBUGF  1,"TCP_input: dumping\n"
 
-        popf
         call    kernel_free
         add     esp, 4
 
@@ -1538,7 +1588,6 @@ align 4
   .drop_no_socket:
         DEBUGF  1,"TCP_input: Drop (no socket)\n"
 
-        popf
         call    kernel_free
         add     esp, 4
 

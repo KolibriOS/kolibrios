@@ -93,7 +93,7 @@ LOOP_input:
 align 4
 LOOP_output:
 
-        DEBUGF  1,"LOOP_output: "
+        DEBUGF  1,"LOOP_output\n"
 
         push    ecx
         push    di
@@ -114,11 +114,11 @@ LOOP_output:
         mov     ebx, LOOPBACK_DEVICE
 
   .done:
-        DEBUGF  1,"ptr=%x size=%u\n", eax, edx
+        DEBUGF  2,"LOOP_output: ptr=%x size=%u\n", eax, edx
         ret
 
   .out_of_ram:
-        DEBUGF  2,"error\n"
+        DEBUGF  2,"LOOP_output: failed\n"
         add     esp, 2+4
         sub     edi, edi
         ret

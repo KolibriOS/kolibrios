@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -99,6 +99,8 @@ TCP_BIT_SENDALOT        = 1 shl 0
 
 TCP_PAWS_IDLE           = 24*24*60*60*100       ; 24 days, in 1/100 seconds
 
+TCP_QUEUE_SIZE          = 50
+
 struct  TCP_header
 
         SourcePort              dw ?
@@ -113,6 +115,18 @@ struct  TCP_header
 
 ends
 
+struct  TCP_queue_entry
+
+        ip_ptr          dd ?
+        segment_ptr     dd ?
+        segment_size    dd ?
+        device_ptr      dd ?
+
+        buffer_ptr      dd ?
+        buffer_size     dd ?
+
+ends
+
 align 4
 uglobal
         TCP_segments_tx         rd MAX_NET_DEVICES
@@ -120,6 +134,7 @@ uglobal
         TCP_bytes_rx            rq MAX_NET_DEVICES
         TCP_bytes_tx            rq MAX_NET_DEVICES
         TCP_sequence_num        dd ?
+        TCP_queue               rd TCP_QUEUE_SIZE*sizeof.TCP_queue_entry/4
 endg
 
 
@@ -139,6 +154,8 @@ macro   TCP_init {
 
         pseudo_random   eax
         mov     [TCP_sequence_num], eax
+
+        init_queue TCP_queue
 
 }
 

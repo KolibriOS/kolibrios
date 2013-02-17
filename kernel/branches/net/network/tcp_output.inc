@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -27,9 +27,6 @@ $Revision$
 ;-----------------------------------------------------------------
 align 4
 TCP_output:
-
-        pushf
-        cli
 
         DEBUGF 1,"TCP_output: socket=%x\n", eax
 
@@ -292,7 +289,6 @@ TCP_output:
         call    mutex_unlock
         popa
 
-        popf
         ret
 
 
@@ -586,7 +582,6 @@ TCP_send:
         DEBUGF 1,"TCP_send: success!\n"
 
         xor     eax, eax
-        popf
         ret
 
 
@@ -605,7 +600,6 @@ TCP_send:
         DEBUGF 1,"TCP_send: IP error\n"
 
         or      eax, -1
-        popf
         ret
 
   .send_error:
@@ -614,7 +608,6 @@ TCP_send:
         DEBUGF 1,"TCP_send: sending failed\n"
 
         or      eax, -2
-        popf
         ret
 
 

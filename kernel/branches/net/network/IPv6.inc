@@ -83,7 +83,7 @@ macro   IPv6_init {
 align 4
 IPv6_input:
 
-        DEBUGF  1,"IPv6_input from: %x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x\n",\
+        DEBUGF  2,"IPv6_input from: %x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x\n",\
         [edx + IPv6_header.SourceAddress + 0]:2,[edx + IPv6_header.SourceAddress + 1]:2,\
         [edx + IPv6_header.SourceAddress + 2]:2,[edx + IPv6_header.SourceAddress + 3]:2,\
         [edx + IPv6_header.SourceAddress + 4]:2,[edx + IPv6_header.SourceAddress + 5]:2,\
@@ -146,7 +146,7 @@ IPv6_input:
         DEBUGF  2,"IPv6_input - unknown protocol: %u\n", al
 
   .dump:
-        DEBUGF  2,"IPv6_input - dumping\n"
+        DEBUGF  1,"IPv6_input - dumping\n"
         call    kernel_free
         add     esp, 4
 
@@ -166,7 +166,7 @@ IPv6_input:
 ; Hop-by-Hop
 
   .hop_by_hop:
-        DEBUGF  2,"IPv6_input - hop by hop\n"
+        DEBUGF  1,"IPv6_input - hop by hop\n"
         pushw   [esi]                   ; 8 bit identifier for option type
         movzx   eax, byte[esi + 1]      ; Hdr Ext Len
         inc     eax                     ; first 8 octets not counted
@@ -195,7 +195,7 @@ IPv6_input:
 
   .pad_n:
         movzx   eax, byte[esi + 1]
-        DEBUGF  2,"IPv6_input - pad %u\n", eax
+        DEBUGF  1,"IPv6_input - pad %u\n", eax
         inc     esi
         inc     esi
         add     esi, eax
@@ -203,7 +203,7 @@ IPv6_input:
         jmp     .hop_by_hop
 
   .pad_1:
-        DEBUGF  2,"IPv6_input - pad 1\n"
+        DEBUGF  1,"IPv6_input - pad 1\n"
         inc     esi
         dec     ecx
         jmp     .hop_by_hop
@@ -211,11 +211,11 @@ IPv6_input:
 
 
   .dest_opts:
-        DEBUGF  2,"IPv6_input - dest opts\n"
+        DEBUGF  1,"IPv6_input - dest opts\n"
         jmp     .nextheader
 
   .routing:
-        DEBUGF  2,"IPv6_input - routing\n"
+        DEBUGF  1,"IPv6_input - routing\n"
         pushw   [esi]                   ; 8 bit identifier for option type
         movzx   eax, byte[esi + 1]      ; Hdr Ext Len
         inc     eax                     ; first 8 octets not counted
@@ -238,7 +238,7 @@ IPv6_input:
         jmp     .nextheader
 
   .fragment:
-        DEBUGF  2,"IPv6_input - fragment\n"
+        DEBUGF  1,"IPv6_input - fragment\n"
 
         jmp     .nextheader
 
