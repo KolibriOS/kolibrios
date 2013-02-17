@@ -53,17 +53,21 @@ int init_panel(window_t *win)
     panel->ctrl.parent  = (ctrl_t*)win;
 
     panel->layout = 0;
+    
+    panel->bitmap.width  = 1920;
+    panel->bitmap.height = PANEL_HEIGHT;
+    panel->bitmap.flags  = 0;
 
-    ctx->pixmap = user_alloc(1920*PANEL_HEIGHT*4);
-    if(!ctx->pixmap)
+    if( create_bitmap(&panel->bitmap) )
     {
-        printf("not enough memory for caption bitmap\n");
+        printf("not enough memory for panel bitmap\n");
         return 0;
-    };
+    }
 
-//    printf("win_w %d win_h %d\n", win->w, win->h);
+    ctx->pixmap   = &panel->bitmap;
+    ctx->offset_x = 0;
+    ctx->offset_y = 0;
 
-    ctx->stride = win->w*4;
     panel->ctrl.ctx = ctx;
 
     btn = create_button(NULL, ID_PLAY,0,19,32,32,&panel->ctrl);
@@ -86,10 +90,10 @@ int init_panel(window_t *win)
     lvl = create_level(NULL, ID_VOL_LEVEL, 0, 20, 96, 10, &panel->ctrl);
     lvl->vol = -1875;
     panel->lvl = lvl;
-
+    
     sld = create_slider(NULL, ID_VOL_CTRL, 0, 20, 96+12, 12, &panel->ctrl);
-    panel->sld = sld;
-
+    panel->sld = sld; 
+     
 //    btn = create_button(NULL, ID_MINIMIZE,0,5,16,18,(ctrl_t*)cpt);
 //    cpt->minimize_btn = btn;
 
@@ -109,7 +113,7 @@ static void panel_update_layout(panel_t *panel)
 {
     progress_t *prg = panel->prg;
     level_t    *lvl = panel->lvl;
-
+    
     if(panel->layout == 0)
     {
         prg->ctrl.rc.l = panel->ctrl.rc.l;
@@ -129,7 +133,7 @@ static void panel_update_layout(panel_t *panel)
         lvl->ctrl.rc.t = panel->ctrl.rc.t+7;
         lvl->ctrl.rc.r = lvl->ctrl.rc.l + lvl->ctrl.w;
         lvl->ctrl.rc.b = lvl->ctrl.rc.t + lvl->ctrl.h;
-
+        
         prg->ctrl.rc.l = lvl->ctrl.rc.r;
         prg->ctrl.rc.t = panel->ctrl.rc.t+7;
         prg->ctrl.rc.r = panel->ctrl.rc.r;
@@ -140,13 +144,13 @@ static void panel_update_layout(panel_t *panel)
 
 void panel_set_layout(panel_t *panel, int layout)
 {
-    panel->layout = layout;
+    panel->layout = layout;    
     panel->lvl->visible = layout;
-
+    
     panel_update_layout(panel);
-
+    
     send_message(&panel->prg->ctrl, MSG_PAINT, 0, 0);
-
+    
     if(layout)
         send_message(&panel->lvl->ctrl, MSG_PAINT, 0, 0);
 };
@@ -154,23 +158,26 @@ void panel_set_layout(panel_t *panel, int layout)
 void update_panel_size(window_t *win)
 {
     panel_t *panel = &win->panel;
+    bitmap_t  *bitmap = panel->ctx.pixmap;
 
     int old_size;
     int new_size;
-    int stride;
+    int pitch;
 
-    old_size = panel->ctx.stride * PANEL_HEIGHT;
+    old_size = bitmap->pitch * bitmap->height;
     old_size = (old_size+4095) & ~4095;
 
-    stride = win->w*4;
+    pitch = ALIGN(win->w*4, 16);
 
-    new_size = stride * PANEL_HEIGHT;
+    new_size = pitch * PANEL_HEIGHT;
     new_size = (new_size+4095) & ~4095;
 
     if( new_size < old_size)
-        user_unmap(panel->ctx.pixmap, new_size, old_size-new_size);
+        user_unmap(bitmap->data, new_size, old_size-new_size);
 
-    panel->ctx.stride = stride;
+    bitmap->width = win->w;
+    bitmap->pitch = pitch;
+
     panel->ctx.offset_x = 0;
     panel->ctx.offset_y = win->h-PANEL_HEIGHT;
 
@@ -203,7 +210,7 @@ void update_panel_size(window_t *win)
     panel->sld->ctrl.rc.r = panel->sld->ctrl.rc.l + panel->sld->ctrl.w;
     panel->sld->ctrl.rc.b = panel->sld->ctrl.rc.t + panel->sld->ctrl.h;
 
-    panel_update_layout(panel);
+    panel_update_layout(panel);                        
 };
 
 
@@ -212,21 +219,14 @@ void draw_panel(panel_t *panel)
     int *pixmap, *src;
     int  i, j, w;
 
-    pixmap = panel->ctx.pixmap;
-    src = res_panel_left;
+    blit_raw(&panel->ctx, res_panel_left, 0, 0,
+             PANEL_CORNER_W, PANEL_HEIGHT, PANEL_CORNER_W*4);
 
-    for(i=0; i < PANEL_HEIGHT; i++)
-    {
-        for(j=0; j < PANEL_CORNER_W; j++)
-            pixmap[j] = src[j];
-        pixmap+= panel->ctx.stride/4;
-        src+= PANEL_CORNER_W;
-    };
 
     w = panel->ctrl.w - (2*PANEL_CORNER_W);
     if( w > 0)
     {
-        pixmap = panel->ctx.pixmap;
+        pixmap = (int*)panel->ctx.pixmap->data;
         pixmap+= PANEL_CORNER_W;
         src = res_panel_body;
 
@@ -234,29 +234,20 @@ void draw_panel(panel_t *panel)
         {
             for(j = 0; j < w; j++)
                 pixmap[j] = src[i];
-            pixmap+= panel->ctx.stride/4;
+            pixmap+= panel->ctx.pixmap->pitch/4;
         }
     };
 
-    pixmap = panel->ctx.pixmap;
-    pixmap+= panel->ctrl.w - PANEL_CORNER_W;
+    blit_raw(&panel->ctx, res_panel_right, panel->ctrl.w - PANEL_CORNER_W, 0,
+             PANEL_CORNER_W, PANEL_HEIGHT, PANEL_CORNER_W*4);
 
-    src = res_panel_right;
-
-    for(i = 0; i < PANEL_HEIGHT; i++)
-    {
-        for(j = 0; j < PANEL_CORNER_W; j++)
-            pixmap[j] = src[j];
-        pixmap+= panel->ctx.stride/4;
-        src+= PANEL_CORNER_W;
-    };
 
     ctrl_t *child;
     child  = (ctrl_t*)panel->ctrl.child.next;
 
     while( &child->link != &panel->ctrl.child)
     {
-        send_message(child, 1, 0, 0);
+        send_message(child, MSG_PAINT, 0, 0);
         child = (ctrl_t*)child->link.next;
     };
 };
@@ -306,7 +297,7 @@ int panel_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                 case ID_PLAY:
                 case ID_STOP:
                 case ID_PROGRESS:
-                case ID_VOL_CTRL:
+                case ID_VOL_CTRL: 
                     win = get_parent_window(ctrl);
                     send_message(win, msg, arg1, arg2);
                     break;
@@ -328,8 +319,8 @@ void blit_panel(panel_t *panel)
 //    printf("%s w:%d h:%d stride: %d\n",__FUNCTION__,
 //            cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.stride);
 
-    Blit(panel->ctx.pixmap, panel->draw.l, panel->draw.t,
+    Blit(panel->ctx.pixmap->data, panel->draw.l, panel->draw.t,
          0, 0, panel->ctrl.w, panel->ctrl.h,
-         panel->ctrl.w, panel->ctrl.h, panel->ctx.stride);
+         panel->ctrl.w, panel->ctrl.h, panel->ctx.pixmap->pitch);
 };
 

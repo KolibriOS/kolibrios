@@ -52,7 +52,7 @@ void flush_video()
     int i;
 
     for(i = 0; i < 4; i++)
-    {
+    {    
         frames[i].pts    = 0;
         frames[i].ready  = 0;
     };
@@ -135,8 +135,8 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
         pts= pkt.dts;
     else
         pts= 0;
-
-
+        
+  
     pts *= av_q2d(video_time_base)*1000.0;
 */
     if( 1 /*pts > current_clock*/)
@@ -199,24 +199,24 @@ extern int64_t rewind_pos;
 
 static void player_stop()
 {
-    window_t  *win;
-
+    window_t  *win;    
+    
     win = main_render->win;
-
+    
     rewind_pos = 0;
-
+    
     win->panel.play_btn->img_default    = res_play_btn;
     win->panel.play_btn->img_hilite     = res_play_btn;
     win->panel.play_btn->img_pressed    = res_play_btn_pressed;
     win->panel.prg->current             = rewind_pos;
-
+    
     send_message(&win->panel.ctrl, MSG_PAINT, 0, 0);
     player_state = STOP;
     decoder_state = PLAY_2_STOP;
     sound_state = PLAY_2_STOP;
     render_draw_client(main_render);
 //    printf("stop player\n");
-
+    
 };
 
 int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
@@ -237,7 +237,7 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
             break;
 
         case MSG_LBTNDOWN:
-
+       
             if(player_state == PAUSE)
             {
                 win->panel.play_btn->img_default = res_pause_btn;
@@ -284,24 +284,24 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                         win->panel.play_btn->img_default  = res_pause_btn;
                         win->panel.play_btn->img_hilite   = res_pause_btn;
                         win->panel.play_btn->img_pressed = res_pause_btn_pressed;
-                        rewind_pos = 0;
+                        rewind_pos = 0;    
                         send_message(&win->panel.ctrl, MSG_PAINT, 0, 0);
                         player_state = PLAY;
                         decoder_state = PREPARE;
                     }
                     break;
-
+                    
                 case ID_STOP:
                     player_stop();
                     break;
-
+                    
                 case ID_PROGRESS:
                     if(player_state != REWIND)
                     {
                         progress_t *prg = (progress_t*)arg2;
-
+                    
                         rewind_pos = (prg->max - prg->min)*prg->pos/prg->ctrl.w;
-
+                              
 //                        printf("progress action pos: %d time: %f\n", prg->pos, (double)rewind_pos);
                         player_state  = REWIND;
                         decoder_state = REWIND;
@@ -313,30 +313,30 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                         }
                         else
                             prg->current  = rewind_pos;
-
+                        
                         win->panel.play_btn->img_default  = res_pause_btn;
                         win->panel.play_btn->img_hilite   = res_pause_btn;
                         win->panel.play_btn->img_pressed  = res_pause_btn_pressed;
                         send_message(&prg->ctrl, MSG_PAINT, 0, 0);
                     };
                     break;
-
-                case ID_VOL_CTRL:
+                    
+                case ID_VOL_CTRL:      
                 {
                     slider_t *sld = (slider_t*)arg2;
                     int      peak;
                     int      level;
-
+                    
                     peak = sld->min + sld->pos * (sld->max - sld->min)/(96);
 //                    level = (log2(peak+16384)*10000.0)/15 - 10000;
                     level =  peak;
-
+                     
 //                    printf("level %d\n", level);
                     set_audio_volume(level, level);
                     send_message(&sld->ctrl, MSG_PAINT, 0, 0);
                     win->panel.lvl->vol = level;
                 }
-
+                
                 default:
                     break;
             }
@@ -352,9 +352,9 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 
 void render_time(render_t *render)
 {
-    progress_t  *prg = main_render->win->panel.prg;
-    level_t     *lvl = main_render->win->panel.lvl;
-
+    progress_t  *prg = main_render->win->panel.prg; 
+    level_t     *lvl = main_render->win->panel.lvl; 
+      
     double      ctime;            /*    milliseconds    */
     double      fdelay;           /*    milliseconds    */
 
@@ -368,11 +368,11 @@ void render_time(render_t *render)
     else if(player_state == REWIND)
     {
         yield();
-        return;
+        return;   
     }
     else if (decoder_state == STOP && frames_count  == 0 &&
               player_state  != STOP)
-    {
+    {          
         player_stop();
     }
     else if(player_state != PLAY)
@@ -413,12 +413,12 @@ void render_time(render_t *render)
         prg->current = frames[vfx].pts*1000;
 //        printf("current %f\n", prg->current);
         lvl->current = vfx & 1 ? sound_level_1 : sound_level_0;
-
+        
         send_message(&prg->ctrl, PRG_PROGRESS, 0, 0);
-
+        
         if(main_render->win->panel.layout)
             send_message(&lvl->ctrl, MSG_PAINT, 0, 0);
-
+        
         frames_count--;
         frames[vfx].ready = 0;
         vfx++;
@@ -538,7 +538,7 @@ render_t *create_render(uint32_t width, uint32_t height,
     render->ctx_format = ctx_format;
 
     mutex_lock(&driver_lock);
-    render->caps = InitPixlib(flags);
+    render->caps = init_pixlib(flags);
     mutex_unlock(&driver_lock);
 
     if(render->caps==0)
@@ -616,6 +616,7 @@ int render_set_size(render_t *render, int width, int height)
             {
                 render->bitmap[i].width  = render->ctx_width;
                 render->bitmap[i].height = render->ctx_height;
+                render->bitmap[i].flags  = HW_TEX_BLIT;
 
                 if( create_bitmap(&render->bitmap[i]) != 0 )
                 {
@@ -632,6 +633,7 @@ int render_set_size(render_t *render, int width, int height)
         {
             render->bitmap[0].width  = width;
             render->bitmap[0].height = height;
+            render->bitmap[0].flags  = HW_BIT_BLIT;
 
             if( create_bitmap(&render->bitmap[0]) != 0 )
                 return 0;
@@ -808,7 +810,7 @@ void render_draw_client(render_t *render)
        render->win_state == ROLLED)
         return;
 
-    if(player_state == PAUSE)
+    if(player_state == PAUSE) 
     {
          if(frames[vfx].ready == 1 )
             main_render->draw(main_render, &frames[vfx].picture);

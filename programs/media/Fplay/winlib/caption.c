@@ -41,16 +41,19 @@ int init_caption(window_t *win)
 
     cpt->text = win->caption_txt;
 
-    ctx->pixmap = user_alloc(1920*CAPTION_HEIGHT*4);
-    if(!ctx->pixmap)
+    cpt->bitmap.width  = 1920;
+    cpt->bitmap.height = CAPTION_HEIGHT;
+    cpt->bitmap.flags  = 0;
+
+    if( create_bitmap(&cpt->bitmap) )
     {
         printf("not enough memory for caption bitmap\n");
         return 0;
-    };
+    }
+
 
 //    printf("win_w %d win_h %d\n", win->w, win->h);
-
-    ctx->stride   = win->w*4;
+    ctx->pixmap   = &cpt->bitmap;
     ctx->offset_x = 0;
     ctx->offset_y = 0;
 
@@ -79,23 +82,25 @@ int init_caption(window_t *win)
 void update_caption_size(window_t *win)
 {
     caption_t *cpt = &win->caption;
+    bitmap_t  *bitmap = cpt->ctx.pixmap;
 
     int old_size;
     int new_size;
-    int stride;
+    int pitch;
 
-    old_size = cpt->ctx.stride * CAPTION_HEIGHT;
+    old_size = bitmap->pitch * bitmap->height;
     old_size = (old_size+4095) & ~4095;
 
-    stride = win->w*4;
+    pitch = ALIGN(win->w*4, 16);
 
-    new_size = stride * CAPTION_HEIGHT;
+    new_size = pitch * CAPTION_HEIGHT;
     new_size = (new_size+4095) & ~4095;
 
     if( new_size < old_size)
-        user_unmap(cpt->ctx.pixmap, new_size, old_size-new_size);
+        user_unmap(bitmap->data, new_size, old_size-new_size);
 
-    cpt->ctx.stride = stride;
+    bitmap->width = win->w;
+    bitmap->pitch = pitch;
 
     cpt->ctrl.rc.l    = 0;
     cpt->ctrl.rc.t    = 0;
@@ -115,37 +120,22 @@ void update_caption_size(window_t *win)
 
 };
 
-typedef struct
-{
-    uint32_t    width;
-    uint32_t    height;
-    uint32_t    pitch;
-    uint32_t    handle;
-    uint8_t    *data;
-}bitmap_t;
 
 extern int win_font;
 
 void draw_caption(caption_t *cpt)
 {
     int *pixmap, *src;
+    rect_t rc;
     int  i, j, w;
 
-    pixmap = cpt->ctx.pixmap;
-    src = res_caption_left;
-
-    for(i=0; i < CAPTION_HEIGHT; i++)
-    {
-        for(j=0; j < CAPTION_CORNER_W; j++)
-            pixmap[j] = src[j];
-        pixmap+= cpt->ctx.stride/4;
-        src+= CAPTION_CORNER_W;
-    };
+    blit_raw(&cpt->ctx, res_caption_left, 0, 0,
+             CAPTION_CORNER_W, CAPTION_HEIGHT, CAPTION_CORNER_W*4);
 
     w = cpt->ctrl.w - (2*CAPTION_CORNER_W);
     if( w > 0)
     {
-        pixmap = cpt->ctx.pixmap;
+        pixmap = (int*)cpt->ctx.pixmap->data;
         pixmap+= CAPTION_CORNER_W;
         src = res_caption_body;
 
@@ -153,29 +143,25 @@ void draw_caption(caption_t *cpt)
         {
             for(j = 0; j < w; j++)
                 pixmap[j] = src[i];
-            pixmap+= cpt->ctx.stride/4;
+            pixmap+= cpt->ctx.pixmap->pitch/4;
         }
+
+//        blit_raw(&cpt->ctx,res_caption_body, CAPTION_CORNER_W, 0,
+//                 w, CAPTION_HEIGHT, 0);
+
     };
 
-    pixmap = cpt->ctx.pixmap;
-    pixmap+= cpt->ctrl.w - CAPTION_CORNER_W;
 
-    src = res_caption_right;
+    blit_raw(&cpt->ctx,res_caption_right, cpt->ctrl.w - CAPTION_CORNER_W, 0,
+             CAPTION_CORNER_W, CAPTION_HEIGHT,CAPTION_CORNER_W*4);
 
-    for(i = 0; i < CAPTION_HEIGHT; i++)
-    {
-        for(j = 0; j < CAPTION_CORNER_W; j++)
-            pixmap[j] = src[j];
-        pixmap+= cpt->ctx.stride/4;
-        src+= CAPTION_CORNER_W;
-    };
-
-    bitmap_t bitmap;
-
-    bitmap.data  = cpt->ctx.pixmap;
-    bitmap.pitch = cpt->ctx.stride;
-
-    draw_text(&bitmap, win_font, cpt->text, 8, 18, 0xFFFFFFFF);
+    rc.l = 8;
+    rc.t = 0;
+    rc.r = cpt->ctrl.w - 25 - 16 - 5 - 8;
+    rc.b = 18;
+    
+    printf(cpt->text);
+    draw_text_ext(cpt->ctx.pixmap, win_font, cpt->text, &rc, 0xFFFFFFFF);
 
     ctrl_t *child;
     child  = (ctrl_t*)cpt->ctrl.child.next;
@@ -261,7 +247,7 @@ void blit_caption(caption_t *cpt)
 //    printf("%s w:%d h:%d stride: %d\n",__FUNCTION__,
 //            cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.stride);
 
-    Blit(cpt->ctx.pixmap, 0, 0, 0, 0, cpt->ctrl.w, cpt->ctrl.h,
-         cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.stride);
+    Blit(cpt->ctx.pixmap->data, 0, 0, 0, 0, cpt->ctrl.w, cpt->ctrl.h,
+         cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.pixmap->pitch);
 };
 

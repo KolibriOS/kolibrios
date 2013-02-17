@@ -185,6 +185,7 @@ void draw_bitmap(void *bitmap, int x, int y, int w, int h)
       "d"((x << 16) | y));
 }
 
+#if 0
 static inline
 void draw_text_sys(const char *text, int x, int y, int len, color_t color)
 {
@@ -194,6 +195,7 @@ void draw_text_sys(const char *text, int x, int y, int len, color_t color)
       "b"((x << 16) | y),
       "S"(len),"c"(color));
 }
+#endif
 
 static inline
 void *user_alloc(size_t size)
@@ -276,6 +278,7 @@ int destroy_cursor(uint32_t cursor)
     return ret;
 };
 
+
 static inline void get_proc_info(char *info)
 {
     __asm__ __volatile__(
@@ -291,7 +294,7 @@ void* user_realloc(void *mem, size_t size)
     __asm__ __volatile__(
     "int $0x40"
     :"=a"(val)
-    :"a"(68),"b"(20),"c"(size),"d"(mem)
+    :"a"(68),"b"(12),"c"(size),"d"(mem)
     :"memory");
 
     return val;
@@ -320,9 +323,4 @@ struct blit_call
 void Blit(void *bitmap, int dst_x, int dst_y,
                         int src_x, int src_y, int w, int h,
                         int src_w, int src_h, int stride);
-
-
-
-
-
 

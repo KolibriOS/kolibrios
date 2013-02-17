@@ -34,6 +34,7 @@ typedef struct
 {
     ctrl_t     ctrl;
     ctx_t      ctx;
+    bitmap_t   bitmap;
     char      *text;
     ctrl_t    *child_over;
     button_t  *close_btn;
@@ -45,6 +46,7 @@ typedef struct
 {
     ctrl_t      ctrl;
     ctx_t       ctx;
+    bitmap_t    bitmap;
     rect_t      draw;
     ctrl_t     *child_over;
     int         layout;
@@ -74,6 +76,7 @@ typedef struct
     rect_t       client;
 
     ctx_t        client_ctx;
+    bitmap_t     bitmap;
 
     char        *caption_txt;
     ctrl_t      *child_over;
@@ -123,6 +126,9 @@ level_t    *create_level(char *caption, int id, int x, int y,
                          int w, int h, ctrl_t *parent);
 scroller_t *create_scroller(uint32_t style, int id, int x, int y,
                             int w, int h, ctrl_t *parent);
+slider_t  *create_slider(char *caption, int id, int x, int y,
+                         int w, int h, ctrl_t *parent);
+
 
 //static uint32_t update_timers(uint32_t realtime);
 

@@ -1,6 +1,7 @@
 #ifndef __CONTROL_H__
 #define __CONTROL_H_
 
+#include <pixlib2.h>
 #include "link.h"
 
 typedef struct
@@ -13,8 +14,7 @@ typedef struct
 
 typedef struct ctx
 {
-  void    *pixmap;
-  int      stride;
+  bitmap_t *pixmap;
   int      offset_x;
   int      offset_y;
 }ctx_t;
@@ -200,5 +200,11 @@ static inline int pt_in_rect(rect_t *rc, int x, int y)
 ctrl_t *get_child(ctrl_t *ctrl, int x, int y);
 
 ctrl_t *capture_mouse(ctrl_t *newm);
+
+void blit_raw(ctx_t *ctx, void *raw, int x, int y, int w, int h, int pitch);
+
+#define __ALIGN_MASK(x,mask)  (((x)+(mask))&~(mask))
+#define ALIGN(x,a)            __ALIGN_MASK(x,(typeof(x))(a)-1)
+
 
 #endif

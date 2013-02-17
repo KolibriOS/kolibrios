@@ -1,18 +1,11 @@
 
+#include "pixlib2.h"
+
 #define BLACK_MAGIC_SOUND
 #define BLACK_MAGIC_VIDEO
 
 typedef unsigned int color_t;
 typedef unsigned int count_t;
-
-typedef struct
-{
-    uint32_t    width;
-    uint32_t    height;
-    uint32_t    pitch;
-    uint32_t    handle;
-    uint8_t    *data;
-}bitmap_t;
 
 typedef struct render  render_t;
 
@@ -124,7 +117,7 @@ void render_draw_client(render_t *render);
 
 int init_audio(int format);
 int audio_thread(void *param);
-void set_audio_volume(int left, int right);
+void set_audio_volume(int left, int right);    
 
 int init_video(AVCodecContext *ctx);
 int video_thread(void *param);
@@ -177,18 +170,8 @@ static inline void delay(uint32_t time)
 };
 
 
-
-
-#define HW_BIT_BLIT         (1<<0)      /* BGRX blitter             */
-#define HW_TEX_BLIT         (1<<1)      /* stretch blit             */
-#define HW_VID_BLIT         (1<<2)      /* planar and packed video  */
-
-uint32_t InitPixlib(uint32_t flags);
-
-int create_bitmap(bitmap_t *bitmap);
-int lock_bitmap(bitmap_t *bitmap);
-int resize_bitmap(bitmap_t *bitmap);
-int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
-                int w, int h);
-
 int init_fontlib();
+int draw_text(bitmap_t *winbitmap, int face, char *text, int x, int y, int color);
+int draw_text_ext(bitmap_t *winbitmap, int face, char *text, rect_t *rc, int color);
+char *get_moviefile();
+

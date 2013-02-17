@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdio.h>
 #include "winlib.h"
 
 extern int res_level[];
@@ -120,19 +121,14 @@ int draw_button(button_t *btn)
 
 int draw_button_cairo(button_t *btn)
 {
-    int *pixmap, *src;
+    int *src;
     ctx_t *ctx;
-    int i, j;
     int x, y;
 
     ctx = btn->ctrl.ctx;
 
     x = btn->ctrl.rc.l - ctx->offset_x;
     y = btn->ctrl.rc.t - ctx->offset_y;
-
-    pixmap = ctx->pixmap;
-
-    pixmap+=  y*ctx->stride/4 + x;
 
     src = btn->img_default;
 
@@ -141,13 +137,7 @@ int draw_button_cairo(button_t *btn)
     else if(btn->state & bHighlight)
         src = btn->img_hilite;
 
-    for(i=0; i < btn->ctrl.h ;i++)
-    {
-        for(j = 0; j < btn->ctrl.w; j++)
-            pixmap[j] = src[j];
-        pixmap+= ctx->stride/4;
-        src+= btn->ctrl.w;
-    };
+    blit_raw(ctx, src, x, y, btn->ctrl.w, btn->ctrl.h, btn->ctrl.w*4);
 
     return 0;
 };
@@ -262,6 +252,7 @@ int draw_progress(progress_t *prg, int background)
     ctx_t *ctx;
     int i, j;
     int x, y;
+    rect_t rc = prg->ctrl.rc;
 
     int len = prg->ctrl.w;
 
@@ -274,15 +265,15 @@ int draw_progress(progress_t *prg, int background)
     {
         src = res_progress_bar;
 
-        pixmap = ctx->pixmap;
-        pixmap+= y * ctx->stride/4 + x;
+        pixmap = (int*)ctx->pixmap->data;
+        pixmap+= y * ctx->pixmap->pitch/4 + x;
 
         for(i=0; i < 10; i++)
         {
             for(j = 0; j < len; j++)
                 pixmap[j] = *src;
 
-            pixmap+= ctx->stride/4;
+            pixmap+= ctx->pixmap->pitch/4;
             src++;
         };
     };
@@ -292,14 +283,14 @@ int draw_progress(progress_t *prg, int background)
 
     src = res_prg_level;
 
-    pixmap = ctx->pixmap;
-    pixmap+= y*ctx->stride/4 + x;
+    pixmap = (int*)ctx->pixmap->data;
+    pixmap+= y*ctx->pixmap->pitch/4 + x;
 
     for(i=0; i < prg->ctrl.h ;i++)
     {
         for(j=0; j < len; j++)
             pixmap[j] = *src;
-        pixmap+= ctx->stride/4;
+        pixmap+= ctx->pixmap->pitch/4;
         src++;
     };
 
@@ -359,7 +350,7 @@ progress_t *create_progress(char *caption, int id, int x, int y,
 
 int draw_level(level_t *lvl)
 {
-    int *pixmap, *src;
+    int *pixmap;
     ctx_t *ctx;
     int i, j;
     int x, y;
@@ -381,36 +372,18 @@ int draw_level(level_t *lvl)
     if(len > 96)
         len = 96;
 
-    pixmap = ctx->pixmap;
+    pixmap = (int*)ctx->pixmap->data;
 
-    pixmap+=  y*ctx->stride/4 + x;
-
-//    for(i=0; i < prg->ctrl.h ;i++)
-//    {
-//        for(j=0; j < len; j++)
-//            pixmap[j] = src;
-//        pixmap+= ctx->stride/4;
-//    };
-
-    src = lvl->img_level;
+    pixmap+=  y*ctx->pixmap->pitch/4 + x;
 
     for(i=0; i < 10; i++)
     {
         for(j = 0; j < 96; j++)
            pixmap[j] = 0xFF1C1C1C;
-           pixmap+= ctx->stride/4;
+           pixmap+= ctx->pixmap->pitch/4;
     };
 
-    pixmap = ctx->pixmap;
-    pixmap+= y*ctx->stride/4 + x;
-
-    for(i=0; i < 10; i++)
-    {
-        for(j = 0; j < len; j++)
-            pixmap[j] = src[j];
-        pixmap+= ctx->stride/4;
-        src+= 96;
-    };
+    blit_raw(ctx, lvl->img_level, x, y, len, 10, 96*4);
 
     return 0;
 };
@@ -466,7 +439,7 @@ level_t    *create_level(char *caption, int id, int x, int y,
 
 int draw_slider(slider_t *sld)
 {
-    int *pixmap, *src;
+    int *pixmap;
     ctx_t *ctx;
     int i, j;
     int x, y;
@@ -479,44 +452,21 @@ int draw_slider(slider_t *sld)
     x = sld->ctrl.rc.l - ctx->offset_x;
     y = sld->ctrl.rc.t - ctx->offset_y;
 
-
     len = 96 + 12;
 
-    pixmap = ctx->pixmap;
-    pixmap+=  y*ctx->stride/4 + x;
+    pixmap = (int*)ctx->pixmap->data;
+    pixmap+=  y*ctx->pixmap->pitch/4 + x;
 
     for(i=0; i < 11; i++)
     {
         for(j = 0; j < len; j++)
            pixmap[j] = 0xFF1C1C1C;
-           pixmap+= ctx->stride/4;
+           pixmap+= ctx->pixmap->pitch/4;
     };
 
-    pixmap = ctx->pixmap;
-    pixmap+=  (y+4)*ctx->stride/4 + x + 6;
+    blit_raw(ctx, sld->img_vol_slider, x+6, y+4, 96, 4, 96*4);
 
-    src = sld->img_vol_slider;
-
-    for(i = 0; i < 4; i++)
-    {
-        for(j = 0; j < 96; j++)
-            pixmap[j] = src[j];
-        pixmap+= ctx->stride/4;
-        src+= 96;
-    };
-
-    pixmap = ctx->pixmap;
-    pixmap+=  y*ctx->stride/4 + x + sld->pos;
-
-    src = res_slider;
-
-    for(i = 0; i < 11; i++)
-    {
-        for(j = 0; j < 12; j++)
-            pixmap[j] = src[j];
-        pixmap+= ctx->stride/4;
-        src+= 12;
-    };
+    blit_raw(ctx, res_slider, x+sld->pos, y, 12, 11, 12*4);
 
     return 0;
 };

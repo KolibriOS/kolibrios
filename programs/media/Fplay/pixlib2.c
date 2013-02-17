@@ -1,21 +1,7 @@
-#include <stdint.h>
-//#include <libavcodec/avcodec.h>
-//#include <libavformat/avformat.h>
-//#include <libswscale/swscale.h>
-#include <stdio.h>
-//#include <fcntl.h>
-#include "../winlib/winlib.h"
-//#include "fplay.h"
-#include "system.h"
 
-typedef struct
-{
-    uint32_t    width;
-    uint32_t    height;
-    uint32_t    pitch;
-    uint32_t    handle;
-    uint8_t    *data;
-}bitmap_t;
+#include <stdio.h>
+#include <pixlib2.h>
+#include "system.h"
 
 
 #define DISPLAY_VERSION     0x0200     /*      2.00     */
@@ -23,30 +9,19 @@ typedef struct
 #define SRV_GETVERSION       0
 #define SRV_GET_CAPS         3
 
-#define SRV_CREATE_SURFACE      10
+#define SRV_CREATE_SURFACE  10
 #define SRV_DESTROY_SURFACE     11
-#define SRV_LOCK_SURFACE        12
+#define SRV_LOCK_SURFACE    12
 #define SRV_UNLOCK_SURFACE      13
 #define SRV_RESIZE_SURFACE      14
 #define SRV_BLIT_BITMAP         15
 #define SRV_BLIT_TEXTURE        16
 #define SRV_BLIT_VIDEO          17
 
+
+#define BUFFER_SIZE(n) ((n)*sizeof(uint32_t))
 #define __ALIGN_MASK(x,mask)  (((x)+(mask))&~(mask))
 #define ALIGN(x,a)            __ALIGN_MASK(x,(typeof(x))(a)-1)
-
-
-#define HW_BIT_BLIT         (1<<0)      /* BGRX blitter             */
-#define HW_TEX_BLIT         (1<<1)      /* stretch blit             */
-#define HW_VID_BLIT         (1<<2)      /* planar and packed video  */
-
-uint32_t InitPixlib(uint32_t flags);
-
-int create_bitmap(bitmap_t *bitmap);
-int lock_bitmap(bitmap_t *bitmap);
-int resize_bitmap(bitmap_t *bitmap);
-int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
-                int w, int h);
 
 
 
@@ -114,16 +89,13 @@ static int call_service(ioctl_t *io)
   return retval;
 };
 
-#define BUFFER_SIZE(n) ((n)*sizeof(uint32_t))
 
-
-
-uint32_t InitPixlib(uint32_t caps)
+uint32_t init_pixlib(uint32_t caps)
 {
     uint32_t  api_version;
     uint32_t  screensize;
-    hwcaps_t   hwcaps;
-    ioctl_t    io;
+    hwcaps_t  hwcaps;
+    ioctl_t   io;
 
  //   __asm__ __volatile__("int3");
 
@@ -187,7 +159,7 @@ int create_bitmap(bitmap_t *bitmap)
 {
  //    __asm__ __volatile__("int3");
 
-    if( blit_caps & HW_BIT_BLIT )
+    if( bitmap->flags &&  blit_caps & HW_BIT_BLIT )
     {
         struct __attribute__((packed))  /*     SRV_CREATE_SURFACE    */
         {
@@ -232,7 +204,6 @@ int create_bitmap(bitmap_t *bitmap)
 //                     bitmap->handle, bitmap->pitch, bitmap->data);
             return 0;
         };
-        return err;
     };
 
     uint32_t   size;
@@ -248,6 +219,7 @@ int create_bitmap(bitmap_t *bitmap)
         bitmap->handle = 0;
         bitmap->pitch  = pitch;
         bitmap->data   = buffer;
+        bitmap->flags  = 0;
         return 0;
     };
 
@@ -261,7 +233,7 @@ int lock_bitmap(bitmap_t *bitmap)
  //    __asm__ __volatile__("int3");
     int err = 0;
 
-    if( blit_caps & HW_BIT_BLIT )
+    if( bitmap->flags && blit_caps & HW_BIT_BLIT )
     {
         struct __attribute__((packed))  /*     SRV_LOCK_SURFACE    */
         {
@@ -302,7 +274,7 @@ int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
 {
     int err;
 
-    if( blit_caps & HW_BIT_BLIT )
+    if( bitmap->flags && blit_caps & HW_BIT_BLIT )
     {
 
 /*
@@ -361,7 +333,7 @@ int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
     :"=a"(err)
     :"a"(73),"b"(0x00),"c"(&bc)
     :"memory");
-
+    
     return err;
 };
 
@@ -369,7 +341,7 @@ int resize_bitmap(bitmap_t *bitmap)
 {
  //    __asm__ __volatile__("int3");
 
-    if( blit_caps & HW_BIT_BLIT )
+    if( bitmap->flags && blit_caps & HW_BIT_BLIT )
     {
         struct __attribute__((packed))
         {
@@ -396,7 +368,7 @@ int resize_bitmap(bitmap_t *bitmap)
 
         err = call_service(&io);
         if(err==0)
-        {
+    {
             bitmap->pitch  = io_14.pitch;
             bitmap->data   = io_14.data;
         };

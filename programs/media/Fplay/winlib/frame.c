@@ -77,8 +77,7 @@ int draw_frame(window_t *win)
 
     frame_t *fr = &win->frame;
 
-
-    pixmap = win->ctx->pixmap;
+    pixmap = (int*)win->ctx->pixmap->data;
     pixmap+= CAPTION_HEIGHT*win->w;
     src = res_border_left;
 
@@ -87,11 +86,11 @@ int draw_frame(window_t *win)
         for(j = 0; j < FRAME_WIDTH; j++)
             pixmap[j] = src[j];
 
-        pixmap+= win->ctx->stride/4;
+        pixmap+= win->ctx->pixmap->pitch/4;
     };
 
 
-    pixmap = win->ctx->pixmap;
+    pixmap = (int*)win->ctx->pixmap->data;
     pixmap+= (CAPTION_HEIGHT+1)*win->w - FRAME_WIDTH;
     src = res_border_right;
 
@@ -100,10 +99,10 @@ int draw_frame(window_t *win)
         for(j = 0; j < FRAME_WIDTH; j++)
             pixmap[j] = src[j];
 
-        pixmap+= win->ctx->stride/4;
+        pixmap+= win->ctx->pixmap->pitch/4;
     };
 
-    pixmap = win->ctx->pixmap;
+    pixmap = (int*)win->ctx->pixmap->data;
 
     pixmap+= fr->bottom.t * win->w;
 
@@ -112,7 +111,7 @@ int draw_frame(window_t *win)
         for(j = 0; j < win->w; j++)
             pixmap[j] = 0x808080;
 
-        pixmap+= win->ctx->stride/4;
+        pixmap+= win->ctx->pixmap->pitch/4;
     };
 
     ctrl_t *child;

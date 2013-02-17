@@ -61,13 +61,18 @@ double get_audio_base()
 int main( int argc, char *argv[])
 {
     int i;
+    char *file_name, *dot;
 
-     if(argc < 2) {
+     if(argc < 2)
+     {
+        movie_file = get_moviefile();
+        if(movie_file == NULL)
+        {
         printf("Please provide a movie file\n");
         return -1;
     }
-
-    movie_file = argv[1];
+    }
+    else movie_file = argv[1];
     /* register all codecs, demux and protocols */
 
     av_log_set_level(AV_LOG_FATAL);
@@ -76,9 +81,9 @@ int main( int argc, char *argv[])
     avdevice_register_all();
     av_register_all();
 
-    if( avformat_open_input(&pFormatCtx, argv[1], NULL, NULL) < 0)
+    if( avformat_open_input(&pFormatCtx, movie_file, NULL, NULL) < 0)
     {
-        printf("Cannot open file %s\n\r", argv[1]);
+        printf("Cannot open file %s\n\r", movie_file);
         return -1; // Couldn't open file
     };
 
@@ -90,6 +95,17 @@ int main( int argc, char *argv[])
         printf("Cannot find streams\n\r");
         return -1;
     };
+
+    file_name = strrchr(movie_file,'/')+1;
+    dot = strrchr(file_name,'.');
+    if(dot)
+    {
+        movie_file = malloc(dot-file_name+1);
+        memcpy(movie_file, file_name, dot-file_name);
+        movie_file[dot-file_name] = 0;
+    }
+    else movie_file = file_name;
+
 
 //    __asm__ __volatile__("int3");
 
@@ -304,7 +320,7 @@ void decoder()
     AVPacket  packet;
     int       ret;
     int64_t   min_pos, max_pos;
-
+    
     while( player_state != CLOSED )
     {
         int err;
@@ -347,7 +363,7 @@ void decoder()
                     decoder_state = STOP;
 //                    printf("stop decoder\n");
                 };
-
+                
             case STOP:
                 delay(1);
                 break;
@@ -380,7 +396,7 @@ void decoder()
                     rewind_pos = -rewind_pos;
                     opts = AVSEEK_FLAG_BACKWARD;
                 };
-
+                
                 if (pFormatCtx->start_time != AV_NOPTS_VALUE)
                     rewind_pos += pFormatCtx->start_time;
 
@@ -390,7 +406,7 @@ void decoder()
 
                 ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
                                          rewind_pos, INT64_MAX, 0);
-
+                
 //                ret = avformat_seek_file(pFormatCtx, -1, min_pos,
 //                                         rewind_pos, max_pos, opts);
 //            __asm__ __volatile__("int3");

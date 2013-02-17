@@ -63,15 +63,20 @@ window_t *create_window(char *caption, int style, int x, int y,
     list_initialize(&Window.link);
     list_initialize(&Window.child);
 
-    ctx->pixmap = user_alloc(1280*1024*4);
-    if(!ctx->pixmap)
-    {
-        printf("not enough memory for context bitmap\n");
-        return NULL;
-    };
 
-    stride = w*4;
-    ctx->stride = stride;
+    Window.bitmap.width  = 1920;
+    Window.bitmap.height = 1080;
+    Window.bitmap.flags  = 0;
+
+    if( create_bitmap(&Window.bitmap) )
+    {
+        printf("not enough memory for window bitmap\n");
+        return 0;
+    }
+
+    ctx->pixmap   = &Window.bitmap;
+    ctx->offset_x = 0;
+    ctx->offset_y = 0;
 
     Window.rc.l = x;
     Window.rc.t = y;
@@ -179,8 +184,8 @@ void blit_client(window_t *win)
     w = win->client.r - win->client.l;
     h = win->client.b - win->client.t;
 
-    Blit(win->ctx->pixmap, win->client.l, win->client.t,
-         0, 0, w, h, w, h,win->ctx->stride);
+    Blit(win->ctx->pixmap->data, win->client.l, win->client.t,
+         0, 0, w, h, w, h,win->ctx->pixmap->pitch);
 };
 
 
@@ -250,21 +255,22 @@ void window_update_layout(window_t *win)
 
     int old_size;
     int new_size;
-    int stride;
+    int pitch;
 
-    old_size = win->ctx->stride * win->h;
+
+    old_size = win->bitmap.pitch * win->bitmap.height;
     old_size = (old_size+4095) & ~4095;
 
-    new_size = winw*winh*4;
+    pitch = ALIGN(win->w*4, 16);
+
+    new_size = pitch * win->h;
     new_size = (new_size+4095) & ~4095;
 
-    stride = winw*4;
-
-//    printf("update win size %d %d\n", winw, winh);
-
     if( new_size < old_size)
-        user_unmap(win->ctx->pixmap, new_size, old_size-new_size);
-    win->ctx->stride = stride;
+        user_unmap(win->bitmap.data, new_size, old_size-new_size);
+
+    win->bitmap.width = win->w;
+    win->bitmap.pitch = pitch;
 
     win->rc.r = winx + winw;
     win->rc.b = winy + winh;
@@ -563,8 +569,8 @@ void update_rect(ctrl_t *ctrl)
     ctx_w = ctrl->parent->w;
     ctx_h = ctrl->parent->h;
 
-    Blit(ctrl->ctx->pixmap, ctrl->rc.l, ctrl->rc.t, src_x, src_y,
-         ctrl->w, ctrl->h, ctx_w, ctx_h, ctrl->ctx->stride);
+    Blit(ctrl->ctx->pixmap->data, ctrl->rc.l, ctrl->rc.t, src_x, src_y,
+         ctrl->w, ctrl->h, ctx_w, ctx_h, ctrl->ctx->pixmap->pitch);
 
 //    need_update++;
 };

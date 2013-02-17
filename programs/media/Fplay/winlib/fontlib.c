@@ -4,21 +4,24 @@
 #include <stdlib.h>
 #include <math.h>
 #include <memory.h>
-#include "font_droid.h"
+//#include "font_droid.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <pixlib2.h>
 
-typedef unsigned int color_t;
+extern char res_def_font[];
 
 typedef struct
 {
-    uint32_t    width;
-    uint32_t    height;
-    uint32_t    pitch;
-    uint32_t    handle;
-    uint8_t    *data;
-}bitmap_t;
+  int  l;
+  int  t;
+  int  r;
+  int  b;
+}rect_t;
 
+typedef unsigned int color_t;
+
+unsigned int ansi2utf32(unsigned char ch);
 
 void my_draw_bitmap(bitmap_t *win, FT_Bitmap *bitmap, int dstx, int dsty, int col)
 {
@@ -65,23 +68,26 @@ void my_draw_bitmap(bitmap_t *win, FT_Bitmap *bitmap, int dstx, int dsty, int co
 };
 
 
-int draw_text(bitmap_t * winbitmap, FT_Face face, char *text, int x, int y, int color)
+int draw_text_ext(bitmap_t *winbitmap, FT_Face face, char *text, rect_t *rc, int color)
 {
     FT_UInt glyph_index;
     FT_Bool use_kerning = 0;
     FT_UInt previous;
-
+    int x, y, w;
     char ch;
     int err = 0;
 
     use_kerning = FT_HAS_KERNING( face );
     previous = 0;
 
-    x <<= 6;
+    x = rc->l << 6;
+    y = rc->b;
+
+    w = (rc->r - rc->l) << 6;
 
     while( ch = *text++ )
     {
-        glyph_index = FT_Get_Char_Index( face, ch );
+        glyph_index = FT_Get_Char_Index( face, ansi2utf32(ch) );
 
         if ( use_kerning && previous && glyph_index )
         {
@@ -89,6 +95,9 @@ int draw_text(bitmap_t * winbitmap, FT_Face face, char *text, int x, int y, int 
             FT_Get_Kerning( face, previous, glyph_index, FT_KERNING_DEFAULT, &delta );
             x += delta.x ;
         }
+
+        if( x + face->glyph->advance.x > w)
+            break;
 
         err = FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT );
         if ( err )
@@ -108,6 +117,7 @@ int draw_text(bitmap_t * winbitmap, FT_Face face, char *text, int x, int y, int 
     return err;
 };
 
+
 int init_fontlib()
 {
     int err;
@@ -122,9 +132,9 @@ int init_fontlib()
         goto done;
     }
 
-    err = FT_New_Face( library, "/hd0/1/istokweb.ttf", 0, &face );
+//    err = FT_New_Face( library, "/hd0/1/IstokWeb.ttf", 0, &face );
 
-//    err = FT_New_Memory_Face( library, pdf_font_DroidSans, 139280, 0, &face );
+    err = FT_New_Memory_Face( library, res_def_font, 277996, 0, &face );
     if ( err == FT_Err_Unknown_File_Format )
     {
         printf("font format is unsupported\n");
@@ -138,7 +148,7 @@ int init_fontlib()
 
     }
 
-    err = FT_Set_Char_Size( face, 0, 12*64, 96, 96 );
+    err = FT_Set_Char_Size( face, 0, 11*64, 96, 96 );
 //    err = FT_Set_Pixel_Sizes( face, 0, 100 );
 
 done:
@@ -147,4 +157,27 @@ done:
 };
 
 //    draw_text(face,"/hd0/1/demo", 10, 80, 0x00000000);
+
+
+unsigned int ansi2utf32(unsigned char ch)
+{
+    if(ch < 0x80)
+        return ch;
+
+    if(ch < 0xB0)
+        return 0x410-0x80 + ch;
+
+    if(ch < 0xE0)
+        return 0;
+
+    if(ch < 0xF0)
+        return 0x440-0xE0 + ch;
+
+    if(ch == 0xF0)
+        return 0x401;
+    else if(ch==0xF1)
+        return 0x451;
+    else return 0;
+}
+
 
