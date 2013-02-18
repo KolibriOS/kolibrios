@@ -138,7 +138,6 @@ static void i915_gem_info_remove_obj(struct drm_i915_private *dev_priv,
 	dev_priv->mm.object_memory -= size;
 }
 
-#if 0
 
 static int
 i915_gem_wait_for_error(struct drm_device *dev)
@@ -150,7 +149,7 @@ i915_gem_wait_for_error(struct drm_device *dev)
 
 	if (!atomic_read(&dev_priv->mm.wedged))
 		return 0;
-
+#if 0
 	/*
 	 * Only wait 10 seconds for the gpu reset to complete to avoid hanging
 	 * userspace. If it takes that long something really bad is going on and
@@ -174,6 +173,8 @@ i915_gem_wait_for_error(struct drm_device *dev)
 		x->done++;
 		spin_unlock_irqrestore(&x->wait.lock, flags);
 	}
+#endif
+
 	return 0;
 }
 
@@ -185,14 +186,11 @@ int i915_mutex_lock_interruptible(struct drm_device *dev)
 	if (ret)
 		return ret;
 
-	ret = mutex_lock_interruptible(&dev->struct_mutex);
-	if (ret)
-		return ret;
+    mutex_lock(&dev->struct_mutex);
 
 	WARN_ON(i915_verify_lists(dev));
 	return 0;
 }
-#endif
 
 static inline bool
 i915_gem_object_is_inactive(struct drm_i915_gem_object *obj)
@@ -251,7 +249,6 @@ i915_gem_get_aperture_ioctl(struct drm_device *dev, void *data,
 	return 0;
 }
 
-#if 0
 static int
 i915_gem_create(struct drm_file *file,
 		struct drm_device *dev,
@@ -284,6 +281,7 @@ i915_gem_create(struct drm_file *file,
 	trace_i915_gem_object_create(obj);
 
 	*handle_p = handle;
+
 	return 0;
 }
 
@@ -318,6 +316,8 @@ i915_gem_create_ioctl(struct drm_device *dev, void *data,
 	return i915_gem_create(file, dev,
 			       args->size, &args->handle);
 }
+
+#if 0
 
 static int i915_gem_object_needs_bit17_swizzle(struct drm_i915_gem_object *obj)
 {
@@ -1473,7 +1473,7 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 	 * Fail silently without starting the shrinker
 	 */
 	for_each_sg(st->sgl, sg, page_count, i) {
-        page = AllocPage(); // oh-oh
+        page = (struct page *)AllocPage(); // oh-oh
         if ( page == 0 )
 			goto err_pages;
 
@@ -3054,7 +3054,6 @@ i915_gem_object_unpin(struct drm_i915_gem_object *obj)
 		obj->pin_mappable = false;
 }
 
-#if 0
 int
 i915_gem_pin_ioctl(struct drm_device *dev, void *data,
 		   struct drm_file *file)
@@ -3106,6 +3105,8 @@ unlock:
 	mutex_unlock(&dev->struct_mutex);
 	return ret;
 }
+
+#if 0
 
 int
 i915_gem_unpin_ioctl(struct drm_device *dev, void *data,

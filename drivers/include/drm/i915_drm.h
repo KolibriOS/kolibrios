@@ -312,6 +312,8 @@ typedef struct drm_i915_irq_wait {
 #define I915_PARAM_HAS_SEMAPHORES	 20
 #define I915_PARAM_HAS_PRIME_VMAP_FLUSH	 21
 #define I915_PARAM_RSVD_FOR_FUTURE_USE	 22
+#define I915_PARAM_HAS_SECURE_BATCHES    23
+#define I915_PARAM_HAS_PINNED_BATCHES    24
 
 typedef struct drm_i915_getparam {
 	int param;

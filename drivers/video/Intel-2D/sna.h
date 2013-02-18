@@ -69,6 +69,9 @@ typedef struct
 
 #define SRV_GET_INFO            20
 #define SRV_GET_PARAM           21
+#define SRV_I915_GEM_CREATE     22
+#define SRV_DRM_GEM_CLOSE       23
+#define SRV_I915_GEM_PIN        24
 
 static int call_service(ioctl_t *io)
 {

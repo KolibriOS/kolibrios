@@ -13,7 +13,21 @@
 
 #include "bitmap.h"
 
+struct pci_device {
+    uint16_t    domain;
+    uint8_t     bus;
+    uint8_t     dev;
+    uint8_t     func;
+    uint16_t    vendor_id;
+    uint16_t    device_id;
+    uint16_t    subvendor_id;
+    uint16_t    subdevice_id;
+    uint32_t    device_class;
+    uint8_t     revision;
+};
+
 extern struct drm_device *main_device;
+extern struct drm_file   *drm_file_handlers[256];
 
 void cpu_detect();
 
@@ -30,6 +44,10 @@ int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
 int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
              int src_x, int src_y, u32 w, u32 h);
 
+void get_pci_info(struct pci_device *dev);
+int gem_getparam(struct drm_device *dev, void *data);
+
+
 static char  log[256];
 
 int x86_clflush_size;
@@ -38,7 +56,6 @@ int i915_modeset = 1;
 
 u32_t drvEntry(int action, char *cmdline)
 {
-    struct pci_device_id  *ent;
 
     int     err = 0;
 
@@ -105,6 +122,12 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_BLIT_TEXTURE        16
 #define SRV_BLIT_VIDEO          17
 
+#define SRV_PCI_INFO            20
+#define SRV_GET_PARAM           21
+#define SRV_I915_GEM_CREATE     22
+#define SRV_DRM_GEM_CLOSE       23
+#define SRV_I915_GEM_PIN        24
+
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
         break;
@@ -115,12 +138,16 @@ u32_t drvEntry(int action, char *cmdline)
 
 int _stdcall display_handler(ioctl_t *io)
 {
+    struct drm_file *file;
+
     int    retval = -1;
     u32_t *inp;
     u32_t *outp;
 
     inp = io->input;
     outp = io->output;
+
+    file = drm_file_handlers[0];
 
     switch(io->io_code)
     {
@@ -164,17 +191,35 @@ int _stdcall display_handler(ioctl_t *io)
 //            retval = resize_surface((struct io_call_14*)inp);
             break;
 
-//        case SRV_BLIT_BITMAP:
+        case SRV_BLIT_BITMAP:
 //            srv_blit_bitmap( inp[0], inp[1], inp[2],
 //                        inp[3], inp[4], inp[5], inp[6]);
 
 //            blit_tex( inp[0], inp[1], inp[2],
 //                    inp[3], inp[4], inp[5], inp[6]);
 
+            break;
 
+        case SRV_PCI_INFO:
+            get_pci_info((struct pci_device *)inp);
             retval = 0;
             break;
 
+        case SRV_GET_PARAM:
+            retval = gem_getparam(main_device, inp);
+            break;
+
+        case SRV_I915_GEM_CREATE:
+            retval = i915_gem_create_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_DRM_GEM_CLOSE:
+            retval = drm_gem_close_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_PIN:
+            retval = i915_gem_pin_ioctl(main_device, inp, file);
+            break;
     };
 
     return retval;
@@ -302,3 +347,18 @@ int get_driver_caps(hwcaps_t *caps)
     return ret;
 }
 
+
+void get_pci_info(struct pci_device *dev)
+{
+    struct pci_dev *pdev = main_device->pdev;
+
+    memset(dev, sizeof(*dev), 0);
+
+    dev->domain     = 0;
+    dev->bus        = pdev->busnr;
+    dev->dev        = pdev->devfn >> 3;
+    dev->func       = pdev->devfn & 7;
+    dev->vendor_id  = pdev->vendor;
+    dev->device_id  = pdev->device;
+    dev->revision   = pdev->revision;
+};

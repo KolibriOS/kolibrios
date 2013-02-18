@@ -427,16 +427,11 @@ struct drm_prime_file_private {
 	struct list_head head;
 	struct mutex lock;
 };
+#endif
 
 /** File private data */
 struct drm_file {
-	int authenticated;
-	struct pid *pid;
-	kuid_t uid;
-	drm_magic_t magic;
-	unsigned long ioctl_count;
 	struct list_head lhead;
-	struct drm_minor *minor;
 	unsigned long lock_count;
 
 	/** Mapping of mm object handles to object pointers. */
@@ -444,21 +439,16 @@ struct drm_file {
 	/** Lock for synchronization of access to object_idr. */
 	spinlock_t table_lock;
 
-	struct file *filp;
 	void *driver_priv;
 
-	int is_master; /* this file private is a master for a minor */
-	struct drm_master *master; /* master this node is currently associated with
-				      N.B. not always minor->master */
 	struct list_head fbs;
 
 	wait_queue_head_t event_wait;
 	struct list_head event_list;
 	int event_space;
-
-	struct drm_prime_file_private prime;
 };
 
+#if 0
 /** Wait queue */
 struct drm_queue {
 	atomic_t use_count;		/**< Outstanding uses (+1) */
@@ -972,6 +962,8 @@ struct drm_driver {
     irqreturn_t (*irq_handler) (DRM_IRQ_ARGS);
     void (*irq_preinstall) (struct drm_device *dev);
     int (*irq_postinstall) (struct drm_device *dev);
+	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
+	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 }; 
 
 
@@ -1601,7 +1593,6 @@ drm_gem_object_unreference(struct drm_gem_object *obj)
 		kref_put(&obj->refcount, drm_gem_object_free);
 }
 
-#if 0
 static inline void
 drm_gem_object_unreference_unlocked(struct drm_gem_object *obj)
 {
@@ -1681,6 +1672,8 @@ void drm_gem_release(struct drm_device *dev, struct drm_file *file_private);
 extern void drm_core_ioremap(struct drm_local_map *map, struct drm_device *dev);
 extern void drm_core_ioremap_wc(struct drm_local_map *map, struct drm_device *dev);
 extern void drm_core_ioremapfree(struct drm_local_map *map, struct drm_device *dev);
+
+#if 0
 
 static __inline__ struct drm_local_map *drm_core_findmap(struct drm_device *dev,
 							 unsigned int token)

@@ -912,6 +912,7 @@ static int i915_flip_bufs(struct drm_device *dev, void *data,
 
 	return ret;
 }
+#endif
 
 static int i915_getparam(struct drm_device *dev, void *data,
 			 struct drm_file *file_priv)
@@ -991,7 +992,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
 		value = 1;
 		break;
 	case I915_PARAM_HAS_SECURE_BATCHES:
-		value = capable(CAP_SYS_ADMIN);
+        value = 1;
 		break;
 	case I915_PARAM_HAS_PINNED_BATCHES:
 		value = 1;
@@ -1002,14 +1003,17 @@ static int i915_getparam(struct drm_device *dev, void *data,
 		return -EINVAL;
 	}
 
-	if (DRM_COPY_TO_USER(param->value, &value, sizeof(int))) {
-		DRM_ERROR("DRM_COPY_TO_USER failed\n");
-		return -EFAULT;
-	}
+//   if (DRM_COPY_TO_USER(param->value, &value, sizeof(int))) {
+//       DRM_ERROR("DRM_COPY_TO_USER failed\n");
+//       return -EFAULT;
+//   }
+
+    *param->value = value;
 
 	return 0;
 }
 
+#if 0
 static int i915_setparam(struct drm_device *dev, void *data,
 			 struct drm_file *file_priv)
 {
@@ -1672,3 +1676,9 @@ int i915_driver_device_is_agp(struct drm_device * dev)
 	return 1;
 }
 #endif
+
+
+int gem_getparam(struct drm_device *dev, void *data)
+{
+    return i915_getparam(dev, data, NULL);
+};

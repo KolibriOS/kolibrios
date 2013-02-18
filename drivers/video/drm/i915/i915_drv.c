@@ -49,6 +49,8 @@ int init_display_kms(struct drm_device *dev);
 
 struct drm_device *main_device;
 
+struct drm_file *drm_file_handlers[256];
+
 static int i915_modeset __read_mostly = 1;
 MODULE_PARM_DESC(modeset,
 		"Use kernel modesetting [KMS] (0=DRM_I915_KMS from .config, "
@@ -481,14 +483,19 @@ int i915_init(void)
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-    struct drm_device *dev;
     static struct drm_driver driver;
+    static struct drm_device drm_dev;
+    static struct drm_file   drm_file;
+
+    struct drm_device *dev;
+    struct drm_file   *priv;
 
     int ret;
 
-    dev = kzalloc(sizeof(*dev), 0);
-    if (!dev)
-        return -ENOMEM;
+    dev  = &drm_dev;
+    priv = &drm_file;
+
+    drm_file_handlers[0] = priv;
 
  //   ret = pci_enable_device(pdev);
  //   if (ret)
@@ -514,6 +521,15 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     mutex_init(&dev->struct_mutex);
     mutex_init(&dev->ctxlist_mutex);
 
+    INIT_LIST_HEAD(&priv->lhead);
+    INIT_LIST_HEAD(&priv->fbs);
+    INIT_LIST_HEAD(&priv->event_list);
+    init_waitqueue_head(&priv->event_wait);
+    priv->event_space = 4096; /* set aside 4k for event buffer */
+
+    idr_init(&priv->object_idr);
+    spin_lock_init(&priv->table_lock);
+
     dev->driver = &driver;
 
     ret = i915_driver_load(dev, ent->driver_data );
@@ -529,14 +545,12 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     return 0;
 
 err_g4:
-//    drm_put_minor(&dev->primary);
 //err_g3:
 //    if (drm_core_check_feature(dev, DRIVER_MODESET))
 //        drm_put_minor(&dev->control);
 //err_g2:
 //    pci_disable_device(pdev);
 //err_g1:
-    free(dev);
 
     return ret;
 }

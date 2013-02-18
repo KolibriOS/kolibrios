@@ -51,6 +51,16 @@
 #define DBG_NO_HANDLE_LUT 0
 #define DBG_DUMP 0
 
+/* Worst case seems to be 965gm where we cannot write within a cacheline that
+ * is being simultaneously being read by the GPU, or within the sampler
+ * prefetch. In general, the chipsets seem to have a requirement that sampler
+ * offsets be aligned to a cacheline (64 bytes).
+ */
+#define UPLOAD_ALIGNMENT 128
+
+#define PAGE_ALIGN(x) ALIGN(x, PAGE_SIZE)
+#define NUM_PAGES(x) (((x) + PAGE_SIZE-1) / PAGE_SIZE)
+
 #define MAX_GTT_VMA_CACHE 512
 #define MAX_CPU_VMA_CACHE INT16_MAX
 #define MAP_PRESERVE_TIME 10
@@ -72,7 +82,123 @@
 #define LOCAL_I915_PARAM_HAS_NO_RELOC		    25
 #define LOCAL_I915_PARAM_HAS_HANDLE_LUT		    26
 
+static struct kgem_bo *__kgem_freed_bo;
 
+#define bucket(B) (B)->size.pages.bucket
+#define num_pages(B) (B)->size.pages.count
+
+#ifdef DEBUG_MEMORY
+static void debug_alloc(struct kgem *kgem, size_t size)
+{
+	kgem->debug_memory.bo_allocs++;
+	kgem->debug_memory.bo_bytes += size;
+}
+static void debug_alloc__bo(struct kgem *kgem, struct kgem_bo *bo)
+{
+	debug_alloc(kgem, bytes(bo));
+}
+#else
+#define debug_alloc(k, b)
+#define debug_alloc__bo(k, b)
+#endif
+
+static uint32_t gem_create(int fd, int num_pages)
+{
+	struct drm_i915_gem_create create;
+    ioctl_t  io;
+
+	VG_CLEAR(create);
+	create.handle = 0;
+	create.size = PAGE_SIZE * num_pages;
+	
+    io.handle   = fd;
+    io.io_code  = SRV_I915_GEM_CREATE;
+    io.input    = &create;
+    io.inp_size = sizeof(create);
+    io.output   = NULL;
+    io.out_size = 0;
+
+    if (call_service(&io)!=0)
+        return 0;
+
+	return create.handle;
+}
+
+static void gem_close(int fd, uint32_t handle)
+{
+	struct drm_gem_close close;
+    ioctl_t  io;
+
+	VG_CLEAR(close);
+	close.handle = handle;
+
+    io.handle   = fd;
+    io.io_code  = SRV_DRM_GEM_CLOSE;
+    io.input    = &close;
+    io.inp_size = sizeof(close);
+    io.output   = NULL;
+    io.out_size = 0;
+
+    call_service(&io);
+}
+
+constant inline static unsigned long __fls(unsigned long word)
+{
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86__) || defined(__x86_64__))
+	asm("bsr %1,%0"
+	    : "=r" (word)
+	    : "rm" (word));
+	return word;
+#else
+	unsigned int v = 0;
+
+	while (word >>= 1)
+		v++;
+
+	return v;
+#endif
+}
+
+constant inline static int cache_bucket(int num_pages)
+{
+	return __fls(num_pages);
+}
+
+static struct kgem_bo *__kgem_bo_init(struct kgem_bo *bo,
+				      int handle, int num_pages)
+{
+	assert(num_pages);
+	memset(bo, 0, sizeof(*bo));
+
+	bo->refcnt = 1;
+	bo->handle = handle;
+	bo->target_handle = -1;
+	num_pages(bo) = num_pages;
+	bucket(bo) = cache_bucket(num_pages);
+	bo->reusable = true;
+	bo->domain = DOMAIN_CPU;
+	list_init(&bo->request);
+	list_init(&bo->list);
+	list_init(&bo->vma);
+
+	return bo;
+}
+
+static struct kgem_bo *__kgem_bo_alloc(int handle, int num_pages)
+{
+	struct kgem_bo *bo;
+
+	if (__kgem_freed_bo) {
+		bo = __kgem_freed_bo;
+		__kgem_freed_bo = *(struct kgem_bo **)bo;
+	} else {
+		bo = malloc(sizeof(*bo));
+		if (bo == NULL)
+			return NULL;
+	}
+
+	return __kgem_bo_init(bo, handle, num_pages);
+}
 
 static int gem_param(struct kgem *kgem, int name)
 {
@@ -97,6 +223,11 @@ static int gem_param(struct kgem *kgem, int name)
 
     VG(VALGRIND_MAKE_MEM_DEFINED(&v, sizeof(v)));
     return v;
+}
+
+static bool test_has_execbuffer2(struct kgem *kgem)
+{
+	return 1;
 }
 
 static bool test_has_no_reloc(struct kgem *kgem)
@@ -131,6 +262,41 @@ static bool test_has_semaphores_enabled(struct kgem *kgem)
 	return detected;
 }
 
+static bool __kgem_throttle(struct kgem *kgem)
+{
+//	if (drmIoctl(kgem->fd, DRM_IOCTL_I915_GEM_THROTTLE, NULL) == 0)
+		return false;
+
+//	return errno == EIO;
+}
+
+static bool is_hw_supported(struct kgem *kgem,
+			    struct pci_device *dev)
+{
+	if (DBG_NO_HW)
+		return false;
+
+	if (!test_has_execbuffer2(kgem))
+		return false;
+
+	if (kgem->gen == (unsigned)-1) /* unknown chipset, assume future gen */
+		return kgem->has_blt;
+
+	/* Although pre-855gm the GMCH is fubar, it works mostly. So
+	 * let the user decide through "NoAccel" whether or not to risk
+	 * hw acceleration.
+	 */
+
+	if (kgem->gen == 060 && dev->revision < 8) {
+		/* pre-production SNB with dysfunctional BLT */
+		return false;
+	}
+
+	if (kgem->gen >= 060) /* Only if the kernel supports the BLT ring */
+		return kgem->has_blt;
+
+	return true;
+}
 
 static bool test_has_relaxed_fencing(struct kgem *kgem)
 {
@@ -223,6 +389,89 @@ static bool test_has_pinned_batches(struct kgem *kgem)
 }
 
 
+static bool kgem_init_pinned_batches(struct kgem *kgem)
+{
+	ioctl_t  io;
+
+	int count[2] = { 4, 2 };
+	int size[2] = { 1, 4 };
+	int n, i;
+
+	if (kgem->wedged)
+		return true;
+
+	for (n = 0; n < ARRAY_SIZE(count); n++) {
+		for (i = 0; i < count[n]; i++) {
+			struct drm_i915_gem_pin pin;
+			struct kgem_bo *bo;
+
+			VG_CLEAR(pin);
+
+			pin.handle = gem_create(kgem->fd, size[n]);
+			if (pin.handle == 0)
+				goto err;
+
+			DBG(("%s: new handle=%d, num_pages=%d\n",
+			     __FUNCTION__, pin.handle, size[n]));
+
+			bo = __kgem_bo_alloc(pin.handle, size[n]);
+			if (bo == NULL) {
+				gem_close(kgem->fd, pin.handle);
+				goto err;
+			}
+
+			pin.alignment = 0;
+			
+            io.handle   = kgem->fd;
+            io.io_code  = SRV_I915_GEM_PIN;
+            io.input    = &pin;
+            io.inp_size = sizeof(pin);
+            io.output   = NULL;
+            io.out_size = 0;
+
+            if (call_service(&io)!=0){
+				gem_close(kgem->fd, pin.handle);
+				goto err;
+			}
+			bo->presumed_offset = pin.offset;
+			debug_alloc__bo(kgem, bo);
+			list_add(&bo->list, &kgem->pinned_batches[n]);
+		}
+	}
+
+	return true;
+
+err:
+	for (n = 0; n < ARRAY_SIZE(kgem->pinned_batches); n++) {
+		while (!list_is_empty(&kgem->pinned_batches[n])) {
+			kgem_bo_destroy(kgem,
+					list_first_entry(&kgem->pinned_batches[n],
+							 struct kgem_bo, list));
+		}
+	}
+
+	/* For simplicity populate the lists with a single unpinned bo */
+	for (n = 0; n < ARRAY_SIZE(count); n++) {
+		struct kgem_bo *bo;
+		uint32_t handle;
+
+		handle = gem_create(kgem->fd, size[n]);
+		if (handle == 0)
+			break;
+
+		bo = __kgem_bo_alloc(handle, size[n]);
+		if (bo == NULL) {
+			gem_close(kgem->fd, handle);
+			break;
+		}
+
+		debug_alloc__bo(kgem, bo);
+		list_add(&bo->list, &kgem->pinned_batches[n]);
+	}
+	return false;
+}
+
+
 
 void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
 {
@@ -259,7 +508,6 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
         for (j = 0; j < ARRAY_SIZE(kgem->vma[i].inactive); j++)
             list_init(&kgem->vma[i].inactive[j]);
     }
-
     kgem->vma[MAP_GTT].count = -MAX_GTT_VMA_CACHE;
     kgem->vma[MAP_CPU].count = -MAX_CPU_VMA_CACHE;
 
@@ -271,7 +519,6 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
         gem_param(kgem, LOCAL_I915_PARAM_HAS_RELAXED_DELTA) > 0;
     DBG(("%s: has relaxed delta? %d\n", __FUNCTION__,
          kgem->has_relaxed_delta));
-
 
     kgem->has_relaxed_fencing = test_has_relaxed_fencing(kgem);
     DBG(("%s: has relaxed fencing? %d\n", __FUNCTION__,
@@ -315,15 +562,11 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
     DBG(("%s: can use pinned batchbuffers (to avoid CS w/a)? %d\n", __FUNCTION__,
          kgem->has_pinned_batches));
 
-#if 0
-
     if (!is_hw_supported(kgem, dev)) {
-        xf86DrvMsg(kgem_get_screen_index(kgem), X_WARNING,
-               "Detected unsupported/dysfunctional hardware, disabling acceleration.\n");
+        printf("Detected unsupported/dysfunctional hardware, disabling acceleration.\n");
         kgem->wedged = 1;
     } else if (__kgem_throttle(kgem)) {
-        xf86DrvMsg(kgem_get_screen_index(kgem), X_WARNING,
-               "Detected a hung GPU, disabling acceleration.\n");
+        printf("Detected a hung GPU, disabling acceleration.\n");
         kgem->wedged = 1;
     }
 
@@ -340,8 +583,7 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
         kgem->batch_size = 4*1024;
 
     if (!kgem_init_pinned_batches(kgem) && gen == 020) {
-        xf86DrvMsg(kgem_get_screen_index(kgem), X_WARNING,
-               "Unable to reserve memory for GPU, disabling acceleration.\n");
+        printf("Unable to reserve memory for GPU, disabling acceleration.\n");
         kgem->wedged = 1;
     }
 
@@ -351,6 +593,8 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
     kgem->min_alignment = 4;
     if (gen < 040)
         kgem->min_alignment = 64;
+
+#if 0
 
     kgem->half_cpu_cache_pages = cpu_cache_size() >> 13;
     DBG(("%s: half cpu cache %d pages\n", __FUNCTION__,
