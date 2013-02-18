@@ -136,7 +136,7 @@ int sna_init(uint32_t service)
         return false;
 
     io.handle   = service;
-    io.io_code  = SRV_GET_INFO;
+    io.io_code  = SRV_GET_PCI_INFO;
     io.input    = &device;
     io.inp_size = sizeof(device);
     io.output   = NULL;

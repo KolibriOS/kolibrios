@@ -3450,10 +3450,4 @@ void *kgem_bo_map(struct kgem *kgem, struct kgem_bo *bo)
     return NULL;   
 };
 
-bool kgem_bo_write(struct kgem *kgem, struct kgem_bo *bo,
-		   const void *data, int length)
-{
-    
-    return false;
-}
 

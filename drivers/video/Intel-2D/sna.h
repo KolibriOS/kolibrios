@@ -67,11 +67,13 @@ typedef struct
   int           out_size;
 }ioctl_t;
 
-#define SRV_GET_INFO            20
-#define SRV_GET_PARAM           21
-#define SRV_I915_GEM_CREATE     22
-#define SRV_DRM_GEM_CLOSE       23
-#define SRV_I915_GEM_PIN        24
+#define SRV_GET_PCI_INFO            20
+#define SRV_GET_PARAM               21
+#define SRV_I915_GEM_CREATE         22
+#define SRV_DRM_GEM_CLOSE           23
+#define SRV_I915_GEM_PIN            24
+#define SRV_I915_GEM_SET_CACHEING   25
+#define SRV_I915_GEM_GET_APERTURE   26
 
 static int call_service(ioctl_t *io)
 {
