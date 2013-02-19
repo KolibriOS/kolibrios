@@ -227,28 +227,6 @@ macro   SOCKET_init {
 
 }
 
-
-;-----------------------------------------------------------------
-;
-; SOCKET_block
-;
-;-----------------------------------------------------------------
-macro   SOCKET_block socket, loop, done {
-
-        test    [socket + SOCKET.options], SO_BLOCK     ; Is this a blocking socket?
-        jz      done                                    ; No, return immediately
-
-        pusha
-        mov     eax, EVENT_NETWORK
-        mov     ebx, 1337                   ; UID: ????
-        call    wait_event
-        popa
-
-        jmp     loop
-
-}
-
-
 ;-----------------------------------------------------------------
 ;
 ; Socket API (function 74)
@@ -306,6 +284,12 @@ SOCKET_open:
 
         mov     [esp+32], edi                   ; return socketnumber
         DEBUGF  2,"socknum=%u\n", edi
+
+;        push    edx
+;        and     edx, SO_NONBLOCK
+        or      [eax + SOCKET.options], SO_NONBLOCK ;edx
+;        pop     edx
+;        and     edx, not SO_NONBLOCK
 
         mov     [eax + SOCKET.Domain], ecx
         mov     [eax + SOCKET.Type], edx
@@ -711,7 +695,11 @@ SOCKET_accept:
         ret
 
   .block:
-        SOCKET_block    eax, .loop, s_error
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     s_error
+
+        call    SOCKET_block
+        jmp     .loop
 
 ;-----------------------------------------------------------------
 ;
@@ -832,22 +820,12 @@ SOCKET_receive_dgram:
         jmp     s_error
 
   .block:
-        SOCKET_block    eax, .loop, s_error
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     s_error
 
-align 4
-SOCKET_receive_local:
+        call    SOCKET_block
+        jmp     .loop
 
-        ; does this socket have a PID yet?
-        cmp     [eax + SOCKET.PID], 0
-        jne     @f
-
-        ; Change PID to that of current process
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx + TASKDATA.pid]
-        mov     [eax + SOCKET.PID], ebx
-      @@:
-
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
 
 align 4
 SOCKET_receive_stream:
@@ -857,10 +835,10 @@ SOCKET_receive_stream:
         mov     ecx, esi
         mov     edi, edx
         xor     edx, edx
-        add     eax, STREAM_SOCKET.rcv
   .loop:
-        cmp     [eax + RING_BUFFER.size], 0
+        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
         je      .block
+        add     eax, STREAM_SOCKET.rcv
         call    SOCKET_ring_read
         call    SOCKET_ring_free
 
@@ -868,7 +846,11 @@ SOCKET_receive_stream:
         ret
 
   .block:
-        SOCKET_block    (eax - STREAM_SOCKET.rcv), .loop, s_error
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     s_error
+
+        call    SOCKET_block
+        jmp     .loop
 
 
 ;-----------------------------------------------------------------
@@ -967,6 +949,8 @@ SOCKET_send_pppoe:
 align 4
 SOCKET_send_local:
 
+        DEBUGF  1,"SOCKET_send: LOCAL\n"
+
         ; does this socket have a PID yet?
         cmp     [eax + SOCKET.PID], 0
         jne     @f
@@ -976,12 +960,6 @@ SOCKET_send_local:
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
       @@:
-        mov     [eax + SOCKET.snd_proc], SOCKET_send_local_
-
-align 4
-SOCKET_send_local_:
-
-        DEBUGF  1,"SOCKET_send: LOCAL\n"
 
         ; get the other side's socket and check if it still exists
         mov     eax, [eax + SOCKET.device]
@@ -998,7 +976,7 @@ SOCKET_send_local_:
         mov     [esp+32], ecx
 
         ; and notify the other end
-        call    SOCKET_notify_owner
+        call    SOCKET_notify
 
         ret
 
@@ -1114,13 +1092,13 @@ SOCKET_set_opt:
         cmp     dword [edx+8], 0
         je      .unblock
 
-        or      [eax + SOCKET.options], SO_BLOCK
+        and     [eax + SOCKET.options], not SO_NONBLOCK
 
         mov     dword [esp+32], 0       ; success!
         ret
 
   .unblock:
-        and     [eax + SOCKET.options], not SO_BLOCK
+        or      [eax + SOCKET.options], SO_NONBLOCK
 
         mov     dword [esp+32], 0       ; success!
         ret
@@ -1151,7 +1129,7 @@ SOCKET_pair:
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
         mov     ebx, eax
 
         call    SOCKET_alloc
@@ -1162,7 +1140,7 @@ SOCKET_pair:
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
 
         ; Link the two sockets to eachother
         mov     [eax + SOCKET.device], ebx
@@ -1375,7 +1353,7 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
-        jmp     SOCKET_notify_owner
+        jmp     SOCKET_notify
 
   .full:
         DEBUGF  2,"SOCKET_input: socket %x is full!\n", eax
@@ -1587,7 +1565,43 @@ SOCKET_ring_free:
 
 ;-----------------------------------------------------------------
 ;
-; SOCKET_notify_owner
+; SOCKET_block
+;
+; Suspends the thread attached to a socket
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_block:
+
+        DEBUGF  1,"SOCKET_block: %x\n", eax
+
+        pushf
+        cli
+
+        ; Set the 'socket is blocked' flag
+        or      [eax + SOCKET.state], SS_BLOCKED
+
+        ; Suspend the thread
+        push    edx
+        mov     edx, [TASK_BASE]
+        DEBUGF  1,"SOCKET_block: suspending PID: %u\n", [edx + TASKDATA.pid]
+        mov     [edx + TASKDATA.state], 1               ; Suspended
+        pop     edx
+
+        call    change_task
+        popf
+
+        DEBUGF  1,"SOCKET_block: continueing\n"
+
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_notify
 ;
 ; notify's the owner of a socket that something happened
 ;
@@ -1596,47 +1610,79 @@ SOCKET_ring_free:
 ;
 ;-----------------------------------------------------------------
 align 4
-SOCKET_notify_owner:
+SOCKET_notify:
 
-        DEBUGF  1,"SOCKET_notify_owner: %x\n", eax
+        DEBUGF  1,"SOCKET_notify: %x\n", eax
 
         call    SOCKET_check
         jz      .error
 
+        test    [eax + SOCKET.state], SS_BLOCKED
+        jnz     .unblock
+
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jz      .error
+
         push    eax ecx esi
 
-; socket exists, now try to flag an event to the application
+; socket exists and is of non blocking type.
+; We'll try to flag an event to the thread
 
         mov     eax, [eax + SOCKET.PID]
         test    eax, eax
-        jz      .error2
+        jz      .done
         mov     ecx, 1
         mov     esi, TASK_DATA + TASKDATA.pid
 
-       .next_pid:
+  .next_pid:
         cmp     [esi], eax
         je      .found_pid
         inc     ecx
         add     esi, 0x20
         cmp     ecx, [TASK_COUNT]
         jbe     .next_pid
-
 ; PID not found, TODO: close socket!
+        jmp     .done
 
-        jmp     .error2
-
-       .found_pid:
+  .found_pid:
         shl     ecx, 8
         or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
-        mov     [check_idle_semaphore], 200
+        mov     [check_idle_semaphore], 200                             ; What does this mean??
 
-        DEBUGF  1,"SOCKET_notify_owner: succes!\n"
+        DEBUGF  1,"SOCKET_notify: Raised a network event!\n"
 
-  .error2:
+        jmp     .done
+
+  .unblock:
+        push    eax ecx esi
+        ; Clear the 'socket is blocked' flag
+        and     [eax + SOCKET.state], not SS_BLOCKED
+
+        ; Find the thread's TASK_DATA
+        mov     eax, [eax + SOCKET.PID]
+        test    eax, eax
+        jz      .error
+        xor     ecx, ecx
+        inc     ecx
+        mov     esi, TASK_DATA
+  .next:
+        cmp     [esi + TASKDATA.pid], eax
+        je      .found
+        inc     ecx
+        add     esi, 0x20
+        cmp     ecx, [TASK_COUNT]
+        jbe     .next
+        jmp     .error
+  .found:
+
+        ; Run the thread
+        mov     [esi + TASKDATA.state], 0       ; Running
+        DEBUGF  1,"SOCKET_notify: Unblocked socket!\n"
+
+  .done:
         pop     esi ecx eax
 
   .error:
-
         ret
 
 
@@ -1966,7 +2012,7 @@ SOCKET_check_owner:
 
         push    ebx
         mov     ebx, [TASK_BASE]
-        mov     ebx, [ecx + TASKDATA.pid]
+        mov     ebx, [ebx + TASKDATA.pid]
         cmp     [eax + SOCKET.PID], ebx
         pop      ebx
 
@@ -2050,7 +2096,7 @@ SOCKET_is_connecting:
         and     [eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.options], SS_ISCONNECTING
 
-        jmp     SOCKET_notify_owner
+        jmp     SOCKET_notify
 
 
 
@@ -2071,7 +2117,7 @@ SOCKET_is_connected:
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.options], SS_ISCONNECTED
 
-        jmp     SOCKET_notify_owner
+        jmp     SOCKET_notify
 
 
 
@@ -2093,7 +2139,7 @@ SOCKET_is_disconnecting:
         and     [eax + SOCKET.options], not (SS_ISCONNECTING)
         or      [eax + SOCKET.options], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
 
-        jmp     SOCKET_notify_owner
+        jmp     SOCKET_notify
 
 
 
@@ -2114,7 +2160,7 @@ SOCKET_is_disconnected:
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
 
-        jmp     SOCKET_notify_owner
+        jmp     SOCKET_notify
 
 
 ;-----------------------------------------------------------------

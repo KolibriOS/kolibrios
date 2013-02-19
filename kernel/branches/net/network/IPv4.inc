@@ -225,7 +225,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         call    NET_ptr_to_num
         shl     edi, 2
 
-        ; check if it matches local ip
+        ; check if it matches local ip (Using RFC1122 strong end system model)
 
         mov     eax, [edx + IPv4_header.DestinationAddress]
         cmp     eax, [IP_LIST+edi]

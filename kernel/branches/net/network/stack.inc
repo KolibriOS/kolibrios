@@ -79,27 +79,30 @@ SO_REUSEPORT            = 1 shl 7
 SO_USELOOPBACK          = 1 shl 8
 SO_BINDTODEVICE         = 1 shl 9
 
-SO_BLOCK                = 1 shl 10
+SO_BLOCK                = 1 shl 10    ; TO BE REMOVED
+SO_NONBLOCK             = 1 shl 31
 
 ; Socket level
 SOL_SOCKET              = 0
 
 
 ; Socket States
-SS_NOFDREF              = 0x001       ; no file table ref any more
-SS_ISCONNECTED          = 0x002       ; socket connected to a peer
-SS_ISCONNECTING         = 0x004       ; in process of connecting to peer
-SS_ISDISCONNECTING      = 0x008       ; in process of disconnecting
-SS_CANTSENDMORE         = 0x010       ; can't send more data to peer
-SS_CANTRCVMORE          = 0x020       ; can't receive more data from peer
-SS_RCVATMARK            = 0x040       ; at mark on input
-SS_ISABORTING           = 0x080       ; aborting fd references - close()
-SS_RESTARTSYS           = 0x100       ; restart blocked system calls
-SS_ISDISCONNECTED       = 0x800       ; socket disconnected from peer
+SS_NOFDREF              = 0x0001      ; no file table ref any more
+SS_ISCONNECTED          = 0x0002      ; socket connected to a peer
+SS_ISCONNECTING         = 0x0004      ; in process of connecting to peer
+SS_ISDISCONNECTING      = 0x0008      ; in process of disconnecting
+SS_CANTSENDMORE         = 0x0010      ; can't send more data to peer
+SS_CANTRCVMORE          = 0x0020      ; can't receive more data from peer
+SS_RCVATMARK            = 0x0040      ; at mark on input
+SS_ISABORTING           = 0x0080      ; aborting fd references - close()
+SS_RESTARTSYS           = 0x0100      ; restart blocked system calls
+SS_ISDISCONNECTED       = 0x0800      ; socket disconnected from peer
 
-SS_ASYNC                = 0x100       ; async i/o notify
-SS_ISCONFIRMING         = 0x200       ; deciding to accept connection req
-SS_MORETOCOME           = 0x400
+SS_ASYNC                = 0x0100      ; async i/o notify
+SS_ISCONFIRMING         = 0x0200      ; deciding to accept connection req
+SS_MORETOCOME           = 0x0400
+
+SS_BLOCKED              = 0x8000
 
 
 SOCKET_MAXDATA          = 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8

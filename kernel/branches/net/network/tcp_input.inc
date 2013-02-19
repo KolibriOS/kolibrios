@@ -485,7 +485,7 @@ TCP_process_input:
         popa
 
         mov     eax, ebx
-        call    SOCKET_notify_owner
+        call    SOCKET_notify
 
 ; Generate more output
         call    TCP_output
@@ -521,7 +521,7 @@ TCP_process_input:
         call    SOCKET_ring_write                       ; Add the data to the socket buffer
 
         mov     eax, ebx
-        call    SOCKET_notify_owner
+        call    SOCKET_notify
 
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK   ; Set delayed ack flag
 
@@ -1079,7 +1079,7 @@ TCP_process_input:
 
         pushf                   ; Why?
         mov     eax, ebx
-        call    SOCKET_notify_owner
+        call    SOCKET_notify
 
 ; Update TCPS
 
