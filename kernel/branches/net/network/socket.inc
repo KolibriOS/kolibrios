@@ -828,6 +828,21 @@ SOCKET_receive_dgram:
 
 
 align 4
+SOCKET_receive_local:
+
+        ; does this socket have a PID yet?
+        cmp     [eax + SOCKET.PID], 0
+        jne     @f
+
+        ; Change PID to that of current process
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        mov     [eax + SOCKET.PID], ebx
+      @@:
+
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+
+align 4
 SOCKET_receive_stream:
 
         DEBUGF  1,"SOCKET_receive: STREAM\n"
@@ -949,8 +964,6 @@ SOCKET_send_pppoe:
 align 4
 SOCKET_send_local:
 
-        DEBUGF  1,"SOCKET_send: LOCAL\n"
-
         ; does this socket have a PID yet?
         cmp     [eax + SOCKET.PID], 0
         jne     @f
@@ -960,6 +973,12 @@ SOCKET_send_local:
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
       @@:
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_local_
+
+align 4
+SOCKET_send_local_:
+
+        DEBUGF  1,"SOCKET_send: LOCAL\n"
 
         ; get the other side's socket and check if it still exists
         mov     eax, [eax + SOCKET.device]
@@ -1129,7 +1148,7 @@ SOCKET_pair:
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
         mov     ebx, eax
 
         call    SOCKET_alloc
@@ -1140,7 +1159,7 @@ SOCKET_pair:
         mov     [eax + SOCKET.Type], SOCK_STREAM
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local
-        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
 
         ; Link the two sockets to eachother
         mov     [eax + SOCKET.device], ebx
