@@ -5,6 +5,28 @@
 
 #include "sna.h"
 
+typedef struct __attribute__((packed))
+{
+  unsigned      handle;
+  unsigned      io_code;
+  void          *input;
+  int           inp_size;
+  void          *output;
+  int           out_size;
+}ioctl_t;
+
+
+static int call_service(ioctl_t *io)
+{
+  int retval;
+
+  asm volatile("int $0x40"
+      :"=a"(retval)
+      :"a"(68),"b"(17),"c"(io)
+      :"memory","cc");
+
+  return retval;
+};
 
 const struct intel_device_info *
 intel_detect_chipset(struct pci_device *pci);
@@ -14,6 +36,11 @@ intel_detect_chipset(struct pci_device *pci);
 static bool sna_solid_cache_init(struct sna *sna);
 
 struct sna *sna_device;
+
+static void no_render_reset(struct sna *sna)
+{
+	(void)sna;
+}
 
 void no_render_init(struct sna *sna)
 {
@@ -36,14 +63,14 @@ void no_render_init(struct sna *sna)
 //    render->fill_one = no_render_fill_one;
 //    render->clear = no_render_clear;
 
-//    render->reset = no_render_reset;
-//    render->flush = no_render_flush;
+    render->reset = no_render_reset;
+    render->flush = no_render_flush;
 //    render->fini = no_render_fini;
 
 //    sna->kgem.context_switch = no_render_context_switch;
 //    sna->kgem.retire = no_render_retire;
 
-//    if (sna->kgem.gen >= 60)
+      if (sna->kgem.gen >= 60)
         sna->kgem.ring = KGEM_RENDER;
 
       sna_vertex_init(sna);
@@ -593,6 +620,20 @@ intel_detect_chipset(struct pci_device *pci)
 	
 }
 
+
+int drmIoctl(int fd, unsigned long request, void *arg)
+{
+    ioctl_t  io;
+
+    io.handle   = fd;
+    io.io_code  = request;
+    io.input    = arg;
+    io.inp_size = 64;
+    io.output   = NULL;
+    io.out_size = 0;
+
+    return call_service(&io);
+}
 
 
 

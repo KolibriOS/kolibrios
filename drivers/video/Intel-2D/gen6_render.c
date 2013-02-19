@@ -397,7 +397,7 @@ gen6_choose_composite_kernel(int op, bool has_mask, bool is_ca, bool is_affine)
 /*
 		if (is_ca) {
 			if (gen6_blend_op[op].src_alpha)
-				base = GEN6_WM_KERNEL_MASKCA_SRCALPHA;
+				base = GEN6_WM_KERNEL_MASKSA;
 			else
 				base = GEN6_WM_KERNEL_MASKCA;
 		} else
@@ -1647,7 +1647,7 @@ gen6_render_video(struct sna *sna,
 		_kgem_set_mode(&sna->kgem, KGEM_RENDER);
 	}
 
-	gen6_emit_video_state(sna, &tmp, frame);
+	gen6_emit_video_state(sna, &tmp);
 	gen6_align_vertex(sna, &tmp);
 
 	/* Set up the offset for translating from the given region (in screen
@@ -1815,10 +1815,10 @@ static void gen6_render_composite_done(struct sna *sna,
         gen6_magic_ca_pass(sna, op);
     }
 
-//   if (op->mask.bo)
-//       kgem_bo_destroy(&sna->kgem, op->mask.bo);
-//   if (op->src.bo)
-//       kgem_bo_destroy(&sna->kgem, op->src.bo);
+	if (op->mask.bo)
+		kgem_bo_destroy(&sna->kgem, op->mask.bo);
+	if (op->src.bo)
+		kgem_bo_destroy(&sna->kgem, op->src.bo);
 
 //   sna_render_composite_redirect_done(sna, op);
 }
@@ -3223,7 +3223,7 @@ static void gen6_render_reset(struct sna *sna)
 
 static void gen6_render_fini(struct sna *sna)
 {
-//   kgem_bo_destroy(&sna->kgem, sna->render_state.gen6.general_bo);
+    kgem_bo_destroy(&sna->kgem, sna->render_state.gen6.general_bo);
 }
 
 static bool is_gt2(struct sna *sna)
@@ -3333,7 +3333,7 @@ bool gen6_render_init(struct sna *sna)
 //    sna->render.fill_one = gen6_render_fill_one;
 //    sna->render.clear = gen6_render_clear;
 
-//    sna->render.flush = gen6_render_flush;
+    sna->render.flush = gen6_render_flush;
     sna->render.reset = gen6_render_reset;
 	sna->render.fini = gen6_render_fini;
 
@@ -3444,10 +3444,4 @@ int gen4_vertex_finish(struct sna *sna)
 	sna->render.vertex_size = size;
 	return sna->render.vertex_size - sna->render.vertex_used;
 }
-
-void *kgem_bo_map(struct kgem *kgem, struct kgem_bo *bo)
-{
-    return NULL;   
-};
-
 

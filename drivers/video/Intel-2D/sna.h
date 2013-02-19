@@ -57,15 +57,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define assert(x)
 
 
-typedef struct
-{
-  unsigned      handle;
-  unsigned      io_code;
-  void          *input;
-  int           inp_size;
-  void          *output;
-  int           out_size;
-}ioctl_t;
+int drmIoctl(int fd, unsigned long request, void *arg);
+
 
 #define SRV_GET_PCI_INFO            20
 #define SRV_GET_PARAM               21
@@ -74,19 +67,16 @@ typedef struct
 #define SRV_I915_GEM_PIN            24
 #define SRV_I915_GEM_SET_CACHEING   25
 #define SRV_I915_GEM_GET_APERTURE   26
+#define SRV_I915_GEM_PWRITE         27
+#define SRV_I915_GEM_BUSY           28
 
-static int call_service(ioctl_t *io)
-{
-  int retval;
+#define SRV_I915_GEM_SET_DOMAIN     29
+#define SRV_I915_GEM_MMAP           30
+#define SRV_I915_GEM_MMAP_GTT       31
 
-  asm volatile("int $0x40"
-      :"=a"(retval)
-      :"a"(68),"b"(17),"c"(io)
-      :"memory","cc");
 
-  return retval;
-};
 
+#define DRM_IOCTL_GEM_CLOSE         SRV_DRM_GEM_CLOSE
 
 #define PIXMAN_FORMAT(bpp,type,a,r,g,b) (((bpp) << 24) |    \
                                         ((type) << 16) |    \

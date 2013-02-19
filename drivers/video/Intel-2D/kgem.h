@@ -273,6 +273,11 @@ struct kgem_bo *kgem_create_2d(struct kgem *kgem,
 			       int bpp,
 			       int tiling,
 			       uint32_t flags);
+struct kgem_bo *kgem_create_cpu_2d(struct kgem *kgem,
+				   int width,
+				   int height,
+				   int bpp,
+				   uint32_t flags);
 
 uint32_t kgem_bo_get_binding(struct kgem_bo *bo, uint32_t format);
 void kgem_bo_set_binding(struct kgem_bo *bo, uint32_t format, uint16_t offset);
@@ -314,8 +319,6 @@ static inline bool kgem_flush(struct kgem *kgem, bool flush)
 	return (kgem->flush ^ flush) && kgem_ring_is_idle(kgem, kgem->ring);
 }
 
-#if 0
-
 static inline void kgem_bo_submit(struct kgem *kgem, struct kgem_bo *bo)
 {
 	if (bo->exec)
@@ -336,8 +339,6 @@ static inline void kgem_bo_flush(struct kgem *kgem, struct kgem_bo *bo)
 	 */
 	__kgem_flush(kgem, bo);
 }
-
-#endif
 
 static inline struct kgem_bo *kgem_bo_reference(struct kgem_bo *bo)
 {
@@ -517,6 +518,15 @@ static inline bool __kgem_bo_is_mappable(struct kgem *kgem,
 	return bo->presumed_offset + kgem_bo_size(bo) <= kgem->aperture_mappable;
 }
 
+static inline bool kgem_bo_is_mappable(struct kgem *kgem,
+				       struct kgem_bo *bo)
+{
+	DBG(("%s: domain=%d, offset: %d size: %d\n",
+	     __FUNCTION__, bo->domain, bo->presumed_offset, kgem_bo_size(bo)));
+	assert(bo->refcnt);
+	return __kgem_bo_is_mappable(kgem, bo);
+}
+
 static inline bool kgem_bo_mapped(struct kgem *kgem, struct kgem_bo *bo)
 {
 	DBG(("%s: map=%p, tiling=%d, domain=%d\n",
@@ -529,15 +539,42 @@ static inline bool kgem_bo_mapped(struct kgem *kgem, struct kgem_bo *bo)
 	return IS_CPU_MAP(bo->map) == !bo->tiling;
 }
 
+static inline bool kgem_bo_can_map(struct kgem *kgem, struct kgem_bo *bo)
+{
+	if (kgem_bo_mapped(kgem, bo))
+		return true;
 
+	if (!bo->tiling && kgem->has_llc)
+		return true;
 
+	if (kgem->gen == 021 && bo->tiling == I915_TILING_Y)
+		return false;
 
+	return kgem_bo_size(bo) <= kgem->aperture_mappable / 4;
+}
 
+static inline bool kgem_bo_is_snoop(struct kgem_bo *bo)
+{
+	assert(bo->refcnt);
+	while (bo->proxy)
+		bo = bo->proxy;
+	return bo->snoop;
+}
 
+bool __kgem_busy(struct kgem *kgem, int handle);
 
+static inline void kgem_bo_mark_busy(struct kgem_bo *bo, int ring)
+{
+	bo->rq = (struct kgem_request *)((uintptr_t)bo->rq | ring);
+}
 
-
-
+inline static void __kgem_bo_clear_busy(struct kgem_bo *bo)
+{
+	bo->needs_flush = false;
+	list_del(&bo->request);
+	bo->rq = NULL;
+	bo->domain = DOMAIN_NONE;
+}
 
 static inline bool kgem_bo_is_busy(struct kgem_bo *bo)
 {
