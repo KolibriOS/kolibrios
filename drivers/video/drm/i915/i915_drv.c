@@ -481,9 +481,54 @@ int i915_init(void)
     return err;
 }
 
+
+
+static struct drm_driver driver = {
+    /* Don't use MTRRs here; the Xserver or userspace app should
+     * deal with them for Intel hardware.
+     */
+//    .driver_features =
+//        DRIVER_USE_AGP | DRIVER_REQUIRE_AGP | /* DRIVER_USE_MTRR |*/
+//        DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED | DRIVER_GEM | DRIVER_PRIME,
+//    .load = i915_driver_load,
+//    .unload = i915_driver_unload,
+//    .open = i915_driver_open,
+//    .lastclose = i915_driver_lastclose,
+//    .preclose = i915_driver_preclose,
+//    .postclose = i915_driver_postclose,
+
+    /* Used in place of i915_pm_ops for non-DRIVER_MODESET */
+//    .suspend = i915_suspend,
+//    .resume = i915_resume,
+
+//    .device_is_agp = i915_driver_device_is_agp,
+//    .master_create = i915_master_create,
+//    .master_destroy = i915_master_destroy,
+    .gem_init_object = i915_gem_init_object,
+    .gem_free_object = i915_gem_free_object,
+//    .gem_vm_ops = &i915_gem_vm_ops,
+
+//    .prime_handle_to_fd = drm_gem_prime_handle_to_fd,
+//    .prime_fd_to_handle = drm_gem_prime_fd_to_handle,
+//    .gem_prime_export = i915_gem_prime_export,
+//    .gem_prime_import = i915_gem_prime_import,
+
+//    .dumb_create = i915_gem_dumb_create,
+//    .dumb_map_offset = i915_gem_mmap_gtt,
+//    .dumb_destroy = i915_gem_dumb_destroy,
+//    .ioctls = i915_ioctls,
+//    .fops = &i915_driver_fops,
+//    .name = DRIVER_NAME,
+//    .desc = DRIVER_DESC,
+//    .date = DRIVER_DATE,
+//    .major = DRIVER_MAJOR,
+//    .minor = DRIVER_MINOR,
+//    .patchlevel = DRIVER_PATCHLEVEL,
+};
+
+
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-    static struct drm_driver driver;
     static struct drm_device drm_dev;
     static struct drm_file   drm_file;
 

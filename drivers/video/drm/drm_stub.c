@@ -107,3 +107,23 @@ int drm_order(unsigned long size)
 
     return order;
 }
+
+extern int x86_clflush_size;
+
+static inline void clflush(volatile void *__p)
+{
+    asm volatile("clflush %0" : "+m" (*(volatile char*)__p));
+}
+
+void
+drm_clflush_virt_range(char *addr, unsigned long length)
+{
+    char *end = addr + length;
+    mb();
+    for (; addr < end; addr += x86_clflush_size)
+        clflush(addr);
+    clflush(end - 1);
+    mb();
+    return;
+}
+

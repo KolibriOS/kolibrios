@@ -22,5 +22,6 @@
 #define trace_intel_gpu_freq_change(a)
 #define trace_i915_reg_rw(a, b, c, d)
 #define trace_i915_ring_wait_begin(a)
+#define trace_i915_gem_object_pwrite(a, b, c)
 
 #endif

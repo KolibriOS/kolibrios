@@ -122,11 +122,17 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_BLIT_TEXTURE        16
 #define SRV_BLIT_VIDEO          17
 
-#define SRV_PCI_INFO            20
+#define SRV_GET_PCI_INFO            20
 #define SRV_GET_PARAM           21
 #define SRV_I915_GEM_CREATE     22
 #define SRV_DRM_GEM_CLOSE       23
 #define SRV_I915_GEM_PIN        24
+#define SRV_I915_GEM_SET_CACHEING   25
+#define SRV_I915_GEM_GET_APERTURE   26
+#define SRV_I915_GEM_PWRITE         27
+#define SRV_I915_GEM_BUSY           28
+#define SRV_I915_GEM_SET_DOMAIN     29
+
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -200,7 +206,7 @@ int _stdcall display_handler(ioctl_t *io)
 
             break;
 
-        case SRV_PCI_INFO:
+        case SRV_GET_PCI_INFO:
             get_pci_info((struct pci_device *)inp);
             retval = 0;
             break;
@@ -220,6 +226,27 @@ int _stdcall display_handler(ioctl_t *io)
         case SRV_I915_GEM_PIN:
             retval = i915_gem_pin_ioctl(main_device, inp, file);
             break;
+
+        case SRV_I915_GEM_SET_CACHEING:
+            retval = i915_gem_set_caching_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_GET_APERTURE:
+            retval = i915_gem_get_aperture_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_PWRITE:
+            retval = i915_gem_pwrite_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_BUSY:
+            retval = i915_gem_busy_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_SET_DOMAIN:
+            retval = i915_gem_set_domain_ioctl(main_device, inp, file);
+            break;
+
     };
 
     return retval;
