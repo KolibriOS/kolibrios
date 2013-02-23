@@ -1149,6 +1149,7 @@ SOCKET_pair:
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.PID], 0
         mov     ebx, eax
 
         call    SOCKET_alloc
@@ -1160,6 +1161,7 @@ SOCKET_pair:
         mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.PID], 0
 
         ; Link the two sockets to eachother
         mov     [eax + SOCKET.device], ebx
