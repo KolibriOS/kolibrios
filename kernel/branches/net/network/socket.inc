@@ -26,7 +26,8 @@ struct  SOCKET
 
         mutex                   MUTEX
 
-        PID                     dd ? ; application process id
+        PID                     dd ? ; process ID
+        TID                     dd ? ; thread ID
         Domain                  dd ? ; INET/LOCAL/..
         Type                    dd ? ; RAW/STREAM/DGRAP
         Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
@@ -682,10 +683,10 @@ SOCKET_accept:
 ; Ok, we got a socket ptr
         mov     eax, [esi]
 
-; Change PID to that of the current process
+; Change thread ID to that of the current thread
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
-        mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx
 
 ; Convert it to a socket number
         call    SOCKET_ptr_to_num
@@ -717,22 +718,18 @@ SOCKET_close:
         call    SOCKET_num_to_ptr
         jz      s_error
 
+        mov     dword [esp+32], 0                               ; The socket exists, so we will succeed in closing it.
+
+  .socket:
         cmp     [eax + SOCKET.Domain], AF_INET4
-        jne     s_error
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
-        je      .free
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
-        je      .free
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_IP
-        je      .free
+        jne     .free
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         je      .tcp
 
-        jmp     s_error
+  .free:
+        call    SOCKET_free
+        ret
 
   .tcp:
         cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED    ; state must be LISTEN, SYN_SENT or CLOSED
@@ -740,15 +737,6 @@ SOCKET_close:
 
         call    TCP_usrclosed
         call    TCP_output      ;;;; Fixme: is this nescessary??
-
-;;; TODO: wait for successfull termination if blocking socket
-        mov     dword [esp+32], 0
-
-        ret
-
-  .free:
-        call    SOCKET_free
-        mov     dword [esp+32], 0
 
         ret
 
@@ -838,6 +826,7 @@ SOCKET_receive_local:
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
       @@:
 
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
@@ -972,6 +961,7 @@ SOCKET_send_local:
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
       @@:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_local_
 
@@ -1608,8 +1598,12 @@ SOCKET_block:
         ; Suspend the thread
         push    edx
         mov     edx, [TASK_BASE]
-        DEBUGF  1,"SOCKET_block: suspending PID: %u\n", [edx + TASKDATA.pid]
         mov     [edx + TASKDATA.state], 1               ; Suspended
+
+        ; Remember the thread ID so we can wake it up again
+        mov     edx, [edx + TASKDATA.pid]
+        DEBUGF  1,"SOCKET_block: suspending thread: %u\n", edx
+        mov     [eax + SOCKET.TID], edx
         pop     edx
 
         call    change_task
@@ -1649,7 +1643,7 @@ SOCKET_notify:
 ; socket exists and is of non blocking type.
 ; We'll try to flag an event to the thread
 
-        mov     eax, [eax + SOCKET.PID]
+        mov     eax, [eax + SOCKET.TID]
         test    eax, eax
         jz      .done
         mov     ecx, 1
@@ -1680,7 +1674,7 @@ SOCKET_notify:
         and     [eax + SOCKET.state], not SS_BLOCKED
 
         ; Find the thread's TASK_DATA
-        mov     eax, [eax + SOCKET.PID]
+        mov     eax, [eax + SOCKET.TID]
         test    eax, eax
         jz      .error
         xor     ecx, ecx
@@ -1769,6 +1763,7 @@ SOCKET_alloc:
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
 
 ; init mutex
         pusha
@@ -2057,40 +2052,27 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
-        DEBUGF  1,"SOCKET_process_end: %x\n", edx
+        DEBUGF  1, "SOCKET_process_end: %x\n", edx
 
         push    ebx
         mov     ebx, net_sockets
 
   .next_socket:
         mov     ebx, [ebx + SOCKET.NextPtr]
-  .test_socket:
         test    ebx, ebx
         jz      .done
 
         cmp     [ebx + SOCKET.PID], edx
         jne     .next_socket
 
-        DEBUGF  1,"SOCKET_process_end: killing socket %x\n", ebx
+        DEBUGF  1, "SOCKET_process_end: killing socket %x\n", ebx
 
         mov     [ebx + SOCKET.PID], 0
-
-        cmp     [ebx + SOCKET.Protocol], IP_PROTO_TCP
-        je      .tcp
-
-; The socket is stateless, just kill it right away!
-
         mov     eax, ebx
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        call    SOCKET_free
-        jmp     .test_socket
-
-  .tcp:
-        push    [ebx + SOCKET.NextPtr]
-        mov     eax, ebx
-        call    TCP_disconnect
-        pop     ebx
-        jmp     .test_socket
+        pusha
+        call    SOCKET_close.socket
+        popa
+        jmp     .next_socket
 
   .done:
         pop     ebx
