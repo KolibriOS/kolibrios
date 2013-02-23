@@ -13,7 +13,10 @@
 #define OS_BASE             0x80000000
 
 #define PG_SW               0x003
-#define PG_NOCACHE          0x010
+#define PG_UW               0x007
+#define PG_NOCACHE          0x018
+#define PG_SHARED           0x200
+
 
 #define MANUAL_DESTROY      0x80000000
 

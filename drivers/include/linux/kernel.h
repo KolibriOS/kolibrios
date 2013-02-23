@@ -203,7 +203,14 @@ typedef unsigned long   pgprotval_t;
 
 typedef struct pgprot { pgprotval_t pgprot; } pgprot_t;
 
-struct file {};
+struct file
+{
+    struct page  **pages;         /* physical memory backend */
+    unsigned int   count;
+    unsigned int   allocated;
+    void           *vma;
+};
+
 struct vm_area_struct {};
 struct address_space {};
 

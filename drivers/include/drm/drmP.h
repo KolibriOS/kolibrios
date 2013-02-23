@@ -171,7 +171,7 @@ int drm_err(const char *func, const char *format, ...);
 /** \name Begin the DRM... */
 /*@{*/
 
-#define DRM_DEBUG_CODE 0   /**< Include debugging code if > 1, then
+#define DRM_DEBUG_CODE 2	  /**< Include debugging code if > 1, then
 				     also include looping detection. */
 
 #define DRM_MAGIC_HASH_ORDER  4  /**< Size of key hash table. Must be power of 2. */
@@ -959,9 +959,14 @@ struct drm_driver {
 #define DRM_IRQ_ARGS            int irq, void *arg 
 
 struct drm_driver {
+	int (*open) (struct drm_device *, struct drm_file *);
+
     irqreturn_t (*irq_handler) (DRM_IRQ_ARGS);
     void (*irq_preinstall) (struct drm_device *dev);
     int (*irq_postinstall) (struct drm_device *dev);
+
+	int (*gem_init_object) (struct drm_gem_object *obj);
+	void (*gem_free_object) (struct drm_gem_object *obj);
 	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 }; 

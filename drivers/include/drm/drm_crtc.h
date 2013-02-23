@@ -244,6 +244,16 @@ struct drm_framebuffer_funcs {
 
 struct drm_framebuffer {
 	struct drm_device *dev;
+	/*
+	 * Note that the fb is refcounted for the benefit of driver internals,
+	 * for example some hw, disabling a CRTC/plane is asynchronous, and
+	 * scanout does not actually complete until the next vblank.  So some
+	 * cleanup (like releasing the reference(s) on the backing GEM bo(s))
+	 * should be deferred.  In cases like this, the driver would like to
+	 * hold a ref to the fb even though it has already been removed from
+	 * userspace perspective.
+	 */
+	struct kref refcount;
 	struct list_head head;
 	struct drm_mode_object base;
 	const struct drm_framebuffer_funcs *funcs;
