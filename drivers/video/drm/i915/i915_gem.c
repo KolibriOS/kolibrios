@@ -37,12 +37,20 @@
 
 extern int x86_clflush_size;
 
+#define PROT_READ       0x1             /* page can be read */
+#define PROT_WRITE      0x2             /* page can be written */
+#define MAP_SHARED      0x01            /* Share changes */
+
 #undef mb
 #undef rmb
 #undef wmb
 #define mb() asm volatile("mfence")
 #define rmb() asm volatile ("lfence")
 #define wmb() asm volatile ("sfence")
+
+unsigned long vm_mmap(struct file *file, unsigned long addr,
+         unsigned long len, unsigned long prot,
+         unsigned long flag, unsigned long offset);
 
 static inline void clflush(volatile void *__p)
 {
@@ -1296,8 +1304,8 @@ i915_gem_mmap_ioctl(struct drm_device *dev, void *data,
 	if (obj == NULL)
 		return -ENOENT;
 	
-	dbgprintf("%s offset %lld size %lld not supported\n",
-				args->offset, args->size);  
+    dbgprintf("%s offset %lld size %lld\n",
+                __FUNCTION__, args->offset, args->size);
 	/* prime objects have no backing filp to GEM mmap
 	 * pages from.
 	 */
@@ -1306,17 +1314,16 @@ i915_gem_mmap_ioctl(struct drm_device *dev, void *data,
 		return -EINVAL;
 	}
 
-//	addr = vm_mmap(obj->filp, 0, args->size,
-//		       PROT_READ | PROT_WRITE, MAP_SHARED,
-//		       args->offset);
+    addr = vm_mmap(obj->filp, 0, args->size,
+              PROT_READ | PROT_WRITE, MAP_SHARED,
+              args->offset);
 	drm_gem_object_unreference_unlocked(obj);
-//	if (IS_ERR((void *)addr))
-//		return addr;
+    if (IS_ERR((void *)addr))
+        return addr;
 
 	args->addr_ptr = (uint64_t) addr;
-	return -EINVAL;
 
-//	return 0;
+    return 0;
 }
 
 
@@ -1444,8 +1451,8 @@ i915_gem_object_truncate(struct drm_i915_gem_object *obj)
 
 //	i915_gem_object_free_mmap_offset(obj);
 
-//	if (obj->base.filp == NULL)
-//		return;
+	if (obj->base.filp == NULL)
+		return;
 
 	/* Our goal here is to return as much of the memory as
 	 * is possible back to the system as we are called from OOM.
@@ -1491,7 +1498,7 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
 
 
 
-		page_cache_release(page);
+//       page_cache_release(page);
 	}
     //DRM_DEBUG_KMS("%s release %d pages\n", __FUNCTION__, page_count);
 	obj->dirty = 0;
@@ -1784,7 +1791,17 @@ i915_add_request(struct intel_ring_buffer *ring,
 	list_add_tail(&request->list, &ring->request_list);
 	request->file_priv = NULL;
 
+	if (file) {
+		struct drm_i915_file_private *file_priv = file->driver_priv;
 
+		spin_lock(&file_priv->mm.lock);
+		request->file_priv = file_priv;
+		list_add_tail(&request->client_list,
+			      &file_priv->mm.request_list);
+		spin_unlock(&file_priv->mm.lock);
+	}
+
+	trace_i915_gem_request_add(ring, request->seqno);
 	ring->outstanding_lazy_request = 0;
 
 	if (!dev_priv->mm.suspended) {
@@ -1805,8 +1822,21 @@ i915_add_request(struct intel_ring_buffer *ring,
 	return 0;
 }
 
+static inline void
+i915_gem_request_remove_from_client(struct drm_i915_gem_request *request)
+{
+	struct drm_i915_file_private *file_priv = request->file_priv;
 
+	if (!file_priv)
+		return;
 
+	spin_lock(&file_priv->mm.lock);
+	if (request->file_priv) {
+		list_del(&request->client_list);
+		request->file_priv = NULL;
+	}
+	spin_unlock(&file_priv->mm.lock);
+}
 
 static void i915_gem_reset_ring_lists(struct drm_i915_private *dev_priv,
 				      struct intel_ring_buffer *ring)
@@ -1819,7 +1849,7 @@ static void i915_gem_reset_ring_lists(struct drm_i915_private *dev_priv,
 					   list);
 
 		list_del(&request->list);
-//       i915_gem_request_remove_from_client(request);
+		i915_gem_request_remove_from_client(request);
 		kfree(request);
 	}
 
@@ -1887,6 +1917,8 @@ i915_gem_retire_requests_ring(struct intel_ring_buffer *ring)
 {
 	uint32_t seqno;
 
+    ENTER();
+
 	if (list_empty(&ring->request_list))
 		return;
 
@@ -1913,6 +1945,7 @@ i915_gem_retire_requests_ring(struct intel_ring_buffer *ring)
 		ring->last_retired_head = request->tail;
 
 		list_del(&request->list);
+		i915_gem_request_remove_from_client(request);
 		kfree(request);
 	}
 
@@ -1939,6 +1972,7 @@ i915_gem_retire_requests_ring(struct intel_ring_buffer *ring)
 	}
 
 	WARN_ON(i915_verify_lists(ring->dev));
+    LEAVE();
 }
 
 void
@@ -1960,6 +1994,8 @@ i915_gem_retire_work_handler(struct work_struct *work)
 	struct intel_ring_buffer *ring;
 	bool idle;
 	int i;
+
+    ENTER();
 
 	dev_priv = container_of(work, drm_i915_private_t,
 				mm.retire_work.work);
@@ -1990,6 +2026,8 @@ i915_gem_retire_work_handler(struct work_struct *work)
 		intel_mark_idle(dev);
 
 	mutex_unlock(&dev->struct_mutex);
+
+    LEAVE();
 }
 
 /**
@@ -2126,6 +2164,9 @@ i915_gem_object_unbind(struct drm_i915_gem_object *obj)
 {
 	drm_i915_private_t *dev_priv = obj->base.dev->dev_private;
 	int ret = 0;
+
+    if(obj == get_fb_obj())
+        return 0;
 
 	if (obj->gtt_space == NULL)
 		return 0;
@@ -3105,7 +3146,6 @@ i915_gem_object_set_to_cpu_domain(struct drm_i915_gem_object *obj, bool write)
 	return 0;
 }
 
-#if 0
 /* Throttle our rendering by waiting until the ring has completed our requests
  * emitted over 20 msec ago.
  *
@@ -3121,7 +3161,7 @@ i915_gem_ring_throttle(struct drm_device *dev, struct drm_file *file)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct drm_i915_file_private *file_priv = file->driver_priv;
-	unsigned long recent_enough = GetTimerTics() - msecs_to_jiffies(20);
+	unsigned long recent_enough = GetTimerTicks() - msecs_to_jiffies(20);
 	struct drm_i915_gem_request *request;
 	struct intel_ring_buffer *ring = NULL;
 	u32 seqno = 0;
@@ -3149,7 +3189,6 @@ i915_gem_ring_throttle(struct drm_device *dev, struct drm_file *file)
 
 	return ret;
 }
-#endif
 
 int
 i915_gem_object_pin(struct drm_i915_gem_object *obj,
@@ -3162,7 +3201,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 	if (WARN_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
 		return -EBUSY;
 
-#if 0
 	if (obj->gtt_space != NULL) {
 		if ((alignment && obj->gtt_offset & (alignment - 1)) ||
 		    (map_and_fenceable && !obj->map_and_fenceable)) {
@@ -3178,7 +3216,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 				return ret;
 		}
 	}
-#endif
 
 	if (obj->gtt_space == NULL) {
 		struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
@@ -3342,13 +3379,14 @@ unlock:
 	return ret;
 }
 
-#if 0
 int
 i915_gem_throttle_ioctl(struct drm_device *dev, void *data,
 			struct drm_file *file_priv)
 {
 	return i915_gem_ring_throttle(dev, file_priv);
 }
+
+#if 0
 
 int
 i915_gem_madvise_ioctl(struct drm_device *dev, void *data,
@@ -3545,7 +3583,7 @@ i915_gem_idle(struct drm_device *dev)
 	mutex_unlock(&dev->struct_mutex);
 
 	/* Cancel the retire work handler, which should be idle now. */
-//   cancel_delayed_work_sync(&dev_priv->mm.retire_work);
+	cancel_delayed_work_sync(&dev_priv->mm.retire_work);
 
 	return 0;
 }

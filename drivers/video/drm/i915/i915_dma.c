@@ -1547,12 +1547,15 @@ int i915_driver_unload(struct drm_device *dev)
 
 	return 0;
 }
+#endif
 
 int i915_driver_open(struct drm_device *dev, struct drm_file *file)
 {
 	struct drm_i915_file_private *file_priv;
 
 	DRM_DEBUG_DRIVER("\n");
+    ENTER();
+
 	file_priv = kmalloc(sizeof(*file_priv), GFP_KERNEL);
 	if (!file_priv)
 		return -ENOMEM;
@@ -1564,9 +1567,11 @@ int i915_driver_open(struct drm_device *dev, struct drm_file *file)
 
 	idr_init(&file_priv->context_idr);
 
+    LEAVE();
 	return 0;
 }
 
+#if 0
 /**
  * i915_driver_lastclose - clean up after all DRM clients have exited
  * @dev: DRM device

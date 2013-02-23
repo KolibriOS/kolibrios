@@ -5,6 +5,10 @@
 
 #include "sna.h"
 
+#include <pixlib2.h>
+
+static struct sna_fb sna_fb;
+
 typedef struct __attribute__((packed))
 {
   unsigned      handle;
@@ -64,7 +68,7 @@ void no_render_init(struct sna *sna)
 //    render->clear = no_render_clear;
 
     render->reset = no_render_reset;
-    render->flush = no_render_flush;
+//    render->flush = no_render_flush;
 //    render->fini = no_render_fini;
 
 //    sna->kgem.context_switch = no_render_context_switch;
@@ -129,24 +133,9 @@ bool sna_accel_init(struct sna *sna)
 //        return false;
 
     sna_device = sna;
-#if 0
-    {
-        struct kgem_bo *screen_bo;
-        bitmap_t        screen;
 
-        screen.pitch  = 1024*4;
-        screen.gaddr  = 0;
-        screen.width  = 1024;
-        screen.height = 768;
-        screen.obj    = (void*)-1;
 
-        screen_bo = create_bo(&screen);
-
-        sna->render.clear(sna, &screen, screen_bo);
-    }
-#endif
-
-    return true;
+    return kgem_init_fb(&sna->kgem, &sna_fb);
 }
 
 int sna_init(uint32_t service)
@@ -339,37 +328,69 @@ done:
 #endif
 
 
-int sna_blit_copy(uint32_t dst_bitmap, int dst_x, int dst_y,
-                  int w, int h, uint32_t src_bitmap, int src_x, int src_y)
+int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
+                  int w, int h, int src_x, int src_y)
 
 {
     struct sna_copy_op copy;
-    struct kgem_bo src_bo, dst_bo;
+    struct _Pixmap src, dst;
+    struct kgem_bo *src_bo;
 
-    memset(&src_bo, 0, sizeof(src_bo));
-    memset(&dst_bo, 0, sizeof(dst_bo));
+    memset(&src, 0, sizeof(src));
+    memset(&dst, 0, sizeof(dst));
 
-//    src_bo.gaddr  = src_bitmap->gaddr;
-//    src_bo.pitch  = src_bitmap->pitch;
-//    src_bo.tiling = 0;
+    src.drawable.bitsPerPixel = 32;
+    src.drawable.width  = src_bitmap->width;
+    src.drawable.height = src_bitmap->height;
 
-//    dst_bo.gaddr  = dst_bitmap->gaddr;
-//    dst_bo.pitch  = dst_bitmap->pitch;
-//    dst_bo.tiling = 0;
+    dst.drawable.bitsPerPixel = 32;
+    dst.drawable.width  = sna_fb.width;
+    dst.drawable.height = sna_fb.height;
 
     memset(&copy, 0, sizeof(copy));
 
-    sna_device->render.copy(sna_device, GXcopy, NULL, &src_bo, NULL, &dst_bo, &copy);
+    src_bo = (struct kgem_bo*)src_bitmap->handle;
+    
+    if( sna_device->render.copy(sna_device, GXcopy,
+                                &src, src_bo,
+                                &dst, sna_fb.fb_bo, &copy) )
+    {                            
     copy.blt(sna_device, &copy, src_x, src_y, w, h, dst_x, dst_y);
     copy.done(sna_device, &copy);
+    }
 
+    kgem_submit(&sna_device->kgem);
 
-
-//    _kgem_submit(&sna_device->kgem, &execbuffer);
+//    __asm__ __volatile__("int3");
 
 };
 
+int sna_create_bitmap(bitmap_t *bitmap)
+{
+	struct kgem_bo *bo;
 
+    bo = kgem_create_2d(&sna_device->kgem, bitmap->width, bitmap->height,
+                        32,I915_TILING_NONE, CREATE_CPU_MAP);
+
+    if(bo == NULL)
+        goto err_1;
+     
+    void *map = kgem_bo_map(&sna_device->kgem, bo);
+    if(map == NULL)
+        goto err_2;
+        
+    bitmap->handle = (uint32_t)bo;
+    bitmap->pitch  = bo->pitch;
+    bitmap->data   = map;
+    
+    return 0;
+    
+err_2:
+    kgem_bo_destroy(&sna_device->kgem, bo);
+    
+err_1:
+    return -1;        
+};
 /*
 
 int sna_blit_tex(bitmap_t *dst_bitmap, int dst_x, int dst_y,

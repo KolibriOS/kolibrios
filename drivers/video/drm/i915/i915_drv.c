@@ -492,7 +492,7 @@ static struct drm_driver driver = {
 //        DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED | DRIVER_GEM | DRIVER_PRIME,
 //    .load = i915_driver_load,
 //    .unload = i915_driver_unload,
-//    .open = i915_driver_open,
+      .open = i915_driver_open,
 //    .lastclose = i915_driver_lastclose,
 //    .preclose = i915_driver_preclose,
 //    .postclose = i915_driver_postclose,
@@ -576,6 +576,12 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     spin_lock_init(&priv->table_lock);
 
     dev->driver = &driver;
+
+    if (dev->driver->open) {
+        ret = dev->driver->open(dev, priv);
+        if (ret < 0)
+            goto err_g4;
+    }
 
     ret = i915_driver_load(dev, ent->driver_data );
 

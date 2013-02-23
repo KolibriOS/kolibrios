@@ -70,8 +70,8 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-//        strcpy(log, "/tmp1/1/i915.log");
-        strcpy(log, "/RD/1/DRIVERS/i915.log");
+        strcpy(log, "/tmp1/1/i915.log");
+//        strcpy(log, "/RD/1/DRIVERS/i915.log");
 
         if(!dbg_open(log))
         {
@@ -132,6 +132,12 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_I915_GEM_PWRITE         27
 #define SRV_I915_GEM_BUSY           28
 #define SRV_I915_GEM_SET_DOMAIN     29
+#define SRV_I915_GEM_MMAP           30
+
+#define SRV_I915_GEM_THROTTLE       32
+#define SRV_FBINFO                  33
+#define SRV_I915_GEM_EXECBUFFER2    34
+
 
 
 #define check_input(size) \
@@ -245,6 +251,22 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_I915_GEM_SET_DOMAIN:
             retval = i915_gem_set_domain_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_THROTTLE:
+            retval = i915_gem_throttle_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_MMAP:
+            retval = i915_gem_mmap_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_FBINFO:
+            retval = i915_fbinfo(inp);
+            break;
+
+        case SRV_I915_GEM_EXECBUFFER2:
+            retval = i915_gem_execbuffer2(main_device, inp, file);
             break;
 
     };

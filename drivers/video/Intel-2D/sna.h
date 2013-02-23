@@ -44,7 +44,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdint.h>
 #include <memory.h>
 #include <malloc.h>
-
+#include <errno.h>
 
 #include "intel_driver.h"
 #include "pciaccess.h"
@@ -69,11 +69,13 @@ int drmIoctl(int fd, unsigned long request, void *arg);
 #define SRV_I915_GEM_GET_APERTURE   26
 #define SRV_I915_GEM_PWRITE         27
 #define SRV_I915_GEM_BUSY           28
-
 #define SRV_I915_GEM_SET_DOMAIN     29
 #define SRV_I915_GEM_MMAP           30
-#define SRV_I915_GEM_MMAP_GTT       31
+#define SRV_I915_GEM_THROTTLE       32
+#define SRV_FBINFO                  33
+#define SRV_I915_GEM_EXECBUFFER2    34 
 
+#define SRV_I915_GEM_MMAP_GTT       31
 
 
 #define DRM_IOCTL_GEM_CLOSE         SRV_DRM_GEM_CLOSE
@@ -153,6 +155,15 @@ typedef struct _Pixmap {
 } PixmapRec;
 
 
+struct sna_fb
+{
+    uint32_t  width;
+    uint32_t  height;
+    uint32_t  pitch;
+    uint32_t  tiling;
+    
+    struct kgem_bo *fb_bo;
+};
 
 struct pixman_box16
 {

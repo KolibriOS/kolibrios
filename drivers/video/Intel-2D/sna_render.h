@@ -471,7 +471,6 @@ unsigned sna_static_stream_compile_wm(struct sna *sna,
 struct kgem_bo *sna_static_stream_fini(struct sna *sna,
 				       struct sna_static_stream *stream);
 
-/*
 struct kgem_bo *
 sna_render_get_solid(struct sna *sna,
 		     uint32_t color);
@@ -479,9 +478,6 @@ sna_render_get_solid(struct sna *sna,
 void
 sna_render_flush_solid(struct sna *sna);
 
-struct kgem_bo *
-sna_render_get_gradient(struct sna *sna,
-			PictGradient *pattern);
 
 uint32_t sna_rgba_for_color(uint32_t color, int depth);
 uint32_t sna_rgba_to_color(uint32_t rgba, uint32_t format);
@@ -492,8 +488,6 @@ bool sna_get_rgba_from_pixel(uint32_t pixel,
 			     uint16_t *alpha,
 			     uint32_t format);
 bool sna_picture_is_solid(PicturePtr picture, uint32_t *color);
-
-*/
 
 void no_render_init(struct sna *sna);
 
@@ -683,8 +677,37 @@ bool
 sna_composite_mask_is_opaque(PicturePtr mask);
 
 #endif
-
 void sna_vertex_init(struct sna *sna);
 
+static inline void sna_vertex_lock(struct sna_render *r)
+{
+//	pthread_mutex_lock(&r->lock);
+}
+
+static inline void sna_vertex_acquire__locked(struct sna_render *r)
+{
+	r->active++;
+}
+
+static inline void sna_vertex_unlock(struct sna_render *r)
+{
+//	pthread_mutex_unlock(&r->lock);
+}
+
+static inline void sna_vertex_release__locked(struct sna_render *r)
+{
+	assert(r->active > 0);
+	--r->active;
+//	if (--r->active == 0)
+//		pthread_cond_signal(&r->wait);
+}
+
+static inline bool sna_vertex_wait__locked(struct sna_render *r)
+{
+	bool was_active = r->active;
+//	while (r->active)
+//		pthread_cond_wait(&r->wait, &r->lock);
+	return was_active;
+}
 
 #endif /* SNA_RENDER_H */

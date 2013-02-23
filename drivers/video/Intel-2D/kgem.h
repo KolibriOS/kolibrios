@@ -28,7 +28,7 @@
 #ifndef KGEM_H
 #define KGEM_H
 
-#define HAS_DEBUG_FULL 1
+#define HAS_DEBUG_FULL 0
 
 #include <stdint.h>
 #include <stdbool.h>

@@ -1,3 +1,5 @@
+#include <ddk.h>
+#include <linux/mm.h>
 #include <drm/drmP.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
@@ -57,3 +59,39 @@ struct page *shmem_read_mapping_page_gfp(struct file *filep,
 
     return page;
 };
+
+unsigned long vm_mmap(struct file *file, unsigned long addr,
+         unsigned long len, unsigned long prot,
+         unsigned long flag, unsigned long offset)
+{
+    char *mem, *ptr;
+    int i;
+
+    if (unlikely(offset + PAGE_ALIGN(len) < offset))
+        return -EINVAL;
+    if (unlikely(offset & ~PAGE_MASK))
+        return -EINVAL;
+
+    mem = UserAlloc(len);
+    if(unlikely(mem == NULL))
+        return -ENOMEM;
+
+    for(i = offset, ptr = mem; i < offset+len; i+= 4096, ptr+= 4096)
+    {
+        struct page *page;
+
+        page = shmem_read_mapping_page_gfp(file, i/PAGE_SIZE,0);
+
+        if (unlikely(IS_ERR(page)))
+            goto err;
+
+        MapPage(ptr, (addr_t)page, PG_SHARED|PG_UW);
+    }
+
+    return (unsigned long)mem;
+err:
+    UserFree(mem);
+    return -ENOMEM;
+};
+
+

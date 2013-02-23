@@ -43,6 +43,12 @@
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
 
+static struct drm_i915_gem_object *fb_obj;
+
+struct drm_i915_gem_object *get_fb_obj()
+{
+    return fb_obj;
+};
 
 struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
 {
@@ -144,6 +150,10 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
         obj->gtt_space = &lfb_vm_node;
         obj->gtt_offset = 0;
         obj->pin_count = 2;
+        obj->cache_level = I915_CACHE_NONE;
+	    obj->base.write_domain = 0;
+	    obj->base.read_domains = I915_GEM_DOMAIN_GTT;
+
     }
 /***********************************************************************/
 
@@ -182,7 +192,7 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 	info->fix.smem_start = dev->mode_config.fb_base + obj->gtt_offset;
 	info->fix.smem_len = size;
 
-	info->screen_base = 0xFE000000;
+	info->screen_base = (void*) 0xFE000000;
 	info->screen_size = size;
 
 //	memset(info->screen_base, 0, size);
@@ -199,6 +209,8 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 
 	mutex_unlock(&dev->struct_mutex);
 //   vga_switcheroo_client_fb_set(dev->pdev, info);
+
+    fb_obj = obj;
 
 	return 0;
 

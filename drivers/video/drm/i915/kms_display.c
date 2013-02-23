@@ -624,6 +624,23 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     return old;
 };
 
+struct sna_fb
+{
+    uint32_t  width;
+    uint32_t  height;
+    uint32_t  pitch;
+    uint32_t  tiling;
+};
+
+int i915_fbinfo(struct sna_fb *fb)
+{
+    fb->width  = os_display->width;
+    fb->height = os_display->height;
+    fb->pitch  = os_display->pitch;
+    fb->tiling = 0;
+
+    return 0;
+};
 
 
 #ifdef __HWA__
