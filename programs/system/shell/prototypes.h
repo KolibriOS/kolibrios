@@ -28,6 +28,5 @@ void alias_list();
 int parameters_prepare(char *param, char* argv[]);
 void parameters_free(int argc, char* argv[]);
 
-void print_error(void);
-
 /// ===========================================================
+

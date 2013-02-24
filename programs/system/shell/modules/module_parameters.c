@@ -20,6 +20,39 @@ for (i = 0; i < param_len; i++)
     {
     switch (param[i])
            {
+
+           case '\\':
+                if (param[i+1]!='\0')
+                   {
+                    switch(param[i+1])
+                        {
+
+                        case 'n':
+                             argv[argc-1][argv_len] = '\n';
+                             argv_len++;
+                             i++;
+                             break;
+
+                        case 't':
+                             argv[argc-1][argv_len] = '\t';
+                             argv_len++;
+                             i++;
+
+                        case '\\':
+                        case '\'':
+                        case '"':
+                        case '?':
+                             argv[argc-1][argv_len] = param[i+1];
+                             argv_len++;
+                             i++;
+                             break;
+
+                        default:
+                             i++;
+                        };
+                   }
+                break;
+
            case '"':
                 if (quote == 0)
                     quote = 1;
@@ -62,6 +95,7 @@ for (i = 0; i < param_len; i++)
                    argv[argc-1][argv_len] = param[i];
                    argv_len++;
                    break;
+
            };
     }
 

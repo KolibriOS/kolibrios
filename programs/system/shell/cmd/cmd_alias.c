@@ -17,3 +17,4 @@ if ( ( 0 != result ) && ( -1 != result ) )
 
 return TRUE;
 }
+
