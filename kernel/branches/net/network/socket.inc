@@ -721,6 +721,13 @@ SOCKET_close:
         mov     dword [esp+32], 0                               ; The socket exists, so we will succeed in closing it.
 
   .socket:
+        or      [eax + SOCKET.options], SO_NONBLOCK             ; Mark the socket as non blocking, we dont want it to block any longer!
+
+        test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
+        jz      @f
+        call    SOCKET_notify.unblock                           ; Unblock it.
+  @@:
+
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .free
 
