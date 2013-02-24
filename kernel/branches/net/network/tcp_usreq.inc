@@ -57,6 +57,7 @@ TCP_usrclosed:
 
   .wait1:
         mov     [eax + TCP_SOCKET.t_state], TCPS_FIN_WAIT_1
+        ; TODO: set timer?
         pop     ebx
         ret
 
@@ -67,6 +68,7 @@ TCP_usrclosed:
 
   .disc:
         call    SOCKET_is_disconnected
+        ; TODO: set timer?
   .ret:
         pop     ebx
         ret

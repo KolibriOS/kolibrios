@@ -639,7 +639,7 @@ TCP_process_input:
         mov     eax, ebx
         call    TCP_close
 ;;;TODO: update stats
-        jmp     .drop_with_reset
+        jmp     .drop_with_reset_no_socket
 
 ;----------------------------------------
 ; Remove data beyond right edge of window (700-736)
@@ -770,14 +770,14 @@ TCP_process_input:
 ;;; TODO: update stats (tcp drops)
         mov     eax, ebx
         call    TCP_close
-        jmp     .drop
+        jmp     .drop_no_socket
 
   .rst_close:
         DEBUGF  1,"TCP_input: Closing with reset\n"
 
         mov     eax, ebx
         call    TCP_close
-        jmp     .drop
+        jmp     .drop_no_socket
 
   .no_rst:
 
@@ -1596,13 +1596,12 @@ align 4
         ret
 
   .drop_with_reset_no_socket:
-
         DEBUGF  1,"TCP_input: Drop with reset (no socket)\n"
 
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .drop_no_socket
 
-        ;;; if its a multicast/broadcast, also drop
+        ;;; TODO: if its a multicast/broadcast, also drop
 
         test    [edx + TCP_header.Flags], TH_ACK
         jnz     .respond_seg_ack

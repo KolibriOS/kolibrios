@@ -318,7 +318,7 @@ TCP_respond:
 
 
 ;-------------------------
-; TCP_respond.segment:
+; TCP_respond_segment:
 ;
 ;  IN:  edx = segment ptr (a previously received segment)
 ;       edi = ptr to dest and src IPv4 addresses
@@ -327,7 +327,7 @@ TCP_respond:
 align 4
 TCP_respond_segment:
 
-        DEBUGF  1,"TCP_respond_segment: frame=%x flags=%c\n", edx, cl
+        DEBUGF  1,"TCP_respond_segment: frame=%x flags=%x\n", edx, cl
 
 ;---------------------
 ; Create the IP packet
@@ -336,7 +336,7 @@ TCP_respond_segment:
         mov     ebx, [edi + 4]
         mov     eax, [edi]
         mov     ecx, sizeof.TCP_header
-        mov     di , IP_PROTO_TCP shl 8 + 128
+        mov     di, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
         jz      .error
         pop     esi cx
@@ -368,12 +368,11 @@ TCP_respond_segment:
 ;---------------------
 ; Fill in the checksum
 
-  .checksum:
         lea     esi, [edi - sizeof.TCP_header]
         mov     ecx, sizeof.TCP_header
         TCP_checksum (esi - sizeof.IPv4_header + IPv4_header.DestinationAddress),\      ; FIXME
                      (esi - sizeof.IPv4_header + IPv4_header.SourceAddress)
-        mov     [esi+TCP_header.Checksum], dx
+        mov     [esi + TCP_header.Checksum], dx
 
 ;--------------------
 ; And send the segment
