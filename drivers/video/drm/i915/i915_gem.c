@@ -48,6 +48,8 @@ extern int x86_clflush_size;
 #define rmb() asm volatile ("lfence")
 #define wmb() asm volatile ("sfence")
 
+struct drm_i915_gem_object *get_fb_obj();
+
 unsigned long vm_mmap(struct file *file, unsigned long addr,
          unsigned long len, unsigned long prot,
          unsigned long flag, unsigned long offset);
@@ -1051,11 +1053,10 @@ static int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
 		wait_forever = false;
 	}
 
-//   timeout_jiffies = timespec_to_jiffies(&wait_time);
+	timeout_jiffies = timespec_to_jiffies(&wait_time);
 
 	if (WARN_ON(!ring->irq_get(ring)))
 		return -ENODEV;
-#if 0
 
     /* Record current time in case interrupted by signal, or wedged * */
 	getrawmonotonic(&before);
@@ -1064,6 +1065,11 @@ static int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
 	(i915_seqno_passed(ring->get_seqno(ring, false), seqno) || \
 	atomic_read(&dev_priv->mm.wedged))
 	do {
+		if (interruptible)
+			end = wait_event_interruptible_timeout(ring->irq_queue,
+							       EXIT_COND,
+							       timeout_jiffies);
+		else
 			end = wait_event_timeout(ring->irq_queue, EXIT_COND,
 						 timeout_jiffies);
 
@@ -1089,24 +1095,13 @@ static int __wait_seqno(struct intel_ring_buffer *ring, u32 seqno,
 	case -ERESTARTSYS: /* Signal */
 		return (int)end;
 	case 0: /* Timeout */
-//		if (timeout)
-//			set_normalized_timespec(timeout, 0, 0);
+		if (timeout)
+			set_normalized_timespec(timeout, 0, 0);
 		return -ETIME;
 	default: /* Completed */
 		WARN_ON(end < 0); /* We're not aware of other errors */
 		return 0;
 	}
-
-#endif
-
-#define EXIT_COND \
-    (i915_seqno_passed(ring->get_seqno(ring, false), seqno) || \
-    atomic_read(&dev_priv->mm.wedged))
-    wait_event(ring->irq_queue, EXIT_COND);
-#undef EXIT_COND
-    ring->irq_put(ring);
-
-    return 0;
 }
 
 /**
@@ -1917,8 +1912,6 @@ i915_gem_retire_requests_ring(struct intel_ring_buffer *ring)
 {
 	uint32_t seqno;
 
-    ENTER();
-
 	if (list_empty(&ring->request_list))
 		return;
 
@@ -1972,7 +1965,6 @@ i915_gem_retire_requests_ring(struct intel_ring_buffer *ring)
 	}
 
 	WARN_ON(i915_verify_lists(ring->dev));
-    LEAVE();
 }
 
 void
@@ -1994,8 +1986,6 @@ i915_gem_retire_work_handler(struct work_struct *work)
 	struct intel_ring_buffer *ring;
 	bool idle;
 	int i;
-
-    ENTER();
 
 	dev_priv = container_of(work, drm_i915_private_t,
 				mm.retire_work.work);
@@ -2026,8 +2016,6 @@ i915_gem_retire_work_handler(struct work_struct *work)
 		intel_mark_idle(dev);
 
 	mutex_unlock(&dev->struct_mutex);
-
-    LEAVE();
 }
 
 /**

@@ -357,7 +357,7 @@ static void snb_gt_irq_handler(struct drm_device *dev,
 			       struct drm_i915_private *dev_priv,
 			       u32 gt_iir)
 {
-    printf("%s\n", __FUNCTION__);
+//    printf("%s\n", __FUNCTION__);
 
 	if (gt_iir & (GEN6_RENDER_USER_INTERRUPT |
 		      GEN6_RENDER_PIPE_CONTROL_NOTIFY_INTERRUPT))
@@ -412,8 +412,6 @@ static irqreturn_t valleyview_irq_handler(int irq, void *arg)
 	int pipe;
 	u32 pipe_stats[I915_MAX_PIPES];
 	bool blc_event;
-
-    printf("%s\n", __FUNCTION__);
 
 	atomic_inc(&dev_priv->irq_received);
 
@@ -566,8 +564,6 @@ static irqreturn_t ivybridge_irq_handler(int irq, void *arg)
 	irqreturn_t ret = IRQ_NONE;
 	int i;
 
-    printf("%s\n", __FUNCTION__);
-
 	atomic_inc(&dev_priv->irq_received);
 
 	/* disable master interrupt before clearing iir  */
@@ -642,8 +638,6 @@ static irqreturn_t ironlake_irq_handler(int irq, void *arg)
     drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
     int ret = IRQ_NONE;
     u32 de_iir, gt_iir, de_ier, pch_iir, pm_iir;
-
-    printf("%s\n", __FUNCTION__);
 
     atomic_inc(&dev_priv->irq_received);
 
@@ -2488,7 +2482,7 @@ void intel_irq_init(struct drm_device *dev)
 irqreturn_t intel_irq_handler(struct drm_device *dev)
 {
 
-    printf("i915 irq\n");
+//    printf("i915 irq\n");
 
 //    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
 

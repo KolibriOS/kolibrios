@@ -32,6 +32,14 @@ static int call_service(ioctl_t *io)
   return retval;
 };
 
+static inline void get_proc_info(char *info)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    :
+    :"a"(9), "b"(info), "c"(-1));
+}
+
 const struct intel_device_info *
 intel_detect_chipset(struct pci_device *pci);
 
@@ -336,6 +344,14 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
     struct _Pixmap src, dst;
     struct kgem_bo *src_bo;
 
+    char proc_info[1024];
+    int winx, winy;
+
+    get_proc_info(proc_info);
+
+    winx = *(uint32_t*)(proc_info+34);
+    winy = *(uint32_t*)(proc_info+38);
+    
     memset(&src, 0, sizeof(src));
     memset(&dst, 0, sizeof(dst));
 
@@ -355,7 +371,7 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
                                 &src, src_bo,
                                 &dst, sna_fb.fb_bo, &copy) )
     {                            
-    copy.blt(sna_device, &copy, src_x, src_y, w, h, dst_x, dst_y);
+        copy.blt(sna_device, &copy, src_x, src_y, w, h, winx+dst_x, winy+dst_y);
     copy.done(sna_device, &copy);
     }
 
@@ -390,7 +406,21 @@ err_2:
     
 err_1:
     return -1;        
+           
 };
+
+void sna_lock_bitmap(bitmap_t *bitmap)
+{
+	struct kgem_bo *bo;
+    
+    bo = (struct kgem_bo *)bitmap->handle;
+        
+    kgem_bo_sync__cpu(&sna_device->kgem, bo);
+
+};
+
+
+
 /*
 
 int sna_blit_tex(bitmap_t *dst_bitmap, int dst_x, int dst_y,

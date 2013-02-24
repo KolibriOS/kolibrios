@@ -7004,8 +7004,6 @@ void intel_mark_fb_idle(struct drm_i915_gem_object *obj)
 	struct drm_device *dev = obj->base.dev;
 	struct drm_crtc *crtc;
 
-    ENTER();
-
 	if (!i915_powersave)
 		return;
 

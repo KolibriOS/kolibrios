@@ -267,7 +267,7 @@ i915_gem_execbuffer_relocate_object(struct drm_i915_gem_object *obj,
 				    struct eb_objects *eb)
 {
 #define N_RELOC(x) ((x) / sizeof(struct drm_i915_gem_relocation_entry))
-	struct drm_i915_gem_relocation_entry stack_reloc[N_RELOC(512)];
+	struct drm_i915_gem_relocation_entry stack_reloc[N_RELOC(64)];
 	struct drm_i915_gem_relocation_entry __user *user_relocs;
 	struct drm_i915_gem_exec_object2 *entry = obj->exec_entry;
 	int remain, ret;
@@ -367,6 +367,8 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 	bool need_fence, need_mappable;
 	int ret;
 
+//    ENTER();
+
 	need_fence =
 		has_fenced_gpu_access &&
 		entry->flags & EXEC_OBJECT_NEEDS_FENCE &&
@@ -375,7 +377,10 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 
 	ret = i915_gem_object_pin(obj, entry->alignment, need_mappable, false);
 	if (ret)
+    {
+        FAIL();
 		return ret;
+    };
 
 	entry->flags |= __EXEC_OBJECT_HAS_PIN;
 
@@ -383,7 +388,10 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 		if (entry->flags & EXEC_OBJECT_NEEDS_FENCE) {
 			ret = i915_gem_object_get_fence(obj);
 			if (ret)
+            {
+                FAIL();
 				return ret;
+            };
 
 			if (i915_gem_object_pin_fence(obj))
 				entry->flags |= __EXEC_OBJECT_HAS_FENCE;
@@ -401,6 +409,8 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 	}
 
 	entry->offset = obj->gtt_offset;
+//    LEAVE();
+
 	return 0;
 }
 
@@ -432,6 +442,8 @@ i915_gem_execbuffer_reserve(struct intel_ring_buffer *ring,
 	struct list_head ordered_objects;
 	bool has_fenced_gpu_access = INTEL_INFO(ring->dev)->gen < 4;
 	int retry;
+
+//    ENTER();
 
 	INIT_LIST_HEAD(&ordered_objects);
 	while (!list_empty(objects)) {
@@ -514,7 +526,10 @@ err:		/* Decrement pin count for bound objects */
 			i915_gem_execbuffer_unreserve_object(obj);
 
 		if (ret != -ENOSPC || retry++)
+        {
+//            LEAVE();
 			return ret;
+        };
 
 //       ret = i915_gem_evict_everything(ring->dev);
 		if (ret)
@@ -554,8 +569,8 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
     reloc_offset = malloc(count * sizeof(*reloc_offset));
     reloc = malloc(total * sizeof(*reloc));
 	if (reloc == NULL || reloc_offset == NULL) {
-        free(reloc);
-        free(reloc_offset);
+        kfree(reloc);
+        kfree(reloc_offset);
 		mutex_lock(&dev->struct_mutex);
 		return -ENOMEM;
 	}
@@ -609,7 +624,10 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
 	for (i = 0; i < count; i++) {
 
         if(exec[i].handle == -2)
+        {
             obj = get_fb_obj();
+            drm_gem_object_reference(&obj->base);
+        }
         else
             obj = to_intel_bo(drm_gem_object_lookup(dev, file,
                               exec[i].handle));
@@ -645,8 +663,8 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
 	 */
 
 err:
-    free(reloc);
-    free(reloc_offset);
+    kfree(reloc);
+    kfree(reloc_offset);
 	return ret;
 }
 
@@ -843,12 +861,16 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 
 	if (!i915_gem_check_execbuffer(args)) {
 		DRM_DEBUG("execbuf with invalid offset/length\n");
+        FAIL();
 		return -EINVAL;
 	}
 
 	ret = validate_exec_list(exec, args->buffer_count);
 	if (ret)
+    {
+        FAIL();
 		return ret;
+    };
 
 	flags = 0;
 	if (args->flags & I915_EXEC_SECURE) {
@@ -870,6 +892,7 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 		if (ctx_id != 0) {
 			DRM_DEBUG("Ring %s doesn't support contexts\n",
 				  ring->name);
+            FAIL();
 			return -EPERM;
 		}
 		break;
@@ -978,10 +1001,16 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 		struct drm_i915_gem_object *obj;
 
         if(exec[i].handle == -2)
+        {
             obj = get_fb_obj();
+            drm_gem_object_reference(&obj->base);
+        }
         else
             obj = to_intel_bo(drm_gem_object_lookup(dev, file,
                               exec[i].handle));
+
+//        printf("%s object %p handle %d\n", __FUNCTION__, obj, exec[i].handle);
+
 		if (&obj->base == NULL) {
 			DRM_DEBUG("Invalid object handle %d at index %d\n",
 				   exec[i].handle, i);
@@ -1094,10 +1123,10 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 			goto err;
 	}
 
-//   i915_gem_execbuffer_move_to_active(&objects, ring);
-//   i915_gem_execbuffer_retire_commands(dev, file, ring);
-    ring->gpu_caches_dirty = true;
-    intel_ring_flush_all_caches(ring);
+	trace_i915_gem_ring_dispatch(ring, intel_ring_get_seqno(ring), flags);
+
+	i915_gem_execbuffer_move_to_active(&objects, ring);
+	i915_gem_execbuffer_retire_commands(dev, file, ring);
 
 err:
 	eb_destroy(eb);
@@ -1115,9 +1144,10 @@ err:
 
 pre_mutex_err:
 	kfree(cliprects);
+
+
 	return ret;
 }
-
 
 int
 i915_gem_execbuffer2(struct drm_device *dev, void *data,
@@ -1127,18 +1157,24 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
 	int ret;
 
+//    ENTER();
+
 	if (args->buffer_count < 1 ||
 	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
 		DRM_DEBUG("execbuf2 with %d buffers\n", args->buffer_count);
+        FAIL();
 		return -EINVAL;
 	}
 
-    exec2_list = kmalloc(sizeof(*exec2_list)*args->buffer_count, 0);
-	if (exec2_list == NULL)
-        exec2_list = malloc(sizeof(*exec2_list) * args->buffer_count);
+    exec2_list = malloc(sizeof(*exec2_list)*args->buffer_count);
+
+//	if (exec2_list == NULL)
+//		exec2_list = drm_malloc_ab(sizeof(*exec2_list),
+//					   args->buffer_count);
 	if (exec2_list == NULL) {
 		DRM_DEBUG("Failed to allocate exec list for %d buffers\n",
 			  args->buffer_count);
+        FAIL();
 		return -ENOMEM;
 	}
 	ret = copy_from_user(exec2_list,
@@ -1148,7 +1184,8 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 	if (ret != 0) {
 		DRM_DEBUG("copy %d exec entries failed %d\n",
 			  args->buffer_count, ret);
-        free(exec2_list);
+        kfree(exec2_list);
+        FAIL();
 		return -EFAULT;
 	}
 
@@ -1166,6 +1203,9 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 		}
 	}
 
-    free(exec2_list);
+    kfree(exec2_list);
+
+//    LEAVE();
+
 	return ret;
 }

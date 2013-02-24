@@ -1341,8 +1341,8 @@ void __stdcall run_workqueue(struct workqueue_struct *cwq)
 {
     unsigned long irqflags;
 
-    dbgprintf("wq: %x head %x, next %x\n",
-               cwq, &cwq->worklist, cwq->worklist.next);
+//    dbgprintf("wq: %x head %x, next %x\n",
+//               cwq, &cwq->worklist, cwq->worklist.next);
 
     spin_lock_irqsave(&cwq->lock, irqflags);
 
@@ -1352,8 +1352,8 @@ void __stdcall run_workqueue(struct workqueue_struct *cwq)
                                         struct work_struct, entry);
         work_func_t f = work->func;
         list_del_init(cwq->worklist.next);
-        dbgprintf("head %x, next %x\n",
-                  &cwq->worklist, cwq->worklist.next);
+//        dbgprintf("head %x, next %x\n",
+//                  &cwq->worklist, cwq->worklist.next);
 
         spin_unlock_irqrestore(&cwq->lock, irqflags);
         f(work);
@@ -1370,8 +1370,8 @@ int __queue_work(struct workqueue_struct *wq,
 {
     unsigned long flags;
 
-    dbgprintf("wq: %x, work: %x\n",
-               wq, work );
+//    dbgprintf("wq: %x, work: %x\n",
+//               wq, work );
 
     if(!list_empty(&work->entry))
         return 0;
@@ -1384,8 +1384,8 @@ int __queue_work(struct workqueue_struct *wq,
     list_add_tail(&work->entry, &wq->worklist);
 
     spin_unlock_irqrestore(&wq->lock, flags);
-   dbgprintf("wq: %x head %x, next %x\n",
-               wq, &wq->worklist, wq->worklist.next);
+//    dbgprintf("wq: %x head %x, next %x\n",
+//               wq, &wq->worklist, wq->worklist.next);
 
     return 1;
 };
@@ -1395,8 +1395,8 @@ void __stdcall delayed_work_timer_fn(unsigned long __data)
     struct delayed_work *dwork = (struct delayed_work *)__data;
     struct workqueue_struct *wq = dwork->work.data;
 
-    dbgprintf("wq: %x, work: %x\n",
-               wq, &dwork->work );
+//    dbgprintf("wq: %x, work: %x\n",
+//               wq, &dwork->work );
 
     __queue_work(wq, &dwork->work);
 }
@@ -1417,8 +1417,8 @@ int queue_delayed_work(struct workqueue_struct *wq,
 {
     u32  flags;
 
-   dbgprintf("wq: %x, work: %x\n",
-               wq, &dwork->work );
+//    dbgprintf("wq: %x, work: %x\n",
+//               wq, &dwork->work );
 
     if (delay == 0)
         return __queue_work(wq, &dwork->work);

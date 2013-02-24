@@ -3776,8 +3776,17 @@ uint32_t kgem_add_reloc(struct kgem *kgem,
 
 	assert((read_write_domain & 0x7fff) == 0 || bo != NULL);
 
-//    if( bo != NULL && bo->handle == -1)
-//        return 0;
+    if( bo != NULL && bo->handle == -2)
+    {
+   		if (bo->exec == NULL)
+			kgem_add_bo(kgem, bo);
+
+		if (read_write_domain & 0x7fff && !bo->dirty) {
+			assert(!bo->snoop || kgem->can_blt_cpu);
+			__kgem_bo_mark_dirty(bo);
+		}
+        return 0;
+    };
         
 	index = kgem->nreloc++;
 	assert(index < ARRAY_SIZE(kgem->reloc));
