@@ -18,7 +18,7 @@ int blocks_matrix[28*28]; //цвета для поля с квадратиками
 #define BLOCK_SIZE 21 //размер квадратика
 #define MARKED 7
 #define DELETED_BLOCK 6
-#define HEADER "Just Clicks v2.0"
+#define HEADER "Just Clicks v2.1"
 
 #ifndef AUTOBUILD
 #include "lang.h--"
@@ -248,6 +248,7 @@ void new_game()
 	//чтобы отметить квадратики в процессе заливки и DELETED_BLOCK  для их удаления
 	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++)
 		blocks_matrix[i] = random(5);
+	DeleteButton(2);
 }
 
 
