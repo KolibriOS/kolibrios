@@ -136,8 +136,10 @@ version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
 
-if lang eq en
-include "boot/booteng.inc"     ; english system boot messages
+if lang eq ge
+include "boot/bootge.inc"     ; german system boot messages
+else if lang eq sp
+include "boot/bootsp.inc"     ; spanish system boot messages
 else if lang eq ru
 include "boot/bootru.inc"      ; russian system boot messages
 include "boot/ru.inc"          ; Russian font
@@ -145,7 +147,7 @@ else if lang eq et
 include "boot/bootet.inc"      ; estonian system boot messages
 include "boot/et.inc"          ; Estonian font
 else
-include "boot/bootge.inc"      ; german system boot messages
+include "boot/booten.inc"      ; english system boot messages
 end if
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
@@ -723,9 +725,11 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
         or      ecx, (10+30*6) shl 16
-                else
+        else if lang eq sp
+        or      ecx, (10+33*6) shl 16
+        else
         or      ecx, (10+29*6) shl 16
-                end if
+        end if
         sub     ecx, 10
         mov     edx, 0xFFFFFF
         mov     ebx, [MEM_AMOUNT]
@@ -846,9 +850,11 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
         add     ecx, (10+19*6) shl 16 - 10         ; 'Determining amount of memory'
-                else
+        else if lang eq sp
+        add     ecx, (10+25*6) shl 16 - 10         ; 'Determining amount of memory'
+        else
         add     ecx, (10+17*6) shl 16 - 10         ; 'Determining amount of memory'
-                end if
+        end if
         mov     edx, 0xFFFFFF
         xor     edi, edi
         mov     eax, 0x00040000

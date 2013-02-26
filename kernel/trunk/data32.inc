@@ -87,6 +87,8 @@ if lang eq ru
 if preboot_blogesc
   boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
 end if
+else if lang eq sp
+  include 'data32sp.inc'
 else
   boot_initirq      db   'Initialize IRQ',0
   boot_picinit      db   'Initialize PIC',0
