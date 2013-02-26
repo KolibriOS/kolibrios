@@ -28,12 +28,12 @@ $Revision$
 align 4
 TCP_output:
 
-        DEBUGF 1,"TCP_output: socket=%x\n", eax
+        DEBUGF  1,"TCP_output: socket=%x\n", eax
 
-        pusha
+        push    eax
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
-        popa
+        pop     eax
 
 ; We'll detect the length of the data to be transmitted, and flags to be used
 ; If there is some data, or any critical controls to send (SYN / RST), then transmit

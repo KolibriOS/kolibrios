@@ -64,8 +64,9 @@ uglobal
         GATEWAY_LIST    rd MAX_NET_DEVICES
         BROADCAST_LIST  rd MAX_NET_DEVICES
 
-        IP_PACKETS_TX   rd MAX_NET_DEVICES
-        IP_PACKETS_RX   rd MAX_NET_DEVICES
+        IP_packets_tx   rd MAX_NET_DEVICES
+        IP_packets_rx   rd MAX_NET_DEVICES
+        IP_packets_dumped       rd MAX_NET_DEVICES
 
         FRAGMENT_LIST   rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
 endg
@@ -228,12 +229,12 @@ IPv4_input:                                                     ; TODO: add IPv4
         ; check if it matches local ip (Using RFC1122 strong end system model)
 
         mov     eax, [edx + IPv4_header.DestinationAddress]
-        cmp     eax, [IP_LIST+edi]
+        cmp     eax, [IP_LIST + edi]
         je      .ip_ok
 
         ; check for broadcast (IP or (not SUBNET))
 
-        cmp     eax, [BROADCAST_LIST+edi]
+        cmp     eax, [BROADCAST_LIST + edi]
         je      .ip_ok
 
         ; or a special broadcast (255.255.255.255)
@@ -262,7 +263,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 ; Now we can update stats
 
   .ip_ok:
-        inc     [IP_PACKETS_RX+edi]
+        inc     [IP_packets_rx + edi]
 
 ;----------------------------------
 ; Check if the packet is fragmented
@@ -303,7 +304,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 
   .dump:
         DEBUGF  1,"IPv4_input: dumping\n"
-;        inc     [dumped_rx_count]                              ;;; TODO
+        inc     [IP_packets_dumped]                             ; FIXME: use correct interface
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
         ret
@@ -584,7 +585,7 @@ IPv4_output:
         push    ebx                     ; push the mac onto the stack
         push    ax
 
-        inc     [IP_PACKETS_TX + edi]   ; update stats
+        inc     [IP_packets_tx + edi]   ; update stats
 
         mov     ebx, [NET_DRV_LIST + edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
@@ -674,7 +675,7 @@ IPv4_output_raw:
         push    ebx                     ; push the mac
         push    ax
 
-        inc     [IP_PACKETS_TX + edi]
+        inc     [IP_packets_tx + edi]
         mov     ebx, [NET_DRV_LIST + edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
@@ -951,11 +952,11 @@ IPv4_api:
         ret
 
   .packets_tx:
-        mov     eax, [IP_PACKETS_TX + eax]
+        mov     eax, [IP_packets_tx + eax]
         ret
 
   .packets_rx:
-        mov     eax, [IP_PACKETS_RX + eax]
+        mov     eax, [IP_packets_rx + eax]
         ret
 
   .read_ip:

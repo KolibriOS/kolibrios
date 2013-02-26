@@ -355,7 +355,7 @@ TCP_respond_segment:
         stosd
         xor     eax, eax
         stosd
-        mov     al, 0x50        ; Dataoffset: 20 bytes (sizeof.TCP_header)
+        mov     al, 0x50        ; Dataoffset: 20 bytes (sizeof.TCP_header/4 shl 4)
         stosb
         mov     al, cl
         stosb

@@ -54,6 +54,8 @@ TCP_input:
   .fail:
         DEBUGF  2, "TCP incoming queue is full, discarding packet!\n"
 
+        inc     [TCP_segments_missed]   ; FIXME: use correct interface
+
         add     esp, sizeof.TCP_queue_entry - 8
         call    kernel_free
         add     esp, 4
@@ -140,7 +142,7 @@ TCP_process_input:
   .socket_loop:
         mov     ebx, [ebx + SOCKET.NextPtr]
         or      ebx, ebx
-        jz      .drop_with_reset_no_socket
+        jz      .respond_seg_reset
 
         cmp     [ebx + SOCKET.Domain], AF_INET4
         jne     .socket_loop
@@ -245,7 +247,7 @@ TCP_process_input:
 ;--------------------
 ; Process TCP options
 
-        push    ecx     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        push    ecx
 
         movzx   ecx, [edx + TCP_header.DataOffset]
         cmp     ecx, sizeof.TCP_header                  ; Does header contain any options?
@@ -376,7 +378,7 @@ TCP_process_input:
 
   .no_options:
 
-        pop     ecx;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        pop     ecx
 
 ;-----------------------------------------------------------------------
 ; Time to do some header prediction (Original Principle by Van Jacobson)
@@ -478,12 +480,13 @@ TCP_process_input:
 ; Stop retransmit timer
         mov     [ebx + TCP_SOCKET.timer_retransmission], 0
 
-; Awaken waiting processes
+; Unlock the socket
         pusha
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
         popa
 
+; Awaken waiting processes
         mov     eax, ebx
         call    SOCKET_notify
 
@@ -527,11 +530,6 @@ TCP_process_input:
 
         jmp     .drop
 
-
-
-
-
-
 ;--------------------------------------------------
 ; Header prediction failed, do it the slow way
 
@@ -554,15 +552,13 @@ TCP_process_input:
         mov     [ebx + TCP_SOCKET.RCV_WND], eax
         pop     edx
 
-; If listen or Syn sent, go to that specific code right away
+; If we are in listen or syn_sent state, go to that specific code right away
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN
         je      .LISTEN
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_SYN_SENT
         je      .SYN_SENT
-
-        DEBUGF  1,"TCP_input: state is not listen or syn_sent\n"
 
 ;----------------------------
 ; trim any data not in window
@@ -639,7 +635,7 @@ TCP_process_input:
         mov     eax, ebx
         call    TCP_close
 ;;;TODO: update stats
-        jmp     .drop_with_reset_no_socket
+        jmp     .respond_seg_reset
 
 ;----------------------------------------
 ; Remove data beyond right edge of window (700-736)
@@ -897,14 +893,25 @@ TCP_process_input:
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
         mov     [ebx + TCP_SOCKET.SND_CWND], eax
 
-        mov     eax, ebx
-        call    TCP_output                                      ; retransmit missing segment
+; Unlock the socket
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
 
-        push    edx
+; retransmit missing segment
+        mov     eax, [esp]
+        call    TCP_output
+
+; Lock the socket again
+        mov     ecx, [esp]
+        add     ecx, SOCKET.mutex
+        call    mutex_lock
+        pop     ebx 
+
+; Continue processing
         xor     edx, edx
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
         mul     [ebx + TCP_SOCKET.t_dupacks]
-        pop     edx
         add     eax, [ebx + TCP_SOCKET.SND_SSTHRESH]
         mov     [ebx + TCP_SOCKET.SND_CWND], eax
 
@@ -925,8 +932,20 @@ TCP_process_input:
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
         add     [ebx + TCP_SOCKET.SND_CWND], eax
 
-        mov     eax, ebx
+; Unlock the socket
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+
+; retransmit missing segment
+        mov     eax, [esp]
         call    TCP_output
+
+; Lock the socket again
+        mov     ecx, [esp]
+        add     ecx, SOCKET.mutex
+        call    mutex_lock
+        pop     ebx
 
         jmp     .drop
 
@@ -1077,7 +1096,7 @@ TCP_process_input:
 
   .wakeup:
 
-        pushf                   ; Why?
+        pushf                   ; Keep the flags (Carry flag)
         mov     eax, ebx
         call    SOCKET_notify
 
@@ -1094,6 +1113,7 @@ TCP_process_input:
 
 ; General ACK handling complete
 ; Now do the state-specific ones
+; Carry flag is set when our FIN is acked
 
         mov     eax, [ebx + TCP_SOCKET.t_state]
         jmp     dword [eax*4 + .ACK_sw_list]
@@ -1150,11 +1170,10 @@ TCP_process_input:
         mov     [ebx + TCP_SOCKET.t_dupacks], 0
         jmp     .ack_processed
 
+;-------
+; LISTEN
 
-
-
-
-
+align 4
   .LISTEN:
 
         DEBUGF  1,"TCP_input: state=listen\n"
@@ -1202,15 +1221,6 @@ TCP_process_input:
 ;;;        call    SOCKET_notify_owner
 
         jmp     .trim_then_step6
-                                   
-
-
-
-
-
-
-
-
 
 ;------------
 ; Active Open
@@ -1324,9 +1334,10 @@ align 4
         dec     eax
         mov     [ebx + TCP_SOCKET.SND_WL1], eax
 
+;-------
+; step 6
 
-
-  .ack_processed:       ; (step 6)
+  .ack_processed:
 
         DEBUGF  1,"TCP_input: ACK processed\n"
 
@@ -1496,8 +1507,6 @@ align 4
         or      [eax + TCP_SOCKET.t_flags], TF_ACKNOW
         jmp     .need_output
 
-
-
   .drop_with_reset:
         DEBUGF  1,"TCP_input: Drop with reset\n"
 
@@ -1538,7 +1547,6 @@ align 4
 
   .need_output:
         DEBUGF  1,"TCP_input: need output\n"
-
         call    TCP_output
 
   .dumpit:
@@ -1546,9 +1554,10 @@ align 4
 
         call    kernel_free
         add     esp, 4
-
         ret
 
+;---------
+; Respond
 
   .respond_ack:
         push    ebx
@@ -1557,7 +1566,6 @@ align 4
         pop     ebx
         jmp     .destroy_new_socket
 
-
   .respond_syn:
         push    ebx
         mov     cl, TH_RST + TH_ACK
@@ -1565,39 +1573,7 @@ align 4
         pop     ebx
         jmp     .destroy_new_socket
 
-
-
-;-----
-; Drop
-
-  .drop:
-
-        DEBUGF  1,"TCP_input: Dropping packet\n"
-
-        pusha
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
-        popa
-
-  .destroy_new_socket:
-
-        test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_DROPSOCKET
-        jz      .drop_no_socket
-
-        mov     eax, ebx
-        call    SOCKET_free
-
-  .drop_no_socket:
-        DEBUGF  1,"TCP_input: Drop (no socket)\n"
-
-        call    kernel_free
-        add     esp, 4
-
-        ret
-
-  .drop_with_reset_no_socket:
-        DEBUGF  1,"TCP_input: Drop with reset (no socket)\n"
-
+  .respond_seg_reset:
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .drop_no_socket
 
@@ -1612,13 +1588,36 @@ align 4
         jmp     .drop_no_socket
 
   .respond_seg_ack:
-
         mov     cl, TH_RST
         call    TCP_respond_segment
         jmp     .drop_no_socket
 
   .respond_seg_syn:
-
         mov     cl, TH_RST + TH_ACK
         call    TCP_respond_segment
         jmp     .drop_no_socket
+
+;-----
+; Drop
+
+  .drop:
+        DEBUGF  1,"TCP_input: Dropping segment\n"
+
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
+  .destroy_new_socket:
+        test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_DROPSOCKET
+        jz      .drop_no_socket
+
+        mov     eax, ebx
+        call    SOCKET_free
+
+  .drop_no_socket:
+        DEBUGF  1,"TCP_input: Drop (no socket)\n"
+
+        call    kernel_free
+        add     esp, 4
+        ret

@@ -131,8 +131,10 @@ align 4
 uglobal
         TCP_segments_tx         rd MAX_NET_DEVICES
         TCP_segments_rx         rd MAX_NET_DEVICES
-        TCP_bytes_rx            rq MAX_NET_DEVICES
-        TCP_bytes_tx            rq MAX_NET_DEVICES
+        TCP_segments_missed     rd MAX_NET_DEVICES
+        TCP_segments_dumped     rd MAX_NET_DEVICES
+;        TCP_bytes_rx            rq MAX_NET_DEVICES
+;        TCP_bytes_tx            rq MAX_NET_DEVICES
         TCP_sequence_num        dd ?
         TCP_queue               rd TCP_QUEUE_SIZE*sizeof.TCP_queue_entry/4
 endg
@@ -190,6 +192,10 @@ TCP_api:
         jz      .packets_tx     ; 0
         dec     bl
         jz      .packets_rx     ; 1
+        dec     bl
+        jz      .packets_missed ; 2
+        dec     bl
+        jz      .packets_dumped ; 3
 
   .error:
         mov     eax, -1
@@ -201,4 +207,12 @@ TCP_api:
 
   .packets_rx:
         mov     eax, [TCP_segments_rx + eax]
+        ret
+
+  .packets_missed:
+        mov     eax, [TCP_segments_missed + eax]
+        ret
+
+  .packets_dumped:
+        mov     eax, [TCP_segments_dumped + eax]
         ret
