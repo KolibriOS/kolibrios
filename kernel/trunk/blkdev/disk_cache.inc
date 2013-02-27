@@ -630,7 +630,7 @@ disk_sync:
         call    write_cache
         mov     [hdd_appl_data], 1
         call    write_cache
-        mov     eax, [hd_status]
+        mov     eax, [hd_error]
         ret
 @@:
 ; The algorithm is straightforward.
