@@ -65,7 +65,7 @@ INI_SEC_PREFIX equ ''
 section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
 
-	mcall	9,p_info,-1
+	mcall	9,p_info2,-1
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
 	mov	[active_process],eax	; WINDOW SLOT
