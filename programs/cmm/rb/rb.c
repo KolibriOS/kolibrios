@@ -1,5 +1,6 @@
-//@RB - v0.6
+//@RB - v0.62
 
+#define MEMSIZE 0x3E80
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h"
 #include "..\lib\figures.h"
@@ -39,7 +40,7 @@ dword stak[100];
 void main()
 {
 	mouse mm;
-	byte thread_id;
+	byte can_show;
 	SetEventMask(100000b);
 	
 	loop() switch(WaitEvent())
@@ -47,10 +48,13 @@ void main()
 		case evMouse:
 			mm.get();
 
-			if (GetPointOwner(mm.x, mm.y)==1) && (mm.pkm)
+			if (GetPointOwner(mm.x, mm.y)<>1) can_show = 0;
+			if (mm.pkm) can_show = 1;
+			if (!mm.pkm) && (can_show)
 			{
 				SwitchToAnotherThread();
 				CreateThread(#window,#stak);
+				can_show = 0;
 			}
 	}
 }
