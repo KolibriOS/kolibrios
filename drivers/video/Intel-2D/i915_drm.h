@@ -941,4 +941,12 @@ struct drm_i915_reg_read {
 	__u64 offset;
 	__u64 val; /* Return value */
 };
+
+struct drm_i915_mask_update {
+    __u32 handle;
+    __u32 bo_size;
+    __u32 bo_pitch;  
+    __u32 bo_map;
+};
+
 #endif				/* _I915_DRM_H_ */

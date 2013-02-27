@@ -8,6 +8,7 @@
 #include <pixlib2.h>
 
 static struct sna_fb sna_fb;
+static struct kgem_bo *mask_bo;
 
 typedef struct __attribute__((packed))
 {
@@ -419,65 +420,154 @@ void sna_lock_bitmap(bitmap_t *bitmap)
 
 };
 
-
-
-/*
-
-int sna_blit_tex(bitmap_t *dst_bitmap, int dst_x, int dst_y,
-                  int w, int h, bitmap_t *src_bitmap, int src_x, int src_y,
-                  bitmap_t *mask_bitmap)
-
+int sna_create_mask()
 {
-    struct sna_composite_op cop;
-    batchbuffer_t  execbuffer;
-    BoxRec box;
+	struct kgem_bo *bo;
+    char proc_info[1024];
+    int width, height;
+    int i;
 
-    struct kgem_bo src_bo, mask_bo, dst_bo;
+    get_proc_info(proc_info);
 
-    memset(&cop, 0, sizeof(cop));
-    memset(&execbuffer,  0, sizeof(execbuffer));
-    memset(&src_bo, 0, sizeof(src_bo));
-    memset(&dst_bo, 0, sizeof(dst_bo));
-    memset(&mask_bo, 0, sizeof(mask_bo));
+    width  = *(uint32_t*)(proc_info+42)+1;
+    height = *(uint32_t*)(proc_info+46)+1;
+    
+    printf("%s width %d height %d\n", __FUNCTION__, width, height);
+    
+    bo = kgem_create_2d(&sna_device->kgem, width, height,
+                        8,I915_TILING_NONE, CREATE_CPU_MAP);
+    
+    if(bo == NULL)
+        goto err_1;
+     
+    int *map = kgem_bo_map(&sna_device->kgem, bo);
+    if(map == NULL)
+        goto err_2;
+        
+    memset(map, 0, bo->pitch * height);
+    
+    mask_bo = bo;
 
-    src_bo.gaddr  = src_bitmap->gaddr;
-    src_bo.pitch  = src_bitmap->pitch;
-    src_bo.tiling = 0;
-
-    dst_bo.gaddr  = dst_bitmap->gaddr;
-    dst_bo.pitch  = dst_bitmap->pitch;
-    dst_bo.tiling = 0;
-
-    mask_bo.gaddr  = mask_bitmap->gaddr;
-    mask_bo.pitch  = mask_bitmap->pitch;
-    mask_bo.tiling = 0;
-
-    box.x1 = dst_x;
-    box.y1 = dst_y;
-    box.x2 = dst_x+w;
-    box.y2 = dst_y+h;
-
-    sna_device->render.composite(sna_device, 0,
-                                 src_bitmap, &src_bo,
-                                 mask_bitmap, &mask_bo,
-                                 dst_bitmap, &dst_bo,
-                                 src_x, src_y,
-                                 src_x, src_y,
-                                 dst_x, dst_y,
-                                 w, h, &cop);
-
-    cop.box(sna_device, &cop, &box);
-    cop.done(sna_device, &cop);
-
-    INIT_LIST_HEAD(&execbuffer.objects);
-    list_add_tail(&src_bitmap->obj->exec_list, &execbuffer.objects);
-    list_add_tail(&mask_bitmap->obj->exec_list, &execbuffer.objects);
-
-    _kgem_submit(&sna_device->kgem, &execbuffer);
-
+    return 0;
+    
+err_2:
+    kgem_bo_destroy(&sna_device->kgem, bo);
+    
+err_1:
+    return -1; 
+           
 };
 
-*/
+
+bool
+gen6_composite(struct sna *sna,
+              uint8_t op,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo, 
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
+
+
+#define MAP(ptr) ((void*)((uintptr_t)(ptr) & ~3))
+
+int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
+                  int w, int h, int src_x, int src_y)
+
+{
+
+//    box.x1 = dst_x;
+//    box.y1 = dst_y;
+//    box.x2 = dst_x+w;
+//    box.y2 = dst_y+h;
+
+
+ //   cop.box(sna_device, &cop, &box);
+
+    struct drm_i915_mask_update update;
+    
+    struct sna_composite_op composite;
+    struct _Pixmap src, dst, mask;
+    struct kgem_bo *src_bo;
+
+    char proc_info[1024];
+    int winx, winy, winw, winh;
+
+    get_proc_info(proc_info);
+
+    winx = *(uint32_t*)(proc_info+34);
+    winy = *(uint32_t*)(proc_info+38);
+    winw = *(uint32_t*)(proc_info+42)+1;
+    winh = *(uint32_t*)(proc_info+46)+1;
+    
+    memset(&src, 0, sizeof(src));
+    memset(&dst, 0, sizeof(dst));
+    memset(&mask, 0, sizeof(dst));
+
+    src.drawable.bitsPerPixel = 32;
+    src.drawable.width  = src_bitmap->width;
+    src.drawable.height = src_bitmap->height;
+
+    dst.drawable.bitsPerPixel = 32;
+    dst.drawable.width  = sna_fb.width;
+    dst.drawable.height = sna_fb.height;
+    
+    mask.drawable.bitsPerPixel = 8;
+    mask.drawable.width  = winw;
+    mask.drawable.height = winh;
+
+    memset(&composite, 0, sizeof(composite));
+
+    src_bo = (struct kgem_bo*)src_bitmap->handle;
+    
+    
+    if( gen6_composite(sna_device, PictOpSrc,
+		      &src, src_bo,
+		      &mask, mask_bo,
+		      &dst, sna_fb.fb_bo, 
+                                 src_x, src_y,
+                                 dst_x, dst_y,
+              winx+dst_x, winy+dst_y,
+              w, h,
+              &composite) )
+    {
+	    struct sna_composite_rectangles r;
+        
+	    r.src.x = src_x;
+	    r.src.y = src_y;
+	    r.mask.x = dst_x;
+	    r.mask.y = dst_y;
+		r.dst.x = winx+dst_x;
+	    r.dst.y = winy+dst_y;
+	    r.width  = w;
+	    r.height = h;
+        
+        composite.blt(sna_device, &composite, &r);
+        composite.done(sna_device, &composite);
+    };
+    
+    VG_CLEAR(update);
+	update.handle = mask_bo->handle;
+	update.bo_size   = __kgem_bo_size(mask_bo);
+	update.bo_pitch  = mask_bo->pitch;
+	update.bo_map    = MAP(mask_bo->map);
+	drmIoctl(sna_device->kgem.fd, SRV_MASK_UPDATE, &update);
+
+    kgem_submit(&sna_device->kgem);
+ 
+    return 0;            
+}
+
+
+
+
+
+
+
+
 
 static const struct intel_device_info intel_generic_info = {
 	.gen = -1,

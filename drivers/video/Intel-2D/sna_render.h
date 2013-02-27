@@ -47,7 +47,7 @@ struct sna_composite_op {
 
     struct sna_composite_channel {
         struct kgem_bo *bo;
-//        PictTransform *transform;
+        PictTransform *transform;
         uint16_t width;
         uint16_t height;
         uint32_t pict_format;
@@ -160,7 +160,6 @@ struct sna_render {
 #define PREFER_GPU_RENDER 0x2
 #define PREFER_GPU_SPANS 0x4
 
-#if 0
 
 	bool (*composite)(struct sna *sna, uint8_t op,
 			  PicturePtr dst, PicturePtr src, PicturePtr mask,
@@ -170,6 +169,7 @@ struct sna_render {
 			  int16_t w, int16_t h,
 			  struct sna_composite_op *tmp);
 
+#if 0
 	bool (*check_composite_spans)(struct sna *sna, uint8_t op,
 				      PicturePtr dst, PicturePtr src,
 				      int16_t w, int16_t h, unsigned flags);

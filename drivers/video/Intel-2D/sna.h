@@ -74,6 +74,7 @@ int drmIoctl(int fd, unsigned long request, void *arg);
 #define SRV_I915_GEM_THROTTLE       32
 #define SRV_FBINFO                  33
 #define SRV_I915_GEM_EXECBUFFER2    34 
+#define SRV_MASK_UPDATE             35
 
 #define SRV_I915_GEM_MMAP_GTT       31
 
@@ -112,16 +113,60 @@ typedef enum {
     PIXMAN_x2r10g10b10 = PIXMAN_FORMAT(32,PIXMAN_TYPE_ARGB,0,10,10,10),
     PIXMAN_a2r10g10b10 = PIXMAN_FORMAT(32,PIXMAN_TYPE_ARGB,2,10,10,10),
     PIXMAN_x2b10g10r10 = PIXMAN_FORMAT(32,PIXMAN_TYPE_ABGR,0,10,10,10),
-    PIXMAN_a2b10g10r10 = PIXMAN_FORMAT(32,PIXMAN_TYPE_ABGR,2,10,10,10)
+    PIXMAN_a2b10g10r10 = PIXMAN_FORMAT(32,PIXMAN_TYPE_ABGR,2,10,10,10),
 
+    PIXMAN_a8 =		 PIXMAN_FORMAT(8,PIXMAN_TYPE_A,8,0,0,0)
+    
 } pixman_format_code_t;
 
+typedef enum _PictFormatShort {
+
+    PICT_a8r8g8b8 = PIXMAN_a8r8g8b8,
+    PICT_x8r8g8b8 = PIXMAN_x8r8g8b8,
+    PICT_a8b8g8r8 = PIXMAN_a8b8g8r8,
+    PICT_x8b8g8r8 = PIXMAN_x8b8g8r8,
+    PICT_b8g8r8a8 = PIXMAN_b8g8r8a8,
+    PICT_b8g8r8x8 = PIXMAN_b8g8r8x8,
+
+/* 8bpp formats */
+    PICT_a8 = PIXMAN_a8,
+
+/* 4bpp formats */
+} PictFormatShort;
+
+#define RepeatNone                          0
+#define RepeatNormal                        1
+#define RepeatPad                           2
+#define RepeatReflect                       3
+
+#define PictFilterNearest	0
+#define PictFilterBilinear	1
+
+#define PictFilterFast		2
+#define PictFilterGood		3
+#define PictFilterBest		4
+
+#define PictFilterConvolution	5
+
+typedef int32_t			pixman_fixed_16_16_t;
+typedef pixman_fixed_16_16_t	pixman_fixed_t;
+
+struct pixman_transform
+{
+    pixman_fixed_t	matrix[3][3];
+};
 
 typedef unsigned long   Picture;
 typedef unsigned long   PictFormat;
 
 typedef struct _Pixmap  *PixmapPtr;
 typedef struct _Picture *PicturePtr;
+typedef struct _Drawable *DrawablePtr;
+typedef struct _PictFormat *PictFormatPtr;
+
+typedef struct pixman_transform PictTransform, *PictTransformPtr;
+
+
 
 typedef struct _Drawable {
     unsigned char type;         /* DRAWABLE_<type> */
@@ -153,6 +198,46 @@ typedef struct _Pixmap {
 
     PixmapPtr master_pixmap;    /* pointer to master copy of pixmap for pixmap sharing */
 } PixmapRec;
+
+typedef struct _PictFormat {
+    uint32_t id;
+    uint32_t format;              /* except bpp */
+    unsigned char type;
+    unsigned char depth;
+//    DirectFormatRec direct;
+//   IndexFormatRec index;
+} PictFormatRec;
+
+typedef struct _Picture {
+    DrawablePtr pDrawable;
+//    PictFormatPtr pFormat;
+    PictFormatShort format;     /* PICT_FORMAT */
+    int refcnt;
+    uint32_t id;
+    unsigned int repeat:1;
+    unsigned int graphicsExposures:1;
+    unsigned int subWindowMode:1;
+    unsigned int polyEdge:1;
+    unsigned int polyMode:1;
+    unsigned int freeCompClip:1;
+    unsigned int clientClipType:2;
+    unsigned int componentAlpha:1;
+    unsigned int repeatType:2;
+    unsigned int filter:3;
+//    unsigned int stateChanges:CPLastBit;
+//    unsigned int unused:18 - CPLastBit;
+
+//    PicturePtr alphaMap;
+
+//    PictTransform *transform;
+
+//    SourcePictPtr pSourcePict;
+//    xFixed *filter_params;
+//    int filter_nparams;
+} PictureRec;
+
+#define PolyModePrecise			    0
+#define PolyModeImprecise		    1
 
 
 struct sna_fb
@@ -262,31 +347,6 @@ struct sna {
 #endif
 };
 
-static inline int vertex_space(struct sna *sna)
-{
-    return sna->render.vertex_size - sna->render.vertex_used;
-}
-
-static inline void vertex_emit(struct sna *sna, float v)
-{
-    assert(sna->render.vertex_used < sna->render.vertex_size);
-    sna->render.vertices[sna->render.vertex_used++] = v;
-}
-
-static inline void vertex_emit_2s(struct sna *sna, int16_t x, int16_t y)
-{
-    int16_t *v = (int16_t *)&sna->render.vertices[sna->render.vertex_used++];
-    assert(sna->render.vertex_used <= sna->render.vertex_size);
-    v[0] = x;
-    v[1] = y;
-}
-
-static inline void batch_emit(struct sna *sna, uint32_t dword)
-{
-    assert(sna->kgem.mode != KGEM_NONE);
-    assert(sna->kgem.nbatch + KGEM_BATCH_RESERVED < sna->kgem.surface);
-    sna->kgem.batch[sna->kgem.nbatch++] = dword;
-}
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
