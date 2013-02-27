@@ -642,6 +642,190 @@ int i915_fbinfo(struct sna_fb *fb)
     return 0;
 };
 
+typedef struct
+{
+    int left;
+    int top;
+    int right;
+    int bottom;
+}rect_t;
+
+struct drm_i915_mask {
+    __u32 handle;
+    __u32 bo_size;
+    __u32 bo_pitch;
+    __u32 bo_map;
+};
+
+#define CURRENT_TASK             (0x80003000)
+
+static u32_t get_display_map()
+{
+    u32_t   addr;
+
+    addr = (u32_t)os_display;
+    addr+= sizeof(display_t);            /*  shoot me  */
+    return *(u32_t*)addr;
+}
+
+void  FASTCALL GetWindowRect(rect_t *rc)__asm__("GetWindowRect");
+
+int i915_mask_update(struct drm_device *dev, void *data,
+            struct drm_file *file)
+{
+    struct drm_i915_mask *mask = data;
+    struct drm_gem_object *obj;
+    static unsigned int mask_seqno[256];
+    rect_t winrc;
+    u32    slot;
+    int    ret;
+
+    obj = drm_gem_object_lookup(dev, file, mask->handle);
+    if (obj == NULL)
+        return -ENOENT;
+
+    if (!obj->filp) {
+        drm_gem_object_unreference_unlocked(obj);
+        return -EINVAL;
+    }
+
+    GetWindowRect(&winrc);
+    {
+        static warn_count;
+
+        if(warn_count < 1)
+        {
+            printf("left %d top %d right %d bottom %d\n",
+                    winrc.left, winrc.top, winrc.right, winrc.bottom);
+            printf("mask pitch %d data %p\n", mask->bo_pitch, mask->bo_size);
+            warn_count++;
+        };
+    };
+
+    slot = *((u8*)CURRENT_TASK);
+
+    if( mask_seqno[slot] != os_display->mask_seqno)
+    {
+        u8* src_offset;
+        u8* dst_offset;
+        u32 ifl;
+
+        ret = i915_mutex_lock_interruptible(dev);
+        if (ret)
+            return ret;
+
+        ret = i915_gem_object_set_to_cpu_domain(to_intel_bo(obj), true);
+        if(ret !=0 )
+        {
+            dbgprintf("%s fail\n", __FUNCTION__);
+            return ret;
+        };
+
+//        printf("width %d height %d\n", winrc.right, winrc.bottom);
+
+//        slot = 0x01;
+
+
+        src_offset = (u8*)( winrc.top*os_display->width + winrc.left);
+        src_offset+= get_display_map();
+        dst_offset = (u8*)mask->bo_map;
+
+        u32_t tmp_h = winrc.bottom - winrc.top;
+
+        ifl = safe_cli();
+        {
+            mask_seqno[slot] = os_display->mask_seqno;
+
+            slot|= (slot<<8)|(slot<<16)|(slot<<24);
+
+            __asm__ __volatile__ (
+                "movd       %[slot],   %%xmm6    \n"
+            "punpckldq  %%xmm6, %%xmm6            \n"
+            "punpcklqdq %%xmm6, %%xmm6            \n"
+            :: [slot]  "m" (slot)
+            :"xmm6");
+
+            while( tmp_h--)
+            {
+                int tmp_w = mask->bo_pitch;
+
+                u8* tmp_src = src_offset;
+                u8* tmp_dst = dst_offset;
+
+                src_offset+= os_display->width;
+                dst_offset+= mask->bo_pitch;
+
+//            while( tmp_w--)
+//            {
+//                *(tmp_src) = (*tmp_dst==slot)?0x1:0x00;
+//                tmp_src++;
+//                tmp_dst++;
+//            };
+                while(tmp_w >= 64)
+                {
+                    __asm__ __volatile__ (
+                    "movdqu     (%0),   %%xmm0            \n"
+                    "movdqu   16(%0),   %%xmm1            \n"
+                    "movdqu   32(%0),   %%xmm2            \n"
+                    "movdqu   48(%0),   %%xmm3            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm1            \n"
+                    "pcmpeqb    %%xmm6, %%xmm2            \n"
+                    "pcmpeqb    %%xmm6, %%xmm3            \n"
+                    "movdqa     %%xmm0,   (%%edi)         \n"
+                    "movdqa     %%xmm1, 16(%%edi)         \n"
+                    "movdqa     %%xmm2, 32(%%edi)         \n"
+                    "movdqa     %%xmm3, 48(%%edi)         \n"
+
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0","xmm1","xmm2","xmm3");
+                    tmp_w -= 64;
+                    tmp_src += 64;
+                    tmp_dst += 64;
+                }
+
+                if( tmp_w >= 32 )
+                {
+                    __asm__ __volatile__ (
+                    "movdqu     (%0),   %%xmm0            \n"
+                    "movdqu   16(%0),   %%xmm1            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm1            \n"
+                    "movdqa     %%xmm0,   (%%edi)         \n"
+                    "movdqa     %%xmm1, 16(%%edi)         \n"
+
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0","xmm1");
+                    tmp_w -= 32;
+                    tmp_src += 32;
+                    tmp_dst += 32;
+                }
+
+                while( tmp_w > 0 )
+                {
+                    __asm__ __volatile__ (
+                    "movdqu     (%0),   %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "movdqa     %%xmm0,   (%%edi)         \n"
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0");
+                    tmp_w -= 16;
+                    tmp_src += 16;
+                    tmp_dst += 16;
+                }
+            };
+        };
+        safe_sti(ifl);
+    }
+
+    drm_gem_object_unreference(obj);
+
+    mutex_unlock(&dev->struct_mutex);
+
+    return 0;
+}
+
+
 
 #ifdef __HWA__
 

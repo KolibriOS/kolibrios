@@ -47,6 +47,9 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
 void get_pci_info(struct pci_device *dev);
 int gem_getparam(struct drm_device *dev, void *data);
 
+int i915_mask_update(struct drm_device *dev, void *data,
+            struct drm_file *file);
+
 
 static char  log[256];
 

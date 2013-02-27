@@ -221,6 +221,7 @@ i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 //   if (obj->active && in_atomic())
 //       return -EFAULT;
 
+
 	reloc->delta += target_offset;
 	if (use_cpu_reloc(obj)) {
 		uint32_t page_offset = reloc->offset & ~PAGE_MASK;
