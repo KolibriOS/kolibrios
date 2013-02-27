@@ -74,7 +74,7 @@ format_disk_fat16:
         mov     edx, eax
 @@:
 ; 2. Zero all system areas on the disk.
-        lea     ecx, [256*(1+FAT16_ROOTDIR_SECTORS)/2+edx+255]
+        lea     ecx, [256*(1+FAT16_ROOTDIR_SECTORS)+edx+255]
         and     ecx, not 255
         shr     ecx, 1
         xor     eax, eax
