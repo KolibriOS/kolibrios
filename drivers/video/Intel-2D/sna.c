@@ -113,16 +113,16 @@ bool sna_accel_init(struct sna *sna)
     no_render_init(sna);
 
  	if (sna->info->gen >= 0100) {
-/*	} else if (sna->info->gen >= 070) {
+	} else if (sna->info->gen >= 070) {
 		if (gen7_render_init(sna))
-			backend = "IvyBridge";  */
+			backend = "IvyBridge"; 
 	} else if (sna->info->gen >= 060) {
 		if (gen6_render_init(sna))
 			backend = "SandyBridge";
-/*	} else if (sna->info->gen >= 050) {
+	} else if (sna->info->gen >= 050) {
 		if (gen5_render_init(sna))
 			backend = "Ironlake";
-	} else if (sna->info->gen >= 040) {
+/*	} else if (sna->info->gen >= 040) {
 		if (gen4_render_init(sna))
 			backend = "Broadwater/Crestline";
 	} else if (sna->info->gen >= 030) {
@@ -334,7 +334,6 @@ done:
     return kgem_bo_reference(cache->bo[i]);
 }
 
-#endif
 
 
 int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
@@ -381,6 +380,8 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
 //    __asm__ __volatile__("int3");
 
 };
+#endif
+
 
 int sna_create_bitmap(bitmap_t *bitmap)
 {
@@ -524,7 +525,7 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
     src_bo = (struct kgem_bo*)src_bitmap->handle;
     
     
-    if( gen6_composite(sna_device, PictOpSrc,
+    if( sna_device->render.blit_tex(sna_device, PictOpSrc,
 		      &src, src_bo,
 		      &mask, mask_bo,
 		      &dst, sna_fb.fb_bo, 

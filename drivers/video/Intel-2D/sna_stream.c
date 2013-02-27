@@ -93,6 +93,30 @@ struct kgem_bo *sna_static_stream_fini(struct sna *sna,
 
 	return bo;
 }
+
+unsigned
+sna_static_stream_compile_sf(struct sna *sna,
+			     struct sna_static_stream *stream,
+			     bool (*compile)(struct brw_compile *))
+{
+	struct brw_compile p;
+
+	brw_compile_init(&p, sna->kgem.gen,
+			 sna_static_stream_map(stream,
+					       64*sizeof(uint32_t), 64));
+
+	if (!compile(&p)) {
+		stream->used -= 64*sizeof(uint32_t);
+		return 0;
+	}
+
+	assert(p.nr_insn*sizeof(struct brw_instruction) <= 64*sizeof(uint32_t));
+
+	stream->used -= 64*sizeof(uint32_t) - p.nr_insn*sizeof(struct brw_instruction);
+	return sna_static_stream_offsetof(stream, p.store);
+}
+
+
 unsigned
 sna_static_stream_compile_wm(struct sna *sna,
 			     struct sna_static_stream *stream,

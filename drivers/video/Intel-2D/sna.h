@@ -320,9 +320,9 @@ struct sna {
     } blt_state;
     union {
 //        struct gen2_render_state gen2;
-//        struct gen3_render_state gen3;
-//        struct gen4_render_state gen4;
-//        struct gen5_render_state gen5;
+        struct gen3_render_state gen3;
+        struct gen4_render_state gen4;
+        struct gen5_render_state gen5;
         struct gen6_render_state gen6;
 		struct gen7_render_state gen7;
     } render_state;
@@ -347,6 +347,11 @@ struct sna {
 #endif
 };
 
+static inline struct sna *
+to_sna_from_kgem(struct kgem *kgem)
+{
+	return container_of(kgem, struct sna, kgem);
+}
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))

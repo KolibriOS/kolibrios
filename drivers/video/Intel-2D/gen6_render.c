@@ -2683,8 +2683,8 @@ fallback:
 }
 
 
-bool
-gen6_composite(struct sna *sna,
+static bool
+gen6_blit_tex(struct sna *sna,
               uint8_t op,
 		      PixmapPtr src, struct kgem_bo *src_bo,
 		      PixmapPtr mask,struct kgem_bo *mask_bo,
@@ -2721,7 +2721,6 @@ gen6_composite(struct sna *sna,
 	tmp->is_affine = tmp->src.is_affine;
 	tmp->has_component_alpha = false;
 	tmp->need_magic_ca_pass = false;
-
 
 	tmp->mask.repeat = SAMPLER_EXTEND_NONE;
 	tmp->mask.filter = SAMPLER_FILTER_NEAREST;
@@ -3479,7 +3478,10 @@ bool gen6_render_init(struct sna *sna)
 //    sna->render.video = gen6_render_video;
 
 //    sna->render.copy_boxes = gen6_render_copy_boxes;
-    sna->render.copy = gen6_render_copy;
+
+    sna->render.blit_tex = gen6_blit_tex;
+
+//    sna->render.copy = gen6_render_copy;
 
 //    sna->render.fill_boxes = gen6_render_fill_boxes;
 //    sna->render.fill = gen6_render_fill;

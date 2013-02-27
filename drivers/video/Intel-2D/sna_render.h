@@ -217,6 +217,17 @@ struct sna_render {
 
 #endif
 
+    bool (*blit_tex)(struct sna *sna,
+              uint8_t op,
+              PixmapPtr src, struct kgem_bo *src_bo,
+              PixmapPtr mask,struct kgem_bo *mask_bo,
+              PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
+
 	bool (*copy)(struct sna *sna, uint8_t alu,
 		     PixmapPtr src, struct kgem_bo *src_bo,
 		     PixmapPtr dst, struct kgem_bo *dst_bo,
