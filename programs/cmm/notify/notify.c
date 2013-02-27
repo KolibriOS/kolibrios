@@ -1,5 +1,6 @@
 //notify 0.5
 
+#define MEMSIZE 0x3E80
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 
