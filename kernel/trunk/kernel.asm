@@ -131,7 +131,11 @@ use16
                   org   0x0
         jmp     start_of_code
 
+if lang eq sp
+include "kernelsp.inc"  ; spanish kernel messages
+else
 version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
+end if
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
@@ -5631,4 +5635,6 @@ include "data32.inc"
 __REV__ = __REV
 
 uglobals_size = $ - endofcode
+if lang ~ eq sp
 diff16 "end of kernel code",0,$
+end if
