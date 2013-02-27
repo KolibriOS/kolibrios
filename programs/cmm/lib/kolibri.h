@@ -7,8 +7,13 @@ char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
-dword  alloc_mem    = #0x00100000;
-dword  x86esp_reg   = #0x00100000;
+#ifdef MEMSIZE
+	dword  alloc_mem    = MEMSIZE;
+	dword  x86esp_reg   = MEMSIZE;
+#else
+	dword  alloc_mem    = #0x00100000;
+	dword  x86esp_reg   = #0x00100000;	
+#endif
 dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 char param[4096];
