@@ -629,7 +629,9 @@ disk_sync:
         mov     [hdd_appl_data], 0
         call    write_cache
         mov     [hdd_appl_data], 1
-        jmp     write_cache
+        call    write_cache
+        mov     eax, [hd_status]
+        ret
 @@:
 ; The algorithm is straightforward.
         push    esi
