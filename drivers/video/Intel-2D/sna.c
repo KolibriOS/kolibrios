@@ -10,6 +10,16 @@
 static struct sna_fb sna_fb;
 static struct kgem_bo *mask_bo;
 
+static int mask_width, mask_height;
+
+static inline void delay(uint32_t time)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(5), "b"(time)
+    :"memory");
+};
+
 typedef struct __attribute__((packed))
 {
   unsigned      handle;
@@ -96,7 +106,7 @@ void sna_vertex_init(struct sna *sna)
     sna->render.active = 0;
 }
 
-bool sna_accel_init(struct sna *sna)
+int sna_accel_init(struct sna *sna)
 {
     const char *backend;
 
@@ -122,15 +132,12 @@ bool sna_accel_init(struct sna *sna)
 	} else if (sna->info->gen >= 050) {
 		if (gen5_render_init(sna))
 			backend = "Ironlake";
-/*	} else if (sna->info->gen >= 040) {
+	} else if (sna->info->gen >= 040) {
 		if (gen4_render_init(sna))
 			backend = "Broadwater/Crestline";
-	} else if (sna->info->gen >= 030) {
+/*	} else if (sna->info->gen >= 030) {
 		if (gen3_render_init(sna))
-			backend = "gen3";
-	} else if (sna->info->gen >= 020) {
-		if (gen2_render_init(sna))
-			backend = "gen2"; */
+			backend = "gen3"; */
 	}
 
 	DBG(("%s(backend=%s, prefer_gpu=%x)\n",
@@ -156,10 +163,12 @@ int sna_init(uint32_t service)
 
     DBG(("%s\n", __FUNCTION__));
 
-    sna = malloc(sizeof(struct sna));
+    sna = malloc(sizeof(*sna));
     if (sna == NULL)
-        return false;
+        return 0;
 
+    memset(sna, 0, sizeof(*sna));
+    
     io.handle   = service;
     io.io_code  = SRV_GET_PCI_INFO;
     io.input    = &device;
@@ -168,13 +177,18 @@ int sna_init(uint32_t service)
     io.out_size = 0;
 
     if (call_service(&io)!=0)
-        return false;
-
+    {
+        free(sna); 
+        return 0;
+    };
+    
     sna->PciInfo = &device;
 
   	sna->info = intel_detect_chipset(sna->PciInfo);
 
     kgem_init(&sna->kgem, service, sna->PciInfo, sna->info->gen);
+    
+    delay(10);
 /*
     if (!xf86ReturnOptValBool(sna->Options,
                   OPTION_RELAXED_FENCING,
@@ -202,7 +216,22 @@ int sna_init(uint32_t service)
 
     sna->flags = 0;
 
-    return sna_accel_init(sna);
+    sna_accel_init(sna);
+
+    delay(10);
+    
+    return sna->render.caps;
+}
+
+void sna_fini()
+{
+    if( sna_device )
+    {
+        sna_device->render.fini(sna_device);
+        kgem_bo_destroy(&sna_device->kgem, mask_bo);
+        kgem_close_batches(&sna_device->kgem);        
+   	    kgem_cleanup_cache(&sna_device->kgem);
+    };
 }
 
 #if 0
@@ -362,7 +391,7 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
     dst.drawable.bitsPerPixel = 32;
     dst.drawable.width  = sna_fb.width;
     dst.drawable.height = sna_fb.height;
-
+    
     memset(&copy, 0, sizeof(copy));
 
     src_bo = (struct kgem_bo*)src_bitmap->handle;
@@ -372,13 +401,13 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
                                 &dst, sna_fb.fb_bo, &copy) )
     {                            
         copy.blt(sna_device, &copy, src_x, src_y, w, h, winx+dst_x, winy+dst_y);
-    copy.done(sna_device, &copy);
+        copy.done(sna_device, &copy);
     }
 
     kgem_submit(&sna_device->kgem);
-
+    
 //    __asm__ __volatile__("int3");
-
+    
 };
 #endif
 
@@ -386,10 +415,10 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
 int sna_create_bitmap(bitmap_t *bitmap)
 {
 	struct kgem_bo *bo;
-
+    
     bo = kgem_create_2d(&sna_device->kgem, bitmap->width, bitmap->height,
                         32,I915_TILING_NONE, CREATE_CPU_MAP);
-
+    
     if(bo == NULL)
         goto err_1;
      
@@ -407,8 +436,18 @@ err_2:
     kgem_bo_destroy(&sna_device->kgem, bo);
     
 err_1:
-    return -1;        
+    return -1; 
            
+};
+
+void sna_destroy_bitmap(bitmap_t *bitmap)
+{
+	struct kgem_bo *bo;
+    
+    bo = (struct kgem_bo *)bitmap->handle;
+        
+    kgem_bo_destroy(&sna_device->kgem, bo);
+
 };
 
 void sna_lock_bitmap(bitmap_t *bitmap)
@@ -424,18 +463,12 @@ void sna_lock_bitmap(bitmap_t *bitmap)
 int sna_create_mask()
 {
 	struct kgem_bo *bo;
-    char proc_info[1024];
     int width, height;
     int i;
 
-    get_proc_info(proc_info);
-
-    width  = *(uint32_t*)(proc_info+42)+1;
-    height = *(uint32_t*)(proc_info+46)+1;
+    printf("%s width %d height %d\n", __FUNCTION__, sna_fb.width, sna_fb.height);
     
-    printf("%s width %d height %d\n", __FUNCTION__, width, height);
-    
-    bo = kgem_create_2d(&sna_device->kgem, width, height,
+    bo = kgem_create_2d(&sna_device->kgem, sna_fb.width, sna_fb.height,
                         8,I915_TILING_NONE, CREATE_CPU_MAP);
     
     if(bo == NULL)
@@ -447,8 +480,10 @@ int sna_create_mask()
         
     memset(map, 0, bo->pitch * height);
     
-    mask_bo = bo;
-
+    mask_bo     = bo;
+    mask_width  = width;
+    mask_height = height;
+    
     return 0;
     
 err_2:
@@ -504,6 +539,14 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
     winw = *(uint32_t*)(proc_info+42)+1;
     winh = *(uint32_t*)(proc_info+46)+1;
     
+    VG_CLEAR(update);
+	update.handle = mask_bo->handle;
+//	update.bo_size   = __kgem_bo_size(mask_bo);
+//	update.bo_pitch  = mask_bo->pitch;
+	update.bo_map    = (__u32)MAP(mask_bo->map);
+	drmIoctl(sna_device->kgem.fd, SRV_MASK_UPDATE, &update);
+    mask_bo->pitch = update.bo_pitch;
+    
     memset(&src, 0, sizeof(src));
     memset(&dst, 0, sizeof(dst));
     memset(&mask, 0, sizeof(dst));
@@ -517,8 +560,8 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
     dst.drawable.height = sna_fb.height;
     
     mask.drawable.bitsPerPixel = 8;
-    mask.drawable.width  = winw;
-    mask.drawable.height = winh;
+    mask.drawable.width  = update.width;
+    mask.drawable.height = update.height;
 
     memset(&composite, 0, sizeof(composite));
 
@@ -529,8 +572,8 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
 		      &src, src_bo,
 		      &mask, mask_bo,
 		      &dst, sna_fb.fb_bo, 
-                                 src_x, src_y,
-                                 dst_x, dst_y,
+              src_x, src_y,
+              dst_x, dst_y,
               winx+dst_x, winy+dst_y,
               w, h,
               &composite) )
@@ -550,13 +593,6 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
         composite.done(sna_device, &composite);
     };
     
-    VG_CLEAR(update);
-	update.handle = mask_bo->handle;
-	update.bo_size   = __kgem_bo_size(mask_bo);
-	update.bo_pitch  = mask_bo->pitch;
-	update.bo_map    = MAP(mask_bo->map);
-	drmIoctl(sna_device->kgem.fd, SRV_MASK_UPDATE, &update);
-
     kgem_submit(&sna_device->kgem);
  
     return 0;            

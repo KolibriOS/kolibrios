@@ -255,6 +255,7 @@ static uint32_t gen7_get_blend(int op,
     src = GEN7_BLENDFACTOR_ONE; //gen6_blend_op[op].src_blend;
     dst = GEN7_BLENDFACTOR_INV_SRC_ALPHA; //gen6_blend_op[op].dst_blend;
 
+
 #if 0
 	/* If there's no dst alpha channel, adjust the blend op so that
 	 * we'll treat it always as 1.
@@ -1357,6 +1358,14 @@ gen7_align_vertex(struct sna *sna, const struct sna_composite_op *op)
 	}
 }
 
+fastcall static void
+gen7_render_composite_blt(struct sna *sna,
+			  const struct sna_composite_op *op,
+			  const struct sna_composite_rectangles *r)
+{
+	gen7_get_rectangles(sna, op, 1, gen7_emit_composite_state);
+	op->prim_emit(sna, op, r);
+}
 static uint32_t
 gen7_composite_create_blend_state(struct sna_static_stream *stream)
 {
@@ -1390,14 +1399,6 @@ gen7_composite_create_blend_state(struct sna_static_stream *stream)
 }
 
 
-fastcall static void
-gen7_render_composite_blt(struct sna *sna,
-			  const struct sna_composite_op *op,
-			  const struct sna_composite_rectangles *r)
-{
-	gen7_get_rectangles(sna, op, 1, gen7_emit_composite_state);
-	op->prim_emit(sna, op, r);
-}
 
 static void gen7_render_composite_done(struct sna *sna,
 				       const struct sna_composite_op *op)
@@ -1502,6 +1503,93 @@ gen7_blit_tex(struct sna *sna,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 static void gen7_render_flush(struct sna *sna)
 {
 	gen4_vertex_close(sna);
@@ -1509,8 +1597,6 @@ static void gen7_render_flush(struct sna *sna)
 	assert(sna->render.vb_id == 0);
 	assert(sna->render.vertex_offset == 0);
 }
-
-
 
 static void
 gen7_render_context_switch(struct kgem *kgem,
@@ -1592,7 +1678,6 @@ static bool is_mobile(struct sna *sna)
 {
 	return (DEVICE_ID(sna->PciInfo) & 0xf) == 0x6;
 }
-
 
 static bool gen7_render_setup(struct sna *sna)
 {
@@ -1680,7 +1765,6 @@ static bool gen7_render_setup(struct sna *sna)
     return state->general_bo != NULL;
 }
 
-
 bool gen7_render_init(struct sna *sna)
 {
     if (!gen7_render_setup(sna))
@@ -1698,6 +1782,8 @@ bool gen7_render_init(struct sna *sna)
 
     sna->render.max_3d_size = GEN7_MAX_SIZE;
     sna->render.max_3d_pitch = 1 << 18;
+    sna->render.caps = HW_BIT_BLIT | HW_TEX_BLIT;
+    
     return true;
 }
 

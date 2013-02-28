@@ -116,7 +116,6 @@ sna_static_stream_compile_sf(struct sna *sna,
 	return sna_static_stream_offsetof(stream, p.store);
 }
 
-
 unsigned
 sna_static_stream_compile_wm(struct sna *sna,
 			     struct sna_static_stream *stream,

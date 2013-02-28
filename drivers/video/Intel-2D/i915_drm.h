@@ -944,6 +944,8 @@ struct drm_i915_reg_read {
 
 struct drm_i915_mask_update {
     __u32 handle;
+    __u32 width;
+    __u32 height;
     __u32 bo_size;
     __u32 bo_pitch;  
     __u32 bo_map;

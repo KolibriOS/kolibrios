@@ -42,7 +42,7 @@
 
 #include "brw/brw.h"
 #include "gen6_render.h"
-
+#include "gen4_source.h"
 #include "gen4_vertex.h"
 
 #define NO_COMPOSITE 0
@@ -209,11 +209,11 @@ static uint32_t gen6_get_blend(int op,
 {
 	uint32_t src, dst;
 
-//    src = GEN6_BLENDFACTOR_ONE; //gen6_blend_op[op].src_blend;
-//    dst = GEN6_BLENDFACTOR_ZERO; //gen6_blend_op[op].dst_blend;
 
     src = GEN6_BLENDFACTOR_ONE; //gen6_blend_op[op].src_blend;
     dst = GEN6_BLENDFACTOR_INV_SRC_ALPHA; //gen6_blend_op[op].dst_blend;
+
+//    dst = GEN6_BLENDFACTOR_ZERO; //gen6_blend_op[op].dst_blend;
 
 #if 0
 	/* If there's no dst alpha channel, adjust the blend op so that
@@ -1836,10 +1836,6 @@ static void gen6_render_composite_done(struct sna *sna,
         gen6_magic_ca_pass(sna, op);
     }
 
-	if (op->mask.bo)
-		kgem_bo_destroy(&sna->kgem, op->mask.bo);
-	if (op->src.bo)
-		kgem_bo_destroy(&sna->kgem, op->src.bo);
 
 //   sna_render_composite_redirect_done(sna, op);
 }
@@ -2708,8 +2704,7 @@ gen6_blit_tex(struct sna *sna,
     tmp->dst.format = PICT_x8r8g8b8;
 
 
-	tmp->src.repeat = RepeatNone;
-	tmp->src.filter = PictFilterNearest;
+	tmp->src.repeat = SAMPLER_EXTEND_NONE;
     tmp->src.is_affine = true;
 
     tmp->src.bo = src_bo;
@@ -2717,6 +2712,12 @@ gen6_blit_tex(struct sna *sna,
     tmp->src.card_format = gen6_get_card_format(tmp->src.pict_format);
     tmp->src.width  = src->drawable.width;
     tmp->src.height = src->drawable.height;
+
+	if ( (tmp->src.width  == width) &&
+         (tmp->src.height == height) )
+		tmp->src.filter = SAMPLER_FILTER_NEAREST;
+	else
+		tmp->src.filter = SAMPLER_FILTER_BILINEAR;
 
 	tmp->is_affine = tmp->src.is_affine;
 	tmp->has_component_alpha = false;
@@ -3494,6 +3495,8 @@ bool gen6_render_init(struct sna *sna)
 
     sna->render.max_3d_size = GEN6_MAX_SIZE;
     sna->render.max_3d_pitch = 1 << 18;
+    sna->render.caps = HW_BIT_BLIT | HW_TEX_BLIT;
+    
 	return true;
 }
 

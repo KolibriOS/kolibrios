@@ -38,6 +38,7 @@
 #define constant __attribute__((const))
 #define pure __attribute__((pure))
 #define __packed__ __attribute__((__packed__))
+#define flatten __attribute__((flatten))
 #else
 #define likely(expr) (expr)
 #define unlikely(expr) (expr)
@@ -48,6 +49,7 @@
 #define constant
 #define pure
 #define __packed__
+#define flatten
 #endif
 
 #ifdef HAVE_VALGRIND

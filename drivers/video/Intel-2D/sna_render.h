@@ -10,6 +10,10 @@
 
 #define GXinvalid 0xff
 
+#define HW_BIT_BLIT         (1<<0)      /* BGRX blitter             */
+#define HW_TEX_BLIT         (1<<1)      /* stretch blit             */
+#define HW_VID_BLIT         (1<<2)      /* planar and packed video  */
+
 struct sna;
 struct sna_glyph;
 struct sna_video;
@@ -151,6 +155,8 @@ struct sna_copy_op {
 
 struct sna_render {
 	int active;
+	
+	int caps;
 
 	int max_3d_size;
 	int max_3d_pitch;
@@ -159,7 +165,6 @@ struct sna_render {
 #define PREFER_GPU_BLT 0x1
 #define PREFER_GPU_RENDER 0x2
 #define PREFER_GPU_SPANS 0x4
-
 
 	bool (*composite)(struct sna *sna, uint8_t op,
 			  PicturePtr dst, PicturePtr src, PicturePtr mask,

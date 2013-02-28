@@ -1062,7 +1062,6 @@ gen5_blit_tex(struct sna *sna,
 	gen5_align_vertex(sna, tmp);
 	return true;
 
-	return false;
 }
 
 
@@ -1407,5 +1406,7 @@ bool gen5_render_init(struct sna *sna)
 
 	sna->render.max_3d_size = MAX_3D_SIZE;
 	sna->render.max_3d_pitch = 1 << 18;
+    sna->render.caps = HW_BIT_BLIT | HW_TEX_BLIT;
+	
 	return true;
 }

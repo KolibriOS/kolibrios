@@ -32,6 +32,18 @@
 #include "sna.h"
 #include "sna_reg.h"
 
+static inline
+int user_free(void *mem)
+{
+    int  val;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(val)
+    :"a"(68),"b"(12),"c"(mem));
+    return val;
+}
+
+
 
 unsigned int cpu_cache_size();
 
@@ -969,7 +981,7 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
     DBG(("%s: maximum batch size? %d\n", __FUNCTION__,
          kgem->batch_size));
 
-    kgem->min_alignment = 4;
+    kgem->min_alignment = 16;
     if (gen < 040)
         kgem->min_alignment = 64;
 
@@ -1315,7 +1327,7 @@ static void kgem_bo_release_map(struct kgem *kgem, struct kgem_bo *bo)
 	     bo->handle, kgem->vma[type].count));
 
 	VG(if (type) VALGRIND_MAKE_MEM_NOACCESS(MAP(bo->map), bytes(bo)));
-//	munmap(MAP(bo->map), bytes(bo));
+	user_free(MAP(bo->map));
 	bo->map = NULL;
 
 	if (!list_is_empty(&bo->vma)) {
@@ -1327,6 +1339,8 @@ static void kgem_bo_release_map(struct kgem *kgem, struct kgem_bo *bo)
 static void kgem_bo_free(struct kgem *kgem, struct kgem_bo *bo)
 {
 	DBG(("%s: handle=%d\n", __FUNCTION__, bo->handle));
+	printf("%s: handle=%d\n", __FUNCTION__, bo->handle);
+
 	assert(bo->refcnt == 0);
 	assert(bo->exec == NULL);
 	assert(!bo->snoop || bo->rq == NULL);
@@ -1587,6 +1601,8 @@ static void __kgem_bo_destroy(struct kgem *kgem, struct kgem_bo *bo)
 {
 	DBG(("%s: handle=%d\n", __FUNCTION__, bo->handle));
 
+	printf("%s: handle=%d\n", __FUNCTION__, bo->handle);
+		
 	assert(list_is_empty(&bo->list));
 	assert(bo->refcnt == 0);
 	assert(!bo->purged);
@@ -4198,7 +4214,18 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
     return 1;
 };
 
+void kgem_close_batches(struct kgem *kgem)
+{
+    int n;
 
+	for (n = 0; n < ARRAY_SIZE(kgem->pinned_batches); n++) {
+		while (!list_is_empty(&kgem->pinned_batches[n])) {
+			kgem_bo_destroy(kgem,
+					list_first_entry(&kgem->pinned_batches[n],
+							 struct kgem_bo, list));
+		}
+	}
+};
 
 
 

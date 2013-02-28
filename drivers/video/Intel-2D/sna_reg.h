@@ -51,6 +51,7 @@
 #define XY_TEXT_IMMEDIATE_BLT		((2<<29)|(0x31<<22)|(1<<16))
 #define XY_SRC_COPY_BLT_CMD		((2<<29)|(0x53<<22)|6)
 #define SRC_COPY_BLT_CMD		((2<<29)|(0x43<<22)|0x4)
+#define XY_PAT_BLT			((2<<29)|(0x51<<22)|0x4)
 #define XY_PAT_BLT_IMMEDIATE		((2<<29)|(0x72<<22))
 #define XY_MONO_PAT			((0x2<<29)|(0x52<<22)|0x7)
 #define XY_MONO_SRC_COPY		((0x2<<29)|(0x54<<22)|(0x6))

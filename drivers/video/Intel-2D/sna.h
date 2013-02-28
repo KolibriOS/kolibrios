@@ -134,6 +134,10 @@ typedef enum _PictFormatShort {
 /* 4bpp formats */
 } PictFormatShort;
 
+#define PIXMAN_FORMAT_A(f)	(((f) >> 12) & 0x0f)
+
+#define PICT_FORMAT_A(f)	PIXMAN_FORMAT_A(f)
+
 #define RepeatNone                          0
 #define RepeatNormal                        1
 #define RepeatPad                           2
