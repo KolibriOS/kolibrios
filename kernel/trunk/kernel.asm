@@ -612,6 +612,52 @@ no_mode_0x12:
         mov     [mem_BACKGROUND], 4
         mov     [img_background], static_background_data
 
+; SET UP OS TASK
+
+        mov     esi, boot_setostask
+        call    boot_log
+
+        xor     eax, eax
+        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
+        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
+        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
+
+        ; name for OS/IDLE process
+
+        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
+        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
+        mov     edi, [os_stack_seg]
+        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
+        add     edi, 0x2000-512
+        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
+        mov     dword [SLOT_BASE+256+APPDATA.terminate_protection], 80000001h
+
+        mov     esi, fpu_data
+        mov     ecx, 512/4
+        cld
+        rep movsd
+
+        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
+        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
+
+        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
+        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
+        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
+
+        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
+        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
+
+        ; task list
+        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
+        inc     eax
+        mov     dword [CURRENT_TASK], eax
+        mov     dword [TASK_COUNT], eax
+        mov     [current_slot], SLOT_BASE+256
+        mov     [TASK_BASE], dword TASK_DATA
+        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
+        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
+
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
         stdcall kernel_alloc, 0x10000/8
@@ -752,7 +798,6 @@ end if
 
         mov     [pci_access_enabled], 1
 
-
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
         mov     esi, boot_windefs
@@ -771,52 +816,6 @@ end if
         mov     esi, boot_resirqports
         call    boot_log
         call    reserve_irqs_ports
-
-; SET UP OS TASK
-
-        mov     esi, boot_setostask
-        call    boot_log
-
-        xor     eax, eax
-        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
-        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
-
-        ; name for OS/IDLE process
-
-        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
-        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-        mov     edi, [os_stack_seg]
-        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-        add     edi, 0x2000-512
-        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
-        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
-        ; [SLOT_BASE+256+APPDATA.io_map] was set earlier
-
-        mov     esi, fpu_data
-        mov     ecx, 512/4
-        cld
-        rep movsd
-
-        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
-
-        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
-        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
-        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
-
-        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
-        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
-
-        ; task list
-        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
-        inc     eax
-        mov     dword [CURRENT_TASK], eax
-        mov     dword [TASK_COUNT], eax
-        mov     [current_slot], SLOT_BASE+256
-        mov     [TASK_BASE], dword TASK_DATA
-        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
-        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
 
         call    init_display
         mov     eax, [def_cursor]
@@ -931,8 +930,8 @@ end if
         call    fs_execute_from_sysdir
 
 ;        cmp   eax,2                  ; continue if a process has been loaded
-        sub     eax, 2
-        jz      first_app_found
+        test    eax, eax
+        jns     first_app_found
 
         mov     esi, boot_failed
         call    boot_log
@@ -2109,6 +2108,12 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
         cmp     byte [ecx], 9
+        jz      noprocessterminate
+        push    ecx edx
+        lea     edx, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        call    request_terminate
+        pop     edx ecx
+        test    eax, eax
         jz      noprocessterminate
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
@@ -3489,7 +3494,14 @@ nobackgr:
 ;--------------------------------------
 align 4
 markz:
+        push    ecx edx
+        lea     edx, [(edx-(TASK_DATA and 1FFFFFFFh))*8+SLOT_BASE]
+        call    request_terminate
+        pop     edx ecx
+        test    eax, eax
+        jz      @f
         mov     [edx+TASKDATA.state], byte 3
+@@:
         add     edx, 0x20
         loop    markz
 ;--------------------------------------

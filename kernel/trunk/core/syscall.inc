@@ -190,7 +190,7 @@ iglobal
       dd syscall_move_window     ; 67-Window move or resize
       dd f68                     ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
-      dd file_system_lfn         ; 70-Common file system interface, version 2
+      dd file_system_lfn_protected; 70-Common file system interface, version 2
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
       dd blit_32                 ; 73-blitter;

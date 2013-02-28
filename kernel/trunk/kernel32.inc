@@ -137,7 +137,7 @@ struct  APPDATA
         ipc_size        dd ?
         event_mask      dd ?
         debugger_slot   dd ?
-                        dd ?
+        terminate_protection dd ?
         keyboard_mode   db ?
                         rb 3
         dir_table       dd ?

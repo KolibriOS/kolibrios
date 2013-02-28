@@ -1023,6 +1023,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     [eax+SLOT_BASE+APPDATA.fpu_state], edi
         mov     [eax+SLOT_BASE+APPDATA.exc_handler], 0
         mov     [eax+SLOT_BASE+APPDATA.except_mask], 0
+        mov     [eax+SLOT_BASE+APPDATA.terminate_protection], 80000001h
 
 ;set default io permission map
         mov     ecx, [SLOT_BASE+256+APPDATA.io_map]
