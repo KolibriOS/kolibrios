@@ -52,6 +52,7 @@ TCP_input:
         ret
 
   .fail:
+        popf
         DEBUGF  2, "TCP incoming queue is full, discarding packet!\n"
 
         inc     [TCP_segments_missed]   ; FIXME: use correct interface
