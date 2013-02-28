@@ -52,31 +52,48 @@ void init_frame(window_t *win);
 window_t *create_window(char *caption, int style, int x, int y,
                           int w, int h, handler_t handler)
 {
+    char proc_info[1024];
     int stride;
-    ctx_t *ctx = &Window.client_ctx;
+
+//    __asm__ __volatile__("int3");
+
+    
+//    ctx_t *ctx = &Window.client_ctx;
 
     if(handler==0) return 0;
 
+    BeginDraw();
+    DrawWindow(x, y, w-1, h-1,
+               NULL,0,0x41);
+    EndDraw();
+
+    get_proc_info(proc_info);
+
+    x = *(uint32_t*)(proc_info+34);
+    y = *(uint32_t*)(proc_info+38);
+    w = *(uint32_t*)(proc_info+42)+1;
+    h = *(uint32_t*)(proc_info+46)+1;
+
     Window.handler = handler;
-    Window.ctx = ctx;
+ //   Window.ctx = ctx;
 
     list_initialize(&Window.link);
     list_initialize(&Window.child);
 
 
-    Window.bitmap.width  = 1920;
-    Window.bitmap.height = 1080;
-    Window.bitmap.flags  = 0;
+//    Window.bitmap.width  = 1920;
+//    Window.bitmap.height = 1080;
+//    Window.bitmap.flags  = 0;
 
-    if( create_bitmap(&Window.bitmap) )
-    {
-        printf("not enough memory for window bitmap\n");
-        return 0;
-    }
+ //   if( create_bitmap(&Window.bitmap) )
+ //   {
+ //       printf("not enough memory for window bitmap\n");
+ //       return 0;
+  //  }
 
-    ctx->pixmap   = &Window.bitmap;
-    ctx->offset_x = 0;
-    ctx->offset_y = 0;
+ //   ctx->pixmap   = &Window.bitmap;
+ //   ctx->offset_x = 0;
+ //   ctx->offset_y = 0;
 
     Window.rc.l = x;
     Window.rc.t = y;
@@ -235,12 +252,12 @@ void window_update_layout(window_t *win)
         win->win_state = ROLLED;
         return;
     };
-
+    
     if(state & 1)
         win->win_state = MAXIMIZED;
     else
         win->win_state = NORMAL;
-
+    
     if( (winx != win->rc.l) || (winy != win->rc.t) )
     {
         win->rc.l = winx;
@@ -253,6 +270,7 @@ void window_update_layout(window_t *win)
         winh  == win->h)
         return;
 
+#if 0
     int old_size;
     int new_size;
     int pitch;
@@ -271,6 +289,7 @@ void window_update_layout(window_t *win)
 
     win->bitmap.width = win->w;
     win->bitmap.pitch = pitch;
+#endif
 
     win->rc.r = winx + winw;
     win->rc.b = winy + winh;
@@ -553,10 +572,10 @@ void  init_winlib(void)
     list_initialize(&timers);
 };
 
-ctx_t *get_window_ctx()
-{
-    return &Window.client_ctx;
-};
+//ctx_t *get_window_ctx()
+//{
+//    return &Window.client_ctx;
+//};
 
 void update_rect(ctrl_t *ctrl)
 {

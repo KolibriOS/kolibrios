@@ -160,7 +160,6 @@ void draw_caption(caption_t *cpt)
     rc.r = cpt->ctrl.w - 25 - 16 - 5 - 8;
     rc.b = 18;
     
-    printf(cpt->text);
     draw_text_ext(cpt->ctx.pixmap, win_font, cpt->text, &rc, 0xFFFFFFFF);
 
     ctrl_t *child;
@@ -219,7 +218,6 @@ int caption_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
             switch((short)arg1)
             {
                 case ID_CLOSE:
-                    win = (window_t*)ctrl->parent;
                     win->win_command = WIN_CLOSED;
                     break;
 
@@ -227,6 +225,8 @@ int caption_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                     __asm__ __volatile__(
                     "int $0x40"
                     ::"a"(18),"b"(10));
+                    win->win_state = MINIMIZED;
+                    send_message((ctrl_t*)win, MSG_SIZE, 0, 0);
                     break;
                 default:
                     break;

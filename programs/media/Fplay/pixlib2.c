@@ -23,6 +23,16 @@
 #define __ALIGN_MASK(x,mask)  (((x)+(mask))&~(mask))
 #define ALIGN(x,a)            __ALIGN_MASK(x,(typeof(x))(a)-1)
 
+int sna_init(uint32_t service);
+void sna_fini();    
+
+int  sna_create_bitmap(bitmap_t *bitmap);
+void sna_destroy_bitmap(bitmap_t *bitmap);
+void sna_lock_bitmap(bitmap_t *bitmap);
+int  sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
+                  int w, int h, int src_x, int src_y);
+int  sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
+                  int w, int h, int src_x, int src_y);
 
 
 static uint32_t service;
@@ -39,7 +49,6 @@ typedef struct
   void          *output;
   int           out_size;
 }ioctl_t;
-
 
 
 typedef struct
@@ -121,6 +130,7 @@ uint32_t init_pixlib(uint32_t caps)
         (DISPLAY_VERSION < (api_version >> 16)))
         goto fail;
 
+#if 0
 /*
  * Let's see what this service can do
 */
@@ -145,8 +155,16 @@ uint32_t init_pixlib(uint32_t caps)
                (blit_caps & HW_BIT_BLIT) != 0 ?"HW_BIT_BLIT ":"",
                (blit_caps & HW_TEX_BLIT) != 0 ?"HW_TEX_BLIT ":"",
                (blit_caps & HW_VID_BLIT) != 0 ?"HW_VID_BLIT ":"");
+#endif
 
-    blit_caps&= caps;
+    blit_caps = caps & sna_init(service);
+
+    if( blit_caps )
+        printf("service caps %s%s%s\n",
+               (blit_caps & HW_BIT_BLIT) != 0 ?"HW_BIT_BLIT ":"",
+               (blit_caps & HW_TEX_BLIT) != 0 ?"HW_TEX_BLIT ":"",
+               (blit_caps & HW_VID_BLIT) != 0 ?"HW_VID_BLIT ":"");
+    
     return blit_caps;
 
 fail:
@@ -154,61 +172,27 @@ fail:
     return 0;
 };
 
+void done_pixlib()
+{
+    
+    sna_fini();    
+    
+};
+
 
 int create_bitmap(bitmap_t *bitmap)
 {
  //    __asm__ __volatile__("int3");
 
-    if( bitmap->flags &&  blit_caps & HW_BIT_BLIT )
-    {
-        struct __attribute__((packed))  /*     SRV_CREATE_SURFACE    */
-        {
-            uint32_t  handle;           // ignored
-            void      *data;            // ignored
-
-            uint32_t  width;
-            uint32_t  height;
-            uint32_t  pitch;            // ignored
-
-            uint32_t  max_width;
-            uint32_t  max_height;
-            uint32_t  format;           // reserved mbz
-        }io_10;
-
-        ioctl_t io;
-        int     err;
-
-//        printf("create bitmap %d x %d\n",
-//                bitmap->width, bitmap->height);
-
-        io_10.width      = bitmap->width;
-        io_10.height     = bitmap->height;
-        io_10.max_width  = screen_width;
-        io_10.max_height = screen_height;
-        io_10.format     = 0;
-
-        io.handle   = service;
-        io.io_code  = SRV_CREATE_SURFACE;
-        io.input    = &io_10;
-        io.inp_size = BUFFER_SIZE(8);
-        io.output   = NULL;
-        io.out_size = 0;
-
-        err = call_service(&io);
-        if(err==0)
-        {
-            bitmap->handle = io_10.handle;
-            bitmap->pitch  = io_10.pitch;
-            bitmap->data   = io_10.data;
-//            printf("Create hardware surface %x pitch %d, buffer %x\n",
-//                     bitmap->handle, bitmap->pitch, bitmap->data);
-            return 0;
-        };
-    };
-
     uint32_t   size;
     uint32_t   pitch;
     uint8_t   *buffer;
+
+    if( bitmap->flags & (HW_BIT_BLIT | HW_TEX_BLIT ))
+        return sna_create_bitmap(bitmap);
+
+//    if( bitmap->flags &&  blit_caps & HW_BIT_BLIT )
+//        return sna_create_bitmap(bitmap);
 
     pitch = ALIGN(bitmap->width*4, 16);
     size  = pitch * bitmap->height;
@@ -226,47 +210,24 @@ int create_bitmap(bitmap_t *bitmap)
     printf("Cannot alloc frame buffer\n\r");
 
     return -1;
+    
+};
+
+int destroy_bitmap(bitmap_t *bitmap)
+{
+    if( bitmap->flags & (HW_BIT_BLIT | HW_TEX_BLIT ))
+        sna_destroy_bitmap(bitmap);
+    return 0;    
 };
 
 int lock_bitmap(bitmap_t *bitmap)
 {
  //    __asm__ __volatile__("int3");
-    int err = 0;
 
-    if( bitmap->flags && blit_caps & HW_BIT_BLIT )
-    {
-        struct __attribute__((packed))  /*     SRV_LOCK_SURFACE    */
-        {
-            uint32_t  handle;
-            void      *data;
-            uint32_t  pitch;
+    if( bitmap->flags & (HW_BIT_BLIT | HW_TEX_BLIT ))
+        sna_lock_bitmap(bitmap);
 
-        }io_12;
-
-        ioctl_t io;
-
-        io_12.handle  = bitmap->handle;
-        io_12.pitch   = 0;
-        io_12.data    = 0;
-
-        io.handle   = service;
-        io.io_code  = SRV_LOCK_SURFACE;
-        io.input    = &io_12;
-        io.inp_size = BUFFER_SIZE(3);
-        io.output   = NULL;
-        io.out_size = 0;
-
-        err = call_service(&io);
-        if(err==0)
-        {
-            bitmap->pitch  = io_12.pitch;
-            bitmap->data   = io_12.data;
-//            printf("Lock hardware surface %x pitch %d, buffer %x\n",
-//                     bitmap->handle, bitmap->pitch, bitmap->data);
-        };
-    };
-
-    return err;
+    return 0;
 };
 
 int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
@@ -274,46 +235,9 @@ int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
 {
     int err;
 
-    if( bitmap->flags && blit_caps & HW_BIT_BLIT )
-    {
+    if( bitmap->flags & (HW_BIT_BLIT | HW_TEX_BLIT ) )
+        return sna_blit_tex(bitmap, dst_x, dst_y, w, h, 0, 0);
 
-/*
- *   Now you will experience the full power of the dark side...
-*/
-
-        struct __attribute__((packed))
-        {
-            uint32_t handle;
-            int      dst_x;
-            int      dst_y;
-            int      src_x;
-            int      src_y;
-            uint32_t w;
-            uint32_t h;
-        }io_15;
-
-        ioctl_t io;
-
-        io_15.handle = bitmap->handle;
-        io_15.dst_x  = dst_x;
-        io_15.dst_y  = dst_y;
-        io_15.src_x  = 0;
-        io_15.src_y  = 0;
-        io_15.w      = w;
-        io_15.h      = h;
-
-        io.handle    = service;
-        io.io_code   = SRV_BLIT_BITMAP;
-        io.input     = &io_15;
-        io.inp_size  = BUFFER_SIZE(7);
-        io.output    = NULL;
-        io.out_size  = 0;
-
-//        printf("do blit %x pitch %d\n",bitmap->handle,
-//                bitmap->pitch);
-        err = call_service(&io);
-        return err;
-    };
 
     struct blit_call bc;
 

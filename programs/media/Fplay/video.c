@@ -68,17 +68,6 @@ int init_video(AVCodecContext *ctx)
     width = ctx->width;
     height = ctx->height;
 
-    printf("w = %d  h = %d\n\r", ctx->width, ctx->height);
-
-//    __asm__ __volatile__("int3");
-
-    main_render = create_render(ctx->width, ctx->height,
-                           ctx->pix_fmt, HW_BIT_BLIT|HW_TEX_BLIT);
-    if( main_render == NULL)
-    {
-        printf("Cannot create render\n\r");
-        return 0;
-    };
 
     Frame = avcodec_alloc_frame();
     if ( Frame == NULL )
@@ -229,7 +218,11 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
     {
         case MSG_SIZE:
             //printf("MSG_SIZE\n");
-            render_adjust_size(main_render, win);
+            if(main_render)
+            {
+                render_adjust_size(main_render, win);
+                render_draw_client(main_render);
+            };
             break;
 
         case MSG_DRAW_CLIENT:
@@ -494,8 +487,9 @@ extern char *movie_file;
 
 int video_thread(void *param)
 {
-    window_t    *MainWindow;
-
+    AVCodecContext *ctx = param;
+    window_t  *MainWindow;
+    
     init_winlib();
 
     MainWindow = create_window(movie_file,0,
@@ -504,15 +498,23 @@ int video_thread(void *param)
     MainWindow->panel.prg->max = stream_duration;
 //    printf("MainWindow %x\n", MainWindow);
 
-    main_render->win = MainWindow;
-
     show_window(MainWindow, NORMAL);
+
+//    __asm__ __volatile__("int3");
+
+    main_render = create_render(MainWindow, ctx, HW_BIT_BLIT|HW_TEX_BLIT);
+    if( main_render == NULL)
+    {
+        printf("Cannot create render\n\r");
+        return 0;
+    };
 
     render_draw_client(main_render);
     player_state = PLAY;
 
     run_render(MainWindow, main_render);
 
+    destroy_render(main_render);
     fini_winlib();
 
     player_state = CLOSED;
@@ -523,40 +525,129 @@ int video_thread(void *param)
 void draw_hw_picture(render_t *render, AVPicture *picture);
 void draw_sw_picture(render_t *render, AVPicture *picture);
 
-render_t *create_render(uint32_t width, uint32_t height,
-                        uint32_t ctx_format, uint32_t flags)
+render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
 {
     render_t *render;
+
+    uint32_t right, bottom, draw_w, draw_h;
+    uint32_t s, sw, sh;
+    uint8_t  state;
 
 //    __asm__ __volatile__("int3");
 
     render = (render_t*)malloc(sizeof(render_t));
     memset(render, 0, sizeof(render_t));
 
-    render->ctx_width  = width;
-    render->ctx_height = height;
-    render->ctx_format = ctx_format;
+    render->win = win;
+
+    render->ctx_width  = ctx->width;
+    render->ctx_height = ctx->height;
+    render->ctx_format = ctx->pix_fmt;
 
     mutex_lock(&driver_lock);
     render->caps = init_pixlib(flags);
     mutex_unlock(&driver_lock);
+    
+    right  = win->w;
+    bottom = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
+
+ //   printf("window width %d height %d\n",
+ //                   right, bottom);
+
+    render->win_state  = win->win_state;
+
+    draw_w = bottom*render->ctx_width/render->ctx_height;
+    draw_h = right*render->ctx_height/render->ctx_width;
+
+    if(draw_w > right)
+    {
+        draw_w = right;
+        draw_h = right*render->ctx_height/render->ctx_width;
+    };
+    
+    if(draw_h > bottom)
+    {
+        draw_h = bottom;
+        draw_w = bottom*render->ctx_width/render->ctx_height;
+    };
+
+    render->win_width  = win->w;
+    render->win_height = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
+   
+    render_set_size(render, draw_w, draw_h);
+    
 
     if(render->caps==0)
     {
-        printf("FPlay render engine: Hardware acceleration disabled\n");
+        render->bitmap[0].width  = draw_w;
+        render->bitmap[0].height = draw_h;
+
+        if( create_bitmap(&render->bitmap[0]) != 0 )
+        {
+            free(render);
+            return NULL;
+        }
         render->draw = draw_sw_picture;
     }
     else
     {
+        int width, height, flags;
+        int i;
+        
+        if(render->caps & HW_TEX_BLIT)
+        {
+            sna_create_mask();
+
+            width  = render->ctx_width;     
+            height = render->ctx_height;     
+            flags  = HW_TEX_BLIT;     
+        }
+        else
+        {
+            width  = draw_w;     
+            height = draw_h;;     
+            flags  = HW_BIT_BLIT;     
+        }
+
+        for( i=0; i < 2; i++)
+        {
+            render->bitmap[i].width  = width;
+            render->bitmap[i].height = height;
+            render->bitmap[i].flags  = flags;
+
+            if( create_bitmap(&render->bitmap[i]) != 0 )
+            {
+                player_state = CLOSED;
+                free(render);
+                return NULL;
+            };
+        }
+        
+        render->state = INIT;
         render->target = 0;
         render->draw   = draw_hw_picture;
     };
-
-    render->state = EMPTY;
+    
+    printf("FPlay %s render engine: context %dx%d picture %dx%d\n",
+           render->caps==0 ? "software":"hardware",
+           render->ctx_width, render->ctx_height,
+           draw_w, draw_h);
+             
     return render;
 };
 
-int render_set_size(render_t *render, int width, int height)
+void destroy_render(render_t *render)
+{
+
+    destroy_bitmap(&render->bitmap[0]);
+    
+    if(render->caps & (HW_BIT_BLIT|HW_TEX_BLIT))          /* hw blitter */
+        destroy_bitmap(&render->bitmap[1]);
+    
+    done_pixlib();  
+};
+
+void render_set_size(render_t *render, int width, int height)
 {
     int i;
 
@@ -607,49 +698,6 @@ int render_set_size(render_t *render, int width, int height)
             render->layout |= HAS_RIGHT;
         }
     };
-
-    if(render->state == EMPTY)
-    {
-        if(render->caps & HW_TEX_BLIT)
-        {
-            for( i=0; i < 4; i++)
-            {
-                render->bitmap[i].width  = render->ctx_width;
-                render->bitmap[i].height = render->ctx_height;
-                render->bitmap[i].flags  = HW_TEX_BLIT;
-
-                if( create_bitmap(&render->bitmap[i]) != 0 )
-                {
-                    player_state = CLOSED;
-/*
- *  Epic fail. Need  exit_thread() here
- *
-*/
-                    return 0;
-                };
-            }
-        }
-        else
-        {
-            render->bitmap[0].width  = width;
-            render->bitmap[0].height = height;
-            render->bitmap[0].flags  = HW_BIT_BLIT;
-
-            if( create_bitmap(&render->bitmap[0]) != 0 )
-                return 0;
-        };
-        render->state = INIT;
-        return 0;
-    };
-
-    if(render->caps & HW_TEX_BLIT)          /*  hw scaler  */
-        return 0;
-
-    render->bitmap[0].width  = width;
-    render->bitmap[0].height = height;
-    resize_bitmap(&render->bitmap[0]);
-
-    return 0;
 };
 
 void render_adjust_size(render_t *render, window_t *win)
@@ -693,6 +741,21 @@ void render_adjust_size(render_t *render, window_t *win)
     render->win_width  = win->w;
     render->win_height = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
     render_set_size(render, new_w, new_h);
+
+    if(render->caps & HW_TEX_BLIT)          /*  hw scaler  */
+        return;
+
+    render->bitmap[0].width  = new_w;
+    render->bitmap[0].height = new_h;
+    resize_bitmap(&render->bitmap[0]);
+
+    if(render->caps & HW_BIT_BLIT)          /* hw blitter */
+    {
+        render->bitmap[1].width  = new_w;
+        render->bitmap[1].height = new_h;
+        resize_bitmap(&render->bitmap[1]);
+    };
+    return;
 };
 
 void draw_hw_picture(render_t *render, AVPicture *picture)
@@ -703,8 +766,8 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     int      linesize[4];
     int ret;
 
-    if(render->win_state == MINIMIZED ||
-       render->win_state == ROLLED)
+    if(render->win->win_state == MINIMIZED ||
+       render->win->win_state == ROLLED)
         return;
 
     if(render->caps & HW_TEX_BLIT)
@@ -760,8 +823,8 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
 //    printf("blit_bitmap\n");
 
 
-//    render->target++;
-//    render->target&= 3;
+    render->target++;
+    render->target&= 1;
 }
 
 void draw_sw_picture(render_t *render, AVPicture *picture)
@@ -769,8 +832,8 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
     uint8_t     *data[4];
     int      linesize[4];
 
-    if(render->win_state == MINIMIZED ||
-       render->win_state == ROLLED)
+    if(render->win->win_state == MINIMIZED ||
+       render->win->win_state == ROLLED)
         return;
 
     cvt_ctx = sws_getCachedContext(cvt_ctx,
@@ -783,6 +846,8 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
         printf("Cannot initialize the conversion context!\n");
         return ;
     }
+
+    lock_bitmap(&render->bitmap[0]);
 
     data[0] = render->bitmap[0].data;
     data[1] = render->bitmap[0].data+1;

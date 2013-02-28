@@ -299,16 +299,16 @@ int audio_thread(void *param)
 
                     for(i = 0, val = 0; i < samples/2; i++, src++)
                         if(val < abs(*src))
-                            val= abs(*src); // * *src; 
+                            val= abs(*src); // * *src;
 
                     sound_level_0 = val; //sqrt(val / (samples/2));
-                    
+
                     for(i = 0, val = 0; i < samples/2; i++, src++)
                         if(val < abs(*src))
-                            val= abs(*src); // * *src; 
+                            val= abs(*src); // * *src;
 
                     sound_level_1 = val; //sqrt(val / (samples/2));
-                    
+
  //                   printf("%d\n", sound_level);
                 };
 

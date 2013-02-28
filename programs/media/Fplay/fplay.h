@@ -106,12 +106,11 @@ int get_packet(queue_t *q, AVPacket *pkt);
 extern astream_t astream;
 extern AVRational video_time_base;
 
-render_t *create_render(uint32_t width, uint32_t height,
-                        uint32_t ctx_format, uint32_t flags);
-
+render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags);
+void destroy_render(render_t *render);
 int init_render(render_t *render, int width, int height);
 void render_adjust_size(render_t *render, window_t *win);
-int render_set_size(render_t *render, int width, int height);
+void render_set_size(render_t *render, int width, int height);
 void render_draw_client(render_t *render);
 
 
