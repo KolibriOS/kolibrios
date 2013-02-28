@@ -289,6 +289,8 @@ TCP_output:
         call    mutex_unlock
         popa
 
+; Fixme: returnvalue?
+
         ret
 
 
@@ -533,10 +535,6 @@ TCP_send:
         TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
         mov     [esi + TCP_header.Checksum], dx
 
-; unlock socket
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
-
 ;----------------
 ; Send the packet
 
@@ -551,10 +549,6 @@ TCP_send:
         pop     eax
 
         inc     [TCP_segments_tx]       ; FIXME: correct interface?
-
-; unlock socket
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
 
 ; update advertised receive window
         test    ecx, ecx
@@ -572,12 +566,19 @@ TCP_send:
 ; and flags
         and     [eax + TCP_SOCKET.t_flags], not (TF_ACKNOW + TF_DELACK)
 
-        test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
-        jnz     TCP_output.again
-
+;--------------
 ; unlock socket
+
+        push    eax
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
+        pop     eax
+
+;-----------------------------
+; Check if we need more output
+
+        test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        jnz     TCP_output.again
 
         DEBUGF 1,"TCP_send: success!\n"
 
@@ -593,7 +594,6 @@ TCP_send:
 
         mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
 
-; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
@@ -602,8 +602,12 @@ TCP_send:
         or      eax, -1
         ret
 
+
   .send_error:
         add     esp, 8
+
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
 
         DEBUGF 1,"TCP_send: sending failed\n"
 
