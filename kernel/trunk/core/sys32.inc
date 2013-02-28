@@ -213,7 +213,7 @@ show_error_parameters:
         pop     ebx
 .no_ud:
         mov     edx, [TASK_BASE];not scratched below
-        DEBUGF  1, "K : Process - forced terminate PID: %x\n", [edx+TASKDATA.pid]
+        DEBUGF  1, "K : Process - forced terminate PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
         cmp     bl, 0x08
         jb      .l0
         cmp     bl, 0x0e
