@@ -217,6 +217,7 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 	 * we may want to use ida for number allocation and a hash table
 	 * for the pointers, anyway.
 	 */
+
 	spin_lock(&filp->table_lock);
 
 	/* Check if we currently have a reference on the object */
@@ -226,6 +227,8 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 		return -EINVAL;
 	}
 	dev = obj->dev;
+
+    printf("%s handle %d obj %p\n", __FUNCTION__, handle, obj);
 
 	/* Release reference and decrement refcount. */
 	idr_remove(&filp->object_idr, handle);

@@ -237,6 +237,8 @@ i915_gem_create(struct drm_file *file,
 	int ret;
 	u32 handle;
 
+    ENTER();
+
 	size = roundup(size, PAGE_SIZE);
 	if (size == 0)
 		return -EINVAL;
@@ -259,6 +261,9 @@ i915_gem_create(struct drm_file *file,
 	trace_i915_gem_object_create(obj);
 
 	*handle_p = handle;
+
+    printf("%s obj %p handle %d\n", __FUNCTION__, obj, handle);
+
 	return 0;
 }
 
@@ -1491,11 +1496,11 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
 	for_each_sg(obj->pages->sgl, sg, page_count, i) {
 		struct page *page = sg_page(sg);
 
-
-
-//       page_cache_release(page);
+        page_cache_release(page);
 	}
     //DRM_DEBUG_KMS("%s release %d pages\n", __FUNCTION__, page_count);
+    printf("%s release %d pages\n", __FUNCTION__, page_count);
+
 	obj->dirty = 0;
 
 	sg_free_table(obj->pages);
@@ -3506,6 +3511,7 @@ void i915_gem_free_object(struct drm_gem_object *gem_obj)
 
 //   if (obj->phys_obj)
 //       i915_gem_detach_phys_object(dev, obj);
+    printf("%s obj %p\n", __FUNCTION__, obj);
 
 	obj->pin_count = 0;
 	if (WARN_ON(i915_gem_object_unbind(obj) == -ERESTARTSYS)) {
@@ -3527,6 +3533,12 @@ void i915_gem_free_object(struct drm_gem_object *gem_obj)
 
 //   if (obj->base.import_attach)
 //       drm_prime_gem_destroy(&obj->base, NULL);
+
+    if(obj->base.filp != NULL)
+    {
+        printf("filp %p\n", obj->base.filp);
+        shmem_file_delete(obj->base.filp);
+    }
 
 	drm_gem_object_release(&obj->base);
 	i915_gem_info_remove_obj(dev_priv, obj->base.size);

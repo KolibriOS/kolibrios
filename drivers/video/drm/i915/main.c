@@ -125,6 +125,7 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_BLIT_TEXTURE        16
 #define SRV_BLIT_VIDEO          17
 
+
 #define SRV_GET_PCI_INFO            20
 #define SRV_GET_PARAM           21
 #define SRV_I915_GEM_CREATE     22
@@ -140,6 +141,7 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_I915_GEM_THROTTLE       32
 #define SRV_FBINFO                  33
 #define SRV_I915_GEM_EXECBUFFER2    34
+#define SRV_MASK_UPDATE             35
 
 
 
@@ -270,6 +272,10 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_I915_GEM_EXECBUFFER2:
             retval = i915_gem_execbuffer2(main_device, inp, file);
+            break;
+
+        case SRV_MASK_UPDATE:
+            retval = i915_mask_update(main_device, inp, file);
             break;
 
     };

@@ -652,6 +652,8 @@ typedef struct
 
 struct drm_i915_mask {
     __u32 handle;
+    __u32 width;
+    __u32 height;
     __u32 bo_size;
     __u32 bo_pitch;
     __u32 bo_map;
@@ -693,6 +695,10 @@ int i915_mask_update(struct drm_device *dev, void *data,
     {
         static warn_count;
 
+        mask->width    = winrc.right - winrc.left + 1;
+        mask->height   = winrc.bottom - winrc.top + 1;
+        mask->bo_pitch = (mask->width+15) & ~15;
+
         if(warn_count < 1)
         {
             printf("left %d top %d right %d bottom %d\n",
@@ -701,6 +707,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
             warn_count++;
         };
     };
+
 
     slot = *((u8*)CURRENT_TASK);
 
@@ -730,7 +737,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
         src_offset+= get_display_map();
         dst_offset = (u8*)mask->bo_map;
 
-        u32_t tmp_h = winrc.bottom - winrc.top;
+        u32_t tmp_h = mask->height;
 
         ifl = safe_cli();
         {
@@ -755,12 +762,6 @@ int i915_mask_update(struct drm_device *dev, void *data,
                 src_offset+= os_display->width;
                 dst_offset+= mask->bo_pitch;
 
-//            while( tmp_w--)
-//            {
-//                *(tmp_src) = (*tmp_dst==slot)?0x1:0x00;
-//                tmp_src++;
-//                tmp_dst++;
-//            };
                 while(tmp_w >= 64)
                 {
                     __asm__ __volatile__ (
