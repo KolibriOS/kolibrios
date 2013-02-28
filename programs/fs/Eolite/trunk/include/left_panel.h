@@ -16,13 +16,13 @@ dword devbuf;
 
 void GetSystemDiscs()
 {
-	unsigned char dev_name[10], sys_discs[10];
+	unsigned char dev_name[20], sys_discs[20];
 	unsigned int i1, j1, dev_num, dev_disc_num;
 	
 	disc_num=0;
 	if (devbuf) free(devbuf);
 	devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
-	ReadDir(19, devbuf, "/");
+	ReadDir(20, devbuf, "/");
 	dev_num = EBX;
 	for (i1=0; i1<dev_num; i1++)
 	{

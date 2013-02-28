@@ -90,12 +90,12 @@ void GetIni(byte onload)
 					}
 					return;
 				}
-				parametr=option='';
+				parametr=option=NULL;
 				break;
 			default:
-				IF (InfType==SECTION) copystr(#bukva,#section+strlen(#section));
-				IF (InfType==PARAM) copystr(#bukva,#parametr+strlen(#parametr));
-				IF (InfType==OPTION) copystr(#bukva,#option+strlen(#option));
+				IF (InfType==SECTION) chrcat(#section, bukva);
+				IF (InfType==PARAM) chrcat(#parametr, bukva);
+				IF (InfType==OPTION) chrcat(#option, bukva);
 		}
 	}
 	RUN_AS_PROGRAM: 

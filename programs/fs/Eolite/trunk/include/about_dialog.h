@@ -1,8 +1,8 @@
-//Leency - 2012
+//Leency - 2013
 
 #define EDITOR_PATH     "/sys/tinypad"
 #define BROWSER_PATH    "/sys/htmlv"
-#define BROWSER_LINK    "http://kolibri-os.narod.ru"
+#define BROWSER_LINK    "http://kolibri-n.org/index.php"
 
 
 void about_dialog()
@@ -36,15 +36,15 @@ void about_dialog()
 				DefineAndDrawWindow(600,150,181,232+GetSkinHeight(),0x34,col_work,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.55",0);
+				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.56",0);
 				$add ebx, 1<<16
 				$int 0x40
 				WriteText(55,120,0x80,0,"Developers:",0); 
 				WriteText(39,130,0x80,0,"Leency & Veliant",0); 
 				WriteText(45,140,0x80,0,"KolibriOS Team",0);
-				WriteText(61,150,0x80,0,"2008-2012",0);
-				WriteText(12,170,0x80,0,"Visit",0);
-				DrawLink(48,170,23, "kolibri-os.narod.ru"); //ссылкa
+				WriteText(61,150,0x80,0,"2008-2013",0);
+				WriteText(29,170,0x80,0,"Visit");
+				DrawLink(66,170,23, "kolibri-n.org"); //ссылкa
 				DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
 				
 				DefineButton(20-1,195-1, 16+1,15+1, 33+BT_HIDE, 0);

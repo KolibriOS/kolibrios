@@ -162,3 +162,10 @@ inline fastcall strcat( EDI, ESI)
     mov eax, ebx
 	}
 }
+
+inline fastcall void chrcat(ESI, BL)
+{
+	EDI = strlen(ESI);
+	ESBYTE[ESI+EDI] = BL;
+	ESBYTE[ESI+EDI+1] = 0;
+}
