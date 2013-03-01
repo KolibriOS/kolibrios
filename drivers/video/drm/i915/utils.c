@@ -29,8 +29,8 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
     filep->allocated = 0;
     filep->vma       = NULL;
 
-    printf("%s file %p pages %p count %d\n",
-              __FUNCTION__,filep, filep->pages, count);
+//    printf("%s file %p pages %p count %d\n",
+//              __FUNCTION__,filep, filep->pages, count);
 
     return filep;
 }
@@ -96,8 +96,8 @@ err:
 
 void shmem_file_delete(struct file *filep)
 {
-    printf("%s file %p pages %p count %d\n",
-            __FUNCTION__, filep, filep->pages, filep->count);
+//    printf("%s file %p pages %p count %d\n",
+//            __FUNCTION__, filep, filep->pages, filep->count);
 
     if(filep->pages)
         kfree(filep->pages);

@@ -237,8 +237,6 @@ i915_gem_create(struct drm_file *file,
 	int ret;
 	u32 handle;
 
-    ENTER();
-
 	size = roundup(size, PAGE_SIZE);
 	if (size == 0)
 		return -EINVAL;
@@ -262,7 +260,7 @@ i915_gem_create(struct drm_file *file,
 
 	*handle_p = handle;
 
-    printf("%s obj %p handle %d\n", __FUNCTION__, obj, handle);
+//    printf("%s obj %p handle %d\n", __FUNCTION__, obj, handle);
 
 	return 0;
 }
@@ -1304,8 +1302,8 @@ i915_gem_mmap_ioctl(struct drm_device *dev, void *data,
 	if (obj == NULL)
 		return -ENOENT;
 	
-    dbgprintf("%s offset %lld size %lld\n",
-                __FUNCTION__, args->offset, args->size);
+    //dbgprintf("%s offset %lld size %lld\n",
+//                __FUNCTION__, args->offset, args->size);
 	/* prime objects have no backing filp to GEM mmap
 	 * pages from.
 	 */
@@ -1499,7 +1497,6 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
         page_cache_release(page);
 	}
     //DRM_DEBUG_KMS("%s release %d pages\n", __FUNCTION__, page_count);
-    printf("%s release %d pages\n", __FUNCTION__, page_count);
 
 	obj->dirty = 0;
 
@@ -1587,7 +1584,7 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 
 	obj->pages = st;
 
-    DRM_DEBUG_KMS("%s alloc %d pages\n", __FUNCTION__, page_count);
+//    DRM_DEBUG_KMS("%s alloc %d pages\n", __FUNCTION__, page_count);
 
 	return 0;
 
@@ -3511,7 +3508,7 @@ void i915_gem_free_object(struct drm_gem_object *gem_obj)
 
 //   if (obj->phys_obj)
 //       i915_gem_detach_phys_object(dev, obj);
-    printf("%s obj %p\n", __FUNCTION__, obj);
+//    printf("%s obj %p\n", __FUNCTION__, obj);
 
 	obj->pin_count = 0;
 	if (WARN_ON(i915_gem_object_unbind(obj) == -ERESTARTSYS)) {
@@ -3536,7 +3533,7 @@ void i915_gem_free_object(struct drm_gem_object *gem_obj)
 
     if(obj->base.filp != NULL)
     {
-        printf("filp %p\n", obj->base.filp);
+//        printf("filp %p\n", obj->base.filp);
         shmem_file_delete(obj->base.filp);
     }
 

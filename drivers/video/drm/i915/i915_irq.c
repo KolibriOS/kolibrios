@@ -2476,7 +2476,7 @@ void intel_irq_init(struct drm_device *dev)
 		}
 	}
 
-    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
+//    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
 }
 
 irqreturn_t intel_irq_handler(struct drm_device *dev)

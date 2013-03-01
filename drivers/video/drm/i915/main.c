@@ -82,7 +82,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("i915 RC 10\n cmdline: %s\n", cmdline);
+    dbgprintf("i915 RC 10.5\n cmdline: %s\n", cmdline);
 
     cpu_detect();
     dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -93,7 +93,8 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(err)
     {
-        dbgprintf("Epic Fail :(/n");
+        dbgprintf("Epic Fail :(\n");
+        return 0;
     };
 
     err = RegService("DISPLAY", display_handler);
