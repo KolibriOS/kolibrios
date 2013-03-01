@@ -41,7 +41,7 @@ sysenter_entry:
         call    protect_from_terminate
 
         movzx   eax, byte [esp+28]
-        mov     edx, dword [esp+24]
+        mov     edx, dword [esp+20]
         call    dword [servetable2 + eax * 4]
 
         call    unprotect_from_terminate
@@ -68,7 +68,7 @@ i40:
         cld
         call    protect_from_terminate
         movzx   eax, byte [esp+28]
-        mov     edx, dword [esp+24]
+        mov     edx, dword [esp+20]
         call    dword [servetable2 + eax * 4]
         call    unprotect_from_terminate
         popad
@@ -95,7 +95,7 @@ syscall_entry:
         call    protect_from_terminate
 
         movzx   eax, byte [esp+28]
-        mov     edx, dword [esp+24]
+        mov     edx, dword [esp+20]
         call    dword [servetable2 + eax * 4]
 
         call    unprotect_from_terminate
