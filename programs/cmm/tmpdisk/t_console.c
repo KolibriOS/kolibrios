@@ -18,13 +18,13 @@
 	"unknown IOCTL code, wrong input/output size...",
 	"DiskId must be from 0 to 9",
 	"DiskSize is too large",
-	"DiskSize is too small",
+	"DiskSize is too small, may be too less free RAM",
 	"memory allocation failed",
 	"unknown error O_o",
 	0};
 //#endif
 
-void Console_Work()
+char Console_Work()
 {
 	unsigned int disk_size, driver_rezult;
 	char size_t[256];
@@ -81,5 +81,6 @@ void Console_Work()
 	
 	driver_rezult = RuleDriver(#ioctl);
 	if (driver_rezult<7) debug(rezult_text[driver_rezult]);
+	return driver_rezult;
 }
 

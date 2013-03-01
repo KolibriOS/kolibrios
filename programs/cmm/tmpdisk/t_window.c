@@ -47,13 +47,15 @@ unsigned char dsize[30];
 edit_box edit1= {40,20,200,0xffffff,0x94AECE,0x94AECE,0x94AECE,0,4,#dsize,#mouse_dd,100000000000010b};
 
 unsigned char icons[14*56] = FROM "icons.raw";
+#define TOPPANELH 30
+#define BOTPANELH 20
 
 
 
 void Main_Window()
 {
-	unsigned int id;
-	unsigned char key;
+	unsigned int id, key, err;
+	int i, x;
 	
    	mem_Init();
 	if (load_dll2(boxlib, #edit_box_draw,0)!=0)
@@ -83,7 +85,8 @@ void Main_Window()
 				}
 				param[0]='d';
 				param[1]=disk_list[selected].Item[3];
-				Console_Work();
+				err = Console_Work();
+				if ((err!=0) && (err<7)) notify(rezult_text[err]);
 				pause(15);
 				GetDisks();
 				DrawTmpDisks();
@@ -127,8 +130,24 @@ void Main_Window()
 			//EAX=key<<8;
 			//edit_box_key stdcall(#edit1);
 			break;
-         case evReDraw:
-			Draw_Window();
+         case evReDraw:			
+			sc.get();
+			DefineAndDrawWindow(170,150,314,250,0x74,sc.work,"Virtual Disk Manager 0.45",0);
+			GetProcessInfo(#Form, SelfInfo);
+			if (Form.status_window>2) return;
+
+			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
+			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);
+			x=6;
+			for (i=0; i<2; i++)
+			{
+				DefineButton(x,5, strlen(but_text[i])*6+28,19, 10+i, sc.work_button);
+				_PutImage(x+3,8,  14,14,   i*14*14*3+#icons);
+				WriteText(x+22,11, 0x80, sc.work_button_text, but_text[i]);
+				x+=strlen(but_text[i])*6+37; 
+			}			
+			GetDisks();
+			DrawTmpDisks();
 		}
 	}
 }
@@ -175,7 +194,12 @@ unsigned int disk_pos_y[]={40,65,90,40,65,90,40,65,90,40,65,90};
 void DrawTmpDisks()
 {
 	int i;
-	DrawBar(0,31, Form.width-9,Form.height-GetSkinHeight()-5-30, 0xFFFFFF);
+	DrawBar(0,31, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
+	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
+	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
+	WriteText(10, Form.cheight-13, 0x80, sc.work_text, "Free RAM size:");
+	WriteText(100, Form.cheight-13, 0x80, sc.work_text, itoa(GetFreeRAM()/2048));
+	WriteText(strlen(itoa(GetFreeRAM()/2048))*6 + 100, Form.cheight-13, 0x80, sc.work_text, " MB");
 	if (disk_num==0)
 	{
 		WriteText(17,45,    0x90, 0x777777, INTRO_TEXT_1);
@@ -183,7 +207,7 @@ void DrawTmpDisks()
 		WriteText(17,45+42, 0x90, 0x777777, INTRO_TEXT_3);
 		return;
 	};
-	if (selected>=disk_num) selected=disk_num-1; //восстанавливает выделение - хорошая фича
+	if (selected>=disk_num) selected=disk_num-1; //restore selected
 	for (i=0; i<10; i++) DeleteButton(20+i);
 	for (i=0; i<disk_num; i++)
 	{
@@ -196,7 +220,7 @@ void DrawTmpDisks()
 
 void AddDisk()
 {
-	unsigned int i, j;
+	unsigned int i, j, err;
 	if (disk_num>=10)
 	{
 		notify(NOTIFY_TEXT_DISK_LIMIT);
@@ -212,51 +236,12 @@ void AddDisk()
 		break;
 	}
 	param[1]=i+48;
-	Console_Work();
+	err = Console_Work();
+	if ((err!=0) && (err<7)) notify(rezult_text[err]);
 	pause(5);
 	GetDisks();
 	DrawTmpDisks();
 }
-
-void Draw_Window()
-{	
-	int i, x;
-	
-	sc.get();
-	DefineAndDrawWindow(170,150,314,250,0x74,sc.work,"Virtual Disk Manager 0.4",0);
-	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return;
-	
-	//рисуем панель
-	DrawBar(0,0,  Form.width-9,30, sc.work);
-	DrawBar(0,30, Form.width-9,1,  sc.work_graph);
-	x=6;
-	for (i=0; i<2; i++)
-	{
-		DefineButton(x,5, strlen(but_text[i])*6+28,19, 10+i, sc.work_button);
-		_PutImage(x+3,8,  14,14,   i*14*14*3+#icons);
-		WriteText(x+22,11, 0x80, sc.work_button_text, but_text[i]);
-		x+=strlen(but_text[i])*6+37; 
-	}
-	
-	GetDisks();
-	DrawTmpDisks();
-	//AddPanel();
-}
-
-/*void AddPanel()
-{
-	DrawBar(0,Form.height-GetSkinHeight()-40, Form.width-9,1,  sc.work_graph);
-	DrawBar(0,Form.height-GetSkinHeight()-39, Form.width-9,35, sc.work);
-
-	strcpy(#dsize, itoa(GetFreeRAM()/10));
-	//strcpy(#dsize, "100");
-	edit1.size=edit1.pos=strlen(#dsize);
-	edit_box_draw stdcall(#edit1); //рисуем строку адреса
-	//DefineButton(-strlen(but_text[2])+Form.width-9,200, strlen(but_text[2])*6+28,19, 12, sc.work_button);
-	//_PutImage(-strlen(but_text[2])+Form.width-9+3,200+3,  14,14,   2*14*14*3+#icons);
-}*/
-
 
 
 

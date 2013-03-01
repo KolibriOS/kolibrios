@@ -1,3 +1,4 @@
+#define MEMSIZE 0x8E80
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h" 
 #include "..\lib\file_system.h"
@@ -50,7 +51,7 @@ int driver_handle;
 
 void main()
 {   
-	debug("=========  tmpdisk 0.4  =========");
+	debug("=========  tmpdisk 0.45  =========");
 	driver_handle = LoadDriver("tmpdisk");
 	if (driver_handle==0)
 	{
