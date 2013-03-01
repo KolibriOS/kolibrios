@@ -136,7 +136,9 @@ struct  TCP_SOCKET              IP_SOCKET
 
         ts_ecr                  dd ? ; timestamp echo reply
         ts_val                  dd ?
+
         temp_bits               db ?
+                                rb 3 ; align
 
 ends
 
@@ -158,6 +160,7 @@ ends
 
 struct  RING_BUFFER
 
+        mutex                   MUTEX
         start_ptr               dd ? ; Pointer to start of buffer
         end_ptr                 dd ? ; pointer to end of buffer
         read_ptr                dd ? ; Read pointer
@@ -1402,6 +1405,12 @@ SOCKET_ring_create:
         pop     edx
 
         DEBUGF  1,"SOCKET_ring_created: %x\n", eax
+
+        pusha
+        lea     ecx, [esi + RING_BUFFER.mutex]
+        call    mutex_init
+        popa
+
         mov     [esi + RING_BUFFER.start_ptr], eax
         mov     [esi + RING_BUFFER.write_ptr], eax
         mov     [esi + RING_BUFFER.read_ptr], eax
@@ -1431,15 +1440,36 @@ SOCKET_ring_write:
 
         DEBUGF  1,"SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
 
-        add     [eax + RING_BUFFER.size], ecx
-        jc      .way_too_large
-        cmp     [eax + RING_BUFFER.size], SOCKET_MAXDATA
-        ja      .too_large
+; lock mutex
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_lock                                      ; TODO: check what registers this function actually destroys
+        popa
 
+; calculate available size
+        mov     edi, SOCKET_MAXDATA
+        sub     edi, [eax + RING_BUFFER.size]                   ; available buffer size in edi
+        cmp     ecx, edi
+        jbe     .copy
+        mov     ecx, edi
   .copy:
         mov     edi, [eax + RING_BUFFER.write_ptr]
         DEBUGF  2,"SOCKET_ring_write: %u bytes from %x to %x\n", ecx, esi, edi
 
+; update write ptr
+        push    edi
+        add     edi, ecx
+        cmp     edi, [eax + RING_BUFFER.end_ptr]
+        jb      @f
+        sub     edi, SOCKET_MAXDATA                             ; WRAP
+  @@:
+        mov     [eax + RING_BUFFER.write_ptr], edi
+        pop     edi
+
+; update size
+        add     [eax + RING_BUFFER.size], ecx
+
+; copy the data
         push    ecx
         shr     ecx, 1
         jnc     .nb
@@ -1455,37 +1485,13 @@ SOCKET_ring_write:
   .nd:
         pop     ecx
 
-        cmp     edi, [eax + RING_BUFFER.end_ptr]
-        jae     .wrap
-        mov     [eax + RING_BUFFER.write_ptr], edi
+; unlock mutex
+        push    eax ecx
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        pop     ecx eax
 
         ret
-
-  .wrap:
-        sub     edi, SOCKET_MAXDATA
-        mov     [eax + RING_BUFFER.write_ptr], edi
-
-        ret
-
-  .too_large:                                                           ; update size, we will fill buffer completely
-        sub     [eax + RING_BUFFER.size], SOCKET_MAXDATA
-        sub     ecx, [eax + RING_BUFFER.size]
-        mov     [eax + RING_BUFFER.size], SOCKET_MAXDATA
-        ja      .copy
-
-  .full:
-        DEBUGF  2,"SOCKET_ring_write: ring buffer is full!\n"
-        xor     ecx, ecx
-        ret
-
-  .way_too_large:
-        sub     [eax + RING_BUFFER.size], ecx
-        mov     ecx, SOCKET_MAXDATA
-        sub     ecx, [eax + RING_BUFFER.size]
-        ja      .copy
-        jmp     .full
-
-
 
 ;-----------------------------------------------------------------
 ;
@@ -1508,12 +1514,22 @@ SOCKET_ring_read:
 
         DEBUGF  1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u offset=%x\n", eax, edi, ecx, edx
 
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_lock                                      ; TODO: check what registers this function actually destroys
+        popa
+
         mov     esi, [eax + RING_BUFFER.read_ptr]
         add     esi, edx                                        ; esi = start_ptr + offset
 
         neg     edx
         add     edx, [eax + RING_BUFFER.size]                   ; edx = snd.size - offset
         jle     .no_data_at_all
+
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        popa
 
         cmp     ecx, edx
         ja      .less_data
@@ -1537,6 +1553,11 @@ SOCKET_ring_read:
         ret
 
   .no_data_at_all:
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        popa
+
         DEBUGF  1,"SOCKET_ring_read: no data at all!\n"
         xor     ecx, ecx
         ret
@@ -1563,6 +1584,11 @@ SOCKET_ring_free:
 
         DEBUGF  1,"SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
 
+        push    eax ecx
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_lock                                      ; TODO: check what registers this function actually destroys
+        pop     ecx eax
+
         sub     [eax + RING_BUFFER.size], ecx
         jb      .error
         add     [eax + RING_BUFFER.read_ptr], ecx
@@ -1572,11 +1598,23 @@ SOCKET_ring_free:
         jb      @f
         sub     [eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA
        @@:
+
+        push    eax ecx
+        lea     ecx, [eax + RING_BUFFER.mutex]                  ; TODO: check what registers this function actually destroys
+        call    mutex_unlock
+        pop     ecx eax
+
         ret
 
   .error:       ; we could free all available bytes, but that would be stupid, i guess..
         DEBUGF  1,"SOCKET_ring_free: buffer=%x error!\n", eax
         add     [eax + RING_BUFFER.size], ecx
+
+        push    eax
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        pop     eax
+
         xor     ecx, ecx
         ret
 
@@ -2066,6 +2104,7 @@ SOCKET_process_end:
 
   .next_socket:
         mov     ebx, [ebx + SOCKET.NextPtr]
+  .next_socket_test:
         test    ebx, ebx
         jz      .done
 
@@ -2076,10 +2115,11 @@ SOCKET_process_end:
 
         mov     [ebx + SOCKET.PID], 0
         mov     eax, ebx
+        mov     ebx, [ebx + SOCKET.NextPtr]
         pusha
         call    SOCKET_close.socket
         popa
-        jmp     .next_socket
+        jmp     .next_socket_test
 
   .done:
         pop     ebx
