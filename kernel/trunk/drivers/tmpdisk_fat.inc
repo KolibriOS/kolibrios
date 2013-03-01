@@ -299,7 +299,7 @@ fat32bootsector_stub:
         db 'KOLIBRI '           ; BS_OEMName
         dw 512                  ; BPB_BytsPerSec
         db 1                    ; BPB_SecsPerClus
-        dw 1                    ; BPB_RsvdSecCnt
+        dw 2                    ; BPB_RsvdSecCnt
         db 1                    ; BPB_NumFATs
         dw 0                    ; BPB_RootEntCnt
         dw 0                    ; BPB_TotSec16
