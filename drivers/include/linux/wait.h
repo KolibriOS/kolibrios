@@ -1,6 +1,7 @@
 #ifndef _LINUX_WAIT_H
 #define _LINUX_WAIT_H
 
+#include <linux/list.h>
 #include <syscall.h>
 
 typedef struct __wait_queue wait_queue_t;
@@ -39,7 +40,6 @@ do {                                                                    \
 
 
 
-
 #define wait_event_timeout(wq, condition, timeout)          \
 ({                                                          \
     long __ret = timeout;                                   \
@@ -48,7 +48,7 @@ do{                                                         \
         .task_list = LIST_HEAD_INIT(__wait.task_list),      \
         .evnt      = CreateEvent(NULL, MANUAL_DESTROY),     \
     };                                                      \
-    u32  flags;                                             \
+    unsigned long flags;                                    \
                                                             \
     spin_lock_irqsave(&wq.lock, flags);                     \
     if (list_empty(&__wait.task_list))                      \
@@ -60,7 +60,7 @@ do{                                                         \
             break;                                          \
         WaitEvent(__wait.evnt);                             \
     };                                                      \
-    if (!list_empty_careful(&__wait.task_list)) {           \
+    if (!list_empty(&__wait.task_list)) {                   \
         spin_lock_irqsave(&wq.lock, flags);                 \
         list_del_init(&__wait.task_list);                   \
         spin_unlock_irqrestore(&wq.lock, flags);            \
@@ -80,7 +80,7 @@ do{                                                         \
         .task_list = LIST_HEAD_INIT(__wait.task_list),      \
         .evnt      = CreateEvent(NULL, MANUAL_DESTROY),     \
     };                                                      \
-    u32  flags;                                             \
+    unsigned long flags;                                    \
                                                             \
     spin_lock_irqsave(&wq.lock, flags);                     \
     if (list_empty(&__wait.task_list))                      \
@@ -112,6 +112,8 @@ void wake_up_all(wait_queue_head_t *q)
     spin_lock_irqsave(&q->lock, flags);
     list_for_each_entry(curr, &q->task_list, task_list)
     {
+//        printf("raise event \n");
+
         kevent_t event;
         event.code = -1;
         RaiseEvent(curr->evnt, 0, &event);

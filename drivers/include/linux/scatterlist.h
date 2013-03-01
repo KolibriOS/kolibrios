@@ -229,7 +229,7 @@ size_t sg_copy_to_buffer(struct scatterlist *sgl, unsigned int nents,
  * Maximum number of entries that will be allocated in one piece, if
  * a list larger than this is required then chaining will be utilized.
  */
-#define SG_MAX_SINGLE_ALLOC		(PAGE_SIZE / sizeof(struct scatterlist))
+#define SG_MAX_SINGLE_ALLOC     (4*PAGE_SIZE / sizeof(struct scatterlist))
 
 
 /*
