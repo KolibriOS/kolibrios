@@ -254,9 +254,9 @@ void window_update_layout(window_t *win)
     };
     
     if(state & 1)
-        win->win_state = MAXIMIZED;
+        state = MAXIMIZED;
     else
-        win->win_state = NORMAL;
+        state = NORMAL;
     
     if( (winx != win->rc.l) || (winy != win->rc.t) )
     {
@@ -267,9 +267,13 @@ void window_update_layout(window_t *win)
     };
 
     if( winw  == win->w &&
-        winh  == win->h)
+        winh  == win->h &&
+        state == win->win_state)
+        
         return;
 
+    win->win_state = state;
+    
 #if 0
     int old_size;
     int new_size;

@@ -75,8 +75,8 @@ typedef struct
 
     rect_t       client;
 
-    ctx_t        client_ctx;
-    bitmap_t     bitmap;
+//    ctx_t        client_ctx;
+//    bitmap_t     bitmap;
 
     char        *caption_txt;
     ctrl_t      *child_over;
