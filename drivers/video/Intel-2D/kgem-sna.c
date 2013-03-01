@@ -44,7 +44,6 @@ int user_free(void *mem)
 }
 
 
-
 unsigned int cpu_cache_size();
 
 static struct kgem_bo *
@@ -794,8 +793,8 @@ static bool test_has_pinned_batches(struct kgem *kgem)
 
 static bool kgem_init_pinned_batches(struct kgem *kgem)
 {
-	int count[2] = { 4, 2 };
-	int size[2] = { 1, 4 };
+	int count[2] = { 2, 1 };
+	int size[2] = { 1, 2 };
 	int n, i;
 
 	if (kgem->wedged)
@@ -1339,7 +1338,6 @@ static void kgem_bo_release_map(struct kgem *kgem, struct kgem_bo *bo)
 static void kgem_bo_free(struct kgem *kgem, struct kgem_bo *bo)
 {
 	DBG(("%s: handle=%d\n", __FUNCTION__, bo->handle));
-	printf("%s: handle=%d\n", __FUNCTION__, bo->handle);
 
 	assert(bo->refcnt == 0);
 	assert(bo->exec == NULL);
@@ -1601,8 +1599,6 @@ static void __kgem_bo_destroy(struct kgem *kgem, struct kgem_bo *bo)
 {
 	DBG(("%s: handle=%d\n", __FUNCTION__, bo->handle));
 
-	printf("%s: handle=%d\n", __FUNCTION__, bo->handle);
-		
 	assert(list_is_empty(&bo->list));
 	assert(bo->refcnt == 0);
 	assert(!bo->purged);
@@ -4208,8 +4204,8 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
     bo->scanout   = 1;
 	fb->fb_bo     = bo;    
 
-    printf("fb width %d height %d pitch %d bo %p\n",
-            fb->width, fb->height, fb->pitch, fb->fb_bo);
+//    printf("fb width %d height %d pitch %d bo %p\n",
+//            fb->width, fb->height, fb->pitch, fb->fb_bo);
             
     return 1;
 };

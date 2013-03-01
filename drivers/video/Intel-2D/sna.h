@@ -135,6 +135,7 @@ typedef enum _PictFormatShort {
 } PictFormatShort;
 
 #define PIXMAN_FORMAT_A(f)	(((f) >> 12) & 0x0f)
+#define PIXMAN_FORMAT_RGB(f)	(((f)      ) & 0xfff)
 
 #define PICT_FORMAT_A(f)	PIXMAN_FORMAT_A(f)
 

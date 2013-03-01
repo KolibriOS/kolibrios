@@ -12,14 +12,6 @@ static struct kgem_bo *mask_bo;
 
 static int mask_width, mask_height;
 
-static inline void delay(uint32_t time)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(5), "b"(time)
-    :"memory");
-};
-
 typedef struct __attribute__((packed))
 {
   unsigned      handle;
@@ -135,9 +127,9 @@ int sna_accel_init(struct sna *sna)
 	} else if (sna->info->gen >= 040) {
 		if (gen4_render_init(sna))
 			backend = "Broadwater/Crestline";
-/*	} else if (sna->info->gen >= 030) {
+	} else if (sna->info->gen >= 030) {
 		if (gen3_render_init(sna))
-			backend = "gen3"; */
+			backend = "gen3";
 	}
 
 	DBG(("%s(backend=%s, prefer_gpu=%x)\n",
@@ -188,7 +180,6 @@ int sna_init(uint32_t service)
 
     kgem_init(&sna->kgem, service, sna->PciInfo, sna->info->gen);
     
-    delay(10);
 /*
     if (!xf86ReturnOptValBool(sna->Options,
                   OPTION_RELAXED_FENCING,
@@ -466,7 +457,7 @@ int sna_create_mask()
     int width, height;
     int i;
 
-    printf("%s width %d height %d\n", __FUNCTION__, sna_fb.width, sna_fb.height);
+//    printf("%s width %d height %d\n", __FUNCTION__, sna_fb.width, sna_fb.height);
     
     bo = kgem_create_2d(&sna_device->kgem, sna_fb.width, sna_fb.height,
                         8,I915_TILING_NONE, CREATE_CPU_MAP);
