@@ -3735,6 +3735,15 @@ set_app_param:
         mov     [esp+32], eax                    ; return old mask value
         ret
 ;-----------------------------------------------------------------------------
+
+; this is for syscall
+proc delay_hs_unprotected
+        call    unprotect_from_terminate
+        call    delay_hs
+        call    protect_from_terminate
+        ret
+endp
+
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time

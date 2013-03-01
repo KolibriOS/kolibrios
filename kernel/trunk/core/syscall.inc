@@ -38,9 +38,13 @@ sysenter_entry:
         pushad
         cld
 
-        movzx   eax, al
+        call    protect_from_terminate
+
+        movzx   eax, byte [esp+28]
+        mov     edx, dword [esp+24]
         call    dword [servetable2 + eax * 4]
 
+        call    unprotect_from_terminate
         popad
         ;------------------
         xchg    ecx, [ss:esp]           ; в вершин стека - app ecx, ecx - app esp + 4
@@ -62,8 +66,11 @@ align 16
 i40:
         pushad
         cld
-        movzx   eax, al
+        call    protect_from_terminate
+        movzx   eax, byte [esp+28]
+        mov     edx, dword [esp+24]
         call    dword [servetable2 + eax * 4]
+        call    unprotect_from_terminate
         popad
         iretd
 
@@ -85,10 +92,13 @@ syscall_entry:
         ;------------------
         pushad
         cld
+        call    protect_from_terminate
 
-        movzx   eax, al
+        movzx   eax, byte [esp+28]
+        mov     edx, dword [esp+24]
         call    dword [servetable2 + eax * 4]
 
+        call    unprotect_from_terminate
         popad
         ;------------------
         mov     ecx, [ss:esp+4]
@@ -125,7 +135,7 @@ iglobal
       dd sys_getkey              ; 2-GetKey
       dd sys_clock               ; 3-GetTime
       dd syscall_writetext       ; 4-WriteText
-      dd delay_hs                ; 5-DelayHs
+      dd delay_hs_unprotected    ; 5-DelayHs
       dd syscall_openramdiskfile ; 6-OpenRamdiskFile
       dd syscall_putimage        ; 7-PutImage
       dd syscall_button          ; 8-DefineButton
@@ -190,7 +200,7 @@ iglobal
       dd syscall_move_window     ; 67-Window move or resize
       dd f68                     ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
-      dd file_system_lfn_protected; 70-Common file system interface, version 2
+      dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
       dd blit_32                 ; 73-blitter;
