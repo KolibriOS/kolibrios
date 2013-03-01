@@ -26,6 +26,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #include <stdlib.h>
 #include <malloc.h>
+#include <memory.h>
 #include <errno.h>
 #include <gthr.h>
 

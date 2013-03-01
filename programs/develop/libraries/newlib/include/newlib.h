@@ -15,12 +15,12 @@
 
 /* C99 formats support (such as %a, %zu, ...) in IO functions like
  * printf/scanf enabled */
-/* #undef _WANT_IO_C99_FORMATS */
+//#define _WANT_IO_C99_FORMATS
 
 #define __DYNAMIC_REENT__
 
 /* long long type support in IO functions like printf/scanf enabled */
-/* #undef _WANT_IO_LONG_LONG */
+#define _WANT_IO_LONG_LONG
 
 /* Register application finalization function using atexit. */
 /* #undef _WANT_REGISTER_FINI */

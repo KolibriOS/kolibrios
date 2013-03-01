@@ -15,7 +15,7 @@ void *load_file(const char *path, size_t *len)
     if( !get_fileinfo(path, &info) )
     {
 
-        file = user_alloc( info.size );
+        file = (void*)user_alloc( info.size );
         read_file(path, file, 0, info.size, &bytes );
         if( bytes == info.size )
         {
@@ -23,7 +23,7 @@ void *load_file(const char *path, size_t *len)
             {
                 void *tmp = NULL;
                 info.size = ((size_t*)file)[1];
-                tmp = user_alloc(info.size);
+                tmp = (void*)user_alloc(info.size);
                 unpack(file, tmp);
                 user_free(file);
                 file = tmp;

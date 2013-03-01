@@ -108,4 +108,3 @@ SECTIONS
     *(.debug_ranges)
   }
 }
-

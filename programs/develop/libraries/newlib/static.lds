@@ -73,13 +73,9 @@ SECTIONS
         LONG(0);
         __data_end__ = . ;
         *(.data_cygwin_nocopy)
-    }
-
-    .eh_frame ALIGN(16) :
-    {
-        *(.eh_frame)
         ___iend = . ;
     }
+
 
     bss ALIGN(16):
     {
@@ -101,6 +97,7 @@ SECTIONS
     *(.debug$F)
     *(.drectve)
     *(.note.GNU-stack)
+    *(.eh_frame)
     *(.comment)
     *(.debug_abbrev)
     *(.debug_info)
