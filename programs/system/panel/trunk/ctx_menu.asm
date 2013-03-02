@@ -24,39 +24,6 @@ ctx_menu_still:
 	jmp	ctx_menu_still
 ;------------------------------------------------------------------------------	
 align 4
-ctx_menu_key:
-	mcall	2
-;--------------------------------------
-align 4
-ctx_menu_button:
-	mcall	17
-	cmp	ah, 1
-	jne	@f
-
-	mov	eax, 18
-	mov	ebx, 2
-	mov	ecx, [n_slot]
-	jmp	.lllxxx
-;--------------------------------------
-align 4
-@@:
-	cmp	ah, 2
-	jne	ctx_menu_still
-	mov	eax, 18
-	mov	ebx, 22
-	mov	edx, [n_slot]
-	xor	ecx, ecx
-
-	test	[procinfo_for_detect+70],byte 2
-	setnz	cl
-	add	cl, cl
-;--------------------------------------
-align 4
-.lllxxx:
-	mcall
-	jmp	ctx_menu_exit
-;--------------------------------------
-align 4
 ctx_menu_mouse:
 	mcall	37,2
 	xchg	eax,ecx	; Если не одна из кнопок не нажата возвращаемся
@@ -78,7 +45,44 @@ ctx_menu_mouse:
 	cmp	ax, 133
 	ja	ctx_menu_exit
 
-	jmp        ctx_menu_still
+	jmp	ctx_menu_still
+;------------------------------------------------------------------------------	
+align 4
+ctx_menu_key:
+	mcall	2
+;--------------------------------------
+align 4
+ctx_menu_button:
+	mcall	17
+	cmp	ah, 1
+	jne	@f
+
+;	mov	eax, 18
+;	mov	ebx, 2
+;	mov	ecx, [n_slot]
+;	jmp	.lllxxx
+	mcall	18,3,[n_slot]
+	mcall	72,1,3,1
+	mcall	68,1
+	jmp	ctx_menu_exit
+;--------------------------------------
+align 4
+@@:
+	cmp	ah, 2
+	jne	ctx_menu_still
+	mov	eax, 18
+	mov	ebx, 22
+	mov	edx, [n_slot]
+	xor	ecx, ecx
+
+	test	[procinfo_for_detect+70],byte 2
+	setnz	cl
+	add	cl, cl
+;--------------------------------------
+align 4
+.lllxxx:
+	mcall
+	jmp	ctx_menu_exit
 ;--------------------------------------
 align 4
 ctx_menu_exit:
