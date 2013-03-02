@@ -1985,7 +1985,6 @@ search_expansion:
 	
 	add	esi,2
 	sub	ebx,esi
-	dec	ebx
 	mov	[expansion_length],ebx
 	cld
 	xor	eax,eax
