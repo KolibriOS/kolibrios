@@ -13,6 +13,9 @@
 
 $Revision$
 
+if lang eq sp
+include 'sys32-sp.inc'
+end if
 
 align 4 ;3A08
 build_interrupt_table:
@@ -75,8 +78,10 @@ iglobal
   msg_exc_d     db "General protection fault", 0
   msg_exc_e     db "Page fault", 0
 
+  if lang ~ eq sp
   msg_sel_ker   db "kernel", 0
   msg_sel_app   db "application", 0
+  end if
 
 endg
 
@@ -213,7 +218,11 @@ show_error_parameters:
         pop     ebx
 .no_ud:
         mov     edx, [TASK_BASE];not scratched below
+        if lang eq sp
+        DEBUGF  1, "K : Proceso - terminado forzado PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
+        else
         DEBUGF  1, "K : Process - forced terminate PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
+        end if
         cmp     bl, 0x08
         jb      .l0
         cmp     bl, 0x0e

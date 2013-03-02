@@ -33,3 +33,8 @@
 if preboot_blogesc
   boot_tasking      db   'Todo configurado - presiona ESC para iniciar',0
 end if
+
+msg_version    db 'versi¢n incompatible del controlador',13,10,0
+msg_www        db 'por favor, visita www.kolibrios.org',13,10,0
+
+ud_user_message db 'Error: instrucci¢n no soportada por el procesador',0

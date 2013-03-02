@@ -34,11 +34,11 @@ gr_mode   db      "Selecciona un modo de video: ",13,10,0
 ask_bd     db      "¨Agregar discos visibles por el BIOS emulados en modo V86? [1-si, 2-no]: ",0
 
 if defined extended_primary_loader
-bdev      db      "Cargar ramdisk desde [1-disquete; 2-kolibri.img]: ",0
+bdev      db      "Cargar unidad ram desde [1-disquete; 2-kolibri.img]: ",0
 else
-bdev      db      "Cargar ramdisk desde [1-disquete; 2-C:\kolibri.img (FAT32);"
+bdev      db      "Cargar unidad ram desde [1-disquete; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
-          db      "3-usar imagen precargada en el reinicio del kernel;"
+          db      "3-usar imagen precargada en el reinicio del n£cleo;"
           db      13,10,186,"                    "
           db      "4-crear imagen vac¡a]: ",0
 end if

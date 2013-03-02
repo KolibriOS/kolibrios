@@ -340,7 +340,11 @@ hd_timeout_error:
 ;    call  clear_application_table_status
 ;    mov   esi,hd_timeout_str
 ;    call  sys_msg_board_str
+    if lang eq sp
+    DEBUGF 1,"K : FS - HD tiempo de espera agotado\n"
+    else
     DEBUGF 1,"K : FS - HD timeout\n"
+    end if
 
         mov     [hd_error], 1
         pop     eax
@@ -352,7 +356,11 @@ hd_read_error:
 ;    call  clear_application_table_status
 ;    mov   esi,hd_read_str
 ;    call  sys_msg_board_str
+    if lang eq sp
+    DEBUGF 1,"K : FS - HD error de lectura\n"
+    else
     DEBUGF 1,"K : FS - HD read error\n"
+    end if
         pop     edx eax
         ret
 
@@ -362,7 +370,11 @@ hd_write_error:
 ;    call  clear_application_table_status
 ;     mov   esi,hd_write_str
 ;     call  sys_msg_board_str
+    if lang eq sp
+    DEBUGF 1,"K : FS - HD error de escritura\n"
+    else
     DEBUGF 1,"K : FS - HD write error\n"
+    end if
         ret
 
 hd_write_error_dma:
@@ -370,7 +382,11 @@ hd_write_error_dma:
 ;        call    clear_application_table_status
 ;        mov     esi, hd_write_str
 ;        call    sys_msg_board_str
-        DEBUGF 1,"K : FS - HD read error\n"
+        if lang eq sp
+        DEBUGF 1,"K : FS - HD error de escritura\n"
+        else
+        DEBUGF 1,"K : FS - HD write error\n"
+        end if
         pop     esi
         ret
 
@@ -379,7 +395,11 @@ hd_lba_error:
 ;    call  clear_application_table_status
 ;    mov   esi,hd_lba_str
 ;    call  sys_msg_board_str
+     if lang eq sp
+     DEBUGF 1,"K : FS - HD error en LBA\n"
+     else
      DEBUGF 1,"K : FS - HD LBA error\n"
+     end if
         jmp     LBA_read_ret
 
 
