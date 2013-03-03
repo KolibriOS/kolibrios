@@ -1011,7 +1011,6 @@ ext2_HdRead:
     .only_one_block:
         mov     esi, ebx
         rep movsb                               ;кусок last блока
-        pop     eax
         jmp     .end_read
         
    .error_at_first_block:
