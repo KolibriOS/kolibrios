@@ -895,15 +895,13 @@ ext2_HdRead:
         jae     .size_great_great
 
     .size_great_less:
-        push    1
-;        or      [EXT2_files_in_folder], 1       ;читаем по границе размера
+        push    1                                ;читаем по границе размера
         mov     ecx, [ebp + EXT2_INODE_STRUC.i_size]
         sub     ecx, [esi]                      ;(размер - старт) = сколько читать
         jmp     @F
 
     .size_great_great:
-        push    0
-;        and     [EXT2_files_in_folder], 0       ;читаем столько сколько запросили
+        push    0                                ;читаем столько сколько запросили
 
     @@:
         ;здесь мы точно знаем сколько байт читать - ecx
@@ -919,7 +917,7 @@ ext2_HdRead:
         mov     eax, [esi]
         div     [ext2_data.block_size]
 
-        push    eax       ;номер блока запоминаем
+        push    eax       ;счетчик блоков ложим в стек
         
         push    ecx
         mov     ecx, eax
@@ -949,7 +947,7 @@ ext2_HdRead:
 
     .zero_start:
         mov     eax, ecx
-        push    0                               ;счетчик блоков
+        push    0                               ;счетчик блоков ложим в стек
         ;теперь в eax кол-во оставшихся байт для чтения
     .calc_blocks_count:
         mov     ebx, edi                        ;чтение блока прям в ->ebx
@@ -994,9 +992,13 @@ ext2_HdRead:
         mov     ecx, edx 
         mov     esi, ebx
         rep movsb                               ;кусок last блока
+        jmp     @F
+
     .end_read:
-        pop     ebx
-        pop     eax
+        pop     ecx                             ;счетчик блоков, который хранился в стеке
+    @@:
+        pop     ebx                             ;количество считанных байт
+        pop     eax                             ; 1 или 0 - достигли ли конца файла
         test    eax, eax
         jz      @F
 
