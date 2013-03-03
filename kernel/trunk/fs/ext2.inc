@@ -1133,11 +1133,11 @@ ext2_find_lfn:
         sub     eax, [ext2_data.count_block_in_block]
         jle     .not_found
         
+        push    eax
         inc     ecx
         jmp     .folder_block_cycle
 
     .not_found:
-        pop     ebx
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
 
