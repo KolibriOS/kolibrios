@@ -1,6 +1,6 @@
 //@RB - v0.62 
 
-#define MEMSIZE 0x3E80
+#define MEMSIZE 0x3000
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h"
 #include "..\lib\figures.h"
@@ -14,23 +14,23 @@
 	#define ITEM_HEIGHT 18
 	#define ITEM_WIDTH  138
 	char *ITEMS_LIST[]={
-	"Сменить тему окон   ", "/sys/SKINSEL",       0,
-	"Выбрать цвет фона   ", "/sys/media/palitra", 0,
-	"Управление иконками ", "/sys/ICON",          0,
-	"Настройка устройств ", "/sys/SETUP",         0,
-	"Обновить стол       ", "/sys/REFRSCRN",      0,
-	"Процессы            ", "/sys/CPU",           0,
+	"Настройка окон",      "/sys/desktop",       0,
+	"Выбрать цвет фона",   "/sys/media/palitra", 0,
+	"Управление иконками", "/sys/ICON",          0,
+	"Настройка устройств", "/sys/SETUP",         0,
+	"Обновить стол",       "/sys/REFRSCRN",      0,
+	"Процессы",            "/sys/CPU",           0,
 	0};
 #else
 	#define ITEM_HEIGHT 18
 	#define ITEM_WIDTH  122
 	char *ITEMS_LIST[]={
-	"Window skin         ", "/sys/SKINSEL",       0,
-	"Background          ", "/sys/media/palitra", 0,
-	"Icon manager        ", "/sys/ICON",          0,
-	"Device setup        ", "/sys/SETUP",         0,
-	"Refresh desktop     ", "/sys/REFRSCRN",      0,
-	"Processes           ", "/sys/CPU",           0,
+	"Window setup",    "/sys/desktop",       0,
+	"Background",      "/sys/media/palitra", 0,
+	"Icon manager",    "/sys/ICON",          0,
+	"Device setup",    "/sys/SETUP",         0,
+	"Refresh desktop", "/sys/REFRSCRN",      0,
+	"Processes",       "/sys/CPU",           0,
 	0};
 #endif
 
