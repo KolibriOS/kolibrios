@@ -450,7 +450,7 @@ ext2_get_inode_block:
         mov     ebx, [ext2_data.ext2_temp_block]
         call    ext2_get_block
         test    eax, eax
-        jz      @F                      ;если не было ошибки
+        jnz     @F                      ;если не было ошибки
 
         mov     ecx, [ebx + ecx*4]    ;заносим результат
     @@:
@@ -980,7 +980,7 @@ ext2_HdRead:
         inc     ecx
         call    ext2_get_inode_block
         test    eax, eax
-        jz      .error_at_finish_block
+        jnz     .error_at_finish_block
 
         mov     edi, ebx
         mov     eax, ecx
