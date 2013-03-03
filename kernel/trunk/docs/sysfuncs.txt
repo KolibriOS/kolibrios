@@ -4540,6 +4540,45 @@ Returned value:
   * eax = 1 - buffer is full
 
 ======================================================================
+===================== Function 73 - blit bitmap  =====================
+======================================================================
+
+Parameters:
+  * eax = 73 - function number
+
+  * ebx = ROP and optional flags
+     31           6 5  4 3   0
+     [  reserved  ][T][B][ROP]
+     ROP - raster operation code
+        0: Copy
+     1-15: reserved
+     B   - blit into the background surface
+     T   - transparent blit
+
+  * ecx = pointer to the function parameters
+        destination offset and clipping
+     +0 signed dword: destination rectangle X offset from the window
+                      top-left corner
+     +4 signed dword: destination rectangle Y offset from the window
+                      top-left corner
+     +8 dword:        destination rectangle width
+    +12 dword:        destination rectangle height
+
+        source offset and clipping
+    +16 signed dword: source rectangle X offset from the bitmap
+                      top-left corner
+    +20 signed dword: source rectangle Y offset from the bitmap
+                      top-left corner
+    +24 dword:        source rectangle width
+    +28 dword:        source rectangle height
+
+    +32: dword: size of the bitmap row in bytes
+    +36: dword: bitmap data - must be 32bpp
+
+Returned value:
+  * function does not return value
+
+======================================================================
 =============== Function -1 - terminate thread/process ===============
 ======================================================================
 Parameters:
