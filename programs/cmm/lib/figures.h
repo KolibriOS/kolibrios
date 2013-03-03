@@ -24,7 +24,7 @@ void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 	WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
 }
 
-void DrawCircle(int x, y, r)
+:void DrawCircle(int x, y, r)
 {
 	int i;
 	float px=0, py=r, ii = r * 3.1415926 * 2;
@@ -36,7 +36,7 @@ void DrawCircle(int x, y, r)
 	}
 }
 
-void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
+:void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
 {
 	DefineButton(x-1, y-1, strlen(text)*6 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, graph_color);
 	WriteText(x+w+10, h / 2 + y -3, 0x80, text_color, text);
@@ -60,7 +60,7 @@ void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
 	} 
 }
 
-void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent, status_text)
+:void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent, status_text)
 {
 	int progress_w;
 	static int fill_old;
