@@ -345,7 +345,7 @@ virtual at ebx
         .pci_bus          dd ?
         .pci_dev          dd ?
         .irq_line         db ?
-		rb 3	; alignment
+                rb 3    ; alignment
 
         .prev_tx_frame            dd ?
         .ver_id                   db ?
@@ -2747,7 +2747,7 @@ int_boomerang:
         mov     [device.curr_upd], esi
         DEBUGF  1, "Next upd: %x\n", esi
 
-        jmp     EthReceiver
+        jmp     Eth_input
   .loop:
 
         mov     ebx, [esp]
