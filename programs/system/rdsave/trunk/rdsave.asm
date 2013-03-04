@@ -258,7 +258,7 @@ draw_window:
 ; надписи
 	mov	ecx,[sc.work_text]
 	or	ecx,0x80000000
-	mcall	4,<45,12>,,label1
+	mcall	4,<10,12>,,label1
 
 	mov	ebx,150 shl 16 + 35
 	mov	edx,path1
@@ -359,7 +359,7 @@ PathShow_data_1:
 if lang eq ru
 save		db 'Сохранить',0
 select		db ' Выбрать',0
-label1		db 'Выберите один из вариантов:',0
+label1		db 'Выберите куда сохранить содержимое RAM-диска:',0
 label2		db 'Или выберите полный путь к файлу:',0
 label3		db 'Все папки должны существовать',0
 ok		db 'RAM-диск сохранен успешно',0
