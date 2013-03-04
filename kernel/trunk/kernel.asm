@@ -3486,17 +3486,26 @@ nobackgr:
         mov     edx, [shutdown_processes]
 
         cmp     [SYS_SHUTDOWN], dl
-        jne     no_mark_system_shutdown
+        jne     noshutdown
 
         lea     ecx, [edx-1]
         mov     edx, OS_BASE+0x3040
-        jecxz   @f
+        jecxz   no_mark_system_shutdown
 ;--------------------------------------
 align 4
 markz:
         push    ecx edx
-        lea     edx, [(edx-(TASK_DATA and 1FFFFFFFh))*8+SLOT_BASE]
+        cmp     [edx+TASKDATA.state], 9
+        jz      .nokill
+        lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
+        cmp     [edx+APPDATA.dir_table], sys_pgdir - OS_BASE
+        jz      .nokill
         call    request_terminate
+        jmp     .common
+.nokill:
+        dec     byte [SYS_SHUTDOWN]
+        xor     eax, eax
+.common:
         pop     edx ecx
         test    eax, eax
         jz      @f
@@ -3521,11 +3530,20 @@ align 4
 newct:
         mov     cl, [ebx]
         cmp     cl, byte 3
-        jz      terminate
+        jz      .terminate
 
         cmp     cl, byte 4
-        jz      terminate
+        jnz     .noterminate
+.terminate:
+        pushad
+        call    terminate
+        popad
+        cmp     byte [SYS_SHUTDOWN], 0
+        jz      .noterminate
+        dec     byte [SYS_SHUTDOWN]
+        je      system_shutdown
 
+.noterminate:
         add     ebx, 0x20
         inc     esi
         dec     eax

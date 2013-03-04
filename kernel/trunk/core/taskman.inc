@@ -1148,6 +1148,14 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     eax, [esi+0x08]  ;app_eip
         mov     [ebx+REG_EIP], eax;app_entry
         mov     [ebx+REG_CS], dword app_code
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 8                      ; created by kernel?
+        cmp     [SLOT_BASE+eax+APPDATA.dir_table], sys_pgdir - OS_BASE
+        jnz     @f
+        cmp     [app_path], 0               ; it is a thread?
+        jnz     @f
+        mov     [ebx+REG_CS], dword os_code ; kernel thread
+@@:
         mov     [ebx+REG_EFLAGS], dword EFL_IOPL1+EFL_IF
 
         mov     eax, [esi+0x0C]  ;app_esp
