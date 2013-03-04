@@ -371,6 +371,33 @@ proc enable_irq stdcall, irq_line:dword
         ret
 endp
 
+proc disable_irq stdcall, irq_line:dword
+        mov     ebx, [irq_line]
+        cmp     [irq_mode], IRQ_APIC
+        je      .APIC
+
+        mov     edx, 0x21
+        cmp     ebx, 8
+        jb      @F
+
+        mov     edx, 0xA1
+        sub     ebx, 8
+@@:
+        in      al, dx
+        bts     eax, ebx
+        out     dx, al
+        ret
+.APIC:
+        shl     ebx, 1
+        add     ebx, 0x10
+        mov     eax, ebx
+        call    IOAPIC_read
+        or      eax, 0x10000; bit 16
+        xchg    eax, ebx
+        call    IOAPIC_write
+        ret
+endp
+
 align 4
 pci_irq_fixup:
 

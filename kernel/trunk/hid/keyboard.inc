@@ -359,9 +359,6 @@ send_scancode:
         
         xor     [kb_state], eax
         xor     [kb_lights], bl
-        push    ecx
-        call    set_lights
-        pop     ecx
 .writekey:
         pushad
 ; test for system hotkeys
@@ -495,10 +492,12 @@ set_lights:
         ret
 
 ps2_set_lights:
+        stdcall disable_irq, 1
         mov     al, 0xED
         call    kb_write
         mov     al, [esp+8]
         call    kb_write
+        stdcall enable_irq, 1
         ret     8
 
 ;// mike.dld ]
