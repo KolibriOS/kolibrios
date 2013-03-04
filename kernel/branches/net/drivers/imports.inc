@@ -97,6 +97,5 @@ kernel_export \
               NetRegDev,\
               NetUnRegDev,\
               NetPtrToNum,\
-              EthReceiver,\
               Eth_input,\
               IPv4_input

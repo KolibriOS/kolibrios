@@ -190,7 +190,6 @@ kernel_export:
   dd szNetRegDev       , NET_add_device
   dd szNetUnRegDev     , NET_remove_device
   dd szNetPtrToNum     , NET_ptr_to_num
-  dd szEthReceiver     , ETH_input               ; to be removed!
   dd szEth_input       , ETH_input
   dd szIPv4_input      , IPv4_input
 
