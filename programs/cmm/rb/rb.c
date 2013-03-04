@@ -1,6 +1,6 @@
 //@RB - v0.62 
 
-#define MEMSIZE 0x3000
+#define MEMSIZE 0x4000
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h"
 #include "..\lib\figures.h"
