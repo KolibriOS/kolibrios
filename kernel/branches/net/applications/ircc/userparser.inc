@@ -144,8 +144,7 @@ cmd_usr_quit:
         mov     ecx, MAX_WINDOWS
         mov     edi, windows
   .loop:
-        mov     [edi+window.flags], FLAG_CLOSE
-;        call    notify_channel_thread
+        mov     [edi + window.flags], FLAG_CLOSE
         add     edi, sizeof.window
         dec     ecx
         jnz     .loop

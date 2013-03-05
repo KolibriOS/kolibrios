@@ -42,12 +42,12 @@ UTF8                    = 2
 USERCMD_MAX_SIZE        = 400
 
 WIN_MIN_X               = 600
-WIN_MIN_Y               = 180
+WIN_MIN_Y               = 165
 
 TEXT_X                  = 5
-TEXT_Y                  = 45
+TEXT_Y                  = 30
 
-TOP_Y                   = 40
+TOP_Y                   = 25
 
 MAX_WINDOWS             = 20
 MAX_USERS               = 4096
@@ -107,6 +107,7 @@ struct  window_data
         text            rb 120*60
         title           rb 256
         names           rb MAX_NICK_LEN * MAX_USERS
+        selected        dd ?            ; selected user, 0 if none selected
         usertext        rb 256
         usertextlen     dd ?
 ends
@@ -169,7 +170,6 @@ START:
         mcall   48, 3, colors, 40
 
 ; set edit box and scrollbar colors
-
         mov     eax, [colors.work]
         mov     [scroll1.bg_color], eax
 
@@ -374,10 +374,6 @@ sockaddr1:
 
 status                  dd STATUS_DISCONNECTED
 
-channel_line_sun        dd 0x9999ff
-channel_line_shadow     dd 0x666699
-index_list_2            dd 0x0000ff
-
 text_start              dd ?                    ; pointer to current textbox data
 irc_data                dd 0x0                  ; encoder
 textbox_width           dd 80                   ; in characters, not pixels ;)
@@ -422,7 +418,7 @@ I_END:
 edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, max, cur, pos, bgcol, frcol, linecol
 scroll1 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 1
-
+scroll2 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 1
 
 main_PID        dd ?            ; identifier of main thread
 utf8_bytes_rest dd ?            ; bytes rest in current UTF8 sequence

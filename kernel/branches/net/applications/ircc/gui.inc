@@ -133,6 +133,8 @@ redraw_channel_list:
   .noscroll:
         mov     [scroll1.position], 0
 
+
+
 print_channel_list:
 
         pusha
@@ -156,7 +158,10 @@ print_channel_list:
         mul     ecx
         mov     edx, eax
         mov     eax, [window_open]
-        add     edx, [eax + window.data_ptr]
+        mov     eax, [eax + window.data_ptr]
+        add     edx, eax
+        mov     ebp, [eax + window_data.selected]
+        sub     ebp, [scroll1.position]
         add     edx, window_data.names
 
         pop     ebx
@@ -168,8 +173,19 @@ print_channel_list:
         mov     edi, [ysize]                    ; Calculate how many names will fit on screen
         sub     edi, TEXT_Y + 15 ;+ 10           ;;;;;
   .loop:
-        ; TODO: check if name is selected and highlight background color if so
-        cmp     byte[edx], ' '                  ; end of list?
+        dec     ebp                             ; is this name selected?
+        jnz     @f
+                                                ; yes, highlight it
+        pusha
+        mov     cx, bx
+        mov     bx, USERLIST_X
+        shl     ecx, 16
+        mov     cx, 10 - 1
+        mov     edx, 0x00000055                 ; blue!
+        mcall   13
+        popa
+  @@:
+        cmp     byte[edx], 0                    ; end of list?
         je      .done
         mcall
 

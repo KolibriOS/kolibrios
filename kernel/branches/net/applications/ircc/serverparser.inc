@@ -46,6 +46,8 @@ server_parser:
 
 server_commands:
 
+        dd      '322 ', cmd_322         ; RPL_LIST
+        dd      '323 ', cmd_323         ; RPL_LISTEND
         dd      '328 ', cmd_328
         dd      '332 ', cmd_topic
         dd      '333 ', cmd_333         ; nickname and time of topic
@@ -870,3 +872,18 @@ cmd_333:
   .fail:
         ret
 
+cmd_322:
+        add     esi, 4
+
+        call    skip_nick
+
+        call    print_text2
+
+        mov     esi, str_newline
+        call    print_text2
+
+        ret
+
+cmd_323:
+
+        ret
