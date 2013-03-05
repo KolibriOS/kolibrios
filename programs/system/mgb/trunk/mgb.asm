@@ -1,9 +1,15 @@
 ;=============================================================================
-; Kolibri Graphics Benchmark 0.4
+; Kolibri Graphics Benchmark 0.5
+;--------------------------------------
 ; MGB - Menuet Graphics Benchmark 0.3
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.5
+; last update:  05/03/2013
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      benchmark f73-blitter
+;---------------------------------------------------------------------
 ; version:	0.4
 ; last update:  18/09//2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -295,6 +301,12 @@ testDrawPicture:
 	ret
 ;---------------------------------------------------------------------
 align 4
+testDrawPicture_f73:
+	xor	ebx,ebx
+	mcall	73,,params_f73
+	ret
+;---------------------------------------------------------------------
+align 4
 testDrawVertLine:
 	mcall	38,<300,300>,<30,380>,1090207Fh
 	ret
@@ -536,6 +548,7 @@ results_table dd \
   ?,?,testDrawWindow,aDrawingWindow,\
   ?,?,testDrawBar,aDrawingBar,\
   ?,?,testDrawPicture,aDrawingPicture,\
+  ?,?,testDrawPicture_f73,aDrawingPictF73,\
   ?,?,testDrawVertLine,aDrawingVLine,\
   ?,?,testDrawHorzLine,aDrawingHLine,\
   ?,?,testDrawFreeLine,aDrawingFLine,\
@@ -551,7 +564,8 @@ TESTS_NUM     = ($ - results_table) / TEST_REC_SIZE - 1
 ;---------------------------------------------------------------------
 aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
 aDrawingBar	db 'Filled Rectangle, 100x250 px',0
-aDrawingPicture db 'Picture, 55x123, px',0
+aDrawingPicture db 'Picture, 90x123, px',0
+aDrawingPictF73	db 'Picture for Blitter, 90x123, px',0
 aDrawingVLine	db 'Vertical Line, 350 px',0
 aDrawingHLine	db 'Horizontal Line, 270 px',0
 aDrawingFLine	db 'Free-angled Line, 350 px',0
@@ -562,7 +576,7 @@ aDrawingPixel	db 'Single Pixel',0
 
 aTestText	db 'This is a 34-charachters test text'
 aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-aCaption	db 'Kolibri Graphical Benchmark 0.4',0
+aCaption	db 'Kolibri Graphical Benchmark 0.5',0
 
 aLeft	db 'Left    :',0
 aRight	db 'Right   :',0
@@ -636,6 +650,22 @@ db	0
 start_temp_file_name:	db 'pattern.mgb',0
 
 path4	db '/rd/1/pattern.mgb',0
+;---------------------------------------------------------------------
+align 4
+params_f73:
+; destination
+.offset_X_dest	dd 0	; +0
+.offset_Y_dest	dd 0	; +4
+.width_dest	dd 90	; +8
+.height_dest	dd 123	; +12
+; source
+.offset_X_src	dd 0	; +16
+.offset_Y_src	dd 0	; +20
+.width_src	dd 90	; +24
+.height_src	dd 123	; +28
+; other
+.pointer	dd 0	; 90*4	; +32
+.row_size	dd 90*4	; +36
 ;---------------------------------------------------------------------
 align 4
 ProcLib_import:
@@ -783,5 +813,6 @@ thread_stack2:
 thread_stack1:
 ;---------------------------------------------------------------------
 	rb 4096
+	rb 0x2884	; for F73 image size 123*90*4
 stacktop:
 I_END:
