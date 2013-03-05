@@ -16,7 +16,7 @@ include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Шифрование алгоритмом DES 04.03.13',0 ;подпись окна
+caption db 'Шифрование алгоритмом DES 05.03.13',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -136,8 +136,8 @@ pushad
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	xor eax,eax
-	mov ebx,(20 shl 16)+485
-	mov ecx,(20 shl 16)+415
+	mov ebx,(20 shl 16)+480
+	mov ecx,(20 shl 16)+410
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x10000000+0x20000000
 	mov edi,caption
@@ -275,7 +275,7 @@ but_open_file:
 	je .end_open_file
 
 	mov [open_file_size],ebx
-	add ebx,open_file
+	add ebx,dword[open_file]
 	mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
 	mcall 71,1,openfile_path
 
@@ -601,7 +601,7 @@ align 4
 buf_0: dd 0 ;указатель на буфер изображения
 	dw 5 ;+4 left
 	dw 31 ;+6 top
-.w: dd 460 ;+8 w
+.w: dd 456 ;+8 w
 .h: dd 350 ;+12 h
 .color: dd 0xffffd0 ;+16 color
 	db 24 ;+20 bit in pixel

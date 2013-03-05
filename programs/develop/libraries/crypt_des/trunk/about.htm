@@ -1,0 +1,104 @@
+<html>
+<head>
+<title>библиотека для шифрования файлов по алгоритму DES</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<style>
+body
+{
+  font-size: 15px;
+  font-family: "Bookman Old Style";
+  color: black;
+  text-align: justify;
+}
+h1 { color: green; font-size: 23px; }
+h2 { color: green; font-size: 21px; }
+h3 { color: green; font-size: 19px; }
+h4 { color: #803f00; font-size: 17px; }
+i { color: #0099cc; }
+b { color: #0099cc; }
+p {
+  text-indent: 1em;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+ol, ul, dl{
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+pre
+{
+  padding: 2px;
+  padding-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  margin-right: 0px;
+  font-family: "Courier New";
+  font-size: 15px;
+  color: #004000;
+  background-color: #ffd0ff;
+}
+table { font-size: 15px; }
+</style>
+</head>
+
+<body>
+
+<h1>Оглавление</h1>
+<ul>
+<li>Вступление</li>
+<li><a href="#fun">Функции</a><br>
+<ul>
+<li><a href="#f_en">des_encryption</a></li>
+<li><a href="#f_de">des_decryption</a></li>
+<li><a href="#tabl_e">Таблица экспорта</a></li>
+</ul>
+
+<h1>Вступление</h1>
+<p>Библиотека для шифрования файлов по алгоритму DES (Data Encryption Standard) — симметричный алгоритм шифрования.</p>
+<p>Документация обновлялась 05.03.13.</p>
+
+<h1><a name="fun">Функции</a></h1>
+
+<h4><a name="f_en">des_encryption</a></h4>
+<p>Функция шифрования файлов. Пример использования:</p>
+<pre>txt_key db 'des_2013',0
+mem_key rb 120
+...
+mov eax,[open_file_size]
+shr eax,3
+stdcall [des_encryption], txt_key,mem_key,[open_file],eax</pre>
+<p>где:</p>
+<p><b>txt_key</b> - входной ключ 64 бит</p>
+<p><b>mem_keys</b> - память для формирования 16 подключей (размер 120 байт)</p>
+<p><b>[open_file]</b> - указатель на первый шифруемый 8 байтный блок</p>
+<p><b>eax</b> - число блоков для шифрования (<i>[open_file_size]</i> - размер файла)</p>
+
+<h4><a name="f_de">des_decryption</a></h4>
+<p>Функция расшифровывания файлов. Пример использования:</p>
+<pre>txt_key db 'des_2013',0
+mem_key rb 120
+...
+mov eax,[open_file_size]
+shr eax,3
+stdcall [des_decryption], txt_key,mem_key,[open_file],eax</pre>
+<p>где:</p>
+<p><b>txt_key</b> - входной ключ 64 бит</p>
+<p><b>mem_keys</b> - память для формирования 16 подключей (размер 120 байт)</p>
+<p><b>[open_file]</b> - указатель на первый расшифровываемый 8 байтный блок</p>
+<p><b>eax</b> - число блоков для расшифрования (<i>[open_file_size]</i> - размер файла)</p>
+
+<h1><a name="tabl_e">Таблица экспорта</a></h1>
+<p>Пример таблицы экспорта, расчитанной на использование макроса <b>@use_library</b>:</p>
+<pre>align 4
+import_des:
+	des_encryption dd sz_des_encryption
+	des_decryption dd sz_des_decryption
+dd 0,0
+	sz_des_encryption db 'des_encryption',0
+	sz_des_decryption db 'des_decryption',0</pre>
+
+</body>
+</html>
