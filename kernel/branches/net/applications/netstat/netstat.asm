@@ -165,8 +165,20 @@ redraw:
  .no_arp:
 
         mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
+
         add     ebx, 18
         mov     edx, str_packets_rx
+        mcall
+
+        cmp     [mode], 106
+        jne     end_of_draw
+
+        add     ebx, 18
+        mov     edx, str_missed
+        mcall
+
+        add     ebx, 18
+        mov     edx, str_dumped
         mcall
 
 
@@ -376,12 +388,32 @@ not_105:
         pop     ebx
         push    eax
 
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 18
+        mov     edx, 135 shl 16 + 75 + 18*3
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        sub     edx, 18
+        pop     ecx
+        mcall
 
         sub     edx, 18
         pop     ecx
@@ -557,6 +589,8 @@ str_gateway     db 'Standard gateway:', 0
 str_arp         db 'ARP entrys:', 0
 str_conflicts   db 'ARP conflicts:', 0
 str_unknown     db 'unknown', 0
+str_missed      db 'Packets missed:',0
+str_dumped      db 'Packets dumped:',0
 
 namebuf         rb 64
 
