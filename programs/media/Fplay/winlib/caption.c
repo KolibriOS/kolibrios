@@ -19,6 +19,10 @@ extern int res_minimize_btn[];
 extern int res_minimize_btn_hl[];
 extern int res_minimize_btn_pressed[];
 
+extern int res_full_btn[];
+extern int res_full_btn_hl[];
+extern int res_full_btn_pressed[];
+
 extern uint32_t main_cursor;
 
 void update_caption_size(window_t *win);
@@ -59,19 +63,26 @@ int init_caption(window_t *win)
 
     cpt->ctrl.ctx = ctx;
 
-    btn = create_button(NULL, ID_CLOSE,0,5,16,18,(ctrl_t*)cpt);
+    btn = create_button(NULL, ID_CLOSE,0,5,18,18,(ctrl_t*)cpt);
     cpt->close_btn = btn;
 
     btn->img_default = res_close_btn;
     btn->img_hilite  = res_close_btn_hl;
     btn->img_pressed = res_close_btn_pressed;
 
-    btn = create_button(NULL, ID_MINIMIZE,0,5,16,18,(ctrl_t*)cpt);
+    btn = create_button(NULL, ID_MINIMIZE,0,5,18,18,(ctrl_t*)cpt);
     cpt->minimize_btn = btn;
 
     btn->img_default = res_minimize_btn;
     btn->img_hilite  = res_minimize_btn_hl;
     btn->img_pressed = res_minimize_btn_pressed;
+
+    btn = create_button(NULL, ID_FULL,0,5,18,18,(ctrl_t*)cpt);
+    cpt->full_btn = btn;
+
+    btn->img_default = res_full_btn;
+    btn->img_hilite  = res_full_btn_hl;
+    btn->img_pressed = res_full_btn_pressed;
 
     update_caption_size(win);
 
@@ -110,13 +121,17 @@ void update_caption_size(window_t *win)
     cpt->ctrl.h       = CAPTION_HEIGHT;
     win->client.t     = CAPTION_HEIGHT;
 
-    cpt->close_btn->ctrl.rc.l = win->w - 25;
+    cpt->close_btn->ctrl.rc.l = win->w - 27;
     cpt->close_btn->ctrl.rc.r = cpt->close_btn->ctrl.rc.l +
                            cpt->close_btn->ctrl.w;
 
-    cpt->minimize_btn->ctrl.rc.l = win->w - 25 - 16 - 5;
+    cpt->minimize_btn->ctrl.rc.l = win->w - 27 - 18 - 5;
     cpt->minimize_btn->ctrl.rc.r = cpt->minimize_btn->ctrl.rc.l +
                            cpt->minimize_btn->ctrl.w;
+
+    cpt->full_btn->ctrl.rc.l = win->w - 27 - 18 -18 - 5 - 5;
+    cpt->full_btn->ctrl.rc.r = cpt->full_btn->ctrl.rc.l +
+                           cpt->full_btn->ctrl.w;
 
 };
 
@@ -157,7 +172,7 @@ void draw_caption(caption_t *cpt)
 
     rc.l = 8;
     rc.t = 0;
-    rc.r = cpt->ctrl.w - 25 - 16 - 5 - 8;
+    rc.r = cpt->ctrl.w - 27 - 18 - 18 - 5 - 5 - 8;
     rc.b = 18;
     
     draw_text_ext(cpt->ctx.pixmap, win_font, cpt->text, &rc, 0xFFFFFFFF);
