@@ -140,8 +140,7 @@ print_channel_list:
         pusha
 ; Now, draw the usernames themselves
 
-        mov     eax, 13                         ; draw rectangle (clear list)
-
+; first, draw an invisible button
         mov     ebx, [xsize]
         sub     ebx, USERLIST_X + SCROLLBAR_WIDTH
         shl     ebx, 16
@@ -149,18 +148,24 @@ print_channel_list:
         mov     bx, USERLIST_X
         mov     ecx, [ysize]
         add     ecx, TEXT_Y shl 16 - (TEXT_Y + 15)        ;;;;;   + 10???
-        mov     edx, [colors.work]
-        mcall
+        push    ecx ebx
+        mov     edx, 50 + 1 shl 29 + 1 shl 30
+        mcall   8
 
+; now draw rectangle to clear the names
+        pop     ebx ecx
+        mov     edx, [colors.work]
+        mcall   13
+
+; now draw the names according with scrollbar position and window size
         mov     eax, [scroll1.position]
         xor     edx, edx
         mov     ecx, MAX_NICK_LEN
         mul     ecx
         mov     edx, eax
         mov     eax, [window_open]
-        mov     eax, [eax + window.data_ptr]
-        add     edx, eax
-        mov     ebp, [eax + window_data.selected]
+        mov     ebp, [eax + window.selected]
+        add     edx, [eax + window.data_ptr]
         sub     ebp, [scroll1.position]
         add     edx, window_data.names
 
@@ -173,8 +178,11 @@ print_channel_list:
         mov     edi, [ysize]                    ; Calculate how many names will fit on screen
         sub     edi, TEXT_Y + 15 ;+ 10           ;;;;;
   .loop:
+        cmp     byte[edx], 0                    ; end of list?
+        je      .done
+
         dec     ebp                             ; is this name selected?
-        jnz     @f
+        jnz     .nothighlight
                                                 ; yes, highlight it
         pusha
         mov     cx, bx
@@ -184,17 +192,24 @@ print_channel_list:
         mov     edx, 0x00000055                 ; blue!
         mcall   13
         popa
-  @@:
-        cmp     byte[edx], 0                    ; end of list?
-        je      .done
+
+        mov     ecx, 0x8000ffff                 ; cyan!
         mcall
 
+        mov     ecx, [colors.work_text]
+        or      ecx, 0x80000000                 ; ASCIIZ string
+        jmp     .next
+
+  .nothighlight:
+        mcall
+
+  .next:
         add     edx, MAX_NICK_LEN               ; next name
         add     ebx, 10                         ; height distance between lines
         sub     edi, 10
         ja      .loop
-  .done:
 
+  .done:
         popa
 
         ret

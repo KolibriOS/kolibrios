@@ -101,13 +101,13 @@ struct  window
         name            rb MAX_WINDOWNAME_LEN
         users           dd ?
         users_scroll    dd ?
+        selected        dd ?            ; selected user, 0 if none selected
 ends
 
 struct  window_data
         text            rb 120*60
         title           rb 256
         names           rb MAX_NICK_LEN * MAX_USERS
-        selected        dd ?            ; selected user, 0 if none selected
         usertext        rb 256
         usertextlen     dd ?
 ends
@@ -231,6 +231,24 @@ button:
         cmp     ax, 1           ; close program
         je      exit
 
+        cmp     ax, 50
+        jne     @f
+
+        mcall   37, 1           ; Get mouse position
+        sub     ax, TEXT_Y
+        mov     bl, 10
+        div     bl
+        and     eax, 0x000000ff
+        inc     eax
+        add     eax, [scroll1.position]
+        mov     ebx, [window_open]
+        mov     [ebx + window.selected], eax
+
+        call    print_channel_list
+
+        jmp     still
+
+  @@:
         sub     ax, WINDOW_BTN_START
         jb      exit
 

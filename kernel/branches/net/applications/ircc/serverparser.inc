@@ -137,56 +137,95 @@ skip_nick:
 align 4
 find_window:                            ; esi is ptr to windowname
 
-; TODO: if the window in question does not exist, create it ???
+        push    esi
+
+        mov     edi, esi
+        call    compare_to_nick
+        jne     .nochat
+
+        mov     esi, servercommand+1
+  .nochat:
 
 ; now search for window in list
         mov     ebx, windows
         mov     [window_print], ebx     ; set first window (server window) as default output window
   .scanloop:
         cmp     [ebx + window.data_ptr], 0
-        je      .just_skip
+        je      .create_it
         push    esi
         lea     edi, [ebx + window.name]
         mov     ecx, MAX_WINDOWNAME_LEN
         repe    cmpsb
+        pop     esi
         cmp     byte[edi-1], 0
         je      .got_it
-        pop     esi
         add     ebx, sizeof.window
         ; TODO: check buffer limits ?
         jmp     .scanloop
 
-; window not found, just skip this name
-  .just_skip:
-        lodsb
-        test    al, al
-        jz      .quit
-        cmp     al, ' '
-        jne     .just_skip
-        dec     esi
-        jmp     .done
+; create channel window - search for empty slot
+  .create_it:
+        mov     ebx, windows
+        mov     ecx, MAX_WINDOWS
+  .scanloop2:
+        cmp     [ebx + window.data_ptr], 0
+        je      .free_found
+        add     ebx, sizeof.window
+        dec     ecx
+        jnz     .scanloop2
+; Error: no more available windows!
+        jmp     .just_skip
+
+  .free_found:
+        push    ebx
+        call    window_create
+        pop     ebx
+        test    eax, eax
+        jz      .just_skip
+        mov     [ebx + window.data_ptr], eax
+        mov     [ebx + window.type], WINDOWTYPE_CHAT
+        mov     [ebx + window.flags], 0
+
+        call    window_set_name
+
+        mov     [window_open], ebx
+        mov     [window_print], ebx
+        call    window_refresh
+
+        call    draw_windownames
+        jmp     .just_skip
 
 ; found it!
   .got_it:
-        add     esp, 4
         mov     [window_print], ebx
-        dec     esi
+        call    window_refresh
 
-; now skip trailing spaces and semicolons
-  .done:
+  .just_skip:
+        pop     esi
+  .skip1:
+; skip text
         lodsb
         test    al, al
         jz      .quit
         cmp     al, ' '
-        je      .done
+        jne     .skip1
+        dec     esi
+; now skip trailing spaces and semicolons
+  .skip2:
+        lodsb
+        test    al, al
+        jz      .quit
+        cmp     al, ' '
+        je      .skip2
         cmp     al, ':'
-        je      .done
+        je      .skip2
         dec     esi
 
   .quit:
-        call    window_refresh
-
         ret
+
+
+
 
 
 

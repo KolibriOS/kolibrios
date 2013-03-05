@@ -46,7 +46,7 @@ window_set_name:    ; esi = ptr to name, ebx = window ptr
         mov     ecx, MAX_WINDOWNAME_LEN
   .loop:
         lodsb
-        cmp     al, 0x20
+        cmp     al, 0x21
         jbe     .addzero
         stosb
         dec     ecx
