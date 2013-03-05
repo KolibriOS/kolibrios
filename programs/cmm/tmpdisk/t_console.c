@@ -14,11 +14,11 @@
 	0};
 #else*/
 	char *rezult_text[]={
-	"operation compleated successfully",
+	"operation completed successfully",
 	"unknown IOCTL code, wrong input/output size...",
 	"DiskId must be from 0 to 9",
 	"DiskSize is too large",
-	"DiskSize is too small, may be too less free RAM",
+	"DiskSize is too small, might be too little free RAM",
 	"memory allocation failed",
 	"unknown error O_o",
 	0};

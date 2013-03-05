@@ -60,7 +60,7 @@ void Main_Window()
    	mem_Init();
 	if (load_dll2(boxlib, #edit_box_draw,0)!=0)
 	{
-		notify("error: library doesn't exists /rd/1/lib/box_lib.obj");
+		notify("error: library doesn't exist /rd/1/lib/box_lib.obj");
 		ExitProcess();
 	}
 	SetEventMask(0x27);
