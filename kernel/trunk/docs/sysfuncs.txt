@@ -4572,8 +4572,8 @@ Parameters:
     +24 dword:        source rectangle width
     +28 dword:        source rectangle height
 
-    +32: dword: size of the bitmap row in bytes
-    +36: dword: bitmap data - must be 32bpp
+    +32: dword: bitmap data - must be 32bpp
+    +36: dword: size of the bitmap row in bytes
 
 Returned value:
   * function does not return value

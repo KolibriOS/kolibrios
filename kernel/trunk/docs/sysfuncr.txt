@@ -4605,8 +4605,8 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
     +24 dword:        ширина исходного прямоугольника
     +28 dword:        высота исходного прямоугольника
 
-    +32: dword: размер строки bitmap в байтах
-    +36: dword: данные bitmap - должны быть 32bpp
+    +32: dword: данные bitmap - должны быть 32bpp
+    +36: dword: размер строки bitmap в байтах
 
 Возвращаемое значение:
   * функция не возвращает значения
