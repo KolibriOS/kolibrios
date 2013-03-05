@@ -1,5 +1,5 @@
 
-#include "system.h"
+#include <system.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -77,7 +77,7 @@ int init_caption(window_t *win)
     btn->img_hilite  = res_minimize_btn_hl;
     btn->img_pressed = res_minimize_btn_pressed;
 
-    btn = create_button(NULL, ID_FULL,0,5,18,18,(ctrl_t*)cpt);
+    btn = create_button(NULL, ID_FULLSCREEN,0,5,18,18,(ctrl_t*)cpt);
     cpt->full_btn = btn;
 
     btn->img_default = res_full_btn;
@@ -243,6 +243,20 @@ int caption_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                     win->win_state = MINIMIZED;
                     send_message((ctrl_t*)win, MSG_SIZE, 0, 0);
                     break;
+                case ID_FULLSCREEN:
+                {
+                    int screensize;
+                    
+                    screensize = GetScreenSize();
+                    __asm__ __volatile__(
+                    "int $0x40"
+                    ::"a"(67), "b"(0), "c"(0),
+                    "d"((screensize >> 16)-1),"S"((screensize & 0xFFFF)-1) );
+                    win->win_state = FULLSCREEN;
+                    window_update_layout(win);
+                };
+                    break;
+                
                 default:
                     break;
             };

@@ -403,14 +403,17 @@ void render_time(render_t *render)
 //                    sys_time*10, frames[vfx].pts, ctime, fdelay);
 
         main_render->draw(main_render, &frames[vfx].picture);
-        prg->current = frames[vfx].pts*1000;
+        if(main_render->win->win_state != FULLSCREEN)
+        {
+            prg->current = frames[vfx].pts*1000;
 //        printf("current %f\n", prg->current);
-        lvl->current = vfx & 1 ? sound_level_1 : sound_level_0;
+            lvl->current = vfx & 1 ? sound_level_1 : sound_level_0;
         
-        send_message(&prg->ctrl, PRG_PROGRESS, 0, 0);
+            send_message(&prg->ctrl, PRG_PROGRESS, 0, 0);
         
-        if(main_render->win->panel.layout)
-            send_message(&lvl->ctrl, MSG_PAINT, 0, 0);
+            if(main_render->win->panel.layout)
+                send_message(&lvl->ctrl, MSG_PAINT, 0, 0);
+        }
         
         frames_count--;
         frames[vfx].ready = 0;
@@ -707,8 +710,11 @@ void render_adjust_size(render_t *render, window_t *win)
     uint8_t  state;
 
     right  = win->w;
-    bottom = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
+    bottom = win->h;
 
+    if(win->win_state != FULLSCREEN)
+        bottom-= CAPTION_HEIGHT+PANEL_HEIGHT;
+    
  //   printf("window width %d height %d\n",
  //                   right, bottom);
 
@@ -724,6 +730,8 @@ void render_adjust_size(render_t *render, window_t *win)
         bottom == render->win_height)
         return;
 
+    printf("%s r: %d b: %d\n", __FUNCTION__, right, bottom);
+    
     new_w = bottom*render->ctx_width/render->ctx_height;
     new_h = right*render->ctx_height/render->ctx_width;
 
@@ -738,8 +746,8 @@ void render_adjust_size(render_t *render, window_t *win)
         new_w = bottom*render->ctx_width/render->ctx_height;
     };
 
-    render->win_width  = win->w;
-    render->win_height = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
+    render->win_width  = right;
+    render->win_height = bottom;
     render_set_size(render, new_w, new_h);
 
     if(render->caps & HW_TEX_BLIT)          /*  hw scaler  */
@@ -815,10 +823,14 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
               picture->linesize, 0, render->ctx_height, data, linesize);
 //    printf("sws_scale\n");
 
-    blit_bitmap(bitmap, render->rcvideo.l,
+    if(render->win->win_state == FULLSCREEN)
+        blit_bitmap(bitmap,render->rcvideo.l,render->rcvideo.t,
+                 render->rcvideo.r, render->rcvideo.b);
+    else
+        blit_bitmap(bitmap, render->rcvideo.l,
                  CAPTION_HEIGHT+render->rcvideo.t,
                  render->rcvideo.r, render->rcvideo.b);
-
+    
     render->last_bitmap = bitmap;
 //    printf("blit_bitmap\n");
 
@@ -863,43 +875,54 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
     sws_scale(cvt_ctx, (const uint8_t* const *)picture->data,
               picture->linesize, 0, render->ctx_height, data, linesize);
 
-    blit_bitmap(&render->bitmap[0], render->rcvideo.l,
-                render->rcvideo.t+CAPTION_HEIGHT,
-                render->rcvideo.r, render->rcvideo.b);
+    if(render->win->win_state == FULLSCREEN)
+        blit_bitmap(&render->bitmap[0],render->rcvideo.l,render->rcvideo.t,
+                 render->rcvideo.r, render->rcvideo.b);
+    else
+        blit_bitmap(&render->bitmap[0], render->rcvideo.l,
+                 CAPTION_HEIGHT+render->rcvideo.t,
+                 render->rcvideo.r, render->rcvideo.b);
+                
     render->last_bitmap = &render->bitmap[0];
 }
 
 void render_draw_client(render_t *render)
 {
+    int y;
+    
     if(render->win_state == MINIMIZED ||
-       render->win_state == ROLLED)
+       render->win_state == ROLLED )
         return;
-
+    if(render->win_state == FULLSCREEN)
+        y = 0;
+    else
+        y = CAPTION_HEIGHT;
+            
     if(player_state == PAUSE) 
     {
          if(frames[vfx].ready == 1 )
             main_render->draw(main_render, &frames[vfx].picture);
          else
-            draw_bar(0, CAPTION_HEIGHT, render->win_width,
+            draw_bar(0, y, render->win_width,
                  render->rcvideo.b, 0);
     }
     else if( player_state == STOP )
     {
-        draw_bar(0, CAPTION_HEIGHT, render->win_width,
+        draw_bar(0,y, render->win_width,
                  render->rcvideo.b, 0);
     };
 
     if(render->layout & HAS_TOP)
-        draw_bar(0, CAPTION_HEIGHT, render->win_width,
+        draw_bar(0, y, render->win_width,
                  render->rctop.b, 0);
     if(render->layout & HAS_LEFT)
-        draw_bar(0, render->rcvideo.t+CAPTION_HEIGHT, render->rcleft.r,
+        draw_bar(0, render->rcvideo.t+y, render->rcleft.r,
                  render->rcvideo.b, 0);
     if(render->layout & HAS_RIGHT)
-        draw_bar(render->rcright.l, render->rcvideo.t+CAPTION_HEIGHT,
+        draw_bar(render->rcright.l, render->rcvideo.t+y,
                  render->rcright.r, render->rcvideo.b, 0);
     if(render->layout & HAS_BOTTOM)
-        draw_bar(0, render->rcbottom.t+CAPTION_HEIGHT,
+        draw_bar(0, render->rcbottom.t+y,
                  render->win_width, render->rcbottom.b, 0);
 }
 

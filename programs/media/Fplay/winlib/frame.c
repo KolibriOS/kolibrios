@@ -139,6 +139,9 @@ int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
     rect_t  *rc = NULL;
     int  x, y;
 
+    if(win->win_state == FULLSCREEN)
+        return 0;
+    
     x = ((pos_t)arg2).x;
     y = ((pos_t)arg2).y;
 

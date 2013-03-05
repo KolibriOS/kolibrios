@@ -252,7 +252,7 @@ void window_update_layout(window_t *win)
         win->win_state = ROLLED;
         return;
     };
-    
+
     if(state & 1)
         state = MAXIMIZED;
     else
@@ -269,10 +269,10 @@ void window_update_layout(window_t *win)
     if( winw  == win->w &&
         winh  == win->h &&
         state == win->win_state)
-        
         return;
 
-    win->win_state = state;
+    if(win->win_state != FULLSCREEN)
+        win->win_state = state;
     
 #if 0
     int old_size;

@@ -64,17 +64,6 @@ typedef struct
     };
 }hwcaps_t;
 
-static inline uint32_t GetScreenSize()
-{
-     uint32_t retval;
-
-     __asm__ __volatile__(
-     "int $0x40"
-     :"=a"(retval)
-     :"a"(61), "b"(1));
-     return retval;
-}
-
 static uint32_t get_service(char *name)
 {
   uint32_t retval = 0;
