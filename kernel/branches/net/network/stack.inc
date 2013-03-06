@@ -287,6 +287,28 @@ stack_handler:
 
 
 
+align 4
+NET_link_changed:
+
+align 4
+NET_send_event:
+
+; Send event to all applications
+        push    edi ecx
+        mov     edi, SLOT_BASE
+        mov     ecx, [TASK_COUNT]
+  .loop:
+        add     edi, 256
+        or      [edi + APPDATA.event_mask], EVENT_NETWORK2
+        loop    .loop
+        pop     ecx edi
+
+;        call    change_task
+
+        ret
+
+
+
 ;-----------------------------------------------------------------
 ;
 ; NET_add_device:
@@ -343,6 +365,8 @@ NET_add_device:
         call    NET_set_default
         pop     eax
        @@:
+
+        call    NET_send_event
 
         DEBUGF  1,"Device number: %u\n", eax
         ret
@@ -434,6 +458,8 @@ NET_remove_device:
 
         xor     eax, eax
         mov     dword [edi-4], eax
+
+        call    NET_send_event
 
         dec     [NET_RUNNING]
         ret

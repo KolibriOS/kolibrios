@@ -136,15 +136,20 @@ no_IP:
 
 
 START:
-
-        mcall   40, EVM_STACK   ; network event
+        mcall   40, EVM_STACK2
 
         DEBUGF  1,">Zero-config service loaded\n"
 
+  .wait:
         mcall   76, API_ETH + 4 ; get MAC of ethernet interface 0
         cmp     eax, -1
-        je      exit
+        jne     .start
 
+        mcall   10
+        jmp     .wait
+
+  .start:
+        mcall   40, EVM_STACK
         mov     word[MAC], bx
         mov     dword[MAC+2], eax
 
