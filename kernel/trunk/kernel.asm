@@ -5674,6 +5674,6 @@ include "data32.inc"
 __REV__ = __REV
 
 uglobals_size = $ - endofcode
-if lang ~ eq sp
+if ~ lang eq sp
 diff16 "end of kernel code",0,$
 end if

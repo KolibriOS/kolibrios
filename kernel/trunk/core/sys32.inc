@@ -78,7 +78,7 @@ iglobal
   msg_exc_d     db "General protection fault", 0
   msg_exc_e     db "Page fault", 0
 
-  if lang ~ eq sp
+  if ~ lang eq sp
   msg_sel_ker   db "kernel", 0
   msg_sel_app   db "application", 0
   end if

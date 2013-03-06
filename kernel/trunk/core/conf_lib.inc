@@ -71,16 +71,16 @@ proc set_kernel_conf
 endp
 iglobal
 ugui db 'gui',0
-if lang ~ eq sp
+if ~ lang eq sp
 ugui_mouse_speed db 'mouse_speed',0
 end if
 ugui_mouse_speed_def db '2',0
-if lang ~ eq sp
+if ~ lang eq sp
 ugui_mouse_delay db 'mouse_delay',0
 end if
 ugui_mouse_delay_def db '0x00A',0
 
-if lang ~ eq sp
+if ~ lang eq sp
 udev db 'dev',0
 end if
 udev_midibase db 'midibase',0
@@ -135,7 +135,7 @@ endl
 
 endp
 iglobal
-if lang ~ eq sp
+if ~ lang eq sp
 unet db 'net',0
 unet_active db 'active',0
 unet_addr db 'addr',0
