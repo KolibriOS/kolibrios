@@ -14,7 +14,7 @@ $Revision$
 
 iglobal
 if lang eq sp
-include 'conf_lib-sp.inc'
+include 'core/conf_lib-sp.inc'
 end if
 conf_path_sect:
                 db 'path',0

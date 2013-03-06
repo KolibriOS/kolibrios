@@ -75,7 +75,7 @@ iglobal
   msg_exc_e     db "Page fault", 0
 
   if lang eq sp
-    include 'sys32-sp.inc'
+    include 'core/sys32-sp.inc'
   else
     msg_sel_ker   db "kernel", 0
     msg_sel_app   db "application", 0
