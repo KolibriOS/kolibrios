@@ -30,7 +30,7 @@ include '..\macros.inc'
 include '..\network.inc'
 
 START:
-        mcall   40, EVM_REDRAW + EVM_BUTTON
+        mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2
 
 redraw:
         mcall   12, 1
@@ -441,6 +441,8 @@ mainloop:
         je      redraw
         cmp     eax, 3
         je      button
+        cmp     eax, 11
+        je      redraw
 
         jmp     draw_stats
 

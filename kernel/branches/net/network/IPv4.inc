@@ -976,6 +976,7 @@ IPv4_api:
         mov     eax, ecx
         call    ARP_output_request              ; now send a gratuitous ARP
 
+        call    NET_send_event
         xor     eax, eax
         ret
 
@@ -985,6 +986,7 @@ IPv4_api:
 
   .write_dns:
         mov     [DNS_LIST + eax], ecx
+        call    NET_send_event
         xor     eax, eax
         ret
 
@@ -1001,6 +1003,7 @@ IPv4_api:
         or      ecx, ebx
         mov     [BROADCAST_LIST + eax], ecx
 
+        call    NET_send_event
         xor     eax, eax
         ret
 
@@ -1010,5 +1013,7 @@ IPv4_api:
 
   .write_gateway:
         mov     [GATEWAY_LIST + eax], ecx
+
+        call    NET_send_event
         xor     eax, eax
         ret
