@@ -350,8 +350,6 @@ create_new_struct:
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -652,6 +650,9 @@ reset:
 
 ; Set the mtu, kernel will be able to send now
         mov     [device.mtu], ETH_FRAME_LEN
+
+; Set link state to unknown
+        mov     [device.state], ETH_LINK_UNKOWN
 
 ; Indicate that we have successfully reset the card
         xor     eax, eax

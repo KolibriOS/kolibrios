@@ -446,8 +446,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -873,6 +871,9 @@ reset:
 
 ; Set the mtu, kernel will be able to send now
         mov     [device.mtu], 1514
+
+; get link status
+        call    cable
 
         DEBUGF 1,"reset complete\n"
         xor     eax, eax

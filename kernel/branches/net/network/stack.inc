@@ -148,7 +148,8 @@ struct  NET_DEVICE
         packets_tx      dd ?    ;
         packets_rx      dd ?    ;
 
-;       hwacc           dd ?    ; bitmask stating available hardware accelerations (offload engines)
+        state           dd ?    ; link state (0 = no link)
+        hwacc           dd ?    ; bitmask stating enabled HW accelerations (offload engines)
 
 ends
 
@@ -290,8 +291,12 @@ stack_handler:
 align 4
 NET_link_changed:
 
+        DEBUGF  1,"NET_link_changed: %x\n", ebx
+
 align 4
 NET_send_event:
+
+        DEBUGF  1,"NET_send_event\n"
 
 ; Send event to all applications
         push    edi ecx

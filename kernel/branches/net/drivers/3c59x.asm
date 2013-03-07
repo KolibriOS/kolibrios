@@ -480,8 +480,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], null_op
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], null_op
         mov     [device.name], my_service
 
@@ -829,7 +827,7 @@ start_device:
 
 ; print link type
         xor     eax, eax
-        bsr     ax, word [device.mode]
+        bsr     ax, word [device.state]
         jz      @f
         sub     ax, 4
        @@:
@@ -1108,7 +1106,7 @@ try_link_detect:
   .finish:
         test    al, al
         jz      @f
-        or      byte [device.mode+1], 100b
+        or      byte [device.state+1], 100b
        @@:
         ret
 
@@ -1219,7 +1217,7 @@ try_phy:
         and     eax, 1111100000b
         push    eax
 
-        mov     word[device.mode+2], ax
+        mov     word[device.state+2], ax
 
 ; switch to register window 3
         set_io  0
@@ -1508,7 +1506,7 @@ try_loopback:
         mov     cl, al
         inc     cl
         shl     cl, 3
-        or      byte [device.mode+1], cl
+        or      byte [device.state+1], cl
 
         test    al, al ; aui or coax?
         jz      .complete_loopback
@@ -1540,7 +1538,7 @@ try_loopback:
 
         test    al, al
         jnz     @f
-        and     byte [device.mode+1], not 11000b
+        and     byte [device.state+1], not 11000b
        @@:
 
         ret
@@ -1713,7 +1711,7 @@ set_available_media:
         DEBUGF  1,"base TX is available\n"
         or      eax, (100b shl 20)
 if defined FORCE_FD
-        mov     word [device.mode], (1 shl 8)
+        mov     word [device.state], (1 shl 8)
 else
         mov     word [device.mode], (1 shl 7)
 end if
@@ -1725,7 +1723,7 @@ end if
 
         DEBUGF  1,"base FX is available\n"
         or      eax, (101b shl 20)
-        mov     word [device.mode], (1 shl 10)
+        mov     word [device.state], (1 shl 10)
         jmp     .set_media
        @@:
 
@@ -1734,7 +1732,7 @@ end if
 
         DEBUGF  1,"mii-device is available\n"
         or      eax, (0110b shl 20)
-        mov     word [device.mode], (1 shl 13)
+        mov     word [device.state], (1 shl 13)
         jmp     .set_media
        @@:
 
@@ -1744,9 +1742,9 @@ end if
         DEBUGF  1,"10base-T is available\n"
   .set_default:
 if FORCE_FD
-        mov     word [device.mode], (1 shl 6)
+        mov     word [device.state], (1 shl 6)
 else
-        mov     word [device.mode], (1 shl 5)
+        mov     word [device.state], (1 shl 5)
 end if
         jmp     .set_media
        @@:
@@ -1762,7 +1760,7 @@ end if
         pop     eax
 
         or      eax, (11b shl 20)
-        mov     word [device.mode], (1 shl 12)
+        mov     word [device.state], (1 shl 12)
         jmp     .set_media
        @@:
 
@@ -1771,7 +1769,7 @@ end if
 
         DEBUGF  1,"AUI is available\n"
         or      eax, (1 shl 20)
-        mov     word [device.mode], (1 shl 11)
+        mov     word [device.state], (1 shl 11)
 
   .set_media:
         set_io  0

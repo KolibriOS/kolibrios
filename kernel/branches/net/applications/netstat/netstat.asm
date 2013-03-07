@@ -76,6 +76,9 @@ redraw:
         add     ebx, 18
         mov     edx, str_MAC
         mcall
+        add     ebx, 18
+        mov     edx, str_link
+        mcall
 
         mov     ebx, API_ETH + 4
         mov     bh, [device]
@@ -201,13 +204,20 @@ draw_stats:
         inc     bl
         cmp     bl, 3
         jbe     @r
+        inc     bl
+        mcall   76
+        push    eax
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 3*18
+        mov     edx, 135 shl 16 + 75 + 5*18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
+
+        sub     edx, 18*2
+        pop     ecx
+        mcall
 
         sub     edx, 18
         pop     ecx
@@ -591,6 +601,7 @@ str_conflicts   db 'ARP conflicts:', 0
 str_unknown     db 'unknown', 0
 str_missed      db 'Packets missed:',0
 str_dumped      db 'Packets dumped:',0
+str_link        db 'Link state:',0
 
 namebuf         rb 64
 

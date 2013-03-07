@@ -22,6 +22,15 @@ include 'bus/pci.inc'
         NET_TYPE_ETH    = 1
         NET_TYPE_SLIP   = 2
 
+; link state
+
+        ETH_LINK_DOWN   = 0             ; Link is down
+        ETH_LINK_UNKOWN = 1b            ; There could be an active link
+        ETH_LINK_FD     = 10b           ; full duplex flag
+        ETH_LINK_10M    = 100b          ; 10 mbit
+        ETH_LINK_100M   = 1000b         ; 100 mbit
+        ETH_LINK_1G     = 10000b        ; gigabit
+
 
         LAST_IO = 0
 macro   set_io addr {
@@ -117,6 +126,9 @@ macro   NET_DEVICE {
         .packets_tx     dd ?    ;
         .packets_rx     dd ?    ;
 
+        .state          dd ?    ; link state (0 = no link)
+        .hwacc          dd ?    ; bitmask stating enabled HW accelerations
+
         .end:
 }
 
@@ -124,15 +136,8 @@ macro   NET_DEVICE {
 macro   ETH_DEVICE {
         NET_DEVICE
 
-        .set_mode       dd ?
-        .get_mode       dd ?
-
-        .set_MAC        dd ?
-        .get_MAC        dd ?
-
-        .mode           dd ?
         .mac            dp ?
-                        dp ?    ; qword alignment
+                        dw ?    ; qword alignment
 
 }
 
@@ -140,10 +145,5 @@ macro   ETH_DEVICE {
 
 macro   SLIP_DEVICE {
         NET_DEVICE
-
-        .set_mode       dd ?
-        .get_mode       dd ?
-
-        .mode           dd ?
 
 }

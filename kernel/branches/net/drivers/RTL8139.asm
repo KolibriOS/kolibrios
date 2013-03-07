@@ -32,7 +32,6 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 include 'fdo.inc'
-include '../struct.inc'
 include 'netdrv.inc'
 
 public START
@@ -59,7 +58,7 @@ public version
         REG_HLTCLK              = 0x5b ; undocumented halt clock register
         REG_BMCR                = 0x62 ; basic mode control register
         REG_ANAR                = 0x66 ; auto negotiation advertisement register
-        REG_9346CR_WE           = 11b SHL 6
+        REG_9346CR_WE           = 11b shl 6
 
         BIT_RUNT                = 4 ; total packet length < 64 bytes
         BIT_LONG                = 3 ; total packet length > 4k
@@ -166,16 +165,16 @@ public version
         IDX_RTL8139D            = 6
         IDX_RTL8101             = 7
 
-        ISR_SERR                = 1 SHL 15
-        ISR_TIMEOUT             = 1 SHL 14
-        ISR_LENCHG              = 1 SHL 13
-        ISR_FIFOOVW             = 1 SHL 6
-        ISR_PUN                 = 1 SHL 5
-        ISR_RXOVW               = 1 SHL 4
-        ISR_TER                 = 1 SHL 3
-        ISR_TOK                 = 1 SHL 2
-        ISR_RER                 = 1 SHL 1
-        ISR_ROK                 = 1 SHL 0
+        ISR_SERR                = 1 shl 15
+        ISR_TIMEOUT             = 1 shl 14
+        ISR_LENCHG              = 1 shl 13
+        ISR_FIFOOVW             = 1 shl 6
+        ISR_PUN                 = 1 shl 5
+        ISR_RXOVW               = 1 shl 4
+        ISR_TER                 = 1 shl 3
+        ISR_TOK                 = 1 shl 2
+        ISR_RER                 = 1 shl 1
+        ISR_ROK                 = 1 shl 0
 
         INTERRUPT_MASK          = ISR_ROK or \
                                   ISR_RXOVW or \
@@ -185,14 +184,14 @@ public version
                                   ISR_TOK or \
                                   ISR_TER
 
-        TSR_OWN                 = 1 SHL 13
-        TSR_TUN                 = 1 SHL 14
-        TSR_TOK                 = 1 SHL 15
+        TSR_OWN                 = 1 shl 13
+        TSR_TUN                 = 1 shl 14
+        TSR_TOK                 = 1 shl 15
 
-        TSR_CDH                 = 1 SHL 28
-        TSR_OWC                 = 1 SHL 29
-        TSR_TABT                = 1 SHL 30
-        TSR_CRS                 = 1 SHL 31
+        TSR_CDH                 = 1 shl 28
+        TSR_OWC                 = 1 shl 29
+        TSR_TABT                = 1 shl 30
+        TSR_CRS                 = 1 shl 31
 
 
 virtual at ebx
@@ -202,7 +201,6 @@ virtual at ebx
         ETH_DEVICE
 
         .rx_buffer      dd ?
-        .tx_buffer      dd ?
 
         .rx_data_offset dd ?
         .io_addr        dd ?
@@ -295,7 +293,7 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-        mov     ax , [eax+1]                            ; get the pci bus and device numbers
+        mov     ax, [eax+1]                             ; get the pci bus and device numbers
   .nextdevice:
         mov     ebx, [esi]
         cmp     al, byte[device.pci_bus]
@@ -318,8 +316,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -339,7 +335,7 @@ proc service_proc stdcall, ioctl:dword
 
         PCI_find_irq
 
-        DEBUGF  2, "Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
+        DEBUGF  2, "Hooking into device, dev:%x, bus:%x, irq:%x, I/O addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
 ; Allocate the receive buffer
@@ -428,7 +424,6 @@ probe:
         PCI_make_bus_master
 
 ; get chip version
-
         set_io  0
         set_io  REG_TXCONFIG + 2
         in      ax, dx
@@ -436,6 +431,7 @@ probe:
         shr     ax, 6
         and     al, 01111111b
 
+; now find it in our array
         mov     ecx, HW_VER_ARRAY_SIZE-1
   .chip_ver_loop:
         cmp     al, [hw_ver_array + ecx]
@@ -456,30 +452,31 @@ probe:
         DEBUGF  2, "Chip version: %s\n", ecx
 
 ; wake up the chip
-
         set_io  0
         set_io  REG_HLTCLK
         mov     al, 'R'         ; run the clock
         out     dx, al
 
 ; unlock config and BMCR registers
-
         set_io  REG_9346CR
         mov     al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EEM0)
         out     dx, al
 
 ; enable power management
-
         set_io  REG_CONFIG1
         in      al, dx
         cmp     [device.hw_ver_id], IDX_RTL8139B
-        jb      .old_chip
+        jae     .new_chip
+; wake up older chips
+        and     al, not ((1 shl BIT_SLEEP) or (1 shl BIT_PWRDWN))
+        out     dx, al
+        jmp     .finish_wake_up
 
 ; set LWAKE pin to active high (default value).
 ; it is for Wake-On-LAN functionality of some motherboards.
 ; this signal is used to inform the motherboard to execute a wake-up process.
 ; only at newer chips.
-
+  .new_chip:
         or      al, (1 shl BIT_PMEn)
         and     al, not (1 shl BIT_LWACT)
         out     dx, al
@@ -489,17 +486,8 @@ probe:
         and     al, not (1 shl BIT_LWPTN)
         out     dx, al
 
-        jmp     .finish_wake_up
-  .old_chip:
-
-; wake up older chips
-
-        and     al, not ((1 shl BIT_SLEEP) or (1 shl BIT_PWRDWN))
-        out     dx, al
-  .finish_wake_up:
-
 ; lock config and BMCR registers
-
+  .finish_wake_up:
         xor     al, al
         set_io  0
         set_io  REG_9346CR
@@ -514,12 +502,11 @@ probe:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 reset:
-        DEBUGF  2, "Resetting\n"
+        DEBUGF  2, "Reset\n"
 
 ; attach int handler
-
         movzx   eax, [device.irq_line]
-        DEBUGF  1, "Attaching int handler to irq %x, ", eax:1
+        DEBUGF  1, "Attaching int handler to irq %x\n", eax:1
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
@@ -529,123 +516,106 @@ reset:
        @@:
 
 ; reset chip
-
         DEBUGF  1, "Resetting chip\n"
         set_io  0
         set_io  REG_COMMAND
-        mov     al , 1 shl BIT_RST
-        out     dx , al
-        mov     cx , 1000               ; wait no longer for the reset
+        mov     al, 1 shl BIT_RST
+        out     dx, al
+        mov     cx, 1000                ; wait no longer for the reset
   .wait_for_reset:
-        in      al , dx
-        test    al , 1 shl BIT_RST
+        in      al, dx
+        test    al, 1 shl BIT_RST
         jz      .reset_completed        ; RST remains 1 during reset
         dec     cx
         jns     .wait_for_reset
+        DEBUGF  1, "Reset timeout!\n"
   .reset_completed:
 
 ; unlock config and BMCR registers
-
         set_io  REG_9346CR
         mov     al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EEM0)
         out     dx, al
 
 ; initialize multicast registers (no filtering)
-
         mov     eax, 0xffffffff
         set_io  REG_MAR0
         out     dx, eax
         set_io  REG_MAR4
         out     dx, eax
 
-; enable Rx/Tx
-
-        mov     al, (1 shl BIT_RE) or (1 shl BIT_TE)
-        set_io  REG_COMMAND
-        out     dx, al
-
 ; Rxbuffer size, unlimited dma burst, no wrapping, no rx threshold
 ; accept broadcast packets, accept physical match packets
-
         mov     ax, RX_CONFIG
         set_io  REG_RXCONFIG
         out     dx, ax
 
-
 ; 1024 bytes DMA burst, total retries = 16 + 8 * 16 = 144
-
         mov     eax, (TX_MXDMA shl BIT_TX_MXDMA) or (TXRR shl BIT_TXRR) or BIT_IFG1 or BIT_IFG0
         set_io  REG_TXCONFIG
         out     dx, eax
 
 ; enable auto negotiation
-
         set_io  REG_BMCR
         in      ax, dx
         or      ax, (1 shl BIT_ANE)
         out     dx, ax
 
 ; set auto negotiation advertisement
-
         set_io  REG_ANAR
         in      ax, dx
         or      ax, (1 shl BIT_SELECTOR) or (1 shl BIT_10) or (1 shl BIT_10FD) or (1 shl BIT_TX) or (1 shl BIT_TXFD)
         out     dx, ax
 
 ; lock config and BMCR registers
-
         xor     eax, eax
         set_io  REG_9346CR
         out     dx, al
 
 ; init RX/TX pointers
-
         mov     [device.rx_data_offset], eax
         mov     [device.curr_tx_desc], al
-
 ;        set_io  REG_CAPR
 ;        out     dx, ax
 
 ; clear packet/byte counters
-
         lea     edi, [device.bytes_tx]
         mov     ecx, 6
         rep     stosd
 
 ; clear missing packet counter
-
         set_io  REG_MPC
         out     dx, eax
 
 ; set RxBuffer address, init RX buffer offset
-
         mov     eax, [device.rx_buffer]
-        mov     dword[eax], 0
-        DEBUGF  2, "RX buffer: %x\n", eax
+        mov     dword[eax], 0                   ; clear receive flags for first packet (really needed??)
+        DEBUGF  2, "RX buffer virtual addr=0x%x\n", eax
         GetRealAddr
-        DEBUGF  2, "RX buffer: %x\n", eax
+        DEBUGF  2, "RX buffer real addr=0x%x\n", eax
         set_io  REG_RBSTART
         out     dx, eax
 
 ; Read MAC address
-
         call    read_mac
 
-; enable interrupts
-
+; enable Rx/Tx
         set_io  0
+        mov     al, (1 shl BIT_RE) or (1 shl BIT_TE)
+        set_io  REG_COMMAND
+        out     dx, al
+
+; enable interrupts
         set_io  REG_IMR
-        mov     eax, INTERRUPT_MASK
-        out     dx , ax
+        mov     ax, INTERRUPT_MASK
+        out     dx, ax
 
 ; Set the mtu, kernel will be able to send now
         mov     [device.mtu], 1514
 
+        call    cable
+
 ; Indicate that we have successfully reset the card
-
-        DEBUGF  2, "Done!\n"
         xor     eax, eax
-
         ret
 
 
@@ -750,7 +720,6 @@ int_handler:
         DEBUGF  1, "\n%s int\n", my_service
 
 ; find pointer of device wich made IRQ occur
-
         mov     ecx, [devices]
         test    ecx, ecx
         jz      .nothing
@@ -760,8 +729,8 @@ int_handler:
 
         set_io  0
         set_io  REG_ISR
-        in      ax, dx
-        out     dx, ax                              ; send it back to ACK
+        in      ax, dx                          ; Get interrupt status
+        out     dx, ax                          ; send it back to ACK
         test    ax, ax
         jnz     .got_it
   .continue:
@@ -769,7 +738,7 @@ int_handler:
         dec     ecx
         jnz     .nextdevice
   .nothing:
-        ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
+        ret                                     ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
 
@@ -785,42 +754,41 @@ int_handler:
   .receive:
         set_io  0
         set_io  REG_COMMAND
-        in      al , dx
-        test    al , BUFE                           ; test if RX buffer is empty
-        jnz     .finish                             ;
+        in      al, dx
+        test    al, BUFE                        ; test if RX buffer is empty
+        jnz     .finish
 
         DEBUGF  1, "RX: "
 
         mov     eax, [device.rx_buffer]
         add     eax, [device.rx_data_offset]
-        test    byte [eax], (1 shl BIT_ROK)         ; check if packet is ok
+        test    byte [eax], (1 shl BIT_ROK)     ; check if packet is ok
         jz      .reset_rx
 
 ; packet is ok, copy it
-        movzx   ecx, word [eax+2]                   ; packet length
-
-        sub     ecx, 4                              ; don't copy CRC
+        movzx   ecx, word [eax+2]               ; packet length
+        sub     cx, 4                           ; don't copy CRC
 
 ; Update stats
         add     dword [device.bytes_rx], ecx
         adc     dword [device.bytes_rx + 4], 0
-        inc     dword [device.packets_rx]
+        inc     [device.packets_rx]
 
         DEBUGF  1, "Received %u bytes\n", ecx
 
         push    ebx eax ecx
-        stdcall KernelAlloc, ecx                    ; Allocate a buffer to put packet into
+        stdcall KernelAlloc, ecx                ; Allocate a buffer to put packet into
         pop     ecx
-        test    eax, eax                            ; Test if we allocated succesfully
+        test    eax, eax                        ; Test if we allocated succesfully
         jz      .abort
 
-        mov     edi, eax                            ; Where we will copy too
+        mov     edi, eax                        ; Where we will copy too
 
-        mov     esi, [esp]                          ; The buffer we will copy from
-        add     esi, 4                              ; Dont copy CRC
+        mov     esi, [esp]                      ; The buffer we will copy from
+        add     esi, 4                          ; Dont copy CRC
 
-        push    dword .abort                        ; Kernel will return to this address after EthReceiver
-        push    ecx edi                             ; Save buffer pointer and size, to pass to kernel
+        push    dword .abort                    ; Kernel will return to this address after EthReceiver
+        push    ecx edi                         ; Save buffer pointer and size, to pass to kernel
 
   .copy:
         shr     ecx, 1
@@ -835,15 +803,15 @@ int_handler:
         rep     movsd
   .nd:
 
-        jmp     Eth_input                           ; Send it to kernel
+        jmp     Eth_input                       ; Send it to kernel
 
   .abort:
         pop     eax ebx
-                                                    ; update eth_data_start_offset
-        movzx   eax, word [eax+2]                   ; packet length
+                                                ; update eth_data_start_offset
+        movzx   eax, word [eax+2]               ; packet length
         add     eax, [device.rx_data_offset]
-        add     eax, 4+3                            ; packet header is 4 bytes long + dword alignment
-        and     eax, not 3                          ; dword alignment
+        add     eax, 4+3                        ; packet header is 4 bytes long + dword alignment
+        and     eax, not 3                      ; dword alignment
 
         cmp     eax, RX_BUFFER_SIZE
         jb      .no_wrap
@@ -854,11 +822,11 @@ int_handler:
         DEBUGF  1, "New RX ptr: %d\n", eax
 
         set_io  0
-        set_io  REG_CAPR                            ; update 'Current Address of Packet Read register'
-        sub     eax, 0x10                           ; value 0x10 is a constant for CAPR
+        set_io  REG_CAPR                        ; update 'Current Address of Packet Read register'
+        sub     eax, 0x10                       ; value 0x10 is a constant for CAPR
         out     dx , ax
 
-        jmp     .receive                            ; check for multiple packets
+        jmp     .receive                        ; check for multiple packets
 
   .reset_rx:
         test    byte [eax], (1 shl BIT_CRC)
@@ -872,16 +840,14 @@ int_handler:
 
   .no_fae_error:
         DEBUGF  1, "Reset RX\n"
-        in      al, dx                              ; read command register
+        in      al, dx                          ; read command register
         push    ax
-
-        and     al, not (1 shl BIT_RE)              ; Clear the RE bit
+        and     al, not (1 shl BIT_RE)          ; Clear the RE bit
         out     dx, al
-
         pop     ax
-        out     dx, al                              ; write original command back
+        out     dx, al                          ; write original command back
 
-        add     edx, REG_RXCONFIG - REG_COMMAND     ; Restore RX configuration
+        add     edx, REG_RXCONFIG - REG_COMMAND         ; Restore RX configuration
         mov     ax, RX_CONFIG
         out     dx, ax
 
@@ -985,7 +951,6 @@ int_handler:
         test    ax, ISR_LENCHG
         jz      .fail
 
-        DEBUGF  2, "Cable changed!\n"
         call    cable
 
   .fail:
@@ -1003,24 +968,35 @@ int_handler:
 
 align 4
 cable:
-        DEBUGF  1, "Checking Cable status: "
+        DEBUGF  1, "Updating Cable status\n"
 
-        mov     edx, dword [device.io_addr]
-        add     edx, REG_MSR
-        in      al , dx
+        set_io  0
+        set_io  REG_MSR
+        in      al, dx
 
-;        test    al , 1 SHL 2     ; 0 = link ok 1 = link fail
-;        jnz     .notconnected
+        test    al, 1 shl 2             ; 0 = link ok 1 = link fail
+        jnz     .notconnected
 
-;        test    al , 1 SHL 3     ; 0 = 100 Mbps 1 = 10 Mbps
-;        jnz     .10mbps
+        test    al, 1 shl 3             ; 0 = 100 Mbps 1 = 10 Mbps
+        jnz     .10mbps
 
-        shr     al, 2
-        and     al, 3
+  .100mbps:
+        mov     [device.state], ETH_LINK_100M
+        call    NetLinkChanged
 
-        mov     byte [device.mode+3], al
-        DEBUGF  1, "Done!\n"
-ret
+        ret
+
+  .10mbps:
+        mov     [device.state], ETH_LINK_10M
+        call    NetLinkChanged
+
+        ret
+
+  .notconnected:
+        mov     [device.state], ETH_LINK_DOWN
+        call    NetLinkChanged
+
+        ret
 
 
 
@@ -1036,7 +1012,6 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         DEBUGF  2, "Writing MAC: "
 
 ; disable all in command registers
-
         set_io  0
         set_io  REG_9346CR
         xor     eax, eax
@@ -1051,13 +1026,11 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         out     dx, ax
 
 ; enable writing
-
         set_io  REG_9346CR
         mov     eax, REG_9346CR_WE
         out     dx, al
 
  ; write the mac ...
-
         set_io  REG_IDR0
         pop     eax
         out     dx, eax
@@ -1068,7 +1041,6 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         out     dx, eax
 
 ; disable writing
-
         set_io  REG_9346CR
         xor     eax, eax
         out     dx, al

@@ -328,10 +328,8 @@ service_proc:
         movzx   ecx, byte[eax+2]
         mov     [device.pci_dev], ecx
 ; 4j. Fill in the direct call addresses into the struct.
-; Note that get_MAC pointer is filled in initialization by probe.
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -439,10 +437,8 @@ probe:
         jmp     .tableloop
 
   .ok:
-        mov     eax, [esi + 4]                  ; Get pointer to "get MAC" function
-        mov     [device.get_MAC], eax
 
-        call    [device.get_MAC]
+        call     dword[esi + 4]                 ; "get MAC" function
 
 ; Set table entries
         mov      [device.table_entries], 16
@@ -662,8 +658,11 @@ reset:
         out     dx, eax
 
         mov     [device.mtu], 1514
-        xor     eax, eax
 
+; Set link state to unknown
+        mov     [device.state], ETH_LINK_UNKOWN
+
+        xor     eax, eax
         ret
 
   .fail:

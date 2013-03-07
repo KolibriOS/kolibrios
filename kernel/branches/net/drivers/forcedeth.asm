@@ -535,8 +535,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], .fail
         mov     [device.unload], .fail
         mov     [device.name], my_service
 
@@ -985,6 +983,9 @@ reset:
   .return:
         xor     eax, eax        ; Indicate that we have successfully reset the card
         mov     [device.mtu], 1514 ;;; FIXME
+
+; Set link state to unknown
+        mov     [device.state], ETH_LINK_UNKOWN
 
         ret
 

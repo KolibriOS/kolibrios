@@ -28,13 +28,6 @@ ends
 
 struct  ETH_DEVICE      NET_DEVICE
 
-        set_mode        dd ?
-        get_mode        dd ?
-
-        set_MAC         dd ?
-        get_MAC         dd ?
-
-        mode            dd ?
         mac             dp ?
 
 ends
@@ -199,7 +192,7 @@ ETH_api:
         dd      .bytes_tx       ; 2
         dd      .bytes_rx       ; 3
         dd      .read_mac       ; 4
-        dd      .write_mac      ; 5
+        dd      .state          ; 5
   .number = ($ - .table) / 4 - 1
 
   .error:
@@ -234,9 +227,7 @@ ETH_api:
         mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
         ret
 
-  .write_mac:
-        push    ecx
-        push    dx
-        call    [eax + ETH_DEVICE.set_MAC]
+  .state:
+        mov     eax, [eax + NET_DEVICE.state]
         ret
 

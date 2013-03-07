@@ -16,17 +16,17 @@
 
 format MS COFF
 
-        API_VERSION             =   0x01000100
-        DRIVER_VERSION          =   5
+        API_VERSION             = 0x01000100
+        DRIVER_VERSION          = 5
 
-        MAX_DEVICES             =   16
+        MAX_DEVICES             = 16
 
-        DEBUG                   =   1
-        __DEBUG__               =   1
-        __DEBUG_LEVEL__         =   1
+        DEBUG                   = 1
+        __DEBUG__               = 1
+        __DEBUG_LEVEL__         = 1
 
-        NUM_TX_DESC             =   4
-        NUM_RX_DESC             =   4
+        NUM_TX_DESC             = 4
+        NUM_RX_DESC             = 4
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -40,210 +40,210 @@ public version
 
 ; for different PHY
 
-    MysonPHY            =   1
-    AhdocPHY            =   2
-    SeeqPHY             =   3
-    MarvellPHY          =   4
-    Myson981            =   5
-    LevelOnePHY         =   6
-    OtherPHY            =   10
+    MysonPHY            = 1
+    AhdocPHY            = 2
+    SeeqPHY             = 3
+    MarvellPHY          = 4
+    Myson981            = 5
+    LevelOnePHY         = 6
+    OtherPHY            = 10
 
 ; Offsets to the Command and Status Registers.
 
-    PAR0                =   0x0        ; physical address 0-3
-    PAR1                =   0x04       ; physical address 4-5
-    MAR0                =   0x08       ; multicast address 0-3
-    MAR1                =   0x0C       ; multicast address 4-7
-    FAR0                =   0x10       ; flow-control address 0-3
-    FAR1                =   0x14       ; flow-control address 4-5
-    TCRRCR              =   0x18       ; receive & transmit configuration
-    BCR                 =   0x1C       ; bus command
-    TXPDR               =   0x20       ; transmit polling demand
-    RXPDR               =   0x24       ; receive polling demand
-    RXCWP               =   0x28       ; receive current word pointer
-    TXLBA               =   0x2C       ; transmit list base address
-    RXLBA               =   0x30       ; receive list base address
-    ISR                 =   0x34       ; interrupt status
-    IMR                 =   0x38       ; interrupt mask
-    FTH                 =   0x3C       ; flow control high/low threshold
-    MANAGEMENT          =   0x40       ; bootrom/eeprom and mii management
-    TALLY               =   0x44       ; tally counters for crc and mpa
-    TSR                 =   0x48       ; tally counter for transmit status
-    BMCRSR              =   0x4c       ; basic mode control and status
-    PHYIDENTIFIER       =   0x50       ; phy identifier
-    ANARANLPAR          =   0x54       ; auto-negotiation advertisement and link partner ability
-    ANEROCR             =   0x58       ; auto-negotiation expansion and pci conf.
-    BPREMRPSR           =   0x5c       ; bypass & receive error mask and phy status
+    PAR0                = 0x0           ; physical address 0-3
+    PAR1                = 0x04          ; physical address 4-5
+    MAR0                = 0x08          ; multicast address 0-3
+    MAR1                = 0x0C          ; multicast address 4-7
+    FAR0                = 0x10          ; flow-control address 0-3
+    FAR1                = 0x14          ; flow-control address 4-5
+    TCRRCR              = 0x18          ; receive & transmit configuration
+    BCR                 = 0x1C          ; bus command
+    TXPDR               = 0x20          ; transmit polling demand
+    RXPDR               = 0x24          ; receive polling demand
+    RXCWP               = 0x28          ; receive current word pointer
+    TXLBA               = 0x2C          ; transmit list base address
+    RXLBA               = 0x30          ; receive list base address
+    ISR                 = 0x34          ; interrupt status
+    IMR                 = 0x38          ; interrupt mask
+    FTH                 = 0x3C          ; flow control high/low threshold
+    MANAGEMENT          = 0x40          ; bootrom/eeprom and mii management
+    TALLY               = 0x44          ; tally counters for crc and mpa
+    TSR                 = 0x48          ; tally counter for transmit status
+    BMCRSR              = 0x4c          ; basic mode control and status
+    PHYIDENTIFIER       = 0x50          ; phy identifier
+    ANARANLPAR          = 0x54          ; auto-negotiation advertisement and link partner ability
+    ANEROCR             = 0x58          ; auto-negotiation expansion and pci conf.
+    BPREMRPSR           = 0x5c          ; bypass & receive error mask and phy status
 
 ; Bits in the interrupt status/enable registers.
 
-    RFCON               =   0x00020000 ; receive flow control xon packet
-    RFCOFF              =   0x00010000 ; receive flow control xoff packet
-    LSCStatus           =   0x00008000 ; link status change
-    ANCStatus           =   0x00004000 ; autonegotiation completed
-    FBE                 =   0x00002000 ; fatal bus error
-    FBEMask             =   0x00001800 ; mask bit12-11
-    ParityErr           =   0x00000000 ; parity error
-    TargetErr           =   0x00001000 ; target abort
-    MasterErr           =   0x00000800 ; master error
-    TUNF                =   0x00000400 ; transmit underflow
-    ROVF                =   0x00000200 ; receive overflow
-    ETI                 =   0x00000100 ; transmit early int
-    ERI                 =   0x00000080 ; receive early int
-    CNTOVF              =   0x00000040 ; counter overflow
-    RBU                 =   0x00000020 ; receive buffer unavailable
-    TBU                 =   0x00000010 ; transmit buffer unavilable
-    TI                  =   0x00000008 ; transmit interrupt
-    RI                  =   0x00000004 ; receive interrupt
-    RxErr               =   0x00000002 ; receive error
+    RFCON               = 0x00020000    ; receive flow control xon packet
+    RFCOFF              = 0x00010000    ; receive flow control xoff packet
+    LSCStatus           = 0x00008000    ; link status change
+    ANCStatus           = 0x00004000    ; autonegotiation completed
+    FBE                 = 0x00002000    ; fatal bus error
+    FBEMask             = 0x00001800    ; mask bit12-11
+    ParityErr           = 0x00000000    ; parity error
+    TargetErr           = 0x00001000    ; target abort
+    MasterErr           = 0x00000800    ; master error
+    TUNF                = 0x00000400    ; transmit underflow
+    ROVF                = 0x00000200    ; receive overflow
+    ETI                 = 0x00000100    ; transmit early int
+    ERI                 = 0x00000080    ; receive early int
+    CNTOVF              = 0x00000040    ; counter overflow
+    RBU                 = 0x00000020    ; receive buffer unavailable
+    TBU                 = 0x00000010    ; transmit buffer unavilable
+    TI                  = 0x00000008    ; transmit interrupt
+    RI                  = 0x00000004    ; receive interrupt
+    RxErr               = 0x00000002    ; receive error
 
 ; Bits in the NetworkConfig register.
 
-    RxModeMask          =   0xe0
-    AcceptAllPhys       =   0x80        ; promiscuous mode
-    AcceptBroadcast     =   0x40        ; accept broadcast
-    AcceptMulticast     =   0x20        ; accept mutlicast
-    AcceptRunt          =   0x08        ; receive runt pkt
-    ALP                 =   0x04        ; receive long pkt
-    AcceptErr           =   0x02        ; receive error pkt
+    RxModeMask          = 0xe0
+    AcceptAllPhys       = 0x80          ; promiscuous mode
+    AcceptBroadcast     = 0x40          ; accept broadcast
+    AcceptMulticast     = 0x20          ; accept mutlicast
+    AcceptRunt          = 0x08          ; receive runt pkt
+    ALP                 = 0x04          ; receive long pkt
+    AcceptErr           = 0x02          ; receive error pkt
 
-    AcceptMyPhys        =   0x00000000
-    RxEnable            =   0x00000001
-    RxFlowCtrl          =   0x00002000
-    TxEnable            =   0x00040000
-    TxModeFDX           =   0x00100000
-    TxThreshold         =   0x00e00000
+    AcceptMyPhys        = 0x00000000
+    RxEnable            = 0x00000001
+    RxFlowCtrl          = 0x00002000
+    TxEnable            = 0x00040000
+    TxModeFDX           = 0x00100000
+    TxThreshold         = 0x00e00000
 
-    PS1000              =   0x00010000
-    PS10                =   0x00080000
-    FD                  =   0x00100000
+    PS1000              = 0x00010000
+    PS10                = 0x00080000
+    FD                  = 0x00100000
 
 
 ; Bits in network_desc.status
 
-    RXOWN               =   0x80000000 ; own bit
-    FLNGMASK            =   0x0fff0000 ; frame length
-    FLNGShift           =   16
-    MARSTATUS           =   0x00004000 ; multicast address received
-    BARSTATUS           =   0x00002000 ; broadcast address received
-    PHYSTATUS           =   0x00001000 ; physical address received
-    RXFSD               =   0x00000800 ; first descriptor
-    RXLSD               =   0x00000400 ; last descriptor
-    ErrorSummary        =   0x80       ; error summary
-    RUNT                =   0x40       ; runt packet received
-    LONG                =   0x20       ; long packet received
-    FAE                 =   0x10       ; frame align error
-    CRC                 =   0x08       ; crc error
-    RXER                =   0x04       ; receive error
+    RXOWN               = 0x80000000    ; own bit
+    FLNGMASK            = 0x0fff0000    ; frame length
+    FLNGShift           = 16
+    MARSTATUS           = 0x00004000    ; multicast address received
+    BARSTATUS           = 0x00002000    ; broadcast address received
+    PHYSTATUS           = 0x00001000    ; physical address received
+    RXFSD               = 0x00000800    ; first descriptor
+    RXLSD               = 0x00000400    ; last descriptor
+    ErrorSummary        = 0x80          ; error summary
+    RUNT                = 0x40          ; runt packet received
+    LONG                = 0x20          ; long packet received
+    FAE                 = 0x10          ; frame align error
+    CRC                 = 0x08          ; crc error
+    RXER                = 0x04          ; receive error
 
 ; rx_desc_control_bits
 
-    RXIC                =   0x00800000 ; interrupt control
-    RBSShift            =   0
+    RXIC                = 0x00800000    ; interrupt control
+    RBSShift            = 0
 
 ; tx_desc_status_bits
 
-    TXOWN               =   0x80000000 ; own bit
-    JABTO               =   0x00004000 ; jabber timeout
-    CSL                 =   0x00002000 ; carrier sense lost
-    LC                  =   0x00001000 ; late collision
-    EC                  =   0x00000800 ; excessive collision
-    UDF                 =   0x00000400 ; fifo underflow
-    DFR                 =   0x00000200 ; deferred
-    HF                  =   0x00000100 ; heartbeat fail
-    NCRMask             =   0x000000ff ; collision retry count
-    NCRShift            =   0
+    TXOWN               = 0x80000000    ; own bit
+    JABTO               = 0x00004000    ; jabber timeout
+    CSL                 = 0x00002000    ; carrier sense lost
+    LC                  = 0x00001000    ; late collision
+    EC                  = 0x00000800    ; excessive collision
+    UDF                 = 0x00000400    ; fifo underflow
+    DFR                 = 0x00000200    ; deferred
+    HF                  = 0x00000100    ; heartbeat fail
+    NCRMask             = 0x000000ff    ; collision retry count
+    NCRShift            = 0
 
 ; tx_desc_control_bits
 
-    TXIC                =   0x80000000 ; interrupt control
-    ETIControl          =   0x40000000 ; early transmit interrupt
-    TXLD                =   0x20000000 ; last descriptor
-    TXFD                =   0x10000000 ; first descriptor
-    CRCEnable           =   0x08000000 ; crc control
-    PADEnable           =   0x04000000 ; padding control
-    RetryTxLC           =   0x02000000 ; retry late collision
-    PKTSMask            =   0x3ff800   ; packet size bit21-11
-    PKTSShift           =   11
-    TBSMask             =   0x000007ff ; transmit buffer bit 10-0
-    TBSShift            =   0
+    TXIC                = 0x80000000    ; interrupt control
+    ETIControl          = 0x40000000    ; early transmit interrupt
+    TXLD                = 0x20000000    ; last descriptor
+    TXFD                = 0x10000000    ; first descriptor
+    CRCEnable           = 0x08000000    ; crc control
+    PADEnable           = 0x04000000    ; padding control
+    RetryTxLC           = 0x02000000    ; retry late collision
+    PKTSMask            = 0x3ff800      ; packet size bit21-11
+    PKTSShift           = 11
+    TBSMask             = 0x000007ff    ; transmit buffer bit 10-0
+    TBSShift            = 0
 
 ; BootROM/EEPROM/MII Management Register
 
-    MASK_MIIR_MII_READ  =   0x00000000
-    MASK_MIIR_MII_WRITE =   0x00000008
-    MASK_MIIR_MII_MDO   =   0x00000004
-    MASK_MIIR_MII_MDI   =   0x00000002
-    MASK_MIIR_MII_MDC   =   0x00000001
+    MASK_MIIR_MII_READ  = 0x00000000
+    MASK_MIIR_MII_WRITE = 0x00000008
+    MASK_MIIR_MII_MDO   = 0x00000004
+    MASK_MIIR_MII_MDI   = 0x00000002
+    MASK_MIIR_MII_MDC   = 0x00000001
 
 ; ST+OP+PHYAD+REGAD+TA
 
-    OP_READ             =   0x6000 ; ST:01+OP:10+PHYAD+REGAD+TA:Z0
-    OP_WRITE            =   0x5002 ; ST:01+OP:01+PHYAD+REGAD+TA:10
+    OP_READ             = 0x6000        ; ST:01+OP:10+PHYAD+REGAD+TA:Z0
+    OP_WRITE            = 0x5002        ; ST:01+OP:01+PHYAD+REGAD+TA:10
 
 ; -------------------------------------------------------------------------
 ;      Constants for Myson PHY
 ; -------------------------------------------------------------------------
 
-    MysonPHYID          =   0xd0000302
-    MysonPHYID0         =   0x0302
-    StatusRegister      =   18
-    SPEED100            =   0x0400 ; bit10
-    FULLMODE            =   0x0800 ; bit11
+    MysonPHYID          = 0xd0000302
+    MysonPHYID0         = 0x0302
+    StatusRegister      = 18
+    SPEED100            = 0x0400        ; bit10
+    FULLMODE            = 0x0800        ; bit11
 
 ; -------------------------------------------------------------------------
 ;      Constants for Seeq 80225 PHY
 ; -------------------------------------------------------------------------
 
-    SeeqPHYID0          =   0x0016
-    MIIRegister18       =   18
-    SPD_DET_100         =   0x80
-    DPLX_DET_FULL       =   0x40
+    SeeqPHYID0          = 0x0016
+    MIIRegister18       = 18
+    SPD_DET_100         = 0x80
+    DPLX_DET_FULL       = 0x40
 
 ; -------------------------------------------------------------------------
 ;      Constants for Ahdoc 101 PHY
 ; -------------------------------------------------------------------------
 
-    AhdocPHYID0         =   0x0022
-    DiagnosticReg       =   18
-    DPLX_FULL           =   0x0800
-    Speed_100           =   0x0400
+    AhdocPHYID0         = 0x0022
+    DiagnosticReg       = 18
+    DPLX_FULL           = 0x0800
+    Speed_100           = 0x0400
 
 ; --------------------------------------------------------------------------
 ;      Constants
 ; --------------------------------------------------------------------------
 
-    MarvellPHYID0       =   0x0141
-    LevelOnePHYID0      =   0x0013
+    MarvellPHYID0               = 0x0141
+    LevelOnePHYID0              = 0x0013
 
-    MII1000BaseTControlReg      =   9
-    MII1000BaseTStatusReg       =   10
-    SpecificReg         =   17
+    MII1000BaseTControlReg      = 9
+    MII1000BaseTStatusReg       = 10
+    SpecificReg                 = 17
 
 ; for 1000BaseT Control Register
 
-    PHYAbletoPerform1000FullDuplex =   0x0200
-    PHYAbletoPerform1000HalfDuplex =   0x0100
-    PHY1000AbilityMask             =   0x300
+    PHYAbletoPerform1000FullDuplex = 0x0200
+    PHYAbletoPerform1000HalfDuplex = 0x0100
+    PHY1000AbilityMask             = 0x300
 
 ; for phy specific status register, marvell phy.
 
-    SpeedMask      =   0x0c000
-    Speed_1000M    =   0x08000
-    Speed_100M     =   0x4000
-    Speed_10M      =   0
-    Full_Duplex    =   0x2000
+    SpeedMask      = 0x0c000
+    Speed_1000M    = 0x08000
+    Speed_100M     = 0x4000
+    Speed_10M      = 0
+    Full_Duplex    = 0x2000
 
 ; for phy specific status register, levelone phy
 
-    LXT1000_100M   =   0x08000
-    LXT1000_1000M  =   0x0c000
-    LXT1000_Full   =   0x200
+    LXT1000_100M   = 0x08000
+    LXT1000_1000M  = 0x0c000
+    LXT1000_Full   = 0x200
 
 ; for PHY
 
-    LinkIsUp       =   0x0004
-    LinkIsUp2      =   0x00040000
+    LinkIsUp       = 0x0004
+    LinkIsUp2      = 0x00040000
 
 
 
@@ -406,8 +406,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -714,8 +712,11 @@ reset:
         rep     stosd
 
         mov     [device.mtu], 1514
-        xor     eax, eax
 
+; Set link state to unknown
+        mov     [device.state], ETH_LINK_UNKOWN
+
+        xor     eax, eax
         ret
 
 

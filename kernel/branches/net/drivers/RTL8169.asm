@@ -462,8 +462,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], write_mac
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -724,6 +722,9 @@ reset:
         rep     stosd
 
         mov     [device.mtu], 1500
+
+; Set link state to unknown
+        mov     [device.state], ETH_LINK_UNKOWN
 
         xor     eax, eax
         ret

@@ -273,8 +273,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-        mov     [device.get_MAC], read_mac
-        mov     [device.set_MAC], MAC_write
         mov     [device.unload], unload
         mov     [device.name], my_service
 
@@ -561,8 +559,11 @@ reset:
         DEBUGF  1,"Resetting %s complete\n", my_service
 
         mov     [device.mtu], 1514
-        xor     eax, eax        ; indicate that we have successfully reset the card
 
+; Set link state to unknown
+        mov     [device.state], ETH_LINK_UNKOWN
+
+        xor     eax, eax        ; indicate that we have successfully reset the card
         ret
 
 
@@ -668,6 +669,8 @@ transmit:
         mov     eax, [esp + 8]
         add     dword [device.bytes_tx], eax
         adc     dword [device.bytes_tx + 4], 0
+
+        DEBUGF  1,"Transmit OK\n"
 
         xor     eax, eax
         ret     8
@@ -781,13 +784,49 @@ int_handler:
   .no_rx:
 
 ; Cleanup after TX
-
+        cmp     [txfd.status], 0
+        je      .done
         cmp     [last_tx_buffer], 0
         je      .done
+        push    ax
+        DEBUGF  1, "Removing packet 0x%x from RAM!\n", [last_tx_buffer]
         stdcall KernelFree, [last_tx_buffer]
         mov     [last_tx_buffer], 0
+        pop     ax
 
   .done:
+        and     ax, 00111100b
+        cmp     ax, 00001000b
+        jne     .fail
+
+        DEBUGF  1, "out of resources!\n"
+; Restart the RX
+
+; allocate new descriptor
+
+        stdcall KernelAlloc, 2000
+        mov     [device.rx_desc], eax
+        mov     esi, eax
+        GetRealAddr
+        mov     [esi + rxfd.status], 0x0000
+        mov     [esi + rxfd.command], 0xc000    ; End of list + Suspend
+        mov     [esi + rxfd.link], eax
+        mov     [esi + rxfd.count], 0
+        mov     [esi + rxfd.size], 1528
+
+; restart RX
+
+        set_io  0
+        set_io  reg_scb_ptr
+;        lea     eax, [device.rx_desc]
+;        GetRealAddr
+        out     dx, eax
+
+        set_io  reg_scb_cmd
+        mov     ax, RX_START
+        out     dx, ax
+        call    cmd_wait
+
   .fail:
 
         ret
