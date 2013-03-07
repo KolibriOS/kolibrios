@@ -136,7 +136,7 @@
 
 
 
-if defined mdio_read
+if used mii_link_ok
 
 align 4
 mii_link_ok:
@@ -151,11 +151,9 @@ mii_link_ok:
         mov     ecx, MII_BMSR
         call    mdio_read
 
-        DEBUGF  1, "eax=0x%x\n", eax
+        and     ax, BMSR_LSTATUS
 
-        and     eax, BMSR_LSTATUS
-
-        DEBUGF  1, "link status=0x%x\n", eax
+        DEBUGF  1, "link status=0x%x\n", ax
 
         ret
 

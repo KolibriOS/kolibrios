@@ -1523,7 +1523,7 @@ check_media:
         call    [device.read_bcr]
         cmp     eax, 0xc0
 
-        DEBUGF  1, "link status=0x%x\n", eax
+        DEBUGF  1, "link status=0x%x\n", ax
 
         ret
 
