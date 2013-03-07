@@ -277,6 +277,10 @@ public version
         TXCTL_MBO               = 0x0000F000
         TXCTL_BUFSZ             = 0x00000FFF
 
+;
+
+        MAX_PHYS                = 32
+
 
 virtual at ebx
 
@@ -318,6 +322,8 @@ virtual at ebx
         .irq_line       db ?
         .pci_bus        dd ?
         .pci_dev        dd ?
+
+        .phy            dw ?
 
         .read_csr       dd ?
         .write_csr      dd ?
@@ -816,6 +822,57 @@ reset:
         mov     dword [device.filter], -1
         mov     dword [device.filter+4], -1
 
+
+
+;-----------------------------
+
+        test    [device.mii], 1
+        jz      .no_mii
+
+        mov     [device.phy], 0
+
+  .mii_loop:
+        mov     ecx, MII_PHYSID1
+        call    mdio_read
+        cmp     ax, 0xffff
+        je      .next
+
+        DEBUGF  1, "0x%x\n", ax
+
+        mov     ecx, MII_PHYSID2
+        call    mdio_read
+        cmp     ax, 0xffff
+        je      .next
+
+        DEBUGF  1, "0x%x\n", ax
+
+        jmp     .got_phy
+
+        cmp     [device.phy], 31
+        jne     .next
+        mov     ax, [device.chip_version]
+        inc     ax
+        and     ax, 0xfffe
+        cmp     ax, 0x2624              ; 79c971 & 79c972 have phantom phy at id 31
+        je      .got_phy
+
+  .next:
+        inc     [device.phy]
+        cmp     [device.phy], MAX_PHYS
+        jb      .mii_loop
+
+        DEBUGF  1, "No PHY found!\n"
+
+        or      eax, -1
+        ret
+
+  .got_phy:
+        DEBUGF  1, "Found PHY at 0x%x\n", [device.phy]:4
+
+  .no_mii:
+
+;-----------------------------------------------
+
         call    read_mac
 
         lea     esi, [device.mac]
@@ -874,6 +931,8 @@ reset:
 
 ; get link status
         mov     [device.state], ETH_LINK_UNKOWN
+
+        call    check_media
 
         DEBUGF 1,"reset complete\n"
         xor     eax, eax
@@ -1410,6 +1469,61 @@ dwio_reset:
         in      eax, dx
         pop     eax
         sub     edx, DWIO_RESET
+
+        ret
+
+
+align 4
+mdio_read:
+
+        and     ecx, 0x1f
+        mov     ax, [device.phy]
+        and     ax, 0x1f
+        shl     ax, 5
+        or      ax, cx
+
+        mov     ecx, BCR_MIIADDR
+        call    [device.write_bcr]
+
+        mov     ecx, BCR_MIIDATA
+        call    [device.read_bcr]
+
+        ret
+
+
+align 4
+mdio_write:
+
+        push    eax
+        and     ecx, 0x1f
+        mov     ax, [device.phy]
+        and     ax, 0x1f
+        shl     ax, 5
+        or      ax, cx
+
+        mov     ecx, BCR_MIIADDR
+        call    [device.write_bcr]
+
+        pop     eax
+        mov     ecx, BCR_MIIDATA
+        call    [device.write_bcr]
+
+        ret
+
+
+align 4
+check_media:
+
+        DEBUGF  1, "check_media\n"
+
+        test    [device.mii], 1
+        jnz      mii_link_ok
+
+        mov     ecx, BCR_LED0
+        call    [device.read_bcr]
+        cmp     eax, 0xc0
+
+        DEBUGF  1, "link status=0x%x\n", eax
 
         ret
 

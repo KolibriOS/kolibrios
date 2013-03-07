@@ -9,6 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 include 'bus/pci.inc'
+include 'bus/mii.inc'
 
 ; Kernel variables
 
