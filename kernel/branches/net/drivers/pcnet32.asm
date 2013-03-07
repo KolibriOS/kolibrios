@@ -873,7 +873,7 @@ reset:
         mov     [device.mtu], 1514
 
 ; get link status
-        call    cable
+        mov     [device.state], ETH_LINK_UNKOWN
 
         DEBUGF 1,"reset complete\n"
         xor     eax, eax
