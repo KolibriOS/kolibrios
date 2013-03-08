@@ -83,11 +83,11 @@ load_libraries l_libs_start,end_l_libs
 	jmp	.OpenDialog
 @@:
 	call	locLoadFile
-	xor  dword [wFlags],1
+	xor	dword [wFlags],1
 .OpenDialog:
 ;OpenDialog	initialisation
-	push    dword OpenDialog_data
-	call    [OpenDialog_Init]
+	push	dword OpenDialog_data
+	call	[OpenDialog_Init]
 ;---------------------------------------------------------------------
 	mcall	40,0x27
 red:
@@ -178,16 +178,16 @@ ActionOpen:
 	jnz	still
 	mov	[OpenDialog_data.type],0 ; open
 	call	OpenDialog_Start_1
-	jne	.1
+	jne	still
 	call	locLoadFile
 	call	DrawBars
 .1:
-	xor  dword [wFlags],1
+	xor	dword [wFlags],1
 	jmp	still
 ;---------------------------------------------------------------------
 OpenDialog_Start_1:
 	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+	call	[OpenDialog_Start]
 	cmp	[OpenDialog_data.status],1
 	ret
 ;---------------------------------------------------------------------
@@ -199,7 +199,7 @@ ActionSave:
 	jnz	still
 	mov	[OpenDialog_data.type],1 ; save
 	call	OpenDialog_Start_1
-	jne	ActionOpen.1
+	jne	still
 	call	locSaveFile
 	jmp	ActionOpen.1
 ;---------------------------------------------------------------------
@@ -233,7 +233,7 @@ align 4
 	add	esi,TEST_REC_SIZE
 	cmp	dword [esi],0
 	jnz	.next_test
-	xor  dword [wFlags],1
+	xor	dword [wFlags],1
 	mcall	-1
 ;---------------------------------------------------------------------
 draw_window:
@@ -449,8 +449,8 @@ thread_comment:
 	mov	eax,esi
 	dec	eax
 	mov	edi, edit1
-	mov	[edi+48], eax  ;ed_size
-	mov	[edi+52], eax  ;ed_pos
+	mov	[edi+48], eax	;ed_size
+	mov	[edi+52], eax	;ed_pos
 ;---------------------------------------------------------------------
 .red:
 	call .draw_window
@@ -463,8 +463,8 @@ thread_comment:
 	cmp	eax,3	; button in buffer ?
 	je	.button
 
-	push    dword name_editboxes
-	call    [edit_box_mouse]
+	push	dword name_editboxes
+	call	[edit_box_mouse]
 	jmp	.still
 ;---------------------------------------------------------------------
 .key:		; key
@@ -474,8 +474,8 @@ thread_comment:
 	cmp	ah,27
 	je	.close
 	
-	push    dword name_editboxes
-	call    [edit_box_key]
+	push	dword name_editboxes
+	call	[edit_box_key]
 	jmp	.still
 ;---------------------------------------------------------------------
 .button:		; button
@@ -483,7 +483,7 @@ thread_comment:
 	cmp	ah,1	; button id=1 ?
 	jne	.still
 .close:
-	xor  dword [wFlags],1
+	xor	dword [wFlags],1
 	mcall	-1
 ;---------------------------------------------------------------------
 .draw_window:
@@ -491,8 +491,8 @@ thread_comment:
 	xor	eax,eax
 	xor	esi,esi
 	mcall	,<100,300>,<100,80>,0x34780078,,aComment
-	push    dword name_editboxes
-	call    [edit_box_draw]
+	push	dword name_editboxes
+	call	[edit_box_draw]
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------
@@ -545,18 +545,18 @@ wFlags		dd 0
 ;---------------------------------------------------------------------
 align 4
 results_table dd \
-  ?,?,testDrawWindow,aDrawingWindow,\
-  ?,?,testDrawBar,aDrawingBar,\
-  ?,?,testDrawPicture,aDrawingPicture,\
-  ?,?,testDrawPicture_f73,aDrawingPictF73,\
-  ?,?,testDrawVertLine,aDrawingVLine,\
-  ?,?,testDrawHorzLine,aDrawingHLine,\
-  ?,?,testDrawFreeLine,aDrawingFLine,\
-  ?,?,testDrawText1,aDrawingText1,\
-  ?,?,testDrawText2,aDrawingText2,\
-  ?,?,testDrawNumber,aDrawingNumber,\
-  ?,?,testDrawPixel,aDrawingPixel,\
-  0,0,0,0
+	?,?,testDrawWindow,aDrawingWindow,\
+	?,?,testDrawBar,aDrawingBar,\
+	?,?,testDrawPicture,aDrawingPicture,\
+	?,?,testDrawPicture_f73,aDrawingPictF73,\
+	?,?,testDrawVertLine,aDrawingVLine,\
+	?,?,testDrawHorzLine,aDrawingHLine,\
+	?,?,testDrawFreeLine,aDrawingFLine,\
+	?,?,testDrawText1,aDrawingText1,\
+	?,?,testDrawText2,aDrawingText2,\
+	?,?,testDrawNumber,aDrawingNumber,\
+	?,?,testDrawPixel,aDrawingPixel,\
+	0,0,0,0
 ;---------------------------------------------------------------------
 LINE_HEIGHT   = 13
 TEST_REC_SIZE = 16
@@ -633,9 +633,9 @@ communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
 if __nightbuild eq yes
-    db '/sys/MANAGERS/opendial',0
+	db '/sys/MANAGERS/opendial',0
 else
-    db '/sys/File Managers/opendial',0
+	db '/sys/File Managers/opendial',0
 end if
 communication_area_default_pach:
 	db '/rd0/1/',0
@@ -672,8 +672,8 @@ ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start
 ;OpenDialog__Version	dd aOpenDialog_Version
-        dd      0
-        dd      0
+	dd 0
+	dd 0
 aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
