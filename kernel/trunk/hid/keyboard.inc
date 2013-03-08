@@ -17,6 +17,8 @@ VKEY_RALT     = 0000000000100000b
 VKEY_CAPSLOCK = 0000000001000000b
 VKEY_NUMLOCK  = 0000000010000000b
 VKEY_SCRLOCK  = 0000000100000000b
+VKEY_LWIN     = 0000001000000000b
+VKEY_RWIN     = 0000010000000000b
 
 VKEY_SHIFT    = 0000000000000011b
 VKEY_CONTROL  = 0000000000001100b
@@ -224,6 +226,27 @@ send_scancode:
         xchg    cl, [ext_code]
         and     al, 0x7F
         mov     bh, 1
+;--------------------------------------
+@@:
+        cmp     al, 0x5B
+        jne     @f
+        
+        cmp     cl, 0xE0
+        jne     .writekey
+        
+        mov     eax, VKEY_LWIN
+        jmp     .modifier
+;--------------------------------------
+@@:
+        cmp     al, 0x5C
+        jne     @f
+        
+        cmp     cl, 0xE0
+        jne     .writekey
+        
+        mov     eax, VKEY_RWIN
+        jmp     .modifier
+;--------------------------------------
 @@:
         cmp     al, 0x2A
         jne     @f
