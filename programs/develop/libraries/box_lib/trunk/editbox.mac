@@ -49,6 +49,24 @@ pushad
         test    word ed_flags,ed_mouse_on
         jne     edit_box.editbox_exit
 
+;--------------------------------------
+; this code for Win-keys, works with
+; kernel SVN r.3356 or later
+	push	eax
+	push	ebx
+	mcall	66,3
+	test	ax,0x200	; LWin
+	jnz	.win_key_pressed
+	test	ax,0x400	; RWin
+	jz	@f
+.win_key_pressed:
+	pop	ebx
+	pop	eax
+	jmp	edit_box.editbox_exit
+@@:
+	pop	ebx
+	pop	eax
+;--------------------------------------
 ;Проверка нажат shift ?
         call    edit_box_key.check_shift
 ;----------------------------------------------------------
