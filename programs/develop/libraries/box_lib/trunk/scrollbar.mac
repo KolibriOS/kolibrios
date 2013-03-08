@@ -468,6 +468,13 @@ scroll_bar_exit
 	imul	eax,sb_cur_area
 	xor	edx,edx
 	div	ebx
+	shl	edx,1
+	cmp	edx,ebx
+	jb	@f
+	
+	inc	eax
+	
+@@:
 	cmp	eax,10
 	jae	@f
 	mov	eax,10
@@ -489,6 +496,13 @@ scroll_bar_exit
 	imul	eax,sb_position
 	xor	edx,edx
 	div	ebx
+	shl	edx,1
+	cmp	edx,ebx
+	jb	@f
+	
+	inc	eax
+	
+@@:
 .@@_1:
 	mov	sb_position2,eax
 	xor	edx,edx
@@ -974,6 +988,15 @@ draw_down_arrow_vertical
 	
 @@:
 .store_position:
+	mov	edx,sb_max_area
+	sub	edx,sb_cur_area
+	cmp	edx,eax
+	ja	@f
+
+	mov	sb_position,edx
+	jmp	.all_sb
+
+@@:
 	mov	sb_position,eax
 .all_sb:
 	mov	sb_redraw,dword 1
@@ -1046,6 +1069,13 @@ scroll_bar_exit
 	imul	eax,sb_cur_area
 	xor	edx,edx
 	div	ebx
+	shl	edx,1
+	cmp	edx,ebx
+	jb	@f
+	
+	inc	eax
+	
+@@:
 	cmp	eax,10
 	jae	@f
 	mov	eax,10
@@ -1067,6 +1097,13 @@ scroll_bar_exit
 	imul	eax,sb_position
 	xor	edx,edx
 	div	ebx
+	shl	edx,1
+	cmp	edx,ebx
+	jb	@f
+	
+	inc	eax
+	
+@@:
 .@@_1:
 	mov	sb_position2,eax
 	xor	edx,edx
@@ -1560,6 +1597,15 @@ draw_down_arrow_horizontal
 	
 @@:
 .store_position:
+	mov	edx,sb_max_area
+	sub	edx,sb_cur_area
+	cmp	edx,eax
+	ja	@f
+
+	mov	sb_position,edx
+	jmp	.all_sb
+
+@@:
 	mov	sb_position,eax
 .all_sb:
 	mov	sb_redraw,dword 1
