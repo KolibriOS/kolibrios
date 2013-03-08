@@ -311,7 +311,7 @@ ARP_output_request:
         inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
 
         DEBUGF  1,"ARP_output_request: ip=%u.%u.%u.%u\n",\
-        [esp]:1, [esp + 1]:1, [esp + 2]:1, [esp + 3]:1
+        [esp + 4]:1, [esp + 5]:1, [esp + 6]:1, [esp + 7]:1
 
         mov     ebx, [NET_DRV_LIST + edi]       ; device ptr
 
