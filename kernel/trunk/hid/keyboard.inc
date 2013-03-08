@@ -232,9 +232,10 @@ send_scancode:
         jne     @f
         
         cmp     cl, 0xE0
-        jne     .writekey
+        jne     @f
         
         mov     eax, VKEY_LWIN
+        mov     bh, 0
         jmp     .modifier
 ;--------------------------------------
 @@:
@@ -242,9 +243,10 @@ send_scancode:
         jne     @f
         
         cmp     cl, 0xE0
-        jne     .writekey
+        jne     @f
         
         mov     eax, VKEY_RWIN
+        mov     bh, 0
         jmp     .modifier
 ;--------------------------------------
 @@:
