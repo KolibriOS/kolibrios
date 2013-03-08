@@ -64,12 +64,6 @@ INI_SEC_PREFIX equ ''
 ;-----------------------------------------------------------------------------
 section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
-
-	mcall	9,p_info2,-1
-	mov	ecx,[ebx+30]	; PID
-	mcall	18,21
-	mov	[active_process],eax	; WINDOW SLOT
-
 	cld
 	mov	edi,@UDATA
 	mov	ecx,@PARAMS-@UDATA
@@ -219,8 +213,6 @@ still:
 	cmp	[open_dialog],1
 	je	.open_dialog
 	mcall	10	; wait here until event
-	
-	call	check_active_process_for_clear_all_flags
 
 	cmp	[main_closed],0
 	jne	key.alt_x
@@ -279,19 +271,6 @@ still:
 draw_window_for_OD:
 	call	drawwindow
 	call	draw_statusbar
-	ret
-;-----------------------------------------------------------------------------
-check_active_process_for_clear_all_flags:
-	push	eax
-	mcall	18,7
-	cmp	[active_process],eax
-	je	.exit
-	
-	xor	eax,eax
-	mov	[win_key_flag],al
-;--------------------------------------    
-.exit:
-	pop	eax
 	ret
 ;-----------------------------------------------------------------------------
 copy_str_2:

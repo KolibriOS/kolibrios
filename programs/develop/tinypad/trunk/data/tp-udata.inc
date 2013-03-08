@@ -69,11 +69,6 @@ ext db ?
 chr dd ?
 shi dd ?
 
-win_key_flag	db ?
-
-align 4
-active_process	dd ?
-
 align 4
 cl_3d_normal dd ?
 cl_3d_pushed dd ?
