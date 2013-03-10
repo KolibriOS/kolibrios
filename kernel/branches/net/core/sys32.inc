@@ -75,8 +75,12 @@ iglobal
   msg_exc_d     db "General protection fault", 0
   msg_exc_e     db "Page fault", 0
 
-  msg_sel_ker   db "kernel", 0
-  msg_sel_app   db "application", 0
+  if lang eq sp
+    include 'core/sys32-sp.inc'
+  else
+    msg_sel_ker   db "kernel", 0
+    msg_sel_app   db "application", 0
+  end if
 
 endg
 
@@ -219,7 +223,11 @@ show_error_parameters:
         pop     ebx
 .no_ud:
         mov     edx, [TASK_BASE];not scratched below
-        DEBUGF  1, "K : Process - forced terminate PID: %x\n", [edx+TASKDATA.pid]
+        if lang eq sp
+        DEBUGF  1, "K : Proceso - terminado forzado PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
+        else
+        DEBUGF  1, "K : Process - forced terminate PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
+        end if
         cmp     bl, 0x08
         jb      .l0
         cmp     bl, 0x0e
@@ -713,3 +721,78 @@ restore .slot
 ;        mov    esi,boot_sched_2
 ;        call   boot_log
 ;        ret
+
+; Three following procedures are used to guarantee that
+; some part of kernel code will not be terminated from outside
+; while it is running.
+; Note: they do not protect a thread from terminating due to errors inside
+; the thread; accessing a nonexisting memory would still terminate it.
+
+; First two procedures must be used in pair by thread-to-be-protected
+; to signal the beginning and the end of an important part.
+; It is OK to have nested areas.
+
+; The last procedure must be used by outside wanna-be-terminators;
+; if it is safe to terminate the given thread immediately, it returns eax=1;
+; otherwise, it returns eax=0 and notifies the target thread that it should
+; terminate itself when leaving a critical area (the last critical area if
+; they are nested).
+
+; Implementation. Those procedures use one dword in APPDATA for the thread,
+; APPDATA.terminate_protection.
+; * The upper bit is 1 during normal operations and 0 when terminate is requested.
+; * Other bits form a number = depth of critical regions,
+;   plus 1 if the upper bit is 1.
+; * When this dword goes to zero, the thread should be destructed,
+;   and the procedure in which it happened becomes responsible for destruction.
+
+; Enter critical area. Called by thread which wants to be protected.
+proc protect_from_terminate
+        mov     edx, [current_slot]
+; Atomically increment depth of critical areas and get the old value.
+        mov     eax, 1
+        lock xadd [edx+APPDATA.terminate_protection], eax
+; If the old value was zero, somebody has started to terminate us,
+; so we are destructing and cannot do anything protected.
+; Otherwise, return to the caller.
+        test    eax, eax
+        jz      @f
+        ret
+@@:
+; Wait for somebody to finish us.
+        call    change_task
+        jmp     @b
+endp
+
+; Leave critical area. Called by thread which wants to be protected.
+proc unprotect_from_terminate
+        mov     edx, [current_slot]
+; Atomically decrement depth of critical areas.
+        lock dec [edx+APPDATA.terminate_protection]
+; If the result of decrement is zero, somebody has requested termination,
+; but at that moment we were inside a critical area; terminate now.
+        jz      sys_end
+; Otherwise, return to the caller.
+        ret
+endp
+
+; Request termination of thread identified by edx = SLOT_BASE + slot*256.
+; Called by anyone.
+proc request_terminate
+        xor     eax, eax        ; set return value
+; Atomically clear the upper bit. If it was already zero, then
+; somebody has requested termination before us, so just exit.
+        lock btr [edx+APPDATA.terminate_protection], 31
+        jnc     .unsafe
+; Atomically decrement depth of critical areas.
+        lock dec [edx+APPDATA.terminate_protection]
+; If the result of decrement is nonzero, the target thread is inside a
+; critical area; leave termination to leaving that area.
+        jnz     .unsafe
+; Otherwise, it is safe to kill the target now and the caller is responsible
+; for this. Return eax=1.
+        inc     eax
+.unsafe:
+        ret
+endp
+

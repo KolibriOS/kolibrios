@@ -291,10 +291,14 @@ stack_handler:
 align 4
 NET_link_changed:
 
+        ret
+
         DEBUGF  1,"NET_link_changed: %x\n", ebx
 
 align 4
 NET_send_event:
+
+        ret
 
         DEBUGF  1,"NET_send_event\n"
 
@@ -330,8 +334,7 @@ NET_add_device:
 
         DEBUGF  1,"NET_Add_Device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
-        mov     eax, [NET_RUNNING]
-        cmp     eax, MAX_NET_DEVICES
+        cmp     [NET_RUNNING], MAX_NET_DEVICES
         jae     .error
 
 ;----------------------------------

@@ -369,7 +369,7 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
 
         pushad
         lea     ebx, [cmd]
-        call    file_system_lfn
+        call    file_system_lfn_protected
         popad
         ret
 endp

@@ -42,7 +42,7 @@ printplain:
 @@:
         call    putchar
         lodsb
-        test    al,al
+        test    al, al
         jnz     @b
         popa
         ret
@@ -91,6 +91,7 @@ boot_read_floppy:
         inc     si
         cmp     si, 10
         jb      @b
+sayerr_badsect:
         mov     si, badsect
 sayerr_plain:
         call    printplain
@@ -110,18 +111,18 @@ sayerr_plain:
 ;         dh - head number
 conv_abs_to_THS:
         push    bx
-        mov     bx,word [BPB_SecPerTrk]
-        xor     dx,dx
+        mov     bx, word [BPB_SecPerTrk]
+        xor     dx, dx
         div     bx
         inc     dx
         mov     cl, dl                          ; cl = sector number
-        mov     bx,word [BPB_NumHeads]
-        xor     dx,dx
+        mov     bx, word [BPB_NumHeads]
+        xor     dx, dx
         div     bx
         ; !!!!!!! ax = track number, dx = head number
-        mov     ch,al                           ; ch=track number
-        xchg    dh,dl                           ; dh=head number
-        mov     dl,0                            ; dl=0 (drive 0 (a:))
+        mov     ch, al                          ; ch=track number
+        xchg    dh, dl                          ; dh=head number
+        mov     dl, 0                           ; dl=0 (drive 0 (a:))
         pop     bx
         retn
 ; needed variables
@@ -145,8 +146,119 @@ FirstDataSector dw      0                       ; begin of data
 ;=========================================================================
 
 include 'bootvesa.inc'                 ;Include source for boot vesa 
+if defined extended_primary_loader
+include 'parsers.inc'
+end if
 
 start_of_code:
+
+if defined extended_primary_loader
+; save data from primary loader
+        mov     word [cs:bootcallback], si
+        mov     word [cs:bootcallback+2], ds
+        push    cs
+        pop     ds
+        mov     [bootdevice], ax
+        mov     [bootfs], bx
+
+; set up stack
+        mov     ax, 3000h
+        mov     ss, ax
+        mov     sp, 0EC00h
+
+; try to load configuration file
+        mov     ax, 1
+        mov     di, config_file_struct
+        call    [bootcallback]
+        cld
+        push    cs
+        pop     es
+; bx=0 - ok, bx=1 - part of file loaded, assume this is ok
+        cmp     bx, 1
+        ja      .config_bad
+; configuration file was loaded, parse
+; if length is too big, use first 0FFFFh bytes
+        test    dx, dx
+        jz      @f
+        mov     ax, 0FFFFh
+@@:
+; ds:si will be pointer to current data, dx = limit
+        xchg    ax, dx
+        push    4000h
+        pop     ds
+        xor     si, si
+.parse_loop:
+; skip spaces
+        cmp     si, dx
+        jae     .parse_done
+        lodsb
+        cmp     al, ' '
+        jbe     .parse_loop
+        dec     si
+; loop over all possible configuration values
+        mov     bx, config_file_variables
+.find_variant:
+; get length
+        mov     cx, [es:bx]
+; zero length = end of list
+        jecxz   .find_newline
+; skip over length
+        inc     bx
+        inc     bx
+        mov     di, bx
+; skip over string
+        add     bx, cx
+; test whether we have at least cx symbols left
+        mov     ax, cx
+        add     ax, si
+        jc      .next_variant1
+        cmp     ax, dx
+        jae     .next_variant1
+; save current position
+        push    si
+; compare strings
+        repz cmpsb
+        jnz     .next_variant2
+; strings are equal; look for "=" with possible spaces before and after
+@@:
+        cmp     si, dx
+        jae     .next_variant2
+        lodsb
+        cmp     al, ' '
+        jbe     @b
+        cmp     al, '='
+        jnz     .next_variant2
+; ok, we found the true variant
+; ignore saved position on the stack
+        pop     ax
+; call the parser
+        call    word [es:bx]
+; line parsed, find next
+.find_newline:
+        cmp     si, dx
+        jae     .parse_done
+        lodsb
+        cmp     al, 13
+        jz      .parse_loop
+        cmp     al, 10
+        jz      .parse_loop
+        jmp     .find_newline
+.next_variant2:
+; continue to the next variant, restoring current position
+        pop     si
+.next_variant1:
+; continue to the next variant
+; skip over the parser
+        inc     bx
+        inc     bx
+        jmp     .find_variant
+.parse_done:
+.config_bad:
+
+; set up segment registers
+        push    cs
+        pop     ds
+else
         cld
 ; \begin{diamond}[02.12.2005]
 ; if bootloader sets ax = 'KL', then ds:si points to loader block
@@ -161,7 +273,7 @@ start_of_code:
 ; (see comment to bx_from_load)
         cmp     cx, 'HA'
         jnz     no_hd_load
-        cmp     dx,'RD'
+        cmp     dx, 'RD'
         jnz     no_hd_load
         mov     word [cs:bx_from_load], bx              ; {SPraid}[13.03.2007]
 no_hd_load:
@@ -175,6 +287,7 @@ no_hd_load:
         pop     ds
         push    cs
         pop     es
+end if
 
 ; set videomode
         mov     ax, 3
@@ -378,6 +491,7 @@ wait_loop:       ; variant 2
 apm_end:
         _setcursor d80x25_top_num, 0
 
+if ~ defined extended_primary_loader
 ;CHECK current of code
         cmp     [cfgmanager.loader_block], -1
         jz      noloaderblock
@@ -387,12 +501,13 @@ apm_end:
         jnz     sayerr
         push    0
         pop     es
+end if
 
 noloaderblock:
 ; DISPLAY VESA INFORMATION
-         call    print_vesa_info
-         call    calc_vmodes_table
-         call    check_first_parm  ;check and enable cursor_pos
+        call    print_vesa_info
+        call    calc_vmodes_table
+        call    check_first_parm   ;check and enable cursor_pos
 
 ; \begin{diamond}[30.11.2005]
 cfgmanager:
@@ -404,7 +519,9 @@ cfgmanager:
 ; d) preboot_device = from what boot?
 
 ; determine default settings
+if ~ defined extended_primary_loader
         mov     [.bSettingsChanged], 0
+end if
 
 ;.preboot_gr_end:
         mov     di, preboot_device
@@ -412,6 +529,12 @@ cfgmanager:
 ; set it to use this preloaded image
         cmp     byte [di], 0
         jnz     .preboot_device_inited
+if defined extended_primary_loader
+        inc     byte [di]
+        cmp     byte [bootdevice], 'f' ; floppy?
+        jz      .preboot_device_inited
+        inc     byte [di]
+else
         cmp     [.loader_block], -1
         jz      @f
         les     bx, [.loader_block]
@@ -422,17 +545,18 @@ cfgmanager:
 @@:
 ; otherwise, set [preboot_device] to 1 (default value - boot from floppy)
         mov     byte [di], 1
+end if
 .preboot_device_inited:
 ; following 4 lines set variables to 1 if its current value is 0
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_biosdisk-preboot_device], 1
         adc     byte [di+preboot_biosdisk-preboot_device], 0
-; default value for VRR is OFF
-        cmp     byte [di+preboot_vrrm-preboot_device], 0
-        jnz     @f
-        mov     byte [di+preboot_vrrm-preboot_device], 2
-@@:
+;; default value for VRR is OFF
+;        cmp     byte [di+preboot_vrrm-preboot_device], 0
+;        jnz    @f
+;        mov    byte [di+preboot_vrrm-preboot_device], 2
+;@@:
 ; notify user
         _setcursor 5,2
 
@@ -455,18 +579,22 @@ cfgmanager:
         mov     si, curvideo_msg
         call    print
 
-            call    draw_current_vmode
+        call    draw_current_vmode
 
         mov     si, usebd_msg
         cmp     [preboot_biosdisk], 1
         call    .say_on_off
-        mov     si, vrrm_msg
-        cmp     [preboot_vrrm], 1
-        call    .say_on_off
+;        mov     si, vrrm_msg
+;        cmp     [preboot_vrrm], 1
+;        call    .say_on_off
         mov     si, preboot_device_msg
         call    print
         mov     al, [preboot_device]
+if defined extended_primary_loader
+        and     eax, 3
+else
         and     eax, 7
+end if
         mov     si, [preboot_device_msgs+eax*2]
         call    printplain
 .show_remarks:
@@ -502,14 +630,14 @@ cfgmanager:
         push    dword [es:8*4]
         pop     dword [.oldtimer]
         push    dword [.timer]
-        pop     dword [es:8*4]    
+        pop     dword [es:8*4]
 ;        mov     eax, [es:8*4]
 ;        mov     [.oldtimer], eax
 ;        mov     eax, [.timer]
 ;        mov     [es:8*4], eax
         sti
 ; wait for keypressed
-        xor     ax,ax
+        xor     ax, ax
         int     16h
         push    ax
 ; restore timer interrupt
@@ -532,7 +660,7 @@ cfgmanager:
 @@:
         push    cx
         mov     cx, 76
-        rep     stosw
+        rep stosw
         pop     cx
         add     di, 4*2
         loop    @b
@@ -546,46 +674,54 @@ cfgmanager:
         jz      .change_a
         cmp     al, 'b'
         jz      .change_b
-        cmp     al, 'c'
-        jz      .change_c
-        cmp     al, 'd'
+;        cmp     al, 'c'
+;        jz      .change_c
+        cmp     al, 'c'         ; 'd'
         jnz     .show_remarks
         _setcursor 15,0
         mov     si, bdev
         call    print
+if defined extended_primary_loader
+        mov     bx, '12'
+else
         mov     bx, '14'
+end if
         call    getkey
         mov     [preboot_device], al
         _setcursor 13,0
 .d:
+if ~ defined extended_primary_loader
         mov     [.bSettingsChanged], 1
+end if
         call    clear_vmodes_table             ;clear vmodes_table
-        jmp    .printcfg
+        jmp     .printcfg
 .change_a:
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
-        xor     ax,ax
+        xor     ax, ax
         int     0x16
 ;        call    clear_table_cursor             ;clear current position of cursor
 
-        mov     si,word [cursor_pos]
+        mov     si, word [cursor_pos]
 
-        cmp     ah,0x48;x,0x48E0               ; up
+        cmp     ah, 0x48;x,0x48E0               ; up
         jne     .down
-        cmp     si,modes_table
+        cmp     si, modes_table
         jbe     .loops
-        sub     word [cursor_pos],size_of_step
+        sub     word [cursor_pos], size_of_step
         jmp     .loops
 
-.down:  cmp     ah,0x50;x,0x50E0               ; down
+.down:
+        cmp     ah, 0x50;x,0x50E0               ; down
         jne     .pgup
-        cmp     word[es:si+10],-1
-        je      .loops        
-        add     word [cursor_pos],size_of_step
+        cmp     word[es:si+10], -1
+        je      .loops
+        add     word [cursor_pos], size_of_step
         jmp     .loops
 
-.pgup:  cmp     ah,0x49                 ; page up
+.pgup:
+        cmp     ah, 0x49                ; page up
         jne     .pgdn
         sub     si, size_of_step*long_v_table
         cmp     si, modes_table
@@ -602,7 +738,8 @@ cfgmanager:
         mov     word [home_cursor], si
         jmp     .loops
 
-.pgdn:  cmp     ah,0x51                 ; page down
+.pgdn:
+        cmp     ah, 0x51                ; page down
         jne     .enter
         mov     ax, [end_cursor]
         add     si, size_of_step*long_v_table
@@ -622,7 +759,8 @@ cfgmanager:
         mov     word [home_cursor], si
         jmp     .loops
 
-.enter: cmp     al,0x0D;x,0x1C0D               ; enter
+.enter:
+        cmp     al, 0x0D;x,0x1C0D               ; enter
         jne     .loops
         push    word [cursor_pos]
         pop     bp
@@ -632,9 +770,9 @@ cfgmanager:
         pop     word [y_save]
         push    word [es:bp+6]
         pop     word [number_vm]
-        mov     word [preboot_graph],bp           ;save choose
+        mov     word [preboot_graph], bp          ;save choose
         
-        jmp    .d
+        jmp     .d
 
 .change_b:
         _setcursor 15,0
@@ -650,15 +788,15 @@ cfgmanager:
         mov     [preboot_biosdisk], al
         _setcursor 11,0
         jmp     .d
-.change_c:
-        _setcursor 15,0
-        mov     si, vrrmprint
-        call    print
-        mov     bx, '12'
-        call    getkey
-        mov     [preboot_vrrm], al
-        _setcursor 12,0
-        jmp     .d
+;.change_c:
+;        _setcursor 15,0
+;        mov     si, vrrmprint
+;        call    print
+;        mov     bx, '12'
+;        call    getkey
+;        mov     [preboot_vrrm], al
+;        _setcursor 12,0
+;        jmp     .d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .say_on_off:
         pushf
@@ -667,15 +805,20 @@ cfgmanager:
         popf
         jz      @f
         mov     si, off_msg
-@@:     jmp     printplain
+@@:
+        jmp     printplain
 ; novesa and vervesa strings are not used at the moment of executing this code
 virtual at novesa
 .oldtimer dd ?
 .starttime dd ?
+if ~ defined extended_primary_loader
 .bSettingsChanged db ?
+end if
 .timer dd ?
 end virtual
+if ~ defined extended_primary_loader
 .loader_block dd -1
+end if
 .gettime:
         mov     ah, 0
         int     1Ah
@@ -692,7 +835,11 @@ end virtual
         pushad
         call    .gettime
         sub     eax, [.starttime]
+if defined extended_primary_loader
+        sub     ax, [preboot_timeout]
+else
         sub     ax, 18*5
+end if
         jae     .timergo
         neg     ax
         add     ax, 18-1
@@ -708,20 +855,30 @@ if lang eq ru
         mov     cl, 'ã'
         jz      @f
         mov     cl, 'ë'
-@@:     mov     [time_str+9], cl
+@@:
+        mov     [time_str+9], cl
 else if lang eq et
         cmp     al, 1
         ja      @f
         mov     [time_str+9], ' '
-        mov     [time_str+10],' '
+        mov     [time_str+10], ' '
 @@:
+else if lang eq sp
+; esperar 5/4/3/2 segundos, 1 segundo
+        cmp     al, 1
+        mov     cl, 's'
+        ja      @f
+        mov     cl, ' '
+@@:
+        mov     [time_str+10], cl
 else
 ; wait 5/4/3/2 seconds, 1 second
         cmp     al, 1
         mov     cl, 's'
         ja      @f
         mov     cl, ' '
-@@:     mov     [time_str+9], cl
+@@:
+        mov     [time_str+9], cl
 end if
         add     al, '0'
         mov     [time_str+1], al
@@ -748,6 +905,7 @@ end if
         mov     si, loading_msg
         call    print
         _setcursor 15,0
+if ~ defined extended_primary_loader
         cmp     [.bSettingsChanged], 0
         jz      .load
         cmp     [.loader_block], -1
@@ -788,6 +946,7 @@ end if
         call    printplain
         _setcursor 15,0
 .load:
+end if
 ; \end{diamond}[02.12.2005]
 
 ; ASK GRAPHICS MODE
@@ -796,18 +955,17 @@ end if
 
 ; GRAPHICS ACCELERATION
 ; force yes
-        mov     [es:0x901C], byte 1
+        mov     [es:BOOT_MTRR], byte 1
 
 ; DMA ACCESS TO HD
 
         mov     al, [preboot_dma]
-        mov     [es:0x901F], al
+        mov     [es:BOOT_DMA], al
 
-; VRR_M USE
-
-        mov     al,[preboot_vrrm]
-        mov     [es:0x9030], al
-        mov     [es:0x901E], byte 1
+;; VRR_M USE
+;
+;        mov     al,[preboot_vrrm]
+;        mov     [es:0x9030], al
 
 ; BOOT DEVICE
 
@@ -820,9 +978,9 @@ include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
-        cmp     [boot_dev],0
+        cmp     [boot_dev], 0
         jne     no_sys_on_floppy
-        mov     si,diskload
+        mov     si, diskload
         call    print
         xor     ax, ax            ; reset drive
         xor     dx, dx
@@ -967,6 +1125,7 @@ sayerr_floppy:
         mov     dx, 0x3f2
         mov     al, 0
         out     dx, al
+sayerr_memmove:
         mov     si, memmovefailed
         jmp     sayerr_plain
 @@:
@@ -1145,6 +1304,40 @@ no_sys_on_floppy:
         mov     al, 0
         out     dx, al
 
+if defined extended_primary_loader
+        cmp     [boot_dev], 1
+        jne     no_sys_from_primary
+; load kolibri.img using callback from primary loader
+        and     word [movedesc + 24 + 2], 0
+        mov     byte [movedesc + 24 + 4], 10h
+; read in blocks of 64K until file is fully loaded
+        mov     ax, 1
+.repeat:
+        mov     di, image_file_struct
+        call    [bootcallback]
+        push    cs
+        pop     ds
+        push    cs
+        pop     es
+        cmp     bx, 1
+        ja      sayerr_badsect
+        push    bx
+        mov     si, movedesc
+        and     word [si + 16 + 2], 0
+        mov     byte [si + 16 + 4], 4
+        mov     ah, 87h
+        mov     cx, 8000h
+        int     15h
+        pop     bx
+        test    ah, ah
+        jnz     sayerr_memmove
+        inc     byte [si + 24 + 4]
+        test    bx, bx
+        jz      no_sys_from_primary
+        mov     ax, 2
+        jmp     .repeat
+no_sys_from_primary:
+end if
 
 ; SET GRAPHICS
 

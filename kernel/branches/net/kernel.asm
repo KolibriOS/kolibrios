@@ -77,7 +77,7 @@ $Revision $
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 
 ; Enabling the next line will enable serial output console
-;debug_com_base  equ 0x2f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
+;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -133,13 +133,19 @@ use16
                   org   0x0
         jmp     start_of_code
 
-version db    'Kolibri OS network branch        ',13,10,13,10,0
+if lang eq sp
+include "kernelsp.inc"  ; spanish kernel messages
+else
+version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
+end if
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
 
-if lang eq en
-include "boot/booteng.inc"     ; english system boot messages
+if lang eq ge
+include "boot/bootge.inc"     ; german system boot messages
+else if lang eq sp
+include "boot/bootsp.inc"     ; spanish system boot messages
 else if lang eq ru
 include "boot/bootru.inc"      ; russian system boot messages
 include "boot/ru.inc"          ; Russian font
@@ -147,7 +153,7 @@ else if lang eq et
 include "boot/bootet.inc"      ; estonian system boot messages
 include "boot/et.inc"          ; Estonian font
 else
-include "boot/bootge.inc"      ; german system boot messages
+include "boot/booten.inc"      ; english system boot messages
 end if
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
@@ -608,6 +614,52 @@ no_mode_0x12:
         mov     [mem_BACKGROUND], 4
         mov     [img_background], static_background_data
 
+; SET UP OS TASK
+
+        mov     esi, boot_setostask
+        call    boot_log
+
+        xor     eax, eax
+        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
+        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
+        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
+
+        ; name for OS/IDLE process
+
+        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
+        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
+        mov     edi, [os_stack_seg]
+        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
+        add     edi, 0x2000-512
+        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
+        mov     dword [SLOT_BASE+256+APPDATA.terminate_protection], 80000001h
+
+        mov     esi, fpu_data
+        mov     ecx, 512/4
+        cld
+        rep movsd
+
+        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
+        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
+
+        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
+        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
+        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
+
+        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
+        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
+
+        ; task list
+        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
+        inc     eax
+        mov     dword [CURRENT_TASK], eax
+        mov     dword [TASK_COUNT], eax
+        mov     [current_slot], SLOT_BASE+256
+        mov     [TASK_BASE], dword TASK_DATA
+        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
+        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
+
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
@@ -718,9 +770,11 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
         or      ecx, (10+30*6) shl 16
-                else
+        else if lang eq sp
+        or      ecx, (10+33*6) shl 16
+        else
         or      ecx, (10+29*6) shl 16
-                end if
+        end if
         sub     ecx, 10
         mov     edx, 0xFFFFFF
         mov     ebx, [MEM_AMOUNT]
@@ -738,7 +792,6 @@ end if
 ;        call    boot_log
 
         mov     [pci_access_enabled], 1
-
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -758,52 +811,6 @@ end if
         mov     esi, boot_resirqports
         call    boot_log
         call    reserve_irqs_ports
-
-; SET UP OS TASK
-
-        mov     esi, boot_setostask
-        call    boot_log
-
-        xor     eax, eax
-        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
-        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
-
-        ; name for OS/IDLE process
-
-        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
-        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-        mov     edi, [os_stack_seg]
-        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-        add     edi, 0x2000-512
-        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
-        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
-        ; [SLOT_BASE+256+APPDATA.io_map] was set earlier
-
-        mov     esi, fpu_data
-        mov     ecx, 512/4
-        cld
-        rep movsd
-
-        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
-
-        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
-        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
-        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
-
-        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
-        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
-
-        ; task list
-        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
-        inc     eax
-        mov     dword [CURRENT_TASK], eax
-        mov     dword [TASK_COUNT], eax
-        mov     [current_slot], SLOT_BASE+256
-        mov     [TASK_BASE], dword TASK_DATA
-        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
-        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
 
         call    init_display
         mov     eax, [def_cursor]
@@ -841,9 +848,11 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
         add     ecx, (10+19*6) shl 16 - 10         ; 'Determining amount of memory'
-                else
+        else if lang eq sp
+        add     ecx, (10+25*6) shl 16 - 10         ; 'Determining amount of memory'
+        else
         add     ecx, (10+17*6) shl 16 - 10         ; 'Determining amount of memory'
-                end if
+        end if
         mov     edx, 0xFFFFFF
         xor     edi, edi
         mov     eax, 0x00040000
@@ -912,8 +921,8 @@ end if
         call    fs_execute_from_sysdir
 
 ;        cmp   eax,2                  ; continue if a process has been loaded
-        sub     eax, 2
-        jz      first_app_found
+        test    eax, eax
+        jns     first_app_found
 
         mov     esi, boot_failed
         call    boot_log
@@ -2089,16 +2098,20 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         push    ecx
         cmp     ecx, 2
         jb      noprocessterminate
-
-        cmp     ecx, [TASK_COUNT]
+        mov     edx, [TASK_COUNT]
+        cmp     ecx, edx
         ja      noprocessterminate
-
-        shl     ecx, 5
         mov     eax, [TASK_COUNT]
+        shl     ecx, 5
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
-
         add     ecx, CURRENT_TASK+TASKDATA.state
         cmp     byte [ecx], 9
+        jz      noprocessterminate
+        push    ecx edx
+        lea     edx, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        call    request_terminate
+        pop     edx ecx
+        test    eax, eax
         jz      noprocessterminate
 ;--------------------------------------
 ; terminate all network sockets it used
@@ -3476,15 +3489,31 @@ nobackgr:
         mov     edx, [shutdown_processes]
 
         cmp     [SYS_SHUTDOWN], dl
-        jne     no_mark_system_shutdown
+        jne     noshutdown
 
         lea     ecx, [edx-1]
         mov     edx, OS_BASE+0x3040
-        jecxz   @f
+        jecxz   no_mark_system_shutdown
 ;--------------------------------------
 align 4
 markz:
+        push    ecx edx
+        cmp     [edx+TASKDATA.state], 9
+        jz      .nokill
+        lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
+        cmp     [edx+APPDATA.dir_table], sys_pgdir - OS_BASE
+        jz      .nokill
+        call    request_terminate
+        jmp     .common
+.nokill:
+        dec     byte [SYS_SHUTDOWN]
+        xor     eax, eax
+.common:
+        pop     edx ecx
+        test    eax, eax
+        jz      @f
         mov     [edx+TASKDATA.state], byte 3
+@@:
         add     edx, 0x20
         loop    markz
 ;--------------------------------------
@@ -3504,11 +3533,20 @@ align 4
 newct:
         mov     cl, [ebx]
         cmp     cl, byte 3
-        jz      terminate
+        jz      .terminate
 
         cmp     cl, byte 4
-        jz      terminate
+        jnz     .noterminate
+.terminate:
+        pushad
+        call    terminate
+        popad
+        cmp     byte [SYS_SHUTDOWN], 0
+        jz      .noterminate
+        dec     byte [SYS_SHUTDOWN]
+        je      system_shutdown
 
+.noterminate:
         add     ebx, 0x20
         inc     esi
         dec     eax
@@ -3718,6 +3756,15 @@ set_app_param:
         mov     [esp+32], eax                    ; return old mask value
         ret
 ;-----------------------------------------------------------------------------
+
+; this is for syscall
+proc delay_hs_unprotected
+        call    unprotect_from_terminate
+        call    delay_hs
+        call    protect_from_terminate
+        ret
+endp
+
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
@@ -5606,4 +5653,6 @@ include "data32.inc"
 __REV__ = __REV
 
 uglobals_size = $ - endofcode
+if ~ lang eq sp
 diff16 "end of kernel code",0,$
+end if

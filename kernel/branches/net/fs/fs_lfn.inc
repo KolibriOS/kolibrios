@@ -134,6 +134,15 @@ fs_additional_handlers:
 
 endg
 
+file_system_lfn_protected:
+        pushad
+        call    protect_from_terminate
+        call    file_system_lfn
+        call    unprotect_from_terminate
+        popad
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
+        ret
 
 file_system_lfn:
 ; in: ebx->fileinfo block

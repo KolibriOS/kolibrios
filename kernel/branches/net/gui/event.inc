@@ -467,9 +467,11 @@ sys_waitforevent:                                  ;; f10
 ;--------------------------------------
 align 4
 sys_wait_event_timeout:                            ;; f23
+        call    unprotect_from_terminate
         mov     edx, get_event_for_app; wait_test
         call    Wait_events_ex        ; ebx - timeout
         mov     [esp+32], eax
+        call    protect_from_terminate
         ret
 ;-----------------------------------------------------------------------------
 align 4
