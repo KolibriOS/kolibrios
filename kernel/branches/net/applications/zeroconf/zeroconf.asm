@@ -239,7 +239,7 @@ build_request:                                          ; Creates a DHCP request
         stdcall mem.Alloc, BUFFER
         mov     [dhcpMsg], eax
         test    eax, eax
-        jz      apipa
+        jz      dhcp_error
 
             ;;; todo: skip this bullcrap
 
@@ -252,6 +252,7 @@ build_request:                                          ; Creates a DHCP request
 
         mov     edx, [dhcpMsg]
 
+        ; Boot protocol legacy
         mov     [edx], byte 0x01                ; Boot request
         mov     [edx+1], byte 0x01              ; Ethernet
         mov     [edx+2], byte 0x06              ; Ethernet h/w len
@@ -263,6 +264,8 @@ build_request:                                          ; Creates a DHCP request
         mov     [edx+28],dword eax
         mov     ax, word [MAC+4]                ; last 2 bytes of MAC
         mov     [edx+32],word ax
+
+        ; DHCP extension
         mov     [edx+236], dword 0x63538263     ; magic cookie
         mov     [edx+240], word 0x0135          ; option DHCP msg type
         mov     al, [dhcpMsgType]
@@ -307,7 +310,7 @@ read_data:                                              ; we have data - this wi
         DEBUGF  1,"->%d bytes received\n", eax
 
         cmp     eax, -1
-        je      error
+        je      dhcp_error
 
         mov     [dhcpMsgLen], eax
 
@@ -345,10 +348,11 @@ send_request:
 
 request:
         call    parse_response
-        call    dhcp_end
 
         cmp     [dhcpMsgType], 0x05             ; Was the response an ACK? It should be
-        jne     link_local                      ; NO - so we do link-local
+        jne     read_data                       ; NO - read next packets
+
+        call    dhcp_end
 
         mcall   76, API_IPv4 + 3, [dhcp.ip]             ; ip
         mcall   76, API_IPv4 + 5, [dhcp.dns]            ; dns
@@ -479,20 +483,19 @@ parse_response:
 
 
 
-apipa:
-        mcall   close, [socketNum]
-        stdcall mem.Free, [dhcpMsg]
-
+dhcp_error:
+        call    dhcp_end
 
 link_local:
         call    random
-        mov     ecx, 0xfea9                             ; IP 169.254.0.0 link local net, see RFC3927
         mov     cx, ax
-        mcall   76, API_IPv4 + 3, ecx                     ; mask is 255.255.0.0
+        shl     ecx, 16
+        mov     cx, 0xfea9                              ; IP 169.254.0.0 link local net, see RFC3927
+        mcall   76, API_IPv4 + 3, ecx                   ; mask is 255.255.0.0
         DEBUGF  1,"Link Local IP assinged: 169.254.%u.%u\n", [generator+2]:1, [generator+3]:1
-        mcall   76, API_IPv4 + 5, 0xffff
+        mcall   76, API_IPv4 + 7, 0xffff
         mcall   76, API_IPv4 + 9, 0x0
-        mcall   76, API_IPv4 + 7, 0x0
+        mcall   76, API_IPv4 + 5, 0x0
 
         mcall   5, PROBE_WAIT*100
 
