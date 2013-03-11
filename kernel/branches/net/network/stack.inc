@@ -29,6 +29,7 @@ uglobal
 endg
 
 MAX_NET_DEVICES         = 16
+ARP_BLOCK               = 1             ; true or false
 
 MIN_EPHEMERAL_PORT      = 49152
 MIN_EPHEMERAL_PORT_N    = 0x00C0        ; same in Network byte order (FIXME)

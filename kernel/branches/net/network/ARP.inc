@@ -485,7 +485,7 @@ ARP_IP_to_MAC:
         loop    .scan_loop
 
   .not_in_list:
-        DEBUGF 1,"ARP_IP_to_MAC: preparing for ARP request\n"
+        DEBUGF  1,"ARP_IP_to_MAC: preparing for ARP request\n"
 
 ;--------------------
 ; Send an ARP request
@@ -517,6 +517,9 @@ ARP_IP_to_MAC:
   .found_it:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING             ; Does it have a MAC assigned?
         je      .valid
+if ARP_BLOCK
+        jmp     .give_up
+else
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE         ; Are we waiting for reply from remote end?
         jne     .give_up
         push    esi
@@ -524,6 +527,7 @@ ARP_IP_to_MAC:
         call    delay_ms
         pop     esi
         jmp     .found_it               ; now check again
+end if
 
   .valid:
         DEBUGF  1,"ARP_IP_to_MAC: found MAC\n"
