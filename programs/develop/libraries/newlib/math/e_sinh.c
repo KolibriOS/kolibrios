@@ -31,6 +31,8 @@
 
 #include "fdlibm.h"
 
+#ifndef _DOUBLE_IS_32BITS
+
 #ifdef __STDC__
 static const double one = 1.0, shuge = 1.0e307;
 #else
@@ -38,9 +40,9 @@ static double one = 1.0, shuge = 1.0e307;
 #endif
 
 #ifdef __STDC__
-	double sinh(double x)
+	double __ieee754_sinh(double x)
 #else
-	double sinh(x)
+	double __ieee754_sinh(x)
 	double x;
 #endif
 {	
@@ -67,12 +69,12 @@ static double one = 1.0, shuge = 1.0e307;
 	}
 
     /* |x| in [22, log(maxdouble)] return 0.5*exp(|x|) */
-	if (ix < 0x40862E42)  return h * exp(fabs(x));
+	if (ix < 0x40862E42)  return h*__ieee754_exp(fabs(x));
 
     /* |x| in [log(maxdouble), overflowthresold] */
 	GET_LOW_WORD(lx,x);
        if (ix<0x408633CE || (ix==0x408633ce && lx<=(__uint32_t)0x8fb9f87d)) {
-	    w = exp(0.5*fabs(x));
+	    w = __ieee754_exp(0.5*fabs(x));
 	    t = h*w;
 	    return t*w;
 	}
@@ -81,3 +83,4 @@ static double one = 1.0, shuge = 1.0e307;
 	return x*shuge;
 }
 
+#endif /* defined(_DOUBLE_IS_32BITS) */

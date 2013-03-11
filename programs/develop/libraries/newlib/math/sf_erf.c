@@ -13,48 +13,7 @@
  * ====================================================
  */
 
-/*
 #include "fdlibm.h"
-*/
-#include <math.h>
-#include <stdint.h>
-#include <errno.h>
-
-#define __ieee754_expf expf
-
-
-
-typedef union
-{
-  float value;
-  uint32_t word;
-} ieee_float_shape_type;
-
-/* Get a 32 bit int from a float.  */
-
-static inline int
-__get_float_word(float d)
-{
-  ieee_float_shape_type u;
-  u.value = d;
-  return u.word;
-}
-
-/* Set a float from a 32 bit int.  */
-
-#define SET_FLOAT_WORD(d,i)					\
-do {								\
-  ieee_float_shape_type sf_u;					\
-  sf_u.word = (i);						\
-  (d) = sf_u.value;						\
-} while (0)
-
-static inline void __trunc_float_word(float * x)
-{
-  ieee_float_shape_type u;
-  u.value = * x;	  
-  u.word &= 0xfffff000;
-}
 
 #ifdef __v810__
 #define const
@@ -146,12 +105,12 @@ sb7  = -2.2440952301e+01; /* 0xc1b38712 */
 	float x;
 #endif
 {
-	int32_t hx,ix,i;
+	__int32_t hx,ix,i;
 	float R,S,P,Q,s,y,z,r;
-	hx = __get_float_word(x);
+	GET_FLOAT_WORD(hx,x);
 	ix = hx&0x7fffffff;
-	if(!(ix<0x7f800000L)) {		/* erf(nan)=nan */
-	    i = ((uint32_t)hx>>31)<<1;
+	if(!FLT_UWORD_IS_FINITE(ix)) {		/* erf(nan)=nan */
+	    i = ((__uint32_t)hx>>31)<<1;
 	    return (float)(1-i)+one/x;	/* erf(+-inf)=+-1 */
 	}
 
@@ -190,9 +149,8 @@ sb7  = -2.2440952301e+01; /* 0xc1b38712 */
 	    S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(
 				sb5+s*(sb6+s*sb7))))));
 	}
-
-	z = x;
-	__trunc_float_word (&z);
+	GET_FLOAT_WORD(ix,x);
+	SET_FLOAT_WORD(z,ix&0xfffff000);
 	r  =  __ieee754_expf(-z*z-(float)0.5625)*__ieee754_expf((z-x)*(z+x)+R/S);
 	if(hx>=0) return one-r/x; else return  r/x-one;
 }
@@ -204,13 +162,13 @@ sb7  = -2.2440952301e+01; /* 0xc1b38712 */
 	float x;
 #endif
 {
-	int32_t hx,ix;
+	__int32_t hx,ix;
 	float R,S,P,Q,s,y,z,r;
-	hx = __get_float_word(x);
+	GET_FLOAT_WORD(hx,x);
 	ix = hx&0x7fffffff;
-	if(!(ix<0x7f800000L)) {			/* erfc(nan)=nan */
+	if(!FLT_UWORD_IS_FINITE(ix)) {			/* erfc(nan)=nan */
 						/* erfc(+-inf)=0,2 */
-	    return (float)(((uint32_t)hx>>31)<<1)+one/x;
+	    return (float)(((__uint32_t)hx>>31)<<1)+one/x;
 	}
 
 	if(ix < 0x3f580000) {		/* |x|<0.84375 */
@@ -238,7 +196,6 @@ sb7  = -2.2440952301e+01; /* 0xc1b38712 */
 		z = erx+P/Q; return one+z;
 	    }
 	}
-
 	if (ix < 0x41e00000) {		/* |x|<28 */
 	    x = fabsf(x);
  	    s = one/(x*x);
@@ -254,14 +211,36 @@ sb7  = -2.2440952301e+01; /* 0xc1b38712 */
 	        S=one+s*(sb1+s*(sb2+s*(sb3+s*(sb4+s*(
 				sb5+s*(sb6+s*sb7))))));
 	    }
-            z = x;   
-	    __trunc_float_word (&z);
+	    GET_FLOAT_WORD(ix,x);
+	    SET_FLOAT_WORD(z,ix&0xfffff000);
 	    r  =  __ieee754_expf(-z*z-(float)0.5625)*
 			__ieee754_expf((z-x)*(z+x)+R/S);
 	    if(hx>0) return r/x; else return two-r/x;
 	} else {
-	    /* set range error */
-            errno = ERANGE;
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
 }
+
+#ifdef _DOUBLE_IS_32BITS
+
+#ifdef __STDC__
+	double erf(double x)
+#else
+	double erf(x)
+	double x;
+#endif
+{
+	return (double) erff((float) x);
+}
+
+#ifdef __STDC__
+	double erfc(double x)
+#else
+	double erfc(x)
+	double x;
+#endif
+{
+	return (double) erfcf((float) x);
+}
+
+#endif /* defined(_DOUBLE_IS_32BITS) */

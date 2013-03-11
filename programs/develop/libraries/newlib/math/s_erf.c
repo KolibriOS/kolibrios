@@ -1,15 +1,74 @@
 
-/* @(#)s_erf.c 1.3 95/01/18 */
+/* @(#)s_erf.c 5.1 93/09/24 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
  * software is freely granted, provided that this notice 
  * is preserved.
  * ====================================================
  */
+
+/*
+FUNCTION
+        <<erf>>, <<erff>>, <<erfc>>, <<erfcf>>---error function 
+INDEX
+	erf
+INDEX
+	erff
+INDEX
+	erfc
+INDEX
+	erfcf
+
+ANSI_SYNOPSIS
+	#include <math.h>
+	double erf(double <[x]>);
+	float erff(float <[x]>);
+	double erfc(double <[x]>);
+	float erfcf(float <[x]>);
+TRAD_SYNOPSIS
+	#include <math.h>
+
+	double erf(<[x]>)
+	double <[x]>;
+
+	float erff(<[x]>)
+	float <[x]>;
+
+	double erfc(<[x]>)
+	double <[x]>;
+
+	float erfcf(<[x]>)
+	float <[x]>;
+
+DESCRIPTION
+	<<erf>> calculates an approximation to the ``error function'',
+	which estimates the probability that an observation will fall within
+	<[x]> standard deviations of the mean (assuming a normal
+	distribution).
+	@tex
+	The error function is defined as
+	$${2\over\sqrt\pi}\times\int_0^x e^{-t^2}dt$$
+	 @end tex
+
+	<<erfc>> calculates the complementary probability; that is,
+	<<erfc(<[x]>)>> is <<1 - erf(<[x]>)>>.  <<erfc>> is computed directly,
+	so that you can use it to avoid the loss of precision that would
+	result from subtracting large probabilities (on large <[x]>) from 1.
+
+	<<erff>> and <<erfcf>> differ from <<erf>> and <<erfc>> only in the
+	argument and result types.
+
+RETURNS
+	For positive arguments, <<erf>> and all its variants return a
+	probability---a number between 0 and 1.
+
+PORTABILITY
+	None of the variants of <<erf>> are ANSI C.
+*/
 
 /* double erf(double x)
  * double erfc(double x)
@@ -106,40 +165,9 @@
  */
 
 
-/* #include "fdlibm.h" */
+#include "fdlibm.h"
 
-#include <math.h>
-#include <stdint.h>
-#include <errno.h>
-
-#define __ieee754_exp exp
-
-typedef union 
-{
-  double value;
-  struct 
-  {
-    uint32_t lsw;
-    uint32_t msw;
-  } parts;
-} ieee_double_shape_type;
-
-
-static inline int __get_hi_word(const double x)
-{
-  ieee_double_shape_type u;
-  u.value = x;
-  return u.parts.msw;
-}
-
-static inline void __trunc_lo_word(double *x)
-{
-  ieee_double_shape_type u;
-  u.value = *x;
-  u.parts.lsw = 0;
-  *x = u.value;
-}
-
+#ifndef _DOUBLE_IS_32BITS
 
 #ifdef __STDC__
 static const double
@@ -227,12 +255,12 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 	double x;
 #endif
 {
-	int hx,ix,i;
+	__int32_t hx,ix,i;
 	double R,S,P,Q,s,y,z,r;
-	hx = __get_hi_word(x);
+	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {		/* erf(nan)=nan */
-	    i = ((unsigned)hx>>31)<<1;
+	    i = ((__uint32_t)hx>>31)<<1;
 	    return (double)(1-i)+one/x;	/* erf(+-inf)=+-1 */
 	}
 
@@ -271,7 +299,7 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 				sb5+s*(sb6+s*sb7))))));
 	}
 	z  = x;  
-	__trunc_lo_word(&z);
+	SET_LOW_WORD(z,0);
 	r  =  __ieee754_exp(-z*z-0.5625)*__ieee754_exp((z-x)*(z+x)+R/S);
 	if(hx>=0) return one-r/x; else return  r/x-one;
 }
@@ -283,13 +311,13 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 	double x;
 #endif
 {
-	int hx,ix;
+	__int32_t hx,ix;
 	double R,S,P,Q,s,y,z,r;
-	hx = __get_hi_word(x);
+	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {			/* erfc(nan)=nan */
 						/* erfc(+-inf)=0,2 */
-	    return (double)(((unsigned)hx>>31)<<1)+one/x;
+	    return (double)(((__uint32_t)hx>>31)<<1)+one/x;
 	}
 
 	if(ix < 0x3feb0000) {		/* |x|<0.84375 */
@@ -333,13 +361,13 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 				sb5+s*(sb6+s*sb7))))));
 	    }
 	    z  = x;
-	    __trunc_lo_word(&z);
+	    SET_LOW_WORD(z,0);
 	    r  =  __ieee754_exp(-z*z-0.5625)*
 			__ieee754_exp((z-x)*(z+x)+R/S);
 	    if(hx>0) return r/x; else return two-r/x;
 	} else {
-	    /* set range error */
-            errno = ERANGE;
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
 }
+
+#endif /* _DOUBLE_IS_32BITS */

@@ -34,6 +34,8 @@
 
 #include "fdlibm.h"
 
+#ifndef _DOUBLE_IS_32BITS
+
 #ifdef __STDC__
 static const double one = 1.0, half=0.5, huge = 1.0e300;
 #else
@@ -41,9 +43,9 @@ static double one = 1.0, half=0.5, huge = 1.0e300;
 #endif
 
 #ifdef __STDC__
-	double cosh(double x)
+	double __ieee754_cosh(double x)
 #else
-	double cosh(x)
+	double __ieee754_cosh(x)
 	double x;
 #endif
 {	
@@ -68,18 +70,18 @@ static double one = 1.0, half=0.5, huge = 1.0e300;
 
     /* |x| in [0.5*ln2,22], return (exp(|x|)+1/exp(|x|)/2; */
 	if (ix < 0x40360000) {
-		t = exp(fabs(x));
+		t = __ieee754_exp(fabs(x));
 		return half*t+half/t;
 	}
 
     /* |x| in [22, log(maxdouble)] return half*exp(|x|) */
-	if (ix < 0x40862E42)  return half*exp(fabs(x));
+	if (ix < 0x40862E42)  return half*__ieee754_exp(fabs(x));
 
     /* |x| in [log(maxdouble), overflowthresold] */
 	GET_LOW_WORD(lx,x);
 	if (ix<0x408633CE || 
              (ix==0x408633ce && lx<=(__uint32_t)0x8fb9f87d)) {
-	    w = exp(half*fabs(x));
+	    w = __ieee754_exp(half*fabs(x));
 	    t = half*w;
 	    return t*w;
 	}
@@ -88,3 +90,4 @@ static double one = 1.0, half=0.5, huge = 1.0e300;
 	return huge*huge;
 }
 
+#endif /* defined(_DOUBLE_IS_32BITS) */

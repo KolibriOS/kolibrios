@@ -9,7 +9,7 @@ LIBC_INCLUDES = $(LIBC_TOPDIR)/include
 
 NAME:=	  libc
 
-DEFINES:=
+DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
@@ -253,26 +253,39 @@ STDIO_SRCS=				\
 			sscanf.c
 
 
-MATH_SRCS = 	acosf.c acosh.c acoshf.c acoshl.c acosl.c asinf.c asinh.c asinhf.c asinhl.c \
-		asinl.c atan2f.c atan2l.c atanf.c atanh.c atanhf.c atanhl.c atanl.c cbrt.c \
-		cbrtf.c cbrtl.c coshf.c coshl.c erfl.c expf.c expl.c expm1.c expm1f.c expm1l.c\
-		fabs.c fabsf.c fabsl.c fdim.c fdimf.c fdiml.c fmal.c fmax.c fmaxf.c fmaxl.c\
-		fmin.c fminf.c fminl.c fmodf.c fmodl.c fp_consts.c fp_constsf.c fp_constsl.c\
-		fpclassify.c fpclassifyf.c fpclassifyl.c frexpf.c fucom.c hypotf.c isnan.c \
-		isnanf.c isnanl.c ldexp.c ldexpf.c ldexpl.c lgamma.c lgammaf.c lgammal.c \
-		llrint.c llrintf.c llrintl.c logb.c logbf.c logbl.c lrint.c lrintf.c lrintl.c\
-		lround_generic.c modff.c modfl.c nextafterf.c nextafterl.c nexttoward.c \
-		nexttowardf.c pow.c powf.c powi.c powif.c powil.c powl.c rint.c rintf.c \
-		rintl.c round_generic.c s_erf.c sf_erf.c signbit.c signbitf.c signbitl.c \
-		sinhf.c sinhl.c sqrtf.c sqrtl.c tanhf.c tanhl.c tgamma.c tgammaf.c tgammal.c \
-		trunc.c truncf.c truncl.c e_sqrt.c e_sinh.c e_cosh.c e_hypot.c s_tanh.c	\
-		s_roundf.c s_fpclassify.c s_isnand.c w_hypot.c s_modf.c e_atan2.c w_atan2.c\
-		ceil.S ceilf.S ceill.S copysign.S copysignf.S copysignl.S cos.S cosf.S cosl.S exp.S exp2.S \
-		exp2f.S exp2l.S floor.S floorf.S floorl.S fma.S fmaf.S frexp.S frexpl.S ilogb.S ilogbf.S \
-		ilogbl.S log10.S log10f.S log10l.S log1p.S log1pf.S log1pl.S log2.S log2f.S log2l.S \
-		log.S logf.S logl.S nearbyint.S nearbyintf.S nearbyintl.S remainder.S remainderf.S \
-		remainderl.S remquo.S remquof.S remquol.S scalbn.S scalbnf.S scalbnl.S sin.S \
-		sinf.S sinl.S tan.S tanf.S tanl.S s_expm1.S
+MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_fmod.c	\
+		e_hypot.c e_j0.c e_j1.c e_jn.c e_log.c e_log10.c e_pow.c e_rem_pio2.c 		\
+		e_remainder.c e_scalb.c e_sinh.c e_sqrt.c ef_acos.c ef_acosh.c ef_asin.c	\
+		ef_atan2.c ef_atanh.c ef_cosh.c ef_exp.c ef_fmod.c ef_hypot.c ef_j0.c ef_j1.c	\
+		ef_jn.c ef_log.c ef_log10.c ef_pow.c ef_rem_pio2.c ef_remainder.c ef_scalb.c	\
+		ef_sinh.c ef_sqrt.c er_gamma.c er_lgamma.c erf_gamma.c erf_lgamma.c f_exp.c	\
+		f_expf.c f_llrint.c f_llrintf.c f_llrintl.c f_lrint.c f_lrintf.c f_lrintl.c	\
+		f_pow.c f_powf.c f_rint.c f_rintf.c f_rintl.c k_cos.c k_rem_pio2.c k_sin.c	\
+		k_standard.c k_tan.c kf_cos.c kf_rem_pio2.c kf_sin.c kf_tan.c s_asinh.c 	\
+		s_atan.c s_cbrt.c s_ceil.c s_copysign.c s_cos.c s_erf.c s_exp10.c s_expm1.c	\
+		s_fabs.c s_fdim.c s_finite.c s_floor.c s_fma.c s_fmax.c s_fmin.c s_fpclassify.c	\
+		s_frexp.c s_ilogb.c s_infconst.c s_infinity.c s_isinf.c s_isinfd.c s_isnan.c	\
+		s_isnand.c s_ldexp.c s_lib_ver.c s_llrint.c s_llround.c s_log1p.c s_log2.c	\
+		s_logb.c s_lrint.c s_lround.c s_matherr.c s_modf.c s_nan.c s_nearbyint.c	\
+		s_nextafter.c s_pow10.c s_remquo.c s_rint.c s_round.c s_scalbln.c s_scalbn.c	\
+		s_signbit.c s_signif.c s_sin.c s_tan.c s_tanh.c s_trunc.c scalblnl.c scalbnl.c	\
+		sf_asinh.c sf_atan.c sf_cbrt.c sf_ceil.c sf_copysign.c sf_cos.c sf_erf.c 	\
+		sf_exp10.c sf_expm1.c sf_fabs.c sf_fdim.c sf_finite.c sf_floor.c sf_fma.c	\
+		sf_fmax.c sf_fmin.c sf_fpclassify.c sf_frexp.c sf_ilogb.c sf_infinity.c		\
+		sf_isinf.c sf_isinff.c sf_isnan.c sf_isnanf.c sf_ldexp.c sf_llrint.c		\
+		sf_llround.c sf_log1p.c sf_log2.c sf_logb.c sf_lrint.c sf_lround.c sf_modf.c	\
+		sf_nan.c sf_nearbyint.c sf_nextafter.c sf_pow10.c sf_remquo.c sf_rint.c		\
+		sf_round.c sf_scalbln.c sf_scalbn.c sf_signif.c sf_sin.c sf_tan.c sf_tanh.c	\
+		sf_trunc.c w_acos.c w_acosh.c w_asin.c w_atan2.c w_atanh.c w_cosh.c w_drem.c	\
+		w_exp.c w_exp2.c w_fmod.c w_gamma.c w_hypot.c w_j0.c w_j1.c w_jn.c w_lgamma.c	\
+		w_log.c w_log10.c w_pow.c w_remainder.c w_scalb.c w_sincos.c w_sinh.c w_sqrt.c	\
+		w_tgamma.c wf_acos.c wf_acosh.c wf_asin.c wf_atan2.c wf_atanh.c wf_cosh.c	\
+		wf_drem.c wf_exp.c wf_exp2.c wf_fmod.c wf_gamma.c wf_hypot.c wf_j0.c wf_j1.c	\
+		wf_jn.c wf_lgamma.c wf_log.c wf_log10.c wf_pow.c wf_remainder.c wf_scalb.c	\
+		wf_sincos.c wf_sinh.c wf_sqrt.c wf_tgamma.c wr_gamma.c wr_lgamma.c wrf_gamma.c	\
+		wrf_lgamma.c	\
+		f_atan2.S f_atan2f.S f_frexp.S f_frexpf.S f_ldexp.S f_ldexpf.S f_log.S		\
+		f_log10.S f_log10f.S f_logf.S f_tan.S f_tanf.S
 
 
 AMZ_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(AMZ_SRCS)))
@@ -385,7 +398,7 @@ stdio/svfiscanf.o: stdio/vfscanf.c
 
 
 %.obj : %.asm Makefile
-	fasm $< $@
+	fasm $< $
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
@@ -393,5 +406,7 @@ stdio/svfiscanf.o: stdio/vfscanf.c
 
 clean:
 	-rm -f */*.o
+
+
 
 

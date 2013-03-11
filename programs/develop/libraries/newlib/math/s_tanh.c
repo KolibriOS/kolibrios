@@ -1,3 +1,4 @@
+
 /* @(#)s_tanh.c 5.1 93/09/24 */
 /*
  * ====================================================
@@ -5,11 +6,52 @@
  *
  * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice
+ * software is freely granted, provided that this notice 
  * is preserved.
  * ====================================================
  */
 
+/*
+
+FUNCTION
+        <<tanh>>, <<tanhf>>---hyperbolic tangent
+
+INDEX
+tanh
+INDEX
+tanhf
+
+ANSI_SYNOPSIS
+        #include <math.h>
+        double tanh(double <[x]>);
+        float tanhf(float <[x]>);
+
+TRAD_SYNOPSIS
+        #include <math.h>
+        double tanh(<[x]>)
+        double <[x]>;
+
+        float tanhf(<[x]>)
+        float <[x]>;
+
+
+DESCRIPTION
+
+<<tanh>> computes the hyperbolic tangent of
+the argument <[x]>.  Angles are specified in radians.  
+
+<<tanh(<[x]>)>> is defined as 
+. sinh(<[x]>)/cosh(<[x]>)
+	
+<<tanhf>> is identical, save that it takes and returns <<float>> values.
+
+RETURNS
+The hyperbolic tangent of <[x]> is returned.
+
+PORTABILITY
+<<tanh>> is ANSI C.  <<tanhf>> is an extension.
+
+*/
 
 /* Tanh(x)
  * Return the Hyperbolic Tangent of x
@@ -35,8 +77,9 @@
  *	only tanh(0)=0 is exact for finite argument.
  */
 
-#include <math.h>
 #include "fdlibm.h"
+
+#ifndef _DOUBLE_IS_32BITS
 
 #ifdef __STDC__
 static const double one=1.0, two=2.0, tiny = 1.0e-300;
@@ -44,32 +87,35 @@ static const double one=1.0, two=2.0, tiny = 1.0e-300;
 static double one=1.0, two=2.0, tiny = 1.0e-300;
 #endif
 
-double tanh(double x)
+#ifdef __STDC__
+	double tanh(double x)
+#else
+	double tanh(x)
+	double x;
+#endif
 {
 	double t,z;
-    int jx,ix,lx;
+	__int32_t jx,ix;
 
     /* High word of |x|. */
-	EXTRACT_WORDS(jx,lx,x);
+	GET_HIGH_WORD(jx,x);
 	ix = jx&0x7fffffff;
 
     /* x is INF or NaN */
-	if(ix>=0x7ff00000) {
+	if(ix>=0x7ff00000) { 
 	    if (jx>=0) return one/x+one;    /* tanh(+-inf)=+-1 */
 	    else       return one/x-one;    /* tanh(NaN) = NaN */
 	}
 
     /* |x| < 22 */
 	if (ix < 0x40360000) {		/* |x|<22 */
-	    if ((ix | lx) == 0)
-		return x;		/* x == +-0 */
 	    if (ix<0x3c800000) 		/* |x|<2**-55 */
 		return x*(one+x);    	/* tanh(small) = small */
 	    if (ix>=0x3ff00000) {	/* |x|>=1  */
-		t = __expm1(two*fabs(x));
+		t = expm1(two*fabs(x));
 		z = one - two/(t+two);
 	    } else {
-	        t = __expm1(-two*fabs(x));
+	        t = expm1(-two*fabs(x));
 	        z= -t/(t+two);
 	    }
     /* |x| > 22, return +-1 */
@@ -78,3 +124,5 @@ double tanh(double x)
 	}
 	return (jx>=0)? z: -z;
 }
+
+#endif /* _DOUBLE_IS_32BITS */

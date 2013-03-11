@@ -6,7 +6,7 @@
  *
  * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice
+ * software is freely granted, provided that this notice 
  * is preserved.
  * ====================================================
  */
@@ -57,8 +57,6 @@ PORTABILITY
  * wrapper hypot(x,y)
  */
 
-#define _IEEE_LIBM
-
 #include "fdlibm.h"
 #include <errno.h>
 
@@ -80,7 +78,7 @@ PORTABILITY
 	if(_LIB_VERSION == _IEEE_) return z;
 	if((!finite(z))&&finite(x)&&finite(y)) {
 	    /* hypot(finite,finite) overflow */
-#ifndef HUGE_VAL
+#ifndef HUGE_VAL 
 #define HUGE_VAL inf
 	    double inf = 0.0;
 
@@ -102,7 +100,7 @@ PORTABILITY
 	    }
 	    if (exc.err != 0)
 	       errno = exc.err;
-            return exc.retval;
+            return exc.retval; 
 	} else
 	    return z;
 #endif

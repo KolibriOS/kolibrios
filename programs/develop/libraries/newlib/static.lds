@@ -33,7 +33,7 @@ SECTIONS
         *(.gcc_except_table)
     }
 
-    .rdata ALIGN(16) :
+    .rdata ALIGN(64) :
     {
         *(.rdata)
         *(SORT(.rdata$*))
@@ -43,7 +43,7 @@ SECTIONS
         ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
         __RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
     }
-    .CRT ALIGN(16) :
+    .CRT ALIGN(64) :
     {
          ___crt_xc_start__ = . ;
         *(SORT(.CRT$XC*))  /* C initialization */
@@ -62,7 +62,7 @@ SECTIONS
         ___crt_xt_end__ = . ;
     }
 
-    .data ALIGN(16) :
+    .data ALIGN(64) :
     {
         __data_start__ = . ;
         *(.data)
@@ -77,7 +77,7 @@ SECTIONS
     }
 
 
-    bss ALIGN(16):
+    bss ALIGN(64):
     {
         *(.bss)
         *(COMMON)
