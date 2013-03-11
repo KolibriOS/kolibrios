@@ -4,6 +4,7 @@
 //home icon - rachel fu, GPL licence
 
 //libraries
+#define MEMSIZE 0x100000
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
 #include "..\lib\figures.h"
@@ -42,7 +43,7 @@ proc_info Form;
 #define WIN_H 480
 
 
-dword stak[100]; //меню ПКМ 
+char stak[100]; //меню ПКМ 
 mouse m;
 
 #include "TWB.h"
@@ -234,13 +235,13 @@ void Draw_Window()
 	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	if (GetProcessSlot(downloader_id)<>0) PutImage(#stop_btn,24,24,88,10);
+	if (GetProcessSlot(downloader_id)<>0) _PutImage(88,10, 24,24, #stop_btn);
 	
 	DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
 	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
 	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
 	for (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0xE4DFE1);
-	PutImage(#URLgoto,40,19,onLeft(57,0),14);
+	_PutImage(onLeft(57,0),14, 40,19, #URLgoto);
 	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
 	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
 	DrawRectangle(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса

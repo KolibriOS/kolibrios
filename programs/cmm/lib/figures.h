@@ -65,7 +65,8 @@ void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 	int progress_w;
 	static int fill_old;
 	    
-	if (progress_percent<=0) {DrawBar(st_x,st_y, st_x + st_w + fill_old + 15,st_h+1, col_fon); fill_old=0; return;}
+	//if (progress_percent<=0) {DrawBar(st_x,st_y, st_x + st_w + fill_old + 15,st_h+1, col_fon); fill_old=0; return;}
+	if (progress_percent<=0) || (progress_percent>=100) return;
 	
 	DrawRectangle(st_x, st_y, st_w,st_h, col_border);
 	DrawRectangle3D(st_x+1, st_y+1, st_w-2,st_h-2, 0xFFFfff, 0xFFFfff);
@@ -82,5 +83,56 @@ void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 		DrawBar(st_x+st_w+15, st_h/2-4+st_y, fill_old, 9, col_fon);
 		WriteText(st_x+st_w+15, st_h/2-4+st_y, 0x80, col_text, status_text);
 		fill_old = strlen(status_text) * 6;
+	}
+}
+
+:void DrawLink(dword x,y,font_type,btn_id, inscription)
+{
+	int w;
+	WriteText(x,y,font_type,0x4E00E7,inscription);
+	if (font_type==0x80) w = strlen(inscription)*6; else w = strlen(inscription)*7;
+	DefineButton(x-1,y-1,w,10,btn_id+BT_HIDE,0);
+	DrawBar(x,y+8,w,1,0x4E00E7);
+}
+
+
+:void PutShadow(dword x,y,w,h,border,strength)
+{
+	proc_info wForm;
+	dword shadow_buf, skin_height;
+	shadow_buf = mem_Alloc(w*h*3);
+ 	//skin_height = GetSkinHeight();
+ 	GetProcessInfo(#wForm, SelfInfo);
+	CopyScreen(shadow_buf, x+wForm.left, y+wForm.top, w, h);
+	ShadowImage(shadow_buf, w, h, strength);
+	_PutImage(x,y,w,h,shadow_buf);
+	mem_Free(shadow_buf);
+}
+
+:void GrayScaleImage(dword color_image, w, h)
+{
+	dword i,j, gray,rr,gg,bb;
+	for (i = 0; i < w*h*3; i+=3)
+	{
+		rr = DSBYTE[i+color_image];
+		gg = DSBYTE[i+1+color_image];
+		bb = DSBYTE[i+2+color_image];
+		gray = rr*rr;
+		gray += gg*gg;
+		gray += bb*bb;
+		gray = sqrt(gray) / 3;
+		DSBYTE[i  +color_image] = DSBYTE[i+1+color_image] = DSBYTE[i+2+color_image] = gray;
+	}
+}
+
+:void ShadowImage(dword color_image, w, h, strength)
+{
+	dword col, to;
+	strength = 10 - strength;
+	to = w*h*3 + color_image;
+	for ( ; color_image < to; color_image++)
+	{
+		col = strength * DSBYTE[color_image] / 10;
+		DSBYTE[color_image] = col;
 	}
 }

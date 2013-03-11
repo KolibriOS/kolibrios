@@ -1,3 +1,4 @@
+#define MEMSIZE 0x3E80
 #include "..\lib\kolibri.h" 
 #include "..\lib\figures.h" 
 #include "..\lib\strings.h" 
@@ -38,19 +39,45 @@ dword stars_col[4]={0xD2CF19, 0x716900, 0x002041}; //0x005BFF - голубой, редко
 
 
 
+:void ShadowScreen(dword img, w, h)
+{
+	dword to = w*h*3 + img;
+	for ( ; img < to; img+=4) { ESDWORD[img] >>= 1;	$and ESDWORD[img], 7F7F7F7Fh }
+	//for ( ; img < to; img+=4) { ESDWORD[img] >>= 2;	$and ESDWORD[img], 3F3F3F3Fh }
+}
+
 
 void main()
 {   
 	int key;
-	
-	pause(10);
-	
+	dword s1,s2, s3, s4, sides_w;
+
+	mem_Init();
 	WIN_SIZE_X=GetScreenWidth()+1;
 	WIN_SIZE_Y=GetScreenHeight()+1;
-
 	PANEL_X=WIN_SIZE_X-PANEL_SIZE_X/2;
 	PANEL_Y=WIN_SIZE_Y-PANEL_SIZE_Y/2;
-	
+
+	sides_w = WIN_SIZE_X-PANEL_SIZE_X/2;
+	s1 = mem_Alloc(WIN_SIZE_X*PANEL_Y*3);
+	s2 = mem_Alloc(sides_w*PANEL_Y*3);
+	s3 = mem_Alloc(sides_w*PANEL_Y*3);
+	s4 = mem_Alloc(WIN_SIZE_X*PANEL_Y*3);	
+
+	CopyScreen(s1, 0, 0, WIN_SIZE_X, PANEL_Y);
+	ShadowScreen(s1, WIN_SIZE_X, PANEL_Y);
+
+	CopyScreen(s2, 0, PANEL_Y, sides_w, PANEL_SIZE_Y+1);
+	ShadowScreen(s2, sides_w, PANEL_SIZE_Y+1);
+
+	CopyScreen(s3, sides_w+PANEL_SIZE_X+1, PANEL_Y, sides_w-1, PANEL_SIZE_Y+1);
+	ShadowScreen(s3, sides_w, PANEL_SIZE_Y+1);
+
+	CopyScreen(s4, 0, PANEL_Y+PANEL_SIZE_Y+1, WIN_SIZE_X, PANEL_Y-1);
+	ShadowScreen(s4, WIN_SIZE_X, PANEL_Y-1);
+
+
+	goto _DRAW;
 	loop()
    {
 		WaitEventTimeout(130);
@@ -76,37 +103,20 @@ void main()
 			break;
          
 		case evReDraw:
-			draw_window();
+			sc.get();
+			DefineAndDrawWindow(0,0,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
+			//_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
+			_PutImage(0,0,WIN_SIZE_X, PANEL_Y,s1);
+			draw_main_area(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y);
+			_PutImage(0,PANEL_Y,sides_w, PANEL_SIZE_Y+1,s2);
+			_PutImage(sides_w+PANEL_SIZE_X+1,PANEL_Y,sides_w-1, PANEL_SIZE_Y+1,s3);
+			_PutImage(0,PANEL_Y+PANEL_SIZE_Y+1,WIN_SIZE_X, PANEL_Y-1,s4);
 			break;
-		default:
+		default: _DRAW:
 			draw_stars();
       }
    }
 }
-
-
-
-void draw_window()
-{
-	int x, y;
-	sc.get();
-	
-	DefineAndDrawWindow(0,0,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
-
-	draw_main_area(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y);
-
-	//draw grid
-	for (y=0; y<WIN_SIZE_Y; y++)
-	{
-		for (x=0; x<WIN_SIZE_X; x++)	
-		{
-			if (y>PANEL_Y) && (y<PANEL_Y+PANEL_SIZE_Y) && (x==PANEL_X) x+=PANEL_SIZE_X; //на панели не рисуем
-			if (! y&1) && (! x&1) {PutPixel(x, y, 0); continue;}
-			if (  y&1) && (  x&1) PutPixel(x, y, 0);
-		}
-	}
-}
-
 
 
 void draw_main_area()
@@ -151,7 +161,7 @@ void draw_stars()
 		PutPixel(PANEL_X +x_pic, PANEL_Y +y_pic-1, stars_col[1]);
 	}*/
 	
-	PutImage(#moon,6,6, PANEL_X+PANEL_SIZE_X-60,PANEL_Y+10);
+	_PutImage(PANEL_X+PANEL_SIZE_X-60,PANEL_Y+10, 6,6, #moon);
 }
 
 

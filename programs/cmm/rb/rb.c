@@ -1,8 +1,9 @@
-//@RB - v0.62 
+//@RB - v0.7
 
 #define MEMSIZE 0x4000
 #include "..\lib\kolibri.h" 
 #include "..\lib\strings.h"
+#include "..\lib\mem.h"
 #include "..\lib\figures.h"
 #include "..\lib\file_system.h"
 
@@ -11,10 +12,9 @@
 #endif
 
 #ifdef LANG_RUS
-	#define ITEM_HEIGHT 18
-	#define ITEM_WIDTH  138
 	char *ITEMS_LIST[]={
-	"Настройка окон",      "/sys/desktop",       0,
+	"Сменить тему окон",   "/sys/SKINSEL",       0,
+	"Выбрать обои",        "/sys/BGSEL",         0,
 	"Выбрать цвет фона",   "/sys/media/palitra", 0,
 	"Управление иконками", "/sys/ICON",          0,
 	"Настройка устройств", "/sys/SETUP",         0,
@@ -22,26 +22,30 @@
 	"Процессы",            "/sys/CPU",           0,
 	0};
 #else
-	#define ITEM_HEIGHT 18
-	#define ITEM_WIDTH  122
 	char *ITEMS_LIST[]={
-	"Window setup",    "/sys/desktop",       0,
-	"Background",      "/sys/media/palitra", 0,
-	"Icon manager",    "/sys/ICON",          0,
-	"Device setup",    "/sys/SETUP",         0,
-	"Refresh desktop", "/sys/REFRSCRN",      0,
-	"Processes",       "/sys/CPU",           0,
+	"Window skin",      "/sys/SKINSEL",       0,
+	"Wallpaper",        "/sys/BGSEL",         0,
+	"Background",       "/sys/media/palitra", 0,
+	"Icon manager",     "/sys/ICON",          0,
+	"Device setup",     "/sys/SETUP",         0,
+	"Refresh desktop ", "/sys/REFRSCRN",      0,
+	"Processes",        "/sys/CPU",           0,
 	0};
 #endif
 
-dword stak[100];
+char stak[100];
+#define ITEM_HEIGHT 18
+int ITEM_WIDTH;
 
 
 void main()
 {
 	mouse mm;
-	byte can_show;
+	byte i, can_show = 0;
 	SetEventMask(100000b);
+	for (i=0; ITEMS_LIST[i]!=0; i+=3) if (strlen(ITEMS_LIST[i])>ITEM_WIDTH) ITEM_WIDTH = strlen(ITEMS_LIST[i]);
+	ITEM_WIDTH = ITEM_WIDTH * 6 + 20;
+	mem_Init();
 	
 	loop() switch(WaitEvent())
 	{
@@ -69,7 +73,7 @@ void window()
 	int id1, key, i;
 	
 	sc.get();
-	SetEventMask(100111b); 
+	SetEventMask(100111b);
 	
 	loop() switch(WaitEvent())
 	{
@@ -123,8 +127,10 @@ void window()
 		case evReDraw:
 				while (ITEMS_LIST[items_num*3]) items_num++;
 				m.get();
-				DefineAndDrawWindow(m.x+1,m.y,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x01,sc.work,0, 0x01fffFFF);
+				DefineAndDrawWindow(m.x+1,m.y,ITEM_WIDTH+1,items_num*ITEM_HEIGHT+2,0x01,sc.work,0, 0x01fffFFF);
 				DrawRectangle(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,sc.work_graph); //юсюфюъ
+				PutShadow(ITEM_WIDTH+1,1,1,items_num*ITEM_HEIGHT+1,0,1);
+				PutShadow(1,items_num*ITEM_HEIGHT+2,ITEM_WIDTH+1,1,0,1);
 				
 				_ITEMS_DRAW:
 				for (i=0; i<items_num; i++;)
@@ -144,6 +150,7 @@ void window()
 				}
 	}
 }
+
 
 void ItemProcess(int num_id)
 {

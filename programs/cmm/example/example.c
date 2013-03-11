@@ -1,4 +1,6 @@
+#define MEMSIZE 0x3E80
 #include "..\lib\kolibri.h" 
+#include "..\lib\strings.h" 
 #include "..\lib\file_system.h"
 
 
@@ -32,9 +34,10 @@ void main()
 
 void draw_window()
 {
+	proc_info Form;
 	DefineAndDrawWindow(215,100,250,200,0x34,0xFFFFFF,"Window header");
+	GetProcessInfo(#Form, SelfInfo);
 	WriteText(50,80,0x80,0,"Press Enter");
-	
 }
 
 

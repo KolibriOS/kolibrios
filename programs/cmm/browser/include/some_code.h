@@ -62,7 +62,7 @@ inline void Skew(dword x,y,w,h)
 	CopyScreen(italic_buf, x+Form.left+2, y+Form.top+skin_height, w, h);
 
 	FOR (i=0;i*tile_height<h;i++)
-		PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i+1,i*tile_height+y);
+		_PutImage(x+shift-i+1,i*tile_height+y, w,tile_height, w*3*tile_height*i+italic_buf);
 	
 	mem_Free(italic_buf);
 }

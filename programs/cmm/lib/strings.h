@@ -3,8 +3,8 @@
 // strlen( EDI)
 // strcpy( EDI, ESI) --- 0 if ==
 // strcat( EDI, ESI)
-// strchr( ESI,BL)
-// strrchr( ESI,BL)
+// strchr( ESI,BL) --- find first BL
+// strrchr( ESI,BL) --- find last BL
 // strstr( EBX, EDX)
 // itoa( ESI)
 // atoi( EAX)
@@ -60,7 +60,7 @@ inline fastcall unsigned int strlen( EDI)
 }
 
 
-inline fastcall strcpy( EDI, ESI)
+inline fastcall void strcpy( EDI, ESI)
 {
 	$cld
 L2:
@@ -86,7 +86,7 @@ inline fastcall int strlcpy(dword ESI, EDI, EBX)
 
 
 
-inline fastcall strcat( EDI, ESI)
+inline fastcall void strcat( EDI, ESI)
 {
   asm {
     mov ebx, edi
@@ -112,6 +112,13 @@ inline fastcall strcat( EDI, ESI)
     rep movsb
     mov eax, ebx
 	}
+}
+
+inline fastcall void chrcat(ESI, BL)
+{
+	EDI = strlen(ESI);
+	ESBYTE[ESI+EDI] = BL;
+	ESBYTE[ESI+EDI+1] = 0;
 }
 
 
@@ -151,7 +158,7 @@ int chrnum(dword searchin, char symbol)
 }
 
 
-inline fastcall dword strstr( EBX, EDX)
+inline fastcall signed int strstr( EBX, EDX)
 {
   asm {
     MOV EDI, EDX
@@ -342,6 +349,7 @@ void debugi(dword d_int)
 	strcpy(#tmpch, itoa(d_int));
 	debug(#tmpch);
 }
+
 
 /* strtok( LPSTR dest, src, divs);
 src - указатель на исходную строку или результат предыдущего вызова

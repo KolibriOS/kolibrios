@@ -20,8 +20,8 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	iconv_open stdcall (from_chs, to_chs); //CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5
 	if (EAX==-1)
 	{
-		debug (from_chs);
-		debug (to_chs);
+		debug(from_chs);
+		debug(to_chs);
 		debug("iconv: wrong charset,\nuse only CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5");
 		return 0; 
 	}
@@ -34,15 +34,28 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	if (cd!=0)
 	{
 		debug("iconv: something is wrong with stdcall iconv()");
-		debug(itoa(cd));
+		debugi(cd);
 		debug("in_len");
-		debug(itoa(in_len));
+		debugi(in_len);
 		debug("out_len");
-		debug(itoa(out_len));
-		new_buf = 0;
+		debugi(out_len);
+		new_buf = free(new_buf);
 		return 0;
 	}
 	strcpy(conv_buf, new_buf);
 	free(new_buf);
 	return conv_buf;
 }
+
+
+char *charsets[] = { " ", "UTF-8", "KOI8-RU", "CP1251",  "CP1252", "ISO8859-5", "CP866"};
+int cur_charset;
+enum {
+	CH_NULL,
+	CH_UTF8,
+	CH_KOI8,
+	CH_CP1251,
+	CH_CP1252,
+	CH_ISO8859_5,
+	CH_CP866
+};

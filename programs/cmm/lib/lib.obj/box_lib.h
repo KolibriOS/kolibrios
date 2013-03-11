@@ -15,28 +15,57 @@ dword scrollbar_h_draw  = #aScrollbar_h_draw;
 dword scrollbar_h_mouse = #aScrollbar_h_mouse;
 dword version_scrollbar = #aVersion_scrollbar;
 
+dword PathShow_prepare = #aPathShow_prepare;
+dword PathShow_draw    = #aPathShow_draw;
+
 dword  am__ = 0x0;
 dword  bm__ = 0x0;
 
-char aEdit_box_draw[9]   = "edit_box\0";
-char aEdit_box_key[13]   = "edit_box_key\0";
-char aEdit_box_mouse[15] = "edit_box_mouse\0";
-char aVersion_ed[11]     = "version_ed\0";
+char aEdit_box_draw [9]     = "edit_box\0";
+char aEdit_box_key  [13]    = "edit_box_key\0";
+char aEdit_box_mouse[15]    = "edit_box_mouse\0";
+char aVersion_ed    [11]    = "version_ed\0";
 
 char aboxlib_init[9]        = "lib_init\0";
-char aScrollbar_v_draw[17]  = "scrollbar_v_draw\0";
+char aScrollbar_v_draw [17] = "scrollbar_v_draw\0";
 char aScrollbar_v_mouse[18] = "scrollbar_v_mouse\0";
-char aScrollbar_h_draw[17]  = "scrollbar_h_draw\0";
+char aScrollbar_h_draw [17] = "scrollbar_h_draw\0";
 char aScrollbar_h_mouse[18] = "scrollbar_h_mouse\0";
 char aVersion_scrollbar[18] = "version_scrollbar\0";
 
-char aCheck_box_draw  [15] = "check_box_draw\0";
-char aCheck_box_mouse [16] = "check_box_mouse\0";
-char aVersion_ch      [11] = "version_ch\0";
+char aCheck_box_draw   [15] = "check_box_draw\0";
+char aCheck_box_mouse  [16] = "check_box_mouse\0";
+char aVersion_ch       [11] = "version_ch\0";
 
-char aOption_box_draw [16] = "option_box_draw\0";
-char aOption_box_mouse[17] = "option_box_mouse\0";
-char aVersion_op      [11] = "version_op\0" ;
+char aOption_box_draw  [16] = "option_box_draw\0";
+char aOption_box_mouse [17] = "option_box_mouse\0";
+char aVersion_op       [11] = "version_op\0" ;
+
+char aPathShow_prepare [17] = "PathShow_prepare\0";
+char aPathShow_draw    [14] = "PathShow_draw\0";
+
+
+struct PathShow_data
+{
+dword type;//			dd 0	;+0
+word start_y,//		dw 28	;+4
+	start_x,//		dw 172	;+6
+	font_size_x,//		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+	area_size_x;//		dw 200	;+10
+dword font_number,//		dd 0	;+12	; 0 - monospace, 1 - variable
+	background_flag,//	dd 0	;+16
+	font_color,//		dd 0x0	;+20
+	background_color,//	dd 0x0	;+24
+	text_pointer,//		dd openfile_pach	;+28
+	work_area_pointer,//	dd text_work_area	;+32
+	temp_text_length;//	dd 0	;+36
+};
+/*
+char temp[128];
+PathShow_data PathShow = {0, 100,20, 6, 200, 0, 1, 0x0, 0xFFFfff, #email_text, #temp, 0};
+PathShow_prepare stdcall(#PathShow);
+PathShow_draw stdcall(#PathShow);
+*/
 
 
 struct edit_box{
@@ -74,22 +103,3 @@ work_size,//	equ [edi+76]
 all_redraw,//	equ [edi+80]
 ar_offset;//	equ [edi+84]
 };
-
-//ed_width        equ [edi]               ;ширина компонента
-//ed_left         equ [edi+4]             ;положение по оси х
-//ed_top          equ [edi+8]             ;положение по оси у
-//ed_color        equ [edi+12]            ;цвет фона компонента
-//shift_color     equ [edi+16]            ;=0x6a9480
-//ed_focus_border_color   equ [edi+20]    ;цвет рамки компонента
-//ed_blur_border_color    equ [edi+24]    ;цвет не активного компонента
-//ed_text_color   equ [edi+28]            ;цвет текста
-//ed_max          equ [edi+32]            ;кол-во символов которые можно максимально ввести
-//ed_text         equ [edi+36]            ;указатель на буфер
-//ed_flags        equ [edi+40]            ;флаги
-//ed_size equ [edi+42]                    ;кол-во символов
-//ed_pos  equ [edi+46]                    ;позиция курсора
-//ed_offset       equ [edi+50]            ;смещение
-//cl_curs_x       equ [edi+54]            ;предыдущая координата курсора по х
-//cl_curs_y       equ [edi+58]            ;предыдущая координата курсора по у
-//ed_shift_pos    equ [edi+62]            ;положение курсора
-//ed_shift_pos_old equ [edi+66]           ;старое положение курсора

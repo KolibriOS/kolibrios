@@ -7,29 +7,23 @@ char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
-#ifdef MEMSIZE
-	dword  alloc_mem    = MEMSIZE;
-	dword  x86esp_reg   = MEMSIZE;
-#else
-	dword  alloc_mem    = #0x00100000;
-	dword  x86esp_reg   = #0x00100000;	
-#endif
+dword  alloc_mem    = MEMSIZE;
+dword  x86esp_reg   = MEMSIZE;
 dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 char param[4096];
 char program_path[4096];
+
+#define NULL      0
+#define OLD      -1
+#define true      1
+#define false     0
 
 //Events
 #define evMouse   6
 #define evButton  3
 #define evKey     2
 #define evReDraw  1
-
-#define OLD      -1
-#define true      1
-#define false     0
-
-#define NULL      0
 
 //Button options
 #define BT_DEL      0x80000000
@@ -352,6 +346,7 @@ DONE:
 	$pop eax
 }
 
+
 inline fastcall void debugch( ECX)
 {
 	$push eax
@@ -399,6 +394,7 @@ void WriteTextB(dword x,y,byte fontType, dword color, EDX)
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
+	ESI = 0;
 	$int 0x40;
 	$add ebx, 1<<16
 	$int 0x40
@@ -409,7 +405,7 @@ void WriteText(dword x,y,byte fontType, dword color, EDX)
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
-	$xor esi, esi
+	ESI = 0;
 	$int 0x40;
 }
 
@@ -422,10 +418,10 @@ void WriteNumber(dword x,y,byte fontType, dword color, count, ECX)
 	$int 0x40;
 }
 
-void CopyScreen(dword EBX, x, y, sizeX, sizeY)
+void CopyScreen(dword EBX, x, y, w, h)
 {
   EAX = 36;
-  ECX = sizeX << 16 + sizeY;
+  ECX = w << 16 + h;
   EDX = x << 16 + y;
   $int  0x40;
 }
@@ -437,13 +433,6 @@ dword GetPixelColor(dword x, x_size, y)
 	$int 0x40
 }
 
-void PutImage(dword EBX,w,h,x,y)
-{
-	EAX = 7;
-	ECX = w<<16+h;
-	EDX = x<<16+y;
-	$int 0x40
-}
 
 void _PutImage(dword x,y, w,h, EBX)
 {

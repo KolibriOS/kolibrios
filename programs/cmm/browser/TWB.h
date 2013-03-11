@@ -475,7 +475,7 @@ void TWebBrowser::ParseHTML(dword bword){
 				if (line[strlen(#line)-1]==' ') break; //убрать 2 пробела подряд
 				if (!stolbec) && (!line) break; //строка не может начинаться с пробела
 			}
-			if (strlen(#line)<sizeof(line))	strcat(#line, #bukva);
+			if (strlen(#line)<sizeof(line)) chrcat(#line, bukva);
 
 			if (stolbec + strlen(#line) > lines.column_max)
 			{
@@ -828,65 +828,64 @@ void Images(int left1, top1, width1)
     char img_path[4096], alt[4096];
     int w=0, h=0, img_lines_first=0, cur_pic=0;
 	
-	if (GetFileInfo(libimg)<>0) return;  //если библиотеки нет
-		do{
-			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
+	do{
+		if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
+		{
+			if (downloader_id) strcpy(#img_path, #history_list[history_current-1].Item);
+				else strcpy(#img_path, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+			
+			if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
 			{
-				if (downloader_id) strcpy(#img_path, #history_list[history_current-1].Item);
-					else strcpy(#img_path, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+				img_path[strrchr(#img_path, '/')] = '\0'; //обрезаем её урл до последнего /
+				strcat(#img_path, #options);
 				
-				if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
+				cur_pic=GetOrSetPicNum(#img_path);
+				if (!pics[cur_pic].path)
 				{
-					img_path[strrchr(#img_path, '/')] = '\0'; //обрезаем её урл до последнего /
-					strcat(#img_path, #options);
-					
-					cur_pic=GetOrSetPicNum(#img_path);
-					if (!pics[cur_pic].path)
-					{
-						pics[cur_pic].image=load_image(#img_path);
-						strcpy(#pics[cur_pic].path, #img_path);
-					}
+					pics[cur_pic].image=load_image(#img_path);
+					strcpy(#pics[cur_pic].path, #img_path);
 				}
 			}
-  			if (!strcmp(#parametr,"alt="))
-			{
-				strcpy(#alt, "[");
-				strcat(#alt, #options);
-				strcat(#alt, "]");
-			}
+		}
+			if (!strcmp(#parametr,"alt="))
+		{
+			strcpy(#alt, "[");
+			strcat(#alt, #options);
+			strcat(#alt, "]");
+		}
 
-		} while(GetNextParam());
-		
-		if (!pics[cur_pic].image) 
-		{
-			if (alt) && (link) strcat(#line, #alt);
-			return;
-		}
-		
-		w=DSWORD[pics[cur_pic].image+4];
-		h=DSWORD[pics[cur_pic].image+8];
-		if (w>width1) w=width1;
-		
-		if (stroka==0) DrawBar(WB1.left, WB1.top, WB1.width-15, 15, bg_color); //закрашиваем первую строку
-		stroka+=h/10;
-		if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
-		if (top1<WB1.top) //если часть изображения сверху
-		{
-			DrawBar(WB1.left, WB1.top, WB1.width-15, 10, bg_color); //закрашиваем первую строку
-			img_lines_first=WB1.top-top1;
-			h=h-img_lines_first;
-			top1=WB1.top;
-		}
-		if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу
-		{
-			h=WB1.top+WB1.height-top1-15;
-		}	
-		if (h<=0) return;
-		if (anchor) return;
-		
-		img_draw stdcall (pics[cur_pic].image,left1-5,top1+10,w, h,0,img_lines_first);
-		DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
-		IF (link) DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
+	} while(GetNextParam());
+	
+	if (!pics[cur_pic].image) 
+	{
+		if (alt) && (link) strcat(#line, #alt);
+		return;
+	}
+	
+	w=DSWORD[pics[cur_pic].image+4];
+	h=DSWORD[pics[cur_pic].image+8];
+	if (w>width1) w=width1;
+	
+	if (stroka==0) DrawBar(WB1.left, WB1.top, WB1.width-15, 15, bg_color); //закрашиваем первую строку
+	stroka+=h/10;
+	if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
+	if (top1<WB1.top) //если часть изображения сверху
+	{
+		DrawBar(WB1.left, WB1.top, WB1.width-15, 10, bg_color); //закрашиваем первую строку
+		img_lines_first=WB1.top-top1;
+		h=h-img_lines_first;
+		top1=WB1.top;
+	}
+	if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу
+	{
+		h=WB1.top+WB1.height-top1-15;
+	}	
+	if (h<=0) return;
+	if (anchor) return;
+	
+	img_draw stdcall (pics[cur_pic].image,left1-5,top1+10,w, h,0,img_lines_first);
+	DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
+	IF (link) DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
 }
 
 

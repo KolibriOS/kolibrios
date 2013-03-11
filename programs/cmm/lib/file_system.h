@@ -28,7 +28,7 @@ struct BDVK{
 //   Запуск программы    //
 ///////////////////////////
 f70 run_file_70;
-:int RunProgram(dword run_path, run_param)
+signed int RunProgram(dword run_path, run_param)
 {	
     run_file_70.func = 7;
     run_file_70.param1 = 
@@ -96,6 +96,24 @@ f70 read_file_70;
 	$int 0x40
 }
 
+:int GetFile(dword buf, filesize, read_path)
+{
+	BDVK ReadFile_atr;
+	dword rBuf=0;
+	if (! GetFileInfo(read_path, #ReadFile_atr))
+	{
+		rBuf = malloc(ReadFile_atr.sizelo);	
+		if (! ReadFile(0, ReadFile_atr.sizelo, rBuf, read_path))
+		{
+			ESDWORD[buf] = rBuf;
+			ESDWORD[filesize] = ReadFile_atr.sizelo;
+			return 1;
+		}
+	}
+	free(rBuf);
+	return 0;
+}
+
 ////////////////////////////
 //     Записать файл      //
 ////////////////////////////
@@ -119,7 +137,7 @@ f70 write_file_70;
 ///////////////////////////
 f70 read_dir_70;
 :int ReadDir(dword file_count, read_buffer, dir_path)
-{    
+{
 	read_dir_70.func = 1;
 	read_dir_70.param1 = 
 	read_dir_70.param2 = 
@@ -133,18 +151,36 @@ f70 read_dir_70;
 }
 
 
+:int GetDir(dword dir_buf, file_count, path)
+{
+	dword buf, fcount, error;
+	buf = malloc(32);
+	error = ReadDir(0, buf, path);
+	if (!error)
+	{
+		fcount = ESDWORD[buf+8];
+		buf = realloc(buf, fcount+1*304+32);
+		ReadDir(fcount, buf, path);
+		if (!strcmp(".",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+		if (!strcmp("..",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+		ESDWORD[dir_buf] = buf;
+		ESDWORD[file_count] = fcount;
+	}
+	return error;
+}
+
+
 ///////////////////////////
 //   Параметры файла    //
 ///////////////////////////
 f70 getinfo_file_70;
-BDVK getinfo_file_info;
-:dword GetFileInfo(dword file_path)
+:dword GetFileInfo(dword file_path, bdvk_struct)
 {    
     getinfo_file_70.func = 5;
     getinfo_file_70.param1 = 
     getinfo_file_70.param2 = 
     getinfo_file_70.param3 = 0;
-    getinfo_file_70.param4 = #getinfo_file_info;
+    getinfo_file_70.param4 = bdvk_struct;
     getinfo_file_70.rezerv = 0;
     getinfo_file_70.name = file_path;
     $mov eax,70
@@ -160,32 +196,17 @@ BDVK getinfo_file_info;
 {
 	BDVK CopyFile_atr;
 	dword cBufer=0;
-	
-	if (! GetFileInfo(copy_from))
+	char rezult = -1;
+	if (! GetFileInfo(copy_from, #CopyFile_atr))
 	{
-		mem_Init();
-		cBufer = mem_Alloc(CopyFile_atr.sizelo);	
+		cBufer = malloc(CopyFile_atr.sizelo);	
 		if (! ReadFile(0, CopyFile_atr.sizelo, cBufer, copy_from))
-			if (! WriteFile(CopyFile_atr.sizelo, cBufer, copy_in)) return 1;
+		{
+			rezult = WriteFile(CopyFile_atr.sizelo, cBufer, copy_in);
+		}
 	}
-	
-	return 0;
-}
-
-
-//Asper
-void ReadAttributes(dword read_buffer, file_path)
-{
-	read_file_70.func = 5;
-	read_file_70.param1 = 0;
-	read_file_70.param2 = 0;
-	read_file_70.param3 = 0;
-	read_file_70.param4 = read_buffer;
-	read_file_70.rezerv = 0;
-	read_file_70.name = file_path;
-	$mov eax,70
-	$mov ebx,#read_file_70.func
-	$int 0x40
+	free(cBufer);
+	return rezult;
 }
 
 inline fastcall void SetCurDir( ECX)

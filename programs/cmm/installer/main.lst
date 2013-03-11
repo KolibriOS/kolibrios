@@ -1,0 +1,4363 @@
+SPHINX/SHEKER C-- One Pass Disassembler. Version 0.239c b26 Apr 27 2007
+
+..\lib\kolibri.h 6: char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
+00000000 4D454E5545543031         db      4Dh,45h,4Eh,55h,45h,54h,30h,31h
+
+..\lib\kolibri.h 7: dword  os_version   = 0x00000001;
+00000008 01000000                 dd      1
+
+..\lib\kolibri.h 8: dword  start_addr   = #main;
+0000000C 80250000                 dd      2580h
+
+..\lib\kolibri.h 9: dword  final_addr   = #stop+32;
+00000010 1E260000                 dd      261Eh
+
+..\lib\kolibri.h 10: dword  alloc_mem    = MEMSIZE;
+00000014 00100A00                 dd      0A1000h
+
+..\lib\kolibri.h 11: dword  x86esp_reg   = MEMSIZE;
+00000018 00100A00                 dd      0A1000h
+
+..\lib\kolibri.h 12: dword  I_Param      = #param;
+0000001C 3E2C0000                 dd      2C3Eh
+
+..\lib\kolibri.h 13: dword  I_Path       = #program_path;
+00000020 3E3C0000                 dd      3C3Eh
+
+..\lib\kolibri.h 41: void mouse::get()
+00000024 55                       push    ebp
+00000025 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 43: EAX = 37;
+00000027 6A25                     push    25h
+00000029 58                       pop     eax
+
+..\lib\kolibri.h 44: EBX = 1;
+0000002A 31DB                     xor     ebx,ebx
+0000002C 43                       inc     ebx
+
+..\lib\kolibri.h 45: $int	0x40
+0000002D CD40                     int     40h
+
+..\lib\kolibri.h 46: $mov	ebx, eax
+0000002F 89C3                     mov     ebx,eax
+
+..\lib\kolibri.h 47: $shr	eax, 16
+00000031 C1E810                   shr     eax,10h
+
+..\lib\kolibri.h 48: $and	ebx,0x0000FFFF
+00000034 81E3FFFF0000             and     ebx,0FFFFh
+
+..\lib\kolibri.h 49: x = EAX;
+0000003A 8B7508                   mov     esi,[ebp+8]
+0000003D 8906                     mov     [esi],eax
+
+..\lib\kolibri.h 50: y = EBX;
+0000003F 895E04                   mov     [esi+4],ebx
+
+..\lib\kolibri.h 51: EAX = 37;
+00000042 6A25                     push    25h
+00000044 58                       pop     eax
+
+..\lib\kolibri.h 52: EBX = 2;
+00000045 6A02                     push    2
+00000047 5B                       pop     ebx
+
+..\lib\kolibri.h 53: $int	0x40
+00000048 CD40                     int     40h
+
+..\lib\kolibri.h 54: $mov	ebx, eax
+0000004A 89C3                     mov     ebx,eax
+
+..\lib\kolibri.h 55: $and	eax, 0x00000001
+0000004C 83E001                   and     eax,1
+
+..\lib\kolibri.h 56: $shr	ebx, 1
+0000004F D1EB                     shr     ebx,1
+
+..\lib\kolibri.h 57: $and	ebx, 0x00000001
+00000051 83E301                   and     ebx,1
+
+..\lib\kolibri.h 58: lkm = EAX;
+00000054 8B7508                   mov     esi,[ebp+8]
+00000057 894608                   mov     [esi+8],eax
+
+..\lib\kolibri.h 59: pkm = EBX;
+0000005A 895E0C                   mov     [esi+0Ch],ebx
+
+..\lib\kolibri.h 60: EAX = 37; //áªà®««
+0000005D 6A25                     push    25h
+0000005F 58                       pop     eax
+
+..\lib\kolibri.h 61: EBX = 7;
+00000060 6A07                     push    7
+00000062 5B                       pop     ebx
+
+..\lib\kolibri.h 62: $int	0x40
+00000063 CD40                     int     40h
+
+..\lib\kolibri.h 63: $mov	ebx, eax
+00000065 89C3                     mov     ebx,eax
+
+..\lib\kolibri.h 64: $shr	eax, 16
+00000067 C1E810                   shr     eax,10h
+
+..\lib\kolibri.h 65: $and	ebx,0x0000FFFF
+0000006A 81E3FFFF0000             and     ebx,0FFFFh
+
+..\lib\kolibri.h 67: vert = EBX;
+00000070 8B7508                   mov     esi,[ebp+8]
+00000073 895E14                   mov     [esi+14h],ebx
+00000076 5D                       pop     ebp
+00000077 C20400                   ret     4
+
+..\lib\kolibri.h 78: void system_colors::get()
+0000007A 55                       push    ebp
+0000007B 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 80: EAX = 48;
+0000007D 6A30                     push    30h
+0000007F 58                       pop     eax
+
+..\lib\kolibri.h 81: EBX = 3;
+00000080 6A03                     push    3
+00000082 5B                       pop     ebx
+
+..\lib\kolibri.h 82: ECX = #frame;
+00000083 8B4D08                   mov     ecx,[ebp+8]
+
+..\lib\kolibri.h 83: EDX = 40;
+00000086 6A28                     push    28h
+00000088 5A                       pop     edx
+
+..\lib\kolibri.h 84: $int 0x40
+00000089 CD40                     int     40h
+0000008B 5D                       pop     ebp
+0000008C C20400                   ret     4
+
+..\lib\kolibri.h 362: void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAreaColor, EDI, ESI)
+0000008F 55                       push    ebp
+00000090 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 364: EAX = 12;              // function 12:tell os about windowdraw
+00000092 6A0C                     push    0Ch
+00000094 58                       pop     eax
+
+..\lib\kolibri.h 365: EBX = 1;
+00000095 31DB                     xor     ebx,ebx
+00000097 43                       inc     ebx
+
+..\lib\kolibri.h 366: $int 0x40
+00000098 CD40                     int     40h
+
+..\lib\kolibri.h 368: EAX = 0;
+0000009A 31C0                     xor     eax,eax
+
+..\lib\kolibri.h 369: EBX = x << 16 + sizeX;
+0000009C 8B5D1C                   mov     ebx,[ebp+1Ch]
+0000009F C1E310                   shl     ebx,10h
+000000A2 035D14                   add     ebx,[ebp+14h]
+
+..\lib\kolibri.h 370: ECX = y << 16 + sizeY;
+000000A5 8B4D18                   mov     ecx,[ebp+18h]
+000000A8 C1E110                   shl     ecx,10h
+000000AB 034D10                   add     ecx,[ebp+10h]
+
+..\lib\kolibri.h 371: EDX = WindowType << 24 | WindowAreaColor;
+000000AE 0FB6550C                 movzx   edx,[ebp+0Ch]
+000000B2 C1E218                   shl     edx,18h
+000000B5 0B5508                   or      edx,[ebp+8]
+
+..\lib\kolibri.h 372: $int 0x40
+000000B8 CD40                     int     40h
+
+..\lib\kolibri.h 374: EAX = 12;              // function 12:tell os about windowdraw
+000000BA 6A0C                     push    0Ch
+000000BC 58                       pop     eax
+
+..\lib\kolibri.h 375: EBX = 2;
+000000BD 6A02                     push    2
+000000BF 5B                       pop     ebx
+
+..\lib\kolibri.h 376: $int 0x40
+000000C0 CD40                     int     40h
+000000C2 5D                       pop     ebp
+000000C3 C21800                   ret     18h
+
+..\lib\kolibri.h 392: void WriteTextB(dword x,y,byte fontType, dword color, EDX)
+000000C6 55                       push    ebp
+000000C7 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 394: EAX = 4;
+000000C9 6A04                     push    4
+000000CB 58                       pop     eax
+
+..\lib\kolibri.h 395: EBX = x<<16+y;
+000000CC 8B5D14                   mov     ebx,[ebp+14h]
+000000CF C1E310                   shl     ebx,10h
+000000D2 035D10                   add     ebx,[ebp+10h]
+
+..\lib\kolibri.h 396: ECX = fontType<<24+color;
+000000D5 0FB64D0C                 movzx   ecx,[ebp+0Ch]
+000000D9 C1E118                   shl     ecx,18h
+000000DC 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 397: ESI = 0;
+000000DF 31F6                     xor     esi,esi
+
+..\lib\kolibri.h 398: $int 0x40;
+000000E1 CD40                     int     40h
+
+..\lib\kolibri.h 399: $add ebx, 1<<16
+000000E3 81C300000100             add     ebx,10000h
+
+..\lib\kolibri.h 400: $int 0x40
+000000E9 CD40                     int     40h
+000000EB 5D                       pop     ebp
+000000EC C21000                   ret     10h
+
+..\lib\kolibri.h 403: void WriteText(dword x,y,byte fontType, dword color, EDX)
+000000EF 55                       push    ebp
+000000F0 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 405: EAX = 4;
+000000F2 6A04                     push    4
+000000F4 58                       pop     eax
+
+..\lib\kolibri.h 406: EBX = x<<16+y;
+000000F5 8B5D14                   mov     ebx,[ebp+14h]
+000000F8 C1E310                   shl     ebx,10h
+000000FB 035D10                   add     ebx,[ebp+10h]
+
+..\lib\kolibri.h 407: ECX = fontType<<24+color;
+000000FE 0FB64D0C                 movzx   ecx,[ebp+0Ch]
+00000102 C1E118                   shl     ecx,18h
+00000105 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 408: ESI = 0;
+00000108 31F6                     xor     esi,esi
+
+..\lib\kolibri.h 409: $int 0x40;
+0000010A CD40                     int     40h
+0000010C 5D                       pop     ebp
+0000010D C21000                   ret     10h
+
+..\lib\kolibri.h 412: void WriteNumber(dword x,y,byte fontType, dword color, count, ECX)
+00000110 55                       push    ebp
+00000111 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 414: EAX = 47;
+00000113 6A2F                     push    2Fh
+00000115 58                       pop     eax
+
+..\lib\kolibri.h 415: EBX = count<<16;
+00000116 8B5D08                   mov     ebx,[ebp+8]
+00000119 C1E310                   shl     ebx,10h
+
+..\lib\kolibri.h 416: EDX = x<<16+y;
+0000011C 8B5518                   mov     edx,[ebp+18h]
+0000011F C1E210                   shl     edx,10h
+00000122 035514                   add     edx,[ebp+14h]
+
+..\lib\kolibri.h 417: ESI = fontType<<24+color;
+00000125 0FB67510                 movzx   esi,[ebp+10h]
+00000129 C1E618                   shl     esi,18h
+0000012C 03750C                   add     esi,[ebp+0Ch]
+
+..\lib\kolibri.h 418: $int 0x40;
+0000012F CD40                     int     40h
+00000131 5D                       pop     ebp
+00000132 C21400                   ret     14h
+
+..\lib\kolibri.h 421: void CopyScreen(dword EBX, x, y, w, h)
+00000135 55                       push    ebp
+00000136 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 423: EAX = 36;
+00000138 6A24                     push    24h
+0000013A 58                       pop     eax
+
+..\lib\kolibri.h 424: ECX = w << 16 + h;
+0000013B 8B4D0C                   mov     ecx,[ebp+0Ch]
+0000013E C1E110                   shl     ecx,10h
+00000141 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 425: EDX = x << 16 + y;
+00000144 8B5514                   mov     edx,[ebp+14h]
+00000147 C1E210                   shl     edx,10h
+0000014A 035510                   add     edx,[ebp+10h]
+
+..\lib\kolibri.h 426: $int  0x40;
+0000014D CD40                     int     40h
+0000014F 5D                       pop     ebp
+00000150 C21000                   ret     10h
+
+..\lib\kolibri.h 429: dword GetPixelColor(dword x, x_size, y)
+00000153 55                       push    ebp
+00000154 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 431: $mov eax, 35
+00000156 B823000000               mov     eax,23h
+
+..\lib\kolibri.h 432: EBX= y*x_size+x;
+0000015B 8B5D08                   mov     ebx,[ebp+8]
+0000015E 0FAF5D0C                 imul    ebx,[ebp+0Ch]
+00000162 035D10                   add     ebx,[ebp+10h]
+
+..\lib\kolibri.h 433: $int 0x40
+00000165 CD40                     int     40h
+00000167 5D                       pop     ebp
+00000168 C20C00                   ret     0Ch
+
+..\lib\kolibri.h 437: void _PutImage(dword x,y, w,h, EBX)
+0000016B 55                       push    ebp
+0000016C 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 439: EAX = 7;
+0000016E 6A07                     push    7
+00000170 58                       pop     eax
+
+..\lib\kolibri.h 440: ECX = w<<16+h;
+00000171 8B4D0C                   mov     ecx,[ebp+0Ch]
+00000174 C1E110                   shl     ecx,10h
+00000177 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 441: EDX = x<<16+y;
+0000017A 8B5514                   mov     edx,[ebp+14h]
+0000017D C1E210                   shl     edx,10h
+00000180 035510                   add     edx,[ebp+10h]
+
+..\lib\kolibri.h 442: $int 0x40
+00000183 CD40                     int     40h
+00000185 5D                       pop     ebp
+00000186 C21000                   ret     10h
+
+..\lib\kolibri.h 445: void PutPaletteImage(dword EBX,w,h,x,y,ESI,EDI)
+00000189 55                       push    ebp
+0000018A 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 447: EAX = 65;
+0000018C 6A41                     push    41h
+0000018E 58                       pop     eax
+
+..\lib\kolibri.h 448: ECX = w<<16+h;
+0000018F 8B4D14                   mov     ecx,[ebp+14h]
+00000192 C1E110                   shl     ecx,10h
+00000195 034D10                   add     ecx,[ebp+10h]
+
+..\lib\kolibri.h 449: EDX = x<<16+y;
+00000198 8B550C                   mov     edx,[ebp+0Ch]
+0000019B C1E210                   shl     edx,10h
+0000019E 035508                   add     edx,[ebp+8]
+
+..\lib\kolibri.h 450: EBP = 0;
+000001A1 31ED                     xor     ebp,ebp
+
+..\lib\kolibri.h 451: $int 0x40
+000001A3 CD40                     int     40h
+000001A5 5D                       pop     ebp
+000001A6 C21000                   ret     10h
+
+..\lib\kolibri.h 460: void DrawBar(dword x,y,w,h,EDX)
+000001A9 55                       push    ebp
+000001AA 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 462: if (h<=0) || (h>60000) || (w<=0) || (w>60000) return; //bad boy :)
+000001AC 837D0800                 cmp     dword ptr [ebp+8],0
+000001B0 7618                     jbe     1CAh
+000001B2 817D0860EA0000           cmp     dword ptr [ebp+8],0EA60h
+000001B9 770F                     ja      1CAh
+000001BB 837D0C00                 cmp     dword ptr [ebp+0Ch],0
+000001BF 7609                     jbe     1CAh
+000001C1 817D0C60EA0000           cmp     dword ptr [ebp+0Ch],0EA60h
+000001C8 7605                     jbe     1CFh
+000001CA E917000000               jmp     1E6h
+
+..\lib\kolibri.h 463: EAX = 13;
+000001CF 6A0D                     push    0Dh
+000001D1 58                       pop     eax
+
+..\lib\kolibri.h 464: EBX = x<<16+w;
+000001D2 8B5D14                   mov     ebx,[ebp+14h]
+000001D5 C1E310                   shl     ebx,10h
+000001D8 035D0C                   add     ebx,[ebp+0Ch]
+
+..\lib\kolibri.h 465: ECX = y<<16+h;
+000001DB 8B4D10                   mov     ecx,[ebp+10h]
+000001DE C1E110                   shl     ecx,10h
+000001E1 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 466: $int 0x40
+000001E4 CD40                     int     40h
+000001E6 5D                       pop     ebp
+000001E7 C21000                   ret     10h
+
+..\lib\kolibri.h 469: void DefineButton(dword x,y,w,h,EDX,ESI)
+000001EA 55                       push    ebp
+000001EB 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 471: EAX = 8;
+000001ED 6A08                     push    8
+000001EF 58                       pop     eax
+
+..\lib\kolibri.h 472: $push edx
+000001F0 52                       push    edx
+
+..\lib\kolibri.h 473: EDX += BT_DEL;
+000001F1 8D9200000080             lea     edx,[edx-80000000h]
+
+..\lib\kolibri.h 474: $int 0x40;
+000001F7 CD40                     int     40h
+
+..\lib\kolibri.h 475: $pop edx
+000001F9 5A                       pop     edx
+
+..\lib\kolibri.h 476: EBX = x<<16+w;
+000001FA 8B5D14                   mov     ebx,[ebp+14h]
+000001FD C1E310                   shl     ebx,10h
+00000200 035D0C                   add     ebx,[ebp+0Ch]
+
+..\lib\kolibri.h 477: ECX = y<<16+h;
+00000203 8B4D10                   mov     ecx,[ebp+10h]
+00000206 C1E110                   shl     ecx,10h
+00000209 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 478: $int 0x40
+0000020C CD40                     int     40h
+0000020E 5D                       pop     ebp
+0000020F C21000                   ret     10h
+
+..\lib\kolibri.h 481: void UnsafeDefineButton(dword x,y,w,h,EDX,ESI)
+00000212 55                       push    ebp
+00000213 89E5                     mov     ebp,esp
+
+..\lib\kolibri.h 483: EAX = 8;
+00000215 6A08                     push    8
+00000217 58                       pop     eax
+
+..\lib\kolibri.h 484: EBX = x<<16+w;
+00000218 8B5D14                   mov     ebx,[ebp+14h]
+0000021B C1E310                   shl     ebx,10h
+0000021E 035D0C                   add     ebx,[ebp+0Ch]
+
+..\lib\kolibri.h 485: ECX = y<<16+h;
+00000221 8B4D10                   mov     ecx,[ebp+10h]
+00000224 C1E110                   shl     ecx,10h
+00000227 034D08                   add     ecx,[ebp+8]
+
+..\lib\kolibri.h 486: $int 0x40
+0000022A CD40                     int     40h
+0000022C 5D                       pop     ebp
+0000022D C21000                   ret     10h
+
+..\lib\strings.h 149: int chrnum(dword searchin, char symbol)
+00000230 55                       push    ebp
+00000231 89E5                     mov     ebp,esp
+00000233 6A00                     push    0
+
+..\lib\strings.h 152: while(DSBYTE[searchin])
+00000235 E914000000               jmp     24Eh
+
+..\lib\strings.h 154: if (DSBYTE[searchin] == symbol)	num++;
+0000023A 8A4508                   mov     al,[ebp+8]
+0000023D 8B750C                   mov     esi,[ebp+0Ch]
+00000240 3806                     cmp     [esi],al
+00000242 0F8503000000             jnz     24Bh
+00000248 FF45FC                   inc     dword ptr [ebp-4]
+
+..\lib\strings.h 155: searchin++;
+0000024B FF450C                   inc     dword ptr [ebp+0Ch]
+
+..\lib\strings.h 152: while(DSBYTE[searchin])
+0000024E 8B750C                   mov     esi,[ebp+0Ch]
+00000251 803E00                   cmp     byte ptr [esi],0
+00000254 75E4                     jne     23Ah
+
+..\lib\strings.h 157: return num;
+00000256 8B45FC                   mov     eax,[ebp-4]
+00000259 C9                       leave
+0000025A C20800                   ret     8
+
+..\lib\strings.h 201: dword strstri(dword searchin, usestr_s)
+0000025D 55                       push    ebp
+0000025E 89E5                     mov     ebp,esp
+00000260 FF7508                   push    dword ptr [ebp+8]
+00000263 51                       push    ecx
+00000264 51                       push    ecx
+
+..\lib\strings.h 206: while(DSBYTE[searchin])
+00000265 E96D000000               jmp     2D7h
+
+..\lib\strings.h 208: si = DSBYTE[searchin];
+0000026A 8B750C                   mov     esi,[ebp+0Ch]
+0000026D 8A06                     mov     al,[esi]
+0000026F 8845F8                   mov     [ebp-8],al
+
+..\lib\strings.h 209: ue = DSBYTE[usestr_e];
+00000272 8B75FC                   mov     esi,[ebp-4]
+00000275 8A06                     mov     al,[esi]
+00000277 8845F4                   mov     [ebp-0Ch],al
+
+..\lib\strings.h 210: if (si>='A') && (si<='Z') si +=32;
+0000027A 807DF841                 cmp     byte ptr [ebp-8],41h
+0000027E 0F8C0E000000             jl      292h
+00000284 807DF85A                 cmp     byte ptr [ebp-8],5Ah
+00000288 0F8F04000000             jg      292h
+0000028E 8045F820                 add     byte ptr [ebp-8],20h
+
+..\lib\strings.h 211: if (ue>='A') && (ue<='Z') ue +=32;
+00000292 3C41                     cmp     al,41h
+00000294 0F8C0C000000             jl      2A6h
+0000029A 3C5A                     cmp     al,5Ah
+0000029C 0F8F04000000             jg      2A6h
+000002A2 8045F420                 add     byte ptr [ebp-0Ch],20h
+
+..\lib\strings.h 212: if (si == ue) usestr_e++; else usestr_e = usestr_s;
+000002A6 8A45F4                   mov     al,[ebp-0Ch]
+000002A9 3845F8                   cmp     [ebp-8],al
+000002AC 0F8508000000             jnz     2BAh
+000002B2 FF45FC                   inc     dword ptr [ebp-4]
+000002B5 E906000000               jmp     2C0h
+000002BA 8B4508                   mov     eax,[ebp+8]
+000002BD 8945FC                   mov     [ebp-4],eax
+
+..\lib\strings.h 213: searchin++;
+000002C0 FF450C                   inc     dword ptr [ebp+0Ch]
+
+..\lib\strings.h 214: if (DSBYTE[usestr_e]=='\0') return searchin;
+000002C3 8B75FC                   mov     esi,[ebp-4]
+000002C6 803E00                   cmp     byte ptr [esi],0
+000002C9 0F8508000000             jnz     2D7h
+000002CF 8B450C                   mov     eax,[ebp+0Ch]
+000002D2 E90A000000               jmp     2E1h
+
+..\lib\strings.h 206: while(DSBYTE[searchin])
+000002D7 8B750C                   mov     esi,[ebp+0Ch]
+000002DA 803E00                   cmp     byte ptr [esi],0
+000002DD 758B                     jne     26Ah
+
+..\lib\strings.h 216: return 0;
+000002DF 31C0                     xor     eax,eax
+000002E1 C9                       leave
+000002E2 C20800                   ret     8
+
+..\lib\strings.h 220: void strcpyb(dword search_in, copyin, startstr, endstr)
+000002E5 C8080000                 enter   8,0
+
+..\lib\strings.h 223: startp = strstr(search_in, startstr) + strlen(startstr);
+000002E9 8B5D14                   mov     ebx,[ebp+14h]
+000002EC 8B550C                   mov     edx,[ebp+0Ch]
+000002EF E849230000               call    263Dh
+000002F4 50                       push    eax
+000002F5 8B7D0C                   mov     edi,[ebp+0Ch]
+000002F8 E822240000               call    271Fh
+000002FD 5A                       pop     edx
+000002FE 01D0                     add     eax,edx
+00000300 8945FC                   mov     [ebp-4],eax
+
+..\lib\strings.h 224: endp = strstri(startp, endstr);
+00000303 50                       push    eax
+00000304 FF7508                   push    dword ptr [ebp+8]
+00000307 E851FFFFFF               call    25Dh
+0000030C 8945F8                   mov     [ebp-8],eax
+
+..\lib\strings.h 225: if (startp==endp) return;
+0000030F 3945FC                   cmp     [ebp-4],eax
+00000312 0F841E000000             jz      336h
+
+..\lib\strings.h 228: DSBYTE[copyin] = DSBYTE[startp];
+00000318 8B75FC                   mov     esi,[ebp-4]
+0000031B 8A06                     mov     al,[esi]
+0000031D 8B7510                   mov     esi,[ebp+10h]
+00000320 8806                     mov     [esi],al
+
+..\lib\strings.h 229: copyin++;
+00000322 FF4510                   inc     dword ptr [ebp+10h]
+
+..\lib\strings.h 230: startp++;
+00000325 FF45FC                   inc     dword ptr [ebp-4]
+
+..\lib\strings.h 232: while (startp<endp);
+00000328 8B45F8                   mov     eax,[ebp-8]
+0000032B 3945FC                   cmp     [ebp-4],eax
+0000032E 72E8                     jc      318h
+
+..\lib\strings.h 233: DSBYTE[copyin] = '\0';
+00000330 8B7510                   mov     esi,[ebp+10h]
+00000333 C60600                   mov     byte ptr [esi],0
+00000336 C9                       leave
+00000337 C21000                   ret     10h
+
+..\lib\strings.h 249: dword itoa( ESI)
+0000033A C80C0000                 enter   0Ch,0
+
+..\lib\strings.h 252: $pusha
+0000033E 6660                     pusha 
+
+..\lib\strings.h 254: EDI = #buffer;
+00000340 8D7DF4                   lea     edi,[ebp-0Ch]
+
+..\lib\strings.h 255: ECX = 10;
+00000343 6A0A                     push    0Ah
+00000345 59                       pop     ecx
+
+..\lib\strings.h 256: if (ESI < 0)
+00000346 85F6                     test    esi,esi
+00000348 0F8305000000             jnb     353h
+
+..\lib\strings.h 258: $mov     al, '-'
+0000034E B02D                     mov     al,2Dh
+
+..\lib\strings.h 259: $stosb
+00000350 AA                       stosb
+
+..\lib\strings.h 260: $neg     esi
+00000351 F7DE                     neg     esi
+
+..\lib\strings.h 263: $mov     eax, esi
+00000353 89F0                     mov     eax,esi
+
+..\lib\strings.h 264: $push    -'0'
+00000355 6AD0                     push    0FFFFFFD0h
+
+..\lib\strings.h 266: $xor     edx, edx
+00000357 33D2                     xor     edx,edx
+
+..\lib\strings.h 267: $div     ecx
+00000359 F7F1                     div     ecx
+
+..\lib\strings.h 268: $push    edx
+0000035B 52                       push    edx
+
+..\lib\strings.h 269: $test    eax, eax
+0000035C 85C0                     test    eax,eax
+
+..\lib\strings.h 270: $jnz     F2
+0000035E 75F7                     jne     357h
+
+..\lib\strings.h 272: $pop     eax
+00000360 58                       pop     eax
+
+..\lib\strings.h 273: $add     al, '0'
+00000361 0430                     add     al,30h
+
+..\lib\strings.h 274: $stosb
+00000363 AA                       stosb
+
+..\lib\strings.h 275: $jnz     F3
+00000364 75FA                     jne     360h
+
+..\lib\strings.h 277: $mov     al, '\0'
+00000366 B000                     mov     al,0
+
+..\lib\strings.h 278: $stosb
+00000368 AA                       stosb
+
+..\lib\strings.h 280: $popa
+00000369 6661                     popa 
+
+..\lib\strings.h 281: return #buffer;
+0000036B 8D45F4                   lea     eax,[ebp-0Ch]
+0000036E C9                       leave
+0000036F C3                       ret
+
+..\lib\strings.h 346: void debugi(dword d_int)
+00000370 C80C0000                 enter   0Ch,0
+
+..\lib\strings.h 349: strcpy(#tmpch, itoa(d_int));
+00000374 8D7DF4                   lea     edi,[ebp-0Ch]
+00000377 8B7508                   mov     esi,[ebp+8]
+0000037A E8BBFFFFFF               call    33Ah
+0000037F 89C6                     mov     esi,eax
+00000381 E8A7230000               call    272Dh
+
+..\lib\strings.h 350: debug(#tmpch);
+00000386 8D55F4                   lea     edx,[ebp-0Ch]
+00000389 E8F6230000               call    2784h
+0000038E C9                       leave
+0000038F C20400                   ret     4
+
+..\lib\figures.h 3: void DrawRectangle(dword x,y,w,h,color1)
+00000392 55                       push    ebp
+00000393 89E5                     mov     ebp,esp
+
+..\lib\figures.h 5: if (w<=0) || (h<=0) return;
+00000395 837D1000                 cmp     dword ptr [ebp+10h],0
+00000399 7606                     jbe     3A1h
+0000039B 837D0C00                 cmp     dword ptr [ebp+0Ch],0
+0000039F 7705                     ja      3A6h
+000003A1 E956000000               jmp     3FCh
+
+..\lib\figures.h 6: DrawBar(x,y,w,1,color1);
+000003A6 FF7518                   push    dword ptr [ebp+18h]
+000003A9 FF7514                   push    dword ptr [ebp+14h]
+000003AC FF7510                   push    dword ptr [ebp+10h]
+000003AF 6A01                     push    1
+000003B1 8B5508                   mov     edx,[ebp+8]
+000003B4 E8F0FDFFFF               call    1A9h
+
+..\lib\figures.h 7: DrawBar(x,y+h,w,1,color1);
+000003B9 FF7518                   push    dword ptr [ebp+18h]
+000003BC 8B4514                   mov     eax,[ebp+14h]
+000003BF 03450C                   add     eax,[ebp+0Ch]
+000003C2 50                       push    eax
+000003C3 FF7510                   push    dword ptr [ebp+10h]
+000003C6 6A01                     push    1
+000003C8 8B5508                   mov     edx,[ebp+8]
+000003CB E8D9FDFFFF               call    1A9h
+
+..\lib\figures.h 8: DrawBar(x,y,1,h,color1);
+000003D0 FF7518                   push    dword ptr [ebp+18h]
+000003D3 FF7514                   push    dword ptr [ebp+14h]
+000003D6 6A01                     push    1
+000003D8 FF750C                   push    dword ptr [ebp+0Ch]
+000003DB 8B5508                   mov     edx,[ebp+8]
+000003DE E8C6FDFFFF               call    1A9h
+
+..\lib\figures.h 9: DrawBar(x+w,y,1,h+1,color1);
+000003E3 8B4518                   mov     eax,[ebp+18h]
+000003E6 034510                   add     eax,[ebp+10h]
+000003E9 50                       push    eax
+000003EA FF7514                   push    dword ptr [ebp+14h]
+000003ED 6A01                     push    1
+000003EF 8B450C                   mov     eax,[ebp+0Ch]
+000003F2 40                       inc     eax
+000003F3 50                       push    eax
+000003F4 8B5508                   mov     edx,[ebp+8]
+000003F7 E8ADFDFFFF               call    1A9h
+000003FC 5D                       pop     ebp
+000003FD C21400                   ret     14h
+
+..\lib\figures.h 12: void DrawRectangle3D(dword x,y,w,h,color1,color2)
+00000400 55                       push    ebp
+00000401 89E5                     mov     ebp,esp
+
+..\lib\figures.h 14: if (w<=0) || (h<=0) return;
+00000403 837D1400                 cmp     dword ptr [ebp+14h],0
+00000407 7606                     jbe     40Fh
+00000409 837D1000                 cmp     dword ptr [ebp+10h],0
+0000040D 7705                     ja      414h
+0000040F E95C000000               jmp     470h
+
+..\lib\figures.h 15: DrawBar(x,y,w+1,1,color1);
+00000414 FF751C                   push    dword ptr [ebp+1Ch]
+00000417 FF7518                   push    dword ptr [ebp+18h]
+0000041A 8B4514                   mov     eax,[ebp+14h]
+0000041D 40                       inc     eax
+0000041E 50                       push    eax
+0000041F 6A01                     push    1
+00000421 8B550C                   mov     edx,[ebp+0Ch]
+00000424 E880FDFFFF               call    1A9h
+
+..\lib\figures.h 16: DrawBar(x,y+1,1,h-1,color1);
+00000429 FF751C                   push    dword ptr [ebp+1Ch]
+0000042C 8B4518                   mov     eax,[ebp+18h]
+0000042F 40                       inc     eax
+00000430 50                       push    eax
+00000431 6A01                     push    1
+00000433 8B4510                   mov     eax,[ebp+10h]
+00000436 48                       dec     eax
+00000437 50                       push    eax
+00000438 8B550C                   mov     edx,[ebp+0Ch]
+0000043B E869FDFFFF               call    1A9h
+
+..\lib\figures.h 17: DrawBar(x+w,y+1,1,h,color2);
+00000440 8B451C                   mov     eax,[ebp+1Ch]
+00000443 034514                   add     eax,[ebp+14h]
+00000446 50                       push    eax
+00000447 8B4518                   mov     eax,[ebp+18h]
+0000044A 40                       inc     eax
+0000044B 50                       push    eax
+0000044C 6A01                     push    1
+0000044E FF7510                   push    dword ptr [ebp+10h]
+00000451 8B5508                   mov     edx,[ebp+8]
+00000454 E850FDFFFF               call    1A9h
+
+..\lib\figures.h 18: DrawBar(x,y+h,w,1,color2);
+00000459 FF751C                   push    dword ptr [ebp+1Ch]
+0000045C 8B4518                   mov     eax,[ebp+18h]
+0000045F 034510                   add     eax,[ebp+10h]
+00000462 50                       push    eax
+00000463 FF7514                   push    dword ptr [ebp+14h]
+00000466 6A01                     push    1
+00000468 8B5508                   mov     edx,[ebp+8]
+0000046B E839FDFFFF               call    1A9h
+00000470 5D                       pop     ebp
+00000471 C21800                   ret     18h
+
+..\lib\figures.h 21: void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
+00000474 55                       push    ebp
+00000475 89E5                     mov     ebp,esp
+
+..\lib\figures.h 23: DefineButton(x,y,w,h,id,color_b);
+00000477 FF7524                   push    dword ptr [ebp+24h]
+0000047A FF7520                   push    dword ptr [ebp+20h]
+0000047D FF751C                   push    dword ptr [ebp+1Ch]
+00000480 FF7518                   push    dword ptr [ebp+18h]
+00000483 8B5514                   mov     edx,[ebp+14h]
+00000486 8B7510                   mov     esi,[ebp+10h]
+00000489 E85CFDFFFF               call    1EAh
+
+..\lib\figures.h 24: WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
+0000048E 8B7D08                   mov     edi,[ebp+8]
+00000491 E889220000               call    271Fh
+00000496 F7D8                     neg     eax
+00000498 6BC006                   imul    eax,eax,6
+0000049B 03451C                   add     eax,[ebp+1Ch]
+0000049E D1E8                     shr     eax,1
+000004A0 034524                   add     eax,[ebp+24h]
+000004A3 40                       inc     eax
+000004A4 50                       push    eax
+000004A5 8B4518                   mov     eax,[ebp+18h]
+000004A8 D1E8                     shr     eax,1
+000004AA 83E803                   sub     eax,3
+000004AD 034520                   add     eax,[ebp+20h]
+000004B0 50                       push    eax
+000004B1 6880000000               push    80h
+000004B6 FF750C                   push    dword ptr [ebp+0Ch]
+000004B9 8B5508                   mov     edx,[ebp+8]
+000004BC E82EFCFFFF               call    0EFh
+000004C1 5D                       pop     ebp
+000004C2 C22000                   ret     20h
+
+..\lib\encoding.h 30: byte mas[66] = "î ¡æ¤¥ä£å¨©ª«¬­®¯ïàáâã¦¢ìë§èíéçêž€–„…”ƒ•ˆ‰Š‹ŒŽŸ‘’“†‚œ›‡˜™—š";
+000004C5 EEA0A1E6A4A5E4A3E5A8A9AA db      'î ¡æ¤¥ä£å¨©ª'
+000004D1 ABACADAEAFEFE0E1E2E3A6A2 db      '«¬­®¯ïàáâã¦¢'
+000004DD ECEBA7E8EDE9E7EA9E808196 db      'ìë§èíéçêž€–'
+000004E9 848594839588898A8B8C8D8E db      '„…”ƒ•ˆ‰Š‹ŒŽ'
+000004F5 8F9F9091929386829C9B8798 db      'Ÿ‘’“†‚œ›‡˜'
+00000501 9D99979A0000             db      '™—š',0,0
+
+..\lib\encoding.h 158: dword Hex2Symb(char* htmlcolor)
+00000507 55                       push    ebp
+00000508 89E5                     mov     ebp,esp
+0000050A 6A00                     push    0
+0000050C 6A00                     push    0
+0000050E 6A00                     push    0
+
+..\lib\encoding.h 162: FOR (;j<2;j++)
+00000510 837DFC02                 cmp     dword ptr [ebp-4],2
+00000514 735C                     jnc     572h
+
+..\lib\encoding.h 164: ch=ESBYTE[htmlcolor+j];
+00000516 8B7508                   mov     esi,[ebp+8]
+00000519 0375FC                   add     esi,[ebp-4]
+0000051C 268A06                   mov     al,es:[esi]
+0000051F 8845F4                   mov     [ebp-0Ch],al
+
+..\lib\encoding.h 165: IF (ch==0x0d) || (ch=='\9') RETURN '';
+00000522 3C0D                     cmp     al,0Dh
+00000524 7404                     je      52Ah
+00000526 3C09                     cmp     al,9
+00000528 7504                     jne     52Eh
+0000052A 31C0                     xor     eax,eax
+0000052C EB4F                     jmp     short 57Dh
+
+..\lib\encoding.h 166: IF ((ch>='0') && (ch<='9')) ch -= '0';
+0000052E 807DF430                 cmp     byte ptr [ebp-0Ch],30h
+00000532 7C0A                     jl      53Eh
+00000534 807DF439                 cmp     byte ptr [ebp-0Ch],39h
+00000538 7F04                     jg      53Eh
+0000053A 806DF430                 sub     byte ptr [ebp-0Ch],30h
+
+..\lib\encoding.h 167: IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+0000053E 807DF441                 cmp     byte ptr [ebp-0Ch],41h
+00000542 7C0A                     jl      54Eh
+00000544 807DF446                 cmp     byte ptr [ebp-0Ch],46h
+00000548 7F04                     jg      54Eh
+0000054A 806DF437                 sub     byte ptr [ebp-0Ch],37h
+
+..\lib\encoding.h 168: IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+0000054E 807DF461                 cmp     byte ptr [ebp-0Ch],61h
+00000552 7C0A                     jl      55Eh
+00000554 807DF466                 cmp     byte ptr [ebp-0Ch],66h
+00000558 7F04                     jg      55Eh
+0000055A 806DF457                 sub     byte ptr [ebp-0Ch],57h
+
+..\lib\encoding.h 169: symbol = symbol*0x10 + ch;
+0000055E 8B45F8                   mov     eax,[ebp-8]
+00000561 C1E004                   shl     eax,4
+00000564 0FBE4DF4                 movsx   ecx,[ebp-0Ch]
+00000568 01C8                     add     eax,ecx
+0000056A 8945F8                   mov     [ebp-8],eax
+
+..\lib\encoding.h 162: j++;
+0000056D FF45FC                   inc     dword ptr [ebp-4]
+00000570 EB9E                     jmp     short 510h
+
+..\lib\encoding.h 171: wintodos(#symbol);
+00000572 8D75F8                   lea     esi,[ebp-8]
+00000575 E800210000               call    267Ah
+
+..\lib\encoding.h 172: AL=symbol;
+0000057A 8A45F8                   mov     al,[ebp-8]
+0000057D C9                       leave
+0000057E C20400                   ret     4
+
+..\lib\file_system.h 31: signed int RunProgram(dword run_path, run_param)
+00000581 55                       push    ebp
+00000582 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 33: run_file_70.func = 7;
+00000584 6A07                     push    7
+00000586 8F053E4C0000             pop     dword ptr [4C3Eh]
+
+..\lib\file_system.h 34: run_file_70.param1 =
+0000058C 31C0                     xor     eax,eax
+0000058E A2524C0000               mov     [4C52h],al
+00000593 A34E4C0000               mov     [4C4Eh],eax
+00000598 A34A4C0000               mov     [4C4Ah],eax
+0000059D A3424C0000               mov     [4C42h],eax
+
+..\lib\file_system.h 38: run_file_70.param2 = run_param;
+000005A2 8B4508                   mov     eax,[ebp+8]
+000005A5 A3464C0000               mov     [4C46h],eax
+
+..\lib\file_system.h 39: run_file_70.name = run_path;
+000005AA 8B450C                   mov     eax,[ebp+0Ch]
+000005AD A3534C0000               mov     [4C53h],eax
+
+..\lib\file_system.h 40: $mov eax,70
+000005B2 B846000000               mov     eax,46h
+
+..\lib\file_system.h 41: $mov ebx,#run_file_70.func
+000005B7 BB3E4C0000               mov     ebx,4C3Eh
+
+..\lib\file_system.h 42: $int 0x40
+000005BC CD40                     int     40h
+000005BE 5D                       pop     ebp
+000005BF C20800                   ret     8
+
+..\lib\file_system.h 226: void notify(dword notify_param)
+000005C2 55                       push    ebp
+000005C3 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 228: RunProgram("@notify", notify_param);
+000005C5 68D6050000               push    5D6h
+000005CA FF7508                   push    dword ptr [ebp+8]
+000005CD E8AFFFFFFF               call    581h
+000005D2 5D                       pop     ebp
+000005D3 C20400                   ret     4
+
+000005D6 406E6F7469667900         db      '@notify',0
+
+..\lib\mem.h 4: $push    ebx
+000005DE 53                       push    ebx
+
+..\lib\mem.h 5: $mov     eax, 68
+000005DF B844000000               mov     eax,44h
+
+..\lib\mem.h 6: $mov     ebx, 11
+000005E4 BB0B000000               mov     ebx,0Bh
+
+..\lib\mem.h 7: $int     0x40
+000005E9 CD40                     int     40h
+
+..\lib\mem.h 9: $pop     ebx
+000005EB 5B                       pop     ebx
+
+..\lib\mem.h 10: return  EAX;
+000005EC C3                       ret
+
+..\lib\mem.h 13: dword malloc(dword size)
+000005ED 55                       push    ebp
+000005EE 89E5                     mov     ebp,esp
+
+..\lib\mem.h 15: $push    ebx
+000005F0 53                       push    ebx
+
+..\lib\mem.h 16: $push    ecx
+000005F1 51                       push    ecx
+
+..\lib\mem.h 17: $mov     eax, 68
+000005F2 B844000000               mov     eax,44h
+
+..\lib\mem.h 18: $mov     ebx, 12
+000005F7 BB0C000000               mov     ebx,0Ch
+
+..\lib\mem.h 19: $mov     ecx, size
+000005FC 8B4D08                   mov     ecx,[ebp+8]
+
+..\lib\mem.h 20: $int     0x40
+000005FF CD40                     int     40h
+
+..\lib\mem.h 22: $pop     ecx
+00000601 59                       pop     ecx
+
+..\lib\mem.h 23: $pop     ebx
+00000602 5B                       pop     ebx
+
+..\lib\mem.h 24: return  EAX;
+00000603 5D                       pop     ebp
+00000604 C20400                   ret     4
+
+..\lib\mem.h 27: stdcall dword realloc(dword mptr, size)
+00000607 55                       push    ebp
+00000608 89E5                     mov     ebp,esp
+
+..\lib\mem.h 29: $push    ebx
+0000060A 53                       push    ebx
+
+..\lib\mem.h 30: $push    ecx
+0000060B 51                       push    ecx
+
+..\lib\mem.h 31: $push    edx
+0000060C 52                       push    edx
+
+..\lib\mem.h 32: $mov     eax, 68
+0000060D B844000000               mov     eax,44h
+
+..\lib\mem.h 33: $mov     ebx, 20
+00000612 BB14000000               mov     ebx,14h
+
+..\lib\mem.h 34: $mov     ecx, size
+00000617 8B4D0C                   mov     ecx,[ebp+0Ch]
+
+..\lib\mem.h 35: $mov     edx, mptr
+0000061A 8B5508                   mov     edx,[ebp+8]
+
+..\lib\mem.h 36: $int     0x40
+0000061D CD40                     int     40h
+
+..\lib\mem.h 38: $pop     edx
+0000061F 5A                       pop     edx
+
+..\lib\mem.h 39: $pop     ecx
+00000620 59                       pop     ecx
+
+..\lib\mem.h 40: $pop     ebx
+00000621 5B                       pop     ebx
+
+..\lib\mem.h 41: return   EAX;
+00000622 5D                       pop     ebp
+00000623 C20800                   ret     8
+
+..\lib\mem.h 44: dword free(dword mptr)
+00000626 55                       push    ebp
+00000627 89E5                     mov     ebp,esp
+
+..\lib\mem.h 46: $push    eax
+00000629 50                       push    eax
+
+..\lib\mem.h 47: $push    ebx
+0000062A 53                       push    ebx
+
+..\lib\mem.h 48: $push    ecx
+0000062B 51                       push    ecx
+
+..\lib\mem.h 49: $mov     eax, 68
+0000062C B844000000               mov     eax,44h
+
+..\lib\mem.h 50: $mov     ebx, 13
+00000631 BB0D000000               mov     ebx,0Dh
+
+..\lib\mem.h 51: $mov     ecx, mptr
+00000636 8B4D08                   mov     ecx,[ebp+8]
+
+..\lib\mem.h 52: $test    ecx, ecx
+00000639 85C9                     test    ecx,ecx
+
+..\lib\mem.h 53: $jz      end0
+0000063B 7402                     je      63Fh
+
+..\lib\mem.h 54: $int     0x40
+0000063D CD40                     int     40h
+
+..\lib\mem.h 56: $pop     ecx
+0000063F 59                       pop     ecx
+
+..\lib\mem.h 57: $pop     ebx
+00000640 5B                       pop     ebx
+
+..\lib\mem.h 58: $pop     eax
+00000641 58                       pop     eax
+
+..\lib\mem.h 59: return 0;
+00000642 31C0                     xor     eax,eax
+00000644 5D                       pop     ebp
+00000645 C20400                   ret     4
+
+..\lib\dll.h 2: char a_libdir[43]  = "/sys/lib/\0";
+00000648 2F7379732F6C69622F000000 db      '/sys/lib/',0,0,0
+00000654 000000000000000000000000 db      0,0,0,0,0,0,0,0,0,0,0,0
+00000660 000000000000000000000000 db      0,0,0,0,0,0,0,0,0,0,0,0
+0000066C 00000000000000           db      0,0,0,0,0,0,0
+
+..\lib\dll.h 6: int dll_Load(dword import_table)
+00000673 55                       push    ebp
+00000674 89E5                     mov     ebp,esp
+
+..\lib\dll.h 8: $mov     esi, import_table
+00000676 8B7508                   mov     esi,[ebp+8]
+
+..\lib\dll.h 9: @next_lib:    $mov     edx, DSDWORD[esi]
+00000679 8B16                     mov     edx,[esi]
+
+..\lib\dll.h 10: $or      edx,edx
+0000067B 0BD2                     or      edx,edx
+
+..\lib\dll.h 11: $jz      exit_
+0000067D 744B                     je      6CAh
+
+..\lib\dll.h 12: $push    esi
+0000067F 56                       push    esi
+
+..\lib\dll.h 13: $mov     esi,DSDWORD[esi+4]
+00000680 8B7604                   mov     esi,[esi+4]
+
+..\lib\dll.h 14: $mov     edi,#a_libdir
+00000683 BF48060000               mov     edi,648h
+
+..\lib\dll.h 16: $push    edi
+00000688 57                       push    edi
+
+..\lib\dll.h 17: $push    esi
+00000689 56                       push    esi
+
+..\lib\dll.h 18: EAX=strlen(#a_libdir);
+0000068A BF48060000               mov     edi,648h
+0000068F E88B200000               call    271Fh
+
+..\lib\dll.h 19: $pop     esi
+00000694 5E                       pop     esi
+
+..\lib\dll.h 20: $pop     edi
+00000695 5F                       pop     edi
+
+..\lib\dll.h 21: $add     edi, eax //9
+00000696 03F8                     add     edi,eax
+
+..\lib\dll.h 23: @loc01: $lodsb
+00000698 AC                       lodsb
+
+..\lib\dll.h 24: $stosb
+00000699 AA                       stosb
+
+..\lib\dll.h 25: $or      al,al
+0000069A 0AC0                     or      al,al
+
+..\lib\dll.h 26: $jnz     loc01
+0000069C 75FA                     jne     698h
+
+..\lib\dll.h 33: $mov     eax, 68
+0000069E B844000000               mov     eax,44h
+
+..\lib\dll.h 34: $mov     ebx, 19
+000006A3 BB13000000               mov     ebx,13h
+
+..\lib\dll.h 35: $mov     ecx,#a_libdir
+000006A8 B948060000               mov     ecx,648h
+
+..\lib\dll.h 36: $int     0x40
+000006AD CD40                     int     40h
+
+..\lib\dll.h 38: $or      eax,eax
+000006AF 0BC0                     or      eax,eax
+
+..\lib\dll.h 39: $jz      fail
+000006B1 741F                     je      6D2h
+
+..\lib\dll.h 41: dll_Link(EAX, EDX);
+000006B3 50                       push    eax
+000006B4 52                       push    edx
+000006B5 E825000000               call    6DFh
+
+..\lib\dll.h 42: $push    eax
+000006BA 50                       push    eax
+
+..\lib\dll.h 43: $mov     eax, DSDWORD [eax]
+000006BB 8B00                     mov     eax,[eax]
+
+..\lib\dll.h 44: $cmp     DSDWORD [eax], 'lib_'
+000006BD 81385F62696C             cmp     dword ptr [eax],6C69625Fh
+
+..\lib\dll.h 45: $pop     eax
+000006C3 58                       pop     eax
+
+..\lib\dll.h 54: $pop     esi
+000006C4 5E                       pop     esi
+
+..\lib\dll.h 55: $add     esi,8
+000006C5 83C608                   add     esi,8
+
+..\lib\dll.h 56: $jmp     next_lib
+000006C8 EBAF                     jmp     short 679h
+
+..\lib\dll.h 57: @exit_:        $xor     eax,eax
+000006CA 33C0                     xor     eax,eax
+
+..\lib\dll.h 58: return 0;
+000006CC 31C0                     xor     eax,eax
+000006CE 5D                       pop     ebp
+000006CF C20400                   ret     4
+
+..\lib\dll.h 59: @fail:        $add     esp,4
+000006D2 83C404                   add     esp,4
+
+..\lib\dll.h 60: $xor     eax,eax
+000006D5 33C0                     xor     eax,eax
+
+..\lib\dll.h 61: $inc     eax
+000006D7 40                       inc     eax
+
+..\lib\dll.h 62: return -1;
+000006D8 83C8FF                   or      eax,0FFFFFFFFh
+000006DB 5D                       pop     ebp
+000006DC C20400                   ret     4
+
+..\lib\dll.h 66: void dll_Link(dword exp, imp)
+000006DF 55                       push    ebp
+000006E0 89E5                     mov     ebp,esp
+
+..\lib\dll.h 68: $push    eax
+000006E2 50                       push    eax
+
+..\lib\dll.h 69: $mov     esi, imp
+000006E3 8B7508                   mov     esi,[ebp+8]
+
+..\lib\dll.h 70: $test    esi, esi
+000006E6 85F6                     test    esi,esi
+
+..\lib\dll.h 71: $jz      done
+000006E8 741F                     je      709h
+
+..\lib\dll.h 72: @next:        $lodsd
+000006EA AD                       lodsd 
+
+..\lib\dll.h 73: $test    eax,eax
+000006EB 85C0                     test    eax,eax
+
+..\lib\dll.h 74: $jz      done
+000006ED 741A                     je      709h
+
+..\lib\dll.h 77: dll_GetProcAddress(exp,EAX);
+000006EF FF750C                   push    dword ptr [ebp+0Ch]
+000006F2 50                       push    eax
+000006F3 E839000000               call    731h
+
+..\lib\dll.h 78: $or      eax,eax
+000006F8 0BC0                     or      eax,eax
+
+..\lib\dll.h 79: $jz      loc03
+000006FA 7405                     je      701h
+
+..\lib\dll.h 81: $mov     DSDWORD[esi-4],eax
+000006FC 8946FC                   mov     [esi-4],eax
+
+..\lib\dll.h 82: $jmp     next
+000006FF EBE9                     jmp     short 6EAh
+
+..\lib\dll.h 84: $mov     DSDWORD[esp],0
+00000701 3EC7042400000000         mov     dword ptr ds:[esp],0
+
+..\lib\dll.h 85: @done:        $pop     eax
+00000709 58                       pop     eax
+0000070A 5D                       pop     ebp
+0000070B C20800                   ret     8
+
+..\lib\dll.h 89: void dll_Init(dword dllentry)
+0000070E 55                       push    ebp
+0000070F 89E5                     mov     ebp,esp
+
+..\lib\dll.h 91: $pushad
+00000711 60                       pushad 
+
+..\lib\dll.h 92: EAX=#mem_Alloc;
+00000712 B8ED050000               mov     eax,5EDh
+
+..\lib\dll.h 93: EBX=#mem_Free;
+00000717 BB26060000               mov     ebx,626h
+
+..\lib\dll.h 94: ECX=#mem_ReAlloc;
+0000071C B907060000               mov     ecx,607h
+
+..\lib\dll.h 95: EDX=#dll_Load;
+00000721 BA73060000               mov     edx,673h
+
+..\lib\dll.h 96: DSDWORD [dllentry+4] stdcall ();
+00000726 8B7508                   mov     esi,[ebp+8]
+00000729 FF5604                   call    dword ptr [esi+4]
+
+..\lib\dll.h 97: $popad
+0000072C 61                       popad 
+0000072D 5D                       pop     ebp
+0000072E C20400                   ret     4
+
+..\lib\dll.h 101: dword dll_GetProcAddress(dword exp, sz_name)
+00000731 55                       push    ebp
+00000732 89E5                     mov     ebp,esp
+
+..\lib\dll.h 103: $push esi
+00000734 56                       push    esi
+
+..\lib\dll.h 104: $mov     edx, exp
+00000735 8B550C                   mov     edx,[ebp+0Ch]
+
+..\lib\dll.h 105: $xor     eax,eax
+00000738 33C0                     xor     eax,eax
+
+..\lib\dll.h 106: @next:        $or      edx,edx
+0000073A 0BD2                     or      edx,edx
+
+..\lib\dll.h 107: $jz      end_
+0000073C 741B                     je      759h
+
+..\lib\dll.h 108: $cmp     edx,0
+0000073E 83FA00                   cmp     edx,0
+
+..\lib\dll.h 109: $jz      end_
+00000741 7416                     je      759h
+
+..\lib\dll.h 110: strcmp(DSDWORD[EDX],sz_name);
+00000743 8B32                     mov     esi,[edx]
+00000745 8B7D08                   mov     edi,[ebp+8]
+00000748 E8B11E0000               call    25FEh
+
+..\lib\dll.h 111: $test    eax,eax
+0000074D 85C0                     test    eax,eax
+
+..\lib\dll.h 112: $jz      ok
+0000074F 7405                     je      756h
+
+..\lib\dll.h 113: $add     edx,8
+00000751 83C208                   add     edx,8
+
+..\lib\dll.h 114: $jmp     next
+00000754 EBE4                     jmp     short 73Ah
+
+..\lib\dll.h 116: $mov     eax, DSDWORD[edx+4]
+00000756 8B4204                   mov     eax,[edx+4]
+
+..\lib\dll.h 118: $pop  esi
+00000759 5E                       pop     esi
+
+..\lib\dll.h 119: return EAX;
+0000075A 5D                       pop     ebp
+0000075B C20800                   ret     8
+
+..\lib\dll.h 123: int load_dll2(dword dllname, import_table, byte need_init)
+0000075E 55                       push    ebp
+0000075F 89E5                     mov     ebp,esp
+
+..\lib\dll.h 127: $mov     eax, 68
+00000761 B844000000               mov     eax,44h
+
+..\lib\dll.h 128: $mov     ebx, 19
+00000766 BB13000000               mov     ebx,13h
+
+..\lib\dll.h 129: ECX=dllname;
+0000076B 8B4D10                   mov     ecx,[ebp+10h]
+
+..\lib\dll.h 130: $int     0x40
+0000076E CD40                     int     40h
+
+..\lib\dll.h 131: $test    eax, eax
+00000770 85C0                     test    eax,eax
+
+..\lib\dll.h 132: $jz      exit01
+00000772 7442                     je      7B6h
+
+..\lib\dll.h 135: $mov     edx,eax
+00000774 89C2                     mov     edx,eax
+
+..\lib\dll.h 136: ESI=import_table;
+00000776 8B750C                   mov     esi,[ebp+0Ch]
+
+..\lib\dll.h 139: $lodsd
+00000779 AD                       lodsd 
+
+..\lib\dll.h 140: $test    eax,eax
+0000077A 85C0                     test    eax,eax
+
+..\lib\dll.h 141: $jz      import_done01
+0000077C 7426                     je      7A4h
+
+..\lib\dll.h 142: $push    edx
+0000077E 52                       push    edx
+
+..\lib\dll.h 144: $mov     ebx,DSDWORD[EDX]
+0000077F 8B1A                     mov     ebx,[edx]
+
+..\lib\dll.h 145: $test    ebx, ebx
+00000781 85DB                     test    ebx,ebx
+
+..\lib\dll.h 146: $jz      exit01
+00000783 7431                     je      7B6h
+
+..\lib\dll.h 147: $push    eax
+00000785 50                       push    eax
+
+..\lib\dll.h 149: $mov     cl,DSBYTE[EAX];
+00000786 8A08                     mov     cl,[eax]
+
+..\lib\dll.h 150: $cmp     cl,DSBYTE[EBX];
+00000788 3A0B                     cmp     cl,[ebx]
+
+..\lib\dll.h 151: $jnz     import_find_next01
+0000078A 7508                     jne     794h
+
+..\lib\dll.h 152: $test    cl,cl
+0000078C 84C9                     test    cl,cl
+
+..\lib\dll.h 153: $jz      import_found01
+0000078E 740A                     je      79Ah
+
+..\lib\dll.h 154: $inc     eax
+00000790 40                       inc     eax
+
+..\lib\dll.h 155: $inc     ebx
+00000791 43                       inc     ebx
+
+..\lib\dll.h 156: $jmp     nex101
+00000792 EBF2                     jmp     short 786h
+
+..\lib\dll.h 158: $pop     eax
+00000794 58                       pop     eax
+
+..\lib\dll.h 159: $add     edx, 8
+00000795 83C208                   add     edx,8
+
+..\lib\dll.h 160: $jmp     import_find01
+00000798 EBE5                     jmp     short 77Fh
+
+..\lib\dll.h 162: $pop     eax
+0000079A 58                       pop     eax
+
+..\lib\dll.h 163: $mov     eax,DSDWORD[edx+4]
+0000079B 8B4204                   mov     eax,[edx+4]
+
+..\lib\dll.h 164: $mov     DSDWORD[esi-4],eax
+0000079E 8946FC                   mov     [esi-4],eax
+
+..\lib\dll.h 165: $pop     edx
+000007A1 5A                       pop     edx
+
+..\lib\dll.h 167: $jmp     import_loop01
+000007A2 EBD5                     jmp     short 779h
+
+..\lib\dll.h 169: IF (need_init) dll_Init(EDX);
+000007A4 807D0800                 cmp     byte ptr [ebp+8],0
+000007A8 7406                     je      7B0h
+000007AA 52                       push    edx
+000007AB E85EFFFFFF               call    70Eh
+
+..\lib\dll.h 170: return 0;
+000007B0 31C0                     xor     eax,eax
+000007B2 5D                       pop     ebp
+000007B3 C20C00                   ret     0Ch
+
+..\lib\dll.h 172: return -1;
+000007B6 83C8FF                   or      eax,0FFFFFFFFh
+000007B9 5D                       pop     ebp
+000007BA C20C00                   ret     0Ch
+000007BD 0000                     add     [eax],al
+000007BF 00C4                     add     ah,al
+
+..\lib\lib.obj\box_lib.h 2: dword boxlib = #aEdit_box_lib;
+000007C0 C4070000                 dd      7C4h
+
+..\lib\lib.obj\box_lib.h 3: char aEdit_box_lib[22]="/sys/lib/box_lib.obj\0";
+000007C4 2F7379732F6C69622F626F78 db      '/sys/lib/box'
+000007D0 5F6C69622E6F626A00000000 db      '_lib.obj',0,0,0,0
+
+..\lib\lib.obj\box_lib.h 5: dword box_lib_init   = #aboxlib_init;
+000007DC 48080000                 dd      848h
+
+..\lib\lib.obj\box_lib.h 7: dword edit_box_draw  = #aEdit_box_draw;
+000007E0 14080000                 dd      814h
+
+..\lib\lib.obj\box_lib.h 8: dword edit_box_key   = #aEdit_box_key;
+000007E4 1E080000                 dd      81Eh
+
+..\lib\lib.obj\box_lib.h 9: dword edit_box_mouse = #aEdit_box_mouse;
+000007E8 2C080000                 dd      82Ch
+
+..\lib\lib.obj\box_lib.h 10: dword version_ed     = #aVersion_ed;
+000007EC 3C080000                 dd      83Ch
+
+..\lib\lib.obj\box_lib.h 12: dword scrollbar_v_draw  = #aScrollbar_v_draw;
+000007F0 52080000                 dd      852h
+
+..\lib\lib.obj\box_lib.h 13: dword scrollbar_v_mouse = #aScrollbar_v_mouse;
+000007F4 64080000                 dd      864h
+
+..\lib\lib.obj\box_lib.h 14: dword scrollbar_h_draw  = #aScrollbar_h_draw;
+000007F8 77080000                 dd      877h
+
+..\lib\lib.obj\box_lib.h 15: dword scrollbar_h_mouse = #aScrollbar_h_mouse;
+000007FC 89080000                 dd      889h
+
+..\lib\lib.obj\box_lib.h 16: dword version_scrollbar = #aVersion_scrollbar;
+00000800 9C080000                 dd      89Ch
+
+..\lib\lib.obj\box_lib.h 18: dword PathShow_prepare = #aPathShow_prepare;
+00000804 0B090000                 dd      90Bh
+
+..\lib\lib.obj\box_lib.h 19: dword PathShow_draw    = #aPathShow_draw;
+00000808 1D090000                 dd      91Dh
+
+..\lib\lib.obj\box_lib.h 21: dword  am__ = 0x0;
+0000080C 00000000                 dd      0
+
+..\lib\lib.obj\box_lib.h 22: dword  bm__ = 0x0;
+00000810 00000000                 dd      0
+
+..\lib\lib.obj\box_lib.h 24: char aEdit_box_draw [9]     = "edit_box\0";
+00000814 656469745F626F780000     db      'edit_box',0,0
+
+..\lib\lib.obj\box_lib.h 25: char aEdit_box_key  [13]    = "edit_box_key\0";
+0000081E 656469745F626F785F6B6579 db      'edit_box_key'
+0000082A 0000                     db      0,0
+
+..\lib\lib.obj\box_lib.h 26: char aEdit_box_mouse[15]    = "edit_box_mouse\0";
+0000082C 656469745F626F785F6D6F75 db      'edit_box_mou'
+00000838 73650000                 db      'se',0,0
+
+..\lib\lib.obj\box_lib.h 27: char aVersion_ed    [11]    = "version_ed\0";
+0000083C 76657273696F6E5F65640000 db      'version_ed',0,0
+
+..\lib\lib.obj\box_lib.h 29: char aboxlib_init[9]        = "lib_init\0";
+00000848 6C69625F696E69740000     db      'lib_init',0,0
+
+..\lib\lib.obj\box_lib.h 30: char aScrollbar_v_draw [17] = "scrollbar_v_draw\0";
+00000852 7363726F6C6C6261725F765F db      'scrollbar_v_'
+0000085E 647261770000             db      'draw',0,0
+
+..\lib\lib.obj\box_lib.h 31: char aScrollbar_v_mouse[18] = "scrollbar_v_mouse\0";
+00000864 7363726F6C6C6261725F765F db      'scrollbar_v_'
+00000870 6D6F7573650000           db      'mouse',0,0
+
+..\lib\lib.obj\box_lib.h 32: char aScrollbar_h_draw [17] = "scrollbar_h_draw\0";
+00000877 7363726F6C6C6261725F685F db      'scrollbar_h_'
+00000883 647261770000             db      'draw',0,0
+
+..\lib\lib.obj\box_lib.h 33: char aScrollbar_h_mouse[18] = "scrollbar_h_mouse\0";
+00000889 7363726F6C6C6261725F685F db      'scrollbar_h_'
+00000895 6D6F7573650000           db      'mouse',0,0
+
+..\lib\lib.obj\box_lib.h 34: char aVersion_scrollbar[18] = "version_scrollbar\0";
+0000089C 76657273696F6E5F7363726F db      'version_scro'
+000008A8 6C6C6261720000           db      'llbar',0,0
+
+..\lib\lib.obj\box_lib.h 36: char aCheck_box_draw   [15] = "check_box_draw\0";
+000008AF 636865636B5F626F785F6472 db      'check_box_dr'
+000008BB 61770000                 db      'aw',0,0
+
+..\lib\lib.obj\box_lib.h 37: char aCheck_box_mouse  [16] = "check_box_mouse\0";
+000008BF 636865636B5F626F785F6D6F db      'check_box_mo'
+000008CB 7573650000               db      'use',0,0
+
+..\lib\lib.obj\box_lib.h 38: char aVersion_ch       [11] = "version_ch\0";
+000008D0 76657273696F6E5F63680000 db      'version_ch',0,0
+
+..\lib\lib.obj\box_lib.h 40: char aOption_box_draw  [16] = "option_box_draw\0";
+000008DC 6F7074696F6E5F626F785F64 db      'option_box_d'
+000008E8 7261770000               db      'raw',0,0
+
+..\lib\lib.obj\box_lib.h 41: char aOption_box_mouse [17] = "option_box_mouse\0";
+000008ED 6F7074696F6E5F626F785F6D db      'option_box_m'
+000008F9 6F7573650000             db      'ouse',0,0
+
+..\lib\lib.obj\box_lib.h 42: char aVersion_op       [11] = "version_op\0" ;
+000008FF 76657273696F6E5F6F700000 db      'version_op',0,0
+
+..\lib\lib.obj\box_lib.h 44: char aPathShow_prepare [17] = "PathShow_prepare\0";
+0000090B 5061746853686F775F707265 db      'PathShow_pre'
+00000917 706172650000             db      'pare',0,0
+
+..\lib\lib.obj\box_lib.h 45: char aPathShow_draw    [14] = "PathShow_draw\0";
+0000091D 5061746853686F775F647261 db      'PathShow_dra'
+00000929 770000                   db      'w',0,0
+
+..\lib\lib.obj\libio_lib.h 4: dword libio = #alibio;
+0000092C 30090000                 dd      930h
+
+..\lib\lib.obj\libio_lib.h 5: char alibio[21] = "/sys/lib/libio.obj\0"; //"libio.obj\0";
+00000930 2F7379732F6C69622F6C6962 db      '/sys/lib/lib'
+0000093C 696F2E6F626A000000000000 db      'io.obj',0,0,0,0,0,0
+
+..\lib\lib.obj\libio_lib.h 7: dword libio_init = #alibio_init;
+00000948 64090000                 dd      964h
+
+..\lib\lib.obj\libio_lib.h 8: dword file_size  = #afile_size;
+0000094C 6E090000                 dd      96Eh
+
+..\lib\lib.obj\libio_lib.h 9: dword file_open = #afile_open;
+00000950 79090000                 dd      979h
+
+..\lib\lib.obj\libio_lib.h 10: dword file_read  = #afile_read;
+00000954 85090000                 dd      985h
+
+..\lib\lib.obj\libio_lib.h 11: dword file_close = #afile_close;
+00000958 90090000                 dd      990h
+
+..\lib\lib.obj\libio_lib.h 13: dword  am2__ = 0x0;
+0000095C 00000000                 dd      0
+
+..\lib\lib.obj\libio_lib.h 14: dword  bm2__ = 0x0;
+00000960 00000000                 dd      0
+
+..\lib\lib.obj\libio_lib.h 18: char alibio_init[9] = "lib_init\0";
+00000964 6C69625F696E69740000     db      'lib_init',0,0
+
+..\lib\lib.obj\libio_lib.h 19: char afile_size[11]  = "file_size\0";
+0000096E 66696C655F73697A650000   db      'file_size',0,0
+
+..\lib\lib.obj\libio_lib.h 20: char afile_open[12] = "file_open\0";
+00000979 66696C655F6F70656E000000 db      'file_open',0,0,0
+
+..\lib\lib.obj\libio_lib.h 21: char afile_read[11]  = "file_read\0";
+00000985 66696C655F726561640000   db      'file_read',0,0
+
+..\lib\lib.obj\libio_lib.h 22: char afile_close[12] = "file_close\0";
+00000990 66696C655F636C6F73650000 db      'file_close',0,0
+
+..\lib\lib.obj\libimg_lib.h 4: dword libimg = #alibimg;
+0000099C A0090000                 dd      9A0h
+
+..\lib\lib.obj\libimg_lib.h 5: char alibimg[21] = "/sys/lib/libimg.obj\0";
+000009A0 2F7379732F6C69622F6C6962 db      '/sys/lib/lib'
+000009AC 696D672E6F626A0000000000 db      'img.obj',0,0,0,0,0
+
+..\lib\lib.obj\libimg_lib.h 7: dword libimg_init = #alibimg_init;
+000009B8 D8090000                 dd      9D8h
+
+..\lib\lib.obj\libimg_lib.h 8: dword img_is_img  = #aimg_is_img;
+000009BC E2090000                 dd      9E2h
+
+..\lib\lib.obj\libimg_lib.h 9: dword img_to_rgb2 = #aimg_to_rgb2;
+000009C0 EE090000                 dd      9EEh
+
+..\lib\lib.obj\libimg_lib.h 10: dword img_decode  = #aimg_decode;
+000009C4 FB090000                 dd      9FBh
+
+..\lib\lib.obj\libimg_lib.h 11: dword img_destroy = #aimg_destroy;
+000009C8 070A0000                 dd      0A07h
+
+..\lib\lib.obj\libimg_lib.h 12: dword img_draw    = #aimg_draw;
+000009CC 140A0000                 dd      0A14h
+
+..\lib\lib.obj\libimg_lib.h 16: dword  am1__ = 0x0;
+000009D0 00000000                 dd      0
+
+..\lib\lib.obj\libimg_lib.h 17: dword  bm1__ = 0x0;
+000009D4 00000000                 dd      0
+
+..\lib\lib.obj\libimg_lib.h 20: char alibimg_init[9] = "lib_init\0";
+000009D8 6C69625F696E69740000     db      'lib_init',0,0
+
+..\lib\lib.obj\libimg_lib.h 21: char aimg_is_img[11]  = "img_is_img\0";
+000009E2 696D675F69735F696D670000 db      'img_is_img',0,0
+
+..\lib\lib.obj\libimg_lib.h 22: char aimg_to_rgb2[12] = "img_to_rgb2\0";
+000009EE 696D675F746F5F7267623200 db      'img_to_rgb2',0
+000009FA 00                       db      0
+
+..\lib\lib.obj\libimg_lib.h 23: char aimg_decode[11]  = "img_decode\0";
+000009FB 696D675F6465636F64650000 db      'img_decode',0,0
+
+..\lib\lib.obj\libimg_lib.h 24: char aimg_destroy[12] = "img_destroy\0";
+00000A07 696D675F64657374726F7900 db      'img_destroy',0
+00000A13 00                       db      0
+
+..\lib\lib.obj\libimg_lib.h 25: char aimg_draw[9]    = "img_draw\0";
+00000A14 696D675F647261770000     db      'img_draw',0,0
+
+..\lib\lib.obj\libimg_lib.h 31: dword load_image(dword filename)
+00000A1E 55                       push    ebp
+00000A1F 89E5                     mov     ebp,esp
+00000A21 6A00                     push    0
+00000A23 6A00                     push    0
+00000A25 6A00                     push    0
+00000A27 6A00                     push    0
+00000A29 83EC28                   sub     esp,28h
+
+..\lib\lib.obj\libimg_lib.h 40: $and     img_data, 0
+00000A2C 8365FC00                 and     dword ptr [ebp-4],0
+
+..\lib\lib.obj\libimg_lib.h 44: file_open stdcall (filename, O_READ);
+00000A30 6A01                     push    1
+00000A32 FF7508                   push    dword ptr [ebp+8]
+00000A35 FF1550090000             call    dword ptr [950h]
+
+..\lib\lib.obj\libimg_lib.h 45: $or      eax, eax
+00000A3B 0BC0                     or      eax,eax
+
+..\lib\lib.obj\libimg_lib.h 46: $jnz      loc05
+00000A3D 7507                     jne     0A46h
+
+..\lib\lib.obj\libimg_lib.h 47: $stc
+00000A3F F9                       stc
+
+..\lib\lib.obj\libimg_lib.h 48: return 0;
+00000A40 31C0                     xor     eax,eax
+00000A42 C9                       leave
+00000A43 C20400                   ret     4
+
+..\lib\lib.obj\libimg_lib.h 50: $mov     fh, eax
+00000A46 8945F4                   mov     [ebp-0Ch],eax
+
+..\lib\lib.obj\libimg_lib.h 52: file_size stdcall (filename);
+00000A49 FF7508                   push    dword ptr [ebp+8]
+00000A4C FF154C090000             call    dword ptr [94Ch]
+
+..\lib\lib.obj\libimg_lib.h 53: $mov     img_data_len, ebx
+00000A52 895DF8                   mov     [ebp-8],ebx
+
+..\lib\lib.obj\libimg_lib.h 55: mem_Alloc(EBX);
+00000A55 53                       push    ebx
+00000A56 E892FBFFFF               call    5EDh
+
+..\lib\lib.obj\libimg_lib.h 57: $test    eax, eax
+00000A5B 85C0                     test    eax,eax
+
+..\lib\lib.obj\libimg_lib.h 58: $jz      error_close
+00000A5D 7468                     je      0AC7h
+
+..\lib\lib.obj\libimg_lib.h 59: $mov     img_data, eax
+00000A5F 8945FC                   mov     [ebp-4],eax
+
+..\lib\lib.obj\libimg_lib.h 61: file_read stdcall (fh, EAX, img_data_len);
+00000A62 FF75F8                   push    dword ptr [ebp-8]
+00000A65 50                       push    eax
+00000A66 FF75F4                   push    dword ptr [ebp-0Ch]
+00000A69 FF1554090000             call    dword ptr [954h]
+
+..\lib\lib.obj\libimg_lib.h 62: $cmp     eax, -1
+00000A6F 83F8FF                   cmp     eax,0FFFFFFFFh
+
+..\lib\lib.obj\libimg_lib.h 63: $jz      error_close
+00000A72 7453                     je      0AC7h
+
+..\lib\lib.obj\libimg_lib.h 64: $cmp     eax, img_data_len
+00000A74 3B45F8                   cmp     eax,[ebp-8]
+
+..\lib\lib.obj\libimg_lib.h 65: $jnz     error_close
+00000A77 754E                     jne     0AC7h
+
+..\lib\lib.obj\libimg_lib.h 67: file_close stdcall (fh);
+00000A79 FF75F4                   push    dword ptr [ebp-0Ch]
+00000A7C FF1558090000             call    dword ptr [958h]
+
+..\lib\lib.obj\libimg_lib.h 68: $inc     eax
+00000A82 40                       inc     eax
+
+..\lib\lib.obj\libimg_lib.h 69: $jz      error_
+00000A83 744B                     je      0AD0h
+
+..\lib\lib.obj\libimg_lib.h 75: EAX=img_data;
+00000A85 8B45FC                   mov     eax,[ebp-4]
+
+..\lib\lib.obj\libimg_lib.h 76: img_decode stdcall (EAX, img_data_len,0);
+00000A88 6A00                     push    0
+00000A8A FF75F8                   push    dword ptr [ebp-8]
+00000A8D 50                       push    eax
+00000A8E FF15C4090000             call    dword ptr [9C4h]
+
+..\lib\lib.obj\libimg_lib.h 77: $or      eax, eax
+00000A94 0BC0                     or      eax,eax
+
+..\lib\lib.obj\libimg_lib.h 78: $jz      error_
+00000A96 7438                     je      0AD0h
+
+..\lib\lib.obj\libimg_lib.h 79: $cmp     image, 0
+00000A98 837DF000                 cmp     dword ptr [ebp-10h],0
+
+..\lib\lib.obj\libimg_lib.h 80: $pushf
+00000A9C 669C                     pushf 
+
+..\lib\lib.obj\libimg_lib.h 81: $mov     image, eax
+00000A9E 8945F0                   mov     [ebp-10h],eax
+
+..\lib\lib.obj\libimg_lib.h 83: $popf
+00000AA1 669D                     popf 
+
+..\lib\lib.obj\libimg_lib.h 85: mem_Free(img_data);//free_img_data(img_data);
+00000AA3 FF75FC                   push    dword ptr [ebp-4]
+00000AA6 E87BFBFFFF               call    626h
+
+..\lib\lib.obj\libimg_lib.h 86: $clc
+00000AAB F8                       clc
+
+..\lib\lib.obj\libimg_lib.h 87: return image;
+00000AAC 8B45F0                   mov     eax,[ebp-10h]
+00000AAF C9                       leave
+00000AB0 C20400                   ret     4
+
+..\lib\lib.obj\libimg_lib.h 91: img_destroy stdcall (image);
+00000AB3 FF75F0                   push    dword ptr [ebp-10h]
+00000AB6 FF15C8090000             call    dword ptr [9C8h]
+
+..\lib\lib.obj\libimg_lib.h 92: $jmp     error_
+00000ABC E90F000000               jmp     0AD0h
+
+..\lib\lib.obj\libimg_lib.h 95: $pop     eax
+00000AC1 58                       pop     eax
+
+..\lib\lib.obj\libimg_lib.h 96: $jmp     error_
+00000AC2 E909000000               jmp     0AD0h
+
+..\lib\lib.obj\libimg_lib.h 99: file_close stdcall (fh);
+00000AC7 FF75F4                   push    dword ptr [ebp-0Ch]
+00000ACA FF1558090000             call    dword ptr [958h]
+
+..\lib\lib.obj\libimg_lib.h 101: mem_Free(img_data);
+00000AD0 FF75FC                   push    dword ptr [ebp-4]
+00000AD3 E84EFBFFFF               call    626h
+
+..\lib\lib.obj\libimg_lib.h 102: $stc
+00000AD8 F9                       stc
+
+..\lib\lib.obj\libimg_lib.h 103: return 0;
+00000AD9 31C0                     xor     eax,eax
+00000ADB C9                       leave
+00000ADC C20400                   ret     4
+00000ADF 00E4                     add     ah,ah
+
+..\lib\lib.obj\truetype.h 5: dword libtruetype = #att;
+00000AE0 E40A0000                 dd      0AE4h
+
+..\lib\lib.obj\truetype.h 7: char att[] = "/sys/lib/truetype.obj"; //"truetype.obj\0";
+00000AE4 2F7379732F6C69622F747275 db      '/sys/lib/tru'
+00000AF0 65747970652E6F626A000000 db      'etype.obj',0,0,0
+
+..\lib\lib.obj\truetype.h 9: dword truetype = #att_truetype;
+00000AFC 180B0000                 dd      0B18h
+
+..\lib\lib.obj\truetype.h 10: dword get_length = #att_get_length;
+00000B00 210B0000                 dd      0B21h
+
+..\lib\lib.obj\truetype.h 11: dword get_width  = #att_get_width;
+00000B04 2C0B0000                 dd      0B2Ch
+
+..\lib\lib.obj\truetype.h 12: dword text_out = #att_text_out;
+00000B08 360B0000                 dd      0B36h
+
+..\lib\lib.obj\truetype.h 13: dword init_font = #att_init_font;
+00000B0C 3F0B0000                 dd      0B3Fh
+
+..\lib\lib.obj\truetype.h 15: dword am3__ = 0x0;
+00000B10 00000000                 dd      0
+
+..\lib\lib.obj\truetype.h 16: dword bm3__ = 0x0;
+00000B14 00000000                 dd      0
+
+..\lib\lib.obj\truetype.h 20: char att_truetype[] = "truetype";
+00000B18 747275657479706500       db      'truetype',0
+
+..\lib\lib.obj\truetype.h 21: char att_get_length[] = "get_length";
+00000B21 6765745F6C656E67746800   db      'get_length',0
+
+..\lib\lib.obj\truetype.h 22: char att_get_width[] = "get_width";
+00000B2C 6765745F776964746800     db      'get_width',0
+
+..\lib\lib.obj\truetype.h 23: char att_text_out[] = "text_out";
+00000B36 746578745F6F757400       db      'text_out',0
+
+..\lib\lib.obj\truetype.h 24: char att_init_font[] = "init_font";
+00000B3F 696E69745F666F6E7400     db      'init_font',0
+
+main.c 23: unsigned char logo[LOGOW*LOGOH*3]= FROM "img\logo.raw";
+00000B49 000000000000000000000000 db      0,0,0,0,0,0,0,0,0,0,0,0
+00000B55 0200003D1700792C00933200 db      2,0,0,3Dh,17h,0,79h,2Ch,0,93h,32h,0
+00000B61 933200792A003D1600020000 db      93h,32h,0,79h,2Ah,0,3Dh,16h,0,2,0,0
+00000B6D 000000000000000000000000 db      0,0,0,0,0,0,0,0,0,0,0,0
+00000B79 000000000000000000391600 db      0,0,0,0,0,0,0,0,0,39h,16h,0
+00000B85 B44300D44C00DE6E23EAA070 db      0B4h,43h,0,0D4h,4Ch,0,0DEh,6Eh,23h,0EAh,0A0h,70h
+00000B91 ECAA7EE3884ED75A03B34000 db      0ECh,0AAh,7Eh,0E3h,88h,4Eh,0D7h,5Ah,3,0B3h,40h,0
+00000B9D 391500000000000000000000 db      39h,15h,0,0,0,0,0,0,0,0,0,0
+00000BA9 000000000000532100CE5000 db      0,0,0,0,0,0,53h,21h,0,0CEh,50h,0
+00000BB5 D75200E68C52EEA87AEDA270 db      0D7h,52h,0,0E6h,8Ch,52h,0EEh,0A8h,7Ah,0EDh,0A2h,70h
+00000BC1 EC9F6CEEA676EBA173DB671C db      0ECh,9Fh,6Ch,0EEh,0A6h,76h,0EBh,0A1h,73h,0DBh,67h,1Ch
+00000BCD CE4E00542100000000000000 db      0CEh,4Eh,0,54h,21h,0,0,0,0,0,0,0
+00000BD9 000000391700D05403D2530E db      0,0,0,39h,17h,0,0D0h,54h,3,0D2h,53h,0Eh
+00000BE5 D05D11D47432E77D38EB8A4B db      0D0h,5Dh,11h,0D4h,74h,32h,0E7h,7Dh,38h,0EBh,8Ah,4Bh
+00000BF1 DF7D3CDF732CDF7025DE7936 db      0DFh,7Dh,3Ch,0DFh,73h,2Ch,0DFh,70h,25h,0DEh,79h,36h
+00000BFD D04C08D154033A1700000000 db      0D0h,4Ch,8,0D1h,54h,3,3Ah,17h,0,0,0,0
+00000C09 020000B64B06D95A08D54E0E db      2,0,0,0B6h,4Bh,6,0D9h,5Ah,8,0D5h,4Eh,0Eh
+00000C15 E5FFFFECFFFFDF8850E87120 db      0E5h,0FFh,0FFh,0ECh,0FFh,0FFh,0DFh,88h,50h,0E8h,71h,20h
+00000C21 E0691AEDF8FFEBFFFFE8FBFF db      0E0h,69h,1Ah,0EDh,0F8h,0FFh,0EBh,0FFh,0FFh,0E8h,0FBh,0FFh
+00000C2D D44708D85C0AB64B06020000 db      0D4h,47h,8,0D8h,5Ch,0Ah,0B6h,4Bh,6,2,0,0
+00000C39 3F1A01D9600EDC6B1ED74708 db      3Fh,1Ah,1,0D9h,60h,0Eh,0DCh,6Bh,1Eh,0D7h,47h,8
+00000C45 E4E3E4EBFFFFE8F9F9E17F42 db      0E4h,0E3h,0E4h,0EBh,0FFh,0FFh,0E8h,0F9h,0F9h,0E1h,7Fh,42h
+00000C51 E34900EEEEF0FFFFFFE5E9ED db      0E3h,49h,0,0EEh,0EEh,0F0h,0FFh,0FFh,0FFh,0E5h,0E9h,0EDh
+00000C5D D73D00DE6614D95F0F3F1A01 db      0D7h,3Dh,0,0DEh,66h,14h,0D9h,5Fh,0Fh,3Fh,1Ah,1
+00000C69 7E3606DC651ADF6F24DB4D08 db      7Eh,36h,6,0DCh,65h,1Ah,0DFh,6Fh,24h,0DBh,4Dh,8
+00000C75 E6E5E3E9F0F7EDF6FDECF9F9 db      0E6h,0E5h,0E3h,0E9h,0F0h,0F7h,0EDh,0F6h,0FDh,0ECh,0F9h,0F9h
+00000C81 E4630EEEDFD5FFFFFFEAE6E7 db      0E4h,63h,0Eh,0EEh,0DFh,0D5h,0FFh,0FFh,0FFh,0EAh,0E6h,0E7h
+00000C8D DB4500E16A1CDE65167E3607 db      0DBh,45h,0,0E1h,6Ah,1Ch,0DEh,65h,16h,7Eh,36h,7
+00000C99 9A450DDE6B20E27127DB5208 db      9Ah,45h,0Dh,0DEh,6Bh,20h,0E2h,71h,27h,0DBh,52h,8
+00000CA5 EBE9E8FFFFFFF0EAE5F0FEFF db      0EBh,0E9h,0E8h,0FFh,0FFh,0FFh,0F0h,0EAh,0E5h,0F0h,0FEh,0FFh
+00000CB1 F0FEFFEFD0BCFFFFFFEAEBEA db      0F0h,0FEh,0FFh,0EFh,0D0h,0BCh,0FFh,0FFh,0FFh,0EAh,0EBh,0EAh
+00000CBD DC4B00E27124DF691E9C470D db      0DCh,4Bh,0,0E2h,71h,24h,0DFh,69h,1Eh,9Ch,47h,0Dh
+00000CC9 9C4610E17026E2742CDE5908 db      9Ch,46h,10h,0E1h,70h,26h,0E2h,74h,2Ch,0DEh,59h,8
+00000CD5 EBEBEBFFFFFFF0EAE7F3F8FB db      0EBh,0EBh,0EBh,0FFh,0FFh,0FFh,0F0h,0EAh,0E7h,0F3h,0F8h,0FBh
+00000CE1 F3FFFFF0EAE7FFFFFFEDEDED db      0F3h,0FFh,0FFh,0F0h,0EAh,0E7h,0FFh,0FFh,0FFh,0EDh,0EDh,0EDh
+00000CED DF5700E4752DE070269E4811 db      0DFh,57h,0,0E4h,75h,2Dh,0E0h,70h,26h,9Eh,48h,11h
+00000CF9 833B0EE0752DE27732DE5B07 db      83h,3Bh,0Eh,0E0h,75h,2Dh,0E2h,77h,32h,0DEh,5Bh,7
+00000D05 EDEBEAFFFFFFF0F9FFE77022 db      0EDh,0EBh,0EAh,0FFh,0FFh,0FFh,0F0h,0F9h,0FFh,0E7h,70h,22h
+00000D11 EFF9F9F2F9FFFFFFFFECECEC db      0EFh,0F9h,0F9h,0F2h,0F9h,0FFh,0FFh,0FFh,0FFh,0ECh,0ECh,0ECh
+00000D1D DE5D0AE37B35DF762F843C10 db      0DEh,5Dh,0Ah,0E3h,7Bh,35h,0DFh,76h,2Fh,84h,3Ch,10h
+00000D29 451E06E07733E27E39DB6110 db      45h,1Eh,6,0E0h,77h,33h,0E2h,7Eh,39h,0DBh,61h,10h
+00000D35 EBEBEBFFFFFFF2FFFFE55F04 db      0EBh,0EBh,0EBh,0FFh,0FFh,0FFh,0F2h,0FFh,0FFh,0E5h,5Fh,4
+00000D41 E7945FEEF9F9FFFFFFEDEBEB db      0E7h,94h,5Fh,0EEh,0F9h,0F9h,0FFh,0FFh,0FFh,0EDh,0EBh,0EBh
+00000D4D DE6514E57F3DE17C3A461E06 db      0DEh,65h,14h,0E5h,7Fh,3Dh,0E1h,7Ch,3Ah,46h,1Eh,6
+00000D59 020000C05E21E27F3FDA6F27 db      2,0,0,0C0h,5Eh,21h,0E2h,7Fh,3Fh,0DAh,6Fh,27h
+00000D65 EBFEFEEFFFFFEFFFFFE47D38 db      0EBh,0FEh,0FEh,0EFh,0FFh,0FFh,0EFh,0FFh,0FFh,0E4h,7Dh,38h
+00000D71 EE8846E59A67EAF9F9EAFEFE db      0EEh,88h,46h,0E5h,9Ah,67h,0EAh,0F9h,0F9h,0EAh,0FEh,0FEh
+00000D7D DB702BE38242C26226020000 db      0DBh,70h,2Bh,0E3h,82h,42h,0C2h,62h,26h,2,0,0
+00000D89 000000441F08DA7231D97B3C db      0,0,0,44h,1Fh,8,0DAh,72h,31h,0D9h,7Bh,3Ch
+00000D95 DD7431E0732AE2803EE28E57 db      0DDh,74h,31h,0E0h,73h,2Ah,0E2h,80h,3Eh,0E2h,8Eh,57h
+00000DA1 EE9E69EB9159D67333DF7734 db      0EEh,9Eh,69h,0EBh,91h,59h,0D6h,73h,33h,0DFh,77h,34h
+00000DAD DB7B3DDA7635452009000000 db      0DBh,7Bh,3Dh,0DAh,76h,35h,45h,20h,9,0,0,0
+00000DB9 000000000000632F0EDE7B3C db      0,0,0,0,0,0,63h,2Fh,0Eh,0DEh,7Bh,3Ch
+00000DC5 E48A50E6925CE89863EB9D69 db      0E4h,8Ah,50h,0E6h,92h,5Ch,0E8h,98h,63h,0EBh,9Dh,69h
+00000DD1 EEA271EDA06EE79963E6915B db      0EEh,0A2h,71h,0EDh,0A0h,6Eh,0E7h,99h,63h,0E6h,91h,5Bh
+00000DDD DD7A3C65300F000000000000 db      0DDh,7Ah,3Ch,65h,30h,0Fh,0,0,0,0,0,0
+00000DE9 000000000000000000653213 db      0,0,0,0,0,0,0,0,0,65h,32h,13h
+00000DF5 CD6D31E3844BE48D55E48F57 db      0CDh,6Dh,31h,0E3h,84h,4Bh,0E4h,8Dh,55h,0E4h,8Fh,57h
+00000E01 E48E56E38B52E18348D36F31 db      0E4h,8Eh,56h,0E3h,8Bh,52h,0E1h,83h,48h,0D3h,6Fh,31h
+00000E0D 4A240C000000000000000000 db      4Ah,24h,0Ch,0,0,0,0,0,0,0,0,0
+00000E19 000000000000000000000000 db      0,0,0,0,0,0,0,0,0,0,0,0
+00000E25 02000051280F9C5023B9622C db      2,0,0,51h,28h,0Fh,9Ch,50h,23h,0B9h,62h,2Ch
+00000E31 B05F2C964F23522A11020000 db      0B0h,5Fh,2Ch,96h,4Fh,23h,52h,2Ah,11h,2,0,0
+00000E3D 000000000000000000000000 db      0,0,0,0,0,0,0,0,0,0,0,0
+00000E49 FFFFFFFFFFFF7BAED6417BB8 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,7Bh,0AEh,0D6h,41h,7Bh,0B8h
+00000E55 3367AB3365A9335499334488 db      33h,67h,0ABh,33h,65h,0A9h,33h,54h,99h,33h,44h,88h
+00000E61 354A8D3C5A99446DA94B81B9 db      35h,4Ah,8Dh,3Ch,5Ah,99h,44h,6Dh,0A9h,4Bh,81h,0B9h
+00000E6D 7BABD3FFFFFFFFFFFFFFFFFF db      7Bh,0ABh,0D3h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000E79 FFFFFFFFFFFFDACEB5F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0DAh,0CEh,0B5h,0F6h,0EDh,0E5h
+00000E85 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00000E91 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+00000E9D DACEB5FFFFFFFFFFFFFFFFFF db      0DAh,0CEh,0B5h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000EA9 FFFFFFFFFFFFD9CDB4F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0D9h,0CDh,0B4h,0F6h,0EDh,0E5h
+00000EB5 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00000EC1 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+00000ECD D9CDB4FFFFFFFFFFFFFFFFFF db      0D9h,0CDh,0B4h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000ED9 FFFFFFFFFFFFD8CCB3F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0D8h,0CCh,0B3h,0F6h,0EDh,0E5h
+00000EE5 EB8563D6714FBC5836AC4725 db      0EBh,85h,63h,0D6h,71h,4Fh,0BCh,58h,36h,0ACh,47h,25h
+00000EF1 B14624C8512FE25F3DF5EBE1 db      0B1h,46h,24h,0C8h,51h,2Fh,0E2h,5Fh,3Dh,0F5h,0EBh,0E1h
+00000EFD D8CCB3FFFFFFFFFFFFFFFFFF db      0D8h,0CCh,0B3h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000F09 FFFFFFFFFFFFD7CAB1F8F2EC db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0D7h,0CAh,0B1h,0F8h,0F2h,0ECh
+00000F15 ECB39BD28268C9B4B19C979B db      0ECh,0B3h,9Bh,0D2h,82h,68h,0C9h,0B4h,0B1h,9Ch,97h,9Bh
+00000F21 948F93BC6148E7A188F8F0E8 db      94h,8Fh,93h,0BCh,61h,48h,0E7h,0A1h,88h,0F8h,0F0h,0E8h
+00000F2D D7CAB1FFFFFFFFFFFFFFFFFF db      0D7h,0CAh,0B1h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000F39 FFFFFFFFFFFFEAE4D7D6C9B0 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0EAh,0E4h,0D7h,0D6h,0C9h,0B0h
+00000F45 F3E7DCE4AE98BD6F55A29A9D db      0F3h,0E7h,0DCh,0E4h,0AEh,98h,0BDh,6Fh,55h,0A2h,9Ah,9Dh
+00000F51 AB5941DC9B82F3E7DAD6C9B0 db      0ABh,59h,41h,0DCh,9Bh,82h,0F3h,0E7h,0DAh,0D6h,0C9h,0B0h
+00000F5D EAE4D7FFFFFFFFFFFFFFFFFF db      0EAh,0E4h,0D7h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000F69 FFFFFFFFFFFFFFFFFFEAE3D6 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0EAh,0E3h,0D6h
+00000F75 D5C8AEF8EFE8DAA794AC4725 db      0D5h,0C8h,0AEh,0F8h,0EFh,0E8h,0DAh,0A7h,94h,0ACh,47h,25h
+00000F81 D29881F3E7DCD5C8AEEAE3D6 db      0D2h,98h,81h,0F3h,0E7h,0DCh,0D5h,0C8h,0AEh,0EAh,0E3h,0D6h
+00000F8D FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000F99 FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000FA5 E9E2D5D4C7ACF9F3EEF3E8DC db      0E9h,0E2h,0D5h,0D4h,0C7h,0ACh,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00000FB1 F5EBE1D4C7ACE9E2D5FFFFFF db      0F5h,0EBh,0E1h,0D4h,0C7h,0ACh,0E9h,0E2h,0D5h,0FFh,0FFh,0FFh
+00000FBD FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000FC9 FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000FD5 E8E2D4D3C5AAF9F3EEF3E8DC db      0E8h,0E2h,0D4h,0D3h,0C5h,0AAh,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00000FE1 F5EBE1D3C5AAE8E2D4FFFFFF db      0F5h,0EBh,0E1h,0D3h,0C5h,0AAh,0E8h,0E2h,0D4h,0FFh,0FFh,0FFh
+00000FED FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00000FF9 FFFFFFFFFFFFFFFFFFE7E1D3 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0E7h,0E1h,0D3h
+00001005 D1C3A8F8EFE8F9F3EEF3E8DC db      0D1h,0C3h,0A8h,0F8h,0EFh,0E8h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001011 F1E3D6F3E7DCD1C3A8E7E1D3 db      0F1h,0E3h,0D6h,0F3h,0E7h,0DCh,0D1h,0C3h,0A8h,0E7h,0E1h,0D3h
+0000101D FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001029 FFFFFFFFFFFFE7E0D2D0C2A6 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0E7h,0E0h,0D2h,0D0h,0C2h,0A6h
+00001035 F3E7DCF5EAE0F9F3EEF3E8DC db      0F3h,0E7h,0DCh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001041 F1E3D6EFDFCFF3E7DAD0C2A6 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0F3h,0E7h,0DAh,0D0h,0C2h,0A6h
+0000104D E7E0D2FFFFFFFFFFFFFFFFFF db      0E7h,0E0h,0D2h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001059 FFFFFFFFFFFFCEC0A4F8F2EC db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0CEh,0C0h,0A4h,0F8h,0F2h,0ECh
+00001065 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001071 F1E3D6EFDFCFEEDDCDF8F0E8 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F8h,0F0h,0E8h
+0000107D CEC0A4FFFFFFFFFFFFFFFFFF db      0CEh,0C0h,0A4h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001089 FFFFFFFFFFFFCDBEA1F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0CDh,0BEh,0A1h,0F6h,0EDh,0E5h
+00001095 7AB1CC8FBFD6B5D4E36EA6C1 db      7Ah,0B1h,0CCh,8Fh,0BFh,0D6h,0B5h,0D4h,0E3h,6Eh,0A6h,0C1h
+000010A1 6199B36098B270A7C1F5EBE1 db      61h,99h,0B3h,60h,98h,0B2h,70h,0A7h,0C1h,0F5h,0EBh,0E1h
+000010AD CDBEA1FFFFFFFFFFFFFFFFFF db      0CDh,0BEh,0A1h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000010B9 FFFFFFFFFFFFC9BA9CF6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0C9h,0BAh,9Ch,0F6h,0EDh,0E5h
+000010C5 A4C2CDB2CED9CDE0E79DBDCB db      0A4h,0C2h,0CDh,0B2h,0CEh,0D9h,0CDh,0E0h,0E7h,9Dh,0BDh,0CBh
+000010D1 94B3BF93B1BD9DBBC6F5EBE1 db      94h,0B3h,0BFh,93h,0B1h,0BDh,9Dh,0BBh,0C6h,0F5h,0EBh,0E1h
+000010DD C9BA9CFFFFFFFFFFFFFFFFFF db      0C9h,0BAh,9Ch,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000010E9 F5F5F5E8E8E8C3B393F6EDE5 db      0F5h,0F5h,0F5h,0E8h,0E8h,0E8h,0C3h,0B3h,93h,0F6h,0EDh,0E5h
+000010F5 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001101 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+0000110D C3B393E8E8E8F5F5F5FFFFFF db      0C3h,0B3h,93h,0E8h,0E8h,0E8h,0F5h,0F5h,0F5h,0FFh,0FFh,0FFh
+00001119 ECECECD2D2D259759F335296 db      0ECh,0ECh,0ECh,0D2h,0D2h,0D2h,59h,75h,9Fh,33h,52h,96h
+00001125 334488334387333A77333367 db      33h,44h,88h,33h,43h,87h,33h,3Ah,77h,33h,33h,67h
+00001131 33376B334077334B86335796 db      33h,37h,6Bh,33h,40h,77h,33h,4Bh,86h,33h,57h,96h
+0000113D 59749DD1D1D1ECECECFFFFFF db      59h,74h,9Dh,0D1h,0D1h,0D1h,0ECh,0ECh,0ECh,0FFh,0FFh,0FFh
+00001149 FFFFFFFFFFFF7BAED6417BB8 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,7Bh,0AEh,0D6h,41h,7Bh,0B8h
+00001155 3367AB3365A9335499334488 db      33h,67h,0ABh,33h,65h,0A9h,33h,54h,99h,33h,44h,88h
+00001161 354A8D3C5A99446DA94B81B9 db      35h,4Ah,8Dh,3Ch,5Ah,99h,44h,6Dh,0A9h,4Bh,81h,0B9h
+0000116D 7BABD3FFFFFFFFFFFFFFFFFF db      7Bh,0ABh,0D3h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001179 FFFFFFFFFFFFDACEB5F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0DAh,0CEh,0B5h,0F6h,0EDh,0E5h
+00001185 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001191 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+0000119D DACEB5FFFFFFFFFFFFFFFFFF db      0DAh,0CEh,0B5h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000011A9 FFFFFFFFFFFFD9CDB4F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0D9h,0CDh,0B4h,0F6h,0EDh,0E5h
+000011B5 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+000011C1 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+000011CD D9CDB4FFFFFFFFFFFFFFFFFF db      0D9h,0CDh,0B4h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000011D9 FFFFFFFFFFFFD8CCB3F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0D8h,0CCh,0B3h,0F6h,0EDh,0E5h
+000011E5 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+000011F1 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+000011FD D8CCB3FFFFFFFFFFFFFFFFFF db      0D8h,0CCh,0B3h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001209 FFFFFFFFFFFFD7CAB1F8F2EC db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0D7h,0CAh,0B1h,0F8h,0F2h,0ECh
+00001215 D5D4CE88BCD4B0D2E265A1BF db      0D5h,0D4h,0CEh,88h,0BCh,0D4h,0B0h,0D2h,0E2h,65h,0A1h,0BFh
+00001221 5894B15793B0D1D0C9F8F0E8 db      58h,94h,0B1h,57h,93h,0B0h,0D1h,0D0h,0C9h,0F8h,0F0h,0E8h
+0000122D D7CAB1FFFFFFFFFFFFFFFFFF db      0D7h,0CAh,0B1h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001239 FFFFFFFFFFFFEAE4D7D6C9B0 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0EAh,0E4h,0D7h,0D6h,0C9h,0B0h
+00001245 F3E7DCE2E1DDB5D4E36EA6C1 db      0F3h,0E7h,0DCh,0E2h,0E1h,0DDh,0B5h,0D4h,0E3h,6Eh,0A6h,0C1h
+00001251 6199B3CFCEC8F3E7DAD6C9B0 db      61h,99h,0B3h,0CFh,0CEh,0C8h,0F3h,0E7h,0DAh,0D6h,0C9h,0B0h
+0000125D EAE4D7FFFFFFFFFFFFFFFFFF db      0EAh,0E4h,0D7h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001269 FFFFFFFFFFFFFFFFFFEAE3D6 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0EAh,0E3h,0D6h
+00001275 D5C8AEF8EFE8EAEDEC9DBDCB db      0D5h,0C8h,0AEh,0F8h,0EFh,0E8h,0EAh,0EDh,0ECh,9Dh,0BDh,0CBh
+00001281 DAD7D0F3E7DCD5C8AEEAE3D6 db      0DAh,0D7h,0D0h,0F3h,0E7h,0DCh,0D5h,0C8h,0AEh,0EAh,0E3h,0D6h
+0000128D FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001299 FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000012A5 E9E2D5D4C7ACF9F3EEF3E8DC db      0E9h,0E2h,0D5h,0D4h,0C7h,0ACh,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+000012B1 F5EBE1D4C7ACE9E2D5FFFFFF db      0F5h,0EBh,0E1h,0D4h,0C7h,0ACh,0E9h,0E2h,0D5h,0FFh,0FFh,0FFh
+000012BD FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000012C9 FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000012D5 E8E2D4D3C5AAF9F3EEF3E8DC db      0E8h,0E2h,0D4h,0D3h,0C5h,0AAh,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+000012E1 F5EBE1D3C5AAE8E2D4FFFFFF db      0F5h,0EBh,0E1h,0D3h,0C5h,0AAh,0E8h,0E2h,0D4h,0FFh,0FFh,0FFh
+000012ED FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000012F9 FFFFFFFFFFFFFFFFFFE7E1D3 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0E7h,0E1h,0D3h
+00001305 D1C3A8F8EFE8F9F3EEF3E8DC db      0D1h,0C3h,0A8h,0F8h,0EFh,0E8h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001311 F1E3D6F3E7DCD1C3A8E7E1D3 db      0F1h,0E3h,0D6h,0F3h,0E7h,0DCh,0D1h,0C3h,0A8h,0E7h,0E1h,0D3h
+0000131D FFFFFFFFFFFFFFFFFFFFFFFF db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001329 FFFFFFFFFFFFE7E0D2D0C2A6 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0E7h,0E0h,0D2h,0D0h,0C2h,0A6h
+00001335 F3E7DCF5EAE0F9F3EEF3E8DC db      0F3h,0E7h,0DCh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001341 F1E3D6EFDFCFF3E7DAD0C2A6 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0F3h,0E7h,0DAh,0D0h,0C2h,0A6h
+0000134D E7E0D2FFFFFFFFFFFFFFFFFF db      0E7h,0E0h,0D2h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001359 FFFFFFFFFFFFCEC0A4F8F2EC db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0CEh,0C0h,0A4h,0F8h,0F2h,0ECh
+00001365 ECB39BD6714FBC5836AC4725 db      0ECh,0B3h,9Bh,0D6h,71h,4Fh,0BCh,58h,36h,0ACh,47h,25h
+00001371 B14624C8512FE7A188F8F0E8 db      0B1h,46h,24h,0C8h,51h,2Fh,0E7h,0A1h,88h,0F8h,0F0h,0E8h
+0000137D CEC0A4FFFFFFFFFFFFFFFFFF db      0CEh,0C0h,0A4h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+00001389 FFFFFFFFFFFFCDBEA1F6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0CDh,0BEh,0A1h,0F6h,0EDh,0E5h
+00001395 EB8563B5A9A8CCB5B1A29A9D db      0EBh,85h,63h,0B5h,0A9h,0A8h,0CCh,0B5h,0B1h,0A2h,9Ah,9Dh
+000013A1 9A9295999294E25F3DF5EBE1 db      9Ah,92h,95h,99h,92h,94h,0E2h,5Fh,3Dh,0F5h,0EBh,0E1h
+000013AD CDBEA1FFFFFFFFFFFFFFFFFF db      0CDh,0BEh,0A1h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000013B9 FFFFFFFFFFFFC9BA9CF6EDE5 db      0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0C9h,0BAh,9Ch,0F6h,0EDh,0E5h
+000013C5 EB8563D6714FBC5836AC4725 db      0EBh,85h,63h,0D6h,71h,4Fh,0BCh,58h,36h,0ACh,47h,25h
+000013D1 B14624C8512FE25F3DF5EBE1 db      0B1h,46h,24h,0C8h,51h,2Fh,0E2h,5Fh,3Dh,0F5h,0EBh,0E1h
+000013DD C9BA9CFFFFFFFFFFFFFFFFFF db      0C9h,0BAh,9Ch,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+000013E9 F5F5F5E8E8E8C3B393F6EDE5 db      0F5h,0F5h,0F5h,0E8h,0E8h,0E8h,0C3h,0B3h,93h,0F6h,0EDh,0E5h
+000013F5 EFDECFF5EAE0F9F3EEF3E8DC db      0EFh,0DEh,0CFh,0F5h,0EAh,0E0h,0F9h,0F3h,0EEh,0F3h,0E8h,0DCh
+00001401 F1E3D6EFDFCFEEDDCDF5EBE1 db      0F1h,0E3h,0D6h,0EFh,0DFh,0CFh,0EEh,0DDh,0CDh,0F5h,0EBh,0E1h
+0000140D C3B393E8E8E8F5F5F5FFFFFF db      0C3h,0B3h,93h,0E8h,0E8h,0E8h,0F5h,0F5h,0F5h,0FFh,0FFh,0FFh
+00001419 ECECECD2D2D259759F335296 db      0ECh,0ECh,0ECh,0D2h,0D2h,0D2h,59h,75h,9Fh,33h,52h,96h
+00001425 334488334387333A77333367 db      33h,44h,88h,33h,43h,87h,33h,3Ah,77h,33h,33h,67h
+00001431 33376B334077334B86335796 db      33h,37h,6Bh,33h,40h,77h,33h,4Bh,86h,33h,57h,96h
+0000143D 59749DD1D1D1ECECECFFFFFF db      59h,74h,9Dh,0D1h,0D1h,0D1h,0ECh,0ECh,0ECh,0FFh,0FFh,0FFh
+
+main.c 34: int DefineWindow(dword wtitle, wbutton)
+00001449 55                       push    ebp
+0000144A 89E5                     mov     ebp,esp
+
+main.c 36: sc.get();
+0000144C 6810510000               push    5110h
+00001451 E824ECFFFF               call    7Ah
+
+main.c 37: DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2-30, WIN_W+9, WIN_H+GetSkinHeight()+4, 0x74,0xFFFfff);
+00001456 E8FF130000               call    285Ah
+0000145B 2DF4010000               sub     eax,1F4h
+00001460 D1E8                     shr     eax,1
+00001462 50                       push    eax
+00001463 E8FD130000               call    2865h
+00001468 2D5E010000               sub     eax,15Eh
+0000146D D1E8                     shr     eax,1
+0000146F 83E81E                   sub     eax,1Eh
+00001472 50                       push    eax
+00001473 68FD010000               push    1FDh
+00001478 B85E010000               mov     eax,15Eh
+0000147D 50                       push    eax
+0000147E E8C8130000               call    284Bh
+00001483 5A                       pop     edx
+00001484 01D0                     add     eax,edx
+00001486 83C004                   add     eax,4
+00001489 50                       push    eax
+0000148A 6A74                     push    74h
+0000148C 68FFFFFF00               push    0FFFFFFh
+00001491 E8F9EBFFFF               call    8Fh
+
+main.c 38: DrawTitle("KolibriN 8.2a Setup");
+00001496 B97E160000               mov     ecx,167Eh
+0000149B E810150000               call    29B0h
+
+main.c 39: GetProcessInfo(#Form, SelfInfo);
+000014A0 BB104D0000               mov     ebx,4D10h
+000014A5 83C9FF                   or      ecx,0FFFFFFFFh
+000014A8 E87A130000               call    2827h
+
+main.c 40: if (Form.status_window>2) return 0; //rolled_up
+000014AD 803D564D000002           cmp     byte ptr [4D56h],2
+000014B4 0F8E07000000             jle     14C1h
+000014BA 31C0                     xor     eax,eax
+000014BC E987000000               jmp     1548h
+
+main.c 42: DrawBar(0, 0, Form.cwidth, BLACK_H, 0);
+000014C1 6A00                     push    0
+000014C3 6A00                     push    0
+000014C5 FF35574D0000             push    dword ptr [4D57h]
+000014CB 6A28                     push    28h
+000014CD 31D2                     xor     edx,edx
+000014CF E8D5ECFFFF               call    1A9h
+
+main.c 43: DrawBar(0, BLACK_H, Form.cwidth, Form.cheight-BLACK_H, 0xFFFfff);
+000014D4 6A00                     push    0
+000014D6 6A28                     push    28h
+000014D8 FF35574D0000             push    dword ptr [4D57h]
+000014DE A15B4D0000               mov     eax,[4D5Bh]
+000014E3 83E828                   sub     eax,28h
+000014E6 50                       push    eax
+000014E7 BAFFFFFF00               mov     edx,0FFFFFFh
+000014EC E8B8ECFFFF               call    1A9h
+
+main.c 44: _PutImage(BLACK_H-LOGOW/2, BLACK_H-LOGOH/2, LOGOW,LOGOH, #logo);
+000014F1 6A0C                     push    0Ch
+000014F3 6A0C                     push    0Ch
+000014F5 6A10                     push    10h
+000014F7 6A10                     push    10h
+000014F9 BB490B0000               mov     ebx,0B49h
+000014FE E868ECFFFF               call    16Bh
+
+main.c 45: WriteTextB(BLACK_H-LOGOW + LOGOW, BLACK_H-6/2, 0x90, 0xFFFfff, wtitle);
+00001503 6A28                     push    28h
+00001505 6A11                     push    11h
+00001507 6890000000               push    90h
+0000150C 68FFFFFF00               push    0FFFFFFh
+00001511 8B550C                   mov     edx,[ebp+0Ch]
+00001514 E8ADEBFFFF               call    0C6h
+
+main.c 46: DrawCaptButton(Form.cwidth-107, Form.cheight-40, 90, 24, 10, sc.work_button, sc.work_button_text,wbutton);
+00001519 A1574D0000               mov     eax,[4D57h]
+0000151E 83E86B                   sub     eax,6Bh
+00001521 50                       push    eax
+00001522 A15B4D0000               mov     eax,[4D5Bh]
+00001527 83E828                   sub     eax,28h
+0000152A 50                       push    eax
+0000152B 6A5A                     push    5Ah
+0000152D 6A18                     push    18h
+0000152F 6A0A                     push    0Ah
+00001531 FF3528510000             push    dword ptr [5128h]
+00001537 FF352C510000             push    dword ptr [512Ch]
+0000153D FF7508                   push    dword ptr [ebp+8]
+00001540 E82FEFFFFF               call    474h
+
+main.c 47: return 1;
+00001545 31C0                     xor     eax,eax
+00001547 40                       inc     eax
+00001548 5D                       pop     ebp
+00001549 C20800                   ret     8
+
+copyf.c 4: void copyf(dword params)
+0000154C C8342200                 enter   2234h,0
+
+copyf.c 10: mem_Init();
+00001550 E889F0FFFF               call    5DEh
+
+copyf.c 11: if (!params) { notify("Error: no copyf params!"); return; }
+00001555 837D0800                 cmp     dword ptr [ebp+8],0
+00001559 0F850F000000             jnz     156Eh
+0000155F 6892160000               push    1692h
+00001564 E859F0FFFF               call    5C2h
+00001569 E90C010000               jmp     167Ah
+
+copyf.c 12: program_path[strrchr(#program_path, '/')] = 0x0;
+0000156E BE3E3C0000               mov     esi,3C3Eh
+00001573 B32F                     mov     bl,2Fh
+00001575 E8A5100000               call    261Fh
+0000157A 89C6                     mov     esi,eax
+0000157C C6863E3C000000           mov     byte ptr [esi+3C3Eh],0
+
+copyf.c 13: border = strchr(params, '|');
+00001583 8B7508                   mov     esi,[ebp+8]
+00001586 B37C                     mov     bl,7Ch
+00001588 E8D5110000               call    2762h
+0000158D 8985CCDDFFFF             mov     [ebp-2234h],eax
+
+copyf.c 14: if (!border) border = strchr(params, ' ');
+00001593 85C0                     test    eax,eax
+00001595 0F8510000000             jnz     15ABh
+0000159B 8B7508                   mov     esi,[ebp+8]
+0000159E B320                     mov     bl,20h
+000015A0 E8BD110000               call    2762h
+000015A5 8985CCDDFFFF             mov     [ebp-2234h],eax
+
+copyf.c 16: if (ESBYTE[params]<>'/')
+000015AB 8B7508                   mov     esi,[ebp+8]
+000015AE 26803E2F                 cmp     byte ptr es:[esi],2Fh
+000015B2 0F8440000000             jz      15F8h
+
+copyf.c 18: strcpy(#from, #program_path);
+000015B8 8DBD00F0FFFF             lea     edi,[ebp-1000h]
+000015BE BE3E3C0000               mov     esi,3C3Eh
+000015C3 E865110000               call    272Dh
+
+copyf.c 19: strcat(#from, params);
+000015C8 8DBD00F0FFFF             lea     edi,[ebp-1000h]
+000015CE 8B7508                   mov     esi,[ebp+8]
+000015D1 E85F110000               call    2735h
+
+copyf.c 20: from[border+strlen(#program_path)-1]=NULL;
+000015D6 8BB5CCDDFFFF             mov     esi,[ebp-2234h]
+000015DC 56                       push    esi
+000015DD BF3E3C0000               mov     edi,3C3Eh
+000015E2 E838110000               call    271Fh
+000015E7 5E                       pop     esi
+000015E8 01C6                     add     esi,eax
+000015EA 4E                       dec     esi
+000015EB C6843500F0FFFF00         mov     byte ptr [ebp+esi-1000h],0
+
+copyf.c 22: else
+000015F3 E91A000000               jmp     1612h
+
+copyf.c 24: strcat(#from, params);
+000015F8 8DBD00F0FFFF             lea     edi,[ebp-1000h]
+000015FE E832110000               call    2735h
+
+copyf.c 25: from[border-1]=NULL;
+00001603 8BB5CCDDFFFF             mov     esi,[ebp-2234h]
+00001609 4E                       dec     esi
+0000160A C6843500F0FFFF00         mov     byte ptr [ebp+esi-1000h],0
+
+copyf.c 27: strcpy(#to, params+border);
+00001612 8DBD00E0FFFF             lea     edi,[ebp-2000h]
+00001618 8B7508                   mov     esi,[ebp+8]
+0000161B 03B5CCDDFFFF             add     esi,[ebp-2234h]
+00001621 E807110000               call    272Dh
+
+copyf.c 29: GetFileInfo(#from, #from_atr);
+00001626 8D8500F0FFFF             lea     eax,[ebp-1000h]
+0000162C 50                       push    eax
+0000162D 8D85D0DDFFFF             lea     eax,[ebp-2230h]
+00001633 50                       push    eax
+00001634 E851120000               call    288Ah
+
+copyf.c 30: if (TestBit(from_atr.attr, 4)==1)
+00001639 8B85D0DDFFFF             mov     eax,[ebp-2230h]
+0000163F B104                     mov     cl,4
+00001641 E886110000               call    27CCh
+00001646 83F801                   cmp     eax,1
+00001649 0F8518000000             jnz     1667h
+
+copyf.c 32: CopyFolder(#from, #to);
+0000164F 8D8500F0FFFF             lea     eax,[ebp-1000h]
+00001655 50                       push    eax
+00001656 8D8500E0FFFF             lea     eax,[ebp-2000h]
+0000165C 50                       push    eax
+0000165D E848000000               call    16AAh
+
+copyf.c 34: else
+00001662 E913000000               jmp     167Ah
+
+copyf.c 36: CopyFile(#from, #to);
+00001667 8D8500F0FFFF             lea     eax,[ebp-1000h]
+0000166D 50                       push    eax
+0000166E 8D8500E0FFFF             lea     eax,[ebp-2000h]
+00001674 50                       push    eax
+00001675 E83F140000               call    2AB9h
+0000167A C9                       leave
+0000167B C20400                   ret     4
+
+0000167E 4B6F6C696272694E20382E32 db      'KolibriN 8.2'
+0000168A 61205365747570004572726F db      'a Setup',0,'Erro'
+00001696 723A206E6F20636F70796620 db      'r: no copyf '
+000016A2 706172616D732100         db      'params!',0
+
+copyf.c 41: void CopyFolder(dword from, to)
+000016AA C8184000                 enter   4018h,0
+
+copyf.c 48: error = GetDir(#dirbuf, #fcount, from);
+000016AE 8D45FC                   lea     eax,[ebp-4]
+000016B1 50                       push    eax
+000016B2 8D45F8                   lea     eax,[ebp-8]
+000016B5 50                       push    eax
+000016B6 FF750C                   push    dword ptr [ebp+0Ch]
+000016B9 E80F120000               call    28CDh
+000016BE 8945EC                   mov     [ebp-14h],eax
+
+copyf.c 49: if (error) debug_error(from, error);
+000016C1 85C0                     test    eax,eax
+000016C3 0F8409000000             jz      16D2h
+000016C9 FF750C                   push    dword ptr [ebp+0Ch]
+000016CC 50                       push    eax
+000016CD E8F7040000               call    1BC9h
+
+copyf.c 51: if ((strcmp(to, "/sys")!=0) && (strcmp(to, "/tmp9/1")!=0))
+000016D2 8B7508                   mov     esi,[ebp+8]
+000016D5 BFD1180000               mov     edi,18D1h
+000016DA E81F0F0000               call    25FEh
+000016DF 85C0                     test    eax,eax
+000016E1 0F8431000000             jz      1718h
+000016E7 8B7508                   mov     esi,[ebp+8]
+000016EA BFD6180000               mov     edi,18D6h
+000016EF E80A0F0000               call    25FEh
+000016F4 85C0                     test    eax,eax
+000016F6 0F841C000000             jz      1718h
+
+copyf.c 53: error = CreateDir(to);
+000016FC FF7508                   push    dword ptr [ebp+8]
+000016FF E877130000               call    2A7Bh
+00001704 8945EC                   mov     [ebp-14h],eax
+
+copyf.c 54: if (error) debug_error(to, error);
+00001707 85C0                     test    eax,eax
+00001709 0F8409000000             jz      1718h
+0000170F FF7508                   push    dword ptr [ebp+8]
+00001712 50                       push    eax
+00001713 E8B1040000               call    1BC9h
+
+copyf.c 56: chrcat(to, '/');
+00001718 8B7508                   mov     esi,[ebp+8]
+0000171B B32F                     mov     bl,2Fh
+0000171D E886100000               call    27A8h
+
+copyf.c 57: chrcat(from, '/');
+00001722 8B750C                   mov     esi,[ebp+0Ch]
+00001725 B32F                     mov     bl,2Fh
+00001727 E87C100000               call    27A8h
+
+copyf.c 59: for (i=0; i<fcount; i++)
+0000172C 8365F000                 and     dword ptr [ebp-10h],0
+00001730 8B45F8                   mov     eax,[ebp-8]
+00001733 3945F0                   cmp     [ebp-10h],eax
+00001736 0F8D89010000             jge     18C5h
+
+copyf.c 61: filename = i*304+dirbuf+72;
+0000173C 8B45F0                   mov     eax,[ebp-10h]
+0000173F 69C030010000             imul    eax,eax,130h
+00001745 0345FC                   add     eax,[ebp-4]
+00001748 83C048                   add     eax,48h
+0000174B 8945F4                   mov     [ebp-0Ch],eax
+
+copyf.c 63: isdir = TestBit(ESDWORD[filename-40], 4);
+0000174E 8B45F4                   mov     eax,[ebp-0Ch]
+00001751 268B40D8                 mov     eax,es:[eax-28h]
+00001755 B104                     mov     cl,4
+00001757 E870100000               call    27CCh
+0000175C 8945E8                   mov     [ebp-18h],eax
+
+copyf.c 64: if (isdir)
+0000175F 85C0                     test    eax,eax
+00001761 0F8477000000             jz      17DEh
+
+copyf.c 66: if ( (!strcmp(filename, ".")) || (!strcmp(filename, "..")) ) continue;
+00001767 8B75F4                   mov     esi,[ebp-0Ch]
+0000176A BFDE180000               mov     edi,18DEh
+0000176F E88A0E0000               call    25FEh
+00001774 85C0                     test    eax,eax
+00001776 7411                     je      1789h
+00001778 8B75F4                   mov     esi,[ebp-0Ch]
+0000177B BFE0180000               mov     edi,18E0h
+00001780 E8790E0000               call    25FEh
+00001785 85C0                     test    eax,eax
+00001787 7505                     jne     178Eh
+00001789 E92F010000               jmp     18BDh
+
+copyf.c 67: strcpy(#from2, from);
+0000178E 8DBDE8CFFFFF             lea     edi,[ebp-3018h]
+00001794 8B750C                   mov     esi,[ebp+0Ch]
+00001797 E8910F0000               call    272Dh
+
+copyf.c 68: strcpy(#to2, to);
+0000179C 8DBDE8BFFFFF             lea     edi,[ebp-4018h]
+000017A2 8B7508                   mov     esi,[ebp+8]
+000017A5 E8830F0000               call    272Dh
+
+copyf.c 70: strcat(#from2, filename);
+000017AA 8DBDE8CFFFFF             lea     edi,[ebp-3018h]
+000017B0 8B75F4                   mov     esi,[ebp-0Ch]
+000017B3 E87D0F0000               call    2735h
+
+copyf.c 71: strcat(#to2, filename);
+000017B8 8DBDE8BFFFFF             lea     edi,[ebp-4018h]
+000017BE 8B75F4                   mov     esi,[ebp-0Ch]
+000017C1 E86F0F0000               call    2735h
+
+copyf.c 73: CopyFolder(#from2, #to2);
+000017C6 8D85E8CFFFFF             lea     eax,[ebp-3018h]
+000017CC 50                       push    eax
+000017CD 8D85E8BFFFFF             lea     eax,[ebp-4018h]
+000017D3 50                       push    eax
+000017D4 E8D1FEFFFF               call    16AAh
+
+copyf.c 75: else
+000017D9 E9DF000000               jmp     18BDh
+
+copyf.c 77: strcpy(#copy_from, from);
+000017DE 8DBDE8EFFFFF             lea     edi,[ebp-1018h]
+000017E4 8B750C                   mov     esi,[ebp+0Ch]
+000017E7 E8410F0000               call    272Dh
+
+copyf.c 78: strcat(#copy_from, filename);
+000017EC 8DBDE8EFFFFF             lea     edi,[ebp-1018h]
+000017F2 8B75F4                   mov     esi,[ebp-0Ch]
+000017F5 E83B0F0000               call    2735h
+
+copyf.c 79: strcpy(#copy_in, to);
+000017FA 8DBDE8DFFFFF             lea     edi,[ebp-2018h]
+00001800 8B7508                   mov     esi,[ebp+8]
+00001803 E8250F0000               call    272Dh
+
+copyf.c 80: strcat(#copy_in, filename);
+00001808 8DBDE8DFFFFF             lea     edi,[ebp-2018h]
+0000180E 8B75F4                   mov     esi,[ebp-0Ch]
+00001811 E81F0F0000               call    2735h
+
+copyf.c 82: if (CheckEvent()==evReDraw) { DefineWindow("Installation Started", "Stop"); ShowProgress("Copying files..."); }
+00001816 E8E70F0000               call    2802h
+0000181B 83F801                   cmp     eax,1
+0000181E 0F8519000000             jnz     183Dh
+00001824 68E3180000               push    18E3h
+00001829 68F8180000               push    18F8h
+0000182E E816FCFFFF               call    1449h
+00001833 68FD180000               push    18FDh
+00001838 E83F080000               call    207Ch
+
+copyf.c 83: ShowProgress(NULL);
+0000183D 6A00                     push    0
+0000183F E838080000               call    207Ch
+
+copyf.c 84: DrawBar(TEXTX, BLACK_H+50, Form.cwidth-TEXTX, 12, 0xFFFfff);
+00001844 6A14                     push    14h
+00001846 6A5A                     push    5Ah
+00001848 A1574D0000               mov     eax,[4D57h]
+0000184D 83E814                   sub     eax,14h
+00001850 50                       push    eax
+00001851 6A0C                     push    0Ch
+00001853 BAFFFFFF00               mov     edx,0FFFFFFh
+00001858 E84CE9FFFF               call    1A9h
+
+copyf.c 85: WriteText(TEXTX, BLACK_H+50, 0x80, 0, filename);
+0000185D 6A14                     push    14h
+0000185F 6A5A                     push    5Ah
+00001861 6880000000               push    80h
+00001866 6A00                     push    0
+00001868 8B55F4                   mov     edx,[ebp-0Ch]
+0000186B E87FE8FFFF               call    0EFh
+
+copyf.c 87: error = CopyFile(#copy_from, #copy_in);
+00001870 8D85E8EFFFFF             lea     eax,[ebp-1018h]
+00001876 50                       push    eax
+00001877 8D85E8DFFFFF             lea     eax,[ebp-2018h]
+0000187D 50                       push    eax
+0000187E E836120000               call    2AB9h
+00001883 8945EC                   mov     [ebp-14h],eax
+
+copyf.c 88: if (error) error = CopyFile(#copy_from, #copy_in); // #2 :)
+00001886 85C0                     test    eax,eax
+00001888 0F8416000000             jz      18A4h
+0000188E 8D85E8EFFFFF             lea     eax,[ebp-1018h]
+00001894 50                       push    eax
+00001895 8D85E8DFFFFF             lea     eax,[ebp-2018h]
+0000189B 50                       push    eax
+0000189C E818120000               call    2AB9h
+000018A1 8945EC                   mov     [ebp-14h],eax
+
+copyf.c 89: if (error) debug_error(#copy_in, error);
+000018A4 837DEC00                 cmp     dword ptr [ebp-14h],0
+000018A8 0F840F000000             jz      18BDh
+000018AE 8D85E8DFFFFF             lea     eax,[ebp-2018h]
+000018B4 50                       push    eax
+000018B5 FF75EC                   push    dword ptr [ebp-14h]
+000018B8 E80C030000               call    1BC9h
+
+copyf.c 59: i++;
+000018BD FF45F0                   inc     dword ptr [ebp-10h]
+000018C0 E96BFEFFFF               jmp     1730h
+
+copyf.c 92: free(dirbuf);
+000018C5 FF75FC                   push    dword ptr [ebp-4]
+000018C8 E859EDFFFF               call    626h
+000018CD C9                       leave
+000018CE C20800                   ret     8
+
+000018D1 2F737973002F746D70392F31 db      '/sys',0,'/tmp9/1'
+000018DD 002E002E2E00496E7374616C db      0,'.',0,'..',0,'Instal'
+000018E9 6C6174696F6E205374617274 db      'lation Start'
+000018F5 65640053746F7000436F7079 db      'ed',0,'Stop',0,'Copy'
+00001901 696E672066696C65732E2E2E db      'ing files...'
+0000190D 00                       db      0
+
+0000190E 0000                     add     [eax],al
+
+copyf.c 96: unsigned char *ERROR_TEXT[]={
+00001910 98190000AB190000E6190000 dd      1998h,19ABh,19E6h
+0000191C 1F1A00003E1A0000651A0000 dd      1A1Fh,1A3Eh,1A65h
+00001928 891A0000A51A0000DB1A0000 dd      1A89h,1AA5h,1ADBh
+00001934 141B0000361B0000501B0000 dd      1B14h,1B36h,1B50h
+00001940 000000000000000000000000 dd      0,0,0
+0000194C 000000000000000000000000 dd      0,0,0
+00001958 000000000000000000000000 dd      0,0,0
+00001964 000000000000000000000000 dd      0,0,0
+00001970 000000000000000000000000 dd      0,0,0
+0000197C 000000000000000000000000 dd      0,0,0
+00001988 691B0000871B0000AA1B0000 dd      1B69h,1B87h,1BAAh
+00001994 00000000                 dd      0
+
+00001998 436F6465202330202D204E6F db      'Code #0 - No'
+000019A4 206572726F72004572726F72 db      ' error',0,'Error'
+000019B0 202331202D2042617365206F db      ' #1 - Base o'
+000019BC 7220706172746974696F6E20 db      'r partition '
+000019C8 6F6620612068617264206469 db      'of a hard di'
+000019D4 736B206973206E6F74206465 db      'sk is not de'
+000019E0 66696E6564004572726F7220 db      'fined',0,'Error '
+000019EC 2332202D2046756E6374696F db      '#2 - Functio'
+000019F8 6E2069736E27742073757070 db      'n isn't supp'
+00001A04 6F7274656420666F72207468 db      'orted for th'
+00001A10 69732066696C652073797374 db      'is file syst'
+00001A1C 656D004572726F7220233320 db      'em',0,'Error #3 '
+00001A28 2D20556E6B6E6F776E206669 db      '- Unknown fi'
+00001A34 6C652073797374656D004572 db      'le system',0,'Er'
+00001A40 726F72202334202D20526573 db      'ror #4 - Res'
+00001A4C 65727665642C206973206E65 db      'erved, is ne'
+00001A58 7665722072657475726E6564 db      'ver returned'
+00001A64 004572726F72202335202D20 db      0,'Error #5 - '
+00001A70 46696C65206F7220666F6C64 db      'File or fold'
+00001A7C 6572206E6F7420666F756E64 db      'er not found'
+00001A88 004572726F72202336202D20 db      0,'Error #6 - '
+00001A94 456E64206F662066696C652C db      'End of file,'
+00001AA0 20454F46004572726F722023 db      ' EOF',0,'Error #'
+00001AAC 37202D20506F696E74657220 db      '7 - Pointer '
+00001AB8 6C696573206F757473696465 db      'lies outside'
+00001AC4 206F66206170706C69636174 db      ' of applicat'
+00001AD0 696F6E206D656D6F72790045 db      'ion memory',0,'E'
+00001ADC 72726F72202338202D20546F db      'rror #8 - To'
+00001AE8 6F206C657373206469736B20 db      'o less disk '
+00001AF4 7370616365206F7220464154 db      'space or FAT'
+00001B00 207461626C65206973206465 db      ' table is de'
+00001B0C 7374726F796564004572726F db      'stroyed',0,'Erro'
+00001B18 72202339202D204641542074 db      'r #9 - FAT t'
+00001B24 61626C652069732064657374 db      'able is dest'
+00001B30 726F796564004572726F7220 db      'royed',0,'Error '
+00001B3C 233130202D20416363657373 db      '#10 - Access'
+00001B48 2064656E696564004572726F db      ' denied',0,'Erro'
+00001B54 7220233131202D2044657669 db      'r #11 - Devi'
+00001B60 6365206572726F7200457272 db      'ce error',0,'Err'
+00001B6C 6F7220233330202D204E6F74 db      'or #30 - Not'
+00001B78 20656E6F756768206D656D6F db      ' enough memo'
+00001B84 7279004572726F7220233331 db      'ry',0,'Error #31'
+00001B90 202D2046696C65206973206E db      ' - File is n'
+00001B9C 6F742065786563757461626C db      'ot executabl'
+00001BA8 65004572726F722023333220 db      'e',0,'Error #32 '
+00001BB4 2D20546F6F206D616E792070 db      '- Too many p'
+00001BC0 726F63657373657300       db      'rocesses',0
+
+copyf.c 116: void debug_error(int path, error_number)
+00001BC9 C8000100                 enter   100h,0
+
+copyf.c 119: if (path) debug(path);
+00001BCD 837D0C00                 cmp     dword ptr [ebp+0Ch],0
+00001BD1 0F8408000000             jz      1BDFh
+00001BD7 8B550C                   mov     edx,[ebp+0Ch]
+00001BDA E8A50B0000               call    2784h
+
+copyf.c 120: if (error_number<0) error_number*=-1;
+00001BDF 837D0800                 cmp     dword ptr [ebp+8],0
+00001BE3 0F8D09000000             jge     1BF2h
+00001BE9 8B4508                   mov     eax,[ebp+8]
+00001BEC 6BC0FF                   imul    eax,eax,0FFh
+00001BEF 894508                   mov     [ebp+8],eax
+
+copyf.c 121: if (error_number<33)
+00001BF2 837D0821                 cmp     dword ptr [ebp+8],21h
+00001BF6 0F8D1A000000             jge     1C16h
+
+copyf.c 123: strcpy(#error, ERROR_TEXT[error_number]);
+00001BFC 8DBD00FFFFFF             lea     edi,[ebp-100h]
+00001C02 8B7508                   mov     esi,[ebp+8]
+00001C05 8B34B510190000           mov     esi,[1910h+esi*4]
+00001C0C E81C0B0000               call    272Dh
+
+copyf.c 125: else
+00001C11 E925000000               jmp     1C3Bh
+
+copyf.c 127: strcpy(#error, itoa(error_number));
+00001C16 8DBD00FFFFFF             lea     edi,[ebp-100h]
+00001C1C 8B7508                   mov     esi,[ebp+8]
+00001C1F E816E7FFFF               call    33Ah
+00001C24 89C6                     mov     esi,eax
+00001C26 E8020B0000               call    272Dh
+
+copyf.c 128: strcat(#error, " - Unknown error number O_o");
+00001C2B 8DBD00FFFFFF             lea     edi,[ebp-100h]
+00001C31 BE4A1C0000               mov     esi,1C4Ah
+00001C36 E8FA0A0000               call    2735h
+
+copyf.c 130: debug(#error);
+00001C3B 8D9500FFFFFF             lea     edx,[ebp-100h]
+00001C41 E83E0B0000               call    2784h
+00001C46 C9                       leave
+00001C47 C20800                   ret     8
+
+00001C4A 202D20556E6B6E6F776E2065 db      ' - Unknown e'
+00001C56 72726F72206E756D62657220 db      'rror number '
+00001C62 4F5F6F00                 db      'O_o',0
+
+tmp_add.c 20: int TmpDiskAdd(int disk_id, disk_size)
+00001C66 C8080000                 enter   8,0
+
+tmp_add.c 23: driver_handle = LoadDriver("tmpdisk");
+00001C6A B9DB1C0000               mov     ecx,1CDBh
+00001C6F E8670B0000               call    27DBh
+00001C74 8945FC                   mov     [ebp-4],eax
+
+tmp_add.c 24: if (driver_handle==0) return 7;
+00001C77 85C0                     test    eax,eax
+00001C79 0F8508000000             jnz     1C87h
+00001C7F 6A07                     push    7
+00001C81 58                       pop     eax
+00001C82 E950000000               jmp     1CD7h
+
+tmp_add.c 26: add_disk.DiskId = disk_id;
+00001C87 8A450C                   mov     al,[ebp+0Ch]
+00001C8A A256510000               mov     [5156h],al
+
+tmp_add.c 27: add_disk.DiskSize = disk_size * 2048;
+00001C8F 8B4508                   mov     eax,[ebp+8]
+00001C92 C1E00B                   shl     eax,0Bh
+00001C95 A352510000               mov     [5152h],eax
+
+tmp_add.c 29: ioctl.handle   = driver_handle;
+00001C9A 8B45FC                   mov     eax,[ebp-4]
+00001C9D A33A510000               mov     [513Ah],eax
+
+tmp_add.c 30: ioctl.io_code  = 1;
+00001CA2 6A01                     push    1
+00001CA4 8F053E510000             pop     dword ptr [513Eh]
+
+tmp_add.c 31: ioctl.input    = #add_disk;
+00001CAA C7054251000052510000     mov     dword ptr [5142h],5152h
+
+tmp_add.c 32: ioctl.inp_size = sizeof(add_disk);
+00001CB4 6A05                     push    5
+00001CB6 8F0546510000             pop     dword ptr [5146h]
+
+tmp_add.c 33: ioctl.output   = 0;
+00001CBC 83254A51000000           and     dword ptr [514Ah],0
+
+tmp_add.c 34: ioctl.out_size = 0;
+00001CC3 83254E51000000           and     dword ptr [514Eh],0
+
+tmp_add.c 36: driver_rezult = RuleDriver(#ioctl);
+00001CCA B93A510000               mov     ecx,513Ah
+00001CCF E8140B0000               call    27E8h
+00001CD4 8945F8                   mov     [ebp-8],eax
+
+tmp_add.c 37: return driver_rezult;
+00001CD7 C9                       leave
+00001CD8 C20800                   ret     8
+
+00001CDB 746D706469736B00         db      'tmpdisk',0
+
+hallo.c 1: void HalloLoop()
+00001CE3 C8080000                 enter   8,0
+
+hallo.c 4: goto _HALLO_DRAW;
+00001CE7 E97C000000               jmp     1D68h
+
+hallo.c 5: loop() switch(WaitEvent())
+00001CEC E8CB0A0000               call    27BCh
+00001CF1 83F801                   cmp     eax,1
+00001CF4 0F846E000000             jz      1D68h
+00001CFA 83F802                   cmp     eax,2
+00001CFD 0F844B000000             jz      1D4Eh
+00001D03 83F803                   cmp     eax,3
+00001D06 0F8578000000             jnz     1D84h
+
+hallo.c 8: id=GetButtonID();
+00001D0C E8610B0000               call    2872h
+00001D11 8845FC                   mov     [ebp-4],al
+
+hallo.c 9: if(id == 1)   ExitProcess();
+00001D14 3C01                     cmp     al,1
+00001D16 0F8505000000             jnz     1D21h
+00001D1C E8870C0000               call    29A8h
+
+hallo.c 10: if (id == 11) RunProgram("/sys/htmlv", "http://kolibri-n.org/index.php");
+00001D21 807DFC0B                 cmp     byte ptr [ebp-4],0Bh
+00001D25 0F850F000000             jnz     1D3Ah
+00001D2B 688B1D0000               push    1D8Bh
+00001D30 68961D0000               push    1D96h
+00001D35 E847E8FFFF               call    581h
+
+hallo.c 11: if (id == 10) GotoInstall();
+00001D3A 807DFC0A                 cmp     byte ptr [ebp-4],0Ah
+00001D3E 0F8505000000             jnz     1D49h
+00001D44 E8E7010000               call    1F30h
+
+hallo.c 12: break;
+00001D49 E936000000               jmp     1D84h
+
+hallo.c 14: key = GetKey();
+00001D4E E8B70A0000               call    280Ah
+00001D53 8845F8                   mov     [ebp-8],al
+
+hallo.c 15: if (key == 13) GotoInstall();
+00001D56 3C0D                     cmp     al,0Dh
+00001D58 0F8505000000             jnz     1D63h
+00001D5E E8CD010000               call    1F30h
+
+hallo.c 16: break;
+00001D63 E91C000000               jmp     1D84h
+
+hallo.c 19: if !(DefineWindow("Prepearing installation", "Install")) break;
+00001D68 68B51D0000               push    1DB5h
+00001D6D 68CD1D0000               push    1DCDh
+00001D72 E8D2F6FFFF               call    1449h
+00001D77 85C0                     test    eax,eax
+00001D79 0F8405000000             jz      1D84h
+
+hallo.c 21: HalloWindow();
+00001D7F E851000000               call    1DD5h
+
+hallo.c 22: break;
+00001D84 E963FFFFFF               jmp     1CECh
+00001D89 C9                       leave
+00001D8A C3                       ret
+
+00001D8B 2F7379732F68746D6C760068 db      '/sys/htmlv',0,'h'
+00001D97 7474703A2F2F6B6F6C696272 db      'ttp://kolibr'
+00001DA3 692D6E2E6F72672F696E6465 db      'i-n.org/inde'
+00001DAF 782E70687000507265706561 db      'x.php',0,'Prepea'
+00001DBB 72696E6720696E7374616C6C db      'ring install'
+00001DC7 6174696F6E00496E7374616C db      'ation',0,'Instal'
+00001DD3 6C00                     db      'l',0
+
+hallo.c 26: void HalloWindow()
+00001DD5 C8040100                 enter   104h,0
+
+hallo.c 32: WriteTextB(TEXTX, 80, 0x90, 0xCC00CC, "KolibriN 8.2a Upgrade Pack is ready for install.");
+00001DD9 6A14                     push    14h
+00001DDB 6A50                     push    50h
+00001DDD 6890000000               push    90h
+00001DE2 68CC00CC00               push    0CC00CCh
+00001DE7 BA791E0000               mov     edx,1E79h
+00001DEC E8D5E2FFFF               call    0C6h
+
+hallo.c 33: DrawLink(TEXTX, 95, 0x90, 11, "http://kolibri-n.org");
+00001DF1 6A14                     push    14h
+00001DF3 6A5F                     push    5Fh
+00001DF5 6890000000               push    90h
+00001DFA 6A0B                     push    0Bh
+00001DFC 68AA1E0000               push    1EAAh
+00001E01 E8B30B0000               call    29B9h
+
+hallo.c 35: free_ram = GetFreeRAM()/1024;
+00001E06 E8720A0000               call    287Dh
+00001E0B C1F80A                   sar     eax,0Ah
+00001E0E 8945FC                   mov     [ebp-4],eax
+
+hallo.c 36: strcpy(#free_ram_text, "You have ");
+00001E11 8DBDFCFEFFFF             lea     edi,[ebp-104h]
+00001E17 BEBF1E0000               mov     esi,1EBFh
+00001E1C E80C090000               call    272Dh
+
+hallo.c 37: strcat(#free_ram_text, itoa(free_ram));
+00001E21 8DBDFCFEFFFF             lea     edi,[ebp-104h]
+00001E27 8B75FC                   mov     esi,[ebp-4]
+00001E2A E80BE5FFFF               call    33Ah
+00001E2F 89C6                     mov     esi,eax
+00001E31 E8FF080000               call    2735h
+
+hallo.c 38: strcat(#free_ram_text, " MB of free RAM. You need 100 Mb for installation.");
+00001E36 8DBDFCFEFFFF             lea     edi,[ebp-104h]
+00001E3C BEC91E0000               mov     esi,1EC9h
+00001E41 E8EF080000               call    2735h
+
+hallo.c 40: WriteText(TEXTX, 140, 0x80, 0, #free_ram_text);
+00001E46 6A14                     push    14h
+00001E48 688C000000               push    8Ch
+00001E4D 6880000000               push    80h
+00001E52 6A00                     push    0
+00001E54 8D95FCFEFFFF             lea     edx,[ebp-104h]
+00001E5A E890E2FFFF               call    0EFh
+
+hallo.c 41: WriteText(TEXTX, 160, 0x80, 0, "Please, close all opened applications before start.");
+00001E5F 6A14                     push    14h
+00001E61 68A0000000               push    0A0h
+00001E66 6880000000               push    80h
+00001E6B 6A00                     push    0
+00001E6D BAFC1E0000               mov     edx,1EFCh
+00001E72 E878E2FFFF               call    0EFh
+00001E77 C9                       leave
+00001E78 C3                       ret
+
+00001E79 4B6F6C696272694E20382E32 db      'KolibriN 8.2'
+00001E85 612055706772616465205061 db      'a Upgrade Pa'
+00001E91 636B20697320726561647920 db      'ck is ready '
+00001E9D 666F7220696E7374616C6C2E db      'for install.'
+00001EA9 00687474703A2F2F6B6F6C69 db      0,'http://koli'
+00001EB5 6272692D6E2E6F726700596F db      'bri-n.org',0,'Yo'
+00001EC1 7520686176652000204D4220 db      'u have ',0,' MB '
+00001ECD 6F6620667265652052414D2E db      'of free RAM.'
+00001ED9 20596F75206E656564203130 db      ' You need 10'
+00001EE5 30204D6220666F7220696E73 db      '0 Mb for ins'
+00001EF1 74616C6C6174696F6E2E0050 db      'tallation.',0,'P'
+00001EFD 6C656173652C20636C6F7365 db      'lease, close'
+00001F09 20616C6C206F70656E656420 db      ' all opened '
+00001F15 6170706C69636174696F6E73 db      'applications'
+00001F21 206265666F72652073746172 db      ' before star'
+00001F2D 742E00                   db      't.',0
+
+hallo.c 46: if (GetFreeRAM()/1024>100) InstallationLoop();
+00001F30 E848090000               call    287Dh
+00001F35 C1E80A                   shr     eax,0Ah
+00001F38 83F864                   cmp     eax,64h
+00001F3B 0F860A000000             jbe     1F4Bh
+00001F41 E843000000               call    1F89h
+
+hallo.c 47: else notify("You do not have enought free RAM for installation!");
+00001F46 E90A000000               jmp     1F55h
+00001F4B 68561F0000               push    1F56h
+00001F50 E86DE6FFFF               call    5C2h
+00001F55 C3                       ret
+
+00001F56 596F7520646F206E6F742068 db      'You do not h'
+00001F62 61766520656E6F7567687420 db      'ave enought '
+00001F6E 667265652052414D20666F72 db      'free RAM for'
+00001F7A 20696E7374616C6C6174696F db      ' installatio'
+00001F86 6E2100                   db      'n!',0
+
+installation.c 2: void InstallationLoop()
+00001F89 C80B0000                 enter   0Bh,0
+00001F8D 6A00                     push    0
+
+installation.c 5: goto _INSTALL_DRAW;
+00001F8F E96F000000               jmp     2003h
+
+installation.c 7: loop() switch(WaitEvent())
+00001F94 E823080000               call    27BCh
+00001F99 83F801                   cmp     eax,1
+00001F9C 0F8461000000             jz      2003h
+00001FA2 83F802                   cmp     eax,2
+00001FA5 0F844B000000             jz      1FF6h
+00001FAB 83F803                   cmp     eax,3
+00001FAE 0F8579000000             jnz     202Dh
+
+installation.c 10: id=GetButtonID();
+00001FB4 E8B9080000               call    2872h
+00001FB9 8845FC                   mov     [ebp-4],al
+
+installation.c 11: if(id == 1) ExitProcess();
+00001FBC 3C01                     cmp     al,1
+00001FBE 0F8505000000             jnz     1FC9h
+00001FC4 E8DF090000               call    29A8h
+
+installation.c 12: if (id == 11) RunProgram("/sys/htmlv", "http://kolibri-n.org/donate.php");
+00001FC9 807DFC0B                 cmp     byte ptr [ebp-4],0Bh
+00001FCD 0F850F000000             jnz     1FE2h
+00001FD3 6834200000               push    2034h
+00001FD8 683F200000               push    203Fh
+00001FDD E89FE5FFFF               call    581h
+
+installation.c 13: if (id == 10) HalloLoop();
+00001FE2 807DFC0A                 cmp     byte ptr [ebp-4],0Ah
+00001FE6 0F8505000000             jnz     1FF1h
+00001FEC E8F2FCFFFF               call    1CE3h
+
+installation.c 14: break;
+00001FF1 E937000000               jmp     202Dh
+
+installation.c 16: key = GetKey();
+00001FF6 E80F080000               call    280Ah
+00001FFB 8845F8                   mov     [ebp-8],al
+
+installation.c 17: break;
+00001FFE E92A000000               jmp     202Dh
+
+installation.c 20: if !(DefineWindow("Installation Started", "Stop")) break;
+00002003 685F200000               push    205Fh
+00002008 6874200000               push    2074h
+0000200D E837F4FFFF               call    1449h
+00002012 85C0                     test    eax,eax
+00002014 0F8413000000             jz      202Dh
+
+installation.c 21: if (started) break;
+0000201A 807DF400                 cmp     byte ptr [ebp-0Ch],0
+0000201E 0F8509000000             jnz     202Dh
+
+installation.c 22: started = true;
+00002024 C645F401                 mov     byte ptr [ebp-0Ch],1
+
+installation.c 23: Install();
+00002028 E8FC000000               call    2129h
+0000202D E962FFFFFF               jmp     1F94h
+00002032 C9                       leave
+00002033 C3                       ret
+
+00002034 2F7379732F68746D6C760068 db      '/sys/htmlv',0,'h'
+00002040 7474703A2F2F6B6F6C696272 db      'ttp://kolibr'
+0000204C 692D6E2E6F72672F646F6E61 db      'i-n.org/dona'
+00002058 74652E70687000496E737461 db      'te.php',0,'Insta'
+00002064 6C6C6174696F6E2053746172 db      'llation Star'
+00002070 7465640053746F7000       db      'ted',0,'Stop',0
+
+installation.c 28: char iclock[3]={1,2};
+00002079 010200                   db      1,2,0
+
+installation.c 29: void ShowProgress(dword text1)
+0000207C 55                       push    ebp
+0000207D 89E5                     mov     ebp,esp
+
+installation.c 31: iclock[0]><iclock[1];
+0000207F A079200000               mov     al,[2079h]
+00002084 86057A200000             xchg    [207Ah],al
+0000208A A279200000               mov     [2079h],al
+
+installation.c 32: _PutImage(WIN_W+LOGOW/2, WIN_H+LOGOH/2, LOGOW,LOGOH, LOGOW*LOGOH*3*iclock[0]+ #logo);
+0000208F 6802010000               push    102h
+00002094 68B7000000               push    0B7h
+00002099 6A10                     push    10h
+0000209B 6A10                     push    10h
+0000209D 0FBE1D79200000           movsx   ebx,[2079h]
+000020A4 69DB00030000             imul    ebx,ebx,300h
+000020AA 81C3490B0000             add     ebx,0B49h
+000020B0 E8B6E0FFFF               call    16Bh
+
+installation.c 33: if (text1)
+000020B5 837D0800                 cmp     dword ptr [ebp+8],0
+000020B9 0F8445000000             jz      2104h
+
+installation.c 35: DrawBar(TEXTX, BLACK_H+30, Form.cwidth-TEXTX, 12, 0xFFFfff);
+000020BF 6A14                     push    14h
+000020C1 6A46                     push    46h
+000020C3 A1574D0000               mov     eax,[4D57h]
+000020C8 83E814                   sub     eax,14h
+000020CB 50                       push    eax
+000020CC 6A0C                     push    0Ch
+000020CE BAFFFFFF00               mov     edx,0FFFFFFh
+000020D3 E8D1E0FFFF               call    1A9h
+
+installation.c 36: DrawBar(TEXTX, BLACK_H+50, Form.cwidth-TEXTX, 12, 0xFFFfff);
+000020D8 6A14                     push    14h
+000020DA 6A5A                     push    5Ah
+000020DC A1574D0000               mov     eax,[4D57h]
+000020E1 83E814                   sub     eax,14h
+000020E4 50                       push    eax
+000020E5 6A0C                     push    0Ch
+000020E7 BAFFFFFF00               mov     edx,0FFFFFFh
+000020EC E8B8E0FFFF               call    1A9h
+
+installation.c 37: WriteText(TEXTX, BLACK_H+30, 0x80, 0, text1);
+000020F1 6A14                     push    14h
+000020F3 6A46                     push    46h
+000020F5 6880000000               push    80h
+000020FA 6A00                     push    0
+000020FC 8B5508                   mov     edx,[ebp+8]
+000020FF E8EBDFFFFF               call    0EFh
+00002104 5D                       pop     ebp
+00002105 C20400                   ret     4
+
+installation.c 42: dword *copyfiles[] = {
+00002108 142100001D21000000000000 dd      2114h,211Dh,0
+
+00002114 737973202F73797300746D70 db      'sys /sys',0,'tmp'
+00002120 202F746D70392F3100       db      ' /tmp9/1',0
+
+installation.c 49: void Install()
+00002129 C8040400                 enter   404h,0
+
+installation.c 54: ShowProgress("Mounting virtual disk...");
+0000212D 6843220000               push    2243h
+00002132 E845FFFFFF               call    207Ch
+
+installation.c 55: if (TmpDiskAdd(9, 100)!=0) RunProgram("/sys/tmpdisk", "a9s100");
+00002137 6A09                     push    9
+00002139 6A64                     push    64h
+0000213B E826FBFFFF               call    1C66h
+00002140 85C0                     test    eax,eax
+00002142 0F840F000000             jz      2157h
+00002148 685C220000               push    225Ch
+0000214D 6869220000               push    2269h
+00002152 E82AE4FFFF               call    581h
+
+installation.c 56: for (i=2; i<256; i++;)
+00002157 6A02                     push    2
+00002159 8F45FC                   pop     dword ptr [ebp-4]
+0000215C 817DFC00010000           cmp     dword ptr [ebp-4],100h
+00002163 0F8D4C000000             jge     21B5h
+
+installation.c 58: GetProcessInfo(#Process, i);
+00002169 8D9DFCFBFFFF             lea     ebx,[ebp-404h]
+0000216F 8B4DFC                   mov     ecx,[ebp-4]
+00002172 E8B0060000               call    2827h
+
+installation.c 59: if (i==Form.ID) || (strchr(#Process.name, '/')) || (strchr(#Process.name, 'Z')) continue;
+00002177 A12E4D0000               mov     eax,[4D2Eh]
+0000217C 3945FC                   cmp     [ebp-4],eax
+0000217F 7422                     je      21A3h
+00002181 8DB506FCFFFF             lea     esi,[ebp-3FAh]
+00002187 B32F                     mov     bl,2Fh
+00002189 E8D4050000               call    2762h
+0000218E 85C0                     test    eax,eax
+00002190 7511                     jne     21A3h
+00002192 8DB506FCFFFF             lea     esi,[ebp-3FAh]
+00002198 B35A                     mov     bl,5Ah
+0000219A E8C3050000               call    2762h
+0000219F 85C0                     test    eax,eax
+000021A1 7405                     je      21A8h
+000021A3 E908000000               jmp     21B0h
+
+installation.c 60: KillProcess(i);
+000021A8 8B4DFC                   mov     ecx,[ebp-4]
+000021AB E845060000               call    27F5h
+
+installation.c 56: i++;;
+000021B0 FF45FC                   inc     dword ptr [ebp-4]
+000021B3 EBA7                     jmp     short 215Ch
+
+installation.c 62: RunProgram("/sys/REFRSCRN", NULL);
+000021B5 6870220000               push    2270h
+000021BA 6A00                     push    0
+000021BC E8C0E3FFFF               call    581h
+
+installation.c 63: pause(100);
+000021C1 6A64                     push    64h
+000021C3 5B                       pop     ebx
+000021C4 E8B3050000               call    277Ch
+
+installation.c 64: ShowProgress("Copying files...");
+000021C9 687E220000               push    227Eh
+000021CE E8A9FEFFFF               call    207Ch
+
+installation.c 65: copyf("/sys/docpack /tmp9/1/docpack");
+000021D3 688F220000               push    228Fh
+000021D8 E86FF3FFFF               call    154Ch
+
+installation.c 66: DeleteFile("/sys/docpack");
+000021DD 68AC220000               push    22ACh
+000021E2 E856080000               call    2A3Dh
+
+installation.c 67: for (i = 0; copyfiles[i]!=0; i++) copyf(copyfiles[i]);
+000021E7 8365FC00                 and     dword ptr [ebp-4],0
+000021EB 8B75FC                   mov     esi,[ebp-4]
+000021EE 833CB50821000000         cmp     dword ptr [2108h+esi*4],0
+000021F6 0F8411000000             jz      220Dh
+000021FC FF34B508210000           push    dword ptr [2108h+esi*4]
+00002203 E844F3FFFF               call    154Ch
+00002208 FF45FC                   inc     dword ptr [ebp-4]
+0000220B EBDE                     jmp     short 21EBh
+
+installation.c 68: ShowProgress("Post install actions...");
+0000220D 68B9220000               push    22B9h
+00002212 E865FEFFFF               call    207Ch
+
+installation.c 69: RunProgram("/sys/launcher", NULL);
+00002217 68D1220000               push    22D1h
+0000221C 6A00                     push    0
+0000221E E85EE3FFFF               call    581h
+
+installation.c 70: RunProgram("/sys/media/kiv", "\\S__/tmp9/1/wallpapers/Retro flower.jpg");
+00002223 68DF220000               push    22DFh
+00002228 68EE220000               push    22EEh
+0000222D E84FE3FFFF               call    581h
+
+installation.c 71: SetSystemSkin("/tmp9/1/skins/latte.skn");
+00002232 B916230000               mov     ecx,2316h
+00002237 E896050000               call    27D2h
+
+installation.c 72: EndLoop();
+0000223C E8ED000000               call    232Eh
+00002241 C9                       leave
+00002242 C3                       ret
+
+00002243 4D6F756E74696E6720766972 db      'Mounting vir'
+0000224F 7475616C206469736B2E2E2E db      'tual disk...'
+0000225B 002F7379732F746D70646973 db      0,'/sys/tmpdis'
+00002267 6B00613973313030002F7379 db      'k',0,'a9s100',0,'/sy'
+00002273 732F524546525343524E0043 db      's/REFRSCRN',0,'C'
+0000227F 6F7079696E672066696C6573 db      'opying files'
+0000228B 2E2E2E002F7379732F646F63 db      '...',0,'/sys/doc'
+00002297 7061636B202F746D70392F31 db      'pack /tmp9/1'
+000022A3 2F646F637061636B002F7379 db      '/docpack',0,'/sy'
+000022AF 732F646F637061636B00506F db      's/docpack',0,'Po'
+000022BB 737420696E7374616C6C2061 db      'st install a'
+000022C7 6374696F6E732E2E2E002F73 db      'ctions...',0,'/s'
+000022D3 79732F6C61756E6368657200 db      'ys/launcher',0
+000022DF 2F7379732F6D656469612F6B db      '/sys/media/k'
+000022EB 6976005C535F5F2F746D7039 db      'iv',0,'\S__/tmp9'
+000022F7 2F312F77616C6C7061706572 db      '/1/wallpaper'
+00002303 732F526574726F20666C6F77 db      's/Retro flow'
+0000230F 65722E6A7067002F746D7039 db      'er.jpg',0,'/tmp9'
+0000231B 2F312F736B696E732F6C6174 db      '/1/skins/lat'
+00002327 74652E736B6E00           db      'te.skn',0
+
+installation.c 76: void EndLoop()
+0000232E C8080000                 enter   8,0
+
+installation.c 80: goto _END_DRAW;
+00002332 E96F000000               jmp     23A6h
+
+installation.c 82: loop() switch(WaitEvent())
+00002337 E880040000               call    27BCh
+0000233C 83F801                   cmp     eax,1
+0000233F 0F8461000000             jz      23A6h
+00002345 83F802                   cmp     eax,2
+00002348 0F844B000000             jz      2399h
+0000234E 83F803                   cmp     eax,3
+00002351 0F85D8000000             jnz     242Fh
+
+installation.c 85: id=GetButtonID();
+00002357 E816050000               call    2872h
+0000235C 8845FC                   mov     [ebp-4],al
+
+installation.c 86: if(id == 1) ExitProcess();
+0000235F 3C01                     cmp     al,1
+00002361 0F8505000000             jnz     236Ch
+00002367 E83C060000               call    29A8h
+
+installation.c 87: if (id == 11) RunProgram("/sys/htmlv", "http://kolibri-n.org/index.php");
+0000236C 807DFC0B                 cmp     byte ptr [ebp-4],0Bh
+00002370 0F850F000000             jnz     2385h
+00002376 6836240000               push    2436h
+0000237B 6841240000               push    2441h
+00002380 E8FCE1FFFF               call    581h
+
+installation.c 88: if (id == 10) ExitProcess();
+00002385 807DFC0A                 cmp     byte ptr [ebp-4],0Ah
+00002389 0F8505000000             jnz     2394h
+0000238F E814060000               call    29A8h
+
+installation.c 89: break;
+00002394 E996000000               jmp     242Fh
+
+installation.c 91: key = GetKey();
+00002399 E86C040000               call    280Ah
+0000239E 8845F8                   mov     [ebp-8],al
+
+installation.c 92: break;
+000023A1 E989000000               jmp     242Fh
+
+installation.c 95: if !(DefineWindow("Installation complete", "Exit")) break;
+000023A6 6860240000               push    2460h
+000023AB 6876240000               push    2476h
+000023B0 E894F0FFFF               call    1449h
+000023B5 85C0                     test    eax,eax
+000023B7 0F8472000000             jz      242Fh
+
+installation.c 96: WriteText(TEXTX, BLACK_H*2, 0x80, 0, "KolibriN install complete.");
+000023BD 6A14                     push    14h
+000023BF 6A50                     push    50h
+000023C1 6880000000               push    80h
+000023C6 6A00                     push    0
+000023C8 BA7B240000               mov     edx,247Bh
+000023CD E81DDDFFFF               call    0EFh
+
+installation.c 97: WriteText(TEXTX, BLACK_H*2+40, 0x80, 0, "I spent a lot of time improving KolibriN, so I hope you'll like it.");
+000023D2 6A14                     push    14h
+000023D4 6A78                     push    78h
+000023D6 6880000000               push    80h
+000023DB 6A00                     push    0
+000023DD BA96240000               mov     edx,2496h
+000023E2 E808DDFFFF               call    0EFh
+
+installation.c 98: WriteText(TEXTX, BLACK_H*2+55, 0x80, 0, "Please, donate as much as you can to help me further improve Kolibri,");
+000023E7 6A14                     push    14h
+000023E9 6887000000               push    87h
+000023EE 6880000000               push    80h
+000023F3 6A00                     push    0
+000023F5 BADA240000               mov     edx,24DAh
+000023FA E8F0DCFFFF               call    0EFh
+
+installation.c 99: WriteText(TEXTX, BLACK_H*2+70, 0x80, 0, "the project I love so much. Visit my site for more information:");
+000023FF 6A14                     push    14h
+00002401 6896000000               push    96h
+00002406 6880000000               push    80h
+0000240B 6A00                     push    0
+0000240D BA20250000               mov     edx,2520h
+00002412 E8D8DCFFFF               call    0EFh
+
+installation.c 100: DrawLink(TEXTX, BLACK_H*2+85, 0x80, 11, "http://kolibri-n.org/donate.php");
+00002417 6A14                     push    14h
+00002419 68A5000000               push    0A5h
+0000241E 6880000000               push    80h
+00002423 6A0B                     push    0Bh
+00002425 6860250000               push    2560h
+0000242A E88A050000               call    29B9h
+0000242F E903FFFFFF               jmp     2337h
+00002434 C9                       leave
+00002435 C3                       ret
+
+00002436 2F7379732F68746D6C760068 db      '/sys/htmlv',0,'h'
+00002442 7474703A2F2F6B6F6C696272 db      'ttp://kolibr'
+0000244E 692D6E2E6F72672F696E6465 db      'i-n.org/inde'
+0000245A 782E70687000496E7374616C db      'x.php',0,'Instal'
+00002466 6C6174696F6E20636F6D706C db      'lation compl'
+00002472 6574650045786974004B6F6C db      'ete',0,'Exit',0,'Kol'
+0000247E 696272694E20696E7374616C db      'ibriN instal'
+0000248A 6C20636F6D706C6574652E00 db      'l complete.',0
+00002496 49207370656E742061206C6F db      'I spent a lo'
+000024A2 74206F662074696D6520696D db      't of time im'
+000024AE 70726F76696E67204B6F6C69 db      'proving Koli'
+000024BA 6272694E2C20736F20492068 db      'briN, so I h'
+000024C6 6F706520796F75276C6C206C db      'ope you'll l'
+000024D2 696B652069742E00506C6561 db      'ike it.',0,'Plea'
+000024DE 73652C20646F6E6174652061 db      'se, donate a'
+000024EA 73206D75636820617320796F db      's much as yo'
+000024F6 752063616E20746F2068656C db      'u can to hel'
+00002502 70206D652066757274686572 db      'p me further'
+0000250E 20696D70726F7665204B6F6C db      ' improve Kol'
+0000251A 696272692C00746865207072 db      'ibri,',0,'the pr'
+00002526 6F6A6563742049206C6F7665 db      'oject I love'
+00002532 20736F206D7563682E205669 db      ' so much. Vi'
+0000253E 736974206D79207369746520 db      'sit my site '
+0000254A 666F72206D6F726520696E66 db      'for more inf'
+00002556 6F726D6174696F6E3A006874 db      'ormation:',0,'ht'
+00002562 74703A2F2F6B6F6C69627269 db      'tp://kolibri'
+0000256E 2D6E2E6F72672F646F6E6174 db      '-n.org/donat'
+0000257A 652E70687000             db      'e.php',0
+
+main.c 57: mem_Init();
+00002580 E859E0FFFF               call    5DEh
+
+main.c 58: if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading library /rd/1/lib/box_lib.obj");
+00002585 FF35C0070000             push    dword ptr [7C0h]
+0000258B 68DC070000               push    7DCh
+00002590 6A00                     push    0
+00002592 E8C7E1FFFF               call    75Eh
+00002597 85C0                     test    eax,eax
+00002599 0F840A000000             jz      25A9h
+0000259F 68CC250000               push    25CCh
+000025A4 E819E0FFFF               call    5C2h
+
+main.c 59: SetEventMask(0x27);
+000025A9 6A27                     push    27h
+000025AB 5B                       pop     ebx
+000025AC E813020000               call    27C4h
+
+main.c 60: program_path[strrchr(#program_path, '/')] = 0x0;
+000025B1 BE3E3C0000               mov     esi,3C3Eh
+000025B6 B32F                     mov     bl,2Fh
+000025B8 E862000000               call    261Fh
+000025BD 89C6                     mov     esi,eax
+000025BF C6863E3C000000           mov     byte ptr [esi+3C3Eh],0
+
+main.c 61: HalloLoop();
+000025C6 E818F7FFFF               call    1CE3h
+000025CB C3                       ret
+
+000025CC 4572726F72207768696C6520 db      'Error while '
+000025D8 6C6F6164696E67206C696272 db      'loading libr'
+000025E4 617279202F72642F312F6C69 db      'ary /rd/1/li'
+000025F0 622F626F785F6C69622E6F62 db      'b/box_lib.ob'
+000025FC 6A00                     db      'j',0
+
+..\lib\strings.h 23: IF (DSBYTE[ESI]<DSBYTE[EDI]) RETURN -1;
+000025FE 8A07                     mov     al,[edi]
+00002600 3806                     cmp     [esi],al
+00002602 7304                     jnc     2608h
+00002604 83C8FF                   or      eax,0FFFFFFFFh
+00002607 C3                       ret
+
+..\lib\strings.h 24: IF (DSBYTE[ESI]>DSBYTE[EDI]) RETURN 1;
+00002608 8A07                     mov     al,[edi]
+0000260A 3806                     cmp     [esi],al
+0000260C 7604                     jbe     2612h
+0000260E 31C0                     xor     eax,eax
+00002610 40                       inc     eax
+00002611 C3                       ret
+
+..\lib\strings.h 25: IF (DSBYTE[ESI]=='\0') RETURN 0;
+00002612 803E00                   cmp     byte ptr [esi],0
+00002615 7503                     jne     261Ah
+00002617 31C0                     xor     eax,eax
+00002619 C3                       ret
+
+..\lib\strings.h 26: ESI++;
+0000261A 46                       inc     esi
+
+..\lib\strings.h 27: EDI++;
+0000261B 47                       inc     edi
+0000261C EBE0                     jmp     short 25FEh
+0000261E C3                       ret
+
+ strrchr()
+0000261F 55                       push    ebp
+00002620 89E5                     mov     ebp,esp
+00002622 6A00                     push    0
+00002624 6A00                     push    0
+
+..\lib\strings.h 141: jj++;
+00002626 FF45FC                   inc     dword ptr [ebp-4]
+
+..\lib\strings.h 142: $lodsb
+00002629 AC                       lodsb
+
+..\lib\strings.h 143: IF(AL==BL) last=jj;
+0000262A 38D8                     cmp     al,bl
+0000262C 7506                     jne     2634h
+0000262E 8B45FC                   mov     eax,[ebp-4]
+00002631 8945F8                   mov     [ebp-8],eax
+
+..\lib\strings.h 144: } while(AL!=0);
+00002634 84C0                     test    al,al
+00002636 75EE                     jne     2626h
+
+..\lib\strings.h 145: return last;
+00002638 8B45F8                   mov     eax,[ebp-8]
+0000263B C9                       leave
+0000263C C3                       ret
+
+..\lib\strings.h 164: MOV EDI, EDX
+0000263D 89D7                     mov     edi,edx
+
+..\lib\strings.h 165: XOR ECX, ECX
+0000263F 33C9                     xor     ecx,ecx
+
+..\lib\strings.h 166: XOR EAX, EAX
+00002641 33C0                     xor     eax,eax
+
+..\lib\strings.h 167: DEC ECX
+00002643 49                       dec     ecx
+
+..\lib\strings.h 168: REPNE SCASB
+00002644 F2AE                     repne   scasb
+
+..\lib\strings.h 169: NOT ECX
+00002646 F7D1                     not     ecx
+
+..\lib\strings.h 170: DEC ECX
+00002648 49                       dec     ecx
+
+..\lib\strings.h 171: JE LS2
+00002649 742C                     je      2677h
+
+..\lib\strings.h 172: MOV ESI, ECX
+0000264B 89CE                     mov     esi,ecx
+
+..\lib\strings.h 173: XOR ECX, ECX
+0000264D 33C9                     xor     ecx,ecx
+
+..\lib\strings.h 174: MOV EDI, EBX
+0000264F 89DF                     mov     edi,ebx
+
+..\lib\strings.h 175: DEC ECX
+00002651 49                       dec     ecx
+
+..\lib\strings.h 176: REPNE SCASB
+00002652 F2AE                     repne   scasb
+
+..\lib\strings.h 177: NOT ECX
+00002654 F7D1                     not     ecx
+
+..\lib\strings.h 178: SUB ECX, ESI
+00002656 2BCE                     sub     ecx,esi
+
+..\lib\strings.h 179: JBE LS2
+00002658 761D                     jbe     2677h
+
+..\lib\strings.h 180: MOV EDI, EBX
+0000265A 89DF                     mov     edi,ebx
+
+..\lib\strings.h 181: LEA EBX, DSDWORD[ ESI-1]
+0000265C 8D5EFF                   lea     ebx,[esi-1]
+
+..\lib\strings.h 182: LS1: MOV ESI, EDX
+0000265F 89D6                     mov     esi,edx
+
+..\lib\strings.h 183: LODSB
+00002661 AC                       lodsb
+
+..\lib\strings.h 184: REPNE SCASB
+00002662 F2AE                     repne   scasb
+
+..\lib\strings.h 185: JNE LS2
+00002664 7511                     jne     2677h
+
+..\lib\strings.h 186: MOV EAX, ECX
+00002666 89C8                     mov     eax,ecx
+
+..\lib\strings.h 187: PUSH EDI
+00002668 57                       push    edi
+
+..\lib\strings.h 188: MOV ECX, EBX
+00002669 89D9                     mov     ecx,ebx
+
+..\lib\strings.h 189: REPE CMPSB
+0000266B F3A6                     repe    cmpsb
+
+..\lib\strings.h 190: POP EDI
+0000266D 5F                       pop     edi
+
+..\lib\strings.h 191: MOV ECX, EAX
+0000266E 89C1                     mov     ecx,eax
+
+..\lib\strings.h 192: JNE LS1
+00002670 75ED                     jne     265Fh
+
+..\lib\strings.h 193: LEA EAX, DSDWORD[ EDI-1]
+00002672 8D47FF                   lea     eax,[edi-1]
+
+..\lib\strings.h 194: JMP SHORT LS3
+00002675 EB02                     jmp     short 2679h
+
+..\lib\strings.h 195: LS2: XOR EAX, EAX
+00002677 33C0                     xor     eax,eax
+
+..\lib\strings.h 196: LS3:
+00002679 C3                       ret
+
+..\lib\encoding.h 4: while (BL=ESBYTE[ESI])
+0000267A E994000000               jmp     2713h
+
+..\lib\encoding.h 6: IF (BL>=192)
+0000267F 80FBC0                   cmp     bl,0C0h
+00002682 7217                     jc      269Bh
+
+..\lib\encoding.h 8: IF (BL>=240) ESBYTE[ESI] = BL - 16;
+00002684 80FBF0                   cmp     bl,0F0h
+00002687 7209                     jc      2692h
+00002689 88D8                     mov     al,bl
+0000268B 2C10                     sub     al,10h
+0000268D 268806                   mov     es:[esi],al
+
+..\lib\encoding.h 9: ELSE ESBYTE[ESI] = BL - 64;
+00002690 EB07                     jmp     short 2699h
+00002692 88D8                     mov     al,bl
+00002694 2C40                     sub     al,40h
+00002696 268806                   mov     es:[esi],al
+
+..\lib\encoding.h 11: ELSE
+00002699 EB77                     jmp     short 2712h
+
+..\lib\encoding.h 13: IF (BL==178) ESBYTE[ESI] = 73;  //I
+0000269B 80FBB2                   cmp     bl,0B2h
+0000269E 7504                     jne     26A4h
+000026A0 26C60649                 mov     byte ptr es:[esi],49h
+
+..\lib\encoding.h 14: IF (BL==179) ESBYTE[ESI] = 105; //i
+000026A4 80FBB3                   cmp     bl,0B3h
+000026A7 7504                     jne     26ADh
+000026A9 26C60669                 mov     byte ptr es:[esi],69h
+
+..\lib\encoding.h 15: IF (BL==175) ESBYTE[ESI] = 244; //J
+000026AD 80FBAF                   cmp     bl,0AFh
+000026B0 7504                     jne     26B6h
+000026B2 26C606F4                 mov     byte ptr es:[esi],0F4h
+
+..\lib\encoding.h 16: IF (BL==191) ESBYTE[ESI] = 245; //j
+000026B6 80FBBF                   cmp     bl,0BFh
+000026B9 7504                     jne     26BFh
+000026BB 26C606F5                 mov     byte ptr es:[esi],0F5h
+
+..\lib\encoding.h 17: IF (BL==170) ESBYTE[ESI] = 242; //E
+000026BF 80FBAA                   cmp     bl,0AAh
+000026C2 7504                     jne     26C8h
+000026C4 26C606F2                 mov     byte ptr es:[esi],0F2h
+
+..\lib\encoding.h 18: IF (BL==186) ESBYTE[ESI] = 243; //e
+000026C8 80FBBA                   cmp     bl,0BAh
+000026CB 7504                     jne     26D1h
+000026CD 26C606F3                 mov     byte ptr es:[esi],0F3h
+
+..\lib\encoding.h 19: IF (BL==168) ESBYTE[ESI] = 240; //ð
+000026D1 80FBA8                   cmp     bl,0A8h
+000026D4 7504                     jne     26DAh
+000026D6 26C606F0                 mov     byte ptr es:[esi],0F0h
+
+..\lib\encoding.h 20: IF (BL==184) ESBYTE[ESI] = 'e'; //e
+000026DA 80FBB8                   cmp     bl,0B8h
+000026DD 7504                     jne     26E3h
+000026DF 26C60665                 mov     byte ptr es:[esi],65h
+
+..\lib\encoding.h 21: IF (BL==180) ESBYTE[ESI] = 254; //ã
+000026E3 80FBB4                   cmp     bl,0B4h
+000026E6 7504                     jne     26ECh
+000026E8 26C606FE                 mov     byte ptr es:[esi],0FEh
+
+..\lib\encoding.h 22: IF ((BL==147) || (BL==148) || (BL==171) || (BL==187)) ESBYTE[ESI] = 34;
+000026EC 80FB93                   cmp     bl,93h
+000026EF 740F                     je      2700h
+000026F1 80FB94                   cmp     bl,94h
+000026F4 740A                     je      2700h
+000026F6 80FBAB                   cmp     bl,0ABh
+000026F9 7405                     je      2700h
+000026FB 80FBBB                   cmp     bl,0BBh
+000026FE 7504                     jne     2704h
+00002700 26C60622                 mov     byte ptr es:[esi],22h
+
+..\lib\encoding.h 23: IF ((BL==150) || (BL==151)) ESBYTE[ESI] = 45;
+00002704 80FB96                   cmp     bl,96h
+00002707 7405                     je      270Eh
+00002709 80FB97                   cmp     bl,97h
+0000270C 7504                     jne     2712h
+0000270E 26C6062D                 mov     byte ptr es:[esi],2Dh
+
+..\lib\encoding.h 25: ESI++;
+00002712 46                       inc     esi
+
+..\lib\encoding.h 4: while (BL=ESBYTE[ESI])
+00002713 268A1E                   mov     bl,es:[esi]
+00002716 84DB                     test    bl,bl
+00002718 0F8561FFFFFF             jnz     267Fh
+0000271E C3                       ret
+
+..\lib\strings.h 56: $xor eax, eax
+0000271F 33C0                     xor     eax,eax
+
+..\lib\strings.h 57: $mov ecx, -1
+00002721 B9FFFFFFFF               mov     ecx,0FFFFFFFFh
+
+..\lib\strings.h 58: $REPNE $SCASB
+00002726 F2AE                     repne   scasb
+
+..\lib\strings.h 59: EAX-=2+ECX;
+00002728 48                       dec     eax
+00002729 48                       dec     eax
+0000272A 29C8                     sub     eax,ecx
+0000272C C3                       ret
+
+..\lib\strings.h 65: $cld
+0000272D FC                       cld
+
+..\lib\strings.h 67: $lodsb
+0000272E AC                       lodsb
+
+..\lib\strings.h 68: $stosb
+0000272F AA                       stosb
+
+..\lib\strings.h 69: $test al,al
+00002730 84C0                     test    al,al
+
+..\lib\strings.h 70: $jnz L2
+00002732 75FA                     jne     272Eh
+00002734 C3                       ret
+
+..\lib\strings.h 92: mov ebx, edi
+00002735 89FB                     mov     ebx,edi
+
+..\lib\strings.h 93: xor ecx, ecx
+00002737 33C9                     xor     ecx,ecx
+
+..\lib\strings.h 94: xor eax, eax
+00002739 33C0                     xor     eax,eax
+
+..\lib\strings.h 95: dec ecx
+0000273B 49                       dec     ecx
+
+..\lib\strings.h 96: repne scasb
+0000273C F2AE                     repne   scasb
+
+..\lib\strings.h 97: dec edi
+0000273E 4F                       dec     edi
+
+..\lib\strings.h 98: mov edx, edi
+0000273F 89FA                     mov     edx,edi
+
+..\lib\strings.h 99: mov edi, esi
+00002741 89F7                     mov     edi,esi
+
+..\lib\strings.h 100: xor ecx, ecx
+00002743 33C9                     xor     ecx,ecx
+
+..\lib\strings.h 101: xor eax, eax
+00002745 33C0                     xor     eax,eax
+
+..\lib\strings.h 102: dec ecx
+00002747 49                       dec     ecx
+
+..\lib\strings.h 103: repne scasb
+00002748 F2AE                     repne   scasb
+
+..\lib\strings.h 104: xor ecx, 0ffffffffh
+0000274A 83F1FF                   xor     ecx,0FFFFFFFFh
+
+..\lib\strings.h 105: mov edi, edx
+0000274D 89D7                     mov     edi,edx
+
+..\lib\strings.h 106: mov edx, ecx
+0000274F 89CA                     mov     edx,ecx
+
+..\lib\strings.h 107: mov eax, edi
+00002751 89F8                     mov     eax,edi
+
+..\lib\strings.h 108: shr ecx, 2
+00002753 C1E902                   shr     ecx,2
+
+..\lib\strings.h 109: rep movsd
+00002756 F3A5                     repe    movsd
+
+..\lib\strings.h 110: mov ecx, edx
+00002758 89D1                     mov     ecx,edx
+
+..\lib\strings.h 111: and ecx, 3
+0000275A 83E103                   and     ecx,3
+
+..\lib\strings.h 112: rep movsb
+0000275D F3A4                     repe    movsb
+
+..\lib\strings.h 113: mov eax, ebx
+0000275F 89D8                     mov     eax,ebx
+00002761 C3                       ret
+
+ strchr()
+00002762 55                       push    ebp
+00002763 89E5                     mov     ebp,esp
+00002765 6A00                     push    0
+
+..\lib\strings.h 129: jj++;
+00002767 FF45FC                   inc     dword ptr [ebp-4]
+
+..\lib\strings.h 130: $lodsb
+0000276A AC                       lodsb
+
+..\lib\strings.h 131: IF(AL==BL) return jj;
+0000276B 38D8                     cmp     al,bl
+0000276D 7505                     jne     2774h
+0000276F 8B45FC                   mov     eax,[ebp-4]
+00002772 C9                       leave
+00002773 C3                       ret
+
+..\lib\strings.h 132: } while(AL!=0);
+00002774 84C0                     test    al,al
+00002776 75EF                     jne     2767h
+
+..\lib\strings.h 133: return 0;
+00002778 31C0                     xor     eax,eax
+0000277A C9                       leave
+0000277B C3                       ret
+
+..\lib\kolibri.h 141: $mov eax, 5
+0000277C B805000000               mov     eax,5
+
+..\lib\kolibri.h 142: $int 0x40
+00002781 CD40                     int     40h
+00002783 C3                       ret
+
+..\lib\kolibri.h 327: $push eax
+00002784 50                       push    eax
+
+..\lib\kolibri.h 328: $push ebx
+00002785 53                       push    ebx
+
+..\lib\kolibri.h 329: $push ecx
+00002786 51                       push    ecx
+
+..\lib\kolibri.h 330: $mov eax, 63
+00002787 B83F000000               mov     eax,3Fh
+
+..\lib\kolibri.h 331: $mov ebx, 1
+0000278C BB01000000               mov     ebx,1
+
+..\lib\kolibri.h 333: $mov ecx, DSDWORD[edx]
+00002791 8B0A                     mov     ecx,[edx]
+
+..\lib\kolibri.h 334: $or	 cl, cl
+00002793 0AC9                     or      cl,cl
+
+..\lib\kolibri.h 335: $jz  DONE
+00002795 7405                     je      279Ch
+
+..\lib\kolibri.h 336: $int 0x40
+00002797 CD40                     int     40h
+
+..\lib\kolibri.h 337: $inc edx
+00002799 42                       inc     edx
+
+..\lib\kolibri.h 338: $jmp NEXT_CHAR
+0000279A EBF5                     jmp     short 2791h
+
+..\lib\kolibri.h 340: $mov cl, 13
+0000279C B10D                     mov     cl,0Dh
+
+..\lib\kolibri.h 341: $int 0x40
+0000279E CD40                     int     40h
+
+..\lib\kolibri.h 342: $mov cl, 10
+000027A0 B10A                     mov     cl,0Ah
+
+..\lib\kolibri.h 343: $int 0x40
+000027A2 CD40                     int     40h
+
+..\lib\kolibri.h 344: $pop ecx
+000027A4 59                       pop     ecx
+
+..\lib\kolibri.h 345: $pop ebx
+000027A5 5B                       pop     ebx
+
+..\lib\kolibri.h 346: $pop eax
+000027A6 58                       pop     eax
+000027A7 C3                       ret
+
+..\lib\strings.h 119: EDI = strlen(ESI);
+000027A8 89F7                     mov     edi,esi
+000027AA E870FFFFFF               call    271Fh
+000027AF 89C7                     mov     edi,eax
+
+..\lib\strings.h 120: ESBYTE[ESI+EDI] = BL;
+000027B1 26881C3E                 mov     es:[esi+edi],bl
+
+..\lib\strings.h 121: ESBYTE[ESI+EDI+1] = 0;
+000027B5 26C6443E0100             mov     byte ptr es:[esi+edi+1],0
+000027BB C3                       ret
+
+..\lib\kolibri.h 91: $mov eax,10
+000027BC B80A000000               mov     eax,0Ah
+
+..\lib\kolibri.h 92: $int 0x40
+000027C1 CD40                     int     40h
+000027C3 C3                       ret
+
+..\lib\kolibri.h 109: $mov eax,40
+000027C4 B828000000               mov     eax,28h
+
+..\lib\kolibri.h 110: $int 0x40
+000027C9 CD40                     int     40h
+000027CB C3                       ret
+
+..\lib\kolibri.h 314: $shr eax,cl
+000027CC D3E8                     shr     eax,cl
+
+..\lib\kolibri.h 315: $and eax,1
+000027CE 83E001                   and     eax,1
+000027D1 C3                       ret
+
+..\lib\kolibri.h 286: EAX = 48;
+000027D2 6A30                     push    30h
+000027D4 58                       pop     eax
+
+..\lib\kolibri.h 287: EBX = 8;
+000027D5 6A08                     push    8
+000027D7 5B                       pop     ebx
+
+..\lib\kolibri.h 288: $int 0x40
+000027D8 CD40                     int     40h
+000027DA C3                       ret
+
+..\lib\kolibri.h 164: $mov eax, 68
+000027DB B844000000               mov     eax,44h
+
+..\lib\kolibri.h 165: $mov ebx, 16
+000027E0 BB10000000               mov     ebx,10h
+
+..\lib\kolibri.h 166: $int 0x40
+000027E5 CD40                     int     40h
+000027E7 C3                       ret
+
+..\lib\kolibri.h 172: $mov eax, 68
+000027E8 B844000000               mov     eax,44h
+
+..\lib\kolibri.h 173: $mov ebx, 17
+000027ED BB11000000               mov     ebx,11h
+
+..\lib\kolibri.h 174: $int 0x40
+000027F2 CD40                     int     40h
+000027F4 C3                       ret
+
+..\lib\kolibri.h 244: $mov eax,18;
+000027F5 B812000000               mov     eax,12h
+
+..\lib\kolibri.h 245: $mov ebx,18;
+000027FA BB12000000               mov     ebx,12h
+
+..\lib\kolibri.h 246: $int 0x40
+000027FF CD40                     int     40h
+00002801 C3                       ret
+
+..\lib\kolibri.h 97: $mov eax,11
+00002802 B80B000000               mov     eax,0Bh
+
+..\lib\kolibri.h 98: $int 0x40
+00002807 CD40                     int     40h
+00002809 C3                       ret
+
+..\lib\kolibri.h 122: $push edx
+0000280A 52                       push    edx
+
+..\lib\kolibri.h 124: $mov  eax,2
+0000280B B802000000               mov     eax,2
+
+..\lib\kolibri.h 125: $int  0x40
+00002810 CD40                     int     40h
+
+..\lib\kolibri.h 126: $cmp eax,1
+00002812 83F801                   cmp     eax,1
+
+..\lib\kolibri.h 127: $jne GETKEYI
+00002815 7507                     jne     281Eh
+
+..\lib\kolibri.h 128: $mov ah,dh
+00002817 88F4                     mov     ah,dh
+
+..\lib\kolibri.h 129: $jmp GETKEYII //jz?
+00002819 E904000000               jmp     2822h
+
+..\lib\kolibri.h 131: $mov dh,ah
+0000281E 88E6                     mov     dh,ah
+
+..\lib\kolibri.h 132: $jmp GETKEY
+00002820 EBE9                     jmp     short 280Bh
+
+..\lib\kolibri.h 134: $pop edx
+00002822 5A                       pop     edx
+
+..\lib\kolibri.h 135: $shr eax,8
+00002823 C1E808                   shr     eax,8
+00002826 C3                       ret
+
+..\lib\kolibri.h 195: $mov eax,9;
+00002827 B809000000               mov     eax,9
+
+..\lib\kolibri.h 196: $int  0x40
+0000282C CD40                     int     40h
+
+..\lib\kolibri.h 197: DSDWORD[EBX+71] = DSDWORD[EBX+42] - 9; //set cwidth
+0000282E 8B432A                   mov     eax,[ebx+2Ah]
+00002831 83E809                   sub     eax,9
+00002834 894347                   mov     [ebx+47h],eax
+
+..\lib\kolibri.h 198: DSDWORD[EBX+75] = DSDWORD[EBX+46] - GetSkinHeight() - 4; //set cheight
+00002837 8B432E                   mov     eax,[ebx+2Eh]
+0000283A 50                       push    eax
+0000283B E80B000000               call    284Bh
+00002840 5A                       pop     edx
+00002841 92                       xchg    edx,eax
+00002842 29D0                     sub     eax,edx
+00002844 83E804                   sub     eax,4
+00002847 89434B                   mov     [ebx+4Bh],eax
+0000284A C3                       ret
+
+..\lib\kolibri.h 277: $push ebx
+0000284B 53                       push    ebx
+
+..\lib\kolibri.h 278: $mov  eax,48
+0000284C B830000000               mov     eax,30h
+
+..\lib\kolibri.h 279: $mov  ebx,4
+00002851 BB04000000               mov     ebx,4
+
+..\lib\kolibri.h 280: $int 0x40
+00002856 CD40                     int     40h
+
+..\lib\kolibri.h 281: $pop  ebx
+00002858 5B                       pop     ebx
+00002859 C3                       ret
+
+..\lib\kolibri.h 293: $mov eax, 14
+0000285A B80E000000               mov     eax,0Eh
+
+..\lib\kolibri.h 294: $int 0x40
+0000285F CD40                     int     40h
+
+..\lib\kolibri.h 295: $shr eax, 16
+00002861 C1E810                   shr     eax,10h
+00002864 C3                       ret
+
+..\lib\kolibri.h 300: $mov eax, 14
+00002865 B80E000000               mov     eax,0Eh
+
+..\lib\kolibri.h 301: $int 0x40
+0000286A CD40                     int     40h
+
+..\lib\kolibri.h 302: $and eax,0x0000FFFF
+0000286C 25FFFF0000               and     eax,0FFFFh
+00002871 C3                       ret
+
+..\lib\kolibri.h 147: $mov eax,17
+00002872 B811000000               mov     eax,11h
+
+..\lib\kolibri.h 148: $int  0x40
+00002877 CD40                     int     40h
+
+..\lib\kolibri.h 149: $shr eax,8
+00002879 C1E808                   shr     eax,8
+0000287C C3                       ret
+
+..\lib\kolibri.h 156: $mov eax, 18
+0000287D B812000000               mov     eax,12h
+
+..\lib\kolibri.h 157: $mov ebx, 16
+00002882 BB10000000               mov     ebx,10h
+
+..\lib\kolibri.h 158: $int 0x40
+00002887 CD40                     int     40h
+00002889 C3                       ret
+
+ GetFileInfo()
+0000288A 55                       push    ebp
+0000288B 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 179: getinfo_file_70.func = 5;
+0000288D 6A05                     push    5
+0000288F 8F05DA4C0000             pop     dword ptr [4CDAh]
+
+..\lib\file_system.h 180: getinfo_file_70.param1 =
+00002895 31C0                     xor     eax,eax
+00002897 A3E64C0000               mov     [4CE6h],eax
+0000289C A3E24C0000               mov     [4CE2h],eax
+000028A1 A3DE4C0000               mov     [4CDEh],eax
+
+..\lib\file_system.h 183: getinfo_file_70.param4 = bdvk_struct;
+000028A6 8B4508                   mov     eax,[ebp+8]
+000028A9 A3EA4C0000               mov     [4CEAh],eax
+
+..\lib\file_system.h 184: getinfo_file_70.rezerv = 0;
+000028AE C605EE4C000000           mov     byte ptr [4CEEh],0
+
+..\lib\file_system.h 185: getinfo_file_70.name = file_path;
+000028B5 8B450C                   mov     eax,[ebp+0Ch]
+000028B8 A3EF4C0000               mov     [4CEFh],eax
+
+..\lib\file_system.h 186: $mov eax,70
+000028BD B846000000               mov     eax,46h
+
+..\lib\file_system.h 187: $mov ebx,#getinfo_file_70.func
+000028C2 BBDA4C0000               mov     ebx,4CDAh
+
+..\lib\file_system.h 188: $int 0x40
+000028C7 CD40                     int     40h
+000028C9 5D                       pop     ebp
+000028CA C20800                   ret     8
+
+ GetDir()
+000028CD C80C0000                 enter   0Ch,0
+
+..\lib\file_system.h 157: buf = malloc(32);
+000028D1 6A20                     push    20h
+000028D3 E815DDFFFF               call    5EDh
+000028D8 8945FC                   mov     [ebp-4],eax
+
+..\lib\file_system.h 158: error = ReadDir(0, buf, path);
+000028DB 6A00                     push    0
+000028DD 50                       push    eax
+000028DE FF7508                   push    dword ptr [ebp+8]
+000028E1 E84C020000               call    2B32h
+000028E6 8945F4                   mov     [ebp-0Ch],eax
+
+..\lib\file_system.h 159: if (!error)
+000028E9 85C0                     test    eax,eax
+000028EB 0F85AB000000             jnz     299Ch
+
+..\lib\file_system.h 161: fcount = ESDWORD[buf+8];
+000028F1 8B45FC                   mov     eax,[ebp-4]
+000028F4 268B4008                 mov     eax,es:[eax+8]
+000028F8 8945F8                   mov     [ebp-8],eax
+
+..\lib\file_system.h 162: buf = realloc(buf, fcount+1*304+32);
+000028FB 8B45F8                   mov     eax,[ebp-8]
+000028FE 40                       inc     eax
+000028FF 69C030010000             imul    eax,eax,130h
+00002905 83C020                   add     eax,20h
+00002908 50                       push    eax
+00002909 FF75FC                   push    dword ptr [ebp-4]
+0000290C E8F6DCFFFF               call    607h
+00002911 8945FC                   mov     [ebp-4],eax
+
+..\lib\file_system.h 163: ReadDir(fcount, buf, path);
+00002914 FF75F8                   push    dword ptr [ebp-8]
+00002917 50                       push    eax
+00002918 FF7508                   push    dword ptr [ebp+8]
+0000291B E812020000               call    2B32h
+
+..\lib\file_system.h 164: if (!strcmp(".",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+00002920 BEA3290000               mov     esi,29A3h
+00002925 8B7DFC                   mov     edi,[ebp-4]
+00002928 83C748                   add     edi,48h
+0000292B E8CEFCFFFF               call    25FEh
+00002930 85C0                     test    eax,eax
+00002932 0F851D000000             jnz     2955h
+00002938 FF4DF8                   dec     dword ptr [ebp-8]
+0000293B 8B7DFC                   mov     edi,[ebp-4]
+0000293E 8B75FC                   mov     esi,[ebp-4]
+00002941 81C630010000             add     esi,130h
+00002947 8B4DF8                   mov     ecx,[ebp-8]
+0000294A 69C930010000             imul    ecx,ecx,130h
+00002950 E821020000               call    2B76h
+
+..\lib\file_system.h 165: if (!strcmp("..",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+00002955 BEA5290000               mov     esi,29A5h
+0000295A 8B7DFC                   mov     edi,[ebp-4]
+0000295D 83C748                   add     edi,48h
+00002960 E899FCFFFF               call    25FEh
+00002965 85C0                     test    eax,eax
+00002967 0F851D000000             jnz     298Ah
+0000296D FF4DF8                   dec     dword ptr [ebp-8]
+00002970 8B7DFC                   mov     edi,[ebp-4]
+00002973 8B75FC                   mov     esi,[ebp-4]
+00002976 81C630010000             add     esi,130h
+0000297C 8B4DF8                   mov     ecx,[ebp-8]
+0000297F 69C930010000             imul    ecx,ecx,130h
+00002985 E8EC010000               call    2B76h
+
+..\lib\file_system.h 166: ESDWORD[dir_buf] = buf;
+0000298A 8B45FC                   mov     eax,[ebp-4]
+0000298D 8B7510                   mov     esi,[ebp+10h]
+00002990 268906                   mov     es:[esi],eax
+
+..\lib\file_system.h 167: ESDWORD[file_count] = fcount;
+00002993 8B45F8                   mov     eax,[ebp-8]
+00002996 8B750C                   mov     esi,[ebp+0Ch]
+00002999 268906                   mov     es:[esi],eax
+
+..\lib\file_system.h 169: return error;
+0000299C 8B45F4                   mov     eax,[ebp-0Ch]
+0000299F C9                       leave
+000029A0 C20C00                   ret     0Ch
+
+000029A3 2E002E2E00               db      '.',0,'..',0
+
+..\lib\kolibri.h 261: $mov eax,-1;
+000029A8 B8FFFFFFFF               mov     eax,0FFFFFFFFh
+
+..\lib\kolibri.h 262: $int 0x40
+000029AD CD40                     int     40h
+000029AF C3                       ret
+
+..\lib\kolibri.h 387: EAX = 71;
+000029B0 6A47                     push    47h
+000029B2 58                       pop     eax
+
+..\lib\kolibri.h 388: EBX = 1;
+000029B3 31DB                     xor     ebx,ebx
+000029B5 43                       inc     ebx
+
+..\lib\kolibri.h 389: $int 0x40;
+000029B6 CD40                     int     40h
+000029B8 C3                       ret
+
+ DrawLink()
+000029B9 C8040000                 enter   4,0
+
+..\lib\figures.h 92: WriteText(x,y,font_type,0x4E00E7,inscription);
+000029BD FF7518                   push    dword ptr [ebp+18h]
+000029C0 FF7514                   push    dword ptr [ebp+14h]
+000029C3 FF7510                   push    dword ptr [ebp+10h]
+000029C6 68E7004E00               push    4E00E7h
+000029CB 8B5508                   mov     edx,[ebp+8]
+000029CE E81CD7FFFF               call    0EFh
+
+..\lib\figures.h 93: if (font_type==0x80) w = strlen(inscription)*6; else w = strlen(inscription)*7;
+000029D3 817D1080000000           cmp     dword ptr [ebp+10h],80h
+000029DA 0F8513000000             jnz     29F3h
+000029E0 8B7D08                   mov     edi,[ebp+8]
+000029E3 E837FDFFFF               call    271Fh
+000029E8 6BC006                   imul    eax,eax,6
+000029EB 8945FC                   mov     [ebp-4],eax
+000029EE E90E000000               jmp     2A01h
+000029F3 8B7D08                   mov     edi,[ebp+8]
+000029F6 E824FDFFFF               call    271Fh
+000029FB 6BC007                   imul    eax,eax,7
+000029FE 8945FC                   mov     [ebp-4],eax
+
+..\lib\figures.h 94: DefineButton(x-1,y-1,w,10,btn_id+BT_HIDE,0);
+00002A01 8B4518                   mov     eax,[ebp+18h]
+00002A04 48                       dec     eax
+00002A05 50                       push    eax
+00002A06 8B4514                   mov     eax,[ebp+14h]
+00002A09 48                       dec     eax
+00002A0A 50                       push    eax
+00002A0B FF75FC                   push    dword ptr [ebp-4]
+00002A0E 6A0A                     push    0Ah
+00002A10 8B550C                   mov     edx,[ebp+0Ch]
+00002A13 81C200000040             add     edx,40000000h
+00002A19 31F6                     xor     esi,esi
+00002A1B E8CAD7FFFF               call    1EAh
+
+..\lib\figures.h 95: DrawBar(x,y+8,w,1,0x4E00E7);
+00002A20 FF7518                   push    dword ptr [ebp+18h]
+00002A23 8B4514                   mov     eax,[ebp+14h]
+00002A26 83C008                   add     eax,8
+00002A29 50                       push    eax
+00002A2A FF75FC                   push    dword ptr [ebp-4]
+00002A2D 6A01                     push    1
+00002A2F BAE7004E00               mov     edx,4E00E7h
+00002A34 E870D7FFFF               call    1A9h
+00002A39 C9                       leave
+00002A3A C21400                   ret     14h
+
+ DeleteFile()
+00002A3D 55                       push    ebp
+00002A3E 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 69: del_file_70.func = 8;
+00002A40 6A08                     push    8
+00002A42 8F05724C0000             pop     dword ptr [4C72h]
+
+..\lib\file_system.h 70: del_file_70.param1 =
+00002A48 31C0                     xor     eax,eax
+00002A4A A2864C0000               mov     [4C86h],al
+00002A4F A3824C0000               mov     [4C82h],eax
+00002A54 A37E4C0000               mov     [4C7Eh],eax
+00002A59 A37A4C0000               mov     [4C7Ah],eax
+00002A5E A3764C0000               mov     [4C76h],eax
+
+..\lib\file_system.h 75: del_file_70.name = del_file_path;
+00002A63 8B4508                   mov     eax,[ebp+8]
+00002A66 A3874C0000               mov     [4C87h],eax
+
+..\lib\file_system.h 76: $mov eax,70
+00002A6B B846000000               mov     eax,46h
+
+..\lib\file_system.h 77: $mov ebx,#del_file_70.func
+00002A70 BB724C0000               mov     ebx,4C72h
+
+..\lib\file_system.h 78: $int 0x40
+00002A75 CD40                     int     40h
+00002A77 5D                       pop     ebp
+00002A78 C20400                   ret     4
+
+ CreateDir()
+00002A7B 55                       push    ebp
+00002A7C 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 51: create_dir_70.func = 9;
+00002A7E 6A09                     push    9
+00002A80 8F05584C0000             pop     dword ptr [4C58h]
+
+..\lib\file_system.h 52: create_dir_70.param1 =
+00002A86 31C0                     xor     eax,eax
+00002A88 A26C4C0000               mov     [4C6Ch],al
+00002A8D A3684C0000               mov     [4C68h],eax
+00002A92 A3644C0000               mov     [4C64h],eax
+00002A97 A3604C0000               mov     [4C60h],eax
+00002A9C A35C4C0000               mov     [4C5Ch],eax
+
+..\lib\file_system.h 57: create_dir_70.name = new_folder_path;
+00002AA1 8B4508                   mov     eax,[ebp+8]
+00002AA4 A36D4C0000               mov     [4C6Dh],eax
+
+..\lib\file_system.h 58: $mov eax,70
+00002AA9 B846000000               mov     eax,46h
+
+..\lib\file_system.h 59: $mov ebx,#create_dir_70.func
+00002AAE BB584C0000               mov     ebx,4C58h
+
+..\lib\file_system.h 60: $int 0x40
+00002AB3 CD40                     int     40h
+00002AB5 5D                       pop     ebp
+00002AB6 C20400                   ret     4
+
+ CopyFile()
+00002AB9 C8330200                 enter   233h,0
+00002ABD 6A00                     push    0
+00002ABF 6AFF                     push    0FFFFFFFFh
+
+..\lib\file_system.h 200: if (! GetFileInfo(copy_from, #CopyFile_atr))
+00002AC1 FF750C                   push    dword ptr [ebp+0Ch]
+00002AC4 8D85D0FDFFFF             lea     eax,[ebp-230h]
+00002ACA 50                       push    eax
+00002ACB E8BAFDFFFF               call    288Ah
+00002AD0 85C0                     test    eax,eax
+00002AD2 0F8544000000             jnz     2B1Ch
+
+..\lib\file_system.h 202: cBufer = malloc(CopyFile_atr.sizelo);
+00002AD8 FFB5F0FDFFFF             push    dword ptr [ebp-210h]
+00002ADE E80ADBFFFF               call    5EDh
+00002AE3 8985CCFDFFFF             mov     [ebp-234h],eax
+
+..\lib\file_system.h 203: if (! ReadFile(0, CopyFile_atr.sizelo, cBufer, copy_from))
+00002AE9 6A00                     push    0
+00002AEB FFB5F0FDFFFF             push    dword ptr [ebp-210h]
+00002AF1 50                       push    eax
+00002AF2 FF750C                   push    dword ptr [ebp+0Ch]
+00002AF5 E8B3000000               call    2BADh
+00002AFA 85C0                     test    eax,eax
+00002AFC 0F851A000000             jnz     2B1Ch
+
+..\lib\file_system.h 205: rezult = WriteFile(CopyFile_atr.sizelo, cBufer, copy_in);
+00002B02 FFB5F0FDFFFF             push    dword ptr [ebp-210h]
+00002B08 FFB5CCFDFFFF             push    dword ptr [ebp-234h]
+00002B0E FF7508                   push    dword ptr [ebp+8]
+00002B11 E8DF000000               call    2BF5h
+00002B16 8885C8FDFFFF             mov     [ebp-238h],al
+
+..\lib\file_system.h 208: free(cBufer);
+00002B1C FFB5CCFDFFFF             push    dword ptr [ebp-234h]
+00002B22 E8FFDAFFFF               call    626h
+
+..\lib\file_system.h 209: return rezult;
+00002B27 0FBE85C8FDFFFF           movsx   eax,[ebp-238h]
+00002B2E C9                       leave
+00002B2F C20800                   ret     8
+
+ ReadDir()
+00002B32 55                       push    ebp
+00002B33 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 141: read_dir_70.func = 1;
+00002B35 6A01                     push    1
+00002B37 8F05C04C0000             pop     dword ptr [4CC0h]
+
+..\lib\file_system.h 142: read_dir_70.param1 =
+00002B3D 31C0                     xor     eax,eax
+00002B3F A2D44C0000               mov     [4CD4h],al
+00002B44 A3C84C0000               mov     [4CC8h],eax
+00002B49 A3C44C0000               mov     [4CC4h],eax
+
+..\lib\file_system.h 145: read_dir_70.param3 = file_count;
+00002B4E 8B4510                   mov     eax,[ebp+10h]
+00002B51 A3CC4C0000               mov     [4CCCh],eax
+
+..\lib\file_system.h 146: read_dir_70.param4 = read_buffer;
+00002B56 8B450C                   mov     eax,[ebp+0Ch]
+00002B59 A3D04C0000               mov     [4CD0h],eax
+
+..\lib\file_system.h 147: read_dir_70.name = dir_path;
+00002B5E 8B4508                   mov     eax,[ebp+8]
+00002B61 A3D54C0000               mov     [4CD5h],eax
+
+..\lib\file_system.h 148: $mov eax,70
+00002B66 B846000000               mov     eax,46h
+
+..\lib\file_system.h 149: $mov ebx,#read_dir_70.func
+00002B6B BBC04C0000               mov     ebx,4CC0h
+
+..\lib\file_system.h 150: $int 0x40
+00002B70 CD40                     int     40h
+00002B72 5D                       pop     ebp
+00002B73 C20C00                   ret     0Ch
+
+..\lib\mem.h 65: MOV EAX, ECX
+00002B76 89C8                     mov     eax,ecx
+
+..\lib\mem.h 66: CMP EDI, ESI
+00002B78 3BFE                     cmp     edi,esi
+
+..\lib\mem.h 67: JG L1
+00002B7A 7F12                     jg      2B8Eh
+
+..\lib\mem.h 68: JE L2
+00002B7C 742E                     je      2BACh
+
+..\lib\mem.h 69: SAR ECX, 2
+00002B7E C1F902                   sar     ecx,2
+
+..\lib\mem.h 70: JS L2
+00002B81 7829                     js      2BACh
+
+..\lib\mem.h 71: REP MOVSD
+00002B83 F3A5                     repe    movsd
+
+..\lib\mem.h 72: MOV ECX, EAX
+00002B85 89C1                     mov     ecx,eax
+
+..\lib\mem.h 73: AND ECX, 3
+00002B87 83E103                   and     ecx,3
+
+..\lib\mem.h 74: REP MOVSB
+00002B8A F3A4                     repe    movsb
+
+..\lib\mem.h 75: JMP SHORT L2
+00002B8C EB1E                     jmp     short 2BACh
+
+..\lib\mem.h 76: L1: LEA ESI, DSDWORD[ ESI+ECX-4]
+00002B8E 8D740EFC                 lea     esi,[esi+ecx-4]
+
+..\lib\mem.h 77: LEA EDI, DSDWORD[ EDI+ECX-4]
+00002B92 8D7C0FFC                 lea     edi,[edi+ecx-4]
+
+..\lib\mem.h 78: SAR ECX, 2
+00002B96 C1F902                   sar     ecx,2
+
+..\lib\mem.h 79: JS L2
+00002B99 7811                     js      2BACh
+
+..\lib\mem.h 80: STD
+00002B9B FD                       std
+
+..\lib\mem.h 81: REP MOVSD
+00002B9C F3A5                     repe    movsd
+
+..\lib\mem.h 82: MOV ECX, EAX
+00002B9E 89C1                     mov     ecx,eax
+
+..\lib\mem.h 83: AND ECX, 3
+00002BA0 83E103                   and     ecx,3
+
+..\lib\mem.h 84: ADD ESI, 3
+00002BA3 83C603                   add     esi,3
+
+..\lib\mem.h 85: ADD EDI, 3
+00002BA6 83C703                   add     edi,3
+
+..\lib\mem.h 86: REP MOVSB
+00002BA9 F3A4                     repe    movsb
+
+..\lib\mem.h 87: CLD
+00002BAB FC                       cld
+
+..\lib\mem.h 88: L2:
+00002BAC C3                       ret
+
+ ReadFile()
+00002BAD 55                       push    ebp
+00002BAE 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 87: read_file_70.func = 0;
+00002BB0 83258C4C000000           and     dword ptr [4C8Ch],0
+
+..\lib\file_system.h 88: read_file_70.param1 = read_pos;
+00002BB7 8B4514                   mov     eax,[ebp+14h]
+00002BBA A3904C0000               mov     [4C90h],eax
+
+..\lib\file_system.h 89: read_file_70.param2 = 0;
+00002BBF 8325944C000000           and     dword ptr [4C94h],0
+
+..\lib\file_system.h 90: read_file_70.param3 = read_file_size;
+00002BC6 8B4510                   mov     eax,[ebp+10h]
+00002BC9 A3984C0000               mov     [4C98h],eax
+
+..\lib\file_system.h 91: read_file_70.param4 = read_buffer;
+00002BCE 8B450C                   mov     eax,[ebp+0Ch]
+00002BD1 A39C4C0000               mov     [4C9Ch],eax
+
+..\lib\file_system.h 92: read_file_70.rezerv = 0;
+00002BD6 C605A04C000000           mov     byte ptr [4CA0h],0
+
+..\lib\file_system.h 93: read_file_70.name = read_file_path;
+00002BDD 8B4508                   mov     eax,[ebp+8]
+00002BE0 A3A14C0000               mov     [4CA1h],eax
+
+..\lib\file_system.h 94: $mov eax,70
+00002BE5 B846000000               mov     eax,46h
+
+..\lib\file_system.h 95: $mov ebx,#read_file_70.func
+00002BEA BB8C4C0000               mov     ebx,4C8Ch
+
+..\lib\file_system.h 96: $int 0x40
+00002BEF CD40                     int     40h
+00002BF1 5D                       pop     ebp
+00002BF2 C21000                   ret     10h
+
+ WriteFile()
+00002BF5 55                       push    ebp
+00002BF6 89E5                     mov     ebp,esp
+
+..\lib\file_system.h 123: write_file_70.func = 2;
+00002BF8 6A02                     push    2
+00002BFA 8F05A64C0000             pop     dword ptr [4CA6h]
+
+..\lib\file_system.h 124: write_file_70.param1 = 0;
+00002C00 8325AA4C000000           and     dword ptr [4CAAh],0
+
+..\lib\file_system.h 125: write_file_70.param2 = 0;
+00002C07 8325AE4C000000           and     dword ptr [4CAEh],0
+
+..\lib\file_system.h 126: write_file_70.param3 = write_file_size;
+00002C0E 8B4510                   mov     eax,[ebp+10h]
+00002C11 A3B24C0000               mov     [4CB2h],eax
+
+..\lib\file_system.h 127: write_file_70.param4 = write_buffer;
+00002C16 8B450C                   mov     eax,[ebp+0Ch]
+00002C19 A3B64C0000               mov     [4CB6h],eax
+
+..\lib\file_system.h 128: write_file_70.rezerv = 0;
+00002C1E C605BA4C000000           mov     byte ptr [4CBAh],0
+
+..\lib\file_system.h 129: write_file_70.name = write_file_path;
+00002C25 8B4508                   mov     eax,[ebp+8]
+00002C28 A3BB4C0000               mov     [4CBBh],eax
+
+..\lib\file_system.h 130: $mov eax,70
+00002C2D B846000000               mov     eax,46h
+
+..\lib\file_system.h 131: $mov ebx,#write_file_70.func
+00002C32 BBA64C0000               mov     ebx,4CA6h
+
+..\lib\file_system.h 132: $int 0x40
+00002C37 CD40                     int     40h
+00002C39 5D                       pop     ebp
+00002C3A C20C00                   ret     0Ch
