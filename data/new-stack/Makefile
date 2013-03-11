@@ -176,7 +176,7 @@ COPY_FILES:=\
 # Format of an item is exactly the same as in the previous list,
 # except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
- File|Managers/Eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
+ File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/cmm/eolite/Eolite.c \
  HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
  tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
  @notify:@notify:$(PROGS)/cmm/notify/notify.c \
