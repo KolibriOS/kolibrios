@@ -25,6 +25,7 @@ void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
 	h = hh;
 	min_h = min_hh;
 	line_h = line_hh;
+	visible = h / line_h;
 }
 
 
