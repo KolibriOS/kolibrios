@@ -492,7 +492,7 @@ link_local:
         shl     ecx, 16
         mov     cx, 0xfea9                              ; IP 169.254.0.0 link local net, see RFC3927
         mcall   76, API_IPv4 + 3, ecx                   ; mask is 255.255.0.0
-        DEBUGF  1,"Link Local IP assinged: 169.254.%u.%u\n", [generator+2]:1, [generator+3]:1
+        DEBUGF  1,"Link Local IP assinged: 169.254.%u.%u\n", [generator+0]:1, [generator+1]:1
         mcall   76, API_IPv4 + 7, 0xffff
         mcall   76, API_IPv4 + 9, 0x0
         mcall   76, API_IPv4 + 5, 0x0
