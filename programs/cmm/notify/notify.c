@@ -1,4 +1,5 @@
 //notify 0.5
+//SoUrcerer 2010, Leency 2012-2013, GNU GPLv2
 
 #define MEMSIZE 0x3E80
 #include "..\lib\kolibri.h" 
@@ -72,10 +73,12 @@ void main()
 			#ifdef AUTOBUILD
 				{ draw_grid(); }
 			#else
-				{ _PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);	}
+			{
+				_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
+				PutPixel(0,0,ESDWORD[lighter_pixel1]);
+				PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);
+			}
 			#endif
-			PutPixel(0,0,ESDWORD[lighter_pixel1]);
-			PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);
 			DrawBar(WIN_SIZE_X,0, 1, WIN_SIZE_Y, 0x333333);
 			WriteText(TEXT_X-1,TEXT_Y, 0x80, 0,#param); //тень
 			WriteText(TEXT_X+1,TEXT_Y, 0x80, 0,#param);
