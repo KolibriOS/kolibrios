@@ -93,6 +93,8 @@ ted_but_open_file:
 		stdcall [mb_create],msgbox_5,thread ;message: save changes in file?
 		stdcall [mb_setfunctions],msgbox_5_funct
 		jmp .ret_f
+	.no_msg: ;метка для вызова функции через кнопку в сообщении msgbox_5
+		pushad
 	@@:
 
 	copy_path open_dialog_name,communication_area_default_path,file_name,0

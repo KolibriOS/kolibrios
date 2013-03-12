@@ -486,7 +486,7 @@ tree_file_struct:
 
 if lang eq ru
 
-hed db 'Текстовый редактор 14.02.13',0 ;подпись окна
+hed db 'Текстовый редактор 12.03.13',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -514,10 +514,6 @@ msgbox_2:
   db 'Не сохранять',0
   db 'Отмена',0
   db 0
-msgbox_2_funct:
-  dd On_SaveAndNewFile
-  dd On_NewFile
-  dd 0
 
 msgbox_3:
   db 1,0
@@ -548,9 +544,6 @@ msgbox_5:
   db 'Не сохранять',0
   db 'Отмена',0
   db 0
-msgbox_5_funct:
-  dd but_no_msg_OpenFile
-  dd 0
 
 msgbox_6:
   db 1,0
@@ -604,7 +597,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 14.02.13',0
+hed db 'Text editor 12.03.13',0
 
 menu_text_area:
 db 'File',0
@@ -632,10 +625,6 @@ msgbox_2:
   db 'Discard',0
   db 'Cancel',0
   db 0
-msgbox_2_funct:
-  dd On_SaveAndNewFile
-  dd On_NewFile
-  dd 0
 
 msgbox_3:
   db 1,0
@@ -666,9 +655,6 @@ msgbox_5:
   db 'Discard',0
   db 'Cancel',0
   db 0
-msgbox_5_funct:
-  dd but_no_msg_OpenFile
-  dd 0
 
 msgbox_6:
   db 1,0
@@ -721,6 +707,15 @@ txtFormatCapt db 'Format',0
 txtFormatApply db 'Apply',0
 
 end if
+
+;функции для кнопок в сообщениях
+msgbox_2_funct:
+  dd On_SaveAndNewFile
+  dd On_NewFile
+  dd 0
+msgbox_5_funct:
+  dd ted_but_open_file.no_msg
+  dd 0
 
 KM_SHIFT equ 0x00010000
 KM_CTRL equ 0x00020000
