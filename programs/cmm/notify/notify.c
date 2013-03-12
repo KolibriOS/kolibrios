@@ -6,7 +6,6 @@
 #include "..\lib\mem.h" 
 #include "..\lib\figures.h" 
 
-
 int SCREEN_SIZE_X,
     SCREEN_SIZE_Y;
 
@@ -39,18 +38,22 @@ void main()
 	//из€€€щный костыль, реализующий многопоточность :)
 	while (GetPixelColor(SCREEN_SIZE_X-1, SCREEN_SIZE_X, WIN_Y)==0x333333) WIN_Y+=WIN_SIZE_Y+17;
 
-	shadow_buf = malloc(WIN_SIZE_X*WIN_SIZE_Y*3);
-	lighter_pixel1 = malloc(3);
-	lighter_pixel2 = malloc(3);
-	CopyScreen(shadow_buf, SCREEN_SIZE_X-WIN_SIZE_X-1, WIN_Y, WIN_SIZE_X, WIN_SIZE_Y);
-	CopyScreen(lighter_pixel1, SCREEN_SIZE_X-WIN_SIZE_X-1, WIN_Y, 1, 1);
-	CopyScreen(lighter_pixel2, SCREEN_SIZE_X-WIN_SIZE_X-1, WIN_Y+WIN_SIZE_Y, 1, 1);
-	ShadowImage(shadow_buf, WIN_SIZE_X, WIN_SIZE_Y, 4);
-	ShadowImage(lighter_pixel1, 1, 1, 1);
-	ShadowImage(lighter_pixel2, 1, 1, 1);
+	#if !defined(AUTOBUILD)
+	{
+		shadow_buf = malloc(WIN_SIZE_X*WIN_SIZE_Y*3);
+		lighter_pixel1 = malloc(3);
+		lighter_pixel2 = malloc(3);
+		CopyScreen(shadow_buf, SCREEN_SIZE_X-WIN_SIZE_X-1, WIN_Y, WIN_SIZE_X, WIN_SIZE_Y);
+		CopyScreen(lighter_pixel1, SCREEN_SIZE_X-WIN_SIZE_X-1, WIN_Y, 1, 1);
+		CopyScreen(lighter_pixel2, SCREEN_SIZE_X-WIN_SIZE_X-1, WIN_Y+WIN_SIZE_Y, 1, 1);
+		ShadowImage(shadow_buf, WIN_SIZE_X, WIN_SIZE_Y, 4);
+		ShadowImage(lighter_pixel1, 1, 1, 1);
+		ShadowImage(lighter_pixel2, 1, 1, 1);
+	}
+	#endif
 
 	loop()
-   {
+	{
 		WaitEventTimeout(500);
 		switch(EAX & 0xFF)
 		{
@@ -66,7 +69,11 @@ void main()
 			DefineButton(0,0, WIN_SIZE_X, WIN_SIZE_Y, 1+BT_HIDE+BT_NOFRAME, 0);
 			//draw_grid();
 			//PutShadow(0,0,WIN_SIZE_X,WIN_SIZE_Y, 0, 4);
-			_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
+			#ifdef AUTOBUILD
+				{ draw_grid(); }
+			#else
+				{ _PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);	}
+			#endif
 			PutPixel(0,0,ESDWORD[lighter_pixel1]);
 			PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);
 			DrawBar(WIN_SIZE_X,0, 1, WIN_SIZE_Y, 0x333333);
@@ -89,7 +96,7 @@ void main()
 
 
 
-void draw_grid()
+:void draw_grid()
 {
 	int x, y; 
 	
@@ -99,13 +106,9 @@ void draw_grid()
 		{
 			if (! y&1) && (! x&1) PutPixel(x, y, 0);
 			if (  y&1) && (  x&1) PutPixel(x, y, 0);
-			//PutPixel(x, y, GetPixelColor(SCREEN_SIZE_X-WIN_SIZE_X+x, SCREEN_SIZE_X, y));
 		}
 	}
 }
-
-
-
 
 
 stop:
