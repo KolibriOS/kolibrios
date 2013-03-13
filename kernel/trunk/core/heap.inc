@@ -154,11 +154,11 @@ proc init_kernel_heap
 
         mov     [ecx+block_next], eax
         mov     [ecx+block_prev], ebx
-        mov     [edi+list_fd], eax
-        mov     [edi+list_bk], eax
-        mov     [edi+block_base], eax
-        mov     [edi+block_size], eax
-        mov     [edi+block_flags], USED_BLOCK
+        mov     [ecx+list_fd], eax
+        mov     [ecx+list_bk], eax
+        mov     [ecx+block_base], eax
+        mov     [ecx+block_size], eax
+        mov     [ecx+block_flags], USED_BLOCK
 
         mov     [ebx+block_next], ecx
         mov     [ebx+block_prev], edi
