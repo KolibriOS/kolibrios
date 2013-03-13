@@ -6,7 +6,7 @@ scr_window:
 .red:
         call    .draw_window
 .still:
-        wait_event .red,.close
+        wait_event .red, .close
         jmp     .still
 
 .draw_window:

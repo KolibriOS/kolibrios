@@ -42,33 +42,33 @@ macro wait_event redraw,key,button,mouse,ipc,other
         mov     eax,10
         mcall
         dec     ax
-if <redraw> eq <>
+if redraw eq
 else
         jz      redraw
 end if
         dec     ax
-if <key> eq <>
+if key eq
 else
         jz      key
 end if
         dec     ax
-if <button> eq <>
+if button eq
 else
         jz      button
 end if
         dec     ax
         dec     ax
         dec     ax
-if <mouse> eq <>
+if mouse eq
 else
         jz      mouse
 end if
-if <ipc> eq <>
+if ipc eq
 else
         dec     ax
         jz      ipc
 end if
-if <other> eq <>
+if other eq
         jmp     still
 else
         jmp     other
@@ -150,7 +150,7 @@ macro get_procinfo proc_inf_buf,slot_num
         ;mov     ebx,proc_inf_buf
         push    proc_inf_buf
         pop     ebx
-if <slot_num> eq <>
+if slot_num eq
         xor     ecx,ecx
         dec     ecx
 else
@@ -197,7 +197,7 @@ macro get_skin_height
 macro delay time
 {
         mov     eax,5
-if <time> eq <>
+if time eq
 else
         mov     ebx,time
 end if
@@ -207,7 +207,7 @@ macro activ_window slot_n
 {
         mov     eax,18
         mov     ebx,3
-if <slot_n> eq <>
+if slot_n eq
 else
         mov     ecx,slot_n
 end if
