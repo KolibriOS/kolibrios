@@ -1,4 +1,6 @@
-;08.05.2009 - bugfix 
+;13.03.2013 - use @notify
+;08.06.2010 - new macros @use_library_mem
+;08.05.2009 - bugfix
 ;14.04.2009 - a macros for code load library the box_lib.obj from '/sys/lib/' or current dirrectory.
 ; The macros for load any library/libraries:
 ; Copyright (c) 2009, <Lrz>
@@ -27,9 +29,9 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
 ; This macros based on source code:
-; <Lrz> - Alexey Teplov / └ыхъёхщ ╥хяыют
-; Mario79, Mario - Marat Zakiyanov / ╠рЁрЄ ╟ръш эют
-; Diamondz - Evgeny Grechnikov / ┼тухэшщ ├Ёхўэшъют
+; <Lrz> - Alexey Teplov / Алексей Теплов
+; Mario79, Mario - Marat Zakiyanov / Марат Закиянов
+; Diamondz - Evgeny Grechnikov / Евгений Гречников
 ;------------------------
 ; DESCRIPTION
 ; Macro load_library
@@ -62,13 +64,13 @@
 ;- Well, if you get 
 ;
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-;DATA фрээ√х
-;┬ёхуфр ёюсы■фрЄ№ яюёыхфютрЄхы№эюёЄ№ т шьхэш.
+;DATA данные
+;Всегда соблюдать последовательность в имени.
 ;system_path__      db '/sys/lib/'
 ;library_name__     db 'box_lib.obj',0
-; ┼ёыш хёЄ№ цхырэшх Ёрч·хфшэшЄ№, Єю эєцэю шёяюы№чютрЄ№ ёыхфє■∙ш■ ъюэёЄЁєъЎш■
+; Если есть желание разъединить, то нужно использовать следующию конструкцию
 ;system_path__      db '/sys/lib/box_lib.obj',0
-;... ы■ср  яюёыхфютрЄхы№эюёЄ№ фЁєушї ъюьрэф ш юяЁхфхыхэшщ.
+;... любая последовательность других команд и определений.
 ;library_name__     db 'box_lib.obj',0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,158 +114,25 @@
 macro @use_library
 {
 
-local __sc
 local lp
 local lp1
-local correction
-local exit_
+local file_name
 
-library_fun_memory_alloc equ 0 ;эх шёяюы№чютрЄ№ т ьръЁюёрї яЁютхЁъє эр ЇєэъЎшш 'lib_init'
-err_message1     equ    dword [esp+8]
-head1            equ    dword [esp+4]
-
-
-__sc.frame                equ  dword [__sc+0]
-__sc.grab                 equ  dword [__sc+4]
-__sc.grab_button          equ  dword [__sc+8]
-__sc.grab_button_text     equ  dword [__sc+12] 
-__sc.grab_text            equ  dword [__sc+16]
-__sc.work                 equ  dword [__sc+20]
-__sc.work_button          equ  dword [__sc+24]
-__sc.work_button_text     equ  dword [__sc+28]
-__sc.work_text            equ  dword [__sc+32]
-__sc.work_graph           equ  dword [__sc+36]
-
-;;;;;;;;;;;CALC WIDTH & HIGHT WINDOW & CENTER MONITOR POSITION;;;;;;;;;;
-show_err_:
-;check memory
-        push    dword [arrea_xx]
-        pop     eax
-        test    eax,eax
-        jnz     @f
-
-        mcall   68,11
-        mcall   68,12,4096
-        push    eax
-        pop     dword [arrea_xx]
-
-        push    head1
-        pop     dword[eax]
-
-        push    0x0
-        pop     dword[eax+4]
-
-@@:
-        mov     eax,48             ;get system color
-        mov     ebx,3
-        mov     ecx,__sc
-        mov     edx,sizeof.system_colors
-        mcall
-;-----------------------------------
-        xor     eax,eax
-        mov     esi,err_message1
-        mov     ecx,30
-align 4
-lp:     add     ecx,7
-        lodsb
-        test    eax,eax
-        jnz     lp
-
-        push    dword [arrea_xx]
-        pop     ebp
+library_fun_memory_alloc equ 0 ;не использовать в макросах проверку на функции 'lib_init'
 
 align 4
-@@:     add     ebp,4
-        mov     eax,dword [ebp]
-
-        test    eax,eax
-        jnz     @b 
-
-        push    err_message1
-        pop     dword[ebp]
-
-        mov     dword [ebp+4],eax
-
-        mcall   48,5    ;get system window
-        cmp     word[on_x],cx
-        jae     @f; эх эєцэю юсэюты Є№
-
-        sub     eax,ecx
-        shl     eax,15
-        mov     ax,cx
-        mov     dword [on_x],eax
-
-@@:
-        add     word [on_y],12
-        sub     bx,word [on_y]
-        shl     ebx,15
-        mov     bx,word [on_y]
-        mov     dword [on_y],ebx
-
-        ret
-
-
-;;;;;;;;;;;DRAW WINDOW;;;;;;;;;;;;;;
-align 4
-start__:
-        mcall   40,0x5         ;set mask on events rewraw window and get id button.
-.red_win:
-;draw_window:
-        mcall 12,1
-
-        xor     eax,eax
-        mov     ebp,dword [arrea_xx]      ; set point
-        mov     ebx,dword [on_x]
-        mov     ecx,dword [on_y]
-        mov     edx,__sc.work
-        or      edx,0x33000000
-        mov     esi,__sc.grab_text
-        xor     edi,edi
-        mov     edi,dword [ebp]         ;head1
-        mcall
-
-        mov     ebx,(10*65536+25-12)
-        add     ebp,4   ;inc index
-
-@@:
-        mov     eax,4
-        add     bx,12
-        mov     ecx,__sc.grab_text
-        or      ecx,0x90000000
-        mov     edx,dword [ebp]       ;err_message1
-        mcall
-
-        add     ebp,4   ;inc index
-
-        mov     eax,dword [ebp]
-        test    eax,eax
-        jnz     @b
-
-        mcall 12,2
-align 4
-
-.still:                          ;main loop
-        mcall   10              ;wait event
-        dec  eax
-        jz   .red_win
-        sub  eax,2
-        jnz  .still   ;go to main loop
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.button:
-        mcall   17      ;get id button
-        test    ah,ah      ;if in ah 0, then go to still
-        jz      .still
-        mcall   -1
-        ret
+arrea_xx dd 0
+file_name db '/rd/1/@notify',0
 
 align 4
-__sc     system_colors
-on_x     dd     0x0
-on_y     dd     0x0000004E
-arrea_xx dd     0x0
-rb      0x50
-end_tr:
-
+run_notify_struct:
+	.Function dd 7
+	.Position dd 0
+	.Flags dd ?
+	.Count dd 0
+	.Buffer dd 0
+		db 0
+	.FileName dd file_name
 ;---------------------------------------------------------------------
 
 @library_name     equ    dword [esp+16]
@@ -368,7 +237,7 @@ exit:
         test    eax,eax
         jz      @f
 
-        mcall   51,1,start__,end_tr            ; ёючфрхь эют√щ яюЄюъ яю °рсыюэє
+        notify_window_run [arrea_xx] ; создаем окно @notify
         or      eax,-1
 @@:     
 
@@ -408,7 +277,7 @@ exit:
         test    eax,eax
         jz      @f
 
-        mcall   51,1,start__,end_tr            ; ёючфрхь эют√щ яюЄюъ яю °рсыюэє
+        notify_window_run [arrea_xx] ; создаем окно @notify
         or      eax,-1
 @@:     
         
@@ -481,7 +350,7 @@ lp2:
         test    eax,eax
         jz      @f
 
-        mcall   51,1,start__,end_tr            ; ёючфрхь эют√щ яюЄюъ яю °рсыюэє
+        notify_window_run [arrea_xx] ; создаем окно @notify
         or      eax,-1
         jmp     exit_lp2
 
@@ -561,7 +430,7 @@ lp2:
         test    eax,eax
         jz      @f
 
-        mcall   51,1,start__,end_tr            ; ёючфрхь эют√щ яюЄюъ яю °рсыюэє
+        notify_window_run [arrea_xx] ; создаем окно @notify
         or      eax,-1
         jmp     exit_lp2
 
@@ -587,22 +456,57 @@ macro copy_path lib_name,dir_path,lib_path,point_dir_name
         popad   ;restore all registers
 }
 
+; готовим текст для показа через @notify:
+; 1) выделяем память в [arrea_xx]
+; 2) копируем err_message и head в [arrea_xx]
 macro show_error_window  err_message, head
-{       pushad  ;save all registers
-        push    dword err_message
-        push    dword head
+{
+local lp0
+local lp1
 
-        call    show_err_
+pushad
+	mcall 68,11
+	mcall 68,12,4096
+	push eax
+	pop dword [arrea_xx]
 
-        add     esp,8
-        popad   ;restore all registers
-        or      eax,-1  ;єт√
+	mov edi,eax
+	mov esi,dword head
+	cld
+align 4
+lp0:
+	movsb
+	cmp byte[esi],0
+	jne lp0
+	mov word[edi],'. '
+	add edi,2
+	mov esi,dword err_message
+align 4
+lp1:
+	movsb
+	cmp byte[esi],0
+	jne lp1
+	mov byte[edi],0
+popad
+	or eax,-1  ;увы
+}
+
+; включаем показ сообщения через @notify:
+macro notify_window_run message
+{
+push eax ebx
+	mov eax,message ;параметры для командной строки
+	mov [run_notify_struct.Flags], eax
+	mov eax,70 ;run @notify
+	mov ebx,run_notify_struct
+	int 0x40
+pop ebx eax
 }
 
 
-;тїюфэ√х ярЁрьхЄЁ√:
-;eax - рфЁхё сшсышюЄхъш т ярь Єш
-;myimport - шьяюЁЄшЁєхь√х ЇєэъЎшш
+;входные параметры:
+;eax - адрес библиотеки в памяти
+;myimport - импортируемые функции
 macro import_boxlib myimport, err_message_import__, head_f_i__
 {
 local import_loop
@@ -619,42 +523,42 @@ local import_not_found
         mov     edx, eax
         mov     esi,myimport
 import_loop:
-        lodsd	;mov eax,dword[esi] ;add esi,4 ;яюыєўрхь т eax єърчрЄхы№ эр шь  шьяюЁЄшЁєхьющ ЇєэъЎшш
+        lodsd	;mov eax,dword[esi] ;add esi,4 ;получаем в eax указатель на имя импортируемой функции
         test    eax, eax
-        jz      import_done ;хёыш єърчрЄхы№ эр шь  ЇєэъЎшш = 0 (т яюы№чютрЄхы№ёъющ яЁюуЁрььх)
-        push    edx ;ёюїЁрэ хь эрўрыю сшсышюЄхўэ√ї єърчрЄхыхщ эр ЇєэъЎшш
+        jz      import_done ;если указатель на имя функции = 0 (в пользовательской программе)
+        push    edx ;сохраняем начало библиотечных указателей на функции
 import_find:
         mov     ebx, [ds:edx]
         test    ebx, ebx
-        jz      import_not_found ;хёыш єърчрЄхы№ эр шь  ЇєэъЎшш = 0 (т сшсышюЄхъх)
-        push    eax ;eax - єърчрЄхы№ эр шь  ¤ъёяюЁЄшЁєхьющ ЇєэъЎшш (т яюы№чютрЄхы№ёъющ яЁюуЁрььх)
+        jz      import_not_found ;если указатель на имя функции = 0 (в библиотеке)
+        push    eax ;eax - указатель на имя экспортируемой функции (в пользовательской программе)
 lp:
         mov     cl, [ds:eax]
-        cmp     cl, [ds:ebx] ;ёЁртэштрхь шьхэр ЇєэъЎшщ т сшсышюЄхъх ш т яюы№чютрЄхы№ёъющ яЁюуЁрььх
-        jnz     import_find_next ;хёыш эрчтрэш  эх ёютярыш
+        cmp     cl, [ds:ebx] ;сравниваем имена функций в библиотеке и в пользовательской программе
+        jnz     import_find_next ;если названия не совпали
         test    cl, cl
-        jz      import_found ;хёыш эрчтрэш  ёютярыш, ш єцх ъюэхЎ ёЄЁюъш (cl=0)
+        jz      import_found ;если названия совпали, и уже конец строки (cl=0)
         inc     eax
         inc     ebx
         jmp     lp
 import_find_next:
         pop     eax
-        add     edx, 8 ;8 = 4 срщЄр єърчрЄхы№ эр эрчтрэшх ш 4 срщЄр єърчрЄхы№ эр ЇєэъЎш■
+        add     edx, 8 ;8 = 4 байта указатель на название и 4 байта указатель на функцию
         jmp     import_find
 import_found:
-        pop     ebx ;тюёЄрэртыштрхь єърчрЄхы№ эр шь  ЇєэъЎшш (ъюЄюЁ√щ с√ы т eax) ш юётюсюцфрхь ёЄхъ
-        mov     eax, [ds:edx+4] ;eax = єърчрЄхы№ эр ЇєэъЎш■ (т сшсышюЄхъх)
-        mov     [esi-4], eax ;ъюяшЁєхь єърчрЄхы№ (эр ЇєэъЎш■) т яЁюуЁрььє, -4 ёЄртшь яюЄюьє ўЄю esi с√ыю ёфтшэєЄю ъюьрэфющ lodsd
-        pop     edx ;єёЄрэртыштрхь edx эр эрўрыю сшсышюЄхўэ√ї ЇєэъЎшщ
-;--- яЁютхЁ хь ёютярфрхЄ ыш шь  ¤ъёяюЁЄшЁютрээющ ЇєэъЎшш ё 'lib_init'
+        pop     ebx ;востанавливаем указатель на имя функции (который был в eax) и освобождаем стек
+        mov     eax, [ds:edx+4] ;eax = указатель на функцию (в библиотеке)
+        mov     [esi-4], eax ;копируем указатель (на функцию) в программу, -4 ставим потому что esi было сдвинуто командой lodsd
+        pop     edx ;устанавливаем edx на начало библиотечных функций
+;--- проверяем совпадает ли имя экспортированной функции с 'lib_init'
 if library_fun_memory_alloc eq 0
 else
 		cmp dword[ebx],'lib_'
 		jne		import_loop
 		cmp dword[ebx+4],'init'
 		jne		import_loop
-;--- хёыш шь  ЇєэъЎшш ёютярыю ё 'lib_init' яюярфрхь ё■фр
-		;яюфъы■ўхэшх ЇєэъЎшщ фы  ЁрсюЄ√ ё ярь Є№■
+;--- если имя функции совпало с 'lib_init' попадаем сюда
+		;подключение функций для работы с памятью
 		;push eax
 		;call dll.Init
 		pushad
@@ -672,18 +576,18 @@ import_not_found:
         show_error_window  err_message_import__, head_f_i__    ;show error message /create window
         jmp     e.exit
 import_done:
-        xor     eax,eax ;=0 тёх чруЁєчшыюё№ єфрўэю
+        xor     eax,eax ;=0 все загрузилось удачно
 e.exit: 
 ;---------------------------------------------------------------------
 }
 ll_struc_size = 48;($-library_name__)    ; constant   size of struct
 struc l_libs library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, my_import, err_message_import__, head_f_i__,point_dir_name; struct for loading libraries
 {        
-.library_name__           dd library_name__        ; шь  чруЁєцрхьющ сшсышюЄхъш
-.cur_dir_path__           dd cur_dir_path__        ; єърчрЄхы№ эр сєЇхЁ т ъюЄюЁюь ёюфхЁцшЄ№ё  яєЄ№ юЄ ъєфр с√ыр чряє∙хэр яЁюуЁрььр
+.library_name__           dd library_name__        ; имя загружаемой библиотеки
+.cur_dir_path__           dd cur_dir_path__        ; указатель на буфер в котором содержиться путь от куда была запущена программа
                         
-.library_path__           dd library_path__        ; єърчрЄхы№ эр сєЇхЁ т ъюЄюЁюь сєфхЄ ёюЇюЁшьшЁютрэ яєЄ№ ъ сшсышюЄхъш, хёыш эєцэю т√ўшёышЄ№ яєЄ№ фю ышс√ ё ьхёЄр чряєёър яЁюуЁрьь√, юс√ўэю эєцэю, т ёыєўр ї, хёыш ышср Ёрёяюыюцхэр т Єющ цх яряъх
-.complete_path            dd system_path__         ; яєЄ№ ъюЄюЁ√щ ўхЄъю ёюфхЁцшЄ яєЄ№
+.library_path__           dd library_path__        ; указатель на буфер в котором будет софоримирован путь к библиотеки, если нужно вычислить путь до либы с места запуска программы, обычно нужно, в случаях, если либа расположена в той же папке
+.complete_path            dd system_path__         ; путь который четко содержит путь
 
 .err_message_found_lib__  dd err_message_found_lib__
 .head_f_l__               dd head_f_l__
@@ -693,7 +597,7 @@ struc l_libs library_name__, cur_dir_path__, library_path__, system_path__, err_
 if point_dir_name eq
 .point_dir_name__	dd 0x0
 else
-.point_dir_name__	dd point_dir_name	   ; шь  тыюцхээющ фшЁЁхъЄюЁшш т ъЄюЁющ їЁрэ Є№ё  яюфуЁєцрхь√х ьюфєыш.
+.point_dir_name__	dd point_dir_name	   ; имя вложенной дирректории в кторой храняться подгружаемые модули.
 end if 
 .adr_load_lib           dd 0x0
 .status_lib             dd 0x0          ;status of load library
