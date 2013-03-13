@@ -1,4 +1,4 @@
-//notify 0.5
+//notify 0.52
 //SoUrcerer 2010, Leency 2012-2013, GNU GPLv2
 
 #define MEMSIZE 0x3E80
@@ -14,6 +14,7 @@ int WIN_Y=0,
     WIN_SIZE_X=300,
     WIN_SIZE_Y=28;
 
+int delay = 500;
 	
 void main()
 {   
@@ -21,7 +22,6 @@ void main()
 	    TEXT_Y=12;
 	dword shadow_buf, lighter_pixel1, lighter_pixel2;
 	
-	mem_Init();
 	if (!param)
 	{
 		if (GetSystemLanguage()==4)
@@ -31,7 +31,11 @@ void main()
 	}
 	
 	SCREEN_SIZE_X=GetScreenWidth()+1;
-	if (strlen(#param)*6>WIN_SIZE_X) WIN_SIZE_X=strlen(#param)*6+8;
+	if (strlen(#param)*6>WIN_SIZE_X)
+	{
+		WIN_SIZE_X=strlen(#param)*6+8;
+		delay = strlen(#param)*10;
+	}
 	
 	TEXT_X=-6*strlen(#param)+WIN_SIZE_X/2;
 	TEXT_Y=WIN_SIZE_Y/2-3;
@@ -41,6 +45,7 @@ void main()
 
 	#if !defined(AUTOBUILD)
 	{
+		mem_Init();
 		shadow_buf = malloc(WIN_SIZE_X*WIN_SIZE_Y*3);
 		lighter_pixel1 = malloc(3);
 		lighter_pixel2 = malloc(3);
@@ -55,7 +60,7 @@ void main()
 
 	loop()
 	{
-		WaitEventTimeout(500);
+		WaitEventTimeout(delay);
 		switch(EAX & 0xFF)
 		{
 		case evButton:
