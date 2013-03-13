@@ -1,10 +1,15 @@
 ;=============================================================================
-; Kolibri Graphics Benchmark 0.5
+; Kolibri Graphics Benchmark 0.6
 ;--------------------------------------
 ; MGB - Menuet Graphics Benchmark 0.3
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.6
+; last update:  14/03/2013
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      benchmark f36 - read screen area
+;---------------------------------------------------------------------
 ; version:	0.5
 ; last update:  05/03/2013
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -204,6 +209,8 @@ ActionSave:
 	jmp	ActionOpen.1
 ;---------------------------------------------------------------------
 TestWndProc:
+	mcall	68,12,90*123*3
+	mov	[area_for_f36],eax
 	or	dword [wFlags],1
 	mov	esi,results_table+8
 align 4
@@ -234,6 +241,7 @@ align 4
 	cmp	dword [esi],0
 	jnz	.next_test
 	xor	dword [wFlags],1
+	mcall	68,13,[area_for_f36]
 	mcall	-1
 ;---------------------------------------------------------------------
 draw_window:
@@ -296,14 +304,20 @@ testDrawBar:
 ;---------------------------------------------------------------------
 align 4
 testDrawPicture:
-	xor	ebx,ebx
-	mcall	7,,<90,123>,<15,33>
+;	xor	ebx,ebx
+	mcall	7,[area_for_f36],<90,123>,<15,33>
 	ret
 ;---------------------------------------------------------------------
 align 4
 testDrawPicture_f73:
 	xor	ebx,ebx
 	mcall	73,,params_f73
+	ret
+;---------------------------------------------------------------------
+align 4
+testGetScreen_f36:
+	xor	ebx,ebx
+	mcall	36,[area_for_f36],<90,123>,<15,33>
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -547,6 +561,7 @@ align 4
 results_table dd \
 	?,?,testDrawWindow,aDrawingWindow,\
 	?,?,testDrawBar,aDrawingBar,\
+	?,?,testGetScreen_f36,aGetScreenF36,\
 	?,?,testDrawPicture,aDrawingPicture,\
 	?,?,testDrawPicture_f73,aDrawingPictF73,\
 	?,?,testDrawVertLine,aDrawingVLine,\
@@ -566,6 +581,7 @@ aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
 aDrawingBar	db 'Filled Rectangle, 100x250 px',0
 aDrawingPicture db 'Picture, 90x123, px',0
 aDrawingPictF73	db 'Picture for Blitter, 90x123, px',0
+aGetScreenF36	db 'Get a piece of screen, 90x123, px',0
 aDrawingVLine	db 'Vertical Line, 350 px',0
 aDrawingHLine	db 'Horizontal Line, 270 px',0
 aDrawingFLine	db 'Free-angled Line, 350 px',0
@@ -576,7 +592,7 @@ aDrawingPixel	db 'Single Pixel',0
 
 aTestText	db 'This is a 34-charachters test text'
 aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-aCaption	db 'Kolibri Graphical Benchmark 0.5',0
+aCaption	db 'Kolibri Graphical Benchmark 0.6',0
 
 aLeft	db 'Left    :',0
 aRight	db 'Right   :',0
@@ -771,10 +787,11 @@ name_editboxes_end:
 ;---------------------------------------------------------------------
 
 IM_END:
-mouse_dd	rd 1
 align 4
-dwTestEndTime	dd ?
-dwMainPID	dd ?
+mouse_dd	rd 1
+area_for_f36	rd 1
+dwTestEndTime	rd 1
+dwMainPID	rd 1
 ;---------------------------------------------------------------------
 textarea:
 	rb 8
