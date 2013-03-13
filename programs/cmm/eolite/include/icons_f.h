@@ -1,101 +1,29 @@
 char *ext[]={
 "..",   17,
 "<DIR>",16,
-"txt", 1,
-"doc", 1,
-"rtf", 1,
-"odt", 1,
-"log", 1,
-"docx",1,
-"htm", 2,
-"html",2,
-"mht", 2,
-"ini", 3,
-"js",  3,
-"conf",3,
-"inf", 3,
-"xlt", 4,
-"xls", 4,
-"ods", 4,
-"xlsx",4,
-"cmd", 5,
-"bat", 5,
-"py",  5,
-"sh",  5,
-"ksh", 5,
-"com", 5,
-"kex", 6,
-"lua", 6,
-"exe", 7,
-"msi", 7,
-"sys", 8,
-"ocx", 8,
-"drv", 8,
-"so",  8,
+"txt", 1, "doc", 1, "rtf", 1, "odt", 1, "log", 1, "docx",1,
+"htm", 2, "html",2, "mht", 2,
+"ini", 3, "js",  3, "conf",3, "inf", 3,
+"xlt", 4, "xls", 4, "ods", 4, "xlsx",4,
+"cmd", 5, "bat", 5, "py",  5, "sh",  5, "ksh", 5, "com", 5,
+"kex", 6, "lua", 6,
+"exe", 7, "msi", 7,
+"sys", 8, "ocx", 8, "drv", 8, "so",  8,
 "inc", 9,
-"chr", 10,
-"mt",  10,
-"ttf", 10,
-"fon", 10,
+"chr", 10, "mt",  10, "ttf", 10, "fon", 10,
 "asm", 11,
+"mp3", 12, "wav", 12, "mid", 12, "midi",12, "ogg", 12, "wma", 12, "flac",12,
 "skn", 13,
-"djvu",15,
-"pdf", 15,
-"fb2", 15,
-"nes", 18,
-"smc", 18,
-"img", 21,
-"ima", 21,
-"dll", 22,
-"obj", 22,
-"dict",22,
-"iso", 24,
-"cue", 24,
-"nrg", 24,
-"mdf", 24,
-"gif", 19,
-"bmp", 19,
-"tga", 19,
-"pcx", 19,
-"png", 19,
-"pnm", 19,
-"jpg", 19,
-"xcf", 19,
-"ai",  19,
-"jpeg",19,
-"raw", 19,
-"psd", 19,
-"wbmp",19,
-"tiff",19,
-"tif", 19,
-"3ds", 20,
-"ico", 20,
-"cur", 20,
-"ani", 20,
-"vox", 20,
-"rar", 23,
-"zip", 23,
-"cab", 23,
-"tar", 23,
-"ajr", 23,
-"jar", 23,
-"7z",  23,
-"gz",  23,
-"mp3", 12,
-"wav", 12,
-"mid", 12,
-"midi",12,
-"ogg", 12,
-"wma", 12,
-"flac",12,
-"avi", 14,
-"flv", 14,
-"mpg", 14,
-"wmv", 14,
-"mov", 14,
-"mkv", 14,
-"mp4", 14,
-"vob", 14,
+"avi", 14, "flv", 14, "mpg", 14, "wmv", 14, "mov", 14, "mkv", 14, "mp4", 14, "vob", 14, "webm", 14,
+"djvu",15, "pdf", 15, "fb2", 15,
+"nes", 18, "smc", 18,
+"gif", 19, "bmp", 19, "tga", 19, "pcx", 19, "png", 19, "pnm", 19, "jpg", 19, "xcf", 19, "ai",  19,
+"jpeg",19, "raw", 19, "psd", 19, "wbmp",19, "tiff",19, "tif", 19, 
+"3ds", 20, "ico", 20, "cur", 20, "ani", 20, "vox", 20,
+"img", 21, "ima", 21,
+"dll", 22, "obj", 22, "dict",22,
+"rar", 23, "zip", 23, "cab", 23, "tar", 23, "ajr", 23, "jar", 23, "7z",  23, "gz",  23,
+"iso", 24, "cue", 24, "nrg", 24, "mdf", 24,
 "grf", 25,
 0,0};
 
@@ -106,19 +34,12 @@ char *ext[]={
 void Put_icon(dword extension, yy, fairing_color)
 { 
 	int icon_n=0, i;
-
-	for (i=0; ext[i]<>0; i+=2;)
-		if (!strcmp(extension, ext[i]))
-		{
-			icon_n = ext[i+1];
-			break;
-		}
+	for (i=0; ext[i]!=0; i+=2;)	if (!strcmp(extension, ext[i]))	{ icon_n = ext[i+1]; break;	}
 
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,195,yy,8,#ficons_pal);
-	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*3+onLeft(168,0)+36,yy+4,0x80,0,extension);
+	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*3+Form.cwidth-120,yy+4,0x80,0,extension);
 	if (fairing_color<>0xFFFfff) IconFairing(icon_n, yy, fairing_color); //закрашиваем иконку
 }
-
 
 
 void IconFairing(dword filenum, y, color)
@@ -294,8 +215,6 @@ void IconFairing(dword filenum, y, color)
 			DrawBar(195+15,y+10,1,2,color);
 			DrawBar(195+14,y+12,2,1,color);
 			DrawBar(195+13,y+13,3,1,color);
-			DrawBar(195+11,y+14,5,1,color);			
-
-			return;
+			DrawBar(195+11,y+14,5,1,color);
 	}
 }
