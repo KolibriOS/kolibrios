@@ -1,6 +1,8 @@
 left_sort_files:
 ;   mcall 26,9
 ;   mov	 [timer_tick],eax
+   cmp   [left_folder_block], 0
+   jz    .nothing
    mov	 eax,[left_folder_data]
    add	 eax,32+40
    cmp	 [eax],word '..'
@@ -10,6 +12,7 @@ left_sort_files:
    add	 [left_folder_data],304
    dec	 [left_folder_block]
    mov	 [exit_to_dir],1
+   jz    .return_exit_to_dir
 @@:
 ; add memory for sorting
    mov	 ecx,[right_folder_data]
@@ -41,16 +44,18 @@ left_sort_files:
    shr	 ecx,2
    cld
    rep	 movsd
-   cmp	 [exit_to_dir],0
-   je	 @f
-   sub	 [left_folder_data],304
-   inc	 [left_folder_block]
-   mov	 [exit_to_dir],0
-@@:
 ; sub memory for sorting
    pop	 ecx
    mov	 [appl_memory],ecx
    mcall 64,1
+   cmp	 [exit_to_dir],0
+   je	 @f
+.return_exit_to_dir:
+   sub	 [left_folder_data],304
+   inc	 [left_folder_block]
+   mov	 [exit_to_dir],0
+@@:
+.nothing:
 ;   mcall 26,9
 ;   sub	 eax,[timer_tick]
 ;   mov	 [timer_tick],eax
@@ -631,6 +636,8 @@ search_extension_start:
    ret
 ;---------------------------------------------------------------------
 right_sort_files:
+   cmp   [right_folder_block], 0
+   jz    .nothing
    mov	 eax,[right_folder_data]
    add	 eax,32+40
    cmp	 [eax],word '..'
@@ -640,6 +647,7 @@ right_sort_files:
    add	 [right_folder_data],304
    dec	 [right_folder_block]
    mov	 [exit_to_dir],1
+   jz    .return_exit_to_dir
 @@:
 ; add memory for sorting
    mov	 ecx,[appl_memory]
@@ -670,16 +678,18 @@ right_sort_files:
    shr	 ecx,2
    cld
    rep	 movsd
-   cmp	 [exit_to_dir],0
-   je	 @f
-   sub	 [right_folder_data],304
-   inc	 [right_folder_block]
-   mov	 [exit_to_dir],0
-@@:
 ; sub memory for sorting
    pop	 ecx
    mov	 [appl_memory],ecx
    mcall 64,1
+   cmp	 [exit_to_dir],0
+   je	 @f
+.return_exit_to_dir:
+   sub	 [right_folder_data],304
+   inc	 [right_folder_block]
+   mov	 [exit_to_dir],0
+@@:
+.nothing:
    ret
 ;---------------------------------------------------------------------
 right_name_sort:
