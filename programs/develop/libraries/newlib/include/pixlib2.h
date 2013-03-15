@@ -29,8 +29,9 @@ int destroy_bitmap(bitmap_t *bitmap);
 
 int lock_bitmap(bitmap_t *bitmap);
 int resize_bitmap(bitmap_t *bitmap);
-int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,int w, int h);
 
+int blit_bitmap(bitmap_t * bitmap, int dst_x, int dst_y,
+                int w, int h, int src_x, int src_y);
 
 
 
