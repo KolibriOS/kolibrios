@@ -31,12 +31,39 @@
 ;area name db 'FFFFFFFF_open_dialog',0 ; FFFFFFFF = PID
 ;
 ; communication area data
-;dd 0 ;	flag  
-;   0 - empty, 1 - file for open, 2 -folder for open,
-;   3 - cancel, 4 - path=name of area 6822.
-;db 4092 ; path to file
-;dd 0 ; flag 0 - no filtration,  1 - filtering
-;db 4092 ; area for storage of filtering values
+; flag  ; +0
+; dw 0   ; 0 - empty, 1 - file for open, 2 -folder for open,
+;          3 - cancel, 4 - path=name of area 6822.
+;
+; type of dialog:  0-Open, 1-Save, 2-Dir
+; dw 0 ; +2
+;
+; window X size ; +4
+; dw 0
+;
+; window X position ; +6 
+; dw 0
+;
+; window y size ; +8
+; dw 0
+;
+; window Y position ; +10
+; dw 0
+;
+; OpenDialog WINDOW SLOT ; +12
+; dd 0
+;
+; file_path ; +16
+; rb 3824 ; path to file
+;
+; file name ; +3840
+; rb 256
+;
+; filtration flag ; +4096
+; dd 0 ; flag 0 - no filtration,  1 - filtering
+;
+; area for storage of filtering values ; +4100
+; rb 4092
 ;---------------------------------------------------------------------
 	use32
 	org	0x0
