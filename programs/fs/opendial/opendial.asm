@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; Open Dialog - for Kolibri OS
-; Copyright (c) 2009, 2010, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2009-2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,19 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-
+;---------------------------------------------------------------------
+;Some documentation for memory
+;
+;area name db 'FFFFFFFF_open_dialog',0 ; FFFFFFFF = PID
+;
+; communication area data
+;dd 0 ;	flag  
+;   0 - empty, 1 - file for open, 2 -folder for open,
+;   3 - cancel, 4 - path=name of area 6822.
+;db 4092 ; path to file
+;dd 0 ; flag 0 - no filtration,  1 - filtering
+;db 4092 ; area for storage of filtering values
+;---------------------------------------------------------------------
 	use32
 	org	0x0
 
