@@ -66,6 +66,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+format binary as "mnt"
+
 include 'macros.inc'
 include 'struct.inc'
 
@@ -4742,7 +4744,8 @@ align 4
         mov     [eax], edx
         mov     [ecx], eax
         mov     [eax+12], ecx
-        jecxz   @f
+        test    edx, edx
+        jz      @f
         mov     [edx+12], eax
 @@:
         and     dword [esp+32], 0
