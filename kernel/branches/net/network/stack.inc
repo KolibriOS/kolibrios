@@ -292,14 +292,10 @@ stack_handler:
 align 4
 NET_link_changed:
 
-        ret
-
-        DEBUGF  1,"NET_link_changed: %x\n", ebx
+        DEBUGF  1,"NET_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.state]
 
 align 4
 NET_send_event:
-
-        ret
 
         DEBUGF  1,"NET_send_event\n"
 
