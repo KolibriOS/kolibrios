@@ -548,7 +548,8 @@ reset_dontstart:
         mov     dword [esi + REG_RDLEN], (1 * 128)      ; Receive Descriptor Length
         mov     dword [esi + REG_RDH], 0                ; Receive Descriptor Head
         mov     dword [esi + REG_RDT], 1                ; Receive Descriptor Tail
-        mov     dword [esi + REG_RCTL], 0x04008006      ; Receiver Enable, Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
+        mov     dword [esi + REG_RCTL], RCTL_EN or RCTL_SBP or RCTL_BAM or RCTL_SECRC or RCTL_UPE or RCTL_MPE
+        ; Receiver Enable, Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet, Promiscuous mode
 
         mov     dword [device.tx_desc], 0
         mov     dword [device.tx_desc + 4], 0
@@ -577,7 +578,7 @@ start_i8254x:
         mov     [esi + REG_RDTR], eax                   ; Clear the Receive Delay Timer Register
         mov     [esi + REG_RADV], eax                   ; Clear the Receive Interrupt Absolute Delay Timer
         mov     [esi + REG_RSRPD], eax                  ; Clear the Receive Small Packet Detect Interrupt
-        or      eax, 1 shl 0 + 1 shl 7                  ; TXDW + RXT0
+;        or      eax, 1 shl 0 + 1 shl 7                  ; TXDW + RXT0
         mov     eax, 1+4+16 ;;;; hack!
         mov     [esi + REG_IMS], eax                    ; Enable interrupt types
 
