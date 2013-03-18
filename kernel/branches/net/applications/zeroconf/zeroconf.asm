@@ -149,11 +149,11 @@ START:
         jmp     .wait
 
   .start:
-        mcall   40, EVM_STACK
         mov     word[MAC], bx
         mov     dword[MAC+2], eax
+        DEBUGF  1,"->MAC: %x-%x-%x-%x-%x-%x\n", [MAC+0]:2, [MAC+1]:2, [MAC+2]:2, [MAC+3]:2, [MAC+4]:2, [MAC+5]:2
 
-        DEBUGF  1,"->MAC: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
+        mcall   40, EVM_STACK
 
         mov     edi, path       ; Calculate the length of zero-terminated string
         xor     al, al
