@@ -517,9 +517,9 @@ ARP_IP_to_MAC:
   .found_it:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING             ; Does it have a MAC assigned?
         je      .valid
+
 if ARP_BLOCK
-        jmp     .give_up
-else
+
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE         ; Are we waiting for reply from remote end?
         jne     .give_up
         push    esi
@@ -527,6 +527,11 @@ else
         call    delay_ms
         pop     esi
         jmp     .found_it               ; now check again
+
+else
+
+        jmp     .give_up
+
 end if
 
   .valid:
