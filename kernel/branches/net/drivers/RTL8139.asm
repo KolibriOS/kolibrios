@@ -543,6 +543,12 @@ reset:
         set_io  REG_MAR4
         out     dx, eax
 
+; enable Rx/Tx
+
+        mov     al, (1 shl BIT_RE) or (1 shl BIT_TE)
+        set_io  REG_COMMAND
+        out     dx, al
+
 ; Rxbuffer size, unlimited dma burst, no wrapping, no rx threshold
 ; accept broadcast packets, accept physical match packets
         mov     ax, RX_CONFIG
@@ -598,13 +604,8 @@ reset:
 ; Read MAC address
         call    read_mac
 
-; enable Rx/Tx
-        set_io  0
-        mov     al, (1 shl BIT_RE) or (1 shl BIT_TE)
-        set_io  REG_COMMAND
-        out     dx, al
-
 ; enable interrupts
+        set_io  0
         set_io  REG_IMR
         mov     ax, INTERRUPT_MASK
         out     dx, ax
