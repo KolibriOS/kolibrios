@@ -49,6 +49,14 @@ TCP_input:
         popf
 
         add     esp, sizeof.TCP_queue_entry
+
+        mov     [check_idle_semaphore], 5
+        xor     edx, edx
+        mov     eax, [TCP_input_event]
+        mov     ebx, [eax + EVENT.id]
+        xor     esi, esi
+        call    raise_event
+
         ret
 
   .fail:
@@ -60,7 +68,7 @@ TCP_input:
         add     esp, sizeof.TCP_queue_entry - 8
         call    kernel_free
         add     esp, 4
-  .done:
+
         ret
 
 
@@ -68,8 +76,16 @@ TCP_input:
 align 4
 TCP_process_input:
 
+        xor     esi, esi
+        mov     ecx, MANUAL_DESTROY
+        call    create_event
+        mov     [TCP_input_event], eax
+
   .loop:
-        get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, TCP_input.done
+        mov     eax, [TCP_input_event]
+        call    wait_event
+
+        get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .loop
 
         push    .loop
         push    [esi + TCP_queue_entry.buffer_size]

@@ -137,6 +137,7 @@ uglobal
 ;        TCP_bytes_tx            rq MAX_NET_DEVICES
         TCP_sequence_num        dd ?
         TCP_queue               rd TCP_QUEUE_SIZE*sizeof.TCP_queue_entry/4
+        TCP_input_event         dd ?
 endg
 
 
@@ -158,6 +159,11 @@ macro   TCP_init {
         mov     [TCP_sequence_num], eax
 
         init_queue TCP_queue
+
+        push    1
+        pop     ebx
+        mov     ecx, TCP_process_input
+        call    new_sys_threads
 
 }
 

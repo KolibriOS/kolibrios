@@ -264,8 +264,6 @@ stack_handler:
         cmp     [NET_RUNNING], 0
         je      .exit
 
-        call    TCP_process_input       ; de-queue TCP ragments and process them
-
         ; Test for 10ms tick
         mov     eax, [timer_ticks]
         cmp     eax, [net_10ms]
