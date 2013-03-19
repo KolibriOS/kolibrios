@@ -799,6 +799,7 @@ end if
 ;        call    boot_log
 
         mov     [pci_access_enabled], 1
+        call    pci_enum
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
