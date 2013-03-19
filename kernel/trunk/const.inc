@@ -579,6 +579,26 @@ struct  PCIDEV
         bus             db ?
 ends
 
+; The following macro assume that we are on uniprocessor machine.
+; Serious work is needed for multiprocessor machines.
+macro spin_lock_irqsave spinlock
+{
+        pushf
+        cli
+}
+macro spin_unlock_irqrestore spinlock
+{
+        popf
+}
+macro spin_lock_irq spinlock
+{
+        cli
+}
+macro spin_unlock_irq spinlock
+{
+        sti
+}
+
 struct  MEM_STATE
         mutex           MUTEX
         smallmap        dd ?
