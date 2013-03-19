@@ -4616,9 +4616,10 @@ sys_msg_board_dword:
         popad
         ret
 
+msg_board_data_size = 65536 ; Must be power of two
+
 uglobal
-  msg_board_data:
-                  times 4096 db 0
+  msg_board_data  rb msg_board_data_size
   msg_board_count dd 0x0
 endg
 
@@ -4651,7 +4652,7 @@ end if
 
         mov     [msg_board_data+ecx], bl
         inc     ecx
-        and     ecx, 4095
+        and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
         mov     [check_idle_semaphore], 5
         ret
