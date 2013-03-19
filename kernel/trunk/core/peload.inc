@@ -288,6 +288,7 @@ __exports:
           destroy_event,         'DestroyEvent',       \      ;
           raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi
           wait_event,            'WaitEvent',          \      ; eax, ebx
+          wait_event_timeout,    'WaitEventTimeout',   \      ; eax, ebx, ecx
           get_event_ex,          'GetEvent',           \      ; edi
 \
           create_kernel_object,  'CreateObject',       \
