@@ -319,7 +319,9 @@ wait_event_timeout:
         mov     ecx, eax             ; wait_param
         mov     edx, get_event_alone ; wait_test
         call    Wait_events_ex
-        jmp     wait_finish
+        test    eax, eax
+        jnz     wait_finish
+        ret
 ;-----------------------------------------------------------------------------
 align 4
 get_event_ex:                                      ;; f68:14
