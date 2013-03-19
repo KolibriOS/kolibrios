@@ -570,6 +570,15 @@ struct  MUTEX
         count   dd ?
 ends
 
+struct  PCIDEV
+        bk              dd ?
+        fd              dd ?
+        vendor_device_id dd ?
+        class           dd ?
+        devfn           db ?
+        bus             db ?
+ends
+
 struct  MEM_STATE
         mutex           MUTEX
         smallmap        dd ?
