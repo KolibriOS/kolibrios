@@ -22,6 +22,7 @@ NAME_SRCS:=  				\
            	io/finfo.c		\
            	io/ssize.c		\
            	io/write.c		\
+		linux/bitmap.c		\
 		linux/idr.c		\
 		linux/firmware.c	\
 		linux/kref.c		\

@@ -10,7 +10,7 @@
 #include <linux/compiler.h>
 #include <linux/kernel.h>
 #include <linux/export.h>
-
+#include <linux/moduleparam.h>
 
 
 #define MODULE_FIRMWARE(x)

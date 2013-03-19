@@ -2215,7 +2215,22 @@ static void do_check_malloc_state(mstate m) {
   else { tchunkptr TP = (tchunkptr)(P); unlink_large_chunk(M, TP); }
 
 
+/* Relays to internal calls to malloc/free from realloc, memalign etc */
 
+#if ONLY_MSPACES
+#define internal_malloc(m, b) mspace_malloc(m, b)
+#define internal_free(m, mem) mspace_free(m,mem);
+#else /* ONLY_MSPACES */
+#if MSPACES
+#define internal_malloc(m, b)\
+  ((m == gm)? dlmalloc(b) : mspace_malloc(m, b))
+#define internal_free(m, mem)\
+   if (m == gm) dlfree(mem); else mspace_free(m,mem);
+#else /* MSPACES */
+#define internal_malloc(m, b) malloc(b)
+#define internal_free(m, mem) free(mem)
+#endif /* MSPACES */
+#endif /* ONLY_MSPACES */
 
 
 static inline void* os_mmap(size_t size)
@@ -2229,7 +2244,6 @@ static inline int os_munmap(void* ptr, size_t size)
 {
     return (KernelFree(ptr) != 0) ? 0 : -1;
 }
-
 
 
 #define MMAP_DEFAULT(s)        os_mmap(s)
@@ -3090,8 +3104,7 @@ void* malloc(size_t bytes)
 
 /* ---------------------------- free --------------------------- */
 
-void free(void* mem)
-{
+void free(void* mem){
   /*
      Consolidate freed chunks with preceeding or succeeding bordering
      free chunks, if they exist, and then place in a bin.  Intermixed
@@ -3205,5 +3218,150 @@ void free(void* mem)
 #undef fm
 #endif /* FOOTERS */
 }
+
+void* calloc(size_t n_elements, size_t elem_size) {
+  void* mem;
+  size_t req = 0;
+  if (n_elements != 0) {
+    req = n_elements * elem_size;
+    if (((n_elements | elem_size) & ~(size_t)0xffff) &&
+        (req / n_elements != elem_size))
+      req = MAX_SIZE_T; /* force downstream failure on overflow */
+  }
+  mem = malloc(req);
+  if (mem != 0 && calloc_must_clear(mem2chunk(mem)))
+    memset(mem, 0, req);
+  return mem;
+}
+
+/* ------------ Internal support for realloc, memalign, etc -------------- */
+
+/* Try to realloc; only in-place unless can_move true */
+static mchunkptr try_realloc_chunk(mstate m, mchunkptr p, size_t nb,
+                                   int can_move) {
+  mchunkptr newp = 0;
+  size_t oldsize = chunksize(p);
+  mchunkptr next = chunk_plus_offset(p, oldsize);
+  if (RTCHECK(ok_address(m, p) && ok_inuse(p) &&
+              ok_next(p, next) && ok_pinuse(next))) {
+    if (is_mmapped(p)) {
+      newp = mmap_resize(m, p, nb, can_move);
+    }
+    else if (oldsize >= nb) {             /* already big enough */
+      size_t rsize = oldsize - nb;
+      if (rsize >= MIN_CHUNK_SIZE) {      /* split off remainder */
+        mchunkptr r = chunk_plus_offset(p, nb);
+        set_inuse(m, p, nb);
+        set_inuse(m, r, rsize);
+        dispose_chunk(m, r, rsize);
+      }
+      newp = p;
+    }
+    else if (next == m->top) {  /* extend into top */
+      if (oldsize + m->topsize > nb) {
+        size_t newsize = oldsize + m->topsize;
+        size_t newtopsize = newsize - nb;
+        mchunkptr newtop = chunk_plus_offset(p, nb);
+        set_inuse(m, p, nb);
+        newtop->head = newtopsize |PINUSE_BIT;
+        m->top = newtop;
+        m->topsize = newtopsize;
+        newp = p;
+      }
+    }
+    else if (next == m->dv) { /* extend into dv */
+      size_t dvs = m->dvsize;
+      if (oldsize + dvs >= nb) {
+        size_t dsize = oldsize + dvs - nb;
+        if (dsize >= MIN_CHUNK_SIZE) {
+          mchunkptr r = chunk_plus_offset(p, nb);
+          mchunkptr n = chunk_plus_offset(r, dsize);
+          set_inuse(m, p, nb);
+          set_size_and_pinuse_of_free_chunk(r, dsize);
+          clear_pinuse(n);
+          m->dvsize = dsize;
+          m->dv = r;
+        }
+        else { /* exhaust dv */
+          size_t newsize = oldsize + dvs;
+          set_inuse(m, p, newsize);
+          m->dvsize = 0;
+          m->dv = 0;
+        }
+        newp = p;
+      }
+    }
+    else if (!cinuse(next)) { /* extend into next free chunk */
+      size_t nextsize = chunksize(next);
+      if (oldsize + nextsize >= nb) {
+        size_t rsize = oldsize + nextsize - nb;
+        unlink_chunk(m, next, nextsize);
+        if (rsize < MIN_CHUNK_SIZE) {
+          size_t newsize = oldsize + nextsize;
+          set_inuse(m, p, newsize);
+        }
+        else {
+          mchunkptr r = chunk_plus_offset(p, nb);
+          set_inuse(m, p, nb);
+          set_inuse(m, r, rsize);
+          dispose_chunk(m, r, rsize);
+        }
+        newp = p;
+      }
+    }
+  }
+  else {
+    USAGE_ERROR_ACTION(m, chunk2mem(p));
+  }
+  return newp;
+}
+
+
+void* realloc(void* oldmem, size_t bytes) {
+  void* mem = 0;
+  if (oldmem == 0) {
+    mem = malloc(bytes);
+  }
+  else if (bytes >= MAX_REQUEST) {
+//    MALLOC_FAILURE_ACTION;
+  }
+#ifdef REALLOC_ZERO_BYTES_FREES
+  else if (bytes == 0) {
+    free(oldmem);
+  }
+#endif /* REALLOC_ZERO_BYTES_FREES */
+  else {
+    size_t nb = request2size(bytes);
+    mchunkptr oldp = mem2chunk(oldmem);
+#if ! FOOTERS
+    mstate m = gm;
+#else /* FOOTERS */
+    mstate m = get_mstate_for(oldp);
+    if (!ok_magic(m)) {
+      USAGE_ERROR_ACTION(m, oldmem);
+      return 0;
+    }
+#endif /* FOOTERS */
+    PREACTION(m); {
+      mchunkptr newp = try_realloc_chunk(m, oldp, nb, 1);
+      POSTACTION(m);
+      if (newp != 0) {
+        check_inuse_chunk(m, newp);
+        mem = chunk2mem(newp);
+      }
+      else {
+        mem = internal_malloc(m, bytes);
+        if (mem != 0) {
+          size_t oc = chunksize(oldp) - overhead_for(oldp);
+          memcpy(mem, oldmem, (oc < bytes)? oc : bytes);
+          internal_free(m, oldmem);
+        }
+      }
+    }
+  }
+  return mem;
+}
+
+
 
 

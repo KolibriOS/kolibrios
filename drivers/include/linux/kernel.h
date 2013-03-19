@@ -338,9 +338,6 @@ static inline void writeq(__u64 val, volatile void __iomem *addr)
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
 
 
-
-
-
 struct page
 {
     unsigned int addr;
@@ -365,9 +362,48 @@ struct pagelist {
     unsigned int   nents;
 };
 
-#define page_cache_release(page)        FreePage((addr_t)(page))
+#define page_cache_release(page)        FreePage(page_to_phys(page))
 
 #define alloc_page(gfp_mask) (struct page*)AllocPage()
+
+#define __free_page(page) FreePage(page_to_phys(page))
+
+#define get_page(a)
+#define put_page(a)
+#define set_pages_uc(a,b)
+#define set_pages_wb(a,b)
+
+#define pci_map_page(dev, page, offset, size, direction) \
+        (dma_addr_t)( (offset)+page_to_phys(page))
+
+#define pci_unmap_page(dev, dma_address, size, direction)
+
+#define GFP_TEMPORARY  0
+#define __GFP_NOWARN   0
+#define __GFP_NORETRY  0
+#define GFP_NOWAIT     0
+
+#define IS_ENABLED(a)  0
+
+
+#define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+
+#define RCU_INIT_POINTER(p, v) \
+        do { \
+                p = (typeof(*v) __force __rcu *)(v); \
+        } while (0)
+
+
+#define rcu_dereference_raw(p)  ({ \
+                                typeof(p) _________p1 = ACCESS_ONCE(p); \
+                                (_________p1); \
+                                })
+#define rcu_assign_pointer(p, v) \
+        ({ \
+                if (!__builtin_constant_p(v) || \
+                    ((v) != NULL)) \
+                (p) = (v); \
+        })
 
 #endif
 

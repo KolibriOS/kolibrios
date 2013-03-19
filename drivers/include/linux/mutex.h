@@ -72,6 +72,15 @@ void __attribute__ ((fastcall)) __attribute__ ((dllimport))
 void __attribute__ ((fastcall)) __attribute__ ((dllimport))
      mutex_unlock(struct mutex*)__asm__("MutexUnlock");
 
+static inline int mutex_lock_interruptible(struct mutex *lock)
+{
+    mutex_lock(lock);
+    return 0;
+}
+
+# define mutex_lock_nest_lock(lock, nest_lock) mutex_lock(lock)
+
+
 /**
  * mutex_is_locked - is the mutex locked
  * @lock: the mutex to be queried

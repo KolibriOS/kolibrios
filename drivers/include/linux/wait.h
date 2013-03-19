@@ -5,10 +5,13 @@
 #include <syscall.h>
 
 typedef struct __wait_queue wait_queue_t;
+typedef int (*wait_queue_func_t)(wait_queue_t *wait, unsigned mode, int flags, void *key);
+
 typedef struct __wait_queue_head wait_queue_head_t;
 
 struct __wait_queue
 {
+    wait_queue_func_t func;
     struct list_head task_list;
     evhandle_t evnt;
 };
@@ -58,7 +61,7 @@ do{                                                         \
     for(;;){                                                \
         if (condition)                                      \
             break;                                          \
-        WaitEvent(__wait.evnt);                             \
+        WaitEventTimeout(__wait.evnt, timeout);             \
     };                                                      \
     if (!list_empty(&__wait.task_list)) {                   \
         spin_lock_irqsave(&wq.lock, flags);                 \
@@ -190,6 +193,18 @@ struct completion {
     unsigned int done;
     wait_queue_head_t wait;
 };
+
+int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
+
+
+#define DEFINE_WAIT_FUNC(name, function)                                \
+        wait_queue_t name = {                                           \
+                .func           = function,                             \
+                .task_list      = LIST_HEAD_INIT((name).task_list),     \
+                .evnt           = CreateEvent(NULL, MANUAL_DESTROY),    \
+        }
+
+#define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)
 
 
 #endif

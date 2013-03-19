@@ -52,6 +52,7 @@
 #include <linux/spinlock.h>
 #include <linux/wait.h>
 #include <linux/bug.h>
+#include <linux/sched.h>
 
 //#include <linux/miscdevice.h>
 //#include <linux/fs.h>
@@ -85,6 +86,8 @@ struct module;
 struct drm_file;
 struct drm_device;
 
+struct device_node;
+struct videomode;
 //#include <drm/drm_os_linux.h>
 #include <drm/drm_hashtab.h>
 #include <drm/drm_mm.h>
@@ -171,7 +174,7 @@ int drm_err(const char *func, const char *format, ...);
 /** \name Begin the DRM... */
 /*@{*/
 
-#define DRM_DEBUG_CODE 0	  /**< Include debugging code if > 1, then
+#define DRM_DEBUG_CODE 2	  /**< Include debugging code if > 1, then
 				     also include looping detection. */
 
 #define DRM_MAGIC_HASH_ORDER  4  /**< Size of key hash table. Must be power of 2. */
@@ -1417,6 +1420,8 @@ extern int drm_vblank_wait(struct drm_device *dev, unsigned int *vbl_seq);
 extern u32 drm_vblank_count(struct drm_device *dev, int crtc);
 extern u32 drm_vblank_count_and_time(struct drm_device *dev, int crtc,
 				     struct timeval *vblanktime);
+extern void drm_send_vblank_event(struct drm_device *dev, int crtc,
+				     struct drm_pending_vblank_event *e);
 extern bool drm_handle_vblank(struct drm_device *dev, int crtc);
 extern int drm_vblank_get(struct drm_device *dev, int crtc);
 extern void drm_vblank_put(struct drm_device *dev, int crtc);
@@ -1439,6 +1444,12 @@ drm_mode_parse_command_line_for_connector(const char *mode_option,
 extern struct drm_display_mode *
 drm_mode_create_from_cmdline_mode(struct drm_device *dev,
 				  struct drm_cmdline_mode *cmd);
+
+extern int drm_display_mode_from_videomode(const struct videomode *vm,
+					   struct drm_display_mode *dmode);
+extern int of_get_drm_display_mode(struct device_node *np,
+				   struct drm_display_mode *dmode,
+				   int index);
 
 /* Modesetting support */
 extern void drm_vblank_pre_modeset(struct drm_device *dev, int crtc);
@@ -1737,5 +1748,7 @@ static __inline__ int drm_device_is_pcie(struct drm_device *dev)
 
 #define drm_sysfs_connector_add(connector)
 #define drm_sysfs_connector_remove(connector)
+
+#define LFB_SIZE 0xC00000
 
 #endif

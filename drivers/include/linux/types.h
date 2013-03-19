@@ -272,21 +272,6 @@ typedef unsigned int         count_t;
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
 
 
-
-
-#ifndef HAVE_ARCH_BUG
-#define BUG() do { \
-         printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __FUNCTION__); \
-       /*  panic("BUG!"); */ \
- } while (0)
-#endif
-
-#ifndef HAVE_ARCH_BUG_ON
-#define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
-#endif
-
-
-
 #define MTRR_TYPE_UNCACHABLE 0
 #define MTRR_TYPE_WRCOMB     1
 #define MTRR_TYPE_WRTHROUGH  4
@@ -313,7 +298,14 @@ char *strcpy(char *s1, const char *s2);
 char *strncpy (char *dst, const char *src, size_t len);
 
 void *malloc(size_t size);
+void* realloc(void* oldmem, size_t bytes);
+
 #define kfree free
+
+static inline void *krealloc(void *p, size_t new_size, gfp_t flags)
+{
+    return realloc(p, new_size);
+}
 
 static inline void *kzalloc(size_t size, uint32_t flags)
 {
@@ -323,6 +315,9 @@ static inline void *kzalloc(size_t size, uint32_t flags)
 }
 
 #define kmalloc(s,f) kzalloc((s), (f))
+
+
+
 
 struct drm_file;
 
@@ -353,5 +348,15 @@ struct timeval
 #define __read_mostly
 #endif
 
+/**
+ * struct callback_head - callback structure for use with RCU and task_work
+ * @next: next update requests in a list
+ * @func: actual update function to call after the grace period.
+ */
+struct callback_head {
+        struct callback_head *next;
+        void (*func)(struct callback_head *head);
+};
+#define rcu_head callback_head
 
 #endif /* _LINUX_TYPES_H */

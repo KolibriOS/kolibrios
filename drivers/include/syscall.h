@@ -173,6 +173,17 @@ static inline void WaitEvent(evhandle_t evh)
      __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
 };
 
+static inline int WaitEventTimeout(evhandle_t evh, int timeout)
+{
+    int retval;
+    __asm__ __volatile__ (
+    "call *__imp__WaitEventTimeout"
+    :"=a"(retval)
+    :"a"(evh.handle),"b"(evh.euid), "c"(timeout));
+    __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
+    return retval;
+};
+
 static inline void DestroyEvent(evhandle_t evh)
 {
      __asm__ __volatile__ (
@@ -475,6 +486,12 @@ static inline void __iomem *ioremap(uint32_t offset, size_t size)
 {
     return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE);
 }
+
+static inline void __iomem *ioremap_wc(uint32_t offset, size_t size)
+{
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE);
+}
+
 
 static inline void iounmap(void *addr)
 {

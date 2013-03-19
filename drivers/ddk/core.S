@@ -65,6 +65,7 @@
     .global _UserFree
 
     .global _WaitEvent
+    .global _WaitEventTimeout
 
 
     .def  _AllocKernelSpace;  .scl  2;  .type 32; .endef
@@ -127,6 +128,7 @@
     .def  _UserFree;          .scl  2;  .type 32; .endef
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
+    .def  _WaitEventTimeout;  .scl  2;  .type 32; .endef
 
 
 _AllocKernelSpace:
@@ -189,6 +191,7 @@ _TimerHs:
 _UserAlloc:
 _UserFree:
 _WaitEvent:
+_WaitEventTimeout:
 
         ret
 
@@ -258,4 +261,5 @@ _WaitEvent:
         .ascii " -export:UserFree"             # stdcall
 
         .ascii " -export:WaitEvent"            # stdcall
+        .ascii " -export:WaitEventTimeout"     # stdcall
 

@@ -33,4 +33,9 @@ struct scatterlist {
 
 #define ARCH_HAS_SG_CHAIN
 
+int dma_map_sg(struct device *dev, struct scatterlist *sglist,
+                           int nelems, int dir);
+
+#define dma_unmap_sg(d, s, n, r)
+
 #endif /* __ASM_GENERIC_SCATTERLIST_H */
