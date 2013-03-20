@@ -1,3 +1,5 @@
+//Leency 2008-2013
+
 void Tip(int y, dword caption, id, arrow)
 {
 	int i;
@@ -10,7 +12,7 @@ void Tip(int y, dword caption, id, arrow)
 }
 
 
-path_string disk_list[20];
+path_string disk_list[30];
 int disc_num;
 dword devbuf;
 
@@ -21,7 +23,7 @@ void GetSystemDiscs()
 	
 	disc_num=0;
 	if (devbuf) free(devbuf);
-	devbuf = malloc(3112); //буфер где-то на 10 девайсов в левой панели
+	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
 	ReadDir(19, devbuf, "/");
 	dev_num = EBX;
 	for (i1=0; i1<dev_num; i1++)
@@ -64,7 +66,7 @@ void DrawSystemDiscs()
 		{
 			case 'r':
 				dev_icon=0;
-				strcpy(#disc_name, "RAM disk ");
+				strcpy(#disc_name, "SYS disk ");
 				break;
 			case 'c':
 				dev_icon=1;
@@ -78,6 +80,10 @@ void DrawSystemDiscs()
 			case 'b':
 				dev_icon=3;
 				strcpy(#disc_name, "Hard disk ");
+				break;
+			case 's':
+				dev_icon=3;
+				strcpy(#disc_name, "SATA disk ");
 				break;
 			case 'u':
 				dev_icon=5;

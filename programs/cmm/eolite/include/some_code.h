@@ -1,4 +1,5 @@
-//Leency - 2012
+//Leency 2008-2013
+
 
 dword onLeft(dword right,left) {EAX=Form.width-right-left;}
 dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
@@ -31,11 +32,18 @@ dword col_palette[14] = {0xD2D3D3,0xD4D4D4,0xD6D5D6,0xD8D7D8,0xDAD8D9,0xDCDADB,
 
 inline fastcall void TVScroll() { //Прокрутка
 	dword on_y, i;
-	if (count<=0) {DrawFlatButton(onLeft(27,0),57,16,onTop(22,58),0,col_work,""); return;}
-	on_y = za_kadrom * onTop(22,57) / count +57;
-	scroll_size=onTop(22,57) * f_visible - f_visible / count;
-	if (scroll_size<20) scroll_size = 20; //устанавливаем минимальный размер скролла
-	if (scroll_size>onTop(22,57)-on_y+56) || (za_kadrom+f_visible>=count) on_y=onTop(23+scroll_size,0); //для большого списка 
+	if (count<=0)
+	{
+		on_y = 57;
+		scroll_size = onTop(22,58);
+	}
+	else
+	{
+		on_y = za_kadrom * onTop(22,57) / count +57;
+		scroll_size=onTop(22,57) * f_visible - f_visible / count;
+		if (scroll_size<20) scroll_size = 20; //устанавливаем минимальный размер скролла
+		if (scroll_size>onTop(22,57)-on_y+56) || (za_kadrom+f_visible>=count) on_y=onTop(23+scroll_size,0); //для большого списка 
+	}
 	DrawFlatButton(onLeft(27,0),on_y,16,scroll_size,0,-1,"");//ползунок
 	if (!scroll_used) for (i=0; i<13; i++) DrawBar(onLeft(25-i,0), on_y+2, 1, scroll_size-3, col_palette[13-i]);
 	if (scroll_used)  for (i=0; i<13; i++) DrawBar(onLeft(25-i,0), on_y+2, 1, scroll_size-3, col_palette[i]);
