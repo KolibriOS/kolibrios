@@ -565,7 +565,7 @@ ext2_HdReadFolder:
         rep movsd
         pop     ecx
     @@:
-        cmp     [ebp + EXT2_INODE_STRUC.i_blocks], 0 ;папка пуста
+        cmp     [ebp + EXT2_INODE_STRUC.i_size], 0 ;папка пуста
         je      .error_empty_dir
         
         push    edx      ;адрес результата              [edi + 28]
@@ -616,14 +616,14 @@ ext2_HdReadFolder:
         test    ebx, 0x3                                ; длина записи должна делиться на 4
         jnz     .error_bad_len
 
+        sub     [ebp + EXT2_INODE_STRUC.i_size], ebx    ;вычитаем напрямую из структуры inode
         add     esi, ebx                                ; к следующей записи
         cmp     esi, [edi + 24]                        ; сравниваем с концом блока
         jb      .find_wanted_start
 
         push    .find_wanted_start
    .end_block:                                              ;вылетели из цикла
-        mov     ebx, [ext2_data.count_block_in_block]
-        sub     [ebp + EXT2_INODE_STRUC.i_blocks], ebx  ;вычитаем напрямую из структуры inode
+        cmp     [ebp + EXT2_INODE_STRUC.i_size], 0
         jle     .end_dir
 
         inc     dword [edi]                                 ;получаем новый блок
@@ -727,6 +727,7 @@ ext2_HdReadFolder:
         test    ebx, 0x3                                ; длина записи должна делиться на 4
         jnz     .error_bad_len
 
+        sub     [ebp + EXT2_INODE_STRUC.i_size], ebx    ;вычитаем напрямую из структуры inode
         add     esi, ebx
         cmp     esi, [edi + 24]                         ;дошли ли до конца блока?
         jb      .wanted_start
@@ -1095,6 +1096,7 @@ ext2_find_lfn:
         push    [ebp + EXT2_INODE_STRUC.i_blocks]
         xor     ecx, ecx
     .folder_block_cycle:
+        push    ecx
         call    ext2_get_inode_block
         test    eax, eax
         jnz     .error_get_inode_block
@@ -1107,7 +1109,7 @@ ext2_find_lfn:
         
         push    esi
         call    ext2_test_block_by_name
-        pop     edi
+        pop     edi ecx
 
         cmp     edi, esi                                ;нашли имя?
         je      .next_folder_block                      ;не нашли -> к след. блоку
@@ -1153,6 +1155,7 @@ ext2_find_lfn:
 
     .error_get_inode_block:
     .error_get_block:
+        pop     ecx
     .error_get_inode:
         pop     ebx
     .error_empty_root:
