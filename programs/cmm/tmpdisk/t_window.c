@@ -193,13 +193,13 @@ unsigned int disk_pos_y[]={40,65,90,40,65,90,40,65,90,40,65,90};
 
 void DrawTmpDisks()
 {
-	int i;
+	int i,FreeRAM=GetFreeRAM()/1024;
 	DrawBar(0,31, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
 	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
 	WriteText(10, Form.cheight-13, 0x80, sc.work_text, "Free RAM size:");
-	WriteText(100, Form.cheight-13, 0x80, sc.work_text, itoa(GetFreeRAM()/2048));
-	WriteText(strlen(itoa(GetFreeRAM()/2048))*6 + 100, Form.cheight-13, 0x80, sc.work_text, " MB");
+	WriteText(100, Form.cheight-13, 0x80, sc.work_text, itoa(FreeRAM));
+	WriteText(strlen(itoa(FreeRAM))*6 + 100, Form.cheight-13, 0x80, sc.work_text, " MB");
 	if (disk_num==0)
 	{
 		WriteText(17,45,    0x90, 0x777777, INTRO_TEXT_1);
