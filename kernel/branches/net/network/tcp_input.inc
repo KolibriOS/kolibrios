@@ -84,6 +84,7 @@ TCP_process_input:
 
   .wait:
         mov     eax, [TCP_input_event]
+        mov     ebx, [eax + EVENT.id]
         call    wait_event
 
   .loop:
