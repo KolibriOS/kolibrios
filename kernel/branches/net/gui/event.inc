@@ -307,6 +307,23 @@ wait_event:                                        ;; EXPORT use
         jmp     wait_finish
 ;-----------------------------------------------------------------------------
 align 4
+wait_event_timeout:
+;param:
+;   eax - event
+;   ebx - uid (for Dummy testing)
+;   ecx - timeout in timer ticks
+;retval:
+;   eax - EVENT handle or 0 if timeout
+        call    DummyTest
+        mov     ebx, ecx
+        mov     ecx, eax             ; wait_param
+        mov     edx, get_event_alone ; wait_test
+        call    Wait_events_ex
+        test    eax, eax
+        jnz     wait_finish
+        ret
+;-----------------------------------------------------------------------------
+align 4
 get_event_ex:                                      ;; f68:14
 ;info:
 ;   ќжидание любого событи€ в очереди EventList текущего слота

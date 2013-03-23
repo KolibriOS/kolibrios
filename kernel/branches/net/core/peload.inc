@@ -284,10 +284,14 @@ __exports:
           alloc_pages,           'AllocPages',         \      ; stdcall
           commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
 \
+          disk_add,              'DiskAdd',            \      ;stdcall
+          disk_media_changed,    'DiskMediaChanged',   \      ;stdcall
+\
           create_event,          'CreateEvent',        \      ; ecx, esi
           destroy_event,         'DestroyEvent',       \      ;
           raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi
           wait_event,            'WaitEvent',          \      ; eax, ebx
+          wait_event_timeout,    'WaitEventTimeout',   \      ; eax, ebx, ecx
           get_event_ex,          'GetEvent',           \      ; edi
 \
           create_kernel_object,  'CreateObject',       \

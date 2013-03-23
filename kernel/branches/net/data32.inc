@@ -181,6 +181,10 @@ dll_list:
  .bk           dd dll_list
  .fd           dd dll_list
 
+pcidev_list:
+ .bk           dd pcidev_list
+ .fd           dd pcidev_list
+
 MAX_DEFAULT_DLL_ADDR = 0x80000000
 MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
