@@ -73,6 +73,7 @@ TCP_input:
 
 
 
+
 align 4
 TCP_process_input:
 
@@ -81,35 +82,27 @@ TCP_process_input:
         call    create_event
         mov     [TCP_input_event], eax
 
-  .loop:
+  .wait:
         mov     eax, [TCP_input_event]
         call    wait_event
 
-        get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .loop
+  .loop:
+        get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .wait
 
-        push    .loop
-        push    [esi + TCP_queue_entry.buffer_size]
+        push    [esi + TCP_queue_entry.timestamp]
         push    [esi + TCP_queue_entry.buffer_ptr]
 
         mov     ebx, [esi + TCP_queue_entry.device_ptr]
         mov     ecx, [esi + TCP_queue_entry.segment_size]
-        mov     edi, [esi + TCP_queue_entry.ip_ptr]
+        mov     edi, [esi + TCP_queue_entry.ip_ptr]                     ; ptr to ipv4 source address, followed by ipv4 destination address
         mov     esi, [esi + TCP_queue_entry.segment_ptr]                ; change esi last
 
-;-----------------------------------------------------------------
-;
-;  IN:  [esp] = ptr to buffer
-;       [esp+4] = timestamp when segment was received
-;       ebx = ptr to device struct
-;       ecx = segment size
-;       esi = ptr to TCP segment
-;       edi = ptr to ipv4 source address, followed by ipv4 dest address
-;
-;  OUT: /
-;
-;-----------------------------------------------------------------
-
         DEBUGF  1,"TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
+
+        mov     edx, esi
+
+        cmp     ebx, LOOPBACK_DEVICE
+        je      .checksum_ok
 
 ; re-calculate the checksum (if not already done by hw)
 ;        test    [ebx + NET_DEVICE.hwacc], HWACC_TCP_IPv4_IN
@@ -171,7 +164,7 @@ TCP_process_input:
         jne     .socket_loop
 
         mov     eax, [ebx + IP_SOCKET.RemoteIP]
-        cmp     eax, [edi]                              ; Ipv4 source addres
+        cmp     eax, [edi]                              ; Ipv4 source address
         je      @f
         test    eax, eax
         jnz     .socket_loop
@@ -580,7 +573,7 @@ TCP_process_input:
 ;----------------------------
 ; trim any data not in window
 
-; check for duplicate data at beginning of segment
+; check for duplicate data at beginning of segment (635)
 
         mov     eax, [ebx + TCP_SOCKET.RCV_NXT]
         sub     eax, [edx + TCP_header.SequenceNumber]
@@ -606,7 +599,7 @@ TCP_process_input:
         dec     eax
   .no_dup_syn:
 
-; Check for entire duplicate segment
+; Check for entire duplicate segment (646)
         cmp     eax, ecx                ; eax holds number of bytes to drop, ecx is data size
         jb      .duplicate
         jnz     @f
@@ -620,6 +613,7 @@ TCP_process_input:
 
 ; send an ACK and resynchronize and drop any data.
 ; But keep on processing for RST or ACK
+        DEBUGF  1, "616\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         mov     eax, ecx
 ;TODO: update stats
@@ -639,7 +633,7 @@ TCP_process_input:
        @@:
 
 ;--------------------------------------------------
-; Handle data that arrives after process terminates
+; Handle data that arrives after process terminates (687)
 
   .no_duplicate:
         cmp     [ebx + SOCKET.PID], 0
@@ -693,6 +687,7 @@ TCP_process_input:
         cmp     eax, [ebx + TCP_SOCKET.RCV_NXT]
         jne     .drop_after_ack
 
+        DEBUGF  1, "690\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 ;;; TODO: update stats
         jmp     .no_excess_data
@@ -703,18 +698,6 @@ TCP_process_input:
         sub     ecx, eax
         and     [ebx + TCP_SOCKET.t_flags], not (TH_PUSH or TH_FIN)
   .no_excess_data:
-
-;--------------------- FIXME -------------------
-
-        pusha
-        movzx   esi, [edx + TCP_header.DataOffset]
-        add     esi, edx
-        lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_write                       ; Add the data to the socket buffer
-        add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
-        popa
-
-;--------------------- FIXME --------------------
 
 ;-----------------
 ; Record timestamp (737-746)
@@ -1447,7 +1430,47 @@ align 4
         jnz     .final_processing
        @@:
 
-;        call    TCP_reassemble        ;;; TODO
+
+; The segment is in order?
+        mov     eax, [edx + TCP_header.SequenceNumber]
+        cmp     eax, [ebx + TCP_SOCKET.RCV_NXT]
+        jne     .out_of_order
+
+; The reassembly queue is empty?
+        cmp     [ebx + TCP_SOCKET.seg_next], 0
+        jne     .out_of_order
+
+; The connection is established?
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        jne     .out_of_order
+
+; Ok, lets do this..  Set delayed ACK flag and copy data into socket buffer
+        or      [ebx + TCP_SOCKET.t_flags], TF_DELACK
+
+        pusha
+        movzx   esi, [edx + TCP_header.DataOffset]
+        add     esi, edx
+        lea     eax, [ebx + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_write                       ; Add the data to the socket buffer
+        add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
+        popa
+
+; Wake up the sleeping process
+        mov     eax, ebx
+        call    SOCKET_notify
+
+        jmp     .data_done
+
+  .out_of_order:
+
+; Uh-oh, some data is out of order, lets call TCP reassemble for help
+
+        call    TCP_reassemble
+
+        DEBUGF  1, "1470\n"
+        or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+
+  .data_done:
 
 ;---------------
 ; FIN processing
@@ -1571,7 +1594,7 @@ align 4
 
         call    kernel_free
         add     esp, 4
-        ret
+        jmp     .loop
 
 ;---------
 ; Respond
@@ -1637,4 +1660,4 @@ align 4
 
         call    kernel_free
         add     esp, 4
-        ret
+        jmp     .loop

@@ -123,7 +123,7 @@ struct  TCP_queue_entry
         device_ptr      dd ?
 
         buffer_ptr      dd ?
-        buffer_size     dd ?
+        timestamp       dd ?
 
 ends
 

@@ -137,6 +137,8 @@ struct  TCP_SOCKET              IP_SOCKET
         ts_ecr                  dd ? ; timestamp echo reply
         ts_val                  dd ?
 
+        seg_next                dd ? ; re-assembly queue
+
         temp_bits               db ?
                                 rb 3 ; align
 
@@ -481,7 +483,7 @@ SOCKET_connect:
   .af_inet4:
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST]
+        push    [IP_LIST]                               ; FIXME
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 

@@ -530,3 +530,16 @@ TCP_mss:
 
 
         ret
+
+
+
+
+; ebx = socket ptr
+; edx = segment ptr
+align 4
+TCP_reassemble:
+
+
+
+        ret
+
