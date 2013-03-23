@@ -25,7 +25,7 @@ void about_dialog()
 				DefineAndDrawWindow(600,150,181,232+GetSkinHeight(),0x34,col_work,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4);
 				PutPaletteImage(#logo,85,85,43,7,8,#logo_pal);
-				WriteTextB(46,100,0x90,0xBF40BF,"Eolite v1.63");
+				WriteTextB(46,100,0x90,0xBF40BF,"Eolite v1.64");
 				WriteText(55,120,0x80,0,"Developers:"); 
 				WriteText(39,130,0x80,0,"Leency & Veliant"); 
 				WriteText(45,140,0x80,0,"KolibriOS Team");

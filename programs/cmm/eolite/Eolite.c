@@ -25,7 +25,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.63"
+#define title "Eolite File Manager v1.64"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -50,7 +50,7 @@ unsigned char
 	path[4096],
 	edit_path[4096],
 	file_path[4096],
-	file_name[4096],
+	file_name[256],
 	copy_file[4096],
 	temp[4096];
 int scroll_size;
@@ -695,13 +695,13 @@ void Del_Form()
 	
 void Del_File(byte dodel)
 {    
-	int del_file_rez;
+	int del_rezult;
 	IF (dodel==true)
 	{
-		del_file_rez = DeleteFile(#file_path);
-		IF (del_file_rez<>0)
+		del_rezult = DeleteFile(#file_path);
+		IF (del_rezult<>0)
 		{
-			Write_Error(del_file_rez);
+			Write_Error(del_rezult);
 			IF ( isdir) ShowMessage("Error. Folder isn't empty.");
 			IF (!isdir) ShowMessage("Error. Filesystem read-only.");
 		}
@@ -725,27 +725,26 @@ void Paste()
 		strcat(#new_copy_path, "new_");
 		strcat(#new_copy_path, #copy_file+strrchr(#copy_file,'/'));
 	}
-	copy_rezult=CopyFile(#copy_file,#new_copy_path);
-	IF (copy_rezult<>0) //ошибка
+	copy_rezult = CopyFile(#copy_file,#new_copy_path);
+	IF (copy_rezult!=0) //ошибка
 	{
 		Write_Error(copy_rezult);
-		DrawFlatButton(Form.width/2-13,160,200,80,0,0xFFB6B5, "Error. You can't paste here.");
-		pause(150);
+		return;
 	}
 	IF (cut_active) //если мы выбрали вырезать
-		{
-			strcpy(#file_path, #copy_file);
-			Del_File(true);
-			copy_file=NULL;
-			cut_active=false;
-		}
+	{
+		strcpy(#file_path, #copy_file);
+		Del_File(true);
+		copy_file=NULL;
+		cut_active=false;
+	}
 	SelectFile(#new_copy_path+strrchr(#new_copy_path,'/'));
 }
 
 
 void ReName(byte rename)
 {
-	int del_file_rez;
+	int del_rezult, copy_rezult;
 	char edit_name[256];
 	rename_active=0;
 	edit2.flags=64;
@@ -758,10 +757,10 @@ void ReName(byte rename)
 		if (strcmp(#file_path,#temp)<>0) && (file_name)
 		IF (isdir)
 		{
-			del_file_rez = DeleteFile(#file_path);
-			IF (del_file_rez<>0)
+			del_rezult = DeleteFile(#file_path);
+			IF (del_rezult!=0)
 			{
-				Write_Error(del_file_rez);
+				Write_Error(del_rezult);
 				ShowMessage("Error. Folder isn't empty.");
 				return;
 			}
@@ -770,8 +769,8 @@ void ReName(byte rename)
 		}
 		ELSE
 		{
-			CopyFile(#file_path,#temp);
-			Del_File(true);
+			copy_rezult = CopyFile(#file_path,#temp);
+			if (copy_rezult!=0) Write_Error(copy_rezult); else Del_File(true);
 		}
 		SelectFile(#edit_name);
 	}
