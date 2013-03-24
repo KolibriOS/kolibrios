@@ -13,8 +13,9 @@
 
 #ifdef LANG_RUS
 	char *ITEMS_LIST[]={
-	"Сменить тему окон",   "/sys/SKINSEL",       0,
-	"Выбрать обои",        "/sys/BGSEL",         0,
+	"Настроить окна",   "/sys/desktop",       0,
+	//"Сменить тему окон",   "/sys/SKINSEL",       0,
+	//"Выбрать обои",        "/sys/BGSEL",         0,
 	"Выбрать цвет фона",   "/sys/media/palitra", 0,
 	"Управление иконками", "/sys/ICON",          0,
 	"Настройка устройств", "/sys/SETUP",         0,
@@ -23,8 +24,9 @@
 	0};
 #else
 	char *ITEMS_LIST[]={
-	"Window skin",      "/sys/SKINSEL",       0,
-	"Wallpaper",        "/sys/BGSEL",         0,
+	"Window skin",      "/sys/desktop",       0,
+	//"Window skin",      "/sys/SKINSEL",       0,
+	//"Wallpaper",        "/sys/BGSEL",         0,
 	"Background",       "/sys/media/palitra", 0,
 	"Icon manager",     "/sys/ICON",          0,
 	"Device setup",     "/sys/SETUP",         0,
