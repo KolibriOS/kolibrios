@@ -1,16 +1,16 @@
 #0    **** MAIN ****
-Games              >      /@1
+Juegos             >      /@1
 Demos              >      /@4
-Graphics           >      /@6
-Sound and music    >      /@7
-Development        >      /@8
-System             >      /@10
+Gráficos           >      /@6
+Música y sonido    >      /@7
+Desarrollo         >      /@8
+Sistema            >      /@10
 Data processing    >      /@14
-Network            >      /@15
-Other              >      /@18
-Help                      /rd/1/docpack
-Run application           /rd/1/run
-Shutdown                  /rd/1/end
+Red                >      /@15
+Otros              >      /@18
+Ayuda                     /rd/1/docpack
+Ejecutar aplicación       /rd/1/run
+Apagar                    /rd/1/end
 #1    **** GAMES ****
 Logical games      >      /@2
 Arcades            >      /@3
