@@ -40,9 +40,9 @@ int DefineWindow(dword wtitle, wbutton)
 	if (Form.status_window>2) return 0; //rolled_up
 
 	DrawBar(0, 0, Form.cwidth, BLACK_H, 0);
-	DrawBar(0, BLACK_H, Form.cwidth, Form.cheight-BLACK_H, 0xFFFfff);
 	_PutImage(BLACK_H-LOGOW/2, BLACK_H-LOGOH/2, LOGOW,LOGOH, #logo);
 	WriteTextB(BLACK_H-LOGOW + LOGOW, BLACK_H-6/2, 0x90, 0xFFFfff, wtitle);
+	DrawBar(0, BLACK_H, Form.cwidth, Form.cheight-BLACK_H, 0xFFFfff);
 	DrawCaptButton(Form.cwidth-107, Form.cheight-40, 90, 24, 10, sc.work_button, sc.work_button_text,wbutton);
 	return 1;
 }

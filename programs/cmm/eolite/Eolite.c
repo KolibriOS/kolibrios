@@ -13,6 +13,7 @@
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\file_system.h"
 #include "..\lib\figures.h"
+#include "..\lib\encoding.h"
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
@@ -25,7 +26,8 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.64"
+#define TITLE "Eolite File Manager v1.64"
+#define ABOUT_TITLE "Eolite v1.64"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -421,7 +423,7 @@ void main()
 			}                         
 			break;
 		case evReDraw:
-			DefineAndDrawWindow(40,20,550,500,0x73,col_work,title);
+			DefineAndDrawWindow(40,20,550,500,0x73,col_work,TITLE);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 			min_win_h = disc_num*16+195;
@@ -557,7 +559,7 @@ void Line_ReDraw(dword color, filenum){
 	{	
 		strcpy(#temp, off);
 		Put_icon(#temp+_strrchr(#temp,'.'), BUTTON_HEIGHT/2-7+y, color);
-		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),BUTTON_HEIGHT-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8])); //size
+		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),BUTTON_HEIGHT-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
 	}
 	else
 		if (!strcmp("..",off))

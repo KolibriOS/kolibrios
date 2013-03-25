@@ -155,7 +155,7 @@ inline fastcall void utf8rutodos( ESI)
 
 //------------------------------------------------------------------------------
 
-dword Hex2Symb(char* htmlcolor)
+:dword Hex2Symb(char* htmlcolor)
 {
   dword j=0, symbol=0;
   char ch=0x00;
@@ -170,4 +170,17 @@ dword Hex2Symb(char* htmlcolor)
   }
   wintodos(#symbol);
   AL=symbol;
+}
+
+:dword ConvertMemSize(unsigned int bytes)
+{
+  unsigned char size_prefix[8], size_nm[4];
+  if (bytes>=1073741824) strcpy(#size_nm, " Gb");
+  else if (bytes>=1048576) strcpy(#size_nm, " Mb");
+  else if (bytes>=1024) strcpy(#size_nm, " Kb");
+  else strcpy(#size_nm, " b ");
+  while (bytes>1023) bytes/=1024;
+  strcpy(#size_prefix, itoa(bytes));
+  strcat(#size_prefix, #size_nm);
+  return #size_prefix;
 }

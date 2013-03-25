@@ -13,20 +13,6 @@ void ShowMessage(dword message)
 }
 
 
-dword ConvertSize(dword bytes)
-{
-	unsigned char size_prefix[8], size_nm[4];
-	if (bytes>=1073741824) strcpy(#size_nm, " Gb");
-	else if (bytes>=1048576) strcpy(#size_nm, " Mb");
-	else if (bytes>=1024) strcpy(#size_nm, " Kb");
-	else strcpy(#size_nm, " b ");
-	while (bytes>1023) bytes/=1024;
-	strcpy(#size_prefix, itoa(bytes));
-	strcat(#size_prefix, #size_nm);
-	return #size_prefix;
-}
-
-
 dword col_palette[14] = {0xD2D3D3,0xD4D4D4,0xD6D5D6,0xD8D7D8,0xDAD8D9,0xDCDADB,
 0xDFDCDD,0xE1DDDE,0xE2DEE0,0xE4DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1};
 

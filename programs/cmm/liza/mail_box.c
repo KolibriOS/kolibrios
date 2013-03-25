@@ -3,12 +3,24 @@
 #define LIST_INFO_H 59
 int status_bar_h = 15;
 
+llist mail_list;
+llist letter_view;
 scroll_bar scroll1 = { 17,200,210, LIST_INFO_H-3,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll2 = { 17,200,210, LIST_INFO_H,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
+struct letter_attr
+{
+   char adress[64];
+   char header[256];
+   byte m_type;
+   int size;
+   void CreateMailsArray();
+   void SetMailsSizes();
+   int GetLetterSize(int N);
+};
+letter_attr atr;
+dword mails_db;
 
-llist mail_list;
-llist letter_view;
 
 char from[256];
 char to[256];
@@ -252,8 +264,8 @@ void MailBoxLoop()
 							debug("Got mail list");
 							DrawMailBox();
 
-							CreateMailsArray();
-							SetMailsSizes();
+							atr.CreateMailsArray();
+							atr.SetMailsSizes();
 						}
 					} 
 				}
@@ -268,7 +280,7 @@ void MailBoxLoop()
 					if (EAX == 0xffffffff) { notify("Error while trying to get letter from server"); aim=NULL; break;}
 
 					mailbuffer = free(mailbuffer);
-					letter_size = GetLetterSize(mail_list.current+1) + 1024;
+					letter_size = atr.GetLetterSize(mail_list.current+1) + 1024;
 					mailbuffer = malloc(letter_size);
 					mailpointer = mailbuffer;
 					aim = GET_ANSWER_RETR;
@@ -330,11 +342,11 @@ void DrawToolbar()
 	mail_list.SetSizes(0, toolbar_w, Form.cwidth - scroll1.size_x - 1, mail_list.h, 60,18);
 
 	DrawBar(0,0, Form.cwidth,toolbar_w-3, sc.work);
-	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,          sc.work_button, sc.work_button_text,"Get mail");
-	DrawCaptButton(BUT_W+BUT_SPACE   + 10, BUT_Y, BUT_W, BUT_H, SEND_MAIL,         sc.work_button, sc.work_button_text,"Send Email");
-	DrawCaptButton(BUT_W+BUT_SPACE*2 + 10, BUT_Y, BUT_W, BUT_H, DELETE_LETTER,     sc.work_button, sc.work_button_text,"Delete");
-	DrawCaptButton(BUT_W+BUT_SPACE*3 + 10, BUT_Y, BUT_W, BUT_H, SAVE_LETTER,       sc.work_button, sc.work_button_text,"Save");
-	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,         sc.work_button, sc.work_button_text,"< Exit");
+	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,      sc.work_button, sc.work_button_text,"Get mail");
+	DrawCaptButton(BUT_W+BUT_SPACE   + 10, BUT_Y, BUT_W, BUT_H, SEND_MAIL,     sc.work_button, sc.work_button_text,"Send Email");
+	DrawCaptButton(BUT_W+BUT_SPACE*2 + 10, BUT_Y, BUT_W, BUT_H, DELETE_LETTER, sc.work_button, sc.work_button_text,"Delete");
+	DrawCaptButton(BUT_W+BUT_SPACE*3 + 10, BUT_Y, BUT_W, BUT_H, SAVE_LETTER,   sc.work_button, sc.work_button_text,"Save");
+	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,     sc.work_button, sc.work_button_text,"< Exit");
 
 	DrawBar(0, mail_list.y-3, mail_list.w,1, sc.work_graph);
 	DrawBar(0, mail_list.y-2, mail_list.w,1, 0xdfdfdf);
@@ -365,8 +377,7 @@ void DrawMailList()
 		DefineButton(0, on_y, mail_list.w-1, mail_list.line_h, 30+i+BT_HIDE+BT_NOFRAME);
 		DrawBar(0, on_y + mail_list.line_h-1, mail_list.w, 1, 0xCCCccc);
 		WriteText(10, on_y+5, 0x80, 0, itoa(i+mail_list.first+1));
-		//WriteText(mail_list.w - 40, on_y+5, 0x80, 0, itoa(GetLetterSize(i+mail_list.first+1)));
-		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertSize(GetLetterSize(i+mail_list.first+1)));
+		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertMemSize(atr.GetLetterSize(i+mail_list.first+1)));
 	}
 	DrawBar(0, i*mail_list.line_h + mail_list.y, mail_list.w, -i*mail_list.line_h+mail_list.h, 0xFFFfff);
 	DrawScroller1();
@@ -379,20 +390,6 @@ void PutMailDirectionImage(int x,y, to_str, from_str)
 	if (strstri(to_str, #email_text)) mail_direction = 1;
 	if (strstri(from_str, #email_text)) mail_direction = 2;
 	_PutImage(x, y, 18,12, sizeof(in_out_mail)/3*mail_direction + #in_out_mail);
-}
-
-
-dword ConvertSize(unsigned int bytes)
-{
-	unsigned char size_prefix[8], size_nm[4];
-	if (bytes>=1073741824) strcpy(#size_nm, " Gb");
-	else if (bytes>=1048576) strcpy(#size_nm, " Mb");
-	else if (bytes>=1024) strcpy(#size_nm, " Kb");
-	else strcpy(#size_nm, " b ");
-	while (bytes>1023) bytes/=1024;
-	strcpy(#size_prefix, itoa(bytes));
-	strcat(#size_prefix, #size_nm);
-	return #size_prefix;
 }
 
 
@@ -520,15 +517,6 @@ int GetMailCount(){
 
 
 
-
-
-
-
-
-
-
-
-
 void listputc(char agot_char){		
 	*listpointer=agot_char;
 	listpointer++;
@@ -547,39 +535,24 @@ int GetLetterSize_(int number){
 }
 
 
-struct line_element
-{
-   byte m_type;
-   char adress[64];
-   char header[256];
-   int size;
-};
-dword mails_db;
 
-void CreateMailsArray()
+
+void letter_attr::CreateMailsArray()
 {
 	mails_db = free(mails_db);
-	mails_db = malloc( mail_list.count * sizeof(line_element) );
+	mails_db = malloc( mail_list.count * sizeof(atr) );
 }
 
-dword GetCurrentElement(int el_N)
+void letter_attr::SetMailsSizes()
 {
-	return sizeof(line_element)*el_N + #mails_db;
-}
-
-void SetMailsSizes()
-{
-	int i, temp;
+	int i, off;
 	for (i=0; i < mail_list.count; i++)
 	{
-		temp = GetLetterSize_(i);
-		EBX = GetCurrentElement(i); //в регистр EBX суём адрес блока памяти со смещением к элементу N с котрым мы хотим работать
-		EBX.line_element.size = temp;//работаем с m_type N-ного элемента структуры отраженной на блок памяти
+		ESDWORD[sizeof(atr)*i+#mails_db+#atr.size-#atr] = GetLetterSize_(i);
 	}
 }
 
-int GetLetterSize(int el_N)
+int letter_attr::GetLetterSize(int N)
 {
-	EBX = GetCurrentElement(el_N);
-	return EBX.line_element.size;
+	return ESDWORD[sizeof(atr)*N+#mails_db+#atr.size-#atr];
 }

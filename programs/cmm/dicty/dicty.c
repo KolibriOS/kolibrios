@@ -200,6 +200,7 @@ void Translate()
 
 void OpenDictionary(dword fileid)
 {
+	KillProcess(speaker_id);
 	if (!dir_buf) ShowDictList();
 	if (!dir_buf) strcpy(#cur_dict, "none");
 	else strcpy(#cur_dict, fileid*304+dir_buf+72);

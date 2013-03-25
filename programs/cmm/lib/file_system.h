@@ -203,9 +203,11 @@ f70 getinfo_file_70;
 		if (! ReadFile(0, CopyFile_atr.sizelo, cBufer, copy_from))
 		{
 			rezult = WriteFile(CopyFile_atr.sizelo, cBufer, copy_in);
+			debugi(rezult);
 		}
 	}
 	free(cBufer);
+	debugi(rezult);
 	return rezult;
 }
 
