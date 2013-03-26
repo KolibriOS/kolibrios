@@ -45,7 +45,7 @@ include 'lang.inc'
 include '../../macros.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../proc32.inc'
-include 'debug.inc'
+;include 'debug.inc'
 ;include 'load_lib.mac'
 include '../../develop/libraries/box_lib/load_lib.mac'
         @use_library    ;use load lib macros
