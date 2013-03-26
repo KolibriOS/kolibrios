@@ -1289,23 +1289,23 @@ o   oI
      I
      I
 0    I
-oooo I
-o    I
-o    I
-oooo I
+ o o I
+     I
 o   oI
 o   oI
-oooo I
+o   oI
+o  ooI
+ oo oI
      I
      I
 130  I
-oooo I
+   o I
+  o  I
+ ooo I
 o   oI
-o   oI
-oooo I
-o   oI
-o   oI
-oooo I
+oooooI
+o    I
+ ooo I
      I
      I
 0    I
@@ -1599,8 +1599,8 @@ o   oI
      I
      I
 160  I
-     I
-     I
+   o I
+  o  I
  ooo I
     oI
  ooooI
@@ -1609,33 +1609,33 @@ o   oI
      I
      I
 0    I
+   o I
+  o  I
+     I
+ oo  I
+  o  I
+  o  I
  ooo I
-o    I
+     I
+     I
+0    I
+   o I
+  o  I
+     I
  ooo I
-o   oI
 o   oI
 o   oI
  ooo I
      I
      I
 0    I
+   o I
+  o  I
      I
-     I
-oooo I
 o   oI
-oooo I
 o   oI
-oooo I
-     I
-     I
-0    I
-     I
-     I
- ooooI
- o   I
- o   I
- o   I
- o   I
+o  ooI
+ oo oI
      I
      I
 0    I
@@ -2329,15 +2329,15 @@ oooooI
      I
      I
 0    I
+   o I
+  o  I
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
      I
      I
-o o oI
-o o oI
-o o oI
-o o oI
-oooooI
-    oI
-    oI
 0    I
      I
      I

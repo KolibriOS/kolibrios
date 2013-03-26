@@ -1,0 +1,166 @@
+#0    **** MAIN ****
+Juegos             >      /@1
+Demos              >      /@4
+Gr ficos           >      /@6
+M£sica y sonido    >      /@7
+Desarrollo         >      /@8
+Sistema            >      /@10
+Proceso de datos   >      /@14
+Red                >      /@15
+Otros              >      /@18
+Ayuda                     /rd/1/docpack
+Ejecutar aplicaci¢n       /rd/1/run
+Apagar                    /rd/1/end
+#1    **** JUEGOS ****
+Logical games      >      /@2
+Arcades            >      /@3
+Memory Blocks             /rd/1/games/mblocks
+FreeCell                  /rd/1/games/freecell
+Pipes                     /rd/1/games/pipes
+Kosilka                   /rd/1/games/kosilka
+RockeT ForceS             /rd/1/games/rforces
+Find Numbers              /rd/1/games/FindNumbers
+#2 **** LOGICAL GAMES ****
+C4                        /rd/1/games/c4
+15                        /rd/1/games/15
+Mine                      /rd/1/games/mine
+Just Clicks               /rd/1/games/clicks
+Checkers                  /rd/1/games/checkers
+SQ_GAME                   /rd/1/games/sq_game
+Color Lines               /rd/1/games/lines
+Flood-it!                 /rd/1/games/flood-it
+MegaMaze                  /rd/1/games/megamaze
+Sea Fight                 /rd/1/games/sw
+Sudoku                    /rd/1/games/sudoku
+Go-moku                   /rd/1/games/gomoku
+Reversi                   /rd/1/games/reversi
+#3 **** ARCADES ****
+Tetris                    /rd/1/games/tetris
+Pong                      /rd/1/games/pong
+New Pong                  /rd/1/games/pong3
+Red Square                /rd/1/games/rsquare
+Xonix                     /rd/1/games/xonix
+ArcanII                   /rd/1/games/arcanii
+Phenix                    /rd/1/games/phenix
+Snake                     /rd/1/games/snake
+#4    **** DEMOS ****
+3D                 >      /@5
+Circle                    /rd/1/demos/circle
+Fractal                   /rd/1/demos/tinyfrac
+Color demo                /rd/1/demos/colorref
+Eyes                      /rd/1/demos/eyes
+Tube                      /rd/1/demos/tube
+Plasma                    /rd/1/demos/plasma
+Moveback                  /rd/1/demos/movback
+Life                      /rd/1/demos/life2
+TranTest                  /rd/1/demos/trantest
+WEB                       /rd/1/demos/web
+FireWork                  /rd/1/demos/firework
+UnvWater                  /rd/1/demos/unvwater
+#5  **** 3D demos ****
+ScreenSaver               /rd/1/3d/crownscr
+3D-labyrinth              /rd/1/3d/free3d04
+Heart                     /rd/1/3d/3dsheart
+View3DS                   /rd/1/3d/view3ds
+CubeLine                  /rd/1/3d/cubeline
+Gears                     /rd/1/3d/gears
+3D-waved area             /rd/1/3d/3dwav
+#6   **** GRµFICOS ****
+Image viewer              /rd/1/media/kiv
+Animage                   /rd/1/media/animage
+Image Filtering           /rd/1/media/imgf/imgf
+Palitra                   /rd/1/media/palitra
+#7   **** AUDIO ****
+MidAMP                    /rd/1/media/midamp
+CD player                 /rd/1/media/cdp
+#8    **** PROGRAMMING ****
+Ejemplos           >      /@9
+Archiver KPack            /rd/1/kpack
+Flat Assembler            /rd/1/develop/fasm
+Debug Board               /rd/1/develop/board
+Debugger                  /rd/1/develop/mtdbg
+Hex2Dec2Bin               /rd/1/develop/h2d2b
+ASCII-codes               /rd/1/develop/keyascii
+SCAN-codes                /rd/1/develop/scancode
+#9    **** EXAMPLES ****
+Threads                   /rd/1/develop/thread
+IPC                       /rd/1/develop/ipc
+Color slider              /rd/1/demos/cslide
+Console example 1         /rd/1/develop/testcon2
+Console example 2         /rd/1/develop/test_gets
+Message Boxes example     /rd/1/demos/use_mb
+#10    **** SISTEMA ****
+Configuraci¢n      >      /@11
+Sensores           >      /@12
+Archivos           >      /@13
+Testing            >      /@19
+Accessibility opt. >      /@20
+Debug board               /rd/1/develop/board
+#11    **** CONFIGURACIàN ****
+Dispositivos              /rd/1/setup
+Background generator      /rd/1/pic4
+Colores y Apariencia      /rd/1/desktop
+Icons manager             /rd/1/icon
+MyKey                     /rd/1/mykey
+Modo de video para ATI    /rd/1/vmode
+#12    **** SENSORES ****
+Process manager           /rd/1/cpu
+PCI devices               /rd/1/pcidev
+Test graphics speed       /rd/1/mgb
+CPUID                     /rd/1/cpuid
+Ghost Monitor             /rd/1/gmon
+K. Bus disconnected       /rd/1/kbd
+HDD informer              /rd/1/hdd_info
+Read HDD                  /rd/1/hdread
+#13  **** ARCHIVOS ****
+KFAR                      /rd/1/File Managers/kfar
+KFM                       /rd/1/File Managers/kfm
+Eolite                    /rd/1/File Managers/Eolite
+SHELL console             /rd/1/shell
+Save RD image             /rd/1/rdsave
+#14 **** DATA PROCESSING ****
+Calculator                /rd/1/calc
+Tinypad                   /rd/1/tinypad
+TextEdit                  /rd/1/develop/t_edit
+Table Processor           /rd/1/table
+Graph builder             /rd/1/graph
+Hex-Editor                /rd/1/develop/heed
+#15    **** RED ****
+Servidores         >      /@16
+Clientes           >      /@17
+Configuraci¢n             /rd/1/network/stackcfg
+Zero-Config               /rd/1/network/zeroconf
+Network status            /rd/1/network/ethstat
+ARP status                /rd/1/network/arpstat
+#16    **** SERVERS ****
+SMTPS                     /rd/1/network/smtps
+HTTPS                     /rd/1/network/https
+FTPS                      /rd/1/network/ftps
+#17   **** CLIENTS ****
+Cliente TFTP              /rd/1/network/tftpc
+Internet-chess            /rd/1/network/chess
+Internet downloader       /rd/1/network/downloader
+Text-based browser        /rd/1/htmlv
+NNTP-NewsGroups           /rd/1/network/nntpc
+TELNET                    /rd/1/network/telnet
+POP - MAIL                /rd/1/network/popc
+Cliente IRC               /rd/1/network/airc
+YAHOO messenger (demo)    /rd/1/network/ym
+JMail                     /rd/1/network/jmail
+Cliente VNC               /rd/1/network/vncclient
+DNS resolver              /rd/1/network/nslookup
+#18    **** OTROS ****
+Analogue clock            /rd/1/demos/aclock
+Binary clock              /rd/1/demos/bcdclk
+Timer                     /rd/1/demos/timer
+ScrShoot                  /rd/1/scrshoot
+Calendario                /rd/1/calendar
+Lector de RTF             /rd/1/rtfread
+#19    **** SYSTEM TESTS ****
+Protection test           /rd/1/test
+Monitor test              /rd/1/disptest
+#20    **** SYSTEM SPECIAL ****
+Screen magnifier          /rd/1/magnify
+Screen keyboard           /rd/1/zkey
+Character table           /rd/1/ASCIIVju
+##

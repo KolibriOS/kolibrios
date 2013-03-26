@@ -7,6 +7,8 @@
 
 $Revision$
 
+include "../lang.inc"
+
 ;------------------------------------------------------------------------------
 align 4
 dtext_asciiz_esi:                          ; for skins title out
@@ -231,9 +233,17 @@ draw_text_to_user_area:
 ;------------------------------------------------------------------------------
 align 4
 FONT_I:
+  if lang eq sp
+  file 'char_sp.mt'
+  else
   file 'char.mt'
+  end if
 ;------------------------------------------------------------------------------
 align 4
 FONT_II:
+  if lang eq sp
+  file 'char2_sp.mt'
+  else
   file 'char2.mt'
+  end if
 ;------------------------------------------------------------------------------

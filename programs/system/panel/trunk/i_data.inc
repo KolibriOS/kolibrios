@@ -1,5 +1,7 @@
 ;------------------------------------------------------------------------------
 align 4
+
+
 ; DATA
 stripe:
 	dd -0x010101
@@ -21,11 +23,11 @@ m_icon:
 	dd 0x000000
 	dd 0xffffff
 
-
 lsz m_text,\
   ru, "åÖçû",\
   en, "MENU",\
-  et, "MEN--"
+  et, "MEN--",\
+  sp, "MENÈ"
 
 mi_text		db 'WAVETETRBGRDGPL '
 
