@@ -182,8 +182,10 @@ ColorDialog_exit
 ; is not present the really. For this reason
 ; not use func 10 and 23, because event 1
 ; is not cleared without call of func 0.
-; In this case is suitable only func 5 and 11!
-	mcall	5,10
+; In this case is suitable only func 5 and 11,
+; or 68.1 and 11 for better response.
+;	mcall	5,10
+	mcall	68,1
 	mcall	11
 	cmp	eax,1
 	je	.draw
