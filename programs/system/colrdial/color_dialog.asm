@@ -223,7 +223,6 @@ palette_button:
 	and	eax,0xffff
 	sub	eax,p_start_y
 	imul	eax,p_size_x
-	dec	eax
 	lea	eax,[eax+eax*2]
 	add	eax,[palette_area]
 	mov	eax,[eax]
