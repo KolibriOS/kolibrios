@@ -127,9 +127,9 @@ void OpenMailDat()
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
 	{
-		strcpy(#email_text, "eiroglif@yandex.ru"); //temporarily, for testing
-		//strcpy(#email_text, "example@mail.com");
-		strcpy(#pass_text, "rostov");
+		//strcpy(#email_text, "eiroglif@yandex.ru"); //temporarily, for testing
+		strcpy(#email_text, "example@mail.com");
+		//strcpy(#pass_text, "rostov");
 	}
 	else
 	{
