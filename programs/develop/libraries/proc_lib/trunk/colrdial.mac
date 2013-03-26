@@ -1,6 +1,6 @@
 ;*****************************************************************************
-; Macro for use Open Dialog - for Kolibri OS
-; Copyright (c) 2009-2013, Marat Zakiyanov aka Mario79, aka Mario
+; Macro for use Color Dialog - for Kolibri OS
+; Copyright (c) 2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -28,14 +28,14 @@
 ;---------------------------------------------------------------------
 ;Some documentation for memory
 ;
-;area name db 'FFFFFFFF_open_dialog',0 ; FFFFFFFF = PID
+;area name db 'FFFFFFFF_color_dialog',0 ; FFFFFFFF = PID
 ;
 ; communication area data
 ; flag  ; +0
-; dw 0   ; 0 - empty, 1 - file for open, 2 -folder for open,
-;          3 - cancel, 4 - path=name of area 6822.
+; dw 0   ; 0 - empty, 1 - OK, color selected
+;          2 - use another method/not found program, 3 - cancel
 ;
-; type of dialog:  0-Open, 1-Save, 2-Dir
+; type of dialog:  0-Palette&Tone
 ; dw 0 ; +2
 ;
 ; window X size ; +4
@@ -50,54 +50,45 @@
 ; window Y position ; +10
 ; dw 0
 ;
-; OpenDialog WINDOW SLOT ; +12
+; ColorDialog WINDOW SLOT ; +12
 ; dd 0
 ;
-; file_path ; +16
-; rb 3824 ; path to file
+; Color type ; +16
+; dd 0
 ;
-; file name ; +3840
-; rb 256
-;
-; filtration flag ; +4096
-; dd 0 ; flag 0 - no filtration,  1 - filtering
-;
-; area for storage of filtering values ; +4100
-; rb 4092
+; Color value ; +20
+; dd 0
 ;---------------------------------------------------------------------
 ;*****************************************************************************
-macro	OpenDialog_exit
+macro	ColorDialog_exit
 {
 popa
 ret 4
 }
 ;*****************************************************************************
-macro	use_OpenDialog
+macro	use_ColorDialog
 {
-OpenDialog:
-od_type			equ dword [ebp]	; 0-Open, 1-Save, 2-Dir
-od_procinfo		equ dword [ebp+4] ; Process info area for function 9
-od_com_area_name	equ dword [ebp+8] ; Name for shared area
-od_com_area		equ dword [ebp+12] ; Adress of shared area
-od_opendir_pach		equ dword [ebp+16] ; Temp area the directory for show
-od_dir_default_pach	equ dword [ebp+20] ; Default path of directory,
-od_start_path		equ dword [ebp+24] ; Location path to OpenDialog
-od_draw_window		equ dword [ebp+28] ; Adress of procedure - draw_window
-od_status		equ dword [ebp+32] ; 0-Cancel, 1-Get path OK, 2-Use alternatives
-od_openfile_pach	equ dword [ebp+36] ; Getting path to file
-od_filename_area	equ dword [ebp+40] ; Adress of file name area
-od_filter_area		equ dword [ebp+44] ; Adress of filter area
-od_x_size		equ [ebp+48] ; Window X size
-od_x_start		equ [ebp+50] ; Window X position
-od_y_size		equ [ebp+52] ; Window y size
-od_y_start		equ [ebp+54] ; Window Y position
+ColorDialog:
+cd_type			equ dword [ebp]	; 0-Palette&Tone
+cd_procinfo		equ dword [ebp+4] ; Process info area for function 9
+cd_com_area_name	equ dword [ebp+8] ; Name for shared area
+cd_com_area		equ dword [ebp+12] ; Adress of shared area
+cd_start_path		equ dword [ebp+16] ; Location path to ColorDialog
+cd_draw_window		equ dword [ebp+20] ; Adress of procedure - draw_window
+cd_status		equ dword [ebp+24] ; 0-Cancel, 1-Get color OK, 2-Use alternatives
+cd_x_size		equ [ebp+28] ; Window X size
+cd_x_start		equ [ebp+30] ; Window X position
+cd_y_size		equ [ebp+32] ; Window y size
+cd_y_start		equ [ebp+34] ; Window Y position
+cd_color_type		equ [ebp+36] ; 0- RGB, 1 or other - reserved
+cd_color		equ [ebp+40] ; Selected color
 ;*****************************************************************************
 .init:
 	pusha
 	mov   ebp,dword [esp+36]
-	mcall	9,od_procinfo,-1
+	mcall	9,cd_procinfo,-1
 	mov	ebx,[ebx+30]
-	mov	edi,od_com_area_name
+	mov	edi,cd_com_area_name
 	add	edi,7
 	std
 	mov	ecx,4
@@ -116,35 +107,31 @@ od_y_start		equ [ebp+54] ; Window Y position
 	jnz	@r
 	cld
 	
-	mcall	68,22,od_com_area_name,8192,0x09
-	mov	od_com_area,eax
+	mcall	68,22,cd_com_area_name,4096,0x09
+	mov	cd_com_area,eax
 	
-	mov	esi,od_openfile_pach
-	mov	edi,od_opendir_pach
-	call	.copy_dir_path
-	
-OpenDialog_exit
+ColorDialog_exit
 ;*****************************************************************************
 ;*****************************************************************************
 .start:
 	pusha
 	mov   ebp,dword [esp+36]
 	
-	mov	eax,od_com_area
+	mov	eax,cd_com_area
 	test	eax,eax
 	jz	.1
-	mov	ebx,od_type
+	mov	ebx,cd_type
 	mov	[eax+2],bx
 	
-	mov	[eax],word 2	; folder for open
+	mov	[eax],word 2	; start ColorDialog
 
 	pusha
-	mcall	9,od_procinfo,-1
+	mcall	9,cd_procinfo,-1
 
 	mov	eax,[ebx+42] ;main window x size
 	shr	eax,1
 	add	eax,[ebx+34] ; main window x start
-	mov	cx,od_x_size
+	mov	cx,cd_x_size
 	shr	cx,1
 	sub	ax,cx
 	test	ax,cx
@@ -152,69 +139,37 @@ OpenDialog_exit
 	jz	@f
 	xor	eax,eax
 @@:
-	mov	od_x_start,ax
+	mov	cd_x_start,ax
 
 	mov	eax,[ebx+46] ;main window y size
 	shr	eax,1
 	add	eax,[ebx+38] ; main window y start
-	mov	cx,od_y_size
+	mov	cx,cd_y_size
 	shr	cx,1
 	sub	ax,cx
 	test	eax,0x8000
 	jz	@f
 	xor	eax,eax
 @@:
-	mov	od_y_start,ax
+	mov	cd_y_start,ax
 	popa
 
-	mov	ebx,dword od_x_size
+	mov	ebx,dword cd_x_size
 	mov	[eax+4],ebx
-	mov	ebx,dword od_y_size
+	mov	ebx,dword cd_y_size
 	mov	[eax+8],ebx
-
-	mov	edi,eax
-	add	edi,16	;12
-
-	mov	esi,od_opendir_pach
-	xor	eax,eax
-	mov	al,[esi]
-	test	eax,eax
-	jnz	@f
-	mov	esi,od_dir_default_pach	;communication_area_default_pach
-@@:
-	call	.copy
+	
 ;----------------------------------------------
-; copy file name to shared area
-	cmp	od_type,dword 2
-	je	.4
-	mov	edi,od_com_area
-	add	edi,3840 ;4096-256
-
-	mov	esi,od_filename_area
-	test	esi,esi
-	jnz	@f
-	xor	eax,eax
-	mov	[edi],eax
-	jmp	.4
-@@:
-	call	.copy
-.4:
-;----------------------------------------------
-	cmp	od_type,dword 2
-	je	@f
-	call	.get_filter_data
-@@:
-;----------------------------------------------
-	mov	ebx,od_procinfo
+	mov	ebx,cd_procinfo
 	xor	eax,eax
 	mov	edi,ebx
 	mov	ecx,6
 	cld
 	rep	stosd
 	mov	[ebx],dword 7
-	mov	eax,od_com_area_name
+	mov	eax,cd_com_area_name
 	mov	[ebx+8],eax
-	mov	eax,od_start_path
+	mov	eax,cd_start_path
 	mov	[ebx+21],eax
 	mcall	70
 
@@ -246,7 +201,7 @@ OpenDialog_exit
 ;----------------------------------------------
 .draw:
 	pusha
-	call	od_draw_window
+	call	cd_draw_window
 	popa
 ;----------------------------------------------
 	pusha
@@ -258,7 +213,7 @@ OpenDialog_exit
 	cmp	eax,ecx ; compare ACTIVE and WINDOW SLOT 
 	jne	@f
 
-	mov	eax,od_com_area
+	mov	eax,cd_com_area
 	mov	ecx,[eax+12]
 	test	ecx,ecx
 	jz	@f
@@ -267,7 +222,7 @@ OpenDialog_exit
 	popa
 ;----------------------------------------------
 .no_draw:
-	mov	eax,od_com_area
+	mov	eax,cd_com_area
 	movzx	ebx,word [eax]
 	test	ebx,ebx
 	jz	.still
@@ -275,116 +230,41 @@ OpenDialog_exit
 	je	.2
 	cmp	ebx,1
 	jne	.still
-
-	mov	esi,od_com_area
-	add	esi,16	;12
-	mov	edi,od_openfile_pach
-	call	.copy
-	mov	od_status,1
-
-	mov	esi,od_openfile_pach
-	mov	edi,od_opendir_pach
-	call	.copy_dir_path
 ;----------------------------------------------
-; copy file name from shared area
-	cmp	od_type,dword 2
-	je	@f
-	mov	esi,od_com_area
-	add	esi,3840
-	mov	edi,od_filename_area
-	test	edi,edi
-	jz	@f
-	call	.copy
-@@:
+; copy color type and value from shared area
+	mov	eax,cd_com_area
+	mov	ebx,[eax+16]
+	mov	cd_color_type,ebx
+	mov	ebx,[eax+20]
+	mov	cd_color,ebx
+
+	mov	cd_status,1
 ;----------------------------------------------
 	jmp	.3
 .2:
-	mov	od_status,0
+	mov	cd_status,0
 	jmp	.3
 .1:
-	mov	od_status,2
+	mov	cd_status,2
 .3:
-	mov	eax,od_com_area
+	mov	eax,cd_com_area
 	mov	ebx,[eax+4]
-	mov	od_x_size,ebx
+	mov	cd_x_size,ebx
 	mov	ebx,[eax+8]
-	mov	od_y_size, ebx
+	mov	cd_y_size, ebx
 
 	call	.prepare_PID
 	jz	@f
 	mov	ecx,eax	; WINDOW SLOT
 	mcall	18,3
 @@:
-OpenDialog_exit
+ColorDialog_exit
 ;----------------------------------------------
 .prepare_PID:
-	mcall	9,od_procinfo,-1
+	mcall	9,cd_procinfo,-1
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
 	test	eax,eax
-	ret
-;----------------------------------------------
-.get_filter_data:
-	mov	edi,od_com_area
-	test	edi,edi
-	jnz	@f
-	ret
-@@:
-	add	edi,4100
-	mov	esi,od_filter_area
-	mov	ecx,[esi]
-	test	ecx,ecx
-	jnz	@f
-	mov	edi,od_com_area
-	mov	[edi+4096],dword 0
-	ret
-@@:
-	inc	ecx
-	cld
-	rep	movsb
-	mov	edi,od_com_area
-	mov	[edi+4096],dword 1
-	ret
-;----------------------------------------------
-.copy:
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-	ret
-;----------------------------------------------
-.copy_dir_path:
-	xor	eax,eax
-	cmp	[esi],al
-	jne	@f
-	mov	[edi],al
-	mov	[ebx],al
-	xor	ebx,ebx
-	inc	ebx
-	ret
-@@:
-	cld
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-	cmp	od_type,dword 2
-	jne	@f
-	ret
-@@:
-	mov	esi,edi
-	dec	esi
-@@:
-	std
-	lodsb
-	cmp	al,'/'
-	jnz	@b
-	
-	mov	[esi+1],byte 0
-	cld
 	ret
 ;----------------------------------------------
 }
