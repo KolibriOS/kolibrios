@@ -27,7 +27,7 @@ lsz m_text,\
   ru, "åÖçû",\
   en, "MENU",\
   et, "MEN--",\
-  sp, "MENÈ"
+  sp, "MENU"
 
 mi_text		db 'WAVETETRBGRDGPL '
 
