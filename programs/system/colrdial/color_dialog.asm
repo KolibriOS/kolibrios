@@ -25,6 +25,40 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
+;---------------------------------------------------------------------
+;Some documentation for memory
+;
+;area name db 'FFFFFFFF_color_dialog',0 ; FFFFFFFF = PID
+;
+; communication area data
+; flag  ; +0
+; dw 0   ; 0 - empty, 1 - OK, color selected
+;          2 - use another method/not found program, 3 - cancel
+;
+; type of dialog:  0-Palette&Tone
+; dw 0 ; +2
+;
+; window X size ; +4
+; dw 0
+;
+; window X position ; +6 
+; dw 0
+;
+; window y size ; +8
+; dw 0
+;
+; window Y position ; +10
+; dw 0
+;
+; ColorDialog WINDOW SLOT ; +12
+; dd 0
+;
+; Color type ; +16
+; dd 0
+;
+; Color value ; +20
+; dd 0
+;---------------------------------------------------------------------
   use32
   org	 0x0
 
@@ -34,11 +68,12 @@
   dd	 IM_END
   dd	 I_END
   dd	 stacktop
-  dd	 0x0
+  dd	 param
   dd	 0x0
 ;---------------------------------------------------------------------
 include '../../macros.inc'
 ;include 'lang.inc'
+;include 'debug.inc'
 ;---------------------------------------------------------------------
 p_start_x = 10
 p_start_y = 10
@@ -64,6 +99,11 @@ c_size_y = 20
 
 START:
 	mcall	68,11
+	mcall	66,1,1
+	mcall	40,0x27
+	call	get_communication_area
+	
+	call	get_active_pocess
 
 	xor	eax,eax
 	mov	al,p_size_x
@@ -120,12 +160,62 @@ button:
 	
 	cmp	ah, 3
 	je	tone_button
+
+	cmp	ah, 4
+	je	color_button
 	
 	cmp	ah, 1
 	jne	still
 
 .exit:
+	mov	eax,[communication_area]
+	mov	[eax],word 3
+; dps "CD flag value: cancel "
+
+.exit_1:
+
+	mov	ax,[eax]
+	and	eax,0xffff
+; dps "CD flag value: "
+; dpd eax
+; newline
+
 	mcall	-1
+;---------------------------------------------------------------------
+align 4
+get_communication_area:
+	xor	eax,eax
+	mov	al,[param]
+	test	eax,eax
+	jz	@f
+	mcall	68,22,param,,0x01
+	mov	[communication_area],eax
+;	movzx	ebx,word [eax+2]
+;	mov	[color_dialog_type],ebx
+
+;	mov	ebx,[eax+4]
+;	cmp	bx,word x_minimal_size ;300
+;	jb	@f
+;	mov	[window_x],ebx
+;	mov	ebx,[eax+8]
+;	cmp	bx,word y_minimal_size ;200
+;	jb	@f
+;	mov	[window_y],ebx
+@@:
+	ret
+;---------------------------------------------------------------------
+align 4
+get_active_pocess:
+	mcall	9,procinfo,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	[active_process],eax	; WINDOW SLOT
+	mov	ebx,[communication_area]	
+	test	ebx,ebx
+	jz	.1
+	mov	[ebx+12],eax	; WINDOW SLOT to com. area
+.1:
+	ret
 ;---------------------------------------------------------------------
 align 4
 palette_button:
@@ -161,6 +251,15 @@ tone_button:
 	jmp	still
 ;---------------------------------------------------------------------
 align 4
+color_button:
+	mov	eax,[communication_area]
+	mov	[eax],word 1
+	mov	ebx,[selected_color]
+	mov	[eax+20],ebx
+; dps "CD flag value: OK "
+	jmp	button.exit_1
+;---------------------------------------------------------------------
+align 4
 key:
 	mcall	2
 	jmp	still
@@ -168,6 +267,7 @@ key:
 align 4
 draw_selected_color:
 	mcall	13,<c_start_x,c_size_x>,<c_start_y,c_size_y>,[selected_color]
+	mcall	8,<c_start_x,c_size_x>,<c_start_y,c_size_y>,0x60000004
 	ret
 ;---------------------------------------------------------------------
 align 4

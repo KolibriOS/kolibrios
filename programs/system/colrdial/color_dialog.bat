@@ -1,6 +1,6 @@
 @erase lang.inc
 @echo lang fix en >lang.inc
-@fasm color_dialog.asm color_dialog
-@kpack color_dialog
+@fasm color_dialog.asm colrdial
+@kpack colrdial
 @erase lang.inc
 @pause
