@@ -50,7 +50,6 @@ macro ClassID a,b,c,d {
 
 ;--------------------------------------
 VendorsTab:
-VendorID        0x002A, 'Atheros Communications Inc.'
 VendorID        0x0033, 'PARADYNE CORP.'
 VendorID        0x003D, 'Lockheed Martin Corp'
 VendorID        0x0100, 'NCIPHER CORP. LTD'
@@ -1006,6 +1005,7 @@ VendorID        0x1607, 'LAVA SEMICONDUCTOR MANUFACTURING INC.'
 VendorID        0x1608, 'AUTOMATED WAGERING INTERNATIONAL'
 VendorID        0x1609, 'SCIEMETRIC INSTRUMENTS INC'
 VendorID        0x166D, 'Broadcom -SiByte'
+VendorID        0x168C, 'Atheros Communications Inc.'
 VendorID        0x1695, 'EPOX Computer Co'
 VendorID        0x17F2, 'ALBATRON Corp.'
 VendorID        0x1813, 'AMBIENT TECHNOLOGIES INC'
