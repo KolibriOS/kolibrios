@@ -1179,7 +1179,7 @@ reserve_irqs_ports:
 
         mov     [eax+16], ecx
         mov     [eax+16+4], dword 0
-        mov     [eax+16+4], dword 0x2D
+        mov     [eax+16+8], dword 0x2D
 
         mov     [eax+32], ecx
         mov     [eax+32+4], dword 0x30
@@ -1187,7 +1187,7 @@ reserve_irqs_ports:
 
         mov     [eax+48], ecx
         mov     [eax+48+4], dword 0x50
-        mov     [eax+28+8], dword 0xDF
+        mov     [eax+48+8], dword 0xDF
 
         mov     [eax+64], ecx
         mov     [eax+64+4], dword 0xE5
