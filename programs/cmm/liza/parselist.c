@@ -31,8 +31,7 @@ void ParceMail()
 				mailbuffer = new_buf;
 				mailpointer = strlen(mailbuffer) + mailbuffer;
 			}
-		} 
-
+		}
 		debug ("getting list info");
 		GetHeader(#from, "\nFrom:");
 		GetHeader(#to,   "\nTo:");
@@ -50,7 +49,7 @@ void ParceMail()
 			line_off = GetNextLine(line_off);
 			letter_view.count++;	
 		}
-		debug ("DrawMailBox()");
+		atr.SetAtrFromCurr(mail_list.current+1);
 		DrawMailBox();
 	}
 }

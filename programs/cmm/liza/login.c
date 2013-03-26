@@ -284,9 +284,7 @@ void GetSettings()
 		strcpy(#POP_server_path, #POP_server1);
 		POP_server_port = atoi(#POP_server_port1);
 	}
-
 	debug(#POP_server_path);
-	debug(#login);
 	debug(itoa(POP_server_port));
 }
 

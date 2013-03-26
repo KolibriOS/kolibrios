@@ -8,25 +8,28 @@ llist letter_view;
 scroll_bar scroll1 = { 17,200,210, LIST_INFO_H-3,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll2 = { 17,200,210, LIST_INFO_H,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-struct letter_attr
-{
-   char adress[64];
-   char header[256];
-   byte m_type;
-   int size;
-   void CreateMailsArray();
-   void SetMailsSizes();
-   int GetLetterSize(int N);
-};
-letter_attr atr;
-dword mails_db;
-
-
 char from[256];
 char to[256];
 char date[256];
 char subj[256];
 dword mdata;
+
+struct letter_attr
+{
+   char adress[sizeof(to)];
+   char subject[sizeof(subj)];
+   byte direction;
+   int size;
+   void CreateArray();
+   void SetSizes();
+   void SetAtrFromCurr(int N);
+   int  GetSize(int N);
+   char GetDirection(int N);
+   dword GetSubject(int N);
+   dword GetAdress(int N);
+};
+letter_attr atr;
+dword mails_db;
 
 char *listbuffer;
 char *listpointer;
@@ -264,8 +267,8 @@ void MailBoxLoop()
 							debug("Got mail list");
 							DrawMailBox();
 
-							atr.CreateMailsArray();
-							atr.SetMailsSizes();
+							atr.CreateArray();
+							atr.SetSizes();
 						}
 					} 
 				}
@@ -280,7 +283,7 @@ void MailBoxLoop()
 					if (EAX == 0xffffffff) { notify("Error while trying to get letter from server"); aim=NULL; break;}
 
 					mailbuffer = free(mailbuffer);
-					letter_size = atr.GetLetterSize(mail_list.current+1) + 1024;
+					letter_size = atr.GetSize(mail_list.current+1) + 1024;
 					mailbuffer = malloc(letter_size);
 					mailpointer = mailbuffer;
 					aim = GET_ANSWER_RETR;
@@ -307,7 +310,7 @@ void MailBoxLoop()
 							if (!mailbuffer) {debug("Relloc error!"); aim=NULL; break;}
 						}
 
-						if (letter_size>5000)
+						if (letter_size>9000)
 						{
 							id = mailpointer - mailbuffer * 100 ;
 							id /= letter_size - 1024;
@@ -356,7 +359,7 @@ void DrawToolbar()
 
 void DrawMailList()
 {
-	int i, on_y;
+	int i, on_y, on_x, direction;
 	mail_list.visible = mail_list.h / mail_list.line_h;
 
 	for (i=30; i<150; i++) DeleteButton(i); 
@@ -366,37 +369,27 @@ void DrawMailList()
 		if (mail_list.current==mail_list.first+i)
 		{
 			DrawBar(0, on_y, mail_list.w, mail_list.line_h-1, 0xEEEeee);
-			WriteText(strlen(itoa(i+mail_list.first+1))*6 + 42, on_y+5, 0x80, 0, #subj);
-			PutMailDirectionImage(strlen(itoa(i+mail_list.first+1))*6 + 18, mail_list.line_h-12/2+ on_y, #to, #from);
 		}
 		else
 		{
 			DrawBar(0, on_y, mail_list.w, mail_list.line_h-1, 0xFFFfff);
-			PutMailDirectionImage(strlen(itoa(i+mail_list.first+1))*6 + 18, mail_list.line_h-12/2+ on_y, NULL, NULL);
 		}
+		direction = atr.GetDirection(i+mail_list.first+1);
+		on_x = strlen(itoa(i+mail_list.first+1))*6;
+		_PutImage(on_x + 18, mail_list.line_h-12/2+ on_y, 18,12, sizeof(in_out_mail)/3*direction + #in_out_mail);
+		WriteText(on_x + 42, on_y+5, 0x80, 0, atr.GetSubject(i+mail_list.first+1));
 		DefineButton(0, on_y, mail_list.w-1, mail_list.line_h, 30+i+BT_HIDE+BT_NOFRAME);
 		DrawBar(0, on_y + mail_list.line_h-1, mail_list.w, 1, 0xCCCccc);
 		WriteText(10, on_y+5, 0x80, 0, itoa(i+mail_list.first+1));
-		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertMemSize(atr.GetLetterSize(i+mail_list.first+1)));
+		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertMemSize(atr.GetSize(i+mail_list.first+1)));
 	}
 	DrawBar(0, i*mail_list.line_h + mail_list.y, mail_list.w, -i*mail_list.line_h+mail_list.h, 0xFFFfff);
 	DrawScroller1();
 }
 
-
-void PutMailDirectionImage(int x,y, to_str, from_str)
-{
-	char mail_direction=0;
-	if (strstri(to_str, #email_text)) mail_direction = 1;
-	if (strstri(from_str, #email_text)) mail_direction = 2;
-	_PutImage(x, y, 18,12, sizeof(in_out_mail)/3*mail_direction + #in_out_mail);
-}
-
-
 void DrawLetterInfo()
 {
 	int lt_y = mail_list.y+mail_list.h;
-
 	DrawBar(0, lt_y, mail_list.w, 1, sc.work_graph);
 	DrawBar(0, lt_y+1, Form.cwidth, 1, LBUMP);
 	DrawBar(0, lt_y+2, Form.cwidth, LIST_INFO_H-4, sc.work);
@@ -405,18 +398,14 @@ void DrawLetterInfo()
 	DrawBar(0, lt_y+LIST_INFO_H-2, mail_list.w, 1, sc.work_graph); //bottom
 	DrawBar(0, lt_y+LIST_INFO_H-1, mail_list.w, 1, 0xdfdfdf);
 	DrawBar(0, lt_y+LIST_INFO_H  , mail_list.w, 1, 0xf0f0f0);
-
 	WriteTextB(10, lt_y+8 , 0x80, sc.work_text, "From:");
-	WriteText(45, lt_y+8 , 0x80, sc.work_text, #from);
-
-	WriteTextB(10, lt_y+20 , 0x80, sc.work_text, "To:");
-	WriteText(45, lt_y+20 , 0x80, sc.work_text, #to);
-	
+	WriteText (45, lt_y+8 , 0x80, sc.work_text, #from);
+	WriteTextB(10, lt_y+20, 0x80, sc.work_text, "To:");
+	WriteText (45, lt_y+20, 0x80, sc.work_text, #to);
 	WriteTextB(10, lt_y+32, 0x80, sc.work_text, "Date:");
-	WriteText(45, lt_y+32, 0x80, sc.work_text, #date);
-
+	WriteText (45, lt_y+32, 0x80, sc.work_text, #date);
 	WriteTextB(10, lt_y+44, 0x80, sc.work_text, "Subject:");
-	WriteText(66, lt_y+44, 0x80, sc.work_text, #subj);
+	WriteText (66, lt_y+44, 0x80, sc.work_text, #subj);
 }
 
 void DrawLetter()
@@ -526,7 +515,6 @@ void listputc(char agot_char){
 int GetLetterSize_(int number){
 	char serch_num[24];
 	char letter_size1[24];
-	
 	strcpy(#serch_num, "\n");
 	strcat(#serch_num, itoa(number));
 	strcat(#serch_num, " ");
@@ -537,22 +525,42 @@ int GetLetterSize_(int number){
 
 
 
-void letter_attr::CreateMailsArray()
+void letter_attr::CreateArray()
 {
 	mails_db = free(mails_db);
 	mails_db = malloc( mail_list.count * sizeof(atr) );
 }
 
-void letter_attr::SetMailsSizes()
+void letter_attr::SetSizes()
 {
-	int i, off;
+	int i;
 	for (i=0; i < mail_list.count; i++)
 	{
 		ESDWORD[sizeof(atr)*i+#mails_db+#atr.size-#atr] = GetLetterSize_(i);
+		ESDWORD[sizeof(atr)*i+#mails_db+#atr.subject-#atr] = ' ';
+		ESDWORD[sizeof(atr)*i+#mails_db+#atr.subject-#atr+1] = '\0';
 	}
 }
 
-int letter_attr::GetLetterSize(int N)
+void letter_attr::SetAtrFromCurr(int N)
 {
-	return ESDWORD[sizeof(atr)*N+#mails_db+#atr.size-#atr];
+	byte mail_direction=0;
+	if (strstri(#to, #email_text))
+	{
+		mail_direction = 1;
+		strcpy(sizeof(atr)*N+#mails_db+#atr.adress-#atr, #from);
+	}
+	if (strstri(#from, #email_text))
+	{
+		mail_direction = 2;
+		strcpy(sizeof(atr)*N+#mails_db+#atr.adress-#atr, #to);
+	}
+	ESBYTE[sizeof(atr)*N+#mails_db+#atr.direction-#atr] = mail_direction;
+	strcpy(sizeof(atr)*N+#mails_db+#atr.subject-#atr, #subj);
 }
+
+int letter_attr::GetSize(int N) { return ESDWORD[sizeof(atr)*N+#mails_db+#atr.size-#atr]; }
+char letter_attr::GetDirection(int N) { return ESBYTE[sizeof(atr)*N+#mails_db+#atr.direction-#atr]; }
+dword letter_attr::GetSubject(int N) { return sizeof(atr)*N+#mails_db+#atr.subject-#atr; }
+dword letter_attr::GetAdress(int N) { return sizeof(atr)*N+#mails_db+#atr.adress-#atr; }
+
