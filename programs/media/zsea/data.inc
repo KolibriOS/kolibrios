@@ -38,7 +38,7 @@ lsz fitext,\
         db 0
 ;---------------------------------------------------------------------
 Authors_text:
-.1:	db 'zSea version: 1.00 RC4 Date: 25/09/2011',0
+.1:	db 'zSea version: 1.00 RC5 Date: 26/03/2013',0
 .2:	db 'Authors:',0
 .3:	db 'Marat Zakiyanov aka Mario(Mario79)',0
 .4:	db 'zSea program, modules: cnv_bmp.obj,',0
@@ -90,6 +90,12 @@ lsz bgrdtext,\
     de, 'Als hintergrund'
         db 0
 ;---------------------------------
+lsz scc_text,\
+    en, 'Position:',\
+    ru, 'Позиция:',\
+    de, 'Position:'
+        db 0
+;---------------------------------
 lsz sorttext,\
     en, 'Directory sorting mode:',\
     ru, 'Режим сортировки директории:',\
@@ -117,6 +123,12 @@ lsz optiontext,\
 ;    en, 'Stretch',\
 ;    ru, 'Растянуть',\
 ;    de, 'Gestreckt'
+;---------------------------------
+lsz color_btn,\
+    en, 'Background color:',\
+    ru, 'Цвет фона:',\
+    de, 'Hintergrundfarbe:'
+        db 0
 ;---------------------------------
 lsz ok_btn,\
     en, 'Ok',\
@@ -617,11 +629,18 @@ align 4
 ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
 OpenDialog_Start	dd aOpenDialog_Start
+
+ColorDialog_Init	dd aColorDialog_Init
+ColorDialog_Start	dd aColorDialog_Start
 ;OpenDialog__Version	dd aOpenDialog_Version
         dd      0
         dd      0
+
 aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
+
+aColorDialog_Init	db 'ColorDialog_init',0
+aColorDialog_Start	db 'ColorDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align 4
@@ -891,10 +910,10 @@ mouse_dd	rd 1
 ;---------------------------------------------------------------------
 align 4
 ; option_boxes_bcgr:
-op1 option_box option_group1,60,40,6,12,0xFFFFFF,0,0xffffff,op_text.1,op_text.e1-op_text.1
-op2 option_box option_group1,60,55,6,12,0xFFFFFF,0,0xffffff,op_text.2,op_text.e2-op_text.2
-op3 option_box option_group1,60,70,6,12,0xFFFFFF,0,0xffffff,op_text.3,op_text.e3-op_text.3
-op4 option_box option_group1,60,85,6,12,0xFFFFFF,0,0xffffff,op_text.4,op_text.e4-op_text.4
+op1 option_box option_group1,60,45,6,12,0xFFFFFF,0,0xffffff,op_text.1,op_text.e1-op_text.1
+op2 option_box option_group1,60,60,6,12,0xFFFFFF,0,0xffffff,op_text.2,op_text.e2-op_text.2
+op3 option_box option_group1,60,75,6,12,0xFFFFFF,0,0xffffff,op_text.3,op_text.e3-op_text.3
+op4 option_box option_group1,60,90,6,12,0xFFFFFF,0,0xffffff,op_text.4,op_text.e4-op_text.4
 ;option_boxes_bcgr_end:
 
 op_text:
@@ -1716,6 +1735,28 @@ open_dialog_name:
 communication_area_default_pach:
 	db '/rd/1',0
 ;communication_area dd 0
+;---------------------------------------------------------------------
+ColorDialog_data:
+.type			dd 0
+.procinfo		dd procinfo ;+4
+.com_area_name		dd cd_communication_area_name ;+8
+.com_area		dd 0 ;+12
+.start_path		dd colordialog_path ;+16
+.draw_window		dd thread4.draw_window ;+20
+.status			dd 0 ;+24
+.x:
+.x_size			dw 420 ;+28 ; Window X size
+.x_start		dw 10 ;+30 ; Window X position
+.y:
+.y_size			dw 320 ;+32 ; Window y size
+.y_start		dw 10 ;+34 ; Window Y position
+.color_type		dd 0 ;+36 ; 0- RGB, 1 or other - reserved
+.color			dd 0 ;+40 ; Selected color
+
+cd_communication_area_name:
+	db 'FFFFFFFF_color_dialog',0
+colordialog_path:
+	db '/rd/1/colrdial',0
 ;---------------------------------------------------------------------
 ; clear bacground thread
 clear_thread_stack:

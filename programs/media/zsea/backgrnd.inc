@@ -110,7 +110,7 @@ background:
 	add	eax,[stretch_img_high]	
 	
 	push	dword eax			; eax - crop size
-	push	dword 0				; edi - background color
+	push	dword [background_color]	; edi - background color
 	push	dword 1				; esi - filtering
 	push	dword 0				; edx - scaling mode
 	push	dword [stretch_start_coordinates]	; ecx - start_coordinates
@@ -177,7 +177,7 @@ background:
 
 	
 	push	dword 0				; eax - crop size
-	push	dword 0				; edi - background color
+	push	dword [background_color]	; edi - background color
 	push	dword 1				; esi - filtering
 	push	dword 0				; edx - scaling mode
 	push	dword [stretch_start_coordinates]	; ecx - start_coordinates
@@ -218,7 +218,7 @@ background:
 	sub	ecx,44
 	mov	edi,eax
 	add	edi,44
-	mov	eax,0xaaaaaa
+	mov	eax,[background_color]	;0xaaaaaa
 	cld
 @@:
 	stosb

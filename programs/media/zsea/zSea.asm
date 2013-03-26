@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; zSea - advanced image viewer for KolibriOS
-; Copyright (c) 2008-2011, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2008-2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-;	v.1.0 rñ4 25.09.2011
+;	v.1.0 rñ5 26.03.2013
 ;******************************************************************************
 	use32
 	org 0x0
@@ -42,11 +42,10 @@ include 'lang.inc'
 ;include 'macros.inc'
 ;include 'editbox_ex.mac'
 ;include 'proc32.inc'
-
 include '../../macros.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../proc32.inc'
-
+include 'debug.inc'
 ;include 'load_lib.mac'
 include '../../develop/libraries/box_lib/load_lib.mac'
         @use_library    ;use load lib macros
@@ -99,6 +98,10 @@ START:				; start of execution
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
 
+;init_ColorDialog	ColorDialog_data
+	push    dword ColorDialog_data
+	call    [ColorDialog_Init]
+	
 	call	get_filter_data
 
 ;-----------------------------------------------------

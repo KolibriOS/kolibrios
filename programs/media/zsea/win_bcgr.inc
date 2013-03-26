@@ -306,8 +306,13 @@ thread4:	; start of bgrd thread
 ;---------------------------------------------------------------------
 .button:		; button
 	mcall	17	; get id
-	cmp	ah,1	; button id=1 ?
-	jne	.noclose
+	cmp	ah,4
+	je	.kok
+	
+	cmp	ah,5
+	je	.start_ColorDialog
+;	cmp	ah,1	; button id=1 ?
+;	jne	.noclose
 .close:
 	xor	dword [status],8
 	xor	eax,eax
@@ -320,6 +325,21 @@ thread4:	; start of bgrd thread
 .kok:
 	call	background
 	jmp	.close
+;---------------------------------------------------------------------	
+.start_ColorDialog:
+	push    dword ColorDialog_data
+	call    [ColorDialog_Start]
+	call	clear_control_key_flag
+; 2 - use another method/not found program
+	cmp	[ColorDialog_data.status],2
+	je	.still
+; 1 - OK, color selected	
+	cmp	[ColorDialog_data.status],1
+	jne	.still
+	
+	mov	eax,[ColorDialog_data.color]
+	mov	[background_color],eax
+	jmp	.still
 ;---------------------------------------------------------------------
 ;	*********************************************
 ;	*******	WINDOW DEFINITIONS AND DRAW ********
@@ -328,12 +348,19 @@ thread4:	; start of bgrd thread
 	mcall	12,1
 	xor	eax,eax
 	xor	esi,esi
-	mcall	,<100,300>,<100,150>,0x13909090,,labelt4
-	mcall	8,<70,40>,<110,20>,4,0xdddddd
-	mcall	4,<46,28>,0xffffff,bgrdtext,bgrdtext.size
-	add	ebx,40*65536+88
+	mcall	,<100,300>,<100,170>,0x13909090,,labelt4
+	mcall	8,<60,40>,<120,20>,4,0xdddddd
+	mcall	,<220,40>,<120,20>,5,[background_color]	; 0xdddddd
+	mcall	4,<36,28>,0xffffff,bgrdtext,bgrdtext.size
+	push	ebx
+	add	ebx,170*65536
+	mcall	,,,scc_text,scc_text.size
+	pop	ebx
+	add	ebx,40*65536+98
 	xor	ecx,ecx
 	mcall	,,,ok_btn,ok_btn.size
+	add	ebx,40*65536
+	mcall	,,0xffffff,color_btn,color_btn.size
 	call	.option_boxes_redraw
 ;	mcall	47,0x80000,[PID4],<200, 5>,0xffffff
 	mcall	12,2
@@ -351,7 +378,7 @@ thread4:	; start of bgrd thread
 	
 	mov	edx,0xffff80
 @@:
-	mcall	13,<59,14>,<39,59>,
+	mcall	13,<59,14>,<44,59>,
 	push	dword option_boxes_bcgr
 	call	[option_box_draw]
 	ret
