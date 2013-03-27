@@ -925,7 +925,11 @@ if ~ defined extended_primary_loader
         or      al, 20h
         cmp     al, 'n'
         jz      .loadc
+        if lang eq sp
+        cmp     al, 's'
+        else
         cmp     al, 'y'
+        end if
         jnz     .waityn
         call    putchar
         mov     byte [space_msg+80], 186
