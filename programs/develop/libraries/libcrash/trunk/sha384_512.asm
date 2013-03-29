@@ -1,3 +1,20 @@
+;    libcrash -- cryptographic hash functions
+;
+;    Copyright (C) 2012-2013 Ivan Baravy (dunkaist)
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 macro chn x, y, z
 {
 	movq	mm0, [y]
@@ -158,9 +175,8 @@ macro crash.sha512.round_17_64 a, b, c, d, e, f, g, h, n, rep_num
 }
 
 
-proc crash.sha512 _sha512, _data, _len, _callback, _msglen
+proc crash.sha512 _sha512, _data
 locals
-	final	rd 1
 	w	rq 80
 	A	rq 1
 	B	rq 1
@@ -172,20 +188,6 @@ locals
 	H	rq 1
 	temp	rq 1
 endl
-	mov	[final], 0
-  .first:
-	mov	eax, [_msglen]
-	mov	ecx, [_len]
-	add	[eax], ecx
-	mov	esi, [_data]
-	test	ecx, ecx
-	jz	.callback
-  .begin:
-	sub	[_len], 128
-	jnc	@f
-	add	[_len], 128
-	jmp	.endofblock
-    @@:
 	mov	edi, [_sha512]
 	movq	mm0, [edi + 0x00]
 	movq	[A], mm0
@@ -268,69 +270,7 @@ end repeat
 	paddq	mm0, [edi + 0x38]
 	movq	[edi + 0x38], mm0
 	add	esi, 128
-	jmp	.begin
-  .endofblock:
-	cmp	[final], 1
-	je	.quit
 
-  .callback:
-	mov	eax, [_callback]
-	test	eax, eax
-	jz	@f
-	call	eax
-	test	eax, eax
-	jz	@f
-	mov	[_len], eax
-	jmp	.first
-    @@:
-
-	mov	edi, [_data]
-	mov	ecx, [_len]
-	rep	movsb
-	mov	eax, [_msglen]
-	mov	eax, [eax]
-	and	eax, 127
-	mov	ecx, 112
-	sub	ecx, eax
-	ja	@f
-	add	ecx, 128
-    @@:
-	add	[_len], ecx
-	mov	byte[edi], 0x80
-	add	edi, 1
-	sub	ecx, 1
-	mov	al, 0
-	rep	stosb
-	xor	eax, eax
-	stosd
-	stosd
-	mov	eax, [_msglen]
-	mov	eax, [eax]
-	mov	edx, 8
-	mul	edx
-	bswap	eax
-	bswap	edx
-	mov	dword[edi], edx
-	mov	dword[edi + 4], eax
-	add	[_len], 16
-	mov	[final], 1
-	jmp	.first
-  .quit:
-	mov	esi, [_sha512]
-	mov	edi, esi
-	mov	ecx, 8
-    @@:
-	lodsd
-	bswap	eax
-	mov	ebx, eax
-	lodsd
-	bswap	eax
-	stosd
-	mov	eax, ebx
-	stosd
-	sub	ecx, 1
-	jnz	@b
-	emms
 	ret
 endp
 

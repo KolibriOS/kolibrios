@@ -1,7 +1,7 @@
 use32
     org 0x0
     db  'MENUET01'
-    dd  0x01,start,i_end,e_end,e_end,0,0
+    dd  0x01,start,i_end,e_end,e_end,0,this_file_name
 
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
@@ -19,12 +19,12 @@ start:
 	or	eax, eax
 	jnz	quit
 
-	invoke	file.open, input_file, O_READ
+	invoke	file.open, this_file_name, O_READ
 	or	eax, eax
 	jz	quit
 	mov	[fh], eax
 
-	invoke	file.size, input_file
+	invoke	file.size, this_file_name
 	mov	[file_len], ebx
 
 	stdcall mem.Alloc, ebx
@@ -101,8 +101,6 @@ sz msg_few_args		, '2 arguments required',0x0a
 sz msg_bad_hash_type	, 'invalid hash type',0x0a
 sz msg_file_not_found	, 'file not found: '
 
-input_file	db '/hd0/1/crashtest',0
-
 f70_buf:
 	funcnum	dd 0
 	src	dd 0
@@ -110,7 +108,7 @@ f70_buf:
 	count	dd BUFFER_SIZE
 	dst	dd data_buffer
 	res2	db 0
-	fname	dd input_file
+	fname	dd this_file_name
 
 align 4
 @IMPORT:
@@ -142,6 +140,7 @@ data_buffer	rb BUFFER_SIZE
 file_data	rd 1
 file_len	rd 1
 
+this_file_name	rb 4096
 rb 0x400					;stack
 e_end:
 

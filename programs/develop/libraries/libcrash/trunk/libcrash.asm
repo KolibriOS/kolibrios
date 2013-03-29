@@ -1,3 +1,20 @@
+;    libcrash -- cryptographic hash functions
+;
+;    Copyright (C) 2012-2013 Ivan Baravy (dunkaist)
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 format MS COFF
 
 public @EXPORT as 'EXPORTS'
@@ -11,8 +28,8 @@ include '../../../../config.inc'
 purge section,mov,add,sub
 section '.flat' code readable align 16
 
+
 include 'libcrash.inc'
-include 'crc32.asm'
 include 'md4.asm'
 include 'md5.asm'
 include 'sha1.asm'
@@ -21,101 +38,207 @@ include 'sha384_512.asm'
 
 
 proc lib_init
-	; generate crc32 table
-	bts	[crash._.init_flags], 0
-	jc	.crc32_table_done
-	
-	mov	edi, crash._.crc32_table
-	xor	ecx, ecx
-	mov	edx, 0xedb88320
-  .1:
-	mov	ebx, 8
-	mov	eax, ecx
-  .2:
-	shr	eax, 1
-	jnc	@f
-	xor	eax, edx
-    @@:
-	dec	ebx
-	jnz	.2
-	stosd
-	inc	cl
-	jnz	.1
-
-  .crc32_table_done:
 	ret
 endp
 
 
-proc crash.hash  _type, _hash, _data, _len, _callback, _msglen
+proc crash.hash  _hid, _hash, _data, _len, _callback, _msglen
 locals
 	hash_func	rd	1
+	final		rd	1
+	hi		rd	1
 endl
-	mov	eax, [_type]
-	mov	ecx, eax
-	and	eax, 0x000000ff
-	sub	eax, 1
-	mov	edx, [crash._.table + eax*8]
-	mov	esi, [crash._.table + eax*8 + 4]
+	mov	eax, [_hid]
+	imul	eax, sizeof.crash_item
+	lea	eax, [crash._.table + eax]
+	mov	[hi], eax
+
+	mov	eax, [hi]
+	mov	edx, [eax + crash_item.function]
+	mov	esi, [eax + crash_item.init_val]
 	mov	edi, [_hash]
 	mov	[hash_func], edx
-	and	ecx, 0x0000ff00
-	shr	ecx, 8
+	mov	ecx, [hi]
+	mov	ecx, [ecx + crash_item.len_in]
 	rep	movsd
 
-	stdcall	[hash_func], [_hash], [_data], [_len], [_callback], [_msglen]
+	mov	[final], 0
+  .first:
+	mov	eax, [_msglen]
+	mov	ecx, [_len]
+	add	[eax], ecx
+	mov	esi, [_data]
+	test	ecx, ecx
+	jz	.callback
+  .begin:
+	mov	eax, [hi]
+	mov	eax, [eax + crash_item.len_blk]
+	sub	[_len], eax
+	jnc	@f
+	add	[_len], eax
+	jmp	.endofblock
+    @@:
+	stdcall	[hash_func], [_hash], [_data]
+	jmp	.begin
+  .endofblock:
+	cmp	[final], 1
+	je	.quit
 
+  .callback:
+	call	[_callback]
+	test	eax, eax
+	jz	@f
+	mov	[_len], eax
+	jmp	.first
+    @@:
+
+	mov	edi, [_data]
+	mov	ecx, [_len]
+	rep	movsb
+	mov	eax, [_msglen]
+	mov	eax, [eax]
+	mov	edx, [hi]
+	mov	edx, [edx + crash_item.len_blk]
+	sub	edx, 1
+	and	eax, edx
+	mov	edx, [hi]
+	mov	ecx, [edx + crash_item.len_blk]
+	sub	ecx, [edx + crash_item.len_size]
+	sub	ecx, eax
+	ja	@f
+	add	ecx, [edx + crash_item.len_blk]
+    @@:
+	add	[_len], ecx
+	mov	eax, [hi]
+	mov	byte[edi], 0x80
+	add	edi, 1
+	sub	ecx, 1
+	mov	al, 0
+	rep	stosb
+	push	ecx
+	xor	eax, eax
+	mov	ecx, [hi]
+	mov	ecx, [ecx + crash_item.len_size]
+	sub	ecx, 8			; FIXME for > 2^64 input length
+	shr	ecx, 2
+	rep	stosd
+	pop	ecx
+	mov	eax, [_msglen]
+	mov	eax, [eax]
+	mov	edx, 8
+	mul	edx
+	mov	ecx, [hi]
+	cmp	[ecx + crash_item.endianness], LIBCRASH_ENDIAN_BIG
+	jne	@f
+	bswap	eax
+	bswap	edx
+	xchg	eax, edx
+    @@:
+	mov	dword[edi], eax
+	mov	dword[edi + 4], edx
+	mov	ecx, [hi]
+	mov	eax, [ecx + crash_item.len_size]
+	add	[_len], eax
+	mov	[final], 1
+	jmp	.first
+  .quit:
+	mov	eax, [hi]
+	stdcall [eax + crash_item.postproc], [eax + crash_item.len_out], [_hash]
 	ret
 endp
 
 
-proc crash.bin2hex _bin, _hex, _type
-	xor	eax, eax
+proc crash._.md4_md5_postprocess _len_out, _hash
+	ret
+endp
+
+
+proc crash._.sha1_224_256_postprocess _len_out, _hash
+	mov	ecx, [_len_out]
+	mov	esi, [_hash]
+	mov	edi, esi
+    @@:
+	lodsd
+	bswap	eax
+	stosd
+	dec	ecx
+	jnz	@b
+	ret
+endp
+
+
+proc crash._.sha384_512_postprocess _len_out, _hash
+	mov	ecx, [_len_out]
+	mov	esi, [_hash]
+	mov	edi, esi
+    @@:
+	lodsd
+	mov	ebx, eax
+	lodsd
+	bswap	eax
+	bswap	ebx
+	stosd
+	mov	eax, ebx
+	stosd
+	dec	ecx
+	jnz	@b
+	emms
+	ret
+endp
+
+
+proc crash.bin2hex _bin, _hex, _hid	; FIXME _hid param?
+	mov	eax, [_hid]
+	imul	eax, sizeof.crash_item
+	mov	ecx, [crash._.table + eax + crash_item.len_out]
 	mov	ebx, crash._.bin2hex_table
 	mov	esi, [_bin]
 	mov	edi, [_hex]
-	mov	ecx, [_type]
-	and	ecx, 0x00ff0000
-	shr	ecx, 16 - 2
-  .byte:
+	shl	ecx, 2
+  .next_byte:
+	xor	eax, eax
 	lodsb
-	mov	ah, al
-	shr	ah, 4
-	and	al, 0x0f
+	shl	eax, 4
+	shr	al, 4
 	xlatb
 	xchg	al, ah
 	xlatb
 	stosw
 	dec	ecx
-	jnz	.byte
-
+	jnz	.next_byte
+	xor	al, al
+	stosb
 	ret
 endp
 
 
 crash._.bin2hex_table	db	'0123456789abcdef'
-crash._.table:		;	hash function,	address of initial hash value
-			dd	crash.crc32,	crash._.crc_init
-			dd	crash.md4,	crash._.md4_init
-			dd	crash.md5,	crash._.md5_init
-			dd	crash.sha1,	crash._.sha1_init
-			dd	crash.sha256,	crash._.sha224_init
-			dd	crash.sha256,	crash._.sha256_init
-			dd	crash.sha512,	crash._.sha384_init
-			dd	crash.sha512,	crash._.sha512_init
+
+; see crash_item struct for details
+crash._.table		dd	crash.md4,	crash._.md4_init,    crash._.md4_md5_postprocess,       4,  4,  64,  8, 0
+			dd	crash.md5,	crash._.md5_init,    crash._.md4_md5_postprocess,       4,  4,  64,  8, 0
+			dd	crash.sha1,	crash._.sha1_init,   crash._.sha1_224_256_postprocess,  5,  5,  64,  8, 1
+			dd	crash.sha256,	crash._.sha224_init, crash._.sha1_224_256_postprocess,  8,  7,  64,  8, 1
+			dd	crash.sha256,	crash._.sha256_init, crash._.sha1_224_256_postprocess,  8,  8,  64,  8, 1
+			dd	crash.sha512,	crash._.sha384_init, crash._.sha384_512_postprocess, 16, 12, 128, 16, 1
+			dd	crash.sha512,	crash._.sha512_init, crash._.sha384_512_postprocess, 16, 16, 128, 16, 1
 
 crash._.crc_init	dd	0xffffffff
+
 crash._.md4_init:
 crash._.md5_init:
 crash._.sha1_init	dd	0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0
+
 crash._.sha224_init	dd	0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4
+
 crash._.sha256_init	dd	0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+
 crash._.sha384_init	dq	0xcbbb9d5dc1059ed8, 0x629a292a367cd507, 0x9159015a3070dd17, 0x152fecd8f70e5939,\
 				0x67332667ffc00b31, 0x8eb44a8768581511, 0xdb0c2e0d64f98fa7, 0x47b5481dbefa4fa4
+
 crash._.sha512_init	dq	0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,\
 				0x510e527fade682d1, 0x9b05688c2b3e6c1f, 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
 
-crash._.init_flags	dd	0
 crash._.sha256_table	dd	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,\
 				0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,\
 				0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,\
@@ -145,6 +268,7 @@ crash._.sha512_table	dq	0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b
 				0x06f067aa72176fba, 0x0a637dc5a2c898a6, 0x113f9804bef90dae, 0x1b710b35131c471b,\
 				0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,\
 				0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817
+
 
 align 4
 @EXPORT:

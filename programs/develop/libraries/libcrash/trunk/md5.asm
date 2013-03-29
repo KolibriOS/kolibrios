@@ -1,3 +1,20 @@
+;    libcrash -- cryptographic hash functions
+;
+;    Copyright (C) 2012-2013 Ivan Baravy (dunkaist)
+;
+;    This program is free software: you can redistribute it and/or modify
+;    it under the terms of the GNU General Public License as published by
+;    the Free Software Foundation, either version 3 of the License, or
+;    (at your option) any later version.
+;
+;    This program is distributed in the hope that it will be useful,
+;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;    GNU General Public License for more details.
+;
+;    You should have received a copy of the GNU General Public License
+;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 macro crash.md5.f b, c, d
 {
 	push	c
@@ -44,24 +61,7 @@ macro crash.md5.round func, a, b, c, d, index, shift, ac
 }
 
 
-proc crash.md5 _md5, _data, _len, _callback, _msglen
-locals
-	final	rd 1
-endl
-	mov	[final], 0
-  .first:
-	mov	eax, [_msglen]
-	mov	ecx, [_len]
-	add	[eax], ecx
-	mov	esi, [_data]
-	test	ecx, ecx
-	jz	.callback
-  .begin:
-	sub	[_len], 64
-	jnc	@f
-	add	[_len], 64
-	jmp	.endofblock
-    @@:
+proc crash.md5 _md5, _data
 	mov	edi, [_md5]
 	mov	eax, [edi + 0x0]
 	mov	ebx, [edi + 0x4]
@@ -142,49 +142,7 @@ endl
 	add	[edi + 0x8], ecx
 	add	[edi + 0xc], edx
 	add	esi, 64
-	jmp	.begin
-  .endofblock:
-	cmp	[final], 1
-	je	.quit
 
-  .callback:
-	mov	eax, [_callback]
-	test	eax, eax
-	jz	@f
-	call	eax
-	test	eax, eax
-	jz	@f
-	mov	[_len], eax
-	jmp	.first
-    @@:
-
-	mov	edi, [_data]
-	mov	ecx, [_len]
-	rep	movsb
-	mov	eax, [_msglen]
-	mov	eax, [eax]
-	and	eax, 63
-	mov	ecx, 56
-	sub	ecx, eax
-	ja	@f
-	add	ecx, 64
-    @@:
-	add	[_len], ecx
-	mov	byte[edi], 0x80
-	add	edi, 1
-	sub	ecx, 1
-	mov	al, 0
-	rep	stosb
-	mov	eax, [_msglen]
-	mov	eax, [eax]
-	mov	edx, 8
-	mul	edx
-	mov	dword[edi], eax
-	mov	dword[edi + 4], edx
-	add	[_len], 8
-	mov	[final], 1
-	jmp	.first
-  .quit:
 	ret
 endp
 
