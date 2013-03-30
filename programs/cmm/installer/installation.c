@@ -67,7 +67,6 @@ void Install()
 	for (i = 0; copyfiles[i]!=0; i++) copyf(copyfiles[i]);
 	ShowProgress("Post install actions...");
 	RunProgram("/sys/launcher", NULL);
-	RunProgram("/sys/media/kiv", "\\S__/tmp9/1/wallpapers/Retro flower.jpg");
 	SetSystemSkin("/tmp9/1/skins/latte.skn");
 	EndLoop();
 }
