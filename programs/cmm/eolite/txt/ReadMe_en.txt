@@ -7,26 +7,20 @@ You can find more information here:
 http://board.kolibrios.org/viewtopic.php?f=9&t=973
 
 
-==Install==
-Put box_lib.obj into "/sys/lib/" directory.
-Put Eolite.ini into programs directory or in "/sys/File Managers/".
-Eolite can be opened from anywhere.
-
-
 ==Authors==
 Leency - programming and design.
 Veliant - programming and support. Inactive now.
+lev
+<Lrz>
+Nable
 
 ==Thanks==
 diamond
-<Lrz>
-Nable
 Mario79
 Rock_maniak_forever
 turbanoff
-Sorcerer
+SoUrcerer
 Gluk
-lev
 
 
 KolibriOS Forever!

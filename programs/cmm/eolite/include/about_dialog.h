@@ -14,7 +14,7 @@ void about_dialog()
 				id=GetButtonID();
 				IF (id==1) || (id==10) ExitProcess();
 				IF (id==23) RunProgram(BROWSER_PATH, BROWSER_LINK);
-				IF (id==33) RunProgram(EDITOR_PATH, #program_path);
+				IF (id==33) RunProgram(EDITOR_PATH, abspath("Eolite.ini"));
 				break;
 				
 		case evKey:

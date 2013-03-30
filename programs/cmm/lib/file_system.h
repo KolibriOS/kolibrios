@@ -99,7 +99,7 @@ f70 read_file_70;
 :int GetFile(dword buf, filesize, read_path)
 {
 	BDVK ReadFile_atr;
-	dword rBuf=0;
+	dword rBuf;
 	if (! GetFileInfo(read_path, #ReadFile_atr))
 	{
 		rBuf = malloc(ReadFile_atr.sizelo);	
@@ -113,6 +113,7 @@ f70 read_file_70;
 	free(rBuf);
 	return 0;
 }
+
 
 ////////////////////////////
 //     Записать файл      //
@@ -203,11 +204,9 @@ f70 getinfo_file_70;
 		if (! ReadFile(0, CopyFile_atr.sizelo, cBufer, copy_from))
 		{
 			rezult = WriteFile(CopyFile_atr.sizelo, cBufer, copy_in);
-			debugi(rezult);
 		}
 	}
 	free(cBufer);
-	debugi(rezult);
 	return rezult;
 }
 
@@ -228,4 +227,13 @@ inline fastcall void GetCurDir( ECX, EDX)
 void notify(dword notify_param)
 {
 	RunProgram("@notify", notify_param);
+}
+
+:dword abspath(dword relative_path) //GetAbsolutePathFromRelative()
+{
+	char absolute_path[4096];
+	strcpy(#absolute_path, #program_path);
+	absolute_path[strrchr(#absolute_path, '/')] = '\0';
+	strcat(#absolute_path, relative_path);
+	return #absolute_path;
 }

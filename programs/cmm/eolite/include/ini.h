@@ -15,7 +15,7 @@ unsigned char *ERROR_TEXT[]={
 "Error #5 - File or folder not found",
 "Error #6 - End of file, EOF",
 "Error #7 - Pointer lies outside of application memory",
-"Error #8 - FAT table is destroyed",
+"Error #8 - Too less disk space",
 "Error #9 - FAT table is destroyed",
 "Error #10 - Access denied",
 "Error #11 - Device error",
@@ -36,13 +36,7 @@ void GetIni(byte onload)
 	if (onload==1)
 	{
 		free(buff);
-		buff = malloc(12000);
-		program_path[strrchr(#program_path, '/')] = NULL;
-		strcat(#program_path, "Eolite.ini");
-		ReadFile(0, 12000, buff, #program_path);
-		fsize=EBX;
-		IF (EAX<>6) ReadFile(0, 12000, buff, "/sys/File managers/Eolite.ini");
-		IF (EAX<>6) notify("Eolite.ini not found. Defaults will be used.");
+		if (!GetFile(#buff, #fsize, abspath("Eolite.ini"))) notify("Eolite.ini not found. Defaults will be used.");
 	}
 	//парсим его
 	for (tj=0; tj<fsize; tj++;) 
@@ -119,16 +113,16 @@ void Write_Error(int error_number)
 
 dword StrToCol(char* htmlcolor)
 {
-  dword j, color=0;
-  char ch=0x00;
-  
-  FOR (j=0; j<6; j++)
-  {
-    ch=ESBYTE[htmlcolor+j];
-    IF ((ch>='0') && (ch<='9')) ch -= '0';
-    IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
-    IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
-    color = color*0x10 + ch;
-  }
-   return color;
+	dword color;
+	char j, ch;
+
+	FOR (j=0; j<6; j++)
+	{
+		ch=ESBYTE[htmlcolor+j];
+		IF ((ch>='0') && (ch<='9')) ch -= '0';
+		IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+		IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+		color = color*0x10 + ch;
+	}
+	return color;
 }

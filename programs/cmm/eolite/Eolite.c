@@ -26,8 +26,8 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define TITLE "Eolite File Manager v1.64"
-#define ABOUT_TITLE "Eolite v1.64"
+#define TITLE "Eolite File Manager v1.65"
+#define ABOUT_TITLE "Eolite v1.65"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -62,7 +62,7 @@ char Item[4096];
 };
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
-char tmp_disk_del_param[3]="d0\0";
+char tmp_disk_del_param[3]="d0";
 
 dword file_mas[6898];
 int j, i, mouse_dd;
@@ -102,19 +102,17 @@ void main()
 
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading library /rd/1/lib/box_lib.obj");
-	SetEventMask(0x27);
 	GetSystemDiscs();
-	GetIni(1);
-	
+	GetIni(1);	
 	if (param)
 	{
 		strcpy(#path, #param);
 		if (strcmp(#path+strlen(#path)-1,"/")<>0) strcat(#path, "/"); //если нет, + "/"
 	}
 	else
-		strcpy(#path, "/rd/1/");
-		
+		strcpy(#path, "/rd/1/");		
 	Open_Dir(#path,ONLY_OPEN);
+	SetEventMask(0x27);
 	loop()	switch(WaitEvent())
 	{
 		case evMouse:

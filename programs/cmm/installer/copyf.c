@@ -2,18 +2,18 @@
 // относительный путь относительно программы
 
 void copyf(dword params)
-{   
-	//copyf /sys/lib|/sys/lib2
+{
+	//copyf:  /sys/lib|/sys/lib2
 	char from[4096], to[4096];
 	BDVK from_atr;
 	int border;
-	mem_Init();
+
 	if (!params) { notify("Error: no copyf params!"); return; }
-	program_path[strrchr(#program_path, '/')] = 0x0;
+	//ищем разделитель
 	border = strchr(params, '|');
 	if (!border) border = strchr(params, ' ');
 
-	if (ESBYTE[params]<>'/')
+	if (ESBYTE[params]<>'/') //абсолютный путь?
 	{
 		strcpy(#from, #program_path);
 		strcat(#from, params);
@@ -28,13 +28,9 @@ void copyf(dword params)
 
 	GetFileInfo(#from, #from_atr);
 	if (TestBit(from_atr.attr, 4)==1)
-	{
 		CopyFolder(#from, #to);
-	}
-	else 
-	{
+	else
 		CopyFile(#from, #to);
-	}
 }
 
 
@@ -46,7 +42,7 @@ void CopyFolder(dword from, to)
 	char from2[4096], to2[4096];
 
 	error = GetDir(#dirbuf, #fcount, from);
-	if (error) debug_error(from, error);
+	if (error) { debug_error(from, error); return; }
 	
 	if ((strcmp(to, "/sys")!=0) && (strcmp(to, "/tmp9/1")!=0))
 	{
@@ -102,7 +98,7 @@ unsigned char *ERROR_TEXT[]={
 "Error #5 - File or folder not found",
 "Error #6 - End of file, EOF",
 "Error #7 - Pointer lies outside of application memory",
-"Error #8 - Too less disk space or FAT table is destroyed",
+"Error #8 - Too less disk space",
 "Error #9 - FAT table is destroyed",
 "Error #10 - Access denied",
 "Error #11 - Device error",
@@ -129,45 +125,3 @@ void debug_error(int path, error_number)
 	}
 	debug(#error);
 }
-
-/*
-int files_num;
-void CalculateFilesNumber(dword from)
-{
-	dword dirbuf, fcount, filename;
-	int i, isdir, error;
-	char from2[4096];
-
-	error = GetDir(#dirbuf, #fcount, from);
-	if (error) debug_error(from, error);
-	debugi(fcount);
-
-	for (i=0; i<fcount; i++)
-	{
-		filename = i*304+dirbuf+72;
-
-		isdir = TestBit(ESDWORD[filename-40], 4);
-		if (!isdir)
-		{
-			files_num++;
-			debug(filename);
-		}
-		else
-		{
-			if ( (!strcmp(filename, ".")) || (!strcmp(filename, "..")) ) continue;
-			strcpy(#from2, from);
-			chrcat(#from2, '/');
-			strcat(#from2, filename);
-			CalculateFilesNumber(#from2);
-		}
-	}
-	free(dirbuf);
-}
-
-int GetFilesNumber(dword pathz)
-{
-	files_num = 0;
-	CalculateFilesNumber(pathz);
-	return files_num;
-}
-*/

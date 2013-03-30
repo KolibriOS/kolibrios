@@ -55,9 +55,7 @@ int DefineWindow(dword wtitle, wbutton)
 void main()
 {
 	mem_Init();
-	//if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading library /rd/1/lib/box_lib.obj");
-	//SetEventMask(0x27);
-	program_path[strrchr(#program_path, '/')] = 0x0;
+	program_path[strrchr(#program_path, '/')] = '\0';
 	HalloLoop();
 }
 

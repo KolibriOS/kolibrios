@@ -1,7 +1,7 @@
-set BINDIR=C:\Users\111\Desktop\svn\programs\cmm\_bin 
+set BINDIR=C:\Users\Кирилл\Desktop\cmm\_bin 
 md %BINDIR%
 cd %BINDIR%
-FOR %%A in (*.*) do del \Q "%%A"
+rem FOR %%A in (*.*) do del \Q "%%A"
 
 cd ..\browser
 cls
