@@ -7,6 +7,13 @@ inline fastcall dword OpenSocket( ECX, EDX, ESI, EDI)
 	$int 0x40
 } 
 
+inline fastcall dword CloseSocket( ECX )
+{
+	$mov eax, 53
+	$mov ebx, 8
+	$int 0x40
+}
+
 inline fastcall int StatusSocket( ECX)
 {
 	$mov eax,53
@@ -20,6 +27,13 @@ inline fastcall dword ReadSocket( ECX)
 	$mov ebx,3
 	$int 0x40
 	return BL;
+}
+
+inline fastcall dword ReadNetworkData( ECX, EDX, ESI)
+{
+	$mov eax, 53
+	$mov ebx, 11
+	$int 0x40
 }
 
 inline fastcall dword PollSocket( ECX)
