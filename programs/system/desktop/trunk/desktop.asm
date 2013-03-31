@@ -5,7 +5,12 @@
 ;
 ;    < russian edition by Ivan Poddubny >
 ;    < skin selection by Mike Semenyako >
-;
+;******************************************************************************
+; last update:  01/04/2013
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      select colors with ColorDialog
+;               some redesign of the look of the program
+;******************************************************************************
 ; last update:  10/09/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      select path with OpenDialog
@@ -15,8 +20,8 @@
 	db 'MENUET01'	; identifier
 	dd 1		; header version
 	dd START	; start address
-	dd I_END	; file size
-	dd i_end	; memory
+	dd IM_END	; file size
+	dd I_END	; memory
 	dd stacktop	; stack pointer
 	dd skin_info	; parameters
 	dd cur_dir_path	; path to file
@@ -29,8 +34,7 @@ include 'unpacker.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 	@use_library
 ;******************************************************************************
-
-
+;--------------------------------------
 struct SKIN_HEADER
   ident   dd ?
   version dd ?
@@ -38,7 +42,7 @@ struct SKIN_HEADER
   buttons dd ?
   bitmaps dd ?
 ends
-
+;--------------------------------------
 struct SKIN_PARAMS
   skin_height    dd ?
   margin.right   dw ?
@@ -54,7 +58,7 @@ struct SKIN_PARAMS
   dtp.size       dd ?
   dtp.data       db 40 dup (?)
 ends
-
+;--------------------------------------
 struct SKIN_BUTTONS
   type     dd ?
   pos:
@@ -64,13 +68,24 @@ struct SKIN_BUTTONS
     width  dw ?
     height dw ?
 ends
-
+;--------------------------------------
 struct SKIN_BITMAPS
   kind  dw ?
   type  dw ?
   _data  dd ?
 ends
-
+;--------------------------------------
+frame_1:
+  .x      = 5
+  .y      = 220
+  .width  = 420
+  .height = 50
+;--------------------------------------  
+frame_2:
+  .x      = 5
+  .y      = 280
+  .width  = 420
+  .height = 50
 ;---------------------------------------------------------------------
 START:		; start of execution
 ;---------------------------------------------------------------------
@@ -127,7 +142,11 @@ skin_path_ready:
 
 	push	dword OpenDialog_data2
 	call	[OpenDialog_Init]
-	
+;--------------------------------------------------------------------
+;init_ColorDialog	ColorDialog_data
+	push    dword ColorDialog_data
+	call    [ColorDialog_Init]
+;--------------------------------------------------------------------
 ; prepare for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_prepare]
@@ -142,16 +161,16 @@ red:
 	call	draw_window		; at first, draw the window
 ;---------------------------------------------------------------------	
 still:
-	mcall	23,5	; wait here for event
+	mcall	10	; wait here for event
 
 	dec	eax	; redraw request ?
 	jz	red
+
 	dec	eax	; key in buffer ?
 	jz	key
+
 	dec	eax	; button in buffer ?
 	jz	button
-
-	call	draw_cursor
 
 	jmp	still
 ;---------------------------------------------------------------------
@@ -227,10 +246,23 @@ no_apply_skin:
 	cmp	ah,41
 	jg	no_new_colour
 	
+;---------------------------------------------------------------------	
+.start_ColorDialog:
+	push    dword ColorDialog_data
+	call    [ColorDialog_Start]
+; 2 - use another method/not found program
+	cmp	[ColorDialog_data.status],2
+	je	still
+; 1 - OK, color selected	
+	cmp	[ColorDialog_data.status],1
+	jne	still
+;---------------------------------------------------------------------	
+	
 	shr	eax,8
 	sub	eax,31
 	shl	eax,2
-	mov	ebx,[color]
+	mov	ebx,[ColorDialog_data.color]
+	and	ebx,0xffffff	; temporary for ColorDialog!!!!!!!!!!
 	mov	[eax+color_table],ebx
  	cmp	dword[not_packed_area+SKIN_HEADER.ident],'SKIN'
  	jne	@f
@@ -253,55 +285,6 @@ close:
 ;--------------------------------------
 noid1:
  	jmp	still
-;---------------------------------------------------------------------
-draw_cursor:
-	pusha
-	mcall	37,2
-	cmp	eax,0
-	jne	dc1
-	popa
-	ret
-;--------------------------------------
-dc1:
-	mcall	37,1
-	mov	ebx,eax
-	shr	ebx,16
-	mov	ecx,eax
-	and	ecx,0xffff
-	cmp	ecx,29
-	jbe	no_color
-
- 	cmp	ebx,32
-	jbe	no_color
-
-	cmp	ebx,266	; CHANGE COLOR
-	jb	no_color
-
-	cmp	ebx,266+20*3
-	jg	no_color
-
- 	cmp	ecx,30+128
-	jge	no_color
-
-	cmp	ecx,29
-	jb	no_color
-
-	sub	ebx,266
-	mov	eax,ebx
-	cdq
-	mov	ebx,20
-	div	ebx
-	mov	ebx,2
-	sub	ebx,eax
-	add	ecx,-30
-	not	ecx
-	shl	ecx,1
-
-	mov	byte [ebx+color],cl
-	call	draw_color
-no_color:
-	popa
-	ret
 ;---------------------------------------------------------------------
 load_file:
 ;---------------------------------------------------------------------
@@ -412,375 +395,58 @@ save_file:
 	mcall	70
 	ret
 ;---------------------------------------------------------------------
-draw_color:
-	pusha
-	mcall	13,<266,60>,<170,30>,[color]
-	mcall	,,<200,10>,[w_work]
-	mcall	47,<8,0+1*256>,[color],<272,201>,[w_work_text]
-	popa
+draw_button_row:
+	mov	edx,0x60000000 + 31		; BUTTON ROW
+	mov	ebx,220*65536+14
+	mov	ecx,10*65536+14
+	mov	eax,8
+;-----------------------------------
+.newb:
+	mcall
+	add	ecx,20*65536
+	inc	edx
+	cmp	edx,0x60000000 + 40
+	jbe	.newb
 	ret
-;----------------------------------------------------------------------
+;---------------------------------------------------------------------
+draw_button_row_of_texts:
+	mov	ebx,240*65536+13	; ROW OF TEXTS
+	mov	ecx,[w_work_text]
+	mov	edx,text
+	mov	esi,32
+	mov	eax,4
+;-----------------------------------
+.newline:
+	mcall
+	add	ebx,20
+	add	edx,32
+	cmp	[edx],byte 'x'
+	jne	.newline
+	ret
+;---------------------------------------------------------------------
 draw_colours:
 	pusha
 	mov	esi,color_table
-	mov	ebx,225*65536+32
-	mov	ecx,32*65536+12
+	mov	ebx,220*65536+14
+	mov	ecx,10*65536+14
+	mov	eax,13
 ;--------------------------------------
 newcol:
 	mov	edx,[esi]
-	mcall	13
-	add	ecx,18*65536
+	mcall
+	call	draw_rectangle
+	add	ecx,20*65536
 	add	esi,4
- 	cmp	esi,color_table+4*9
+	cmp	esi,color_table+4*9
 	jbe	newcol
 
 	popa
 	ret
 ;----------------------------------------------------------------------
-draw_framerect: ; ebx,ecx
-	push	ebx ecx
-	add	bx,[esp+6]
-	mov	cx,[esp+2]
-	dec	ebx
-	mcall	38
-	add	cx,[esp]
-	rol	ecx,16
-	add	cx,[esp]
-	sub	ecx,0x00010001
-	mcall
-	mov	ebx,[esp+4]
-	mov	ecx,[esp]
-	mov	bx,[esp+6]
-	add	cx,[esp+2]
-	dec	ecx
-	mcall
-	add	bx,[esp+4]
-	rol	ebx,16
-	add	bx,[esp+4]
-	sub	ebx,0x00010001
-	mcall
-	add	esp,8
-	ret
-;----------------------------------------------------------------------
-find_bitmap:
-	mov	edi,[ebp+SKIN_HEADER.bitmaps]
-	add	edi,ebp
-	xor	ebx,ebx
-;--------------------------------------
-.lp1:
-	cmp	dword[edi],0
-	je	.lp2
-
-	cmp	dword[edi+0],eax
-	jne	@f
-;--------------------------------------
-	mov	ebx,[edi+SKIN_BITMAPS._data]
-	add	ebx,ebp
-	mov	ecx,[ebx-2]
-	mov	cx,[ebx+4]
-	add	ebx,8
-;--------------------------------------
-.lp2:
-	ret
-;--------------------------------------
-@@:
-	add	edi,8
-	jmp	.lp1
-;----------------------------------------------------------------------
-dec_edx:
-	sub	dl,4
-	jnc	@f
-
-	xor	dl,dl
-;--------------------------------------
-@@:
-	sub	dh,4
-	jnc	@f
-
-	xor	dh,dh
-;--------------------------------------
-@@:
-	rol	edx,16
-	sub	dl,4
-	jnc	@f
-
-	xor	dl,dl
-;--------------------------------------
-@@:
-	rol	edx,16
-	ret
-;----------------------------------------------------------------------
-area:
-  .x      = 345
-  .y      = 20
-  .width  = 206
-  .height = 191
-;--------------------------------------
-wnd1:
-  .x      = area.x+49
-  .y      = area.y+5
-  .width  = 150
-  .height = 90
-;--------------------------------------
-wnd2:
-  .x      = area.x+35
-  .y      = area.y+35
-  .width  = 150
-  .height = 90
-;--------------------------------------
-wnd3:
-  .x      = area.x+21
-  .y      = area.y+65
-  .width  = 150
-  .height = 90
-;--------------------------------------
-wnd4:
-  .x      = area.x+7
-  .y      = area.y+95
-  .width  = 150
-  .height = 90
-;--------------------------------------
-virtual at edi+SKIN_PARAMS.dtp.data
-	dtp system_colors
-end virtual
-;----------------------------------------------------------------------
-draw_skin:
-	mcall	13,<area.x,area.width>,<area.y+2,area.height-2>,0x00FFFFFF
-	mov	ebp,not_packed_area
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd1.x,wnd1.width
-	mpack	ecx,wnd1.y,wnd1.height
-	mov	edx,[dtp.frame]
-	call	draw_framerect
-	mcall	13,<wnd1.x+1,wnd1.width-2>,<wnd1.y+1,wnd1.height-2>,dword[dtp.work]
-	mov	eax,38
-	mpack	ebx,wnd1.x+1,wnd1.x+wnd1.width-2
-	mpack	ecx,wnd1.y+1,wnd1.y+1
-	mov	edx,[dtp.grab]
-	mov	esi,20
-;--------------------------------------
-@@:
-	mcall
-	call	dec_edx
-	add	ecx,0x00010001
-	dec	esi
-	jnz	@b
-
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mcall	4,<wnd1.x+6,wnd1.y+7>,dword[dtp.grab_text],caption_text,caption_text.size
-	mcall	8,<wnd1.x+wnd1.width-18,12>,<wnd1.y+4,12>,0,[dtp.grab_button]
-	mcall	4,<wnd1.x+wnd1.width-18+4,wnd1.y+4+2>,dword[dtp.grab_button_text],close_text,close_text.size
-;----------------------------------------------------------------------
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd2.x,wnd2.width
-	mpack	ecx,wnd2.y,wnd2.height
-	mov	edx,[dtp.frame]
-	shr	edx,1
-	and	edx,0x007F7F7F
-	call	draw_framerect
-	mpack	ebx,wnd2.x+4,wnd2.width-8
-	mpack	ecx,wnd2.y+4,wnd2.height-8
-	call	draw_framerect
-	mcall	13,<wnd2.x+1,wnd2.width-2>,<wnd2.y+1,3>,[dtp.frame]
-	add	ecx,(wnd2.height-5)*65536
-	mcall
-	mcall	,<wnd2.x+1,3>,<wnd2.y+1,wnd2.height-2>
-	add	ebx,(wnd2.width-5)*65536
-	mcall
-	mcall	,<wnd2.x+5,wnd2.width-10>,<wnd2.y+5,wnd2.height-10>,dword[dtp.work]
-
-	mov	eax,38
-	mpack	ebx,wnd2.x+4,wnd2.x+wnd2.width-5
-	mpack	ecx,wnd2.y+4,wnd2.y+4
-	mov	edx,[dtp.grab]
-	mov	esi,16
-;--------------------------------------
-@@:
-	mcall
-	call	dec_edx
-	add	ecx,0x00010001
-	dec	esi
-	jnz	@b
-
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mcall	4,<wnd2.x+8,wnd2.y+7>,dword[dtp.grab_text],caption_text,caption_text.size
-	mcall	8,<wnd2.x+wnd2.width-20,12>,<wnd2.y+4,12>,0,[dtp.grab_button]
-	mcall	4,<wnd2.x+wnd2.width-20+4,wnd2.y+4+2>,dword[dtp.grab_button_text],close_text,close_text.size
-;----------------------------------------------------------------------
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd3.x,wnd3.width
-	mpack	ecx,wnd3.y,wnd3.height
-	mov	edx,[edi+SKIN_PARAMS.colors_1.outer]
-	call	draw_framerect
-	mpack	ebx,wnd3.x+4,wnd3.width-8
-	mpack	ecx,wnd3.y+4,wnd3.height-8
-	mov	edx,[edi+SKIN_PARAMS.colors_1.inner]
-	call	draw_framerect
-	mcall	13,<wnd3.x+1,wnd3.width-2>,<wnd3.y+1,3>,[edi+SKIN_PARAMS.colors_1.frame]
-	add	ecx,(wnd3.height-5)*65536
-	mcall
-	mcall	,<wnd3.x+1,3>,<wnd3.y+1,wnd3.height-2>
-	add	ebx,(wnd3.width-5)*65536
-	mcall
-	mcall	,<wnd3.x+5,wnd3.width-10>,<wnd3.y+5,wnd3.height-10>,dword[dtp.work]
-
-	mov	eax,0x00000001 ; left, inactive
-	call	find_bitmap
-	mcall	7,,,<wnd3.x,wnd3.y>
-
-	pushd	[ebx-8]
-	mov	eax,0x00000003 ; base, inactive
-	call	find_bitmap
-	pop	edx
-	mov	esi,wnd3.x+wnd3.width-1
-	sub	esi,edx
-	shl	edx,16
-	add	edx,wnd3.x*65536+wnd3.y
-	mcall	7
-;--------------------------------------
-@@:
-	rol	edx,16
-	add	dx,[ebx-8]
-	cmp	dx,si
-	ja	@f
-
-	rol	edx,16
-	mcall	7
-	jmp	@b
-;--------------------------------------
-@@:
-	mov	eax,0x00000002 ; oper, inactive
-	call	find_bitmap
-	mov	edx,ecx
-	shr	edx,16
-	neg	edx
-	shl	edx,16
-	add	edx,(wnd3.x+wnd3.width)*65536+wnd3.y
-	mcall	7
-
-	mov	ebp,not_packed_area
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mov	eax,dword[edi+SKIN_PARAMS.margin.left-2]
-	mov	ax,word[edi+SKIN_PARAMS.skin_height]
-	sub	ax,[edi+SKIN_PARAMS.margin.bottom]
-	shr	ax,1
-	add	ax,[edi+SKIN_PARAMS.margin.top]
-	add	ax,-4
-	push	eax
-	lea	ebx,[eax+wnd3.x*65536+wnd3.y]
-	mcall	4,,dword[dtp.grab_text],caption_text,caption_text.size
-;---------------------------------------------------------
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd4.x,wnd4.width
-	mpack	ecx,wnd4.y,wnd4.height
-	mov	edx,[edi+SKIN_PARAMS.colors.outer]
-	call	draw_framerect
-	mpack	ebx,wnd4.x+4,wnd4.width-8
-	mpack	ecx,wnd4.y+4,wnd4.height-8
-	mov	edx,[edi+SKIN_PARAMS.colors.inner]
-	call	draw_framerect
-	mcall	13,<wnd4.x+1,wnd4.width-2>,<wnd4.y+1,3>,[edi+SKIN_PARAMS.colors.frame]
-	add	ecx,(wnd4.height-5)*65536
-	mcall
-	mcall	,<wnd4.x+1,3>,<wnd4.y+1,wnd4.height-2>
-	add	ebx,(wnd4.width-5)*65536
-	mcall
-	mcall	,<wnd4.x+5,wnd4.width-10>,<wnd4.y+5,wnd4.height-10>,dword[dtp.work]
-
-	mov	eax,0x00010001 ; left, inactive
-	call	find_bitmap
-	mcall	7,,,<wnd4.x,wnd4.y>
-
-	pushd	[ebx-8]
-	mov	eax,0x00010003 ; base, inactive
-	call	find_bitmap
-	pop	edx
-	mov	esi,wnd4.x+wnd4.width-1
-	sub	esi,edx
-	shl	edx,16
-	add	edx,wnd4.x*65536+wnd4.y
-	mcall	7
-;--------------------------------------
-@@:
-	rol	edx,16
-	add	dx,[ebx-8]
-	cmp	dx,si
-	ja	@f
-
-	rol	edx,16
-	mcall	7
-	jmp	@b
-;--------------------------------------
-@@:
-	mov	eax,0x00010002 ; oper, inactive
-	call	find_bitmap
-	mov	edx,ecx
-	shr	edx,16
-	neg	edx
-	shl	edx,16
-	add	edx,(wnd4.x+wnd4.width)*65536+wnd4.y
-	mcall	7
-
-	mov	ebp,not_packed_area
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	pop	eax
-	lea	ebx,[eax+wnd4.x*65536+wnd4.y]
-	mcall	4,,dword[dtp.grab_text],caption_text,caption_text.size
-;----------------------------------------------------------------------
-	mov	edi,[ebp+SKIN_HEADER.buttons]
-	add	edi,ebp
-;--------------------------------------
-.lp1:
-	cmp	dword[edi],0
-	je	.lp2
-
-	mov	ebx,dword[edi+SKIN_BUTTONS.left-2]
-	mov	bx,[edi+SKIN_BUTTONS.width]
-	mov	ecx,dword[edi+SKIN_BUTTONS.top-2]
-	mov	cx,[edi+SKIN_BUTTONS.height]
-	add	ebx,(wnd4.x+wnd4.width)*65536
-	add	ecx,wnd4.y*65536
-	dec	ebx
-	dec	ecx
-	mcall	8,,,0x40000000
-	add	edi,12
-	jmp	.lp1
-;--------------------------------------
-.lp2:
-	mov	edi,[ebp+SKIN_HEADER.params]
-	add	edi,ebp
-	mpack	ebx,wnd4.x+10,wnd4.y+10
-	add	bx,word[edi+SKIN_PARAMS.skin_height]
-	mcall	4,,[dtp.work_text],window_text,window_text.size
-
-	mov	ecx,[edi+SKIN_PARAMS.skin_height]
-	shl	ecx,16
-	add	ecx,(wnd4.y+8)*65536+10
-	mcall	13,<wnd4.x+window_text.size*6+20,wnd4.x+wnd4.width-10-\
-			(wnd4.x+window_text.size*6+20)>,,[dtp.work_graph]
-
-	add	ecx,25*65536+8
-	mcall	8,<wnd4.x+wnd4.width/2-button_text.size*3-6,\
-			button_text.size*6+11>,,0,[dtp.work_button]
-
-	shr	ecx,16
-	mov	bx,cx
-	add	ebx,0x00060006
-	mcall	4,,[dtp.work_button_text],button_text,button_text.size
-	ret
-;---------------------------------------------------------------------
 draw_PathShow:
 	pusha
-	mcall	13,<10,534>,<214,15>,0xffffff
-	mcall	13,<10,534>,<232,15>,0xffffff
+	mcall	13,<frame_1.x+5,frame_1.width-15>,<frame_1.y+7,15>,0xffffff
+	mcall	13,<frame_2.x+5,frame_2.width-15>,<frame_2.y+7,15>,0xffffff
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
@@ -797,12 +463,16 @@ draw_window:
 	mcall	12,1
 	mcall	48,3,app_colours,10*4
 	mcall	14
+	mcall	48,4
+	mov	[current_skin_high],eax
 ; DRAW WINDOW
 	xor	eax,eax		; function 0 : define and draw window
 	xor	esi,esi
 	mov	edx,[w_work]	; color of work area RRGGBB,8->color
-	or	edx,0x14000000
-	mcall	,<110,555>,<50,275>,,,title
+	or	edx,0x34000000
+	mov	ecx,50 shl 16 + 346
+	add	ecx,[current_skin_high]
+	mcall	,<110,440>,,,,title
 
 	mcall	9,procinfo,-1
 	
@@ -810,106 +480,75 @@ draw_window:
 	test	eax,100b
 	jne	.end
 
-if lang eq ru
+;if lang eq ru
   load_w  = (5*2+6*9)
   save_w  = (5*2+6*9)
   flat_w  = (5*2+6*7)
   apply_w = (5*2+6*9)
-else
-  load_w  = (5*2+6*6)
-  save_w  = (5*2+6*8)
-  flat_w  = (5*2+6*4)
-  apply_w = (5*2+6*7)
-end if
-
-; LOAD BUTTON
-	mcall	8,<15,load_w>,<35+18*12,14>,12,[w_work_button]
+;else
+;  load_w  = (5*2+6*6)
+;  save_w  = (5*2+6*8)
+;  flat_w  = (5*2+6*4)
+;  apply_w = (5*2+6*7)
+;end if
+;-----------------------------------
+; select color DTP frame
+; LOAD BUTTON	; button 12
+	mcall	8,<frame_1.x+10,load_w>,<frame_1.y+25,15>,12,[w_work_button]
 ; SAVE BUTTON
 	add	ebx,(load_w+2)*65536-load_w+save_w
 	inc	edx
-	mcall
-; 3D
-	mov	ebx,(340-t1.size*6-13)*65536+(5*2+6*4)
-	inc	edx
-	mcall
-; FLAT
-	add	ebx,(5*2+6*4+2)*65536-(5*2+6*4)+flat_w
-	inc	edx
-	mcall
+	mcall		; button 13
 ; APPLY BUTTON
-	add	ebx,(flat_w+6+2)*65536-flat_w+apply_w
+	mov	ebx,(frame_1.x + frame_1.width - apply_w - 15)*65536+apply_w
+	mcall	8,,,16	; button 17
+; select color DTP button text
+	mcall	4,<frame_1.x+16,frame_1.y+29>,[w_work_button_text],t1,t1.size
+;-----------------------------------	
+; select skin frame	
+; LOAD SKIN BUTTON	; button 17
+	mcall	8,<frame_2.x+10,load_w>,<frame_2.y+25,15>,17,[w_work_button]
+; 3D
+	mov	ebx,(frame_2.x+155)*65536+34
+	mcall	,,,14	; button 14
+; FLAT
+	add	ebx,36*65536-34+flat_w
 	inc	edx
-	mcall
-; LOAD SKIN BUTTON
-	mov	ebx,(336+(555-335)/2-t2.size*6/2)*65536+load_w
-	inc	edx
-	mcall
+	mcall		; button 15
 ; APPLY SKIN BUTTON
-	add	ebx,(load_w+6+2)*65536-load_w+apply_w
-	inc	edx
-	mcall
-	
-	mov	ebx,(339-t1.size*6-12)*65536+(35+18*12+4)
-	mcall	4,,[w_work_button_text],t1,t1.size
-	
-	mov	ebx,(336+(555-335)/2-t2.size*6/2)*65536+(35+18*12+4)
-	mcall	,,,t2,t2.size
-	
-	mov	ebx,(15+(load_w+save_w+2-t3.size*6)/2)*65536+(35+18*12+4)
-	mcall	,,,t3,t3.size
-	
-	mov	eax,38		; R G B COLOR GLIDES
-	mov	ebx,266*65536+285
-	mov	ecx,30*65536+30
-	mov	edx,0xff0000
-;----------------------------------- 
-.newl:
-	mcall
-	pusha
-	add	ebx,20*65536+20
-	shr	edx,8
-	mcall
-	add	ebx,20*65536+20
-	shr	edx,8
-	mcall
-	popa
-	sub	edx,0x020000
-	add	ecx,0x00010001
-	cmp	ecx,158*65536+158
-	jnz	.newl
-;-----------------------------------	
-	call	draw_color
-	
-	mov	edx,31		; BUTTON ROW
-	mov	ebx,15*65536+200
-	mov	ecx,30*65536+14
-	mov	esi,[w_work_button]
-
-	mov	eax,8
-;-----------------------------------
-.newb:
-	mcall
-	add	ecx,18*65536
-	inc	edx
-	cmp	edx,40
-	jbe	.newb
-;-----------------------------------	
-	mov	ebx,15*65536+34		; ROW OF TEXTS
-	mov	ecx,[w_work_button_text]
-	mov	edx,text
-	mov	esi,32
-
-	mov	eax,4
-;-----------------------------------
-.newline:
-	mcall
-	add	ebx,18
-	add	edx,32
-	cmp	[edx],byte 'x'
-	jne	.newline
-;-----------------------------------
+	mov	ebx,(frame_2.x + frame_2.width - apply_w -15)*65536+apply_w
+	mcall	,,,18		; button 18
+; select skin button text
+	mcall	4,<frame_2.x+16,frame_2.y+29>,[w_work_button_text],t2,t2.size
+;-----------------------------------		
+	call	draw_button_row
+	call	draw_button_row_of_texts
 	call	draw_colours
-	call	draw_PathShow	
+;-----------------------------------
+	mov	ebx,frame_1.x shl 16+frame_1.width
+	mov	ecx,frame_1.y shl 16+frame_1.height
+	call	draw_rectangle
+
+; select color DTP text
+	mov	ecx,[w_work_text]
+	and	ecx,0xffffff
+	add	ecx,0x40000000
+	mcall	4,<frame_1.x+10,frame_1.y-4>,,select_dtp_text,\
+				select_dtp_text.size,[w_work]
+;-----------------------------------
+	mov	ebx,frame_2.x shl 16+frame_2.width
+	mov	ecx,frame_2.y shl 16+frame_2.height
+	call	draw_rectangle
+	
+; select skin text
+	mov	ecx,[w_work_text]
+	and	ecx,0xffffff
+	add	ecx,0x40000000
+	mcall	4,<frame_2.x+10,frame_2.y-4>,,select_skin_text,\
+				select_skin_text.size,[w_work]
+;-----------------------------------
+	call	draw_PathShow
+;-----------------------------------
 	cmp	dword[not_packed_area+SKIN_HEADER.ident],'SKIN'
 	jne	@f
 	call	draw_skin
@@ -917,401 +556,18 @@ end if
 .end:
 	mcall	12,2
 	ret
-;---------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+include 'drawrect.inc'
+;-----------------------------------------------------------------------------
+include 'drawskin.inc'
+;-----------------------------------------------------------------------------
 ; DATA AREA
-;---------------------------------------------------------------------
-lsz text,\
-    ru,  ' êÄåäÄ éäçÄ                     ',\
-    ru,  ' èéãéëÄ áÄÉéãéÇäÄ               ',\
-    ru,  ' äçéèäÄ çÄ èéãéëÖ áÄÉéãéÇäÄ     ',\
-    ru,  ' íÖäëí çÄ äçéèäÖ çÄ áÄÉéãéÇäÖ   ',\
-    ru,  ' íÖäëí áÄÉéãéÇéäÄ               ',\
-    ru,  ' êÄÅéóÄü éÅãÄëíú                ',\
-    ru,  ' äçéèäÄ Ç êÄÅéóÖâ éÅãÄëíà       ',\
-    ru,  ' íÖäëí çÄ äçéèäÖ                ',\
-    ru,  ' íÖäëí Ç êÄÅéóÖâ éÅãÄëíà        ',\
-    ru,  ' ÉêÄîàäÄ Ç êÄÅéóÖâ éÅãÄëíà      ',\
-    ru,  'x',\
-    en,  ' WINDOW FRAME                   ',\
-    en,  ' WINDOW GRAB BAR                ',\
-    en,  ' WINDOW GRAB BUTTON             ',\
-    en,  ' WINDOW GRAB BUTTON TEXT        ',\
-    en,  ' WINDOW GRAB TITLE              ',\
-    en,  ' WINDOW WORK AREA               ',\
-    en,  ' WINDOW WORK AREA BUTTON        ',\
-    en,  ' WINDOW WORK AREA BUTTON TEXT   ',\
-    en,  ' WINDOW WORK AREA TEXT          ',\
-    en,  ' WINDOW WORK AREA GRAPH         ',\
-    en,  'x',\
-    et,  ' AKNA RAAM                      ',\
-    et,  ' AKNA HAARAMISE RIBA            ',\
-    et,  ' AKNA HAARAMISE NUPP            ',\
-    et,  ' AKNA HAARAMISE NUPU TEKST      ',\
-    et,  ' AKNA HAARAMISE PEALKIRI        ',\
-    et,  ' AKNA T÷÷PIIRKOND               ',\
-    et,  ' AKNA T÷÷PIIRKONNA NUPP         ',\
-    et,  ' AKNA T÷÷PIIRKONNA NUPPU TEKST  ',\
-    et,  ' AKNA T÷÷PIIRKONNA TEKST        ',\
-    et,  ' AKNA T÷÷PIIRKONNA GRAAFIKA     ',\
-    et,  'x'
-
-lsz t1,\
-    ru, '  3D   èãéëäàÖ   èêàåÖçàíú ',\
-    en, '  3D   FLAT    APPLY  ',\
-    et, '  3D   LAME   KINNITA '
-
-lsz t2,\
-    ru,  ' áÄÉêìáàíú   èêàåÖçàíú ',\
-    en,  '  LOAD     APPLY  ',\
-    et,  '  LAADI   KINNITA '
-
-lsz t3,\
-    ru,  ' áÄÉêìáàíú  ëéïêÄçàíú ',\
-    en,  '  LOAD     SAVE  ',\
-    et,  ' LAADI  SALVESTA',\
-
-lsz caption_text,\
-    ru, 'á†£Æ´Æ¢Æ™',\
-    en, 'Caption',\
-    et, 'Pealkiri'
-
-sz  close_text,'x'
-
-lsz window_text,\
-    ru, 'í•™·‚ ¢ Æ™≠•',\
-    en, 'Window text',\
-    et, 'Akna tekst'
-
-lsz button_text,\
-    ru, 'í•™·‚ ≠† ™≠ÆØ™•',\
-    en, 'Button text',\
-    et, 'Nupu tekst'
-
-;sz  default_skn, '/sys/DEFAULT.SKN',0
-
-if lang eq ru
-  title db 'çÄëíêéâäÄ éäéç',0
-else if lang eq et
-  title db 'AKNA SEADED - VALI VƒRV JA VAJUTA OBJEKTILE',0
-else
-  title db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
-end if
-
-
-color dd  0
-
-;---------------------------------------------------------------------
-l_libs_start:
-
-library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
-err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
-
-library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
-err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
-
-end_l_libs:
-;---------------------------------------------------------------------
-system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
-system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
-
-head_f_i:
-head_f_l	db 'System error',0
-
-err_message_found_lib1	db 'box_lib.obj - Not found!',0
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
-
-err_message_import1	db 'box_lib.obj - Wrong import!',0
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
-
-;---------------------------------------------------------------------
-align 4
-ProcLib_import:
-OpenDialog_Init		dd aOpenDialog_Init
-OpenDialog_Start	dd aOpenDialog_Start
-;OpenDialog__Version	dd aOpenDialog_Version
-        dd      0
-        dd      0
-aOpenDialog_Init	db 'OpenDialog_init',0
-aOpenDialog_Start	db 'OpenDialog_start',0
-;aOpenDialog_Version	db 'Version_OpenDialog',0
-;---------------------------------------------------------------------
-align 4
-Box_lib_import:	
-;init_lib		dd a_init
-;version_lib		dd a_version
-
-
-;edit_box_draw		dd aEdit_box_draw
-;edit_box_key		dd aEdit_box_key
-;edit_box_mouse		dd aEdit_box_mouse
-;version_ed		dd aVersion_ed
-
-;check_box_draw		dd aCheck_box_draw
-;check_box_mouse	dd aCheck_box_mouse
-;version_ch		dd aVersion_ch
-
-;option_box_draw	dd aOption_box_draw
-;option_box_mouse	dd aOption_box_mouse
-;version_op		dd aVersion_op
-
-;scrollbar_ver_draw	dd aScrollbar_ver_draw
-;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
-;scrollbar_hor_draw	dd aScrollbar_hor_draw
-;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
-;version_scrollbar	dd aVersion_scrollbar
-
-;dinamic_button_draw	dd aDbutton_draw
-;dinamic_button_mouse	dd aDbutton_mouse
-;version_dbutton	dd aVersion_dbutton
-
-;menu_bar_draw		dd aMenu_bar_draw
-;menu_bar_mouse		dd aMenu_bar_mouse
-;menu_bar_activate	dd aMenu_bar_activate
-;version_menu_bar	dd aVersion_menu_bar
-
-;FileBrowser_draw	dd aFileBrowser_draw
-;FileBrowser_mouse	dd aFileBrowser_mouse
-;FileBrowser_key	dd aFileBrowser_key
-;Version_FileBrowser	dd aVersion_FileBrowser
-
-PathShow_prepare	dd sz_PathShow_prepare
-PathShow_draw		dd sz_PathShow_draw
-;Version_path_show	dd szVersion_path_show
-			dd 0
-			dd 0
-
-;a_init			db 'lib_init',0
-;a_version		db 'version',0
-
-;aEdit_box_draw		db 'edit_box',0
-;aEdit_box_key		db 'edit_box_key',0
-;aEdit_box_mouse	db 'edit_box_mouse',0
-;aVersion_ed		db 'version_ed',0
-
-;aCheck_box_draw	db 'check_box_draw',0
-;aCheck_box_mouse	db 'check_box_mouse',0
-;aVersion_ch		db 'version_ch',0
-
-;aOption_box_draw	db 'option_box_draw',0
-;aOption_box_mouse	db 'option_box_mouse',0
-;aVersion_op		db 'version_op',0
-
-;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
-;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
-;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
-;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
-;aVersion_scrollbar	db 'version_scrollbar',0
-
-;aDbutton_draw		db 'dbutton_draw',0
-;aDbutton_mouse		db 'dbutton_mouse',0
-;aVersion_dbutton	db 'version_dbutton',0
-
-;aMenu_bar_draw		db 'menu_bar_draw',0
-;aMenu_bar_mouse		db 'menu_bar_mouse',0
-;aMenu_bar_activate	db 'menu_bar_activate',0
-;aVersion_menu_bar	db 'version_menu_bar',0
-
-;aFileBrowser_draw	db 'FileBrowser_draw',0
-;aFileBrowser_mouse	db 'FileBrowser_mouse',0
-;aFileBrowser_key	db 'FileBrowser_key',0
-;aVersion_FileBrowser	db 'version_FileBrowser',0
-
-sz_PathShow_prepare	db 'PathShow_prepare',0
-sz_PathShow_draw	db 'PathShow_draw',0
-;szVersion_path_show	db 'version_PathShow',0
-;---------------------------------------------------------------------
-PathShow_data_1:
-.type			dd 0	;+0
-.start_y		dw 217	;+4
-.start_x		dw 12	;+6
-.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
-.area_size_x		dw 530	;+10
-.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
-.background_flag	dd 0	;+16
-.font_color		dd 0x0	;+20
-.background_color	dd 0x0	;+24
-.text_pointer		dd fname	;+28
-.work_area_pointer	dd text_work_area	;+32
-.temp_text_length	dd 0	;+36
-;---------------------------------------------------------------------
-PathShow_data_2:
-.type			dd 0	;+0
-.start_y		dw 235	;+4
-.start_x		dw 12	;+6
-.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
-.area_size_x		dw 530	;+10
-.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
-.background_flag	dd 0	;+16
-.font_color		dd 0x0	;+20
-.background_color	dd 0x0	;+24
-.text_pointer		dd skin_info	;+28
-.work_area_pointer	dd text_work_area2	;+32
-.temp_text_length	dd 0	;+36
-;---------------------------------------------------------------------
-OpenDialog_data:
-.type			dd 0
-.procinfo		dd procinfo	;+4
-.com_area_name		dd communication_area_name	;+8
-.com_area		dd 0	;+12
-.opendir_pach		dd temp_dir_pach	;+16
-.dir_default_pach	dd communication_area_default_pach	;+20
-.start_path		dd open_dialog_path	;+24
-.draw_window		dd draw_window	;+28
-.status			dd 0	;+32
-.openfile_pach 		dd fname	;+36
-.filename_area		dd filename_area	;+40
-.filter_area		dd Filter
-.x:
-.x_size			dw 420 ;+48 ; Window X size
-.x_start		dw 10 ;+50 ; Window X position
-.y:
-.y_size			dw 320 ;+52 ; Window y size
-.y_start		dw 10 ;+54 ; Window Y position
-
-OpenDialog_data2:
-.type			dd 0
-.procinfo		dd procinfo	;+4
-.com_area_name		dd communication_area_name2	;+8
-.com_area		dd 0	;+12
-.opendir_pach		dd temp_dir_pach2	;+16
-.dir_default_pach	dd communication_area_default_pach	;+20
-.start_path		dd open_dialog_path	;+24
-.draw_window		dd draw_window	;+28
-.status			dd 0	;+32
-.openfile_pach 		dd skin_info	;+36
-.filename_area		dd filename_area2	;+40
-.filter_area		dd Filter2
-.x:
-.x_size			dw 420 ;+48 ; Window X size
-.x_start		dw 10 ;+50 ; Window X position
-.y:
-.y_size			dw 320 ;+52 ; Window y size
-.y_start		dw 10 ;+54 ; Window Y position
-
-communication_area_name2:
-	db 'FFFFFFFF_open_dialog',0
-
-communication_area_name:
-	db 'FFFFFFFF_open_dialog2',0
-open_dialog_path:
-if __nightbuild eq yes
-	db '/sys/MANAGERS/opendial',0
-else
-	db '/sys/File Managers/opendial',0
-end if
-communication_area_default_pach:
-	db '/sys',0
-
-Filter:
-	dd Filter.end - Filter
-.1:
-	db 'DTP',0
-.end:
-	db 0
-
-Filter2:
-	dd Filter.end - Filter
-.1:
-	db 'SKN',0
-.end:
-	db 0
-
-start_temp_file_name:
-	db 'default.dtp',0
-
-default_skin:
-	db '/sys/default.skn',0
-default_dtp:
-	db '/sys/default.dtp',0
-;---------------------------------------------------------------------
-IncludeIGlobals
-
+;-----------------------------------------------------------------------------
+include 'idata.inc'
+;-----------------------------------------------------------------------------
+IM_END:
+;-----------------------------------------------------------------------------
+include 'udata.inc'
+;-----------------------------------------------------------------------------
 I_END:
-
-IncludeUGlobals
-
-read_info:
-  .mode         dd ?            ; read
-  .start_block  dd ?            ; first block
-  .blocks       dd ?            ; 512 bytes
-  .address      dd ?
-  .workarea     dd ?
-fname rb 4096            ; filename
-
-virtual at read_info
- write_info:
-  .mode         dd ?
-  rd 1
-  .bytes2write  dd ?
-  .address      dd ?
-  .workarea     dd ?
-end virtual
-
-read_info2:
-  .mode         dd ?            ; read
-  .start_block  dd ?            ; first block
-  .blocks       dd ?            ; 512 bytes
-  .address      dd ?
-  .workarea     dd ?
-skin_info rb 4096
-
-;param   rb      257
-
-align 4
-app_colours:
-
-w_frame              dd ?
-w_grab               dd ?
-w_grab_button        dd ?
-w_grab_button_text   dd ?
-w_grab_text          dd ?
-w_work               dd ?
-w_work_button        dd ?
-w_work_button_text   dd ?
-w_work_text          dd ?
-w_work_graph         dd ?
-
-color_table:
-	times 10 dd ?
-;---------------------------------------------------------------------
-align 4
-cur_dir_path:
-	rb 4096
-;---------------------------------------------------------------------
-library_path:
-	rb 4096
-;---------------------------------------------------------------------
-temp_dir_pach:
-	rb 4096
-;---------------------------------------------------------------------
-temp_dir_pach2:
-	rb 4096
-;---------------------------------------------------------------------
-text_work_area:
-	rb 1024
-;---------------------------------------------------------------------
-text_work_area2:
-	rb 1024
-;---------------------------------------------------------------------
-procinfo:
-	rb 1024
-;---------------------------------------------------------------------
-filename_area:
-	rb 256
-;---------------------------------------------------------------------
-filename_area2:
-	rb 256
-;---------------------------------------------------------------------
-	rb 4096
-stacktop:
-;---------------------------------------------------------------------
-file_load_area:	; old 0x10000
-	rb 32*1024
-;---------------------------------------------------------------------
-not_packed_area:	; old 0x18000
-	rb 32*1024
-;---------------------------------------------------------------------
-unpack_area:	; old 0x20000
-	rb 32*1024
-;---------------------------------------------------------------------
-i_end:
+;-----------------------------------------------------------------------------
