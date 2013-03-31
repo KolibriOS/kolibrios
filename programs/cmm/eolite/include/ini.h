@@ -6,25 +6,6 @@
 #define PARAM	2
 #define OPTION	3
 
-unsigned char *ERROR_TEXT[]={
-"Code #0 - No error",
-"Error #1 - Base or partition of a hard disk is not defined",
-"Error #2 - Function isn't supported for this file system",
-"Error #3 - Unknown file system",
-"Error #4 - Reserved, is never returned",
-"Error #5 - File or folder not found",
-"Error #6 - End of file, EOF",
-"Error #7 - Pointer lies outside of application memory",
-"Error #8 - Too less disk space",
-"Error #9 - FAT table is destroyed",
-"Error #10 - Access denied",
-"Error #11 - Device error",
-0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 
-"Error #30 - Not enough memory",
-"Error #31 - File is not executable",
-"Error #32 - Too many processes",
-0}; 
 
 void GetIni(byte onload)
 {
@@ -61,7 +42,7 @@ void GetIni(byte onload)
 			case 0x0d:
 				InfType=PARAM;
 				IF (!strcmp(#parametr,"SelectionColor")) edit2.shift_color=col_selec=StrToCol(#option);
-				IF (!strcmp(#parametr,"LineHeight")) BUTTON_HEIGHT=atoi(#option);
+				IF (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
 				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
 				
 				/*if (!strcmp(#section,"UserDirectories")) && (parametr) && (onload)
@@ -94,20 +75,9 @@ void GetIni(byte onload)
 
 void Write_Error(int error_number)
 {
-	char error[256];
-
-	if (error_number<0) error_number=-1*error_number;
-	
-	if (error_number<33)
-		strcpy(#error, ERROR_TEXT[error_number]);
-	else
-		{
-			strcpy(#error, itoa(error_number));
-			strcat(#error, " - Unknown error number O_o");
-		}
-	if (curbtn>=0) Line_ReDraw(0xFF0000, curbtn);
+	if (files.current>=0) Line_ReDraw(0xFF0000, files.current);
 	pause(5);
-	notify(#error);
+	notify(get_error(error_number));
 }
 
 

@@ -75,10 +75,7 @@ void CopyFolder(dword from, to)
 			strcpy(#copy_in, to);
 			strcat(#copy_in, filename);
 
-			if (CheckEvent()==evReDraw) { DefineWindow("Installation Started", "Stop"); ShowProgress("Copying files..."); }
-			ShowProgress(NULL);
-			DrawBar(TEXTX, BLACK_H+50, Form.cwidth-TEXTX, 12, 0xFFFfff);
-			WriteText(TEXTX, BLACK_H+50, 0x80, 0, filename);
+			copyf_Action(filename);
 
 			error = CopyFile(#copy_from, #copy_in);
 			if (error) error = CopyFile(#copy_from, #copy_in); // #2 :)
@@ -87,7 +84,6 @@ void CopyFolder(dword from, to)
 	}
 	free(dirbuf);
 }
-
 
 unsigned char *ERROR_TEXT[]={
 "Code #0 - No error",
@@ -109,19 +105,24 @@ unsigned char *ERROR_TEXT[]={
 "Error #32 - Too many processes",
 0}; 
 
-void debug_error(int path, error_number)
+dword get_error(int N)
 {
 	char error[256];
-	if (path) debug(path);
-	if (error_number<0) error_number*=-1;   
-	if (error_number<33)
+	if (N<0) N*=-1;   
+	if (N<33)
 	{
-		strcpy(#error, ERROR_TEXT[error_number]);
+		strcpy(#error, ERROR_TEXT[N]);
 	}
 	else
 	{
-		strcpy(#error, itoa(error_number));
+		strcpy(#error, itoa(N));
 		strcat(#error, " - Unknown error number O_o");
 	}
-	debug(#error);
+	return #error;
+}
+
+void debug_error(dword path, error_number)
+{
+	if (path) debug(path);
+	debug(get_error(error_number));
 }

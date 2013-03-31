@@ -101,9 +101,8 @@ void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 	proc_info wForm;
 	dword shadow_buf, skin_height;
 	shadow_buf = mem_Alloc(w*h*3);
- 	//skin_height = GetSkinHeight();
  	GetProcessInfo(#wForm, SelfInfo);
-	CopyScreen(shadow_buf, x+wForm.left, y+wForm.top, w, h);
+	CopyScreen(shadow_buf, 5*border+x+wForm.left, GetSkinHeight()*border+y+wForm.top, w, h);
 	ShadowImage(shadow_buf, w, h, strength);
 	_PutImage(x,y,w,h,shadow_buf);
 	mem_Free(shadow_buf);

@@ -14,7 +14,6 @@ void about_dialog()
 				id=GetButtonID();
 				IF (id==1) || (id==10) ExitProcess();
 				IF (id==23) RunProgram(BROWSER_PATH, BROWSER_LINK);
-				IF (id==33) RunProgram(EDITOR_PATH, abspath("Eolite.ini"));
 				break;
 				
 		case evKey:
@@ -33,8 +32,6 @@ void about_dialog()
 				WriteText(29,170,0x80,0,"Visit");
 				DrawLink(66,170,0x80,23, "kolibri-n.org");
 				DrawFlatButton(85,190,70,22,10,0xE4DFE1, "Close");
-				DefineButton(20-1,195-1, 16+1,15+1, 33+BT_HIDE, 0);
-				PutPaletteImage(8*16*15+#ficons,16,15,20,195,8,#ficons_pal);	
 				DrawFilledBar(0, 216, 172, 12);
 	}
 }

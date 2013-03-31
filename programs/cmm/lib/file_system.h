@@ -155,6 +155,7 @@ f70 read_dir_70;
 :int GetDir(dword dir_buf, file_count, path)
 {
 	dword buf, fcount, error;
+	ESDWORD[file_count] = 0;
 	buf = malloc(32);
 	error = ReadDir(0, buf, path);
 	if (!error)

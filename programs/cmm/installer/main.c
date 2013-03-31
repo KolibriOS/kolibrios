@@ -6,6 +6,7 @@
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
+#include "..\lib\copyf.h"
 //*.obj libraries
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\libio_lib.h"
@@ -47,7 +48,6 @@ int DefineWindow(dword wtitle, wbutton)
 	return 1;
 }
 
-#include "copyf.c"
 #include "tmp_add.c"
 #include "hallo.c";
 #include "installation.c";

@@ -16,7 +16,7 @@ path_string disk_list[30];
 int disc_num;
 dword devbuf;
 
-void GetSystemDiscs()
+void SystemDiscsGet()
 {
 	unsigned char dev_name[10], sys_discs[10];
 	unsigned int i1, j1, dev_num, dev_disc_num;
@@ -32,8 +32,8 @@ void GetSystemDiscs()
 		strcat(#dev_name, i1*304+ devbuf+72); // /rd
 		strcat(#dev_name, "/");               // /rd/
 		Open_Dir(#dev_name, ONLY_OPEN);
-		dev_disc_num = count;
-		//if (count<=0) copystr(#dev_name,#disk_list[disc_num].Item); else
+		dev_disc_num = files.count;
+		//if (files.count<=0) copystr(#dev_name,#disk_list[disc_num].Item); else
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
 			strcpy(#sys_discs, #dev_name);                              // /rd/
@@ -46,20 +46,17 @@ void GetSystemDiscs()
 }
 
 
-void DrawSystemDiscs()
+void SystemDiscsDraw()
 {    
-	byte disc_icon;
-	char dev_name[10];
-	char disc_name[100];
+	char dev_name[10], disc_name[100];
 	int i, dev_icon;
 	
-	for (i=0; i<20; i++) DeleteButton(100+i);
-	//список дисков
 	Tip(56, "Devices", 78, "=");
+	for (i=0; i<20; i++) DeleteButton(100+i);
 	for (i=0;i<disc_num;i++)
 	{
-		DrawBar(17,i*16+74,160,17,0xFFFFFF); //фон
-		DefineButton(17,i*16+74,159,16,100+i+BT_HIDE,0xFFFFFF); //создаём кнопки, а потом выводим названия дисков
+		DrawBar(17,i*16+74,160,17,0xFFFFFF);
+		DefineButton(17,i*16+74,159,16,100+i+BT_HIDE,0xFFFFFF);
 		strcpy(#dev_name, #disk_list[i].Item);
 		dev_name[strlen(#dev_name)-1]=NULL;
 		switch(dev_name[1])
@@ -107,76 +104,36 @@ void DrawSystemDiscs()
 	}
 }
 
-void FileMenu()
-{
-	word id, key;
-	loop() switch(WaitEvent())
-	{
-		case evButton: 
-				id=GetButtonID();
-				ExitProcess();
-				break;
-				
-		case evKey:
-				IF (GetKey()==27) ExitProcess();
-				break;
-				
-		case evReDraw:
-			DefineAndDrawWindow(m.x+1+Form.left,m.y+Form.top,159,90,0x01,0xEEEeee,0x01fffFFF);
-			DrawBar(1,18,160,51,0xFFFFFF); //белое
-			_PutImage(1,23, 16,44, #factions); //иконки
-			//rename file 
-			DefineButton(1,18,159,16,80+BT_HIDE,0xE4DFE1);
-			WriteText(26,23,0x80,0,"Rename file");
-			WriteText(134,23,0x80,0x999999,"[F2]");
-			//delete file
-			DefineButton(1,35,159,16,81+BT_HIDE,0xE4DFE1);
-			WriteText(26,40,0x80,0,"Delete file");
-			WriteText(144,40,0x80,0x999999,"[Del]");
-			//create folder
-			DefineButton(1,52,159,16,82+BT_HIDE,0xE4DFE1);
-			WriteText(26,57,0x80,0,"Create folder");
-			WriteText(134,57,0x80,0x999999,"[F6]");
-	}
-}
 
-void Actions()
+char *actions[] = {
+	57, "New file", "F7",
+	56, "New folder", "F6",
+	60, "Options", "F10",
+	0,0,0
+};
+void ActionsDraw()
 {
-	int actions_y=disc_num*16;
-	
-	DeleteButton(80);
-	DeleteButton(81);
-	DeleteButton(82);
-	
-	if (!show_actions)
-		Tip(actions_y+90, "Actions", 77, "\x18");
-	else
+	int actions_y=disc_num*16+108, lineh=16;
+	Tip(actions_y-18, "Actions", 77, ""); //заголовок
+	for (i=0; actions[i*3]!=0; i++, actions_y+=lineh)
 	{
-		Tip(actions_y+90, "Actions", 77, "\x19"); //заголовок
-		DrawBar(17,actions_y+108,160,51,0xFFFFFF); //белое
-		_PutImage(21,actions_y+113, 16,44, #factions); //иконки
-		//rename file 
-		DefineButton(17,actions_y+108,159,16,80+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+113,0x80,0,"Rename file");
-		WriteText(150,actions_y+113,0x80,0x999999,"[F2]");
-		//delete file
-		DefineButton(17,actions_y+125,159,16,81+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+130,0x80,0,"Delete file");
-		WriteText(144,actions_y+130,0x80,0x999999,"[Del]");
-		//create folder
-		DefineButton(17,actions_y+142,159,16,82+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+147,0x80,0,"Create folder");
-		WriteText(150,actions_y+147,0x80,0x999999,"[F6]");
+		DrawBar(17,actions_y,160,lineh,0xFFFFFF); //белое
+		DefineButton(17,actions_y,159,lineh,actions[i*3]+BT_HIDE,0xE4DFE1);
+		WriteText(45,actions_y+4,0x80,0,actions[i*3+1]);
+		WriteText(-strlen(actions[i*3+2])*6+170,actions_y+4,0x80,0x999999,actions[i*3+2]);
+		_PutImage(21,actions_y+2, 14,13, i*14*13*3+#factions);
 	}
 }
 
 
-void LeftPanelBackground()
+void LeftPanelBgDraw()
 {
 	int actions_y=disc_num*16;
-	int start_y = show_actions*51+actions_y+108;
+	int start_y = actions_y+156;
 	DrawBar(2,41,190,15,col_lpanel);		      //синий прямоугольник - над девайсами
 	DrawBar(17,actions_y+75,160,15,col_lpanel); //синий прямоугольник - под девайсами
+	PutShadow(17,actions_y+75,160,1,1,2);
+	PutShadow(18,actions_y+75+1,158,1,1,1);
 	DrawBar(2,56,15,actions_y+103,col_lpanel);	          //синий прямоугольник - слева       
 	DrawBar(177,56,15,actions_y+103,col_lpanel);            //синий прямоугольник - справа
 	if (onTop(start_y, 6) < 268)
@@ -186,13 +143,15 @@ void LeftPanelBackground()
 		DrawBar(2,start_y,190,onTop(start_y,6+268),col_lpanel);
 		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), 8, #blue_hl_pal);
 	}
+	PutShadow(17,start_y,160,1,1,2);
+	PutShadow(18,start_y+1,158,1,1,1);
 }
 
 
 void DrawLeftPanel()
 {
-	DrawSystemDiscs();
-	Actions();
-	LeftPanelBackground();
+	SystemDiscsDraw();
+	ActionsDraw();
+	LeftPanelBgDraw();
 }
 

@@ -71,6 +71,14 @@ void Install()
 	EndLoop();
 }
 
+void copyf_Action(dword filename)
+{
+	if (CheckEvent()==evReDraw) { DefineWindow("Installation Started", "Stop"); ShowProgress("Copying files..."); }
+	ShowProgress(NULL);
+	DrawBar(TEXTX, BLACK_H+50, Form.cwidth-TEXTX, 12, 0xFFFfff);
+	WriteText(TEXTX, BLACK_H+50, 0x80, 0, filename);
+}
+
 
 void EndLoop()
 {

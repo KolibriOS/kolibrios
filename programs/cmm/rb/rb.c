@@ -35,7 +35,7 @@
 	0};
 #endif
 
-char stak[100];
+char stak[512];
 #define ITEM_HEIGHT 18
 int ITEM_WIDTH;
 
@@ -82,9 +82,8 @@ void window()
 	case evMouse:
 				m.get();
 
-				GetProcessInfo(#MenuForm, SelfInfo);
 				id1=GetProcessSlot(MenuForm.ID);
-				if (id1<>GetActiveProcess()) ExitProcess();			
+				if (id1<>GetActiveProcess()) ExitProcess();
 				id1=m.y-1/ITEM_HEIGHT;
 				if (m.y<0) || (id1+1>items_num) || (m.x<0) || (m.x>ITEM_WIDTH) break;
 				if (m.lkm) || (m.pkm)
@@ -130,6 +129,7 @@ void window()
 				while (ITEMS_LIST[items_num*3]) items_num++;
 				m.get();
 				DefineAndDrawWindow(m.x+1,m.y,ITEM_WIDTH+1,items_num*ITEM_HEIGHT+2,0x01,sc.work,0, 0x01fffFFF);
+				GetProcessInfo(#MenuForm, SelfInfo);
 				DrawRectangle(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,sc.work_graph); //ободок
 				PutShadow(ITEM_WIDTH+1,1,1,items_num*ITEM_HEIGHT+1,0,1);
 				PutShadow(1,items_num*ITEM_HEIGHT+2,ITEM_WIDTH+1,1,0,1);

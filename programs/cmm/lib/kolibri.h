@@ -65,6 +65,7 @@ void mouse::get()
 	$and	ebx,0x0000FFFF
 	//hor = EAX;
 	vert = EBX;
+	if (y>6000) y=0;
 }
 
 
