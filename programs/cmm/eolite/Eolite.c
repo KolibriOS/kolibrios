@@ -24,8 +24,8 @@
 #define WITH_REDRAW	1
 #define ONLY_OPEN	2
 
-#define TITLE "Eolite File Manager v1.77"
-#define ABOUT_TITLE "Eolite v1.77"
+#define TITLE "Eolite File Manager v1.8"
+#define ABOUT_TITLE "Eolite v1.80"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -45,10 +45,9 @@ byte
 	copy_file[4096],
 	temp[4096];	 
 byte
-	cut_active,
-	rename_active,
-	del_active;
-byte
+	cut_active=0,
+	rename_active=0,
+	del_active=0,
 	show_dev_name=1,
 	sort_num=2,
 	isdir;
@@ -185,13 +184,14 @@ void main()
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
 			id=GetButtonID();
-			IF (id==1) ExitProcess();
-
-			IF (del_active)
+			if (id==1) ExitProcess();
+			if (rename_active) break;
+			if (del_active)
 			{
 				IF (id==301) || (id==302) Del_File(302-id);
 				break;
 			}
+			
 			switch(id) 
 			{
 				case 21: //Back
@@ -350,6 +350,7 @@ void main()
 			files.SetSizes(192, 57, onLeft(192,27), onTop(57,6), disc_num*16+195,files.line_h);
 			if (Form.height < files.min_h) MoveSize(OLD,OLD,OLD,files.min_h);
 			if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
+			GetProcessInfo(#Form, SelfInfo); //if win_size changed
 			draw_window();
 	}
 }
@@ -380,6 +381,7 @@ inline fastcall void draw_window()
 	DrawFlatButton(onLeft(27,0),onTop(22,0),16,16,0,col_work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
+	if (rename_active) ActionsProcess(2);
 }
 
 
@@ -467,7 +469,6 @@ void List_ReDraw()
 
 void Line_ReDraw(dword color, filenum){
 	dword text_col=0, name_len=0, y=filenum*files.line_h+57;
-	IF (rename_active==1) ReName(false);
 	DrawBar(192,y,3,files.line_h,color); 
 	DrawBar(192+19,y,onLeft(46,192),files.line_h,color); DrawBar(195,y+17,16,1,color);
 	if (files.line_h>18) DrawBar(195,y+18,16,files.line_h-18,color);
@@ -755,7 +756,6 @@ void ActionsProcess(char N)
 			break;
 		case 2:
 			if (!files.count) break;
-			DeleteButton(files.current+201);
 			edit2.flags=100000000000010b; //set active
 			edit2.width=onLeft(24,217);
 			edit2.top=files.current*files.line_h+59;

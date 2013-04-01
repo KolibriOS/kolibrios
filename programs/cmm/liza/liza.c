@@ -147,7 +147,7 @@ void OpenMailDat()
 void SaveAndExit()
 {
 	char write_data[512], pass_b64[256];
-	if (!CloseSocket(socket)) debug("An error occurred during closing of the socket");
+	CloseSocket(socket);
 	strcpy(#write_data, #email_text);
 	strcat(#write_data, "\n");
 	base64_encode stdcall (#pass_text, #pass_b64, strlen(#pass_text));
