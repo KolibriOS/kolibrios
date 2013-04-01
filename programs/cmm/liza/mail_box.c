@@ -132,6 +132,7 @@ void MailBoxLoop()
 				if (id==EXIT_MAIL) 
 				{
 					StopLoading();
+					if (!CloseSocket(socket)) debug("An error occurred during closing of the socket");
 					LoginBoxLoop();
 				}
 				if (id==CHANGE_CHARSET) 

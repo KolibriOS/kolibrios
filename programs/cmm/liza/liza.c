@@ -46,9 +46,9 @@ enum {
 #define WIN_H         440
 #define WIN_MIN_W     500
 #define WIN_MIN_H     380
-#define LOGIN_HEADER   "Login - Email client Liza 0.8"
-#define OPTIONS_HEADER "Options - Email client Liza 0.8"
-#define MAILBOX_HEADER "Mail Box - Email client Liza 0.8"
+#define LOGIN_HEADER   "Login - Email client Liza 0.8a"
+#define OPTIONS_HEADER "Options - Email client Liza 0.8a"
+#define MAILBOX_HEADER "Mail Box - Email client Liza 0.8a"
 proc_info Form;
 system_colors sc;
 #define LBUMP 0xFFFfff
@@ -147,6 +147,7 @@ void OpenMailDat()
 void SaveAndExit()
 {
 	char write_data[512], pass_b64[256];
+	if (!CloseSocket(socket)) debug("An error occurred during closing of the socket");
 	strcpy(#write_data, #email_text);
 	strcat(#write_data, "\n");
 	base64_encode stdcall (#pass_text, #pass_b64, strlen(#pass_text));
