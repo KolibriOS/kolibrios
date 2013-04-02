@@ -50,7 +50,7 @@ byte
 	del_active=0,
 	show_dev_name=1,
 	sort_num=2,
-	isdir;
+	itdir;
 
 proc_info Form;
 mouse m;
@@ -281,7 +281,7 @@ void main()
 					case 024: //Ctrl+X
 					case 003: //Ctrl+C
 							CTRLC_MARK:
-							IF (isdir) break;
+							IF (itdir) break;
 							strcpy(#copy_file, #file_path);
 							IF (key==24) cut_active=1; ELSE cut_active=0; 
 							break;
@@ -482,7 +482,7 @@ void Line_ReDraw(dword color, filenum){
 	if (TestBit(ESDWORD[off-40],1)) || (TestBit(ESDWORD[off-40],2)) text_col=0xA6A6B7; //system or hiden?
 	if (color<>0xFFFfff)
 	{
-		isdir=TestBit(ESDWORD[off-40], 4);		
+		itdir=TestBit(ESDWORD[off-40], 4);		
 		strcpy(#file_name, off);
 		strcpy(#file_path, #path);
 		strcat(#file_path, #file_name);
@@ -560,7 +560,7 @@ inline Sorting()
 	FOR (j=files.count-1, off=files.count-1*304+buf+32; j>=0; j--, off-=304;)  //files | folders
 	{
 		strttl(off+40);
-		if (TestBit(ESDWORD[off],4)) //isdir?
+		if (TestBit(ESDWORD[off],4)) //directory?
 		{
 			file_mas[k]=j;
 			k++;
@@ -615,8 +615,8 @@ void Del_File(byte dodel)
 		IF (del_rezult<>0)
 		{
 			Write_Error(del_rezult);
-			IF ( isdir) ShowMessage("Error. Folder isn't empty.");
-			IF (!isdir) ShowMessage("Error. Filesystem read-only.");
+			IF ( itdir) ShowMessage("Error. Folder isn't empty.");
+			IF (!itdir) ShowMessage("Error. Filesystem read-only.");
 		}
  	}
 	del_active=0;
@@ -667,7 +667,7 @@ void ReName(byte rename)
 		strcpy(#edit_name, #file_name); //save edit name to select it later
 		strcat(#temp, #file_name);
 		if (strcmp(#file_path,#temp)<>0) && (file_name)
-		IF (isdir)
+		IF (itdir)
 		{
 			del_rezult = DeleteFile(#file_path);
 			IF (del_rezult!=0)
@@ -716,7 +716,7 @@ void Dir_Up()
 
 void Open()
 {
-	if (!isdir)
+	if (!itdir)
 	{
 		GetIni(0);
 	} 
@@ -757,10 +757,10 @@ void ActionsProcess(char N)
 			rename_active=1;
 			break;
 		case 3:
-			IF (!isdir) RunProgram("/sys/tinypad", #file_path);
+			IF (!itdir) RunProgram("/sys/tinypad", #file_path);
 			break;
 		case 4:
-			IF (!isdir) RunProgram("/sys/develop/heed", #file_path);
+			IF (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
 			Tip(56, "Devices", 55, "-");
