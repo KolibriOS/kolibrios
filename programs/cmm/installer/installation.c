@@ -39,13 +39,6 @@ void ShowProgress(dword text1)
 }
 
 
-dword *copyfiles[] = {
-	"sys /sys",
-	"tmp /tmp9/1",
-	0
-};
-
-
 void Install()
 {
 	int i;
@@ -59,12 +52,14 @@ void Install()
 		if (i==Form.ID) || (strchr(#Process.name, '/')) || (strchr(#Process.name, 'Z')) continue;
 		KillProcess(i);
 	}
+	//RunProgram("/sys/develop/board", NULL); //temp============
 	RunProgram("/sys/REFRSCRN", NULL);
 	pause(100);
 	ShowProgress("Copying files...");
-	copyf("/sys/docpack /tmp9/1/docpack");
+	copyf("/sys/docpack", "/tmp9/1/docpack");
 	DeleteFile("/sys/docpack");
-	for (i = 0; copyfiles[i]!=0; i++) copyf(copyfiles[i]);
+	copyf(abspath("sys"), "/sys");
+	copyf(abspath("tmp"), "/tmp9/1");
 	ShowProgress("Post install actions...");
 	RunProgram("/sys/launcher", NULL);
 	SetSystemSkin("/tmp9/1/skins/latte.skn");

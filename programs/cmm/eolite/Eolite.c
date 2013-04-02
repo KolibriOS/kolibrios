@@ -24,8 +24,8 @@
 #define WITH_REDRAW	1
 #define ONLY_OPEN	2
 
-#define TITLE "Eolite File Manager v1.8"
-#define ABOUT_TITLE "Eolite v1.80"
+#define TITLE "Eolite File Manager v1.81"
+#define ABOUT_TITLE "Eolite v1.81"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -220,14 +220,6 @@ void main()
 						IF(sort_num==3) DrawFilledBar(onLeft(44,0),42,6,10);
 						sort_num=id-30;
 						Open_Dir(#path,WITH_REDRAW);
-						break;
-				case 78: //rescan devices
-						Tip(56, "Devices", 78, "-");
-						pause(10);
-						GetIni(1);
-						SystemDiscsGet();
-						Open_Dir(#path,WITH_REDRAW);
-						DrawLeftPanel();
 						break;
 				case 50...60: //Actions
 						ActionsProcess(id-50);
@@ -770,8 +762,14 @@ void ActionsProcess(char N)
 		case 4:
 			IF (!isdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
-		case 5:
+		case 5: //refresh cur dir & devs
+			Tip(56, "Devices", 55, "-");
+			Open_Dir(#path,WITH_REDRAW);
+			pause(10);
+			GetIni(1);
+			SystemDiscsGet();
 			Open_Dir(#path,1);
+			DrawLeftPanel();
 			break;
 		case 6:
 			strcpy(#temp, #path);

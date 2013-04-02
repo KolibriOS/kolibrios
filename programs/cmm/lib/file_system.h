@@ -23,6 +23,37 @@ struct BDVK{
 	char	name[518];
 };
 
+inline fastcall void SetCurDir( ECX)
+{
+	$mov eax,30
+	$mov ebx,1
+	$int 0x40
+}
+
+inline fastcall void GetCurDir( ECX, EDX)
+{
+	$mov eax,30
+	$mov ebx,2
+	$int 0x40
+}
+
+///////////////////////////
+//   Параметры файла    //
+///////////////////////////
+f70 getinfo_file_70;
+:dword GetFileInfo(dword file_path, bdvk_struct)
+{    
+    getinfo_file_70.func = 5;
+    getinfo_file_70.param1 = 
+    getinfo_file_70.param2 = 
+    getinfo_file_70.param3 = 0;
+    getinfo_file_70.param4 = bdvk_struct;
+    getinfo_file_70.rezerv = 0;
+    getinfo_file_70.name = file_path;
+    $mov eax,70
+    $mov ebx,#getinfo_file_70.func
+    $int 0x40 
+}
 
 ///////////////////////////
 //   Запуск программы    //
@@ -96,25 +127,6 @@ f70 read_file_70;
 	$int 0x40
 }
 
-:int GetFile(dword buf, filesize, read_path)
-{
-	BDVK ReadFile_atr;
-	dword rBuf;
-	if (! GetFileInfo(read_path, #ReadFile_atr))
-	{
-		rBuf = malloc(ReadFile_atr.sizelo);	
-		if (! ReadFile(0, ReadFile_atr.sizelo, rBuf, read_path))
-		{
-			ESDWORD[buf] = rBuf;
-			ESDWORD[filesize] = ReadFile_atr.sizelo;
-			return 1;
-		}
-	}
-	free(rBuf);
-	return 0;
-}
-
-
 ////////////////////////////
 //     Записать файл      //
 ////////////////////////////
@@ -151,11 +163,33 @@ f70 read_dir_70;
 	$int 0x40
 }
 
+char isdir(dword fpath)
+{
+	BDVK fpath_atr;
+	GetFileInfo(fpath, #fpath_atr);
+	if (TestBit(fpath_atr.attr, 4)==1) return 1; else return 0;
+}
+:int GetFile(dword buf, filesize, read_path)
+{
+	BDVK ReadFile_atr;
+	dword rBuf;
+	if (! GetFileInfo(read_path, #ReadFile_atr))
+	{
+		rBuf = malloc(ReadFile_atr.sizelo);	
+		if (! ReadFile(0, ReadFile_atr.sizelo, rBuf, read_path))
+		{
+			ESDWORD[buf] = rBuf;
+			ESDWORD[filesize] = ReadFile_atr.sizelo;
+			return 1;
+		}
+	}
+	free(rBuf);
+	return 0;
+}
 
 :int GetDir(dword dir_buf, file_count, path)
 {
 	dword buf, fcount, error;
-	ESDWORD[file_count] = 0;
 	buf = malloc(32);
 	error = ReadDir(0, buf, path);
 	if (!error)
@@ -163,69 +197,21 @@ f70 read_dir_70;
 		fcount = ESDWORD[buf+8];
 		buf = realloc(buf, fcount+1*304+32);
 		ReadDir(fcount, buf, path);
+		//fcount=EBX;
 		if (!strcmp(".",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
 		if (!strcmp("..",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
 		ESDWORD[dir_buf] = buf;
 		ESDWORD[file_count] = fcount;
 	}
+	else
+	{
+		ESDWORD[file_count] = 0;
+		ESDWORD[dir_buf] = free(buf);
+	}
 	return error;
 }
 
-
-///////////////////////////
-//   Параметры файла    //
-///////////////////////////
-f70 getinfo_file_70;
-:dword GetFileInfo(dword file_path, bdvk_struct)
-{    
-    getinfo_file_70.func = 5;
-    getinfo_file_70.param1 = 
-    getinfo_file_70.param2 = 
-    getinfo_file_70.param3 = 0;
-    getinfo_file_70.param4 = bdvk_struct;
-    getinfo_file_70.rezerv = 0;
-    getinfo_file_70.name = file_path;
-    $mov eax,70
-    $mov ebx,#getinfo_file_70.func
-    $int 0x40 
-}
-
-
-///////////////////////////
-//   Скопировать файл    //
-///////////////////////////
-:int CopyFile(dword copy_from, copy_in)
-{
-	BDVK CopyFile_atr;
-	dword cBufer=0;
-	char rezult = -1;
-	if (! GetFileInfo(copy_from, #CopyFile_atr))
-	{
-		cBufer = malloc(CopyFile_atr.sizelo);	
-		if (! ReadFile(0, CopyFile_atr.sizelo, cBufer, copy_from))
-		{
-			rezult = WriteFile(CopyFile_atr.sizelo, cBufer, copy_in);
-		}
-	}
-	free(cBufer);
-	return rezult;
-}
-
-inline fastcall void SetCurDir( ECX)
-{
-    $mov eax,30
-    $mov ebx,1
-    $int 0x40
-}
-
-inline fastcall void GetCurDir( ECX, EDX)
-{
-    $mov eax,30
-    $mov ebx,2
-    $int 0x40
-}
-
-void notify(dword notify_param)
+:void notify(dword notify_param)
 {
 	RunProgram("@notify", notify_param);
 }
@@ -233,6 +219,7 @@ void notify(dword notify_param)
 :dword abspath(dword relative_path) //GetAbsolutePathFromRelative()
 {
 	char absolute_path[4096];
+	if (ESBYTE[relative_path]=='/') return relative_path;
 	strcpy(#absolute_path, #program_path);
 	absolute_path[strrchr(#absolute_path, '/')] = '\0';
 	strcat(#absolute_path, relative_path);

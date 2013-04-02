@@ -51,7 +51,7 @@ void SystemDiscsDraw()
 	char dev_name[10], disc_name[100];
 	int i, dev_icon;
 	
-	Tip(56, "Devices", 78, "=");
+	Tip(56, "Devices", 55, "=");
 	for (i=0; i<20; i++) DeleteButton(100+i);
 	for (i=0;i<disc_num;i++)
 	{

@@ -7,6 +7,7 @@ char *captions[] = {
 	"View as HEX",   "F4",
 	"Rename",        "F2",
 	"Delete",        "Del",
+	//"Refresh",       "F5",
 	0};
 
 void FileMenu()
@@ -32,7 +33,7 @@ void FileMenu()
 				if (slot != GetActiveProcess()) ExitProcess();
 				mm.get();
 				newi = mm.y - 1 / lineh;
-				//if (m.y<0) || (newi+1>items_num) || (m.x<0) || (m.x>ITEM_WIDTH) break;
+				if (mm.y<=0) || (mm.y>ccount*lineh+5) || (mm.x<0) || (mm.x>linew) newi=-1;
 				if (cur<>newi)
 				{
 					cur=newi;
@@ -48,6 +49,7 @@ void FileMenu()
 				if (id==103) ActionsProcess(4);
 				if (id==104) ActionsProcess(2);
 				if (id==105) Del_Form();
+				if (id==106) ActionsProcess(5);
 				ExitProcess();
 				break;
 				

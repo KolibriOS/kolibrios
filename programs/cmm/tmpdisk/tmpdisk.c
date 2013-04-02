@@ -55,12 +55,11 @@ void main()
 	driver_handle = LoadDriver("tmpdisk");
 	if (driver_handle==0)
 	{
-		notify("error: /rd1/1/lib/tmpdisk.obj driver loading failed");
+		notify("error: /rd1/1/drivers/tmpdisk.obj driver loading failed");
 		notify("program terminated");
 		ExitProcess();
 	}
-	else
-		debug("tmpdisk.obj driver loaded successfully");
+
 	
 	if (param)
 		Console_Work();

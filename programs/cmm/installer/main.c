@@ -55,7 +55,6 @@ int DefineWindow(dword wtitle, wbutton)
 void main()
 {
 	mem_Init();
-	program_path[strrchr(#program_path, '/')] = '\0';
 	HalloLoop();
 }
 
