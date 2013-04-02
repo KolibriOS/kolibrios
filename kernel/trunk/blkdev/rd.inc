@@ -2257,8 +2257,10 @@ fs_RamdiskDelete:
         jmp     .lfndel
 .lfndone:
 ; delete FAT chain
-        test    eax, eax
-        jz      .done
+        cmp     eax, 2
+        jb      .done
+        cmp     eax, 0xFF8
+        jae     .done
         lea     eax, [RAMDISK_FAT + eax*2]
         push    dword [eax]
         and     word [eax], 0
