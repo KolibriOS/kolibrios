@@ -1,6 +1,6 @@
 ;
 ; END
-; KolibriOS Team 2005-2010
+; KolibriOS Team 2005-2013
 ;
 ; <diamond> note that 'mov al,xx' is shorter than 'mov eax,xx'
 ;           and if we know that high 24 bits of eax are zero, we can use 1st form
@@ -23,21 +23,20 @@ do_draw:
 
     shr  eax,17
     shl  eax,16
-    lea  ebx,[eax-110*10000h+220]
+    lea  ebx,[eax-110*10000h+222]
 
     shr  ecx,1
     shl  ecx,16
     sub  ecx,50*10000h - 115
 
     xor  eax,eax			   ; define and draw window
-    mov  edx,0x00cccccc
+    mov  edx,0x01cccccc
     mov  esi,edx
     mov  edi,edx
     mcall
 
-   sub edx,0x555555
-   mov al,13
-   mcall ,19 shl 16+87,21 shl 16+24
+   mcall 13,0 shl 16+222,0 shl 16+230, 0xcccccc
+   mcall ,19 shl 16+87,21 shl 16+24, 0x555555
    push ebx
    mcall ,122 shl 16+87
    xchg ebx,[esp]
