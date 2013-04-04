@@ -1,10 +1,15 @@
 ;=============================================================================
-; Kolibri Graphics Benchmark 0.6
+; Kolibri Graphics Benchmark 0.7
 ;--------------------------------------
 ; MGB - Menuet Graphics Benchmark 0.3
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.7
+; last update:  05/04/2013
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      benchmark GS selector - read screen area
+;---------------------------------------------------------------------
 ; version:	0.6
 ; last update:  14/03/2013
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -56,6 +61,7 @@ use32
 include '../../../config.inc'		;for nightbuild
 include '..\..\..\macros.inc'
 include '..\..\..\proc32.inc'
+;include '..\..\..\debug.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 	@use_library
@@ -321,6 +327,107 @@ testGetScreen_f36:
 	ret
 ;---------------------------------------------------------------------
 align 4
+testGetScreen_GS:
+	push	edi
+	mov	[start_x],15
+	mov	[start_y],33
+	mov	[size_x],90
+	mov	[size_y],123
+	mov	edi,[area_for_f36]
+
+	mcall	61,2
+	cmp	eax,24
+	je	get_area_with_GS_24
+;-----------------------------------------------------------------------------
+align 4
+get_area_with_GS_32:	
+	mcall	61,1
+	shr	eax,16
+	shl	eax,2
+	mov	[offset_x],eax
+
+	mov	esi,[start_y]
+	imul	esi,eax
+	
+	mov	eax,[start_x]
+	shl	eax,2
+	add	esi,eax
+
+	mov	eax,[size_x]
+	shl	eax,2
+	sub	[offset_x],eax
+	
+	mov	edx,[size_y]
+	mov	ebx,[offset_x]
+	sub	esi,ebx
+	mov	ebp,[size_x]
+;--------------------------------------
+align 4
+.start_y:
+	add	esi,ebx
+	mov	ecx,ebp
+;--------------------------------------
+align 4
+.start_x:	
+	mov	eax,[gs:esi]
+	mov	[edi],eax
+	add	esi,4
+	add	edi,3
+	
+        dec     ecx
+        jnz     .start_x
+	
+        dec     edx
+        jnz     .start_y
+	
+	pop	edi
+	ret
+;-----------------------------------------------------------------------------
+align 4
+get_area_with_GS_24:	
+	mcall	61,1
+	shr	eax,16
+	lea	eax,[eax*3]
+	mov	[offset_x],eax
+	
+	mov	esi,[start_y]
+	imul	esi,eax
+	
+	mov	eax,[start_x]
+	lea	eax,[eax*3]
+	add	esi,eax
+	
+	mov	eax,[size_x]
+	lea	eax,[eax*3]
+	sub	[offset_x],eax
+	
+	mov	edx,[size_y]
+	mov	ebx,[offset_x]
+	sub	esi,ebx
+	mov	ebp,[size_x]
+;--------------------------------------
+align 4
+.start_y:
+	add	esi,ebx
+	mov	ecx,ebp
+;--------------------------------------
+align 4
+.start_x:	
+	mov	eax,[gs:esi]
+	mov	[edi],eax
+	add	esi,3
+	add	edi,3
+
+        dec     ecx
+        jnz     .start_x
+	
+        dec     edx
+        jnz     .start_y
+
+	pop	edi
+	ret
+;-----------------------------------------------------------------------------
+align 4
 testDrawVertLine:
 	mcall	38,<300,300>,<30,380>,1090207Fh
 	ret
@@ -562,6 +669,7 @@ results_table dd \
 	?,?,testDrawWindow,aDrawingWindow,\
 	?,?,testDrawBar,aDrawingBar,\
 	?,?,testGetScreen_f36,aGetScreenF36,\
+	?,?,testGetScreen_GS,aGetScreen_GS,\
 	?,?,testDrawPicture,aDrawingPicture,\
 	?,?,testDrawPicture_f73,aDrawingPictF73,\
 	?,?,testDrawVertLine,aDrawingVLine,\
@@ -581,7 +689,8 @@ aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
 aDrawingBar	db 'Filled Rectangle, 100x250 px',0
 aDrawingPicture db 'Picture, 90x123, px',0
 aDrawingPictF73	db 'Picture for Blitter, 90x123, px',0
-aGetScreenF36	db 'Get a piece of screen, 90x123, px',0
+aGetScreenF36	db 'Get a piece of screen f.36, 90x123, px',0
+aGetScreen_GS	db 'Get a piece of screen GS, 90x123, px',0
 aDrawingVLine	db 'Vertical Line, 350 px',0
 aDrawingHLine	db 'Horizontal Line, 270 px',0
 aDrawingFLine	db 'Free-angled Line, 350 px',0
@@ -592,7 +701,7 @@ aDrawingPixel	db 'Single Pixel',0
 
 aTestText	db 'This is a 34-charachters test text'
 aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-aCaption	db 'Kolibri Graphical Benchmark 0.6',0
+aCaption	db 'Kolibri Graphical Benchmark 0.7',0
 
 aLeft	db 'Left    :',0
 aRight	db 'Right   :',0
@@ -792,6 +901,12 @@ mouse_dd	rd 1
 area_for_f36	rd 1
 dwTestEndTime	rd 1
 dwMainPID	rd 1
+;-----------------------------------------------------------------------------
+start_x		rd 1
+start_y		rd 1
+size_x		rd 1
+size_y		rd 1
+offset_x	rd 1
 ;---------------------------------------------------------------------
 textarea:
 	rb 8
