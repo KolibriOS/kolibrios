@@ -19,7 +19,7 @@ void copyf_Action(dword filename) {
 	DrawBar(0, 0, WIN_W, WIN_H, 0xDDDddd);
 	WriteText(5,6, 0x80, 0, "Copying file:");
 	WriteText(90,6, 0x80, 0, filename);
-	pause(20);
+	//pause(20);
 }
 
 
