@@ -52,7 +52,7 @@ f70 getinfo_file_70;
     getinfo_file_70.name = file_path;
     $mov eax,70
     $mov ebx,#getinfo_file_70.func
-    $int 0x40 
+    $int 0x40
 }
 
 ///////////////////////////
@@ -187,7 +187,13 @@ char isdir(dword fpath)
 	return 0;
 }
 
-:int GetDir(dword dir_buf, file_count, path)
+enum
+{
+	DIRS_ALL,
+	DIRS_NOROOT,
+	DIRS_ONLYREAL
+};
+:int GetDir(dword dir_buf, file_count, path, doptions)
 {
 	dword buf, fcount, error;
 	buf = malloc(32);
@@ -198,8 +204,17 @@ char isdir(dword fpath)
 		buf = realloc(buf, fcount+1*304+32);
 		ReadDir(fcount, buf, path);
 		//fcount=EBX;
-		if (!strcmp(".",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
-		if (!strcmp("..",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+
+		if (doptions == DIRS_ONLYREAL)
+		{
+			if (!strcmp(".",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+			if (!strcmp("..",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+		}
+		if (doptions == DIRS_NOROOT)
+		{
+			if (!strcmp(".",buf+72)) {fcount--; memmov(buf,buf+304,fcount*304);}
+		}
+
 		ESDWORD[dir_buf] = buf;
 		ESDWORD[file_count] = fcount;
 	}

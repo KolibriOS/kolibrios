@@ -240,6 +240,13 @@ inline fastcall void SwitchToAnotherThread()
 	$int 0x40
 }
 
+inline fastcall void SendWindowMessage( ECX, EDX)
+{
+	$mov eax, 72
+	$mov ebx, 1
+	$int 0x40
+}
+
 inline fastcall int KillProcess( ECX)
 {
 	$mov eax,18;

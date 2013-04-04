@@ -12,6 +12,7 @@
 // strlwr( ESI) --- kyrillic symbols may not work
 // strttl( EDX)
 // strtok( ESI)
+// chrnum(dword searchin, char symbol)
 // strcpyb(dword searchin, copyin, startstr, endstr) --- copy string between strings
 // strnumb(dword searchin, startstr, endstr) --- get number between strings
 //------------------------------------------------------------------------------

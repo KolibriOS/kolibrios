@@ -14,7 +14,7 @@ void main()
 	signed int result;
 
 	mem_Init();
-	GetDir(#dirbuf, #fcount, "/");
+	GetDir(#dirbuf, #fcount, "/", DIRS_ONLYREAL);
 
 	for (i=0; i<fcount; i++)
 	{
@@ -24,7 +24,7 @@ void main()
 			strcpy(#cd_path, "/");
 			strcat(#cd_path, filename);
 			free(dirbuf2);
-			GetDir(#dirbuf2, #fcount2, #cd_path);
+			GetDir(#dirbuf2, #fcount2, #cd_path, DIRS_ONLYREAL);
 
 			for (j=0; j<fcount2; j++)
 			{

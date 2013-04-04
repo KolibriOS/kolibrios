@@ -45,11 +45,11 @@ void FileMenu()
 				id=GetButtonID();
 				if (id==100) Open();
 				if (id==101) notify("Not compleated yet");
-				if (id==102) ActionsProcess(3);
-				if (id==103) ActionsProcess(4);
-				if (id==104) ActionsProcess(2);
+				if (id==102) FnProcess(3);
+				if (id==103) FnProcess(4);
+				if (id==104) FnProcess(2);
 				if (id==105) Del_Form();
-				if (id==106) ActionsProcess(5);
+				if (id==106) FnProcess(5);
 				ExitProcess();
 				break;
 				
@@ -58,13 +58,15 @@ void FileMenu()
 				break;
 				
 		case evReDraw: _MENU_DRAW:
-				DefineAndDrawWindow(m.x+Form.left+5,m.y+Form.top+GetSkinHeight(),linew+2,ccount*lineh+5,0x01, 0, 0, 0x01fffFFF);
+				DefineAndDrawWindow(m.x+Form.left+5,m.y+Form.top+GetSkinHeight(),linew+3,ccount*lineh+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
 				/* _PutImage(1,23, 16,44, #factions); //иконки	*/
 				DrawRectangle(0,0,linew+1,ccount*lineh+2,col_border);
 				DrawBar(1,1,linew,1,0xFFFfff);
-				PutShadow(linew+2,1,1,ccount*lineh+2,0,1);
-				PutShadow(1,ccount*lineh+3,linew+2,1,0,1);
+				PutShadow(linew+2,1,1,ccount*lineh+2,0,2);
+				PutShadow(linew+3,2,1,ccount*lineh+2,0,1);
+				PutShadow(1,ccount*lineh+3,linew+2,1,0,2);
+				PutShadow(2,ccount*lineh+4,linew+1,1,0,1);
 
 				_ITEMS_DRAW:
 				for (i=0; captions[i*2]!=0; i++)

@@ -21,7 +21,7 @@ inline fastcall int StatusSocket( ECX)
 	$int 0x40
 } 
 
-inline fastcall dword ReadSocket( ECX) //ecx - handle
+inline fastcall dword ReadSocket( ECX)
 {
 	$mov eax,53
 	$mov ebx,3

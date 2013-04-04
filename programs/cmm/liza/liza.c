@@ -4,13 +4,13 @@
 #define MEMSIZE 0xA0000
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
-#include "..\lib\encoding.h"
-#include "..\lib\file_system.h"
-#include "..\lib\figures.h"
-#include "..\lib\list_box.h"
-#include "..\lib\socket.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
+#include "..\lib\encoding.h"
+#include "..\lib\figures.h"
+#include "..\lib\file_system.h"
+#include "..\lib\list_box.h"
+#include "..\lib\socket.h"
 //*.obj libraries
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\network.h"

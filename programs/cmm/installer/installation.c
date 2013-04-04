@@ -58,7 +58,7 @@ void Install()
 	ShowProgress("Copying files...");
 	copyf("/sys/docpack", "/tmp9/1/docpack");
 	DeleteFile("/sys/docpack");
-	copyf(abspath("sys"), "/sys");
+	copyf(abspath("sys"), "/rd/1");
 	copyf(abspath("tmp"), "/tmp9/1");
 	ShowProgress("Post install actions...");
 	RunProgram("/sys/launcher", NULL);

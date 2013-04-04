@@ -9,7 +9,7 @@
 
 
 unsigned char speaker[23*40*3]= FROM "speaker.raw";
-char title[]= "Dictionary v1.3";
+char title[]= "Dictionary v1.31";
 char direction[] = "Translate direction:";
 char translate_caption[] = "Translate";
 char dict_not_found[] = "Dictionary not found";
@@ -62,7 +62,7 @@ void main()
 
 		case evButton:
             id=GetButtonID();               
-            if (id==1) ExitProcess();
+            if (id==1) {KillProcess(speaker_id); ExitProcess();}
 			if (id==10) { Translate(); DrawTranslation(); }
 			if (id==11)	ShowDictList();
 			if (id==12)	DrawWindowContent();
@@ -229,7 +229,7 @@ void ShowDictList()
 	int j, fcount, error;
 	
 	free(dir_buf);
-	error = GetDir(#dir_buf, #fcount, #dict_folder);
+	error = GetDir(#dir_buf, #fcount, #dict_folder, DIRS_ONLYREAL);
 	if (!error)
 	{
 		DefineButton(0,0, Form.width,Form.height, 12+BT_HIDE+BT_NOFRAME, sc.work_button);
