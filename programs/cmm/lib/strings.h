@@ -12,6 +12,7 @@
 // strlwr( ESI) --- kyrillic symbols may not work
 // strttl( EDX)
 // strtok( ESI)
+// strtrim( ESI) --- removes "blank" characters (\r, \n and space)
 // chrnum(dword searchin, char symbol)
 // strcpyb(dword searchin, copyin, startstr, endstr) --- copy string between strings
 // strnumb(dword searchin, startstr, endstr) --- get number between strings
@@ -85,6 +86,20 @@ inline fastcall int strlcpy(dword ESI, EDI, EBX)
 	return 0;
 }
 
+inline fastcall strtrim( ESI)
+{
+	EDI = ESI;
+	do{
+		AL=DSBYTE[EDI];
+		if (AL != '\32') && (AL != '\13') && (AL != '\10')
+		{
+			DSBYTE[ESI]=AL;
+			ESI++;
+		}
+ 		EDI++;
+	}while(AL!=0);
+	DSBYTE[ESI] = '\0';
+}
 
 
 inline fastcall void strcat( EDI, ESI)
