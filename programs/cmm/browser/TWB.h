@@ -163,7 +163,7 @@ void TWebBrowser::Scan(int id)
 			return;
 			
 		case HOME:
-			strcpy(#editURL, "http://kolibri-os.narod.ru");
+			strcpy(#editURL, "http://kolibri-n.org/index.php");
 		case GOTOURL:
 		case 0x0D: //enter
 			strcpy(#URL, #editURL);

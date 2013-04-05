@@ -24,6 +24,7 @@
 
 #define URL param
 int use_truetype = 0;
+char fontlol[64];
 
 char editURL[sizeof(URL)],
 	page_links[12000],
@@ -49,41 +50,6 @@ mouse m;
 #include "TWB.h"
 #include "include\menu_rmb.h"
 
-
-void tre()
-{
-	char *font_picture;
-	char text[20];
-	int width=600;
-	int height=20;
-//	char palette[256*4];
-	int x;
-	
-	text_out stdcall ("hello world\0",#fontlol, 17, 0x0, 10, 10);
-	text_out stdcall ("heyeyey!\0",#fontlol, 27, 0x0, 10, 30);
-	text_out stdcall ("alarm!\0", #fontlol, 47, 0x00FF0000, 10, 70);
-	/*
-	strcpy(#text, "hello world\0");
-	
-	debug("get width\n");
-	get_width stdcall (#text, #fontinfo, height);
-	width=EAX;
-	for (x=0;x<20;x++)  {
-	init_font(#fontinfo);
-	debug("yaya\n");
-	font_picture=mem_Alloc(width*height);
-	text[1]=30+x;
-	truetype stdcall (#text, #fontinfo, font_picture,  width, height);
-
-	debug("blyad'!\n");
-
-
-	
-	PutPaletteImage(font_picture,width,height,0,20*x,8,#palette);
-	mem_Free(font_picture); }*/
-}
-
-char fontlol[64];
 
 void main()
 {

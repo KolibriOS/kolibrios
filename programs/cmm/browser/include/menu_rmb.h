@@ -39,7 +39,8 @@ void menu_rmb()
 				if (id1<0) || (id1+1>items_num) || (mm.x<0) || (mm.x>ITEM_WIDTH) break;
 				if (mm.lkm) || (mm.pkm)
 				{
-					WB1.Scan(ITEMS_LIST[items_cur*2+1]);
+					ActivateWindow(GetProcessSlot(Form.ID));
+					SendWindowMessage(evKey, ITEMS_LIST[items_cur*2+1]);
 					ExitProcess();
 				}
 				if (items_cur<>id1)
@@ -50,9 +51,6 @@ void menu_rmb()
 				break;
 				
 		case evButton: 
-				id1=GetButtonID()-10;
-				WB1.Scan(ITEMS_LIST[id1*2+1]);
-				ExitProcess();
 				break;
 				
 		case evKey:
