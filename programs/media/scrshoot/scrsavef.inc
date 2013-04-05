@@ -130,6 +130,7 @@ pusha
         movzx   edx,word [scr_buf.height]
         movzx   ebx,word [scr_buf.width]
         lea     ebx,[ebx*3]
+        mov     ecx,ebx
         
         test    ebx,11b
         jz      @f
@@ -137,16 +138,19 @@ pusha
         inc     ebx
         shl     ebx,2
 @@:
+        mov     eax,ebx
+        sub     eax,ecx
         cld
 align 4
 .next_str:
-        sub  edi,ebx
-        mov ecx,ebx
-        shr ecx,2
-        rep movsd
-        sub edi,ebx
-        dec edx
-        jnz .next_str 
+        sub     edi,ebx
+        mov     ecx,ebx
+        shr     ecx,2
+        rep     movsd
+        sub     edi,ebx
+        sub     esi,eax
+        dec     edx
+        jnz     .next_str 
 
        draw_status saving
         mov     eax,70
