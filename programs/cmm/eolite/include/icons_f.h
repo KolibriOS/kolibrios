@@ -36,7 +36,7 @@ void Put_icon(dword extension, yy, fairing_color)
 	int icon_n=0, i;
 	for (i=0; ext[i]!=0; i+=2;)	if (!strcmp(extension, ext[i]))	{ icon_n = ext[i+1]; break;	}
 
-	PutPaletteImage(icon_n*16*15+#ficons,16,15,195,yy,8,#ficons_pal);
+	PutPaletteImage(icon_n*16*15+#ficons,16,15,files.x+3,yy,8,#ficons_pal);
 	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*3+Form.cwidth-120,yy+4,0x80,0,extension);
 	if (fairing_color<>0xFFFfff) IconFairing(icon_n, yy, fairing_color); //закрашиваем иконку
 }

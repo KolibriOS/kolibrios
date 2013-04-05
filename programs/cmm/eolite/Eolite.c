@@ -22,8 +22,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.88"
-#define ABOUT_TITLE "Eolite v1.88"
+#define TITLE "Eolite File Manager v1.89"
+#define ABOUT_TITLE "Eolite v1.89"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -307,8 +307,8 @@ void main()
 							List_ReDraw();
 							break;
 					case 181: //end
-							files.first=files.count-files.visible;
-							files.current=files.visible-1;
+							files.first = files.count - files.visible;
+							files.current = files.visible - 1;
 							List_ReDraw();
 							break;
 					case 183: //Page Down
@@ -453,25 +453,25 @@ void List_ReDraw()
 	//in the bottom
 	paint_y = j * files.line_h + files.y;
 	DrawBar(files.x,paint_y,files.w,onTop(paint_y,6),0xFFFFFF);
-	DrawBar(onLeft(168,0),paint_y,1,onTop(paint_y,6),col_work);
-	DrawBar(onLeft(95,0),paint_y,1,onTop(paint_y,6),col_work);
+	DrawBar(Form.cwidth-159,paint_y,1,onTop(paint_y,6),col_work);
+	DrawBar(Form.cwidth-86,paint_y,1,onTop(paint_y,6),col_work);
 	Scroll();
 }
 
 
 void Line_ReDraw(dword color, filenum){
 	dword text_col=0, name_len=0, y=filenum*files.line_h+57;
-	DrawBar(192,y,3,files.line_h,color); 
-	DrawBar(192+19,y,onLeft(46,192),files.line_h,color); DrawBar(195,y+17,16,1,color);
-	if (files.line_h>18) DrawBar(195,y+18,16,files.line_h-18,color);
-	if (files.line_h>15) DrawBar(195,y,16,files.line_h-15,color); 
+	DrawBar(files.x,y,3,files.line_h,color); 
+	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
+	DrawBar(files.x+3,y+17,16,1,color);
+	if (files.line_h>18) DrawBar(files.x+3,y+18,16,files.line_h-18,color);
+	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,color); 
 
 	off=file_mas[filenum+files.first]*304 + buf+72;
 
 	if (!TestBit(ESDWORD[off-40], 4)) //file or folder?
 	{	
-		strcpy(#temp, off);
-		Put_icon(#temp+_strrchr(#temp,'.'), files.line_h/2-7+y, color);
+		Put_icon(off+_strrchr(off,'.'), files.line_h/2-7+y, color);
 		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
 	}
 	else
@@ -490,6 +490,7 @@ void Line_ReDraw(dword color, filenum){
 	}
 	if (Form.width>=480)
 	{
+		FileShow.start_x = files.x + 23;
 		FileShow.font_color = text_col;
 		FileShow.area_size_x = Form.width - 380;
 		FileShow.text_pointer = off;
@@ -497,8 +498,8 @@ void Line_ReDraw(dword color, filenum){
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}
-	DrawBar(onLeft(168,0),y,1,files.line_h,col_work); //gray line 1
-	DrawBar(onLeft(95,0),y,1,files.line_h,col_work); //gray line 2
+	DrawBar(Form.cwidth-159,y,1,files.line_h,col_work); //gray line 1
+	DrawBar(Form.cwidth-86,y,1,files.line_h,col_work); //gray line 2
 }
 
 
@@ -708,12 +709,13 @@ void FnProcess(char N)
 			break;
 		case 2:
 			if (!files.count) break;
-			edit2.flags=100000000000010b; //set active
-			edit2.width=onLeft(24,217);
+			edit2.flags = 100000000000010b; //set active
+			edit2.left = files.x + 21;
+			edit2.width = files.w - 26;
 			edit2.top=files.current*files.line_h+59;
 			edit2.size=edit2.pos=strlen(#file_name);
 			edit_box_draw  stdcall (#edit2);
-			DrawBar(213,files.current*files.line_h+58,edit2.width+1,1,0xFFFFCC); //bg
+			DrawBar(edit2.left,files.current*files.line_h+58,edit2.width+1,1,0xFFFFCC); //bg
 			rename_active=1;
 			break;
 		case 3:

@@ -41,13 +41,11 @@ void Paste()
 		notify("Copy directory into itself is a bad idea...");
 		ExitProcess();
 	}
-	copy_rezult = copyf(#copy_from,#copy_to);
-	if (copy_rezult)
+	if (copy_rezult = copyf(#copy_from,#copy_to))
 	{
 		Write_Error(copy_rezult);
-		ExitProcess();
 	}
-	if (cut_active)
+	else if (cut_active)
 	{
 		strcpy(#file_path, #copy_from);
 		Del_File(true);
