@@ -381,6 +381,16 @@ align 4
         push    esi edx ecx ebx
         mov     eax, esp
         mov     bl, [edi + WDATA.fl_wstate]
+;--------------------------------------
+align 4
+@@:
+        cmp     [REDRAW_BACKGROUND], byte 0
+        jz      @f
+        call    change_task
+        jmp     @b
+;--------------------------------------
+align 4
+@@:
         call    window._.set_window_box
         add     esp, sizeof.BOX
 
