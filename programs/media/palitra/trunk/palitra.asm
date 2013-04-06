@@ -31,6 +31,7 @@
 ;; 0.6.0 - Добавлена возможность запуска с параметрами                                               |
 ;;       - Добавлен режим H (hidden) производит замену фона рабочего стола градиентной заливкой.     |
 ;;       - Большая деоптимизация.                                                                    |
+;; 0.7.0 - Добавлена пипетка - выбор на среднюю кнопку мыши                                          |
 ;.....................................................................................................
 ;; All rights reserved.                                                                              |
 ;;                                                                                                   |
@@ -62,13 +63,12 @@
 ;----------------------------------------------------------------------------------------------------/
   use32
   org	 0x0
-
   db	 'MENUET01'
   dd	 0x01
   dd	 START
   dd	 I_END
-  dd	 0x100000
-  dd	 0x1000
+  dd	 I_END+4096
+  dd	 I_END+4096
   dd	 params
   dd	 0x0
 
@@ -79,33 +79,13 @@
   WIN_X  equ 250            ; координата х окна
   WIN_Y  equ 190            ; координата у окна
 
+panel:
+  file "panel.raw"
+
 START:
-; обработка параметров командной строки
-    mov  edi,params         ; указатель на строку
-    call str_len            ; получаем длину строки
-    cmp  eax,0              ; стравниваем длину с нулём
-    je   red                ; если параметров нет то уходим
-    call    _read_params    ; иначе читаем параметры цвета (очень криво)
-    xor  eax,eax            ; зануляем регистр
-    mov  al,byte [params]   ; читаем параметр мода
-    cmp  al,'N'             ; сравниваем с normal mode
-    jne _no_normalmode      ; если нет то уходим на проверку дальше
-    mov  [runmode],1        ; если да то устанавливаем его
-    jmp  red                ; идём на отрисовку
-  _no_normalmode:           ; если не normal mode то
-    cmp  al,'H'             ; возможно hidden mode
-    jne _no_hiddenmode      ; если не он то уходим дальше
-    mov  [runmode],2        ; если он то устанавливаем что это он (нах?)
-    call set_background     ; меняем фон
-    jmp  bexit              ; и закрываем прогу
-  _no_hiddenmode:           ; если не hidden mode
-    cmp  al,'D'             ; возможно это color dialog mode
-    jne _no_dialogmode      ; если всё таки не он то уходим
-    mov  [runmode],3        ; иначе указываем что это таки он
-    jmp  red                ; и уходим на выполнение
-  _no_dialogmode:           ; если это ни один из заявленых модов
-    mov  [runmode],1        ; то сбрасываем на дефолт
-    jmp  red                ; и рисуем
+    mcall   68,11                         ; инициализация кучи
+    mcall   40,0x27                       ; устанавливаем маску событий
+    include 'params_init.inc'             ; обработка параметров командной строки
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
@@ -121,6 +101,8 @@ still:
     je      key                           ; если да - на key
     cmp     eax,3                         ; нажата кнопка ?
     je      button                        ; если да - на button
+    cmp     eax,6                         ; событие от мыши вне окна
+    je      mouse                         ; если да - на button
     jmp     still                         ; если другое событие - в начало цикла
 ;end_still
 
@@ -128,6 +110,19 @@ key:                                      ; нажата клавиша на клавиатуре
     mcall   2                             ; функция 2 - считать код символа (в ah) (тут в принципе не нужна)
     jmp     still                         ; вернуться к началу цикла
 ;end_key
+
+mouse:
+    mov     eax,[renmode]
+    cmp     eax,2
+    jnz     still
+    call    cyrcle_draw
+    mcall   37,2
+    cmp     al,100b
+    jne     still
+    mov     [color],edx
+    call    draw_result
+    jmp     still                         ; вернуться к началу цикла
+;end_mouse
 
 button:
     mcall   17                            ; 17 - получить идентификатор нажатой кнопки
@@ -154,7 +149,7 @@ button:
   circle_bg:
     cmp     ah, 15                        ; Кнопка Круговая палитра
     jne     next_end                      ; если не нажата то выходим
-    ;mov     [renmode],2                   ; включаем отрисовку круговой палитры
+    mov     [renmode],2                   ; включаем отрисовку круговой палитры
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     jmp     still                         ; и на ожидание события
   next_end:
@@ -303,41 +298,52 @@ draw_main:
     mov     edx,0x6000000C                ; ID = 12
     mov     esi,[sc.work_button]          ; RGB
     int     0x40                          ; call
-    mov     eax,13                        ; draw rect
-    mov     ebx,266 shl 16+16             ; [x] + [size]
-    mov     ecx,9 shl 16+16               ; [y] + [size]
-    mov     edx,0x666666                  ; RGB
-    push    esi                           ; backup esi
-    mov     esi,8                         ; counter=8
-    draw_lpanel:                          ; loop label
-      int     0x40                        ; call draw black rect
-      add     ecx,19 shl 16               ; move rect
-      dec     esi                         ; decrement counter
-      cmp     esi,0                       ; if counter!=zero
-      jne     draw_lpanel                 ; then goto label
-      mov     esi,8                       ; else counter=8
-      mov     ebx,267 shl 16+14           ; [x] + [size]
-      mov     ecx,10 shl 16+14            ; [y] + [size]
-      mov     edx,0xF3F3F3                ; RGB
-    draw_lpanel2:                         ; 2 loop label
-      int     0x40                        ; call draw white rect
-      add     ecx,19 shl 16               ; move rect
-      dec     esi                         ; decrement counter
-      cmp     esi,0                       ; if counter!=0
-      jne     draw_lpanel2                ; then goto label2
-    pop     esi                           ; restore esi
+    ; circle diagram
+    add     ecx,19 shl 16                 ; move rect
+    mov     edx,0x6000000F                ; ID = 15
+    int     0x40                          ; call
+
+    mov     eax,7                         ; 7 - номер функции 
+    mov     ebx,panel                     ; указатель на изображение в формате BBGGRRBBGGRR... 
+    mov     ecx, 16 shl 16 + 149          ; [размер по оси x]*65536 + [размер по оси y] 
+    mov     edx,266 shl 16 +   9            ; [координата по оси x]*65536 + [координата по оси y]
+    int     0x40
+
+    ;mov     eax,13                        ; draw rect
+    ;mov     ebx,266 shl 16+16             ; [x] + [size]
+    ;mov     ecx,9 shl 16+16               ; [y] + [size]
+    ;mov     edx,0x666666                  ; RGB
+    ;push    esi                           ; backup esi
+    ;mov     esi,8                         ; counter=8
+    ;draw_lpanel:                          ; loop label
+    ;  int     0x40                        ; call draw black rect
+    ;  add     ecx,19 shl 16               ; move rect
+    ;  dec     esi                         ; decrement counter
+    ;  cmp     esi,0                       ; if counter!=zero
+    ;  jne     draw_lpanel                 ; then goto label
+    ;  mov     esi,8                       ; else counter=8
+    ;  mov     ebx,267 shl 16+14           ; [x] + [size]
+    ;  mov     ecx,10 shl 16+14            ; [y] + [size]
+    ;  mov     edx,0xF3F3F3                ; RGB
+    ;draw_lpanel2:                         ; 2 loop label
+    ;  int     0x40                        ; call draw white rect
+    ;  add     ecx,19 shl 16               ; move rect
+    ;  dec     esi                         ; decrement counter
+    ;  cmp     esi,0                       ; if counter!=0
+    ;  jne     draw_lpanel2                ; then goto label2
+    ;pop     esi                           ; restore esi
     ; draw_left_arrow for button_next_colorsheme
-    mov     eax,4                         ; Write string
-    mov     ebx,272 shl 16+13             ; [x] + [y]
-    mov     ecx,0x0                       ; RGB
-    mov     edx,larrow                    ; string pointer
-    mov     esi,1                         ; count symbol
-    int     0x40                          ; call
-    mov     eax,38                        ; draw line
-    mov     ebx,270 shl 16+272            ; [start x] + [end x] 
-    mov     ecx,16 shl 16+16              ; [start y] + [end y] 
-    mov     edx,0x0                       ; RGB
-    int     0x40                          ; call
+    ;mov     eax,4                         ; Write string
+    ;mov     ebx,272 shl 16+13             ; [x] + [y]
+    ;mov     ecx,0x0                       ; RGB
+    ;mov     edx,larrow                    ; string pointer
+    ;mov     esi,1                         ; count symbol
+    ;int     0x40                          ; call
+    ;mov     eax,38                        ; draw line
+    ;mov     ebx,270 shl 16+272            ; [start x] + [end x] 
+    ;mov     ecx,16 shl 16+16              ; [start y] + [end y] 
+    ;mov     edx,0x0                       ; RGB
+    ;int     0x40                          ; call
     ret                                   ; return
     ;.................................................................................................
 
@@ -456,10 +462,11 @@ desktop_get:
     int     0x40                          ; xsize = размер по горизонтали - 1 
     mov     ebx,eax                       ;
     shr     ebx,16                        ; ebx = xsize-1
-    ;movzx   edx,ax                       ;; edx = ysize-1 (лишний код)
+    movzx   edx,ax                        ; edx = ysize-1 (лишний код)
     inc     ebx                           ; ebx = xsize
-    ;inc     edx                          ;; edx = ysize (лишний код)
+    inc     edx                           ; edx = ysize (лишний код)
     mov     [desctop_w],ebx
+    mov     [desctop_h],edx
     ret
 ;end_desktop_get
 
@@ -504,8 +511,8 @@ draw_palitra:
     mov     edx,[sc.work]                 ; цвет
     int     0x40
 
-    ;cmp     [renmode],2
-    ;je      cyrcle_draw
+    cmp     [renmode],2
+    je      cyrcle_draw
     ;cmp     [renmode],1
     ;je      picker_draw
     cmp     [renmode],0
@@ -515,13 +522,125 @@ draw_palitra:
     ;.................................................................................................
     ; Отрисовка круговой диаграммы
     ;.................................................................................................
-    ;cyrcle_draw:
-    ;mov     eax,7                         ; 7 - номер функции 
-    ;mov     ebx,circle                    ; указатель на изображение в формате BBGGRRBBGGRR... 
-    ;mov     ecx,148 shl 16 + 148          ; [размер по оси x]*65536 + [размер по оси y] 
-    ;mov     edx,110 shl 16 + 9            ; [координата по оси x]*65536 + [координата по оси y]
-    ;int     0x40
-    ;ret
+    cyrcle_draw:
+    ;mov     eax,13
+    ;mov     edx,0x666666
+    ;mov     ebx,108*65536+152
+    ;mov     ecx,125*65536+33
+    ;mcall
+    ;mov     edx,0xF3F3F3
+    ;mov     ebx,109*65536+150
+    ;mov     ecx,126*65536+31
+    ;mcall
+
+    ;mov     eax,4                         ; 4 - вывести строку текста в окно
+    ;mov     ebx,115 shl 16+131            ; [координата по оси x]*65536 + [координата по оси y]
+    ;mov     ecx,0x666666                  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
+    ;mov     edx,hint                      ; указатель на начало строки
+    ;mov     esi,24                        ; выводить esi символов
+    ;mcall
+    ;mov     ebx,125 shl 16+144            ; [координата по оси x]*65536 + [координата по оси y]
+    ;mov     edx,hint2                     ; указатель на начало строки
+    ;mov     esi,21                        ; выводить esi символов
+    ;mcall
+
+    mov     eax,13
+    mov     edx,0x666666
+    mov     ebx,111*65536+145
+    mov     ecx,  9*65536+145
+    mcall
+    ;mov     edx,[color]
+    ;mov     ebx,109*65536+150
+    ;mov     ecx, 10*65536+150
+    ;mcall
+    call    mouse_local                   ; получаем координаты мыши относительно окна
+    mov     ecx, [mouse_x]                ; заносим в регистр
+    mov     edx, [mouse_y]                ; заносим в регистр
+    cmp     ecx, WIN_W-10
+    jg      cyrcle_draw_2
+    cmp     edx, WIN_H
+    jle     end_cyrcle_draw
+
+    cyrcle_draw_2:
+    call    desktop_get
+    call    mouse_global
+
+    mov     ebx,112*65536+11
+    mov     esi,0                         ; counter=8
+    circle_loop:
+      mov     ecx, 10*65536+11
+      mov     edi,0
+      circle_loop2:
+        mov     eax,13
+        call    circle_pixel_read
+        mcall
+        add     ecx,11 shl 16
+        inc     edi
+        cmp     edi,13
+        jne     circle_loop2
+
+      add     ebx,11 shl 16
+      inc     esi
+      cmp     esi,13
+      jne     circle_loop
+    
+    
+    mov     eax,13
+    mov     edx,0x0
+    mov     ebx,177*65536+13
+    mov     ecx, 76*65536+13
+    mcall
+    mov     ecx, [mouse_x]
+    mov     edx, [mouse_y]
+    inc     ecx
+    inc     edx
+    mov     ebx, edx
+    imul    ebx, [desctop_w]
+    add     ebx, ecx
+    mov     eax, 35
+    mcall
+    mov     edx,eax
+    mov     eax,13
+    mov     ebx,178*65536+11
+    mov     ecx, 77*65536+11
+    mcall
+    end_cyrcle_draw:
+    ret
+
+    circle_pixel_read:
+    push    ecx
+    push    ebx
+    push    eax
+    mov     ecx, [mouse_x]
+    mov     edx, [mouse_y]
+    inc     ecx
+    add     ecx, esi
+    cmp     ecx, 6
+    jl      _cpr_exit
+    sub     ecx, 6
+    inc     edx
+    add     edx, edi
+    cmp     edx, 6
+    jl      _cpr_exit
+    sub     edx, 6
+
+    mov     ebx, edx
+    imul    ebx, [desctop_w]
+    add     ebx, ecx
+    mov     eax, 35
+    mcall
+    mov     edx,eax
+    pop     eax
+    pop     ebx
+    pop     ecx
+    ret
+
+    _cpr_exit:
+    mov     edx,0x00000000
+    pop     eax
+    pop     ebx
+    pop     ecx
+    ret
 
     ;picker_draw:
     ;ret
@@ -1079,35 +1198,13 @@ str_len:
 	ret
 ;end_str_len
 
-    ;.................................................................................................
-    ; возвращает указатель на первое вхождение Chr ВL (вход->EDI string ; выход->EAX offset)
-    ;.................................................................................................
-;strscan:
-;    push ecx ; длина строки
-;    push ebx ; указатель на символ (bl)
-;    push esi ; пригодится
-;    push edi ; указатель на строку  
-;    mov esi, edi
-;    mov al,bl
-;    repne scasb
-;    sub edi, esi
-;    mov eax, edi
-;    dec eax
-;    pop edi
-;    pop esi
-;    pop ebx
-;    pop ecx
-;    ret
-;end;
-
-
 
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
 ; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
 ;----------------------------------------------------------------------------------------------------/
-
+circle:
     cm          db 12 dup(0)
     color       dd 00000000h              ; хранит значение выбранного цвета
     color2      dd 00FFFFFFh              ; хранит значение второго выбранного цвета
@@ -1115,8 +1212,9 @@ str_len:
     mouse_y     dd 0                      ; хранит глобальную у координату мыши
     mouse_f     dd 0                      ; хранит данные о том какая кнопка мыши была нажата
     desctop_w   dd 0                      ; хранит ширину экрана
+    desctop_h   dd 0                      ; хранит высоту экрана
     sc          system_colors             ; хранит структуру системных цветов скина
-    title       db 'Palitra v0.6',0       ; хранит имя программы
+    title       db 'Palitra v0.7',0       ; хранит имя программы
     hidden      db 'Hidden',0
     hex         db '#',0                  ; для вывода решётки как текста
     cname       db 'RGBAx'                ; хранит разряды цветов (red,green,blue) x-метка конца
@@ -1132,6 +1230,9 @@ str_len:
     runmode     dd 1                      ; режим запуска (1-normal, 2-hidden, 3-colordialog)
     params      db 20 dup(0)              ; приём параметров
     params_c    db 9  dup(0)              ; приёмник для цвета
+
+
+
 I_END:
 
 
