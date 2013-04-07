@@ -121,6 +121,18 @@ button:
         mov ebx,1
         int 0x40        ;eax=x*65536+y
         mov [px],eax    ;[px][py]  -  координата ткнутого места
+	
+	cmp [px],word 40
+        jb  event_wait	
+	
+	cmp [px],word 200
+        ja  event_wait	
+	
+	cmp [py],word 40
+        jb  event_wait	
+	
+	cmp [py],word 200
+        ja  event_wait	
 
           xor eax,eax
      g11:                      ;1st cell======
