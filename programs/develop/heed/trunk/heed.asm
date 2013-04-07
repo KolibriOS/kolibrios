@@ -234,11 +234,19 @@ red:
 draw_window_1:
 	call	start_draw
 	call	draw_window
+
+	mov     eax,[threath_buf+70]
+	test	eax,10b
+	jnz     .end
+	test	eax,100b
+	jnz     .end
+
 	call	show_file_size
 	call	show_codepage
 	call	show_insert
 	call	ready_screen_buffer
 	call	main_area
+.end:
 	ret
 ;---------------------------------------------------------------------
 key:
@@ -1387,12 +1395,16 @@ draw_window:
 	xor	esi,esi
 	mcall	0,100*65536+653,100*65536+360,((0x73 shl 24) + frgrd_color),,title_buf	;title
 	mcall	9,threath_buf,-1
-	cmp	byte [threath_buf+70],3	;окно свёрнуто в заголовок?
-	jnae	@f
+;	cmp	byte [threath_buf+70],3	;окно свёрнуто в заголовок?
+;	jnae	@f
+	mov	eax,[threath_buf+70]
+	test	eax,10b
+	jnz	.@d
+	test	eax,100b
+	jz	@f
 .@d:
 	call	end_draw
-	add	esp,4
-	jmp	still
+	ret
 ;--------------------------------------
 @@:
 	cmp	dword [threath_buf+66],(24*4)	;проверка минимальной высоты
@@ -1971,6 +1983,13 @@ draw_ed_box:	;рисование edit box'а
 	cmp	al,1
 	jne	.2
 	call	draw_window
+	
+	mov     eax,[threath_buf+70]
+	test    eax,10b
+	jnz     .2
+	test    eax,100b
+	jnz     .2
+	
 	call	main_area
 	bt	[flags],2
 	jnc	@f
@@ -3437,7 +3456,8 @@ file_name:
 cur_dir_path	rb 4096
 buf_cmd_lin	rb 0
 procinfo:	;opendialog
-threath_buf	rb 0x400
+threath_buf:
+	rb 0x400
 path:
 		rb 1024+16	;opendialog
 
@@ -3479,8 +3499,8 @@ sel1_string	rb 9
 sel2_string	rb 9
 cur_help_string	rb 1	;номер строки, с которой выводится текст в help - окне
 
-help_is_open_already	db ?  ;если окно справки открыто, то здесь 1
-help_window_pid 	dd ?
+help_is_open_already	rb 1  ;если окно справки открыто, то здесь 1
+help_window_pid 	rd 1
 
 func_70	f70
 ;---------------------------------------------------------------------
