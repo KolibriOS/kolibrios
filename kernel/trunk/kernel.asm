@@ -2201,13 +2201,24 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         call    syscall_display_settings._.redraw_whole_screen
 .nowindowdeactivate:
         ret
- ;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         cmp     ecx, 2
         jb      .nowindowactivate
         cmp     ecx, [TASK_COUNT]
         ja      .nowindowactivate
-
+;-------------------------------------
+@@:
+; If the window is captured and moved by the user,
+; then you can't change the position in window stack!!!
+        mov     al, [mouse.active_sys_window.action]
+        and     al, WINDOW_MOVE_AND_RESIZE_FLAGS
+        test    al, al
+        jz      @f
+        call    change_task
+        jmp     @b
+@@:
+;-------------------------------------
         mov     [window_minimize], 2; restore window if minimized
 
         movzx   esi, word [WIN_STACK + ecx*2]
