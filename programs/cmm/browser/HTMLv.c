@@ -53,8 +53,7 @@ mouse m;
 
 void main()
 {
-	int btn;
-	byte key;
+	int btn, key;
 	int half_scroll_size;
 	int scroll_used=0;
 	
@@ -151,7 +150,7 @@ void main()
 			case evKey:
 				key = GetKey();
 				
-				if (edit1.flags  & 0b10) SWITCH(key) //если активна строка адреса игнорируем некоторые кнопки
+				if (edit1.flags & 0b10) SWITCH(key) //если активна строка адреса игнорируем некоторые кнопки
 					{ CASE 52: CASE 53: CASE 54: goto _EDIT_MARK; } 
 
 				WB1.Scan(key);

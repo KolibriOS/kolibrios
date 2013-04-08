@@ -42,7 +42,11 @@ dword stars_col[4]={0xD2CF19, 0x716900, 0x002041}; //0x005BFF - голубой, редко
 :void ShadowScreen(dword img, w, h)
 {
 	dword to = w*h*3 + img;
-	for ( ; img < to; img+=4) { ESDWORD[img] >>= 1;	$and ESDWORD[img], 7F7F7F7Fh }
+	for ( ; img < to; img+=4)
+	{
+		ESDWORD[img] >>= 1;
+		$and ESDWORD[img], 7F7F7F7Fh
+	}
 	//for ( ; img < to; img+=4) { ESDWORD[img] >>= 2;	$and ESDWORD[img], 3F3F3F3Fh }
 }
 

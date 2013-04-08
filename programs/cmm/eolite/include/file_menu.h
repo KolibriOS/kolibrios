@@ -50,6 +50,7 @@ void FileMenu()
 				if (id==104) FnProcess(2);
 				if (id==105) Del_Form();
 				if (id==106) FnProcess(5);
+				SwitchToAnotherThread();
 				ExitProcess();
 				break;
 				

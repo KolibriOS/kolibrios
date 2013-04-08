@@ -1,20 +1,10 @@
-//кнопки
-#define BACK        300
-#define FORWARD     301
-#define REFRESH     302
-#define HOME        303
-#define NEWTAB      304
-#define GOTOURL     305
-#define SEARCHWEB   306
-#define INPUT_CH    307
-#define INPUT_BT    308
+
+enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT };
+enum { _WIN, _DOS, _KOI, _UTF };
+
 #define ID1         178
 #define ID2         177
 
-#define _WIN  0
-#define _DOS  1
-#define _KOI  2
-#define _UTF  3
                       
 
 dword get_URL_part(int len) {
@@ -35,7 +25,7 @@ void GetURLfromPageLinks(int id)
 		do
 		{
 			j++;
-			if (j>=strlen(#page_links)) return; //не самое удачное решение
+			if (j>=strlen(#page_links)) return;
 		}
 		while (page_links[j] <>'|');
 	}
@@ -53,8 +43,8 @@ void GetURLfromPageLinks(int id)
 inline void Skew(dword x,y,w,h)
 {
 	dword italic_buf;
-	int tile_height=2, //будем выводить двухпиксельными полосками
-	shift=-2, //с двухпиксельным смещением
+	int tile_height=2,
+	shift=-2,
 	i, skin_height;
 
 	italic_buf = mem_Alloc(w*h*3);

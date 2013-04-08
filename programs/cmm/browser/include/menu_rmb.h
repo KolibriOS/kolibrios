@@ -5,7 +5,7 @@
 
 char *ITEMS_LIST[]={
 "View in Tinypad   F3",52,
-"WIN               F5",REFRESH,
+"WIN               F5",54,
 "DOS           Ctrl+D",04,
 "KOI           Ctrl+K",11,
 "UTF           Ctrl+U",21,
@@ -40,7 +40,8 @@ void menu_rmb()
 				if (mm.lkm) || (mm.pkm)
 				{
 					ActivateWindow(GetProcessSlot(Form.ID));
-					SendWindowMessage(evKey, ITEMS_LIST[items_cur*2+1]);
+					SendWindowMessage(evButton, ITEMS_LIST[items_cur*2+1]);
+					SwitchToAnotherThread();
 					ExitProcess();
 				}
 				if (items_cur<>id1)

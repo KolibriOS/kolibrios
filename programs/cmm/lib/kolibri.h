@@ -240,7 +240,7 @@ inline fastcall void SwitchToAnotherThread()
 	$int 0x40
 }
 
-inline fastcall void SendWindowMessage( ECX, EDX)
+inline fastcall int SendWindowMessage( ECX, EDX)
 {
 	$mov eax, 72
 	$mov ebx, 1
@@ -413,7 +413,6 @@ void WriteText(dword x,y,byte fontType, dword color, EDX)
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
-	ESI = 0;
 	$int 0x40;
 }
 
