@@ -83,6 +83,10 @@ SO_BINDTODEVICE         = 1 shl 9
 SO_BLOCK                = 1 shl 10    ; TO BE REMOVED
 SO_NONBLOCK             = 1 shl 31
 
+; Socket flags for user calls
+MSG_PEEK                = 0x02
+MSG_DONTWAIT            = 0x40
+
 ; Socket level
 SOL_SOCKET              = 0
 
@@ -263,6 +267,12 @@ stack_handler:
 
         cmp     [NET_RUNNING], 0
         je      .exit
+
+        cmp     [UDP_PACKETS_TX], 50
+        jb      @f
+        DEBUGF  1, "\n\nCRAP!\n\n"
+        jmp     $
+      @@:
 
         ; Test for 10ms tick
         mov     eax, [timer_ticks]

@@ -848,17 +848,30 @@ SOCKET_receive_stream:
 
         DEBUGF  1,"SOCKET_receive: STREAM\n"
 
+        mov     ebx, edi
         mov     ecx, esi
         mov     edi, edx
         xor     edx, edx
+
+        test    ebx, MSG_DONTWAIT
+        jnz     .dontwait
   .loop:
         cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
         je      .block
+  .dontwait:
+        test    ebx, MSG_PEEK
+        jnz     .peek
+
         add     eax, STREAM_SOCKET.rcv
         call    SOCKET_ring_read
         call    SOCKET_ring_free
 
         mov     [esp+32], ecx                                   ; return number of bytes copied
+        ret
+
+  .peek:
+        mov     ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+        mov     [esp+32], ecx                                   ; return number of bytes available
         ret
 
   .block:
