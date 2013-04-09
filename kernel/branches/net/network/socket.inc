@@ -876,10 +876,15 @@ SOCKET_receive_stream:
 
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     s_error
+        jnz     .return0
 
         call    SOCKET_block
         jmp     .loop
+
+  .return0:
+        xor     ecx, ecx
+        mov     [esp+32], ecx
+        ret
 
 
 ;-----------------------------------------------------------------
