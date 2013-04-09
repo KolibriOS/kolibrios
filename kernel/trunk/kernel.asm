@@ -4912,7 +4912,11 @@ syscall_writetext:                      ; WriteText
         add     ebp, [eax-twdw+WDATA.box.top]
         add     bp, word[esi+APPDATA.wnd_clientbox.top]
         pop     esi
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jnz     @f
         add     ebx, ebp
+align 4
+@@:
         mov     eax, edi
         test    ecx, 0x08000000  ; redirect the output to the user area
         jnz     dtext
