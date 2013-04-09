@@ -96,7 +96,9 @@ c_start_y = 10
 c_size_x = 40
 c_size_y = 20
 ;---------------------------------------------------------------------
-
+x_minimal_size equ 350
+y_minimal_size equ 250
+;---------------------------------------------------------------------
 START:
 	mcall	68,11
 	mcall	66,1,1
@@ -180,7 +182,33 @@ button:
 ; dpd eax
 ; newline
 
+	call	get_window_param
+	mov	ebx,[communication_area]
+	mov	ecx,procinfo
+;	mov	eax,[window_x]
+	mov	eax,[ecx+34]
+	shl	eax,16
+	add	eax,[ecx+42]
+	mov	[ebx+4],eax
+;	mov	eax,[window_y]
+	mov	eax,[ecx+38]
+	shl	eax,16
+	add	eax,[ecx+46]
+	mov	[ebx+8],eax
+
 	mcall	-1
+;---------------------------------------------------------------------
+get_window_param:
+	mcall	9,procinfo,-1
+	mov	eax,[ebx+66]
+	inc	eax
+;	mov	[window_high],eax
+	mov	eax,[ebx+62]
+	inc	eax
+;	mov	[window_width],eax
+	mov	eax,[ebx+70]
+;	mov	[window_status],eax
+	ret
 ;---------------------------------------------------------------------
 align 4
 get_communication_area:
@@ -193,14 +221,14 @@ get_communication_area:
 ;	movzx	ebx,word [eax+2]
 ;	mov	[color_dialog_type],ebx
 
-;	mov	ebx,[eax+4]
-;	cmp	bx,word x_minimal_size ;300
-;	jb	@f
-;	mov	[window_x],ebx
-;	mov	ebx,[eax+8]
-;	cmp	bx,word y_minimal_size ;200
-;	jb	@f
-;	mov	[window_y],ebx
+	mov	ebx,[eax+4]
+	cmp	bx,word x_minimal_size ;300
+	jb	@f
+	mov	[window_x],ebx
+	mov	ebx,[eax+8]
+	cmp	bx,word y_minimal_size ;200
+	jb	@f
+	mov	[window_y],ebx
 @@:
 	ret
 ;---------------------------------------------------------------------
@@ -254,6 +282,7 @@ color_button:
 	mov	eax,[communication_area]
 	mov	[eax],word 1
 	mov	ebx,[selected_color]
+	and	ebx,0xffffff
 	mov	[eax+20],ebx
 ; dps "CD flag value: OK "
 	jmp	button.exit_1
@@ -283,7 +312,8 @@ draw_tone:
 align 4
 draw_window:
 	mcall	12,1
-	mcall	0, <w_start_x,w_size_x>, <w_start_y,w_size_y>, 0x33AABBCC,,title
+;	mcall	0, <w_start_x,w_size_x>, <w_start_y,w_size_y>, 0x33AABBCC,,title
+	mcall	0,[window_x],[window_y], 0x33AABBCC,,title
 	mcall	8,<p_start_x,[palette_SIZE_X]>,<p_start_y,[palette_SIZE_Y]>,0x60000002
 	mcall	,<t_start_x,[tone_SIZE_X]>,<t_start_y,[tone_SIZE_Y]>,0x60000003
 	mcall	65,[palette_area],<[palette_SIZE_X],[palette_SIZE_Y]>,<p_start_x,p_start_y>,24
