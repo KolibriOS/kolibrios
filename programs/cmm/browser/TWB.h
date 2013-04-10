@@ -12,7 +12,7 @@ char version[]=" Text-based Browser 0.98.2";
 
 
 struct TWebBrowser {
-	int left, top, width, height;
+	int left, top, width, height, line_h;
 	void Scan(int);
 	void GetNewUrl();
 	void OpenPage();
@@ -508,27 +508,18 @@ void TWebBrowser::ParseHTML(dword bword){
 	DrawScroller();
 }
 
-void TWebBrowser::DrawPage() //резать здесь!!1!
+
+
+void TWebBrowser::DrawPage()
 {
 	int start_x, start_y, line_length;
-	char temp[sizeof(line)];
 	
-	if (!header) //&& (tag) 
+	if (!header)
 	{
-		if (strlen(#version)+strlen(#line)+2>sizeof(header))
-		{
-			strcpy(#temp, #line);
-			temp[sizeof(header)-strlen(#version)-2]=0;
-			strcpy(#header, #temp);
-			strcpy(#line, #line+strlen(#temp));
-		}
-		else
-		{
-			strcpy(#header, #line);
-			line=0;
-		}
+		strcpy(#header, #line);
 		strcat(#header, " -");
 		strcat(#header, #version);
+		line = 0;
 		return;
 	}
 	
@@ -536,13 +527,13 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 	{
 		if (!stroka) && (!stolbec)
 		{
-			DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
+			DrawBar(left, top, width-15, 15, bg_color); //first line
 			first_line_drawed=1;
 		}
 		
-		start_x=stolbec * 6 + left+5;
-		start_y=stroka * 10 + top + 5;
-		line_length=strlen(#line)*6;
+		start_x = stolbec * 6 + left + 5;
+		start_y = stroka * 10 + top + 5;
+		line_length = strlen(#line) * 6;
 
 		if (use_truetype == 1)
 		{
@@ -885,7 +876,7 @@ void Images(int left1, top1, width1)
 	
 	img_draw stdcall (pics[cur_pic].image,left1-5,top1+10,w, h,0,img_lines_first);
 	DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
-	IF (link) DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
+	IF (link) UnsafeDefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
 }
 
 

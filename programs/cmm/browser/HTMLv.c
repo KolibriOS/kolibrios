@@ -28,7 +28,7 @@ char fontlol[64];
 
 char editURL[sizeof(URL)],
 	page_links[12000],
-	header[300];
+	header[2048];
 
 struct lines{
 	int visible, all, first, column_max;
@@ -36,7 +36,7 @@ struct lines{
 
 int	mouse_dd;
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(editURL),#editURL,#mouse_dd,2,19,19};
-scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1}; //details in scroll_lib.h--
+scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 
 proc_info Form;
@@ -44,7 +44,7 @@ proc_info Form;
 #define WIN_H 480
 
 
-char stak[100]; //меню ПКМ 
+char stak[512];
 mouse m;
 
 #include "TWB.h"
@@ -137,7 +137,7 @@ void main()
 				break;
 			case evButton:
 				btn=GetButtonID();
-				IF (btn==1)
+				if (btn==1)
 				{
 					KillProcess(downloader_id);
 					ExitProcess();
@@ -156,7 +156,7 @@ void main()
 				WB1.Scan(key);
 				
 				_EDIT_MARK:
-				IF (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#edit1);} //адресная строка
+				if (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#edit1);} //адресная строка
 				break;
 			case evReDraw:
 				Draw_Window();
@@ -176,12 +176,13 @@ void main()
 
 void SetElementSizes()
 {
-	edit1.width=Form.width-266;
-	WB1.top=44;
-	WB1.width=Form.width-13;
-	WB1.height=onTop(43,5);
+	edit1.width = Form.width-266;
+	WB1.top = 44;
+	WB1.width = Form.cwidth - 4;
+	WB1.height = Form.cheight - WB1.top;
+	WB1.line_h = 10;
 	lines.column_max = WB1.width - 30 / 6;
-	lines.visible = WB1.height - 3 / 10 - 2;
+	lines.visible = WB1.height - 3 / WB1.line_h - 2;
 }
 
 
@@ -191,7 +192,7 @@ void Draw_Window()
 	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0,0);
 
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
+	if (Form.status_window>2)
 	{
 		DrawTitle(#header);
 		return;
@@ -202,25 +203,22 @@ void Draw_Window()
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 	if (GetProcessSlot(downloader_id)<>0) _PutImage(88,10, 24,24, #stop_btn);
 	
-	DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
-	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
-	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
+	DrawBar(200,0,Form.cwidth-200,43,0xE4DFE1);
+	DrawBar(0,42,Form.cwidth,1,0xE2DBDC);
+	DrawBar(0,43,Form.cwidth,1,0xD2CED0);
 	for (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0xE4DFE1);
-	_PutImage(onLeft(57,0),14, 40,19, #URLgoto);
-	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
-	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
-	DrawRectangle(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса
-	DrawRectangle(206,15,onLeft(59,205),16,0xE4ECF3);
+	_PutImage(Form.cwidth-48,14, 40,19, #URLgoto);
+	DefineButton(Form.cwidth-28,15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
+	DefineButton(Form.cwidth-47,15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
+	DrawRectangle(205,14,Form.cwidth-205-49,18,0x94AECE); //around adress bar
+	DrawRectangle(206,15,Form.cwidth-205-50,16,0xE4ECF3);
 
 	SetElementSizes();
 	WB1.ShowPage();
-	//tre();
+
 	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
 	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, ID2+BT_HIDE, 0xE4DFE1);
 }
- 
-int onLeft(dword right,left) {return Form.width-right-left;}
-int onTop(dword down,up) {return Form.height-GetSkinHeight()-down-up;}
 
 
 stop:
