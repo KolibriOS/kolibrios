@@ -19,7 +19,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 10.03.11',0
+hed db 'kol_f_edit 11.04.13',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -64,9 +64,19 @@ BIT_MOD_BUT_NFON equ 0 ;стиль Button не рисовать кнопку
 BIT_MOD_BUT_NBORD equ 1 ;стиль Button не рисовать границу
 BIT_MOD_IMPORT_FUNCT_COMMENT equ 0 ;коментировать функцию
 
-macro load_image_file path,buf,size ;макрос для загрузки изображений
-{
-	copy_path path,sys_path,fp_icon,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+macro load_image_file path,buf,size { ;макрос для загрузки изображений
+	;path - может быть переменной или строковым параметром
+	if path eqtype '' ;проверяем задан ли строкой параметр path
+		jmp @f
+			local .path_str
+			.path_str db path ;формируем локальную переменную
+			db 0
+		@@:
+		;32 - стандартный адрес по которому должен быть буфер с системным путем
+		copy_path .path_str,[32],file_name,0x0
+	else
+		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
@@ -78,7 +88,7 @@ macro load_image_file path,buf,size ;макрос для загрузки изображений
 	mov [run_file_70.Count], dword size
 	m2m [run_file_70.Buffer], [buf]
 	mov byte[run_file_70+20], 0
-	mov [run_file_70.FileName], fp_icon
+	mov [run_file_70.FileName], file_name
 	mov ebx,run_file_70
 	int 0x40 ;загружаем файл изображения
 	cmp ebx,0xffffffff
@@ -135,14 +145,12 @@ IMAGE_FILE_SKIN1_SIZE equ 3*(SKIN_W1+3)*SKIN_H+54
 IMAGE_FILE_SKIN2_SIZE equ 3*(SKIN_W2+3)*SKIN_H+54
 IMAGE_FILE_SKIN3_SIZE equ 3*(SKIN_W3+3)*SKIN_H+54
 
-fn_font_s1 db 'font6x9.bmp',0
 IMAGE_FILE_FONT1_SIZE equ 96*144*3 ;размер файла с 1-м системным шрифтом
 
 fn_icon db 'icon.bmp',0
 count_main_icons equ 35 ;число иконок в файле icon.bmp
 bmp_icon rb 0x300*count_main_icons
 
-fn_icon_tl_sys db 'tl_sys_16.png',0
 TREE_ICON_SYS16_BMP_SIZE equ 256*3*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_font_s1 dd 0 ;указатель на временную память для загрузки шрифта
@@ -206,7 +214,7 @@ start:
 	stdcall dword[tl_data_init], tree1
 	stdcall dword[tl_data_init], tree2
 
-	copy_path fn_icon,sys_path,fp_icon,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+	copy_path fn_icon,sys_path,file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	mov eax,70 ;load icon file
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 54
@@ -214,7 +222,7 @@ start:
 	mov [run_file_70.Count], 0x300*count_main_icons
 	mov [run_file_70.Buffer], bmp_icon
 	mov [run_file_70.rezerv], 0
-	mov [run_file_70.FileName], fp_icon
+	mov [run_file_70.FileName], file_name
 	mov ebx,run_file_70
 	int 0x40
 
@@ -227,7 +235,7 @@ start:
 	@@:
 
 	;системные иконки 16*16 для tree_list
-	load_image_file fn_icon_tl_sys, icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
+	load_image_file 'tl_sys_16.png', icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
 	;если изображение не открылось, то в icon_tl_sys будут
 	;не инициализированные данные, но ошибки не будет, т. к. буфер нужного размера
 	mov eax,dword[icon_tl_sys]
@@ -248,7 +256,7 @@ start:
 	stdcall mem.Free,[icon_font_s1] ;освобождаем память
 
 	;символы 1-го системного шрифта
-	load_image_file fn_font_s1, icon_font_s1,IMAGE_FILE_FONT1_SIZE
+	load_image_file 'font6x9.bmp', icon_font_s1,IMAGE_FILE_FONT1_SIZE
 	stdcall [buf2d_create_f_img], buf_font,[icon_font_s1] ;создаем буфер
 	stdcall mem.Free,[icon_font_s1] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_font,1 ;делаем буфер прозрачности 8 бит
@@ -292,10 +300,47 @@ start:
 	.open_end:
 
 	stdcall [ted_init], tedit0
-	copy_path fn_syntax,sys_path,fp_icon,0x0
-	stdcall [ted_init_syntax_file], tedit0,run_file_70,fp_icon
-	;mov edi,tedit0
-    ;call [ted_text_colored]
+	copy_path fn_syntax,sys_path,file_name,0x0
+
+	; *** init syntax file ***
+	; проверяем размер файла синтаксиса
+	mov eax,70
+	mov [run_file_70.Function], 5
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov dword[run_file_70.Count], 0
+	mov dword[run_file_70.Buffer], open_b
+	mov byte[run_file_70+20], 0
+	mov dword[run_file_70.FileName], file_name
+	mov ebx,run_file_70
+	int 0x40
+	cmp eax,0
+	jne @f
+
+	mov edi,tedit0
+	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+	mov ted_syntax_file_size,ecx
+
+	stdcall mem.Alloc,ecx ;выделяем память для файла синтаксиса
+	mov ted_syntax_file,eax
+
+	;пробуем открыть файл синтаксиса
+	mov ebx,run_file_70
+	mov dword[ebx], 0
+	mov dword[ebx+4], 0
+	mov dword[ebx+8], 0
+	mov dword[ebx+12], ecx
+	mov dword[ebx+16], eax ;ted_syntax_file
+	mov  byte[ebx+20], 0
+	m2m dword[ebx+21], file_name
+	mcall 70
+	cmp eax,0
+	jne @f
+		stdcall [ted_init_syntax_file],edi
+		jmp .end_0
+	@@:
+		notify_window_run txt_not_syntax_file
+	.end_0:
 
 	;get cmd line
 	cmp [buf_cmd_lin],0
@@ -1152,6 +1197,8 @@ foc_obj dd 0 ;объект в фокусе
 obj_count_txt_props dd 0 ;количество используемых текстовых свойств
 obj_m_win dd 0 ;структура главного окна
 
+txt_not_syntax_file db 'Не найден файл для подсветки синтаксиса.',0
+
 ;
 if 1 ;lang eq ru
 
@@ -1459,10 +1506,11 @@ load_lib_end:
 align 16
 procinfo process_information
 run_file_70 FileInfoBlock
+open_b rb 560
 
 i_end:
 	buf_cmd_lin rb 1024
-	fp_icon rb 1024 ;icon file path
+	file_name rb 1024 ;icon file path
 	fp_obj_opt rb 1024 ;obj options file patch
 	rb 1024
 	prop_thread:

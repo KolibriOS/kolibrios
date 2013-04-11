@@ -90,7 +90,7 @@ proc insert_text_label_data, obj:dword, col:dword
 	push eax edx
 	mov eax,[obj]
 		stdcall insert_text, txt_txt
-		mov edx,fp_icon
+		mov edx,file_name
 		stdcall get_obj_id_str, eax,edx ;edx = 'n'
 		stdcall str_cat, edx,txt_db ;edx = 'n db '
 		stdcall insert_text, edx
@@ -470,7 +470,7 @@ proc get_code_auto_data_el
 			insert_br
 			stdcall insert_text, txt_txt
 
-			mov edx,fp_icon
+			mov edx,file_name
 			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text, edx
 
@@ -564,7 +564,7 @@ proc get_code_auto_data_el_cbox
 			stdcall insert_text, txt_br
 
 			stdcall insert_text, txt_txt
-			mov edx,fp_icon
+			mov edx,file_name
 			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text, edx
 			stdcall insert_text, txt_coma
@@ -615,7 +615,7 @@ proc get_code_auto_data_libs_param
 
 			stdcall insert_text, txt_sys_dir
 			;object code
-			mov edx,fp_icon
+			mov edx,file_name
 			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			stdcall insert_text,txt_db
@@ -683,7 +683,7 @@ proc get_code_auto_data_libs_struc
 
 			stdcall insert_text, txt_lib
 			;object code
-			mov edx,fp_icon
+			mov edx,file_name
 			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			insert_sp
@@ -856,7 +856,7 @@ proc get_code_auto_data_dop
 
 			;формируем текстовые данные для editbox-ов
 			stdcall insert_text, txt_txt
-			mov edx,fp_icon
+			mov edx,file_name
 			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 
@@ -875,7 +875,7 @@ proc get_code_auto_data_dop
 				stdcall insert_text, txt_met_end
 				stdcall insert_text, txt_rb
 				stdcall insert_text, txt_txt
-				mov edx,fp_icon
+				mov edx,file_name
 				stdcall get_obj_id_str, ebx,edx
 				stdcall insert_text,edx
 
@@ -1293,7 +1293,7 @@ proc get_code_draw_obj
 			insert_reg txt_edx
 			insert_coma
 			stdcall insert_text, txt_txt
-			mov edx,fp_icon
+			mov edx,file_name
 			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			insert_nl

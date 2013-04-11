@@ -12,6 +12,4 @@ if not exist bin\font6x9.bmp @copy ..\..\fs\kfar\trunk\font6x9.bmp bin\font6x9.b
 if not exist bin\asm.syn @copy ..\..\other\t_edit\info\asm.syn bin\asm.syn
 
 copy *.ced bin\*.ced
-@fasm.exe -m 16384 ..\libraries\buf2d\trunk\buf2d.asm bin\buf2d.obj
-@kpack bin\buf2d.obj
 pause
