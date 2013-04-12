@@ -35,7 +35,7 @@ struct lines{
 };
 
 int	mouse_dd;
-edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(editURL),#editURL,#mouse_dd,2,19,19};
+edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(editURL),#editURL,#mouse_dd,2,19,19};
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 
@@ -69,9 +69,7 @@ void main()
 	
 	Form.width=WIN_W;
 	Form.height=WIN_H;
-	
 	SetElementSizes();
-
 	WB1.OpenPage();
 
 	SetEventMask(0x27);
@@ -92,7 +90,7 @@ void main()
 				btn=GetProcessSlot(Form.ID); 
 				IF (btn<>GetActiveProcess()) break; //если окно не активно на события мыши не реагируем
 
-				edit_box_mouse stdcall (#edit1);
+				edit_box_mouse stdcall (#address_box);
 
 				m.get();
 				
@@ -150,13 +148,13 @@ void main()
 			case evKey:
 				key = GetKey();
 				
-				if (edit1.flags & 0b10) SWITCH(key) //если активна строка адреса игнорируем некоторые кнопки
+				if (address_box.flags & 0b10) SWITCH(key) //если активна строка адреса игнорируем некоторые кнопки
 					{ CASE 52: CASE 53: CASE 54: goto _EDIT_MARK; } 
 
 				WB1.Scan(key);
 				
 				_EDIT_MARK:
-				if (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#edit1);} //адресная строка
+				if (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#address_box);} //адресная строка
 				break;
 			case evReDraw:
 				Draw_Window();
@@ -176,10 +174,10 @@ void main()
 
 void SetElementSizes()
 {
-	edit1.width = Form.width-266;
+	address_box.width = Form.width-266;
 	WB1.top = 44;
-	WB1.width = Form.cwidth - 4;
-	WB1.height = Form.cheight - WB1.top;
+	WB1.width = Form.width - 10 - scroll1.size_x;
+	WB1.height = Form.height - WB1.top - GetSkinHeight() - 4;
 	WB1.line_h = 10;
 	lines.column_max = WB1.width - 30 / 6;
 	lines.visible = WB1.height - 3 / WB1.line_h - 2;
@@ -189,7 +187,7 @@ void SetElementSizes()
 void Draw_Window()
 {
 	int j;
-	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0,0);
+	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0xE4DFE1,0,0);
 
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2)

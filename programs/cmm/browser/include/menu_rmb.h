@@ -4,6 +4,7 @@
 #define ITEM_WIDTH  138
 
 char *ITEMS_LIST[]={
+//"Old HTMLv        F12",255,
 "View in Tinypad   F3",52,
 "WIN               F5",54,
 "DOS           Ctrl+D",04,
