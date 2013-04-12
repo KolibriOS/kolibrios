@@ -19,13 +19,11 @@ int GetOrSetPicNum(dword i_path)
 
 void FreeImgCache()
 {
-	int i;
-	for (i=0; i<=num_of_pics; i++)
+	for ( ; num_of_pics>0; num_of_pics--)
 	{
-		img_destroy stdcall (pics[num_of_pics].image);
+		if (pics[num_of_pics].image) img_destroy stdcall (pics[num_of_pics].image);
 		pics[num_of_pics].path = NULL;
 	}
-	num_of_pics=0;
 }
 
 

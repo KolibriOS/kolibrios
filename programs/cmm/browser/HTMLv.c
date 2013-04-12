@@ -61,7 +61,7 @@ void main()
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	if (load_dll2(libio, #libio_init,1)!=0) debug("Error: library doesn't exists - libio"w);
 	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Error: library doesn't exists - libimg"w);
-	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Error: library doesn't exists - TrueType"w); use_truetype = 2; }
+	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Warning: library doesn't exists - TrueType"w); use_truetype = 2; }
 	else init_font(#fontlol);
 	
 	if (!URL) strcpy(#URL, "/sys/home.htm");
@@ -181,6 +181,7 @@ void SetElementSizes()
 	WB1.line_h = 10;
 	lines.column_max = WB1.width - 30 / 6;
 	lines.visible = WB1.height - 3 / WB1.line_h - 2;
+	DrawBufInit();
 }
 
 

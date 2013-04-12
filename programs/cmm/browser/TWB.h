@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.99";
+char version[]=" Text-based Browser 0.99.01";
 
 
 struct TWebBrowser {
@@ -60,7 +60,6 @@ void DrawBufInit()
 	drawbuf = malloc(WB1.width * WB1.line_h +4 * 4 + 8); //+1 for good luck
 	ESDWORD[drawbuf] = WB1.width;
 	ESDWORD[drawbuf+4] = WB1.line_h;
-	DrawBufFill();
 }
 void DrawBufFill()
 {
@@ -202,12 +201,12 @@ void TWebBrowser::Scan(int id)
 		case 004: //Ctrl+D
 			ReadHtml(_DOS);
 			break;
-		case 001:
-			if (!pre_text) pre_text=2;
-				else pre_text=0;
-			break;
 		case 002: //free img cache
 			FreeImgCache();
+			break;
+		case 003:
+			if (!pre_text) pre_text=2;
+				else pre_text=0;
 			break;			
 		case 005: //truetype
 			if (use_truetype == 2) 
@@ -225,9 +224,9 @@ void TWebBrowser::Scan(int id)
 			if (!BrowserHistory.GoForward()) return;
 			OpenPage();
 			return;
-		//case 255:  //F12
-		//	RunProgram("/rd/1/HTMLv_old", #URL);
-		//	return;
+		case 255:  //F12
+			RunProgram("/rd/1/HTMLv_old", #URL);
+			return;
 		case 052:  //F3
 			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
 			return;
@@ -426,20 +425,17 @@ void TWebBrowser::ParseHTML(dword bword){
 	byte ignor_param;
 	char temp[768];
 	
-	stroka = -lines.first;
-	stolbec = 0;
-	
-	for (j = 400; j < blink + 1; j++;) DeleteButton(j);
-	blink = 400;
-
+	if (blink<400) blink=400; else for ( ; blink>400; blink--;) DeleteButton(blink);
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
+	DrawBufFill();
 	line = NULL;
 	strcpy(#page_links,"|");
 	strcpy(#header, #version);
-	DrawBufInit();
+	stroka = -lines.first;
+	stolbec = 0;
 
 	if (pre_text<>2)
 	{
@@ -466,24 +462,21 @@ void TWebBrowser::ParseHTML(dword bword){
 				tab_len=strlen(#line)/8;
 				tab_len=tab_len*8;
 				tab_len=8+tab_len-strlen(#line);
-				for (j=0; j<tab_len; j++;) strcat(#line," ");
+				for (j=0; j<tab_len; j++;) chrcat(#line,' ');
 				break;
-			}		
-		case 0x0d:
-			bukva = ' ';
-			goto DEFAULT_MARK;
-		case '=': //поддержка шайтанской кодировки страниц, сохранённых через ИЕ7
+			}
+			goto DEFAULT_MARK;		
+		case '=': //quoted printable
 			if (strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
 
-			bword++;
-			bukva=ESBYTE[bword];
-			strcpy(#temp,#bukva);
-			bword++;
-			bukva=ESBYTE[bword];
-			strcat(#temp,#bukva);
-			
-			bukva=Hex2Symb(#temp);
-			if (bukva) goto DEFAULT_MARK;
+			temp[0] = ESBYTE[bword+1];
+			temp[1] = ESBYTE[bword+2];
+			temp[2] = '\0';
+			if (bukva = Hex2Symb(#temp))
+			{
+				bword+=2;
+				goto DEFAULT_MARK;
+			}
 			break;
 			
 		case '&': //&nbsp; and so on
@@ -492,7 +485,7 @@ void TWebBrowser::ParseHTML(dword bword){
 			for (j=0; (ESBYTE[bword]<>';') && (j<7);   j++, bword++;)
 			{
 				bukva = ESBYTE[bword];
-				strcat(#tag, #bukva);
+				chrcat(#tag, bukva);
 			}
 			
 			bukva = GetUnicodeSymbol();
@@ -559,6 +552,7 @@ void TWebBrowser::ParseHTML(dword bword){
 			break;
 		default:
 			DEFAULT_MARK:
+			if (bukva<=15) bukva=' ';
 			if (!pre_text) && (bukva == ' ')
 			{
 				if (line[strlen(#line)-1]==' ') break; //убрать 2 пробела подряд
