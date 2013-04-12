@@ -460,7 +460,10 @@ void List_ReDraw()
 
 
 void Line_ReDraw(dword color, filenum){
-	dword text_col=0, name_len=0, y=filenum*files.line_h+57;
+	dword text_col=0,
+	      name_len=0,
+	      attr,
+	      y=filenum*files.line_h+57;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
 	DrawBar(files.x+3,y+17,16,1,color);
@@ -468,8 +471,9 @@ void Line_ReDraw(dword color, filenum){
 	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,color); 
 
 	off=file_mas[filenum+files.first]*304 + buf+72;
+	attr = ESDWORD[off - 40];
 
-	if (!TestBit(ESDWORD[off-40], 4)) //file or folder?
+	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		Put_icon(off+_strrchr(off,'.'), files.line_h/2-7+y, color);
 		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
@@ -479,10 +483,10 @@ void Line_ReDraw(dword color, filenum){
 			Put_icon("..", files.line_h/2-7+y, color);
 		else
 			Put_icon("<DIR>", files.line_h/2-7+y, color);
-	if (TestBit(ESDWORD[off-40],1)) || (TestBit(ESDWORD[off-40],2)) text_col=0xA6A6B7; //system or hiden?
+	if ( TestBit(attr, 1) ) || ( TestBit(attr, 2) ) text_col=0xA6A6B7; //system or hiden?
 	if (color!=0xFFFfff)
 	{
-		itdir=TestBit(ESDWORD[off-40], 4);		
+		itdir = TestBit(attr, 4);
 		strcpy(#file_name, off);
 		strcpy(#file_path, #path);
 		strcat(#file_path, #file_name);

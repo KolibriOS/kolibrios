@@ -416,6 +416,14 @@ void WriteText(dword x,y,byte fontType, dword color, EDX)
 	$int 0x40;
 }
 
+dword WriteBufText(dword x,y,byte fontType, dword color, EDX, EDI)
+{
+	EAX = 4;
+	EBX = x<<16+y;
+	ECX = fontType<<24+color;
+	$int 0x40;
+}
+
 void WriteNumber(dword x,y,byte fontType, dword color, count, ECX)
 {
 	EAX = 47;
@@ -433,7 +441,7 @@ void CopyScreen(dword EBX, x, y, w, h)
   $int  0x40;
 }
 
-dword GetPixelColor(dword x, x_size, y)
+:dword GetPixelColor(dword x, x_size, y)
 {
 	$mov eax, 35
 	EBX= y*x_size+x;

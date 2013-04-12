@@ -367,52 +367,9 @@ void debugi(dword d_int)
 }
 
 
-/* strtok( LPSTR dest, src, divs);
-src - указатель на исходную строку или результат предыдущего вызова
-dest - указатель на буфер, куда будет скопировано слово
-divs - указатель на строку, содержащую символы-разделители
-¬озвращает: 0, если слов больше нет
-         не 0, если слово скопировано в dest (передайте это значение
-               в качестве src дл€ последующего поиска) */
-
-inline fastcall dword strtok( EDX, ESI, EBX)
-{
-  asm {
-    XOR ECX, ECX
-    MOV EDI, EBX
-    XOR EAX, EAX
-    DEC ECX
-    REPNE SCASB
-    XOR ECX, 0FFFFFFFFH
-    DEC ECX
-    PUSH ECX
-L1: LODSB
-    OR AL, AL
-    JZ L4
-    MOV EDI, EBX
-    MOV ECX, SSDWORD[ ESP]
-    REPNE SCASB
-    JZ L1
-    DEC ESI
-L2: LODSB
-    MOV EDI, EBX
-    MOV ECX, SSDWORD[ ESP]
-    REPNE SCASB
-    JZ L3
-    MOV DSBYTE[ EDX], AL
-    INC EDX
-    JMP SHORT L2
-L3: MOV EAX, ESI
-L4: POP ECX
-  } DSBYTE[ EDX] = 0;
-}
 
 #define strncpy strcpyn
 #define strnmov strmovn
 #define stricmp strcmpi
 #define strcmpn strncmp
-#define strncmpi strcmpni
-#define stricmpn strcmpni
-#define strnicmp strcmpni
-#define strincmp strcmpni
-#define strcmpin strcmpni
+

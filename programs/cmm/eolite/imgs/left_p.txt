@@ -1,4 +1,4 @@
-unsigned char blue_hl[190*268]= FROM "imgs\blue_hl8.raw";
+unsigned char blue_hl[sizeof(file "imgs\blue_hl8.raw")]= FROM "imgs\blue_hl8.raw";
 
 dword blue_hl_pal[]= {0x0001699C,0x0000699C,0x00026A9C,0x0002699C,
 0x00036A9C,0x00046B9C,0x00046A9C,0x00056B9D,0x00046B9D,0x00066C9D,
