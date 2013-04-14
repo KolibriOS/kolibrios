@@ -69,11 +69,14 @@
   dd	 I_END
   dd	 stacktop
   dd	 param
-  dd	 0x0
+  dd	 path
 ;---------------------------------------------------------------------
 include '../../macros.inc'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'lang.inc'
-;include 'debug.inc'
+;include '../../debug.inc'
+@use_library
 ;---------------------------------------------------------------------
 p_start_x = 10
 p_start_y = 10
@@ -103,10 +106,15 @@ START:
 	mcall	68,11
 	mcall	66,1,1
 	mcall	40,0x27
+;	mcall	40,0x7
 	call	get_communication_area
 	
 	call	get_active_pocess
 
+load_libraries	l_libs_start,end_l_libs
+	test	eax,eax
+	jnz	button.exit_2
+	
 	xor	eax,eax
 	mov	al,p_size_x
 	mov	[palette_SIZE_X],eax
@@ -117,6 +125,7 @@ START:
 	mov	eax,0xff0000
 	mov	[tone_color],eax
 	mov	[selected_color],eax
+	call	prepare_scrollbars_position_from_color
 ;--------------------------------------
 	mov	ecx,[palette_SIZE_Y]
 	imul	ecx,[palette_SIZE_X]
@@ -151,7 +160,12 @@ still:
 	je	key
 
 	cmp	eax,3
-	jne	still
+	je	button
+	
+	cmp	eax,6
+	je	mouse
+	
+	jmp	still
 ;---------------------------------------------------------------------
 align 4
 button:
@@ -195,7 +209,7 @@ button:
 	shl	eax,16
 	add	eax,[ecx+46]
 	mov	[ebx+8],eax
-
+.exit_2:
 	mcall	-1
 ;---------------------------------------------------------------------
 get_window_param:
@@ -222,12 +236,14 @@ get_communication_area:
 ;	mov	[color_dialog_type],ebx
 
 	mov	ebx,[eax+4]
-	cmp	bx,word x_minimal_size ;300
-	jb	@f
+;	cmp	bx,word x_minimal_size ;300
+;	jb	@f
+	mov	bx,420
 	mov	[window_x],ebx
 	mov	ebx,[eax+8]
-	cmp	bx,word y_minimal_size ;200
-	jb	@f
+;	cmp	bx,word y_minimal_size ;200
+;	jb	@f
+	mov	bx,320
 	mov	[window_y],ebx
 @@:
 	ret
@@ -256,8 +272,10 @@ palette_button:
 	mov	eax,[eax]
 	mov	[tone_color],eax
 	mov	[selected_color],eax
+	call	prepare_scrollbars_position_from_color
 	call	create_and_draw_tone
 	call	draw_selected_color
+	call	draw_scrollbars
 	jmp	still
 ;---------------------------------------------------------------------
 align 4
@@ -274,7 +292,9 @@ tone_button:
 	add	eax,[tone_area]
 	mov	eax,[eax]
 	mov	[selected_color],eax
+	call	prepare_scrollbars_position_from_color
 	call	draw_selected_color
+	call	draw_scrollbars
 	jmp	still
 ;---------------------------------------------------------------------
 align 4
@@ -288,14 +308,82 @@ color_button:
 	jmp	button.exit_1
 ;---------------------------------------------------------------------
 align 4
+prepare_scrollbars_position_from_color:
+; in: eax = selected color
+	movzx	ebx,al
+	mov	[scroll_bar_data_blue.position],ebx
+	shr	eax,8
+	mov	bl,al
+	mov	[scroll_bar_data_green.position],ebx
+	shr	eax,8
+	mov	bl,al
+	mov	[scroll_bar_data_red.position],ebx
+	ret
+;---------------------------------------------------------------------
+align 4
+prepare_color_from_scrollbars_position:
+; out: ebx = selected color
+	mov	eax,[scroll_bar_data_red.position]
+	movzx	ebx,al
+	shl	ebx,8
+	mov	eax,[scroll_bar_data_green.position]
+	mov	bl,al
+	shl	ebx,8
+	mov	eax,[scroll_bar_data_blue.position]
+	mov	bl,al
+	ret
+;---------------------------------------------------------------------	
+align 4
 key:
 	mcall	2
 	jmp	still
 ;---------------------------------------------------------------------
 align 4
+mouse:
+	cmp	[scroll_bar_data_red.delta2],0
+	jne	.red
+	cmp	[scroll_bar_data_green.delta2],0
+	jne	.green
+	cmp	[scroll_bar_data_blue.delta2],0
+	jne	.blue	
+;--------------------------------------
+align 4
+.red:
+	push	dword scroll_bar_data_red
+	call	[scrollbar_ver_mouse]
+	cmp	[scroll_bar_data_red.delta2],0
+	jne	@f
+;--------------------------------------
+align 4
+.green:
+	push	dword scroll_bar_data_green
+	call	[scrollbar_ver_mouse]
+	cmp	[scroll_bar_data_green.delta2],0
+	jne	@f
+;--------------------------------------
+align 4
+.blue:
+	push	dword scroll_bar_data_blue
+	call	[scrollbar_ver_mouse]
+;	cmp	[scroll_bar_data_blue.delta2],0
+;	jne	@f
+;--------------------------------------
+align 4
+@@:
+	call	prepare_color_from_scrollbars_position
+	cmp	[selected_color],ebx
+	je	still
+	mov	[selected_color],ebx
+	call	draw_selected_color
+	jmp	still
+;---------------------------------------------------------------------
+align 4
 draw_selected_color:
 	mcall	13,<c_start_x,c_size_x>,<c_start_y,c_size_y>,[selected_color]
-	mcall	8,<c_start_x,c_size_x>,<c_start_y,c_size_y>,0x60000004
+	mcall	13,<c_start_x+c_size_x+10,c_size_x>,<c_start_y,c_size_y>,0xffffff
+	mov	ecx,[selected_color]
+	and	ecx,0xffffff
+	mcall	47,0x00060100,,<c_start_x+c_size_x+13,c_start_y+(c_size_y-6)/2>,0
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -309,16 +397,34 @@ draw_tone:
 	mcall	65,[tone_area],<[tone_SIZE_X],[tone_SIZE_Y]>,<t_start_x,t_start_y>,24
 	ret
 ;---------------------------------------------------------------------
+draw_scrollbars:
+	push	dword scroll_bar_data_red
+	call	[scrollbar_ver_draw]
+	push	dword scroll_bar_data_green
+	call	[scrollbar_ver_draw]
+	push	dword scroll_bar_data_blue
+	call	[scrollbar_ver_draw]
+	ret
+;---------------------------------------------------------------------
 align 4
 draw_window:
 	mcall	12,1
 ;	mcall	0, <w_start_x,w_size_x>, <w_start_y,w_size_y>, 0x33AABBCC,,title
-	mcall	0,[window_x],[window_y], 0x33AABBCC,,title
+	xor	esi,esi
+	mcall	0,[window_x],[window_y], 0x34AABBCC,,title
 	mcall	8,<p_start_x,[palette_SIZE_X]>,<p_start_y,[palette_SIZE_Y]>,0x60000002
 	mcall	,<t_start_x,[tone_SIZE_X]>,<t_start_y,[tone_SIZE_Y]>,0x60000003
+	mcall	,<c_start_x,c_size_x>,<c_start_y,c_size_y>,0x60000004
+	xor	ebp,ebp
 	mcall	65,[palette_area],<[palette_SIZE_X],[palette_SIZE_Y]>,<p_start_x,p_start_y>,24
 	call	draw_tone
 	call	draw_selected_color
+	xor	eax,eax
+	inc	eax
+	mov	[scroll_bar_data_red.all_redraw],eax
+	mov	[scroll_bar_data_green.all_redraw],eax
+	mov	[scroll_bar_data_blue.all_redraw],eax
+	call	draw_scrollbars
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------
