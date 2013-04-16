@@ -72,6 +72,7 @@ frame_start
 	shl	ebx,16
 	mov	bx,fr_start_x
 	add	bx,fr_size_x
+	dec	bx
 	
 	mov	cx,fr_start_y
 	shl	ecx,16
@@ -90,12 +91,15 @@ frame_start
 	shl	ebx,16
 	mov	bx,fr_start_x
 	add	bx,fr_size_x
+	dec	bx
 	
 	mov	cx,fr_start_y
 	add	cx,fr_size_y
+	dec	cx
 	shl	ecx,16
 	mov	cx,fr_start_y
 	add	cx,fr_size_y
+	dec	cx
 
 	mcall	,,,fr_ext_fr_col
 	
@@ -114,6 +118,7 @@ frame_start
 	shl	ecx,16
 	mov	cx,fr_start_y
 	add	cx,fr_size_y
+	dec	cx
 
 	mcall	,,,fr_ext_fr_col
 	
@@ -127,14 +132,17 @@ frame_start
 ; right
 	mov	bx,fr_start_x
 	add	bx,fr_size_x
+	dec	bx
 	shl	ebx,16
 	mov	bx,fr_start_x
 	add	bx,fr_size_x
+	dec	bx
 
 	mov	cx,fr_start_y
 	shl	ecx,16
 	mov	cx,fr_start_y
 	add	cx,fr_size_y
+	dec	cx
 
 	mcall	,,,fr_ext_fr_col
 	
