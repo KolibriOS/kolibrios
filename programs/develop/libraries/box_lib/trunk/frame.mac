@@ -1,0 +1,198 @@
+;**************************************************************
+; Frame Macro for Kolibri OS
+; Copyright (c) 2013, Marat Zakiyanov aka Mario79, aka Mario
+; All rights reserved.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+;     * Redistributions of source code must retain the above copyright
+;       notice, this list of conditions and the following disclaimer.
+;     * Redistributions in binary form must reproduce the above copyright
+;       notice, this list of conditions and the following disclaimer in the
+;       documentation and/or other materials provided with the distribution.
+;     * Neither the name of the <organization> nor the
+;       names of its contributors may be used to endorse or promote products
+;       derived from this software without specific prior written permission.
+;
+; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
+; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
+; DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;*****************************************************************************
+macro frame_start
+{
+	pusha
+	mov	edi,dword [esp+36]
+}
+;*****************************************************************************
+macro frame_exit
+{
+popa         
+ret 4
+}
+;*****************************************************************************
+macro use_frame
+{
+frame: 
+fr_type			equ [edi]	;dword
+fr_size_x		equ [edi+4]	;word
+fr_start_x		equ [edi+6]	;word
+fr_size_y		equ [edi+8]	;word
+fr_start_y		equ [edi+10]	;word
+fr_ext_fr_col		equ [edi+12]	;dword
+fr_int_fr_col		equ [edi+16]	;dword
+fr_draw_text_flag	equ [edi+20]	;dword 0-not,1-yes
+fr_text_pointer		equ [edi+24]	;dword
+fr_text_position	equ [edi+28]	;dword 0-up,1-bottom
+fr_font_number		equ [edi+32]	;dword 0-monospace,1-variable
+fr_font_size_y		equ [edi+36]	;dword
+fr_font_color		equ [edi+40]	;dword
+fr_font_backgr_color	equ [edi+44]	;dword
+;*****************************************************************************
+;*****************************************************************************
+; draw event
+;*****************************************************************************
+;*****************************************************************************
+align 4
+.draw:
+frame_start
+;-------------------------------------
+; in
+; ebx = [coordinate on axis x]*65536 + [size on axis x]
+; ecx = [coordinate on axis y]*65536 + [size on axis y]
+;--------------------------------------
+; top
+	mov	bx,fr_start_x
+	shl	ebx,16
+	mov	bx,fr_start_x
+	add	bx,fr_size_x
+	
+	mov	cx,fr_start_y
+	shl	ecx,16
+	mov	cx,fr_start_y
+
+	mcall	38,,,fr_ext_fr_col
+	
+	add	ecx,1 shl 16 +1
+	add	ebx,1 shl 16
+	dec	ebx
+
+	mcall	,,,fr_int_fr_col
+;--------------------------------------
+; bottom
+	mov	bx,fr_start_x
+	shl	ebx,16
+	mov	bx,fr_start_x
+	add	bx,fr_size_x
+	
+	mov	cx,fr_start_y
+	add	cx,fr_size_y
+	shl	ecx,16
+	mov	cx,fr_start_y
+	add	cx,fr_size_y
+
+	mcall	,,,fr_ext_fr_col
+	
+	sub	ecx,1 shl 16 +1
+	add	ebx,1 shl 16
+	dec	ebx
+
+	mcall	,,,fr_int_fr_col
+;--------------------------------------
+; left
+	mov	bx,fr_start_x
+	shl	ebx,16
+	mov	bx,fr_start_x
+	
+	mov	cx,fr_start_y
+	shl	ecx,16
+	mov	cx,fr_start_y
+	add	cx,fr_size_y
+
+	mcall	,,,fr_ext_fr_col
+	
+	add	ebx,1 shl 16 +1
+	add	ecx,1 shl 16
+	dec	ecx
+
+	mcall	,,,fr_int_fr_col
+
+;--------------------------------------
+; right
+	mov	bx,fr_start_x
+	add	bx,fr_size_x
+	shl	ebx,16
+	mov	bx,fr_start_x
+	add	bx,fr_size_x
+
+	mov	cx,fr_start_y
+	shl	ecx,16
+	mov	cx,fr_start_y
+	add	cx,fr_size_y
+
+	mcall	,,,fr_ext_fr_col
+	
+	sub	ebx,1 shl 16 +1
+	add	ecx,1 shl 16
+	dec	ecx
+
+	mcall	,,,fr_int_fr_col
+;----------------------------------------------------------------------
+	cmp	fr_draw_text_flag,dword 0
+	je	.exit
+
+	mov	ecx,0xC0000000
+	mov	eax,fr_font_number
+	and	eax,11b
+	shl	eax,28
+	add	ecx,eax
+	mov	eax,fr_font_color
+	and	eax,0xffffff
+	add	ecx,eax
+
+	mov	edx,fr_text_pointer
+
+	mov	eax,fr_font_backgr_color
+	and	eax,0xffffff
+
+	xor	esi,esi
+
+	mov	bx,fr_start_x
+	add	bx,10
+	shl	ebx,16
+	mov	bx,fr_font_size_y
+	shr	bx,1
+
+	not	bx
+	add	bx,fr_start_y
+
+	test	fr_font_size_y,word 1b
+	jz	@f
+	
+	inc	bx
+;--------------------------------------
+align 4
+@@:
+	cmp	fr_text_position,dword 0
+	je	.draw_1
+	
+	add	bx,fr_size_y
+;--------------------------------------
+align 4
+.draw_1:
+	push	edi
+	mov	edi,eax
+	mcall	4
+	pop	edi
+;----------------------------------------------------------------------
+align 4
+.exit:
+frame_exit
+}
+;*****************************************************************************

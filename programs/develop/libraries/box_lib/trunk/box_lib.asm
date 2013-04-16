@@ -1,5 +1,6 @@
 ;*****************************************************************************
 ; Box_Lib - library of graphical components
+; Copyright (C) KolibriOS team 2008-2013. All rights reserved.
 ;
 ; Authors:
 ; Alexey Teplov aka <Lrz>
@@ -101,6 +102,11 @@ use_path_show
 ;--------------------------------------------------
 align 16
 use_text_edit
+;--------------------------------------------------
+;Frame Group
+;--------------------------------------------------
+align 16
+use_frame
 
 ;input:
 ; eax = указатель на функцию выделения памяти
@@ -327,6 +333,9 @@ dd	sz_ted_but_find_next,		ted_but_find_next
 dd	sz_ted_text_colored,		ted_text_colored
 dd	sz_ted_version, 		0x00000003
 
+dd	sz_Frame_draw,			frame.draw
+dd	szVersion_frame,		0x00010001
+
 dd	0,0
 
 
@@ -425,3 +434,6 @@ sz_ted_but_reverse		db 'ted_but_reverse',0
 sz_ted_but_find_next		db 'ted_but_find_next',0
 sz_ted_text_colored		db 'ted_text_colored',0
 sz_ted_version			db 'version_text_edit',0
+
+sz_Frame_draw			db 'frame_draw',0
+szVersion_frame			db 'version_frame',0
