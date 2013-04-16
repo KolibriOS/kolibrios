@@ -418,9 +418,10 @@ step2:
 	fld	_t6
 	fld	qword[ebx+8]
 	fld	st1
-	fsub	st0, st1
-	fxch	st1
-	faddp	st2, st0	; st : t2, t1
+        fld     st1
+	faddp	st3, st0	
+	fsubp	st1, st0	; st : t2, t1
+
 	fld	_t8
 	fsub	_t0
 	fld	_t5
@@ -430,7 +431,7 @@ step2:
 	fsub	st0, st1
 	fstp	qword[ebx+8*9]	; f[l3] = t1-t4
 	fadd	st0, st3
-	fstp	qword[ebx+8]	; f[l1] = t1+t4
+	fstp	qword[ebx+8]      ; f[l1] = t1+t4
 	fld	st1		; st : t2, t3, t2, t1
 	fsub	st0, st1	; f[l4] = t2-t3
 	fstp	qword[ebx+8*13] ; st : t3, t2, t1
