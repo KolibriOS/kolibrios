@@ -430,11 +430,27 @@ draw_colours:
 	mov	ebx,220*65536+14
 	mov	ecx,10*65536+14
 	mov	eax,13
+	mov	[frame_data.draw_text_flag],dword 0
 ;--------------------------------------
 newcol:
 	mov	edx,[esi]
 	mcall
-	call	draw_rectangle
+
+	push	ebx ecx
+
+	sub	ebx,2 shl 16
+	add	bx,4
+	sub	ecx,2 shl 16
+	add	cx,4
+	
+	mov	[frame_data.x],ebx
+	mov	[frame_data.y],ecx	
+
+	push	dword frame_data
+	call	[Frame_draw]
+
+	pop	ecx ebx
+
 	add	ecx,20*65536
 	add	esi,4
 	cmp	esi,color_table+4*9
@@ -525,27 +541,24 @@ draw_window:
 	call	draw_button_row_of_texts
 	call	draw_colours
 ;-----------------------------------
-	mov	ebx,frame_1.x shl 16+frame_1.width
-	mov	ecx,frame_1.y shl 16+frame_1.height
-	call	draw_rectangle
-
-; select color DTP text
-	mov	ecx,[w_work_text]
-	and	ecx,0xffffff
-	add	ecx,0x40000000
-	mcall	4,<frame_1.x+10,frame_1.y-4>,,select_dtp_text,\
-				select_dtp_text.size,[w_work]
-;-----------------------------------
-	mov	ebx,frame_2.x shl 16+frame_2.width
-	mov	ecx,frame_2.y shl 16+frame_2.height
-	call	draw_rectangle
+	mov	[frame_data.x],dword frame_1.x shl 16+frame_1.width
+	mov	[frame_data.y],dword frame_1.y shl 16+frame_1.height
+	mov	[frame_data.text_pointer],dword select_dtp_text
+	mov	eax,[w_work]
+	mov	[frame_data.font_backgr_color],eax
+	mov	eax,[w_work_text]
+	mov	[frame_data.font_color],eax
+	mov	[frame_data.draw_text_flag],dword 1
 	
-; select skin text
-	mov	ecx,[w_work_text]
-	and	ecx,0xffffff
-	add	ecx,0x40000000
-	mcall	4,<frame_2.x+10,frame_2.y-4>,,select_skin_text,\
-				select_skin_text.size,[w_work]
+	push	dword frame_data
+	call	[Frame_draw]
+;-----------------------------------
+	mov	[frame_data.x],dword frame_2.x shl 16+frame_2.width
+	mov	[frame_data.y],dword frame_2.y shl 16+frame_2.height
+	mov	[frame_data.text_pointer],dword select_skin_text
+
+	push	dword frame_data
+	call	[Frame_draw]
 ;-----------------------------------
 	call	draw_PathShow
 ;-----------------------------------
@@ -556,8 +569,6 @@ draw_window:
 .end:
 	mcall	12,2
 	ret
-;-----------------------------------------------------------------------------
-include 'drawrect.inc'
 ;-----------------------------------------------------------------------------
 include 'drawskin.inc'
 ;-----------------------------------------------------------------------------

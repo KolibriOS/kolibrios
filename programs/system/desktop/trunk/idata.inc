@@ -47,12 +47,14 @@ lsz select_dtp_text,\
     ru, ' ÇõÅéê ñÇÖíéÇéÉé éîéêåãÖçàü: ',\
     en, ' CHOICE OF COLOR SCHEMES: ',\
     et, ' VALIK VARVISKEEME: '
-    
+	db 0
+
 lsz select_skin_text,\
     ru, ' ÇõÅéê òäìêäà: ',\
     en, ' CHOICE OF SKINS: ',\
     et, ' VALIK NAHAD: '
-    
+	db 0
+
 lsz caption_text,\
     ru, 'á†£Æ´Æ¢Æ™',\
     en, 'Caption',\
@@ -161,6 +163,10 @@ Box_lib_import:
 PathShow_prepare	dd sz_PathShow_prepare
 PathShow_draw		dd sz_PathShow_draw
 ;Version_path_show	dd szVersion_path_show
+
+Frame_draw		dd sz_Frame_draw
+;Version_frame		dd szVersion_frame
+
 			dd 0
 			dd 0
 
@@ -203,6 +209,9 @@ PathShow_draw		dd sz_PathShow_draw
 sz_PathShow_prepare	db 'PathShow_prepare',0
 sz_PathShow_draw	db 'PathShow_draw',0
 ;szVersion_path_show	db 'version_PathShow',0
+
+sz_Frame_draw		db 'frame_draw',0
+;szVersion_frame	db 'version_frame',0
 ;---------------------------------------------------------------------
 PathShow_data_1:
 .type			dd 0	;+0
@@ -329,5 +338,23 @@ cd_communication_area_name:
 	db 'FFFFFFFF_color_dialog',0
 colordialog_path:
 	db '/rd/1/colrdial',0
+;---------------------------------------------------------------------
+frame_data: 
+.type			dd 0 ;+0
+.x:
+.x_size			dw 0 ;+4
+.x_start		dw 0 ;+6
+.y:
+.y_size			dw 0 ;+8
+.y_start		dw 0 ;+10
+.ext_fr_col		dd 0x0 ;+12
+.int_fr_col		dd 0xffffff ;+16
+.draw_text_flag		dd 1 ;+20
+.text_pointer		dd 0 ;+24
+.text_position		dd 0 ;+28
+.font_number		dd 0 ;+32
+.font_size_y		dd 9 ;+36
+.font_color		dd 0x0 ;+40
+.font_backgr_color	dd 0xffffff ;+44
 ;---------------------------------------------------------------------
 IncludeIGlobals
