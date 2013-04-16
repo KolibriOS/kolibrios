@@ -58,6 +58,14 @@
 ;
 ; Color value ; +20
 ; dd 0
+
+; First start flag ; +24
+; dd 0 ; 0 - first start, 1 - subsequent starts
+;
+; Old colors ; +28
+; rd 10
+;
+; Free area ; +68
 ;---------------------------------------------------------------------
   use32
   org	 0x0
@@ -108,13 +116,13 @@ START:
 	mcall	40,0x27
 ;	mcall	40,0x7
 	call	get_communication_area
-	
 	call	get_active_pocess
-
+	call	clear_colors_history
+;--------------------------------------
 load_libraries	l_libs_start,end_l_libs
 	test	eax,eax
 	jnz	button.exit_2
-	
+;--------------------------------------
 	xor	eax,eax
 	mov	al,p_size_x
 	mov	[palette_SIZE_X],eax
@@ -180,18 +188,45 @@ button:
 	cmp	ah, 4
 	je	color_button
 	
+	cmp	ah, 30
+	jb	@f
+	
+	cmp	ah, 39
+	ja	@f
+	
+	sub	ah,30
+	movzx	eax,ah
+	shl	eax,2
+	add	eax,[communication_area]
+	add	eax,28
+	mov	eax,[eax]
+	mov	[selected_color],eax
+	call	prepare_scrollbars_position_from_color
+	call	draw_selected_color
+	call	draw_scrollbars
+	jmp	still
+;--------------------------------------
+align 4
+@@:
 	cmp	ah, 1
 	jne	still
-
+;--------------------------------------
+align 4
 .exit:
 	mov	eax,[communication_area]
 	mov	[eax],word 3
+	jmp	@f
 ; dps "CD flag value: cancel "
-
+;--------------------------------------
+align 4
 .exit_1:
-
-	mov	ax,[eax]
-	and	eax,0xffff
+;--------------------------------------
+	call	scroll_colors_history
+;--------------------------------------
+align 4
+@@:
+;	mov	ax,[eax]
+;	and	eax,0xffff
 ; dps "CD flag value: "
 ; dpd eax
 ; newline
@@ -209,9 +244,12 @@ button:
 	shl	eax,16
 	add	eax,[ecx+46]
 	mov	[ebx+8],eax
+;--------------------------------------
+align 4
 .exit_2:
 	mcall	-1
 ;---------------------------------------------------------------------
+align 4
 get_window_param:
 	mcall	9,procinfo,-1
 	mov	eax,[ebx+66]
@@ -238,7 +276,7 @@ get_communication_area:
 	mov	ebx,[eax+4]
 ;	cmp	bx,word x_minimal_size ;300
 ;	jb	@f
-	mov	bx,420
+	mov	bx,450
 	mov	[window_x],ebx
 	mov	ebx,[eax+8]
 ;	cmp	bx,word y_minimal_size ;200
@@ -259,6 +297,38 @@ get_active_pocess:
 	jz	.1
 	mov	[ebx+12],eax	; WINDOW SLOT to com. area
 .1:
+	ret
+;---------------------------------------------------------------------
+align 4
+clear_colors_history:
+	mov	edi,[communication_area]
+	cmp	[edi+24],dword 1
+	je	@f
+	mov	[edi+24],dword 1
+	add	edi,28
+	mov	ecx,10
+	cld
+	mov	eax,0xffffff
+	rep	stosd
+@@:
+	ret
+;---------------------------------------------------------------------
+align 4
+scroll_colors_history:
+	mov	edi,[communication_area]
+	add	edi,28
+	mov	eax,[selected_color]
+	cmp	[edi],eax
+	je	@f
+	mov	ecx,9
+	mov	esi,edi
+	add	esi,32
+	add	edi,36
+	std
+	rep	movsd
+	mov	edi,[communication_area]
+	mov	[edi+28],eax
+@@:
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -406,6 +476,58 @@ draw_scrollbars:
 	call	[scrollbar_ver_draw]
 	ret
 ;---------------------------------------------------------------------
+draw_button_row:
+	mov	edx,0x60000000 + 30		; BUTTON ROW
+;	mov	ebx,220*65536+14
+	mov	ebx,(c_start_x+c_size_x*2+10*3)*65536+14
+	mov	ecx,20*65536+14
+	mov	eax,8
+;-----------------------------------
+.newb:
+	mcall
+	add	ecx,25*65536
+	inc	edx
+	cmp	edx,0x60000000 + 39
+	jbe	.newb
+	ret
+;---------------------------------------------------------------------
+draw_colours:
+	mov	edi,10
+	mov	esi,[communication_area]
+	add	esi,28
+;	mov	ebx,220*65536+14
+	mov	ebx,(c_start_x+c_size_x*2+10*3)*65536+14
+	mov	ecx,20*65536+14
+	mov	eax,13
+	mov	[frame_data.draw_text_flag],dword 0
+;--------------------------------------
+newcol:
+	mov	edx,[esi]
+	mcall
+
+	push	ebx ecx
+
+	sub	ebx,2 shl 16
+	add	bx,4
+	sub	ecx,2 shl 16
+	add	cx,4
+	
+	mov	[frame_data.x],ebx
+	mov	[frame_data.y],ecx	
+
+	push	dword frame_data
+	call	[Frame_draw]
+
+	pop	ecx ebx
+
+	add	ecx,25*65536
+	add	esi,4
+	
+	dec	edi
+	jnz	newcol
+
+	ret
+;----------------------------------------------------------------------
 align 4
 draw_window:
 	mcall	12,1
@@ -425,6 +547,8 @@ draw_window:
 	mov	[scroll_bar_data_green.all_redraw],eax
 	mov	[scroll_bar_data_blue.all_redraw],eax
 	call	draw_scrollbars
+	call	draw_button_row
+	call	draw_colours
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------

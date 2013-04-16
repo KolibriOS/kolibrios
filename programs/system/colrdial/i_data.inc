@@ -71,6 +71,10 @@ scrollbar_ver_mouse	dd aScrollbar_ver_mouse
 ;PathShow_prepare	dd sz_PathShow_prepare
 ;PathShow_draw		dd sz_PathShow_draw
 ;Version_path_show	dd szVersion_path_show
+
+Frame_draw		dd sz_Frame_draw
+;Version_frame		dd szVersion_frame
+
 	dd 0
 	dd 0
 
@@ -113,6 +117,9 @@ aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
 ;sz_PathShow_prepare	db 'PathShow_prepare',0
 ;sz_PathShow_draw	db 'PathShow_draw',0
 ;szVersion_path_show	db 'version_PathShow',0
+
+sz_Frame_draw		db 'frame_draw',0
+;szVersion_frame	db 'version_frame',0
 ;---------------------------------------------------------------------
 align 4
 scroll_bar_data_red:
@@ -215,4 +222,22 @@ scroll_bar_data_blue:
 .work_size  dd 0 ;+76
 .all_redraw dd 1 ;+80
 .ar_offset  dd 10 ;+84
+;---------------------------------------------------------------------
+frame_data: 
+.type			dd 0 ;+0
+.x:
+.x_size			dw 0 ;+4
+.x_start		dw 0 ;+6
+.y:
+.y_size			dw 0 ;+8
+.y_start		dw 0 ;+10
+.ext_fr_col		dd 0x0 ;+12
+.int_fr_col		dd 0xffffff ;+16
+.draw_text_flag		dd 1 ;+20
+.text_pointer		dd 0 ;+24
+.text_position		dd 0 ;+28
+.font_number		dd 0 ;+32
+.font_size_y		dd 9 ;+36
+.font_color		dd 0x0 ;+40
+.font_backgr_color	dd 0xffffff ;+44
 ;---------------------------------------------------------------------
