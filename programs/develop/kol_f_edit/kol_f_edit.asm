@@ -14,12 +14,14 @@ include '../../proc32.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
+include '../../system/desktop/trunk/kglobals.inc'
+include '../../system/desktop/trunk/unpacker.inc'
 include 'strlen.inc'
 include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 11.04.13',0
+hed db 'kol_f_edit 17.04.13',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -325,19 +327,8 @@ start:
 	mov ted_syntax_file,eax
 
 	;пробуем открыть файл синтаксиса
-	mov ebx,run_file_70
-	mov dword[ebx], 0
-	mov dword[ebx+4], 0
-	mov dword[ebx+8], 0
-	mov dword[ebx+12], ecx
-	mov dword[ebx+16], eax ;ted_syntax_file
-	mov  byte[ebx+20], 0
-	m2m dword[ebx+21], file_name
-	mcall 70
-	cmp eax,0
-	jne @f
-		stdcall [ted_init_syntax_file],edi
-		jmp .end_0
+	call open_unpac_synt_file
+	jmp .end_0
 	@@:
 		notify_window_run txt_not_syntax_file
 	.end_0:
@@ -638,6 +629,10 @@ button:
 	stdcall [buf2d_delete],buf_skin2
 	stdcall [buf2d_delete],buf_skin3
 	stdcall [ted_delete], tedit0
+	cmp dword[unpac_mem],0
+	je @f
+		stdcall mem.Free,[unpac_mem]
+	@@:
 	mcall -1
 
 align 4
@@ -868,6 +863,13 @@ push eax ebx ecx
 	je @f
 		xor ecx,ecx
 		mov cx,word[eax+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
+
+		cmp ecx,count_main_icons ;в старших битах ecx будут 0, потому отрицательные числа тоже проверяются
+		jl .end_0
+			;если иконки нет, по умолчанию берем 0-ю
+			xor cx,cx
+		.end_0:
+
 		shl ecx,16
 		stdcall mem_clear, u_object,sizeof.object
 		mov ebx,dword[eax]
@@ -887,6 +889,84 @@ but_ctrl_n:
 align 4
 but_ctrl_s:
 	ret
+
+;открытие и распаковка файла подсветки синтаксиса
+;input:
+; ted_syntax_file - буфер для открываемого файла синтаксиса
+; ted_syntax_file_size - размер открываемого файла синтаксиса
+;output:
+; ebx - число прочитанных байт из файла
+align 4
+open_unpac_synt_file:
+push eax edi esi
+	mov edi, tedit0
+	mov [run_file_70.Function], 0
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov ecx, ted_syntax_file_size
+	mov dword[run_file_70.Count], ecx
+	m2m dword[run_file_70.Buffer], ted_syntax_file
+	mov byte[run_file_70+20], 0
+	mov [run_file_70.FileName], file_name
+	mcall 70, run_file_70
+	cmp ebx,-1
+	jne .end_0
+		;если возникли ошибки при открытии файла синтаксиса
+		mov byte[txt_not_syntax_file.err],'0'
+		add byte[txt_not_syntax_file.err],al
+		notify_window_run txt_not_syntax_file ;Can-t open color options file!
+		jmp @f
+	.end_0:
+
+		mov eax,ted_syntax_file
+		cmp dword[eax],'KPCK'
+		jne .end_unpack
+
+		mov ecx,dword[eax+4] ;ecx - размер файла синтаксиса после распаковки
+		cmp dword[unpac_mem],0
+		jne .end_1
+			;первоначальное выделение временной памяти для распаковки файла
+			stdcall mem.Alloc,ecx
+			mov [unpac_mem],eax
+			mov [unpac_mem_size],ecx
+		.end_1:
+		cmp dword[unpac_mem_size],ecx
+		jge .end_2
+			;если для распакованого файла не хватает временной памяти
+			stdcall mem.ReAlloc,[unpac_mem],ecx ;заново выделяем временную память
+			mov [unpac_mem],eax
+			mov [unpac_mem_size],ecx
+		.end_2:
+
+		;распаковка файла во временную память
+		stdcall unpack,ted_syntax_file,[unpac_mem]
+
+		cmp ted_syntax_file_size,ecx
+		jge .end_3
+			;если для распакованого файла не хватает памяти
+			stdcall mem.ReAlloc,ted_syntax_file,ecx ;заново выделяем память
+			mov ted_syntax_file,eax
+			mov ted_syntax_file_size,ecx
+		.end_3:
+
+		;копирование распакованного файла из временной памяти в память элемента
+		mov edi,ted_syntax_file
+		mov esi,[unpac_mem]
+		cld
+		rep movsb
+
+		.end_unpack:
+		;применение файла подсветки
+		stdcall [ted_init_syntax_file], tedit0
+	@@:
+pop esi edi eax
+	ret
+
+align 4
+txt_not_syntax_file:
+	db 'Ошибка при открытии файла с цветовыми настройками! (Код ошибки ='
+	.err: db '?'
+	db ')',0
 
 align 4
 buf_fon: ;фоновый буфер
@@ -942,6 +1022,8 @@ txtErrIni1 db 'Не открылся файл с опциями',0
 err_opn db 0 ;рез. открытия файла проэкта
 err_ini0 db 0 ;рез. открытия файла с иконками
 err_ini1 db 0 ;рез. открытия файла с опциями
+unpac_mem dd 0
+unpac_mem_size dd 0
 
 edit1 edit_box 210, 10, 5, 0xffffff, 0xff80, 0xff, 0xff0000, 0x4080, 300, ed_text1, mouse_dd, 0, 7, 7
 
@@ -1094,17 +1176,7 @@ rb 4+4
 .delta	  dw   0 ;+44
 .delta2   dw   0 ;+46
 .run_x:
-.r_size_x  dw 0 ;+48
-.r_start_x dw 0 ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 32
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------
@@ -1127,17 +1199,7 @@ rb 4+4
 .delta	    dw 0  ;+44
 .delta2     dw 0  ;+46
 .run_x:
-.r_size_x   dw 0  ;+48
-.r_start_x  dw 0  ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 32
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 
@@ -1156,7 +1218,7 @@ rb 4+4
 .line_col   dd 0  ;+36
 rb 4+2+2
 .run_x:
-rb 2+2+2+2+4+4+4+4+4+4
+rb 32
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 
@@ -1173,7 +1235,7 @@ rb 4+4
 .line_col   dd 0  ;+36
 rb 4+2+2
 .run_x:
-rb 2+2+2+2+4+4+4+4+4+4
+rb 32
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 
@@ -1196,8 +1258,6 @@ cur_y dd 0
 foc_obj dd 0 ;объект в фокусе
 obj_count_txt_props dd 0 ;количество используемых текстовых свойств
 obj_m_win dd 0 ;структура главного окна
-
-txt_not_syntax_file db 'Не найден файл для подсветки синтаксиса.',0
 
 ;
 if 1 ;lang eq ru
@@ -1508,7 +1568,9 @@ procinfo process_information
 run_file_70 FileInfoBlock
 open_b rb 560
 
+IncludeIGlobals
 i_end:
+IncludeUGlobals
 	buf_cmd_lin rb 1024
 	file_name rb 1024 ;icon file path
 	fp_obj_opt rb 1024 ;obj options file patch
