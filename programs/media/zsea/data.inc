@@ -1745,10 +1745,10 @@ ColorDialog_data:
 .draw_window		dd thread4.draw_window ;+20
 .status			dd 0 ;+24
 .x:
-.x_size			dw 420 ;+28 ; Window X size
+.x_size			dw 510 ;+28 ; Window X size
 .x_start		dw 10 ;+30 ; Window X position
 .y:
-.y_size			dw 320 ;+32 ; Window y size
+.y_size			dw 310 ;+32 ; Window y size
 .y_start		dw 10 ;+34 ; Window Y position
 .color_type		dd 0 ;+36 ; 0- RGB, 1 or other - reserved
 .color			dd 0 ;+40 ; Selected color

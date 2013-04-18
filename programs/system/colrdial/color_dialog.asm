@@ -276,12 +276,12 @@ get_communication_area:
 	mov	ebx,[eax+4]
 ;	cmp	bx,word x_minimal_size ;300
 ;	jb	@f
-	mov	bx,450
+	mov	bx,510
 	mov	[window_x],ebx
 	mov	ebx,[eax+8]
 ;	cmp	bx,word y_minimal_size ;200
 ;	jb	@f
-	mov	bx,320
+	mov	bx,310
 	mov	[window_y],ebx
 @@:
 	ret
@@ -476,31 +476,78 @@ draw_scrollbars:
 	call	[scrollbar_ver_draw]
 	ret
 ;---------------------------------------------------------------------
+align 4
+draw_history_frame:
+	mov	[frame_data.x],dword (c_start_x+c_size_x*2+10*2)*65536+80
+	mov	[frame_data.y],dword (p_start_y+5)*65536+(p_size_y-5)
+
+	mov	[frame_data.draw_text_flag],dword 1
+	
+	mov	[frame_data.text_pointer],dword history_text
+	push	dword frame_data
+	call	[Frame_draw]
+	ret
+;---------------------------------------------------------------------
+align 4
 draw_button_row:
 	mov	edx,0x60000000 + 30		; BUTTON ROW
 ;	mov	ebx,220*65536+14
 	mov	ebx,(c_start_x+c_size_x*2+10*3)*65536+14
-	mov	ecx,20*65536+14
+	mov	ecx,25*65536+14
 	mov	eax,8
 ;-----------------------------------
+align 4
 .newb:
 	mcall
-	add	ecx,25*65536
+	add	ecx,24*65536
 	inc	edx
 	cmp	edx,0x60000000 + 39
 	jbe	.newb
 	ret
 ;---------------------------------------------------------------------
+align 4
+draw_color_value:
+	mov	ebx,(c_start_x+c_size_x*3+10)*65536+(c_size_x-1)
+	mov	ecx,28*65536+11
+	mov	edx,0xffffff
+	mov	eax,13
+	mov	edi,10
+	mov	esi,[communication_area]
+	add	esi,28
+;-----------------------------------
+align 4
+@@:	
+	mcall
+	pusha
+	mov	edx,ebx
+	add	edx,2 shl 16
+	shr	ecx,16
+	mov	dx,cx
+	add	dx,2
+	mov	ecx,[esi]
+	and	ecx,0xffffff
+	mcall	47,0x00060100,,,0
+	popa
+	
+	add	ecx,24*65536
+	add	esi,4
+	dec	edi
+	jnz	@b
+
+	ret
+;---------------------------------------------------------------------
+align 4
 draw_colours:
 	mov	edi,10
 	mov	esi,[communication_area]
 	add	esi,28
 ;	mov	ebx,220*65536+14
 	mov	ebx,(c_start_x+c_size_x*2+10*3)*65536+14
-	mov	ecx,20*65536+14
+	mov	ecx,27*65536+14
 	mov	eax,13
 	mov	[frame_data.draw_text_flag],dword 0
 ;--------------------------------------
+align 4
 newcol:
 	mov	edx,[esi]
 	mcall
@@ -520,7 +567,7 @@ newcol:
 
 	pop	ecx ebx
 
-	add	ecx,25*65536
+	add	ecx,24*65536
 	add	esi,4
 	
 	dec	edi
@@ -547,8 +594,10 @@ draw_window:
 	mov	[scroll_bar_data_green.all_redraw],eax
 	mov	[scroll_bar_data_blue.all_redraw],eax
 	call	draw_scrollbars
+	call	draw_history_frame
 	call	draw_button_row
 	call	draw_colours
+	call	draw_color_value
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------

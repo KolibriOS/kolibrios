@@ -1,6 +1,10 @@
 ;---------------------------------------------------------------------
 title:
 	db 'ColorDialog',0
+	
+history_text:
+	db ' History: ',0
+	
 ;---------------------------------------------------------------------
 align 4
 window_x:
@@ -239,5 +243,5 @@ frame_data:
 .font_number		dd 0 ;+32
 .font_size_y		dd 9 ;+36
 .font_color		dd 0x0 ;+40
-.font_backgr_color	dd 0xffffff ;+44
+.font_backgr_color	dd 0xAABBCC ;+44
 ;---------------------------------------------------------------------
