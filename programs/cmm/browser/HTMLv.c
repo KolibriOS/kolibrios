@@ -88,7 +88,7 @@ void main()
 				};*/
 				
 				btn=GetProcessSlot(Form.ID); 
-				IF (btn<>GetActiveProcess()) break; //если окно не активно на события мыши не реагируем
+				if (btn<>GetActiveProcess()) break; //если окно не активно на события мыши не реагируем
 
 				edit_box_mouse stdcall (#address_box);
 
@@ -97,19 +97,20 @@ void main()
 				if (m.pkm) && (m.y>WB1.top) && (m.y<Form.height) && (filesize)
 				{
 					SwitchToAnotherThread();
-					CreateThread(#menu_rmb,#stak); 
+					CreateThread(#menu_rmb,#stak);
+					break; 
 				}
 
-				IF (m.vert==65535) //прокрутка колёсиком
+				if (m.vert==65535) //прокрутка колёсиком
 				{
-					IF (lines.first==0) break;
-					IF (lines.first>3) lines.first-=2; ELSE lines.first=1;
+					if (lines.first==0) break;
+					if (lines.first>3) lines.first-=2; ELSE lines.first=1;
 					WB1.Scan(ID1);
 					break;
 				} 
-				IF (m.vert==1)
+				if (m.vert==1)
 				{
-					IF(lines.visible+lines.first+3>=lines.all) WB1.Scan(181);
+					if(lines.visible+lines.first+3>=lines.all) WB1.Scan(181);
 					ELSE	{
 						lines.first+=2;
 						WB1.Scan(ID2);
@@ -118,14 +119,17 @@ void main()
 				}
 				
 				if (!m.lkm) scroll_used=0;
-				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6) && (m.y>WB1.top+16)
-				&& (m.y<WB1.top+WB1.height-16) && (lines.all>lines.visible) && (m.lkm)
-					scroll_used=1;
+				if (m.x>=scroll1.start_x) && (m.x<=scroll1.start_x+scroll1.size_x) 
+					&& (m.y>=scroll1.start_y+scroll1.btn_height) && (-scroll1.btn_height+scroll1.start_y+scroll1.size_y>m.y)
+					&& (lines.all>lines.visible) && (m.lkm)
+					{
+						scroll_used=1;
+					}
 				
 				if (scroll_used)
 				{
 					half_scroll_size = WB1.height - 16 * lines.visible / lines.all - 3 /2;
-					IF (half_scroll_size+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.top; //если курсор над окном
+					if (half_scroll_size+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.top; //если курсор над окном
 					btn=lines.first; //сохраняем старое количество
 					lines.first = m.y -half_scroll_size -WB1.top * lines.all / WB1.height;
 					if (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
