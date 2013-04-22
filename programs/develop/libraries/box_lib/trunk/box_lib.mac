@@ -486,3 +486,16 @@ struc scrollbar xsize, xpos, ysize, ypos, btn_height, max, cur, pos, bgcol, frco
 .all_redraw     dd ?
 .ar_offset      dd ar_offset
 }
+
+; *** ProgressBar  constants *** ;
+PB_VALUE          equ +0
+PB_LEFT           equ +4
+PB_TOP            equ +8
+PB_WIDTH          equ +12
+PB_HEIGHT         equ +16
+PB_STYLE          equ +20
+PB_MIN            equ +24
+PB_MAX            equ +28
+PB_BACK_COLOR     equ +32
+PB_PROGRESS_COLOR equ +36
+PB_FRAME_COLOR    equ +40

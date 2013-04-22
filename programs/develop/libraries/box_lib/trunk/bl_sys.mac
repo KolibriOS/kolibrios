@@ -9,3 +9,4 @@ include 'tree_list.mac'		;macro implements tree_list, image_list, list_box
 include 'pathshow.mac'		;macro implements pathshow
 include 't_edit.mac'		;macro implements text_editor
 include 'frame.mac'		;macro implements frame
+include 'progressbar.mac' ;macro implements progressbar

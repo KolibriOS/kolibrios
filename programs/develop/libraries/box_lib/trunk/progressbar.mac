@@ -1,0 +1,158 @@
+macro use_progressbar
+{
+pb equ [ebp + 4 + 8*4]
+align 16
+progressbar_draw:
+        pushad
+				mov    ebp, esp				
+; draw frame
+        push   ebp
+        mov    [.last_esp], esp
+        mov    eax, pb
+        mov    esi, [eax + PB_LEFT]
+        mov    edi, [eax + PB_TOP]
+        mov    ebp, [eax + PB_WIDTH]
+        add    ebp, esi
+				dec    ebp
+        mov    esp, [eax + PB_HEIGHT]
+        add    esp, edi
+				dec    esp
+        mov    edx, [eax + PB_FRAME_COLOR]
+        mov    eax, 38
+        mov    ebx, esi
+        shl    ebx, 16
+        add    ebx, ebp
+        mov    ecx, edi
+        shl    ecx, 16
+        add    ecx, edi
+        int    64
+        mov    ecx, esp
+        shl    ecx, 16
+        add    ecx, esp
+        int    64		
+        mov    bx, si
+        mov    ecx, edi
+        shl    ecx, 16
+        add    ecx, esp
+        int    64		
+        mov    ebx, ebp
+        shl    ebx, 16
+        add    ebx, ebp
+        int    64			
+        mov    esp, [.last_esp]
+        pop    ebp
+; if min > max then .skip
+        mov    eax, pb
+				mov    edx, [eax + PB_MAX]
+				mov    ecx, [eax + PB_MIN]
+				cmp    ecx, edx
+				; jg     .skip
+				jne    .min_no_eq_max
+				dec    edx
+.min_no_eq_max:				
+; draw all progress rectangle
+				call   get_progress_width
+				mov    edi, eax
+        mov    eax, pb				
+        mov    ebx, [eax + PB_LEFT]
+				inc    ebx
+        shl    ebx, 16
+        add    ebx, edi
+        mov    ecx, [eax + PB_TOP]
+				inc    ecx
+        shl    ecx, 16
+        add    ecx, [eax + PB_HEIGHT]
+				dec    ecx
+				dec    ecx
+        mov    edx, [eax + PB_PROGRESS_COLOR]
+				mov    eax, 13
+        int    64
+; draw last part of non-progress rectangle
+; edi = pW, esi = W - 2 
+        sub    esi, edi ; width
+				shr    ebx, 16
+        add    ebx, edi
+        shl    ebx, 16
+        add    ebx, esi
+				mov    esi, pb
+        mov    edx, [esi + PB_BACK_COLOR]
+        int    64				
+; .skip:
+				popad
+        ret    4
+.last_esp dd 0
+
+
+align 16
+get_progress_width:
+; pW = (W-2)(value - min) / (max - min)
+        mov    esi, [eax + PB_WIDTH]
+        dec    esi
+        dec    esi
+        mov    eax, [eax + PB_VALUE]
+        sub    eax, ecx
+        imul   eax, esi
+        neg    ecx
+        add    ecx, edx
+        xor    edx, edx
+        div    ecx
+        ret
+
+
+align 16
+progressbar_progress:
+        pushad
+				mov    ebp, esp
+; if min > max then .skip
+        mov    eax, pb
+				mov    edx, [eax + PB_MAX]
+				mov    ecx, [eax + PB_MIN]
+				cmp    ecx, edx
+				; jg     .skip		
+				jne    .min_no_eq_max1
+				dec    edx
+.min_no_eq_max1:	
+				call   get_progress_width
+				mov    edi, eax				
+; increase value
+        mov    eax, pb
+				mov    edx, [eax + PB_MAX]
+				mov    ecx, [eax + PB_VALUE]
+				inc    ecx 
+; if value > max then value = max
+        cmp    ecx, edx
+				jng    .next
+				mov    ecx, edx
+.next:		
+		    mov    [eax + PB_VALUE], ecx
+; draw new part of progress rectangle
+        mov    eax, pb
+				mov    ecx, [eax + PB_MIN]
+				cmp    ecx, edx	
+				jne    .min_no_eq_max2
+				dec    edx
+.min_no_eq_max2:	
+        call   get_progress_width
+				mov    esi, eax
+; edi = last pW, esi = new pW				
+        mov    eax, pb				
+        mov    ebx, [eax + PB_LEFT]
+				inc    ebx
+			  add    ebx, edi	
+        shl    ebx, 16
+        add    ebx, esi
+			  sub    ebx, edi
+        mov    ecx, [eax + PB_TOP]
+				inc    ecx
+        shl    ecx, 16
+        add    ecx, [eax + PB_HEIGHT]
+				dec    ecx
+				dec    ecx
+        mov    edx, [eax + PB_PROGRESS_COLOR]
+				mov    eax, 13
+        int    64				
+; .skip:
+				popad
+        ret    4
+restore pb				
+}

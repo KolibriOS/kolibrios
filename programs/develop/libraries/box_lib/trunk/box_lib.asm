@@ -107,6 +107,10 @@ use_text_edit
 ;--------------------------------------------------
 align 16
 use_frame
+;--------------------------------------------------
+;ProgressBar
+;--------------------------------------------------
+use_progressbar
 
 ;input:
 ; eax = указатель на функцию выделения памяти
@@ -336,6 +340,9 @@ dd	sz_ted_version, 		0x00000003
 dd	sz_Frame_draw,			frame.draw
 dd	szVersion_frame,		0x00010001
 
+dd sz_progressbar_draw,     progressbar_draw    
+dd sz_progressbar_progress, progressbar_progress
+
 dd	0,0
 
 
@@ -437,3 +444,6 @@ sz_ted_version			db 'version_text_edit',0
 
 sz_Frame_draw			db 'frame_draw',0
 szVersion_frame			db 'version_frame',0
+
+sz_progressbar_draw     db 'progressbar_draw', 0
+sz_progressbar_progress db 'progressbar_progress', 0
