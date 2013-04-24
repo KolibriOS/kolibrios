@@ -18,6 +18,9 @@
     .global _DestroyEvent
     .global _DestroyObject
 
+    .global _DiskAdd
+    .global _DiskMediaChanged
+
     .global _FreeKernelSpace
     .global _FreePage
 
@@ -82,6 +85,9 @@
     .def  _DestroyEvent;      .scl  2;  .type 32; .endef
     .def  _DestroyObject;     .scl  2;  .type 32; .endef
 
+    .def  _DiskAdd;           .scl  2;  .type 32; .endef
+    .def  _DiskMediaChanged;  .scl  2;  .type 32; .endef
+
     .def  _FreeKernelSpace;   .scl  2;  .type 32; .endef
     .def  _FreePage;          .scl  2;  .type 32; .endef
 
@@ -145,6 +151,9 @@ _Delay:
 
 _DestroyEvent:
 _DestroyObject:
+
+_DiskAdd:
+_DiskMediaChanged:
 
 _FreeKernelSpace:
 _FreePage:
@@ -213,6 +222,9 @@ _WaitEventTimeout:
 
         .ascii " -export:DestroyEvent"
         .ascii " -export:DestroyObject"
+
+        .ascii " -export:DiskAdd"              # stdcall
+        .ascii " -export:DiskMediaChanged"     # stdcall
 
         .ascii " -export:FreeKernelSpace"      # stdcall
         .ascii " -export:FreePage"             #

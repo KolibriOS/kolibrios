@@ -118,6 +118,11 @@
  * timings in the mode to prevent the crtc fixup from overwriting them.
  * Currently only lvds needs that. */
 #define INTEL_MODE_CRTC_TIMINGS_SET (0x20)
+/*
+ * Set when limited 16-235 (as opposed to full 0-255) RGB color range is
+ * to be used.
+ */
+#define INTEL_MODE_LIMITED_COLOR_RANGE (0x40)
 
 static inline void
 intel_mode_set_pixel_multiplier(struct drm_display_mode *mode,
@@ -162,6 +167,7 @@ struct intel_encoder {
 	bool cloneable;
 	bool connectors_active;
 	void (*hot_plug)(struct intel_encoder *);
+	void (*pre_pll_enable)(struct intel_encoder *);
 	void (*pre_enable)(struct intel_encoder *);
 	void (*enable)(struct intel_encoder *);
 	void (*disable)(struct intel_encoder *);
@@ -214,6 +220,7 @@ struct intel_crtc {
 	 * some outputs connected to this crtc.
 	 */
 	bool active;
+	bool eld_vld;
 	bool primary_disabled; /* is the crtc obscured by a plane? */
 	bool lowfreq_avail;
 	struct intel_overlay *overlay;
@@ -237,6 +244,9 @@ struct intel_crtc {
 	/* We can share PLLs across outputs if the timings match */
 	struct intel_pch_pll *pch_pll;
 	uint32_t ddi_pll_sel;
+
+	/* reset counter value when the last flip was submitted */
+	unsigned int reset_counter;
 };
 
 struct intel_plane {
@@ -292,6 +302,9 @@ struct cxsr_latency {
 #define DIP_LEN_AVI     13
 #define DIP_AVI_PR_1    0
 #define DIP_AVI_PR_2    1
+#define DIP_AVI_RGB_QUANT_RANGE_DEFAULT	(0 << 2)
+#define DIP_AVI_RGB_QUANT_RANGE_LIMITED	(1 << 2)
+#define DIP_AVI_RGB_QUANT_RANGE_FULL	(2 << 2)
 
 #define DIP_TYPE_SPD	0x83
 #define DIP_VERSION_SPD	0x1
@@ -346,9 +359,11 @@ struct intel_hdmi {
 	u32 sdvox_reg;
 	int ddc_bus;
 	uint32_t color_range;
+	bool color_range_auto;
 	bool has_hdmi_sink;
 	bool has_audio;
 	enum hdmi_force_audio force_audio;
+	bool rgb_quant_range_selectable;
 	void (*write_infoframe)(struct drm_encoder *encoder,
 				struct dip_infoframe *frame);
 	void (*set_infoframes)(struct drm_encoder *encoder,
@@ -365,6 +380,7 @@ struct intel_dp {
 	bool has_audio;
 	enum hdmi_force_audio force_audio;
 	uint32_t color_range;
+	bool color_range_auto;
 	uint8_t link_bw;
 	uint8_t lane_count;
 	uint8_t dpcd[DP_RECEIVER_CAP_SIZE];
@@ -386,6 +402,7 @@ struct intel_dp {
 struct intel_digital_port {
 	struct intel_encoder base;
 	enum port port;
+	u32 port_reversal;
 	struct intel_dp dp;
 	struct intel_hdmi hdmi;
 };
@@ -448,10 +465,10 @@ extern bool intel_sdvo_init(struct drm_device *dev, uint32_t sdvo_reg,
 extern void intel_dvo_init(struct drm_device *dev);
 extern void intel_tv_init(struct drm_device *dev);
 extern void intel_mark_busy(struct drm_device *dev);
-extern void intel_mark_idle(struct drm_device *dev);
 extern void intel_mark_fb_busy(struct drm_i915_gem_object *obj);
-extern void intel_mark_fb_idle(struct drm_i915_gem_object *obj);
+extern void intel_mark_idle(struct drm_device *dev);
 extern bool intel_lvds_init(struct drm_device *dev);
+extern bool intel_is_dual_link_lvds(struct drm_device *dev);
 extern void intel_dp_init(struct drm_device *dev, int output_reg,
 			  enum port port);
 extern void intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
@@ -511,12 +528,12 @@ struct intel_set_config {
 	bool mode_changed;
 };
 
-extern bool intel_set_mode(struct drm_crtc *crtc, struct drm_display_mode *mode,
+extern int intel_set_mode(struct drm_crtc *crtc, struct drm_display_mode *mode,
 			   int x, int y, struct drm_framebuffer *old_fb);
 extern void intel_modeset_disable(struct drm_device *dev);
+extern void intel_crtc_restore_mode(struct drm_crtc *crtc);
 extern void intel_crtc_load_lut(struct drm_crtc *crtc);
 extern void intel_crtc_update_dpms(struct drm_crtc *crtc);
-extern void intel_encoder_noop(struct drm_encoder *encoder);
 extern void intel_encoder_destroy(struct drm_encoder *encoder);
 extern void intel_encoder_dpms(struct intel_encoder *encoder, int mode);
 extern bool intel_encoder_check_is_cloned(struct intel_encoder *encoder);
@@ -554,6 +571,9 @@ hdmi_to_dig_port(struct intel_hdmi *intel_hdmi)
 {
 	return container_of(intel_hdmi, struct intel_digital_port, hdmi);
 }
+
+bool ibx_digital_port_connected(struct drm_i915_private *dev_priv,
+				struct intel_digital_port *port);
 
 extern void intel_connector_attach_encoder(struct intel_connector *connector,
 					   struct intel_encoder *encoder);
@@ -598,6 +618,7 @@ extern int intel_framebuffer_init(struct drm_device *dev,
 				  struct drm_mode_fb_cmd2 *mode_cmd,
 				  struct drm_i915_gem_object *obj);
 extern int intel_fbdev_init(struct drm_device *dev);
+extern void intel_fbdev_initial_config(struct drm_device *dev);
 extern void intel_fbdev_fini(struct drm_device *dev);
 extern void intel_fbdev_set_suspend(struct drm_device *dev, int state);
 extern void intel_prepare_page_flip(struct drm_device *dev, int plane);
@@ -636,7 +657,8 @@ extern void intel_update_sprite_watermarks(struct drm_device *dev, int pipe,
 extern void intel_update_linetime_watermarks(struct drm_device *dev, int pipe,
 			 struct drm_display_mode *mode);
 
-extern unsigned long intel_gen4_compute_offset_xtiled(int *x, int *y,
+extern unsigned long intel_gen4_compute_page_offset(int *x, int *y,
+						    unsigned int tiling_mode,
 						      unsigned int bpp,
 						      unsigned int pitch);
 
@@ -657,7 +679,8 @@ extern void intel_update_fbc(struct drm_device *dev);
 extern void intel_gpu_ips_init(struct drm_i915_private *dev_priv);
 extern void intel_gpu_ips_teardown(void);
 
-extern void intel_init_power_wells(struct drm_device *dev);
+extern void intel_init_power_well(struct drm_device *dev);
+extern void intel_set_power_well(struct drm_device *dev, bool enable);
 extern void intel_enable_gt_powersave(struct drm_device *dev);
 extern void intel_disable_gt_powersave(struct drm_device *dev);
 extern void gen6_gt_check_fifodbg(struct drm_i915_private *dev_priv);

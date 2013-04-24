@@ -28,7 +28,6 @@
 #include <linux/fb.h>
 #include <drm/drm_edid.h>
 #include <drm/drmP.h>
-#include <drm/drm_edid.h>
 #include "intel_drv.h"
 #include "i915_drv.h"
 
@@ -85,7 +84,7 @@ intel_attach_force_audio_property(struct drm_connector *connector)
 	struct drm_device *dev = connector->dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct drm_property *prop;
-#if 0
+
 	prop = dev_priv->force_audio_property;
 	if (prop == NULL) {
 		prop = drm_property_create_enum(dev, 0,
@@ -98,12 +97,12 @@ intel_attach_force_audio_property(struct drm_connector *connector)
 		dev_priv->force_audio_property = prop;
 	}
 	drm_object_attach_property(&connector->base, prop, 0);
-#endif
 }
 
 static const struct drm_prop_enum_list broadcast_rgb_names[] = {
-	{ 0, "Full" },
-	{ 1, "Limited 16:235" },
+	{ INTEL_BROADCAST_RGB_AUTO, "Automatic" },
+	{ INTEL_BROADCAST_RGB_FULL, "Full" },
+	{ INTEL_BROADCAST_RGB_LIMITED, "Limited 16:235" },
 };
 
 void
@@ -112,7 +111,7 @@ intel_attach_broadcast_rgb_property(struct drm_connector *connector)
 	struct drm_device *dev = connector->dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct drm_property *prop;
-#if 0
+
 	prop = dev_priv->broadcast_rgb_property;
 	if (prop == NULL) {
 		prop = drm_property_create_enum(dev, DRM_MODE_PROP_ENUM,
@@ -126,5 +125,4 @@ intel_attach_broadcast_rgb_property(struct drm_connector *connector)
 	}
 
 	drm_object_attach_property(&connector->base, prop, 0);
-#endif
 }

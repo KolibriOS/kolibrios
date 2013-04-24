@@ -69,6 +69,7 @@ void drm_helper_move_panel_connectors_to_head(struct drm_device *dev)
 EXPORT_SYMBOL(drm_helper_move_panel_connectors_to_head);
 
 static bool drm_kms_helper_poll = true;
+module_param_named(poll, drm_kms_helper_poll, bool, 0600);
 
 static void drm_mode_validate_flag(struct drm_connector *connector,
 				   int flags)
@@ -140,6 +141,12 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 		connector->status = connector->funcs->detect(connector, true);
 //        dbgprintf("status %x\n", connector->status);
 	}
+
+	/* Re-enable polling in case the global poll config changed. */
+	if (drm_kms_helper_poll != dev->mode_config.poll_running)
+		drm_kms_helper_poll_enable(dev);
+
+	dev->mode_config.poll_running = drm_kms_helper_poll;
 
 	if (connector->status == connector_status_disconnected) {
 		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] disconnected\n",
@@ -955,7 +962,13 @@ int drm_helper_resume_force_mode(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_helper_resume_force_mode);
 
-#if 0
+void drm_kms_helper_hotplug_event(struct drm_device *dev)
+{
+	/* send a uevent + call fbdev */
+    if (dev->mode_config.funcs->output_poll_changed)
+		dev->mode_config.funcs->output_poll_changed(dev);
+}
+EXPORT_SYMBOL(drm_kms_helper_hotplug_event);
 
 #define DRM_OUTPUT_POLL_PERIOD (10*HZ)
 static void output_poll_execute(struct work_struct *work)
@@ -1004,15 +1017,15 @@ static void output_poll_execute(struct work_struct *work)
 	if (changed)
 		drm_kms_helper_hotplug_event(dev);
 
-	if (repoll)
-		schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
+//   if (repoll)
+//       schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
 }
 
 void drm_kms_helper_poll_disable(struct drm_device *dev)
 {
 	if (!dev->mode_config.poll_enabled)
 		return;
-	cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
+//   cancel_delayed_work_sync(&dev->mode_config.output_poll_work);
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_disable);
 
@@ -1030,8 +1043,8 @@ void drm_kms_helper_poll_enable(struct drm_device *dev)
 			poll = true;
 	}
 
-	if (poll)
-		schedule_delayed_work(&dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
+//   if (poll)
+//       schedule_delayed_work(&dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_enable);
 
@@ -1083,5 +1096,3 @@ void drm_helper_hpd_irq_event(struct drm_device *dev)
 		drm_kms_helper_hotplug_event(dev);
 }
 EXPORT_SYMBOL(drm_helper_hpd_irq_event);
-
-#endif

@@ -52,26 +52,30 @@ struct drm_device *main_device;
 struct drm_file *drm_file_handlers[256];
 
 static int i915_modeset __read_mostly = 1;
+module_param_named(modeset, i915_modeset, int, 0400);
 MODULE_PARM_DESC(modeset,
 		"Use kernel modesetting [KMS] (0=DRM_I915_KMS from .config, "
 		"1=on, -1=force vga console preference [default])");
 
 
-int i915_panel_ignore_lid __read_mostly         =  0;
+int i915_panel_ignore_lid __read_mostly         =  1;
+module_param_named(panel_ignore_lid, i915_panel_ignore_lid, int, 0600);
 MODULE_PARM_DESC(panel_ignore_lid,
-		"Override lid status (0=autodetect [default], 1=lid open, "
-		"-1=lid closed)");
+		"Override lid status (0=autodetect, 1=autodetect disabled [default], "
+		"-1=force lid closed, -2=force lid open)");
 
 unsigned int i915_powersave  __read_mostly      =  0;
+module_param_named(powersave, i915_powersave, int, 0600);
 MODULE_PARM_DESC(powersave,
 		"Enable powersavings, fbc, downclocking, etc. (default: true)");
 
 int i915_semaphores __read_mostly = -1;
-
+module_param_named(semaphores, i915_semaphores, int, 0600);
 MODULE_PARM_DESC(semaphores,
 		"Use semaphores for inter-ring sync (default: -1 (use per-chip defaults))");
 
 int i915_enable_rc6 __read_mostly      = 0;
+module_param_named(i915_enable_rc6, i915_enable_rc6, int, 0400);
 MODULE_PARM_DESC(i915_enable_rc6,
 		"Enable power-saving render C-state 6. "
 		"Different stages can be selected via bitmask values "
@@ -80,44 +84,53 @@ MODULE_PARM_DESC(i915_enable_rc6,
 		"default: -1 (use per-chip default)");
 
 int i915_enable_fbc __read_mostly      =  0;
+module_param_named(i915_enable_fbc, i915_enable_fbc, int, 0600);
 MODULE_PARM_DESC(i915_enable_fbc,
 		"Enable frame buffer compression for power savings "
 		"(default: -1 (use per-chip default))");
 
 unsigned int i915_lvds_downclock  __read_mostly =  0;
+module_param_named(lvds_downclock, i915_lvds_downclock, int, 0400);
 MODULE_PARM_DESC(lvds_downclock,
 		"Use panel (LVDS/eDP) downclocking for power savings "
 		"(default: false)");
 
 int i915_lvds_channel_mode __read_mostly;
+module_param_named(lvds_channel_mode, i915_lvds_channel_mode, int, 0600);
 MODULE_PARM_DESC(lvds_channel_mode,
 		 "Specify LVDS channel mode "
 		 "(0=probe BIOS [default], 1=single-channel, 2=dual-channel)");
 
 int i915_panel_use_ssc __read_mostly = -1;
+module_param_named(lvds_use_ssc, i915_panel_use_ssc, int, 0600);
 MODULE_PARM_DESC(lvds_use_ssc,
 		"Use Spread Spectrum Clock with panels [LVDS/eDP] "
 		"(default: auto from VBT)");
 
 int i915_vbt_sdvo_panel_type __read_mostly      = -1;
+module_param_named(vbt_sdvo_panel_type, i915_vbt_sdvo_panel_type, int, 0600);
 MODULE_PARM_DESC(vbt_sdvo_panel_type,
 		"Override/Ignore selection of SDVO panel mode in the VBT "
 		"(-2=ignore, -1=auto [default], index in VBT BIOS table)");
 
 static bool i915_try_reset __read_mostly = true;
+module_param_named(reset, i915_try_reset, bool, 0600);
 MODULE_PARM_DESC(reset, "Attempt GPU resets (default: true)");
 
 bool i915_enable_hangcheck __read_mostly = false;
+module_param_named(enable_hangcheck, i915_enable_hangcheck, bool, 0644);
 MODULE_PARM_DESC(enable_hangcheck,
 		"Periodically check GPU activity for detecting hangs. "
 		"WARNING: Disabling this can cause system wide hangs. "
 		"(default: true)");
 
 int i915_enable_ppgtt __read_mostly = false;
+module_param_named(i915_enable_ppgtt, i915_enable_ppgtt, int, 0600);
 MODULE_PARM_DESC(i915_enable_ppgtt,
 		"Enable PPGTT (default: true)");
 
 unsigned int i915_preliminary_hw_support __read_mostly = true;
+module_param_named(preliminary_hw_support, i915_preliminary_hw_support, int, 0600);
 MODULE_PARM_DESC(preliminary_hw_support,
 		"Enable preliminary hardware support. "
 		"Enable Haswell and ValleyView Support. "
@@ -254,6 +267,7 @@ static const struct intel_device_info intel_valleyview_m_info = {
 	.has_bsd_ring = 1,
 	.has_blt_ring = 1,
 	.is_valleyview = 1,
+	.display_mmio_offset = VLV_DISPLAY_BASE,
 };
 
 static const struct intel_device_info intel_valleyview_d_info = {
@@ -263,6 +277,7 @@ static const struct intel_device_info intel_valleyview_d_info = {
 	.has_bsd_ring = 1,
 	.has_blt_ring = 1,
 	.is_valleyview = 1,
+	.display_mmio_offset = VLV_DISPLAY_BASE,
 };
 
 static const struct intel_device_info intel_haswell_d_info = {
@@ -350,15 +365,15 @@ static const struct pci_device_id pciidlist[] = {       /* aka */
 	INTEL_VGA_DEVICE(0x0A06, &intel_haswell_m_info), /* ULT GT1 mobile */
 	INTEL_VGA_DEVICE(0x0A16, &intel_haswell_m_info), /* ULT GT2 mobile */
 	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT2 mobile */
-	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT1 desktop */
+	INTEL_VGA_DEVICE(0x0D02, &intel_haswell_d_info), /* CRW GT1 desktop */
+	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT2 desktop */
 	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT2 desktop */
-	INTEL_VGA_DEVICE(0x0D32, &intel_haswell_d_info), /* CRW GT2 desktop */
-	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT1 server */
+	INTEL_VGA_DEVICE(0x0D0A, &intel_haswell_d_info), /* CRW GT1 server */
+	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT2 server */
 	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT2 server */
-	INTEL_VGA_DEVICE(0x0D3A, &intel_haswell_d_info), /* CRW GT2 server */
-	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT1 mobile */
+	INTEL_VGA_DEVICE(0x0D06, &intel_haswell_m_info), /* CRW GT1 mobile */
+	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT2 mobile */
 	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT2 mobile */
-	INTEL_VGA_DEVICE(0x0D36, &intel_haswell_m_info), /* CRW GT2 mobile */
 	INTEL_VGA_DEVICE(0x0f30, &intel_valleyview_m_info),
 	INTEL_VGA_DEVICE(0x0157, &intel_valleyview_m_info),
 	INTEL_VGA_DEVICE(0x0155, &intel_valleyview_d_info),
@@ -454,7 +469,7 @@ int i915_init(void)
     if( unlikely(ent == NULL) )
     {
         dbgprintf("device not found\n");
-        return 0;
+        return -ENODEV;
     };
 
     struct intel_device_info *intel_info =
@@ -730,8 +745,6 @@ u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
 		if (dev_priv->forcewake_count == 0) \
 			dev_priv->gt.force_wake_put(dev_priv); \
 		spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
-	} else if (IS_VALLEYVIEW(dev_priv->dev) && IS_DISPLAYREG(reg)) { \
-		val = read##y(dev_priv->regs + reg + 0x180000);		\
 	} else { \
 		val = read##y(dev_priv->regs + reg); \
 	} \
@@ -757,11 +770,7 @@ void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
 		DRM_ERROR("Unknown unclaimed register before writing to %x\n", reg); \
 		I915_WRITE_NOTRACE(GEN7_ERR_INT, ERR_INT_MMIO_UNCLAIMED); \
 	} \
-	if (IS_VALLEYVIEW(dev_priv->dev) && IS_DISPLAYREG(reg)) { \
-		write##y(val, dev_priv->regs + reg + 0x180000);		\
-	} else {							\
 	write##y(val, dev_priv->regs + reg); \
-	}								\
 	if (unlikely(__fifo_ret)) { \
 		gen6_gt_check_fifodbg(dev_priv); \
 	} \

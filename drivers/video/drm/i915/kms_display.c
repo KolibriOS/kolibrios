@@ -480,7 +480,7 @@ int init_cursor(cursor_t *cursor)
 /* You don't need to worry about fragmentation issues.
  * GTT space is continuous. I guarantee it.                           */
 
-        mapped = bits = (u32*)MapIoMem(dev_priv->mm.gtt->gma_bus_addr + obj->gtt_offset,
+        mapped = bits = (u32*)MapIoMem(dev_priv->gtt.mappable_base + obj->gtt_offset,
                     CURSOR_WIDTH*CURSOR_HEIGHT*4, PG_SW);
 
         if (unlikely(bits == NULL))
@@ -680,6 +680,12 @@ int i915_mask_update(struct drm_device *dev, void *data,
     rect_t winrc;
     u32    slot;
     int    ret;
+
+     if(mask->handle == -2)
+     {
+        printf("%s handle %d\n", __FUNCTION__, mask->handle);
+        return 0;
+     }
 
     obj = drm_gem_object_lookup(dev, file, mask->handle);
     if (obj == NULL)
@@ -883,6 +889,12 @@ int __queue_work(struct workqueue_struct *wq,
     return 1;
 };
 
+bool queue_work(struct workqueue_struct *wq, struct work_struct *work)
+{
+    return __queue_work(wq, work);
+}
+
+
 void __stdcall delayed_work_timer_fn(unsigned long __data)
 {
     struct delayed_work *dwork = (struct delayed_work *)__data;
@@ -960,6 +972,63 @@ void set_normalized_timespec(struct timespec *ts, time_t sec, long nsec)
         ts->tv_sec = sec;
         ts->tv_nsec = nsec;
 }
+
+
+void
+prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)
+{
+    unsigned long flags;
+
+//    wait->flags &= ~WQ_FLAG_EXCLUSIVE;
+    spin_lock_irqsave(&q->lock, flags);
+    if (list_empty(&wait->task_list))
+            __add_wait_queue(q, wait);
+    spin_unlock_irqrestore(&q->lock, flags);
+}
+
+/**
+ * finish_wait - clean up after waiting in a queue
+ * @q: waitqueue waited on
+ * @wait: wait descriptor
+ *
+ * Sets current thread back to running state and removes
+ * the wait descriptor from the given waitqueue if still
+ * queued.
+ */
+void finish_wait(wait_queue_head_t *q, wait_queue_t *wait)
+{
+    unsigned long flags;
+
+//    __set_current_state(TASK_RUNNING);
+    /*
+     * We can check for list emptiness outside the lock
+     * IFF:
+     *  - we use the "careful" check that verifies both
+     *    the next and prev pointers, so that there cannot
+     *    be any half-pending updates in progress on other
+     *    CPU's that we haven't seen yet (and that might
+     *    still change the stack area.
+     * and
+     *  - all other users take the lock (ie we can only
+     *    have _one_ other CPU that looks at or modifies
+     *    the list).
+     */
+    if (!list_empty_careful(&wait->task_list)) {
+            spin_lock_irqsave(&q->lock, flags);
+            list_del_init(&wait->task_list);
+            spin_unlock_irqrestore(&q->lock, flags);
+    }
+
+    DestroyEvent(wait->evnt);
+}
+
+int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
+{
+    list_del_init(&wait->task_list);
+    return 1;
+}
+
+
 
 
 

@@ -58,6 +58,8 @@
 
 #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
 
+#define BUILD_BUG_ON_NOT_POWER_OF_2(n)                  \
+        BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 
 
 #endif

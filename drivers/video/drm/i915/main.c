@@ -57,7 +57,7 @@ int x86_clflush_size;
 
 int i915_modeset = 1;
 
-u32_t drvEntry(int action, char *cmdline)
+u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
 
     int     err = 0;
@@ -82,10 +82,10 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("i915 RC 10.5\n cmdline: %s\n", cmdline);
+    dbgprintf(" i915 v3.9-rc8\n cmdline: %s\n", cmdline);
 
     cpu_detect();
-    dbgprintf("\ncache line size %d\n", x86_clflush_size);
+//    dbgprintf("\ncache line size %d\n", x86_clflush_size);
 
     enum_pci_devices();
 
@@ -104,6 +104,14 @@ u32_t drvEntry(int action, char *cmdline)
 
     return err;
 };
+
+//int __declspec(dllexport) DllMain(int, char*) __attribute__ ((weak, alias ("drvEntry")));
+
+//int __declspec(dllexport) DllMain( int hinstDLL, int fdwReason, void *lpReserved )
+//{
+//
+//    return 1;
+//}
 
 #define CURRENT_API     0x0200      /*      2.00     */
 #define COMPATIBLE_API  0x0100      /*      1.00     */
@@ -138,7 +146,7 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_I915_GEM_BUSY           28
 #define SRV_I915_GEM_SET_DOMAIN     29
 #define SRV_I915_GEM_MMAP           30
-
+#define SRV_I915_GEM_MMAP_GTT       31
 #define SRV_I915_GEM_THROTTLE       32
 #define SRV_FBINFO                  33
 #define SRV_I915_GEM_EXECBUFFER2    34
@@ -266,6 +274,11 @@ int _stdcall display_handler(ioctl_t *io)
         case SRV_I915_GEM_MMAP:
             retval = i915_gem_mmap_ioctl(main_device, inp, file);
             break;
+
+        case SRV_I915_GEM_MMAP_GTT:
+            retval = i915_gem_mmap_gtt_ioctl(main_device, inp, file);
+            break;
+
 
         case SRV_FBINFO:
             retval = i915_fbinfo(inp);

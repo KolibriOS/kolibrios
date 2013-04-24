@@ -88,7 +88,6 @@ drm_dma_handle_t *drm_pci_alloc(struct drm_device * dev, size_t size, size_t ali
 int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
 {
 	struct pci_dev *root;
-	int pos;
 	u32 lnkcap, lnkcap2;
 
 	*mask = 0;
@@ -103,33 +102,26 @@ int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
 #if 0
 	root = dev->pdev->bus->self;
 
-	pos = pci_pcie_cap(root);
-	if (!pos)
+	/* we've been informed via and serverworks don't make the cut */
+	if (root->vendor == PCI_VENDOR_ID_VIA ||
+	    root->vendor == PCI_VENDOR_ID_SERVERWORKS)
 		return -EINVAL;
 
-	/* we've been informed via and serverworks don't make the cut */
-//   if (root->vendor == PCI_VENDOR_ID_VIA ||
-//       root->vendor == PCI_VENDOR_ID_SERVERWORKS)
-//       return -EINVAL;
+	pcie_capability_read_dword(root, PCI_EXP_LNKCAP, &lnkcap);
+	pcie_capability_read_dword(root, PCI_EXP_LNKCAP2, &lnkcap2);
 
-	pci_read_config_dword(root, pos + PCI_EXP_LNKCAP, &lnkcap);
-	pci_read_config_dword(root, pos + PCI_EXP_LNKCAP2, &lnkcap2);
-
-	lnkcap &= PCI_EXP_LNKCAP_SLS;
-	lnkcap2 &= 0xfe;
-
-	if (lnkcap2) { /* PCIE GEN 3.0 */
+	if (lnkcap2) {	/* PCIe r3.0-compliant */
 		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_2_5GB)
 			*mask |= DRM_PCIE_SPEED_25;
 		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_5_0GB)
 			*mask |= DRM_PCIE_SPEED_50;
 		if (lnkcap2 & PCI_EXP_LNKCAP2_SLS_8_0GB)
 			*mask |= DRM_PCIE_SPEED_80;
-	} else {
-		if (lnkcap & 1)
+	} else {	/* pre-r3.0 */
+		if (lnkcap & PCI_EXP_LNKCAP_SLS_2_5GB)
 			*mask |= DRM_PCIE_SPEED_25;
-		if (lnkcap & 2)
-			*mask |= DRM_PCIE_SPEED_50;
+		if (lnkcap & PCI_EXP_LNKCAP_SLS_5_0GB)
+			*mask |= (DRM_PCIE_SPEED_25 | DRM_PCIE_SPEED_50);
 	}
 
 	DRM_INFO("probing gen 2 caps for device %x:%x = %x/%x\n", root->vendor, root->device, lnkcap, lnkcap2);

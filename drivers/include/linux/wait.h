@@ -172,6 +172,13 @@ struct delayed_work {
     struct work_struct work;
 };
 
+static inline struct delayed_work *to_delayed_work(struct work_struct *work)
+{
+    return container_of(work, struct delayed_work, work);
+}
+
+
+
 struct workqueue_struct *alloc_workqueue_key(const char *fmt,
                            unsigned int flags, int max_active);
 
@@ -181,6 +188,13 @@ struct workqueue_struct *alloc_workqueue_key(const char *fmt,
 
 int queue_delayed_work(struct workqueue_struct *wq,
                         struct delayed_work *dwork, unsigned long delay);
+
+#define INIT_WORK(_work, _func)                 \
+    do {                                        \
+        INIT_LIST_HEAD(&(_work)->entry);        \
+        (_work)->func = _func;                  \
+    } while (0)
+
 
 #define INIT_DELAYED_WORK(_work, _func)         \
     do {                                        \
@@ -205,6 +219,8 @@ int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *
         }
 
 #define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)
+
+
 
 
 #endif

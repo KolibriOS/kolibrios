@@ -87,8 +87,14 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
 	return buf;
 }
 
-extern int hex_to_bin(char ch);
-extern void hex2bin(u8 *dst, const char *src, size_t count);
+enum {
+    DUMP_PREFIX_NONE,
+    DUMP_PREFIX_ADDRESS,
+    DUMP_PREFIX_OFFSET
+};
+
+int hex_to_bin(char ch);
+int hex2bin(u8 *dst, const char *src, size_t count);
 
 
 //int printk(const char *fmt, ...);
@@ -335,8 +341,8 @@ static inline void writeq(__u64 val, volatile void __iomem *addr)
 #define dev_info(dev, format, arg...)       \
         printk("Info %s " format , __func__, ## arg)
 
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-
+//#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+#define BUILD_BUG_ON(condition)
 
 struct page
 {

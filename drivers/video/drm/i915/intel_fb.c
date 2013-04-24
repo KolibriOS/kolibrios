@@ -91,9 +91,10 @@ static struct fb_ops intelfb_ops = {
 //   .fb_debug_leave = drm_fb_helper_debug_leave,
 };
 
-static int intelfb_create(struct intel_fbdev *ifbdev,
+static int intelfb_create(struct drm_fb_helper *helper,
 			  struct drm_fb_helper_surface_size *sizes)
 {
+	struct intel_fbdev *ifbdev = (struct intel_fbdev *)helper;
 	struct drm_device *dev = ifbdev->helper.dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct fb_info *info;
@@ -186,8 +187,7 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 		goto out_unpin;
 	}
 	info->apertures->ranges[0].base = dev->mode_config.fb_base;
-	info->apertures->ranges[0].size =
-		dev_priv->mm.gtt->gtt_mappable_entries << PAGE_SHIFT;
+	info->apertures->ranges[0].size = dev_priv->gtt.mappable_end;
 
 	info->fix.smem_start = dev->mode_config.fb_base + obj->gtt_offset;
 	info->fix.smem_len = size;
@@ -223,26 +223,10 @@ out:
 	return ret;
 }
 
-static int intel_fb_find_or_create_single(struct drm_fb_helper *helper,
-					  struct drm_fb_helper_surface_size *sizes)
-{
-	struct intel_fbdev *ifbdev = (struct intel_fbdev *)helper;
-	int new_fb = 0;
-	int ret;
-
-	if (!helper->fb) {
-		ret = intelfb_create(ifbdev, sizes);
-		if (ret)
-			return ret;
-		new_fb = 1;
-	}
-	return new_fb;
-}
-
 static struct drm_fb_helper_funcs intel_fb_helper_funcs = {
 	.gamma_set = intel_crtc_fb_gamma_set,
 	.gamma_get = intel_crtc_fb_gamma_get,
-    .fb_probe = intel_fb_find_or_create_single,
+	.fb_probe = intelfb_create,
 };
 
 
@@ -268,9 +252,20 @@ int intel_fbdev_init(struct drm_device *dev)
 	}
 
 	drm_fb_helper_single_add_all_connectors(&ifbdev->helper);
-	drm_fb_helper_initial_config(&ifbdev->helper, 32);
 
     return 0;
 }
 
+void intel_fbdev_initial_config(struct drm_device *dev)
+{
+	drm_i915_private_t *dev_priv = dev->dev_private;
 
+	/* Due to peculiar init order wrt to hpd handling this is separate. */
+	drm_fb_helper_initial_config(&dev_priv->fbdev->helper, 32);
+}
+
+void intel_fb_output_poll_changed(struct drm_device *dev)
+{
+	drm_i915_private_t *dev_priv = dev->dev_private;
+	drm_fb_helper_hotplug_event(&dev_priv->fbdev->helper);
+}

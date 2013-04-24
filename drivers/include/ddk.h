@@ -50,7 +50,7 @@ typedef struct
   int        out_size;
 }ioctl_t;
 
-typedef int (__stdcall *srv_proc_t)(ioctl_t *);
+typedef int ( __stdcall *srv_proc_t)(ioctl_t *);
 
 #define ERR_OK       0
 #define ERR_PARAM   -1
