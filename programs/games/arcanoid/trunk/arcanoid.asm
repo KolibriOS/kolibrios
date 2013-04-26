@@ -418,15 +418,25 @@ noplayagain:
 draw_window:
     startwd
     window 0,0,400+8,480+24,window_Skinned
-    label 12,8,'ARCANOID: USE ARROW KEYS    LIVES      SCORE',cl_White+font_Big
+    if lang eq it
+        label 12,8,'ARCANOID: Usa le freccie    Vite      Punti',cl_White+font_Big
+    else
+        label 12,8,'ARCANOID: USE ARROW KEYS    LIVES      SCORE',cl_White+font_Big
+    end if
+
 
     cmp [againbut],0
     je  no_againbut
 
     cmp [nextlev],1
     je  nlev
-    label 160,200,'You Lose!',cl_Red+font_Big
-    label 130,220,'Youre Score:',cl_Red+font_Big
+    if lang eq it
+        label 160,200,'Hai perso!',cl_Red+font_Big
+        label 130,220,'Punteggio:',cl_Red+font_Big
+    else
+        label 160,200,'You Lose!',cl_Red+font_Big
+        label 130,220,'Youre Score:',cl_Red+font_Big
+    end if
     outcount dword [scorea],230,220,cl_Red,5*65536
     mov ebx,150*65536+80
     mov ecx,240*65536+12
@@ -437,13 +447,22 @@ draw_window:
     mov ecx,260*65536+12
     mov edx,1
     mcall
-    label 152,244,'Play again?',cl_Red+font_Big
+    if lang eq it
+        label 152,244,'Rigioca',cl_Red+font_Big
+    else
+        label 152,244,'Play again?',cl_Red+font_Big
+    end if
     jmp elev
 nlev:
-    label 160,200,'You Win!',cl_Green+font_Big
-    label 130,220,'Youre Score:',cl_Green+font_Big
+    if lang eq it
+        label 160,200,'Hai vinto!',cl_Green+font_Big
+        label 130,220,'Punteggio:',cl_Green+font_Big
+    else
+        label 160,200,'You Win!',cl_Green+font_Big
+        label 130,220,'Youre Score:',cl_Green+font_Big
+    end if
     outcount dword [scorea],230,220,cl_Green,5*65536
-    mov ebx,150*65536+80
+    mov ebx,150*65536+120  ;mov ebx,150*65536+80
     mov ecx,240*65536+12
     mov edx,2
     mov esi,0x0000aa00
@@ -452,10 +471,18 @@ nlev:
     mov ecx,260*65536+12
     mov edx,1
     mcall
-    label 152,244,'Next level?',cl_Red+font_Big
+    if lang eq it
+        label 152,244,'Prossimo Livello',cl_Red+font_Big
+    else
+        label 152,244,'Next level?',cl_Red+font_Big
+    end if
 elev:
+    if lang eq it
+        label 178,264,'Esci',cl_Red+font_Big
+    else
+        label 178,264,'Exit?',cl_Red+font_Big
+    end if
 
-    label 178,264,'Exit?',cl_Red+font_Big
 no_againbut:
 
     endwd
