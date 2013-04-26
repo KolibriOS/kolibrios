@@ -411,5 +411,12 @@ struct pagelist {
                 (p) = (v); \
         })
 
+
+unsigned int hweight16(unsigned int w);
+
+#define cpufreq_quick_get_max(x) GetCpuFreq()
+
+extern unsigned int tsc_khz;
+
 #endif
 

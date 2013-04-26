@@ -302,6 +302,35 @@ extern u64 nsec_to_clock_t(u64 x);
 extern u64 nsecs_to_jiffies64(u64 n);
 extern unsigned long nsecs_to_jiffies(u64 n);
 
+
+static unsigned long round_jiffies_common(unsigned long j, bool force_up)
+{
+    int rem;
+    unsigned long original = j;
+
+    rem = j % HZ;
+
+    /*
+     * If the target jiffie is just after a whole second (which can happen
+     * due to delays of the timer irq, long irq off times etc etc) then
+     * we should round down to the whole second, not up. Use 1/4th second
+     * as cutoff for this rounding as an extreme upper bound for this.
+     * But never round down if @force_up is set.
+     */
+    if (rem < HZ/4 && !force_up) /* round down */
+            j = j - rem;
+    else /* round up */
+            j = j - rem + HZ;
+
+    if (j <= GetTimerTicks()) /* rounding ate our timeout entirely; */
+            return original;
+    return j;
+}
+
+
+
+unsigned long round_jiffies_up_relative(unsigned long j);
+
 #define TIMESTAMP_SIZE	30
 
 #endif

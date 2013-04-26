@@ -8237,6 +8237,9 @@ int intel_get_pipe_from_crtc_id(struct drm_device *dev, void *data,
 	struct drm_mode_object *drmmode_obj;
 	struct intel_crtc *crtc;
 
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -ENODEV;
+
 	drmmode_obj = drm_mode_object_find(dev, pipe_from_crtc_id->crtc_id,
 			DRM_MODE_OBJECT_CRTC);
 
@@ -8760,9 +8763,9 @@ void intel_modeset_init_hw(struct drm_device *dev)
 
 	intel_init_clock_gating(dev);
 
-//   mutex_lock(&dev->struct_mutex);
-//   intel_enable_gt_powersave(dev);
-//   mutex_unlock(&dev->struct_mutex);
+    mutex_lock(&dev->struct_mutex);
+    intel_enable_gt_powersave(dev);
+    mutex_unlock(&dev->struct_mutex);
 }
 
 void intel_modeset_init(struct drm_device *dev)

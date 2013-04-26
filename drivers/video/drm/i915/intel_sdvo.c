@@ -37,15 +37,6 @@
 #include "i915_drv.h"
 #include "intel_sdvo_regs.h"
 
-unsigned int hweight16(unsigned int w)
-{
-    unsigned int res = w - ((w >> 1) & 0x5555);
-    res = (res & 0x3333) + ((res >> 2) & 0x3333);
-    res = (res + (res >> 4)) & 0x0F0F;
-    return (res + (res >> 8)) & 0x00FF;
-}
-
-
 #define SDVO_TMDS_MASK (SDVO_OUTPUT_TMDS0 | SDVO_OUTPUT_TMDS1)
 #define SDVO_RGB_MASK  (SDVO_OUTPUT_RGB0 | SDVO_OUTPUT_RGB1)
 #define SDVO_LVDS_MASK (SDVO_OUTPUT_LVDS0 | SDVO_OUTPUT_LVDS1)

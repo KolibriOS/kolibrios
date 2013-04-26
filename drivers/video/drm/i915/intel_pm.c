@@ -282,7 +282,6 @@ bool intel_fbc_enabled(struct drm_device *dev)
 	return dev_priv->display.fbc_enabled(dev);
 }
 
-#if 0
 static void intel_fbc_work_fn(struct work_struct *__work)
 {
 	struct intel_fbc_work *work =
@@ -323,9 +322,9 @@ static void intel_cancel_fbc_work(struct drm_i915_private *dev_priv)
 	 * dev_priv->fbc_work, so we can perform the cancellation
 	 * entirely asynchronously.
 	 */
-	if (cancel_delayed_work(&dev_priv->fbc_work->work))
+//	if (cancel_delayed_work(&dev_priv->fbc_work->work))
 		/* tasklet was killed before being run, clean up */
-		kfree(dev_priv->fbc_work);
+//		kfree(dev_priv->fbc_work);
 
 	/* Mark the work as no longer wanted so that if it does
 	 * wake-up (because the work was already running and waiting
@@ -334,7 +333,6 @@ static void intel_cancel_fbc_work(struct drm_i915_private *dev_priv)
 	 */
 	dev_priv->fbc_work = NULL;
 }
-#endif
 
 void intel_enable_fbc(struct drm_crtc *crtc, unsigned long interval)
 {
@@ -342,9 +340,9 @@ void intel_enable_fbc(struct drm_crtc *crtc, unsigned long interval)
 	struct drm_device *dev = crtc->dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-//   if (!dev_priv->display.enable_fbc)
+	if (!dev_priv->display.enable_fbc)
 		return;
-#if 0
+
 	intel_cancel_fbc_work(dev_priv);
 
 	work = kzalloc(sizeof *work, GFP_KERNEL);
@@ -374,20 +372,18 @@ void intel_enable_fbc(struct drm_crtc *crtc, unsigned long interval)
 	 * waiting synchronously upon the vblank.
 	 */
 	schedule_delayed_work(&work->work, msecs_to_jiffies(50));
-#endif
-
 }
 
 void intel_disable_fbc(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-//   intel_cancel_fbc_work(dev_priv);
+	intel_cancel_fbc_work(dev_priv);
 
-//   if (!dev_priv->display.disable_fbc)
-//       return;
+	if (!dev_priv->display.disable_fbc)
+		return;
 
-//   dev_priv->display.disable_fbc(dev);
+	dev_priv->display.disable_fbc(dev);
 	dev_priv->cfb_plane = -1;
 }
 
@@ -419,6 +415,8 @@ void intel_update_fbc(struct drm_device *dev)
 	struct intel_framebuffer *intel_fb;
 	struct drm_i915_gem_object *obj;
 	int enable_fbc;
+
+    ENTER();
 
 	if (!i915_powersave)
 		return;
@@ -550,6 +548,8 @@ void intel_update_fbc(struct drm_device *dev)
 	}
 
 	intel_enable_fbc(crtc, 500);
+    LEAVE();
+
 	return;
 
 out_disable:
@@ -559,6 +559,7 @@ out_disable:
 		intel_disable_fbc(dev);
 	}
 	i915_gem_stolen_cleanup_compression(dev);
+    LEAVE();
 }
 
 static void i915_pineview_get_mem_freq(struct drm_device *dev)
@@ -2411,7 +2412,7 @@ static void ironlake_enable_drps(struct drm_device *dev)
 		I915_READ(0x112e0);
     dev_priv->ips.last_time1 = jiffies_to_msecs(GetTimerTicks());
 	dev_priv->ips.last_count2 = I915_READ(0x112f4);
-//   getrawmonotonic(&dev_priv->ips.last_time2);
+	getrawmonotonic(&dev_priv->ips.last_time2);
 
 	spin_unlock_irq(&mchdev_lock);
 }
@@ -2690,7 +2691,6 @@ static void gen6_enable_rps(struct drm_device *dev)
 	gen6_gt_force_wake_put(dev_priv);
 }
 
-#if 0
 static void gen6_update_ring_freq(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
@@ -2737,7 +2737,6 @@ static void gen6_update_ring_freq(struct drm_device *dev)
 					ia_freq | gpu_freq);
 	}
 }
-#endif
 
 void ironlake_teardown_rc6(struct drm_device *dev)
 {
@@ -3466,9 +3465,28 @@ void intel_disable_gt_powersave(struct drm_device *dev)
 		ironlake_disable_drps(dev);
 		ironlake_disable_rc6(dev);
 	} else if (INTEL_INFO(dev)->gen >= 6 && !IS_VALLEYVIEW(dev)) {
+//		cancel_delayed_work_sync(&dev_priv->rps.delayed_resume_work);
+		mutex_lock(&dev_priv->rps.hw_lock);
 		gen6_disable_rps(dev);
 		mutex_unlock(&dev_priv->rps.hw_lock);
 	}
+}
+
+static void intel_gen6_powersave_work(struct work_struct *work)
+{
+	struct drm_i915_private *dev_priv =
+		container_of(work, struct drm_i915_private,
+			     rps.delayed_resume_work.work);
+	struct drm_device *dev = dev_priv->dev;
+
+    ENTER();
+
+	mutex_lock(&dev_priv->rps.hw_lock);
+	gen6_enable_rps(dev);
+	gen6_update_ring_freq(dev);
+	mutex_unlock(&dev_priv->rps.hw_lock);
+
+    LEAVE();
 }
 
 void intel_enable_gt_powersave(struct drm_device *dev)
@@ -3485,8 +3503,8 @@ void intel_enable_gt_powersave(struct drm_device *dev)
 		 * done at any specific time, so do this out of our fast path
 		 * to make resume and init faster.
 		 */
-//		schedule_delayed_work(&dev_priv->rps.delayed_resume_work,
-//				      round_jiffies_up_relative(HZ));
+		schedule_delayed_work(&dev_priv->rps.delayed_resume_work,
+				      round_jiffies_up_relative(HZ));
 	}
 }
 
@@ -4089,6 +4107,9 @@ void intel_set_power_well(struct drm_device *dev, bool enable)
 	if (!IS_HASWELL(dev))
 		return;
 
+	if (!i915_disable_power_well && !enable)
+		return;
+
 	tmp = I915_READ(HSW_PWR_WELL_DRIVER);
 	is_enabled = tmp & HSW_PWR_WELL_STATE;
 	enable_requested = tmp & HSW_PWR_WELL_ENABLE;
@@ -4468,6 +4489,8 @@ void intel_gt_init(struct drm_device *dev)
 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
 	}
+	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
+			  intel_gen6_powersave_work);
 }
 
 int sandybridge_pcode_read(struct drm_i915_private *dev_priv, u8 mbox, u32 *val)

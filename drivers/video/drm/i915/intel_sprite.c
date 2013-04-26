@@ -594,6 +594,8 @@ int intel_sprite_set_colorkey(struct drm_device *dev, void *data,
 	struct intel_plane *intel_plane;
 	int ret = 0;
 
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -ENODEV;
 
 	/* Make sure we don't try to enable both src & dest simultaneously */
 	if ((set->flags & (I915_SET_COLORKEY_DESTINATION | I915_SET_COLORKEY_SOURCE)) == (I915_SET_COLORKEY_DESTINATION | I915_SET_COLORKEY_SOURCE))
@@ -625,6 +627,8 @@ int intel_sprite_get_colorkey(struct drm_device *dev, void *data,
 	struct intel_plane *intel_plane;
 	int ret = 0;
 
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -ENODEV;
 
 	drm_modeset_lock_all(dev);
 

@@ -62,4 +62,18 @@
         BUILD_BUG_ON((n) == 0 || (((n) & ((n) - 1)) != 0))
 
 
+#define printk_once(fmt, ...)                   \
+({                                              \
+        static bool __print_once;               \
+                                                \
+        if (!__print_once) {                    \
+                __print_once = true;            \
+                printk(fmt, ##__VA_ARGS__);     \
+        }                                       \
+})
+
+
+#define pr_warn_once(fmt, ...)                                  \
+        printk_once(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
+
 #endif

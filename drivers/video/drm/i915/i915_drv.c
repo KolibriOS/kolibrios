@@ -64,7 +64,7 @@ MODULE_PARM_DESC(panel_ignore_lid,
 		"Override lid status (0=autodetect, 1=autodetect disabled [default], "
 		"-1=force lid closed, -2=force lid open)");
 
-unsigned int i915_powersave  __read_mostly      =  0;
+unsigned int i915_powersave __read_mostly = 1;
 module_param_named(powersave, i915_powersave, int, 0600);
 MODULE_PARM_DESC(powersave,
 		"Enable powersavings, fbc, downclocking, etc. (default: true)");
@@ -74,7 +74,7 @@ module_param_named(semaphores, i915_semaphores, int, 0600);
 MODULE_PARM_DESC(semaphores,
 		"Use semaphores for inter-ring sync (default: -1 (use per-chip defaults))");
 
-int i915_enable_rc6 __read_mostly      = 0;
+int i915_enable_rc6 __read_mostly = -1;
 module_param_named(i915_enable_rc6, i915_enable_rc6, int, 0400);
 MODULE_PARM_DESC(i915_enable_rc6,
 		"Enable power-saving render C-state 6. "
@@ -83,7 +83,7 @@ MODULE_PARM_DESC(i915_enable_rc6,
 		"For example, 3 would enable rc6 and deep rc6, and 7 would enable everything. "
 		"default: -1 (use per-chip default)");
 
-int i915_enable_fbc __read_mostly      =  0;
+int i915_enable_fbc __read_mostly = -1;
 module_param_named(i915_enable_fbc, i915_enable_fbc, int, 0600);
 MODULE_PARM_DESC(i915_enable_fbc,
 		"Enable frame buffer compression for power savings "
@@ -136,6 +136,10 @@ MODULE_PARM_DESC(preliminary_hw_support,
 		"Enable Haswell and ValleyView Support. "
 		"(default: false)");
 
+int i915_disable_power_well __read_mostly = 0;
+module_param_named(disable_power_well, i915_disable_power_well, int, 0600);
+MODULE_PARM_DESC(disable_power_well,
+		 "Disable the power well when possible (default: false)");
 
 #define PCI_VENDOR_ID_INTEL        0x8086
 
@@ -502,9 +506,9 @@ static struct drm_driver driver = {
     /* Don't use MTRRs here; the Xserver or userspace app should
      * deal with them for Intel hardware.
      */
-//    .driver_features =
-//        DRIVER_USE_AGP | DRIVER_REQUIRE_AGP | /* DRIVER_USE_MTRR |*/
-//        DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED | DRIVER_GEM | DRIVER_PRIME,
+    .driver_features =
+        DRIVER_USE_AGP | DRIVER_REQUIRE_AGP | /* DRIVER_USE_MTRR |*/
+        DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED | DRIVER_GEM | DRIVER_MODESET,
 //    .load = i915_driver_load,
 //    .unload = i915_driver_unload,
       .open = i915_driver_open,

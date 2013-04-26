@@ -252,8 +252,6 @@ static bool intel_ironlake_crt_detect_hotplug(struct drm_connector *connector)
 	u32 adpa;
 	bool ret;
 
-    ENTER();
-
 	/* The first time through, trigger an explicit detection cycle */
 	if (crt->force_hotplug_required) {
 		bool turn_off_dac = HAS_PCH_SPLIT(dev);
@@ -288,8 +286,6 @@ static bool intel_ironlake_crt_detect_hotplug(struct drm_connector *connector)
 		ret = false;
 	DRM_DEBUG_KMS("ironlake hotplug adpa=0x%x, result %d\n", adpa, ret);
 
-    LEAVE();
-
 	return ret;
 }
 
@@ -301,8 +297,6 @@ static bool valleyview_crt_detect_hotplug(struct drm_connector *connector)
 	u32 adpa;
 	bool ret;
 	u32 save_adpa;
-
-    ENTER();
 
 	save_adpa = adpa = I915_READ(crt->adpa_reg);
 	DRM_DEBUG_KMS("trigger hotplug detect cycle: adpa=0x%x\n", adpa);
@@ -329,8 +323,6 @@ static bool valleyview_crt_detect_hotplug(struct drm_connector *connector)
 	/* FIXME: debug force function and remove */
 	ret = true;
 
-    LEAVE();
-
 	return ret;
 }
 
@@ -349,8 +341,6 @@ static bool intel_crt_detect_hotplug(struct drm_connector *connector)
 	u32 hotplug_en, orig, stat;
 	bool ret = false;
 	int i, tries = 0;
-
-    ENTER();
 
 	if (HAS_PCH_SPLIT(dev))
 		return intel_ironlake_crt_detect_hotplug(connector);
@@ -390,8 +380,6 @@ static bool intel_crt_detect_hotplug(struct drm_connector *connector)
 	/* and put the bits back */
 	I915_WRITE(PORT_HOTPLUG_EN, orig);
 
-    LEAVE();
-
 	return ret;
 }
 
@@ -399,8 +387,6 @@ static struct edid *intel_crt_get_edid(struct drm_connector *connector,
 				struct i2c_adapter *i2c)
 {
 	struct edid *edid;
-
-    ENTER();
 
 	edid = drm_get_edid(connector, i2c);
 
@@ -410,8 +396,6 @@ static struct edid *intel_crt_get_edid(struct drm_connector *connector,
 		edid = drm_get_edid(connector, i2c);
 		intel_gmbus_force_bit(i2c, false);
 	}
-
-    LEAVE();
 
 	return edid;
 }

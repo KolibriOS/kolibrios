@@ -194,7 +194,7 @@ u32 intel_panel_get_max_backlight(struct drm_device *dev)
 		/* XXX add code here to query mode clock or hardware clock
 		 * and program max PWM appropriately.
 		 */
-        printk("fixme: max PWM is zero\n");
+		pr_warn_once("fixme: max PWM is zero\n");
 		return 1;
 	}
 

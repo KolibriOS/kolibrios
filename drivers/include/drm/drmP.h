@@ -74,6 +74,9 @@
 //#include <linux/poll.h>
 //#include <asm/pgalloc.h>
 
+#include <linux/workqueue.h>
+
+
 #include "drm.h"
 
 #include <linux/idr.h>
@@ -972,6 +975,7 @@ struct drm_driver {
 	void (*gem_free_object) (struct drm_gem_object *obj);
 	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
+	u32 driver_features;
 }; 
 
 
@@ -1204,6 +1208,11 @@ struct drm_device {
 #define DRM_SWITCH_POWER_OFF 1
 #define DRM_SWITCH_POWER_CHANGING 2
 
+static __inline__ int drm_core_check_feature(struct drm_device *dev,
+					     int feature)
+{
+	return ((dev->driver->driver_features & feature) ? 1 : 0);
+}
 
 static inline int drm_dev_to_irq(struct drm_device *dev)
 {

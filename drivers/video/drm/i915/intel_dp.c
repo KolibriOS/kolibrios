@@ -1147,13 +1147,13 @@ static void ironlake_panel_vdd_off_sync(struct intel_dp *intel_dp)
 
 static void ironlake_panel_vdd_work(struct work_struct *__work)
 {
-//    struct intel_dp *intel_dp = container_of(to_delayed_work(__work),
-//                        struct intel_dp, panel_vdd_work);
-//   struct drm_device *dev = intel_dp_to_dev(intel_dp);
-//
-//   mutex_lock(&dev->mode_config.mutex);
-//   ironlake_panel_vdd_off_sync(intel_dp);
-//   mutex_unlock(&dev->mode_config.mutex);
+	struct intel_dp *intel_dp = container_of(to_delayed_work(__work),
+						 struct intel_dp, panel_vdd_work);
+	struct drm_device *dev = intel_dp_to_dev(intel_dp);
+
+	mutex_lock(&dev->mode_config.mutex);
+	ironlake_panel_vdd_off_sync(intel_dp);
+	mutex_unlock(&dev->mode_config.mutex);
 }
 
 void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp, bool sync)
@@ -1174,8 +1174,8 @@ void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp, bool sync)
 		 * time from now (relative to the power down delay)
 		 * to keep the panel power up across a sequence of operations
 		 */
-//       schedule_delayed_work(&intel_dp->panel_vdd_work,
-//                     msecs_to_jiffies(intel_dp->panel_power_cycle_delay * 5));
+		schedule_delayed_work(&intel_dp->panel_vdd_work,
+				      msecs_to_jiffies(intel_dp->panel_power_cycle_delay * 5));
 	}
 }
 

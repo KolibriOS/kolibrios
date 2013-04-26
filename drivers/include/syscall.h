@@ -58,6 +58,8 @@ u32_t  IMPORT  GetPid(void)__asm__("GetPid");
 u32 STDCALL TimerHs(u32 delay, u32 interval,
                     void *fn, void *data)asm("TimerHs");
 
+u64 IMPORT GetCpuFreq()__asm__("GetCpuFreq");
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void   STDCALL SetMouseData(int btn, int x, int y,

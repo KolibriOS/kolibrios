@@ -53,7 +53,10 @@ int i915_mask_update(struct drm_device *dev, void *data,
 
 static char  log[256];
 
+struct workqueue_struct *system_wq;
+
 int x86_clflush_size;
+unsigned int tsc_khz;
 
 int i915_modeset = 1;
 
@@ -102,16 +105,13 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( err != 0)
         dbgprintf("Set DISPLAY handler\n");
 
+    struct drm_i915_private *dev_priv = main_device->dev_private;
+
+    run_workqueue(dev_priv->wq);
+
     return err;
 };
 
-//int __declspec(dllexport) DllMain(int, char*) __attribute__ ((weak, alias ("drvEntry")));
-
-//int __declspec(dllexport) DllMain( int hinstDLL, int fdwReason, void *lpReserved )
-//{
-//
-//    return 1;
-//}
 
 #define CURRENT_API     0x0200      /*      2.00     */
 #define COMPATIBLE_API  0x0100      /*      1.00     */
@@ -394,6 +394,8 @@ void cpu_detect()
     {
         x86_clflush_size = ((misc >> 8) & 0xff) * 8;
     }
+
+    tsc_khz = (unsigned int)(GetCpuFreq()/1000);
 }
 
 

@@ -1,4 +1,5 @@
 
+
 CC = gcc
 AS = as
 
@@ -7,7 +8,7 @@ DRV_INCLUDES = $(DRV_TOPDIR)/include
 
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/asm
 DEFINES  = 	-DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 
-CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i586 -fomit-frame-pointer -fno-builtin-printf \
+CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf \
 -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2
 
 NAME:=	  libddk
@@ -31,6 +32,7 @@ NAME_SRCS:=  				\
 		linux/ctype.c		\
 		linux/string.c		\
 		linux/time.c		\
+		linux/workqueue.c	\
 		malloc/malloc.c		\
 		stdio/vsprintf.c	\
 		string/_memmove.S 	\

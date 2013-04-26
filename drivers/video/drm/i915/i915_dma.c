@@ -1339,6 +1339,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
           ret = -ENOMEM;
           goto out_mtrrfree;
       }
+    system_wq = dev_priv->wq;
 
 	/* This must be called before any calls to HAS_PCH_* */
 	intel_detect_pch(dev);

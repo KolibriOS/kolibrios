@@ -33,6 +33,8 @@
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_dp_helper.h>
 
+#define KBUILD_MODNAME "i915.dll"
+
 #define cpu_relax()     asm volatile("rep; nop")
 
 #define _wait_for(COND, MS, W) ({ \
