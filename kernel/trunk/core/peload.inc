@@ -335,7 +335,8 @@ __exports:
           delay_hs,              'Delay',              \      ; ebx
           set_mouse_data,        'SetMouseData',       \      ;
           set_keyboard_data,     'SetKeyboardData',    \      ; gcc fastcall
-          timer_hs,              'TimerHs'                   ; stdcall
+          timer_hs,              'TimerHs',            \      ; stdcall
+          get_cpu_freq,          'GetCpuFreq'
 
 
 

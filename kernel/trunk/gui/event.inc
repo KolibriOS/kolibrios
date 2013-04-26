@@ -165,6 +165,7 @@ raise_event:                                       ;; EXPORT use
 ;   esi - event data (=0 => skip)
 ;scratched: ebx,ecx,esi,edi
         call    NotDummyTest ; not returned for fail !!!
+        mov     [check_idle_semaphore], 5
         or      esi, esi
         jz      @f
         lea     edi, [ebx+EVENT.code]

@@ -420,7 +420,7 @@ high_code:
 
         call    calculate_fast_getting_offset_for_WinMapAddress
 ; for Qemu or non standart video cards
-; Unfortunately [BytesPerScanLine] does not always 
+; Unfortunately [BytesPerScanLine] does not always
 ;                             equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
 
@@ -837,16 +837,19 @@ end if
         rdtsc   ;call  _rdtsc
         sti
         sub     eax, ecx
+        xor     edx, edx
+        shld    edx, eax, 2
         shl     eax, 2
-        mov     [CPU_FREQ], eax       ; save tsc / sec
-;       mov ebx, 1000000
-;       div ebx
+        mov     dword [cpu_freq], eax
+        mov     dword [cpu_freq+4], edx
+        mov     ebx, 1000000
+        div     ebx
 ; вообще-то производительность в данном конкретном месте
 ; совершенно некритична, но чтобы заткнуть любителей
 ; оптимизирующих компиляторов ЯВУ...
-        mov     edx, 2251799814
-        mul     edx
-        shr     edx, 19
+;        mov     edx, 2251799814
+;        mul     edx
+;        shr     edx, 19
         mov     [stall_mcs], edx
 ; PRINT CPU FREQUENCY
         mov     esi, boot_cpufreq
@@ -2240,10 +2243,14 @@ sysfn_getidletime:              ; 18.4 = GET IDLETIME
         ret
 ;------------------------------------------------------------------------------
 sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
-        mov     eax, [CPU_FREQ]
+        mov     eax, dword [cpu_freq]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
+get_cpu_freq:
+        mov     eax, dword [cpu_freq]
+        mov     edx, dword [cpu_freq+4]
+        ret
 ;  SAVE ramdisk to /hd/1/menuet.img
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'

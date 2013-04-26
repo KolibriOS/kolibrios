@@ -81,7 +81,7 @@ if lang eq ru
   boot_pal_vga      db   'Установка VGA 640x480 палитры',0
   boot_failed       db   'Загрузка первого приложения не удалась',0
   boot_mtrr         db   'Установка MTRR',0
-  
+
   boot_APIC_found   db   'APIC включен', 0
   boot_APIC_nfound  db   'APIC не найден', 0
 if preboot_blogesc
@@ -119,7 +119,7 @@ else
   boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
   boot_mtrr         db   'Setting MTRR',0
-  
+
   boot_APIC_found   db   'APIC enabled', 0
   boot_APIC_nfound  db   'APIC not found', 0
 if preboot_blogesc
@@ -331,6 +331,8 @@ fpu_data:
 mem_block_list    rd 64*2
 mem_used_list     rd 64*2
 mem_hash_cnt      rd 64
+
+cpu_freq          rq 1
 
 heap_mutex        MUTEX
 heap_size         rd 1

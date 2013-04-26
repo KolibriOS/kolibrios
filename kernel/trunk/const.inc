@@ -218,10 +218,10 @@ KEY_BUFF            equ (OS_BASE+0x000F401)
 BTN_COUNT           equ (OS_BASE+0x000F500)
 BTN_BUFF            equ (OS_BASE+0x000F501)
 
-CPU_FREQ            equ (OS_BASE+0x000F600)
+;CPU_FREQ            equ (OS_BASE+0x000F600)
 
 ;unused ? no active references
-MOUSE_PORT          equ (OS_BASE+0x000F604)
+;MOUSE_PORT          equ (OS_BASE+0x000F604)
 
 ;unused
 PS2_CHUNK           equ (OS_BASE+0x000FB00)
