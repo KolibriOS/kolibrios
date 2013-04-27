@@ -416,7 +416,11 @@ intro:  ; INTRO    ;
   @@:
     label 146,200,'ARCANOID II  v0.30',0x100000FF
     label 120,220,'by jj (jacek jerzy malinowski)',0x050505
-    label 100,240,'press SPACE to start a new game',0x10FF0800
+    if lang eq it
+        label 100,240,'Premi spazio per iniziare una nuova partita',0x10FF0800
+    else
+        label 100,240,'press SPACE to start a new game',0x10FF0800
+    end if
     label 15,240,'F1 + delay',0xFFA8FF
     label 15,260,'F2 + delay',0xFFA8FF
     delay 10
@@ -428,9 +432,19 @@ level_info:
     jne  @f
     ret
   @@:
-    label 170,230,'L E V E L',0x100000FF
+    if lang eq it
+        label 170,230,'L I V E L LO',0x100000FF
+    else
+        label 170,230,'L E V E L',0x100000FF
+    end if
+
+
     outcount [level],195,250,0x100000FF,2*65536
-    label 100,270,'press SPACE to start the level',0x10FF0800
+    if lang eq it
+        label 100,270,'Premi spazio per iniziare il livello',0x10FF0800
+    else
+        label 100,270,'press SPACE to start the level',0x10FF0800
+    end if
     delay 10
 ret
 
@@ -442,7 +456,11 @@ game_over:  ; GAME OVER  ;
     call grad_fill_screen
     call show_screen  ; flips the screen
     label 120,150,'G  A  M  E    O  V  E  R',0x10050505
-    label 140,200,'Thanks for playing',0x0FFF800
+    if lang eq it
+        label 140,200,'Grazie per aver giocato',0x0FFF800
+    else
+        label 140,200,'Thanks for playing',0x0FFF800
+    end if
     delay 20
 ret
 
@@ -802,8 +820,12 @@ draw_window:
     mcall 12,1
     mcall 0,<100,X_SIZE+8>,<100,Y_SIZE+21>,0x14ffffff, , VERSION
 
-	
-	label 200,8,'LIVES:',0x10ffffff
+    if lang eq it
+        label 200,8,'VITE:',0x10ffffff
+    else
+        label 200,8,'LIVES:',0x10ffffff
+    end if
+
     outcount dword [lives],250,8,0x10ffffff,65536
 
     cmp [is_rolled_up], 1
@@ -943,4 +965,3 @@ screen:
 proc_info:
     rb 1024
 I_END:
-
