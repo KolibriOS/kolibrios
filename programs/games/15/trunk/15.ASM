@@ -3,6 +3,7 @@
 ;   Author: Lloyd, coded by Ivushkin Andrey
 ;   Compile with FASM
 ;
+
 include 'lang.inc'
 include '..\..\..\macros.inc' ; decreases program size (not required)
 
@@ -157,7 +158,7 @@ fail:
 ;   *******************************
 
 draw_window:
-                  
+
     mcall 12, 1 ; begin draw
 	mcall 0, XXwindow, YYwindow, BgdColor,, txtTitle ; CREATING WINDOW
 
@@ -420,6 +421,10 @@ conf db 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,15
 txtMoves:
 if lang eq ru
      db 'Ходов:'
+else if lang eq it
+     db 'Movimenti:'
+else if lang eq de
+     db 'Bewegungen:'
 else
      db 'Moves:'
 end if
@@ -428,6 +433,10 @@ lenMoves:
 txtSh:
 if lang eq ru
      db 'Тасовка'
+else if lang eq it
+     db 'Mischia'
+else if lang eq de
+     db 'Mischen'
 else
      db 'Shuffle'
 end if
@@ -436,6 +445,10 @@ lenSh:
 txtCnf:
 if lang eq ru
      db 'Выберите задачу и нажмите->'
+else if lang eq it
+     db 'Seleziona un compito, poi premi->'
+else if lang eq de
+     db 'Waehle eine Aufgabe, dann clicke au->'
 else
      db 'Select task,  then press ->'
 end if
@@ -444,6 +457,10 @@ lenCnf:
 txtTitle:              ; строка заголовка
 if lang eq ru
      db   'Игра 15 - задача X', 0
+else if lang eq it
+     db 'Gioco del quindici - partita X', 0
+else if lang eq de
+     db '15-Puzzle - Spiel X', 0
 else
      db   'Game 15 - puzzle X', 0
 end if
@@ -451,6 +468,10 @@ end if
 txtVictory:
 if lang eq ru
      db 'Вы решили задачу! Нажмите->'
+else if lang eq it
+     db 'Gioco completato! Premi ->'
+else if lang eq de
+     db 'Spiel beendet! Druecken sie auf ->'
 else
      db 'Puzzle completed!   Press->'
 end if
