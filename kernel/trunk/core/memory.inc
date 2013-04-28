@@ -1471,33 +1471,6 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
 endp
 
 align 4
-proc stall stdcall, delay:dword
-        push    ecx
-        push    edx
-        push    ebx
-        push    eax
-
-        mov     eax, [delay]
-        mul     [stall_mcs]
-        mov     ebx, eax      ;low
-        mov     ecx, edx      ;high
-        rdtsc
-        add     ebx, eax
-        adc     ecx, edx
-@@:
-        rdtsc
-        sub     eax, ebx
-        sbb     edx, ecx
-        jb      @B
-
-        pop     eax
-        pop     ebx
-        pop     edx
-        pop     ecx
-        ret
-endp
-
-align 4
 proc create_ring_buffer stdcall, size:dword, flags:dword
            locals
              buf_ptr  dd ?

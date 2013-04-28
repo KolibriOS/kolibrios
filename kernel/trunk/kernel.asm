@@ -842,15 +842,6 @@ end if
         shl     eax, 2
         mov     dword [cpu_freq], eax
         mov     dword [cpu_freq+4], edx
-        mov     ebx, 1000000
-        div     ebx
-; вообще-то производительность в данном конкретном месте
-; совершенно некритична, но чтобы заткнуть любителей
-; оптимизирующих компиляторов ЯВУ...
-;        mov     edx, 2251799814
-;        mul     edx
-;        shr     edx, 19
-        mov     [stall_mcs], edx
 ; PRINT CPU FREQUENCY
         mov     esi, boot_cpufreq
         call    boot_log

@@ -392,7 +392,6 @@ default_io_map    rd 1
 
 LFBSize           rd 1
 
-stall_mcs         rd 1
 current_slot      rd 1
 
 ; status
