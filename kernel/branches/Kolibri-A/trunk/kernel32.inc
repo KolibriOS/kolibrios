@@ -211,7 +211,7 @@ include "gui/button.inc"
 include "fs/fs.inc"	  ; syscall
 include "fs/fat32.inc"	  ; read / write for fat32 filesystem
 include "fs/ntfs.inc"	  ; read / write for ntfs filesystem
-include "fs/fat12.inc"	  ; read / write for fat12 filesystem
+;include "fs/fat12.inc"	  ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
 ;include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
@@ -253,18 +253,13 @@ include "bus/user/special.inc"
 ; Floppy drive controller
 
 include "blkdev/fdc.inc"
-include "blkdev/flp_drv.inc"
+;include "blkdev/flp_drv.inc"
 
 ; IDE cache
 include "blkdev/ide_cache.inc"
 
 ; HD drive controller
 include "blkdev/hd_drv.inc"
-
-; CD drive controller
-
-;include "blkdev/cdrom.inc"
-;include "blkdev/cd_drv.inc"
 
 ; Character devices
 

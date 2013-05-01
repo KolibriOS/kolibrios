@@ -22,12 +22,6 @@ rootdirs:
 	db	7,'ramdisk'
 	dd	fs_OnRamdisk
 	dd	fs_NextRamdisk
-	db	2,'fd'
-	dd	fs_OnFloppy
-	dd	fs_NextFloppy
-	db	10,'floppydisk'
-	dd	fs_OnFloppy
-	dd	fs_NextFloppy
 	db	3,'hd0'
 	dd	fs_OnHd0
 	dd	fs_NextHd0
@@ -440,37 +434,6 @@ fs_RamdiskServices:
 	dd	fs_RamdiskDelete
 	dd	fs_RamdiskCreateFolder
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
-
-fs_OnFloppy:
-	cmp	ecx, 2
-	ja	file_system_lfn.notfound
-	mov	eax, [ebx]
-	cmp	eax, fs_NumFloppyServices
-	jae	fs_OnRamdisk.not_impl
-	call	reserve_flp
-	mov	[flp_number], cl
-	mov	ecx, [ebx+12]
-	mov	edx, [ebx+16]
-   ;     add     edx, std_application_base_address
-	add	ebx, 4
-	call	dword [fs_FloppyServices + eax*4]
-	and	[flp_status], 0
-	mov	[image_of_eax], eax
-	mov	[image_of_ebx], ebx
-	ret
-
-fs_FloppyServices:
-	dd	fs_FloppyRead
-	dd	fs_FloppyReadFolder
-	dd	fs_FloppyRewrite
-	dd	fs_FloppyWrite
-	dd	fs_FloppySetFileEnd
-	dd	fs_FloppyGetFileInfo
-	dd	fs_FloppySetFileInfo
-	dd	0
-	dd	fs_FloppyDelete
-	dd	fs_FloppyCreateFolder
-fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
 	call	reserve_hd1

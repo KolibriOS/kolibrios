@@ -2934,3 +2934,50 @@ fs_HdDelete:
         ret
 
 ; \end{diamond}
+
+
+; \begin{diamond}
+fat_find_lfn:
+; in: esi->name
+;     [esp+4] = next
+;     [esp+8] = first
+;     [esp+C]... - possibly parameters for first and next
+; out: CF=1 - file not found
+;      else CF=0, esi->next name component, edi->direntry
+        pusha
+        lea     eax, [esp+0Ch+20h]
+        call    dword [eax-4]
+        jc      .reterr
+        sub     esp, 262*2      ; reserve place for LFN
+        mov     ebp, esp
+        push    0               ; for fat_get_name: read ASCII name
+.l1:
+        call    fat_get_name
+        jc      .l2
+        call    fat_compare_name
+        jz      .found
+.l2:
+        lea     eax, [esp+0Ch+20h+262*2+4]
+        call    dword [eax-8]
+        jnc     .l1
+        add     esp, 262*2+4
+.reterr:
+        stc
+        popa
+        ret
+.found:
+        add     esp, 262*2+4
+; if this is LFN entry, advance to true entry
+        cmp     byte [edi+11], 0xF
+        jnz     @f
+        lea     eax, [esp+0Ch+20h]
+        call    dword [eax-8]
+        jc      .reterr
+@@:
+        add     esp, 8          ; CF=0
+        push    esi
+        push    edi
+        popa
+        ret
+
+

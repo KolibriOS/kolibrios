@@ -245,7 +245,7 @@ p_irq6:
         mov     edi, 6
         cmp     [v86_irqhooks+edi*8], 0
         jnz     v86_irq2
-        call    fdc_irq
+;        call    fdc_irq
         call    ready_for_next_irq
         restore_ring3_context
         iret
@@ -684,10 +684,10 @@ term9:
 ;        jnz     @f
 ;        call    free_cd_channel
 ;        and     [cd_status], 0
-@@:
-        cmp     [flp_status], esi
-        jnz     @f
-        and     [flp_status], 0
+;@@:
+;        cmp     [flp_status], esi
+;        jnz     @f
+;        and     [flp_status], 0
 @@:
         pop     esi
         cmp     [bgrlockpid], esi

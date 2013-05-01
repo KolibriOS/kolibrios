@@ -268,49 +268,49 @@ endg
 
   ;********************************************************************
     mov   eax,[edi+1]
-    cmp   eax,'FD  '
-    je    fs_yesflpdisk
-    cmp   eax,'FLOP'
+;    cmp   eax,'FD  '
+ ;   je    fs_yesflpdisk
+ ;   cmp   eax,'FLOP'
     jne   fs_noflpdisk
 
-  fs_yesflpdisk:
-    call   reserve_flp
+ ; fs_yesflpdisk:
+ ;   call   reserve_flp
 
-    cmp   byte [edi+1+11],0
-    je    fs_give_dir1
+;    cmp   byte [edi+1+11],0
+;    je    fs_give_dir1
 
-    mov   eax,[edi+1+12]
-    cmp   eax,'1   '
-    je    fs_yesflpdisk_first
-    cmp   eax,'FIRS'
-    je    fs_yesflpdisk_first
-    cmp   eax,'2   '
-    je    fs_yesflpdisk_second
-    cmp   eax,'SECO'
-    jne   fs_noflpdisk
-    jmp   fs_yesflpdisk_second
+;    mov   eax,[edi+1+12]
+;    cmp   eax,'1   '
+;    je    fs_yesflpdisk_first
+;    cmp   eax,'FIRS'
+;    je    fs_yesflpdisk_first
+;    cmp   eax,'2   '
+;    je    fs_yesflpdisk_second
+;    cmp   eax,'SECO'
+;    jne   fs_noflpdisk
+;    jmp   fs_yesflpdisk_second
 
-  fs_yesflpdisk_first:
-    mov   [flp_number],1
-    jmp   fs_yesflpdisk_start
-  fs_yesflpdisk_second:
-    mov   [flp_number],2
-  fs_yesflpdisk_start:
-    cmp   dword [esp+20],0      ; READ
-    jne   fs_noflpdisk_read
+;  fs_yesflpdisk_first:
+;    mov   [flp_number],1
+;    jmp   fs_yesflpdisk_start
+;  fs_yesflpdisk_second:
+;    mov   [flp_number],2
+;  fs_yesflpdisk_start:
+;    cmp   dword [esp+20],0      ; READ
+;    jne   fs_noflpdisk_read
 
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    mov   ebx,[esp+16]          ; block start
-    inc   ebx
-    mov   ecx,[esp+12]          ; block count
-    mov   edx,[esp+8]           ; return
-    mov   esi,[esp+0]
-    sub   esi,eax
-    add   esi,12+1              ; file name length
-    call  floppy_fileread
+;    mov   eax,[esp+4]           ; fname
+;    add   eax,2*12+1
+;    mov   ebx,[esp+16]          ; block start
+;    inc   ebx
+;    mov   ecx,[esp+12]          ; block count
+;    mov   edx,[esp+8]           ; return
+;    mov   esi,[esp+0]
+;    sub   esi,eax
+;    add   esi,12+1              ; file name length
+;    call  floppy_fileread
 
-    jmp   file_system_return
+ ;   jmp   file_system_return
 
 
   fs_noflpdisk_read:

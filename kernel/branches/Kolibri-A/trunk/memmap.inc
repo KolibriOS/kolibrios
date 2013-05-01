@@ -80,6 +80,7 @@
 ;   C402  ->   C7FF   window position in stack
 ;   D000  ->   D1FF   FDC controller
 ;   D200  ->   D3FF   FDC controller for Fat12
+;                     - D201..D2A1 cleaned in fdc.init (fs/fdc.inc) 
 ;   D400  ->   DFFF   free (3k)
 
 ;   E000  ->   F9FF   free (6k5)

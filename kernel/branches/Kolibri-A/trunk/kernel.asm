@@ -695,7 +695,7 @@ include 'vmodeld.inc'
 ; STACK AND FDC
 
 	call  stack_init
-	call  fdc_init
+;	call  fdc_init
 
 
 ; LOAD DEFAULT SKIN
@@ -1998,23 +1998,8 @@ version_inf:
 version_end:
 endg
 
-sys_cachetodiskette:
-	cmp	ebx, 1
-	jne	.no_floppy_a_save
-	mov	[flp_number], 1
-	jmp	.save_image_on_floppy
-.no_floppy_a_save:
-	cmp	ebx, 2
-	jne	.no_floppy_b_save
-	mov	[flp_number], 2
-.save_image_on_floppy:
-	call	save_image
-	mov	[esp + 32], dword 0
-	cmp	[FDC_Status], 0
-	je	.yes_floppy_save
-.no_floppy_b_save:
-	mov	[esp + 32], dword 1
-.yes_floppy_save:
+sys_cachetodiskette:            ; << removed
+	mov	[esp + 32], ebx
 	ret
 
 uglobal
