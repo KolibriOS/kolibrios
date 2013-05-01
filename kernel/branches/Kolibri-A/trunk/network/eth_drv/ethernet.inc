@@ -98,11 +98,11 @@ end virtual
 include "drivers/rtl8029.inc"
 include "drivers/i8255x.inc"
 include "drivers/rtl8139.inc"
-include "drivers/3c59x.inc"
-include "drivers/sis900.inc"
-include "drivers/pcnet32.inc"
+;include "drivers/3c59x.inc"
+;include "drivers/sis900.inc"
+;include "drivers/pcnet32.inc"
 include "drivers/rtl8169.inc"
-include "drivers/forcedeth.inc"
+;include "drivers/forcedeth.inc"
 
 ; PCICards
 ; ========
@@ -154,6 +154,7 @@ dd  0x011616ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x43001186, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x816710ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 
+if 0
 dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x597010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
@@ -240,6 +241,8 @@ dd 0x0ab110de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_trans
 dd 0x0ab210de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
 dd 0x0ab310de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
 dd 0x0d7d10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+
+end if
 
 rb PCICARDS_ENTRY_SIZE	; end of list marker, do not remove
 endg
