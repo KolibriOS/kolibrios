@@ -533,7 +533,7 @@ include 'detect/disks.inc'
 ; LOAD VMODE DRIVER
 
 ;!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeld.inc'
+;include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -1321,7 +1321,7 @@ no_set_lba_read:
 no_set_pci_access:
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeint.inc'
+;include 'vmodeint.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 sys_setup_err:

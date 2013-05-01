@@ -199,26 +199,14 @@ TASK_BASE	    equ (OS_BASE+0x0003010)
 TASK_DATA	    equ (OS_BASE+0x0003020)
 TASK_EVENT	    equ (OS_BASE+0x0003020)
 
+WIN_STACK	    equ (OS_BASE+0x0005000)
+WIN_POS 	    equ (OS_BASE+0x0005400)
+idts		    equ (OS_BASE+0x0005800)
+PUTPIXEL	    equ (OS_BASE+0x0006820)
+GETPIXEL	    equ (OS_BASE+0x0006824)
 mouseunder	    equ (OS_BASE+0x0006900)
-CDDataBuf	    equ (OS_BASE+0x0007000)
-FLOPPY_BUFF	    equ (OS_BASE+0x0008000)
-;ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
-idts		    equ (OS_BASE+0x000B100)
-WIN_STACK	    equ (OS_BASE+0x000C000)
-WIN_POS 	    equ (OS_BASE+0x000C400)
-FDD_BUFF	    equ (OS_BASE+0x000D000)
 
-;unused ? only one reference
-;ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
 
-PUTPIXEL	    equ (OS_BASE+0x000E020)
-GETPIXEL	    equ (OS_BASE+0x000E024)
-
-;unused ? only one reference
-; BANK_SWITCH         equ (OS_BASE+0x000E030)   ; VESA 1.2 - not used
-
-;unused ? store mousepointer
-;MOUSE_PICTURE       equ (OS_BASE+0x000F200)    ; mousedrv.inc - not used
 
 MOUSE_VISIBLE	    equ (OS_BASE+0x000F204)
 WIN_TEMP_XY	    equ (OS_BASE+0x000F300)
@@ -290,20 +278,19 @@ DRIVE_DATA	    equ (OS_BASE+0x0070000)
 SLOT_BASE	    equ (OS_BASE+0x0080000)
 
 ;unused
-TMP_BUFF	    equ (OS_BASE+0x0090000)
+;TMP_BUFF	    equ (OS_BASE+0x0090000)
 
-VGABasePtr	    equ (OS_BASE+0x00A0000)
+;VGABasePtr	    equ (OS_BASE+0x00A0000)
 
 RAMDISK 	    equ (OS_BASE+0x0100000)
 RAMDISK_FAT	    equ (OS_BASE+0x0280000)
-FLOPPY_FAT	    equ (OS_BASE+0x0282000)
 
 CLEAN_ZONE	    equ 0x280000
 IDE_DMA 	    equ 0x284000
 
 BgrAuxTable	    equ (OS_BASE+0x0298000)
 ; unused?
-SB16Buffer	    equ (OS_BASE+0x2A0000)
+SB16Buffer	    equ (OS_BASE+0x02A0000)
 SB16_Status	    equ (OS_BASE+0x02B0000)
 
 BUTTON_INFO	    equ (OS_BASE+0x02C0000)
@@ -317,7 +304,7 @@ eth_data_start	    equ (OS_BASE+0x0300000)
 stack_data	    equ (OS_BASE+0x0304000)
 stack_data_end	    equ (OS_BASE+0x031ffff)
 resendQ 	    equ (OS_BASE+0x0320000)
-VMODE_BASE	    equ (OS_BASE+0x0328000)
+;VMODE_BASE	    equ (OS_BASE+0x0328000)
 skin_data	    equ (OS_BASE+0x0330000)
 draw_data	    equ (OS_BASE+0x0338000);
 

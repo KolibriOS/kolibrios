@@ -64,26 +64,20 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   73FF   << FLOPPY buffer (9k)                             - fs/fat12.inc
+;   5000  ->   53FF   window stack C000 no of windows - all in words
+;   5402  ->   57FF   window position in stack
+;   5800  ->   5fff   << IDT for int_0x00..int_0x40 + reserv
 
-;   7400  ->   78ff   << IDT for int_0x00..int_0x40 + reserv
+;   6000  ->   68FF   << free (2k5)                             
 
-;   7900  ->   7EFF   << saved picture under mouse pointer (1k5)
+;   6900  ->   7EFF   << saved picture under mouse pointer (1k5)
 ;
-;   7F00  ->   7FFF   << SB16_Status (256)
+;   7F00  ->   7FFF   << SB16_Status (256) \\
 ;
-; XX  8000  ->   BFFF   free (16k)  XX
+;   8000  ->   87FF   free (2k)  
 ; 0x80008000 -> 9FFF   ramdisk fat    (8k)
-; 0x8000A000 -> BFFF   floppy  fat    (8k)
 
-;   C000  ->   C3FF   window stack C000 no of windows - all in words
-;   C402  ->   C7FF   window position in stack
-;   D000  ->   D1FF   FDC controller
-;   D200  ->   D3FF   FDC controller for Fat12
-;                     - D201..D2A1 cleaned in fdc.init (fs/fdc.inc) 
-;   D400  ->   DFFF   free (3k)
-
-;   E000  ->   F9FF   free (6k5)
+;   A000  ->   F9FF   free (23k)
 
 ;   FA00  byte        no of keys in buffer
 ;   FA01  byte        'buffer'
@@ -102,7 +96,7 @@
 ;   FE00  ->   FE0F   mouse memory 00 chunk count, that includes:
 ;   FE08 word       -- mouse H-scroll
 ;   FE0A word       -- mouse x
-;   FE0C word         -- mouse y
+;   FE0C word       -- mouse y
 ;   FE0E word       -- mouse V-scroll
 
 ;   FE10  ->   FB17   mouse color mem
