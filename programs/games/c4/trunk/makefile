@@ -9,6 +9,8 @@ FILE=c4
 SOURCE=${FILE}.asm
 OUT=${FILE}.bin
 
+all:en
+
 en:
 	echo "lang equ 'en'" > lang.inc
 	${NASM} -f bin -o ${OUT} ${SOURCE}
@@ -17,8 +19,5 @@ it:
 	echo "lang equ 'it'" > lang.inc
 	${NASM} -f bin -o ${OUT} ${SOURCE}
 
-def:
-	${NASM} -f bin -o ${OUT} ${SOURCE}
-
 clean:
-	rm -f ${OUT}
+	rm -f ${OUT} lang.inc
