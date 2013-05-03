@@ -21,7 +21,7 @@
 	bits 32
 	%include 'mos.inc'
 	section .text
-	%include 'lang.inc' ;fedesco
+	%include 'lang_nasm.inc' ;fedesco
 
 
 	MOS_HEADER01 start,end
