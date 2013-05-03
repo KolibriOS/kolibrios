@@ -21,6 +21,8 @@
 	bits 32
 	%include 'mos.inc'
 	section .text
+	%include 'lang.inc' ;fedesco
+
 
 	MOS_HEADER01 start,end
 
@@ -44,7 +46,11 @@ BUTTON_HEIGHT		equ	12
 
 BUTTON_NEW_X		equ	14
 BUTTON_NEW_Y		equ	30
-BUTTON_NEW_WIDTH	equ	56
+%if lang = 'it'
+	BUTTON_NEW_WIDTH equ 56 + 28
+%else
+	BUTTON_NEW_WIDTH equ 56
+%endif
 
 BUTTON_SPIN_WIDTH	equ	8
 BUTTON_PL1DN_X		equ	228
@@ -58,11 +64,19 @@ BUTTON_PL2UP_X		equ	(BUTTON_PL2DN_X + BUTTON_SPIN_WIDTH + 1)
 BUTTON_PL2UP_Y		equ	BUTTON_PL2DN_Y
 
 ; label dimensions
-LABEL_PL1_X		equ	90
+%if lang = 'it'
+	LABEL_PL1_X      equ   90 + 10
+%else
+	LABEL_PL1_X      equ   90
+%endif
 LABEL_PL1_Y		equ	(1 + BUTTON_PL1DN_Y + (BUTTON_HEIGHT-8)/2)
 LABEL_PL2_X		equ	LABEL_PL1_X
 LABEL_PL2_Y		equ	(1 + BUTTON_PL2DN_Y + (BUTTON_HEIGHT-8)/2)
-LABEL_PL1TYPE_X		equ	(LABEL_PL1_X + 10*6)
+%if lang = 'it'
+        LABEL_PL1TYPE_X      equ   (LABEL_PL1_X + 10*6 - 4)
+%else
+        LABEL_PL1TYPE_X      equ   (LABEL_PL1_X + 10*6)
+%endif
 LABEL_PL1TYPE_Y		equ	LABEL_PL1_Y
 LABEL_PL2TYPE_X		equ	LABEL_PL1TYPE_X
 LABEL_PL2TYPE_Y		equ	LABEL_PL2_Y
@@ -166,7 +180,7 @@ handleButton:
 	je short .player2dn
 	cmp ah,BT_PLAYER2UP
 	je short .player2up
-.bye:	
+.bye:
 	ret
 .quit:
 	MOS_EXIT
@@ -235,7 +249,7 @@ defineWindow:
 
 	xor eax,eax
 	call drawBoard
-	
+
 	MOS_ENDREDRAW
 	ret
 
@@ -261,18 +275,18 @@ updateStatusText:
      	xor edx,edx
      	mov eax,MOS_SC_DRAWBAR
      	int 0x40
-     	
+
      	; redraw label
 	mov edi,statusbar
 	mov ecx,1
-	call drawLabels	
-.bye:	
+	call drawLabels
+.bye:
 	ret
 
 
 
-;**********************************************************	
-; updatePlayerType	
+;**********************************************************
+; updatePlayerType
 ; update player type label
 ; input:	eax = new type
 ;		edi = address label structure to update
@@ -314,7 +328,7 @@ drawBoard:
 
 
 drawGrid:
-	
+
 	; vertical lines
 	mov ebx,MOS_DWORD(GRIDX,GRIDX)
 	mov ecx,MOS_DWORD(GRIDY,GRIDY+GRIDHEIGHT-1)
@@ -326,7 +340,7 @@ drawGrid:
 	add ebx,MOS_DWORD(GRIDSPACING,GRIDSPACING)
 	dec esi
 	jnz .vlines
-	
+
 	; horizontal lines
 	mov ebx,MOS_DWORD(GRIDX,GRIDX+GRIDWIDTH-1)
 	mov ecx,MOS_DWORD(GRIDY,GRIDY)
@@ -336,10 +350,10 @@ drawGrid:
 	add ecx,MOS_DWORD(GRIDSPACING,GRIDSPACING)
 	dec esi
 	jnz .hlines
-	
+
 	ret
-	
-	
+
+
 drawStones:
 	mov ebx,6
 .col:
@@ -350,7 +364,7 @@ drawStones:
 	dec ebx
 	jnz .col
 	ret
-	
+
 
 
 ; ecx = column (1..7)
@@ -383,10 +397,10 @@ drawStone:
 	dec ebx
 	mul ebx
 	add eax,GRIDY + 1
-	mov cx,ax	
+	mov cx,ax
 	mov edx,ecx
 
-	; put image (position is already in edx)	
+	; put image (position is already in edx)
 	mov ebx,ebp				; image address
 	mov ecx,MOS_DWORD(STONESIZE,STONESIZE)	; image dimensions
 	mov eax,MOS_SC_PUTIMAGE
@@ -428,8 +442,8 @@ resetInput:
 ;**********************************************************
 newGame:
 	call boardReset			; reset and redraw board
-	mov eax,1	
-	call drawBoard	
+	mov eax,1
+	call drawBoard
 	call resetInput			; reset input
 	mov dword [gameover],0		; game is running
 	ret
@@ -507,7 +521,7 @@ getMouseCol:
 	div ebx
 	cmp eax,BWIDTH-3		; right outside of board ?
 	jg .outside			; yes -> bye
-	
+
 	inc eax				; xform into range [1,7]
 	ret
 .outside:
@@ -529,7 +543,7 @@ isActiveApp:
 %define	PROCINFO (ebp-MOS_PROCESSINFO_size)
 
 	enter MOS_PROCESSINFO_size,0
-	
+
 	; get process information
 	mov eax,MOS_SC_GETPROCESSINFO
 	lea ebx,[ebp-MOS_PROCESSINFO_size]
@@ -539,10 +553,10 @@ isActiveApp:
 	; set al to 1 if we are the active application
 	cmp ax,[PROCINFO+MOS_PROCESSINFO.windowStackPos]
 	sete al
-	
+
 	leave
 	ret
-%undef PROCINFO	
+%undef PROCINFO
 
 
 
@@ -556,7 +570,7 @@ isActiveApp:
 ;**********************************************************
 keyboardInput:
 	mov eax,MOS_SC_GETKEY		; get key
-	int 0x40	
+	int 0x40
 	or al,al			; key available ?
 	jnz .bye			; no -> bye
 	cmp dword [playerinput],0	; unprocessed input available ?
@@ -572,7 +586,7 @@ keyboardInput:
 	inc eax
 	mov [playerinput],eax
 
-.bye:	
+.bye:
 	ret
 
 
@@ -675,7 +689,7 @@ getMoveForCurrentPlayer:
 
 
 ;**********************************************************
-; update status bar : which player's turn it is	
+; update status bar : which player's turn it is
 ;**********************************************************
 updatePlayerStatusText:
 	cmp dword [currentplayer],PLAYER2
@@ -763,27 +777,49 @@ NBUTTONS	equ	(($-buttons)/BUTTON_size)
 ;
 ; label table
 ;
-
-newgame		db	"New game",0
+%if lang = 'it'
+       newgame db   "Nuova partita",0
+%else
+       newgame db   "New game",0
+%endif
 down		db	"<",0
 up		db	">",0
-pl1		db	"Player 1:",0
-pl2		db	"Player 2:",0
+%if lang = 'it'
+       pl1		db	"Giocatore 1:",0
+       pl2		db	"Giocatore 2:",0
+%else
+       pl1		db	"Player 1:",0
+       pl2		db	"Player 2:",0
+%endif
 
+%if lang = 'it'
+	playertypes:
+			db	"Umano",0
+	PLAYERTYPELEN	equ	($ - playertypes)
+			db	"CPU 1 ",0
+			db	"CPU 2 ",0
+			db	"CPU 3 ",0
+			db	"CPU 4 ",0
+			db	"CPU 5 ",0
+			db	"CPU 6 ",0
+			db	"CPU 7 ",0
+			db	"CPU 8 ",0
+%else
+	playertypes:
+			db	"Human       ",0
+	PLAYERTYPELEN	equ	($ - playertypes)
+			db	"CPU level 1 ",0
+			db	"CPU level 2 ",0
+			db	"CPU level 3 ",0
+			db	"CPU level 4 ",0
+			db	"CPU level 5 ",0
+			db	"CPU level 6 ",0
+			db	"CPU level 7 ",0
+			db	"CPU level 8 ",0
+%endif
 
-playertypes:
-		db	"Human       ",0
-PLAYERTYPELEN	equ	($ - playertypes)		
-		db	"CPU level 1 ",0
-		db	"CPU level 2 ",0
-		db	"CPU level 3 ",0
-		db	"CPU level 4 ",0
-		db	"CPU level 5 ",0
-		db	"CPU level 6 ",0
-		db	"CPU level 7 ",0
-		db	"CPU level 8 ",0
 NPLAYERTYPES	equ	(($-playertypes)/PLAYERTYPELEN)
-		
+
 
 labels:
 istruc LABEL						; new
@@ -846,7 +882,11 @@ iend
 label_pl1type:
 istruc LABEL
 	at LABEL.position
-	dd MOS_DWORD(LABEL_PL1TYPE_X,LABEL_PL1TYPE_Y)
+	%if lang = 'it'
+		dd MOS_DWORD(LABEL_PL1TYPE_X + 18,LABEL_PL1TYPE_Y)
+	%else
+		dd MOS_DWORD(LABEL_PL1TYPE_X,LABEL_PL1TYPE_Y)
+	%endif
 	dd playertypes+PL1TYPE_INIT*PLAYERTYPELEN
 	dd MOS_RGB(255,255,255)
 	dd MOS_RGB(0,0,0)
@@ -854,7 +894,11 @@ iend
 label_pl2type:
 istruc LABEL
 	at LABEL.position
-	dd MOS_DWORD(LABEL_PL2TYPE_X,LABEL_PL2TYPE_Y)
+	%if lang = 'it'
+		dd MOS_DWORD(LABEL_PL2TYPE_X + 18,LABEL_PL2TYPE_Y)
+	%else
+		dd MOS_DWORD(LABEL_PL2TYPE_X,LABEL_PL2TYPE_Y)
+	%endif
 	dd playertypes+PL2TYPE_INIT*PLAYERTYPELEN
 	dd MOS_RGB(255,255,255)
 	dd MOS_RGB(0,0,0)
@@ -868,13 +912,23 @@ player2_type	dd	PL2TYPE_INIT
 
 
 ; status messages
-player1hmnprmpt	db	"Make your move, player 1.",0
-player2hmnprmpt db	"Make your move, player 2.",0
-player1cpuprmpt	db	"Player 1 is thinking, please wait...",0
-player2cpuprmpt	db	"Player 2 is thinking, please wait...",0
-itisadraw	db	"It's a draw.",0
-player1wins	db	"Player 1 wins.",0
-player2wins	db	"Player 2 wins.",0
+%if lang = 'it'
+	player1hmnprmpt	db	"Turno del giocatore 1",0
+	player2hmnprmpt db	"Turno del giocatore 2",0
+	player1cpuprmpt	db	"Attendi, giocatore 1 sta pensando...",0
+	player2cpuprmpt	db	"Attendi, giocatore 2 sta pensando...",0
+	itisadraw	db	"Pareggio",0
+	player1wins	db	"Vince giocatore 1",0
+	player2wins	db	"Vince Giocatore 2",0
+%else
+	player1hmnprmpt	db	"Make your move, player 1.",0
+	player2hmnprmpt db	"Make your move, player 2.",0
+	player1cpuprmpt	db	"Player 1 is thinking, please wait...",0
+	player2cpuprmpt	db	"Player 2 is thinking, please wait...",0
+	itisadraw	db	"It's a draw.",0
+	player1wins	db	"Player 1 wins.",0
+	player2wins	db	"Player 2 wins.",0
+%endif
 
 
 ; pointer to ai player. future releases C4 might
