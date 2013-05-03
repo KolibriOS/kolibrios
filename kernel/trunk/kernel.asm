@@ -2034,8 +2034,6 @@ restore_default_cursor_before_killing:
 @@:
         mov     [redrawmouse_unconditional], 1
         popfd
-;        call    [draw_pointer]
-        call    __sys_draw_pointer
         ret
 ;------------------------------------------------------------------------------
 iglobal
@@ -3549,6 +3547,13 @@ newct:
         cmp     cl, byte 4
         jnz     .noterminate
 .terminate:
+        pushad
+        mov     ecx, eax
+        shl     ecx, 8
+        add     ecx, SLOT_BASE
+        call    restore_default_cursor_before_killing
+        popad
+
         pushad
         call    terminate
         popad
