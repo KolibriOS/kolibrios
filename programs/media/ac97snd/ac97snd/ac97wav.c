@@ -64,6 +64,8 @@ int pan =0;
 DWORD status;
 DWORD first_sync;
 DWORD PLStatus=0; //Asper+
+byte replay=0;
+byte hidden=0;
 
 #ifdef DOCKABLE_WINDOW
 byte thread_info[1024]; //Asper+
@@ -92,6 +94,7 @@ char header_PL[] = "PLAYLIST";
 char buttons_xm[]  = " Play    Stop                    Vol-    Vol+"; /* uFMOD integration */
 char buttons_wav[] = " Play    Stop     <<      >>     Vol-    Vol+"; /* uFMOD integration */
 char button_PL[] = "PL"; //Asper+
+char button_R[] = "R"; //Asper+
 char *buttons_text = buttons_wav;                                     /* uFMOD integration */
 
 void play_xm();                                                       /* uFMOD integration */
@@ -223,10 +226,46 @@ void _stdcall pl_thread_proc(void *param)
 					 exit();
 					 break;
 
+				 case 0x19: //P - playlist
+				   switch (PLStatus)
+				   {    case 0x00: //PL not started.
+							pl_tid=create_thread(pl_thread_proc, 0, 4096);              
+							PLStatus=0x12;
+						break;
+						case 0x01: //PL started, but hidden.
+							PLStatus=0x12;
+						break;
+						case 0x02: //PL started and showed.
+							PLStatus=0x11;
+						break;
+				   }
+				   break;
+
 				 case 0x1C:  //Enter                   
 					 currActive=currFirstShowed+currSelected-1;
 					 status = ST_TRACK; 
 					 break; 
+
+				 case 0x2C: //Z - previous
+				   currActive-=2;
+				   status = ST_TRACK;
+				   break;
+				 
+				 case 0x2D: //X - play
+				   status = ST_PLAY;
+				   break;
+				 
+				 case 0x2E: //C - pause
+				   break;
+				 
+				 case 0x2F: //V - stop
+                   status = ST_STOP;
+				   break;
+				 
+				 case 0x30: //B - next
+				   status = ST_TRACK;
+				   break;
+
                  case 0x47:  //Home
 					 if(l_vol < 0)
 					 { l_vol+=100;
@@ -239,6 +278,7 @@ void _stdcall pl_thread_proc(void *param)
 					 {
 						 if (currFirstShowed>0)
 							 currFirstShowed--;
+						 else break;
 						 ShowPLContent(pl_buff);
 						 break;
 					 }
@@ -289,15 +329,8 @@ void _stdcall pl_thread_proc(void *param)
 			  PLStatus=0x00;
 			  exit();
 		  }
-		  for (i=0;i<PL_MAX_SHOWN_ITEMS;i++)
-		  {
-			  if (button==0x10+i)
-			  {
-				  currActive=currFirstShowed+i-1;
-				  status = ST_TRACK; 
-				  break;
-			  }
-		  }
+		  currActive=currFirstShowed+button-0x10-1;
+		  status = ST_TRACK; 
 		  break;
 	  case EV_IPC:
   		  *ipc_buff='\0';
@@ -342,11 +375,11 @@ int GetFileNameFromPL(const char *plbuff, int index, char *name)
 		ch=plbuff[i];
 		if (ch!='#' && i && plbuff[i-1]=='\n')
 			count++;
-		if (count-1==index) 
+		if (count-1==index)
 		{
-			if (j>MAX_TEXT_WIDTH || ch=='\n')
+			if (j>MAX_TEXT_WIDTH || ch=='\r' || ch=='\n')
 			{
-				name[j-1]='\0';
+				name[j]='\0';
 				break;
 			}
 			if (ch=='\\') ch='/';
@@ -397,42 +430,50 @@ int ShowPLContent(char *filebuffer)
 	return 1;
 }
 //Asper_____________________Play List code end_____________________________ 
+void redraw_R_button() //Asper +
+{
+	DWORD rc = 0xA0FFA0; //R button text color
+	if (!replay) rc = 0x404040;
+	write_text(14,74,rc|FONT0,button_R,sizeof(button_R)-1);
+}
 
 void update_dinamic_content() //Asper +
 {
-	int len;                                                          /* uFMOD integration */
+	int len = strlen(filename);
+	if (len > 47) len = 47;
 	draw_bar(7,41,286,11,main_wc);
-	
 	draw_bar(7,55,286,11,main_wc);
-	len = strlen(filename);                                                /* uFMOD integration */
-	if(len > 47) len = 47;                                              /* uFMOD integration */
-	write_text(11,57,0x00FF20|FONT0, filename, len);                        /* uFMOD integration */
+	write_text(11,57,0x00FF20|FONT0, filename, len);
 }
 
 void draw_window()
 {
    BeginDraw();
+   if (!hidden)
+   {
+      DrawWindow(100,100,299,main_wh,main_wc,4,0,0,0); //Asper+   
 
-   DrawWindow(100,100,299,main_wh,main_wc,4,0,0,0); //Asper+   
+      make_button(7,24,45,13, 0x10|BT_NORMAL,main_bc);
+      make_button(56,24,45,13, 0x11|BT_NORMAL,main_bc);
+      make_button(104,24,45,13, 0x12|BT_NORMAL,main_bc);
+      make_button(152,24,45,13, 0x13|BT_NORMAL,main_bc);
+      make_button(200,24,45,13, 0x14|BT_NORMAL,main_bc);
+      make_button(248,24,45,13, 0x15|BT_NORMAL,main_bc);
 
-   make_button(7,24,45,13, 0x10|BT_NORMAL,main_bc);
-   make_button(56,24,45,13, 0x11|BT_NORMAL,main_bc);
-   make_button(104,24,45,13, 0x12|BT_NORMAL,main_bc);
-   make_button(152,24,45,13, 0x13|BT_NORMAL,main_bc);
-   make_button(200,24,45,13, 0x14|BT_NORMAL,main_bc);
-   make_button(248,24,45,13, 0x15|BT_NORMAL,main_bc);
+      make_button(268,70,25,13, 0x16|BT_NORMAL,main_bc); //Asper+ PL button
+      make_button(10,70,12,13, 0x17|BT_NORMAL,main_wc); //Asper+ R button
 
-   make_button(268,70,25,13, 0x16|BT_NORMAL,main_bc); //Asper+ PL button
+      make_button(7,41,286,11, 0x30|BT_HIDE|BT_NOFRAME,main_wc);
 
-   make_button(7,41,286,11, 0x30|BT_HIDE|BT_NOFRAME,main_wc);
+      update_dinamic_content();
+      write_text(8,8,FONT0, header, sizeof(header)-1);                     /* uFMOD integration */
+      write_text(12,28,main_wc|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
+      write_text(11,27,0xA0FFA0|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
 
-   update_dinamic_content();
-   write_text(8,8,FONT0, header, sizeof(header)-1);                     /* uFMOD integration */
-   write_text(12,28,main_wc|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
-   write_text(11,27,0xA0FFA0|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
-
-   write_text(276,74,main_wc|FONT0,button_PL,sizeof(button_PL)-1); //Asper+ PL button text
-   write_text(275,73,0xA0FFA0|FONT0,button_PL,sizeof(button_PL)-1); //Asper+
+      write_text(276,74,main_wc|FONT0,button_PL,sizeof(button_PL)-1); //Asper+ PL button text
+      write_text(275,73,0xA0FFA0|FONT0,button_PL,sizeof(button_PL)-1); //Asper+
+      redraw_R_button();
+   }
    EndDraw();
 };
 
@@ -565,11 +606,11 @@ int LoadFile(char *fname)
 			fr.single = -1;
 			goto play;
    };
-     
+
    if(!_stricmp(fileext,".xm")) 
    {
 	   if(uFMOD_LoadSong(fname))
-	   {       
+	   {
 	      buttons_text = buttons_xm;               /* uFMOD integration */
 	      fmt = PCM_2_16_48;                       /* uFMOD integration */
 	      snd_play = &play_xm;                     /* uFMOD integration */
@@ -624,10 +665,15 @@ int main(int argc, char *argv[])
    int err, ver;
    int i;
    char ipc_msg[2]="\0\0";
-    
-   strcpy (full_filename, argv[1]);
    pl_items_number=0;
-    
+
+   if (argv[1][0]=='-' && argv[1][1]=='h')
+   {
+      hidden = 1;
+	  argv[1]+=3;
+   }
+   strcpy (full_filename, argv[1]);
+   
    InitHeap(1024*1024);
    
    if(err = InitSound(&ver))
@@ -663,7 +709,13 @@ int main(int argc, char *argv[])
 				if (LoadFile(full_filename))
 					status = ST_PLAY;
 			}
-			else status = ST_STOP;
+			else 
+			{
+				currSelected=currFirstShowed=0;
+				currActive=-1;
+				if (!replay) status = ST_STOP;
+				continue;
+			}
 
 			//Update ac97snd and PL windows
 			i=currActive-currFirstShowed;
@@ -904,7 +956,47 @@ void _stdcall thread_proc(void *param)
                    exit();
                    break;
                
-                 case 0x47:  //Home
+				 case 0x13: //R - repeat on/off
+				   replay=!replay;
+				   redraw_R_button();
+				   break;
+
+				 case 0x19: //P - playlist
+				   switch (PLStatus)
+				   {    case 0x00: //PL not started.
+							pl_tid=create_thread(pl_thread_proc, 0, 4096);              
+							PLStatus=0x12;
+						break;
+						case 0x01: //PL started, but hidden.
+							PLStatus=0x12;
+						break;
+						case 0x02: //PL started and showed.
+							PLStatus=0x11;
+						break;
+				   }
+				   break;
+
+				 case 0x2C: //Z - previous
+				   currActive-=2;
+				   status = ST_TRACK;
+				   break;
+				 
+				 case 0x2D: //X - play
+				   status = ST_PLAY;
+				   break;
+				 
+				 case 0x2E: //C - pause
+				   break;
+				 
+				 case 0x2F: //V - stop
+                   status = ST_STOP;
+				   break;
+				 
+				 case 0x30: //B - next
+				   status = ST_TRACK;
+				   break;
+
+				 case 0x47:  //Home
                    if(l_vol < 0)
                    { l_vol+=100;
                      r_vol+=100;  
@@ -944,18 +1036,18 @@ void _stdcall thread_proc(void *param)
              
            case 0x10:
              status = ST_PLAY;
-             continue;
+             break;//continue;
 
            case 0x11:
              status = ST_STOP;
              break;
            case 0x12:
-			   currActive-=2;
-			   status = ST_TRACK;
-			   break;
+			 currActive-=2;
+			 status = ST_TRACK;
+			 break;
            case 0x13:
-			   status = ST_TRACK;
-			   break;
+			 status = ST_TRACK;
+			 break;
            case 0x14:
             if(l_vol > -10000)
             {
@@ -986,6 +1078,10 @@ void _stdcall thread_proc(void *param)
 						PLStatus=0x11;
 					break;
 			   }
+            break;
+           case 0x17: //Asper+ PL button action
+			   replay=!replay;
+			   redraw_R_button();
             break;
 
            case 0x30:
@@ -1182,7 +1278,7 @@ void uint2str(unsigned int value, char *string)
 
 
 ///*********
-void *__cdecl memmove ( void * dst, const void * src, unsigned int count)  /* uFMOD integration */
+void *memmove ( void * dst, void * src, unsigned int count)  /* uFMOD integration */
 { void *ret;
   ret = dst;
 
