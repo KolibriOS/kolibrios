@@ -74,7 +74,7 @@ proc  codec_exec_verb stdcall, cmd:dword;, res:dword <- returned in eax
 
   @@:
 
-    ; call   snd_hda_power_down
+    ;call   snd_hda_power_down
     cmp    edx, -1
     jne    .l1
 
@@ -154,13 +154,24 @@ proc  snd_hda_sequence_write stdcall, seq:dword
     push     eax  ebx  ecx  esi
     mov      esi, [seq]
   @@:
-    mov      ecx, [esi + hda_verb.nid]
-    mov      ebx, [esi + hda_verb.verb]
-    mov      eax, [esi + hda_verb.param]
+    ;mov      ecx, [esi + hda_verb.nid]
+    ;mov      ebx, [esi + hda_verb.verb]
+    ;mov      eax, [esi + hda_verb.param]
+    ;stdcall  snd_hda_codec_write, ecx, 0, ebx, eax
+    ;add      esi, hda_verb.sizeof
+    ;test     ecx, ecx
+    ;jnz      @b
+    ;______________________________________
+    cmp      dword [esi], 0
+    je	     .out
+    movzx    ecx, word [esi] ; NID
+    movzx    ebx, word [esi+2] ; verb
+    and      bx, 0x0FFF
+    movzx    eax, word [esi + 4] ; sizeof(param) = 4 bytes
     stdcall  snd_hda_codec_write, ecx, 0, ebx, eax
-    add      esi, hda_verb.sizeof
-    test     ecx, ecx
-    jnz      @b
+    add      esi, 6
+    jmp      @b
+ .out:
     pop      esi  ecx  ebx  eax
     ret
 endp
@@ -547,7 +558,7 @@ proc  snd_hda_codec_init    ; We use just one codec (the first found)
   @@:
 
      ; power up all before initialization
-;     stdcall snd_hda_set_power_state, ebx, AC_PWRST_D0
+     stdcall snd_hda_set_power_state, ebx, AC_PWRST_D0
 
      pop     ebx
      ret
@@ -567,14 +578,7 @@ proc  snd_hda_codec_configure
   @@:
      ; call the default parser
      stdcall snd_hda_parse_generic_codec  ;entry point to generic tree parser!!!
-     ;Asper+:patch for HP Elitebook 8730w [
-;     push    eax ebx
-;     mov     ebx, [codec.afg]
-;     stdcall snd_hda_codec_write, ebx, 0, AC_VERB_SET_GPIO_MASK, 0x02
-;     stdcall snd_hda_codec_write, ebx, 0, AC_VERB_SET_GPIO_DIRECTION, 0x02
-;     stdcall snd_hda_codec_write, ebx, 0, AC_VERB_SET_GPIO_DATA, 0x02 ; first muted
-;     pop     ebx eax
-     ;Asper+ ]
+
      test    eax, eax
      jz      @f
   if DEBUG

@@ -13,7 +13,7 @@ DEBUG_IRQ	equ 0
 
 USE_SINGLE_MODE   equ  0   ; 1 = Single mode; 0 = Normal mode.
 
-TEST_VERSION_NUMBER  equ '018b'
+TEST_VERSION_NUMBER  equ '018d'
 
 ;Asper+ [
 SDO_TAG  equ 1	      ;Asper: Output stream tag id (any number except 0)
@@ -452,6 +452,52 @@ end virtual
 
 EVENT_NOTIFY	equ 0x00000200
 
+; Macroses by CleverMouse
+; The following macro assume that we are on uniprocessor machine.
+; Serious work is needed for multiprocessor machines.
+macro spin_lock_irqsave spinlock
+{
+	pushf
+	cli
+}
+macro spin_unlock_irqrestore spinlock
+{
+	popf
+}
+macro spin_lock_irq spinlock
+{
+	cli
+}
+macro spin_unlock_irq spinlock
+{
+	sti
+}
+
+SPINLOCK_BUSY = 1
+SPINLOCK_FREE = 0
+
+macro spin_lock
+{
+	push	eax ebx
+	mov	eax, aspinlock
+	mov	ebx, SPINLOCK_BUSY
+  @@:
+	lock	xchg [eax], ebx
+	cmp	ebx, SPINLOCK_FREE
+	jnz	@b
+	pop	ebx eax
+}
+
+macro spin_unlock
+{
+	push	eax ebx
+	mov	eax, aspinlock
+	mov	eax, aspinlock
+	mov	ebx, SPINLOCK_FREE
+lock	xchg	[eax], ebx
+	pop	ebx eax
+}
+
 public START
 public service_proc
 public version
@@ -602,12 +648,7 @@ proc START stdcall, state:dword
 	   stdcall RegService, sz_sound_srv, service_proc
 	   ret
 .fail:
-     if DEBUG
 	   mov esi, msgFail
-	   call SysMsgBoardStr
-     end if
-	   xor eax, eax
-	   ret
 .fail_msg:
 	   call SysMsgBoardStr
 	   xor eax, eax
@@ -647,8 +688,8 @@ proc service_proc stdcall, ioctl:dword
 	   mov esi, msgPlay
 	   call SysMsgBoardStr
      end if
-	   call play
-	   xor	    eax, eax
+	   call    play
+	   xor	   eax, eax
 	   ret
 @@:
 	   cmp eax, DEV_STOP
@@ -657,50 +698,50 @@ proc service_proc stdcall, ioctl:dword
 	   mov esi, msgStop
 	   call SysMsgBoardStr
      end if
-	   call stop
-	   xor	    eax, eax
+	   call    stop
+	   xor	   eax, eax
 	   ret
 @@:
-	   cmp eax, DEV_CALLBACK
-	   jne @F
-	   mov ebx, [edi+input]
-	   stdcall  set_callback, [ebx]
-	   xor	    eax, eax
+	   cmp	   eax, DEV_CALLBACK
+	   jne	   @f
+	   mov	   ebx, [edi+input]
+	   stdcall set_callback, [ebx]
+	   xor	   eax, eax
 	   ret
 @@:
-	   cmp eax, DEV_SET_MASTERVOL
-	   jne @F
-	   mov	    eax, [edi+input]
-	   mov	    eax, [eax]
-	   call     set_master_vol
-	   xor	    eax, eax
+	   cmp	   eax, DEV_SET_MASTERVOL
+	   jne	   @f
+	   mov	   eax, [edi+input]
+	   mov	   eax, [eax]
+	   call    set_master_vol
+	   xor	   eax, eax
 	   ret
 @@:
-	   cmp eax, DEV_GET_MASTERVOL
-	   jne @F
-	   mov	    ebx, [edi+output]
-	   stdcall  get_master_vol, ebx
-	   xor	    eax, eax
+	   cmp	   eax, DEV_GET_MASTERVOL
+	   jne	   @f
+	   mov	   ebx, [edi+output]
+	   stdcall get_master_vol, ebx
+	   xor	   eax, eax
 	   ret
 ;@@:
-;           cmp eax, DEV_GET_INFO
-;           jne @F
-;           mov      ebx, [edi+output]
-;           stdcall  get_dev_info, ebx
-;           xor      eax, eax
+;           cmp     eax, DEV_GET_INFO
+;           jne     @f
+;           mov     ebx, [edi+output]
+;           stdcall get_dev_info, ebx
+;           xor     eax, eax
 ;           ret
 @@:
-	   cmp eax, DEV_GET_POS
-	   jne @F
-	   stdcall  azx_get_position
-	   shr	    eax, 2
-	   mov	    ebx, [edi+output]
-	   mov	    [ebx], eax
-	   xor	    eax, eax
+	   cmp	   eax, DEV_GET_POS
+	   jne	   @f
+	   stdcall azx_get_position
+	   shr	   eax, 2
+	   mov	   ebx, [edi+output]
+	   mov	   [ebx], eax
+	   xor	   eax, eax
 	   ret
 @@:
 ;           cmp eax, DEV_SET_CHANNEL_VOLUME
-;           jne @F
+;           jne @f
 ;     if DEBUG
 ;           mov esi, msgSetChannelVolume
 ;           call SysMsgBoardStr
@@ -709,30 +750,30 @@ proc service_proc stdcall, ioctl:dword
 ;           mov      cl,  byte [ebx]      ; cl=channel
 ;           mov      eax, dword [ebx+1]   ; eax=volume in Db
 ;     if DEBUG
-;           push eax esi
-;           mov  esi, msgYAHOO1
-;           call SysMsgBoardStr
-;           stdcall  fdword2str, 1
-;           call SysMsgBoardStr
-;           mov  esi, strSemicolon
-;           call SysMsgBoardStr
-;           movzx eax, cl
-;           stdcall  fdword2str, 3
-;           call SysMsgBoardStr
-;           pop  esi eax
+;           push    eax esi
+;           mov     esi, msgYAHOO1
+;           call    SysMsgBoardStr
+;           stdcall fdword2str, 1
+;           call    SysMsgBoardStr
+;           mov     esi, strSemicolon
+;           call    SysMsgBoardStr
+;           movzx   eax, cl
+;           stdcall fdword2str, 3
+;           call    SysMsgBoardStr
+;           pop     esi eax
 ;     end if
 ;
-;           call     set_channel_volume
-;           xor      eax, eax
+;           call    set_channel_volume
+;           xor     eax, eax
 ;           ret
 ;@@:
-;           cmp eax, DEV_GET_CHANNEL_VOLUME
-;           jne @F
-;           mov      cl,  byte [edi+input]  ; cl=channel
-;           call     get_channel_volume
-;           mov      ebx, [edi+output]
-;           mov      [ebx], eax
-;           xor      eax, eax
+;           cmp     eax, DEV_GET_CHANNEL_VOLUME
+;           jne     @f
+;           mov     cl,  byte [edi+input]  ; cl=channel
+;           call    get_channel_volume
+;           mov     ebx, [edi+output]
+;           mov     [ebx], eax
+;           xor     eax, eax
 ;           ret
 ;@@:
 
@@ -765,6 +806,7 @@ restore   out_size
 
 align 4
 proc hda_irq   ;+
+	   spin_lock
      if DEBUG_IRQ
 	   push eax esi
 	   ;mov esi, msgIRQ
@@ -778,6 +820,7 @@ proc hda_irq   ;+
 	   call  azx_readl
 	   test  eax, eax
 	   jnz	 @f
+	   spin_unlock
 	   ret
   @@:
 	   mov	 ebx, eax ; status
@@ -843,6 +886,7 @@ proc hda_irq   ;+
   @@:
 ;end if
 	   or	 eax, 1
+	   spin_unlock
 	   ret
 endp
 
@@ -935,7 +979,7 @@ proc create_primary_buff
 	   ; wallclk has 24Mhz clock source
 	   mov [ctrl.period_wallclk], ((0x4000 * 24000) / 48000) * 1000
 
-	   ;-call  azx_stream_reset
+	   call  azx_stream_reset
 	   call  azx_setup_controller
 	   ret
 endp
@@ -1290,16 +1334,19 @@ endp
 
 align 4
 play:
+	   spin_lock
 	   mov	 edx, ICH6_REG_WALLCLK
 	   call  azx_readl
 	   mov	 [ctrl.start_wallclk], eax
 
 	   call  azx_stream_start
 	   xor	 eax, eax
+	   spin_unlock
 	   ret
 
 align 4
 stop:
+	     spin_lock
 ;*           call  azx_stream_stop        ;Asper: Hangs system
 ;R           push  ebx ecx edx
 ;R           ; stop DMA
@@ -1339,6 +1386,7 @@ stop:
 ;Asper ]
 
 	   xor	 eax, eax
+	   spin_unlock
 	   ret
 
 ;align 4
@@ -1404,6 +1452,7 @@ proc  azx_alloc_cmd_io
 endp
 
 proc  azx_init_cmd_io
+	   spin_lock_irq
 	   pusha
 	   ; CORB set up
 	   mov	 eax, [ctrl.rb]
@@ -1471,10 +1520,12 @@ proc  azx_init_cmd_io
 	   call  azx_writeb
 
 	   popa
+	   spin_unlock_irq
 	   ret
 endp
 
 proc  azx_free_cmd_io
+	   spin_lock_irq
 	   push  eax edx
 	   ; disable ringbuffer DMAs
 	   xor	  al, al
@@ -1483,12 +1534,14 @@ proc  azx_free_cmd_io
 	   mov	 edx, ICH6_REG_CORBCTL
 	   call  azx_writeb
 	   pop	 edx eax
+	   spin_unlock_irq
 	   ret
 endp
 
 
 ; send a command
 proc  azx_corb_send_cmd  stdcall, val:dword
+	   spin_lock_irq
 	   push  edx edi
 	   xor	 eax, eax
 	   ; add command to corb
@@ -1509,6 +1562,7 @@ proc  azx_corb_send_cmd  stdcall, val:dword
 
 	   pop	 edi edx
 	   xor	 eax, eax ;Asper+
+	   spin_unlock_irq
 	   ret
 endp
 
@@ -1589,7 +1643,9 @@ proc  azx_rirb_get_response
       test    ah, ah
       jz      @f
   .poll:
+      spin_lock_irq
       call    azx_update_rirb
+      spin_unlock_irq
   @@:
       mov     eax, [ctrl.rirb_cmd]
       test    eax, eax
@@ -2457,56 +2513,50 @@ get_channel_volume:
       shr     eax, 2 ; *0.25
       neg     eax
   .out:
-      pop     edx ecx ebx
-      ret
+	   pop	   edx ecx ebx
+	   ret
 
 
 ; in:  ecx = delay
 udelay:
-	   push  eax ecx edx
-	   test  ecx, ecx
-	   jnz	 @f
-	   inc	 ecx
+	push	eax ecx edx
+	test	ecx, ecx
+	jnz	@f
+	inc	ecx
   @@:
-	   mov	 eax, ecx
-	   mov	 cx, 500
-	   mul	 cl
-	   mov	 ecx, edx
-	   shl	 ecx, 16
-	   or	 ecx, eax
+	mov	eax, ecx
+	mov	cx, 500
+	mul	cl
+	mov	ecx, edx
+	shl	ecx, 16
+	or	ecx, eax
   @@:
-	   xor	 eax, eax
-	   cpuid
-	   dec	 ecx
-	   jz	 @b
-	   pop	 edx ecx eax
-	   ret
+	xor	eax, eax
+	cpuid
+	dec	ecx
+	jz	@b
+	pop	edx ecx eax
+	ret
 
 align 4
 proc StallExec
-	   push ecx
-	   push edx
-	   push ebx
-	   push eax
+	push	ecx edx ebx eax
 
-	   mov ecx, CPU_FREQ
-	   mul ecx
-	   mov ebx, eax       ;low
-	   mov ecx, edx       ;high
-	   rdtsc
-	   add ebx, eax
-	   adc ecx,edx
-@@:
-	   rdtsc
-	   sub eax, ebx
-	   sbb edx, ecx
-	   js @B
+	mov	ecx, CPU_FREQ
+	mul	ecx
+	mov	ebx, eax       ;low
+	mov	ecx, edx       ;high
+	rdtsc
+	add	ebx, eax
+	adc	ecx,edx
+  @@:
+	rdtsc
+	sub	eax, ebx
+	sbb	edx, ecx
+	js	@B
 
-	   pop eax
-	   pop ebx
-	   pop edx
-	   pop ecx
-	   ret
+	pop	eax ebx edx ecx
+	ret
 endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2515,44 +2565,44 @@ endp
 
 align 4
 proc azx_readb
-	   add edx, [ctrl.ctrl_mem_base]
-	   mov al, [edx]
-	   ret
+	add	edx, [ctrl.ctrl_mem_base]
+	mov	al, [edx]
+	ret
 endp
 
 align 4
 proc azx_readw
-	   add edx, [ctrl.ctrl_mem_base]
-	   mov ax, [edx]
-	   ret
+	add	edx, [ctrl.ctrl_mem_base]
+	mov	ax, [edx]
+	ret
 endp
 
 align 4
 proc azx_readl
-	   add edx, [ctrl.ctrl_mem_base]
-	   mov eax, [edx]
-	   ret
+	add	edx, [ctrl.ctrl_mem_base]
+	mov	eax, [edx]
+	ret
 endp
 
 align 4
 proc azx_writeb
-	   add edx, [ctrl.ctrl_mem_base]
-	   mov [edx], al
-	   ret
+	add	edx, [ctrl.ctrl_mem_base]
+	mov	[edx], al
+	ret
 endp
 
 align 4
 proc azx_writew
-	   add edx, [ctrl.ctrl_mem_base]
-	   mov [edx], ax
-	   ret
+	add	edx, [ctrl.ctrl_mem_base]
+	mov	[edx], ax
+	ret
 endp
 
 align 4
 proc azx_writel
-	   add edx, [ctrl.ctrl_mem_base]
-	   mov [edx], eax
-	   ret
+	add	edx, [ctrl.ctrl_mem_base]
+	mov	[edx], eax
+	ret
 endp
 
 ;_______
@@ -2561,56 +2611,56 @@ endp
 ;Asper remember to add this functions:
 proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
   if DEBUG
-     push    esi
-     mov     esi, msgUnsolEvent
-     call    SysMsgBoardStr
-     pop     esi
+	push	esi
+	mov	esi, msgUnsolEvent
+	call	SysMsgBoardStr
+	pop	esi
   end if
-  ret
+	ret
 endp
 ;...
 
 
 align 4
 proc  fdword2str stdcall, flags:dword	; bit 0 - skipLeadZeroes; bit 1 - newLine; other bits undefined
-      push  eax ebx ecx
-      mov  esi, hex_buff
-      mov ecx, -8
-      push eax
+	push	eax ebx ecx
+	mov	esi, hex_buff
+	mov	ecx, -8
+	push	eax
   @@:
-      rol eax, 4
-      mov ebx, eax
-      and ebx, 0x0F
-      mov bl, [ebx+hexletters]
-      mov [8+esi+ecx], bl
-      inc ecx
-      jnz @B
-      pop eax
+	rol	eax, 4
+	mov	ebx, eax
+	and	ebx, 0x0F
+	mov	bl, [ebx+hexletters]
+	mov	[8+esi+ecx], bl
+	inc	ecx
+	jnz	@b
+	pop	eax
 
-      mov  dword [esi+8], 0
-      test [flags], 0x2 ; new line ?
-      jz   .no_newline
-      mov  dword [esi+8], 0x00000A0D
+	mov	dword [esi+8], 0
+	test	[flags], 0x2 ; new line ?
+	jz	.no_newline
+	mov	dword [esi+8], 0x00000A0D
   .no_newline:
 
-      push eax
-      test [flags], 0x1 ; skip zero bits ?
-      jz   .no_skipz
-      mov  ecx, 8
+	push	eax
+	test	[flags], 0x1 ; skip zero bits ?
+	jz	.no_skipz
+	mov	ecx, 8
   @@:
-      test eax, 0xF0000000
-      jnz  .skipz_done
-      rol  eax, 4
-      inc  esi
-      dec  ecx
-      jnz  @b
-      dec  esi
+	test	eax, 0xF0000000
+	jnz	.skipz_done
+	rol	eax, 4
+	inc	esi
+	dec	ecx
+	jnz	@b
+	dec	esi
   .skipz_done:
   .no_skipz:
-      pop eax
+	pop	eax
 
-      pop    ecx ebx eax
-      ret
+	pop	ecx ebx eax
+	ret
 endp
 
 hexletters   db '0123456789ABCDEF'
@@ -2913,6 +2963,7 @@ end if
 
 section '.data' data readable writable align 16
 
+aspinlock	 dd SPINLOCK_FREE
 
 codec CODEC
 ctrl AC_CNTRL
