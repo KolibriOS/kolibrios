@@ -8,7 +8,7 @@
 format MS COFF
 
 DEBUG		equ 1
-FDEBUG		equ 1
+FDEBUG		equ 0
 DEBUG_IRQ	equ 0
 
 USE_SINGLE_MODE   equ  0   ; 1 = Single mode; 0 = Normal mode.
