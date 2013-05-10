@@ -193,21 +193,25 @@ endl
 	push	esi		; fixme!!
 
 	mov	ecx, [edx + Image.Type]
-	dec	ecx
-	jz	.bpp8i
-	dec	ecx
-	jz	.bpp24
-	dec	ecx
-	jz	.bpp32
-	dec	ecx
-	dec	ecx		; tiff doesn't handle 15bpp images
-	jz	.bpp16
-	dec	ecx
-	jz	.bpp1
-	dec	ecx
-	jz	.bpp8g
-	dec	ecx
-	jz	.bpp8a
+        cmp     ecx, Image.bpp8i
+        je	.bpp8i
+        cmp     ecx, Image.bpp24
+	je	.bpp24
+        cmp     ecx, Image.bpp32
+	je	.bpp32
+        cmp     ecx, Image.bpp16
+	je	.bpp16
+        cmp     ecx, Image.bpp1
+	je	.bpp1
+        cmp     ecx, Image.bpp8g
+	je	.bpp8g
+        cmp     ecx, Image.bpp8a
+	je	.bpp8a
+;        cmp     ecx, Image.bpp2
+;	je	.bpp2
+;        cmp     ecx, Image.bpp4
+;	je	.bpp4
+        jmp     .quit
 ;error report!!
 
   .bpp1:
@@ -222,6 +226,9 @@ endl
   .bpp1.white_is_zero:
 	mov	[edi], dword 0x00ffffff
 	mov	[edi + 4], dword 0x00000000
+	jmp	.common
+
+  .bpp2:
 	jmp	.common
 
   .bpp4:
@@ -351,6 +358,9 @@ endl
 
 
   .decoded:
+        cmp     [ebx + tiff_extra.planar_configuration], TIFF.PLANAR.PLANAR
+        jne     .post.rgb_bgr
+        stdcall tiff._.planar_to_separate, [retvalue]
   .post.rgb_bgr:
 	cmp	[ebx + tiff_extra.samples_per_pixel], 3
 	jne	.post.rgba_bgra
@@ -617,6 +627,21 @@ proc tiff._.parse_IFDE _data, _endianness
 	mov	[ebx + tiff_extra.strip_byte_counts], eax
 	jmp	.quit
 
+  .tag_11c:						; Planar configuration
+	cmp	ax, TIFF.IFDE_TYPE.SHORT
+	jne	@f
+	lodsd
+	xor	eax, eax
+	lodsw_
+	mov	[ebx + tiff_extra.planar_configuration], eax
+;debug_print 'planar_configuration: '
+;debug_print_dec eax
+;newline
+	lodsw
+    @@:
+	jmp	.quit
+
+
   .tag_13d:						; Predictor
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
@@ -710,17 +735,16 @@ endp
 
 proc tiff._.decompress.packbits _image
 
-	push	ebx ecx edx esi
+	push	edx
 
 	mov	edx, ecx
 
   .decode:
 	lodsb
 	dec	edx
-	cmp	al, 0x7f
-	jbe	.different
 	cmp	al, 0x80
-	jne	.identical
+	jb	.different
+	jg	.identical
 	test	edx, edx
 	jz	.quit
 	jmp	.decode
@@ -745,7 +769,7 @@ proc tiff._.decompress.packbits _image
 	jnz	.decode
 
   .quit:
-	pop	esi edx ecx ebx
+	pop	edx
 	ret
 endp
 
@@ -1167,6 +1191,75 @@ proc	tiff._.pack_8a _img
 	ret
 endp
 
+
+proc tiff._.planar_to_separate _img
+locals
+        pixels          rd 1
+        tmp_image       rd 1
+        channels        rd 1
+        channel_padding rd 1
+endl
+        pushad
+        mov     ebx, [_img]
+        mov     ecx, [ebx + Image.Width]
+        imul    ecx, [ebx + Image.Height]
+        mov     [pixels], ecx
+        cmp     [ebx + Image.Type], Image.bpp24
+        je      .bpp24
+        cmp     [ebx + Image.Type], Image.bpp32
+        je      .bpp32
+;        cmp     [ebx + Image.Type], Image.bpp4
+;        je      .bpp4
+        jmp     .quit
+  .bpp24:
+        mov     [channels], 3
+        mov     [channel_padding], 2
+        lea     eax, [ecx*3]
+        jmp     .proceed
+  .bpp32:
+        mov     [channels], 4
+        mov     [channel_padding], 3
+        shl     eax, 2
+        jmp     .proceed
+  .bpp4:
+        mov     [channels], 3
+        mov     [channel_padding], 2
+        shr     eax, 1
+        jmp     .proceed
+  .proceed:
+        invoke  mem.alloc, eax
+        test    eax, eax
+        jz      .quit
+        mov     [tmp_image], eax
+  .channel:
+        mov     esi, [ebx + Image.Data]
+        mov     edi, [tmp_image]
+        mov     ecx, [pixels]
+        mov     eax, [channel_padding]
+        inc     eax
+        sub     eax, [channels]
+        add     edi, eax
+        mov     eax, [channels]
+        dec     eax
+        imul    eax, [pixels]
+        add     esi, eax
+    @@:
+        lodsb
+        stosb
+        add     edi, [channel_padding]
+        dec     ecx
+        jnz     @b
+        dec     [channels]
+        jnz     .channel
+
+  .quit:
+        mov     eax, [tmp_image]
+        xchg    [ebx + Image.Data], eax
+        invoke  mem.free, eax
+        popad
+        ret
+endp
+
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -1184,6 +1277,7 @@ tiff.IFDE_tag_table.begin:
   .tag_115:		dd	0x0115,	tiff._.parse_IFDE.tag_115		; samples per pixel
   .tag_116:		dd	0x0116,	tiff._.parse_IFDE.tag_116		; rows per strip
   .tag_117:		dd	0x0117,	tiff._.parse_IFDE.tag_117		; strip byte counts
+  .tag_11c:		dd	0x011c,	tiff._.parse_IFDE.tag_11c		; planar configuration
   .tag_13d:		dd	0x013d,	tiff._.parse_IFDE.tag_13d		; predictor
   .tag_140:		dd	0x0140,	tiff._.parse_IFDE.tag_140		; color map
   .tag_152:		dd	0x0152,	tiff._.parse_IFDE.tag_152		; extra samples

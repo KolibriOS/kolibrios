@@ -45,6 +45,7 @@ include 'xcf/xcf.asm'
 include 'tiff/tiff.asm'
 include 'pnm/pnm.asm'
 include 'wbmp/wbmp.asm'
+include 'xbm/xbm.asm'
 
 include 'scale.asm'
 include 'convert.asm'
@@ -1926,6 +1927,7 @@ img.formats_table:
   .tiff dd LIBIMG_FORMAT_TIFF, img.is.tiff, img.decode.tiff,    img.encode.tiff,0
   .pnm  dd LIBIMG_FORMAT_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8g) + (1 SHL Image.bpp24)
   .wbmp dd LIBIMG_FORMAT_WBMP, img.is.wbmp, img.decode.wbmp,    img.encode.wbmp,0
+  .xbm  dd LIBIMG_FORMAT_XBM,  img.is.xbm,  img.decode.xbm,     img.encode.xbm, 0
   .z80  dd LIBIMG_FORMAT_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
         dd 0
 
@@ -2161,7 +2163,7 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
 
 align 4
-type2bpp    dd  8, 24, 32, 15, 16, 1, 9 ;,16
+type2bpp    dd  8, 24, 32, 15, 16, 1, 9;, 2, 4
 img._.do_rgb.handlers:
     dd  img._.do_rgb.bpp8i
     dd  img._.do_rgb.bpp24

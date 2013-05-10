@@ -23,6 +23,7 @@ struct tiff_header
 	first_IFD		rd	1
 ends
 
+
 struct tiff_extra
 	image_width			rd	1	; SHORT or LONG
 	image_height			rd	1	; SHORT or LONG
@@ -38,6 +39,7 @@ struct tiff_extra
 	strip_byte_counts_length	rd	1
 	palette				rd	1	; SHORT
 	palette_size			rd	1	; in colors, not samples
+        planar_configuration            rd      1       ; SHORT
 	extra_samples			rd	1	; pointer to array of SHORTs
 	extra_samples_number		rd	1
 	predictor			rd	1	; SHORT
@@ -86,6 +88,9 @@ TIFF.PHOTOMETRIC.MASK		=	4
 TIFF.PHOTOMETRIC.CMYK		=	5
 TIFF.PHOTOMETRIC.YCbCr		=	6
 TIFF.PHOTOMETRIC.CIELAB		=	8
+
+TIFF.PLANAR.CHUNKY              =       1
+TIFF.PLANAR.PLANAR              =       2
 
 
 macro	lodsw_

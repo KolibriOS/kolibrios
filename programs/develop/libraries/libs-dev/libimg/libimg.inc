@@ -30,7 +30,8 @@ LIBIMG_FORMAT_XCF	= 9
 LIBIMG_FORMAT_TIFF	= 10
 LIBIMG_FORMAT_PNM	= 11
 LIBIMG_FORMAT_WBMP	= 12
-LIBIMG_FORMAT_Z80	= 13
+LIBIMG_FORMAT_XBM	= 13
+LIBIMG_FORMAT_Z80	= 14
 
 ; scale type                    ; corresponding img.scale params
 LIBIMG_SCALE_INTEGER	= 1     ; scale factor ; reserved 0
@@ -78,14 +79,14 @@ struct FormatsTableEntry
 ends
 
 struct Image
-  Checksum dd ? ; ((Width ROL 16) OR Height) XOR Data[0]
+  Checksum dd ? ; ((Width ROL 16) OR Height) XOR Data[0]	; ignored so far
   Width    dd ?
   Height   dd ?
   Next     dd ?
   Previous dd ?
   Type     dd ? ; one of Image.bppN
   Data     dd ?
-  Palette  dd ? ; used iff Type eq Image.bpp8 or Image.bpp1
+  Palette  dd ? ; used iff Type eq Image.bpp1, Image.bpp2, Image.bpp4 or Image.bpp8i
   Extended dd ?
   Flags    dd ? ; bitfield
   Delay    dd ? ; used iff Image.IsAnimated is set in Flags
@@ -101,8 +102,8 @@ Image.bpp16 = 5
 Image.bpp1  = 6
 Image.bpp8g = 7  ; grayscale
 Image.bpp8a = 8  ; grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
-;Image.bpp4  = 9
-;Image.bpp2  = 10
+;Image.bpp2  = 9
+;Image.bpp4  = 10
 
 ; bits in Image.Flags
 Image.IsAnimated = 1
