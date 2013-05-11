@@ -15,6 +15,8 @@
 ;
 ; Version 1.0
 
+include "lang.inc"
+
 lf              equ     0ah
 cr              equ     0dh
 
@@ -262,7 +264,11 @@ conv_abs_to_THS:
         retn
 ;------------------------------------------
 
+if lang eq sp
+loading         db      cr,lf,'Iniciando el sistema ',00h
+else
 loading         db      cr,lf,'Starting system ',00h
+end if
 error_message   db      13,10
 kernel_name     db      'KERNEL  MNT ?',cr,lf,00h
 FirstRootDirSecNum      dw      ?

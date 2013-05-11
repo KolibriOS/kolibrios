@@ -150,7 +150,7 @@ struct DISK
 ; 0 if media fields are not used, nonzero otherwise. If .MediaRefCount is
 ; nonzero, this field is nonzero too; however, when .MediaRefCount goes
 ; to zero, there is some time interval during which media object is still used.
-		align 4
+                        dw ? ; padding
 ; The following fields are not valid unless either .MediaInserted is nonzero
 ; or they are accessed from a code which has obtained the reference when
 ; .MediaInserted was nonzero.
@@ -381,6 +381,7 @@ disk_add:
 	call	mutex_init
 	xor	eax, eax
 	mov	dword [esi+DISK.MediaInserted], eax
+        mov     [esi+DISK.MediaRefCount], eax
 	inc	eax
 	mov	[esi+DISK.RefCount], eax
 ; The DISK structure is initialized.

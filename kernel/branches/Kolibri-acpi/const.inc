@@ -218,10 +218,10 @@ KEY_BUFF            equ (OS_BASE+0x000F401)
 BTN_COUNT           equ (OS_BASE+0x000F500)
 BTN_BUFF            equ (OS_BASE+0x000F501)
 
-CPU_FREQ            equ (OS_BASE+0x000F600)
+;CPU_FREQ            equ (OS_BASE+0x000F600)
 
 ;unused ? no active references
-MOUSE_PORT          equ (OS_BASE+0x000F604)
+;MOUSE_PORT          equ (OS_BASE+0x000F604)
 
 ;unused
 PS2_CHUNK           equ (OS_BASE+0x000FB00)
@@ -569,6 +569,35 @@ struct  MUTEX
         lhead   LHEAD
         count   dd ?
 ends
+
+struct  PCIDEV
+        bk              dd ?
+        fd              dd ?
+        vendor_device_id dd ?
+        class           dd ?
+        devfn           db ?
+        bus             db ?
+ends
+
+; The following macro assume that we are on uniprocessor machine.
+; Serious work is needed for multiprocessor machines.
+macro spin_lock_irqsave spinlock
+{
+        pushf
+        cli
+}
+macro spin_unlock_irqrestore spinlock
+{
+        popf
+}
+macro spin_lock_irq spinlock
+{
+        cli
+}
+macro spin_unlock_irq spinlock
+{
+        sti
+}
 
 struct  MEM_STATE
         mutex           MUTEX

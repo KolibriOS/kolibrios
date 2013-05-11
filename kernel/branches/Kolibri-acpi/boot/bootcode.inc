@@ -863,6 +863,14 @@ else if lang eq et
         mov     [time_str+9], ' '
         mov     [time_str+10], ' '
 @@:
+else if lang eq sp
+; esperar 5/4/3/2 segundos, 1 segundo
+        cmp     al, 1
+        mov     cl, 's'
+        ja      @f
+        mov     cl, ' '
+@@:
+        mov     [time_str+10], cl
 else
 ; wait 5/4/3/2 seconds, 1 second
         cmp     al, 1
@@ -917,7 +925,11 @@ if ~ defined extended_primary_loader
         or      al, 20h
         cmp     al, 'n'
         jz      .loadc
+        if lang eq sp
+        cmp     al, 's'
+        else
         cmp     al, 'y'
+        end if
         jnz     .waityn
         call    putchar
         mov     byte [space_msg+80], 186

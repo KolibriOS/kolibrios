@@ -888,6 +888,7 @@ v86_irq2:
 .cont2:
         pop     ecx
 .cont:
+        add     ebx, 0x100
         loop    .scan
         mov     ecx, edi
         call    irq_eoi

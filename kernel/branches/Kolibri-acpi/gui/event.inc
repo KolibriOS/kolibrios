@@ -165,6 +165,7 @@ raise_event:                                       ;; EXPORT use
 ;   esi - event data (=0 => skip)
 ;scratched: ebx,ecx,esi,edi
         call    NotDummyTest ; not returned for fail !!!
+        mov     [check_idle_semaphore], 5
         or      esi, esi
         jz      @f
         lea     edi, [ebx+EVENT.code]
@@ -307,6 +308,23 @@ wait_event:                                        ;; EXPORT use
         jmp     wait_finish
 ;-----------------------------------------------------------------------------
 align 4
+wait_event_timeout:
+;param:
+;   eax - event
+;   ebx - uid (for Dummy testing)
+;   ecx - timeout in timer ticks
+;retval:
+;   eax - EVENT handle or 0 if timeout
+        call    DummyTest
+        mov     ebx, ecx
+        mov     ecx, eax             ; wait_param
+        mov     edx, get_event_alone ; wait_test
+        call    Wait_events_ex
+        test    eax, eax
+        jnz     wait_finish
+        ret
+;-----------------------------------------------------------------------------
+align 4
 get_event_ex:                                      ;; f68:14
 ;info:
 ;   Ожидание любого события в очереди EventList текущего слота
@@ -441,7 +459,7 @@ align 4
 ;--------------------------------------
 align 4
 .result:
-        setae   byte[esp+32] ;считаем, что исходно: dword[esp+32]==72
+        setae   byte[esp+32+4] ;считаем, что исходно: dword[esp+32+4]==72
 ;--------------------------------------
 align 4
 .retf:
@@ -467,9 +485,11 @@ sys_waitforevent:                                  ;; f10
 ;--------------------------------------
 align 4
 sys_wait_event_timeout:                            ;; f23
+        call    unprotect_from_terminate
         mov     edx, get_event_for_app; wait_test
         call    Wait_events_ex        ; ebx - timeout
         mov     [esp+32], eax
+        call    protect_from_terminate
         ret
 ;-----------------------------------------------------------------------------
 align 4

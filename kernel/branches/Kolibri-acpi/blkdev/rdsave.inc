@@ -24,7 +24,7 @@ sysfn_saveramdisk:      ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
         mov     ebx, saverd_fileinfo
         mov     [saverd_fileinfo.name], ecx
         pushad
-        call    file_system_lfn	;in ebx
+        call    file_system_lfn_protected ;in ebx
         popad
         mov     [esp+32], eax
         ret

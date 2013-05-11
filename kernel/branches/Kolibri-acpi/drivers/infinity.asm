@@ -379,10 +379,10 @@ align 4
 
         mov     eax, esp
 
-        push ebx
-        push ecx
+        push    ebx
+        push    ecx
         push    edx
-        push esi
+        push    esi
         push    edi
 
         push    4              ;.out_size
@@ -397,10 +397,10 @@ align 4
         add     esp, 6*4
 
         pop     edi
-        pop esi
+        pop     esi
         pop     edx
-        pop ecx
-        pop ebx
+        pop     ecx
+        pop     ebx
 
         test    eax, eax
         jz      @F

@@ -197,19 +197,19 @@ Parameters:
   * ecx = 0xXYRRGGBB, where
     * RR, GG, BB specify text color
     * X=ABnn (bits):
-    * nn specifies the used font: 0=system monospaced,
-      1=system font of variable width
-    * A=0 - output esi characters, A=1 - output ASCIIZ-string
-    * B=1 - fill background with the color edi
+      * nn specifies the used font: 0=system monospaced,
+        1=system font of variable width
+      * A=0 - output esi characters, A=1 - output ASCIIZ-string
+      * B=1 - fill background with the color edi
     * Y = Cnnn
       * C=1 redirect the output to the user area, specified in edi
-      * nnn - not used in the current, must be 0 (zero)
+      * nnn - not used in the current, must be 0 (zero) 
   * edx = pointer to the beginning of the string
   * esi = for A=0 length of the string, must not exceed 255;
           for A=1 is ignored
   * edi = color to fill background, if B=1
   * edi = pointer to user area, for redirect, if C=1
-
+  
 Returned value:
   * function does not return value
 Remarks:
@@ -1788,7 +1788,7 @@ Returned value:
   * eax = 0x000000XX - owner of pixel the slot window N
     If incorrect values ebx and ecx then function returns 0
   * The function takes the value from the area [_WinMapAddress]
-
+  
 ======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
 ======================================================================
@@ -3394,15 +3394,17 @@ Parameters:
   * ebx = 3 - subfunction number
 Returned value:
   * eax = bit mask:
-  * bit 0 (mask 1): left Shift is pressed
-  * bit 1 (mask 2): right Shift is pressed
-  * bit 2 (mask 4): left Ctrl is pressed
-  * bit 3 (mask 8): right Ctrl is pressed
-  * bit 4 (mask 0x10): left Alt is pressed
-  * bit 5 (mask 0x20): right Alt is pressed
-  * bit 6 (mask 0x40): CapsLock is on
-  * bit 7 (mask 0x80): NumLock is on
-  * bit 8 (mask 0x100): ScrollLock is on
+  * bit 0  (mask 1): left Shift is pressed
+  * bit 1  (mask 2): right Shift is pressed
+  * bit 2  (mask 4): left Ctrl is pressed
+  * bit 3  (mask 8): right Ctrl is pressed
+  * bit 4  (mask 0x10): left Alt is pressed
+  * bit 5  (mask 0x20): right Alt is pressed
+  * bit 6  (mask 0x40): CapsLock is on
+  * bit 7  (mask 0x80): NumLock is on
+  * bit 8  (mask 0x100): ScrollLock is on
+  * bit 9  (mask 0x200): left Win is pressed
+  * bit 10 (mask 0x400): right Win is pressed
   * other bits are cleared
 
 -------------- Subfunction 4 - set system-wide hotkey. ---------------
@@ -4135,8 +4137,8 @@ Examples:
   * '/hd0/2/menuet/pics/tanzania.bmp',0
   * '/hd0/1/Program files/NameOfProgram/SomeFile.SomeExtension',0
   * '/sys/MySuperApp.ini',0
-Also function supports relative names.  If the path begins not
-with '/', it is considered relative to a current folder. To get or
+Also function supports relative names.  If the path begins not 
+with '/', it is considered relative to a current folder. To get or 
 set a current folder, use the function 30.
 
 Available subfunctions:
@@ -4555,7 +4557,7 @@ Parameters:
      B   - blit into the background surface
      T   - transparent blit
 
-  * ecx = pointer to the function parametrs
+  * ecx = pointer to the function parameters
         destination offset and clipping
      +0 signed dword: destination rectangle X offset from the window
                       top-left corner
@@ -4565,17 +4567,18 @@ Parameters:
     +12 dword:        destination rectangle height
 
         source offset and clipping
-    +16 signed dword: source rectangle X offset from the bitmap top-left corner
-    +20 signed dword: source rectangle Y offset from the bitmap top-left corner
+    +16 signed dword: source rectangle X offset from the bitmap
+                      top-left corner
+    +20 signed dword: source rectangle Y offset from the bitmap
+                      top-left corner
     +24 dword:        source rectangle width
     +28 dword:        source rectangle height
 
-    +32: dword: size of the bitmap row in bytes
-    +36: dword: bitmap data - must be 32bpp
+    +32: dword: bitmap data - must be 32bpp
+    +36: dword: size of the bitmap row in bytes
 
 Returned value:
   * function does not return value
-
 
 ======================================================================
 =============== Function -1 - terminate thread/process ===============

@@ -155,12 +155,12 @@ pci_make_config_cmd:
 align 4
 
 pci_read_reg:
+        push    ebx esi
         cmp     byte [BOOT_VAR+0x9020], 2;what mechanism will we use?
         je      pci_read_reg_2
 
                 ; mechanism 1
-        push    esi   ; save register size into ESI
-        mov     esi, eax
+        mov     esi, eax ; save register size into ESI
         and     esi, 3
 
         call    pci_make_config_cmd
@@ -202,15 +202,14 @@ pci_fin_read1:
         out     dx, eax
 
         pop     eax
-        pop     esi
+        pop     esi ebx
         ret
 pci_read_reg_2:
 
         test    bh, 128 ;mech#2 only supports 16 devices per bus
         jnz     pci_read_reg_err
 
-        push    esi; save register size into ESI
-        mov     esi, eax
+        mov     esi, eax ; save register size into ESI
         and     esi, 3
 
         push    eax
@@ -262,12 +261,13 @@ pci_fin_read2:
         out     dx, al
 
         pop     eax
-        pop     esi
+        pop     esi ebx
         ret
 
 pci_read_reg_err:
         xor     eax, eax
         dec     eax
+        pop     esi ebx
         ret
 
 
@@ -286,12 +286,12 @@ pci_read_reg_err:
 align 4
 
 pci_write_reg:
+        push    esi ebx
         cmp     byte [BOOT_VAR+0x9020], 2;what mechanism will we use?
         je      pci_write_reg_2
 
                 ; mechanism 1
-        push    esi   ; save register size into ESI
-        mov     esi, eax
+        mov     esi, eax ; save register size into ESI
         and     esi, 3
 
         call    pci_make_config_cmd
@@ -335,7 +335,7 @@ pci_fin_write1:
         out     dx, eax
 
         xor     eax, eax
-        pop     esi
+        pop     ebx esi
 
         ret
 pci_write_reg_2:
@@ -344,8 +344,7 @@ pci_write_reg_2:
         jnz     pci_write_reg_err
 
 
-        push    esi; save register size into ESI
-        mov     esi, eax
+        mov     esi, eax ; save register size into ESI
         and     esi, 3
 
         push    eax
@@ -397,12 +396,13 @@ pci_fin_write2:
         out     dx, al
 
         xor     eax, eax
-        pop     esi
+        pop     ebx esi
         ret
 
 pci_write_reg_err:
         xor     eax, eax
         dec     eax
+        pop     ebx esi
         ret
 
 if defined mmio_pci_addr        ; must be set above
@@ -658,3 +658,67 @@ sys_pcibios:
 .return_a:
         mov     dword[esp + 32], eax
         ret
+
+proc pci_enum
+        push    ebp
+        mov     ebp, esp
+        push    0
+virtual at ebp-4
+.devfn          db      ?
+.bus            db      ?
+end virtual
+.loop:
+        mov     ah, [.bus]
+        mov     al, 2
+        mov     bh, [.devfn]
+        mov     bl, 0
+        call    pci_read_reg
+        cmp     eax, 0xFFFFFFFF
+        jnz     .has_device
+        test    byte [.devfn], 7
+        jnz     .next_func
+        jmp     .no_device
+.has_device:
+        push    eax
+        push    sizeof.PCIDEV
+        pop     eax
+        call    malloc
+        pop     ecx
+        test    eax, eax
+        jz      .nomemory
+        mov     edi, eax
+        mov     [edi+PCIDEV.vendor_device_id], ecx
+        mov     eax, pcidev_list
+        mov     ecx, [eax+PCIDEV.bk]
+        mov     [edi+PCIDEV.bk], ecx
+        mov     [edi+PCIDEV.fd], eax
+        mov     [ecx+PCIDEV.fd], edi
+        mov     [eax+PCIDEV.bk], edi
+        mov     eax, dword [.devfn]
+        mov     word [edi+PCIDEV.devfn], ax
+        mov     bh, al
+        mov     al, 2
+        mov     bl, 8
+        call    pci_read_reg
+        shr     eax, 8
+        mov     [edi+PCIDEV.class], eax
+        test    byte [.devfn], 7
+        jnz     .next_func
+        mov     ah, [.bus]
+        mov     al, 0
+        mov     bh, [.devfn]
+        mov     bl, 0Eh
+        call    pci_read_reg
+        test    al, al
+        js      .next_func
+.no_device:
+        or      byte [.devfn], 7
+.next_func:
+        inc     dword [.devfn]
+        mov     ah, [.bus]
+        cmp     ah, [BOOT_VAR+0x9021]
+        jbe     .loop
+.nomemory:
+        leave
+        ret
+endp

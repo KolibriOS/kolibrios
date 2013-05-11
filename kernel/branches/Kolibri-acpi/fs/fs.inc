@@ -21,6 +21,10 @@ $Revision$
 
 
 iglobal
+
+if lang eq sp
+include 'fs/fs-sp.inc'
+else
 dir0:
              db  'HARDDISK   '
              db  'RAMDISK    '
@@ -33,6 +37,7 @@ dir1:
              db  'THIRD      '
              db  'FOURTH     '
              db  0
+end if
 
 not_select_IDE db 0
 

@@ -66,6 +66,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+format binary as "mnt"
+
 include 'macros.inc'
 include 'struct.inc'
 
@@ -131,13 +133,19 @@ use16
                   org   0x0
         jmp     start_of_code
 
+if lang eq sp
+include "kernelsp.inc"  ; spanish kernel messages
+else
 version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
+end if
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
 
-if lang eq en
-include "boot/booteng.inc"     ; english system boot messages
+if lang eq ge
+include "boot/bootge.inc"     ; german system boot messages
+else if lang eq sp
+include "boot/bootsp.inc"     ; spanish system boot messages
 else if lang eq ru
 include "boot/bootru.inc"      ; russian system boot messages
 include "boot/ru.inc"          ; Russian font
@@ -145,7 +153,7 @@ else if lang eq et
 include "boot/bootet.inc"      ; estonian system boot messages
 include "boot/et.inc"          ; Estonian font
 else
-include "boot/bootge.inc"      ; german system boot messages
+include "boot/booten.inc"      ; english system boot messages
 end if
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
@@ -160,8 +168,6 @@ include "detect/biosdisk.inc"
 
 
 ; CR0 Flags - Protected mode and Paging
-
-align 16
 
         mov     ecx, CR0_PE
 
@@ -200,20 +206,6 @@ align 16
         mov     cr0, eax
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
 
-include "boot/shutdown.inc" ; shutdown or restart
-
-include "data16.inc"
-
-align 4096
-__ap_start_16:
-        cli
-        lgdt    [cs:(tmp_gdt-__ap_start_16)]            ; Load GDT
-        mov     eax, cr0                                ; protected mode
-        or      eax, CR0_PE
-        and     eax, 10011111b *65536*256 + 0xffffff    ; caching enabled
-        mov     cr0, eax
-        jmp     pword os_code:__ap_start_32             ; jmp to enable 32 bit mode
-
 align 8
 tmp_gdt:
 
@@ -233,36 +225,10 @@ tmp_gdt:
         dw     11011111b *256 +10010010b
         db     0x00
 
+include "data16.inc"
 
 use32
 org $+0x10000
-
-align 16
-__ap_start_32:
-        mov     ax, os_stack       ; Selector for os
-        mov     ds, ax
-        mov     es, ax
-        mov     fs, ax
-        mov     gs, ax
-        mov     ss, ax
-
-        bt      [cpu_caps-OS_BASE], CAPS_PSE
-        jnc     .no_PSE
-
-        mov     ebx, cr4
-        or      ebx, CR4_PSE
-        mov     eax, PG_LARGE+PG_SW
-        mov     cr4, ebx
-.no_PSE:
-        mov     eax, sys_pgdir-OS_BASE
-        mov     cr3, eax
-
-        mov     eax, cr0
-        or      eax, CR0_PG+CR0_WP
-        mov     cr0, eax
-
-        lgdt    [gdts]
-        jmp     pword os_code:ap_entry
 
 align 4
 B32:
@@ -325,6 +291,11 @@ align 4
 bios32_entry    dd ?
 tmp_page_tabs   dd ?
 
+use16
+org $-0x10000
+include "boot/shutdown.inc" ; shutdown or restart
+org $+0x10000
+use32
 
 __DEBUG__       fix 1
 __DEBUG_LEVEL__ fix 1
@@ -333,37 +304,6 @@ include 'init.inc'
 org OS_BASE+$
 
 include 'fdo.inc'
-
-ap_entry:
-        bt      [cpu_caps], CAPS_PGE
-        jnc     @F
-
-        mov     ebx, cr4
-        or      ebx, CR4_PGE
-        mov     cr4, ebx
-@@:
-        mov     esi, [LAPIC_BASE]
-        xor     ebp, ebp
-.1:
-        mov ebx, [esi+0x20]               ;apic_id
-        shr ebx, 24
-        shl ebx, 6+2
-        add ebx, LFB_BASE
-        mov edx, 32
-.2:
-        mov ecx, 32
-        mov edi, ebx
-        mov eax, [_display.width]
-        lea ebx, [ebx+eax*4]
-        mov eax, ebp
-        rep stosd
-        dec edx
-        jnz .2
-        dec ebp
-        jmp .1
-
-        hlt
-        jmp ap_entry
 
 align 4
 high_code:
@@ -387,12 +327,12 @@ high_code:
         or      ebx, CR4_PGE
         mov     cr4, ebx
 @@:
-;        xor     eax, eax
-;        mov     dword [sys_pgdir], eax
-;        mov     dword [sys_pgdir+4], eax
+        xor     eax, eax
+        mov     dword [sys_pgdir], eax
+        mov     dword [sys_pgdir+4], eax
 
-;        mov     eax, cr3
-;        mov     cr3, eax          ; flush TLB
+        mov     eax, cr3
+        mov     cr3, eax          ; flush TLB
 
         mov     ecx, pg_data.mutex
         call    mutex_init
@@ -674,6 +614,52 @@ no_mode_0x12:
         mov     [mem_BACKGROUND], 4
         mov     [img_background], static_background_data
 
+; SET UP OS TASK
+
+        mov     esi, boot_setostask
+        call    boot_log
+
+        xor     eax, eax
+        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
+        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
+        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
+
+        ; name for OS/IDLE process
+
+        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
+        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
+        mov     edi, [os_stack_seg]
+        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
+        add     edi, 0x2000-512
+        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
+        mov     dword [SLOT_BASE+256+APPDATA.terminate_protection], 80000001h
+
+        mov     esi, fpu_data
+        mov     ecx, 512/4
+        cld
+        rep movsd
+
+        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
+        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
+
+        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
+        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
+        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
+
+        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
+        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
+
+        ; task list
+        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
+        inc     eax
+        mov     dword [CURRENT_TASK], eax
+        mov     dword [TASK_COUNT], eax
+        mov     [current_slot], SLOT_BASE+256
+        mov     [TASK_BASE], dword TASK_DATA
+        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
+        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
+
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
         stdcall kernel_alloc, 0x10000/8
@@ -707,11 +693,8 @@ no_mode_0x12:
 ; Try to Initialize APIC
         call    APIC_init
 
-        call    LAPIC_init
-
-;        mov     eax, 1
-;        call    start_ap
-
+        mov     esi, boot_enableirq
+        call    boot_log
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
@@ -794,6 +777,8 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
         or      ecx, (10+30*6) shl 16
+        else if lang eq sp
+        or      ecx, (10+33*6) shl 16
                 else
         or      ecx, (10+29*6) shl 16
                 end if
@@ -814,7 +799,7 @@ end if
 ;        call    boot_log
 
         mov     [pci_access_enabled], 1
-
+        call    pci_enum
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -835,52 +820,6 @@ end if
         call    boot_log
         call    reserve_irqs_ports
 
-; SET UP OS TASK
-
-        mov     esi, boot_setostask
-        call    boot_log
-
-        xor     eax, eax
-        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
-        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
-
-        ; name for OS/IDLE process
-
-        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
-        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-        mov     edi, [os_stack_seg]
-        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-        add     edi, 0x2000-512
-        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
-        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
-        ; [SLOT_BASE+256+APPDATA.io_map] was set earlier
-
-        mov     esi, fpu_data
-        mov     ecx, 512/4
-        cld
-        rep movsd
-
-        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
-
-        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
-        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
-        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
-
-        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
-        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
-
-        ; task list
-        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
-        inc     eax
-        mov     dword [CURRENT_TASK], eax
-        mov     dword [TASK_COUNT], eax
-        mov     [current_slot], SLOT_BASE+256
-        mov     [TASK_BASE], dword TASK_DATA
-        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
-        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
-
         call    init_display
         mov     eax, [def_cursor]
         mov     [SLOT_BASE+APPDATA.cursor], eax
@@ -898,17 +837,11 @@ end if
         rdtsc   ;call  _rdtsc
         sti
         sub     eax, ecx
+        xor     edx, edx
+        shld    edx, eax, 2
         shl     eax, 2
-        mov     [CPU_FREQ], eax       ; save tsc / sec
-;       mov ebx, 1000000
-;       div ebx
-; вообще-то производительность в данном конкретном месте
-; совершенно некритична, но чтобы заткнуть любителей
-; оптимизирующих компиляторов ЯВУ...
-        mov     edx, 2251799814
-        mul     edx
-        shr     edx, 19
-        mov     [stall_mcs], edx
+        mov     dword [cpu_freq], eax
+        mov     dword [cpu_freq+4], edx
 ; PRINT CPU FREQUENCY
         mov     esi, boot_cpufreq
         call    boot_log
@@ -917,6 +850,8 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
         add     ecx, (10+19*6) shl 16 - 10         ; 'Determining amount of memory'
+        else if lang eq sp
+        add     ecx, (10+25*6) shl 16 - 10         ; 'Determining amount of memory'
                 else
         add     ecx, (10+17*6) shl 16 - 10         ; 'Determining amount of memory'
                 end if
@@ -992,8 +927,8 @@ end if
         call    fs_execute_from_sysdir
 
 ;        cmp   eax,2                  ; continue if a process has been loaded
-        sub     eax, 2
-        jz      first_app_found
+        test    eax, eax
+        jns     first_app_found
 
         mov     esi, boot_failed
         call    boot_log
@@ -1099,6 +1034,8 @@ if defined debug_com_base
 
 
 end if
+        mov     eax, [version_inf.rev]
+        DEBUGF  1, "K : kernel SVN r%d\n", eax
 
         mov     eax, [cpu_count]
         test    eax, eax
@@ -1107,7 +1044,7 @@ end if
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
 
-        call    print_mem
+;        call    print_mem
 
 ; START MULTITASKING
 
@@ -1240,7 +1177,7 @@ reserve_irqs_ports:
 
         mov     [eax+16], ecx
         mov     [eax+16+4], dword 0
-        mov     [eax+16+4], dword 0x2D
+        mov     [eax+16+8], dword 0x2D
 
         mov     [eax+32], ecx
         mov     [eax+32+4], dword 0x30
@@ -1248,7 +1185,7 @@ reserve_irqs_ports:
 
         mov     [eax+48], ecx
         mov     [eax+48+4], dword 0x50
-        mov     [eax+28+8], dword 0xDF
+        mov     [eax+48+8], dword 0xDF
 
         mov     [eax+64], ecx
         mov     [eax+64+4], dword 0xE5
@@ -2099,8 +2036,6 @@ restore_default_cursor_before_killing:
 @@:
         mov     [redrawmouse_unconditional], 1
         popfd
-;        call    [draw_pointer]
-        call    __sys_draw_pointer
         ret
 ;------------------------------------------------------------------------------
 iglobal
@@ -2172,6 +2107,12 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
         cmp     byte [ecx], 9
+        jz      noprocessterminate
+        push    ecx edx
+        lea     edx, [(ecx-(CURRENT_TASK and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        call    request_terminate
+        pop     edx ecx
+        test    eax, eax
         jz      noprocessterminate
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
@@ -2254,13 +2195,24 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         call    syscall_display_settings._.redraw_whole_screen
 .nowindowdeactivate:
         ret
- ;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         cmp     ecx, 2
         jb      .nowindowactivate
         cmp     ecx, [TASK_COUNT]
         ja      .nowindowactivate
-
+;-------------------------------------
+@@:
+; If the window is captured and moved by the user,
+; then you can't change the position in window stack!!!
+        mov     al, [mouse.active_sys_window.action]
+        and     al, WINDOW_MOVE_AND_RESIZE_FLAGS
+        test    al, al
+        jz      @f
+        call    change_task
+        jmp     @b
+@@:
+;-------------------------------------
         mov     [window_minimize], 2; restore window if minimized
 
         movzx   esi, word [WIN_STACK + ecx*2]
@@ -2282,10 +2234,14 @@ sysfn_getidletime:              ; 18.4 = GET IDLETIME
         ret
 ;------------------------------------------------------------------------------
 sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
-        mov     eax, [CPU_FREQ]
+        mov     eax, dword [cpu_freq]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
+get_cpu_freq:
+        mov     eax, dword [cpu_freq]
+        mov     edx, dword [cpu_freq+4]
+        ret
 ;  SAVE ramdisk to /hd/1/menuet.img
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'
@@ -2535,7 +2491,7 @@ iglobal
 version_inf:
   db 0,7,7,0  ; version 0.7.7.0
   db 0
-  dd __REV__
+.rev    dd __REV__
 version_end:
 endg
 ;------------------------------------------------------------------------------
@@ -3544,15 +3500,31 @@ nobackgr:
         mov     edx, [shutdown_processes]
 
         cmp     [SYS_SHUTDOWN], dl
-        jne     no_mark_system_shutdown
+        jne     noshutdown
 
         lea     ecx, [edx-1]
         mov     edx, OS_BASE+0x3040
-        jecxz   @f
+        jecxz   no_mark_system_shutdown
 ;--------------------------------------
 align 4
 markz:
+        push    ecx edx
+        cmp     [edx+TASKDATA.state], 9
+        jz      .nokill
+        lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
+        cmp     [edx+APPDATA.dir_table], sys_pgdir - OS_BASE
+        jz      .nokill
+        call    request_terminate
+        jmp     .common
+.nokill:
+        dec     byte [SYS_SHUTDOWN]
+        xor     eax, eax
+.common:
+        pop     edx ecx
+        test    eax, eax
+        jz      @f
         mov     [edx+TASKDATA.state], byte 3
+@@:
         add     edx, 0x20
         loop    markz
 ;--------------------------------------
@@ -3572,11 +3544,27 @@ align 4
 newct:
         mov     cl, [ebx]
         cmp     cl, byte 3
-        jz      terminate
+        jz      .terminate
 
         cmp     cl, byte 4
-        jz      terminate
+        jnz     .noterminate
+.terminate:
+        pushad
+        mov     ecx, eax
+        shl     ecx, 8
+        add     ecx, SLOT_BASE
+        call    restore_default_cursor_before_killing
+        popad
 
+        pushad
+        call    terminate
+        popad
+        cmp     byte [SYS_SHUTDOWN], 0
+        jz      .noterminate
+        dec     byte [SYS_SHUTDOWN]
+        je      system_shutdown
+
+.noterminate:
         add     ebx, 0x20
         inc     esi
         dec     eax
@@ -3786,6 +3774,15 @@ set_app_param:
         mov     [esp+32], eax                    ; return old mask value
         ret
 ;-----------------------------------------------------------------------------
+
+; this is for syscall
+proc delay_hs_unprotected
+        call    unprotect_from_terminate
+        call    delay_hs
+        call    protect_from_terminate
+        ret
+endp
+
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
@@ -4638,9 +4635,10 @@ sys_msg_board_dword:
         popad
         ret
 
+msg_board_data_size = 65536 ; Must be power of two
+
 uglobal
-  msg_board_data:
-                  times 4096 db 0
+  msg_board_data  rb msg_board_data_size
   msg_board_count dd 0x0
 endg
 
@@ -4673,7 +4671,7 @@ end if
 
         mov     [msg_board_data+ecx], bl
         inc     ecx
-        and     ecx, 4095
+        and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
         mov     [check_idle_semaphore], 5
         ret
@@ -4766,7 +4764,8 @@ align 4
         mov     [eax], edx
         mov     [ecx], eax
         mov     [eax+12], ecx
-        jecxz   @f
+        test    edx, edx
+        jz      @f
         mov     [edx+12], eax
 @@:
         and     dword [esp+32], 0
@@ -4918,7 +4917,11 @@ syscall_writetext:                      ; WriteText
         add     ebp, [eax-twdw+WDATA.box.top]
         add     bp, word[esi+APPDATA.wnd_clientbox.top]
         pop     esi
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jnz     @f
         add     ebx, ebp
+align 4
+@@:
         mov     eax, edi
         test    ecx, 0x08000000  ; redirect the output to the user area
         jnz     dtext
@@ -5698,4 +5701,6 @@ include "data32.inc"
 __REV__ = __REV
 
 uglobals_size = $ - endofcode
+if ~ lang eq sp
 diff16 "end of kernel code",0,$
+end if

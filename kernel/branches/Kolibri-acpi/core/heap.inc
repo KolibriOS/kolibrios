@@ -154,11 +154,11 @@ proc init_kernel_heap
 
             mov [ecx+block_next], eax
             mov [ecx+block_prev], ebx
-            mov [edi+list_fd], eax
-            mov [edi+list_bk], eax
-            mov [edi+block_base], eax
-            mov [edi+block_size], eax
-            mov [edi+block_flags], USED_BLOCK
+        mov     [ecx+list_fd], eax
+        mov     [ecx+list_bk], eax
+        mov     [ecx+block_base], eax
+        mov     [ecx+block_size], eax
+        mov     [ecx+block_flags], USED_BLOCK
 
             mov [ebx+block_next], ecx
             mov [ebx+block_prev], edi
@@ -440,6 +440,7 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            cmp edx, [edx]
            jne .add_block
            btr [mem_block_mask], ecx
+
 .add_block:
            bts [mem_block_mask], eax
            lea edx, [mem_block_list+eax*8]
@@ -758,11 +759,13 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
            inc ebx
            dec eax
            jnz .fill
+
 .second_nofill:
            sub ecx, edx
            jz  .nothird
            or  cl, FREE_BLOCK
            mov [page_tabs+ebx*4], ecx
+
 .nothird:
 
            mov     edx, [current_slot]
@@ -822,6 +825,7 @@ proc user_free stdcall, base:dword
            inc esi
            dec ecx
            jnz .release
+
 .released:
            push edi
 

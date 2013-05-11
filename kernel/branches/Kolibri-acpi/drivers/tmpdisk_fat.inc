@@ -74,7 +74,7 @@ format_disk_fat16:
         mov     edx, eax
 @@:
 ; 2. Zero all system areas on the disk.
-        lea     ecx, [256*(1+FAT16_ROOTDIR_SECTORS)/2+edx+255]
+        lea     ecx, [256*(1+FAT16_ROOTDIR_SECTORS)+edx+255]
         and     ecx, not 255
         shr     ecx, 1
         xor     eax, eax
@@ -299,7 +299,7 @@ fat32bootsector_stub:
         db 'KOLIBRI '           ; BS_OEMName
         dw 512                  ; BPB_BytsPerSec
         db 1                    ; BPB_SecsPerClus
-        dw 1                    ; BPB_RsvdSecCnt
+        dw 2                    ; BPB_RsvdSecCnt
         db 1                    ; BPB_NumFATs
         dw 0                    ; BPB_RootEntCnt
         dw 0                    ; BPB_TotSec16

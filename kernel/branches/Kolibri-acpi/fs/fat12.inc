@@ -2257,15 +2257,17 @@ fs_FloppyDelete:
         popa
 ; delete FAT chain
         pop     eax
-        test    eax, eax
-        jz      .done
 @@:
+        cmp     eax, 2
+        jb      .done
+        cmp     eax, 0xFF8
+        jae     .done
         lea     eax, [FLOPPY_FAT + eax*2]
         push    dword [eax]
         and     word [eax], 0
         pop     eax
         and     eax, 0xFFF
-        jnz     @b
+        jmp     @b
 .done:
         call    save_flp_fat
         pop     edi

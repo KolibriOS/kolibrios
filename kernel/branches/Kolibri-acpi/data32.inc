@@ -87,6 +87,8 @@ if lang eq ru
 if preboot_blogesc
   boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
 end if
+else if lang eq sp
+  include 'data32sp.inc'
 else
   boot_initirq      db   'Initialize IRQ',0
   boot_picinit      db   'Initialize PIC',0
@@ -131,8 +133,10 @@ start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
 msg_module     db 'in module ',0
+if ~ lang eq sp
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
+end if
 msg_CR         db  13,10,0
 
 intel_str      db "GenuineIntel",0
@@ -155,7 +159,7 @@ firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
 ud_user_message db 'Ошибка: неподдерживаемая инструкция процессора',0
-else
+else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
 
@@ -176,6 +180,10 @@ shmem_list:
 dll_list:
  .bk           dd dll_list
  .fd           dd dll_list
+
+pcidev_list:
+ .bk           dd pcidev_list
+ .fd           dd pcidev_list
 
 MAX_DEFAULT_DLL_ADDR = 0x80000000
 MIN_DEFAULT_DLL_ADDR = 0x70000000
@@ -324,6 +332,8 @@ mem_block_list    rd 64*2
 mem_used_list     rd 64*2
 mem_hash_cnt      rd 64
 
+cpu_freq          rq 1
+
 heap_mutex        MUTEX
 heap_size         rd 1
 heap_free         rd 1
@@ -382,7 +392,6 @@ default_io_map    rd 1
 
 LFBSize           rd 1
 
-stall_mcs         rd 1
 current_slot      rd 1
 
 ; status
