@@ -843,6 +843,8 @@ end if
         shl     eax, 2
         mov     dword [cpu_freq], eax
         mov     dword [cpu_freq+4], edx
+        mov     ebx, 1000000
+        div     ebx
         mov     ebx, eax
 
         movzx   ecx, word [boot_y]
