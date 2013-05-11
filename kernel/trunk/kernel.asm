@@ -825,36 +825,35 @@ end if
         mov     [SLOT_BASE+APPDATA.cursor], eax
         mov     [SLOT_BASE+APPDATA.cursor+256], eax
 
-  ; READ TSC / SECOND
+; PRINT CPU FREQUENCY
 
-        mov     esi, boot_tsc
+        mov     esi, boot_cpufreq
         call    boot_log
-        cli
-        rdtsc   ;call  _rdtsc
+
+        cli                         ;FIXME check IF
+        rdtsc
         mov     ecx, eax
         mov     esi, 250            ; wait 1/4 a second
         call    delay_ms
-        rdtsc   ;call  _rdtsc
-        sti
+        rdtsc
+
         sub     eax, ecx
         xor     edx, edx
         shld    edx, eax, 2
         shl     eax, 2
         mov     dword [cpu_freq], eax
         mov     dword [cpu_freq+4], edx
-; PRINT CPU FREQUENCY
-        mov     esi, boot_cpufreq
-        call    boot_log
+        mov     ebx, eax
 
-        mov     ebx, edx
         movzx   ecx, word [boot_y]
         if lang eq ru
-        add     ecx, (10+19*6) shl 16 - 10         ; 'Determining amount of memory'
+        add     ecx, (10+19*6) shl 16 - 10
         else if lang eq sp
-        add     ecx, (10+25*6) shl 16 - 10         ; 'Determining amount of memory'
+        add     ecx, (10+25*6) shl 16 - 10
         else
-        add     ecx, (10+17*6) shl 16 - 10         ; 'Determining amount of memory'
+        add     ecx, (10+17*6) shl 16 - 10
         end if
+
         mov     edx, 0xFFFFFF
         xor     edi, edi
         mov     eax, 0x00040000
