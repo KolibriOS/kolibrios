@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// libimg.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2012 ///////;;
+;;//// libimg.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2013 ///////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -544,42 +544,116 @@ align 16
 
 align 16
 .bpp1:
-    push ebx edx
-    mov ebx, esi
-    mov esi, [ebx + Image.Data]
-    mov ecx, [ebx + Image.Height]
+    push ebx ebp
+    mov ebp, [esi + Image.Width]
+    mov edx, [esi + Image.Height]
+    shl edx, 16
+    mov ebx, [esi + Image.Palette]
+    mov esi, [esi + Image.Data]
   .bpp1.pre:
-    mov edx, [ebx + Image.Width]
-    mov eax, 7
+    mov dx, bp
+    mov ecx, 7
   .bpp1.begin:
-    push ecx esi
-    xor cx, cx
-    bt [esi], eax
-    setc cl
-    mov esi, [ebx + Image.Palette]
-     jcxz @f
-    add esi, 4
-  @@:
-    mov ecx, 3
-    cld
-    rep movsb
-    pop esi ecx
-    dec edx
-     jz .bpp1.end_line
-    dec eax
-     jns .bpp1.begin
-    mov eax, 7
-    inc esi
-     jmp .bpp1.begin
-
-  .bpp1.end_line:
+    xor eax, eax
+    bt  [esi], ecx
+    adc eax, 0
+    mov eax, [ebx + eax*4]
+    mov [edi], ax
+    shr eax, 16
+    mov [edi + 2], al
+    add edi, 3
+    dec dx
+    jz .bpp1.end_line
     dec ecx
-     jz .bpp1.quit
+    jns .bpp1.begin
+    mov ecx, 7
     inc esi
-     jmp .bpp1.pre
-
+    jmp .bpp1.begin
+  .bpp1.end_line:
+    sub edx, 0x10000
+    jz .bpp1.quit
+    inc esi
+    jmp .bpp1.pre
   .bpp1.quit:
-    pop edx ebx
+    pop ebp ebx
+    ret
+
+align 16
+.bpp2i:
+    push ebx ebp
+    mov ebp, [esi + Image.Width]
+    mov edx, [esi + Image.Height]
+    shl edx, 16
+    mov ebx, [esi + Image.Palette]
+    mov esi, [esi + Image.Data]
+  .bpp2i.pre:
+    mov dx, bp
+    mov ecx, 3
+  .bpp2i.begin:
+    mov eax, 3
+    shl ecx, 1
+    shl eax, cl
+    and al, [esi]
+    shr eax, cl
+    shr ecx, 1
+    mov eax, [ebx + eax*4]
+    mov [edi], ax
+    shr eax, 16
+    mov [edi + 2], al
+    add edi, 3
+    dec dx
+    jz .bpp2i.end_line
+    dec ecx
+    jns .bpp2i.begin
+    mov ecx, 3
+    inc esi
+    jmp .bpp2i.begin
+  .bpp2i.end_line:
+    sub edx, 0x10000
+    jz .bpp2i.quit
+    inc esi
+    jmp .bpp2i.pre
+  .bpp2i.quit:
+    pop ebp ebx
+    ret
+
+align 16
+.bpp4i:
+    push ebx ebp
+    mov ebp, [esi + Image.Width]
+    mov edx, [esi + Image.Height]
+    shl edx, 16
+    mov ebx, [esi + Image.Palette]
+    mov esi, [esi + Image.Data]
+  .bpp4i.pre:
+    mov dx, bp
+    mov ecx, 1
+  .bpp4i.begin:
+    mov eax, 15
+    shl ecx, 2
+    shl eax, cl
+    and al, [esi]
+    shr eax, cl
+    shr ecx, 2
+    mov eax, [ebx + eax*4]
+    mov [edi], ax
+    shr eax, 16
+    mov [edi + 2], al
+    add edi, 3
+    dec dx
+    jz .bpp4i.end_line
+    dec ecx
+    jns .bpp4i.begin
+    mov ecx, 1
+    inc esi
+    jmp .bpp4i.begin
+  .bpp4i.end_line:
+    sub edx, 0x10000
+    jz .bpp4i.quit
+    inc esi
+    jmp .bpp4i.pre
+  .bpp4i.quit:
+    pop ebp ebx
     ret
 
 endp
@@ -1059,58 +1133,185 @@ endl
     jmp .exit
 
 .bpp1_horz:
-    push eax edx
     mov edi, [scanline_len]
-    mov edx, [ebx+Image.Width]
-    and edx,  0x07
-    neg dl
-    add dl, 8
-    and dl, 0x07                                        ; clear if cl=8
+    mov edx, [ebx + Image.Width]
+    and edx, 7
+    neg edx
+    add edx, 8
+    and edx, 7
 .bpp1_horz.begin:
-    push ebx ecx edx esi
+    push ebx edx esi
     mov eax, 7
     add edi, esi
     sub edi, 1
-    mov ebx, [ebx+Image.Width]
+    mov ebx, [ebx + Image.Width]
     shr ebx, 1
-.bpp1_horz.flip_line:
-    xor ecx, ecx
-    bt  [esi], eax
-    setc cl
+.bpp1_horz.bit:
     bt  [edi], edx
-     jc .bpp1_horz.one
-  .bpp1_horz.zero:
+    jc  @f
     btr [esi], eax
-     jmp @f
-  .bpp1_horz.one:
+    jmp .bpp1_horz.right
+  @@:
     bts [esi], eax
-  @@:
-     jecxz .bpp1_horz.reset
-  .bpp1_horz.set:
+  .bpp1_horz.right:
+    jnc @f
     bts [edi], edx
-     jmp @f
-  .bpp1_horz.reset:
-    btr [edi], edx
+    jmp .bpp1_horz.bit_done
   @@:
+    btr [edi], edx
+  .bpp1_horz.bit_done:
     inc edx
-    and edx, 0x07
-     jnz @f
+    and edx, 7
+    jnz @f
     dec edi
   @@:
     dec eax
-     jns @f
+    jns @f
     mov eax, 7
     inc esi
   @@:
     dec ebx
-     jnz .bpp1_horz.flip_line
+    jnz .bpp1_horz.bit
 
-    pop esi edx ecx ebx
+    pop esi edx ebx
     add esi, [scanline_len]
     mov edi, [scanline_len]
     dec ecx
-     jnz .bpp1_horz.begin
-    pop edx eax
+    jnz .bpp1_horz.begin
+    jmp .exit
+
+
+.bpp2i_horz:
+    mov edi, [scanline_len]
+    mov edx, [ebx + Image.Width]
+    and edx, 3
+    neg edx
+    add edx, 4
+    and edx, 3
+.bpp2i_horz.begin:
+    push ebx edx esi
+    mov eax, 3
+    add edi, esi
+    sub edi, 1
+    mov ebx, [ebx + Image.Width]
+    shr ebx, 1
+.bpp2i_horz.pixel:
+    push ebx ecx
+    mov ebx, 3
+    mov ecx, edx
+    shl ebx, cl
+    shl ebx, cl
+    and bl, [edi]
+    shr ebx, cl
+    shr ebx, cl
+    mov bh,  3
+    mov ecx, eax
+    shl ebx, cl
+    shl ebx, cl
+    not bh
+    and bh, [esi]
+    or  bl, bh
+    mov bh, [esi]
+    mov [esi], bl
+    shr ebx, 8
+    shr ebx, cl
+    shr ebx, cl
+    and ebx, 3
+    mov bh,  3
+    mov ecx, edx
+    shl ebx, cl
+    shl ebx, cl
+    not bh
+    and bh, [edi]
+    or  bl, bh
+    mov [edi], bl
+    pop ecx ebx
+  .bpp2i_horz.pixel_done:
+    inc edx
+    and edx, 3
+    jnz @f
+    dec edi
+  @@:
+    dec eax
+    jns @f
+    mov eax, 3
+    inc esi
+  @@:
+    dec ebx
+    jnz .bpp2i_horz.pixel
+
+    pop esi edx ebx
+    add esi, [scanline_len]
+    mov edi, [scanline_len]
+    dec ecx
+    jnz .bpp2i_horz.begin
+    jmp .exit
+
+
+.bpp4i_horz:
+    mov edi, [scanline_len]
+    mov edx, [ebx + Image.Width]
+    and edx, 1
+    neg edx
+    add edx, 2
+    and edx, 1
+.bpp4i_horz.begin:
+    push ebx edx esi
+    mov eax, 1
+    add edi, esi
+    sub edi, 1
+    mov ebx, [ebx + Image.Width]
+    shr ebx, 1
+.bpp4i_horz.pixel:
+    push ebx ecx
+    mov ebx, 15
+    mov ecx, edx
+    shl ecx, 2
+    shl ebx, cl
+    and bl, [edi]
+    shr ebx, cl
+    mov bh,  15
+    mov ecx, eax
+    shl ecx, 2
+    shl ebx, cl
+    not bh
+    and bh, [esi]
+    or  bl, bh
+    mov bh, [esi]
+    mov [esi], bl
+    shr ebx, 8
+    shr ebx, cl
+    and ebx, 15
+    mov bh,  15
+    mov ecx, edx
+    shl ecx, 2
+    shl ebx, cl
+    not bh
+    and bh, [edi]
+    or  bl, bh
+    mov [edi], bl
+    pop ecx ebx
+  .bpp4i_horz.pixel_done:
+    inc edx
+    and edx, 1
+    jnz @f
+    dec edi
+  @@:
+    dec eax
+    jns @f
+    mov eax, 1
+    inc esi
+  @@:
+    dec ebx
+    jnz .bpp4i_horz.pixel
+
+    pop esi edx ebx
+    add esi, [scanline_len]
+    mov edi, [scanline_len]
+    dec ecx
+    jnz .bpp4i_horz.begin
+    jmp .exit
+
 
   .exit:
     xor eax, eax
@@ -1212,6 +1413,10 @@ endl
 
     cmp [ebx + Image.Type], Image.bpp1
     jz  .rotate_ccw1
+    cmp [ebx + Image.Type], Image.bpp2i
+    jz  .rotate_ccw2i
+    cmp [ebx + Image.Type], Image.bpp4i
+    jz  .rotate_ccw4i
     cmp [ebx + Image.Type], Image.bpp8i
     jz  .rotate_ccw8ig
     cmp [ebx + Image.Type], Image.bpp8g
@@ -1409,12 +1614,10 @@ endl
 .rotate_ccw1:
     push ecx edx
 
-    mov eax, [ebx+Image.Height]
+    mov eax, [ebx + Image.Height]
     add eax, 7
     shr eax, 3
-    mul word[ebx+Image.Width]
-    shl eax, 16
-    shrd eax, edx, 16
+    imul eax, [ebx + Image.Width]
     push eax                                            ; save new data size
 
     invoke  mem.alloc, eax
@@ -1422,66 +1625,219 @@ endl
     jz  .error
     push eax                                            ; save pointer to new data
 
-    mov ecx, [ebx+Image.Width]
-    and ecx,  0x07
-    neg cl
-    add cl, 8
-    and cl, 0x07                                        ; clear if cl=8
+    mov ecx, [ebx + Image.Width]
+    and ecx, 7
+    neg ecx
+    add ecx, 8
+    and ecx, 7
 
-    mov esi, eax
-    mov edi, [ebx+Image.Data]
+    mov edi, eax
+    mov esi, [ebx + Image.Data]
     mov eax, 7
     mov edx, [scanline_len_old]
     dec edx
-    add edi, edx
+    add esi, edx
 
   .rotate_ccw1.begin:
-    bt  [edi], ecx
-     jc .rotate_ccw1.one
+    bt  [esi], ecx
+    jc .rotate_ccw1.one
   .rotate_ccw1.zero:
-    btr [esi], eax
-     jmp @f
+    btr [edi], eax
+    jmp @f
   .rotate_ccw1.one:
-    bts [esi], eax
+    bts [edi], eax
   @@:
-    add edi, [scanline_len_old]
+    add esi, [scanline_len_old]
     dec [scanline_pixels_new]
-     jz .rotate_ccw1.end_of_line
-    dec eax
-     jns .rotate_ccw1.begin
-    mov eax, 7
-    inc esi
-     jmp .rotate_ccw1.begin
-
+    jz .rotate_ccw1.end_of_line
+    sub eax, 1
+    adc edi, 0
+    and eax, 7
+    jmp .rotate_ccw1.begin
   .rotate_ccw1.end_of_line:
-    inc esi
+    inc edi
+    mov eax, [ebx + Image.Height]
+    mov [scanline_pixels_new], eax
     mov eax, 7
-    mov edi, [ebx+Image.Height]
-    mov [scanline_pixels_new],  edi
     inc ecx
-    and cl, 0x07
-     jz @f
-    mov edi, [ebx+Image.Data]
-    add edi, edx
-     jmp .rotate_ccw1.begin 
+    and ecx, 7
+    jz @f
+    mov esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_ccw1.begin 
   @@:
     dec edx
-     js .rotate_ccw1.quit
-    mov edi, [ebx+Image.Data]
-    add edi, edx
-     jmp .rotate_ccw1.begin
-
+    js .rotate_ccw1.quit
+    mov esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_ccw1.begin
   .rotate_ccw1.quit:
-    pop eax                                             ; get pointer to new data
-    mov esi, eax
+    pop esi                                             ; get pointer to new data
     mov edi, [ebx + Image.Data]
     pop ecx                                             ; get new data size
     rep movsb
-
-    invoke  mem.free, eax
-
+    invoke  mem.free, esi
     pop edx ecx
      jmp .exchange_dims
+
+
+.rotate_ccw2i:
+    push ecx edx
+
+    mov eax, [ebx + Image.Height]
+    add eax, 3
+    shr eax, 2
+    imul eax, [ebx + Image.Width]
+    push eax                                            ; save new data size
+
+    invoke  mem.alloc, eax
+    or  eax, eax
+    jz  .error
+    push eax                                            ; save pointer to new data
+
+    mov ecx, [ebx + Image.Width]
+    and ecx, 3
+    neg ecx
+    add ecx, 4
+    and ecx, 3
+
+    mov edi, eax
+    mov esi, [ebx + Image.Data]
+    mov eax, 3
+    mov edx, [scanline_len_old]
+    dec edx
+    add esi, edx
+
+  .rotate_ccw2i.begin:
+    push ebx ecx
+    mov ebx, 3
+    shl ebx, cl
+    shl ebx, cl
+    and bl, [esi]
+    shr ebx, cl
+    shr ebx, cl
+    mov bh, 3
+    mov ecx, eax
+    shl ebx, cl
+    shl ebx, cl
+    not bh
+    and bh, [edi]
+    or  bl, bh
+    mov [edi], bl
+    pop ecx ebx
+
+    add esi, [scanline_len_old]
+    dec [scanline_pixels_new]
+    jz .rotate_ccw2i.end_of_line
+    sub eax, 1
+    adc edi, 0
+    and eax, 3
+    jmp .rotate_ccw2i.begin
+  .rotate_ccw2i.end_of_line:
+    inc edi
+    mov eax, 3
+    mov esi, [ebx + Image.Height]
+    mov [scanline_pixels_new], esi
+    inc ecx
+    and ecx, 3
+    jz @f
+    mov esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_ccw2i.begin 
+  @@:
+    dec edx
+    js .rotate_ccw2i.quit
+    mov esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_ccw2i.begin
+  .rotate_ccw2i.quit:
+    pop esi                                             ; get pointer to new data
+    mov edi, [ebx + Image.Data]
+    pop ecx                                             ; get new data size
+    rep movsb
+    invoke  mem.free, esi
+    pop edx ecx
+     jmp .exchange_dims
+
+
+.rotate_ccw4i:
+    push ecx edx
+
+    mov eax, [ebx + Image.Height]
+    add eax, 1
+    shr eax, 1
+    imul eax, [ebx + Image.Width]
+    push eax                                            ; save new data size
+
+    invoke  mem.alloc, eax
+    or  eax, eax
+    jz  .error
+    push eax                                            ; save pointer to new data
+
+    mov ecx, [ebx + Image.Width]
+    and ecx, 1
+    neg ecx
+    add ecx, 2
+    and ecx, 1
+
+    mov edi, eax
+    mov esi, [ebx + Image.Data]
+    mov eax, 1
+    mov edx, [scanline_len_old]
+    dec edx
+    add esi, edx
+
+  .rotate_ccw4i.begin:
+    push ebx ecx
+    mov ebx, 15
+    shl ecx, 2
+    shl ebx, cl
+    and bl, [esi]
+    shr ebx, cl
+    mov bh, 15
+    mov ecx, eax
+    shl ecx, 2
+    shl ebx, cl
+    not bh
+    and bh, [edi]
+    or  bl, bh
+    mov [edi], bl
+    pop ecx ebx
+
+    add esi, [scanline_len_old]
+    dec [scanline_pixels_new]
+    jz .rotate_ccw4i.end_of_line
+    sub eax, 1
+    adc edi, 0
+    and eax, 1
+    jmp .rotate_ccw4i.begin
+  .rotate_ccw4i.end_of_line:
+    inc edi
+    mov eax, 1
+    mov esi, [ebx + Image.Height]
+    mov [scanline_pixels_new], esi
+    inc ecx
+    and ecx, 1
+    jz @f
+    mov esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_ccw4i.begin 
+  @@:
+    dec edx
+    js .rotate_ccw4i.quit
+    mov esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_ccw4i.begin
+  .rotate_ccw4i.quit:
+    pop esi                                             ; get pointer to new data
+    mov edi, [ebx + Image.Data]
+    pop ecx                                             ; get new data size
+    rep movsb
+    invoke  mem.free, esi
+    pop edx ecx
+     jmp .exchange_dims
+
+
 
   .rotate_cw_low:
     mov eax, [ebx + Image.Height]
@@ -1506,6 +1862,10 @@ endl
 
     cmp [ebx + Image.Type], Image.bpp1
     jz  .rotate_cw1
+    cmp [ebx + Image.Type], Image.bpp2i
+    jz  .rotate_cw2i
+    cmp [ebx + Image.Type], Image.bpp4i
+    jz  .rotate_cw4i
     cmp [ebx + Image.Type], Image.bpp8i
     jz  .rotate_cw8ig
     cmp [ebx + Image.Type], Image.bpp8g
@@ -1710,16 +2070,14 @@ endl
     pop ecx
     jmp .next_column_cw_low24
 
+
 .rotate_cw1:
     push ecx edx
 
-    mov eax, [ebx+Image.Height]
+    mov eax, [ebx + Image.Height]
     add eax, 7
     shr eax, 3
-    mul word[ebx+Image.Width]
-    shl eax, 16
-    shrd eax, edx, 16
-
+    imul [ebx + Image.Width]
     push eax                                            ; save new data size
 
     invoke  mem.alloc, eax
@@ -1727,75 +2085,215 @@ endl
     jz  .error
     push eax                                            ; save pointer to new data
 
-    mov ecx, 7
-
-    mov edx, [ebx+Image.Width]
-    mov [pixels_ptr],   edx                             ; we don't use pixels_ptr as it do other procedures, we save there [ebx+Image.Width]
-    mov esi, eax
-    mov edi, [ebx+Image.Data]
-    mov eax, [ebx+Image.Height]
+    mov edi, eax
+    mov esi, [ebx + Image.Data]
+    mov eax, [ebx + Image.Height]
     dec eax
-    mul [scanline_len_old]
-    add edi, eax
+    imul eax, [scanline_len_old]
+    add esi, eax
     mov eax, 7
+    mov ecx, 7
     mov edx, 0
 
   .rotate_cw1.begin:
-    bt  [edi], ecx
-     jc .rotate_cw1.one
+    bt  [esi], ecx
+    jc .rotate_cw1.one
   .rotate_cw1.zero:
-    btr [esi], eax
-     jmp @f
+    btr [edi], eax
+    jmp @f
   .rotate_cw1.one:
-    bts [esi], eax
+    bts [edi], eax
   @@:
-    sub edi, [scanline_len_old]
+    sub esi, [scanline_len_old]
     dec [scanline_pixels_new]
-     jz .rotate_cw1.end_of_line
-    dec eax
-     jns .rotate_cw1.begin
-    mov eax, 7
-    inc esi
-     jmp .rotate_cw1.begin
-
+    jz  .rotate_cw1.end_of_line
+    sub eax, 1
+    adc edi, 0
+    and eax, 7
+    jmp .rotate_cw1.begin
   .rotate_cw1.end_of_line:
-    dec [pixels_ptr]
-     jz .rotate_cw1.quit
-    inc esi
-    mov eax, [ebx+Image.Height]
+    inc edi
+    mov eax, [ebx + Image.Height]
     mov [scanline_pixels_new],   eax
     mov eax, 7
     dec ecx
-     js @f
-    mov edi, [ebx+Image.Height]
-    dec edi
-    imul edi, [scanline_len_old]
-    add edi, [ebx+Image.Data]
-    add edi, edx
-     jmp .rotate_cw1.begin
-  @@:
+    jns @f
     mov ecx, 7
     inc edx
     cmp edx, [scanline_len_old]
-     je .rotate_cw1.quit
-    mov edi, [ebx+Image.Height]
-    dec edi
-    imul edi, [scanline_len_old]
-    add edi, [ebx+Image.Data]
-    add edi, edx
-     jmp .rotate_cw1.begin
-
+    je .rotate_cw1.quit
+  @@:
+    mov esi, [ebx + Image.Height]
+    dec esi
+    imul esi, [scanline_len_old]
+    add esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_cw1.begin
   .rotate_cw1.quit:
     pop eax                                             ; get pointer to new data
     mov esi, eax
     mov edi, [ebx + Image.Data]
     pop ecx                                             ; get new data size
     rep movsb
-
     invoke  mem.free, eax
-
     pop edx ecx
-     jmp .exchange_dims
+    jmp .exchange_dims
+
+
+.rotate_cw2i:
+    push ecx edx
+
+    mov eax, [ebx + Image.Height]
+    add eax, 3
+    shr eax, 2
+    imul [ebx + Image.Width]
+    push eax                                            ; save new data size
+
+    invoke  mem.alloc, eax
+    or  eax, eax
+    jz  .error
+    push eax                                            ; save pointer to new data
+
+    mov edi, eax
+    mov esi, [ebx + Image.Data]
+    mov eax, [ebx + Image.Height]
+    dec eax
+    imul eax, [scanline_len_old]
+    add esi, eax
+    mov eax, 3
+    mov ecx, 3
+    mov edx, 0
+
+  .rotate_cw2i.begin:
+    push ebx ecx
+    mov ebx, 3
+    shl ebx, cl
+    shl ebx, cl
+    and bl, [esi]
+    shr ebx, cl
+    shr ebx, cl
+    mov bh, 3
+    mov ecx, eax
+    shl ebx, cl
+    shl ebx, cl
+    not bh
+    and bh, [edi]
+    or  bl, bh
+    mov [edi], bl
+    pop ecx ebx
+
+    sub esi, [scanline_len_old]
+    dec [scanline_pixels_new]
+    jz  .rotate_cw2i.end_of_line
+    sub eax, 1
+    adc edi, 0
+    and eax, 3
+    jmp .rotate_cw2i.begin
+  .rotate_cw2i.end_of_line:
+    inc edi
+    mov eax, [ebx + Image.Height]
+    mov [scanline_pixels_new],   eax
+    mov eax, 3
+    dec ecx
+    jns @f
+    mov ecx, 3
+    inc edx
+    cmp edx, [scanline_len_old]
+    je .rotate_cw2i.quit
+  @@:
+    mov esi, [ebx + Image.Height]
+    dec esi
+    imul esi, [scanline_len_old]
+    add esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_cw2i.begin
+  .rotate_cw2i.quit:
+    pop eax                                             ; get pointer to new data
+    mov esi, eax
+    mov edi, [ebx + Image.Data]
+    pop ecx                                             ; get new data size
+    rep movsb
+    invoke  mem.free, eax
+    pop edx ecx
+    jmp .exchange_dims
+
+
+.rotate_cw4i:
+    push ecx edx
+
+    mov eax, [ebx + Image.Height]
+    add eax, 1
+    shr eax, 1
+    imul [ebx + Image.Width]
+    push eax                                            ; save new data size
+
+    invoke  mem.alloc, eax
+    or  eax, eax
+    jz  .error
+    push eax                                            ; save pointer to new data
+
+    mov edi, eax
+    mov esi, [ebx + Image.Data]
+    mov eax, [ebx + Image.Height]
+    dec eax
+    imul eax, [scanline_len_old]
+    add esi, eax
+    mov eax, 1
+    mov ecx, 1
+    mov edx, 0
+
+  .rotate_cw4i.begin:
+    push ebx ecx
+    mov ebx, 15
+    shl ecx, 2
+    shl ebx, cl
+    and bl, [esi]
+    shr ebx, cl
+    mov bh, 15
+    mov ecx, eax
+    shl ecx, 2
+    shl ebx, cl
+    not bh
+    and bh, [edi]
+    or  bl, bh
+    mov [edi], bl
+    pop ecx ebx
+
+    sub esi, [scanline_len_old]
+    dec [scanline_pixels_new]
+    jz  .rotate_cw4i.end_of_line
+    sub eax, 1
+    adc edi, 0
+    and eax, 1
+    jmp .rotate_cw4i.begin
+  .rotate_cw4i.end_of_line:
+    inc edi
+    mov eax, [ebx + Image.Height]
+    mov [scanline_pixels_new],   eax
+    mov eax, 1
+    dec ecx
+    jns @f
+    mov ecx, 1
+    inc edx
+    cmp edx, [scanline_len_old]
+    je .rotate_cw4i.quit
+  @@:
+    mov esi, [ebx + Image.Height]
+    dec esi
+    imul esi, [scanline_len_old]
+    add esi, [ebx + Image.Data]
+    add esi, edx
+    jmp .rotate_cw4i.begin
+  .rotate_cw4i.quit:
+    pop eax                                             ; get pointer to new data
+    mov esi, eax
+    mov edi, [ebx + Image.Data]
+    pop ecx                                             ; get new data size
+    rep movsb
+    invoke  mem.free, eax
+    pop edx ecx
+    jmp .exchange_dims
+
 
   .flip:
     jmp .exit
@@ -2033,11 +2531,12 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
     imul    eax, [_width]
     test    eax, eax
     jz  .error
-; do not allow images which require too many memory
-    cmp eax, 4000000h
-    jae .error
     cmp [ebx + Image.Type], Image.bpp1
     jz  .bpp1
+    cmp [ebx + Image.Type], Image.bpp2i
+    jz  .bpp2i
+    cmp [ebx + Image.Type], Image.bpp4i
+    jz  .bpp4i
     cmp [ebx + Image.Type], Image.bpp8i
     jz  .bpp8i
     cmp [ebx + Image.Type], Image.bpp8g
@@ -2059,31 +2558,52 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
 .bpp8a:
     shl eax, 1
     jmp @f
+.bpp4i:
+    mov eax, [_width]
+    add eax, 1
+    shr eax, 1
+    imul eax, [_height]
+    mov ecx, eax
+    mov eax, [_height]
+    add eax, 1
+    shr eax, 1
+    imul eax, [_width]
+    cmp eax, ecx
+    jge .bpp4i.skip
+    mov eax, ecx
+ .bpp4i.skip:
+    add eax, 16*4    ; for palette
+    jmp @f
+.bpp2i:
+    mov eax, [_width]
+    add eax, 3
+    shr eax, 2
+    imul eax, [_height]
+    mov ecx, eax
+    mov eax, [_height]
+    add eax, 3
+    shr eax, 2
+    imul eax, [_width]
+    cmp eax, ecx
+    jge .bpp2i.skip
+    mov eax, ecx
+ .bpp2i.skip:
+    add eax, 4*4    ; for palette
+    jmp @f
 .bpp1:
     mov eax, [_width]
     add eax, 7
     shr eax, 3
-    mul word[_height]
-    shl eax, 16
-    mov ax,  dx
-    ror eax, 16
-
-    push ebx
-    mov ebx, eax
-
+    imul eax, [_height]
+    mov ecx, eax
     mov eax, [_height]
     add eax, 7
     shr eax, 3
-    mul word[_width]
-    shl eax, 16
-    mov ax,  dx
-    ror eax, 16
-
-    cmp eax, ebx
-     jge .bpp1.skip
-    mov eax, ebx
-  .bpp1.skip:
-    pop ebx
+    imul eax, [_width]
+    cmp eax, ecx
+    jge .bpp1.skip
+    mov eax, ecx
+ .bpp1.skip:
 
     add eax, 2*4    ; for palette
 @@:
@@ -2104,8 +2624,20 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
     jmp .ret
 @@:
     cmp [ebx + Image.Type], Image.bpp1
-    jnz .ret
+    jnz @f
     lea esi, [eax + esi - 2*4]
+    mov [ebx + Image.Palette], esi
+    jmp .ret
+@@:
+    cmp [ebx + Image.Type], Image.bpp2i
+    jnz @f
+    lea esi, [eax + esi - 4*4]
+    mov [ebx + Image.Palette], esi
+    jmp .ret
+@@:
+    cmp [ebx + Image.Type], Image.bpp4i
+    jnz .ret
+    lea esi, [eax + esi - 16*4]
     mov [ebx + Image.Palette], esi
     jmp .ret
 
@@ -2127,6 +2659,10 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
     cmp [ebx + Image.Type], Image.bpp1
     jz  .bpp1.1
+    cmp [ebx + Image.Type], Image.bpp2i
+    jz  .bpp2i.1
+    cmp [ebx + Image.Type], Image.bpp4i
+    jz  .bpp4i.1
     cmp [ebx + Image.Type], Image.bpp8i
     jz  .bpp8.1
     cmp [ebx + Image.Type], Image.bpp8g
@@ -2147,6 +2683,14 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
     add eax, 7
     shr eax, 3
     jmp .quit
+.bpp2i.1:
+    add eax, 3
+    shr eax, 2
+    jmp .quit
+.bpp4i.1:
+    add eax, 1
+    shr eax, 1
+    jmp .quit
 .bpp8a.1:
     shl eax, 1
 .bpp8.1:
@@ -2163,7 +2707,7 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
 
 align 4
-type2bpp    dd  8, 24, 32, 15, 16, 1, 9;, 2, 4
+type2bpp    dd  8, 24, 32, 15, 16, 1, 9, 2, 4
 img._.do_rgb.handlers:
     dd  img._.do_rgb.bpp8i
     dd  img._.do_rgb.bpp24
@@ -2172,7 +2716,8 @@ img._.do_rgb.handlers:
     dd  img._.do_rgb.bpp16.amd  ; can be overwritten in lib_init
     dd  img._.do_rgb.bpp1
     dd  img._.do_rgb.bpp8g
-;    dd  img._.do_rgb.bpp8a
+    dd  img._.do_rgb.bpp2i
+    dd  img._.do_rgb.bpp4i
 
 img.flip.layer.handlers_horz:
     dd  img.flip.layer.bpp8ig_horz
@@ -2182,7 +2727,8 @@ img.flip.layer.handlers_horz:
     dd  img.flip.layer.bpp1x_horz
     dd  img.flip.layer.bpp1_horz
     dd  img.flip.layer.bpp8ig_horz
-;    dd  img.flip.layer.bpp8a_horz
+    dd  img.flip.layer.bpp2i_horz
+    dd  img.flip.layer.bpp4i_horz
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;

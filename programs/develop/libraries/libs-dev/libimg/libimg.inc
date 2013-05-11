@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// libimg.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2012 ///////;;
+;;//// libimg.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2013 ///////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -101,9 +101,9 @@ Image.bpp15 = 4
 Image.bpp16 = 5
 Image.bpp1  = 6
 Image.bpp8g = 7  ; grayscale
-Image.bpp8a = 8  ; grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
-;Image.bpp2  = 9
-;Image.bpp4  = 10
+Image.bpp2i = 8
+Image.bpp4i = 9
+Image.bpp8a = 10  ; grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
 
 ; bits in Image.Flags
 Image.IsAnimated = 1

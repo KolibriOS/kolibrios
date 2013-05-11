@@ -125,7 +125,7 @@ endl
         rep     stosb
         test    ebx, ebx
         jnz     @b
-	stdcall pcx._.scanline_unpack, [width], [cur_scanline], [num_planes]
+	stdcall pcx._.scanline_unpack, [width], [bp_plane], [cur_scanline], [num_planes]
 	dec	[height]
 	jnz	.24bit.scanline
         jmp     .quit
@@ -244,7 +244,7 @@ proc	pcx._.get_byte
 endp
 
 
-proc pcx._.scanline_unpack _width, _scanline, _num_planes
+proc pcx._.scanline_unpack _width, _bp_plane, _scanline, _num_planes
         push    esi
 
         mov     esi, [_scanline]
@@ -262,8 +262,8 @@ proc pcx._.scanline_unpack _width, _scanline, _num_planes
         add     edi, [_num_planes]
         dec     ecx
         jnz     @b
-        bt      dword[_width], 0
-        adc     esi, 0
+        add     esi, [_bp_plane]
+        sub     esi, [_width]
         dec     ebx
         jns     .plane
 

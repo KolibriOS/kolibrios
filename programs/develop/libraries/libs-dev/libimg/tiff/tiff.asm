@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// tiff.asm //// (c) dunkaist, 2011-2012 /////////////////////////////////////////////////////;;
+;;//// tiff.asm //// (c) dunkaist, 2011-2013 /////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -207,10 +207,10 @@ endl
 	je	.bpp8g
         cmp     ecx, Image.bpp8a
 	je	.bpp8a
-;        cmp     ecx, Image.bpp2
-;	je	.bpp2
-;        cmp     ecx, Image.bpp4
-;	je	.bpp4
+        cmp     ecx, Image.bpp2i
+	je	.bpp2i
+        cmp     ecx, Image.bpp4i
+	je	.bpp4i
         jmp     .quit
 ;error report!!
 
@@ -220,38 +220,24 @@ endl
 	cmp	[ebx + tiff_extra.photometric], TIFF.PHOTOMETRIC.BLACK_IS_ZERO
 	jne	.bpp1.white_is_zero
   .bpp1.black_is_zero:
-	mov	[edi], dword 0x00000000
-	mov	[edi + 4], dword 0x00ffffff
+	mov	[edi], dword 0xff000000
+	mov	[edi + 4], dword 0xffffffff
 	jmp	.common
   .bpp1.white_is_zero:
-	mov	[edi], dword 0x00ffffff
-	mov	[edi + 4], dword 0x00000000
+	mov	[edi], dword 0xffffffff
+	mov	[edi + 4], dword 0xff000000
 	jmp	.common
 
-  .bpp2:
+  .bpp2i:
+        stdcall tiff._.get_palette, 1 SHL 2, [_endianness]
 	jmp	.common
 
-  .bpp4:
+  .bpp4i:
+        stdcall tiff._.get_palette, 1 SHL 4, [_endianness]
 	jmp	.common
 
   .bpp8i:
-	mov	esi, [ebx + tiff_extra.palette]
-	mov	ah, 2
-  .bpp8.channel:
-	mov	edi, eax
-	and	edi, 0x0000ff00
-	shr	edi, 8
-	add	edi, [edx + Image.Palette]
-	mov	ecx, 256
-    @@:
-	lodsb
-	stosb
-	lodsb
-	add	edi, 3
-	dec	ecx
-	jnz	@b
-	dec	ah
-	jns	.bpp8.channel
+        stdcall tiff._.get_palette, 1 SHL 8, [_endianness]
 	jmp	.common
   .bpp8g:
 	jmp	.common
@@ -634,9 +620,6 @@ proc tiff._.parse_IFDE _data, _endianness
 	xor	eax, eax
 	lodsw_
 	mov	[ebx + tiff_extra.planar_configuration], eax
-;debug_print 'planar_configuration: '
-;debug_print_dec eax
-;newline
 	lodsw
     @@:
 	jmp	.quit
@@ -676,7 +659,7 @@ proc tiff._.define_image_type
 	xor	eax, eax
 
 	cmp	[ebx + tiff_extra.photometric], TIFF.PHOTOMETRIC.RGB
-	jne	.not_full_color
+	jne	.palette_bilevel_grayscale
 	mov	eax, -3
 	add	eax, [ebx + tiff_extra.samples_per_pixel]
 	mov	[ebx + tiff_extra.extra_samples_number], eax
@@ -691,17 +674,17 @@ proc tiff._.define_image_type
 ;	mov	[ebx + tiff_extra.extra_samples_number], 0
 	jmp	.quit
     @@:
-  .not_full_color:	; grayscale, indexed, bilevel
-	cmp	[ebx + tiff_extra.bits_per_sample], 1
-	jg	.not_bilevel
-	mov	eax, Image.bpp1
-	jmp	.quit
-  .not_bilevel:		; grayscale, indexed
+  .palette_bilevel_grayscale:
 	cmp	[ebx + tiff_extra.palette], 0
-	je	.without_palette
+	je	.bilevel_grayscale
+	cmp	[ebx + tiff_extra.bits_per_sample], 2
+	jg	@f
+	mov	eax, Image.bpp2i
+	jmp	.quit
+    @@:
 	cmp	[ebx + tiff_extra.bits_per_sample], 4
-	jne	@f
-;	mov	eax, Image.bpp4
+	jg	@f
+	mov	eax, Image.bpp4i
 	jmp	.quit
     @@:
 	cmp	[ebx + tiff_extra.bits_per_sample], 8
@@ -710,12 +693,16 @@ proc tiff._.define_image_type
 	jmp	.quit
     @@: 
 	jmp	.quit
-  .without_palette:	; grayscale
-	mov	eax, -1
-	add	eax, [ebx + tiff_extra.samples_per_pixel]
-	mov	[ebx + tiff_extra.extra_samples_number], eax
-	dec	eax
-	jns	@f
+  .bilevel_grayscale:
+	cmp	[ebx + tiff_extra.bits_per_sample], 1
+	jg	.grayscale
+	mov	eax, Image.bpp1
+	jmp	.quit
+  .grayscale:
+	cmp	[ebx + tiff_extra.bits_per_sample], 8
+        jne     .quit
+	cmp	[ebx + tiff_extra.samples_per_pixel], 1
+        jne     @f
 	mov	eax, Image.bpp8g
 	jmp	.quit
     @@:
@@ -1257,6 +1244,28 @@ endl
         xchg    [ebx + Image.Data], eax
         invoke  mem.free, eax
         popad
+        ret
+endp
+
+
+proc tiff._.get_palette _num_colors, _endianness
+	mov	esi, [ebx + tiff_extra.palette]
+        push    ebx
+	mov	ebx, 2
+  .bpp2.channel:
+	mov	edi, ebx
+	add	edi, [edx + Image.Palette]
+	mov	ecx, [_num_colors]
+    @@:
+        lodsw_
+        shr     eax, 8
+        stosb
+	add	edi, 3
+	dec	ecx
+	jnz	@b
+	dec	ebx
+	jns	.bpp2.channel
+        pop     ebx
         ret
 endp
 
