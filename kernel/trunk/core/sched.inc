@@ -29,8 +29,8 @@ irq0:
   .nocounter:
         xor     ecx, ecx        ; send End Of Interrupt signal
         call    irq_eoi
-        btr     dword[DONT_SWITCH], 0
-        jc      .return
+;        btr     dword[DONT_SWITCH], 0
+;        jc      .return
         call    find_next_task
         jz      .return  ; if there is only one running process
         call    do_change_task
@@ -61,7 +61,7 @@ end if
         call    find_next_task
         jz      .return  ; the same task -> skip switch
   @@:
-        mov     byte[DONT_SWITCH], 1
+;        mov     byte[DONT_SWITCH], 1
         call    do_change_task
   .return:
         popad

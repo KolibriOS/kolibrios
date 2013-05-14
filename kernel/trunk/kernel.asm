@@ -1221,7 +1221,7 @@ set_variables:
 ;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
      ;!! IP 04.02.2005:
-        mov     byte [DONT_SWITCH], al; change task if possible
+;        mov     byte [DONT_SWITCH], al; change task if possible
         pop     eax
         ret
 
