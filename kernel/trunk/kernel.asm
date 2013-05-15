@@ -803,6 +803,8 @@ end if
         mov     [pci_access_enabled], 1
         call    pci_enum
 
+        stdcall load_driver, szVidintel
+
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
         mov     esi, boot_windefs
