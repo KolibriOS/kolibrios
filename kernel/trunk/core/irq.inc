@@ -66,8 +66,7 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
         test    edx, edx
         jz      .err
 
-        pushfd
-        cli
+        spin_lock_irqsave IrqsList
 
 ;allocate handler
 
@@ -84,13 +83,14 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
         mov     eax, [user_data]
         mov     [ecx+IRQH.handler], edx
         mov     [ecx+IRQH.data], eax
+        and     [ecx+IRQH.num_ints], 0
 
         lea     edx, [irqh_tab+ebx*8]
-         list_add_tail ecx, edx     ;clobber eax
+        list_add_tail ecx, edx     ;clobber eax
         stdcall enable_irq, ebx
 
 .fail:
-        popfd
+        spin_unlock_irqrestore IrqsList
 .err:
         pop     ebx
         mov     eax, [.irqh]
@@ -144,7 +144,7 @@ purge irq_serv_h
 
 align 16
 .main:
-       save_ring3_context
+        save_ring3_context
 
         mov     ebp, [esp + 32]
         mov     bx, app_data;os_data
@@ -188,7 +188,7 @@ align 16
 
         push    [ebx+IRQH.data]
         call    [ebx+IRQH.handler]
-        add     esp, 4
+        pop     ecx
 
         pop     esi
         pop     edi
@@ -197,12 +197,49 @@ align 16
         test    eax, eax
         jz      .next
 
+        inc     [ebx+IRQH.num_ints]
         btr     [irq_active_set], ebp
         jmp     .next
 
 .done:
         btr     [irq_active_set], ebp
         jnc     .exit
+
+; There is at least one configuration with one device which generates IRQ
+; that is not the same as it should be according to PCI config space.
+; For that device, the handler is registered at wrong IRQ.
+; As a workaround, when nobody acknowledges the generated IRQ,
+; try to ask all other registered handlers; if some handler acknowledges
+; the IRQ this time, relink it to the current IRQ list.
+; To make this more reliable, for every handler keep number of times
+; that it has acknowledged an IRQ, and assume that handlers with at least one
+; acknowledged IRQ are registered properly.
+; Note: this still isn't 100% correct, because two IRQs can fire simultaneously,
+; the better way would be to find the correct IRQ, but I don't know how to do
+; this in that case.
+        push    ebp
+        xor     ebp, ebp
+.try_other_irqs:
+        cmp     ebp, [esp]
+        jz      .try_next_irq
+        lea     esi, [irqh_tab+ebp*8]
+        mov     ebx, esi
+.try_next_handler:
+        mov     ebx, [ebx+IRQH.list.next]
+        cmp     ebx, esi
+        je      .try_next_irq
+        cmp     [ebx+IRQH.num_ints], 0
+        jne     .try_next_irq
+        push    [ebx+IRQH.data]
+        call    [ebx+IRQH.handler]
+        pop     ecx
+        test    eax, eax
+        jnz     .found_in_wrong_list
+.try_next_irq:
+        inc     ebp
+        cmp     ebp, 16
+        jb      .try_other_irqs
+        pop     ebp
 
         inc     [irq_failed+ebp*4]
 .exit:
@@ -211,9 +248,20 @@ align 16
         mov     ecx, ebp
         call    irq_eoi
 
-       restore_ring3_context
+        restore_ring3_context
         add     esp, 4
         iret
+
+.found_in_wrong_list:
+        DEBUGF 1,'K : warning: relinking handler from IRQ%d to IRQ%d\n',\
+                ebp, [esp]
+        spin_lock_irqsave IrqsList
+        list_del ebx
+        pop     ebp
+        lea     edx, [irqh_tab+ebp*8]
+        list_add_tail ebx, edx
+        spin_unlock_irqrestore IrqsList
+        jmp     .exit
 
 align 4
 irqD:
