@@ -1,1 +1,1 @@
-lang equ 'ru'
+%define lang 'ru'

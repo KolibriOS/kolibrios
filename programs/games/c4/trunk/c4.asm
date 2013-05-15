@@ -46,7 +46,7 @@ BUTTON_HEIGHT		equ	12
 
 BUTTON_NEW_X		equ	14
 BUTTON_NEW_Y		equ	30
-%if lang = 'it'
+%ifidn lang, 'it'
 	BUTTON_NEW_WIDTH equ 56 + 28
 %else
 	BUTTON_NEW_WIDTH equ 56
@@ -64,7 +64,7 @@ BUTTON_PL2UP_X		equ	(BUTTON_PL2DN_X + BUTTON_SPIN_WIDTH + 1)
 BUTTON_PL2UP_Y		equ	BUTTON_PL2DN_Y
 
 ; label dimensions
-%if lang = 'it'
+%ifidn lang, 'it'
 	LABEL_PL1_X      equ   90 + 10
 %else
 	LABEL_PL1_X      equ   90
@@ -72,7 +72,7 @@ BUTTON_PL2UP_Y		equ	BUTTON_PL2DN_Y
 LABEL_PL1_Y		equ	(1 + BUTTON_PL1DN_Y + (BUTTON_HEIGHT-8)/2)
 LABEL_PL2_X		equ	LABEL_PL1_X
 LABEL_PL2_Y		equ	(1 + BUTTON_PL2DN_Y + (BUTTON_HEIGHT-8)/2)
-%if lang = 'it'
+%ifidn lang, 'it'
         LABEL_PL1TYPE_X      equ   (LABEL_PL1_X + 10*6 - 4)
 %else
         LABEL_PL1TYPE_X      equ   (LABEL_PL1_X + 10*6)
@@ -777,14 +777,14 @@ NBUTTONS	equ	(($-buttons)/BUTTON_size)
 ;
 ; label table
 ;
-%if lang = 'it'
+%ifidn lang, 'it'
        newgame db   "Nuova partita",0
 %else
        newgame db   "New game",0
 %endif
 down		db	"<",0
 up		db	">",0
-%if lang = 'it'
+%ifidn lang, 'it'
        pl1		db	"Giocatore 1:",0
        pl2		db	"Giocatore 2:",0
 %else
@@ -792,7 +792,7 @@ up		db	">",0
        pl2		db	"Player 2:",0
 %endif
 
-%if lang = 'it'
+%ifidn lang, 'it'
 	playertypes:
 			db	"Umano",0
 	PLAYERTYPELEN	equ	($ - playertypes)
@@ -882,7 +882,7 @@ iend
 label_pl1type:
 istruc LABEL
 	at LABEL.position
-	%if lang = 'it'
+	%ifidn lang, 'it'
 		dd MOS_DWORD(LABEL_PL1TYPE_X + 18,LABEL_PL1TYPE_Y)
 	%else
 		dd MOS_DWORD(LABEL_PL1TYPE_X,LABEL_PL1TYPE_Y)
@@ -894,7 +894,7 @@ iend
 label_pl2type:
 istruc LABEL
 	at LABEL.position
-	%if lang = 'it'
+	%ifidn lang, 'it'
 		dd MOS_DWORD(LABEL_PL2TYPE_X + 18,LABEL_PL2TYPE_Y)
 	%else
 		dd MOS_DWORD(LABEL_PL2TYPE_X,LABEL_PL2TYPE_Y)
@@ -912,7 +912,7 @@ player2_type	dd	PL2TYPE_INIT
 
 
 ; status messages
-%if lang = 'it'
+%ifidn lang, 'it'
 	player1hmnprmpt	db	"Turno del giocatore 1",0
 	player2hmnprmpt db	"Turno del giocatore 2",0
 	player1cpuprmpt	db	"Attendi, giocatore 1 sta pensando...",0

@@ -1,1 +1,1 @@
-lang equ 'en'
+%define lang 'en'

@@ -1,1 +1,1 @@
-lang equ 'sp'
+%define lang 'sp'
