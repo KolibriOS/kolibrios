@@ -78,6 +78,8 @@ USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 
 ; Enabling the next line will enable serial output console
 ;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
+; The following constant, if nonzero, duplicates debug output to the screen.
+debug_direct_print equ 0
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -4669,6 +4671,29 @@ if defined debug_com_base
 end if
 
         mov     [msg_board_data+ecx], bl
+if debug_direct_print
+        pusha
+iglobal
+msg_board_pos   dd      234*65536+10
+endg
+        lea     edx, [msg_board_data+ecx]
+        mov     ecx, 0x40FFFFFF
+        mov     ebx, [msg_board_pos]
+        mov     edi, 1
+        mov     esi, 1
+        call    dtext
+        popa
+        add     word [msg_board_pos+2], 6
+        cmp     bl, 10
+        jnz     @f
+        mov     word [msg_board_pos+2], 234
+        add     word [msg_board_pos], 10
+        mov     ax, [Screen_Max_Y]
+        cmp     word [msg_board_pos], ax
+        jbe     @f
+        mov     word [msg_board_pos], 10
+@@:
+end if
         inc     ecx
         and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
