@@ -217,6 +217,14 @@ align 16
 ; Note: this still isn't 100% correct, because two IRQs can fire simultaneously,
 ; the better way would be to find the correct IRQ, but I don't know how to do
 ; this in that case.
+; Also, [fdc_irq_func], [irq14_func], [irq15_func] could process interrupt
+; but do not return whether they did it, so just ignore IRQs 6, 14, 15.
+        cmp     ebp, 6
+        jz      .fail
+        cmp     ebp, 14
+        jz      .fail
+        cmp     ebp, 15
+        jz      .fail
         push    ebp
         xor     ebp, ebp
 .try_other_irqs:
@@ -230,6 +238,9 @@ align 16
         je      .try_next_irq
         cmp     [ebx+IRQH.num_ints], 0
         jne     .try_next_irq
+; keyboard handler acknowledges everything
+        cmp     [ebx+IRQH.handler], irq1
+        jz      .try_next_irq
         push    [ebx+IRQH.data]
         call    [ebx+IRQH.handler]
         pop     ecx
@@ -241,6 +252,7 @@ align 16
         jb      .try_other_irqs
         pop     ebp
 
+.fail:
         inc     [irq_failed+ebp*4]
 .exit:
         mov     [check_idle_semaphore], 5
