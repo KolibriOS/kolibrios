@@ -688,4 +688,5 @@ struct  IRQH
         list            LHEAD
         handler         dd ?   ;handler roututine
         data            dd ?   ;user-specific data
+        num_ints        dd ?   ;how many times handled
 ends
