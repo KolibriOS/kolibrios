@@ -237,10 +237,10 @@ align 16
         cmp     ebx, esi
         je      .try_next_irq
         cmp     [ebx+IRQH.num_ints], 0
-        jne     .try_next_irq
+        jne     .try_next_handler
 ; keyboard handler acknowledges everything
         cmp     [ebx+IRQH.handler], irq1
-        jz      .try_next_irq
+        jz      .try_next_handler
         push    [ebx+IRQH.data]
         call    [ebx+IRQH.handler]
         pop     ecx
