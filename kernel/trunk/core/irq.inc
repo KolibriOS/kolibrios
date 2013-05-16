@@ -250,9 +250,9 @@ align 16
 .found_in_wrong_list:
         DEBUGF 1,'K : warning: relinking handler from IRQ%d to IRQ%d\n',\
                 ebp, [esp]
+        pop     ebp
         spin_lock_irqsave IrqsList
         list_del ebx
-        pop     ebp
         lea     edx, [irqh_tab+ebp*8]
         list_add_tail ebx, edx
         spin_unlock_irqrestore IrqsList
