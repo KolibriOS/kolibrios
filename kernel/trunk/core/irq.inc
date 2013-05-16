@@ -245,7 +245,19 @@ align 16
         call    [ebx+IRQH.handler]
         pop     ecx
         test    eax, eax
-        jnz     .found_in_wrong_list
+        jz      .try_next_handler
+
+.found_in_wrong_list:
+        DEBUGF 1,'K : warning: relinking handler from IRQ%d to IRQ%d\n',\
+                ebp, [esp]
+        spin_lock_irqsave IrqsList
+        list_del ebx
+        pop     ebp
+        lea     edx, [irqh_tab+ebp*8]
+        list_add_tail ebx, edx
+        spin_unlock_irqrestore IrqsList
+        jmp     .exit
+
 .try_next_irq:
         inc     ebp
         cmp     ebp, 16
@@ -263,17 +275,6 @@ align 16
         restore_ring3_context
         add     esp, 4
         iret
-
-.found_in_wrong_list:
-        DEBUGF 1,'K : warning: relinking handler from IRQ%d to IRQ%d\n',\
-                ebp, [esp]
-        spin_lock_irqsave IrqsList
-        list_del ebx
-        pop     ebp
-        lea     edx, [irqh_tab+ebp*8]
-        list_add_tail ebx, edx
-        spin_unlock_irqrestore IrqsList
-        jmp     .exit
 
 align 4
 irqD:
