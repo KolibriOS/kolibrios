@@ -129,6 +129,8 @@ FASM_PROGRAMS:=\
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(KERNEL)/drivers/intelac97.asm \
  drivers/tmpdisk.obj:DRIVERS/TMPDISK.OBJ:$(KERNEL)/drivers/tmpdisk.asm \
+ drivers/usbhid.obj:DRIVERS/USBHID.OBJ:$(KERNEL)/drivers/usbhid.asm \
+ drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/vidintel.obj:DRIVERS/VIDINTEL.OBJ:$(KERNEL)/drivers/vidintel.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
@@ -301,7 +303,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
 
 # Generate skins list understandable by gnu make
 Makefile.skins: $(REPOSITORY)/skins/authors.txt $(REPOSITORY)/data/generate_makefile_skins.sh
-	cut -f1 $< | $(SHELL) $(REPOSITORY)/data/generate_makefile_skins.sh > $@
+        cut -f1 $< | $(SHELL) $(REPOSITORY)/data/generate_makefile_skins.sh > $@
 include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
@@ -403,30 +405,30 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
  Makefile \
  $(BUILD_DIR)/boot_fat12.bin \
  $(targets)
-	str=`date -u +"[auto-build %d %b %Y %R, r$(REV)]"`; \
-	echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
-	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
-	mformat -f 1440 -i $(BUILD_DIR)/kolibri.img ::
-	dd if=$(BUILD_DIR)/boot_fat12.bin of=$(BUILD_DIR)/kolibri.img count=1 bs=512 conv=notrunc 2>&1
-	mmd -i $(BUILD_DIR)/kolibri.img ::3D
-	mmd -i $(BUILD_DIR)/kolibri.img ::DEMOS
-	mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP
-	mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP/INFO
-	mmd -i $(BUILD_DIR)/kolibri.img ::DRIVERS
-	mmd -i $(BUILD_DIR)/kolibri.img ::File\ Managers
-	mmd -i $(BUILD_DIR)/kolibri.img ::FONTS
-	mmd -i $(BUILD_DIR)/kolibri.img ::GAMES
-	mmd -i $(BUILD_DIR)/kolibri.img ::LIB
-	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
-	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA/ImgF
-	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
-	$(mcopy_all_items)
+        str=`date -u +"[auto-build %d %b %Y %R, r$(REV)]"`; \
+        echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
+        dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
+        mformat -f 1440 -i $(BUILD_DIR)/kolibri.img ::
+        dd if=$(BUILD_DIR)/boot_fat12.bin of=$(BUILD_DIR)/kolibri.img count=1 bs=512 conv=notrunc 2>&1
+        mmd -i $(BUILD_DIR)/kolibri.img ::3D
+        mmd -i $(BUILD_DIR)/kolibri.img ::DEMOS
+        mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP
+        mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP/INFO
+        mmd -i $(BUILD_DIR)/kolibri.img ::DRIVERS
+        mmd -i $(BUILD_DIR)/kolibri.img ::File\ Managers
+        mmd -i $(BUILD_DIR)/kolibri.img ::FONTS
+        mmd -i $(BUILD_DIR)/kolibri.img ::GAMES
+        mmd -i $(BUILD_DIR)/kolibri.img ::LIB
+        mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
+        mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA/ImgF
+        mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
+        $(mcopy_all_items)
 
 # The second goal: LiveCD image.
 $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
-	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points \
-	-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
-	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(call respace,$(MKISOFS_EXTRA)) 2>&1
+        mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points \
+        -A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
+        -iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(call respace,$(MKISOFS_EXTRA)) 2>&1
 
 # Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
@@ -434,16 +436,16 @@ $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 
 # The floppy bootsector.
 $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
-	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
+        fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
  games/.dir lib/.dir media/.dir network/.dir allskins/.dir distr_data/.dir .deps/.dir:
-	mkdir -p $(dir $@)
-	touch $@
+        mkdir -p $(dir $@)
+        touch $@
 develop/info/.dir: develop/.dir
 File\ Managers/.dir:
-	mkdir -p "File Managers"
-	touch "File Managers/.dir"
+        mkdir -p "File Managers"
+        touch "File Managers/.dir"
 
 # extra dependency for mtldr_install.exe
 distr_data/mtldr_install.exe: mtldr_for_installer
@@ -460,7 +462,7 @@ include Makefile.copy
 # Special rules for copying sysfuncs.txt - it isn't directly included in the image.
 docpack: $(DOCDIR)SYSFUNCS.TXT
 $(DOCDIR)SYSFUNCS.TXT: $(KERNEL)/docs/sysfuncs.txt
-	cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
+        cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
 
 # Similar for C--.
 include Makefile.cmm
@@ -473,21 +475,21 @@ include Makefile.msvc
 
 # Rules for table
 table: .obj.table/table.exe
-	$(msvc_final)
+        $(msvc_final)
 TABLE_OBJECTS:=.obj.table/calc.obj .obj.table/func.obj .obj.table/hello.obj \
  .obj.table/KosFile.obj .obj.table/kosSyst.obj .obj.table/math2.obj \
  .obj.table/mcsmemm.obj .obj.table/parser.obj
 TABLE_H_FILES:=$(wildcard $(PROGS)/other/table/*.h)
 .obj.table/table.exe: $(TABLE_OBJECTS)
-	$(msvc_link)
+        $(msvc_link)
 $(TABLE_OBJECTS): .obj.table/%.obj: $(PROGS)/other/table/%.cpp $(TABLE_H_FILES) Makefile.msvc | .obj.table
-	$(msvc_compile)
+        $(msvc_compile)
 .obj.table:
-	mkdir -p .obj.table
+        mkdir -p .obj.table
 
 # Rules for graph
 graph: .obj.graph/graph.exe
-	$(msvc_final)
+        $(msvc_final)
 GRAPH_CPP_OBJECTS:=.obj.graph/func.obj .obj.graph/hello.obj .obj.graph/kolibri.obj \
  .obj.graph/KosFile.obj .obj.graph/kosSyst.obj .obj.graph/math2.obj \
  .obj.graph/mcsmemm.obj .obj.graph/parser.obj
@@ -495,34 +497,34 @@ GRAPH_C_OBJECTS:=.obj.graph/string.obj
 GRAPH_H_FILES:=$(wildcard $(PROGS)/other/graph/*.h)
 GRAPH_FASM_OBJECTS:=.obj.graph/memcpy.obj .obj.graph/memset.obj
 .obj.graph/graph.exe: $(GRAPH_CPP_OBJECTS) $(GRAPH_C_OBJECTS) $(GRAPH_FASM_OBJECTS)
-	$(msvc_link)
+        $(msvc_link)
 $(GRAPH_CPP_OBJECTS): .obj.graph/%.obj: $(PROGS)/other/graph/%.cpp $(GRAPH_H_FILES) Makefile.msvc | .obj.graph
-	$(msvc_compile)
+        $(msvc_compile)
 $(GRAPH_C_OBJECTS): .obj.graph/%.obj: $(PROGS)/other/graph/%.c $(GRAPH_H_FILES) Makefile.msvc | .obj.graph
-	$(msvc_compile)
+        $(msvc_compile)
 $(GRAPH_FASM_OBJECTS): .obj.graph/%.obj: $(PROGS)/other/graph/%.asm Makefile.msvc | .obj.graph
-	fasm $< $@
+        fasm $< $@
 .obj.graph:
-	mkdir -p .obj.graph
+        mkdir -p .obj.graph
 
 # Rules for kosilka
 games/kosilka: .obj.kosilka/kosilka.exe
-	$(msvc_final)
+        $(msvc_final)
 KOSILKA_OBJECTS:=.obj.kosilka/kosilka.obj .obj.kosilka/KosFile.obj .obj.kosilka/kosSyst.obj .obj.kosilka/mcsmemm.obj
 KOSILKA_H_FILES:=$(PROGS)/games/kosilka/*.h
 .obj.kosilka/kosilka.exe: $(KOSILKA_OBJECTS)
-	$(msvc_link)
+        $(msvc_link)
 $(KOSILKA_OBJECTS): .obj.kosilka/%.obj: $(PROGS)/games/kosilka/%.cpp $(KOSILKA_H_FILES) Makefile.msvc | .obj.kosilka
-	$(msvc_compile)
+        $(msvc_compile)
 .obj.kosilka:
-	mkdir -p .obj.kosilka
+        mkdir -p .obj.kosilka
 
 include Makefile.gcc
 
 # Rules for shell
 shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o \
  $(PROGS)/system/shell/kolibri.ld
-	$(call gcc_link,$(PROGS)/system/shell/kolibri.ld)
+        $(call gcc_link,$(PROGS)/system/shell/kolibri.ld)
 .obj.shell/shell.o: $(PROGS)/system/shell/shell.c \
  $(PROGS)/system/shell/all.h \
  $(PROGS)/system/shell/system/*.h \
@@ -530,77 +532,77 @@ shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/std
  $(PROGS)/system/shell/modules/*.c \
  $(PROGS)/system/shell/locale/rus/globals.h \
  Makefile.gcc | .obj.shell
-	$(gcc_compile)
+        $(gcc_compile)
 .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o: .obj.shell/%.o: \
  $(PROGS)/system/shell/system/%.c $(PROGS)/system/shell/system/*.h \
  Makefile.gcc | .obj.shell
-	$(gcc_compile)
-	win32-gcc -c -Os -o $@ $<
+        $(gcc_compile)
+        win32-gcc -c -Os -o $@ $<
 .obj.shell/start.o: $(PROGS)/system/shell/start.asm | .obj.shell
-	fasm $< $@
+        fasm $< $@
 .obj.shell:
-	mkdir -p .obj.shell
+        mkdir -p .obj.shell
 
 # Rules for e80
 E80DIR=$(PROGS)/emulator/e80/trunk
 e80: .obj.e80/start.o .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o .obj.e80/z80.o .obj.e80/e80.o
-	$(call gcc_link,$(E80DIR)/kolibri.ld)
+        $(call gcc_link,$(E80DIR)/kolibri.ld)
 .obj.e80/e80.o: $(E80DIR)/e80.c $(E80DIR)/48.h \
  $(E80DIR)/system/*.h $(E80DIR)/system/msgbox.c \
  $(E80DIR)/z80/z80.h Makefile.gcc | .obj.e80
-	$(gcc_compile)
+        $(gcc_compile)
 .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o: .obj.e80/%.o: \
  $(E80DIR)/system/%.c $(E80DIR)/system/*.h Makefile.gcc | .obj.e80
-	$(gcc_compile)
+        $(gcc_compile)
 .obj.e80/z80.o: $(E80DIR)/z80/z80.c $(E80DIR)/z80/*
-	$(gcc_compile)
+        $(gcc_compile)
 .obj.e80/start.o: $(E80DIR)/asm_code.asm | .obj.e80
-	fasm $< $@
+        fasm $< $@
 .obj.e80:
-	mkdir -p .obj.e80
+        mkdir -p .obj.e80
 
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
 SOUND_OBJECTS:=$(patsubst $(SOUNDDIR)/%.asm,.sdk/%.obj,$(wildcard $(SOUNDDIR)/*.asm))
 SOUND_INC_FILES:=$(wildcard $(SOUNDDIR)/*.inc)
 .sdk/sound.lib: $(SOUND_OBJECTS)
-	win32-link /lib /out:$@ $^
+        win32-link /lib /out:$@ $^
 $(SOUND_OBJECTS): .sdk/%.obj: $(SOUNDDIR)/%.asm $(SOUND_INC_FILES) | .sdk
-	fasm $< $@
+        fasm $< $@
 .sdk:
-	mkdir -p .sdk
+        mkdir -p .sdk
 # Rules for media/ac97snd
 AC97DIR=$(PROGS)/media/ac97snd
 media/ac97snd: .obj.ac97snd/ac97snd.exe
-	$(msvc_final)
+        $(msvc_final)
 .obj.ac97snd/ac97snd.exe: .obj.ac97snd/ac97wav.obj .obj.ac97snd/crt.obj .obj.ac97snd/k_lib.obj \
-	.obj.ac97snd/mpg.lib .sdk/sound.lib .obj.ac97snd/ufmod.obj
-	$(msvc_link)
+        .obj.ac97snd/mpg.lib .sdk/sound.lib .obj.ac97snd/ufmod.obj
+        $(msvc_link)
 .obj.ac97snd/ac97wav.obj: $(AC97DIR)/ac97snd/ac97wav.c \
-	$(AC97DIR)/kolibri.h $(AC97DIR)/ac97snd/ac97wav.h $(AC97DIR)/mpg/mpg123.h \
-	$(AC97DIR)/sound.h $(AC97DIR)/ufmod-codec.h Makefile.msvc | .obj.ac97snd
-	$(msvc_compile)
+        $(AC97DIR)/kolibri.h $(AC97DIR)/ac97snd/ac97wav.h $(AC97DIR)/mpg/mpg123.h \
+        $(AC97DIR)/sound.h $(AC97DIR)/ufmod-codec.h Makefile.msvc | .obj.ac97snd
+        $(msvc_compile)
 .obj.ac97snd/crt.obj: $(AC97DIR)/ac97snd/crt.c $(AC97DIR)/ac97snd/crt.h Makefile.msvc | .obj.ac97snd
-	$(msvc_compile)
+        $(msvc_compile)
 .obj.ac97snd/k_lib.obj: $(AC97DIR)/ac97snd/k_lib.asm $(AC97DIR)/ac97snd/proc32.inc | .obj.ac97snd
-	fasm $< $@
+        fasm $< $@
 .obj.ac97snd/ufmod.obj: $(AC97DIR)/ufmod-config.asm | .obj.ac97snd
-	fasm $< $@ -s .deps/ac97snd-ufmod.fas
-	prepsrc .deps/ac97snd-ufmod.fas /dev/stdout | \
-	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$1 if/^;include\\ \x27(.*?)\x27/;' \
-	-e 'END{$$a=join " \\\n ",@a;print "$@: $$a\n$$a:\n"}' > .deps/ac97snd-ufmod.Po
+        fasm $< $@ -s .deps/ac97snd-ufmod.fas
+        prepsrc .deps/ac97snd-ufmod.fas /dev/stdout | \
+        perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$1 if/^;include\\ \x27(.*?)\x27/;' \
+        -e 'END{$$a=join " \\\n ",@a;print "$@: $$a\n$$a:\n"}' > .deps/ac97snd-ufmod.Po
 -include .deps/ac97snd-ufmod.Po
 AC97SND_MPG_C_FILES:=$(wildcard $(AC97DIR)/mpg/*.c)
 AC97SND_MPG_H_FILES:=$(wildcard $(AC97DIR)/mpg/*.h)
 AC97SND_MPG_C_OBJECTS:=$(patsubst $(AC97DIR)/mpg/%.c,.obj.ac97snd/%.o,$(AC97SND_MPG_C_FILES))
 .obj.ac97snd/mpg.lib: $(AC97SND_MPG_C_OBJECTS) .obj.ac97snd/pow.obj
-	win32-link /lib /ltcg /out:$@ $^
+        win32-link /lib /ltcg /out:$@ $^
 $(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_FILES) Makefile.msvc | .obj.ac97snd
-	$(msvc_compile)
+        $(msvc_compile)
 .obj.ac97snd/pow.obj: $(AC97DIR)/mpg/pow.asm $(AC97DIR)/mpg/proc32.inc | .obj.ac97snd
-	fasm $< $@
+        fasm $< $@
 .obj.ac97snd:
-	mkdir -p .obj.ac97snd
+        mkdir -p .obj.ac97snd
 
 # Rules for atikms.dll
 # Use Makefile from $(REPOSITORY)/drivers/ddk and $(REPOSITORY)/drivers/video/drm/radeon
@@ -609,16 +611,16 @@ $(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_F
 # Note that we are going to write in the directory shared
 # between all Makefiles, so we need locked operations.
 drivers/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll drivers/.dir
-	kpack --nologo $< $@
+        kpack --nologo $< $@
 $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/Makefile.lto
-	flock $(REPOSITORY)/drivers/video/drm/radeon/.lock \
-	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon -f Makefile.lto
+        flock $(REPOSITORY)/drivers/video/drm/radeon/.lock \
+        $(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon -f Makefile.lto
 $(REPOSITORY)/drivers/ddk/libddk.a: $(REPOSITORY)/drivers/ddk/Makefile
-	flock $(REPOSITORY)/drivers/ddk/.lock \
-	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk libddk.a
+        flock $(REPOSITORY)/drivers/ddk/.lock \
+        $(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk libddk.a
 $(REPOSITORY)/drivers/ddk/libcore.a: $(REPOSITORY)/drivers/ddk/Makefile
-	flock $(REPOSITORY)/drivers/ddk/.lock \
-	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk libcore.a
+        flock $(REPOSITORY)/drivers/ddk/.lock \
+        $(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk libcore.a
 # dependencies
 $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: \
  $(REPOSITORY)/drivers/video/drm/radeon/atikms.lds \

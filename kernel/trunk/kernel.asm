@@ -805,6 +805,8 @@ end if
 
         stdcall load_driver, szVidintel
 
+        call    usb_init
+
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
         mov     esi, boot_windefs

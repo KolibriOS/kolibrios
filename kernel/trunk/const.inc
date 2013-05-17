@@ -634,6 +634,17 @@ struct  SRV
         srv_proc_ex     dd ?     ;+0x2C ;kernel mode service handler
 ends
 
+struct USBSRV
+        srv             SRV
+        usb_func        dd ?
+ends
+
+struct USBFUNC
+        strucsize       dd ?
+        add_device      dd ?
+        device_disconnect dd ?
+ends
+
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1
 

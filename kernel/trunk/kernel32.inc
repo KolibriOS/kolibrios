@@ -220,6 +220,9 @@ include "gui/skincode.inc"
 
 include "bus/pci/pci32.inc"
 
+; USB functions
+include "bus/usb/init.inc"
+
 ; Floppy drive controller
 
 include "blkdev/fdc.inc"

@@ -97,6 +97,14 @@ kernel_export \
               GetDisplay,\
               SetScreen,\
 \
+              RegUSBDriver,\
+              USBOpenPipe,\
+              USBNormalTransferAsync,\
+              USBControlTransferAsync,\
+\
               DiskAdd,\
               DiskMediaChanged,\
-              DiskDel
+              DiskDel,\
+\
+              TimerHS,\
+              CancelTimerHS

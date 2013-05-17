@@ -550,7 +550,7 @@ proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
 
         xor     edx, edx
         push    edx
-        mov     eax, 0x2
+        mov     eax, 0x1
         mov     ebx, [pg_dir]
 .loop:
 ;eax = current slot of process
