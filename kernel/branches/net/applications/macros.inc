@@ -576,12 +576,13 @@ EV_IPC         = 7
 EV_STACK       = 8
 
 ; event mask bits for function 40
-EVM_REDRAW     =        1b
-EVM_KEY        =       10b
-EVM_BUTTON     =      100b
-EVM_EXIT       =     1000b
-EVM_BACKGROUND =    10000b
-EVM_MOUSE      =   100000b
-EVM_IPC        =  1000000b
-EVM_STACK      = 10000000b
-EVM_STACK2     = 0x400
+EVM_REDRAW     =          1b
+EVM_KEY        =         10b
+EVM_BUTTON     =        100b
+EVM_EXIT       =       1000b
+EVM_BACKGROUND =      10000b
+EVM_MOUSE      =     100000b
+EVM_IPC        =    1000000b
+EVM_STACK      =   10000000b
+EVM_DEBUG      =  100000000b
+EVM_STACK2     = 1000000000b

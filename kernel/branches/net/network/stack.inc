@@ -317,7 +317,7 @@ NET_send_event:
         loop    .loop
         pop     ecx edi
 
-;        call    change_task
+        call    change_task
 
         ret
 
