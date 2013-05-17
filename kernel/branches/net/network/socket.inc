@@ -2230,6 +2230,19 @@ SOCKET_is_disconnected:
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
 
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        je      .udp
+
+        jmp     SOCKET_notify
+
+  .tcp:
+  .udp:
+        mov     [eax + UDP_SOCKET.LocalPort], 0         ; UDP and TCP structs store localport at the same offset
+        mov     [eax + UDP_SOCKET.RemotePort], 0
+
         jmp     SOCKET_notify
 
 

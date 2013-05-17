@@ -416,13 +416,14 @@ local   .done
 align 4
 TCP_set_persist:
 
+        DEBUGF  1,"TCP_set_persist\n"
+
 ; First, check if retransmit timer is not set, retransmit and persist are mutually exclusive
 
         cmp     [eax + TCP_SOCKET.timer_retransmission], 0
-        jg      @f
+        ja      @f
 
 ; calculate RTO
-
         push    ebx
         mov     ebx, [eax + TCP_SOCKET.t_srtt]
         shr     ebx, 2
