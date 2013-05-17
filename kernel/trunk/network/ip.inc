@@ -215,27 +215,27 @@ local buffer_number dd ?
 
 
   .dump.1:
-        DEBUGF  1, "K : ip_rx - dumped (checksum: 0x%x-0x%x)\n", dx, ax
+;        DEBUGF  1, "K : ip_rx - dumped (checksum: 0x%x-0x%x)\n", dx, ax
         jmp     .dump.x
 
   .dump.2:
-        DEBUGF  1, "K : ip_rx - dumped (ip: %u.%u.%u.%u)\n", [ebx + IP_PACKET.DestinationAddress + 0]:1, [ebx + IP_PACKET.DestinationAddress + 1]:1, [ebx + IP_PACKET.DestinationAddress + 2]:1, [ebx + IP_PACKET.DestinationAddress + 3]:1
+;        DEBUGF  1, "K : ip_rx - dumped (ip: %u.%u.%u.%u)\n", [ebx + IP_PACKET.DestinationAddress + 0]:1, [ebx + IP_PACKET.DestinationAddress + 1]:1, [ebx + IP_PACKET.DestinationAddress + 2]:1, [ebx + IP_PACKET.DestinationAddress + 3]:1
         jmp     .dump.x
 
   .dump.3:
-        DEBUGF  1, "K : ip_rx - dumped (ihl: %u)\n", al
+;        DEBUGF  1, "K : ip_rx - dumped (ihl: %u)\n", al
         jmp     .dump.x
 
   .dump.4:
-        DEBUGF  1, "K : ip_rx - dumped (ttl: %u)\n", [ebx + IP_PACKET.TimeToLive]
+;        DEBUGF  1, "K : ip_rx - dumped (ttl: %u)\n", [ebx + IP_PACKET.TimeToLive]
         jmp     .dump.x
 
   .dump.5:
-        DEBUGF  1, "K : ip_rx - dumped (flags: 0x%x)\n", ax
+;        DEBUGF  1, "K : ip_rx - dumped (flags: 0x%x)\n", ax
         jmp     .dump.x
 
   .dump.6:
-        DEBUGF  1, "K : ip_rx - dumped (proto: %u)\n", [ebx + IP_PACKET.Protocol]:1
+;        DEBUGF  1, "K : ip_rx - dumped (proto: %u)\n", [ebx + IP_PACKET.Protocol]:1
 
   .dump.x:
         inc     dword[dumped_rx_count]

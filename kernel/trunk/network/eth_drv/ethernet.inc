@@ -506,7 +506,7 @@ eth_rx:
         cmp     ax, ETHER_ARP
         je      .is_arp              ; It is ARP
 
-    DEBUGF  1,"K : eth_rx - dumped (%u)\n", ax
+;    DEBUGF  1,"K : eth_rx - dumped (%u)\n", ax
         inc     [dumped_rx_count]
         jmp     .exit           ; If not IP or ARP, ignore
 
