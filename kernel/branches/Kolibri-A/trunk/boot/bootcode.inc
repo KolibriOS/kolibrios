@@ -62,10 +62,6 @@ cfgmanager:
 ;        mov     [es:0x901C], al
 
 
-; VRR_M USE
-
-;        mov     [es:0x9030], byte 2
-
 ; BOOT DEVICE
 
 	xor	ax, ax

@@ -206,6 +206,8 @@ PUTPIXEL	    equ (OS_BASE+0x0006820)
 GETPIXEL	    equ (OS_BASE+0x0006824)
 mouseunder	    equ (OS_BASE+0x0006900)
 
+IDE_DMA 	    equ 0x0007000
+
 
 
 MOUSE_VISIBLE	    equ (OS_BASE+0x000F204)
@@ -266,19 +268,18 @@ MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
 DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
 DONT_SWITCH	    equ (OS_BASE+0x000FFFF)
 
-TMP_STACK_TOP	    equ 0x006CC00
+FONT_II 	    equ (OS_BASE+0x005DC00)
+FONT_I		    equ (OS_BASE+0x005E600)
 
-FONT_II 	    equ (OS_BASE+0x006DC00)
-FONT_I		    equ (OS_BASE+0x006E600)
+TMP_STACK_TOP	    equ 0x006C000
 
+mmio_pte  	    equ 0x006E000
 sys_pgdir	    equ (OS_BASE+0x006F000)
 
 DRIVE_DATA	    equ (OS_BASE+0x0070000)
 
 SLOT_BASE	    equ (OS_BASE+0x0080000)
 
-;unused
-;TMP_BUFF	    equ (OS_BASE+0x0090000)
 
 ;VGABasePtr	    equ (OS_BASE+0x00A0000)
 
@@ -286,25 +287,18 @@ RAMDISK 	    equ (OS_BASE+0x0100000)
 RAMDISK_FAT	    equ (OS_BASE+0x0280000)
 
 CLEAN_ZONE	    equ 0x280000
-IDE_DMA 	    equ 0x284000
 
-BgrAuxTable	    equ (OS_BASE+0x0298000)
-; unused?
-SB16Buffer	    equ (OS_BASE+0x02A0000)
-SB16_Status	    equ (OS_BASE+0x02B0000)
 
 BUTTON_INFO	    equ (OS_BASE+0x02C0000)
 RESERVED_PORTS	    equ (OS_BASE+0x02D0000)
 IRQ_SAVE	    equ (OS_BASE+0x02E0000)
-;BOOT_VAR           equ (OS_BASE+0x02F0000)
-
 
 stack_data_start    equ (OS_BASE+0x0300000)
 eth_data_start	    equ (OS_BASE+0x0300000)
 stack_data	    equ (OS_BASE+0x0304000)
 stack_data_end	    equ (OS_BASE+0x031ffff)
 resendQ 	    equ (OS_BASE+0x0320000)
-;VMODE_BASE	    equ (OS_BASE+0x0328000)
+BgrAuxTable	    equ (OS_BASE+0x0328000)
 skin_data	    equ (OS_BASE+0x0330000)
 draw_data	    equ (OS_BASE+0x0338000);
 
@@ -327,6 +321,8 @@ HEAP_MIN_SIZE	    equ 0x02000000
 PCIe_CONFIG_SPACE   equ 0xF0000000
 USER_DMA_BUFFER     equ 0xFD000000    ; linear addr.
 USER_DMA_SIZE	    equ 0x00800000
+FUSION_MMIO         equ 0xFD800000    
+LAPIC_BAR           equ 0xFD800000    ; ==
 
 page_tabs	    equ 0xFDC00000
 app_page_tabs	    equ 0xFDC00000

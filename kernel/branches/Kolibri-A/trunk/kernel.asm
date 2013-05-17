@@ -508,11 +508,11 @@ high_code:
 	out	0xA1, al
 
 ; Enable interrupts in IDE controller
-	mov	al, 0
-	mov	dx, 0x3F6
-	out	dx, al
-	mov	dl, 0x76
-	out	dx, al
+;	mov	al, 0
+;	mov	dx, 0x3F6
+;	out	dx, al
+;	mov	dl, 0x76
+;	out	dx, al
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -721,7 +721,8 @@ include 'detect/disks.inc'
 
 ; LOAD FIRST APPLICATION
 	cli
-
+if 0 
+<<<
 	cmp   byte [BOOT_VAR+0x9030],1
 	jne   no_load_vrr_m
 
@@ -732,8 +733,8 @@ include 'detect/disks.inc'
 	sub   eax,2
 	jz    first_app_found
 
-no_load_vrr_m:
-
+no_load_vrr_m: <<<
+end if
 	mov	ebp, firstapp
 	call	fs_execute_from_sysdir
 

@@ -145,7 +145,7 @@ rs7xx_pcie_init:
 ; (eax = phys. address of PCIe conf.space)
 ;
 map_pcie_pages:
-	or	eax, (PG_NOCACHE + PG_SHARED + PG_LARGE + PG_UW)  ;  UW is unsafe, fix it!
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_LARGE + PG_UW)  ;  UW is unsafe!
 	mov	ecx, PCIe_CONFIG_SPACE			; linear address
 	mov	ebx, ecx
 	shr	ebx, 20
@@ -163,13 +163,9 @@ map_pcie_pages:
 	add	eax, 0x400000			; +4M phys.
 	add	ecx, 0x400000			; +4M lin.
 	cmp	dl, byte[mmio_pcie_cfg_pdes-OS_BASE]
-	jae	.pcie_cfg_mapped
+	jae	pcie_cfg_mapped
 	inc	dl
 	jmp	.write_pde
-;        mov     eax, cr3
-;        mov     cr3, eax                        ; flush TLB
-.pcie_cfg_mapped:
-	ret	; <<< OK >>>
 
 ; ---- stepping 10h CPUs and Fusion APUs: the configspace is stored in MSR_C001_0058 ----
 align 4
@@ -196,7 +192,25 @@ fusion_pcie_init:
 	add	edx, eax			; the upper configspace limit
 	mov	dword[mmio_pcie_cfg_lim-OS_BASE], edx
 
-	jmp	map_pcie_pages
+pcie_cfg_mapped:
+
+create_mmio_pte:
+
+	mov	ecx, mmio_pte                           ; physical address
+	or	ecx, (PG_NOCACHE + PG_SHARED)  
+	mov	ebx, FUSION_MMIO			; linear address
+	shr	ebx, 20
+	add	ebx, (sys_pgdir - OS_BASE)		; PgDir entry @
+        mov     dword[ebx], ecx                         ; Fusion MMIO tables
+
+map_apic_mmio:
+        mov     ecx, 0x01B      ; APIC BAR
+        rdmsr
+        and     eax, 0xFFFFF000                         ; physical address
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)   ;  UW is unsafe!
+        mov     dword[mmio_pte + 0], eax
+
+	ret	; <<< OK >>>
 
 ; ================================================================================
 

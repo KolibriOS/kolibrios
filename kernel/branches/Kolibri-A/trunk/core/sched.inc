@@ -20,7 +20,6 @@ irq0:
         mov     es, ax
         inc     [timer_ticks]
         mov     eax, [timer_ticks]
-;        call    playNote       ; <<<--- Speaker driver
         sub     eax,[next_usage_update]
         cmp     eax,100
         jb      .nocounter

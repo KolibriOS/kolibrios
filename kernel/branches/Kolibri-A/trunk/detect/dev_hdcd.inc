@@ -21,25 +21,13 @@ FindHDD:
         mov     [ChannelNumber],1
         mov     [DiskNumber],0
         call    FindHDD_3
-;        mov     ax,[Sector512+176]
-;        mov     [DRIVE_DATA+6],ax
-;        mov     ax,[Sector512+126]
-;        mov     [DRIVE_DATA+8],ax
-;        mov     ax,[Sector512+128]
-;        mov     [DRIVE_DATA+8],ax
         mov     [DiskNumber],1
         call    FindHDD_3
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+7],al
         inc     [ChannelNumber]
         mov     [DiskNumber],0
         call    FindHDD_3
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+8],al
         mov     [DiskNumber],1
         call    FindHDD_1
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+9],al
 
         jmp     EndFindHDD
 
@@ -57,9 +45,9 @@ FindHDD_1:
         call    DeviceReset
         cmp     [DevErrorCode],0
         jne     FindHDD_2_2
-        call    ReadCD_ID
-        cmp     [DevErrorCode],0
-        jne      FindHDD_2_2
+;        call    ReadCD_ID
+;        cmp     [DevErrorCode],0
+;        jne      FindHDD_2_2
         inc     byte [DRIVE_DATA+1]
         inc     byte [DRIVE_DATA+1]
    FindHDD_2_2:
@@ -111,8 +99,6 @@ ReadHDD_ID:
         test    AL,08h   ;состояние сигнала DRQ
         jz      @@WaitCompleet
 ; Принять блок данных от контроллера
-;        mov     AX,DS
-;        mov     ES,AX
         mov     EDI,Sector512  ;offset Sector512
         mov     DX,[ATABasePortAddr] ;регистр данных
         mov     CX,256   ;число считываемых слов
@@ -201,17 +187,10 @@ SendCommandToHDD:
         ; Ожидать, пока диск не будет готов
         inc     DX
         mov  ecx,0xfff
-;        mov     eax,[timer_ticks]
-;        mov     [TickCounter_1],eax
 @@WaitHDReady:
         ; Проверить время ожидани
         dec  ecx
-;        cmp  ecx,0
         jz     @@Err1
-;        mov     eax,[timer_ticks]
-;        sub     eax,[TickCounter_1]
-;        cmp     eax,300    ;ожидать 300 тиков
-;        ja      @@Err1   ;ошибка тайм-аута
         ; Прочитать регистр состояни
         in      AL,DX
         ; Проверить состояние сигнала BSY
@@ -270,6 +249,7 @@ SendCommandToHDD:
 ; Завершение работы программы
         ret
 
+if 0
 ;*************************************************
 ;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА УСТРОЙСТВА ATAPI    *
 ;* Входные параметры передаются через глобальные *
@@ -299,7 +279,6 @@ ReadCD_ID:
 @@WaitCompleet_1:
         ; Проверить врем
         dec  	ecx
-;        cmp  	ecx,0
         jz     @@Error1_1  ;ошибка тайм-аута
         ; Проверить готовность
         in      AL,DX
@@ -310,8 +289,6 @@ ReadCD_ID:
         test    AL,08h   ;состояние сигнала DRQ
         jz      @@WaitCompleet_1
 ; Принять блок данных от контроллера
-;        mov     AX,DS
-;        mov     ES,AX
         mov     EDI,Sector512  ;offset Sector512
         mov     DX,[ATABasePortAddr] ;порт 1x0h
         mov     CX,256 ;число считываемых слов
@@ -325,6 +302,8 @@ ReadCD_ID:
         mov     [DevErrorCode],6
 @@End_1:
         ret
+
+end if
 
 ;*************************************************
 ;*                СБРОС УСТРОЙСТВА               *

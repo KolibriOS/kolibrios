@@ -70,14 +70,10 @@
 
 ;   6000  ->   68FF   << free (2k5)                             
 
-;   6900  ->   7EFF   << saved picture under mouse pointer (1k5)
+;   6900  ->   6EFF   << saved picture under mouse pointer (1k5)
 ;
-;   7F00  ->   7FFF   << SB16_Status (256) \\
+;   7000  ->   EFFF   HDD DMA AREA   (32k)
 ;
-;   8000  ->   87FF   free (2k)  
-; 0x80008000 -> 9FFF   ramdisk fat    (8k)
-
-;   A000  ->   F9FF   free (23k)
 
 ;   FA00  byte        no of keys in buffer
 ;   FA01  byte        'buffer'
@@ -151,11 +147,13 @@
 ;            ->  3B752   end_of_kernel
 ;            ->  3C000   not used (>200k)
 ; 0x80050000 -> 090000   zero-filled zone after preinit_mem
-; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)
+; 0x8006DC00 ->  5E5FF   basic text font II
+; 0x8006E600 ->  5Efff   basic text font I
+
+; 0x8006C000 ->  6CFFF   stack at boot time (4Kb)
 ;
-; 0x8006DC00 ->  6E5FF   basic text font II
-; 0x8006E600 ->  6Efff   basic text font I
-; 0x8006F000 ->  6FFFF   main page directory
+; 0x8006E000 ->  6EFFF   MMIO PTE  directory (4Kb)
+; 0x8006F000 ->  6FFFF   main page directory (4Kb)
 
 ; 0x80070000 ->  7FFFF   data of retrieved disks and partitions (Mario79)
 ; 0x80080000 ->  8FFFF   additional app info, in 256 byte steps - 256 entries
@@ -200,28 +198,16 @@
 ;         BC dword  address of debug event memory
 ;         C0  5 dd  thread debug registers: DR0,DR1,DR2,DR3,DR7
 ;
-; 0x80090000 ->  9FFFF   wav device buffer (64k)        ; << SB16Buffer
+; 0x80090000 ->  9FFFF   free (64k)        
 ; 0x800A0000 ->  AFFFF   screen access area               << VGA legacy buffer
 ; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k), << purpose unknown
+
 ; 0x80100000 -> 283FFF   diskette image (1m5)
+; 0x80280000 -> 9FFF     ramdisk fat    (8k)
 
-; 0x80284000 -> HEAP_BASE zero-filled zone after preinit_mem
+; 0x80280000 -> HEAP_BASE zero-filled zone after preinit_mem
 ;
-; 0x80284000 -> 28BFFF   HDD DMA AREA   (32k)
-; 0x8028C000 -> 297FFF   free (48k)
-;
-; 0x80298000 -> 29ffff   auxiliary table for background smoothing code (32k)
-;
-; 0x802A0000 -> 2Bffff   free (128k)
-; 0x80328000 -> 32FFFF   !vrr driver      (32k)
-
-
-; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
-;         00   dword  draw limit - x start
-;         04   dword  draw limit - y start
-;         08   dword  draw limit - x end
-;         0C   dword  draw limit - y end
-; 0x80339000 -> 3BFFF3   free (12k)
+; 0x80280000 -> 2Bffff   free (262k)
 
 ; 0x802C0000 -> 2C3fff   button info (8k)
 ;
@@ -244,8 +230,20 @@
 ;            dword   start port
 ;            dword   end port
 ;            dword   0
+
+; 0x802E0000 -> 2EFFFF   irq data area   (64k)
+; 0x802F0000 -> 327fff   free (229k)
+
+; 0x80328000 -> 29ffff   auxiliary table for background smoothing code (32k)
 ;
-; 0x80370000 -> 37FFFF   irq data area   (64k)
+; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
+;         00   dword  draw limit - x start
+;         04   dword  draw limit - y start
+;         08   dword  draw limit - x end
+;         0C   dword  draw limit - y end
+; 0x80339000 -> 3BFFF3   free (12k)
+
+;
 ; 0x80380000 -> 38FFFF   low memory save (64k)
 ;
 ; 0x80390000 -> 3AFFFF   tcp memory       (128k)
@@ -265,7 +263,10 @@
 ; 0x80800000 ->827FFFFF  kernel heap
 
 ; 0xF0000000 -> 0xF1FFFFFF  PCI-express extended config space
-; 0xFD000000 -> 0xFD3FFFFF  static system buffer 4Mb
+
+; 0xFD000000 -> 0xFD7FFFFF  static system buffer (8Mb reserved)
+; 0xFD800000 -> 0xFBFFFFFF  CPU & Southbridge memory-mapped IO (4Mb reserved)
+;      +0000..0FFF              LAPIC BAR (4k)
 ; 0xFDC00000 -> 0xFDFFFFFF  page tables 4Mb
 ; 0xFE000000 -> 0xFFFFFFFF  LFB 32Mb
 ; 0xFE000000 -> 0xFE7FFFFF  application available LFB 8Mb
