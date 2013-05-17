@@ -208,7 +208,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \
- network/zeroconf.ini:NETWORK/ZEROCONF.INI \
+ network.ini:NETWORK.INI \
  network/ftpd.ini:NETWORK/FTPD.INI \
  network/users.ini:NETWORK/USERS.INI \
 #end of list

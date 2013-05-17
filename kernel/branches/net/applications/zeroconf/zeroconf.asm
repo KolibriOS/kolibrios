@@ -19,39 +19,39 @@
 format binary as ""
 
 use32
-               org    0x0
+        org     0x0
 
-               db     'MENUET01'            ; 8 byte id
-               dd     0x01                  ; header version
-               dd     START                 ; start of code
-               dd     IM_END                ; size of image
-               dd     (I_END+0x100)         ; memory for app
-               dd     (I_END+0x100)         ; esp
-               dd     0x0 , path            ; I_Param , I_Icon
+        db      'MENUET01'              ; 8 byte id
+        dd      0x01                    ; header version
+        dd      START                   ; start of code
+        dd      IM_END                  ; size of image
+        dd      (I_END+0x100)           ; memory for app
+        dd      (I_END+0x100)           ; esp
+        dd      0, 0                    ; I_Param, I_Path
 
 ; CONFIGURATION
 
-TIMEOUT             equ 60                  ; in seconds
-BUFFER              equ 1024                ; in bytes
-__DEBUG__           equ 1                   ; enable/disable
-__DEBUG_LEVEL__     equ 1                   ; 1 = all, 2 = errors
+TIMEOUT                 = 60            ; in seconds
+BUFFER                  = 1024          ; in bytes
+__DEBUG__               = 1             ; enable/disable
+__DEBUG_LEVEL__         = 1             ; 1 = all, 2 = errors
 
 ; CONFIGURATION FOR LINK-LOCAL
 
-PROBE_WAIT          equ 1                   ; second  (initial random delay)
-PROBE_MIN           equ 1                   ; second  (minimum delay till repeated probe)
-PROBE_MAX           equ 2                   ; seconds (maximum delay till repeated probe)
-PROBE_NUM           equ 3                   ;         (number of probe packets)
+PROBE_WAIT              = 1             ; second  (initial random delay)
+PROBE_MIN               = 1             ; second  (minimum delay till repeated probe)
+PROBE_MAX               = 2             ; seconds (maximum delay till repeated probe)
+PROBE_NUM               = 3             ;         (number of probe packets)
 
-ANNOUNCE_NUM        equ 2                   ;         (number of announcement packets)
-ANNOUNCE_INTERVAL   equ 2                   ; seconds (time between announcement packets)
-ANNOUNCE_WAIT       equ 2                   ; seconds (delay before announcing)
+ANNOUNCE_NUM            = 2             ;         (number of announcement packets)
+ANNOUNCE_INTERVAL       = 2             ; seconds (time between announcement packets)
+ANNOUNCE_WAIT           = 2             ; seconds (delay before announcing)
 
-MAX_CONFLICTS       equ 10                  ;         (max conflicts before rate limiting)
+MAX_CONFLICTS           = 10            ;         (max conflicts before rate limiting)
 
-RATE_LIMIT_INTERVAL equ 60                  ; seconds (delay between successive attempts)
+RATE_LIMIT_INTERVAL     = 60            ; seconds (delay between successive attempts)
 
-DEFEND_INTERVAL     equ 10                  ; seconds (min. wait between defensive ARPs)
+DEFEND_INTERVAL         = 10            ; seconds (min. wait between defensive ARPs)
 
 
 include '../proc32.inc'
@@ -154,18 +154,6 @@ START:
         DEBUGF  1,"->MAC: %x-%x-%x-%x-%x-%x\n", [MAC+0]:2, [MAC+1]:2, [MAC+2]:2, [MAC+3]:2, [MAC+4]:2, [MAC+5]:2
 
         mcall   40, EVM_STACK
-
-        mov     edi, path       ; Calculate the length of zero-terminated string
-        xor     al, al
-        mov     ecx, 1024
-        repne   scasb
-        dec     edi
-
-        mov     esi, filename   ; append with .ini
-        movsd
-        movsb
-
-        DEBUGF  1,"->Loading ini %s\n", path
 
         mcall   68, 11
 
@@ -577,7 +565,6 @@ import  libini, \
 
 include_debug_strings
 
-filename        db '.ini', 0
 str_ip          db 'ip', 0
 str_subnet      db 'subnet', 0
 str_gateway     db 'gateway', 0
@@ -603,6 +590,7 @@ sockaddr2:
 
         rb 10
 
+path            db  '/sys/network.ini'
 
 IM_END:
 
@@ -628,11 +616,5 @@ currTime        dd  ?
 generator       dd  ?
 
 dhcpMsg         dd  ?
-
-I_END_2:
-
-path            rb  1024+5
-
-                rb  65536
 
 I_END:
