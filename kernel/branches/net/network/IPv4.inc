@@ -578,7 +578,7 @@ IPv4_output:
         cmp     eax, 1 shl 24 + 127
         je      .loopback
 
-        call    IPv4_dest_to_dev        ; outputs device number in edi, dest ip in eax
+        call    IPv4_route              ; outputs device number in edi, dest ip in eax
         call    ARP_IP_to_MAC
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
@@ -666,7 +666,7 @@ IPv4_output_raw:
         sub     esp, 8
         push    esi eax
 
-        call    IPv4_dest_to_dev
+        call    IPv4_route
         call    ARP_IP_to_MAC
 
         test    eax, 0xffff0000         ; error bits
@@ -852,7 +852,7 @@ IPv4_fragment:
 
 ;---------------------------------------------------------------------------
 ;
-; IPv4_dest_to_dev
+; IPv4_route
 ;
 ; IN:   eax = Destination IP
 ; OUT:  edi = device id * 4
@@ -860,7 +860,7 @@ IPv4_fragment:
 ;
 ;---------------------------------------------------------------------------
 align 4
-IPv4_dest_to_dev:
+IPv4_route:
 
         cmp     eax, 0xffffffff
         je      .broadcast
