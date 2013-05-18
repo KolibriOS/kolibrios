@@ -268,11 +268,6 @@ stack_handler:
         cmp     [NET_RUNNING], 0
         je      .exit
 
-        cmp     [UDP_PACKETS_TX], 50
-        jb      @f
-        DEBUGF  1, "\n\nCRAP!\n\n"
-        jmp     $
-      @@:
 
         ; Test for 10ms tick
         mov     eax, [timer_ticks]
