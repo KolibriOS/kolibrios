@@ -95,6 +95,11 @@ iglobal
   szTimerHS           db 'TimerHS',0
   szCancelTimerHS     db 'CancelTimerHS',0
 
+  szRegUSBDriver      db 'RegUSBDriver',0
+  szUSBOpenPipe       db 'USBOpenPipe',0
+  szUSBClosePipe      db 'USBClosePipe',0
+  szUSBNormalTransferAsync db 'USBNormalTransferAsync',0
+  szUSBControlTransferAsync db 'USBControlTransferAsync',0
 
 align 16
 kernel_export:
@@ -179,6 +184,12 @@ kernel_export:
 
   dd szTimerHS         , timer_hs
   dd szCancelTimerHS   , cancel_timer_hs
+
+  dd szRegUSBDriver    , reg_usb_driver
+  dd szUSBOpenPipe     , usb_open_pipe
+  dd szUSBClosePipe    , usb_close_pipe
+  dd szUSBNormalTransferAsync, usb_normal_transfer_async
+  dd szUSBControlTransferAsync, usb_control_async
 
 exp_lfb:
   dd szLFBAddress      , 0
