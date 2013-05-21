@@ -1601,8 +1601,26 @@ fs_RamdiskRewrite:
         cmp     ecx, eax
         jb      .scan_cont
 ; found!
-; calculate name checksum
+; If creating a directory, allocate one data cluster now and fail immediately
+; if this is impossible. This prevents from creating an invalid directory entry
+; on a full disk.
+; yup, the argument is quite non-intuitive... but what should I do if
+; the entire function uses such arguments? BTW, it refers to al from pushad,
+; which in turn is filled with 0 in fs_RamdiskRewrite and 1 in fs_RamdiskCreateFolder.
         push    esi ecx
+        cmp     byte [esp+24+12+20+28], 0
+        jz      .no.preallocate.folder.data
+        mov     ecx, 2849
+        mov     edi, RAMDISK_FAT
+        xor     eax, eax
+        repnz scasw
+        jz      @f
+        add     esp, 24
+        jmp     .disk_full
+@@:
+        mov     [esp+24+12+20+20], edi  ; store the cluster somewhere
+.no.preallocate.folder.data:
+; calculate name checksum
         mov     esi, [esp+8+8]
         mov     ecx, 11
         xor     eax, eax
@@ -1672,6 +1690,13 @@ fs_RamdiskRewrite:
         mov     byte [edi+11], 10h         ; attributes: folder
         mov     ecx, 32*2
         mov     edx, edi
+        push    edx
+        push    ecx
+        push    edi
+        add     edi, 26         ; edi points to low word of cluster
+        push    edi
+        mov     edi, [esp+16+20+20]
+        jmp     .doit2
 .doit:
         push    edx
         push    ecx
@@ -1686,6 +1711,7 @@ fs_RamdiskRewrite:
         xor     eax, eax
         repnz scasw
         jnz     .disk_full2
+.doit2:
         dec     edi
         dec     edi
 
