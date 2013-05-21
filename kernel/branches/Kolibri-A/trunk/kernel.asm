@@ -216,15 +216,8 @@ diff16 "32-bit code start ",0,$
 
 ; PCIe extended config space access
 
-	display '** Platform chosen (const.inc): '
-if PLATFORM>PLATFORM_RS780
+
 	call fusion_pcie_init	; (bus/HT.inc)
-	display 'RS880/Fusion '
-else
-	call rs7xx_pcie_init	; (bus/HT.inc)
-	display 'RS780 '
-end if
-	display 10,13
 
 
 ; MEMORY MODEL

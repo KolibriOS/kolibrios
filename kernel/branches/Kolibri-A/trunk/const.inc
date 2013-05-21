@@ -370,18 +370,18 @@ PG_SHARED	    equ 0x200
 ;;;;;;;;;;;boot time variables
 
 ;BOOT_BPP            equ 0x9000    ;byte   bits per pixel
-BOOT_SCANLINE	    equ 0x9001	  ;word   scanline length
-BOOT_VESA_MODE	    equ 0x9008	  ;word   vesa video mode
+;BOOT_SCANLINE	    equ 0x9001	  ;word   scanline length
+;BOOT_VESA_MODE	    equ 0x9008	  ;word   vesa video mode
 ;;BOOT_X_RES          equ 0x900A    ;word   X res
 ;;BOOT_Y_RES          equ 0x900C    ;word   Y res
 ;;BOOT_MOUSE_PORT     equ 0x9010    ;byte   mouse port  - not used
-BOOT_BANK_SW	    equ 0x9014	  ;dword  Vesa 1.2 pm bank switch
+;BOOT_BANK_SW	    equ 0x9014	  ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB	    equ 0x9018	  ;dword  Vesa 2.0 LFB address
 BOOT_MTRR	    equ 0x901C	  ;byte   0 or 1 : enable MTRR graphics acceleration
 BOOT_LOG	    equ 0x901D	  ;byte   not used anymore (0 or 1 : enable system log display)
 BOOT_DIRECT_LFB     equ 0x901E	  ;byte   0 or 1 : enable direct lfb write, paging disabled
 BOOT_PCI_DATA	    equ 0x9020	  ;8bytes pci data
-BOOT_VRR	    equ 0x9030	  ;byte   VRR start enabled 1, 2-no
+;BOOT_VRR	    equ 0x9030	  ;byte   VRR start enabled 1, 2-no
 BOOT_IDE_BASE_ADDR  equ 0x9031	 ;word   IDEContrRegsBaseAddr
 BOOT_MEM_AMOUNT     equ 0x9034	  ;dword  memory amount
 

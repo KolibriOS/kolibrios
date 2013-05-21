@@ -54,8 +54,8 @@ preinit_mem:
 	   rep	 stosd
 
 ; clear <sys_pgdir> table
-	   mov edi, sys_pgdir-OS_BASE
-	   mov ecx, 4096/4
+	   mov edi, mmio_pte
+	   mov ecx, 2048                               ; 8k (sys_pgdir included)
 	   rep stosd
 	ret
 

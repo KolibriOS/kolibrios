@@ -92,80 +92,16 @@ rs7xx_unlock_bar3:
 
 ;***************************************************************************
 ;   Function
-;      rs7xx_pcie_init:
+;      fusion_pcie_init:
 ;
 ;   Description
-;       PCIe extended (memory-mapped) config space detection
+;       PCIe extended  config space detection and mapping
 ;
 ;***************************************************************************
 
 align 4
 
-rs7xx_pcie_init:
-	call	rs7xx_unlock_bar3
-	mov	al, 0x7C		       ; NB_IOC_CFG_CNTL
-	call	rs7xx_nbconfig_read_pci
-	mov	ebx, eax
-;       call    rs7xx_nbconfig_flush_pci
-	test	ebx, 0x20000000 		; BAR3 locked?
-	jz	$
-	mov	al, 0x84			; NB_PCI_ARB
-	call	rs7xx_nbconfig_read_pci
-	shr	eax,16
-	and	ax, 7				; the Bus range lays here:
-	jnz	@f
-	mov	ax, 8					; 1=2Mb,  2=4MB,  3=8MB,  4=16MB
-@@:
-	mov	word[PCIe_bus_range-OS_BASE], ax	; 5=32Mb, 6=64MB, 7=128Mb, 8=256Mb
-	mov	cl, al
-	call	rs7xx_nbconfig_flush_pci
-	dec	cl				; <4M ?
-	jz	@f
-	dec	cl				; one PDE needed anyway
-@@:
-	mov	ebx, 1
-	shl	ebx, cl
-	mov	word[mmio_pcie_cfg_pdes-OS_BASE], bx	; 1..64 PDE(s) needed,
-	shl	ebx, 22
-	mov	dword[mmio_pcie_cfg_lim-OS_BASE], ebx	; or 4..256Mb space to map
-	dec	dword[mmio_pcie_cfg_lim-OS_BASE]
 
-	mov	al, 0x1C			; NB_BAR3_PCIEXP_MMCFG
-	call	rs7xx_nbconfig_read_pci
-	mov	ebx, eax
-	call	rs7xx_nbconfig_flush_pci
-	mov	eax, ebx
-	and	eax, 0xFFE00000 		; valid bits [31..21]
-	jz	$				; invalid map!
-.addr_found:
-	mov	dword[mmio_pcie_cfg_addr-OS_BASE], eax	; physical address (lower 32 bits)
-	add	dword[mmio_pcie_cfg_lim-OS_BASE],  eax
-
-; ---- common mapping procedure ----
-; (eax = phys. address of PCIe conf.space)
-;
-map_pcie_pages:
-	or	eax, (PG_NOCACHE + PG_SHARED + PG_LARGE + PG_UW)  ;  UW is unsafe!
-	mov	ecx, PCIe_CONFIG_SPACE			; linear address
-	mov	ebx, ecx
-	shr	ebx, 20
-	add	ebx, (sys_pgdir - OS_BASE)		; PgDir entry @
-	mov	dl, byte[mmio_pcie_cfg_pdes-OS_BASE]	; 1 page = 4M in address space
-	cmp	dl, 0x34	; =(USER_DMA_BUFFER - PCIe_CONFIG_SPACE) / 4M
-	jb	@f
-	mov	dl, 0x33
-	mov	byte[mmio_pcie_cfg_pdes-OS_BASE], dl
-@@:
-	xor	dx,  dx 			; PDEs counter
-.write_pde:
-	mov	dword[ebx], eax 		; map 4 buses
-	add	bx,  4				; new PDE
-	add	eax, 0x400000			; +4M phys.
-	add	ecx, 0x400000			; +4M lin.
-	cmp	dl, byte[mmio_pcie_cfg_pdes-OS_BASE]
-	jae	pcie_cfg_mapped
-	inc	dl
-	jmp	.write_pde
 
 ; ---- stepping 10h CPUs and Fusion APUs: the configspace is stored in MSR_C001_0058 ----
 align 4
@@ -192,10 +128,35 @@ fusion_pcie_init:
 	add	edx, eax			; the upper configspace limit
 	mov	dword[mmio_pcie_cfg_lim-OS_BASE], edx
 
-pcie_cfg_mapped:
+; ---- large pages mapping  ----
+; (eax = phys. address of PCIe conf.space)
+;
+.map_pcie_pages:
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_LARGE + PG_UW)  ;  UW is unsafe!
+	mov	ecx, PCIe_CONFIG_SPACE			; linear address
+	mov	ebx, ecx
+	shr	ebx, 20
+	add	ebx, (sys_pgdir - OS_BASE)		; PgDir entry @
+	mov	dl, byte[mmio_pcie_cfg_pdes-OS_BASE]	; 1 page = 4M in address space
+	cmp	dl, 0x34	; =(USER_DMA_BUFFER - PCIe_CONFIG_SPACE) / 4M
+	jb	@f
+	mov	dl, 0x33
+	mov	byte[mmio_pcie_cfg_pdes-OS_BASE], dl
+@@:
+	xor	dx,  dx 			; PDEs counter
+.write_pde:
+	mov	dword[ebx], eax 		; map 4 buses
+	add	bx,  4				; new PDE
+	add	eax, 0x400000			; +4M phys.
+	add	ecx, 0x400000			; +4M lin.
+	cmp	dl, byte[mmio_pcie_cfg_pdes-OS_BASE]
+	jae	.pcie_cfg_mapped
+	inc	dl
+	jmp	.write_pde
+
+.pcie_cfg_mapped:
 
 create_mmio_pte:
-
 	mov	ecx, mmio_pte                           ; physical address
 	or	ecx, (PG_NOCACHE + PG_SHARED)  
 	mov	ebx, FUSION_MMIO			; linear address
@@ -203,11 +164,12 @@ create_mmio_pte:
 	add	ebx, (sys_pgdir - OS_BASE)		; PgDir entry @
         mov     dword[ebx], ecx                         ; Fusion MMIO tables
 
-map_apic_mmio:
+; ---- short page mapping  ----
+.map_apic_mmio:
         mov     ecx, 0x01B      ; APIC BAR
         rdmsr
         and     eax, 0xFFFFF000                         ; physical address
-	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)   ;  UW is unsafe!
+	or	eax, (PG_NOCACHE + PG_SHARED)   
         mov     dword[mmio_pte + 0], eax
 
 	ret	; <<< OK >>>
