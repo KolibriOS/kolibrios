@@ -1,153 +1,172 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;                                                  ;
-;      EXAMPLE APPLICATION                         ;
-;                                                  ;
-;      Compile with FASM                           ;
-;                                                  ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
- 
-; The header
- 
-use32                                   ; Tell compiler to use 32 bit instructions
- 
-org 0x0                                 ; the base address of code, always 0x0
- 
-db 'MENUET01'
-dd 0x01
-dd START
-dd I_END
-dd 0x100000
-dd 0x7fff0
-dd 0, 0
- 
-; The code area
- 
-include 'macros.inc'
- 
-START:                                  ; start of execution
-        call    draw_window             ; draw the window
- 
-; After the window is drawn, it's practical to have the main loop.
-; Events are distributed from here.
- 
-event_wait:
-        mov     eax, 10                 ; function 10 : wait until event
-        mcall                           ; event type is returned in eax
- 
-        cmp     eax, 1                  ; Event redraw request ?
-        je      red                     ; Expl.: there has been activity on screen and
-                                        ; parts of the applications has to be redrawn.
- 
-        cmp     eax, 2                  ; Event key in buffer ?
-        je      key                     ; Expl.: User has pressed a key while the
-                                        ; app is at the top of the window stack.
- 
-        cmp     eax, 3                  ; Event button in buffer ?
-        je      button                  ; Expl.: User has pressed one of the
-                                        ; applications buttons.
- 
-        jmp     event_wait
- 
-;  The next section reads the event and processes data.
- 
-red:                                    ; Redraw event handler
-        call    draw_window             ; We call the window_draw function and
-        jmp     event_wait              ; jump back to event_wait
- 
-key:                                    ; Keypress event handler
-        mov     eax, 2                  ; The key is returned in ah. The key must be
-        mcall                           ; read and cleared from the system queue.
-        jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
- 
-button:                                 ; Buttonpress event handler
-        mov     eax,17                  ; The button number defined in window_draw
-        mcall                           ; is returned to ah.
- 
-        cmp     ah,1                    ; button id=1 ?
-        jne     noclose
-        mov     eax,-1                  ; Function -1 : close this program
-        mcall
- 
-noclose:
-        jmp     event_wait              ; This is for ignored events, useful at development
- 
-;  *********************************************
-;  ******  WINDOW DEFINITIONS AND DRAW  ********
-;  *********************************************
+;   Простой пример программы для KolibriOS
+;   озвучивает код нажатой клавиши
 ;
-;  The static window parts are drawn in this function. The window canvas can
-;  be accessed later from any parts of this code (thread) for displaying
-;  processes or recorded data, for example.
+;   Компилировать FASM'ом
+;        Можно открыть example.asm через программу FASM (её ярлык есть
+;        на рабочем столе)
+;        А можно просто нажать F9 в Tinypad'е. Лог компиляции 
+;        отображается на доске отладки (программа BOARD)
 ;
-;  The static parts *must* be placed within the fn 12 , ebx = 1 and ebx = 2.
- 
+;   Что важно знать при программировании под Колибри:
+;        Номер функции помещается в регистр eax.
+;        Вызов системной функции осуществляется командой "int 0x40".
+;        Все регистры, кроме явно указанных в возвращаемом значении,
+;        включая регистр флагов eflags, сохраняются.
+;
+;    Пример:
+;        mov eax, 1    ;Функция 1 - поставить точку в окне
+;                      ;список сисфункций см. в DOCPACK - sysfuncr.txt
+;        mov ebx, 10   ; координата x=10
+;        mov ecx, 20   ; координата y=10
+;        mov edx, 0xFFFfff ;цвет точки
+;        int 0x40      ;вызвать функцию
+;
+;    Тоже самое с использованием макроса:
+;        mcall 1, 10, 20, 0xFFFfff
+;---------------------------------------------------------------------
+
+  use32              ; включить 32-битный режим ассемблера
+  org    0x0         ; адресация с нуля
+
+  db     'MENUET01'  ; 8-байтный идентификатор MenuetOS
+  dd     0x01        ; версия заголовка (всегда 1)
+  dd     START       ; адрес первой команды
+  dd     I_END       ; размер программы
+  dd     0x1000      ; количество памяти
+  dd     0x1000      ; адрес вершины стэка
+  dd     0x0         ; адрес буфера для параметров
+  dd     0x0         ; зарезервировано
+
+include 'lang.inc'
+include 'macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+
+;---------------------------------------------------------------------
+;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
+;---------------------------------------------------------------------
+
+START:
+
+red:                    ; перерисовать окно
+
+    call draw_window    ; вызываем процедуру отрисовки окна
+
+;---------------------------------------------------------------------
+;---  ЦИКЛ ОБРАБОТКИ СОБЫТИЙ  ----------------------------------------
+;---------------------------------------------------------------------
+
+still:
+    mcall 10            ; функция 10 - ждать события
+
+    cmp  eax,1          ; перерисовать окно ?
+    je   red            ; если да - на метку red
+    cmp  eax,2          ; нажата клавиша ?
+    je   key            ; если да - на key
+    cmp  eax,3          ; нажата кнопка ?
+    je   button         ; если да - на button
+
+    jmp  still          ; если другое событие - в начало цикла
+
+
+;---------------------------------------------------------------------
+
+
+  key:                  ; нажата клавиша на клавиатуре
+    mcall 2             ; функция 2 - считать код символа (в ah)
+
+    mov  [Music+1], ah  ; записать код символа как код ноты
+
+    ; функция 55-55: системный динамик ("PlayNote")
+    ;   esi - адрес мелодии
+
+    ;   mov  eax,55
+    ;   mov  ebx,eax
+    ;   mov  esi,Music
+    ;   int  0x40
+
+    ; или коротко:
+    mcall 55, eax, , , Music
+
+    jmp  still          ; вернуться к началу цикла
+
+;---------------------------------------------------------------------
+
+  button:
+    mcall 17            ; 17 - получить идентификатор нажатой кнопки
+
+    cmp   ah, 1         ; если НЕ нажата кнопка с номером 1,
+    jne   still         ;  вернуться
+
+  .exit:
+    mcall -1            ; иначе конец программы
+
+
+
+;---------------------------------------------------------------------
+;---  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА  ----------------------------------
+;---------------------------------------------------------------------
+
 draw_window:
-        mov     eax, 12                 ; function 12: tell os about windowdraw
-        mov     ebx, 1                  ; 1, start of draw
-        mcall
- 
-        mov     eax, 0                  ; function 0 : define and draw window
-        mov     ebx, 100 * 65536 + 300  ; [x start] *65536 + [x size]
-        mov     ecx, 100 * 65536 + 120  ; [y start] *65536 + [y size]
-        mov     edx, 0x14ffffff         ; color of work area RRGGBB
-                                        ; 0x02000000 = window type 4 (fixed size, skinned window)
-        mov     esi, 0x808899ff         ; color of grab bar  RRGGBB
-                                        ; 0x80000000 = color glide
-        mov     edi, title
-        mcall
- 
-        mov     ebx, 25 * 65536 + 35    ; draw info text with function 4
-        mov     ecx, 0x224466
-        mov     edx, text
-        mov     esi, 40
-        mov     eax, 4
- 
-  .newline:                             ; text from the DATA AREA
-        mcall
-        add     ebx, 10
-        add     edx, 40
-        cmp     byte[edx], 0
-        jne     .newline
- 
-        mov     eax, 12                 ; function 12:tell os about windowdraw
-        mov     ebx, 2                  ; 2, end of draw
-        mcall
- 
-        ret
- 
-;  *********************************************
-;  *************   DATA AREA   *****************
-;  *********************************************
-;
-; Data can be freely mixed with code to any parts of the image.
-; Only the header information is required at the beginning of the image.
- 
-text    db  "It look's like you have just compiled   "
-        db  "your first program for KolibriOS.       "
-        db  "                                        "
-        db  "Congratulations!                        ", 0
- 
-title   db  "Example application", 0
- 
-I_END:
- 
-; The area after I_END is free for use as the application memory, 
-; just avoid the stack.
-;
-; Application memory structure, according to the used header, 1 Mb.
-;
-; 0x00000   - Start of compiled image
-; I_END     - End of compiled image           
-;
-;           + Free for use in the application
-;
-; 0x7ff00   - Start of stack area
-; 0x7fff0   - End of stack area                 - defined in the header
-;
-;           + Free for use in the application
-;
-; 0xFFFFF   - End of freely useable memory      - defined in the header
-;
-; All of the the areas can be modified within the application with a
-; direct reference.
-; For example, mov [0x80000],byte 1 moves a byte above the stack area.
+
+    mcall 12, 1                    ; функция 12: сообщить ОС об отрисовке окна
+                                   ; 1 - начинаем рисовать
+
+    ; далее: сначала длинный вариант (закомментированный)
+    ;        затем короткий аналог с использованием макросов
+
+
+                                   ; СОЗДАЁМ ОКНО
+;   mov  eax,0                     ; функция 0 : определить и отрисовать окно
+;   mov  ebx,200*65536+200         ; [x старт] *65536 + [x размер]
+;   mov  ecx,200*65536+50          ; [y старт] *65536 + [y размер]
+;   mov  edx,0x33aabbcc            ; цвет рабочей области  RRGGBB,8->color gl
+;   mov  edi,header                ; ЗАГОЛОВОК ОКНА
+;   int  0x40
+
+    mcall 0, <200,200>, <200,50>, 0x33AABBCC,,title
+
+                                   
+
+;   mov  eax,4
+;   mov  ebx,3 shl 16 + 8
+;   mov  ecx,0
+;   mov  edx,message
+;   mov  esi,message.size
+;   int  0x40
+
+    mcall 4, <3, 8>, 0, message, message.size
+
+    mcall 12, 2                    ; функция 12: сообщить ОС об отрисовке окна
+                                   ; 2, закончили рисовать
+
+    ret                            ; выходим из процедуры
+
+
+;---------------------------------------------------------------------
+;---  ДАННЫЕ ПРОГРАММЫ  ----------------------------------------------
+;---------------------------------------------------------------------
+
+; Вот такая вот короткая "мелодия".
+; Второй байт изменяется нажатием клавишы
+
+Music:
+  db  0x90, 0x30, 0
+
+
+;---------------------------------------------------------------------
+
+; интерфейс программы многоязычный
+;  Вы можете задать язык в MACROS.INC (lang fix язык)
+
+lsz message,\
+  ru,'Нажмите любую клавишу...',\
+  en,'Press any key...',\
+  fr,'Pressez une touche...'
+
+lsz title,\
+  ru,'ПРИМЕР ПРОГРАММЫ',\
+  en,'EXAMPLE APPLICATION',\
+  fr,"L'exemplaire programme"
+
+;---------------------------------------------------------------------
+
+I_END:                             ; метка конца программы
