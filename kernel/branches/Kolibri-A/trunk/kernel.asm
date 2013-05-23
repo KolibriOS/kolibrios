@@ -501,11 +501,11 @@ high_code:
 	out	0xA1, al
 
 ; Enable interrupts in IDE controller
-;	mov	al, 0
-;	mov	dx, 0x3F6
-;	out	dx, al
-;	mov	dl, 0x76
-;	out	dx, al
+;       mov     al, 0
+;       mov     dx, 0x3F6
+;       out     dx, al
+;       mov     dl, 0x76
+;       out     dx, al
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -688,7 +688,7 @@ include 'detect/disks.inc'
 ; STACK AND FDC
 
 	call  stack_init
-;	call  fdc_init
+;       call  fdc_init
 
 
 ; LOAD DEFAULT SKIN
@@ -712,9 +712,11 @@ include 'detect/disks.inc'
 ;        mov     esi, boot_uDMA_ok
 ;        call    boot_log
 
+	call apic_timer_reset
+
 ; LOAD FIRST APPLICATION
 	cli
-if 0 
+if 0
 <<<
 	cmp   byte [BOOT_VAR+0x9030],1
 	jne   no_load_vrr_m
@@ -1992,7 +1994,7 @@ version_inf:
 version_end:
 endg
 
-sys_cachetodiskette:            ; << removed
+sys_cachetodiskette:		; << removed
 	mov	[esp + 32], ebx
 	ret
 

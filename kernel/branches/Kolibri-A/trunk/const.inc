@@ -273,7 +273,8 @@ FONT_I		    equ (OS_BASE+0x005E600)
 
 TMP_STACK_TOP	    equ 0x006C000
 
-mmio_pte  	    equ 0x006E000
+apic_data	    equ (OS_BASE+0x006D000)
+mmio_pte	    equ 0x006E000
 sys_pgdir	    equ (OS_BASE+0x006F000)
 
 DRIVE_DATA	    equ (OS_BASE+0x0070000)
@@ -281,7 +282,7 @@ DRIVE_DATA	    equ (OS_BASE+0x0070000)
 SLOT_BASE	    equ (OS_BASE+0x0080000)
 
 
-;VGABasePtr	    equ (OS_BASE+0x00A0000)
+;VGABasePtr         equ (OS_BASE+0x00A0000)
 
 RAMDISK 	    equ (OS_BASE+0x0100000)
 RAMDISK_FAT	    equ (OS_BASE+0x0280000)
@@ -321,8 +322,8 @@ HEAP_MIN_SIZE	    equ 0x02000000
 PCIe_CONFIG_SPACE   equ 0xF0000000
 USER_DMA_BUFFER     equ 0xFD000000    ; linear addr.
 USER_DMA_SIZE	    equ 0x00800000
-FUSION_MMIO         equ 0xFD800000    
-LAPIC_BAR           equ 0xFD800000    ; ==
+FUSION_MMIO	    equ 0xFD800000
+LAPIC_BAR	    equ 0xFD800000    ; ==
 
 page_tabs	    equ 0xFDC00000
 app_page_tabs	    equ 0xFDC00000
@@ -370,18 +371,18 @@ PG_SHARED	    equ 0x200
 ;;;;;;;;;;;boot time variables
 
 ;BOOT_BPP            equ 0x9000    ;byte   bits per pixel
-;BOOT_SCANLINE	    equ 0x9001	  ;word   scanline length
-;BOOT_VESA_MODE	    equ 0x9008	  ;word   vesa video mode
+;BOOT_SCANLINE      equ 0x9001    ;word   scanline length
+;BOOT_VESA_MODE     equ 0x9008    ;word   vesa video mode
 ;;BOOT_X_RES          equ 0x900A    ;word   X res
 ;;BOOT_Y_RES          equ 0x900C    ;word   Y res
 ;;BOOT_MOUSE_PORT     equ 0x9010    ;byte   mouse port  - not used
-;BOOT_BANK_SW	    equ 0x9014	  ;dword  Vesa 1.2 pm bank switch
+;BOOT_BANK_SW       equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB	    equ 0x9018	  ;dword  Vesa 2.0 LFB address
 BOOT_MTRR	    equ 0x901C	  ;byte   0 or 1 : enable MTRR graphics acceleration
 BOOT_LOG	    equ 0x901D	  ;byte   not used anymore (0 or 1 : enable system log display)
 BOOT_DIRECT_LFB     equ 0x901E	  ;byte   0 or 1 : enable direct lfb write, paging disabled
 BOOT_PCI_DATA	    equ 0x9020	  ;8bytes pci data
-;BOOT_VRR	    equ 0x9030	  ;byte   VRR start enabled 1, 2-no
+;BOOT_VRR           equ 0x9030    ;byte   VRR start enabled 1, 2-no
 BOOT_IDE_BASE_ADDR  equ 0x9031	 ;word   IDEContrRegsBaseAddr
 BOOT_MEM_AMOUNT     equ 0x9034	  ;dword  memory amount
 

@@ -157,20 +157,20 @@ fusion_pcie_init:
 .pcie_cfg_mapped:
 
 create_mmio_pte:
-	mov	ecx, mmio_pte                           ; physical address
-	or	ecx, (PG_NOCACHE + PG_SHARED)  
+	mov	ecx, mmio_pte				; physical address
+	or	ecx, (PG_NOCACHE + PG_SHARED + PG_SW)
 	mov	ebx, FUSION_MMIO			; linear address
 	shr	ebx, 20
 	add	ebx, (sys_pgdir - OS_BASE)		; PgDir entry @
-        mov     dword[ebx], ecx                         ; Fusion MMIO tables
+	mov	dword[ebx], ecx 			; Fusion MMIO tables
 
 ; ---- short page mapping  ----
 .map_apic_mmio:
-        mov     ecx, 0x01B      ; APIC BAR
-        rdmsr
-        and     eax, 0xFFFFF000                         ; physical address
-	or	eax, (PG_NOCACHE + PG_SHARED)   
-        mov     dword[mmio_pte + 0], eax
+	mov	ecx, 0x01B	; APIC BAR
+	rdmsr
+	and	eax, 0xFFFFF000 			; physical address
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_SW)
+	mov	dword[mmio_pte + 0], eax
 
 	ret	; <<< OK >>>
 
@@ -297,5 +297,27 @@ sys_rdmsr:
 	mov	[esp+16], edx
 	pop	edx ecx
 	ret
+
+apic_timer_reset:
+	xor	eax, eax
+	mov	[apic_data+0], eax
+	mov	ebx, LAPIC_BAR+ 0x320
+	mov	eax, [ebx]
+	and	eax, 0xFFFEFF00
+	or	eax, 0x0000003F       ; int vector + norestart
+	mov	[ebx], eax
+	mov	dword[apic_data + 8], 100000000
+	ret
+
+
+apic_timer_int:
+	push	eax
+	inc	dword [apic_data + 0]
+	mov	eax,  [apic_data + 8]
+	mov	dword [LAPIC_BAR + 0x380], eax	      ; load APICTIC
+	mov	dword [LAPIC_BAR + 0x0B0], 0	    ; end of interrupt
+;        mov     dword [LAPIC_BAR + 0x420], 0x3F     ; end of interrupt
+	pop	eax
+	iretd
 
 
