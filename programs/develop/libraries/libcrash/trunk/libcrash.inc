@@ -15,24 +15,25 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-LIBCRASH_ENDIAN_LITTLE	= 0
-LIBCRASH_ENDIAN_BIG	= 1
-
-LIBCRASH_MD4	= 0
-LIBCRASH_MD5	= 1
-LIBCRASH_SHA1	= 2
-LIBCRASH_SHA224	= 3
-LIBCRASH_SHA256	= 4
-LIBCRASH_SHA384	= 5
-LIBCRASH_SHA512	= 6
+LIBCRASH_MD4		= 0
+LIBCRASH_MD5		= 1
+LIBCRASH_SHA1		= 2
+LIBCRASH_SHA224		= 3
+LIBCRASH_SHA256		= 4
+LIBCRASH_SHA384		= 5
+LIBCRASH_SHA512		= 6
+LIBCRASH_SHA3_224	= 7
+LIBCRASH_SHA3_256	= 8
+LIBCRASH_SHA3_384	= 9
+LIBCRASH_SHA3_512	= 10
 
 struct crash_item
 	function	dd ?
 	init_val	dd ?
+	finalproc	dd ?
 	postproc	dd ?
 	len_in		dd ?
 	len_out		dd ?
 	len_blk		dd ?
 	len_size	dd ?
-	endianness	dd ?
 ends
