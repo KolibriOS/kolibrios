@@ -1027,6 +1027,7 @@ align 4
         xor     eax, eax
         mov     byte[MOUSE_BACKGROUND], al
         mov     byte[DONT_DRAW_MOUSE], al
+        dec     eax
 ;--------------------------------------
 align 4
 .exit:

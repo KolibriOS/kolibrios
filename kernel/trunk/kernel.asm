@@ -2839,9 +2839,12 @@ nosb7:
         cmp     ebx, 8
         jnz     nosb8
 
-        mov     eax, [BG_Rect_X_left_right]
+        mov     ecx, [current_slot]
+        xor     eax, eax
+        xchg    eax, [ecx+APPDATA.draw_bgr_x]
         mov     [esp + 32], eax ; eax = [left]*65536 + [right]
-        mov     eax, [BG_Rect_Y_top_bottom]
+        xor     eax, eax
+        xchg    eax, [ecx+APPDATA.draw_bgr_y]
         mov     [esp + 20], eax ; ebx = [top]*65536 + [bottom]
         ret
 ;------------------------------------------------------------------------------
@@ -3493,8 +3496,7 @@ mouse_not_active:
         jz      nobackgr
 ;--------------------------------------
 align 4
-@@:
-        push    eax
+backgr:
         mov     eax, [draw_data+32 + RECT.left]
         shl     eax, 16
         add     eax, [draw_data+32 + RECT.right]
@@ -3504,7 +3506,6 @@ align 4
         shl     eax, 16
         add     eax, [draw_data+32 + RECT.bottom]
         mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
-        pop     eax
 
         call    drawbackground
 ;        DEBUGF  1, "K : drawbackground\n"
@@ -3518,15 +3519,42 @@ align 4
 align 4
 set_bgr_event:
         add     edi, 256
+        mov     eax, [BG_Rect_X_left_right]
+        mov     edx, [BG_Rect_Y_top_bottom]
+        cmp     [edi+SLOT_BASE+APPDATA.draw_bgr_x], 0
+        jz      .set
+.join:
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
+        jbe     @f
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
+@@:
+        shr     eax, 16
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
+        jae     @f
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
+@@:
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        jbe     @f
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+@@:
+        shr     edx, 16
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
+        jae     @f
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
+@@:
+        jmp     .common
+.set:
+        mov     [edi+SLOT_BASE+APPDATA.draw_bgr_x], eax
+        mov     [edi+SLOT_BASE+APPDATA.draw_bgr_y], edx
+.common:
         or      [edi+SLOT_BASE+APPDATA.event_mask], 10000b  ; set event 5
         loop    set_bgr_event
         pop     edi ecx
-; call change_task - because the application must have time to call f.15.8
-        call    change_task
 ;--------- set event 5 stop -----------
         dec     byte[REDRAW_BACKGROUND]    ; got new update request?
-        jnz     @b
+        jnz     backgr
 
+        xor     eax, eax
         mov     [draw_data+32 + RECT.left], eax
         mov     [draw_data+32 + RECT.top], eax
         mov     [draw_data+32 + RECT.right], eax

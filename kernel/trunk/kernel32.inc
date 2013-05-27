@@ -126,7 +126,9 @@ struct  APPDATA
         tls_base        dd ?            ;+104
         dlls_list_ptr   dd ?            ;+108
         event_filter    dd ?            ;+112
-                        rb 12           ;+116
+        draw_bgr_x      dd ?            ;+116
+        draw_bgr_y      dd ?            ;+120
+                        dd ?            ;+124
 
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
