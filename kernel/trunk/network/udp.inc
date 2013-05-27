@@ -146,8 +146,6 @@ proc udp_rx stdcall
         shl     ecx, 8
         or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK ; stack event
 
-        mov     [check_idle_semaphore], 200
-
   .exit:
         pop     eax
         call    freeBuff    ; Discard the packet

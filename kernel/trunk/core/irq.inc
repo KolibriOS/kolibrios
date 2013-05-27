@@ -267,7 +267,6 @@ align 16
 .fail:
         inc     [irq_failed+ebp*4]
 .exit:
-        mov     [check_idle_semaphore], 5
 
         mov     ecx, ebp
         call    irq_eoi

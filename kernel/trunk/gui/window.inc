@@ -1629,6 +1629,7 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
 ; Otherwise the user can see cursor specified by f.37.5 from another window.
 ; He will be really unhappy! He is terrible in rage - usually he throws stones!
         mov     [redrawmouse_unconditional], 1
+        call    wakeup_osloop
         ; NOTE: commented out since doesn't provide necessary functionality
         ;       anyway, to be reworked
 ;       mov     eax, [timer_ticks] ; [0xfdf0]

@@ -284,6 +284,24 @@ save_timer_fdd_motor:
 ;*****************************************
 ;*  œ–Œ¬≈– ¿ «¿ƒ≈–∆ » ¬€ Àﬁ◊≈Õ»ﬂ ÃŒ“Œ–¿  *
 ;*****************************************
+proc check_fdd_motor_status_has_work?
+        cmp     [flp_status], 0
+        jnz     .yes
+        cmp     [fdd_motor_status], 0
+        jz      .no
+        mov     eax, [timer_ticks]
+        sub     eax, [timer_fdd_motor]
+        cmp     eax, 500
+        jb      .no
+.yes:
+        xor     eax, eax
+        inc     eax
+        ret
+.no:
+        xor     eax, eax
+        ret
+endp
+
 align 4
 check_fdd_motor_status:
         cmp     [fdd_motor_status], 0

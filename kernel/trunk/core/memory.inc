@@ -1136,11 +1136,6 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         mov     eax, [dst_slot]
         shl     eax, 8
         or      [eax+SLOT_BASE+0xA8], dword 0x40
-        cmp     dword [check_idle_semaphore], 20
-        jge     .ipc_no_cis
-
-        mov     dword [check_idle_semaphore], 5
-.ipc_no_cis:
         push    0
         jmp     .ret
 .no_pid:

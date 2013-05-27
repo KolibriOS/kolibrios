@@ -710,6 +710,20 @@ EjectMedium:
 ;* ChannelNumber - номер канала;                 *
 ;* DiskNumber - номер диска на канале.           *
 ;*************************************************
+proc check_ATAPI_device_event_has_work?
+        mov     eax, [timer_ticks]
+        sub     eax, [timer_ATAPI_check]
+        cmp     eax, 100
+        jb      .no
+.yes:
+        xor     eax, eax
+        inc     eax
+        ret
+.no:
+        xor     eax, eax
+        ret
+endp
+
 align 4
 check_ATAPI_device_event:
         pusha

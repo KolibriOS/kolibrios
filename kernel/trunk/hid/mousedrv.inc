@@ -531,6 +531,7 @@ align 4
         mov     [mouse_active], 1
         mov     eax, [timer_ticks]
         mov     [mouse_timer_ticks], eax
+        call    wakeup_osloop
         ret
 endp
 ;-----------------------------------------------------------------------------

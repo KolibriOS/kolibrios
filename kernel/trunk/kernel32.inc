@@ -132,19 +132,21 @@ struct  APPDATA
         wnd_shape_scale dd ?            ;+132
                         dd ?            ;+136
         mem_size        dd ?            ;+140
-        saved_box       BOX
-        ipc_start       dd ?
-        ipc_size        dd ?
-        event_mask      dd ?
-        debugger_slot   dd ?
-        terminate_protection dd ?
-        keyboard_mode   db ?
+        saved_box       BOX             ;+144
+        ipc_start       dd ?            ;+160
+        ipc_size        dd ?            ;+164
+        event_mask      dd ?            ;+168
+        debugger_slot   dd ?            ;+172
+        terminate_protection dd ?       ;+176
+        keyboard_mode   db ?            ;+180
                         rb 3
-        dir_table       dd ?
-        dbg_event_mem   dd ?
-        dbg_regs        DBG_REGS
-        wnd_caption     dd ?
-        wnd_clientbox   BOX
+        dir_table       dd ?            ;+184
+        dbg_event_mem   dd ?            ;+188
+        dbg_regs        DBG_REGS        ;+192
+        wnd_caption     dd ?            ;+212
+        wnd_clientbox   BOX             ;+216
+        priority        dd ?            ;+232
+        in_schedule     LHEAD           ;+236
 
 ends
 

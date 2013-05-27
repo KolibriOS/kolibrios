@@ -348,6 +348,9 @@ high_code:
         mov     ecx, unpack_mutex
         call    mutex_init
 
+        mov     ecx, application_table_mutex
+        call    mutex_init
+
 ; SAVE REAL MODE VARIABLES
         mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
@@ -523,7 +526,7 @@ no_mode_0x12:
           ;lidt [idtreg]
 
         call    init_kernel_heap
-        stdcall kernel_alloc, RING0_STACK_SIZE+512
+        stdcall kernel_alloc, (RING0_STACK_SIZE+512) * 2
         mov     [os_stack_seg], eax
 
         lea     esp, [eax+RING0_STACK_SIZE]
@@ -603,10 +606,6 @@ no_mode_0x12:
 
         xor     eax, eax
         inc     eax
-        mov     [CURRENT_TASK], eax     ;dword 1
-        mov     [TASK_COUNT], eax       ;dword 1
-        mov     [TASK_BASE], dword TASK_DATA
-        mov     [current_slot], SLOT_BASE+256
 
 ; set background
 
@@ -621,48 +620,28 @@ no_mode_0x12:
         mov     esi, boot_setostask
         call    boot_log
 
-        xor     eax, eax
-        mov     dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
-        mov     dword [SLOT_BASE+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+APPDATA.except_mask], eax
+        mov     edx, SLOT_BASE+256
+        mov     ebx, [os_stack_seg]
+        add     ebx, 0x2000
+        call    setup_os_slot
+        mov     dword [edx], 'IDLE'
+        sub     [edx+APPDATA.saved_esp], 4
+        mov     eax, [edx+APPDATA.saved_esp]
+        mov     dword [eax], idle_thread
+        mov     ecx, IDLE_PRIORITY
+        call    scheduler_add_thread
 
-        ; name for OS/IDLE process
+        mov     edx, SLOT_BASE+256*2
+        mov     ebx, [os_stack_seg]
+        call    setup_os_slot
+        mov     dword [edx], 'OS'
+        xor     ecx, ecx
+        call    scheduler_add_thread
 
-        mov     dword [SLOT_BASE+256+APPDATA.app_name], dword 'OS/I'
-        mov     dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-        mov     edi, [os_stack_seg]
-        mov     dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-        add     edi, 0x2000-512
-        mov     dword [SLOT_BASE+256+APPDATA.fpu_state], edi
-        mov     dword [SLOT_BASE+256+APPDATA.saved_esp0], edi; just for case
-        mov     dword [SLOT_BASE+256+APPDATA.terminate_protection], 80000001h
-
-        mov     esi, fpu_data
-        mov     ecx, 512/4
-        cld
-        rep movsd
-
-        mov     dword [SLOT_BASE+256+APPDATA.exc_handler], eax
-        mov     dword [SLOT_BASE+256+APPDATA.except_mask], eax
-
-        mov     ebx, SLOT_BASE+256+APP_OBJ_OFFSET
-        mov     dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
-        mov     dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
-
-        mov     dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
-        mov     dword [SLOT_BASE+256+APPDATA.tls_base], eax
-
-        ; task list
-        mov     dword [TASK_DATA+TASKDATA.mem_start], eax; process base address
-        inc     eax
-        mov     dword [CURRENT_TASK], eax
-        mov     dword [TASK_COUNT], eax
-        mov     [current_slot], SLOT_BASE+256
-        mov     [TASK_BASE], dword TASK_DATA
-        mov     byte[TASK_DATA+TASKDATA.wnd_number], al ; on screen number
-        mov     dword [TASK_DATA+TASKDATA.pid], eax     ; process id number
-
-        mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
+        mov     dword [CURRENT_TASK], 2
+        mov     dword [TASK_COUNT], 2
+        mov     dword [current_slot], SLOT_BASE + 256*2
+        mov     dword [TASK_BASE], CURRENT_TASK + 32*2
 
         stdcall kernel_alloc, 0x10000/8
         mov     edi, eax
@@ -828,8 +807,8 @@ end if
 
         call    init_display
         mov     eax, [def_cursor]
-        mov     [SLOT_BASE+APPDATA.cursor], eax
         mov     [SLOT_BASE+APPDATA.cursor+256], eax
+        mov     [SLOT_BASE+APPDATA.cursor+256*2], eax
 
 ; PRINT CPU FREQUENCY
 
@@ -946,10 +925,6 @@ end if
 first_app_found:
 
         cli
-
-        ;mov   [TASK_COUNT],dword 2
-        push    1
-        pop     dword [CURRENT_TASK]    ; set OS task fisrt
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
@@ -1068,7 +1043,7 @@ end if
         mov     [timer_ticks_enable], 1         ; for cd driver
 
         sti
-        call    change_task
+;        call    change_task
 
         jmp     osloop
 
@@ -1097,6 +1072,43 @@ boot_log:
 
         ret
 
+; in: edx -> APPDATA for OS/IDLE slot
+; in: ebx = stack base
+proc setup_os_slot
+        xor     eax, eax
+        mov     ecx, 256/4
+        mov     edi, edx
+        rep stosd
+
+        mov     dword [edx+APPDATA.pl0_stack], ebx
+        lea     edi, [ebx+0x2000-512]
+        mov     dword [edx+APPDATA.fpu_state], edi
+        mov     dword [edx+APPDATA.saved_esp0], edi
+        mov     dword [edx+APPDATA.saved_esp], edi
+        mov     dword [edx+APPDATA.terminate_protection], 1 ; make unkillable
+
+        mov     esi, fpu_data
+        mov     ecx, 512/4
+        cld
+        rep movsd
+
+        lea     eax, [edx+APP_OBJ_OFFSET]
+        mov     dword [edx+APPDATA.fd_obj], eax
+        mov     dword [edx+APPDATA.bk_obj], eax
+
+        mov     dword [edx+APPDATA.cur_dir], sysdir_path
+
+        mov     [edx + APPDATA.dir_table], sys_pgdir - OS_BASE
+
+        mov     eax, edx
+        shr     eax, 3
+        add     eax, CURRENT_TASK - (SLOT_BASE shr 3)
+        mov     [eax+TASKDATA.wnd_number], dh
+        mov     byte [eax+TASKDATA.pid], dh
+
+        ret
+endp
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
 ;                    MAIN OS LOOP START                              ;
@@ -1104,14 +1116,21 @@ boot_log:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 osloop:
+        mov     edx, osloop_has_work?
+        xor     ecx, ecx
+        call    Wait_events
+        xor     eax, eax
+        xchg    eax, [osloop_nonperiodic_work]
+        test    eax, eax
+        jz      .no_periodic
 ;        call    [draw_pointer]
         call    __sys_draw_pointer
         call    window_check_events
         call    mouse_check_events
         call    checkmisc
         call    checkVga_N13
+.no_periodic:
         call    stack_handler
-        call    checkidle
         call    check_fdd_motor_status
         call    check_ATAPI_device_event
         call    check_lights_state
@@ -1122,36 +1141,44 @@ osloop:
 ;                      MAIN OS LOOP END                              ;
 ;                                                                    ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-align 4
-checkidle:
-        pushad
-        call    change_task
-        jmp     idle_loop_entry
-  idle_loop:
-        cmp     eax, [idlemem]    ; eax == [timer_ticks]
-        jne     idle_exit
-        rdtsc   ;call _rdtsc
-        mov     ecx, eax
-        hlt
-        rdtsc   ;call _rdtsc
-        sub     eax, ecx
-        add     [idleuse], eax
-  idle_loop_entry:
-        mov     eax, [timer_ticks]; eax =  [timer_ticks]
-        cmp     [check_idle_semaphore], 0
-        je      idle_loop
-        dec     [check_idle_semaphore]
-  idle_exit:
-        mov     [idlemem], eax    ; eax == [timer_ticks]
-        popad
+proc osloop_has_work?
+        cmp     [osloop_nonperiodic_work], 0
+        jnz     .yes
+        call    stack_handler_has_work?
+        jnz     .yes
+        call    check_fdd_motor_status_has_work?
+        jnz     .yes
+        call    check_ATAPI_device_event_has_work?
+        jnz     .yes
+        call    check_lights_state_has_work?
+        jnz     .yes
+        call    check_timers_has_work?
+        jnz     .yes
+.no:
+        xor     eax, eax
         ret
+.yes:
+        xor     eax, eax
+        inc     eax
+        ret
+endp
+
+proc wakeup_osloop
+        mov     [osloop_nonperiodic_work], 1
+        ret
+endp
 
 uglobal
-  idlemem               dd   0x0
-  idleuse               dd   0x0
-  idleusesec            dd   0x0
-  check_idle_semaphore  dd   0x0
+align 4
+osloop_nonperiodic_work dd      ?
 endg
+
+align 4
+idle_thread:
+        sti
+idle_loop:
+        hlt
+        jmp     idle_loop
 
 
 
@@ -1200,7 +1227,7 @@ reserve_irqs_ports:
 
 
 iglobal
-  process_number dd 0x1
+  process_number dd 0x2
 endg
 
 set_variables:
@@ -1217,6 +1244,7 @@ set_variables:
         mov     ax, [BOOT_VAR+BOOT_X_RES]
         shr     ax, 1
         mov     [MOUSE_X], eax
+        call    wakeup_osloop
 
         xor     eax, eax
         mov     [BTN_ADDR], dword BUTTON_INFO ; address of button list
@@ -2007,6 +2035,7 @@ sys_end:
 
         mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], 3; terminate this program
+        call    wakeup_osloop
 
     waitterm:            ; wait here for termination
         mov     ebx, 100
@@ -2040,6 +2069,7 @@ restore_default_cursor_before_killing:
         mov     [current_cursor], esi
 @@:
         mov     [redrawmouse_unconditional], 1
+        call    wakeup_osloop
         popfd
         ret
 ;------------------------------------------------------------------------------
@@ -2092,6 +2122,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         mov     eax, [TASK_COUNT]
         mov     [SYS_SHUTDOWN], al
         mov     [shutdown_processes], eax
+        call    wakeup_osloop
         and     dword [esp+32], 0
  exit_for_anyone:
         ret
@@ -2137,11 +2168,12 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
         mov     [ecx], byte 3; clear possible i40's
+        call    wakeup_osloop
      ;call MEM_Heap_UnLock
 
-        cmp     edx, [application_table_status]; clear app table stat
+        cmp     edx, [application_table_owner]; clear app table stat
         jne     noatsc
-        and     [application_table_status], 0
+        call    unlock_application_table
 noatsc:
 noprocessterminate:
         add     esp, 4
@@ -2150,14 +2182,7 @@ noprocessterminate:
 sysfn_terminate2:
 ;lock application_table_status mutex
 .table_status:
-        cli
-        cmp     [application_table_status], 0
-        je      .stf
-        sti
-        call    change_task
-        jmp     .table_status
-.stf:
-        call    set_application_table_status
+        call    lock_application_table
         mov     eax, ecx
         call    pid_to_slot
         test    eax, eax
@@ -2165,12 +2190,12 @@ sysfn_terminate2:
         mov     ecx, eax
         cli
         call    sysfn_terminate
-        and     [application_table_status], 0
+        call    unlock_application_table
         sti
         and     dword [esp+32], 0
         ret
 .not_found:
-        mov     [application_table_status], 0
+        call    unlock_application_table
         or      dword [esp+32], -1
         ret
 ;------------------------------------------------------------------------------
@@ -2219,6 +2244,7 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
 @@:
 ;-------------------------------------
         mov     [window_minimize], 2; restore window if minimized
+        call    wakeup_osloop
 
         movzx   esi, word [WIN_STACK + ecx*2]
         cmp     esi, [TASK_COUNT]
@@ -2234,7 +2260,7 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         ret
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
-        mov     eax, [idleusesec]
+        mov     eax, [CURRENT_TASK+32+TASKDATA.cpu_usage]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
@@ -2276,6 +2302,7 @@ sysfn_sound_flag:       ; 18.8 = get/set sound_flag
 ;------------------------------------------------------------------------------
 sysfn_minimize:         ; 18.10 = minimize window
         mov     [window_minimize], 1
+        call    wakeup_osloop
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -2338,6 +2365,7 @@ sysfn_centermouse:      ; 18.15 = mouse centered
         mov     eax, [Screen_Max_Y]
         shr     eax, 1
         mov     [MOUSE_Y], ax
+        call    wakeup_osloop
 ;        ret
 ;* mouse centered - end code- Mario79
         xor     eax, eax
@@ -2382,6 +2410,7 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
         cmp     dx, word[Screen_Max_X]
         ja      .end
         mov     [MOUSE_X], edx
+        call    wakeup_osloop
         ret
  .set_mouse_button:
 ;     cmp   ecx,5  ; set mouse button features
@@ -2389,6 +2418,7 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
         jnz     .end
         mov     [BTN_DOWN], dl
         mov     [mouse_active], 1
+        call    wakeup_osloop
  .end:
         ret
 ;------------------------------------------------------------------------------
@@ -2848,6 +2878,7 @@ nosb8:
         mov     [draw_data+32 + RECT.bottom], edx
 
         inc     byte[REDRAW_BACKGROUND]
+        call    wakeup_osloop
 ;--------------------------------------
 align 4
 .exit:
@@ -2874,6 +2905,7 @@ force_redraw_background:
         mov     [draw_data+32 + RECT.bottom], ebx
         pop     ebx eax
         inc     byte[REDRAW_BACKGROUND]
+        call    wakeup_osloop
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -3532,6 +3564,7 @@ markz:
 @@:
         add     edx, 0x20
         loop    markz
+        call    wakeup_osloop
 ;--------------------------------------
 align 4
 @@:
@@ -3683,6 +3716,7 @@ align 4
 align 4
 @@:
         add     byte[REDRAW_BACKGROUND], dl
+        call    wakeup_osloop
         jmp     newdw8
 ;--------------------------------------
 align 4
@@ -3704,6 +3738,7 @@ align 4
         cmp     dword [esp], 1
         jne     nobgrd
         inc     byte[REDRAW_BACKGROUND]
+        call    wakeup_osloop
 ;--------------------------------------
 align 4
 newdw8:
@@ -4698,10 +4733,16 @@ endg
         mov     word [msg_board_pos], 10
 @@:
 end if
+if 0
+        pusha
+        mov     al, bl
+        mov     edx, 402h
+        out     dx, al
+        popa
+end if
         inc     ecx
         and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
-        mov     [check_idle_semaphore], 5
         ret
 .smbl1:
         cmp     eax, 2

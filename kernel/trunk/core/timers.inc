@@ -203,3 +203,28 @@ check_timers:
         call    unlock_timer_list
 ; 4. Return.
         ret
+
+; This is a simplified version of check_timers that does not call anything,
+; just checks whether check_timers should do something.
+proc check_timers_has_work?
+        pushf
+        cli
+        mov     eax, [timer_list+TIMER.Next]
+.loop:
+        cmp     eax, timer_list
+        jz      .done_nowork
+        mov     edx, [timer_ticks]
+        sub     edx, [eax+TIMER.Time]
+        jns     .done_haswork
+        mov     eax, [eax+TIMER.Next]
+        jmp     .loop
+.done_nowork:
+        popf
+        xor     eax, eax
+        ret
+.done_haswork:
+        popf
+        xor     eax, eax
+        inc     eax
+        ret
+endp

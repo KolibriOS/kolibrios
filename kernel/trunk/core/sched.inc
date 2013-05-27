@@ -89,9 +89,6 @@ update_counters:
         ret
 align 4
 updatecputimes:
-        xor     eax, eax
-        xchg    eax, [idleuse]
-        mov     [idleusesec], eax
         mov     ecx, [TASK_COUNT]
         mov     edi, TASK_DATA
   .newupdate:
@@ -102,56 +99,6 @@ updatecputimes:
         loop    .newupdate
         ret
 
-align 4
-find_next_task:
-;info:
-;   Find next task to execute
-;retval:
-;   ebx = address of the APPDATA for the selected task (slot-base)
-;   esi = previous slot-base ([current_slot] at the begin)
-;   edi = address of the TASKDATA for the selected task
-;   ZF  = 1  if the task is the same
-;warning:
-;   [CURRENT_TASK] = bh , [TASK_BASE] = edi -- as result
-;   [current_slot] is not set to new value (ebx)!!!
-;scratched: eax,ecx
-        call    update_counters ; edi := [TASK_BASE]
-        Mov     esi, ebx, [current_slot]
-  .loop:
-        cmp     bh, [TASK_COUNT]
-        jb      @f
-        xor     bh, bh
-        mov     edi, CURRENT_TASK
-  @@:
-        inc     bh       ; ebx += APPDATA.size
-        add     edi, 0x20; edi += TASKDATA.size
-        mov     al, [edi+TASKDATA.state]
-        test    al, al
-        jz      .found   ; state == 0
-        cmp     al, 5
-        jne     .loop    ; state == 1,2,3,4,9
-      ; state == 5
-        pushad  ; more freedom for [APPDATA.wait_test]
-        call    [ebx+APPDATA.wait_test]
-        mov     [esp+28], eax
-        popad
-        or      eax, eax
-        jnz     @f
-      ; testing for timeout
-        mov     ecx, [timer_ticks]
-        sub     ecx, [ebx+APPDATA.wait_begin]
-        cmp     ecx, [ebx+APPDATA.wait_timeout]
-        jb      .loop
-  @@:
-        mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
-        mov     [edi+TASKDATA.state], 0
-  .found:
-        mov     [CURRENT_TASK], bh
-        mov     [TASK_BASE], edi
-        rdtsc   ;call  _rdtsc
-        mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
-        cmp     ebx, esi ;esi - previous slot-base
-        ret
 ;TODO: Надо бы убрать использование do_change_task из V86...
 ; и после этого перенести обработку TASKDATA.counter_add/sum в do_change_task
 
@@ -305,6 +252,143 @@ mutex_unlock:
 
 purge MUTEX_WAITER
 
+MAX_PRIORITY      = 0   ; highest, used for kernel tasks
+USER_PRIORITY     = 1   ; default
+IDLE_PRIORITY     = 2   ; lowest, only IDLE thread goes here
+NR_SCHED_QUEUES   = 3   ; MUST equal IDLE_PRIORYTY + 1
+
+uglobal
+; [scheduler_current + i*4] = zero if there are no threads with priority i,
+;  pointer to APPDATA of the current thread with priority i otherwise.
+align 4
+scheduler_current       rd      NR_SCHED_QUEUES
+endg
+
+; Add the given thread to the given priority list for the scheduler.
+; in: edx -> APPDATA, ecx = priority
+proc scheduler_add_thread
+; 1. Acquire the lock.
+        spin_lock_irqsave SchedulerLock
+; 2. Store the priority in APPDATA structure.
+        mov     [edx+APPDATA.priority], ecx
+; 3. There are two different cases: the given list is empty or not empty.
+; In first case, go to 6. Otherwise, advance to 4.
+        mov     eax, [scheduler_current+ecx*4]
+        test    eax, eax
+        jz      .new_list
+; 4. Insert the new item immediately before the current item.
+        mov     ecx, [eax+APPDATA.in_schedule.prev]
+        mov     [edx+APPDATA.in_schedule.next], eax
+        mov     [edx+APPDATA.in_schedule.prev], ecx
+        mov     [eax+APPDATA.in_schedule.prev], edx
+        mov     [ecx+APPDATA.in_schedule.next], edx
+; 5. Release the lock and return.
+        spin_unlock_irqrestore SchedulerLock
+        ret
+.new_list:
+; 6. Initialize the list with one item and make it the current item.
+        mov     [edx+APPDATA.in_schedule.next], edx
+        mov     [edx+APPDATA.in_schedule.prev], edx
+        mov     [scheduler_current+ecx*4], edx
+; 7. Release the lock and return.
+        spin_unlock_irqrestore SchedulerLock
+        ret
+endp
+
+; Remove the given thread from the corresponding priority list for the scheduler.
+; in: edx -> APPDATA
+proc scheduler_remove_thread
+; 1. Acquire the lock.
+        spin_lock_irqsave SchedulerLock
+; 2. Remove the item from the corresponding list.
+        mov     eax, [edx+APPDATA.in_schedule.next]
+        mov     ecx, [edx+APPDATA.in_schedule.prev]
+        mov     [eax+APPDATA.in_schedule.prev], ecx
+        mov     [ecx+APPDATA.in_schedule.next], eax
+; 3. If the given thread is the current item in the list,
+; advance the current item.
+; 3a. Check whether the given thread is the current item;
+; if no, skip the rest of this step.
+        mov     ecx, [edx+APPDATA.priority]
+        cmp     [scheduler_current+ecx*4], edx
+        jnz     .return
+; 3b. Set the current item to eax; step 2 has set eax = next item.
+        mov     [scheduler_current+ecx*4], eax
+; 3c. If there were only one item in the list, zero the current item.
+        cmp     eax, edx
+        jnz     .return
+        mov     [scheduler_current+ecx*4], 0
+.return:
+; 4. Release the lock and return.
+        spin_unlock_irqrestore SchedulerLock
+        ret
+endp
+
+;info:
+;   Find next task to execute
+;retval:
+;   ebx = address of the APPDATA for the selected task (slot-base)
+;   edi = address of the TASKDATA for the selected task
+;   ZF  = 1  if the task is the same
+;warning:
+;   [CURRENT_TASK] = bh , [TASK_BASE] = edi -- as result
+;   [current_slot] is not set to new value (ebx)!!!
+;scratched: eax,ecx
+proc find_next_task
+        call    update_counters
+        spin_lock_irqsave SchedulerLock
+        xor     ecx, ecx
+.priority_loop:
+        mov     ebx, [scheduler_current+ecx*4]
+        test    ebx, ebx
+        jz      .priority_next
+.task_loop:
+        mov     ebx, [ebx+APPDATA.in_schedule.next]
+        mov     edi, ebx
+        shr     edi, 3
+        add     edi, CURRENT_TASK - (SLOT_BASE shr 3)
+        mov     al, [edi+TASKDATA.state]
+        test    al, al
+        jz      .task_found     ; state == 0
+        cmp     al, 5
+        jne     .task_next      ; state == 1,2,3,4,9
+      ; state == 5
+        pushad  ; more freedom for [APPDATA.wait_test]
+        call    [ebx+APPDATA.wait_test]
+        mov     [esp+28], eax
+        popad
+        or      eax, eax
+        jnz     @f
+      ; testing for timeout
+        mov     eax, [timer_ticks]
+        sub     eax, [ebx+APPDATA.wait_begin]
+        cmp     eax, [ebx+APPDATA.wait_timeout]
+        jb      .task_next
+        xor     eax, eax
+@@:
+        mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
+        mov     [edi+TASKDATA.state], 0
+.task_found:
+        mov     [scheduler_current+ecx*4], ebx
+        spin_unlock_irqrestore SchedulerLock
+.found:
+        mov     [CURRENT_TASK], bh
+        mov     [TASK_BASE], edi
+        rdtsc   ;call  _rdtsc
+        mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
+        cmp     ebx, [current_slot]
+        ret
+.task_next:
+        cmp     ebx, [scheduler_current+ecx*4]
+        jnz     .task_loop
+.priority_next:
+        inc     ecx
+        cmp     ecx, NR_SCHED_QUEUES
+        jb      .priority_loop
+        hlt
+        jmp     $-1
+endp
+
 if 0
 
 struc TIMER
@@ -315,13 +399,6 @@ struc TIMER
   .arg       dd ?
 }
 
-
-MAX_PROIRITY         0   ; highest, used for kernel tasks
-MAX_USER_PRIORITY    0   ; highest priority for user processes
-USER_PRIORITY        7   ; default (should correspond to nice 0)
-MIN_USER_PRIORITY   14   ; minimum priority for user processes
-IDLE_PRIORITY       15   ; lowest, only IDLE process goes here
-NR_SCHED_QUEUES     16   ; MUST equal IDLE_PRIORYTY + 1
 
 uglobal
 rdy_head   rd 16

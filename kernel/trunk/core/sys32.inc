@@ -159,6 +159,7 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
         call    show_error_parameters ;; only ONE using, inline ???
        ;mov     edx, [TASK_BASE]
         mov     [edx + TASKDATA.state], byte 4 ; terminate
+        call    wakeup_osloop
         jmp     change_task     ; stack - here it does not matter at all, SEE: core/shed.inc
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
@@ -261,36 +262,31 @@ show_error_parameters:
 
 
 align 4
-set_application_table_status:
-        push    eax
+lock_application_table:
+        push    eax ecx edx
+        mov     ecx, application_table_mutex
+        call    mutex_lock
 
         mov     eax, [CURRENT_TASK]
         shl     eax, 5
         add     eax, CURRENT_TASK+TASKDATA.pid
         mov     eax, [eax]
 
-        mov     [application_table_status], eax
+        mov     [application_table_owner], eax
 
-        pop     eax
+        pop     edx ecx eax
 
         ret
 
 align 4
-clear_application_table_status:
-        push    eax
+unlock_application_table:
+        push    eax ecx edx
 
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 5
-        add     eax, CURRENT_TASK+TASKDATA.pid
-        mov     eax, [eax]
+        mov     [application_table_owner], 0
+        mov     ecx, application_table_mutex
+        call    mutex_unlock
 
-        cmp     eax, [application_table_status]
-        jne     apptsl1
-        xor     eax, eax
-        mov     [application_table_status], eax
-      apptsl1:
-
-        pop     eax
+        pop     edx ecx eax
 
         ret
 
@@ -338,17 +334,11 @@ terminate: ; terminate application
         mov     [CURRENT_TASK+esi+TASKDATA.state], 9
         ret
 @@:
+        lea     edx, [SLOT_BASE+esi]
+        call    scheduler_remove_thread
            ;mov    esi,process_terminating
            ;call   sys_msg_board_str
-@@:
-        cli
-        cmp     [application_table_status], 0
-        je      term9
-        sti
-        call    change_task
-        jmp     @b
-term9:
-        call    set_application_table_status
+        call    lock_application_table
 
 ; if the process is in V86 mode...
         mov     eax, [.slot]
@@ -391,11 +381,11 @@ term9:
         stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
 
         mov     esi, [.slot]
-        cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 1
+        cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 2
         jne     @F
 
-        mov     [fpu_owner], 1
-        mov     eax, [256+SLOT_BASE+APPDATA.fpu_state]
+        mov     [fpu_owner], 2
+        mov     eax, [256*2+SLOT_BASE+APPDATA.fpu_state]
         clts
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
@@ -688,7 +678,7 @@ term9:
         mov     [MOUSE_BACKGROUND], byte 0; no mouse background
         mov     [DONT_DRAW_MOUSE], byte 0; draw mouse
 
-        and     [application_table_status], 0
+        call    unlock_application_table
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
         add     esp, 4

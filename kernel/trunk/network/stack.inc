@@ -191,6 +191,12 @@ stack_init:
         mov     [last_1sTick], al
         ret
 
+; Wakeup every tick.
+proc stack_handler_has_work?
+        mov     eax, [timer_ticks]
+        cmp     eax, [last_1hsTick]
+        ret
+endp
 
 
 ;***************************************************************************

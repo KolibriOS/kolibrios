@@ -397,7 +397,8 @@ current_slot      rd 1
 
 ; status
 hd1_status                  rd 1  ; 0 - free : other - pid
-application_table_status    rd 1  ; 0 - free : other - pid
+application_table_owner     rd 1  ; 0 - free : other - pid
+application_table_mutex     MUTEX
 
 ; device addresses
 mididp            rd 1

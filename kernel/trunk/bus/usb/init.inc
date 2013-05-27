@@ -163,7 +163,6 @@ proc usb_wakeup_if_needed
         test    ebx, ebx
         jz      usb_wakeup.nothing
 usb_wakeup:
-        mov     [check_idle_semaphore], 5       ; we really, really need a normal scheduler
         xor     edx, edx
         mov     eax, [usb_event]
         mov     ebx, [eax+EVENT.id]
