@@ -512,7 +512,7 @@ include Makefile.copy
 # Special rules for copying sysfuncr.txt - it isn't directly included in the image.
 docpack: $(DOCDIR)SYSFUNCR.TXT
 $(DOCDIR)SYSFUNCR.TXT: $(KERNEL)/docs/sysfuncr.txt
-	iconv -f utf-8 -t cp866 $(KERNEL)/docs/sysfuncr.txt $(DOCDIR)SYSFUNCR.TXT
+	iconv -f utf-8 -t cp866 $(KERNEL)/docs/sysfuncr.txt > $(DOCDIR)SYSFUNCR.TXT
 
 # Similar for C--.
 include Makefile.cmm
