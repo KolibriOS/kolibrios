@@ -61,7 +61,7 @@ iglobal
   idtreg: ; data for LIDT instruction (!!! must be immediately below sys_int data)
         dw      2*($-sys_int-4)-1
         dd      idts ;0x8000B100
-        dw      0    ;просто выравнивание
+        dw      0    ;РїСЂРѕСЃС‚Рѕ РІС‹СЂР°РІРЅРёРІР°РЅРёРµ
 
   msg_fault_sel dd  msg_exc_8,msg_exc_u,msg_exc_a,msg_exc_b
                 dd  msg_exc_c,msg_exc_d,msg_exc_e
@@ -109,19 +109,19 @@ uglobal
   pf_err_code   dd ?
 endg
 
-page_fault_exc:                 ; дуракоусточивость: селекторы испорчены...
-        pop     [ss:pf_err_code]; действительно до следующего #PF
+page_fault_exc:                 ; РґСѓСЂР°РєРѕСѓСЃС‚РѕС‡РёРІРѕСЃС‚СЊ: СЃРµР»РµРєС‚РѕСЂС‹ РёСЃРїРѕСЂС‡РµРЅС‹...
+        pop     [ss:pf_err_code]; РґРµР№СЃС‚РІРёС‚РµР»СЊРЅРѕ РґРѕ СЃР»РµРґСѓСЋС‰РµРіРѕ #PF
         save_ring3_context
         mov     bl, 14
 
-exc_c:                          ; исключения (все, кроме 7-го - #NM)
-; Фрэйм стека при исключении/прерывании из 3-го кольца + pushad (т.е., именно здесь)
+exc_c:                          ; РёСЃРєР»СЋС‡РµРЅРёСЏ (РІСЃРµ, РєСЂРѕРјРµ 7-РіРѕ - #NM)
+; Р¤СЂСЌР№Рј СЃС‚РµРєР° РїСЂРё РёСЃРєР»СЋС‡РµРЅРёРё/РїСЂРµСЂС‹РІР°РЅРёРё РёР· 3-РіРѕ РєРѕР»СЊС†Р° + pushad (С‚.Рµ., РёРјРµРЅРЅРѕ Р·РґРµСЃСЊ)
   reg_ss        equ esp+0x30
   reg_esp3      equ esp+0x2C
   reg_eflags    equ esp+0x28
   reg_cs3       equ esp+0x24
   reg_eip       equ esp+0x20
- ; это фрэйм от pushad
+ ; СЌС‚Рѕ С„СЂСЌР№Рј РѕС‚ pushad
   reg_eax       equ esp+0x1C
   reg_ecx       equ esp+0x18
   reg_edx       equ esp+0x14
@@ -131,10 +131,10 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-        mov     ax, app_data        ;исключение
-        mov     ds, ax                  ;загрузим правильные значения
-        mov     es, ax                  ;в регистры
-        cld                     ; и приводим DF к стандарту
+        mov     ax, app_data        ;РёСЃРєР»СЋС‡РµРЅРёРµ
+        mov     ds, ax                  ;Р·Р°РіСЂСѓР·РёРј РїСЂР°РІРёР»СЊРЅС‹Рµ Р·РЅР°С‡РµРЅРёСЏ
+        mov     es, ax                  ;РІ СЂРµРіРёСЃС‚СЂС‹
+        cld                     ; Рё РїСЂРёРІРѕРґРёРј DF Рє СЃС‚Р°РЅРґР°СЂС‚Сѓ
         movzx   ebx, bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
         test    byte[reg_eflags+2], 2
@@ -290,12 +290,12 @@ unlock_application_table:
 
         ret
 
-;  * eax = 64 - номер функции
-;  * ebx = 1 - единственная подфункция
-;  * ecx = новый размер памяти
-;Возвращаемое значение:
-;  * eax = 0 - успешно
-;  * eax = 1 - недостаточно памяти
+;  * eax = 64 - РЅРѕРјРµСЂ С„СѓРЅРєС†РёРё
+;  * ebx = 1 - РµРґРёРЅСЃС‚РІРµРЅРЅР°СЏ РїРѕРґС„СѓРЅРєС†РёСЏ
+;  * ecx = РЅРѕРІС‹Р№ СЂР°Р·РјРµСЂ РїР°РјСЏС‚Рё
+;Р’РѕР·РІСЂР°С‰Р°РµРјРѕРµ Р·РЅР°С‡РµРЅРёРµ:
+;  * eax = 0 - СѓСЃРїРµС€РЅРѕ
+;  * eax = 1 - РЅРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РїР°РјСЏС‚Рё
 
 align 4
 sys_resize_app_memory:
@@ -684,17 +684,6 @@ terminate: ; terminate application
         add     esp, 4
         ret
 restore .slot
-
-;iglobal
-;if lang eq ru
-;  boot_sched_1    db   '‘®§¤ ­ЁҐ GDT TSS гЄ § вҐ«п',0
-;  boot_sched_2    db   '‘®§¤ ­ЁҐ IDT в Ў«Ёжл',0
-;else
-;  boot_sched_1    db   'Building gdt tss pointer',0
-;  boot_sched_2    db   'Building IDT table',0
-;end if
-;endg
-
 
 ;build_scheduler:
 ;        mov     esi, boot_sched_1

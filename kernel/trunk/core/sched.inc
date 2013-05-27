@@ -99,8 +99,8 @@ updatecputimes:
         loop    .newupdate
         ret
 
-;TODO: Надо бы убрать использование do_change_task из V86...
-; и после этого перенести обработку TASKDATA.counter_add/sum в do_change_task
+;TODO: РќР°РґРѕ Р±С‹ СѓР±СЂР°С‚СЊ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ do_change_task РёР· V86...
+; Рё РїРѕСЃР»Рµ СЌС‚РѕРіРѕ РїРµСЂРµРЅРµСЃС‚Рё РѕР±СЂР°Р±РѕС‚РєСѓ TASKDATA.counter_add/sum РІ do_change_task
 
 align 4
 do_change_task:

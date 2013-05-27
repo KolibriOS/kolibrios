@@ -37,9 +37,9 @@ save_image:
         call    check_label
         cmp     [FDC_Status], 0
         jne     unnecessary_save_image
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 0; Сторона
-        mov     [FDD_Sector], 1; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 0; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 1; РЎРµРєС‚РѕСЂ
         mov     esi, RAMDISK
         call    SeekTrack
 save_image_1:

@@ -29,7 +29,7 @@ cross_order:
 
 align 32
 sysenter_entry:
-        ; Настраиваем стек
+        ; РќР°СЃС‚СЂР°РёРІР°РµРј СЃС‚РµРє
         mov     esp, [ss:tss._esp0]
         sti
         push    ebp                     ; save app esp + 4
@@ -47,7 +47,7 @@ sysenter_entry:
         call    unprotect_from_terminate
         popad
         ;------------------
-        xchg    ecx, [ss:esp]           ; в вершин стека - app ecx, ecx - app esp + 4
+        xchg    ecx, [ss:esp]           ; РІ РІРµСЂС€РёРЅ СЃС‚РµРєР° - app ecx, ecx - app esp + 4
         sub     ecx, 4
         xchg    edx, [ecx]              ; edx - return point, & save original edx
         push    edx

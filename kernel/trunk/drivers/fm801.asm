@@ -17,7 +17,7 @@ API_VERSION     equ 0x01000100
 
 USE_COM_IRQ     equ 0    ;make irq 3 and irq 4 available for PCI devices
 
-;irq 0,1,2,8,12,13 недоступны
+;irq 0,1,2,8,12,13 РЅРµРґРѕСЃС‚СѓРїРЅС‹
 ;                   FEDCBA9876543210
 VALID_IRQ       equ 1100111011111000b
 ATTCH_IRQ       equ 0000111010100000b

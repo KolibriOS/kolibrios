@@ -30,7 +30,7 @@ error:
         mov     cx, bx
         jmp     ret_on_ch       ;return 
 
-;///// ошибка при находжении длинны секции в параметре default
+;///// РѕС€РёР±РєР° РїСЂРё РЅР°С…РѕРґР¶РµРЅРёРё РґР»РёРЅРЅС‹ СЃРµРєС†РёРё РІ РїР°СЂР°РјРµС‚СЂРµ default
 .error_get_size_d_sect: 
         leave   ;clear array in stack 
         mov     si, not_found_def_sect
@@ -42,7 +42,7 @@ error:
         mov     si, not_found_sec_loader
         jmp     err_show_ini
 
-.default_eq_loader:     ;критическая ошибка default секция = loader
+.default_eq_loader:     ;РєСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° default СЃРµРєС†РёСЏ = loader
         leave
         mov     si, default_eq_loader
         jmp     err_show_ini

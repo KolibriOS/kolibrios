@@ -77,10 +77,10 @@ ext2_data:
     .inode_size                     dd ?
     .count_pointer_in_block         dd ?        ;  block_size / 4
     .count_pointer_in_block_square  dd ?        ; (block_size / 4)**2
-    .ext2_save_block                dd ?    ; °´Æ™ ≠† £´Æ°†´Ï≠„Ó 1 Ø‡ÆÊ•§„‡„
-    .ext2_temp_block                dd ?    ; °´Æ™ §´Ô ¨•´™®Â Ø‡ÆÊ•§„‡
-    .ext2_save_inode                dd ?    ; inode ≠† £´Æ°†´Ï≠„Ó Ø‡ÆÊ•§„‡„
-    .ext2_temp_inode                dd ?    ; inode §´Ô ¨•´™®Â Ø‡ÆÊ•§„‡
+    .ext2_save_block                dd ?    ; –±–ª–æ–∫ –Ω–∞ –≥–ª–æ–±–∞–ª—å–Ω—É—é 1 –ø—Ä–æ—Ü–µ–¥—É—Ä—É
+    .ext2_temp_block                dd ?    ; –±–ª–æ–∫ –¥–ª—è –º–µ–ª–∫–∏—Ö –ø—Ä–æ—Ü–µ–¥—É—Ä
+    .ext2_save_inode                dd ?    ; inode –Ω–∞ –≥–ª–æ–±–∞–ª—å–Ω—É—é –ø—Ä–æ—Ü–µ–¥—É—Ä—É
+    .ext2_temp_inode                dd ?    ; inode –¥–ª—è –º–µ–ª–∫–∏—Ö –ø—Ä–æ—Ü–µ–¥—É—Ä
     .sb                             dd ?    ; superblock
     .groups_count                   dd ?
 if $ > fs_dependent_data_end
@@ -278,7 +278,7 @@ test_primary_partition_3:
         ;pop     edx
 
 test_ext_partition_0:
-        pop     eax         ; Ø‡Æ·‚Æ ¢Î™®§Î¢†•¨ ®ß ·‚•™†
+        pop     eax         ; –ø—Ä–æ—Å—Ç–æ –≤—ã–∫–∏–¥—ã–≤–∞–µ–º –∏–∑ —Å—Ç–µ–∫–∞
         mov     al, [ebx+0x1be+4]; get extended partition type
         call    scan_extended_types
         jnz     test_ext_partition_1
@@ -368,7 +368,7 @@ hd_and_partition_ok:
 
    ;     mov     edx, [PARTITION_END]
    ;     sub     edx, eax
-   ;     inc     edx     ; edx = length of partition ß†Á•¨ Æ≠Æ ≠†¨??
+   ;     inc     edx     ; edx = length of partition –∑–∞—á–µ–º –æ–Ω–æ –Ω–∞–º??
 
 ;    mov   [hd_setup],1
         mov     ebx, buffer

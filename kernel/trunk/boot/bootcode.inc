@@ -428,7 +428,7 @@ sayerr:
 .nopci:
 ; \end{Mario79}
 
-        mov     al, 0xf6        ; Сброс клавиатуры, разрешить сканирование
+        mov     al, 0xf6        ; РЎР±СЂРѕСЃ РєР»Р°РІРёР°С‚СѓСЂС‹, СЂР°Р·СЂРµС€РёС‚СЊ СЃРєР°РЅРёСЂРѕРІР°РЅРёРµ
         out     0x60, al
         xor     cx, cx
 wait_loop:       ; variant 2
@@ -847,21 +847,21 @@ end if
         xor     dx, dx
         div     bx
 if lang eq ru
-; Ї®¤®¦¤ЁвҐ 5 бҐЄг­¤, 4/3/2 бҐЄг­¤л, 1 бҐЄг­¤г
+; РїРѕРґРѕР¶РґРёС‚Рµ 5 СЃРµРєСѓРЅРґ, 4/3/2 СЃРµРєСѓРЅРґС‹, 1 СЃРµРєСѓРЅРґСѓ
         cmp     al, 5
         mov     cl, ' '
         jae     @f
         cmp     al, 1
-        mov     cl, 'г'
+        mov     cl, 0xE3 ; 'Сѓ' in cp866
         jz      @f
-        mov     cl, 'л'
+        mov     cl, 0xEB ; 'С‹' in cp866
 @@:
         mov     [time_str+9], cl
 else if lang eq et
         cmp     al, 1
         ja      @f
-        mov     [time_str+9], ' '
-        mov     [time_str+10], ' '
+        mov     byte [time_str+9], ' '
+        mov     byte [time_str+10], ' '
 @@:
 else if lang eq sp
 ; esperar 5/4/3/2 segundos, 1 segundo

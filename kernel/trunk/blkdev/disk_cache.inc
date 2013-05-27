@@ -397,7 +397,7 @@ saved_esi_pos = 16+12 ; size of local variables + size of registers before esi
         mov     dword [esi+8], 1        ; same as in hd
         mov     eax, [esi]
         mov     edx, [esi+4]            ; edx:eax = sector to write
-; Объединяем запись цепочки последовательных секторов в одно обращение к диску
+; РћР±СЉРµРґРёРЅСЏРµРј Р·Р°РїРёСЃСЊ С†РµРїРѕС‡РєРё РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅС‹С… СЃРµРєС‚РѕСЂРѕРІ РІ РѕРґРЅРѕ РѕР±СЂР°С‰РµРЅРёРµ Рє РґРёСЃРєСѓ
         cmp     ecx, 1
         jz      .nonext
         cmp     dword [esi+12+8], 2

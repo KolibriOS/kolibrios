@@ -178,7 +178,7 @@ v86_set_page:
 ;     esi=handle
 ; out: eax=V86 address, para-aligned (0x10 multiple)
 ; destroys: nothing
-; недописана!!!
+; ╨╜╨╡╨┤╨╛╨┐╨╕╤Б╨░╨╜╨░!!!
 ;v86_alloc:
 ;        push    ebx ecx edx edi
 ;        lea     ebx, [esi+V86_machine.mutex]
@@ -377,8 +377,8 @@ v86_exc_c:
         jnz     .nogp
 ; Otherwise we can safely access byte at CS:IP
 ; (because it is #GP, not #PF handler)
-; Если бы мы могли схлопотать исключение только из-за чтения байтов кода,
-; мы бы его уже схлопотали и это было бы не #GP
+; ╨Х╤Б╨╗╨╕ ╨▒╤Л ╨╝╤Л ╨╝╨╛╨│╨╗╨╕ ╤Б╤Е╨╗╨╛╨┐╨╛╤В╨░╤В╤М ╨╕╤Б╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╤В╨╛╨╗╤М╨║╨╛ ╨╕╨╖-╨╖╨░ ╤З╤В╨╡╨╜╨╕╤П ╨▒╨░╨╣╤В╨╛╨▓ ╨║╨╛╨┤╨░,
+; ╨╝╤Л ╨▒╤Л ╨╡╨│╨╛ ╤Г╨╢╨╡ ╤Б╤Е╨╗╨╛╨┐╨╛╤В╨░╨╗╨╕ ╨╕ ╤Н╤В╨╛ ╨▒╤Л╨╗╨╛ ╨▒╤Л ╨╜╨╡ #GP
         movzx   esi, word [esp+v86_regs.cs]
         shl     esi, 4
         add     esi, [esp+v86_regs.eip]

@@ -164,7 +164,7 @@ endp
 proc strtoint_dec stdcall,strs
         pushad
         xor     edx, edx
-  ; Ї®ЁбЄ Є®­ж 
+  ; РїРѕРёСЃРє РєРѕРЅС†Р°
         mov     esi, [strs]
 @@:
         lodsb
@@ -180,7 +180,7 @@ proc strtoint_dec stdcall,strs
         dec     ebx
         or      ebx, ebx
         jz      @f
-        imul    ecx, ecx, 10; Ї®ап¤®Є
+        imul    ecx, ecx, 10; РїРѕСЂСЏРґРѕРє
         jmp     @b
 @@:
 

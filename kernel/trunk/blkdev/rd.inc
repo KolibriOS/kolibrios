@@ -346,10 +346,10 @@ uni2ansi_str:
         mov     al, '_'
         jmp     .doit
 .yo1:
-        mov     al, 'ğ'
+        mov     al, 0xF0 ; 'Ğ'
         jmp     .doit
 .yo2:
-        mov     al, 'ñ'
+        mov     al, 0xF1 ; 'Ñ‘'
         jmp     .doit
 .rus1:
 ; 0x410-0x43F -> 0x80-0xAF
@@ -389,9 +389,9 @@ ansi2uni_char:
 ; 0xF0 -> 0x401
 ; 0xF1 -> 0x451
 @@:
-        cmp     al, 'ğ'
+        cmp     al, 0xF0 ; 'Ğ'
         jz      .yo1
-        cmp     al, 'ñ'
+        cmp     al, 0xF1 ; 'Ñ‘'
         jz      .yo2
 .unk:
         mov     al, '_'         ; ah=0
@@ -411,16 +411,16 @@ char_toupper:
         jb      .ret
         cmp     al, 'z'
         jbe     .az
-        cmp     al, 'ñ'
+        cmp     al, 0xF1 ; 'Ñ‘'
         jz      .yo1
-        cmp     al, ' '
+        cmp     al, 0xA0 ; 'Ğ°'
         jb      .ret
-        cmp     al, 'à'
+        cmp     al, 0xE0 ; 'Ñ€'
         jb      .rus1
-        cmp     al, 'ï'
+        cmp     al, 0xEF ; 'Ñ'
         ja      .ret
 ; 0xE0-0xEF -> 0x90-0x9F
-        sub     al, 'à'-''
+        sub     al, 0xE0-0x90
 .ret:
         ret
 .rus1:

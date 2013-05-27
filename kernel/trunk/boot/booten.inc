@@ -89,11 +89,11 @@ save_quest db     "Remember current settings? [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
 end if
 
-_st db 186,'                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄ¿',13,10,0
-_r1 db 186,'                   ³  320x200  EGA/CGA 256 colors  ³ ³',13,10,0
-_r2 db 186,'                   ³  640x480  VGA 16 colors       ³ ³',13,10,0
-_rs db 186,'                   ³  ????x????@??  SVGA VESA      ³ ³',13,10,0
-_bt db 186,'                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÙ',13,10,0
+_st:latin1 'â•‘                   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”',13,10,0
+_r1:latin1 'â•‘                   â”‚  320x200  EGA/CGA 256 colors  â”‚ â”‚',13,10,0
+_r2:latin1 'â•‘                   â”‚  640x480  VGA 16 colors       â”‚ â”‚',13,10,0
+_rs:latin1 'â•‘                   â”‚  ????x????@??  SVGA VESA      â”‚ â”‚',13,10,0
+_bt:latin1 'â•‘                   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”˜',13,10,0
 
 remark1 db      "Default values were selected to match most of configurations, but not all.",0
 remark2 db      "If the system does not boot, try to disable the item [b].",0

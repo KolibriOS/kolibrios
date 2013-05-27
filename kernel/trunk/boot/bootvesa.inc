@@ -78,7 +78,7 @@ virtual at $A000
   mi VBE_ModeInfo
 modes_table:
 end virtual
-cursor_pos  dw 0         ;временное хранение курсора.
+cursor_pos  dw 0         ;РІСЂРµРјРµРЅРЅРѕРµ С…СЂР°РЅРµРЅРёРµ РєСѓСЂСЃРѕСЂР°.
 home_cursor dw 0    ;current shows rows a table
 end_cursor  dw 0     ;end of position current shows rows a table
 scroll_start dw 0    ;start position of scroll bar
@@ -189,7 +189,7 @@ calc_vmodes_table:
         lfs     si, [es:vi.VideoModePtr]
 
         mov     bx, modes_table
-;save no vesa mode of work 320x200, EGA/CGA 256 жўҐв®ў and 640x480, VGA 16 жўҐв®ў
+;save no vesa mode of work 320x200, EGA/CGA 256 Р¶СћТђРІВ®Сћ and 640x480, VGA 16 Р¶СћТђРІВ®Сћ
         mov     word [es:bx], 640
         mov     word [es:bx+2], 480
         mov     word [es:bx+6], 0x13

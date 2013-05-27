@@ -84,6 +84,7 @@ debug_direct_print equ 0
 include "proc32.inc"
 include "kglobals.inc"
 include "lang.inc"
+include "encoding.inc"
 
 include "const.inc"
 max_processes    equ   255
@@ -494,9 +495,9 @@ no_mode_0x12:
 
         ; !!!! It`s dirty hack, fix it !!!
         ; Bits of EDX :
-        ; Bit 31Ц16 During the SYSRET instruction, this field is copied into the CS register
+        ; Bit 31тАУ16 During the SYSRET instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
-        ; Bit 15Ц0 During the SYSCALL instruction, this field is copied into the CS register
+        ; Bit 15тАУ0 During the SYSCALL instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
 
         ; mov   edx, (os_code + 16) * 65536 + os_code
@@ -3337,8 +3338,8 @@ sys_sheduler:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
         ; Fast Call MSR can't be destroy
-        ; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
-        ; включаются/выключаются расширенные возможности
+        ; ╨Э╨╛ MSR_AMD_EFER ╨╝╨╛╨╢╨╜╨╛ ╨╕╨╖╨╝╨╡╨╜╤П╤В╤М, ╤В.╨║. ╨▓ ╤Н╤В╨╛╨╝ ╤А╨╡╨│╨╕╤Б╤В╤А╨╡ ╨╗╨╕╤И
+        ; ╨▓╨║╨╗╤О╤З╨░╤О╤В╤Б╤П/╨▓╤Л╨║╨╗╤О╤З╨░╤О╤В╤Б╤П ╤А╨░╤Б╤И╨╕╤А╨╡╨╜╨╜╤Л╨╡ ╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛╤Б╤В╨╕
         cmp     edx, MSR_SYSENTER_CS
         je      @f
         cmp     edx, MSR_SYSENTER_ESP

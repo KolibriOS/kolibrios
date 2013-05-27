@@ -49,43 +49,43 @@ keymap_alt:
 
 
 if lang eq ru
-  boot_initirq      db   'Инициализация IRQ',0
-  boot_picinit      db   'Инициализация PIC',0
-  boot_v86machine   db   'Инициализация системы V86 машины',0
-  boot_inittimer    db   'Инициализация системного таймера (IRQ0)',0
-  boot_initapic     db   'Попытка инициализации APIC',0
-  boot_enableirq    db   'Включить прерывания 2, 6, 13, 14, 15',0
-  boot_enablint_ide db   'Разрешение прерываний в контроллере IDE',0
-  boot_detectfloppy db   'Поиск floppy дисководов',0
-  boot_detecthdcd   db   'Поиск жестких дисков и ATAPI приводов',0
-  boot_getcache     db   'Получение памяти для кэша',0
-  boot_detectpart   db   'Поиск разделов на дисковых устройствах',0
-  boot_init_sys     db   'Инициализация системного каталога /sys',0
-  boot_loadlibs     db   'Загрузка библиотек (.obj)',0
-  boot_memdetect    db   'Количество оперативной памяти','     ',' Мб',0
-  boot_tss          db   'Установка TSSs',0
-  boot_cpuid        db   'Чтение CPUIDs',0
-;  boot_devices      db   'Поиск устройств',0
-  boot_timer        db   'Установка таймера',0
-  boot_irqs         db   'Переопределение IRQ',0
-  boot_setmouse     db   'Установка мыши',0
-  boot_windefs      db   'Установка настроек окон по умолчанию',0
-  boot_bgr          db   'Установка фона',0
-  boot_resirqports  db   'Резервирование IRQ и портов',0
-  boot_setrports    db   'Установка адресов IRQ',0
-  boot_setostask    db   'Создание процесса ядра',0
-  boot_allirqs      db   'Открытие всех IRQ',0
-  boot_tsc          db   'Чтение TSC',0
-  boot_cpufreq      db   'Частота процессора ','    ',' МГц',0
-  boot_pal_ega      db   'Установка EGA/CGA 320x200 палитры',0
-  boot_pal_vga      db   'Установка VGA 640x480 палитры',0
-  boot_failed       db   'Загрузка первого приложения не удалась',0
-  boot_mtrr         db   'Установка MTRR',0
+  boot_initirq:     cp866 '╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П IRQ',0
+  boot_picinit:     cp866 '╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П PIC',0
+  boot_v86machine:  cp866 '╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П ╤Б╨╕╤Б╤В╨╡╨╝╤Л V86 ╨╝╨░╤И╨╕╨╜╤Л',0
+  boot_inittimer:   cp866 '╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П ╤Б╨╕╤Б╤В╨╡╨╝╨╜╨╛╨│╨╛ ╤В╨░╨╣╨╝╨╡╤А╨░ (IRQ0)',0
+  boot_initapic:    cp866 '╨Я╨╛╨┐╤Л╤В╨║╨░ ╨╕╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╨╕ APIC',0
+  boot_enableirq:   cp866 '╨Т╨║╨╗╤О╤З╨╕╤В╤М ╨┐╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╤П 2, 6, 13, 14, 15',0
+  boot_enablint_ide:cp866 '╨а╨░╨╖╤А╨╡╤И╨╡╨╜╨╕╨╡ ╨┐╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╨╣ ╨▓ ╨║╨╛╨╜╤В╤А╨╛╨╗╨╗╨╡╤А╨╡ IDE',0
+  boot_detectfloppy:cp866 '╨Я╨╛╨╕╤Б╨║ floppy ╨┤╨╕╤Б╨║╨╛╨▓╨╛╨┤╨╛╨▓',0
+  boot_detecthdcd:  cp866 '╨Я╨╛╨╕╤Б╨║ ╨╢╨╡╤Б╤В╨║╨╕╤Е ╨┤╨╕╤Б╨║╨╛╨▓ ╨╕ ATAPI ╨┐╤А╨╕╨▓╨╛╨┤╨╛╨▓',0
+  boot_getcache:    cp866 '╨Я╨╛╨╗╤Г╤З╨╡╨╜╨╕╨╡ ╨┐╨░╨╝╤П╤В╨╕ ╨┤╨╗╤П ╨║╤Н╤И╨░',0
+  boot_detectpart:  cp866 '╨Я╨╛╨╕╤Б╨║ ╤А╨░╨╖╨┤╨╡╨╗╨╛╨▓ ╨╜╨░ ╨┤╨╕╤Б╨║╨╛╨▓╤Л╤Е ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░╤Е',0
+  boot_init_sys:    cp866 '╨Ш╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П ╤Б╨╕╤Б╤В╨╡╨╝╨╜╨╛╨│╨╛ ╨║╨░╤В╨░╨╗╨╛╨│╨░ /sys',0
+  boot_loadlibs:    cp866 '╨Ч╨░╨│╤А╤Г╨╖╨║╨░ ╨▒╨╕╨▒╨╗╨╕╨╛╤В╨╡╨║ (.obj)',0
+  boot_memdetect:   cp866 '╨Ъ╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨╛╨┐╨╡╤А╨░╤В╨╕╨▓╨╜╨╛╨╣ ╨┐╨░╨╝╤П╤В╨╕','     ',' ╨Ь╨▒',0
+  boot_tss:         cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ TSSs',0
+  boot_cpuid:       cp866 '╨з╤В╨╡╨╜╨╕╨╡ CPUIDs',0
+;  boot_devices:     cp866 '╨Я╨╛╨╕╤Б╨║ ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓',0
+  boot_timer:       cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╤В╨░╨╣╨╝╨╡╤А╨░',0
+  boot_irqs:        cp866 '╨Я╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╨╡ IRQ',0
+  boot_setmouse:    cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨╝╤Л╤И╨╕',0
+  boot_windefs:     cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨╜╨░╤Б╤В╤А╨╛╨╡╨║ ╨╛╨║╨╛╨╜ ╨┐╨╛ ╤Г╨╝╨╛╨╗╤З╨░╨╜╨╕╤О',0
+  boot_bgr:         cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╤Д╨╛╨╜╨░',0
+  boot_resirqports: cp866 '╨а╨╡╨╖╨╡╤А╨▓╨╕╤А╨╛╨▓╨░╨╜╨╕╨╡ IRQ ╨╕ ╨┐╨╛╤А╤В╨╛╨▓',0
+  boot_setrports:   cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨░╨┤╤А╨╡╤Б╨╛╨▓ IRQ',0
+  boot_setostask:   cp866 '╨б╨╛╨╖╨┤╨░╨╜╨╕╨╡ ╨┐╤А╨╛╤Ж╨╡╤Б╤Б╨░ ╤П╨┤╤А╨░',0
+  boot_allirqs:     cp866 '╨Ю╤В╨║╤А╤Л╤В╨╕╨╡ ╨▓╤Б╨╡╤Е IRQ',0
+  boot_tsc:         cp866 '╨з╤В╨╡╨╜╨╕╨╡ TSC',0
+  boot_cpufreq:     cp866 '╨з╨░╤Б╤В╨╛╤В╨░ ╨┐╤А╨╛╤Ж╨╡╤Б╤Б╨╛╤А╨░ ','    ',' ╨Ь╨У╤Ж',0
+  boot_pal_ega:     cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ EGA/CGA 320x200 ╨┐╨░╨╗╨╕╤В╤А╤Л',0
+  boot_pal_vga:     cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ VGA 640x480 ╨┐╨░╨╗╨╕╤В╤А╤Л',0
+  boot_failed:      cp866 '╨Ч╨░╨│╤А╤Г╨╖╨║╨░ ╨┐╨╡╤А╨▓╨╛╨│╨╛ ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╤П ╨╜╨╡ ╤Г╨┤╨░╨╗╨░╤Б╤М',0
+  boot_mtrr:        cp866 '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ MTRR',0
 
-  boot_APIC_found   db   'APIC включен', 0
-  boot_APIC_nfound  db   'APIC не найден', 0
+  boot_APIC_found:  cp866 'APIC ╨▓╨║╨╗╤О╤З╨╡╨╜', 0
+  boot_APIC_nfound: cp866 'APIC ╨╜╨╡ ╨╜╨░╨╣╨┤╨╡╨╜', 0
 if preboot_blogesc
-  boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
+  boot_tasking:     cp866 '╨Т╤Б╨╡ ╨│╨╛╤В╨╛╨▓╨╛ ╨┤╨╗╤П ╨╖╨░╨┐╤Г╤Б╨║╨░, ╨╜╨░╨╢╨╝╨╕╤В╤А╨╡ ESC ╨┤╨╗╤П ╤Б╤В╨░╤А╤В╨░',0
 end if
 else if lang eq sp
   include 'data32sp.inc'
@@ -159,7 +159,7 @@ read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
-ud_user_message db 'Ошибка: неподдерживаемая инструкция процессора',0
+ud_user_message: cp866 '╨Ю╤И╨╕╨▒╨║╨░: ╨╜╨╡╨┐╨╛╨┤╨┤╨╡╤А╨╢╨╕╨▓╨░╨╡╨╝╨░╤П ╨╕╨╜╤Б╤В╤А╤Г╨║╤Ж╨╕╤П ╨┐╤А╨╛╤Ж╨╡╤Б╤Б╨╛╤А╨░',0
 else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if

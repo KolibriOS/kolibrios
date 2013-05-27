@@ -119,9 +119,9 @@ frfl6_1:
         call    read_flp_fat
         cmp     [FDC_Status], 0
         jne     fdc_status_error_3_1
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 1; Сторона
-        mov     [FDD_Sector], 2; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 1; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 2; РЎРµРєС‚РѕСЂ
         call    SeekTrack
         mov     dh, 14
 l.20_1:
@@ -253,9 +253,9 @@ read_flp_root:
         jne     unnecessary_root_read
         cmp     [root_read], 1
         je      unnecessary_root_read
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 1; Сторона
-        mov     [FDD_Sector], 2; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 1; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 2; РЎРµРєС‚РѕСЂ
         mov     edi, FLOPPY_BUFF
         call    SeekTrack
 read_flp_root_1:
@@ -282,9 +282,9 @@ read_flp_fat:
         jne     unnecessary_flp_fat
         cmp     [flp_fat], 1
         je      unnecessary_flp_fat
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 0; Сторона
-        mov     [FDD_Sector], 2; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 0; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 2; РЎРµРєС‚РѕСЂ
         mov     edi, FLOPPY_BUFF
         call    SeekTrack
 read_flp_fat_1:
@@ -351,9 +351,9 @@ calculatefatchain_flp:
 
 check_label:
         pushad
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 0; Сторона
-        mov     [FDD_Sector], 1; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 0; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 1; РЎРµРєС‚РѕСЂ
         call    SetUserInterrupts
         call    FDDMotorON
         call    RecalibrateFDD
@@ -392,9 +392,9 @@ save_flp_root:
         jne     unnecessary_root_save
         cmp     [root_read], 0
         je      unnecessary_root_save
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 1; Сторона
-        mov     [FDD_Sector], 2; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 1; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 2; РЎРµРєС‚РѕСЂ
         mov     esi, FLOPPY_BUFF
         call    SeekTrack
 save_flp_root_1:
@@ -421,9 +421,9 @@ save_flp_fat:
         cmp     [flp_fat], 0
         je      unnecessary_flp_fat_save
         call    restorefatchain_flp
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 0; Сторона
-        mov     [FDD_Sector], 2; Сектор
+        mov     [FDD_Track], 0; Р¦РёР»РёРЅРґСЂ
+        mov     [FDD_Head], 0; РЎС‚РѕСЂРѕРЅР°
+        mov     [FDD_Sector], 2; РЎРµРєС‚РѕСЂ
         mov     esi, FLOPPY_BUFF
         call    SeekTrack
 save_flp_fat_1:

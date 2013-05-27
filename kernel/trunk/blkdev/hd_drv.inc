@@ -109,28 +109,28 @@ hd_read_pio:
         xor     eax, eax
         mov     edx, [hdbase]
         inc     edx
-        out     dx, al; ATAFeatures ‡•£®·‚‡ "Æ·Æ°•≠≠Æ·‚•©"
+        out     dx, al; ATAFeatures —Ä–µ–≥–∏—Å—Ç—Ä "–æ—Å–æ–±–µ–Ω–Ω–æ—Å—Ç–µ–π"
         inc     edx
         inc     eax
-        out     dx, al; ATASectorCount ·ÁÒ‚Á®™ ·•™‚Æ‡Æ¢
+        out     dx, al; ATASectorCount —Å—á—ë—Ç—á–∏–∫ —Å–µ–∫—Ç–æ—Ä–æ–≤
         inc     edx
         mov     eax, [esp+4]
-        out     dx, al; ATASectorNumber ‡•£®·‚‡ ≠Æ¨•‡† ·•™‚Æ‡†
+        out     dx, al; ATASectorNumber —Ä–µ–≥–∏—Å—Ç—Ä –Ω–æ–º–µ—Ä–∞ —Å–µ–∫—Ç–æ—Ä–∞
         shr     eax, 8
         inc     edx
-        out     dx, al; ATACylinder ≠Æ¨•‡ Ê®´®≠§‡† (¨´†§Ë®© °†©‚)
+        out     dx, al; ATACylinder –Ω–æ–º–µ—Ä —Ü–∏–ª–∏–Ω–¥—Ä–∞ (–º–ª–∞–¥—à–∏–π –±–∞–π—Ç)
         shr     eax, 8
         inc     edx
-        out     dx, al; ≠Æ¨•‡ Ê®´®≠§‡† (·‚†‡Ë®© °†©‚)
+        out     dx, al; –Ω–æ–º–µ—Ä —Ü–∏–ª–∏–Ω–¥—Ä–∞ (—Å—Ç–∞—Ä—à–∏–π –±–∞–π—Ç)
         shr     eax, 8
         inc     edx
         and     al, 1+2+4+8
         add     al, byte [hdid]
         add     al, 128+64+32
-        out     dx, al; ≠Æ¨•‡ £Æ´Æ¢™®/≠Æ¨•‡ §®·™†
+        out     dx, al; –Ω–æ–º–µ—Ä –≥–æ–ª–æ–≤–∫–∏/–Ω–æ–º–µ—Ä –¥–∏—Å–∫–∞
         inc     edx
         mov     al, 20h
-        out     dx, al; ATACommand ‡•£®·‚‡ ™Æ¨†≠§
+        out     dx, al; ATACommand —Ä–µ–≥–∏—Å—Ç—Ä –∫–æ–º–∞–Ω–¥
         sti
 
         call    wait_for_sector_buffer

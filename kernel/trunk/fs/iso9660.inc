@@ -137,7 +137,7 @@ fs_CdRead:
 .l1:
         push    ecx edx
         push    0
-        mov     eax, [edi+10] ; ðåàëüíûé ðàçìåð ôàéëîâîé ñåêöèè
+        mov     eax, [edi+10] ; Ñ€ÐµÐ°Ð»ÑŒÐ½Ñ‹Ð¹ Ñ€Ð°Ð·Ð¼ÐµÑ€ Ñ„Ð°Ð¹Ð»Ð¾Ð²Ð¾Ð¹ ÑÐµÐºÑ†Ð¸Ð¸
         sub     eax, ebx
         jb      .eof
         cmp     eax, ecx
@@ -159,7 +159,7 @@ fs_CdRead:
         jb      .incomplete_sector
 ; we may read and memmove complete sector
         mov     [CDDataBuf_pointer], edx
-        call    ReadCDWRetr; ÷èòàåì ñåêòîð ôàéëà
+        call    ReadCDWRetr; Ñ‡Ð¸Ñ‚Ð°ÐµÐ¼ ÑÐµÐºÑ‚Ð¾Ñ€ Ñ„Ð°Ð¹Ð»Ð°
         cmp     [DevErrorCode], 0
         jne     .noaccess_3
         add     edx, 2048
@@ -170,7 +170,7 @@ fs_CdRead:
 .incomplete_sector:
 ; we must read and memmove incomplete sector
         mov     [CDDataBuf_pointer], CDDataBuf
-        call    ReadCDWRetr; ÷èòàåì ñåêòîð ôàéëà
+        call    ReadCDWRetr; Ñ‡Ð¸Ñ‚Ð°ÐµÐ¼ ÑÐµÐºÑ‚Ð¾Ñ€ Ñ„Ð°Ð¹Ð»Ð°
         cmp     [DevErrorCode], 0
         jne     .noaccess_3
         push    ecx
@@ -240,7 +240,7 @@ fs_CdReadFolder:
 .found_dir:
         mov     eax, [edi+2]    ; eax=cluster
         mov     [CDSectorAddress], eax
-        mov     eax, [edi+10]   ; ðàçìåð äèðåêòðîðèè
+        mov     eax, [edi+10]   ; Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð´Ð¸Ñ€ÐµÐºÑ‚Ñ€Ð¾Ñ€Ð¸Ð¸
 .doit:
 ; init header
         push    eax ecx
@@ -252,7 +252,7 @@ fs_CdReadFolder:
         mov     byte [edx], 1   ; version
         mov     [cd_mem_location], edx
         add     [cd_mem_location], 32
-; íà÷èíàåì ïåðåáðîñêó ÁÄÂÊ â ÓÑÂÊ
+; Ð½Ð°Ñ‡Ð¸Ð½Ð°ÐµÐ¼ Ð¿ÐµÑ€ÐµÐ±Ñ€Ð¾ÑÐºÑƒ Ð‘Ð”Ð’Ðš Ð² Ð£Ð¡Ð’Ðš
 ;.mainloop:
         mov     [cd_counter_block], dword 0
         dec     dword [CDSectorAddress]
@@ -260,12 +260,12 @@ fs_CdReadFolder:
 .read_to_buffer:
         inc     dword [CDSectorAddress]
         mov     [CDDataBuf_pointer], CDDataBuf
-        call    ReadCDWRetr         ; ÷èòàåì ñåêòîð äèðåêòîðèè
+        call    ReadCDWRetr         ; Ñ‡Ð¸Ñ‚Ð°ÐµÐ¼ ÑÐµÐºÑ‚Ð¾Ñ€ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ð¸
         cmp     [DevErrorCode], 0
         jne     .noaccess_1
         call    .get_names_from_buffer
         sub     eax, 2048
-; äèðåêòîðèÿ çàêîí÷èëàñü?
+; Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ñ Ð·Ð°ÐºÐ¾Ð½Ñ‡Ð¸Ð»Ð°ÑÑŒ?
         ja      .read_to_buffer
         mov     edi, [cd_counter_block]
         mov     [edx+8], edi
@@ -310,17 +310,17 @@ fs_CdReadFolder:
         call    uni2ansi_char
         cld
         stosb
-; ïðîâåðêà êîíöà ôàéëà
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÐºÐ¾Ð½Ñ†Ð° Ñ„Ð°Ð¹Ð»Ð°
         mov     ax, [esi]
-        cmp     ax, word 3B00h; ñåïàðàòîð êîíöà ôàéëà ';'
+        cmp     ax, word 3B00h; ÑÐµÐ¿Ð°Ñ€Ð°Ñ‚Ð¾Ñ€ ÐºÐ¾Ð½Ñ†Ð° Ñ„Ð°Ð¹Ð»Ð° ';'
         je      .cd_get_parameters_of_file_1
-; ïðîâåðêà äëÿ ôàéëîâ íå çàêàí÷èâàþùèõñÿ ñåïàðàòîðîì
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð´Ð»Ñ Ñ„Ð°Ð¹Ð»Ð¾Ð² Ð½Ðµ Ð·Ð°ÐºÐ°Ð½Ñ‡Ð¸Ð²Ð°ÑŽÑ‰Ð¸Ñ…ÑÑ ÑÐµÐ¿Ð°Ñ€Ð°Ñ‚Ð¾Ñ€Ð¾Ð¼
         movzx   eax, byte [ebp-33]
         add     eax, ebp
         sub     eax, 34
         cmp     esi, eax
         je      .cd_get_parameters_of_file_1
-; ïðîâåðêà êîíöà ïàïêè
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÐºÐ¾Ð½Ñ†Ð° Ð¿Ð°Ð¿ÐºÐ¸
         movzx   eax, byte [ebp-1]
         add     eax, ebp
         cmp     esi, eax
@@ -347,17 +347,17 @@ fs_CdReadFolder:
         jbe     .unicode_parent_directory
         cld
         movsw
-; ïðîâåðêà êîíöà ôàéëà
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÐºÐ¾Ð½Ñ†Ð° Ñ„Ð°Ð¹Ð»Ð°
         mov     ax, [esi]
-        cmp     ax, word 3B00h; ñåïàðàòîð êîíöà ôàéëà ';'
+        cmp     ax, word 3B00h; ÑÐµÐ¿Ð°Ñ€Ð°Ñ‚Ð¾Ñ€ ÐºÐ¾Ð½Ñ†Ð° Ñ„Ð°Ð¹Ð»Ð° ';'
         je      .cd_get_parameters_of_file_2
-; ïðîâåðêà äëÿ ôàéëîâ íå çàêàí÷èâàþùèõñÿ ñåïàðàòîðîì
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð´Ð»Ñ Ñ„Ð°Ð¹Ð»Ð¾Ð² Ð½Ðµ Ð·Ð°ÐºÐ°Ð½Ñ‡Ð¸Ð²Ð°ÑŽÑ‰Ð¸Ñ…ÑÑ ÑÐµÐ¿Ð°Ñ€Ð°Ñ‚Ð¾Ñ€Ð¾Ð¼
         movzx   eax, byte [ebp-33]
         add     eax, ebp
         sub     eax, 34
         cmp     esi, eax
         je      .cd_get_parameters_of_file_2
-; ïðîâåðêà êîíöà ïàïêè
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÐºÐ¾Ð½Ñ†Ð° Ð¿Ð°Ð¿ÐºÐ¸
         movzx   eax, byte [ebp-1]
         add     eax, ebp
         cmp     esi, eax
@@ -386,60 +386,60 @@ fs_CdReadFolder:
 cd_get_parameters_of_file:
         mov     edi, [cd_mem_location]
 cd_get_parameters_of_file_1:
-; ïîëó÷àåì àòðèáóòû ôàéëà
+; Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ð°Ñ‚Ñ€Ð¸Ð±ÑƒÑ‚Ñ‹ Ñ„Ð°Ð¹Ð»Ð°
         xor     eax, eax
-; ôàéë íå àðõèâèðîâàëñÿ
+; Ñ„Ð°Ð¹Ð» Ð½Ðµ Ð°Ñ€Ñ…Ð¸Ð²Ð¸Ñ€Ð¾Ð²Ð°Ð»ÑÑ
         inc     eax
         shl     eax, 1
-; ýòî êàòàëîã?
+; ÑÑ‚Ð¾ ÐºÐ°Ñ‚Ð°Ð»Ð¾Ð³?
         test    [ebp-8], byte 2
         jz      .file
         inc     eax
 .file:
-; ìåòêà òîìà íå êàê â FAT, â ýòîì âèäå îòñóòñâóåò
-; ôàéë íå ÿâëÿåòñÿ ñèñòåìíûì
+; Ð¼ÐµÑ‚ÐºÐ° Ñ‚Ð¾Ð¼Ð° Ð½Ðµ ÐºÐ°Ðº Ð² FAT, Ð² ÑÑ‚Ð¾Ð¼ Ð²Ð¸Ð´Ðµ Ð¾Ñ‚ÑÑƒÑ‚ÑÐ²ÑƒÐµÑ‚
+; Ñ„Ð°Ð¹Ð» Ð½Ðµ ÑÐ²Ð»ÑÐµÑ‚ÑÑ ÑÐ¸ÑÑ‚ÐµÐ¼Ð½Ñ‹Ð¼
         shl     eax, 3
-; ôàéë ÿâëÿåòñÿ ñêðûòûì? (àòðèáóò ñóùåñòâîâàíèå)
+; Ñ„Ð°Ð¹Ð» ÑÐ²Ð»ÑÐµÑ‚ÑÑ ÑÐºÑ€Ñ‹Ñ‚Ñ‹Ð¼? (Ð°Ñ‚Ñ€Ð¸Ð±ÑƒÑ‚ ÑÑƒÑ‰ÐµÑÑ‚Ð²Ð¾Ð²Ð°Ð½Ð¸Ðµ)
         test    [ebp-8], byte 1
         jz      .hidden
         inc     eax
 .hidden:
         shl     eax, 1
-; ôàéë âñåãäà òîëüêî äëÿ ÷òåíèÿ, òàê êàê ýòî CD
+; Ñ„Ð°Ð¹Ð» Ð²ÑÐµÐ³Ð´Ð° Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð´Ð»Ñ Ñ‡Ñ‚ÐµÐ½Ð¸Ñ, Ñ‚Ð°Ðº ÐºÐ°Ðº ÑÑ‚Ð¾ CD
         inc     eax
         mov     [edi], eax
-; ïîëó÷àåì âðåìÿ äëÿ ôàéëà
-;÷àñ
+; Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ð²Ñ€ÐµÐ¼Ñ Ð´Ð»Ñ Ñ„Ð°Ð¹Ð»Ð°
+;Ñ‡Ð°Ñ
         movzx   eax, byte [ebp-12]
         shl     eax, 8
-;ìèíóòà
+;Ð¼Ð¸Ð½ÑƒÑ‚Ð°
         mov     al, [ebp-11]
         shl     eax, 8
-;ñåêóíäà
+;ÑÐµÐºÑƒÐ½Ð´Ð°
         mov     al, [ebp-10]
-;âðåìÿ ñîçäàíèÿ ôàéëà
+;Ð²Ñ€ÐµÐ¼Ñ ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð°
         mov     [edi+8], eax
-;âðåìÿ ïîñëåäíåãî äîñòóïà
+;Ð²Ñ€ÐµÐ¼Ñ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ³Ð¾ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð°
         mov     [edi+16], eax
-;âðåìÿ ïîñëåäíåé çàïèñè
+;Ð²Ñ€ÐµÐ¼Ñ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ¹ Ð·Ð°Ð¿Ð¸ÑÐ¸
         mov     [edi+24], eax
-; ïîëó÷àåì äàòó äëÿ ôàéëà
-;ãîä
+; Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ð´Ð°Ñ‚Ñƒ Ð´Ð»Ñ Ñ„Ð°Ð¹Ð»Ð°
+;Ð³Ð¾Ð´
         movzx   eax, byte [ebp-15]
         add     eax, 1900
         shl     eax, 8
-;ìåñÿö
+;Ð¼ÐµÑÑÑ†
         mov     al, [ebp-14]
         shl     eax, 8
-;äåíü
+;Ð´ÐµÐ½ÑŒ
         mov     al, [ebp-13]
-;äàòà ñîçäàíèÿ ôàéëà
+;Ð´Ð°Ñ‚Ð° ÑÐ¾Ð·Ð´Ð°Ð½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð°
         mov     [edi+12], eax
-;âðåìÿ ïîñëåäíåãî äîñòóïà
+;Ð²Ñ€ÐµÐ¼Ñ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ³Ð¾ Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð°
         mov     [edi+20], eax
-;âðåìÿ ïîñëåäíåé çàïèñè
+;Ð²Ñ€ÐµÐ¼Ñ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ¹ Ð·Ð°Ð¿Ð¸ÑÐ¸
         mov     [edi+28], eax
-; ïîëó÷àåì òèï äàííûõ èìåíè
+; Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ñ‚Ð¸Ð¿ Ð´Ð°Ð½Ð½Ñ‹Ñ… Ð¸Ð¼ÐµÐ½Ð¸
         xor     eax, eax
         test    dword [ebx+4], 1; 0=ANSI, 1=UNICODE
         jnz     .unicode_1
@@ -449,7 +449,7 @@ cd_get_parameters_of_file_1:
         inc     eax
         mov     [edi+4], eax
 @@:
-; ïîëó÷àåì ðàçìåð ôàéëà â áàéòàõ
+; Ð¿Ð¾Ð»ÑƒÑ‡Ð°ÐµÐ¼ Ñ€Ð°Ð·Ð¼ÐµÑ€ Ñ„Ð°Ð¹Ð»Ð° Ð² Ð±Ð°Ð¹Ñ‚Ð°Ñ…
         xor     eax, eax
         mov     [edi+32+4], eax
         mov     eax, [ebp-23]
@@ -503,21 +503,21 @@ cd_find_lfn:
 ; out: CF=1 - file not found
 ; else CF=0 and [cd_current_pointer_of_input] direntry
         push    eax esi
-; 16 ñåêòîð íà÷àëî íàáîðà äåñêðèïòîðîâ òîìîâ
+; 16 ÑÐµÐºÑ‚Ð¾Ñ€ Ð½Ð°Ñ‡Ð°Ð»Ð¾ Ð½Ð°Ð±Ð¾Ñ€Ð° Ð´ÐµÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ñ€Ð¾Ð² Ñ‚Ð¾Ð¼Ð¾Ð²
 
         call    WaitUnitReady
         cmp     [DevErrorCode], 0
         jne     .access_denied
 
         call    prevent_medium_removal
-; òåñòîâîå ÷òåíèå
+; Ñ‚ÐµÑÑ‚Ð¾Ð²Ð¾Ðµ Ñ‡Ñ‚ÐµÐ½Ð¸Ðµ
         mov     [CDSectorAddress], dword 16
         mov     [CDDataBuf_pointer], CDDataBuf
         call    ReadCDWRetr;_1
         cmp     [DevErrorCode], 0
         jne     .access_denied
 
-; âû÷èñëåíèå ïîñëåäíåé ñåññèè
+; Ð²Ñ‹Ñ‡Ð¸ÑÐ»ÐµÐ½Ð¸Ðµ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐ¹ ÑÐµÑÑÐ¸Ð¸
         call    WaitUnitReady
         cmp     [DevErrorCode], 0
         jne     .access_denied
@@ -539,37 +539,37 @@ cd_find_lfn:
         jne     .access_denied
 
 .start_check:
-; ïðîâåðêà íà âøèâîñòü
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð½Ð° Ð²ÑˆÐ¸Ð²Ð¾ÑÑ‚ÑŒ
         cmp     [CDDataBuf+1], dword 'CD00'
         jne     .access_denied
         cmp     [CDDataBuf+5], byte '1'
         jne     .access_denied
-; ñåêòîð ÿâëÿåòñÿ òåðìèíàòîðîì íàáîð äåñêðèïòîðîâ òîìîâ?
+; ÑÐµÐºÑ‚Ð¾Ñ€ ÑÐ²Ð»ÑÐµÑ‚ÑÑ Ñ‚ÐµÑ€Ð¼Ð¸Ð½Ð°Ñ‚Ð¾Ñ€Ð¾Ð¼ Ð½Ð°Ð±Ð¾Ñ€ Ð´ÐµÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ñ€Ð¾Ð² Ñ‚Ð¾Ð¼Ð¾Ð²?
         cmp     [CDDataBuf], byte 0xff
         je      .access_denied
-; ñåêòîð ÿâëÿåòñÿ äîïîëíèòåëüíûì è óëó÷øåííûì äåñêðèïòîðîì òîìà?
+; ÑÐµÐºÑ‚Ð¾Ñ€ ÑÐ²Ð»ÑÐµÑ‚ÑÑ Ð´Ð¾Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¼ Ð¸ ÑƒÐ»ÑƒÑ‡ÑˆÐµÐ½Ð½Ñ‹Ð¼ Ð´ÐµÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ñ€Ð¾Ð¼ Ñ‚Ð¾Ð¼Ð°?
         cmp     [CDDataBuf], byte 0x2
         jne     .start
-; ñåêòîð ÿâëÿåòñÿ äîïîëíèòåëüíûì äåñêðèïòîðîì òîìà?
+; ÑÐµÐºÑ‚Ð¾Ñ€ ÑÐ²Ð»ÑÐµÑ‚ÑÑ Ð´Ð¾Ð¿Ð¾Ð»Ð½Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ð¼ Ð´ÐµÑÐºÑ€Ð¸Ð¿Ñ‚Ð¾Ñ€Ð¾Ð¼ Ñ‚Ð¾Ð¼Ð°?
         cmp     [CDDataBuf+6], byte 0x1
         jne     .start
 
-; ïàðàìåòðû root äèðåêòðîðèè
-        mov     eax, [CDDataBuf+0x9c+2]; íà÷àëî root äèðåêòðîðèè
+; Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ root Ð´Ð¸Ñ€ÐµÐºÑ‚Ñ€Ð¾Ñ€Ð¸Ð¸
+        mov     eax, [CDDataBuf+0x9c+2]; Ð½Ð°Ñ‡Ð°Ð»Ð¾ root Ð´Ð¸Ñ€ÐµÐºÑ‚Ñ€Ð¾Ñ€Ð¸Ð¸
         mov     [CDSectorAddress], eax
-        mov     eax, [CDDataBuf+0x9c+10]; ðàçìåð root äèðåêòðîðèè
+        mov     eax, [CDDataBuf+0x9c+10]; Ñ€Ð°Ð·Ð¼ÐµÑ€ root Ð´Ð¸Ñ€ÐµÐºÑ‚Ñ€Ð¾Ñ€Ð¸Ð¸
         cmp     byte [esi], 0
         jnz     @f
         mov     [cd_current_pointer_of_input], CDDataBuf+0x9c
         jmp     .done
 @@:
-; íà÷èíàåì ïîèñê
+; Ð½Ð°Ñ‡Ð¸Ð½Ð°ÐµÐ¼ Ð¿Ð¾Ð¸ÑÐº
 .mainloop:
         dec     dword [CDSectorAddress]
 .read_to_buffer:
         inc     dword [CDSectorAddress]
         mov     [CDDataBuf_pointer], CDDataBuf
-        call    ReadCDWRetr      ; ÷èòàåì ñåêòîð äèðåêòîðèè
+        call    ReadCDWRetr      ; Ñ‡Ð¸Ñ‚Ð°ÐµÐ¼ ÑÐµÐºÑ‚Ð¾Ñ€ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ð¸
         cmp     [DevErrorCode], 0
         jne     .access_denied
         push    ebp
@@ -577,27 +577,27 @@ cd_find_lfn:
         pop     ebp
         jnc     .found
         sub     eax, 2048
-; äèðåêòîðèÿ çàêîí÷èëàñü?
+; Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ñ Ð·Ð°ÐºÐ¾Ð½Ñ‡Ð¸Ð»Ð°ÑÑŒ?
         cmp     eax, 0
         ja      .read_to_buffer
-; íåò èñêîìîãî ýëåìåíòà öåïî÷êè
+; Ð½ÐµÑ‚ Ð¸ÑÐºÐ¾Ð¼Ð¾Ð³Ð¾ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð° Ñ†ÐµÐ¿Ð¾Ñ‡ÐºÐ¸
 .access_denied:
         pop     esi eax
         mov     [cd_appl_data], 1
         stc
         ret
-; èñêîìûé ýëåìåíò öåïî÷êè íàéäåí
+; Ð¸ÑÐºÐ¾Ð¼Ñ‹Ð¹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚ Ñ†ÐµÐ¿Ð¾Ñ‡ÐºÐ¸ Ð½Ð°Ð¹Ð´ÐµÐ½
   .found:
-; êîíåö ïóòè ôàéëà
+; ÐºÐ¾Ð½ÐµÑ† Ð¿ÑƒÑ‚Ð¸ Ñ„Ð°Ð¹Ð»Ð°
         cmp     byte [esi-1], 0
         jz      .done
   .nested:
         mov     eax, [cd_current_pointer_of_input]
         push    dword [eax+2]
-        pop     dword [CDSectorAddress]       ; íà÷àëî äèðåêòîðèè
-        mov     eax, [eax+2+8]; ðàçìåð äèðåêòîðèè
+        pop     dword [CDSectorAddress]       ; Ð½Ð°Ñ‡Ð°Ð»Ð¾ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ð¸
+        mov     eax, [eax+2+8]; Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð´Ð¸Ñ€ÐµÐºÑ‚Ð¾Ñ€Ð¸Ð¸
         jmp     .mainloop
-; óêàçàòåëü ôàéëà íàéäåí
+; ÑƒÐºÐ°Ð·Ð°Ñ‚ÐµÐ»ÑŒ Ñ„Ð°Ð¹Ð»Ð° Ð½Ð°Ð¹Ð´ÐµÐ½
    .done:
         test    ebp, ebp
         jz      @f
@@ -629,13 +629,13 @@ cd_get_name:
         mov     ebp, [cd_current_pointer_of_input_2]
         mov     [cd_current_pointer_of_input], ebp
         mov     eax, [ebp]
-        test    eax, eax ; âõîäû çàêîí÷èëèñü?
+        test    eax, eax ; Ð²Ñ…Ð¾Ð´Ñ‹ Ð·Ð°ÐºÐ¾Ð½Ñ‡Ð¸Ð»Ð¸ÑÑŒ?
         jz      .next_sector
-        cmp     ebp, CDDataBuf+2048  ; áóôåð çàêîí÷èëñÿ?
+        cmp     ebp, CDDataBuf+2048  ; Ð±ÑƒÑ„ÐµÑ€ Ð·Ð°ÐºÐ¾Ð½Ñ‡Ð¸Ð»ÑÑ?
         jae     .next_sector
         movzx   eax, byte [ebp]
-        add     [cd_current_pointer_of_input_2], eax; ñëåäóþùèé âõîä êàòàëîãà
-        add     ebp, 33; óêàçàòåëü óñòàíîâëåí íà íà÷àëî èìåíè
+        add     [cd_current_pointer_of_input_2], eax; ÑÐ»ÐµÐ´ÑƒÑŽÑ‰Ð¸Ð¹ Ð²Ñ…Ð¾Ð´ ÐºÐ°Ñ‚Ð°Ð»Ð¾Ð³Ð°
+        add     ebp, 33; ÑƒÐºÐ°Ð·Ð°Ñ‚ÐµÐ»ÑŒ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²Ð»ÐµÐ½ Ð½Ð° Ð½Ð°Ñ‡Ð°Ð»Ð¾ Ð¸Ð¼ÐµÐ½Ð¸
         pop     eax
         clc
         ret
@@ -669,9 +669,9 @@ cd_compare_name:
         scasw
         jne     .name_not_coincide
 .coincides:
-        cmp     [esi], byte '/'; ðàçäåëèòåëü ïóòè, êîíåö èìåíè òåêóùåãî ýëåìåíòà
+        cmp     [esi], byte '/'; Ñ€Ð°Ð·Ð´ÐµÐ»Ð¸Ñ‚ÐµÐ»ÑŒ Ð¿ÑƒÑ‚Ð¸, ÐºÐ¾Ð½ÐµÑ† Ð¸Ð¼ÐµÐ½Ð¸ Ñ‚ÐµÐºÑƒÑ‰ÐµÐ³Ð¾ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð°
         je      .done
-        cmp     [esi], byte 0; ðàçäåëèòåëü ïóòè, êîíåö èìåíè òåêóùåãî ýëåìåíòà
+        cmp     [esi], byte 0; Ñ€Ð°Ð·Ð´ÐµÐ»Ð¸Ñ‚ÐµÐ»ÑŒ Ð¿ÑƒÑ‚Ð¸, ÐºÐ¾Ð½ÐµÑ† Ð¸Ð¼ÐµÐ½Ð¸ Ñ‚ÐµÐºÑƒÑ‰ÐµÐ³Ð¾ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð°
         je      .done
         jmp     .loop
 .name_not_coincide:
@@ -679,16 +679,16 @@ cd_compare_name:
         stc
         ret
 .done:
-; ïðîâåðêà êîíöà ôàéëà
-        cmp     [edi], word 3B00h; ñåïàðàòîð êîíöà ôàéëà ';'
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÐºÐ¾Ð½Ñ†Ð° Ñ„Ð°Ð¹Ð»Ð°
+        cmp     [edi], word 3B00h; ÑÐµÐ¿Ð°Ñ€Ð°Ñ‚Ð¾Ñ€ ÐºÐ¾Ð½Ñ†Ð° Ñ„Ð°Ð¹Ð»Ð° ';'
         je      .done_1
-; ïðîâåðêà äëÿ ôàéëîâ íå çàêàí÷èâàþùèõñÿ ñåïàðàòîðîì
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° Ð´Ð»Ñ Ñ„Ð°Ð¹Ð»Ð¾Ð² Ð½Ðµ Ð·Ð°ÐºÐ°Ð½Ñ‡Ð¸Ð²Ð°ÑŽÑ‰Ð¸Ñ…ÑÑ ÑÐµÐ¿Ð°Ñ€Ð°Ñ‚Ð¾Ñ€Ð¾Ð¼
         movzx   eax, byte [ebp-33]
         add     eax, ebp
         sub     eax, 34
         cmp     edi, eax
         je      .done_1
-; ïðîâåðêà êîíöà ïàïêè
+; Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÐºÐ¾Ð½Ñ†Ð° Ð¿Ð°Ð¿ÐºÐ¸
         movzx   eax, byte [ebp-1]
         add     eax, ebp
         cmp     edi, eax
@@ -708,14 +708,14 @@ char_todown:
         jb      .ret
         cmp     al, 'Z'
         jbe     .az
-        cmp     al, '€'
+        cmp     al, 0x80 ; 'Ð'
         jb      .ret
-        cmp     al, ''
+        cmp     al, 0x90 ; 'Ð '
         jb      .rus1
-        cmp     al, 'Ÿ'
+        cmp     al, 0x9F ; 'Ð¯'
         ja      .ret
 ; 0x90-0x9F -> 0xE0-0xEF
-        add     al, 'à'-''
+        add     al, 0xE0-0x90
 .ret:
         ret
 .rus1:
@@ -744,10 +744,10 @@ uni2ansi_char:
         mov     al, '_'
         jmp     .doit
 .yo1:
-        mov     al, 'ð'
+        mov     al, 0xF0 ; 'Ð' in cp866
         jmp     .doit
 .yo2:
-        mov     al, 'ñ'
+        mov     al, 0xF1 ; 'Ñ‘' in cp866
         jmp     .doit
 .rus1:
 ; 0x410-0x43F -> 0x80-0xAF

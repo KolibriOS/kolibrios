@@ -330,7 +330,7 @@ new_app_base        equ 0;
 twdw                equ 0x2000   ;(CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
+RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 Р±Р°Р№С‚ РґР»СЏ РєРѕРЅС‚РµРєСЃС‚Р° FPU
 
 REG_SS              equ (RING0_STACK_SIZE-4)
 REG_APP_ESP         equ (RING0_STACK_SIZE-8)
