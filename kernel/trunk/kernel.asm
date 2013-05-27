@@ -389,8 +389,6 @@ high_code:
         mov     al, [BOOT_VAR+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
         movzx   eax, byte [BOOT_VAR+BOOT_BPP]      ; bpp
-        mov     [ScreenBPP], al
-
         mov     [_display.bpp], eax
         mov     [_display.vrefresh], 60
 
@@ -449,7 +447,7 @@ high_code:
 setvesa20:
         mov     [PUTPIXEL], dword Vesa20_putpixel24 ; Vesa 2.0
         mov     [GETPIXEL], dword Vesa20_getpixel24
-        cmp     [ScreenBPP], byte 24
+        cmp     byte [_display.bpp], 24
         jz      v20ga24
 v20ga32:
         mov     [PUTPIXEL], dword Vesa20_putpixel32
@@ -4980,7 +4978,7 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 .2:                             ; bits per pixel
-        movzx   eax, byte [ScreenBPP]
+        mov     eax, [_display.bpp]
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline

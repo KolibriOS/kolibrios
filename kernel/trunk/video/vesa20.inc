@@ -231,7 +231,7 @@ align 4
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
         mov     eax, [BytesPerScanLine]
-        movzx   ebx, byte [ScreenBPP]
+        mov     ebx, [_display.bpp]
         shr     ebx, 3
         imul    ecx, ebx
         sub     eax, ecx
@@ -266,7 +266,7 @@ align 4
 ;--------------------------------------
 ; get process number
         mov     ebx, [CURRENT_TASK]
-        cmp     byte [ScreenBPP], 32
+        cmp     byte [_display.bpp], 32
         je      put_image_end_32
 ;--------------------------------------
 put_image_end_24:
@@ -1229,7 +1229,7 @@ align 4
         mov     [drbar.line_inc_map], eax
 ; line_inc_scr
         mov     eax, [drbar.real_sx]
-        movzx   ebx, byte [ScreenBPP]
+        mov     ebx, [_display.bpp]
         shr     ebx, 3
         imul    eax, ebx
         neg     eax
@@ -1268,7 +1268,7 @@ align 4
         rol     eax, 8
         mov     bh, al  ; 0x80 drawing gradient bars
         ror     eax, 8
-        cmp     byte [ScreenBPP], 24
+        cmp     byte [_display.bpp], 24
         jne     draw_bar_end_32
 ;--------------------------------------
 align 4
@@ -1653,7 +1653,7 @@ dp2:
         add     ebp, eax
         add     ebp, eax
         add     ebp, eax
-        cmp     [ScreenBPP], byte 24    ; 24 or 32 bpp ? - x size
+        cmp     byte [_display.bpp], 24    ; 24 or 32 bpp ? - x size
         jz      @f
         add     ebp, eax
 ;--------------------------------------
@@ -1733,7 +1733,7 @@ nbgp:
 ;--------------------------------------
 align 4
 @@:
-        cmp     [ScreenBPP], byte 25    ; 24 or 32 bpp?
+        cmp     byte [_display.bpp], 25    ; 24 or 32 bpp?
         sbb     edi, -1         ; +1 for 32 bpp
 ; I do not use 'inc eax' because this is slightly slower then 'add eax,1'
         add     ebp, edx
@@ -1799,7 +1799,7 @@ vesa20_drawbackground_stretch:
         add     ebp, eax
         add     ebp, eax
         add     ebp, eax
-        cmp     [ScreenBPP], byte 24    ; 24 or 32 bpp ? - x size
+        cmp     byte [_display.bpp], 24    ; 24 or 32 bpp ? - x size
         jz      @f
         add     ebp, eax
 ;--------------------------------------
@@ -1918,7 +1918,7 @@ align 4
 ;--------------------------------------
 align 4
 snbgp:
-        cmp     [ScreenBPP], byte 25
+        cmp     byte [_display.bpp], 25
         sbb     edi, -4
         add     ebp, 1
         mov     eax, [esp+20]
@@ -1944,7 +1944,7 @@ sdp4:
         sub     edi, eax
         sub     edi, eax
         sub     edi, eax
-        cmp     [ScreenBPP], byte 24
+        cmp     byte [_display.bpp], 24
         jz      @f
         sub     edi, eax
 ;--------------------------------------

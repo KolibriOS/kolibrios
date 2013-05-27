@@ -237,7 +237,6 @@ BTN_DOWN            equ (OS_BASE+0x000FB40)
 MOUSE_DOWN          equ (OS_BASE+0x000FB44)
 X_UNDER             equ (OS_BASE+0x000FB4A)
 Y_UNDER             equ (OS_BASE+0x000FB4C)
-ScreenBPP           equ (OS_BASE+0x000FBF1)
 
 ;unused ? only one reference
 MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
