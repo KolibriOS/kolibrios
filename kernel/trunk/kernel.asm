@@ -512,12 +512,8 @@ no_mode_0x12:
         stdcall alloc_page
         stdcall map_page, tss-0xF80, eax, PG_SW
         stdcall alloc_page
-        inc     eax
-        mov     [SLOT_BASE+256+APPDATA.io_map], eax
         stdcall map_page, tss+0x80, eax, PG_SW
         stdcall alloc_page
-        inc     eax
-        mov     dword [SLOT_BASE+256+APPDATA.io_map+4], eax
         stdcall map_page, tss+0x1080, eax, PG_SW
 
 ; LOAD IDT
@@ -1079,6 +1075,15 @@ proc setup_os_slot
         mov     ecx, 256/4
         mov     edi, edx
         rep stosd
+
+        mov     eax, tss+0x80
+        call    get_pg_addr
+        inc     eax
+        mov     [edx+APPDATA.io_map], eax
+        mov     eax, tss+0x1080
+        call    get_pg_addr
+        inc     eax
+        mov     [edx+APPDATA.io_map+4], eax
 
         mov     dword [edx+APPDATA.pl0_stack], ebx
         lea     edi, [ebx+0x2000-512]
