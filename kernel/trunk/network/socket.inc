@@ -263,7 +263,7 @@ sys_socket:
   .number = ($ - .table) / 4 - 1
 
 s_error:
-        DEBUGF  2,"SOCKET: error\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET: error\n"
         mov     dword [esp+32], -1
 
         ret
@@ -281,7 +281,7 @@ s_error:
 align 4
 SOCKET_open:
 
-        DEBUGF  2,"SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
 
         push    ecx edx esi
         call    SOCKET_alloc
@@ -289,7 +289,7 @@ SOCKET_open:
         jz      s_error
 
         mov     [esp+32], edi                   ; return socketnumber
-        DEBUGF  2,"socknum=%u\n", edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socknum=%u\n", edi
 
 ;        push    edx
 ;        and     edx, SO_NONBLOCK
@@ -321,7 +321,7 @@ SOCKET_open:
         je      .pppoe
 
   .no_ppp:
-        DEBUGF  2,"Unknown socket family/protocol\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_open: Unknown socket family/protocol\n"
         ret
 
 align 4
@@ -394,7 +394,7 @@ align 4
 align 4
 SOCKET_bind:
 
-        DEBUGF  2,"SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -444,7 +444,7 @@ SOCKET_bind:
         call    SOCKET_check_port
         jz      s_error                         ; ZF is set by socket_check_port, on error
 
-        DEBUGF  1,"SOCKET_bind: local ip=%u.%u.%u.%u\n",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: local ip=%u.%u.%u.%u\n",\
         [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
         [eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
 
@@ -467,7 +467,7 @@ SOCKET_bind:
 align 4
 SOCKET_connect:
 
-        DEBUGF  2,"SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -616,7 +616,7 @@ align 4
 align 4
 SOCKET_listen:
 
-        DEBUGF  2,"SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -668,7 +668,7 @@ SOCKET_listen:
 align 4
 SOCKET_accept:
 
-        DEBUGF  2,"SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -718,7 +718,7 @@ SOCKET_accept:
 align 4
 SOCKET_close:
 
-        DEBUGF  2,"SOCKET_close: socknum=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_close: socknum=%u\n", ecx
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -767,7 +767,7 @@ SOCKET_close:
 align 4
 SOCKET_receive:
 
-        DEBUGF  2,"SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -778,7 +778,7 @@ SOCKET_receive:
 align 4
 SOCKET_receive_dgram:
 
-        DEBUGF  1,"SOCKET_receive: DGRAM\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: DGRAM\n"
 
         mov     ebx, esi
         mov     edi, edx                                        ; addr to buffer
@@ -787,14 +787,14 @@ SOCKET_receive_dgram:
         get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .block      ; destroys esi and ecx
 
         mov     ecx, [esi + socket_queue_entry.data_size]
-        DEBUGF  1,"SOCKET_receive: %u bytes data\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: %u bytes data\n", ecx
 
         cmp     ecx, ebx
         ja      .too_small
 
         push    [esi + socket_queue_entry.buf_ptr]              ; save the buffer addr so we can clear it later
         mov     esi, [esi + socket_queue_entry.data_ptr]
-        DEBUGF  1,"SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
         mov     [esp+32+4], ecx                                 ; return number of bytes copied
 
 ; copy the data
@@ -816,7 +816,7 @@ SOCKET_receive_dgram:
 
   .too_small:
 
-        DEBUGF  2,"SOCKET_receive: Buffer too small\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Buffer too small\n"
         jmp     s_error
 
   .block:
@@ -846,7 +846,7 @@ SOCKET_receive_local:
 align 4
 SOCKET_receive_stream:
 
-        DEBUGF  1,"SOCKET_receive: STREAM\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: STREAM\n"
 
         mov     ebx, edi
         mov     ecx, esi
@@ -902,7 +902,7 @@ SOCKET_receive_stream:
 align 4
 SOCKET_send:
 
-        DEBUGF  2,"SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -916,7 +916,7 @@ SOCKET_send:
 align 4
 SOCKET_send_udp:
 
-        DEBUGF  1,"SOCKET_send: UDP\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: UDP\n"
 
         mov     [esp+32], ecx
         call    UDP_output
@@ -928,7 +928,7 @@ SOCKET_send_udp:
 align 4
 SOCKET_send_tcp:
 
-        DEBUGF  1,"SOCKET_send: TCP\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: TCP\n"
 
         push    eax
         add     eax, STREAM_SOCKET.snd
@@ -944,7 +944,7 @@ SOCKET_send_tcp:
 align 4
 SOCKET_send_ip:
 
-        DEBUGF  1,"SOCKET_send: IPv4\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: IPv4\n"
 
         mov     [esp+32], ecx
         call    IPv4_output_raw
@@ -956,7 +956,7 @@ SOCKET_send_ip:
 align 4
 SOCKET_send_icmp:
 
-        DEBUGF  1,"SOCKET_send: ICMP\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: ICMP\n"
 
         mov     [esp+32], ecx
         call    ICMP_output_raw
@@ -968,7 +968,7 @@ SOCKET_send_icmp:
 align 4
 SOCKET_send_pppoe:
 
-        DEBUGF  1,"SOCKET_send: PPPoE\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: PPPoE\n"
 
         mov     [esp+32], ecx
         mov     ebx, [eax + SOCKET.device]
@@ -998,7 +998,7 @@ SOCKET_send_local:
 align 4
 SOCKET_send_local_:
 
-        DEBUGF  1,"SOCKET_send: LOCAL\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: LOCAL\n"
 
         ; get the other side's socket and check if it still exists
         mov     eax, [eax + SOCKET.device]
@@ -1037,7 +1037,7 @@ SOCKET_send_local_:
 align 4
 SOCKET_get_opt:
 
-        DEBUGF  2,"SOCKET_get_opt\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_get_opt\n"
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -1087,7 +1087,7 @@ SOCKET_get_opt:
 align 4
 SOCKET_set_opt:
 
-        DEBUGF  2,"SOCKET_set_opt\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt\n"
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -1116,7 +1116,7 @@ SOCKET_set_opt:
         jz      s_error
         mov     [eax + SOCKET.device], edx
 
-        DEBUGF  1,"SOCKET_set_opt: Bound socket %x to device %x\n",eax, edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt: Bound socket %x to device %x\n",eax, edx
 
         mov     dword [esp+32], 0       ; success!
         ret
@@ -1158,7 +1158,7 @@ SOCKET_set_opt:
 align 4
 SOCKET_pair:
 
-        DEBUGF  2,"SOCKET_pair\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_pair\n"
 
         call    SOCKET_alloc
         jz      s_error
@@ -1217,7 +1217,7 @@ SOCKET_pair:
 align 4
 SOCKET_debug:
 
-        DEBUGF  1,"SOCKET_debug\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_debug\n"
 
         mov     edi, edx
 
@@ -1266,7 +1266,7 @@ SOCKET_debug:
 align 4
 SOCKET_find_port:
 
-        DEBUGF  2,"SOCKET_find_port\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_find_port\n"
 
         push    ebx esi ecx
 
@@ -1327,7 +1327,7 @@ SOCKET_find_port:
 align 4
 SOCKET_check_port:
 
-        DEBUGF  2,"SOCKET_check_port: "
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check_port: "
 
         mov     ecx, [eax + SOCKET.Protocol]
         mov     edx, [eax + IP_SOCKET.LocalIP]
@@ -1347,11 +1347,11 @@ SOCKET_check_port:
         cmp     [esi + UDP_SOCKET.LocalPort], bx
         jne     .next_socket
 
-        DEBUGF  2,"local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
         ret
 
   .port_ok:
-        DEBUGF  2,"local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.LocalPort], bx
         or      bx, bx                                  ; clear the zero-flag
         ret
@@ -1378,7 +1378,7 @@ SOCKET_check_port:
 align 4
 SOCKET_input:
 
-        DEBUGF  2,"SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
 
         mov     [esp+4], ecx
         push    esi
@@ -1386,7 +1386,7 @@ SOCKET_input:
 
         add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, SOCKET_input.full
 
-        DEBUGF  1,"SOCKET_input: success\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: success\n"
         add     esp, sizeof.socket_queue_entry
 
         pusha
@@ -1397,7 +1397,7 @@ SOCKET_input:
         jmp     SOCKET_notify
 
   .full:
-        DEBUGF  2,"SOCKET_input: socket %x is full!\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_input: socket %x is full!\n", eax
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -1424,7 +1424,7 @@ SOCKET_ring_create:
         stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SW
         pop     edx
 
-        DEBUGF  1,"SOCKET_ring_created: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_created: %x\n", eax
 
         pusha
         lea     ecx, [esi + RING_BUFFER.mutex]
@@ -1458,7 +1458,7 @@ SOCKET_ring_create:
 align 4
 SOCKET_ring_write:
 
-        DEBUGF  1,"SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
 
 ; lock mutex
         pusha
@@ -1474,7 +1474,7 @@ SOCKET_ring_write:
         mov     ecx, edi
   .copy:
         mov     edi, [eax + RING_BUFFER.write_ptr]
-        DEBUGF  2,"SOCKET_ring_write: %u bytes from %x to %x\n", ecx, esi, edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_write: %u bytes from %x to %x\n", ecx, esi, edi
 
 ; update write ptr
         push    edi
@@ -1532,7 +1532,7 @@ SOCKET_ring_write:
 align 4
 SOCKET_ring_read:
 
-        DEBUGF  1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u offset=%x\n", eax, edi, ecx, edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_read: ringbuff=%x ptr=%x size=%u offset=%x\n", eax, edi, ecx, edx
 
         pusha
         lea     ecx, [eax + RING_BUFFER.mutex]
@@ -1555,7 +1555,7 @@ SOCKET_ring_read:
         ja      .less_data
 
   .copy:
-        DEBUGF  2,"SOCKET_ring_read: %u bytes from %x to %x\n", ecx, esi, edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_read: %u bytes from %x to %x\n", ecx, esi, edi
         push    ecx
         shr     ecx, 1
         jnc     .nb
@@ -1578,7 +1578,7 @@ SOCKET_ring_read:
         call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
         popa
 
-        DEBUGF  1,"SOCKET_ring_read: no data at all!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_read: no data at all!\n"
         xor     ecx, ecx
         ret
 
@@ -1602,7 +1602,7 @@ SOCKET_ring_read:
 align 4
 SOCKET_ring_free:
 
-        DEBUGF  1,"SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
 
         push    eax ecx
         lea     ecx, [eax + RING_BUFFER.mutex]
@@ -1627,7 +1627,7 @@ SOCKET_ring_free:
         ret
 
   .error:       ; we could free all available bytes, but that would be stupid, i guess..
-        DEBUGF  1,"SOCKET_ring_free: buffer=%x error!\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_free: buffer=%x error!\n", eax
         add     [eax + RING_BUFFER.size], ecx
 
         push    eax
@@ -1652,7 +1652,7 @@ SOCKET_ring_free:
 align 4
 SOCKET_block:
 
-        DEBUGF  1,"SOCKET_block: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: %x\n", eax
 
         pushf
         cli
@@ -1667,14 +1667,14 @@ SOCKET_block:
 
         ; Remember the thread ID so we can wake it up again
         mov     edx, [edx + TASKDATA.pid]
-        DEBUGF  1,"SOCKET_block: suspending thread: %u\n", edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: suspending thread: %u\n", edx
         mov     [eax + SOCKET.TID], edx
         pop     edx
 
         call    change_task
         popf
 
-        DEBUGF  1,"SOCKET_block: continueing\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continueing\n"
 
         ret
 
@@ -1692,7 +1692,7 @@ SOCKET_block:
 align 4
 SOCKET_notify:
 
-        DEBUGF  1,"SOCKET_notify: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: %x\n", eax
 
         call    SOCKET_check
         jz      .error
@@ -1728,7 +1728,7 @@ SOCKET_notify:
         shl     ecx, 8
         or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
 
-        DEBUGF  1,"SOCKET_notify: Raised a network event!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Raised a network event!\n"
 
         jmp     .done
 
@@ -1756,7 +1756,7 @@ SOCKET_notify:
 
         ; Run the thread
         mov     [esi + TASKDATA.state], 0       ; Running
-        DEBUGF  1,"SOCKET_notify: Unblocked socket!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
 
   .done:
         pop     esi ecx eax
@@ -1785,7 +1785,7 @@ SOCKET_alloc:
         push    ebx
 
         stdcall kernel_alloc, SOCKETBUFFSIZE
-        DEBUGF  1, "SOCKET_alloc: ptr=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_alloc: ptr=%x\n", eax
         or      eax, eax
         jz      .exit
 
@@ -1821,7 +1821,7 @@ SOCKET_alloc:
   .last_socket:
         mov     [last_socket_num], edi
         mov     [eax + SOCKET.Number], edi
-        DEBUGF  1, "SOCKET_alloc: number=%u\n", edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_alloc: number=%u\n", edi
 
 ; Fill in PID
         mov     ebx, [TASK_BASE]
@@ -1878,7 +1878,7 @@ SOCKET_alloc:
 align 4
 SOCKET_free:
 
-        DEBUGF  1, "SOCKET_free: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: %x\n", eax
 
         call    SOCKET_check
         jz      .error
@@ -1906,7 +1906,7 @@ SOCKET_free:
         mov     ebx, [eax + SOCKET.NextPtr]
         mov     eax, [eax + SOCKET.PrevPtr]
 
-        DEBUGF  1, "SOCKET_free: linking socket %x to socket %x\n", eax, ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: linking socket %x to socket %x\n", eax, ebx
 
         test    eax, eax
         jz      @f
@@ -1921,7 +1921,7 @@ SOCKET_free:
         call    kernel_free
         pop     ebx
 
-        DEBUGF  1, "SOCKET_free: success!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
 
   .error:
         ret
@@ -1939,7 +1939,7 @@ SOCKET_free:
 align 4
 SOCKET_fork:
 
-        DEBUGF  1,"SOCKET_fork: %x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_fork: %x\n", ebx
 
 ; Exit if backlog queue is full
         mov     eax, [ebx + SOCKET_QUEUE_LOCATION + queue.size]
@@ -1971,7 +1971,7 @@ SOCKET_fork:
   .fail2:
         add     esp, 4+4+4
   .fail:
-        DEBUGF  1,"SOCKET_fork: failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_fork: failed\n"
         xor     eax, eax
         ret
 
@@ -1990,7 +1990,7 @@ SOCKET_fork:
 align 4
 SOCKET_num_to_ptr:
 
-        DEBUGF  1,"SOCKET_num_to_ptr: num=%u ", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_num_to_ptr: num=%u ", ecx
 
         mov     eax, net_sockets
 
@@ -2003,11 +2003,11 @@ SOCKET_num_to_ptr:
 
         test    eax, eax
 
-        DEBUGF  1,"ptr=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ptr=%x\n", eax
         ret
 
   .error:
-        DEBUGF  1,"not found\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_nuto_ptr: not found\n", eax
         ret
 
 
@@ -2025,18 +2025,18 @@ SOCKET_num_to_ptr:
 align 4
 SOCKET_ptr_to_num:
 
-        DEBUGF  1,"SOCKET_ptr_to_num: ptr=%x ", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ptr_to_num: ptr=%x ", eax
 
         call    SOCKET_check
         jz      .error
 
         mov     eax, [eax + SOCKET.Number]
 
-        DEBUGF  1,"num=%u\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "num=%u\n", eax
         ret
 
   .error:
-        DEBUGF  1,"not found\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_ptr_to_num: not found\n", eax
         ret
 
 
@@ -2054,7 +2054,7 @@ SOCKET_ptr_to_num:
 align 4
 SOCKET_check:
 
-        DEBUGF  1,"SOCKET_check: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check: %x\n", eax
 
         push    ebx
         mov     ebx, net_sockets
@@ -2088,7 +2088,7 @@ SOCKET_check:
 align 4
 SOCKET_check_owner:
 
-        DEBUGF  1,"SOCKET_check_owner: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check_owner: %x\n", eax
 
         push    ebx
         mov     ebx, [TASK_BASE]
@@ -2116,7 +2116,7 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
-        DEBUGF  1, "SOCKET_process_end: %x\n", edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
         push    ebx
         mov     ebx, net_sockets
@@ -2130,7 +2130,7 @@ SOCKET_process_end:
         cmp     [ebx + SOCKET.PID], edx
         jne     .next_socket
 
-        DEBUGF  1, "SOCKET_process_end: killing socket %x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: killing socket %x\n", ebx
 
         mov     [ebx + SOCKET.PID], 0
         mov     eax, ebx
@@ -2160,7 +2160,7 @@ SOCKET_process_end:
 align 4
 SOCKET_is_connecting:
 
-        DEBUGF  1,"SOCKET_is_connecting: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connecting: %x\n", eax
 
         and     [eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.options], SS_ISCONNECTING
@@ -2181,7 +2181,7 @@ SOCKET_is_connecting:
 align 4
 SOCKET_is_connected:
 
-        DEBUGF  1,"SOCKET_is_connected: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connected: %x\n", eax
 
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.options], SS_ISCONNECTED
@@ -2203,7 +2203,7 @@ SOCKET_is_connected:
 align 4
 SOCKET_is_disconnecting:
 
-        DEBUGF  1,"SOCKET_is_disconnecting: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnecting: %x\n", eax
 
         and     [eax + SOCKET.options], not (SS_ISCONNECTING)
         or      [eax + SOCKET.options], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
@@ -2224,7 +2224,7 @@ SOCKET_is_disconnecting:
 align 4
 SOCKET_is_disconnected:
 
-        DEBUGF  1,"SOCKET_is_disconnected: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnected: %x\n", eax
 
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
@@ -2257,7 +2257,7 @@ SOCKET_is_disconnected:
 align 4
 SOCKET_cant_recv_more:
 
-        DEBUGF  1,"SOCKET_cant_recv_more: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_recv_more: %x\n", eax
 
         or      [eax + SOCKET.options], SS_CANTRCVMORE
 
@@ -2277,7 +2277,7 @@ SOCKET_cant_recv_more:
 align 4
 SOCKET_cant_send_more:
 
-        DEBUGF  1,"SOCKET_cant_send_more: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_send_more: %x\n", eax
 
         or      [eax + SOCKET.options], SS_CANTSENDMORE
 

@@ -119,7 +119,7 @@ macro   TCP_init_socket socket {
 align 4
 TCP_pull_out_of_band:
 
-        DEBUGF  1,"TCP_pull_out_of_band\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_pull_out_of_band\n"
 
         ;;;; 1282-1305
 
@@ -145,7 +145,7 @@ TCP_pull_out_of_band:
 align 4
 TCP_drop:
 
-        DEBUGF  1,"TCP_drop: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_drop: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
         jb      .no_syn_received
@@ -184,7 +184,7 @@ TCP_drop:
 align 4
 TCP_close:
 
-        DEBUGF  1,"TCP_close: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_close: %x\n", eax
 
 ;;; TODO: update RTT and mean deviation
 ;;; TODO: update slow start threshold
@@ -212,7 +212,7 @@ TCP_outflags:
         mov     edx, [eax + TCP_SOCKET.t_state]
         movzx   edx, byte [edx + .flaglist]
 
-        DEBUGF  1,"TCP_outflags: socket=%x flags=%x\n", eax, dl
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_outflags: socket=%x flags=%x\n", eax, dl
 
         ret
 
@@ -248,7 +248,7 @@ TCP_outflags:
 align 4
 TCP_respond:
 
-        DEBUGF  1,"TCP_respond_socket: socket=%x flags=%x\n", ebx, cl
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_respond_socket: socket=%x flags=%x\n", ebx, cl
 
 ;---------------------
 ; Create the IP packet
@@ -305,7 +305,7 @@ TCP_respond:
         ret
 
   .error:
-        DEBUGF  1,"TCP_respond_socket: failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_respond_socket: failed\n"
         add     esp, 2 + 4
 
         ret
@@ -327,7 +327,7 @@ TCP_respond:
 align 4
 TCP_respond_segment:
 
-        DEBUGF  1,"TCP_respond_segment: frame=%x flags=%x\n", edx, cl
+        DEBUGF  DEBUG_NETWORK_VERBOSE,"TCP_respond_segment: frame=%x flags=%x\n", edx, cl
 
 ;---------------------
 ; Create the IP packet
@@ -381,7 +381,7 @@ TCP_respond_segment:
         ret
 
   .error:
-        DEBUGF  1,"TCP_respond_segment: failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_respond_segment: failed\n"
         add     esp, 2+4
 
         ret
@@ -416,7 +416,7 @@ local   .done
 align 4
 TCP_set_persist:
 
-        DEBUGF  1,"TCP_set_persist\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_set_persist\n"
 
 ; First, check if retransmit timer is not set, retransmit and persist are mutually exclusive
 
@@ -454,7 +454,7 @@ TCP_set_persist:
 align 4
 TCP_xmit_timer:
 
-        DEBUGF  1,"TCP_xmit_timer: socket=%x rtt=%d0ms\n", ebx, eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=%x rtt=%d0ms\n", ebx, eax
 
 ;TODO: update stats
 

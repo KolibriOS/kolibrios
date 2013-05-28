@@ -28,6 +28,9 @@ uglobal
         net_tmr_count   dw ?
 endg
 
+DEBUG_NETWORK_ERROR     = 1
+DEBUG_NETWORK_VERBOSE   = 0
+
 MAX_NET_DEVICES         = 16
 ARP_BLOCK               = 1             ; true or false
 
@@ -305,12 +308,12 @@ stack_handler:
 align 4
 NET_link_changed:
 
-        DEBUGF  1,"NET_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.state]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.state]
 
 align 4
 NET_send_event:
 
-        DEBUGF  1,"NET_send_event\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_send_event\n"
 
 ; Send event to all applications
         push    edi ecx
@@ -340,7 +343,7 @@ NET_send_event:
 align 4
 NET_add_device:
 
-        DEBUGF  1,"NET_Add_Device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_Add_Device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
         cmp     [NET_RUNNING], MAX_NET_DEVICES
         jae     .error
@@ -384,12 +387,12 @@ NET_add_device:
 
         call    NET_send_event
 
-        DEBUGF  1,"Device number: %u\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Device number: %u\n", eax
         ret
 
   .error:
         or      eax, -1
-        DEBUGF  2,"Adding network device failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "Adding network device failed\n"
         ret
 
 
@@ -407,7 +410,7 @@ NET_add_device:
 align 4
 NET_set_default:
 
-        DEBUGF  1,"NET_set_default: device=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_set_default: device=%x\n", eax
 
         cmp     eax, MAX_NET_DEVICES
         jae     .error
@@ -417,12 +420,12 @@ NET_set_default:
 
         mov     [NET_DEFAULT], eax
 
-        DEBUGF  1,"NET_set_default: succes\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_set_default: succes\n"
         ret
 
   .error:
         or      eax, -1
-        DEBUGF  1,"NET_set_default: failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "NET_set_default: failed\n"
         ret
 
 
@@ -634,7 +637,7 @@ checksum_2:
   .not_zero:
         xchg    dl, dh
 
-        DEBUGF  1,"Checksum: %x\n", dx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Checksum: %x\n", dx
 
         ret
 

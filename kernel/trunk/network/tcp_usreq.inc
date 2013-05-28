@@ -27,7 +27,7 @@
 align 4
 TCP_usrclosed:
 
-        DEBUGF  1,"TCP_usrclosed: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_usrclosed: %x\n", eax
 
         push    ebx
         mov     ebx, [eax + TCP_SOCKET.t_state]
@@ -87,7 +87,7 @@ TCP_usrclosed:
 align 4
 TCP_disconnect:
 
-        DEBUGF  1,"TCP_disconnect: %x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_disconnect: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         jb      TCP_close

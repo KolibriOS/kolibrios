@@ -177,7 +177,7 @@ ARP_input:
 
         inc     [ARP_PACKETS_RX + 4*edi]        ; update stats
 
-        DEBUGF  1,"ARP_input: got packet from %u.%u.%u.%u through device %u\n",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: got packet from %u.%u.%u.%u through device %u\n",\
         [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
         [edx + ARP_header.SenderIP + 2]:1, [edx + ARP_header.SenderIP + 3]:1, edi
 
@@ -194,7 +194,7 @@ ARP_input:
         cmp     [edx + ARP_header.Opcode], ARP_REP_OPCODE
         jne     .maybe_request
 
-        DEBUGF  1,"ARP_input: It's a reply\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: It's a reply\n"
 
         mov     ecx, [NumARP]
         test    ecx, ecx
@@ -208,16 +208,16 @@ ARP_input:
         dec     ecx
         jnz     .loop
 
-        DEBUGF  1,"ARP_input: no matching entry found\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: no matching entry found\n"
         jmp     .exit
 
   .gotit:
-        DEBUGF  1,"ARP_input: found matching entry\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: found matching entry\n"
 
         cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY         ; if it is a static entry, dont touch it
         je      .exit
 
-        DEBUGF  1,"ARP_input: updating entry\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: updating entry\n"
 
         mov     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         mov     [esi + ARP_entry.TTL], ARP_ENTRY_TTL
@@ -236,7 +236,7 @@ ARP_input:
         cmp     [edx + ARP_header.Opcode], ARP_REQ_OPCODE
         jne     .exit
 
-        DEBUGF  1,"ARP_input: its a request\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: its a request\n"
 
         mov     eax, [IP_LIST + 4*edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
@@ -277,20 +277,20 @@ ARP_input:
 ;        mov     ax , ETHER_ARP                                 ; It's already there, I'm sure of it!
 ;        stosw
 
-        DEBUGF  1,"ARP_input: Sending reply\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: Sending reply\n"
 
         call    [ebx + NET_DEVICE.transmit]
         ret
 
   .collision:
         inc     [ARP_CONFLICTS + 4*edi]
-        DEBUGF  1,"ARP_input: IP address conflict detected!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: IP address conflict detected!\n"
 
   .exit:
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
 
-        DEBUGF  1,"ARP_input: exiting\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: exiting\n"
         ret
 
 
@@ -310,7 +310,7 @@ ARP_output_request:
         pushd   [IP_LIST + edi]                 ; SenderIP
         inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
 
-        DEBUGF  1,"ARP_output_request: ip=%u.%u.%u.%u\n",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: ip=%u.%u.%u.%u\n",\
         [esp + 4]:1, [esp + 5]:1, [esp + 6]:1, [esp + 7]:1
 
         mov     ebx, [NET_DRV_LIST + edi]       ; device ptr
@@ -344,7 +344,7 @@ ARP_output_request:
         pop     eax                             ; DestIP
         stosd                                   ;
 
-        DEBUGF  1,"ARP_output_request: device=%x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: device=%x\n", ebx
 
         push    edx ecx
         call    [ebx + NET_DEVICE.transmit]
@@ -352,7 +352,7 @@ ARP_output_request:
 
   .exit:
         add     esp, 4 + 4
-        DEBUGF  1,"ARP_output_request: failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: failed\n"
         sub     eax, eax
         ret
 
@@ -369,7 +369,7 @@ ARP_output_request:
 align 4
 ARP_add_entry:
 
-        DEBUGF  1,"ARP_add_entry: "
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: "
 
         mov     ecx, [NumARP]
         cmp     ecx, ARP_TABLE_SIZE                                     ; list full ?
@@ -400,12 +400,12 @@ ARP_add_entry:
         rep     movsw
         inc     [NumARP]
         sub     edi, sizeof.ARP_entry
-        DEBUGF  1,"entry=%u\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "entry=%u\n", eax
 
         ret
 
   .error:
-        DEBUGF  1,"failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "failed\n"
         mov     eax, -1
         ret
 
@@ -421,8 +421,8 @@ ARP_add_entry:
 align 4
 ARP_del_entry:
 
-        DEBUGF 1,"ARP_del_entry: entry=%x entrys=%u\n", esi, [NumARP]
-        DEBUGF 1,"ARP_del_entry: IP=%u.%u.%u.%u\n", \
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=%x entrys=%u\n", esi, [NumARP]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: IP=%u.%u.%u.%u\n", \
         [esi + ARP_entry.IP]:1, [esi + ARP_entry.IP + 1]:1, [esi + ARP_entry.IP + 2]:1, [esi + ARP_entry.IP + 3]:1
 
         mov     ecx, ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry
@@ -438,7 +438,7 @@ ARP_del_entry:
         rep     stosw
 
         dec     [NumARP]
-        DEBUGF 1,"ARP_del_entry: success\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: success\n"
 
         ret
 
@@ -463,9 +463,9 @@ ARP_del_entry:
 align 4
 ARP_IP_to_MAC:
 
-        DEBUGF 1,"ARP_IP_to_MAC: %u.%u", al, ah
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: %u.%u", al, ah
         rol     eax, 16
-        DEBUGF 1,".%u.%u\n", al, ah
+        DEBUGF  DEBUG_NETWORK_VERBOSE, ".%u.%u\n", al, ah
         rol     eax, 16
 
         cmp     eax, 0xffffffff
@@ -485,7 +485,7 @@ ARP_IP_to_MAC:
         loop    .scan_loop
 
   .not_in_list:
-        DEBUGF  1,"ARP_IP_to_MAC: preparing for ARP request\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: preparing for ARP request\n"
 
 ;--------------------
 ; Send an ARP request
@@ -535,16 +535,16 @@ else
 end if
 
   .valid:
-        DEBUGF  1,"ARP_IP_to_MAC: found MAC\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: found MAC\n"
         movzx   eax, word[esi + ARP_entry.MAC]
         mov     ebx, dword[esi + ARP_entry.MAC + 2]
         ret
 
   .full:
-        DEBUGF  1,"ARP_IP_to_MAC: table is full!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: table is full!\n"
         add     esp, 8
   .give_up:
-        DEBUGF  1,"ARP_IP_to_MAC: entry has no valid mapping!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: entry has no valid mapping!\n"
         mov     eax, -1
         ret
 
