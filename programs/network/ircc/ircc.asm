@@ -92,7 +92,7 @@ include "../proc32.inc"
 include "../dll.inc"
 include "../network.inc"
 include "../struct.inc"
-include '../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 struct  window
         data_ptr        dd ?            ; zero if not used
