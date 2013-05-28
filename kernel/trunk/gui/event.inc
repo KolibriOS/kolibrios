@@ -515,8 +515,8 @@ align 4
         jz      .no_events     ; исчерпали все биты маски, но ничего не нашли ???
         btr     ecx, eax       ; сбрасываем проверяемый бит маски
        ; переходим на обработчик этого (eax) бита
-        cmp     eax, 9
-        jae     .loop          ; eax=[9..31], ignored (event 10...32)
+        cmp     eax, 10
+        jae     .loop          ; eax=[10..31], ignored (event 10...32)
 
         cmp     eax, 3
         je      .loop          ; eax=3, ignored (event 4)
@@ -527,7 +527,7 @@ align 4
         cmp     eax, 5
         je      .mouse_check  ; eax=5, retvals=eax+1 (event 6)
 
-        ja      .FlagAutoReset ; eax=[6..8], retvals=eax+1 (event 7...9)
+        ja      .FlagAutoReset ; eax=[6..9], retvals=eax+1 (event 7...10)
 
         cmp     eax, 1
         jae     .BtKy          ; eax=[1,2],  retvals=eax+1 (event 2,3)

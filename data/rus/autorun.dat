@@ -7,6 +7,7 @@
 #/RD/1/COMMOUSE        ""          1    # COM mice detector
 #/RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
 #/RD/1/refrscrn        ""           1    # Refresh screen
+/RD/1/NETWORK/NETCFG  A            1    #
 /RD/1/NETWORK/ZEROCONF ""          1    # Network configuration
 /RD/1/MEDIA/PALITRA "H 007DCEDF 003C427F" 1 #SET BG
 /RD/1/@PANEL           ""          1    # Start panel

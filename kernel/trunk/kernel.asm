@@ -77,7 +77,7 @@ $Revision$
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 
 ; Enabling the next line will enable serial output console
-;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
+debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
 ; The following constant, if nonzero, duplicates debug output to the screen.
 debug_direct_print equ 0
 
@@ -638,12 +638,6 @@ no_mode_0x12:
         mov     dword [current_slot], SLOT_BASE + 256*2
         mov     dword [TASK_BASE], CURRENT_TASK + 32*2
 
-        stdcall kernel_alloc, 0x10000/8
-        mov     edi, eax
-        mov     [network_free_ports], eax
-        or      eax, -1
-        mov     ecx, 0x10000/32
-        rep stosd
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
         mov     esi, boot_initirq
@@ -882,12 +876,6 @@ end if
                 [SLOT_BASE+256+APPDATA.io_map], PG_MAP
         stdcall map_page, tss._io_map_1, \
                 [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
-
-        mov     ax, [OS_BASE+0x10000+bx_from_load]
-        cmp     ax, 'r1'; if not rused ram disk - load network configuration from files {SPraid.simba}
-        je      no_st_network
-        call    set_network_conf
-  no_st_network:
 
 ; LOAD FIRST APPLICATION
         cli
@@ -2029,6 +2017,13 @@ sys_end:
         popa
 @@:
 ;--------------------------------------
+; kill all sockets this process owns
+        pusha
+        mov     edx, [TASK_BASE]
+        mov     edx, [edx+TASKDATA.pid]
+        call    SOCKET_process_end
+        popa
+;--------------------------------------
         mov     ecx, [current_slot]
         mov     eax, [ecx+APPDATA.tls_base]
         test    eax, eax
@@ -2154,6 +2149,12 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         pop     edx ecx
         test    eax, eax
         jz      noprocessterminate
+;--------------------------------------
+; terminate all network sockets it used
+        pusha
+        mov     eax, edx
+        call    SOCKET_process_end
+        popa
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
         je      .restore_end
@@ -5365,28 +5366,6 @@ syscall_threads:                        ; CreateThreads
         ret
 
 align 4
-
-stack_driver_stat:
-
-        call    app_stack_handler       ; Stack status
-
-;     mov   [check_idle_semaphore],5    ; enable these for zero delay
-;     call  change_task                 ; between sent packet
-
-        mov     [esp+32], eax
-        ret
-
-align 4
-
-socket:                                 ; Socket interface
-        call    app_socket_handler
-
-;     mov   [check_idle_semaphore],5    ; enable these for zero delay
-;     call  change_task                 ; between sent packet
-
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
-        ret
 
 paleholder:
         ret

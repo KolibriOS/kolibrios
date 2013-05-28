@@ -101,6 +101,12 @@ iglobal
   szUSBNormalTransferAsync db 'USBNormalTransferAsync',0
   szUSBControlTransferAsync db 'USBControlTransferAsync',0
 
+  szNetRegDev         db 'NetRegDev',0
+  szNetUnRegDev       db 'NetUnRegDev',0
+  szNetPtrToNum       db 'NetPtrToNum',0
+  szNetLinkChanged    db 'NetLinkChanged',0
+  szEth_input         db 'Eth_input',0
+
 align 16
 kernel_export:
   dd szRegService      , reg_service
@@ -190,6 +196,12 @@ kernel_export:
   dd szUSBClosePipe    , usb_close_pipe
   dd szUSBNormalTransferAsync, usb_normal_transfer_async
   dd szUSBControlTransferAsync, usb_control_async
+
+  dd szNetRegDev       , NET_add_device
+  dd szNetUnRegDev     , NET_remove_device
+  dd szNetPtrToNum     , NET_ptr_to_num
+  dd szNetLinkChanged  , NET_link_changed
+  dd szEth_input       , ETH_input
 
 exp_lfb:
   dd szLFBAddress      , 0

@@ -133,27 +133,19 @@ HEX-редактор              /rd/1/develop/heed
 #15   **** NET ****
 Серверы            >      /@16
 Клиенты            >      /@17
-Конфигурация              /rd/1/network/stackcfg
-Zero-Config               /rd/1/network/zeroconf
-Статус сети               /rd/1/network/ethstat
-Статус ARP                /rd/1/network/arpstat
+Zero-Config               /sys/network/zeroconf
+network Config            /sys/network/netcfg
+Network status            /sys/network/netstat
+ARP status                /sys/network/arpcfg
 #16   **** SERVERS ****
-SMTPS                     /rd/1/network/smtps
-HTTPS                     /rd/1/network/https
-FTPS                      /rd/1/network/ftps
+FTP daemon                /sys/network/ftpd
 #17   **** CLIENTS ****
-TFTP-клиент               /rd/1/network/tftpc
-Интернет-шахматы          /rd/1/network/chess
-Интернет загрузчик        /rd/1/network/downloader
-Текстовый браузер         /rd/1/htmlv
-NNTP-группы новостей      /rd/1/network/nntpc
-TELNET                    /rd/1/network/telnet
-POP-почта                 /rd/1/network/popc
-IRC-клиент                /rd/1/network/airc
-YAHOO IM (демо)           /rd/1/network/ym
-JMail                     /rd/1/network/jmail
-VNC-клиент                /rd/1/network/vncclient
-DNS resolver              /rd/1/network/nslookup
+IRC client                /sys/network/ircc
+TFTP client               /sys/network/tftpc
+Ping                      /sys/network/ping
+Telnet client             /sys/network/telnet
+Synergy client            /sys/network/synergyc
+DNS lookup                /sys/network/nslookup
 #18   **** OTHER ****
 Аналоговые часы           /rd/1/demos/aclock
 Бинарные часы             /rd/1/demos/bcdclk

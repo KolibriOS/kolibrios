@@ -527,7 +527,7 @@ align 4
         cmp     eax, 5
         je      .mouse_check  ; eax=5, retvals=eax+1 (event 6)
 
-        ja      .FlagAutoReset ; eax=[6..8], retvals=eax+1 (event 7...10)
+        ja      .FlagAutoReset ; eax=[6..9], retvals=eax+1 (event 7...10)
 
         cmp     eax, 1
         jae     .BtKy          ; eax=[1,2],  retvals=eax+1 (event 2,3)

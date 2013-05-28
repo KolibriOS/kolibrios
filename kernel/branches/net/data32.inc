@@ -500,4 +500,5 @@ BiosDisksData   rb 200h
 BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
 BiosDiskPartitions rd 80h
 
+tetten:
 IncludeUGlobals

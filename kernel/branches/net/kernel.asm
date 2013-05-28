@@ -77,11 +77,12 @@ $Revision $
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 
 ; Enabling the next line will enable serial output console
-;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
+debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
 
 include "proc32.inc"
 include "kglobals.inc"
-include "lang.inc"
+;include "lang.inc"
+lang fix en
 
 include "const.inc"
 max_processes    equ   255
@@ -136,7 +137,7 @@ use16
 if lang eq sp
 include "kernelsp.inc"  ; spanish kernel messages
 else
-version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
+version db    'Kolibri OS network development   ',13,10,13,10,0
 end if
 
 include "boot/bootstr.inc"     ; language-independent boot messages
