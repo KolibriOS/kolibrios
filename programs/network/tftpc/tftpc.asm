@@ -15,7 +15,7 @@ include '../proc32.inc'
 include '../macros.inc'
 include '../libio.inc'
 include '../dll.inc'
-include '../../../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
+include '../develop/libraries/box_lib/trunk/box_lib.mac'
 
 include '../network.inc'
 
