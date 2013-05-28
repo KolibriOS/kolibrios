@@ -1,6 +1,0 @@
-# This is similar to Makefile.fasm, look there for comments.
-define copy_meta_rule
-$(1): $(2) Makefile.copy $$(call respace,$$(addsuffix .dir,$(3)))
-	cp $$< "$$@"
-endef
-$(foreach f,$(COPY_FILES),$(eval $(call copy_meta_rule,$(fbinary),$(fsource),$(binarydir))))

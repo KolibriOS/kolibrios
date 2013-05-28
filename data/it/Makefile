@@ -103,7 +103,6 @@ FASM_PROGRAMS:=\
  develop/fasm:DEVELOP/FASM:$(PROGS)/develop/fasm/trunk/fasm.asm \
  develop/h2d2b:DEVELOP/H2D2B:$(PROGS)/develop/h2d2b/trunk/h2d2b.asm \
  develop/heed:DEVELOP/HEED:$(PROGS)/develop/heed/trunk/heed.asm \
- develop/ipc:DEVELOP/IPC:$(PROGS)/network/ipc/trunk/ipc.asm \
  develop/keyascii:DEVELOP/KEYASCII:$(PROGS)/develop/keyascii/trunk/keyascii.asm \
  develop/mtdbg:DEVELOP/MTDBG:$(PROGS)/develop/mtdbg/mtdbg.asm \
  develop/scancode:DEVELOP/SCANCODE:$(PROGS)/develop/scancode/trunk/scancode.asm \
@@ -133,6 +132,19 @@ FASM_PROGRAMS:=\
  drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/vidintel.obj:DRIVERS/VIDINTEL.OBJ:$(KERNEL)/drivers/vidintel.asm \
+ drivers/3c59x.obj:DRIVERS/3C59X.obj:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
+ drivers/dec21x4x.obj:DRIVERS/DEC21X4X.obj:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
+ drivers/forcedeth.obj:DRIVERS/FORCEDETH.obj:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
+ drivers/i8254x.obj:DRIVERS/I8254X.obj:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
+ drivers/i8255x.obj:DRIVERS/I8255X.obj:$(REPOSITORY)/drivers/ethernet/i8255x.asm \
+ drivers/mtd80x.obj:DRIVERS/MTD80X.obj:$(REPOSITORY)/drivers/ethernet/mtd80x.asm \
+ drivers/pcnet32.obj:DRIVERS/PCNET32.obj:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \
+ drivers/r6040.obj:DRIVERS/R6040.obj:$(REPOSITORY)/drivers/ethernet/R6040.asm \
+ drivers/rhine.obj:DRIVERS/RHINE.obj:$(REPOSITORY)/drivers/ethernet/rhine.asm \
+ drivers/rtl8029.obj:DRIVERS/RTL8029.obj:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
+ drivers/rtl8139.obj:DRIVERS/RTL8139.obj:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
+ drivers/rtl8169.obj:DRIVERS/RTL8169.obj:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
+ drivers/sis900.obj:DRIVERS/SIS900.obj:$(REPOSITORY)/drivers/ethernet/sis900.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
@@ -175,23 +187,18 @@ FASM_PROGRAMS:=\
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
  media/palitra:MEDIA/PALITRA:$(PROGS)/media/palitra/trunk/palitra.asm \
  media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
- network/airc:NETWORK/AIRC:$(PROGS)/network/airc/trunk/airc.asm \
- network/arpstat:NETWORK/ARPSTAT:$(PROGS)/network/arpstat/trunk/arpstat.asm \
- network/chess:NETWORK/CHESS:$(PROGS)/network/chess/trunk/chess.asm \
- network/downloader:NETWORK/DOWNLOADER:$(PROGS)/network/downloader/trunk/downloader.asm \
- network/ethstat:NETWORK/ETHSTAT:$(PROGS)/network/ethstat/trunk/ethstat.asm \
- network/ftps:NETWORK/FTPS:$(PROGS)/network/ftps/trunk/FTPS.ASM \
- network/https:NETWORK/HTTPS:$(PROGS)/network/https/trunk/https.asm \
- network/nntpc:NETWORK/NNTPC:$(PROGS)/network/nntpc/trunk/nntpc.asm \
- network/nslookup:NETWORK/NSLOOKUP:$(PROGS)/develop/libraries/network/examples/nslookup.asm \
- network/popc:NETWORK/POPC:$(PROGS)/network/popc/trunk/popc.asm \
- network/smtps:NETWORK/SMTPS:$(PROGS)/network/smtps/trunk/smtps.asm \
- network/stackcfg:NETWORK/STACKCFG:$(PROGS)/network/stackcfg/trunk/stackcfg.asm \
- network/telnet:NETWORK/TELNET:$(PROGS)/network/telnet/trunk/telnet.asm \
- network/tftpc:NETWORK/TFTPC:$(PROGS)/network/tftpc/trunk/tftpc.asm \
- network/VNCclient:NETWORK/VNCclient:$(PROGS)/network/VNCclient/VNCclient.asm \
- network/ym:NETWORK/YM:$(PROGS)/network/ym/trunk/ym.asm \
- network/zeroconf:NETWORK/ZEROCONF:$(PROGS)/network/zeroconf/trunk/zeroconf.asm \
+ network/arpcfg:NETWORK/ARPCFG:$(PROGS)/network/arpcfg/arpcfg.asm \
+ network/ping:NETWORK/PING:$(PROGS)/network/icmp/ping.asm \
+ network/netcfg:NETWORK/NETCFG:$(PROGS)/network/netcfg/netcfg.asm \
+ network/netstat:NETWORK/NETSTAT:$(PROGS)/network/netstat/netstat.asm \
+ network/nslookup:NETWORK/NSLOOKUP:$(PROGS)/network/nslookup/nslookup.asm \
+ network/synergyc:NETWORK/SYNERGYC:$(PROGS)/network/synergyc/synergyc.asm \
+ network/tcpserv:NETWORK/TCPSERV:$(PROGS)/network/tcpserv/tcpserv.asm \
+ network/telnet:NETWORK/TELNET:$(PROGS)/network/telnet/telnet.asm \
+ network/zeroconf:NETWORK/ZEROCONF:$(PROGS)/network/zeroconf/zeroconf.asm \
+ network/ftpd:NETWORK/FTPD:$(PROGS)/network/ftpd/ftpd.asm \
+ network/tftpc:NETWORK/TFTPC:$(PROGS)/network/tftpc/tftpc.asm \
+ network/ircc:NETWORK/IRCC:$(PROGS)/network/ircc/ircc.asm \
 # end of list
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
@@ -298,7 +305,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
  media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
  media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
- network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
+ network.ini:NETWORK.INI \
 #end of list
 
 # Generate skins list understandable by gnu make

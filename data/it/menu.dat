@@ -1,4 +1,4 @@
-#0    **** MAIN ****
+﻿#0    **** MAIN ****
 Giochi             >      /@1
 Demo               >      /@4
 Grafica            >      /@6
@@ -127,27 +127,19 @@ Hex-Editor                /rd/1/develop/heed
 #15    **** NET ****
 Servers            >      /@16
 Clients            >      /@17
-Configurazione            /rd/1/network/stackcfg
-Zero-Config               /rd/1/network/zeroconf
-Network status            /rd/1/network/ethstat
-ARP status                /rd/1/network/arpstat
+Zero-Config               /sys/network/zeroconf
+network Config            /sys/network/netcfg
+Network status            /sys/network/netstat
+ARP status                /sys/network/arpcfg
 #16    **** SERVERS ****
-SMTPS                     /rd/1/network/smtps
-HTTPS                     /rd/1/network/https
-FTPS                      /rd/1/network/ftps
+FTP daemon                /sys/network/ftpd
 #17   **** CLIENTS ****
-TFTP client               /rd/1/network/tftpc
-Internet-chess            /rd/1/network/chess
-Internet downloader       /rd/1/network/downloader
-Text-based browser        /rd/1/htmlv
-NNTP-NewsGroups           /rd/1/network/nntpc
-TELNET                    /rd/1/network/telnet
-POP - MAIL                /rd/1/network/popc
-Client IRC                 /rd/1/network/airc
-YAHOO messenger (demo)    /rd/1/network/ym
-JMail                     /rd/1/network/jmail
-VNC client                /rd/1/network/vncclient
-DNS resolver              /rd/1/network/nslookup
+IRC client                /sys/network/ircc
+TFTP client               /sys/network/tftpc
+Ping                      /sys/network/ping
+Telnet client             /sys/network/telnet
+Synergy client            /sys/network/synergyc
+DNS lookup                /sys/network/nslookup
 #18    **** OTHER ****
 Orologio analogico        /rd/1/demos/aclock
 Orologio binario          /rd/1/demos/bcdclk
