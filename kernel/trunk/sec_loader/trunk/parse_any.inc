@@ -324,7 +324,7 @@ end if
 ;;;;;;;;;;;;;;;;;;;;;;; show '__________________________'
         mov     di, 480
         mov     ah, color_sym_yellow
-        mov     al, 'Д'
+        mov     al, 0xC4 ; '─'
         mov     cx, 61
         rep stosw
 ;;;;;;;;;;;;;;;;;;;;;;; show 'Select section'
