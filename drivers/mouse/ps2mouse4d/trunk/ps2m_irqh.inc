@@ -113,6 +113,8 @@ proc irq_handler
         mov   [mouse_byte],0
 
   .exit:
+        xor     eax, eax
+        inc     eax
         ret
 endp
 
