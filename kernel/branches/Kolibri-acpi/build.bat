@@ -1,6 +1,6 @@
 @echo off
 cls
-set languages=en ru ge et
+set languages=en ru ge et sp
 set drivers=com_mouse emu10k1x fm801 infinity sis sound viasound vt823x
 set targets=all kernel drivers clean
 

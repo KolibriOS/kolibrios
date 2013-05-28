@@ -1,11 +1,11 @@
-; êste archivo debe ser editado con codificaci¢n CP866
+; √âste archivo debe ser editado con codificaci√≥n CP866
 
-ugui_mouse_speed db 'velocidad del rat¢n',0
-ugui_mouse_delay db 'demora del rat¢n',0
+ugui_mouse_speed:cp850 'velocidad del rat√≥n',0
+ugui_mouse_delay:cp850 'demora del rat√≥n',0
 
-udev db 'disp',0
-unet db 'red',0
-unet_active db 'activa',0
-unet_addr db 'direc',0
-unet_mask db 'm†sc',0
-unet_gate db 'puer',0
+udev:cp850 'disp',0
+unet:cp850 'red',0
+unet_active:cp850 'activa',0
+unet_addr:cp850 'direc',0
+unet_mask:cp850 'm√°sc',0
+unet_gate:cp850 'puer',0

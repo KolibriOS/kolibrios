@@ -61,7 +61,7 @@ iglobal
   idtreg: ; data for LIDT instruction (!!! must be immediately below sys_int data)
         dw      2*($-sys_int-4)-1
         dd      idts ;0x8000B100
-        dw      0    ;ïðîñòî âûðàâíèâàíèå
+        dw      0    ;Ð¿Ñ€Ð¾ÑÑ‚Ð¾ Ð²Ñ‹Ñ€Ð°Ð²Ð½Ð¸Ð²Ð°Ð½Ð¸Ðµ
 
   msg_fault_sel dd  msg_exc_8,msg_exc_u,msg_exc_a,msg_exc_b
                 dd  msg_exc_c,msg_exc_d,msg_exc_e
@@ -109,19 +109,19 @@ uglobal
   pf_err_code   dd ?
 endg
 
-page_fault_exc:                 ; äóðàêîóñòî÷èâîñòü: ñåëåêòîðû èñïîð÷åíû...
-        pop     [ss:pf_err_code]; äåéñòâèòåëüíî äî ñëåäóþùåãî #PF
+page_fault_exc:                 ; Ð´ÑƒÑ€Ð°ÐºÐ¾ÑƒÑÑ‚Ð¾Ñ‡Ð¸Ð²Ð¾ÑÑ‚ÑŒ: ÑÐµÐ»ÐµÐºÑ‚Ð¾Ñ€Ñ‹ Ð¸ÑÐ¿Ð¾Ñ€Ñ‡ÐµÐ½Ñ‹...
+        pop     [ss:pf_err_code]; Ð´ÐµÐ¹ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ð´Ð¾ ÑÐ»ÐµÐ´ÑƒÑŽÑ‰ÐµÐ³Ð¾ #PF
         save_ring3_context
         mov     bl, 14
 
-exc_c:                          ; èñêëþ÷åíèÿ (âñå, êðîìå 7-ãî - #NM)
-; Ôðýéì ñòåêà ïðè èñêëþ÷åíèè/ïðåðûâàíèè èç 3-ãî êîëüöà + pushad (ò.å., èìåííî çäåñü)
+exc_c:                          ; Ð¸ÑÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ (Ð²ÑÐµ, ÐºÑ€Ð¾Ð¼Ðµ 7-Ð³Ð¾ - #NM)
+; Ð¤Ñ€ÑÐ¹Ð¼ ÑÑ‚ÐµÐºÐ° Ð¿Ñ€Ð¸ Ð¸ÑÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ð¸/Ð¿Ñ€ÐµÑ€Ñ‹Ð²Ð°Ð½Ð¸Ð¸ Ð¸Ð· 3-Ð³Ð¾ ÐºÐ¾Ð»ÑŒÑ†Ð° + pushad (Ñ‚.Ðµ., Ð¸Ð¼ÐµÐ½Ð½Ð¾ Ð·Ð´ÐµÑÑŒ)
   reg_ss        equ esp+0x30
   reg_esp3      equ esp+0x2C
   reg_eflags    equ esp+0x28
   reg_cs3       equ esp+0x24
   reg_eip       equ esp+0x20
- ; ýòî ôðýéì îò pushad
+ ; ÑÑ‚Ð¾ Ñ„Ñ€ÑÐ¹Ð¼ Ð¾Ñ‚ pushad
   reg_eax       equ esp+0x1C
   reg_ecx       equ esp+0x18
   reg_edx       equ esp+0x14
@@ -131,10 +131,10 @@ exc_c:                          ; èñêëþ÷åíèÿ (âñå, êðîìå 7-ãî - #NM)
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-        mov     ax, app_data        ;èñêëþ÷åíèå
-        mov     ds, ax                  ;çàãðóçèì ïðàâèëüíûå çíà÷åíèÿ
-        mov     es, ax                  ;â ðåãèñòðû
-        cld                     ; è ïðèâîäèì DF ê ñòàíäàðòó
+        mov     ax, app_data        ;Ð¸ÑÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ðµ
+        mov     ds, ax                  ;Ð·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ð¼ Ð¿Ñ€Ð°Ð²Ð¸Ð»ÑŒÐ½Ñ‹Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ñ
+        mov     es, ax                  ;Ð² Ñ€ÐµÐ³Ð¸ÑÑ‚Ñ€Ñ‹
+        cld                     ; Ð¸ Ð¿Ñ€Ð¸Ð²Ð¾Ð´Ð¸Ð¼ DF Ðº ÑÑ‚Ð°Ð½Ð´Ð°Ñ€Ñ‚Ñƒ
         movzx   ebx, bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
         test    byte[reg_eflags+2], 2
@@ -159,6 +159,7 @@ exc_c:                          ; èñêëþ÷åíèÿ (âñå, êðîìå 7-ãî - #NM)
         call    show_error_parameters ;; only ONE using, inline ???
        ;mov     edx, [TASK_BASE]
         mov     [edx + TASKDATA.state], byte 4 ; terminate
+        call    wakeup_osloop
         jmp     change_task     ; stack - here it does not matter at all, SEE: core/shed.inc
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
@@ -261,45 +262,40 @@ show_error_parameters:
 
 
 align 4
-set_application_table_status:
-        push    eax
+lock_application_table:
+        push    eax ecx edx
+        mov     ecx, application_table_mutex
+        call    mutex_lock
 
         mov     eax, [CURRENT_TASK]
         shl     eax, 5
         add     eax, CURRENT_TASK+TASKDATA.pid
         mov     eax, [eax]
 
-        mov     [application_table_status], eax
+        mov     [application_table_owner], eax
 
-        pop     eax
+        pop     edx ecx eax
 
         ret
 
 align 4
-clear_application_table_status:
-        push    eax
+unlock_application_table:
+        push    eax ecx edx
 
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 5
-        add     eax, CURRENT_TASK+TASKDATA.pid
-        mov     eax, [eax]
+        mov     [application_table_owner], 0
+        mov     ecx, application_table_mutex
+        call    mutex_unlock
 
-        cmp     eax, [application_table_status]
-        jne     apptsl1
-        xor     eax, eax
-        mov     [application_table_status], eax
-      apptsl1:
-
-        pop     eax
+        pop     edx ecx eax
 
         ret
 
-;  * eax = 64 - íîìåð ôóíêöèè
-;  * ebx = 1 - åäèíñòâåííàÿ ïîäôóíêöèÿ
-;  * ecx = íîâûé ðàçìåð ïàìÿòè
-;Âîçâðàùàåìîå çíà÷åíèå:
-;  * eax = 0 - óñïåøíî
-;  * eax = 1 - íåäîñòàòî÷íî ïàìÿòè
+;  * eax = 64 - Ð½Ð¾Ð¼ÐµÑ€ Ñ„ÑƒÐ½ÐºÑ†Ð¸Ð¸
+;  * ebx = 1 - ÐµÐ´Ð¸Ð½ÑÑ‚Ð²ÐµÐ½Ð½Ð°Ñ Ð¿Ð¾Ð´Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ
+;  * ecx = Ð½Ð¾Ð²Ñ‹Ð¹ Ñ€Ð°Ð·Ð¼ÐµÑ€ Ð¿Ð°Ð¼ÑÑ‚Ð¸
+;Ð’Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÐ¼Ð¾Ðµ Ð·Ð½Ð°Ñ‡ÐµÐ½Ð¸Ðµ:
+;  * eax = 0 - ÑƒÑÐ¿ÐµÑˆÐ½Ð¾
+;  * eax = 1 - Ð½ÐµÐ´Ð¾ÑÑ‚Ð°Ñ‚Ð¾Ñ‡Ð½Ð¾ Ð¿Ð°Ð¼ÑÑ‚Ð¸
 
 align 4
 sys_resize_app_memory:
@@ -338,17 +334,11 @@ terminate: ; terminate application
         mov     [CURRENT_TASK+esi+TASKDATA.state], 9
         ret
 @@:
+        lea     edx, [SLOT_BASE+esi]
+        call    scheduler_remove_thread
            ;mov    esi,process_terminating
            ;call   sys_msg_board_str
-@@:
-        cli
-        cmp     [application_table_status], 0
-        je      term9
-        sti
-        call    change_task
-        jmp     @b
-term9:
-        call    set_application_table_status
+        call    lock_application_table
 
 ; if the process is in V86 mode...
         mov     eax, [.slot]
@@ -391,11 +381,11 @@ term9:
         stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
 
         mov     esi, [.slot]
-        cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 1
+        cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 2
         jne     @F
 
-        mov     [fpu_owner], 1
-        mov     eax, [256+SLOT_BASE+APPDATA.fpu_state]
+        mov     [fpu_owner], 2
+        mov     eax, [256*2+SLOT_BASE+APPDATA.fpu_state]
         clts
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
@@ -685,26 +675,12 @@ term9:
         xor     esi, esi
         call    redrawscreen
 
-        mov     [MOUSE_BACKGROUND], byte 0; no mouse background
-        mov     [DONT_DRAW_MOUSE], byte 0; draw mouse
-
-        and     [application_table_status], 0
+        call    unlock_application_table
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
         add     esp, 4
         ret
 restore .slot
-
-;iglobal
-;if lang eq ru
-;  boot_sched_1    db   '‘®§¤ ­¨¥ GDT TSS ãª § â¥«ï',0
-;  boot_sched_2    db   '‘®§¤ ­¨¥ IDT â ¡«¨æë',0
-;else
-;  boot_sched_1    db   'Building gdt tss pointer',0
-;  boot_sched_2    db   'Building IDT table',0
-;end if
-;endg
-
 
 ;build_scheduler:
 ;        mov     esi, boot_sched_1

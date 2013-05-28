@@ -90,7 +90,7 @@ proc fs_execute
         stdcall set_cursor, [def_cursor_clock]
         mov     [handle], eax
         mov     [redrawmouse_unconditional], 1
-        call    __sys_draw_pointer
+        call    wakeup_osloop
         popad
 @@:
         mov     [flags], edx
@@ -152,19 +152,7 @@ proc fs_execute
         test    eax, eax
         jz      .err_hdr
 
-.wait_lock:
-        cmp     [application_table_status], 0
-        je      .get_lock
-        call    change_task
-        jmp     .wait_lock
-
-.get_lock:
-        mov     eax, 1
-        xchg    eax, [application_table_status]
-        test    eax, eax
-        jnz     .wait_lock
-
-        call    set_application_table_status
+        call    lock_application_table
 
         call    get_new_process_place
         test    eax, eax
@@ -246,9 +234,8 @@ end if
         mov     eax, [save_cr3]
         call    set_cr3
 
-        xor     ebx, ebx
-        mov     [application_table_status], ebx;unlock application_table_status mutex
         mov     eax, [process_number];set result
+        call    unlock_application_table
 
         jmp     .final
 
@@ -259,8 +246,7 @@ end if
 .err_hdr:
         stdcall kernel_free, [file_base]
 .err_file:
-        xor     eax, eax
-        mov     [application_table_status], eax
+        call    unlock_application_table
         mov     eax, esi
 .final:
         cmp     [SCR_MODE], word 0x13
@@ -268,7 +254,7 @@ end if
         pushad
         stdcall set_cursor, [handle]
         mov     [redrawmouse_unconditional], 1
-        call    __sys_draw_pointer
+        call    wakeup_osloop
         popad
 @@:
         ret
@@ -550,7 +536,7 @@ proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
 
         xor     edx, edx
         push    edx
-        mov     eax, 0x2
+        mov     eax, 0x1
         mov     ebx, [pg_dir]
 .loop:
 ;eax = current slot of process
@@ -898,19 +884,7 @@ proc new_sys_threads
         mov     [app_path], eax
        ;mov    esi,new_process_loading
        ;call   sys_msg_board_str
-.wait_lock:
-        cmp     [application_table_status], 0
-        je      .get_lock
-        call    change_task
-        jmp     .wait_lock
-
-.get_lock:
-        mov     eax, 1
-        xchg    eax, [application_table_status]
-        test    eax, eax
-        jnz     .wait_lock
-
-        call    set_application_table_status
+        call    lock_application_table
 
         call    get_new_process_place
         test    eax, eax
@@ -967,14 +941,13 @@ proc new_sys_threads
 
        ;mov    esi,new_process_running
        ;call   sys_msg_board_str                ;output information about succefull startup
-        xor     eax, eax
-        mov     [application_table_status], eax ;unlock application_table_status mutex
         mov     eax, [process_number]           ;set result
+        call    unlock_application_table
         ret
 .failed:
         xor     eax, eax
 .failed1:
-        mov     [application_table_status], eax
+        call    unlock_application_table
         dec     eax     ;-1
         ret
 endp
@@ -1148,6 +1121,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     eax, [esi+0x08]  ;app_eip
         mov     [ebx+REG_EIP], eax;app_entry
         mov     [ebx+REG_CS], dword app_code
+        mov     ecx, USER_PRIORITY
         mov     eax, [CURRENT_TASK]
         shl     eax, 8                      ; created by kernel?
         cmp     [SLOT_BASE+eax+APPDATA.dir_table], sys_pgdir - OS_BASE
@@ -1155,6 +1129,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         cmp     [app_path], 0               ; it is a thread?
         jnz     @f
         mov     [ebx+REG_CS], dword os_code ; kernel thread
+        mov     ecx, MAX_PRIORITY
 @@:
         mov     [ebx+REG_EFLAGS], dword EFL_IOPL1+EFL_IF
 
@@ -1162,20 +1137,22 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     [ebx+REG_APP_ESP], eax;app_stack
         mov     [ebx+REG_SS], dword app_data
 
-        lea     ecx, [ebx+REG_RET]
+        lea     edx, [ebx+REG_RET]
         mov     ebx, [slot]
         shl     ebx, 5
-        mov     [ebx*8+SLOT_BASE+APPDATA.saved_esp], ecx
+        mov     [ebx*8+SLOT_BASE+APPDATA.saved_esp], edx
 
-        xor     ecx, ecx; process state - running
+        xor     edx, edx; process state - running
 ; set if debuggee
         test    byte [flags], 1
         jz      .no_debug
-        inc     ecx ; process state - suspended
+        inc     edx ; process state - suspended
         mov     eax, [CURRENT_TASK]
         mov     [SLOT_BASE+ebx*8+APPDATA.debugger_slot], eax
 .no_debug:
-        mov     [CURRENT_TASK+ebx+TASKDATA.state], cl
+        mov     [CURRENT_TASK+ebx+TASKDATA.state], dl
+        lea     edx, [SLOT_BASE+ebx*8]
+        call    scheduler_add_thread
        ;mov    esi,new_process_running
        ;call   sys_msg_board_str     ;output information about succefull startup
         ret

@@ -905,7 +905,7 @@ flat assembler  version 1.68  (65535 kilobytes memory)
 0E58: E2 FC                                  loop        @b
 0E5A: BF E0 01                               mov         di, 480
 0E5D: B4 0E                                  mov         ah, color_sym_yellow
-0E5F: B0 C4                                  mov         al, 'Ä'
+0E5F: B0 C4                                  mov         al, 0xC4
 0E61: B9 3D 00                               mov         cx, 61
 0E64: F3                                     rep
 0E65: AB                                     stosw      

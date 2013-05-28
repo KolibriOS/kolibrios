@@ -2923,9 +2923,9 @@ Remarks:
     * if one want to read 0 blocks, function considers,
       that he requested 1;
     * if one requests more than 14 blocks or starting block is
-      not less than 14, function returns eax=5 (not found) и ebx=-1;
+      not less than 14, function returns eax=5 (not found) and ebx=-1;
     * size of ramdisk root folder is 14 blocks,
-      0x1C00=7168 байт; but function returns ebx=0
+      0x1C00=7168 bytes; but function returns ebx=0
       (except of the case of previous item);
     * strangely enough, it is possible to read 14th block (which
       generally contains a garbage - I remind, the indexing begins
@@ -2994,7 +2994,7 @@ Remarks:
     data of the concrete partition are required, application must
     define starting sector of this partition (either directly
     through MBR, or from the full structure returned by
-    подфункцией 11 функции 18).
+    subfunction 11 of function 18).
   * Function does not check error code of hard disk, so request of
     nonexisting sector reads something (most probably it will be
     zeroes, but this is defined by device) and this is considered
@@ -3868,7 +3868,7 @@ Message codes:
     * in addition dword-image of the register DR6 is given:
       * bits 0-3: condition of the corresponding breakpoint (set by
         subfunction 9) is satisfied
-      * бит 14: exception has occured because of the trace mode
+      * bit 14: exception has occured because of the trace mode
         (flag TF is set TF)
     * process is suspended
 When debugger terminates, all debugged processes are killed.
@@ -4440,7 +4440,7 @@ Parameters:
 Format of the information structure:
   * +0: dword: 7 = subfunction number
   * +4: dword: flags field:
-    * бит 0: start process as debugged
+    * bit 0: start process as debugged
     * other bits are reserved and must be set to 0
   * +8: dword: 0 or pointer to ASCIIZ-string with parameters
   * +12 = +0xC: dword: 0 (reserved)

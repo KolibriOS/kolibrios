@@ -1,155 +1,325 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;                                                              ;;
-;;  UDP.INC                                                     ;;
-;;                                                              ;;
-;;  UDP Processes for Menuet OS  TCP/IP stack                   ;;
-;;                                                              ;;
-;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
-;;                                                              ;;
-;;  See file COPYING for details                                ;;
-;;                                                              ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  UDP.INC                                                        ;;
+;;                                                                 ;;
+;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;                                                                 ;;
+;;    Written by hidnplayr@kolibrios.org                           ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
 
-;*******************************************************************
-;   Interface
-;
-;       udp_rx      Handles received IP packets with the UDP protocol
-;
-;*******************************************************************
+struct  UDP_header
+
+        SourcePort              dw  ?
+        DestinationPort         dw  ?
+        Length                  dw  ?  ; Length of (UDP Header + Data)
+        Checksum                dw  ?
+
+ends
 
 
-;
-;   UDP Payload ( Data field in IP datagram )
-;
-;    0                   1                   2                   3
-;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-;
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |       Source Port             |      Destination Port         |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   | Length ( UDP Header + Data )  |           Checksum            |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |       UDP Data                                                |
-;   +-+-+-..........                                               -+
-;
+align 4
+uglobal
+        UDP_PACKETS_TX          rd  MAX_NET_DEVICES
+        UDP_PACKETS_RX          rd  MAX_NET_DEVICES
+endg
 
-struc UDP_PACKET
-{  .SourcePort	     dw  ?  ;+00
-   .DestinationPort  dw  ?  ;+02
-   .Length	     dw  ?  ;+04 - Length of (UDP Header + Data)
-   .Checksum	     dw  ?  ;+06
-   .Data	     db  ?  ;+08
+
+;-----------------------------------------------------------------
+;
+; UDP_init
+;
+;  This function resets all UDP variables
+;
+;-----------------------------------------------------------------
+macro   UDP_init {
+
+        xor     eax, eax
+        mov     edi, UDP_PACKETS_TX
+        mov     ecx, 2*MAX_NET_DEVICES
+        rep     stosd
 }
 
-virtual at 0
-  UDP_PACKET UDP_PACKET
-end virtual
+
+macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size, destroys: ecx, edx
+
+; Pseudoheader
+        mov     edx, IP_PROTO_UDP
+
+        add     dl, [IP1+1]
+        adc     dh, [IP1+0]
+        adc     dl, [IP1+3]
+        adc     dh, [IP1+2]
+
+        adc     dl, [IP2+1]
+        adc     dh, [IP2+0]
+        adc     dl, [IP2+3]
+        adc     dh, [IP2+2]
+
+        adc     dl, cl ; byte[esi+UDP_header.Length+1]
+        adc     dh, ch ; byte[esi+UDP_header.Length+0]
+
+; Done with pseudoheader, now do real header
+        adc     dl, byte[esi+UDP_header.SourcePort+1]
+        adc     dh, byte[esi+UDP_header.SourcePort+0]
+
+        adc     dl, byte[esi+UDP_header.DestinationPort+1]
+        adc     dh, byte[esi+UDP_header.DestinationPort+0]
+
+        adc     dl, byte[esi+UDP_header.Length+1]
+        adc     dh, byte[esi+UDP_header.Length+0]
+
+        adc     edx, 0
+
+; Done with header, now do data
+        push    esi
+        movzx   ecx, [esi+UDP_header.Length]
+        rol     cx , 8
+        sub     cx , sizeof.UDP_header
+        add     esi, sizeof.UDP_header
+
+        call    checksum_1
+        call    checksum_2
+        pop     esi
+
+        add     [esi+UDP_header.Checksum], dx   ; this final instruction will set or clear ZF :)
+
+}
 
 
-;***************************************************************************
-;   Function
-;      udp_rx  [by Johnny_B]
+;-----------------------------------------------------------------
 ;
-;   Description
-;       UDP protocol handler
-;       This is a kernel function, called by ip_rx
-;       IP buffer address given in edx
-;          IP buffer number in eax
-;          Free up (or re-use) IP buffer when finished
+; UDP_input:
 ;
-;***************************************************************************
+;  Called by IPv4_input,
+;  this procedure will inject the udp data diagrams in the application sockets.
+;
+;  IN:   [esp]  = Pointer to buffer
+;       [esp+4] = size of buffer
+;       ebx = ptr to device struct
+;       ecx = UDP Packet size
+;       esi = ptr to UDP header
+;       edi = ptr to ipv4 source and dest address
+;
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+UDP_input:
 
-proc udp_rx stdcall
-	push	eax
+        DEBUGF  1,"UDP_input: size=%u\n", ecx
 
-	; First validate the header & checksum. Discard buffer if error
+        ; First validate, checksum
 
-	; Look for a socket where
-	; IP Packet UDP Destination Port = local Port
-	; IP Packet SA = Remote IP
+        neg     [esi + UDP_header.Checksum]     ; substract checksum from 0
+        jz      .no_checksum                    ; if checksum is zero, it is considered valid
 
-	mov	ax, [edx + 20 + UDP_PACKET.DestinationPort]   ; get the local port from
-				       ; the IP packet's UDP header
+        ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
-	mov	ebx, net_sockets
+        UDP_checksum (edi), (edi+4)
+        jnz     .checksum_mismatch
+
+  .no_checksum:
+        DEBUGF  1,"UDP_input: checksum ok\n"
+
+        ; Convert length to little endian
+
+        rol     [esi + UDP_header.Length], 8
+
+        ; Look for a socket where
+        ; IP Packet UDP Destination Port = local Port
+        ; IP Packet SA = Remote IP
+
+        mov     cx, [esi + UDP_header.SourcePort]
+        mov     dx, [esi + UDP_header.DestinationPort]
+        mov     edi, [edi + 4]                          ; ipv4 source address
+        mov     eax, net_sockets
 
   .next_socket:
-	mov	ebx, [ebx + SOCKET.NextPtr]
-	or	ebx, ebx
-	jz	.exit					; No match, so exit
-	cmp	[ebx + SOCKET.LocalPort], ax		; ax will hold the 'wrong' value,
-							; but the comparision is correct
-	jne	.next_socket				; Return back if no match
+        mov     eax, [eax + SOCKET.NextPtr]
+        or      eax, eax
+        jz      .dump
 
-	; For dhcp, we must allow any remote server to respond.
-	; I will accept the first incoming response to be the one
-	; I bind to, if the socket is opened with a destination IP address of
-	; 255.255.255.255
-	cmp	[ebx + SOCKET.RemoteIP], 0xffffffff
-	je	@f
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .next_socket
 
-	mov	eax, [edx + IP_PACKET.SourceAddress]	; get the Source address from the IP packet
-	cmp	[ebx + SOCKET.RemoteIP], eax
-	jne	.exit		   ; Quit if the source IP is not valid
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        jne     .next_socket
 
-    @@: ; OK - we have a valid UDP packet for this socket.
-	; First, update the sockets remote port number with the incoming msg
-	; - it will have changed
-	; from the original ( 69 normally ) to allow further connects
-	mov	ax, [edx + 20 + UDP_PACKET.SourcePort]		; get the UDP source port
-								; ( was 69, now new )
-	mov	[ebx + SOCKET.RemotePort], ax
+        cmp     [eax + UDP_SOCKET.LocalPort], dx
+        jne     .next_socket
 
-	; Now, copy data to socket. We have socket address as [eax + sockets].
-	; We have IP packet in edx
+        DEBUGF  1,"UDP_input: socket=%x\n", eax
 
-	; get # of bytes in ecx
-	movzx	ecx, [edx + IP_PACKET.TotalLength]	; total length of IP packet. Subtract
-	xchg	cl, ch					; 20 + 8 gives data length
-	sub	ecx, 28
+        ;;; TODO: when packet is processed, check more sockets!
 
-	mov	eax, [ebx + SOCKET.rxDataCount] 	; get # of bytes already in buffer
-	add	[ebx + SOCKET.rxDataCount], ecx 	; increment the count of bytes in buffer
+;        cmp     [eax + IP_SOCKET.RemoteIP], 0xffffffff
+;        je      @f
+;        cmp     [eax + IP_SOCKET.RemoteIP], edi
+;        jne     .next_socket
+;       @@:
+;
+; FIXME: UDP should check remote IP, but not under all circumstances!
 
-	; ecx has count, edx points to data
+        cmp     [eax + UDP_SOCKET.firstpacket], 0
+        je      .updateport
 
-	add	edx, 28        ; edx now points to the data
-	lea	edi, [ebx + eax + SOCKETHEADERSIZE]
-	mov	esi, edx
+        cmp     [eax + UDP_SOCKET.RemotePort], cx
+        jne     .dump
 
-	cld
-	rep	movsb	       ; copy the data across
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
-	; flag an event to the application
-	mov	eax, [ebx + SOCKET.PID] 		; get socket owner PID
-	mov	ecx, 1
-	mov	esi, TASK_DATA + TASKDATA.pid
+  .updatesock:
+        inc     [UDP_PACKETS_RX]        ; Fixme: correct interface?
 
-  .next_pid:
-	cmp	[esi], eax
-	je	.found_pid
-	inc	ecx
-	add	esi, 0x20
-	cmp	ecx, [TASK_COUNT]
-	jbe	.next_pid
+        movzx   ecx, [esi + UDP_header.Length]
+        sub     ecx, sizeof.UDP_header
+        add     esi, sizeof.UDP_header
 
-	jmp	.exit
+        jmp     SOCKET_input
 
-  .found_pid:
-	shl	ecx, 8
-	or	[ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK ; stack event
+  .updateport:
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
-	mov	[check_idle_semaphore], 200
+        DEBUGF  1,"UDP_input: new remote port=%x\n", cx ; FIXME: find a way to print big endian values with debugf
+        mov     [eax + UDP_SOCKET.RemotePort], cx
+        inc     [eax + UDP_SOCKET.firstpacket]
 
-  .exit:
-	pop	eax
-	call	freeBuff    ; Discard the packet
-	ret
-endp
+        jmp     .updatesock
+
+
+  .checksum_mismatch:
+        DEBUGF  2,"UDP_input: checksum mismatch\n"
+
+  .dump:
+        call    kernel_free
+        add     esp, 4 ; pop (balance stack)
+        DEBUGF  2,"UDP_input: dumping\n"
+
+        ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; UDP_output
+;
+; IN: eax = socket pointer
+;     ecx = number of bytes to send
+;     esi = pointer to data
+;
+;-----------------------------------------------------------------
+
+align 4
+UDP_output:
+
+        DEBUGF  1,"UDP_output: socket=%x bytes=%u data_ptr=%x\n", eax, ecx, esi
+
+        mov     dx, [eax + UDP_SOCKET.RemotePort]
+        DEBUGF  1,"UDP_output: remote port=%x, ", dx    ; FIXME: find a way to print big endian values with debugf
+        rol     edx, 16
+        mov     dx, [eax + UDP_SOCKET.LocalPort]
+        DEBUGF  1,"local port=%x\n", dx
+
+        sub     esp, 8                                          ; Data ptr and data size will be placed here
+        push    edx esi
+        mov     ebx, [eax + SOCKET.device]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     eax, [eax + IP_SOCKET.RemoteIP]
+        mov     di, IP_PROTO_UDP shl 8 + 128
+        add     ecx, sizeof.UDP_header
+        call    IPv4_output
+        jz      .fail
+        mov     [esp + 8], eax                                  ; pointer to buffer start
+        mov     [esp + 8 + 4], edx                              ; buffer size
+
+        mov     [edi + UDP_header.Length], cx
+        rol     [edi + UDP_header.Length], 8
+
+        pop     esi
+        push    edi ecx
+        sub     ecx, sizeof.UDP_header
+        add     edi, sizeof.UDP_header
+        shr     ecx, 2
+        rep     movsd
+        mov     ecx, [esp]
+        and     ecx, 3
+        rep     movsb
+        pop     ecx edi
+
+        pop     dword [edi + UDP_header.SourcePort]
+
+; Checksum
+        mov     esi, edi
+        mov     [edi + UDP_header.Checksum], 0
+        UDP_checksum (edi-4), (edi-8)                           ; FIXME: IPv4 packet could have options..
+
+        DEBUGF  1,"UDP_output: sending with device %x\n", ebx
+        call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
+       @@:
+
+        ret
+
+  .fail:
+        DEBUGF  1,"UDP_output: failed\n"
+        add     esp, 4+4+8
+        or      eax, -1
+        ret
+
+
+
+;---------------------------------------------------------------------------
+;
+; UDP_API
+;
+; This function is called by system function 75
+;
+; IN:  subfunction number in bl
+;      device number in bh
+;      ecx, edx, .. depends on subfunction
+;
+; OUT:
+;
+;---------------------------------------------------------------------------
+
+align 4
+UDP_api:
+
+        movzx   eax, bh
+        shl     eax, 2
+
+        test    bl, bl
+        jz      .packets_tx     ; 0
+        dec     bl
+        jz      .packets_rx     ; 1
+
+  .error:
+        mov     eax, -1
+        ret
+
+  .packets_tx:
+        mov     eax, [UDP_PACKETS_TX + eax]
+        ret
+
+  .packets_rx:
+        mov     eax, [UDP_PACKETS_RX + eax]
+        ret

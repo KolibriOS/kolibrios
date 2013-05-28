@@ -21,7 +21,7 @@ IRQ_REMAP       equ 0
 IRQ_LINE        equ 0
 
 
-;irq 0,1,2,8,12,13 недоступны
+;irq 0,1,2,8,12,13 РЅРµРґРѕСЃС‚СѓРїРЅС‹
 ;                   FEDCBA9876543210
 VALID_IRQ       equ 1100111011111000b
 ATTCH_IRQ       equ 0000111010100000b

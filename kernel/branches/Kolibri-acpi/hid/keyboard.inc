@@ -339,6 +339,7 @@ send_scancode:
         jne     .noctrlaltdel
         
         mov     [ctrl_alt_del], 1
+        call    wakeup_osloop
 .noctrlaltdel:
         test    dl, VKEY_CONTROL ; ctrl on ?
         jz      @f
@@ -490,7 +491,6 @@ send_scancode:
         mov     [KEY_COUNT], al
         mov     [KEY_COUNT+eax], bl
 .exit.irq1:
-        mov     [check_idle_semaphore], 5
         ret
 ;---------------------------------------------------------------------
 set_lights:
@@ -526,9 +526,14 @@ ps2_set_lights:
         ret     8
 
 ;// mike.dld ]
-check_lights_state:
+proc check_lights_state_has_work?
         mov     al, [kb_lights]
         cmp     al, [old_kb_lights]
+        ret
+endp
+
+check_lights_state:
+        call    check_lights_state_has_work?
         jz      .nothing
         mov     [old_kb_lights], al
         call    set_lights

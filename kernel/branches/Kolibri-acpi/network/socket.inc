@@ -1,1129 +1,2284 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;  SOCKET.INC                                                  ;;
-;;                                                              ;;
-;;  Sockets constants, structures and functions                 ;;
-;;                                                              ;;
-;;  This file contains the following:                           ;;
-;;    is_localport_unused                                       ;;
-;;    get_free_socket                                           ;;
-;;    socket_open                                               ;;
-;;    socket_open_tcp                                           ;;
-;;    socket_close                                              ;;
-;;    socket_close_tcp                                          ;;
-;;    socket_poll                                               ;;
-;;    socket_status                                             ;;
-;;    socket_read                                               ;;
-;;    socket_write                                              ;;
-;;    socket_write_tcp                                          ;;
-;;                                                              ;;
-;;                                                              ;;
-;;  Changes history:                                            ;;
-;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net          ;;
-;;   11.11.2006 - [Johnny_B] and [smb]                          ;;
-;;                                                              ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
+;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org,                           ;;
+;;     and Clevermouse.                                            ;;
+;;                                                                 ;;
+;;       Based on code by mike.dld                                 ;;
+;;                                                                 ;;
+;;         GNU GENERAL PUBLIC LICENSE                              ;;
+;;          Version 2, June 1991                                   ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-; socket data structure
+
 struct  SOCKET
-        PrevPtr        dd ? ; pointer to previous socket in list
-        NextPtr        dd ? ; pointer to next socket in list
-        Number         dd ? ; socket number (unique within single process)
-        PID            dd ? ; application process id
-        LocalIP        dd ? ; local IP address
-        LocalPort      dw ? ; local port
-        RemoteIP       dd ? ; remote IP address
-        RemotePort     dw ? ; remote port
-        OrigRemoteIP   dd ? ; original remote IP address (used to reset to LISTEN state)
-        OrigRemotePort dw ? ; original remote port (used to reset to LISTEN state)
-        rxDataCount    dd ? ; rx data count
-        TCBState       dd ? ; TCB state
-        TCBTimer       dd ? ; TCB timer (seconds)
-        ISS            dd ? ; initial send sequence
-        IRS            dd ? ; initial receive sequence
-        SND_UNA        dd ? ; sequence number of unack'ed sent packets
-        SND_NXT        dd ? ; bext send sequence number to use
-        SND_WND        dd ? ; send window
-        RCV_NXT        dd ? ; next receive sequence number to use
-        RCV_WND        dd ? ; receive window
-        SEG_LEN        dd ? ; segment length
-        SEG_WND        dd ? ; segment window
-        wndsizeTimer   dd ? ; window size timer
-        mutex          MUTEX ; lock mutex
-        rxData         dd ? ; receive data buffer here
+
+        NextPtr                 dd ? ; pointer to next socket in list
+        PrevPtr                 dd ? ; pointer to previous socket in list
+        Number                  dd ? ; socket number
+
+        mutex                   MUTEX
+
+        PID                     dd ? ; process ID
+        TID                     dd ? ; thread ID
+        Domain                  dd ? ; INET/LOCAL/..
+        Type                    dd ? ; RAW/STREAM/DGRAP
+        Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
+        errorcode               dd ?
+        device                  dd ? ; driver pointer, socket pointer if it's an LOCAL socket
+
+        options                 dd ?
+        state                   dd ?
+        backlog                 dw ? ; how many incoming connections that can be queued
+
+        snd_proc                dd ?
+        rcv_proc                dd ?
+
 ends
 
-; TCP opening modes
-SOCKET_PASSIVE = 0
-SOCKET_ACTIVE  = 1
+struct  IP_SOCKET               SOCKET
 
-; socket types
-SOCK_STREAM = 1
-SOCK_DGRAM  = 2
+        LocalIP                 rd 4 ; network byte order
+        RemoteIP                rd 4 ; network byte order
 
-; pointer to bitmap of free ports (1=free, 0=used)
+ends
+
+struct  TCP_SOCKET              IP_SOCKET
+
+        LocalPort               dw ? ; network byte order
+        RemotePort              dw ? ; network byte order
+
+        t_state                 dd ? ; TCB state
+        t_rxtshift              db ?
+                                rb 3 ; align
+        t_rxtcur                dd ?
+        t_dupacks               dd ?
+        t_maxseg                dd ?
+        t_force                 dd ?
+        t_flags                 dd ?
+
+;---------------
+; RFC783 page 21
+
+; send sequence
+        SND_UNA                 dd ? ; sequence number of unack'ed sent Packets
+        SND_NXT                 dd ? ; next send sequence number to use
+        SND_UP                  dd ? ; urgent pointer
+        SND_WL1                 dd ? ; window minus one
+        SND_WL2                 dd ? ;
+        ISS                     dd ? ; initial send sequence number
+        SND_WND                 dd ? ; send window
+
+; receive sequence
+        RCV_WND                 dd ? ; receive window
+        RCV_NXT                 dd ? ; next receive sequence number to use
+        RCV_UP                  dd ? ; urgent pointer
+        IRS                     dd ? ; initial receive sequence number
+
+;---------------------
+; Additional variables
+
+; receive variables
+        RCV_ADV                 dd ?
+
+; retransmit variables
+        SND_MAX                 dd ?
+
+; congestion control
+        SND_CWND                dd ?
+        SND_SSTHRESH            dd ?
+
+;----------------------
+; Transmit timing stuff
+        t_idle                  dd ?
+        t_rtt                   dd ?
+        t_rtseq                 dd ?
+        t_srtt                  dd ?
+        t_rttvar                dd ?
+        t_rttmin                dd ?
+        max_sndwnd              dd ?
+
+;-----------------
+; Out-of-band data
+        t_oobflags              dd ?
+        t_iobc                  dd ?
+        t_softerror             dd ?
+
+
+;---------
+; RFC 1323                              ; the order of next 4 elements may not change
+
+        SND_SCALE               db ?
+        RCV_SCALE               db ?
+        requested_s_scale       db ?
+        request_r_scale         db ?
+
+        ts_recent               dd ?    ; a copy of the most-recent valid timestamp from the other end
+        ts_recent_age           dd ?
+        last_ack_sent           dd ?
+
+
+;-------
+; Timers
+        timer_retransmission    dd ? ; rexmt
+        timer_persist           dd ?
+        timer_keepalive         dd ? ; keepalive/syn timeout
+        timer_timed_wait        dd ? ; also used as 2msl timer
+
+; extra
+
+        ts_ecr                  dd ? ; timestamp echo reply
+        ts_val                  dd ?
+
+        seg_next                dd ? ; re-assembly queue
+
+        temp_bits               db ?
+                                rb 3 ; align
+
+ends
+
+struct  UDP_SOCKET              IP_SOCKET
+
+        LocalPort               dw ? ; network byte order
+        RemotePort              dw ? ; network byte order
+        firstpacket             db ?
+
+ends
+
+
+struct  ICMP_SOCKET             IP_SOCKET
+
+        Identifier              dw ?
+
+ends
+
+
+struct  RING_BUFFER
+
+        mutex                   MUTEX
+        start_ptr               dd ? ; Pointer to start of buffer
+        end_ptr                 dd ? ; pointer to end of buffer
+        read_ptr                dd ? ; Read pointer
+        write_ptr               dd ? ; Write pointer
+        size                    dd ? ; Number of bytes buffered
+
+ends
+
+struct  STREAM_SOCKET           TCP_SOCKET
+
+        rcv                     RING_BUFFER
+        snd                     RING_BUFFER
+
+ends
+
+struct  socket_queue_entry
+
+        data_ptr                dd ?
+        buf_ptr                 dd ?
+        data_size               dd ?
+
+ends
+
+
+SOCKETBUFFSIZE          = 4096     ; in bytes
+
+SOCKET_QUEUE_SIZE       = 10       ; maximum number of incoming packets queued for 1 socket
+; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
+SOCKET_QUEUE_LOCATION   = (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
+
 uglobal
-align 4
-network_free_ports      dd      ?
+        net_sockets     rd 4
+        last_socket_num dd ?
+        last_UDP_port   dw ? ; These values give the number of the last used ephemeral port
+        last_TCP_port   dw ? ;
 endg
 
-iglobal
-align 4
-network_free_hint       dd      1024/8
-endg
 
-;; Allocate memory for socket data and put new socket into the list
-; Newly created socket is initialized with calling PID and number and
-; put into beginning of list (which is a fastest way).
+;-----------------------------------------------------------------
 ;
-; @return socket structure address in EAX
-;;
-proc net_socket_alloc stdcall uses ebx ecx edx edi
-        stdcall kernel_alloc, SOCKETBUFFSIZE
-        DEBUGF  1, "K : net_socket_alloc (0x%x)\n", eax
-        ; check if we can allocate needed amount of memory
-        or      eax, eax
-        jz      .exit
+; SOCKET_init
+;
+;-----------------------------------------------------------------
+macro   SOCKET_init {
 
-        ; zero-initialize allocated memory
-        push    eax
-        mov     edi, eax
-        mov     ecx, SOCKETBUFFSIZE / 4
-        cld
         xor     eax, eax
-        rep stosd
+        mov     edi, net_sockets
+        mov     ecx, 5
+        rep     stosd
+
+       @@:
+        pseudo_random eax
+        cmp     ax, MIN_EPHEMERAL_PORT
+        jb      @r
+        cmp     ax, MAX_EPHEMERAL_PORT
+        ja      @r
+        xchg    al, ah
+        mov     [last_UDP_port], ax
+
+       @@:
+        pseudo_random eax
+        cmp     ax, MIN_EPHEMERAL_PORT
+        jb      @r
+        cmp     ax, MAX_EPHEMERAL_PORT
+        ja      @r
+        xchg    al, ah
+        mov     [last_TCP_port], ax
+
+}
+
+;-----------------------------------------------------------------
+;
+; Socket API (function 74)
+;
+;-----------------------------------------------------------------
+align 4
+sys_socket:
+
+        cmp     ebx, 255
+        jz      SOCKET_debug
+
+        cmp     ebx, .number
+        ja      s_error
+        jmp     dword [.table + 4*ebx]
+
+  .table:
+        dd      SOCKET_open     ; 0
+        dd      SOCKET_close    ; 1
+        dd      SOCKET_bind     ; 2
+        dd      SOCKET_listen   ; 3
+        dd      SOCKET_connect  ; 4
+        dd      SOCKET_accept   ; 5
+        dd      SOCKET_send     ; 6
+        dd      SOCKET_receive  ; 7
+        dd      SOCKET_set_opt  ; 8
+        dd      SOCKET_get_opt  ; 9
+        dd      SOCKET_pair     ; 10
+  .number = ($ - .table) / 4 - 1
+
+s_error:
+        DEBUGF  2,"SOCKET: error\n"
+        mov     dword [esp+32], -1
+
+        ret
+
+;-----------------------------------------------------------------
+;
+; SOCKET_open
+;
+;  IN:  domain in ecx
+;       type in edx
+;       protocol in esi
+;  OUT: eax is socket num, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_open:
+
+        DEBUGF  2,"SOCKET_open: domain=%u type=%u protocol=%x ", ecx, edx, esi
+
+        push    ecx edx esi
+        call    SOCKET_alloc
+        pop     esi edx ecx
+        jz      s_error
+
+        mov     [esp+32], edi                   ; return socketnumber
+        DEBUGF  2,"socknum=%u\n", edi
+
+;        push    edx
+;        and     edx, SO_NONBLOCK
+        or      [eax + SOCKET.options], SO_NONBLOCK ;edx
+;        pop     edx
+;        and     edx, not SO_NONBLOCK
+
+        mov     [eax + SOCKET.Domain], ecx
+        mov     [eax + SOCKET.Type], edx
+        mov     [eax + SOCKET.Protocol], esi
+
+        cmp     ecx, AF_INET4
+        jne     .no_inet4
+
+        cmp     edx, SOCK_DGRAM
+        je      .udp
+
+        cmp     edx, SOCK_STREAM
+        je      .tcp
+
+        cmp     edx, SOCK_RAW
+        je      .raw
+
+  .no_inet4:
+        cmp     ecx, AF_PPP
+        jne     .no_ppp
+
+        cmp     esi, PPP_PROTO_ETHERNET
+        je      .pppoe
+
+  .no_ppp:
+        DEBUGF  2,"Unknown socket family/protocol\n"
+        ret
+
+align 4
+  .raw:
+        test    esi, esi       ; IP_PROTO_IP
+        jz      .ip
+
+        cmp     esi, IP_PROTO_ICMP
+        je      .icmp
+
+        cmp     esi, IP_PROTO_UDP
+        je      .udp
+
+        cmp     esi, IP_PROTO_TCP
+        je      .tcp
+
+        ret
+
+align 4
+  .udp:
+        mov     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_udp
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        ret
+
+align 4
+  .tcp:
+        mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+
+        TCP_init_socket eax
+        ret
+
+
+align 4
+  .ip:
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        ret
+
+
+align 4
+  .icmp:
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_icmp
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        ret
+
+align 4
+  .pppoe:
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
         pop     eax
 
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_pppoe
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_bind
+;
+;  IN:  socket number in ecx
+;       pointer to sockaddr struct in edx
+;       length of that struct in esi
+;  OUT: 0 on success
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_bind:
+
+        DEBUGF  2,"SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        cmp     esi, 2
+        jb      s_error
+
+        cmp     word [edx], AF_INET4
+        je      .af_inet4
+
+        cmp     word [edx], AF_LOCAL
+        je      .af_local
+
+        jmp     s_error
+
+  .af_local:
+        ; TODO: write code here
+
+        mov     dword [esp+32], 0
+        ret
+
+  .af_inet4:
+
+        cmp     esi, 6
+        jb      s_error
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        je      .udp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+        jmp     s_error
+
+  .tcp:
+  .udp:
+
+        mov     ebx, [edx + 4]                  ; First, fill in the IP
+        test    ebx, ebx                        ; If IP is 0, use default
+        jnz     @f
+        mov     ebx, [NET_DEFAULT]
+        mov     ebx, [IP_LIST + 4*ebx]
+       @@:
+        mov     [eax + IP_SOCKET.LocalIP], ebx
+
+        mov     bx, [edx + 2]                   ; Now fill in the local port if it's still available
+        call    SOCKET_check_port
+        jz      s_error                         ; ZF is set by socket_check_port, on error
+
+        DEBUGF  1,"SOCKET_bind: local ip=%u.%u.%u.%u\n",\
+        [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
+        [eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
+
+        mov     dword [esp+32], 0
+        ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_connect
+;
+;  IN:  socket number in ecx
+;       pointer to sockaddr struct in edx
+;       length of that struct in esi
+;  OUT: 0 on success
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_connect:
+
+        DEBUGF  2,"SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        cmp     esi, 8
+        jb      s_error
+
+        cmp     word [edx], AF_INET4
+        je      .af_inet4
+
+        jmp     s_error
+
+  .af_inet4:
+        cmp     [eax + IP_SOCKET.LocalIP], 0
+        jne     @f
+        push    [IP_LIST]                               ; FIXME
+        pop     [eax + IP_SOCKET.LocalIP]
+       @@:
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        je      .udp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_IP
+        je      .ip
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
+        je      .ip
+
+        jmp     s_error
+
+align 4
+  .udp:
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+        pushw   [edx + 2]
+        pop     [eax + UDP_SOCKET.RemotePort]
+
+        pushd   [edx + 4]
+        pop     [eax + IP_SOCKET.RemoteIP]
+
+        cmp     [eax + UDP_SOCKET.LocalPort], 0
+        jne     @f
+        call    SOCKET_find_port
+       @@:
+
+        mov     [eax + UDP_SOCKET.firstpacket], 0
+
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+        pop     eax
+
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+
+        mov     dword [esp+32], 0
+        ret
+
+align 4
+  .tcp:
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+        pushw   [edx + 2]
+        pop     [eax + TCP_SOCKET.RemotePort]
+
+        pushd   [edx + 4]
+        pop     [eax + IP_SOCKET.RemoteIP]
+
+        cmp     [eax + TCP_SOCKET.LocalPort], 0
+        jne     @f
+        call    SOCKET_find_port
+       @@:
+
+        mov     [eax + TCP_SOCKET.timer_persist], 0
+        mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
+
+        push    [TCP_sequence_num]
+        add     [TCP_sequence_num], 6400
+        pop     [eax + TCP_SOCKET.ISS]
+        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
+
+
+        TCP_sendseqinit eax
+
+;        mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
+
         mov     ebx, eax
-        lea     ecx, [eax+SOCKET.mutex]
-        call    mutex_init
+
+        lea     eax, [ebx + STREAM_SOCKET.snd]
+        call    SOCKET_ring_create
+
+        lea     eax, [ebx + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_create
+
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         mov     eax, ebx
+        call    TCP_output
 
-        ; add socket to the list by changing pointers
-        mov     ebx, net_sockets
-        push    [ebx + SOCKET.NextPtr]
-        mov     [ebx + SOCKET.NextPtr], eax
-        mov     [eax + SOCKET.PrevPtr], ebx
-        pop     ebx
-        mov     [eax + SOCKET.NextPtr], ebx
-        or      ebx, ebx
+;;; TODO: wait for successfull connection if blocking socket
+
+        mov     dword [esp+32], 0
+        ret
+
+align 4
+  .ip:
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+        pushd   [edx + 4]
+        pop     [eax + IP_SOCKET.RemoteIP]
+
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+        pop     eax
+
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+
+        mov     dword [esp+32], 0
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_listen
+;
+;  IN:  socket number in ecx
+;       backlog in edx
+;  OUT: eax is socket num, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_listen:
+
+        DEBUGF  2,"SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     s_error
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        jne     s_error
+
+        cmp     [eax + TCP_SOCKET.LocalPort], 0
+        je      s_error
+
+        cmp     [eax + IP_SOCKET.LocalIP], 0
+        jne     @f
+        push    [IP_LIST]
+        pop     [eax + IP_SOCKET.LocalIP]
+       @@:
+
+        cmp     edx, MAX_backlog
+        jbe     @f
+        mov     edx, MAX_backlog
+       @@:
+
+        mov     [eax + SOCKET.backlog], dx
+        or      [eax + SOCKET.options], SO_ACCEPTCON
+        mov     [eax + TCP_SOCKET.t_state], TCPS_LISTEN
+        mov     [eax + TCP_SOCKET.timer_keepalive], 0           ; disable keepalive timer
+
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up sockets queue
+        pop     eax
+
+        mov     dword [esp+32], 0
+
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_accept
+;
+;  IN:  socket number in ecx
+;       addr in edx
+;       addrlen in esi
+;  OUT: eax is socket num, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_accept:
+
+        DEBUGF  2,"SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        test    [eax + SOCKET.options], SO_ACCEPTCON
+        jz      s_error
+
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     s_error
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        jne     s_error
+
+  .loop:
+        get_from_queue (eax + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, .block
+
+; Ok, we got a socket ptr
+        mov     eax, [esi]
+
+; Change thread ID to that of the current thread
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        mov     [eax + SOCKET.TID], ebx
+
+; Convert it to a socket number
+        call    SOCKET_ptr_to_num
+        jz      s_error
+; and return it to caller
+        mov     [esp+32], eax
+        ret
+
+  .block:
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     s_error
+
+        call    SOCKET_block
+        jmp     .loop
+
+;-----------------------------------------------------------------
+;
+; SOCKET_close
+;
+;  IN:  socket number in ecx
+;  OUT: eax is socket num, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_close:
+
+        DEBUGF  2,"SOCKET_close: socknum=%u\n", ecx
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        mov     dword [esp+32], 0                               ; The socket exists, so we will succeed in closing it.
+
+  .socket:
+        or      [eax + SOCKET.options], SO_NONBLOCK             ; Mark the socket as non blocking, we dont want it to block any longer!
+
+        test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
         jz      @f
-        mov     [ebx + SOCKET.PrevPtr], eax
+        call    SOCKET_notify.unblock                           ; Unblock it.
+  @@:
 
-    @@: ; set socket owner PID to the one of calling process
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .free
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+  .free:
+        call    SOCKET_free
+        ret
+
+  .tcp:
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED    ; state must be LISTEN, SYN_SENT or CLOSED
+        jb      .free
+
+        call    TCP_usrclosed
+        call    TCP_output      ;;;; Fixme: is this nescessary??
+
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_receive
+;
+;  IN:  socket number in ecx
+;       addr to buffer in edx
+;       length of buffer in esi
+;       flags in edi
+;  OUT: eax is number of bytes copied, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_receive:
+
+        DEBUGF  2,"SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        jmp     [eax + SOCKET.rcv_proc]
+
+
+align 4
+SOCKET_receive_dgram:
+
+        DEBUGF  1,"SOCKET_receive: DGRAM\n"
+
+        mov     ebx, esi
+        mov     edi, edx                                        ; addr to buffer
+
+  .loop:
+        get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .block      ; destroys esi and ecx
+
+        mov     ecx, [esi + socket_queue_entry.data_size]
+        DEBUGF  1,"SOCKET_receive: %u bytes data\n", ecx
+
+        cmp     ecx, ebx
+        ja      .too_small
+
+        push    [esi + socket_queue_entry.buf_ptr]              ; save the buffer addr so we can clear it later
+        mov     esi, [esi + socket_queue_entry.data_ptr]
+        DEBUGF  1,"SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
+        mov     [esp+32+4], ecx                                 ; return number of bytes copied
+
+; copy the data
+        shr     ecx, 1
+        jnc     .nb
+        movsb
+  .nb:
+        shr     ecx, 1
+        jnc     .nw
+        movsw
+  .nw:
+        test    ecx, ecx
+        jz      .nd
+        rep     movsd
+  .nd:
+
+        call    kernel_free                                     ; remove the packet
+        ret
+
+  .too_small:
+
+        DEBUGF  2,"SOCKET_receive: Buffer too small\n"
+        jmp     s_error
+
+  .block:
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     s_error
+
+        call    SOCKET_block
+        jmp     .loop
+
+
+align 4
+SOCKET_receive_local:
+
+        ; does this socket have a PID yet?
+        cmp     [eax + SOCKET.PID], 0
+        jne     @f
+
+        ; Change PID to that of current process
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
+      @@:
 
-        ; find first free socket number and use it
-        ;mov     edx, ebx
-        mov     ebx, net_sockets
-        xor     ecx, ecx
-  .next_socket_number:
-        inc     ecx
-  .next_socket:
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
-        jz      .last_socket_number
-        cmp     [ebx + SOCKET.Number], ecx
-        jne     .next_socket
-        ;cmp     [ebx + SOCKET.PID], edx
-        ;jne     .next_socket
-        mov     ebx, net_sockets
-        jmp     .next_socket_number
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
 
-  .last_socket_number:
-        mov     [eax + SOCKET.Number], ecx
+align 4
+SOCKET_receive_stream:
 
-  .exit:
-        ret
-endp
+        DEBUGF  1,"SOCKET_receive: STREAM\n"
 
-;; Free socket data memory and pop socket off the list
-;
-; @param sockAddr is a socket structure address
-;;
-proc net_socket_free stdcall uses ebx ecx edx, sockAddr:DWORD
-        mov     eax, [sockAddr]
-        DEBUGF  1, "K : net_socket_free (0x%x)\n", eax
-        ; check if we got something similar to socket structure address
-        or      eax, eax
-        jz      .error
-
-        ; make sure sockAddr is one of the socket addresses in the list
-        mov     ebx, net_sockets
-        ;mov     ecx, [TASK_BASE]
-        ;mov     ecx, [ecx + TASKDATA.pid]
-  .next_socket:
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
-        jz      .error
-        cmp     ebx, eax
-        jne     .next_socket
-        ;cmp     [ebx + SOCKET.PID], ecx
-        ;jne     .next_socket
-
-        ; okay, we found the correct one
-        ; mark local port as unused
-        movzx   ebx, [eax + SOCKET.LocalPort]
-        push    eax
-        mov     eax, [network_free_ports]
-        xchg    bl, bh
-        lock bts [eax], ebx
-        pop     eax
-        ; remove it from the list first, changing pointers
-        mov     ebx, [eax + SOCKET.NextPtr]
-        mov     eax, [eax + SOCKET.PrevPtr]
-        mov     [eax + SOCKET.NextPtr], ebx
-        or      ebx, ebx
-        jz      @f
-        mov     [ebx + SOCKET.PrevPtr], eax
-
-    @@: ; and finally free the memory structure used
-        stdcall kernel_free, [sockAddr]
-        ret
-
-  .error:
-        DEBUGF  1, "K :   failed\n"
-        ret
-endp
-
-;; Get socket structure address by its number
-; Scan through sockets list to find the socket with specified number.
-; This proc uses SOCKET.PID indirectly to check if socket is owned by
-; calling process.
-;
-; @param sockNum is a socket number
-; @return socket structure address or 0 (not found) in EAX
-;;
-proc net_socket_num_to_addr stdcall uses ebx ecx, sockNum:DWORD
-        mov     eax, [sockNum]
-        ; check if we got something similar to socket number
-        or      eax, eax
-        jz      .error
-
-        ; scan through sockets list
-        mov     ebx, net_sockets
-        ;mov     ecx, [TASK_BASE]
-        ;mov     ecx, [ecx + TASKDATA.pid]
-  .next_socket:
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
-        jz      .error
-        cmp     [ebx + SOCKET.Number], eax
-        jne     .next_socket
-        ;cmp     [ebx + SOCKET.PID], ecx
-        ;jne     .next_socket
-
-        ; okay, we found the correct one
-        mov     eax, ebx
-        ret
-
-  .error:
-        xor     eax, eax
-        ret
-endp
-
-;; Get socket number by its structure address
-; Scan through sockets list to find the socket with specified address.
-; This proc uses SOCKET.PID indirectly to check if socket is owned by
-; calling process.
-;
-; @param sockAddr is a socket structure address
-; @return socket number (SOCKET.Number) or 0 (not found) in EAX
-;;
-proc net_socket_addr_to_num stdcall uses ebx ecx, sockAddr:DWORD
-        mov     eax, [sockAddr]
-        ; check if we got something similar to socket structure address
-        or      eax, eax
-        jz      .error
-
-        ; scan through sockets list
-        mov     ebx, net_sockets
-        ;mov     ecx, [TASK_BASE]
-        ;mov     ecx, [ecx + TASKDATA.pid]
-  .next_socket:
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
-        jz      .error
-        cmp     ebx, eax
-        jne     .next_socket
-        ;cmp     [ebx + SOCKET.PID], ecx
-        ;jne     .next_socket
-
-        ; okay, we found the correct one
-        mov     eax, [ebx + SOCKET.Number]
-        ret
-
-  .error:
-        xor     eax, eax
-        ret
-endp
-
-;; [53.9] Check if local port is used by any socket in the system.
-; Scan through sockets list, checking SOCKET.LocalPort.
-; Useful when you want a to generate a unique local port number.
-; This proc doesn't guarantee that after calling it and trying to use
-; the port reported being free in calls to socket_open/socket_open_tcp it'll
-; still be free or otherwise it'll still be used if reported being in use.
-;
-; @param BX is a port number
-; @return 1 (port is free) or 0 (port is in use) in EAX
-;;
-proc is_localport_unused stdcall
-        movzx   ebx, bx
-        mov     eax, [network_free_ports]
-        bt      [eax], ebx
-        setc    al
-        movzx   eax, al
-        ret
-endp
-
-;======================================
-set_local_port:
-;--------------------------------------
-;? Set local port in socket structure.
-;--------------------------------------
-;> eax -> struct SOCKET
-;> bx = local port, or 0 if the kernel must select it itself
-;--------------------------------------
-;< CF set on error / cleared on success
-;< [eax+SOCKET.LocalPort] filled on success
-;======================================
-; 0. Prepare: save registers, make eax point to ports table, expand port to ebx.
-        push    eax ecx
-        mov     eax, [network_free_ports]
-        movzx   ebx, bx
-; 1. Test, whether the kernel should choose port itself. If no, proceed to 5.
-        test    ebx, ebx
-        jnz     .given
-; 2. Yes, it should. Set ecx = limit of table, eax = start value
-        lea     ecx, [eax+0x10000/8]
-        add     eax, [network_free_hint]
-; 3. First scan loop: from free hint to end of table.
-.scan1:
-; 3a. For each dword, find bit set to 1
-        bsf     ebx, [eax]
-        jz      .next1
-; 3b. If such bit has been found, atomically test again and clear it.
-        lock btr [eax], ebx
-; 3c. If the bit was still set (usual case), we have found and reserved one port.
-; Proceed to 6.
-        jc      .found
-; 3d. Otherwise, someone has reserved it between bsf and btr, so retry search.
-        jmp     .scan1
-.next1:
-; 3e. All bits are cleared, so advance to next dword.
-        add     eax, 4
-; 3f. Check limit and continue loop.
-        cmp     eax, ecx
-        jb      .scan1
-; 4. Second scan loop: from port 1024 (start of non-system ports) to free hint.
-        mov     eax, [network_free_ports]
-        mov     ecx, eax
-        add     ecx, [network_free_hint]
-        add     eax, 1024/8
-; 4a. Test whether there is something to scan.
-        cmp     eax, ecx
-        jae     .fail
-; 4b. Enter the loop, the process is same as for 3.
-.scan2:
-        bsf     ebx, [eax]
-        jz      .next2
-        lock btr [eax], ebx
-        jc      .found
-        jmp     .scan2
-.next2:
-        add     eax, 4
-        cmp     eax, ecx
-        jb      .scan2
-; 4c. None found. Fail.
-.fail:
-        pop     ecx eax
-        stc
-        ret
-; 5. No, the kernel should reserve selected port.
-.given:
-; 5a. Atomically test old value and clear bit.
-        lock btr [eax], ebx
-; 5b. If the bit was set, reservation is successful. Proceed to 8.
-        jc      .set
-; 5c. Otherwise, fail.
-        jmp     .fail
-.found:
-; 6. We have found the bit set to 1, convert the position to port number.
-        sub     eax, [network_free_ports]
-        lea     ebx, [ebx+eax*8]
-; 7. Update free hint.
-        add     eax, 4
-        cmp     eax, 65536/8
-        jb      @f
-        mov     eax, 1024/8
-@@:
-        mov     [network_free_hint], eax
-.set:
-; 8. Restore eax, set SOCKET.LocalPort and return.
-        pop     ecx eax
-        xchg    bl, bh  ; Intel -> network byte order
-        mov     [eax + SOCKET.LocalPort], bx
-        clc
-        ret
-
-;; [53.0] Open DGRAM socket (connectionless, unreliable)
-;
-; @param BX is local port number
-; @param CX is remote port number
-; @param EDX is remote IP address
-; @return socket number or -1 (error) in EAX
-;;
-proc socket_open stdcall
-        call    net_socket_alloc
-        or      eax, eax
-        jz      .error
-
-        DEBUGF  1, "K : socket_open (0x%x)\n", eax
-
-        push    eax
-
-        call    set_local_port
-        jc      .error.free
-        xchg    ch, cl
-        mov     [eax + SOCKET.RemotePort], cx
-        mov     ebx, [stack_ip]
-        mov     [eax + SOCKET.LocalIP], ebx
-        mov     [eax + SOCKET.RemoteIP], edx
-
-        ;pop     eax      ; Get the socket number back, so we can return it
-        stdcall net_socket_addr_to_num
-        ret
-
-  .error.free:
-        stdcall net_socket_free;, eax
-
-  .error:
-        DEBUGF  1, "K : socket_open (fail)\n"
-        or      eax, -1
-        ret
-endp
-
-;; [53.5] Open STREAM socket (connection-based, sequenced, reliable, two-way)
-;
-; @param BX is local port number
-; @param CX is remote port number
-; @param EDX is remote IP address
-; @param ESI is open mode (SOCKET_ACTIVE, SOCKET_PASSIVE)
-; @return socket number or -1 (error) in EAX
-;;
-proc socket_open_tcp stdcall
-local sockAddr dd ?
-
-        cmp     esi, SOCKET_PASSIVE
-        jne     .skip_port_check
-
-        push    ebx
-        mov     eax, ebx
-        xchg    al, ah
-        mov     ebx, net_sockets
-
-  .next_socket:
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
-        jz      .last_socket
-        cmp     [ebx + SOCKET.TCBState], TCB_LISTEN
-        jne     .next_socket
-        cmp     [ebx + SOCKET.LocalPort], ax
-        jne     .next_socket
-
-        xchg    al, ah
-        DEBUGF  1, "K : error: port %u is listened by 0x%x\n", ax, ebx
-        pop     ebx
-        jmp     .error
-
-  .last_socket:
-        pop     ebx
-
-  .skip_port_check:
-        call    net_socket_alloc
-        or      eax, eax
-        jz      .error
-
-        DEBUGF  1, "K : socket_open_tcp (0x%x)\n", eax
-
-        mov     [sockAddr], eax
-
-        ; TODO - check this works!
-        ;mov     [eax + SOCKET.wndsizeTimer], 0     ; Reset the window timer.
-
-        call    set_local_port
-        jc      .error.free
-        xchg    ch, cl
-        mov     [eax + SOCKET.RemotePort], cx
-        mov     [eax + SOCKET.OrigRemotePort], cx
-        mov     ebx, [stack_ip]
-        mov     [eax + SOCKET.LocalIP], ebx
-        mov     [eax + SOCKET.RemoteIP], edx
-        mov     [eax + SOCKET.OrigRemoteIP], edx
-
-        mov     ebx, TCB_LISTEN
-        cmp     esi, SOCKET_PASSIVE
-        je      @f
-        mov     ebx, TCB_SYN_SENT
-    @@:
-        mov     [eax + SOCKET.TCBState], ebx            ; Indicate the state of the TCB
-
-        cmp     ebx, TCB_LISTEN
-        je      .exit
-
-        ; Now, if we are in active mode, then we have to send a SYN to the specified remote port
-        mov     eax, EMPTY_QUEUE
-        call    dequeue
-        cmp     ax, NO_BUFFER
-        je      .exit
-
-        push    eax
-
-        mov     bl, TH_SYN
-        xor     ecx, ecx
-        stdcall build_tcp_packet, [sockAddr]
-
-        mov     eax, NET1OUT_QUEUE
-        mov     edx, [stack_ip]
-        mov     ecx, [sockAddr]
-        cmp     edx, [ecx + SOCKET.RemoteIP]
-        jne     .not_local
-        mov     eax, IPIN_QUEUE
-
-  .not_local:
-        ; Send it.
-        pop     ebx
-        call    queue
-
-        mov     esi, [sockAddr]
-
-        ; increment SND.NXT in socket
-        add     esi, SOCKET.SND_NXT
-        call    inc_inet_esi
-
-  .exit:
-        ; Get the socket number back, so we can return it
-        stdcall net_socket_addr_to_num, [sockAddr]
-        ret
-
-  .error.free:
-        stdcall net_socket_free, eax
-
-  .error:
-        DEBUGF  1, "K : socket_open_tcp (fail)\n"
-        or      eax, -1
-        ret
-endp
-
-;; [53.1] Close DGRAM socket
-;
-; @param EBX is socket number
-; @return 0 (closed successfully) or -1 (error) in EAX
-;;
-proc socket_close stdcall
-        DEBUGF  1, "K : socket_close (0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx
-        or      eax, eax
-        jz      .error
-
-        stdcall net_socket_free, eax
-
-        xor     eax, eax
-        ret
-
-  .error:
-        DEBUGF  1, "K : socket_close (fail)\n"
-        or      eax, -1
-        ret
-endp
-
-;; [53.8] Close STREAM socket
-; Closing TCP sockets takes time, so when you get successful return code
-; from this function doesn't always mean that socket is actually closed.
-;
-; @param EBX is socket number
-; @return 0 (closed successfully) or -1 (error) in EAX
-;;
-proc socket_close_tcp stdcall
-local sockAddr dd ?
-
-        DEBUGF  1, "K : socket_close_tcp (0x%x)\n", ebx
-        ; first, remove any resend entries
-        pusha
-
-        mov     esi, resendQ
-        mov     ecx, 0
-
-  .next_resendq:
-        cmp     ecx, NUMRESENDENTRIES
-        je      .last_resendq       ; None left
-        cmp     [esi + 4], ebx
-        je      @f                  ; found one
-        inc     ecx
-        add     esi, 8
-        jmp     .next_resendq
-
-    @@:
-        mov     dword[esi + 4], 0
-        inc     ecx
-        add     esi, 8
-        jmp     .next_resendq
-
-  .last_resendq:
-        popa
-
-        stdcall net_socket_num_to_addr, ebx
-        or      eax, eax
-        jz      .error
-
-        mov     ebx, eax
-        mov     [sockAddr], eax
-
-        cmp     [ebx + SOCKET.TCBState], TCB_LISTEN
-        je      .destroy_tcb
-        cmp     [ebx + SOCKET.TCBState], TCB_SYN_SENT
-        je      .destroy_tcb
-        cmp     [ebx + SOCKET.TCBState], TCB_CLOSED
-        je      .destroy_tcb
-
-        ; Now construct the response, and queue for sending by IP
-        mov     eax, EMPTY_QUEUE
-        call    dequeue
-        cmp     ax, NO_BUFFER
-        je      .error
-
-        push    eax
-
-        mov     bl, TH_FIN+TH_ACK
-        xor     ecx, ecx
-        xor     esi, esi
-        stdcall build_tcp_packet, [sockAddr]
-
-        mov     ebx, [sockAddr]
-        ; increament SND.NXT in socket
-        lea     esi, [ebx + SOCKET.SND_NXT]
-        call    inc_inet_esi
-
-        ; Get the socket state
-        mov     eax, [ebx + SOCKET.TCBState]
-        cmp     eax, TCB_SYN_RECEIVED
-        je      .fin_wait_1
-        cmp     eax, TCB_ESTABLISHED
-        je      .fin_wait_1
-
-        ; assume CLOSE WAIT
-        ; Send a fin, then enter last-ack state
-        mov     [ebx + SOCKET.TCBState], TCB_LAST_ACK
-        jmp     .send
-
-  .fin_wait_1:
-        ; Send a fin, then enter finwait2 state
-        mov     [ebx + SOCKET.TCBState], TCB_FIN_WAIT_1
-
-  .send:
-        mov     eax, NET1OUT_QUEUE
-        mov     edx, [stack_ip]
-        mov     ecx, [sockAddr]
-        cmp     edx, [ecx + SOCKET.RemoteIP]
-        jne     .not_local
-        mov     eax, IPIN_QUEUE
-
-  .not_local:
-        ; Send it.
-        pop     ebx
-        call    queue
-        jmp     .exit
-
-  .destroy_tcb:
-
-        ; Clear the socket variables
-        stdcall net_socket_free, ebx
-
-  .exit:
-        xor     eax, eax
-        ret
-
-  .error:
-        DEBUGF  1, "K : socket_close_tcp (fail)\n"
-        or      eax, -1
-        ret
-endp
-
-;; [53.2] Poll socket
-;
-; @param EBX is socket number
-; @return count or bytes in rx buffer or 0 (error) in EAX
-;;
-proc socket_poll stdcall
-;        DEBUGF  1, "socket_poll(0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx
-        or      eax, eax
-        jz      .error
-
-        mov     eax, [eax + SOCKET.rxDataCount]
-        ret
-
-  .error:
-        xor     eax, eax
-        ret
-endp
-
-;; [53.6] Get socket TCB state
-;
-; @param EBX is socket number
-; @return socket TCB state or 0 (error) in EAX
-;;
-proc socket_status stdcall
-;;       DEBUGF  1, "socket_status(0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx
-        or      eax, eax
-        jz      .error
-
-        mov     eax, [eax + SOCKET.TCBState]
-        ret
-
-  .error:
-        xor     eax, eax
-        ret
-endp
-
-;; [53.3] Get one byte from rx buffer
-; This function can return 0 in two cases: if there's one byte read and
-; non left, and if an error occured. Behavior should be changed and function
-; shouldn't be used for now. Consider using [53.11] instead.
-;
-; @param EBX is socket number
-; @return number of bytes left in rx buffer or 0 (error) in EAX
-; @return byte read in BL
-;;
-proc socket_read stdcall
-;        DEBUGF  1, "socket_read(0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx
-        or      eax, eax
-        jz      .error
-
-        mov     ebx, eax
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-
-        mov     eax, [ebx + SOCKET.rxDataCount]         ; get count of bytes
-        test    eax, eax
-        jz      .error_release
-
-        dec     eax
-        mov     esi, ebx                                ; esi is address of socket
-        mov     [ebx + SOCKET.rxDataCount], eax         ; store new count
-        movzx   eax, byte[ebx + SOCKET.rxData]          ; get the byte
-
-        mov     ecx, SOCKETBUFFSIZE - SOCKET.rxData - 1
-        lea     edi, [esi + SOCKET.rxData]
-        lea     esi, [edi + 1]
-        cld
-        push    ecx
-        shr     ecx, 2
-        rep movsd
-        pop     ecx
-        and     ecx, 3
-        rep movsb
-
-        lea     ecx, [ebx + SOCKET.mutex]
-        mov     ebx, eax
-        call    mutex_unlock
-        mov     eax, ebx
-        ret
-
-  .error_release:
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
-  .error:
-        xor     ebx, ebx
-        xor     eax, eax
-        ret
-endp
-
-;; [53.11] Get specified number of bytes from rx buffer
-; Number of bytes in rx buffer can be less than requested size. In this case,
-; only available number of bytes is read.
-; This function can return 0 in two cases: if there's no data to read, and if
-; an error occured. Behavior should be changed.
-;
-; @param EBX is socket number
-; @param ECX is pointer to application buffer
-; @param EDX is application buffer size (number of bytes to read)
-; @return number of bytes read or 0 (error) in EAX
-;;
-proc socket_read_packet stdcall
-;        DEBUGF  1, "socket_read_packet(0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx                ; get real socket address
-        or      eax, eax
-        jz      .error
-
-        mov     ebx, eax
-
-        push    ecx edx
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        pop     edx ecx
-
-        mov     eax, [ebx + SOCKET.rxDataCount]            ; get count of bytes
-        test    eax, eax                                   ; if count of bytes is zero..
-        jz      .exit                                      ; exit function (eax will be zero)
-
-        test    edx, edx                                   ; if buffer size is zero, copy all data
-        jz      .copy_all_bytes
-        cmp     edx, eax                                   ; if buffer size is larger then the bytes of data, copy all data
-        jge     .copy_all_bytes
-
-        sub     eax, edx                                   ; store new count (data bytes in buffer - bytes we're about to copy)
-        mov     [ebx + SOCKET.rxDataCount], eax            ;
-        push    eax
-        mov     eax, edx                                   ; number of bytes we want to copy must be in eax
-        call    .start_copy                                ; copy to the application
-
-        mov     esi, ebx                                   ; now we're going to copy the remaining bytes to the beginning
-        add     esi, SOCKET.rxData                         ; we dont need to copy the header
-        mov     edi, esi                                   ; edi is where we're going to copy to
-        add     esi, edx                                   ; esi is from where we copy
-        pop     ecx                                        ; count of bytes we have left
-        push    ecx                                        ; push it again so we can re-use it later
-        shr     ecx, 2                                     ; divide eax by 4
-        cld
-        rep movsd                                          ; copy all full dwords
-        pop     ecx
-        and     ecx, 3
-        rep movsb                                          ; copy remaining bytes
-
-  .exit:
-        lea     ecx, [ebx + SOCKET.mutex]
-        mov     ebx, eax
-        call    mutex_unlock
-        mov     eax, ebx
-        ret                    ; at last, exit
-
-  .error:
-        xor     eax, eax
-        ret
-
-  .copy_all_bytes:
-        xor     esi, esi
-        mov     [ebx + SOCKET.rxDataCount], esi            ; store new count (zero)
-        call    .start_copy
-        lea     ecx, [ebx + SOCKET.mutex]
-        mov     ebx, eax
-        call    mutex_unlock
-        mov     eax, ebx
-        ret
-
-  .start_copy:
-        mov     edi, ecx
-        mov     esi, ebx
-        add     esi, SOCKET.rxData                         ; we dont need to copy the header
-        mov     ecx, eax                                   ; eax is count of bytes
-        push    ecx
-        shr     ecx, 2                                     ; divide eax by 4
-        cld                                                ; copy all full dwords
-        rep movsd
-        pop     ecx
-        and     ecx, 3
-        rep movsb                                          ; copy the rest bytes
-        retn                                               ; exit, or go back to shift remaining bytes if any
-endp
-
-;; [53.4] Send data through DGRAM socket
-;
-; @param EBX is socket number
-; @param ECX is application data size (number of bytes to send)
-; @param EDX is pointer to application data buffer
-; @return 0 (sent successfully) or -1 (error) in EAX
-;;
-proc socket_write stdcall
-;        DEBUGF  1, "socket_write(0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx                ; get real socket address
-        or      eax, eax
-        jz      .error
-
-        mov     ebx, eax
-
-        mov     eax, EMPTY_QUEUE
-        call    dequeue
-        cmp     ax, NO_BUFFER
-        je      .error
-
-        ; Save the queue entry number
-        push    eax
-
-        ; save the pointers to the data buffer & size
-        push    edx
-        push    ecx
-
-        ; convert buffer pointer eax to the absolute address
-        mov     ecx, IPBUFFSIZE
-        mul     ecx
-        add     eax, IPbuffs
-
-        mov     edx, eax
-
-        ; So, ebx holds the socket ptr, edx holds the IPbuffer ptr
-
-        ; Fill in the IP header (some data is in the socket descriptor)
-        mov     eax, [ebx + SOCKET.LocalIP]
-        mov     [edx + IP_PACKET.SourceAddress], eax
-        mov     eax, [ebx + SOCKET.RemoteIP]
-        mov     [edx + IP_PACKET.DestinationAddress], eax
-
-        mov     [edx + IP_PACKET.VersionAndIHL], 0x45
-        mov     [edx + IP_PACKET.TypeOfService], 0
-
-        pop     eax                   ; Get the UDP data length
-        push    eax
-
-        add     eax, 20 + 8           ; add IP header and UDP header lengths
-        xchg    al, ah
-        mov     [edx + IP_PACKET.TotalLength], ax
-        xor     eax, eax
-        mov     [edx + IP_PACKET.Identification], ax
-        mov     [edx + IP_PACKET.FlagsAndFragmentOffset], 0x0040
-        mov     [edx + IP_PACKET.TimeToLive], 0x20
-        mov     [edx + IP_PACKET.Protocol], PROTOCOL_UDP
-
-        ; Checksum left unfilled
-        mov     [edx + IP_PACKET.HeaderChecksum], ax
-
-        ; Fill in the UDP header (some data is in the socket descriptor)
-        mov     ax, [ebx + SOCKET.LocalPort]
-        mov     [edx + 20 + UDP_PACKET.SourcePort], ax
-
-        mov     ax, [ebx + SOCKET.RemotePort]
-        mov     [edx + 20 + UDP_PACKET.DestinationPort], ax
-
-        pop     eax
-        push    eax
-
-        add     eax, 8
-        xchg    al, ah
-        mov     [edx + 20 + UDP_PACKET.Length], ax
-
-        ; Checksum left unfilled
-        xor     eax, eax
-        mov     [edx + 20 + UDP_PACKET.Checksum], ax
-
-        pop     ecx                  ; count of bytes to send
-        mov     ebx, ecx             ; need the length later
-        pop     eax                  ; get callers ptr to data to send
-
-        ; Get the address of the callers data
-        mov     edi, [TASK_BASE]
-        add     edi, TASKDATA.mem_start
-        add     eax, [edi]
-        mov     esi, eax
-
+        mov     ebx, edi
+        mov     ecx, esi
         mov     edi, edx
-        add     edi, 28
-        cld
-        rep movsb                   ; copy the data across
+        xor     edx, edx
 
-        ; we have edx as IPbuffer ptr.
-        ; Fill in the UDP checksum
-        ; First, fill in pseudoheader
-        mov     eax, [edx + IP_PACKET.SourceAddress]
-        mov     [pseudoHeader], eax
-        mov     eax, [edx + IP_PACKET.DestinationAddress]
-        mov     [pseudoHeader + 4], eax
-        mov     word[pseudoHeader + 8], PROTOCOL_UDP shl 8 + 0      ; 0 + protocol
-        add     ebx, 8
-        mov     eax, ebx
-        xchg    al, ah
-        mov     [pseudoHeader + 10], ax
+        test    ebx, MSG_DONTWAIT
+        jnz     .dontwait
+  .loop:
+        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
+        je      .block
+  .dontwait:
+        test    ebx, MSG_PEEK
+        jnz     .peek
 
-        mov     eax, pseudoHeader
-        mov     [checkAdd1], eax
-        mov     [checkSize1], word 12
-        mov     eax, edx
-        add     eax, 20
-        mov     [checkAdd2], eax
-        mov     eax, ebx
-        mov     [checkSize2], ax      ; was eax!! mjh 8/7/02
+        add     eax, STREAM_SOCKET.rcv
+        call    SOCKET_ring_read
+        call    SOCKET_ring_free
 
-        call    checksum
-
-        ; store it in the UDP checksum ( in the correct order! )
-        mov     ax, [checkResult]
-
-        ; If the UDP checksum computes to 0, we must make it 0xffff
-        ; (0 is reserved for 'not used')
-        test    ax, ax
-        jnz     @f
-        mov     ax, 0xffff
-
-    @@:
-        xchg    al, ah
-        mov     [edx + 20 + UDP_PACKET.Checksum], ax
-
-        ; Fill in the IP header checksum
-        GET_IHL ecx,edx              ; get IP-Header length
-        stdcall checksum_jb, edx, ecx; buf_ptr, buf_size
-        xchg    al, ah
-        mov     [edx + IP_PACKET.HeaderChecksum], ax
-
-        ; Check destination IP address.
-        ; If it is the local host IP, route it back to IP_RX
-
-        pop     ebx
-
-        mov     eax, NET1OUT_QUEUE
-        mov     ecx, [edx + SOCKET.RemoteIP]
-        mov     edx, [stack_ip]
-        cmp     edx, ecx
-        jne     .not_local
-        mov     eax, IPIN_QUEUE
-
-  .not_local:
-        ; Send it.
-        call    queue
-
-        xor     eax, eax
+        mov     [esp+32], ecx                                   ; return number of bytes copied
         ret
 
-  .error:
-        or      eax, -1
+  .peek:
+        mov     ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+        mov     [esp+32], ecx                                   ; return number of bytes available
         ret
-endp
 
-;; [53.7] Send data through STREAM socket
+  .block:
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     .return0
+
+        call    SOCKET_block
+        jmp     .loop
+
+  .return0:
+        xor     ecx, ecx
+        mov     [esp+32], ecx
+        ret
+
+
+;-----------------------------------------------------------------
 ;
-; @param EBX is socket number
-; @param ECX is application data size (number of bytes to send)
-; @param EDX is pointer to application data buffer
-; @return 0 (sent successfully) or -1 (error) in EAX
-;;
-proc socket_write_tcp stdcall
-local sockAddr dd ?
+; SOCKET_send
+;
+;
+;  IN:  socket number in ecx
+;       pointer to data in edx
+;       datalength in esi
+;       flags in edi
+;  OUT: -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_send:
 
-;        DEBUGF  1, "socket_write_tcp(0x%x)\n", ebx
-        stdcall net_socket_num_to_addr, ebx
-        or      eax, eax
-        jz      .error
+        DEBUGF  2,"SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
-        mov     ebx, eax
-        mov     [sockAddr], ebx
+        call    SOCKET_num_to_ptr
+        jz      s_error
 
-        ; If the sockets window timer is nonzero, do not queue packet
-        cmp     [ebx + SOCKET.wndsizeTimer], 0
-        jne     .error
-
-        mov     eax, EMPTY_QUEUE
-        call    dequeue
-        cmp     ax, NO_BUFFER
-        je      .error
-
-        push    eax
-
-        ; Get the address of the callers data
-        mov     edi, [TASK_BASE]
-        add     edi, TASKDATA.mem_start
-        add     edx, [edi]
+        mov     ecx, esi
         mov     esi, edx
 
-        pop     eax
+        jmp     [eax + SOCKET.snd_proc]
+
+
+align 4
+SOCKET_send_udp:
+
+        DEBUGF  1,"SOCKET_send: UDP\n"
+
+        mov     [esp+32], ecx
+        call    UDP_output
+        cmp     eax, -1
+        je      s_error
+        ret
+
+
+align 4
+SOCKET_send_tcp:
+
+        DEBUGF  1,"SOCKET_send: TCP\n"
+
         push    eax
-
-        push    ecx
-        mov     bl, TH_ACK
-        stdcall build_tcp_packet, [sockAddr]
-        pop     ecx
-
-        ; Check destination IP address.
-        ; If it is the local host IP, route it back to IP_RX
-
-        pop     ebx
-        push    ecx
-
-        mov     eax, NET1OUT_QUEUE
-        mov     edx, [stack_ip]
-        mov     ecx, [sockAddr]
-        cmp     edx, [ecx + SOCKET.RemoteIP]
-        jne     .not_local
-        mov     eax, IPIN_QUEUE
-
-  .not_local:
-        pop     ecx
-        push    ebx                 ; save ipbuffer number
-
-        call    queue
-
-        mov     esi, [sockAddr]
-
-        ; increament SND.NXT in socket
-        ; Amount to increment by is in ecx
-        add     esi, SOCKET.SND_NXT
-        call    add_inet_esi
-
-        pop     ebx
-
-        ; Copy the IP buffer to a resend queue
-        ; If there isn't one, dont worry about it for now
-        mov     esi, resendQ
-        mov     ecx, 0
-
-  .next_resendq:
-        cmp     ecx, NUMRESENDENTRIES
-        je      .exit              ; None found
-        cmp     dword[esi + 4], 0
-        je      @f                 ; found one
-        inc     ecx
-        add     esi, 8
-        jmp     .next_resendq
-
-    @@:
-        push    ebx
-
-        ; OK, we have a buffer descriptor ptr in esi.
-        ; resend entry # in ecx
-        ;  Populate it
-        ;  socket #
-        ;  retries count
-        ;  retry time
-        ;  fill IP buffer associated with this descriptor
-
-        stdcall net_socket_addr_to_num, [sockAddr]
-        mov     [esi + 4], eax
-        mov     byte[esi + 1], TCP_RETRIES
-        mov     word[esi + 2], TCP_TIMEOUT
-
-        inc     ecx
-        ; Now get buffer location, and copy buffer across. argh! more copying,,
-        mov     edi, resendBuffer - IPBUFFSIZE
-
-    @@:
-        add     edi, IPBUFFSIZE
-        loop    @b
-
-        ; we have dest buffer location in edi
+        add     eax, STREAM_SOCKET.snd
+        call    SOCKET_ring_write
         pop     eax
-        ; convert source buffer pointer eax to the absolute address
-        mov     ecx, IPBUFFSIZE
-        mul     ecx
-        add     eax, IPbuffs
-        mov     esi, eax
 
-        ; do copy
-        mov     ecx, IPBUFFSIZE
-        cld
-        rep movsb
+        mov     [esp+32], ecx
 
-  .exit:
-        xor     eax, eax
+        call    TCP_output
+        ret
+
+
+align 4
+SOCKET_send_ip:
+
+        DEBUGF  1,"SOCKET_send: IPv4\n"
+
+        mov     [esp+32], ecx
+        call    IPv4_output_raw
+        cmp     eax, -1
+        je      s_error
+        ret
+
+
+align 4
+SOCKET_send_icmp:
+
+        DEBUGF  1,"SOCKET_send: ICMP\n"
+
+        mov     [esp+32], ecx
+        call    ICMP_output_raw
+        cmp     eax, -1
+        je      s_error
+        ret
+
+
+align 4
+SOCKET_send_pppoe:
+
+        DEBUGF  1,"SOCKET_send: PPPoE\n"
+
+        mov     [esp+32], ecx
+        mov     ebx, [eax + SOCKET.device]
+
+        call    PPPoE_discovery_output
+        cmp     eax, -1
+        je      s_error
+        ret
+
+
+
+align 4
+SOCKET_send_local:
+
+        ; does this socket have a PID yet?
+        cmp     [eax + SOCKET.PID], 0
+        jne     @f
+
+        ; Change PID to that of current process
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
+      @@:
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_local_
+
+align 4
+SOCKET_send_local_:
+
+        DEBUGF  1,"SOCKET_send: LOCAL\n"
+
+        ; get the other side's socket and check if it still exists
+        mov     eax, [eax + SOCKET.device]
+        call    SOCKET_check
+        jz      s_error
+
+        ; allright, shove in the data!
+        push    eax
+        add     eax, STREAM_SOCKET.rcv
+        call    SOCKET_ring_write
+        pop     eax
+
+        ; return the number of written bytes (or errorcode) to application
+        mov     [esp+32], ecx
+
+        ; and notify the other end
+        call    SOCKET_notify
+
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_get_options
+;
+;  IN:  ecx = socket number
+;       edx = pointer to the options:
+;               dd      level, optname, optval, optlen
+;  OUT: -1 on error
+;
+; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
+; TODO: find best way to notify that send()'ed data were acknowledged
+; Also pseudo-optname -3 is valid and returns socket state, one of TCPS_*.
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_get_opt:
+
+        DEBUGF  2,"SOCKET_get_opt\n"
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        cmp     dword [edx], IP_PROTO_TCP
+        jne     s_error
+        cmp     dword [edx+4], -2
+        je      @f
+        cmp     dword [edx+4], -3
+        jne     s_error
+@@:
+;        mov     eax, [edx+12]
+;        test    eax, eax
+;        jz      .fail
+;        cmp     dword [eax], 4
+;        mov     dword [eax], 4
+;        jb      .fail
+;        stdcall net_socket_num_to_addr, ecx
+;        test    eax, eax
+;        jz      .fail
+;        ; todo: check that eax is really TCP socket
+;        mov     ecx, [eax + TCP_SOCKET.last_ack_number]
+;        cmp     dword [edx+4], -2
+;        jz      @f
+;        mov     ecx, [eax + TCP_SOCKET.state]
+@@:
+        mov     eax, [edx+8]
+        test    eax, eax
+        jz      @f
+        mov     [eax], ecx
+@@:
+        mov     dword [esp+32], 0
+        ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_set_options
+;
+;  IN:  ecx = socket number
+;       edx = pointer to the options:
+;               dd      level, optname, optlen, optval
+;  OUT: -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_set_opt:
+
+        DEBUGF  2,"SOCKET_set_opt\n"
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        cmp     dword [edx], SOL_SOCKET
+        jne     s_error
+
+        cmp     dword [edx+4], SO_BINDTODEVICE
+        je      .bind
+
+        cmp     dword [edx+4], SO_BLOCK
+        je      .block
+
+        jmp     s_error
+
+  .bind:
+        cmp     dword [edx+8], 0
+        je      .unbind
+
+        movzx   edx, byte [edx + 9]
+        cmp     edx, MAX_NET_DEVICES
+        ja      s_error
+
+        mov     edx, [NET_DRV_LIST + 4*edx]
+        test    edx, edx
+        jz      s_error
+        mov     [eax + SOCKET.device], edx
+
+        DEBUGF  1,"SOCKET_set_opt: Bound socket %x to device %x\n",eax, edx
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+  .unbind:
+        mov     [eax + SOCKET.device], 0
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+  .block:
+        cmp     dword [edx+8], 0
+        je      .unblock
+
+        and     [eax + SOCKET.options], not SO_NONBLOCK
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+  .unblock:
+        or      [eax + SOCKET.options], SO_NONBLOCK
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_pair
+;
+; Allocates a pair of linked LOCAL domain sockets
+;
+; IN: /
+; OUT: eax is socket1 num, -1 on error
+;      ebx is socket2 num
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_pair:
+
+        DEBUGF  2,"SOCKET_pair\n"
+
+        call    SOCKET_alloc
+        jz      s_error
+        mov     [esp+32], edi   ; application's eax
+
+        mov     [eax + SOCKET.Domain], AF_LOCAL
+        mov     [eax + SOCKET.Type], SOCK_STREAM
+        mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_local
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.PID], 0
+        mov     ebx, eax
+
+        call    SOCKET_alloc
+        jz      .error
+        mov     [esp+24], edi   ; application's ebx
+
+        mov     [eax + SOCKET.Domain], AF_LOCAL
+        mov     [eax + SOCKET.Type], SOCK_STREAM
+        mov     [eax + SOCKET.Protocol], 0              ;;; CHECKME
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_local
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_local
+        mov     [eax + SOCKET.PID], 0
+
+        ; Link the two sockets to eachother
+        mov     [eax + SOCKET.device], ebx
+        mov     [ebx + SOCKET.device], eax
+
+        lea     eax, [eax + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_create
+
+        lea     eax, [ebx + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_create
+        pop     eax
+
         ret
 
   .error:
-        or      eax, -1
+        mov     eax, ebx
+        call    SOCKET_free
+        jmp     s_error
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_debug
+;
+;  Copies socket variables to application buffer
+;
+;  IN:  ecx = socket number
+;       edx = pointer to buffer
+;
+;  OUT: -1 on error
+;-----------------------------------------------------------------
+align 4
+SOCKET_debug:
+
+        DEBUGF  1,"SOCKET_debug\n"
+
+        mov     edi, edx
+
+        test    ecx, ecx
+        jz      .returnall
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+        mov     esi, eax
+        mov     ecx, SOCKETBUFFSIZE/4
+        rep     movsd
+
+        mov     dword [esp+32], 0
         ret
-endp
+
+  .returnall:
+        mov     ebx, net_sockets
+  .next_socket:
+        mov     ebx, [ebx + SOCKET.NextPtr]
+        test    ebx, ebx
+        jz      .done
+        mov     eax, [ebx + SOCKET.Number]
+        stosd
+        jmp     .next_socket
+  .done:
+        xor     eax, eax
+        stosd
+
+        mov     dword [esp+32], 0
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_find_port
+;
+; Fills in the local port number for TCP and UDP sockets
+; This procedure always works because the number of sockets is
+; limited to a smaller number then the number of possible ports
+;
+;  IN:  eax = socket pointer
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_find_port:
+
+        DEBUGF  2,"SOCKET_find_port\n"
+
+        push    ebx esi ecx
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        je      .udp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+        pop     ecx esi ebx
+        ret
+
+  .udp:
+        mov     bx, [last_UDP_port]
+        call    .findit
+        mov     [last_UDP_port], bx
+
+        pop     ecx esi ebx
+        ret
+
+  .tcp:
+        mov     bx, [last_TCP_port]
+        call    .findit
+        mov     [last_TCP_port], bx
+
+        pop     ecx esi ebx
+        ret
+
+
+  .restart:
+        mov     bx, MIN_EPHEMERAL_PORT_N
+  .findit:
+        cmp     bx, MAX_EPHEMERAL_PORT_N
+        je      .restart
+
+        add     bh, 1
+        adc     bl, 0
+
+        call    SOCKET_check_port
+        jz      .findit
+        ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_check_port (to be used with AF_INET only!)
+;
+; Checks if a local port number is unused
+; If the proposed port number is unused, it is filled in in the socket structure
+;
+;  IN:  eax = socket ptr (to find out if its a TCP/UDP socket)
+;        bx = proposed socket number (network byte order)
+;
+;  OUT:  ZF = set on error
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_check_port:
+
+        DEBUGF  2,"SOCKET_check_port: "
+
+        mov     ecx, [eax + SOCKET.Protocol]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     esi, net_sockets
+
+  .next_socket:
+        mov     esi, [esi + SOCKET.NextPtr]
+        or      esi, esi
+        jz      .port_ok
+
+        cmp     [esi + SOCKET.Protocol], ecx
+        jne     .next_socket
+
+        cmp     [esi + IP_SOCKET.LocalIP], edx
+        jne     .next_socket
+
+        cmp     [esi + UDP_SOCKET.LocalPort], bx
+        jne     .next_socket
+
+        DEBUGF  2,"local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
+        ret
+
+  .port_ok:
+        DEBUGF  2,"local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
+        mov     [eax + UDP_SOCKET.LocalPort], bx
+        or      bx, bx                                  ; clear the zero-flag
+        ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_input
+;
+; Updates a (stateless) socket with received data
+;
+; Note: the mutex should already be set !
+;
+;  IN:  eax = socket ptr
+;       ecx = data size
+;       esi = ptr to data
+;       [esp] = ptr to buf
+;       [esp + 4] = buf size
+;
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_input:
+
+        DEBUGF  2,"SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
+
+        mov     [esp+4], ecx
+        push    esi
+        mov     esi, esp
+
+        add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, SOCKET_input.full
+
+        DEBUGF  1,"SOCKET_input: success\n"
+        add     esp, sizeof.socket_queue_entry
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
+        jmp     SOCKET_notify
+
+  .full:
+        DEBUGF  2,"SOCKET_input: socket %x is full!\n", eax
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
+        call    kernel_free
+        add     esp, 8
+
+        ret
+
+
+;--------------------------
+;
+; eax = ptr to ring struct (just a buffer of the right size)
+;
+align 4
+SOCKET_ring_create:
+
+        push    esi
+        mov     esi, eax
+
+        push    edx
+        stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SW
+        pop     edx
+
+        DEBUGF  1,"SOCKET_ring_created: %x\n", eax
+
+        pusha
+        lea     ecx, [esi + RING_BUFFER.mutex]
+        call    mutex_init
+        popa
+
+        mov     [esi + RING_BUFFER.start_ptr], eax
+        mov     [esi + RING_BUFFER.write_ptr], eax
+        mov     [esi + RING_BUFFER.read_ptr], eax
+        mov     [esi + RING_BUFFER.size], 0
+        add     eax, SOCKET_MAXDATA
+        mov     [esi + RING_BUFFER.end_ptr], eax
+        mov     eax, esi
+        pop     esi
+
+        ret
+
+;-----------------------------------------------------------------
+;
+; SOCKET_ring_write
+;
+; Adds data to a stream socket, and updates write pointer and size
+;
+;  IN:  eax = ptr to ring struct
+;       ecx = data size
+;       esi = ptr to data
+;
+;  OUT: ecx = number of bytes stored
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_ring_write:
+
+        DEBUGF  1,"SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
+
+; lock mutex
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_lock                                      ; TODO: check what registers this function actually destroys
+        popa
+
+; calculate available size
+        mov     edi, SOCKET_MAXDATA
+        sub     edi, [eax + RING_BUFFER.size]                   ; available buffer size in edi
+        cmp     ecx, edi
+        jbe     .copy
+        mov     ecx, edi
+  .copy:
+        mov     edi, [eax + RING_BUFFER.write_ptr]
+        DEBUGF  2,"SOCKET_ring_write: %u bytes from %x to %x\n", ecx, esi, edi
+
+; update write ptr
+        push    edi
+        add     edi, ecx
+        cmp     edi, [eax + RING_BUFFER.end_ptr]
+        jb      @f
+        sub     edi, SOCKET_MAXDATA                             ; WRAP
+  @@:
+        mov     [eax + RING_BUFFER.write_ptr], edi
+        pop     edi
+
+; update size
+        add     [eax + RING_BUFFER.size], ecx
+
+; copy the data
+        push    ecx
+        shr     ecx, 1
+        jnc     .nb
+        movsb
+  .nb:
+        shr     ecx, 1
+        jnc     .nw
+        movsw
+  .nw:
+        test    ecx, ecx
+        jz      .nd
+        rep     movsd
+  .nd:
+        pop     ecx
+
+; unlock mutex
+        push    eax ecx
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        pop     ecx eax
+
+        ret
+
+;-----------------------------------------------------------------
+;
+; SOCKET_ring_read
+;
+;  IN:  eax = ring struct ptr
+;       ecx = bytes to read
+;       edx = offset
+;       edi = ptr to buffer start
+;
+;  OUT: eax = unchanged
+;       ecx = number of bytes read (0 on error)
+;       edx = destroyed
+;       esi = destroyed
+;       edi = ptr to buffer end
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_ring_read:
+
+        DEBUGF  1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u offset=%x\n", eax, edi, ecx, edx
+
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_lock                                      ; TODO: check what registers this function actually destroys
+        popa
+
+        mov     esi, [eax + RING_BUFFER.read_ptr]
+        add     esi, edx                                        ; esi = start_ptr + offset
+
+        neg     edx
+        add     edx, [eax + RING_BUFFER.size]                   ; edx = snd.size - offset
+        jle     .no_data_at_all
+
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        popa
+
+        cmp     ecx, edx
+        ja      .less_data
+
+  .copy:
+        DEBUGF  2,"SOCKET_ring_read: %u bytes from %x to %x\n", ecx, esi, edi
+        push    ecx
+        shr     ecx, 1
+        jnc     .nb
+        movsb
+  .nb:
+        shr     ecx, 1
+        jnc     .nw
+        movsw
+  .nw:
+        test    ecx, ecx
+        jz      .nd
+        rep     movsd
+  .nd:
+        pop     ecx
+        ret
+
+  .no_data_at_all:
+        pusha
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        popa
+
+        DEBUGF  1,"SOCKET_ring_read: no data at all!\n"
+        xor     ecx, ecx
+        ret
+
+  .less_data:
+        mov     ecx, edx
+        jmp     .copy
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_ring_free
+;
+; Free's some bytes from the ringbuffer
+;
+;  IN:  eax = ptr to ring struct
+;       ecx = data size
+;
+;  OUT: ecx = number of bytes free-ed
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_ring_free:
+
+        DEBUGF  1,"SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
+
+        push    eax ecx
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_lock                                      ; TODO: check what registers this function actually destroys
+        pop     ecx eax
+
+        sub     [eax + RING_BUFFER.size], ecx
+        jb      .error
+        add     [eax + RING_BUFFER.read_ptr], ecx
+
+        mov     edx, [eax + RING_BUFFER.end_ptr]
+        cmp     [eax + RING_BUFFER.read_ptr], edx
+        jb      @f
+        sub     [eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA
+       @@:
+
+        push    eax ecx
+        lea     ecx, [eax + RING_BUFFER.mutex]                  ; TODO: check what registers this function actually destroys
+        call    mutex_unlock
+        pop     ecx eax
+
+        ret
+
+  .error:       ; we could free all available bytes, but that would be stupid, i guess..
+        DEBUGF  1,"SOCKET_ring_free: buffer=%x error!\n", eax
+        add     [eax + RING_BUFFER.size], ecx
+
+        push    eax
+        lea     ecx, [eax + RING_BUFFER.mutex]
+        call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
+        pop     eax
+
+        xor     ecx, ecx
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_block
+;
+; Suspends the thread attached to a socket
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_block:
+
+        DEBUGF  1,"SOCKET_block: %x\n", eax
+
+        pushf
+        cli
+
+        ; Set the 'socket is blocked' flag
+        or      [eax + SOCKET.state], SS_BLOCKED
+
+        ; Suspend the thread
+        push    edx
+        mov     edx, [TASK_BASE]
+        mov     [edx + TASKDATA.state], 1               ; Suspended
+
+        ; Remember the thread ID so we can wake it up again
+        mov     edx, [edx + TASKDATA.pid]
+        DEBUGF  1,"SOCKET_block: suspending thread: %u\n", edx
+        mov     [eax + SOCKET.TID], edx
+        pop     edx
+
+        call    change_task
+        popf
+
+        DEBUGF  1,"SOCKET_block: continueing\n"
+
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_notify
+;
+; notify's the owner of a socket that something happened
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_notify:
+
+        DEBUGF  1,"SOCKET_notify: %x\n", eax
+
+        call    SOCKET_check
+        jz      .error
+
+        test    [eax + SOCKET.state], SS_BLOCKED
+        jnz     .unblock
+
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jz      .error
+
+        push    eax ecx esi
+
+; socket exists and is of non blocking type.
+; We'll try to flag an event to the thread
+
+        mov     eax, [eax + SOCKET.TID]
+        test    eax, eax
+        jz      .done
+        mov     ecx, 1
+        mov     esi, TASK_DATA + TASKDATA.pid
+
+  .next_pid:
+        cmp     [esi], eax
+        je      .found_pid
+        inc     ecx
+        add     esi, 0x20
+        cmp     ecx, [TASK_COUNT]
+        jbe     .next_pid
+; PID not found, TODO: close socket!
+        jmp     .done
+
+  .found_pid:
+        shl     ecx, 8
+        or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
+
+        DEBUGF  1,"SOCKET_notify: Raised a network event!\n"
+
+        jmp     .done
+
+  .unblock:
+        push    eax ecx esi
+        ; Clear the 'socket is blocked' flag
+        and     [eax + SOCKET.state], not SS_BLOCKED
+
+        ; Find the thread's TASK_DATA
+        mov     eax, [eax + SOCKET.TID]
+        test    eax, eax
+        jz      .error
+        xor     ecx, ecx
+        inc     ecx
+        mov     esi, TASK_DATA
+  .next:
+        cmp     [esi + TASKDATA.pid], eax
+        je      .found
+        inc     ecx
+        add     esi, 0x20
+        cmp     ecx, [TASK_COUNT]
+        jbe     .next
+        jmp     .error
+  .found:
+
+        ; Run the thread
+        mov     [esi + TASKDATA.state], 0       ; Running
+        DEBUGF  1,"SOCKET_notify: Unblocked socket!\n"
+
+  .done:
+        pop     esi ecx eax
+
+  .error:
+        ret
+
+
+;--------------------------------------------------------------------
+;
+; SOCKET_alloc
+;
+; Allocate memory for socket data and put new socket into the list
+; Newly created socket is initialized with calling PID and number and
+; put into beginning of list (which is a fastest way).
+;
+; IN:  /
+; OUT: eax = 0 on error, socket ptr otherwise
+;      edi = socket number
+;       ZF = cleared on error
+;
+;--------------------------------------------------------------------
+align 4
+SOCKET_alloc:
+
+        push    ebx
+
+        stdcall kernel_alloc, SOCKETBUFFSIZE
+        DEBUGF  1, "SOCKET_alloc: ptr=%x\n", eax
+        or      eax, eax
+        jz      .exit
+
+; zero-initialize allocated memory
+        push    eax
+        mov     edi, eax
+        mov     ecx, SOCKETBUFFSIZE / 4
+        xor     eax, eax
+        rep     stosd
+        pop     eax
+
+; set send-and receive procedures to return -1
+        mov     [eax + SOCKET.snd_proc], s_error
+        mov     [eax + SOCKET.rcv_proc], s_error
+
+; find first free socket number and use it
+        mov     edi, [last_socket_num]
+  .next_socket_number:
+        inc     edi
+        jz      .next_socket_number     ; avoid socket nr 0
+        cmp     edi, -1
+        je      .next_socket_number     ; avoid socket nr -1
+        mov     ebx, net_sockets
+  .next_socket:
+        mov     ebx, [ebx + SOCKET.NextPtr]
+        test    ebx, ebx
+        jz      .last_socket
+
+        cmp     [ebx + SOCKET.Number], edi
+        jne     .next_socket
+        jmp     .next_socket_number
+
+  .last_socket:
+        mov     [last_socket_num], edi
+        mov     [eax + SOCKET.Number], edi
+        DEBUGF  1, "SOCKET_alloc: number=%u\n", edi
+
+; Fill in PID
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        mov     [eax + SOCKET.PID], ebx
+        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
+
+; init mutex
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_init
+        popa
+
+; add socket to the list by re-arranging some pointers
+        mov     ebx, [net_sockets + SOCKET.NextPtr]
+
+        mov     [eax + SOCKET.PrevPtr], net_sockets
+        mov     [eax + SOCKET.NextPtr], ebx
+
+        test    ebx, ebx
+        jz      @f
+
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+        mov     [ebx + SOCKET.PrevPtr], eax
+
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+       @@:
+
+        mov     [net_sockets + SOCKET.NextPtr], eax
+        or      eax, eax                ; used to clear zero flag
+  .exit:
+        pop     ebx
+
+        ret
+
+
+;----------------------------------------------------
+;
+; SOCKET_free
+;
+; Free socket data memory and remove socket from the list
+;
+; IN:  eax = socket ptr
+; OUT: /
+;
+;----------------------------------------------------
+align 4
+SOCKET_free:
+
+        DEBUGF  1, "SOCKET_free: %x\n", eax
+
+        call    SOCKET_check
+        jz      .error
+
+        push    ebx
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jnz     .no_tcp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        jnz     .no_tcp
+
+        mov     ebx, eax
+        stdcall kernel_free, [ebx + STREAM_SOCKET.rcv.start_ptr]
+        stdcall kernel_free, [ebx + STREAM_SOCKET.snd.start_ptr]
+        mov     eax, ebx
+  .no_tcp:
+
+        push    eax                             ; this will be passed to kernel_free
+        mov     ebx, [eax + SOCKET.NextPtr]
+        mov     eax, [eax + SOCKET.PrevPtr]
+
+        DEBUGF  1, "SOCKET_free: linking socket %x to socket %x\n", eax, ebx
+
+        test    eax, eax
+        jz      @f
+        mov     [eax + SOCKET.NextPtr], ebx
+       @@:
+
+        test    ebx, ebx
+        jz      @f
+        mov     [ebx + SOCKET.PrevPtr], eax
+       @@:
+
+        call    kernel_free
+        pop     ebx
+
+        DEBUGF  1, "SOCKET_free: success!\n"
+
+  .error:
+        ret
+
+;------------------------------------
+;
+; SOCKET_fork
+;
+; Create a child socket
+;
+; IN:  socket nr in ebx
+; OUT: child socket nr in eax
+;
+;-----------------------------------
+align 4
+SOCKET_fork:
+
+        DEBUGF  1,"SOCKET_fork: %x\n", ebx
+
+; Exit if backlog queue is full
+        mov     eax, [ebx + SOCKET_QUEUE_LOCATION + queue.size]
+        cmp     ax, [ebx + SOCKET.backlog]
+        jae     .fail
+
+; Allocate new socket
+        push    ebx
+        call    SOCKET_alloc
+        pop     ebx
+        jz      .fail
+
+        push    eax
+        mov     esi, esp
+        add_to_queue (ebx + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, .fail2
+        pop     eax
+
+; Copy structure from current socket to new
+; We start at PID to preserve the socket num, and the 2 pointers at beginning of socket
+        lea     esi, [ebx + SOCKET.PID]
+        lea     edi, [eax + SOCKET.PID]
+        mov     ecx, (SOCKET_QUEUE_LOCATION - SOCKET.PID + 3)/4
+        rep     movsd
+
+        and     [eax + SOCKET.options], not SO_ACCEPTCON
+
+        ret
+
+  .fail2:
+        add     esp, 4+4+4
+  .fail:
+        DEBUGF  1,"SOCKET_fork: failed\n"
+        xor     eax, eax
+        ret
+
+
+;---------------------------------------------------
+;
+; SOCKET_num_to_ptr
+;
+; Get socket structure address by its number
+;
+; IN:  ecx = socket number
+; OUT: eax = 0 on error, socket ptr otherwise
+;       ZF = set on error
+;
+;---------------------------------------------------
+align 4
+SOCKET_num_to_ptr:
+
+        DEBUGF  1,"SOCKET_num_to_ptr: num=%u ", ecx
+
+        mov     eax, net_sockets
+
+  .next_socket:
+        mov     eax, [eax + SOCKET.NextPtr]
+        or      eax, eax
+        jz      .error
+        cmp     [eax + SOCKET.Number], ecx
+        jne     .next_socket
+
+        test    eax, eax
+
+        DEBUGF  1,"ptr=%x\n", eax
+        ret
+
+  .error:
+        DEBUGF  1,"not found\n", eax
+        ret
+
+
+;---------------------------------------------------
+;
+; SOCKET_ptr_to_num
+;
+; Get socket number by its address
+;
+; IN:  eax = socket ptr
+; OUT: eax = 0 on error, socket num otherwise
+;       ZF = set on error
+;
+;---------------------------------------------------
+align 4
+SOCKET_ptr_to_num:
+
+        DEBUGF  1,"SOCKET_ptr_to_num: ptr=%x ", eax
+
+        call    SOCKET_check
+        jz      .error
+
+        mov     eax, [eax + SOCKET.Number]
+
+        DEBUGF  1,"num=%u\n", eax
+        ret
+
+  .error:
+        DEBUGF  1,"not found\n", eax
+        ret
+
+
+;---------------------------------------------------
+;
+; SOCKET_check
+;
+; checks if the given value is really a socket ptr
+;
+; IN:  eax = socket ptr
+; OUT: eax = 0 on error, unchanged otherwise
+;       ZF = set on error
+;
+;---------------------------------------------------
+align 4
+SOCKET_check:
+
+        DEBUGF  1,"SOCKET_check: %x\n", eax
+
+        push    ebx
+        mov     ebx, net_sockets
+
+  .next_socket:
+        mov     ebx, [ebx + SOCKET.NextPtr]
+        or      ebx, ebx
+        jz      .done
+        cmp     ebx, eax
+        jnz     .next_socket
+
+  .done:
+        mov     eax, ebx
+        test    eax, eax
+        pop     ebx
+
+        ret
+
+
+
+;---------------------------------------------------
+;
+; SOCKET_check_owner
+;
+; checks if the caller application owns the socket
+;
+; IN:  eax = socket ptr
+; OUT:  ZF = true/false
+;
+;---------------------------------------------------
+align 4
+SOCKET_check_owner:
+
+        DEBUGF  1,"SOCKET_check_owner: %x\n", eax
+
+        push    ebx
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        cmp     [eax + SOCKET.PID], ebx
+        pop      ebx
+
+        ret
+
+
+
+
+;------------------------------------------------------
+;
+; SOCKET_process_end
+;
+; Kernel calls this function when a certain process ends
+; This function will check if the process had any open sockets
+; And update them accordingly
+;
+; IN:  edx = pid
+; OUT: /
+;
+;------------------------------------------------------
+align 4
+SOCKET_process_end:
+
+        DEBUGF  1, "SOCKET_process_end: %x\n", edx
+
+        push    ebx
+        mov     ebx, net_sockets
+
+  .next_socket:
+        mov     ebx, [ebx + SOCKET.NextPtr]
+  .next_socket_test:
+        test    ebx, ebx
+        jz      .done
+
+        cmp     [ebx + SOCKET.PID], edx
+        jne     .next_socket
+
+        DEBUGF  1, "SOCKET_process_end: killing socket %x\n", ebx
+
+        mov     [ebx + SOCKET.PID], 0
+        mov     eax, ebx
+        mov     ebx, [ebx + SOCKET.NextPtr]
+        pusha
+        call    SOCKET_close.socket
+        popa
+        jmp     .next_socket_test
+
+  .done:
+        pop     ebx
+
+        ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_connecting
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_connecting:
+
+        DEBUGF  1,"SOCKET_is_connecting: %x\n", eax
+
+        and     [eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+        or      [eax + SOCKET.options], SS_ISCONNECTING
+
+        jmp     SOCKET_notify
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_connected
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_connected:
+
+        DEBUGF  1,"SOCKET_is_connected: %x\n", eax
+
+        and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+        or      [eax + SOCKET.options], SS_ISCONNECTED
+
+        jmp     SOCKET_notify
+
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_disconnecting
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_disconnecting:
+
+        DEBUGF  1,"SOCKET_is_disconnecting: %x\n", eax
+
+        and     [eax + SOCKET.options], not (SS_ISCONNECTING)
+        or      [eax + SOCKET.options], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
+
+        jmp     SOCKET_notify
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_disconnected
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_disconnected:
+
+        DEBUGF  1,"SOCKET_is_disconnected: %x\n", eax
+
+        and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
+        or      [eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        je      .udp
+
+        jmp     SOCKET_notify
+
+  .tcp:
+  .udp:
+        mov     [eax + UDP_SOCKET.LocalPort], 0         ; UDP and TCP structs store localport at the same offset
+        mov     [eax + UDP_SOCKET.RemotePort], 0
+
+        jmp     SOCKET_notify
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_cant_recv_more
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_cant_recv_more:
+
+        DEBUGF  1,"SOCKET_cant_recv_more: %x\n", eax
+
+        or      [eax + SOCKET.options], SS_CANTRCVMORE
+
+        ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_cant_send_more
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_cant_send_more:
+
+        DEBUGF  1,"SOCKET_cant_send_more: %x\n", eax
+
+        or      [eax + SOCKET.options], SS_CANTSENDMORE
+
+        ret

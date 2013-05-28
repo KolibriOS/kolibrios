@@ -15,87 +15,87 @@ $Revision$
 
  
 d80x25_bottom:
-          db       186,' KolibriOS pohineb MenuetOS ja kaasas IGASUGUSE GARANTI'
-          db       'ITA                    ',186
-          db       186,' Naha faili COPYING detailid                           '
-          db       '                       ',186
+          latin1   'â•‘ KolibriOS pohineb MenuetOS ja kaasas IGASUGUSE GARANTI'
+          latin1   'ITA                    â•‘'
+          latin1   'â•‘ Naha faili COPYING detailid                           '
+          latin1   '                       â•‘'
           line_full_bottom
 d80x25_bottom_num = 3
 
-msg_apm	  db      " APM x.x ", 0
-novesa    db      "Ekraan: EGA/CGA",13,10,0
-s_vesa    db      "Vesa versioon: "
+msg_apm:  latin1  " APM x.x ", 0
+novesa:   latin1  "Ekraan: EGA/CGA",13,10,0
+s_vesa:   latin1  "Vesa versioon: "
   .ver    db      "?.?",13,10,0
 
-gr_mode   db      "Vali videomode: ",13,10,0
+gr_mode:  latin1  "Vali videomode: ",13,10,0
 
-ask_bd     db      "Lisa kettad nahtavaks BIOS reziim V86? [1-jah, 2-no]: ",0
+ask_bd:   latin1  "Lisa kettad nahtavaks BIOS reziim V86? [1-jah, 2-no]: ",0
 
 if defined extended_primary_loader
-bdev      db      "Paigalda mäluketas [1-diskett; 2-kolibri.img]: ",0
+bdev:     latin1  "Paigalda mÃ¤luketas [1-diskett; 2-kolibri.img]: ",0
 else
-bdev      db      "Paigalda mäluketas [1-diskett; 2-C:\kolibri.img (FAT32);"
-          db      13,10,186,"                    "
-          db      "3-kasuta eellaaditud mäluketast kerneli restardist;"
-          db      13,10,186,"                    "
-          db      "4-loo tühi pilt]: ",0
+bdev:     latin1  "Paigalda mÃ¤luketas [1-diskett; 2-C:\kolibri.img (FAT32);"
+          latin1  13,10,"â•‘                    "
+          latin1  "3-kasuta eellaaditud mÃ¤luketast kerneli restardist;"
+          latin1  13,10,"â•‘                    "
+          latin1  "4-loo tÃ¼hi pilt]: ",0
 end if
 
-prnotfnd  db      "Fataalne - Videoreziimi ei leitud.",0
+prnotfnd: latin1  "Fataalne - Videoreziimi ei leitud.",0
 
-not386    db      "Fataalne - CPU 386+ on vajalik.",0
-fatalsel  db      "Fataalne - Graafilist reziimi riistvara ei toeta.",0
-pres_key  db      "Vajutage suvalist klahvi, et valida uus videomode.",0
-badsect   db      13,10,186," Fataalne - Vigane sektor. Asenda diskett.",0
-memmovefailed db  13,10,186," Fataalne - Int 0x15 liigutamine ebaõnnestus.",0
-okt       db      " ... OK"
-linef     db      13,10,0
-diskload  db      "Loen disketti: 00 %",8,8,8,8,0
-pros      db      "00"
-backspace2 db     8,8,0
+not386:   latin1  "Fataalne - CPU 386+ on vajalik.",0
+fatalsel: latin1  "Fataalne - Graafilist reziimi riistvara ei toeta.",0
+pres_key: latin1  "Vajutage suvalist klahvi, et valida uus videomode.",0
+badsect:  latin1  13,10,"â•‘ Fataalne - Vigane sektor. Asenda diskett.",0
+memmovefailed:latin1  13,10,"â•‘ Fataalne - Int 0x15 liigutamine ebaÃµnnestus.",0
+okt:      latin1  " ... OK"
+linef:    latin1  13,10,0
+diskload: latin1  "Loen disketti: 00 %",8,8,8,8,0
+pros:     latin1  "00"
+backspace2:latin1 8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Vajuta [abcd] seadete muutmiseks, vajuta [Enter] laadimise jätkamiseks",13,10,0
-time_msg  db      " või oota "
-time_str  db      " 5 sekundit"
-          db      " automaatseks jätkamiseks",13,10,0
-current_cfg_msg db "Praegused seaded:",13,10,0
-curvideo_msg db   " [a] Videoreziim: ",0
+start_msg:latin1  "Vajuta [abcd] seadete muutmiseks, vajuta [Enter] laadimise jÃ¤tkamiseks",13,10,0
+time_msg: latin1  " vÃµi oota "
+time_str: latin1  " 5 sekundit"
+          latin1  " automaatseks jÃ¤tkamiseks",13,10,0
+current_cfg_msg:latin1 "Praegused seaded:",13,10,0
+curvideo_msg:latin1   " [a] Videoreziim: ",0
 
-mode0     db      "320x200, EGA/CGA 256 värvi",0
-mode9     db      "640x480, VGA 16 värvi",0
+mode0:    latin1  "320x200, EGA/CGA 256 vÃ¤rvi",0
+mode9:    latin1  "640x480, VGA 16 vÃ¤rvi",0
 
-usebd_msg db      " [b] Lisa kettad nahtavaks BIOS:",0
-on_msg    db      " sees",13,10,0
-off_msg   db      " väljas",13,10,0
+usebd_msg:latin1  " [b] Lisa kettad nahtavaks BIOS:",0
+on_msg:   latin1  " sees",13,10,0
+off_msg:  latin1  " vÃ¤ljas",13,10,0
 
-preboot_device_msg db " [c] Disketi kujutis: ",0
+preboot_device_msg:latin1 " [c] Disketi kujutis: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0
-pdm1      db      "reaalne diskett",13,10,0
-pdm2      db      "kolibri.img",13,10,0
+pdm1:     latin1  "reaalne diskett",13,10,0
+pdm2:     latin1  "kolibri.img",13,10,0
 else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
-pdm1      db      "reaalne diskett",13,10,0
-pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
-pdm3      db      "kasuta juba laaditud kujutist",13,10,0
-pdm4      db      "loo tühi pilt",13,10,0
+pdm1:     latin1  "reaalne diskett",13,10,0
+pdm2:     latin1  "C:\kolibri.img (FAT32)",13,10,0
+pdm3:     latin1  "kasuta juba laaditud kujutist",13,10,0
+pdm4:     latin1  "loo tÃ¼hi pilt",13,10,0
 end if
 
-loading_msg db    "Laadin KolibriOS...",0
+loading_msg:latin1 "Laadin KolibriOS...",0
 
 if ~ defined extended_primary_loader
-save_quest db     "Jäta meelde praegused seaded? [y/n]: ",0
-loader_block_error db "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.",0
+save_quest:latin1 "JÃ¤ta meelde praegused seaded? [y/n]: ",0
+loader_block_error:latin1 "Alglaaduri andmed vigased, ei saa jÃ¤tkata. Peatatud.",0
 end if
 
-_st db 186,'                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄ¿',13,10,0
-_r1 db 186,'                   ³  320x200  EGA/CGA 256 colors  ³ ³',13,10,0
-_r2 db 186,'                   ³  640x480  VGA 16 colors       ³ ³',13,10,0
-_rs db 186,'                   ³  ????x????@??  SVGA VESA      ³ ³',13,10,0
-_bt db 186,'                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÙ',13,10,0
+_st:latin1 'â•‘                   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”',13,10,0
+_r1:latin1 'â•‘                   â”‚  320x200  EGA/CGA 256 colors  â”‚ â”‚',13,10,0
+_r2:latin1 'â•‘                   â”‚  640x480  VGA 16 colors       â”‚ â”‚',13,10,0
+_rs:latin1 'â•‘                   â”‚  ????x????@??  SVGA VESA      â”‚ â”‚',13,10,0
+_bt:latin1 'â•‘                   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”˜',13,10,0
 
-remark1 db      "Vaikimisi maaratud vaartused on valitud mugavuse enamikes, kuid mitte koik.",0
-remark2 db      "Kui susteem ei kaivitu, proovige lulitada kirje [b].",0
+remark1:latin1  "Vaikimisi maaratud vaartused on valitud mugavuse enamikes, kuid mitte koik.",0
+remark2:latin1  "Kui susteem ei kaivitu, proovige lulitada kirje [b].",0
 remarks dw      remark1, remark2
 num_remarks = 2

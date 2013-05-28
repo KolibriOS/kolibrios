@@ -1,229 +1,100 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
+;;  queue.inc                                                   ;;
 ;;                                                              ;;
-;;  QUEUE.INC                                                   ;;
+;;    Written by hidnplayr@kolibrios.org                        ;;
 ;;                                                              ;;
-;;  Buffer queue management for Menuet OS TCP/IP Stack          ;;
-;;                                                              ;;
-;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
-;;                                                              ;;
-;;  See file COPYING for details                                ;;
+;;          GNU GENERAL PUBLIC LICENSE                          ;;
+;;             Version 2, June 1991                             ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-
-;*******************************************************************
-;   Interface
+; The Queues implemented by these macros form a ring-buffer.
+; The data to these queue's always looks like this:
 ;
-;       queueInit   Configures the queues to empty
-;       dequeue     Removes a buffer pointer from a queue
-;       queue       Inserts a buffer pointer into a queue
-;       freeBuff    Adds the buffer pointer to the list of free buffers
-;       queueSize   Returns the number of entries in a queue
-;
-;      The various defines for queue names can be found in stack.inc
-;
-;*******************************************************************
+; At top, you have the queue struct, wich has the size (number of currently queued packets, read and write pointers.
+; This struct is followed by a number of slots wich you can read and write to using the macros.
+; How these slots look like is up to you to chose, normally they should have at least a pointer to where the real data is.
+; (you can see some examples below)
 
 
-;***************************************************************************
-;   Function
-;      freeBuff
-;
-;   Description
-;       Adds a buffer number to the beginning of the free list.
-;       buffer number in eax  ( ms word zeroed )
-;       all other registers preserved
-;        This always works, so no error returned
-;***************************************************************************
-;uglobal
-;  freeBuff_cnt dd ?
-;endg
-freeBuff:
-;        inc     [freeBuff_cnt]
-;        DEBUGF  1, "K : freeBuff (%u)\n", [freeBuff_cnt]
-        push    ebx
-        push    ecx
-        mov     ebx, queues + EMPTY_QUEUE * 2
-        cli     ; Ensure that another process does not interfer
-        mov     cx, [ebx]
-        mov     [ebx], ax
-        mov     [queueList + eax * 2], cx
-        sti
-        pop     ecx
-        pop     ebx
+struct	queue
 
-        ret
+	size	       dd ?    ; number of queued packets in this queue
+	w_ptr	       dd ?    ; current writing pointer in queue
+	r_ptr	       dd ?    ; current reading pointer
 
+ends
 
-;***************************************************************************
-;   Function
-;      queueSize
-;
-;   Description
-;       Counts the number of entries in a queue
-;       queue number in ebx ( ms word zeroed )
-;       Queue size returned in eax
-;    This always works, so no error returned
-;***************************************************************************
-queueSize:
-        xor     eax, eax
-        shl     ebx, 1
-        add     ebx, queues
-        movzx   ecx, word [ebx]
-        cmp     cx, NO_BUFFER
-        je      qs_exit
+; The following macros share these inputs:
 
-qs_001:
-        inc     eax
-        shl     ecx, 1
-        add     ecx, queueList
-        movzx   ecx, word [ecx]
-        cmp     cx, NO_BUFFER
-        je      qs_exit
-        jmp     qs_001
+; ptr           = pointer to where the queue data is located
+; size          = number of slots/entrys in the queue
+; entry_size    = size of one slot, in bytes
+; failaddr      = the address where macro will jump to when there is no data in the queue
 
-qs_exit:
-        ret
+; additionally, add_to_queue requires you to set esi to the data wich you want to queue
+; get_from_queue on the other hand will return a pointer in esi, to the entry you're interessed in
+; PS: macros WILL destroy ecx and edi
 
+macro add_to_queue ptr, size, entry_size, failaddr {
 
-;***************************************************************************
-;   Function
-;      queue
-;
-;   Description
-;       Adds a buffer number to the *end* of a queue
-;       This is quite quick because these queues will be short
-;       queue number in eax ( ms word zeroed )
-;       buffer number in ebx  ( ms word zeroed )
-;       all other registers preserved
-;        This always works, so no error returned
-;***************************************************************************
-;uglobal
-;  queue_cnt dd ?
-;endg
-queue:
-;        inc     [queue_cnt]
-;        DEBUGF  1, "K : queue (%u)\n", [queue_cnt]
-        push    ebx
-        shl     ebx, 1
-        add     ebx, queueList    ; eax now holds address of queue entry
-        mov     [ebx], word NO_BUFFER; This buffer will be the last
+	cmp	[ptr + queue.size], size	; Check if queue isnt full
+	jae	failaddr
 
-        cli
-        shl     eax, 1
-        add     eax, queues        ; eax now holds address of queue
-        movzx   ebx, word [eax]
+	inc	[ptr + queue.size]		; if not full, queue one more
 
-        cmp     bx, NO_BUFFER
-        jne     qu_001
+	mov	edi, [ptr + queue.w_ptr]	; Current write pointer (FIFO!)
+	mov	ecx, entry_size/4		; Write the queue entry
+	rep	movsd				;
 
-        pop     ebx
-    ; The list is empty, so add this to the head
-        mov     [eax], bx
-        jmp     qu_exit
+	lea	ecx, [size*entry_size+ptr+sizeof.queue]
+	cmp	edi, ecx			; entry size
+	jb	.no_wrap
 
-qu_001:
-    ; Find the last entry
-        shl     ebx, 1
-        add     ebx, queueList
-        mov     eax, ebx
-        movzx   ebx, word [ebx]
-        cmp     bx, NO_BUFFER
-        jne     qu_001
+	sub	edi, size*entry_size
 
-        mov     ebx, eax
-        pop     eax
-        mov     [ebx], ax
+  .no_wrap:
+	mov	[ptr + queue.w_ptr], edi
 
-qu_exit:
-        sti
-        ret
+}
 
 
 
-;***************************************************************************
-;   Function
-;      dequeue
-;
-;   Description
-;       removes a buffer number from the head of a queue
-;       This is fast, as it unlinks the first entry in the list
-;       queue number in eax ( ms word zeroed )
-;       buffer number returned in eax ( ms word zeroed )
-;       all other registers preserved
-;
-;***************************************************************************
-;uglobal
-;  dequeue_cnt dd ?
-;endg
-dequeue:
-        push    ebx
-        shl     eax, 1
-        add     eax, queues        ; eax now holds address of queue
-        mov     ebx, eax
-        cli
-        movzx   eax, word [eax]
-        cmp     ax, NO_BUFFER
-        je      dq_exit
-;        inc     [dequeue_cnt]
-;        DEBUGF  1, "K : dequeue (%u)\n", [dequeue_cnt]
-        push    eax
-        shl     eax, 1
-        add     eax, queueList    ; eax now holds address of queue entry
-        mov     ax, [eax]
-        mov     [ebx], ax
-        pop     eax
+macro get_from_queue ptr, size, entry_size,  failaddr {
 
-dq_exit:
-        sti
-        pop     ebx
-        ret
+	cmp	[ptr + queue.size], 0		; any packets queued?
+	je	failaddr
 
+	dec	[ptr + queue.size]		; if so, dequeue one
 
-;***************************************************************************
-;   Function
-;      queueInit
-;
-;   Description
-;       Initialises the queues to empty, and creates the free queue
-;       list.
-;
-;***************************************************************************
-queueInit:
-        mov     esi, queues
-        mov     ecx, NUMQUEUES
-        mov     ax, NO_BUFFER
+	mov	esi, [ptr + queue.r_ptr]
+	push	esi
 
-qi001:
-        mov     [esi], ax
-        inc     esi
-        inc     esi
-        loop    qi001
+	add	esi, entry_size
 
-        mov     esi, queues + ( 2 * EMPTY_QUEUE )
+	lea	ecx, [size*entry_size+ptr+sizeof.queue]
+	cmp	esi, ecx			; entry size
+	jb	.no_wrap
 
-    ; Initialise empty queue list
+	sub	esi, size*entry_size
 
-        xor     ax, ax
-        mov     [esi], ax
+  .no_wrap:
+	mov	dword [ptr + queue.r_ptr], esi
 
-        mov     ecx, NUMQUEUEENTRIES - 1
-        mov     esi, queueList
+	pop	esi
 
-qi002:
-        inc     ax
-        mov     [esi], ax
-        inc     esi
-        inc     esi
-        loop    qi002
+}
 
-        mov     ax, NO_BUFFER
-        mov     [esi], ax
+macro init_queue ptr {
 
-        ret
+	mov	[ptr + queue.size] , 0
+	lea	edi, [ptr + sizeof.queue]
+	mov	[ptr + queue.w_ptr], edi
+	mov	[ptr + queue.r_ptr], edi
+}

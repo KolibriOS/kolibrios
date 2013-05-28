@@ -49,43 +49,43 @@ keymap_alt:
 
 
 if lang eq ru
-  boot_initirq      db   'à≠®Ê®†´®ß†Ê®Ô IRQ',0
-  boot_picinit      db   'à≠®Ê®†´®ß†Ê®Ô PIC',0
-  boot_v86machine   db   'à≠®Ê®†´®ß†Ê®Ô ·®·‚•¨Î V86 ¨†Ë®≠Î',0
-  boot_inittimer    db   'à≠®Ê®†´®ß†Ê®Ô ·®·‚•¨≠Æ£Æ ‚†©¨•‡† (IRQ0)',0
-  boot_initapic     db   'èÆØÎ‚™† ®≠®Ê®†´®ß†Ê®® APIC',0
-  boot_enableirq    db   'Ç™´ÓÁ®‚Ï Ø‡•‡Î¢†≠®Ô 2, 6, 13, 14, 15',0
-  boot_enablint_ide db   'ê†ß‡•Ë•≠®• Ø‡•‡Î¢†≠®© ¢ ™Æ≠‚‡Æ´´•‡• IDE',0
-  boot_detectfloppy db   'èÆ®·™ floppy §®·™Æ¢Æ§Æ¢',0
-  boot_detecthdcd   db   'èÆ®·™ ¶•·‚™®Â §®·™Æ¢ ® ATAPI Ø‡®¢Æ§Æ¢',0
-  boot_getcache     db   'èÆ´„Á•≠®• Ø†¨Ô‚® §´Ô ™ÌË†',0
-  boot_detectpart   db   'èÆ®·™ ‡†ß§•´Æ¢ ≠† §®·™Æ¢ÎÂ „·‚‡Æ©·‚¢†Â',0
-  boot_init_sys     db   'à≠®Ê®†´®ß†Ê®Ô ·®·‚•¨≠Æ£Æ ™†‚†´Æ£† /sys',0
-  boot_loadlibs     db   'á†£‡„ß™† °®°´®Æ‚•™ (.obj)',0
-  boot_memdetect    db   'äÆ´®Á•·‚¢Æ ÆØ•‡†‚®¢≠Æ© Ø†¨Ô‚®','     ',' å°',0
-  boot_tss          db   'ì·‚†≠Æ¢™† TSSs',0
-  boot_cpuid        db   'ó‚•≠®• CPUIDs',0
-;  boot_devices      db   'èÆ®·™ „·‚‡Æ©·‚¢',0
-  boot_timer        db   'ì·‚†≠Æ¢™† ‚†©¨•‡†',0
-  boot_irqs         db   'è•‡•ÆØ‡•§•´•≠®• IRQ',0
-  boot_setmouse     db   'ì·‚†≠Æ¢™† ¨ÎË®',0
-  boot_windefs      db   'ì·‚†≠Æ¢™† ≠†·‚‡Æ•™ Æ™Æ≠ ØÆ „¨Æ´Á†≠®Ó',0
-  boot_bgr          db   'ì·‚†≠Æ¢™† ‰Æ≠†',0
-  boot_resirqports  db   'ê•ß•‡¢®‡Æ¢†≠®• IRQ ® ØÆ‡‚Æ¢',0
-  boot_setrports    db   'ì·‚†≠Æ¢™† †§‡•·Æ¢ IRQ',0
-  boot_setostask    db   'ëÆß§†≠®• Ø‡ÆÊ•··† Ô§‡†',0
-  boot_allirqs      db   'é‚™‡Î‚®• ¢·•Â IRQ',0
-  boot_tsc          db   'ó‚•≠®• TSC',0
-  boot_cpufreq      db   'ó†·‚Æ‚† Ø‡ÆÊ•··Æ‡† ','    ',' åÉÊ',0
-  boot_pal_ega      db   'ì·‚†≠Æ¢™† EGA/CGA 320x200 Ø†´®‚‡Î',0
-  boot_pal_vga      db   'ì·‚†≠Æ¢™† VGA 640x480 Ø†´®‚‡Î',0
-  boot_failed       db   'á†£‡„ß™† Ø•‡¢Æ£Æ Ø‡®´Æ¶•≠®Ô ≠• „§†´†·Ï',0
-  boot_mtrr         db   'ì·‚†≠Æ¢™† MTRR',0
-  
-  boot_APIC_found   db   'APIC ¢™´ÓÁ•≠', 0
-  boot_APIC_nfound  db   'APIC ≠• ≠†©§•≠', 0
+  boot_initirq:     cp866 '–ò–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏—è IRQ',0
+  boot_picinit:     cp866 '–ò–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏—è PIC',0
+  boot_v86machine:  cp866 '–ò–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏—è —Å–∏—Å—Ç–µ–º—ã V86 –º–∞—à–∏–Ω—ã',0
+  boot_inittimer:   cp866 '–ò–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏—è —Å–∏—Å—Ç–µ–º–Ω–æ–≥–æ —Ç–∞–π–º–µ—Ä–∞ (IRQ0)',0
+  boot_initapic:    cp866 '–ü–æ–ø—ã—Ç–∫–∞ –∏–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏–∏ APIC',0
+  boot_enableirq:   cp866 '–í–∫–ª—é—á–∏—Ç—å –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏—è 2, 6, 13, 14, 15',0
+  boot_enablint_ide:cp866 '–†–∞–∑—Ä–µ—à–µ–Ω–∏–µ –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏–π –≤ –∫–æ–Ω—Ç—Ä–æ–ª–ª–µ—Ä–µ IDE',0
+  boot_detectfloppy:cp866 '–ü–æ–∏—Å–∫ floppy –¥–∏—Å–∫–æ–≤–æ–¥–æ–≤',0
+  boot_detecthdcd:  cp866 '–ü–æ–∏—Å–∫ –∂–µ—Å—Ç–∫–∏—Ö –¥–∏—Å–∫–æ–≤ –∏ ATAPI –ø—Ä–∏–≤–æ–¥–æ–≤',0
+  boot_getcache:    cp866 '–ü–æ–ª—É—á–µ–Ω–∏–µ –ø–∞–º—è—Ç–∏ –¥–ª—è –∫—ç—à–∞',0
+  boot_detectpart:  cp866 '–ü–æ–∏—Å–∫ —Ä–∞–∑–¥–µ–ª–æ–≤ –Ω–∞ –¥–∏—Å–∫–æ–≤—ã—Ö —É—Å—Ç—Ä–æ–π—Å—Ç–≤–∞—Ö',0
+  boot_init_sys:    cp866 '–ò–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏—è —Å–∏—Å—Ç–µ–º–Ω–æ–≥–æ –∫–∞—Ç–∞–ª–æ–≥–∞ /sys',0
+  boot_loadlibs:    cp866 '–ó–∞–≥—Ä—É–∑–∫–∞ –±–∏–±–ª–∏–æ—Ç–µ–∫ (.obj)',0
+  boot_memdetect:   cp866 '–ö–æ–ª–∏—á–µ—Å—Ç–≤–æ –æ–ø–µ—Ä–∞—Ç–∏–≤–Ω–æ–π –ø–∞–º—è—Ç–∏','     ',' –ú–±',0
+  boot_tss:         cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ TSSs',0
+  boot_cpuid:       cp866 '–ß—Ç–µ–Ω–∏–µ CPUIDs',0
+;  boot_devices:     cp866 '–ü–æ–∏—Å–∫ —É—Å—Ç—Ä–æ–π—Å—Ç–≤',0
+  boot_timer:       cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ —Ç–∞–π–º–µ—Ä–∞',0
+  boot_irqs:        cp866 '–ü–µ—Ä–µ–æ–ø—Ä–µ–¥–µ–ª–µ–Ω–∏–µ IRQ',0
+  boot_setmouse:    cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ –º—ã—à–∏',0
+  boot_windefs:     cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ –Ω–∞—Å—Ç—Ä–æ–µ–∫ –æ–∫–æ–Ω –ø–æ —É–º–æ–ª—á–∞–Ω–∏—é',0
+  boot_bgr:         cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ —Ñ–æ–Ω–∞',0
+  boot_resirqports: cp866 '–†–µ–∑–µ—Ä–≤–∏—Ä–æ–≤–∞–Ω–∏–µ IRQ –∏ –ø–æ—Ä—Ç–æ–≤',0
+  boot_setrports:   cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ –∞–¥—Ä–µ—Å–æ–≤ IRQ',0
+  boot_setostask:   cp866 '–°–æ–∑–¥–∞–Ω–∏–µ –ø—Ä–æ—Ü–µ—Å—Å–∞ —è–¥—Ä–∞',0
+  boot_allirqs:     cp866 '–û—Ç–∫—Ä—ã—Ç–∏–µ –≤—Å–µ—Ö IRQ',0
+  boot_tsc:         cp866 '–ß—Ç–µ–Ω–∏–µ TSC',0
+  boot_cpufreq:     cp866 '–ß–∞—Å—Ç–æ—Ç–∞ –ø—Ä–æ—Ü–µ—Å—Å–æ—Ä–∞ ','    ',' –ú–ì—Ü',0
+  boot_pal_ega:     cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ EGA/CGA 320x200 –ø–∞–ª–∏—Ç—Ä—ã',0
+  boot_pal_vga:     cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ VGA 640x480 –ø–∞–ª–∏—Ç—Ä—ã',0
+  boot_failed:      cp866 '–ó–∞–≥—Ä—É–∑–∫–∞ –ø–µ—Ä–≤–æ–≥–æ –ø—Ä–∏–ª–æ–∂–µ–Ω–∏—è –Ω–µ —É–¥–∞–ª–∞—Å—å',0
+  boot_mtrr:        cp866 '–£—Å—Ç–∞–Ω–æ–≤–∫–∞ MTRR',0
+
+  boot_APIC_found:  cp866 'APIC –≤–∫–ª—é—á–µ–Ω', 0
+  boot_APIC_nfound: cp866 'APIC –Ω–µ –Ω–∞–π–¥–µ–Ω', 0
 if preboot_blogesc
-  boot_tasking      db   'Ç·• £Æ‚Æ¢Æ §´Ô ß†Ø„·™†, ≠†¶¨®‚‡• ESC §´Ô ·‚†‡‚†',0
+  boot_tasking:     cp866 '–í—Å–µ –≥–æ—Ç–æ–≤–æ –¥–ª—è –∑–∞–ø—É—Å–∫–∞, –Ω–∞–∂–º–∏—Ç—Ä–µ ESC –¥–ª—è —Å—Ç–∞—Ä—Ç–∞',0
 end if
 else if lang eq sp
   include 'data32sp.inc'
@@ -119,7 +119,7 @@ else
   boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
   boot_mtrr         db   'Setting MTRR',0
-  
+
   boot_APIC_found   db   'APIC enabled', 0
   boot_APIC_nfound  db   'APIC not found', 0
 if preboot_blogesc
@@ -145,6 +145,7 @@ AMD_str        db "AuthenticAMD",0
 szHwMouse       db 'ATI2D',0
 szPS2MDriver    db 'PS2MOUSE',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
+szVidintel      db 'vidintel',0
 szUSB           db 'USB',0
 szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
@@ -158,7 +159,7 @@ read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
-ud_user_message db 'éË®°™†: ≠•ØÆ§§•‡¶®¢†•¨†Ô ®≠·‚‡„™Ê®Ô Ø‡ÆÊ•··Æ‡†',0
+ud_user_message: cp866 '–û—à–∏–±–∫–∞: –Ω–µ–ø–æ–¥–¥–µ—Ä–∂–∏–≤–∞–µ–º–∞—è –∏–Ω—Å—Ç—Ä—É–∫—Ü–∏—è –ø—Ä–æ—Ü–µ—Å—Å–æ—Ä–∞',0
 else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
@@ -332,8 +333,9 @@ mem_block_list    rd 64*2
 mem_used_list     rd 64*2
 mem_hash_cnt      rd 64
 
-cpu_freq          rq 1
+MEM_AMOUNT        rd 1
 
+cpu_freq          rq 1
 heap_mutex        MUTEX
 heap_size         rd 1
 heap_free         rd 1
@@ -362,6 +364,35 @@ _display          display_t
 
 _WinMapAddress    rd 1
 _WinMapSize       rd 1
+
+Screen_Max_X      rd 1
+Screen_Max_Y      rd 1
+
+LFBAddress        rd 1
+BytesPerScanLine  rd 1
+SCR_MODE          rw 2
+
+PUTPIXEL          rd 1
+GETPIXEL          rd 1
+
+BgrDrawMode       rd 1
+BgrDataWidth      rd 1
+BgrDataHeight     rd 1
+REDRAW_BACKGROUND rb 4
+
+MOUSE_PICTURE     rd 1
+
+MOUSE_SCROLL_H    rw 1
+MOUSE_X:          rw 1
+MOUSE_Y:          rw 1
+MOUSE_SCROLL_V    rw 1
+
+X_UNDER           rw 1
+Y_UNDER           rw 1
+COLOR_TEMP        rd 1
+MOUSE_COLOR_MEM   rd 1
+
+BTN_DOWN:         rb 4
 
 def_cursor        rd 1
 def_cursor_clock  rd 1
@@ -394,9 +425,22 @@ LFBSize           rd 1
 
 current_slot      rd 1
 
+BTN_ADDR          rd 1
+BTN_COUNT         rb 4
+BTN_BUFF          rd 255
+
+KEY_COUNT         rb 4
+KEY_BUFF          rb 128
+
+mouseunder        rd 16*24
+
+SYS_SHUTDOWN      rb 4
+
+
 ; status
 hd1_status                  rd 1  ; 0 - free : other - pid
-application_table_status    rd 1  ; 0 - free : other - pid
+application_table_owner     rd 1  ; 0 - free : other - pid
+application_table_mutex     MUTEX
 
 ; device addresses
 mididp            rd 1
@@ -500,5 +544,31 @@ NumBiosDisks    rd 1
 BiosDisksData   rb 200h
 BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
 BiosDiskPartitions rd 80h
+
+align 4096
+
+SLOT_BASE:      rb 64*1024
+DRIVE_DATA:     rb 64*1024
+RESERVED_PORTS: rb 64*1024
+FLOPPY_BUFF:    rb 16*1024
+BUTTON_INFO:    rb 16*1024
+BgrAuxTable:    rb 32*1024
+skin_data:      rb 32*1024
+
+;IDE_DMA:        rb 32*1024
+
+window_data:    rb 8192
+CURRENT_TASK:   rb 8192
+draw_data:      rb 4096
+WIN_STACK:      rb 0x400
+WIN_POS:        rb 0x800
+
+CDDataBuf:      rb 4096
+
+idts            rq 0x41
+
+RAMDISK_FAT:    rb 2856*2 +16
+
+FLOPPY_FAT:     rb 2856*2 +16
 
 IncludeUGlobals

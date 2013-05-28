@@ -24,7 +24,7 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
 
-;Тут представленны теги, для сравнения
+;РўСѓС‚ РїСЂРµРґСЃС‚Р°РІР»РµРЅРЅС‹ С‚РµРіРё, РґР»СЏ СЃСЂР°РІРЅРµРЅРёСЏ
 parse_loader      db '[loader]'
 parse_loader_e:
 parse_l_timeout   db 'timeout'

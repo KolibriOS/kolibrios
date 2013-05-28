@@ -142,7 +142,11 @@ proc srv_handler stdcall, ioctl:dword
         cmp     [edi+SRV.size], sizeof.SRV
         jne     .fail
 
-        stdcall [edi+SRV.srv_proc], esi
+;        stdcall [edi+SRV.srv_proc], esi
+        mov     eax, [edi+SRV.srv_proc]
+        test    eax, eax
+        jz      .fail
+        stdcall eax, esi
         ret
 .fail:
         xor     eax, eax
@@ -174,7 +178,11 @@ srv_handlerEx:
         cmp     [eax+SRV.size], sizeof.SRV
         jne     .fail
 
-        stdcall [eax+SRV.srv_proc], ecx
+;        stdcall [eax+SRV.srv_proc], ecx
+        mov     eax, [eax+SRV.srv_proc]
+        test    eax, eax
+        jz      .fail
+        stdcall eax, ecx
         ret
 .fail:
         or      eax, -1
@@ -213,8 +221,30 @@ proc get_service stdcall, sz_name:dword
         ret
 endp
 
-align 4
-proc reg_service stdcall, name:dword, handler:dword
+reg_service:
+        xor     eax, eax
+        mov     ecx, [esp+8]
+        jecxz   .nothing
+        push    sizeof.SRV
+        push    ecx
+        pushd   [esp+12]
+        call    reg_service_ex
+.nothing:
+        ret     8
+
+reg_usb_driver:
+        push    sizeof.USBSRV
+        pushd   [esp+12]
+        pushd   [esp+12]
+        call    reg_service_ex
+        test    eax, eax
+        jz      .nothing
+        mov     ecx, [esp+12]
+        mov     [eax+USBSRV.usb_func], ecx
+.nothing:
+        ret     12
+
+proc reg_service_ex stdcall, name:dword, handler:dword, srvsize:dword
 
         push    ebx
 
@@ -223,10 +253,10 @@ proc reg_service stdcall, name:dword, handler:dword
         cmp     [name], eax
         je      .fail
 
-        cmp     [handler], eax
-        je      .fail
+;        cmp     [handler], eax
+;        je      .fail
 
-        mov     eax, sizeof.SRV
+        mov     eax, [srvsize]
         call    malloc
         test    eax, eax
         jz      .fail

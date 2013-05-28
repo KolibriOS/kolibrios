@@ -24,14 +24,14 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
 
-;Òóò îïðåäåëåíû âñå ñîîáùåíèÿ, êîòîðûå íóæíû â ïðîöåññå îòëàäêè, è ñîâñåì íå íóæíû â ðàáî÷åé êîïèè ïðîãðàììû.
+;Ð¢ÑƒÑ‚ Ð¾Ð¿Ñ€ÐµÐ´ÐµÐ»ÐµÐ½Ñ‹ Ð²ÑÐµ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Ñ, ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ðµ Ð½ÑƒÐ¶Ð½Ñ‹ Ð² Ð¿Ñ€Ð¾Ñ†ÐµÑÑÐµ Ð¾Ñ‚Ð»Ð°Ð´ÐºÐ¸, Ð¸ ÑÐ¾Ð²ÑÐµÐ¼ Ð½Ðµ Ð½ÑƒÐ¶Ð½Ñ‹ Ð² Ñ€Ð°Ð±Ð¾Ñ‡ÐµÐ¹ ÐºÐ¾Ð¿Ð¸Ð¸ Ð¿Ñ€Ð¾Ð³Ñ€Ð°Ð¼Ð¼Ñ‹.
 If DEBUG
-cseg_msg	db '       - Adress of code segment',0
-stack_msg	db 'Set stack & segments is have completed',0
-show_string	db 'Have loaded size:'
-show_decode	db '      ',0
-show_db1	db '       -Message debug1',0
-show_db2	db '       -Message debug2',0
+cseg_msg        db '       - Adress of code segment',0
+stack_msg       db 'Set stack & segments is have completed',0
+show_string     db 'Have loaded size:'
+show_decode     db '      ',0
+show_db1        db '       -Message debug1',0
+show_db2        db '       -Message debug2',0
 
 
 lm_l_found      db '[loader] is found',0
@@ -64,7 +64,7 @@ check_name_fat_msg_n db 'Name is not present that is GOOD',0
 name_of_seg_get_64 db '       -name of seg where we get 64 Kb of data',0
 convertion_file_name_msg_y db '->Destination name of file is GOOD',0
 convertion_file_name_msg_n db '->Destination name of file is BAD',0
-alarm_msg 	db '%%%%%%%% WARNING: MISS THE FILE %%%%%%%%%%%',0
+alarm_msg       db '%%%%%%%% WARNING: MISS THE FILE %%%%%%%%%%%',0
 start_making_FAT12_msg db '>>>>>> Begin make a RAMDISK and FS after 1 Mb <<<<<<<',0
 make_fat12_RFS_msg db '-Make FAT12 Ram FS',0
 get_type_FS_msg    db '-End make RamDisk',0

@@ -72,54 +72,7 @@ ugui_mouse_delay_def db '0x00A',0
 udev_midibase db 'midibase',0
 udev_midibase_def db '0x320',0
 endg
-;set up netvork configuration
-proc set_network_conf
-locals
-  par db 30 dup(?)
-endl
-        pushad
 
-  ;[net]
-  ;active
-        lea     eax, [par]
-        invoke  ini.get_int, conf_fname, unet, unet_active, 0
-        or      eax, eax
-        jz      .do_not_set_net
-        mov     eax, [stack_config]
-        and     eax, 0xFFFFFF80
-        add     eax, 3
-        mov     [stack_config], eax
-        call    ash_eth_enable
-
-  ;addr
-        lea     eax, [par]
-        push    eax
-        invoke  ini.get_str, conf_fname, unet, unet_addr, eax, 30, unet_def
-        pop     eax
-        stdcall do_inet_adr, eax
-        mov     [stack_ip], eax
-
-  ;mask
-        lea     eax, [par]
-        push    eax
-        invoke  ini.get_str, conf_fname, unet, unet_mask, eax, 30, unet_def
-        pop     eax
-        stdcall do_inet_adr, eax
-        mov     [subnet_mask], eax
-
-  ;gate
-        lea     eax, [par]
-        push    eax
-        invoke  ini.get_str, conf_fname, unet, unet_gate, eax, 30, unet_def
-        pop     eax
-        stdcall do_inet_adr, eax
-        mov     [gateway_ip], eax
-.do_not_set_net:
-        popad
-        ret
-
-
-endp
 iglobal
 if lang eq sp
   include 'core/conf_lib-sp.inc'
@@ -164,7 +117,7 @@ endp
 proc strtoint_dec stdcall,strs
         pushad
         xor     edx, edx
-  ; ØÆ®·™ ™Æ≠Ê†
+  ; –ø–æ–∏—Å–∫ –∫–æ–Ω—Ü–∞
         mov     esi, [strs]
 @@:
         lodsb
@@ -180,7 +133,7 @@ proc strtoint_dec stdcall,strs
         dec     ebx
         or      ebx, ebx
         jz      @f
-        imul    ecx, ecx, 10; ØÆ‡Ô§Æ™
+        imul    ecx, ecx, 10; –ø–æ—Ä—è–¥–æ–∫
         jmp     @b
 @@:
 

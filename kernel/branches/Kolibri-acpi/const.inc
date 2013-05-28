@@ -181,131 +181,6 @@ ends
 
 OS_BASE             equ 0x80000000
 
-window_data         equ (OS_BASE+0x0001000)
-
-CURRENT_TASK        equ (OS_BASE+0x0003000)
-TASK_COUNT          equ (OS_BASE+0x0003004)
-TASK_BASE           equ (OS_BASE+0x0003010)
-TASK_DATA           equ (OS_BASE+0x0003020)
-TASK_EVENT          equ (OS_BASE+0x0003020)
-
-mouseunder          equ (OS_BASE+0x0006900)
-CDDataBuf           equ (OS_BASE+0x0007000)
-FLOPPY_BUFF         equ (OS_BASE+0x0008000)
-ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
-idts                equ (OS_BASE+0x000B100)
-WIN_STACK           equ (OS_BASE+0x000C000)
-WIN_POS             equ (OS_BASE+0x000C400)
-FDD_BUFF            equ (OS_BASE+0x000D000)
-
-;unused ? only one reference
-ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
-
-PUTPIXEL            equ (OS_BASE+0x000E020)
-GETPIXEL            equ (OS_BASE+0x000E024)
-
-;unused ? only one reference
-BANK_SWITCH         equ (OS_BASE+0x000E030)
-
-;unused ? store mousepointer
-MOUSE_PICTURE       equ (OS_BASE+0x000F200)
-
-;MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
-WIN_TEMP_XY         equ (OS_BASE+0x000F300)
-KEY_COUNT           equ (OS_BASE+0x000F400)
-KEY_BUFF            equ (OS_BASE+0x000F401)
-
-BTN_COUNT           equ (OS_BASE+0x000F500)
-BTN_BUFF            equ (OS_BASE+0x000F501)
-
-;CPU_FREQ            equ (OS_BASE+0x000F600)
-
-;unused ? no active references
-;MOUSE_PORT          equ (OS_BASE+0x000F604)
-
-;unused
-PS2_CHUNK           equ (OS_BASE+0x000FB00)
-
-MOUSE_SCROLL_H      equ (OS_BASE+0x000FB08)
-MOUSE_X             equ (OS_BASE+0x000FB0A)
-MOUSE_Y             equ (OS_BASE+0x000FB0C)
-MOUSE_SCROLL_V      equ (OS_BASE+0x000FB0E)
-
-MOUSE_COLOR_MEM     equ (OS_BASE+0x000FB10)
-COLOR_TEMP          equ (OS_BASE+0x000FB30)
-BTN_DOWN            equ (OS_BASE+0x000FB40)
-MOUSE_DOWN          equ (OS_BASE+0x000FB44)
-X_UNDER             equ (OS_BASE+0x000FB4A)
-Y_UNDER             equ (OS_BASE+0x000FB4C)
-ScreenBPP           equ (OS_BASE+0x000FBF1)
-
-;unused ? only one reference
-MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
-
-Screen_Max_X        equ (OS_BASE+0x000FE00)
-Screen_Max_Y        equ (OS_BASE+0x000FE04)
-BytesPerScanLine    equ (OS_BASE+0x000FE08)
-SCR_MODE            equ (OS_BASE+0x000FE0C)
-
-LFBAddress          equ (OS_BASE+0x000FE80)
-BTN_ADDR            equ (OS_BASE+0x000FE88)
-MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
-
-SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
-TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
-
-REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
-
-BANK_RW             equ (OS_BASE+0x000FFF2)
-MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
-DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
-DONT_SWITCH         equ (OS_BASE+0x000FFFF)
-
-TMP_STACK_TOP       equ 0x006CC00
-
-sys_pgdir           equ (OS_BASE+0x006F000)
-
-DRIVE_DATA          equ (OS_BASE+0x0070000)
-
-SLOT_BASE           equ (OS_BASE+0x0080000)
-
-;unused
-TMP_BUFF            equ (OS_BASE+0x0090000)
-
-VGABasePtr          equ (OS_BASE+0x00A0000)
-
-RAMDISK             equ (OS_BASE+0x0100000)
-RAMDISK_FAT         equ (OS_BASE+0x0280000)
-FLOPPY_FAT          equ (OS_BASE+0x0282000)
-
-CLEAN_ZONE          equ 0x284000
-IDE_DMA             equ 0x284000
-
-BgrAuxTable         equ (OS_BASE+0x0298000)
-; unused?
-SB16Buffer          equ (OS_BASE+0x02A0000)
-SB16_Status         equ (OS_BASE+0x02B0000)
-
-BUTTON_INFO         equ (OS_BASE+0x02B3FEE)
-
-BPSLine_calc_area   equ (OS_BASE+0x02C4000)
-d_width_calc_area   equ (OS_BASE+0x02CA000)
-
-RESERVED_PORTS      equ (OS_BASE+0x02D0000)
-BOOT_VAR            equ (OS_BASE+0x02E0000)
-
-stack_data_start    equ (OS_BASE+0x02F0000)
-eth_data_start      equ (OS_BASE+0x02F0000)
-stack_data          equ (OS_BASE+0x02F4000)
-stack_data_end      equ (OS_BASE+0x030ffff)
-resendQ             equ (OS_BASE+0x0310000)
-
-skin_data           equ (OS_BASE+0x0318000)
-draw_data           equ (OS_BASE+0x0320000)
-
-BgrDrawMode         equ (OS_BASE+0x0323FF4)
-BgrDataWidth        equ (OS_BASE+0x0323FF8)
-BgrDataHeight       equ (OS_BASE+0x0323FFC)
 
 sys_pgmap           equ (OS_BASE+0x0324000)
 
@@ -331,7 +206,7 @@ new_app_base        equ 0;
 twdw                equ 0x2000   ;(CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
+RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 Р±Р°Р№С‚ РґР»СЏ РєРѕРЅС‚РµРєСЃС‚Р° FPU
 
 REG_SS              equ (RING0_STACK_SIZE-4)
 REG_APP_ESP         equ (RING0_STACK_SIZE-8)
@@ -368,7 +243,6 @@ BOOT_PITCH          equ 0x9001    ;word   scanline length
 BOOT_VESA_MODE      equ 0x9008    ;word   vesa video mode
 BOOT_X_RES          equ 0x900A    ;word   X res
 BOOT_Y_RES          equ 0x900C    ;word   Y res
-;;BOOT_MOUSE_PORT     equ 0x9010    ;byte   mouse port  - not used
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
@@ -400,7 +274,8 @@ EVENT_MOUSE        equ 0x00000020
 EVENT_IPC          equ 0x00000040
 EVENT_NETWORK      equ 0x00000080
 EVENT_DEBUG        equ 0x00000100
-EVENT_EXTENDED     equ 0x00000200
+EVENT_NETWORK2     equ 0x00000200
+EVENT_EXTENDED     equ 0x00000400
 
 EV_INTR            equ 1
 
@@ -634,6 +509,17 @@ struct  SRV
         srv_proc_ex     dd ?     ;+0x2C ;kernel mode service handler
 ends
 
+struct USBSRV
+        srv             SRV
+        usb_func        dd ?
+ends
+
+struct USBFUNC
+        strucsize       dd ?
+        add_device      dd ?
+        device_disconnect dd ?
+ends
+
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1
 
@@ -688,4 +574,5 @@ struct  IRQH
         list            LHEAD
         handler         dd ?   ;handler roututine
         data            dd ?   ;user-specific data
+        num_ints        dd ?   ;how many times handled
 ends

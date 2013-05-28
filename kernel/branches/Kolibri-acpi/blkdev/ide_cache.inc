@@ -29,78 +29,78 @@ write_cache:
 ;-----------------------------------------------------------
 ; write all changed sectors to disk
 ;-----------------------------------------------------------
-    push  eax ecx edx esi edi
+        push    eax ecx edx esi edi
 
     ; write difference ( 2 ) from cache to hd
-    call  calculate_cache
+        call    calculate_cache
         add     esi, 8
         mov     edi, 1
 write_cache_more:
         cmp     dword [esi+4], 2; if cache slot is not different
-    jne   .write_chain
+        jne     .write_chain
         mov     dword [esi+4], 1; same as in hd
         mov     eax, [esi]      ; eax = sector to write
         cmp     eax, [PARTITION_START]
-    jb	  danger
+        jb      danger
         cmp     eax, [PARTITION_END]
-    ja	  danger
+        ja      danger
         cmp     [hdpos], 0x80
         jae     @f
 ; DMA write is permitted only if [allow_dma_access]=1
-	cmp	[allow_dma_access], 2
-	jae	.nodma
-	cmp	[dma_hdd], 1
-	jnz	.nodma
+        cmp     [allow_dma_access], 2
+        jae     .nodma
+        cmp     [dma_hdd], 1
+        jnz     .nodma
 @@:
-; ��ꥤ��塞 ������ 楯�窨 ��᫥����⥫��� ᥪ�஢ � ���� ���饭�� � ����
-	cmp	ecx, 1
-	jz	.nonext
-	cmp	dword [esi+8+4], 2
-	jnz	.nonext
-	push	eax
-	inc	eax
-	cmp	eax, [esi+8]
-	pop	eax
-	jnz	.nonext
-	cmp	[cache_chain_started], 1
-	jz	@f
-	mov	[cache_chain_started], 1
-	mov	[cache_chain_size], 0
-	mov	[cache_chain_pos], edi
-	mov	[cache_chain_ptr], esi
+; Объединяем запись цепочки последовательных секторов в одно обращение к диску
+        cmp     ecx, 1
+        jz      .nonext
+        cmp     dword [esi+8+4], 2
+        jnz     .nonext
+        push    eax
+        inc     eax
+        cmp     eax, [esi+8]
+        pop     eax
+        jnz     .nonext
+        cmp     [cache_chain_started], 1
+        jz      @f
+        mov     [cache_chain_started], 1
+        mov     [cache_chain_size], 0
+        mov     [cache_chain_pos], edi
+        mov     [cache_chain_ptr], esi
 @@:
-	inc	[cache_chain_size]
-	cmp	[cache_chain_size], 16
-	jnz	.continue
-	jmp	.write_chain
+        inc     [cache_chain_size]
+        cmp     [cache_chain_size], 16
+        jnz     .continue
+        jmp     .write_chain
 .nonext:
-	call	flush_cache_chain
-	mov	[cache_chain_size], 1
-	mov	[cache_chain_ptr], esi
-	call	write_cache_sector
-	jmp	.continue
+        call    flush_cache_chain
+        mov     [cache_chain_size], 1
+        mov     [cache_chain_ptr], esi
+        call    write_cache_sector
+        jmp     .continue
 .nodma:
-	call	cache_write_pio
+        call    cache_write_pio
 .write_chain:
-	call	flush_cache_chain
+        call    flush_cache_chain
 .continue:
 danger:
         add     esi, 8
-    inc   edi
-    dec   ecx
-    jnz   write_cache_more
-	call	flush_cache_chain
+        inc     edi
+        dec     ecx
+        jnz     write_cache_more
+        call    flush_cache_chain
  return_02:
-    pop   edi esi edx ecx eax
-    ret
+        pop     edi esi edx ecx eax
+        ret
 
 flush_cache_chain:
-	cmp	[cache_chain_started], 0
-	jz	@f
-	call	write_cache_chain
-	mov	[cache_chain_started], 0
+        cmp     [cache_chain_started], 0
+        jz      @f
+        call    write_cache_chain
+        mov     [cache_chain_started], 0
 @@:
-	ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 find_empty_slot:
@@ -111,33 +111,33 @@ find_empty_slot:
 ;    push  ecx esi
 
 search_again:
-    call  calculate_cache_3
+        call    calculate_cache_3
         shr     ecx, 3
 search_for_empty:
-    inc   edi
-    call  calculate_cache_4
-    jbe   inside_cache
+        inc     edi
+        call    calculate_cache_4
+        jbe     inside_cache
         mov     edi, 1
 inside_cache:
-    push   esi
-    call  calculate_cache_1
+        push    esi
+        call    calculate_cache_1
         cmp     dword [edi*8+esi+4], 2
-    pop   esi
-    jb	  found_slot			; it's empty or read
-    dec   ecx
-    jnz   search_for_empty
-    call  write_cache			; no empty slots found, write all
+        pop     esi
+        jb      found_slot              ; it's empty or read
+        dec     ecx
+        jnz     search_for_empty
+        call    write_cache             ; no empty slots found, write all
         cmp     [hd_error], 0
-    jne   found_slot_access_denied
-    jmp   search_again			; and start again
+        jne     found_slot_access_denied
+        jmp     search_again            ; and start again
 found_slot:
-    call  calculate_cache_5
+        call    calculate_cache_5
 found_slot_access_denied:
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 clear_hd_cache:
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 calculate_cache:
@@ -147,77 +147,77 @@ calculate_cache:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [hdd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     ecx, [cache_ide0_system_sad_size]
         mov     esi, [cache_ide0_pointer]
-    ret
+        ret
 .ide0_appl_data:
         mov     ecx, [cache_ide0_appl_sad_size]
         mov     esi, [cache_ide0_data_pointer]
-    ret
+        ret
 .ide1:
         cmp     [hdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [hdd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     ecx, [cache_ide1_system_sad_size]
         mov     esi, [cache_ide1_pointer]
-    ret
+        ret
 .ide1_appl_data:
         mov     ecx, [cache_ide1_appl_sad_size]
         mov     esi, [cache_ide1_data_pointer]
-    ret
+        ret
 .ide2:
         cmp     [hdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [hdd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     ecx, [cache_ide2_system_sad_size]
         mov     esi, [cache_ide2_pointer]
-    ret
+        ret
 .ide2_appl_data:
         mov     ecx, [cache_ide2_appl_sad_size]
         mov     esi, [cache_ide2_data_pointer]
-    ret
+        ret
 .ide3:
         cmp     [hdpos], 4
-    jne    .noide
+        jne     .noide
         cmp     [hdd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     ecx, [cache_ide3_system_sad_size]
         mov     esi, [cache_ide3_pointer]
-    ret
+        ret
 .ide3_appl_data:
         mov     ecx, [cache_ide3_appl_sad_size]
         mov     esi, [cache_ide3_data_pointer]
-    ret
+        ret
 .noide:
-    push   eax
+        push    eax
         mov     eax, [hdpos]
         sub     eax, 80h
-    cmp    byte [BiosDisksData+eax*4+2], -1
-    jz     @f
+        cmp     byte [BiosDisksData+eax*4+2], -1
+        jz      @f
         movzx   eax, byte [BiosDisksData+eax*4+2]
         imul    eax, cache_ide1-cache_ide0
         add     eax, cache_ide0
-    jmp    .get
+        jmp     .get
 @@:
         imul    eax, cache_ide1-cache_ide0
         add     eax, BiosDiskCaches
 .get:
         cmp     [hdd_appl_data], 0
-    jne    .bd_appl_data
+        jne     .bd_appl_data
         mov     ecx, [cache_ide0_system_sad_size-cache_ide0+eax]
         mov     esi, [cache_ide0_pointer-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 .bd_appl_data:
         mov     ecx, [cache_ide0_appl_sad_size-cache_ide0+eax]
         mov     esi, [cache_ide0_data_pointer-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_1:
@@ -225,67 +225,67 @@ calculate_cache_1:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [hdd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     esi, [cache_ide0_pointer]
-    ret
+        ret
 .ide0_appl_data:
         mov     esi, [cache_ide0_data_pointer]
-    ret
+        ret
 .ide1:
         cmp     [hdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [hdd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     esi, [cache_ide1_pointer]
-    ret
+        ret
 .ide1_appl_data:
         mov     esi, [cache_ide1_data_pointer]
-    ret
+        ret
 .ide2:
         cmp     [hdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [hdd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     esi, [cache_ide2_pointer]
-    ret
+        ret
 .ide2_appl_data:
         mov     esi, [cache_ide2_data_pointer]
-    ret
+        ret
 .ide3:
         cmp     [hdpos], 4
-    jne    .noide
+        jne     .noide
         cmp     [hdd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     esi, [cache_ide3_pointer]
-    ret
+        ret
 .ide3_appl_data:
         mov     esi, [cache_ide3_data_pointer]
-    ret
+        ret
 .noide:
-    push   eax
+        push    eax
         mov     eax, [hdpos]
         sub     eax, 80h
-    cmp    byte [BiosDisksData+eax*4+2], -1
-    jz     @f
+        cmp     byte [BiosDisksData+eax*4+2], -1
+        jz      @f
         movzx   eax, byte [BiosDisksData+eax*4+2]
         imul    eax, cache_ide1-cache_ide0
         add     eax, cache_ide0
-    jmp    .get
+        jmp     .get
 @@:
         imul    eax, cache_ide1-cache_ide0
         add     eax, BiosDiskCaches
 .get:
         cmp     [hdd_appl_data], 0
-    jne    .bd_appl_data
+        jne     .bd_appl_data
         mov     esi, [cache_ide0_pointer-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 .bd_appl_data:
         mov     esi, [cache_ide0_data_pointer-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 
 ;--------------------------------------------------------------------
 align 4
@@ -294,64 +294,64 @@ calculate_cache_2:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [hdd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     eax, [cache_ide0_system_data]
-    ret
+        ret
 .ide0_appl_data:
         mov     eax, [cache_ide0_appl_data]
-    ret
+        ret
 .ide1:
         cmp     [hdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [hdd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     eax, [cache_ide1_system_data]
-    ret
+        ret
 .ide1_appl_data:
         mov     eax, [cache_ide1_appl_data]
-    ret
+        ret
 .ide2:
         cmp     [hdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [hdd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     eax, [cache_ide2_system_data]
-    ret
+        ret
 .ide2_appl_data:
         mov     eax, [cache_ide2_appl_data]
-    ret
+        ret
 .ide3:
         cmp     [hdpos], 4
-    jne    .noide
+        jne     .noide
         cmp     [hdd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     eax, [cache_ide3_system_data]
-    ret
+        ret
 .ide3_appl_data:
         mov     eax, [cache_ide3_appl_data]
-    ret
+        ret
 .noide:
         mov     eax, [hdpos]
         sub     eax, 80h
-    cmp    byte [BiosDisksData+eax*4+2], -1
-    jz     @f
+        cmp     byte [BiosDisksData+eax*4+2], -1
+        jz      @f
         movzx   eax, byte [BiosDisksData+eax*4+2]
         imul    eax, cache_ide1-cache_ide0
         add     eax, cache_ide0
-    jmp    .get
+        jmp     .get
 @@:
         imul    eax, cache_ide1-cache_ide0
         add     eax, BiosDiskCaches
 .get:
         cmp     [hdd_appl_data], 0
-    jne    .bd_appl_data
+        jne     .bd_appl_data
         mov     eax, [cache_ide0_system_data-cache_ide0+eax]
-    ret
+        ret
 .bd_appl_data:
         mov     eax, [cache_ide0_appl_data-cache_ide0+eax]
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_3:
@@ -361,77 +361,77 @@ calculate_cache_3:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [hdd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     ecx, [cache_ide0_system_sad_size]
         mov     edi, [cache_ide0_search_start]
-    ret
+        ret
 .ide0_appl_data:
         mov     ecx, [cache_ide0_appl_sad_size]
         mov     edi, [cache_ide0_appl_search_start]
-    ret
+        ret
 .ide1:
         cmp     [hdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [hdd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     ecx, [cache_ide1_system_sad_size]
         mov     edi, [cache_ide1_search_start]
-    ret
+        ret
 .ide1_appl_data:
         mov     ecx, [cache_ide1_appl_sad_size]
         mov     edi, [cache_ide1_appl_search_start]
-    ret
+        ret
 .ide2:
         cmp     [hdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [hdd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     ecx, [cache_ide2_system_sad_size]
         mov     edi, [cache_ide2_search_start]
-    ret
+        ret
 .ide2_appl_data:
         mov     ecx, [cache_ide2_appl_sad_size]
         mov     edi, [cache_ide2_appl_search_start]
-    ret
+        ret
 .ide3:
         cmp     [hdpos], 4
-    jne    .noide
+        jne     .noide
         cmp     [hdd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     ecx, [cache_ide3_system_sad_size]
         mov     edi, [cache_ide3_search_start]
-    ret
+        ret
 .ide3_appl_data:
         mov     ecx, [cache_ide3_appl_sad_size]
         mov     edi, [cache_ide3_appl_search_start]
-    ret
+        ret
 .noide:
-    push   eax
+        push    eax
         mov     eax, [hdpos]
         sub     eax, 80h
-    cmp    byte [BiosDisksData+eax*4+2], -1
-    jz     @f
+        cmp     byte [BiosDisksData+eax*4+2], -1
+        jz      @f
         movzx   eax, byte [BiosDisksData+eax*4+2]
         imul    eax, cache_ide1-cache_ide0
         add     eax, cache_ide0
-    jmp    .get
+        jmp     .get
 @@:
         imul    eax, cache_ide1-cache_ide0
         add     eax, BiosDiskCaches
 .get:
         cmp     [hdd_appl_data], 0
-    jne    .bd_appl_data
+        jne     .bd_appl_data
         mov     ecx, [cache_ide0_system_sad_size-cache_ide0+eax]
         mov     edi, [cache_ide0_search_start-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 .bd_appl_data:
         mov     ecx, [cache_ide0_appl_sad_size-cache_ide0+eax]
         mov     edi, [cache_ide0_appl_search_start-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_4:
@@ -439,67 +439,67 @@ calculate_cache_4:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [hdd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         cmp     edi, [cache_ide0_system_sad_size]
-    ret
+        ret
 .ide0_appl_data:
         cmp     edi, [cache_ide0_appl_sad_size]
-    ret
+        ret
 .ide1:
         cmp     [hdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [hdd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         cmp     edi, [cache_ide1_system_sad_size]
-    ret
+        ret
 .ide1_appl_data:
         cmp     edi, [cache_ide1_appl_sad_size]
-    ret
+        ret
 .ide2:
         cmp     [hdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [hdd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         cmp     edi, [cache_ide2_system_sad_size]
-    ret
+        ret
 .ide2_appl_data:
         cmp     edi, [cache_ide2_appl_sad_size]
-    ret
+        ret
 .ide3:
         cmp     [hdpos], 4
-    jne    .noide
+        jne     .noide
         cmp     [hdd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         cmp     edi, [cache_ide3_system_sad_size]
-    ret
+        ret
 .ide3_appl_data:
         cmp     edi, [cache_ide3_appl_sad_size]
-    ret
+        ret
 .noide:
-    push   eax
+        push    eax
         mov     eax, [hdpos]
         sub     eax, 80h
-    cmp    byte [BiosDisksData+eax*4+2], -1
-    jz     @f
+        cmp     byte [BiosDisksData+eax*4+2], -1
+        jz      @f
         movzx   eax, byte [BiosDisksData+eax*4+2]
         imul    eax, cache_ide1-cache_ide0
         add     eax, cache_ide0
-    jmp    .get
+        jmp     .get
 @@:
         imul    eax, cache_ide1-cache_ide0
         add     eax, BiosDiskCaches
 .get:
         cmp     [hdd_appl_data], 0
-    jne    .bd_appl_data
+        jne     .bd_appl_data
         cmp     edi, [cache_ide0_system_sad_size-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 .bd_appl_data:
         cmp     edi, [cache_ide0_appl_sad_size-cache_ide0+eax]
-    pop    eax
-    ret
+        pop     eax
+        ret
 
 ;--------------------------------------------------------------------
 align 4
@@ -508,67 +508,67 @@ calculate_cache_5:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [hdd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     [cache_ide0_search_start], edi
-    ret
+        ret
 .ide0_appl_data:
         mov     [cache_ide0_appl_search_start], edi
-    ret
+        ret
 .ide1:
         cmp     [hdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [hdd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     [cache_ide1_search_start], edi
-    ret
+        ret
 .ide1_appl_data:
         mov     [cache_ide1_appl_search_start], edi
-    ret
+        ret
 .ide2:
         cmp     [hdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [hdd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     [cache_ide2_search_start], edi
-    ret
+        ret
 .ide2_appl_data:
         mov     [cache_ide2_appl_search_start], edi
-    ret
+        ret
 .ide3:
         cmp     [hdpos], 4
-    jne    .noide
+        jne     .noide
         cmp     [hdd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     [cache_ide3_search_start], edi
-    ret
+        ret
 .ide3_appl_data:
         mov     [cache_ide3_appl_search_start], edi
-    ret
+        ret
 .noide:
-    push   eax
+        push    eax
         mov     eax, [hdpos]
         sub     eax, 80h
-    cmp    byte [BiosDisksData+eax*4+2], -1
-    jz     @f
+        cmp     byte [BiosDisksData+eax*4+2], -1
+        jz      @f
         movzx   eax, byte [BiosDisksData+eax*4+2]
         imul    eax, cache_ide1-cache_ide0
         add     eax, cache_ide0
-    jmp    .get
+        jmp     .get
 @@:
         imul    eax, cache_ide1-cache_ide0
         add     eax, BiosDiskCaches
 .get:
         cmp     [hdd_appl_data], 0
-    jne    .bd_appl_data
+        jne     .bd_appl_data
         mov     [cache_ide0_search_start-cache_ide0+eax], edi
-    pop    eax
-    ret
+        pop     eax
+        ret
 .bd_appl_data:
         mov     [cache_ide0_appl_search_start-cache_ide0+eax], edi
-    pop    eax
-    ret
+        pop     eax
+        ret
 
 ;--------------------------------------------------------------------
 align 4
@@ -578,69 +578,69 @@ find_empty_slot_CD_cache:
 ; output : edi = cache slot
 ;-----------------------------------------------------------
 .search_again:
-    call  cd_calculate_cache_3
+        call    cd_calculate_cache_3
 .search_for_empty:
-    inc   edi
-    call  cd_calculate_cache_4
-    jbe   .inside_cache
+        inc     edi
+        call    cd_calculate_cache_4
+        jbe     .inside_cache
         mov     edi, 1
 .inside_cache:
-    call  cd_calculate_cache_5
-    ret
+        call    cd_calculate_cache_5
+        ret
 ;--------------------------------------------------------------------
 clear_CD_cache:
-    pusha
+        pusha
 .ide0:
         xor     eax, eax
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         mov     [cache_ide0_search_start], eax
         mov     ecx, [cache_ide0_system_sad_size]
         mov     edi, [cache_ide0_pointer]
-    call   .clear
+        call    .clear
         mov     [cache_ide0_appl_search_start], eax
         mov     ecx, [cache_ide0_appl_sad_size]
         mov     edi, [cache_ide0_data_pointer]
-    jmp    .continue
+        jmp     .continue
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         mov     [cache_ide1_search_start], eax
         mov     ecx, [cache_ide1_system_sad_size]
         mov     edi, [cache_ide1_pointer]
-    call   .clear
+        call    .clear
         mov     [cache_ide1_appl_search_start], eax
         mov     ecx, [cache_ide1_appl_sad_size]
         mov     edi, [cache_ide1_data_pointer]
-    jmp    .continue
+        jmp     .continue
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         mov     [cache_ide2_search_start], eax
         mov     ecx, [cache_ide2_system_sad_size]
         mov     edi, [cache_ide2_pointer]
-    call   .clear
+        call    .clear
         mov     [cache_ide2_appl_search_start], eax
         mov     ecx, [cache_ide2_appl_sad_size]
         mov     edi, [cache_ide2_data_pointer]
-    jmp    .continue
+        jmp     .continue
 .ide3:
         mov     [cache_ide3_search_start], eax
         mov     ecx, [cache_ide3_system_sad_size]
         mov     edi, [cache_ide3_pointer]
-    call   .clear
+        call    .clear
         mov     [cache_ide3_appl_search_start], eax
         mov     ecx, [cache_ide3_appl_sad_size]
         mov     edi, [cache_ide3_data_pointer]
 .continue:
-    call   .clear
-    popa
-    ret
+        call    .clear
+        popa
+        ret
 .clear:
         shl     ecx, 1
-    cld
-    rep   stosd
-    ret
+        cld
+        rep stosd
+        ret
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache:
@@ -650,50 +650,50 @@ cd_calculate_cache:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [cd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     ecx, [cache_ide0_system_sad_size]
         mov     esi, [cache_ide0_pointer]
-    ret
+        ret
 .ide0_appl_data:
         mov     ecx, [cache_ide0_appl_sad_size]
         mov     esi, [cache_ide0_data_pointer]
-    ret
+        ret
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [cd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     ecx, [cache_ide1_system_sad_size]
         mov     esi, [cache_ide1_pointer]
-    ret
+        ret
 .ide1_appl_data:
         mov     ecx, [cache_ide1_appl_sad_size]
         mov     esi, [cache_ide1_data_pointer]
-    ret
+        ret
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [cd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     ecx, [cache_ide2_system_sad_size]
         mov     esi, [cache_ide2_pointer]
-    ret
+        ret
 .ide2_appl_data:
         mov     ecx, [cache_ide2_appl_sad_size]
         mov     esi, [cache_ide2_data_pointer]
-    ret
+        ret
 .ide3:
         cmp     [cd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     ecx, [cache_ide3_system_sad_size]
         mov     esi, [cache_ide3_pointer]
-    ret
+        ret
 .ide3_appl_data:
         mov     ecx, [cache_ide3_appl_sad_size]
         mov     esi, [cache_ide3_data_pointer]
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_1:
@@ -701,42 +701,42 @@ cd_calculate_cache_1:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [cd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     esi, [cache_ide0_pointer]
-    ret
+        ret
 .ide0_appl_data:
         mov     esi, [cache_ide0_data_pointer]
-    ret
+        ret
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [cd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     esi, [cache_ide1_pointer]
-    ret
+        ret
 .ide1_appl_data:
         mov     esi, [cache_ide1_data_pointer]
-    ret
+        ret
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [cd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     esi, [cache_ide2_pointer]
-    ret
+        ret
 .ide2_appl_data:
         mov     esi, [cache_ide2_data_pointer]
-    ret
+        ret
 .ide3:
         cmp     [cd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     esi, [cache_ide3_pointer]
-    ret
+        ret
 .ide3_appl_data:
         mov     esi, [cache_ide3_data_pointer]
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_2:
@@ -744,42 +744,42 @@ cd_calculate_cache_2:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [cd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     eax, [cache_ide0_system_data]
-    ret
+        ret
 .ide0_appl_data:
         mov     eax, [cache_ide0_appl_data]
-    ret
+        ret
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [cd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     eax, [cache_ide1_system_data]
-    ret
+        ret
 .ide1_appl_data:
         mov     eax, [cache_ide1_appl_data]
-    ret
+        ret
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [cd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     eax, [cache_ide2_system_data]
-    ret
+        ret
 .ide2_appl_data:
         mov     eax, [cache_ide2_appl_data]
-    ret
+        ret
 .ide3:
         cmp     [cd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     eax, [cache_ide3_system_data]
-    ret
+        ret
 .ide3_appl_data:
         mov     eax, [cache_ide3_appl_data]
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_3:
@@ -789,42 +789,42 @@ cd_calculate_cache_3:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [cd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     edi, [cache_ide0_search_start]
-    ret
+        ret
 .ide0_appl_data:
         mov     edi, [cache_ide0_appl_search_start]
-    ret
+        ret
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [cd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     edi, [cache_ide1_search_start]
-    ret
+        ret
 .ide1_appl_data:
         mov     edi, [cache_ide1_appl_search_start]
-    ret
+        ret
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [cd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     edi, [cache_ide2_search_start]
-    ret
+        ret
 .ide2_appl_data:
         mov     edi, [cache_ide2_appl_search_start]
-    ret
+        ret
 .ide3:
         cmp     [cd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     edi, [cache_ide3_search_start]
-    ret
+        ret
 .ide3_appl_data:
         mov     edi, [cache_ide3_appl_search_start]
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_4:
@@ -832,42 +832,42 @@ cd_calculate_cache_4:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [cd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         cmp     edi, [cache_ide0_system_sad_size]
-    ret
+        ret
 .ide0_appl_data:
         cmp     edi, [cache_ide0_appl_sad_size]
-    ret
+        ret
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [cd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         cmp     edi, [cache_ide1_system_sad_size]
-    ret
+        ret
 .ide1_appl_data:
         cmp     edi, [cache_ide1_appl_sad_size]
-    ret
+        ret
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [cd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         cmp     edi, [cache_ide2_system_sad_size]
-    ret
+        ret
 .ide2_appl_data:
         cmp     edi, [cache_ide2_appl_sad_size]
-    ret
+        ret
 .ide3:
         cmp     [cd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         cmp     edi, [cache_ide3_system_sad_size]
-    ret
+        ret
 .ide3_appl_data:
         cmp     edi, [cache_ide3_appl_sad_size]
-    ret
+        ret
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_5:
@@ -875,42 +875,42 @@ cd_calculate_cache_5:
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
-    jne    .ide1
+        jne     .ide1
         cmp     [cd_appl_data], 0
-    jne    .ide0_appl_data
+        jne     .ide0_appl_data
         mov     [cache_ide0_search_start], edi
-    ret
+        ret
 .ide0_appl_data:
         mov     [cache_ide0_appl_search_start], edi
-    ret
+        ret
 .ide1:
         cmp     [cdpos], 2
-    jne    .ide2
+        jne     .ide2
         cmp     [cd_appl_data], 0
-    jne    .ide1_appl_data
+        jne     .ide1_appl_data
         mov     [cache_ide1_search_start], edi
-    ret
+        ret
 .ide1_appl_data:
         mov     [cache_ide1_appl_search_start], edi
-    ret
+        ret
 .ide2:
         cmp     [cdpos], 3
-    jne    .ide3
+        jne     .ide3
         cmp     [cd_appl_data], 0
-    jne    .ide2_appl_data
+        jne     .ide2_appl_data
         mov     [cache_ide2_search_start], edi
-    ret
+        ret
 .ide2_appl_data:
         mov     [cache_ide2_appl_search_start], edi
-    ret
+        ret
 .ide3:
         cmp     [cd_appl_data], 0
-    jne    .ide3_appl_data
+        jne     .ide3_appl_data
         mov     [cache_ide3_search_start], edi
-    ret
+        ret
 .ide3_appl_data:
         mov     [cache_ide3_appl_search_start], edi
-    ret
+        ret
 ;--------------------------------------------------------------------
 ;align 4
 ;calculate_linear_to_real:

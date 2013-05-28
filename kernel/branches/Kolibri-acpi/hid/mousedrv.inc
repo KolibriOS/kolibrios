@@ -494,9 +494,9 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
 ;--------------------------------------
 align 4
 @@M1:
-        cmp     ax, [Screen_Max_X];ScreenLength
+        cmp     ax, word [Screen_Max_X];ScreenLength
         jl      @@M2
-        mov     ax, [Screen_Max_X];ScreenLength-1
+        mov     ax, word [Screen_Max_X];ScreenLength-1
 ;--------------------------------------
 align 4
 @@M2:
@@ -514,9 +514,9 @@ align 4
 ;--------------------------------------
 align 4
 @@M3:
-        cmp     ax, [Screen_Max_Y];ScreenHeigth
+        cmp     ax, word [Screen_Max_Y];ScreenHeigth
         jl      @@M4
-        mov     ax, [Screen_Max_Y];ScreenHeigth-1
+        mov     ax, word [Screen_Max_Y];ScreenHeigth-1
 ;--------------------------------------
 align 4
 @@M4:
@@ -531,6 +531,7 @@ align 4
         mov     [mouse_active], 1
         mov     eax, [timer_ticks]
         mov     [mouse_timer_ticks], eax
+        call    wakeup_osloop
         ret
 endp
 ;-----------------------------------------------------------------------------

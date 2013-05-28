@@ -992,7 +992,6 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         jz      .do_not_draw
 
         ; yes it is, activate and update screen buffer
-        mov     byte[MOUSE_DOWN], 1
         call    window._.window_activate
 
         pushad
@@ -1025,12 +1024,9 @@ align 4
         ; no it's not, just activate the window
         call    window._.window_activate
         xor     eax, eax
-        mov     byte[MOUSE_BACKGROUND], al
-        mov     byte[DONT_DRAW_MOUSE], al
 ;--------------------------------------
 align 4
 .exit:
-        mov     byte[MOUSE_DOWN], 0
         inc     eax
         ret
 ;------------------------------------------------------------------------------
@@ -1183,7 +1179,6 @@ align 4
         add     edx, ebx
         call    ebp
         inc     [_display.mask_seqno]
-        mov     byte[MOUSE_BACKGROUND], 0
 ;--------------------------------------
 align 4
 .exit:
@@ -1629,6 +1624,7 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
 ; Otherwise the user can see cursor specified by f.37.5 from another window.
 ; He will be really unhappy! He is terrible in rage - usually he throws stones!
         mov     [redrawmouse_unconditional], 1
+        call    wakeup_osloop
         ; NOTE: commented out since doesn't provide necessary functionality
         ;       anyway, to be reworked
 ;       mov     eax, [timer_ticks] ; [0xfdf0]

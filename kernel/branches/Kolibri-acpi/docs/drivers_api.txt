@@ -13,12 +13,14 @@ drivers. They must be called in the following order: DiskAdd, then zero or
 more DiskMediaChanged, then optionally DiskDel. The driver must not call
 two functions in parallel, including two calls to DiskMediaChanged.
 
-void* stdcall DiskAdd(DISKFUNC* functions, const char* name, void* userdata,
-int flags); ; The pointer 'functions' must be valid at least until the disk
-will be deleted ; (until DISKFUNC.close is called). ; The pointer 'name' can
-be invalid after this function returns. ; It should point to ASCIIZ-string
-without leading '/' in latin lowercase and ; digits, like 'usbhd0'. ; The
-value 'userdata' is any pointer-sized data, passed as is to all ; callbacks.
+void* DiskAdd(DISKFUNC* functions, const char* name, void* userdata, int flags);
+; The pointer 'functions' must be valid at least until the disk will be deleted
+; (until DISKFUNC.close is called).
+; The pointer 'name' can be invalid after this function returns.
+; It should point to ASCIIZ-string without leading '/' in latin lowercase and
+; digits, like 'usbhd0'.
+; The value 'userdata' is any pointer-sized data, passed as is to all
+; callbacks.
 DISK_NO_INSERT_NOTIFICATION = 1
 ; The bitfield 'flags' has currently only one bit defined. If it is set, the
 ; driver will never call DiskMediaChanged(hDisk, true), so the kernel must scan
@@ -27,13 +29,13 @@ struc DISKFUNC
 {
   .strucsize  dd ?
   .close      dd ?
-; void stdcall (*close)(void* userdata);
+; void close(void* userdata);
 ; Optional.
 ; The last function that is called for the given disk. The kernel calls it when
 ; the kernel has finished all operations with the disk and it is safe to free
 ; all driver-specific data identified by 'userdata'.
   .closemedia dd ?
-; void stdcall (*closemedia)(void* userdata);
+; void closemedia(void* userdata);
 ; Optional.
 ; The kernel calls this function when it finished all processing with the
 ; current media. If media is removed, the driver should decline all requests
@@ -41,25 +43,25 @@ struc DISKFUNC
 ; until this function is called. If media is removed, a new call to
 ; DiskMediaChanged(hDisk, true) is not allowed until this function is called.
   .querymedia dd ?
-; int stdcall (*querymedia)(void* userdata, DISKMEDIAINFO* info);
+; int querymedia(void* userdata, DISKMEDIAINFO* info);
 ; return value: 0 = success, otherwise = error
   .read       dd ?
-; int stdcall (*read)(void* userdata, void* buffer, __int64 startsector,
-;                     int* numsectors);
+; int read(void* userdata, void* buffer, __int64 startsector,
+;          int* numsectors);
 ; return value: 0 = success, otherwise = error
   .write      dd ?
-; int stdcall (*write)(void* userdata, const void* buffer, __int64 startsector,
-;                      int* numsectors);
+; int write(void* userdata, const void* buffer, __int64 startsector,
+;           int* numsectors);
 ; Optional.
 ; return value: 0 = success, otherwise = error
   .flush      dd ?
-; int stdcall (*flush)(void* userdata);
+; int flush(void* userdata);
 ; Optional.
 ; Flushes the hardware cache, if it exists. Note that a driver should not
 ; implement a software cache for read/write, since they are called from the
 ; kernel cache manager.
   .adjust_cache_size dd ?
-; unsigned int stdcall (*adjust_cache_size)(unsigned int suggested_size);
+; unsigned int adjust_cache_size(unsigned int suggested_size);
 ; Optional.
 ; Returns the cache size for this device in bytes. 0 = disable cache.
 }

@@ -192,7 +192,7 @@ calc_vmodes_table:
         mov     word [es:bx], 640
         mov     word [es:bx+2], 480
         mov     word [es:bx+6], 0x13
-
+        
         mov     word [es:bx+10], 640
         mov     word [es:bx+12], 480
         mov     word [es:bx+16], 0x12
@@ -249,7 +249,7 @@ calc_vmodes_table:
         mov     [es:bx+6], cx              ; +6 : mode number
         movzx   ax, byte [es:mi.BitsPerPixel]
         mov     word [es:bx+8], ax              ; +8 : bits per pixel
-        add     bx, size_of_step                ; size of record
+        add     bx, size_of_step                ; size of record 
 
     @@:
         add     si, 2
@@ -276,11 +276,11 @@ calc_vmodes_table:
 ;        je      .exit
 ;        add     bx,word [es:bp+2]
 ;        add     bx,word [es:bp+8]
-;
+;        
 ;        cmp     ax,bx
 ;        ja      .loops
 ;        jmp     .again
-;.loops:
+;.loops: 
 ;        push    dword [es:si]
 ;        push    dword [es:si+4]
 ;        push    dword [es:si+8]
@@ -455,7 +455,7 @@ check_first_parm:
 ;-----------------------------------------------------------------------------
 
 ;default_vmode:
-
+        
 ;-----------------------------------------------------------------------------
 draw_vmodes_table:
         _setcursor 9, 2
@@ -477,10 +477,10 @@ draw_vmodes_table:
 
 
         add     cx, size_of_step*long_v_table
-
+        
         cmp     ax, cx
         jb      .ok
-
+        
         sub     cx, size_of_step*long_v_table
         add     cx, size_of_step
         cmp     cx, word[end_cursor]
@@ -586,7 +586,7 @@ draw_vmodes_table:
 ;draw   cursor
         mov     word[ds:_rs+21], '>>'
         mov     word[ds:_rs+46], '<<'
-
+        
 
 
 .next:
@@ -682,7 +682,7 @@ set_vmode:
 
         mov     si, word [preboot_graph]           ;[preboot_graph]
         mov     cx, word [es:si+6]           ; number of mode
-
+        
 
         mov     ax, word [es:si+0]           ; resolution X
         mov     bx, word [es:si+2]           ; resolution Y

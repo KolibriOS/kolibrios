@@ -514,7 +514,7 @@ cfgmanager:
         push    word [es:bp+6]
         pop     word [number_vm]
         mov     word [preboot_graph], bp          ;save choose
-
+        
         jmp     .d
 
 .change_b:

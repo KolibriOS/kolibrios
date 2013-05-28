@@ -66,8 +66,7 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
          test edx, edx
          jz   .err
 
-         pushfd
-         cli
+        spin_lock_irqsave IrqsList
 
 ;allocate handler
 
@@ -84,13 +83,14 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
          mov eax, [user_data]
          mov [ecx+IRQH.handler], edx
          mov [ecx+IRQH.data],    eax
+        and     [ecx+IRQH.num_ints], 0
 
          lea edx, [irqh_tab+ebx*8]
          list_add_tail ecx, edx     ;clobber eax
          stdcall enable_irq, ebx
 
 .fail:
-         popfd
+        spin_unlock_irqrestore IrqsList
 .err:
          pop ebx
          mov eax, [.irqh]
@@ -188,7 +188,7 @@ align 16
 
        push [ebx+IRQH.data]
        call [ebx+IRQH.handler]
-       add esp, 4
+        pop     ecx
 
        pop esi
        pop edi
@@ -197,6 +197,7 @@ align 16
        test eax, eax
        jz .next
 
+        inc     [ebx+IRQH.num_ints]
        btr [irq_active_set], ebp
        jmp .next
 
@@ -204,9 +205,70 @@ align 16
        btr [irq_active_set], ebp
        jnc .exit
 
+; There is at least one configuration with one device which generates IRQ
+; that is not the same as it should be according to PCI config space.
+; For that device, the handler is registered at wrong IRQ.
+; As a workaround, when nobody acknowledges the generated IRQ,
+; try to ask all other registered handlers; if some handler acknowledges
+; the IRQ this time, relink it to the current IRQ list.
+; To make this more reliable, for every handler keep number of times
+; that it has acknowledged an IRQ, and assume that handlers with at least one
+; acknowledged IRQ are registered properly.
+; Note: this still isn't 100% correct, because two IRQs can fire simultaneously,
+; the better way would be to find the correct IRQ, but I don't know how to do
+; this in that case.
+; Also, [fdc_irq_func], [irq14_func], [irq15_func] could process interrupt
+; but do not return whether they did it, so just ignore IRQs 6, 14, 15.
+        cmp     ebp, 6
+        jz      .fail
+        cmp     ebp, 14
+        jz      .fail
+        cmp     ebp, 15
+        jz      .fail
+        push    ebp
+        xor     ebp, ebp
+.try_other_irqs:
+        cmp     ebp, [esp]
+        jz      .try_next_irq
+        cmp     ebp, 1
+        jz      .try_next_irq
+        cmp     ebp, 12
+        jz      .try_next_irq
+        lea     esi, [irqh_tab+ebp*8]
+        mov     ebx, esi
+.try_next_handler:
+        mov     ebx, [ebx+IRQH.list.next]
+        cmp     ebx, esi
+        je      .try_next_irq
+        cmp     [ebx+IRQH.num_ints], 0
+        jne     .try_next_handler
+; keyboard handler acknowledges everything
+        push    [ebx+IRQH.data]
+        call    [ebx+IRQH.handler]
+        pop     ecx
+        test    eax, eax
+        jz      .try_next_handler
+
+.found_in_wrong_list:
+        DEBUGF 1,'K : warning: relinking handler from IRQ%d to IRQ%d\n',\
+                ebp, [esp]
+        pop     ebp
+        spin_lock_irqsave IrqsList
+        list_del ebx
+        lea     edx, [irqh_tab+ebp*8]
+        list_add_tail ebx, edx
+        spin_unlock_irqrestore IrqsList
+        jmp     .exit
+
+.try_next_irq:
+        inc     ebp
+        cmp     ebp, 16
+        jb      .try_other_irqs
+        pop     ebp
+
+.fail:
        inc [irq_failed+ebp*4]
 .exit:
-        mov     [check_idle_semaphore], 5
 
        mov ecx, ebp
        call irq_eoi

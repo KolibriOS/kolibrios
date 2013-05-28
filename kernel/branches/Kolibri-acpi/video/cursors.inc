@@ -846,7 +846,7 @@ check_mouse_area_for_getpixel_new:
         add     eax, ebx
         mov     ebx, eax
         shl     eax, 2
-        cmp     [ScreenBPP], byte 32
+        cmp     byte [_display.bpp], 32
         je      @f
         sub     eax, ebx
 ;--------------------------------------
@@ -921,7 +921,7 @@ align 4
         add     ecx, ebx
         mov     ebx, ecx
         shl     ecx, 2
-        cmp     [ScreenBPP], byte 24
+        cmp     byte [_display.bpp], 24
         je      .24
         and     eax, 0xFFFFFF
         mov     [ecx + cur_saved_data], eax   ;store new color  to
@@ -991,21 +991,15 @@ init_display:
 
         test    word [SCR_MODE], 0x4000
         jz      .fail
-;        jmp      .fail
 
         mov     ebx, restore_32
         mov     ecx, move_cursor_32
-        movzx   eax, byte [ScreenBPP]
-        cmp     eax, 32
-        je      @F
+        mov     edx, Vesa20_putpixel32_new
+        mov     eax, [_display.bpp]
+        cmp     al, 32
+        jne     .24
 
-        mov     ebx, restore_24
-        mov     ecx, move_cursor_24
-        cmp     eax, 24
-        jne     .fail
-;--------------------------------------
-align 4
-@@:
+.set:
         mov     [_display.select_cursor], select_cursor
         mov     [_display.move_cursor], ecx
         mov     [_display.restore_cursor], ebx
@@ -1014,24 +1008,21 @@ align 4
 
         cmp     [PUTPIXEL], dword VGA_putpixel
         je      @f
-        cmp     [ScreenBPP], byte 32
-        je      .32
-        mov     [PUTPIXEL], dword Vesa20_putpixel24_new
-        jmp     @f
-;--------------------------------------
-align 4
-.32:
-        mov     [PUTPIXEL], dword Vesa20_putpixel32_new
-;--------------------------------------
-align 4
+        mov     [PUTPIXEL], edx
 @@:
         stdcall load_cursor, clock_arrow, dword LOAD_FROM_MEM
         mov     [def_cursor_clock], eax
         stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
         mov     [def_cursor], eax
         ret
-;--------------------------------------
-align 4
+
+.24:
+        mov     ebx, restore_24
+        mov     ecx, move_cursor_24
+        mov     edx, Vesa20_putpixel24_new
+        cmp     al, 24
+        je      .set
+
 .fail:
         xor     eax, eax
         mov     [_display.select_cursor], eax

@@ -179,5 +179,5 @@ except_7:                  ;#NM exception handler
         iret
 
 iglobal
-  fpu_owner dd 0
+  fpu_owner dd 2
 endg

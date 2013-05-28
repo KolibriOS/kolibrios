@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 2140 $
+$Revision: 3284 $
 
 ; This function is intended to replace the old 'hd_read' function when
 ; [hdd_appl_data] = 0, so its input/output parameters are the same, except
@@ -167,7 +167,7 @@ end virtual
 
         mov     edi, ebx
         mov     ecx, 512/4
-        rep     movsd           ; move data
+        rep movsd               ; move data
         xor     eax, eax        ; successful read
 .read_done:
         mov     ecx, [.cache]
@@ -325,7 +325,7 @@ end virtual
 
         mov     esi, ebx
         mov     ecx, 512/4
-        rep     movsd           ; move data
+        rep movsd               ; move data
         xor     eax, eax        ; success
 .hd_write_access_denied:
         mov     ecx, [.cache]
@@ -397,7 +397,7 @@ saved_esi_pos = 16+12 ; size of local variables + size of registers before esi
         mov     dword [esi+8], 1        ; same as in hd
         mov     eax, [esi]
         mov     edx, [esi+4]            ; edx:eax = sector to write
-; Объединяем запись цепочки последовательных секторов в одно обращение к диску
+; РћР±СЉРµРґРёРЅСЏРµРј Р·Р°РїРёСЃСЊ С†РµРїРѕС‡РєРё РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅС‹С… СЃРµРєС‚РѕСЂРѕРІ РІ РѕРґРЅРѕ РѕР±СЂР°С‰РµРЅРёРµ Рє РґРёСЃРєСѓ
         cmp     ecx, 1
         jz      .nonext
         cmp     dword [esi+12+8], 2
@@ -560,7 +560,7 @@ disk_init_cache:
         mov     edi, [esi+DISK.SysCache.pointer]
         lea     ecx, [ecx*3]
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     edi
 
         mov     eax, [esi+DISK.AppCache.data_size]
@@ -575,7 +575,7 @@ disk_init_cache:
         mov     edi, [esi+DISK.AppCache.pointer]
         lea     ecx, [ecx*3]
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     edi
 
 ; 4. Return with nonzero al.

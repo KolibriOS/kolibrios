@@ -11,93 +11,93 @@
 ;
 ;======================================================================
 
-; Para modificar ‚ste archivo es necesario abrirlo con codificaci¢n CP850
+; Para modificar Ã©ste archivo es necesario abrirlo con codificaciÃ³n CP850
 
 $Revision: 2455 $
 
 
 d80x25_bottom:
-          db       186,' KolibriOS est  basado en MenuetOS y viene ABSOLUTAMENTE  '
-          db       'SIN GARANT¡A        ',186
-          db       186,' Lee el archivo COPYING por m s detalles                  '
-          db       '                    ',186
+          cp850    'â•‘ KolibriOS estÃ¡ basado en MenuetOS y viene ABSOLUTAMENTE  '
+          cp850    'SIN GARANTÃ­A        â•‘'
+          cp850    'â•‘ Lee el archivo COPYING por mÃ¡s detalles                  '
+          cp850    '                    â•‘'
           line_full_bottom
 d80x25_bottom_num = 3
 
-msg_apm   db      " APM x.x ", 0
-novesa    db      "Monitor: EGA/CGA",13,10,0
-s_vesa    db      "Versi¢n de VESA: "
+msg_apm:  cp850   " APM x.x ", 0
+novesa:   cp850   "Monitor: EGA/CGA",13,10,0
+s_vesa:   cp850   "VersiÃ³n de VESA: "
   .ver    db      "?.?",13,10,0
 
-gr_mode   db      "Selecciona un modo de video: ",13,10,0
+gr_mode:  cp850   "Selecciona un modo de video: ",13,10,0
 
-ask_bd     db      "¨Agregar discos visibles por el BIOS emulados en modo V86? [1-si, 2-no]: ",0
+ask_bd:   cp850   "Â¿Agregar discos visibles por el BIOS emulados en modo V86? [1-si, 2-no]: ",0
 
 if defined extended_primary_loader
-bdev      db      "Cargar unidad ram desde [1-disquete; 2-kolibri.img]: ",0
+bdev:     cp850   "Cargar unidad ram desde [1-disquete; 2-kolibri.img]: ",0
 else
-bdev      db      "Cargar unidad ram desde [1-disquete; 2-C:\kolibri.img (FAT32);"
-          db      13,10,186,"                    "
-          db      "3-usar imagen precargada en el reinicio del n£cleo;"
-          db      13,10,186,"                    "
-          db      "4-crear imagen vac¡a]: ",0
+bdev:     cp850   "Cargar unidad ram desde [1-disquete; 2-C:\kolibri.img (FAT32);"
+          cp850   13,10,"â•‘                    "
+          cp850   "3-usar imagen precargada en el reinicio del nÃºcleo;"
+          cp850   13,10,"â•‘                    "
+          cp850   "4-crear imagen vacÃ­a]: ",0
 end if
 
-prnotfnd  db      "Fatal - Modo de video no encontrado.",0
+prnotfnd: cp850   "Fatal - Modo de video no encontrado.",0
 
-not386    db      "Fatal - CPU 386+ requerido.",0
-fatalsel  db      "Fatal - Modo de gr ficos no soportado por hardware.",0
-pres_key  db      "Presiona una tecla para seleccionar otro modo de video.",0
-badsect   db      13,10,186," Fatal - Sector mal. Reemplaze el disquete.",0
-memmovefailed db  13,10,186," Fatal - Int 0x15 move failed.",0
-okt       db      " ... BIEN"
-linef     db      13,10,0
-diskload  db      "Cargando disquete: 00 %",8,8,8,8,0
-pros      db      "00"
-backspace2 db     8,8,0
+not386:   cp850   "Fatal - CPU 386+ requerido.",0
+fatalsel: cp850   "Fatal - Modo de grÃ¡ficos no soportado por hardware.",0
+pres_key: cp850   "Presiona una tecla para seleccionar otro modo de video.",0
+badsect:  cp850   13,10,"â•‘ Fatal - Sector mal. Reemplaze el disquete.",0
+memmovefailed:cp850 13,10,"â•‘ Fatal - Int 0x15 move failed.",0
+okt:      cp850   " ... BIEN"
+linef:    cp850   13,10,0
+diskload: cp850   "Cargando disquete: 00 %",8,8,8,8,0
+pros:     cp850   "00"
+backspace2:cp850  8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Presiona [abcd] para cambiar la configuraci¢n, [Enter] para continuar",13,10,0
-time_msg  db      " o espera "
-time_str  db      " 5 segundos"
-          db      " para que inicie autom ticamente",13,10,0
-current_cfg_msg db "Configuraci¢n actual:",13,10,0
-curvideo_msg db   " [a] Modo de video: ",0
+start_msg:cp850   "Presiona [abcd] para cambiar la configuraciÃ³n, [Enter] para continuar",13,10,0
+time_msg: cp850   " o espera "
+time_str: cp850   " 5 segundos"
+          cp850   " para que inicie automÃ¡ticamente",13,10,0
+current_cfg_msg:cp850 "ConfiguraciÃ³n actual:",13,10,0
+curvideo_msg:cp850 " [a] Modo de video: ",0
 
-mode0     db      "320x200, EGA/CGA 256 colores",13,10,0
-mode9     db      "640x480, VGA 16 colores",13,10,0
+mode0:    cp850   "320x200, EGA/CGA 256 colores",13,10,0
+mode9:    cp850   "640x480, VGA 16 colores",13,10,0
 
-usebd_msg db      " [b] Agregar discos visibles por el BIOS:",0
-on_msg    db      " activado",13,10,0
-off_msg   db      " desactivado",13,10,0
+usebd_msg:cp850   " [b] Agregar discos visibles por el BIOS:",0
+on_msg:   cp850   " activado",13,10,0
+off_msg:  cp850   " desactivado",13,10,0
 
-preboot_device_msg db " [c] Imagen de disquete: ",0
+preboot_device_msg:cp850 " [c] Imagen de disquete: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0
-pdm1      db      "disquete real",13,10,0
-pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
+pdm1:     cp850   "disquete real",13,10,0
+pdm2:     cp850   "C:\kolibri.img (FAT32)",13,10,0
 else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
-pdm1      db      "disquete real",13,10,0
-pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
-pdm3      db      "usar imagen ya cargada",13,10,0
-pdm4      db      "crear imagen vac¡a",13,10,0
+pdm1:     cp850   "disquete real",13,10,0
+pdm2:     cp850   "C:\kolibri.img (FAT32)",13,10,0
+pdm3:     cp850   "usar imagen ya cargada",13,10,0
+pdm4:     cp850   "crear imagen vacÃ­a",13,10,0
 end if
 
-loading_msg db    "Cargando KolibriOS...",0
+loading_msg:cp850 "Cargando KolibriOS...",0
 
 if ~ defined extended_primary_loader
-save_quest db     "¨Recordar configuraci¢n actual? [s/n]: ",0
-loader_block_error db "Bootloader inv lido, no puedo continuar. Detenido.",0
+save_quest:cp850  "Â¿Recordar configuraciÃ³n actual? [s/n]: ",0
+loader_block_error:cp850 "Bootloader invÃ¡lido, no puedo continuar. Detenido.",0
 end if
 
-_st db 186,'                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄ¿',13,10,0
-_r1 db 186,'                   ³  320x200 EGA/CGA 256 colores  ³ ³',13,10,0
-_r2 db 186,'                   ³  640x480 VGA 16 colores       ³ ³',13,10,0
-_rs db 186,'                   ³  ????x????@??  SVGA VESA      ³ ³',13,10,0
-_bt db 186,'                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÙ',13,10,0
+_st:cp850 'â•‘                   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”',13,10,0
+_r1:cp850 'â•‘                   â”‚  320x200 EGA/CGA 256 colores  â”‚ â”‚',13,10,0
+_r2:cp850 'â•‘                   â”‚  640x480 VGA 16 colores       â”‚ â”‚',13,10,0
+_rs:cp850 'â•‘                   â”‚  ????x????@??  SVGA VESA      â”‚ â”‚',13,10,0
+_bt:cp850 'â•‘                   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”˜',13,10,0
 
-remark1 db      "Los valores por defecto puede que no funcionen en algunas configuraciones.",0
-remark2 db      "Si el sistema no inicia, prueba deshabilitar la opci¢n [b].",0
+remark1:cp850   "Los valores por defecto puede que no funcionen en algunas configuraciones.",0
+remark2:cp850   "Si el sistema no inicia, prueba deshabilitar la opciÃ³n [b].",0
 remarks dw      remark1, remark2
 num_remarks = 2

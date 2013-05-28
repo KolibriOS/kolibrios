@@ -29,7 +29,7 @@ cross_order:
 
 align 32
 sysenter_entry:
-        ; Настраиваем стек
+        ; РќР°СЃС‚СЂР°РёРІР°РµРј СЃС‚РµРє
         mov     esp, [ss:tss._esp0]
         sti
         push    ebp                     ; save app esp + 4
@@ -47,7 +47,7 @@ sysenter_entry:
         call    unprotect_from_terminate
         popad
         ;------------------
-        xchg    ecx, [ss:esp]           ; в вершин стека - app ecx, ecx - app esp + 4
+        xchg    ecx, [ss:esp]           ; РІ РІРµСЂС€РёРЅ СЃС‚РµРєР° - app ecx, ecx - app esp + 4
         sub     ecx, 4
         xchg    edx, [ecx]              ; edx - return point, & save original edx
         push    edx
@@ -112,7 +112,7 @@ iglobal
 
   align 4
   servetable:
-      dd socket                  ; 53-Socket interface
+      dd 0
       dd 0
       dd 0
       dd 0
@@ -182,8 +182,8 @@ iglobal
       dd sys_apm                 ; 49-Advanced Power Management (APM)
       dd syscall_set_window_shape ; 50-Window shape & scale
       dd syscall_threads         ; 51-Threads
-      dd stack_driver_stat       ; 52-Stack driver status
-      dd cross_order             ; 53-Socket interface
+      dd undefined_syscall       ; 52-Stack driver status
+      dd undefined_syscall       ; 53-Socket interface
       dd undefined_syscall       ; 54-reserved
       dd sound_interface         ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
@@ -204,9 +204,9 @@ iglobal
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
       dd blit_32                 ; 73-blitter;
-      dd undefined_syscall       ; 74-reserved for new stack
-      dd undefined_syscall       ; 75-reserved for new stack
-      dd undefined_syscall       ; 76-reserved for new stack
+      dd sys_network             ; 74-reserved for new stack
+      dd sys_socket              ; 75-reserved for new stack
+      dd sys_protocols           ; 76-reserved for new stack
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
 

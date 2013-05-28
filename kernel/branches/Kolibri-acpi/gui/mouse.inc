@@ -66,13 +66,9 @@ mouse_check_events: ;//////////////////////////////////////////////////////////
         ; NOTE: this code wouldn't be necessary if we knew window did
         ;       already redraw itself after call above
         or      eax, eax
-        jz      @f
-
-        and     [mouse.state.buttons], 0
-        jmp     .exit
+        jnz     .exit
 
         ; is there any system button under cursor?
-    @@:
         call    mouse._.find_sys_button_under_cursor
         or      eax, eax
         jz      .check_buttons_released
