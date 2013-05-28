@@ -371,7 +371,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF 1,"Loading %s driver\n", my_service
+        DEBUGF  2,"Loading %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
 
@@ -1039,7 +1039,7 @@ transmit:
 ; get next descriptor 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...
         inc     [device.cur_tx]
         and     [device.cur_tx], TX_RING_SIZE - 1
-        DEBUGF  2," - Packet Sent! "
+        DEBUGF  1," - Packet Sent! "
 
 ; Update stats
         inc     [device.packets_tx]
@@ -1048,7 +1048,7 @@ transmit:
         adc     dword [device.bytes_tx + 4], 0
 
   .finish:
-        DEBUGF  2," - Done!\n"
+        DEBUGF  1," - Done!\n"
         xor     eax, eax
         ret     8
 
