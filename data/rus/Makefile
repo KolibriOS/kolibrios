@@ -1,4 +1,4 @@
-# General rule for naming: variables with CAPITALIZED names hold settings,
+﻿# General rule for naming: variables with CAPITALIZED names hold settings,
 # you can - and are expected - to modify it; variables with lowercase names
 # are intermediate variables and macroses not to be modified unless you
 # know what you're doing.
@@ -104,7 +104,6 @@ FASM_PROGRAMS:=\
  develop/fasm:DEVELOP/FASM:$(PROGS)/develop/fasm/trunk/fasm.asm \
  develop/h2d2b:DEVELOP/H2D2B:$(PROGS)/develop/h2d2b/trunk/h2d2b.asm \
  develop/heed:DEVELOP/HEED:$(PROGS)/develop/heed/trunk/heed.asm \
- develop/ipc:DEVELOP/IPC:$(PROGS)/network/ipc/trunk/ipc.asm \
  develop/keyascii:DEVELOP/KEYASCII:$(PROGS)/develop/keyascii/trunk/keyascii.asm \
  develop/mtdbg:DEVELOP/MTDBG:$(PROGS)/develop/mtdbg/mtdbg.asm \
  develop/scancode:DEVELOP/SCANCODE:$(PROGS)/develop/scancode/trunk/scancode.asm \

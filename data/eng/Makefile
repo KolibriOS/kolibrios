@@ -103,7 +103,6 @@ FASM_PROGRAMS:=\
  develop/fasm:DEVELOP/FASM:$(PROGS)/develop/fasm/trunk/fasm.asm \
  develop/h2d2b:DEVELOP/H2D2B:$(PROGS)/develop/h2d2b/trunk/h2d2b.asm \
  develop/heed:DEVELOP/HEED:$(PROGS)/develop/heed/trunk/heed.asm \
- develop/ipc:DEVELOP/IPC:$(PROGS)/network/ipc/trunk/ipc.asm \
  develop/keyascii:DEVELOP/KEYASCII:$(PROGS)/develop/keyascii/trunk/keyascii.asm \
  develop/mtdbg:DEVELOP/MTDBG:$(PROGS)/develop/mtdbg/mtdbg.asm \
  develop/scancode:DEVELOP/SCANCODE:$(PROGS)/develop/scancode/trunk/scancode.asm \
