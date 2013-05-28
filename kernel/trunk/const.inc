@@ -198,9 +198,6 @@ WIN_STACK           equ (OS_BASE+0x000C000)
 WIN_POS             equ (OS_BASE+0x000C400)
 FDD_BUFF            equ (OS_BASE+0x000D000)
 
-;unused ? only one reference
-ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
-
 PUTPIXEL            equ (OS_BASE+0x000E020)
 GETPIXEL            equ (OS_BASE+0x000E024)
 
@@ -218,13 +215,6 @@ KEY_BUFF            equ (OS_BASE+0x000F401)
 BTN_COUNT           equ (OS_BASE+0x000F500)
 BTN_BUFF            equ (OS_BASE+0x000F501)
 
-;CPU_FREQ            equ (OS_BASE+0x000F600)
-
-;unused ? no active references
-;MOUSE_PORT          equ (OS_BASE+0x000F604)
-
-;unused
-PS2_CHUNK           equ (OS_BASE+0x000FB00)
 
 MOUSE_SCROLL_H      equ (OS_BASE+0x000FB08)
 MOUSE_X             equ (OS_BASE+0x000FB0A)
@@ -288,12 +278,6 @@ d_width_calc_area   equ (OS_BASE+0x02CA000)
 
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 BOOT_VAR            equ (OS_BASE+0x02E0000)
-
-stack_data_start    equ (OS_BASE+0x02F0000)
-eth_data_start      equ (OS_BASE+0x02F0000)
-stack_data          equ (OS_BASE+0x02F4000)
-stack_data_end      equ (OS_BASE+0x030ffff)
-resendQ             equ (OS_BASE+0x0310000)
 
 skin_data           equ (OS_BASE+0x0318000)
 draw_data           equ (OS_BASE+0x0320000)
