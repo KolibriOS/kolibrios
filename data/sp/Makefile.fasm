@@ -53,7 +53,7 @@ $(foreach f,$(FASM_NOKPACK_PROGRAMS),$(eval $(call fasm_nokpack_meta_rule,$(fbin
 # Rule for the kernel differs: it uses kerpack instead of kpack.
 kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
 	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
-	(fasm -m 65536 "$<" "$@" -s $$tmpfile && \
+	(fasm -m 131072 "$<" "$@" -s $$tmpfile && \
 	fasmdep -e $$tmpfile > .deps/kernel.Po && \
 	rm $$tmpfile) || (rm $$tmpfile; false)
 	kerpack "$@"
