@@ -2221,11 +2221,6 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         lea     esi, [WIN_POS + esi * 2]
         call    window._.window_deactivate
 
-        xor     eax, eax
-        mov     byte[MOUSE_BACKGROUND], al
-        mov     byte[DONT_DRAW_MOUSE], al
-        mov     byte[MOUSE_DOWN], 0
-
         call    syscall_display_settings._.calculate_whole_screen
         call    syscall_display_settings._.redraw_whole_screen
 .nowindowdeactivate:
@@ -3559,7 +3554,6 @@ set_bgr_event:
         mov     [draw_data+32 + RECT.top], eax
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], eax
-        mov     [MOUSE_BACKGROUND], byte 0
 ;--------------------------------------
 align 4
 nobackgr:

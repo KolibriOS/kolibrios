@@ -992,7 +992,6 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         jz      .do_not_draw
 
         ; yes it is, activate and update screen buffer
-        mov     byte[MOUSE_DOWN], 1
         call    window._.window_activate
 
         pushad
@@ -1025,13 +1024,9 @@ align 4
         ; no it's not, just activate the window
         call    window._.window_activate
         xor     eax, eax
-        mov     byte[MOUSE_BACKGROUND], al
-        mov     byte[DONT_DRAW_MOUSE], al
-        dec     eax
 ;--------------------------------------
 align 4
 .exit:
-        mov     byte[MOUSE_DOWN], 0
         inc     eax
         ret
 ;------------------------------------------------------------------------------
@@ -1184,7 +1179,6 @@ align 4
         add     edx, ebx
         call    ebp
         inc     [_display.mask_seqno]
-        mov     byte[MOUSE_BACKGROUND], 0
 ;--------------------------------------
 align 4
 .exit:

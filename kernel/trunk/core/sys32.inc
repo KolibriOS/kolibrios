@@ -675,9 +675,6 @@ terminate: ; terminate application
         xor     esi, esi
         call    redrawscreen
 
-        mov     [MOUSE_BACKGROUND], byte 0; no mouse background
-        mov     [DONT_DRAW_MOUSE], byte 0; draw mouse
-
         call    unlock_application_table
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
