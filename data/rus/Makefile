@@ -1,4 +1,4 @@
-﻿# General rule for naming: variables with CAPITALIZED names hold settings,
+# General rule for naming: variables with CAPITALIZED names hold settings,
 # you can - and are expected - to modify it; variables with lowercase names
 # are intermediate variables and macroses not to be modified unless you
 # know what you're doing.
