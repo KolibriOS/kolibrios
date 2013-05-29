@@ -102,7 +102,7 @@ START:
         inc     esi
   .done:
         mov     [shared_name], esi
-        jmp     still
+        jmp     download
 
 prepare_event:
 ; Report events
@@ -113,6 +113,9 @@ red:    ; redraw
         call    draw_window
 
 still:
+        cmp     byte [params], 0
+        jne     exit
+
         mcall   10      ; wait here for event
         cmp     eax, 1  ; redraw request ?
         je      red
