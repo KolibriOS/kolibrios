@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 URLMAXLEN               = 1024
-primary_buffer_size     = 4096
+BUFFERSIZE              = 4096
 
 __DEBUG__       = 1
 __DEBUG_LEVEL__ = 2
@@ -30,8 +30,8 @@ use32
         dd      0x01            ; header version
         dd      START           ; entry point
         dd      IM_END          ; image size
-        dd      I_END           ; required memory
-        dd      I_END           ; esp
+        dd      I_END+0x100     ; required memory
+        dd      I_END+0x100     ; esp
         dd      params          ; I_PARAM
         dd      0x0             ; I_Path
 
@@ -53,8 +53,7 @@ START:
         test    eax, eax
         jnz     exit
 
-; prepare webAddr area  
-
+; prepare webAddr area
         mov     al, ' '
         mov     edi, webAddr
         mov     ecx, URLMAXLEN
@@ -103,10 +102,6 @@ START:
         inc     esi
   .done:
         mov     [shared_name], esi
-
-        mov     ah, 22   ; strange way to tell that socket should be opened...
-        call    socket_commands
-
         jmp     still
 
 prepare_event:
@@ -118,7 +113,7 @@ red:    ; redraw
         call    draw_window
 
 still:
-        mcall   23, 1   ; wait here for event
+        mcall   10      ; wait here for event
         cmp     eax, 1  ; redraw request ?
         je      red
 
@@ -131,93 +126,129 @@ still:
         cmp     eax, 6  ; mouse in buffer ?
         je      mouse
 
-; Get the web page data from the remote server
-        cmp     eax, 8
-        jne     still
-
-        call    read_incoming_data
-
-        cmp     [status], 4
-        je      .no_send
-
-        mov     [onoff], 1
-        call    send_request
-
-  .no_send:
-        call    print_status
-
-        cmp     [prev_status], 4
-        jne     no_close
-        cmp     [status], 4             ; connection closed by server
-        jbe     no_close                ; respond to connection close command
-; draw page
-        call    read_incoming_data
-        mcall   close, [socketnum]
-        mov     [onoff], 0
-
-no_close:
         jmp     still
+
 
 key:
         mcall   2       ; read key
 
         stdcall [edit_box_key], dword edit1
 
-        shr     eax, 8
-        cmp     eax, 13
-        je      retkey
+        cmp     ax, 13 shl 8
+        je      download
         
         jmp     still
-
         
 button:
 
         mcall   17      ; get id
         cmp     ah, 26
-        je      save
+        jne     @f
+        call    save_to_file
+        jmp     still
+  @@:
         cmp     ah, 1   ; button id=1 ?
-        jne     noclose
-;        DEBUGF  1, "Closing socket before exit...\n"
+        je      exit
 
-close_end_exit:
+        jmp     download
 
-exit:
-        or      eax, -1  ; close this program
-        mcall
-        
 mouse:
         stdcall [edit_box_mouse], edit1
         jmp     still
 
+exit:
+        or      eax, -1  ; close this program
+        mcall
+
+download:
+
+        DEBUGF  1, "Starting download\n"
+
+        call    parse_url
+        call    open_socket
+        call    send_request
+
+        mcall   68, 12, BUFFERSIZE
+        mov     [buf_ptr], eax
+        mov     [buf_size], 0
+
+        call    read_incoming_data
+
+        mcall   close, [socketnum]
+
+        call    parse_result
+        call    save
+
+        mcall   68, 13, [final_buffer]
+
+        jmp     still
+
+
 save:
-        DEBUGF  2, "File saved\n"
+
+        mov     ecx, [shared_name]
+        test    ecx, ecx
+        jz      @f
+        cmp     [ecx], byte 0
+        jnz     save_in_shared
+    @@:
+
+        call    save_to_file
+
+; if called from command line, then exit
+        cmp     byte[params], 0
+        jne     exit
+
+        ret
+
+save_in_shared:
+
+        mov     esi, 1   ; SHM_OPEN+SHM_WRITE
+        mcall   68, 22
+        test    eax, eax
+        jz      exit
+
+        sub     edx, 4
+        jbe     exit
+
+        mov     ecx, [final_size]
+        cmp     ecx, edx
+        jb      @f
+
+        mov     ecx, edx
+    @@:
+        mov     [eax], ecx
+        lea     edi, [eax+4]
+        mov     esi, [final_buffer]
+        mov     edx, ecx
+        shr     ecx, 2
+        rep     movsd
+        mov     ecx, edx
+        and     ecx, 3
+        rep     movsb
+
+        jmp     exit
+
+
+;****************************************************************************
+;    Function
+;       save_to_file
+;
+;   Description
+;
+;
+;****************************************************************************
+
+save_to_file:
+
+        DEBUGF  2, "Saving to file\n"
         mcall   70, fileinfo
 
         mov     ecx, [sc.work_text]
         or      ecx, 0x80000000
         mcall   4, <10, 93>, , download_complete
 
-        jmp     still
-
-noclose:
-        cmp     ah, 31
-        jne     noup
-        sub     [display_from], 20
-        jmp     still
-
-noup:
-        cmp     ah, 32
-        jne     nourl
-        add     [display_from], 20
-        jmp     still
-
-
-retkey:
-        mov     ah, 22  ; start load
-
-nourl:
-        call    socket_commands ; opens or closes the connection
-        jmp     still
+        ret
 
 
 ;****************************************************************************
@@ -233,7 +264,6 @@ send_request:
 
         DEBUGF  1, "Sending request\n"
 
-        pusha
         mov     esi, string0
         mov     edi, request
         movsd
@@ -307,44 +337,7 @@ send_request:
         mov     esi, edi
         sub     esi, request    ; length
         xor     edi, edi        ; flags
-;;;;now write \r\nConnection: Close \r\n\r\n
         mcall   send, [socketnum], request  ;' HTTP/1.1 .. '
-        popa
-        ret
-
-;****************************************************************************
-;    Function
-;       print_status
-;
-;   Description
-;       displays the socket/data received status information
-;
-;****************************************************************************
-print_status:
-        pusha
-        mcall   26, 9
-        cmp     eax, [nextupdate]
-        jb      status_return
-
-        add     eax, 25
-        mov     [nextupdate], eax
-
-        mov     ecx, [winys]
-        shl     ecx, 16
-        add     ecx, -18 shl 16 + 10
-        mcall   13, <5, 100>, , 0xffffff
-
-        mov     edx, 12 shl 16 - 18
-        add     edx, [winys]
-        xor     esi, esi
-        mcall   47, <3, 0>, [status], ,
-
-        mov     edx, 40 shl 16 - 18
-        add     edx, [winys]
-        mcall   , <6, 0>, [pos]
-
-status_return:
-        popa
         ret
 
 ;****************************************************************************
@@ -356,111 +349,54 @@ status_return:
 ;
 ;****************************************************************************
 read_incoming_data:
-        cmp     [onoff], 1
-        je      .rid
-        ret
 
-  .rid:
-        push    esi
-        push    edi
         DEBUGF  1, "Reading incoming data\n"
 
+        mov     eax, [buf_ptr]
+        mov     [pos], eax
+
   .read:
-        ; TODO: implement timeout !
-        mcall   recv, [socketnum], primary_buf, primary_buffer_size, 0
+        mcall   23, 100         ; 1 second timeout
+  .read_dontwait:
+        mcall   recv, [socketnum], [pos], BUFFERSIZE, 0
         inc     eax             ; -1 = error (socket closed?)
         jz      .no_more_data
         dec     eax             ; 0 bytes...
-        jz      .read
+        jz      .read           ; timeout
 
         DEBUGF  1, "Got chunk of %u bytes\n", eax
-        
-        mov     edi, [pos]
+
+        add     [buf_size], eax
         add     [pos], eax
         push    eax
-        mcall   68, 20, [pos], [buf_ptr]
-        mov     [buf_ptr], eax
-        add     edi, eax
-        mov     esi, primary_buf
-        pop     ecx             ; number of recently read bytes
-        lea     edx, [ecx - 3]
-        rep     movsb
+        mov     ecx, [buf_size]
+        add     ecx, BUFFERSIZE
+        mcall   68, 20, , [buf_ptr]     ; reallocate memory block (make bigger)
+        ; TODO: parse header and resize buffer only once
+        pop     eax
+
+        cmp     eax, BUFFERSIZE
+        je      .read_dontwait
+        jmp     .read
         
   .no_more_data:
+        mov     eax, [buf_ptr]
+        sub     [pos], eax
 
         DEBUGF  1, "No more data\n"
 
-;        mov     [status], 4     ; connection closed by server
-
-        call    parse_result
-
-        DEBUGF  1, "Parsing complete\n"
-
-        mov     ecx, [shared_name]
-        test    ecx, ecx
-        jz      @f
-        cmp     [ecx], byte 0
-        jnz     save_in_shared
-    @@:
-
-        mcall   70, fileinfo
-
-        DEBUGF  2, "File saved\n"
-        
-        mov     ecx, [sc.work_text]
-        or      ecx, 0x80000000
-        mcall   4, <10, 93>, , download_complete
-
-        pop     edi
-        pop     esi
-
-; if called from command line, then exit
-        cmp     byte[params], 0
-        jne     exit
-
         ret
         
-save_in_shared:
 
-        mov     esi, 1   ; SHM_OPEN+SHM_WRITE
-        mcall   68, 22
-        test    eax, eax
-        jz      save_in_shared_done
-
-        sub     edx, 4
-        jbe     save_in_shared_done
-
-        mov     ecx, [final_size]
-        cmp     ecx, edx
-        jb      @f
-
-        mov     ecx, edx
-    @@:
-        mov     [eax], ecx
-        lea     edi, [eax+4]
-        mov     esi, [final_buffer]
-        mov     edx, ecx
-        shr     ecx, 2
-        rep     movsd
-        mov     ecx, edx
-        and     ecx, 3
-        rep     movsb
-
-save_in_shared_done:
-        pop     edi
-        pop     esi
-        jmp     exit
         
 ; this function cuts header, and removes chunk sizes if doc is chunked
 ; in: buf_ptr, pos; out: buf_ptr, pos.
         
 parse_result:
-; close socket
-        mcall   close, [socketnum]
-        
+
         mov     edi, [buf_ptr]
         mov     edx, [pos]
-        mov     [buf_size], edx
+;        mov     [buf_size], edx
 ;       mcall   70, fileinfo_tmp
         DEBUGF  1, "Parsing result (%u bytes)\n", edx
 
@@ -560,7 +496,8 @@ parse_result:
         sub     ebx, [body_pos]
         cmp     eax, ebx
         jbe     .size_ok
-        DEBUGF  2, "Not all data was received!\n"
+        sub     eax, ebx
+        DEBUGF  2, "%u bytes of data are missing!\n", eax
         mov     eax, ebx
   .size_ok:
         mov     [final_size], eax
@@ -622,11 +559,9 @@ parse_chunks:
         jmp     .read_size
         
 chunks_end:
-; free old buffer
         DEBUGF  1, "chunks end\n"
+        mcall   68, 13, [buf_ptr]       ; free old buffer
 
-        mcall   68, 13, [buf_ptr]
-; done!
         ret
 
 ; reads content-length from [edi+ecx], result in eax
@@ -700,31 +635,15 @@ read_hex:
 
 ;****************************************************************************
 ;    Function
-;       socket_commands
+;       open_socket
 ;
 ;   Description
-;       opens or closes the socket
+;       opens the socket
 ;
 ;****************************************************************************
-socket_commands:
-        cmp     ah, 22   ; open socket
-        jne     tst3
+open_socket:
 
         DEBUGF  1, "opening socket\n"
-
-; Clear all page memory
-        xor     eax, eax
-        mov     [prev_chunk_end], eax    ; 0
-        cmp     [buf_ptr], eax   ; 0
-        jz      no_free
-
-        mcall   68, 13, [buf_ptr] ; free  buffer
-
-no_free:
-        xor     eax, eax
-        mov     [buf_size], eax  ; 0
-; Parse the entered url
-        call    parse_url
 
         mov     edx, 80
         cmp     byte [proxyAddr], 0
@@ -737,25 +656,9 @@ no_free:
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         mov     [socketnum], eax
         mcall   connect, [socketnum], sockaddr1, 18
-        mov     [pagexs], 80
-        
-        push    eax
-        xor     eax, eax ; 0
-        mov     [pos], eax
-        mov     [pagex], eax
-        mov     [pagey], eax
-        mov     [command_on_off], eax
-        mov     [is_body], eax
-        pop     eax
+
         ret
 
-tst3:
-        cmp     ah, 24   ; close socket
-        jne     no_24
-
-        mcall   close, [socketnum]
-no_24:
-        ret
 
 ;****************************************************************************
 ;    Function
@@ -1055,6 +958,8 @@ draw_window:
 
         mcall   12, 2 ; end window redraw
         ret
+
+
 ;-----------------------------------------------------------------------------
 ; Data area
 ;-----------------------------------------------------------------------------
@@ -1086,7 +991,6 @@ final_buffer    dd 0
                 db '/rd/1/.download', 0
         
 body_pos        dd 0
-
 buf_size        dd 0
 buf_ptr         dd 0
 
@@ -1108,21 +1012,6 @@ include_debug_strings
 type_pls        db 'URL:', 0
 button_text     db 'DOWNLOAD     STOP     RESAVE', 0
 download_complete db 'File saved as /rd/1/.download', 0
-display_from    dd 20
-pos             dd 0
-pagex           dd 0
-pagey           dd 0
-pagexs          dd 80
-command_on_off  dd 0
-text_type       db 1
-com2            dd 0
-script          dd 0
-socketnum       dd 0
-
-addr            dd 0
-ya              dd 0
-len             dd 0
-
 title           db 'HTTP Downloader', 0
 
 ;---------------------------------------------------------------------
@@ -1131,11 +1020,6 @@ len_contentlength = 15
 
 s_chunked       db 'Transfer-Encoding: chunked'
 len_chunked     = $ - s_chunked
-
-is_body         dd 0    ; 0 if headers, 1 if content
-is_chunked      dd 0
-prev_chunk_end  dd 0
-cur_chunk_size  dd 0
 
 string0:        db 'GET '
 
@@ -1167,14 +1051,6 @@ proxyPort       dd 80
 
 shared_name     dd 0
 
-status          dd 0x0
-prev_status     dd 0x0
-
-onoff           dd 0x0
-
-nextupdate      dd 0
-winys           dd 400
-
 ;---------------------------------------------------------------------
 document_user   db 'http://', 0
 ;---------------------------------------------------------------------
@@ -1190,9 +1066,12 @@ document        rb URLMAXLEN
 align 4
 webAddr         rb URLMAXLEN+1
 ;---------------------------------------------------------------------
-
-align 4
-primary_buf     rb primary_buffer_size
+pos             dd ?
+socketnum       dd ?
+is_chunked      dd ?
+prev_chunk_end  dd ?
+cur_chunk_size  dd ?
+;---------------------------------------------------------------------
 
 params          rb 1024
 
@@ -1201,8 +1080,6 @@ request         rb 256
 proxyAddr       rb 256
 proxyUser       rb 256
 proxyPassword   rb 256
-
-                rb 4096         ; stack
 
 I_END:
 

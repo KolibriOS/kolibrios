@@ -199,6 +199,7 @@ FASM_PROGRAMS:=\
  network/ftpd:NETWORK/FTPD:$(PROGS)/network/ftpd/ftpd.asm \
  network/tftpc:NETWORK/TFTPC:$(PROGS)/network/tftpc/tftpc.asm \
  network/ircc:NETWORK/IRCC:$(PROGS)/network/ircc/ircc.asm \
+ network/downloader:NETWORK/DOWNLOADER:$(PROGS)/network/downloader/downloader.asm \
 # end of list
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
