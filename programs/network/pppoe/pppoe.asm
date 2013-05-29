@@ -129,7 +129,7 @@ mainloop:
         test    eax, 0x200                      ; con window closed?
         jnz     close_conn
 
-        mcall   recv, [socketnum], buffer, 4096
+        mcall   recv, [socketnum], buffer, 4096, 0
         cmp     eax, sizeof.PPPoE_frame
         jb      mainloop
 

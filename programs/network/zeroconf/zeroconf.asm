@@ -293,7 +293,7 @@ send_dhcpmsg:
         mcall   23, TIMEOUT*10                          ; wait for data
 
 read_data:                                              ; we have data - this will be the response
-        mcall   75, 7, [socketNum], [dhcpMsg], BUFFER   ; read data from socket
+        mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, 0   ; read data from socket
 
         DEBUGF  1,"->%d bytes received\n", eax
 

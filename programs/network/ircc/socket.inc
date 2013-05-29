@@ -205,7 +205,7 @@ read_incoming_data:
 ; TODO: read more data if we receive one full packet
 
   .nextpacket:
-        mcall   recv, [socketnum], packetbuf, 1024      ; read a packet
+        mcall   recv, [socketnum], packetbuf, 1024, 0   ; read a packet
         inc     eax                                     ; check if we got one
         jz      .done
         dec     eax
