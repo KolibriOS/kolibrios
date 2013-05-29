@@ -2394,8 +2394,17 @@ Returned value:
     </UL>
 
 ======================================================================
+=========================== Function 52 ==============================
+======================================================================
+
+WARNING: This function is obsolete and is only present in the 
+	 documentation as a guide to understand/port the older network
+         applications. For new programs, use function 74
+
+======================================================================
 === Function 52, subfunction 0 - get network driver configuration. ===
 ======================================================================
+
 Parameters:
   * eax = 52 - function number
   * ebx = 0 - subfunction number
@@ -2556,6 +2565,14 @@ Returned value:
   * for ecx=4: ax = last 2 bytes of MAC address,
                high half of eax is destroyed
   * for other ecx: eax = -1 indicates an error
+
+======================================================================
+=========================== Function 53 ==============================
+======================================================================
+
+WARNING: This function is obsolete and is only present in the 
+	 documentation as a guide to understand/port the older network
+         applications. For new programs, use function 75.
 
 ======================================================================
 ============ Function 53, subfunction 0 - open UDP-socket. ===========
@@ -4579,6 +4596,201 @@ Parameters:
 
 Returned value:
   * function does not return value
+
+======================================================================
+= Function 74, Subfunction -1, Get number of active network devices. =
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = -1 - subfunction number
+Returned value:
+  * eax = number of active network devices
+
+======================================================================
+======== Function 74, Subfunction 0, Get network device type. ========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 0 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = device type
+
+======================================================================
+======== Function 74, Subfunction 1, Get network device name. ========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 1 - subfunction number
+  * bh = device number
+  * ecx = pointer to 64 byte buffer
+Returned value:
+  * eax = -1 on error
+  * The network device name is written into the buffer, on success
+
+======================================================================
+========= Function 74, Subfunction 2, Reset network device. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 2 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+========== Function 74, Subfunction 3, Stop network device. ==========
+======================================================================
+Parameters:
+  * eax = 74 - function number
+  * bl = 3 - subfunction number
+  * bh = device number
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+============== Function 75, Subfunction 0, Open socket. ==============
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 0 - subfunction number
+  * ecx = domain
+  * edx = type
+  * esi = protocol
+Returned value:
+  * eax = socket number, -1 on error
+
+======================================================================
+============= Function 75, Subfunction 1, Close socket. ==============
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 1 - subfunction number
+  * ecx = socket number
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+================== Function 75, Subfunction 2, Bind. =================
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 2 - subfunction number
+  * ecx = socket number
+  * edx = pointer to sockaddr structure
+  * esi = length of sockaddr structure
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+================= Function 75, Subfunction 3, Listen. ================
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 3 - subfunction number
+  * ecx = socket number
+  * edx = backlog
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+================ Function 75, Subfunction 4, Connect. ================
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 4 - subfunction number
+  * ecx = socket number
+  * edx = pointer to sockaddr structure
+  * esi = length of sockaddr structure
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+================= Function 75, Subfunction 5, Accept. ================
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 5 - subfunction number
+  * ecx = socket number
+  * edx = pointer to sockaddr structure
+  * esi = length of sockaddr structure
+Returned value:
+  * eax = -1 on error
+
+======================================================================
+================== Function 75, Subfunction 6, Send. =================
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 6 - subfunction number
+  * ecx = socket number
+  * edx = pointer to buffer
+  * esi = length of buffer
+Returned value:
+  * eax = number of bytes copied, -1 on error
+
+======================================================================
+================ Function 75, Subfunction 7, Receive. ================
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 7 - subfunction number
+  * ecx = socket number
+  * edx = pointer to buffer
+  * esi = length of buffer
+  * edi = flags
+Returned value:
+  * eax = number of bytes copied, -1 on error
+
+======================================================================
+=========== Function 75, Subfunction 8, Set socket options. ==========
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 8 - subfunction number
+  * ecx = socket number
+  * edx = pointer to optstruct
+Returned value:
+  * eax = -1 on error
+Remarks:
+
+  Optstruct: dd level
+             dd optionname
+             dd optlength
+             db options...
+
+======================================================================
+=========== Function 75, Subfunction 9, Get socket options. ==========
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 9 - subfunction number
+  * ecx = socket number
+  * edx = pointer to optstruct
+Returned value:
+  * eax = -1 on error
+Remarks:
+
+  Optstruct: dd level
+             dd optionname
+             dd optlength
+             db options...
+
+======================================================================
+============ Function 75, Subfunction 10, Get socketpair. ===========
+======================================================================
+Parameters:
+  * eax = 75 - function number
+  * bl = 10 - subfunction number
+Returned value:
+  * eax = socketnum1, -1 on error
+  * ebx = socketnum2
+Remarks:
+
+  Optstruct: dd level
+             dd optionname
+             dd optlength
+             db options...
 
 ======================================================================
 =============== Function -1 - terminate thread/process ===============
