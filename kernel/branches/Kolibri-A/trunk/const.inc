@@ -273,7 +273,6 @@ FONT_I		    equ (OS_BASE+0x005E600)
 
 TMP_STACK_TOP	    equ 0x006C000
 
-apic_data	    equ (OS_BASE+0x006D000)
 mmio_pte	    equ 0x006E000
 sys_pgdir	    equ (OS_BASE+0x006F000)
 

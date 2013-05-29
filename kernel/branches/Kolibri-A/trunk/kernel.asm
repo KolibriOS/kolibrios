@@ -628,51 +628,90 @@ include 'detect/disks.inc'
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
 
-  ; READ TSC / SECOND == Fusion only!
+  ; READ TSC / SECOND === Fusion fam.14h only! ===
 
-	cli
-	mov	edx, PCIe_CONFIG_SPACE + 0xE0
-	mov	eax, 0x013080F0 	; BIOS timer reg.
-	mov	[edx], eax
-	add	dl, 4
-	mov	edi, edx
-	mov	eax, [edi]		; old microseconds
-	inc	eax			; next precise microsecond
-	mov	esi, eax
- @@:
-	mov	eax, [edi]
-	cmp	eax, esi
-	jne	@b
+uglobal
+align 4
+diff16 "pll_freq : ", 0, $
+pll_frequency:
+	.main	dd ?
+	.divd	dd ?
+	.nclk	dd ?
+	.osc	dd ?
+endg
+	mov	ecx, 0xC0010064 	; P0-state register
+	rdmsr
+	and	eax, 0x000001F3
+	xor	ebx, ebx
+	mov	bl, al
+	shr	eax, 2			; divd = 4*((1 + bits[8:4]) + 0.25*(bits[1:0]))
+	add	al, 4
+	and	bl, 3
+	add	al, bl
+	mov	[pll_frequency.divd], eax
 
-	rdtsc
-	mov	ebp, eax		; clockmark
-	add	esi, 20 		; wait 20us
- @@:
-	mov	eax, [edi]
-	cmp	eax, esi
-	jne	@b
 
-	rdtsc
-	sub	eax, ebp
-	mov	ebx, 50000
-	mul	ebx		      ; clks per second
-	sti
+	mov	eax, [PCIe_CONFIG_SPACE + 0xC30D4]  ; bdf: 0.18.3; reg.0xD4
+	and	eax, 0x0000003F 	; 100 * (16 + bits[5:0]) = MHz
+	add	al, 16
+	imul	eax, 100
+	mov	[pll_frequency.main], eax
 
-	mov   [CPU_FREQ],eax	      ; save tsc / sec
-	mov   ebx, 1000000
-	div   ebx
-	mov [stall_mcs], eax
+	shl	eax, 2
+	xor	edx, edx
+	mov	ebx, [pll_frequency.divd]
+	div	ebx
+	mov	ecx, 1000000
+	push	edx
+	xor	edx, edx
+	mul	ecx
+	mov	[CPU_FREQ], eax 	; Hz
+	pop	eax
+	xor	edx, edx
+	mov	ecx, 250000		; remainder in MHz/4
+	mul	ecx
+	div	ebx
+	add	eax, [CPU_FREQ]
+
+	mov	[CPU_FREQ],eax		; save tsc / sec
+	mov	ebx, 1000000
+	div	ebx
+	mov	[stall_mcs], eax	; (core/memory.inc:stall)
+
+	mov	ebx, [PCIe_CONFIG_SPACE + 0xC30DC]  ; bdf: 0.18.3; reg.0xDC
+	shr	ebx, 20
+	and	bx, 0x3F		; NbP0NclkDiv
+	mov	eax, [pll_frequency.main]
+	shl	eax, 2
+	xor	edx, edx
+	div	ebx
+	push	edx
+	imul	eax, 1000000
+	mov	[pll_frequency.nclk], eax  ; +-MHz
+	pop	eax
+	xor	edx, edx
+	imul	eax, 1000000
+	div	ebx
+	add	[pll_frequency.nclk], eax  ; precise bus clk
+	mov	eax, 200000000
+	mov	[pll_frequency.osc], eax   ; 200MHz main oscillator
+
+
 ; PRINT CPU FREQUENCY
 	mov	esi, boot_cpufreq
 	call	boot_log
 
+	mov	eax, [CPU_FREQ]
+	xor	edx, edx
+	mov	ebx, 1000000
+	div	ebx
 	mov	ebx, eax
 	movzx	ecx, word [boot_y]
 	add	ecx, (10+17*6) shl 16 - 10 ; 'CPU frequency is '
 	mov	edx, 0xFFFFFF
 	xor	edi,edi
 	mov	eax, 0x00040000
-		inc		edi
+	inc	edi
 	call	display_number_force
 
 ; SET VARIABLES

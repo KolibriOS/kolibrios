@@ -298,25 +298,41 @@ sys_rdmsr:
 	pop	edx ecx
 	ret
 
+;------------------------------------------------
+uglobal
+
+align 4
+diff16 "apic_data : ", 0, $
+apic_data:
+
+    .counter dd ?
+    .ticks   dd ?
+    .t_freq  dd ?
+endg
+
 apic_timer_reset:
-	xor	eax, eax
-	mov	[apic_data+0], eax
+	mov	eax, [pll_frequency.osc]
+	shr	eax, 1					; default prescaler - fix it !!
+	mov	[apic_data.t_freq], eax
+	shr	eax, 4					; 16 per second
+	mov	[apic_data.ticks], eax
+
 	mov	ebx, LAPIC_BAR+ 0x320
-	mov	eax, [ebx]
-	and	eax, 0xFFFEFF00
-	or	eax, 0x0000003F       ; int vector + norestart
-	mov	[ebx], eax
-	mov	dword[apic_data + 8], 100000000
+	mov	edx, [ebx]
+	and	edx, 0xFFFEFF00
+	or	edx, 0x0002003F 			; int vector + restart
+	mov	[ebx], edx
+	mov	dword [LAPIC_BAR + 0x380], eax		; load APICTIC
 	ret
 
 
 apic_timer_int:
 	push	eax
-	inc	dword [apic_data + 0]
-	mov	eax,  [apic_data + 8]
-	mov	dword [LAPIC_BAR + 0x380], eax	      ; load APICTIC
-	mov	dword [LAPIC_BAR + 0x0B0], 0	    ; end of interrupt
-;        mov     dword [LAPIC_BAR + 0x420], 0x3F     ; end of interrupt
+	inc	dword [apic_data.counter]
+;        mov     eax,  [apic_data.ticks]
+;        mov     dword [LAPIC_BAR + 0x380], eax          ; reload APICTIC
+	mov	dword [LAPIC_BAR + 0x0B0], 0		; end of interrupt
+;        mov     dword [LAPIC_BAR + 0x420], 0x3F            ; end of interrupt
 	pop	eax
 	iretd
 
