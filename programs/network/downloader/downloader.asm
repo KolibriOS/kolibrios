@@ -19,7 +19,7 @@ URLMAXLEN               = 1024
 primary_buffer_size     = 4096
 
 __DEBUG__       = 1
-__DEBUG_LEVEL__ = 1
+__DEBUG_LEVEL__ = 2
 
 format binary as ""
 
@@ -190,7 +190,7 @@ mouse:
         jmp     still
 
 save:
-        DEBUGF  1, "file saved\n"
+        DEBUGF  2, "File saved\n"
         mcall   70, fileinfo
 
         mov     ecx, [sc.work_text]
@@ -363,14 +363,17 @@ read_incoming_data:
   .rid:
         push    esi
         push    edi
-        DEBUGF  1, "rid\n"
+        DEBUGF  1, "Reading incoming data\n"
 
   .read:
+        ; TODO: implement timeout !
         mcall   recv, [socketnum], primary_buf, primary_buffer_size, 0
         inc     eax             ; -1 = error (socket closed?)
         jz      .no_more_data
         dec     eax             ; 0 bytes...
         jz      .read
+
+        DEBUGF  1, "Got chunk of %u bytes\n", eax
         
         mov     edi, [pos]
         add     [pos], eax
@@ -385,9 +388,14 @@ read_incoming_data:
         
   .no_more_data:
 
+        DEBUGF  1, "No more data\n"
+
 ;        mov     [status], 4     ; connection closed by server
 
         call    parse_result
+
+        DEBUGF  1, "Parsing complete\n"
+
         mov     ecx, [shared_name]
         test    ecx, ecx
         jz      @f
@@ -396,11 +404,12 @@ read_incoming_data:
     @@:
 
         mcall   70, fileinfo
+
+        DEBUGF  2, "File saved\n"
         
         mov     ecx, [sc.work_text]
         or      ecx, 0x80000000
         mcall   4, <10, 93>, , download_complete
-        DEBUGF  1, "file saved\n"
 
         pop     edi
         pop     esi
@@ -449,12 +458,11 @@ parse_result:
 ; close socket
         mcall   close, [socketnum]
         
-        DEBUGF  1, "close socketnum: 0x%x\n", eax
         mov     edi, [buf_ptr]
         mov     edx, [pos]
         mov     [buf_size], edx
 ;       mcall   70, fileinfo_tmp
-        DEBUGF  1, "pos = 0x%x\n", edx
+        DEBUGF  1, "Parsing result (%u bytes)\n", edx
 
 ; first, find end of headers
   .next_byte:
@@ -465,12 +473,13 @@ parse_result:
         inc     edi
         dec     edx
         jne     .next_byte
+        DEBUGF  1, "Uh-oh, there's no end of header!\n"
 ; no end of headers. it's an error. let client see all those headers.
         ret
 
   .end_of_headers:
 ; here we look at headers and search content-length or transfer-encoding headers
-;       DEBUGF  1, "eoh\n"
+        DEBUGF  1, "Found end of header\n"
 
         sub     edi, [buf_ptr]
         add     edi, 4
@@ -498,7 +507,7 @@ parse_result:
         je      .cl_error
         jmp     .cl_next
   .cl_error:
-;       DEBUGF  1, "content-length not found\n"
+        DEBUGF  1, "content-length not found\n"
 
 ; find 'chunked'
 ; да, я копирую код, это ужасно, но мне хочется, чтобы поскорее заработало
@@ -543,25 +552,27 @@ parse_result:
         
   .cl_found:
         call    read_number     ; eax = number from *esi
+        DEBUGF  1, "Content length: %u\n", eax
 
   .write_final_size:
-        mov     [final_size], eax        ; if this works, i will b very happy...
         
-        mov     ebx, [pos]       ; we well check if it is right
+        mov     ebx, [buf_size]
         sub     ebx, [body_pos]
+        cmp     eax, ebx
+        jbe     .size_ok
+        DEBUGF  2, "Not all data was received!\n"
+        mov     eax, ebx
+  .size_ok:
+        mov     [final_size], eax
 
-; everything is ok, so we return
-        mov     eax, [body_pos]
-        mov     ebx, [buf_ptr]
-        add     ebx, eax
+        mov     ebx, [body_pos]
+        add     ebx, [buf_ptr]
         mov     [final_buffer], ebx
-;       mov     ebx, [pos]
-;       sub     ebx, eax
-;       mov     [final_size], ebx
+
         ret
         
 parse_chunks:
-;       DEBUGF  1, "parse chunks\n"
+        DEBUGF  1, "parse chunks\n"
         ; we have to look through the data and remove sizes of chunks we see
         ; 1. read size of next chunk
         ; 2. if 0, it's end. if not, continue.
@@ -575,7 +586,7 @@ parse_chunks:
         mov     ebx, eax
         sub     ebx, [buf_ptr]
         mov     edx, eax
-;       DEBUGF  1, "rs "
+        DEBUGF  1, "rs "
         cmp     ebx, [pos]
         jae     chunks_end      ; not good
         
@@ -589,7 +600,7 @@ parse_chunks:
         add     ebx, eax
         mov     [prev_chunk_end], ebx
         
-;       DEBUGF  1, "sz "
+        DEBUGF  1, "sz "
 
 ; do copying: from buf_ptr+edx to final_buffer+prev_final_size count eax
 ; realloc final buffer
@@ -599,13 +610,13 @@ parse_chunks:
         add     [final_size], eax
         mcall   68, 20, [final_size], [final_buffer]
         mov     [final_buffer], eax
-;       DEBUGF  1, "re "
+        DEBUGF  1, "re "
         pop     edi
         pop     esi
         pop     ecx
 ;       add     [pos], ecx
         add     edi, [final_buffer]
-;       DEBUGF  1, "cp "
+        DEBUGF  1, "cp "
 
         rep     movsb
         jmp     .read_size
@@ -845,9 +856,7 @@ pu_004:
 
 pu_009:
 ; For debugging, display resulting strings
-        DEBUGF  1, "document_user: %s\n", document_user
-        DEBUGF  1, "webAddr: %s\n", webAddr
-        DEBUGF  1, "document: %s\n", document
+        DEBUGF  2, "Downloadng %s\n", document_user
 
 ; Look up the ip address, or was it specified?
         mov     al, [proxyAddr]
@@ -904,12 +913,11 @@ pu_010:
         push    webAddr
         call    [getaddrinfo]
         pop     esi
-; test for error
-        DEBUGF  1, "eax=0x%x\n", eax
+; TODO: handle error
 ;        test    eax, eax
 ;        jnz     .fail_dns
 
-; fill in ip in sockstruct
+; fill in ip
         mov     eax, [esi + addrinfo.ai_addr]
         mov     eax, [eax + sockaddr_in.sin_addr]
         mov     [server_ip], eax
