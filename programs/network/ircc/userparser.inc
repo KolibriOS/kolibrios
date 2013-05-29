@@ -13,6 +13,8 @@
 user_parser:
 
         mov     eax, [edit1.size]
+        test    eax, eax
+        jz      sdts_ret                                ; ignore empty commands
         mov     word [usercommand + eax], 0x0a0d        ; terminate the line
 
         cmp     byte[usercommand], '/'                  ; is it a server command ?
