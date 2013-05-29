@@ -516,7 +516,7 @@ align 4
         btr     ecx, eax       ; сбрасываем проверяемый бит маски
        ; переходим на обработчик этого (eax) бита
         cmp     eax, 10
-        jae     .loop          ; eax=[10..31], ignored (event 10...32)
+        jae     .loop          ; eax=[10..31], ignored (event 11...32)
 
         cmp     eax, 3
         je      .loop          ; eax=3, ignored (event 4)

@@ -772,7 +772,10 @@ SOCKET_receive:
         call    SOCKET_num_to_ptr
         jz      s_error
 
-        jmp     [eax + SOCKET.rcv_proc]
+        call    [eax + SOCKET.rcv_proc]
+
+        mov     [esp+32], eax
+        ret
 
 
 align 4
@@ -792,10 +795,10 @@ SOCKET_receive_dgram:
         cmp     ecx, ebx
         ja      .too_small
 
+        push    ecx
         push    [esi + socket_queue_entry.buf_ptr]              ; save the buffer addr so we can clear it later
         mov     esi, [esi + socket_queue_entry.data_ptr]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
-        mov     [esp+32+4], ecx                                 ; return number of bytes copied
 
 ; copy the data
         shr     ecx, 1
@@ -812,16 +815,20 @@ SOCKET_receive_dgram:
   .nd:
 
         call    kernel_free                                     ; remove the packet
+        pop     eax
+
         ret
 
   .too_small:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Buffer too small\n"
-        jmp     s_error
+  .fail:
+        mov     eax, -1
+        ret
 
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     s_error
+        jnz     .fail
 
         call    SOCKET_block
         jmp     .loop
@@ -866,12 +873,11 @@ SOCKET_receive_stream:
         call    SOCKET_ring_read
         call    SOCKET_ring_free
 
-        mov     [esp+32], ecx                                   ; return number of bytes copied
+        mov     eax, ecx                ; return number of bytes copied
         ret
 
   .peek:
-        mov     ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
-        mov     [esp+32], ecx                                   ; return number of bytes available
+        mov     eax, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
         ret
 
   .block:
@@ -882,8 +888,15 @@ SOCKET_receive_stream:
         jmp     .loop
 
   .return0:
-        xor     ecx, ecx
-        mov     [esp+32], ecx
+        test    [eax + SOCKET.options], SS_CANTRCVMORE
+        jz      .ok
+
+        xor     eax, eax
+        dec     eax
+        ret
+
+  .ok:
+        xor     eax, eax
         ret
 
 
@@ -2261,6 +2274,8 @@ SOCKET_cant_recv_more:
 
         or      [eax + SOCKET.options], SS_CANTRCVMORE
 
+        call    SOCKET_notify
+
         ret
 
 
@@ -2280,5 +2295,8 @@ SOCKET_cant_send_more:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_send_more: %x\n", eax
 
         or      [eax + SOCKET.options], SS_CANTSENDMORE
+        mov     [eax + SOCKET.snd_proc], s_error
+
+        call    SOCKET_notify
 
         ret
