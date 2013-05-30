@@ -4,8 +4,8 @@ configuration is always selected. The kernel also reads device descriptor to
 print some information, reads and parses configuration descriptor. For every
 interface the kernel looks for class code of this interface and loads the
 corresponding COFF driver. Currently the correspondence is hardcoded into
-the kernel code and looks as follows: 3 = usbhid.obj, 8 = usbstor.obj,
-9 is handled by the kernel itself, other = usbother.obj.
+the kernel code and looks as follows: 3 = usbhid.obj, 7 = usbprint.obj,
+8 = usbstor.obj, 9 is handled by the kernel itself, other = usbother.obj.
 
 The driver must be standard driver in COFF format, exporting procedure
 named "START" and a variable named "version". Loader calls "START" procedure
@@ -46,7 +46,7 @@ void* __stdcall AddDevice(
     void* interfacedescr
 );
 
-The parameter 'controlpipe' is a handle of the control pipe for endpoint zero
+The parameter 'pipe0' is a handle of the control pipe for endpoint zero
 of the device. It can be used as the argument of USBControlTransferAsync.
 The parameter 'configdescr' points to USB configuration descriptor
 and all associated data, as returned by GET_DESCRIPTOR request.
@@ -93,6 +93,19 @@ The parameter 'type' selects the type of the endpoint as defined by USB:
 The parameter 'interval' is ignored for control and bulk endpoints.
 For interrupt endpoints, it sets the polling interval in milliseconds.
 The function returns a handle to the pipe or NULL on failure.
+The output handle becomes invalid when a) it is explicitly closed with
+the following function or b) the function DeviceDisconnected provided
+by the driver returns.
+
+void __stdcall USBClosePipe(
+    void* pipe
+);
+
+Releases all resources associated with the given pipe. The only parameter
+must be a handle returned by USBOpenPipe.
+When a device is disconnected, all associated pipes are closed by the kernel;
+there is no need to ever call this function if all pipes are used continuously
+while a device is connected.
 
 void* __stdcall USBNormalTransferAsync(
     void* pipe,
@@ -104,7 +117,7 @@ void* __stdcall USBNormalTransferAsync(
 );
 void* __stdcall USBControlTransferAsync(
     void* pipe,
-    void* config,
+    void* setup,
     void* buffer,
     int size,
     void* callback,
@@ -116,12 +129,12 @@ The first function inserts a bulk or interrupt transfer to the transfer queue
 for given pipe. Type and direction of transfer are fixed for bulk and interrupt
 endpoints and are set in USBOpenPipe. The second function inserts a control
 transfer to the transfer queue for given pipe. Direction of a control transfer
-is concluded from 'config' packet, bit 7 of byte 0 is set for IN transfers
+is concluded from 'setup' packet, bit 7 of byte 0 is set for IN transfers
 and cleared for OUT transfers. These function return immediately; when data
 are transferred, the callback function will be called.
 
 The parameter 'pipe' is a handle returned by USBOpenPipe.
-The parameter 'config' of USBControlTransferAsync points to 8-byte
+The parameter 'setup' of USBControlTransferAsync points to 8-byte
 configuration packet as defined by USB.
 The parameter 'buffer' is a pointer to buffer. For IN transfers, it will be
 filled with the data. For OUT transfers, it should contain data to be
@@ -174,10 +187,12 @@ USB_STATUS_BUFOVERRUN	= 12	; overflow of internal controller buffer
 				; possible only for isochronous transfers
 USB_STATUS_BUFUNDERRUN	= 13	; underflow of internal controller buffer
 				; possible only for isochronous transfers
-USB_STATUS_DISCONNECTED	= 16	; device disconnected
+USB_STATUS_CLOSED	= 16	; pipe closed, either explicitly with USBClosePipe
+				; or due to device disconnect
 
 If several transfers are queued for the same pipe, their callback functions
 are called in the same order as they were queued.
-When the device is disconnected, all callback functions are called
-with USB_STATUS_DISCONNECTED. The call to DeviceDisconnected() occurs after
+When a pipe is closed, either explicitly with USBClosePipe, or
+implicitly due to device disconnect, all callback functions are called
+with USB_STATUS_CLOSED. The call to DeviceDisconnected() occurs after
 all callbacks.
