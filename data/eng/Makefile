@@ -308,6 +308,8 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
  media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
  network.ini:NETWORK.INI \
+ network/ftpd.ini:NETWORK/FTPD.INI \
+ network/users.ini:NETWORK/USERS.INI \
 #end of list
 
 # Generate skins list understandable by gnu make
