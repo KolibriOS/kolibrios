@@ -24,9 +24,9 @@ use32
         dd      1               ; header version
         dd      start           ; entry point
         dd      i_end           ; initialized size
-        dd      mem             ; required memory
-        dd      mem             ; stack pointer
-        dd      s               ; parameters
+        dd      mem+4096        ; required memory
+        dd      mem+4096        ; stack pointer
+        dd      hostname        ; parameters
         dd      0               ; path
 
 include '../macros.inc'
@@ -53,7 +53,7 @@ start:
         call    [con_init]
 
 ; Check for parameters
-        cmp     byte [s], 0
+        cmp     byte [hostname], 0
         jne     resolve
 
 main:
@@ -62,11 +62,12 @@ main:
         push    str1
         call    [con_write_asciiz]
 
+prompt:
 ; write prompt
         push    str2
         call    [con_write_asciiz]
 ; read string
-        mov     esi, s
+        mov     esi, hostname
         push    256
         push    esi
         call    [con_gets]
@@ -78,31 +79,59 @@ main:
 
 resolve:
 
+        mov     [sockaddr1.port], 23 shl 8
+
 ; delete terminating '\n'
-        mov     esi, s
+        mov     esi, hostname
   @@:
         lodsb
+        cmp     al, ':'
+        je      .do_port
         cmp     al, 0x20
         ja      @r
         mov     byte [esi-1], 0
+        jmp     .done
 
-        call    [con_cls]
-        push    str3
-        call    [con_write_asciiz]
-        push    s
-        call    [con_write_asciiz]
+  .do_port:
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     byte [esi-1], 0
+  .portloop:
+        lodsb
+        cmp     al, 0x20
+        jbe     .port_done
+        sub     al, '0'
+        jb      hostname_error
+        cmp     al, 9
+        ja      hostname_error
+        lea     ebx, [ebx*4 + ebx]
+        shl     ebx, 1
+        add     ebx, eax
+        jmp     .portloop
+
+  .port_done:
+        xchg    bl, bh
+        mov     [sockaddr1.port], bx
+
+  .done:
 
 ; resolve name
         push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    s       ; first parameter
+        push    esp     ; ptr to result
+        push    0       ; addrinfo hints
+        push    0       ; servname
+        push    hostname; hostname
         call    [getaddrinfo]
         pop     esi
 ; test for error
         test    eax, eax
         jnz     fail
+
+        call    [con_cls]
+        push    str3
+        call    [con_write_asciiz]
+        push    hostname
+        call    [con_write_asciiz]
 
 ; write results
         push    str8
@@ -217,16 +246,18 @@ fail2:
         push    str6
         call    [con_write_asciiz]
 
-        jmp     fail.wait
+        jmp     prompt
 
 fail:
         push    str5
         call    [con_write_asciiz]
-  .wait:
-        push    str10
+
+        jmp     prompt
+
+hostname_error:
+        push    str11
         call    [con_write_asciiz]
-        call    [con_getch2]
-        jmp     main
+        jmp     prompt
 
 done:
         push    1
@@ -252,19 +283,21 @@ thread:
 
 ; data
 title   db      'Telnet',0
-str1    db      'Telnet for KolibriOS v0.11',10,10,'Please enter URL of telnet server (for example: towel.blinkenlights.nl)',10,10,0
+str1    db      'Telnet for KolibriOS',10,10,\
+                'Please enter URL of telnet server (for example: towel.blinkenlights.nl:23)',10,10,0
 str2    db      '> ',0
-str3    db      'Connecting to: ',0
+str3    db      'Connecting to ',0
 str4    db      10,0
-str5    db      10,'Name resolution failed.',10,0
-str6    db      10,'Could not open socket.',10,0
 str8    db      ' (',0
 str9    db      ')',10,0
-str10   db      'Push any key to continue.',0
+
+str5    db      'Name resolution failed.',10,10,0
+str6    db      'Could not open socket.',10,10,0
+str11   db      'Invalid hostname.',10,10,0
 
 sockaddr1:
         dw AF_INET4
-.port   dw 0x1700       ; 23
+.port   dw 0
 .ip     dd 0
         rb 10
 
@@ -298,8 +331,8 @@ i_end:
 
 socketnum       dd ?
 buffer_ptr      rb BUFFERSIZE+1
-send_data       rb 100
+send_data       rb 1
 
-s       rb      1024
-        rb      4096    ; stack
+hostname        rb 1024
+
 mem:
