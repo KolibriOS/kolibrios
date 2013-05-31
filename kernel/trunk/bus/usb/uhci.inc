@@ -126,7 +126,7 @@ struct uhci_controller
 ; ------------------------------ hardware fields ------------------------------
 FrameList       rd      1024
 ; Entry n corresponds to the head of the frame list to be executed in
-; the frames n,n+1024,n+2048,n+3096,...
+; the frames n,n+1024,n+2048,n+3072,...
 ; The first bit of each entry is Terminate bit, 1 = the frame is empty.
 ; The second bit of each entry is QH/TD select bit, 1 = the entry points to
 ; QH, 0 = to TD.
