@@ -1,12 +1,13 @@
-#!/bin/bash
-# This script does for linux the same as build.bat for DOS,
-# it compiles the KoOS kernel, hopefully ;-)
+#!/bin/sh
 
+	echo "lang fix ru"
 	echo "lang fix en"
-	echo "lang fix en" > lang.inc
-	fasm -m 16384 menu.asm @menu
+	echo "lang fix de"
+	echo "lang fix it" > lang.inc
+	#/opt/fasm/fasm menu.asm @menu
+	fasm menu.asm @menu
 	kpack @menu
-	rm -f lang.inc
+	#rm -f lang.inc
 	exit 0
 
 

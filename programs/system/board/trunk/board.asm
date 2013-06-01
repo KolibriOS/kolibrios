@@ -41,7 +41,7 @@ param:
 ;flush:
 ;	mcall	63,2
 ;	loop	flush
-	
+
 	mov	ecx,TMP
 	xor	eax,eax
 	mov	edi,[targ]
@@ -49,7 +49,7 @@ param:
 
 	mov	[tmp1],'x'
 	mov	[tmp2],'x'
-	
+
 	mcall	14
 	and	eax,0xffff0000
 	sub	eax,399 shl 16
@@ -251,7 +251,7 @@ newline:
 	cmp	[edx],byte 'x'
 	jne	newline
 	ret
-;------------------------------------------------------------------------------    
+;------------------------------------------------------------------------------
 if WRITE_LOG
 ;********************************************
 ;*  input:  esi = pointer to the file name  *
@@ -322,10 +322,12 @@ duk db 'KernUser'
 ; 5,11  > 0,-1
 if lang eq ru
  title	db 'Доска отладки и сообщений',0
-else if lang eq en
- title	db 'General debug & message board',0
-else
+else if lang eq it
+ title	db 'Notifiche e informazioni generiche per il debug',0
+else if lang eq ge
  title	db 'Allgemeines debug- & nachrichtenboard',0
+else
+ title	db 'General debug & message board',0
 end if
 krnl_cnt	dd 0
 vmode		dd 1
@@ -352,11 +354,11 @@ sc system_colors
 i_end:
 
 filename	rb 256
-;------------------------------------------------------------------------------ 
+;------------------------------------------------------------------------------
 align 4
 procinfo:
 	rb 1024
-;------------------------------------------------------------------------------ 
+;------------------------------------------------------------------------------
 align 4
 stackbuf	rb 2000h
 ;------------------------------------------------------------------------------

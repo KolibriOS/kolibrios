@@ -159,6 +159,20 @@ else if lang eq et
      db   'Oktoober '
      db   'November '
      db   'Detsember'
+else if lang eq it
+     db   9
+     db   'Gennaio  '
+     db   'Febbraio '
+     db   'Marzo    '
+     db   'Aprile   '
+     db   'Maggio   '
+     db   'Giugno   '
+     db   'Luglio   '
+     db   'Agosto   '
+     db   'Settembre'
+     db   'Ottobre  '
+     db   'Novembre '
+     db   'Dicembre '
 else
      db   9
      db   'January  '
@@ -226,6 +240,16 @@ else if lang eq et
      db   'Ree'
      db   'Lau'
      db   'P№h'
+else if lang eq it
+     db   3
+     db   7
+     db   'Dom'
+     db   'Lun'
+     db   'Mar'
+     db   'Mer'
+     db   'Gio'
+     db   'Ven'
+     db   'Sab'
 else
      db   3
      db   7
@@ -1063,6 +1087,8 @@ else if lang eq fr
      db   'Calendrier',0
 else if lang eq et
      db   'Kalender',0
+else if lang eq it
+     db   'Calendario',0
 else
      db   'Calendar',0
 end if
@@ -1081,6 +1107,9 @@ else if lang eq ge
 else if lang eq et
      db   'Kuupфev 1'
      db   'Kuupфev 2'
+else if lang eq it
+     db   '1a data  '
+     db   '2a data  '
 else
      db   '1st date '
      db   '2nd date '
@@ -1095,6 +1124,8 @@ else if lang eq fr
      db   'Nouveau'
 else if lang eq et
      db   'Uus stiil'
+else if lang eq it
+     db   'Nuovo stile'
 else
      db   'New style'
 end if
@@ -1108,6 +1139,8 @@ else if lang eq fr
      db   "Aujourd'hui"
 else if lang eq et
      db   'Tфna'
+else if lang eq it
+     db   'Oggi'
 else
      db   'Today'
 end if
@@ -1116,10 +1149,38 @@ focus dd  3
 new_style dd 1
 dropped db 0
 
-sys_text:  db  'системное время',0
-plus:  db  'добавить(+)',0
-minus:	db  'убрать(-)',0
-setd:	db  'Установить дату',0
+sys_text:
+if lang eq ru
+		db  'системное время',0
+else if lang eq it
+		db   'Ora di sistema',0
+else
+		db  'системное время',0
+end if
+plus:
+if lang eq ru
+		db  'добавить(+)',0
+else if lang eq it
+		db   'Avanti',0
+else
+		db  'добавить(+)',0
+end if
+minus:
+if lang eq ru
+		db  'убрать(-)',0
+else if lang eq it
+		db   'Indietro',0
+else
+		db  'убрать(-)',0
+end if
+setd:
+if lang eq ru
+		db  'Установить дату',0
+else if lang eq it
+		db   'Impostazioni',0
+else
+		db  'Установить дату',0
+end if
 
 I_END:	; конец программы
 firstday  dd ?
