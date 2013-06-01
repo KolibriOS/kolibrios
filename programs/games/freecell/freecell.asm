@@ -648,7 +648,11 @@ code
     mcall
 
     mov     eax, 4
-    mov     ebx, 20 shl 16 + 22 + topbuttonsbarheight/2 - 4
+    if lang eq it
+        mov     ebx, 7 shl 16 + 22 + topbuttonsbarheight/2 - 4
+    else
+        mov     ebx, 20 shl 16 + 22 + topbuttonsbarheight/2 - 4
+    end if
     mov     ecx, [syscolors.work_button_text]
     mov     edx, new_game
     mov     esi, new_game_len
@@ -1992,6 +1996,16 @@ if lang eq ru
 
   s: db "10"
 
+else if lang eq it
+  title db 'Freecell',0
+
+  new_game: db "Nuova partita"
+  new_game_len = $ - new_game
+
+  exit: db "Esci"
+  exit_len = $ - exit
+
+  s: db "10"
 else
   title db 'Freecell',0
 
