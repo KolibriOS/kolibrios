@@ -129,18 +129,20 @@ Hex-Editor                /rd/1/develop/heed
 Servidores         >      /@16
 Clientes           >      /@17
 Zero-Config               /sys/network/zeroconf
-network Config            /sys/network/netcfg
+Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
 ARP status                /sys/network/arpcfg
 #16    **** SERVIDORES ****
 FTP daemon                /sys/network/ftpd
 #17   **** CLIENTES ****
-IRC client                /sys/network/ircc
-TFTP client               /sys/network/tftpc
+Cliente IRC               /sys/network/ircc
+Cliente TFTP              /sys/network/tftpc
 Ping                      /sys/network/ping
-Telnet client             /sys/network/telnet
-Synergy client            /sys/network/synergyc
-DNS lookup                /sys/network/nslookup
+Cliente Telnet            /sys/network/telnet
+Cliente Synergy           /sys/network/synergyc
+Resoluci¢n de nombres     /sys/network/nslookup
+Cliente de descarga       /rd/1/network/downloader
+Navegador (modo texto)    /rd/1/htmlv
 #18    **** OTROS ****
 Reloj anal¢gico           /rd/1/demos/aclock
 Reloj binario             /rd/1/demos/bcdclk

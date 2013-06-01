@@ -134,7 +134,7 @@ HEX-редактор              /rd/1/develop/heed
 Серверы            >      /@16
 Клиенты            >      /@17
 Zero-Config               /sys/network/zeroconf
-network Config            /sys/network/netcfg
+Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
 ARP status                /sys/network/arpcfg
 #16   **** SERVERS ****
@@ -146,6 +146,8 @@ Ping                      /sys/network/ping
 Telnet client             /sys/network/telnet
 Synergy client            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
+Интернет загрузчик        /rd/1/network/downloader
+Текстовый браузер         /rd/1/htmlv
 #18   **** OTHER ****
 Аналоговые часы           /rd/1/demos/aclock
 Бинарные часы             /rd/1/demos/bcdclk
