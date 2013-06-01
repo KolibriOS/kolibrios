@@ -1,0 +1,76 @@
+#
+# NetSurf source file inclusion
+#
+# Included by main makefile -- indicates generic sources for every build.
+#
+
+S_CONTENT := content.c content_factory.c dirlist.c fetch.c hlcache.c	\
+	llcache.c mimesniff.c urldb.c
+
+S_FETCHERS := curl.c data.c file.c about.c resource.c
+
+S_CSS := css.c dump.c internal.c select.c utils.c
+
+S_RENDER := box.c box_construct.c box_normalise.c			\
+	font.c form.c							\
+	html.c html_script.c html_interaction.c html_redraw.c		\
+	html_forms.c imagemap.c layout.c list.c search.c table.c	\
+	textinput.c textplain.c
+
+S_UTILS := base64.c corestrings.c filename.c filepath.c hashtable.c	\
+	libdom.c locale.c log.c messages.c nsurl.c talloc.c url.c	\
+	utf8.c utils.c useragent.c
+
+S_HTTP := challenge.c generics.c primitives.c parameter.c		\
+	content-disposition.c content-type.c www-authenticate.c
+
+S_DESKTOP := cookies.c history_global_core.c hotlist.c knockout.c	\
+	mouse.c options.c plot_style.c print.c search.c searchweb.c	\
+	scrollbar.c sslcert.c textarea.c thumbnail.c tree.c 		\
+	tree_url_node.c version.c
+
+# Javascript source
+include Makefile.sources.javascript
+
+# S_COMMON are sources common to all builds
+S_COMMON := $(addprefix content/,$(S_CONTENT))				\
+	$(addprefix content/fetchers/,$(S_FETCHERS))			\
+	$(addprefix css/,$(S_CSS))					\
+	$(addprefix render/,$(S_RENDER))				\
+	$(addprefix utils/,$(S_UTILS))					\
+	$(addprefix utils/http/,$(S_HTTP))				\
+	$(addprefix desktop/,$(S_DESKTOP))				\
+	$(addprefix javascript/,$(S_JAVASCRIPT))			\
+	$(S_JSAPI_BINDING)
+
+# S_IMAGE are sources related to image management
+S_IMAGE_YES := image.c image_cache.c
+S_IMAGE_NO :=
+S_IMAGE_$(NETSURF_USE_BMP) += bmp.c ico.c
+S_IMAGE_$(NETSURF_USE_GIF) += gif.c
+S_IMAGE_$(NETSURF_USE_JPEG) += jpeg.c
+S_IMAGE_$(NETSURF_USE_MNG) += mng.c
+S_IMAGE_$(NETSURF_USE_ROSPRITE) += nssprite.c
+S_IMAGE_$(NETSURF_USE_PNG) += png.c
+S_IMAGE_$(NETSURF_USE_NSSVG) += svg.c
+S_IMAGE_$(NETSURF_USE_RSVG) += rsvg.c
+S_IMAGE_$(NETSURF_USE_WEBP) += webp.c
+S_IMAGE_$(NETSURF_USE_VIDEO) += video.c
+
+S_IMAGE := $(addprefix image/,$(S_IMAGE_YES))
+
+# S_PDF are sources of the pdf plotter + the ones for paged-printing
+S_PDF := pdf_plotters.c font_haru.c
+S_PDF := $(addprefix desktop/save_pdf/,$(S_PDF))
+
+# S_BROWSER are sources related to full browsers but are common
+# between RISC OS, GTK, BeOS and AmigaOS builds
+S_BROWSER := browser.c download.c frames.c history_core.c netsurf.c \
+	save_complete.c save_text.c selection.c textinput.c
+
+S_BROWSER := $(addprefix desktop/,$(S_BROWSER))
+
+# The following files depend on the testament
+content/fetchers/about.c: testament utils/testament.h
+desktop/version.c: testament utils/testament.h
+

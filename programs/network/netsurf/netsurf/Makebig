@@ -1,0 +1,263 @@
+# ----------------------------------------------------------------------------
+# Options relating to all versions of NetSurf
+# ----------------------------------------------------------------------------
+
+# Enable NetSurf's use of libnsbmp for displaying BMPs and ICOs
+# Valid options: YES, NO
+NETSURF_USE_BMP := YES
+
+# Enable NetSurf's use of libnsgif for displaying GIFs
+# Valid options: YES, NO				  (highly recommended)
+NETSURF_USE_GIF := YES
+
+# Enable NetSurf's use of libjpeg for displaying JPEGs
+# Valid options: YES, NO				  (highly recommended)
+NETSURF_USE_JPEG := YES
+
+# Enable NetSurf's use of libpng for displaying PNGs.  If MNG and PNG
+# are both enabled then NetSurf will choose libpng for PNGs, leaving
+# MNGs and JNGs to libmng.
+# Valid options: YES, NO	  (at least one of PNG/MNG highly recommended)
+NETSURF_USE_PNG := NO
+
+# Enable NetSurf's use of libmng for displaying MNGs, JNGs and PNGs
+# Valid options: YES, NO	  (at least one of PNG/MNG highly recommended)
+NETSURF_USE_MNG := NO
+
+# Enable NetSurf's use of libwebp for displaying WebPs
+# Valid options: YES, NO
+NETSURF_USE_WEBP := NO
+
+# Enable NetSurf's use of gstreamer for displaying videos
+# Valid options: YES, NO
+NETSURF_USE_VIDEO := NO
+
+# Enable NetSurf's use of spidermonkey for javascript
+# Valid options: YES, NO, AUTO
+NETSURF_USE_JS := NO
+# Javascript support in older debian/ubuntu versions
+NETSURF_USE_MOZJS := NO
+
+# Enable NetSurf's use of libharu for PDF export and GTK printing support.
+# There is no auto-detection available for this, as it does not have a
+# pkg-config file.
+# Valid options: YES, NO
+NETSURF_USE_HARU_PDF := NO
+
+# Enable stripping the NetSurf binary
+# Valid options: YES, NO
+NETSURF_STRIP_BINARY := NO
+
+# Template used for constructing the User Agent: string.  The first two
+# replacements are major/minor version, next is OS.
+# Please don't be tempted to mention Mozilla here!  Let's let that lie die.
+NETSURF_UA_FORMAT_STRING := "NetSurf/%d.%d (%s)"
+
+# Default home page, if one is not defined by the user.  Note that this
+# option does not apply to the RISC OS version, as it has its own local
+# home page, and it can be changed by editing the end of gui_init2() in
+# riscos/gui.c
+NETSURF_HOMEPAGE := "about:welcome"
+
+# Force using glibc internal iconv implementation instead of external libiconv
+# Valid options: YES, NO
+NETSURF_USE_LIBICONV_PLUG := YES 
+
+  # Optimisation levels
+  CFLAGS += -O2
+
+  # Framebuffer default surface provider.
+  # Valid values are: x, sdl, linux, vnc, able, 
+  NETSURF_FB_FRONTEND := sdl
+
+  # Use libharu to enable PDF export and GTK printing support.
+  # Valid options: YES, NO
+  NETSURF_USE_HARU_PDF := NO
+
+  # Enable NetSurf's use of librosprite for displaying RISC OS Sprites
+  # Valid options: YES, NO, AUTO
+  NETSURF_USE_ROSPRITE := NO
+
+  # Library to use for font plotting 
+  # Valid options: internal, freetype
+  NETSURF_FB_FONTLIB := internal
+
+  # Default freetype font files
+  NETSURF_FB_FONT_SANS_SERIF := DejaVuSans.ttf
+  NETSURF_FB_FONT_SANS_SERIF_BOLD := DejaVuSans-Bold.ttf
+  NETSURF_FB_FONT_SANS_SERIF_ITALIC := DejaVuSans-Oblique.ttf
+  NETSURF_FB_FONT_SANS_SERIF_ITALIC_BOLD := DejaVuSans-BoldOblique.ttf
+  NETSURF_FB_FONT_SERIF := DejaVuSerif.ttf
+  NETSURF_FB_FONT_SERIF_BOLD := DejaVuSerif-Bold.ttf
+  NETSURF_FB_FONT_MONOSPACE := DejaVuSansMono.ttf
+  NETSURF_FB_FONT_MONOSPACE_BOLD := DejaVuSansMono-Bold.ttf
+  NETSURF_FB_FONT_CURSIVE := Comic_Sans_MS.ttf
+  NETSURF_FB_FONT_FANTASY := Impact.ttf
+
+  PREFIX ?= /usr/local
+
+  # Default binary install path
+  NETSURF_FRAMEBUFFER_BIN := $(PREFIX)/bin/
+
+  # Default resource install path
+  NETSURF_FRAMEBUFFER_RESOURCES := $(PREFIX)/share/netsurf/
+
+  # Default framebuffer search path
+  NETSURF_FB_RESPATH := $${HOME}/.netsurf/:$${NETSURFRES}:$(NETSURF_FRAMEBUFFER_RESOURCES):./framebuffer/res
+
+  # freetype compiled in font serch path
+  NETSURF_FB_FONTPATH := /usr/share/fonts/truetype/ttf-dejavu:/usr/share/fonts/truetype/msttcorefonts
+
+
+#
+# NetSurf source file inclusion
+#
+# Included by main makefile -- indicates generic sources for every build.
+#
+
+S_CONTENT := content.c content_factory.c dirlist.c fetch.c hlcache.c	\
+	llcache.c mimesniff.c urldb.c
+
+S_FETCHERS := curl.c data.c file.c about.c resource.c
+
+S_CSS := css.c dump.c internal.c select.c utils.c
+
+S_RENDER := box.c box_construct.c box_normalise.c			\
+	font.c form.c							\
+	html.c html_script.c html_interaction.c html_redraw.c		\
+	html_forms.c imagemap.c layout.c list.c search.c table.c	\
+	textinput.c textplain.c
+
+S_UTILS := base64.c corestrings.c filename.c filepath.c hashtable.c	\
+	libdom.c locale.c log.c messages.c nsurl.c talloc.c url.c	\
+	utf8.c utils.c useragent.c
+
+S_HTTP := challenge.c generics.c primitives.c parameter.c		\
+	content-disposition.c content-type.c www-authenticate.c
+
+S_DESKTOP := cookies.c history_global_core.c hotlist.c knockout.c	\
+	mouse.c options.c plot_style.c print.c search.c searchweb.c	\
+	scrollbar.c sslcert.c textarea.c thumbnail.c tree.c 		\
+	tree_url_node.c version.c
+
+# Javascript source
+include Makefile.sources.javascript
+
+# S_COMMON are sources common to all builds
+S_COMMON := $(addprefix content/,$(S_CONTENT))				\
+	$(addprefix content/fetchers/,$(S_FETCHERS))			\
+	$(addprefix css/,$(S_CSS))					\
+	$(addprefix render/,$(S_RENDER))				\
+	$(addprefix utils/,$(S_UTILS))					\
+	$(addprefix utils/http/,$(S_HTTP))				\
+	$(addprefix desktop/,$(S_DESKTOP))				\
+	$(addprefix javascript/,$(S_JAVASCRIPT))			\
+	$(S_JSAPI_BINDING)
+
+# S_IMAGE are sources related to image management
+S_IMAGE_YES := image.c image_cache.c
+S_IMAGE_NO :=
+S_IMAGE_$(NETSURF_USE_BMP) += bmp.c ico.c
+S_IMAGE_$(NETSURF_USE_GIF) += gif.c
+S_IMAGE_$(NETSURF_USE_JPEG) += jpeg.c
+S_IMAGE_$(NETSURF_USE_MNG) += mng.c
+S_IMAGE_$(NETSURF_USE_ROSPRITE) += nssprite.c
+S_IMAGE_$(NETSURF_USE_PNG) += png.c
+S_IMAGE_$(NETSURF_USE_NSSVG) += svg.c
+S_IMAGE_$(NETSURF_USE_RSVG) += rsvg.c
+S_IMAGE_$(NETSURF_USE_WEBP) += webp.c
+S_IMAGE_$(NETSURF_USE_VIDEO) += video.c
+
+S_IMAGE := $(addprefix image/,$(S_IMAGE_YES))
+
+# S_PDF are sources of the pdf plotter + the ones for paged-printing
+S_PDF := pdf_plotters.c font_haru.c
+S_PDF := $(addprefix desktop/save_pdf/,$(S_PDF))
+
+# S_BROWSER are sources related to full browsers but are common
+# between RISC OS, GTK, BeOS and AmigaOS builds
+S_BROWSER := browser.c download.c frames.c history_core.c netsurf.c \
+	save_complete.c save_text.c selection.c textinput.c
+
+S_BROWSER := $(addprefix desktop/,$(S_BROWSER))
+
+
+
+$(eval $(call feature_enabled,MNG,-DWITH_MNG,-lmng,PNG/MNG/JNG (libmng)))
+$(eval $(call feature_enabled,PNG,-DWITH_PNG,-lpng,PNG (libpng)  ))
+
+ifeq ($(NETSURF_FB_FONTLIB),freetype)
+  CFLAGS += -DFB_USE_FREETYPE $(shell freetype-config --cflags)
+  LDFLAGS += $(shell freetype-config --libs)
+endif
+
+# define additional CFLAGS and LDFLAGS requirements for pkg-configed libs here
+NETSURF_FEATURE_RSVG_CFLAGS := -DWITH_RSVG
+NETSURF_FEATURE_ROSPRITE_CFLAGS := -DWITH_NSSPRITE
+NETSURF_FEATURE_HUBBUB_CFLAGS := -DWITH_HUBBUB
+NETSURF_FEATURE_BMP_CFLAGS := -DWITH_BMP
+NETSURF_FEATURE_GIF_CFLAGS := -DWITH_GIF
+NETSURF_FEATURE_JS_CFLAGS := -DWITH_JS -DJS_HAS_FILE_OBJECT=0
+NETSURF_FEATURE_MOZJS_CFLAGS := -DWITH_MOZJS -DJS_HAS_FILE_OBJECT=0
+
+CFLAGS += -Dnsframebuffer 
+
+#resource path
+CFLAGS += '-DNETSURF_FB_RESPATH="$(NETSURF_FB_RESPATH)"'
+
+# compile time font locations
+CFLAGS += '-DNETSURF_FB_FONTPATH="$(NETSURF_FB_FONTPATH)"'
+CFLAGS += '-DNETSURF_FB_FONT_SANS_SERIF="$(NETSURF_FB_FONT_SANS_SERIF)"'
+CFLAGS += '-DNETSURF_FB_FONT_SANS_SERIF_BOLD="$(NETSURF_FB_FONT_SANS_SERIF_BOLD)"'
+CFLAGS += '-DNETSURF_FB_FONT_SANS_SERIF_ITALIC="$(NETSURF_FB_FONT_SANS_SERIF_ITALIC)"'
+CFLAGS += '-DNETSURF_FB_FONT_SANS_SERIF_ITALIC_BOLD="$(NETSURF_FB_FONT_SANS_SERIF_ITALIC_BOLD)"'
+CFLAGS += '-DNETSURF_FB_FONT_SERIF="$(NETSURF_FB_FONT_SERIF)"'
+CFLAGS += '-DNETSURF_FB_FONT_SERIF_BOLD="$(NETSURF_FB_FONT_SERIF_BOLD)"'
+CFLAGS += '-DNETSURF_FB_FONT_MONOSPACE="$(NETSURF_FB_FONT_MONOSPACE)"'
+CFLAGS += '-DNETSURF_FB_FONT_MONOSPACE_BOLD="$(NETSURF_FB_FONT_MONOSPACE_BOLD)"'
+CFLAGS += '-DNETSURF_FB_FONT_CURSIVE="$(NETSURF_FB_FONT_CURSIVE)"'
+CFLAGS += '-DNETSURF_FB_FONT_FANTASY="$(NETSURF_FB_FONT_FANTASY)"'
+
+$(eval $(call pkg_config_find_and_add_enabled,ROSPRITE,librosprite,Sprite))
+$(eval $(call pkg_config_find_and_add_enabled,BMP,libnsbmp,BMP))
+$(eval $(call pkg_config_find_and_add_enabled,GIF,libnsgif,GIF))
+$(eval $(call pkg_config_find_and_add_enabled,MOZJS,mozjs185,JavaScript))
+$(eval $(call pkg_config_find_and_add_enabled,JS,mozilla-js,JavaScript))
+
+
+# ----------------------------------------------------------------------------
+# Source file setup
+# ----------------------------------------------------------------------------
+
+# S_FRAMEBUFFER are sources purely for the framebuffer build
+S_FRAMEBUFFER := gui.c framebuffer.c tree.c schedule.c			\
+	thumbnail.c misc.c bitmap.c filetype.c login.c findfile.c	\
+	localhistory.c system_colour.c clipboard.c
+
+S_FRAMEBUFFER_FBTK := fbtk.c event.c fill.c bitmap.c user.c window.c 	\
+	text.c scroll.c osk.c 
+
+S_FRAMEBUFFER += font_$(NETSURF_FB_FONTLIB).c
+
+ifeq ($(NETSURF_FB_FONTLIB),internal)
+S_FRAMEBUFFER += nsfont_regular.c nsfont_italic.c nsfont_bold.c		\
+	nsfont_italic_bold.c 
+endif
+
+S_FRAMEBUFFER := $(addprefix framebuffer/,$(S_FRAMEBUFFER)) $(addprefix framebuffer/fbtk/,$(S_FRAMEBUFFER_FBTK))
+
+# This is the final source build list
+# Note this is deliberately *not* expanded here as common and image
+#   are not yet available
+SOURCES = $(S_COMMON) $(S_IMAGE) $(S_BROWSER) $(S_FRAMEBUFFER) $(S_IMAGES)
+EXETARGET := nsfb
+
+# ----------------------------------------------------------------------------
+# Install target
+# ----------------------------------------------------------------------------
+
+NETSURF_FRAMEBUFFER_RESOURCE_LIST := adblock.css credits.html	\
+	default.css internal.css licence.html			\
+	netsurf.png quirks.css welcome.html
+
+

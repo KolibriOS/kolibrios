@@ -1,0 +1,7 @@
+OBJS = fbtk.o event.o fill.o bitmap.o user.o window.o 	\
+	text.o scroll.o osk.o 
+
+OUTFILE = TEST.o
+CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include
+include $(MENUETDEV)/makefiles/Makefile_for_o_lib
+

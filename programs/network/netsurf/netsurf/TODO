@@ -1,0 +1,6 @@
+0) port entire project to newlib?
+1) NSFB - native UI instead of SDL
+2) framebuffer/gui.c -replace  init "SDL" to init "kolibri"
+3) fix stubs.c file
+4) port libcURL
+ 

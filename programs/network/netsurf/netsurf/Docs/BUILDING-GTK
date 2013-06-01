@@ -1,0 +1,146 @@
+--------------------------------------------------------------------------------
+  Build Instructions for GTK NetSurf                              8 April 2010
+--------------------------------------------------------------------------------
+
+  This document provides instructions for building the GTK version of NetSurf
+  and provides guidance on obtaining NetSurf's build dependencies.
+
+  GTK NetSurf has been tested on Debian, Ubuntu, Fedora 8, FreeBSD, NetBSD and
+  Solaris 10.
+
+
+  Building and executing NetSurf
+================================
+
+  First of all, you should examine the contents of Makefile.defaults
+  and enable and disable relevant features as you see fit by creating
+  a Makefile.config file.  Some of these options can be automatically
+  detected and used, and where this is the case they are set to such.
+  Others cannot be automatically detected from the Makefile, so you
+  will either need to install the dependencies, or set them to NO.
+  
+  You should then obtain NetSurf's dependencies, keeping in mind which options
+  you have enabled in the configuration file.  See the next section for
+  specifics.
+  
+  Once done, to build GTK NetSurf on a UNIX-like platform, simply run:
+
+      $ make
+
+  If that produces errors, you probably don't have some of NetSurf's
+  build dependencies installed. See "Obtaining NetSurf's dependencies"
+  below. Or turn off the complaining features in a Makefile.config
+  file. You may need to "make clean" before attempting to build after
+  installing the dependencies.
+
+  Run NetSurf by executing the "test-nsgtk" shell script:
+
+      $ ./test-nsgtk
+
+  This script makes it easy to run the nsgtk binary from the build tree. It
+  sets up some environment variables which enable NetSurf to find its
+  resources.
+
+  If you are packaging NetSurf, see the PACKAGING-GTK document.
+
+
+  Obtaining NetSurf's build dependencies
+========================================
+
+  Many of NetSurf's dependencies are packaged on various operating systems.
+  The remainder must be installed manually.  Currently, some of the libraries
+  developed as part of the NetSurf project have not had official releases.
+  Hopefully they will soon be released with downloadable tarballs and packaged
+  in common distros.  For now, you'll have to make do with Git checkouts.
+
+  Some of NetSurf's own libraries will be installed in /usr/local/ by default.
+  Fedora, and perhaps some other distributions of Linux, do not ship a
+  pkg-config that will search here, so you will either need to change where
+  these libraries install, or do the following before building NetSurf itself;
+  
+      $ PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+      $ export PKG_CONFIG_PATH
+
+  Package installation
+----------------------
+
+  Debian-like OS:
+
+      $ apt-get install libglade2-dev libcurl3-dev libmng-dev 
+      $ apt-get install librsvg2-dev liblcms1-dev libjpeg-dev
+
+  Recent OS versions might need libcurl4-dev instead of libcurl3-dev but
+  note that when it has not been built with OpenSSL, the SSL_CTX is not
+  available and results that certification details won't be presented in case
+  they are invalid.  But as this is currently unimplemented in the GTK
+  flavour of NetSurf, this won't make a difference at all.
+
+  For experimental javascript support the mozilla spiermonkey library
+  is required:
+
+      $ apt-get install libmozjs-dev
+
+  Fedora:
+
+      $ yum install libglade2-devel curl-devel libmng-devel
+      $ yum install librsvg2-devel lcms-devel
+
+  Other:
+
+  You'll need to install the development resources for libglade2, libcurl3,
+  libmng and librsvg.
+
+  Note that if you don't require MNG or JNG image support, NetSurf can be
+  configured to use libpng instead of libmng. If you wish to do this, install
+  the libpng development package instead.
+
+  The NetSurf project's libraries
+---------------------------------
+
+  The NetSurf project has developed several libraries which are required by
+  the browser. These are:
+
+  LibParserUtils  --  Parser building utility functions
+  LibWapcaplet    --  String internment
+  Hubbub          --  HTML5 compliant HTML parser
+  LibCSS          --  CSS parser and selection engine
+  LibNSGIF        --  GIF format image decoder
+  LibNSBMP        --  BMP and ICO format image decoder
+  LibROSprite     --  RISC OS Sprite format image decoder
+
+  To fetch each of these libraries, run the appropriate commands from the
+  Docs/LIBRARIES file.
+
+  To build and install these libraries, simply enter each of their directories
+  and run:
+  
+      $ sudo make install
+
+  | Note: We advise enabling iconv() support in libparserutils, which vastly
+  |       increases the number of supported character sets.  To do this,
+  |       create a file called Makefile.config.override in the libparserutils
+  |       directory, containing the following line:
+  |
+  |           CFLAGS += -DWITH_ICONV_FILTER
+  |
+  |       For more information, consult the libparserutils README file.
+
+  Libharu
+---------
+
+  NetSurf can use Haru PDF to enable PDF export.  Haru PDF can be obtained
+  from http://libharu.org/.  We require libharu 2.2 or later.
+
+  | Note: libharu cannot be auto-detected by the Makefile.  If you wish to
+  |       enable it, do so by creating a Makefile.config file.
+
+  General requirements
+----------------------
+
+  NetSurf requires at minimum GTK 2.12. Earlier versions will not work. It also
+  depends on Cairo for rendering, but you should have this already with
+  versions of GTK 2.12 or later.
+
+  This will pull in loads of things, like all the GTK dev libraries, the PNG
+  and JPEG libraries, colour management libraries, zlib, OpenSSL etc that
+  NetSurf also depends on.

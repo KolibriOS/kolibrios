@@ -1,0 +1,121 @@
+--------------------------------------------------------------------------------
+  Build Instructions for RISC OS NetSurf                          16 July 2012
+--------------------------------------------------------------------------------
+
+  This document provides instructions for building the RISC OS NetSurf
+  natively on a RISC OS computer and provides guidance on obtaining NetSurf's
+  build dependencies.
+
+  RISC OS NetSurf should work on RISC OS 4.02 and above.
+
+  | Note: This guide assumes that you have the RISC OS SVN client installed,
+  |       and that you have used it to fetch the NetSurf source.  It also
+  |       assumes that you have the following requirements installed:
+  |
+  |           + OSLib 6.80 or later
+  |           + Perl 5.8.8 or later
+  |           + GCC 3.4.6 release 3 or later
+  |           + The latest NSTools
+
+  If you want to cross-compile NetSurf for RISC OS, use the BUILDING-ROCross
+  document.
+
+
+  Building and executing NetSurf
+================================
+
+  | Note: The version of make supplied with RISC OS GCC 3 is old and has a bug
+  |       that prevents NetSurf from building.  Either ensure that NSTools is
+  |       seen before GCC, or replace the make inside "!GCC.bin" with the make
+  |       from "!NSTools.bin".
+  |       The minimum version of make that works is v3.81.  You can check what
+  |       version you have by running, '*make --version'.
+
+  | Note: The pre-built libraries currently supplied in NSTools are AOF format,
+  |       and will not work with GCC4, which requires them to be in ELF format.
+  |       If you want to build NetSurf with GCC4, you will need to build the
+  |       libraries yourself.  See "Obtaining NetSurf's dependencies" below for
+  |       details.
+
+  You can examine the contents of Makefile.defaults and enable and disable
+  features as you see fit by creating a Makefile.config file.  The default
+  settings will work fine.
+
+  You should then obtain NetSurf's dependencies, keeping in mind which options
+  you have enabled in the configuration file.  See the next section for
+  specifics.
+
+  Once done, to build RISC OS NetSurf on a RISC OS system, set the CSD to the
+  directory containing the NetSurf sources, set the next slot to at least
+  6000K, and in a TaskWindow, simply run:
+
+      *make
+
+  If that produces errors, you probably don't have some of NetSurf's build
+  dependencies installed, or your libraries may be out of date.
+  
+  See "Obtaining NetSurf's dependencies" below.  Or turn off the complaining
+  features in a Makefile.config file.  You may need to "make clean" before
+  attempting to build after installing the dependencies.
+
+  Once NetSurf is compiled, the !RunImage is put into the !NetSurf
+  application directory, so you can simply double click it as normal.
+
+  To confirm that you're running your own development NetSurf build, view the
+  Info window from the NetSurf iconbar menu.  The Version string should read
+
+      #.0 (Development)
+
+  where # is the next major release version number.
+
+
+  Obtaining NetSurf's build dependencies
+========================================
+
+  NSTools contains all of the tools needed to build NetSurf, such as make,
+  uname and ccres.  It also contains pre-built libraries.
+
+  Currently NSTools contains libraries which are in a format that are in a
+  format which is compatible with RISC OS GCC3 but not RISC OS GCC4.  Until
+  NSTools is updated with GCC4 compatible libraries, it is recommended that
+  you use GCC3 for native builds.
+
+  The NSTools on the web site is not auto-built, so it may not always have
+  the latest versions of the NetSurf project's own libraries.  In this case
+  you will need to build the libraries yourself and update your copy of
+  NSTools.
+
+  Fetching the sources
+----------------------
+
+  Use SVN to obtain the latest versions of each of the libraries.  To do this,
+  set the CSD to a directory where you want to keep your copies of the library
+  sources, and run the appropriate commands from the Docs/LIBRARIES file.
+
+  The above will create a directory for each of the libraries containing their
+  sources.
+
+  | Note: We advise enabling iconv() support in libparserutils, which vastly
+  |       increases the number of supported character sets.  To do this,
+  |       create a file called Makefile.config.override in the libparserutils
+  |       directory, containing the following line:
+  |
+  |           CFLAGS += -DWITH_ICONV_FILTER
+  |
+  |       For more information, consult the libparserutils README file.
+
+  Updating NSTools' copies of the libraries
+-------------------------------------------
+
+  Set the CSD to the directory of the library you want to build, set your next
+  slot to at least 6000K and in a TaskWindow, run
+
+      *svn update
+
+  This updates your local copy of the source to the latest version.  To build
+  and install the library into NSTools, run:
+
+      *make install
+
+  | Note: If you are using GCC3, you may get a warning from AR when you run
+  |       make.  This can be ignored.

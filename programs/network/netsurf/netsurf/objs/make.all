@@ -1,0 +1,32 @@
+OBJS = about.o base64.o bitmap_fbtk.o bitmap.o bmp.o box_construct.o \
+ box_normalise.o box.o browser.o caret_image.o challenge.o clipboard.o \
+ content-disposition.o content_factory.o content.o content-type.o \
+  cookies.o corestrings.o css.o curl.o data.o dirlist.o download.o \
+  dump.o event.o fbtk.o fetch.o filename.o file.o filepath.o filetype.o \
+   fill.o findfile.o font_freetype.o font.o form.o framebuffer.o frames.o \
+   generics.o gif.o gui.o hand_image.o hashtable.o history_core.o \
+   history_global_core.o history_image_g.o history_image.o hlcache.o \
+   hotlist.o html_forms.o html_interaction.o html.o html_redraw.o \
+   html_script.o ico.o image_cache.o imagemap.o image.o internal.o \
+   jpeg.o knockout.o layout.o left_arrow_g.o left_arrow.o libdom.o \
+   list.o llcache.o locale.o localhistory.o login.o log.o menu_image.o \
+   messages.o mimesniff.o misc.o mouse.o move_image.o netsurf.o none.o \
+   nsfont_bold.o nsfont_italic_bold.o nsfont_italic.o nsfont_regular.o \
+   nsurl.o options.o osk_image.o osk.o parameter.o plot_style.o png.o \
+    pointer_image.o primitives.o print.o progress_image.o reload_g.o \
+    reload.o resource.o right_arrow_g.o right_arrow.o save_complete.o \
+    save_text.o schedule.o scrollbar.o scrolld.o scrolll.o scroll.o \
+    scrollr.o scrollu.o search.o search_ren.o searchweb.o selection.o \
+    select.o sslcert.o stop_image_g.o stop_image.o system_colour.o \
+    table.o talloc.o textarea.o textinput.o textinput_r.o text.o \
+    textplain.o throbber0.o throbber1.o throbber2.o throbber3.o \
+    throbber4.o throbber5.o throbber6.o throbber7.o throbber8.o \
+    thumb_ddesk.o thumbnail.o tree_ddesk.o tree.o tree_url_node.o \
+    urldb.o url.o useragent.o user.o utf8.o utils.o utils_utils.o \
+    version.o window.o www-authenticate.o snprintf.o stubs.o divdi3.o
+
+LIBS += -lm -lcurl -liconv  -lnsbmp -lnsgif -lpng -ljpeg -lz -lnsfb  -lSDL -lwapcaplet -lcss  -ldom -lhubbub -lparserutils -lfreetype2
+
+OUTFILE = _netsurf
+
+include $(MENUETDEV)/makefiles/Makefile_for_program

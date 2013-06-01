@@ -1,0 +1,229 @@
+body {
+	color: #333333;
+	background: #F4F5F5;
+	line-height: 2em;
+	font-size: 11.5pt;
+	margin: 0;
+	padding: 0;
+	font-family: "Source Sans Pro", "Open Sans", sans-serif;
+}
+
+a {
+	text-decoration: underline;
+	color: #1F1F1F;
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+a img {
+	filter: alpha(opacity=80);
+	..-opacity:0.8;
+	opacity: 0.8;
+	-khtml-opacity: 0.8;
+}
+
+a img:hover {
+	filter: alpha(opacity=100);
+	..-opacity:1.0;
+	opacity: 1.0;
+	-khtml-opacity: 1.0;
+}
+
+#logo {
+	opacity: 1;
+	filter: alpha(opacity=100);
+	border-radius: 2px;
+	border: solid 5px white;
+	box-shadow: 0px 0px 0px 1px #D4D5D5, 0px 0px 10px 0px rgba(0,0,0,0.1);
+}
+
+#show {
+	width:800px;
+	height:600px;
+	cursor:pointer;
+	box-shadow: 0px 0px 0px 1px #D4D5D5, 0px 0px 10px 0px rgba(0,0,0,0.1);
+}
+
+.minislide, .minislide_a {
+	width: 80px;
+	height: 60px;
+	padding: 1px;
+}
+
+.minislide { border: 1px solid #ccc; }
+.minislide_a {
+	border: 1px solid #222;
+	opacity: 1;
+	filter: alpha(opacity=100);
+}
+
+.download_img {
+	width: 32px;
+	height: 32px;
+	border: 0px;
+}
+
+.icon_cell {
+	width: 32px;
+	height:32px;
+	background-repeat: no-repeat;
+}
+
+#footer {
+	padding: 30px 0 30px 0;
+	text-align: center;
+	color: #848585;
+	-khtml-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+	-webkit-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+	text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+#footer a {
+	color: #848585;
+}
+
+#page {
+	position: relative;
+	margin: 0;
+	background-attachment: scroll;
+	background-repeat: no-repeat;
+	background-position: right bottom;
+	color: #333333;
+	padding: 5px 35px 5px 35px;
+	width: 910px;
+}
+
+
+#inner {
+	background: #fff;
+	border-radius: 4px;
+	box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);
+	border: solid 1px #D4D5D5;
+}
+
+*+html #inner { /*IE 7*/
+	background: #fff;
+	filter:
+	progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=45, Strength=3)
+	progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=135, Strength=3)
+	progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=225, Strength=3)
+	progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=315, Strength=3);
+	position: relative;
+	top: -6px;
+	left: -6px;
+	zoom: 1;
+}
+
+*+html #logo { /*IE 7*/
+	border: 1px solid #D4D5D5;
+}
+
+@media \0screen { /*IE 8*/
+	#inner {
+		background: #fff;
+		filter:
+		progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=45, Strength=3)
+		progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=135, Strength=3)
+		progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=225, Strength=3)
+		progid:DXImageTransform.Microsoft.Shadow(color='#e5e6e6', Direction=315, Strength=3);
+		position: relative;
+		top: -6px;
+		left: -6px;
+		zoom: 1;
+	}
+	#logo {
+		position: relative;
+		top: 9px;
+		left: 9px;
+		border: 1px solid #D4D5D5;
+	}
+}
+
+#splash {
+	margin: 0;
+	position: relative;
+	padding: 35px 35px 5px 35px;
+}
+
+#wrapper {
+	width: 980px;
+	position: relative;
+	margin-right: auto;
+	margin-bottom: 0;
+	margin-left: auto;
+}
+
+#floatbar {
+	position: fixed; 
+	top:0;
+	right:0;
+	bottom:100px;
+	left:0;
+	float: center !important; 
+	text-align:center;
+	z-index:9998;
+	height: 30px !important;
+}
+
+#idsel {
+	dispaly: inline;
+	color: white !important; 
+	font-weight: bold !important;
+	text-decoration: none !important; 
+}
+
+#archnavbar {
+	height: 30px !important;
+	padding: 10px 15px !important;
+	background: #333 !important;
+	border-bottom: 1px #888 solid !important;
+	box-shadow: 0 0 5px black;
+	box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	-moz-box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	-webkit-box-shadow: 0 0 10px rgba(0,0,0,0.4);
+	position: relative;
+}
+
+#archnavbarlist { 
+	width: 980px;
+	height: 30px !important;
+	position: relative;
+	margin-top: 0px;
+	margin-right: auto;
+	margin-bottom: 0px;
+	margin-left: auto;
+	float: center !important; 
+	list-style: none !important; 
+	padding: 0 !important;
+}
+
+#archnavbarlist ul { 
+	text-align:center;	
+}
+
+#archnavbarlist li { 
+	display: inline-block;
+	float: center !important; 
+	font-size: 14px !important; 
+	line-height: 25px !important; 
+	padding-right: 15px !important; 
+	padding-left: 15px !important;
+}
+
+#archnavbarlist li a { 
+	color: #999; 
+	font-weight: bold !important;
+	text-decoration: none !important;
+}
+
+#archnavbarlist li a:hover { 
+	color: white !important; 
+	font-weight: bold !important;
+	text-decoration: none !important; 
+}
+
+strong {
+	color: #000;
+}

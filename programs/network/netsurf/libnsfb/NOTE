@@ -1,0 +1,5 @@
+extern nsfb_surface_rtns_t sdl_rtns;
+	
+	_nsfb_register_surface(NSFB_SURFACE_SDL, &sdl_rtns, "sdl");
+
+NSFB_SURFACE_RAM IS NEEDED TOO

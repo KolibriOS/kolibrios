@@ -1,0 +1,1602 @@
+Archive member included because of file (symbol)
+
+/home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+                              (--whole-archive)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o) (SDL_RemoveTimer)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o) (SDL_GetTicks)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o) (SDL_PushEvent)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (SDL_CheckKeyRepeat)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (SDL_MouseInit)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_quit.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (SDL_QuitInit)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o) (SDL_MoveCursor)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o) (SDL_MapRGB)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o) (SDL_UnRLESurface)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o) (SDL_LockSurface)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (current_video)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o) (mosvideo_bootstrab)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o) (SDL_Quit)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o) (SDL_ClearError)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o) (SDL_InstallParachute)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_getenv.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o) (SDL_getenv)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o) (SDL_AudioQuit)
+/home/sourcerer/kos_src/me//lib/libSDL.a(init.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o) (InitSound)
+/home/sourcerer/kos_src/me//lib/libSDL.a(setbuf.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o) (SetBuffer)
+/home/sourcerer/kos_src/me//lib/libSDL.a(stopbuf.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o) (StopBuffer)
+/home/sourcerer/kos_src/me//lib/libSDL.a(sndgetsize.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o) (GetBufferSize)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o) (SDL_mutexP)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o) (SDL_DestroySemaphore)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (SDL_ThreadID)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_thread.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (SDL_WaitThread)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_active.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o) (SDL_AppActiveInit)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_resize.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o) (SDL_PrivateResize)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o) (SDL_CalculateBlit)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o) (SDL_CalculateBlitN)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o) (MenuetOS_InitOSKeymap)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o) (SDL_CalculateBlit0)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o) (SDL_CalculateBlit1)
+/home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o) (SDL_CalculateAlphaBlit)
+/home/sourcerer/kos_src/me//lib/libc.a(dup.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o) (dup)
+/home/sourcerer/kos_src/me//lib/libc.a(fdopen.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o) (fdopen)
+/home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+                              bezier.o (__menuet__debug_out)
+/home/sourcerer/kos_src/me//lib/libc.a(window.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o) (__menuet__define_window)
+/home/sourcerer/kos_src/me//lib/libc.a(param.o)
+                              /home/sourcerer/kos_src/me//stub/crt0.o (__menuet__app_param_area)
+/home/sourcerer/kos_src/me//lib/libc.a(keyb.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o) (__menuet__getkey)
+/home/sourcerer/kos_src/me//lib/libc.a(image.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o) (__menuet__putimage)
+/home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o) (__menuet__sys_exit)
+/home/sourcerer/kos_src/me//lib/libc.a(event.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o) (__menuet__check_for_event)
+/home/sourcerer/kos_src/me//lib/libc.a(delay.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o) (__menuet__delay100)
+/home/sourcerer/kos_src/me//lib/libc.a(button.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o) (__menuet__get_button_id)
+/home/sourcerer/kos_src/me//lib/libc.a(setmode.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o) (__setmode)
+/home/sourcerer/kos_src/me//lib/libc.a(fmode.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o) (_fmode)
+/home/sourcerer/kos_src/me//lib/libc.a(crt1.o)
+                              /home/sourcerer/kos_src/me//stub/crt0.o (__crt1_startup)
+/home/sourcerer/kos_src/me//lib/libc.a(crt0.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(crt1.o) (__crt0_setup_arguments)
+/home/sourcerer/kos_src/me//lib/libc.a(brk.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(crt1.o) (init_brk)
+/home/sourcerer/kos_src/me//lib/libc.a(strdup.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o) (strdup)
+/home/sourcerer/kos_src/me//lib/libc.a(memset.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o) (memset)
+/home/sourcerer/kos_src/me//lib/libc.a(memmove.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o) (memmove)
+/home/sourcerer/kos_src/me//lib/libc.a(strncpy.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o) (strncpy)
+/home/sourcerer/kos_src/me//lib/libc.a(strncmp.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o) (strncmp)
+/home/sourcerer/kos_src/me//lib/libc.a(strlen.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o) (strlen)
+/home/sourcerer/kos_src/me//lib/libc.a(strcpy.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o) (strcpy)
+/home/sourcerer/kos_src/me//lib/libc.a(strcmp.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o) (strcmp)
+/home/sourcerer/kos_src/me//lib/libc.a(memcpy.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o) (memcpy)
+/home/sourcerer/kos_src/me//lib/libc.a(memcmp.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o) (memcmp)
+/home/sourcerer/kos_src/me//lib/libc.a(malloc.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o) (free)
+/home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o) (exit)
+/home/sourcerer/kos_src/me//lib/libc.a(calloc.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o) (calloc)
+/home/sourcerer/kos_src/me//lib/libc.a(abs.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o) (abs)
+/home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o) (vsprintf)
+/home/sourcerer/kos_src/me//lib/libc.a(stdout.o)
+                              bezier.o (__dj_stdout)
+/home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(stdout.o) (__stdio_cleanup_proc)
+/home/sourcerer/kos_src/me//lib/libc.a(stderr.o)
+                              bezier.o (__dj_stderr)
+/home/sourcerer/kos_src/me//lib/libc.a(sprintf.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o) (sprintf)
+/home/sourcerer/kos_src/me//lib/libc.a(fwalk.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o) (_fwalk)
+/home/sourcerer/kos_src/me//lib/libc.a(frlist.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fwalk.o) (__file_rec_list)
+/home/sourcerer/kos_src/me//lib/libc.a(freopen.o)
+                              bezier.o (freopen)
+/home/sourcerer/kos_src/me//lib/libc.a(fprintf.o)
+                              bezier.o (fprintf)
+/home/sourcerer/kos_src/me//lib/libc.a(fflush.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o) (fflush)
+/home/sourcerer/kos_src/me//lib/libc.a(fclose.o)
+                              /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o) (fclose)
+/home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o) (_doprnt)
+/home/sourcerer/kos_src/me//lib/libc.a(allocfil.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o) (__alloc_file)
+/home/sourcerer/kos_src/me//lib/libc.a(modfl.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o) (__modfl)
+/home/sourcerer/kos_src/me//lib/libc.a(lconv.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o) (localeconv)
+/home/sourcerer/kos_src/me//lib/libc.a(errno.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(brk.o) (errno)
+/home/sourcerer/kos_src/me//lib/libc.a(ct_flags.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o) (__dj_ctype_flags)
+/home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+                              /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o) (__libclog_vprintf)
+/home/sourcerer/kos_src/me//lib/libc.a(write.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fflush.o) (write)
+/home/sourcerer/kos_src/me//lib/libc.a(lseek.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o) (lseek)
+/home/sourcerer/kos_src/me//lib/libc.a(close.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fclose.o) (close)
+/home/sourcerer/kos_src/me//lib/libc.a(open.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(freopen.o) (open)
+/home/sourcerer/kos_src/me//lib/libc.a(emu_init.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(crt1.o) (dosemu_inithandles)
+/home/sourcerer/kos_src/me//lib/libc.a(dosemu.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(lseek.o) (dosemu_lseek)
+/home/sourcerer/kos_src/me//lib/libc.a(_main.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(crt1.o) (__main)
+/home/sourcerer/kos_src/me//lib/libc.a(strrchr.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(emu_init.o) (strrchr)
+/home/sourcerer/kos_src/me//lib/libc.a(memchr.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o) (memchr)
+/home/sourcerer/kos_src/me//lib/libc.a(stdin.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(frlist.o) (__dj_stdin)
+/home/sourcerer/kos_src/me//lib/libc.a(remove.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fclose.o) (remove)
+/home/sourcerer/kos_src/me//lib/libc.a(putc.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o) (putc)
+/home/sourcerer/kos_src/me//lib/libc.a(fputc.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(putc.o) (fputc)
+/home/sourcerer/kos_src/me//lib/libc.a(flsbuf.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o) (_flsbuf)
+/home/sourcerer/kos_src/me//lib/libc.a(hooks.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fputc.o) (__libc_write_termios_hook)
+/home/sourcerer/kos_src/me//lib/libc.a(fixpath.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(dosemu.o) (_fixpath)
+/home/sourcerer/kos_src/me//lib/libc.a(systree.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(remove.o) (__kolibri__system_tree_access2)
+/home/sourcerer/kos_src/me//lib/libc.a(dosio.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fputc.o) (__file_handle_modes)
+/home/sourcerer/kos_src/me//lib/libc.a(curdir.o)
+                              /home/sourcerer/kos_src/me//lib/libc.a(fixpath.o) (__libc_combine_path)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+
+.text           0x0000000000000000    0x23a48
+                0x0000000000000000                code = .
+                0x0000000000000000                _code = .
+ *(.text)
+ .text          0x0000000000000000       0x24 /home/sourcerer/kos_src/me//stub/crt0.o
+                0x0000000000000000                __menuet__app_header
+                0x0000000000000000                start
+                0x0000000000000014                __menuet__memsize
+ .text          0x0000000000000024        0x0 bezier.o
+ .text          0x0000000000000024      0x2a4 /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+                0x0000000000000024                nsfb_cursor_init
+                0x000000000000006f                nsfb_cursor_set
+                0x00000000000000da                nsfb_cursor_loc_set
+                0x000000000000011c                nsfb_cursor_loc_get
+                0x0000000000000145                nsfb_cursor_plot
+                0x000000000000026a                nsfb_cursor_clear
+ .text          0x00000000000002c8       0xbd /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+                0x00000000000002c8                nsfb_dump
+ *fill*         0x0000000000000385        0x3 00
+ .text          0x0000000000000388      0x1a9 /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+                0x0000000000000388                nsfb_new
+                0x00000000000003d6                nsfb_init
+                0x00000000000003e5                nsfb_free
+                0x000000000000041f                nsfb_event
+                0x000000000000042e                nsfb_claim
+                0x000000000000043d                nsfb_update
+                0x000000000000044c                nsfb_set_geometry
+                0x0000000000000488                nsfb_set_parameters
+                0x00000000000004dc                nsfb_get_geometry
+                0x000000000000050d                nsfb_get_buffer
+ *fill*         0x0000000000000531        0x3 00
+ .text          0x0000000000000534      0x1ca /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+                0x0000000000000534                nsfb_palette_free
+                0x0000000000000567                nsfb_palette_new
+                0x00000000000005e0                nsfb_palette_dither_init
+                0x0000000000000623                nsfb_palette_dither_fini
+                0x0000000000000635                nsfb_palette_generate_nsfb_8bpp
+ *fill*         0x00000000000006fe        0x2 00
+ .text          0x0000000000000700      0x9df /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+ *fill*         0x00000000000010df        0x1 00
+ .text          0x00000000000010e0      0x894 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+ .text          0x0000000000001974      0x96e /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+ *fill*         0x00000000000022e2        0x2 00
+ .text          0x00000000000022e4      0xcfb /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+ *fill*         0x0000000000002fdf        0x1 00
+ .text          0x0000000000002fe0      0x1b6 /home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+                0x0000000000002fe0                nsfb_plot_set_clip
+                0x0000000000002fef                nsfb_plot_get_clip
+                0x0000000000002ffe                nsfb_plot_clg
+                0x000000000000300c                nsfb_plot_rectangle
+                0x000000000000301b                nsfb_plot_rectangle_fill
+                0x000000000000302a                nsfb_plot_line
+                0x0000000000003044                nsfb_plot_lines
+                0x0000000000003053                nsfb_plot_polylines
+                0x0000000000003062                nsfb_plot_polygon
+                0x0000000000003071                nsfb_plot_arc
+                0x0000000000003080                nsfb_plot_point
+                0x000000000000308f                nsfb_plot_ellipse
+                0x000000000000309e                nsfb_plot_ellipse_fill
+                0x00000000000030ad                nsfb_plot_copy
+                0x000000000000312d                nsfb_plot_bitmap
+                0x000000000000313c                nsfb_plot_glyph8
+                0x000000000000314b                nsfb_plot_glyph1
+                0x000000000000315a                nsfb_plot_readrect
+                0x0000000000003169                nsfb_plot_cubic_bezier
+                0x0000000000003178                nsfb_plot_quadratic_bezier
+                0x0000000000003187                nsfb_plot_path
+ *fill*         0x0000000000003196        0x2 00
+ .text          0x0000000000003198     0x10d5 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+                0x0000000000004165                select_plotters
+ *fill*         0x000000000000426d        0x3 00
+ .text          0x0000000000004270      0x466 /home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+                0x0000000000004270                nsfb_plot_clip
+                0x000000000000439c                nsfb_plot_clip_ctx
+                0x00000000000043ae                nsfb_plot_clip_line
+                0x0000000000004638                nsfb_plot_clip_line_ctx
+                0x000000000000464a                nsfb_plot_add_rect
+                0x00000000000046a5                nsfb_plot_bbox_intersect
+ *fill*         0x00000000000046d6        0x2 00
+ .text          0x00000000000046d8       0x3b /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ *fill*         0x0000000000004713        0x1 00
+ .text          0x0000000000004714       0x36 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ *fill*         0x000000000000474a        0x2 00
+ .text          0x000000000000474c      0x112 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ *fill*         0x000000000000485e        0x2 00
+ .text          0x0000000000004860      0x579 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+ *fill*         0x0000000000004dd9        0x3 00
+ .text          0x0000000000004ddc      0x169 /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+                0x0000000000004e1f                _nsfb_register_surface
+                0x0000000000004e52                nsfb_surface_get_rtns
+                0x0000000000004f08                nsfb_type_from_name
+ *fill*         0x0000000000004f45        0x3 00
+ .text          0x0000000000004f48      0x3fd /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+                0x0000000000004f54                SDL_RemoveTimer
+                0x0000000000004fcd                SDL_SetTimerThreaded
+                0x0000000000004ffd                SDL_AddTimer
+                0x00000000000050ca                SDL_SetTimer
+                0x0000000000005194                SDL_ThreadedTimerCheck
+                0x00000000000052a2                SDL_TimerQuit
+                0x00000000000052f2                SDL_TimerInit
+ *fill*         0x0000000000005345        0x3 00
+ .text          0x0000000000005348       0x67 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o)
+                0x0000000000005348                SDL_StartTicks
+                0x0000000000005360                SDL_GetTicks
+                0x000000000000537c                SDL_SYS_TimerInit
+                0x0000000000005383                SDL_SYS_TimerQuit
+                0x0000000000005388                SDL_SYS_StartTimer
+                0x000000000000538f                SDL_SYS_StopTimer
+                0x0000000000005394                SDL_Delay
+ *fill*         0x00000000000053af        0x1 00
+ .text          0x00000000000053b0      0x682 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+                0x00000000000053b0                SDL_EventThreadID
+                0x00000000000053ba                SDL_GetEventFilter
+                0x00000000000053c4                SDL_PumpEvents
+                0x00000000000053f1                SDL_PeepEvents
+                0x0000000000005611                SDL_PushEvent
+                0x0000000000005627                SDL_PrivateSysWMEvent
+                0x0000000000005685                SDL_WaitEvent
+                0x00000000000056cf                SDL_PollEvent
+                0x00000000000056ea                SDL_EventState
+                0x000000000000579e                SDL_SetEventFilter
+                0x00000000000057c5                SDL_Unlock_EventThread
+                0x00000000000057f4                SDL_Lock_EventThread
+                0x00000000000058d4                SDL_StopEventLoop
+                0x0000000000005941                SDL_StartEventLoop
+ *fill*         0x0000000000005a32        0x2 00
+ .text          0x0000000000005a34      0xc2f /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+                0x0000000000005a34                SDL_EnableUNICODE
+                0x0000000000005a4b                SDL_GetKeyState
+                0x0000000000005a62                SDL_GetModState
+                0x0000000000005a6c                SDL_SetModState
+                0x0000000000005a79                SDL_GetKeyName
+                0x0000000000005a98                SDL_CheckKeyRepeat
+                0x0000000000005a9d                SDL_EnableKeyRepeat
+                0x0000000000005ae9                SDL_KeyboardInit
+                0x0000000000006446                SDL_PrivateKeyboard
+                0x0000000000006611                SDL_ResetKeyboard
+ *fill*         0x0000000000006663        0x1 00
+ .text          0x0000000000006664      0x3fb /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o)
+                0x0000000000006664                SDL_MouseInit
+                0x0000000000006696                SDL_GetMouseState
+                0x00000000000066c0                SDL_GetRelativeMouseState
+                0x0000000000006747                SDL_PrivateMouseButton
+                0x00000000000068d5                SDL_PrivateMouseMotion
+ *fill*         0x0000000000006a5f        0x1 00
+ .text          0x0000000000006a60       0x4d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_quit.o)
+                0x0000000000006a60                SDL_QuitInit
+                0x0000000000006a67                SDL_PrivateQuit
+ *fill*         0x0000000000006aad        0x3 00
+ .text          0x0000000000006ab0      0xfb3 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+                0x0000000000006ab0                SDL_GetCursor
+                0x0000000000006aba                SDL_CursorPaletteChanged
+                0x0000000000006ac9                SDL_MouseRect
+                0x0000000000006b5a                SDL_ResetCursor
+                0x0000000000006b93                SDL_EraseCursorNoLock
+                0x0000000000006cf9                SDL_EraseCursor
+                0x0000000000006d86                SDL_DrawCursorNoLock
+                0x00000000000073fa                SDL_DrawCursor
+                0x0000000000007487                SDL_MoveCursor
+                0x0000000000007526                SDL_WarpMouse
+                0x000000000000758f                SDL_SetCursor
+                0x00000000000076f9                SDL_ShowCursor
+                0x0000000000007792                SDL_FreeCursor
+                0x0000000000007818                SDL_CreateCursor
+                0x0000000000007990                SDL_CursorInit
+                0x00000000000079e7                SDL_CursorQuit
+ *fill*         0x0000000000007a63        0x1 00
+ .text          0x0000000000007a64      0xc8e /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o)
+                0x0000000000007a64                SDL_DitherColors
+                0x0000000000007ad1                SDL_CalculatePitch
+                0x0000000000007b0a                SDL_FindColor
+                0x0000000000007b82                SDL_MapRGB
+                0x0000000000007bf4                SDL_MapRGBA
+                0x0000000000007c82                SDL_GetRGBA
+                0x0000000000007d95                SDL_GetRGB
+                0x0000000000007e59                SDL_ApplyGamma
+                0x0000000000007eab                SDL_InvalidateMap
+                0x0000000000007ee5                SDL_FormatChanged
+                0x0000000000007efd                SDL_FreeBlitMap
+                0x0000000000007f3b                SDL_FreeFormat
+                0x000000000000806c                SDL_MapSurface
+                0x000000000000832e                SDL_AllocBlitMap
+                0x00000000000083a0                SDL_AllocFormat
+                0x00000000000086ae                SDL_ReallocFormat
+ *fill*         0x00000000000086f2        0x2 00
+ .text          0x00000000000086f4     0x39e4 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+                0x00000000000086f4                SDL_RLEBlit
+                0x000000000000a7df                SDL_RLEAlphaBlit
+                0x000000000000b65a                SDL_UnRLESurface
+                0x000000000000b859                SDL_RLESurface
+ .text          0x000000000000c0d8      0xd19 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+                0x000000000000c0d8                SDL_SetClipRect
+                0x000000000000c193                SDL_GetClipRect
+                0x000000000000c1b1                SDL_LockSurface
+                0x000000000000c208                SDL_FreeSurface
+                0x000000000000c2d4                SDL_UnlockSurface
+                0x000000000000c320                SDL_FillRect
+                0x000000000000c5c1                SDL_LowerBlit
+                0x000000000000c62d                SDL_UpperBlit
+                0x000000000000c7e4                SDL_SetAlpha
+                0x000000000000c8fa                SDL_SetColorKey
+                0x000000000000c9c5                SDL_CreateRGBSurface
+                0x000000000000cb98                SDL_ConvertSurface
+                0x000000000000cd94                SDL_CreateRGBSurfaceFrom
+ *fill*         0x000000000000cdf1        0x3 00
+ .text          0x000000000000cdf4     0x18ea /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+                0x000000000000cdf4                SDL_GetVideoSurface
+                0x000000000000ce0b                SDL_GetVideoInfo
+                0x000000000000ce1f                SDL_ListModes
+                0x000000000000ce53                SDL_GL_SwapBuffers
+                0x000000000000ce75                SDL_GL_UpdateRectsLock
+                0x000000000000ce7a                SDL_GL_UpdateRects
+                0x000000000000ce7f                SDL_GL_Lock
+                0x000000000000ce84                SDL_GL_Unlock
+                0x000000000000ce89                SDL_WM_GetCaption
+                0x000000000000ceb7                SDL_WM_GrabInput
+                0x000000000000cf69                SDL_WM_IconifyWindow
+                0x000000000000cf8c                SDL_WM_ToggleFullScreen
+                0x000000000000d02e                SDL_GetWMInfo
+                0x000000000000d058                SDL_VideoModeOK
+                0x000000000000d12f                SDL_WM_SetIcon
+                0x000000000000d362                SDL_WM_SetCaption
+                0x000000000000d436                SDL_GL_GetAttribute
+                0x000000000000d473                SDL_GL_SetAttribute
+                0x000000000000d507                SDL_GL_GetProcAddress
+                0x000000000000d54a                SDL_GL_LoadLibrary
+                0x000000000000d57f                SDL_VideoQuit
+                0x000000000000d6db                SDL_UpdateRects
+                0x000000000000d8a5                SDL_UpdateRect
+                0x000000000000da5a                SDL_SetPalette
+                0x000000000000dbc6                SDL_SetColors
+                0x000000000000dbe1                SDL_Flip
+                0x000000000000dcb8                SDL_DisplayFormat
+                0x000000000000dd03                SDL_DisplayFormatAlpha
+                0x000000000000dddb                SDL_SetVideoMode
+                0x000000000000e44a                SDL_VideoDriverName
+                0x000000000000e480                SDL_VideoInit
+ *fill*         0x000000000000e6de        0x2 00
+ .text          0x000000000000e6e0      0x6bc /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+                0x000000000000e6e0                get_skinh
+                0x000000000000e70c                MenuetOS_SetColors
+                0x000000000000e713                MenuetOS_VideoQuit
+                0x000000000000e73f                MenuetOS_FinalQuit
+                0x000000000000e744                MenuetOS_SetCaption
+                0x000000000000e7b4                KolibriOS_FreeWMCursor
+                0x000000000000e7ca                KolibriOS_CheckMouseMode
+                0x000000000000e9df                KolibriOS_ShowWMCursor
+                0x000000000000ea63                KolibriOS_CreateWMCursor
+                0x000000000000ec00                MenuetOS_SDL_RepaintWnd
+                0x000000000000ec94                MenuetOS_SetVideoMode
+ .text          0x000000000000ed9c      0x1a8 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+                0x000000000000ed9c                SDL_WasInit
+                0x000000000000edb2                SDL_Linked_Version
+                0x000000000000edbc                SDL_QuitSubSystem
+                0x000000000000ee0f                SDL_Quit
+                0x000000000000ee28                SDL_InitSubSystem
+                0x000000000000ef0a                SDL_Init
+ .text          0x000000000000ef44      0x4d4 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+                0x000000000000ef44                SDL_ClearError
+                0x000000000000ef53                SDL_GetErrorMsgUNICODE
+                0x000000000000f1e1                SDL_GetErrorMsg
+                0x000000000000f248                SDL_GetError
+                0x000000000000f25f                SDL_printf
+                0x000000000000f2bb                SDL_SetError
+                0x000000000000f3cb                SDL_Error
+ .text          0x000000000000f418       0x28 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o)
+                0x000000000000f418                SDL_InstallParachute
+                0x000000000000f41d                SDL_UninstallParachute
+                0x000000000000f422                SDL_printf_error
+ .text          0x000000000000f440      0x179 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_getenv.o)
+                0x000000000000f440                SDL_getenv
+                0x000000000000f4b2                SDL_putenv
+ *fill*         0x000000000000f5b9        0x3 00
+ .text          0x000000000000f5bc      0xad6 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+                0x000000000000f5bc                SDL_AudioQuit
+                0x000000000000f5c1                SDL_PauseAudio
+                0x000000000000f603                SDL_LockAudio
+                0x000000000000f635                SDL_UnlockAudio
+                0x000000000000f644                SDL_CloseAudio
+                0x000000000000f6a0                SDL_OpenAudio
+                0x000000000001000c                SDL_AudioDriverName
+                0x000000000001003c                SDL_AudioInit
+ *fill*         0x0000000000010092        0xe 00
+ .text          0x00000000000100a0       0xbf /home/sourcerer/kos_src/me//lib/libSDL.a(init.o)
+                0x00000000000100a0                InitSound
+                0x0000000000010104                CreateBuffer
+                0x0000000000010134                DestroyBuffer
+ *fill*         0x000000000001015f        0x1 00
+ .text          0x0000000000010160       0x57 /home/sourcerer/kos_src/me//lib/libSDL.a(setbuf.o)
+                0x0000000000010160                SetBuffer
+                0x000000000001018c                PlayBuffer
+ *fill*         0x00000000000101b7        0x9 00
+ .text          0x00000000000101c0       0x2b /home/sourcerer/kos_src/me//lib/libSDL.a(stopbuf.o)
+                0x00000000000101c0                StopBuffer
+ *fill*         0x00000000000101eb        0x5 00
+ .text          0x00000000000101f0       0x2e /home/sourcerer/kos_src/me//lib/libSDL.a(sndgetsize.o)
+                0x00000000000101f0                GetBufferSize
+ *fill*         0x000000000001021e        0x2 00
+ .text          0x0000000000010220       0x99 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o)
+                0x0000000000010220                SDL_mutexP
+                0x0000000000010227                SDL_mutexV
+                0x000000000001022e                SDL_DestroyMutex
+                0x0000000000010260                SDL_CreateMutex
+ *fill*         0x00000000000102b9        0x3 00
+ .text          0x00000000000102bc       0x74 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+                0x00000000000102bc                SDL_DestroySemaphore
+                0x00000000000102c1                SDL_SemValue
+                0x00000000000102c8                SDL_SemPost
+                0x00000000000102dd                SDL_SemWait
+                0x00000000000102f2                SDL_SemWaitTimeout
+                0x0000000000010307                SDL_SemTryWait
+                0x000000000001031c                SDL_CreateSemaphore
+ .text          0x0000000000010330       0x2b /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+                0x0000000000010330                SDL_SYS_SetupThread
+                0x0000000000010335                SDL_ThreadID
+                0x000000000001033c                SDL_SYS_WaitThread
+                0x0000000000010341                SDL_SYS_KillThread
+                0x0000000000010346                SDL_SYS_CreateThread
+ *fill*         0x000000000001035b        0x1 00
+ .text          0x000000000001035c      0x39a /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_thread.o)
+                0x000000000001035c                SDL_GetThreadID
+                0x00000000000103e2                SDL_WaitThread
+                0x0000000000010422                SDL_KillThread
+                0x000000000001044b                SDL_GetErrBuf
+                0x00000000000104b6                SDL_RunThread
+                0x00000000000104fd                SDL_ThreadsQuit
+                0x0000000000010524                SDL_ThreadsInit
+                0x000000000001054f                SDL_CreateThread
+ *fill*         0x00000000000106f6        0x2 00
+ .text          0x00000000000106f8       0xbf /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_active.o)
+                0x00000000000106f8                SDL_AppActiveInit
+                0x0000000000010706                SDL_GetAppState
+                0x0000000000010710                SDL_PrivateAppActive
+ *fill*         0x00000000000107b7        0x1 00
+ .text          0x00000000000107b8       0xb9 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_resize.o)
+                0x00000000000107b8                SDL_PrivateResize
+ *fill*         0x0000000000010871        0x3 00
+ .text          0x0000000000010874      0x524 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+                0x00000000000109e3                SDL_CalculateBlit
+ .text          0x0000000000010d98     0x4fa8 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+                0x0000000000015bcc                SDL_CalculateBlitN
+ .text          0x0000000000015d40      0x2e4 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+                0x0000000000015d40                MenuetOS_InitOSKeymap
+                0x0000000000015d58                kol_event_wait_time
+                0x0000000000015d69                MenuetOS_PumpEvents
+ .text          0x0000000000016024      0xa1f /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+                0x000000000001693f                SDL_CalculateBlit0
+ *fill*         0x0000000000016a43        0x1 00
+ .text          0x0000000000016a44     0x1f10 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+                0x00000000000188f9                SDL_CalculateBlit1
+ .text          0x0000000000018954     0x44a5 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+                0x000000000001cc90                SDL_CalculateAlphaBlit
+ *fill*         0x000000000001cdf9        0x3 00
+ .text          0x000000000001cdfc        0x8 /home/sourcerer/kos_src/me//lib/libc.a(dup.o)
+                0x000000000001cdfc                dup
+ .text          0x000000000001ce04      0x123 /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o)
+                0x000000000001ce04                fdopen
+ *fill*         0x000000000001cf27        0x1 00
+ .text          0x000000000001cf28       0x1f /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+                0x000000000001cf28                __menuet__debug_out
+ *fill*         0x000000000001cf47        0x1 00
+ .text          0x000000000001cf48       0x43 /home/sourcerer/kos_src/me//lib/libc.a(window.o)
+                0x000000000001cf48                __menuet__define_window
+                0x000000000001cf7a                __menuet__window_redraw
+ *fill*         0x000000000001cf8b        0x1 00
+ .text          0x000000000001cf8c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(param.o)
+ .text          0x000000000001cf8c       0x17 /home/sourcerer/kos_src/me//lib/libc.a(keyb.o)
+                0x000000000001cf8c                __menuet__getkey
+ *fill*         0x000000000001cfa3        0x1 00
+ .text          0x000000000001cfa4       0x2b /home/sourcerer/kos_src/me//lib/libc.a(image.o)
+                0x000000000001cfa4                __menuet__putimage
+ *fill*         0x000000000001cfcf        0x1 00
+ .text          0x000000000001cfd0        0xa /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+                0x000000000001cfd0                __menuet__sys_exit
+ *fill*         0x000000000001cfda        0x2 00
+ .text          0x000000000001cfdc       0x29 /home/sourcerer/kos_src/me//lib/libc.a(event.o)
+                0x000000000001cfdc                __menuet__wait_for_event
+                0x000000000001cfe8                __menuet__check_for_event
+                0x000000000001cff4                __menuet__set_bitfield_for_wanted_events
+ *fill*         0x000000000001d005        0x3 00
+ .text          0x000000000001d008       0x24 /home/sourcerer/kos_src/me//lib/libc.a(delay.o)
+                0x000000000001d008                __menuet__delay100
+                0x000000000001d019                __menuet(int, double, long,...)
+ .text          0x000000000001d02c       0x48 /home/sourcerer/kos_src/me//lib/libc.a(button.o)
+                0x000000000001d02c                __menuet__make_button
+                0x000000000001d05c                __menuet__get_button_id
+ .text          0x000000000001d074        0x7 /home/sourcerer/kos_src/me//lib/libc.a(setmode.o)
+                0x000000000001d074                __setmode
+ *fill*         0x000000000001d07b        0x1 00
+ .text          0x000000000001d07c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fmode.o)
+ .text          0x000000000001d07c       0x43 /home/sourcerer/kos_src/me//lib/libc.a(crt1.o)
+                0x000000000001d07c                __crt1_startup
+ *fill*         0x000000000001d0bf        0x1 00
+ .text          0x000000000001d0c0      0x148 /home/sourcerer/kos_src/me//lib/libc.a(crt0.o)
+                0x000000000001d0c0                _exit
+                0x000000000001d14b                __crt0_setup_arguments
+ .text          0x000000000001d208      0x163 /home/sourcerer/kos_src/me//lib/libc.a(brk.o)
+                0x000000000001d208                init_brk
+                0x000000000001d25c                sbrk
+ *fill*         0x000000000001d36b        0x1 00
+ .text          0x000000000001d36c       0x3e /home/sourcerer/kos_src/me//lib/libc.a(strdup.o)
+                0x000000000001d36c                strdup
+ *fill*         0x000000000001d3aa        0x2 00
+ .text          0x000000000001d3ac       0x3d /home/sourcerer/kos_src/me//lib/libc.a(memset.o)
+                0x000000000001d3ac                memset
+ *fill*         0x000000000001d3e9        0x3 00
+ .text          0x000000000001d3ec       0x26 /home/sourcerer/kos_src/me//lib/libc.a(memmove.o)
+                0x000000000001d3ec                memmove
+ *fill*         0x000000000001d412        0x2 00
+ .text          0x000000000001d414       0x21 /home/sourcerer/kos_src/me//lib/libc.a(strncpy.o)
+                0x000000000001d414                strncpy
+ *fill*         0x000000000001d435        0x3 00
+ .text          0x000000000001d438       0x25 /home/sourcerer/kos_src/me//lib/libc.a(strncmp.o)
+                0x000000000001d438                strncmp
+ *fill*         0x000000000001d45d        0x3 00
+ .text          0x000000000001d460       0x16 /home/sourcerer/kos_src/me//lib/libc.a(strlen.o)
+                0x000000000001d460                strlen
+ *fill*         0x000000000001d476        0x2 00
+ .text          0x000000000001d478       0x19 /home/sourcerer/kos_src/me//lib/libc.a(strcpy.o)
+                0x000000000001d478                strcpy
+ *fill*         0x000000000001d491        0x3 00
+ .text          0x000000000001d494       0x1f /home/sourcerer/kos_src/me//lib/libc.a(strcmp.o)
+                0x000000000001d494                strcmp
+ *fill*         0x000000000001d4b3        0x1 00
+ .text          0x000000000001d4b4       0x2b /home/sourcerer/kos_src/me//lib/libc.a(memcpy.o)
+                0x000000000001d4b4                memcpy
+ *fill*         0x000000000001d4df        0x1 00
+ .text          0x000000000001d4e0       0x35 /home/sourcerer/kos_src/me//lib/libc.a(memcmp.o)
+                0x000000000001d4e0                memcmp
+ *fill*         0x000000000001d515        0x3 00
+ .text          0x000000000001d518      0x373 /home/sourcerer/kos_src/me//lib/libc.a(malloc.o)
+                0x000000000001d518                free
+                0x000000000001d657                malloc
+                0x000000000001d829                realloc
+ *fill*         0x000000000001d88b        0x1 00
+ .text          0x000000000001d88c       0x23 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+                0x000000000001d88c                exit
+ *fill*         0x000000000001d8af        0x1 00
+ .text          0x000000000001d8b0       0x34 /home/sourcerer/kos_src/me//lib/libc.a(calloc.o)
+                0x000000000001d8b0                calloc
+ .text          0x000000000001d8e4        0xd /home/sourcerer/kos_src/me//lib/libc.a(abs.o)
+                0x000000000001d8e4                abs
+ *fill*         0x000000000001d8f1        0x3 00
+ .text          0x000000000001d8f4       0x31 /home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o)
+                0x000000000001d8f4                vsprintf
+ *fill*         0x000000000001d925        0x3 00
+ .text          0x000000000001d928        0x4 /home/sourcerer/kos_src/me//lib/libc.a(stdout.o)
+ .text          0x000000000001d92c       0x3f /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o)
+                0x000000000001d92c                __stdio_cleanup_proc
+ *fill*         0x000000000001d96b        0x1 00
+ .text          0x000000000001d96c        0x4 /home/sourcerer/kos_src/me//lib/libc.a(stderr.o)
+ .text          0x000000000001d970       0x32 /home/sourcerer/kos_src/me//lib/libc.a(sprintf.o)
+                0x000000000001d970                sprintf
+ *fill*         0x000000000001d9a2        0x2 00
+ .text          0x000000000001d9a4       0x3f /home/sourcerer/kos_src/me//lib/libc.a(fwalk.o)
+                0x000000000001d9a4                _fwalk
+ *fill*         0x000000000001d9e3        0x1 00
+ .text          0x000000000001d9e4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(frlist.o)
+ .text          0x000000000001d9e4      0x11f /home/sourcerer/kos_src/me//lib/libc.a(freopen.o)
+                0x000000000001d9e4                freopen
+ *fill*         0x000000000001db03        0x1 00
+ .text          0x000000000001db04       0x82 /home/sourcerer/kos_src/me//lib/libc.a(fprintf.o)
+                0x000000000001db04                fprintf
+ *fill*         0x000000000001db86        0x2 00
+ .text          0x000000000001db88       0xad /home/sourcerer/kos_src/me//lib/libc.a(fflush.o)
+                0x000000000001db88                fflush
+ *fill*         0x000000000001dc35        0x3 00
+ .text          0x000000000001dc38       0xb4 /home/sourcerer/kos_src/me//lib/libc.a(fclose.o)
+                0x000000000001dc38                fclose
+ .text          0x000000000001dcec     0x1517 /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+                0x000000000001ded5                _doprnt
+ *fill*         0x000000000001f203        0x1 00
+ .text          0x000000000001f204       0x9a /home/sourcerer/kos_src/me//lib/libc.a(allocfil.o)
+                0x000000000001f208                __alloc_file
+ *fill*         0x000000000001f29e        0x2 00
+ .text          0x000000000001f2a0       0x2c /home/sourcerer/kos_src/me//lib/libc.a(modfl.o)
+                0x000000000001f2a0                __modfl
+ .text          0x000000000001f2cc        0xa /home/sourcerer/kos_src/me//lib/libc.a(lconv.o)
+                0x000000000001f2cc                localeconv
+ *fill*         0x000000000001f2d6        0x2 00
+ .text          0x000000000001f2d8        0xa /home/sourcerer/kos_src/me//lib/libc.a(errno.o)
+                0x000000000001f2d8                __isatty
+ *fill*         0x000000000001f2e2        0x2 00
+ .text          0x000000000001f2e4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(ct_flags.o)
+ .text          0x000000000001f2e4       0x8b /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+                0x000000000001f2e4                __libclog_vprintf
+                0x000000000001f349                __libclog_printf
+ *fill*         0x000000000001f36f        0x1 00
+ .text          0x000000000001f370        0xc /home/sourcerer/kos_src/me//lib/libc.a(write.o)
+                0x000000000001f370                write
+ .text          0x000000000001f37c        0xc /home/sourcerer/kos_src/me//lib/libc.a(lseek.o)
+                0x000000000001f37c                lseek
+ .text          0x000000000001f388        0xc /home/sourcerer/kos_src/me//lib/libc.a(close.o)
+                0x000000000001f388                close
+ .text          0x000000000001f394       0x13 /home/sourcerer/kos_src/me//lib/libc.a(open.o)
+                0x000000000001f394                open
+ *fill*         0x000000000001f3a7        0x1 00
+ .text          0x000000000001f3a8       0x70 /home/sourcerer/kos_src/me//lib/libc.a(emu_init.o)
+                0x000000000001f3a8                dosemu_inithandles
+                0x000000000001f3ed                init_dir_stack
+ .text          0x000000000001f418      0x5b3 /home/sourcerer/kos_src/me//lib/libc.a(dosemu.o)
+                0x000000000001f418                dosemu_file_exists
+                0x000000000001f467                dosemu_createtrunc
+                0x000000000001f4b2                dosemu_getiostruct
+                0x000000000001f4d7                dosemu_allochandle
+                0x000000000001f4f7                dosemu_freehandle
+                0x000000000001f513                dosemu_fileread
+                0x000000000001f56a                dosemu_filewrite
+                0x000000000001f5cc                dosemu_iosize
+                0x000000000001f5fd                dosemu_filesize
+                0x000000000001f64c                dosemu_tell
+                0x000000000001f677                dosemu_lseek
+                0x000000000001f6d5                dosemu_read
+                0x000000000001f74e                dosemu_write
+                0x000000000001f783                dosemu_close
+                0x000000000001f7ba                _dosemu_flush
+                0x000000000001f7bf                dosemu_truncate
+                0x000000000001f849                dosemu_open
+ *fill*         0x000000000001f9cb        0x1 00
+ .text          0x000000000001f9cc       0x39 /home/sourcerer/kos_src/me//lib/libc.a(_main.o)
+                0x000000000001f9cc                __main
+ *fill*         0x000000000001fa05        0x3 00
+ .text          0x000000000001fa08       0x24 /home/sourcerer/kos_src/me//lib/libc.a(strrchr.o)
+                0x000000000001fa08                strrchr
+ .text          0x000000000001fa2c       0x22 /home/sourcerer/kos_src/me//lib/libc.a(memchr.o)
+                0x000000000001fa2c                memchr
+ *fill*         0x000000000001fa4e        0x2 00
+ .text          0x000000000001fa50        0x4 /home/sourcerer/kos_src/me//lib/libc.a(stdin.o)
+ .text          0x000000000001fa54       0x87 /home/sourcerer/kos_src/me//lib/libc.a(remove.o)
+                0x000000000001fa54                remove
+ *fill*         0x000000000001fadb        0x1 00
+ .text          0x000000000001fadc        0xc /home/sourcerer/kos_src/me//lib/libc.a(putc.o)
+                0x000000000001fadc                putc
+ .text          0x000000000001fae8       0xb7 /home/sourcerer/kos_src/me//lib/libc.a(fputc.o)
+                0x000000000001fae8                fputc
+ *fill*         0x000000000001fb9f        0x1 00
+ .text          0x000000000001fba0      0x148 /home/sourcerer/kos_src/me//lib/libc.a(flsbuf.o)
+                0x000000000001fba0                _flsbuf
+ .text          0x000000000001fce8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(hooks.o)
+ .text          0x000000000001fce8       0x66 /home/sourcerer/kos_src/me//lib/libc.a(fixpath.o)
+                0x000000000001fce8                fix_slashes
+                0x000000000001fd2a                _fixpath
+ *fill*         0x000000000001fd4e        0x2 00
+ .text          0x000000000001fd50       0x22 /home/sourcerer/kos_src/me//lib/libc.a(systree.o)
+                0x000000000001fd50                __kolibri__system_tree_access
+                0x000000000001fd61                __kolibri__system_tree_access2
+ *fill*         0x000000000001fd72        0x2 00
+ .text          0x000000000001fd74       0x14 /home/sourcerer/kos_src/me//lib/libc.a(dosio.o)
+                0x000000000001fd74                __file_handle_set
+ .text          0x000000000001fd88       0xe9 /home/sourcerer/kos_src/me//lib/libc.a(curdir.o)
+                0x000000000001fd88                __get_curdir
+                0x000000000001fe34                __libc_combine_path
+                0x000000000001fe5d                __chdir
+ *(.fixup)
+ *(.gnu.warning)
+ *(.gnu.linkonce.t*)
+ *(.const)
+ *(.ro*)
+ .rodata.str1.1
+                0x000000000001fe71       0xc7 bezier.o
+ .rodata.str1.1
+                0x000000000001ff38       0x2d /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+                                         0x31 (size before relaxing)
+ *fill*         0x000000000001ff65        0x3 00
+ .rodata        0x000000000001ff68       0x50 /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+                0x000000000001ff68                _nsfb_16bpp_plotters
+ .rodata        0x000000000001ffb8       0x50 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+                0x000000000001ffb8                _nsfb_32bpp_xbgr8888_plotters
+ .rodata        0x0000000000020008       0x50 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+                0x0000000000020008                _nsfb_32bpp_xrgb8888_plotters
+ .rodata        0x0000000000020058       0x50 /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+                0x0000000000020058                _nsfb_8bpp_plotters
+ .rodata        0x00000000000200a8       0x20 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+ .rodata.cst4   0x00000000000200c8       0x10 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+ .rodata.str1.1
+                0x00000000000200d8        0x5 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ *fill*         0x00000000000200dd        0x3 00
+ .rodata        0x00000000000200e0       0x24 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+                0x00000000000200e0                able_rtns
+ .rodata.str1.1
+                0x0000000000020104        0x6 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ *fill*         0x000000000002010a        0x2 00
+ .rodata        0x000000000002010c       0x24 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+                0x000000000002010c                linux_rtns
+ .rodata.str1.1
+                0x0000000000020130        0x4 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .rodata        0x0000000000020134       0x24 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+                0x0000000000020134                ram_rtns
+ .rodata.str1.1
+                0x0000000000020158       0x31 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+                                         0x35 (size before relaxing)
+ *fill*         0x0000000000020189        0x3 00
+ .rodata        0x000000000002018c       0x24 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+                0x000000000002018c                sdl_rtns
+ .rodata.str1.1
+                0x00000000000201b0       0x9e /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+ .rodata.str1.1
+                0x000000000002024e       0x1a /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+ .rodata.str1.1
+                0x0000000000020268      0x567 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+                                        0x5b3 (size before relaxing)
+ *fill*         0x00000000000207cf        0x1 00
+ .rodata        0x00000000000207d0       0x70 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+ .rodata.str1.1
+                0x0000000000020840       0x2a /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+ *fill*         0x000000000002086a        0x2 00
+ .rodata        0x000000000002086c       0x10 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+ .rodata.str1.1
+                0x000000000002087c       0x67 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+ .rodata.str1.1
+                0x00000000000208e3      0x19d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+ .rodata        0x0000000000020a80       0x38 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+ .rodata.str1.1
+                0x0000000000020ab8       0x20 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+ .rodata.str1.1
+                0x0000000000020ad8       0x65 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+ .rodata.str1.1
+                0x0000000000020b3d       0x8e /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+                                         0x91 (size before relaxing)
+ .rodata.str1.1
+                0x0000000000020bcb      0x192 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+ .rodata.str1.1
+                0x0000000000020d5d       0x27 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+ .rodata.str1.1
+                0x0000000000020d84       0x2b /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+ .rodata.str1.1
+                0x0000000000020daf       0x1f /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+ *fill*         0x0000000000020dce        0x2 00
+ .rodata        0x0000000000020dd0     0x2350 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+ .rodata        0x0000000000023120      0x600 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+ .rodata        0x0000000000023720       0x28 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+ .rodata        0x0000000000023748      0x140 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+ .rodata        0x0000000000023888       0x1c /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+ .rodata.str1.1
+                0x00000000000238a4       0x2a /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ *fill*         0x00000000000238ce        0x2 00
+ .rodata        0x00000000000238d0      0x13c /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ .rodata.cst4   0x0000000000023a0c       0x10 /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+                                         0x14 (size before relaxing)
+ *fill*         0x0000000000023a1c        0x4 00
+ .rodata.cst16  0x0000000000023a20       0x20 /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ .rodata.cst8   0x0000000000023a40        0x8 /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ *(.gnu.linkonce.r*)
+                0x0000000000023a48                ecode = .
+                0x0000000000023a48                _ecode = .
+
+.iplt           0x0000000000023a50        0x0
+ .iplt          0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+
+.text.startup   0x0000000000023a48      0x3a0
+ .text.startup  0x0000000000023a48      0x330 bezier.o
+                0x0000000000023a48                main
+ .text.startup  0x0000000000023d78       0x1c /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ .text.startup  0x0000000000023d94       0x1c /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ .text.startup  0x0000000000023db0       0x1c /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .text.startup  0x0000000000023dcc       0x1c /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+
+.rel.dyn        0x0000000000023de8        0x0
+ .rel.iplt      0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+ .rel.text      0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+ .rel.text.startup
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+ .rel.rodata    0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+ .rel.data      0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+
+.rdata
+
+.data           0x0000000000023df0     0x201c
+                0x0000000000023df0                djgpp_first_ctor = .
+ *(.ctor)
+ *(.ctors)
+                0x0000000000023df0                djgpp_last_ctor = .
+                0x0000000000023df0                djgpp_first_dtor = .
+ *(.dtor)
+ *(.dtors)
+                0x0000000000023df0                djgpp_last_dtor = .
+ *(.gcc_exc*)
+                0x0000000000023df0                __EH_FRAME_BEGIN__ = .
+ *(.eh_fram*)
+ .eh_frame      0x0000000000023df0       0x5c bezier.o
+ .eh_frame      0x0000000000023e4c      0x120 /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+                                        0x138 (size before relaxing)
+ .eh_frame      0x0000000000023f6c       0x2c /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+                                         0x44 (size before relaxing)
+ .eh_frame      0x0000000000023f98      0x170 /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+                                        0x188 (size before relaxing)
+ .eh_frame      0x0000000000024108       0xc4 /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+                                         0xdc (size before relaxing)
+ .eh_frame      0x00000000000241cc      0x1b0 /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+                                        0x1c8 (size before relaxing)
+ .eh_frame      0x000000000002437c      0x16c /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+                                        0x184 (size before relaxing)
+ .eh_frame      0x00000000000244e8      0x1ac /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+                                        0x1c4 (size before relaxing)
+ .eh_frame      0x0000000000024694      0x1cc /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+                                        0x1e4 (size before relaxing)
+ .eh_frame      0x0000000000024860      0x2bc /home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+                                        0x2d4 (size before relaxing)
+ .eh_frame      0x0000000000024b1c      0x3d4 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+                                        0x3ec (size before relaxing)
+ .eh_frame      0x0000000000024ef0       0xec /home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+                                        0x104 (size before relaxing)
+ .eh_frame      0x0000000000024fdc       0xa0 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+                                         0xb8 (size before relaxing)
+ .eh_frame      0x000000000002507c      0x100 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+                                        0x118 (size before relaxing)
+ .eh_frame      0x000000000002517c       0xd8 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+                                         0xf0 (size before relaxing)
+ .eh_frame      0x0000000000025254      0x1b0 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+                                        0x1c8 (size before relaxing)
+ .eh_frame      0x0000000000025404      0x118 /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+                                        0x130 (size before relaxing)
+                0x000000000002551c                __EH_FRAME_END__ = .
+                0x000000000002551c        0x4 LONG 0x0
+ *(.gnu.linkonce.d*)
+ *(.rodata)
+ *(.rodata.*)
+ *(.data)
+ .data          0x0000000000025520        0x0 bezier.o
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ .data          0x0000000000025520        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .data          0x0000000000025520      0x50c /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+                0x0000000000025520                sdl_nsfb_map
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o)
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o)
+ .data          0x0000000000025a2c        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_quit.o)
+ .data          0x0000000000025a2c       0x44 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+ .data          0x0000000000025a70        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o)
+ .data          0x0000000000025a70        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+ .data          0x0000000000025a70        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+ .data          0x0000000000025a70       0x20 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+ .data          0x0000000000025a90       0x24 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+                0x0000000000025a90                def_title
+                0x0000000000025aa4                mosvideo_bootstrab
+ .data          0x0000000000025ab4        0x3 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+ *fill*         0x0000000000025ab7        0x1 00
+ .data          0x0000000000025ab8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+ .data          0x0000000000025ab8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o)
+ .data          0x0000000000025ab8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_getenv.o)
+ .data          0x0000000000025ab8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+ *fill*         0x0000000000025ab8        0x8 00
+ .data          0x0000000000025ac0       0x17 /home/sourcerer/kos_src/me//lib/libSDL.a(init.o)
+                0x0000000000025ac0                hSound
+                0x0000000000025ac4                hrdwSound
+ *fill*         0x0000000000025ad7        0x1 00
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_thread.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_active.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_resize.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dup.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(window.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(param.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(keyb.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(image.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(event.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(delay.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(button.o)
+ .data          0x0000000000025ad8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(setmode.o)
+ .data          0x0000000000025ad8        0x4 /home/sourcerer/kos_src/me//lib/libc.a(fmode.o)
+                0x0000000000025ad8                _fmode
+ .data          0x0000000000025adc        0x4 /home/sourcerer/kos_src/me//lib/libc.a(crt1.o)
+                0x0000000000025adc                __bss_count
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(crt0.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(brk.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strdup.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memset.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memmove.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strncpy.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strncmp.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strlen.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strcpy.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strcmp.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memcpy.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memcmp.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(malloc.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(calloc.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(abs.o)
+ .data          0x0000000000025ae0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o)
+ .data          0x0000000000025ae0       0x24 /home/sourcerer/kos_src/me//lib/libc.a(stdout.o)
+                0x0000000000025ae0                __dj_stdout
+ .data          0x0000000000025b04        0x4 /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o)
+                0x0000000000025b04                __stdio_cleanup_hook
+ .data          0x0000000000025b08       0x24 /home/sourcerer/kos_src/me//lib/libc.a(stderr.o)
+                0x0000000000025b08                __dj_stderr
+ .data          0x0000000000025b2c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(sprintf.o)
+ .data          0x0000000000025b2c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fwalk.o)
+ .data          0x0000000000025b2c       0x5c /home/sourcerer/kos_src/me//lib/libc.a(frlist.o)
+                0x0000000000025b2c                __file_rec_list
+ .data          0x0000000000025b88        0x0 /home/sourcerer/kos_src/me//lib/libc.a(freopen.o)
+ .data          0x0000000000025b88        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fprintf.o)
+ .data          0x0000000000025b88        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fflush.o)
+ .data          0x0000000000025b88        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fclose.o)
+ .data          0x0000000000025b88        0xb /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ *fill*         0x0000000000025b93        0x1 00
+ .data          0x0000000000025b94        0x0 /home/sourcerer/kos_src/me//lib/libc.a(allocfil.o)
+ .data          0x0000000000025b94        0x0 /home/sourcerer/kos_src/me//lib/libc.a(modfl.o)
+ .data          0x0000000000025b94       0x33 /home/sourcerer/kos_src/me//lib/libc.a(lconv.o)
+ *fill*         0x0000000000025bc7        0x1 00
+ .data          0x0000000000025bc8        0x0 /home/sourcerer/kos_src/me//lib/libc.a(errno.o)
+ .data          0x0000000000025bc8      0x202 /home/sourcerer/kos_src/me//lib/libc.a(ct_flags.o)
+                0x0000000000025bc8                __dj_ctype_flags
+ *fill*         0x0000000000025dca        0x2 00
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(write.o)
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(lseek.o)
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(close.o)
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(open.o)
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(emu_init.o)
+ .data          0x0000000000025dcc        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dosemu.o)
+ .data          0x0000000000025dcc        0x4 /home/sourcerer/kos_src/me//lib/libc.a(_main.o)
+ .data          0x0000000000025dd0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strrchr.o)
+ .data          0x0000000000025dd0        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memchr.o)
+ .data          0x0000000000025dd0       0x24 /home/sourcerer/kos_src/me//lib/libc.a(stdin.o)
+                0x0000000000025dd0                __dj_stdin
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(remove.o)
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(putc.o)
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fputc.o)
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(flsbuf.o)
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(hooks.o)
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fixpath.o)
+ .data          0x0000000000025df4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(systree.o)
+ .data          0x0000000000025df4       0x18 /home/sourcerer/kos_src/me//lib/libc.a(dosio.o)
+                0x0000000000025df4                __file_handle_modes
+ .data          0x0000000000025e0c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(curdir.o)
+                0x0000000000025e0c                edata = .
+                0x0000000000025e0c                _edata = .
+                0x0000000000025e0c                bss = .
+
+.igot.plt       0x0000000000025e0c        0x0
+ .igot.plt      0x0000000000000000        0x0 /home/sourcerer/kos_src/me//stub/crt0.o
+
+.init_array     0x0000000000025e0c       0x10
+ .init_array    0x0000000000025e0c        0x4 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ .init_array    0x0000000000025e10        0x4 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ .init_array    0x0000000000025e14        0x4 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .init_array    0x0000000000025e18        0x4 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+
+.bss            0x0000000000025e1c    0x20230
+ *(.bss)
+ .bss           0x0000000000025e1c    0x10000 /home/sourcerer/kos_src/me//stub/crt0.o
+ .bss           0x0000000000035e1c        0x0 bezier.o
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .bss           0x0000000000035e1c        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+ .bss           0x0000000000035e1c       0xc4 /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+ .bss           0x0000000000035ee0       0x24 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+                0x0000000000035ee0                SDL_timer_started
+                0x0000000000035ee4                SDL_timer_running
+                0x0000000000035ee8                SDL_alarm_interval
+                0x0000000000035eec                SDL_alarm_callback
+ .bss           0x0000000000035f04        0x4 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o)
+ .bss           0x0000000000035f08      0xe4c /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+                0x0000000000035f08                SDL_EventOK
+                0x0000000000035f0c                SDL_ProcessEvents
+ .bss           0x0000000000036d54      0x678 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+                0x0000000000036d54                SDL_TranslateUNICODE
+                0x0000000000036d58                SDL_KeyRepeat
+ .bss           0x00000000000373cc        0xa /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o)
+ *fill*         0x00000000000373d6        0x2 00
+ .bss           0x00000000000373d8        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_quit.o)
+ .bss           0x00000000000373d8       0x18 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+                0x00000000000373d8                SDL_cursorstate
+                0x00000000000373dc                SDL_cursor
+                0x00000000000373e0                SDL_cursorlock
+ .bss           0x00000000000373f0        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o)
+ .bss           0x00000000000373f0        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+ .bss           0x00000000000373f0        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+ .bss           0x00000000000373f0        0x4 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+                0x00000000000373f0                current_video
+ .bss           0x00000000000373f4       0x10 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+ .bss           0x0000000000037404        0x8 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+ .bss           0x000000000003740c      0xb08 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+ .bss           0x0000000000037f14        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o)
+ .bss           0x0000000000037f14        0x4 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_getenv.o)
+ .bss           0x0000000000037f18     0x4438 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+                0x0000000000037f18                audio_thread_stack
+ .bss           0x000000000003c350        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o)
+ .bss           0x000000000003c350        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+ .bss           0x000000000003c350        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+ .bss           0x000000000003c350      0x31c /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_thread.o)
+                0x000000000003c350                _creating_thread_lock
+ .bss           0x000000000003c66c        0x1 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_active.o)
+ *fill*         0x000000000003c66d        0x3 00
+ .bss           0x000000000003c670        0x8 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_resize.o)
+ .bss           0x000000000003c678        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+ .bss           0x000000000003c678        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+ .bss           0x000000000003c678        0xc /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dup.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .bss           0x000000000003c684        0x0 /home/sourcerer/kos_src/me//lib/libc.a(window.o)
+ .bss           0x000000000003c684      0x800 /home/sourcerer/kos_src/me//lib/libc.a(param.o)
+                0x000000000003c684                __menuet__app_param_area
+                0x000000000003ca84                __menuet__app_path_area
+ .bss           0x000000000003ce84        0x0 /home/sourcerer/kos_src/me//lib/libc.a(keyb.o)
+ .bss           0x000000000003ce84        0x0 /home/sourcerer/kos_src/me//lib/libc.a(image.o)
+ .bss           0x000000000003ce84        0x0 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .bss           0x000000000003ce84        0x0 /home/sourcerer/kos_src/me//lib/libc.a(event.o)
+ .bss           0x000000000003ce84        0x0 /home/sourcerer/kos_src/me//lib/libc.a(delay.o)
+ .bss           0x000000000003ce84        0x0 /home/sourcerer/kos_src/me//lib/libc.a(button.o)
+ .bss           0x000000000003ce84        0x4 /home/sourcerer/kos_src/me//lib/libc.a(setmode.o)
+                0x000000000003ce84                __setmode_stdio_hook
+ .bss           0x000000000003ce88        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fmode.o)
+ .bss           0x000000000003ce88       0x14 /home/sourcerer/kos_src/me//lib/libc.a(crt1.o)
+                0x000000000003ce88                __crt0_argc
+                0x000000000003ce8c                __crt0_argv
+                0x000000000003ce90                __dos_argv0
+                0x000000000003ce94                _crt0_startup_flags
+                0x000000000003ce98                environ
+ .bss           0x000000000003ce9c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(crt0.o)
+ .bss           0x000000000003ce9c       0x18 /home/sourcerer/kos_src/me//lib/libc.a(brk.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strdup.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memset.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memmove.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strncpy.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strncmp.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strlen.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strcpy.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strcmp.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memcpy.o)
+ .bss           0x000000000003ceb4        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memcmp.o)
+ .bss           0x000000000003ceb4       0x80 /home/sourcerer/kos_src/me//lib/libc.a(malloc.o)
+ .bss           0x000000000003cf34        0x8 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+                0x000000000003cf34                __atexit_ptr
+                0x000000000003cf38                keypress_at_exit
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(calloc.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(abs.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stdout.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stderr.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(sprintf.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fwalk.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(frlist.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(freopen.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fprintf.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fflush.o)
+ .bss           0x000000000003cf3c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fclose.o)
+ .bss           0x000000000003cf3c        0x4 /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ .bss           0x000000000003cf40        0x0 /home/sourcerer/kos_src/me//lib/libc.a(allocfil.o)
+ .bss           0x000000000003cf40        0x0 /home/sourcerer/kos_src/me//lib/libc.a(modfl.o)
+ .bss           0x000000000003cf40        0x0 /home/sourcerer/kos_src/me//lib/libc.a(lconv.o)
+ .bss           0x000000000003cf40        0x4 /home/sourcerer/kos_src/me//lib/libc.a(errno.o)
+                0x000000000003cf40                errno
+ .bss           0x000000000003cf44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(ct_flags.o)
+ .bss           0x000000000003cf44      0x400 /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .bss           0x000000000003d344        0x0 /home/sourcerer/kos_src/me//lib/libc.a(write.o)
+ .bss           0x000000000003d344        0x0 /home/sourcerer/kos_src/me//lib/libc.a(lseek.o)
+ .bss           0x000000000003d344        0x0 /home/sourcerer/kos_src/me//lib/libc.a(close.o)
+ .bss           0x000000000003d344        0x0 /home/sourcerer/kos_src/me//lib/libc.a(open.o)
+ .bss           0x000000000003d344     0x8800 /home/sourcerer/kos_src/me//lib/libc.a(emu_init.o)
+                0x000000000003d344                _io_handles
+                0x0000000000045744                __curdir_buf
+ .bss           0x0000000000045b44      0x100 /home/sourcerer/kos_src/me//lib/libc.a(dosemu.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(_main.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strrchr.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memchr.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stdin.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(remove.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(putc.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fputc.o)
+ .bss           0x0000000000045c44        0x0 /home/sourcerer/kos_src/me//lib/libc.a(flsbuf.o)
+ .bss           0x0000000000045c44        0x8 /home/sourcerer/kos_src/me//lib/libc.a(hooks.o)
+                0x0000000000045c44                __libc_read_termios_hook
+                0x0000000000045c48                __libc_write_termios_hook
+ .bss           0x0000000000045c4c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fixpath.o)
+ .bss           0x0000000000045c4c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(systree.o)
+ .bss           0x0000000000045c4c        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dosio.o)
+ .bss           0x0000000000045c4c      0x400 /home/sourcerer/kos_src/me//lib/libc.a(curdir.o)
+ *(.note.gnu.build-id)
+                0x000000000004604c                end = .
+                0x000000000004604c                _end = .
+LOAD /home/sourcerer/kos_src/me//stub/crt0.o
+LOAD bezier.o
+LOAD /home/sourcerer/kos_src/me//lib/libm.a
+LOAD /home/sourcerer/kos_src/me//lib/libnsfb.a
+LOAD /home/sourcerer/kos_src/me//lib/libSDL.a
+LOAD /home/sourcerer/kos_src/me//lib/libc.a
+OUTPUT(bezier elf32-i386)
+
+.comment        0x0000000000000000       0x38
+ .comment       0x0000000000000000       0x1c bezier.o
+                                         0x1d (size before relaxing)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+ .comment       0x000000000000001c       0x1c /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+                                         0x1d (size before relaxing)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_quit.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_getenv.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_thread.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_active.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_resize.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(dup.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(window.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(param.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(keyb.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(image.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(event.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(delay.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(button.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(setmode.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fmode.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(crt1.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(crt0.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(brk.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strdup.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strncpy.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strncmp.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strlen.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strcpy.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strcmp.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(memcpy.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(memcmp.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(malloc.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(calloc.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(abs.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(stdout.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(stderr.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(sprintf.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fwalk.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(frlist.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(freopen.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fprintf.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fflush.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fclose.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(allocfil.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(lconv.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(errno.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(ct_flags.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(write.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(lseek.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(close.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(open.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(emu_init.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(dosemu.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(_main.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(strrchr.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(memchr.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(stdin.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(remove.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(putc.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fputc.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(flsbuf.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(hooks.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(fixpath.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(systree.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(dosio.o)
+ .comment       0x0000000000000000       0x1d /home/sourcerer/kos_src/me//lib/libc.a(curdir.o)
+
+.note.GNU-stack
+                0x0000000000000000        0x0
+ .note.GNU-stack
+                0x0000000000000000        0x0 bezier.o
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(cursor.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(dump.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(libnsfb.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(palette.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(16bpp.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xbgr8888.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(32bpp-xrgb8888.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(8bpp.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(api.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(generic.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(util.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(able.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(linux.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(ram.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(sdl.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libnsfb.a(surface.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_timer.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systimer.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_events.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_keyboard.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_mouse.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_quit.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_cursor.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_pixels.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_RLEaccel.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_surface.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_video.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetvideo.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_error.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_fatal.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_getenv.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_kolibri_audio.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_sysmutex.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_syssem.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_systhread.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_thread.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_active.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_resize.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_N.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_menuetevents.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_0.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_1.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libSDL.a(SDL_blit_A.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dup.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fdopen.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(window.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(param.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(keyb.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(image.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(event.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(delay.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(button.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(setmode.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fmode.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(crt1.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(crt0.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(brk.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strdup.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strncpy.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strncmp.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strlen.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strcpy.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strcmp.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memcpy.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memcmp.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(malloc.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(exit.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(calloc.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(abs.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(vsprintf.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stdout.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stdiohk.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stderr.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(sprintf.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fwalk.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(frlist.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(freopen.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fprintf.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fflush.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fclose.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(doprnt.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(allocfil.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(lconv.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(errno.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(ct_flags.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(debug.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(write.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(lseek.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(close.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(open.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(emu_init.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dosemu.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(_main.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(strrchr.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(memchr.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(stdin.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(remove.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(putc.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fputc.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(flsbuf.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(hooks.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(fixpath.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(systree.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(dosio.o)
+ .note.GNU-stack
+                0x0000000000000000        0x0 /home/sourcerer/kos_src/me//lib/libc.a(curdir.o)

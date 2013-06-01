@@ -1,0 +1,284 @@
+/* Binding to generate window interface
+ *
+ * Copyright 2012 Vincent Sanders <vince@netsurf-browser.org>
+ *
+ * This file is part of NetSurf, http://www.netsurf-browser.org/
+ *
+ * Released under the terms of the MIT License,
+ *         http://www.opensource.org/licenses/mit-license
+ */
+
+
+webidlfile "html.idl";
+webidlfile "dom.idl";
+
+hdrcomment "Copyright 2012 Vincent Sanders <vince@netsurf-browser.org>";
+hdrcomment "This file is part of NetSurf, http://www.netsurf-browser.org/";
+hdrcomment "Released under the terms of the MIT License,";
+hdrcomment "        http://www.opensource.org/licenses/mit-license";
+
+preamble %{
+
+#include <dom/dom.h>
+
+#include "utils/config.h"
+#include "utils/log.h"
+#include "utils/corestrings.h"
+#include "render/html_internal.h"
+#include "javascript/jsapi.h"
+
+#include "console.h"
+#include "navigator.h"
+#include "event.h"
+#include "node.h"
+#include "htmlcollection.h"
+#include "nodelist.h"
+#include "htmldocument.h"
+#include "text.h"
+#include "comment.h"
+#include "htmlelement.h"
+#include "window.h"
+#include "location.h"
+
+%}
+
+binding window {
+	type js_libdom; /* the binding type */
+
+	interface Window; /* Web IDL interface to generate */
+
+	private "struct browser_window *" bw;
+	private "struct html_content *" htmlc;
+
+	internal "JSObject *" document;
+	internal "JSObject *" navigator;
+	internal "JSObject *" console;
+
+	property unshared type EventHandler;
+}
+
+api mark %{
+	if (private != NULL) {
+		if (private->document != NULL) {
+			JSAPI_GCMARK(private->document);
+		}
+		if (private->navigator != NULL) {
+			JSAPI_GCMARK(private->navigator);
+		}
+		if (private->console != NULL) {
+			JSAPI_GCMARK(private->console);
+		}
+	}
+%}
+
+api global %{
+%}
+
+api init %{
+	JSObject *user_proto;
+
+	prototype = JS_NewCompartmentAndGlobalObject(cx, &JSClass_Window, NULL);
+	if (prototype == NULL) {
+		return NULL;
+	}
+
+	/** @todo reconsider global object handling. future
+	 * editions of spidermonkey appear to be removing the
+	 * idea of a global so we probably need to handle
+	 * global object references internally
+	 */
+
+	/* set the contexts global */
+	JS_SetGlobalObject(cx, prototype);
+
+	/* Populate the global object with the standard globals, like
+	 *  Object and Array.
+	 */
+	if (!JS_InitStandardClasses(cx, prototype)) {
+		return NULL;
+	}
+
+	/* add functions to prototype */
+	if (!JS_DefineFunctions(cx, prototype, jsclass_functions)) {
+		return NULL;
+	}
+
+	/* add properties to prototype */
+	if (!JS_DefineProperties(cx, prototype, jsclass_properties))
+		return NULL;
+
+	/* Initialises all the user javascript classes to make their
+	 * prototypes available.
+	 */
+	/** @todo should we be managing these prototype objects ourselves */
+	user_proto = jsapi_InitClass_Document(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Navigator(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Location(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Console(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_HTMLElement(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_HTMLCollection(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_NodeList(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Text(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Comment(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Node(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+	user_proto = jsapi_InitClass_Event(cx, prototype);
+	if (user_proto == NULL) {
+		return NULL;
+	}
+
+%}
+
+api new %{
+	/* @todo sort out windows that are not globals */
+	assert(parent == NULL);
+
+	/* the window object is the global so its prototype *is* the instance */
+	newobject = prototype;
+
+	/* instantiate the subclasses off the window global */
+	private->document = jsapi_new_Document(cx,
+					       NULL,
+					       newobject,
+					       (dom_document *)dom_node_ref(htmlc->document),
+					       htmlc);
+	if (private->document == NULL) {
+		free(private);
+		return NULL;
+	}
+
+	private->navigator = jsapi_new_Navigator(cx, NULL, newobject);
+	if (private->navigator == NULL) {
+		free(private);
+		return NULL;
+	}
+
+	private->console = jsapi_new_Console(cx, NULL, newobject);
+	if (private->console == NULL) {
+		free(private);
+		return NULL;
+	}
+
+	/** @todo forms, history */
+
+	LOG(("Created new window object %p", newobject));
+%}
+
+operation confirm %{
+	warn_user(message, NULL);
+%}
+
+operation alert %{
+	warn_user(message, NULL);
+%}
+
+operation prompt %{
+	warn_user(message, NULL);
+%}
+
+/* boolean dispatchEvent(Event event); */
+operation dispatchEvent %{
+	/* this implementation is unique to the window object as it is
+	 * not a "real" dom node.
+	 */
+
+	/* caution, this must match the struct generated from event.bnd */
+	struct {
+		dom_event *event;
+	} *event_private;
+	dom_string *type_dom = NULL;
+	dom_exception exc;
+	jsval eventval = JSVAL_VOID;
+	jsval event_argv[1];
+	jsval event_rval;
+
+	event_private = JS_GetInstancePrivate(cx, event, &JSClass_Event, NULL);
+	if (event_private->event == NULL) {
+		/** @todo type error? */
+		jsret = JS_FALSE;
+	} else {
+		exc = dom_event_get_type(event_private->event, &type_dom);
+		if (exc == DOM_NO_ERR) {
+
+			if (dom_string_isequal(type_dom, corestring_dom_load)) {
+				JS_GetProperty(cx, JSAPI_THIS_OBJECT(cx, vp), "onload", &eventval);
+			}
+
+			if (!JSVAL_IS_VOID(eventval)) {
+				event_argv[0] = eventval;
+				jsret = JS_CallFunctionValue(cx, NULL, eventval, 1, event_argv, &event_rval);
+			}
+		}
+	}
+%}
+
+getter location %{
+	jsval loc;
+	JS_GetProperty(cx, private->document, "location", &loc);
+	jsret = JSVAL_TO_OBJECT(loc);
+%}
+
+getter window %{
+	jsret = obj;
+%}
+
+getter self %{
+	jsret = obj;
+%}
+
+getter EventHandler %{
+	/* this implementation is unique to the window object as it is
+	 * not a dom node.
+	 */
+	JSLOG("propname[%d]=\"%s\"",
+	      tinyid,
+	      jsclass_properties[tinyid].name);
+%}
+
+setter EventHandler %{
+	/* this implementation is unique to the window object as it is
+	 * not a dom node.
+	 */
+	JSLOG("propname[%d]=\"%s\"",
+	      tinyid,
+	      jsclass_properties[tinyid].name);
+%}
