@@ -375,9 +375,6 @@ SCR_MODE          rw 2
 PUTPIXEL          rd 1
 GETPIXEL          rd 1
 
-BgrDrawMode       rd 1
-BgrDataWidth      rd 1
-BgrDataHeight     rd 1
 REDRAW_BACKGROUND rb 4
 
 MOUSE_PICTURE     rd 1
@@ -480,6 +477,12 @@ img_background        rd 1
 mem_BACKGROUND        rd 1
 static_background_data rd 1
 
+BgrDrawMode             rd 1
+BgrDataWidth            rd 1
+BgrDataHeight           rd 1
+
+skin_data              rd 1
+
 cache_ide0:
 cache_ide0_pointer            rd 1
 cache_ide0_size               rd 1   ; not use
@@ -553,7 +556,6 @@ RESERVED_PORTS: rb 64*1024
 FLOPPY_BUFF:    rb 16*1024
 BUTTON_INFO:    rb 16*1024
 BgrAuxTable:    rb 32*1024
-skin_data:      rb 32*1024
 
 ;IDE_DMA:        rb 32*1024
 

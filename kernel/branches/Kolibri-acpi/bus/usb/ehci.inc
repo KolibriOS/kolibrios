@@ -222,7 +222,7 @@ struct ehci_controller
 ; ------------------------------ hardware fields ------------------------------
 FrameList               rd      1024
 ; Entry n corresponds to the head of the frame list to be executed in
-; the frames n,n+1024,n+2048,n+3096,...
+; the frames n,n+1024,n+2048,n+3072,...
 ; The first bit of each entry is Terminate bit, 1 = the frame is empty.
 ; Bits 1-2 are Type field, one of EHCI_TYPE_* constants.
 ; Bits 3-4 must be zero.

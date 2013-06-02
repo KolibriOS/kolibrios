@@ -87,7 +87,7 @@ local   .exit
         dec     [eax + TCP_SOCKET.timer_retransmission]
         jnz     .check_more2
 
-        DEBUGF  1,"socket %x: Retransmission timer expired\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Retransmission timer expired\n", eax
 
         push    eax
         call    TCP_output
@@ -97,7 +97,7 @@ local   .exit
         dec     [eax + TCP_SOCKET.timer_keepalive]
         jnz     .check_more3
 
-        DEBUGF  1,"socket %x: Keepalive expired\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Keepalive expired\n", eax
 
         cmp     [eax + TCP_SOCKET.state], TCPS_ESTABLISHED
         ja      .dont_kill
@@ -126,13 +126,13 @@ local   .exit
         dec     [eax + TCP_SOCKET.timer_timed_wait]
         jnz     .check_more5
 
-        DEBUGF  1,"socket %x: 2MSL timer expired\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: 2MSL timer expired\n", eax
 
   .check_more5:
         dec     [eax + TCP_SOCKET.timer_persist]
         jnz     .loop
 
-        DEBUGF  1,"socket %x: persist timer expired\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: persist timer expired\n", eax
 
         call    TCP_set_persist
         mov     [eax + TCP_SOCKET.t_force], 1

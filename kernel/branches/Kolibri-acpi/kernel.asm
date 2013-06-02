@@ -77,7 +77,7 @@ $Revision$
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 
 ; Enabling the next line will enable serial output console
-debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
+;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
 ; The following constant, if nonzero, duplicates debug output to the screen.
 debug_direct_print equ 0
 
@@ -162,35 +162,6 @@ end if
 include "boot/bootcode.inc"    ; 16 bit system boot code
 include "bus/pci/pci16.inc"
 include "detect/biosdisk.inc"
-
-FDD_BUFF            equ (OS_BASE+0x000D000)
-
-sys_pgdir           equ (OS_BASE+0x006F000)
-
-VGABasePtr          equ (OS_BASE+0x00A0000)
-
-RAMDISK             equ (OS_BASE+0x0100000)
-
-CLEAN_ZONE          equ 0x284000
-IDE_DMA             equ 0x284000
-
-BOOT_VAR            equ (OS_BASE+0x02E0000)
-
-TASK_COUNT          equ (CURRENT_TASK+0x04)
-TASK_BASE           equ (CURRENT_TASK+0x10)
-TASK_DATA           equ (CURRENT_TASK+0x20)
-TASK_EVENT          equ (CURRENT_TASK+0x20)
-
-BPSLine_calc_area   equ (OS_BASE+0x02C4000)
-
-d_width_calc_area   equ (OS_BASE+0x02CA000)
-
-stack_data_start    equ (OS_BASE+0x02F0000)
-eth_data_start      equ (OS_BASE+0x02F0000)
-stack_data          equ (OS_BASE+0x02F4000)
-stack_data_end      equ (OS_BASE+0x030ffff)
-resendQ             equ (OS_BASE+0x0310000)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                      ;;
@@ -434,15 +405,17 @@ high_code:
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
-        mov     ax, word [BOOT_VAR+BOOT_VESA_MODE]  ; screen mode
-        mov     [SCR_MODE], ax
-        mov     [BytesPerScanLine], 640*4           ; Bytes PerScanLine
-        cmp     [SCR_MODE], 0x13                    ; 320x200
+        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE]; screen mode
+        mov     [SCR_MODE], eax
+;        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
+;        mov     [BANK_SWITCH], eax
+        mov     [BytesPerScanLine], word 640*4      ; Bytes PerScanLine
+        cmp     [SCR_MODE], word 0x13       ; 320x200
         je      @f
-        cmp     [SCR_MODE], 0x12                    ; VGA 640x480
+        cmp     [SCR_MODE], word 0x12       ; VGA 640x480
         je      @f
         movzx   eax, word[BOOT_VAR+BOOT_PITCH]      ; for other modes
-        mov     [BytesPerScanLine], eax
+        mov     [BytesPerScanLine], ax
         mov     [_display.pitch], eax
 @@:
         mov     eax, [_display.width]
@@ -1268,6 +1241,7 @@ set_variables:
         xor     eax, eax
         mov     [BTN_ADDR], dword BUTTON_INFO ; address of button list
 
+        mov     byte [MOUSE_BUFF_COUNT], al              ; mouse buffer
         mov     byte [KEY_COUNT], al              ; keyboard buffer
         mov     byte [BTN_COUNT], al              ; button buffer
 ;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
@@ -4995,7 +4969,7 @@ sys_gs:                         ; direct screen access
 .1:                             ; resolution
         mov     eax, [Screen_Max_X]
         shl     eax, 16
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, [Screen_Max_Y]
         add     eax, 0x00010001
         mov     [esp+32], eax
         ret
@@ -5094,9 +5068,9 @@ syscall_drawrect:                       ; DrawRect
 
 align 4
 syscall_getscreensize:                  ; GetScreenSize
-        mov     eax, [Screen_Max_X]
+        mov     ax, [Screen_Max_X]
         shl     eax, 16
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, [Screen_Max_Y]
         mov     [esp + 32], eax
         ret
 

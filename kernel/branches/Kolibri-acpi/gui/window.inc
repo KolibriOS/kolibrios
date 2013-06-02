@@ -1024,6 +1024,8 @@ align 4
         ; no it's not, just activate the window
         call    window._.window_activate
         xor     eax, eax
+        ret
+
 ;--------------------------------------
 align 4
 .exit:

@@ -112,7 +112,7 @@ local   .loop, .next
         jmp     .done
 
   .died:
-        DEBUGF  2,"IPv4 Fragment slot timed-out!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4 Fragment slot timed-out!\n"
 ;;; TODO: clear all entry's of timed-out slot
         jmp     .next
 
@@ -205,10 +205,10 @@ macro IPv4_checksum ptr {
 align 4
 IPv4_input:                                                     ; TODO: add IPv4 raw sockets support
 
-        DEBUGF  2,"IPv4_input, packet from: %u.%u.%u.%u ",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input, packet from: %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
         [edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
-        DEBUGF  2,"to: %u.%u.%u.%u\n",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "to: %u.%u.%u.%u\n",\
         [edx + IPv4_header.DestinationAddress + 0]:1,[edx + IPv4_header.DestinationAddress + 1]:1,\
         [edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
 
@@ -218,7 +218,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         IPv4_checksum edx
         jnz     .dump                                           ; if checksum isn't valid then dump packet
 
-        DEBUGF  1,"IPv4_input: Checksum ok\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Checksum ok\n"
 
 ;-----------------------------------
 ; Check if destination IP is correct
@@ -256,7 +256,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 
         ; or it's just not meant for us.. :(
 
-        DEBUGF  2,"IPv4_input: Destination address does not match!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Destination address does not match!\n"
         jmp     .dump
 
 ;------------------------
@@ -300,10 +300,10 @@ IPv4_input:                                                     ; TODO: add IPv4
         cmp     al, IP_PROTO_ICMP
         je      ICMP_input
 
-        DEBUGF  2,"IPv4_input: unknown protocol %u\n", al
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: unknown protocol %u\n", al
 
   .dump:
-        DEBUGF  1,"IPv4_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: dumping\n"
         inc     [IP_packets_dumped]                             ; FIXME: use correct interface
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
@@ -319,7 +319,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         xchg    al, ah
         shl     ax, 3
 
-        DEBUGF  1,"IPv4_input: fragmented packet offset=%u id=%x\n", ax, [edx + IPv4_header.Identification]:4
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: fragmented packet offset=%u id=%x\n", ax, [edx + IPv4_header.Identification]:4
 
         test    ax, ax                                          ; Is this the first packet of the fragment?
         jz      .is_first_fragment
@@ -328,7 +328,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 ;-------------------------------------------------------
 ; We have a fragmented IP packet, but it's not the first
 
-        DEBUGF  1,"IPv4_input: Middle fragment packet received!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Middle fragment packet received!\n"
 
         call    IPv4_find_fragment_slot
         cmp     esi, -1
@@ -361,7 +361,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 ; We have received the first fragment
 
   .is_first_fragment:
-        DEBUGF  1,"IPv4_input: First fragment packet received!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: First fragment packet received!\n"
                                                                 ; try to locate a free slot..
         mov     ecx, MAX_FRAGMENTS
         mov     esi, FRAGMENT_LIST
@@ -395,7 +395,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 ; We have received the last fragment
 
   .is_last_fragment:
-        DEBUGF  1,"IPv4_input: Last fragment packet received!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Last fragment packet received!\n"
 
         call    IPv4_find_fragment_slot
         cmp     esi, -1
@@ -411,12 +411,12 @@ IPv4_input:                                                     ; TODO: add IPv4
         jne     .destroy_slot_pop                                               ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
         mov     cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]     ; Add total length
         xchg    cl, ch
-        DEBUGF  1,"IPv4_input: Packet size=%u\n", cx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet size=%u\n", cx
         add     ax, cx
         movzx   cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]   ; Sub Header length
         and     cx, 0x000F
         shl     cx, 2
-        DEBUGF  1,"IPv4_input: Header size=%u\n", cx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Header size=%u\n", cx
         sub     ax, cx
         mov     edi, esi
         mov     esi, [esi + FRAGMENT_entry.NextPtr]
@@ -431,9 +431,9 @@ IPv4_input:                                                     ; TODO: add IPv4
 
         mov     cx, [edx + IPv4_header.TotalLength]                             ; Note: This time we dont substract Header length
         xchg    cl, ch
-        DEBUGF  1,"IPv4_input: Packet size=%u\n", cx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet size=%u\n", cx
         add     ax, cx
-        DEBUGF  1,"IPv4_input: Total Received data size=%u\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Total Received data size=%u\n", eax
 
         push    eax
         mov     ax, [edx + IPv4_header.FlagsAndFragmentOffset]
@@ -441,7 +441,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         shl     ax, 3
         add     cx, ax
         pop     eax
-        DEBUGF  1,"IPv4_input: Total Fragment size=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Total Fragment size=%u\n", ecx
 
         cmp     ax, cx
         jne     .destroy_slot_pop
@@ -457,7 +457,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
         xchg    cl, ch                                                                  ;  intel byte order
         shl     cx, 3                                                                   ;   multiply by 8 and clear first 3 bits
-        DEBUGF  1,"IPv4_input: Fragment offset=%u\n", cx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Fragment offset=%u\n", cx
 
         lea     edi, [eax + ecx]                                                        ; Notice that edi will be equal to eax for first fragment
         movzx   ebx, [edx + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]          ; Find header size (in ebx) of fragment
@@ -504,7 +504,7 @@ IPv4_input:                                                     ; TODO: add IPv4
   .destroy_slot_pop:
         add     esp, 4
   .destroy_slot:
-        DEBUGF  1,"IPv4_input: Destroy fragment slot!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Destroy fragment slot!\n"
         ; TODO!
         jmp     .dump
 
@@ -568,7 +568,7 @@ IPv4_find_fragment_slot:
 align 4
 IPv4_output:
 
-        DEBUGF  1,"IPv4_output: size=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u\n", ecx
 
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
@@ -614,23 +614,23 @@ IPv4_output:
 
         IPv4_checksum edi
         add     edi, sizeof.IPv4_header
-        DEBUGF  2,"IPv4_output: success!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: success!\n"
         ret
 
   .eth_error:
-        DEBUGF  2,"IPv4_output: ethernet error\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: ethernet error\n"
         add     esp, 3*4+2+6
         xor     edi, edi
         ret
 
   .arp_error:
-        DEBUGF  2,"IPv4_output: ARP error=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: ARP error=%x\n", eax
         add     esp, 3*4+2
         xor     edi, edi
         ret
 
   .too_large:
-        DEBUGF  2,"IPv4_output: Packet too large!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: Packet too large!\n"
         xor     edi, edi
         ret
 
@@ -713,7 +713,7 @@ IPv4_output_raw:
 
         IPv4_checksum edi                       ;;;; todo: checksum for IP packet with options!
         add     edi, sizeof.IPv4_header
-        DEBUGF  2,"IPv4_output_raw: device=%x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output_raw: device=%x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         ret
 
@@ -722,7 +722,7 @@ IPv4_output_raw:
   .arp_error:
         add     esp, 8+4+4
   .too_large:
-        DEBUGF  2,"IPv4_output_raw: Failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output_raw: Failed\n"
         sub     edi, edi
         ret
 
@@ -742,7 +742,7 @@ IPv4_output_raw:
 align 4
 IPv4_fragment:
 
-        DEBUGF 1,"IPv4_fragment\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_fragment\n"
 
         and     ecx, not 111b   ; align 4
 
@@ -770,7 +770,7 @@ IPv4_fragment:
         push    dword 0                         ; offset
 
   .new_fragment:
-        DEBUGF 1,"Ipv4_fragment: new fragment"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: new fragment"
 
 
         mov     eax, [esp + 3*4]
@@ -792,7 +792,7 @@ IPv4_fragment:
         add     esi, [esp]      ; offset
 
         mov     ecx, [esp + 1*4]
-        DEBUGF 1,"IPv4_fragment: copying %u bytes\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_fragment: copying %u bytes\n", ecx
         rep     movsb
 
 ; now, correct header
@@ -829,7 +829,7 @@ IPv4_fragment:
         sub     ecx, [esp+2*4]          ; ptr to ip header
         add     ecx, [esp]              ; offset
 
-        DEBUGF 1,"Ipv4_fragment: %u bytes remaining\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: %u bytes remaining\n", ecx
 
         cmp     ecx, [esp+1*4]
         jae     .new_fragment
@@ -838,11 +838,11 @@ IPv4_fragment:
         jmp     .new_fragment
 
       .err:
-        DEBUGF 1,"Ipv4_fragment: failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "Ipv4_fragment: failed\n"
       .done:
         add     esp, 12 + 4 + 6
       .err2:
-        DEBUGF 1,"Ipv4_fragment: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: dumping\n"
         call    kernel_free
         add     esp, 4
 
@@ -886,7 +886,7 @@ IPv4_route:
         mov     eax, [GATEWAY_LIST]
 
   .found_it:
-        DEBUGF  1,"IPv4_dest_to_dev: %u\n", edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
         ret
 
   .broadcast:

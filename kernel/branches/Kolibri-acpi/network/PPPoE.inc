@@ -59,7 +59,7 @@ macro   PPPoE_init {
 align 4
 PPPoE_discovery_input:
 
-        DEBUGF  2,"PPPoE_discovery_input\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_input\n"
 
 ; First, find open PPPoE socket
 
@@ -84,7 +84,7 @@ PPPoE_discovery_input:
         jmp     SOCKET_input
 
   .dump:
-        DEBUGF 1,'PPPoE_discovery_input: dumping\n'
+        DEBUGF  DEBUG_NETWORK_VERBOSE, 'PPPoE_discovery_input: dumping\n'
         call    kernel_free
         add     esp, 4
         ret
@@ -103,7 +103,7 @@ PPPoE_discovery_input:
 align 4
 PPPoE_discovery_output:
 
-        DEBUGF  2,"PPPoE_discovery_output: socket=%x buffer=%x size=%d\n", eax, esi, ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_output: socket=%x buffer=%x size=%d\n", eax, esi, ecx
 
 ; RFC2516: An entire PADI packet (including the PPPoE header) MUST NOT
 ; exceed 1484 octets.
@@ -123,7 +123,7 @@ PPPoE_discovery_output:
         cmp     [ebx + NET_DEVICE.type], NET_TYPE_ETH
         jne     .bad
 
-        DEBUGF  2,"PPPoE_discovery_output: device=%x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_output: device=%x\n", ebx
 
 ; Create packet.
         push    ecx esi
@@ -193,7 +193,7 @@ PPPoE_session_input:
         xchg    cl, ch
 
         mov     ax, [edx + PPPoE_frame.SessionID]
-        DEBUGF  2,"PPPoE_input: session ID=%x, length=%u\n", ax, cx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: session ID=%x, length=%u\n", ax, cx
         cmp     ax, [PPPoE_SID]
         jne     .dump
 
@@ -207,10 +207,10 @@ PPPoE_session_input:
 ;        je      IPv6_input
 
         jmp     PPPoE_discovery_input   ; Send LCP,CHAP,CBCP,... packets to the PPP dialer
-        DEBUGF  2,"PPPoE_input: Unknown protocol=%x\n", ax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: Unknown protocol=%x\n", ax
 
   .dump:
-        DEBUGF  2,"PPPoE_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: dumping\n"
         call    kernel_free
         add     esp, 4
         ret
@@ -238,7 +238,7 @@ PPPoE_session_input:
 align 4
 PPPoE_output:
 
-        DEBUGF  1,"PPPoE_output: size=%u device=%x\n", ecx, ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_output: size=%u device=%x\n", ecx, ebx
 
         pushw   di
         pushw   [PPPoE_SID]
@@ -263,7 +263,7 @@ PPPoE_output:
         sub     ecx, 2
         add     edi, PPPoE_frame.Payload + 2
 
-        DEBUGF  1,"PPPoE_output: success!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_output: success!\n"
         ret
 
 
@@ -276,7 +276,7 @@ PPPoE_output:
 
 PPPoE_start_connection:
 
-        DEBUGF  2,"PPPoE_start_connection: %x\n", cx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_start_connection: %x\n", cx
 
         cmp     [PPPoE_SID], 0
         jne     .fail
@@ -296,7 +296,7 @@ PPPoE_start_connection:
 align 4
 PPPoE_stop_connection:
 
-        DEBUGF  2,"PPPoE_stop_connection\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_stop_connection\n"
 
         xor     eax, eax
         mov     [PPPoE_SID], ax

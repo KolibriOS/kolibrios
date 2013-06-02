@@ -38,8 +38,8 @@ ICMP_UNREACH_HOST_PROHIB        = 10              ; ditto
 ICMP_UNREACH_TOSNET             = 11              ; bad tos for net
 ICMP_UNREACH_TOSHOST            = 12              ; bad tos for host
 ICMP_UNREACH_FILTER_PROHIB      = 13              ; admin prohib
-ICMP_UNREACH_HOST_PRECEDENCE    = 14             ; host prec vio.
-ICMP_UNREACH_PRECEDENCE_CUTOFF  = 15           ; prec cutoff
+ICMP_UNREACH_HOST_PRECEDENCE    = 14              ; host prec vio.
+ICMP_UNREACH_PRECEDENCE_CUTOFF  = 15              ; prec cutoff
 
 ICMP_SOURCEQUENCH               = 4               ; Packet lost, slow down
 
@@ -142,7 +142,7 @@ macro ICMP_init {
 align 4
 ICMP_input:
 
-        DEBUGF  1,"ICMP_input:\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input:\n"
 
 ; First, check the checksum (altough some implementations ignore it)
 
@@ -163,7 +163,7 @@ ICMP_input:
 ; We well re-use the packet so we can create the response as fast as possible
 ; Notice: this only works on pure ethernet
 
-        DEBUGF  1,"got echo request\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "got echo request\n"
         mov     [edx + ICMP_header.Type], ICMP_ECHOREPLY        ; Change Packet type to reply
 
         mov     esi, [esp]                                      ; Start of buffer
@@ -258,7 +258,7 @@ ICMP_input:
 ;        je      .dump
 ;        inc     [ICMP_PACKETS_RX+edi]
 
-        DEBUGF 1,"socket=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket=%x\n", eax
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -270,10 +270,10 @@ ICMP_input:
 
 
   .checksum_mismatch:
-        DEBUGF  1,"checksum mismatch\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "checksum mismatch\n"
 
   .dump:
-        DEBUGF  1,"ICMP_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: dumping\n"
 
         call    kernel_free
         add     esp, 4 ; pop (balance stack)
@@ -297,7 +297,7 @@ ICMP_input:
 align 4
 ICMP_output:
 
-        DEBUGF  1,"Creating ICMP Packet\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Creating ICMP Packet\n"
 
         push    esi edi dx
 
@@ -308,7 +308,7 @@ ICMP_output:
         call    IPv4_output
         jz      .exit
 
-        DEBUGF  1,"full icmp packet size: %u\n", edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "full icmp packet size: %u\n", edx
 
         pop     word [edi + ICMP_header.Type]           ; Write both type and code bytes at once
         pop     dword [edi + ICMP_header.Identifier]    ; identifier and sequence number
@@ -333,11 +333,11 @@ ICMP_output:
 
         sub     edi, edx                                ;;; TODO: find a better way to remember start of packet
         push    edx edi
-        DEBUGF  1,"Sending ICMP Packet\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Sending ICMP Packet\n"
         call    [ebx + NET_DEVICE.transmit]
         ret
   .exit:
-        DEBUGF  1,"Creating ICMP Packet failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"
         add     esp, 2*4 + 2
         ret
 
@@ -356,7 +356,7 @@ ICMP_output:
 align 4
 ICMP_output_raw:
 
-        DEBUGF  1,"Creating ICMP Packet for socket %x, data ptr=%x\n", eax, edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Creating ICMP Packet for socket %x, data ptr=%x\n", eax, edx
 
         push    edx
 
@@ -371,7 +371,7 @@ ICMP_output_raw:
         push    eax
 
         push    edi ecx
-        DEBUGF  1,"copying %u bytes from %x to %x\n", ecx, esi, edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "copying %u bytes from %x to %x\n", ecx, esi, edi
         rep     movsb
         pop     ecx edi
 
@@ -383,11 +383,11 @@ ICMP_output_raw:
         call    checksum_2
         mov     [edi + ICMP_header.Checksum], dx
 
-        DEBUGF  1,"Sending ICMP Packet\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Sending ICMP Packet\n"
         call    [ebx + NET_DEVICE.transmit]
         ret
   .exit:
-        DEBUGF  1,"Creating ICMP Packet failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"
         add     esp, 4
         ret
 

@@ -17,21 +17,16 @@ read_skin_file:
         stdcall load_file, ebx
         test    eax, eax
         jz      .notfound
+
         cmp     dword [eax], 'SKIN'
         jnz     .noskin
-        cmp     ebx, 32*1024
-        jb      @f
-        mov     ebx, 32*1024
-;--------------------------------------
-align 4
-@@:
-        lea     ecx, [ebx+3]
-        shr     ecx, 2
-        mov     esi, eax
-        mov     edi, skin_data
-        rep movsd
-        stdcall kernel_free, eax
 
+        xchg    eax, [skin_data]
+        test    eax, eax
+        jz @f
+
+        stdcall kernel_free, eax
+@@:
         call    parse_skin_data
         xor     eax, eax
         ret
@@ -45,8 +40,7 @@ align 4
 align 4
 .noskin:
         stdcall kernel_free, eax
-        push    2
-        pop     eax
+        mov     eax, 2
         ret
 ;------------------------------------------------------------------------------
 struct  SKIN_HEADER
@@ -98,7 +92,7 @@ load_default_skin:
 ;------------------------------------------------------------------------------
 align 4
 parse_skin_data:
-        mov     ebp, skin_data
+        mov     ebp, [skin_data]
         cmp     [ebp+SKIN_HEADER.ident], 'SKIN'
         jne     .exit
 
@@ -109,7 +103,7 @@ parse_skin_data:
         rep stosd
 
         mov     ebx, [ebp+SKIN_HEADER.params]
-        add     ebx, skin_data
+        add     ebx, [skin_data]
         mov     eax, [ebx+SKIN_PARAMS.skin_height]
         mov     [_skinh], eax
         mov     eax, [ebx+SKIN_PARAMS.colors.inner]
@@ -135,7 +129,7 @@ parse_skin_data:
         mov     dword[_skinmargins+4], eax
 
         mov     ebx, [ebp+SKIN_HEADER.bitmaps]
-        add     ebx, skin_data
+        add     ebx, [skin_data]
 ;--------------------------------------
 align 4
 .lp1:
@@ -160,7 +154,7 @@ align 4
         dec     eax
         jnz     .not_oper
         mov     esi, [ebx+SKIN_BITMAPS.data]
-        add     esi, skin_data
+        add     esi, [skin_data]
         mov     eax, [esi+0]
         neg     eax
         mov     edx, skin_active.oper.data
@@ -195,7 +189,7 @@ align 4
 align 4
 .next_bitmap:
         mov     ecx, [ebx+SKIN_BITMAPS.data]
-        add     ecx, skin_data
+        add     ecx, [skin_data]
         mov     [edx+4], eax
         mov     eax, [ecx+0]
         mov     [edx+8], eax
@@ -207,7 +201,7 @@ align 4
 align 4
 .end_bitmaps:
         mov     ebx, [ebp+SKIN_HEADER.buttons]
-        add     ebx, skin_data
+        add     ebx, [skin_data]
 ;--------------------------------------
 align 4
 .lp2:
@@ -396,7 +390,8 @@ _dw3l:
 ;--------------------------------------
 align 4
 @@:
-        cmp     dword[skin_data], 'SKIN'
+        mov     eax, [skin_data]
+        cmp     [eax], dword 'SKIN'
         je      @f
         xor     eax, eax
         xor     ebx, ebx
@@ -438,7 +433,8 @@ draw_clientbar:
 ;--------------------------------------
 align 4
 _noinside2:
-        cmp     dword[skin_data], 'SKIN'
+        mov     eax, [skin_data]
+        cmp     [eax], dword 'SKIN'
         jne     no_skin_add_button
 ;* close button
         mov     edi, [BTN_ADDR]

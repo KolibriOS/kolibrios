@@ -59,7 +59,7 @@ LOOP_input:
         push    ecx
         push    eax
 
-        DEBUGF  1,"LOOP_input: size=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: size=%u\n", ecx
         lea     edx, [eax + 2]
         mov     ax, word[eax]
         mov     ebx, LOOPBACK_DEVICE
@@ -67,10 +67,10 @@ LOOP_input:
         cmp     ax, ETHER_IPv4
         je      IPv4_input
 
-        DEBUGF  2,"LOOP_input: Unknown packet type=%x\n", ax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: Unknown packet type=%x\n", ax
 
   .dump:
-        DEBUGF  2,"LOOP_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: dumping\n"
         call    kernel_free
         add     esp, 4
         ret
@@ -93,7 +93,7 @@ LOOP_input:
 align 4
 LOOP_output:
 
-        DEBUGF  1,"LOOP_output\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output\n"
 
         push    ecx
         push    di
@@ -114,11 +114,11 @@ LOOP_output:
         mov     ebx, LOOPBACK_DEVICE
 
   .done:
-        DEBUGF  2,"LOOP_output: ptr=%x size=%u\n", eax, edx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output: ptr=%x size=%u\n", eax, edx
         ret
 
   .out_of_ram:
-        DEBUGF  2,"LOOP_output: failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output: failed\n"
         add     esp, 2+4
         sub     edi, edi
         ret

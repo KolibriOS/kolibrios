@@ -28,7 +28,7 @@ $Revision: 3289 $
 align 4
 TCP_output:
 
-        DEBUGF  1,"TCP_output: socket=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x\n", eax
 
         push    eax
         lea     ecx, [eax + SOCKET.mutex]
@@ -78,7 +78,7 @@ TCP_output:
         cmp     [eax + TCP_SOCKET.t_force], 0
         je      .no_force
 
-        DEBUGF 1,"TCP_output: forcing data out\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: forcing data out\n"
 
         test    ecx, ecx
         jnz     .no_zero_window
@@ -202,7 +202,7 @@ TCP_output:
 ;----------------------------------------
 ; Check if a window update should be sent (154)
 
-        DEBUGF  1,"TCP_output: window=%d\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: window=%d\n", ecx
 
 ; Compare available window to amount of window known to peer (as advertised window less next expected input)
 ; If the difference is at least two max size segments, or at least 50% of the maximum possible window,
@@ -237,7 +237,7 @@ TCP_output:
 ;--------------------------
 ; Should a segment be sent? (174)
 
-        DEBUGF  1,"TCP_output: 174\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: 174\n"
 
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW   ; we need to ACK
         jnz     TCP_send
@@ -273,7 +273,7 @@ TCP_output:
         cmp     [eax + TCP_SOCKET.timer_persist], 0     ; Persist timer already expired?
         jne     @f
 
-        DEBUGF  1,"TCP_output: Entering persist state\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: Entering persist state\n"
 
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
         call    TCP_set_persist
@@ -282,7 +282,7 @@ TCP_output:
 ;----------------------------
 ; No reason to send a segment (219)
 
-        DEBUGF  1,"TCP_output: No reason to send a segment\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: No reason to send a segment\n"
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -313,7 +313,7 @@ TCP_output:
 align 4
 TCP_send:
 
-        DEBUGF  1,"TCP_send: socket=%x length=%u flags=%x\n", eax, esi, dl
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: socket=%x length=%u flags=%x\n", eax, esi, dl
 
         push    eax                     ; save socket ptr
         push    esi                     ; and data length too
@@ -337,7 +337,7 @@ TCP_send:
         push    ecx
         add     di, 4
 
-        DEBUGF  1,"TCP_send: added maxseg option\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: added maxseg option\n"
 
         test    [eax + TCP_SOCKET.t_flags], TF_REQ_SCALE
         jz      .no_scale
@@ -355,7 +355,7 @@ TCP_send:
         pushw   TCP_OPT_WINDOW + 3 shl 8
         add     di, 4
 
-        DEBUGF  1,"TCP_send: added scale option\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: added scale option\n"
 
   .no_scale:
   .no_syn:
@@ -381,7 +381,7 @@ TCP_send:
         pushd   TCP_OPT_NOP + TCP_OPT_NOP shl 8 + TCP_OPT_TIMESTAMP shl 16 + 10 shl 24
         add     di, 12
 
-        DEBUGF  1,"TCP_send: added timestamp\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: added timestamp\n"
 
   .no_timestamp:
 
@@ -538,7 +538,7 @@ TCP_send:
 ;----------------
 ; Send the packet
 
-        DEBUGF  1,"TCP_send: Sending with device %x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: Sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         jnz     .send_error
 
@@ -580,7 +580,7 @@ TCP_send:
         test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
         jnz     TCP_output.again
 
-        DEBUGF 1,"TCP_send: success!\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: success!\n"
 
         xor     eax, eax
         ret
@@ -597,7 +597,7 @@ TCP_send:
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
-        DEBUGF 1,"TCP_send: IP error\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: IP error\n"
 
         or      eax, -1
         ret
@@ -609,7 +609,7 @@ TCP_send:
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
-        DEBUGF 1,"TCP_send: sending failed\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: sending failed\n"
 
         or      eax, -2
         ret

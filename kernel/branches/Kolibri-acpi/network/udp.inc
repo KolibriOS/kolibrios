@@ -116,7 +116,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 align 4
 UDP_input:
 
-        DEBUGF  1,"UDP_input: size=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: size=%u\n", ecx
 
         ; First validate, checksum
 
@@ -129,7 +129,7 @@ UDP_input:
         jnz     .checksum_mismatch
 
   .no_checksum:
-        DEBUGF  1,"UDP_input: checksum ok\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: checksum ok\n"
 
         ; Convert length to little endian
 
@@ -158,7 +158,7 @@ UDP_input:
         cmp     [eax + UDP_SOCKET.LocalPort], dx
         jne     .next_socket
 
-        DEBUGF  1,"UDP_input: socket=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: socket=%x\n", eax
 
         ;;; TODO: when packet is processed, check more sockets!
 
@@ -196,7 +196,7 @@ UDP_input:
         call    mutex_lock
         popa
 
-        DEBUGF  1,"UDP_input: new remote port=%x\n", cx ; FIXME: find a way to print big endian values with debugf
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: new remote port=%x\n", cx ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.RemotePort], cx
         inc     [eax + UDP_SOCKET.firstpacket]
 
@@ -204,12 +204,12 @@ UDP_input:
 
 
   .checksum_mismatch:
-        DEBUGF  2,"UDP_input: checksum mismatch\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: checksum mismatch\n"
 
   .dump:
         call    kernel_free
         add     esp, 4 ; pop (balance stack)
-        DEBUGF  2,"UDP_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE,"UDP_input: dumping\n"
 
         ret
 
@@ -229,13 +229,13 @@ UDP_input:
 align 4
 UDP_output:
 
-        DEBUGF  1,"UDP_output: socket=%x bytes=%u data_ptr=%x\n", eax, ecx, esi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_output: socket=%x bytes=%u data_ptr=%x\n", eax, ecx, esi
 
         mov     dx, [eax + UDP_SOCKET.RemotePort]
-        DEBUGF  1,"UDP_output: remote port=%x, ", dx    ; FIXME: find a way to print big endian values with debugf
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_output: remote port=%x, ", dx    ; FIXME: find a way to print big endian values with debugf
         rol     edx, 16
         mov     dx, [eax + UDP_SOCKET.LocalPort]
-        DEBUGF  1,"local port=%x\n", dx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "local port=%x\n", dx
 
         sub     esp, 8                                          ; Data ptr and data size will be placed here
         push    edx esi
@@ -270,7 +270,7 @@ UDP_output:
         mov     [edi + UDP_header.Checksum], 0
         UDP_checksum (edi-4), (edi-8)                           ; FIXME: IPv4 packet could have options..
 
-        DEBUGF  1,"UDP_output: sending with device %x\n", ebx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_output: sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         test    eax, eax
         jnz     @f
@@ -280,7 +280,7 @@ UDP_output:
         ret
 
   .fail:
-        DEBUGF  1,"UDP_output: failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "UDP_output: failed\n"
         add     esp, 4+4+8
         or      eax, -1
         ret
