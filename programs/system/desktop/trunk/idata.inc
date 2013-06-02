@@ -76,6 +76,8 @@ if lang eq ru
   title db 'çÄëíêéâäÄ éäéç',0
 else if lang eq et
   title db 'AKNA SEADED - VALI VƒRV JA VAJUTA OBJEKTILE',0
+else if lang eq it
+  title db 'Impostazioni - definire il colore e cliccare lo oggetto',0
 else
   title db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
 end if
@@ -122,7 +124,7 @@ aColorDialog_Start	db 'ColorDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align 4
-Box_lib_import:	
+Box_lib_import:
 ;init_lib		dd a_init
 ;version_lib		dd a_version
 
@@ -339,7 +341,7 @@ cd_communication_area_name:
 colordialog_path:
 	db '/rd/1/colrdial',0
 ;---------------------------------------------------------------------
-frame_data: 
+frame_data:
 .type			dd 0 ;+0
 .x:
 .x_size			dw 0 ;+4

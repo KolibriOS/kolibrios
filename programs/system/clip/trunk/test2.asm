@@ -8,7 +8,7 @@
 
 ; <--- include all MeOS stuff --->
 include "lang.inc"
-include "..\..\..\MACROS.INC"
+include "..\..\..\macros.inc"
 
 ; <--- start of MenuetOS application --->
 MEOS_APP_START
@@ -70,7 +70,7 @@ key:                             ; key event handler
 	call	draw_window
 	jmp	wait_event
 no_digit:
-	
+
 	mov	edi, input_box
 	call	edit_box.key
 
@@ -109,7 +109,7 @@ paste:
 	movzx	eax, byte [format_id]
 	mov	edx, 7
 	call	clipboard_read
-	
+
 	or	eax, eax
 	jz	wait_event
 
@@ -236,7 +236,7 @@ exit:
 
     mov     eax, 12                ; finish drawing
     mov     ebx, 2
-    int     0x40    	
+    int     0x40
 
   ret
 

@@ -1,6 +1,6 @@
 //Leency 10.10.2011, JustClicks v2.0, GPL
 
-#include "lib\kolibri.h" 
+#include "lib\kolibri.h"
 #include "lib\random.h"
 #include "lib\boxes.txt"
 system_colors sc;
@@ -25,48 +25,48 @@ int blocks_matrix[28*28]; //цвета дл€ пол€ с квадратиками
 #endif
 
 #ifdef LANG_RUS
-	char NEW_GAME_TEXT[]=" З†≠ЃҐЃ [F2]"; 
+	char NEW_GAME_TEXT[]=" З†≠ЃҐЃ [F2]";
 	char REZULT_TEXT[]="Р•ІгЂмв†в: ";
 #else
-	char NEW_GAME_TEXT[]="New Game [F2]"; 
+	char NEW_GAME_TEXT[]="New Game [F2]";
 	char REZULT_TEXT[]="Rezult: ";
 #endif
 
 
 void main()
-{   
+{
 	int key, id;
-	
+
 	BLOCKS_NUM=DIFFICULTY_LEV_PARAMS[DIFFICULTY_LEVEL];
-	
+
 	new_game();
-   
+
 	loop()
-		switch(WaitEvent()) 
+		switch(WaitEvent())
 		{
 			case evButton:
-				id = GetButtonID(); 
+				id = GetButtonID();
 				if (id==1) ExitProcess();
 				if (id==2) goto _NEW_GAME_MARK;
 				if (id>=100)
 				{
 					if (check_for_end()) break; //если игра закончена
-					
+
 					move_blocks(id-100);
 					draw_field();
-					
+
 					draw_clicks_num();
-					
+
 					break;
 				}
 				if (id==10) //измен€ем размер пол€
 				{
 					if (DIFFICULTY_LEVEL<2) DIFFICULTY_LEVEL++; else DIFFICULTY_LEVEL=0;
-					
+
 					BLOCKS_NUM = DIFFICULTY_LEV_PARAMS[DIFFICULTY_LEVEL]; //количество квадратиков по ’ и по Y
-					
+
 					new_game();
-					
+
 					MoveSize(-1, -1, BLOCK_SIZE*BLOCKS_NUM +9, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+4+USER_PANEL_HEIGHT);
 					break;
 				}
@@ -106,12 +106,12 @@ void move_blocks(int button_id) //если фишка одна, то не удал€ем
 		{
 			if (blocks_matrix[i*BLOCKS_NUM+j]<>old_marker) continue; //если фишка не нужного цвета идЄм дальше
 			if (blocks_matrix[i*BLOCKS_NUM+j]==MARKED) continue; //если фишка уже отмечена, идЄм далее
-			
+
 			if (j>0) && (blocks_matrix[i*BLOCKS_NUM+j-1]==MARKED) blocks_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим левый
 			if (i>0) && (blocks_matrix[i-1*BLOCKS_NUM+j]==MARKED) blocks_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим верхний
 			if (j<BLOCKS_NUM-1) && (blocks_matrix[i*BLOCKS_NUM+j+1]==MARKED) blocks_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим правый
 			if (i<BLOCKS_NUM-1) && (blocks_matrix[i+1*BLOCKS_NUM+j]==MARKED) blocks_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим нижний
-			
+
 			if (blocks_matrix[i*BLOCKS_NUM+j]==MARKED) //если фишку отметили, то потом цикл нужно будет прокрутить сначала - мож ещЄ чЄ отметим
 			{
 				restart=1;
@@ -119,7 +119,7 @@ void move_blocks(int button_id) //если фишка одна, то не удал€ем
 			}
 		}
 	if (restart) goto _RESTART_MARK;
-	
+
 	if (marked_num==1) //если блок только один, уходим
 	{
 		blocks_matrix[button_id]=old_marker;
@@ -139,15 +139,15 @@ void move_blocks(int button_id) //если фишка одна, то не удал€ем
 			}
 		}
 	if (restart) goto _2_RESTART_MARK;
-	
+
 	//отмечаем фишки, как удалЄнные
-	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) 
+	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++)
 			if (blocks_matrix[i]==MARKED)
 				blocks_matrix[i]=DELETED_BLOCK;
-				
+
 	//двигаем блоки влево, если есть пустой столбец
 	restart=BLOCKS_NUM; //не придумал ничего лучше :(
-	
+
 	_3_RESTART_MARK:
 	for (j=0;j<BLOCKS_NUM-1;j++)
 		if (blocks_matrix[BLOCKS_NUM-1*BLOCKS_NUM+j]==DELETED_BLOCK)
@@ -164,11 +164,11 @@ void draw_window()
 {
 	int j, PANEL_Y;
 	proc_info Form;
-	
+
 	sc.get();
 	DefineAndDrawWindow(300,176, BLOCK_SIZE*BLOCKS_NUM +9, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+4+USER_PANEL_HEIGHT,
-		0x74,sc.work,0,0,HEADER); 
-	
+		0x74,sc.work,0,0,HEADER);
+
 	//провер€ем не схлопнуто ли окно в заголовок
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
@@ -177,7 +177,7 @@ void draw_window()
 	PANEL_Y=BLOCK_SIZE*BLOCKS_NUM;
 
 	DrawBar(0,PANEL_Y, PANEL_Y, USER_PANEL_HEIGHT, sc.work); //панель снизу
-		
+
 	//нова€ игра
 	DefineButton(10,PANEL_Y+7, 13*6+6, 20, 2,sc.work_button);
 	WriteText(10+4,PANEL_Y+14,0x80,sc.work_button_text,#NEW_GAME_TEXT,0);
@@ -186,9 +186,9 @@ void draw_window()
 	//кнопочкa выбора уровн€ сложности
 	DefineButton(95,PANEL_Y+7, 20,20, 10,sc.work_button);
 	WriteText(95+8,PANEL_Y+14,0x80,sc.work_button_text,BOARD_SIZES[DIFFICULTY_LEVEL],0);
-	
+
 	draw_field();
-	
+
 	draw_clicks_num();
 }
 
@@ -203,15 +203,15 @@ int check_for_end()
 		for (j=0;j<BLOCKS_NUM;j++)
 		{
 			button_id=blocks_matrix[i*BLOCKS_NUM+j];
-			
+
 			if (button_id==DELETED_BLOCK) continue;
-			
+
 			if (j>0) && (blocks_matrix[i*BLOCKS_NUM+j-1]==button_id) return 0;
 			if (i>0) && (blocks_matrix[i-1*BLOCKS_NUM+j]==button_id) return 0;
 			if (j<BLOCKS_NUM-1) && (blocks_matrix[i*BLOCKS_NUM+j+1]==button_id) return 0;
 			if (i<BLOCKS_NUM-1) && (blocks_matrix[i+1*BLOCKS_NUM+j]==button_id) return 0;
 		}
-	return 2; 
+	return 2;
 }
 
 
@@ -223,10 +223,10 @@ void draw_clicks_num()
 	int TEXT_X=TEXT_Y/2+48; //130;
 
 	BLOCKS_LEFT=0;
-	
-	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) 
-		if (blocks_matrix[i]<>DELETED_BLOCK) BLOCKS_LEFT++;	
-	
+
+	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++)
+		if (blocks_matrix[i]<>DELETED_BLOCK) BLOCKS_LEFT++;
+
 	DrawBar(TEXT_X, TEXT_Y, 18,9, sc.work);
 	WriteText(TEXT_X,TEXT_Y,0x80,sc.work_text,IntToStr(BLOCKS_LEFT),0);
 
@@ -256,7 +256,7 @@ void draw_field()
 {
 	int i, j;
 	int current_id;
-	
+
 	for (i=0;i<BLOCKS_NUM;i++)
 		for (j=0;j<BLOCKS_NUM;j++)
 		{

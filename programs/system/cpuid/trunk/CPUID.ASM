@@ -28,6 +28,8 @@ use32
   dd	 0x0
   dd	 0x0
 
+include 'lang.inc'				; language support
+
 include '..\..\..\macros.inc' ; useful macroses
 include 'draw.inc'
 include 'brand.inc'           ;Brand ID decoding
@@ -197,7 +199,7 @@ jmp fut
 
 maybe_athlon:
 mov eax, 0x80000001		  ; CPUID ext. function 0x80000001
-cpuid				    
+cpuid
 mov ecx, eax
 shr ecx,8	  ;   shift it to the correct position
 and ecx,0000000Fh ;   get CPU family
@@ -239,15 +241,15 @@ mov  dword [myname], $612F6E
     mov   [myname+44],edx
 
 .noname:
-red:			
+red:
 
 ;mov byte [multiplier], 115;     ; for testing
 
-call multipl			      ; get multiplier 
+call multipl			      ; get multiplier
 mov byte [multiplier], cl
 
 mov   dword [freqbb], 0
-mov   dword [freqll], 0 
+mov   dword [freqll], 0
 
 mov   ebx, dword [multiplier]
 test  ebx, ebx
@@ -467,7 +469,7 @@ mov [L2],ecx
 A6:
         mov     [FRS], 266  ;!!!!!!
 
-        Number  315,90,0,3,dword [FRS],0x000000; MHz 
+        Number  315,90,0,3,dword [FRS],0x000000; MHz
 
         call    newrating; !!!!
 
@@ -502,7 +504,7 @@ AA:
         mov     [FRS], 333; !!!!
         Text    245,70,0x00000000,pr, prlen-pr
 
-        Number  315,90,0,3,dword [FRS],0x000000; MHz 
+        Number  315,90,0,3,dword [FRS],0x000000; MHz
 
         mov     edx, Atat
         cmp     [L2], 256
@@ -523,7 +525,7 @@ fif:  ;  AMD-64    Family=15
 ;AMD AthlonTM 64 and  AMD OpteronTM  Processors" 25759.pdf
 
 ; checking sse3 for new AMD's is needed
-    cmp [m],$1	; Dual-core Opteron      
+    cmp [m],$1	; Dual-core Opteron
     jz .AF1
     cmp [m],$3	; Toledo 1024 0.09   // Manchester     ||Windsor Dual Core not supported
     jz .AF3
@@ -1377,25 +1379,25 @@ event_wait:
 	mov	ebx,50	     ; ждемс 0.5 сек
 	mcall
 
-    cmp  eax,1		; 
+    cmp  eax,1		;
     je	 red		;  redraw
-    cmp  eax,2		; 
+    cmp  eax,2		;
     je	 key		;  key
-    cmp  eax,3		; 
+    cmp  eax,3		;
     je	 button 	;  button
-    jmp  still		; 
-  key:			; 
-    mcall		; 
-    jmp  still		; 
-  button:		; 
-    mov  eax,17 	; 
-    mcall		; 
+    jmp  still		;
+  key:			;
+    mcall		;
+    jmp  still		;
+  button:		;
+    mov  eax,17 	;
+    mcall		;
     cmp  ah,1		;  = 1 ?
     je	close		; close
 
     cmp  ah,2		;  = 2 ?
-    je	thread_start	; 
-			; 
+    je	thread_start	;
+			;
     cmp  ah,3		;  = 3 ?
     jne  still
 
@@ -1403,7 +1405,7 @@ vybor:
 
  Number 310,70,0,4,dword [rating],0xFFFFFF ;
 
- Number 315,90,0,3,dword [FRS]; MHz 
+ Number 315,90,0,3,dword [FRS]; MHz
 
 cmp [FRS], 266
 jz .s1
@@ -1418,7 +1420,7 @@ mov [FRS], 333
 call newrating
  Number 310,70,0,4,dword [rating],0x000000
 
- Number 315,90,0,3,dword [FRS]; MHz 
+ Number 315,90,0,3,dword [FRS]; MHz
 jmp  still
 
 .s2:
@@ -1430,15 +1432,15 @@ mov [FRS], 266
 jmp .rating
 
 close:
-    mov   eax,-1	
-    mcall	       
+    mov   eax,-1
+    mcall
 
 ;**************************** THREAD-SECOND WINDOW
 thread_start:
 
-    cmp  [num_win2],0	
+    cmp  [num_win2],0
 
-    jne  still		
+    jne  still
 
 ;================================================RSA test
 
@@ -1468,37 +1470,37 @@ CreateTread window_2,thread2_esp
   jmp  still
 
 window_2:
-    mov  [num_win2],1	
-    call draw_window_2	
+    mov  [num_win2],1
+    call draw_window_2
 
-still_2:		
+still_2:
 
-    mov  eax,10 	
-    mcall		
+    mov  eax,10
+    mcall
 
-    cmp  eax,1		
+    cmp  eax,1
     je	 window_2	;  window_2
-    cmp  eax,2		; 
+    cmp  eax,2		;
     je	 key_2		;  key_2
-    cmp  eax,3		; 
+    cmp  eax,3		;
     je	 button_2	;  button_2
 
-    jmp  still_2	; 
+    jmp  still_2	;
 
-  key_2:		; 
-    mcall		; 
-    jmp  still_2	; 
+  key_2:		;
+    mcall		;
+    jmp  still_2	;
 
-  button_2:		; 
-    mov  eax,17 	; 17 
-    mcall		; 
+  button_2:		;
+    mov  eax,17 	; 17
+    mcall		;
 
     cmp  ah,1		; = 1 ?
     jne  still_2	; noclose
 
-    mov  [num_win2],0	; 
+    mov  [num_win2],0	;
 
-    or	 eax,-1 	; 
+    or	 eax,-1 	;
     mcall
 
 draw_window_2:
@@ -1661,10 +1663,10 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
      cont:
 
 
-    Text 15,50,0x00000000,tsum, tsumlen-tsum   ; 
-    Text 15,90,,cpuname, cpunamelen-cpuname; 
+    Text 15,50,0x00000000,tsum, tsumlen-tsum   ;
+    Text 15,90,,cpuname, cpunamelen-cpuname;
     Text 255,250,,typen, typenlen-typen;
-    Text 175, 50,,tech, techlen-tech; 
+    Text 175, 50,,tech, techlen-tech;
 
     Number 82,50,0,4,dword [total],0x000000; MHz
     Number 110,50,0,2,dword [sot]; KHz
@@ -1674,7 +1676,7 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
     Text 15,230,,cache4, cache4len-cache4
 
 
-    Number 75,110,1*256,1,dword [f],0x000000 ; 
+    Number 75,110,1*256,1,dword [f],0x000000 ;
     Number 75,130,,,dword [m]
     Number 75,150,,,dword [s]
 
@@ -1710,7 +1712,7 @@ Number 289,30,0,2,dword [freqll]
 ;-
 Text 15,250,,brandid, brandidlen-brandid
 
-    ret 		; 
+    ret 		;
 
 load_gif:
         mov     edi, img_area
@@ -1724,7 +1726,13 @@ include 'gif_lite.inc'        ; parse GIF files
 title	 db   'CPUID 2.21 by S.Kuzmin & the KolibriOS team',0
 
 tsum:
-    db 'Frequency:     .   MHz'
+if lang eq it
+		db 'Frequenza:     .   MHz'
+else
+		db 'Frequency:     .   MHz'
+end if
+
+
 tsumlen:
 
 total dd 0x0
@@ -1733,7 +1741,13 @@ rating dd 0x0
 rat dd 0x0  ;
 
 ram:
-db 'Available RAM:     out of'
+if lang eq it
+		db 'RAM libera:        su'
+else
+		db 'Available RAM:     out of'
+end if
+
+
 ramlen:
 
 NEF:
@@ -1749,7 +1763,13 @@ mblen:
 ;logcpuslen:
 
 speed :
-db 'PERFORMANCE:'
+if lang eq it
+		db 'Performance'
+else
+		db 'PERFORMANCE:'
+end if
+
+
 speedlen:
 
 kbpersec:
@@ -1757,7 +1777,13 @@ db 'KB/SEC'
 kbperseclen:
 
 instruct:
-    db 'Instruction sets'
+if lang eq it
+		db 'Set istruzioni'
+else
+		db 'Instruction sets'
+end if
+
+
 instructlen:
 
 standard    db 'Standard and Extended features plus Performance test',0
@@ -1779,23 +1805,54 @@ brandid:
 brandidlen:
 
 oblom:
-    db 'SORRY, CPUID IS NOT AVAILABLE'
+if lang eq it
+		db 'CPUID non e disponibile'
+else
+		db 'SORRY, CPUID IS NOT AVAILABLE'
+end if
+
 oblomlen:
 other:
-    db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
+if lang eq it
+		db 'Questo vendor non e supportato'
+else
+		db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
+end if
+
 otherlen:
 
 cpuname:
-    db 'CPU VENDOR:             '
+if lang eq it
+		db 'Vendor CPU              '
+else
+		db 'CPU VENDOR:             '
+end if
+
 cpunamelen:
 fam:
-    db 'FAMILY:     std    ext'
+if lang eq it
+		db 'Famiglia:   std    ext'
+else
+		db 'FAMILY:     std    ext'
+end if
+
+
 famlen:
 mode:
-    db 'MODEL:      std    ext'
+if lang eq it
+		db 'Modello:    std    ext'
+else
+		db 'MODEL:      std    ext'
+end if
+
 modelen:
 step:
-    db 'STEPPING:'
+if lang eq it
+		db 'Stepping:'
+else
+		db 'STEPPING:'
+end if
+
 steplen:
 
 cache2:
@@ -1822,11 +1879,22 @@ cacheP4:
 cacheP4len:
 
 tech:
-  db 'Technology: 0.   micron '
+if lang eq it
+		db 'Tecnologia: 0.   micron '
+else
+		db 'Technology: 0.   micron '
+end if
+
+
 techlen:
 
 typen:
-  db 'Type:'
+if lang eq it
+		db 'Tipo:'
+else
+		db 'Type:'
+end if
+
 typenlen:
 
 pr:
@@ -1842,7 +1910,12 @@ freql:
 freqllen:
 
 name:
-    db 'CODENAME:'
+if lang eq it
+		db 'Codename:'
+else
+		db 'CODENAME:'
+end if
+
 namelen:
 
 AMDn:
@@ -2110,7 +2183,12 @@ NG:
 NGlen:
 
 stm:
-    db 'Internal name:'
+if lang eq it
+		db 'Nome:  '
+else
+		db 'Internal name:'
+end if
+
 stmlen:
 
 athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120

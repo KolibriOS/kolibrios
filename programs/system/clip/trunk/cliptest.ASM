@@ -7,7 +7,7 @@
 
 ; <--- include all MeOS stuff --->
 include "lang.inc"
-include "..\..\..\MACROS.INC"
+include "..\..\..\macros.inc"
 
 TEST_SIZE = 100000	; должно делиться на 4
 
@@ -113,11 +113,11 @@ print ""
 ; последняя проверка - на ресайз буфера. а именно, возьмем много данных
 ; и прокачаем их через буфер
 
-	mov	eax, 68	
+	mov	eax, 68
 	mov	ebx, 11
 	int	0x40
 
-	mov	eax, 68	
+	mov	eax, 68
 	mov	ebx, 12
 	mov	ecx, TEST_SIZE + 12
 	int	0x40
@@ -154,7 +154,7 @@ print "mega buffer written"
 	mov	edx, [mega_buf]
 	add	edx, 12
 	xor	eax, eax
-	mov	ecx, TEST_SIZE/4	
+	mov	ecx, TEST_SIZE/4
 .loopc:
 	mov	[edx], eax
 	add	edx, 4
@@ -162,7 +162,7 @@ print "mega buffer written"
 	jnz	.loopc
 
 	; now read
-	
+
 	mov	eax, 69
 	mov	esi, [mega_buf]
 	mov	edx, 7
@@ -208,7 +208,7 @@ print "if read error then all is ok"
 	jz	.reading
 	jmp	.err
 
-.reading:	
+.reading:
 
 print "test complete!"
 

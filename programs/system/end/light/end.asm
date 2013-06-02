@@ -160,6 +160,14 @@ else if lang eq ge
   label4:
       db   'Save your settings (Ctrl-S)',0
 
+else if lang eq it
+  label2:
+      db   '  Spegni         Kernel',0
+  label3:
+      db   '   Riavvio        Annulla',0
+  label4:
+      db   'Salva impostazioni (Ctrl-S)',0
+
 else
   label2:
       db   'Power off          Kernel',0

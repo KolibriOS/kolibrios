@@ -10,16 +10,16 @@ as MACROS.INC and DEBUG.INC files, simplify the developing greatly.
 Today I let you to judge a desktop calendar, similar to the Windows one.
 Application abilities are:
 
-1. Interface is translated into Russian,English, German, French, and Finnish
-    (not completely - there was no help). Day sequence difference is taken
-    into account as well. You may change localization through 'lang' constant
-    while compiling.
+1. Interface is translated into Russian,English, German, French, Italian
+   and Finnish (not completely - there was no help). Day sequence
+   difference is taken into account as well. You may change localization
+   through 'lang' constant while compiling.
 2. Calendar is equipped with additional buttons 'Today' and 'New style' that
-    are self-explaining.
+   are self-explaining.
 3. I tied to follow world GUI standards: use TAB to move along fields; while
-    editing the year, use Backspace and Del, as well as left and right arrows
-    of 'spinner' when in its focus. Arrow keys navigate along day matrix.
-    Pressing Ctrl-F1...Ctrl-F12 selects appropriate month.
+   editing the year, use Backspace and Del, as well as left and right arrows
+   of 'spinner' when in its focus. Arrow keys navigate along day matrix.
+   Pressing Ctrl-F1...Ctrl-F12 selects appropriate month.
 
 To-Do list:
 

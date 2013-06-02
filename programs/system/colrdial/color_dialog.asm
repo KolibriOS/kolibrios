@@ -41,7 +41,7 @@
 ; window X size ; +4
 ; dw 0
 ;
-; window X position ; +6 
+; window X position ; +6
 ; dw 0
 ;
 ; window y size ; +8
@@ -143,7 +143,7 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[palette_area],eax
 ;--------------------------------------
 	call	create_palette
-;--------------------------------------	
+;--------------------------------------
 	mov	ecx,[tone_SIZE_Y]
 	imul	ecx,[tone_SIZE_X]
 	lea	ecx,[ecx*3]
@@ -169,10 +169,10 @@ still:
 
 	cmp	eax,3
 	je	button
-	
+
 	cmp	eax,6
 	je	mouse
-	
+
 	jmp	still
 ;---------------------------------------------------------------------
 align 4
@@ -181,19 +181,19 @@ button:
 
 	cmp	ah, 2
 	je	palette_button
-	
+
 	cmp	ah, 3
 	je	tone_button
 
 	cmp	ah, 4
 	je	color_button
-	
+
 	cmp	ah, 30
 	jb	@f
-	
+
 	cmp	ah, 39
 	ja	@f
-	
+
 	sub	ah,30
 	movzx	eax,ah
 	shl	eax,2
@@ -292,7 +292,7 @@ get_active_pocess:
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
 	mov	[active_process],eax	; WINDOW SLOT
-	mov	ebx,[communication_area]	
+	mov	ebx,[communication_area]
 	test	ebx,ebx
 	jz	.1
 	mov	[ebx+12],eax	; WINDOW SLOT to com. area
@@ -402,7 +402,7 @@ prepare_color_from_scrollbars_position:
 	mov	eax,[scroll_bar_data_blue.position]
 	mov	bl,al
 	ret
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 align 4
 key:
 	mcall	2
@@ -415,7 +415,7 @@ mouse:
 	cmp	[scroll_bar_data_green.delta2],0
 	jne	.green
 	cmp	[scroll_bar_data_blue.delta2],0
-	jne	.blue	
+	jne	.blue
 ;--------------------------------------
 align 4
 .red:
@@ -482,7 +482,7 @@ draw_history_frame:
 	mov	[frame_data.y],dword (p_start_y+5)*65536+(p_size_y-5)
 
 	mov	[frame_data.draw_text_flag],dword 1
-	
+
 	mov	[frame_data.text_pointer],dword history_text
 	push	dword frame_data
 	call	[Frame_draw]
@@ -516,7 +516,7 @@ draw_color_value:
 	add	esi,28
 ;-----------------------------------
 align 4
-@@:	
+@@:
 	mcall
 	pusha
 	mov	edx,ebx
@@ -528,7 +528,7 @@ align 4
 	and	ecx,0xffffff
 	mcall	47,0x00060100,,,0
 	popa
-	
+
 	add	ecx,24*65536
 	add	esi,4
 	dec	edi
@@ -558,9 +558,9 @@ newcol:
 	add	bx,4
 	sub	ecx,2 shl 16
 	add	cx,4
-	
+
 	mov	[frame_data.x],ebx
-	mov	[frame_data.y],ecx	
+	mov	[frame_data.y],ecx
 
 	push	dword frame_data
 	call	[Frame_draw]
@@ -569,7 +569,7 @@ newcol:
 
 	add	ecx,24*65536
 	add	esi,4
-	
+
 	dec	edi
 	jnz	newcol
 

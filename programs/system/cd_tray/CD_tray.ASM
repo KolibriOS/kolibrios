@@ -16,6 +16,7 @@
   dd	 0x0	     ; зарезервировано
 
 include 'MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
+include 'lang.inc'
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -87,7 +88,11 @@ draw_window:
 		   ; 1 - начинаем рисовать
 		   ; СОЗДАиМ ОКНО
 
-    mcall 0, <100,230>, <100,110>, 0x03AABBCC, 0x805080D0, 0x005080D0
+    if lang eq it
+			mcall 0, <100,250>, <100,110>, 0x03AABBCC, 0x805080D0, 0x005080D0
+	 else
+			mcall 0, <100,230>, <100,110>, 0x03AABBCC, 0x805080D0, 0x005080D0
+	 end if
     mcall 71, 1 ,header
     mcall 8,<15,42>,<40,20>,2,0xaaaaaa
     call  draw_buttons
@@ -95,17 +100,21 @@ draw_window:
     add   ecx,30 shl 16
     mcall
     call  draw_buttons
-    
-    mcall 4, <25,25>, 0x80ffffff,text1
+
+	 if lang eq it
+			mcall 4, <16,25>, 0x80ffffff,text1
+	 else
+			mcall 4, <25,25>, 0x80ffffff,text1
+	 end if
     mov   edx,text2
-    
+
     add   ebx,3 shl 16+20
     mcall
     mov   edx,text3
     add   ebx,30
     sub   ebx,3 shl 16
     mcall
-    
+
     mcall 12, 2 	   ; функция 12: сообщить ОС об отрисовке окна
 		   ; 2, закончили рисовать
 
@@ -113,24 +122,43 @@ draw_window:
 
 draw_buttons:
     pusha
-    add   ebx,50 shl 16
+    if lang eq it
+			add   ebx,60 shl 16
+	 else
+			add   ebx,50 shl 16
+	 end if
     inc   edx
-    mcall 
-    add   ebx,50 shl 16
+    mcall
+    if lang eq it
+			add   ebx,60 shl 16
+	 else
+			add   ebx,50 shl 16
+	 end if
     inc   edx
-    mcall 
-    add   ebx,50 shl 16
+    mcall
+    if lang eq it
+			add   ebx,60 shl 16
+	 else
+			add   ebx,50 shl 16
+	 end if
     inc   edx
-    mcall 
+    mcall
     popa
     ret
 ;---------------------------------------------------------------------
 ;---  ДАННЫЕ ПРОГРАММЫ  ----------------------------------------------
 ;---------------------------------------------------------------------
 header db ' ATAPI Device Tray Control',0
-text3 db 'eject   eject   eject   eject',0
-text2 db 'load    load    load    load',0
-text1 db '/cd0/   /cd1/   /cd2/   /cd3/',0
+if lang eq it
+	text3 db 'espelli   espelli   espelli   espelli',0
+	text2 db 'carica    carica    carica    carica',0
+	text1 db '/cd0/     /cd1/     /cd2/     /cd3/',0
+else
+	text3 db 'eject   eject   eject   eject',0
+	text2 db 'load    load    load    load',0
+	text1 db '/cd0/   /cd1/   /cd2/   /cd3/',0
+end if
+
 ;---------------------------------------------------------------------
-    
+
 I_END:			 ; метка конца программы
