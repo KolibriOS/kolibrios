@@ -2918,7 +2918,7 @@ sys_getbackground:
         jnz     nogb1
         mov     eax, [BgrDataWidth]
         shl     eax, 16
-        mov     ax, [BgrDataHeight]
+        mov     ax, word [BgrDataHeight]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------

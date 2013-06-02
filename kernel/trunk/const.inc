@@ -279,12 +279,7 @@ d_width_calc_area   equ (OS_BASE+0x02CA000)
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 BOOT_VAR            equ (OS_BASE+0x02E0000)
 
-skin_data           equ (OS_BASE+0x0318000)
 draw_data           equ (OS_BASE+0x0320000)
-
-BgrDrawMode         equ (OS_BASE+0x0323FF4)
-BgrDataWidth        equ (OS_BASE+0x0323FF8)
-BgrDataHeight       equ (OS_BASE+0x0323FFC)
 
 sys_pgmap           equ (OS_BASE+0x0324000)
 
