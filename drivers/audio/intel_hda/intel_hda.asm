@@ -806,7 +806,7 @@ restore   out_size
 
 align 4
 proc hda_irq   ;+
-	   spin_lock
+	   ;spin_lock
      if DEBUG_IRQ
 	   push eax esi
 	   ;mov esi, msgIRQ
@@ -820,7 +820,7 @@ proc hda_irq   ;+
 	   call  azx_readl
 	   test  eax, eax
 	   jnz	 @f
-	   spin_unlock
+	   ;spin_unlock
 	   ret
   @@:
 	   mov	 ebx, eax ; status
@@ -886,7 +886,7 @@ proc hda_irq   ;+
   @@:
 ;end if
 	   or	 eax, 1
-	   spin_unlock
+	   ;spin_unlock
 	   ret
 endp
 
@@ -1334,19 +1334,19 @@ endp
 
 align 4
 play:
-	   spin_lock
+	   ;spin_lock
 	   mov	 edx, ICH6_REG_WALLCLK
 	   call  azx_readl
 	   mov	 [ctrl.start_wallclk], eax
 
 	   call  azx_stream_start
 	   xor	 eax, eax
-	   spin_unlock
+	   ;spin_unlock
 	   ret
 
 align 4
 stop:
-	     spin_lock
+	     ;spin_lock
 ;*           call  azx_stream_stop        ;Asper: Hangs system
 ;R           push  ebx ecx edx
 ;R           ; stop DMA
@@ -1386,7 +1386,7 @@ stop:
 ;Asper ]
 
 	   xor	 eax, eax
-	   spin_unlock
+	   ;spin_unlock
 	   ret
 
 ;align 4
