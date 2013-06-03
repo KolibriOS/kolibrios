@@ -3850,6 +3850,7 @@ proc delay_hs_unprotected
         ret
 endp
 
+if 0
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
@@ -3873,6 +3874,35 @@ delay_hs:     ; delay in 1/100 secs
         add     esp, 4
         popad
         ret
+
+else
+
+align 4
+delay_hs:     ; delay in 1/100 secs
+; ebx = delay time
+        push    ecx
+        push    edx
+
+        mov     edx, [timer_ticks]
+;--------------------------------------
+align 4
+newtic:
+        mov     ecx, [timer_ticks]
+        sub     ecx, edx
+        cmp     ecx, ebx
+        jae     zerodelay
+
+        call    change_task
+
+        jmp     newtic
+;--------------------------------------
+align 4
+zerodelay:
+        pop     edx
+        pop     ecx
+        ret
+end if
+
 ;-----------------------------------------------------------------------------
 align 16        ;very often call this subrutine
 memmove:       ; memory move in bytes
