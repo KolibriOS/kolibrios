@@ -13,122 +13,125 @@ DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
-AMZ_SRCS:= 			 \
+AMZ_SRCS:= 			 		\
          		crt/crt_amz.S        	\
          		crt/chkstk.S         	\
          		crt/exit.S           	\
-		crt/pseudo-reloc.c	\
-		crt/dllstart.c 	\
-		crt/setjmp.S
+			crt/pseudo-reloc.c	\
+			crt/dllstart.c 		\
+			crt/setjmp.S
 
-STATIC_SRCS:=			\
+STATIC_SRCS:=					\
          		crt/start.S		\
          		crt/crt1.c		\
-         		crt/chkstk.S	\
+			crt/crt2.c		\
+         		crt/chkstk.S		\
          		crt/exit.S		\
-		crt/setjmp.S
+			crt/setjmp.S
 
-DLL_SRCS:=			\
-		crt/crtdll.c		\
-		crt/chkstk.S	\
-		crt/exit.S		\
-		crt/setjmp.S	\
-		pe/loader.c
+DLL_SRCS:=					\
+			crt/crtdll.c		\
+			crt/chkstk.S		\
+			crt/exit.S		\
+			crt/setjmp.S		\
+			pe/loader.c
 
-CORE_SRCS:=                   \
+CORE_SRCS:=                   			\
 			argz/buf_findstr.c	\
 			argz/envz_get.c		\
-         crt/emutls.c         \
-         crt/thread.S         \
-         crt/tls.S            \
-         crt/assert.c         \
+         		crt/emutls.c         	\
+         		crt/thread.S         	\
+         		crt/tls.S            	\
+         		crt/assert.c         	\
 			crt/cpu_features.c	\
 			ctype/ctype_.c 		\
 			ctype/isascii.c		\
 			ctype/isblank.c		\
-         ctype/isalnum.c      \
-         ctype/isalpha.c      \
-         ctype/iscntrl.c      \
-         ctype/isdigit.c      \
-         ctype/islower.c      \
-         ctype/isupper.c      \
-         ctype/isprint.c      \
-         ctype/ispunct.c      \
-         ctype/isspace.c      \
-         ctype/iswctype.c     \
-         ctype/iswalnum.c     \
-         ctype/iswalpha.c     \
-         ctype/iswblank.c     \
-         ctype/iswcntrl.c     \
-         ctype/iswdigit.c     \
-         ctype/iswgraph.c     \
-         ctype/iswlower.c     \
-         ctype/iswprint.c     \
-         ctype/iswpunct.c     \
-         ctype/iswspace.c     \
-         ctype/iswupper.c     \
-         ctype/iswxdigit.c    \
-         ctype/isxdigit.c     \
+         		ctype/isalnum.c      	\
+         		ctype/isalpha.c      	\
+         		ctype/iscntrl.c      	\
+         		ctype/isdigit.c      	\
+         		ctype/islower.c      	\
+			ctype/isupper.c      	\
+         		ctype/isprint.c      	\
+         		ctype/ispunct.c      	\
+         		ctype/isspace.c      	\
+         		ctype/iswctype.c     	\
+         		ctype/iswalnum.c     	\
+         		ctype/iswalpha.c     	\
+         		ctype/iswblank.c     	\
+         		ctype/iswcntrl.c     	\
+         		ctype/iswdigit.c     	\
+         		ctype/iswgraph.c     	\
+         		ctype/iswlower.c     	\
+         		ctype/iswprint.c     	\
+         		ctype/iswpunct.c     	\
+         		ctype/iswspace.c     	\
+         		ctype/iswupper.c     	\
+         		ctype/iswxdigit.c    	\
+         		ctype/isxdigit.c     	\
 			ctype/toascii.c		\
-         ctype/tolower.c      \
+         		ctype/tolower.c      	\
 			ctype/toupper.c		\
-         ctype/towctrans.c    \
-         ctype/towlower.c     \
-         ctype/towupper.c     \
+         		ctype/towctrans.c    	\
+         		ctype/towlower.c     	\
+         		ctype/towupper.c     	\
 			ctype/wctrans.c		\
-         ctype/wctype.c       \
-         errno/errno.c        \
+         		ctype/wctype.c       	\
+         		errno/errno.c        	\
 			locale/locale.c		\
 			locale/lctype.c		\
-         reent/impure.c       \
-         reent/getreent.c     \
+         		reent/impure.c       	\
+			reent/init_reent.c	\
+	         	reent/getreent.c     	\
+			reent/mutex.c		\
 			reent/gettimeofdayr.c	\
-         reent/hdlman.c       \
+         		reent/hdlman.c       	\
 			reent/isattyr.c		\
-         reent/openr.c        \
-         reent/closer.c       \
-         reent/readr.c        \
-         reent/lseekr.c       \
-         reent/fstatr.c       \
-         reent/writer.c       \
-         search/qsort.c       \
-         search/bsearch.c     \
+         		reent/openr.c        	\
+         		reent/closer.c       	\
+         		reent/readr.c        	\
+         		reent/lseekr.c       	\
+         		reent/fstatr.c       	\
+         		reent/writer.c       	\
+         		search/qsort.c       	\
+         		search/bsearch.c     	\
 			signal/signal.c		\
-         sys/create.c         \
-         sys/delete.c         \
-         sys/finfo.c          \
-         sys/read.c           \
-         sys/write.c          \
-         sys/fsize.c          \
-         sys/fload.c          \
-         time/asctime.c       \
-         time/asctime_r.c     \
-         time/clock.c         \
-         time/ctime.c         \
-         time/ctime_r.c       \
+         		sys/create.c         	\
+         		sys/delete.c         	\
+         		sys/finfo.c          	\
+         		sys/read.c           	\
+         		sys/write.c          	\
+         		sys/fsize.c          	\
+         		sys/fload.c          	\
+         		time/asctime.c       	\
+         		time/asctime_r.c     	\
+         		time/clock.c         	\
+         		time/ctime.c         	\
+         		time/ctime_r.c       	\
 			time/difftime.c		\
-         time/gettzinfo.c     \
-         time/gmtime.c        \
+         		time/gettzinfo.c     	\
+         		time/gmtime.c        	\
 			time/gmtime_r.c		\
-         time/mktime.c        \
-         time/mktm_r.c        \
-         time/lcltime.c       \
-         time/lcltime_r.c     \
+         		time/mktime.c        	\
+         		time/mktm_r.c        	\
+         		time/lcltime.c       	\
+         		time/lcltime_r.c     	\
 			time/strftime.c		\
-         time/time.c          \
-         time/tzlock.c        \
-         time/tzvars.c        \
+         		time/time.c          	\
+         		time/tzlock.c        	\
+         		time/tzvars.c        	\
 			unpack/unpacker.asm
 
 
-STDLIB_SRCS=                 		\
+STDLIB_SRCS=                 			\
          		__atexit.c          	\
          		__call_atexit.c     	\
          		abort.c              	\
          		abs.c               	\
          		atof.c              	\
          		atoi.c              	\
-		atol.c		\
+			atol.c			\
          		div.c               	\
          		dtoa.c               	\
          		dtoastub.c          	\
@@ -160,93 +163,93 @@ STDLIB_SRCS=                 		\
          		strtoull_r.c        	\
          		system.c            	\
          		wcrtomb.c           	\
-		wctomb_r.c
+			wctomb_r.c
 
 
-STRING_SRCS=      memcpy.c    \
-         memcmp.c             \
-         memmove.c            \
-         memset.c             \
-         memchr.c             \
-         strcat.c             \
-         strchr.c             \
-         strcmp.c             \
-         strcoll.c            \
-         strcasecmp.c         \
-         strncasecmp.c        \
-         strncat.c            \
-         strncmp.c            \
-         strncpy.c            \
-         strndup.c            \
-         strndup_r.c          \
-         strnlen.c            \
-         strcasestr.c         \
-         strdup.c             \
-         strdup_r.c           \
-         strerror.c           \
-         strlen.c             \
-         strrchr.c            \
-         strpbrk.c            \
-         strsep.c             \
-         strstr.c             \
-         strtok.c             \
-         strtok_r.c           \
-         strupr.c             \
-         strcspn.c            \
-         strspn.c             \
-         strcpy.c             \
+STRING_SRCS=      	memcpy.c    \
+         		memcmp.c             \
+         		memmove.c            \
+         		memset.c             \
+         		memchr.c             \
+         		strcat.c             \
+         		strchr.c             \
+         		strcmp.c             \
+         		strcoll.c            \
+         		strcasecmp.c         \
+         		strncasecmp.c        \
+         		strncat.c            \
+         		strncmp.c            \
+         		strncpy.c            \
+         		strndup.c            \
+         		strndup_r.c          \
+         		strnlen.c            \
+         		strcasestr.c         \
+         		strdup.c             \
+         		strdup_r.c           \
+         		strerror.c           \
+         		strlen.c             \
+         		strrchr.c            \
+         		strpbrk.c            \
+         		strsep.c             \
+         		strstr.c             \
+         		strtok.c             \
+         		strtok_r.c           \
+         		strupr.c             \
+         		strcspn.c            \
+         		strspn.c             \
+         		strcpy.c             \
 			u_strerr.c
 
-STDIO_SRCS=				\
+STDIO_SRCS=					\
 			clearerr.c		\
 			diprintf.c		\
 			dprintf.c		\
 			printf.c		\
 			putchar.c		\
-			fgetc.c		\
-			fgets.c		\
-			fopen.c		\
+			fgetc.c			\
+			fgets.c			\
+			fopen.c			\
 			fclose.c		\
 			fdopen.c		\
 			fflush.c		\
-			flags.c		\
+			flags.c			\
 			fileno.c		\
 			findfp.c		\
 			fiprintf.c		\
 			fiscanf.c		\
 			fprintf.c		\
-			fputc.c		\
-			fputs.c		\
+			fputc.c			\
+			fputs.c			\
 			fputwc.c		\
-			fread.c		\
+			fread.c			\
 			freopen.c		\
 			fscanf.c		\
-			fseek.c		\
+			fseek.c			\
 			fseeko.c		\
-			ftell.c		\
+			ftell.c			\
 			ftello.c		\
 			fwrite.c		\
 			fvwrite.c		\
-			fwalk.c		\
-			putc.c		\
-			puts.c		\
+			fwalk.c			\
+			putc.c			\
+			puts.c			\
 			refill.c		\
-			rget.c		\
+			rget.c			\
 			remove.c		\
 			rename.c		\
 			setvbuf.c		\
-			stdio.c		\
+			stdio.c			\
 			tmpfile.c		\
 			tmpnam.c		\
 			ungetc.c		\
 			vscanf.c		\
 			vsprintf.c		\
-			vsnprintf.c	\
+			vsnprintf.c		\
 			vsscanf.c		\
-			makebuf.c	\
+			makebuf.c		\
 			wsetup.c		\
-			wbuf.c		\
-			sccl.c		\
+			wbuf.c			\
+			sccl.c			\
 			sniprintf.c		\
 			snprintf.c		\
 			sprintf.c		\

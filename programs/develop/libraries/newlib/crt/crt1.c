@@ -54,25 +54,6 @@ char * __libc_getenv(const char *name)
 }
 
 void __main (){};
-void init_reent();
-
-void  __attribute__((noreturn))
-__thread_startup (int (*entry)(void*), void *param,
-                  void *stacklow, void *stackhigh)
-{
-    int retval;
-
-    __asm__ __volatile__(               // save stack limits
-    "movl %0, %%fs:4    \n\t"           // use TLS
-    "movl %1, %%fs:8    \n\t"
-    ::"r"(stacklow), "r"(stackhigh));
-
-    init_reent();                       // initialize thread reentry structure
-
-    retval = entry(param);              // call user thread function
-
-    _exit(retval);
-};
 
 struct app_hdr
 {
@@ -86,6 +67,19 @@ struct app_hdr
     char  *path;
 };
 
+typedef void (*ctp)();
+static void __do_global_ctors ()
+{
+  extern int __CTOR_LIST__;
+  int *c = &__CTOR_LIST__;
+  c++;
+  while (*c)
+    {
+      ctp d = (ctp)*c;
+      (d)();
+      c++;
+    }
+}
 
 void  __attribute__((noreturn))
 __crt_startup (void)
@@ -102,7 +96,7 @@ __crt_startup (void)
     __cpu_features_init ();   /* Do we have SSE, etc.*/
 //  _fpreset ();              /* Supplied by the runtime library. */
 
-    __initPOSIXHandles();
+    __do_global_ctors();
 
     __appcwdlen = strrchr(&__pgmname, '/') - &__pgmname + 1;
     __appcwdlen = __appcwdlen > 1023 ? 1023 : __appcwdlen;

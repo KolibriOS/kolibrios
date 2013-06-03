@@ -29,40 +29,6 @@ void init_reent()
     __sinit(ent);
 }
 
-void init_global_reent()
-{
-    struct _reent *ent;
-
-    ent =_GLOBAL_REENT;
-
-    _REENT_INIT_PTR(ent);
-
-    __asm__ __volatile__(
-    "movl %0, %%fs:12"
-    ::"r"(ent));
-    __sinit(ent);
-}
 
 
-void __mutex_lock(volatile int *val)
-{
-    int tmp;
 
-    __asm__ __volatile__ (
-"0:\n\t"
-    "mov %0, %1\n\t"
-    "testl %1, %1\n\t"
-    "jz 1f\n\t"
-
-    "movl $68, %%eax\n\t"
-    "movl $1,  %%ebx\n\t"
-    "int  $0x40\n\t"
-    "jmp 0b\n\t"
-"1:\n\t"
-    "incl %1\n\t"
-    "xchgl %0, %1\n\t"
-    "testl %1, %1\n\t"
-	"jnz 0b\n"
-    : "+m" (*val), "=&r"(tmp)
-    ::"eax","ebx" );
-}

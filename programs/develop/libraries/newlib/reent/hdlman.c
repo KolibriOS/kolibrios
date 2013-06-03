@@ -54,6 +54,8 @@
 
 void __ChkTTYIOMode( int handle );
 
+void __initPOSIXHandles( void ) __attribute__ ((constructor));
+
 void  __grow_iomode( int num );
 int   debugwrite(const char *path,const void *buff,
                  size_t offset, size_t count, size_t *writes);
