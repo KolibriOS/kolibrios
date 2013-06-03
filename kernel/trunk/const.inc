@@ -281,6 +281,10 @@ BOOT_VAR            equ (OS_BASE+0x02E0000)
 
 draw_data           equ (OS_BASE+0x0320000)
 
+BgrDrawMode         equ (OS_BASE+0x0323FF4)
+BgrDataWidth        equ (OS_BASE+0x0323FF8)
+BgrDataHeight       equ (OS_BASE+0x0323FFC)
+
 sys_pgmap           equ (OS_BASE+0x0324000)
 
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
@@ -342,7 +346,6 @@ BOOT_PITCH          equ 0x9001    ;word   scanline length
 BOOT_VESA_MODE      equ 0x9008    ;word   vesa video mode
 BOOT_X_RES          equ 0x900A    ;word   X res
 BOOT_Y_RES          equ 0x900C    ;word   Y res
-;;BOOT_MOUSE_PORT     equ 0x9010    ;byte   mouse port  - not used
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration

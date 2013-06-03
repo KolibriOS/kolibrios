@@ -438,10 +438,6 @@ img_background          rd 1
 mem_BACKGROUND          rd 1
 static_background_data  rd 1
 
-BgrDrawMode             rd 1
-BgrDataWidth            rd 1
-BgrDataHeight           rd 1
-
 skin_data              rd 1
 
 cache_ide0:
