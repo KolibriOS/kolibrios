@@ -3853,26 +3853,25 @@ endp
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
-        push    ecx
-        push    edx
 
-        mov     edx, [timer_ticks]
-;--------------------------------------
-align 4
-newtic:
-        mov     ecx, [timer_ticks]
-        sub     ecx, edx
-        cmp     ecx, ebx
-        jae     zerodelay
+        pushad
+        push    ebx
+        xor     esi, esi
+        mov     ecx, MANUAL_DESTROY
+        call    create_event
+        test    eax, eax
+        jz      .done
 
-        call    change_task
-
-        jmp     newtic
-;--------------------------------------
-align 4
-zerodelay:
-        pop     edx
-        pop     ecx
+        mov     ebx, edx
+        mov     ecx, [esp]
+        push    eax
+        call    wait_event_timeout
+        pop     eax
+        mov     ebx, [esp]
+        call    destroy_event
+.done:
+        add     esp, 4
+        popad
         ret
 ;-----------------------------------------------------------------------------
 align 16        ;very often call this subrutine
