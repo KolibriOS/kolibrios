@@ -2036,10 +2036,9 @@ sys_end:
         mov     [eax+TASKDATA.state], 3; terminate this program
         call    wakeup_osloop
 
-    waitterm:            ; wait here for termination
-        mov     ebx, 100
-        call    delay_hs
-        jmp     waitterm
+.waitterm:            ; wait here for termination
+        call    change_task
+        jmp     .waitterm
 ;------------------------------------------------------------------------------
 align 4
 restore_default_cursor_before_killing:
@@ -3850,7 +3849,7 @@ proc delay_hs_unprotected
         ret
 endp
 
-if 0
+if 1
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
@@ -3865,10 +3864,11 @@ delay_hs:     ; delay in 1/100 secs
 
         mov     ebx, edx
         mov     ecx, [esp]
+        push    edx
         push    eax
         call    wait_event_timeout
         pop     eax
-        mov     ebx, [esp]
+        pop     ebx
         call    destroy_event
 .done:
         add     esp, 4
