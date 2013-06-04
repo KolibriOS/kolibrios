@@ -504,8 +504,7 @@ terminate: ; terminate application
         mov     eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
         test    eax, eax
         jz      .nodebug
-        push    8
-        pop     ecx
+        movi    ecx, 8
         push    dword [CURRENT_TASK+edi+TASKDATA.pid]; PID
         push    2
         call    debugger_notify

@@ -19,6 +19,20 @@
 ;   __DEBUG__ equ 1
 ;   __DEBUG_LEVEL__ equ 5
 
+; MOV Immediate.
+; Useful for things like movi eax,10:
+; shorter than regular mov, but slightly slower,
+; do not use it in performance-critical places.
+macro movi dst, imm
+{
+if imm >= -0x80 & imm <= 0x7F
+        push    imm
+        pop     dst
+else
+        mov     dst, imm
+end if
+}
+
 macro debug_func name {
  if used name
   name@of@func equ name
@@ -273,8 +287,7 @@ debug_beginf
         call    fdo_debug_outchar
         pop     eax
     @@:
-        push    10
-        pop     ecx
+        movi    ecx, 10
         push    -'0'
   .l1:
         xor     edx, edx

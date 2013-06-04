@@ -298,8 +298,7 @@ virtual at esp
 .UserData       dd      ?       ; request_queue_item.UserData
 end virtual
 ; 1. Allocate the memory for the request description.
-        push    request_queue_item.sizeof
-        pop     eax
+        movi    eax, request_queue_item.sizeof
         call    Kmalloc
         test    eax, eax
         jnz     @f
@@ -1004,10 +1003,8 @@ proc inquiry_callback
 ; 4. Thus, create a temporary kernel thread which would do it.
         mov     edx, [esp+8]
         push    ebx ecx
-        push    51
-        pop     eax
-        push    1
-        pop     ebx
+        movi    eax, 51
+        movi    ebx, 1
         mov     ecx, new_disk_thread
         ; edx = parameter
         int     0x40
@@ -1069,8 +1066,7 @@ end virtual
         cmp     [edx+usb_unit_data.UnitReadyAttempts], 3
         jz      @f
         push    ecx edx esi
-        push    10
-        pop     esi
+        movi    esi, 10
         call    Sleep
         pop     esi edx ecx
         stdcall queue_request, ecx, test_unit_ready_req, 0, test_unit_ready_callback, edx
@@ -1124,8 +1120,7 @@ end virtual
         mov     byte [edi-1], 'd'
         push    eax
         push    -'0'
-        push    10
-        pop     ecx
+        movi    ecx, 10
 @@:
         cdq
         div     ecx

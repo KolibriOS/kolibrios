@@ -139,8 +139,7 @@ endg
 
 register_keyboard:
         push    ebx
-        push    sizeof.KEYBOARD
-        pop     eax
+        movi    eax, sizeof.KEYBOARD
         call    malloc
         test    eax, eax
         jz      .nothing

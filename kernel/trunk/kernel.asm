@@ -5567,8 +5567,7 @@ system_shutdown:          ; shut down the system
         ret
 @@:
         call    stop_all_services
-        push    3                ; stop playing cd
-        pop     eax
+        movi    eax, 3
         call    sys_cd_audio
 
 yes_shutdown_param:
@@ -5576,8 +5575,7 @@ yes_shutdown_param:
 
 if ~ defined extended_primary_loader
         mov     eax, kernel_file ; load kernel.mnt to 0x7000:0
-        push    12
-        pop     esi
+        movi    esi, 12
         xor     ebx, ebx
         or      ecx, -1
         mov     edx, OS_BASE+0x70000

@@ -680,8 +680,7 @@ end virtual
         jmp     .no_device
 .has_device:
         push    eax
-        push    sizeof.PCIDEV
-        pop     eax
+        movi    eax, sizeof.PCIDEV
         call    malloc
         pop     ecx
         test    eax, eax

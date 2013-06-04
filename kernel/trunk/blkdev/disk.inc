@@ -335,8 +335,7 @@ disk_add:
         push    ebx esi         ; save used registers to be stdcall
 ; 1. Allocate the DISK structure.
 ; 1a. Call the heap manager.
-        push    sizeof.DISK
-        pop     eax
+        movi    eax, sizeof.DISK
         call    malloc
 ; 1b. Check the result. If allocation failed, return (go to 9) with eax = 0.
         test    eax, eax
@@ -608,15 +607,13 @@ disk_call_driver:
 
 ; The default implementation of DISKFUNC.querymedia.
 disk_default_querymedia:
-        push    DISK_STATUS_INVALID_CALL
-        pop     eax
+        movi    eax, DISK_STATUS_INVALID_CALL
         ret     8
 
 ; The default implementation of DISKFUNC.read and DISKFUNC.write.
 disk_default_read:
 disk_default_write:
-        push    DISK_STATUS_INVALID_CALL
-        pop     eax
+        movi    eax, DISK_STATUS_INVALID_CALL
         ret     20
 
 ; The default implementation of DISKFUNC.close, DISKFUNC.closemedia and
@@ -1002,8 +999,7 @@ end virtual
         jnz     .success
 ; 3. No file system has recognized the volume, so just allocate the PARTITION
 ; structure without extra fields.
-        push    sizeof.PARTITION
-        pop     eax
+        movi    eax, sizeof.PARTITION
         call    malloc
         test    eax, eax
         jz      .nothing

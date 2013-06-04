@@ -278,8 +278,7 @@ debug_beginf
         call    fdo_debug_outchar
         pop     eax
     @@:
-        push    10
-        pop     ecx
+        movi    ecx, 10
         push    -'0'
   .l1:
         xor     edx, edx

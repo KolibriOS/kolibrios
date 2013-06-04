@@ -160,8 +160,7 @@ macro   TCP_init {
 
         init_queue TCP_queue
 
-        push    1
-        pop     ebx
+        movi    ebx, 1
         mov     ecx, TCP_process_input
         call    new_sys_threads
 

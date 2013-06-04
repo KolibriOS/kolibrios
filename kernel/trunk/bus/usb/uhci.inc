@@ -315,8 +315,7 @@ end if
 ; 2b. Fill first 32 entries.
         inc     eax
         inc     eax     ; set QH bit for uhci_pipe.NextQH
-        push    32
-        pop     ecx
+        movi    ecx, 32
         mov     edx, ecx
 @@:
         stosd
@@ -416,12 +415,10 @@ end if
         mov     ax, 2
         out     dx, ax
 ; 5f. Wait up to 10ms.
-        push    10
-        pop     ecx
+        movi    ecx, 10
 @@:
         push    esi
-        push    1
-        pop     esi
+        movi    esi, 1
         call    delay_ms
         pop     esi
         in      ax, dx
@@ -435,8 +432,7 @@ if 0
 ; emergency variant for tests - always wait 10 ms
 ; wait 10 ms
         push    esi
-        push    10
-        pop     esi
+        movi    esi, 10
         call    delay_ms
         pop     esi
 ; clear reset signal
@@ -998,8 +994,7 @@ end if
 ; * if several non-fatal errors have occured during transaction retries,
 ;   all corresponding bits are set. In this case, return some error code,
 ;   the order is quite arbitrary.
-        push    USB_STATUS_UNDERRUN
-        pop     ecx
+        movi    ecx, USB_STATUS_UNDERRUN
         test    al, 1 shl (22-16)       ; not Stalled?
         jz      .know_error
         mov     cl, USB_STATUS_OVERRUN
@@ -1260,8 +1255,7 @@ proc uhci_port_reset_done
 ; 2. Status bits in UHCI are invalid during reset signalling.
 ; Wait a millisecond while status bits become valid again.
         push    esi
-        push    1
-        pop     esi
+        movi    esi, 1
         call    delay_ms
         pop     esi
 ; 3. ConnectStatus bit is zero during reset and becomes 1 during step 2;
@@ -1458,8 +1452,7 @@ end virtual
 ; if so, return an error.
         lea     edx, [esi + uhci_controller.IntEDs - sizeof.uhci_controller]
         lea     eax, [esi + uhci_controller.IntEDs + 32*sizeof.uhci_static_ep - sizeof.uhci_controller]
-        push    64
-        pop     ecx
+        movi    ecx, 64
         call    usb1_select_interrupt_list
         test    edx, edx
         jz      .return0

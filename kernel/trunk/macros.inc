@@ -117,3 +117,16 @@ macro list_del entry
         mov     [ecx+list_fd], edx
 }
 
+; MOV Immediate.
+; Useful for things like movi eax,10:
+; shorter than regular mov, but slightly slower,
+; do not use it in performance-critical places.
+macro movi dst, imm
+{
+if imm >= -0x80 & imm <= 0x7F
+        push    imm
+        pop     dst
+else
+        mov     dst, imm
+end if
+}

@@ -253,8 +253,7 @@ end virtual
 ; 2a. Save registers.
         push    edx
 ; 2b. Call the allocator.
-        push    40
-        pop     eax
+        movi    eax, 40
         call    malloc
 ; 2c. Restore registers.
         pop     ecx

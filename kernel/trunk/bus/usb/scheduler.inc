@@ -206,8 +206,7 @@ end virtual
         sub     ecx, 3
         cmp     ecx, 5  ; maximum 32ms
         jbe     @f
-        push    5
-        pop     ecx
+        movi    ecx, 5
 @@:
 ; There are four nested loops,
 ; * Loop #4 (the innermost one) calculates the total periodic bandwidth
@@ -221,10 +220,8 @@ end virtual
 ; ebx = number of iterations of loop #1
 ; [esp] = delta of counter for loop #3, in bytes
 ; [esp+4] = delta between the first group and the target group, in bytes
-        push    1
-        pop     ebx
-        push    sizeof.ehci_static_ep
-        pop     edx
+        movi    ebx, 1
+        movi    edx, sizeof.ehci_static_ep
         shl     ebx, cl
         shl     edx, cl
         mov     eax, 64*sizeof.ehci_static_ep
@@ -282,8 +279,7 @@ end virtual
         ja      @f
         mov     [.bandwidth], edi
         mov     [.target], edx
-        push    1
-        pop     eax
+        movi    eax, 1
         shl     eax, cl
         mov     [.targetsmask], eax
 @@:
@@ -317,8 +313,7 @@ end virtual
         mov     ecx, [.targetsmask]
         add     [edx+ehci_static_ep.Bandwidths+ecx*2], ax
         add     edx, ehci_static_ep.SoftwarePart
-        push    1
-        pop     eax
+        movi    eax, 1
         shl     eax, cl
         pop     edi ebx         ; restore used registers to be stdcall
         ret
@@ -371,8 +366,7 @@ virtual at esp
 end virtual
 ; 10. Select the best variant.
 ; edx = S-Mask = bitmask of scheduled microframes
-        push    0x11
-        pop     edx
+        movi    edx, 0x11
         cmp     ecx, 1
         ja      @f
         mov     dl, 0x55
