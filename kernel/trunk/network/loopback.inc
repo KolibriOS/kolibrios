@@ -19,7 +19,8 @@ $Revision: 2891 $
 iglobal
 
 LOOPBACK_DEVICE:
-        .type            dd NET_TYPE_LOOPBACK
+
+        .device_type     dd NET_DEVICE_LOOPBACK
         .mtu             dd 4096
         .name            dd .namestr
 
@@ -43,7 +44,7 @@ endg
 ;
 ; LOOP_input
 ;
-;  IN:   [esp+4]  = Pointer to buffer
+;  IN:  [esp+4] = Pointer to buffer
 ;       [esp+8] = size of buffer
 ;
 ;  OUT: /
@@ -60,11 +61,11 @@ LOOP_input:
         push    eax
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: size=%u\n", ecx
-        lea     edx, [eax + 2]
-        mov     ax, word[eax]
+        lea     edx, [eax + 4]
+        mov     eax, dword[eax]
         mov     ebx, LOOPBACK_DEVICE
 
-        cmp     ax, ETHER_IPv4
+        cmp     eax, AF_INET4
         je      IPv4_input
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: Unknown packet type=%x\n", ax
@@ -96,21 +97,21 @@ LOOP_output:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output\n"
 
         push    ecx
-        push    di
+        push    edi
 
-        add     ecx, 2
+        add     ecx, 4
         cmp     ecx, [LOOPBACK_DEVICE.mtu]
         ja      .out_of_ram
         stdcall kernel_alloc, ecx
         test    eax, eax
         jz      .out_of_ram
         mov     edi, eax
-        pop     ax
-        stosw
+        pop     eax
+        stosd
 
-        lea     eax, [edi - 2]  ; Set eax to buffer start
+        lea     eax, [edi - 4]  ; Set eax to buffer start
         pop     ecx
-        lea     edx, [ecx + 2]  ; Set edx to complete buffer size
+        lea     edx, [ecx + 4]  ; Set edx to complete buffer size
         mov     ebx, LOOPBACK_DEVICE
 
   .done:
@@ -119,8 +120,8 @@ LOOP_output:
 
   .out_of_ram:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output: failed\n"
-        add     esp, 2+4
-        sub     edi, edi
+        add     esp, 4+4
+        xor     edi, edi
         ret
 
 

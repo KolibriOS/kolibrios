@@ -58,17 +58,17 @@ ends
 align 4
 uglobal
 
-        IP_LIST         rd MAX_NET_DEVICES
-        SUBNET_LIST     rd MAX_NET_DEVICES
-        DNS_LIST        rd MAX_NET_DEVICES
-        GATEWAY_LIST    rd MAX_NET_DEVICES
-        BROADCAST_LIST  rd MAX_NET_DEVICES
+        IP_LIST                 rd NET_DEVICES_MAX
+        SUBNET_LIST             rd NET_DEVICES_MAX
+        DNS_LIST                rd NET_DEVICES_MAX
+        GATEWAY_LIST            rd NET_DEVICES_MAX
+        BROADCAST_LIST          rd NET_DEVICES_MAX
 
-        IP_packets_tx   rd MAX_NET_DEVICES
-        IP_packets_rx   rd MAX_NET_DEVICES
-        IP_packets_dumped       rd MAX_NET_DEVICES
+        IP_packets_tx           rd NET_DEVICES_MAX
+        IP_packets_rx           rd NET_DEVICES_MAX
+        IP_packets_dumped       rd NET_DEVICES_MAX
 
-        FRAGMENT_LIST   rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
+        FRAGMENT_LIST           rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
 endg
 
 
@@ -83,7 +83,7 @@ macro   IPv4_init {
 
         xor     eax, eax
         mov     edi, IP_LIST
-        mov     ecx, 7*MAX_NET_DEVICES + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
+        mov     ecx, 7*NET_DEVICES_MAX + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
         rep     stosd
 
 }
@@ -592,7 +592,7 @@ IPv4_output:
         mov     edx, esp
         mov     ecx, [esp + 10 + 6]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_IPv4
+        mov     di, ETHER_PROTO_IPv4
         call    ETH_output
         jz      .eth_error
         add     esp, 6                  ; pop the mac out of the stack
@@ -637,7 +637,7 @@ IPv4_output:
   .loopback:
         mov     dword [esp + 2], eax
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_IPv4
+        mov     edi, AF_INET4
         call    LOOP_output
         jmp     .continue
 
@@ -681,7 +681,7 @@ IPv4_output_raw:
         mov     edx, esp
         mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_IPv4
+        mov     di, ETHER_PROTO_IPv4
         call    ETH_output
         jz      .error
 
@@ -775,7 +775,7 @@ IPv4_fragment:
 
         mov     eax, [esp + 3*4]
         lea     ebx, [esp + 4*4]
-        mov     di , ETHER_IPv4
+        mov     di , ETHER_PROTO_IPv4
         call    ETH_output
 
         cmp     edi, -1
@@ -866,7 +866,7 @@ IPv4_route:
         je      .broadcast
 
         xor     edi, edi
-        mov     ecx, MAX_NET_DEVICES
+        mov     ecx, NET_DEVICES_MAX
   .loop:
         mov     ebx, [IP_LIST+edi]
         and     ebx, [SUBNET_LIST+edi]

@@ -93,7 +93,7 @@ TCP_output:
         jmp     .no_force
 
   .no_zero_window:
-        mov     [eax + TCP_SOCKET.timer_persist], 0
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_persist
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
 
   .no_force:
@@ -125,7 +125,7 @@ TCP_output:
         jnz     @f
 
 ; cancel pending retransmit
-        mov     [eax + TCP_SOCKET.timer_retransmission], 0
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
 
 ; pull SND_NXT back to (closed) window, We will enter persist state below.
         push    [eax + TCP_SOCKET.SND_UNA]
@@ -266,12 +266,13 @@ TCP_output:
 
   .enter_persist:
 
-        cmp     [eax + STREAM_SOCKET.snd.size], 0       ; Data ready to send?
+        cmp     [eax + STREAM_SOCKET.snd.size], 0                       ; Data ready to send?
         jne     @f
-        cmp     [eax + TCP_SOCKET.timer_retransmission], 0
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
         jne     @f
-        cmp     [eax + TCP_SOCKET.timer_persist], 0     ; Persist timer already expired?
-        jne     @f
+
+        test    [ebx + TCP_SOCKET.timer_flags], timer_flag_persist      ; Persist timer already expired?
+        jnz     @f
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: Entering persist state\n"
 
@@ -512,19 +513,19 @@ TCP_send:
        @@:
 
 ; set retransmission timer if not already set, and not doing an ACK or keepalive probe
-
-        cmp     [eax + TCP_SOCKET.timer_retransmission], 0 ;;;; FIXME
-        ja      .retransmit_set
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
+        jnz     .retransmit_set
 
         cmp     edx, [eax + TCP_SOCKET.SND_UNA]                 ; edx is still [eax + TCP_SOCKET.SND_NXT]
         je      .retransmit_set
 
         mov     edx, [eax + TCP_SOCKET.t_rxtcur]
         mov     [eax + TCP_SOCKET.timer_retransmission], edx
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
 
-        cmp     [eax + TCP_SOCKET.timer_persist], 0
-        jne     .retransmit_set
-        mov     [eax + TCP_SOCKET.timer_persist], 0
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist
+        jz      .retransmit_set
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_persist
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
 
   .retransmit_set:
@@ -593,6 +594,7 @@ TCP_send:
         pop     eax
 
         mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
 
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock

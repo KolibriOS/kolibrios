@@ -62,9 +62,9 @@ uglobal
 
         ARP_table       rb ARP_TABLE_SIZE * sizeof.ARP_entry    ; TODO: separate ARP table and stats per interface
 
-        ARP_PACKETS_TX  rd MAX_NET_DEVICES
-        ARP_PACKETS_RX  rd MAX_NET_DEVICES
-        ARP_CONFLICTS   rd MAX_NET_DEVICES
+        ARP_PACKETS_TX  rd NET_DEVICES_MAX
+        ARP_PACKETS_RX  rd NET_DEVICES_MAX
+        ARP_CONFLICTS   rd NET_DEVICES_MAX
 
 
 endg
@@ -84,7 +84,7 @@ macro ARP_init {
         mov     [NumARP], eax
 
         mov     edi, ARP_PACKETS_TX
-        mov     ecx, 3*MAX_NET_DEVICES
+        mov     ecx, 3*NET_DEVICES_MAX
         rep     stosd
 
 }
@@ -318,7 +318,7 @@ ARP_output_request:
         lea     eax, [ebx + ETH_DEVICE.mac]     ; local device mac
         mov     edx, ETH_BROADCAST              ; broadcast mac
         mov     ecx, sizeof.ARP_header
-        mov     di, ETHER_ARP
+        mov     di, ETHER_PROTO_ARP
         call    ETH_output
         jz      .exit
 

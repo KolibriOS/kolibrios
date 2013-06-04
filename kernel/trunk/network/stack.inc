@@ -31,31 +31,20 @@ endg
 DEBUG_NETWORK_ERROR     = 1
 DEBUG_NETWORK_VERBOSE   = 0
 
-MAX_NET_DEVICES         = 16
+NET_DEVICES_MAX         = 16
 ARP_BLOCK               = 1             ; true or false
 
-MIN_EPHEMERAL_PORT      = 49152
+EPHEMERAL_PORT_MIN      = 49152
+EPHEMERAL_PORT_MAX      = 61000
 MIN_EPHEMERAL_PORT_N    = 0x00C0        ; same in Network byte order (FIXME)
-MAX_EPHEMERAL_PORT      = 61000
 MAX_EPHEMERAL_PORT_N    = 0x48EE        ; same in Network byte order (FIXME)
 
 ; Ethernet protocol numbers
-ETHER_ARP               = 0x0608
-ETHER_IPv4              = 0x0008
-ETHER_IPv6              = 0xDD86
-ETHER_PPP_DISCOVERY     = 0x6388
-ETHER_PPP_SESSION       = 0x6488
-
-; PPP protocol numbers
-PPP_IPv4                = 0x2100
-PPP_IPV6                = 0x5780
-
-;Protocol family
-AF_UNSPEC               = 0
-AF_LOCAL                = 1
-AF_INET4                = 2
-AF_INET6                = 10
-AF_PPP                  = 777
+ETHER_PROTO_ARP                 = 0x0608
+ETHER_PROTO_IPv4                = 0x0008
+ETHER_PROTO_IPv6                = 0xDD86
+ETHER_PROTO_PPP_DISCOVERY       = 0x6388
+ETHER_PROTO_PPP_SESSION         = 0x6488
 
 ; Internet protocol numbers
 IP_PROTO_IP             = 0
@@ -63,8 +52,17 @@ IP_PROTO_ICMP           = 1
 IP_PROTO_TCP            = 6
 IP_PROTO_UDP            = 17
 
-; PPP protocol number
-PPP_PROTO_ETHERNET      = 666
+; PPP protocol numbers
+PPP_PROTO_IPv4          = 0x2100
+PPP_PROTO_IPV6          = 0x5780
+PPP_PROTO_ETHERNET      = 666           ; FIXME
+
+;Protocol family
+AF_UNSPEC               = 0
+AF_LOCAL                = 1
+AF_INET4                = 2
+AF_INET6                = 10
+AF_PPP                  = 777           ; FIXME
 
 ; Socket types
 SOCK_STREAM             = 1
@@ -83,7 +81,7 @@ SO_REUSEPORT            = 1 shl 7
 SO_USELOOPBACK          = 1 shl 8
 SO_BINDTODEVICE         = 1 shl 9
 
-SO_BLOCK                = 1 shl 10    ; TO BE REMOVED
+SO_BLOCK                = 1 shl 10      ; TO BE REMOVED
 SO_NONBLOCK             = 1 shl 31
 
 ; Socket flags for user calls
@@ -95,32 +93,26 @@ SOL_SOCKET              = 0
 
 
 ; Socket States
-SS_NOFDREF              = 0x0001      ; no file table ref any more
-SS_ISCONNECTED          = 0x0002      ; socket connected to a peer
-SS_ISCONNECTING         = 0x0004      ; in process of connecting to peer
-SS_ISDISCONNECTING      = 0x0008      ; in process of disconnecting
-SS_CANTSENDMORE         = 0x0010      ; can't send more data to peer
-SS_CANTRCVMORE          = 0x0020      ; can't receive more data from peer
-SS_RCVATMARK            = 0x0040      ; at mark on input
-SS_ISABORTING           = 0x0080      ; aborting fd references - close()
-SS_RESTARTSYS           = 0x0100      ; restart blocked system calls
-SS_ISDISCONNECTED       = 0x0800      ; socket disconnected from peer
+SS_NOFDREF              = 0x0001        ; no file table ref any more
+SS_ISCONNECTED          = 0x0002        ; socket connected to a peer
+SS_ISCONNECTING         = 0x0004        ; in process of connecting to peer
+SS_ISDISCONNECTING      = 0x0008        ; in process of disconnecting
+SS_CANTSENDMORE         = 0x0010        ; can't send more data to peer
+SS_CANTRCVMORE          = 0x0020        ; can't receive more data from peer
+SS_RCVATMARK            = 0x0040        ; at mark on input
+SS_ISABORTING           = 0x0080        ; aborting fd references - close()
+SS_RESTARTSYS           = 0x0100        ; restart blocked system calls
+SS_ISDISCONNECTED       = 0x0800        ; socket disconnected from peer
 
-SS_ASYNC                = 0x0100      ; async i/o notify
-SS_ISCONFIRMING         = 0x0200      ; deciding to accept connection req
+SS_ASYNC                = 0x0100        ; async i/o notify
+SS_ISCONFIRMING         = 0x0200        ; deciding to accept connection req
 SS_MORETOCOME           = 0x0400
 
 SS_BLOCKED              = 0x8000
 
 
-SOCKET_MAXDATA          = 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
-
-; Network driver types
-NET_TYPE_LOOPBACK       = 0
-NET_TYPE_ETH            = 1
-NET_TYPE_SLIP           = 2
-
-MAX_backlog             = 20          ; maximum backlog for stream sockets
+SOCKET_MAXDATA          = 4096*32       ; must be 4096*(power of 2) where 'power of 2' is at least 8
+MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
 ENOBUFS                 = 55
@@ -139,11 +131,23 @@ API_ARP                 = 5
 API_PPPOE               = 6
 API_IPv6                = 7
 
+; Network device types
+NET_DEVICE_LOOPBACK     = 0
+NET_DEVICE_ETH          = 1
+NET_DEVICE_SLIP         = 2
+
+; Network link types (link protocols)
+NET_LINK_LOOPBACK       = 0     ;;; Really a link type?
+NET_LINK_MAC            = 1     ; Media access control (ethernet, isdn, ...)
+NET_LINK_PPP            = 2     ; Point to Point Protocol (PPPoE, ...)
+NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
+
+; Hardware acceleration bits
 HWACC_TCP_IPv4          = 1 shl 0
 
 struct  NET_DEVICE
 
-        type            dd ?    ; Type field
+        device_type     dd ?    ; Type field
         mtu             dd ?    ; Maximal Transmission Unit
         name            dd ?    ; Ptr to 0 terminated string
 
@@ -156,7 +160,7 @@ struct  NET_DEVICE
         packets_tx      dd ?    ;
         packets_rx      dd ?    ;
 
-        state           dd ?    ; link state (0 = no link)
+        link_state      dd ?    ; link state (0 = no link)
         hwacc           dd ?    ; bitmask stating enabled HW accelerations (offload engines)
 
 ends
@@ -214,7 +218,7 @@ uglobal
 
         NET_RUNNING     dd  ?
         NET_DEFAULT     dd  ?
-        NET_DRV_LIST    rd  MAX_NET_DEVICES
+        NET_DRV_LIST    rd  NET_DEVICES_MAX
 
 endg
 
@@ -235,7 +239,7 @@ stack_init:
 ; Init the network drivers list
         xor     eax, eax
         mov     edi, NET_RUNNING
-        mov     ecx, (MAX_NET_DEVICES + 2)
+        mov     ecx, (NET_DEVICES_MAX + 2)
         rep     stosd
 
         PPPoE_init
@@ -345,13 +349,13 @@ NET_add_device:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_Add_Device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
-        cmp     [NET_RUNNING], MAX_NET_DEVICES
+        cmp     [NET_RUNNING], NET_DEVICES_MAX
         jae     .error
 
 ;----------------------------------
 ; Check if device is already listed
         mov     eax, ebx
-        mov     ecx, MAX_NET_DEVICES    ; We need to check whole list because a device may be removed without re-organizing list
+        mov     ecx, NET_DEVICES_MAX    ; We need to check whole list because a device may be removed without re-organizing list
         mov     edi, NET_DRV_LIST
 
         repne   scasd                   ; See if device is already in the list
@@ -360,7 +364,7 @@ NET_add_device:
 ;----------------------------
 ; Find empty slot in the list
         xor     eax, eax
-        mov     ecx, MAX_NET_DEVICES
+        mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
 
         repne   scasd
@@ -378,13 +382,6 @@ NET_add_device:
 
         inc     [NET_RUNNING]           ; Indicate that one more network device is up and running
 
-        cmp     eax, 1                  ; If it's the first network device, try to set it as default
-        jne     @f
-        push    eax
-        call    NET_set_default
-        pop     eax
-       @@:
-
         call    NET_send_event
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Device number: %u\n", eax
@@ -395,38 +392,6 @@ NET_add_device:
         DEBUGF  DEBUG_NETWORK_ERROR, "Adding network device failed\n"
         ret
 
-
-
-;-----------------------------------------------------------------
-;
-; NET_set_default
-;
-;  API to set the default interface
-;
-;  IN:  Device num in eax
-;  OUT: Device num in eax, -1 on error
-;
-;-----------------------------------------------------------------
-align 4
-NET_set_default:
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_set_default: device=%x\n", eax
-
-        cmp     eax, MAX_NET_DEVICES
-        jae     .error
-
-        cmp     [NET_DRV_LIST+eax*4], 0
-        je      .error
-
-        mov     [NET_DEFAULT], eax
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_set_default: succes\n"
-        ret
-
-  .error:
-        or      eax, -1
-        DEBUGF  DEBUG_NETWORK_ERROR, "NET_set_default: failed\n"
-        ret
 
 
 ;-----------------------------------------------------------------
@@ -453,7 +418,7 @@ NET_remove_device:
         je      @f
         ; there are still active devices, find one and make it default
         xor     eax, eax
-        mov     ecx, MAX_NET_DEVICES
+        mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
         repe    scasd
         je      @f
@@ -466,7 +431,7 @@ NET_remove_device:
 ; Find the driver in the list
 
         mov     eax, ebx
-        mov     ecx, MAX_NET_DEVICES
+        mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST+4
 
         repne   scasd
@@ -501,7 +466,7 @@ align 4
 NET_ptr_to_num:
         push    ecx
 
-        mov     ecx, MAX_NET_DEVICES
+        mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
 
   .loop:
@@ -658,7 +623,7 @@ sys_network:                    ; FIXME: make default device easily accessible
         jmp     .return
 
    @@:
-        cmp     bh, MAX_NET_DEVICES             ; Check if device number exists
+        cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
         jae     .doesnt_exist
 
         mov     esi, ebx
@@ -682,12 +647,11 @@ sys_network:                    ; FIXME: make default device easily accessible
         dd      .stop                   ; 3
         dd      .get_ptr                ; 4
         dd      .get_drv_name           ; 5
-        dd      .set_default            ; 6
   .number = ($ - .table) / 4 - 1
 
   .get_type:                            ; 0 = Get device type (ethernet/token ring/...)
 
-        mov     eax, [eax + NET_DEVICE.type]
+        mov     eax, [eax + NET_DEVICE.device_type]
         jmp     .return
 
 
@@ -724,11 +688,6 @@ sys_network:                    ; FIXME: make default device easily accessible
         jmp     .return
 
 
-  .set_default:                         ; 6 = Set default device
-
-        call    NET_set_default
-        jmp     .return
-
   .doesnt_exist:
         mov     eax, -1
 
@@ -744,7 +703,7 @@ sys_network:                    ; FIXME: make default device easily accessible
 ;----------------------------------------------------------------
 align 4
 sys_protocols:
-        cmp     bh, MAX_NET_DEVICES             ; Check if device number exists
+        cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
         jae     .doesnt_exist
 
         mov     esi, ebx

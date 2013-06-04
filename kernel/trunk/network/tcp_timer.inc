@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -16,6 +16,13 @@
 
 $Revision: 3143 $
 
+timer_flag_retransmission       = 1 shl 0
+timer_flag_keepalive            = 1 shl 1
+timer_flag_2msl                 = 1 shl 2
+timer_flag_persist              = 1 shl 3
+timer_flag_wait                 = 1 shl 4
+
+
 ;----------------------
 ; 160 ms timer
 ;----------------------
@@ -27,17 +34,16 @@ local   .exit
         mov     ebx, net_sockets
   .loop:
         mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
+        test    ebx, ebx
         jz      .exit
 
         cmp     [ebx + SOCKET.Domain], AF_INET4
         jne     .loop
-
         cmp     [ebx + SOCKET.Protocol], IP_PROTO_TCP
         jne     .loop
-
         test    [ebx + TCP_SOCKET.t_flags], TF_DELACK
         jz      .loop
+
         and     [ebx + TCP_SOCKET.t_flags], not (TF_DELACK)
 
         push    ebx
@@ -58,7 +64,7 @@ local   .exit
 ;----------------------
 ; 640 ms timer
 ;----------------------
-macro   TCP_timer_640ms {
+macro   TCP_timer_640ms {                       ; TODO: implement timed wait timer!
 
 local   .loop
 local   .exit
@@ -68,7 +74,7 @@ local   .exit
         add     [TCP_sequence_num], 64000
 
 ; scan through all the active TCP sockets, decrementing ALL timers
-; timers do not have the chance to wrap because the keepalive timer will kill the socket when it expires
+; When a timer reaches zero, we'll check wheter it was active or not
 
         mov     eax, net_sockets
   .loop:
@@ -84,8 +90,11 @@ local   .exit
         jne     .loop
 
         inc     [eax + TCP_SOCKET.t_idle]
+
         dec     [eax + TCP_SOCKET.timer_retransmission]
         jnz     .check_more2
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
+        jz      .check_more2
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Retransmission timer expired\n", eax
 
@@ -96,6 +105,8 @@ local   .exit
   .check_more2:
         dec     [eax + TCP_SOCKET.timer_keepalive]
         jnz     .check_more3
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_keepalive
+        jz      .check_more3
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Keepalive expired\n", eax
 
@@ -125,12 +136,16 @@ local   .exit
   .check_more3:
         dec     [eax + TCP_SOCKET.timer_timed_wait]
         jnz     .check_more5
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_2msl
+        jz      .check_more5
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: 2MSL timer expired\n", eax
 
   .check_more5:
         dec     [eax + TCP_SOCKET.timer_persist]
         jnz     .loop
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist
+        jz      .loop
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: persist timer expired\n", eax
 
@@ -152,17 +167,6 @@ local   .exit
 
 TCP_cancel_timers:
 
-        push    eax edi
-
-        lea     edi, [eax + TCP_SOCKET.timer_retransmission]
-        xor     eax, eax
-        stosd
-        stosd
-        stosd
-        stosd
-        stosd
-
-        pop     edi eax
-
+        mov     [eax + TCP_SOCKET.timer_flags], 0
 
         ret

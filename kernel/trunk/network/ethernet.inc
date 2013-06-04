@@ -64,19 +64,19 @@ ETH_input:
         lea     edx, [eax + sizeof.ETH_header]
         mov     ax, [eax + ETH_header.Type]
 
-        cmp     ax, ETHER_IPv4
+        cmp     ax, ETHER_PROTO_IPv4
         je      IPv4_input
 
-        cmp     ax, ETHER_ARP
+        cmp     ax, ETHER_PROTO_IPv4
         je      ARP_input
 
-        cmp     ax, ETHER_IPv6
+        cmp     ax, ETHER_PROTO_IPv4
         je      IPv6_input
 
-        cmp     ax, ETHER_PPP_DISCOVERY
+        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
         je      PPPoE_discovery_input
 
-        cmp     ax, ETHER_PPP_SESSION
+        cmp     ax, ETHER_PROTO_PPP_SESSION
         je      PPPoE_session_input
 
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH_input: Unknown packet type=%x\n", ax
@@ -174,11 +174,11 @@ ETH_output:
 align 4
 ETH_api:
 
-        cmp     bh, MAX_NET_DEVICES
+        cmp     bh, NET_DEVICES_MAX
         ja      .error
         movzx   eax, bh
         mov     eax, dword [NET_DRV_LIST + 4*eax]
-        cmp     [eax + NET_DEVICE.type], NET_TYPE_ETH
+        cmp     [eax + NET_DEVICE.device_type], NET_DEVICE_ETH
         jne     .error
 
         and     ebx, 0xff
@@ -228,6 +228,6 @@ ETH_api:
         ret
 
   .state:
-        mov     eax, [eax + NET_DEVICE.state]
+        mov     eax, [eax + NET_DEVICE.link_state]
         ret
 

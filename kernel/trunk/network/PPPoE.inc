@@ -113,14 +113,14 @@ PPPoE_discovery_output:
 ; Check that device exists and is ethernet device
         mov     ebx, [eax + SOCKET.device]
 
-        cmp     ebx, MAX_NET_DEVICES
+        cmp     ebx, NET_DEVICES_MAX
         ja      .bad
 
         mov     ebx, [NET_DRV_LIST + 4*ebx]
         test    ebx, ebx
         jz      .bad
 
-        cmp     [ebx + NET_DEVICE.type], NET_TYPE_ETH
+        cmp     [ebx + NET_DEVICE.device_type], NET_DEVICE_ETH
         jne     .bad
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_discovery_output: device=%x\n", ebx
@@ -148,9 +148,9 @@ PPPoE_discovery_output:
         lea     esi, [ebx + ETH_DEVICE.mac]
         movsd
         movsw
-        cmp     word[edi], ETHER_PPP_SESSION    ; Allow only PPP_discovery, or LCP
+        cmp     word[edi], ETHER_PROTO_PPP_SESSION      ; Allow only PPP_discovery, or LCP
         je      @f
-        mov     ax, ETHER_PPP_DISCOVERY
+        mov     ax, ETHER_PROTO_PPP_DISCOVERY
         stosw
        @@:
 
@@ -200,10 +200,10 @@ PPPoE_session_input:
         mov     ax, word [edx + PPPoE_frame.Payload]
         add     edx, PPPoE_frame.Payload + 2
 
-        cmp     ax, PPP_IPv4
+        cmp     ax, PPP_PROTO_IPv4
         je      IPv4_input
 
-;        cmp     ax, PPP_IPv6
+;        cmp     ax, PPP_PROTO_IPv6
 ;        je      IPv6_input
 
         jmp     PPPoE_discovery_input   ; Send LCP,CHAP,CBCP,... packets to the PPP dialer
@@ -246,7 +246,7 @@ PPPoE_output:
         lea     eax, [ebx + ETH_DEVICE.mac]
         lea     edx, [PPPoE_MAC]
         add     ecx, PPPoE_frame.Payload + 2
-        mov     di, ETHER_PPP_SESSION
+        mov     di, ETHER_PROTO_PPP_SESSION
         call    ETH_output
         jz      .eth_error
 

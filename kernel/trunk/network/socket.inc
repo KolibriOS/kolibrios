@@ -127,6 +127,7 @@ struct  TCP_SOCKET              IP_SOCKET
 
 ;-------
 ; Timers
+        timer_flags             dd ?
         timer_retransmission    dd ? ; rexmt
         timer_persist           dd ?
         timer_keepalive         dd ? ; keepalive/syn timeout
@@ -215,18 +216,18 @@ macro   SOCKET_init {
 
        @@:
         pseudo_random eax
-        cmp     ax, MIN_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MIN
         jb      @r
-        cmp     ax, MAX_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MAX
         ja      @r
         xchg    al, ah
         mov     [last_UDP_port], ax
 
        @@:
         pseudo_random eax
-        cmp     ax, MIN_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MIN
         jb      @r
-        cmp     ax, MAX_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MAX
         ja      @r
         xchg    al, ah
         mov     [last_TCP_port], ax
@@ -1121,7 +1122,7 @@ SOCKET_set_opt:
         je      .unbind
 
         movzx   edx, byte [edx + 9]
-        cmp     edx, MAX_NET_DEVICES
+        cmp     edx, NET_DEVICES_MAX
         ja      s_error
 
         mov     edx, [NET_DRV_LIST + 4*edx]

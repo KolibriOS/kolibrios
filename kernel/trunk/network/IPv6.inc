@@ -34,13 +34,13 @@ align 4
 uglobal
 
         IPv6:
-        .addresses      rd 4*MAX_NET_DEVICES
-        .subnet         rd 4*MAX_NET_DEVICES
-        .dns            rd 4*MAX_NET_DEVICES
-        .gateway        rd 4*MAX_NET_DEVICES
+        .addresses      rd 4*NET_DEVICES_MAX
+        .subnet         rd 4*NET_DEVICES_MAX
+        .dns            rd 4*NET_DEVICES_MAX
+        .gateway        rd 4*NET_DEVICES_MAX
 
-        .packets_tx     rd MAX_NET_DEVICES
-        .packets_rx     rd MAX_NET_DEVICES
+        .packets_tx     rd NET_DEVICES_MAX
+        .packets_rx     rd NET_DEVICES_MAX
 
 endg
 

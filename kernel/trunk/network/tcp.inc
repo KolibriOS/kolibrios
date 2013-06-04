@@ -129,12 +129,12 @@ ends
 
 align 4
 uglobal
-        TCP_segments_tx         rd MAX_NET_DEVICES
-        TCP_segments_rx         rd MAX_NET_DEVICES
-        TCP_segments_missed     rd MAX_NET_DEVICES
-        TCP_segments_dumped     rd MAX_NET_DEVICES
-;        TCP_bytes_rx            rq MAX_NET_DEVICES
-;        TCP_bytes_tx            rq MAX_NET_DEVICES
+        TCP_segments_tx         rd NET_DEVICES_MAX
+        TCP_segments_rx         rd NET_DEVICES_MAX
+        TCP_segments_missed     rd NET_DEVICES_MAX
+        TCP_segments_dumped     rd NET_DEVICES_MAX
+;        TCP_bytes_rx            rq NET_DEVICES_MAX
+;        TCP_bytes_tx            rq NET_DEVICES_MAX
         TCP_sequence_num        dd ?
         TCP_queue               rd TCP_QUEUE_SIZE*sizeof.TCP_queue_entry/4
         TCP_input_event         dd ?
@@ -152,7 +152,7 @@ macro   TCP_init {
 
         xor     eax, eax
         mov     edi, TCP_segments_tx
-        mov     ecx, (6*MAX_NET_DEVICES)
+        mov     ecx, (6*NET_DEVICES_MAX)
         rep     stosd
 
         pseudo_random   eax
