@@ -98,7 +98,7 @@ Accessibility opt. >      /@20
 Debug board               /rd/1/develop/board
 #11    **** SETTINGS ****
 Devices                   /rd/1/setup
-Background generator      /rd/1/pic4
+Background generator      /rd/1/media/palitra
 Colors & Skin             /rd/1/desktop
 Icons manager             /rd/1/icon
 MyKey                     /rd/1/mykey
