@@ -618,13 +618,13 @@ IPv4_output:
         ret
 
   .eth_error:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: ethernet error\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ethernet error\n"
         add     esp, 3*4+2+6
         xor     edi, edi
         ret
 
   .arp_error:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: ARP error=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ARP error=%x\n", eax
         add     esp, 3*4+2
         xor     edi, edi
         ret

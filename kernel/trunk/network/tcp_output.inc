@@ -93,7 +93,7 @@ TCP_output:
         jmp     .no_force
 
   .no_zero_window:
-        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_persist
+        and     [eax + TCP_SOCKET.timer_flags], not timer_flag_persist
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
 
   .no_force:
@@ -125,7 +125,7 @@ TCP_output:
         jnz     @f
 
 ; cancel pending retransmit
-        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
+        and     [eax + TCP_SOCKET.timer_flags], not timer_flag_retransmission
 
 ; pull SND_NXT back to (closed) window, We will enter persist state below.
         push    [eax + TCP_SOCKET.SND_UNA]
@@ -268,10 +268,10 @@ TCP_output:
 
         cmp     [eax + STREAM_SOCKET.snd.size], 0                       ; Data ready to send?
         jne     @f
-        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
+        and     [eax + TCP_SOCKET.timer_flags], not timer_flag_retransmission
         jne     @f
 
-        test    [ebx + TCP_SOCKET.timer_flags], timer_flag_persist      ; Persist timer already expired?
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist      ; Persist timer already expired?
         jnz     @f
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: Entering persist state\n"
@@ -521,11 +521,11 @@ TCP_send:
 
         mov     edx, [eax + TCP_SOCKET.t_rxtcur]
         mov     [eax + TCP_SOCKET.timer_retransmission], edx
-        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
+        or      [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
 
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_persist
         jz      .retransmit_set
-        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_persist
+        and     [eax + TCP_SOCKET.timer_flags], not timer_flag_persist
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
 
   .retransmit_set:
