@@ -230,10 +230,6 @@ Y_UNDER             equ (OS_BASE+0x000FB4C)
 ;unused ? only one reference
 MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
-Screen_Max_X        equ (OS_BASE+0x000FE00)
-Screen_Max_Y        equ (OS_BASE+0x000FE04)
-BytesPerScanLine    equ (OS_BASE+0x000FE08)
-SCR_MODE            equ (OS_BASE+0x000FE0C)
 
 LFBAddress          equ (OS_BASE+0x000FE80)
 BTN_ADDR            equ (OS_BASE+0x000FE88)
@@ -280,10 +276,6 @@ RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 BOOT_VAR            equ (OS_BASE+0x02E0000)
 
 draw_data           equ (OS_BASE+0x0320000)
-
-BgrDrawMode         equ (OS_BASE+0x0323FF4)
-BgrDataWidth        equ (OS_BASE+0x0323FF8)
-BgrDataHeight       equ (OS_BASE+0x0323FFC)
 
 sys_pgmap           equ (OS_BASE+0x0324000)
 

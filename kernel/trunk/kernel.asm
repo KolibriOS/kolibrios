@@ -405,19 +405,18 @@ high_code:
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
-        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE]; screen mode
-        mov     [SCR_MODE], eax
-;        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
+        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE] ; screen mode
+        mov     dword [SCR_MODE], eax
+;        mov     eax, [BOOT_VAR+0x9014]             ; Vesa 1.2 bnk sw add
 ;        mov     [BANK_SWITCH], eax
-        mov     [BytesPerScanLine], word 640*4      ; Bytes PerScanLine
-        cmp     [SCR_MODE], word 0x13       ; 320x200
+        mov     eax, 640 *4                         ; Bytes PerScanLine
+        cmp     [SCR_MODE], word 0x13               ; 320x200
         je      @f
-        cmp     [SCR_MODE], word 0x12       ; VGA 640x480
+        cmp     [SCR_MODE], word 0x12               ; VGA 640x480
         je      @f
-        movzx   eax, word[BOOT_VAR+BOOT_PITCH]   ; for other modes
-        mov     [BytesPerScanLine], ax
-        mov     [_display.pitch], eax
+        movzx   eax, word[BOOT_VAR+BOOT_PITCH]      ; for other modes
 @@:
+        mov     [_display.pitch], eax
         mov     eax, [_display.width]
         mul     [_display.height]
         mov     [_WinMapSize], eax
@@ -2492,7 +2491,7 @@ sysfn_set_screen_sizes:
         pushfd
         cli
         mov     eax, ecx
-        mov     ecx, [BytesPerScanLine]
+        mov     ecx, [_display.pitch]
         mov     [_display.width], eax
         dec     eax
         mov     [_display.height], edx
@@ -4998,7 +4997,7 @@ sys_gs:                         ; direct screen access
 .1:                             ; resolution
         mov     eax, [Screen_Max_X]
         shl     eax, 16
-        mov     ax, [Screen_Max_Y]
+        mov     ax, word [Screen_Max_Y]
         add     eax, 0x00010001
         mov     [esp+32], eax
         ret
@@ -5007,7 +5006,7 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline
-        mov     eax, [BytesPerScanLine]
+        mov     eax, [_display.pitch]
         mov     [esp+32], eax
         ret
 
@@ -5097,9 +5096,9 @@ syscall_drawrect:                       ; DrawRect
 
 align 4
 syscall_getscreensize:                  ; GetScreenSize
-        mov     ax, [Screen_Max_X]
+        mov     ax, word [Screen_Max_X]
         shl     eax, 16
-        mov     ax, [Screen_Max_Y]
+        mov     ax, word [Screen_Max_Y]
         mov     [esp + 32], eax
         ret
 
@@ -5418,7 +5417,7 @@ calculate_fast_getting_offset_for_LFB:
         cld
 @@:
         stosd
-        add     eax, [BytesPerScanLine]
+        add     eax, [_display.pitch]
         dec     ecx
         jnz     @r
         ret
@@ -5441,7 +5440,7 @@ set_screen:
 
         mov     [Screen_Max_X], eax
         mov     [Screen_Max_Y], edx
-        mov     [BytesPerScanLine], ecx
+        mov     [_display.pitch], ecx
 
         mov     [screen_workarea.right], eax
         mov     [screen_workarea.bottom], edx

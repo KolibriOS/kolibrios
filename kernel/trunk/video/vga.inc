@@ -150,7 +150,7 @@ endg
 ;------------------------------------------------------------------------------
 align 4
 checkVga_N13:
-        cmp     [SCR_MODE], dword 0x13
+        cmp     [SCR_MODE], 0x13
         jne     @f
 
         pushad

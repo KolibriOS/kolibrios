@@ -230,7 +230,7 @@ align 4
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
-        mov     eax, [BytesPerScanLine]
+        mov     eax, [_display.pitch]
         mov     ebx, [_display.bpp]
         shr     ebx, 3
         imul    ecx, ebx
@@ -534,7 +534,7 @@ align 4
 .finish:
         add     esp, putimg.stack_data
         popad
-        cmp     [SCR_MODE], dword 0x12
+        cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA__putimage
 ;--------------------------------------
@@ -1233,7 +1233,7 @@ align 4
         shr     ebx, 3
         imul    eax, ebx
         neg     eax
-        add     eax, [BytesPerScanLine]
+        add     eax, [_display.pitch]
         mov     [drbar.line_inc_scr], eax
 ; pointer to screen
         mov     edx, [drbar.abs_cy]
@@ -1508,7 +1508,7 @@ align 4
 .end:
         add     esp, drbar.stack_data
         popad
-        cmp     [SCR_MODE], dword 0x12
+        cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA_draw_bar
 ;--------------------------------------
@@ -1757,7 +1757,7 @@ dp4:
         jbe     dp2
         popad
         mov     [EGA_counter], 1
-        cmp     [SCR_MODE], dword 0x12
+        cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA_drawbackground
 ;--------------------------------------
@@ -1950,7 +1950,7 @@ sdp4:
 ;--------------------------------------
 align 4
 @@:
-        add     edi, [BytesPerScanLine]
+        add     edi, [_display.pitch]
 ; restore ecx,edx; advance esi to next background line
         mov     eax, [esp+28]
         mov     ebx, [esp+32]
@@ -1981,7 +1981,7 @@ sdpdone:
         add     esp, 44
         popad
         mov     [EGA_counter], 1
-        cmp     [SCR_MODE], dword 0x12
+        cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA_drawbackground
 ;--------------------------------------

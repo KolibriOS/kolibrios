@@ -364,6 +364,11 @@ _display          display_t
 _WinMapAddress    rd 1
 _WinMapSize       rd 1
 
+Screen_Max_X      rd 1
+Screen_Max_Y      rd 1
+
+SCR_MODE          rw 2
+
 def_cursor        rd 1
 def_cursor_clock  rd 1
 current_cursor    rd 1
@@ -437,6 +442,10 @@ redrawmouse_unconditional rd 1
 img_background          rd 1
 mem_BACKGROUND          rd 1
 static_background_data  rd 1
+
+BgrDrawMode             rd 1
+BgrDataWidth            rd 1
+BgrDataHeight           rd 1
 
 skin_data              rd 1
 
