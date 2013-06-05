@@ -35,6 +35,8 @@ SECONDARY_CHANNEL equ 0x177
 ;  Fnc 01: 10-1,14-1,18-1,1c-1,BMA-0x18e1,0x18d1
 ; Регистр по смещению 0х10 для функции 02 содержит 0x1c01 (порты 0х1с00-0х1с07)
 
+include 'lang.inc'	; language support
+
 ; Режимы Legacy, Native и пр. меняются через BIOS.
 include '../../../config.inc'		;for nightbuild
 include '..\..\..\macros.inc'
@@ -117,7 +119,7 @@ load_libraries l_libs_start,end_l_libs
 ;	jne	skin_path_ready
 	mov	esi,default_SMART
 	call	copy_str_1
-;skin_path_ready:	
+;skin_path_ready:
 ;---------------------------------------------------------------------
 ;OpenDialog	initialisation
 	push    dword OpenDialog_data
@@ -125,11 +127,11 @@ load_libraries l_libs_start,end_l_libs
 
 	push    dword OpenDialog_data2
 	call    [OpenDialog_Init]
-	
+
 ; prepare for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_prepare]
-	
+
 	push	dword PathShow_data_2
 	call	[PathShow_prepare]
 ;---------------------------------------------------------------------
@@ -176,7 +178,7 @@ draw_PathShow:
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
-	
+
 	push	dword PathShow_data_2
 	call	[PathShow_draw]
 	popa
@@ -1307,31 +1309,61 @@ show_SmartBlock:
 	ret
 ;---------------------------------------------------------------------
 ;DATA AREA
-t:
-.sup	db 'supported',0
-;.usp	db 'unsupported',0
-.sel	db 'selected',0
-;.usl	db 'not selected',0
-.enb	db 'enabled',0
-;.dis	db 'disabled',0
-.unk	db 'unknown',0
-.type	db 'Type',0
-.chs	db 'CHS',0
+if lang eq it
+	t:
+	.sup	db 'supportato',0
+	;.usp	db 'unsupported',0
+	.sel	db 'selzionato',0
+	;.usl	db 'not selected',0
+	.enb	db 'abilitato',0
+	;.dis	db 'disabled',0
+	.unk	db 'sconosciuto',0
+	.type	db 'Tipo',0
+	.chs	db 'CHS',0
+else
+	t:
+	.sup	db 'supported',0
+	;.usp	db 'unsupported',0
+	.sel	db 'selected',0
+	;.usl	db 'not selected',0
+	.enb	db 'enabled',0
+	;.dis	db 'disabled',0
+	.unk	db 'unknown',0
+	.type	db 'Type',0
+	.chs	db 'CHS',0
+end if
 
-.10_19	db 'Serial number',0
-.23_26	db 'Firmware revision',0
-.27_46	db 'Model number',0
-.47	db 'Max. number of sectors that shall be transferred per DRQ data block',0
-;.47	db 'Maximum number of logical sectors that shall be transferred per DRQ',0
-;.47_	db 'data block on READ/WRITE MULTIPLE commands',0
-.48.0	db 'Trusted Computing feature set is',0 ;1 sup
-.49.13.1	db 'Standby timer values are',0 ;sup
-.49.13.0	db 'Standby timer values shall be managed by the device',0
-.49.11.1	db 'IORDY',0 ;sup
-.49.11.0	db 'IORDY may be',0 ;sup
-.49.10.1	db 'IORDY may be disabled',0
-.49.9	db 'LBA',0 ;1 sup
-.49.8	db 'DMA',0 ;1 sup
+if lang eq it
+	.10_19	db 'Numero seriale',0
+	.23_26	db 'Versione firmware',0
+	.27_46	db 'Numero modello',0
+	.47	db 'Max. number of sectors that shall be transferred per DRQ data block',0
+	;.47	db 'Maximum number of logical sectors that shall be transferred per DRQ',0
+	;.47_	db 'data block on READ/WRITE MULTIPLE commands',0
+	.48.0	db 'Trusted Computing feature set is',0 ;1 sup
+	.49.13.1	db 'Standby timer values are',0 ;sup
+	.49.13.0	db 'Standby timer values shall be managed by the device',0
+	.49.11.1	db 'IORDY',0 ;sup
+	.49.11.0	db 'IORDY may be',0 ;sup
+	.49.10.1	db 'IORDY potrebbe essere disabilitato',0
+	.49.9	db 'LBA',0 ;1 sup
+	.49.8	db 'DMA',0 ;1 sup
+else
+	.10_19	db 'Serial number',0
+	.23_26	db 'Firmware revision',0
+	.27_46	db 'Model number',0
+	.47	db 'Max. number of sectors that shall be transferred per DRQ data block',0
+	;.47	db 'Maximum number of logical sectors that shall be transferred per DRQ',0
+	;.47_	db 'data block on READ/WRITE MULTIPLE commands',0
+	.48.0	db 'Trusted Computing feature set is',0 ;1 sup
+	.49.13.1	db 'Standby timer values are',0 ;sup
+	.49.13.0	db 'Standby timer values shall be managed by the device',0
+	.49.11.1	db 'IORDY',0 ;sup
+	.49.11.0	db 'IORDY may be',0 ;sup
+	.49.10.1	db 'IORDY may be disabled',0
+	.49.9	db 'LBA',0 ;1 sup
+	.49.8	db 'DMA',0 ;1 sup
+end if
 
 ;.53  db 'Free-fall Control Sensitivity',0
 ;.53.6_15 db 'Sensitivity level',0
@@ -1613,11 +1645,19 @@ page_text	db 'Page:',0
 ;head_f_l	db 'error',0
 ;err_message_found_lib	db 'box_lib.obj was not found',0
 ;err_message_import	db 'box_lib.obj was not imported ',0
-error_open_file_string_Info	db 'Can not open Info file!',0
-error_save_file_string_Info	db 'Can not save Info file!',0
+if lang eq it
+	error_open_file_string_Info	db 'Non riesco ad aprire Info file!',0
+	error_save_file_string_Info	db 'Non riesco a salvare Info file!',0
 
-error_open_file_string_SMART	db 'Can not open SMART file!',0
-error_save_file_string_SMART	db 'Can not save SMART file!',0
+	error_open_file_string_SMART	db 'Non riesco ad aprire SMART file!',0
+	error_save_file_string_SMART	db 'Non riesco a salvare SMART file!',0
+else
+	error_open_file_string_Info	db 'Can not open Info file!',0
+	error_save_file_string_Info	db 'Can not save Info file!',0
+
+	error_open_file_string_SMART	db 'Can not open SMART file!',0
+	error_save_file_string_SMART	db 'Can not save SMART file!',0
+end if
 no_error_text	db 0
 align 4
 error_text	dd no_error_text
@@ -1628,11 +1668,20 @@ system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 head_f_i:
 head_f_l	db 'System error',0
 
-err_message_found_lib1	db 'box_lib.obj - Not found!',0
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
+if lang eq it
+	err_message_found_lib1	db 'box_lib.obj - Non trovato!',0
+	err_message_found_lib2	db 'proc_lib.obj - Non trovato!',0
 
-err_message_import1	db 'box_lib.obj - Wrong import!',0
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
+	err_message_import1	db 'box_lib.obj - Import errato!',0
+	err_message_import2	db 'proc_lib.obj - Import errato!',0
+
+else
+	err_message_found_lib1	db 'box_lib.obj - Not found!',0
+	err_message_found_lib2	db 'proc_lib.obj - Not found!',0
+
+	err_message_import1	db 'box_lib.obj - Wrong import!',0
+	err_message_import2	db 'proc_lib.obj - Wrong import!',0
+end if
 ;---------------------------------------------------------------------
 align 4
 l_libs_start:
@@ -1685,7 +1734,7 @@ aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align 4
-Box_lib_import:	
+Box_lib_import:
 ;init_lib		dd a_init
 ;version_lib		dd a_version
 

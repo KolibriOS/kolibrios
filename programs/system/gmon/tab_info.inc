@@ -49,7 +49,7 @@ mmx_en:	int	0x40
 	mov	edx, 160 * 65536 + 295
 	xor	esi, esi
 	int	0x40
-	
+
 	; push	eax			; Вернуть код после исправления ftoa
 	; fild	dword[esp]
 	; push	1000;000
@@ -66,7 +66,7 @@ mmx_en:	int	0x40
 	; int	0x40
 	; pop	eax
 	; pop	eax
-	
+
 	; Семейство и модель процессора
 	mov	eax, 47
 	mov	ebx, 0x10100
@@ -78,7 +78,7 @@ mmx_en:	int	0x40
 	mov	cl, [CPU_mod]
 	add	edx, 10 * 65536
 	int	0x40
-	
+
 	; коэффициент умножения
 	call	multiplier
 	test	ecx, ecx
@@ -112,7 +112,7 @@ if (OS_version >= 0x0530)
 	xor	esi, esi
 	int	0x40
 end if
-	
+
 	; Расставляем двоеточия
 	mov	eax, 4
 	mov	ebx, 152 * 65536 + 285
@@ -125,14 +125,24 @@ nxt_dp:	push	ecx
 	add	ebx, 10
 	pop	ecx
 	loop	nxt_dp
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 	jmp	end_drow_tab
 dub_p	db	':'
 
-lab_info_tab mls \
-	'CPU Vendor',\
-	'CPU frequency (MHz)',\
-	'MMX tehnology',\
-	'Multiplier',\
-	'Monitoring chip',\
-	'Free memory (Kb)'
+if lang eq it
+	lab_info_tab mls \
+		'Vendor CPU',\
+		'Frequenza CPU (MHz)',\
+		'MMX tehnology',\
+		'Multiplier',\
+		'Monitoring chip',\
+		'Memoria libera (Kb)'
+else
+	lab_info_tab mls \
+		'CPU Vendor',\
+		'CPU frequency (MHz)',\
+		'MMX tehnology',\
+		'Multiplier',\
+		'Monitoring chip',\
+		'Free memory (Kb)'
+end if

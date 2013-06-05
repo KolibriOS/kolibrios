@@ -82,7 +82,7 @@ Hex2Dec2Bin               /rd/1/develop/h2d2b
 Codici ASCII              /rd/1/develop/keyascii
 SCAN-codes                /rd/1/develop/scancode
 #9    **** EXAMPLES ****
-Threads                   /rd/1/develop/thread
+Thread                    /rd/1/develop/thread
 IPC                       /rd/1/develop/ipc
 Color slider              /rd/1/demos/cslide
 Esempio Console 1         /rd/1/develop/testcon2
@@ -90,7 +90,7 @@ Esempio Console 2         /rd/1/develop/test_gets
 Esempio Message Boxes     /rd/1/demos/use_mb
 #10    **** SYSTEM ****
 Impostazioni       >      /@11
-System sensors     >      /@12
+Sensori di sistema >      /@12
 Work with files    >      /@13
 Testing            >      /@19
 Opzioni Accessibilità >      /@20
@@ -103,7 +103,7 @@ Gestore icone             /rd/1/icon
 MyKey                     /rd/1/mykey
 Video mode for ATI        /rd/1/vmode
 #12    **** SYSTEM SENSORS ****
-Process manager           /rd/1/cpu
+Gestore processi          /rd/1/cpu
 PCI devices               /rd/1/pcidev
 Test graphics speed       /rd/1/mgb
 CPUID                     /rd/1/cpuid
@@ -131,13 +131,13 @@ Zero-Config               /sys/network/zeroconf
 Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
 #16    **** SERVERS ****
-FTP daemon                /sys/network/ftpd
+Demone FTP                /sys/network/ftpd
 #17   **** CLIENTS ****
-IRC client                /sys/network/ircc
-TFTP client               /sys/network/tftpc
+Client IRC                /sys/network/ircc
+Client TFTP               /sys/network/tftpc
 Ping                      /sys/network/ping
-Telnet client             /sys/network/telnet
-Synergy client            /sys/network/synergyc
+Client Telnet             /sys/network/telnet
+Client Synergy            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
 Internet downloader       /rd/1/network/downloader
 Text-based browser        /rd/1/htmlv

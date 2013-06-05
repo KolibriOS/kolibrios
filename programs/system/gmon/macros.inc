@@ -1,5 +1,6 @@
 ; language for programs
-lang fix en ; ru en fr ge fi
+;lang fix en ; ru en fr ge fi
+	; added lang.inc for compiling with a specific language
 
 @^ fix macro comment {
 ^@ fix }
@@ -103,10 +104,10 @@ struc mls [sstring] {
 	db ssize
 	db sstring
 	common
-	
+
 	db -1			; mod
 }
- 
+
 
 
 ; strings

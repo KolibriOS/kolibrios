@@ -35,6 +35,7 @@
 ;	12 - Update time decriment (tab_conf.inc)
 ;	13..17 - Изменение цвета CPU_load, Mem_usage, Temp1, Temp2, Temp3
 
+include 'lang.inc'
 include 'config.inc'
 include 'macros.inc'
 
@@ -70,7 +71,7 @@ CODE
 	shr	ecx, 12
 	and	cl, 11b
 	mov	[CPU_type], cl
-	
+
 	; ! Цвета из массива colors
 	mov	dword[d_cpu_load], 0xFF00	; инициализируем график загрузки АЛУ
 	mov	dword[d_mem_usage], 0x8BA169	; -- mem usega
@@ -129,7 +130,7 @@ no_tabs:
 	; если нет запущеных тестов - запускаем выбранный
 	cmp	byte[test_id], 0
 	je	run_test
-	; если кнопка активного теста - останавливаем тест, иначе ничего не делаем	
+	; если кнопка активного теста - останавливаем тест, иначе ничего не делаем
 	cmp	[test_id], ah
 	jne	wait_for_event
 	call	stop_test
@@ -212,16 +213,16 @@ draw_window:
 	int	0x40
 	cmp	cx, 230			; привязано к координатам окна
 	jl	@b
-	
+
 	; Пишим названия параметров (Cpu load, temper, etc...)
 	mov	edx, msgs_mon
 	mov	ebx, 17 * 65536 + 30
 	call	show_text
-	
+
 	mov	edx, msgs_mon2
 	mov	ebx, 156 * 65536 + 30
 	call	show_text
-	
+
 	; Рисуем кнопки смены цвета
 	mov	eax, 8
 	mov	ebx, 112 * 65536 + 5
@@ -234,7 +235,7 @@ draw_window:
 	inc	edx
 	cmp	edx, 13 + 5		; 5 кнопок
 	jne	@b
-	
+
 	; Пишим загрузку процессора
 	call	cpu_usage
 	;--- добавляем на график ---
@@ -248,7 +249,7 @@ draw_window:
 	xor	esi, esi
 	call	digit_len
 	int	0x40
-	
+
 	; Пишим используемую память
 	call	mem_usage
 	;--- добавляем на график ---
@@ -262,7 +263,7 @@ draw_window:
 	xor	esi, esi
 	call	digit_len
 	int	0x40
-	
+
 	cmp	byte[hwm_enable], 0
 	jne	show_mon
 	; Нет датчиков - пишем NO
@@ -349,11 +350,11 @@ sh_fan:	push	ecx
 	call	digit_len
 	mov	eax, 47
 	int	0x40
-	add	edx, 10	
+	add	edx, 10
 	pop	esi
 	pop	ecx
 	loop	sh_fan
-	
+
 	;---------------------------
 	; Напруги
 	mov	esi, hwm_voltages
@@ -370,13 +371,13 @@ volt_nxt:
 	fld	dword [esi]
 	fsub	dword [edi]
 	fabs
-	
+
 	; fcomp	dword [c_eps]	; bug in MeOsEmul
 	; fstsw	ax
 	fcom	dword [c_eps]	; 0xBADCODE
 	fstsw	ax
-	finit	
-	
+	finit
+
 	sahf
 	jc	@f
 	mov	ecx, val_mod
@@ -385,7 +386,7 @@ volt_nxt:
 	test	al, al
 	jnz	@b
 	sub	esi, Data_String
-	
+
 	mov	eax, 4
 	int	0x40
 	add	ebx, 10
@@ -393,7 +394,7 @@ volt_nxt:
 	pop	ecx
 	movsd
 	loop	volt_nxt
-	
+
 no_monitor:
 	;---------------------------
 	; Создаём кнопки вкладок
@@ -460,7 +461,7 @@ about_tab:
 	include	"system.inc"
 	include "hwm.inc"
 	include "diag.inc"
-	
+
 
 DATA
 act_tab		db	2 			; Номер активной вкладки
@@ -478,7 +479,7 @@ msgs_mon mls \
 	'Fan3',\
 	'Fan4',\
 	'Fan5'
-	
+
 msgs_mon2 mls \
 	'Vcore',\
 	'AGP',\
@@ -524,13 +525,13 @@ old_volts:	times	7 dd ?
 diag_beg:
 d_cpu_load:	dd	?
 		times 286 db ?
-		
+
 d_mem_usage:	dd	?
 		times 286 db ?
-		
+
 d_temp1:	dd	?
 		times 286 db ?
-		
+
 d_temp2:	dd	?
 		times 286 db ?
 

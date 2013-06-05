@@ -132,13 +132,17 @@ nr4:	int	0x40
 	mov	ecx, 418 * 65536 + 10
 	mov	edx, atcol
 	int	0x40
-	
-	
+
+
 	jmp	end_drow_tab
-	
+
 tmsg_p	db	'Pentium (Pro/II/III)'	; 7/20
 tmsg_k6	db	'K6 (I/II/III)'		; 13
 tmsg_k7	db	'K7/Athlon/Duron'	; 15
 ;tmsg_mmx db	'MMX (memory)'		; 12
 tmsg_rec db	'- recommendate'	; 14
-tmsg_war db	'May permanent damage to electronic' ; 34
+if lang eq it
+	tmsg_war db	'Potrebbe danneggiare lo hardware  ' ; 34
+else
+	tmsg_war db	'May permanent damage to electronic' ; 34
+end if
