@@ -32,36 +32,36 @@ ARP_REP_OPCODE          = 0x0200      ; reply
 
 ARP_TABLE_SIZE          = 20          ; Size of table
 
-struct ARP_entry
+struct  ARP_entry
 
-       IP               dd ?
-       MAC              dp ?
-       Status           dw ?
-       TTL              dw ?
+        IP              dd ?
+        MAC             dp ?
+        Status          dw ?
+        TTL             dw ?
 
 ends
 
-struct ARP_header
+struct  ARP_header
 
-       HardwareType     dw ?
-       ProtocolType     dw ?
-       HardwareSize     db ?
-       ProtocolSize     db ?
-       Opcode           dw ?
-       SenderMAC        dp ?
-       SenderIP         dd ?
-       TargetMAC        dp ?
-       TargetIP         dd ?
+        HardwareType    dw ?
+        ProtocolType    dw ?
+        HardwareSize    db ?
+        ProtocolSize    db ?
+        Opcode          dw ?
+        SenderMAC       dp ?
+        SenderIP        dd ?
+        TargetMAC       dp ?
+        TargetIP        dd ?
 
 ends
 
 align 4
 uglobal
 
-        NumARP          dd ?
 
-        ARP_table       rb ARP_TABLE_SIZE * sizeof.ARP_entry    ; TODO: separate ARP table and stats per interface
+        ARP_table       rb NET_DEVICES_MAX*(ARP_TABLE_SIZE * sizeof.ARP_entry)
 
+        ARP_entries_num rd NET_DEVICES_MAX
         ARP_PACKETS_TX  rd NET_DEVICES_MAX
         ARP_PACKETS_RX  rd NET_DEVICES_MAX
         ARP_CONFLICTS   rd NET_DEVICES_MAX
@@ -81,10 +81,8 @@ endg
 macro ARP_init {
 
         xor     eax, eax
-        mov     [NumARP], eax
-
-        mov     edi, ARP_PACKETS_TX
-        mov     ecx, 3*NET_DEVICES_MAX
+        mov     edi, ARP_entries_num
+        mov     ecx, 4*NET_DEVICES_MAX
         rep     stosd
 
 }
@@ -111,11 +109,15 @@ local   .exit
 ; The last status value is provided to allow the network layer to delete
 ; a packet that is queued awaiting an ARP response
 
-        mov     ecx, [NumARP]
+        xor     edi, edi
+  .loop_outer:
+        mov     ecx, [ARP_entries_num + 4*edi]
         test    ecx, ecx
         jz      .exit
 
-        mov     esi, ARP_table
+        mov     esi, (ARP_TABLE_SIZE * sizeof.ARP_entry)
+        imul    esi, edi
+        add     esi, ARP_table
   .loop:
         cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY
         je      .next
@@ -133,9 +135,9 @@ local   .exit
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE
         je      .response_timeout
 
-        push    esi ecx
+        push    esi edi ecx
         call    ARP_del_entry
-        pop     ecx esi
+        pop     ecx edi esi
 
         jmp     .next
 
@@ -146,6 +148,9 @@ local   .exit
         jmp     .next
 
   .exit:
+        inc     edi
+        cmp     edi, NET_DEVICES_MAX
+        jb      .loop_outer
 
 }
 
@@ -196,11 +201,13 @@ ARP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: It's a reply\n"
 
-        mov     ecx, [NumARP]
+        mov     ecx, [ARP_entries_num + 4*edi]
         test    ecx, ecx
         jz      .exit
 
-        mov     esi, ARP_table
+        mov     esi, (ARP_TABLE_SIZE * sizeof.ARP_entry)
+        imul    esi, edi
+        add     esi, ARP_table
   .loop:
         cmp     [esi + ARP_entry.IP], eax
         je      .gotit
@@ -298,22 +305,19 @@ ARP_input:
 ;
 ; ARP_output_request
 ;
-; IN:  ip in eax
-;      device in edi
+; IN:   ebx = device ptr
+;       eax = IP
 ; OUT: /
+;       scratched: probably everything
 ;
 ;---------------------------------------------------------------------------
 align 4
 ARP_output_request:
 
-        push    eax                             ; DestIP
-        pushd   [IP_LIST + edi]                 ; SenderIP
-        inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
+        push    eax
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: ip=%u.%u.%u.%u\n",\
-        [esp + 4]:1, [esp + 5]:1, [esp + 6]:1, [esp + 7]:1
-
-        mov     ebx, [NET_DRV_LIST + edi]       ; device ptr
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: ip=%u.%u.%u.%u device=0x%x\n",\
+        [esp]:1, [esp + 1]:1, [esp + 2]:1, [esp + 3]:1, ebx
 
         lea     eax, [ebx + ETH_DEVICE.mac]     ; local device mac
         mov     edx, ETH_BROADCAST              ; broadcast mac
@@ -322,8 +326,6 @@ ARP_output_request:
         call    ETH_output
         jz      .exit
 
-        mov     ecx, eax
-
         mov     [edi + ARP_header.HardwareType], 0x0100         ; Ethernet
         mov     [edi + ARP_header.ProtocolType], 0x0008         ; IP
         mov     [edi + ARP_header.HardwareSize], 6              ; MAC-addr length
@@ -331,29 +333,29 @@ ARP_output_request:
         mov     [edi + ARP_header.Opcode], ARP_REQ_OPCODE       ; Request
 
         add     edi, ARP_header.SenderMAC
-
         lea     esi, [ebx + ETH_DEVICE.mac]     ; SenderMac
         movsw                                   ;
         movsd                                   ;
-        pop     eax                             ; SenderIP
-        stosd                                   ;
 
-        mov     eax, -1                         ; DestMac
-        stosd                                   ;
-        stosw                                   ;
-        pop     eax                             ; DestIP
-        stosd                                   ;
+;        mov     esi, [ebx + NET_DEVICE.number]
+        xor     esi, esi        ;;;; FIXME
+        inc     esi ;;;;;;;;;
+        inc     [ARP_PACKETS_TX + 4*esi]        ; assume we will succeed
+        lea     esi, [IP_LIST + 4*esi]          ; SenderIP
+        movsd
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: device=%x\n", ebx
+        mov     esi, ETH_BROADCAST              ; DestMac
+        movsw                                   ;
+        movsd                                   ;
+        popd    [edi]                           ; DestIP
 
-        push    edx ecx
+        push    edx eax
         call    [ebx + NET_DEVICE.transmit]
         ret
 
   .exit:
-        add     esp, 4 + 4
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: failed\n"
-        sub     eax, eax
+        add     esp, 4
+        DEBUGF  DEBUG_NETWORK_ERROR, "ARP_output_request: send failed\n"
         ret
 
 
@@ -362,50 +364,65 @@ ARP_output_request:
 ; ARP_add_entry (or update)
 ;
 ; IN:  esi = ptr to entry (can easily be made on the stack)
+;      edi = device num
 ; OUT: eax = entry #, -1 on error
-;      edi = ptr to newly created entry
+;      esi = ptr to newly created entry
 ;
 ;-----------------------------------------------------------------      ; TODO: use a mutex
 align 4
 ARP_add_entry:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: "
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: device=%u\n", edi
 
-        mov     ecx, [NumARP]
+        mov     ecx, [ARP_entries_num + 4*edi]
         cmp     ecx, ARP_TABLE_SIZE                                     ; list full ?
-        jae     .error
+        jae     .full
 
-        xor     eax, eax
-        mov     edi, ARP_table
-        mov     ecx, [esi + ARP_entry.IP]
+
+; From this point on, we can only fail if IP has a static entry, or if table is corrupt.
+
+        inc     [ARP_entries_num + 4*edi]                               ; assume we will succeed
+
+        push    edi
+        xor     ecx, ecx
+        imul    edi, ARP_TABLE_SIZE*sizeof.ARP_entry
+        add     edi, ARP_table
+        mov     eax, [edi + ARP_entry.IP]
   .loop:
         cmp     [edi + ARP_entry.Status], ARP_NO_ENTRY                  ; is this slot empty?
         je      .add
 
-        cmp     [edi + ARP_entry.IP], ecx                               ; if not, check if it doesnt collide
+        cmp     [edi + ARP_entry.IP], eax                               ; if not, check if it doesnt collide
         jne     .maybe_next
 
         cmp     [edi + ARP_entry.TTL], ARP_STATIC_ENTRY                 ; ok, its the same IP, update it if not static
         jne     .add
 
+        DEBUGF  DEBUG_NETWORK_ERROR, "ARP_add_entry: failed, IP already has a static entry\n"
+        jmp     .error
+
   .maybe_next:                                                          ; try the next slot
         add     edi, sizeof.ARP_entry
-        inc     eax
-        cmp     eax, ARP_TABLE_SIZE
-        jae     .error
-        jmp     .loop
+        inc     ecx
+        cmp     ecx, ARP_TABLE_SIZE
+        jb      .loop
 
   .add:
+        push    ecx
         mov     ecx, sizeof.ARP_entry/2
         rep     movsw
-        inc     [NumARP]
-        sub     edi, sizeof.ARP_entry
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "entry=%u\n", eax
+        pop     ecx
+        lea     esi, [edi - sizeof.ARP_entry]
+        pop     edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: entry=%u\n", ecx
 
         ret
 
   .error:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "failed\n"
+        pop     edi
+        dec     [ARP_entries_num + 4*edi]
+        DEBUGF  DEBUG_NETWORK_ERROR, "ARP_add_entry_failed\n"
+  .full:
         mov     eax, -1
         ret
 
@@ -414,30 +431,36 @@ ARP_add_entry:
 ;
 ; ARP_del_entry
 ;
-; IN:  esi = ptr to arp entry
-; OUT: /
+; IN:   esi = ptr to arp entry
+;       edi = device number
+; OUT:  /
 ;
 ;-----------------------------------------------------------------
 align 4
 ARP_del_entry:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=%x entrys=%u\n", esi, [NumARP]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: entry=%x entrys=%u\n", esi, [ARP_entries_num + 4*edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: IP=%u.%u.%u.%u\n", \
         [esi + ARP_entry.IP]:1, [esi + ARP_entry.IP + 1]:1, [esi + ARP_entry.IP + 2]:1, [esi + ARP_entry.IP + 3]:1
 
-        mov     ecx, ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry
+        push    edi
+        imul    edi, (ARP_TABLE_SIZE) * sizeof.ARP_entry
+        lea     ecx, [ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry + edi]
         sub     ecx, esi
         shr     ecx, 1
 
+; move all trailing entries, sizeof.ARP_entry bytes to left.
         mov     edi, esi
         add     esi, sizeof.ARP_entry
         rep     movsw
 
+; now add an empty entry to the end (erasing previous one)
         xor     eax, eax
         mov     ecx, sizeof.ARP_entry/2
         rep     stosw
 
-        dec     [NumARP]
+        pop     edi
+        dec     [ARP_entries_num + 4*edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_del_entry: success\n"
 
         ret
@@ -465,7 +488,7 @@ ARP_IP_to_MAC:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: %u.%u", al, ah
         rol     eax, 16
-        DEBUGF  DEBUG_NETWORK_VERBOSE, ".%u.%u\n", al, ah
+        DEBUGF  DEBUG_NETWORK_VERBOSE, ".%u.%u device: %u\n", al, ah, edi
         rol     eax, 16
 
         cmp     eax, 0xffffffff
@@ -474,7 +497,7 @@ ARP_IP_to_MAC:
 ;--------------------------------
 ; Try to find the IP in ARP_table
 
-        mov     ecx, [NumARP]
+        mov     ecx, [ARP_entries_num + 4*edi]
         test    ecx, ecx
         jz      .not_in_list
         mov     esi, ARP_table + ARP_entry.IP
@@ -482,38 +505,41 @@ ARP_IP_to_MAC:
         cmp     [esi], eax
         je      .found_it
         add     esi, sizeof.ARP_entry
-        loop    .scan_loop
+        dec     ecx
+        jnz     .scan_loop
 
   .not_in_list:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: preparing for ARP request\n"
 
-;--------------------
-; Send an ARP request
-
         push    eax edi                 ; save IP for ARP_output_request
-
-; Now create the ARP entry
+; Now craft the ARP entry on the stack
         pushw   ARP_REQUEST_TTL         ; TTL
         pushw   ARP_AWAITING_RESPONSE   ; status
         pushd   0                       ; mac
         pushw   0
         pushd   eax                     ; ip
         mov     esi, esp
+
+; Add it to the list
         call    ARP_add_entry
+
+; Delete the temporary entry
         add     esp, sizeof.ARP_entry   ; clear the entry from stack
 
+; If we could not add it to the list, give up
         cmp     eax, -1                 ; did ARP_add_entry fail?
         je      .full
 
-        mov     esi, edi
-        pop     edi eax                 ; IP in eax, device number in edi, for ARP_output_request
-
-        push    esi edi
-        call    ARP_output_request      ; And send a request
-        pop     edi esi
-
 ;-----------------------------------------------
 ; At this point, we got an ARP entry in the list
+
+; Now send a request packet on the network
+        pop     edi eax                 ; IP in eax, device number in ebx, for ARP_output_request
+
+        push    esi edi
+        mov     ebx, [NET_DRV_LIST + 4*edi]
+        call    ARP_output_request
+        pop     edi esi
   .found_it:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING             ; Does it have a MAC assigned?
         je      .valid
@@ -522,10 +548,10 @@ if ARP_BLOCK
 
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE         ; Are we waiting for reply from remote end?
         jne     .give_up
-        push    esi
+        push    esi edi
         mov     esi, 10                 ; wait 10 ms
         call    delay_ms
-        pop     esi
+        pop     edi esi
         jmp     .found_it               ; now check again
 
 else
@@ -536,8 +562,8 @@ end if
 
   .valid:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: found MAC\n"
-        movzx   eax, word[esi + ARP_entry.MAC]
-        mov     ebx, dword[esi + ARP_entry.MAC + 2]
+        movzx   eax, word[edi + ARP_entry.MAC]
+        mov     ebx, dword[edi + ARP_entry.MAC + 2]
         ret
 
   .full:
@@ -606,17 +632,19 @@ ARP_api:
         ret
 
   .entries:
-        mov     eax, [NumARP]
+        mov     eax, [ARP_entries_num + eax]
         ret
 
   .read:
-        cmp     ecx, [NumARP]
+        cmp     ecx, [ARP_entries_num + eax]
         jae     .error
+        shr     eax, 2
+        imul    eax, sizeof.ARP_entry*ARP_TABLE_SIZE
+        add     eax, ARP_table
         ; edi = pointer to buffer
         ; ecx = # entry
         imul    ecx, sizeof.ARP_entry
-        add     ecx, ARP_table
-        mov     esi, ecx
+        lea     esi, [eax + ecx]
         mov     ecx, sizeof.ARP_entry/2
         rep     movsw
 
@@ -625,20 +653,24 @@ ARP_api:
 
   .write:
         ; esi = pointer to buffer
+        mov     edi, eax
+        shr     edi, 2
         call    ARP_add_entry           ; out: eax = entry number, -1 on error
         ret
 
   .remove:
         ; ecx = # entry
-        cmp     ecx, [NumARP]
+        cmp     ecx, [ARP_entries_num + eax]
         jae     .error
         imul    ecx, sizeof.ARP_entry
         lea     esi, [ARP_table + ecx]
+        mov     edi, eax
+        shr     edi, 2
         call    ARP_del_entry
         ret
 
   .send_announce:
-        mov     edi, eax
+        mov     ebx, [NET_DRV_LIST + eax]
         mov     eax, [IP_LIST + eax]
         call    ARP_output_request      ; now send a gratuitous ARP
         ret

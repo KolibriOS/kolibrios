@@ -67,10 +67,10 @@ ETH_input:
         cmp     ax, ETHER_PROTO_IPv4
         je      IPv4_input
 
-        cmp     ax, ETHER_PROTO_IPv4
+        cmp     ax, ETHER_PROTO_ARP
         je      ARP_input
 
-        cmp     ax, ETHER_PROTO_IPv4
+        cmp     ax, ETHER_PROTO_IPv6
         je      IPv6_input
 
         cmp     ax, ETHER_PROTO_PPP_DISCOVERY
@@ -162,7 +162,7 @@ ETH_output:
 ;
 ; ETH_API
 ;
-; This function is called by system function 75
+; This function is called by system function 76
 ;
 ; IN:  subfunction number in bl
 ;      device number in bh
@@ -187,37 +187,11 @@ ETH_api:
         jmp     dword [.table + 4*ebx]
 
   .table:
-        dd      .packets_tx     ; 0
-        dd      .packets_rx     ; 1
-        dd      .bytes_tx       ; 2
-        dd      .bytes_rx       ; 3
-        dd      .read_mac       ; 4
-        dd      .state          ; 5
+        dd      .read_mac       ; 0
   .number = ($ - .table) / 4 - 1
 
   .error:
         or      eax, -1
-        ret
-
-  .packets_tx:
-        mov     eax, [eax + NET_DEVICE.packets_tx]
-
-        ret
-
-  .packets_rx:
-        mov     eax, [eax + NET_DEVICE.packets_rx]
-        ret
-
-  .bytes_tx:
-        mov     ebx, dword [eax + NET_DEVICE.bytes_tx + 4]
-        mov     eax, dword [eax + NET_DEVICE.bytes_tx]
-        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
-        ret
-
-  .bytes_rx:
-        mov     ebx, dword [eax + NET_DEVICE.bytes_rx + 4]
-        mov     eax, dword [eax + NET_DEVICE.bytes_rx]
-        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
         ret
 
 
@@ -227,7 +201,4 @@ ETH_api:
         mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
         ret
 
-  .state:
-        mov     eax, [eax + NET_DEVICE.link_state]
-        ret
 

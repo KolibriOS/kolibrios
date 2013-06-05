@@ -217,7 +217,6 @@ align 4
 uglobal
 
         NET_RUNNING     dd  ?
-        NET_DEFAULT     dd  ?
         NET_DRV_LIST    rd  NET_DEVICES_MAX
 
 endg
@@ -253,6 +252,8 @@ stack_init:
         TCP_init
 
         SOCKET_init
+
+        LOOP_init
 
         mov     [net_tmr_count], 0
 
@@ -312,7 +313,7 @@ stack_handler:
 align 4
 NET_link_changed:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.state]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "NET_link_changed device=0x%x status=0x%x\n", ebx, [ebx + NET_DEVICE.link_state]
 
 align 4
 NET_send_event:
@@ -398,7 +399,7 @@ NET_add_device:
 ;
 ; NET_Remove_Device:
 ;
-;  This function is called by etwork drivers,
+;  This function is called by network drivers,
 ;  to unregister network devices from the kernel
 ;
 ;  IN:  Pointer to device structure in ebx
@@ -411,28 +412,12 @@ NET_remove_device:
         cmp     [NET_RUNNING], 0
         je      .error
 
-        cmp     [NET_DRV_LIST], ebx
-        jne     @f
-        mov     [NET_DRV_LIST], 0
-        cmp     [NET_RUNNING], 1
-        je      @f
-        ; there are still active devices, find one and make it default
-        xor     eax, eax
-        mov     ecx, NET_DEVICES_MAX
-        mov     edi, NET_DRV_LIST
-        repe    scasd
-        je      @f
-        shr     edi, 2
-        dec     edi
-        mov     [NET_DEFAULT], edi
-       @@:
-
 ;----------------------------
 ; Find the driver in the list
 
         mov     eax, ebx
         mov     ecx, NET_DEVICES_MAX
-        mov     edi, NET_DRV_LIST+4
+        mov     edi, NET_DRV_LIST
 
         repne   scasd
         jnz     .error
@@ -442,10 +427,11 @@ NET_remove_device:
 
         xor     eax, eax
         mov     dword [edi-4], eax
+        dec     [NET_RUNNING]
 
         call    NET_send_event
 
-        dec     [NET_RUNNING]
+        xor     eax, eax
         ret
 
   .error:
@@ -610,17 +596,18 @@ checksum_2:
 
 ;----------------------------------------------------------------
 ;
-;  System function to work with network devices (75)
+;  System function to work with network devices (74)
 ;
 ;----------------------------------------------------------------
 align 4
-sys_network:                    ; FIXME: make default device easily accessible
+sys_network:
 
         cmp     ebx, -1
         jne     @f
 
         mov     eax, [NET_RUNNING]
-        jmp     .return
+        mov     [esp+32], eax
+        ret
 
    @@:
         cmp     bh, NET_DEVICES_MAX             ; Check if device number exists
@@ -647,16 +634,20 @@ sys_network:                    ; FIXME: make default device easily accessible
         dd      .stop                   ; 3
         dd      .get_ptr                ; 4
         dd      .get_drv_name           ; 5
+
+        dd      .packets_tx             ; 6
+        dd      .packets_rx             ; 7
+        dd      .bytes_tx               ; 8
+        dd      .bytes_rx               ; 9
+        dd      .state                  ; 10
   .number = ($ - .table) / 4 - 1
 
-  .get_type:                            ; 0 = Get device type (ethernet/token ring/...)
-
+  .get_type:
         mov     eax, [eax + NET_DEVICE.device_type]
-        jmp     .return
+        mov     [esp+32], eax
+        ret
 
-
-  .get_dev_name:                        ; 1 = Get device name
-
+  .get_dev_name:
         mov     esi, [eax + NET_DEVICE.name]
         mov     edi, ecx
 
@@ -664,36 +655,64 @@ sys_network:                    ; FIXME: make default device easily accessible
         rep     movsd
 
         xor     eax, eax
-        jmp     .return
+        mov     [esp+32], eax
+        ret
 
-  .reset:                               ; 2 = Reset the device
-
+  .reset:
         call    [eax + NET_DEVICE.reset]
-        jmp     .return
+        mov     [esp+32], eax
+        ret
 
-  .stop:                                ; 3 = Stop driver for this device
-
+  .stop:
         call    [eax + NET_DEVICE.unload]
-        jmp     .return
+        mov     [esp+32], eax
+        ret
 
 
-  .get_ptr:                             ; 4 = Get driver pointer
+  .get_ptr:
+        mov     [esp+32], eax
+        ret
 
-        jmp     .return
 
-
-  .get_drv_name:                        ; 5 = Get driver name
-
+  .get_drv_name:
         xor     eax, eax
-        jmp     .return
+        mov     [esp+32], eax
+        ret
+
+  .packets_tx:
+        mov     eax, [eax + NET_DEVICE.packets_tx]
+        mov     [esp+32], eax
+        ret
+
+  .packets_rx:
+        mov     eax, [eax + NET_DEVICE.packets_rx]
+        mov     [esp+32], eax
+        ret
+
+  .bytes_tx:
+        mov     ebx, dword [eax + NET_DEVICE.bytes_tx + 4]
+        mov     [esp+20], ebx
+        mov     eax, dword [eax + NET_DEVICE.bytes_tx]
+        mov     [esp+32], eax
+        ret
+
+  .bytes_rx:
+        mov     ebx, dword [eax + NET_DEVICE.bytes_rx + 4]
+        mov     [esp+20], ebx
+        mov     eax, dword [eax + NET_DEVICE.bytes_rx]
+        mov     [esp+32], eax
+        ret
+
+  .state:
+        mov     eax, [eax + NET_DEVICE.link_state]
+        mov     [esp+32], eax
+        ret
 
 
   .doesnt_exist:
-        mov     eax, -1
-
-  .return:
-        mov     [esp+32], eax
+        mov     dword[esp+32], -1
         ret
+
 
 
 ;----------------------------------------------------------------

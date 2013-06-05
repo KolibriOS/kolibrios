@@ -187,7 +187,6 @@ FASM_PROGRAMS:=\
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
  media/palitra:MEDIA/PALITRA:$(PROGS)/media/palitra/trunk/palitra.asm \
  media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
- network/arpcfg:NETWORK/ARPCFG:$(PROGS)/network/arpcfg/arpcfg.asm \
  network/ping:NETWORK/PING:$(PROGS)/network/icmp/ping.asm \
  network/netcfg:NETWORK/NETCFG:$(PROGS)/network/netcfg/netcfg.asm \
  network/netstat:NETWORK/NETSTAT:$(PROGS)/network/netstat/netstat.asm \

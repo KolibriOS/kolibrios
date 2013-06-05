@@ -18,13 +18,13 @@ use32
 
         org    0x0
 
-        db     'MENUET01'        ; 8 byte id
-        dd     0x01              ; header version
-        dd     START             ; start of code
-        dd     I_END             ; size of image
-        dd     (I_END+0x100)     ; memory for app
-        dd     (I_END+0x100)     ; esp
-        dd     I_PARAM , 0x0     ; I_Param , I_Icon
+        db     'MENUET01'       ; 8 byte id
+        dd     0x01             ; header version
+        dd     START            ; start of code
+        dd     I_END            ; size of image
+        dd     (I_END+0x1000)   ; memory for app
+        dd     (I_END+0x1000)   ; esp
+        dd     0, 0             ; I_Param , I_Path
 
 include '..\macros.inc'
 include '..\network.inc'
@@ -38,17 +38,21 @@ redraw:
 
         call    draw_interfaces
 
+        xor     ebx, ebx
+        mov     bh, [device]
+        mcall   74
+        mov     [device_type], eax
+
         mov     edx, 101
         mov     esi, 0x00aaaaff
         mov     edi, 0x00aaffff
 
         cmp     dl, [mode]
         cmove   esi, edi
-        mcall   8, 25 shl 16 + 65, 25 shl 16 + 20
-
+        mcall   8, 5 shl 16 + 55, 5 shl 16 + 20
   .morebuttons:
         inc     edx
-        add     ebx, 75 shl 16
+        add     ebx, 60 shl 16
         mov     esi, 0x00aaaaff
 
         cmp     dl, [mode]
@@ -58,12 +62,12 @@ redraw:
         cmp     edx, 105
         jle     .morebuttons
 
-        mcall   4, 28 shl 16 + 31, 0x80000000, modes
+        mcall   4, 8 shl 16 + 11, 0x80000000, modes
 
         cmp     [mode], 101
         jne     .no_eth
 
-        mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
+        mcall   4, 8 shl 16 + 35, 0x80000000, str_packets_tx
         add     ebx, 18
         mov     edx, str_packets_rx
         mcall
@@ -74,19 +78,23 @@ redraw:
         mov     edx, str_bytes_rx
         mcall
         add     ebx, 18
-        mov     edx, str_MAC
-        mcall
-        add     ebx, 18
         mov     edx, str_link
         mcall
 
-        mov     ebx, API_ETH + 4
+        cmp     [device_type], 1
+        jne     end_of_draw
+
+        add     ebx, 18
+        mov     edx, str_MAC
+        mcall
+
+        mov     ebx, API_ETH
         mov     bh, [device]
         mcall   76
         push    eax
         push    bx
 
-        mov     edx, 135 shl 16 + 75 + 4*18
+        mov     edx, 135 shl 16 + 35 + 5*18
         call    draw_mac
         jmp     end_of_draw
 
@@ -95,7 +103,7 @@ redraw:
         cmp     [mode], 102
         jne     .no_ip
 
-        mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
+        mcall   4, 8 shl 16 + 35, 0x80000000, str_packets_tx
         add     ebx, 18
         mov     edx, str_packets_rx
         mcall
@@ -133,7 +141,7 @@ redraw:
         mcall   76
         push    eax
 
-        mov     edx, 135 shl 16 + 75 + 2*18
+        mov     edx, 135 shl 16 + 35 + 2*18
         call    draw_ip
 
         add     edx, 18
@@ -152,7 +160,7 @@ redraw:
         cmp     [mode], 103
         jne     .no_arp
 
-        mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
+        mcall   4, 8 shl 16 + 35, 0x80000000, str_packets_tx
         add     ebx, 18
         mov     edx, str_packets_rx
         mcall
@@ -163,11 +171,13 @@ redraw:
         mov     edx, str_conflicts
         mcall
 
+        mcall   4, 8 shl 16 + 130, 0x80000000, str_ARP_legend
+
         jmp     end_of_draw
 
  .no_arp:
 
-        mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
+        mcall   4, 8 shl 16 + 35, 0x80000000, str_packets_tx
 
         add     ebx, 18
         mov     edx, str_packets_rx
@@ -196,26 +206,24 @@ draw_stats:
 
         mov     ebx, API_ETH
         mov     bh, [device]
+        mov     bl, 6
   @@:
         push    ebx
-        mcall   76
+        mcall   74
         pop     ebx
         push    eax
         inc     bl
-        cmp     bl, 3
+        cmp     bl, 10
         jbe     @r
-        inc     bl
-        mcall   76
-        push    eax
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 5*18
+        mov     edx, 135 shl 16 + 35 + 4*18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
 
-        sub     edx, 18*2
+        sub     edx, 18
         pop     ecx
         mcall
 
@@ -255,7 +263,7 @@ not_101:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 18
+        mov     edx, 135 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
@@ -299,7 +307,7 @@ not_102:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 3*18
+        mov     edx, 135 shl 16 + 35 + 3*18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
@@ -316,7 +324,84 @@ not_102:
         pop     ecx
         mcall
 
-        jmp     mainloop
+
+
+        mov     edx, 50 shl 16 + 150
+        mov     [last], 0
+
+  .arp_loop:
+        mov     ebx, API_ARP + 3
+        mov     bh, [device]
+        mcall   76, , [last],,, arp_buf
+        cmp     eax, -1
+        je      mainloop
+
+        mcall   4, 20 shl 16 + 140, 0x80000000, str_ARP_entry
+        mov     edx, ebx
+
+        mov     eax, 47
+        mov     ebx, 0x00030000
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        xor     ecx, ecx
+
+        mov     cl, byte[arp_buf.IP+0]
+        mcall
+
+        mov     cl, byte[arp_buf.IP+1]
+        add     edx, 24 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.IP+2]
+        add     edx, 24 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.IP+3]
+        add     edx, 24 shl 16
+        mcall
+
+
+        mov     ebx, 0x00020100
+        mov     cl, byte[arp_buf.MAC+0]
+        add     edx, 36 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.MAC+1]
+        add     edx, 18 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.MAC+2]
+        add     edx, 18 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.MAC+3]
+        add     edx, 18 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.MAC+4]
+        add     edx, 18 shl 16
+        mcall
+
+        mov     cl, byte[arp_buf.MAC+5]
+        add     edx, 18 shl 16
+        mcall
+
+        mov     ebx, 0x00040000
+        mov     cx, [arp_buf.status]
+        add     edx, 30 shl 16
+        mcall
+
+        mov     cx, [arp_buf.TTL]
+        add     edx, 60 shl 16
+        mcall
+
+        add     dx, 18
+        rol     edx, 16
+        mov     dx, 8
+        rol     edx, 16
+        inc     [last]
+
+        jmp     .arp_loop
 
 not_103:
 
@@ -338,7 +423,7 @@ not_103:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 18
+        mov     edx, 135 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
@@ -369,7 +454,7 @@ not_104:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 18
+        mov     edx, 135 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
@@ -412,7 +497,7 @@ not_105:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 75 + 18*3
+        mov     edx, 135 shl 16 + 35 + 18*3
         mov     esi, 0x40000000
         mov     edi, 0x00bcbcbc
         mcall   47
@@ -530,8 +615,8 @@ draw_ip:
 
 draw_interfaces:
 
-        mov     [.btnpos], 8 shl 16 + 20
-        mov     [.txtpos], 490 shl 16 + 15
+        mov     [.btnpos], 5 shl 16 + 20
+        mov     [.txtpos], 455 shl 16 + 12
 
         mcall   74, -1          ; get number of active network devices
         mov     ecx, eax
@@ -539,8 +624,8 @@ draw_interfaces:
         xor     ebx, ebx        ; get device type
   .loop:
         mcall   74
-        cmp     eax, 1          ; ethernet?
-        je      .hit
+        cmp     eax, 1          ; loopback or ethernet?
+        jbe     .hit
         inc     bh
         jb      .loop           ; tried all 256?
         ret
@@ -553,17 +638,17 @@ draw_interfaces:
         mov     esi, 0x00aaaaff
         cmp     bh, [device]
         cmove   esi, 0x00aaffff
-        mcall   8, 485 shl 16 + 100, [.btnpos]
+        mcall   8, 450 shl 16 + 135, [.btnpos]
         mov     ebx, [esp]
         inc     bl
         mov     ecx, namebuf
         mov     edx, namebuf
-        mcall   74              ; get device name
+        mcall   74                              ; get device name
         cmp     eax, -1
         jne     @f
         mov     edx, str_unknown
        @@:
-        mcall   4, [.txtpos], 0x80000000   ; print the name
+        mcall   4, [.txtpos], 0x80000000        ; print the name
         pop     ebx ecx
 
         inc     bh
@@ -587,7 +672,9 @@ draw_interfaces:
 name            db 'Netstat', 0
 mode            db 101
 device          db 0
-modes           db 'Ethernet        IPv4        ARP         ICMP         UDP         TCP', 0
+device_type     dd 0
+last            dd 0
+modes           db 'Physical    IPv4      ARP       ICMP      UDP       TCP', 0
 
 str_packets_tx  db 'Packets sent:', 0
 str_packets_rx  db 'Packets received:', 0
@@ -605,9 +692,11 @@ str_missed      db 'Packets missed:',0
 str_dumped      db 'Packets dumped:',0
 str_link        db 'Link state:',0
 
-namebuf         rb 64
+str_ARP_legend  db 'IP-address        MAC-address         Status    TTL', 0
+str_ARP_entry   db '   .   .   .        -  -  -  -  -                    s', 0
 
-I_PARAM rb 1024
+namebuf         rb 64
+arp_buf         ARP_entry
 
 I_END:
 

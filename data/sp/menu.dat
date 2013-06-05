@@ -131,7 +131,6 @@ Clientes           >      /@17
 Zero-Config               /sys/network/zeroconf
 Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
-ARP status                /sys/network/arpcfg
 #16    **** SERVIDORES ****
 FTP daemon                /sys/network/ftpd
 #17   **** CLIENTES ****

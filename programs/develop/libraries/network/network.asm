@@ -675,7 +675,7 @@ lock    xadd    [DNSrequestID], eax     ; atomically increment ID, get old value
         mov     eax, 0x01000100
         stosd
 ; 7. Get DNS server address.
-        mcall   76, API_IPv4 + 4 ; protocol IP=0, device number=0, function=get DNS address
+        mcall   76, API_IPv4 + (1 shl 8) + 4 ; protocol IP=0, device number=0, function=get DNS address
         cmp     eax, -1
         je      .ret.dnserr
         mov     esi, eax        ; put server address to esi

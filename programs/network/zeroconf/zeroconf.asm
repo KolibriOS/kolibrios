@@ -141,7 +141,9 @@ START:
         DEBUGF  1,">Zero-config service loaded\n"
 
   .wait:
-        mcall   76, API_ETH + 4 ; get MAC of ethernet interface 0
+        mov     ebx, API_ETH + 0
+        mov     bh, [device]
+        mcall   76                              ; get MAC of ethernet interface 1
         cmp     eax, -1
         jne     .start
 
@@ -342,10 +344,15 @@ request:
 
         call    dhcp_end
 
-        mcall   76, API_IPv4 + 3, [dhcp.ip]             ; ip
-        mcall   76, API_IPv4 + 5, [dhcp.dns]            ; dns
-        mcall   76, API_IPv4 + 7, [dhcp.subnet]         ; subnet
-        mcall   76, API_IPv4 + 9, [dhcp.gateway]        ; gateway
+        mov     ebx, API_IPv4 + 3
+        mov     bh, [device]
+        mcall   76, , [dhcp.ip]                 ; ip
+        mov     bl, 5
+        mcall   76, , [dhcp.dns]                ; dns
+        mov     bl, 7
+        mcall   76, , [dhcp.subnet]             ; subnet
+        mov     bl, 9
+        mcall   76, , [dhcp.gateway]            ; gateway
 
         jmp     exit
 
@@ -479,11 +486,16 @@ link_local:
         mov     cx, ax
         shl     ecx, 16
         mov     cx, 0xfea9                              ; IP 169.254.0.0 link local net, see RFC3927
-        mcall   76, API_IPv4 + 3, ecx                   ; mask is 255.255.0.0
+        mov     ebx, API_IPv4 + 3
+        mov     bh, [device]
+        mcall   76, , ecx                   ; mask is 255.255.0.0
         DEBUGF  1,"Link Local IP assinged: 169.254.%u.%u\n", [generator+0]:1, [generator+1]:1
-        mcall   76, API_IPv4 + 7, 0xffff
-        mcall   76, API_IPv4 + 9, 0x0
-        mcall   76, API_IPv4 + 5, 0x0
+        mov     bl, 7
+        mcall   76, , 0xffff
+        mov     bl, 9
+        mcall   76, , 0x0
+        mov     bl, 5
+        mcall   76, , 0x0
 
         mcall   5, PROBE_WAIT*100
 
@@ -506,7 +518,9 @@ link_local:
         mcall   5
 
         DEBUGF  1,"Sending Probe\n"
-        mcall   76, API_ARP + 6
+        mov     ebx, API_ARP + 6
+        mov     bh, [device]
+        mcall   76
         inc     esi
 
         cmp     esi, PROBE_NUM
@@ -521,7 +535,9 @@ link_local:
    announce_loop:
 
         DEBUGF  1,"Sending Announce\n"
-        mcall   76, API_ARP + 6
+        mov     ebx, API_ARP + 6
+        mov     bh, [device]
+        mcall   76
 
         inc     esi
         cmp     esi,ANNOUNCE_NUM
@@ -594,6 +610,7 @@ path            db  '/sys/network.ini'
 
 IM_END:
 
+device          db 1
 inibuf          rb 16
 
 dhcpMsgType     db  ?

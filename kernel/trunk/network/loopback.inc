@@ -20,25 +20,45 @@ iglobal
 
 LOOPBACK_DEVICE:
 
-        .device_type     dd NET_DEVICE_LOOPBACK
-        .mtu             dd 4096
-        .name            dd .namestr
+        .device_type    dd NET_DEVICE_LOOPBACK
+        .mtu            dd 4096
+        .name           dd .namestr
 
-        .unload          dd .dummy_fn
-        .reset           dd .dummy_fn
-        .transmit        dd LOOP_input
+        .unload         dd .dummy_fn
+        .reset          dd .dummy_fn
+        .transmit       dd LOOP_input
 
-        .bytes_tx        dq 0
-        .bytes_rx        dq 0
-        .packets_tx      dd 0
-        .packets_rx      dd 0
+        .bytes_tx       dq 0
+        .bytes_rx       dq 0
+        .packets_tx     dd 0
+        .packets_rx     dd 0
 
-        .namestr         db 'loopback', 0
+        .link_state     dd -1
+        .hwacc          dd 0
+
+        .namestr        db 'loopback', 0
 
         .dummy_fn:
                 ret
 
 endg
+
+
+macro   LOOP_init {
+local   .fail
+
+        mov     ebx, LOOPBACK_DEVICE
+        call    NET_add_device
+
+        cmp     eax, -1
+        je      .fail
+
+        mov     [IP_LIST], 127 + 1 shl 24
+        mov     [SUBNET_LIST], 255
+        mov     [BROADCAST_LIST], 0xffffff00 + 127
+
+  .fail:
+}
 
 ;-----------------------------------------------------------------
 ;

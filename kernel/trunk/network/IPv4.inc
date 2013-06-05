@@ -568,7 +568,7 @@ IPv4_find_fragment_slot:
 align 4
 IPv4_output:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u ip=0x%x\n", ecx, eax
 
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
@@ -585,9 +585,9 @@ IPv4_output:
         push    ebx                     ; push the mac onto the stack
         push    ax
 
-        inc     [IP_packets_tx + edi]   ; update stats
+        inc     [IP_packets_tx + 4*edi] ; update stats
 
-        mov     ebx, [NET_DRV_LIST + edi]
+        mov     ebx, [NET_DRV_LIST + 4*edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
         mov     ecx, [esp + 10 + 6]
@@ -675,8 +675,8 @@ IPv4_output_raw:
         push    ebx                     ; push the mac
         push    ax
 
-        inc     [IP_packets_tx + edi]
-        mov     ebx, [NET_DRV_LIST + edi]
+        inc     [IP_packets_tx + 4*edi]
+        mov     ebx, [NET_DRV_LIST + 4*edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
         mov     ecx, [esp + 6 + 4]
@@ -855,7 +855,7 @@ IPv4_fragment:
 ; IPv4_route
 ;
 ; IN:   eax = Destination IP
-; OUT:  edi = device id * 4
+; OUT:  edi = device number
 ;       eax = ip of gateway if nescessary, unchanged otherwise
 ;
 ;---------------------------------------------------------------------------
@@ -882,15 +882,17 @@ IPv4_route:
         jnz     .loop
 
   .invalid:
-        xor     edi, edi                        ; if none found, use device 0 as default
-        mov     eax, [GATEWAY_LIST]
+        xor     edi, edi                        ; if none found, use device 1 as default        ;;; FIXME
+        inc     di
+        mov     eax, [GATEWAY_LIST+4]
 
   .found_it:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
         ret
 
   .broadcast:
-        xor     edi, edi
+        xor     edi, edi                ;;;; FIXME
+        inc     di
         ret
 
 
@@ -973,7 +975,8 @@ IPv4_api:
         or      ebx, ecx
         mov     [BROADCAST_LIST + eax], ebx
 
-        mov     eax, ecx
+        mov     ebx, [NET_DRV_LIST + eax]
+        mov     eax, [IP_LIST + eax]
         call    ARP_output_request              ; now send a gratuitous ARP
 
         call    NET_send_event

@@ -136,8 +136,7 @@ HEX-редактор              /rd/1/develop/heed
 Zero-Config               /sys/network/zeroconf
 Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
-ARP status                /sys/network/arpcfg
-#16   **** SERVERS ****
+#16    **** SERVERS ****
 FTP daemon                /sys/network/ftpd
 #17   **** CLIENTS ****
 IRC client                /sys/network/ircc

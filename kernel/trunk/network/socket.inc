@@ -433,11 +433,10 @@ SOCKET_bind:
   .tcp:
   .udp:
 
-        mov     ebx, [edx + 4]                  ; First, fill in the IP
+        cmp     ebx, [edx + 4]                  ; First, fill in the IP
         test    ebx, ebx                        ; If IP is 0, use default
         jnz     @f
-        mov     ebx, [NET_DEFAULT]
-        mov     ebx, [IP_LIST + 4*ebx]
+        mov     ebx, [IP_LIST + 4]      ;;;;; FIXME !i!i!i
        @@:
         mov     [eax + IP_SOCKET.LocalIP], ebx
 
@@ -484,7 +483,7 @@ SOCKET_connect:
   .af_inet4:
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST]                               ; FIXME
+        push    [IP_LIST + 4]                               ; FIXME !i!i!i!
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 
@@ -514,6 +513,8 @@ align 4
 
         pushd   [edx + 4]
         pop     [eax + IP_SOCKET.RemoteIP]
+
+        DEBUGF  1, "Connecting to 0x%x\n", [eax + IP_SOCKET.RemoteIP]
 
         cmp     [eax + UDP_SOCKET.LocalPort], 0
         jne     @f
@@ -633,7 +634,7 @@ SOCKET_listen:
 
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST]
+        push    [IP_LIST + 4]           ;;; fixme!!!!
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 
