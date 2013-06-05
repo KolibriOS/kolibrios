@@ -1312,11 +1312,8 @@ show_SmartBlock:
 if lang eq it
 	t:
 	.sup	db 'supportato',0
-	;.usp	db 'unsupported',0
 	.sel	db 'selzionato',0
-	;.usl	db 'not selected',0
 	.enb	db 'abilitato',0
-	;.dis	db 'disabled',0
 	.unk	db 'sconosciuto',0
 	.type	db 'Tipo',0
 	.chs	db 'CHS',0
@@ -1338,16 +1335,14 @@ if lang eq it
 	.23_26	db 'Versione firmware',0
 	.27_46	db 'Numero modello',0
 	.47	db 'Max. number of sectors that shall be transferred per DRQ data block',0
-	;.47	db 'Maximum number of logical sectors that shall be transferred per DRQ',0
-	;.47_	db 'data block on READ/WRITE MULTIPLE commands',0
-	.48.0	db 'Trusted Computing feature set is',0 ;1 sup
-	.49.13.1	db 'Standby timer values are',0 ;sup
+	.48.0	db 'Trusted Computing feature set is',0
+	.49.13.1	db 'Standby timer values are',0
 	.49.13.0	db 'Standby timer values shall be managed by the device',0
-	.49.11.1	db 'IORDY',0 ;sup
-	.49.11.0	db 'IORDY may be',0 ;sup
+	.49.11.1	db 'IORDY',0
+	.49.11.0	db 'IORDY may be',0
 	.49.10.1	db 'IORDY potrebbe essere disabilitato',0
-	.49.9	db 'LBA',0 ;1 sup
-	.49.8	db 'DMA',0 ;1 sup
+	.49.9	db 'LBA',0
+	.49.8	db 'DMA',0
 else
 	.10_19	db 'Serial number',0
 	.23_26	db 'Firmware revision',0

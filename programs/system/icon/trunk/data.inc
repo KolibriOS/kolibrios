@@ -45,6 +45,20 @@ add_text	db 'AUF UNBENUTZTE ICONPOSITION KLICKEN          ',0
 rem_text	db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL    ',0
 title		db 'Icon Manager',0
 
+else if lang eq it
+text:
+	db 255,255,255,0,   'Titolo                                         '
+	db 255,255,255,0,   'Nome app                                       '
+	db 255,255,255,0,   'Parametri                                      '
+	db 255,255,255,0,   '           Applica modifiche                   '
+	db 255,255,255,0,   '      Aggiungi               Rimuovi           '
+	db 0,0,0,0,         'Clicca sull icona per effettuare modifiche     '
+	db                  'x' ; <- END MARKER, DONT DELETE
+
+add_text	db 'Clicca su una posizione non usata            ',0
+rem_text	db 'Cliccare sull icona da rimuovere             ',0
+title		db 'Gestore Icone',0
+
 else
 text:
 	db 255,255,255,0,   '   TITLE                                       '
@@ -73,6 +87,8 @@ icon_default:
 rep_text:
 if lang eq ru
 	db '‡€—Šˆ    -     ˆ‡    , ‚›€ #'
+;else if lang eq it
+;	db 'Icone     -     di    , Selezionate'
 else
 	db 'ICONS     -     OF    , SELECTED'
 end if
@@ -164,10 +180,10 @@ aCP_Assoc	db 'Associations',0
 align 4
 UNPACK_import:
 ;unpack_Version				dd aUnpack_Version
-;unpack_PluginLoad			dd aUnpack_PluginLoad 
+;unpack_PluginLoad			dd aUnpack_PluginLoad
 ;unpack_OpenFilePlugin		dd aUnpack_OpenFilePlugin
 ;unpack_ClosePlugin			dd aUnpack_ClosePlugin
-;unpack_ReadFolder			dd aUnpack_ReadFolder 
+;unpack_ReadFolder			dd aUnpack_ReadFolder
 ;unpack_SetFolder			dd aUnpack_SetFolder
 ;unpack_GetFiles				dd aUnpack_GetFiles
 ;unpack_GetOpenPluginInfo	dd aUnpack_GetOpenPluginInfo
