@@ -548,10 +548,10 @@ if ARP_BLOCK
 
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE         ; Are we waiting for reply from remote end?
         jne     .give_up
-        push    esi edi
+        push    esi
         mov     esi, 10                 ; wait 10 ms
         call    delay_ms
-        pop     edi esi
+        pop     esi
         jmp     .found_it               ; now check again
 
 else
@@ -562,8 +562,8 @@ end if
 
   .valid:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: found MAC\n"
-        movzx   eax, word[edi + ARP_entry.MAC]
-        mov     ebx, dword[edi + ARP_entry.MAC + 2]
+        movzx   eax, word[esi + ARP_entry.MAC]
+        mov     ebx, dword[esi + ARP_entry.MAC + 2]
         ret
 
   .full:

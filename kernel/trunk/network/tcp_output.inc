@@ -594,12 +594,12 @@ TCP_send:
         pop     eax
 
         mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
-        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
+        or      [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
 
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: IP error\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "TCP_send: IP error\n"
 
         or      eax, -1
         ret
@@ -611,7 +611,7 @@ TCP_send:
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: sending failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "TCP_send: sending failed\n"
 
         or      eax, -2
         ret

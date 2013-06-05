@@ -514,8 +514,6 @@ align 4
         pushd   [edx + 4]
         pop     [eax + IP_SOCKET.RemoteIP]
 
-        DEBUGF  1, "Connecting to 0x%x\n", [eax + IP_SOCKET.RemoteIP]
-
         cmp     [eax + UDP_SOCKET.LocalPort], 0
         jne     @f
         call    SOCKET_find_port
