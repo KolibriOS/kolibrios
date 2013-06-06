@@ -575,10 +575,11 @@ IPv4_output:
 
         push    ecx eax edx di
 
-        cmp     eax, 1 shl 24 + 127
-        je      .loopback
-
         call    IPv4_route              ; outputs device number in edi, dest ip in eax
+
+        test    edi, edi
+        jz      .loopback
+
         call    ARP_IP_to_MAC
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
@@ -635,7 +636,8 @@ IPv4_output:
         ret
 
   .loopback:
-        mov     dword [esp + 2], eax
+        mov     dword [esp + 2], eax            ; change source IP to dest IP
+        mov     ecx, [esp + 10]
         add     ecx, sizeof.IPv4_header
         mov     edi, AF_INET4
         call    LOOP_output
@@ -875,23 +877,20 @@ IPv4_route:
         and     edx, [SUBNET_LIST+edi]
 
         cmp     ebx, edx
-        je      .found_it
+        jne     .next
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
+        ret
+
   .next:
         add     edi, 4
         dec     ecx
         jnz     .loop
 
   .invalid:
-        xor     edi, edi                        ; if none found, use device 1 as default        ;;; FIXME
-        inc     di
-        mov     eax, [GATEWAY_LIST+4]
-
-  .found_it:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
-        ret
-
+        mov     eax, [GATEWAY_LIST+4]       ;;; FIXME
   .broadcast:
-        xor     edi, edi                ;;;; FIXME
+        xor     edi, edi                ; if none found, use device 1 as default     ;;;; FIXME
         inc     di
         ret
 

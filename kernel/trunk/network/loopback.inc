@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  loopback.inc                                                   ;;
@@ -80,6 +80,10 @@ LOOP_input:
         push    ecx
         push    eax
 
+        inc     [LOOPBACK_DEVICE.packets_rx]
+        add     dword[LOOPBACK_DEVICE.bytes_rx], ecx
+        adc     dword[LOOPBACK_DEVICE.bytes_rx + 4], 0
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: size=%u\n", ecx
         lea     edx, [eax + 4]
         mov     eax, dword[eax]
@@ -101,14 +105,14 @@ LOOP_input:
 ; LOOP_output
 ;
 ; IN:
-;     ecx = packet size
-;      di = protocol
+;       ecx = packet size
+;       edi = address family
 ;
-; OUT: edi = 0 on error, pointer to buffer otherwise
-;      eax = buffer start
-;      ebx = to device structure
-;      ecx = unchanged (packet size of embedded data)
-;      edx = size of complete buffer
+; OUT:  edi = 0 on error, pointer to buffer otherwise
+;       eax = buffer start
+;       ebx = to device structure
+;       ecx = unchanged (packet size of embedded data)
+;       edx = size of complete buffer
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -134,12 +138,15 @@ LOOP_output:
         lea     edx, [ecx + 4]  ; Set edx to complete buffer size
         mov     ebx, LOOPBACK_DEVICE
 
-  .done:
+        inc     [LOOPBACK_DEVICE.packets_tx]
+        add     dword[LOOPBACK_DEVICE.bytes_tx], ecx
+        adc     dword[LOOPBACK_DEVICE.bytes_tx + 4], 0
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output: ptr=%x size=%u\n", eax, edx
         ret
 
   .out_of_ram:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_output: failed\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "LOOP_output: out of memory\n"
         add     esp, 4+4
         xor     edi, edi
         ret
