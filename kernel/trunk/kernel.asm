@@ -3517,23 +3517,23 @@ set_bgr_event:
         cmp     [edi+SLOT_BASE+APPDATA.draw_bgr_x], 0
         jz      .set
 .join:
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
-        jbe     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
-@@:
-        shr     eax, 16
         cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
         jae     @f
         mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
 @@:
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        shr     eax, 16
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
         jbe     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
 @@:
-        shr     edx, 16
         cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
         jae     @f
         mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
+@@:
+        shr     edx, 16
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        jbe     @f
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
 @@:
         jmp     .common
 .set:
