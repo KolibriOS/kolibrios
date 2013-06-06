@@ -378,7 +378,6 @@ ARP_add_entry:
         cmp     ecx, ARP_TABLE_SIZE                                     ; list full ?
         jae     .full
 
-
 ; From this point on, we can only fail if IP has a static entry, or if table is corrupt.
 
         inc     [ARP_entries_num + 4*edi]                               ; assume we will succeed
@@ -387,7 +386,7 @@ ARP_add_entry:
         xor     ecx, ecx
         imul    edi, ARP_TABLE_SIZE*sizeof.ARP_entry
         add     edi, ARP_table
-        mov     eax, [edi + ARP_entry.IP]
+        mov     eax, [esi + ARP_entry.IP]
   .loop:
         cmp     [edi + ARP_entry.Status], ARP_NO_ENTRY                  ; is this slot empty?
         je      .add
@@ -500,7 +499,9 @@ ARP_IP_to_MAC:
         mov     ecx, [ARP_entries_num + 4*edi]
         test    ecx, ecx
         jz      .not_in_list
-        mov     esi, ARP_table + ARP_entry.IP
+        mov     esi, edi
+        imul    esi, sizeof.ARP_entry * ARP_TABLE_SIZE
+        add     esi, ARP_table + ARP_entry.IP
   .scan_loop:
         cmp     [esi], eax
         je      .found_it
@@ -584,7 +585,7 @@ end if
 ;
 ; ARP_API
 ;
-; This function is called by system function 75
+; This function is called by system function 76
 ;
 ; IN:  subfunction number in bl
 ;      device number in bh
