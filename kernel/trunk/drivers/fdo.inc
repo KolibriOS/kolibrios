@@ -248,27 +248,27 @@ macro DEBUGH_N _sign,_num,_hex {
 debug_func fdo_debug_outchar
 debug_beginf
         pushad
-        movzx   ebx, al
-        mov     eax, 1
+        movzx   ecx, al
+        mov     ebx, 1
 ;        mov     ecx,sys_msg_board
 ;        call    ecx ; sys_msg_board
-        stdcall SysMsgBoardChar
+        stdcall SysMsgBoard
         popad
         ret
 debug_endf
 
 debug_func fdo_debug_outstr
 debug_beginf
-        mov     eax, 1
+        mov     ebx, 1
   .l1:
         dec     esi
         js      .l2
-        movzx   ebx, byte[edx]
-        or      bl, bl
+        movzx   ecx, byte[edx]
+        or      cl, cl
         jz      .l2
 ;        mov     ecx,sys_msg_board
 ;        call    ecx ; sys_msg_board
-        stdcall SysMsgBoardChar
+        stdcall SysMsgBoard
         inc     edx
         jmp     .l1
   .l2:

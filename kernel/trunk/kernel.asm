@@ -4680,8 +4680,8 @@ sys_msg_board_str:
    @@:
         cmp     [esi], byte 0
         je      @f
-        mov     eax, 1
-        movzx   ebx, byte [esi]
+        mov     ebx, 1
+        movzx   ecx, byte [esi]
         call    sys_msg_board
         inc     esi
         jmp     @b
@@ -4721,9 +4721,9 @@ sys_msg_board_dword:
         cmp     al, 10
         sbb     al, 69h
         das
-        mov     bl, al
-        xor     eax, eax
-        inc     eax
+        mov     cl, al
+        xor     ebx, ebx
+        inc     ebx
         call    sys_msg_board
         pop     eax
         pop     ecx
@@ -4740,8 +4740,12 @@ endg
 
 sys_msg_board:
 
-; eax=1 : write :  bl byte to write
-; eax=2 :  read :  ebx=0 -> no data, ebx=1 -> data in al
+; ebx=1 : write :  bl byte to write
+; ebx=2 :  read :  ebx=0 -> no data, ebx=1 -> data in al
+
+        push    eax ebx                 ; Save eax and ebx, since we're restoring their order required.
+        mov     eax, ebx
+        mov     ebx, ecx
 
         mov     ecx, [msg_board_count]
         cmp     eax, 1
@@ -4799,24 +4803,29 @@ end if
         inc     ecx
         and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
+
+        pop     ebx eax
         ret
 .smbl1:
         cmp     eax, 2
         jne     .smbl2
         test    ecx, ecx
         jz      .smbl21
+
+        add     esp, 8                  ; Returning data in ebx and eax, so no need to restore them.
         mov     eax, msg_board_data+1
         mov     ebx, msg_board_data
         movzx   edx, byte [ebx]
         call    memmove
         dec     [msg_board_count]
-        mov     [esp + 36], edx ;eax
-        mov     [esp + 24], dword 1
+        mov     [esp + 32], edx ;eax
+        mov     [esp + 20], dword 1
         ret
 .smbl21:
-        mov     [esp+36], ecx
-        mov     [esp+24], ecx
+        mov     [esp+32], ecx
+        mov     [esp+20], ecx
 .smbl2:
+        pop     ebx eax
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

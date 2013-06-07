@@ -66,7 +66,7 @@ iglobal
   szLoadCursor        db 'LoadCursor',0
 
   szSysMsgBoardStr    db 'SysMsgBoardStr', 0
-  szSysMsgBoardChar   db 'SysMsgBoardChar', 0
+  szSysMsgBoard       db 'SysMsgBoard', 0
   szGetCurrentTask    db 'GetCurrentTask',0
   szLFBAddress        db 'LFBAddress',0
   szLoadFile          db 'LoadFile',0
@@ -163,7 +163,7 @@ kernel_export:
   dd szLoadCursor      , load_cursor           ;stdcall
 
   dd szSysMsgBoardStr  , sys_msg_board_str
-  dd szSysMsgBoardChar , sys_msg_board
+  dd szSysMsgBoard     , sys_msg_board
   dd szGetCurrentTask  , get_curr_task
   dd szLoadFile        , load_file             ;retval eax, ebx
   dd szSendEvent       , send_event            ;see EVENT.inc for specification

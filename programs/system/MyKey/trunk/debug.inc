@@ -62,7 +62,7 @@ debug_outchar:		; al - char
    ;int  0x40
    mov	bl, al
    mov	eax, 1
-   call SysMsgBoardChar
+   call SysMsgBoard
    popad
    popf
 ret
@@ -138,7 +138,7 @@ debug_outhex:
     popf
 ret
 
-SysMsgBoardChar:
+SysMsgBoard:
    push   eax ebx ecx
    mov	  cl, al
    mov	  eax, 63
@@ -153,7 +153,7 @@ SysMsgBoardStr:
    lodsb
    or	  al, al
    jz	  @f
-   call   SysMsgBoardChar
+   call   SysMsgBoard
    jmp	  @b
  @@:
    pop	  eax
