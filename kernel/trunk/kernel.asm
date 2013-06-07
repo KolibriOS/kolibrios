@@ -657,6 +657,10 @@ no_mode_0x12:
 ; Initialize system timer (IRQ0)
         call    PIT_init
 
+; CALCULATE FAT CHAIN FOR RAMDISK
+
+        call    calculatefatchain
+
         mov     esi, boot_initapic
         call    boot_log
 ; Try to Initialize APIC
@@ -713,9 +717,6 @@ include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 end if
 ;    mov    [dma_hdd],1
-; CALCULATE FAT CHAIN FOR RAMDISK
-
-        call    calculatefatchain
 
 if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
@@ -4782,7 +4783,7 @@ endg
         jnz     @f
         mov     word [msg_board_pos+2], 234
         add     word [msg_board_pos], 10
-        mov     ax, [Screen_Max_Y]
+        mov     ax, word [Screen_Max_Y]
         cmp     word [msg_board_pos], ax
         jbe     @f
         mov     word [msg_board_pos], 10
