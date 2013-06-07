@@ -30,8 +30,8 @@ use32
         dd      0x01            ; header version
         dd      START           ; entry point
         dd      IM_END          ; image size
-        dd      I_END+0x100     ; required memory
-        dd      I_END+0x100     ; esp
+        dd      I_END+0x1000    ; required memory
+        dd      I_END+0x1000    ; esp
         dd      params          ; I_PARAM
         dd      0x0             ; I_Path
 
@@ -45,8 +45,6 @@ include '../../debug-fdo.inc'
 START:
 
         mcall   68, 11                  ; init heap so we can allocate memory dynamically
-
-        mcall   40, EV_STACK
 
 ; load libraries
         stdcall dll.Load, @IMPORT
@@ -69,68 +67,96 @@ START:
         mov     ecx, URLMAXLEN-1
         rep     stosb
 
-        call    load_settings
-        cmp     byte[params], 0
-        je      prepare_event   ;red
+; load proxy settings
+        invoke  ini.get_str, inifile, sec_proxy, key_proxy, proxyAddr, 256, proxyAddr
+        invoke  ini.get_int, inifile, sec_proxy, key_proxyport, 80
+        mov     [proxyPort], eax
+        invoke  ini.get_str, inifile, sec_proxy, key_user, proxyUser, 256, proxyUser
+        invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
 
-; we have an url
-        mov     edi, document_user
-        mov     al, ' '
-        mov     ecx, URLMAXLEN
-        rep     stosb
-        
+; check parameters
+        cmp     byte[params], 0         ; no parameters ?
+        je      reset_events            ; load the GUI
+
+; we have an url, copy untill space or 0
         mov     esi, params
         mov     edi, document_user
-
-; copy untill space or 0
+        mov     ecx, 1024               ; max parameter size
+        mov     [shared_name], 0
   .copy_param:
-        mov     al, [esi]
+        lodsb
         test    al, al
         jz      .done
 
         cmp     al, ' '
-        jz      .done_inc
+        jz      .done_with_shared
 
-        mov     [edi], al
-        inc     esi
-        inc     edi
-        jmp     .copy_param
+        stosb
+        dec     ecx
+        jnz     .copy_param
+        DEBUGF  2, "Invalid parameters\n"
+        jmp     exit
 
-  .done_inc:
-
-; url is followed by shared memory name.
-        inc     esi
-  .done:
+  .done_with_shared:
         mov     [shared_name], esi
-        jmp     download
+  .done:
+        xor     al, al
+        stosb
 
-prepare_event:
-; Report events
-; Stack 8 + defaults
-        mcall   40, 10100111b
 
-red:    ; redraw
-        call    draw_window
+download:
 
-still:
+        DEBUGF  1, "Starting download\n"
+
+        call    parse_url
+        call    open_socket
+        call    send_request
+
+        mcall   68, 12, BUFFERSIZE      ; create buffer, we'll resize it later if needed..
+        mov     [buf_ptr], eax
+        mov     [buf_size], 0
+
+        call    read_incoming_data
+
+        mcall   close, [socketnum]
+
+        call    parse_result
+        call    save
+
+        mcall   68, 13, [final_buffer]  ; free buffer
+
         cmp     byte [params], 0
         jne     exit
 
-        mcall   10      ; wait here for event
-        cmp     eax, 1  ; redraw request ?
-        je      red
+reset_events:
 
-        cmp     eax, 2  ; key in buffer ?
+        DEBUGF  1, "resetting events\n"
+
+; Report events
+; defaults + mouse
+        mcall   40, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
+
+redraw:
+        call    draw_window
+
+still:
+        DEBUGF  1, "waiting for events\n"
+
+        mcall   10      ; wait here for event
+
+        cmp     eax, EV_REDRAW
+        je      redraw
+
+        cmp     eax, EV_KEY
         je      key
 
-        cmp     eax, 3  ; button in buffer ?
+        cmp     eax, EV_BUTTON
         je      button
         
-        cmp     eax, 6  ; mouse in buffer ?
+        cmp     eax, EV_MOUSE
         je      mouse
 
         jmp     still
-
 
 key:
         mcall   2       ; read key
@@ -145,6 +171,7 @@ key:
 button:
 
         mcall   17      ; get id
+
         cmp     ah, 26
         jne     @f
         call    save_to_file
@@ -163,40 +190,19 @@ exit:
         or      eax, -1  ; close this program
         mcall
 
-download:
-
-        DEBUGF  1, "Starting download\n"
-
-        call    parse_url
-        call    open_socket
-        call    send_request
-
-        mcall   68, 12, BUFFERSIZE
-        mov     [buf_ptr], eax
-        mov     [buf_size], 0
-
-        call    read_incoming_data
-
-        mcall   close, [socketnum]
-
-        call    parse_result
-        call    save
-
-        mcall   68, 13, [final_buffer]
-
-        jmp     still
-
 
 save:
+        cmp     [shared_name], 0
+        je      .use_file
 
-        mov     ecx, [shared_name]
-        test    ecx, ecx
-        jz      @f
-        cmp     [ecx], byte 0
-        jnz     save_in_shared
-    @@:
+        call    save_in_shared
+        jmp     .done
+
+  .use_file:
 
         call    save_to_file
+
+  .done:
 
 ; if called from command line, then exit
         cmp     byte[params], 0
@@ -206,31 +212,27 @@ save:
 
 save_in_shared:
 
-        mov     esi, 1   ; SHM_OPEN+SHM_WRITE
-        mcall   68, 22
+; open the shared memory area
+        mov     esi, 1
+        mcall   68, 22, [shared_name], , 1 ; SHM_OPEN+SHM_WRITE
         test    eax, eax
         jz      exit
 
-        sub     edx, 4
-        jbe     exit
-
         mov     ecx, [final_size]
-        cmp     ecx, edx
-        jb      @f
-
-        mov     ecx, edx
-    @@:
+; store the size
         mov     [eax], ecx
+
+; now copy the data
         lea     edi, [eax+4]
         mov     esi, [final_buffer]
-        mov     edx, ecx
+        mov     eax, ecx
         shr     ecx, 2
         rep     movsd
-        mov     ecx, edx
+        mov     ecx, eax
         and     ecx, 3
         rep     movsb
 
-        jmp     exit
+        ret
 
 
 ;****************************************************************************
@@ -341,6 +343,7 @@ send_request:
         sub     esi, request    ; length
         xor     edi, edi        ; flags
         mcall   send, [socketnum], request  ;' HTTP/1.1 .. '
+
         ret
 
 ;****************************************************************************
@@ -354,6 +357,8 @@ send_request:
 read_incoming_data:
 
         DEBUGF  1, "Reading incoming data\n"
+
+        mcall   40, EVM_STACK   ; we only want stack events now
 
         mov     eax, [buf_ptr]
         mov     [pos], eax
@@ -604,7 +609,7 @@ read_hex:
 
         xor     eax, eax
         xor     ecx, ecx
-.next:
+  .next:
         mov     cl, [ebx]
         inc     ebx
         
@@ -625,14 +630,12 @@ read_hex:
         cmp     cl, 0x0f
         ja      .bad
 
-.adding:
+  .adding:
         shl     eax, 4
         or      eax, ecx
-;       jmp     .not_number
-;.bad:
-.bad:
+  .bad:
         jmp     .next
-.done:
+  .done:
 
         ret
 
@@ -806,7 +809,8 @@ ip2:
         inc     edi
         cmp     edi, server_ip+3
         jbe     ip1
-        jmp     pu_011
+
+        ret
 
 pu_010:
         DEBUGF  1, "Resolving %s\n", webAddr
@@ -829,26 +833,6 @@ pu_010:
         mov     [server_ip], eax
 
         DEBUGF  1, "Resolved to %u.%u.%u.%u\n", [server_ip]:1, [server_ip + 1]:1, [server_ip + 2]:1, [server_ip + 3]:1
-
-pu_011:
-
-        ret
-
-;***************************************************************************
-;   Function
-;       load_settings
-;
-;   Description
-;       Load settings from configuration file network.ini
-;
-;***************************************************************************
-load_settings:
-
-        invoke  ini.get_str, inifile, sec_proxy, key_proxy, proxyAddr, 256, proxyAddr
-        invoke  ini.get_int, inifile, sec_proxy, key_proxyport, 80
-        mov     [proxyPort], eax
-        invoke  ini.get_str, inifile, sec_proxy, key_user, proxyUser, 256, proxyUser
-        invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
 
         ret
 
@@ -960,6 +944,7 @@ draw_window:
         mcall   4, <102, 59>, , button_text
 
         mcall   12, 2 ; end window redraw
+
         ret
 
 
