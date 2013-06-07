@@ -436,8 +436,11 @@ static void fetch_curl_process(struct fetch_curl_context *ctx) {
 	 * fetch_file_send_callback().
 	 */
 
-	/* content type */
-	if (fetch_curl_send_header(ctx, "Content-Type: text/html"))
+	__menuet__debug_out(fetch_filetype(ctx->path));
+	__menuet__debug_out("\n");
+	
+	if (fetch_curl_send_header(ctx, "Content-Type: %s", 
+			fetch_filetype(ctx->path)))
 		goto fetch_file_process_aborted;
 
 	

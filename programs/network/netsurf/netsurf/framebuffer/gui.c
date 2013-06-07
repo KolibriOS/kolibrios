@@ -427,8 +427,8 @@ process_cmdline(int argc, char** argv)
 
 	LOG(("argc %d, argv %p", argc, argv));
 
-	fename = "sdl";
-	febpp = 16;
+	fename = "kolibri";
+	febpp = 32;
 
 	if ((nsoption_int(window_width) != 0) && 
 	    (nsoption_int(window_height) != 0)) {
@@ -543,15 +543,17 @@ main(int argc, char** argv)
 	
 	LOG(("Registering surfaces for SDL and RAM.."));
 	
-	extern nsfb_surface_rtns_t sdl_rtns;
+	//extern nsfb_surface_rtns_t sdl_rtns;
 	extern nsfb_surface_rtns_t ram_rtns;
 	extern nsfb_surface_rtns_t able_rtns;
+	extern nsfb_surface_rtns_t kolibri_rtns;
 	
-	_nsfb_register_surface(NSFB_SURFACE_SDL, &sdl_rtns, "sdl");
+	//_nsfb_register_surface(NSFB_SURFACE_SDL, &sdl_rtns, "sdl");
 	_nsfb_register_surface(NSFB_SURFACE_RAM, &ram_rtns, "ram");
-	_nsfb_register_surface(NSFB_SURFACE_RAM, &able_rtns, "able");
+	_nsfb_register_surface(NSFB_SURFACE_ABLE, &able_rtns, "able");
+	_nsfb_register_surface(NSFB_SURFACE_KOLIBRI, &kolibri_rtns, "kolibri");
 
-	respaths = fb_init_resource("/tmp9/1/netsurf/res/:res/:fonts/");
+	respaths = fb_init_resource("/hd0/1/res/:/bd0/1/res/:/tmp9/1/netsurf/res/:res/:fonts/");
 
 	options = filepath_find(respaths, "Choices");
 	messages = filepath_find(respaths, "messages");
