@@ -210,7 +210,7 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     @F     ;---------
 
-        DEBUGF  2,"Checking if device is already listed..\n"
+        DEBUGF  1,"Checking if device is already listed..\n"
 
         mov     eax, [IOCTL.input]
 
@@ -656,7 +656,7 @@ reset:
 
 ; Indicate that we have successfully reset the card
         xor     eax, eax
-        DEBUGF  2,"Done!\n"
+        DEBUGF  1,"Done!\n"
 
         ret
 
@@ -673,8 +673,8 @@ transmit:
 
         mov     esi, [esp + 4]
         mov     ecx, [esp + 8]
-        DEBUGF  2,"Transmitting packet, buffer:%x, size:%u\n",esi, ecx
-        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n",esi, ecx
+        DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
         cmp     ecx, ETH_FRAME_LEN
@@ -709,7 +709,7 @@ transmit:
         mov     al, CMD_PS0 + CMD_TXP + CMD_RD2 + CMD_STA
         out     dx, al
 
-        DEBUGF  2," - Packet Sent!\n"
+        DEBUGF  1,"Packet Sent!\n"
 
         inc     [device.packets_tx]
         mov     eax, [esp + 8]                   ; Get packet size in eax
@@ -721,8 +721,8 @@ transmit:
         xor     eax, eax
         ret     8
 
-.err:
-        DEBUGF  2," - Error!\n"
+  .err:
+        DEBUGF  2,"Transmit error!\n"
 
         or      eax, -1
         stdcall KernelFree, [esp+4]
@@ -860,7 +860,7 @@ int_handler:
 
 ; update stats
 
-        DEBUGF  2,"Received %u bytes\n", ecx
+        DEBUGF  1,"Received %u bytes\n", ecx
 
         add     dword[device.bytes_rx], ecx
         adc     dword[device.bytes_rx + 4], 0
@@ -878,8 +878,6 @@ int_handler:
         sub     eax, esi
         cmp     ecx, eax                ; eax = number of bytes till end of buffer, ecx = bytes we need to read
         jbe     .no_wrap
-
-        DEBUGF  2,"WRAP!\n"
 
 ; Read first part
 
@@ -929,7 +927,7 @@ int_handler:
 
   .no_rx:
         pop     ebx
-        DEBUGF  2,"done\n"
+        DEBUGF  1,"done\n"
 
         set_io  0
         set_io  P0_ISR
