@@ -160,7 +160,11 @@ exc_c:                          ; исключения (все, кроме 7-г�
        ;mov     edx, [TASK_BASE]
         mov     [edx + TASKDATA.state], byte 4 ; terminate
         call    wakeup_osloop
-        jmp     change_task     ; stack - here it does not matter at all, SEE: core/shed.inc
+        call    change_task
+; If we're here, then the main OS thread has crashed before initializing IDLE thread.
+; Or they both have crashed. Anyway, things are hopelessly broken.
+        hlt
+        jmp     $-1
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
 ; eax=debugger PID

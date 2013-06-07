@@ -31,6 +31,7 @@ irq0:
         call    irq_eoi
 ;        btr     dword[DONT_SWITCH], 0
 ;        jc      .return
+        mov     bl, SCHEDULE_ANY_PRIORITY
         call    find_next_task
         jz      .return  ; if there is only one running process
         call    do_change_task
@@ -58,6 +59,7 @@ if 0
 .find_next_task:
 ; \end{Mario79}
 end if
+        mov     bl, SCHEDULE_ANY_PRIORITY
         call    find_next_task
         jz      .return  ; the same task -> skip switch
   @@:
@@ -324,8 +326,16 @@ proc scheduler_remove_thread
         ret
 endp
 
+SCHEDULE_ANY_PRIORITY = 0
+SCHEDULE_HIGHER_PRIORITY = 1
 ;info:
 ;   Find next task to execute
+;in:
+;   bl = SCHEDULE_ANY_PRIORITY:
+;        consider threads with any priority
+;   bl = SCHEDULE_HIGHER_PRIORITY:
+;        consider only threads with strictly higher priority than the current one,
+;        keep running the current thread if other ready threads have the same or lower priority
 ;retval:
 ;   ebx = address of the APPDATA for the selected task (slot-base)
 ;   edi = address of the TASKDATA for the selected task
@@ -337,6 +347,18 @@ endp
 proc find_next_task
         call    update_counters
         spin_lock_irqsave SchedulerLock
+        push    NR_SCHED_QUEUES
+; If bl == SCHEDULE_ANY_PRIORITY = 0, loop over all NR_SCHED lists.
+; Otherwise, loop over first [APPDATA.priority] lists.
+        test    bl, bl
+        jz      .start
+        mov     ebx, [current_slot]
+        mov     edi, [TASK_BASE]
+        mov     eax, [ebx+APPDATA.priority]
+        test    eax, eax
+        jz      .unlock_found
+        mov     [esp], eax
+.start:
         xor     ecx, ecx
 .priority_loop:
         mov     ebx, [scheduler_current+ecx*4]
@@ -370,6 +392,8 @@ proc find_next_task
         mov     [edi+TASKDATA.state], 0
 .task_found:
         mov     [scheduler_current+ecx*4], ebx
+.unlock_found:
+        pop     ecx
         spin_unlock_irqrestore SchedulerLock
 .found:
         mov     [CURRENT_TASK], bh
@@ -383,10 +407,11 @@ proc find_next_task
         jnz     .task_loop
 .priority_next:
         inc     ecx
-        cmp     ecx, NR_SCHED_QUEUES
+        cmp     ecx, [esp]
         jb      .priority_loop
-        hlt
-        jmp     $-1
+        mov     ebx, [current_slot]
+        mov     edi, [TASK_BASE]
+        jmp     .unlock_found
 endp
 
 if 0
