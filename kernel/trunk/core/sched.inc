@@ -392,6 +392,16 @@ proc find_next_task
         mov     [edi+TASKDATA.state], 0
 .task_found:
         mov     [scheduler_current+ecx*4], ebx
+; If we have selected a thread with higher priority
+; AND rescheduling is due to IRQ,
+; turn the current scheduler list one entry back,
+; so the current thread will be next after high-priority thread is done.
+        mov     ecx, [esp]
+        cmp     ecx, NR_SCHED_QUEUES
+        jz      .unlock_found
+        mov     eax, [current_slot]
+        mov     eax, [eax+APPDATA.in_schedule.prev]
+        mov     [scheduler_current+ecx*4], eax
 .unlock_found:
         pop     ecx
         spin_unlock_irqrestore SchedulerLock
