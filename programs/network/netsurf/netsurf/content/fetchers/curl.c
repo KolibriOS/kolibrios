@@ -216,7 +216,12 @@ void * fetch_curl_setup (struct fetch *fetchh,
 	if (ctx == NULL)
 		return NULL;
 
-	ctx->path = url_to_path(nsurl_access(url));
+	//ctx->path = url_to_path(nsurl_access(url));
+	char *zz;
+	int pr;
+	nsurl_get(url, NSURL_WITH_FRAGMENT, &zz, &pr);
+	
+	ctx->path = zz;
 	if (ctx->path == NULL) {
 		free(ctx);
 		return NULL;
@@ -343,12 +348,85 @@ fetch_file_process_error_aborted:
 }
 
 
+int is_pid(int k)
+{
+	int error;
+asm volatile ("int $0x40":"=a"(error):"a"(18), "b"(21), "c"(k));
+return error;
+}
+
+
+int kill_pid(int k)
+{
+	int error;
+asm volatile ("int $0x40":"=a"(error):"a"(18), "b"(18), "c"(k));
+return error;
+}
+
 static void fetch_curl_process(struct fetch_curl_context *ctx) {
 	
+	int pid=execl ("/sys/network/downloader", ctx->path, 0);
+	
+	
+	
+//	while (is_pid(pid)) {
+	kill_pid(pid);
+//	}
+	
+	pid=execl ("/sys/network/downloader", ctx->path, 0);
+	
+	char ps[255];
+	sprintf(ps, "pid %d", pid);
+	execl ("/sys/network/@notify", ps, 0);
+	
+	
+	while (is_pid(pid));
+	
+	
+	sprintf(ps, "Yay! Finished");
+	execl ("/sys/network/@notify", ps, 0);
+	
+	
+	/*
+	char pzz[255];
+	sprintf(pzz, "Pid is %d", pid);
+	execl ("/sys/@notify", pzz, 0); */
+	//int status;
+	//waitpid(pid, &status, 0); 
+	
+	
 	fetch_msg msg;
-	const char * buf = "<html><body><h1>Hello, file fetcher!</h1></body></html>";
-//	fetch_curl_process_error(ctx, 501);
-//	return;
+	//const char * buf = "<html><body><h1>Hello, file fetcher!</h1></body></html>";
+
+ FILE *infile;
+  infile = fopen("/sys/.download", "rb");
+ 
+  if (infile == NULL) {
+    printf("file does not exist.\n");
+    return -1;
+  }
+ 
+  fseek(infile, 0, SEEK_END);
+  size_t file_size = ftell(infile);
+  rewind(infile);
+ 
+  char *buffer = (char*)malloc(file_size * sizeof(char));
+  if (buffer == NULL) {
+    fclose(infile);
+    printf("Error allocating %d bytes.\n", file_size * sizeof(char));
+    return -1;
+  }
+  size_t bytes_read = fread(buffer, sizeof(char), file_size, infile);
+  if (bytes_read != file_size) {
+    printf("Have read only %d bytes of %d.\n", bytes_read, file_size);
+    free(buffer);
+    fclose(infile);
+    return -1;
+  }
+  fclose(infile);
+  
+ 
+	
 
 /* fetch is going to be successful */
 	fetch_set_http_code(ctx->fetchh, 200);
@@ -366,8 +444,8 @@ static void fetch_curl_process(struct fetch_curl_context *ctx) {
 	/* main data loop */
 
 		msg.type = FETCH_DATA;
-		msg.data.header_or_data.buf = (const uint8_t *) buf;
-		msg.data.header_or_data.len = strlen(buf);
+		msg.data.header_or_data.buf = (const uint8_t *) buffer;
+		msg.data.header_or_data.len = file_size;
 		fetch_curl_send_callback(&msg, ctx);
 			
 	
