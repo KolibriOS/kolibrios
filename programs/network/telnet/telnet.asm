@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  telnet.asm - Telnet client for KolibriOS                       ;;
@@ -14,9 +14,9 @@
 
 format binary as ""
 
-__DEBUG__       equ 0
-__DEBUG_LEVEL__ equ 1
-BUFFERSIZE      equ 4096
+__DEBUG__       = 0
+__DEBUG_LEVEL__ = 1
+BUFFERSIZE      = 4096
 
 use32
 ; standard header
@@ -29,12 +29,12 @@ use32
         dd      hostname        ; parameters
         dd      0               ; path
 
-include '../macros.inc'
+include '../../macros.inc'
 purge mov,add,sub
-include '../proc32.inc'
-include '../dll.inc'
-include '../debug-fdo.inc'
-include '../network.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../debug-fdo.inc'
+include '../../network.inc'
 
 ; entry point
 start:

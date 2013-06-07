@@ -1,39 +1,47 @@
-;
-;
-; VNC Client for kolibrios by hidnplayr
-;
-; hidnplayr@gmail.com
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  vncc.asm - VNC client for KolibriOS                            ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 format binary as ""
+
+__DEBUG__       = 1
+__DEBUG_LEVEL__ = 1
+
+STRLEN          = 64            ; password and server max length
+xpos            = 4             ; coordinates of image
+ypos            = 22            ;
+
+TIMEOUT         = 5             ; timeout in seconds
 
 use32
 
         org     0x0
 
-        db      'MENUET01'              ; 8 byte id
-        dd      0x01                    ; header version
-        dd      START                   ; start of code
-        dd      I_END                   ; size of image
-        dd      IM_END                  ; memory for app
-        dd      IM_END                  ; esp
-        dd      0x0 , 0x0               ; I_Param , I_Path
+        db      'MENUET01'      ; 8 byte id
+        dd      0x01            ; header version
+        dd      START           ; start of code
+        dd      I_END           ; size of image
+        dd      IM_END          ; memory for app
+        dd      IM_END          ; esp
+        dd      0x0 , 0x0       ; I_Param , I_Path
 
-__DEBUG__ equ 1
-__DEBUG_LEVEL__ equ 1
 
-STRLEN = 64      ; password and server max length
-xpos = 4         ; coordinates of image
-ypos = 22        ;
-
-TIMEOUT = 5     ; timeout in seconds
-
-include '../macros.inc'
-include '../debug-fdo.inc'
-include '../proc32.inc'
-include '../dll.inc'
-include '../struct.inc'
-include '../network.inc'
+include '../../macros.inc'
+include '../../debug-fdo.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../struct.inc'
+include '../../network.inc'
 
 include 'structs.inc'
 include 'logon.inc'

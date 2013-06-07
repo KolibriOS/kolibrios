@@ -1,3 +1,17 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;; nslookup.asm - name service lookup (DNS)) program for KolibriOS ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 format binary as ""
 
 use32
@@ -12,12 +26,12 @@ use32
         dd      0               ; path
 
 ; useful includes
-include '../macros.inc'
+include '../../macros.inc'
 purge mov,add,sub
-include '../proc32.inc'
-include '../dll.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
 
-include '../network.inc'
+include '../../network.inc'
 
 ; entry point
 start:

@@ -292,7 +292,8 @@ include 'config.inc'
 ;__CPU_type equ p5
 SYSENTER_VAR    equ 0
 
-macro mcall a,b,c,d,e,f {   ; mike.dld
+macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
+ local  ..ret_point
  __mov eax,a
  __mov ebx,b
  __mov ecx,c
@@ -300,7 +301,30 @@ macro mcall a,b,c,d,e,f {   ; mike.dld
  __mov esi,e
  __mov edi,f
 
-   int 0x40
+ if __CPU_type eq p5
+        int     0x40
+ else
+  if __CPU_type eq p6
+        push    ebp
+        mov     ebp, esp
+        push    ..ret_point     ; it may be 2 or 5 byte
+        sysenter
+ ..ret_point:
+        pop     edx
+        pop     ecx
+
+  else
+   if __CPU_type eq k6
+        push    ecx
+        syscall
+        pop     ecx
+   else
+        display 'ERROR : unknown CPU type (set to p5)', 10, 13
+        __CPU_type equ p5
+        int     0x40
+   end if
+  end if
+ end if
 }
 
 
@@ -503,6 +527,49 @@ struct FILEINFO
   Size       dq ?
 ends
 
+
+if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
+
+cmove   fix     cmovz
+macro cmovz reg1, reg2 {
+
+local   .jumpaddr
+
+        jnz     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+cmovne  fix     cmovnz
+macro cmovnz reg1, reg2 {
+
+local   .jumpaddr
+
+        jz      .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovg reg1, reg2 {
+
+local   .jumpaddr
+
+        jle     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovl reg1, reg2 {
+
+local   .jumpaddr
+
+        jge     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+end if
+
 ; constants
 
 ; events
@@ -518,11 +585,13 @@ EV_IPC         = 7
 EV_STACK       = 8
 
 ; event mask bits for function 40
-EVM_REDRAW     =        1b
-EVM_KEY        =       10b
-EVM_BUTTON     =      100b
-EVM_EXIT       =     1000b
-EVM_BACKGROUND =    10000b
-EVM_MOUSE      =   100000b
-EVM_IPC        =  1000000b
-EVM_STACK      = 10000000b
+EVM_REDRAW     =          1b
+EVM_KEY        =         10b
+EVM_BUTTON     =        100b
+EVM_EXIT       =       1000b
+EVM_BACKGROUND =      10000b
+EVM_MOUSE      =     100000b
+EVM_IPC        =    1000000b
+EVM_STACK      =   10000000b
+EVM_DEBUG      =  100000000b
+EVM_STACK2     = 1000000000b

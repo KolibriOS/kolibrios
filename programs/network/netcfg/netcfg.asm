@@ -1,10 +1,16 @@
-;
-; Netcfg v1.02
-;
-; Application to load network drivers in KolibriOS
-;
-; By hidnplayr
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  netcfg.asm - Network driver control center for KolibriOS       ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 format binary as ""
 
@@ -21,7 +27,7 @@ use32
 
 type_ethernet equ 1
 
-include '../macros.inc'
+include '../../macros.inc'
 
 START:
         ; first, check boot parameters
@@ -243,12 +249,25 @@ Start_Enum:
 @@:     mcall   62                      ; Read it
         mov     [PCI_IRQ], al           ; Save it
 
-;        cmp     byte [PCI_Class], 0     ; device from before class codes
-;        je      @f
-
         cmp     byte [PCI_Class], 2     ; network controller
+        je      @f
+
+        cmp     byte [PCI_Class], 6     ; bridge type device
         jne     nextDev
-;       @@:
+
+        cmp     byte [PCI_SubClass], 7  ; Cardbus bridge
+        jne     nextDev
+
+        mov     bl, 6                   ; get a dword
+        mov     bh, byte [V_Bus]        ; bus of pci device
+        mov     ch, byte [V_Dev]        ; device number/function
+        mov     cl, 0x40                ; offset to subsystem device/vendor id
+        mcall   62                      ; get ID's
+
+        mov     word [PCI_Device], ax   ; There is a device here, save the ID's
+        shr     eax, 16                 ;
+        mov     word [PCI_Vendor], ax   ;
+       @@:
 
         cmp     byte[param], 0
         jne     load_and_start

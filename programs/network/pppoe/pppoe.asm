@@ -1,9 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2012. All rights reserved.         ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  pppoe.asm - PPPoE dialer for KolibriOS                         ;;
+;;  pppoe.asm - PPPoe dialer for KolibriOS                         ;;
 ;;                                                                 ;;
 ;;  Written by hidnplayr@kolibrios.org                             ;;
 ;;                                                                 ;;
@@ -25,12 +25,12 @@ use32
         dd      0               ; parameters
         dd      0               ; path
 
-include '../macros.inc'
+include '../../macros.inc'
 purge mov,add,sub
-include '../proc32.inc'
-include '../dll.inc'
-include '../network.inc'
-include '../struct.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../network.inc'
+include '../../struct.inc'
 
 ; Ethernet protocol numbers
 ETHER_PPP_DISCOVERY     = 0x6388

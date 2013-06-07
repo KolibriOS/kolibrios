@@ -15,11 +15,11 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-URLMAXLEN               = 1024
-BUFFERSIZE              = 4096
+URLMAXLEN       = 1024
+BUFFERSIZE      = 4096
 
 __DEBUG__       = 1
-__DEBUG_LEVEL__ = 2
+__DEBUG_LEVEL__ = 1
 
 format binary as ""
 
@@ -35,12 +35,12 @@ use32
         dd      params          ; I_PARAM
         dd      0x0             ; I_Path
 
-include '../macros.inc'
-include '../proc32.inc'
-include '../network.inc'
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../network.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../dll.inc'
-include '../debug-fdo.inc'
+include '../../dll.inc'
+include '../../debug-fdo.inc'
 
 START:
 

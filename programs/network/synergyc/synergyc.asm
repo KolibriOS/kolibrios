@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Synergyc.asm - Synergy client for KolibriOS                    ;;
@@ -14,6 +14,9 @@
 
 format binary as ""
 
+BUFFERSIZE      = 1024
+DEFAULTPORT     = 24800
+
 use32
         org     0x0
 
@@ -26,19 +29,12 @@ use32
         dd      0               ; parameters
         dd      path            ; path
 
-__DEBUG__           equ 1                   ; enable/disable
-__DEBUG_LEVEL__     equ 1                   ; 1 = all, 2 = errors
-
-
-BUFFERSIZE      equ 1024
-DEFAULTPORT     equ 24800
-
-include '../macros.inc'
+include '../../macros.inc'
 purge mov,add,sub
-include '../proc32.inc'
-include '../dll.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
 
-include '../network.inc'
+include '../../network.inc'
 
 start:
 
@@ -68,13 +64,7 @@ start:
         push    80
         call    [con_init]
 
-        push    path
-        call    [con_write_asciiz]
-
-        push    newline
-        call    [con_write_asciiz]
-
-        push    newline
+        push    str0
         call    [con_write_asciiz]
 
         invoke  ini.get_str, path, str_remote, str_ip, buffer_ptr, 16, 0
@@ -97,13 +87,22 @@ start:
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      error
-
         mov     [socketnum], eax
 
+; resolve name
+        push    esp             ; reserve stack place
+        push    esp             ; ptr to result
+        push    0               ; addrinfo hints
+        push    0               ; servname
         push    buffer_ptr      ; hostname
-        call    [inet_addr]
-        cmp     eax, -1
-        je      error
+        call    [getaddrinfo]
+        pop     esi
+; test for error
+        test    eax, eax
+        jnz     error
+
+        mov     eax, [esi+addrinfo.ai_addr]
+        mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
 
         mcall   connect, [socketnum], sockaddr1, 18
@@ -111,7 +110,7 @@ start:
         push    str7
         call    [con_write_asciiz]
 
-        mcall   40, 1 shl 7;  + 7
+        mcall   40, EVM_STACK
 
 login:
         call    wait_for_data
@@ -273,12 +272,14 @@ error:
         push    str_err
         call    [con_write_asciiz]
 
-        call    [con_gets]
+;        call    [con_gets]
+
+        call    [con_getch2]
+
+        mcall   close, [socketnum]
 
         push    1
         call    [con_exit]
-
-        mcall   close, [socketnum]
 exit:
 
         mcall   -1
@@ -292,7 +293,7 @@ wait_for_data:
         je      wait_for_data
 
         cmp     eax, 8
-        jl      wait_for_data
+        jb      wait_for_data   ; FIXME
 
         ret
 
@@ -300,15 +301,16 @@ wait_for_data:
 
 ; data
 title   db      'Synergy client',0
+str0    db      'Welcome to the software KM switch for KolibriOS.',10,10,0
 str1    db      'Connecting to: ',0
-str7    db      'Connected!',13,10,0
-str2    db      13,10,'Handshake received',13,10,0
+str7    db      'Connected!',10,0
+str2    db      10,'Handshake received',10,0
 str3    db      'Unsupported command: ',0
-newline db      13,10,0
-str4    db      'mouse moved',13,10,0
-str5    db      'mouse buttons changed',13,10,0
-str6    db      'Enter screen',13,10,0
-str_err db      'Error occured !',13,10,'Press any key to quit',0
+newline db      10,0
+str4    db      'mouse moved',10,0
+str5    db      'mouse buttons changed',10,0
+str6    db      'Enter screen',10,0
+str_err db      'Uh-Oh.. some error occured !',10,'Press any key to quit.',0
 
 screeninfo:
         dd (screeninfo.length - 4) shl 24
@@ -360,7 +362,7 @@ library console,        'console.obj',\
         libini,         'libini.obj'
 
 import  network,\
-        inet_addr,      'inet_addr'
+        getaddrinfo,    'getaddrinfo'
 
 import  console,                \
         con_start,              'START',\

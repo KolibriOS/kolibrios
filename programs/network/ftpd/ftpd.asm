@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ftpd.asm - FTP Daemon for KolibriOS                            ;;
@@ -63,14 +63,14 @@ use32
         dd      params          ; parameters
         dd      path            ; path
 
-include '../macros.inc'
+include '../../macros.inc'
 purge mov,add,sub
-include '../proc32.inc'
-include '../dll.inc'
-include '../struct.inc'
-include '../libio.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../struct.inc'
+include '../../libio.inc'
 
-include '../network.inc'
+include '../../network.inc'
 
 macro sendFTP str {
 local string, length

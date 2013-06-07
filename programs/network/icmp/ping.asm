@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ping.asm - ICMP echo client for KolibriOS                      ;;
@@ -12,8 +12,9 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 format binary as ""
+
+BUFFERSIZE      = 1500
 
 use32
         org     0x0
@@ -28,13 +29,12 @@ use32
         dd      0               ; path
 
 
-BUFFERSIZE      equ 1500
 ; useful includes
-include '../macros.inc'
+include '../../macros.inc'
 purge mov,add,sub
-include '../proc32.inc'
-include '../dll.inc'
-include '../network.inc'
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../network.inc'
 
 include 'icmp.inc'
 

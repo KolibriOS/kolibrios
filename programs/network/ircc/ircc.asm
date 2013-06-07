@@ -87,11 +87,11 @@ use32
         dd      param
         dd      path
 
-include "../macros.inc"
-include "../proc32.inc"
-include "../dll.inc"
-include "../network.inc"
-include "../struct.inc"
+include "../../macros.inc"
+include "../../proc32.inc"
+include "../../dll.inc"
+include "../../network.inc"
+include "../../struct.inc"
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 struct  window
@@ -426,10 +426,6 @@ import  boxlib,\
         scrollbar_v_draw ,'scrollbar_v_draw'    ,\
         scrollbar_v_mouse,'scrollbar_v_mouse'
 
-
-usercommand     db '/server chat.freenode.net', 0
-                rb MAX_COMMAND_LEN
-
 I_END:
 
         ;         width, left, top
@@ -437,6 +433,9 @@ edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, userco
         ;         xsize, xpos, ysize, ypos, max, cur, pos, bgcol, frcol, linecol
 scroll1 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 1
 scroll2 scrollbar SCROLLBAR_WIDTH, 300, 150, TOP_Y, 10, 100, 0, 0, 0, 0, 0, 1
+
+usercommand     db '/server chat.freenode.net', 0
+                rb MAX_COMMAND_LEN
 
 main_PID        dd ?            ; identifier of main thread
 utf8_bytes_rest dd ?            ; bytes rest in current UTF8 sequence

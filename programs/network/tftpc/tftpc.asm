@@ -1,37 +1,48 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  tftpc.asm - TFTP client for KolibriOS                          ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 format binary as ""
 
 use32
-    org 0x0
+        org     0x0
 
-    db 'MENUET01'
-    dd 0x1
-    dd START
-    dd I_END
-    dd IM_END
-    dd IM_END
-    dd 0, 0
+        db      'MENUET01'
+        dd      0x1
+        dd      START
+        dd      I_END
+        dd      IM_END+0x1000
+        dd      IM_END+0x1000
+        dd      0, 0
 
-include '../proc32.inc'
-include '../macros.inc'
-include '../libio.inc'
-include '../dll.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
+include '../../libio.inc'
+include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
-include '../network.inc'
+include '../../network.inc'
 
 
-filebuffer_size equ 4*4096 ; 16kb   (dont try to change it yet..)
-TIMEOUT         equ 100
-buffer_len      equ 1500
+filebuffer_size = 4*4096        ; 16kb   (dont try to change it yet..)
+TIMEOUT         = 100
+buffer_len      = 1500
 
-AF_INET4        equ 2
-IP_PROTO_UDP    equ 17
-
-opcode_rrq      equ 1
-opcode_wrq      equ 2
-opcode_data     equ 3
-opcode_ack      equ 4
-opcode_error    equ 5
+opcode_rrq      = 1
+opcode_wrq      = 2
+opcode_data     = 3
+opcode_ack      = 4
+opcode_error    = 5
 
 ; read/write request packet
 ;
@@ -560,7 +571,5 @@ I_END:
 mouse_dd        dd ?
 buffer:
 rb buffer_len
-
-rb 0x1000       ; stack
 
 IM_END:

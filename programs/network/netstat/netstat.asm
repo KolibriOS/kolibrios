@@ -26,8 +26,8 @@ use32
         dd     (I_END+0x1000)   ; esp
         dd     0, 0             ; I_Param , I_Path
 
-include '..\macros.inc'
-include '..\network.inc'
+include '../../macros.inc'
+include '../../network.inc'
 
 START:
         mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2
@@ -324,15 +324,13 @@ not_102:
         pop     ecx
         mcall
 
-
-
-        mov     edx, 50 shl 16 + 150
+;        mov     edx, 50 shl 16 + 150
         mov     [last], 0
 
   .arp_loop:
         mov     ebx, API_ARP + 3
         mov     bh, [device]
-        mcall   76, , [last],,, arp_buf
+        mcall   76, , [last], , , arp_buf
         cmp     eax, -1
         je      mainloop
 

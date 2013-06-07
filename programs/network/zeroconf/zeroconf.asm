@@ -9,7 +9,7 @@
 ;;    Some code contributed by Derpenguin                          ;;
 ;;                                                                 ;;
 ;;  DHCP code is based on that by Mike Hibbet                      ;;
-;       (DHCP client for menuetos)                                 ;;
+;;      (DHCP client for menuetos)                                 ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -17,17 +17,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 format binary as ""
-
-use32
-        org     0x0
-
-        db      'MENUET01'              ; 8 byte id
-        dd      0x01                    ; header version
-        dd      START                   ; start of code
-        dd      IM_END                  ; size of image
-        dd      (I_END+0x100)           ; memory for app
-        dd      (I_END+0x100)           ; esp
-        dd      0, 0                    ; I_Param, I_Path
 
 ; CONFIGURATION
 
@@ -53,13 +42,24 @@ RATE_LIMIT_INTERVAL     = 60            ; seconds (delay between successive atte
 
 DEFEND_INTERVAL         = 10            ; seconds (min. wait between defensive ARPs)
 
+use32
+        org     0x0
 
-include '../proc32.inc'
-include '../macros.inc'
-include '../debug-fdo.inc'
-include '../network.inc'
+        db      'MENUET01'              ; 8 byte id
+        dd      0x01                    ; header version
+        dd      START                   ; start of code
+        dd      IM_END                  ; size of image
+        dd      (I_END+0x100)           ; memory for app
+        dd      (I_END+0x100)           ; esp
+        dd      0, 0                    ; I_Param, I_Path
+
+
+include '../../proc32.inc'
+include '../../macros.inc'
+include '../../debug-fdo.inc'
+include '../../network.inc'
 include 'dhcp.inc'
-include '../dll.inc'
+include '../../dll.inc'
 
 
 Ip2dword:

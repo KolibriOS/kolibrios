@@ -531,25 +531,25 @@ cmdLIST:
         stosd
 
 ; now the filesize in ascii
-        mov     eax, [ebx + FileInfoA.FileSizeLow]
+        mov     eax, dword[ebx + FileInfoA.FileSize]
         call    dword_to_ascii
         mov     al, ' '
         stosb
 
 ; then date (month/day/year)
-        movzx   eax, [ebx + FileInfoA.DateModify + FileDateTime.month]
+        movzx   eax, [ebx + FileInfoA.DateModify.month]
         cmp     eax, 12
         ja      @f
         mov     eax, [months - 4 + 4*eax]
         stosd
        @@:
 
-        movzx   eax, [ebx + FileInfoA.DateModify + FileDateTime.day]
+        movzx   eax, [ebx + FileInfoA.DateModify.day]
         call    dword_to_ascii
         mov     al, ' '
         stosb
 
-        movzx   eax, [ebx + FileInfoA.DateModify + FileDateTime.year]
+        movzx   eax, [ebx + FileInfoA.DateModify.year]
         call    dword_to_ascii
         mov     al, ' '
         stosb
