@@ -42,6 +42,13 @@ asm("popa");
 
 void kolibri_redraw(nsfb_t *nsfb){
 	
+
+ f65(0,0, nsfb->width, nsfb->height, pixels);
+
+}
+
+void kolibri_window_redraw(nsfb_t *nsfb){
+	
  __menuet__window_redraw(1);
  __menuet__define_window(100,100,nsfb->width,nsfb->height,0x43000080,0x800000FF,0x000080);
  __menuet__write_text(3,3,0xFFFFFF,"Netsurf",7);
@@ -51,6 +58,7 @@ __menuet__debug_out("f65 is mighty!\n");
  f65(0,0, nsfb->width, nsfb->height, pixels);
  __menuet__window_redraw(2);
 }
+
 
 
 static bool 
@@ -212,7 +220,7 @@ static bool kolibri_input(nsfb_t *nsfb, nsfb_event_t *event, int timeout)
     event->type = NSFB_EVENT_NONE;
 
 	 if (got_event==1) { //key pressed
-    kolibri_redraw(nsfb);
+    kolibri_window_redraw(nsfb);
 	
 	}
 
