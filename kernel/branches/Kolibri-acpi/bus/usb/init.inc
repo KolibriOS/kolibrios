@@ -131,8 +131,7 @@ endg
 proc create_usb_thread
 ; 1. Create the thread.
         push    edi
-        push    1
-        pop     ebx
+        movi    ebx, 1
         mov     ecx, usb_thread_proc
         xor     edx, edx
         call    new_sys_threads

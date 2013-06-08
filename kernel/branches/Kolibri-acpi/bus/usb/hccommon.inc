@@ -398,8 +398,7 @@ proc usb_process_wait_lists
         jnc     @f
         or      byte [esp], 1 shl CONTROL_PIPE
 @@:
-        push    4
-        pop     edx
+        movi    edx, 4
         call    usb_process_one_wait_list
         jnc     @f
         or      byte [esp], 1 shl INTERRUPT_PIPE

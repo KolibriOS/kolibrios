@@ -524,7 +524,7 @@ proc restore_24 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [BytesPerScanLine]
+        add     ebx, [_display.pitch]
 
         mov     ecx, [esp]
         rep movsb
@@ -559,7 +559,7 @@ proc restore_32 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [BytesPerScanLine]
+        add     ebx, [_display.pitch]
 
         mov     ecx, [cur.w]
         rep movsd
@@ -650,7 +650,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [BytesPerScanLine]
+        add     edx, [_display.pitch]
         mov     ecx, [cur.w]
         lea     ecx, [ecx+ecx*2]
         rep movsb
@@ -673,7 +673,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [BytesPerScanLine]
+        add     ebx, [_display.pitch]
 ;--------------------------------------
 align 4
 .pix:
@@ -768,7 +768,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [BytesPerScanLine]
+        add     edx, [_display.pitch]
         mov     ecx, [cur.w]
         rep movsd
         dec     eax
@@ -790,7 +790,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [BytesPerScanLine]
+        add     ebx, [_display.pitch]
 ;--------------------------------------
 align 4
 .pix:

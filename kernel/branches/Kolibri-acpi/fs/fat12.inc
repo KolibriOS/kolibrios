@@ -1311,8 +1311,7 @@ fs_FloppyRewrite:
         push    ecx edi
         mov     ecx, 8
         repnz scasb
-        push    1
-        pop     eax     ; 1 entry
+        movi    eax, 1     ; 1 entry
         jnz     .notilde
 ; we need ceil(strlen(esi)/13) additional entries = floor((strlen(esi)+12+13)/13) total
         xor     eax, eax
@@ -1822,8 +1821,7 @@ floppy_extend_file:
         jb      @b
 .fat_err:
         pop     ecx
-        push    ERROR_FAT_TABLE
-        pop     eax
+        movi    eax, ERROR_FAT_TABLE
         stc
         ret
 @@:
@@ -1885,8 +1883,7 @@ floppy_extend_file:
         pop     edi ecx
         pop     esi edx
         stc
-        push    ERROR_DISK_FULL
-        pop     eax
+        movi    eax, ERROR_DISK_FULL
         ret
 
 ;----------------------------------------------------------------

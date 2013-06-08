@@ -351,8 +351,7 @@ end if
         lea     esi, [eax+ohci_controller.IntEDs+32*sizeof.ohci_static_ep]
         call    get_pg_addr
         add     eax, ohci_controller.IntEDs
-        push    32
-        pop     ecx
+        movi    ecx, 32
         mov     edx, ecx
 @@:
         stosd
@@ -429,10 +428,8 @@ end if
 ; 5c. Save FmInterval register.
         pushd   [edi+OhciFmIntervalReg]
 ; 5d. Issue software reset and wait up to 10ms, checking status every 1 ms.
-        push    1
-        pop     ecx
-        push    10
-        pop     edx
+        movi    ecx, 1
+        movi    edx, 10
         mov     [edi+OhciCommandStatusReg], ecx
 @@:
         mov     esi, ecx
@@ -633,14 +630,12 @@ proc ohci_kickoff_bios
 ; (This should generate SMI, BIOS should release its ownership in SMI handler.)
         mov     dword [eax+OhciCommandStatusReg], 8
 ; 4c. Wait for result no more than 50 ms, checking for status every 1 ms.
-        push    50
-        pop     ecx
+        movi    ecx, 50
 @@:
         test    dword [eax+OhciControlReg], edx
         jz      .has_ownership
         push    esi
-        push    1
-        pop     esi
+        movi    esi, 1
         call    delay_ms
         pop     esi
         loop    @b
@@ -984,8 +979,7 @@ end virtual
 ; if so, return an error.
         lea     edx, [esi + ohci_controller.IntEDs - sizeof.ohci_controller]
         lea     eax, [esi + ohci_controller.IntEDs + 32*sizeof.ohci_static_ep - sizeof.ohci_controller]
-        push    64
-        pop     ecx
+        movi    ecx, 64
         call    usb1_select_interrupt_list
         test    edx, edx
         jz      .return0

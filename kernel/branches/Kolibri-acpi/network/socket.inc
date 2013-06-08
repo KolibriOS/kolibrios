@@ -127,6 +127,7 @@ struct  TCP_SOCKET              IP_SOCKET
 
 ;-------
 ; Timers
+        timer_flags             dd ?
         timer_retransmission    dd ? ; rexmt
         timer_persist           dd ?
         timer_keepalive         dd ? ; keepalive/syn timeout
@@ -215,18 +216,18 @@ macro   SOCKET_init {
 
        @@:
         pseudo_random eax
-        cmp     ax, MIN_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MIN
         jb      @r
-        cmp     ax, MAX_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MAX
         ja      @r
         xchg    al, ah
         mov     [last_UDP_port], ax
 
        @@:
         pseudo_random eax
-        cmp     ax, MIN_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MIN
         jb      @r
-        cmp     ax, MAX_EPHEMERAL_PORT
+        cmp     ax, EPHEMERAL_PORT_MAX
         ja      @r
         xchg    al, ah
         mov     [last_TCP_port], ax
@@ -432,11 +433,10 @@ SOCKET_bind:
   .tcp:
   .udp:
 
-        mov     ebx, [edx + 4]                  ; First, fill in the IP
+        cmp     ebx, [edx + 4]                  ; First, fill in the IP
         test    ebx, ebx                        ; If IP is 0, use default
         jnz     @f
-        mov     ebx, [NET_DEFAULT]
-        mov     ebx, [IP_LIST + 4*ebx]
+        mov     ebx, [IP_LIST + 4]      ;;;;; FIXME !i!i!i
        @@:
         mov     [eax + IP_SOCKET.LocalIP], ebx
 
@@ -483,7 +483,7 @@ SOCKET_connect:
   .af_inet4:
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST]                               ; FIXME
+        push    [IP_LIST + 4]                               ; FIXME !i!i!i!
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 
@@ -632,7 +632,7 @@ SOCKET_listen:
 
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST]
+        push    [IP_LIST + 4]           ;;; fixme!!!!
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 
@@ -1121,7 +1121,7 @@ SOCKET_set_opt:
         je      .unbind
 
         movzx   edx, byte [edx + 9]
-        cmp     edx, MAX_NET_DEVICES
+        cmp     edx, NET_DEVICES_MAX
         ja      s_error
 
         mov     edx, [NET_DRV_LIST + 4*edx]

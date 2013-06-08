@@ -253,6 +253,7 @@ TCP_process_input:
 
         mov     [ebx + TCP_SOCKET.t_idle], 0
         mov     [ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_idle
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_keepalive
 
 ;--------------------
 ; Process TCP options
@@ -488,7 +489,7 @@ TCP_process_input:
         mov     [ebx + TCP_SOCKET.SND_UNA], eax
 
 ; Stop retransmit timer
-        mov     [ebx + TCP_SOCKET.timer_retransmission], 0
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
 
 ; Unlock the socket
         pusha
@@ -852,8 +853,8 @@ TCP_process_input:
 ; (window info didnt change) The ACK is the biggest we've seen and we've seen exactly our rexmt threshold of them,
 ; assume a packet has been dropped and retransmit it. Kludge snd_nxt & the congestion window so we send only this one packet.
 
-        cmp     [ebx + TCP_SOCKET.timer_retransmission], 0 ;;;;  FIXME
-        jg      @f
+        test    [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
+        jz      @f
 
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     eax, [ebx + TCP_SOCKET.SND_UNA]
@@ -886,7 +887,7 @@ TCP_process_input:
         pop     edx
         mov     [ebx + TCP_SOCKET.SND_SSTHRESH], eax
 
-        mov     [ebx + TCP_SOCKET.timer_retransmission], 0      ; turn off retransmission timer
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission   ; turn off retransmission timer
         mov     [ebx + TCP_SOCKET.t_rtt], 0
         mov     eax, [edx + TCP_header.AckNumber]
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
@@ -1017,16 +1018,16 @@ TCP_process_input:
         mov     eax, [ebx + TCP_SOCKET.SND_MAX]
         cmp     eax, [edx + TCP_header.AckNumber]
         jne     .more_data
-        mov     [ebx + TCP_SOCKET.timer_retransmission], 0
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
         or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_NEEDOUTPUT
         jmp     .no_restart
   .more_data:
-        cmp     [ebx + TCP_SOCKET.timer_persist], 0
-        jne     .no_restart
+        test    [ebx + TCP_SOCKET.timer_flags], timer_flag_persist
+        jnz     .no_restart
 
         mov     eax, [ebx + TCP_SOCKET.t_rxtcur]
         mov     [ebx + TCP_SOCKET.timer_retransmission], eax
-
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
   .no_restart:
 
 
@@ -1140,6 +1141,7 @@ TCP_process_input:
         mov     eax, ebx
         call    SOCKET_is_disconnected
         mov     [ebx + TCP_SOCKET.timer_timed_wait], TCP_time_max_idle
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
        @@:
         mov     [ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_2
         jmp     .ack_processed
@@ -1151,6 +1153,7 @@ TCP_process_input:
         mov     eax, ebx
         call    TCP_cancel_timers
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
         mov     eax, ebx
         call    SOCKET_is_disconnected
         jmp     .ack_processed
@@ -1164,6 +1167,7 @@ TCP_process_input:
 
   .ack_tw:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
         jmp     .drop_after_ack
 
   .reset_dupacks:               ; We got a new ACK, reset duplicate ACK counter
@@ -1209,6 +1213,7 @@ align 4
         mov     [ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
         mov     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         mov     [ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval  ;;;; macro
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_keepalive
 
         lea     eax, [ebx + STREAM_SOCKET.snd]
         call    SOCKET_ring_create
@@ -1272,7 +1277,7 @@ align 4
        @@:
 
   .no_syn_ack:
-        mov     [ebx + TCP_SOCKET.timer_retransmission], 0      ; disable retransmission
+        and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission   ; disable retransmission timer
 
         push    [edx + TCP_header.SequenceNumber]
         pop     [ebx + TCP_SOCKET.IRS]
@@ -1525,11 +1530,13 @@ align 4
         mov     eax, ebx
         call    TCP_cancel_timers
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
         call    SOCKET_is_disconnected
         jmp     .final_processing
 
   .fin_timed:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
         jmp     .final_processing
 
 

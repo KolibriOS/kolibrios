@@ -234,8 +234,7 @@ AddDevice:
 ; 8 bytes for a packet and 8 bytes for previous packet, used by a keyboard.
 ; 9. Initialize device data.
         mov     [ebx+device_data.intpipe], eax
-        push    8
-        pop     ecx
+        movi    ecx, 8
         cmp     edx, ecx
         jb      @f
         mov     edx, ecx
@@ -364,8 +363,7 @@ keyboard_data_ready:
         jb      .controlloop
 .nocontrol:
 ; 3. Initialize before loop for normal keys. esi = index.
-        push    2
-        pop     esi
+        movi    esi, 2
 .normalloop:
 ; 4. Process one key which was pressed in the previous packet.
 ; 4a. Get the next pressed key from the previous packet.
@@ -486,8 +484,7 @@ keyboard_data_ready:
 
 ; Auxiliary procedure for keyboard_data_ready.
 haskey:
-        push    2
-        pop     edx
+        movi    edx, 2
 @@:
         cmp     byte [ecx+edx], al
         jz      @f

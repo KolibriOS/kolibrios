@@ -1139,15 +1139,13 @@ ntfs_HdRead:
         cmp     byte [esi], 0
         jnz     @f
         or      ebx, -1
-        push    ERROR_ACCESS_DENIED
-        pop     eax
+        movi    eax, ERROR_ACCESS_DENIED
         ret
 @@:
         call    ntfs_find_lfn
         jnc     .found
         or      ebx, -1
-        push    ERROR_FILE_NOT_FOUND
-        pop     eax
+        movi    eax, ERROR_FILE_NOT_FOUND
         ret
 .found:
         mov     [ntfs_cur_attr], 0x80   ; $DATA
@@ -1156,8 +1154,7 @@ ntfs_HdRead:
         call    ntfs_read_attr
         jnc     @f
         or      ebx, -1
-        push    ERROR_ACCESS_DENIED
-        pop     eax
+        movi    eax, ERROR_ACCESS_DENIED
         ret
 @@:
         pushad
@@ -1171,8 +1168,7 @@ ntfs_HdRead:
         popad
         xor     ebx, ebx
 .eof:
-        push    ERROR_END_OF_FILE
-        pop     eax
+        movi    eax, ERROR_END_OF_FILE
         ret
 @@:
         mov     eax, [ebx]
@@ -1349,8 +1345,7 @@ ntfs_HdReadFolder:
 .nomem:
         popad
         or      ebx, -1
-        push    12
-        pop     eax
+        movi    eax, 12
         ret
 @@:
         mov     [ntfs_data.cur_index_buf], eax
@@ -1804,14 +1799,12 @@ ntfs_HdDelete:
 ntfs_HdGetFileInfo:
         cmp     byte [esi], 0
         jnz     @f
-        push    2
-        pop     eax
+        movi    eax, 2
         ret
 @@:
         call    ntfs_find_lfn
         jnc     .doit
-        push    ERROR_FILE_NOT_FOUND
-        pop     eax
+        movi    eax, ERROR_FILE_NOT_FOUND
         cmp     [hd_error], 0
         jz      @f
         mov     al, 11

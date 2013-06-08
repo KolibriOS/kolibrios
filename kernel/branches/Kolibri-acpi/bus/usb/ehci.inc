@@ -330,8 +330,7 @@ end if
 ; 2b. Fill first 32 entries.
         inc     eax
         inc     eax     ; set Type to EHCI_TYPE_QH
-        push    32
-        pop     ecx
+        movi    ecx, 32
         mov     edx, ecx
 @@:
         stosd
@@ -434,14 +433,12 @@ end if
 ; now edi = MMIOBase2
 ; 6. Transfer the controller to a known state.
 ; 6b. Stop the controller if it is running.
-        push    10
-        pop     ecx
+        movi    ecx, 10
         test    dword [edi+EhciStatusReg], 1 shl 12
         jnz     .stopped
         and     dword [edi+EhciCommandReg], not 1
 @@:
-        push    1
-        pop     esi
+        movi    esi, 1
         call    delay_ms
         test    dword [edi+EhciStatusReg], 1 shl 12
         jnz     .stopped
@@ -451,11 +448,9 @@ end if
 .stopped:
 ; 6c. Reset the controller. Wait up to 50 ms checking status every 1 ms.
         or      dword [edi+EhciCommandReg], 2
-        push    50
-        pop     ecx
+        movi    ecx, 50
 @@:
-        push    1
-        pop     esi
+        movi    esi, 1
         call    delay_ms
         test    dword [edi+EhciCommandReg], 2
         jz      .reset_ok
@@ -515,8 +510,7 @@ end if
         test    byte [esi+ehci_controller.StructuralParams-sizeof.ehci_controller], 10h
         jz      @f
         push    esi
-        push    20
-        pop     esi
+        movi    esi, 20
         call    delay_ms
         pop     esi
 @@:
@@ -676,8 +670,7 @@ proc ehci_kickoff_bios
         test    al, 1
         jz      .has_ownership
         push    esi
-        push    1
-        pop     esi
+        movi    esi, 1
         call    delay_ms
         pop     esi
         dec     dword [esp]
@@ -862,8 +855,7 @@ end virtual
         push    eax ecx
         sub     edi, ehci_pipe.SoftwarePart
         xor     eax, eax
-        push    ehci_pipe.SoftwarePart/4
-        pop     ecx
+        movi    ecx, ehci_pipe.SoftwarePart/4
         rep stosd
         pop     ecx eax
 ; 2. Setup PID in the first TD and make sure that the it is not active.
@@ -883,8 +875,7 @@ end virtual
         and     eax, 3FFF0000h
 ; Use 1 requests per microframe for control/bulk endpoints,
 ; use value from the endpoint descriptor for periodic endpoints
-        push    1
-        pop     edx
+        movi    edx, 1
         test    [.type], 1
         jz      @f
         mov     edx, [.maxpacket]
@@ -1292,8 +1283,7 @@ proc ehci_port_init
 @@:
 ; 3. Call the worker procedure to notify the protocol layer
 ; about new EHCI device. It is high-speed.
-        push    USB_SPEED_HS
-        pop     eax
+        movi    eax, USB_SPEED_HS
         call    ehci_new_device
         test    eax, eax
         jnz     .nothing
@@ -1794,8 +1784,7 @@ proc ehci_process_updated_td
 ;   all corresponding bits are set. In this case, return some error code,
 ;   the order is quite arbitrary.
         pop     eax     ; status
-        push    USB_STATUS_UNDERRUN
-        pop     ecx
+        movi    ecx, USB_STATUS_UNDERRUN
         test    al, 40h         ; not Halted?
         jz      .know_error
         mov     cl, USB_STATUS_OVERRUN

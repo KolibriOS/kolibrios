@@ -15,7 +15,7 @@ $Revision$
 ;***************************************************
         xor     eax, eax
         mov     edi, DRIVE_DATA
-        mov     ecx, 16384
+        mov     ecx, DRIVE_DATA_SIZE/4
         cld
         rep stosd
 

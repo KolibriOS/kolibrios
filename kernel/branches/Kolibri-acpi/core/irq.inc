@@ -273,6 +273,12 @@ align 16
        mov ecx, ebp
        call irq_eoi
 
+; IRQ handler could make some kernel thread ready; reschedule
+        mov     bl, SCHEDULE_HIGHER_PRIORITY
+        call    find_next_task
+        jz      .return  ; if there is only one running process
+        call    do_change_task
+  .return:
        restore_ring3_context
        add   esp, 4
        iret

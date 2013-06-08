@@ -82,8 +82,7 @@ proc timer_hs stdcall uses ebx, deltaStart:dword, interval:dword, \
         timerFunc:dword, userData:dword
 ; 1. Allocate memory for the TIMER structure.
 ; 1a. Call the allocator.
-        push    sizeof.TIMER
-        pop     eax
+        movi    eax, sizeof.TIMER
         call    malloc
 ; 1b. If allocation failed, return (go to 5) with eax = 0.
         test    eax, eax

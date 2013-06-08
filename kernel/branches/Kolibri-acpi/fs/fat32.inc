@@ -167,8 +167,7 @@ fat_create_partition:
 ; in the normal operation, let's hope for the best and allocate data now; if
 ; it will prove wrong, just deallocate it.
         push    ebx
-        push    sizeof.FAT
-        pop     eax
+        movi    eax, sizeof.FAT
         call    malloc
         pop     ebx
         test    eax, eax
@@ -972,8 +971,7 @@ fs_HdReadFolder:
         jz      ntfs_HdReadFolder
         cmp     [fs_type], 2
         jz      ext2_HdReadFolder
-        push    ERROR_UNSUPPORTED_FS
-        pop     eax
+        movi    eax, ERROR_UNSUPPORTED_FS
         or      ebx, -1
         ret
 @@:
@@ -1659,8 +1657,7 @@ fat_Rewrite:
         push    ecx edi
         mov     ecx, 8
         repnz scasb
-        push    1
-        pop     eax     ; 1 entry
+        movi    eax, 1     ; 1 entry
         jnz     .notilde
 ; we need ceil(strlen(esi)/13) additional entries = floor((strlen(esi)+12+13)/13) total
         xor     eax, eax
@@ -2362,8 +2359,7 @@ hd_extend_file:
         jmp     .device_err2
 .disk_full:
         pop     eax edx esi
-        push    ERROR_DISK_FULL
-        pop     eax
+        movi    eax, ERROR_DISK_FULL
         stc
         ret
 
@@ -2390,8 +2386,7 @@ fs_HdSetFileEnd:
         jz      ntfs_HdSetFileEnd
         cmp     [fs_type], 2
         jz      ext2_HdSetFileEnd
-        push    ERROR_UNKNOWN_FS
-        pop     eax
+        movi    eax, ERROR_UNKNOWN_FS
         ret
 @@:
         sub     ebx, 4
@@ -2566,8 +2561,7 @@ fat_SetFileEnd:
         pop     eax ecx eax edi
         call    update_disk
         call    fat_unlock
-        push    ERROR_DEVICE
-        pop     eax
+        movi    eax, ERROR_DEVICE
         ret
 @@:
 ; we will zero data at the end of last sector - remember it
@@ -2640,8 +2634,7 @@ fat_SetFileEnd:
         pop     eax ecx eax edi
         call    update_disk
         call    fat_unlock
-        push    ERROR_FAT_TABLE
-        pop     eax
+        movi    eax, ERROR_FAT_TABLE
         ret
 
 fs_HdGetFileInfo:
@@ -2771,8 +2764,7 @@ fs_HdDelete:
         jz      ntfs_HdDelete
         cmp     [fs_type], 2
         jz      ext2_HdDelete
-        push    ERROR_UNKNOWN_FS
-        pop     eax
+        movi    eax, ERROR_UNKNOWN_FS
         ret
 @@:
         sub     ebx, 4
@@ -2866,23 +2858,20 @@ fat_Delete:
 .err2:
         pop     edi
         call    fat_unlock
-        push    ERROR_DEVICE
-        pop     eax
+        movi    eax, ERROR_DEVICE
         ret
 .error_fat:
         popad
         pop     edi
         call    fat_unlock
-        push    ERROR_FAT_TABLE
-        pop     eax
+        movi    eax, ERROR_FAT_TABLE
         ret
 .notempty:
         popad
 .access_denied2:
         pop     edi
         call    fat_unlock
-        push    ERROR_ACCESS_DENIED
-        pop     eax
+        movi    eax, ERROR_ACCESS_DENIED
         ret
 .empty:
         popad

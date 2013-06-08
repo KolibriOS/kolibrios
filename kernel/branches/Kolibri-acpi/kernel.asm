@@ -75,6 +75,7 @@ $Revision$
 
 
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
+VESA_1_2_VIDEO  equ 0      ; enable vesa 1.2 bank switch functions
 
 ; Enabling the next line will enable serial output console
 ;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
@@ -229,6 +230,10 @@ tmp_gdt:
         db     0x00
 
 include "data16.inc"
+
+if ~ lang eq sp
+diff16 "end of bootcode",0,$+0x10000
+end if
 
 use32
 org $+0x10000
@@ -405,19 +410,18 @@ high_code:
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
-        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE]; screen mode
-        mov     [SCR_MODE], eax
+        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE] ; screen mode
+        mov     dword [SCR_MODE], eax
 ;        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
 ;        mov     [BANK_SWITCH], eax
-        mov     [BytesPerScanLine], word 640*4      ; Bytes PerScanLine
+        mov     eax, 640 *4                         ; Bytes PerScanLine
         cmp     [SCR_MODE], word 0x13       ; 320x200
         je      @f
         cmp     [SCR_MODE], word 0x12       ; VGA 640x480
         je      @f
         movzx   eax, word[BOOT_VAR+BOOT_PITCH]      ; for other modes
-        mov     [BytesPerScanLine], ax
-        mov     [_display.pitch], eax
 @@:
+        mov     [_display.pitch], eax
         mov     eax, [_display.width]
         mul     [_display.height]
         mov     [_WinMapSize], eax
@@ -658,6 +662,10 @@ no_mode_0x12:
 ; Initialize system timer (IRQ0)
         call    PIT_init
 
+; CALCULATE FAT CHAIN FOR RAMDISK
+
+        call    calculatefatchain
+
         mov     esi, boot_initapic
         call    boot_log
 ; Try to Initialize APIC
@@ -714,9 +722,6 @@ include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 end if
 ;    mov    [dma_hdd],1
-; CALCULATE FAT CHAIN FOR RAMDISK
-
-        call    calculatefatchain
 
 if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
@@ -1241,13 +1246,10 @@ set_variables:
         xor     eax, eax
         mov     [BTN_ADDR], dword BUTTON_INFO ; address of button list
 
-        mov     byte [MOUSE_BUFF_COUNT], al              ; mouse buffer
         mov     byte [KEY_COUNT], al              ; keyboard buffer
         mov     byte [BTN_COUNT], al              ; button buffer
 ;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
-     ;!! IP 04.02.2005:
-;        mov     byte [DONT_SWITCH], al; change task if possible
         pop     eax
         ret
 
@@ -2036,10 +2038,9 @@ sys_end:
         mov     [eax+TASKDATA.state], 3; terminate this program
         call    wakeup_osloop
 
-    waitterm:            ; wait here for termination
-        mov     ebx, 100
-        call    delay_hs
-        jmp     waitterm
+.waitterm:            ; wait here for termination
+        call    change_task
+        jmp     .waitterm
 ;------------------------------------------------------------------------------
 align 4
 restore_default_cursor_before_killing:
@@ -2325,7 +2326,7 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
         dec     ecx
         jnz     exit_for_anyone
         call    for_all_tables
-        mov     ecx, 16384
+        mov     ecx, DRIVE_DATA_SIZE/4
         cld
         rep movsd
         ret
@@ -2493,7 +2494,7 @@ sysfn_set_screen_sizes:
         pushfd
         cli
         mov     eax, ecx
-        mov     ecx, [BytesPerScanLine]
+        mov     ecx, [_display.pitch]
         mov     [_display.width], eax
         dec     eax
         mov     [_display.height], edx
@@ -3519,23 +3520,23 @@ set_bgr_event:
         cmp     [edi+SLOT_BASE+APPDATA.draw_bgr_x], 0
         jz      .set
 .join:
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
-        jbe     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
-@@:
-        shr     eax, 16
         cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
         jae     @f
         mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
 @@:
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        shr     eax, 16
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
         jbe     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
 @@:
-        shr     edx, 16
         cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
         jae     @f
         mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
+@@:
+        shr     edx, 16
+        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        jbe     @f
+        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
 @@:
         jmp     .common
 .set:
@@ -3850,6 +3851,34 @@ proc delay_hs_unprotected
         ret
 endp
 
+if 1
+align 4
+delay_hs:     ; delay in 1/100 secs
+; ebx = delay time
+
+        pushad
+        push    ebx
+        xor     esi, esi
+        mov     ecx, MANUAL_DESTROY
+        call    create_event
+        test    eax, eax
+        jz      .done
+
+        mov     ebx, edx
+        mov     ecx, [esp]
+        push    edx
+        push    eax
+        call    wait_event_timeout
+        pop     eax
+        pop     ebx
+        call    destroy_event
+.done:
+        add     esp, 4
+        popad
+        ret
+
+else
+
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
@@ -3874,6 +3903,8 @@ zerodelay:
         pop     edx
         pop     ecx
         ret
+end if
+
 ;-----------------------------------------------------------------------------
 align 16        ;very often call this subrutine
 memmove:       ; memory move in bytes
@@ -4651,8 +4682,8 @@ sys_msg_board_str:
    @@:
         cmp     [esi], byte 0
         je      @f
-        mov     eax, 1
-        movzx   ebx, byte [esi]
+        mov     ebx, 1
+        movzx   ecx, byte [esi]
         call    sys_msg_board
         inc     esi
         jmp     @b
@@ -4692,9 +4723,9 @@ sys_msg_board_dword:
         cmp     al, 10
         sbb     al, 69h
         das
-        mov     bl, al
-        xor     eax, eax
-        inc     eax
+        mov     cl, al
+        xor     ebx, ebx
+        inc     ebx
         call    sys_msg_board
         pop     eax
         pop     ecx
@@ -4711,8 +4742,12 @@ endg
 
 sys_msg_board:
 
-; eax=1 : write :  bl byte to write
-; eax=2 :  read :  ebx=0 -> no data, ebx=1 -> data in al
+; ebx=1 : write :  bl byte to write
+; ebx=2 :  read :  ebx=0 -> no data, ebx=1 -> data in al
+
+        push    eax ebx                 ; Save eax and ebx, since we're restoring their order required.
+        mov     eax, ebx
+        mov     ebx, ecx
 
         mov     ecx, [msg_board_count]
         cmp     eax, 1
@@ -4754,7 +4789,7 @@ endg
         jnz     @f
         mov     word [msg_board_pos+2], 234
         add     word [msg_board_pos], 10
-        mov     ax, [Screen_Max_Y]
+        mov     ax, word [Screen_Max_Y]
         cmp     word [msg_board_pos], ax
         jbe     @f
         mov     word [msg_board_pos], 10
@@ -4770,24 +4805,29 @@ end if
         inc     ecx
         and     ecx, msg_board_data_size - 1
         mov     [msg_board_count], ecx
+
+        pop     ebx eax
         ret
 .smbl1:
         cmp     eax, 2
         jne     .smbl2
         test    ecx, ecx
         jz      .smbl21
+
+        add     esp, 8                  ; Returning data in ebx and eax, so no need to restore them.
         mov     eax, msg_board_data+1
         mov     ebx, msg_board_data
         movzx   edx, byte [ebx]
         call    memmove
         dec     [msg_board_count]
-        mov     [esp + 36], edx ;eax
-        mov     [esp + 24], dword 1
+        mov     [esp + 32], edx ;eax
+        mov     [esp + 20], dword 1
         ret
 .smbl21:
-        mov     [esp+36], ecx
-        mov     [esp+24], ecx
+        mov     [esp+32], ecx
+        mov     [esp+20], ecx
 .smbl2:
+        pop     ebx eax
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4969,7 +5009,7 @@ sys_gs:                         ; direct screen access
 .1:                             ; resolution
         mov     eax, [Screen_Max_X]
         shl     eax, 16
-        mov     ax, [Screen_Max_Y]
+        mov     ax, word [Screen_Max_Y]
         add     eax, 0x00010001
         mov     [esp+32], eax
         ret
@@ -4978,7 +5018,7 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline
-        mov     eax, [BytesPerScanLine]
+        mov     eax, [_display.pitch]
         mov     [esp+32], eax
         ret
 
@@ -5068,9 +5108,9 @@ syscall_drawrect:                       ; DrawRect
 
 align 4
 syscall_getscreensize:                  ; GetScreenSize
-        mov     ax, [Screen_Max_X]
+        mov     ax, word [Screen_Max_X]
         shl     eax, 16
-        mov     ax, [Screen_Max_Y]
+        mov     ax, word [Screen_Max_Y]
         mov     [esp + 32], eax
         ret
 
@@ -5389,7 +5429,7 @@ calculate_fast_getting_offset_for_LFB:
         cld
 @@:
         stosd
-        add     eax, [BytesPerScanLine]
+        add     eax, [_display.pitch]
         dec     ecx
         jnz     @r
         ret
@@ -5412,7 +5452,7 @@ set_screen:
 
         mov     [Screen_Max_X], eax
         mov     [Screen_Max_Y], edx
-        mov     [BytesPerScanLine], ecx
+        mov     [_display.pitch], ecx
 
         mov     [screen_workarea.right], eax
         mov     [screen_workarea.bottom], edx
@@ -5538,8 +5578,7 @@ system_shutdown:          ; shut down the system
         ret
 @@:
         call    stop_all_services
-        push    3                ; stop playing cd
-        pop     eax
+        movi    eax, 3
         call    sys_cd_audio
 
 yes_shutdown_param:
@@ -5547,8 +5586,7 @@ yes_shutdown_param:
 
 if ~ defined extended_primary_loader
         mov     eax, kernel_file ; load kernel.mnt to 0x7000:0
-        push    12
-        pop     esi
+        movi    esi, 12
         xor     ebx, ebx
         or      ecx, -1
         mov     edx, OS_BASE+0x70000
@@ -5768,6 +5806,10 @@ scan_rsdp:
         stc
 .ok:
         ret
+end if
+
+if ~ lang eq sp
+diff16 "end of .text segment",0,$
 end if
 
 include "data32.inc"

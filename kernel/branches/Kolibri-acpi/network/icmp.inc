@@ -16,7 +16,6 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 $Revision$
 
 ; ICMP types & codes
@@ -100,8 +99,8 @@ ends
 
 align 4
 uglobal
-        ICMP_PACKETS_TX         rd MAX_NET_DEVICES
-        ICMP_PACKETS_RX         rd MAX_NET_DEVICES
+        ICMP_PACKETS_TX         rd NET_DEVICES_MAX
+        ICMP_PACKETS_RX         rd NET_DEVICES_MAX
 endg
 
 
@@ -116,7 +115,7 @@ macro ICMP_init {
 
         xor     eax, eax
         mov     edi, ICMP_PACKETS_TX
-        mov     ecx, 2*MAX_NET_DEVICES
+        mov     ecx, 2*NET_DEVICES_MAX
         rep     stosd
 
 }
@@ -168,15 +167,17 @@ ICMP_input:
 
         mov     esi, [esp]                                      ; Start of buffer
 
-        cmp     dword[edi + 4], 1 shl 24 + 127
-        je      .loopback
-
 ; Update stats (and validate device ptr)
         call    NET_ptr_to_num
-        cmp     edi,-1
+        cmp     edi, -1
         je      .dump
         inc     [ICMP_PACKETS_RX + 4*edi]
         inc     [ICMP_PACKETS_TX + 4*edi]
+
+        cmp     ebx, LOOPBACK_DEVICE
+        je      .loopback
+
+; FIXME: dont assume device is an ethernet device!
 
 ; exchange dest and source address in IP header
 ; exchange dest and source MAC in ETH header
@@ -188,10 +189,10 @@ ICMP_input:
         push    word [esi + ETH_header.SrcMAC + 4]
         pop     word [esi + ETH_header.DstMAC + 4]
         pop     word [esi + ETH_header.SrcMAC + 4]
-        add     esi, sizeof.ETH_header-2
+        add     esi, sizeof.ETH_header-4
 
   .loopback:
-        add     esi, 2
+        add     esi, 4
         push    [esi + IPv4_header.SourceAddress]
         push    [esi + IPv4_header.DestinationAddress]
         pop     [esi + IPv4_header.SourceAddress]

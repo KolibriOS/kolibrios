@@ -58,17 +58,17 @@ ends
 align 4
 uglobal
 
-        IP_LIST         rd MAX_NET_DEVICES
-        SUBNET_LIST     rd MAX_NET_DEVICES
-        DNS_LIST        rd MAX_NET_DEVICES
-        GATEWAY_LIST    rd MAX_NET_DEVICES
-        BROADCAST_LIST  rd MAX_NET_DEVICES
+        IP_LIST                 rd NET_DEVICES_MAX
+        SUBNET_LIST             rd NET_DEVICES_MAX
+        DNS_LIST                rd NET_DEVICES_MAX
+        GATEWAY_LIST            rd NET_DEVICES_MAX
+        BROADCAST_LIST          rd NET_DEVICES_MAX
 
-        IP_packets_tx   rd MAX_NET_DEVICES
-        IP_packets_rx   rd MAX_NET_DEVICES
-        IP_packets_dumped       rd MAX_NET_DEVICES
+        IP_packets_tx           rd NET_DEVICES_MAX
+        IP_packets_rx           rd NET_DEVICES_MAX
+        IP_packets_dumped       rd NET_DEVICES_MAX
 
-        FRAGMENT_LIST   rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
+        FRAGMENT_LIST           rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
 endg
 
 
@@ -83,7 +83,7 @@ macro   IPv4_init {
 
         xor     eax, eax
         mov     edi, IP_LIST
-        mov     ecx, 7*MAX_NET_DEVICES + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
+        mov     ecx, 7*NET_DEVICES_MAX + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
         rep     stosd
 
 }
@@ -568,31 +568,32 @@ IPv4_find_fragment_slot:
 align 4
 IPv4_output:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u\n", ecx
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: size=%u ip=0x%x\n", ecx, eax
 
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
 
         push    ecx eax edx di
 
-        cmp     eax, 1 shl 24 + 127
-        je      .loopback
-
         call    IPv4_route              ; outputs device number in edi, dest ip in eax
+
+        test    edi, edi
+        jz      .loopback
+
         call    ARP_IP_to_MAC
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
         push    ebx                     ; push the mac onto the stack
         push    ax
 
-        inc     [IP_packets_tx + edi]   ; update stats
+        inc     [IP_packets_tx + 4*edi] ; update stats
 
-        mov     ebx, [NET_DRV_LIST + edi]
+        mov     ebx, [NET_DRV_LIST + 4*edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
         mov     ecx, [esp + 10 + 6]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_IPv4
+        mov     di, ETHER_PROTO_IPv4
         call    ETH_output
         jz      .eth_error
         add     esp, 6                  ; pop the mac out of the stack
@@ -618,13 +619,13 @@ IPv4_output:
         ret
 
   .eth_error:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: ethernet error\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ethernet error\n"
         add     esp, 3*4+2+6
         xor     edi, edi
         ret
 
   .arp_error:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_output: ARP error=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ARP error=%x\n", eax
         add     esp, 3*4+2
         xor     edi, edi
         ret
@@ -635,9 +636,10 @@ IPv4_output:
         ret
 
   .loopback:
-        mov     dword [esp + 2], eax
+        mov     dword [esp + 2], eax            ; change source IP to dest IP
+        mov     ecx, [esp + 10]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_IPv4
+        mov     edi, AF_INET4
         call    LOOP_output
         jmp     .continue
 
@@ -675,13 +677,13 @@ IPv4_output_raw:
         push    ebx                     ; push the mac
         push    ax
 
-        inc     [IP_packets_tx + edi]
-        mov     ebx, [NET_DRV_LIST + edi]
+        inc     [IP_packets_tx + 4*edi]
+        mov     ebx, [NET_DRV_LIST + 4*edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
         mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_IPv4
+        mov     di, ETHER_PROTO_IPv4
         call    ETH_output
         jz      .error
 
@@ -775,7 +777,7 @@ IPv4_fragment:
 
         mov     eax, [esp + 3*4]
         lea     ebx, [esp + 4*4]
-        mov     di , ETHER_IPv4
+        mov     di , ETHER_PROTO_IPv4
         call    ETH_output
 
         cmp     edi, -1
@@ -855,7 +857,7 @@ IPv4_fragment:
 ; IPv4_route
 ;
 ; IN:   eax = Destination IP
-; OUT:  edi = device id * 4
+; OUT:  edi = device number
 ;       eax = ip of gateway if nescessary, unchanged otherwise
 ;
 ;---------------------------------------------------------------------------
@@ -866,7 +868,7 @@ IPv4_route:
         je      .broadcast
 
         xor     edi, edi
-        mov     ecx, MAX_NET_DEVICES
+        mov     ecx, NET_DEVICES_MAX
   .loop:
         mov     ebx, [IP_LIST+edi]
         and     ebx, [SUBNET_LIST+edi]
@@ -875,22 +877,21 @@ IPv4_route:
         and     edx, [SUBNET_LIST+edi]
 
         cmp     ebx, edx
-        je      .found_it
+        jne     .next
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
+        ret
+
   .next:
         add     edi, 4
         dec     ecx
         jnz     .loop
 
   .invalid:
-        xor     edi, edi                        ; if none found, use device 0 as default
-        mov     eax, [GATEWAY_LIST]
-
-  .found_it:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
-        ret
-
+        mov     eax, [GATEWAY_LIST+4]       ;;; FIXME
   .broadcast:
-        xor     edi, edi
+        xor     edi, edi                ; if none found, use device 1 as default     ;;;; FIXME
+        inc     di
         ret
 
 
@@ -973,7 +974,8 @@ IPv4_api:
         or      ebx, ecx
         mov     [BROADCAST_LIST + eax], ebx
 
-        mov     eax, ecx
+        mov     ebx, [NET_DRV_LIST + eax]
+        mov     eax, [IP_LIST + eax]
         call    ARP_output_request              ; now send a gratuitous ARP
 
         call    NET_send_event

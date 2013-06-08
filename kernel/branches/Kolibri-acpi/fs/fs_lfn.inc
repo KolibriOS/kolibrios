@@ -683,61 +683,43 @@ fs_NumCdServices = ($ - fs_CdServices)/4
 fs_HasRamdisk:
         mov     al, 1   ; we always have ramdisk
         ret
-
 fs_HasFloppy:
         cmp     byte [DRIVE_DATA], 0
         setnz   al
         ret
-
 fs_HasHd0:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 11000000b
-        cmp     al, 01000000b
-        setz    al
+        test    byte [DRIVE_DATA+1], 01000000b
+        setnz   al
         ret
 fs_HasHd1:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 00110000b
-        cmp     al, 00010000b
-        setz    al
+        test    byte [DRIVE_DATA+1], 00010000b
+        setnz   al
         ret
 fs_HasHd2:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 00001100b
-        cmp     al, 00000100b
-        setz    al
+        test    byte [DRIVE_DATA+1], 00000100b
+        setnz   al
         ret
 fs_HasHd3:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 00000011b
-        cmp     al, 00000001b
-        setz    al
+        test    byte [DRIVE_DATA+1], 00000001b
+        setnz   al
         ret
 
 ;*******************************************************
 fs_HasCd0:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 11000000b
-        cmp     al, 10000000b
-        setz    al
+        test    byte [DRIVE_DATA+1], 10000000b
+        setnz   al
         ret
 fs_HasCd1:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 00110000b
-        cmp     al, 00100000b
-        setz    al
+        test    byte [DRIVE_DATA+1], 00100000b
+        setnz   al
         ret
 fs_HasCd2:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 00001100b
-        cmp     al, 00001000b
-        setz    al
+        test    byte [DRIVE_DATA+1], 00001000b
+        setnz   al
         ret
 fs_HasCd3:
-        mov     al, [DRIVE_DATA+1]
-        and     al, 00000011b
-        cmp     al, 00000010b
-        setz    al
+        test    byte [DRIVE_DATA+1], 00000010b
+        setnz   al
         ret
 ;*******************************************************
 
