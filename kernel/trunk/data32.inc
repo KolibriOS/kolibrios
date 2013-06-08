@@ -323,6 +323,8 @@ tls_data_l:
 endofcode:
 gdte:
 
+diff16 "end of .data segment",0,$
+
 align 16
 cur_saved_data:
                   rb 4096
@@ -364,10 +366,37 @@ _display          display_t
 _WinMapAddress    rd 1
 _WinMapSize       rd 1
 
+LFBAddress        rd 1
 Screen_Max_X      rd 1
 Screen_Max_Y      rd 1
 
 SCR_MODE          rw 2
+
+PUTPIXEL          rd 1
+GETPIXEL          rd 1
+
+if VESA_1_2_VIDEO
+BANK_SWITCH       rd 1  reserved for vesa 1.2
+BANK_RW           rd 1
+end if
+
+REDRAW_BACKGROUND rb 4
+
+mouseunder        rd 16*24
+
+MOUSE_PICTURE     rd 1
+
+MOUSE_SCROLL_H    rw 1
+MOUSE_X:          rw 1
+MOUSE_Y:          rw 1
+MOUSE_SCROLL_V    rw 1
+
+X_UNDER           rw 1
+Y_UNDER           rw 1
+COLOR_TEMP        rd 1
+MOUSE_COLOR_MEM   rd 1
+
+BTN_DOWN:         rb 4
 
 def_cursor        rd 1
 def_cursor_clock  rd 1
@@ -513,5 +542,7 @@ NumBiosDisks    rd 1
 BiosDisksData   rb 200h
 BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
 BiosDiskPartitions rd 80h
+align 16
+DRIVE_DATA:     rb DRIVE_DATA_SIZE
 
 IncludeUGlobals

@@ -75,6 +75,7 @@ $Revision$
 
 
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
+VESA_1_2_VIDEO  equ 0      ; enable vesa 1.2 bank switch functions
 
 ; Enabling the next line will enable serial output console
 ;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
@@ -229,6 +230,10 @@ tmp_gdt:
         db     0x00
 
 include "data16.inc"
+
+if ~ lang eq sp
+diff16 "end of bootcode",0,$+0x10000
+end if
 
 use32
 org $+0x10000
@@ -1241,13 +1246,10 @@ set_variables:
         xor     eax, eax
         mov     [BTN_ADDR], dword BUTTON_INFO ; address of button list
 
-        mov     byte [MOUSE_BUFF_COUNT], al              ; mouse buffer
         mov     byte [KEY_COUNT], al              ; keyboard buffer
         mov     byte [BTN_COUNT], al              ; button buffer
 ;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
-     ;!! IP 04.02.2005:
-;        mov     byte [DONT_SWITCH], al; change task if possible
         pop     eax
         ret
 
@@ -2324,7 +2326,7 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
         dec     ecx
         jnz     exit_for_anyone
         call    for_all_tables
-        mov     ecx, 16384
+        mov     ecx, DRIVE_DATA_SIZE/4
         cld
         rep movsd
         ret
@@ -5804,6 +5806,10 @@ scan_rsdp:
         stc
 .ok:
         ret
+end if
+
+if ~ lang eq sp
+diff16 "end of .text segment",0,$
 end if
 
 include "data32.inc"
