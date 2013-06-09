@@ -6,7 +6,6 @@ KPACK=/opt/bin/kpack
 LANG=lang.inc
 FILE=menu
 SOURCE=${FILE}.asm
-OUT=${FILE}.bin
 
 en:
 	echo "lang fix de" > lang.inc
@@ -27,4 +26,4 @@ it:
 	rm ${LANG}
 
 clean:
-	rm ${LANG} \@menu
+	rm -f ${LANG} \@menu

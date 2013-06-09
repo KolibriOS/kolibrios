@@ -36,12 +36,12 @@ CODE
 ;-----------------------------------------------------------------------------
 start:
 	mcall	70,notifyapp
-	
+
 start1:
 	xor	ebx,ebx
 	mcall	40
 @@:
-	mcall	23,10	
+	mcall	23,10
 
 	mcall	66,3
 	test	eax,0x80	;NumLock status
@@ -53,7 +53,7 @@ start1:
 	mcall	40,10b
 still:
 	mcall	10
-	
+
 	cmp	eax,2		; if event == 2
 	jne	still
 ;-----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ key:				   ; key event handler
 	call	mouse_acceleration
 
 	mcall	2		   ; get key code
-	
+
 	push	eax
 	mcall	66,3
 	test	eax,0x80	;NumLock status
@@ -273,7 +273,7 @@ hotkeys_common:
 
 	mov	cl,73	; Down Num 9
 	mcall	66
-; disable/enable input, work only hotkeys (f.66.6,66.7)	
+; disable/enable input, work only hotkeys (f.66.6,66.7)
 	add	ebx,2
 	mcall	66
 	ret
@@ -286,9 +286,11 @@ UDATA
 mouse_timer_ticks	dd 0
 ;-----------------------------------------------------------------------------
 if lang eq ru
-ud_user_message db 'NumLock включает и выключает эмулятор мыши. Управление через Numpad',0
+	ud_user_message db 'NumLock включает и выключает эмулятор мыши. Управление через Numpad',0
+else if lang eq it
+	ud_user_message db 'NumLock - on/off - usa Numpad per muovere il cursore',0
 else
-ud_user_message db 'NumLock - on/off mouse emul. Numpad - move cursor',0
+	ud_user_message db 'NumLock - on/off mouse emul. Numpad - move cursor',0
 end if
 
 notifyapp:

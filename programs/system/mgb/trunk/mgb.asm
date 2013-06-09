@@ -64,6 +64,7 @@ include '..\..\..\proc32.inc'
 ;include '..\..\..\debug.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
+include 'lang.inc'	;language support
 	@use_library
 ;---------------------------------------------------------------------
 start:
@@ -340,7 +341,7 @@ testGetScreen_GS:
 	je	get_area_with_GS_24
 ;-----------------------------------------------------------------------------
 align 4
-get_area_with_GS_32:	
+get_area_with_GS_32:
 	mcall	61,1
 	shr	eax,16
 	shl	eax,2
@@ -348,7 +349,7 @@ get_area_with_GS_32:
 
 	mov	esi,[start_y]
 	imul	esi,eax
-	
+
 	mov	eax,[start_x]
 	shl	eax,2
 	add	esi,eax
@@ -356,7 +357,7 @@ get_area_with_GS_32:
 	mov	eax,[size_x]
 	shl	eax,2
 	sub	[offset_x],eax
-	
+
 	mov	edx,[size_y]
 	mov	ebx,[offset_x]
 	sub	esi,ebx
@@ -368,39 +369,39 @@ align 4
 	mov	ecx,ebp
 ;--------------------------------------
 align 4
-.start_x:	
+.start_x:
 	mov	eax,[gs:esi]
 	mov	[edi],eax
 	add	esi,4
 	add	edi,3
-	
+
         dec     ecx
         jnz     .start_x
-	
+
         dec     edx
         jnz     .start_y
-	
+
 	pop	edi
 	ret
 ;-----------------------------------------------------------------------------
 align 4
-get_area_with_GS_24:	
+get_area_with_GS_24:
 	mcall	61,1
 	shr	eax,16
 	lea	eax,[eax*3]
 	mov	[offset_x],eax
-	
+
 	mov	esi,[start_y]
 	imul	esi,eax
-	
+
 	mov	eax,[start_x]
 	lea	eax,[eax*3]
 	add	esi,eax
-	
+
 	mov	eax,[size_x]
 	lea	eax,[eax*3]
 	sub	[offset_x],eax
-	
+
 	mov	edx,[size_y]
 	mov	ebx,[offset_x]
 	sub	esi,ebx
@@ -412,7 +413,7 @@ align 4
 	mov	ecx,ebp
 ;--------------------------------------
 align 4
-.start_x:	
+.start_x:
 	mov	eax,[gs:esi]
 	mov	[edi],eax
 	add	esi,3
@@ -420,7 +421,7 @@ align 4
 
         dec     ecx
         jnz     .start_x
-	
+
         dec     edx
         jnz     .start_y
 
@@ -594,7 +595,7 @@ thread_comment:
 	je	.close	;.close_with_open_file
 	cmp	ah,27
 	je	.close
-	
+
 	push	dword name_editboxes
 	call	[edit_box_key]
 	jmp	.still
@@ -685,36 +686,67 @@ LINE_HEIGHT   = 13
 TEST_REC_SIZE = 16
 TESTS_NUM     = ($ - results_table) / TEST_REC_SIZE - 1
 ;---------------------------------------------------------------------
-aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
-aDrawingBar	db 'Filled Rectangle, 100x250 px',0
-aDrawingPicture db 'Picture, 90x123, px',0
-aDrawingPictF73	db 'Picture for Blitter, 90x123, px',0
-aGetScreenF36	db 'Get a piece of screen f.36, 90x123, px',0
-aGetScreen_GS	db 'Get a piece of screen GS, 90x123, px',0
-aDrawingVLine	db 'Vertical Line, 350 px',0
-aDrawingHLine	db 'Horizontal Line, 270 px',0
-aDrawingFLine	db 'Free-angled Line, 350 px',0
-aDrawingText1	db 'Fixed-width Text, 34 chars',0
-aDrawingText2	db 'Proportional Text, 34 chars',0
-aDrawingNumber	db 'Decimal Number, 8 digits',0
-aDrawingPixel	db 'Single Pixel',0
+if lang eq it
+	aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
+	aDrawingBar	db 'Filled Rectangle, 100x250 px',0
+	aDrawingPicture db 'Picture, 90x123, px',0
+	aDrawingPictF73	db 'Picture for Blitter, 90x123, px',0
+	aGetScreenF36	db 'Get a piece of screen f.36, 90x123, px',0
+	aGetScreen_GS	db 'Get a piece of screen GS, 90x123, px',0
+	aDrawingVLine	db 'Linea verticale, 350 px',0
+	aDrawingHLine	db 'Linea orizzontale, 270 px',0
+	aDrawingFLine	db 'Free-angled Line, 350 px',0
+	aDrawingText1	db 'Fixed-width Text, 34 chars',0
+	aDrawingText2	db 'Proportional Text, 34 chars',0
+	aDrawingNumber	db 'Decimal Number, 8 digits',0
+	aDrawingPixel	db 'Singolo pixel',0
 
-aTestText	db 'This is a 34-charachters test text'
-aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-aCaption	db 'Kolibri Graphical Benchmark 0.7',0
+	aTestText	db 'This is a 34-charachters test text'
+	aButtonsText	db 'Test      Commenti    Pattern+     Apri        Salva',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.7',0
 
-aLeft	db 'Left    :',0
-aRight	db 'Right   :',0
+	aLeft	db 'Sinistra:',0
+	aRight	db 'Destra  :',0
 
-aComment1	db 'current',0
-aComment2	db 'no pattern',0
-aComment	db 'Comment',0
+	aComment1	db 'Attuale ',0
+	aComment2	db 'no pattern',0
+	aComment	db 'Commento',0
+else
+	aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
+	aDrawingBar	db 'Filled Rectangle, 100x250 px',0
+	aDrawingPicture db 'Picture, 90x123, px',0
+	aDrawingPictF73	db 'Picture for Blitter, 90x123, px',0
+	aGetScreenF36	db 'Get a piece of screen f.36, 90x123, px',0
+	aGetScreen_GS	db 'Get a piece of screen GS, 90x123, px',0
+	aDrawingVLine	db 'Vertical Line, 350 px',0
+	aDrawingHLine	db 'Horizontal Line, 270 px',0
+	aDrawingFLine	db 'Free-angled Line, 350 px',0
+	aDrawingText1	db 'Fixed-width Text, 34 chars',0
+	aDrawingText2	db 'Proportional Text, 34 chars',0
+	aDrawingNumber	db 'Decimal Number, 8 digits',0
+	aDrawingPixel	db 'Single Pixel',0
+
+	aTestText	db 'This is a 34-charachters test text'
+	aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.7',0
+
+	aLeft	db 'Left    :',0
+	aRight	db 'Right   :',0
+
+	aComment1	db 'current',0
+	aComment2	db 'no pattern',0
+	aComment	db 'Comment',0
+end if
 ;---------------------------------------------------------------------
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 ;---------------------------------------------------------------------
 head_f_i:
-head_f_l	db 'System error',0
+if lang eq it
+	head_f_l	db 'Errore Sistema',0
+else
+	head_f_l	db 'System error',0
+end if
 
 err_message_found_lib1	db 'box_lib.obj - Not found!',0
 err_message_found_lib2	db 'proc_lib.obj - Not found!',0
@@ -804,7 +836,7 @@ aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align 4
-Box_lib_import:	
+Box_lib_import:
 ;init_lib		dd a_init
 ;version_lib		dd a_version
 

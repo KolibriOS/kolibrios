@@ -47,6 +47,7 @@ include 'proc32.inc'
 include 'macros.inc'
 include 'libio.inc'
 include '../../../dll.inc'
+include 'lang.inc'
 
 purge mov
 
@@ -109,10 +110,10 @@ read_ini_debug:												;; Read debug options
 	invoke ini.get_option_str, etc_cfg, cfg_debug, cfg_debug, debug_strings, DEBUG_MAX_LEN, DEBUG_DEFAULT
 	invoke ini.get_option_str, path, cfg_debug, cfg_debug, debug_strings, DEBUG_MAX_LEN, eax
 	mov [debug_option], eax
-	
+
 	test eax, eax				;; No console
 	je .ok
-	
+
 	jmp .con_init
 
 .console_err:
@@ -134,7 +135,7 @@ read_ini_debug:												;; Read debug options
 read_ini_kobra:
 	invoke ini.get_bool, etc_cfg, cfg_kobra, cfg_use, 0
 	invoke ini.get_bool, path, cfg_kobra, cfg_use, eax
-	
+
 	mov byte [kobra_use], al
 
 ;;--------------------------------------------------------------------------------------------------
@@ -265,25 +266,25 @@ exit:
 	mov al, byte [kobra_use]
 	test al, al
 	je .close
-	
+
 .register:
 	mov dword [IPC_area], buff
 	call IPC_init
 ; 	jnz .close
-	
+
 	mov dword [thread_find_buff], another_buff
-	
+
 	call kobra_register
-	
+
 	test eax, eax
 	jnz .close
-	
+
 	;; Prepare message
 	mov dword [kobra_message], KOBRA_MESSAGE_LAUNCH_STATE
-	
+
 	mov eax, dword [tid]
 	mov dword [kobra_message+4], eax
-	
+
 .kobra_send:
 	stdcall kobra_send_message, kobra_group_launch_reactive, kobra_message, 8
 
@@ -345,15 +346,25 @@ window_title:
 	db APP_NAME, ' ', APP_VERSION, 0
 
 ;; Messages
-message_dbg_not_found:
-	db '%s not found', 10, 0
+if lang eq it
+	message_dbg_not_found:
+		db '%s non trovato', 10, 0
 
-message_error:
-	db 'File (%s) not found!', 0
+	message_error:
+		db 'File (%s) non trovato!', 0
 
-message_ok:
-	db '%s loaded succesfully. PID: %d (0x%X)', 0
+	message_ok:
+		db '%s caricato correttamente. PID: %d (0x%X)', 0
+else
+	message_dbg_not_found:
+		db '%s not found', 10, 0
 
+	message_error:
+		db 'File (%s) not found!', 0
+
+	message_ok:
+		db '%s loaded succesfully. PID: %d (0x%X)', 0
+end if
 ;; Configuration path
 etc_cfg:
 	db '/sys/etc/'

@@ -18,6 +18,7 @@ include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'mem.inc'
 ;include 'dll.inc'
+include 'lang.inc'
 
 @use_library ;_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
@@ -165,10 +166,15 @@ ch3 check_box2 (5 shl 16)+15,(29 shl 16)+10,5, 0xffffff,0x8000,0xff,\
  txt_158,0+ch_flag_middle
 check_boxes_end:
 
-txt_160 db 'Num',0
-txt_159 db 'Caps',0
-txt_158 db 'Scroll',0
-
+if lang eq it
+	txt_160 db 'Bloc Num',0
+	txt_159 db 'Bloc Maiusc',0
+	txt_158 db 'Bloc Scorr',0
+else
+	txt_160 db 'Num',0
+	txt_159 db 'Caps',0
+	txt_158 db 'Scroll',0
+end if
 head_f_i:
 head_f_l db 'Системная ошибка',0
 
@@ -195,7 +201,7 @@ import_box_lib:
  sz_check_box_mouse db 'check_box_mouse2',0
 
 ;mouse_dd dd 0x0
-sc system_colors 
+sc system_colors
 
 _end:
 align 32
