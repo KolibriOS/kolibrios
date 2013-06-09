@@ -142,6 +142,7 @@
 ;                 * detect Revision, Class and Subclass of Device,
 ;                 * and make Description based on Class
 ;-------------------------------------------------------------
+include 'lang.inc'
 include	'macros.inc'
 MEOS_APP_START
 CODE
@@ -217,7 +218,7 @@ nomo:					;done drawing bars here
 	mov	cl, [PCI_LastBus]
 	add	cl, '0'
 	mov	[PCIWin + 105], cl
-	
+
 	mov	edx, PCIWin
 	mov	ebx, 20 * 65536 + 25	; x start, ystart of text
 	mov	ecx, 0x224466		; color of text
@@ -266,19 +267,19 @@ Start_Enum:
 	shr	ecx, 16			;
 	mov	word [PCI_Device], cx	;
 
-	
-	
+
+
 	mov	ebp, 8			; Read config byte
 	mov	bh, byte [V_Bus]	; Bus #
 	mov	bl, byte [V_Dev]	; Device # on bus
 	mov	edi, 0x08		; Register to read (Get Revision)
 	mcall	57			; Read it
 	mov	byte [PCI_Rev], cl	; Save it
-	
+
 	mov	edi, 0x0b		; Register to read (Get class)
 	mcall	57			; Read it
 	mov	byte [PCI_Class], cl	; Save it
-	
+
 	mov	edi, 0x0a		; Register to read (Get Subclass)
 	mcall	57			; Read it
 	mov	byte [PCI_SubClass], cl; Save it
@@ -324,7 +325,7 @@ Print_New_Device:
 	movzx	ecx, byte [V_Dev]	; get device number
 	shr	ecx, 3			; device number is bits 3-7
 	mcall				; Draw device Number To Window
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 155 * 65536	; X start becomes 155
 	movzx	ecx, byte [V_Dev]	; get Function number
@@ -368,7 +369,7 @@ Print_New_Device:
 ;------------------------------------------------------------------
 	mov	edx, VendorsTab
 	mov	cx, word[PCI_Vendor]
-	
+
 .fn:	mov	ax, [edx]
 	add	edx, 6
 	test	ax, ax
@@ -403,7 +404,7 @@ Print_New_Device:
 .endfc:	test	edx, edx
 	jnz	@f
 	mov	edx, [Classes + esi * 8 - 4]
-@@:	
+@@:
 	and	ebx, 0x0000FFFF		; clear X position
 	or	ebx, 0x24E0000		; set X position to 590 pixels
 	mcall	4,, 0x80000000,, 32	; draw the text
@@ -411,7 +412,7 @@ Print_New_Device:
 	add	edx, 0x0014000A		; add 10 to y coordinate and set x coordinate to 20
 	ret
 
-include	'VENDORS.INC'
+include	'vendors.inc'
 ;------------------------------------------------------------------
 ; DATA AREA
 DATA
@@ -422,8 +423,20 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 420 ; window height
 	dw 100 ; window y start
 
+if lang eq it
 title	db 'PCI Device Enumeration v 2.1n new PCI API test', 0
-
+PCIWin mls \
+	'Ricordarsi di abilitare l accesso alla PCI per le applicazioni dal menu.',\
+	'',\
+	'Versione PCI = x.xx',\
+	'Ultimo Bus PCI = x',\
+	'Numerod di devices =',\
+	'',\
+	'VenID DevID Bus# Dev# Fnc Rev  Class  Subclass/ IRQ                 Compania                     Descrizione',\
+	'                                      Interface',\
+	'----- ----- ---- ---- --- ---  -----  --------- --- ------------------------------------------ ----------------'
+else
+title	db 'PCI Device Enumeration v 2.1n new PCI API test', 0
 PCIWin mls \
 	'Please remember to enable PCI Access to Applications in Setup Menu.',\
 	'',\
@@ -434,7 +447,7 @@ PCIWin mls \
 	'VenID DevID Bus# Dev# Fnc Rev  Class  Subclass/ IRQ                 Company                      Description',\
 	'                                      Interface',\
 	'----- ----- ---- ---- --- ---  -----  --------- --- ------------------------------------------ ----------------'
-
+end if
 ;------------------------------------------------------------------
 ; UNINITIALIZED DATA AREA
 UDATA

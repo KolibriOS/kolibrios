@@ -19,6 +19,8 @@
 ;        connected to the PCI Bus.
 ;***************************************************************
 ;-----------------------------------------------------------------------------
+
+include 'lang.inc'	;language support
 include '../../../macros.inc'
 
 include	'../../../develop/libraries/box_lib/load_lib.mac'
@@ -45,14 +47,14 @@ load_libraries l_libs_start,end_l_libs
 ;OpenDialog	initialisation
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
-	
+
 	mov	edi,filename_area
 	mov	esi,start_temp_file_name
 	call	copy_file_name_path
 ;-----------------------------------------------------------------------------
 	mcall	68,12,4096*4 ; 16 Kb - I hope this will be enough for store of data
 	mov	[store_text_area_start],eax
-;-----------------------------------------------------------------------------	
+;-----------------------------------------------------------------------------
 	call draw_window
 still:
 	mcall	10			; wait here for event
@@ -112,26 +114,26 @@ button: 				; button
 ;-----------------------------------------------------------------------------
 call_OpenDialog:
 	mov	[OpenDialog_data.type],1	; Save
-	
+
 	push    dword OpenDialog_data
 	call    [OpenDialog_Start]
 
 	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
 	je	.save_file_default_path
-	
+
 	cmp	[OpenDialog_data.status],1
 	jne	still
-	
+
 	call	store_data
 	jmp	still
-;----------------------------------------	
+;----------------------------------------
 .save_file_default_path:
 	mov	edi,file_name
 	mov	esi,file_default_path
 	call	copy_file_name_path
 	call	store_data
 	jmp	still
-;----------------------------------------	
+;----------------------------------------
 copy_file_name_path:
 	xor	eax,eax
 	cld
@@ -151,7 +153,7 @@ prepare_text_area:
 	cld
 	rep	stosd
 	pop	edi
-	
+
 	mov	esi,PCIWin
 	xor	ecx,ecx
 @@:
@@ -161,32 +163,32 @@ prepare_text_area:
 	mov	al,0Ah ; CR - carriage return
 	stosb
 	cmp	[esi],byte 0xFF
-	jne	@r	
+	jne	@r
 
 	mov	[store_text_area_end],edi
-	
+
 	xor	edi,edi
 	ret
-;-----------------------------------------------------------------------------		
+;-----------------------------------------------------------------------------
 get_window_param:
-	mcall	9, Proc_Info, -1	; window redraw requested so get 
+	mcall	9, Proc_Info, -1	; window redraw requested so get
 					; new window coordinates and size
 	ret
-;-----------------------------------------------------------------------------	
+;-----------------------------------------------------------------------------
 draw_window:
 	call	prepare_text_area
-	
+
 	mov	byte [total], 0
 	mcall	12, 1			; start of draw
 	; DRAW WINDOW
 	mcall	0,dword [Form],dword [Form + 4],0x13ffffff,0x805080d0,title
-	
+
 	call	get_window_param
-	
+
 	mov	eax,[Proc_Info+70] ;status of window
 	test	eax,100b
 	jne	.end
-	
+
 	mcall	8,<450,100>,<25,25>,2,0xC0C0C0
 	shr	ecx,16
 	mov	bx,cx
@@ -245,7 +247,7 @@ draw_window:
 	; Quantity of devices...
 	movzx	ecx, byte [total]	; number to draw
 	mcall	47, 0x00020000,,150 * 65536 + 65, 0x224466
-	
+
 	mov	ebx,ecx
 	mov	ecx,2
 	mov	edi,[store_text_area_start]
@@ -254,14 +256,14 @@ draw_window:
 	call	binary_to_hex_string
 	pop	edi
 	mov	[edi+2],byte 'h'
-	
+
 	mov	ah, [MMIO_allowed]
 	or 	ah, ah
 	jz 	@f
 	mov	ah, [MMIO_Bus]	; =255 if MMIO disabled / not found
 	and	ah, 0x7f
 	inc	ah
-	jo	@f	
+	jo	@f
 	call	Try_MMIO
 @@:
 .end:
@@ -289,7 +291,7 @@ Get_PCI_Info:
 	cmp	al, 0xff		; 0xFF means no pci bus found
 	jne	Pci_Exists		;
 	ret				; if no bus then leave
-;-----------------------------------------------------------------------------	
+;-----------------------------------------------------------------------------
 Pci_Exists:
 	mov	byte [V_Bus], 0 	; reset varibles
 	mov	byte [V_Dev], 0 	;
@@ -303,7 +305,7 @@ Start_Enum:
 
 	cmp	ax, 0			; Vendor ID should not be 0 or 0xFFFF
 	je	nextDev 		; check next device if nothing exists here
-	
+
 	cmp	ax, 0xffff		;
 	je	nextDev 		;
 
@@ -315,7 +317,7 @@ Start_Enum:
 	mov	ch, byte [V_Dev]	; Device # on bus
 	mov	cl, 0x08		; Register to read (Get Revision)
 	mcall	62			; Read it
-	
+
 	mov	byte [PCI_Rev], al	; Save it
 	mov	cl, 0x0b		; Register to read (Get class)
 	mcall	62			; Read it
@@ -327,19 +329,19 @@ Start_Enum:
 ; by Mario79 august 2006
 	mov	cl, 0x09		; Register to read (Get Interface)
 	mcall	62			; Read it
-	
+
 	mov  [PCI_Interface], al	; Save it
 ;
 ; by Ghost april 2007
 	mov	cl, 0x3c		; Register to read (Get IRQ)
 @@:
 	mcall	62			; Read it
-	
+
 	mov	[PCI_IRQ], al		; Save it
 ; by CleverMouse juny 2011
 	mov	cl, 0x0e
 	mcall	62
-	
+
 	push	eax
 	inc	byte [total]		; one more device found
 	call	Print_New_Device	; print device info to screen
@@ -347,10 +349,10 @@ Start_Enum:
 	pop	eax
 	test	al, al
 	js	nextDev
-	
+
 	test	byte [V_Dev], 7
 	jnz	nextDev
-	
+
 	or	byte [V_Dev], 7
 nextDev:
 	inc	byte [V_Dev]		; next device on this bus
@@ -377,17 +379,17 @@ Print_New_Device:
 	mov 	ch, byte [V_Bus]
 	mov 	cl, byte [V_Dev]
 	mcall	62, 11		; detect uMMIO
-	
+
 	and	ax,0x7fff
 	inc 	ax			; -1 returned?
 	jo 	no_ummio_allowed
-	
+
 	inc 	ax			; -2 returned?
 	jo 	no_ummio_here
-	
+
 	inc 	ax			; -3 returned?
 	jo 	no_ummio_here
-	
+
 	mov 	esi, 0x990033   ; highlighted text color
 	mov 	bh, byte [V_Bus]
 	mov 	bl, byte [V_Dev]
@@ -408,23 +410,23 @@ Print_New_Device:
 no_ummio_here:
 	movzx	ecx,word [PCI_Vendor]	; Pointer to number to be written
 	mcall	47, 0x00040100		; Write Vendor ID
-	
+
 	call	store_4_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 54 * 65536 ; X start becomes 54
 	movzx	ecx, word [PCI_Device]	; get Vendor ID
 	mcall				; Draw Vendor ID to Window
 
 	call	store_4_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 98 * 65536 ; X start becomes 98
 	movzx	ecx, byte [V_Bus]	; get bus number
 	mcall	,0x00020100		; draw bus number to screen
 
 	call	store_2_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 128 * 65536	; X start becomes 128
 	movzx	ecx, byte [V_Dev]	; get device number
@@ -432,44 +434,44 @@ no_ummio_here:
 	mcall				; Draw device Number To Window
 
 	call	store_2_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 155 * 65536	; X start becomes 155
 	movzx	ecx, byte [V_Dev]	; get Function number
 	and	ecx, 7			; function is first 3 bits
 	mcall				; Draw Function Number To Window
-	
+
 	call	store_2_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 179 * 65536	; X start becomes 179
 	movzx	ecx, byte [PCI_Rev]	; get revision number
 	mcall				; Draw Revision to screen
-	
+
 	call	store_2_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 215*65536		; X start becomes 215
 	movzx	ecx, byte [PCI_Class]	; get PCI_Class
 	mcall				; Draw Class to screen
-	
+
 	call	store_2_digits
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 250*65536		; X start becomes 250
 	movzx	ecx, byte [PCI_SubClass]; get sub class
 	mcall				; Draw Sub Class to screen
-	
+
 	call	store_2_digits
-	
+
 ; from Mario79 august 2006
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 280 * 65536	; X start becomes 280
 	movzx	ecx, [PCI_Interface]	; get Interface
 	mcall
-	
+
 	call	store_2_digits
-	
+
 ;
 ; from Ghost april 2007                 ;*****************************************
 	and	edx, 0xFFFF
@@ -482,7 +484,7 @@ no_ummio_here:
 
 	call	store_2_digits
 	jmp	.PCI_Vendor
-@@:	
+@@:
 	call	store_NA
 .PCI_Vendor:
 	;Write Names
@@ -502,14 +504,14 @@ no_ummio_here:
 	add	edx, 6
 	test	ax, ax
 	jz	.find
-	
+
 	cmp	ax, cx
 	jne	.fn
-	
+
 .find:
 	mov	edx, [edx - 4]
 	mcall	4,, 0x80000000		; lets print the vendor Name
-	
+
 	mov	[store_text_size],42
 	call	store_text
 ;------------------------------------------------------------------
@@ -526,34 +528,34 @@ no_ummio_here:
 	mov	ecx, [Classes + esi * 8 - 8]
 	cmp	cx, 0xffff
 	je	.endfc
-	
+
 	cmp	cx, ax
 	jne	.fnc
-	
+
 	test	ecx, 0xff000000
 	jz	@f
-	
+
 	mov	edx, [Classes + esi * 8 - 4]
 	jmp	.fnc
 @@:
 	cmp	eax, ecx
 	jne	.fnc
-	
+
 	xor	edx, edx
 .endfc:
 	test	edx, edx
 	jnz	@f
-	
+
 	mov	edx, [Classes + esi * 8 - 4]
 @@:
 	and	ebx, 0x0000FFFF 	; clear X position
 	or	ebx, 0x24E0000		; set X position to 590 pixels
 	mcall	4,, 0x80000000,, 32	; draw the text
-	
+
 	mov	[store_text_size],0
 	call	store_text
 	call	store_CR
-	
+
 	movzx	edx, bx 	; get y coordinate
 	add	edx, 0x0014000A 	; add 10 to y coordinate and set x coordinate to 20
 	mov	[gr_pos], edx
@@ -570,18 +572,18 @@ Try_MMIO:
 	or	bx, 12			; function 12
 	mov	ecx, 4096		; =1 page to map
 	mcall	62
-	
+
 	mov	[MMIO_Map], eax 	; store MMIO lin.addr.
 	mov	ecx, 0x80990022 	; print color : red
 	add	bh, '0'
 	cmp	eax, -3
 	jne	@f
-	
+
 	mov	[bar_um+3], bh
 	mov	ebx, [gr_pos]
 	mov	edx, bar_um
 	mcall	4
-	
+
 	jmp	mmio_next_bar
 @@:
 	cmp	eax, -4
@@ -590,7 +592,7 @@ Try_MMIO:
 	mov	ebx, [gr_pos]
 	mov	edx, bar_io
 	mcall	4
-	
+
 	jmp	mmio_next_bar
 @@:
 	cmp	bh, '6' 	; expansion ROM ?
@@ -599,7 +601,7 @@ Try_MMIO:
 	mov	ebx, [gr_pos]
 	mov	edx, bar_ram
 	mcall	4
-	
+
 	jmp	mmio_dump
 ;-----------------------------------------------------------------------------
 @@:
@@ -614,7 +616,7 @@ mmio_dump:
 	add	ebx, 10
 	mov	[gr_pos], ebx
 	mcall	4
-	
+
 	mov	ecx, [MMIO_Map] 	; release the tried page
 	mcall	62,13
 
@@ -623,7 +625,7 @@ mmio_next_bar:
 	inc	bh
 	cmp	bh,7
 	je	@f
-	
+
 	mov	[MMIO_BAR], bh
 	add	[gr_pos], 10
 	jmp	Try_MMIO
@@ -639,12 +641,12 @@ store_CR:
 	mov	[edi],word 0A20h ; CR (carriage return) + SPACE
 	add	dword [store_text_area_end],2
 	popa
-	ret	
+	ret
 ;-----------------------------------------------------------------------------
 store_text:
 	pusha
 	inc	dword [store_text_area_end]
-	mov	esi,edx	
+	mov	esi,edx
 	mov	edi,[store_text_area_end]
 	push	edi
 	xor	eax,eax
@@ -666,7 +668,7 @@ store_text:
 	add	[store_text_area_end],eax
 @@:
 	popa
-	ret	
+	ret
 ;-----------------------------------------------------------------------------
 store_NA:
 	pusha
@@ -735,6 +737,27 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 
 title	db 'PCI Device Enumerator v 2.3', 0
 
+if lang eq it
+PCIWin mls \
+	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
+	'',\
+	'Versione PCI = x.xx; Ultimo Bus PCI = x',\
+	'User MMIO channel = 0F.F:F ',\
+	'Numbero di unità PCI =    ',\
+	'',\
+	'VenID DevID Bus# Dev# Fnc Rev  Class  Subclass/ IRQ                 Compania                    Descrizzione',\
+	'                                      Interfaccia',\
+	'----- ----- ---- ---- --- ---  -----  --------- --- ------------------------------------------ --------------------------------'
+
+bar_ram db 'BARx: MMIO block', 0
+bar_io	db 'BARx: porte IO',0
+bar_um	db 'BARx: unmapped',0
+bar_rom db 'BAR6: Expansion ROM', 0
+
+text_save_button:
+	db 'Salva lista PCI',0
+.1:	db '(Premere S)',0
+else
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
 	'',\
@@ -754,6 +777,7 @@ bar_rom db 'BAR6: Expansion ROM', 0
 text_save_button:
 	db 'Save PCI list',0
 .1:	db '(Press S key)',0
+end if
 
 text_NA:
 	db '--',0
@@ -822,7 +846,7 @@ dd	0
 
 file_default_path:
 	db '/sys/'
-start_temp_file_name:	
+start_temp_file_name:
 	db 'pcidev.txt',0
 ;---------------------------------------------------------------------
 align	4
