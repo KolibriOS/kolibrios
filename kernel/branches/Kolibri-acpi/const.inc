@@ -179,10 +179,22 @@ struct  TSS
         _io_map_1   rb 4096
 ends
 
+PARTITION_COUNT     equ 64
+DRIVE_DATA_SIZE     equ (16+PARTITION_COUNT*100)
+
 OS_BASE             equ 0x80000000
 
+TASK_COUNT          equ (CURRENT_TASK+0x04)
+TASK_BASE           equ (CURRENT_TASK+0x10)
+TASK_DATA           equ (CURRENT_TASK+0x20)
+TASK_EVENT          equ (CURRENT_TASK+0x20)
+FDD_BUFF            equ (OS_BASE+0x000D000)
 
-sys_pgmap           equ (OS_BASE+0x0324000)
+sys_pgdir           equ (OS_BASE+0x006F000)
+
+VGABasePtr          equ (OS_BASE+0x00A0000)
+CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
+IDE_DMA             equ (_IDE_DMA-OS_BASE)
 
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 

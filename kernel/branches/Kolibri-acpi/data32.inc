@@ -384,6 +384,10 @@ end if
 
 REDRAW_BACKGROUND rb 4
 
+draw_data:          rb 16*256
+BPSLine_calc_area   rd 1440
+d_width_calc_area   rd 1140
+
 mouseunder        rd 16*24
 
 MOUSE_PICTURE     rd 1
@@ -555,23 +559,41 @@ NumBiosDisks    rd 1
 BiosDisksData   rb 200h
 BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
 BiosDiskPartitions rd 80h
-
 align 16
 DRIVE_DATA:     rb DRIVE_DATA_SIZE
+
+IncludeUGlobals
+
+uglobals_size = $ - endofcode
+
+if ~ lang eq sp
+diff16 "end of .bss",0,$
+end if
+
+org (OS_BASE+0x0100000)
+
+RAMDISK:        rb 2880*512
+RAMDISK_FAT:    rb 2856*2
+FLOPPY_FAT:     rb 2856*2
+
+_CLEAN_ZONE:
+
+align 4096
+_IDE_DMA        rb 16*512
+BgrAuxTable     rb 32768
+BUTTON_INFO     rb 64*1024
+RESERVED_PORTS: rb 64*1024
+BOOT_VAR:       rb 64*1024
+sys_pgmap:      rb 1024*1024/8
 
 align 4096
 
 SLOT_BASE:      rb 64*1024
-RESERVED_PORTS: rb 64*1024
 FLOPPY_BUFF:    rb 16*1024
-BUTTON_INFO:    rb 16*1024
-BgrAuxTable:    rb 32*1024
 
-;IDE_DMA:        rb 32*1024
 
 window_data:    rb 8192
 CURRENT_TASK:   rb 8192
-draw_data:      rb 4096
 WIN_STACK:      rb 0x400
 WIN_POS:        rb 0x800
 
@@ -579,8 +601,4 @@ CDDataBuf:      rb 4096
 
 idts            rq 0x41
 
-RAMDISK_FAT:    rb 2856*2 +16
 
-FLOPPY_FAT:     rb 2856*2 +16
-
-IncludeUGlobals
