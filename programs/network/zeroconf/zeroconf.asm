@@ -195,8 +195,6 @@ START:
 
 try_dhcp:
 
-        mov     [tries], DHCP_TRIES
-
         DEBUGF  1,"->Trying DHCP\n"
 
         mcall   75, 0, AF_INET4, SOCK_DGRAM, 0          ; open socket (parameters: domain, type, reserved)
@@ -226,6 +224,8 @@ try_dhcp:
         mov     [currTime], eax
 
 build_request:                                          ; Creates a DHCP request packet.
+
+        mov     [tries], DHCP_TRIES
 
         DEBUGF  1,"->Building request\n"
 
@@ -275,9 +275,9 @@ build_request:                                          ; Creates a DHCP request
         cmp     [dhcpMsgType], byte 0x01        ; Check which msg we are sending
         jne     request_options
 
-        mov     [edx+240+21], byte 0xff         ; "Discover" options
+        mov     [edx+240+21], byte 0xff         ; end of options marker
 
-        mov     [dhcpMsgLen], dword 262         ; end of options marker
+        mov     [dhcpMsgLen], 262       ; length
         jmp     send_dhcpmsg
 
 request_options:
@@ -287,10 +287,10 @@ request_options:
 
         mov     [edx+240+27], byte 0xff         ; end of options marker
 
-        mov     [dhcpMsgLen], dword 268
+        mov     [dhcpMsgLen], 268       ; length
 
 send_dhcpmsg:
-        DEBUGF  1,"Sending DHCP request\n"
+        DEBUGF  1,"Sending DHCP discover/request\n"
         mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]     ; write to socket ( send broadcast request )
         mcall   23, TIMEOUT*100                                 ; wait for data
 
@@ -336,6 +336,7 @@ discover:
         jmp     link_local
 
 send_request:
+        DEBUGF  1, "Got offer, making request\n"
         mov     [dhcpMsgType], 0x03             ; make it a request
         jmp     build_request
 
@@ -344,6 +345,8 @@ request:
 
         cmp     [dhcpMsgType], 0x05             ; Was the response an ACK? It should be
         jne     read_data                       ; NO - read next packets
+
+        DEBUGF  1, "Got ACK, applying settings\n"
 
         call    dhcp_end
 
