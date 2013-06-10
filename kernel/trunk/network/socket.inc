@@ -433,7 +433,7 @@ SOCKET_bind:
   .tcp:
   .udp:
 
-        cmp     ebx, [edx + 4]                  ; First, fill in the IP
+        mov     ebx, [edx + 4]                  ; First, fill in the IP
         test    ebx, ebx                        ; If IP is 0, use default
         jnz     @f
         mov     ebx, [IP_LIST + 4]      ;;;;; FIXME !i!i!i
@@ -2020,7 +2020,7 @@ SOCKET_num_to_ptr:
         ret
 
   .error:
-        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_nuto_ptr: not found\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: not found\n", eax
         ret
 
 
