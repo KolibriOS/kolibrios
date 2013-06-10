@@ -283,19 +283,19 @@ not_102:
         mov     ebx, API_ARP
         mov     bh, [device]
         push    ebx
-        mcall   76
+        mcall   76      ; tx
         pop     ebx
         push    eax
 
         inc     bl
         push    ebx
-        mcall   76
+        mcall   76      ; rx
         pop     ebx
         push    eax
 
         inc     bl
         push    ebx
-        mcall   76
+        mcall   76      ; entries
         pop     ebx
         push    eax
 
@@ -328,13 +328,16 @@ not_102:
         mov     [last], 0
 
   .arp_loop:
-        mov     ebx, API_ARP + 3
+        mov     ebx, API_ARP + 3                ; read ARP entry
         mov     bh, [device]
-        mcall   76, , [last], , , arp_buf
+        mcall   76, ,[last], , , arp_buf
         cmp     eax, -1
         je      mainloop
 
-        mcall   4, 20 shl 16 + 140, 0x80000000, str_ARP_entry
+        mov     ebx, [last]
+        imul    ebx, 16
+        add     ebx, 8 shl 16 + 140
+        mcall   4, , 0x80000000, str_ARP_entry
         mov     edx, ebx
 
         mov     eax, 47
