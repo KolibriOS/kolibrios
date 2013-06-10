@@ -76,6 +76,11 @@ macro   allocate_and_clear dest, size, err {
         xor     eax, eax
         rep     stosd
 
+     if (size - size/4*4)
+        mov     ecx, size - size/4*4
+        rep     stosb
+     end if
+
 }
 
 struc   IOCTL {

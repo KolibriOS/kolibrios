@@ -211,6 +211,7 @@ virtual at ebx
         .irq_line       db ?
         .hw_ver_id      db ?
 
+                        db ?    ; align 4
         .TX_DESC        rd NUM_TX_DESC
 
         .size = $ - device
@@ -821,7 +822,7 @@ int_handler:
 
         cmp     eax, RX_BUFFER_SIZE
         jb      .no_wrap
-        DEBUGF  2, "Wrapping"
+        DEBUGF  1, "Wrapping"
         sub     eax, RX_BUFFER_SIZE
   .no_wrap:
         mov     [device.rx_data_offset], eax
@@ -960,7 +961,7 @@ int_handler:
         call    cable
 
   .fail:
-        DEBUGF  2, "\n"
+        DEBUGF  1, "\n"
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
