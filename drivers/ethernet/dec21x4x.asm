@@ -675,7 +675,7 @@ reset:
         call    start_link
 
 ; wait a bit
-        mov     esi, 3000
+        mov     esi, 500
         call    Sleep
 
 ;----------------------------------------------------
@@ -782,6 +782,8 @@ init_ring:
 
 align 4
 start_link:
+
+        DEBUGF  1,"Starting link\n"
 
         ; TODO: write working code here
 
@@ -1037,10 +1039,10 @@ int_handler:
 
         set_io  0
         set_io  CSR5
-        in      eax, dx
-        test    eax, eax
+        in      ax, dx
+        test    ax, ax
+        out     dx, ax                                  ; send it back to ACK
         jnz     .got_it
-        out     dx, eax                                 ; send it back to ACK
   .continue:
         add     esi, 4
         dec     ecx
