@@ -586,9 +586,9 @@ IPv4_output:
         push    ebx                     ; push the mac onto the stack
         push    ax
 
-        inc     [IP_packets_tx + 4*edi] ; update stats
+        inc     [IP_packets_tx + edi]   ; update stats
 
-        mov     ebx, [NET_DRV_LIST + 4*edi]
+        mov     ebx, [NET_DRV_LIST + edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
         mov     ecx, [esp + 10 + 6]
@@ -857,7 +857,7 @@ IPv4_fragment:
 ; IPv4_route
 ;
 ; IN:   eax = Destination IP
-; OUT:  edi = device number
+; OUT:  edi = device number*4
 ;       eax = ip of gateway if nescessary, unchanged otherwise
 ;
 ;---------------------------------------------------------------------------
@@ -890,8 +890,7 @@ IPv4_route:
   .invalid:
         mov     eax, [GATEWAY_LIST+4]       ;;; FIXME
   .broadcast:
-        xor     edi, edi                ; if none found, use device 1 as default     ;;;; FIXME
-        inc     di
+        mov     edi, 4                  ; if none found, use device 1 as default     ;;;; FIXME
         ret
 
 

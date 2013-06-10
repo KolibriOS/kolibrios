@@ -364,7 +364,7 @@ ARP_output_request:
 ; ARP_add_entry (or update)
 ;
 ; IN:  esi = ptr to entry (can easily be made on the stack)
-;      edi = device num
+;      edi = device num*4
 ; OUT: eax = entry #, -1 on error
 ;      esi = ptr to newly created entry
 ;
@@ -374,17 +374,17 @@ ARP_add_entry:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_add_entry: device=%u\n", edi
 
-        mov     ecx, [ARP_entries_num + 4*edi]
+        mov     ecx, [ARP_entries_num + edi]
         cmp     ecx, ARP_TABLE_SIZE                                     ; list full ?
         jae     .full
 
 ; From this point on, we can only fail if IP has a static entry, or if table is corrupt.
 
-        inc     [ARP_entries_num + 4*edi]                               ; assume we will succeed
+        inc     [ARP_entries_num + edi]                                 ; assume we will succeed
 
         push    edi
         xor     ecx, ecx
-        imul    edi, ARP_TABLE_SIZE*sizeof.ARP_entry
+        imul    edi, ARP_TABLE_SIZE*sizeof.ARP_entry/4
         add     edi, ARP_table
         mov     eax, [esi + ARP_entry.IP]
   .loop:
@@ -419,7 +419,7 @@ ARP_add_entry:
 
   .error:
         pop     edi
-        dec     [ARP_entries_num + 4*edi]
+        dec     [ARP_entries_num + edi]
         DEBUGF  DEBUG_NETWORK_ERROR, "ARP_add_entry_failed\n"
   .full:
         mov     eax, -1
@@ -475,7 +475,7 @@ ARP_del_entry:
 ;  This function translates an IP address to a MAC address
 ;
 ;  IN:  eax = IPv4 address
-;       edi = device number
+;       edi = device number * 4
 ;  OUT: eax = -1 on error, -2 means request send
 ;      else, ax = first two bytes of mac (high 16 bits of eax will be 0)
 ;       ebx = last four bytes of mac
@@ -487,7 +487,7 @@ ARP_IP_to_MAC:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: %u.%u", al, ah
         rol     eax, 16
-        DEBUGF  DEBUG_NETWORK_VERBOSE, ".%u.%u device: %u\n", al, ah, edi
+        DEBUGF  DEBUG_NETWORK_VERBOSE, ".%u.%u device*4: %u\n", al, ah, edi
         rol     eax, 16
 
         cmp     eax, 0xffffffff
@@ -496,7 +496,7 @@ ARP_IP_to_MAC:
 ;--------------------------------
 ; Try to find the IP in ARP_table
 
-        mov     ecx, [ARP_entries_num + 4*edi]
+        mov     ecx, [ARP_entries_num]
         test    ecx, ecx
         jz      .not_in_list
         mov     esi, edi
@@ -538,7 +538,7 @@ ARP_IP_to_MAC:
         pop     edi eax                 ; IP in eax, device number in ebx, for ARP_output_request
 
         push    esi edi
-        mov     ebx, [NET_DRV_LIST + 4*edi]
+        mov     ebx, [NET_DRV_LIST + edi]
         call    ARP_output_request
         pop     edi esi
   .found_it:
@@ -655,7 +655,6 @@ ARP_api:
   .write:
         ; esi = pointer to buffer
         mov     edi, eax
-        shr     edi, 2
         call    ARP_add_entry           ; out: eax = entry number, -1 on error
         ret
 
