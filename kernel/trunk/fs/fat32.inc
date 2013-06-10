@@ -2441,7 +2441,6 @@ fat_SetFileEnd:
         pop     eax
         lea     ebx, [ebp+FAT.buffer]
         call    fs_write32_sys
-        pop     edi
         test    eax, eax
         jz      @f
         push    ERROR_DEVICE
