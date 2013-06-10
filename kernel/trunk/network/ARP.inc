@@ -496,11 +496,11 @@ ARP_IP_to_MAC:
 ;--------------------------------
 ; Try to find the IP in ARP_table
 
-        mov     ecx, [ARP_entries_num]
+        mov     ecx, [ARP_entries_num + edi]
         test    ecx, ecx
         jz      .not_in_list
         mov     esi, edi
-        imul    esi, sizeof.ARP_entry * ARP_TABLE_SIZE
+        imul    esi, (sizeof.ARP_entry * ARP_TABLE_SIZE)/4
         add     esi, ARP_table + ARP_entry.IP
   .scan_loop:
         cmp     [esi], eax
