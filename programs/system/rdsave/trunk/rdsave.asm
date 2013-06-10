@@ -20,7 +20,7 @@ include '..\..\..\macros.inc'
 
 appname equ 'RDsave '
 version equ '1.3'
-  
+
 use32 	     ; включить 32-битный режим ассемблера
 org	 0x0	     ; адресация с нуля
 
@@ -96,7 +96,7 @@ still:
 
 	dec	eax	 ; перерисовать окно?
 	jz	red	 ; если да - на метку red
-	dec	eax 
+	dec	eax
 	jz	key
 	dec	eax
 	jz	button
@@ -242,7 +242,7 @@ draw_window:
 ;отрисовка кнопок
 	sub	ebx,4 shl 16
 	sub	ecx,4 shl 16
-	mcall	8,,,5,[sc.work_button]	
+	mcall	8,,,5,[sc.work_button]
 
 	sub	ecx,40 shl 16
 	dec	edx
@@ -332,7 +332,7 @@ key_help_correct:
 	mov	cx,13
 	mcall	13,,,[sc.work_graph]
 	popa
-	mcall	
+	mcall
 	pop	ebx
 	ret
 ;---------------------------------------------------------------------
@@ -385,6 +385,21 @@ error9		db 'FAT tabel vigane',0
 error10 	db 'Juurdepффs keelatud',0
 error11 	db 'Seadme viga',0
 aUnknownError 	db 'Tundmatu viga',0
+;---------------------------------------------------------------------
+else if lang eq it
+save		db 'Salva',0
+select		db 'Seleziona',0
+label1		db 'Seleziona cosa salvare:',0
+label2		db ' oppure seleziona il file:',0
+label3		db 'Tutte le cartelle devono esistere',0
+ok		db 'Il RAM-drivet e stato salvato',0
+error3		db 'Filesystem sconosciuto',0
+error5		db 'Percorso non valido',0
+error8		db 'Disco pieno',0
+error9		db 'Tabella FAT corrotta',0
+error10 	db 'Accesso negato',0
+error11 	db 'Errore di device',0
+aUnknownError 	db 'Errore sconosciuto',0
 ;---------------------------------------------------------------------
 else
 save		db '  Save',0
@@ -483,7 +498,7 @@ aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align 4
-Box_lib_import:	
+Box_lib_import:
 ;init_lib		dd a_init
 ;version_lib		dd a_version
 

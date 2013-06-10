@@ -11,7 +11,7 @@ include 'txtbut.inc'
 include '../../../macros.inc'
 include 'run.mac'
 include 'lang.inc'
-use32		     
+use32
     org 0x0
     db 'MENUET01'
     dd 0x1
@@ -46,7 +46,7 @@ red:
 	push	dword [sc.work_graph]
 	pop	[input_fn.focus_border_color]
 	call	draw_window
-still:				;основной обработчик 
+still:				;основной обработчик
 	mcall	10		;Ожидать события
 	dec  eax
 	jz   red
@@ -54,7 +54,7 @@ still:				;основной обработчик
 	jz   key
 	dec  eax
 	jz   button
-;        mouse_edit_box input_fn 
+;        mouse_edit_box input_fn
 	push	dword input_fn
 	call	[edit_box_mouse]
 
@@ -239,31 +239,44 @@ input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0,511,fn,mouse_dd,ed_focus+
 ;mouse_flag: dd 0x0
 input_fn_end:
 if lang eq ru
-hello db 'Введите полный путь к файлу и нажмите Enter',0
-bad_file_sys db 'Неизвестная файловая система',0 ; 3
-file_not_find db 'Файл не найден',0		 ; 5
-bad_fat_table db 'Таблица FAT разрушена',0	 ; 9
-acces_denyied db 'Доступ запрещен',0		 ; 10
-device_error db 'Ошибка устройства',0		 ; 11
-out_of_memory db 'Недостаточно памяти',0	 ; 30
-file_not_executable db 'Файл не является исполняемым',0 ; 31
-many_processes db 'Слишком много процессов',0	 ; 32
-run_ok db 'Программа успешно запущена',0
-grab_text db 'Запуск программы',0
-run_but_text db 'ЗАПУСТИТЬ',0
+	hello db 'Введите полный путь к файлу и нажмите Enter',0
+	bad_file_sys db 'Неизвестная файловая система',0 ; 3
+	file_not_find db 'Файл не найден',0		 ; 5
+	bad_fat_table db 'Таблица FAT разрушена',0	 ; 9
+	acces_denyied db 'Доступ запрещен',0		 ; 10
+	device_error db 'Ошибка устройства',0		 ; 11
+	out_of_memory db 'Недостаточно памяти',0	 ; 30
+	file_not_executable db 'Файл не является исполняемым',0 ; 31
+	many_processes db 'Слишком много процессов',0	 ; 32
+	run_ok db 'Программа успешно запущена',0
+	grab_text db 'Запуск программы',0
+	run_but_text db 'ЗАПУСТИТЬ',0
+else if lang eq it
+	hello db 'Inserisci percorso completo al file e premi <Enter>',0
+	bad_file_sys db 'Filesysrem sconosciuto',0 	       ; 3
+	file_not_find db 'File non trovato',0		       ; 5
+	bad_fat_table db 'Tabella FAT corrotta',0	       ; 9
+	acces_denyied db 'Accesso negato',0		       ; 10
+	device_error db 'Device error',0		       ; 11
+	out_of_memory db 'Out of memory',0		       ; 30
+	file_not_executable db 'File non eseguibile',0      ; 31
+	many_processes db 'Troppo processi',0	       ; 32
+	run_ok db 'Il programma eseguito correttamente',0
+	grab_text db 'RUN',0
+	run_but_text db 'Esegui',0
 else
-hello db 'Enter full path to file and press <Enter>',0
-bad_file_sys db 'Unknown file system',0 	       ; 3
-file_not_find db 'File not found',0		       ; 5
-bad_fat_table db 'FAT table corrupted',0	       ; 9
-acces_denyied db 'Access denied',0		       ; 10
-device_error db 'Device error',0		       ; 11
-out_of_memory db 'Out of memory',0		       ; 30
-file_not_executable db 'File is not executable',0      ; 31
-many_processes db 'Too many processes',0	       ; 32
-run_ok db 'The program was started successfully',0
-grab_text db 'RUN',0
-run_but_text db 'RUN',0
+	hello db 'Enter full path to file and press <Enter>',0
+	bad_file_sys db 'Unknown file system',0 	       ; 3
+	file_not_find db 'File not found',0		       ; 5
+	bad_fat_table db 'FAT table corrupted',0	       ; 9
+	acces_denyied db 'Access denied',0		       ; 10
+	device_error db 'Device error',0		       ; 11
+	out_of_memory db 'Out of memory',0		       ; 30
+	file_not_executable db 'File is not executable',0      ; 31
+	many_processes db 'Too many processes',0	       ; 32
+	run_ok db 'The program was started successfully',0
+	grab_text db 'RUN',0
+	run_but_text db 'RUN',0
 end if
 status dd hello
 
@@ -286,7 +299,7 @@ head_f_l	db 'System error',0
 err_message_import	db 'Error on load import library box_lib.obj',0
 end if
 
-myimport:   
+myimport:
 
 edit_box_draw	dd	aEdit_box_draw
 edit_box_key	dd	aEdit_box_key
