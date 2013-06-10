@@ -20,8 +20,9 @@ format binary as ""
 
 ; CONFIGURATION
 
-TIMEOUT                 = 60            ; in seconds
+TIMEOUT                 = 3             ; in seconds
 BUFFER                  = 1024          ; in bytes
+DHCP_TRIES              = 3             ; number of times to try contacting DHCP server
 __DEBUG__               = 1             ; enable/disable
 __DEBUG_LEVEL__         = 1             ; 1 = all, 2 = errors
 
@@ -194,6 +195,8 @@ START:
 
 try_dhcp:
 
+        mov     [tries], DHCP_TRIES
+
         DEBUGF  1,"->Trying DHCP\n"
 
         mcall   75, 0, AF_INET4, SOCK_DGRAM, 0          ; open socket (parameters: domain, type, reserved)
@@ -287,21 +290,21 @@ request_options:
         mov     [dhcpMsgLen], dword 268
 
 send_dhcpmsg:
+        DEBUGF  1,"Sending DHCP request\n"
         mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]     ; write to socket ( send broadcast request )
+        mcall   23, TIMEOUT*100                                 ; wait for data
 
-        mov     eax, [dhcpMsg]                          ; Setup the DHCP buffer to receive response
-        mov     [dhcpMsgLen], eax                       ; Used as a pointer to the data
-
-        mcall   23, TIMEOUT*10                          ; wait for data
-
-read_data:                                              ; we have data - this will be the response
-        mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, 0   ; read data from socket
-
-        DEBUGF  1,"->%d bytes received\n", eax
-
+read_data:                                                      ; we have data - this will be the response
+        mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, 0        ; read data from socket
         cmp     eax, -1
-        je      dhcp_error
+        jne     @f
+        DEBUGF  1,"No answer from DHCP server\n"
+        dec     [tries]
+        jnz     send_dhcpmsg                    ; try again
+        jmp     dhcp_error                      ; fail
 
+  @@:
+        DEBUGF  1,"->%d bytes received\n", eax
         mov     [dhcpMsgLen], eax
 
 ; depending on which msg we sent, handle the response
@@ -612,26 +615,27 @@ IM_END:
 
 device          db 1
 inibuf          rb 16
+tries           db ?
 
-dhcpMsgType     db  ?
-dhcpLease       dd  ?
-dhcpServerIP    dd  ?
+dhcpMsgType     db ?
+dhcpLease       dd ?
+dhcpServerIP    dd ?
 
 dhcp:
-.ip             dd  ?
-.subnet         dd  ?
-.dns            dd  ?
-.gateway        dd  ?
+.ip             dd ?
+.subnet         dd ?
+.dns            dd ?
+.gateway        dd ?
 
 
-dhcpMsgLen      dd  ?
-socketNum       dd  ?
+dhcpMsgLen      dd ?
+socketNum       dd ?
 
-MAC             dp  ?
+MAC             dp ?
 
-currTime        dd  ?
-generator       dd  ?
+currTime        dd ?
+generator       dd ?
 
-dhcpMsg         dd  ?
+dhcpMsg         dd ?
 
 I_END:
