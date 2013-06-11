@@ -57,7 +57,7 @@ ETH_input:
         mov     ecx, [esp+4]
 
         DEBUGF  DEBUG_NETWORK_VERBOSE,"ETH_input: size=%u\n", ecx
-        cmp     ecx, ETH_FRAME_MINIMUM
+        cmp     ecx, sizeof.ETH_header ;ETH_FRAME_MINIMUM
         jb      .dump
         sub     ecx, sizeof.ETH_header
 
