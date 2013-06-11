@@ -176,13 +176,13 @@ ARP_input:
         cmp     ecx, sizeof.ARP_header
         jb      .exit
 
-        call    NET_ptr_to_num
+        call    NET_ptr_to_num4
         cmp     edi, -1
         jz      .exit
 
-        inc     [ARP_PACKETS_RX + 4*edi]        ; update stats
+        inc     [ARP_PACKETS_RX + edi]          ; update stats
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: got packet from %u.%u.%u.%u through device %u\n",\
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: got packet from %u.%u.%u.%u (device*4=%u)\n",\
         [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
         [edx + ARP_header.SenderIP + 2]:1, [edx + ARP_header.SenderIP + 3]:1, edi
 
@@ -190,7 +190,7 @@ ARP_input:
 ; First, check for IP collision
 
         mov     eax, [edx + ARP_header.SenderIP]
-        cmp     eax, [IP_LIST + 4*edi]
+        cmp     eax, [IP_LIST + edi]
         je      .collision
 
 ;---------------------
@@ -201,12 +201,12 @@ ARP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: It's a reply\n"
 
-        mov     ecx, [ARP_entries_num + 4*edi]
+        mov     ecx, [ARP_entries_num + edi]
         test    ecx, ecx
         jz      .exit
 
-        mov     esi, (ARP_TABLE_SIZE * sizeof.ARP_entry)
-        imul    esi, edi
+        mov     esi, edi
+        imul    esi, (ARP_TABLE_SIZE * sizeof.ARP_entry)/4
         add     esi, ARP_table
   .loop:
         cmp     [esi + ARP_entry.IP], eax
@@ -245,7 +245,7 @@ ARP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: its a request\n"
 
-        mov     eax, [IP_LIST + 4*edi]
+        mov     eax, [IP_LIST + edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
         jne     .exit
 
@@ -262,7 +262,7 @@ ARP_input:
         movsd                                                   ; Move sender IP to Dest IP
 
         pop     esi
-        mov     esi, [NET_DRV_LIST + 4*esi]
+        mov     esi, [NET_DRV_LIST + esi]
         lea     esi, [esi + ETH_DEVICE.mac]
         lea     edi, [edx + ARP_header.SenderMAC]
         movsd                                                   ; Copy MAC address from in MAC_LIST
@@ -290,7 +290,7 @@ ARP_input:
         ret
 
   .collision:
-        inc     [ARP_CONFLICTS + 4*edi]
+        inc     [ARP_CONFLICTS + edi]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: IP address conflict detected!\n"
 
   .exit:

@@ -223,8 +223,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 ;-----------------------------------
 ; Check if destination IP is correct
 
-        call    NET_ptr_to_num
-        shl     edi, 2
+        call    NET_ptr_to_num4
 
         ; check if it matches local ip (Using RFC1122 strong end system model)
 

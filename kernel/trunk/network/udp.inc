@@ -182,7 +182,8 @@ UDP_input:
         popa
 
   .updatesock:
-        inc     [UDP_PACKETS_RX]        ; Fixme: correct interface?
+        call    NET_ptr_to_num4
+        inc     [UDP_PACKETS_RX + edi]
 
         movzx   ecx, [esi + UDP_header.Length]
         sub     ecx, sizeof.UDP_header
@@ -274,7 +275,8 @@ UDP_output:
         call    [ebx + NET_DEVICE.transmit]
         test    eax, eax
         jnz     @f
-        inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
+        call    NET_ptr_to_num4
+        inc     [UDP_PACKETS_TX + edi]
        @@:
 
         ret

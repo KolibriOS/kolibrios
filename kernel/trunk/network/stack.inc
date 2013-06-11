@@ -450,29 +450,33 @@ NET_remove_device:
 ;-----------------------------------------------------------------
 align 4
 NET_ptr_to_num:
+
+        call    NET_ptr_to_num4
+        ror     edi, 2          ; If -1, stay -1
+                                ; valid device numbers have last two bits 0, so do just shr
+
+        ret
+
+align 4
+NET_ptr_to_num4:                ; Todo, place number in device structure so we only need to verify?
+
         push    ecx
 
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
-
   .loop:
         cmp     ebx, [edi]
-        jz      .found
+        je      .found
         add     edi, 4
         dec     ecx
         jnz     .loop
 
-        ; repnz  scasd could work too if eax is used instead of ebx!
-
         or      edi, -1
-
         pop     ecx
         ret
 
   .found:
         sub     edi, NET_DRV_LIST
-        shr     edi, 2
-
         pop     ecx
         ret
 
