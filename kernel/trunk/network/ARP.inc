@@ -337,11 +337,11 @@ ARP_output_request:
         movsw                                   ;
         movsd                                   ;
 
-;        mov     esi, [ebx + NET_DEVICE.number]
-        xor     esi, esi        ;;;; FIXME
-        inc     esi ;;;;;;;;;
-        inc     [ARP_PACKETS_TX + 4*esi]        ; assume we will succeed
-        lea     esi, [IP_LIST + 4*esi]          ; SenderIP
+        push    edi
+        call    NET_ptr_to_num4
+        inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
+        lea     esi, [IP_LIST + edi]            ; SenderIP
+        pop     edi
         movsd
 
         mov     esi, ETH_BROADCAST              ; DestMac

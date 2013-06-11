@@ -302,6 +302,11 @@ TCP_respond:
 ; And send the segment
 
         call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_tx + edi]
+       @@:
         ret
 
   .error:
@@ -378,6 +383,11 @@ TCP_respond_segment:
 ; And send the segment
 
         call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_tx + edi]
+       @@:
         ret
 
   .error:

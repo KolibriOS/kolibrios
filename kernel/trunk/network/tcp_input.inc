@@ -50,6 +50,9 @@ TCP_input:
 
         add     esp, sizeof.TCP_queue_entry
 
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_rx + edi]
+
         xor     edx, edx
         mov     eax, [TCP_input_event]
         mov     ebx, [eax + EVENT.id]
@@ -62,7 +65,8 @@ TCP_input:
         popf
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP incoming queue is full, discarding packet!\n"
 
-        inc     [TCP_segments_missed]   ; FIXME: use correct interface
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_missed + edi]
 
         add     esp, sizeof.TCP_queue_entry - 8
         call    kernel_free
@@ -177,11 +181,6 @@ TCP_process_input:
         jnz     .socket_loop
   .found_socket:                                        ; ebx now contains the socketpointer
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: socket ptr=%x state=%u flags=%x\n", ebx, [ebx + TCP_SOCKET.t_state], [edx + TCP_header.Flags]:2
-
-;-------------
-; update stats
-
-        inc     [TCP_segments_rx]                       ; FIXME: correct interface?
 
 ;----------------------------
 ; Check if socket isnt closed

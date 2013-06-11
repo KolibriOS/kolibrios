@@ -549,7 +549,8 @@ TCP_send:
         pop     ecx
         pop     eax
 
-        inc     [TCP_segments_tx]       ; FIXME: correct interface?
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_tx + edi]
 
 ; update advertised receive window
         test    ecx, ecx
