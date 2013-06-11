@@ -15,6 +15,7 @@ use32
 	       dd     0x0 , 0x0 	      ; I_Param , I_Icon
 
 include '../../../macros.inc'
+include 'lang.inc'
 
 START:				; start of execution
 
@@ -91,10 +92,7 @@ still:
   notest8:
 
 
-
-
     jmp  still
-
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -142,32 +140,49 @@ draw_window:
 
 ; DATA AREA
 
-
-text:
-
-    db 'Application uses 0x10000 bytes of memory'
-    db '                                        '
-    db 'Open debug board for rezult information '
-    db '                                        '
-    db '     CLI                                '
-    db '                                        '
-    db '     STI                                '
-    db '                                        '
-    db '     MOV [0x10000],BYTE 1               '
-    db '                                        '
-    db '     JMP DWORD 0x10000                  '
-    db '                                        '
-    db '     MOV ESP,0 & PUSH EAX               '
-    db '                                        '
-    db '     IN  Al,0x60                        '
-    db '                                        '
-    db '     OUT 0x60,AL                        '
-    db 'x                                       '
-
-
+if lang eq it
+	text:
+		db 'Il programma usa 0x10000 byte di memoria'
+		db '                                        '
+		db 'Open debug board for rezult information '
+		db '                                        '
+		db '     CLI                                '
+		db '                                        '
+		db '     STI                                '
+		db '                                        '
+		db '     MOV [0x10000],BYTE 1               '
+		db '                                        '
+		db '     JMP DWORD 0x10000                  '
+		db '                                        '
+		db '     MOV ESP,0 & PUSH EAX               '
+		db '                                        '
+		db '     IN  Al,0x60                        '
+		db '                                        '
+		db '     OUT 0x60,AL                        '
+		db 'x                                       '
+else
+	text:
+		db 'Application uses 0x10000 bytes of memory'
+		db '                                        '
+		db 'Open debug board for rezult information '
+		db '                                        '
+		db '     CLI                                '
+		db '                                        '
+		db '     STI                                '
+		db '                                        '
+		db '     MOV [0x10000],BYTE 1               '
+		db '                                        '
+		db '     JMP DWORD 0x10000                  '
+		db '                                        '
+		db '     MOV ESP,0 & PUSH EAX               '
+		db '                                        '
+		db '     IN  Al,0x60                        '
+		db '                                        '
+		db '     OUT 0x60,AL                        '
+		db 'x                                       '
+end if
 
 tlabel:
     db	 'Kolibri protection test',0
-
 
 I_END:

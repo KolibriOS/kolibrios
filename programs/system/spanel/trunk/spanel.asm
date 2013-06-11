@@ -1,11 +1,11 @@
 ;
 ;   PANEL SETUP
 ;
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 ; last update:  09/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Code optimizing and refactoring.
-;               
+;
 ;------------------------------------------------------------------------------
 	use32
 	org 0x0
@@ -19,17 +19,18 @@
 	dd 0x0			; path
 ;------------------------------------------------------------------------------
 include '../../../macros.inc'
+include 'lang.inc'
 ;------------------------------------------------------------------------------
 START:
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 red:
 	call	draw_window
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 still:
 	mcall	10
-	
+
 	cmp	eax,1	; redraw request ?
 	je	red
 
@@ -38,20 +39,20 @@ still:
 
 	cmp	eax,3	; button in buffer ?
 	je	button
-	
+
 	jmp	still
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 key:
 	mcall	2
-	
+
 	shr	eax,8
 	cmp	eax,'0'
 	jb	still
 
 	cmp	eax,'9'
 	jg	still
-	
+
 	mov	edi,[ent]
 	add	edi,text
 	mov	esi,edi
@@ -59,15 +60,15 @@ key:
 	mov	ecx,3
 	cld
 	rep	movsb
-	
+
 	mov	[edi],al
-	
+
 	jmp	red
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 button:
 	mcall	17
-	
+
 	cmp	ah,1	; button id=1 ?
 	jne	noclose
 
@@ -77,7 +78,7 @@ align 4
 noclose:
 	cmp	ah,10
 	jne	no_apply
-	
+
 	mov	esi,text+17
 	mov	edi,panel_ini_data_area	;I_END+10
 	mov	ecx,12
@@ -101,7 +102,7 @@ newread:
 	mcall	9,proc_info,esi
 	cmp	esi,eax
 	jg	all_terminated
-	
+
 	mov	eax,[ebx+10]
 	and	eax,not 0x20202000
 	cmp	eax,'@PAN'
@@ -111,11 +112,11 @@ newread:
 	and	eax,not 0x2020
 	cmp	ax,'EL'
 	jne	newread
-	
+
 	mcall	18,2,esi
-	
+
 	mcall	5,5
-	
+
 	mov	esi,1
 	jmp	newread
 ;--------------------------------------
@@ -137,11 +138,11 @@ no_apply:
 	mov	[ent],eax
 	mov	[text+eax],dword '0000'
 	jmp	red
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 draw_window:
 	mcall	12,1
@@ -180,33 +181,56 @@ newline:
 
 	mcall	12,2
 	ret
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 ; DATA AREA
-text:
-	db 'width            0000  :  0 for full screen width     <'
-	db 'buttons          0000  :  0 no frames  , 1 frames     <'
-	db 'soften_up        0001  :  0 no         , 1 yes        <'
-	db 'soften_down      0001  :  0 no         , 1 yes        <'
-	db 'minimize_left    0001  :  0 no         , 1 yes        <'
-	db 'minimize_right   0001  :  0 no         , 1 yes        <'
-	db 'icons_position   0100  :  position in pixels          <'
-	db 'menu_enable      0001  :  0 no         , 1 yes        <'
-	db 'setup_enable     0001  :  0 no         , 1 yes        <'
-	db 'graph_text       0001  :  0 graphics   , 1 text       <'
-	db 'soften_middle    0001  :  0 no         , 1 yes        <'
-	db 'icons            0001  :  0 start      , 1 activate   <'
-	db '                                                       '
-	db '                         APPLY                         '
-	db 'x'
-;------------------------------------------------------------------------------	
-labelt:
-	db 'Panel setup'
-labellen:
-;------------------------------------------------------------------------------	
+if lang eq it
+	text:
+		db 'largehzza        0000  :  0 for full screen width     <'
+		db 'pulsanti         0000  :  0 no frames  , 1 frames     <'
+		db 'soften_up        0001  :  0 no         , 1 si         <'
+		db 'soften_down      0001  :  0 no         , 1 si         <'
+		db 'minimize_left    0001  :  0 no         , 1 si         <'
+		db 'minimize_right   0001  :  0 no         , 1 si         <'
+		db 'posizione icone  0100  :  posizione in pixel          <'
+		db 'menu_enable      0001  :  0 no         , 1 si         <'
+		db 'setup_enable     0001  :  0 no         , 1 si         <'
+		db 'graph_text       0001  :  0 grafica    , 1 text       <'
+		db 'soften_middle    0001  :  0 no         , 1 si         <'
+		db 'icone            0001  :  0 start      , 1 attivato   <'
+		db '                                                       '
+		db '                        Applica                        '
+		db 'x'
+
+	labelt:
+		db 'Setup pannello'
+	labellen:
+else
+	text:
+		db 'width            0000  :  0 for full screen width     <'
+		db 'buttons          0000  :  0 no frames  , 1 frames     <'
+		db 'soften_up        0001  :  0 no         , 1 yes        <'
+		db 'soften_down      0001  :  0 no         , 1 yes        <'
+		db 'minimize_left    0001  :  0 no         , 1 yes        <'
+		db 'minimize_right   0001  :  0 no         , 1 yes        <'
+		db 'icons_position   0100  :  position in pixels          <'
+		db 'menu_enable      0001  :  0 no         , 1 yes        <'
+		db 'setup_enable     0001  :  0 no         , 1 yes        <'
+		db 'graph_text       0001  :  0 graphics   , 1 text       <'
+		db 'soften_middle    0001  :  0 no         , 1 yes        <'
+		db 'icons            0001  :  0 start      , 1 activate   <'
+		db '                                                       '
+		db '                         APPLY                         '
+		db 'x'
+
+	labelt:
+		db 'Panel setup'
+	labellen:
+end if
+;------------------------------------------------------------------------------
 align 4
 ent	dd  17
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 panel_start:
 	dd 7
@@ -215,7 +239,7 @@ panel_start:
 	dd 0
 	dd 0
 	db '/RD/1/@PANEL',0
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 dat_write:
 	dd 2
@@ -224,9 +248,9 @@ dat_write:
 	dd 5*12+1
 	dd panel_ini_data_area	;I_END+10
 	db 'PANEL.DAT',0
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 IM_END:
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 proc_info:
 	rb 1024
@@ -234,10 +258,10 @@ proc_info:
 align 4
 	rb 1024
 stack_top:
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 panel_ini_data_area:
 	rb 61
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 I_END:
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------

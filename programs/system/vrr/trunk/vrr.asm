@@ -8,9 +8,9 @@
 ;   Compile with FASM for Menuet
 ;
 use32
-   
+
         org    0x0
-   
+
         db     'MENUET01'   ; 8 byte id
         dd     0x01         ; header version
         dd     START        ; start of code
@@ -18,10 +18,11 @@ use32
         dd     0x5000       ; memory for app
         dd     0x4ff0       ; esp
         dd     0x0 , 0x0    ; I_Param , I_Icon
-   
+
 include '..\..\..\macros.inc'
+include 'lang.inc'
 START:    ; start of execution
-   
+
     mov eax,14
     mcall
     mov ebx,eax
@@ -30,7 +31,7 @@ START:    ; start of execution
     shl eax,16
     shr eax,16
     mov [oldY],eax
-   
+
 ; Test on installed video driver
     mov eax,21
     mov ebx,13
@@ -42,7 +43,7 @@ START:    ; start of execution
     call warning_info
     retn
 ;
-   
+
 vrr_00:
     call get_vert_rate
     mov eax,[currvm]
@@ -50,12 +51,12 @@ vrr_00:
     call get_pid
 red:
     call draw_window  ; at first, draw the window
-   
+
 still:
-   
+
     mov  eax,10   ; check here for event
     mcall
-   
+
     cmp  eax,1   ; redraw request ?
     je  red
     cmp  eax,2   ; key in buffer ?
@@ -64,7 +65,7 @@ still:
     je  button
     call get_pid
     jmp  still
-      
+
   key:    ; key
     mov  al,2   ; just read it
     mcall
@@ -138,11 +139,11 @@ key_loc_07:
     xor ax,ax
     mov [vmselect],ax
     jmp red
-   
+
 button:   ; button
     mov  al,17   ; get id
     mcall
-   
+
     cmp  ah,1   ; button id=1 ?
     jne  noclose
     mov  eax,-1           ; close this program
@@ -181,21 +182,21 @@ button_loc_05:
     call restore_mode
 button_loc_06:
     jmp  still
-   
-   
+
+
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
-   
-   
+
+
 draw_window:
-   
+
 dw_continue:
-   
+
     mov  eax,12      ; function 12:tell os about windowdraw
     mov  ebx,1      ; 1, start of draw
     mcall
-   
+
        ; DRAW WINDOW
     mov  eax,0      ; function 0 : define and draw window
     mov  ebx,100*65536+400    ; [x start] *65536 + [x size]
@@ -203,7 +204,7 @@ dw_continue:
     mov  edx,0x140020C0;0x00000040 ; color of work area RRGGBB,8->color glide
     mov  edi,title
     mcall
-   
+
        ; BUTTONS
     mov eax,8
     mov edx,0
@@ -228,17 +229,17 @@ dw_continue:
     add ebx,90*65536
     inc dl ;dl=7
     mcall               ; Button 'Default'
-   
+
     call draw_face
-   
+
     mov  eax,12      ; function 12:tell os about windowdraw
     mov  ebx,2      ; 2, end of draw
     mcall
-   
+
     ret
-   
+
 ;------------Subfunctions-----------
-   
+
 restore_mode:
     push eax
     push ebx
@@ -251,9 +252,9 @@ restore_mode:
     pop ecx
     pop eax
     retn
-   
-   
-   
+
+
+
 ; IN: edx = RefRate*65536+No.VideoMode
 set_my_mode:
     push ecx
@@ -274,7 +275,7 @@ set_my_mode:
     pop ebx
     pop ecx
     retn
-   
+
 ; IN: eax = 0/1  -  -/+ 1Hz
 inc_dec_rate:
     push ebx
@@ -289,7 +290,7 @@ inc_dec_rate:
     pop ecx
     pop ebx
     retn
-   
+
 get_pid:
     mov eax,9
     mov ebx,buffer
@@ -302,7 +303,7 @@ get_pid:
     mov ax,[ebx+4]
     mov [mypno],ax
     retn
-   
+
 get_vert_rate:
     xor eax,eax
     mov ebx,eax
@@ -318,11 +319,11 @@ get_vert_rate:
     rol ecx,16
     mov [currvm],ecx
     retn
-   
+
 get_initial_videomode:
     retn
-   
-   
+
+
 draw_table:
     mov eax,13
     mov ebx,9*65536+303
@@ -425,7 +426,7 @@ dt_loc_01:
     add edx,4
     mcall
     retn
-   
+
 ;IN: ah=keycode
 safekey:
     sub ah,30h
@@ -474,7 +475,7 @@ sk_loc_01:
     call draw_window
     pop bx
     retn
-   
+
 ; IN: ebx=Xstart*65536+Xend
 ;     ecx=Ystart*65536+Yend
 ;     edx=color
@@ -514,7 +515,7 @@ draw_rect:
     pop ebx
     pop eax
     retn
-   
+
 ;
 ; OUT: eax = 0 - no event
 protect_and_return:
@@ -564,7 +565,7 @@ par_loc_00:
 par_loc_02:
     pop ebx
     retn
-   
+
 debug_ftr:
 ;    xor eax,eax
 ;    mov ebx,eax
@@ -580,7 +581,7 @@ debug_ftr:
 ;    add edx,54*65536
 ;    mcall
     retn
-   
+
 print_cur_vm:
     mov eax,4
     mov ebx,20*65536+40
@@ -689,7 +690,7 @@ print_cur_vm:
     pop esi
  pcv_loc_00:
      retn
-   
+
 print_all_herz:
         push esi
         push edi
@@ -733,7 +734,7 @@ pah_loc_03:
         pop edi
         pop esi
         retn
-   
+
 ; IN: ebx=X*65536+Y - coordinate
 print_noherz:
         push eax
@@ -754,7 +755,7 @@ print_noherz:
         pop ebx
         pop eax
         retn
-   
+
 ; IN: eax=numer_of_herz
 ;     ebx=X*65536+Y
 print_herz:
@@ -778,14 +779,14 @@ print_herz:
         pop ebx
         pop eax
         retn
-   
+
 get_pixelclock:
         retn
-   
+
  ; light version of function
 calc_refrate:
         retn
-   
+
 rect_select:
         mov ax,[vmselect]
 ;     mov [ftr_ebx],eax
@@ -833,7 +834,7 @@ rs_loc_01:
         call draw_rect
 rs_loc_00:
         retn
-   
+
 draw_face:
         call draw_table
 ;
@@ -917,12 +918,12 @@ draw_face:
         call print_cur_vm
         call print_all_herz
         retn
-   
+
 warning_info:
         call warning_window
         call warning_loop
         retn
-   
+
 warning_window:
         mov  eax,12      ; function 12:tell os about windowdraw
         mov  ebx,1      ; 1, start of draw
@@ -969,7 +970,7 @@ warning_window:
         mov  ebx,2      ; 2, end of draw
         mcall
         retn
-   
+
 warning_loop:
         mov  eax,5
         mov ebx,13
@@ -1021,9 +1022,9 @@ warning_loop:
         mcall
         jmp warning_loop
         retn
-   
+
 ;------------DATA AREA---------------
-   
+
 oldX       dd ?
 oldY       dd ?
 initvm     dd ?
@@ -1038,43 +1039,73 @@ vmselect   dw 0
 ftr_eax    dd ?
 ftr_ebx    dd ?
 blinkcol   dd 0ffh
-   
+
 ;  db 0,0,0,0,0,0,0,0
 ;_m1        dw 0,0,0,0,0
 ;_m2        dw 0,0,0,0,0
 ;_m3        dw 0,0,0,0,0
 ;_m4        dw 0,0,0,0,0
-   
-title     db   'Vertical Refresh Rate v2.0 (C) 2003 TRANS',0
-   
-_m1280x1024 db '1280x1024'
-_m1024x768  db '1024x768 '
-_m800x600   db ' 800x600 '
-_m640x480   db ' 640x480 '
-_mk         db 'Key1Key2'
-   
-curmode     db 'Current mode: '
-            db '    x    x   Hz'
-cmlen=$-curmode
-selmode     db ' Select mode: '
-selcans     db '----x----x---Hz'
-noherz      db '---'
-width       db 'Width',11h,10h
-tmode       db ' Mode '
-actions     db ' Actions '
-button1     db 'Ok'      ;len=2
-button2     db 'Cancel'  ;len=6
-button3     db 'Return'  ;len=6
-button4     db 'Default' ;len=7
-   
-strt  db 'LAUNCHER    '
-   
-warn00      db ' W  A  R  N  I  N  G  ! '
-len_warn00=$-warn00
-warn01      db 'V i d e o  D r i v e r  N O T  I n s t a l l e d'
-len_warn01=$-warn01
-   
-   
+
+if lang eq it
+	title     db   'Vertical Refresh Rate v2.0 (C) 2003 TRANS',0
+
+	_m1280x1024 db '1280x1024'
+	_m1024x768  db '1024x768 '
+	_m800x600   db ' 800x600 '
+	_m640x480   db ' 640x480 '
+	_mk         db 'Key1Key2'
+
+	curmode     db 'Modalita intera: '
+					db '    x    x   Hz'
+	cmlen=$-curmode
+	selmode     db ' Select mode: '
+	selcans     db '----x----x---Hz'
+	noherz      db '---'
+	width       db 'Width',11h,10h
+	tmode       db ' Modalita '
+	actions     db ' Azioni '
+	button1     db 'Ok'      ;len=2
+	button2     db 'Cancella'  ;len=6
+	button3     db 'Torna'  ;len=6
+	button4     db 'Default' ;len=7
+
+	strt  db 'LAUNCHER    '
+
+	warn00      db ' A T T E N Z I O N E ! '
+	len_warn00=$-warn00
+	warn01      db 'D R I V E R  V I D E O  N O N  I N S T A L L A T O'
+	len_warn01=$-warn01
+else
+	title     db   'Vertical Refresh Rate v2.0 (C) 2003 TRANS',0
+
+	_m1280x1024 db '1280x1024'
+	_m1024x768  db '1024x768 '
+	_m800x600   db ' 800x600 '
+	_m640x480   db ' 640x480 '
+	_mk         db 'Key1Key2'
+
+	curmode     db 'Current mode: '
+					db '    x    x   Hz'
+	cmlen=$-curmode
+	selmode     db ' Select mode: '
+	selcans     db '----x----x---Hz'
+	noherz      db '---'
+	width       db 'Width',11h,10h
+	tmode       db ' Mode '
+	actions     db ' Actions '
+	button1     db 'Ok'      ;len=2
+	button2     db 'Cancel'  ;len=6
+	button3     db 'Return'  ;len=6
+	button4     db 'Default' ;len=7
+
+	strt  db 'LAUNCHER    '
+
+	warn00      db ' W  A  R  N  I  N  G  ! '
+	len_warn00=$-warn00
+	warn01      db 'V i d e o  D r i v e r  N O T  I n s t a l l e d'
+	len_warn01=$-warn01
+end if
+
 drvinfo:   ; 512 bytes driver info area
 ; +0   - Full driver name
 ; +32  - Driver version
@@ -1087,8 +1118,6 @@ vidmode:
       org $+64
 _m1:
       org drvinfo+200h
-   
+
 buffer:
 I_END:
-   
-   

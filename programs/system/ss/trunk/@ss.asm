@@ -37,7 +37,7 @@ START:
 	jne	@f
 	mov	[type],dword 0
 ;--------------------------------------
-align 4	
+align 4
 @@:
 	cmp	[I_Param],dword 'ASSM'
 	jne	bgr_changed
@@ -135,7 +135,7 @@ thread:
 	mov	[addy2],1
 	jmp	drawsswin
 ;--------------------------------------
-align 4	
+align 4
 asminit:	; for "assembler" - assembler sources demo
 ; get size of file
 	mov	[fileinfo],dword 5
@@ -155,26 +155,26 @@ asminit:	; for "assembler" - assembler sources demo
 	jz	@f
 	mcall	68,13,[fileinfo.point]
 ;--------------------------------------
-align 4	
+align 4
 .no_file:
 	mov	[type],dword 0
 	jmp	drawsswin
 ;--------------------------------------
-align 4	
+align 4
 @@:
 	mov	dword [delay],1	;25 - old value
 ;--------------------------------------
-align 4	
+align 4
 asminit1:
 	mov	eax,[fileinfo.point]
 	mov	[stringstart],eax
 	mov	dword [stringlen],1
 ;--------------------------------------
-align 4	
+align 4
 newpage:
 	mov	word [stringpos],10
 ;--------------------------------------
-align 4	
+align 4
 drawsswin:
 	xor	eax,eax
 	movzx	ebx,[x_max]
@@ -186,7 +186,7 @@ drawsswin:
 	xor	edx,edx
 	mcall	13
 ;--------------------------------------
-align 4		
+align 4
 tstill:
 	mcall	23,[delay]
 	test	eax,eax
@@ -201,13 +201,13 @@ tstill:
 	call	draw_line
 	jmp	tstill
 ;--------------------------------------
-align 4		
+align 4
 thr_end:
 	cmp	[type],dword 24
 	jne	@f
 	mcall	68,13,[fileinfo.point]
 ;--------------------------------------
-align 4		
+align 4
 @@:
 	and	[params], not 1
 	or	eax,-1
@@ -233,7 +233,7 @@ drawssasm:
 
 	dec	edi
 ;--------------------------------------
-align 4	
+align 4
 addstring:
 	add	word [stringpos],10
 	add	edi,2
@@ -244,7 +244,7 @@ addstring:
 	jb	tstill
 	jmp	newpage
 ;--------------------------------------
-align 4	
+align 4
 noaddstring:
 	mov	ebx,10*65536
 	mov	bx,[stringpos]
@@ -268,65 +268,65 @@ draw_line:
 	add	[lx2],eax
 	mov	eax,[addy2]
 	add	[ly2],eax
-	
+
 	cmp	[lx1],1
 	jge	dl1
 	mov	[addx1],1
 ;--------------------------------------
-align 4	
+align 4
 dl1:
 	cmp	[lx2],1
 	jge	dl2
 
 	mov	[addx2],1
 ;--------------------------------------
-align 4	
+align 4
 dl2:
 	cmp	[lx1],esi
 	jbe	dl3
 
 	mov	[addx1],0xffffffff
 ;--------------------------------------
-align 4	
+align 4
 dl3:
 	cmp	[lx2],esi
 	jbe	dl4
 
 	mov	[addx2],0xffffffff
 ;--------------------------------------
-align 4	
+align 4
 dl4:
 	cmp	[ly1],1
 	jge	dl5
 	mov	[addy1],1
 ;--------------------------------------
-align 4	
+align 4
 dl5:
 	cmp	[ly2],2
 	jge	dl6
 
 	mov	[addy2],1
 ;--------------------------------------
-align 4	
+align 4
 dl6:
 	cmp	[ly1],edi
 	jbe	dl7
 
 	mov	[addy1],-1
 ;--------------------------------------
-align 4	
+align 4
 dl7:
 	cmp	[ly2],edi
 	jbe	dl8
 
 	mov	[addy2],-1
 ;--------------------------------------
-align 4	
+align 4
 dl8:
 	mov	eax,[lx2]
 	cmp	[lx1],eax
 	jz	dnol
-	
+
 	mov	bx,word [lx1]
 	shl	ebx,16
 	mov	bx,word [lx2]
@@ -334,12 +334,12 @@ dl8:
 	mov	cx,word [ly1]
 	shl	ecx,16
 	mov	cx,word [ly2]
-	
+
 	mov	edx,[lcolor]
 	and	edx,0xffffff
 	mcall	38
 ;--------------------------------------
-align 4	
+align 4
 dnol:
 	add	[lcolor],0x010201
 	ret
@@ -348,7 +348,7 @@ align 4
 sthread:		; start of execution
      call sdraw_window
 ;--------------------------------------
-align 4	
+align 4
 sstill:
 	mcall	10	; wait here for event
 	dec	eax	; redraw request ?
@@ -371,7 +371,7 @@ sbutton:		; button
 	mov	eax,-1	; close this program
 	mcall
 ;--------------------------------------
-align 4	
+align 4
 snoclose:
 	cmp	ah,7
 	jne	nosetfl
@@ -382,7 +382,7 @@ snoclose:
 	call	drawtime
 	jmp	sstill
 ;--------------------------------------
-align 4	
+align 4
 nosetfl:
 	test	[params],1
 	jnz	sstill
@@ -471,14 +471,14 @@ sdraw_window:
 	mcall	,<100,215>,<100,70>,0x13400088,,title
 
 	mcall	8,<47,10>,<31,10>,2,0x702050
-    
+
 	push	ebx
 	add	ebx,13*65536
 	mov	edi,ebx
 	inc	edx
 	mcall
 	pop	ebx
-    
+
 	add	ecx,15*65536
 	inc	edx
 	mcall
@@ -543,7 +543,7 @@ drawflag:
 	mcall	8,,,0x80000007	; before we need delete button
 ; otherwise, a few hours later the application will spend all buttons of system
 	mcall	,<150,10>,<45,10>,7,0xe0e0e0	; then create button
-	
+
 	mov	edx,flag
 	bt	dword [params],0
 	jc	setf
