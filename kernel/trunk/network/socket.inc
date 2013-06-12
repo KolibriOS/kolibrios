@@ -199,6 +199,7 @@ uglobal
         last_socket_num dd ?
         last_UDP_port   dw ? ; These values give the number of the last used ephemeral port
         last_TCP_port   dw ? ;
+        socket_mutex    MUTEX
 endg
 
 
@@ -231,6 +232,9 @@ macro   SOCKET_init {
         ja      @r
         xchg    al, ah
         mov     [last_TCP_port], ax
+
+        mov     ecx, socket_mutex
+        call    mutex_init
 
 }
 
@@ -1343,6 +1347,11 @@ SOCKET_check_port:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check_port: "
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     ecx, [eax + SOCKET.Protocol]
         mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     esi, net_sockets
@@ -1361,10 +1370,20 @@ SOCKET_check_port:
         cmp     [esi + UDP_SOCKET.LocalPort], bx
         jne     .next_socket
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
         ret
 
   .port_ok:
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.LocalPort], bx
         or      bx, bx                                  ; clear the zero-flag
@@ -1815,6 +1834,11 @@ SOCKET_alloc:
         mov     [eax + SOCKET.snd_proc], s_error
         mov     [eax + SOCKET.rcv_proc], s_error
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
 ; find first free socket number and use it
         mov     edi, [last_socket_num]
   .next_socket_number:
@@ -1873,6 +1897,12 @@ SOCKET_alloc:
 
         mov     [net_sockets + SOCKET.NextPtr], eax
         or      eax, eax                ; used to clear zero flag
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
   .exit:
         pop     ebx
 
@@ -1898,6 +1928,11 @@ SOCKET_free:
         jz      .error
 
         push    ebx
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -1934,6 +1969,11 @@ SOCKET_free:
 
         call    kernel_free
         pop     ebx
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
 
@@ -2006,6 +2046,11 @@ SOCKET_num_to_ptr:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_num_to_ptr: num=%u ", ecx
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     eax, net_sockets
 
   .next_socket:
@@ -2017,10 +2062,20 @@ SOCKET_num_to_ptr:
 
         test    eax, eax
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ptr=%x\n", eax
         ret
 
   .error:
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: not found\n", eax
         ret
 
@@ -2070,6 +2125,11 @@ SOCKET_check:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check: %x\n", eax
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         push    ebx
         mov     ebx, net_sockets
 
@@ -2084,6 +2144,11 @@ SOCKET_check:
         mov     eax, ebx
         test    eax, eax
         pop     ebx
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         ret
 
@@ -2132,6 +2197,11 @@ SOCKET_process_end:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         push    ebx
         mov     ebx, net_sockets
 
@@ -2156,6 +2226,11 @@ SOCKET_process_end:
 
   .done:
         pop     ebx
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         ret
 

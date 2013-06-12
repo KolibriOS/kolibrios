@@ -139,6 +139,11 @@ UDP_input:
         ; IP Packet UDP Destination Port = local Port
         ; IP Packet SA = Remote IP
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     cx, [esi + UDP_header.SourcePort]
         mov     dx, [esi + UDP_header.DestinationPort]
         mov     edi, [edi + 4]                          ; ipv4 source address
@@ -147,7 +152,7 @@ UDP_input:
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
-        jz      .dump
+        jz      .dump_
 
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
@@ -159,6 +164,11 @@ UDP_input:
         jne     .next_socket
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: socket=%x\n", eax
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         ;;; TODO: when packet is processed, check more sockets!
 
@@ -203,6 +213,16 @@ UDP_input:
 
         jmp     .updatesock
 
+  .dump_:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: no socket found\n"
+
+        jmp     .dump
 
   .checksum_mismatch:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: checksum mismatch\n"

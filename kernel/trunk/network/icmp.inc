@@ -238,6 +238,11 @@ ICMP_input:
        .check_sockets:
         ; Look for an open ICMP socket
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     esi, [edi]              ; ipv4 source address
         mov     eax, net_sockets
   .try_more:
@@ -245,7 +250,7 @@ ICMP_input:
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
-        jz      .dump
+        jz      .dump_
 
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
@@ -262,8 +267,13 @@ ICMP_input:
 ; Update stats (and validate device ptr)
         call    NET_ptr_to_num4
         cmp     edi, -1
-        je      .dump
+        je      .dump_
         inc     [ICMP_PACKETS_RX + edi]
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket=%x\n", eax
 
@@ -274,6 +284,16 @@ ICMP_input:
 
         mov     esi, edx
         jmp     SOCKET_input
+
+  .dump_:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: no socket found\n"
+        jmp     .dump
 
 
   .checksum_mismatch:

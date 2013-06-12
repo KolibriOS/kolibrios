@@ -150,13 +150,18 @@ TCP_process_input:
 ; (IP Packet TCP Source Port = remote Port) OR (remote Port = 0)
 
   .findpcb:
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     ebx, net_sockets
         mov     si, [edx + TCP_header.DestinationPort]
 
   .socket_loop:
         mov     ebx, [ebx + SOCKET.NextPtr]
         or      ebx, ebx
-        jz      .respond_seg_reset
+        jz      .no_socket ;respond_seg_reset
 
         cmp     [ebx + SOCKET.Domain], AF_INET4
         jne     .socket_loop
@@ -180,6 +185,11 @@ TCP_process_input:
         test    ax, ax
         jnz     .socket_loop
   .found_socket:                                        ; ebx now contains the socketpointer
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: socket ptr=%x state=%u flags=%x\n", ebx, [ebx + TCP_SOCKET.t_state], [edx + TCP_header.Flags]:2
 
 ;----------------------------
@@ -1618,6 +1628,13 @@ align 4
         call    TCP_respond
         pop     ebx
         jmp     .destroy_new_socket
+
+  .no_socket:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
   .respond_seg_reset:
         test    [edx + TCP_header.Flags], TH_RST
