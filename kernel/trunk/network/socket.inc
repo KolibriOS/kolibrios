@@ -749,6 +749,7 @@ SOCKET_close:
 
         call    TCP_usrclosed
         call    TCP_output      ;;;; Fixme: is this nescessary??
+        call    SOCKET_free
 
         ret
 
