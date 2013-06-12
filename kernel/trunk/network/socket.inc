@@ -2195,6 +2195,9 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
+        pushf
+        cli     ; FIXME
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
         pusha
@@ -2219,9 +2222,21 @@ SOCKET_process_end:
         mov     [ebx + SOCKET.PID], 0
         mov     eax, ebx
         mov     ebx, [ebx + SOCKET.NextPtr]
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         pusha
         call    SOCKET_close.socket
         popa
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         jmp     .next_socket_test
 
   .done:
@@ -2231,6 +2246,8 @@ SOCKET_process_end:
         mov     ecx, socket_mutex
         call    mutex_unlock
         popa
+
+        popf
 
         ret
 
