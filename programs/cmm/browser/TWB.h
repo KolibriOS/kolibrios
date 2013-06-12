@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.99.02";
+char version[]=" Text-based Browser 0.99.02a";
 
 
 struct TWebBrowser {
@@ -375,6 +375,7 @@ void TWebBrowser::OpenPage()
 		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
 		downloader_id = RunProgram("/sys/network/downloader", #URL);
 		//Browser Hack v2.0
+		/*
 		pause(60);
 		if (GetProcessSlot(downloader_id)<>0)
 		{
@@ -382,7 +383,7 @@ void TWebBrowser::OpenPage()
 			KillProcess(downloader_id); //убиваем старый процесс
 			downloader_id = RunProgram("/sys/network/downloader", #URL);
 		}
-		//
+		*/
 		IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
 		Draw_Window();
 		return;
