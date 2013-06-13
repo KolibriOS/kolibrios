@@ -43,7 +43,6 @@ proc_info Form;
 
 int mouse_dd;
 unsigned char dsize[30];
-edit_box edit1= {40,20,200,0xffffff,0x94AECE,0x94AECE,0x94AECE,0,4,#dsize,#mouse_dd,100000000000010b};
 
 unsigned char icons[14*56] = FROM "icons.raw";
 #define TOPPANELH 30
@@ -57,19 +56,10 @@ void Main_Window()
 	int i, x;
 	
    	mem_Init();
-	if (load_dll2(boxlib, #edit_box_draw,0)!=0)
-	{
-		notify("error: library doesn't exist /rd/1/lib/box_lib.obj");
-		ExitProcess();
-	}
-	SetEventMask(0x27);
 	loop()
 	{
 		switch(WaitEvent()) 
 		{
-		case evMouse:
-			//edit_box_mouse stdcall (#edit1);
-			break;
 		case evButton:
             id=GetButtonID();               
 			if (id==1) ExitProcess();
@@ -126,8 +116,6 @@ void Main_Window()
 				selected+=3;
 				DrawTmpDisks();
 			}
-			//EAX=key<<8;
-			//edit_box_key stdcall(#edit1);
 			break;
          case evReDraw:			
 			sc.get();
