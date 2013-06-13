@@ -20,7 +20,7 @@ USB_PID_IN    = 69h
 USB_PID_OUT   = 0E1h
 ; UHCI does not support an interrupt on root hub status change. We must poll
 ; the controller periodically. This is the period in timer ticks (10ms).
-; We use the value 100 ticks: it is small enough to be responsible to connect
+; We use the value 100 ticks: it is small enough to be responsive to connect
 ; events and large enough to not load CPU too often.
 UHCI_POLL_INTERVAL = 100
 ; the following constant is an invalid encoding for length fields in
