@@ -1,7 +1,6 @@
 #include "..\lib\figures.h"
 #include "..\lib\mem.h" 
 #include "..\lib\dll.h"
-#include "..\lib\edit_box_lib.h"
 
 #ifdef LANG_RUS
 	unsigned char *but_text[]={
