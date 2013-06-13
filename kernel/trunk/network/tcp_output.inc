@@ -35,6 +35,8 @@ TCP_output:
         call    mutex_lock
         pop     eax
 
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket locked\n"
+
 ; We'll detect the length of the data to be transmitted, and flags to be used
 ; If there is some data, or any critical controls to send (SYN / RST), then transmit
 ; Otherwise, investigate further
@@ -216,6 +218,7 @@ TCP_output:
         mov     ebx, TCP_max_win
         shl     ebx, cl
         pop     ecx
+
         cmp     ebx, ecx
         jb      @f
         mov     ebx, ecx
@@ -571,6 +574,8 @@ TCP_send:
 ;--------------
 ; unlock socket
 
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: unlocking socket 0x%x\n", eax
+
         push    eax
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
@@ -607,7 +612,8 @@ TCP_send:
 
 
   .send_error:
-        add     esp, 8
+        add     esp, 4
+        pop     eax
 
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock

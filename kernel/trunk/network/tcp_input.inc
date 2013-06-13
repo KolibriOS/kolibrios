@@ -1170,9 +1170,17 @@ TCP_process_input:
   .ack_la:
         jnc     .ack_processed
 
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        pop     ebx
+
+        push    ebx
         mov     eax, ebx
         call    TCP_disconnect
-        jmp     .drop
+        pop     ebx
+
+        jmp     .destroy_new_socket
 
   .ack_tw:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL

@@ -729,7 +729,6 @@ SOCKET_close:
 
         mov     dword [esp+32], 0                               ; The socket exists, so we will succeed in closing it.
 
-  .socket:
         or      [eax + SOCKET.options], SO_NONBLOCK             ; Mark the socket as non blocking, we dont want it to block any longer!
 
         test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
@@ -1924,15 +1923,15 @@ SOCKET_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: %x\n", eax
 
-        call    SOCKET_check
-        jz      .error
-
-        push    ebx
-
         pusha
         mov     ecx, socket_mutex
         call    mutex_lock
         popa
+
+        call    SOCKET_check
+        jz      .error
+
+        push    ebx
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -1951,6 +1950,7 @@ SOCKET_free:
         mov     eax, ebx
   .no_tcp:
 
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: freeing socket %x\n", eax
         push    eax                             ; this will be passed to kernel_free
         mov     ebx, [eax + SOCKET.NextPtr]
         mov     eax, [eax + SOCKET.PrevPtr]
@@ -1970,14 +1970,15 @@ SOCKET_free:
         call    kernel_free
         pop     ebx
 
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
+
+  .error:
+
         pusha
         mov     ecx, socket_mutex
         call    mutex_unlock
         popa
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
-
-  .error:
         ret
 
 ;------------------------------------
@@ -2125,11 +2126,6 @@ SOCKET_check:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check: %x\n", eax
 
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_lock
-        popa
-
         push    ebx
         mov     ebx, net_sockets
 
@@ -2144,11 +2140,6 @@ SOCKET_check:
         mov     eax, ebx
         test    eax, eax
         pop     ebx
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_unlock
-        popa
 
         ret
 
@@ -2229,7 +2220,19 @@ SOCKET_process_end:
         popa
 
         pusha
-        call    SOCKET_close.socket
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .free
+
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        jne     .free
+
+        call    TCP_close
+        jmp     .closed
+
+  .free:
+        call    SOCKET_free
+
+  .closed:
         popa
 
         pusha
