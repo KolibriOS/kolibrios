@@ -1058,22 +1058,30 @@ endl
 ; this corresponds to 1001h bytes. If the requested size is
 ; greater, we should split the transfer into several descriptors.
 ; Boundaries to split must be multiples of endpoint transfer size
-; to avoid short packets except in the end of the transfer,
-; 1000h is always a good value.
+; to avoid short packets except in the end of the transfer.
+        cmp     [size], 1001h
+        jbe     .lastpacket
 ; 2. While the remaining data cannot fit in one packet,
-; allocate page-sized descriptors.
-        mov     edi, 1000h
+; allocate full-sized descriptors.
+; 2a. Calculate size of one descriptor: must be a multiple of transfer size
+; and must be not greater than 1001h.
+        movzx   ecx, word [ebx+ohci_pipe.Flags+2-sizeof.ohci_pipe]
+        mov     eax, 1001h
+        xor     edx, edx
+        mov     edi, eax
+        div     ecx
+        sub     edi, edx
+; 2b. Allocate in loop.
         mov     [packetSize], edi
 .fullpackets:
-        cmp     [size], edi
-        jbe     .lastpacket
         call    ohci_alloc_packet
         test    eax, eax
         jz      .fail
         mov     [td], eax
         add     [buffer], edi
         sub     [size], edi
-        jmp     .fullpackets
+        cmp     [size], 1001h
+        ja      .fullpackets
 ; 3. The remaining data can fit in one descriptor;
 ; allocate the last descriptor with size = size of remaining data.
 .lastpacket:

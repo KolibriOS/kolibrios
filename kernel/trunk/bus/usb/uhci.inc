@@ -20,9 +20,8 @@ USB_PID_IN    = 69h
 USB_PID_OUT   = 0E1h
 ; UHCI does not support an interrupt on root hub status change. We must poll
 ; the controller periodically. This is the period in timer ticks (10ms).
-; We use the value 100 ms: it is valid value for USB hub poll rate (1-255 ms),
-; small enough to be responsible to connect events and large enough to not
-; load CPU too often.
+; We use the value 100 ticks: it is small enough to be responsible to connect
+; events and large enough to not load CPU too often.
 UHCI_POLL_INTERVAL = 100
 ; the following constant is an invalid encoding for length fields in
 ; uhci_gtd; it is used to check whether an inactive TD has been
@@ -1718,9 +1717,12 @@ end virtual
         push    eax
         sub     eax, sizeof.uhci_gtd
         call    get_phys_addr
-; use Depth traversal unless this is the first TD in the transfer stage;
+; for Control/Bulk pipes, use Depth traversal unless this is the first TD
+; in the transfer stage;
 ; uhci_insert_transfer will set Depth traversal for the first TD and clear
 ; it in the last TD
+        test    [ebx+usb_pipe.Type], 1
+        jnz     @f
         cmp     ecx, [ebx+usb_pipe.LastTD]
         jz      @f
         or      eax, 4
@@ -1778,7 +1780,10 @@ proc uhci_insert_transfer
         or      byte [ecx+uhci_gtd.ControlStatus+3-sizeof.uhci_gtd], 1 shl (24-24)        ; set InterruptOnComplete bit
         mov     eax, [esp+4]
         or      byte [eax+uhci_gtd.ControlStatus+2-sizeof.uhci_gtd], 1 shl (23-16)        ; set Active bit
+        test    [ebx+usb_pipe.Type], 1
+        jnz     @f
         or      byte [eax+uhci_gtd.NextTD-sizeof.uhci_gtd], 4     ; set Depth bit
+@@:
         ret
 endp
 
