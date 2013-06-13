@@ -81,27 +81,21 @@ ends
 ; * The hardware requires 32-bytes alignment of the hardware part, so
 ;   the entire descriptor must be 32-bytes aligned. Since the allocator
 ;   (usb_allocate_common) allocates memory sequentially from page start
-;   (aligned on 0x1000 bytes), size of the structure must be divisible by 32.
+;   (aligned on 0x1000 bytes), block size for the allocator must be divisible
+;   by 32; ehci_alloc_td ensures this.
 ; * The hardware also requires that the hardware part must not cross page
 ;   boundary; the allocator satisfies this automatically.
 struct ehci_gtd ehci_hardware_td
 Flags                   dd      ?
 ; Copy of flags from the call to usb_*_transfer_async.
-SoftwarePart            rd      sizeof.usb_gtd/4
-; Software part, common for all controllers.
-                        rd      3       ; padding
 ends
-
-if sizeof.ehci_gtd mod 32
-.err ehci_gtd must be 32-bytes aligned
-end if
 
 ; EHCI-specific part of a pipe descriptor.
 ; * This structure corresponds to the Queue Head from the EHCI specification.
 ; * The hardware requires 32-bytes alignment of the hardware part.
 ;   Since the allocator (usb_allocate_common) allocates memory sequentially
-;   from page start (aligned on 0x1000 bytes), size of the structure must be
-;   divisible by 32.
+;   from page start (aligned on 0x1000 bytes), block size for the allocator
+;   must be divisible by 32; ehci_alloc_pipe ensures this.
 ; * The hardware requires also that the hardware part must not cross page
 ;   boundary; the allocator satisfies this automatically.
 struct ehci_pipe
@@ -154,14 +148,7 @@ Overlay                 ehci_hardware_td        ?
 ; from the new TD, if any.
 BaseList                dd      ?
 ; Pointer to head of the corresponding pipe list.
-SoftwarePart            rd      sizeof.usb_pipe/4
-; Software part, common for all controllers.
-                        rd      2       ; padding
 ends
-
-if sizeof.ehci_pipe mod 32
-.err ehci_pipe must be 32-bytes aligned
-end if
 
 ; This structure describes the static head of every list of pipes.
 ; The hardware requires 32-bytes alignment of this structure.
@@ -764,7 +751,7 @@ endp
 ; and stores USB device address in the ehci_pipe structure.
 ; in: esi -> usb_controller, ebx -> usb_pipe, cl = address
 proc ehci_set_device_address
-        mov     byte [ebx+ehci_pipe.Token-ehci_pipe.SoftwarePart], cl
+        mov     byte [ebx+ehci_pipe.Token-sizeof.ehci_pipe], cl
         call    usb_subscribe_control
         ret
 endp
@@ -773,7 +760,7 @@ endp
 ; in: esi -> usb_controller, ebx -> usb_pipe
 ; out: eax = endpoint address
 proc ehci_get_device_address
-        mov     eax, [ebx+ehci_pipe.Token-ehci_pipe.SoftwarePart]
+        mov     eax, [ebx+ehci_pipe.Token-sizeof.ehci_pipe]
         and     eax, 7Fh
         ret
 endp
@@ -793,11 +780,11 @@ endp
 ; stores the packet size in ehci_pipe structure.
 ; in: esi -> usb_controller, ebx -> usb_pipe, ecx = packet size
 proc ehci_set_endpoint_packet_size
-        mov     eax, [ebx+ehci_pipe.Token-ehci_pipe.SoftwarePart]
+        mov     eax, [ebx+ehci_pipe.Token-sizeof.ehci_pipe]
         and     eax, not (0x7FF shl 16)
         shl     ecx, 16
         or      eax, ecx
-        mov     [ebx+ehci_pipe.Token-ehci_pipe.SoftwarePart], eax
+        mov     [ebx+ehci_pipe.Token-sizeof.ehci_pipe], eax
 ; Wait until hardware cache is evicted.
         call    usb_subscribe_control
         ret
@@ -818,10 +805,10 @@ endg
 proc ehci_alloc_pipe
         push    ebx
         mov     ebx, ehci_ep_mutex
-        stdcall usb_allocate_common, sizeof.ehci_pipe
+        stdcall usb_allocate_common, (sizeof.ehci_pipe + sizeof.usb_pipe + 1Fh) and not 1Fh
         test    eax, eax
         jz      @f
-        add     eax, ehci_pipe.SoftwarePart
+        add     eax, sizeof.ehci_pipe
 @@:
         pop     ebx
         ret
@@ -834,7 +821,7 @@ virtual at esp
         dd      ?       ; return address
 .ptr    dd      ?
 end virtual
-        sub     [.ptr], ehci_pipe.SoftwarePart
+        sub     [.ptr], sizeof.ehci_pipe
         jmp     usb_free_common
 endp
 
@@ -853,25 +840,25 @@ virtual at ebp+8
 end virtual
 ; 1. Zero all fields in the hardware part.
         push    eax ecx
-        sub     edi, ehci_pipe.SoftwarePart
+        sub     edi, sizeof.ehci_pipe
         xor     eax, eax
-        movi    ecx, ehci_pipe.SoftwarePart/4
+        movi    ecx, sizeof.ehci_pipe/4
         rep stosd
         pop     ecx eax
 ; 2. Setup PID in the first TD and make sure that the it is not active.
         xor     edx, edx
         test    byte [.endpoint], 80h
         setnz   dh
-        mov     [eax+ehci_gtd.Token-ehci_gtd.SoftwarePart], edx
-        mov     [eax+ehci_gtd.NextTD-ehci_gtd.SoftwarePart], 1
-        mov     [eax+ehci_gtd.AlternateNextTD-ehci_gtd.SoftwarePart], 1
+        mov     [eax+ehci_gtd.Token-sizeof.ehci_gtd], edx
+        mov     [eax+ehci_gtd.NextTD-sizeof.ehci_gtd], 1
+        mov     [eax+ehci_gtd.AlternateNextTD-sizeof.ehci_gtd], 1
 ; 3. Store physical address of the first TD.
-        sub     eax, ehci_gtd.SoftwarePart
+        sub     eax, sizeof.ehci_gtd
         call    get_phys_addr
-        mov     [edi+ehci_pipe.Overlay.NextTD-ehci_pipe.SoftwarePart], eax
+        mov     [edi+ehci_pipe.Overlay.NextTD-sizeof.ehci_pipe], eax
 ; 4. Fill ehci_pipe.Flags except for S- and C-masks.
 ; Copy location from the config pipe.
-        mov     eax, [ecx+ehci_pipe.Flags-ehci_pipe.SoftwarePart]
+        mov     eax, [ecx+ehci_pipe.Flags-sizeof.ehci_pipe]
         and     eax, 3FFF0000h
 ; Use 1 requests per microframe for control/bulk endpoints,
 ; use value from the endpoint descriptor for periodic endpoints
@@ -884,9 +871,9 @@ end virtual
 @@:
         shl     edx, 30
         or      eax, edx
-        mov     [edi+ehci_pipe.Flags-ehci_pipe.SoftwarePart], eax
+        mov     [edi+ehci_pipe.Flags-sizeof.ehci_pipe], eax
 ; 5. Fill ehci_pipe.Token.
-        mov     eax, [ecx+ehci_pipe.Token-ehci_pipe.SoftwarePart]
+        mov     eax, [ecx+ehci_pipe.Token-sizeof.ehci_pipe]
 ; copy following fields from the config pipe:
 ; DeviceAddress, EndpointSpeed, ControlEndpoint if new type is control
         mov     ecx, eax
@@ -915,7 +902,7 @@ end virtual
 @@:
         or      eax, 40000000h
 .nonak:
-        mov     [edi+ehci_pipe.Token-ehci_pipe.SoftwarePart], eax
+        mov     [edi+ehci_pipe.Token-sizeof.ehci_pipe], eax
 ; 5. Select the corresponding list and insert to the list.
 ; 5a. Use Control list for control pipes, Bulk list for bulk pipes.
         lea     edx, [esi+ehci_controller.ControlED.SoftwarePart-sizeof.ehci_controller]
@@ -931,7 +918,7 @@ end virtual
 ; another for split transactions.
 ; This could fail if the requested bandwidth is not available;
 ; if so, return an error.
-        test    word [edi+ehci_pipe.Flags-ehci_pipe.SoftwarePart+2], 3FFFh
+        test    word [edi+ehci_pipe.Flags-sizeof.ehci_pipe+2], 3FFFh
         jnz     .interrupt_fs
         call    ehci_select_hs_interrupt_list
         jmp     .interrupt_common
@@ -940,9 +927,9 @@ end virtual
 .interrupt_common:
         test    edx, edx
         jz      .return0
-        mov     word [edi+ehci_pipe.Flags-ehci_pipe.SoftwarePart], ax
+        mov     word [edi+ehci_pipe.Flags-sizeof.ehci_pipe], ax
 .insert:
-        mov     [edi+ehci_pipe.BaseList-ehci_pipe.SoftwarePart], edx
+        mov     [edi+ehci_pipe.BaseList-sizeof.ehci_pipe], edx
 ; Insert to the head of the corresponding list.
 ; Note: inserting to the head guarantees that the list traverse in
 ; ehci_process_updated_schedule, once started, will not interact with new pipes.
@@ -957,8 +944,8 @@ end virtual
 ; 5d. Insert in the hardware list: copy previous NextQH to the new pipe,
 ; store the physical address of the new pipe to previous NextQH.
         mov     ecx, [edx+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart]
-        mov     [edi+ehci_pipe.NextQH-ehci_pipe.SoftwarePart], ecx
-        lea     eax, [edi-ehci_pipe.SoftwarePart]
+        mov     [edi+ehci_pipe.NextQH-sizeof.ehci_pipe], ecx
+        lea     eax, [edi-sizeof.ehci_pipe]
         call    get_phys_addr
         inc     eax
         inc     eax
@@ -1084,7 +1071,7 @@ endl
         jz      .fail
 ; 9. Update flags in the last packet.
         mov     edx, [flags]
-        mov     [ecx+ehci_gtd.Flags-ehci_gtd.SoftwarePart], edx
+        mov     [ecx+ehci_gtd.Flags-sizeof.ehci_gtd], edx
 ; 10. Fill AlternateNextTD field in all allocated TDs.
 ; If the caller says that short transfer is ok, the queue must advance to
 ; the next descriptor, which is in eax.
@@ -1093,7 +1080,7 @@ endl
         push    eax
         test    dl, 1
         jz      .disable_short
-        sub     eax, ehci_gtd.SoftwarePart
+        sub     eax, sizeof.ehci_gtd
         jmp     @f
 .disable_short:
         mov     eax, [ebx+usb_pipe.Controller]
@@ -1104,7 +1091,7 @@ endl
 @@:
         cmp     edx, [esp]
         jz      @f
-        mov     [edx+ehci_gtd.AlternateNextTD-ehci_gtd.SoftwarePart], eax
+        mov     [edx+ehci_gtd.AlternateNextTD-sizeof.ehci_gtd], eax
         mov     edx, [edx+usb_gtd.NextVirt]
         jmp     @b
 @@:
@@ -1144,28 +1131,28 @@ end virtual
         call    usb_init_transfer
         pop     eax
 ; 3. Copy PID to the new descriptor.
-        mov     edx, [ecx+ehci_gtd.Token-ehci_gtd.SoftwarePart]
-        mov     [eax+ehci_gtd.Token-ehci_gtd.SoftwarePart], edx
-        mov     [eax+ehci_gtd.NextTD-ehci_gtd.SoftwarePart], 1
-        mov     [eax+ehci_gtd.AlternateNextTD-ehci_gtd.SoftwarePart], 1
+        mov     edx, [ecx+ehci_gtd.Token-sizeof.ehci_gtd]
+        mov     [eax+ehci_gtd.Token-sizeof.ehci_gtd], edx
+        mov     [eax+ehci_gtd.NextTD-sizeof.ehci_gtd], 1
+        mov     [eax+ehci_gtd.AlternateNextTD-sizeof.ehci_gtd], 1
 ; 4. Save the returned value (next descriptor).
         push    eax
 ; 5. Store the physical address of the next descriptor.
-        sub     eax, ehci_gtd.SoftwarePart
+        sub     eax, sizeof.ehci_gtd
         call    get_phys_addr
-        mov     [ecx+ehci_gtd.NextTD-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.NextTD-sizeof.ehci_gtd], eax
 ; 6. For zero-length transfers, store zero in all fields for buffer addresses.
 ; Otherwise, fill them with real values.
         xor     eax, eax
-        mov     [ecx+ehci_gtd.Flags-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.Flags-sizeof.ehci_gtd], eax
 repeat 10
-        mov     [ecx+ehci_gtd.BufferPointers-ehci_gtd.SoftwarePart+(%-1)*4], eax
+        mov     [ecx+ehci_gtd.BufferPointers-sizeof.ehci_gtd+(%-1)*4], eax
 end repeat
         cmp     [.packetSize], eax
         jz      @f
         mov     eax, [.buffer]
         call    get_phys_addr
-        mov     [ecx+ehci_gtd.BufferPointers-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.BufferPointers-sizeof.ehci_gtd], eax
         and     eax, 0xFFF
         mov     edx, [.packetSize]
         add     edx, eax
@@ -1174,25 +1161,25 @@ end repeat
         mov     eax, [.buffer]
         add     eax, 0x1000
         call    get_pg_addr
-        mov     [ecx+ehci_gtd.BufferPointers+4-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.BufferPointers+4-sizeof.ehci_gtd], eax
         sub     edx, 0x1000
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x2000
         call    get_pg_addr
-        mov     [ecx+ehci_gtd.BufferPointers+8-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.BufferPointers+8-sizeof.ehci_gtd], eax
         sub     edx, 0x1000
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x3000
         call    get_pg_addr
-        mov     [ecx+ehci_gtd.BufferPointers+12-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.BufferPointers+12-sizeof.ehci_gtd], eax
         sub     edx, 0x1000
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x4000
         call    get_pg_addr
-        mov     [ecx+ehci_gtd.BufferPointers+16-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.BufferPointers+16-sizeof.ehci_gtd], eax
 @@:
 ; 7. Fill Token field:
 ; set Status = 0 (inactive, ehci_insert_transfer would mark everything active);
@@ -1202,7 +1189,7 @@ end repeat
 ; set current page to 0;
 ; do not interrupt on complete (ehci_insert_transfer sets this bit where needed);
 ; set DataToggle to bit 2 of [.direction].
-        mov     eax, [ecx+ehci_gtd.Token-ehci_gtd.SoftwarePart]
+        mov     eax, [ecx+ehci_gtd.Token-sizeof.ehci_gtd]
         and     eax, 300h       ; keep PID code
         mov     edx, [.direction]
         test    edx, edx
@@ -1222,7 +1209,7 @@ end repeat
         mov     edx, [.packetSize]
         shl     edx, 16
         or      eax, edx
-        mov     [ecx+ehci_gtd.Token-ehci_gtd.SoftwarePart], eax
+        mov     [ecx+ehci_gtd.Token-sizeof.ehci_gtd], eax
 ; 4. Restore the returned value saved in step 2.
         pop     eax
 .nothing:
@@ -1234,10 +1221,10 @@ endp
 ; ehci_alloc_transfer.
 ; ecx -> last descriptor for the transfer, ebx -> usb_pipe
 proc ehci_insert_transfer
-        or      byte [ecx+ehci_gtd.Token+1-ehci_gtd.SoftwarePart], 80h  ; set IOC bit
+        or      byte [ecx+ehci_gtd.Token+1-sizeof.ehci_gtd], 80h  ; set IOC bit
         mov     eax, [esp+4]
 .activate:
-        or      byte [eax+ehci_gtd.Token-ehci_gtd.SoftwarePart], 80h    ; set Active bit
+        or      byte [eax+ehci_gtd.Token-sizeof.ehci_gtd], 80h    ; set Active bit
         cmp     eax, ecx
         mov     eax, [eax+usb_gtd.NextVirt]
         jnz     .activate
@@ -1328,7 +1315,7 @@ proc ehci_new_device
 .found_hs_hub:
         mov     edx, [edx+usb_hub.ConfigPipe]
         inc     ecx
-        mov     edx, [edx+ehci_pipe.Token-ehci_pipe.SoftwarePart]
+        mov     edx, [edx+ehci_pipe.Token-sizeof.ehci_pipe]
         shl     ecx, 23
         and     edx, 7Fh
         shl     edx, 16
@@ -1338,15 +1325,15 @@ proc ehci_new_device
 .common:
 ; 5. Create pseudo-pipe in the stack.
 ; See ehci_init_pipe: only .Controller, .Token, .Flags fields are used.
-        push    esi     ; ehci_pipe.SoftwarePart.Controller
+        push    esi     ; usb_pipe.Controller
         mov     ecx, esp
-        sub     esp, ehci_pipe.SoftwarePart - ehci_pipe.Flags - 4
+        sub     esp, sizeof.ehci_pipe - ehci_pipe.Flags - 4
         push    edx     ; ehci_pipe.Flags
         push    eax     ; ehci_pipe.Token
 ; 6. Notify the protocol layer.
         call    usb_new_device
 ; 7. Cleanup the stack after step 5 and return.
-        add     esp, ehci_pipe.SoftwarePart - ehci_pipe.Flags + 8
+        add     esp, sizeof.ehci_pipe - ehci_pipe.Flags + 8
         pop     ecx ebx ; restore used registers
         ret
 endp
@@ -1658,7 +1645,7 @@ proc ehci_process_updated_list
 ; if either of conditions holds, exit from the internal loop.
         cmp     ebx, [esp]
         jz      .tddone
-        cmp     byte [ebx+ehci_gtd.Token-ehci_gtd.SoftwarePart], 0
+        cmp     byte [ebx+ehci_gtd.Token-sizeof.ehci_gtd], 0
         js      .tddone
 ; Release the queue lock while processing one descriptor:
 ; callback function could (and often would) schedule another transfer.
@@ -1690,14 +1677,14 @@ proc ehci_process_updated_td
 ;       cmp     [eax+usb_pipe.Type], INTERRUPT_PIPE
 ;       jnz     @f
 ;       DEBUGF 1,'K : finalized TD for pipe %x:\n',eax
-;       lea     eax, [ebx-ehci_gtd.SoftwarePart]
+;       lea     eax, [ebx-sizeof.ehci_gtd]
 ;       DEBUGF 1,'K : %x %x %x %x\n',[eax],[eax+4],[eax+8],[eax+12]
 ;       DEBUGF 1,'K : %x %x %x %x\n',[eax+16],[eax+20],[eax+24],[eax+28]
 ;@@:
 ; 1. Remove this descriptor from the list of descriptors for this pipe.
         call    usb_unlink_td
 ; 2. Calculate actual number of bytes transferred.
-        mov     eax, [ebx+ehci_gtd.Token-ehci_gtd.SoftwarePart]
+        mov     eax, [ebx+ehci_gtd.Token-sizeof.ehci_gtd]
         lea     edx, [eax+eax]
         shr     edx, 17
         sub     edx, [ebx+usb_gtd.Length]
@@ -1715,7 +1702,7 @@ proc ehci_process_updated_td
         xor     ecx, ecx
         test    al, 40h
         jnz     .error
-        test    byte [ebx+ehci_gtd.Flags-ehci_gtd.SoftwarePart], 1
+        test    byte [ebx+ehci_gtd.Flags-sizeof.ehci_gtd], 1
         jnz     .notify
         cmp     edx, [ebx+usb_gtd.Length]
         jnz     .special
@@ -1745,14 +1732,14 @@ proc ehci_process_updated_td
         ret
 .error:
         push    ebx
-        sub     ebx, ehci_gtd.SoftwarePart
+        sub     ebx, sizeof.ehci_gtd
         DEBUGF 1,'K : TD failed:\n'
         DEBUGF 1,'K : %x %x %x %x\n',[ebx],[ebx+4],[ebx+8],[ebx+12]
         DEBUGF 1,'K : %x %x %x %x\n',[ebx+16],[ebx+20],[ebx+24],[ebx+28]
         pop     ebx
         DEBUGF 1,'K : pipe now:\n'
         mov     ecx, [ebx+usb_gtd.Pipe]
-        sub     ecx, ehci_pipe.SoftwarePart
+        sub     ecx, sizeof.ehci_pipe
         DEBUGF 1,'K : %x %x %x %x\n',[ecx],[ecx+4],[ecx+8],[ecx+12]
         DEBUGF 1,'K : %x %x %x %x\n',[ecx+16],[ecx+20],[ecx+24],[ecx+28]
         DEBUGF 1,'K : %x %x %x %x\n',[ecx+32],[ecx+36],[ecx+40],[ecx+44]
@@ -1802,7 +1789,7 @@ proc ehci_process_updated_td
 ; it is not an error; in this case, go to 4 with ecx = 0.
         cmp     ecx, USB_STATUS_UNDERRUN
         jnz     @f
-        test    byte [ebx+ehci_gtd.Flags-ehci_gtd.SoftwarePart], 1
+        test    byte [ebx+ehci_gtd.Flags-sizeof.ehci_gtd], 1
         jz      @f
         xor     ecx, ecx
         pop     edx     ; length
@@ -1832,20 +1819,20 @@ proc ehci_process_updated_td
 ; to the next transfer. (According to the standard, "A control pipe may also
 ; support functional stall as well, but this is not recommended.").
         mov     edx, [ebx+usb_gtd.Pipe]
-        mov     eax, [ebx+ehci_gtd.NextTD-ehci_gtd.SoftwarePart]
+        mov     eax, [ebx+ehci_gtd.NextTD-sizeof.ehci_gtd]
         or      al, 1
-        mov     [edx+ehci_pipe.Overlay.NextTD-ehci_pipe.SoftwarePart], eax
-        mov     [edx+ehci_pipe.Overlay.AlternateNextTD-ehci_pipe.SoftwarePart], eax
+        mov     [edx+ehci_pipe.Overlay.NextTD-sizeof.ehci_pipe], eax
+        mov     [edx+ehci_pipe.Overlay.AlternateNextTD-sizeof.ehci_pipe], eax
         cmp     [edx+usb_pipe.Type], CONTROL_PIPE
         jz      .control
 ; Bulk/interrupt transfer; halt the queue.
-        mov     [edx+ehci_pipe.Overlay.Token-ehci_pipe.SoftwarePart], 40h
+        mov     [edx+ehci_pipe.Overlay.Token-sizeof.ehci_pipe], 40h
         pop     edx
         jmp     .notify
 ; Control transfer.
 .control:
-        and     [edx+ehci_pipe.Overlay.Token-ehci_pipe.SoftwarePart], 0
-        dec     [edx+ehci_pipe.Overlay.NextTD-ehci_pipe.SoftwarePart]
+        and     [edx+ehci_pipe.Overlay.Token-sizeof.ehci_pipe], 0
+        dec     [edx+ehci_pipe.Overlay.NextTD-sizeof.ehci_pipe]
         pop     edx
         jmp     .notify
 endp
@@ -1855,7 +1842,7 @@ endp
 proc ehci_unlink_pipe
         cmp     [ebx+usb_pipe.Type], INTERRUPT_PIPE
         jnz     @f
-        test    word [ebx+ehci_pipe.Flags-ehci_pipe.SoftwarePart+2], 3FFFh
+        test    word [ebx+ehci_pipe.Flags-sizeof.ehci_pipe+2], 3FFFh
         jnz     .interrupt_fs
         call    ehci_hs_interrupt_list_unlink
         jmp     .interrupt_common
@@ -1870,9 +1857,9 @@ proc ehci_unlink_pipe
         mov     edx, esi
         sub     edx, eax
         cmp     edx, sizeof.ehci_controller
-        mov     edx, [ebx+ehci_pipe.NextQH-ehci_pipe.SoftwarePart]
+        mov     edx, [ebx+ehci_pipe.NextQH-sizeof.ehci_pipe]
         jb      .prev_is_static
-        mov     [eax+ehci_pipe.NextQH-ehci_pipe.SoftwarePart], edx
+        mov     [eax+ehci_pipe.NextQH-sizeof.ehci_pipe], edx
         ret
 .prev_is_static:
         mov     [eax+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart], edx
@@ -1882,10 +1869,10 @@ endp
 proc ehci_alloc_td
         push    ebx
         mov     ebx, ehci_gtd_mutex
-        stdcall usb_allocate_common, sizeof.ehci_gtd
+        stdcall usb_allocate_common, (sizeof.ehci_gtd + sizeof.usb_gtd + 1Fh) and not 1Fh
         test    eax, eax
         jz      @f
-        add     eax, ehci_gtd.SoftwarePart
+        add     eax, sizeof.ehci_gtd
 @@:
         pop     ebx
         ret
@@ -1895,6 +1882,6 @@ endp
 ; frees all additional data associated with the transfer descriptor.
 ; EHCI has no additional data, so just free ehci_gtd structure.
 proc ehci_free_td
-        sub     dword [esp+4], ehci_gtd.SoftwarePart
+        sub     dword [esp+4], sizeof.ehci_gtd
         jmp     usb_free_common
 endp

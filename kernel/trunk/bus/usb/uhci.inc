@@ -42,8 +42,8 @@ UHCI_INVALID_LENGTH = 700h
 ;   software book-keeping.
 ; * The hardware requires 16-bytes alignment of the hardware part.
 ;   Since the allocator (usb_allocate_common) allocates memory sequentially
-;   from page start (aligned on 0x1000 bytes), size of the structure must be
-;   divisible by 16.
+;   from page start (aligned on 0x1000 bytes), block size for the allocator
+;   must be divisible by 16; usb1_allocate_endpoint ensures this.
 struct uhci_pipe
 NextQH          dd      ?
 ; 1. First bit (bit 0) is Terminate bit. 1 = there is no next QH.
@@ -81,13 +81,7 @@ Token           dd      ?
 ErrorTD         dd      ?
 ; Usually NULL. If nonzero, it is a pointer to descriptor which was error'd
 ; and should be freed sometime in the future (the hardware could still use it).
-SoftwarePart    rd      sizeof.usb_pipe/4
-; Common part for all controllers, described by usb_pipe structure.
 ends
-
-if sizeof.uhci_pipe mod 16
-.err uhci_pipe must be 16-bytes aligned
-end if
 
 ; This structure describes the static head of every list of pipes.
 ; The hardware requires 16-bytes alignment of this structure.
@@ -167,7 +161,8 @@ end if
 ; * The hardware requires 16-bytes alignment of the hardware part, so
 ;   the entire descriptor must be 16-bytes aligned. Since the allocator
 ;   (uhci_allocate_common) allocates memory sequentially from page start
-;   (aligned on 0x1000 bytes), size of the structure must be divisible by 16.
+;   (aligned on 0x1000 bytes), block size for the allocator must be
+;   divisible by 16; usb1_allocate_general_td ensures this.
 struct uhci_gtd
 NextTD          dd      ?
 ; 1. First bit (bit 0) is Terminate bit. 1 = there is no next TD.
@@ -231,13 +226,7 @@ OrigBufferInfo  dd      ?
 ; bit 0: 1 = short packet is NOT allowed
 ; (before the TD is processed, it is the copy of bit 29 of ControlStatus;
 ;  some controllers modify that bit, so we need a copy in a safe place)
-SoftwarePart    rd      sizeof.usb_gtd/4
-; Software part, common for all controllers.
 ends
-
-if sizeof.uhci_gtd mod 16
-.err uhci_gtd must be 16-bytes aligned
-end if
 
 ; UHCI requires that the entire transfer buffer should be on one page.
 ; If the actual buffer crosses page boundary, uhci_alloc_packet
@@ -853,7 +842,7 @@ proc uhci_process_updated_list
 ; if either of conditions holds, exit from the internal loop.
         cmp     ebx, [esp]
         jz      .tddone
-        mov     eax, [ebx+uhci_gtd.ControlStatus-uhci_gtd.SoftwarePart]
+        mov     eax, [ebx+uhci_gtd.ControlStatus-sizeof.uhci_gtd]
         test    eax, 1 shl 23   ; active?
         jnz     .tddone
 ; Release the queue lock while processing one descriptor:
@@ -889,10 +878,10 @@ proc uhci_process_finalized_td
 ;       DEBUGF 1,'K : %x %x %x %x\n',[ebx-4],[ebx],[ebx+4],[ebx+8]
 ; 2. If this is IN transfer into special buffer, copy the data
 ; to target location.
-        mov     edx, [ebx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart]
+        mov     edx, [ebx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd]
         and     edx, not 1      ; clear lsb (used for another goal)
         jz      .nocopy
-        cmp     byte [ebx+uhci_gtd.Token-uhci_gtd.SoftwarePart], USB_PID_IN
+        cmp     byte [ebx+uhci_gtd.Token-sizeof.uhci_gtd], USB_PID_IN
         jnz     .nocopy
 ; Note: we assume that pointer to buffer is valid in the memory space of
 ; the USB thread. This means that buffer must reside in kernel memory
@@ -900,7 +889,7 @@ proc uhci_process_finalized_td
         push    esi edi
         mov     esi, [edx+uhci_original_buffer.UsedBuffer]
         mov     edi, [edx+uhci_original_buffer.OrigBuffer]
-        mov     ecx, [ebx+uhci_gtd.ControlStatus-uhci_gtd.SoftwarePart]
+        mov     ecx, [ebx+uhci_gtd.ControlStatus-sizeof.uhci_gtd]
         inc     ecx
         and     ecx, 7FFh
         mov     edx, ecx
@@ -913,8 +902,8 @@ proc uhci_process_finalized_td
 .nocopy:
 ; 3. Calculate actual number of bytes transferred.
 ; 3a. Read the state.
-        mov     eax, [ebx+uhci_gtd.ControlStatus-uhci_gtd.SoftwarePart]
-        mov     ecx, [ebx+uhci_gtd.Token-uhci_gtd.SoftwarePart]
+        mov     eax, [ebx+uhci_gtd.ControlStatus-sizeof.uhci_gtd]
+        mov     ecx, [ebx+uhci_gtd.Token-sizeof.uhci_gtd]
 ; 3b. Get number of bytes processed.
         lea     edx, [eax+1]
         and     edx, 7FFh
@@ -938,7 +927,7 @@ proc uhci_process_finalized_td
         xor     ecx, ecx
         test    eax, 1 shl 22
         jnz     .error
-        test    byte [ebx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart], 1
+        test    byte [ebx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd], 1
         jz      .notify
         cmp     edx, [ebx+usb_gtd.Length]
         jz      .notify
@@ -946,7 +935,7 @@ proc uhci_process_finalized_td
 ; 5. There was an error while processing this packet.
 ; The hardware has stopped processing the queue.
         DEBUGF 1,'K : TD failed:\n'
-if uhci_gtd.SoftwarePart <> 20
+if sizeof.uhci_gtd <> 20
 .err modify offsets for debug output
 end if
         DEBUGF 1,'K : %x %x %x %x\n',[ebx-20],[ebx-16],[ebx-12],[ebx-8]
@@ -955,17 +944,17 @@ end if
         push    edx
         push    eax
         mov     eax, [ebx+usb_gtd.Pipe]
-        DEBUGF 1,'K : pipe: %x %x\n',[eax+0-uhci_pipe.SoftwarePart],[eax+4-uhci_pipe.SoftwarePart]
+        DEBUGF 1,'K : pipe: %x %x\n',[eax+0-sizeof.uhci_pipe],[eax+4-sizeof.uhci_pipe]
 ; 5b. Store the current TD as an error packet.
 ; If an error packet is already stored for this pipe,
 ; it is definitely not used already, so free the old packet.
-        mov     eax, [eax+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart]
+        mov     eax, [eax+uhci_pipe.ErrorTD-sizeof.uhci_pipe]
         test    eax, eax
         jz      @f
         stdcall uhci_free_td, eax
 @@:
         mov     eax, [ebx+usb_gtd.Pipe]
-        mov     [eax+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart], ebx
+        mov     [eax+uhci_pipe.ErrorTD-sizeof.uhci_pipe], ebx
 ; 5c. Traverse the list of descriptors looking for the final packet
 ; for this transfer.
 ; Free and unlink non-final descriptors, except the current one.
@@ -1019,17 +1008,17 @@ end if
 ; After that, go to step 6 with ecx = 0 (no error).
         cmp     ecx, USB_STATUS_UNDERRUN
         jnz     @f
-        test    byte [ebx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart], 1
+        test    byte [ebx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd], 1
         jnz     @f
 ; The controller has stopped this queue on the error packet.
 ; Update uhci_pipe.HeadTD to point to the next packet in the queue.
         call    uhci_fix_toggle
         xor     ecx, ecx
 .control:
-        mov     eax, [ebx+uhci_gtd.NextTD-uhci_gtd.SoftwarePart]
+        mov     eax, [ebx+uhci_gtd.NextTD-sizeof.uhci_gtd]
         and     al, not 0xF
         mov     edx, [ebx+usb_gtd.Pipe]
-        mov     [edx+uhci_pipe.HeadTD-uhci_pipe.SoftwarePart], eax
+        mov     [edx+uhci_pipe.HeadTD-sizeof.uhci_pipe], eax
         pop     edx     ; length
         jmp     .notify
 @@:
@@ -1047,7 +1036,7 @@ end if
         push    ecx
         mov     eax, [ebx+usb_gtd.Pipe]
         push    [ebx+usb_gtd.NextVirt]
-        cmp     ebx, [eax+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart]
+        cmp     ebx, [eax+uhci_pipe.ErrorTD-sizeof.uhci_pipe]
         jz      @f
         stdcall uhci_free_td, ebx
 @@:
@@ -1065,10 +1054,10 @@ end if
         cmp     [edx+usb_pipe.Type], CONTROL_PIPE
         jz      .control
 ; Bulk/interrupt transfer; halt the queue.
-        mov     eax, [ebx+uhci_gtd.NextTD-uhci_gtd.SoftwarePart]
+        mov     eax, [ebx+uhci_gtd.NextTD-sizeof.uhci_gtd]
         and     al, not 0xF
         inc     eax     ; set Halted bit
-        mov     [edx+uhci_pipe.HeadTD-uhci_pipe.SoftwarePart], eax
+        mov     [edx+uhci_pipe.HeadTD-sizeof.uhci_pipe], eax
         pop     edx     ; restore length saved in step 5a
 .notify:
 ; 6. Either the descriptor in ebx was processed without errors,
@@ -1094,7 +1083,7 @@ end if
         push    [ebx+usb_gtd.NextVirt]
 ; 7b. Free the descriptor, unless it is saved as ErrorTD.
         mov     eax, [ebx+usb_gtd.Pipe]
-        cmp     [eax+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart], ebx
+        cmp     [eax+uhci_pipe.ErrorTD-sizeof.uhci_pipe], ebx
         jz      @f
         stdcall uhci_free_td, ebx
 @@:
@@ -1118,9 +1107,9 @@ proc uhci_fix_toggle
 ; 2. The hardware expects next packet with toggle = (ErrorTD.toggle xor 1),
 ; the current value in next packet is (ebx.toggle xor 1).
 ; Nothing to do if ErrorTD.toggle == ebx.toggle.
-        mov     eax, [ecx+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart]
-        mov     eax, [eax+uhci_gtd.Token-uhci_gtd.SoftwarePart]
-        xor     eax, [ebx+uhci_gtd.Token-uhci_gtd.SoftwarePart]
+        mov     eax, [ecx+uhci_pipe.ErrorTD-sizeof.uhci_pipe]
+        mov     eax, [eax+uhci_gtd.Token-sizeof.uhci_gtd]
+        xor     eax, [ebx+uhci_gtd.Token-sizeof.uhci_gtd]
         test    eax, 1 shl 19
         jz      .nothing
 ; 3. Lock the transfer queue.
@@ -1130,13 +1119,13 @@ proc uhci_fix_toggle
 ; (inclusive).
         mov     eax, [ebx+usb_gtd.NextVirt]
 .loop:
-        xor     byte [eax+uhci_gtd.Token-uhci_gtd.SoftwarePart+2], 1 shl (19-16)
+        xor     byte [eax+uhci_gtd.Token-sizeof.uhci_gtd+2], 1 shl (19-16)
         cmp     eax, [ecx+usb_pipe.LastTD-usb_pipe.Lock]
         mov     eax, [eax+usb_gtd.NextVirt]
         jnz     .loop
 ; 5. Flip the toggle bit in uhci_pipe structure.
-        xor     byte [ecx+uhci_pipe.Token-uhci_pipe.SoftwarePart-usb_pipe.Lock+2], 1 shl (19-16)
-        or      dword [ecx+uhci_pipe.Token-uhci_pipe.SoftwarePart-usb_pipe.Lock], eax
+        xor     byte [ecx+uhci_pipe.Token-sizeof.uhci_pipe-usb_pipe.Lock+2], 1 shl (19-16)
+        or      dword [ecx+uhci_pipe.Token-sizeof.uhci_pipe-usb_pipe.Lock], eax
 ; 6. Unlock the transfer queue.
         call    mutex_unlock
 .nothing:
@@ -1338,7 +1327,7 @@ endp
 ; and stores USB device address in the uhci_pipe structure.
 ; in: esi -> usb_controller, ebx -> usb_pipe, cl = address
 proc uhci_set_device_address
-        mov     byte [ebx+uhci_pipe.Token+1-uhci_pipe.SoftwarePart], cl
+        mov     byte [ebx+uhci_pipe.Token+1-sizeof.uhci_pipe], cl
         call    usb_subscription_done
         ret
 endp
@@ -1347,7 +1336,7 @@ endp
 ; in: esi -> usb_controller, ebx -> usb_pipe
 ; out: eax = endpoint address
 proc uhci_get_device_address
-        mov     al, byte [ebx+uhci_pipe.Token+1-uhci_pipe.SoftwarePart]
+        mov     al, byte [ebx+uhci_pipe.Token+1-sizeof.uhci_pipe]
         and     eax, 7Fh
         ret
 endp
@@ -1372,8 +1361,8 @@ endp
 proc uhci_set_endpoint_packet_size
         dec     ecx
         shl     ecx, 21
-        and     [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart], (1 shl 21) - 1
-        or      [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart], ecx
+        and     [ebx+uhci_pipe.Token-sizeof.uhci_pipe], (1 shl 21) - 1
+        or      [ebx+uhci_pipe.Token-sizeof.uhci_pipe], ecx
 ; uhci_pipe.Token field is purely for software bookkeeping and does not affect
 ; the hardware; thus, we can continue initialization immediately.
         call    usb_subscription_done
@@ -1395,18 +1384,18 @@ virtual at ebp+8
 .interval       dd      ?
 end virtual
 ; 1. Initialize ErrorTD to zero.
-        and     [edi+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart], 0
+        and     [edi+uhci_pipe.ErrorTD-sizeof.uhci_pipe], 0
 ; 2. Initialize HeadTD to the physical address of the first TD.
         push    eax     ; store pointer to the first TD for step ?
-        sub     eax, uhci_gtd.SoftwarePart
+        sub     eax, sizeof.uhci_gtd
         call    get_phys_addr
-        mov     [edi+uhci_pipe.HeadTD-uhci_pipe.SoftwarePart], eax
+        mov     [edi+uhci_pipe.HeadTD-sizeof.uhci_pipe], eax
 ; 3. Initialize Token field:
 ; take DeviceAddress and LowSpeedDevice from the parent pipe,
 ; take Endpoint and MaximumLength fields from API arguments,
 ; set PID depending on pipe type and provided pipe direction,
 ; set DataToggle to zero.
-        mov     eax, [ecx+uhci_pipe.Token-uhci_pipe.SoftwarePart]
+        mov     eax, [ecx+uhci_pipe.Token-sizeof.uhci_pipe]
         and     eax, 0x107F00   ; keep DeviceAddress and LowSpeedDevice
         mov     edx, [.endpoint]
         and     edx, 15
@@ -1424,20 +1413,20 @@ end virtual
         jz      @f
         mov     al, USB_PID_IN
 @@:
-        mov     [edi+uhci_pipe.Token-uhci_pipe.SoftwarePart], eax
+        mov     [edi+uhci_pipe.Token-sizeof.uhci_pipe], eax
 ; 4. Initialize the first TD:
 ; copy Token from uhci_pipe.Token zeroing reserved bit 20,
 ; set ControlStatus for future transfers, bit make it inactive,
 ; set bit 0 in NextTD = "no next TD".
         pop     edx     ; restore pointer saved in step 2
-        mov     [edx+uhci_gtd.Token-uhci_gtd.SoftwarePart], eax
-        and     byte [edx+uhci_gtd.Token+2-uhci_gtd.SoftwarePart], not (1 shl (20-16))
+        mov     [edx+uhci_gtd.Token-sizeof.uhci_gtd], eax
+        and     byte [edx+uhci_gtd.Token+2-sizeof.uhci_gtd], not (1 shl (20-16))
         and     eax, 1 shl 20
         shl     eax, 6
         or      eax, UHCI_INVALID_LENGTH + (3 shl 27)
                 ; not processed, inactive, allow 3 errors
-        mov     [edx+uhci_gtd.ControlStatus-uhci_gtd.SoftwarePart], eax
-        mov     [edx+uhci_gtd.NextTD-uhci_gtd.SoftwarePart], 1
+        mov     [edx+uhci_gtd.ControlStatus-sizeof.uhci_gtd], eax
+        mov     [edx+uhci_gtd.NextTD-sizeof.uhci_gtd], 1
 ; 5. Select the corresponding list and insert to the list.
 ; 5a. Use Control list for control pipes, Bulk list for bulk pipes.
         lea     edx, [esi+uhci_controller.ControlED.SoftwarePart-sizeof.uhci_controller]
@@ -1471,8 +1460,8 @@ end virtual
 ; 5d. Insert in the hardware list: copy previous NextQH to the new pipe,
 ; store the physical address of the new pipe to previous NextQH.
         mov     ecx, [edx+uhci_static_ep.NextQH-uhci_static_ep.SoftwarePart]
-        mov     [edi+uhci_pipe.NextQH-uhci_pipe.SoftwarePart], ecx
-        lea     eax, [edi-uhci_pipe.SoftwarePart]
+        mov     [edi+uhci_pipe.NextQH-sizeof.uhci_pipe], ecx
+        lea     eax, [edi-sizeof.uhci_pipe]
         call    get_phys_addr
         inc     eax
         inc     eax
@@ -1486,13 +1475,13 @@ endp
 
 ; This procedure is called when a pipe is closing (either due to API call
 ; or due to disconnect); it unlinks a pipe from the corresponding list.
-if uhci_static_ep.SoftwarePart <> uhci_pipe.SoftwarePart
-.err uhci_unlink_pipe assumes that uhci_static_ep.SoftwarePart == uhci_pipe.SoftwarePart
+if uhci_static_ep.SoftwarePart <> sizeof.uhci_pipe
+.err uhci_unlink_pipe assumes that uhci_static_ep.SoftwarePart == sizeof.uhci_pipe
 end if
 proc uhci_unlink_pipe
         cmp     [ebx+usb_pipe.Type], INTERRUPT_PIPE
         jnz     @f
-        mov     eax, [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart]
+        mov     eax, [ebx+uhci_pipe.Token-sizeof.uhci_pipe]
         cmp     al, USB_PID_IN
         setz    ch
         bt      eax, 20
@@ -1510,8 +1499,8 @@ proc uhci_unlink_pipe
         mov     [eax+usb_pipe.NextVirt], edx
 ; Note: eax could be either usb_pipe or usb_static_ep;
 ; fortunately, NextQH and SoftwarePart have same offsets in both.
-        mov     edx, [ebx+uhci_pipe.NextQH-uhci_pipe.SoftwarePart]
-        mov     [eax+uhci_pipe.NextQH-uhci_pipe.SoftwarePart], edx
+        mov     edx, [ebx+uhci_pipe.NextQH-sizeof.uhci_pipe]
+        mov     [eax+uhci_pipe.NextQH-sizeof.uhci_pipe], edx
         ret
 endp
 
@@ -1519,7 +1508,7 @@ endp
 ; For UHCI, this includes usb_pipe structure and ErrorTD, if present.
 proc uhci_free_pipe
         mov     eax, [esp+4]
-        mov     eax, [eax+uhci_pipe.ErrorTD-uhci_pipe.SoftwarePart]
+        mov     eax, [eax+uhci_pipe.ErrorTD-sizeof.uhci_pipe]
         test    eax, eax
         jz      @f
         stdcall uhci_free_td, eax
@@ -1544,7 +1533,7 @@ endl
 ; with size <= endpoint max packet size.
 ; 2. Get the maximum packet size for endpoint from uhci_pipe.Token
 ; and generate Token field for TDs.
-        mov     edi, [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart]
+        mov     edi, [ebx+uhci_pipe.Token-sizeof.uhci_pipe]
         mov     eax, edi
         shr     edi, 21
         inc     edi
@@ -1602,14 +1591,14 @@ endl
 ; transparently to the caller.
         test    [flags], 1
         jz      @f
-        and     byte [ecx+uhci_gtd.ControlStatus+3-uhci_gtd.SoftwarePart], not (1 shl (29-24))
-        and     byte [ecx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart], not 1
+        and     byte [ecx+uhci_gtd.ControlStatus+3-sizeof.uhci_gtd], not (1 shl (29-24))
+        and     byte [ecx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd], not 1
 @@:
 ; 6. Update toggle bit in uhci_pipe structure from current value of [token].
         mov     edx, [token]
-        xor     edx, [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart]
+        xor     edx, [ebx+uhci_pipe.Token-sizeof.uhci_pipe]
         and     edx, 1 shl 19
-        xor     [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart], edx
+        xor     [ebx+uhci_pipe.Token-sizeof.uhci_pipe], edx
 .nothing:
         ret
 .fail:
@@ -1713,21 +1702,21 @@ end virtual
 ; allocated), copy Token field from uhci_pipe.Token zeroing bit 20,
 ; generate ControlStatus field, mark as Active
 ; (for last descriptor, this will be changed by uhci_insert_transfer).
-        mov     [eax+uhci_gtd.NextTD-uhci_gtd.SoftwarePart], 1  ; no next TD
-        mov     edx, [ebx+uhci_pipe.Token-uhci_pipe.SoftwarePart]
-        mov     [eax+uhci_gtd.Token-uhci_gtd.SoftwarePart], edx
-        and     byte [eax+uhci_gtd.Token+2-uhci_gtd.SoftwarePart], not (1 shl (20-16))
+        mov     [eax+uhci_gtd.NextTD-sizeof.uhci_gtd], 1  ; no next TD
+        mov     edx, [ebx+uhci_pipe.Token-sizeof.uhci_pipe]
+        mov     [eax+uhci_gtd.Token-sizeof.uhci_gtd], edx
+        and     byte [eax+uhci_gtd.Token+2-sizeof.uhci_gtd], not (1 shl (20-16))
         and     edx, 1 shl 20
         shl     edx, 6
         or      edx, UHCI_INVALID_LENGTH + (1 shl 23) + (3 shl 27)
                 ; not processed, active, allow 3 errors
-        mov     [eax+uhci_gtd.ControlStatus-uhci_gtd.SoftwarePart], edx
+        mov     [eax+uhci_gtd.ControlStatus-sizeof.uhci_gtd], edx
 ; 5. Initialize remaining fields of the current TD.
 ; 5a. Store pointer to the buffer allocated in step 1 (or zero).
-        pop     [ecx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart]
+        pop     [ecx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd]
 ; 5b. Store physical address of the next TD.
         push    eax
-        sub     eax, uhci_gtd.SoftwarePart
+        sub     eax, sizeof.uhci_gtd
         call    get_phys_addr
 ; use Depth traversal unless this is the first TD in the transfer stage;
 ; uhci_insert_transfer will set Depth traversal for the first TD and clear
@@ -1736,21 +1725,21 @@ end virtual
         jz      @f
         or      eax, 4
 @@:
-        mov     [ecx+uhci_gtd.NextTD-uhci_gtd.SoftwarePart], eax
+        mov     [ecx+uhci_gtd.NextTD-sizeof.uhci_gtd], eax
 ; 5c. Store physical address of the buffer: zero if no data present,
 ; the temporary buffer if it was allocated, the given buffer otherwise.
         xor     eax, eax
         cmp     [.packetSize], eax
         jz      .hasphysbuf
         mov     eax, [.buffer]
-        mov     edx, [ecx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart]
+        mov     edx, [ecx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd]
         test    edx, edx
         jz      @f
         mov     eax, [edx+uhci_original_buffer.UsedBuffer]
 @@:
         call    get_phys_addr
 .hasphysbuf:
-        mov     [ecx+uhci_gtd.Buffer-uhci_gtd.SoftwarePart], eax
+        mov     [ecx+uhci_gtd.Buffer-sizeof.uhci_gtd], eax
 ; 5d. For IN transfers, disallow short packets.
 ; This will be overridden, if needed, by uhci_alloc_transfer.
         mov     eax, [.token]
@@ -1758,13 +1747,13 @@ end virtual
         dec     edx
         cmp     al, USB_PID_IN
         jnz     @f
-        or      byte [ecx+uhci_gtd.ControlStatus+3-uhci_gtd.SoftwarePart], 1 shl (29-24)        ; disallow short packets
-        or      byte [ecx+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart], 1
+        or      byte [ecx+uhci_gtd.ControlStatus+3-sizeof.uhci_gtd], 1 shl (29-24)        ; disallow short packets
+        or      byte [ecx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd], 1
 @@:
 ; 5e. Get Token field: combine [.token] with [.packetSize].
         shl     edx, 21
         or      edx, eax
-        mov     [ecx+uhci_gtd.Token-uhci_gtd.SoftwarePart], edx
+        mov     [ecx+uhci_gtd.Token-sizeof.uhci_gtd], edx
 ; 6. Flip toggle bit in [.token].
         xor     eax, 1 shl 19
         mov     [.token], eax
@@ -1785,11 +1774,11 @@ endp
 ; ecx -> last descriptor for the transfer, ebx -> usb_pipe
 proc uhci_insert_transfer
 ;       DEBUGF 1,'K : uhci_insert_transfer: eax=%x, ecx=%x, [esp+4]=%x\n',eax,ecx,[esp+4]
-        and     byte [eax+uhci_gtd.ControlStatus+2-uhci_gtd.SoftwarePart], not (1 shl (23-16))  ; clear Active bit
-        or      byte [ecx+uhci_gtd.ControlStatus+3-uhci_gtd.SoftwarePart], 1 shl (24-24)        ; set InterruptOnComplete bit
+        and     byte [eax+uhci_gtd.ControlStatus+2-sizeof.uhci_gtd], not (1 shl (23-16))  ; clear Active bit
+        or      byte [ecx+uhci_gtd.ControlStatus+3-sizeof.uhci_gtd], 1 shl (24-24)        ; set InterruptOnComplete bit
         mov     eax, [esp+4]
-        or      byte [eax+uhci_gtd.ControlStatus+2-uhci_gtd.SoftwarePart], 1 shl (23-16)        ; set Active bit
-        or      byte [eax+uhci_gtd.NextTD-uhci_gtd.SoftwarePart], 4     ; set Depth bit
+        or      byte [eax+uhci_gtd.ControlStatus+2-sizeof.uhci_gtd], 1 shl (23-16)        ; set Active bit
+        or      byte [eax+uhci_gtd.NextTD-sizeof.uhci_gtd], 4     ; set Depth bit
         ret
 endp
 
@@ -1798,13 +1787,13 @@ endp
 ; and the temporary buffer, if present.
 proc uhci_free_td
         mov     eax, [esp+4]
-        mov     eax, [eax+uhci_gtd.OrigBufferInfo-uhci_gtd.SoftwarePart]
+        mov     eax, [eax+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd]
         and     eax, not 1
         jz      .nobuf
         push    ebx
         call    free
         pop     ebx
 .nobuf:
-        sub     dword [esp+4], uhci_gtd.SoftwarePart
+        sub     dword [esp+4], sizeof.uhci_gtd
         jmp     usb_free_common
 endp

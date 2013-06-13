@@ -432,14 +432,14 @@ endp
 ; in the list header.
 proc ehci_hs_interrupt_list_unlink
 ; get target list
-        mov     edx, [ebx+ehci_pipe.BaseList-ehci_pipe.SoftwarePart]
+        mov     edx, [ebx+ehci_pipe.BaseList-sizeof.ehci_pipe]
 ; TODO: calculate real bandwidth
-        movzx   eax, word [ebx+ehci_pipe.Token-ehci_pipe.SoftwarePart+2]
-        mov     ecx, [ebx+ehci_pipe.Flags-ehci_pipe.SoftwarePart]
+        movzx   eax, word [ebx+ehci_pipe.Token-sizeof.ehci_pipe+2]
+        mov     ecx, [ebx+ehci_pipe.Flags-sizeof.ehci_pipe]
         and     eax, (1 shl 11) - 1
         shr     ecx, 30
         imul    eax, ecx
-        movzx   ecx, byte [ebx+ehci_pipe.Flags-ehci_pipe.SoftwarePart]
+        movzx   ecx, byte [ebx+ehci_pipe.Flags-sizeof.ehci_pipe]
         add     edx, ehci_static_ep.Bandwidths - ehci_static_ep.SoftwarePart
 ; update bandwidth
 .dec_bandwidth:
