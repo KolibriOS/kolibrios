@@ -256,6 +256,8 @@ macro   SOCKET_init {
 align 4
 sys_socket:
 
+        mov     dword[esp+24], 0        ; Set error code to 0
+
         cmp     ebx, 255
         jz      SOCKET_debug
 
