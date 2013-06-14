@@ -56,6 +56,50 @@ START:	    ; Start of execution
 	cmp	[params],0
 	jz	start_1
 	
+	                                              ;---------GerdtR
+        or      ecx,-1                      
+        mov     esi,params
+        cmp     byte[esi],' '
+        jne     @f
+        mov     edi,esi
+        mov     al,' '
+        repe    scasb
+        mov     esi,edi
+        dec     esi
+    @@:
+
+        mov     edi,dbgWord
+    @@: lodsb
+        scasb
+        jne     NoOutDebugInfo
+        cmp     byte[edi],0
+        jnz     @b
+
+        cmp     byte[esi],' '
+        jne     NoOutDebugInfo
+
+        mov     edi,esi
+        mov     al,' '
+        repe    scasb
+        mov     esi,edi
+        dec     esi
+
+        mov     edi,params
+    @@: lodsb
+        stosb
+        test    al,al
+        jnz     @b
+
+ ;       mov     [bGenerateDebugInfo], 1
+        or      dword[ch1_dbg.flags],10b
+
+
+NoOutDebugInfo:
+                                                   ;---------/GerdtR
+
+
+
+
 	mov	ecx,10
 	mov	eax,'    '
 	mov	edi,infile
@@ -652,6 +696,8 @@ _counter db 4,'0000'
 _mode	       dd NORMAL_MODE
 _run_outfile  dd 0
 ;bGenerateDebugInfo db 0
+
+dbgWord         db '-d',0
 
 sub_table:
 times $41 db $00
