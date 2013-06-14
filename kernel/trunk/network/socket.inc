@@ -17,6 +17,16 @@
 
 $Revision: 3514 $
 
+ENOBUFS         = 1
+EOPNOTSUPP      = 4
+EWOULDBLOCK     = 6
+ENOTCONN        = 9
+EALREADY        = 10
+EINVAL          = 11
+EMSGSIZE        = 12
+ENOMEM          = 18
+EADDRINUSE      = 20
+
 
 struct  SOCKET
 
@@ -250,7 +260,7 @@ sys_socket:
         jz      SOCKET_debug
 
         cmp     ebx, .number
-        ja      s_error
+        ja      .error
         jmp     dword [.table + 4*ebx]
 
   .table:
@@ -267,9 +277,9 @@ sys_socket:
         dd      SOCKET_pair     ; 10
   .number = ($ - .table) / 4 - 1
 
-s_error:
-        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET: error\n"
-        mov     dword [esp+32], -1
+  .error:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EINVAL
 
         ret
 
@@ -291,7 +301,7 @@ SOCKET_open:
         push    ecx edx esi
         call    SOCKET_alloc
         pop     esi edx ecx
-        jz      s_error
+        jz      .nobuffs
 
         mov     [esp+32], edi                   ; return socketnumber
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socknum=%u\n", edi
@@ -326,24 +336,27 @@ SOCKET_open:
         je      .pppoe
 
   .no_ppp:
-        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_open: Unknown socket family/protocol\n"
+  .unsupported:
+        push    eax
+        call    SOCKET_free
+        pop     eax
+        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+32], -1
         ret
 
-align 4
+  .nobuffs:
+        mov     dword[esp+24], ENOBUFS
+        mov     dword[esp+32], -1
+        ret
+
   .raw:
         test    esi, esi       ; IP_PROTO_IP
-        jz      .ip
+        jz      .raw_ip
 
         cmp     esi, IP_PROTO_ICMP
-        je      .icmp
+        je      .raw_icmp
 
-        cmp     esi, IP_PROTO_UDP
-        je      .udp
-
-        cmp     esi, IP_PROTO_TCP
-        je      .tcp
-
-        ret
+        jmp     .unsupported
 
 align 4
   .udp:
@@ -363,14 +376,14 @@ align 4
 
 
 align 4
-  .ip:
+  .raw_ip:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
         ret
 
 
 align 4
-  .icmp:
+  .raw_icmp:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_icmp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
         ret
@@ -402,10 +415,10 @@ SOCKET_bind:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         cmp     esi, 2
-        jb      s_error
+        jb      .invalid
 
         cmp     word [edx], AF_INET4
         je      .af_inet4
@@ -413,18 +426,24 @@ SOCKET_bind:
         cmp     word [edx], AF_LOCAL
         je      .af_local
 
-        jmp     s_error
+  .notsupp:
+        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+32], -1
+        ret
+
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
 
   .af_local:
         ; TODO: write code here
-
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
         ret
 
   .af_inet4:
-
         cmp     esi, 6
-        jb      s_error
+        jb      .invalid
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
         je      .udp
@@ -432,11 +451,10 @@ SOCKET_bind:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         je      .tcp
 
-        jmp     s_error
+        jmp     .notsupp
 
   .tcp:
   .udp:
-
         mov     ebx, [edx + 4]                  ; First, fill in the IP
         test    ebx, ebx                        ; If IP is 0, use default
         jnz     @f
@@ -446,13 +464,18 @@ SOCKET_bind:
 
         mov     bx, [edx + 2]                   ; Now fill in the local port if it's still available
         call    SOCKET_check_port
-        jz      s_error                         ; ZF is set by socket_check_port, on error
+        jz      .addrinuse                      ; ZF is set by socket_check_port, on error
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: local ip=%u.%u.%u.%u\n",\
         [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
         [eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
 
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
+        ret
+
+  .addrinuse:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EADDRINUSE
         ret
 
 
@@ -474,15 +497,23 @@ SOCKET_connect:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         cmp     esi, 8
-        jb      s_error
+        jb      .invalid
 
         cmp     word [edx], AF_INET4
         je      .af_inet4
 
-        jmp     s_error
+  .notsupp:
+        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+32], -1
+        ret
+
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
 
   .af_inet4:
         cmp     [eax + IP_SOCKET.LocalIP], 0
@@ -503,7 +534,7 @@ SOCKET_connect:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
         je      .ip
 
-        jmp     s_error
+        jmp     .notsupp
 
 align 4
   .udp:
@@ -532,7 +563,7 @@ align 4
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
         ret
 
 align 4
@@ -569,10 +600,10 @@ align 4
         mov     ebx, eax
 
         lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_create
+        call    SOCKET_ring_create              ; TODO: check if memory was available or not
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create
+        call    SOCKET_ring_create              ; TODO: same here
 
         pusha
         lea     ecx, [ebx + SOCKET.mutex]
@@ -584,7 +615,7 @@ align 4
 
 ;;; TODO: wait for successfull connection if blocking socket
 
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
         ret
 
 align 4
@@ -604,7 +635,7 @@ align 4
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
         ret
 
 
@@ -623,16 +654,16 @@ SOCKET_listen:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         cmp     [eax + SOCKET.Domain], AF_INET4
-        jne     s_error
+        jne     .notsupp
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        jne     s_error
+        jne     .invalid
 
         cmp     [eax + TCP_SOCKET.LocalPort], 0
-        je      s_error
+        je      .already
 
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
@@ -654,8 +685,22 @@ SOCKET_listen:
         init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up sockets queue
         pop     eax
 
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
+        ret
 
+  .notsupp:
+        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+32], -1
+        ret
+
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
+
+  .already:
+        mov     dword[esp+24], EALREADY
+        mov     dword[esp+32], -1
         ret
 
 
@@ -675,16 +720,16 @@ SOCKET_accept:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         test    [eax + SOCKET.options], SO_ACCEPTCON
-        jz      s_error
+        jz      .invalid
 
         cmp     [eax + SOCKET.Domain], AF_INET4
-        jne     s_error
+        jne     .notsupp
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        jne     s_error
+        jne     .invalid
 
   .loop:
         get_from_queue (eax + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, .block
@@ -692,24 +737,40 @@ SOCKET_accept:
 ; Ok, we got a socket ptr
         mov     eax, [esi]
 
+; Convert it to a socket number
+        call    SOCKET_ptr_to_num
+        jz      .invalid        ; FIXME ?
+
 ; Change thread ID to that of the current thread
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.TID], ebx
 
-; Convert it to a socket number
-        call    SOCKET_ptr_to_num
-        jz      s_error
 ; and return it to caller
         mov     [esp+32], eax
         ret
 
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     s_error
+        jnz     .wouldblock
 
         call    SOCKET_block
         jmp     .loop
+
+  .wouldblock:
+        mov     dword[esp+24], EWOULDBLOCK
+        mov     dword[esp+32], -1
+        ret
+
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
+
+  .notsupp:
+        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+32], -1
+        ret
 
 ;-----------------------------------------------------------------
 ;
@@ -725,9 +786,9 @@ SOCKET_close:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_close: socknum=%u\n", ecx
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
-        mov     dword [esp+32], 0                               ; The socket exists, so we will succeed in closing it.
+        mov     dword[esp+32], 0                                ; The socket exists, so we will succeed in closing it.
 
         or      [eax + SOCKET.options], SO_NONBLOCK             ; Mark the socket as non blocking, we dont want it to block any longer!
 
@@ -757,6 +818,12 @@ SOCKET_close:
         ret
 
 
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
+
+
 ;-----------------------------------------------------------------
 ;
 ; SOCKET_receive
@@ -774,17 +841,22 @@ SOCKET_receive:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         call    [eax + SOCKET.rcv_proc]
 
+        mov     [esp+24], ebx
         mov     [esp+32], eax
         ret
 
 
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
+
 align 4
 SOCKET_receive_dgram:
-
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: DGRAM\n"
 
         mov     ebx, esi
@@ -820,22 +892,24 @@ SOCKET_receive_dgram:
 
         call    kernel_free                                     ; remove the packet
         pop     eax
-
         ret
 
   .too_small:
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Buffer too small\n"
-  .fail:
         mov     eax, -1
+        mov     ebx, EMSGSIZE
         ret
 
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     .fail
+        jnz     .wouldblock
 
         call    SOCKET_block
         jmp     .loop
+
+  .wouldblock:
+        mov     eax, -1
+        mov     ebx, EWOULDBLOCK
+        ret
 
 
 align 4
@@ -886,7 +960,7 @@ SOCKET_receive_stream:
 
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     .return0
+        jnz     .wouldblock
 
         call    SOCKET_block
         jmp     .loop
@@ -902,6 +976,12 @@ SOCKET_receive_stream:
   .ok:
         xor     eax, eax
         ret
+
+  .wouldblock:
+        mov     eax, -1
+        mov     ebx, EWOULDBLOCK
+        ret
+
 
 
 ;-----------------------------------------------------------------
@@ -922,12 +1002,17 @@ SOCKET_send:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         mov     ecx, esi
         mov     esi, edx
 
         jmp     [eax + SOCKET.snd_proc]
+
+  .invalid:
+        mov     dword[esp+24], EINVAL
+        mov     dword[esp+32], -1
+        ret
 
 
 align 4
@@ -938,7 +1023,12 @@ SOCKET_send_udp:
         mov     [esp+32], ecx
         call    UDP_output
         cmp     eax, -1
-        je      s_error
+        je      .error
+        ret
+
+  .error:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EMSGSIZE ; FIXME: UDP_output should return error codes!
         ret
 
 
@@ -953,8 +1043,12 @@ SOCKET_send_tcp:
         pop     eax
 
         mov     [esp+32], ecx
-
-        call    TCP_output
+        mov     [eax + SOCKET.errorcode], 0
+        push    eax
+        call    TCP_output              ; FIXME: this doesnt look pretty, does it?
+        pop     eax
+        mov     eax, [eax + SOCKET.errorcode]
+        mov     [esp+24], eax
         ret
 
 
@@ -964,9 +1058,14 @@ SOCKET_send_ip:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: IPv4\n"
 
         mov     [esp+32], ecx
-        call    IPv4_output_raw
+        call    IPv4_output_raw         ; FIXME: IPv4_output_raw should return error codes!
         cmp     eax, -1
-        je      s_error
+        je      .error
+        ret
+
+  .error:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EMSGSIZE
         ret
 
 
@@ -976,9 +1075,14 @@ SOCKET_send_icmp:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: ICMP\n"
 
         mov     [esp+32], ecx
-        call    ICMP_output_raw
+        call    ICMP_output_raw         ; FIXME: errorcodes
         cmp     eax, -1
-        je      s_error
+        je      .error
+        ret
+
+  .error:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EMSGSIZE
         ret
 
 
@@ -990,9 +1094,14 @@ SOCKET_send_pppoe:
         mov     [esp+32], ecx
         mov     ebx, [eax + SOCKET.device]
 
-        call    PPPoE_discovery_output
+        call    PPPoE_discovery_output  ; FIXME: errorcodes
         cmp     eax, -1
-        je      s_error
+        je      .error
+        ret
+
+  .error:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EMSGSIZE
         ret
 
 
@@ -1020,7 +1129,7 @@ SOCKET_send_local_:
         ; get the other side's socket and check if it still exists
         mov     eax, [eax + SOCKET.device]
         call    SOCKET_check
-        jz      s_error
+        jz      .invalid
 
         ; allright, shove in the data!
         push    eax
@@ -1034,6 +1143,11 @@ SOCKET_send_local_:
         ; and notify the other end
         call    SOCKET_notify
 
+        ret
+
+  .invalid:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EINVAL
         ret
 
 
@@ -1057,14 +1171,14 @@ SOCKET_get_opt:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_get_opt\n"
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         cmp     dword [edx], IP_PROTO_TCP
-        jne     s_error
+        jne     .invalid
         cmp     dword [edx+4], -2
         je      @f
         cmp     dword [edx+4], -3
-        jne     s_error
+        jne     .invalid
 @@:
 ;        mov     eax, [edx+12]
 ;        test    eax, eax
@@ -1089,6 +1203,11 @@ SOCKET_get_opt:
         mov     dword [esp+32], 0
         ret
 
+  .invalid:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EINVAL
+        ret
+
 
 
 ;-----------------------------------------------------------------
@@ -1107,10 +1226,10 @@ SOCKET_set_opt:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt\n"
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         cmp     dword [edx], SOL_SOCKET
-        jne     s_error
+        jne     .invalid
 
         cmp     dword [edx+4], SO_BINDTODEVICE
         je      .bind
@@ -1118,46 +1237,55 @@ SOCKET_set_opt:
         cmp     dword [edx+4], SO_BLOCK
         je      .block
 
-        jmp     s_error
+  .invalid:
+        mov     dword[esp+32], -1
+        mov     dword[esp+24], EINVAL
+        ret
 
   .bind:
-        cmp     dword [edx+8], 0
+        cmp     dword[edx+8], 0
         je      .unbind
 
-        movzx   edx, byte [edx + 9]
+        movzx   edx, byte[edx + 9]
         cmp     edx, NET_DEVICES_MAX
-        ja      s_error
+        ja      .invalid
 
         mov     edx, [NET_DRV_LIST + 4*edx]
         test    edx, edx
-        jz      s_error
+        jz      .already
         mov     [eax + SOCKET.device], edx
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_set_opt: Bound socket %x to device %x\n",eax, edx
 
-        mov     dword [esp+32], 0       ; success!
+        mov     dword[esp+32], 0        ; success!
         ret
 
   .unbind:
         mov     [eax + SOCKET.device], 0
 
-        mov     dword [esp+32], 0       ; success!
+        mov     dword[esp+32], 0        ; success!
         ret
 
   .block:
-        cmp     dword [edx+8], 0
+        cmp     dword[edx+8], 0
         je      .unblock
 
         and     [eax + SOCKET.options], not SO_NONBLOCK
 
-        mov     dword [esp+32], 0       ; success!
+        mov     dword[esp+32], 0        ; success!
         ret
 
   .unblock:
         or      [eax + SOCKET.options], SO_NONBLOCK
 
-        mov     dword [esp+32], 0       ; success!
+        mov     dword[esp+32], 0        ; success!
         ret
+
+  .already:
+        mov     dword[esp+24], EALREADY
+        mov     dword[esp+32], -1
+        ret
+
 
 
 
@@ -1178,7 +1306,7 @@ SOCKET_pair:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_pair\n"
 
         call    SOCKET_alloc
-        jz      s_error
+        jz      .nomem1
         mov     [esp+32], edi   ; application's eax
 
         mov     [eax + SOCKET.Domain], AF_LOCAL
@@ -1190,7 +1318,7 @@ SOCKET_pair:
         mov     ebx, eax
 
         call    SOCKET_alloc
-        jz      .error
+        jz      .nomem2
         mov     [esp+24], edi   ; application's ebx
 
         mov     [eax + SOCKET.Domain], AF_LOCAL
@@ -1213,10 +1341,13 @@ SOCKET_pair:
 
         ret
 
-  .error:
+  .nomem2:
         mov     eax, ebx
         call    SOCKET_free
-        jmp     s_error
+  .nomem1:
+        mov     dword[esp+32], -1
+        mov     dword[esp+28], ENOMEM
+        ret
 
 
 
@@ -1242,13 +1373,13 @@ SOCKET_debug:
         jz      .returnall
 
         call    SOCKET_num_to_ptr
-        jz      s_error
+        jz      .invalid
 
         mov     esi, eax
         mov     ecx, SOCKETBUFFSIZE/4
         rep     movsd
 
-        mov     dword [esp+32], 0
+        mov     dword[esp+32], 0
         ret
 
   .returnall:
@@ -1263,8 +1394,12 @@ SOCKET_debug:
   .done:
         xor     eax, eax
         stosd
+        mov     dword[esp+32], eax
+        ret
 
-        mov     dword [esp+32], 0
+  .invalid:
+        mov     dword[esp+32], -1
+        mov     dword[esp+28], EINVAL
         ret
 
 
@@ -1830,8 +1965,8 @@ SOCKET_alloc:
         pop     eax
 
 ; set send-and receive procedures to return -1
-        mov     [eax + SOCKET.snd_proc], s_error
-        mov     [eax + SOCKET.rcv_proc], s_error
+        mov     [eax + SOCKET.snd_proc], .not_yet
+        mov     [eax + SOCKET.rcv_proc], .not_yet
 
         pusha
         mov     ecx, socket_mutex
@@ -1905,6 +2040,11 @@ SOCKET_alloc:
   .exit:
         pop     ebx
 
+        ret
+
+  .not_yet:
+        mov     dword[esp+24], ENOTCONN
+        mov     dword[esp+32], -1
         ret
 
 
@@ -2391,8 +2531,13 @@ SOCKET_cant_send_more:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_send_more: %x\n", eax
 
         or      [eax + SOCKET.options], SS_CANTSENDMORE
-        mov     [eax + SOCKET.snd_proc], s_error
+        mov     [eax + SOCKET.snd_proc], .notconn
 
         call    SOCKET_notify
 
+        ret
+
+  .notconn:
+        mov     dword[esp+24], ENOTCONN
+        mov     dword[esp+32], -1
         ret
