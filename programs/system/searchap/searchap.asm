@@ -37,8 +37,13 @@
 	dd 0x0
 	dd 0x0
 ;-------------------------------------------------------------------------------
+debug equ no	;yes
+
 include	'../../macros.inc'
+
+if debug eq yes	
 include	'../../debug.inc'
+end if
 ;-------------------------------------------------------------------------------
 START:
 	mov	ebx,start_dir
@@ -48,12 +53,12 @@ START:
 	mov	ebx,read_folder_1_name
 	mov	[ebx],ax
 	call	device_detect_f70
-	call	print_retrieved_devices_table
-	
-	mov	[fileinfo.return],dword folder_data
 ;--------------------------------------
+if debug eq yes	
+	call	print_retrieved_devices_table
 dps 'get basic file'
 newline
+end if
 ;--------------------------------------
 	call	load_file	; download the master file
 	xor	eax,eax
@@ -65,6 +70,8 @@ newline
 	call	search_and_load_pointer_file_label
 ;---------------------------------------------------------------------
 exit:
+;--------------------------------------
+if debug eq yes
 dps 'just exit'
 ;newline
 ;	mov	edx,read_folder_name
@@ -73,58 +80,78 @@ dps 'just exit'
 ;	mov	edx,read_folder_1_name
 ;	call	debug_outstr
 ;newline
+end if
+;--------------------------------------
 	mcall	-1
 ;---------------------------------------------------------------------
 device_detect_f70:
 ;--------------------------------------
+if debug eq yes
 dps	'read_folder_name: '
 	mov	edx,read_folder_name
 	call	debug_outstr
 newline
+end if
 ;--------------------------------------
 	mcall	70,read_folder
 	test	eax,eax
 	jz	@f
 	cmp	eax,6
 	je	@f
+;--------------------------------------
+if debug eq yes
 dps 'read_folder_error'
 newline
 ;	mov	edx,read_folder_name
 ;	call	debug_outstr
 ;newline
+end if
+;--------------------------------------
 	jmp	exit
 @@:
 ;--------------------------------------
+if debug eq yes
 	call	print_root_dir
+end if
+;--------------------------------------
 	mov	[left_folder_block],ebx
-	mov	[temp_counter_1],0
-	mov	[retrieved_devices_table_counter],0
+	xor	eax,eax
+	mov	[temp_counter_1],eax
+	mov	[retrieved_devices_table_counter],eax
 .start_temp_counter_1:
 	imul	esi,[temp_counter_1],304
 	add	esi,[read_folder.return]
 	add	esi,32+40
 	call	copy_folder_name_1
+;--------------------------------------
+if debug eq yes
 ;dps	'read_folder_1_name: '
 ;	mov	edx,read_folder_1_name
 ;	call	debug_outstr
 ;newline
+end if
+;--------------------------------------
 	mcall	70,read_folder_1
 	test	eax,eax
 	jz	@f
 	cmp	eax,6
 	je	@f
+;--------------------------------------
+if debug eq yes
 dps 'read_folder_error_1'
 newline
 ;	mov	edx,read_folder_1_name
 ;	call	debug_outstr
 ;newline
+end if
+;--------------------------------------
 	jmp	exit
 @@:
 	mov	eax,[read_folder_1.return]
 	cmp	[eax+4],dword 0
 	je	.continue
 	mov	[right_folder_block],ebx
-	mov	ebp,0
+	xor	ebp,ebp
 .start_copy_device_patch:
 	imul	edi,[retrieved_devices_table_counter],10
 	add	edi,retrieved_devices_table
@@ -151,7 +178,7 @@ newline
 	mov	esi,retrieved_devices_table+1
 	call	copy_folder_name
 	mov	esi,retrieved_devices_table+3
-	mov	ecx,0
+	xor	ecx,ecx
 @@:
 	add	esi,8
 	cld
@@ -174,30 +201,48 @@ load_file:
 	xor	eax,eax
 	mov	[fileinfo.size],eax
 	mov	[fs_error],eax
+;--------------------------------------
+if debug eq yes
 dps 'get file info'
 newline
+end if
+;--------------------------------------
 	mcall	70,fileinfo
 	mov	[fs_error],eax
 	test	eax,eax
 	jnz	.file_error
+;--------------------------------------
+if debug eq yes
 dps 'file info ok'
 newline
-	mov	[fileinfo.subfunction],dword 0
+end if
+;--------------------------------------
+	xor	eax,eax
+	mov	[fileinfo.subfunction],eax	;dword 0
 	mov	eax,[fileinfo.return]
 	mov	ecx,[eax+32]
+;--------------------------------------
+if debug eq yes
 dps 'real file size: '
 dpd ecx
 newline
+end if
+;--------------------------------------
 	test	ecx,ecx
 	jz	.file_error
-	cmp	ecx,304*32+32 ; 9 Kb
+	mov	eax,304*32+32 ; 9 Kb
+	cmp	ecx,eax
 	jbe	@f
-	mov	ecx,304*32+32 ; 9 Kb
+	mov	ecx,eax
 ;-----------------------------------
 @@:	
 	mov	[fileinfo.size],ecx
+;--------------------------------------
+if debug eq yes
 dps 'get file'
 newline	
+end if
+;--------------------------------------
 	mcall	70,fileinfo
 	mov	[fs_error],eax
 	test	eax,eax
@@ -209,14 +254,22 @@ newline
 ;	jmp	@f
 ;-----------------------------------
 .file_error:
+;--------------------------------------
+if debug eq yes
 dps 'read file - error!'
 newline
+end if
+;--------------------------------------
 	ret
 ;-----------------------------------	
-@@:	
+@@:
+;--------------------------------------
+if debug eq yes
 dps 'read file corrected size: '
 dpd dword[fileinfo.size]
 newline
+end if
+;--------------------------------------
 	ret
 ;---------------------------------------------------------------------
 search_and_load_pointer_file_label:
@@ -227,9 +280,13 @@ search_and_load_pointer_file_label:
 	mov	esi,retrieved_devices_table
 ;	sub	esi,10	; deleted because /rd/1/ no need to check
 .next_entry:
+;--------------------------------------
+if debug eq yes
 newline
 dps 'copy next entry'
 newline
+end if
+;--------------------------------------
 	add	esi,10
 	push	esi
 	add	esi,1
@@ -238,11 +295,15 @@ newline
 	dec	edi
 	call	copy_folder_name.1
 	pop	esi
+;--------------------------------------
+if debug eq yes
 	mov	edx,[fileinfo.name]
 	push	ecx
 	call	debug_outstr
 	pop	ecx
 newline	
+end if
+;--------------------------------------
 ;	mcall	5,10
 	push	ecx
 	call	load_file
@@ -257,8 +318,12 @@ newline
 @@:
 	dec	ecx
 	jnz	.next_entry
+;--------------------------------------
+if debug eq yes
 dps 'additional parttition is not found!'
 newline	
+end if
+;--------------------------------------
 	ret
 .sucess:
 	call	compare_files_and_mount
@@ -282,54 +347,60 @@ compare_files_and_mount:
 	jnz	.next_char
 	mov	[compare_flag],byte 0
 	pop	esi ecx
+;--------------------------------------
+if debug eq yes
 dps 'compare files sucess!'
 newline	
 dps 'mount directory:'
 newline
 	mov	edx,esi
+	push	esi
 	call	debug_outstr
+	pop	esi
 newline
+end if
+;--------------------------------------
+; prepare real directory path for mounting
+	inc	esi
+	mov	edi,f30_3_work_area+64
+	call	proc_copy_patch
+; prepare fake directory name
+	mov	esi,additional_dir_name
+	mov	edi,f30_3_work_area
+	call	proc_copy_patch
 ; here is call kernel function to mount the found partition
 ; as "/addappl" directory to root directory "/"
+	mcall	30,3,f30_3_work_area
 	ret
 ;--------------------------------------
 .not_match:
 	mov	[compare_flag],byte 1
 	pop	esi ecx
+;--------------------------------------
+if debug eq yes
 dps 'compare files is not match!'
 newline	
+end if
+;--------------------------------------
 	ret
 ;---------------------------------------------------------------------
-proc_copy_patch:
-@@:
-	cld
-	lodsb
-	stosb
-	cmp	al,0
-	jne	@r
-	ret
-;---------------------------------------------------------------------	
 copy_folder_name:
 	mov	edi,read_folder_name+1
 .1:
-@@:
+proc_copy_patch:
 	cld
+@@:
 	lodsb
 	stosb
-	cmp	al,0
-	jne	@r
+	test	al,al
+	jnz	@r
 	ret
 ;---------------------------------------------------------------------
 copy_folder_name_1:
 	mov	edi,read_folder_1_name+1
-@@:
-	cld
-	lodsb
-	stosb
-	cmp	al,0
-	jne	@r
-	ret
+	jmp	proc_copy_patch
 ;---------------------------------------------------------------------
+if debug eq yes
 print_retrieved_devices_table:
 	mov	ecx,[retrieved_devices_table_counter]
 	mov	edx,retrieved_devices_table
@@ -371,6 +442,7 @@ newline
 dps '----------'
 newline
 	ret
+end if
 ;---------------------------------------------------------------------
 read_folder:
 .subfunction	dd 1
@@ -390,7 +462,6 @@ read_folder_1:
 		db 0
 .name:		dd read_folder_1_name
 ;---------------------------------------------------------------------
-align 4
 fileinfo:
 .subfunction	dd 5
 .Offset		dd 0
@@ -407,6 +478,8 @@ basic_file_path:
 	db '/rd/1/'
 basic_file_name:
 	db 'kolibri.lbl',0
+additional_dir_name:
+	db 'addappl',0
 ;-------------------------------------------------------------------------------
 IM_END:
 ;-------------------------------------------------------------------------------
@@ -418,6 +491,10 @@ retrieved_devices_table_counter	rd 1
 basic_file_size		rd 1
 fs_error		rd 1
 compare_flag		rb 1
+;-------------------------------------------------------------------------------
+align 4
+f30_3_work_area:
+	rb 128
 ;-------------------------------------------------------------------------------
 align 4
 retrieved_devices_table:
