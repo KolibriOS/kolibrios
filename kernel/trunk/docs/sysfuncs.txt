@@ -1776,6 +1776,23 @@ Remarks:
   * At process/thread creation the current folder will be inherited
     from the parent.
 
+--- Subfunction 3 - install the add.system directory for the kernel --
+Parameters:
+  * eax = 30 - function number
+  * ebx = 3 - subfunction number
+  * ecx = pointer to a block of data:
+          sysdir_name     rb 64
+          sysdir_path     rb 64
+For example:  
+dir_name1       db 'addappl',0
+                rb 64-8
+dir_path1       db 'HD0/1',0
+                rb 64-6
+Returned value:
+  * function does not return value
+Remarks:
+  * The function can be called only 1 time for 1 session of the OS.
+
 ======================================================================
 ========= Function 34 - who owner the pixel on the screen. ===========
 ======================================================================

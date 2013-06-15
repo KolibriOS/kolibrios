@@ -934,6 +934,12 @@ biosdisk_enum_root:
         ret
 
 process_replace_file_name:
+; in
+; esi - path with filename(f.70)
+;
+; out
+; ebp - full filename
+
         mov     ebp, [full_file_name_table]
         mov     edi, [full_file_name_table.size]
         dec     edi
@@ -975,6 +981,10 @@ process_replace_file_name:
 .ret:
         ret
 
+uglobal
+lock_flag_for_f30_3 rb 1
+endg
+        
 sys_current_directory:
 ;       mov     esi, [current_slot]
 ;       mov     esi, [esi+APPDATA.cur_dir]
@@ -988,7 +998,42 @@ sys_current_directory:
         jz      .set
         dec     ebx
         jz      .get
+        dec     ebx
+        jz      .mount_additional_directory
         ret
+
+.mount_additional_directory:
+; sysfunction 30.2: [for app] eax=30,ebx=3,ecx->dir name+dir path (128)
+; for our code: nothing
+
+; check lock of the function
+        cmp     [lock_flag_for_f30_3], 1
+        je      @f
+        
+        mov     esi, ecx
+        mov     edi, sysdir_name1
+; copying fake directory name
+        mov     ecx, 63
+        cld
+        rep     movsb
+; terminator of name, in case if we get the inlet trash
+        inc     esi
+        xor     eax, eax
+        stosb
+; copying real directory path for mounting
+        mov     ecx, 63
+        rep     movsb
+; terminator of name, in case if we get the inlet trash
+        xor     eax, eax
+        stosb
+; increase the pointer of inputs for procedure "process_replace_file_name"        
+        mov     [full_file_name_table.size], 2
+; block the ability to call f.30.3 because for one session is necessary
+; for us only once
+        mov     [lock_flag_for_f30_3], 1
+@@:
+        ret
+        
 .get:
 ; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
 ; for our code: ebx->buffer,ecx=len
