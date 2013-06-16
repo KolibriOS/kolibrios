@@ -75,6 +75,7 @@ FASM_PROGRAMS:=\
  rdsave:RDSAVE:$(PROGS)/system/rdsave/trunk/rdsave.asm \
  rtfread:RTFREAD:$(PROGS)/other/rtfread/trunk/rtfread.asm \
  run:RUN:$(PROGS)/system/run/trunk/run.asm \
+ searchap:SEARCHAP:$(PROGS)/system/searchap/searchap.asm \
  scrshoot:SCRSHOOT:$(PROGS)/media/scrshoot/scrshoot.asm \
  setup:SETUP:$(PROGS)/system/setup/trunk/setup.asm \
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
@@ -277,7 +278,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
- menu.dat:MENU.DAT \
+ menu.dat:MENU.DAT kolibri.lbl:KOLIBRI.LBL \
  panel.ini:PANEL.INI pipetka:PIPETKA setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
@@ -370,6 +371,7 @@ DISTRIBUTION_EXTRA:=\
  $(EXTRA) \
  /readme.txt=distr_data/readme_distr.txt \
  /readme_dos.txt=distr_data/readme_dos_distr.txt \
+ /kolibri.lbl=kolibri.lbl \
 #end of list
 MKISOFS_EXTRA:=\
  $(EXTRA) \
