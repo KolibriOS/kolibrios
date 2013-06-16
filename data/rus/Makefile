@@ -377,6 +377,7 @@ MKISOFS_EXTRA:=\
  $(EXTRA) \
  /=distr_data/readme.txt \
  /=distr_data/readme_dos.txt \
+ /=kolibri.lbl \
 #end of list
 
 # Text files which need to be recoded to cp1251 from native aka cp866
