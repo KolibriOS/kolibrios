@@ -74,6 +74,7 @@ FASM_PROGRAMS:=\
  rdsave:RDSAVE:$(PROGS)/system/rdsave/trunk/rdsave.asm \
  rtfread:RTFREAD:$(PROGS)/other/rtfread/trunk/rtfread.asm \
  run:RUN:$(PROGS)/system/run/trunk/run.asm \
+ searchap:SEARCHAP:$(PROGS)/system/searchap/searchap.asm \
  scrshoot:SCRSHOOT:$(PROGS)/media/scrshoot/scrshoot.asm \
  setup:SETUP:$(PROGS)/system/setup/trunk/setup.asm \
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
@@ -282,7 +283,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
- menu.dat:MENU.DAT \
+ menu.dat:MENU.DAT kolibri.lbl:KOLIBRI.LBL \
  panel.ini:PANEL.INI setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
@@ -324,6 +325,7 @@ MKISOFS_EXTRA:=\
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \
+ /=kolibri.lbl \
  Skins/=$(REPOSITORY)/skins/authors.txt \
  Docs/config.txt=docs/CONFIG.TXT \
  Docs/copying.txt=docs/COPYING.TXT \

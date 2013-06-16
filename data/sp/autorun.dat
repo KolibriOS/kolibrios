@@ -3,6 +3,7 @@
 # Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds. 
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
+/RD/1/SEARCHAP         ""          1    # Search and mount additional system directory
 #/RD/1/CROPFLAT "XS800 YS480"      1    # set limits of screen
 #/RD/1/COMMOUSE        ""          1    # COM mice detector
 #/RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
