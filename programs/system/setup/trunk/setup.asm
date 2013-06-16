@@ -172,7 +172,7 @@ no_close:
         jmp     nodownup
 ;--------------------------------------
 downuplbl:
-        mov     eax,6
+        mov     eax,7
 ;--------------------------------------
 nodownup:
         mov     [keyboard],eax
@@ -182,7 +182,7 @@ nokm:
         cmp     ah,5
         jnz     nokp
         mov     eax,[keyboard]
-        cmp     eax,6
+        cmp     eax,7
         je      updownlbl
         inc     eax
         jmp     noupdown
@@ -428,7 +428,7 @@ nosetkeylfr:
 ;--------------------------------------
 nosetkeylet:
         cmp     [keyboard],6    ;belgian
-        jnz     nosetkeylbe
+        jnz     nosetkeylit
 
         mcall   21,2,1,be_keymap
         
@@ -438,8 +438,23 @@ nosetkeylet:
         inc  ecx
         mcall   21,,,be_keymap_alt_gr
 
-        mcall   21,,9,5
+        mcall   21,,9,7
 ;--------------------------------------
+nosetkeylit:
+        cmp     [keyboard],7    ;italian
+        jnz     nosetkeylbe
+        
+        mcall   21,2,1,it_keymap
+        
+        inc     ecx
+        mcall   21,,,it_keymap_shift
+        
+        inc     ecx
+        mcall   21,,,it_keymap_alt_gr
+        
+        mcall   21,,9,8
+;--------------------------------------
+
 nosetkeylbe:
         ret
 ;-------------------------------------------------------------------------------
@@ -566,6 +581,12 @@ noet:
         mov     [text00+LLL*1+32],dword 'IAN '
 ;--------------------------------------
 nobe:
+        cmp     eax,7
+        jnz     noit
+        mov     [text00+LLL*1+28],dword 'ITAL'
+        mov     [text00+LLL*1+32],dword 'IAN'
+;--------------------------------------
+noit:
         mov     eax,[syslang]             ; SYSTEM LANGUAGE
         dec     eax
         test    eax,eax
