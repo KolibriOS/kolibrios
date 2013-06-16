@@ -36,6 +36,43 @@
 	dd stacktop
 	dd 0x0
 	dd 0x0
+;---------------------------------------------------------------------
+fileinfo:
+.subfunction	dd 5
+.Offset		dd 0
+.Offset_1	dd 0
+.size		dd 0
+.return		dd folder_data
+		db 0
+.name:		dd basic_file_path
+;---------------------------------------------------------------------
+read_folder:
+.subfunction	dd 1
+.start		dd 0
+.flags		dd 0
+.size		dd 32
+.return		dd folder_data
+		db 0
+.name:		dd read_folder_name
+;---------------------------------------------------------------------
+read_folder_1:
+.subfunction	dd 1
+.start		dd 0
+.flags		dd 0
+.size		dd 32
+.return		dd folder_data_1
+		db 0
+.name:		dd read_folder_1_name
+;---------------------------------------------------------------------
+start_dir:
+	db '/',0
+;-------------------------------------------------------------------------------
+basic_file_path:
+	db '/rd/1/'
+basic_file_name:
+	db 'kolibri.lbl',0
+additional_dir_name:
+	db 'addappl',0
 ;-------------------------------------------------------------------------------
 debug equ no	;yes
 
@@ -327,7 +364,7 @@ end if
 	ret
 .sucess:
 	call	compare_files_and_mount
-	cmp	[compare_flag],0
+	cmp	[compare_flag],byte 0
 	jne	@b
 	ret
 ;---------------------------------------------------------------------
@@ -443,43 +480,6 @@ dps '----------'
 newline
 	ret
 end if
-;---------------------------------------------------------------------
-read_folder:
-.subfunction	dd 1
-.start		dd 0
-.flags		dd 0
-.size		dd 32
-.return		dd folder_data
-		db 0
-.name:		dd read_folder_name
-;---------------------------------------------------------------------
-read_folder_1:
-.subfunction	dd 1
-.start		dd 0
-.flags		dd 0
-.size		dd 32
-.return		dd folder_data_1
-		db 0
-.name:		dd read_folder_1_name
-;---------------------------------------------------------------------
-fileinfo:
-.subfunction	dd 5
-.Offset		dd 0
-.Offset_1	dd 0
-.size		dd 0
-.return		dd folder_data
-		db 0
-.name:		dd basic_file_path
-;---------------------------------------------------------------------
-start_dir:
-	db '/',0
-;-------------------------------------------------------------------------------
-basic_file_path:
-	db '/rd/1/'
-basic_file_name:
-	db 'kolibri.lbl',0
-additional_dir_name:
-	db 'addappl',0
 ;-------------------------------------------------------------------------------
 IM_END:
 ;-------------------------------------------------------------------------------
