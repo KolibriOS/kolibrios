@@ -1240,7 +1240,10 @@ align 4
 
         and     [ebx + TCP_SOCKET.temp_bits], not TCP_BIT_DROPSOCKET
 
-;;;        call    SOCKET_notify_owner
+        pusha
+        mov     eax, ebx
+        call    SOCKET_notify
+        popa
 
         jmp     .trim_then_step6
 
@@ -1315,7 +1318,10 @@ align 4
 ;;; TODO: update stats
 
 ; set socket state to connected
-        mov     [ebx + SOCKET.state], SS_ISCONNECTED
+        push    eax
+        mov     eax, ebx
+        call    SOCKET_is_connected
+        pop     eax
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ; Do window scaling on this connection ?

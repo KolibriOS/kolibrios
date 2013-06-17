@@ -17,17 +17,6 @@
 
 $Revision: 3514 $
 
-ENOBUFS         = 1
-EOPNOTSUPP      = 4
-EWOULDBLOCK     = 6
-ENOTCONN        = 9
-EALREADY        = 10
-EINVAL          = 11
-EMSGSIZE        = 12
-ENOMEM          = 18
-EADDRINUSE      = 20
-
-
 struct  SOCKET
 
         NextPtr                 dd ? ; pointer to next socket in list
@@ -310,7 +299,7 @@ SOCKET_open:
 
 ;        push    edx
 ;        and     edx, SO_NONBLOCK
-        or      [eax + SOCKET.options], SO_NONBLOCK ;edx
+        or      [eax + SOCKET.options], SO_NONBLOCK ;edx        ; HACK: make all sockets non-blocking untill API and applications are fixed
 ;        pop     edx
 ;        and     edx, not SO_NONBLOCK
 
@@ -594,13 +583,10 @@ align 4
         pop     [eax + TCP_SOCKET.ISS]
         mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
 
-
         TCP_sendseqinit eax
-
 ;        mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
 
         mov     ebx, eax
-
         lea     eax, [ebx + STREAM_SOCKET.snd]
         call    SOCKET_ring_create              ; TODO: check if memory was available or not
 
@@ -612,13 +598,38 @@ align 4
         call    mutex_unlock
         popa
 
+        push    ebx
         mov     eax, ebx
         call    TCP_output
+        pop     eax
 
-;;; TODO: wait for successfull connection if blocking socket
+  .block:
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jz      .loop
 
+        mov     dword[esp+20], EWOULDBLOCK
+        mov     dword[esp+32], 0                 ; Should be -1? or not?
+        ret
+
+  .loop:
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
+        je      .fail
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
+        jne     .syn_received
+
+        call    SOCKET_block
+        jmp     .loop
+
+  .fail:
+        mov     eax, [eax + SOCKET.errorcode]
+        mov     [esp+20], eax
+        mov     dword[esp+32], -1
+        ret
+
+  .syn_received:
         mov     dword[esp+32], 0
         ret
+
 
 align 4
   .ip:
@@ -1815,7 +1826,7 @@ SOCKET_ring_free:
 ; Suspends the thread attached to a socket
 ;
 ;  IN:  eax = socket ptr
-;  OUT: /
+;  OUT: eax = unchanged
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -1824,6 +1835,7 @@ SOCKET_block:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: %x\n", eax
 
         pushf
+        push    eax
         cli
 
         ; Set the 'socket is blocked' flag
@@ -1841,6 +1853,7 @@ SOCKET_block:
         pop     edx
 
         call    change_task
+        pop     eax
         popf
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continueing\n"
@@ -1855,7 +1868,7 @@ SOCKET_block:
 ; notify's the owner of a socket that something happened
 ;
 ;  IN:  eax = socket ptr
-;  OUT: /
+;  OUT: eax = unchanged
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -2434,8 +2447,8 @@ SOCKET_is_connected:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connected: %x\n", eax
 
-        and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
-        or      [eax + SOCKET.options], SS_ISCONNECTED
+        and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+        or      [eax + SOCKET.state], SS_ISCONNECTED
 
         jmp     SOCKET_notify
 
@@ -2456,8 +2469,8 @@ SOCKET_is_disconnecting:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnecting: %x\n", eax
 
-        and     [eax + SOCKET.options], not (SS_ISCONNECTING)
-        or      [eax + SOCKET.options], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
+        and     [eax + SOCKET.state], not (SS_ISCONNECTING)
+        or      [eax + SOCKET.state], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
 
         jmp     SOCKET_notify
 
@@ -2477,8 +2490,8 @@ SOCKET_is_disconnected:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_disconnected: %x\n", eax
 
-        and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
-        or      [eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
+        and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
+        or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         je      .tcp
@@ -2510,7 +2523,7 @@ SOCKET_cant_recv_more:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_recv_more: %x\n", eax
 
-        or      [eax + SOCKET.options], SS_CANTRCVMORE
+        or      [eax + SOCKET.state], SS_CANTRCVMORE
 
         call    SOCKET_notify
 
@@ -2532,7 +2545,7 @@ SOCKET_cant_send_more:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_cant_send_more: %x\n", eax
 
-        or      [eax + SOCKET.options], SS_CANTSENDMORE
+        or      [eax + SOCKET.state], SS_CANTSENDMORE
         mov     [eax + SOCKET.snd_proc], .notconn
 
         call    SOCKET_notify

@@ -104,9 +104,9 @@ SS_ISABORTING           = 0x0080        ; aborting fd references - close()
 SS_RESTARTSYS           = 0x0100        ; restart blocked system calls
 SS_ISDISCONNECTED       = 0x0800        ; socket disconnected from peer
 
-SS_ASYNC                = 0x0100        ; async i/o notify
-SS_ISCONFIRMING         = 0x0200        ; deciding to accept connection req
-SS_MORETOCOME           = 0x0400
+SS_ASYNC                = 0x1000        ; async i/o notify
+SS_ISCONFIRMING         = 0x2000        ; deciding to accept connection req
+SS_MORETOCOME           = 0x4000
 
 SS_BLOCKED              = 0x8000
 
@@ -115,7 +115,15 @@ SOCKET_MAXDATA          = 4096*32       ; must be 4096*(power of 2) where 'power
 MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
-ENOBUFS                 = 55
+ENOBUFS                 = 1
+EOPNOTSUPP              = 4
+EWOULDBLOCK             = 6
+ENOTCONN                = 9
+EALREADY                = 10
+EINVAL                  = 11
+EMSGSIZE                = 12
+ENOMEM                  = 18
+EADDRINUSE              = 20
 ECONNREFUSED            = 61
 ECONNRESET              = 52
 ETIMEDOUT               = 60

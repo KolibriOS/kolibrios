@@ -164,7 +164,7 @@ TCP_drop:
 
 ;;; TODO: check if error code is "Connection timed out' and handle accordingly
 
-        mov     [eax + SOCKET.errorcode], ebx
+;        mov     [eax + SOCKET.errorcode], ebx
 
 
 
