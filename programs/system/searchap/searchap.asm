@@ -73,6 +73,8 @@ basic_file_name:
 	db 'kolibri.lbl',0
 additional_dir_name:
 	db 'addappl',0
+real_additional_dir:
+	db '/kolibrios',0
 ;-------------------------------------------------------------------------------
 debug equ no	;yes
 
@@ -400,6 +402,9 @@ end if
 ; prepare real directory path for mounting
 	inc	esi
 	mov	edi,f30_3_work_area+64
+	call	proc_copy_patch
+	dec	edi
+	mov	esi,real_additional_dir
 	call	proc_copy_patch
 ; prepare fake directory name
 	mov	esi,additional_dir_name
