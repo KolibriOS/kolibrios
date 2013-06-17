@@ -1,0 +1,38 @@
+Description
+===========
+
+Kolibri debugger - simple user mode debugger
+
+TODO
+====
+
+See inline 'TODO' comments
+Also long term goals:
+
+1. Commands history and navigation
+2. Command autocompletion
+3. Save memory block into file
+4. Gdb remote protocol support (gdb-stub)
+5. Live assembly
+6. Improve disassembly engine
+7. Split out context handling and kernel interface
+8. Split out commands handler and tables in cmd.inc
+8. Restrurize and refactor data section
+9. Add disassembler listing export into file
+10. Record trace log
+11. Improve FPU/MMX/SSE/AVX debugging
+12. Document disassembly engine deeply
+13. Add tips for insufficient code sequences
+
+
+Hacking
+=======
+
+If you want improve or change some features see files description:
+
+1. mtdbg.asm - Main loop, events handling, data container
+2. gui.inc - GUI implementation
+3. disasm.inc - Disassembler engine
+4. disasm_tbl.inc - Instruction tables for disassembler engine
+5. parser.inc - Parser and evaluator of expressions
+

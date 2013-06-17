@@ -1,15 +1,18 @@
-; Сортировка dword'ов в количестве ecx по адресу edx, функция сравнения в ebx
-; Разрушает eax, ecx, esi, edi
+; Sorting bunch of dwords, count = ecx, locating at address = edx,
+; comparison function at ebx
+; Destroy content of eax, ecx, esi, edi
 sort:
         jecxz   .done
         mov     eax, ecx
-@@:
+
+    @@:
         push    eax
         call    .restore
         pop     eax
         dec     eax
         jnz     @b
-@@:
+
+    @@:
         cmp     ecx, 1
         jz      .done
         mov     esi, 1
@@ -19,10 +22,11 @@ sort:
         mov     eax, 1
         call    .restore
         jmp     @b
-.done:
+
+    .done:
         ret
 
-.exchange:
+    .exchange:
         push    eax ecx
         mov     eax, [edx+esi*4-4]
         mov     ecx, [edx+edi*4-4]
@@ -31,10 +35,10 @@ sort:
         pop     ecx eax
         ret
 
-.restore:
+    .restore:
         lea     esi, [eax+eax]
         cmp     esi, ecx
-        ja      .doner
+        ja      .donerr
         push    esi
         mov     esi, [edx+esi*4-4]
         mov     edi, [edx+eax*4-4]
@@ -42,14 +46,15 @@ sort:
         pop     esi
         ja      .need_xchg
         cmp     esi, ecx
-        jae     .doner
+        jae     .donerr
         push    esi
         mov     esi, [edx+esi*4]
         mov     edi, [edx+eax*4-4]
         call    ebx
         pop     esi
-        jbe     .doner
-.need_xchg:
+        jbe     .donerr
+
+    .need_xchg:
         cmp     esi, ecx
         jz      .do_xchg
         push    esi
@@ -58,10 +63,15 @@ sort:
         call    ebx
         pop     esi
         sbb     esi, -1
-.do_xchg:
+
+    .do_xchg:
         mov     edi, eax
         call    .exchange
         mov     eax, esi
         jmp     .restore
-.doner:
+
+    .donerr:
         ret
+
+; vim: ft=fasm tabstop=4
+
