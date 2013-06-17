@@ -256,7 +256,7 @@ macro   SOCKET_init {
 align 4
 sys_socket:
 
-        mov     dword[esp+24], 0        ; Set error code to 0
+        mov     dword[esp+20], 0        ; Set error code to 0
 
         cmp     ebx, 255
         jz      SOCKET_debug
@@ -281,7 +281,7 @@ sys_socket:
 
   .error:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
 
         ret
 
@@ -342,12 +342,12 @@ SOCKET_open:
         push    eax
         call    SOCKET_free
         pop     eax
-        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+20], EOPNOTSUPP
         mov     dword[esp+32], -1
         ret
 
   .nobuffs:
-        mov     dword[esp+24], ENOBUFS
+        mov     dword[esp+20], ENOBUFS
         mov     dword[esp+32], -1
         ret
 
@@ -429,12 +429,12 @@ SOCKET_bind:
         je      .af_local
 
   .notsupp:
-        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+20], EOPNOTSUPP
         mov     dword[esp+32], -1
         ret
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
@@ -477,7 +477,7 @@ SOCKET_bind:
 
   .addrinuse:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EADDRINUSE
+        mov     dword[esp+20], EADDRINUSE
         ret
 
 
@@ -508,12 +508,12 @@ SOCKET_connect:
         je      .af_inet4
 
   .notsupp:
-        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+20], EOPNOTSUPP
         mov     dword[esp+32], -1
         ret
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
@@ -691,17 +691,17 @@ SOCKET_listen:
         ret
 
   .notsupp:
-        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+20], EOPNOTSUPP
         mov     dword[esp+32], -1
         ret
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
   .already:
-        mov     dword[esp+24], EALREADY
+        mov     dword[esp+20], EALREADY
         mov     dword[esp+32], -1
         ret
 
@@ -760,17 +760,17 @@ SOCKET_accept:
         jmp     .loop
 
   .wouldblock:
-        mov     dword[esp+24], EWOULDBLOCK
+        mov     dword[esp+20], EWOULDBLOCK
         mov     dword[esp+32], -1
         ret
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
   .notsupp:
-        mov     dword[esp+24], EOPNOTSUPP
+        mov     dword[esp+20], EOPNOTSUPP
         mov     dword[esp+32], -1
         ret
 
@@ -821,7 +821,7 @@ SOCKET_close:
 
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
@@ -847,13 +847,13 @@ SOCKET_receive:
 
         call    [eax + SOCKET.rcv_proc]
 
-        mov     [esp+24], ebx
+        mov     [esp+20], ebx
         mov     [esp+32], eax
         ret
 
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
@@ -1012,7 +1012,7 @@ SOCKET_send:
         jmp     [eax + SOCKET.snd_proc]
 
   .invalid:
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         mov     dword[esp+32], -1
         ret
 
@@ -1030,7 +1030,7 @@ SOCKET_send_udp:
 
   .error:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EMSGSIZE ; FIXME: UDP_output should return error codes!
+        mov     dword[esp+20], EMSGSIZE ; FIXME: UDP_output should return error codes!
         ret
 
 
@@ -1050,7 +1050,7 @@ SOCKET_send_tcp:
         call    TCP_output              ; FIXME: this doesnt look pretty, does it?
         pop     eax
         mov     eax, [eax + SOCKET.errorcode]
-        mov     [esp+24], eax
+        mov     [esp+20], eax
         ret
 
 
@@ -1067,7 +1067,7 @@ SOCKET_send_ip:
 
   .error:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EMSGSIZE
+        mov     dword[esp+20], EMSGSIZE
         ret
 
 
@@ -1084,7 +1084,7 @@ SOCKET_send_icmp:
 
   .error:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EMSGSIZE
+        mov     dword[esp+20], EMSGSIZE
         ret
 
 
@@ -1103,7 +1103,7 @@ SOCKET_send_pppoe:
 
   .error:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EMSGSIZE
+        mov     dword[esp+20], EMSGSIZE
         ret
 
 
@@ -1149,7 +1149,7 @@ SOCKET_send_local_:
 
   .invalid:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         ret
 
 
@@ -1207,7 +1207,7 @@ SOCKET_get_opt:
 
   .invalid:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         ret
 
 
@@ -1241,7 +1241,7 @@ SOCKET_set_opt:
 
   .invalid:
         mov     dword[esp+32], -1
-        mov     dword[esp+24], EINVAL
+        mov     dword[esp+20], EINVAL
         ret
 
   .bind:
@@ -1284,7 +1284,7 @@ SOCKET_set_opt:
         ret
 
   .already:
-        mov     dword[esp+24], EALREADY
+        mov     dword[esp+20], EALREADY
         mov     dword[esp+32], -1
         ret
 
@@ -1321,7 +1321,7 @@ SOCKET_pair:
 
         call    SOCKET_alloc
         jz      .nomem2
-        mov     [esp+24], edi   ; application's ebx
+        mov     [esp+20], edi   ; application's ebx
 
         mov     [eax + SOCKET.Domain], AF_LOCAL
         mov     [eax + SOCKET.Type], SOCK_STREAM
@@ -2045,7 +2045,7 @@ SOCKET_alloc:
         ret
 
   .not_yet:
-        mov     dword[esp+24], ENOTCONN
+        mov     dword[esp+20], ENOTCONN
         mov     dword[esp+32], -1
         ret
 
@@ -2540,6 +2540,6 @@ SOCKET_cant_send_more:
         ret
 
   .notconn:
-        mov     dword[esp+24], ENOTCONN
+        mov     dword[esp+20], ENOTCONN
         mov     dword[esp+32], -1
         ret
