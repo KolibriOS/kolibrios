@@ -2,7 +2,7 @@
 Games              >      /@1
 Demos              >      /@4
 Graphics           >      /@6
-Sound and music    >      /@7
+Multimedia         >      /@7
 Development        >      /@8
 System             >      /@10
 Data processing    >      /@14
@@ -70,7 +70,8 @@ Image viewer              /rd/1/media/kiv
 Animage                   /rd/1/media/animage
 Image Filtering           /rd/1/media/imgf/imgf
 Palitra                   /rd/1/media/palitra
-#7   **** AUDIO ****
+#7   **** MULTIMEDIA ****
+Fplay - video             /addappl/media/fplay-full
 MidAMP                    /rd/1/media/midamp
 CD player                 /rd/1/media/cdp
 #8    **** PROGRAMMING ****

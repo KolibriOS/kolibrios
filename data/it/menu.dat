@@ -69,7 +69,8 @@ Gears                     /rd/1/3d/gears
 Visualizzatore Immagini   /rd/1/media/kiv
 Animage                   /rd/1/media/animage
 Palitra                   /rd/1/media/palitra
-#7   **** AUDIO ****
+#7   **** MULTIMEDIA ****
+Fplay - video             /addappl/media/fplay-full
 MidAMP                    /rd/1/media/midamp
 CD player                 /rd/1/media/cdp
 #8    **** PROGRAMMING ****

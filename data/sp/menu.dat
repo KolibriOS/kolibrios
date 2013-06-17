@@ -2,7 +2,7 @@
 Juegos             >      /@1
 Demos              >      /@4
 Gr ficos           >      /@6
-M£sica y sonido    >      /@7
+Multimedia         >      /@7
 Desarrollo         >      /@8
 Sistema            >      /@10
 Proceso de datos   >      /@14
@@ -70,7 +70,8 @@ Visor de im genes         /rd/1/media/kiv
 Animage                   /rd/1/media/animage
 Efectos de im genes       /rd/1/media/imgf/imgf
 Palitra                   /rd/1/media/palitra
-#7   **** AUDIO ****
+#7   **** MULTIMEDIA ****
+Fplay - video             /addappl/media/fplay-full
 MidAMP                    /rd/1/media/midamp
 Reproductor de CD         /rd/1/media/cdp
 #8    **** DESARROLLO ****

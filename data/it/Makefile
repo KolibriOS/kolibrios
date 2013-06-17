@@ -361,6 +361,7 @@ MKISOFS_EXTRA:=\
  games/=../common/games \
  games/fara=games/fara \
  games/soko/soko=games/soko \
+ kolibrios/media/fplay-full=media/fplay-full \
 #end of list
 
 # Some macro for convenient work.

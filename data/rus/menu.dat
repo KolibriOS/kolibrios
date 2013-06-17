@@ -2,7 +2,7 @@
 Игры               >      /@1
 Демки              >      /@4
 Графика            >      /@6
-Звук и музыка      >      /@7
+Мультимедиа        >      /@7
 Разработка         >      /@8
 Система            >      /@10
 Обработка данных   >      /@14
@@ -75,7 +75,8 @@ FlatWave                  /rd/1/3d/flatwav
 Редактор zSea             /rd/1/media/zSea
 Наложение фильтров        /rd/1/media/imgf/imgf
 Палитра                   /rd/1/media/palitra
-#7    **** AUDIO ****
+#7    **** MULTIMEDIA ****
+Fplay - видео             /addappl/media/fplay-full
 Midi-плеер                /rd/1/media/midamp
 CD-плейер                 /rd/1/media/cdp
 #8    **** PROGRAMMING ****
