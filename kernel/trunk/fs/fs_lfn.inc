@@ -939,7 +939,8 @@ process_replace_file_name:
 ;
 ; out
 ; ebp - full filename
-
+	pushfd
+	cli
         mov     ebp, [full_file_name_table]
         mov     edi, [full_file_name_table.size]
         dec     edi
@@ -979,6 +980,7 @@ process_replace_file_name:
 .notfound:
         xor     ebp, ebp
 .ret:
+	popfd
         ret
 
 uglobal
@@ -1014,6 +1016,8 @@ sys_current_directory:
         mov     edi, sysdir_name1
 ; copying fake directory name
         mov     ecx, 63
+	pushfd
+	cli
         cld
         rep     movsb
 ; terminator of name, in case if we get the inlet trash
@@ -1031,6 +1035,7 @@ sys_current_directory:
 ; block the ability to call f.30.3 because for one session is necessary
 ; for us only once
         mov     [lock_flag_for_f30_3], 1
+	popfd
 @@:
         ret
         
