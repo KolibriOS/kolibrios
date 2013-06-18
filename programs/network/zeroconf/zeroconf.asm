@@ -24,7 +24,7 @@ TIMEOUT                 = 3             ; in seconds
 BUFFER                  = 1024          ; in bytes
 DHCP_TRIES              = 3             ; number of times to try contacting DHCP server
 __DEBUG__               = 1             ; enable/disable
-__DEBUG_LEVEL__         = 1             ; 1 = all, 2 = errors
+__DEBUG_LEVEL__         = 2             ; 1 = all, 2 = errors
 
 ; CONFIGURATION FOR LINK-LOCAL
 
@@ -346,7 +346,7 @@ request:
         cmp     [dhcpMsgType], 0x05             ; Was the response an ACK? It should be
         jne     read_data                       ; NO - read next packets
 
-        DEBUGF  1, "Got ACK, applying settings\n"
+        DEBUGF  2, "Setting IP using DHCP\n"
 
         call    dhcp_end
 
@@ -495,7 +495,7 @@ link_local:
         mov     ebx, API_IPv4 + 3
         mov     bh, [device]
         mcall   76, , ecx                   ; mask is 255.255.0.0
-        DEBUGF  1,"Link Local IP assinged: 169.254.%u.%u\n", [generator+0]:1, [generator+1]:1
+        DEBUGF  2,"Link Local IP assigned: 169.254.%u.%u\n", [generator+0]:1, [generator+1]:1
         mov     bl, 7
         mcall   76, , 0xffff
         mov     bl, 9
@@ -556,7 +556,7 @@ link_local:
 
 
 error:
-        DEBUGF  1,"Socket error\n"
+        DEBUGF  2,"Socket error\n"
 exit:   ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
         mcall   -1
 
