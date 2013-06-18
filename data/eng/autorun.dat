@@ -3,7 +3,6 @@
 # Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds. 
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
-/RD/1/SEARCHAP         ""          1    # Search and mount additional system directory
 #/RD/1/CROPFLAT "XS800 YS480"      1    # set limits of screen
 #/RD/1/COMMOUSE        ""          1    # COM mice detector
 #/RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
@@ -16,5 +15,6 @@
 /RD/1/ICON            BOOT         1    # Multithread icon
 /RD/1/@RB              ""          1    # Desktop right-click menu
 /RD/1/@SS             ASSM         1    # Screensaver
-/RD/1/TMPDISK          A1          1    # Add virtual RAM disk /tmp1/1
+/RD/1/TMPDISK          A1         -1    # Add virtual RAM disk /tmp1/1
+/RD/1/SEARCHAP         ""         -1    # Search and mount additional system directory
 ### Hello, ASM World! ###
