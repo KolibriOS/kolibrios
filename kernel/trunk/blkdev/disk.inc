@@ -349,10 +349,8 @@ disk_add:
         inc     eax
         cmp     byte [ebx+eax-1], 0
         jnz     @b
-; 2b. Call the heap manager. Note that it can change ebx.
-        push    ebx
+; 2b. Call the heap manager.
         call    malloc
-        pop     ebx
 ; 2c. Check the result. If allocation failed, go to 7.
         pop     esi             ; restore allocated pointer to DISK
         test    eax, eax

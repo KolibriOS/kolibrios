@@ -1640,12 +1640,10 @@ end virtual
 ; 1c. We need a temporary buffer. Allocate [packetSize]*2 bytes, so that
 ; there must be [packetSize] bytes on one page,
 ; plus space for a header uhci_original_buffer.
-        push    ebx
         mov     eax, [.packetSize]
         add     eax, eax
         add     eax, sizeof.uhci_original_buffer
         call    malloc
-        pop     ebx
 ; 1d. If failed, return zero.
         test    eax, eax
         jz      .nothing

@@ -166,10 +166,8 @@ fat_create_partition:
 ; FAT size requires knowledge of some calculated values, which are also used
 ; in the normal operation, let's hope for the best and allocate data now; if
 ; it will prove wrong, just deallocate it.
-        push    ebx
         movi    eax, sizeof.FAT
         call    malloc
-        pop     ebx
         test    eax, eax
         jz      .return0
         mov     ecx, [ebp+8]

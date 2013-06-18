@@ -459,10 +459,7 @@ proc usb_after_set_endpoint_size
 ; save length for step 2
         push    eax
         add     eax, sizeof.usb_device_data + 8
-; Note that malloc destroys ebx.
-        push    ebx
         call    malloc
-        pop     ebx
 ; 1b. If failed, say something to the debug board and stop the initialization.
         test    eax, eax
         jz      .nomemory
