@@ -85,6 +85,7 @@ include	'../../debug.inc'
 end if
 ;-------------------------------------------------------------------------------
 START:
+	mcall	5,500
 	mov	ebx,start_dir
 	mov	ax,[ebx]
 	mov	ebx,read_folder_name
