@@ -1,29 +1,28 @@
+
+use32                ; транслятор, использующий 32 разрядных команды
+    org 0x0                ; базовый адрес кода, всегда 0x0
+    db 'MENUET01'        ; идентификатор исполняемого файла (8 байт)
+    dd 0x1                ; версия формата заголовка исполняемого файла
+    dd start                ; адрес, на который система передаёт управление
+                        ; после загрузки приложения в память
+    dd i_end                ; размер приложения
+    dd mem                  ; Объем используемой памяти, для стека отведем 0х100 байт и выровним на грницу 4 байта
+    dd mem                  ; расположим позицию стека в области памяти, сразу за телом программы. Вершина стека в диапазоне памяти, указанном выше
+    dd 0x0              ; указатель на строку с параметрами.
+    dd 0;pathprog       ;путь и имя проги
+
 include "../../macros.inc"
 include "../../proc32.inc"
+include "API.inc"
 include "../../dll.inc"
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/box_lib/load_lib.mac'
 
-include "API.inc"
-
-use32		     ; ЄЁрэёы ЄюЁ, шёяюы№чє■∙шщ 32 ЁрчЁ фэ√ї ъюьрэф√
-    org 0x0		   ; срчют√щ рфЁхё ъюфр, тёхуфр 0x0
-    db 'MENUET01'	 ; шфхэЄшЇшърЄюЁ шёяюыэ хьюую Їрщыр (8 срщЄ)
-    dd 0x1		  ; тхЁёш  ЇюЁьрЄр чруюыютър шёяюыэ хьюую Їрщыр
-    dd start		    ; рфЁхё, эр ъюЄюЁ√щ ёшёЄхьр яхЁхфр╕Є єяЁртыхэшх
-			; яюёых чруЁєчъш яЁшыюцхэш  т ярь Є№
-    dd i_end		    ; ЁрчьхЁ яЁшыюцхэш 
-    dd mem		    ; ╬с·хь шёяюы№чєхьющ ярь Єш, фы  ёЄхър юЄтхфхь 0ї100 срщЄ ш т√Ёютэшь эр уЁэшЎє 4 срщЄр
-    dd mem		    ; Ёрёяюыюцшь яючшЎш■ ёЄхър т юсырёЄш ярь Єш, ёЁрчє чр Єхыюь яЁюуЁрьь√. ┬хЁ°шэр ёЄхър т фшрярчюэх ярь Єш, єърчрээюь т√°х
-    dd 0x0		; єърчрЄхы№ эр ёЄЁюъє ё ярЁрьхЄЁрьш.
-    dd 0;pathprog 	;яєЄ№ ш шь  яЁюуш
-
-
 start:
-	mcall 68,11	 ;шэшЎшрышчшЁєхь ъєўє
-	test eax,eax
-	jz Win1.Exit
-	stdcall dll.Load, @IMPORT
+        mcall 68,11      ;инициализируем кучу
+        test eax,eax
+        jz Win1.Exit
+        stdcall dll.Load, @IMPORT
 
 
 ;       mov ecx,1024
@@ -40,18 +39,18 @@ start:
 ;       test al,al
 ;       jne @b
 
-	;GetFileInfo fStruc,pathprog,fInfo  ;яЁютхЁър эр эрышўшх Їрщыр
-	;test eax,eax                    ;чрюфэю ш яюыєўє ЁрчьхЁ Їрщыр
-	;je WordFileOK
+        ;GetFileInfo fStruc,pathprog,fInfo  ;проверка на наличие файла
+        ;test eax,eax                    ;заодно и получу размер файла
+        ;je WordFileOK
 
-	;stdcall [mb_create],msgNotFound,mbThread
-	;jmp Win1.Redraw
+        ;stdcall [mb_create],msgNotFound,mbThread
+        ;jmp Win1.Redraw
 
 ;WordFileOK:
 ;       stdcall mem.Alloc,dword [fInfo+32]
 ;       mov ebx,dword [fInfo+32]
 ;       mov [filBuffer],eax
-;       add dword[fInfo+32],eax  ;чфхё№ їЁрэшЄё  єърчрЄхы№ эр ъюэхЎ сєЇхЁр
+;       add dword[fInfo+32],eax  ;здесь хранится указатель на конец буфера
 ;       ReadFile fStruc,pathprog,ebx,eax,0
 ;       test eax,eax
 ;       jz Win1.Redraw
@@ -64,270 +63,270 @@ start:
 
 align 4
 Win1.Redraw:
-	RedrawWinBeg
+        RedrawWinBeg
 
-	xor eax,eax
-	mov ebx,(524*10000h+500)
-	mov ecx,(548*10000h+200)
-	mov edx,73FFFFFFh
-	mov edi,Win1.Caption
-	int 40h 		     ;юъэю ё яЁючЁрўэ√ь Їюэoь
+        xor eax,eax
+        mov ebx,(524*10000h+500)
+        mov ecx,(548*10000h+200)
+        mov edx,73FFFFFFh
+        mov edi,Win1.Caption
+        int 40h                      ;окно с прозрачным фонoм
 
-	mcall 9,ThreadInfo,-1
+        mcall 9,ThreadInfo,-1
 
-	mov eax,13
-	mov ebx,[ThreadInfo+3Eh]
-	inc ebx
-	mov ecx,[ThreadInfo+42h]
-	inc ecx
-	mov edx,clWhite
-	int 40h 		     ;р ЄхяхЁ№ эх яЁючЁрўэ√ь:)
+        mov eax,13
+        mov ebx,[ThreadInfo+3Eh]
+        inc ebx
+        mov ecx,[ThreadInfo+42h]
+        inc ecx
+        mov edx,clWhite
+        int 40h                      ;а теперь не прозрачным:)
 
-	call Perevod		     ; т яхЁхЁшёютъх ёЁрчє яхЁхтюфшь ттхф╕ээюх ёыютю
-	call NextPerev
-	stdcall [edit_box_draw],EditIN
-	RedrawWinEnd
+        call Perevod                 ; в перерисовке сразу переводим введённое слово
+        call NextPerev
+        stdcall [edit_box_draw],EditIN
+        RedrawWinEnd
 
 align 4
 Win1.Events:
-	WaitMessage
-	dec eax
-	jz Win1.Redraw
-	dec eax
-	jz Win1.Key
-	dec eax
-	jz Win1.ButtonPress
+        WaitMessage
+        dec eax
+        jz Win1.Redraw
+        dec eax
+        jz Win1.Key
+        dec eax
+        jz Win1.ButtonPress
 
-	;stdcall [edit_box_mouse],EditIN
+        ;stdcall [edit_box_mouse],EditIN
 
-	jmp Win1.Events
+        jmp Win1.Events
 
 Win1.ButtonPress:
-	GetButtonPressed
+        GetButtonPressed
 
-	cmp ah,idbExit
-	je Win1.Exit
+        cmp ah,idbExit
+        je Win1.Exit
 
-	jmp Win1.Events
+        jmp Win1.Events
 
 Win1.Key:
-	GetKeyPressed
-	stdcall [edit_box_key],EditIN
-	jmp Win1.FonRedraw
+        GetKeyPressed
+        stdcall [edit_box_key],EditIN
+        jmp Win1.FonRedraw
 
 
 Win1.Exit:
 
-	ExitProcess
+        ExitProcess
 
-Win1.FonRedraw: 	      ;яхЁхЁшёютър юсырёЄш т√тюфр
-	mcall 9,ThreadInfo,-1
+Win1.FonRedraw:               ;перерисовка области вывода
+        mcall 9,ThreadInfo,-1
 
-	mov eax,13
-	mov ebx,[ThreadInfo+3Eh]
-	inc ebx
-	mov ecx,20
-	shl ecx,16
-	add ecx,[ThreadInfo+42h]
-	sub ecx,19
-	mov edx,clWhite
-	int 40h
+        mov eax,13
+        mov ebx,[ThreadInfo+3Eh]
+        inc ebx
+        mov ecx,20
+        shl ecx,16
+        add ecx,[ThreadInfo+42h]
+        sub ecx,19
+        mov edx,clWhite
+        int 40h
 
-	call Perevod
-	call NextPerev
+        call Perevod
+        call NextPerev
 jmp Win1.Events
 
 ;-------------------------------------------------------------------------------
 
-Perevod:	      ;ёрь яхЁхтюф
-	mov edi,dict;[filBuffer]
+Perevod:              ;сам перевод
+        mov edi,dict;[filBuffer]
 
     Perev:
-	xor ebx,ebx
-      @@:		  ;ёЁртэшхь шёї. ёыютю ёю ёыютюь яюф esi
-	mov al,[text+ebx]
-	test al,al
-	je endWord
-	cmp [ebx+edi],al
-	jne WordNotFound
-	inc ebx
-	jmp @b
+        xor ebx,ebx
+      @@:                 ;сравнием исх. слово со словом под esi
+        mov al,[text+ebx]
+        test al,al
+        je endWord
+        cmp [ebx+edi],al
+        jne WordNotFound
+        inc ebx
+        jmp @b
 
   endWord:
-	cmp byte[ebx+edi],20h
-	jne WordNotFound
+        cmp byte[ebx+edi],20h
+        jne WordNotFound
 
-	add edi,ebx
-	dec edi 	     ;яЁюяєёърхь яЁюсхы√ яюёых рэуышщёъюую ёыютр
+        add edi,ebx
+        dec edi              ;пропускаем пробелы после английского слова
       @@:
-	inc edi
-	cmp byte[edi],20h
-	je @b
+        inc edi
+        cmp byte[edi],20h
+        je @b
 
-	xor ebx,ebx
-     CopyWord:		     ;ъюяшЁєхь яхЁхтюф т ёЄЁюъє фы  т√тюфр
-	mov al,[edi+ebx]
-	cmp al,0Dh
-	je @f
-	mov [perevText+ebx],al
-	inc ebx
-	jmp CopyWord
+        xor ebx,ebx
+     CopyWord:               ;копируем перевод в строку для вывода
+        mov al,[edi+ebx]
+        cmp al,0Dh
+        je @f
+        mov [perevText+ebx],al
+        inc ebx
+        jmp CopyWord
       @@:
-	mov byte[perevText+ebx],0
+        mov byte[perevText+ebx],0
 
-	OutText 7,25,perevText
-	ret
+        OutText 7,25,perevText
+        ret
 
-  WordNotFound: 	 ;хёыш ёыютю эх яюфю°ыю
-	add edi,ebx
+  WordNotFound:          ;если слово не подошло
+        add edi,ebx
       @@:
-	cmp byte[edi],0Dh
-	je NextWord
-	inc edi
-	cmp edi,SizeDict;dword [fInfo+32]
-	jae endPerev
-	jmp @b
+        cmp byte[edi],0Dh
+        je NextWord
+        inc edi
+        cmp edi,SizeDict;dword [fInfo+32]
+        jae endPerev
+        jmp @b
 
     NextWord:
-	add edi,2
-	cmp edi,SizeDict;dword [fInfo+32]
-	jae endPerev
-	jmp Perev
+        add edi,2
+        cmp edi,SizeDict;dword [fInfo+32]
+        jae endPerev
+        jmp Perev
     endPerev:
-	ret
+        ret
 
 
 ;-------------------------------------------------------------------------------
 NextPerev:
-	mov ecx,Lines
-	mov edi,dict;[filBuffer]
-  LinePerev:	       ;Ўшъы Ёшёютрэш  ёЄЁюъш
-	xor ebx,ebx
-      @@:		  ;ёЁртэшхь шёї. ёыютю ёю ёыютюь яюф esi
-	mov al,[text+ebx]
-	test al,al
-	je N_endWord
-	cmp [ebx+edi],al
-	jne N_WordNotFound
-	inc ebx
-	jmp @b
+        mov ecx,Lines
+        mov edi,dict;[filBuffer]
+  LinePerev:           ;цикл рисования строки
+        xor ebx,ebx
+      @@:                 ;сравнием исх. слово со словом под esi
+        mov al,[text+ebx]
+        test al,al
+        je N_endWord
+        cmp [ebx+edi],al
+        jne N_WordNotFound
+        inc ebx
+        jmp @b
 
   N_endWord:
-	cmp ebx,0
-	jne N_Ppoisk
-	ret
+        cmp ebx,0
+        jne N_Ppoisk
+        ret
 
-      N_Ppoisk: 	    ;яюшёъ эрўрыр ёЄЁюъш
-	add edi,ebx
+      N_Ppoisk:             ;поиск начала строки
+        add edi,ebx
       @@:
-	dec edi
-	cmp byte[edi],0Ah
-	jne @b
-	inc edi
+        dec edi
+        cmp byte[edi],0Ah
+        jne @b
+        inc edi
 
-			     ;########яЁюяєёърхь єцх яхЁхтхф╕ээюх ёыютю########
-	xor ebx,ebx
+                             ;########пропускаем уже переведённое слово########
+        xor ebx,ebx
     N_NoDouble:
-	mov al,[text+ebx]
-	test al,al
-	je N_Double
-	cmp [ebx+edi],al
-	jne N_NoDblOk
-	inc ebx
-	jmp N_NoDouble
+        mov al,[text+ebx]
+        test al,al
+        je N_Double
+        cmp [ebx+edi],al
+        jne N_NoDblOk
+        inc ebx
+        jmp N_NoDouble
 
     N_Double:
-	cmp byte[ebx+edi],20h
-	jne N_NoDblOk
+        cmp byte[ebx+edi],20h
+        jne N_NoDblOk
 
-	add edi,ebx
+        add edi,ebx
       @@:
-	inc edi
-	cmp byte[edi],0Ah
-	jne @b
-	add edi,2
-	jmp LinePerev
+        inc edi
+        cmp byte[edi],0Ah
+        jne @b
+        add edi,2
+        jmp LinePerev
 
-     N_NoDblOk: 	     ;############т√тюф Ёхчєы№ЄрЄют####################
-	xor ebx,ebx	   ;ъюяшЁєхь Ёхчєы№ЄрЄ
+     N_NoDblOk:              ;############вывод результатов####################
+        xor ebx,ebx        ;копируем результат
      N_CopyWord:
-	mov al,[edi+ebx]
-	cmp al,20h
-	je @f
-	mov [perevText+ebx],al
-	inc ebx
-	jmp N_CopyWord
+        mov al,[edi+ebx]
+        cmp al,20h
+        je @f
+        mov [perevText+ebx],al
+        inc ebx
+        jmp N_CopyWord
       @@:
-	mov byte[perevText+ebx],0
-	add edi,ebx
+        mov byte[perevText+ebx],0
+        add edi,ebx
 
-	mov eax,Lines
-	sub eax,ecx
-	dec eax
-	shl eax,3
-	add eax,45
-	push ecx
-	push edi
-	OutText 7,ax,perevText
-	pop edi
-	pop ecx
+        mov eax,Lines
+        sub eax,ecx
+        dec eax
+        shl eax,3
+        add eax,45
+        push ecx
+        push edi
+        OutText 7,ax,perevText
+        pop edi
+        pop ecx
 
       @@:
-	inc edi
-	cmp byte[edi],20h
-	je @b
+        inc edi
+        cmp byte[edi],20h
+        je @b
 
 
-	xor ebx,ebx
+        xor ebx,ebx
      N_CopyPerev:
-	mov al,[edi+ebx]
-	cmp al,0Dh
-	je @f
-	mov [perevText+ebx],al
-	inc ebx
-	jmp N_CopyPerev
+        mov al,[edi+ebx]
+        cmp al,0Dh
+        je @f
+        mov [perevText+ebx],al
+        inc ebx
+        jmp N_CopyPerev
       @@:
-	mov byte[perevText+ebx],0
+        mov byte[perevText+ebx],0
 
-	mov eax,Lines
-	sub eax,ecx
-	dec eax
-	shl eax,3
-	add eax,45
-	push ecx
-	push edi
-	OutText 127,ax,perevText
-	pop edi
-	pop ecx
+        mov eax,Lines
+        sub eax,ecx
+        dec eax
+        shl eax,3
+        add eax,45
+        push ecx
+        push edi
+        OutText 127,ax,perevText
+        pop edi
+        pop ecx
 
       @@:
-	inc edi
-	cmp byte[edi],0Ah
-	jne @b
-	inc edi
+        inc edi
+        cmp byte[edi],0Ah
+        jne @b
+        inc edi
 
-	loop @f      ;эхфюЄ уштрхЄё  фю LinePerev
-	ret
+        loop @f      ;недотягивается до LinePerev
+        ret
       @@:
-	jmp LinePerev
+        jmp LinePerev
 
   N_WordNotFound:
-	add edi,ebx
+        add edi,ebx
       @@:
-	cmp byte[edi],0Dh
-	je N_NextWord
-	inc edi
-	cmp edi,SizeDict;dword [fInfo+32]
-	jae N_endPerev
-	jmp @b
+        cmp byte[edi],0Dh
+        je N_NextWord
+        inc edi
+        cmp edi,SizeDict;dword [fInfo+32]
+        jae N_endPerev
+        jmp @b
 
     N_NextWord:
-	add edi,2
-	cmp edi,SizeDict;dword [fInfo+32]
-	jae N_endPerev
-	jmp LinePerev
+        add edi,2
+        cmp edi,SizeDict;dword [fInfo+32]
+        jae N_endPerev
+        jmp LinePerev
     N_endPerev:
-	ret
+        ret
 
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
@@ -335,42 +334,42 @@ NextPerev:
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 
-	idbExit = 1
+        idbExit = 1
 
-	Lines	= 16	    ;ъюышўхёЄт ёЄЁюъ
+        Lines   = 16        ;количеств строк
 
-	clTheme = 080B0FFh
+        clTheme = 080B0FFh
 
-	Win1.Caption	db 'Dictionary RUS -> ENG',0
-	Win1X		= 524
-	Win1Y		= 548
-	Win1W		= 500
-	Win1H		= 200
+        Win1.Caption    db 'Dictionary ENG -> RUS',0
+        Win1X           = 524
+        Win1Y           = 548
+        Win1W           = 500
+        Win1H           = 200
 
-	Memo.X	= 5
-	Memo.Y	= 20
-	Memo.W	= 400
-	Memo.H	= 370
+        Memo.X  = 5
+        Memo.Y  = 20
+        Memo.W  = 400
+        Memo.H  = 370
 
-	EditIN edit_box 350,5,5,0FFFFFFh,06F9480h,0,00h,0,40,\
-			text,mouse_dd,ed_focus,0,0
+        EditIN edit_box 350,5,5,0FFFFFFh,06F9480h,0,00h,0,40,\
+                        text,mouse_dd,ed_focus,0,0
 
 
 
 ;       msgNotFound:
 ;                       dw 0
-;                       db '╬°шсър',0
-;                       db '╘рщы dictionary.wrd эх эрщфхэ',0
-;                       db '▀ёэю',0
+;                       db 'Ошибка',0
+;                       db 'Файл dictionary.wrd не найден',0
+;                       db 'Ясно',0
 ;                       db 0
 ;
 ;       msgNotFound1:
 ;                       dw 0
 ;                       db '!!!',0
-;                       db '╬°шсър ўЄхэш  '
+;                       db 'Ошибка чтения '
 ;                    NumErr:    db 0
 ;                               db 0
-;                       db '▀ёэю',0
+;                       db 'Ясно',0
 ;                       db 0
 ;
 ;       WordFile        db '.wrd',0
@@ -379,12 +378,12 @@ NextPerev:
 ;-------------------------------------------------------------------------------
 @IMPORT:
 library box_lib,'box_lib.obj',msgbox,'msgbox.obj'
-import	box_lib,\
-	edit_box_draw,'edit_box',\
-	edit_box_key,'edit_box_key';,\
-	;edit_box_mouse,'edit_box_mouse'
-import	msgbox,\
-	mb_create,'mb_create'
+import  box_lib,\
+        edit_box_draw,'edit_box',\
+        edit_box_key,'edit_box_key';,\
+        ;edit_box_mouse,'edit_box_mouse'
+import  msgbox,\
+        mb_create,'mb_create'
 
 dict:
 include 'dictionary.wrd'
@@ -395,21 +394,21 @@ SizeDict = $;-dict
 i_end:
 ;-------------------------------------------------------------------------------
 
-	;WordFP		rb 1024
+        ;WordFP         rb 1024
 ;        m1 dd 0
-	;filBuffer	rd 1
+        ;filBuffer      rd 1
 
 
-	ThreadInfo:     rb 1024 
-	;pathprog	
-	mouse_dd	rd 1
-	text		rb 40
-	perevText	rb 300
-	;fStruc		rb 30
-	;fInfo		rb 40
-	mbThread	rb 1024
+        ThreadInfo:     rb 1024
+        ;pathprog
+        mouse_dd        rd 1
+        text            rb 40
+        perevText       rb 300
+        ;fStruc         rb 30
+        ;fInfo          rb 40
+        mbThread        rb 1024
 
 
-	rb 4096
+        rb 4096
 mem:
 
