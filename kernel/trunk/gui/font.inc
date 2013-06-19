@@ -7,8 +7,6 @@
 
 $Revision$
 
-include "lang.inc"
-
 ;------------------------------------------------------------------------------
 align 4
 dtext_asciiz_esi:                          ; for skins title out
