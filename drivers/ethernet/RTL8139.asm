@@ -356,6 +356,10 @@ proc service_proc stdcall, ioctl:dword
         mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
         inc     [devices]                                               ;
 
+        call    reset
+        test    eax, eax
+        jnz     .destroy
+
         mov     [device.type], NET_TYPE_ETH
         call    NetRegDev
 
@@ -377,6 +381,7 @@ proc service_proc stdcall, ioctl:dword
 ; If an error occured, remove all allocated data and exit (returning -1 in eax)
 
   .destroy:
+        ; todo: unregister device from device_list
         ; todo: reset device into virgin state
 
   .err:
@@ -495,6 +500,10 @@ probe:
         out     dx, al
         DEBUGF  2, "done!\n"
 
+        xor     eax, eax
+
+        ret
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -596,9 +605,9 @@ reset:
 ; set RxBuffer address, init RX buffer offset
         mov     eax, [device.rx_buffer]
         mov     dword[eax], 0                   ; clear receive flags for first packet (really needed??)
-        DEBUGF  2, "RX buffer virtual addr=0x%x\n", eax
+        DEBUGF  1, "RX buffer virtual addr=0x%x\n", eax
         GetRealAddr
-        DEBUGF  2, "RX buffer real addr=0x%x\n", eax
+        DEBUGF  1, "RX buffer real addr=0x%x\n", eax
         set_io  REG_RBSTART
         out     dx, eax
 
