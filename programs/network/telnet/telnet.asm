@@ -125,7 +125,7 @@ resolve:
         pop     esi
 ; test for error
         test    eax, eax
-        jnz     fail
+        jnz     dns_error
 
         call    [con_cls]
         push    str3
@@ -156,7 +156,7 @@ resolve:
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
-        jz      fail2
+        jz      socket_err
         mov     [socketnum], eax
 
         mcall   connect, [socketnum], sockaddr1, 18
@@ -199,7 +199,7 @@ mainloop:
   .no_cmd:
 
         cmp     esi, buffer_ptr
-        je      .print_loop
+        je      .print
 
     DEBUGF  1, 'TELNET: sending data\n'
 
@@ -208,47 +208,29 @@ mainloop:
         mcall   send, [socketnum], buffer_ptr, , 0
         pop     edi esi
 
-  .print_loop:
-    DEBUGF  1, 'TELNET: printloop\n'
+  .print:
         cmp     esi, edi
         jae     mainloop
 
-        cmp     byte [esi], 0x1b        ; escape character
-        jne     .print_byte
-        inc     esi
+        push    esi
+        call    [con_write_asciiz]
 
-        cmp     word [esi], 0x485b      ; move cursor to beginning
-        jne     @f
-        inc     esi
-        inc     esi
-
-    DEBUGF  1, 'TELNET: resetting cursor \n'
-
-        push    0
-        push    0
-        call    [con_set_cursor_pos]
-        jmp     .print_loop
-
-  @@:
-        inc     esi
-        inc     esi
-        jmp     .print_loop
-
-  .print_byte:
-        push    dword 1
-        push    esi                     ; next string to print
-        inc     esi
-        call    [con_write_string]
-        jmp     .print_loop
+  .loop:
+        lodsb
+        test    al, al
+        jz      .print
+        jmp     .loop
 
 
-fail2:
+socket_err:
+        DEBUGF  1, "TELNET: socket error %d", ebx
         push    str6
         call    [con_write_asciiz]
 
         jmp     prompt
 
-fail:
+dns_error:
+        DEBUGF  1, "TELNET: DNS error %d", eax
         push    str5
         call    [con_write_asciiz]
 
