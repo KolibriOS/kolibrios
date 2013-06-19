@@ -847,6 +847,9 @@ con.write_special_char:
         cmp     [con_esc_attr_n], 2
         je      @f
         xor     eax, eax
+        mov     [con.cur_x], eax
+        mov     [con.cur_y], eax
+        jmp     .j_get_data
 @@:
         mov     eax, [con_esc_attrs]
         cmp     eax, [con.scr_width]
