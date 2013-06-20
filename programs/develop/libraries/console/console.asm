@@ -221,7 +221,8 @@ times 'x'-' '+1         db      con.printfc.normal
         set     'u', unsigned
 purge set
 align 4
-con.charjump    dd      con_printf.normal
+con.charjump:
+        dd      con_printf.normal
         dd      con_printf.percent
         dd      con_printf.dot
         dd      con_printf.asterisk
@@ -294,7 +295,7 @@ con_printf:
         cmp     al, 'x'
         ja      .normal
         movzx   ecx, byte [con.charcodes + eax - ' ']
-        jmp     [con.charjump + ecx*4]
+        jmp     dword[con.charjump + ecx*4]
 
 .sharp:
         test    bl, bl
@@ -701,17 +702,22 @@ con.write_char_ex:
 
 con.write_char:
         push    eax
-        stosb
-        mov     al, byte [con_flags]
-        stosb
+
         mov     eax, [con.cur_x]
-        inc     eax
-        mov     [con.cur_x], eax
         cmp     eax, [con.scr_width]
         jb      @f
         and     [con.cur_x], 0
         call    con.newline
 @@:
+        mov     eax, [esp]
+        stosb
+        mov     al, byte [con_flags]
+        stosb
+
+        mov     eax, [con.cur_x]
+        inc     eax
+        mov     [con.cur_x], eax
+
         pop     eax
         ret
 
@@ -919,6 +925,7 @@ con.write_special_char:
         jz      .attr_bgr_bold
         cmp     al, 7
         jz      .attr_reversed
+
         xor     edx, edx
         cmp     al, 30
         jz      .attr_color
@@ -943,6 +950,7 @@ con.write_special_char:
         mov     dl, 7
         cmp     al, 37
         jz      .attr_color
+
         xor     edx, edx
         cmp     al, 40
         jz      .attr_bgr_color
@@ -966,16 +974,67 @@ con.write_special_char:
         jz      .attr_bgr_color
         mov     dl, 0x70
         cmp     al, 47
+        jz      .attr_bgr_color
+
+        mov     dl, 0x08
+        cmp     al, 100
+        jz      .attr_color
+        mov     dl, 4 + 8
+        cmp     al, 101
+        jz      .attr_color
+        mov     dl, 2 + 8
+        cmp     al, 102
+        jz      .attr_color
+        mov     dl, 6 + 8
+        cmp     al, 103
+        jz      .attr_color
+        mov     dl, 1 + 8
+        cmp     al, 104
+        jz      .attr_color
+        mov     dl, 5 + 8
+        cmp     al, 105
+        jz      .attr_color
+        mov     dl, 3 + 8
+        cmp     al, 106
+        jz      .attr_color
+        mov     dl, 7 + 8
+        cmp     al, 107
+        jz      .attr_color
+
+        mov     dl, 0x80
+        cmp     al, 100
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x40
+        cmp     al, 101
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x20
+        cmp     al, 102
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x60
+        cmp     al, 103
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x10
+        cmp     al, 104
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x50
+        cmp     al, 105
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x30
+        cmp     al, 106
+        jz      .attr_bgr_color
+        mov     dl, 0x80 + 0x70
+        cmp     al, 107
         jnz     .attr_continue
+
 .attr_bgr_color:
         mov     eax, [con_flags]
-        and     al, 0x8F
+        and     al, 0x0F
         or      al, dl
         mov     [con_flags], eax
         jmp     .attr_continue
 .attr_color:
         mov     eax, [con_flags]
-        and     al, 0xF8
+        and     al, 0xF0
         or      al, dl
         mov     [con_flags], eax
         jmp     .attr_continue
