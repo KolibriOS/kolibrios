@@ -932,31 +932,30 @@ biosdisk_enum_root:
         pop     eax
         inc     eax
         ret
-
+;-----------------------------------------------------------------------------
 process_replace_file_name:
 ; in
 ; esi - path with filename(f.70)
 ;
 ; out
 ; ebp - full filename
-	pushfd
-	cli
+        pushfd
+        cli
         mov     ebp, [full_file_name_table]
-        mov     edi, [full_file_name_table.size]
-        dec     edi
-        shl     edi, 7
-        add     edi, ebp
+        xor     edi, edi
 .loop:
-        cmp     edi, ebp
-        jb      .notfound
+        cmp     edi,[full_file_name_table.size]
+        jae     .notfound
         push    esi edi
+        shl     edi, 7 ; edi*128
+        add     edi, ebp
 @@:
-        cmp     byte [edi], 0
+        cmp     byte [edi], 0 ; end of dir_name
         jz      .dest_done
         lodsb
         test    al, al
         jz      .cont
-        or      al, 20h
+        or      al, 20h ; 32 - space char
         scasb
         jz      @b
         jmp     .cont
@@ -969,10 +968,12 @@ process_replace_file_name:
         jmp     .found
 .cont:
         pop     edi esi
-        sub     edi, 128
+        inc     edi
         jmp     .loop
 .found:
         pop     edi eax
+        shl     edi, 7 ; edi*128
+        add     edi, ebp
         mov     ebp, esi
         cmp     byte [esi], 0
         lea     esi, [edi+64]
@@ -980,9 +981,9 @@ process_replace_file_name:
 .notfound:
         xor     ebp, ebp
 .ret:
-	popfd
+        popfd
         ret
-
+;-----------------------------------------------------------------------------
 uglobal
 lock_flag_for_f30_3 rb 1
 endg
