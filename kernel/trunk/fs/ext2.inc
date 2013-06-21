@@ -4,7 +4,7 @@
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;   02.02.2010  turbanoff  - support 70.5                      ;;
 ;;   23.01.2010  turbanoff  - support 70.0 70.1                 ;;
-;;                                                              ;;
+;;   21.06.2013  yogev_ezra - Translate Russian comments        ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,31 +17,34 @@ EXT2_ACL_DATA_INO    = 4
 EXT2_BOOT_LOADER_INO = 5
 EXT2_UNDEL_DIR_INO   = 6
 
-;флаги, указываемый в inode файла
+;RUS: флаги, указываемые в inode файла   ;ENG: flags specified in file inode
 EXT2_S_IFREG         = 0x8000
 EXT2_S_IFDIR         = 0x4000
-EXT2_S_IFMT          = 0xF000 ;маска для типа файла
+EXT2_S_IFMT          = 0xF000 ;RUS: маска для типа файла  ;ENG: mask for file type
 
-;флаги, указываемые в linked list родительской папки
-EXT2_FT_REG_FILE     = 1     ;это файл, запись в родительском каталоге
-EXT2_FT_DIR          = 2     ;это папка
+;RUS: флаги, указываемые в linked list родительской папки
+;ENG: flags specified in linked list of parent folder
+EXT2_FT_REG_FILE     = 1     ;RUS: это файл, запись в родительском каталоге
+                             ;ENG: this is a file, record in parent catalog
+EXT2_FT_DIR          = 2     ;RUS: это папка   ;ENG: this is a folder
 
-;флаги используемые KolibriOS
+;RUS: флаги используемые KolibriOS   ;ENG: flags used by KolibriOS
 FS_FT_HIDDEN         = 2
-FS_FT_DIR            = 0x10  ;это папка
-FS_FT_ASCII          = 0     ;имя в ascii
-FS_FT_UNICODE        = 1     ;имя в unicode
+FS_FT_DIR            = 0x10  ;RUS: это папка      ;ENG: this is a folder
+FS_FT_ASCII          = 0     ;RUS: имя в ascii    ;ENG: name in ASCII
+FS_FT_UNICODE        = 1     ;RUS: имя в unicode  ;ENG: name in UNICODE
 
-EXT2_FEATURE_INCOMPAT_FILETYPE = 0x0002 ;тип файла должен указываться в директории
-EXT4_FEATURE_INCOMPAT_EXTENTS  = 0x0040 ;экстенты
-EXT4_FEATURE_INCOMPAT_FLEX_BG  = 0x0200 ;гибкие группы блоков
-;реализованные ext[234] features
+EXT2_FEATURE_INCOMPAT_FILETYPE = 0x0002 ;RUS: тип файла должен указываться в директории
+                                        ;ENG: file type must be specified in the folder
+EXT4_FEATURE_INCOMPAT_EXTENTS  = 0x0040 ;RUS: экстенты   ;ENG: extents
+EXT4_FEATURE_INCOMPAT_FLEX_BG  = 0x0200 ;RUS: гибкие группы блоков   ;ENG: flexible block groups
+
+;RUS: реализованные ext[234] features   ;ENG: implemented ext[234] features
 EXT4_FEATURE_INCOMPAT_SUPP = EXT2_FEATURE_INCOMPAT_FILETYPE \
                           or EXT4_FEATURE_INCOMPAT_EXTENTS \
                           or EXT4_FEATURE_INCOMPAT_FLEX_BG
 
-
-;флаги, указываемые для inode в i_flags
+;RUS: флаги, указываемые для inode в i_flags   ;ENG: flags specified for inode in i_flags
 EXT2_EXTENTS_FL      = 0x00080000
 
 struct  EXT2_INODE_STRUC
@@ -147,26 +150,31 @@ struct  EXT2_SB_STRUC
         log_groups_per_flex     db ? ;+372
 ends
 
-struct EXT4_EXTENT_HEADER       ;заголовок блока экстентов/индексов
-        eh_magic        dw ?    ;в текущей реализации ext4 должно быть 0xF30A
-        eh_entries      dw ?    ;количество экстентов/индексов в блоке
-        eh_max          dw ?    ;max количество (используется при записи)
-        eh_depth        dw ?    ;глубина дерева (0, если это блок экстентов)
+struct EXT4_EXTENT_HEADER       ;RUS: заголовок блока экстентов/индексов
+        eh_magic        dw ?    ;RUS: в текущей реализации ext4 должно быть 0xF30A
+        eh_entries      dw ?    ;RUS: количество экстентов/индексов в блоке
+        eh_max          dw ?    ;RUS: max количество (используется при записи)
+        eh_depth        dw ?    ;RUS: глубина дерева (0, если это блок экстентов)
         eh_generation   dd ?    ;???
 ends
 
-struct EXT4_EXTENT              ;экстент
-        ee_block        dd ?    ;номер ext4 блока
-        ee_len          dw ?    ;длина экстента
-        ee_start_hi     dw ?    ;старшие 16 бит 48-битного адреса (пока не используются в KOS)
-        ee_start_lo     dd ?    ;младшие 32 бита 48-битного адреса
+struct EXT4_EXTENT              ;RUS: экстент            ;ENG: extent
+        ee_block        dd ?    ;RUS: номер ext4 блока   ;ENG: number of ext4 block
+        ee_len          dw ?    ;RUS: длина экстента     ;ENG: extent length
+        ee_start_hi     dw ?    ;RUS: старшие 16 бит 48-битного адреса (пока не используются в KOS)
+                                ;ENG: upper 16 bits of the 48-bit address (not used in KolibriOS yet)
+        ee_start_lo     dd ?    ;RUS: младшие 32 бита 48-битного адреса
+                                ;ENG: lower 32 bits of the 48-bit address
 ends
 
-struct EXT4_EXTENT_IDX          ;индес - указатель на блок с экстентами/индексами
-        ei_block        dd ?    ;номер ext4 блока
-        ei_leaf_lo      dd ?    ;младшие 32 бит 48-битного адреса
-        ei_leaf_hi      dw ?    ;старшие 16 бит 48-битного адреса (пока не используются в KOS)
-        ei_unused       dw ?    ;зарезервировано
+struct EXT4_EXTENT_IDX          ;RUS: индекс - указатель на блок с экстентами/индексами
+                                ;ENG: index - pointer to block of extents/indexes
+        ei_block        dd ?    ;RUS: номер ext4 блока   ;ENG: number of ext4 block
+        ei_leaf_lo      dd ?    ;RUS: младшие 32 бит 48-битного адреса
+                                ;ENG: lower 32 bits of the 48-bit address
+        ei_leaf_hi      dw ?    ;RUS: старшие 16 бит 48-битного адреса (пока не используются в KOS)
+                                ;ENG: upper 16 bits of the 48-bit address (not used in KolibriOS yet)
+        ei_unused       dw ?    ;RUS: зарезервировано   ;ENG: reserved
 ends
 
 ext2_test_superblock:
@@ -230,7 +238,7 @@ ext2_setup:
 
         shl     eax, 7
         mov     [ext2_data.count_pointer_in_block], eax
-        mov     edx, eax                                ; потом еще квадрат найдем
+        mov     edx, eax   ;RUS: потом еще квадрат найдем   ;ENG: we'll find a square later
 
         shl     eax, 2
         mov     [ext2_data.block_size], eax
@@ -294,11 +302,11 @@ ext2_get_block:
         
 
 ;===================================================================
-;получает номер блока из extent inode
-;in:  ecx = номер блока по порядку
-;     ebp = адрес extent header`а
-;out: ecx - адрес очередного блока в случае успеха
-;     eax - номер ошибки (если равно 0, то ошибки нет)
+;RUS: получает номер блока из extent inode                    ;ENG: receives block number from extent inode
+;RUS: in:  ecx = номер блока по порядку                       ;ENG: in:  ecx = consecutive block number
+;RUS:      ebp = адрес extent header`а                        ;ENG:      ebp = address of extent header
+;RUS: out: ecx - адрес очередного блока в случае успеха       ;ENG: out: ecx - address of next block, if successful
+;RUS:      eax - номер ошибки (если равно 0, то ошибки нет)   ;ENG:      eax - error number (0 - no error)
 ext4_block_recursive_search:
         cmp     word [ebp + EXT4_EXTENT_HEADER.eh_magic], 0xF30A ;EXT4_EXT_MAGIC
         jne     .fail
@@ -369,10 +377,10 @@ ext4_block_recursive_search:
 
 ;===================================================================
 ;получает адрес ext2 блока из inode с определнным номером
-;in:  ecx = номер блока в inode (0..)
-;     ebp = адрес inode
-;out: ecx = адрес очередного блока
-;     eax - error code
+;RUS: in:  ecx = номер блока в inode (0..)   ;ENG: in:  ecx = number of block in inode (0..)
+;RUS:      ebp = адрес inode                 ;ENG:      ebp = inode address
+;RUS: out: ecx = адрес очередного блока      ;ENG: out: ecx = next block address
+;RUS:      eax - error code                  ;ENG:      eax - error code
 ext2_get_inode_block:
         test    [ebp + EXT2_INODE_STRUC.i_flags], EXT2_EXTENTS_FL
         jz      @F
@@ -411,7 +419,8 @@ ext2_get_inode_block:
         mov     eax, ecx
         div     [ext2_data.count_pointer_in_block_square]
 
-    ;eax - номер в полученном блоке   edx - номер дальше
+    ;RUS: eax - номер в полученном блоке   edx - номер дальше
+    ;ENG: eax - current block number, edx - next block number
         mov     eax, [ebx + eax*4]
         call    ext2_get_block
         test    eax, eax
@@ -450,9 +459,9 @@ ext2_get_inode_block:
         mov     ebx, [ext2_data.ext2_temp_block]
         call    ext2_get_block
         test    eax, eax
-        jnz     @F                      ;если не было ошибки
+        jnz     @F          ;RUS: если не было ошибки   ;ENG: if there was no error
 
-        mov     ecx, [ebx + ecx*4]    ;заносим результат
+        mov     ecx, [ebx + ecx*4]   ;RUS: заносим результат   ;ENG: ???
     @@:
         pop     ebx
         ret
@@ -481,8 +490,10 @@ ext2_get_inode:
         mov     edx, 32
         mul     edx                             ; address block_group in global_desc_table
 
-        ; в eax - смещение группы с inode-ом относительно начала глобальной дескрипторной таблицы
-        ; найдем блок в котором он находится
+        ;RUS: в eax - смещение группы с inode-ом относительно начала глобальной дескрипторной таблицы
+        ;RUS: найдем блок в котором он находится
+        ;ENG: in eax - inode group offset relative to global descriptor table start
+        ;ENG: let's find the block this inode is in
         div     [ext2_data.block_size]
         add     eax, [ecx + EXT2_SB_STRUC.first_data_block]
         inc     eax
@@ -491,32 +502,32 @@ ext2_get_inode:
         test    eax, eax
         jnz     .fail     
 
-        add     ebx, edx                        ; локальный номер в блоке
-        mov     eax, [ebx + EXT2_BLOCK_GROUP_DESC.inode_table]; номер блока - в терминах ext2
-
+        add     ebx, edx   ;RUS: локальный номер в блоке   ;ENG: local number inside block
+        mov     eax, [ebx + EXT2_BLOCK_GROUP_DESC.inode_table]   ;RUS: номер блока - в терминах ext2
+                                                                 ;ENG: block number - in ext2 terms
         mov     ecx, [ext2_data.log_block_size]
         shl     eax, cl
-        add     eax, [PARTITION_START]        ; а старт раздела - в терминах hdd (512)
+        add     eax, [PARTITION_START]          ;RUS: а старт раздела - в терминах hdd (512)
+                                                ;ENG: partition start - in HDD terms (512)
+        ;RUS: eax - указывает на таблицу inode-ов на hdd   ;ENG: eax - points to inode table on HDD
+        mov     esi, eax   ;RUS: сохраним его пока в esi   ;ENG: let's save it in esi for now
 
-        ;eax - указывает на таблицу inode-ов на hdd
-        mov     esi, eax                        ;сохраним его пока в esi
-
-        ; прибавим локальный адрес inode-а
+        ;RUS: прибавим локальный адрес inode-а   ;ENG: add local address of inode
         pop     eax                             ; index
         mov     ecx, [ext2_data.inode_size]
         mul     ecx                             ; (index * inode_size)
         mov     ebp, 512
-        div     ebp                             ;поделим на размер блока
+        div     ebp        ;RUS: поделим на размер блока        ;ENG: divide by block size
 
-        add     eax, esi                        ;нашли адрес блока для чтения
+        add     eax, esi   ;RUS: нашли адрес блока для чтения   ;ENG: found block address to read
         mov     ebx, [ext2_data.ext2_temp_block]
         call    hd_read
         cmp     [hd_error], 0
         jnz     .fail
 
-        mov     esi, edx                        ;добавим "остаток"
-        add     esi, ebx                        ;к адресу
-        rep movsb                               ;копируем inode
+        mov     esi, edx         ;RUS: добавим "остаток"   ;ENG: add the "remainder"
+        add     esi, ebx         ;RUS: к адресу            ;ENG: to the address
+        rep movsb                ;RUS: копируем inode      ;ENG: copy inode
         xor     eax, eax
     .fail:
         mov     PUSHAD_EAX, eax
@@ -745,7 +756,8 @@ ext2_HdReadFolder:
         
         lea     esp, [edi + 32]
         
-        xor     eax, eax            ;зарезервировано: нули в текущей реализации
+        xor     eax, eax        ;RUS: зарезервировано: нули в текущей реализации
+                                ;ENG: reserved: zeros in current implementation
         lea     edi, [edx + 12]
         mov     ecx, 20 / 4
         rep stosd
@@ -760,12 +772,12 @@ ext2_HdReadFolder:
         or      ebx, -1
         ret
         
-    .error_empty_dir:               ;inode папки без блоков
-    .error_root:                    ;root - не папка
+    .error_empty_dir:   ;RUS: inode папки без блоков   ;ENG: inode of folder without blocks
+    .error_root:        ;RUS: root - не папка          ;ENG: root is not a folder
         mov     eax, ERROR_FS_FAIL
         jmp     .error_ret
 
-    .error_not_found:               ;файл не найден
+    .error_not_found:   ;RUS: файл не найден           ;ENG: file not found
         mov     eax, ERROR_FILE_NOT_FOUND
         jmp     .error_ret
             
@@ -867,9 +879,9 @@ ext2_HdRead:
         jz      @F
         mov     esi, ebx            ; esi = pointer to first_wanted
         mov     ebx, [esi+4]
-        mov     eax, [esi]          ; ebx : eax - стартовый номер байта
+        mov     eax, [esi]    ;RUS: ebx : eax - стартовый номер байта   ;ENG: ebx : eax - start byte number
 
-        ;///// сравним хватит ли нам файла или нет
+        ;RUS: ///// сравним хватит ли нам файла или нет    ;ENG: ///// check if file is big enough for us
         cmp     [ebp + EXT2_INODE_STRUC.i_dir_acl], ebx
         ja      .size_great
         jb      .size_less
@@ -886,23 +898,24 @@ ext2_HdRead:
         xor     ebx, ebx
         xor     eax, eax
     .size_great:
-        add     eax, ecx                  ;add to first_wanted кол-во байт для чтения
+        add     eax, ecx    ;RUS: add to first_wanted кол-во байт для чтения
+                            ;ENG: add to first_wanted number of bytes to read
         adc     ebx, 0
 
         cmp     [ebp + EXT2_INODE_STRUC.i_dir_acl], ebx
         ja      .size_great_great
         jb      .size_great_less
         cmp     [ebp + EXT2_INODE_STRUC.i_size], eax
-        jae     .size_great_great
+        jae     .size_great_great   ; and if it's equal, no matter where we jump
 
     .size_great_less:
-        push    1                                ;читаем по границе размера
+        push    1            ;RUS: читаем по границе размера   ;ENG: reading till the end of file
         mov     ecx, [ebp + EXT2_INODE_STRUC.i_size]
-        sub     ecx, [esi]                      ;(размер - старт) = сколько читать
+        sub     ecx, [esi]   ;RUS: (размер - старт) = сколько читать   ;ENG: to read = (size - start)
         jmp     @F
 
     .size_great_great:
-        push    0                                ;читаем столько сколько запросили
+        push    0            ;RUS: читаем столько, сколько запросили   ;ENG: reading as much as requested
 
     @@:
         ;здесь мы точно знаем сколько байт читать - ecx
@@ -934,7 +947,8 @@ ext2_HdRead:
         add     ebx, edx
 
         neg     edx
-        add     edx, [ext2_data.block_size]     ;block_size - стартовый байт = сколько байт 1-го блока
+        add     edx, [ext2_data.block_size]     ;RUS: block_size - стартовый байт = сколько байт 1-го блока
+                                                ;ENG: block_size - start byte = number of bytes in 1st block
         cmp     ecx, edx
         jbe     .only_one_block
 
@@ -943,7 +957,7 @@ ext2_HdRead:
         mov     ecx, edx
 
         mov     esi, ebx
-        rep movsb                               ;кусок 1-го блока
+        rep movsb                               ;RUS: кусок 1-го блока   ;ENG: part of 1st block
         jmp     .calc_blocks_count
 
     .zero_start:
@@ -1031,7 +1045,7 @@ ext2_HdRead:
 ext2_test_block_by_name:
         sub     esp, 256        ;EXT2_filename
         mov     edx, ebx
-        add     edx, [ext2_data.block_size]       ;запомним конец блока
+        add     edx, [ext2_data.block_size]   ;RUS: запомним конец блока   ;ENG: save block end
 
     .start_rec:
         cmp     [ebx + EXT2_DIR_STRUC.inode], 0
@@ -1045,7 +1059,7 @@ ext2_test_block_by_name:
 
         mov     ecx, edi
         lea     edi, [esp + 4]
-        sub     ecx, edi          ;кол-во байт в получившейся строке
+        sub     ecx, edi   ;RUS: кол-во байт в получившейся строке   ;ENG: number of bytes in resulting string
 
         mov     esi, [esp]
     @@:
@@ -1061,19 +1075,19 @@ ext2_test_block_by_name:
         call    char_toupper
         cmp     al, ah
         je      @B
-    @@:                           ;не подошло
+    @@:                           ;RUS: не подошло   ;ENG: didn't fit
         pop     esi
     .next_rec:
         movzx   eax, [ebx + EXT2_DIR_STRUC.rec_len]
-        add     ebx, eax                                    ;к след. записи
-        cmp     ebx, edx                                    ;проверим конец ли
+        add     ebx, eax          ;RUS: к след. записи      ;ENG: go to next record
+        cmp     ebx, edx          ;RUS: проверим конец ли   ;ENG: check if this is the end
         jb      .start_rec
         add     esp, 256
         ret
 
     .test_find:
         cmp     byte [esi], 0
-        je      .ret                ;нашли конец
+        je      .ret              ;RUS: нашли конец         ;ENG: the end reached
         cmp     byte [esi], '/'
         jne     @B
         inc     esi
@@ -1111,27 +1125,28 @@ ext2_find_lfn:
         call    ext2_test_block_by_name
         pop     edi ecx
 
-        cmp     edi, esi                                ;нашли имя?
-        je      .next_folder_block                      ;не нашли -> к след. блоку
+        cmp     edi, esi             ;RUS: нашли имя?   ;ENG: did we find a name?
+        je      .next_folder_block   ;RUS: не нашли -> к след. блоку   ;ENG: we didn't -> moving to next block
         
-        cmp     byte [esi], 0                           ;дошли до "конца" пути -> возваращаемся
+        cmp     byte [esi], 0   ;RUS: дошли до "конца" пути -> возваращаемся
+                                ;ENG: reached the "end" of path -> returning
         jz      .get_inode_ret
 
-        cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR   ;нашли, но это не папка
-        jne     .not_found
+        cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR   ;RUS: нашли, но это не папка
+        jne     .not_found                                      ;ENG: found, but it's not a folder
 
         mov     eax, [ebx + EXT2_DIR_STRUC.inode]
-        mov     ebx, [ext2_data.ext2_save_inode]                ;все же папка.
+        mov     ebx, [ext2_data.ext2_save_inode]   ;RUS: все же папка.   ;ENG: it's a folder afterall
         call    ext2_get_inode
         test    eax, eax
         jnz     .error_get_inode
-        pop     ecx                                     ;в стеке лежит кол-во блоков
+        pop     ecx   ;RUS: в стеке лежит кол-во блоков   ;ENG: stack top contains number of blocks
         mov     ebp, ebx
         jmp     .next_path_part
         
     .next_folder_block:
         ;к следующему блоку в текущей папке
-        pop     eax                                     ;счетчик блоков
+        pop     eax                ;RUS: счетчик блоков   ;ENG: blocks counter
         sub     eax, [ext2_data.count_block_in_block]
         jle     .not_found
         
@@ -1144,8 +1159,8 @@ ext2_find_lfn:
         ret
 
     .get_inode_ret:
-        pop     ecx                                     ;в стеке лежит кол-во блоков
-        mov     dl, [ebx + EXT2_DIR_STRUC.name]     ;в dl - первый символ ()
+        pop     ecx   ;RUS: в стеке лежит кол-во блоков   ;ENG: stack top contains number of blocks
+        mov     dl, [ebx + EXT2_DIR_STRUC.name]   ;RUS: в dl - первый символ ()   ;ENG: ???
         mov     eax, [ebx + EXT2_DIR_STRUC.inode]
         mov     ebx, [ext2_data.ext2_save_inode]
         call    ext2_get_inode
@@ -1182,7 +1197,7 @@ ext2_HdGetFileInfo:
         ret
 
     .is_root:
-        xor     ebx, ebx                        ;root не может быть скрытым
+        xor     ebx, ebx      ;RUS: root не может быть скрытым   ;ENG: root cannot be hidden
         mov     ebp, [ext2_data.root_inode]
     @@:
         xor     eax, eax
