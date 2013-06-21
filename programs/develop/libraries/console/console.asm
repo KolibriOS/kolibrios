@@ -977,28 +977,28 @@ con.write_special_char:
         jz      .attr_bgr_color
 
         mov     dl, 0x08
-        cmp     al, 100
+        cmp     al, 90
         jz      .attr_color
         mov     dl, 4 + 8
-        cmp     al, 101
+        cmp     al, 91
         jz      .attr_color
         mov     dl, 2 + 8
-        cmp     al, 102
+        cmp     al, 92
         jz      .attr_color
         mov     dl, 6 + 8
-        cmp     al, 103
+        cmp     al, 93
         jz      .attr_color
         mov     dl, 1 + 8
-        cmp     al, 104
+        cmp     al, 94
         jz      .attr_color
         mov     dl, 5 + 8
-        cmp     al, 105
+        cmp     al, 95
         jz      .attr_color
         mov     dl, 3 + 8
-        cmp     al, 106
+        cmp     al, 96
         jz      .attr_color
         mov     dl, 7 + 8
-        cmp     al, 107
+        cmp     al, 97
         jz      .attr_color
 
         mov     dl, 0x80
