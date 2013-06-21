@@ -55,5 +55,6 @@ void Paste()
 	ActivateWindow(GetProcessSlot(Form.ID));
 	SendWindowMessage(evKey, 54);
 	SelectFile(#copy_to+strrchr(#copy_to,'/'));
+	pause(20);
 	ExitProcess();
 }

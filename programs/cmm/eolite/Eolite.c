@@ -1,7 +1,7 @@
 //Leency & Veliant 2008-2013
 //GNU GPL licence.
 
-//копировать через поток
+//ГЄГ®ГЇГЁГ°Г®ГўГ ГІГј Г·ГҐГ°ГҐГ§ ГЇГ®ГІГ®ГЄ
 
 //libraries
 #define MEMSIZE 0xA0000
@@ -22,8 +22,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.89"
-#define ABOUT_TITLE "Eolite v1.89"
+#define TITLE "Eolite File Manager v1.90"
+#define ABOUT_TITLE "Eolite v1.90"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -59,15 +59,15 @@ edit_box edit2= {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
+#include "include\copypaste.h"
 #include "include\some_code.h"
-#include "include\about_dialog.h"
 #include "include\sorting.h"
 #include "include\icons_f.h"
 #include "include\ini.h"
 #include "include\left_panel.h"
 #include "include\history.h"
 #include "include\file_menu.h"
-#include "include\copypaste.h"
+#include "include\about_dialog.h"
 
 void main() 
 {
@@ -84,7 +84,9 @@ void main()
 		if (path[strlen(#path)-1]!='/') chrcat(#path, '/'); //add "/" to the end of the string
 	}
 	else
+	{
 		strcpy(#path, "/rd/1/");		
+	}
 	Open_Dir(#path,ONLY_OPEN);
 	SetEventMask(0x27);
 	loop() switch(WaitEvent())
@@ -112,11 +114,19 @@ void main()
 			if (!m.lkm) && (!m.pkm) && (can_select)
 			{
 				can_select = 0;
-				if (m.y<57) break;
-				id = m.y - 57 / files.line_h;
-				if (id!=m_selected) {can_show=0; break;}
-				if (files.current!=id) List_Current(id-files.current);
-				else Open();
+				if (m.y>=57)
+				{
+					id = m.y - 57 / files.line_h;
+					if (id!=m_selected)
+					{
+						can_show=0;
+						break;
+					}
+					if (files.current!=id)
+						List_Current(id-files.current);
+					else
+						Open();
+				}
 			};
 			// } select/open file
 
@@ -124,13 +134,14 @@ void main()
 			if (!m.pkm) && (!m.lkm) && (can_show)
 			{
 				can_show = 0;
-				if (m.y<57) break;
-				SwitchToAnotherThread();
-				CreateThread(#FileMenu,#menu_stak);
+				if (m.y>=57)
+				{
+					SwitchToAnotherThread();
+					CreateThread(#FileMenu,#menu_stak);
+				}
 				break;
 			}
 			// } file menu
-
 
 			if (m.vert)
 			{
@@ -444,8 +455,8 @@ void List_Current(int cur)
 void List_ReDraw()
 {
 	int paint_y;
-	//если мы в конце списка файлов развернём окно появяться пустяе белые кнопки
-	//это если выделение после схлопывания окна за кадром
+	//ГҐГ±Г«ГЁ Г¬Г» Гў ГЄГ®Г­Г¶ГҐ Г±ГЇГЁГ±ГЄГ  ГґГ Г©Г«Г®Гў Г°Г Г§ГўГҐГ°Г­ВёГ¬ Г®ГЄГ­Г® ГЇГ®ГїГўГїГІГјГ±Гї ГЇГіГ±ГІГїГҐ ГЎГҐГ«Г»ГҐ ГЄГ­Г®ГЇГЄГЁ
+	//ГЅГІГ® ГҐГ±Г«ГЁ ГўГ»Г¤ГҐГ«ГҐГ­ГЁГҐ ГЇГ®Г±Г«ГҐ Г±ГµГ«Г®ГЇГ»ГўГ Г­ГЁГї Г®ГЄГ­Г  Г§Г  ГЄГ Г¤Г°Г®Г¬
 	if (files.count-files.first<files.visible) || (files.current>files.visible-1)
 	{ files.first=files.count-files.visible; files.current=files.visible-1; }
 

@@ -5,21 +5,26 @@ char *captions[] = {
 	"Open with...",  "CrlEnt",
 	"View as text",  "F3",
 	"View as HEX",   "F4",
+	//
+	"Copy",          "Crl+C",
+	"Cut",           "Crl+X",
+	"Paste",         "Crl+V",
 	"Rename",        "F2",
 	"Delete",        "Del",
 	//"Refresh",       "F5",
-	0};
+	0, 0};
+
+proc_info MenuForm;
 
 void FileMenu()
 {
-	proc_info MenuForm;
 	mouse mm;
-	word id, key, slot;
+	word id, key, slot, index;
 	int ccount=0, cur, newi, linew=10, lineh=18, texty;
-	for (i=0; captions[i]!=0; i+=2)
+	for (index=0; captions[index]!=0; index+=2)
 	{
 		ccount++;
-		if (strlen(captions[i])>linew) linew = strlen(captions[i]);
+		if (strlen(captions[index])>linew) linew = strlen(captions[index]);
 	}
 	linew = linew + 3 * 6 + 50;
 	texty = lineh/2-4;
@@ -45,12 +50,14 @@ void FileMenu()
 				id=GetButtonID();
 				if (id==100) Open();
 				if (id==101) notify("Not compleated yet");
-				if (id==102) FnProcess(3);
-				if (id==103) FnProcess(4);
-				if (id==104) FnProcess(2);
-				if (id==105) Del_Form();
-				if (id==106) FnProcess(5);
-				SwitchToAnotherThread();
+				if (id==102) FnProcess(3); //F3
+				if (id==103) FnProcess(4); //F4
+				if (id==104) Copy(#file_path, NOCUT);
+				if (id==105) Copy(#file_path, CUT);
+				if (id==106) CreateThread(#Paste,#copy_stak);
+				if (id==107) FnProcess(2);
+				if (id==108) Del_Form();
+				if (id==109) FnProcess(5);
 				ExitProcess();
 				break;
 				
@@ -61,7 +68,6 @@ void FileMenu()
 		case evReDraw: _MENU_DRAW:
 				DefineAndDrawWindow(m.x+Form.left+5,m.y+Form.top+GetSkinHeight(),linew+3,ccount*lineh+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				/* _PutImage(1,23, 16,44, #factions); //иконки	*/
 				DrawRectangle(0,0,linew+1,ccount*lineh+2,col_border);
 				DrawBar(1,1,linew,1,0xFFFfff);
 				PutShadow(linew+2,1,1,ccount*lineh+2,0,2);
@@ -70,13 +76,21 @@ void FileMenu()
 				PutShadow(2,ccount*lineh+4,linew+1,1,0,1);
 
 				_ITEMS_DRAW:
-				for (i=0; captions[i*2]!=0; i++)
+				for (index=0; captions[index*2]!=0; index++)
 				{
-					DefineButton(1,i*lineh+1,linew,lineh-1,i+100+BT_HIDE+BT_NOFRAME,0xFFFFFF);
-					DrawBar(1,i*lineh+2,1,lineh,0xFFFfff);
-					if (i==cur) DrawBar(2,i*lineh+2,linew-1,lineh,0xFFFfff); else DrawBar(2,i*lineh+2,linew-1,lineh,col_work);
-					WriteText(7,i*lineh+texty+2,0x80,0x000000,captions[i*2]);
-					WriteText(-strlen(captions[i*2+1])*6-6+linew,i*lineh+texty+2,0x80,0x999999,captions[i*2+1]);
+					DefineButton(1,index*lineh+1,linew,lineh-1,index+100+BT_HIDE+BT_NOFRAME,0xFFFFFF);
+					DrawBar(1,index*lineh+2,1,lineh,0xFFFfff);
+					if (index==cur)
+					{
+						DrawBar(2,index*lineh+2,linew-1,lineh,0xFFFfff);
+					}
+					else
+					{
+						DrawBar(2,index*lineh+2,linew-1,lineh,col_work);
+						WriteText(8,index*lineh+texty+3,0x80,0xf2f2f2,captions[index*2]);
+					}
+					WriteText(7,index*lineh+texty+2,0x80,0x000000,captions[index*2]);
+					WriteText(-strlen(captions[index*2+1])*6-6+linew,index*lineh+texty+2,0x80,0x888888,captions[index*2+1]);
 				}
 	}
 }
