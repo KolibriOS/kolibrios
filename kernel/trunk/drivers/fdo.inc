@@ -4,6 +4,7 @@
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+_esp equ esp
 
 ;
 ; Formatted Debug Output (FDO)
@@ -73,11 +74,11 @@ macro DEBUGS_N _sign,_num,[_str] {
         jmp     ..label
    ..str db _str,0
    ..label:
-        add     esp, 4*8+4
         mov     edx, ..str
-        sub     esp, 4*8+4
   else
+esp equ esp+4*8+4
         mov     edx, _str
+esp equ _esp
   end if
   if ~_num eq
    if _num eqtype eax
@@ -159,7 +160,7 @@ macro DEBUGD_N _sign,_num,_dec {
  else if _dec eqtype 0
         mov     eax, _dec
  else
-        add     esp, 4*8+4
+esp equ esp+4*8+4
   if _num eq
         mov     eax, dword _dec
   else if _num = 1
@@ -177,7 +178,7 @@ macro DEBUGD_N _sign,_num,_dec {
   else
         mov     eax, dword _dec
   end if
-        sub     esp, 4*8+4
+esp equ _esp
  end if
         mov     cl, _sign
         call    fdo_debug_outdec
@@ -227,9 +228,9 @@ macro DEBUGH_N _sign,_num,_hex {
  else if _hex eqtype 0
         mov     eax, _hex
  else
-        add     esp, 4*8+4
+esp equ esp+4*8+4
         mov     eax, dword _hex
-        sub     esp, 4*8+4
+esp equ _esp
  end if
  if ~_num eq
         mov     edx, _num
