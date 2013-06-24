@@ -32,8 +32,8 @@ struct  ETH_DEVICE      NET_DEVICE
 
 ends
 
-align 4
 iglobal
+align 4
 
         ETH_BROADCAST   dp  0xffffffffffff
 endg

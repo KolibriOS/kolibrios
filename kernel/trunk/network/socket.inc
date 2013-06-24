@@ -194,11 +194,14 @@ SOCKET_QUEUE_SIZE       = 10       ; maximum number of incoming packets queued f
 SOCKET_QUEUE_LOCATION   = (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
 
 uglobal
+align 4
+
         net_sockets     rd 4
         last_socket_num dd ?
         last_UDP_port   dw ? ; These values give the number of the last used ephemeral port
         last_TCP_port   dw ? ;
         socket_mutex    MUTEX
+
 endg
 
 
@@ -614,8 +617,9 @@ align 4
   .loop:
         cmp     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
         je      .fail
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
-        jne     .syn_received
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        je      .established
+        ja      .fail
 
         call    SOCKET_block
         jmp     .loop
@@ -626,7 +630,7 @@ align 4
         mov     dword[esp+32], -1
         ret
 
-  .syn_received:
+  .established:
         mov     dword[esp+32], 0
         ret
 

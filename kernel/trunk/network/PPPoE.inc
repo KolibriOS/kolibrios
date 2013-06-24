@@ -23,8 +23,11 @@ struct  PPPoE_frame
 ends
 
 uglobal
+align 4
+
         PPPoE_SID       dw ?
         PPPoE_MAC       dp ?
+
 endg
 
 ;-----------------------------------------------------------------

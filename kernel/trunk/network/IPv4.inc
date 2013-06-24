@@ -55,8 +55,8 @@ struct  FRAGMENT_entry                  ; This structure will replace the ethern
 ends
 
 
-align 4
 uglobal
+align 4
 
         IP_LIST                 rd NET_DEVICES_MAX
         SUBNET_LIST             rd NET_DEVICES_MAX
@@ -69,6 +69,7 @@ uglobal
         IP_packets_dumped       rd NET_DEVICES_MAX
 
         FRAGMENT_LIST           rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
+
 endg
 
 

@@ -17,6 +17,7 @@
 $Revision: 2891 $
 
 iglobal
+align 4
 
 LOOPBACK_DEVICE:
 

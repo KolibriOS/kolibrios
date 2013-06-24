@@ -30,8 +30,8 @@ struct  IPv6_header
 ends
 
 
-align 4
 uglobal
+align 4
 
         IPv6:
         .addresses      rd 4*NET_DEVICES_MAX

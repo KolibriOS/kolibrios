@@ -221,8 +221,8 @@ include "socket.inc"
 
 
 
-align 4
 uglobal
+align 4
 
         NET_RUNNING     dd  ?
         NET_DRV_LIST    rd  NET_DEVICES_MAX

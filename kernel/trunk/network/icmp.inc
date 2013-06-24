@@ -97,10 +97,12 @@ struct  ICMP_header
 ends
 
 
-align 4
 uglobal
+align 4
+
         ICMP_PACKETS_TX         rd NET_DEVICES_MAX
         ICMP_PACKETS_RX         rd NET_DEVICES_MAX
+
 endg
 
 

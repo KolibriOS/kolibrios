@@ -27,10 +27,12 @@ struct  UDP_header
 ends
 
 
-align 4
 uglobal
+align 4
+
         UDP_PACKETS_TX          rd  NET_DEVICES_MAX
         UDP_PACKETS_RX          rd  NET_DEVICES_MAX
+
 endg
 
 
@@ -114,6 +116,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 ;
 ;-----------------------------------------------------------------
 align 4
+diff16 "UDP packetgfgfgfgfs", 0, $
 UDP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: size=%u\n", ecx

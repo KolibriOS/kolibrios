@@ -23,11 +23,12 @@ $Revision: 2305 $
 ; (you can see some examples below)
 
 
-struct	queue
+struct  queue
 
-	size	       dd ?    ; number of queued packets in this queue
-	w_ptr	       dd ?    ; current writing pointer in queue
-	r_ptr	       dd ?    ; current reading pointer
+        size            dd ?    ; number of queued packets in this queue
+        w_ptr           dd ?    ; current writing pointer in queue
+        r_ptr           dd ?    ; current reading pointer
+        mutex           MUTEX
 
 ends
 
@@ -44,23 +45,41 @@ ends
 
 macro add_to_queue ptr, size, entry_size, failaddr {
 
-	cmp	[ptr + queue.size], size	; Check if queue isnt full
-	jae	failaddr
+local .ok, .no_wrap
 
-	inc	[ptr + queue.size]		; if not full, queue one more
+        pusha
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_lock
+        popa
 
-	mov	edi, [ptr + queue.w_ptr]	; Current write pointer (FIFO!)
-	mov	ecx, entry_size/4		; Write the queue entry
-	rep	movsd				;
+        cmp     [ptr + queue.size], size        ; Check if queue isnt full
+        jb      .ok
 
-	lea	ecx, [size*entry_size+ptr+sizeof.queue]
-	cmp	edi, ecx			; entry size
-	jb	.no_wrap
+        pusha
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_unlock
+        popa
+        jmp     failaddr
 
-	sub	edi, size*entry_size
+  .ok:
+        inc     [ptr + queue.size]              ; if not full, queue one more
 
+        mov     edi, [ptr + queue.w_ptr]        ; Current write pointer (FIFO!)
+        mov     ecx, entry_size/4               ; Write the queue entry
+        rep     movsd                           ;
+
+        lea     ecx, [size*entry_size+ptr+sizeof.queue]
+        cmp     edi, ecx                        ; entry size
+        jb      .no_wrap
+
+        sub     edi, size*entry_size
   .no_wrap:
-	mov	[ptr + queue.w_ptr], edi
+        mov     [ptr + queue.w_ptr], edi
+
+        pusha
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_unlock
+        popa
 
 }
 
@@ -68,33 +87,55 @@ macro add_to_queue ptr, size, entry_size, failaddr {
 
 macro get_from_queue ptr, size, entry_size,  failaddr {
 
-	cmp	[ptr + queue.size], 0		; any packets queued?
-	je	failaddr
+local .ok, .no_wrap
 
-	dec	[ptr + queue.size]		; if so, dequeue one
+        pusha
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_lock
+        popa
 
-	mov	esi, [ptr + queue.r_ptr]
-	push	esi
+        cmp     [ptr + queue.size], 0           ; any packets queued?
+        ja      .ok
 
-	add	esi, entry_size
+        pusha
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_unlock
+        popa
+        jmp     failaddr
 
-	lea	ecx, [size*entry_size+ptr+sizeof.queue]
-	cmp	esi, ecx			; entry size
-	jb	.no_wrap
+  .ok:
+        dec     [ptr + queue.size]              ; if so, dequeue one
 
-	sub	esi, size*entry_size
+        mov     esi, [ptr + queue.r_ptr]
+        push    esi
+
+        add     esi, entry_size
+
+        lea     ecx, [size*entry_size+ptr+sizeof.queue]
+        cmp     esi, ecx                        ; entry size
+        jb      .no_wrap
+
+        sub     esi, size*entry_size
 
   .no_wrap:
-	mov	dword [ptr + queue.r_ptr], esi
+        mov     dword [ptr + queue.r_ptr], esi
 
-	pop	esi
+        pop     esi
+
+        pusha
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_unlock
+        popa
 
 }
 
 macro init_queue ptr {
 
-	mov	[ptr + queue.size] , 0
-	lea	edi, [ptr + sizeof.queue]
-	mov	[ptr + queue.w_ptr], edi
-	mov	[ptr + queue.r_ptr], edi
+        mov     [ptr + queue.size] , 0
+        lea     edi, [ptr + sizeof.queue]
+        mov     [ptr + queue.w_ptr], edi
+        mov     [ptr + queue.r_ptr], edi
+
+        lea     ecx, [ptr + queue.mutex]
+        call    mutex_init
 }
