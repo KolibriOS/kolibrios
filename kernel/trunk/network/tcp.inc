@@ -127,8 +127,9 @@ struct  TCP_queue_entry
 
 ends
 
-align 4
 uglobal
+align 4
+
         TCP_segments_tx         rd NET_DEVICES_MAX
         TCP_segments_rx         rd NET_DEVICES_MAX
         TCP_segments_missed     rd NET_DEVICES_MAX
@@ -136,7 +137,7 @@ uglobal
 ;        TCP_bytes_rx            rq NET_DEVICES_MAX
 ;        TCP_bytes_tx            rq NET_DEVICES_MAX
         TCP_sequence_num        dd ?
-        TCP_queue               rd TCP_QUEUE_SIZE*sizeof.TCP_queue_entry/4
+        TCP_queue               rd (TCP_QUEUE_SIZE*sizeof.TCP_queue_entry + sizeof.queue)/4
         TCP_input_event         dd ?
 endg
 
@@ -163,6 +164,10 @@ macro   TCP_init {
         movi    ebx, 1
         mov     ecx, TCP_process_input
         call    new_sys_threads
+        test    eax, eax
+        jns     @f
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP, error %d\n', eax
+  @@:
 
 }
 
