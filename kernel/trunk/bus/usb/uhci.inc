@@ -1698,7 +1698,9 @@ end virtual
 ; mark it as last one (this will be changed when further packets will be
 ; allocated), copy Token field from uhci_pipe.Token zeroing bit 20,
 ; generate ControlStatus field, mark as Active
-; (for last descriptor, this will be changed by uhci_insert_transfer).
+; (for last descriptor, this will be changed by uhci_insert_transfer),
+; zero OrigBufferInfo (otherwise uhci_free_td would try to free it).
+        and     [eax+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd], 0
         mov     [eax+uhci_gtd.NextTD-sizeof.uhci_gtd], 1  ; no next TD
         mov     edx, [ebx+uhci_pipe.Token-sizeof.uhci_pipe]
         mov     [eax+uhci_gtd.Token-sizeof.uhci_gtd], edx
