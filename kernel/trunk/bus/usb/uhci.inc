@@ -1385,7 +1385,7 @@ end virtual
 ; 1. Initialize ErrorTD to zero.
         and     [edi+uhci_pipe.ErrorTD-sizeof.uhci_pipe], 0
 ; 2. Initialize HeadTD to the physical address of the first TD.
-        push    eax     ; store pointer to the first TD for step ?
+        push    eax     ; store pointer to the first TD for step 4
         sub     eax, sizeof.uhci_gtd
         call    get_phys_addr
         mov     [edi+uhci_pipe.HeadTD-sizeof.uhci_pipe], eax
@@ -1416,7 +1416,8 @@ end virtual
 ; 4. Initialize the first TD:
 ; copy Token from uhci_pipe.Token zeroing reserved bit 20,
 ; set ControlStatus for future transfers, bit make it inactive,
-; set bit 0 in NextTD = "no next TD".
+; set bit 0 in NextTD = "no next TD",
+; zero OrigBufferInfo.
         pop     edx     ; restore pointer saved in step 2
         mov     [edx+uhci_gtd.Token-sizeof.uhci_gtd], eax
         and     byte [edx+uhci_gtd.Token+2-sizeof.uhci_gtd], not (1 shl (20-16))
@@ -1424,6 +1425,7 @@ end virtual
         shl     eax, 6
         or      eax, UHCI_INVALID_LENGTH + (3 shl 27)
                 ; not processed, inactive, allow 3 errors
+        and     [edx+uhci_gtd.OrigBufferInfo-sizeof.uhci_gtd], 0
         mov     [edx+uhci_gtd.ControlStatus-sizeof.uhci_gtd], eax
         mov     [edx+uhci_gtd.NextTD-sizeof.uhci_gtd], 1
 ; 5. Select the corresponding list and insert to the list.
