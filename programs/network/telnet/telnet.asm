@@ -179,9 +179,16 @@ mainloop:
         test    eax, 0x200                      ; con window closed?
         jnz     exit
 
+  .check_for_data:
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
         cmp     eax, -1
+        jne     .parse_data
+        cmp     ebx, 6  ; EWOULDBLOCK
         je      mainloop
+        jmp     closed
+
+
+  .parse_data:
 
     DEBUGF  1, 'TELNET: got %u bytes of data !\n', eax
 
@@ -210,7 +217,7 @@ mainloop:
 
   .print:
         cmp     esi, edi
-        jae     mainloop
+        jae     .check_for_data
 
         push    esi
         call    [con_write_asciiz]
@@ -238,6 +245,11 @@ dns_error:
 
 hostname_error:
         push    str11
+        call    [con_write_asciiz]
+        jmp     prompt
+
+closed:
+        push    str12
         call    [con_write_asciiz]
         jmp     prompt
 
@@ -276,6 +288,7 @@ str9    db      ')',10,0
 str5    db      'Name resolution failed.',10,10,0
 str6    db      'Could not open socket.',10,10,0
 str11   db      'Invalid hostname.',10,10,0
+str12   db      10,'Remote host closed the connection.',10,10,0
 
 sockaddr1:
         dw AF_INET4
