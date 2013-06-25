@@ -300,11 +300,11 @@ SOCKET_open:
         mov     [esp+32], edi                   ; return socketnumber
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socknum=%u\n", edi
 
-;        push    edx
-;        and     edx, SO_NONBLOCK
-;        or      [eax + SOCKET.options], SO_NONBLOCK ;edx        ; HACK: make all sockets non-blocking untill API and applications are fixed
-;        pop     edx
-;        and     edx, not SO_NONBLOCK
+        test    edx, SO_NONBLOCK
+        jz      @f
+        or      [eax + SOCKET.options], SO_NONBLOCK
+        and     edx, not SO_NONBLOCK
+  @@:
 
         mov     [eax + SOCKET.Domain], ecx
         mov     [eax + SOCKET.Type], edx
