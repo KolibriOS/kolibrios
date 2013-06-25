@@ -525,25 +525,29 @@ fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
         call    reserve_hd1
-        mov     [hdbase], 0x1F0
+	mov	eax,[hd_address_table]
+        mov     [hdbase], eax	;0x1F0
         mov     [hdid], 0
         push    1
         jmp     fs_OnHd
 fs_OnHd1:
         call    reserve_hd1
-        mov     [hdbase], 0x1F0
+	mov	eax,[hd_address_table]
+        mov     [hdbase], eax	;0x1F0
         mov     [hdid], 0x10
         push    2
         jmp     fs_OnHd
 fs_OnHd2:
         call    reserve_hd1
-        mov     [hdbase], 0x170
+	mov	eax,[hd_address_table+16]
+        mov     [hdbase], eax	;0x170
         mov     [hdid], 0
         push    3
         jmp     fs_OnHd
 fs_OnHd3:
         call    reserve_hd1
-        mov     [hdbase], 0x170
+	mov	eax,[hd_address_table+16]
+        mov     [hdbase], eax	;0x170
         mov     [hdid], 0x10
         push    4
 fs_OnHd:

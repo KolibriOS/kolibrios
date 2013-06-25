@@ -387,7 +387,12 @@ sayerr:
 
         push    0
         pop     es
-        and     word [es:BOOT_IDE_BASE_ADDR], 0
+	xor	ax,ax
+        and     word [es:BOOT_IDE_BASE_ADDR], ax	;0
+        and     word [es:BOOT_IDE_BAR0_16], ax	;0
+        and     word [es:BOOT_IDE_BAR1_16], ax	;0
+        and     word [es:BOOT_IDE_BAR2_16], ax	;0
+        and     word [es:BOOT_IDE_BAR3_16], ax	;0
 ; \begin{Mario79}
 ; find HDD IDE DMA PCI device
 ; check for PCI BIOS
@@ -402,29 +407,81 @@ sayerr:
 ; a) class 1, subclass 1, programming interface 0x80
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x80
+        mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found
-; b) class 1, subclass 1, programming interface 0x8A
+        jnc     .found_1
+; b) class 1, subclass 1, programming interface 0x8f
         mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x8A
+        mov     ecx, 1*10000h + 1*100h + 0x8f
+        mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
         jnc     .found
 ; c) class 1, subclass 1, programming interface 0x85
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x85
-        xor     si, si
+        mov     [es:BOOT_IDE_PI_16], cx
+        xor     si, si  ; device index = 0
         int     0x1A
-        jc      .nopci
-.found:
-; get memory base
+        jnc     .found
+; d) class 1, subclass 1, programming interface 0x8A
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x8A
+        mov     [es:BOOT_IDE_PI_16], cx
+        xor     si, si  ; device index = 0
+        int     0x1A
+        jnc     .found
+
+	jmp     .nopci
+.found_1:
+; get memory base BAR4
         mov     ax, 0xB10A
         mov     di, 0x20        ; memory base is config register at 0x20
+	push	cx
         int     0x1A
-        jc      .nopci
+        jc      .no_BAR4	;.nopci
         and     cx, 0xFFF0      ; clear address decode type
         mov     [es:BOOT_IDE_BASE_ADDR], cx
+.no_BAR4:
+	pop	cx
+.found:	
+; get memory base BAR0
+        mov     ax, 0xB10A
+        mov     di, 0x10        ; memory base is config register at 0x20
+	push	cx
+        int     0x1A
+        jc      .no_BAR0	;.nopci
+        mov     [es:BOOT_IDE_BAR0_16], cx
+.no_BAR0:
+	pop	cx
+; get memory base BAR1
+        mov     ax, 0xB10A
+        mov     di, 0x14        ; memory base is config register at 0x20
+	push	cx
+        int     0x1A
+        jc      .no_BAR1	;.nopci
+        mov     [es:BOOT_IDE_BAR1_16], cx
+.no_BAR1:
+	pop	cx
+; get memory base BAR2
+        mov     ax, 0xB10A
+        mov     di, 0x18        ; memory base is config register at 0x20
+	push	cx
+        int     0x1A
+        jc      .no_BAR2	;.nopci
+        mov     [es:BOOT_IDE_BAR2_16], cx
+.no_BAR2:
+	pop	cx
+; get memory base BAR3
+        mov     ax, 0xB10A
+        mov     di, 0x1C        ; memory base is config register at 0x20
+	push	cx
+        int     0x1A
+        jc      .no_BAR3	;.nopci
+        mov     [es:BOOT_IDE_BAR3_16], cx
+.no_BAR3:
+	pop	cx
 .nopci:
 ; \end{Mario79}
 
@@ -550,8 +607,8 @@ end if
 ; following 4 lines set variables to 1 if its current value is 0
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
-        cmp     byte [di+preboot_biosdisk-preboot_device], 1
-        adc     byte [di+preboot_biosdisk-preboot_device], 0
+;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
+;        adc     byte [di+preboot_biosdisk-preboot_device], 0
 ;; default value for VRR is OFF
 ;        cmp     byte [di+preboot_vrrm-preboot_device], 0
 ;        jnz    @f

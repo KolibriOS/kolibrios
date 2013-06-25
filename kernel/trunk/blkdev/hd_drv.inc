@@ -50,11 +50,11 @@ hd_read:
         cmp     [hdpos], 0x80
         jae     .bios
 ; hd_read_{dma,pio} use old ATA with 28 bit for sector number
-        cmp     eax, 0x10000000
-        jb      @f
-        inc     [hd_error]
-        jmp     return_01
-@@:
+;        cmp     eax, 0x10000000
+;        jb      @f
+;        inc     [hd_error]
+;        jmp     return_01
+;@@:
 ; DMA read is permitted if [allow_dma_access]=1 or 2
         cmp     [allow_dma_access], 2
         ja      .nodma
@@ -101,10 +101,22 @@ align 4
 hd_read_pio:
         push    eax edx
 
+        ; Выбрать нужный диск
+        mov     edx, [hdbase]
+        add     edx, 6   ;адрес регистра головок
+        mov     al, byte [hdid]
+        add     al, 128+64+32
+        out     dx, al; номер головки/номер диска
+	
         call    wait_for_hd_idle
         cmp     [hd_error], 0
         jne     hd_read_error
-
+	
+; ATA with 28 or 48 bit for sector number?
+        mov     eax, [esp+4]
+        cmp     eax, 0x10000000
+        jae     .lba48	
+.lba28:
         cli
         xor     eax, eax
         mov     edx, [hdbase]
@@ -132,7 +144,45 @@ hd_read_pio:
         mov     al, 20h
         out     dx, al; ATACommand регистр команд
         sti
-
+	jmp	.continue
+.lba48:
+        cli
+        xor     eax, eax
+        mov     edx, [hdbase]
+        inc     edx
+        out     dx, al ; Features Previous Reserved
+        out     dx, al ; Features Current Reserved
+        inc     edx
+        out     dx, al ; Sector Count Previous Sector count (15:8)
+        inc     eax
+        out     dx, al ; Sector Count Current Sector count (7:0)
+        inc     edx
+        mov     eax, [esp+4]
+	rol	eax,8
+        out     dx, al ; LBA Low Previous LBA (31:24)
+	xor	eax,eax ; because only 32 bit cache
+        inc     edx
+        out     dx, al ; LBA Mid Previous LBA (39:32)
+        inc     edx
+        out     dx, al ; LBA High Previous LBA (47:40)
+	sub	edx,2
+        mov     eax, [esp+4]
+        out     dx, al ; LBA Low Current LBA (7:0)
+        shr     eax, 8
+        inc     edx
+        out     dx, al ; LBA Mid Current LBA (15:8)
+        shr     eax, 8
+        inc     edx
+        out     dx, al ; LBA High Current LBA (23:16)
+        inc     edx
+        mov     al, byte [hdid]
+        add     al, 128+64+32
+        out     dx, al; номер головки/номер диска
+        inc     edx
+        mov     al, 24h	; READ SECTOR(S) EXT
+        out     dx, al; ATACommand регистр команд
+        sti
+.continue:
         call    wait_for_sector_buffer
 
         cmp     [hd_error], 0
@@ -244,6 +294,13 @@ cache_write_pio:
         cmp     dword[esi], 0x10000000
         jae     .bad
 ;    call  disable_ide_int
+
+        ; Выбрать нужный диск
+        mov     edx, [hdbase]
+        add     edx, 6   ;адрес регистра головок
+        mov     al, byte [hdid]
+        add     al, 128+64+32
+        out     dx, al; номер головки/номер диска
 
         call    wait_for_hd_idle
         cmp     [hd_error], 0
@@ -596,6 +653,12 @@ hdd_irq15:
 
 align 4
 hd_read_dma:
+; hd_read_dma use old ATA with 28 bit for sector number
+        cmp     eax, 0x10000000
+        jb      @f
+        inc     [hd_error]
+        ret
+@@:
         push    eax
         push    edx
         mov     edx, [dma_hdpos]
@@ -819,6 +882,11 @@ write_cache_chain:
 
 uglobal
 IDEContrRegsBaseAddr    dw      ?
+IDEContrProgrammingInterface   dw ?
+IDE_BAR0_val	dw ?
+IDE_BAR1_val	dw ?
+IDE_BAR2_val	dw ?
+IDE_BAR3_val	dw ?
 endg
 ; \end{Mario79}
 
