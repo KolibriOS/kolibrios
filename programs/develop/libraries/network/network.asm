@@ -7,7 +7,7 @@ include '../../../proc32.inc'
 include '../../../macros.inc'
 purge section,mov,add,sub
 
-include 'network.inc'
+include '../../../network.inc'
 
 section '.flat' code readable align 16
 
@@ -761,7 +761,7 @@ end virtual
 ; 2. Read UDP datagram.
         mov     ecx, [edi+__gai_reqdata.socketnum]
         push    edi
-        mcall   75, 7, , , 512, 0
+        mcall   75, 7, , , 512, MSG_DONTWAIT
         pop     edi
 ; 3. Ignore events for other socketnums (return if no data read)
         test    eax, eax

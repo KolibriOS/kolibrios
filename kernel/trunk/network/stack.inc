@@ -81,7 +81,6 @@ SO_REUSEPORT            = 1 shl 7
 SO_USELOOPBACK          = 1 shl 8
 SO_BINDTODEVICE         = 1 shl 9
 
-SO_BLOCK                = 1 shl 10      ; TO BE REMOVED
 SO_NONBLOCK             = 1 shl 31
 
 ; Socket flags for user calls

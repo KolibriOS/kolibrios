@@ -302,7 +302,7 @@ SOCKET_open:
 
 ;        push    edx
 ;        and     edx, SO_NONBLOCK
-        or      [eax + SOCKET.options], SO_NONBLOCK ;edx        ; HACK: make all sockets non-blocking untill API and applications are fixed
+;        or      [eax + SOCKET.options], SO_NONBLOCK ;edx        ; HACK: make all sockets non-blocking untill API and applications are fixed
 ;        pop     edx
 ;        and     edx, not SO_NONBLOCK
 
@@ -611,7 +611,7 @@ align 4
         jz      .loop
 
         mov     dword[esp+20], EWOULDBLOCK
-        mov     dword[esp+32], 0                 ; Should be -1? or not?
+        mov     dword[esp+32], -1
         ret
 
   .loop:
@@ -860,32 +860,50 @@ SOCKET_receive:
         call    SOCKET_num_to_ptr
         jz      .invalid
 
+  .loop:
+        push    edi
         call    [eax + SOCKET.rcv_proc]
+        pop     edi
 
+        cmp     ebx, EWOULDBLOCK
+        jne     .return
+
+        test    edi, MSG_DONTWAIT
+        jnz     .return_err
+
+;        test    [eax + SOCKET.options], SO_NONBLOCK
+;        jnz     .return_err
+
+        call    SOCKET_block
+        jmp     .loop
+
+
+  .invalid:
+        push    EINVAL
+        pop     ebx
+  .return_err:
+        mov     eax, -1
+  .return:
         mov     [esp+20], ebx
         mov     [esp+32], eax
         ret
 
 
-  .invalid:
-        mov     dword[esp+20], EINVAL
-        mov     dword[esp+32], -1
-        ret
+
+
 
 align 4
 SOCKET_receive_dgram:
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: DGRAM\n"
 
-        mov     ebx, esi
-        mov     edi, edx                                        ; addr to buffer
+        mov     ebx, esi                                        ; bufferlength
 
-  .loop:
-        get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .block      ; destroys esi and ecx
-
+        get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .wouldblock ; sets esi only on success.
         mov     ecx, [esi + socket_queue_entry.data_size]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: %u bytes data\n", ecx
 
-        cmp     ecx, ebx
+        cmp     ecx, ebx                                        ; If data segment does not fit in applications buffer, abort
         ja      .too_small
 
         push    ecx
@@ -893,7 +911,8 @@ SOCKET_receive_dgram:
         mov     esi, [esi + socket_queue_entry.data_ptr]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
 
-; copy the data
+; copy the data from kernel buffer to application buffer
+        mov     edi, edx                                        ; bufferaddr
         shr     ecx, 1
         jnc     .nb
         movsb
@@ -907,26 +926,22 @@ SOCKET_receive_dgram:
         rep     movsd
   .nd:
 
-        call    kernel_free                                     ; remove the packet
-        pop     eax
+        call    kernel_free                                     ; free kernel buffer
+        pop     eax                                             ; return number of bytes copied to application
+        xor     ebx, ebx
         ret
 
   .too_small:
         mov     eax, -1
-        mov     ebx, EMSGSIZE
+        push    EMSGSIZE
+        pop     ebx
         ret
-
-  .block:
-        test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     .wouldblock
-
-        call    SOCKET_block
-        jmp     .loop
 
   .wouldblock:
-        mov     eax, -1
-        mov     ebx, EWOULDBLOCK
+        push    EWOULDBLOCK
+        pop     ebx
         ret
+
 
 
 align 4
@@ -940,65 +955,45 @@ SOCKET_receive_local:
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
-        mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
+        mov     [eax + SOCKET.TID], ebx                         ; currently TID = PID in kolibrios :(
       @@:
 
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+
+; ... continue to SOCKET_receive_stream
 
 align 4
 SOCKET_receive_stream:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: STREAM\n"
 
-        mov     ebx, edi
+        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
+        je      .wouldblock
+
+        test    edi, MSG_PEEK
+        jnz     .peek
+
         mov     ecx, esi
         mov     edi, edx
         xor     edx, edx
 
-        test    ebx, MSG_DONTWAIT
-        jnz     .dontwait
-  .loop:
-        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
-        je      .block
-  .dontwait:
-        test    ebx, MSG_PEEK
-        jnz     .peek
-
         add     eax, STREAM_SOCKET.rcv
-        call    SOCKET_ring_read
-        call    SOCKET_ring_free
+        call    SOCKET_ring_read                                ; copy data from kernel buffer to application buffer
+        call    SOCKET_ring_free                                ; free read memory
 
-        mov     eax, ecx                ; return number of bytes copied
+        mov     eax, ecx                                        ; return number of bytes copied
+        xor     ebx, ebx                                        ; errorcode = 0 (no error)
+        ret
+
+  .wouldblock:
+        push    EWOULDBLOCK
+        pop     ebx
         ret
 
   .peek:
         mov     eax, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+        xor     ebx, ebx
         ret
-
-  .block:
-        test    [eax + SOCKET.options], SO_NONBLOCK
-        jnz     .wouldblock
-
-        call    SOCKET_block
-        jmp     .loop
-
-  .return0:
-        test    [eax + SOCKET.options], SS_CANTRCVMORE
-        jz      .ok
-
-        xor     eax, eax
-        dec     eax
-        ret
-
-  .ok:
-        xor     eax, eax
-        ret
-
-  .wouldblock:
-        mov     eax, -1
-        mov     ebx, EWOULDBLOCK
-        ret
-
 
 
 ;-----------------------------------------------------------------
@@ -1251,9 +1246,6 @@ SOCKET_set_opt:
         cmp     dword [edx+4], SO_BINDTODEVICE
         je      .bind
 
-        cmp     dword [edx+4], SO_BLOCK
-        je      .block
-
   .invalid:
         mov     dword[esp+32], -1
         mov     dword[esp+20], EINVAL
@@ -1279,21 +1271,6 @@ SOCKET_set_opt:
 
   .unbind:
         mov     [eax + SOCKET.device], 0
-
-        mov     dword[esp+32], 0        ; success!
-        ret
-
-  .block:
-        cmp     dword[edx+8], 0
-        je      .unblock
-
-        and     [eax + SOCKET.options], not SO_NONBLOCK
-
-        mov     dword[esp+32], 0        ; success!
-        ret
-
-  .unblock:
-        or      [eax + SOCKET.options], SO_NONBLOCK
 
         mov     dword[esp+32], 0        ; success!
         ret
@@ -1886,8 +1863,8 @@ SOCKET_notify:
         test    [eax + SOCKET.state], SS_BLOCKED
         jnz     .unblock
 
-        test    [eax + SOCKET.options], SO_NONBLOCK
-        jz      .error
+;        test    [eax + SOCKET.options], SO_NONBLOCK
+;        jz      .error
 
         push    eax ecx esi
 

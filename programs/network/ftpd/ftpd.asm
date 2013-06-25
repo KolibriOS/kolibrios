@@ -270,7 +270,7 @@ threadloop:
         mov     ecx, [ebp + thread_data.socketnum]
         mov     edx, [ebp + thread_data.buffer_ptr]
         mov     esi, sizeof.thread_data.buffer    ;;; FIXME
-        xor     edi, edi
+        mov     edi, MSG_DONTWAIT
         mcall   recv
         inc     eax                                     ; error? (-1)
         jz      threadloop

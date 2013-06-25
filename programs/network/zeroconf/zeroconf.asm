@@ -295,7 +295,7 @@ send_dhcpmsg:
         mcall   23, TIMEOUT*100                                 ; wait for data
 
 read_data:                                                      ; we have data - this will be the response
-        mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, 0        ; read data from socket
+        mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, MSG_DONTWAIT     ; read data from socket
         cmp     eax, -1
         jne     @f
         DEBUGF  1,"No answer from DHCP server\n"

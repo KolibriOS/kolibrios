@@ -161,7 +161,7 @@ wait_for_serverdata:
         jnz     exit
 
 ; receive socket data
-        mcall   recv, [socketnum], [offset], BUFFERSIZE, 0
+        mcall   recv, [socketnum], [offset], BUFFERSIZE, MSG_DONTWAIT
         inc     eax
         jz      wait_for_serverdata
         dec     eax

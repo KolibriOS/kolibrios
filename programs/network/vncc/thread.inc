@@ -3,7 +3,7 @@ thread_start:
 
         DEBUGF  1, 'I am the thread!\n'
 
-        mcall   40, 1 shl 7
+        mcall   40, 0
 
 ; resolve name
         push    esp     ; reserve stack place
@@ -55,8 +55,6 @@ no_security:
         mcall   send, [socketnum], shared, 1, 0
         DEBUGF  1, 'Sending handshake: shared session?\n'
 
-        mcall   23, 100*TIMEOUT
-
         call    wait_for_data       ; now the server should send init message
 
         DEBUGF  1, 'Serverinit: bpp: %u depth: %u bigendian: %u truecolor: %u\n', \
@@ -85,8 +83,6 @@ request_rfb:
         mcall   send, [socketnum], fbur, 10, 0
 
 thread_loop:
-        mcall   23, 100
-
         call    read_data              ; Read the data into the buffer
 
 ;        cmp     eax, 2
@@ -206,10 +202,8 @@ servercuttext:
 
 
 read_data:
-
         mov     [datapointer], receive_buffer
   .loop:
-        mcall   23, 100*TIMEOUT
         mcall   recv, [socketnum], [datapointer], 4096, 0
         cmp     eax, -1
         je      .done
@@ -227,8 +221,6 @@ read_data:
 
 
 wait_for_data:
-
-        mcall   23, 500
         mcall   recv, [socketnum], receive_buffer, 4096, 0
         cmp     eax, -1
         je      wait_for_data

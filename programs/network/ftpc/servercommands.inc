@@ -80,7 +80,7 @@ pasv_ok:
 
 data_ok:
 
-        mcall   recv, [datasocket], buffer_ptr, BUFFERSIZE, 0   ; fixme: use other buffer
+        mcall   recv, [datasocket], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT   ; fixme: use other buffer
         inc     eax
         jz      .fail
         dec     eax

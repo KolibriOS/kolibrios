@@ -308,7 +308,7 @@ receive_data_loop:
         jz      .key
 
 
-        mcall   recv, [socketnum], buffer, buffer_len, 0  ; receive data
+        mcall   recv, [socketnum], buffer, buffer_len, MSG_DONTWAIT     ; receive data
 
         cmp     word[buffer], opcode_data
         jne     .error
@@ -415,7 +415,7 @@ send_:
         dec     eax
         jz      .key
 
-        mcall   recv, [socketnum], buffer, buffer_len, 0  ; receive ack
+        mcall   recv, [socketnum], buffer, buffer_len, MSG_DONTWAIT  ; receive ack
 
         cmp     word[buffer], opcode_ack
         jne     .exit

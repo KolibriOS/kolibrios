@@ -187,7 +187,8 @@ mouse:
         jmp     still
 
 exit:
-        or      eax, -1  ; close this program
+        DEBUGF  1, "Exiting\n"
+        or      eax, -1 ; close this program
         mcall
 
 
@@ -207,6 +208,10 @@ save:
 ; if called from command line, then exit
         cmp     byte[params], 0
         jne     exit
+
+        mov     ecx, [sc.work_text]
+        or      ecx, 0x80000000
+        mcall   4, <10, 93>, , download_complete
 
         ret
 
@@ -248,10 +253,6 @@ save_to_file:
 
         DEBUGF  2, "Saving to file\n"
         mcall   70, fileinfo
-
-        mov     ecx, [sc.work_text]
-        or      ecx, 0x80000000
-        mcall   4, <10, 93>, , download_complete
 
         ret
 
@@ -358,15 +359,17 @@ read_incoming_data:
 
         DEBUGF  1, "Reading incoming data\n"
 
-        mcall   40, EVM_STACK   ; we only want stack events now
+        mcall   40, EVM_STACK + EVM_BUTTON
 
         mov     eax, [buf_ptr]
         mov     [pos], eax
 
   .read:
         mcall   23, 100         ; 1 second timeout
+        cmp     eax, EV_BUTTON
+        je      exit
   .read_dontwait:
-        mcall   recv, [socketnum], [pos], BUFFERSIZE, 0
+        mcall   recv, [socketnum], [pos], BUFFERSIZE, MSG_DONTWAIT
         inc     eax             ; -1 = error (socket closed?)
         jz      .no_more_data
         dec     eax             ; 0 bytes...

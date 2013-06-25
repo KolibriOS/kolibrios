@@ -171,24 +171,14 @@ resolve:
         mcall   18, 3
 
 mainloop:
-    DEBUGF  1, 'TELNET: Waiting for events\n'
-        mcall   10
-    DEBUGF  1, 'TELNET: EVENT %x !\n', eax
-
         call    [con_get_flags]
         test    eax, 0x200                      ; con window closed?
         jnz     exit
 
-  .check_for_data:
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
         cmp     eax, -1
-        jne     .parse_data
-        cmp     ebx, 6  ; EWOULDBLOCK
-        je      mainloop
-        jmp     closed
+        je      closed
 
-
-  .parse_data:
 
     DEBUGF  1, 'TELNET: got %u bytes of data !\n', eax
 
@@ -217,7 +207,7 @@ mainloop:
 
   .print:
         cmp     esi, edi
-        jae     .check_for_data
+        jae     mainloop
 
         push    esi
         call    [con_write_asciiz]

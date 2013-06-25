@@ -91,8 +91,6 @@ start:
         mcall   send, [socketnum2], hello, hello.length
 
   .loop:
-        mcall   10
-
         mcall   recv, [socketnum2], buffer, buffer.length, 0
         cmp     eax, -1
         je      .loop

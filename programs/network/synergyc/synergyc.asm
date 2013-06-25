@@ -286,8 +286,6 @@ exit:
 
 
 wait_for_data:
-        mcall   10              ; wait for data
-
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
         cmp     eax, -1
         je      wait_for_data
