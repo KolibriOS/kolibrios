@@ -246,7 +246,7 @@ stack_init:
         xor     eax, eax
         mov     edi, NET_RUNNING
         mov     ecx, (NET_DEVICES_MAX + 2)
-        rep     stosd
+        rep stosd
 
         PPPoE_init
 
@@ -271,8 +271,8 @@ stack_init:
 ; Wakeup every tick.
 proc stack_handler_has_work?
 
-        mov eax, [timer_ticks]
-        cmp eax, [net_10ms]
+        mov     eax, [timer_ticks]
+        cmp     eax, [net_10ms]
 
         ret
 endp
@@ -366,7 +366,7 @@ NET_add_device:
         mov     ecx, NET_DEVICES_MAX    ; We need to check whole list because a device may be removed without re-organizing list
         mov     edi, NET_DRV_LIST
 
-        repne   scasd                   ; See if device is already in the list
+        repne scasd                     ; See if device is already in the list
         jz      .error
 
 ;----------------------------
@@ -375,7 +375,7 @@ NET_add_device:
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
 
-        repne   scasd
+        repne scasd
         jnz     .error
 
         sub     edi, 4
@@ -426,7 +426,7 @@ NET_remove_device:
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
 
-        repne   scasd
+        repne scasd
         jnz     .error
 
 ;------------------------
@@ -663,7 +663,7 @@ sys_network:
         mov     edi, ecx
 
         mov     ecx, 64/4 ; max length
-        rep     movsd
+        rep movsd
 
         xor     eax, eax
         mov     [esp+32], eax

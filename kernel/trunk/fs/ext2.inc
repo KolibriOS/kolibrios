@@ -41,8 +41,8 @@ EXT4_FEATURE_INCOMPAT_FLEX_BG  = 0x0200 ;RUS: гибкие группы блок
 
 ;RUS: реализованные ext[234] features   ;ENG: implemented ext[234] features
 EXT4_FEATURE_INCOMPAT_SUPP = EXT2_FEATURE_INCOMPAT_FILETYPE \
-                          or EXT4_FEATURE_INCOMPAT_EXTENTS \
-                          or EXT4_FEATURE_INCOMPAT_FLEX_BG
+        or      EXT4_FEATURE_INCOMPAT_EXTENTS \
+                or EXT4_FEATURE_INCOMPAT_FLEX_BG
 
 ;RUS: флаги, указываемые для inode в i_flags   ;ENG: flags specified for inode in i_flags
 EXT2_EXTENTS_FL      = 0x00080000
@@ -500,7 +500,7 @@ ext2_get_inode:
         mov     ebx, [ext2_data.ext2_temp_block]
         call    ext2_get_block
         test    eax, eax
-        jnz     .fail     
+        jnz     .fail
 
         add     ebx, edx   ;RUS: локальный номер в блоке   ;ENG: local number inside block
         mov     eax, [ebx + EXT2_BLOCK_GROUP_DESC.inode_table]   ;RUS: номер блока - в терминах ext2
@@ -1004,7 +1004,7 @@ ext2_HdRead:
         test    eax, eax
         jnz     .error_at_finish_block
 
-        mov     ecx, edx 
+        mov     ecx, edx
         mov     esi, ebx
         rep movsb                               ;кусок last блока
         jmp     @F
@@ -1031,7 +1031,7 @@ ext2_HdRead:
    .error_at_first_block:
         pop     edx
    .error_at_read_cycle:
-        pop     ebx 
+        pop     ebx
    .error_at_finish_block:
         pop     ecx edx
         or      ebx, -1

@@ -243,7 +243,7 @@ NextTD          dd      ?
 ;   Virtual pointer to the next processed TD.
 BufEnd          dd      ?
 ; Physical address of the last byte in the buffer for this TD.
-		dd	?	; padding to align with uhci_gtd
+                dd      ?       ; padding to align with uhci_gtd
 ends
 
 ; OHCI isochronous transfer descriptor.

@@ -23,7 +23,7 @@ read_skin_file:
 
         xchg    eax, [skin_data]
         test    eax, eax
-        jz @f
+        jz      @f
 
         stdcall kernel_free, eax
 @@:

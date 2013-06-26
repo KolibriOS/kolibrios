@@ -64,20 +64,20 @@ FindHDD_1:
         jne     FindHDD_2_2
         inc     byte [DRIVE_DATA+1]
         inc     byte [DRIVE_DATA+1]
-Print_Device_Name:	
-	pushad
-	pushfd
-	mov	esi,Sector512+27*2
-	mov	edi,dev_name
-	mov	ecx,20
-	cld
+Print_Device_Name:      
+        pushad
+        pushfd
+        mov     esi, Sector512+27*2
+        mov     edi, dev_name
+        mov     ecx, 20
+        cld
 @@:
-	lodsw
-	xchg	ah,al
-	stosw
-	loop	@b
-	popfd
-	popad
+        lodsw
+        xchg    ah, al
+        stosw
+        loop    @b
+        popfd
+        popad
         DEBUGF 1, "K : Dev: %s \n", dev_name
    FindHDD_2_2:
         ret
@@ -91,7 +91,7 @@ FindHDD_3:
 uglobal
 SectorAddress   DD ?
 dev_name:
-	rb 41
+        rb 41
 endg
 ;*************************************************
 ;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА ЖЕСТКОГО ДИСКА      *

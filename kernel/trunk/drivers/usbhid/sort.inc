@@ -2,8 +2,8 @@
 ; ecx = array size, edx = array pointer.
 ; Destroys eax, ecx, esi, edi.
 sort:
-	test	ecx, ecx
-	jz	.done
+        test    ecx, ecx
+        jz      .done
         mov     eax, ecx
 @@:
         push    eax
@@ -38,18 +38,18 @@ sort:
         cmp     esi, ecx
         ja      .doner
         mov     edi, [edx+eax*4-4]
-        cmp	[edx+esi*4-4], edi
+        cmp     [edx+esi*4-4], edi
         ja      .need_xchg
         cmp     esi, ecx
         jae     .doner
         mov     edi, [edx+eax*4-4]
-        cmp	[edx+esi*4], edi
+        cmp     [edx+esi*4], edi
         jbe     .doner
 .need_xchg:
         cmp     esi, ecx
         jz      .do_xchg
         mov     edi, [edx+esi*4-4]
-        cmp	[edx+esi*4], edi
+        cmp     [edx+esi*4], edi
         sbb     esi, -1
 .do_xchg:
         mov     edi, eax

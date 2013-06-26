@@ -40,7 +40,7 @@ LOOPBACK_DEVICE:
         .namestr        db 'loopback', 0
 
         .dummy_fn:
-                ret
+        ret
 
 endg
 

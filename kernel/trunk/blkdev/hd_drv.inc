@@ -107,15 +107,15 @@ hd_read_pio:
         mov     al, byte [hdid]
         add     al, 128+64+32
         out     dx, al; номер головки/номер диска
-	
+        
         call    wait_for_hd_idle
         cmp     [hd_error], 0
         jne     hd_read_error
-	
+        
 ; ATA with 28 or 48 bit for sector number?
         mov     eax, [esp+4]
         cmp     eax, 0x10000000
-        jae     .lba48	
+        jae     .lba48
 .lba28:
         pushfd
         cli
@@ -142,10 +142,10 @@ hd_read_pio:
         add     al, 128+64+32
         out     dx, al ; номер головки/номер диска
         inc     edx
-        mov     al, 20h	; READ SECTOR(S)
+        mov     al, 20h ; READ SECTOR(S)
         out     dx, al ; ATACommand регистр команд
         popfd
-	jmp	.continue
+        jmp     .continue
 .lba48:
         pushfd
         cli
@@ -160,14 +160,14 @@ hd_read_pio:
         out     dx, al ; Sector Count Current Sector count (7:0)
         inc     edx
         mov     eax, [esp+4+4]
-	rol	eax,8
+        rol     eax, 8
         out     dx, al ; LBA Low Previous LBA (31:24)
-	xor	eax,eax ; because only 32 bit cache
+        xor     eax, eax; because only 32 bit cache
         inc     edx
         out     dx, al ; LBA Mid Previous LBA (39:32)
         inc     edx
         out     dx, al ; LBA High Previous LBA (47:40)
-	sub	edx,2
+        sub     edx, 2
         mov     eax, [esp+4+4]
         out     dx, al ; LBA Low Current LBA (7:0)
         shr     eax, 8
@@ -181,7 +181,7 @@ hd_read_pio:
         add     al, 128+64+32
         out     dx, al; номер головки/номер диска
         inc     edx
-        mov     al, 24h	; READ SECTOR(S) EXT
+        mov     al, 24h ; READ SECTOR(S) EXT
         out     dx, al; ATACommand регистр команд
         popfd
 .continue:
@@ -339,7 +339,7 @@ cache_write_pio:
         mov     al, 30h ; WRITE SECTOR(S)
         out     dx, al ; ATACommand регистр команд
         popfd
-	jmp	.continue
+        jmp     .continue
 .lba48:
         pushfd
         cli
@@ -354,14 +354,14 @@ cache_write_pio:
         out     dx, al ; Sector Count Current Sector count (7:0)
         inc     edx
         mov     eax, [esi]
-	rol	eax,8
+        rol     eax, 8
         out     dx, al ; LBA Low Previous LBA (31:24)
-	xor	eax,eax ; because only 32 bit cache
+        xor     eax, eax; because only 32 bit cache
         inc     edx
         out     dx, al ; LBA Mid Previous LBA (39:32)
         inc     edx
         out     dx, al ; LBA High Previous LBA (47:40)
-	sub	edx,2
+        sub     edx, 2
         mov     eax, [esi]
         out     dx, al ; LBA Low Current LBA (7:0)
         shr     eax, 8
@@ -375,7 +375,7 @@ cache_write_pio:
         add     al, 128+64+32
         out     dx, al; номер головки/номер диска
         inc     edx
-        mov     al, 34h	; WRITE SECTOR(S) EXT
+        mov     al, 34h ; WRITE SECTOR(S) EXT
         out     dx, al; ATACommand регистр команд
         popfd
 .continue:
@@ -925,10 +925,10 @@ write_cache_chain:
 uglobal
 IDEContrRegsBaseAddr    dw      ?
 IDEContrProgrammingInterface   dw ?
-IDE_BAR0_val	dw ?
-IDE_BAR1_val	dw ?
-IDE_BAR2_val	dw ?
-IDE_BAR3_val	dw ?
+IDE_BAR0_val    dw ?
+IDE_BAR1_val    dw ?
+IDE_BAR2_val    dw ?
+IDE_BAR3_val    dw ?
 endg
 ; \end{Mario79}
 

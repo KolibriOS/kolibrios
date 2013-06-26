@@ -66,7 +66,7 @@ local .ok, .no_wrap
 
         mov     edi, [ptr + queue.w_ptr]        ; Current write pointer (FIFO!)
         mov     ecx, entry_size/4               ; Write the queue entry
-        rep     movsd                           ;
+        rep movsd                               ;
 
         lea     ecx, [size*entry_size+ptr+sizeof.queue]
         cmp     edi, ecx                        ; entry size

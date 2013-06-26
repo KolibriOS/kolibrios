@@ -916,7 +916,7 @@ TCP_process_input:
         mov     ecx, [esp]
         add     ecx, SOCKET.mutex
         call    mutex_lock
-        pop     ebx 
+        pop     ebx
 
 ; Continue processing
         xor     edx, edx

@@ -215,7 +215,7 @@ macro   SOCKET_init {
         xor     eax, eax
         mov     edi, net_sockets
         mov     ecx, 5
-        rep     stosd
+        rep stosd
 
        @@:
         pseudo_random eax
@@ -923,7 +923,7 @@ SOCKET_receive_dgram:
   .nw:
         test    ecx, ecx
         jz      .nd
-        rep     movsd
+        rep movsd
   .nd:
 
         call    kernel_free                                     ; free kernel buffer
@@ -1371,7 +1371,7 @@ SOCKET_debug:
 
         mov     esi, eax
         mov     ecx, SOCKETBUFFSIZE/4
-        rep     movsd
+        rep movsd
 
         mov     dword[esp+32], 0
         ret
@@ -1662,7 +1662,7 @@ SOCKET_ring_write:
   .nw:
         test    ecx, ecx
         jz      .nd
-        rep     movsd
+        rep movsd
   .nd:
         pop     ecx
 
@@ -1728,7 +1728,7 @@ SOCKET_ring_read:
   .nw:
         test    ecx, ecx
         jz      .nd
-        rep     movsd
+        rep movsd
   .nd:
         pop     ecx
         ret
@@ -1957,7 +1957,7 @@ SOCKET_alloc:
         mov     edi, eax
         mov     ecx, SOCKETBUFFSIZE / 4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     eax
 
 ; set send-and receive procedures to return -1
@@ -2153,7 +2153,7 @@ SOCKET_fork:
         lea     esi, [ebx + SOCKET.PID]
         lea     edi, [eax + SOCKET.PID]
         mov     ecx, (SOCKET_QUEUE_LOCATION - SOCKET.PID + 3)/4
-        rep     movsd
+        rep movsd
 
         and     [eax + SOCKET.options], not SO_ACCEPTCON
 
@@ -2300,7 +2300,7 @@ SOCKET_check_owner:
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         cmp     [eax + SOCKET.PID], ebx
-        pop      ebx
+        pop     ebx
 
         ret
 

@@ -525,29 +525,29 @@ fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
         call    reserve_hd1
-	mov	eax,[hd_address_table]
-        mov     [hdbase], eax	;0x1F0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax   ;0x1F0
         mov     [hdid], 0
         push    1
         jmp     fs_OnHd
 fs_OnHd1:
         call    reserve_hd1
-	mov	eax,[hd_address_table]
-        mov     [hdbase], eax	;0x1F0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax   ;0x1F0
         mov     [hdid], 0x10
         push    2
         jmp     fs_OnHd
 fs_OnHd2:
         call    reserve_hd1
-	mov	eax,[hd_address_table+16]
-        mov     [hdbase], eax	;0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax   ;0x170
         mov     [hdid], 0
         push    3
         jmp     fs_OnHd
 fs_OnHd3:
         call    reserve_hd1
-	mov	eax,[hd_address_table+16]
-        mov     [hdbase], eax	;0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax   ;0x170
         mov     [hdid], 0x10
         push    4
 fs_OnHd:
@@ -948,7 +948,7 @@ process_replace_file_name:
         mov     ebp, [full_file_name_table]
         xor     edi, edi
 .loop:
-        cmp     edi,[full_file_name_table.size]
+        cmp     edi, [full_file_name_table.size]
         jae     .notfound
         push    esi edi
         shl     edi, 7 ; edi*128
@@ -1021,17 +1021,17 @@ sys_current_directory:
         mov     edi, sysdir_name1
 ; copying fake directory name
         mov     ecx, 63
-	pushfd
-	cli
+        pushfd
+        cli
         cld
-        rep     movsb
+        rep movsb
 ; terminator of name, in case if we get the inlet trash
         inc     esi
         xor     eax, eax
         stosb
 ; copying real directory path for mounting
         mov     ecx, 63
-        rep     movsb
+        rep movsb
 ; terminator of name, in case if we get the inlet trash
         xor     eax, eax
         stosb
@@ -1040,7 +1040,7 @@ sys_current_directory:
 ; block the ability to call f.30.3 because for one session is necessary
 ; for us only once
         mov     [lock_flag_for_f30_3], 1
-	popfd
+        popfd
 @@:
         ret
         

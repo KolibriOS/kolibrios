@@ -118,7 +118,7 @@ macro ICMP_init {
         xor     eax, eax
         mov     edi, ICMP_PACKETS_TX
         mov     ecx, 2*NET_DEVICES_MAX
-        rep     stosd
+        rep stosd
 
 }
 
@@ -355,10 +355,10 @@ ICMP_output:
         add     edi, sizeof.ICMP_header
         push    cx
         shr     cx, 2
-        rep     movsd
+        rep movsd
         pop     cx
         and     cx, 3
-        rep     movsb
+        rep movsb
 
         sub     edi, edx                                ;;; TODO: find a better way to remember start of packet
         push    edx edi
@@ -406,7 +406,7 @@ ICMP_output_raw:
 
         push    edi ecx
         DEBUGF  DEBUG_NETWORK_VERBOSE, "copying %u bytes from %x to %x\n", ecx, esi, edi
-        rep     movsb
+        rep movsb
         pop     ecx edi
 
         mov     [edi + ICMP_header.Checksum], 0

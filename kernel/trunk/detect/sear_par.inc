@@ -17,8 +17,8 @@ $Revision$
  search_partitions_ide0:
         test    [DRIVE_DATA+1], byte 0x40
         jz      search_partitions_ide1
-	mov	eax,[hd_address_table]
-        mov     [hdbase], eax	;0x1f0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax   ;0x1f0
         mov     [hdid], 0x0
         mov     [hdpos], 1
         mov     [known_part], 1
@@ -40,8 +40,8 @@ $Revision$
  search_partitions_ide1:
         test    [DRIVE_DATA+1], byte 0x10
         jz      search_partitions_ide2
-	mov	eax,[hd_address_table]
-        mov     [hdbase], eax	;0x1f0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax   ;0x1f0
         mov     [hdid], 0x10
         mov     [hdpos], 2
         mov     [known_part], 1
@@ -63,8 +63,8 @@ $Revision$
  search_partitions_ide2:
         test    [DRIVE_DATA+1], byte 0x4
         jz      search_partitions_ide3
-	mov	eax,[hd_address_table+16]
-        mov     [hdbase], eax	;0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax   ;0x170
         mov     [hdid], 0x0
         mov     [hdpos], 3
         mov     [known_part], 1
@@ -86,8 +86,8 @@ $Revision$
  search_partitions_ide3:
         test    [DRIVE_DATA+1], byte 0x1
         jz      end_search_partitions_ide
-	mov	eax,[hd_address_table+16]
-        mov     [hdbase], eax	;0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax   ;0x170
         mov     [hdid], 0x10
         mov     [hdpos], 4
         mov     [known_part], 1

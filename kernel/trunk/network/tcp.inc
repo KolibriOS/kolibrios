@@ -154,7 +154,7 @@ macro   TCP_init {
         xor     eax, eax
         mov     edi, TCP_segments_tx
         mov     ecx, (6*NET_DEVICES_MAX)
-        rep     stosd
+        rep stosd
 
         pseudo_random   eax
         mov     [TCP_sequence_num], eax

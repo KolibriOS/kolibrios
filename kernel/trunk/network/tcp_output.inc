@@ -452,7 +452,7 @@ TCP_send:
         mov     ecx, [esp + 4]
         lea     esi, [esp + 8]
         shr     ecx, 2                  ; count is in bytes, we will work with dwords
-        rep     movsd
+        rep movsd
         pop     ecx                     ; full TCP packet size
 
         pop     esi                     ; headersize

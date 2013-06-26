@@ -48,7 +48,7 @@ macro   UDP_init {
         xor     eax, eax
         mov     edi, UDP_PACKETS_TX
         mov     ecx, 2*NET_DEVICES_MAX
-        rep     stosd
+        rep stosd
 }
 
 
@@ -281,10 +281,10 @@ UDP_output:
         sub     ecx, sizeof.UDP_header
         add     edi, sizeof.UDP_header
         shr     ecx, 2
-        rep     movsd
+        rep movsd
         mov     ecx, [esp]
         and     ecx, 3
-        rep     movsb
+        rep movsb
         pop     ecx edi
 
         pop     dword [edi + UDP_header.SourcePort]

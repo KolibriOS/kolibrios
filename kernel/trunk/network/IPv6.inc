@@ -57,7 +57,7 @@ macro   IPv6_init {
         xor     eax, eax
         mov     edi, IPv6
         mov     ecx, (4*4*4+2*4)MAX_IP
-        rep     stosd
+        rep stosd
 
 }
 

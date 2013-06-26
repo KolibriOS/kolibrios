@@ -387,12 +387,12 @@ sayerr:
 
         push    0
         pop     es
-	xor	ax,ax
-        and     word [es:BOOT_IDE_BASE_ADDR], ax	;0
-        and     word [es:BOOT_IDE_BAR0_16], ax	;0
-        and     word [es:BOOT_IDE_BAR1_16], ax	;0
-        and     word [es:BOOT_IDE_BAR2_16], ax	;0
-        and     word [es:BOOT_IDE_BAR3_16], ax	;0
+        xor     ax, ax
+        and     word [es:BOOT_IDE_BASE_ADDR], ax        ;0
+        and     word [es:BOOT_IDE_BAR0_16], ax  ;0
+        and     word [es:BOOT_IDE_BAR1_16], ax  ;0
+        and     word [es:BOOT_IDE_BAR2_16], ax  ;0
+        and     word [es:BOOT_IDE_BAR3_16], ax  ;0
 ; \begin{Mario79}
 ; find HDD IDE DMA PCI device
 ; check for PCI BIOS
@@ -433,55 +433,55 @@ sayerr:
         int     0x1A
         jnc     .found
 
-	jmp     .nopci
+        jmp     .nopci
 .found_1:
 ; get memory base BAR4
         mov     ax, 0xB10A
         mov     di, 0x20        ; memory base is config register at 0x20
-	push	cx
+        push    cx
         int     0x1A
-        jc      .no_BAR4	;.nopci
+        jc      .no_BAR4        ;.nopci
         and     cx, 0xFFF0      ; clear address decode type
         mov     [es:BOOT_IDE_BASE_ADDR], cx
 .no_BAR4:
-	pop	cx
-.found:	
+        pop     cx
+.found: 
 ; get memory base BAR0
         mov     ax, 0xB10A
         mov     di, 0x10        ; memory base is config register at 0x20
-	push	cx
+        push    cx
         int     0x1A
-        jc      .no_BAR0	;.nopci
+        jc      .no_BAR0        ;.nopci
         mov     [es:BOOT_IDE_BAR0_16], cx
 .no_BAR0:
-	pop	cx
+        pop     cx
 ; get memory base BAR1
         mov     ax, 0xB10A
         mov     di, 0x14        ; memory base is config register at 0x20
-	push	cx
+        push    cx
         int     0x1A
-        jc      .no_BAR1	;.nopci
+        jc      .no_BAR1        ;.nopci
         mov     [es:BOOT_IDE_BAR1_16], cx
 .no_BAR1:
-	pop	cx
+        pop     cx
 ; get memory base BAR2
         mov     ax, 0xB10A
         mov     di, 0x18        ; memory base is config register at 0x20
-	push	cx
+        push    cx
         int     0x1A
-        jc      .no_BAR2	;.nopci
+        jc      .no_BAR2        ;.nopci
         mov     [es:BOOT_IDE_BAR2_16], cx
 .no_BAR2:
-	pop	cx
+        pop     cx
 ; get memory base BAR3
         mov     ax, 0xB10A
         mov     di, 0x1C        ; memory base is config register at 0x20
-	push	cx
+        push    cx
         int     0x1A
-        jc      .no_BAR3	;.nopci
+        jc      .no_BAR3        ;.nopci
         mov     [es:BOOT_IDE_BAR3_16], cx
 .no_BAR3:
-	pop	cx
+        pop     cx
 .nopci:
 ; \end{Mario79}
 

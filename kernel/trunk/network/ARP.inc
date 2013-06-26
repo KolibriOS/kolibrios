@@ -82,7 +82,7 @@ macro ARP_init {
         xor     eax, eax
         mov     edi, ARP_entries_num
         mov     ecx, 4*NET_DEVICES_MAX
-        rep     stosd
+        rep stosd
 
 }
 
@@ -408,7 +408,7 @@ ARP_add_entry:
   .add:
         push    ecx
         mov     ecx, sizeof.ARP_entry/2
-        rep     movsw
+        rep movsw
         pop     ecx
         lea     esi, [edi - sizeof.ARP_entry]
         pop     edi
@@ -450,12 +450,12 @@ ARP_del_entry:
 ; move all trailing entries, sizeof.ARP_entry bytes to left.
         mov     edi, esi
         add     esi, sizeof.ARP_entry
-        rep     movsw
+        rep movsw
 
 ; now add an empty entry to the end (erasing previous one)
         xor     eax, eax
         mov     ecx, sizeof.ARP_entry/2
-        rep     stosw
+        rep stosw
 
         pop     edi
         dec     [ARP_entries_num + 4*edi]
@@ -646,7 +646,7 @@ ARP_api:
         imul    ecx, sizeof.ARP_entry
         lea     esi, [eax + ecx]
         mov     ecx, sizeof.ARP_entry/2
-        rep     movsw
+        rep movsw
 
         xor     eax, eax
         ret

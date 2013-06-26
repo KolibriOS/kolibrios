@@ -152,7 +152,7 @@ PPPoE_discovery_output:
 
         mov     edx, ecx
         mov     edi, eax
-        rep     movsb
+        rep movsb
 
         cmp     edx, 60         ; Min ETH size
         ja      @f
