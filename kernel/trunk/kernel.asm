@@ -1046,18 +1046,12 @@ end if
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
 
-	movzx	eax,[IDE_BAR0_val]
-        DEBUGF  1, "K : BAR0 %x \n", eax
-	movzx	eax,[IDE_BAR1_val]
-        DEBUGF  1, "K : BAR1 %x \n", eax
-	movzx	eax,[IDE_BAR2_val]
-        DEBUGF  1, "K : BAR2 %x \n", eax
-	movzx	eax,[IDE_BAR3_val]
-        DEBUGF  1, "K : BAR3 %x \n", eax
-	movzx	eax,[IDEContrRegsBaseAddr]
-        DEBUGF  1, "K : BAR4 %x \n", eax
-	movzx	eax,[IDEContrProgrammingInterface]
-        DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", eax
+        DEBUGF  1, "K : BAR0 %x \n", [IDE_BAR0_val]:4
+        DEBUGF  1, "K : BAR1 %x \n", [IDE_BAR1_val]:4
+        DEBUGF  1, "K : BAR2 %x \n", [IDE_BAR2_val]:4
+        DEBUGF  1, "K : BAR3 %x \n", [IDE_BAR3_val]:4
+        DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
+        DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need

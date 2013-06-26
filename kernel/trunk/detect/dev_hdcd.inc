@@ -44,10 +44,8 @@ FindHDD:
         jmp     EndFindHDD
 
 FindHDD_1:
-	movzx	eax,word [ChannelNumber]
-        DEBUGF  1, "K : Channel %d ",eax
-	movzx	eax,byte [DiskNumber]
-        DEBUGF  1, "Disk %d\n",eax
+        DEBUGF  1, "K : Channel %d ",[ChannelNumber]:2
+        DEBUGF  1, "Disk %d\n",[DiskNumber]:1
         call    ReadHDD_ID
         cmp     [DevErrorCode], 0
         jne     FindHDD_2

@@ -117,35 +117,37 @@ hd_read_pio:
         cmp     eax, 0x10000000
         jae     .lba48	
 .lba28:
+        pushfd
         cli
         xor     eax, eax
         mov     edx, [hdbase]
         inc     edx
-        out     dx, al; ATAFeatures регистр "особенностей"
+        out     dx, al ; ATA Features регистр "особенностей"
         inc     edx
         inc     eax
-        out     dx, al; ATASectorCount счётчик секторов
+        out     dx, al ; ATA Sector Counter счётчик секторов
         inc     edx
-        mov     eax, [esp+4]
-        out     dx, al; ATASectorNumber регистр номера сектора
+        mov     eax, [esp+4+4]
+        out     dx, al ; LBA Low LBA (7:0)
         shr     eax, 8
         inc     edx
-        out     dx, al; ATACylinder номер цилиндра (младший байт)
+        out     dx, al ; LBA Mid LBA (15:8)
         shr     eax, 8
         inc     edx
-        out     dx, al; номер цилиндра (старший байт)
+        out     dx, al ; LBA High LBA (23:16)
         shr     eax, 8
         inc     edx
-        and     al, 1+2+4+8
+        and     al, 1+2+4+8 ; LBA (27:24)
         add     al, byte [hdid]
         add     al, 128+64+32
-        out     dx, al; номер головки/номер диска
+        out     dx, al ; номер головки/номер диска
         inc     edx
-        mov     al, 20h
-        out     dx, al; ATACommand регистр команд
-        sti
+        mov     al, 20h	; READ SECTOR(S)
+        out     dx, al ; ATACommand регистр команд
+        popfd
 	jmp	.continue
 .lba48:
+        pushfd
         cli
         xor     eax, eax
         mov     edx, [hdbase]
@@ -157,7 +159,7 @@ hd_read_pio:
         inc     eax
         out     dx, al ; Sector Count Current Sector count (7:0)
         inc     edx
-        mov     eax, [esp+4]
+        mov     eax, [esp+4+4]
 	rol	eax,8
         out     dx, al ; LBA Low Previous LBA (31:24)
 	xor	eax,eax ; because only 32 bit cache
@@ -166,7 +168,7 @@ hd_read_pio:
         inc     edx
         out     dx, al ; LBA High Previous LBA (47:40)
 	sub	edx,2
-        mov     eax, [esp+4]
+        mov     eax, [esp+4+4]
         out     dx, al ; LBA Low Current LBA (7:0)
         shr     eax, 8
         inc     edx
@@ -181,7 +183,7 @@ hd_read_pio:
         inc     edx
         mov     al, 24h	; READ SECTOR(S) EXT
         out     dx, al; ATACommand регистр команд
-        sti
+        popfd
 .continue:
         call    wait_for_sector_buffer
 
@@ -291,8 +293,6 @@ hd_write:
 
 align 4
 cache_write_pio:
-        cmp     dword[esi], 0x10000000
-        jae     .bad
 ;    call  disable_ide_int
 
         ; Выбрать нужный диск
@@ -306,34 +306,79 @@ cache_write_pio:
         cmp     [hd_error], 0
         jne     hd_write_error
 
+; ATA with 28 or 48 bit for sector number?
+        mov     eax, [esi]
+        cmp     eax, 0x10000000
+        jae     .lba48
+.lba28:
+        pushfd
         cli
         xor     eax, eax
         mov     edx, [hdbase]
         inc     edx
-        out     dx, al
+        out     dx, al ; ATA Features регистр "особенностей"
         inc     edx
         inc     eax
-        out     dx, al
+        out     dx, al ; ATA Sector Counter счётчик секторов
         inc     edx
         mov     eax, [esi]      ; eax = sector to write
-        out     dx, al
+        out     dx, al ; LBA Low LBA (7:0)
         shr     eax, 8
         inc     edx
-        out     dx, al
+        out     dx, al ; LBA Mid LBA (15:8)
         shr     eax, 8
         inc     edx
-        out     dx, al
+        out     dx, al ; LBA High LBA (23:16)
         shr     eax, 8
         inc     edx
-        and     al, 1+2+4+8
+        and     al, 1+2+4+8 ; LBA (27:24)
         add     al, byte [hdid]
         add     al, 128+64+32
-        out     dx, al
+        out     dx, al ; номер головки/номер диска
         inc     edx
-        mov     al, 30h
-        out     dx, al
-        sti
-
+        mov     al, 30h ; WRITE SECTOR(S)
+        out     dx, al ; ATACommand регистр команд
+        popfd
+	jmp	.continue
+.lba48:
+        pushfd
+        cli
+        xor     eax, eax
+        mov     edx, [hdbase]
+        inc     edx
+        out     dx, al ; Features Previous Reserved
+        out     dx, al ; Features Current Reserved
+        inc     edx
+        out     dx, al ; Sector Count Previous Sector count (15:8)
+        inc     eax
+        out     dx, al ; Sector Count Current Sector count (7:0)
+        inc     edx
+        mov     eax, [esi]
+	rol	eax,8
+        out     dx, al ; LBA Low Previous LBA (31:24)
+	xor	eax,eax ; because only 32 bit cache
+        inc     edx
+        out     dx, al ; LBA Mid Previous LBA (39:32)
+        inc     edx
+        out     dx, al ; LBA High Previous LBA (47:40)
+	sub	edx,2
+        mov     eax, [esi]
+        out     dx, al ; LBA Low Current LBA (7:0)
+        shr     eax, 8
+        inc     edx
+        out     dx, al ; LBA Mid Current LBA (15:8)
+        shr     eax, 8
+        inc     edx
+        out     dx, al ; LBA High Current LBA (23:16)
+        inc     edx
+        mov     al, byte [hdid]
+        add     al, 128+64+32
+        out     dx, al; номер головки/номер диска
+        inc     edx
+        mov     al, 34h	; WRITE SECTOR(S) EXT
+        out     dx, al; ATACommand регистр команд
+        popfd
+.continue:
         call    wait_for_sector_buffer
 
         cmp     [hd_error], 0
@@ -359,9 +404,6 @@ cache_write_pio:
 ;    call  enable_ide_int
         pop     esi ecx
 
-        ret
-.bad:
-        inc     [hd_error]
         ret
 
 save_hd_wait_timeout:
