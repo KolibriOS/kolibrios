@@ -1562,7 +1562,7 @@ end virtual
         mov     edx, [ecx+ohci_pipe.HeadP-sizeof.ohci_pipe]
         and     edx, 2  ; keep toggleCarry bit
         cmp     [ecx+usb_pipe.Type], CONTROL_PIPE
-        jnz     @f
+        jz      @f
         inc     edx     ; set Halted bit
 @@:
         jmp     .advance_queue
