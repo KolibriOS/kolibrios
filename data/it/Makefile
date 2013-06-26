@@ -129,7 +129,7 @@ FASM_PROGRAMS:=\
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(KERNEL)/drivers/intelac97.asm \
  drivers/tmpdisk.obj:DRIVERS/TMPDISK.OBJ:$(KERNEL)/drivers/tmpdisk.asm \
- drivers/usbhid.obj:DRIVERS/USBHID.OBJ:$(KERNEL)/drivers/usbhid.asm \
+ drivers/usbhid.obj:DRIVERS/USBHID.OBJ:$(KERNEL)/drivers/usbhid/usbhid.asm \
  drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/vidintel.obj:DRIVERS/VIDINTEL.OBJ:$(KERNEL)/drivers/vidintel.asm \
