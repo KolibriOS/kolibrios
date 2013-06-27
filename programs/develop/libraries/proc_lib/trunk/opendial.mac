@@ -229,8 +229,8 @@ OpenDialog_exit
 ; is not cleared without call of func 0.
 ; In this case is suitable only func 5 and 11,
 ; or 68.1 and 11 for better response.
-;	mcall	5,10
 	mcall	68,1
+	mcall	5,10 ; because OS uses a new scheduler for kernel(SVN r.3534)
 	mcall	11
 	cmp	eax,1
 	je	.draw
