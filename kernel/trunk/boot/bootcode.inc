@@ -405,12 +405,13 @@ sayerr:
 ; class 1 = mass storage
 ; subclass 1 = IDE controller
 ; a) class 1, subclass 1, programming interface 0x80
+; This is a Parallel IDE Controller which uses IRQs 14 and 15.
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x80
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found_1
+        jnc     .found_1 ; Parallel IDE Controller
 ; b) class 1, subclass 1, programming interface 0x8f
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x8f
@@ -426,12 +427,13 @@ sayerr:
         int     0x1A
         jnc     .found
 ; d) class 1, subclass 1, programming interface 0x8A
+; This is a Parallel IDE Controller which uses IRQs 14 and 15.
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x8A
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found
+        jnc     .found_1 ; Parallel IDE Controller
 
         jmp     .nopci
 .found_1:
@@ -448,7 +450,7 @@ sayerr:
 .found: 
 ; get memory base BAR0
         mov     ax, 0xB10A
-        mov     di, 0x10        ; memory base is config register at 0x20
+        mov     di, 0x10        ; memory base is config register at 0x10
         push    cx
         int     0x1A
         jc      .no_BAR0        ;.nopci
@@ -457,7 +459,7 @@ sayerr:
         pop     cx
 ; get memory base BAR1
         mov     ax, 0xB10A
-        mov     di, 0x14        ; memory base is config register at 0x20
+        mov     di, 0x14        ; memory base is config register at 0x14
         push    cx
         int     0x1A
         jc      .no_BAR1        ;.nopci
@@ -466,7 +468,7 @@ sayerr:
         pop     cx
 ; get memory base BAR2
         mov     ax, 0xB10A
-        mov     di, 0x18        ; memory base is config register at 0x20
+        mov     di, 0x18        ; memory base is config register at 0x18
         push    cx
         int     0x1A
         jc      .no_BAR2        ;.nopci
@@ -475,7 +477,7 @@ sayerr:
         pop     cx
 ; get memory base BAR3
         mov     ax, 0xB10A
-        mov     di, 0x1C        ; memory base is config register at 0x20
+        mov     di, 0x1C        ; memory base is config register at 0x1c
         push    cx
         int     0x1A
         jc      .no_BAR3        ;.nopci
