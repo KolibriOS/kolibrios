@@ -13,4 +13,4 @@ start of the application CPU (the manager of processes), is a sole combination m
 11) Win + R                  Inizializza l'applicazione Esegui
 12) Alt + Ctrl + ArrowLeft   Permette di scorrere le applicazioni nella taskbar
 13) Alt + Ctrl + ArrowRight  Permette di scorrere le applicazioni nella taskbar in ordine inverso
-14) PrintScreen              Esegue l'applicazione SCRSHOOT. Permette di effettuare uno screenshoot e di salvare l'immagine come file bmp.
+14) Ctrl + PrintScreen       Esegue l'applicazione SCRSHOOT. Permette di effettuare uno screenshoot e di salvare l'immagine come file bmp.

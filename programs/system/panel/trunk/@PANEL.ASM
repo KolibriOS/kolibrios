@@ -647,8 +647,8 @@ load_libraries l_libs_start,end_l_libs
 	mcall	66,,32,0h	; Win+D DOWN
 ;       mcall   66,,160,0h      ; Win+D UP
 
-	mcall	66,,55,0h	; PrintScreen DOWN
-;       mcall   66,,183,0h      ; PrintScreen UP
+	mcall	66,,55,10h	; Ctrl+PrintScreen DOWN
+;       mcall   66,,183,10h      ; Ctrl+PrintScreen UP
 
 
 ;       mcall   66,,91,100h     ; Alt+LWin

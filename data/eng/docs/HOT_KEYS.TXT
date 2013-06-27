@@ -13,4 +13,4 @@ The following "hot" shortcut keys are used in the system:
 11) Win + R - start of the application RUN
 12) Alt + Ctrl + ArrowLeft - to scroll back a list of the taskbar
 13) Alt + Ctrl + ArrowRight - to scroll forward a list of the taskbar
-14) PrintScreen - start of the application SCRSHOOT. Just do a screen shot and the user is offered to specify (with OpenDialog) where to save the BMP image.
+14) Ctrl + PrintScreen - start of the application SCRSHOOT. Just do a screen shot and the user is offered to specify (with OpenDialog) where to save the BMP image.
