@@ -152,7 +152,7 @@ end virtual
 @@:
         mov     edx, [edx+usb_pipe.NextVirt]
         cmp     [edx+usb_pipe.Controller], esi
-        jnz     @b
+        jz      @b
 ; subtract pipe bandwidth
 ; TODO: calculate real bandwidth
         mov     eax, [.maxpacket]
