@@ -44,6 +44,8 @@ FindHDD:
         jmp     EndFindHDD
 
 FindHDD_1:
+        DEBUGF  1, "K : Channel %d ",[ChannelNumber]:2
+        DEBUGF  1, "Disk %d\n",[DiskNumber]:1
         call    ReadHDD_ID
         cmp     [DevErrorCode], 0
         jne     FindHDD_2
@@ -52,7 +54,7 @@ FindHDD_1:
         cmp     [Sector512+12], word 255
         ja      FindHDD_2
         inc     byte [DRIVE_DATA+1]
-        jmp     FindHDD_2_2
+        jmp     Print_Device_Name
    FindHDD_2:
         call    DeviceReset
         cmp     [DevErrorCode], 0
@@ -62,6 +64,21 @@ FindHDD_1:
         jne     FindHDD_2_2
         inc     byte [DRIVE_DATA+1]
         inc     byte [DRIVE_DATA+1]
+Print_Device_Name:      
+        pushad
+        pushfd
+        mov     esi, Sector512+27*2
+        mov     edi, dev_name
+        mov     ecx, 20
+        cld
+@@:
+        lodsw
+        xchg    ah, al
+        stosw
+        loop    @b
+        popfd
+        popad
+        DEBUGF 1, "K : Dev: %s \n", dev_name
    FindHDD_2_2:
         ret
 
@@ -70,10 +87,11 @@ FindHDD_3:
         shl     byte [DRIVE_DATA+1], 2
         ret
 
-
 ; Адрес считываемого сектора в режиме LBA
 uglobal
 SectorAddress   DD ?
+dev_name:
+        rb 41
 endg
 ;*************************************************
 ;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА ЖЕСТКОГО ДИСКА      *

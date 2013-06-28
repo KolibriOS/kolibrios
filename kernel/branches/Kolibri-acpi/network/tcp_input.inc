@@ -50,6 +50,9 @@ TCP_input:
 
         add     esp, sizeof.TCP_queue_entry
 
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_rx + edi]
+
         xor     edx, edx
         mov     eax, [TCP_input_event]
         mov     ebx, [eax + EVENT.id]
@@ -62,7 +65,8 @@ TCP_input:
         popf
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP incoming queue is full, discarding packet!\n"
 
-        inc     [TCP_segments_missed]   ; FIXME: use correct interface
+        call    NET_ptr_to_num4
+        inc     [TCP_segments_missed + edi]
 
         add     esp, sizeof.TCP_queue_entry - 8
         call    kernel_free
@@ -146,13 +150,18 @@ TCP_process_input:
 ; (IP Packet TCP Source Port = remote Port) OR (remote Port = 0)
 
   .findpcb:
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     ebx, net_sockets
         mov     si, [edx + TCP_header.DestinationPort]
 
   .socket_loop:
         mov     ebx, [ebx + SOCKET.NextPtr]
         or      ebx, ebx
-        jz      .respond_seg_reset
+        jz      .no_socket ;respond_seg_reset
 
         cmp     [ebx + SOCKET.Domain], AF_INET4
         jne     .socket_loop
@@ -176,12 +185,12 @@ TCP_process_input:
         test    ax, ax
         jnz     .socket_loop
   .found_socket:                                        ; ebx now contains the socketpointer
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: socket ptr=%x state=%u flags=%x\n", ebx, [ebx + TCP_SOCKET.t_state], [edx + TCP_header.Flags]:2
-
-;-------------
-; update stats
-
-        inc     [TCP_segments_rx]                       ; FIXME: correct interface?
 
 ;----------------------------
 ; Check if socket isnt closed
@@ -907,7 +916,7 @@ TCP_process_input:
         mov     ecx, [esp]
         add     ecx, SOCKET.mutex
         call    mutex_lock
-        pop     ebx 
+        pop     ebx
 
 ; Continue processing
         xor     edx, edx
@@ -1161,9 +1170,17 @@ TCP_process_input:
   .ack_la:
         jnc     .ack_processed
 
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        pop     ebx
+
+        push    ebx
         mov     eax, ebx
         call    TCP_disconnect
-        jmp     .drop
+        pop     ebx
+
+        jmp     .destroy_new_socket
 
   .ack_tw:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
@@ -1223,7 +1240,10 @@ align 4
 
         and     [ebx + TCP_SOCKET.temp_bits], not TCP_BIT_DROPSOCKET
 
-;;;        call    SOCKET_notify_owner
+        pusha
+        mov     eax, ebx
+        call    SOCKET_notify
+        popa
 
         jmp     .trim_then_step6
 
@@ -1298,7 +1318,10 @@ align 4
 ;;; TODO: update stats
 
 ; set socket state to connected
-        mov     [ebx + SOCKET.state], SS_ISCONNECTED
+        push    eax
+        mov     eax, ebx
+        call    SOCKET_is_connected
+        pop     eax
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ; Do window scaling on this connection ?
@@ -1619,6 +1642,13 @@ align 4
         call    TCP_respond
         pop     ebx
         jmp     .destroy_new_socket
+
+  .no_socket:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
   .respond_seg_reset:
         test    [edx + TCP_header.Flags], TH_RST

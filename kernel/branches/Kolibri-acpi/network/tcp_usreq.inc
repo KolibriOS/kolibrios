@@ -97,6 +97,9 @@ TCP_disconnect:
 
         call    SOCKET_is_disconnecting
         call    TCP_usrclosed
+
+        push    eax
         call    TCP_output
+        pop     eax
 
         ret

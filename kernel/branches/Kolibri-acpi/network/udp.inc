@@ -27,10 +27,12 @@ struct  UDP_header
 ends
 
 
-align 4
 uglobal
+align 4
+
         UDP_PACKETS_TX          rd  NET_DEVICES_MAX
         UDP_PACKETS_RX          rd  NET_DEVICES_MAX
+
 endg
 
 
@@ -46,7 +48,7 @@ macro   UDP_init {
         xor     eax, eax
         mov     edi, UDP_PACKETS_TX
         mov     ecx, 2*NET_DEVICES_MAX
-        rep     stosd
+        rep stosd
 }
 
 
@@ -114,6 +116,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 ;
 ;-----------------------------------------------------------------
 align 4
+diff16 "UDP packetgfgfgfgfs", 0, $
 UDP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: size=%u\n", ecx
@@ -139,6 +142,11 @@ UDP_input:
         ; IP Packet UDP Destination Port = local Port
         ; IP Packet SA = Remote IP
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     cx, [esi + UDP_header.SourcePort]
         mov     dx, [esi + UDP_header.DestinationPort]
         mov     edi, [edi + 4]                          ; ipv4 source address
@@ -147,7 +155,7 @@ UDP_input:
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
-        jz      .dump
+        jz      .dump_
 
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
@@ -159,6 +167,11 @@ UDP_input:
         jne     .next_socket
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: socket=%x\n", eax
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         ;;; TODO: when packet is processed, check more sockets!
 
@@ -182,7 +195,8 @@ UDP_input:
         popa
 
   .updatesock:
-        inc     [UDP_PACKETS_RX]        ; Fixme: correct interface?
+        call    NET_ptr_to_num4
+        inc     [UDP_PACKETS_RX + edi]
 
         movzx   ecx, [esi + UDP_header.Length]
         sub     ecx, sizeof.UDP_header
@@ -202,6 +216,16 @@ UDP_input:
 
         jmp     .updatesock
 
+  .dump_:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: no socket found\n"
+
+        jmp     .dump
 
   .checksum_mismatch:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: checksum mismatch\n"
@@ -257,10 +281,10 @@ UDP_output:
         sub     ecx, sizeof.UDP_header
         add     edi, sizeof.UDP_header
         shr     ecx, 2
-        rep     movsd
+        rep movsd
         mov     ecx, [esp]
         and     ecx, 3
-        rep     movsb
+        rep movsb
         pop     ecx edi
 
         pop     dword [edi + UDP_header.SourcePort]
@@ -274,7 +298,8 @@ UDP_output:
         call    [ebx + NET_DEVICE.transmit]
         test    eax, eax
         jnz     @f
-        inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
+        call    NET_ptr_to_num4
+        inc     [UDP_PACKETS_TX + edi]
        @@:
 
         ret

@@ -30,8 +30,8 @@ struct  IPv6_header
 ends
 
 
-align 4
 uglobal
+align 4
 
         IPv6:
         .addresses      rd 4*NET_DEVICES_MAX
@@ -57,7 +57,7 @@ macro   IPv6_init {
         xor     eax, eax
         mov     edi, IPv6
         mov     ecx, (4*4*4+2*4)MAX_IP
-        rep     stosd
+        rep stosd
 
 }
 

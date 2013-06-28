@@ -358,8 +358,44 @@ high_code:
         call    mutex_init
 
 ; SAVE REAL MODE VARIABLES
+        xor     eax, eax
+        mov     ax, [BOOT_VAR + BOOT_IDE_PI_16]
+        mov     [IDEContrProgrammingInterface], ax
         mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
+        mov     ax, [BOOT_VAR + BOOT_IDE_BAR0_16]
+        mov     [IDE_BAR0_val], ax
+
+        cmp     ax, 0
+        je      @f
+
+        cmp     ax, 1
+        je      @f
+
+        and     ax, 0xfff0
+        mov     [StandardATABases], ax
+        mov     [hd_address_table], eax
+        mov     [hd_address_table+8], eax
+@@:
+        mov     ax, [BOOT_VAR + BOOT_IDE_BAR1_16]
+        mov     [IDE_BAR1_val], ax
+        mov     ax, [BOOT_VAR + BOOT_IDE_BAR2_16]
+        mov     [IDE_BAR2_val], ax
+
+        cmp     ax, 0
+        je      @f
+
+        cmp     ax, 1
+        je      @f
+
+        and     ax, 0xfff0
+        mov     [StandardATABases+2], ax
+        mov     [hd_address_table+16], eax
+        mov     [hd_address_table+24], eax
+@@:
+        mov     ax, [BOOT_VAR + BOOT_IDE_BAR3_16]
+        mov     [IDE_BAR3_val], ax
+
 ; --------------- APM ---------------------
 
 ; init selectors
@@ -1014,6 +1050,12 @@ end if
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
 
+        DEBUGF  1, "K : BAR0 %x \n", [IDE_BAR0_val]:4
+        DEBUGF  1, "K : BAR1 %x \n", [IDE_BAR1_val]:4
+        DEBUGF  1, "K : BAR2 %x \n", [IDE_BAR2_val]:4
+        DEBUGF  1, "K : BAR3 %x \n", [IDE_BAR3_val]:4
+        DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
+        DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -1028,6 +1070,17 @@ end if
 
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
+
+        cmp     [dma_hdd], 0
+        je      .print_pio
+.print_dma:
+        DEBUGF  1, "K : IDE DMA mode\n"
+        jmp     .continue
+
+.print_pio:
+        DEBUGF  1, "K : IDE PIO mode\n"
+.continue:
+
         mov     [timer_ticks_enable], 1         ; for cd driver
 
         sti
@@ -1585,25 +1638,29 @@ endg
 
         dec     ecx
         jnz     noprma
-        mov     [cdbase], 0x1f0
+        mov     eax, [hd_address_table]
+        mov     [cdbase], eax    ;0x1f0
         mov     [cdid], 0xa0
-   noprma:
+noprma:
 
         dec     ecx
         jnz     noprsl
-        mov     [cdbase], 0x1f0
+        mov     eax, [hd_address_table]
+        mov     [cdbase], eax   ;0x1f0
         mov     [cdid], 0xb0
-   noprsl:
+noprsl:
         dec     ecx
         jnz     nosema
-        mov     [cdbase], 0x170
+        mov     eax, [hd_address_table+16]
+        mov     [cdbase], eax   ;0x170
         mov     [cdid], 0xa0
-   nosema:
+nosema:
         dec     ecx
         jnz     nosesl
-        mov     [cdbase], 0x170
+        mov     eax, [hd_address_table+16]
+        mov     [cdbase], eax    ;0x170
         mov     [cdid], 0xb0
-   nosesl:
+nosesl:
         ret
 
 iglobal
@@ -1630,7 +1687,8 @@ endg
 
         cmp     ecx, 1
         jnz     noprmahd
-        mov     [hdbase], 0x1f0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax    ;0x1f0
         and     dword [hdid], 0x0
         mov     dword [hdpos], ecx
 ;     call set_FAT32_variables
@@ -1638,7 +1696,8 @@ endg
 
         cmp     ecx, 2
         jnz     noprslhd
-        mov     [hdbase], 0x1f0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax  ;0x1f0
         mov     [hdid], 0x10
         mov     dword [hdpos], ecx
 ;     call set_FAT32_variables
@@ -1646,7 +1705,8 @@ endg
 
         cmp     ecx, 3
         jnz     nosemahd
-        mov     [hdbase], 0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax	;0x170
         and     dword [hdid], 0x0
         mov     dword [hdpos], ecx
 ;     call set_FAT32_variables
@@ -1654,7 +1714,8 @@ endg
 
         cmp     ecx, 4
         jnz     noseslhd
-        mov     [hdbase], 0x170
+	mov	eax,[hd_address_table+16]
+        mov     [hdbase], eax	;0x170
         mov     [hdid], 0x10
         mov     dword [hdpos], ecx
 ;     call set_FAT32_variables
@@ -5409,7 +5470,6 @@ calculate_fast_getting_offset_for_WinMapAddress:
 ; calculate data area for fast getting offset to _WinMapAddress
         xor     eax, eax
         mov     ecx, [_display.height]
-        inc     ecx
         mov     edi, d_width_calc_area
         cld
 @@:
@@ -5424,7 +5484,6 @@ calculate_fast_getting_offset_for_LFB:
 ; calculate data area for fast getting offset to LFB
         xor     eax, eax
         mov     ecx, [_display.height]
-        inc     ecx
         mov     edi, BPSLine_calc_area
         cld
 @@:
@@ -5816,7 +5875,6 @@ include "data32.inc"
 
 __REV__ = __REV
 
-uglobals_size = $ - endofcode
 if ~ lang eq sp
 diff16 "end of kernel code",0,$
 end if

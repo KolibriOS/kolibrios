@@ -310,7 +310,9 @@ if 1
 end if
         and     byte [esi+7000Bh], not 80h      ; PIPEACONF: disable pipe
         and     byte [esi+7100Bh], not 80h      ; PIPEBCONF: disable pipe
-if 1
+        cmp     [deviceType], gen4_start
+        jb      .wait_watching_scanline
+; g45 and later: use special flag from PIPE*CONF
         mov     edx, 10000h
 @@:
         mov     ecx, 1000h
@@ -319,20 +321,17 @@ if 1
         jz      @f
         dec     edx
         jnz     @b
-.not_disabled:
-        sti
-        jmp     .return
+        jmp     .not_disabled
 @@:
         test    byte [esi+7100Bh], 40h  ; PIPEBCONF: wait until pipe disabled
-        jz      @f
+        jz      .disabled
         mov     ecx, 1000h
         loop    $
         dec     edx
         jnz     @b
         jmp     .not_disabled
-@@:
-else
-; alternative way of waiting for pipe stop, works too
+; pineview and before: wait while scanline still changes
+.wait_watching_scanline:
         mov     edx, 1000h
 .dis1:
         push    dword [esi+71000h]
@@ -354,7 +353,6 @@ else
         sti
         jmp     .return
 .disabled:
-end if
         lea     eax, [esi+61183h]
         cmp     [deviceType], ironlake_start
         jb      @f
@@ -378,6 +376,7 @@ end if
         and     ecx, not 15
         shl     ecx, 2
         mov     dword [edx+10188h], ecx ; DSPASTRIDE: set scanline length
+        mov     dword [edx+10184h], 0   ; DSPALINOFF: force write to DSPA* registers
         and     byte [esi+61233h], not 80h      ; PFIT_CONTROL: disable panel fitting 
         or      byte [edx+1000Bh], 80h          ; PIPEACONF: enable pipe
 ;       and     byte [edx+1000Ah], not 0Ch      ; PIPEACONF: enable Display+Cursor Planes
@@ -437,6 +436,9 @@ i965_start = ($ - pciids) / 2
         dw      0x29b2  ; q35g
         dw      0x29c2  ; g33g
         dw      0x29d2  ; q33g
+        dw      0xa001  ; pineview
+        dw      0xa011  ; pineview
+gen4_start = ($ - pciids) / 2
         dw      0x2a02  ; i965gm
         dw      0x2a12  ; i965gm
         dw      0x2a42  ; gm45
@@ -446,8 +448,6 @@ i965_start = ($ - pciids) / 2
         dw      0x2e32  ; g45
         dw      0x2e42  ; g45
         dw      0x2e92  ; g45
-        dw      0xa001  ; pineview
-        dw      0xa011  ; pineview
 ironlake_start = ($ - pciids) / 2
         dw      0x0042  ; ironlake_d
         dw      0x0046  ; ironlake_m

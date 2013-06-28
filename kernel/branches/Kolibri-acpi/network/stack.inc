@@ -81,7 +81,6 @@ SO_REUSEPORT            = 1 shl 7
 SO_USELOOPBACK          = 1 shl 8
 SO_BINDTODEVICE         = 1 shl 9
 
-SO_BLOCK                = 1 shl 10      ; TO BE REMOVED
 SO_NONBLOCK             = 1 shl 31
 
 ; Socket flags for user calls
@@ -104,9 +103,9 @@ SS_ISABORTING           = 0x0080        ; aborting fd references - close()
 SS_RESTARTSYS           = 0x0100        ; restart blocked system calls
 SS_ISDISCONNECTED       = 0x0800        ; socket disconnected from peer
 
-SS_ASYNC                = 0x0100        ; async i/o notify
-SS_ISCONFIRMING         = 0x0200        ; deciding to accept connection req
-SS_MORETOCOME           = 0x0400
+SS_ASYNC                = 0x1000        ; async i/o notify
+SS_ISCONFIRMING         = 0x2000        ; deciding to accept connection req
+SS_MORETOCOME           = 0x4000
 
 SS_BLOCKED              = 0x8000
 
@@ -115,7 +114,15 @@ SOCKET_MAXDATA          = 4096*32       ; must be 4096*(power of 2) where 'power
 MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
-ENOBUFS                 = 55
+ENOBUFS                 = 1
+EOPNOTSUPP              = 4
+EWOULDBLOCK             = 6
+ENOTCONN                = 9
+EALREADY                = 10
+EINVAL                  = 11
+EMSGSIZE                = 12
+ENOMEM                  = 18
+EADDRINUSE              = 20
 ECONNREFUSED            = 61
 ECONNRESET              = 52
 ETIMEDOUT               = 60
@@ -213,8 +220,8 @@ include "socket.inc"
 
 
 
-align 4
 uglobal
+align 4
 
         NET_RUNNING     dd  ?
         NET_DRV_LIST    rd  NET_DEVICES_MAX
@@ -239,7 +246,7 @@ stack_init:
         xor     eax, eax
         mov     edi, NET_RUNNING
         mov     ecx, (NET_DEVICES_MAX + 2)
-        rep     stosd
+        rep stosd
 
         PPPoE_init
 
@@ -264,8 +271,8 @@ stack_init:
 ; Wakeup every tick.
 proc stack_handler_has_work?
 
-        mov eax, [timer_ticks]
-        cmp eax, [net_10ms]
+        mov     eax, [timer_ticks]
+        cmp     eax, [net_10ms]
 
         ret
 endp
@@ -359,7 +366,7 @@ NET_add_device:
         mov     ecx, NET_DEVICES_MAX    ; We need to check whole list because a device may be removed without re-organizing list
         mov     edi, NET_DRV_LIST
 
-        repne   scasd                   ; See if device is already in the list
+        repne scasd                     ; See if device is already in the list
         jz      .error
 
 ;----------------------------
@@ -368,7 +375,7 @@ NET_add_device:
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
 
-        repne   scasd
+        repne scasd
         jnz     .error
 
         sub     edi, 4
@@ -419,7 +426,7 @@ NET_remove_device:
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
 
-        repne   scasd
+        repne scasd
         jnz     .error
 
 ;------------------------
@@ -450,29 +457,33 @@ NET_remove_device:
 ;-----------------------------------------------------------------
 align 4
 NET_ptr_to_num:
+
+        call    NET_ptr_to_num4
+        ror     edi, 2          ; If -1, stay -1
+                                ; valid device numbers have last two bits 0, so do just shr
+
+        ret
+
+align 4
+NET_ptr_to_num4:                ; Todo, place number in device structure so we only need to verify?
+
         push    ecx
 
         mov     ecx, NET_DEVICES_MAX
         mov     edi, NET_DRV_LIST
-
   .loop:
         cmp     ebx, [edi]
-        jz      .found
+        je      .found
         add     edi, 4
         dec     ecx
         jnz     .loop
 
-        ; repnz  scasd could work too if eax is used instead of ebx!
-
         or      edi, -1
-
         pop     ecx
         ret
 
   .found:
         sub     edi, NET_DRV_LIST
-        shr     edi, 2
-
         pop     ecx
         ret
 
@@ -652,7 +663,7 @@ sys_network:
         mov     edi, ecx
 
         mov     ecx, 64/4 ; max length
-        rep     movsd
+        rep movsd
 
         xor     eax, eax
         mov     [esp+32], eax

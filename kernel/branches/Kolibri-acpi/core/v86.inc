@@ -896,6 +896,7 @@ v86_irq2:
         iretd
 .found:
         mov     cr3, eax
+        mov     esi, [ebx+APPDATA.saved_esp0]
         sub     word [esi-sizeof.v86_regs+v86_regs.esp], 6
         mov     ecx, [esi-sizeof.v86_regs+v86_regs.eip]
         mov     word [edx], cx
@@ -916,7 +917,7 @@ v86_irq2:
         call    update_counters
         lea     edi, [ebx + 0x100000000 - SLOT_BASE]
         shr     edi, 3
-        add     edi, TASK_DATA
+        add     edi, CURRENT_TASK
         call    find_next_task.found
         call    do_change_task
         popad

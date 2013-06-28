@@ -32,8 +32,8 @@ struct  ETH_DEVICE      NET_DEVICE
 
 ends
 
-align 4
 iglobal
+align 4
 
         ETH_BROADCAST   dp  0xffffffffffff
 endg
@@ -57,9 +57,8 @@ ETH_input:
         mov     ecx, [esp+4]
 
         DEBUGF  DEBUG_NETWORK_VERBOSE,"ETH_input: size=%u\n", ecx
-        cmp     ecx, ETH_FRAME_MINIMUM
-        jb      .dump
         sub     ecx, sizeof.ETH_header
+        jb      .dump
 
         lea     edx, [eax + sizeof.ETH_header]
         mov     ax, [eax + ETH_header.Type]

@@ -206,7 +206,4 @@ clear_ide_cache:
         ret
 
 end_get_cache:
-;    mov  [cache_ide0_pointer],HD_CACHE
-;    mov  [cache_ide0_system_data],HD_CACHE+65536
-;    mov  [cache_ide0_system_sad_size],1919
         popa

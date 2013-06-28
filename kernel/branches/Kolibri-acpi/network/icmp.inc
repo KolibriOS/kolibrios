@@ -97,10 +97,12 @@ struct  ICMP_header
 ends
 
 
-align 4
 uglobal
+align 4
+
         ICMP_PACKETS_TX         rd NET_DEVICES_MAX
         ICMP_PACKETS_RX         rd NET_DEVICES_MAX
+
 endg
 
 
@@ -116,7 +118,7 @@ macro ICMP_init {
         xor     eax, eax
         mov     edi, ICMP_PACKETS_TX
         mov     ecx, 2*NET_DEVICES_MAX
-        rep     stosd
+        rep stosd
 
 }
 
@@ -156,8 +158,16 @@ ICMP_input:
         pop     ecx edx
         jne     .checksum_mismatch
 
+; Check packet type
+
         cmp     [edx + ICMP_header.Type], ICMP_ECHO             ; Is this an echo request?
         jne     .check_sockets
+
+; Update stats (and validate device ptr)
+        call    NET_ptr_to_num4
+        cmp     edi, -1
+        je      .dump
+        inc     [ICMP_PACKETS_RX + edi]
 
 ; We well re-use the packet so we can create the response as fast as possible
 ; Notice: this only works on pure ethernet
@@ -166,14 +176,6 @@ ICMP_input:
         mov     [edx + ICMP_header.Type], ICMP_ECHOREPLY        ; Change Packet type to reply
 
         mov     esi, [esp]                                      ; Start of buffer
-
-; Update stats (and validate device ptr)
-        call    NET_ptr_to_num
-        cmp     edi, -1
-        je      .dump
-        inc     [ICMP_PACKETS_RX + 4*edi]
-        inc     [ICMP_PACKETS_TX + 4*edi]
-
         cmp     ebx, LOOPBACK_DEVICE
         je      .loopback
 
@@ -225,6 +227,11 @@ ICMP_input:
 
 ; Transmit the packet (notice that packet ptr and packet size have been on stack since start of the procedure!)
         call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        call    NET_ptr_to_num4
+        inc     [UDP_PACKETS_TX + edi]
+       @@:
         ret
 
 
@@ -233,6 +240,11 @@ ICMP_input:
        .check_sockets:
         ; Look for an open ICMP socket
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     esi, [edi]              ; ipv4 source address
         mov     eax, net_sockets
   .try_more:
@@ -240,7 +252,7 @@ ICMP_input:
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
-        jz      .dump
+        jz      .dump_
 
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
@@ -254,10 +266,16 @@ ICMP_input:
 ;        cmp     [eax + ICMP_SOCKET.Identifier],
 ;        jne     .next_socket
 
-;        call    IPv4_dest_to_dev
-;        cmp     edi,-1
-;        je      .dump
-;        inc     [ICMP_PACKETS_RX+edi]
+; Update stats (and validate device ptr)
+        call    NET_ptr_to_num4
+        cmp     edi, -1
+        je      .dump_
+        inc     [ICMP_PACKETS_RX + edi]
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket=%x\n", eax
 
@@ -268,6 +286,16 @@ ICMP_input:
 
         mov     esi, edx
         jmp     SOCKET_input
+
+  .dump_:
+
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: no socket found\n"
+        jmp     .dump
 
 
   .checksum_mismatch:
@@ -327,15 +355,20 @@ ICMP_output:
         add     edi, sizeof.ICMP_header
         push    cx
         shr     cx, 2
-        rep     movsd
+        rep movsd
         pop     cx
         and     cx, 3
-        rep     movsb
+        rep movsb
 
         sub     edi, edx                                ;;; TODO: find a better way to remember start of packet
         push    edx edi
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Sending ICMP Packet\n"
         call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        call    NET_ptr_to_num4
+        inc     [ICMP_PACKETS_TX + edi]
+       @@:
         ret
   .exit:
         DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"
@@ -373,7 +406,7 @@ ICMP_output_raw:
 
         push    edi ecx
         DEBUGF  DEBUG_NETWORK_VERBOSE, "copying %u bytes from %x to %x\n", ecx, esi, edi
-        rep     movsb
+        rep movsb
         pop     ecx edi
 
         mov     [edi + ICMP_header.Checksum], 0
@@ -386,6 +419,11 @@ ICMP_output_raw:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Sending ICMP Packet\n"
         call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        call    NET_ptr_to_num4
+        inc     [ICMP_PACKETS_TX + edi]
+       @@:
         ret
   .exit:
         DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"

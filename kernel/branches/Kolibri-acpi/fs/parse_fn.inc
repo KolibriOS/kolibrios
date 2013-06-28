@@ -32,6 +32,17 @@ uglobal
 ; Parser_params will initialize: sysdir_name = "sys", sysdir_path = <sysdir>
 sysdir_name     rb      64
 sysdir_path     rb      64
+sysdir_name1    rb      64
+sysdir_path1    rb      64
+
+; for example:
+;dir_name1      db 'addappl',0
+;               rb 64-8
+;dir_path1      db 'HD0/1',0
+;               rb 64-6
+endg
+
+uglobal
 tmp_file_name_table dd  ?
 endg
 

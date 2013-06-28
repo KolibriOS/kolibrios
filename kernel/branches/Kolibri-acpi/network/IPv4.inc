@@ -55,8 +55,8 @@ struct  FRAGMENT_entry                  ; This structure will replace the ethern
 ends
 
 
-align 4
 uglobal
+align 4
 
         IP_LIST                 rd NET_DEVICES_MAX
         SUBNET_LIST             rd NET_DEVICES_MAX
@@ -69,6 +69,7 @@ uglobal
         IP_packets_dumped       rd NET_DEVICES_MAX
 
         FRAGMENT_LIST           rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
+
 endg
 
 
@@ -84,7 +85,7 @@ macro   IPv4_init {
         xor     eax, eax
         mov     edi, IP_LIST
         mov     ecx, 7*NET_DEVICES_MAX + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
-        rep     stosd
+        rep stosd
 
 }
 
@@ -223,8 +224,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 ;-----------------------------------
 ; Check if destination IP is correct
 
-        call    NET_ptr_to_num
-        shl     edi, 2
+        call    NET_ptr_to_num4
 
         ; check if it matches local ip (Using RFC1122 strong end system model)
 
@@ -476,10 +476,10 @@ IPv4_input:                                                     ; TODO: add IPv4
 
         push    cx                                                                      ; First copy dword-wise, then byte-wise
         shr     cx, 2                                                                   ;
-        rep     movsd                                                                   ;
+        rep movsd                                                                       ;
         pop     cx                                                                      ;
         and     cx, 3                                                                   ;
-        rep     movsb                                                                   ;
+        rep movsb                                                                       ;
 
         push    eax
         push    edx                                                                     ; Push pointer to fragment onto stack
@@ -586,9 +586,9 @@ IPv4_output:
         push    ebx                     ; push the mac onto the stack
         push    ax
 
-        inc     [IP_packets_tx + 4*edi] ; update stats
+        inc     [IP_packets_tx + edi]   ; update stats
 
-        mov     ebx, [NET_DRV_LIST + 4*edi]
+        mov     ebx, [NET_DRV_LIST + edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
         mov     ecx, [esp + 10 + 6]
@@ -696,7 +696,7 @@ IPv4_output_raw:
 ;; todo: check socket options if we should add header, or just compute checksum
 
         push    edi ecx
-        rep     movsb
+        rep movsb
         pop     ecx edi
 
 ;        [edi + IPv4_header.VersionAndIHL]              ; IPv4, normal length (no Optional header)
@@ -786,7 +786,7 @@ IPv4_fragment:
 ; copy header
         mov     esi, [esp + 2*4]
         mov     ecx, 5  ; 5 dwords: TODO: use IHL field of the header!
-        rep     movsd
+        rep movsd
 
 ; copy data
         mov     esi, [esp + 2*4]
@@ -795,7 +795,7 @@ IPv4_fragment:
 
         mov     ecx, [esp + 1*4]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_fragment: copying %u bytes\n", ecx
-        rep     movsb
+        rep movsb
 
 ; now, correct header
         mov     ecx, [esp + 1*4]
@@ -823,7 +823,7 @@ IPv4_fragment:
         call    [ebx + NET_DEVICE.transmit]
         ;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-        mov     ecx,  [esp+4]
+        mov     ecx, [esp+4]
         add     [esp], ecx
 
         mov     ecx, [esp+3*4+6+4]      ; ptr to begin of buff
@@ -857,7 +857,7 @@ IPv4_fragment:
 ; IPv4_route
 ;
 ; IN:   eax = Destination IP
-; OUT:  edi = device number
+; OUT:  edi = device number*4
 ;       eax = ip of gateway if nescessary, unchanged otherwise
 ;
 ;---------------------------------------------------------------------------
@@ -890,8 +890,7 @@ IPv4_route:
   .invalid:
         mov     eax, [GATEWAY_LIST+4]       ;;; FIXME
   .broadcast:
-        xor     edi, edi                ; if none found, use device 1 as default     ;;;; FIXME
-        inc     di
+        mov     edi, 4                  ; if none found, use device 1 as default     ;;;; FIXME
         ret
 
 

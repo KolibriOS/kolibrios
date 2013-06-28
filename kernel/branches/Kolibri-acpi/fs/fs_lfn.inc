@@ -525,25 +525,29 @@ fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
         call    reserve_hd1
-        mov     [hdbase], 0x1F0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax   ;0x1F0
         mov     [hdid], 0
         push    1
         jmp     fs_OnHd
 fs_OnHd1:
         call    reserve_hd1
-        mov     [hdbase], 0x1F0
+        mov     eax, [hd_address_table]
+        mov     [hdbase], eax   ;0x1F0
         mov     [hdid], 0x10
         push    2
         jmp     fs_OnHd
 fs_OnHd2:
         call    reserve_hd1
-        mov     [hdbase], 0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax   ;0x170
         mov     [hdid], 0
         push    3
         jmp     fs_OnHd
 fs_OnHd3:
         call    reserve_hd1
-        mov     [hdbase], 0x170
+        mov     eax, [hd_address_table+16]
+        mov     [hdbase], eax   ;0x170
         mov     [hdid], 0x10
         push    4
 fs_OnHd:
@@ -932,24 +936,30 @@ biosdisk_enum_root:
         pop     eax
         inc     eax
         ret
-
+;-----------------------------------------------------------------------------
 process_replace_file_name:
+; in
+; esi - path with filename(f.70)
+;
+; out
+; ebp - full filename
+        pushfd
+        cli
         mov     ebp, [full_file_name_table]
-        mov     edi, [full_file_name_table.size]
-        dec     edi
-        shl     edi, 7
-        add     edi, ebp
+        xor     edi, edi
 .loop:
-        cmp     edi, ebp
-        jb      .notfound
+        cmp     edi, [full_file_name_table.size]
+        jae     .notfound
         push    esi edi
+        shl     edi, 7 ; edi*128
+        add     edi, ebp
 @@:
-        cmp     byte [edi], 0
+        cmp     byte [edi], 0 ; end of dir_name
         jz      .dest_done
         lodsb
         test    al, al
         jz      .cont
-        or      al, 20h
+        or      al, 20h ; 32 - space char
         scasb
         jz      @b
         jmp     .cont
@@ -962,10 +972,12 @@ process_replace_file_name:
         jmp     .found
 .cont:
         pop     edi esi
-        sub     edi, 128
+        inc     edi
         jmp     .loop
 .found:
         pop     edi eax
+        shl     edi, 7 ; edi*128
+        add     edi, ebp
         mov     ebp, esi
         cmp     byte [esi], 0
         lea     esi, [edi+64]
@@ -973,7 +985,12 @@ process_replace_file_name:
 .notfound:
         xor     ebp, ebp
 .ret:
+        popfd
         ret
+;-----------------------------------------------------------------------------
+uglobal
+lock_flag_for_f30_3 rb 1
+endg
 
 sys_current_directory:
 ;       mov     esi, [current_slot]
@@ -988,7 +1005,45 @@ sys_current_directory:
         jz      .set
         dec     ebx
         jz      .get
+        dec     ebx
+        jz      .mount_additional_directory
         ret
+
+.mount_additional_directory:
+; sysfunction 30.2: [for app] eax=30,ebx=3,ecx->dir name+dir path (128)
+; for our code: nothing
+
+; check lock of the function
+        cmp     [lock_flag_for_f30_3], 1
+        je      @f
+        
+        mov     esi, ecx
+        mov     edi, sysdir_name1
+; copying fake directory name
+        mov     ecx, 63
+        pushfd
+        cli
+        cld
+        rep movsb
+; terminator of name, in case if we get the inlet trash
+        inc     esi
+        xor     eax, eax
+        stosb
+; copying real directory path for mounting
+        mov     ecx, 63
+        rep movsb
+; terminator of name, in case if we get the inlet trash
+        xor     eax, eax
+        stosb
+; increase the pointer of inputs for procedure "process_replace_file_name"        
+        mov     [full_file_name_table.size], 2
+; block the ability to call f.30.3 because for one session is necessary
+; for us only once
+        mov     [lock_flag_for_f30_3], 1
+        popfd
+@@:
+        ret
+        
 .get:
 ; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
 ; for our code: ebx->buffer,ecx=len

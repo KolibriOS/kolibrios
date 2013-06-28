@@ -77,10 +77,10 @@ ext2_data:
     .inode_size                     dd ?
     .count_pointer_in_block         dd ?        ;  block_size / 4
     .count_pointer_in_block_square  dd ?        ; (block_size / 4)**2
-    .ext2_save_block                dd ?    ; блок на глобальную 1 процедуру
-    .ext2_temp_block                dd ?    ; блок для мелких процедур
-    .ext2_save_inode                dd ?    ; inode на глобальную процедуру
-    .ext2_temp_inode                dd ?    ; inode для мелких процедур
+    .ext2_save_block                dd ?   ;RUS: блок на глобальную 1 процедуру   ;ENG: block for 1 global procedure
+    .ext2_temp_block                dd ?   ;RUS: блок для мелких процедур         ;ENG: block for small procedures
+    .ext2_save_inode                dd ?   ;RUS: inode на глобальную процедуру    ;ENG: inode for global procedure
+    .ext2_temp_inode                dd ?   ;RUS: inode для мелких процедур        ;ENG: inode for small procedures
     .sb                             dd ?    ; superblock
     .groups_count                   dd ?
 if $ > fs_dependent_data_end

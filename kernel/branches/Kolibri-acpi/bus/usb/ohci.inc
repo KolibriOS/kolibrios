@@ -44,8 +44,8 @@ OhciRhPortStatusReg     = 54h
 ;   specification.
 ; * The hardware requires 16-bytes alignment of the hardware part.
 ;   Since the allocator (usb_allocate_common) allocates memory sequentially
-;   from page start (aligned on 0x1000 bytes), size of the structure must be
-;   divisible by 16.
+;   from page start (aligned on 0x1000 bytes), block size for the allocator
+;   must be divisible by 16; usb1_allocate_endpoint ensures this.
 struct ohci_pipe
 ; All addresses are physical.
 Flags           dd      ?
@@ -95,13 +95,7 @@ NextED          dd      ?
 ; * There is no "next" list for Bulk and Control lists, they are processed
 ;   separately from others.
 ; * There is no "next" list for Periodic list for 1ms interval.
-SoftwarePart    rd      sizeof.usb_pipe/4
-; Software part, common for all controllers.
 ends
-
-if sizeof.ohci_pipe mod 16
-.err ohci_pipe must be 16-bytes aligned
-end if
 
 ; This structure describes the static head of every list of pipes.
 ; The hardware requires 16-bytes alignment of this structure.
@@ -204,7 +198,8 @@ end if
 ; * The hardware requires 16-bytes alignment of the hardware part, so
 ;   the entire descriptor must be 16-bytes aligned. Since the allocator
 ;   (usb_allocate_common) allocates memory sequentially from page start
-;   (aligned on 0x1000 bytes), size of the structure must be divisible by 16.
+;   (aligned on 0x1000 bytes), block size for the allocator must be
+;   divisible by 16; usb1_allocate_generic_td ensures this.
 struct ohci_gtd
 ; ------------------------------ hardware fields ------------------------------
 ; All addresses in this part are physical.
@@ -248,14 +243,8 @@ NextTD          dd      ?
 ;   Virtual pointer to the next processed TD.
 BufEnd          dd      ?
 ; Physical address of the last byte in the buffer for this TD.
-                dd      ?       ; padding for 16-bytes alignment
-SoftwarePart    rd      sizeof.usb_gtd/4
-; Common part for all controllers.
+                dd      ?       ; padding to align with uhci_gtd
 ends
-
-if sizeof.ohci_gtd mod 16
-.err ohci_gtd must be 16-bytes aligned
-end if
 
 ; OHCI isochronous transfer descriptor.
 ; * The structure describes transfers to be performed on Isochronous endpoints.
@@ -726,7 +715,7 @@ end virtual
 .tdloop:
         mov     ecx, [eax+ohci_gtd.NextTD]
         mov     [eax+ohci_gtd.NextTD], ebx
-        lea     ebx, [eax+ohci_gtd.SoftwarePart]
+        lea     ebx, [eax+sizeof.ohci_gtd]
         test    ecx, ecx
         jz      .tddone
         call    usb_td_to_virt
@@ -893,7 +882,7 @@ endp
 ; and stores USB device address in the ohci_pipe structure.
 ; in: esi -> usb_controller, ebx -> usb_pipe, cl = address
 proc ohci_set_device_address
-        mov     byte [ebx+ohci_pipe.Flags-ohci_pipe.SoftwarePart], cl
+        mov     byte [ebx+ohci_pipe.Flags-sizeof.ohci_pipe], cl
 ; Wait until the hardware will forget the old value.
         call    usb_subscribe_control
         ret
@@ -903,7 +892,7 @@ endp
 ; in: esi -> usb_controller, ebx -> usb_pipe
 ; out: eax = endpoint address
 proc ohci_get_device_address
-        mov     eax, [ebx+ohci_pipe.Flags-ohci_pipe.SoftwarePart]
+        mov     eax, [ebx+ohci_pipe.Flags-sizeof.ohci_pipe]
         and     eax, 7Fh
         ret
 endp
@@ -923,7 +912,7 @@ endp
 ; stores the packet size in ohci_pipe structure.
 ; in: esi -> usb_controller, ebx -> usb_pipe, ecx = packet size
 proc ohci_set_endpoint_packet_size
-        mov     byte [ebx+ohci_pipe.Flags+2-ohci_pipe.SoftwarePart], cl
+        mov     byte [ebx+ohci_pipe.Flags+2-sizeof.ohci_pipe], cl
 ; Wait until the hardware will forget the old value.
         call    usb_subscribe_control
         ret
@@ -943,27 +932,27 @@ virtual at ebp+8
 .interval       dd      ?
 end virtual
 ; 1. Initialize the queue of transfer descriptors: empty.
-        sub     eax, ohci_gtd.SoftwarePart
+        sub     eax, sizeof.ohci_gtd
         call    get_phys_addr
-        mov     [edi+ohci_pipe.TailP-ohci_pipe.SoftwarePart], eax
-        mov     [edi+ohci_pipe.HeadP-ohci_pipe.SoftwarePart], eax
+        mov     [edi+ohci_pipe.TailP-sizeof.ohci_pipe], eax
+        mov     [edi+ohci_pipe.HeadP-sizeof.ohci_pipe], eax
 ; 2. Generate ohci_pipe.Flags, see the description in ohci_pipe.
-        mov     eax, [ecx+ohci_pipe.Flags-ohci_pipe.SoftwarePart]
+        mov     eax, [ecx+ohci_pipe.Flags-sizeof.ohci_pipe]
         and     eax, 0x207F     ; keep Speed bit and FunctionAddress
         mov     edx, [.endpoint]
         and     edx, 15
         shl     edx, 7
         or      eax, edx
-        mov     [edi+ohci_pipe.Flags-ohci_pipe.SoftwarePart], eax
+        mov     [edi+ohci_pipe.Flags-sizeof.ohci_pipe], eax
         mov     eax, [.maxpacket]
-        mov     word [edi+ohci_pipe.Flags+2-ohci_pipe.SoftwarePart], ax
+        mov     word [edi+ohci_pipe.Flags+2-sizeof.ohci_pipe], ax
         cmp     [.type], CONTROL_PIPE
         jz      @f
         test    byte [.endpoint], 80h
         setnz   al
         inc     eax
         shl     al, 3
-        or      byte [edi+ohci_pipe.Flags+1-ohci_pipe.SoftwarePart], al
+        or      byte [edi+ohci_pipe.Flags+1-sizeof.ohci_pipe], al
 @@:
 ; 3. Insert the new pipe to the corresponding list of endpoints.
 ; 3a. Use Control list for control pipes, Bulk list for bulk pipes.
@@ -992,11 +981,11 @@ end virtual
         mov     [edi+usb_pipe.PrevVirt], edx
         mov     [ecx+usb_pipe.PrevVirt], edi
         mov     [edx+usb_pipe.NextVirt], edi
-        mov     ecx, [edx+ohci_pipe.NextED-ohci_pipe.SoftwarePart]
-        mov     [edi+ohci_pipe.NextED-ohci_pipe.SoftwarePart], ecx
-        lea     eax, [edi-ohci_pipe.SoftwarePart]
+        mov     ecx, [edx+ohci_pipe.NextED-sizeof.ohci_pipe]
+        mov     [edi+ohci_pipe.NextED-sizeof.ohci_pipe], ecx
+        lea     eax, [edi-sizeof.ohci_pipe]
         call    get_phys_addr
-        mov     [edx+ohci_pipe.NextED-ohci_pipe.SoftwarePart], eax
+        mov     [edx+ohci_pipe.NextED-sizeof.ohci_pipe], eax
 ; 4. Return something non-zero.
         ret
 .return0:
@@ -1069,22 +1058,30 @@ endl
 ; this corresponds to 1001h bytes. If the requested size is
 ; greater, we should split the transfer into several descriptors.
 ; Boundaries to split must be multiples of endpoint transfer size
-; to avoid short packets except in the end of the transfer,
-; 1000h is always a good value.
+; to avoid short packets except in the end of the transfer.
+        cmp     [size], 1001h
+        jbe     .lastpacket
 ; 2. While the remaining data cannot fit in one packet,
-; allocate page-sized descriptors.
-        mov     edi, 1000h
+; allocate full-sized descriptors.
+; 2a. Calculate size of one descriptor: must be a multiple of transfer size
+; and must be not greater than 1001h.
+        movzx   ecx, word [ebx+ohci_pipe.Flags+2-sizeof.ohci_pipe]
+        mov     eax, 1001h
+        xor     edx, edx
+        mov     edi, eax
+        div     ecx
+        sub     edi, edx
+; 2b. Allocate in loop.
         mov     [packetSize], edi
 .fullpackets:
-        cmp     [size], edi
-        jbe     .lastpacket
         call    ohci_alloc_packet
         test    eax, eax
         jz      .fail
         mov     [td], eax
         add     [buffer], edi
         sub     [size], edi
-        jmp     .fullpackets
+        cmp     [size], 1001h
+        ja      .fullpackets
 ; 3. The remaining data can fit in one descriptor;
 ; allocate the last descriptor with size = size of remaining data.
 .lastpacket:
@@ -1094,7 +1091,7 @@ endl
         test    eax, eax
         jz      .fail
 ; 4. Enable an immediate interrupt on completion of the last packet.
-        and     byte [ecx+ohci_gtd.Flags+2-ohci_gtd.SoftwarePart], not (7 shl (21-16))
+        and     byte [ecx+ohci_gtd.Flags+2-sizeof.ohci_gtd], not (7 shl (21-16))
 ; 5. If a short transfer is ok for a caller, set the corresponding bit in
 ; the last descriptor, but not in others.
 ; Note: even if the caller says that short transfers are ok,
@@ -1104,7 +1101,7 @@ endl
 ; transparently to the caller.
         test    [flags], 1
         jz      @f
-        or      byte [ecx+ohci_gtd.Flags+2-ohci_gtd.SoftwarePart], 1 shl (18-16)
+        or      byte [ecx+ohci_gtd.Flags+2-sizeof.ohci_gtd], 1 shl (18-16)
 @@:
         ret
 .fail:
@@ -1143,24 +1140,24 @@ end virtual
 ; 3. Save the returned value (next descriptor).
         push    eax
 ; 4. Store the physical address of the next descriptor.
-        sub     eax, ohci_gtd.SoftwarePart
+        sub     eax, sizeof.ohci_gtd
         call    get_phys_addr
-        mov     [ecx+ohci_gtd.NextTD-ohci_gtd.SoftwarePart], eax
+        mov     [ecx+ohci_gtd.NextTD-sizeof.ohci_gtd], eax
 ; 5. For zero-length transfers, store zero in both fields for buffer addresses.
 ; Otherwise, fill them with real values.
         xor     eax, eax
-        mov     [ecx+ohci_gtd.CurBufPtr-ohci_gtd.SoftwarePart], eax
-        mov     [ecx+ohci_gtd.BufEnd-ohci_gtd.SoftwarePart], eax
+        mov     [ecx+ohci_gtd.CurBufPtr-sizeof.ohci_gtd], eax
+        mov     [ecx+ohci_gtd.BufEnd-sizeof.ohci_gtd], eax
         cmp     [.packetSize], eax
         jz      @f
         mov     eax, [.buffer]
         call    get_phys_addr
-        mov     [ecx+ohci_gtd.CurBufPtr-ohci_gtd.SoftwarePart], eax
+        mov     [ecx+ohci_gtd.CurBufPtr-sizeof.ohci_gtd], eax
         mov     eax, [.buffer]
         add     eax, [.packetSize]
         dec     eax
         call    get_phys_addr
-        mov     [ecx+ohci_gtd.BufEnd-ohci_gtd.SoftwarePart], eax
+        mov     [ecx+ohci_gtd.BufEnd-sizeof.ohci_gtd], eax
 @@:
 ; 6. Generate Flags field:
 ; - set bufferRounding (bit 18) to zero = disallow short transfers;
@@ -1179,7 +1176,7 @@ end virtual
         and     edx, (3 shl 2)
         shl     edx, 24 - 2
         lea     eax, [eax + edx + (7 shl 21) + (15 shl 28)]
-        mov     [ecx+ohci_gtd.Flags-ohci_gtd.SoftwarePart], eax
+        mov     [ecx+ohci_gtd.Flags-sizeof.ohci_gtd], eax
 ; 7. Restore the returned value saved in step 3.
         pop     eax
 .nothing:
@@ -1192,8 +1189,8 @@ endp
 ; ecx -> last descriptor for the transfer, ebx -> usb_pipe
 proc ohci_insert_transfer
 ; 1. Advance the queue of transfer descriptors.
-        mov     eax, [ecx+ohci_gtd.NextTD-ohci_gtd.SoftwarePart]
-        mov     [ebx+ohci_pipe.TailP-ohci_pipe.SoftwarePart], eax
+        mov     eax, [ecx+ohci_gtd.NextTD-sizeof.ohci_gtd]
+        mov     [ebx+ohci_pipe.TailP-sizeof.ohci_pipe], eax
 ; 2. For control and bulk pipes, notify the controller that
 ; there is new work in control/bulk queue respectively.
 ohci_notify_new_work:
@@ -1393,7 +1390,7 @@ proc ohci_process_finalized_td
         mov     edx, [ebx+usb_gtd.Pipe]
         test    [edx+usb_pipe.Flags], USB_FLAG_CLOSED
         jz      @f
-        lea     eax, [ebx+ohci_gtd.NextTD-ohci_gtd.SoftwarePart]
+        lea     eax, [ebx+ohci_gtd.NextTD-sizeof.ohci_gtd]
         xor     ebx, ebx
         jmp     .next_td2
 @@:
@@ -1402,13 +1399,13 @@ proc ohci_process_finalized_td
 ; 3. Get number of bytes that remain to be transferred.
 ; If CurBufPtr is zero, everything was transferred.
         xor     edx, edx
-        cmp     [ebx+ohci_gtd.CurBufPtr-ohci_gtd.SoftwarePart], edx
+        cmp     [ebx+ohci_gtd.CurBufPtr-sizeof.ohci_gtd], edx
         jz      .gotlen
 ; Otherwise, the remaining length is
 ; (BufEnd and 0xFFF) - (CurBufPtr and 0xFFF) + 1,
 ; plus 0x1000 if BufEnd and CurBufPtr are in different pages.
-        mov     edx, [ebx+ohci_gtd.BufEnd-ohci_gtd.SoftwarePart]
-        mov     eax, [ebx+ohci_gtd.CurBufPtr-ohci_gtd.SoftwarePart]
+        mov     edx, [ebx+ohci_gtd.BufEnd-sizeof.ohci_gtd]
+        mov     eax, [ebx+ohci_gtd.CurBufPtr-sizeof.ohci_gtd]
         mov     ecx, edx
         and     edx, 0xFFF
         inc     edx
@@ -1425,7 +1422,7 @@ proc ohci_process_finalized_td
         neg     edx
 ; 4. Check for error. If so, go to 7.
         push    ebx
-        mov     eax, [ebx+ohci_gtd.Flags-ohci_gtd.SoftwarePart]
+        mov     eax, [ebx+ohci_gtd.Flags-sizeof.ohci_gtd]
         shr     eax, 28
         jnz     .error
 .notify:
@@ -1451,7 +1448,7 @@ proc ohci_process_finalized_td
         stdcall usb1_free_general_td, ebx
 @@:
         pop     ebx
-        lea     eax, [ebx+ohci_gtd.NextTD-ohci_gtd.SoftwarePart]
+        lea     eax, [ebx+ohci_gtd.NextTD-sizeof.ohci_gtd]
 .next_td2:
         push    ebx
         mov     ebx, eax
@@ -1484,10 +1481,10 @@ proc ohci_process_finalized_td
         push    eax
         push    edx
 ;       DEBUGF 1,'K : TD failed:\n'
-;       DEBUGF 1,'K : %x %x %x %x\n',[ebx-ohci_gtd.SoftwarePart],[ebx-ohci_gtd.SoftwarePart+4],[ebx-ohci_gtd.SoftwarePart+8],[ebx-ohci_gtd.SoftwarePart+12]
-;       DEBUGF 1,'K : %x %x %x %x\n',[ebx-ohci_gtd.SoftwarePart+16],[ebx-ohci_gtd.SoftwarePart+20],[ebx-ohci_gtd.SoftwarePart+24],[ebx-ohci_gtd.SoftwarePart+28]
+;       DEBUGF 1,'K : %x %x %x %x\n',[ebx-sizeof.ohci_gtd],[ebx-sizeof.ohci_gtd+4],[ebx-sizeof.ohci_gtd+8],[ebx-sizeof.ohci_gtd+12]
+;       DEBUGF 1,'K : %x %x %x %x\n',[ebx-sizeof.ohci_gtd+16],[ebx-sizeof.ohci_gtd+20],[ebx-sizeof.ohci_gtd+24],[ebx-sizeof.ohci_gtd+28]
 ;       mov     eax, [ebx+usb_gtd.Pipe]
-;       DEBUGF 1,'K : pipe: %x %x %x %x\n',[eax-ohci_pipe.SoftwarePart],[eax-ohci_pipe.SoftwarePart+4],[eax-ohci_pipe.SoftwarePart+8],[eax-ohci_pipe.SoftwarePart+12]
+;       DEBUGF 1,'K : pipe: %x %x %x %x\n',[eax-sizeof.ohci_pipe],[eax-sizeof.ohci_pipe+4],[eax-sizeof.ohci_pipe+8],[eax-sizeof.ohci_pipe+12]
 ; 7b. Traverse the list of descriptors looking for the final packet
 ; for this transfer.
 ; Free and unlink non-final descriptors, except the current one.
@@ -1517,18 +1514,18 @@ end virtual
 ; After that, go to step 5 with eax = 0 (no error).
         cmp     dword [.error_code], USB_STATUS_UNDERRUN
         jnz     .no_underrun
-        test    byte [ebx+ohci_gtd.Flags+2-ohci_gtd.SoftwarePart], 1 shl (18-16)
+        test    byte [ebx+ohci_gtd.Flags+2-sizeof.ohci_gtd], 1 shl (18-16)
         jz      .no_underrun
         and     dword [.error_code], 0
         mov     ecx, [ebx+usb_gtd.Pipe]
-        mov     edx, [ecx+ohci_pipe.HeadP-ohci_pipe.SoftwarePart]
+        mov     edx, [ecx+ohci_pipe.HeadP-sizeof.ohci_pipe]
         and     edx, 2
 .advance_queue:
         mov     eax, [ebx+usb_gtd.NextVirt]
-        sub     eax, ohci_gtd.SoftwarePart
+        sub     eax, sizeof.ohci_gtd
         call    get_phys_addr
         or      eax, edx
-        mov     [ecx+ohci_pipe.HeadP-ohci_pipe.SoftwarePart], eax
+        mov     [ecx+ohci_pipe.HeadP-sizeof.ohci_pipe], eax
         push    ebx
         mov     ebx, ecx
         call    ohci_notify_new_work
@@ -1562,10 +1559,10 @@ end virtual
 ; support functional stall as well, but this is not recommended.").
 ; Advance the transfer queue to the next descriptor.
         mov     ecx, [ebx+usb_gtd.Pipe]
-        mov     edx, [ecx+ohci_pipe.HeadP-ohci_pipe.SoftwarePart]
+        mov     edx, [ecx+ohci_pipe.HeadP-sizeof.ohci_pipe]
         and     edx, 2  ; keep toggleCarry bit
         cmp     [ecx+usb_pipe.Type], CONTROL_PIPE
-        jnz     @f
+        jz      @f
         inc     edx     ; set Halted bit
 @@:
         jmp     .advance_queue
@@ -1577,7 +1574,7 @@ endp
 proc ohci_unlink_pipe
         cmp     [ebx+usb_pipe.Type], INTERRUPT_PIPE
         jnz     @f
-        mov     eax, [ebx+ohci_pipe.Flags-ohci_pipe.SoftwarePart]
+        mov     eax, [ebx+ohci_pipe.Flags-sizeof.ohci_pipe]
         bt      eax, 13
         setc    cl
         bt      eax, 11
@@ -1589,7 +1586,7 @@ proc ohci_unlink_pipe
         mov     eax, [ebx+usb_pipe.PrevVirt]
         mov     [edx+usb_pipe.PrevVirt], eax
         mov     [eax+usb_pipe.NextVirt], edx
-        mov     edx, [ebx+ohci_pipe.NextED-ohci_pipe.SoftwarePart]
-        mov     [eax+ohci_pipe.NextED-ohci_pipe.SoftwarePart], edx
+        mov     edx, [ebx+ohci_pipe.NextED-sizeof.ohci_pipe]
+        mov     [eax+ohci_pipe.NextED-sizeof.ohci_pipe], edx
         ret
 endp

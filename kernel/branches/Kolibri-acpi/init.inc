@@ -453,6 +453,9 @@ acpi_dev_data     rd 1
 acpi_dev_size     rd 1
 
 acpi_rsdt_base    rd 1
+acpi_fadt_base    rd 1
+acpi_dsdt_base    rd 1
+acpi_dsdt_size    rd 1
 acpi_madt_base    rd 1
 acpi_ioapic_base  rd 1
 
@@ -464,6 +467,7 @@ ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
 ACPI_HI_RSDP_WINDOW_END    equ 0x00100000
 ACPI_RSDP_CHECKSUM_LENGTH  equ 20
 ACPI_MADT_SIGN             equ 0x43495041
+ACPI_FADT_SIGN             equ 0x50434146
 
 
 acpi_locate:
@@ -535,8 +539,21 @@ check_acpi:
         jz      .done
 
         mov     ecx, [eax+16]
-        mov     edx, ACPI_MADT_SIGN
+        mov     edx, 0x50434146
         mov     [acpi_rsdt_base-OS_BASE], ecx
+        call    rsdt_find
+        mov     [acpi_fadt_base-OS_BASE], eax
+        test    eax, eax
+        jz      @f
+
+        mov     eax, [eax+40]
+        mov     [acpi_dsdt_base-OS_BASE], eax
+        mov     eax, [eax+4]
+        mov     [acpi_dsdt_size-OS_BASE], eax
+
+@@:
+        mov     edx, ACPI_MADT_SIGN
+        mov     ecx, [acpi_rsdt_base-OS_BASE]
         call    rsdt_find
         test    eax, eax
         jz      .done

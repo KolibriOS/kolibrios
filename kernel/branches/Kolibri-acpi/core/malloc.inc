@@ -22,7 +22,7 @@ $Revision$
 ;
 align 4
 malloc:
-        push    esi
+        push    ebx esi
 
 ; nb = ((size+7)&~7)+8;
 
@@ -96,7 +96,7 @@ malloc:
         mov     ecx, mst.mutex
         call    mutex_unlock
         mov     eax, esi
-        pop     esi
+        pop     esi ebx
         ret
 
 .split:
@@ -205,7 +205,7 @@ free:
         test    eax, eax
         jz      .exit
 
-        push    edi
+        push    ebx edi
         mov     edi, eax
         add     edi, -8
 
@@ -298,7 +298,7 @@ free:
         mov     eax, esi
         pop     esi
 .fail:
-        pop     edi
+        pop     edi ebx
 .exit:
         ret
 

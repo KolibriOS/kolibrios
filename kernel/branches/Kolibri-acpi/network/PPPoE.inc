@@ -23,8 +23,11 @@ struct  PPPoE_frame
 ends
 
 uglobal
+align 4
+
         PPPoE_SID       dw ?
         PPPoE_MAC       dp ?
+
 endg
 
 ;-----------------------------------------------------------------
@@ -63,6 +66,11 @@ PPPoE_discovery_input:
 
 ; First, find open PPPoE socket
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
+
         mov     eax, net_sockets
 
   .next_socket:
@@ -76,6 +84,11 @@ PPPoE_discovery_input:
         cmp     [eax + SOCKET.Protocol], PPP_PROTO_ETHERNET
         jne     .next_socket
 
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
 ; Now, send it to the this socket
 
         mov     ecx, [esp + 4]
@@ -84,6 +97,11 @@ PPPoE_discovery_input:
         jmp     SOCKET_input
 
   .dump:
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, 'PPPoE_discovery_input: dumping\n'
         call    kernel_free
         add     esp, 4
@@ -134,7 +152,7 @@ PPPoE_discovery_output:
 
         mov     edx, ecx
         mov     edi, eax
-        rep     movsb
+        rep movsb
 
         cmp     edx, 60         ; Min ETH size
         ja      @f

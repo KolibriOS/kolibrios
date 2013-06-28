@@ -136,14 +136,7 @@ found_slot_access_denied:
         ret
 ;--------------------------------------------------------------------
 align 4
-clear_hd_cache:
-        ret
-;--------------------------------------------------------------------
-align 4
 calculate_cache:
-;    mov   ecx,cache_max         ; entries in cache
-;    mov   esi,HD_CACHE+8
-
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
@@ -221,7 +214,6 @@ calculate_cache:
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_1:
-;    lea   esi,[edi*8+HD_CACHE]
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
@@ -290,7 +282,6 @@ calculate_cache_1:
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_2:
-;    add   esi,HD_CACHE+65536
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [hdpos], 1
@@ -644,9 +635,6 @@ clear_CD_cache:
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache:
-;    mov   ecx,cache_max         ; entries in cache
-;    mov   esi,HD_CACHE+8
-
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
@@ -697,7 +685,6 @@ cd_calculate_cache:
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_1:
-;    lea   esi,[edi*8+HD_CACHE]
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
@@ -740,7 +727,6 @@ cd_calculate_cache_1:
 ;--------------------------------------------------------------------
 align 4
 cd_calculate_cache_2:
-;    add   esi,HD_CACHE+65536
 ; 1 - IDE0 ... 4 - IDE3
 .ide0:
         cmp     [cdpos], 1
