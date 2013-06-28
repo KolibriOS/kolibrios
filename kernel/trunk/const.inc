@@ -193,11 +193,11 @@ TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
 
 CDDataBuf           equ (OS_BASE+0x0007000)
-FLOPPY_BUFF         equ (OS_BASE+0x0008000)
+FLOPPY_BUFF         equ (OS_BASE+0x0008000)     ;18*512
 idts                equ (OS_BASE+0x000B100)
 WIN_STACK           equ (OS_BASE+0x000C000)
 WIN_POS             equ (OS_BASE+0x000C400)
-FDD_BUFF            equ (OS_BASE+0x000D000)
+FDD_BUFF            equ (OS_BASE+0x000D000)     ;512
 
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)
 KEY_COUNT           equ (OS_BASE+0x000F400)
@@ -222,29 +222,32 @@ SLOT_BASE           equ (OS_BASE+0x0080000)
 
 VGABasePtr          equ (OS_BASE+0x00A0000)
 
-RAMDISK             equ (OS_BASE+0x0100000)
-RAMDISK_FAT         equ (OS_BASE+0x0280000)
-FLOPPY_FAT          equ (OS_BASE+0x0282000)
+;RAMDISK             equ (OS_BASE+0x0100000)
+;RAMDISK_FAT         equ (OS_BASE+0x0280000)
+;FLOPPY_FAT          equ (OS_BASE+0x0282000)
 
-CLEAN_ZONE          equ 0x284000
-IDE_DMA             equ 0x284000
+;CLEAN_ZONE          equ 0x284000
+;IDE_DMA             equ 0x284000
 
-BgrAuxTable         equ (OS_BASE+0x0298000)
+CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
+IDE_DMA             equ (_IDE_DMA-OS_BASE)
+
+;BgrAuxTable         equ (OS_BASE+0x0298000)
 ; unused?
 SB16Buffer          equ (OS_BASE+0x02A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
-BUTTON_INFO         equ (OS_BASE+0x02B3FEE)
+;BUTTON_INFO         equ (OS_BASE+0x02B3FEE)
 
-BPSLine_calc_area   equ (OS_BASE+0x02C4000)
-d_width_calc_area   equ (OS_BASE+0x02CA000)
+;BPSLine_calc_area   equ (OS_BASE+0x02C4000)
+;d_width_calc_area   equ (OS_BASE+0x02CA000)
 
-RESERVED_PORTS      equ (OS_BASE+0x02D0000)
-BOOT_VAR            equ (OS_BASE+0x02E0000)
+;RESERVED_PORTS      equ (OS_BASE+0x02D0000)
+;BOOT_VAR            equ (OS_BASE+0x02E0000)
 
-draw_data           equ (OS_BASE+0x0320000)
+;draw_data           equ (OS_BASE+0x0320000)
 
-sys_pgmap           equ (OS_BASE+0x0324000)
+;sys_pgmap           equ (OS_BASE+0x0324000)
 
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 

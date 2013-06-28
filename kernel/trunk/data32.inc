@@ -361,56 +361,60 @@ srv.bk            rd 1
 
 align 16
 
-_display          display_t
+_display            display_t
 
-_WinMapAddress    rd 1
-_WinMapSize       rd 1
+_WinMapAddress      rd 1
+_WinMapSize         rd 1
 
-LFBAddress        rd 1
-Screen_Max_X      rd 1
-Screen_Max_Y      rd 1
+LFBAddress          rd 1
+Screen_Max_X        rd 1
+Screen_Max_Y        rd 1
 
-SCR_MODE          rw 2
+SCR_MODE            rw 2
 
-PUTPIXEL          rd 1
-GETPIXEL          rd 1
+PUTPIXEL            rd 1
+GETPIXEL            rd 1
 
 if VESA_1_2_VIDEO
-BANK_SWITCH       rd 1  reserved for vesa 1.2
-BANK_RW           rd 1
+BANK_SWITCH         rd 1  reserved for vesa 1.2
+BANK_RW             rd 1
 end if
 
-REDRAW_BACKGROUND rb 4
+REDRAW_BACKGROUND   rb 4
 
-mouseunder        rd 16*24
+draw_data:          rb 16*256
+BPSLine_calc_area   rd 1440
+d_width_calc_area   rd 1140
 
-MOUSE_PICTURE     rd 1
+mouseunder          rd 16*24
 
-MOUSE_SCROLL_H    rw 1
-MOUSE_X:          rw 1
-MOUSE_Y:          rw 1
-MOUSE_SCROLL_V    rw 1
+MOUSE_PICTURE       rd 1
 
-X_UNDER           rw 1
-Y_UNDER           rw 1
-COLOR_TEMP        rd 1
-MOUSE_COLOR_MEM   rd 1
+MOUSE_SCROLL_H      rw 1
+MOUSE_X:            rw 1
+MOUSE_Y:            rw 1
+MOUSE_SCROLL_V      rw 1
 
-BTN_DOWN:         rb 4
+X_UNDER             rw 1
+Y_UNDER             rw 1
+COLOR_TEMP          rd 1
+MOUSE_COLOR_MEM     rd 1
 
-def_cursor        rd 1
-def_cursor_clock  rd 1
-current_cursor    rd 1
-hw_cursor         rd 1
-cur_saved_base    rd 1
+BTN_DOWN:           rb 4
 
-cur.lock          rd 1   ;1 - lock update, 2- hide
-cur.left          rd 1   ;cursor clip box
-cur.top           rd 1
-cur.right         rd 1
-cur.bottom        rd 1
-cur.w             rd 1
-cur.h             rd 1
+def_cursor          rd 1
+def_cursor_clock    rd 1
+current_cursor      rd 1
+hw_cursor           rd 1
+cur_saved_base      rd 1
+
+cur.lock            rd 1   ;1 - lock update, 2- hide
+cur.left            rd 1   ;cursor clip box
+cur.top             rd 1
+cur.right           rd 1
+cur.bottom          rd 1
+cur.w               rd 1
+cur.h               rd 1
 
 ipc_tmp           rd 1
 ipc_pdir          rd 1
@@ -546,3 +550,25 @@ align 16
 DRIVE_DATA:     rb DRIVE_DATA_SIZE
 
 IncludeUGlobals
+
+uglobals_size = $ - endofcode
+
+if ~ lang eq sp
+diff16 "end of .bss",0,$
+end if
+
+org (OS_BASE+0x0100000)
+
+RAMDISK:        rb 2880*512
+RAMDISK_FAT:    rb 2856*2
+FLOPPY_FAT:     rb 2856*2
+
+_CLEAN_ZONE:
+
+align 4096
+_IDE_DMA        rb 16*512
+BgrAuxTable     rb 32768
+BUTTON_INFO     rb 64*1024
+RESERVED_PORTS: rb 64*1024
+BOOT_VAR:       rb 64*1024
+sys_pgmap:      rb 1024*1024/8

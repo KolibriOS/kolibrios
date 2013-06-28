@@ -5466,7 +5466,6 @@ calculate_fast_getting_offset_for_WinMapAddress:
 ; calculate data area for fast getting offset to _WinMapAddress
         xor     eax, eax
         mov     ecx, [_display.height]
-        inc     ecx
         mov     edi, d_width_calc_area
         cld
 @@:
@@ -5481,7 +5480,6 @@ calculate_fast_getting_offset_for_LFB:
 ; calculate data area for fast getting offset to LFB
         xor     eax, eax
         mov     ecx, [_display.height]
-        inc     ecx
         mov     edi, BPSLine_calc_area
         cld
 @@:
@@ -5873,7 +5871,6 @@ include "data32.inc"
 
 __REV__ = __REV
 
-uglobals_size = $ - endofcode
 if ~ lang eq sp
 diff16 "end of kernel code",0,$
 end if
