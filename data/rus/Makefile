@@ -204,7 +204,7 @@ FASM_PROGRAMS:=\
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
 FASM_PROGRAMS_CD:=\
- kolibrios/drivers/atikms:KOLIBRIOS/DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
+ drivers/atikms:DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
  distr_data/zsea:DISTR_DATA/ZSEA:$(PROGS)/media/zsea/zSea.asm \
  distr_data/cnv_bmp.obj:DISTR_DATA/CNV_BMP.OBJ:$(PROGS)/media/zsea/plugins/bmp/cnv_bmp.asm \
  distr_data/cnv_gif.obj:DISTR_DATA/CNV_GIF.OBJ:$(PROGS)/media/zsea/plugins/gif/cnv_gif.asm \
