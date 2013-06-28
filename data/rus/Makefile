@@ -200,18 +200,19 @@ FASM_PROGRAMS:=\
  network/tftpc:NETWORK/TFTPC:$(PROGS)/network/tftpc/tftpc.asm \
  network/ircc:NETWORK/IRCC:$(PROGS)/network/ircc/ircc.asm \
  network/downloader:NETWORK/DOWNLOADER:$(PROGS)/network/downloader/downloader.asm \
+ distr_data/zsea:DISTR_DATA/ZSEA:$(PROGS)/media/zsea/zSea.asm \
+ distr_data/cnv_bmp.obj:DISTR_DATA/CNV_BMP.OBJ:$(PROGS)/media/zsea/plugins/bmp/cnv_bmp.asm \
+ distr_data/cnv_gif.obj:DISTR_DATA/CNV_GIF.OBJ:$(PROGS)/media/zsea/plugins/gif/cnv_gif.asm \
+ distr_data/cnv_jpeg.obj:DISTR_DATA/CNV_JPEG.OBJ:$(PROGS)/media/zsea/plugins/jpeg/cnv_jpeg.asm \
+ distr_data/convert.obj:DISTR_DATA/CONVERT.OBJ:$(PROGS)/media/zsea/plugins/convert/convert.asm \
+ distr_data/rotate.obj:DISTR_DATA/ROTATE.OBJ:$(PROGS)/media/zsea/plugins/rotate/rotate.asm \
+ distr_data/scaling.obj:DISTR_DATA/SCALING.OBJ:$(PROGS)/media/zsea/plugins/scaling/scaling.asm \
 # end of list
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
 FASM_PROGRAMS_CD:=\
 # kolibrios/drivers/atikms:KOLIBRIOS/DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
- distr_data/zsea:DISTR_DATA/ZSEA:$(REPOSITORY)/programs/media/zsea/zSea.asm \
- distr_data/cnv_bmp.obj:DISTR_DATA/CNV_BMP.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/bmp/cnv_bmp.asm \
- distr_data/cnv_gif.obj:DISTR_DATA/CNV_GIF.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/gif/cnv_gif.asm \
- distr_data/cnv_jpeg.obj:DISTR_DATA/CNV_JPEG.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/jpeg/cnv_jpeg.asm \
- distr_data/convert.obj:DISTR_DATA/CONVERT.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/convert/convert.asm \
- distr_data/rotate.obj:DISTR_DATA/ROTATE.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/rotate/rotate.asm \
- distr_data/scaling.obj:DISTR_DATA/SCALING.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/scaling/scaling.asm \
+ 
 # end of list
 
 # The list of all FASM programs which needs to be compiled without KPACKing.
