@@ -377,7 +377,7 @@ EXTRA:=\
  kolibrios/media/fplay-full=media/fplay-full \
  kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
  kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
- kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/Docs/buttons.png \
+ kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/buttons.png \
 #end of list
 DISTRIBUTION_EXTRA:=\
  $(EXTRA) \
