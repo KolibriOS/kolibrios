@@ -205,14 +205,13 @@ FASM_PROGRAMS:=\
 # Format of an item is exactly the same as in the previous list.
 FASM_PROGRAMS_CD:=\
 # kolibrios/drivers/atikms:KOLIBRIOS/DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
- kolibrios/media/zsea/zsea:KOLIBRIOS/MEDIA/ZSEA/ZSEA:$(REPOSITORY)/programs/media/zsea/zSea.asm \
- kolibrios/media/zsea/plugins/cnv_bmp.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_BMP.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/bmp/cnv_bmp.asm \
- kolibrios/media/zsea/plugins/cnv_gif.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_GIF.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/gif/cnv_gif.asm \
- kolibrios/media/zsea/plugins/cnv_jpeg.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_JPEG.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/jpeg/cnv_jpeg.asm \
-# kolibrios/media/zsea/plugins/cnv_png.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_PNG.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/png/cnv_png.asm \
- kolibrios/media/zsea/plugins/convert.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CONVERT.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/convert/convert.asm \
- kolibrios/media/zsea/plugins/rotate.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/ROTATE.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/rotate/rotate.asm \
- kolibrios/media/zsea/plugins/scaling.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/SCALING.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/scaling/scaling.asm \
+ distr_data/zsea:DISTR_DATA/ZSEA:$(REPOSITORY)/programs/media/zsea/zSea.asm \
+ distr_data/cnv_bmp.obj:DISTR_DATA/CNV_BMP.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/bmp/cnv_bmp.asm \
+ distr_data/cnv_gif.obj:DISTR_DATA/CNV_GIF.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/gif/cnv_gif.asm \
+ distr_data/cnv_jpeg.obj:DISTR_DATA/CNV_JPEG.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/jpeg/cnv_jpeg.asm \
+ distr_data/convert.obj:DISTR_DATA/CONVERT.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/convert/convert.asm \
+ distr_data/rotate.obj:DISTR_DATA/ROTATE.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/rotate/rotate.asm \
+ distr_data/scaling.obj:DISTR_DATA/SCALING.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/scaling/scaling.asm \
 # end of list
 
 # The list of all FASM programs which needs to be compiled without KPACKing.
@@ -375,14 +374,13 @@ EXTRA:=\
  games/fara=games/fara \
  games/soko/soko=games/soko \
  kolibrios/media/fplay-full=media/fplay-full \
- kolibrios/media/zsea/zsea=kolibrios/media/zsea/zsea \
- kolibrios/media/zsea/plugins/cnv_bmp.obj=kolibrios/media/zsea/plugins/cnv_bmp.obj \
- kolibrios/media/zsea/plugins/cnv_gif.obj=kolibrios/media/zsea/plugins/cnv_gif.obj \
- kolibrios/media/zsea/plugins/cnv_jpeg.obj=kolibrios/media/zsea/plugins/cnv_jpeg.obj \
-# kolibrios/media/zsea/plugins/cnv_png.obj=kolibrios/media/zsea/plugins/cnv_png.obj \
- kolibrios/media/zsea/plugins/convert.obj=kolibrios/media/zsea/plugins/convert.obj \
- kolibrios/media/zsea/plugins/rotate.obj=kolibrios/media/zsea/plugins/rotate.obj \
- kolibrios/media/zsea/plugins/scaling.obj=kolibrios/media/zsea/plugins/scaling.obj \
+ kolibrios/media/zsea/zsea=distr_data/zsea \
+ kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
+ kolibrios/media/zsea/plugins/cnv_gif.obj=distr_data/cnv_gif.obj \
+ kolibrios/media/zsea/plugins/cnv_jpeg.obj=distr_data/cnv_jpeg.obj \
+ kolibrios/media/zsea/plugins/convert.obj=distr_data/convert.obj \
+ kolibrios/media/zsea/plugins/rotate.obj=distr_data/rotate.obj \
+ kolibrios/media/zsea/plugins/scaling.obj=distr_data/scaling.obj \
  kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
  kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
  kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/buttons.png \
