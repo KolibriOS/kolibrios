@@ -1904,7 +1904,7 @@ load_directory:
 	jz	@f
 	
 	call	delete_point_dir
-	call	files_name_normalize
+;	call	files_name_normalize
 	call	check_filter
 	call	prepare_extension_and_mark
 	call	clear_data_fb_and_sb
@@ -2142,29 +2142,29 @@ delete_point_dir:
 @@:
 	ret
 ;---------------------------------------------------------------------
-files_name_normalize:
-	mov	esi,[dirinfo.return]
-	mov	ebp,[esi+4]
-	add	esi,32+40
-.start:
-	push	esi
-	mov	al,[esi]
-	call	char_toupper
-	mov	[esi],al
-@@:
-	inc	esi
-	mov	al,[esi]
-	test	al,al
-	jz	@f
-	call	char_todown
-	mov	[esi],al
-	jmp	@b
-@@:
-	pop	esi
-	add	esi,304
-	dec	ebp
-	jnz	.start
-	ret
+;files_name_normalize:
+;	mov	esi,[dirinfo.return]
+;	mov	ebp,[esi+4]
+;	add	esi,32+40
+;.start:
+;	push	esi
+;	mov	al,[esi]
+;	call	char_toupper
+;	mov	[esi],al
+;@@:
+;	inc	esi
+;	mov	al,[esi]
+;	test	al,al
+;	jz	@f
+;	call	char_todown
+;	mov	[esi],al
+;	jmp	@b
+;@@:
+;	pop	esi
+;	add	esi,304
+;	dec	ebp
+;	jnz	.start
+;	ret
 ;---------------------------------------------------------------------
 char_toupper:
 ; convert character to uppercase,using cp866 encoding
