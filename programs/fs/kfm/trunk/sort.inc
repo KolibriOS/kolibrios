@@ -254,55 +254,55 @@ left_prepare_extension_start_1:
    jb	 .start
    ret
 ;---------------------------------------------------------------------
-left_files_name_normalize:
-   xor	 ebp,ebp
-   mov	 esi,[left_folder_data]
-   add	 esi,32+40
-.start:
-   push  esi
-   mov	 al,[esi]
-   call  char_toupper
-   mov	 [esi],al
-@@:
-   inc	 esi
-   mov	 al,[esi]
-   test  al,al
-   jz	@f
-   call  char_todown
-   mov	 [esi],al
-   jmp	 @b
-@@:
-   pop	 esi
-   add	 esi,304
-   inc	 ebp
-   cmp	 ebp,[left_folder_block]
-   jb	 .start
-   ret
+;left_files_name_normalize:
+;   xor	 ebp,ebp
+;   mov	 esi,[left_folder_data]
+;   add	 esi,32+40
+;.start:
+;   push  esi
+;   mov	 al,[esi]
+;   call  char_toupper
+;   mov	 [esi],al
+;@@:
+;   inc	 esi
+;   mov	 al,[esi]
+;   test  al,al
+;   jz	@f
+;   call  char_todown
+;   mov	 [esi],al
+;   jmp	 @b
+;@@:
+;   pop	 esi
+;   add	 esi,304
+;   inc	 ebp
+;   cmp	 ebp,[left_folder_block]
+;   jb	 .start
+;   ret
 ;---------------------------------------------------------------------
-right_files_name_normalize:
-   xor	 ebp,ebp
-   mov	 esi,[right_folder_data]
-   add	 esi,32+40
-.start:
-   push  esi
-   mov	 al,[esi]
-   call  char_toupper
-   mov	 [esi],al
-@@:
-   inc	 esi
-   mov	 al,[esi]
-   test  al,al
-   jz	@f
-   call  char_todown
-   mov	 [esi],al
-   jmp	 @b
-@@:
-   pop	 esi
-   add	 esi,304
-   inc	 ebp
-   cmp	 ebp,[right_folder_block]
-   jb	 .start
-   ret
+;right_files_name_normalize:
+;   xor	 ebp,ebp
+;   mov	 esi,[right_folder_data]
+;   add	 esi,32+40
+;.start:
+;   push  esi
+;   mov	 al,[esi]
+;   call  char_toupper
+;   mov	 [esi],al
+;@@:
+;   inc	 esi
+;   mov	 al,[esi]
+;   test  al,al
+;   jz	@f
+;   call  char_todown
+;   mov	 [esi],al
+;   jmp	 @b
+;@@:
+;   pop	 esi
+;   add	 esi,304
+;   inc	 ebp
+;   cmp	 ebp,[right_folder_block]
+;   jb	 .start
+;   ret
 ;---------------------------------------------------------------------
 right_prepare_extension_start:
    xor	 ebp,ebp

@@ -97,7 +97,7 @@ proc_read_left_folder:
     jne   .error
 @@:
    push  eax
-   call  left_files_name_normalize
+;   call  left_files_name_normalize
    call  left_prepare_extension_start
    call  left_sort_files
    pop   eax
@@ -201,7 +201,7 @@ proc_read_right_folder:
     jne   .error
 @@:
    push  eax
-   call  right_files_name_normalize
+;   call  right_files_name_normalize
    call  right_prepare_extension_start
    call  right_sort_files
    pop   eax

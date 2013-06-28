@@ -1,13 +1,16 @@
 ;---------------------------------------------------------------------
 get_icon_number:
     mov   ebp,[extension_size]	;[icons_end_tag]
+    test  ebp,ebp
+    jz    .end
+    call  normalize_extension_of_file
     mov   edx,[icons_end_tag]
     mov   edi,[ini_file_start]
     dec   edi
 .search_association:
     cmp   edx,edi
     jbe   .end
-    mov   esi,[extension_start]
+    mov   esi,extension_temp_storage
     mov   ecx,ebp
     test  ecx,ecx
     je	  @f
@@ -51,6 +54,20 @@ get_icon_number:
     sub   eax,0x30
     ret
 ;---------------------------------------------------------------------
+normalize_extension_of_file:
+    push  edi
+    mov   esi,[extension_start]
+    mov   edi,extension_temp_storage
+    cld
+@@:
+    lodsb
+    call  char_todown
+    stosb
+    test  al,al
+    jnz   @b
+    pop   edi
+    ret
+;---------------------------------------------------------------------
 open_file_with_appl_1:
     mov   ebp,files_associations_1
     jmp   open_file_with_appl.1
@@ -64,10 +81,11 @@ open_file_with_appl:
     call  search_star_and_end_tags
     cmp   ebp,-1
     je	  .end
+    call  normalize_extension_of_file
 .search_association:
     cmp   [end_tag],edi
     jbe   .end
-    mov   esi,[extension_start] ;extension_temp_area
+    mov   esi,extension_temp_storage
     mov   ecx,[extension_size]
     inc   edi
     cld
