@@ -247,6 +247,7 @@ dps 'get file info'
 newline
 end if
 ;--------------------------------------
+	mcall	68,1
 	mcall	70,fileinfo
 	mov	[fs_error],eax
 	test	eax,eax
@@ -283,6 +284,7 @@ dps 'get file'
 newline	
 end if
 ;--------------------------------------
+	mcall	68,1
 	mcall	70,fileinfo
 	mov	[fs_error],eax
 	test	eax,eax
