@@ -204,7 +204,18 @@ FASM_PROGRAMS:=\
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
 FASM_PROGRAMS_CD:=\
- drivers/atikms:DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
+# kolibrios/drivers/atikms:KOLIBRIOS/DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
+ kolibrios/media/zsea/zsea:KOLIBRIOS/MEDIA/ZSEA/ZSEA:$(REPOSITORY)/programs/media/zsea/zSea.asm \
+ kolibrios/media/zsea/plugins/cnv_bmp.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_BMP.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/bmp/cnv_bmp.asm \
+ kolibrios/media/zsea/plugins/cnv_gif.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_GIF.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/gif/cnv_gif.asm \
+ kolibrios/media/zsea/plugins/cnv_jpeg.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_JPEG.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/jpeg/cnv_jpeg.asm \
+# kolibrios/media/zsea/plugins/cnv_png.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CNV_PNG.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/png/cnv_png.asm \
+ kolibrios/media/zsea/plugins/convert.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CONVERT.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/convert/convert.asm \
+ kolibrios/media/zsea/plugins/rotate.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/ROTATE.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/rotate/rotate.asm \
+ kolibrios/media/zsea/plugins/scaling.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/SCALING.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/scaling/scaling.asm \
+ kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
+ kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
+ kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/Docs/buttons.png \
 # end of list
 
 # The list of all FASM programs which needs to be compiled without KPACKing.
@@ -439,8 +450,8 @@ mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
 # add skins to MKISOFS_EXTRA and DISTRIBUTION_EXTRA
 allskins:=$(foreach f,$(SKIN_SOURCES),$(call imagepart,$(f))=$(call binarypart,$(f)))
-MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins)
-DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins)
+MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins) $(FASM_PROGRAMS_CD)
+DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins) $(FASM_PROGRAMS_CD)
 # dependencies of MKISOFS_EXTRA; we iterate through $(MKISOFS_EXTRA),
 # substitute "=" with space, get the 2nd word and join all results
 mkisofs_extra_targets:=$(call respace,$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f)))))
