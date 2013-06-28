@@ -213,9 +213,6 @@ FASM_PROGRAMS_CD:=\
  kolibrios/media/zsea/plugins/convert.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/CONVERT.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/convert/convert.asm \
  kolibrios/media/zsea/plugins/rotate.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/ROTATE.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/rotate/rotate.asm \
  kolibrios/media/zsea/plugins/scaling.obj:KOLIBRIOS/MEDIA/ZSEA/PLUGINS/SCALING.OBJ:$(REPOSITORY)/programs/media/zsea/plugins/scaling/scaling.asm \
- kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
- kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
- kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/Docs/buttons.png \
 # end of list
 
 # The list of all FASM programs which needs to be compiled without KPACKing.
@@ -378,6 +375,9 @@ EXTRA:=\
  games/fara=games/fara \
  games/soko/soko=games/soko \
  kolibrios/media/fplay-full=media/fplay-full \
+ kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
+ kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
+ kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/Docs/buttons.png \
 #end of list
 DISTRIBUTION_EXTRA:=\
  $(EXTRA) \
@@ -450,8 +450,9 @@ mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
 # add skins to MKISOFS_EXTRA and DISTRIBUTION_EXTRA
 allskins:=$(foreach f,$(SKIN_SOURCES),$(call imagepart,$(f))=$(call binarypart,$(f)))
-MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins) $(FASM_PROGRAMS_CD)
-DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins) $(FASM_PROGRAMS_CD)
+FASM_PROGRAMS_CD_1:=$(foreach f,$(FASM_PROGRAMS_CD),$(fbinary))
+MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins) $(FASM_PROGRAMS_CD_1)
+DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins) $(FASM_PROGRAMS_CD_1)
 # dependencies of MKISOFS_EXTRA; we iterate through $(MKISOFS_EXTRA),
 # substitute "=" with space, get the 2nd word and join all results
 mkisofs_extra_targets:=$(call respace,$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f)))))
