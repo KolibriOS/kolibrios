@@ -375,6 +375,14 @@ EXTRA:=\
  games/fara=games/fara \
  games/soko/soko=games/soko \
  kolibrios/media/fplay-full=media/fplay-full \
+ kolibrios/media/zsea/zsea=kolibrios/media/zsea/zsea \
+ kolibrios/media/zsea/plugins/cnv_bmp.obj=kolibrios/media/zsea/plugins/cnv_bmp.obj \
+ kolibrios/media/zsea/plugins/cnv_gif.obj=kolibrios/media/zsea/plugins/cnv_gif.obj \
+ kolibrios/media/zsea/plugins/cnv_jpeg.obj=kolibrios/media/zsea/plugins/cnv_jpeg.obj \
+# kolibrios/media/zsea/plugins/cnv_png.obj=kolibrios/media/zsea/plugins/cnv_png.obj \
+ kolibrios/media/zsea/plugins/convert.obj=kolibrios/media/zsea/plugins/convert.obj \
+ kolibrios/media/zsea/plugins/rotate.obj=kolibrios/media/zsea/plugins/rotate.obj \
+ kolibrios/media/zsea/plugins/scaling.obj=kolibrios/media/zsea/plugins/scaling.obj \
  kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
  kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
  kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/buttons.png \
@@ -450,9 +458,8 @@ mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
 # add skins to MKISOFS_EXTRA and DISTRIBUTION_EXTRA
 allskins:=$(foreach f,$(SKIN_SOURCES),$(call imagepart,$(f))=$(call binarypart,$(f)))
-FASM_PROGRAMS_CD_1:=$(foreach f,$(FASM_PROGRAMS_CD),$(fbinary))
-MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins) $(FASM_PROGRAMS_CD_1)
-DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins) $(FASM_PROGRAMS_CD_1)
+MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(allskins)
+DISTRIBUTION_EXTRA:=$(DISTRIBUTION_EXTRA) $(allskins)
 # dependencies of MKISOFS_EXTRA; we iterate through $(MKISOFS_EXTRA),
 # substitute "=" with space, get the 2nd word and join all results
 mkisofs_extra_targets:=$(call respace,$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f)))))
