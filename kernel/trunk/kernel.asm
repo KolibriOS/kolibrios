@@ -265,12 +265,11 @@ B32:
 
 ; SAVE & CLEAR 0-0xffff
 
-        xor     esi, esi
-        mov     edi, (BOOT_VAR-OS_BASE)
-        mov     ecx, 0x10000 / 4
-        rep movsd
         mov     edi, 0x1000
-        mov     ecx, 0xf000 / 4
+        mov     ecx, 0x8000 / 4
+        rep stosd
+        mov     edi, 0xa000
+        mov     ecx, 0x6000 / 4
         rep stosd
 
         call    test_cpu
@@ -359,13 +358,13 @@ high_code:
 
 ; SAVE REAL MODE VARIABLES
         xor     eax, eax
-        mov     ax, [BOOT_VAR + BOOT_IDE_PI_16]
+        mov     ax, [BOOT_VARS + BOOT_IDE_PI_16]
         mov     [IDEContrProgrammingInterface], ax
-        mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
+        mov     ax, [BOOT_VARS + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR0_16]
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR0_16]
         mov     [IDE_BAR0_val], ax
-        
+
         cmp     ax, 0
         je      @f
         cmp     ax, 1
@@ -375,9 +374,9 @@ high_code:
         mov     [hd_address_table], eax
         mov     [hd_address_table+8], eax
 @@:
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR1_16]
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR1_16]
         mov     [IDE_BAR1_val], ax
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR2_16]
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR2_16]
         mov     [IDE_BAR2_val], ax
 
         cmp     ax, 0
@@ -389,18 +388,18 @@ high_code:
         mov     [hd_address_table+16], eax
         mov     [hd_address_table+24], eax
 @@:
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR3_16]
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR3_16]
         mov     [IDE_BAR3_val], ax
-        
+
 ; --------------- APM ---------------------
 
 ; init selectors
-        mov     ebx, [BOOT_VAR+BOOT_APM_ENTRY]        ; offset of APM entry point
-        movzx   eax, word [BOOT_VAR+BOOT_APM_CODE_32] ; real-mode segment base address of
+        mov     ebx, [BOOT_VARS+BOOT_APM_ENTRY]        ; offset of APM entry point
+        movzx   eax, word [BOOT_VARS+BOOT_APM_CODE_32] ; real-mode segment base address of
                                                                                 ; protected-mode 32-bit code segment
-        movzx   ecx, word [BOOT_VAR+BOOT_APM_CODE_16]; real-mode segment base address of
+        movzx   ecx, word [BOOT_VARS+BOOT_APM_CODE_16]; real-mode segment base address of
                                                                                 ; protected-mode 16-bit code segment
-        movzx   edx, word [BOOT_VAR+BOOT_APM_DATA_16]; real-mode segment base address of
+        movzx   edx, word [BOOT_VARS+BOOT_APM_DATA_16]; real-mode segment base address of
                                                                                 ; protected-mode 16-bit data segment
 
         shl     eax, 4
@@ -421,28 +420,28 @@ high_code:
         mov     dword[apm_entry], ebx
         mov     word [apm_entry + 4], apm_code_32 - gdts
 
-        mov     eax, [BOOT_VAR + BOOT_APM_VERSION] ; version & flags
+        mov     eax, [BOOT_VARS + BOOT_APM_VERSION] ; version & flags
         mov     [apm_vf], eax
 ; -----------------------------------------
-        mov     al, [BOOT_VAR+BOOT_DMA]            ; DMA access
+        mov     al, [BOOT_VARS+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
-        movzx   eax, byte [BOOT_VAR+BOOT_BPP]      ; bpp
+        movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
         mov     [_display.bpp], eax
         mov     [_display.vrefresh], 60
 
-        movzx   eax, word [BOOT_VAR+BOOT_X_RES]; X max
+        movzx   eax, word [BOOT_VARS+BOOT_X_RES]; X max
         mov     [_display.width], eax
         mov     [display_width_standard], eax
         dec     eax
         mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
-        movzx   eax, word [BOOT_VAR+BOOT_Y_RES]; Y max
+        movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
         mov     [display_height_standard], eax
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
-        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE] ; screen mode
+        movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE] ; screen mode
         mov     dword [SCR_MODE], eax
 ;        mov     eax, [BOOT_VAR+0x9014]             ; Vesa 1.2 bnk sw add
 ;        mov     [BANK_SWITCH], eax
@@ -451,7 +450,7 @@ high_code:
         je      @f
         cmp     [SCR_MODE], word 0x12               ; VGA 640x480
         je      @f
-        movzx   eax, word[BOOT_VAR+BOOT_PITCH]      ; for other modes
+        movzx   eax, word[BOOT_VARS+BOOT_PITCH]      ; for other modes
 @@:
         mov     [_display.pitch], eax
         mov     eax, [_display.width]
@@ -464,7 +463,7 @@ high_code:
 ;                             equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
 
-        mov     esi, BOOT_VAR+0x9080
+        mov     esi, BOOT_VARS+0x9080
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
         mov     edi, BiosDisksData
@@ -472,7 +471,7 @@ high_code:
 
 ; GRAPHICS ADDRESSES
 
-        mov     eax, [BOOT_VAR+BOOT_LFB]
+        mov     eax, [BOOT_VARS+BOOT_LFB]
         mov     [LFBAddress], eax
 
         cmp     [SCR_MODE], word 0100000000000000b
@@ -917,22 +916,8 @@ end if
 ; LOAD FIRST APPLICATION
         cli
 
-;        cmp   byte [BOOT_VAR+0x9030],1
-;        jne   no_load_vrr_m
-
-;        mov     ebp, vrr_m
-;        call    fs_execute_from_sysdir
-;
-;;        cmp   eax,2                  ; if vrr_m app found (PID=2)
-;       sub   eax,2
-;        jz    first_app_found
-;
-;no_load_vrr_m:
-
         mov     ebp, firstapp
         call    fs_execute_from_sysdir
-
-;        cmp   eax,2                  ; continue if a process has been loaded
         test    eax, eax
         jns     first_app_found
 
@@ -1066,17 +1051,17 @@ end if
 
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
-        
+
         cmp     [dma_hdd], 0
         je      .print_pio
 .print_dma:
         DEBUGF  1, "K : IDE DMA mode\n"
         jmp     .continue
-        
+
 .print_pio:
         DEBUGF  1, "K : IDE PIO mode\n"
 .continue:
-        
+
         mov     [timer_ticks_enable], 1         ; for cd driver
 
         sti
@@ -1284,10 +1269,10 @@ set_variables:
         loop    .fl60
         push    eax
 
-        mov     ax, [BOOT_VAR+BOOT_Y_RES]
+        mov     ax, [BOOT_VARS+BOOT_Y_RES]
         shr     ax, 1
         shl     eax, 16
-        mov     ax, [BOOT_VAR+BOOT_X_RES]
+        mov     ax, [BOOT_VARS+BOOT_X_RES]
         shr     ax, 1
         mov     [MOUSE_X], eax
         call    wakeup_osloop
@@ -1683,7 +1668,7 @@ endg
 
         cmp     ecx, 1
         jnz     noprmahd
-        mov     eax, [hd_address_table]  
+        mov     eax, [hd_address_table]
         mov     [hdbase], eax   ;0x1f0
         and     dword [hdid], 0x0
         mov     dword [hdpos], ecx
@@ -2174,7 +2159,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         jl      exit_for_anyone
         cmp     ecx, 4
         jg      exit_for_anyone
-        mov     [BOOT_VAR+0x9030], cl
+        mov     [BOOT_VARS+0x9030], cl
 
         mov     eax, [TASK_COUNT]
         mov     [SYS_SHUTDOWN], al
@@ -5628,7 +5613,7 @@ undefined_syscall:                      ; Undefined system call
 align 4
 system_shutdown:          ; shut down the system
 
-        cmp     byte [BOOT_VAR+0x9030], 1
+        cmp     byte [BOOT_VARS+0x9030], 1
         jne     @F
         ret
 @@:
@@ -5653,11 +5638,11 @@ if ~ defined extended_primary_loader
         rep movsb
 end if
 
-        mov     esi, BOOT_VAR    ; restore 0x0 - 0xffff
-        mov     edi, OS_BASE
-        mov     ecx, 0x10000/4
-        cld
-        rep movsd
+;        mov     esi, BOOT_VAR    ; restore 0x0 - 0xffff
+;        mov     edi, OS_BASE
+;        mov     ecx, 0x10000/4
+;        cld
+;        rep movsd
 
         call    restorefatchain
 

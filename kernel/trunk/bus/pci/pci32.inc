@@ -101,17 +101,17 @@ pci_api_drv:
 
 pci_fn_0:
 ; PCI function 0: get pci version (AH.AL)
-        movzx   eax, word [BOOT_VAR+0x9022]
+        movzx   eax, word [BOOT_VARS+0x9022]
         ret
 
 pci_fn_1:
 ; PCI function 1: get last bus in AL
-        mov     al, [BOOT_VAR+0x9021]
+        mov     al, [BOOT_VARS+0x9021]
         ret
 
 pci_fn_2:
 ; PCI function 2: get pci access mechanism
-        mov     al, [BOOT_VAR+0x9020]
+        mov     al, [BOOT_VARS+0x9020]
         ret
 
 pci_service_not_supported:
@@ -156,7 +156,7 @@ align 4
 
 pci_read_reg:
         push    ebx esi
-        cmp     byte [BOOT_VAR+0x9020], 2;what mechanism will we use?
+        cmp     byte [BOOT_VARS+0x9020], 2;what mechanism will we use?
         je      pci_read_reg_2
 
                 ; mechanism 1
@@ -287,7 +287,7 @@ align 4
 
 pci_write_reg:
         push    esi ebx
-        cmp     byte [BOOT_VAR+0x9020], 2;what mechanism will we use?
+        cmp     byte [BOOT_VARS+0x9020], 2;what mechanism will we use?
         je      pci_write_reg_2
 
                 ; mechanism 1
@@ -570,9 +570,9 @@ sys_pcibios:
         cmp     ebp, 1                  ; PCI_FUNCTION_ID
         jnz     .not_PCI_BIOS_PRESENT
         mov     edx, 'PCI '
-        mov     al, [BOOT_VAR + 0x9020]
-        mov     bx, [BOOT_VAR + 0x9022]
-        mov     cl, [BOOT_VAR + 0x9021]
+        mov     al, [BOOT_VARS + 0x9020]
+        mov     bx, [BOOT_VARS + 0x9022]
+        mov     cl, [BOOT_VARS + 0x9021]
         xor     ah, ah
         jmp     .return_abcd
 
@@ -715,7 +715,7 @@ end virtual
 .next_func:
         inc     dword [.devfn]
         mov     ah, [.bus]
-        cmp     ah, [BOOT_VAR+0x9021]
+        cmp     ah, [BOOT_VARS+0x9021]
         jbe     .loop
 .nomemory:
         leave

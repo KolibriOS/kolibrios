@@ -327,36 +327,36 @@ diff16 "end of .data segment",0,$
 
 align 16
 cur_saved_data:
-                  rb 4096
+                    rb 4096
 fpu_data:
-                  rb 512
+                    rb 512
 
-mem_block_list    rd 64*2
-mem_used_list     rd 64*2
-mem_hash_cnt      rd 64
+mem_block_list      rd 64*2
+mem_used_list       rd 64*2
+mem_hash_cnt        rd 64
 
-cpu_freq          rq 1
+cpu_freq            rq 1
 
-heap_mutex        MUTEX
-heap_size         rd 1
-heap_free         rd 1
-heap_blocks       rd 1
-free_blocks       rd 1
+heap_mutex          MUTEX
+heap_size           rd 1
+heap_free           rd 1
+heap_blocks         rd 1
+free_blocks         rd 1
 
-mem_block_mask    rd 2
-next_memblock     rd 1
-
-
-mst MEM_STATE
-
-page_start        rd 1
-page_end          rd 1
-sys_page_map      rd 1
-os_stack_seg      rd 1
+mem_block_mask      rd 2
+next_memblock       rd 1
 
 
-srv.fd            rd 1
-srv.bk            rd 1
+mst                 MEM_STATE
+
+page_start          rd 1
+page_end            rd 1
+sys_page_map        rd 1
+os_stack_seg        rd 1
+
+
+srv.fd              rd 1
+srv.bk              rd 1
 
 
 align 16
@@ -382,6 +382,7 @@ end if
 
 REDRAW_BACKGROUND   rb 4
 
+align 4
 draw_data:          rb 16*256
 BPSLine_calc_area   rd 1440
 d_width_calc_area   rd 1140
@@ -402,6 +403,7 @@ MOUSE_COLOR_MEM     rd 1
 
 BTN_DOWN:           rb 4
 
+align 4
 def_cursor          rd 1
 def_cursor_clock    rd 1
 current_cursor      rd 1
@@ -416,138 +418,142 @@ cur.bottom          rd 1
 cur.w               rd 1
 cur.h               rd 1
 
-ipc_tmp           rd 1
-ipc_pdir          rd 1
-ipc_ptab          rd 1
+ipc_tmp             rd 1
+ipc_pdir            rd 1
+ipc_ptab            rd 1
 
-proc_mem_map      rd 1
-proc_mem_pdir     rd 1
-proc_mem_tab      rd 1
+proc_mem_map        rd 1
+proc_mem_pdir       rd 1
+proc_mem_tab        rd 1
 
-tmp_task_pdir     rd 1
-tmp_task_ptab     rd 1
+tmp_task_pdir       rd 1
+tmp_task_ptab       rd 1
 
-default_io_map    rd 1
+default_io_map      rd 1
 
-LFBSize           rd 1
+LFBSize             rd 1
 
-current_slot      rd 1
+current_slot        rd 1
 
 ; status
-hd1_status                  rd 1  ; 0 - free : other - pid
-application_table_owner     rd 1  ; 0 - free : other - pid
-application_table_mutex     MUTEX
+hd1_status                      rd 1  ; 0 - free : other - pid
+application_table_owner         rd 1  ; 0 - free : other - pid
+application_table_mutex         MUTEX
 
 ; device addresses
-mididp            rd 1
-midisp            rd 1
+mididp                          rd 1
+midisp                          rd 1
 
-cdbase            rd 1
-cdid              rd 1
+cdbase                          rd 1
+cdid                            rd 1
 
-hdbase            rd 1    ; for boot 0x1f0
-hdid              rd 1
-hdpos             rd 1    ; for boot 0x1
+hdbase                          rd 1    ; for boot 0x1f0
+hdid                            rd 1
+hdpos                           rd 1    ; for boot 0x1
 label   known_part dword
-fat32part         rd 1    ; for boot 0x1
-cdpos             rd 1
+fat32part                       rd 1    ; for boot 0x1
+cdpos                           rd 1
 
 ;CPUID information
-cpu_vendor        rd 3
-cpu_sign          rd 1
-cpu_info          rd 1
-cpu_caps          rd 4
+cpu_vendor                      rd 3
+cpu_sign                        rd 1
+cpu_info                        rd 1
+cpu_caps                        rd 4
 
 
-pg_data           PG_DATA
-heap_test         rd 1
+pg_data                         PG_DATA
+heap_test                       rd 1
 
-buttontype        rd 1
-windowtypechanged rd 1
+buttontype                      rd 1
+windowtypechanged               rd 1
 
-hd_entries        rd 1     ;unused ? 0xfe10
+hd_entries                      rd 1     ;unused ? 0xfe10
 
-mouse_active          rd 1
-mouse_pause           rd 1
+mouse_active                    rd 1
+mouse_pause                     rd 1
 
-redrawmouse_unconditional rd 1
+redrawmouse_unconditional       rd 1
 
-img_background          rd 1
-mem_BACKGROUND          rd 1
-static_background_data  rd 1
+img_background                  rd 1
+mem_BACKGROUND                  rd 1
+static_background_data          rd 1
 
-BgrDrawMode             rd 1
-BgrDataWidth            rd 1
-BgrDataHeight           rd 1
+BgrDrawMode                     rd 1
+BgrDataWidth                    rd 1
+BgrDataHeight                   rd 1
 
-skin_data              rd 1
+skin_data                       rd 1
 
 cache_ide0:
-cache_ide0_pointer            rd 1
-cache_ide0_size               rd 1   ; not use
-cache_ide0_data_pointer       rd 1
-cache_ide0_system_data_size   rd 1   ; not use
-cache_ide0_appl_data_size     rd 1   ; not use
-cache_ide0_system_data        rd 1
-cache_ide0_appl_data          rd 1
-cache_ide0_system_sad_size    rd 1
-cache_ide0_appl_sad_size      rd 1
-cache_ide0_search_start       rd 1
-cache_ide0_appl_search_start  rd 1
+cache_ide0_pointer              rd 1
+cache_ide0_size                 rd 1   ; not use
+cache_ide0_data_pointer         rd 1
+cache_ide0_system_data_size     rd 1   ; not use
+cache_ide0_appl_data_size       rd 1   ; not use
+cache_ide0_system_data          rd 1
+cache_ide0_appl_data            rd 1
+cache_ide0_system_sad_size      rd 1
+cache_ide0_appl_sad_size        rd 1
+cache_ide0_search_start         rd 1
+cache_ide0_appl_search_start    rd 1
 
 cache_ide1:
-cache_ide1_pointer            rd 1
-cache_ide1_size               rd 1   ; not use
-cache_ide1_data_pointer       rd 1
-cache_ide1_system_data_size   rd 1   ; not use
-cache_ide1_appl_data_size     rd 1   ; not use
-cache_ide1_system_data        rd 1
-cache_ide1_appl_data          rd 1
-cache_ide1_system_sad_size    rd 1
-cache_ide1_appl_sad_size      rd 1
-cache_ide1_search_start       rd 1
-cache_ide1_appl_search_start  rd 1
+cache_ide1_pointer              rd 1
+cache_ide1_size                 rd 1   ; not use
+cache_ide1_data_pointer         rd 1
+cache_ide1_system_data_size     rd 1   ; not use
+cache_ide1_appl_data_size       rd 1   ; not use
+cache_ide1_system_data          rd 1
+cache_ide1_appl_data            rd 1
+cache_ide1_system_sad_size      rd 1
+cache_ide1_appl_sad_size        rd 1
+cache_ide1_search_start         rd 1
+cache_ide1_appl_search_start    rd 1
 
 cache_ide2:
-cache_ide2_pointer            rd 1
-cache_ide2_size               rd 1   ; not use
-cache_ide2_data_pointer       rd 1
-cache_ide2_system_data_size   rd 1   ; not use
-cache_ide2_appl_data_size     rd 1   ; not use
-cache_ide2_system_data        rd 1
-cache_ide2_appl_data          rd 1
-cache_ide2_system_sad_size    rd 1
-cache_ide2_appl_sad_size      rd 1
-cache_ide2_search_start       rd 1
-cache_ide2_appl_search_start  rd 1
+cache_ide2_pointer              rd 1
+cache_ide2_size                 rd 1   ; not use
+cache_ide2_data_pointer         rd 1
+cache_ide2_system_data_size     rd 1   ; not use
+cache_ide2_appl_data_size       rd 1   ; not use
+cache_ide2_system_data          rd 1
+cache_ide2_appl_data            rd 1
+cache_ide2_system_sad_size      rd 1
+cache_ide2_appl_sad_size        rd 1
+cache_ide2_search_start         rd 1
+cache_ide2_appl_search_start    rd 1
 
 cache_ide3:
-cache_ide3_pointer            rd 1
-cache_ide3_size               rd 1   ; not use
-cache_ide3_data_pointer       rd 1
-cache_ide3_system_data_size   rd 1   ; not use
-cache_ide3_appl_data_size     rd 1   ; not use
-cache_ide3_system_data        rd 1
-cache_ide3_appl_data          rd 1
-cache_ide3_system_sad_size    rd 1
-cache_ide3_appl_sad_size      rd 1
-cache_ide3_search_start       rd 1
-cache_ide3_appl_search_start  rd 1
+cache_ide3_pointer              rd 1
+cache_ide3_size                 rd 1   ; not use
+cache_ide3_data_pointer         rd 1
+cache_ide3_system_data_size     rd 1   ; not use
+cache_ide3_appl_data_size       rd 1   ; not use
+cache_ide3_system_data          rd 1
+cache_ide3_appl_data            rd 1
+cache_ide3_system_sad_size      rd 1
+cache_ide3_appl_sad_size        rd 1
+cache_ide3_search_start         rd 1
+cache_ide3_appl_search_start    rd 1
 
-debug_step_pointer rd 1
-hdd_appl_data rb 1 ; 0 = system cache, 1 - application cache
-cd_appl_data rb 1 ; 0 = system cache, 1 - application cache
+debug_step_pointer              rd 1
 
-lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
-pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled
-timer_ticks_enable rb 1         ; for cd driver
+lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
+pci_access_enabled              rd 1  ; 0 = disabled , 1 = enabled
 
-NumBiosDisks    rd 1
-BiosDisksData   rb 200h
-BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
-BiosDiskPartitions rd 80h
+hdd_appl_data                   rb 1  ; 0 = system cache, 1 - application cache
+cd_appl_data                    rb 1  ; 0 = system cache, 1 - application cache
+
+timer_ticks_enable              rb 1  ; for cd driver
+
+align 4
+NumBiosDisks                    rd 1
+BiosDisksData                   rb 200h
+BiosDiskCaches                  rb 80h*(cache_ide1-cache_ide0)
+BiosDiskPartitions              rd 80h
+
 align 16
-DRIVE_DATA:     rb DRIVE_DATA_SIZE
+DRIVE_DATA:                     rb DRIVE_DATA_SIZE
 
 IncludeUGlobals
 
@@ -559,16 +565,17 @@ end if
 
 org (OS_BASE+0x0100000)
 
-RAMDISK:        rb 2880*512
-RAMDISK_FAT:    rb 2856*2
-FLOPPY_FAT:     rb 2856*2
+RAMDISK:                        rb 2880*512
+RAMDISK_FAT:                    rb 2856*2
+FLOPPY_FAT:                     rb 2856*2
 
 _CLEAN_ZONE:
 
 align 4096
-_IDE_DMA        rb 16*512
-BgrAuxTable     rb 32768
-BUTTON_INFO     rb 64*1024
-RESERVED_PORTS: rb 64*1024
-BOOT_VAR:       rb 64*1024
-sys_pgmap:      rb 1024*1024/8
+_IDE_DMA                        rb 16*512
+BgrAuxTable                     rb 32768
+BUTTON_INFO                     rb 64*1024
+RESERVED_PORTS:                 rb 64*1024
+FLOPPY_BUFF:                    rb 18*512           ;one track
+
+sys_pgmap:                      rb 1024*1024/8
