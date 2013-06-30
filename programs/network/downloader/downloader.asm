@@ -359,21 +359,14 @@ read_incoming_data:
 
         DEBUGF  1, "Reading incoming data\n"
 
-        mcall   40, EVM_STACK + EVM_BUTTON
-
         mov     eax, [buf_ptr]
         mov     [pos], eax
-
   .read:
-        mcall   23, 100         ; 1 second timeout
-        cmp     eax, EV_BUTTON
-        je      exit
-  .read_dontwait:
-        mcall   recv, [socketnum], [pos], BUFFERSIZE, MSG_DONTWAIT
+        mcall   recv, [socketnum], [pos], BUFFERSIZE, 0
         inc     eax             ; -1 = error (socket closed?)
         jz      .no_more_data
         dec     eax             ; 0 bytes...
-        jz      .read           ; timeout
+        jz      .read
 
         DEBUGF  1, "Got chunk of %u bytes\n", eax
 
@@ -385,9 +378,6 @@ read_incoming_data:
         mcall   68, 20, , [buf_ptr]     ; reallocate memory block (make bigger)
         ; TODO: parse header and resize buffer only once
         pop     eax
-
-        cmp     eax, BUFFERSIZE
-        je      .read_dontwait
         jmp     .read
         
   .no_more_data:

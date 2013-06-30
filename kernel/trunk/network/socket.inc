@@ -871,6 +871,9 @@ SOCKET_receive:
         test    edi, MSG_DONTWAIT
         jnz     .return_err
 
+        test    [eax + SOCKET.state], SS_CANTRCVMORE
+        jnz     .return_err
+
 ;        test    [eax + SOCKET.options], SO_NONBLOCK
 ;        jnz     .return_err
 

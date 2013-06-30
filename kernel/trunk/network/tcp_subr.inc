@@ -190,7 +190,7 @@ TCP_close:
 ;;; TODO: update slow start threshold
 
         call    SOCKET_is_disconnected
-        call    SOCKET_free
+;;        call    SOCKET_free
 
         ret
 

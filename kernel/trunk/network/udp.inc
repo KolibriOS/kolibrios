@@ -116,7 +116,6 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 ;
 ;-----------------------------------------------------------------
 align 4
-diff16 "UDP packetgfgfgfgfs", 0, $
 UDP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: size=%u\n", ecx
