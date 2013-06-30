@@ -433,6 +433,7 @@ user_selected_name_action:
 select_disk:
 	call	check_alt
 .1:
+	call	load_root_directory
 	xor	eax,eax
 	mov	[menu_data_1.ret_key],eax
 
@@ -807,7 +808,7 @@ mouse:
 	jne	.menu_bar_2
 
 	cmp	[menu_data_1.cursor_out],dword 0
-	jne	analyse_out_menu_1
+	jne	select_disk.1	;analyse_out_menu_1
 	jmp	.menu_bar_1
 ;--------------------------------------------
 .menu_bar_2:
@@ -1188,8 +1189,16 @@ file_no_folder:
 	jmp	button.exit
 ;---------------------------------------------------------------------
 load_root_directory:
+	mov	[dirinfo.name],dword dir_path_temp
+	mov	eax,[dirinfo.return]
+	push	eax
+	mov	eax,[file_browser_data_1.folder_data]
+	push	eax
+	xor	eax,eax
+	mov	[dirinfo.return],eax
+	mov	[file_browser_data_1.folder_data],eax
 	mov	esi,root_pach
-	mov	edi,dir_path
+	mov	edi,dir_path_temp
 	call	copy_dir_name
 	call	load_directory
 	mov	eax,[N_error]
@@ -1211,7 +1220,7 @@ load_root_directory:
 	imul	esi,[temp_counter_1],304
 	add	esi,[root_folder_area]
 	add	esi,32+40
-	mov	edi,dir_path+1
+	mov	edi,dir_path_temp+1
 	mov	[edi-1],byte '/'
 	call	copy_dir_name
 	call	load_directory
@@ -1274,6 +1283,11 @@ load_root_directory:
 	mov	[menu_data_1.text_end],edi
 	xor	eax,eax
 	mov	[edi],eax
+	pop	eax
+	mov	[file_browser_data_1.folder_data],eax
+	pop	eax
+	mov	[dirinfo.return],eax
+	mov	[dirinfo.name],dword dir_path
 	ret
 ;---------------------------------------------------------------------
 memory_free_error:
@@ -2689,7 +2703,7 @@ title_2:
 ;---------------------------------------------------------------------
 align 4
 menu_data_1:
-.type:		dd 0   ;+0
+.type:		dd 1   ;+0
 .x:
 .size_x 	dw 80  ;+4
 .start_x	dw 10	;+6
@@ -3010,6 +3024,9 @@ previous_dir_path:
 	rb 4096
 ;---------------------------------------------------------------------
 dir_path:
+	rb 4096
+;---------------------------------------------------------------------
+dir_path_temp:
 	rb 4096
 ;---------------------------------------------------------------------
 text_work_area:
