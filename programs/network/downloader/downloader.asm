@@ -419,7 +419,7 @@ parse_result:
         je      .end_of_headers
         inc     edi
         dec     edx
-        jne     .next_byte
+        ja      .next_byte
         DEBUGF  1, "Uh-oh, there's no end of header!\n"
 ; no end of headers. it's an error. let client see all those headers.
         ret
@@ -834,6 +834,10 @@ pu_010:
         mov     eax, [esi + addrinfo.ai_addr]
         mov     eax, [eax + sockaddr_in.sin_addr]
         mov     [server_ip], eax
+
+; free allocated memory
+        push    esi
+        call    [freeaddrinfo]
 
         DEBUGF  1, "Resolved to %u.%u.%u.%u\n", [server_ip]:1, [server_ip + 1]:1, [server_ip + 2]:1, [server_ip + 3]:1
 
