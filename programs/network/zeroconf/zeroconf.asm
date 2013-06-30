@@ -272,12 +272,12 @@ build_request:                                          ; Creates a DHCP request
         mov     [edx+240+15], word 0x0437       ; option request list
         mov     [edx+240+17], dword 0x0f060301
 
-        cmp     [dhcpMsgType], byte 0x01        ; Check which msg we are sending
+        cmp     [dhcpMsgType], 0x01             ; Check which msg we are sending
         jne     request_options
 
         mov     [edx+240+21], byte 0xff         ; end of options marker
 
-        mov     [dhcpMsgLen], 262       ; length
+        mov     [dhcpMsgLen], 262               ; length
         jmp     send_dhcpmsg
 
 request_options:
@@ -287,17 +287,20 @@ request_options:
 
         mov     [edx+240+27], byte 0xff         ; end of options marker
 
-        mov     [dhcpMsgLen], 268       ; length
+        mov     [dhcpMsgLen], 268               ; length
 
 send_dhcpmsg:
         DEBUGF  1,"Sending DHCP discover/request\n"
         mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]     ; write to socket ( send broadcast request )
+  .wait:
         mcall   23, TIMEOUT*100                                 ; wait for data
 
 read_data:                                                      ; we have data - this will be the response
         mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, MSG_DONTWAIT     ; read data from socket
         cmp     eax, -1
         jne     @f
+        cmp     ebx, 6  ; EWOULDBLOCK
+        je      send_dhcpmsg.wait
         DEBUGF  1,"No answer from DHCP server\n"
         dec     [tries]
         jnz     send_dhcpmsg                    ; try again
@@ -329,7 +332,7 @@ read_data:                                                      ; we have data -
 discover:
         call    parse_response
 
-        cmp     [dhcpMsgType], 0x02             ; Was the response an offer?
+        cmp     [dhcpMsgType2], 0x02            ; Was the response an offer?
         je      send_request
 
         call    dhcp_end
@@ -343,7 +346,7 @@ send_request:
 request:
         call    parse_response
 
-        cmp     [dhcpMsgType], 0x05             ; Was the response an ACK? It should be
+        cmp     [dhcpMsgType2], 0x05            ; Was the response an ACK? It should be
         jne     read_data                       ; NO - read next packets
 
         DEBUGF  2, "Setting IP using DHCP\n"
@@ -385,6 +388,7 @@ parse_response:
 
         DEBUGF  1,"Data received, parsing response\n"
         mov     edx, [dhcpMsg]
+        mov     [dhcpMsgType2], 0
 
         push    dword [edx+16]
         pop     [dhcp.ip]
@@ -441,7 +445,7 @@ parse_response:
 
   .msgtype:
         mov     al, [edx]
-        mov     [dhcpMsgType], al
+        mov     [dhcpMsgType2], al
 
         DEBUGF  1,"DHCP Msg type: %u\n", al
         jmp     .next_option                    ; Get next option
@@ -558,6 +562,7 @@ link_local:
 error:
         DEBUGF  2,"Socket error\n"
 exit:   ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
+        DEBUGF  2,"Exiting\n"
         mcall   -1
 
 
@@ -620,7 +625,8 @@ device          db 1
 inibuf          rb 16
 tries           db ?
 
-dhcpMsgType     db ?
+dhcpMsgType     db ?    ; sent
+dhcpMsgType2    db ?    ; received
 dhcpLease       dd ?
 dhcpServerIP    dd ?
 
