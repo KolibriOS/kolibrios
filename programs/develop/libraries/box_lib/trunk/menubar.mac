@@ -245,7 +245,6 @@ m_get_mouse_flag	equ [edi+116]
 	call	.draw_1
 	jmp	.exit_menu_1
 @@:
-
 	cmp	dword m_get_mouse_flag,1
 	mov	m_get_mouse_flag,dword 0
 	je	@f
@@ -254,6 +253,15 @@ m_get_mouse_flag	equ [edi+116]
 	cmp	eax,m_mouse_keys_old
 	je	.exit_menu_1
 @@:
+	cmp	dword m_type,1
+	jne	.start_loop
+
+	xor	eax,eax
+	inc	eax
+	mov	m_cursor_out,eax
+	mov	m_click,eax
+	menu_bar_exit
+
 .start_loop:
 	mov	m_select,dword 1
 	call	.draw_1
