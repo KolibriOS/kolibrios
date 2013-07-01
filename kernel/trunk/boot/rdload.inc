@@ -77,7 +77,7 @@ align 4
 read_image_fsinfo:
         dd      0               ; function: read
         dq      0               ; offset: zero
-        dd      1474560/512     ; size
+        dd      1474560         ; size
         dd      RAMDISK         ; buffer
         db      '/hd'
 .name_digit db  '0'
