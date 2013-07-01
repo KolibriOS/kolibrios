@@ -100,6 +100,7 @@ iglobal
   szUSBClosePipe      db 'USBClosePipe',0
   szUSBNormalTransferAsync db 'USBNormalTransferAsync',0
   szUSBControlTransferAsync db 'USBControlTransferAsync',0
+  szUSBGetParam       db 'USBGetParam',0
 
   szNetRegDev         db 'NetRegDev',0
   szNetUnRegDev       db 'NetUnRegDev',0
@@ -196,6 +197,7 @@ kernel_export:
   dd szUSBClosePipe    , usb_close_pipe
   dd szUSBNormalTransferAsync, usb_normal_transfer_async
   dd szUSBControlTransferAsync, usb_control_async
+  dd szUSBGetParam     , usb_get_param
 
   dd szNetRegDev       , NET_add_device
   dd szNetUnRegDev     , NET_remove_device
