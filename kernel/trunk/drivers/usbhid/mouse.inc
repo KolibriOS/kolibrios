@@ -25,6 +25,7 @@ buttons         dd      ?       ; buttons that are currently pressed
 dx              dd      ?       ; current x moving
 dy              dd      ?       ; current y moving
 wheel           dd      ?       ; current wheel moving
+hwheel          dd      ?
 ends
 
 ; This procedure is called when HID layer detects a new mouse.
@@ -56,6 +57,7 @@ proc mouse_driver_begin_packet
         mov     [edi+mouse_device_data.dx], 0
         mov     [edi+mouse_device_data.dy], 0
         mov     [edi+mouse_device_data.wheel], 0
+        mov     [edi+mouse_device_data.hwheel], 0
         ret
 endp
 
@@ -83,6 +85,8 @@ proc mouse_driver_input_field
         jz      .y
         cmp     ecx, USAGE_GD_WHEEL
         jz      .wheel
+        cmp     ecx, 0xC0238
+        jz      .hwheel
         sub     ecx, USAGE_BUTTON_PAGE + 1
         jb      .unclaimed
         cmp     ecx, 32
@@ -129,6 +133,11 @@ end if
         neg     edx
         mov     [edi+mouse_device_data.wheel], edx
         ret
+.hwheel:
+        test    byte [esi+report_field_group.flags], HID_FIELD_RELATIVE
+        jz      .unclaimed
+        mov     [edi+mouse_device_data.hwheel], edx
+        ret
 endp
 
 ; This procedure is called when HID layer ends processing a new input packet
@@ -141,6 +150,6 @@ proc mouse_driver_end_packet
                 [edi+mouse_device_data.dx], \
                 [edi+mouse_device_data.dy], \
                 [edi+mouse_device_data.wheel], \
-                0
+                [edi+mouse_device_data.hwheel]
         ret
 endp
