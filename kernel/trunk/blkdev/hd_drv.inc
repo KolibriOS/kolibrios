@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -13,39 +13,93 @@ $Revision$
 ; Access through BIOS by diamond
 ; LBA48 support by Mario79
 ;-----------------------------------------------------------------------------
+struct HD_DATA
+hdbase  dd      ?
+hdid    dd      ?
+hdpos   dd      ?
+ends
+
+iglobal
 align 4
-hd_read:
-;-----------------------------------------------------------
-; input  : eax = block to read
-;          ebx = destination
-;-----------------------------------------------------------
+ide_callbacks:
+        dd      ide_callbacks.end - ide_callbacks       ; strucsize
+        dd      0       ; no close function
+        dd      0       ; no closemedia function
+        dd      ide_querymedia
+        dd      ide_read
+        dd      ide_write
+        dd      0       ; no flush function
+        dd      0       ; use default cache size
+.end:
+
+bd_callbacks:
+        dd      bd_callbacks.end - bd_callbacks         ; strucsize
+        dd      0       ; no close function
+        dd      0       ; no closemedia function
+        dd      bd_querymedia
+        dd      bd_read_interface
+        dd      bd_write_interface
+        dd      0       ; no flush function
+        dd      0       ; use default cache size
+.end:
+
+hd0_data        HD_DATA         ?,    0, 1
+hd1_data        HD_DATA         ?, 0x10, 2
+hd2_data        HD_DATA         ?,    0, 3
+hd3_data        HD_DATA         ?, 0x10, 4
+endg
+
+uglobal
+ide_mutex               MUTEX
+ide_channel1_mutex      MUTEX
+ide_channel2_mutex      MUTEX
+endg
+
+proc ide_read stdcall uses edi, \
+        hd_data, buffer, startsector:qword, numsectors
+        ; hd_data = pointer to hd*_data
+        ; buffer = pointer to buffer for data
+        ; startsector = 64-bit start sector
+        ; numsectors = pointer to number of sectors on input,
+        ;  must be filled with number of sectors really read
+locals
+sectors_todo    dd      ?
+channel_lock    dd      ?
+endl
+; 1. Initialize number of sectors: get number of requested sectors
+; and say that no sectors were read yet.
+        mov     ecx, [numsectors]
+        mov     eax, [ecx]
+        mov     dword [ecx], 0
+        mov     [sectors_todo], eax
+; 2. Acquire the global lock.
+        mov     ecx, ide_mutex
+        call    mutex_lock
+        mov     ecx, ide_channel2_mutex
+        mov     eax, [hd_data]
+        cmp     [eax+HD_DATA.hdbase], 0x1F0
+        jne     .IDE_Channel_2
+        mov     ecx, ide_channel1_mutex
+.IDE_Channel_2:
+        mov     [channel_lock], ecx
+        call    mutex_lock
+; 3. Convert parameters to the form suitable for worker procedures.
+; Underlying procedures do not know about 64-bit sectors.
+; Worker procedures use global variables and edi for [buffer].
+        cmp     dword [startsector+4], 0
+        jnz     .fail
         and     [hd_error], 0
-        push    ecx esi edi     ; scan cache
-
-        call    calculate_cache
-        add     esi, 8
-
-        mov     edi, 1
-
-hdreadcache:
-        cmp     dword [esi+4], 0 ; empty
-        je      nohdcache
-
-        cmp     [esi], eax      ; correct sector
-        je      yeshdcache
-
-nohdcache:
-        add     esi, 8
-        inc     edi
-        dec     ecx
-        jnz     hdreadcache
-
-        call    find_empty_slot ; ret in edi
-        cmp     [hd_error], 0
-        jne     return_01
-; Read through BIOS?
-        cmp     [hdpos], 0x80
-        jae     .bios
+        mov     ecx, [hd_data]
+        mov     eax, [ecx+HD_DATA.hdbase]
+        mov     [hdbase], eax
+        mov     eax, [ecx+HD_DATA.hdid]
+        mov     [hdid], eax
+        mov     eax, [ecx+HD_DATA.hdpos]
+        mov     [hdpos], eax
+        mov     eax, dword [startsector]
+        mov     edi, [buffer]
+; 4. Worker procedures take one sectors per time, so loop over all sectors to read.
+.sectors_loop:
 ; DMA read is permitted if [allow_dma_access]=1 or 2
         cmp     [allow_dma_access], 2
         ja      .nodma
@@ -55,38 +109,273 @@ nohdcache:
         jmp     @f
 .nodma:
         call    hd_read_pio
-        jmp     @f
-.bios:
-        call    bd_read
 @@:
         cmp     [hd_error], 0
-        jne     return_01
-
-        call    calculate_cache_1
-        lea     esi, [edi*8+esi]
-
-        mov     [esi], eax      ; sector number
-        mov     dword [esi+4], 1 ; hd read - mark as same as in hd
-
-yeshdcache:
-        mov     esi, edi
-        shl     esi, 9
-
-        push    eax
-        call    calculate_cache_2
-        add     esi, eax
-        pop     eax
-
-        mov     edi, ebx
-        mov     ecx, 512/4
-        cld
-        rep movsd               ; move data
-
-return_01:
-        pop     edi esi ecx
+        jnz     .fail
+        mov     ecx, [numsectors]
+        inc     dword [ecx]     ; one more sector is read
+        dec     [sectors_todo]
+        jz      .done
+        inc     eax
+        jnz     .sectors_loop
+; 5. Loop is done, either due to error or because everything is done.
+; Release the global lock and return the corresponding status.
+.fail:
+        mov     ecx, [channel_lock]
+        call    mutex_unlock
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        or      eax, -1
         ret
+.done:
+        mov     ecx, [channel_lock]
+        call    mutex_unlock
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        xor     eax, eax
+        ret
+endp
+
+proc ide_write stdcall uses esi edi, \
+        hd_data, buffer, startsector:qword, numsectors
+        ; hd_data = pointer to hd*_data
+        ; buffer = pointer to buffer with data
+        ; startsector = 64-bit start sector
+        ; numsectors = pointer to number of sectors on input,
+        ;  must be filled with number of sectors really written
+locals
+sectors_todo    dd      ?
+channel_lock    dd      ?
+endl
+; 1. Initialize number of sectors: get number of requested sectors
+; and say that no sectors were read yet.      
+        mov     ecx, [numsectors]
+        mov     eax, [ecx]
+        mov     dword [ecx], 0
+        mov     [sectors_todo], eax
+; 2. Acquire the global lock.
+        mov     ecx, ide_mutex
+        call    mutex_lock
+        mov     ecx, ide_channel2_mutex
+        mov     eax, [hd_data]
+        cmp     [eax+HD_DATA.hdbase], 0x1F0
+        jne     .IDE_Channel_2
+        mov     ecx, ide_channel1_mutex
+.IDE_Channel_2:
+        mov     [channel_lock], ecx
+        call    mutex_lock
+; 3. Convert parameters to the form suitable for worker procedures.
+; Underlying procedures do not know about 64-bit sectors.
+; Worker procedures use global variables and esi for [buffer].
+        cmp     dword [startsector+4], 0
+        jnz     .fail
+        and     [hd_error], 0
+        mov     ecx, [hd_data]
+        mov     eax, [ecx+HD_DATA.hdbase]
+        mov     [hdbase], eax
+        mov     eax, [ecx+HD_DATA.hdid]
+        mov     [hdid], eax
+        mov     eax, [ecx+HD_DATA.hdpos]
+        mov     [hdpos], eax
+        mov     esi, [buffer]
+        lea     edi, [startsector]
+        mov     [cache_chain_ptr], edi
+; 4. Worker procedures take max 16 sectors per time,
+; loop until all sectors will be processed.
+.sectors_loop:
+        mov     ecx, 16
+        cmp     ecx, [sectors_todo]
+        jbe     @f
+        mov     ecx, [sectors_todo]
+@@:
+        mov     [cache_chain_size], cl
+; DMA write is permitted only if [allow_dma_access]=1
+        cmp     [allow_dma_access], 2
+        jae     .nodma
+        cmp     [dma_hdd], 1
+        jnz     .nodma
+        call    cache_write_dma
+        jmp     .common
+.nodma:
+        mov     [cache_chain_size], 1
+        call    cache_write_pio
+.common:
+        cmp     [hd_error], 0
+        jnz     .fail
+        movzx   ecx, [cache_chain_size]
+        mov     eax, [numsectors]
+        add     [eax], ecx
+        sub     [sectors_todo], ecx
+        jz      .done
+        add     [edi], ecx
+        jc      .fail
+        shl     ecx, 9
+        add     esi, ecx
+        jmp     .sectors_loop
+; 5. Loop is done, either due to error or because everything is done.
+; Release the global lock and return the corresponding status.
+.fail:
+        mov     ecx, [channel_lock]
+        call    mutex_unlock
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        or      eax, -1
+        ret
+.done:
+        mov     ecx, [channel_lock]
+        call    mutex_unlock
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        xor     eax, eax
+        ret
+endp
+
+; This is a stub.
+proc ide_querymedia stdcall, hd_data, mediainfo
+        mov     eax, [mediainfo]
+        mov     [eax+DISKMEDIAINFO.Flags], 0
+        mov     [eax+DISKMEDIAINFO.SectorSize], 512
+        or      dword [eax+DISKMEDIAINFO.Capacity], 0xFFFFFFFF
+        or      dword [eax+DISKMEDIAINFO.Capacity+4], 0xFFFFFFFF
+        xor     eax, eax
+        ret
+endp
+
+proc bd_read_interface stdcall uses edi, \
+        userdata, buffer, startsector:qword, numsectors
+        ; userdata = old [hdpos] = 80h + index in NumBiosDisks
+        ; buffer = pointer to buffer for data
+        ; startsector = 64-bit start sector
+        ; numsectors = pointer to number of sectors on input,
+        ;  must be filled with number of sectors really read
+locals
+sectors_todo    dd      ?
+endl
+; 1. Initialize number of sectors: get number of requested sectors
+; and say that no sectors were read yet.
+        mov     ecx, [numsectors]
+        mov     eax, [ecx]
+        mov     dword [ecx], 0
+        mov     [sectors_todo], eax
+; 2. Acquire the global lock.
+        mov     ecx, ide_mutex
+        call    mutex_lock
+; 3. Convert parameters to the form suitable for worker procedures.
+; Underlying procedures do not know about 64-bit sectors.
+; Worker procedures use global variables and edi for [buffer].
+        cmp     dword [startsector+4], 0
+        jnz     .fail
+        and     [hd_error], 0
+        mov     eax, [userdata]
+        mov     [hdpos], eax
+        mov     eax, dword [startsector]
+        mov     edi, [buffer]
+; 4. Worker procedures take one sectors per time, so loop over all sectors to read.
+.sectors_loop:
+        call    bd_read
+        cmp     [hd_error], 0
+        jnz     .fail
+        mov     ecx, [numsectors]
+        inc     dword [ecx]     ; one more sector is read
+        dec     [sectors_todo]
+        jz      .done
+        inc     eax
+        jnz     .sectors_loop
+; 5. Loop is done, either due to error or because everything is done.
+; Release the global lock and return the corresponding status.
+.fail:
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        or      eax, -1
+        ret
+.done:
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        xor     eax, eax
+        ret
+endp
+
+proc bd_write_interface stdcall uses esi edi, \
+        userdata, buffer, startsector:qword, numsectors
+        ; userdata = old [hdpos] = 80h + index in NumBiosDisks
+        ; buffer = pointer to buffer with data
+        ; startsector = 64-bit start sector
+        ; numsectors = pointer to number of sectors on input,
+        ;  must be filled with number of sectors really written
+locals
+sectors_todo    dd      ?
+endl
+; 1. Initialize number of sectors: get number of requested sectors
+; and say that no sectors were read yet.      
+        mov     ecx, [numsectors]
+        mov     eax, [ecx]
+        mov     dword [ecx], 0
+        mov     [sectors_todo], eax
+; 2. Acquire the global lock.
+        mov     ecx, ide_mutex
+        call    mutex_lock
+; 3. Convert parameters to the form suitable for worker procedures.
+; Underlying procedures do not know about 64-bit sectors.
+; Worker procedures use global variables and esi for [buffer].
+        cmp     dword [startsector+4], 0
+        jnz     .fail
+        and     [hd_error], 0
+        mov     eax, [userdata]
+        mov     [hdpos], eax
+        mov     esi, [buffer]
+        lea     edi, [startsector]
+        mov     [cache_chain_ptr], edi
+; 4. Worker procedures take max 16 sectors per time,
+; loop until all sectors will be processed.
+.sectors_loop:
+        mov     ecx, 16
+        cmp     ecx, [sectors_todo]
+        jbe     @f
+        mov     ecx, [sectors_todo]
+@@:
+        mov     [cache_chain_size], cl
+        call    bd_write_cache_chain
+        cmp     [hd_error], 0
+        jnz     .fail
+        movzx   ecx, [cache_chain_size]
+        mov     eax, [numsectors]
+        add     [eax], ecx
+        sub     [sectors_todo], ecx
+        jz      .done
+        add     [edi], ecx
+        jc      .fail
+        shl     ecx, 9
+        add     esi, ecx
+        jmp     .sectors_loop
+; 5. Loop is done, either due to error or because everything is done.
+; Release the global lock and return the corresponding status.
+.fail:
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        or      eax, -1
+        ret
+.done:
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        xor     eax, eax
+        ret
+endp
+
+; This is a stub.
+proc bd_querymedia stdcall, hd_data, mediainfo
+        mov     eax, [mediainfo]
+        mov     [eax+DISKMEDIAINFO.Flags], 0
+        mov     [eax+DISKMEDIAINFO.SectorSize], 512
+        or      dword [eax+DISKMEDIAINFO.Capacity], 0xFFFFFFFF
+        or      dword [eax+DISKMEDIAINFO.Capacity+4], 0xFFFFFFFF
+        xor     eax, eax
+        ret
+endp
+
 ;-----------------------------------------------------------------------------
 align 4
+; input: eax = sector, edi -> buffer
+; output: edi = edi + 512
 hd_read_pio:
         push    eax edx
 
@@ -184,80 +473,18 @@ hd_read_pio:
 
         pushfd
         cli
-        push    edi
-        shl     edi, 9
-
-        push    eax
-        call    calculate_cache_2
-        add     edi, eax
-        pop     eax
 
         mov     ecx, 256
         mov     edx, [hdbase]
         cld
         rep insw
-        pop     edi
         popfd
 
         pop     edx eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
-hd_write:
-;-----------------------------------------------------------
-; input  : eax = block
-;          ebx = pointer to memory
-;-----------------------------------------------------------
-        push    ecx esi edi
-
-; check if the cache already has the sector and overwrite it
-        call    calculate_cache
-        add     esi, 8
-        mov     edi, 1
-
-hdwritecache:
-        cmp     dword [esi+4], 0 ; if cache slot is empty
-        je      not_in_cache_write
-
-        cmp     [esi], eax      ; if the slot has the sector
-        je      yes_in_cache_write
-
-not_in_cache_write:
-        add     esi, 8
-        inc     edi
-        dec     ecx
-        jnz     hdwritecache
-
-; sector not found in cache
-; write the block to a new location
-        call    find_empty_slot ; ret in edi
-        cmp     [hd_error], 0
-        jne     hd_write_access_denied
-
-        call    calculate_cache_1
-        lea     esi, [edi*8+esi]
-        mov     [esi], eax      ; sector number
-
-yes_in_cache_write:
-        mov     dword [esi+4], 2 ; write - differs from hd
-
-        shl     edi, 9
-
-        push    eax
-        call    calculate_cache_2
-        add     edi, eax
-        pop     eax
-
-        mov     esi, ebx
-        mov     ecx, 512/4
-        cld
-        rep movsd               ; move data
-
-hd_write_access_denied:
-        pop     edi esi ecx
-        ret
-;-----------------------------------------------------------------------------
-align 4
+; edi -> sector, esi -> data
 cache_write_pio:
 ; Select the desired drive
         mov     edx, [hdbase]
@@ -271,7 +498,7 @@ cache_write_pio:
         jne     hd_write_error
 
 ; ATA with 28 or 48 bit for sector number?
-        mov     eax, [esi]
+        mov     eax, [edi]
         cmp     eax, 0x10000000
         jae     .lba48
 ;--------------------------------------
@@ -286,7 +513,7 @@ cache_write_pio:
         inc     eax
         out     dx, al ; ATA Sector Counter счётчик секторов
         inc     edx
-        mov     eax, [esi]      ; eax = sector to write
+        mov     eax, [edi]      ; eax = sector to write
         out     dx, al ; LBA Low LBA (7:0)
         shr     eax, 8
         inc     edx
@@ -319,7 +546,7 @@ cache_write_pio:
         inc     eax
         out     dx, al ; Sector Count Current Sector count (7:0)
         inc     edx
-        mov     eax, [esi]
+        mov     eax, [edi]
         rol     eax, 8
         out     dx, al ; LBA Low Previous LBA (31:24)
         xor     eax, eax ; because only 32 bit cache
@@ -328,7 +555,7 @@ cache_write_pio:
         inc     edx
         out     dx, al ; LBA High Previous LBA (47:40)
         sub     edx, 2
-        mov     eax, [esi]
+        mov     eax, [edi]
         out     dx, al ; LBA Low Current LBA (7:0)
         shr     eax, 8
         inc     edx
@@ -355,14 +582,6 @@ cache_write_pio:
 
         pushfd
         cli
-        mov     esi, edi
-        shl     esi, 9
-
-        push    eax
-        call    calculate_cache_2
-        add     esi, eax
-        pop     eax
-
         mov     ecx, 256
         mov     edx, [hdbase]
         cld
@@ -605,19 +824,13 @@ hd_read_dma:
         sub     eax, [dma_cur_sector]
         shl     eax, 9
         add     eax, (OS_BASE+IDE_DMA)
-        push    ecx esi edi
+        push    ecx esi
         mov     esi, eax
-        shl     edi, 9
-
-        push    eax
-        call    calculate_cache_2
-        add     edi, eax
-        pop     eax
 
         mov     ecx, 512/4
         cld
         rep movsd
-        pop     edi esi ecx
+        pop     esi ecx
         pop     edx
         pop     eax
         ret
@@ -766,24 +979,12 @@ hd_read_dma:
         mov     [dma_cur_sector], eax
         jmp     hd_read_dma
 ;-----------------------------------------------------------------------------
-align 4
-write_cache_sector:
-        mov     [cache_chain_size], 1
-        mov     [cache_chain_pos], edi
-;--------------------------------------
-align 4
-write_cache_chain:
-        cmp     [hdpos], 0x80
-        jae     bd_write_cache_chain
+cache_write_dma:
         mov     eax, [cache_chain_ptr]
         push    esi
         mov     eax, IDE_descriptor_table
         mov     edx, eax
         pusha
-        mov     esi, [cache_chain_pos]
-        shl     esi, 9
-        call    calculate_cache_2
-        add     esi, eax
         mov     edi, (OS_BASE+IDE_DMA)
         mov     dword [edx], IDE_DMA
         movzx   ecx, [cache_chain_size]
@@ -965,19 +1166,12 @@ bd_read:
         sub     eax, [bios_cur_sector]
         shl     eax, 9
         add     eax, (OS_BASE+0x9A000)
-        push    ecx esi edi
+        push    ecx esi
         mov     esi, eax
-        shl     edi, 9
-
-        push    eax
-        call    calculate_cache_2
-        add     edi, eax
-        pop     eax
-
         mov     ecx, 512/4
         cld
         rep movsd
-        pop     edi esi ecx
+        pop     esi ecx
         pop     edx
         pop     eax
         ret
@@ -1006,10 +1200,6 @@ bd_read:
 align 4
 bd_write_cache_chain:
         pusha
-        mov     esi, [cache_chain_pos]
-        shl     esi, 9
-        call    calculate_cache_2
-        add     esi, eax
         mov     edi, OS_BASE + 0x9A000
         movzx   ecx, [cache_chain_size]
         push    ecx
@@ -1041,7 +1231,7 @@ align 4
 int13_call:
 ; Because this code uses fixed addresses,
 ; it can not be run simultaniously by many threads.
-; In current implementation it is protected by common mutex 'hd1_status'
+; In current implementation it is protected by common mutex 'ide_status'
         mov     word [OS_BASE + 510h], 10h             ; packet length
         mov     word [OS_BASE + 512h], cx              ; number of sectors
         mov     dword [OS_BASE + 514h], 9A000000h      ; buffer 9A00:0000
@@ -1088,82 +1278,3 @@ int13_call:
 @@:
         ret
 ; \end{diamond}
-;-----------------------------------------------------------------------------
-align 4
-reserve_hd1:
-        cli
-        cmp     [hd1_status], 0
-        je      reserve_ok1
-
-        sti
-        call    change_task
-        jmp     reserve_hd1
-
-reserve_ok1:
-        push    eax
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 5
-        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
-        mov     [hd1_status], eax
-        pop     eax
-        sti
-        ret
-;-----------------------------------------------------------------------------
-uglobal
-hd_in_cache db ?
-endg
-;-----------------------------------------------------------------------------
-align 4
-reserve_hd_channel:
-; BIOS disk accesses are protected with common mutex hd1_status
-; This must be modified when hd1_status will not be valid!
-        cmp     [hdpos], 0x80
-        jae     .ret
-        cmp     [hdbase], 0x1F0
-        jne     .IDE_Channel_2
-.IDE_Channel_1:
-        cli
-        cmp     [IDE_Channel_1], 0
-        je      .reserve_ok_1
-        sti
-        call    change_task
-        jmp     .IDE_Channel_1
-.IDE_Channel_2:
-        cli
-        cmp     [IDE_Channel_2], 0
-        je      .reserve_ok_2
-        sti
-        call    change_task
-        jmp     .IDE_Channel_2
-.reserve_ok_1:
-        mov     [IDE_Channel_1], 1
-        push    eax
-        mov     al, 1
-        jmp     @f
-.reserve_ok_2:
-        mov     [IDE_Channel_2], 1
-        push    eax
-        mov     al, 3
-@@:
-        cmp     [hdid], 1
-        sbb     al, -1
-        mov     [hd_in_cache], al
-        pop     eax
-        sti
-.ret:
-        ret
-;-----------------------------------------------------------------------------
-free_hd_channel:
-; see comment at reserve_hd_channel
-        cmp     [hdpos], 0x80
-        jae     .ret
-        cmp     [hdbase], 0x1F0
-        jne     .IDE_Channel_2
-.IDE_Channel_1:
-        mov     [IDE_Channel_1], 0
-.ret:
-        ret
-.IDE_Channel_2:
-        mov     [IDE_Channel_2], 0
-        ret
-;-----------------------------------------------------------------------------

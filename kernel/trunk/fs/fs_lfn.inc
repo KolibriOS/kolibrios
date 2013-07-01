@@ -42,18 +42,6 @@ rootdirs:
         db      10,'floppydisk'
         dd      fs_OnFloppy
         dd      fs_NextFloppy
-        db      3,'hd0'
-        dd      fs_OnHd0
-        dd      fs_NextHd0
-        db      3,'hd1'
-        dd      fs_OnHd1
-        dd      fs_NextHd1
-        db      3,'hd2'
-        dd      fs_OnHd2
-        dd      fs_NextHd2
-        db      3,'hd3'
-        dd      fs_OnHd3
-        dd      fs_NextHd3
 ;**********************************************
         db      3,'cd0'
         dd      fs_OnCd0
@@ -76,14 +64,6 @@ virtual_root_query:
         db      'rd',0
         dd      fs_HasFloppy
         db      'fd',0
-        dd      fs_HasHd0
-        db      'hd0',0
-        dd      fs_HasHd1
-        db      'hd1',0
-        dd      fs_HasHd2
-        db      'hd2',0
-        dd      fs_HasHd3
-        db      'hd3',0
 ;**********************************************
         dd      fs_HasCd0
         db      'cd0',0
@@ -97,7 +77,6 @@ virtual_root_query:
         dd      0
 
 fs_additional_handlers:
-        dd      biosdisk_handler, biosdisk_enum_root
         dd      dyndisk_handler, dyndisk_enum_root
 ; add new handlers here
         dd      0
@@ -523,84 +502,6 @@ fs_FloppyServices:
         dd      fs_FloppyCreateFolder
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
-fs_OnHd0:
-        call    reserve_hd1
-        mov     eax, [hd_address_table]
-        mov     [hdbase], eax   ;0x1F0
-        mov     [hdid], 0
-        push    1
-        jmp     fs_OnHd
-fs_OnHd1:
-        call    reserve_hd1
-        mov     eax, [hd_address_table]
-        mov     [hdbase], eax   ;0x1F0
-        mov     [hdid], 0x10
-        push    2
-        jmp     fs_OnHd
-fs_OnHd2:
-        call    reserve_hd1
-        mov     eax, [hd_address_table+16]
-        mov     [hdbase], eax   ;0x170
-        mov     [hdid], 0
-        push    3
-        jmp     fs_OnHd
-fs_OnHd3:
-        call    reserve_hd1
-        mov     eax, [hd_address_table+16]
-        mov     [hdbase], eax   ;0x170
-        mov     [hdid], 0x10
-        push    4
-fs_OnHd:
-        call    reserve_hd_channel
-        pop     eax
-        mov     [hdpos], eax
-        cmp     ecx, 0x100
-        jae     fs_OnHdAndBd.nf
-        cmp     cl, [DRIVE_DATA+1+eax]
-fs_OnHdAndBd:
-        jbe     @f
-.nf:
-        call    free_hd_channel
-        and     [hd1_status], 0
-        mov     dword [image_of_eax], 5       ; not found
-        ret
-@@:
-        mov     [known_part], ecx ;     mov     [fat32part], ecx
-        push    ebx esi
-        call    choice_necessity_partition_1
-        pop     esi ebx
-        mov     ecx, [ebx+12]
-        mov     edx, [ebx+16]
-    ;    add     edx, std_application_base_address
-        mov     eax, [ebx]
-        cmp     eax, fs_NumHdServices
-        jae     .not_impl
-        add     ebx, 4
-        call    dword [fs_HdServices + eax*4]
-        call    free_hd_channel
-        and     [hd1_status], 0
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-.not_impl:
-        call    free_hd_channel
-        and     [hd1_status], 0
-        mov     dword [image_of_eax], 2       ; not implemented
-        ret
-
-fs_HdServices:
-        dd      fs_HdRead
-        dd      fs_HdReadFolder
-        dd      fs_HdRewrite
-        dd      fs_HdWrite
-        dd      fs_HdSetFileEnd
-        dd      fs_HdGetFileInfo
-        dd      fs_HdSetFileInfo
-        dd      0
-        dd      fs_HdDelete
-        dd      fs_HdCreateFolder
-fs_NumHdServices = ($ - fs_HdServices)/4
-
 ;*******************************************************
 fs_OnCd0:
         call    reserve_cd
@@ -691,22 +592,6 @@ fs_HasFloppy:
         cmp     byte [DRIVE_DATA], 0
         setnz   al
         ret
-fs_HasHd0:
-        test    byte [DRIVE_DATA+1], 01000000b
-        setnz   al
-        ret
-fs_HasHd1:
-        test    byte [DRIVE_DATA+1], 00010000b
-        setnz   al
-        ret
-fs_HasHd2:
-        test    byte [DRIVE_DATA+1], 00000100b
-        setnz   al
-        ret
-fs_HasHd3:
-        test    byte [DRIVE_DATA+1], 00000001b
-        setnz   al
-        ret
 
 ;*******************************************************
 fs_HasCd0:
@@ -762,27 +647,6 @@ fs_NextFloppy:
         stc
         ret
 
-; on hdx, we have partitions from 1 to [0x40002+x]
-fs_NextHd0:
-        push    0
-        jmp     fs_NextHd
-fs_NextHd1:
-        push    1
-        jmp     fs_NextHd
-fs_NextHd2:
-        push    2
-        jmp     fs_NextHd
-fs_NextHd3:
-        push    3
-fs_NextHd:
-        pop     ecx
-        movzx   ecx, byte [DRIVE_DATA+2+ecx]
-        cmp     eax, ecx
-        jae     fs_NextFloppy.no2
-        inc     eax
-        clc
-        ret
-
 ;*******************************************************
 fs_NextCd:
 ; we always have /cdX/1
@@ -795,147 +659,6 @@ fs_NextCd:
         ret
 ;*******************************************************
 
-; Additional FS handlers.
-; This handler gets the control each time when fn 70 is called
-; with unknown item of root subdirectory.
-; in: esi -> name
-;     ebp = 0 or rest of name relative to esi
-; out: if the handler processes path, he must not return in file_system_lfn,
-;      but instead pop return address and return directly to the caller
-;      otherwise simply return
-
-; here we test for /bd<N>/... - BIOS disks
-biosdisk_handler:
-        cmp     [NumBiosDisks], 0
-        jz      .ret
-        mov     al, [esi]
-        or      al, 20h
-        cmp     al, 'b'
-        jnz     .ret
-        mov     al, [esi+1]
-        or      al, 20h
-        cmp     al, 'd'
-        jnz     .ret
-        push    esi
-        inc     esi
-        inc     esi
-        cmp     byte [esi], '0'
-        jb      .ret2
-        cmp     byte [esi], '9'
-        ja      .ret2
-        xor     edx, edx
-@@:
-        lodsb
-        test    al, al
-        jz      .ok
-        cmp     al, '/'
-        jz      .ok
-        sub     al, '0'
-        cmp     al, 9
-        ja      .ret2
-        lea     edx, [edx*5]
-        lea     edx, [edx*2+eax]
-        jmp     @b
-.ret2:
-        pop     esi
-.ret:
-        ret
-.ok:
-        cmp     al, '/'
-        jz      @f
-        dec     esi
-@@:
-        add     dl, 80h
-        xor     ecx, ecx
-@@:
-        cmp     dl, [BiosDisksData+ecx*4]
-        jz      .ok2
-        inc     ecx
-        cmp     ecx, [NumBiosDisks]
-        jb      @b
-        jmp     .ret2
-.ok2:
-        add     esp, 8
-        test    al, al
-        jnz     @f
-        mov     esi, fs_BdNext
-        jmp     file_system_lfn.maindir_noesi
-@@:
-        push    ecx
-        push    ecx
-        push    biosdisk_cleanup
-        push    fs_OnBd
-        mov     edi, esp
-        jmp     file_system_lfn.found2
-
-fs_BdNext:
-        cmp     eax, [BiosDiskPartitions+ecx*4]
-        inc     eax
-        cmc
-biosdisk_cleanup:
-        ret
-
-fs_OnBd:
-        pop     edx edx edx edx
-; edx = disk number, ecx = partition number
-; esi+ebp = name
-        call    reserve_hd1
-        add     edx, 0x80
-        mov     [hdpos], edx
-        cmp     ecx, [BiosDiskPartitions+(edx-0x80)*4]
-        jmp     fs_OnHdAndBd
-
-; This handler is called when virtual root is enumerated
-; and must return all items which can be handled by this.
-; It is called several times, first time with eax=0
-; in: eax = 0 for first call, previously returned value for subsequent calls
-; out: eax = 0 => no more items
-;      eax != 0 => buffer pointed to by edi contains name of item
-
-; here we enumerate existing BIOS disks /bd<N>
-biosdisk_enum_root:
-        cmp     eax, [NumBiosDisks]
-        jae     .end
-        push    eax
-        movzx   eax, byte [BiosDisksData+eax*4]
-        sub     al, 80h
-        push    eax
-        mov     al, 'b'
-        stosb
-        mov     al, 'd'
-        stosb
-        pop     eax
-        cmp     al, 10
-        jae     .big
-        add     al, '0'
-        stosb
-        mov     byte [edi], 0
-        pop     eax
-        inc     eax
-        ret
-.end:
-        xor     eax, eax
-        ret
-.big:
-        push    ecx edx
-        push    -'0'
-        mov     ecx, 10
-@@:
-        xor     edx, edx
-        div     ecx
-        push    edx
-        test    eax, eax
-        jnz     @b
-        xchg    eax, edx
-@@:
-        pop     eax
-        add     al, '0'
-        stosb
-        jnz     @b
-        pop     edx ecx
-        pop     eax
-        inc     eax
-        ret
 ;-----------------------------------------------------------------------------
 process_replace_file_name:
 ; in

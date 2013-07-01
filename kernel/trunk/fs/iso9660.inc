@@ -42,26 +42,18 @@ reserve_cd_channel:
         cmp     [ChannelNumber], 1
         jne     .IDE_Channel_2
 .IDE_Channel_1:
-        cli
-        cmp     [IDE_Channel_1], 0
-        je      .reserve_ok_1
-        sti
-        call    change_task
-        jmp     .IDE_Channel_1
-.IDE_Channel_2:
-        cli
-        cmp     [IDE_Channel_2], 0
-        je      .reserve_ok_2
-        sti
-        call    change_task
-        jmp     .IDE_Channel_2
-.reserve_ok_1:
+        pushad
+        mov     ecx, ide_channel1_mutex
+        call    mutex_lock
         mov     [IDE_Channel_1], 1
-        sti
+        popad
         ret
-.reserve_ok_2:
+.IDE_Channel_2:
+        pushad
+        mov     ecx, ide_channel2_mutex
+        call    mutex_lock
         mov     [IDE_Channel_2], 1
-        sti
+        popad
         ret
 
 free_cd_channel:
@@ -69,11 +61,17 @@ free_cd_channel:
         jne     .IDE_Channel_2
 .IDE_Channel_1:
         mov     [IDE_Channel_1], 0
-        sti
+        pushad
+        mov     ecx, ide_channel1_mutex
+        call    mutex_unlock
+        popad
         ret
 .IDE_Channel_2:
         mov     [IDE_Channel_2], 0
-        sti
+        pushad
+        mov     ecx, ide_channel2_mutex
+        call    mutex_unlock
+        popad
         ret
 
 uglobal

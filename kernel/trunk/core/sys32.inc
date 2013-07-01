@@ -578,11 +578,6 @@ terminate: ; terminate application
         push    esi     ; remove hd1 & cd & flp reservation
         shl     esi, 5
         mov     esi, [esi+CURRENT_TASK+TASKDATA.pid]
-        cmp     [hd1_status], esi
-        jnz     @f
-        call    free_hd_channel
-        and     [hd1_status], 0
-@@:
         cmp     [cd_status], esi
         jnz     @f
         call    free_cd_channel

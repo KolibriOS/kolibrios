@@ -36,65 +36,27 @@ $Revision$
         xor     eax, eax
         mov     [hdd_appl_data], 1;al
         mov     [cd_appl_data], 1
-    
-        mov     ch, [DRIVE_DATA+1]
-        mov     cl, ch
-        and     cl, 11b
-        je      .ide2
+
+        test    byte [DRIVE_DATA+1], 2
+        je      .ide2 
         mov     esi, cache_ide3
         call    get_cache_ide
 .ide2:
-        mov     cl, ch
-        shr     cl, 2
-        and     cl, 11b
+        test    byte [DRIVE_DATA+1], 8
         je      .ide1
         mov     esi, cache_ide2
         call    get_cache_ide
 .ide1:
-        mov     cl, ch
-        shr     cl, 4
-        and     cl, 11b
+        test    byte [DRIVE_DATA+1], 0x20
         je      .ide0
         mov     esi, cache_ide1
         call    get_cache_ide
 .ide0:
-        mov     cl, ch
-        shr     cl, 6
-        and     cl, 11b
+        test    byte [DRIVE_DATA+1], 0x80
         je      @f
         mov     esi, cache_ide0
         call    get_cache_ide
 @@:
-        xor     ecx, ecx
-        cmp     [NumBiosDisks], ecx
-        jz      .endbd
-        mov     esi, BiosDiskCaches
-.loopbd:
-        push    ecx
-        movsx   ecx, byte [BiosDisksData+ecx*4+2]
-        inc     ecx
-        jz      .getbd
-        add     ecx, ecx
-        movzx   eax, byte [DRIVE_DATA+1]
-        shl     eax, cl
-        and     ah, 3
-        cmp     ah, 1
-        jz      .contbd
-        pop     ecx
-        mov     byte [BiosDisksData+ecx*4+2], -1
-        push    ecx
-.getbd:
-        mov     eax, [cache_ide0_size]
-        mov     [esi+cache_ide0_size-cache_ide0], eax
-        mov     cl, 1
-        call    get_cache_ide
-.contbd:
-        pop     ecx
-        add     esi, cache_ide1-cache_ide0
-        inc     ecx
-        cmp     ecx, [NumBiosDisks]
-        jb      .loopbd
-.endbd:
         jmp     end_get_cache
 
 get_cache_ide:
@@ -114,33 +76,6 @@ get_cache_ide:
         add     ebx, edx
         mov     [esi+cache_ide0_data_pointer-cache_ide0], ebx
 
-        cmp     cl, 10b
-        je      .cd
-        push    ecx
-        mov     eax, [esi+cache_ide0_system_data_size-cache_ide0]
-        call    calculate_for_hd
-        add     eax, [esi+cache_ide0_pointer-cache_ide0]
-        mov     [esi+cache_ide0_system_data-cache_ide0], eax
-        mov     [esi+cache_ide0_system_sad_size-cache_ide0], ecx
-
-        push    edi
-        mov     edi, [esi+cache_ide0_pointer-cache_ide0]
-        call    clear_ide_cache
-        pop     edi
-
-        mov     eax, [esi+cache_ide0_appl_data_size-cache_ide0]
-        call    calculate_for_hd
-        add     eax, [esi+cache_ide0_data_pointer-cache_ide0]
-        mov     [esi+cache_ide0_appl_data-cache_ide0], eax
-        mov     [esi+cache_ide0_appl_sad_size-cache_ide0], ecx
-
-        push    edi
-        mov     edi, [esi+cache_ide0_data_pointer-cache_ide0]
-        call    clear_ide_cache
-        pop     edi
-
-        pop     ecx
-        ret
 .cd:
         push    ecx
         mov     eax, [esi+cache_ide0_system_data_size-cache_ide0]
@@ -166,20 +101,6 @@ get_cache_ide:
         pop     edi
 
         pop     ecx
-        ret
-
-calculate_for_hd:
-        push    eax
-        mov     ebx, eax
-        shr     eax, 9
-        shl     eax, 3
-        sub     ebx, eax
-        shr     ebx, 9
-        mov     ecx, ebx
-        shl     ebx, 9
-        pop     eax
-        sub     eax, ebx
-        dec     ecx
         ret
 
 calculate_for_cd:

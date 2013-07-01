@@ -164,8 +164,6 @@ else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
 
-bootpath       db  '/KOLIBRI    '
-bootpath2      db  0
 vmode          db  '/sys/drivers/VMODE.MDR',0
 ;vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'

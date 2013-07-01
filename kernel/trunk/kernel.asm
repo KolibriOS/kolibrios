@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -354,6 +354,13 @@ high_code:
         call    mutex_init
 
         mov     ecx, application_table_mutex
+        call    mutex_init
+
+        mov     ecx, ide_mutex
+        call    mutex_init
+        mov     ecx, ide_channel1_mutex
+        call    mutex_init
+        mov     ecx, ide_channel2_mutex
         call    mutex_init
 
 ; SAVE REAL MODE VARIABLES
@@ -1656,76 +1663,17 @@ endg
         ret
    nsyse5:
 
-        sub     ebx, 2          ; HD BASE
+        sub     ebx, 2          ; HD BASE - obsolete
         jnz     nsyse7
 
-        test    ecx, ecx
-        jz      nosethd
-
-        cmp     ecx, 4
-        ja      nosethd
-        mov     [hd_base], cl
-
-        cmp     ecx, 1
-        jnz     noprmahd
-        mov     eax, [hd_address_table]
-        mov     [hdbase], eax   ;0x1f0
-        and     dword [hdid], 0x0
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   noprmahd:
-
-        cmp     ecx, 2
-        jnz     noprslhd
-        mov     eax, [hd_address_table]
-        mov     [hdbase], eax   ;0x1f0
-        mov     [hdid], 0x10
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   noprslhd:
-
-        cmp     ecx, 3
-        jnz     nosemahd
-        mov     eax, [hd_address_table+16]
-        mov     [hdbase], eax   ;0x170
-        and     dword [hdid], 0x0
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   nosemahd:
-
-        cmp     ecx, 4
-        jnz     noseslhd
-        mov     eax, [hd_address_table+16]
-        mov     [hdbase], eax   ;0x170
-        mov     [hdid], 0x10
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   noseslhd:
-        call    reserve_hd1
-        call    reserve_hd_channel
-        call    free_hd_channel
-        and     dword [hd1_status], 0     ; free
    nosethd:
         ret
 
-iglobal
-hd_base db 0
-endg
-
 nsyse7:
 
-;     cmp  eax,8                      ; HD PARTITION
+;     cmp  eax,8                      ; HD PARTITION - obsolete
         dec     ebx
         jnz     nsyse8
-        mov     [fat32part], ecx
-;     call set_FAT32_variables
-        call    reserve_hd1
-        call    reserve_hd_channel
-        call    free_hd_channel
-;       pusha
-        call    choice_necessity_partition_1
-;       popa
-        and     dword [hd1_status], 0   ; free
         ret
 
 nsyse8:
@@ -1826,7 +1774,7 @@ ngsyse5:
 ;     cmp  eax,7
         sub     ebx, 2
         jnz     ngsyse7
-        movzx   eax, [hd_base]
+        xor     eax, eax
         mov     [esp+32], eax
         ret
 ngsyse7:

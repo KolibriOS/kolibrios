@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8,86 +8,69 @@
 $Revision$
 
 
+read_ramdisk:
 ; READ RAMDISK IMAGE FROM HD
 
         cmp     [boot_dev+OS_BASE+0x10000], 1
         jne     no_sys_on_hd
 
-        test    [DRIVE_DATA+1], byte 0x40
-        jz      position_2
-        mov     [hdbase], 0x1f0
-        mov     [hdid], 0x0
-        mov     [hdpos], 1
-        mov     [fat32part], 0
-  position_1_1:
-        inc     [fat32part]
-        call    search_and_read_image
-        cmp     [image_retrieved], 1
-        je      yes_sys_on_hd
-        movzx   eax, byte [DRIVE_DATA+2]
-        cmp     [fat32part], eax
-        jle     position_1_1
-  position_2:
-        test    [DRIVE_DATA+1], byte 0x10
-        jz      position_3
-        mov     [hdbase], 0x1f0
-        mov     [hdid], 0x10
-        mov     [hdpos], 2
-        mov     [fat32part], 0
-  position_2_1:
-        inc     [fat32part]
-        call    search_and_read_image
-        cmp     [image_retrieved], 1
-        je      yes_sys_on_hd
-        movzx   eax, byte [DRIVE_DATA+3]
-        cmp     eax, [fat32part]
-        jle     position_2_1
-  position_3:
-        test    [DRIVE_DATA+1], byte 0x4
-        jz      position_4
-        mov     [hdbase], 0x170
-        mov     [hdid], 0x0
-        mov     [hdpos], 3
-        mov     [fat32part], 0
-  position_3_1:
-        inc     [fat32part]
-        call    search_and_read_image
-        cmp     [image_retrieved], 1
-        je      yes_sys_on_hd
-        movzx   eax, byte [DRIVE_DATA+4]
-        cmp     eax, [fat32part]
-        jle     position_3_1
-  position_4:
-        test    [DRIVE_DATA+1], byte 0x1
-        jz      no_sys_on_hd
-        mov     [hdbase], 0x170
-        mov     [hdid], 0x10
-        mov     [hdpos], 4
-        mov     [fat32part], 0
-  position_4_1:
-        inc     [fat32part]
-        call    search_and_read_image
-        cmp     [image_retrieved], 1
-        je      yes_sys_on_hd
-        movzx   eax, byte [DRIVE_DATA+5]
-        cmp     eax, [fat32part]
-        jle     position_4_1
+        xor     ebp, ebp
+.hd_loop:
+        lea     eax, [ebp+'0']
+        mov     [read_image_fsinfo.name_digit], al
+        movzx   eax, byte [DRIVE_DATA+2+ebp]
+        test    eax, eax
+        jz      .next_hd
+        push    eax
+        mov     esi, 1
+.partition_loop:
+        mov     eax, esi
+        push    -'0'
+@@:
+        xor     edx, edx
+        div     [_10]
+        push    edx
+        test    eax, eax
+        jnz     @b
+        mov     edi, read_image_fsinfo.partition
+@@:
+        pop     eax
+        add     al, '0'
+        stosb
+        jnz     @b
+        mov     byte [edi-1], '/'
+        push    esi edi
+        mov     esi, bootpath1
+        mov     ecx, bootpath1.len
+        rep movsb
+        call    read_image
+        test    eax, eax
+        jz      .yes
+        cmp     eax, 6
+        jz      .yes
+        pop     edi
+        push    edi
+        mov     esi, bootpath2
+        mov     ecx, bootpath2.len
+        rep movsb
+        call    read_image
+        test    eax, eax
+        jz      .yes
+        cmp     eax, 6
+        jz      .yes
+        pop     edi esi
+        inc     esi
+        cmp     esi, [esp]
+        jbe     .partition_loop
+        pop     eax
+.next_hd:
+        inc     ebp
+        cmp     ebp, 4
+        jb      .hd_loop
+        jmp     no_sys_on_hd
+.yes:
+        pop     edi esi eax
         jmp     yes_sys_on_hd
-
-  search_and_read_image:
-        call    set_FAT32_variables
-        mov     edx, bootpath
-        call    read_image
-        test    eax, eax
-        jz      image_present
-        mov     edx, bootpath2
-        call    read_image
-        test    eax, eax
-        jz      image_present
-        ret
-    image_present:
-        mov     [image_retrieved], 1
-        ret
 
 iglobal
 align 4
@@ -96,8 +79,16 @@ read_image_fsinfo:
         dq      0               ; offset: zero
         dd      1474560/512     ; size
         dd      RAMDISK         ; buffer
-        db      0
-        dd      hdsysimage+OS_BASE+0x10000
+        db      '/hd'
+.name_digit db  '0'
+        db      '/'
+.partition:
+        rb      64      ; should be enough for '255/KOLIBRI/KOLIBRI.IMG'
+
+bootpath1       db      'KOLIBRI.IMG',0
+.len = $ - bootpath1
+bootpath2       db      'KOLIBRI/KOLIBRI.IMG',0
+.len = $ - bootpath2
 endg
 
 read_image:
@@ -107,8 +98,6 @@ read_image:
         popad
         ret
 
-image_retrieved  db 0
-counter_of_partitions db 0
 no_sys_on_hd:
         ; test_to_format_ram_disk (need if not using ram disk)
         cmp     [boot_dev+OS_BASE+0x10000], 3
