@@ -1,63 +1,63 @@
-Combination of control key to zSea v1.00 Beta (or the current version).
+The control key combinations for zSea v1.00 Beta (or the current version).
 
 Main window:
 PageUp - move the file pointer by one position to the top of the list.
 PageDown - move the file pointer by one position to the end of the list.
 Home - move the file pointer to the top of the list.
 End - move the file pointer to the end of the list.
-"0" (main keyb.) ¨ "*" (add. keyb.) - auto-scaling to fit the screen.
+"0" (main keyb.) or "*" (add. keyb.) - autoscaling to fit the screen.
 "+" - zoom in
 "-" - zoom out
-"|" (main keyb.) ¨ "/" (add. keyb.) - zoom to 100%
-W - secondary window "Installing desktop pictures"
+"|" (main keyb.) or "/" (add. keyb.) - zoom to 100%
+W - secondary window "Set desktop background"
 I - secondary window "Information about the file"
-S - secondary window "Selects the sort mode"
+S - secondary window "Select the sort mode"
 O - secondary window "Application options"
-Cursor arrows (main keyb. and add. keyb.)  - pictures shift if it is more than the display region.
-Enter  (main keyb. and add. keyb.)  - display area on the all screen and return to normal.
-PrintScreen - start SlideShow, stop by pressing Esc or Space.
-Alt+F1 - activation of menu.
+Cursor arrows (main keyb. and add. keyb.)  - pictures shift if it is bigger than the display region.
+Enter  (main keyb. and add. keyb.)  - display area on the whole screen and return to normal.
+PrintScreen - start SlideShow, stop it by pressing Esc or Space.
+Alt+F1 - menu activation.
 
 Menu:
-Arrow cursor up and down - moving to item.
-Esc - close window.
-Enter - close the window with the confirmation item.
+Arrow cursor up and down - move to item.
+Esc - close the window.
+Enter - close the window with confirmation.
 Arrow cursor left and right - to move into the adjacent menu.
 
 
 Secondary windows:
-Esc - close window.
-Enter - close the window with the confirmation.
+Esc - close the window.
+Enter - close the window with confirmation.
 Arrow cursor up and down - moving to item.
-"+" ¨ "-" change the numerical data.
-Space - enable or disable the item if it's checkbox.
+"+" and "-" change the numeric data.
+Space - enable or disable the item if it's a checkbox.
 
-The windows do not use keys - all keys lead to the closure of the window.
+In the windows that do not use keys - all keys lead to the close of the window.
 
 
 OpenDialog - file open dialog (standalone program):
 1) Move the cursor inside the panel:
-   ) up and down arrows (including add. keyb.) - move the cursor one position up or down.
-  ¡) PageUp - paging up.
-  ¢) PageDown - paging down.
-  £) Home - to the top of directory.
-  ¤) End - to the end of directory.
-2) Enter - file operations on the position of which the selection cursor:
-    ) entrance to the folder.
-   ¡) choose a file.
+  a) up and down arrows (including add. keyb.) - move the cursor one position up or down.
+  b) PageUp - list page up.
+  c) PageDown - list page down.
+  d) Home - move to the top of directory.
+  e) End - move to the end of directory.
+2) Enter - operations with the selected file:
+   a) enter the folder.
+   b) choose a file.
 3) Using the menu:
-   Alt+F1 - call the disk selection menu.
-   Alt+F2 - call the sort menu.
+   Alt+F1 - call disk selection menu.
+   Alt+F2 - call sort menu.
    Alt+F3 - call filter menu.
    Inside the menu:
-    Arrow cursor up and down - moving to item.
-    Esc - close window.
-    Enter - close the window with the confirmation.
-    Arrow cursor left and right - to move into the adjacent menu.   
+    Arrow cursor up and down - move to item.
+    Esc - close the window.
+    Enter - close the window with confirmation.
+    Arrow cursor left and right - move into the adjacent menu.   
 4) Ctrl+R - update the contents of a directory.
-5) Backspace (left arrow next to the Insert) - output from the directory.
-6) Insert - highlighted in red to file at the cursor and moves the cursor one position down.
-7) Ctrl+A ¨ Ctrl+(NumPad(+) Up) - selecting all files and directories in the active panel, except the directory '..'
-8) Ctrl+(NumPad(-) Up) - deselect all files and directories in the active panel, with the exception of directory '..'
-9) Ctrl+(NumPad(*) Up) - invert the selection of all files and directories in the active panel, with the exception of directory '..'
-10) Esc - end a program, without selecting the file.
+5) Backspace - exit from the directory.
+6) Insert - highlighted by red color the file at the cursor and move the cursor one position down.
+7) Ctrl+A and Ctrl+(NumPad(+) Up) - select all files and directories in the active panel, with the exception of the directory '..'
+8) Ctrl+(NumPad(-) Up) - deselect all files and directories in the active panel with the exception of the directory '..'
+9) Ctrl+(NumPad(*) Up) - invert the selection of all files and directories in the active panel, with the exception of the directory '..'
+10) Esc - shutdown the program, without opening of a file.
