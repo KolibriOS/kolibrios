@@ -260,7 +260,7 @@ ext2_setup:
         mov     ecx, [ebp+PARTITION.Disk]
         mov     [eax+EXTFS.Disk], ecx
         mov     [eax+EXTFS.FSUserFunctions], ext2_user_functions
-        push    ebp esi
+        push    ebp esi edi
         mov     ebp, eax
         lea     ecx, [eax+EXTFS.Lock]
         call    mutex_init
@@ -323,7 +323,7 @@ ext2_setup:
         call    ext2_get_inode                          ; read root inode
 
         mov     eax, ebp        ; return pointer to EXTFS
-        pop     esi ebp ebx
+        pop     edi esi ebp ebx
         ret
 endp
 
