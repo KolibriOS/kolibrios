@@ -377,7 +377,7 @@ MKISOFS_EXTRA:=\
  kolibrios/media/zsea/plugins/rotate.obj=distr_data/rotate.obj \
  kolibrios/media/zsea/plugins/scaling.obj=distr_data/scaling.obj \
  kolibrios/media/zsea/zsea.ini=$(REPOSITORY)/programs/media/zsea/zSea.ini \
- kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys.txt \
+ kolibrios/media/zsea/zsea_keys.txt=$(REPOSITORY)/programs/media/zsea/Docs/zSea_keys_eng.txt \
  kolibrios/media/zsea/buttons/buttons.png=$(REPOSITORY)/programs/media/zsea/buttons.png \
 #end of list
 
