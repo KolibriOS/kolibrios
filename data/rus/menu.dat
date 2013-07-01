@@ -8,129 +8,129 @@
 Обработка данных   >      /@14
 Сеть               >      /@15
 Разное             >      /@18
-Помощь                    /rd/1/docpack
-Запуск программы          /rd/1/run
-Завершение работы         /rd/1/end
+Помощь                    /sys/docpack
+Запуск программы          /sys/run
+Завершение работы         /sys/end
 #1    **** GAMES ****
 Логические         >      /@2
 Аркады             >      /@3
-Memory Blocks             /rd/1/games/mblocks
-FreeCell                  /rd/1/games/freecell
-Трубопровод               /rd/1/games/pipes
-Косилка                   /rd/1/games/kosilka
-RockeT ForceS             /rd/1/games/rforces
-Атака                     /rd/1/games/ataka
-Find Numbers              /rd/1/games/FindNumbers
+Memory Blocks             /sys/games/mblocks
+FreeCell                  /sys/games/freecell
+Трубопровод               /sys/games/pipes
+Косилка                   /sys/games/kosilka
+RockeT ForceS             /sys/games/rforces
+Атака                     /sys/games/ataka
+Find Numbers              /sys/games/FindNumbers
 #2    **** ЛОГИЧЕСКИЕ ****
-C4                        /rd/1/games/c4
-15                        /rd/1/games/15
-Сапёр                     /rd/1/games/mine
-Just Clicks               /rd/1/games/clicks
-Шашки                     /rd/1/games/checkers
-SQ_Game                   /rd/1/games/sq_game
-Цветные линии             /rd/1/games/lines
-Миллионер                 /rd/1/games/whowtbam
-Лабиринт                  /rd/1/games/megamaze
-Flood-it!                 /rd/1/games/flood-it
-Морской бой               /rd/1/games/sw
-Судоку                    /rd/1/games/sudoku
-Гомоку                    /rd/1/games/gomoku
-Реверси                   /rd/1/games/reversi
+C4                        /sys/games/c4
+15                        /sys/games/15
+Сапёр                     /sys/games/mine
+Just Clicks               /sys/games/clicks
+Шашки                     /sys/games/checkers
+SQ_Game                   /sys/games/sq_game
+Цветные линии             /sys/games/lines
+Миллионер                 /sys/games/whowtbam
+Лабиринт                  /sys/games/megamaze
+Flood-it!                 /sys/games/flood-it
+Морской бой               /sys/games/sw
+Судоку                    /sys/games/sudoku
+Гомоку                    /sys/games/gomoku
+Реверси                   /sys/games/reversi
 #3    **** АРКАДЫ ****
-Тетрис                    /rd/1/games/tetris
-Понг                      /rd/1/games/pong
-Новый Понг                /rd/1/games/pong3
-Red Square                /rd/1/games/rsquare
-Xonix                     /rd/1/games/xonix
-ArcanII                   /rd/1/games/arcanii
-PheniX                    /rd/1/games/phenix
-Падение                   /rd/1/games/padenie
-Змейка                    /rd/1/games/snake
+Тетрис                    /sys/games/tetris
+Понг                      /sys/games/pong
+Новый Понг                /sys/games/pong3
+Red Square                /sys/games/rsquare
+Xonix                     /sys/games/xonix
+ArcanII                   /sys/games/arcanii
+PheniX                    /sys/games/phenix
+Падение                   /sys/games/padenie
+Змейка                    /sys/games/snake
 #4    **** DEMOS ****
 Трёхмерные         >      /@5
-Кружок                    /rd/1/demos/circle
-Фрактал Мандельброта      /rd/1/demos/tinyfrac
-Цвета                     /rd/1/demos/colorref
-Глаза                     /rd/1/demos/eyes
-Труба                     /rd/1/demos/tube
-Plasma                    /rd/1/demos/plasma
-Moveback                  /rd/1/demos/movback
-Life                      /rd/1/demos/life2
-TranTest                  /rd/1/demos/trantest
-Паутинка                  /rd/1/demos/web
-Фейерверк                 /rd/1/demos/firework
-UnvWater                  /rd/1/demos/unvwater
+Кружок                    /sys/demos/circle
+Фрактал Мандельброта      /sys/demos/tinyfrac
+Цвета                     /sys/demos/colorref
+Глаза                     /sys/demos/eyes
+Труба                     /sys/demos/tube
+Plasma                    /sys/demos/plasma
+Moveback                  /sys/demos/movback
+Life                      /sys/demos/life2
+TranTest                  /sys/demos/trantest
+Паутинка                  /sys/demos/web
+Фейерверк                 /sys/demos/firework
+UnvWater                  /sys/demos/unvwater
 #5    **** 3D demos ****
-Скринсейвер               /rd/1/3d/crownscr
-3D-Лабиринт               /rd/1/3d/free3d04
-Сердце                    /rd/1/3d/3dsheart
-Просмотрщик 3DS           /rd/1/3d/view3ds
-CubeLine                  /rd/1/3d/cubeline
-Шестерёнки                /rd/1/3d/gears
-FlatWave                  /rd/1/3d/flatwav
-3D-Волны                  /rd/1/3d/3dwav
+Скринсейвер               /sys/3d/crownscr
+3D-Лабиринт               /sys/3d/free3d04
+Сердце                    /sys/3d/3dsheart
+Просмотрщик 3DS           /sys/3d/view3ds
+CubeLine                  /sys/3d/cubeline
+Шестерёнки                /sys/3d/gears
+FlatWave                  /sys/3d/flatwav
+3D-Волны                  /sys/3d/3dwav
 #6    **** GRAPHICS ****
-Просмотр фото KIV         /rd/1/media/kiv
+Просмотр фото KIV         /sys/media/kiv
 Просмотр фото zSea        /addappl/media/zsea/zsea
-Редактор Animage          /rd/1/media/animage
-Наложение фильтров        /rd/1/media/imgf/imgf
-Палитра                   /rd/1/media/palitra
+Редактор Animage          /sys/media/animage
+Наложение фильтров        /sys/media/imgf/imgf
+Палитра                   /sys/media/palitra
 #7    **** MULTIMEDIA ****
 Fplay - видео             /addappl/media/fplay-full
-Midi-плеер                /rd/1/media/midamp
-CD-плейер                 /rd/1/media/cdp
+Midi-плеер                /sys/media/midamp
+CD-плейер                 /sys/media/cdp
 #8    **** PROGRAMMING ****
 Примеры            >      /@9
-Упаковщик KPack           /rd/1/kpack
-Flat Assembler            /rd/1/develop/fasm
-Доска отладки             /rd/1/develop/board
-Отладчик                  /rd/1/develop/mtdbg
-Пипетка                   /rd/1/pipetka
-Hex2Dec2Bin               /rd/1/develop/h2d2b
-ASCII-коды                /rd/1/develop/keyascii
-SCAN-коды                 /rd/1/develop/scancode
+Упаковщик KPack           /sys/kpack
+Flat Assembler            /sys/develop/fasm
+Доска отладки             /sys/develop/board
+Отладчик                  /sys/develop/mtdbg
+Пипетка                   /sys/pipetka
+Hex2Dec2Bin               /sys/develop/h2d2b
+ASCII-коды                /sys/develop/keyascii
+SCAN-коды                 /sys/develop/scancode
 #9    **** EXAMPLES ****
-Потоки                    /rd/1/develop/thread
-IPC                       /rd/1/develop/ipc
-Color Slider              /rd/1/demos/cslide
-Консольный пример 1       /rd/1/develop/testcon2
-Консольный пример 2       /rd/1/develop/test_gets
-Окна сообщений            /rd/1/demos/use_mb
+Потоки                    /sys/develop/thread
+IPC                       /sys/develop/ipc
+Color Slider              /sys/demos/cslide
+Консольный пример 1       /sys/develop/testcon2
+Консольный пример 2       /sys/develop/test_gets
+Окна сообщений            /sys/demos/use_mb
 #10   **** SYSTEM ****
 Настройка          >      /@11
 Системные сенсоры  >      /@12
 Работа с файлами   >      /@13
 Тестирование       >      /@19
 Спец. возможности  >      /@20
-Доска отладки             /rd/1/develop/board
+Доска отладки             /sys/develop/board
 #11   **** SETUP ****
-Устройства                /rd/1/setup
-Установить фон            /rd/1/media/palitra
-Стиль окон                /rd/1/desktop
-Менеджер иконок           /rd/1/icon
-MyKey                     /rd/1/mykey
-Видеорежим для ATI        /rd/1/vmode
+Устройства                /sys/setup
+Установить фон            /sys/media/palitra
+Стиль окон                /sys/desktop
+Менеджер иконок           /sys/icon
+MyKey                     /sys/mykey
+Видеорежим для ATI        /sys/vmode
 #12   **** SENSORS ****
-Диспетчер процессов       /rd/1/cpu
-PCI-устройства            /rd/1/pcidev
-CPUID                     /rd/1/cpuid
-GHOST Monitor             /rd/1/gmon
-K. Bus disconnected       /rd/1/kbd
-HDD информер              /rd/1/hdd_info
-Чтение HDD                /rd/1/hdread
+Диспетчер процессов       /sys/cpu
+PCI-устройства            /sys/pcidev
+CPUID                     /sys/cpuid
+GHOST Monitor             /sys/gmon
+K. Bus disconnected       /sys/kbd
+HDD информер              /sys/hdd_info
+Чтение HDD                /sys/hdread
 #13   **** File Managers ****
-KFAR                      /rd/1/File Managers/kfar
-KFM                       /rd/1/File Managers/kfm
-Eolite                    /rd/1/File Managers/Eolite
-Консоль SHELL             /rd/1/shell
-Сохранение образа         /rd/1/rdsave
+KFAR                      /sys/File Managers/kfar
+KFM                       /sys/File Managers/kfm
+Eolite                    /sys/File Managers/Eolite
+Консоль SHELL             /sys/shell
+Сохранение образа         /sys/rdsave
 #14   **** ОБРАБОТКА ДАННЫХ ****
-Калькулятор               /rd/1/calc
-Редактор Tinypad          /rd/1/tinypad
-Редактор TextEdit         /rd/1/develop/t_edit
-Табличный процессор       /rd/1/table
-Построение графиков       /rd/1/graph
-HEX-редактор              /rd/1/develop/heed
+Калькулятор               /sys/calc
+Редактор Tinypad          /sys/tinypad
+Редактор TextEdit         /sys/develop/t_edit
+Табличный процессор       /sys/table
+Построение графиков       /sys/graph
+HEX-редактор              /sys/develop/heed
 #15   **** NET ****
 Серверы            >      /@16
 Клиенты            >      /@17
@@ -146,23 +146,23 @@ Ping                      /sys/network/ping
 Telnet client             /sys/network/telnet
 Synergy client            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
-Интернет загрузчик        /rd/1/network/downloader
-Текстовый браузер         /rd/1/htmlv
+Интернет загрузчик        /sys/network/downloader
+Текстовый браузер         /sys/htmlv
 #18   **** OTHER ****
-Аналоговые часы           /rd/1/demos/aclock
-Бинарные часы             /rd/1/demos/bcdclk
-Таймер                    /rd/1/demos/timer
-Создание скриншотов       /rd/1/scrshoot
-Календарь                 /rd/1/calendar
-Просмотр RTF              /rd/1/rtfread
-Таблица Менделеева        /rd/1/period
-Тренажёр KJ|ABuIIIA       /rd/1/games/klavisha
+Аналоговые часы           /sys/demos/aclock
+Бинарные часы             /sys/demos/bcdclk
+Таймер                    /sys/demos/timer
+Создание скриншотов       /sys/scrshoot
+Календарь                 /sys/calendar
+Просмотр RTF              /sys/rtfread
+Таблица Менделеева        /sys/period
+Тренажёр KJ|ABuIIIA       /sys/games/klavisha
 #19   **** SYSTEM TESTS ****
-Тест защиты               /rd/1/test
-Тест монитора             /rd/1/disptest
-Графический бенчмарк      /rd/1/mgb
+Тест защиты               /sys/test
+Тест монитора             /sys/disptest
+Графический бенчмарк      /sys/mgb
 #20   **** SYSTEM SPECIAL ****
-Экранная лупа             /rd/1/magnify
-Экранная клавиатура       /rd/1/zkey
-Таблица символов          /rd/1/ASCIIVju
+Экранная лупа             /sys/magnify
+Экранная клавиатура       /sys/zkey
+Таблица символов          /sys/ASCIIVju
 ##

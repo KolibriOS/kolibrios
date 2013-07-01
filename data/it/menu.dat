@@ -8,124 +8,124 @@ Sistema            >      /@10
 Data processing    >      /@14
 Network            >      /@15
 Altro              >      /@18
-Aiuto                     /rd/1/docpack
-Esegui applicazione       /rd/1/run
-Spegni                    /rd/1/end
+Aiuto                     /sys/docpack
+Esegui applicazione       /sys/run
+Spegni                    /sys/end
 #1    **** GAMES ****
 Giochi di logica   >      /@2
 Arcade             >      /@3
-Memory                    /rd/1/games/mblocks
-FreeCell                  /rd/1/games/freecell
-Pipes                     /rd/1/games/pipes
-Kosilka                   /rd/1/games/kosilka
-RockeT ForceS             /rd/1/games/rforces
-Trova i numeri            /rd/1/games/FindNumbers
+Memory                    /sys/games/mblocks
+FreeCell                  /sys/games/freecell
+Pipes                     /sys/games/pipes
+Kosilka                   /sys/games/kosilka
+RockeT ForceS             /sys/games/rforces
+Trova i numeri            /sys/games/FindNumbers
 #2 **** LOGICAL GAMES ****
-C4                        /rd/1/games/c4
-Gioco del quindici        /rd/1/games/15
-Campo minato              /rd/1/games/mine
-Just Clicks               /rd/1/games/clicks
-Checkers                  /rd/1/games/checkers
-SQ_GAME                   /rd/1/games/sq_game
-Color Lines               /rd/1/games/lines
-Flood-it!                 /rd/1/games/flood-it
-MegaMaze                  /rd/1/games/megamaze
-Battaglia navale          /rd/1/games/sw
-Sudoku                    /rd/1/games/sudoku
-Go-moku                   /rd/1/games/gomoku
-Reversi                   /rd/1/games/reversi
+C4                        /sys/games/c4
+Gioco del quindici        /sys/games/15
+Campo minato              /sys/games/mine
+Just Clicks               /sys/games/clicks
+Checkers                  /sys/games/checkers
+SQ_GAME                   /sys/games/sq_game
+Color Lines               /sys/games/lines
+Flood-it!                 /sys/games/flood-it
+MegaMaze                  /sys/games/megamaze
+Battaglia navale          /sys/games/sw
+Sudoku                    /sys/games/sudoku
+Go-moku                   /sys/games/gomoku
+Reversi                   /sys/games/reversi
 #3 **** ARCADES ****
-Tetris                    /rd/1/games/tetris
-Pong                      /rd/1/games/pong
-New Pong                  /rd/1/games/pong3
-Red Square                /rd/1/games/rsquare
-Xonix                     /rd/1/games/xonix
-ArcanII                   /rd/1/games/arcanii
-Phenix                    /rd/1/games/phenix
-Snake                     /rd/1/games/snake
+Tetris                    /sys/games/tetris
+Pong                      /sys/games/pong
+New Pong                  /sys/games/pong3
+Red Square                /sys/games/rsquare
+Xonix                     /sys/games/xonix
+ArcanII                   /sys/games/arcanii
+Phenix                    /sys/games/phenix
+Snake                     /sys/games/snake
 #4    **** DEMOS ****
 3D                 >      /@5
-Cerchio                   /rd/1/demos/circle
-Frattale                  /rd/1/demos/tinyfrac
-Demo Colori               /rd/1/demos/colorref
-Occhi                     /rd/1/demos/eyes
-Vortice                   /rd/1/demos/tube
-Plasma                    /rd/1/demos/plasma
-Moveback                  /rd/1/demos/movback
-Life                      /rd/1/demos/life2
-TranTest                  /rd/1/demos/trantest
-WEB                       /rd/1/demos/web
-Fuochi d'artificio        /rd/1/demos/firework
-UnvWater                  /rd/1/demos/unvwater
+Cerchio                   /sys/demos/circle
+Frattale                  /sys/demos/tinyfrac
+Demo Colori               /sys/demos/colorref
+Occhi                     /sys/demos/eyes
+Vortice                   /sys/demos/tube
+Plasma                    /sys/demos/plasma
+Moveback                  /sys/demos/movback
+Life                      /sys/demos/life2
+TranTest                  /sys/demos/trantest
+WEB                       /sys/demos/web
+Fuochi d'artificio        /sys/demos/firework
+UnvWater                  /sys/demos/unvwater
 #5  **** 3D demos ****
-ScreenSaver               /rd/1/3d/crownscr
-Labirinto 3D              /rd/1/3d/free3d04
-Cuore 3D                  /rd/1/3d/3dsheart
-View3DS                   /rd/1/3d/view3ds
-CubeLine                  /rd/1/3d/cubeline
-Gears                     /rd/1/3d/gears
-3D-waved area             /rd/1/3d/3dwav
+ScreenSaver               /sys/3d/crownscr
+Labirinto 3D              /sys/3d/free3d04
+Cuore 3D                  /sys/3d/3dsheart
+View3DS                   /sys/3d/view3ds
+CubeLine                  /sys/3d/cubeline
+Gears                     /sys/3d/gears
+3D-waved area             /sys/3d/3dwav
 #6   **** GRAPHICS ****
-Image viewer KIV          /rd/1/media/kiv
+Image viewer KIV          /sys/media/kiv
 Image viewer zSea         /addappl/media/zsea/zsea
-Animage                   /rd/1/media/animage
-Palitra                   /rd/1/media/palitra
+Animage                   /sys/media/animage
+Palitra                   /sys/media/palitra
 #7   **** MULTIMEDIA ****
 Fplay - video             /addappl/media/fplay-full
-MidAMP                    /rd/1/media/midamp
-CD player                 /rd/1/media/cdp
+MidAMP                    /sys/media/midamp
+CD player                 /sys/media/cdp
 #8    **** PROGRAMMING ****
 Esempi             >      /@9
-Gestore di archivi KPack  /rd/1/kpack
-Compilatore FASM          /rd/1/develop/fasm
-Debug Board               /rd/1/develop/board
-Debugger                  /rd/1/develop/mtdbg
-Hex2Dec2Bin               /rd/1/develop/h2d2b
-Codici ASCII              /rd/1/develop/keyascii
-SCAN-codes                /rd/1/develop/scancode
+Gestore di archivi KPack  /sys/kpack
+Compilatore FASM          /sys/develop/fasm
+Debug Board               /sys/develop/board
+Debugger                  /sys/develop/mtdbg
+Hex2Dec2Bin               /sys/develop/h2d2b
+Codici ASCII              /sys/develop/keyascii
+SCAN-codes                /sys/develop/scancode
 #9    **** EXAMPLES ****
-Thread                    /rd/1/develop/thread
-IPC                       /rd/1/develop/ipc
-Color slider              /rd/1/demos/cslide
-Esempio Console 1         /rd/1/develop/testcon2
-Esempio Console 2         /rd/1/develop/test_gets
-Esempio Message Boxes     /rd/1/demos/use_mb
+Thread                    /sys/develop/thread
+IPC                       /sys/develop/ipc
+Color slider              /sys/demos/cslide
+Esempio Console 1         /sys/develop/testcon2
+Esempio Console 2         /sys/develop/test_gets
+Esempio Message Boxes     /sys/demos/use_mb
 #10    **** SYSTEM ****
 Impostazioni       >      /@11
 Sensori di sistema >      /@12
 Work with files    >      /@13
 Testing            >      /@19
 Opzioni Accessibilità >      /@20
-Debug board               /rd/1/develop/board
+Debug board               /sys/develop/board
 #11    **** SETTINGS ****
-Device                    /rd/1/setup
-Generatore di sfondi      /rd/1/media/palitra
-Colori e temi             /rd/1/desktop
-Gestore icone             /rd/1/icon
-MyKey                     /rd/1/mykey
-Video mode for ATI        /rd/1/vmode
+Device                    /sys/setup
+Generatore di sfondi      /sys/media/palitra
+Colori e temi             /sys/desktop
+Gestore icone             /sys/icon
+MyKey                     /sys/mykey
+Video mode for ATI        /sys/vmode
 #12    **** SYSTEM SENSORS ****
-Gestore processi          /rd/1/cpu
-PCI devices               /rd/1/pcidev
-Test graphics speed       /rd/1/mgb
-CPUID                     /rd/1/cpuid
-Ghost Monitor             /rd/1/gmon
-K. Bus disconnected       /rd/1/kbd
-HDD informer              /rd/1/hdd_info
-Read HDD                  /rd/1/hdread
+Gestore processi          /sys/cpu
+PCI devices               /sys/pcidev
+Test graphics speed       /sys/mgb
+CPUID                     /sys/cpuid
+Ghost Monitor             /sys/gmon
+K. Bus disconnected       /sys/kbd
+HDD informer              /sys/hdd_info
+Read HDD                  /sys/hdread
 #13  **** WORK WITH FILES ****
-KFAR                      /rd/1/File Managers/kfar
-KFM                       /rd/1/File Managers/kfm
-Eolite                    /rd/1/File Managers/Eolite
-SHELL console             /rd/1/shell
-Salva immagine RD         /rd/1/rdsave
+KFAR                      /sys/File Managers/kfar
+KFM                       /sys/File Managers/kfm
+Eolite                    /sys/File Managers/Eolite
+SHELL console             /sys/shell
+Salva immagine RD         /sys/rdsave
 #14 **** DATA PROCESSING ****
-Calcolatrice              /rd/1/calc
-Tinypad                   /rd/1/tinypad
-TextEdit                  /rd/1/develop/t_edit
-Table Processor           /rd/1/table
-Graph builder             /rd/1/graph
-Hex-Editor                /rd/1/develop/heed
+Calcolatrice              /sys/calc
+Tinypad                   /sys/tinypad
+TextEdit                  /sys/develop/t_edit
+Table Processor           /sys/table
+Graph builder             /sys/graph
+Hex-Editor                /sys/develop/heed
 #15    **** NET ****
 Servers            >      /@16
 Clients            >      /@17
@@ -141,20 +141,20 @@ Ping                      /sys/network/ping
 Client Telnet             /sys/network/telnet
 Client Synergy            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
-Internet downloader       /rd/1/network/downloader
-Text-based browser        /rd/1/htmlv
+Internet downloader       /sys/network/downloader
+Text-based browser        /sys/htmlv
 #18    **** OTHER ****
-Orologio analogico        /rd/1/demos/aclock
-Orologio binario          /rd/1/demos/bcdclk
-Timer                     /rd/1/demos/timer
-ScreenShoter              /rd/1/scrshoot
-Calendario                /rd/1/calendar
-Lettore RTF               /rd/1/rtfread
+Orologio analogico        /sys/demos/aclock
+Orologio binario          /sys/demos/bcdclk
+Timer                     /sys/demos/timer
+ScreenShoter              /sys/scrshoot
+Calendario                /sys/calendar
+Lettore RTF               /sys/rtfread
 #19    **** SYSTEM TESTS ****
-Protection test           /rd/1/test
-Test Monitor              /rd/1/disptest
+Protection test           /sys/test
+Test Monitor              /sys/disptest
 #20    **** SYSTEM SPECIAL ****
-Lente di ingrandimento    /rd/1/magnify
-Tastiera da schermo       /rd/1/zkey
-Tavola caratteri          /rd/1/ASCIIVju
+Lente di ingrandimento    /sys/magnify
+Tastiera da schermo       /sys/zkey
+Tavola caratteri          /sys/ASCIIVju
 ##
