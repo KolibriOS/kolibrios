@@ -11,8 +11,8 @@
 //extern void warn_slowpath_null(const char *file, const int line);
 
 #define __WARN()                printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
-#define __WARN_printf(arg...)   printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
-
+//#define __WARN_printf(arg...)   printf("\nWARNING: at %s:%d\n", __FILE__, __LINE__)
+#define __WARN_printf(arg...)   do { printf(arg); __WARN(); } while (0)
 
 #define WARN(condition, format...) ({                                   \
         int __ret_warn_on = !!(condition);                              \

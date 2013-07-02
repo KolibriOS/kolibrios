@@ -263,7 +263,7 @@ enum {
     PCI_NUM_RESOURCES,
 
     /* preserve this for compatibility */
-    DEVICE_COUNT_RESOURCE
+	DEVICE_COUNT_RESOURCE = PCI_NUM_RESOURCES,
 };
 
 typedef int __bitwise pci_power_t;
@@ -376,8 +376,7 @@ struct pci_dev {
 	pci_power_t     current_state;  /* Current operating state. In ACPI-speak,
 					   this is D0-D3, D0 being fully functional,
 					   and D3 being off. */
-	int		pm_cap;		/* PM capability offset in the
-					   configuration space */
+	u8		pm_cap;		/* PM capability offset */
     unsigned int    pme_support:5;  /* Bitmask of states from which PME#
                        can be generated */
 	unsigned int	pme_interrupt:1;
@@ -403,7 +402,7 @@ struct pci_dev {
 
 	pci_channel_state_t error_state;	/* current connectivity state */
     struct  device  dev;        /* Generic device interface */
-    struct acpi_device *acpi_dev;
+
     int     cfg_size;   /* Size of configuration space */
 
     /*

@@ -36,6 +36,10 @@
 #define PTR_ALIGN(p, a)     ((typeof(p))ALIGN((unsigned long)(p), (a)))
 #define IS_ALIGNED(x, a)        (((x) & ((typeof(x))(a) - 1)) == 0)
 
+
+#define __round_mask(x, y) ((__typeof__(x))((y)-1))
+#define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
+
 /* The `const' in roundup() prevents gcc-3.3 from calling __divdi3 */
 #define roundup(x, y) (                                 \
 {                                                       \
@@ -417,6 +421,13 @@ unsigned int hweight16(unsigned int w);
 #define cpufreq_quick_get_max(x) GetCpuFreq()
 
 extern unsigned int tsc_khz;
+
+#define on_each_cpu(func,info,wait)             \
+        ({                                      \
+                func(info);                     \
+                0;                              \
+        })
+
 
 #endif
 

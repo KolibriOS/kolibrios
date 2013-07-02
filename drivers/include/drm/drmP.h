@@ -35,6 +35,8 @@
 #ifndef _DRM_P_H_
 #define _DRM_P_H_
 
+#define iowrite32(v, addr)      writel((v), (addr))
+
 #ifdef __KERNEL__
 #ifdef __alpha__
 /* add include of current.h so that "current" is defined
@@ -61,7 +63,7 @@
 //#include <linux/file.h>
 #include <linux/pci.h>
 #include <linux/jiffies.h>
-#include <linux/irqreturn.h> 
+#include <linux/irqreturn.h>
 //#include <linux/smp_lock.h>    /* For (un)lock_kernel */
 //#include <linux/dma-mapping.h>
 //#include <linux/mm.h>
@@ -321,6 +323,7 @@ struct drm_ioctl_desc {
 	int flags;
 	drm_ioctl_t *func;
 	unsigned int cmd_drv;
+	const char *name;
 };
 
 /**
@@ -329,7 +332,7 @@ struct drm_ioctl_desc {
  */
 
 #define DRM_IOCTL_DEF_DRV(ioctl, _func, _flags)			\
-	[DRM_IOCTL_NR(DRM_##ioctl)] = {.cmd = DRM_##ioctl, .func = _func, .flags = _flags, .cmd_drv = DRM_IOCTL_##ioctl}
+	[DRM_IOCTL_NR(DRM_##ioctl)] = {.cmd = DRM_##ioctl, .func = _func, .flags = _flags, .cmd_drv = DRM_IOCTL_##ioctl, .name = #ioctl}
 
 struct drm_magic_entry {
 	struct list_head head;
