@@ -95,8 +95,6 @@
  */
 #define CONTEXT_ALIGN (64<<10)
 
-#if 0
-
 static struct i915_hw_context *
 i915_gem_context_get(struct drm_i915_file_private *file_priv, u32 id);
 static int do_switch(struct i915_hw_context *to);
@@ -152,6 +150,13 @@ create_hw_context(struct drm_device *dev,
 		kfree(ctx);
 		DRM_DEBUG_DRIVER("Context object allocated failed\n");
 		return ERR_PTR(-ENOMEM);
+	}
+
+	if (INTEL_INFO(dev)->gen >= 7) {
+		ret = i915_gem_object_set_cache_level(ctx->obj,
+						      I915_CACHE_LLC_MLC);
+		if (ret)
+			goto err_out;
 	}
 
 	/* The ring associated with the context object is handled by the normal
@@ -224,13 +229,11 @@ err_destroy:
 	do_destroy(ctx);
 	return ret;
 }
-#endif
 
 void i915_gem_context_init(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-#if 0
 	if (!HAS_HW_CONTEXTS(dev)) {
 		dev_priv->hw_contexts_disabled = true;
 		return;
@@ -254,11 +257,8 @@ void i915_gem_context_init(struct drm_device *dev)
 	}
 
 	DRM_DEBUG_DRIVER("HW context support initialized\n");
-#endif
-
 }
 
-#if 0
 void i915_gem_context_fini(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
@@ -269,7 +269,7 @@ void i915_gem_context_fini(struct drm_device *dev)
 	/* The only known way to stop the gpu from accessing the hw context is
 	 * to reset it. Do this as the very last operation to avoid confusing
 	 * other code, leading to spurious errors. */
-	intel_gpu_reset(dev);
+//	intel_gpu_reset(dev);
 
 	i915_gem_object_unpin(dev_priv->ring[RCS].default_context->obj);
 
@@ -292,7 +292,7 @@ void i915_gem_context_close(struct drm_device *dev, struct drm_file *file)
 	struct drm_i915_file_private *file_priv = file->driver_priv;
 
 	mutex_lock(&dev->struct_mutex);
-	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
+//	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
 	idr_destroy(&file_priv->context_idr);
 	mutex_unlock(&dev->struct_mutex);
 }
@@ -420,7 +420,6 @@ static int do_switch(struct i915_hw_context *to)
 
 	return 0;
 }
-#endif
 
 /**
  * i915_switch_context() - perform a GPU context switch.
@@ -445,7 +444,6 @@ int i915_switch_context(struct intel_ring_buffer *ring,
 	if (dev_priv->hw_contexts_disabled)
 		return 0;
 
-#if 0
 	if (ring != &dev_priv->ring[RCS])
 		return 0;
 
@@ -461,9 +459,6 @@ int i915_switch_context(struct intel_ring_buffer *ring,
 	}
 
 	return do_switch(to);
-#endif
-
-    return 0;
 }
 
 #if 0

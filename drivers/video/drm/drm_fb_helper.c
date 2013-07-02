@@ -863,6 +863,48 @@ static bool drm_has_cmdline_mode(struct drm_fb_helper_connector *fb_connector)
 	return cmdline_mode->specified;
 }
 
+static struct drm_display_mode *drm_pick_cmdline_mode(struct drm_fb_helper_connector *fb_helper_conn,
+						      int width, int height)
+{
+	struct drm_cmdline_mode *cmdline_mode;
+	struct drm_display_mode *mode = NULL;
+
+	return NULL;
+
+	cmdline_mode = &fb_helper_conn->cmdline_mode;
+	if (cmdline_mode->specified == false)
+		return mode;
+
+	/* attempt to find a matching mode in the list of modes
+	 *  we have gotten so far, if not add a CVT mode that conforms
+	 */
+	if (cmdline_mode->rb || cmdline_mode->margins)
+		goto create_mode;
+
+	list_for_each_entry(mode, &fb_helper_conn->connector->modes, head) {
+		/* check width/height */
+		if (mode->hdisplay != cmdline_mode->xres ||
+		    mode->vdisplay != cmdline_mode->yres)
+			continue;
+
+		if (cmdline_mode->refresh_specified) {
+			if (mode->vrefresh != cmdline_mode->refresh)
+				continue;
+		}
+
+		if (cmdline_mode->interlace) {
+			if (!(mode->flags & DRM_MODE_FLAG_INTERLACE))
+				continue;
+		}
+		return mode;
+	}
+
+create_mode:
+	mode = drm_mode_create_from_cmdline_mode(fb_helper_conn->connector->dev,
+						 cmdline_mode);
+	list_add(&mode->head, &fb_helper_conn->connector->modes);
+	return mode;
+}
 
 static bool drm_connector_enabled(struct drm_connector *connector, bool strict)
 {
@@ -900,6 +942,78 @@ static void drm_enable_connectors(struct drm_fb_helper *fb_helper,
 	}
 }
 
+static bool drm_target_cloned(struct drm_fb_helper *fb_helper,
+			      struct drm_display_mode **modes,
+			      bool *enabled, int width, int height)
+{
+	int count, i, j;
+	bool can_clone = false;
+	struct drm_fb_helper_connector *fb_helper_conn;
+	struct drm_display_mode *dmt_mode, *mode;
+
+	/* only contemplate cloning in the single crtc case */
+	if (fb_helper->crtc_count > 1)
+		return false;
+
+	count = 0;
+	for (i = 0; i < fb_helper->connector_count; i++) {
+		if (enabled[i])
+			count++;
+	}
+
+	/* only contemplate cloning if more than one connector is enabled */
+	if (count <= 1)
+		return false;
+
+	/* check the command line or if nothing common pick 1024x768 */
+	can_clone = true;
+	for (i = 0; i < fb_helper->connector_count; i++) {
+		if (!enabled[i])
+			continue;
+		fb_helper_conn = fb_helper->connector_info[i];
+		modes[i] = drm_pick_cmdline_mode(fb_helper_conn, width, height);
+		if (!modes[i]) {
+			can_clone = false;
+			break;
+		}
+		for (j = 0; j < i; j++) {
+			if (!enabled[j])
+				continue;
+			if (!drm_mode_equal(modes[j], modes[i]))
+				can_clone = false;
+		}
+	}
+
+	if (can_clone) {
+		DRM_DEBUG_KMS("can clone using command line\n");
+		return true;
+	}
+
+	/* try and find a 1024x768 mode on each connector */
+	can_clone = true;
+	dmt_mode = drm_mode_find_dmt(fb_helper->dev, 1024, 768, 60, false);
+
+	for (i = 0; i < fb_helper->connector_count; i++) {
+
+		if (!enabled[i])
+			continue;
+
+		fb_helper_conn = fb_helper->connector_info[i];
+		list_for_each_entry(mode, &fb_helper_conn->connector->modes, head) {
+			if (drm_mode_equal(mode, dmt_mode))
+				modes[i] = mode;
+		}
+		if (!modes[i])
+			can_clone = false;
+	}
+
+	if (can_clone) {
+		DRM_DEBUG_KMS("can clone using 1024x768\n");
+		return true;
+	}
+	DRM_INFO("kms: can't enable cloning when we probably wanted to.\n");
+	return false;
+}
 
 static bool drm_target_preferred(struct drm_fb_helper *fb_helper,
 				 struct drm_display_mode **modes,
@@ -918,10 +1032,7 @@ static bool drm_target_preferred(struct drm_fb_helper *fb_helper,
 			      fb_helper_conn->connector->base.id);
 
 		/* got for command line mode first */
-//       modes[i] = drm_pick_cmdline_mode(fb_helper_conn, width, height);
-
-        modes[i] = NULL;
-
+		modes[i] = drm_pick_cmdline_mode(fb_helper_conn, width, height);
 		if (!modes[i]) {
 			DRM_DEBUG_KMS("looking for preferred mode on connector %d\n",
 				      fb_helper_conn->connector->base.id);
@@ -1029,7 +1140,7 @@ static void drm_setup_crtcs(struct drm_fb_helper *fb_helper)
 	struct drm_mode_set *modeset;
 	bool *enabled;
 	int width, height;
-	int i, ret;
+	int i;
 
 	DRM_DEBUG_KMS("\n");
 
@@ -1050,19 +1161,23 @@ static void drm_setup_crtcs(struct drm_fb_helper *fb_helper)
 
 	drm_enable_connectors(fb_helper, enabled);
 
-    //ret = drm_target_cloned(fb_helper, modes, enabled, width, height);
+	if (!(fb_helper->funcs->initial_config &&
+	      fb_helper->funcs->initial_config(fb_helper, crtcs, modes,
+					       enabled, width, height))) {
+		memset(modes, 0, dev->mode_config.num_connector*sizeof(modes[0]));
+		memset(crtcs, 0, dev->mode_config.num_connector*sizeof(crtcs[0]));
 
-    ret = 0;
-
-	if (!ret) {
-		ret = drm_target_preferred(fb_helper, modes, enabled, width, height);
-		if (!ret)
+		if (!drm_target_cloned(fb_helper,
+				       modes, enabled, width, height) &&
+		    !drm_target_preferred(fb_helper,
+					  modes, enabled, width, height))
 			DRM_ERROR("Unable to find initial modes\n");
-	}
 
-	DRM_DEBUG_KMS("picking CRTCs for %dx%d config\n", width, height);
+		DRM_DEBUG_KMS("picking CRTCs for %dx%d config\n",
+			      width, height);
 
 	drm_pick_crtcs(fb_helper, crtcs, modes, 0, width, height);
+	}
 
 	/* need to set the modesets up here for use later */
 	/* fill out the connector<->crtc mappings into the modesets */

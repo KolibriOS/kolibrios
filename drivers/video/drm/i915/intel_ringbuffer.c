@@ -26,8 +26,6 @@
  *    Xiang Hai hao<haihao.xiang@intel.com>
  *
  */
-#define iowrite32(v, addr)      writel((v), (addr))
-#define ioread32(addr)          readl(addr)
 
 #include <drm/drmP.h>
 #include "i915_drv.h"
@@ -506,6 +504,8 @@ static int init_render_ring(struct intel_ring_buffer *ring)
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int ret = init_ring_common(ring);
 
+    ENTER();
+
 	if (INTEL_INFO(dev)->gen > 3)
 		I915_WRITE(MI_MODE, _MASKED_BIT_ENABLE(VS_TIMER_DISPATCH));
 
@@ -554,6 +554,8 @@ static int init_render_ring(struct intel_ring_buffer *ring)
 
 	if (HAS_L3_GPU_CACHE(dev))
 		I915_WRITE_IMR(ring, ~GEN6_RENDER_L3_PARITY_ERROR);
+
+    LEAVE();
 
 	return ret;
 }
@@ -879,6 +881,8 @@ void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
 	drm_i915_private_t *dev_priv = ring->dev->dev_private;
 	u32 mmio = 0;
 
+    ENTER();
+
 	/* The ring status page addresses are no longer next to the rest of
 	 * the ring registers as of gen7.
 	 */
@@ -902,6 +906,8 @@ void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
 
 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
 	POSTING_READ(mmio);
+    LEAVE();
+
 }
 
 static int

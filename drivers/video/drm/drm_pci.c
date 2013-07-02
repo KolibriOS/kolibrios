@@ -94,8 +94,6 @@ int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
 	if (!dev->pdev)
 		return -EINVAL;
 
-	if (!pci_is_pcie(dev->pdev))
-		return -EINVAL;
 
     return -EINVAL;
 

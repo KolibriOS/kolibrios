@@ -208,7 +208,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 
 
 	mutex_unlock(&dev->struct_mutex);
-//   vga_switcheroo_client_fb_set(dev->pdev, info);
 
     fb_obj = obj;
 
@@ -244,7 +243,7 @@ int intel_fbdev_init(struct drm_device *dev)
 	ifbdev->helper.funcs = &intel_fb_helper_funcs;
 
 	ret = drm_fb_helper_init(dev, &ifbdev->helper,
-				 dev_priv->num_pipe,
+				 INTEL_INFO(dev)->num_pipes,
 				 INTELFB_CONN_LIMIT);
 	if (ret) {
 		kfree(ifbdev);

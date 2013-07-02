@@ -26,8 +26,6 @@
  *
  */
 
-#define iowrite32(v, addr)      writel((v), (addr))
-
 #include <drm/drmP.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
@@ -384,8 +382,7 @@ i915_gem_execbuffer_relocate_object_slow(struct drm_i915_gem_object *obj,
 }
 
 static int
-i915_gem_execbuffer_relocate(struct drm_device *dev,
-			     struct eb_objects *eb)
+i915_gem_execbuffer_relocate(struct eb_objects *eb)
 {
 	struct drm_i915_gem_object *obj;
 	int ret = 0;
@@ -508,7 +505,6 @@ i915_gem_execbuffer_unreserve_object(struct drm_i915_gem_object *obj)
 
 static int
 i915_gem_execbuffer_reserve(struct intel_ring_buffer *ring,
-			    struct drm_file *file,
 			    struct list_head *objects,
 			    bool *need_relocs)
 {
@@ -701,7 +697,7 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
 			goto err;
 
 	need_relocs = (args->flags & I915_EXEC_NO_RELOC) == 0;
-	ret = i915_gem_execbuffer_reserve(ring, file, &eb->objects, &need_relocs);
+	ret = i915_gem_execbuffer_reserve(ring, &eb->objects, &need_relocs);
 	if (ret)
 		goto err;
 
@@ -774,7 +770,7 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
 	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
 
 	for (i = 0; i < count; i++) {
-		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
+		char __user *ptr = to_user_ptr(exec[i].relocs_ptr);
 		int length; /* limited by fault_in_pages_readable() */
 
 		if (exec[i].flags & __EXEC_OBJECT_UNKNOWN_FLAGS)
@@ -790,7 +786,11 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
 
 		length = exec[i].relocation_count *
 			sizeof(struct drm_i915_gem_relocation_entry);
-		/* we may also need to update the presumed offsets */
+		/*
+		 * We must check that the entire relocation array is safe
+		 * to read, but since we may need to update the presumed
+		 * offsets during execution, check for full write access.
+		 */
 //       if (!access_ok(VERIFY_WRITE, ptr, length))
 //           return -EFAULT;
 
@@ -992,8 +992,7 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 		}
 
 		if (copy_from_user(cliprects,
-				     (struct drm_clip_rect __user *)(uintptr_t)
-				     args->cliprects_ptr,
+				   to_user_ptr(args->cliprects_ptr),
 				     sizeof(*cliprects)*args->num_cliprects)) {
 			ret = -EFAULT;
 			goto pre_mutex_err;
@@ -1029,13 +1028,13 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 
 	/* Move the objects en-masse into the GTT, evicting if necessary. */
 	need_relocs = (args->flags & I915_EXEC_NO_RELOC) == 0;
-	ret = i915_gem_execbuffer_reserve(ring, file, &eb->objects, &need_relocs);
+	ret = i915_gem_execbuffer_reserve(ring, &eb->objects, &need_relocs);
 	if (ret)
 		goto err;
 
 	/* The objects are in their final locations, apply the relocations. */
 	if (need_relocs)
-		ret = i915_gem_execbuffer_relocate(dev, eb);
+		ret = i915_gem_execbuffer_relocate(eb);
 	if (ret) {
 		if (ret == -EFAULT) {
 			ret = i915_gem_execbuffer_relocate_slow(dev, args, file, ring,
