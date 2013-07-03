@@ -82,7 +82,7 @@ APIC_init:
 @@:
         mov     ebx, eax
         call    IOAPIC_read
-        mov     ah, 0x09; Delivery Mode: Lowest Priority, Destination Mode: Logical
+        mov     ah, 0x08; Delivery Mode: Fixed, Destination Mode: Logical
         mov     al, cl
         add     al, 0x20; vector
         or      eax, 0x10000; Mask Interrupt
