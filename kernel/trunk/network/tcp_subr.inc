@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -338,7 +338,7 @@ TCP_respond_segment:
 ; Create the IP packet
 
         push    cx edx
-        mov     ebx, [edi + 4]
+        mov     edx, [edi + 4]
         mov     eax, [edi]
         mov     ecx, sizeof.TCP_header
         mov     di, IP_PROTO_TCP shl 8 + 128
