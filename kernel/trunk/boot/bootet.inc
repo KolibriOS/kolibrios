@@ -15,12 +15,10 @@ $Revision$
 
  
 d80x25_bottom:
-          latin1   '║ KolibriOS pohineb MenuetOS ja kaasas IGASUGUSE GARANTI'
-          latin1   'ITA                    ║'
-          latin1   '║ Naha faili COPYING detailid                           '
-          latin1   '                       ║'
+          latin1   '║ KolibriOS kaasas IGASUGUSE GARANTIITA. Naha faili COPY'
+          latin1   'ING detailid           ║'
           line_full_bottom
-d80x25_bottom_num = 3
+d80x25_bottom_num = 2
 
 msg_apm:  latin1  " APM x.x ", 0
 novesa:   latin1  "Ekraan: EGA/CGA",13,10,0

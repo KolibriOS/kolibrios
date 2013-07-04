@@ -17,8 +17,8 @@ $Revision: 2455 $
 
 
 d80x25_bottom:
-          cp850    '║ KolibriOS está basado en MenuetOS y viene ABSOLUTAMENTE  '
-          cp850    'SIN GARANTíA        ║'
+          cp850    '║ KolibriOS y viene ABSOLUTAMENTE SIN GARANTíA.            '
+          cp850    '                    ║'
           cp850    '║ Lee el archivo COPYING por más detalles                  '
           cp850    '                    ║'
           line_full_bottom

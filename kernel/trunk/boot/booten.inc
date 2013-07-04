@@ -15,12 +15,10 @@ $Revision: 2455 $
 
 
 d80x25_bottom:
-          db       186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '
-          db       'NO WARRANTY         ',186
-          db       186,' See file COPYING for details                             '
-          db       '                    ',186
+          db       186,' KolibriOS comes with ABSOLUTELY NO WARRANTY. See file COP'
+          db       'YING for details    ',186
           line_full_bottom
-d80x25_bottom_num = 3
+d80x25_bottom_num = 2
 
 msg_apm   db      " APM x.x ", 0
 novesa    db      "Display: EGA/CGA",13,10,0

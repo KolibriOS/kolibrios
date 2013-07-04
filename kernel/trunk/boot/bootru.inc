@@ -15,7 +15,7 @@ $Revision$
 
 
 d80x25_bottom:
-          cp866       '║ KolibriOS основана на MenuetOS и НЕ ПРЕДОСТАВЛЯЕТ НИКАКИХ ГАРAНТИЙ.          ║'
+          cp866       '║ KolibriOS НЕ ПРЕДОСТАВЛЯЕТ НИКАКИХ ГАРAНТИЙ.                                 ║'
           cp866       '║ Подробнее смотрите в файле COPYING.TXT                                       ║'
           line_full_bottom
 d80x25_bottom_num = 3

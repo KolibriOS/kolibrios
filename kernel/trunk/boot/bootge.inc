@@ -15,8 +15,8 @@ $Revision$
 
 
 d80x25_bottom:
-           db       186,' KolibriOS basiert auf MenuetOS und wird ohne jegliche '
-           db       ' Garantie vertrieben   ',186
+           db       186,' KolibriOS wird ohne jegliche Garantie vertrieben.     '
+           db       '                       ',186
            db       186,' Details stehen in der Datei COPYING                   '
            db       '                       ',186
           line_full_bottom
