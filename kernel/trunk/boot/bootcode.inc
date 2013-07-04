@@ -731,6 +731,8 @@ end if
         or      al, 20h
         cmp     al, 'a'
         jz      .change_a
+        cmp     al, 'q'         ; Trick to make 'A' key on azerty keyboard work
+        je      .change_a
         cmp     al, 'b'
         jz      .change_b
 ;        cmp     al, 'c'
