@@ -515,36 +515,30 @@ unpack_mutex MUTEX
 endg
 
 align 4
-proc get_proc_ex stdcall, proc_name:dword, imports:dword
-
+proc get_proc_ex stdcall uses ebx esi, proc_name:dword, imports:dword
+        mov     ebx, [imports]
+        test    ebx, ebx
+        jz      .end
+        xor     esi, esi
 .look_up:
-        mov     edx, [imports]
-        test    edx, edx
-        jz      .end
-        mov     edx, [edx]
-        test    edx, edx
-        jz      .end
-.next:
-        mov     eax, [edx]
-        test    eax, eax
-        jz      .next_table
 
-        push    edx
+        mov     eax, [ebx+32]
+        mov     eax, [OS_BASE+eax+esi*4]
+        add     eax, OS_BASE
         stdcall strncmp, eax, [proc_name], 256
-        pop     edx
         test    eax, eax
         jz      .ok
 
-        add     edx, 8
-        jmp     .next
-.next_table:
-        add     [imports], 4
-        jmp     .look_up
-.ok:
-        mov     eax, [edx+4]
-        ret
+        inc     esi
+        cmp     esi, [ebx+24]
+        jb      .look_up
 .end:
         xor     eax, eax
+        ret
+.ok:
+        mov     eax, [ebx+28]
+        mov     eax, [OS_BASE+eax+esi*4]
+        add     eax, OS_BASE
         ret
 endp
 
@@ -713,8 +707,6 @@ proc load_driver stdcall, driver_name:dword
              img_base  dd ?
              start     dd ?
 
-             exports   dd ?   ;fake exports table
-                       dd ?
              file_name rb 13+16+4+1      ; '/sys/drivers/<up-to-16-chars>.obj'
            endl
 
@@ -803,13 +795,10 @@ proc load_driver stdcall, driver_name:dword
         add     ecx, [sym]
         mov     [strings], ecx
 
-        lea     ebx, [exports]
-        mov     dword [ebx], kernel_export
-        mov     dword [ebx+4], 0
         lea     eax, [edx+20]
 
         stdcall fix_coff_symbols, eax, [sym], [edx+COFF_HEADER.nSymbols], \
-                [strings], ebx
+                [strings], __exports
         test    eax, eax
         jz      .link_fail
 
