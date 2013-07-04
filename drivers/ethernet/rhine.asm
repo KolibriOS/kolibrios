@@ -657,11 +657,9 @@ proc service_proc stdcall, ioctl:dword
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
 ; Ok, the eth_device structure is ready, let's probe the device
-    ;;;    cli
-
         call    probe                                                   ; this function will output in eax
         test    eax, eax
-        jnz     .err_sti                                                ; If an error occured, exit
+        jnz     .err                                                    ; If an error occured, exit
 
         mov     eax, [devices]                                          ; Add the device structure to our device list
         mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
@@ -669,7 +667,6 @@ proc service_proc stdcall, ioctl:dword
 
         mov     [device.type], NET_TYPE_ETH
         call    NetRegDev
-   ;;;     sti
 
         cmp     eax, -1
         je      .destroy
@@ -690,9 +687,6 @@ proc service_proc stdcall, ioctl:dword
 
   .destroy:
         ; todo: reset device into virgin state
-
-  .err_sti:
-        sti
 
   .err:
         stdcall KernelFree, ebx
@@ -724,6 +718,21 @@ probe:
 ; get device id
         stdcall PciRead16, [device.pci_bus], [device.pci_dev], PCI_DEVICE_ID
         mov     [device.chip_id], ax
+
+        mov     esi, chiplist
+  .loop:
+        cmp     word[esi+2], ax
+        je      .got_it
+        add     esi, 8
+        cmp     esi, chiplist + 6*8
+        jbe     .loop
+        DEBUGF  2, "Unknown chip: 0x%x, continueing anyway\n", ax
+        jmp     .done
+  .got_it:
+        mov     eax, dword[esi+4]
+        mov     [device.name], eax
+        DEBUGF  1, "Chip type = %s\n", eax
+  .done:
 
 ; get revision id.
         PCI_find_rev
@@ -930,7 +939,7 @@ reset:
 ; attach int handler
 
         movzx   eax, [device.irq_line]
-        DEBUGF  2,"Attaching int handler to irq %x\n", eax:1
+        DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
@@ -1399,9 +1408,9 @@ read_mac:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-        DEBUGF  2,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
+        DEBUGF  1,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
-        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+        DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
@@ -1450,7 +1459,7 @@ transmit:
         ret     8
 
   .fail:
-        DEBUGF  1, "Failed!\n"
+        DEBUGF  2, "Transmit Failed!\n"
 
         ret     8
 
@@ -1657,7 +1666,7 @@ devices         dd 0
 version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
 my_service      db 'RHINE',0                    ; max 16 chars including zero
 
-devicelist:
+chiplist:
                 dd 0x30431106, rhine_3043;, RHINE_IOTYPE, RHINE_I_IOSIZE, CanHaveMII or ReqTxAlign or HasV1TxStat
                 dd 0x61001106, rhine_6100;, RHINE_IOTYPE, RHINE_I_IOSIZE, CanHaveMII or ReqTxAlign or HasV1TxStat
                 dd 0x30651106, rhine_6102;, RHINE_IOTYPE, RHINEII_IOSIZE, CanHaveMII or HasWOL
