@@ -226,6 +226,7 @@ key_menu_right:
     jmp  still
 ;---------------------------------------------------------------------
 draw_left_select_disk_menu:
+    call  device_detect_f70
     mov  [select_panel_counter],0
     call  draw_left_panel
     call  draw_right_panel
@@ -248,6 +249,7 @@ draw_left_select_disk_menu:
     jmp  button
 ;---------------------------------------------------------------------
 draw_right_select_disk_menu:
+    call  device_detect_f70
     mov  [select_panel_counter],1
     call  draw_left_panel
     call  draw_right_panel

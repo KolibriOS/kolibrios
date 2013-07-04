@@ -91,12 +91,14 @@ left_start_draw_line rd 1
 left_folder_block rd 1
 left_start_draw_cursor_line rw 1
 ;left_panel_clear_all rb 1
+left_folder_block_1 rd 1
 ;---------------------------------------------------------------------
 align 4
 right_start_draw_line rd 1
 right_folder_block rd 1
 right_start_draw_cursor_line rw 1
 ;right_panel_clear_all rb 1
+right_folder_block_1 rd 1
 ;---------------------------------------------------------------------
 align 4
 sort_counter rd 1
@@ -175,6 +177,14 @@ create_dir_name:
 	rb 256
 ;---------------------------------------------------------------------
 align 4
+left_folder_data_1:
+	rb 304*32+32
+;---------------------------------------------------------------------
+align 4
+right_folder_data_1:
+	rb 304*32+32
+;---------------------------------------------------------------------
+align 4
 retrieved_devices_table:
 	rb 10*100
 ;---------------------------------------------------------------------
@@ -242,4 +252,12 @@ read_folder_name:
 align 4
 read_folder_1_name:
 	rb 4096
+;---------------------------------------------------------------------
+align 4
+read_folder_2_name:
+	rb 64
+;---------------------------------------------------------------------
+align 4
+read_folder_3_name:
+	rb 64
 ;---------------------------------------------------------------------

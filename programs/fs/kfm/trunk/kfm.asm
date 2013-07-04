@@ -364,6 +364,11 @@ add_memory_for_folders:
     add   ecx,304*32+32
     mov   [appl_memory],ecx
     mcall 64,1
+
+    mov   eax,[left_folder_data]
+    mov   [read_folder.return],eax 
+    mov   eax,[right_folder_data]
+    mov   [read_folder_1.return],eax
     ret
 ;---------------------------------------------------------------------
 copy_path:

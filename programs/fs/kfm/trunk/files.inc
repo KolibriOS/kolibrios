@@ -365,9 +365,10 @@ proc_read_folder_1:
     jmp   still
 ;---------------------------------------------------------------------
 copy_folder_name:
-    mov  edi,read_folder_name+1  ;read_folder.name+1
-@@:
+    mov  edi,read_folder_name+1
+.1:
     cld
+@@:
     lodsb
     stosb
     cmp al,0
@@ -375,21 +376,23 @@ copy_folder_name:
     ret
 ;---------------------------------------------------------------------
 copy_folder_name_1:
-    mov  edi,read_folder_1_name+1  ;read_folder_1.name+1
-@@:
-    cld
-    lodsb
-    stosb
-    cmp al,0
-    jne  @r
-    ret
+    mov  edi,read_folder_1_name+1
+    jmp  copy_folder_name.1
+;---------------------------------------------------------------------
+copy_folder_name_2:
+    mov  edi,read_folder_2_name+1
+    jmp  copy_folder_name.1
+;---------------------------------------------------------------------
+copy_folder_name_3:
+    mov  edi,read_folder_3_name+1
+    jmp  copy_folder_name.1
 ;---------------------------------------------------------------------
 read_folder:
     .subfunction dd   1
     .start	 dd   0
     .flags	 dd   0
-    .size	     dd   5000
-    .return	 dd   0  ;folder_data
+    .size	 dd   5000
+    .return	 dd   0
     db 0
     .name: dd read_folder_name
 ;---------------------------------------------------------------------
@@ -397,10 +400,28 @@ read_folder_1:
     .subfunction dd   1
     .start	 dd   0
     .flags	 dd   0
-    .size	     dd   5000
-    .return	 dd   0  ;folder_data_1
+    .size	 dd   5000
+    .return	 dd   0
     db 0
     .name: dd read_folder_1_name
+;---------------------------------------------------------------------
+read_folder_2:
+    .subfunction dd   1
+    .start	 dd   0
+    .flags	 dd   0
+    .size	 dd   5000
+    .return	 dd   left_folder_data_1
+    db 0
+    .name: dd read_folder_2_name
+;---------------------------------------------------------------------
+read_folder_3:
+    .subfunction dd   1
+    .start	 dd   0
+    .flags	 dd   0
+    .size	 dd   5000
+    .return	 dd   right_folder_data_1
+    db 0
+    .name: dd read_folder_3_name
 ;---------------------------------------------------------------------
 read_file_features:
     .subfunction dd   5

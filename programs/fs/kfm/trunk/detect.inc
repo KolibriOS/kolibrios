@@ -49,34 +49,37 @@ device_detect: ; f1811
     ret
 ;---------------------------------------------------------------------
 device_detect_f70:
-    mov   eax,[left_folder_data]
-    mov   [read_folder.return],eax
-    mcall 70, read_folder
+    mov   ax,[select_disk_char]
+    mov   [read_folder_2_name],ax
+    mov   [read_folder_3_name],ax
+;    mov   eax,left_folder_data_1
+;    mov   [read_folder_2.return],eax
+    mcall 70, read_folder_2
     test  eax,eax
     jz    @f
     cmp   eax,6
     jne   read_folder_error
 @@:
-    mov   [left_folder_block],ebx
+    mov   [left_folder_block_1],ebx
     mov   [temp_counter_1],0
     mov   [retrieved_devices_table_counter],0
 .start_temp_counter_1:
     imul  esi,[temp_counter_1],304
-    add   esi,[left_folder_data]
+    add   esi,left_folder_data_1
     add   esi,32+40   ;[eax+32+40]
-    call  copy_folder_name_1
-    mov   eax,[right_folder_data]
-    mov   [read_folder_1.return],eax
-    mcall 70, read_folder_1
+    call  copy_folder_name_3
+;    mov   eax,right_folder_data_1
+;    mov   [read_folder_3.return],eax
+    mcall 70, read_folder_3
     test  eax,eax
     jz    @f
     cmp   eax,6
     jne   read_folder_1_error
 @@:
-    mov   eax,[right_folder_data]
+    mov   eax,right_folder_data_1
     cmp   [eax+4],dword 0
     je    .continue
-    mov   [right_folder_block],ebx
+    mov   [right_folder_block_1],ebx
     mov   ebp,0
 .start_copy_device_patch:
     imul  edi,[retrieved_devices_table_counter],10
@@ -84,22 +87,22 @@ device_detect_f70:
     mov   [edi],byte '/'
     inc   edi
     imul  esi,[temp_counter_1],304
-    add   esi,[left_folder_data]
+    add   esi,left_folder_data_1
     add   esi,32+40  ;[eax+32+40]
     call  proc_copy_patch
     imul  esi,ebp,304
-    add   esi,[right_folder_data]
+    add   esi,right_folder_data_1
     add   esi,32+40   ;[eax+32+40]
     mov   [edi-1],byte '/'
     call  proc_copy_patch
     inc   [retrieved_devices_table_counter]
     inc   ebp
-    cmp   ebp,[right_folder_block]
+    cmp   ebp,[right_folder_block_1]
     jb	  .start_copy_device_patch
 .continue:
     inc   [temp_counter_1]
     mov   eax,[temp_counter_1]
-    cmp   eax,[left_folder_block]
+    cmp   eax,[left_folder_block_1]
     jb	  .start_temp_counter_1
     mov   esi,retrieved_devices_table+1
     call  copy_folder_name
