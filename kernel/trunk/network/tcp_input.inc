@@ -1455,9 +1455,8 @@ align 4
         jnz     @f
 
         test    ecx, ecx
-        jnz     .final_processing
+        jz      .final_processing
        @@:
-
 
 ; The segment is in order?
         mov     eax, [edx + TCP_header.SequenceNumber]
