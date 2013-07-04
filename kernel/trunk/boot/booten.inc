@@ -54,7 +54,7 @@ diskload  db      "Loading diskette: 00 %",8,8,8,8,0
 pros      db      "00"
 backspace2 db     8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Press [abcd] to change settings, press [Enter] to continue booting",13,10,0
+start_msg db      "Press [abc] to change settings, press [Enter] to continue booting",13,10,0
 time_msg  db      " or wait "
 time_str  db      " 5 seconds"
           db      " before automatical continuation",13,10,0

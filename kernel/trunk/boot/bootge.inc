@@ -54,7 +54,7 @@ diskload  db      "Lade Diskette: 00 %",8,8,8,8,0
 pros      db      "00"
 backspace2 db     8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Druecke [abcd], um die Einstellungen zu aendern, druecke [Enter] zum starten",13,10,0
+start_msg db      "Druecke [abc], um die Einstellungen zu aendern, druecke [Enter] zum starten",13,10,0
 time_msg  db      " oder warte "
 time_str  db      " 5 Sekunden"
           db      " bis zum automatischen Start",13,10,0

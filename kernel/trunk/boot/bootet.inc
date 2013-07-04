@@ -54,7 +54,7 @@ diskload: latin1  "Loen disketti: 00 %",8,8,8,8,0
 pros:     latin1  "00"
 backspace2:latin1 8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg:latin1  "Vajuta [abcd] seadete muutmiseks, vajuta [Enter] laadimise jätkamiseks",13,10,0
+start_msg:latin1  "Vajuta [abc] seadete muutmiseks, vajuta [Enter] laadimise jätkamiseks",13,10,0
 time_msg: latin1  " või oota "
 time_str: latin1  " 5 sekundit"
           latin1  " automaatseks jätkamiseks",13,10,0

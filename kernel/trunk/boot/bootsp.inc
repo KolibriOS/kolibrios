@@ -56,7 +56,7 @@ diskload: cp850   "Cargando disquete: 00 %",8,8,8,8,0
 pros:     cp850   "00"
 backspace2:cp850  8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg:cp850   "Presiona [abcd] para cambiar la configuración, [Enter] para continuar",13,10,0
+start_msg:cp850   "Presiona [abc] para cambiar la configuración, [Enter] para continuar",13,10,0
 time_msg: cp850   " o espera "
 time_str: cp850   " 5 segundos"
           cp850   " para que inicie automáticamente",13,10,0
