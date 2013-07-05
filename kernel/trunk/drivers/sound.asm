@@ -10,8 +10,9 @@ format MS COFF
 DEBUG           = 1
 
 include 'proc32.inc'
-include '../struct.inc'
 include 'imports.inc'
+include '../struct.inc'
+
 
 VID_INTEL         = 0x8086
 VID_NVIDIA        = 0x10DE
@@ -168,9 +169,6 @@ section '.flat' code readable align 16
 proc START stdcall, state:dword
 
         mov     eax, [srv_entry]
-        test    eax, eax
-        jnz     .done
-
         cmp     [state], 1
         jne     .stop
 
@@ -179,9 +177,14 @@ proc START stdcall, state:dword
         call    SysMsgBoardStr
      end if
 
+        test    eax, eax
+        jnz     .done
         call    detect_controller
         ret
 .stop:
+        test    eax, eax
+        jz      .done
+        leave
         jmp     eax
 .done:
         xor     eax, eax
@@ -415,5 +418,6 @@ msgInit         db 'Detecting hardware...',13,10,0
 msgFail         db 'No compatible soundcard found!',13,10,0
 msgLoading      db 'Loading ',0
 msgNewline      db 13,10,0
+
 
 section '.data' data readable writable align 16
