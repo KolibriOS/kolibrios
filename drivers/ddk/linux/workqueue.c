@@ -2,6 +2,8 @@
 #include <linux/workqueue.h>
 #include <ddk.h>
 
+extern int driver_wq_state;
+
 struct workqueue_struct *alloc_workqueue(const char *fmt,
                            unsigned int flags,
                            int max_active)
@@ -29,29 +31,28 @@ void run_workqueue(struct workqueue_struct *cwq)
 //    dbgprintf("wq: %x head %x, next %x\n",
 //               cwq, &cwq->worklist, cwq->worklist.next);
 
-repeat:
-
-    spin_lock_irqsave(&cwq->lock, irqflags);
-
-    while (!list_empty(&cwq->worklist))
+    while(driver_wq_state != 0)
     {
-        struct work_struct *work = list_entry(cwq->worklist.next,
+        spin_lock_irqsave(&cwq->lock, irqflags);
+
+        while (!list_empty(&cwq->worklist))
+        {
+            struct work_struct *work = list_entry(cwq->worklist.next,
                                         struct work_struct, entry);
-        work_func_t f = work->func;
-        list_del_init(cwq->worklist.next);
-//        dbgprintf("head %x, next %x\n",
-//                  &cwq->worklist, cwq->worklist.next);
+            work_func_t f = work->func;
+            list_del_init(cwq->worklist.next);
+//            printf("work %p, func %p\n",
+//                      work, f);
+
+            spin_unlock_irqrestore(&cwq->lock, irqflags);
+            f(work);
+            spin_lock_irqsave(&cwq->lock, irqflags);
+        }
 
         spin_unlock_irqrestore(&cwq->lock, irqflags);
-        f(work);
-        spin_lock_irqsave(&cwq->lock, irqflags);
-    }
 
-    spin_unlock_irqrestore(&cwq->lock, irqflags);
-
-    delay(1);
-
-    goto repeat;
+        delay(1);
+    };
 }
 
 

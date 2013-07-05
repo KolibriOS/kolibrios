@@ -59,9 +59,5 @@ struct platform_device
 
 #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
 
-static inline long IS_ERR(const void *ptr)
-{
-    return IS_ERR_VALUE((unsigned long)ptr);
-}
 
 #endif

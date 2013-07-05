@@ -28,12 +28,12 @@
 #ifndef TTM_MEMORY_H
 #define TTM_MEMORY_H
 
-//#include <linux/workqueue.h>
+#include <linux/workqueue.h>
 #include <linux/spinlock.h>
 #include <linux/bug.h>
 #include <linux/wait.h>
 #include <linux/errno.h>
-//#include <linux/kobject.h>
+#include <linux/kobject.h>
 #include <linux/mm.h>
 
 /**
@@ -75,7 +75,7 @@ struct ttm_mem_shrink {
 #define TTM_MEM_MAX_ZONES 2
 struct ttm_mem_zone;
 struct ttm_mem_global {
-//   struct kobject kobj;
+    struct kobject kobj;
 	struct ttm_mem_shrink *shrink;
 	struct workqueue_struct *swap_queue;
 	struct work_struct work;

@@ -56,7 +56,9 @@
 #include <linux/bug.h>
 #include <linux/sched.h>
 
-//#include <linux/miscdevice.h>
+#include <linux/firmware.h>
+#include <linux/err.h>
+
 //#include <linux/fs.h>
 //#include <linux/proc_fs.h>
 //#include <linux/init.h>
