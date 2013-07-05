@@ -208,10 +208,6 @@ align 16
 ; but do not return whether they did it, so just ignore IRQs 6, 14, 15.
         cmp     ebp, 6
         jz      .fail
-        cmp     ebp, 14
-        jz      .fail
-        cmp     ebp, 15
-        jz      .fail
         push    ebp
         xor     ebp, ebp
 .try_other_irqs:
