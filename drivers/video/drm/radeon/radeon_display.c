@@ -835,17 +835,13 @@ radeon_framebuffer_init(struct drm_device *dev,
 			  struct drm_gem_object *obj)
 {
 	int ret;
-
-    ENTER();
-
 	rfb->obj = obj;
+	drm_helper_mode_fill_fb_struct(&rfb->base, mode_cmd);
 	ret = drm_framebuffer_init(dev, &rfb->base, &radeon_fb_funcs);
 	if (ret) {
 		rfb->obj = NULL;
 		return ret;
 	}
-	drm_helper_mode_fill_fb_struct(&rfb->base, mode_cmd);
-    LEAVE();
 	return 0;
 }
 
@@ -1043,8 +1039,6 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	int i;
 	int ret;
 
-    ENTER();
-
 	drm_mode_config_init(rdev->ddev);
 	rdev->mode_info.mode_config_initialized = true;
 
@@ -1074,8 +1068,6 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	/* init i2c buses */
 	radeon_i2c_init(rdev);
 
-    dbgprintf("i2c init\n");
-
 	/* check combios for a valid hardcoded EDID - Sun servers */
 	if (!rdev->is_atom_bios) {
 		/* check for hardcoded EDID in BIOS */
@@ -1086,8 +1078,6 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	for (i = 0; i < rdev->num_crtc; i++) {
 		radeon_crtc_init(rdev->ddev, i);
 	}
-
-    dbgprintf("crtc init\n");
 
 	/* okay we should have all the bios connectors */
 	ret = radeon_setup_enc_conn(rdev->ddev);
@@ -1113,8 +1103,6 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	radeon_fbdev_init(rdev);
 //   drm_kms_helper_poll_init(rdev->ddev);
 
-    LEAVE();
-
 	return 0;
 }
 
@@ -1126,7 +1114,7 @@ void radeon_modeset_fini(struct radeon_device *rdev)
 //		radeon_afmt_fini(rdev);
 //       drm_kms_helper_poll_fini(rdev->ddev);
 //       radeon_hpd_fini(rdev);
-		drm_mode_config_cleanup(rdev->ddev);
+//       drm_mode_config_cleanup(rdev->ddev);
 		rdev->mode_info.mode_config_initialized = false;
 	}
 	/* free i2c buses */
@@ -1163,18 +1151,12 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 	radeon_crtc->h_border = 0;
 	radeon_crtc->v_border = 0;
 
-    ENTER();
-
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
 		if (encoder->crtc != crtc)
 			continue;
 		radeon_encoder = to_radeon_encoder(encoder);
 		connector = radeon_get_connector_for_encoder(encoder);
 		radeon_connector = to_radeon_connector(connector);
-
-        dbgprintf("native_hdisplay %d vdisplay %d\n",
-                   radeon_encoder->native_mode.hdisplay,
-                   radeon_encoder->native_mode.vdisplay);
 
 		if (first) {
 			/* set scaling */
@@ -1241,9 +1223,6 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 		radeon_crtc->vsc.full = dfixed_const(1);
 		radeon_crtc->hsc.full = dfixed_const(1);
 	}
-
-    LEAVE();
-
 	return true;
 }
 

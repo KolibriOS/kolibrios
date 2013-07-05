@@ -661,8 +661,6 @@ void i915_gem_init_global_gtt(struct drm_device *dev)
         gtt_size -= I915_PPGTT_PD_ENTRIES*PAGE_SIZE;
 		}
 
-//        gtt_size -= LFB_SIZE;
-
         i915_gem_setup_global_gtt(dev, LFB_SIZE, mappable_size, gtt_size);
 
 		ret = i915_gem_init_aliasing_ppgtt(dev);

@@ -59,7 +59,7 @@ int radeon_hw_i2c = 0;
 int radeon_pcie_gen2 = 0;
 int radeon_disp_priority = 0;
 int radeon_lockup_timeout = 10000;
-
+int radeon_fastfb = 0;
 
 int irq_override = 0;
 
@@ -143,8 +143,46 @@ static const char radeon_family_name[][16] = {
 	"TAHITI",
 	"PITCAIRN",
 	"VERDE",
+	"OLAND",
+	"HAINAN",
 	"LAST",
 };
+
+/**
+ * radeon_program_register_sequence - program an array of registers.
+ *
+ * @rdev: radeon_device pointer
+ * @registers: pointer to the register array
+ * @array_size: size of the register array
+ *
+ * Programs an array or registers with and and or masks.
+ * This is a helper for setting golden registers.
+ */
+void radeon_program_register_sequence(struct radeon_device *rdev,
+				      const u32 *registers,
+				      const u32 array_size)
+{
+	u32 tmp, reg, and_mask, or_mask;
+	int i;
+
+	if (array_size % 3)
+		return;
+
+	for (i = 0; i < array_size; i +=3) {
+		reg = registers[i + 0];
+		and_mask = registers[i + 1];
+		or_mask = registers[i + 2];
+
+		if (and_mask == 0xffffffff) {
+			tmp = or_mask;
+		} else {
+			tmp = RREG32(reg);
+			tmp &= ~and_mask;
+			tmp |= or_mask;
+		}
+		WREG32(reg, tmp);
+	}
+}
 
 /**
  * radeon_surface_init - Clear GPU surface registers.
@@ -253,16 +291,6 @@ void radeon_scratch_free(struct radeon_device *rdev, uint32_t reg)
  */
 void radeon_wb_disable(struct radeon_device *rdev)
 {
-	int r;
-
-	if (rdev->wb.wb_obj) {
-		r = radeon_bo_reserve(rdev->wb.wb_obj, false);
-		if (unlikely(r != 0))
-			return;
-		radeon_bo_kunmap(rdev->wb.wb_obj);
-		radeon_bo_unpin(rdev->wb.wb_obj);
-		radeon_bo_unreserve(rdev->wb.wb_obj);
-	}
 	rdev->wb.enabled = false;
 }
 
@@ -304,7 +332,6 @@ int radeon_wb_init(struct radeon_device *rdev)
 			dev_warn(rdev->dev, "(%d) create WB bo failed\n", r);
 			return r;
 		}
-	}
 	r = radeon_bo_reserve(rdev->wb.wb_obj, false);
 	if (unlikely(r != 0)) {
 		radeon_wb_fini(rdev);
@@ -324,6 +351,7 @@ int radeon_wb_init(struct radeon_device *rdev)
 		dev_warn(rdev->dev, "(%d) map WB bo failed\n", r);
 		radeon_wb_fini(rdev);
 		return r;
+	}
 	}
 
 	/* clear wb memory */
@@ -405,7 +433,7 @@ void radeon_vram_location(struct radeon_device *rdev, struct radeon_mc *mc, u64 
 	uint64_t limit = (uint64_t)radeon_vram_limit << 20;
 
 	mc->vram_start = base;
-	if (mc->mc_vram_size > (0xFFFFFFFF - base + 1)) {
+	if (mc->mc_vram_size > (rdev->mc.mc_mask - base + 1)) {
 		dev_warn(rdev->dev, "limiting VRAM to PCI aperture size\n");
 		mc->real_vram_size = mc->aper_size;
 		mc->mc_vram_size = mc->aper_size;
@@ -440,7 +468,7 @@ void radeon_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
 {
 	u64 size_af, size_bf;
 
-	size_af = ((0xFFFFFFFF - mc->vram_end) + mc->gtt_base_align) & ~mc->gtt_base_align;
+	size_af = ((rdev->mc.mc_mask - mc->vram_end) + mc->gtt_base_align) & ~mc->gtt_base_align;
 	size_bf = mc->vram_start & ~mc->gtt_base_align;
 	if (size_bf > size_af) {
 		if (mc->gtt_size > size_bf) {
@@ -476,19 +504,21 @@ bool radeon_card_posted(struct radeon_device *rdev)
 {
 	uint32_t reg;
 
+	if (ASIC_IS_NODCE(rdev))
+		goto check_memsize;
+
 	/* first check CRTCs */
-	if (ASIC_IS_DCE41(rdev)) {
+	if (ASIC_IS_DCE4(rdev)) {
 		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
 			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
-		if (reg & EVERGREEN_CRTC_MASTER_EN)
-			return true;
-	} else if (ASIC_IS_DCE4(rdev)) {
-		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
-			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET) |
-			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
-			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET) |
-			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
+			if (rdev->num_crtc >= 4) {
+				reg |= RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
+					RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
+			}
+			if (rdev->num_crtc >= 6) {
+				reg |= RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
 			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
+			}
 		if (reg & EVERGREEN_CRTC_MASTER_EN)
 			return true;
 	} else if (ASIC_IS_AVIVO(rdev)) {
@@ -505,6 +535,7 @@ bool radeon_card_posted(struct radeon_device *rdev)
 		}
 	}
 
+check_memsize:
 	/* then check MEM_SIZE, in case the crtcs are off */
 	if (rdev->family >= CHIP_R600)
 		reg = RREG32(R600_CONFIG_MEMSIZE);
@@ -797,6 +828,11 @@ int radeon_atombios_init(struct radeon_device *rdev)
 	atom_card_info->pll_write = cail_pll_write;
 
 	rdev->mode_info.atom_context = atom_parse(atom_card_info, rdev->bios);
+	if (!rdev->mode_info.atom_context) {
+		radeon_atombios_fini(rdev);
+		return -ENOMEM;
+	}
+
 	mutex_init(&rdev->mode_info.atom_context->mutex);
     radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
 	atom_allocate_fb_scratch(rdev->mode_info.atom_context);
@@ -816,9 +852,11 @@ void radeon_atombios_fini(struct radeon_device *rdev)
 {
 	if (rdev->mode_info.atom_context) {
 		kfree(rdev->mode_info.atom_context->scratch);
-	kfree(rdev->mode_info.atom_context);
 	}
+	kfree(rdev->mode_info.atom_context);
+	rdev->mode_info.atom_context = NULL;
 	kfree(rdev->mode_info.atom_card_info);
+	rdev->mode_info.atom_card_info = NULL;
 }
 
 /* COMBIOS */
@@ -970,8 +1008,8 @@ int radeon_device_init(struct radeon_device *rdev,
 	mutex_init(&rdev->gem.mutex);
 	mutex_init(&rdev->pm.mutex);
 	mutex_init(&rdev->gpu_clock_mutex);
-	init_rwsem(&rdev->pm.mclk_lock);
-	init_rwsem(&rdev->exclusive_lock);
+//   init_rwsem(&rdev->pm.mclk_lock);
+//   init_rwsem(&rdev->exclusive_lock);
 	init_waitqueue_head(&rdev->irq.vblank_queue);
 	r = radeon_gem_init(rdev);
 	if (r)
@@ -1002,6 +1040,17 @@ int radeon_device_init(struct radeon_device *rdev,
 	if (rdev->flags & RADEON_IS_AGP && radeon_agpmode == -1) {
 		radeon_agp_disable(rdev);
     }
+
+	/* Set the internal MC address mask
+	 * This is the max address of the GPU's
+	 * internal address space.
+	 */
+	if (rdev->family >= CHIP_CAYMAN)
+		rdev->mc.mc_mask = 0xffffffffffULL; /* 40 bit MC */
+	else if (rdev->family >= CHIP_CEDAR)
+		rdev->mc.mc_mask = 0xfffffffffULL; /* 36 bit MC */
+	else
+		rdev->mc.mc_mask = 0xffffffffULL; /* 32 bit MC */
 
 	/* set DMA mask + need_dma32 flags.
 	 * PCIE - can handle 40-bits.
@@ -1121,7 +1170,6 @@ retry:
     }
 
     radeon_restore_bios_scratch_regs(rdev);
-    drm_helper_resume_force_mode(rdev->ddev);
 
     if (!r) {
         for (i = 0; i < RADEON_NUM_RINGS; ++i) {
@@ -1165,7 +1213,6 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
     struct radeon_device *rdev;
     int r;
 
-    ENTER();
 
     rdev = kzalloc(sizeof(struct radeon_device), GFP_KERNEL);
     if (rdev == NULL) {
@@ -1216,8 +1263,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     static struct drm_device *dev;
     int ret;
 
-    ENTER();
-
     dev = kzalloc(sizeof(*dev), 0);
     if (!dev)
         return -ENOMEM;
@@ -1258,8 +1303,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     else
         init_display(dev->dev_private, &usermode);
 
-
-    LEAVE();
 
     return 0;
 
@@ -1333,9 +1376,9 @@ static struct pci_device_id pciidlist[] = {
 
 #define API_VERSION     (COMPATIBLE_API << 16) | CURRENT_API
 
-#define SRV_GETVERSION      0
-#define SRV_ENUM_MODES      1
-#define SRV_SET_MODE        2
+#define SRV_GETVERSION          0
+#define SRV_ENUM_MODES          1
+#define SRV_SET_MODE            2
 #define SRV_GET_CAPS            3
 
 #define SRV_CREATE_SURFACE      10
@@ -1392,7 +1435,7 @@ int _stdcall display_handler(ioctl_t *io)
             if( radeon_modeset )
                 retval = set_user_mode((videomode_t*)inp);
             break;
-
+/*
         case SRV_GET_CAPS:
             retval = get_driver_caps((hwcaps_t*)inp);
             break;
@@ -1409,7 +1452,7 @@ int _stdcall display_handler(ioctl_t *io)
         case SRV_BLIT_BITMAP:
             srv_blit_bitmap( inp[0], inp[1], inp[2],
                         inp[3], inp[4], inp[5], inp[6]);
-
+*/
     };
 
     return retval;
@@ -1438,7 +1481,7 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/TMP1/1/atikms.log");
+        strcpy(log, "/TMP1/1/ati.log");
 
         if(!dbg_open(log))
         {
@@ -1446,7 +1489,9 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC13 cmdline %s\n", cmdline);
+    dbgprintf("Radeon v3.10 preview-1 cmdline %s\n", cmdline);
+
+    cpu_detect();
 
     enum_pci_devices();
 
@@ -1460,6 +1505,8 @@ u32_t drvEntry(int action, char *cmdline)
 
     dbgprintf("device %x:%x\n", device.pci_dev.vendor,
                                 device.pci_dev.device);
+
+    drm_global_init();
 
     err = drm_get_dev(&device.pci_dev, ent);
 
@@ -1494,14 +1541,5 @@ int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
             ret = 1;
     }
     return ret;
-}
-
-unsigned int hweight32(unsigned int w)
-{
-    unsigned int res = w - ((w >> 1) & 0x55555555);
-    res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
-    res = (res + (res >> 4)) & 0x0F0F0F0F;
-    res = res + (res >> 8);
-    return (res + (res >> 16)) & 0x000000FF;
 }
 

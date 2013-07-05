@@ -53,6 +53,43 @@
 #define RCU_IND_INDEX           			0x100
 #define RCU_IND_DATA            			0x104
 
+/* discrete uvd clocks */
+#define CG_UPLL_FUNC_CNTL				0x718
+#	define UPLL_RESET_MASK				0x00000001
+#	define UPLL_SLEEP_MASK				0x00000002
+#	define UPLL_BYPASS_EN_MASK			0x00000004
+#	define UPLL_CTLREQ_MASK				0x00000008
+#	define UPLL_REF_DIV_MASK			0x003F0000
+#	define UPLL_VCO_MODE_MASK			0x00000200
+#	define UPLL_CTLACK_MASK				0x40000000
+#	define UPLL_CTLACK2_MASK			0x80000000
+#define CG_UPLL_FUNC_CNTL_2				0x71c
+#	define UPLL_PDIV_A(x)				((x) << 0)
+#	define UPLL_PDIV_A_MASK				0x0000007F
+#	define UPLL_PDIV_B(x)				((x) << 8)
+#	define UPLL_PDIV_B_MASK				0x00007F00
+#	define VCLK_SRC_SEL(x)				((x) << 20)
+#	define VCLK_SRC_SEL_MASK			0x01F00000
+#	define DCLK_SRC_SEL(x)				((x) << 25)
+#	define DCLK_SRC_SEL_MASK			0x3E000000
+#define CG_UPLL_FUNC_CNTL_3				0x720
+#	define UPLL_FB_DIV(x)				((x) << 0)
+#	define UPLL_FB_DIV_MASK				0x01FFFFFF
+#define CG_UPLL_FUNC_CNTL_4				0x854
+#	define UPLL_SPARE_ISPARE9			0x00020000
+#define CG_UPLL_SPREAD_SPECTRUM				0x79c
+#	define SSEN_MASK				0x00000001
+
+/* fusion uvd clocks */
+#define CG_DCLK_CNTL                                    0x610
+#       define DCLK_DIVIDER_MASK                        0x7f
+#       define DCLK_DIR_CNTL_EN                         (1 << 8)
+#define CG_DCLK_STATUS                                  0x614
+#       define DCLK_STATUS                              (1 << 0)
+#define CG_VCLK_CNTL                                    0x618
+#define CG_VCLK_STATUS                                  0x61c
+#define	CG_SCRATCH1					0x820
+
 #define GRBM_GFX_INDEX          			0x802C
 #define		INSTANCE_INDEX(x)			((x) << 0)
 #define		SE_INDEX(x)     			((x) << 16)
@@ -197,6 +234,7 @@
 #       define HDMI_MPEG_INFO_CONT           (1 << 9)
 #define HDMI_INFOFRAME_CONTROL1              0x7048
 #       define HDMI_AVI_INFO_LINE(x)         (((x) & 0x3f) << 0)
+#       define HDMI_AVI_INFO_LINE_MASK       (0x3f << 0)
 #       define HDMI_AUDIO_INFO_LINE(x)       (((x) & 0x3f) << 8)
 #       define HDMI_MPEG_INFO_LINE(x)        (((x) & 0x3f) << 16)
 #define HDMI_GENERIC_PACKET_CONTROL          0x704c
@@ -729,6 +767,18 @@
 #define	WAIT_UNTIL					0x8040
 
 #define	SRBM_STATUS				        0x0E50
+#define		RLC_RQ_PENDING 				(1 << 3)
+#define		GRBM_RQ_PENDING 			(1 << 5)
+#define		VMC_BUSY 				(1 << 8)
+#define		MCB_BUSY 				(1 << 9)
+#define		MCB_NON_DISPLAY_BUSY 			(1 << 10)
+#define		MCC_BUSY 				(1 << 11)
+#define		MCD_BUSY 				(1 << 12)
+#define		SEM_BUSY 				(1 << 14)
+#define		RLC_BUSY 				(1 << 15)
+#define		IH_BUSY 				(1 << 17)
+#define	SRBM_STATUS2				        0x0EC4
+#define		DMA_BUSY 				(1 << 5)
 #define	SRBM_SOFT_RESET				        0x0E60
 #define		SRBM_SOFT_RESET_ALL_MASK    	       	0x00FEEFA6
 #define		SOFT_RESET_BIF				(1 << 1)
@@ -924,10 +974,13 @@
 #define CAYMAN_DMA1_CNTL                                  0xd82c
 
 /* async DMA packets */
-#define DMA_PACKET(cmd, t, s, n)	((((cmd) & 0xF) << 28) |	\
-					 (((t) & 0x1) << 23) |		\
-					 (((s) & 0x1) << 22) |		\
+#define DMA_PACKET(cmd, sub_cmd, n) ((((cmd) & 0xF) << 28) |    \
+                                    (((sub_cmd) & 0xFF) << 20) |\
 					 (((n) & 0xFFFFF) << 0))
+#define GET_DMA_CMD(h) (((h) & 0xf0000000) >> 28)
+#define GET_DMA_COUNT(h) ((h) & 0x000fffff)
+#define GET_DMA_SUB_CMD(h) (((h) & 0x0ff00000) >> 20)
+
 /* async DMA Packet types */
 #define	DMA_PACKET_WRITE				  0x2
 #define	DMA_PACKET_COPY					  0x3
@@ -977,19 +1030,20 @@
 #       define TARGET_LINK_SPEED_MASK                     (0xf << 0)
 #       define SELECTABLE_DEEMPHASIS                      (1 << 6)
 
+
+/*
+ * UVD
+ */
+#define UVD_UDEC_ADDR_CONFIG				0xef4c
+#define UVD_UDEC_DB_ADDR_CONFIG				0xef50
+#define UVD_UDEC_DBW_ADDR_CONFIG			0xef54
+#define UVD_RBC_RB_RPTR					0xf690
+#define UVD_RBC_RB_WPTR					0xf694
+
 /*
  * PM4
  */
-#define	PACKET_TYPE0	0
-#define	PACKET_TYPE1	1
-#define	PACKET_TYPE2	2
-#define	PACKET_TYPE3	3
-
-#define CP_PACKET_GET_TYPE(h) (((h) >> 30) & 3)
-#define CP_PACKET_GET_COUNT(h) (((h) >> 16) & 0x3FFF)
-#define CP_PACKET0_GET_REG(h) (((h) & 0xFFFF) << 2)
-#define CP_PACKET3_GET_OPCODE(h) (((h) >> 8) & 0xFF)
-#define PACKET0(reg, n)	((PACKET_TYPE0 << 30) |				\
+#define PACKET0(reg, n)	((RADEON_PACKET_TYPE0 << 30) |			\
 			 (((reg) >> 2) & 0xFFFF) |			\
 			 ((n) & 0x3FFF) << 16)
 #define CP_PACKET2			0x80000000
@@ -998,7 +1052,7 @@
 
 #define PACKET2(v)	(CP_PACKET2 | REG_SET(PACKET2_PAD, (v)))
 
-#define PACKET3(op, n)	((PACKET_TYPE3 << 30) |				\
+#define PACKET3(op, n)	((RADEON_PACKET_TYPE3 << 30) |			\
 			 (((op) & 0xFF) << 8) |				\
 			 ((n) & 0x3FFF) << 16)
 

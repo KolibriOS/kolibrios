@@ -450,8 +450,6 @@ bool radeon_dp_getdpcd(struct radeon_connector *radeon_connector)
 	u8 msg[DP_DPCD_SIZE];
 	int ret, i;
 
-    ENTER();
-
 	ret = radeon_dp_aux_native_read(radeon_connector, DP_DPCD_REV, msg,
 					DP_DPCD_SIZE, 0);
 	if (ret > 0) {
@@ -462,10 +460,9 @@ bool radeon_dp_getdpcd(struct radeon_connector *radeon_connector)
 			DRM_DEBUG_KMS("\n");
 
 		radeon_dp_probe_oui(radeon_connector);
-        LEAVE();
+
 		return true;
 	}
-    FAIL();
 	dig_connector->dpcd[0] = 0;
 	return false;
 }

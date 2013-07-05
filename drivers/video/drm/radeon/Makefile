@@ -19,7 +19,7 @@ CFLAGS   = -c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-b
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
-LIBS:=    -lddk -lcore 
+LIBS:=    -lddk -lcore -lgcc
 
 LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
@@ -42,11 +42,14 @@ HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 
 NAME_SRC=							\
 			pci.c					\
+			$(DRM_TOPDIR)/drm_cache.c		\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
+			$(DRM_TOPDIR)/drm_gem.c			\
+			$(DRM_TOPDIR)/drm_global.c		\
 			$(DRM_TOPDIR)/drm_irq.c			\
 			$(DRM_TOPDIR)/drm_mm.c			\
 			$(DRM_TOPDIR)/drm_modes.c		\
@@ -66,6 +69,10 @@ NAME_SRC=							\
 			radeon_clocks.c				\
 			atom.c					\
 			ni.c					\
+			atombios_crtc.c				\
+			atombios_dp.c				\
+			atombios_encoders.c			\
+			atombios_i2c.c				\
 			radeon_agp.c				\
 			radeon_asic.c				\
 			radeon_atombios.c			\
@@ -73,25 +80,22 @@ NAME_SRC=							\
 			radeon_bios.c				\
 			radeon_combios.c			\
 			radeon_connectors.c			\
-			atombios_crtc.c				\
-			atombios_dp.c				\
-			atombios_encoders.c			\
-			atombios_i2c.c				\
+			radeon_display.c			\
 			radeon_encoders.c			\
 			radeon_fence.c				\
+			radeon_fb.c				\
+			radeon_gart.c				\
 			radeon_gem.c				\
 			radeon_i2c.c				\
 			radeon_irq_kms.c			\
 			radeon_legacy_crtc.c			\
 			radeon_legacy_encoders.c		\
 			radeon_legacy_tv.c			\
-			radeon_display.c			\
-			radeon_gart.c				\
-			radeon_ring.c				\
 			radeon_object_kos.c			\
+			radeon_pm.c				\
+			radeon_ring.c				\
 			radeon_sa.c				\
 			radeon_semaphore.c			\
-			radeon_pm.c				\
 			r100.c					\
 			r200.c					\
 			r300.c					\
@@ -106,12 +110,12 @@ NAME_SRC=							\
 			rs600.c					\
 			rs690.c					\
 			rv770.c					\
-			radeon_fb.c				\
 			rdisplay.c				\
 			rdisplay_kms.c				\
 			cmdline.c				\
 			si.c					\
 			si_blit_shaders.c			\
+			utils.c					\
 			fwblob.asm
 
 FW_BINS=							\

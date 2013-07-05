@@ -5,9 +5,10 @@
 #include "hmm.h"
 #include "bitmap.h"
 
-//#define DRIVER_CAPS_0   HW_BIT_BLIT
 
-#define DRIVER_CAPS_0   0
+#define DRIVER_CAPS_0   HW_BIT_BLIT
+
+//#define DRIVER_CAPS_0   0
 #define DRIVER_CAPS_1   0
 
 struct context *context_map[256];
@@ -16,6 +17,7 @@ struct hmm bm_mm;
 
 extern struct drm_device *main_drm_device;
 
+#if 0
 
 void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
 {
@@ -44,7 +46,6 @@ void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
     __DestroyObject(bitmap);
 };
 
-#if 0
 static int bitmap_get_pages_gtt(struct drm_i915_gem_object *obj)
 {
     int page_count;
@@ -110,7 +111,6 @@ struct  io_call_10         /*     SRV_CREATE_SURFACE    */
     u32     format;       // reserved mbz
 };
 
-#endif
 
 int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
 {
@@ -183,9 +183,11 @@ int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
     if (unlikely(ret != 0))
         goto err3;
 
+#ifndef __TTM__
     ret = radeon_bo_user_map(obj, (void**)&uaddr);
     if (unlikely(ret != 0))
         goto err3;
+#endif
 
     bitmap->page_count = size/PAGE_SIZE;
     bitmap->max_count  =  max_size/PAGE_SIZE;
@@ -482,4 +484,5 @@ err:
     return NULL;
 };
 
+#endif
 

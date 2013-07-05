@@ -668,10 +668,10 @@ int evergreen_blit_init(struct radeon_device *rdev)
 		r = radeon_bo_create(rdev, obj_size, PAGE_SIZE, true,
 				     RADEON_GEM_DOMAIN_VRAM,
 				     NULL, &rdev->r600_blit.shader_obj);
-	if (r) {
-		DRM_ERROR("evergreen failed to allocate shader\n");
-		return r;
-	}
+		if (r) {
+			DRM_ERROR("evergreen failed to allocate shader\n");
+			return r;
+		}
 
 		r = radeon_bo_reserve(rdev->r600_blit.shader_obj, false);
 		if (unlikely(r != 0))
@@ -724,7 +724,7 @@ int evergreen_blit_init(struct radeon_device *rdev)
 	radeon_bo_kunmap(rdev->r600_blit.shader_obj);
 	radeon_bo_unreserve(rdev->r600_blit.shader_obj);
 
-//   radeon_ttm_set_active_vram_size(rdev, rdev->mc.real_vram_size);
+	radeon_ttm_set_active_vram_size(rdev, rdev->mc.real_vram_size);
 
 #endif
 

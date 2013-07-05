@@ -54,6 +54,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
 static char  log[256];
 
 struct workqueue_struct *system_wq;
+int driver_wq_state;
 
 int x86_clflush_size;
 unsigned int tsc_khz;
@@ -66,7 +67,10 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     int     err = 0;
 
     if(action != 1)
+    {
+        driver_wq_state = 0;
         return 0;
+    };
 
     if( GetService("DISPLAY") != 0 )
         return 0;
@@ -85,7 +89,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf(" i915 v3.9-rc8\n cmdline: %s\n", cmdline);
+    dbgprintf(" i915 v3.10\n cmdline: %s\n", cmdline);
 
     cpu_detect();
 //    dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -106,7 +110,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         dbgprintf("Set DISPLAY handler\n");
 
     struct drm_i915_private *dev_priv = main_device->dev_private;
-
+    driver_wq_state = 1;
     run_workqueue(dev_priv->wq);
 
     return err;

@@ -615,8 +615,6 @@ radeon_lvds_detect(struct drm_connector *connector, bool force)
 	struct drm_encoder *encoder = radeon_best_single_encoder(connector);
 	enum drm_connector_status ret = connector_status_disconnected;
 
-    ENTER();
-
 	if (encoder) {
 		struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
 		struct drm_display_mode *native_mode = &radeon_encoder->native_mode;
@@ -641,7 +639,6 @@ radeon_lvds_detect(struct drm_connector *connector, bool force)
 	/* check acpi lid status ??? */
 
 	radeon_connector_update_scratch_regs(connector, ret);
-    LEAVE();
 	return ret;
 }
 
@@ -948,7 +945,6 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
 	int i;
 	enum drm_connector_status ret = connector_status_disconnected;
 	bool dret = false, broken_edid = false;
-
 
 	if (!force && radeon_check_hpd_status_unchanged(connector))
 		return connector->status;
@@ -1370,8 +1366,6 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
 	struct radeon_connector_atom_dig *radeon_dig_connector = radeon_connector->con_priv;
 	struct drm_encoder *encoder = radeon_best_single_encoder(connector);
 
-    dbgprintf("%s radeon_connector %p encoder %p\n",
-              __FUNCTION__, radeon_connector, encoder);
 
 #if DISABLE_DP
     connector->status = connector_status_disconnected;
@@ -1401,7 +1395,6 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
 		if (!radeon_dig_connector->edp_on)
 			atombios_set_edp_panel_power(connector,
 						     ATOM_TRANSMITTER_ACTION_POWER_ON);
-        dbgprintf("check eDP\n");
 		if (radeon_dp_getdpcd(radeon_connector))
 			ret = connector_status_connected;
 		if (!radeon_dig_connector->edp_on)
@@ -1423,7 +1416,7 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
 			else if (radeon_connector->dac_load_detect) { /* try load detection */
 				struct drm_encoder_helper_funcs *encoder_funcs = encoder->helper_private;
 				ret = encoder_funcs->detect(encoder, connector);
-		}
+            }
 		}
 	} else {
 		radeon_dig_connector->dp_sink_type = radeon_dp_getsinktype(radeon_connector);
@@ -1444,7 +1437,6 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
 	}
 
 	radeon_connector_update_scratch_regs(connector, ret);
-    LEAVE();
 	return ret;
 }
 
@@ -1879,7 +1871,7 @@ radeon_add_atom_connector(struct drm_device *dev,
 		connector->polled = DRM_CONNECTOR_POLL_HPD;
 
 	connector->display_info.subpixel_order = subpixel_order;
-//   drm_sysfs_connector_add(connector);
+	drm_sysfs_connector_add(connector);
 	return;
 
 failed:
@@ -2036,5 +2028,5 @@ radeon_add_legacy_connector(struct drm_device *dev,
 	} else
 		connector->polled = DRM_CONNECTOR_POLL_HPD;
 	connector->display_info.subpixel_order = subpixel_order;
-//   drm_sysfs_connector_add(connector);
+	drm_sysfs_connector_add(connector);
 }

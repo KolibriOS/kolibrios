@@ -9,25 +9,6 @@ static struct drm_mm   mm_gtt;
 static struct drm_mm   mm_vram;
 
 
-/**
- * Initialize an already allocate GEM object of the specified size with
- * shmfs backing store.
- */
-int drm_gem_object_init(struct drm_device *dev,
-            struct drm_gem_object *obj, size_t size)
-{
-    BUG_ON((size & (PAGE_SIZE - 1)) != 0);
-
-    obj->dev = dev;
-    obj->filp = NULL;
-
-    atomic_set(&obj->handle_count, 0);
-    obj->size = size;
-
-    return 0;
-}
-
-
 int drm_mm_alloc(struct drm_mm *mm, size_t num_pages,
                  struct drm_mm_node **node)
 {
@@ -215,10 +196,10 @@ int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
     {
         u32_t *pagelist;
         bo->kptr  = KernelAlloc( bo->tbo.num_pages << PAGE_SHIFT );
-        dbgprintf("kernel alloc %x\n", bo->kptr );
+//        dbgprintf("kernel alloc %x\n", bo->kptr );
 
         pagelist =  &((u32_t*)page_tabs)[(u32_t)bo->kptr >> 12];
-        dbgprintf("pagelist %x\n", pagelist);
+//        dbgprintf("pagelist %x\n", pagelist);
         radeon_gart_bind(bo->rdev, bo->tbo.offset,
                          bo->tbo.vm_node->size,  pagelist, NULL);
         bo->tbo.offset += (u64)bo->rdev->mc.gtt_start;
@@ -244,6 +225,67 @@ int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
         dev_err(bo->rdev->dev, "%p pin failed\n", bo);
     return r;
 };
+
+int radeon_bo_pin_restricted(struct radeon_bo *bo, u32 domain, u64 max_offset,
+                 u64 *gpu_addr)
+{
+    int r, i;
+
+    if (bo->pin_count) {
+        bo->pin_count++;
+        if (gpu_addr)
+            *gpu_addr = radeon_bo_gpu_offset(bo);
+
+        if (max_offset != 0) {
+            u64 domain_start;
+
+            if (domain == RADEON_GEM_DOMAIN_VRAM)
+                domain_start = bo->rdev->mc.vram_start;
+            else
+                domain_start = bo->rdev->mc.gtt_start;
+            WARN_ON_ONCE(max_offset <
+                     (radeon_bo_gpu_offset(bo) - domain_start));
+        }
+
+        return 0;
+    }
+ //   radeon_ttm_placement_from_domain(bo, domain);
+    if (domain == RADEON_GEM_DOMAIN_VRAM) {
+        /* force to pin into visible video ram */
+//        bo->placement.lpfn = bo->rdev->mc.visible_vram_size >> PAGE_SHIFT;
+        bo->tbo.offset += (u64)bo->rdev->mc.vram_start;
+
+    }
+    else if (bo->domain & RADEON_GEM_DOMAIN_GTT)
+    {
+        u32_t *pagelist;
+        bo->kptr  = KernelAlloc( bo->tbo.num_pages << PAGE_SHIFT );
+        dbgprintf("kernel alloc %x\n", bo->kptr );
+
+        pagelist =  &((u32_t*)page_tabs)[(u32_t)bo->kptr >> 12];
+        dbgprintf("pagelist %x\n", pagelist);
+        radeon_gart_bind(bo->rdev, bo->tbo.offset,
+                         bo->tbo.vm_node->size,  pagelist, NULL);
+        bo->tbo.offset += (u64)bo->rdev->mc.gtt_start;
+    }
+    else
+    {
+        DRM_ERROR("Unknown placement %x\n", bo->domain);
+        bo->tbo.offset = -1;
+        r = -1;
+    };
+
+    if (likely(r == 0)) {
+        bo->pin_count = 1;
+        if (gpu_addr != NULL)
+            *gpu_addr = radeon_bo_gpu_offset(bo);
+    }
+
+    if (unlikely(r != 0))
+        dev_err(bo->rdev->dev, "%p pin failed\n", bo);
+    return r;
+}
+
 
 int radeon_bo_unpin(struct radeon_bo *bo)
 {
@@ -374,23 +416,6 @@ void radeon_bo_get_tiling_flags(struct radeon_bo *bo,
         *pitch = bo->pitch;
 }
 
-
-/**
- * Allocate a GEM object of the specified size with shmfs backing store
- */
-struct drm_gem_object *
-drm_gem_object_alloc(struct drm_device *dev, size_t size)
-{
-    struct drm_gem_object *obj;
-
-    BUG_ON((size & (PAGE_SIZE - 1)) != 0);
-
-    obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-
-    obj->dev = dev;
-    obj->size = size;
-    return obj;
-}
 
 
 int radeon_fb_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,

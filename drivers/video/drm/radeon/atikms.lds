@@ -33,6 +33,7 @@ SECTIONS
     *(.debug$F)
     *(.drectve)
     *(.edata)
+    *(.eh_frame)
   }
 
   .idata ALIGN(__section_alignment__):

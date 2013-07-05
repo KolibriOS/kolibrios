@@ -62,7 +62,9 @@ static void radeon_fence_write(struct radeon_device *rdev, u32 seq, int ring)
 {
 	struct radeon_fence_driver *drv = &rdev->fence_drv[ring];
 	if (likely(rdev->wb.enabled || !drv->scratch_reg)) {
+		if (drv->cpu_addr) {
 		*drv->cpu_addr = cpu_to_le32(seq);
+		}
 	} else {
 		WREG32(drv->scratch_reg, seq);
 	}
@@ -83,7 +85,11 @@ static u32 radeon_fence_read(struct radeon_device *rdev, int ring)
 	u32 seq = 0;
 
 	if (likely(rdev->wb.enabled || !drv->scratch_reg)) {
+		if (drv->cpu_addr) {
 		seq = le32_to_cpu(*drv->cpu_addr);
+	} else {
+			seq = lower_32_bits(atomic64_read(&drv->last_seq));
+		}
 	} else {
 		seq = RREG32(drv->scratch_reg);
 	}
@@ -285,7 +291,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 target_seq,
 	while (target_seq > atomic64_read(&rdev->fence_drv[ring].last_seq)) {
 		if (!rdev->ring[ring].ready) {
 			return -EBUSY;
-			}
+        }
 
 		timeout = GetTimerTicks() - RADEON_FENCE_JIFFIES_TIMEOUT;
 		if (time_after(rdev->fence_drv[ring].last_activity, timeout)) {
@@ -296,7 +302,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 target_seq,
 			 * anyway we will just wait for the minimum amount and then check for a lockup
 			 */
 			timeout = 1;
-	}
+        }
 		seq = atomic64_read(&rdev->fence_drv[ring].last_seq);
 		/* Save current last activity valuee, used to check for GPU lockups */
 		last_activity = rdev->fence_drv[ring].last_activity;
@@ -312,7 +318,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 target_seq,
                 (signaled = radeon_fence_seq_signaled(rdev, target_seq, ring)),
                timeout);
             }
-		radeon_irq_kms_sw_irq_put(rdev, ring);
+        radeon_irq_kms_sw_irq_put(rdev, ring);
         if (unlikely(r < 0)) {
             return r;
         }
@@ -323,7 +329,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 target_seq,
 			 * isn't signaled yet, resume waiting */
 			if (r) {
 				continue;
-	}
+            }
 
 			/* check if sequence value has changed since last_activity */
 			if (seq != atomic64_read(&rdev->fence_drv[ring].last_seq)) {
@@ -332,7 +338,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 target_seq,
 
 			if (lock_ring) {
 				mutex_lock(&rdev->ring_lock);
-	}
+            }
 
 			/* test if somebody else has already decided that this is a lockup */
 			if (last_activity != rdev->fence_drv[ring].last_activity) {
@@ -617,7 +623,7 @@ int radeon_fence_wait_empty_locked(struct radeon_device *rdev, int ring)
 	if (r) {
 		if (r == -EDEADLK) {
 			return -EDEADLK;
-	}
+		}
 		dev_err(rdev->dev, "error waiting for ring[%d] to become idle (%d)\n",
 			ring, r);
 	}
@@ -767,7 +773,19 @@ int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring)
 	radeon_scratch_free(rdev, rdev->fence_drv[ring].scratch_reg);
 	if (rdev->wb.use_event || !radeon_ring_supports_scratch_reg(rdev, &rdev->ring[ring])) {
 		rdev->fence_drv[ring].scratch_reg = 0;
+		if (ring != R600_RING_TYPE_UVD_INDEX) {
 		index = R600_WB_EVENT_OFFSET + ring * 4;
+			rdev->fence_drv[ring].cpu_addr = &rdev->wb.wb[index/4];
+			rdev->fence_drv[ring].gpu_addr = rdev->wb.gpu_addr +
+							 index;
+
+		} else {
+			/* put fence directly behind firmware */
+			index = ALIGN(rdev->uvd_fw->size, 8);
+			rdev->fence_drv[ring].cpu_addr = rdev->uvd.cpu_addr + index;
+			rdev->fence_drv[ring].gpu_addr = rdev->uvd.gpu_addr + index;
+		}
+
 	} else {
 		r = radeon_scratch_get(rdev, &rdev->fence_drv[ring].scratch_reg);
 	if (r) {
@@ -777,9 +795,9 @@ int radeon_fence_driver_start_ring(struct radeon_device *rdev, int ring)
 		index = RADEON_WB_SCRATCH_OFFSET +
 			rdev->fence_drv[ring].scratch_reg -
 			rdev->scratch.reg_base;
-	}
 	rdev->fence_drv[ring].cpu_addr = &rdev->wb.wb[index/4];
 	rdev->fence_drv[ring].gpu_addr = rdev->wb.gpu_addr + index;
+	}
 	radeon_fence_write(rdev, atomic64_read(&rdev->fence_drv[ring].last_seq), ring);
 	rdev->fence_drv[ring].initialized = true;
 	dev_info(rdev->dev, "fence driver on ring %d use gpu addr 0x%016llx and cpu addr 0x%p\n",

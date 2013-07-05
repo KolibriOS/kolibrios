@@ -1,5 +1,6 @@
 
 #include <linux/kernel.h>
+#include <linux/types.h>
 #include <linux/export.h>
 #include <linux/mutex.h>
 #include <linux/mod_devicetable.h>
@@ -635,7 +636,9 @@ struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from)
 /* Create a virtual mapping cookie for an IO port range */
 void __iomem *ioport_map(unsigned long port, unsigned int nr)
 {
-    return (void __iomem *) port;
+    if (port > PIO_MASK)
+        return NULL;
+    return (void __iomem *) (unsigned long) (port + PIO_OFFSET);
 }
 
 void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
@@ -786,7 +789,8 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
         start = (loff_t)0xC0000;
         *size = 0x20000; /* cover C000:0 through E000:0 */
     } else {
-        if (res->flags & (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY)) {
+                if (res->flags &
+                        (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY)) {
             *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
              return (void __iomem *)(unsigned long)
              pci_resource_start(pdev, PCI_ROM_RESOURCE);
@@ -840,15 +844,6 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
     if (!(res->flags & (IORESOURCE_ROM_ENABLE | IORESOURCE_ROM_SHADOW)))
             pci_disable_rom(pdev);
 }
-
-int pci_set_dma_mask(struct pci_dev *dev, u64 mask)
-{
-    dev->dma_mask = mask;
-
-    return 0;
-}
-
-
 
 static void __pci_set_master(struct pci_dev *dev, bool enable)
 {

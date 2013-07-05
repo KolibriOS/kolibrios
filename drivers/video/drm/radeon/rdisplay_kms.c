@@ -530,7 +530,7 @@ bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
     };
     safe_sti(ifl);
 
-    init_bitmaps();
+//    init_bitmaps();
 
     LEAVE();
 
@@ -632,18 +632,19 @@ int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
     size = mode_cmd->pitches[0] * height;
     aligned_size = ALIGN(size, PAGE_SIZE);
 
-
+#ifndef __TTM__
     ret = drm_gem_object_init(rdev->ddev, &kos_bo.gem_base, aligned_size);
     if (unlikely(ret)) {
         printk(KERN_ERR "failed to allocate framebuffer (%d)\n",
                aligned_size);
         return -ENOMEM;
     }
+#endif
 
     kos_bo.rdev = rdev;
     kos_bo.gem_base.driver_private = NULL;
     kos_bo.surface_reg = -1;
-    kos_bo.domain = RADEON_GEM_DOMAIN_VRAM;
+//    kos_bo.domain = RADEON_GEM_DOMAIN_VRAM;
 
     INIT_LIST_HEAD(&kos_bo.list);
 
@@ -676,7 +677,7 @@ int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
     return 0;
 }
 
-
+#if 0
 typedef struct
 {
     int left;
@@ -704,7 +705,7 @@ static u32_t get_display_map()
 #include "clip.inc"
 #include "r100d.h"
 
-# define PACKET3_BITBLT            0x92
+# define PACKET3_BITBLT                 0x92
 # define PACKET3_TRANS_BITBLT           0x9C
 # define R5XX_SRC_CMP_EQ_COLOR      (4 <<  0)
 # define R5XX_SRC_CMP_NEQ_COLOR     (5 <<  0)
@@ -802,7 +803,7 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
             u32 tmp_w = width;
 
             u32* tmp_src = src_offset;
-            u8* tmp_dst = dst_offset;
+            u8*  tmp_dst = dst_offset;
 
             src_offset+= bitmap->pitch;
             dst_offset+= rdisplay->width;
@@ -900,3 +901,4 @@ fail:
     return ret;
 };
 
+#endif

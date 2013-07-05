@@ -259,7 +259,7 @@ macro SI_code [arg]
 
 }
 
-SI_code TAHITI, PITCAIRN, VERDE
+SI_code TAHITI, PITCAIRN, VERDE, OLAND, HAINAN
 
 ___end_builtin_fw:
 
@@ -380,7 +380,7 @@ arg#_RLC_END:
 
 }
 
-SI_firmware TAHITI,PITCAIRN,VERDE
+SI_firmware TAHITI, PITCAIRN, VERDE, OLAND, HAINAN
 
 align 16
 R100CP_START:

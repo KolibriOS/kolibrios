@@ -249,8 +249,6 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
 	p = t / (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
 	for (i = 0; i < pages; i++, p++) {
 		if (rdev->gart.pages[p]) {
-//           pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
-//                      PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
 			rdev->gart.pages[p] = NULL;
 			rdev->gart.pages_addr[p] = rdev->dummy_page.addr;
 			page_base = rdev->gart.pages_addr[p];
@@ -940,6 +938,7 @@ uint64_t radeon_vm_map_gart(struct radeon_device *rdev, uint64_t addr)
  */
 static int radeon_vm_update_pdes(struct radeon_device *rdev,
 				 struct radeon_vm *vm,
+				 struct radeon_ib *ib,
 				 uint64_t start, uint64_t end)
 {
 	static const uint32_t incr = RADEON_VM_PTE_COUNT * 8;
@@ -982,7 +981,7 @@ retry:
 		    ((last_pt + incr * count) != pt)) {
 
 			if (count) {
-				radeon_asic_vm_set_page(rdev, last_pde,
+				radeon_asic_vm_set_page(rdev, ib, last_pde,
 							last_pt, count, incr,
 							RADEON_VM_PAGE_VALID);
 			}
@@ -996,7 +995,7 @@ retry:
 	}
 
 	if (count) {
-		radeon_asic_vm_set_page(rdev, last_pde, last_pt, count,
+		radeon_asic_vm_set_page(rdev, ib, last_pde, last_pt, count,
 					incr, RADEON_VM_PAGE_VALID);
 
 	}
@@ -1020,6 +1019,7 @@ retry:
  */
 static void radeon_vm_update_ptes(struct radeon_device *rdev,
 				  struct radeon_vm *vm,
+				  struct radeon_ib *ib,
 				  uint64_t start, uint64_t end,
 				  uint64_t dst, uint32_t flags)
 {
@@ -1049,7 +1049,7 @@ static void radeon_vm_update_ptes(struct radeon_device *rdev,
 		if ((last_pte + 8 * count) != pte) {
 
 			if (count) {
-				radeon_asic_vm_set_page(rdev, last_pte,
+				radeon_asic_vm_set_page(rdev, ib, last_pte,
 							last_dst, count,
 							RADEON_GPU_PAGE_SIZE,
 							flags);
@@ -1067,7 +1067,8 @@ static void radeon_vm_update_ptes(struct radeon_device *rdev,
 	}
 
 	if (count) {
-		radeon_asic_vm_set_page(rdev, last_pte,	last_dst, count,
+		radeon_asic_vm_set_page(rdev, ib, last_pte,
+					last_dst, count,
 					RADEON_GPU_PAGE_SIZE, flags);
 	}
 }
@@ -1091,8 +1092,7 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
 			    struct ttm_mem_reg *mem)
 {
 	unsigned ridx = rdev->asic->vm.pt_ring_index;
-	struct radeon_ring *ring = &rdev->ring[ridx];
-	struct radeon_semaphore *sem = NULL;
+	struct radeon_ib ib;
 	struct radeon_bo_va *bo_va;
 	unsigned nptes, npdes, ndw;
 	uint64_t addr;
@@ -1135,25 +1135,13 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
 		bo_va->valid = false;
 	}
 
-	if (vm->fence && radeon_fence_signaled(vm->fence)) {
-		radeon_fence_unref(&vm->fence);
-	}
-
-	if (vm->fence && vm->fence->ring != ridx) {
-		r = radeon_semaphore_create(rdev, &sem);
-		if (r) {
-			return r;
-		}
-	}
-
 	nptes = radeon_bo_ngpu_pages(bo);
 
 	/* assume two extra pdes in case the mapping overlaps the borders */
 	npdes = (nptes >> RADEON_VM_BLOCK_SIZE) + 2;
 
-	/* estimate number of dw needed */
-	/* semaphore, fence and padding */
-	ndw = 32;
+	/* padding, etc. */
+	ndw = 64;
 
 	if (RADEON_VM_BLOCK_SIZE > 11)
 		/* reserve space for one header for every 2k dwords */
@@ -1172,33 +1160,31 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
 	/* reserve space for pde addresses */
 	ndw += npdes * 2;
 
-	r = radeon_ring_lock(rdev, ring, ndw);
+	/* update too big for an IB */
+	if (ndw > 0xfffff)
+		return -ENOMEM;
+
+	r = radeon_ib_get(rdev, ridx, &ib, NULL, ndw * 4);
+	ib.length_dw = 0;
+
+	r = radeon_vm_update_pdes(rdev, vm, &ib, bo_va->soffset, bo_va->eoffset);
 	if (r) {
+		radeon_ib_free(rdev, &ib);
 		return r;
 	}
 
-	if (sem && radeon_fence_need_sync(vm->fence, ridx)) {
-		radeon_semaphore_sync_rings(rdev, sem, vm->fence->ring, ridx);
-		radeon_fence_note_sync(vm->fence, ridx);
-	}
-
-	r = radeon_vm_update_pdes(rdev, vm, bo_va->soffset, bo_va->eoffset);
-	if (r) {
-		radeon_ring_unlock_undo(rdev, ring);
-		return r;
-	}
-
-	radeon_vm_update_ptes(rdev, vm, bo_va->soffset, bo_va->eoffset,
+	radeon_vm_update_ptes(rdev, vm, &ib, bo_va->soffset, bo_va->eoffset,
 			      addr, bo_va->flags);
 
-	radeon_fence_unref(&vm->fence);
-	r = radeon_fence_emit(rdev, &vm->fence, ridx);
+	radeon_ib_sync_to(&ib, vm->fence);
+	r = radeon_ib_schedule(rdev, &ib, NULL);
 	if (r) {
-		radeon_ring_unlock_undo(rdev, ring);
+		radeon_ib_free(rdev, &ib);
 		return r;
 	}
-	radeon_ring_unlock_commit(rdev, ring);
-	radeon_semaphore_free(rdev, &sem, vm->fence);
+	radeon_fence_unref(&vm->fence);
+	vm->fence = radeon_fence_ref(ib.fence);
+	radeon_ib_free(rdev, &ib);
 	radeon_fence_unref(&vm->last_flush);
 
 	return 0;
@@ -1220,11 +1206,13 @@ int radeon_vm_bo_update_pte(struct radeon_device *rdev,
 int radeon_vm_bo_rmv(struct radeon_device *rdev,
 		     struct radeon_bo_va *bo_va)
 {
-	int r;
+	int r = 0;
 
 	mutex_lock(&rdev->vm_manager.lock);
 	mutex_lock(&bo_va->vm->mutex);
+	if (bo_va->soffset) {
 	r = radeon_vm_bo_update_pte(rdev, bo_va->vm, bo_va->bo, NULL);
+	}
 	mutex_unlock(&rdev->vm_manager.lock);
 	list_del(&bo_va->vm_list);
 	mutex_unlock(&bo_va->vm->mutex);

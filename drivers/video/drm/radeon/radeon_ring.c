@@ -109,6 +109,25 @@ void radeon_ib_free(struct radeon_device *rdev, struct radeon_ib *ib)
 }
 
 /**
+ * radeon_ib_sync_to - sync to fence before executing the IB
+ *
+ * @ib: IB object to add fence to
+ * @fence: fence to sync to
+ *
+ * Sync to the fence before executing the IB
+ */
+void radeon_ib_sync_to(struct radeon_ib *ib, struct radeon_fence *fence)
+{
+	struct radeon_fence *other;
+
+	if (!fence)
+		return;
+
+	other = ib->sync_to[fence->ring];
+	ib->sync_to[fence->ring] = radeon_fence_later(fence, other);
+}
+
+/**
  * radeon_ib_schedule - schedule an IB (Indirect Buffer) on the ring
  *
  * @rdev: radeon_device pointer
@@ -161,7 +180,8 @@ int radeon_ib_schedule(struct radeon_device *rdev, struct radeon_ib *ib,
 		radeon_semaphore_free(rdev, &ib->semaphore, NULL);
 	}
 	/* if we can't remember our last VM flush then flush now! */
-	if (ib->vm && !ib->vm->last_flush) {
+	/* XXX figure out why we have to flush for every IB */
+	if (ib->vm /*&& !ib->vm->last_flush*/) {
 		radeon_ring_vm_flush(rdev, ib->ring, ib->vm);
 	}
 	if (const_ib) {
@@ -349,7 +369,7 @@ void radeon_ring_free_size(struct radeon_device *rdev, struct radeon_ring *ring)
 {
 	u32 rptr;
 
-	if (rdev->wb.enabled)
+	if (rdev->wb.enabled && ring != &rdev->ring[R600_RING_TYPE_UVD_INDEX])
 		rptr = le32_to_cpu(rdev->wb.wb[ring->rptr_offs/4]);
 	else
 		rptr = RREG32(ring->rptr_reg);
@@ -377,8 +397,18 @@ int radeon_ring_alloc(struct radeon_device *rdev, struct radeon_ring *ring, unsi
 {
 	int r;
 
+	/* make sure we aren't trying to allocate more space than there is on the ring */
+	if (ndw > (ring->ring_size / 4))
+		return -ENOMEM;
 	/* Align requested size with padding so unlock_commit can
 	 * pad safely */
+	radeon_ring_free_size(rdev, ring);
+	if (ring->ring_free_dw == (ring->ring_size / 4)) {
+		/* This is an empty ring update lockup info to avoid
+		 * false positive.
+		 */
+		radeon_ring_lockup_update(ring);
+	}
 	ndw = (ndw + ring->align_mask) & ~ring->align_mask;
 	while (ndw > (ring->ring_free_dw - 1)) {
 		radeon_ring_free_size(rdev, ring);
@@ -799,18 +829,20 @@ static int radeon_debugfs_ring_info(struct seq_file *m, void *data)
 	return 0;
 }
 
-static int radeon_ring_type_gfx_index = RADEON_RING_TYPE_GFX_INDEX;
-static int cayman_ring_type_cp1_index = CAYMAN_RING_TYPE_CP1_INDEX;
-static int cayman_ring_type_cp2_index = CAYMAN_RING_TYPE_CP2_INDEX;
-static int radeon_ring_type_dma1_index = R600_RING_TYPE_DMA_INDEX;
-static int radeon_ring_type_dma2_index = CAYMAN_RING_TYPE_DMA1_INDEX;
+static int radeon_gfx_index = RADEON_RING_TYPE_GFX_INDEX;
+static int cayman_cp1_index = CAYMAN_RING_TYPE_CP1_INDEX;
+static int cayman_cp2_index = CAYMAN_RING_TYPE_CP2_INDEX;
+static int radeon_dma1_index = R600_RING_TYPE_DMA_INDEX;
+static int radeon_dma2_index = CAYMAN_RING_TYPE_DMA1_INDEX;
+static int r600_uvd_index = R600_RING_TYPE_UVD_INDEX;
 
 static struct drm_info_list radeon_debugfs_ring_info_list[] = {
-	{"radeon_ring_gfx", radeon_debugfs_ring_info, 0, &radeon_ring_type_gfx_index},
-	{"radeon_ring_cp1", radeon_debugfs_ring_info, 0, &cayman_ring_type_cp1_index},
-	{"radeon_ring_cp2", radeon_debugfs_ring_info, 0, &cayman_ring_type_cp2_index},
-	{"radeon_ring_dma1", radeon_debugfs_ring_info, 0, &radeon_ring_type_dma1_index},
-	{"radeon_ring_dma2", radeon_debugfs_ring_info, 0, &radeon_ring_type_dma2_index},
+	{"radeon_ring_gfx", radeon_debugfs_ring_info, 0, &radeon_gfx_index},
+	{"radeon_ring_cp1", radeon_debugfs_ring_info, 0, &cayman_cp1_index},
+	{"radeon_ring_cp2", radeon_debugfs_ring_info, 0, &cayman_cp2_index},
+	{"radeon_ring_dma1", radeon_debugfs_ring_info, 0, &radeon_dma1_index},
+	{"radeon_ring_dma2", radeon_debugfs_ring_info, 0, &radeon_dma2_index},
+	{"radeon_ring_uvd", radeon_debugfs_ring_info, 0, &r600_uvd_index},
 };
 
 static int radeon_debugfs_sa_info(struct seq_file *m, void *data)

@@ -91,11 +91,9 @@ static bool radeon_read_bios(struct radeon_device *rdev)
 	}
 	rdev->bios = kmalloc(size, GFP_KERNEL);
 	if (rdev->bios == NULL) {
-//        pci_unmap_rom(rdev->pdev, bios);
 		return false;
 	}
 	memcpy(rdev->bios, bios, size);
-//    pci_unmap_rom(rdev->pdev, bios);
 	return true;
 }
 
@@ -221,6 +219,7 @@ static bool ni_read_disabled_bios(struct radeon_device *rdev)
 
 	/* enable the rom */
 	WREG32(R600_BUS_CNTL, (bus_cntl & ~R600_BIOS_ROM_DIS));
+	if (!ASIC_IS_NODCE(rdev)) {
 	/* Disable VGA mode */
 	WREG32(AVIVO_D1VGA_CONTROL,
 	       (d1vga_control & ~(AVIVO_DVGA_CONTROL_MODE_ENABLE |
@@ -230,15 +229,18 @@ static bool ni_read_disabled_bios(struct radeon_device *rdev)
 		AVIVO_DVGA_CONTROL_TIMING_SELECT)));
 	WREG32(AVIVO_VGA_RENDER_CONTROL,
 	       (vga_render_control & ~AVIVO_VGA_VSTATUS_CNTL_MASK));
+	}
 	WREG32(R600_ROM_CNTL, rom_cntl | R600_SCK_OVERWRITE);
 
 	r = radeon_read_bios(rdev);
 
 	/* restore regs */
 	WREG32(R600_BUS_CNTL, bus_cntl);
+	if (!ASIC_IS_NODCE(rdev)) {
 	WREG32(AVIVO_D1VGA_CONTROL, d1vga_control);
 	WREG32(AVIVO_D2VGA_CONTROL, d2vga_control);
 	WREG32(AVIVO_VGA_RENDER_CONTROL, vga_render_control);
+	}
 	WREG32(R600_ROM_CNTL, rom_cntl);
 	return r;
 }

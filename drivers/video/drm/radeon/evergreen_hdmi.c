@@ -24,6 +24,7 @@
  * Authors: Christian König
  *          Rafał Miłecki
  */
+#include <linux/hdmi.h>
 #include <drm/drmP.h>
 #include <drm/radeon_drm.h>
 #include "radeon.h"
@@ -53,80 +54,81 @@ static void evergreen_hdmi_update_ACR(struct drm_encoder *encoder, uint32_t cloc
 	WREG32(HDMI_ACR_48_1 + offset, acr.n_48khz);
 }
 
-/*
- * calculate the crc for a given info frame
- */
-static void evergreen_hdmi_infoframe_checksum(uint8_t packetType,
-					 uint8_t versionNumber,
-					 uint8_t length,
-					 uint8_t *frame)
+static void evergreen_hdmi_write_sad_regs(struct drm_encoder *encoder)
 {
-	int i;
-	frame[0] = packetType + versionNumber + length;
-	for (i = 1; i <= length; i++)
-		frame[0] += frame[i];
-	frame[0] = 0x100 - frame[0];
+	struct radeon_device *rdev = encoder->dev->dev_private;
+	struct drm_connector *connector;
+	struct radeon_connector *radeon_connector = NULL;
+	struct cea_sad *sads;
+	int i, sad_count;
+
+	static const u16 eld_reg_to_type[][2] = {
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR0, HDMI_AUDIO_CODING_TYPE_PCM },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR1, HDMI_AUDIO_CODING_TYPE_AC3 },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR2, HDMI_AUDIO_CODING_TYPE_MPEG1 },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR3, HDMI_AUDIO_CODING_TYPE_MP3 },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR4, HDMI_AUDIO_CODING_TYPE_MPEG2 },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR5, HDMI_AUDIO_CODING_TYPE_AAC_LC },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR6, HDMI_AUDIO_CODING_TYPE_DTS },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR7, HDMI_AUDIO_CODING_TYPE_ATRAC },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR9, HDMI_AUDIO_CODING_TYPE_EAC3 },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR10, HDMI_AUDIO_CODING_TYPE_DTS_HD },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR11, HDMI_AUDIO_CODING_TYPE_MLP },
+		{ AZ_F0_CODEC_PIN0_CONTROL_AUDIO_DESCRIPTOR13, HDMI_AUDIO_CODING_TYPE_WMA_PRO },
+	};
+
+	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
+		if (connector->encoder == encoder)
+			radeon_connector = to_radeon_connector(connector);
+	}
+
+	if (!radeon_connector) {
+		DRM_ERROR("Couldn't find encoder's connector\n");
+		return;
+	}
+
+	sad_count = drm_edid_to_sad(radeon_connector->edid, &sads);
+	if (sad_count < 0) {
+		DRM_ERROR("Couldn't read SADs: %d\n", sad_count);
+		return;
+	}
+	BUG_ON(!sads);
+
+	for (i = 0; i < ARRAY_SIZE(eld_reg_to_type); i++) {
+		u32 value = 0;
+		int j;
+
+		for (j = 0; j < sad_count; j++) {
+			struct cea_sad *sad = &sads[j];
+
+			if (sad->format == eld_reg_to_type[i][1]) {
+				value = MAX_CHANNELS(sad->channels) |
+					DESCRIPTOR_BYTE_2(sad->byte2) |
+					SUPPORTED_FREQUENCIES(sad->freq);
+				if (sad->format == HDMI_AUDIO_CODING_TYPE_PCM)
+					value |= SUPPORTED_FREQUENCIES_STEREO(sad->freq);
+				break;
+			}
+		}
+		WREG32(eld_reg_to_type[i][0], value);
+	}
+
+	kfree(sads);
 }
 
 /*
  * build a HDMI Video Info Frame
  */
-static void evergreen_hdmi_videoinfoframe(
-	struct drm_encoder *encoder,
-	uint8_t color_format,
-	int active_information_present,
-	uint8_t active_format_aspect_ratio,
-	uint8_t scan_information,
-	uint8_t colorimetry,
-	uint8_t ex_colorimetry,
-	uint8_t quantization,
-	int ITC,
-	uint8_t picture_aspect_ratio,
-	uint8_t video_format_identification,
-	uint8_t pixel_repetition,
-	uint8_t non_uniform_picture_scaling,
-	uint8_t bar_info_data_valid,
-	uint16_t top_bar,
-	uint16_t bottom_bar,
-	uint16_t left_bar,
-	uint16_t right_bar
-)
+static void evergreen_hdmi_update_avi_infoframe(struct drm_encoder *encoder,
+						void *buffer, size_t size)
 {
 	struct drm_device *dev = encoder->dev;
 	struct radeon_device *rdev = dev->dev_private;
 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
 	uint32_t offset = dig->afmt->offset;
+	uint8_t *frame = buffer + 3;
 
-	uint8_t frame[14];
-
-	frame[0x0] = 0;
-	frame[0x1] =
-		(scan_information & 0x3) |
-		((bar_info_data_valid & 0x3) << 2) |
-		((active_information_present & 0x1) << 4) |
-		((color_format & 0x3) << 5);
-	frame[0x2] =
-		(active_format_aspect_ratio & 0xF) |
-		((picture_aspect_ratio & 0x3) << 4) |
-		((colorimetry & 0x3) << 6);
-	frame[0x3] =
-		(non_uniform_picture_scaling & 0x3) |
-		((quantization & 0x3) << 2) |
-		((ex_colorimetry & 0x7) << 4) |
-		((ITC & 0x1) << 7);
-	frame[0x4] = (video_format_identification & 0x7F);
-	frame[0x5] = (pixel_repetition & 0xF);
-	frame[0x6] = (top_bar & 0xFF);
-	frame[0x7] = (top_bar >> 8);
-	frame[0x8] = (bottom_bar & 0xFF);
-	frame[0x9] = (bottom_bar >> 8);
-	frame[0xA] = (left_bar & 0xFF);
-	frame[0xB] = (left_bar >> 8);
-	frame[0xC] = (right_bar & 0xFF);
-	frame[0xD] = (right_bar >> 8);
-
-	evergreen_hdmi_infoframe_checksum(0x82, 0x02, 0x0D, frame);
 	/* Our header values (type, version, length) should be alright, Intel
 	 * is using the same. Checksum function also seems to be OK, it works
 	 * fine for audio infoframe. However calculated value is always lower
@@ -154,7 +156,10 @@ void evergreen_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode
 	struct radeon_device *rdev = dev->dev_private;
 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+	u8 buffer[HDMI_INFOFRAME_HEADER_SIZE + HDMI_AVI_INFOFRAME_SIZE];
+	struct hdmi_avi_infoframe frame;
 	uint32_t offset;
+	ssize_t err;
 
 	/* Silent, r600_hdmi_enable will raise WARN for us */
 	if (!dig->afmt->enabled)
@@ -200,9 +205,19 @@ void evergreen_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode
 
 	WREG32(HDMI_GC + offset, 0); /* unset HDMI_GC_AVMUTE */
 
-	evergreen_hdmi_videoinfoframe(encoder, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-				      0, 0, 0, 0, 0, 0);
+	err = drm_hdmi_avi_infoframe_from_display_mode(&frame, mode);
+	if (err < 0) {
+		DRM_ERROR("failed to setup AVI infoframe: %zd\n", err);
+		return;
+	}
 
+	err = hdmi_avi_infoframe_pack(&frame, buffer, sizeof(buffer));
+	if (err < 0) {
+		DRM_ERROR("failed to pack AVI infoframe: %zd\n", err);
+		return;
+	}
+
+	evergreen_hdmi_update_avi_infoframe(encoder, buffer, sizeof(buffer));
 	evergreen_hdmi_update_ACR(encoder, mode->clock);
 
 	/* it's unknown what these bits do excatly, but it's indeed quite useful for debugging */

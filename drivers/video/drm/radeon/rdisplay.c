@@ -257,7 +257,7 @@ bool init_display(struct radeon_device *rdev, videomode_t *usermode)
     };
     safe_sti(ifl);
 
-    init_bitmaps();
+//    init_bitmaps();
 
     LEAVE();
 

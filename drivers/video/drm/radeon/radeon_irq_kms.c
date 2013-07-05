@@ -34,13 +34,6 @@
 
 #define RADEON_WAIT_IDLE_TIMEOUT 200
 
-#define DRM_IRQ_ARGS            void *arg
-
-struct drm_driver {
-    irqreturn_t(*irq_handler) (DRM_IRQ_ARGS);
-    void (*irq_preinstall) (struct drm_device *dev);
-    int (*irq_postinstall) (struct drm_device *dev);
-};
 
 extern int irq_override;
 
@@ -134,7 +127,7 @@ void radeon_driver_irq_uninstall_kms(struct drm_device *dev)
 		atomic_set(&rdev->irq.pflip[i], 0);
 		rdev->irq.afmt[i] = false;
 	}
-    radeon_irq_set(rdev);
+	radeon_irq_set(rdev);
 	spin_unlock_irqrestore(&rdev->irq.lock, irqflags);
 }
 
@@ -172,7 +165,7 @@ int radeon_irq_kms_init(struct radeon_device *rdev)
 }
 
 /**
- * radeon_irq_kms_fini - tear down driver interrrupt info
+ * radeon_irq_kms_fini - tear down driver interrupt info
  *
  * @rdev: radeon device pointer
  *

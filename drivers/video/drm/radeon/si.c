@@ -38,6 +38,7 @@
 #define SI_CE_UCODE_SIZE 2144
 #define SI_RLC_UCODE_SIZE 2048
 #define SI_MC_UCODE_SIZE 7769
+#define OLAND_MC_UCODE_SIZE 7863
 
 MODULE_FIRMWARE("radeon/TAHITI_pfp.bin");
 MODULE_FIRMWARE("radeon/TAHITI_me.bin");
@@ -54,6 +55,16 @@ MODULE_FIRMWARE("radeon/VERDE_me.bin");
 MODULE_FIRMWARE("radeon/VERDE_ce.bin");
 MODULE_FIRMWARE("radeon/VERDE_mc.bin");
 MODULE_FIRMWARE("radeon/VERDE_rlc.bin");
+MODULE_FIRMWARE("radeon/OLAND_pfp.bin");
+MODULE_FIRMWARE("radeon/OLAND_me.bin");
+MODULE_FIRMWARE("radeon/OLAND_ce.bin");
+MODULE_FIRMWARE("radeon/OLAND_mc.bin");
+MODULE_FIRMWARE("radeon/OLAND_rlc.bin");
+MODULE_FIRMWARE("radeon/HAINAN_pfp.bin");
+MODULE_FIRMWARE("radeon/HAINAN_me.bin");
+MODULE_FIRMWARE("radeon/HAINAN_ce.bin");
+MODULE_FIRMWARE("radeon/HAINAN_mc.bin");
+MODULE_FIRMWARE("radeon/HAINAN_rlc.bin");
 
 extern int r600_ih_ring_alloc(struct radeon_device *rdev);
 extern void r600_ih_ring_fini(struct radeon_device *rdev);
@@ -61,6 +72,945 @@ extern void evergreen_fix_pci_max_read_req_size(struct radeon_device *rdev);
 extern void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *save);
 extern void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save);
 extern u32 evergreen_get_number_of_dram_channels(struct radeon_device *rdev);
+extern void evergreen_print_gpu_status_regs(struct radeon_device *rdev);
+extern bool evergreen_is_display_hung(struct radeon_device *rdev);
+
+static const u32 tahiti_golden_rlc_registers[] =
+{
+	0xc424, 0xffffffff, 0x00601005,
+	0xc47c, 0xffffffff, 0x10104040,
+	0xc488, 0xffffffff, 0x0100000a,
+	0xc314, 0xffffffff, 0x00000800,
+	0xc30c, 0xffffffff, 0x800000f4,
+	0xf4a8, 0xffffffff, 0x00000000
+};
+
+static const u32 tahiti_golden_registers[] =
+{
+	0x9a10, 0x00010000, 0x00018208,
+	0x9830, 0xffffffff, 0x00000000,
+	0x9834, 0xf00fffff, 0x00000400,
+	0x9838, 0x0002021c, 0x00020200,
+	0xc78, 0x00000080, 0x00000000,
+	0xd030, 0x000300c0, 0x00800040,
+	0xd830, 0x000300c0, 0x00800040,
+	0x5bb0, 0x000000f0, 0x00000070,
+	0x5bc0, 0x00200000, 0x50100000,
+	0x7030, 0x31000311, 0x00000011,
+	0x277c, 0x00000003, 0x000007ff,
+	0x240c, 0x000007ff, 0x00000000,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8b24, 0xffffffff, 0x00ffffff,
+	0x8b10, 0x0000ff0f, 0x00000000,
+	0x28a4c, 0x07ffffff, 0x4e000000,
+	0x28350, 0x3f3f3fff, 0x2a00126a,
+	0x30, 0x000000ff, 0x0040,
+	0x34, 0x00000040, 0x00004040,
+	0x9100, 0x07ffffff, 0x03000000,
+	0x8e88, 0x01ff1f3f, 0x00000000,
+	0x8e84, 0x01ff1f3f, 0x00000000,
+	0x9060, 0x0000007f, 0x00000020,
+	0x9508, 0x00010000, 0x00010000,
+	0xac14, 0x00000200, 0x000002fb,
+	0xac10, 0xffffffff, 0x0000543b,
+	0xac0c, 0xffffffff, 0xa9210876,
+	0x88d0, 0xffffffff, 0x000fff40,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x1410, 0x20000000, 0x20fffed8,
+	0x15c0, 0x000c0fc0, 0x000c0400
+};
+
+static const u32 tahiti_golden_registers2[] =
+{
+	0xc64, 0x00000001, 0x00000001
+};
+
+static const u32 pitcairn_golden_rlc_registers[] =
+{
+	0xc424, 0xffffffff, 0x00601004,
+	0xc47c, 0xffffffff, 0x10102020,
+	0xc488, 0xffffffff, 0x01000020,
+	0xc314, 0xffffffff, 0x00000800,
+	0xc30c, 0xffffffff, 0x800000a4
+};
+
+static const u32 pitcairn_golden_registers[] =
+{
+	0x9a10, 0x00010000, 0x00018208,
+	0x9830, 0xffffffff, 0x00000000,
+	0x9834, 0xf00fffff, 0x00000400,
+	0x9838, 0x0002021c, 0x00020200,
+	0xc78, 0x00000080, 0x00000000,
+	0xd030, 0x000300c0, 0x00800040,
+	0xd830, 0x000300c0, 0x00800040,
+	0x5bb0, 0x000000f0, 0x00000070,
+	0x5bc0, 0x00200000, 0x50100000,
+	0x7030, 0x31000311, 0x00000011,
+	0x2ae4, 0x00073ffe, 0x000022a2,
+	0x240c, 0x000007ff, 0x00000000,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8b24, 0xffffffff, 0x00ffffff,
+	0x8b10, 0x0000ff0f, 0x00000000,
+	0x28a4c, 0x07ffffff, 0x4e000000,
+	0x28350, 0x3f3f3fff, 0x2a00126a,
+	0x30, 0x000000ff, 0x0040,
+	0x34, 0x00000040, 0x00004040,
+	0x9100, 0x07ffffff, 0x03000000,
+	0x9060, 0x0000007f, 0x00000020,
+	0x9508, 0x00010000, 0x00010000,
+	0xac14, 0x000003ff, 0x000000f7,
+	0xac10, 0xffffffff, 0x00000000,
+	0xac0c, 0xffffffff, 0x32761054,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x15c0, 0x000c0fc0, 0x000c0400
+};
+
+static const u32 verde_golden_rlc_registers[] =
+{
+	0xc424, 0xffffffff, 0x033f1005,
+	0xc47c, 0xffffffff, 0x10808020,
+	0xc488, 0xffffffff, 0x00800008,
+	0xc314, 0xffffffff, 0x00001000,
+	0xc30c, 0xffffffff, 0x80010014
+};
+
+static const u32 verde_golden_registers[] =
+{
+	0x9a10, 0x00010000, 0x00018208,
+	0x9830, 0xffffffff, 0x00000000,
+	0x9834, 0xf00fffff, 0x00000400,
+	0x9838, 0x0002021c, 0x00020200,
+	0xc78, 0x00000080, 0x00000000,
+	0xd030, 0x000300c0, 0x00800040,
+	0xd030, 0x000300c0, 0x00800040,
+	0xd830, 0x000300c0, 0x00800040,
+	0xd830, 0x000300c0, 0x00800040,
+	0x5bb0, 0x000000f0, 0x00000070,
+	0x5bc0, 0x00200000, 0x50100000,
+	0x7030, 0x31000311, 0x00000011,
+	0x2ae4, 0x00073ffe, 0x000022a2,
+	0x2ae4, 0x00073ffe, 0x000022a2,
+	0x2ae4, 0x00073ffe, 0x000022a2,
+	0x240c, 0x000007ff, 0x00000000,
+	0x240c, 0x000007ff, 0x00000000,
+	0x240c, 0x000007ff, 0x00000000,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8b24, 0xffffffff, 0x00ffffff,
+	0x8b10, 0x0000ff0f, 0x00000000,
+	0x28a4c, 0x07ffffff, 0x4e000000,
+	0x28350, 0x3f3f3fff, 0x0000124a,
+	0x28350, 0x3f3f3fff, 0x0000124a,
+	0x28350, 0x3f3f3fff, 0x0000124a,
+	0x30, 0x000000ff, 0x0040,
+	0x34, 0x00000040, 0x00004040,
+	0x9100, 0x07ffffff, 0x03000000,
+	0x9100, 0x07ffffff, 0x03000000,
+	0x8e88, 0x01ff1f3f, 0x00000000,
+	0x8e88, 0x01ff1f3f, 0x00000000,
+	0x8e88, 0x01ff1f3f, 0x00000000,
+	0x8e84, 0x01ff1f3f, 0x00000000,
+	0x8e84, 0x01ff1f3f, 0x00000000,
+	0x8e84, 0x01ff1f3f, 0x00000000,
+	0x9060, 0x0000007f, 0x00000020,
+	0x9508, 0x00010000, 0x00010000,
+	0xac14, 0x000003ff, 0x00000003,
+	0xac14, 0x000003ff, 0x00000003,
+	0xac14, 0x000003ff, 0x00000003,
+	0xac10, 0xffffffff, 0x00000000,
+	0xac10, 0xffffffff, 0x00000000,
+	0xac10, 0xffffffff, 0x00000000,
+	0xac0c, 0xffffffff, 0x00001032,
+	0xac0c, 0xffffffff, 0x00001032,
+	0xac0c, 0xffffffff, 0x00001032,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x15c0, 0x000c0fc0, 0x000c0400
+};
+
+static const u32 oland_golden_rlc_registers[] =
+{
+	0xc424, 0xffffffff, 0x00601005,
+	0xc47c, 0xffffffff, 0x10104040,
+	0xc488, 0xffffffff, 0x0100000a,
+	0xc314, 0xffffffff, 0x00000800,
+	0xc30c, 0xffffffff, 0x800000f4
+};
+
+static const u32 oland_golden_registers[] =
+{
+	0x9a10, 0x00010000, 0x00018208,
+	0x9830, 0xffffffff, 0x00000000,
+	0x9834, 0xf00fffff, 0x00000400,
+	0x9838, 0x0002021c, 0x00020200,
+	0xc78, 0x00000080, 0x00000000,
+	0xd030, 0x000300c0, 0x00800040,
+	0xd830, 0x000300c0, 0x00800040,
+	0x5bb0, 0x000000f0, 0x00000070,
+	0x5bc0, 0x00200000, 0x50100000,
+	0x7030, 0x31000311, 0x00000011,
+	0x2ae4, 0x00073ffe, 0x000022a2,
+	0x240c, 0x000007ff, 0x00000000,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8b24, 0xffffffff, 0x00ffffff,
+	0x8b10, 0x0000ff0f, 0x00000000,
+	0x28a4c, 0x07ffffff, 0x4e000000,
+	0x28350, 0x3f3f3fff, 0x00000082,
+	0x30, 0x000000ff, 0x0040,
+	0x34, 0x00000040, 0x00004040,
+	0x9100, 0x07ffffff, 0x03000000,
+	0x9060, 0x0000007f, 0x00000020,
+	0x9508, 0x00010000, 0x00010000,
+	0xac14, 0x000003ff, 0x000000f3,
+	0xac10, 0xffffffff, 0x00000000,
+	0xac0c, 0xffffffff, 0x00003210,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x15c0, 0x000c0fc0, 0x000c0400
+};
+
+static const u32 hainan_golden_registers[] =
+{
+	0x9a10, 0x00010000, 0x00018208,
+	0x9830, 0xffffffff, 0x00000000,
+	0x9834, 0xf00fffff, 0x00000400,
+	0x9838, 0x0002021c, 0x00020200,
+	0xd0c0, 0xff000fff, 0x00000100,
+	0xd030, 0x000300c0, 0x00800040,
+	0xd8c0, 0xff000fff, 0x00000100,
+	0xd830, 0x000300c0, 0x00800040,
+	0x2ae4, 0x00073ffe, 0x000022a2,
+	0x240c, 0x000007ff, 0x00000000,
+	0x8a14, 0xf000001f, 0x00000007,
+	0x8b24, 0xffffffff, 0x00ffffff,
+	0x8b10, 0x0000ff0f, 0x00000000,
+	0x28a4c, 0x07ffffff, 0x4e000000,
+	0x28350, 0x3f3f3fff, 0x00000000,
+	0x30, 0x000000ff, 0x0040,
+	0x34, 0x00000040, 0x00004040,
+	0x9100, 0x03e00000, 0x03600000,
+	0x9060, 0x0000007f, 0x00000020,
+	0x9508, 0x00010000, 0x00010000,
+	0xac14, 0x000003ff, 0x000000f1,
+	0xac10, 0xffffffff, 0x00000000,
+	0xac0c, 0xffffffff, 0x00003210,
+	0x88d4, 0x0000001f, 0x00000010,
+	0x15c0, 0x000c0fc0, 0x000c0400
+};
+
+static const u32 hainan_golden_registers2[] =
+{
+	0x98f8, 0xffffffff, 0x02010001
+};
+
+static const u32 tahiti_mgcg_cgcg_init[] =
+{
+	0xc400, 0xffffffff, 0xfffffffc,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9a60, 0xffffffff, 0x00000100,
+	0x92a4, 0xffffffff, 0x00000100,
+	0xc164, 0xffffffff, 0x00000100,
+	0x9774, 0xffffffff, 0x00000100,
+	0x8984, 0xffffffff, 0x06000100,
+	0x8a18, 0xffffffff, 0x00000100,
+	0x92a0, 0xffffffff, 0x00000100,
+	0xc380, 0xffffffff, 0x00000100,
+	0x8b28, 0xffffffff, 0x00000100,
+	0x9144, 0xffffffff, 0x00000100,
+	0x8d88, 0xffffffff, 0x00000100,
+	0x8d8c, 0xffffffff, 0x00000100,
+	0x9030, 0xffffffff, 0x00000100,
+	0x9034, 0xffffffff, 0x00000100,
+	0x9038, 0xffffffff, 0x00000100,
+	0x903c, 0xffffffff, 0x00000100,
+	0xad80, 0xffffffff, 0x00000100,
+	0xac54, 0xffffffff, 0x00000100,
+	0x897c, 0xffffffff, 0x06000100,
+	0x9868, 0xffffffff, 0x00000100,
+	0x9510, 0xffffffff, 0x00000100,
+	0xaf04, 0xffffffff, 0x00000100,
+	0xae04, 0xffffffff, 0x00000100,
+	0x949c, 0xffffffff, 0x00000100,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9160, 0xffffffff, 0x00010000,
+	0x9164, 0xffffffff, 0x00030002,
+	0x9168, 0xffffffff, 0x00040007,
+	0x916c, 0xffffffff, 0x00060005,
+	0x9170, 0xffffffff, 0x00090008,
+	0x9174, 0xffffffff, 0x00020001,
+	0x9178, 0xffffffff, 0x00040003,
+	0x917c, 0xffffffff, 0x00000007,
+	0x9180, 0xffffffff, 0x00060005,
+	0x9184, 0xffffffff, 0x00090008,
+	0x9188, 0xffffffff, 0x00030002,
+	0x918c, 0xffffffff, 0x00050004,
+	0x9190, 0xffffffff, 0x00000008,
+	0x9194, 0xffffffff, 0x00070006,
+	0x9198, 0xffffffff, 0x000a0009,
+	0x919c, 0xffffffff, 0x00040003,
+	0x91a0, 0xffffffff, 0x00060005,
+	0x91a4, 0xffffffff, 0x00000009,
+	0x91a8, 0xffffffff, 0x00080007,
+	0x91ac, 0xffffffff, 0x000b000a,
+	0x91b0, 0xffffffff, 0x00050004,
+	0x91b4, 0xffffffff, 0x00070006,
+	0x91b8, 0xffffffff, 0x0008000b,
+	0x91bc, 0xffffffff, 0x000a0009,
+	0x91c0, 0xffffffff, 0x000d000c,
+	0x91c4, 0xffffffff, 0x00060005,
+	0x91c8, 0xffffffff, 0x00080007,
+	0x91cc, 0xffffffff, 0x0000000b,
+	0x91d0, 0xffffffff, 0x000a0009,
+	0x91d4, 0xffffffff, 0x000d000c,
+	0x91d8, 0xffffffff, 0x00070006,
+	0x91dc, 0xffffffff, 0x00090008,
+	0x91e0, 0xffffffff, 0x0000000c,
+	0x91e4, 0xffffffff, 0x000b000a,
+	0x91e8, 0xffffffff, 0x000e000d,
+	0x91ec, 0xffffffff, 0x00080007,
+	0x91f0, 0xffffffff, 0x000a0009,
+	0x91f4, 0xffffffff, 0x0000000d,
+	0x91f8, 0xffffffff, 0x000c000b,
+	0x91fc, 0xffffffff, 0x000f000e,
+	0x9200, 0xffffffff, 0x00090008,
+	0x9204, 0xffffffff, 0x000b000a,
+	0x9208, 0xffffffff, 0x000c000f,
+	0x920c, 0xffffffff, 0x000e000d,
+	0x9210, 0xffffffff, 0x00110010,
+	0x9214, 0xffffffff, 0x000a0009,
+	0x9218, 0xffffffff, 0x000c000b,
+	0x921c, 0xffffffff, 0x0000000f,
+	0x9220, 0xffffffff, 0x000e000d,
+	0x9224, 0xffffffff, 0x00110010,
+	0x9228, 0xffffffff, 0x000b000a,
+	0x922c, 0xffffffff, 0x000d000c,
+	0x9230, 0xffffffff, 0x00000010,
+	0x9234, 0xffffffff, 0x000f000e,
+	0x9238, 0xffffffff, 0x00120011,
+	0x923c, 0xffffffff, 0x000c000b,
+	0x9240, 0xffffffff, 0x000e000d,
+	0x9244, 0xffffffff, 0x00000011,
+	0x9248, 0xffffffff, 0x0010000f,
+	0x924c, 0xffffffff, 0x00130012,
+	0x9250, 0xffffffff, 0x000d000c,
+	0x9254, 0xffffffff, 0x000f000e,
+	0x9258, 0xffffffff, 0x00100013,
+	0x925c, 0xffffffff, 0x00120011,
+	0x9260, 0xffffffff, 0x00150014,
+	0x9264, 0xffffffff, 0x000e000d,
+	0x9268, 0xffffffff, 0x0010000f,
+	0x926c, 0xffffffff, 0x00000013,
+	0x9270, 0xffffffff, 0x00120011,
+	0x9274, 0xffffffff, 0x00150014,
+	0x9278, 0xffffffff, 0x000f000e,
+	0x927c, 0xffffffff, 0x00110010,
+	0x9280, 0xffffffff, 0x00000014,
+	0x9284, 0xffffffff, 0x00130012,
+	0x9288, 0xffffffff, 0x00160015,
+	0x928c, 0xffffffff, 0x0010000f,
+	0x9290, 0xffffffff, 0x00120011,
+	0x9294, 0xffffffff, 0x00000015,
+	0x9298, 0xffffffff, 0x00140013,
+	0x929c, 0xffffffff, 0x00170016,
+	0x9150, 0xffffffff, 0x96940200,
+	0x8708, 0xffffffff, 0x00900100,
+	0xc478, 0xffffffff, 0x00000080,
+	0xc404, 0xffffffff, 0x0020003f,
+	0x30, 0xffffffff, 0x0000001c,
+	0x34, 0x000f0000, 0x000f0000,
+	0x160c, 0xffffffff, 0x00000100,
+	0x1024, 0xffffffff, 0x00000100,
+	0x102c, 0x00000101, 0x00000000,
+	0x20a8, 0xffffffff, 0x00000104,
+	0x264c, 0x000c0000, 0x000c0000,
+	0x2648, 0x000c0000, 0x000c0000,
+	0x55e4, 0xff000fff, 0x00000100,
+	0x55e8, 0x00000001, 0x00000001,
+	0x2f50, 0x00000001, 0x00000001,
+	0x30cc, 0xc0000fff, 0x00000104,
+	0xc1e4, 0x00000001, 0x00000001,
+	0xd0c0, 0xfffffff0, 0x00000100,
+	0xd8c0, 0xfffffff0, 0x00000100
+};
+
+static const u32 pitcairn_mgcg_cgcg_init[] =
+{
+	0xc400, 0xffffffff, 0xfffffffc,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9a60, 0xffffffff, 0x00000100,
+	0x92a4, 0xffffffff, 0x00000100,
+	0xc164, 0xffffffff, 0x00000100,
+	0x9774, 0xffffffff, 0x00000100,
+	0x8984, 0xffffffff, 0x06000100,
+	0x8a18, 0xffffffff, 0x00000100,
+	0x92a0, 0xffffffff, 0x00000100,
+	0xc380, 0xffffffff, 0x00000100,
+	0x8b28, 0xffffffff, 0x00000100,
+	0x9144, 0xffffffff, 0x00000100,
+	0x8d88, 0xffffffff, 0x00000100,
+	0x8d8c, 0xffffffff, 0x00000100,
+	0x9030, 0xffffffff, 0x00000100,
+	0x9034, 0xffffffff, 0x00000100,
+	0x9038, 0xffffffff, 0x00000100,
+	0x903c, 0xffffffff, 0x00000100,
+	0xad80, 0xffffffff, 0x00000100,
+	0xac54, 0xffffffff, 0x00000100,
+	0x897c, 0xffffffff, 0x06000100,
+	0x9868, 0xffffffff, 0x00000100,
+	0x9510, 0xffffffff, 0x00000100,
+	0xaf04, 0xffffffff, 0x00000100,
+	0xae04, 0xffffffff, 0x00000100,
+	0x949c, 0xffffffff, 0x00000100,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9160, 0xffffffff, 0x00010000,
+	0x9164, 0xffffffff, 0x00030002,
+	0x9168, 0xffffffff, 0x00040007,
+	0x916c, 0xffffffff, 0x00060005,
+	0x9170, 0xffffffff, 0x00090008,
+	0x9174, 0xffffffff, 0x00020001,
+	0x9178, 0xffffffff, 0x00040003,
+	0x917c, 0xffffffff, 0x00000007,
+	0x9180, 0xffffffff, 0x00060005,
+	0x9184, 0xffffffff, 0x00090008,
+	0x9188, 0xffffffff, 0x00030002,
+	0x918c, 0xffffffff, 0x00050004,
+	0x9190, 0xffffffff, 0x00000008,
+	0x9194, 0xffffffff, 0x00070006,
+	0x9198, 0xffffffff, 0x000a0009,
+	0x919c, 0xffffffff, 0x00040003,
+	0x91a0, 0xffffffff, 0x00060005,
+	0x91a4, 0xffffffff, 0x00000009,
+	0x91a8, 0xffffffff, 0x00080007,
+	0x91ac, 0xffffffff, 0x000b000a,
+	0x91b0, 0xffffffff, 0x00050004,
+	0x91b4, 0xffffffff, 0x00070006,
+	0x91b8, 0xffffffff, 0x0008000b,
+	0x91bc, 0xffffffff, 0x000a0009,
+	0x91c0, 0xffffffff, 0x000d000c,
+	0x9200, 0xffffffff, 0x00090008,
+	0x9204, 0xffffffff, 0x000b000a,
+	0x9208, 0xffffffff, 0x000c000f,
+	0x920c, 0xffffffff, 0x000e000d,
+	0x9210, 0xffffffff, 0x00110010,
+	0x9214, 0xffffffff, 0x000a0009,
+	0x9218, 0xffffffff, 0x000c000b,
+	0x921c, 0xffffffff, 0x0000000f,
+	0x9220, 0xffffffff, 0x000e000d,
+	0x9224, 0xffffffff, 0x00110010,
+	0x9228, 0xffffffff, 0x000b000a,
+	0x922c, 0xffffffff, 0x000d000c,
+	0x9230, 0xffffffff, 0x00000010,
+	0x9234, 0xffffffff, 0x000f000e,
+	0x9238, 0xffffffff, 0x00120011,
+	0x923c, 0xffffffff, 0x000c000b,
+	0x9240, 0xffffffff, 0x000e000d,
+	0x9244, 0xffffffff, 0x00000011,
+	0x9248, 0xffffffff, 0x0010000f,
+	0x924c, 0xffffffff, 0x00130012,
+	0x9250, 0xffffffff, 0x000d000c,
+	0x9254, 0xffffffff, 0x000f000e,
+	0x9258, 0xffffffff, 0x00100013,
+	0x925c, 0xffffffff, 0x00120011,
+	0x9260, 0xffffffff, 0x00150014,
+	0x9150, 0xffffffff, 0x96940200,
+	0x8708, 0xffffffff, 0x00900100,
+	0xc478, 0xffffffff, 0x00000080,
+	0xc404, 0xffffffff, 0x0020003f,
+	0x30, 0xffffffff, 0x0000001c,
+	0x34, 0x000f0000, 0x000f0000,
+	0x160c, 0xffffffff, 0x00000100,
+	0x1024, 0xffffffff, 0x00000100,
+	0x102c, 0x00000101, 0x00000000,
+	0x20a8, 0xffffffff, 0x00000104,
+	0x55e4, 0xff000fff, 0x00000100,
+	0x55e8, 0x00000001, 0x00000001,
+	0x2f50, 0x00000001, 0x00000001,
+	0x30cc, 0xc0000fff, 0x00000104,
+	0xc1e4, 0x00000001, 0x00000001,
+	0xd0c0, 0xfffffff0, 0x00000100,
+	0xd8c0, 0xfffffff0, 0x00000100
+};
+
+static const u32 verde_mgcg_cgcg_init[] =
+{
+	0xc400, 0xffffffff, 0xfffffffc,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9a60, 0xffffffff, 0x00000100,
+	0x92a4, 0xffffffff, 0x00000100,
+	0xc164, 0xffffffff, 0x00000100,
+	0x9774, 0xffffffff, 0x00000100,
+	0x8984, 0xffffffff, 0x06000100,
+	0x8a18, 0xffffffff, 0x00000100,
+	0x92a0, 0xffffffff, 0x00000100,
+	0xc380, 0xffffffff, 0x00000100,
+	0x8b28, 0xffffffff, 0x00000100,
+	0x9144, 0xffffffff, 0x00000100,
+	0x8d88, 0xffffffff, 0x00000100,
+	0x8d8c, 0xffffffff, 0x00000100,
+	0x9030, 0xffffffff, 0x00000100,
+	0x9034, 0xffffffff, 0x00000100,
+	0x9038, 0xffffffff, 0x00000100,
+	0x903c, 0xffffffff, 0x00000100,
+	0xad80, 0xffffffff, 0x00000100,
+	0xac54, 0xffffffff, 0x00000100,
+	0x897c, 0xffffffff, 0x06000100,
+	0x9868, 0xffffffff, 0x00000100,
+	0x9510, 0xffffffff, 0x00000100,
+	0xaf04, 0xffffffff, 0x00000100,
+	0xae04, 0xffffffff, 0x00000100,
+	0x949c, 0xffffffff, 0x00000100,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9160, 0xffffffff, 0x00010000,
+	0x9164, 0xffffffff, 0x00030002,
+	0x9168, 0xffffffff, 0x00040007,
+	0x916c, 0xffffffff, 0x00060005,
+	0x9170, 0xffffffff, 0x00090008,
+	0x9174, 0xffffffff, 0x00020001,
+	0x9178, 0xffffffff, 0x00040003,
+	0x917c, 0xffffffff, 0x00000007,
+	0x9180, 0xffffffff, 0x00060005,
+	0x9184, 0xffffffff, 0x00090008,
+	0x9188, 0xffffffff, 0x00030002,
+	0x918c, 0xffffffff, 0x00050004,
+	0x9190, 0xffffffff, 0x00000008,
+	0x9194, 0xffffffff, 0x00070006,
+	0x9198, 0xffffffff, 0x000a0009,
+	0x919c, 0xffffffff, 0x00040003,
+	0x91a0, 0xffffffff, 0x00060005,
+	0x91a4, 0xffffffff, 0x00000009,
+	0x91a8, 0xffffffff, 0x00080007,
+	0x91ac, 0xffffffff, 0x000b000a,
+	0x91b0, 0xffffffff, 0x00050004,
+	0x91b4, 0xffffffff, 0x00070006,
+	0x91b8, 0xffffffff, 0x0008000b,
+	0x91bc, 0xffffffff, 0x000a0009,
+	0x91c0, 0xffffffff, 0x000d000c,
+	0x9200, 0xffffffff, 0x00090008,
+	0x9204, 0xffffffff, 0x000b000a,
+	0x9208, 0xffffffff, 0x000c000f,
+	0x920c, 0xffffffff, 0x000e000d,
+	0x9210, 0xffffffff, 0x00110010,
+	0x9214, 0xffffffff, 0x000a0009,
+	0x9218, 0xffffffff, 0x000c000b,
+	0x921c, 0xffffffff, 0x0000000f,
+	0x9220, 0xffffffff, 0x000e000d,
+	0x9224, 0xffffffff, 0x00110010,
+	0x9228, 0xffffffff, 0x000b000a,
+	0x922c, 0xffffffff, 0x000d000c,
+	0x9230, 0xffffffff, 0x00000010,
+	0x9234, 0xffffffff, 0x000f000e,
+	0x9238, 0xffffffff, 0x00120011,
+	0x923c, 0xffffffff, 0x000c000b,
+	0x9240, 0xffffffff, 0x000e000d,
+	0x9244, 0xffffffff, 0x00000011,
+	0x9248, 0xffffffff, 0x0010000f,
+	0x924c, 0xffffffff, 0x00130012,
+	0x9250, 0xffffffff, 0x000d000c,
+	0x9254, 0xffffffff, 0x000f000e,
+	0x9258, 0xffffffff, 0x00100013,
+	0x925c, 0xffffffff, 0x00120011,
+	0x9260, 0xffffffff, 0x00150014,
+	0x9150, 0xffffffff, 0x96940200,
+	0x8708, 0xffffffff, 0x00900100,
+	0xc478, 0xffffffff, 0x00000080,
+	0xc404, 0xffffffff, 0x0020003f,
+	0x30, 0xffffffff, 0x0000001c,
+	0x34, 0x000f0000, 0x000f0000,
+	0x160c, 0xffffffff, 0x00000100,
+	0x1024, 0xffffffff, 0x00000100,
+	0x102c, 0x00000101, 0x00000000,
+	0x20a8, 0xffffffff, 0x00000104,
+	0x264c, 0x000c0000, 0x000c0000,
+	0x2648, 0x000c0000, 0x000c0000,
+	0x55e4, 0xff000fff, 0x00000100,
+	0x55e8, 0x00000001, 0x00000001,
+	0x2f50, 0x00000001, 0x00000001,
+	0x30cc, 0xc0000fff, 0x00000104,
+	0xc1e4, 0x00000001, 0x00000001,
+	0xd0c0, 0xfffffff0, 0x00000100,
+	0xd8c0, 0xfffffff0, 0x00000100
+};
+
+static const u32 oland_mgcg_cgcg_init[] =
+{
+	0xc400, 0xffffffff, 0xfffffffc,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9a60, 0xffffffff, 0x00000100,
+	0x92a4, 0xffffffff, 0x00000100,
+	0xc164, 0xffffffff, 0x00000100,
+	0x9774, 0xffffffff, 0x00000100,
+	0x8984, 0xffffffff, 0x06000100,
+	0x8a18, 0xffffffff, 0x00000100,
+	0x92a0, 0xffffffff, 0x00000100,
+	0xc380, 0xffffffff, 0x00000100,
+	0x8b28, 0xffffffff, 0x00000100,
+	0x9144, 0xffffffff, 0x00000100,
+	0x8d88, 0xffffffff, 0x00000100,
+	0x8d8c, 0xffffffff, 0x00000100,
+	0x9030, 0xffffffff, 0x00000100,
+	0x9034, 0xffffffff, 0x00000100,
+	0x9038, 0xffffffff, 0x00000100,
+	0x903c, 0xffffffff, 0x00000100,
+	0xad80, 0xffffffff, 0x00000100,
+	0xac54, 0xffffffff, 0x00000100,
+	0x897c, 0xffffffff, 0x06000100,
+	0x9868, 0xffffffff, 0x00000100,
+	0x9510, 0xffffffff, 0x00000100,
+	0xaf04, 0xffffffff, 0x00000100,
+	0xae04, 0xffffffff, 0x00000100,
+	0x949c, 0xffffffff, 0x00000100,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9160, 0xffffffff, 0x00010000,
+	0x9164, 0xffffffff, 0x00030002,
+	0x9168, 0xffffffff, 0x00040007,
+	0x916c, 0xffffffff, 0x00060005,
+	0x9170, 0xffffffff, 0x00090008,
+	0x9174, 0xffffffff, 0x00020001,
+	0x9178, 0xffffffff, 0x00040003,
+	0x917c, 0xffffffff, 0x00000007,
+	0x9180, 0xffffffff, 0x00060005,
+	0x9184, 0xffffffff, 0x00090008,
+	0x9188, 0xffffffff, 0x00030002,
+	0x918c, 0xffffffff, 0x00050004,
+	0x9190, 0xffffffff, 0x00000008,
+	0x9194, 0xffffffff, 0x00070006,
+	0x9198, 0xffffffff, 0x000a0009,
+	0x919c, 0xffffffff, 0x00040003,
+	0x91a0, 0xffffffff, 0x00060005,
+	0x91a4, 0xffffffff, 0x00000009,
+	0x91a8, 0xffffffff, 0x00080007,
+	0x91ac, 0xffffffff, 0x000b000a,
+	0x91b0, 0xffffffff, 0x00050004,
+	0x91b4, 0xffffffff, 0x00070006,
+	0x91b8, 0xffffffff, 0x0008000b,
+	0x91bc, 0xffffffff, 0x000a0009,
+	0x91c0, 0xffffffff, 0x000d000c,
+	0x91c4, 0xffffffff, 0x00060005,
+	0x91c8, 0xffffffff, 0x00080007,
+	0x91cc, 0xffffffff, 0x0000000b,
+	0x91d0, 0xffffffff, 0x000a0009,
+	0x91d4, 0xffffffff, 0x000d000c,
+	0x9150, 0xffffffff, 0x96940200,
+	0x8708, 0xffffffff, 0x00900100,
+	0xc478, 0xffffffff, 0x00000080,
+	0xc404, 0xffffffff, 0x0020003f,
+	0x30, 0xffffffff, 0x0000001c,
+	0x34, 0x000f0000, 0x000f0000,
+	0x160c, 0xffffffff, 0x00000100,
+	0x1024, 0xffffffff, 0x00000100,
+	0x102c, 0x00000101, 0x00000000,
+	0x20a8, 0xffffffff, 0x00000104,
+	0x264c, 0x000c0000, 0x000c0000,
+	0x2648, 0x000c0000, 0x000c0000,
+	0x55e4, 0xff000fff, 0x00000100,
+	0x55e8, 0x00000001, 0x00000001,
+	0x2f50, 0x00000001, 0x00000001,
+	0x30cc, 0xc0000fff, 0x00000104,
+	0xc1e4, 0x00000001, 0x00000001,
+	0xd0c0, 0xfffffff0, 0x00000100,
+	0xd8c0, 0xfffffff0, 0x00000100
+};
+
+static const u32 hainan_mgcg_cgcg_init[] =
+{
+	0xc400, 0xffffffff, 0xfffffffc,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9a60, 0xffffffff, 0x00000100,
+	0x92a4, 0xffffffff, 0x00000100,
+	0xc164, 0xffffffff, 0x00000100,
+	0x9774, 0xffffffff, 0x00000100,
+	0x8984, 0xffffffff, 0x06000100,
+	0x8a18, 0xffffffff, 0x00000100,
+	0x92a0, 0xffffffff, 0x00000100,
+	0xc380, 0xffffffff, 0x00000100,
+	0x8b28, 0xffffffff, 0x00000100,
+	0x9144, 0xffffffff, 0x00000100,
+	0x8d88, 0xffffffff, 0x00000100,
+	0x8d8c, 0xffffffff, 0x00000100,
+	0x9030, 0xffffffff, 0x00000100,
+	0x9034, 0xffffffff, 0x00000100,
+	0x9038, 0xffffffff, 0x00000100,
+	0x903c, 0xffffffff, 0x00000100,
+	0xad80, 0xffffffff, 0x00000100,
+	0xac54, 0xffffffff, 0x00000100,
+	0x897c, 0xffffffff, 0x06000100,
+	0x9868, 0xffffffff, 0x00000100,
+	0x9510, 0xffffffff, 0x00000100,
+	0xaf04, 0xffffffff, 0x00000100,
+	0xae04, 0xffffffff, 0x00000100,
+	0x949c, 0xffffffff, 0x00000100,
+	0x802c, 0xffffffff, 0xe0000000,
+	0x9160, 0xffffffff, 0x00010000,
+	0x9164, 0xffffffff, 0x00030002,
+	0x9168, 0xffffffff, 0x00040007,
+	0x916c, 0xffffffff, 0x00060005,
+	0x9170, 0xffffffff, 0x00090008,
+	0x9174, 0xffffffff, 0x00020001,
+	0x9178, 0xffffffff, 0x00040003,
+	0x917c, 0xffffffff, 0x00000007,
+	0x9180, 0xffffffff, 0x00060005,
+	0x9184, 0xffffffff, 0x00090008,
+	0x9188, 0xffffffff, 0x00030002,
+	0x918c, 0xffffffff, 0x00050004,
+	0x9190, 0xffffffff, 0x00000008,
+	0x9194, 0xffffffff, 0x00070006,
+	0x9198, 0xffffffff, 0x000a0009,
+	0x919c, 0xffffffff, 0x00040003,
+	0x91a0, 0xffffffff, 0x00060005,
+	0x91a4, 0xffffffff, 0x00000009,
+	0x91a8, 0xffffffff, 0x00080007,
+	0x91ac, 0xffffffff, 0x000b000a,
+	0x91b0, 0xffffffff, 0x00050004,
+	0x91b4, 0xffffffff, 0x00070006,
+	0x91b8, 0xffffffff, 0x0008000b,
+	0x91bc, 0xffffffff, 0x000a0009,
+	0x91c0, 0xffffffff, 0x000d000c,
+	0x91c4, 0xffffffff, 0x00060005,
+	0x91c8, 0xffffffff, 0x00080007,
+	0x91cc, 0xffffffff, 0x0000000b,
+	0x91d0, 0xffffffff, 0x000a0009,
+	0x91d4, 0xffffffff, 0x000d000c,
+	0x9150, 0xffffffff, 0x96940200,
+	0x8708, 0xffffffff, 0x00900100,
+	0xc478, 0xffffffff, 0x00000080,
+	0xc404, 0xffffffff, 0x0020003f,
+	0x30, 0xffffffff, 0x0000001c,
+	0x34, 0x000f0000, 0x000f0000,
+	0x160c, 0xffffffff, 0x00000100,
+	0x1024, 0xffffffff, 0x00000100,
+	0x20a8, 0xffffffff, 0x00000104,
+	0x264c, 0x000c0000, 0x000c0000,
+	0x2648, 0x000c0000, 0x000c0000,
+	0x2f50, 0x00000001, 0x00000001,
+	0x30cc, 0xc0000fff, 0x00000104,
+	0xc1e4, 0x00000001, 0x00000001,
+	0xd0c0, 0xfffffff0, 0x00000100,
+	0xd8c0, 0xfffffff0, 0x00000100
+};
+
+static u32 verde_pg_init[] =
+{
+	0x353c, 0xffffffff, 0x40000,
+	0x3538, 0xffffffff, 0x200010ff,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x7007,
+	0x3538, 0xffffffff, 0x300010ff,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x400000,
+	0x3538, 0xffffffff, 0x100010ff,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x120200,
+	0x3538, 0xffffffff, 0x500010ff,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x1e1e16,
+	0x3538, 0xffffffff, 0x600010ff,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x171f1e,
+	0x3538, 0xffffffff, 0x700010ff,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x353c, 0xffffffff, 0x0,
+	0x3538, 0xffffffff, 0x9ff,
+	0x3500, 0xffffffff, 0x0,
+	0x3504, 0xffffffff, 0x10000800,
+	0x3504, 0xffffffff, 0xf,
+	0x3504, 0xffffffff, 0xf,
+	0x3500, 0xffffffff, 0x4,
+	0x3504, 0xffffffff, 0x1000051e,
+	0x3504, 0xffffffff, 0xffff,
+	0x3504, 0xffffffff, 0xffff,
+	0x3500, 0xffffffff, 0x8,
+	0x3504, 0xffffffff, 0x80500,
+	0x3500, 0xffffffff, 0x12,
+	0x3504, 0xffffffff, 0x9050c,
+	0x3500, 0xffffffff, 0x1d,
+	0x3504, 0xffffffff, 0xb052c,
+	0x3500, 0xffffffff, 0x2a,
+	0x3504, 0xffffffff, 0x1053e,
+	0x3500, 0xffffffff, 0x2d,
+	0x3504, 0xffffffff, 0x10546,
+	0x3500, 0xffffffff, 0x30,
+	0x3504, 0xffffffff, 0xa054e,
+	0x3500, 0xffffffff, 0x3c,
+	0x3504, 0xffffffff, 0x1055f,
+	0x3500, 0xffffffff, 0x3f,
+	0x3504, 0xffffffff, 0x10567,
+	0x3500, 0xffffffff, 0x42,
+	0x3504, 0xffffffff, 0x1056f,
+	0x3500, 0xffffffff, 0x45,
+	0x3504, 0xffffffff, 0x10572,
+	0x3500, 0xffffffff, 0x48,
+	0x3504, 0xffffffff, 0x20575,
+	0x3500, 0xffffffff, 0x4c,
+	0x3504, 0xffffffff, 0x190801,
+	0x3500, 0xffffffff, 0x67,
+	0x3504, 0xffffffff, 0x1082a,
+	0x3500, 0xffffffff, 0x6a,
+	0x3504, 0xffffffff, 0x1b082d,
+	0x3500, 0xffffffff, 0x87,
+	0x3504, 0xffffffff, 0x310851,
+	0x3500, 0xffffffff, 0xba,
+	0x3504, 0xffffffff, 0x891,
+	0x3500, 0xffffffff, 0xbc,
+	0x3504, 0xffffffff, 0x893,
+	0x3500, 0xffffffff, 0xbe,
+	0x3504, 0xffffffff, 0x20895,
+	0x3500, 0xffffffff, 0xc2,
+	0x3504, 0xffffffff, 0x20899,
+	0x3500, 0xffffffff, 0xc6,
+	0x3504, 0xffffffff, 0x2089d,
+	0x3500, 0xffffffff, 0xca,
+	0x3504, 0xffffffff, 0x8a1,
+	0x3500, 0xffffffff, 0xcc,
+	0x3504, 0xffffffff, 0x8a3,
+	0x3500, 0xffffffff, 0xce,
+	0x3504, 0xffffffff, 0x308a5,
+	0x3500, 0xffffffff, 0xd3,
+	0x3504, 0xffffffff, 0x6d08cd,
+	0x3500, 0xffffffff, 0x142,
+	0x3504, 0xffffffff, 0x2000095a,
+	0x3504, 0xffffffff, 0x1,
+	0x3500, 0xffffffff, 0x144,
+	0x3504, 0xffffffff, 0x301f095b,
+	0x3500, 0xffffffff, 0x165,
+	0x3504, 0xffffffff, 0xc094d,
+	0x3500, 0xffffffff, 0x173,
+	0x3504, 0xffffffff, 0xf096d,
+	0x3500, 0xffffffff, 0x184,
+	0x3504, 0xffffffff, 0x15097f,
+	0x3500, 0xffffffff, 0x19b,
+	0x3504, 0xffffffff, 0xc0998,
+	0x3500, 0xffffffff, 0x1a9,
+	0x3504, 0xffffffff, 0x409a7,
+	0x3500, 0xffffffff, 0x1af,
+	0x3504, 0xffffffff, 0xcdc,
+	0x3500, 0xffffffff, 0x1b1,
+	0x3504, 0xffffffff, 0x800,
+	0x3508, 0xffffffff, 0x6c9b2000,
+	0x3510, 0xfc00, 0x2000,
+	0x3544, 0xffffffff, 0xfc0,
+	0x28d4, 0x00000100, 0x100
+};
+
+static void si_init_golden_registers(struct radeon_device *rdev)
+{
+	switch (rdev->family) {
+	case CHIP_TAHITI:
+		radeon_program_register_sequence(rdev,
+						 tahiti_golden_registers,
+						 (const u32)ARRAY_SIZE(tahiti_golden_registers));
+		radeon_program_register_sequence(rdev,
+						 tahiti_golden_rlc_registers,
+						 (const u32)ARRAY_SIZE(tahiti_golden_rlc_registers));
+		radeon_program_register_sequence(rdev,
+						 tahiti_mgcg_cgcg_init,
+						 (const u32)ARRAY_SIZE(tahiti_mgcg_cgcg_init));
+		radeon_program_register_sequence(rdev,
+						 tahiti_golden_registers2,
+						 (const u32)ARRAY_SIZE(tahiti_golden_registers2));
+		break;
+	case CHIP_PITCAIRN:
+		radeon_program_register_sequence(rdev,
+						 pitcairn_golden_registers,
+						 (const u32)ARRAY_SIZE(pitcairn_golden_registers));
+		radeon_program_register_sequence(rdev,
+						 pitcairn_golden_rlc_registers,
+						 (const u32)ARRAY_SIZE(pitcairn_golden_rlc_registers));
+		radeon_program_register_sequence(rdev,
+						 pitcairn_mgcg_cgcg_init,
+						 (const u32)ARRAY_SIZE(pitcairn_mgcg_cgcg_init));
+		break;
+	case CHIP_VERDE:
+		radeon_program_register_sequence(rdev,
+						 verde_golden_registers,
+						 (const u32)ARRAY_SIZE(verde_golden_registers));
+		radeon_program_register_sequence(rdev,
+						 verde_golden_rlc_registers,
+						 (const u32)ARRAY_SIZE(verde_golden_rlc_registers));
+		radeon_program_register_sequence(rdev,
+						 verde_mgcg_cgcg_init,
+						 (const u32)ARRAY_SIZE(verde_mgcg_cgcg_init));
+		radeon_program_register_sequence(rdev,
+						 verde_pg_init,
+						 (const u32)ARRAY_SIZE(verde_pg_init));
+		break;
+	case CHIP_OLAND:
+		radeon_program_register_sequence(rdev,
+						 oland_golden_registers,
+						 (const u32)ARRAY_SIZE(oland_golden_registers));
+		radeon_program_register_sequence(rdev,
+						 oland_golden_rlc_registers,
+						 (const u32)ARRAY_SIZE(oland_golden_rlc_registers));
+		radeon_program_register_sequence(rdev,
+						 oland_mgcg_cgcg_init,
+						 (const u32)ARRAY_SIZE(oland_mgcg_cgcg_init));
+		break;
+	case CHIP_HAINAN:
+		radeon_program_register_sequence(rdev,
+						 hainan_golden_registers,
+						 (const u32)ARRAY_SIZE(hainan_golden_registers));
+		radeon_program_register_sequence(rdev,
+						 hainan_golden_registers2,
+						 (const u32)ARRAY_SIZE(hainan_golden_registers2));
+		radeon_program_register_sequence(rdev,
+						 hainan_mgcg_cgcg_init,
+						 (const u32)ARRAY_SIZE(hainan_mgcg_cgcg_init));
+		break;
+	default:
+		break;
+	}
+}
+
+#define PCIE_BUS_CLK                10000
+#define TCLK                        (PCIE_BUS_CLK / 10)
+
+/**
+ * si_get_xclk - get the xclk
+ *
+ * @rdev: radeon_device pointer
+ *
+ * Returns the reference clock used by the gfx engine
+ * (SI).
+ */
+u32 si_get_xclk(struct radeon_device *rdev)
+{
+        u32 reference_clock = rdev->clock.spll.reference_freq;
+	u32 tmp;
+
+	tmp = RREG32(CG_CLKPIN_CNTL_2);
+	if (tmp & MUX_TCLK_TO_XCLK)
+		return TCLK;
+
+	tmp = RREG32(CG_CLKPIN_CNTL);
+	if (tmp & XTALIN_DIVIDE)
+		return reference_clock / 4;
+
+	return reference_clock;
+}
 
 /* get temperature in millidegrees */
 int si_get_temp(struct radeon_device *rdev)
@@ -200,6 +1150,84 @@ static const u32 verde_io_mc_regs[TAHITI_IO_MC_REGS_SIZE][2] = {
 	{0x0000009f, 0x00a37400}
 };
 
+static const u32 oland_io_mc_regs[TAHITI_IO_MC_REGS_SIZE][2] = {
+	{0x0000006f, 0x03044000},
+	{0x00000070, 0x0480c018},
+	{0x00000071, 0x00000040},
+	{0x00000072, 0x01000000},
+	{0x00000074, 0x000000ff},
+	{0x00000075, 0x00143400},
+	{0x00000076, 0x08ec0800},
+	{0x00000077, 0x040000cc},
+	{0x00000079, 0x00000000},
+	{0x0000007a, 0x21000409},
+	{0x0000007c, 0x00000000},
+	{0x0000007d, 0xe8000000},
+	{0x0000007e, 0x044408a8},
+	{0x0000007f, 0x00000003},
+	{0x00000080, 0x00000000},
+	{0x00000081, 0x01000000},
+	{0x00000082, 0x02000000},
+	{0x00000083, 0x00000000},
+	{0x00000084, 0xe3f3e4f4},
+	{0x00000085, 0x00052024},
+	{0x00000087, 0x00000000},
+	{0x00000088, 0x66036603},
+	{0x00000089, 0x01000000},
+	{0x0000008b, 0x1c0a0000},
+	{0x0000008c, 0xff010000},
+	{0x0000008e, 0xffffefff},
+	{0x0000008f, 0xfff3efff},
+	{0x00000090, 0xfff3efbf},
+	{0x00000094, 0x00101101},
+	{0x00000095, 0x00000fff},
+	{0x00000096, 0x00116fff},
+	{0x00000097, 0x60010000},
+	{0x00000098, 0x10010000},
+	{0x00000099, 0x00006000},
+	{0x0000009a, 0x00001000},
+	{0x0000009f, 0x00a17730}
+};
+
+static const u32 hainan_io_mc_regs[TAHITI_IO_MC_REGS_SIZE][2] = {
+	{0x0000006f, 0x03044000},
+	{0x00000070, 0x0480c018},
+	{0x00000071, 0x00000040},
+	{0x00000072, 0x01000000},
+	{0x00000074, 0x000000ff},
+	{0x00000075, 0x00143400},
+	{0x00000076, 0x08ec0800},
+	{0x00000077, 0x040000cc},
+	{0x00000079, 0x00000000},
+	{0x0000007a, 0x21000409},
+	{0x0000007c, 0x00000000},
+	{0x0000007d, 0xe8000000},
+	{0x0000007e, 0x044408a8},
+	{0x0000007f, 0x00000003},
+	{0x00000080, 0x00000000},
+	{0x00000081, 0x01000000},
+	{0x00000082, 0x02000000},
+	{0x00000083, 0x00000000},
+	{0x00000084, 0xe3f3e4f4},
+	{0x00000085, 0x00052024},
+	{0x00000087, 0x00000000},
+	{0x00000088, 0x66036603},
+	{0x00000089, 0x01000000},
+	{0x0000008b, 0x1c0a0000},
+	{0x0000008c, 0xff010000},
+	{0x0000008e, 0xffffefff},
+	{0x0000008f, 0xfff3efff},
+	{0x00000090, 0xfff3efbf},
+	{0x00000094, 0x00101101},
+	{0x00000095, 0x00000fff},
+	{0x00000096, 0x00116fff},
+	{0x00000097, 0x60010000},
+	{0x00000098, 0x10010000},
+	{0x00000099, 0x00006000},
+	{0x0000009a, 0x00001000},
+	{0x0000009f, 0x00a07730}
+};
+
 /* ucode loading */
 static int si_mc_load_microcode(struct radeon_device *rdev)
 {
@@ -226,6 +1254,16 @@ static int si_mc_load_microcode(struct radeon_device *rdev)
 	default:
 		io_mc_regs = (u32 *)&verde_io_mc_regs;
 		ucode_size = SI_MC_UCODE_SIZE;
+		regs_size = TAHITI_IO_MC_REGS_SIZE;
+		break;
+	case CHIP_OLAND:
+		io_mc_regs = (u32 *)&oland_io_mc_regs;
+		ucode_size = OLAND_MC_UCODE_SIZE;
+		regs_size = TAHITI_IO_MC_REGS_SIZE;
+		break;
+	case CHIP_HAINAN:
+		io_mc_regs = (u32 *)&hainan_io_mc_regs;
+		ucode_size = OLAND_MC_UCODE_SIZE;
 		regs_size = TAHITI_IO_MC_REGS_SIZE;
 		break;
 	}
@@ -321,6 +1359,24 @@ static int si_init_microcode(struct radeon_device *rdev)
 		ce_req_size = SI_CE_UCODE_SIZE * 4;
 		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
 		mc_req_size = SI_MC_UCODE_SIZE * 4;
+		break;
+	case CHIP_OLAND:
+		chip_name = "OLAND";
+		rlc_chip_name = "OLAND";
+		pfp_req_size = SI_PFP_UCODE_SIZE * 4;
+		me_req_size = SI_PM4_UCODE_SIZE * 4;
+		ce_req_size = SI_CE_UCODE_SIZE * 4;
+		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+		mc_req_size = OLAND_MC_UCODE_SIZE * 4;
+		break;
+	case CHIP_HAINAN:
+		chip_name = "HAINAN";
+		rlc_chip_name = "HAINAN";
+		pfp_req_size = SI_PFP_UCODE_SIZE * 4;
+		me_req_size = SI_PM4_UCODE_SIZE * 4;
+		ce_req_size = SI_CE_UCODE_SIZE * 4;
+		rlc_req_size = SI_RLC_UCODE_SIZE * 4;
+		mc_req_size = OLAND_MC_UCODE_SIZE * 4;
 		break;
 	default: BUG();
 	}
@@ -1123,9 +2179,12 @@ static void si_tiling_mode_table_init(struct radeon_device *rdev)
 				gb_tile_moden = 0;
 				break;
 			}
+			rdev->config.si.tile_mode_array[reg_offset] = gb_tile_moden;
 			WREG32(GB_TILE_MODE0 + (reg_offset * 4), gb_tile_moden);
 		}
-	} else if (rdev->family == CHIP_VERDE) {
+	} else if ((rdev->family == CHIP_VERDE) ||
+		   (rdev->family == CHIP_OLAND) ||
+		   (rdev->family == CHIP_HAINAN)) {
 		for (reg_offset = 0; reg_offset < num_tile_mode_states; reg_offset++) {
 			switch (reg_offset) {
 			case 0:  /* non-AA compressed depth or any compressed stencil */
@@ -1362,6 +2421,7 @@ static void si_tiling_mode_table_init(struct radeon_device *rdev)
 				gb_tile_moden = 0;
 				break;
 			}
+			rdev->config.si.tile_mode_array[reg_offset] = gb_tile_moden;
 			WREG32(GB_TILE_MODE0 + (reg_offset * 4), gb_tile_moden);
 		}
 	} else
@@ -1374,7 +2434,7 @@ static void si_select_se_sh(struct radeon_device *rdev,
 	u32 data = INSTANCE_BROADCAST_WRITES;
 
 	if ((se_num == 0xffffffff) && (sh_num == 0xffffffff))
-		data = SH_BROADCAST_WRITES | SE_BROADCAST_WRITES;
+		data |= SH_BROADCAST_WRITES | SE_BROADCAST_WRITES;
 	else if (se_num == 0xffffffff)
 		data |= SE_BROADCAST_WRITES | SH_INDEX(sh_num);
 	else if (sh_num == 0xffffffff)
@@ -1556,7 +2616,7 @@ static void si_gpu_init(struct radeon_device *rdev)
 	default:
 		rdev->config.si.max_shader_engines = 1;
 		rdev->config.si.max_tile_pipes = 4;
-		rdev->config.si.max_cu_per_sh = 2;
+		rdev->config.si.max_cu_per_sh = 5;
 		rdev->config.si.max_sh_per_se = 2;
 		rdev->config.si.max_backends_per_se = 4;
 		rdev->config.si.max_texture_channel_caches = 4;
@@ -1569,6 +2629,40 @@ static void si_gpu_init(struct radeon_device *rdev)
 		rdev->config.si.sc_hiz_tile_fifo_size = 0x30;
 		rdev->config.si.sc_earlyz_tile_fifo_size = 0x130;
 		gb_addr_config = VERDE_GB_ADDR_CONFIG_GOLDEN;
+		break;
+	case CHIP_OLAND:
+		rdev->config.si.max_shader_engines = 1;
+		rdev->config.si.max_tile_pipes = 4;
+		rdev->config.si.max_cu_per_sh = 6;
+		rdev->config.si.max_sh_per_se = 1;
+		rdev->config.si.max_backends_per_se = 2;
+		rdev->config.si.max_texture_channel_caches = 4;
+		rdev->config.si.max_gprs = 256;
+		rdev->config.si.max_gs_threads = 16;
+		rdev->config.si.max_hw_contexts = 8;
+
+		rdev->config.si.sc_prim_fifo_size_frontend = 0x20;
+		rdev->config.si.sc_prim_fifo_size_backend = 0x40;
+		rdev->config.si.sc_hiz_tile_fifo_size = 0x30;
+		rdev->config.si.sc_earlyz_tile_fifo_size = 0x130;
+		gb_addr_config = VERDE_GB_ADDR_CONFIG_GOLDEN;
+		break;
+	case CHIP_HAINAN:
+		rdev->config.si.max_shader_engines = 1;
+		rdev->config.si.max_tile_pipes = 4;
+		rdev->config.si.max_cu_per_sh = 5;
+		rdev->config.si.max_sh_per_se = 1;
+		rdev->config.si.max_backends_per_se = 1;
+		rdev->config.si.max_texture_channel_caches = 2;
+		rdev->config.si.max_gprs = 256;
+		rdev->config.si.max_gs_threads = 16;
+		rdev->config.si.max_hw_contexts = 8;
+
+		rdev->config.si.sc_prim_fifo_size_frontend = 0x20;
+		rdev->config.si.sc_prim_fifo_size_backend = 0x40;
+		rdev->config.si.sc_hiz_tile_fifo_size = 0x30;
+		rdev->config.si.sc_earlyz_tile_fifo_size = 0x130;
+		gb_addr_config = HAINAN_GB_ADDR_CONFIG_GOLDEN;
 		break;
 	}
 
@@ -1659,9 +2753,15 @@ static void si_gpu_init(struct radeon_device *rdev)
 
 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);
+	WREG32(DMIF_ADDR_CALC, gb_addr_config);
 	WREG32(HDP_ADDR_CONFIG, gb_addr_config);
 	WREG32(DMA_TILING_CONFIG + DMA0_REGISTER_OFFSET, gb_addr_config);
 	WREG32(DMA_TILING_CONFIG + DMA1_REGISTER_OFFSET, gb_addr_config);
+	if (rdev->has_uvd) {
+		WREG32(UVD_UDEC_ADDR_CONFIG, gb_addr_config);
+		WREG32(UVD_UDEC_DB_ADDR_CONFIG, gb_addr_config);
+		WREG32(UVD_UDEC_DBW_ADDR_CONFIG, gb_addr_config);
+	}
 
 	si_tiling_mode_table_init(rdev);
 
@@ -2106,50 +3206,129 @@ static int si_cp_resume(struct radeon_device *rdev)
 	return 0;
 }
 
-bool si_gpu_is_lockup(struct radeon_device *rdev, struct radeon_ring *ring)
+static u32 si_gpu_check_soft_reset(struct radeon_device *rdev)
 {
-	u32 srbm_status;
-	u32 grbm_status, grbm_status2;
-	u32 grbm_status_se0, grbm_status_se1;
+	u32 reset_mask = 0;
+	u32 tmp;
 
-	srbm_status = RREG32(SRBM_STATUS);
-	grbm_status = RREG32(GRBM_STATUS);
-	grbm_status2 = RREG32(GRBM_STATUS2);
-	grbm_status_se0 = RREG32(GRBM_STATUS_SE0);
-	grbm_status_se1 = RREG32(GRBM_STATUS_SE1);
-	if (!(grbm_status & GUI_ACTIVE)) {
-		radeon_ring_lockup_update(ring);
-		return false;
+	/* GRBM_STATUS */
+	tmp = RREG32(GRBM_STATUS);
+	if (tmp & (PA_BUSY | SC_BUSY |
+		   BCI_BUSY | SX_BUSY |
+		   TA_BUSY | VGT_BUSY |
+		   DB_BUSY | CB_BUSY |
+		   GDS_BUSY | SPI_BUSY |
+		   IA_BUSY | IA_BUSY_NO_DMA))
+		reset_mask |= RADEON_RESET_GFX;
+
+	if (tmp & (CF_RQ_PENDING | PF_RQ_PENDING |
+		   CP_BUSY | CP_COHERENCY_BUSY))
+		reset_mask |= RADEON_RESET_CP;
+
+	if (tmp & GRBM_EE_BUSY)
+		reset_mask |= RADEON_RESET_GRBM | RADEON_RESET_GFX | RADEON_RESET_CP;
+
+	/* GRBM_STATUS2 */
+	tmp = RREG32(GRBM_STATUS2);
+	if (tmp & (RLC_RQ_PENDING | RLC_BUSY))
+		reset_mask |= RADEON_RESET_RLC;
+
+	/* DMA_STATUS_REG 0 */
+	tmp = RREG32(DMA_STATUS_REG + DMA0_REGISTER_OFFSET);
+	if (!(tmp & DMA_IDLE))
+		reset_mask |= RADEON_RESET_DMA;
+
+	/* DMA_STATUS_REG 1 */
+	tmp = RREG32(DMA_STATUS_REG + DMA1_REGISTER_OFFSET);
+	if (!(tmp & DMA_IDLE))
+		reset_mask |= RADEON_RESET_DMA1;
+
+	/* SRBM_STATUS2 */
+	tmp = RREG32(SRBM_STATUS2);
+	if (tmp & DMA_BUSY)
+		reset_mask |= RADEON_RESET_DMA;
+
+	if (tmp & DMA1_BUSY)
+		reset_mask |= RADEON_RESET_DMA1;
+
+	/* SRBM_STATUS */
+	tmp = RREG32(SRBM_STATUS);
+
+	if (tmp & IH_BUSY)
+		reset_mask |= RADEON_RESET_IH;
+
+	if (tmp & SEM_BUSY)
+		reset_mask |= RADEON_RESET_SEM;
+
+	if (tmp & GRBM_RQ_PENDING)
+		reset_mask |= RADEON_RESET_GRBM;
+
+	if (tmp & VMC_BUSY)
+		reset_mask |= RADEON_RESET_VMC;
+
+	if (tmp & (MCB_BUSY | MCB_NON_DISPLAY_BUSY |
+		   MCC_BUSY | MCD_BUSY))
+		reset_mask |= RADEON_RESET_MC;
+
+	if (evergreen_is_display_hung(rdev))
+		reset_mask |= RADEON_RESET_DISPLAY;
+
+	/* VM_L2_STATUS */
+	tmp = RREG32(VM_L2_STATUS);
+	if (tmp & L2_BUSY)
+		reset_mask |= RADEON_RESET_VMC;
+
+	/* Skip MC reset as it's mostly likely not hung, just busy */
+	if (reset_mask & RADEON_RESET_MC) {
+		DRM_DEBUG("MC busy: 0x%08X, clearing.\n", reset_mask);
+		reset_mask &= ~RADEON_RESET_MC;
 	}
-	/* force CP activities */
-	radeon_ring_force_activity(rdev, ring);
-	return radeon_ring_test_lockup(rdev, ring);
+
+	return reset_mask;
 }
 
-static void si_gpu_soft_reset_gfx(struct radeon_device *rdev)
+static void si_gpu_soft_reset(struct radeon_device *rdev, u32 reset_mask)
 {
-	u32 grbm_reset = 0;
+	struct evergreen_mc_save save;
+	u32 grbm_soft_reset = 0, srbm_soft_reset = 0;
+	u32 tmp;
 
-	if (!(RREG32(GRBM_STATUS) & GUI_ACTIVE))
+	if (reset_mask == 0)
 		return;
 
-	dev_info(rdev->dev, "  GRBM_STATUS=0x%08X\n",
-		RREG32(GRBM_STATUS));
-	dev_info(rdev->dev, "  GRBM_STATUS2=0x%08X\n",
-		RREG32(GRBM_STATUS2));
-	dev_info(rdev->dev, "  GRBM_STATUS_SE0=0x%08X\n",
-		RREG32(GRBM_STATUS_SE0));
-	dev_info(rdev->dev, "  GRBM_STATUS_SE1=0x%08X\n",
-		RREG32(GRBM_STATUS_SE1));
-	dev_info(rdev->dev, "  SRBM_STATUS=0x%08X\n",
-		RREG32(SRBM_STATUS));
+	dev_info(rdev->dev, "GPU softreset: 0x%08X\n", reset_mask);
+
+	evergreen_print_gpu_status_regs(rdev);
+	dev_info(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x%08X\n",
+		 RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR));
+	dev_info(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x%08X\n",
+		 RREG32(VM_CONTEXT1_PROTECTION_FAULT_STATUS));
 
 	/* Disable CP parsing/prefetching */
 	WREG32(CP_ME_CNTL, CP_ME_HALT | CP_PFP_HALT | CP_CE_HALT);
 
-	/* reset all the gfx blocks */
-	grbm_reset = (SOFT_RESET_CP |
-		      SOFT_RESET_CB |
+	if (reset_mask & RADEON_RESET_DMA) {
+		/* dma0 */
+		tmp = RREG32(DMA_RB_CNTL + DMA0_REGISTER_OFFSET);
+		tmp &= ~DMA_RB_ENABLE;
+		WREG32(DMA_RB_CNTL + DMA0_REGISTER_OFFSET, tmp);
+	}
+	if (reset_mask & RADEON_RESET_DMA1) {
+		/* dma1 */
+		tmp = RREG32(DMA_RB_CNTL + DMA1_REGISTER_OFFSET);
+		tmp &= ~DMA_RB_ENABLE;
+		WREG32(DMA_RB_CNTL + DMA1_REGISTER_OFFSET, tmp);
+	}
+
+	udelay(50);
+
+	evergreen_mc_stop(rdev, &save);
+	if (evergreen_mc_wait_for_idle(rdev)) {
+		dev_warn(rdev->dev, "Wait for MC idle timedout !\n");
+	}
+
+	if (reset_mask & (RADEON_RESET_GFX | RADEON_RESET_COMPUTE | RADEON_RESET_CP)) {
+		grbm_soft_reset = SOFT_RESET_CB |
 		      SOFT_RESET_DB |
 		      SOFT_RESET_GDS |
 		      SOFT_RESET_PA |
@@ -2160,94 +3339,148 @@ static void si_gpu_soft_reset_gfx(struct radeon_device *rdev)
 		      SOFT_RESET_TC |
 		      SOFT_RESET_TA |
 		      SOFT_RESET_VGT |
-		      SOFT_RESET_IA);
-
-	dev_info(rdev->dev, "  GRBM_SOFT_RESET=0x%08X\n", grbm_reset);
-	WREG32(GRBM_SOFT_RESET, grbm_reset);
-	(void)RREG32(GRBM_SOFT_RESET);
-	udelay(50);
-	WREG32(GRBM_SOFT_RESET, 0);
-	(void)RREG32(GRBM_SOFT_RESET);
-
-	dev_info(rdev->dev, "  GRBM_STATUS=0x%08X\n",
-		RREG32(GRBM_STATUS));
-	dev_info(rdev->dev, "  GRBM_STATUS2=0x%08X\n",
-		RREG32(GRBM_STATUS2));
-	dev_info(rdev->dev, "  GRBM_STATUS_SE0=0x%08X\n",
-		RREG32(GRBM_STATUS_SE0));
-	dev_info(rdev->dev, "  GRBM_STATUS_SE1=0x%08X\n",
-		RREG32(GRBM_STATUS_SE1));
-	dev_info(rdev->dev, "  SRBM_STATUS=0x%08X\n",
-		RREG32(SRBM_STATUS));
-}
-
-static void si_gpu_soft_reset_dma(struct radeon_device *rdev)
-{
-	u32 tmp;
-
-	if (RREG32(DMA_STATUS_REG) & DMA_IDLE)
-		return;
-
-	dev_info(rdev->dev, "  DMA_STATUS_REG   = 0x%08X\n",
-		RREG32(DMA_STATUS_REG));
-
-	/* dma0 */
-	tmp = RREG32(DMA_RB_CNTL + DMA0_REGISTER_OFFSET);
-	tmp &= ~DMA_RB_ENABLE;
-	WREG32(DMA_RB_CNTL + DMA0_REGISTER_OFFSET, tmp);
-
-	/* dma1 */
-	tmp = RREG32(DMA_RB_CNTL + DMA1_REGISTER_OFFSET);
-	tmp &= ~DMA_RB_ENABLE;
-	WREG32(DMA_RB_CNTL + DMA1_REGISTER_OFFSET, tmp);
-
-	/* Reset dma */
-	WREG32(SRBM_SOFT_RESET, SOFT_RESET_DMA | SOFT_RESET_DMA1);
-	RREG32(SRBM_SOFT_RESET);
-	udelay(50);
-	WREG32(SRBM_SOFT_RESET, 0);
-
-	dev_info(rdev->dev, "  DMA_STATUS_REG   = 0x%08X\n",
-		RREG32(DMA_STATUS_REG));
-}
-
-static int si_gpu_soft_reset(struct radeon_device *rdev, u32 reset_mask)
-{
-	struct evergreen_mc_save save;
-
-	if (reset_mask == 0)
-		return 0;
-
-	dev_info(rdev->dev, "GPU softreset: 0x%08X\n", reset_mask);
-
-	dev_info(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_ADDR   0x%08X\n",
-		 RREG32(VM_CONTEXT1_PROTECTION_FAULT_ADDR));
-	dev_info(rdev->dev, "  VM_CONTEXT1_PROTECTION_FAULT_STATUS 0x%08X\n",
-		 RREG32(VM_CONTEXT1_PROTECTION_FAULT_STATUS));
-
-	evergreen_mc_stop(rdev, &save);
-	if (radeon_mc_wait_for_idle(rdev)) {
-		dev_warn(rdev->dev, "Wait for MC idle timedout !\n");
+			SOFT_RESET_IA;
 	}
 
-	if (reset_mask & (RADEON_RESET_GFX | RADEON_RESET_COMPUTE))
-		si_gpu_soft_reset_gfx(rdev);
+	if (reset_mask & RADEON_RESET_CP) {
+		grbm_soft_reset |= SOFT_RESET_CP | SOFT_RESET_VGT;
+
+		srbm_soft_reset |= SOFT_RESET_GRBM;
+	}
 
 	if (reset_mask & RADEON_RESET_DMA)
-		si_gpu_soft_reset_dma(rdev);
+		srbm_soft_reset |= SOFT_RESET_DMA;
+
+	if (reset_mask & RADEON_RESET_DMA1)
+		srbm_soft_reset |= SOFT_RESET_DMA1;
+
+	if (reset_mask & RADEON_RESET_DISPLAY)
+		srbm_soft_reset |= SOFT_RESET_DC;
+
+	if (reset_mask & RADEON_RESET_RLC)
+		grbm_soft_reset |= SOFT_RESET_RLC;
+
+	if (reset_mask & RADEON_RESET_SEM)
+		srbm_soft_reset |= SOFT_RESET_SEM;
+
+	if (reset_mask & RADEON_RESET_IH)
+		srbm_soft_reset |= SOFT_RESET_IH;
+
+	if (reset_mask & RADEON_RESET_GRBM)
+		srbm_soft_reset |= SOFT_RESET_GRBM;
+
+	if (reset_mask & RADEON_RESET_VMC)
+		srbm_soft_reset |= SOFT_RESET_VMC;
+
+	if (reset_mask & RADEON_RESET_MC)
+		srbm_soft_reset |= SOFT_RESET_MC;
+
+	if (grbm_soft_reset) {
+		tmp = RREG32(GRBM_SOFT_RESET);
+		tmp |= grbm_soft_reset;
+		dev_info(rdev->dev, "GRBM_SOFT_RESET=0x%08X\n", tmp);
+		WREG32(GRBM_SOFT_RESET, tmp);
+		tmp = RREG32(GRBM_SOFT_RESET);
+
+		udelay(50);
+
+		tmp &= ~grbm_soft_reset;
+		WREG32(GRBM_SOFT_RESET, tmp);
+		tmp = RREG32(GRBM_SOFT_RESET);
+	}
+
+	if (srbm_soft_reset) {
+		tmp = RREG32(SRBM_SOFT_RESET);
+		tmp |= srbm_soft_reset;
+		dev_info(rdev->dev, "SRBM_SOFT_RESET=0x%08X\n", tmp);
+		WREG32(SRBM_SOFT_RESET, tmp);
+		tmp = RREG32(SRBM_SOFT_RESET);
+
+		udelay(50);
+
+		tmp &= ~srbm_soft_reset;
+		WREG32(SRBM_SOFT_RESET, tmp);
+		tmp = RREG32(SRBM_SOFT_RESET);
+	}
 
 	/* Wait a little for things to settle down */
 	udelay(50);
 
 	evergreen_mc_resume(rdev, &save);
-	return 0;
+	udelay(50);
+
+	evergreen_print_gpu_status_regs(rdev);
 }
 
 int si_asic_reset(struct radeon_device *rdev)
 {
-	return si_gpu_soft_reset(rdev, (RADEON_RESET_GFX |
+	u32 reset_mask;
+
+	reset_mask = si_gpu_check_soft_reset(rdev);
+
+	if (reset_mask)
+		r600_set_bios_scratch_engine_hung(rdev, true);
+
+	si_gpu_soft_reset(rdev, reset_mask);
+
+	reset_mask = si_gpu_check_soft_reset(rdev);
+
+	if (!reset_mask)
+		r600_set_bios_scratch_engine_hung(rdev, false);
+
+	return 0;
+}
+
+/**
+ * si_gfx_is_lockup - Check if the GFX engine is locked up
+ *
+ * @rdev: radeon_device pointer
+ * @ring: radeon_ring structure holding ring information
+ *
+ * Check if the GFX engine is locked up.
+ * Returns true if the engine appears to be locked up, false if not.
+ */
+bool si_gfx_is_lockup(struct radeon_device *rdev, struct radeon_ring *ring)
+{
+	u32 reset_mask = si_gpu_check_soft_reset(rdev);
+
+	if (!(reset_mask & (RADEON_RESET_GFX |
 					RADEON_RESET_COMPUTE |
-					RADEON_RESET_DMA));
+			    RADEON_RESET_CP))) {
+		radeon_ring_lockup_update(ring);
+		return false;
+	}
+	/* force CP activities */
+	radeon_ring_force_activity(rdev, ring);
+	return radeon_ring_test_lockup(rdev, ring);
+}
+
+/**
+ * si_dma_is_lockup - Check if the DMA engine is locked up
+ *
+ * @rdev: radeon_device pointer
+ * @ring: radeon_ring structure holding ring information
+ *
+ * Check if the async DMA engine is locked up.
+ * Returns true if the engine appears to be locked up, false if not.
+ */
+bool si_dma_is_lockup(struct radeon_device *rdev, struct radeon_ring *ring)
+{
+	u32 reset_mask = si_gpu_check_soft_reset(rdev);
+	u32 mask;
+
+	if (ring->idx == R600_RING_TYPE_DMA_INDEX)
+		mask = RADEON_RESET_DMA;
+	else
+		mask = RADEON_RESET_DMA1;
+
+	if (!(reset_mask & mask)) {
+		radeon_ring_lockup_update(ring);
+		return false;
+	}
+	/* force ring activities */
+	radeon_ring_force_activity(rdev, ring);
+	return radeon_ring_test_lockup(rdev, ring);
 }
 
 /* MC */
@@ -2271,6 +3504,7 @@ static void si_mc_program(struct radeon_device *rdev)
 	if (radeon_mc_wait_for_idle(rdev)) {
 		dev_warn(rdev->dev, "Wait for MC idle timedout !\n");
 	}
+	if (!ASIC_IS_NODCE(rdev))
 	/* Lockout access through VGA aperture*/
 	WREG32(VGA_HDP_CONTROL, VGA_MEMORY_DISABLE);
 	/* Update configuration */
@@ -2294,49 +3528,11 @@ static void si_mc_program(struct radeon_device *rdev)
 		dev_warn(rdev->dev, "Wait for MC idle timedout !\n");
 	}
 	evergreen_mc_resume(rdev, &save);
+	if (!ASIC_IS_NODCE(rdev)) {
 	/* we need to own VRAM, so turn off the VGA renderer here
 	 * to stop it overwriting our objects */
 	rv515_vga_render_disable(rdev);
-}
-
-/* SI MC address space is 40 bits */
-static void si_vram_location(struct radeon_device *rdev,
-			     struct radeon_mc *mc, u64 base)
-{
-	mc->vram_start = base;
-	if (mc->mc_vram_size > (0xFFFFFFFFFFULL - base + 1)) {
-		dev_warn(rdev->dev, "limiting VRAM to PCI aperture size\n");
-		mc->real_vram_size = mc->aper_size;
-		mc->mc_vram_size = mc->aper_size;
-	}
-	mc->vram_end = mc->vram_start + mc->mc_vram_size - 1;
-	dev_info(rdev->dev, "VRAM: %lluM 0x%016llX - 0x%016llX (%lluM used)\n",
-			mc->mc_vram_size >> 20, mc->vram_start,
-			mc->vram_end, mc->real_vram_size >> 20);
-}
-
-static void si_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
-{
-	u64 size_af, size_bf;
-
-	size_af = ((0xFFFFFFFFFFULL - mc->vram_end) + mc->gtt_base_align) & ~mc->gtt_base_align;
-	size_bf = mc->vram_start & ~mc->gtt_base_align;
-	if (size_bf > size_af) {
-		if (mc->gtt_size > size_bf) {
-			dev_warn(rdev->dev, "limiting GTT\n");
-			mc->gtt_size = size_bf;
 		}
-		mc->gtt_start = (mc->vram_start & ~mc->gtt_base_align) - mc->gtt_size;
-	} else {
-		if (mc->gtt_size > size_af) {
-			dev_warn(rdev->dev, "limiting GTT\n");
-			mc->gtt_size = size_af;
-		}
-		mc->gtt_start = (mc->vram_end + 1 + mc->gtt_base_align) & ~mc->gtt_base_align;
-	}
-	mc->gtt_end = mc->gtt_start + mc->gtt_size - 1;
-	dev_info(rdev->dev, "GTT: %lluM 0x%016llX - 0x%016llX\n",
-			mc->gtt_size >> 20, mc->gtt_start, mc->gtt_end);
 }
 
 static void si_vram_gtt_location(struct radeon_device *rdev,
@@ -2348,9 +3544,9 @@ static void si_vram_gtt_location(struct radeon_device *rdev,
 		mc->real_vram_size = 0xFFC0000000ULL;
 		mc->mc_vram_size = 0xFFC0000000ULL;
 	}
-	si_vram_location(rdev, &rdev->mc, 0);
+	radeon_vram_location(rdev, &rdev->mc, 0);
 	rdev->mc.gtt_base_align = 0;
-	si_gtt_location(rdev, mc);
+	radeon_gtt_location(rdev, mc);
 }
 
 static int si_mc_init(struct radeon_device *rdev)
@@ -2404,8 +3600,8 @@ static int si_mc_init(struct radeon_device *rdev)
 	rdev->mc.aper_base = pci_resource_start(rdev->pdev, 0);
 	rdev->mc.aper_size = pci_resource_len(rdev->pdev, 0);
 	/* size in MB on si */
-	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
-	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024 * 1024;
+	rdev->mc.mc_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+	rdev->mc.real_vram_size = RREG32(CONFIG_MEMSIZE) * 1024ULL * 1024ULL;
 	rdev->mc.visible_vram_size = rdev->mc.aper_size;
 	si_vram_gtt_location(rdev, &rdev->mc);
 	radeon_update_bandwidth_info(rdev);
@@ -2849,19 +4045,19 @@ int si_ib_parse(struct radeon_device *rdev, struct radeon_ib *ib)
 
 	do {
 		pkt.idx = idx;
-		pkt.type = CP_PACKET_GET_TYPE(ib->ptr[idx]);
-		pkt.count = CP_PACKET_GET_COUNT(ib->ptr[idx]);
+		pkt.type = RADEON_CP_PACKET_GET_TYPE(ib->ptr[idx]);
+		pkt.count = RADEON_CP_PACKET_GET_COUNT(ib->ptr[idx]);
 		pkt.one_reg_wr = 0;
 		switch (pkt.type) {
-		case PACKET_TYPE0:
+		case RADEON_PACKET_TYPE0:
 			dev_err(rdev->dev, "Packet0 not allowed!\n");
 			ret = -EINVAL;
 			break;
-		case PACKET_TYPE2:
+		case RADEON_PACKET_TYPE2:
 			idx += 1;
 			break;
-		case PACKET_TYPE3:
-			pkt.opcode = CP_PACKET3_GET_OPCODE(ib->ptr[idx]);
+		case RADEON_PACKET_TYPE3:
+			pkt.opcode = RADEON_CP_PACKET3_GET_OPCODE(ib->ptr[idx]);
 			if (ib->is_const_ib)
 				ret = si_vm_packet3_ce_check(rdev, ib->ptr, &pkt);
 			else {
@@ -2914,19 +4110,21 @@ void si_vm_fini(struct radeon_device *rdev)
  * si_vm_set_page - update the page tables using the CP
  *
  * @rdev: radeon_device pointer
+ * @ib: indirect buffer to fill with commands
  * @pe: addr of the page entry
  * @addr: dst addr to write into pe
  * @count: number of page entries to update
  * @incr: increase next addr by incr bytes
  * @flags: access flags
  *
- * Update the page tables using the CP (cayman-si).
+ * Update the page tables using the CP (SI).
  */
-void si_vm_set_page(struct radeon_device *rdev, uint64_t pe,
+void si_vm_set_page(struct radeon_device *rdev,
+		    struct radeon_ib *ib,
+		    uint64_t pe,
 		    uint64_t addr, unsigned count,
 		    uint32_t incr, uint32_t flags)
 {
-	struct radeon_ring *ring = &rdev->ring[rdev->asic->vm.pt_ring_index];
 	uint32_t r600_flags = cayman_vm_page_flags(rdev, flags);
 	uint64_t value;
 	unsigned ndw;
@@ -2937,11 +4135,11 @@ void si_vm_set_page(struct radeon_device *rdev, uint64_t pe,
 		if (ndw > 0x3FFE)
 			ndw = 0x3FFE;
 
-		radeon_ring_write(ring, PACKET3(PACKET3_WRITE_DATA, ndw));
-		radeon_ring_write(ring, (WRITE_DATA_ENGINE_SEL(0) |
-					 WRITE_DATA_DST_SEL(1)));
-		radeon_ring_write(ring, pe);
-		radeon_ring_write(ring, upper_32_bits(pe));
+			ib->ptr[ib->length_dw++] = PACKET3(PACKET3_WRITE_DATA, ndw);
+			ib->ptr[ib->length_dw++] = (WRITE_DATA_ENGINE_SEL(0) |
+					WRITE_DATA_DST_SEL(1));
+			ib->ptr[ib->length_dw++] = pe;
+			ib->ptr[ib->length_dw++] = upper_32_bits(pe);
 		for (; ndw > 2; ndw -= 2, --count, pe += 8) {
 			if (flags & RADEON_VM_PAGE_SYSTEM) {
 				value = radeon_vm_map_gart(rdev, addr);
@@ -2951,12 +4149,12 @@ void si_vm_set_page(struct radeon_device *rdev, uint64_t pe,
 				} else {
 				value = 0;
 				}
-			addr += incr;
-			value |= r600_flags;
-			radeon_ring_write(ring, value);
-			radeon_ring_write(ring, upper_32_bits(value));
+				addr += incr;
+				value |= r600_flags;
+				ib->ptr[ib->length_dw++] = value;
+				ib->ptr[ib->length_dw++] = upper_32_bits(value);
+			}
 		}
-	}
 	} else {
 		/* DMA */
 		if (flags & RADEON_VM_PAGE_SYSTEM) {
@@ -2966,9 +4164,9 @@ void si_vm_set_page(struct radeon_device *rdev, uint64_t pe,
 					ndw = 0xFFFFE;
 
 				/* for non-physically contiguous pages (system) */
-				radeon_ring_write(ring, DMA_PACKET(DMA_PACKET_WRITE, 0, 0, 0, ndw));
-				radeon_ring_write(ring, pe);
-				radeon_ring_write(ring, upper_32_bits(pe) & 0xff);
+				ib->ptr[ib->length_dw++] = DMA_PACKET(DMA_PACKET_WRITE, 0, 0, 0, ndw);
+				ib->ptr[ib->length_dw++] = pe;
+				ib->ptr[ib->length_dw++] = upper_32_bits(pe) & 0xff;
 				for (; ndw > 0; ndw -= 2, --count, pe += 8) {
 					if (flags & RADEON_VM_PAGE_SYSTEM) {
 						value = radeon_vm_map_gart(rdev, addr);
@@ -2980,8 +4178,8 @@ void si_vm_set_page(struct radeon_device *rdev, uint64_t pe,
 					}
 			addr += incr;
 			value |= r600_flags;
-			radeon_ring_write(ring, value);
-			radeon_ring_write(ring, upper_32_bits(value));
+					ib->ptr[ib->length_dw++] = value;
+					ib->ptr[ib->length_dw++] = upper_32_bits(value);
 		}
 	}
 		} else {
@@ -2995,20 +4193,22 @@ void si_vm_set_page(struct radeon_device *rdev, uint64_t pe,
 				else
 					value = 0;
 				/* for physically contiguous pages (vram) */
-				radeon_ring_write(ring, DMA_PTE_PDE_PACKET(ndw));
-				radeon_ring_write(ring, pe); /* dst addr */
-				radeon_ring_write(ring, upper_32_bits(pe) & 0xff);
-				radeon_ring_write(ring, r600_flags); /* mask */
-				radeon_ring_write(ring, 0);
-				radeon_ring_write(ring, value); /* value */
-				radeon_ring_write(ring, upper_32_bits(value));
-				radeon_ring_write(ring, incr); /* increment size */
-				radeon_ring_write(ring, 0);
+				ib->ptr[ib->length_dw++] = DMA_PTE_PDE_PACKET(ndw);
+				ib->ptr[ib->length_dw++] = pe; /* dst addr */
+				ib->ptr[ib->length_dw++] = upper_32_bits(pe) & 0xff;
+				ib->ptr[ib->length_dw++] = r600_flags; /* mask */
+				ib->ptr[ib->length_dw++] = 0;
+				ib->ptr[ib->length_dw++] = value; /* value */
+				ib->ptr[ib->length_dw++] = upper_32_bits(value);
+				ib->ptr[ib->length_dw++] = incr; /* increment size */
+				ib->ptr[ib->length_dw++] = 0;
 				pe += ndw * 4;
 				addr += (ndw / 2) * incr;
 				count -= ndw / 2;
 			}
 		}
+		while (ib->length_dw & 0x7)
+			ib->ptr[ib->length_dw++] = DMA_PACKET(DMA_PACKET_NOP, 0, 0, 0, 0);
 	}
 }
 
@@ -3254,8 +4454,10 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 	tmp = RREG32(DMA_CNTL + DMA1_REGISTER_OFFSET) & ~TRAP_ENABLE;
 	WREG32(DMA_CNTL + DMA1_REGISTER_OFFSET, tmp);
 	WREG32(GRBM_INT_CNTL, 0);
+	if (rdev->num_crtc >= 2) {
 	WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
+	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(INT_MASK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 		WREG32(INT_MASK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
@@ -3265,8 +4467,10 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 		WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
 
+	if (rdev->num_crtc >= 2) {
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
+	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
@@ -3276,6 +4480,7 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
 
+	if (!ASIC_IS_NODCE(rdev)) {
 	WREG32(DACA_AUTODETECT_INT_CONTROL, 0);
 
 	tmp = RREG32(DC_HPD1_INT_CONTROL) & DC_HPDx_INT_POLARITY;
@@ -3290,7 +4495,7 @@ static void si_disable_interrupt_state(struct radeon_device *rdev)
 	WREG32(DC_HPD5_INT_CONTROL, tmp);
 	tmp = RREG32(DC_HPD6_INT_CONTROL) & DC_HPDx_INT_POLARITY;
 	WREG32(DC_HPD6_INT_CONTROL, tmp);
-
+	}
 }
 
 static int si_irq_init(struct radeon_device *rdev)
@@ -3369,7 +4574,7 @@ int si_irq_set(struct radeon_device *rdev)
 	u32 cp_int_cntl = CNTX_BUSY_INT_ENABLE | CNTX_EMPTY_INT_ENABLE;
 	u32 cp_int_cntl1 = 0, cp_int_cntl2 = 0;
 	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
-	u32 hpd1, hpd2, hpd3, hpd4, hpd5, hpd6;
+	u32 hpd1 = 0, hpd2 = 0, hpd3 = 0, hpd4 = 0, hpd5 = 0, hpd6 = 0;
 	u32 grbm_int_cntl = 0;
 	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
 	u32 dma_cntl, dma_cntl1;
@@ -3386,12 +4591,14 @@ int si_irq_set(struct radeon_device *rdev)
 		return 0;
 	}
 
+	if (!ASIC_IS_NODCE(rdev)) {
 	hpd1 = RREG32(DC_HPD1_INT_CONTROL) & ~DC_HPDx_INT_EN;
 	hpd2 = RREG32(DC_HPD2_INT_CONTROL) & ~DC_HPDx_INT_EN;
 	hpd3 = RREG32(DC_HPD3_INT_CONTROL) & ~DC_HPDx_INT_EN;
 	hpd4 = RREG32(DC_HPD4_INT_CONTROL) & ~DC_HPDx_INT_EN;
 	hpd5 = RREG32(DC_HPD5_INT_CONTROL) & ~DC_HPDx_INT_EN;
 	hpd6 = RREG32(DC_HPD6_INT_CONTROL) & ~DC_HPDx_INT_EN;
+	}
 
 	dma_cntl = RREG32(DMA_CNTL + DMA0_REGISTER_OFFSET) & ~TRAP_ENABLE;
 	dma_cntl1 = RREG32(DMA_CNTL + DMA1_REGISTER_OFFSET) & ~TRAP_ENABLE;
@@ -3482,8 +4689,10 @@ int si_irq_set(struct radeon_device *rdev)
 
 	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
 
+	if (rdev->num_crtc >= 2) {
 	WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, crtc1);
 	WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, crtc2);
+	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(INT_MASK + EVERGREEN_CRTC2_REGISTER_OFFSET, crtc3);
 		WREG32(INT_MASK + EVERGREEN_CRTC3_REGISTER_OFFSET, crtc4);
@@ -3493,8 +4702,10 @@ int si_irq_set(struct radeon_device *rdev)
 		WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
 	}
 
+	if (rdev->num_crtc >= 2) {
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
+	}
 	if (rdev->num_crtc >= 4) {
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
@@ -3504,12 +4715,14 @@ int si_irq_set(struct radeon_device *rdev)
 		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
 	}
 
+	if (!ASIC_IS_NODCE(rdev)) {
 	WREG32(DC_HPD1_INT_CONTROL, hpd1);
 	WREG32(DC_HPD2_INT_CONTROL, hpd2);
 	WREG32(DC_HPD3_INT_CONTROL, hpd3);
 	WREG32(DC_HPD4_INT_CONTROL, hpd4);
 	WREG32(DC_HPD5_INT_CONTROL, hpd5);
 	WREG32(DC_HPD6_INT_CONTROL, hpd6);
+	}
 
 	return 0;
 }
@@ -3517,6 +4730,9 @@ int si_irq_set(struct radeon_device *rdev)
 static inline void si_irq_ack(struct radeon_device *rdev)
 {
 	u32 tmp;
+
+	if (ASIC_IS_NODCE(rdev))
+		return;
 
 	rdev->irq.stat_regs.evergreen.disp_int = RREG32(DISP_INTERRUPT_STATUS);
 	rdev->irq.stat_regs.evergreen.disp_int_cont = RREG32(DISP_INTERRUPT_STATUS_CONTINUE);
@@ -4079,14 +5295,6 @@ static int si_startup(struct radeon_device *rdev)
 		return r;
 	si_gpu_init(rdev);
 
-#if 0
-	r = evergreen_blit_init(rdev);
-	if (r) {
-		r600_blit_fini(rdev);
-		rdev->asic->copy = NULL;
-		dev_warn(rdev->dev, "failed blitter (%d) falling back to memcpy\n", r);
-	}
-#endif
 	/* allocate rlc buffers */
 	r = si_rlc_init(rdev);
 	if (r) {
@@ -4129,7 +5337,14 @@ static int si_startup(struct radeon_device *rdev)
 		return r;
 	}
 
+
 	/* Enable IRQ */
+	if (!rdev->irq.installed) {
+		r = radeon_irq_kms_init(rdev);
+		if (r)
+			return r;
+	}
+
 	r = si_irq_init(rdev);
 	if (r) {
 		DRM_ERROR("radeon: IH init failed (%d).\n", r);
@@ -4186,17 +5401,18 @@ static int si_startup(struct radeon_device *rdev)
 	if (r)
 		return r;
 
+
 	r = radeon_ib_pool_init(rdev);
 	if (r) {
 		dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
 		return r;
 	}
 
-//   r = radeon_vm_manager_init(rdev);
-//   if (r) {
-//       dev_err(rdev->dev, "vm manager initialization failed (%d).\n", r);
-//       return r;
-//   }
+	r = radeon_vm_manager_init(rdev);
+	if (r) {
+		dev_err(rdev->dev, "vm manager initialization failed (%d).\n", r);
+		return r;
+	}
 
 	return 0;
 }
@@ -4240,6 +5456,8 @@ int si_init(struct radeon_device *rdev)
 		DRM_INFO("GPU not posted. posting now...\n");
 		atom_asic_init(rdev->mode_info.atom_context);
 	}
+	/* init golden registers */
+	si_init_golden_registers(rdev);
 	/* Initialize scratch registers */
 	si_scratch_init(rdev);
 	/* Initialize surface registers */
@@ -4258,10 +5476,6 @@ int si_init(struct radeon_device *rdev)
 		return r;
 	/* Memory manager */
 	r = radeon_bo_init(rdev);
-	if (r)
-		return r;
-
-	r = radeon_irq_kms_init(rdev);
 	if (r)
 		return r;
 
@@ -4285,7 +5499,7 @@ int si_init(struct radeon_device *rdev)
 	ring->ring_obj = NULL;
 	r600_ring_init(rdev, ring, 64 * 1024);
 
-	rdev->ih.ring_obj = NULL;
+    rdev->ih.ring_obj = NULL;
 	r600_ih_ring_init(rdev, 64 * 1024);
 
     r = r600_pcie_gart_init(rdev);
@@ -4321,14 +5535,14 @@ int si_init(struct radeon_device *rdev)
 }
 
 /**
- * si_get_gpu_clock - return GPU clock counter snapshot
+ * si_get_gpu_clock_counter - return GPU clock counter snapshot
  *
  * @rdev: radeon_device pointer
  *
  * Fetches a GPU clock counter snapshot (SI).
  * Returns the 64 bit clock counter snapshot.
  */
-uint64_t si_get_gpu_clock(struct radeon_device *rdev)
+uint64_t si_get_gpu_clock_counter(struct radeon_device *rdev)
 {
 	uint64_t clock;
 
@@ -4339,3 +5553,96 @@ uint64_t si_get_gpu_clock(struct radeon_device *rdev)
 	mutex_unlock(&rdev->gpu_clock_mutex);
 	return clock;
 }
+
+#if 0
+int si_set_uvd_clocks(struct radeon_device *rdev, u32 vclk, u32 dclk)
+{
+	unsigned fb_div = 0, vclk_div = 0, dclk_div = 0;
+	int r;
+
+	/* bypass vclk and dclk with bclk */
+	WREG32_P(CG_UPLL_FUNC_CNTL_2,
+		VCLK_SRC_SEL(1) | DCLK_SRC_SEL(1),
+		~(VCLK_SRC_SEL_MASK | DCLK_SRC_SEL_MASK));
+
+	/* put PLL in bypass mode */
+	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_BYPASS_EN_MASK, ~UPLL_BYPASS_EN_MASK);
+
+	if (!vclk || !dclk) {
+		/* keep the Bypass mode, put PLL to sleep */
+		WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_SLEEP_MASK, ~UPLL_SLEEP_MASK);
+		return 0;
+	}
+
+	r = radeon_uvd_calc_upll_dividers(rdev, vclk, dclk, 125000, 250000,
+					  16384, 0x03FFFFFF, 0, 128, 5,
+					  &fb_div, &vclk_div, &dclk_div);
+	if (r)
+		return r;
+
+	/* set RESET_ANTI_MUX to 0 */
+	WREG32_P(CG_UPLL_FUNC_CNTL_5, 0, ~RESET_ANTI_MUX_MASK);
+
+	/* set VCO_MODE to 1 */
+	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_VCO_MODE_MASK, ~UPLL_VCO_MODE_MASK);
+
+	/* toggle UPLL_SLEEP to 1 then back to 0 */
+	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_SLEEP_MASK, ~UPLL_SLEEP_MASK);
+	WREG32_P(CG_UPLL_FUNC_CNTL, 0, ~UPLL_SLEEP_MASK);
+
+	/* deassert UPLL_RESET */
+	WREG32_P(CG_UPLL_FUNC_CNTL, 0, ~UPLL_RESET_MASK);
+
+	mdelay(1);
+
+	r = radeon_uvd_send_upll_ctlreq(rdev, CG_UPLL_FUNC_CNTL);
+	if (r)
+		return r;
+
+	/* assert UPLL_RESET again */
+	WREG32_P(CG_UPLL_FUNC_CNTL, UPLL_RESET_MASK, ~UPLL_RESET_MASK);
+
+	/* disable spread spectrum. */
+	WREG32_P(CG_UPLL_SPREAD_SPECTRUM, 0, ~SSEN_MASK);
+
+	/* set feedback divider */
+	WREG32_P(CG_UPLL_FUNC_CNTL_3, UPLL_FB_DIV(fb_div), ~UPLL_FB_DIV_MASK);
+
+	/* set ref divider to 0 */
+	WREG32_P(CG_UPLL_FUNC_CNTL, 0, ~UPLL_REF_DIV_MASK);
+
+	if (fb_div < 307200)
+		WREG32_P(CG_UPLL_FUNC_CNTL_4, 0, ~UPLL_SPARE_ISPARE9);
+	else
+		WREG32_P(CG_UPLL_FUNC_CNTL_4, UPLL_SPARE_ISPARE9, ~UPLL_SPARE_ISPARE9);
+
+	/* set PDIV_A and PDIV_B */
+	WREG32_P(CG_UPLL_FUNC_CNTL_2,
+		UPLL_PDIV_A(vclk_div) | UPLL_PDIV_B(dclk_div),
+		~(UPLL_PDIV_A_MASK | UPLL_PDIV_B_MASK));
+
+	/* give the PLL some time to settle */
+	mdelay(15);
+
+	/* deassert PLL_RESET */
+	WREG32_P(CG_UPLL_FUNC_CNTL, 0, ~UPLL_RESET_MASK);
+
+	mdelay(15);
+
+	/* switch from bypass mode to normal mode */
+	WREG32_P(CG_UPLL_FUNC_CNTL, 0, ~UPLL_BYPASS_EN_MASK);
+
+	r = radeon_uvd_send_upll_ctlreq(rdev, CG_UPLL_FUNC_CNTL);
+	if (r)
+		return r;
+
+	/* switch VCLK and DCLK selection */
+	WREG32_P(CG_UPLL_FUNC_CNTL_2,
+		VCLK_SRC_SEL(2) | DCLK_SRC_SEL(2),
+		~(VCLK_SRC_SEL_MASK | DCLK_SRC_SEL_MASK));
+
+	mdelay(100);
+
+	return 0;
+}
+#endif
