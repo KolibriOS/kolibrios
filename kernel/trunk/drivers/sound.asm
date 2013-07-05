@@ -10,6 +10,7 @@ format MS COFF
 DEBUG           = 1
 
 include 'proc32.inc'
+include '../struct.inc'
 include 'imports.inc'
 
 VID_INTEL         = 0x8086
