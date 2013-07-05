@@ -447,7 +447,17 @@ sayerr:
         mov     [es:BOOT_IDE_BASE_ADDR], cx
 .no_BAR4:
         pop     cx
-.found: 
+.found:
+; get Interrupt Line
+        mov     ax, 0xB10A
+        mov     di, 0x3c        ; memory base is config register at 0x3c
+        push    cx
+        int     0x1A
+        jc      .no_Interrupt        ;.nopci
+ ;       and     cx, 0xFFF0      ; clear address decode type
+        mov     [es:BOOT_IDE_INTERR_16], cx
+.no_Interrupt:
+        pop     cx
 ; get memory base BAR0
         mov     ax, 0xB10A
         mov     di, 0x10        ; memory base is config register at 0x10

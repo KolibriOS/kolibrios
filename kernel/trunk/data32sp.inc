@@ -4,7 +4,9 @@
   boot_inittimer:   cp850   'Inicializar reloj del sistema (IRQ0)',0
   boot_initapic:    cp850   'Prueba inicializar APIC',0
   boot_enableirq:   cp850   'Habilitar interrupciones 2, 6, 13, 14, 15',0
-  boot_enablint_ide:cp850   'Habiliar interrupciones en controladores IDE',0
+  boot_disabling_ide:cp850   'Habiliar interrupciones en controladores IDE',0
+  boot_enabling_ide:cp850   'Habilitar interrupciones en controladores IDE',0
+  boot_set_int_IDE: cp850   'Configuración del controlador de interrupciones para el controlador IDE',0
   boot_detectfloppy:cp850   'Buscar unidades de disquete',0
   boot_detecthdcd:  cp850   'Buscar discos duros y unidades ATAPI',0
   boot_getcache:    cp850   'Tomar memoria para caché',0

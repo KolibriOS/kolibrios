@@ -704,6 +704,9 @@ buf_wait_ok:
         pop     edx eax
         ret
 ;-----------------------------------------------------------------------------
+irq14_num equ byte 14
+irq15_num equ byte 15
+;-----------------------------------------------------------------------------
 align 4
 wait_for_sector_dma_ide0:
         push    eax
@@ -713,12 +716,14 @@ wait_for_sector_dma_ide0:
 align 4
 .wait:
         call    change_task
-        cmp     [irq14_func], hdd_irq14
+        cmp     [IDE_common_irq_param], irq14_num
         jnz     .done
+
         call    check_hd_wait_timeout
         cmp     [hd_error], 0
         jz      .wait
-        mov     [irq14_func], hdd_irq_null
+
+        mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         mov     al, 0
         out     dx, al
@@ -736,12 +741,14 @@ wait_for_sector_dma_ide1:
 align 4
 .wait:
         call    change_task
-        cmp     [irq15_func], hdd_irq15
+        cmp     [IDE_common_irq_param], irq15_num
         jnz     .done
+
         call    check_hd_wait_timeout
         cmp     [hd_error], 0
         jz      .wait
-        mov     [irq15_func], hdd_irq_null
+
+        mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         add     dx, 8
         mov     al, 0
@@ -761,8 +768,7 @@ IDE_descriptor_table:
 
 dma_cur_sector  dd not 40h
 dma_hdpos       dd 0
-irq14_func      dd hdd_irq_null
-irq15_func      dd hdd_irq_null
+IDE_common_irq_param db 0
 endg
 ;-----------------------------------------------------------------------------
 uglobal
@@ -779,32 +785,34 @@ allow_dma_access    db 0
 endg
 ;-----------------------------------------------------------------------------
 align 4
-hdd_irq14:
+IDE_common_irq_handler:
         pushfd
         cli
         pushad
-        mov     [irq14_func], hdd_irq_null
+
+        xor     ebx, ebx
+        mov     eax, IDE_common_irq_param
+        cmp     [eax], irq15_num
+        mov     [eax], ebx
+        je      @f
+;--------------------------------------
         mov     dx, [IDEContrRegsBaseAddr]
         mov     al, 0
         out     dx, al
-        popad
-        popfd
+        jmp     .end
+;--------------------------------------
 align 4
-hdd_irq_null:
-        ret
-;-----------------------------------------------------------------------------
-align 4
-hdd_irq15:
-        pushfd
-        cli
-        pushad
-        mov     [irq15_func], hdd_irq_null
+@@:
         mov     dx, [IDEContrRegsBaseAddr]
         add     dx, 8
         mov     al, 0
         out     dx, al
+;--------------------------------------
+align 4
+.end:
         popad
         popfd
+        mov     al, 1
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -956,10 +964,11 @@ hd_read_dma:
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
         jnz     .ide1
-        mov     [irq14_func], hdd_irq14
+
+        mov     [IDE_common_irq_param], irq14_num
         jmp     @f
 .ide1:
-        mov     [irq15_func], hdd_irq15
+        mov     [IDE_common_irq_param], irq15_num
 @@:
         popfd
         mov     eax, [hd_address_table]
@@ -1113,10 +1122,11 @@ cache_write_dma:
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
         jnz     .ide1
-        mov     [irq14_func], hdd_irq14
+
+        mov     [IDE_common_irq_param], irq14_num
         jmp     @f
 .ide1:
-        mov     [irq15_func], hdd_irq15
+        mov     [IDE_common_irq_param], irq15_num
 @@:
         popfd
         mov     [dma_cur_sector], not 0x40
@@ -1134,6 +1144,7 @@ cache_write_dma:
         ret
 ;-----------------------------------------------------------------------------
 uglobal
+IDE_Interrupt   dw ?
 IDEContrRegsBaseAddr         dw ?
 IDEContrProgrammingInterface dw ?
 IDE_BAR0_val    dw ?

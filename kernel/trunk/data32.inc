@@ -55,7 +55,9 @@ if lang eq ru
   boot_inittimer:   cp866 'Инициализация системного таймера (IRQ0)',0
   boot_initapic:    cp866 'Попытка инициализации APIC',0
   boot_enableirq:   cp866 'Включить прерывания 2, 6, 13, 14, 15',0
-  boot_enablint_ide:cp866 'Разрешение прерываний в контроллере IDE',0
+  boot_disabling_ide:cp866 'Запрещение прерываний в контроллере IDE',0
+  boot_enabling_ide:cp866 'Разрешение прерываний в контроллере IDE',0
+  boot_set_int_IDE: cp866 'Установка обработчиков прерываний для контроллера IDE',0
   boot_detectfloppy:cp866 'Поиск floppy дисководов',0
   boot_detecthdcd:  cp866 'Поиск жестких дисков и ATAPI приводов',0
   boot_getcache:    cp866 'Получение памяти для кэша',0
@@ -96,7 +98,9 @@ else
   boot_inittimer    db   'Initialize system timer (IRQ0)',0
   boot_initapic     db   'Try to initialize APIC',0
   boot_enableirq    db   'Enable interrupts 2, 6, 13, 14, 15',0
-  boot_enablint_ide db   'Enable interrupts in IDE controller',0
+  boot_disabling_ide db   'Disable interrupts in IDE controller',0
+  boot_enabling_ide db   'Enable interrupts in IDE controller',0
+  boot_set_int_IDE  db   'Set handler of interrupts for IDE controller',0
   boot_detectfloppy db   'Search floppy drives',0
   boot_detecthdcd   db   'Search hard drives and ATAPI drives',0
   boot_getcache     db   'Get memory for cache',0

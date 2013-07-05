@@ -160,19 +160,6 @@ align 16
         call    [fdc_irq_func]
         pop     ebp
 @@:
-
-        cmp     bp, 14
-        jnz     @f
-        push    ebp
-        call    [irq14_func]
-        pop     ebp
-@@:
-        cmp     bp, 15
-        jnz     @f
-        push    ebp
-        call    [irq15_func]
-        pop     ebp
-@@:
         bts     [irq_active_set], ebp
 
         lea     esi, [irqh_tab+ebp*8]   ; esi= list head
@@ -233,6 +220,10 @@ align 16
         cmp     ebp, 1
         jz      .try_next_irq
         cmp     ebp, 12
+        jz      .try_next_irq
+        cmp     ebp, 14
+        jz      .try_next_irq
+        cmp     ebp, 15
         jz      .try_next_irq
         lea     esi, [irqh_tab+ebp*8]
         mov     ebx, esi

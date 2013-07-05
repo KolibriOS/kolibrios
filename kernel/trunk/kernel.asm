@@ -365,6 +365,8 @@ high_code:
 
 ; SAVE REAL MODE VARIABLES
         xor     eax, eax
+        mov     ax, [BOOT_VARS + BOOT_IDE_INTERR_16]
+        mov     [IDE_Interrupt], ax
         mov     ax, [BOOT_VARS + BOOT_IDE_PI_16]
         mov     [IDEContrProgrammingInterface], ax
         mov     ax, [BOOT_VARS + BOOT_IDE_BASE_ADDR]
@@ -717,18 +719,23 @@ no_mode_0x12:
         stdcall enable_irq, 2               ; @#$%! PIC
         stdcall enable_irq, 6               ; FDD
         stdcall enable_irq, 13              ; co-processor
-        stdcall enable_irq, 14
-        stdcall enable_irq, 15
 
-        mov     esi, boot_enablint_ide
+        mov     esi, boot_disabling_ide
         call    boot_log
-; Enable interrupts in IDE controller
-        mov     al, 0
-        mov     dx, 0x3F6
+;--------------------------------------
+; Disable IDE interrupts, because the search
+; for IDE partitions is in the PIO mode.
+;--------------------------------------
+.disable_IDE_interrupt:
+; Disable interrupts in IDE controller for PIO
+        mov     al, 2
+        mov     dx, [IDE_BAR1_val] ;0x3F6
+        add     dx, 2
         out     dx, al
-        mov     dl, 0x76
+        mov     dx, [IDE_BAR3_val] ;0x76
+        add     dx, 2
         out     dx, al
-
+;-----------------------------------------------------------------------------
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;        mov     esi, boot_detectdisks
 ;        call    boot_log
@@ -977,6 +984,7 @@ endg
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
+        DEBUGF  1, "K : IRQ0 error code %x\n", eax
 .no_keyboard:
 
 ; SET MOUSE
@@ -1044,6 +1052,7 @@ end if
         DEBUGF  1, "K : BAR3 %x \n", [IDE_BAR3_val]:4
         DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
         DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
+        DEBUGF  1, "K : IDE_Interrupt %x \n", [IDE_Interrupt]:4
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -1059,6 +1068,65 @@ end if
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
+;-----------------------------------------------------------------------------
+; set interrupts for IDE Controller
+;-----------------------------------------------------------------------------
+        mov     esi, boot_set_int_IDE
+        call    boot_log
+set_interrupts_for_IDE_controllers:
+        mov     ax, [IDEContrProgrammingInterface]
+        cmp     ax, 0x0180
+        je      .pata_ide
+
+        cmp     ax, 0x018a
+        jne     .sata_ide
+;--------------------------------------
+.pata_ide:
+        cmp     [IDEContrRegsBaseAddr], 0
+        je      .end_set_interrupts
+
+        stdcall attach_int_handler, 14, IDE_common_irq_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
+        stdcall attach_int_handler, 15, IDE_common_irq_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
+
+        stdcall enable_irq, 14
+        stdcall enable_irq, 15
+
+        jmp     .enable_IDE_interrupt
+;--------------------------------------
+.sata_ide:
+        cmp     ax, 0x0185
+        je      .sata_ide_1
+
+        cmp     ax, 0x018f
+        jne     .end_set_interrupts
+;--------------------------------------
+.sata_ide_1:
+        cmp     [IDEContrRegsBaseAddr], 0
+        je      .end_set_interrupts
+
+        mov     ax, [IDE_Interrupt]
+        movzx   eax, al
+        stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [IDE_Interrupt]:2, eax
+
+        stdcall enable_irq, eax
+;--------------------------------------
+.enable_IDE_interrupt:
+        mov     esi, boot_enabling_ide
+        call    boot_log
+; Enable interrupts in IDE controller for DMA
+        mov     al, 0
+        mov     dx, [IDE_BAR1_val] ;0x3F6
+        add     dx, 2
+        out     dx, al
+        mov     dx, [IDE_BAR3_val] ;0x76
+        add     dx, 2
+        out     dx, al
+;--------------------------------------
+.end_set_interrupts:
+;-----------------------------------------------------------------------------
         cmp     [dma_hdd], 0
         je      .print_pio
 .print_dma:
