@@ -717,7 +717,6 @@ no_mode_0x12:
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
         stdcall enable_irq, 2               ; @#$%! PIC
-        stdcall enable_irq, 6               ; FDD
         stdcall enable_irq, 13              ; co-processor
 
         mov     esi, boot_disabling_ide
@@ -1252,8 +1251,8 @@ proc osloop_has_work?
         jnz     .yes
         call    stack_handler_has_work?
         jnz     .yes
-        call    check_fdd_motor_status_has_work?
-        jnz     .yes
+;        call    check_fdd_motor_status_has_work?
+;        jnz     .yes
         call    check_ATAPI_device_event_has_work?
         jnz     .yes
         call    check_lights_state_has_work?

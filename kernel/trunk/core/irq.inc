@@ -154,12 +154,6 @@ align 16
         cmp     [v86_irqhooks+ebp*8], 0
         jnz     v86_irq
 
-        cmp     bp, 6
-        jnz     @f
-        push    ebp
-        call    [fdc_irq_func]
-        pop     ebp
-@@:
         bts     [irq_active_set], ebp
 
         lea     esi, [irqh_tab+ebp*8]   ; esi= list head
@@ -204,16 +198,14 @@ align 16
 ; Note: this still isn't 100% correct, because two IRQs can fire simultaneously,
 ; the better way would be to find the correct IRQ, but I don't know how to do
 ; this in that case.
-; Also, [fdc_irq_func], [irq14_func], [irq15_func] could process interrupt
-; but do not return whether they did it, so just ignore IRQs 6, 14, 15.
-        cmp     ebp, 6
-        jz      .fail
         push    ebp
         xor     ebp, ebp
 .try_other_irqs:
         cmp     ebp, [esp]
         jz      .try_next_irq
         cmp     ebp, 1
+        jz      .try_next_irq
+        cmp     ebp, 6
         jz      .try_next_irq
         cmp     ebp, 12
         jz      .try_next_irq

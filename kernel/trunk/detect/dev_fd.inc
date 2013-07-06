@@ -30,8 +30,9 @@ wait_cmos:
         mov     [DRIVE_DATA], al
         test    al, al
         jz      @f
-        in      al, 0x21
-        and     al, 10111111b   ; Enable IRQ6
-        out     0x21, al
+
+        stdcall attach_int_handler, 6, FDCInterrupt, 0
+        DEBUGF  1, "K : Set IDE IRQ6 return code %x\n", eax
+        stdcall enable_irq, 6               ; FDD
 @@:
 
