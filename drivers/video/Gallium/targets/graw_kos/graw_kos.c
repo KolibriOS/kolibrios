@@ -77,9 +77,16 @@ graw_create_window_and_screen(int x,
       goto fail;
 
    screen = sw_screen_create(winsys);
+   
    if (screen == NULL)
       goto fail;
 
+    BeginDraw();
+    DrawWindow(x, y,width-1,height-1,
+               NULL,0,0x41);
+    EndDraw();
+    
+    *handle = (void *)winsys; 
     return (screen);
 
 fail:
@@ -99,12 +106,44 @@ graw_set_display_func(void (* draw)(void))
 void
 graw_main_loop(void)
 {
-   for (;;) {
- 
-      if (graw.draw) {
-         graw.draw();
-      }
+    int ev;
+    oskey_t   key;
 
-      delay(1);
-   }
+    BeginDraw();
+    DrawWindow(0,0,0,0, NULL, 0x000000,0x41);
+    EndDraw();
+            
+    if (graw.draw)
+    {
+       graw.draw();
+    }
+
+    while(1)
+    {
+        ev = wait_for_event(100);
+
+        switch(ev)
+        {
+            case 1:
+                BeginDraw();
+                DrawWindow(0,0,0,0, NULL, 0x000000,0x41);
+                EndDraw();
+            
+                if (graw.draw)
+                {
+                    graw.draw();
+                }
+                continue;
+
+            case 2:
+                key = get_key();
+//                printf("key %x\n", key.code);
+                if( key.code == 0x1b)
+                    return;
+                continue;
+
+            default:
+                continue;
+        };
+    };
 }

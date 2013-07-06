@@ -183,10 +183,26 @@ kos_sw_display( struct sw_winsys *winsys,
 {
     struct kos_sw_displaytarget *gdt = kos_sw_displaytarget(dt);
 
-//    StretchDIBits(hDC,
-//                  0, 0, gdt->width, gdt->height,
-//                  0, 0, gdt->width, gdt->height,
-//                  gdt->data, &gdt->bmi, 0, SRCCOPY);
+	struct blit_call bc;
+	int ret;
+
+	bc.dstx     = 0;
+	bc.dsty     = 24;
+	bc.w        = gdt->width;
+	bc.h        = gdt->height;
+	bc.srcx     = 0;
+	bc.srcy     = 0;
+	bc.srcw     = gdt->width;
+	bc.srch     = gdt->height;
+	bc.stride   = gdt->stride;
+	bc.bitmap   = gdt->data;
+
+	__asm__ __volatile__(
+    "int $0x40":"=a"(ret):"a"(73), "b"(0x00),
+	"c"(&bc):"memory");
+
+	return ret;
+
 }
 
 static void

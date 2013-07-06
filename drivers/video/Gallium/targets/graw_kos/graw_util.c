@@ -8,7 +8,6 @@
 #include "util/u_memory.h"
 #include "state_tracker/graw.h"
 
-#if 0
 /* Helper functions.  These are the same for all graw implementations.
  */
 PUBLIC void *
@@ -55,7 +54,6 @@ graw_parse_fragment_shader(struct pipe_context *pipe,
    state.tokens = tokens;
    return pipe->create_fs_state(pipe, &state);
 }
-#endif
 
 static char out_filename[256] = "";
 
