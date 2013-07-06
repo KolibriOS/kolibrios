@@ -989,7 +989,7 @@ gen5_render_composite_done(struct sna *sna,
 
 static bool
 gen5_blit_tex(struct sna *sna,
-              uint8_t op,
+              uint8_t op, bool scale,
 		      PixmapPtr src, struct kgem_bo *src_bo,
 		      PixmapPtr mask,struct kgem_bo *mask_bo,
 		      PixmapPtr dst, struct kgem_bo *dst_bo, 
@@ -1035,8 +1035,16 @@ gen5_blit_tex(struct sna *sna,
     tmp->mask.width  = mask->drawable.width;
     tmp->mask.height = mask->drawable.height;
 
-    tmp->src.scale[0] = 1.f/width;            //src->width;
-    tmp->src.scale[1] = 1.f/height;            //src->height;
+    if( scale )
+    {
+        tmp->src.scale[0] = 1.f/width;
+        tmp->src.scale[1] = 1.f/height;
+    }
+    else
+    {
+        tmp->src.scale[0] = 1.f/src->drawable.width;
+        tmp->src.scale[1] = 1.f/src->drawable.height;
+    }
 
     tmp->mask.scale[0] = 1.f/mask->drawable.width;
     tmp->mask.scale[1] = 1.f/mask->drawable.height;

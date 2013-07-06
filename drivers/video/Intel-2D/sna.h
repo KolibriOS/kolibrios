@@ -60,27 +60,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 int drmIoctl(int fd, unsigned long request, void *arg);
 
 
-#define SRV_GET_PCI_INFO            20
-#define SRV_GET_PARAM               21
-#define SRV_I915_GEM_CREATE         22
-#define SRV_DRM_GEM_CLOSE           23
-#define SRV_I915_GEM_PIN            24
-#define SRV_I915_GEM_SET_CACHEING   25
-#define SRV_I915_GEM_GET_APERTURE   26
-#define SRV_I915_GEM_PWRITE         27
-#define SRV_I915_GEM_BUSY           28
-#define SRV_I915_GEM_SET_DOMAIN     29
-#define SRV_I915_GEM_MMAP           30
-#define SRV_I915_GEM_THROTTLE       32
-#define SRV_FBINFO                  33
-#define SRV_I915_GEM_EXECBUFFER2    34 
-#define SRV_MASK_UPDATE             35
-
-#define SRV_I915_GEM_MMAP_GTT       31
-
-
-#define DRM_IOCTL_GEM_CLOSE         SRV_DRM_GEM_CLOSE
-
 #define PIXMAN_FORMAT(bpp,type,a,r,g,b) (((bpp) << 24) |    \
                                         ((type) << 16) |    \
                                         ((a) << 12)    |    \

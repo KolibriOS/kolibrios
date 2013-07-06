@@ -1,47 +1,54 @@
-//#include "../bitmap.h"
+
 
 #include <memory.h>
 #include <malloc.h>
+#include <kos32sys.h>
+#include <pixlib2.h>
 
 #include "sna.h"
 
-#include <pixlib2.h>
+#define to_surface(x) (surface_t*)((x)->handle)
 
 static struct sna_fb sna_fb;
-static struct kgem_bo *mask_bo;
+static int    tls_mask;
 
-static int mask_width, mask_height;
+int tls_alloc(void);
 
-typedef struct __attribute__((packed))
+static inline void *tls_get(int key)
 {
-  unsigned      handle;
-  unsigned      io_code;
-  void          *input;
-  int           inp_size;
-  void          *output;
-  int           out_size;
-}ioctl_t;
+    void *val;
+    __asm__ __volatile__(
+    "movl %%fs:(%1), %0"
+    :"=r"(val)
+    :"r"(key));
 
-
-static int call_service(ioctl_t *io)
-{
-  int retval;
-
-  asm volatile("int $0x40"
-      :"=a"(retval)
-      :"a"(68),"b"(17),"c"(io)
-      :"memory","cc");
-
-  return retval;
+  return val;
 };
 
-static inline void get_proc_info(char *info)
+static inline int
+tls_set(int key, const void *ptr)
 {
-    __asm__ __volatile__(
-    "int $0x40"
-    :
-    :"a"(9), "b"(info), "c"(-1));
+    if(!(key & 3))
+    {
+        __asm__ __volatile__(
+        "movl %0, %%fs:(%1)"
+        ::"r"(ptr),"r"(key));
+        return 0;
+    }
+    else return -1;
 }
+
+
+
+
+int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb);
+int kgem_update_fb(struct kgem *kgem, struct sna_fb *fb);
+uint32_t kgem_surface_size(struct kgem *kgem,bool relaxed_fencing,
+				  unsigned flags, uint32_t width, uint32_t height,
+				  uint32_t bpp, uint32_t tiling, uint32_t *pitch);
+
+void kgem_close_batches(struct kgem *kgem);
+void sna_bo_destroy(struct kgem *kgem, struct kgem_bo *bo);
 
 const struct intel_device_info *
 intel_detect_chipset(struct pci_device *pci);
@@ -51,6 +58,8 @@ intel_detect_chipset(struct pci_device *pci);
 static bool sna_solid_cache_init(struct sna *sna);
 
 struct sna *sna_device;
+
+__LOCK_INIT_RECURSIVE(, __sna_lock);
 
 static void no_render_reset(struct sna *sna)
 {
@@ -149,17 +158,17 @@ int sna_accel_init(struct sna *sna)
 int sna_init(uint32_t service)
 {
     ioctl_t   io;
+    int caps = 0;
 
     static struct pci_device device;
     struct sna *sna;
 
     DBG(("%s\n", __FUNCTION__));
 
-    sna = malloc(sizeof(*sna));
-    if (sna == NULL)
-        return 0;
+    __lock_acquire_recursive(__sna_lock);
 
-    memset(sna, 0, sizeof(*sna));
+    if(sna_device)
+        goto done;
     
     io.handle   = service;
     io.io_code  = SRV_GET_PCI_INFO;
@@ -169,10 +178,13 @@ int sna_init(uint32_t service)
     io.out_size = 0;
 
     if (call_service(&io)!=0)
-    {
-        free(sna); 
-        return 0;
-    };
+        goto err1;
+    
+    sna = malloc(sizeof(*sna));
+    if (sna == NULL)
+        goto err1;
+
+    memset(sna, 0, sizeof(*sna));
     
     sna->PciInfo = &device;
 
@@ -209,19 +221,37 @@ int sna_init(uint32_t service)
 
     sna_accel_init(sna);
 
-    delay(10);
+    tls_mask = tls_alloc();
     
-    return sna->render.caps;
+//    printf("tls mask %x\n", tls_mask);
+    
+done:
+    caps = sna_device->render.caps;
+
+err1:
+    __lock_release_recursive(__sna_lock);
+    
+    return caps;    
 }
 
 void sna_fini()
 {
     if( sna_device )
     {
+        struct kgem_bo *mask;
+        
+        __lock_acquire_recursive(__sna_lock);
+        
+        mask = tls_get(tls_mask);
+        
         sna_device->render.fini(sna_device);
-        kgem_bo_destroy(&sna_device->kgem, mask_bo);
+        if(mask)
+            kgem_bo_destroy(&sna_device->kgem, mask);
         kgem_close_batches(&sna_device->kgem);        
    	    kgem_cleanup_cache(&sna_device->kgem);
+   	    
+   	    sna_device = NULL;
+        __lock_release_recursive(__sna_lock);
     };
 }
 
@@ -354,6 +384,7 @@ done:
     return kgem_bo_reference(cache->bo[i]);
 }
 
+#endif
 
 
 int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
@@ -397,92 +428,200 @@ int sna_blit_copy(bitmap_t *src_bitmap, int dst_x, int dst_y,
 
     kgem_submit(&sna_device->kgem);
     
+    return 0;
+    
 //    __asm__ __volatile__("int3");
     
 };
-#endif
+
+typedef struct 
+{
+    uint32_t        width;
+    uint32_t        height;
+    void           *data;
+    uint32_t        pitch;
+    struct kgem_bo *bo;    
+    uint32_t        bo_size; 
+    uint32_t        flags; 
+}surface_t;
+
 
 
 int sna_create_bitmap(bitmap_t *bitmap)
 {
+    surface_t *sf;
 	struct kgem_bo *bo;
     
+    sf = malloc(sizeof(*sf));
+    if(sf == NULL)
+        goto err_1;
+    
+    __lock_acquire_recursive(__sna_lock);
+
     bo = kgem_create_2d(&sna_device->kgem, bitmap->width, bitmap->height,
                         32,I915_TILING_NONE, CREATE_CPU_MAP);
     
     if(bo == NULL)
-        goto err_1;
+        goto err_2;
      
     void *map = kgem_bo_map(&sna_device->kgem, bo);
     if(map == NULL)
-        goto err_2;
+        goto err_3;
         
-    bitmap->handle = (uint32_t)bo;
-    bitmap->pitch  = bo->pitch;
-    bitmap->data   = map;
+    sf->width   = bitmap->width;
+    sf->height  = bitmap->height;
+    sf->data    = map;
+    sf->pitch   = bo->pitch;
+    sf->bo      = bo;
+    sf->bo_size = PAGE_SIZE * bo->size.pages.count;
+    sf->flags   = bitmap->flags;
+    
+    bitmap->handle = (uint32_t)sf;
+    __lock_release_recursive(__sna_lock);
     
     return 0;
     
-err_2:
+err_3:
     kgem_bo_destroy(&sna_device->kgem, bo);
-    
+err_2:
+    __lock_release_recursive(__sna_lock);
+    free(sf);    
 err_1:
     return -1; 
+};
+
+int sna_destroy_bitmap(bitmap_t *bitmap)
+{
+    surface_t *sf = to_surface(bitmap);
+    
+    __lock_acquire_recursive(__sna_lock);
+    
+    kgem_bo_destroy(&sna_device->kgem, sf->bo);
            
-};
+    __lock_release_recursive(__sna_lock);
 
-void sna_destroy_bitmap(bitmap_t *bitmap)
-{
-	struct kgem_bo *bo;
+    free(sf);
     
-    bo = (struct kgem_bo *)bitmap->handle;
-        
-    kgem_bo_destroy(&sna_device->kgem, bo);
+    bitmap->handle = -1;
+    bitmap->data   = (void*)-1;
+    bitmap->pitch  = -1;
 
+    return 0;
 };
 
-void sna_lock_bitmap(bitmap_t *bitmap)
+int sna_lock_bitmap(bitmap_t *bitmap)
 {
-	struct kgem_bo *bo;
+    surface_t *sf = to_surface(bitmap);    
     
-    bo = (struct kgem_bo *)bitmap->handle;
-        
-    kgem_bo_sync__cpu(&sna_device->kgem, bo);
+//    printf("%s\n", __FUNCTION__);
+    __lock_acquire_recursive(__sna_lock);
+    
+    kgem_bo_sync__cpu(&sna_device->kgem, sf->bo);
 
+    __lock_release_recursive(__sna_lock);
+        
+    bitmap->data  = sf->data;
+    bitmap->pitch = sf->pitch;    
+
+    return 0;
 };
+
+int sna_resize_bitmap(bitmap_t *bitmap)
+{
+    surface_t *sf = to_surface(bitmap);
+    struct kgem *kgem = &sna_device->kgem;
+    struct kgem_bo *bo = sf->bo;    
+    
+    uint32_t   size;
+    uint32_t   pitch;
+
+   	bitmap->pitch = -1;
+    bitmap->data = (void *) -1;
+
+	size = kgem_surface_size(kgem,kgem->has_relaxed_fencing, CREATE_CPU_MAP,
+				 bitmap->width, bitmap->height, 32, I915_TILING_NONE, &pitch);
+	assert(size && size <= kgem->max_object_size);
+        
+    if(sf->bo_size >= size)
+    {
+        sf->width   = bitmap->width;
+        sf->height  = bitmap->height;
+        sf->pitch   = pitch;
+        bo->pitch   = pitch; 
+        
+	    return 0;
+    }
+    else
+    {
+        __lock_acquire_recursive(__sna_lock);
+        
+        sna_bo_destroy(kgem, bo);
+        
+        sf->bo = NULL;
+        
+        bo = kgem_create_2d(kgem, bitmap->width, bitmap->height,
+                            32, I915_TILING_NONE, CREATE_CPU_MAP);
+
+        if(bo == NULL)
+        {
+            __lock_release_recursive(__sna_lock);
+            return -1;
+        };
+        
+        void *map = kgem_bo_map(kgem, bo);
+        if(map == NULL)
+        {
+            sna_bo_destroy(kgem, bo);
+            __lock_release_recursive(__sna_lock);
+            return -1;
+        };
+        
+        __lock_release_recursive(__sna_lock);
+        
+        sf->width   = bitmap->width;
+        sf->height  = bitmap->height;
+        sf->data    = map;
+        sf->pitch   = bo->pitch;
+        sf->bo      = bo;
+        sf->bo_size = PAGE_SIZE * bo->size.pages.count;
+    }
+
+    return 0;    
+};
+
+
 
 int sna_create_mask()
 {
 	struct kgem_bo *bo;
-    int width, height;
-    int i;
 
 //    printf("%s width %d height %d\n", __FUNCTION__, sna_fb.width, sna_fb.height);
+    
+    __lock_acquire_recursive(__sna_lock);
     
     bo = kgem_create_2d(&sna_device->kgem, sna_fb.width, sna_fb.height,
                         8,I915_TILING_NONE, CREATE_CPU_MAP);
     
-    if(bo == NULL)
+    if(unlikely(bo == NULL))
         goto err_1;
      
     int *map = kgem_bo_map(&sna_device->kgem, bo);
     if(map == NULL)
         goto err_2;
         
-    memset(map, 0, bo->pitch * height);
+    __lock_release_recursive(__sna_lock);
+        
+    memset(map, 0, bo->pitch * sna_fb.height);
     
-    mask_bo     = bo;
-    mask_width  = width;
-    mask_height = height;
+    tls_set(tls_mask, bo);
     
     return 0;
     
 err_2:
     kgem_bo_destroy(&sna_device->kgem, bo);
-    
 err_1:
+    __lock_release_recursive(__sna_lock);
     return -1; 
-           
 };
 
 
@@ -501,39 +640,52 @@ gen6_composite(struct sna *sna,
 
 #define MAP(ptr) ((void*)((uintptr_t)(ptr) & ~3))
 
-int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
+int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
                   int w, int h, int src_x, int src_y)
 
 {
-
-//    box.x1 = dst_x;
-//    box.y1 = dst_y;
-//    box.x2 = dst_x+w;
-//    box.y2 = dst_y+h;
-
-
- //   cop.box(sna_device, &cop, &box);
+    surface_t *sf = to_surface(bitmap);    
 
     struct drm_i915_mask_update update;
     
     struct sna_composite_op composite;
     struct _Pixmap src, dst, mask;
-    struct kgem_bo *src_bo;
+    struct kgem_bo *src_bo, *mask_bo;
+    int winx, winy;
 
     char proc_info[1024];
-    int winx, winy, winw, winh;
 
     get_proc_info(proc_info);
 
     winx = *(uint32_t*)(proc_info+34);
     winy = *(uint32_t*)(proc_info+38);
-    winw = *(uint32_t*)(proc_info+42)+1;
-    winh = *(uint32_t*)(proc_info+46)+1;
+//    winw = *(uint32_t*)(proc_info+42)+1;
+//    winh = *(uint32_t*)(proc_info+46)+1;
+    
+    mask_bo = tls_get(tls_mask);
+    
+    if(unlikely(mask_bo == NULL))
+    {
+        sna_create_mask();
+        mask_bo = tls_get(tls_mask);
+        if( mask_bo == NULL)
+            return -1;  
+    };
+    
+    if(kgem_update_fb(&sna_device->kgem, &sna_fb))
+    {
+        __lock_acquire_recursive(__sna_lock);
+        kgem_bo_destroy(&sna_device->kgem, mask_bo);
+        __lock_release_recursive(__sna_lock);
+        
+        sna_create_mask();
+        mask_bo = tls_get(tls_mask);
+        if( mask_bo == NULL)
+            return -1;  
+    }
     
     VG_CLEAR(update);
 	update.handle = mask_bo->handle;
-//	update.bo_size   = __kgem_bo_size(mask_bo);
-//	update.bo_pitch  = mask_bo->pitch;
 	update.bo_map    = (__u32)MAP(mask_bo->map);
 	drmIoctl(sna_device->kgem.fd, SRV_MASK_UPDATE, &update);
     mask_bo->pitch = update.bo_pitch;
@@ -543,8 +695,9 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
     memset(&mask, 0, sizeof(dst));
 
     src.drawable.bitsPerPixel = 32;
-    src.drawable.width  = src_bitmap->width;
-    src.drawable.height = src_bitmap->height;
+    
+    src.drawable.width  = sf->width;
+    src.drawable.height = sf->height;
 
     dst.drawable.bitsPerPixel = 32;
     dst.drawable.width  = sna_fb.width;
@@ -556,10 +709,12 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
 
     memset(&composite, 0, sizeof(composite));
 
-    src_bo = (struct kgem_bo*)src_bitmap->handle;
+    src_bo = sf->bo;
     
+    __lock_acquire_recursive(__sna_lock);
+
     
-    if( sna_device->render.blit_tex(sna_device, PictOpSrc,
+    if( sna_device->render.blit_tex(sna_device, PictOpSrc,scale,
 		      &src, src_bo,
 		      &mask, mask_bo,
 		      &dst, sna_fb.fb_bo, 
@@ -582,9 +737,15 @@ int sna_blit_tex(bitmap_t *src_bitmap, int dst_x, int dst_y,
         
         composite.blt(sna_device, &composite, &r);
         composite.done(sna_device, &composite);
+        
     };
     
     kgem_submit(&sna_device->kgem);
+ 
+    __lock_release_recursive(__sna_lock);
+
+    bitmap->data   = (void*)-1;
+    bitmap->pitch  = -1;
  
     return 0;            
 }
@@ -758,8 +919,6 @@ const struct intel_device_info *
 intel_detect_chipset(struct pci_device *pci)
 {
     const struct pci_id_match *ent = NULL;
-	const char *name = NULL;
-	int i;
 
     ent = PciDevMatch(pci->device_id, intel_device_match); 
     

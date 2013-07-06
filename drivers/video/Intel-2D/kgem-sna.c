@@ -285,21 +285,12 @@ retry_gtt:
 	}
 
 retry_mmap:
-//	ptr = mmap(0, bytes(bo), PROT_READ | PROT_WRITE, MAP_SHARED,
-//		   kgem->fd, mmap_arg.offset);
-//	if (ptr == 0) {
+	ptr = (void*)(int)mmap_arg.offset;
+	if (ptr == NULL) {
 		printf("%s: failed to mmap %d, %d bytes, into GTT domain: %d\n",
 		       __FUNCTION__, bo->handle, bytes(bo), 0);
-//		if (__kgem_throttle_retire(kgem, 0))
-//			goto retry_mmap;
 
-//		if (kgem->need_expire) {
-//			kgem_cleanup_cache(kgem);
-//			goto retry_mmap;
-//		}
-
-		ptr = NULL;
-//	}
+	}
 
 	return ptr;
 }
@@ -650,7 +641,6 @@ static bool test_has_handle_lut(struct kgem *kgem)
 
 static bool test_has_semaphores_enabled(struct kgem *kgem)
 {
-	FILE *file;
 	bool detected = false;
 	int ret;
 
@@ -1128,7 +1118,8 @@ static uint32_t kgem_untiled_pitch(struct kgem *kgem,
 	width = ALIGN(width, 2) * bpp >> 3;
 	return ALIGN(width, kgem_pitch_alignment(kgem, flags));
 }
-static uint32_t kgem_surface_size(struct kgem *kgem,
+
+uint32_t kgem_surface_size(struct kgem *kgem,
 				  bool relaxed_fencing,
 				  unsigned flags,
 				  uint32_t width,
@@ -4209,6 +4200,45 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
             
     return 1;
 };
+
+
+int kgem_update_fb(struct kgem *kgem, struct sna_fb *fb)
+{
+    struct kgem_bo *bo;
+    size_t size;
+    int ret;
+    
+    bo = fb->fb_bo;
+    
+	ret = drmIoctl(kgem->fd, SRV_FBINFO, fb);
+	if( ret != 0 )
+	    return 0;
+
+	fb->fb_bo = bo;    
+    
+    size = fb->pitch * fb->height / PAGE_SIZE;
+
+    if((size != bo->size.pages.count) ||
+       (fb->pitch != bo->pitch))      
+    {
+        bo->size.pages.count = size;
+	    bo->pitch     = fb->pitch;
+
+    printf("fb width %d height %d pitch %d bo %p\n",
+            fb->width, fb->height, fb->pitch, fb->fb_bo);
+	    
+        return 1;
+    }
+            
+    return 0;
+};
+
+void sna_bo_destroy(struct kgem *kgem, struct kgem_bo *bo)
+{
+    kgem_bo_destroy(kgem, bo);
+    kgem_bo_free(kgem, bo);
+}
+
 
 void kgem_close_batches(struct kgem *kgem)
 {

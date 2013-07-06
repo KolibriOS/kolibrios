@@ -1834,7 +1834,7 @@ static inline bool is_constant_ps(uint32_t type)
 
 static bool
 gen3_blit_tex(struct sna *sna,
-              uint8_t op,
+              uint8_t op, bool scale,
 		      PixmapPtr src, struct kgem_bo *src_bo,
 		      PixmapPtr mask,struct kgem_bo *mask_bo,
 		      PixmapPtr dst, struct kgem_bo *dst_bo, 
@@ -1890,17 +1890,19 @@ gen3_blit_tex(struct sna *sna,
     tmp->mask.width  = mask->drawable.width;
     tmp->mask.height = mask->drawable.height;
 
-    tmp->src.scale[0] = 1.f/width;            //src->width;
-    tmp->src.scale[1] = 1.f/height;            //src->height;
-//    tmp->src.offset[0] = -dst_x;
-//    tmp->src.offset[1] = -dst_y;
-
+    if( scale )
+    {
+        tmp->src.scale[0] = 1.f/width;
+        tmp->src.scale[1] = 1.f/height;
+    }
+    else
+    {
+        tmp->src.scale[0] = 1.f/src->drawable.width;
+        tmp->src.scale[1] = 1.f/src->drawable.height;
+    }
 
     tmp->mask.scale[0] = 1.f/mask->drawable.width;
     tmp->mask.scale[1] = 1.f/mask->drawable.height;
-//    tmp->mask.offset[0] = -dst_x;
-//    tmp->mask.offset[1] = -dst_y;
-
 
 	tmp->prim_emit = gen3_emit_composite_primitive_identity_source_mask;
 
@@ -1952,7 +1954,7 @@ bool gen3_render_init(struct sna *sna)
 
 //	render->video = gen3_render_video;
 
-    sna->render.blit_tex = gen3_blit_tex;
+    render->blit_tex = gen3_blit_tex;
 
 	render->reset = gen3_render_reset;
 	render->flush = gen3_render_flush;
@@ -1960,6 +1962,8 @@ bool gen3_render_init(struct sna *sna)
 
 	render->max_3d_size = MAX_3D_SIZE;
 	render->max_3d_pitch = MAX_3D_PITCH;
+
+    render->caps = HW_BIT_BLIT | HW_TEX_BLIT;
 
 	sna->kgem.retire = gen3_render_retire;
 	sna->kgem.expire = gen3_render_expire;

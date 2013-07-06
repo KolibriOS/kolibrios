@@ -35,7 +35,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "i915_drm.h"
+#include <i915_drm.h>
 
 #include "compiler.h"
 #include "intel_list.h"
@@ -48,6 +48,7 @@ static inline void delay(uint32_t time)
     :"memory");
 };
 
+#undef  DBG
 
 #if HAS_DEBUG_FULL
 #define DBG(x) printf x

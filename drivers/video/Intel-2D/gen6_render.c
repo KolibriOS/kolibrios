@@ -2271,7 +2271,6 @@ cleanup_dst:
 }
 #endif
 
-#endif
 
 static void
 gen6_emit_copy_state(struct sna *sna,
@@ -2305,7 +2304,6 @@ gen6_emit_copy_state(struct sna *sna,
 	gen6_emit_state(sna, op, offset | dirty);
 }
 
-#if 0
 
 static inline bool prefer_blt_copy(struct sna *sna,
 				   struct kgem_bo *src_bo,
@@ -2590,8 +2588,6 @@ fallback_tiled:
 				     box, n);
 }
 
-#endif
-
 static void
 gen6_render_copy_blt(struct sna *sna,
 		     const struct sna_copy_op *op,
@@ -2677,11 +2673,12 @@ fallback:
 	op->done = gen6_render_copy_done;
 	return true;
 }
+#endif
 
 
 static bool
 gen6_blit_tex(struct sna *sna,
-              uint8_t op,
+              uint8_t op, bool scale,
 		      PixmapPtr src, struct kgem_bo *src_bo,
 		      PixmapPtr mask,struct kgem_bo *mask_bo,
 		      PixmapPtr dst, struct kgem_bo *dst_bo, 
@@ -2734,8 +2731,16 @@ gen6_blit_tex(struct sna *sna,
     tmp->mask.height = mask->drawable.height;
 
 
-    tmp->src.scale[0] = 1.f/width;            //src->width;
-    tmp->src.scale[1] = 1.f/height;            //src->height;
+    if( scale )
+    {
+        tmp->src.scale[0] = 1.f/width;
+        tmp->src.scale[1] = 1.f/height;
+    }
+    else
+    {
+        tmp->src.scale[0] = 1.f/src->drawable.width;
+        tmp->src.scale[1] = 1.f/src->drawable.height;
+    }
 //    tmp->src.offset[0] = -dst_x;
 //    tmp->src.offset[1] = -dst_y;
 

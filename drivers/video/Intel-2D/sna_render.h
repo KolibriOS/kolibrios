@@ -223,7 +223,7 @@ struct sna_render {
 #endif
 
     bool (*blit_tex)(struct sna *sna,
-              uint8_t op,
+              uint8_t op, bool scale,
               PixmapPtr src, struct kgem_bo *src_bo,
               PixmapPtr mask,struct kgem_bo *mask_bo,
               PixmapPtr dst, struct kgem_bo *dst_bo,
