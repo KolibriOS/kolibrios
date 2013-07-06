@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright 2008-2010 VMware, Inc.
+ * Copyright 2008 Tungsten Graphics, Inc., Cedar Park, Texas.
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -18,7 +18,7 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
- * IN NO EVENT SHALL VMWARE AND/OR ITS SUPPLIERS BE LIABLE FOR
+ * IN NO EVENT SHALL TUNGSTEN GRAPHICS AND/OR ITS SUPPLIERS BE LIABLE FOR
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -27,38 +27,16 @@
 
 /**
  * @file
- * OS independent time-manipulation functions.
- *
- * @author Jose Fonseca <jfonseca@vmware.com>
+ * Runtime detection of CPU capabilities.
  */
 
-
-#include "pipe/p_config.h"
-
-#  include <time.h> /* timeval */
-#  include <sys/time.h> /* timeval */
-
-#include "os_time.h"
+#ifndef _RTASM_CPU_H_
+#define _RTASM_CPU_H_
 
 
-int64_t
-os_time_get_nano(void)
-{
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-}
+int rtasm_cpu_has_sse(void);
+
+int rtasm_cpu_has_sse2(void);
 
 
-#if defined(PIPE_SUBSYSTEM_WINDOWS_USER)
-
-void
-os_time_sleep(int64_t usecs)
-{
-   DWORD dwMilliseconds = (DWORD) ((usecs + 999) / 1000);
-   /* Avoid Sleep(O) as that would cause to sleep for an undetermined duration */
-   if (dwMilliseconds) {
-      Sleep(dwMilliseconds);
-   }
-}
-
-#endif
+#endif /* _RTASM_CPU_H_ */
