@@ -47,7 +47,7 @@ void main()
 			case evButton:
 				id = GetButtonID();
 				if (id==1) ExitProcess();
-				if (id==2) goto _NEW_GAME_MARK;
+				if (id==2) || (id==3) goto _NEW_GAME_MARK;
 				if (id>=100)
 				{
 					if (check_for_end()) break; //если игра закончена
@@ -235,7 +235,7 @@ void draw_clicks_num()
 		copystr(#REZULT_TEXT, #rezult);
 		copystr(IntToStr(BLOCKS_LEFT), #rezult+strlen(#rezult));
 		if (check_for_end()==1) copystr("Epic WIN!!1", #rezult);
-		DrawFlatButton(BLOCK_SIZE*BLOCKS_NUM/2-70, BLOCK_SIZE*BLOCKS_NUM/2-20, 140, 40, 2, #rezult);
+		DrawFlatButton(BLOCK_SIZE*BLOCKS_NUM/2-70, BLOCK_SIZE*BLOCKS_NUM/2-20, 140, 40, 3, #rezult);
 	}
 }
 
@@ -248,7 +248,7 @@ void new_game()
 	//чтобы отметить квадратики в процессе заливки и DELETED_BLOCK  для их удаления
 	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++)
 		blocks_matrix[i] = random(5);
-	DeleteButton(2);
+	DeleteButton(3);
 }
 
 
