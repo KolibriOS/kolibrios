@@ -596,9 +596,11 @@ cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
-; b) preboot_dma  = use DMA access?
-; c) preboot_vrrm = use VRR?
-; d) preboot_device = from what boot?
+; b) preboot_biosdisk  = use BIOS disks through V86 emulation? // (earlier was: preboot_dma  = use DMA access?)
+; c) preboot_debug = duplicates kernel debug output to the screen // (earlier was: preboot_vrrm = use VRR?)
+;    // VRR is an obsolete functionality, used only with CRT monitors: increase display frequency by reducing screen resolution
+; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
+; e) preboot_device = from where to boot?
 
 ; determine default settings
 if ~ defined extended_primary_loader
@@ -632,6 +634,8 @@ end if
 ; following 4 lines set variables to 1 if its current value is 0
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
+        cmp     byte [di+preboot_launcher-preboot_device], 1        ; Start LAUNCHER by default
+        adc     byte [di+preboot_launcher-preboot_device], 0        
 ;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
 ;        adc     byte [di+preboot_biosdisk-preboot_device], 0
 ;; default value for VRR is OFF
@@ -669,6 +673,12 @@ end if
 ;        mov     si, vrrm_msg
 ;        cmp     [preboot_vrrm], 1
 ;        call    .say_on_off
+        mov     si, debug_mode_msg
+        cmp     [preboot_debug], 1
+        call    .say_on_off
+        mov     si, launcher_msg
+        cmp     [preboot_launcher], 1
+        call    .say_on_off
         mov     si, preboot_device_msg
         call    print
         mov     al, [preboot_device]
@@ -752,17 +762,20 @@ end if
         cmp     al, 13
         jz      .continue
         or      al, 20h
-        cmp     al, 'a'
+        cmp     al, 'a'         ; select graphical mode
         jz      .change_a
         cmp     al, 'q'         ; Trick to make 'A' key on azerty keyboard work
         je      .change_a
-        cmp     al, 'b'
+        cmp     al, 'b'         ; use BIOS disks? // (selecting YES will make BIOS disks visible as /bd)
         jz      .change_b
-;        cmp     al, 'c'
-;        jz      .change_c
-        cmp     al, 'c'         ; 'd'
+        cmp     al, 'c'         ; load kernel in debug mode?  // (earlier was: use VRR?)
+        jz      .change_c
+        cmp     al, 'd'         ; start launcher after kernel is loaded?
+        jz      .change_d
+        cmp     al, 'e'         ; select boot origin
         jnz     .show_remarks
-        _setcursor 15,0
+; e) preboot_device = from where to boot?
+        _setcursor 16,0
         mov     si, bdev
         call    print
 if defined extended_primary_loader
@@ -772,7 +785,7 @@ else
 end if
         call    getkey
         mov     [preboot_device], al
-        _setcursor 13,0
+        _setcursor 14,0
 .d:
 if ~ defined extended_primary_loader
         mov     [.bSettingsChanged], 1
@@ -858,9 +871,9 @@ end if
         
         jmp     .d
 
-.change_b:
-        _setcursor 15,0
-;        mov     si, ask_dma
+.change_b:                      ; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
+        _setcursor 16,0
+;        mov     si, ask_dma    // (earlier was: preboot_dma  = use DMA access?)
 ;        call    print
 ;        mov     bx, '13'
 ;        call    getkey
@@ -872,8 +885,8 @@ end if
         mov     [preboot_biosdisk], al
         _setcursor 11,0
         jmp     .d
-;.change_c:
-;        _setcursor 15,0
+;.change_c:                     ; //  VRR is an obsolete functionality, used only with CRT monitors
+;        _setcursor 16,0
 ;        mov     si, vrrmprint
 ;        call    print
 ;        mov     bx, '12'
@@ -881,6 +894,24 @@ end if
 ;        mov     [preboot_vrrm], al
 ;        _setcursor 12,0
 ;        jmp     .d
+.change_c:                     ; c) preboot_debug = duplicates kernel debug output to the screen
+        _setcursor 16,0
+        mov     si, ask_debug
+        call    print
+        mov     bx, '12'
+        call    getkey
+        mov     [preboot_debug], al
+        _setcursor 12,0
+        jmp     .d
+.change_d:                     ; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
+        _setcursor 16,0
+        mov     si, ask_launcher
+        call    print
+        mov     bx, '12'
+        call    getkey
+        mov     [preboot_launcher], al
+        _setcursor 13,0
+        jmp     .d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .say_on_off:
         pushf
@@ -988,7 +1019,7 @@ end if
         _setcursor 6,0
         mov     si, loading_msg
         call    print
-        _setcursor 15,0
+        _setcursor 16,0
 if ~ defined extended_primary_loader
         cmp     [.bSettingsChanged], 0
         jz      .load
@@ -1030,9 +1061,9 @@ if ~ defined extended_primary_loader
         pop     ds
         mov     si, space_msg
         mov     byte [si+80], 0
-        _setcursor 15,0
+        _setcursor 16,0
         call    printplain
-        _setcursor 15,0
+        _setcursor 16,0
 .load:
 end if
 ; \end{diamond}[02.12.2005]
@@ -1053,7 +1084,15 @@ end if
 ;; VRR_M USE
 ;
 ;        mov     al,[preboot_vrrm]
-;        mov     [es:0x9030], al
+;        mov     [es:BOOT_VRR], al              ;// 0x9030
+
+; Set kernel DEBUG mode - if nonzero, duplicates debug output to the screen.
+        mov     al, [preboot_debug]
+        mov     [es:BOOT_DEBUG_PRINT], al       ;// 0x901E
+
+; Start the first app (right now it's LAUNCHER) after kernel is loaded?
+        mov     al, [preboot_launcher]
+        mov     [es:BOOT_LAUNCHER_START], al    ;// 0x901D        
 
 ; BOOT DEVICE
 

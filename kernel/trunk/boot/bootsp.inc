@@ -56,7 +56,7 @@ diskload: cp850   "Cargando disquete: 00 %",8,8,8,8,0
 pros:     cp850   "00"
 backspace2:cp850  8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg:cp850   "Presiona [abc] para cambiar la configuración, [Enter] para continuar",13,10,0
+start_msg:cp850   "Presiona [abcde] para cambiar la configuración, [Enter] para continuar",13,10,0
 time_msg: cp850   " o espera "
 time_str: cp850   " 5 segundos"
           cp850   " para que inicie automáticamente",13,10,0
@@ -70,7 +70,13 @@ usebd_msg:cp850   " [b] Agregar discos visibles por el BIOS:",0
 on_msg:   cp850   " activado",13,10,0
 off_msg:  cp850   " desactivado",13,10,0
 
-preboot_device_msg:cp850 " [c] Imagen de disquete: ",0
+debug_mode_msg: cp850 " [c] Duplicar depurar salida a la pantalla:",0
+ask_debug:      cp850 "¿Duplicar depurar la salida a la pantalla? [1-si, 2-no]: ",0
+
+launcher_msg:   cp850 " [d] Iniciar LAUNCHER después de cargar kernel:",0
+ask_launcher:   cp850 "¿Inicie la primera aplicación (LAUNCHER) después de cargar el kernel? [1-si, 2-no]: ",0
+
+preboot_device_msg:cp850 " [e] Imagen de disquete: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0

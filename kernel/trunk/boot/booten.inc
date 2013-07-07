@@ -52,7 +52,7 @@ diskload  db      "Loading diskette: 00 %",8,8,8,8,0
 pros      db      "00"
 backspace2 db     8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Press [abc] to change settings, press [Enter] to continue booting",13,10,0
+start_msg db      "Press [abcde] to change settings, press [Enter] to continue booting",13,10,0
 time_msg  db      " or wait "
 time_str  db      " 5 seconds"
           db      " before automatical continuation",13,10,0
@@ -66,7 +66,13 @@ usebd_msg db      " [b] Add disks visible by BIOS:",0
 on_msg    db      " on",13,10,0
 off_msg   db      " off",13,10,0
 
-preboot_device_msg db " [c] Floppy image: ",0
+debug_mode_msg db " [c] Duplicate debug output to the screen:",0
+ask_debug      db "Duplicate debug output to the screen? [1-yes, 2-no]: ",0
+
+launcher_msg   db " [d] Start LAUNCHER after kernel is loaded:",0
+ask_launcher   db "Start first app (LAUNCHER) after kernel is loaded? [1-yes, 2-no]: ",0
+
+preboot_device_msg db " [e] Floppy image: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0

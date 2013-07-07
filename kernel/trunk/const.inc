@@ -295,8 +295,10 @@ BOOT_Y_RES          equ 0x900C    ;word   Y res
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
-BOOT_LOG            equ 0x901D    ;byte   not used anymore (0 or 1 : enable system log display)
+;BOOT_LOG            equ 0x901D    ;byte   not used anymore (0 or 1 : enable system log display)
+BOOT_LAUNCHER_START equ 0x901D    ;byte  (0 or 1) start the first app (right now it's LAUNCHER) after kernel is loaded?
 ;BOOT_DIRECT_LFB     equ 0x901E    ;byte   0 or 1 : enable direct lfb write, paging disabled
+BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to the screen.
 BOOT_DMA            equ 0x901F    ;
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
 BOOT_VRR            equ 0x9030    ;byte   VRR start enabled 1, 2-no

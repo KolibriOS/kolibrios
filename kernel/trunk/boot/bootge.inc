@@ -54,7 +54,7 @@ diskload  db      "Lade Diskette: 00 %",8,8,8,8,0
 pros      db      "00"
 backspace2 db     8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Druecke [abc], um die Einstellungen zu aendern, druecke [Enter] zum starten",13,10,0
+start_msg db      "Druecke [abcde], um die Einstellungen zu aendern, druecke [Enter] zum starten",13,10,0
 time_msg  db      " oder warte "
 time_str  db      " 5 Sekunden"
           db      " bis zum automatischen Start",13,10,0
@@ -68,7 +68,13 @@ usebd_msg db      " [b] Add-Festplatten sichtbar durch das BIOS:",0
 on_msg    db      " an",13,10,0
 off_msg   db      " aus",13,10,0
 
-preboot_device_msg db " [c] Diskettenimage: ",0
+debug_mode_msg db " [c] Duplizieren debuggen Ausgabe auf dem Bildschirm:",0
+ask_debug      db "Duplizieren debuggen Ausgabe auf dem Bildschirm? [1-ja, 2 nein]: ",0
+
+launcher_msg   db " [d] Start LAUNCHER nach Kernel geladen wird:",0
+ask_launcher   db "Starten sie die erste App (LAUNCHER) nach Kernel geladen wird? [1-ja, 2 nein]: ",0
+
+preboot_device_msg db " [e] Diskettenimage: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0

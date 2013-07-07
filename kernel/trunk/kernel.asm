@@ -79,8 +79,6 @@ VESA_1_2_VIDEO  equ 0      ; enable vesa 1.2 bank switch functions
 
 ; Enabling the next line will enable serial output console
 ;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
-; The following constant, if nonzero, duplicates debug output to the screen.
-debug_direct_print equ 0
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -88,9 +86,16 @@ include "lang.inc"
 include "encoding.inc"
 
 include "const.inc"
+
+iglobal
+; The following variable, if equal to 1, duplicates debug output to the screen.
+debug_direct_print db 0
+; Start the first app (LAUNCHER) after kernel is loaded? (1=yes, 2 or 0=no)
+launcher_start db 1
+endg
+
 max_processes    equ   255
 tss_step         equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
-
 
 os_stack       equ  (os_data_l-gdts)    ; GDTs
 os_code        equ  (os_code_l-gdts)
@@ -471,7 +476,10 @@ save_variables_IDE_controller:
         movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
         mov     [_display.bpp], eax
         mov     [_display.vrefresh], 60
-
+        mov     al, [BOOT_VARS+BOOT_DEBUG_PRINT]    ; If nonzero, duplicates debug output to the screen
+        mov     [debug_direct_print], al
+        mov     al, [BOOT_VARS+BOOT_LAUNCHER_START] ; Start the first app (LAUNCHER) after kernel is loaded?
+        mov     [launcher_start], al
         movzx   eax, word [BOOT_VARS+BOOT_X_RES]; X max
         mov     [_display.width], eax
         mov     [display_width_standard], eax
@@ -961,8 +969,10 @@ end if
                 [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
 ; LOAD FIRST APPLICATION
-        cli
+        cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
+        jnz     @f
 
+        cli
         mov     ebp, firstapp
         call    fs_execute_from_sysdir
         test    eax, eax
@@ -4863,10 +4873,12 @@ if defined debug_com_base
 end if
 
         mov     [msg_board_data+ecx], bl
-if debug_direct_print
+; // if debug_direct_print == 1
+        cmp     byte [debug_direct_print], 1
+        jnz     @f
         pusha
 iglobal
-msg_board_pos   dd      234*65536+10
+msg_board_pos   dd      234*65536+10 ; for printing debug output on the screen
 endg
         lea     edx, [msg_board_data+ecx]
         mov     ecx, 0x40FFFFFF
@@ -4885,7 +4897,8 @@ endg
         jbe     @f
         mov     word [msg_board_pos], 10
 @@:
-end if
+; // end if
+
 if 0
         pusha
         mov     al, bl

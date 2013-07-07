@@ -52,7 +52,7 @@ diskload: latin1  "Loen disketti: 00 %",8,8,8,8,0
 pros:     latin1  "00"
 backspace2:latin1 8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg:latin1  "Vajuta [abc] seadete muutmiseks, vajuta [Enter] laadimise jätkamiseks",13,10,0
+start_msg:latin1  "Vajuta [abcde] seadete muutmiseks, vajuta [Enter] laadimise jätkamiseks",13,10,0
 time_msg: latin1  " või oota "
 time_str: latin1  " 5 sekundit"
           latin1  " automaatseks jätkamiseks",13,10,0
@@ -66,7 +66,13 @@ usebd_msg:latin1  " [b] Lisa kettad nahtavaks BIOS:",0
 on_msg:   latin1  " sees",13,10,0
 off_msg:  latin1  " väljas",13,10,0
 
-preboot_device_msg:latin1 " [c] Disketi kujutis: ",0
+debug_mode_msg: latin1 " [c] Duplicate siluda väljund ekraani:",0
+ask_debug:      latin1 "Duplicate siluda väljund ekraani? [1-jah, 2-no]: ",0
+
+launcher_msg:   latin1 " [d] Alusta LAUNCHER pärast kernel on koormatud:",0
+ask_launcher:   latin1 "Alusta esimese taotluse (LAUNCHER) pärast kernel laetakse? [1-jah, 2-no]: ",0
+
+preboot_device_msg:latin1 " [e] Disketi kujutis: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0
