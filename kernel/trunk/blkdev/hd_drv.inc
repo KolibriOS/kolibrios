@@ -77,7 +77,10 @@ endl
         call    mutex_lock
         mov     ecx, ide_channel2_mutex
         mov     eax, [hd_data]
-        cmp     [eax+HD_DATA.hdbase], 0x1F0
+        push    ecx
+        mov     ecx, [hd_address_table]
+        cmp     [eax+HD_DATA.hdbase], ecx ; 0x1F0
+        pop     ecx
         jne     .IDE_Channel_2
         mov     ecx, ide_channel1_mutex
 .IDE_Channel_2:
@@ -158,7 +161,10 @@ endl
         call    mutex_lock
         mov     ecx, ide_channel2_mutex
         mov     eax, [hd_data]
-        cmp     [eax+HD_DATA.hdbase], 0x1F0
+        push    ecx
+        mov     ecx, [hd_address_table]
+        cmp     [eax+HD_DATA.hdbase], ecx ; 0x1F0
+        pop     ecx
         jne     .IDE_Channel_2
         mov     ecx, ide_channel1_mutex
 .IDE_Channel_2:
@@ -848,7 +854,10 @@ hd_read_dma:
         mov     word [eax+4], 0x2000
         sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
-        cmp     [hdbase], 0x1F0
+        push    eax
+        mov     eax, [hd_address_table]
+        cmp     [hdbase], eax ; 0x1F0
+        pop     eax
         jz      @f
         add     edx, 8
 @@:
@@ -1005,7 +1014,10 @@ cache_write_dma:
         popa
         sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
-        cmp     [hdbase], 0x1F0
+        push    eax
+        mov     eax, [hd_address_table]
+        cmp     [hdbase], eax ; 0x1F0
+        pop     eax
         jz      @f
         add     edx, 8
 @@:

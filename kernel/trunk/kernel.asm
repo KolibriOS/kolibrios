@@ -362,42 +362,76 @@ high_code:
         call    mutex_init
         mov     ecx, ide_channel2_mutex
         call    mutex_init
-
+;-----------------------------------------------------------------------------
 ; SAVE REAL MODE VARIABLES
+;-----------------------------------------------------------------------------
+save_variables_IDE_controller:
         xor     eax, eax
         mov     ax, [BOOT_VARS + BOOT_IDE_INTERR_16]
         mov     [IDE_Interrupt], ax
+;--------------------------------------
         mov     ax, [BOOT_VARS + BOOT_IDE_PI_16]
         mov     [IDEContrProgrammingInterface], ax
+;--------------------------------------
         mov     ax, [BOOT_VARS + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
+;--------------------------------------
         mov     ax, [BOOT_VARS + BOOT_IDE_BAR0_16]
-        mov     [IDE_BAR0_val], ax
-
         cmp     ax, 0
         je      @f
         cmp     ax, 1
-        je      @f
-        and     ax, 0xfff0
+        jne     .no_PATA_BAR0
+@@:
+        mov     ax, 0x1F0
+        jmp     @f
+.no_PATA_BAR0:
+        and     ax, 0xFFFC
+@@:
         mov     [StandardATABases], ax
         mov     [hd_address_table], eax
         mov     [hd_address_table+8], eax
-@@:
+        mov     [IDE_BAR0_val], ax
+;--------------------------------------
         mov     ax, [BOOT_VARS + BOOT_IDE_BAR1_16]
-        mov     [IDE_BAR1_val], ax
-        mov     ax, [BOOT_VARS + BOOT_IDE_BAR2_16]
-        mov     [IDE_BAR2_val], ax
-
         cmp     ax, 0
         je      @f
         cmp     ax, 1
+        jne     .no_PATA_BAR1
+@@:
+        mov     ax, 0x3F4
+        jmp     @f
+.no_PATA_BAR1:
+        and     ax, 0xFFFC
+@@:
+        mov     [IDE_BAR1_val], ax
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR2_16]
+        cmp     ax, 0
         je      @f
-        and     ax, 0xfff0
+        cmp     ax, 1
+        jne     .no_PATA_BAR2
+@@:
+        mov     ax, 0x170
+        jmp     @f
+.no_PATA_BAR2:
+        and     ax, 0xFFFC
+@@:
         mov     [StandardATABases+2], ax
         mov     [hd_address_table+16], eax
         mov     [hd_address_table+24], eax
-@@:
+        mov     [IDE_BAR2_val], ax
+;--------------------------------------
         mov     ax, [BOOT_VARS + BOOT_IDE_BAR3_16]
+        cmp     ax, 0
+        je      @f
+        cmp     ax, 1
+        jne     .no_PATA_BAR3
+@@:
+        mov     ax, 0x374
+        jmp     @f
+.no_PATA_BAR3:
+        and     ax, 0xFFFC
+@@:
         mov     [IDE_BAR3_val], ax
 
 ; --------------- APM ---------------------
@@ -728,11 +762,11 @@ no_mode_0x12:
 .disable_IDE_interrupt:
 ; Disable interrupts in IDE controller for PIO
         mov     al, 2
-        mov     dx, [IDE_BAR1_val] ;0x3F6
-        add     dx, 2
+        mov     dx, [IDE_BAR1_val] ;0x3F4
+        add     dx, 2 ;0x3F6
         out     dx, al
-        mov     dx, [IDE_BAR3_val] ;0x76
-        add     dx, 2
+        mov     dx, [IDE_BAR3_val] ;0x374
+        add     dx, 2 ;0x376
         out     dx, al
 ;-----------------------------------------------------------------------------
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -983,7 +1017,7 @@ endg
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
-        DEBUGF  1, "K : IRQ0 error code %x\n", eax
+        DEBUGF  1, "K : IRQ1 error code %x\n", eax
 .no_keyboard:
 
 ; SET MOUSE
@@ -1108,7 +1142,7 @@ set_interrupts_for_IDE_controllers:
         mov     ax, [IDE_Interrupt]
         movzx   eax, al
         stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
-        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [IDE_Interrupt]:2, eax
+        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [IDE_Interrupt]:1, eax
 
         stdcall enable_irq, eax
 ;--------------------------------------
@@ -1117,11 +1151,11 @@ set_interrupts_for_IDE_controllers:
         call    boot_log
 ; Enable interrupts in IDE controller for DMA
         mov     al, 0
-        mov     dx, [IDE_BAR1_val] ;0x3F6
-        add     dx, 2
+        mov     dx, [IDE_BAR1_val] ;0x3F4
+        add     dx, 2 ;0x3F6
         out     dx, al
-        mov     dx, [IDE_BAR3_val] ;0x76
-        add     dx, 2
+        mov     dx, [IDE_BAR3_val] ;0x374
+        add     dx, 2 ;0x376
         out     dx, al
 ;--------------------------------------
 .end_set_interrupts:

@@ -50,6 +50,8 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
          locals
            .irqh dd ?
          endl
+ 
+        DEBUGF  1, "K : Attach Interrupt %d Handler %x\n", [irq], [handler]
 
         and     [.irqh], 0
 

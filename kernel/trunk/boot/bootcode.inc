@@ -434,8 +434,11 @@ sayerr:
         xor     si, si  ; device index = 0
         int     0x1A
         jnc     .found_1 ; Parallel IDE Controller
-
+; Controller not found!
+        xor     ax, ax
+        mov     [es:BOOT_IDE_PI_16], ax
         jmp     .nopci
+;--------------------------------------
 .found_1:
 ; get memory base BAR4
         mov     ax, 0xB10A
@@ -443,10 +446,11 @@ sayerr:
         push    cx
         int     0x1A
         jc      .no_BAR4        ;.nopci
-        and     cx, 0xFFF0      ; clear address decode type
+        and     cx, 0xFFFC      ; clear address decode type
         mov     [es:BOOT_IDE_BASE_ADDR], cx
 .no_BAR4:
         pop     cx
+;--------------------------------------
 .found:
 ; get Interrupt Line
         mov     ax, 0xB10A
@@ -454,46 +458,55 @@ sayerr:
         push    cx
         int     0x1A
         jc      .no_Interrupt        ;.nopci
- ;       and     cx, 0xFFF0      ; clear address decode type
+
         mov     [es:BOOT_IDE_INTERR_16], cx
 .no_Interrupt:
         pop     cx
+;--------------------------------------
 ; get memory base BAR0
         mov     ax, 0xB10A
         mov     di, 0x10        ; memory base is config register at 0x10
         push    cx
         int     0x1A
         jc      .no_BAR0        ;.nopci
+
         mov     [es:BOOT_IDE_BAR0_16], cx
 .no_BAR0:
         pop     cx
+;--------------------------------------
 ; get memory base BAR1
         mov     ax, 0xB10A
         mov     di, 0x14        ; memory base is config register at 0x14
         push    cx
         int     0x1A
         jc      .no_BAR1        ;.nopci
+
         mov     [es:BOOT_IDE_BAR1_16], cx
 .no_BAR1:
         pop     cx
+;--------------------------------------
 ; get memory base BAR2
         mov     ax, 0xB10A
         mov     di, 0x18        ; memory base is config register at 0x18
         push    cx
         int     0x1A
         jc      .no_BAR2        ;.nopci
+
         mov     [es:BOOT_IDE_BAR2_16], cx
 .no_BAR2:
         pop     cx
+;--------------------------------------
 ; get memory base BAR3
         mov     ax, 0xB10A
         mov     di, 0x1C        ; memory base is config register at 0x1c
         push    cx
         int     0x1A
         jc      .no_BAR3        ;.nopci
+
         mov     [es:BOOT_IDE_BAR3_16], cx
 .no_BAR3:
         pop     cx
+;--------------------------------------
 .nopci:
 ; \end{Mario79}
 
