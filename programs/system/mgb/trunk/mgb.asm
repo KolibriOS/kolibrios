@@ -5,6 +5,11 @@
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.8
+; last update:  08/07/2013
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      benchmark f4 with memory + f65
+;---------------------------------------------------------------------
 ; version:	0.7
 ; last update:  05/04/2013
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -70,6 +75,12 @@ include 'lang.inc'	;language support
 start:
 	mcall	68,11
 
+	mcall	68,12,8+9*6*38*4	; 7352
+	mov	[text_scren_buffer],eax
+
+	mcall	68,12,8+9*6*38*4	; 8216
+	mov	[text_scren_buffer2],eax
+	
 load_libraries l_libs_start,end_l_libs
 
 	cmp	eax,-1
@@ -445,17 +456,41 @@ testDrawFreeLine:
 ;---------------------------------------------------------------------
 align 4
 testDrawText1:
-	mcall	4,0C012Ch,0AA66h,aTestText,34
+	mcall	4,<12,300>,0x0000AA66,aTestText,34
+	ret
+;---------------------------------------------------------------------
+align 4
+testDrawText1m:
+	mov	eax,[text_scren_buffer]
+	mov	[eax],dword 6*34
+	mov	[eax+4],dword 9
+	mcall	4,<0,0>,0x0800AA66,aTestText,34,[text_scren_buffer]
+	xor	ebp,ebp
+	mov	ebx,[text_scren_buffer]
+	add	ebx,8
+	mcall	65,,<6*34,9>,<18,309>,32
 	ret
 ;---------------------------------------------------------------------
 align 4
 testDrawText2:
-	mcall	4,1B013Bh,10E7B850h,aTestText,34
+	mcall	4,<27,315>,0x10E7B850,aTestText,34
+	ret
+;---------------------------------------------------------------------
+align 4
+testDrawText2m:
+	mov	eax,[text_scren_buffer2]
+	mov	[eax],dword 6*38
+	mov	[eax+4],dword 9
+	mcall	4,<0,0>,0x18E7B850,aTestText,34,[text_scren_buffer2]
+	xor	ebp,ebp
+	mov	ebx,[text_scren_buffer2]
+	add	ebx,8
+	mcall	65,,<6*38,9>,<33,324>,32
 	ret
 ;---------------------------------------------------------------------
 align 4
 testDrawNumber:
-	mcall	47,80000h,12345678,2A014Ah,0E0B27Bh
+	mcall	47,0x80000,12345678,<42,333>,0x0E0B27B
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -677,7 +712,9 @@ results_table dd \
 	?,?,testDrawHorzLine,aDrawingHLine,\
 	?,?,testDrawFreeLine,aDrawingFLine,\
 	?,?,testDrawText1,aDrawingText1,\
+	?,?,testDrawText1m,aDrawingText1m,\
 	?,?,testDrawText2,aDrawingText2,\
+	?,?,testDrawText2m,aDrawingText2m,\
 	?,?,testDrawNumber,aDrawingNumber,\
 	?,?,testDrawPixel,aDrawingPixel,\
 	0,0,0,0
@@ -697,13 +734,15 @@ if lang eq it
 	aDrawingHLine	db 'Linea orizzontale, 270 px',0
 	aDrawingFLine	db 'Free-angled Line, 350 px',0
 	aDrawingText1	db 'Fixed-width Text, 34 chars',0
+	aDrawingText1m	db 'Fixed-width Text(m), 34 chars',0
 	aDrawingText2	db 'Proportional Text, 34 chars',0
+	aDrawingText2m	db 'Proportional Text(m), 34 chars',0
 	aDrawingNumber	db 'Decimal Number, 8 digits',0
 	aDrawingPixel	db 'Singolo pixel',0
 
 	aTestText	db 'This is a 34-charachters test text'
 	aButtonsText	db 'Test      Commenti    Pattern+     Apri        Salva',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.7',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.8',0
 
 	aLeft	db 'Sinistra:',0
 	aRight	db 'Destra  :',0
@@ -722,13 +761,15 @@ else
 	aDrawingHLine	db 'Horizontal Line, 270 px',0
 	aDrawingFLine	db 'Free-angled Line, 350 px',0
 	aDrawingText1	db 'Fixed-width Text, 34 chars',0
+	aDrawingText1m	db 'Fixed-width Text(m), 34 chars',0
 	aDrawingText2	db 'Proportional Text, 34 chars',0
+	aDrawingText2m	db 'Proportional Text(m), 34 chars',0
 	aDrawingNumber	db 'Decimal Number, 8 digits',0
 	aDrawingPixel	db 'Single Pixel',0
 
 	aTestText	db 'This is a 34-charachters test text'
 	aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.7',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.8',0
 
 	aLeft	db 'Left    :',0
 	aRight	db 'Right   :',0
@@ -940,6 +981,9 @@ size_x		rd 1
 size_y		rd 1
 offset_x	rd 1
 ;---------------------------------------------------------------------
+text_scren_buffer	rd 1
+text_scren_buffer2	rd 1
+;---------------------------------------------------------------------
 textarea:
 	rb 8
 ;---------------------------------------------------------------------
@@ -970,12 +1014,15 @@ fname_buf:
 filename_area:
 	rb 256
 ;---------------------------------------------------------------------
+align 4
 	rb 4096
 thread_stack2:
 ;---------------------------------------------------------------------
+align 4
 	rb 4096
 thread_stack1:
 ;---------------------------------------------------------------------
+align 4
 	rb 4096
 	rb 0x2884	; for F73 image size 123*90*4
 stacktop:
