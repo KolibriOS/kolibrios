@@ -970,7 +970,7 @@ end if
 
 ; LOAD FIRST APPLICATION
         cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
-        jnz     @f
+        jnz     first_app_found
 
         cli
         mov     ebp, firstapp
@@ -4878,7 +4878,7 @@ end if
         jnz     @f
         pusha
 iglobal
-msg_board_pos   dd      234*65536+10 ; for printing debug output on the screen
+msg_board_pos   dd      (42*6)*65536+10 ; for printing debug output on the screen
 endg
         lea     edx, [msg_board_data+ecx]
         mov     ecx, 0x40FFFFFF
@@ -4890,7 +4890,7 @@ endg
         add     word [msg_board_pos+2], 6
         cmp     bl, 10
         jnz     @f
-        mov     word [msg_board_pos+2], 234
+        mov     word [msg_board_pos+2], (42*6)
         add     word [msg_board_pos], 10
         mov     ax, word [Screen_Max_Y]
         cmp     word [msg_board_pos], ax
