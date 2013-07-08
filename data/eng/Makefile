@@ -310,10 +310,10 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \
- media/ImgF/ImgF:MEDIA/ImgF/ImgF \
- media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
- media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
- media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
+ ../common/media/ImgF/ImgF:MEDIA/ImgF/ImgF \
+ ../common/media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
+ ../common/media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
+ ../common/media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
  network.ini:NETWORK.INI \
  network/ftpd.ini:NETWORK/FTPD.INI \
  network/users.ini:NETWORK/USERS.INI \
@@ -367,7 +367,7 @@ EXTRA:=\
  games/=../common/games \
  games/fara=games/fara \
  games/soko/soko=games/soko \
- kolibrios/media/fplay-full=media/fplay-full \
+ kolibrios/media/fplay-full=../common/media/fplay-full \
  kolibrios/media/zsea/zsea=distr_data/zsea \
  kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
  kolibrios/media/zsea/plugins/cnv_gif.obj=distr_data/cnv_gif.obj \
