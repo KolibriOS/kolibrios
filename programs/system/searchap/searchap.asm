@@ -72,7 +72,7 @@ basic_file_path:
 basic_file_name:
 	db 'kolibri.lbl',0
 additional_dir_name:
-    db 'KolibriOS',0
+    db 'kolibrios',0
 real_additional_dir:
 	db '/kolibrios',0
 ;-------------------------------------------------------------------------------
@@ -276,12 +276,12 @@ end if
 	jbe	@f
 	mov	ecx,eax
 ;-----------------------------------
-@@:
+@@:	
 	mov	[fileinfo.size],ecx
 ;--------------------------------------
 if debug eq yes
 dps 'get file'
-newline
+newline	
 end if
 ;--------------------------------------
 	mcall	68,1
@@ -303,7 +303,7 @@ newline
 end if
 ;--------------------------------------
 	ret
-;-----------------------------------
+;-----------------------------------	
 @@:
 ;--------------------------------------
 if debug eq yes
@@ -343,7 +343,7 @@ if debug eq yes
 	push	ecx
 	call	debug_outstr
 	pop	ecx
-newline
+newline	
 end if
 ;--------------------------------------
 ;	mcall	5,10
@@ -363,7 +363,7 @@ end if
 ;--------------------------------------
 if debug eq yes
 dps 'additional parttition is not found!'
-newline
+newline	
 end if
 ;--------------------------------------
 	ret
@@ -392,7 +392,7 @@ compare_files_and_mount:
 ;--------------------------------------
 if debug eq yes
 dps 'compare files sucess!'
-newline
+newline	
 dps 'mount directory:'
 newline
 	mov	edx,esi
@@ -414,7 +414,7 @@ end if
 	mov	edi,f30_3_work_area
 	call	proc_copy_patch
 ; here is call kernel function to mount the found partition
-; as "/KolibriOS" directory to root directory "/"
+; as "/kolibrios" directory to root directory "/"
 	mcall	30,3,f30_3_work_area
 	ret
 ;--------------------------------------
@@ -424,7 +424,7 @@ end if
 ;--------------------------------------
 if debug eq yes
 dps 'compare files is not match!'
-newline
+newline	
 end if
 ;--------------------------------------
 	ret
