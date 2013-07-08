@@ -67,12 +67,12 @@ Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
 #6   **** GRµFICOS ****
 Image viewer KIV          /sys/media/kiv
-Image viewer zSea         /addappl/media/zsea/zsea
+Image viewer zSea         /KolibriOS/media/zsea/zsea
 Animage                   /sys/media/animage
 Efectos de im genes       /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #7   **** MULTIMEDIA ****
-Fplay - video             /addappl/media/fplay-full
+Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
 Reproductor de CD         /sys/media/cdp
 #8    **** DESARROLLO ****

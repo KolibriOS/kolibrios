@@ -203,13 +203,13 @@ Parameters:
       * B=1 - fill background with the color edi
     * Y = Cnnn
       * C=1 redirect the output to the user area, specified in edi
-      * nnn - not used in the current, must be 0 (zero) 
+      * nnn - not used in the current, must be 0 (zero)
   * edx = pointer to the beginning of the string
   * esi = for A=0 length of the string, must not exceed 255;
           for A=1 is ignored
   * edi = color to fill background, if B=1
   * edi = pointer to user area, for redirect, if C=1
-  
+
 Returned value:
   * function does not return value
 Remarks:
@@ -1783,8 +1783,8 @@ Parameters:
   * ecx = pointer to a block of data:
           sysdir_name     rb 64
           sysdir_path     rb 64
-For example:  
-dir_name1       db 'addappl',0
+For example:
+dir_name1       db 'KolibriOS',0
                 rb 64-8
 dir_path1       db 'HD0/1',0
                 rb 64-6
@@ -1805,7 +1805,7 @@ Returned value:
   * eax = 0x000000XX - owner of pixel the slot window N
     If incorrect values ebx and ecx then function returns 0
   * The function takes the value from the area [_WinMapAddress]
-  
+
 ======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
 ======================================================================
@@ -2414,7 +2414,7 @@ Returned value:
 =========================== Function 52 ==============================
 ======================================================================
 
-WARNING: This function is obsolete and is only present in the 
+WARNING: This function is obsolete and is only present in the
 	 documentation as a guide to understand/port the older network
          applications. For new programs, use function 74
 
@@ -2587,7 +2587,7 @@ Returned value:
 =========================== Function 53 ==============================
 ======================================================================
 
-WARNING: This function is obsolete and is only present in the 
+WARNING: This function is obsolete and is only present in the
 	 documentation as a guide to understand/port the older network
          applications. For new programs, use function 75.
 
@@ -4171,8 +4171,8 @@ Examples:
   * '/hd0/2/menuet/pics/tanzania.bmp',0
   * '/hd0/1/Program files/NameOfProgram/SomeFile.SomeExtension',0
   * '/sys/MySuperApp.ini',0
-Also function supports relative names.  If the path begins not 
-with '/', it is considered relative to a current folder. To get or 
+Also function supports relative names.  If the path begins not
+with '/', it is considered relative to a current folder. To get or
 set a current folder, use the function 30.
 
 Available subfunctions:

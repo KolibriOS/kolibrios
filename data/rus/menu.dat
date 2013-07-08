@@ -71,12 +71,12 @@ FlatWave                  /sys/3d/flatwav
 3D-Волны                  /sys/3d/3dwav
 #6    **** GRAPHICS ****
 Просмотр фото KIV         /sys/media/kiv
-Просмотр фото zSea        /addappl/media/zsea/zsea
+Просмотр фото zSea        /KolibriOS/media/zsea/zsea
 Редактор Animage          /sys/media/animage
 Наложение фильтров        /sys/media/imgf/imgf
 Палитра                   /sys/media/palitra
 #7    **** MULTIMEDIA ****
-Fplay - видео             /addappl/media/fplay-full
+Fplay - видео             /KolibriOS/media/fplay-full
 Midi-плеер                /sys/media/midamp
 CD-плейер                 /sys/media/cdp
 #8    **** PROGRAMMING ****
