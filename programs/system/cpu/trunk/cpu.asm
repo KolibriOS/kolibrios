@@ -360,19 +360,28 @@ align 4
         lea     edi,[check1]
         test    dword ch_flags,ch_flag_en
         pop     edi
-        jnz     @f
+        jnz     .no_filter
 
         cmp     dword [process_info_buffer+10],'ICON'
+	jnz	@f
+        cmp     dword [process_info_buffer+10+4],0
         jz      .return_1
-
-        cmp     dword [process_info_buffer+10],'OS/I'
+@@:
+        cmp     dword [process_info_buffer+10],'IDLE'
+	jnz	@f
+        cmp     dword [process_info_buffer+10+4],0
         jz      .return_1
-
+@@:
+        cmp     word [process_info_buffer+10],'OS'
+	jnz	@f
+        cmp     dword [process_info_buffer+10+2],0
+        jz      .return_1
+@@:
         cmp     byte [process_info_buffer+10],'@'
         jz      .return_1
 ;--------------------------------------
 align 4
-@@:
+.no_filter:
         mov     edi,ecx
         mov     [list_add],ecx
 ;get processor cpeed
