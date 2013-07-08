@@ -246,9 +246,9 @@ align 4
 	jb	@r
 align 4
 @@:
-	push	esi
+	push	esi edi
 	call	dword [esi]
-	pop	esi
+	pop	edi esi
 	inc	edi
 	mcall	26,9
 	cmp	eax,[dwTestEndTime]
