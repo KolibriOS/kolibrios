@@ -90,14 +90,14 @@ pasv_ok:
 
 data_ok:
 
-        mcall   recv, [datasocket], buffer_ptr2, BUFFERSIZE, MSG_DONTWAIT
-        inc     eax
-        jz      .fail
-        dec     eax
-        jz      .fail
+        mcall   recv, [datasocket], buffer_ptr2, BUFFERSIZE, 0
+        test    ebx, ebx
+        jnz     .fail
         mov     byte[buffer_ptr2 + eax], 0
 
         invoke  con_write_asciiz, buffer_ptr2
+
+        jmp     data_ok
 
   .fail:
         mcall   close, [datasocket]

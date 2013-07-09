@@ -51,7 +51,7 @@ start:
         jnz     exit
 ; initialize console
         invoke  con_start, 1
-        invoke  con_init, 80, 25, 80, 25, title
+        invoke  con_init, 80, 25, 80, 250, title
 
 ; Check for parameters
         cmp     byte [s], 0
@@ -278,7 +278,7 @@ exit:
 
 ; data
 title   db 'FTP client',0
-str1    db 'FTP client for KolibriOS v0.02',10,10,'Please enter ftp server address.',10,0
+str1    db 'FTP client for KolibriOS v0.03',10,10,'Please enter ftp server address.',10,0
 str2    db '> ',0
 str3    db 'Resolving ',0
 str4    db 10,0
