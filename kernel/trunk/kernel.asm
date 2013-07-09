@@ -755,11 +755,14 @@ no_mode_0x12:
 
         mov     esi, boot_enableirq
         call    boot_log
-; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
+; Enable timer IRQ (IRQ0) and co-processor IRQ (IRQ13)
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
         stdcall enable_irq, 2               ; @#$%! PIC
         stdcall enable_irq, 13              ; co-processor
+
+        cmp     [IDEContrProgrammingInterface], 0
+        je      @f
 
         mov     esi, boot_disabling_ide
         call    boot_log
@@ -776,6 +779,7 @@ no_mode_0x12:
         mov     dx, [IDE_BAR3_val] ;0x374
         add     dx, 2 ;0x376
         out     dx, al
+@@:
 ;-----------------------------------------------------------------------------
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;        mov     esi, boot_detectdisks
@@ -1111,6 +1115,8 @@ end if
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
+        cmp     [IDEContrProgrammingInterface], 0
+        je      set_interrupts_for_IDE_controllers.continue
 ;-----------------------------------------------------------------------------
 ; set interrupts for IDE Controller
 ;-----------------------------------------------------------------------------

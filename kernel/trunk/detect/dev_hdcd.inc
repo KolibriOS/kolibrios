@@ -17,6 +17,9 @@ $Revision$
 ;****************************************************
 ;*                 ПОИСК HDD и CD                   *
 ;****************************************************
+        cmp     [IDEContrProgrammingInterface], 0
+        je      EndFindHDD
+
 FindHDD:
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 0
