@@ -14,8 +14,6 @@
 
 format binary as ""
 
-__DEBUG__               = 0
-__DEBUG_LEVEL__         = 1
 BUFFERSIZE              = 1024
 
 STATUS_CONNECTING       = 0
@@ -38,7 +36,6 @@ include '../../macros.inc'
 purge mov,add,sub
 include '../../proc32.inc'
 include '../../dll.inc'
-include '../../debug-fdo.inc'
 include '../../network.inc'
 
 include 'usercommands.inc'
@@ -47,39 +44,32 @@ include 'servercommands.inc'
 ; entry point
 start:
 
-        DEBUGF  1, "hello"
+        mcall   40, 0
 ; load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
         jnz     exit
 ; initialize console
-        push    1
-        call    [con_start]
-        push    title
-        push    25
-        push    80
-        push    25
-        push    80
-        call    [con_init]
+        invoke  con_start, 1
+        invoke  con_init, 80, 25, 80, 25, title
 
 ; Check for parameters
         cmp     byte [s], 0
         jne     resolve
 
 main:
-        call    [con_cls]
+        invoke  con_cls
 ; Welcome user
-        push    str1
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str1
 
 ; write prompt
-        push    str2
-        call    [con_write_asciiz]
+        invoke  con_set_flags, 0x0a
+        invoke  con_write_asciiz, str2
 ; read string
         mov     esi, s
-        push    256
-        push    esi
-        call    [con_gets]
+        invoke  con_gets, esi, 256
+        invoke  con_write_asciiz, str4  ; newline
+        invoke  con_set_flags, 0x07
 ; check for exit
         test    eax, eax
         jz      done
@@ -87,7 +77,6 @@ main:
         jz      done
 
 resolve:
-
 ; delete terminating '\n'
         mov     esi, s
   @@:
@@ -96,119 +85,89 @@ resolve:
         ja      @r
         mov     byte [esi-1], 0
 
-;        call    [con_cls]
-        push    str3
-        call    [con_write_asciiz]
-        push    s
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str3
+        invoke  con_write_asciiz, s
 
 ; resolve name
         push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    s       ; first parameter
-        call    [getaddrinfo]
+        invoke  getaddrinfo, s, 0, 0, esp
         pop     esi
 ; test for error
         test    eax, eax
         jnz     fail
 
 ; write results
-        push    str8
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str8
 ;        mov     edi, esi
 
 ; convert IP address to decimal notation
         mov     eax, [esi+addrinfo.ai_addr]
         mov     eax, [eax+sockaddr_in.sin_addr]
         mov     [sockaddr1.ip], eax
-        push    eax
-        call    [inet_ntoa]
+
+        invoke  inet_ntoa, eax
 ; write result
-        push    eax
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, eax
 ; free allocated memory
-        push    esi
-        call    [freeaddrinfo]
+        invoke  freeaddrinfo, esi
 
-        push    str9
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str9
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
-        je      fail2
+        je      socket_error
         mov     [socketnum], eax
 
-        push    str11
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str11
         mcall   connect, [socketnum], sockaddr1, 18
-
-        mcall   40, EVM_STACK
-
         mov     [status], STATUS_CONNECTING
-        mov     [offset], buffer_ptr
 
-        push    str12
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str12
 
-wait_for_serverdata:
-        mcall   10
+wait_for_servercommand:
 
-        call    [con_get_flags]
-        test    eax, 0x200                      ; con window closed?
-        jnz     exit
+;        invoke  con_write_asciiz, str_dbg
 
 ; receive socket data
-        mcall   recv, [socketnum], [offset], BUFFERSIZE, MSG_DONTWAIT
+        mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
         inc     eax
-        jz      wait_for_serverdata
+        jz      socket_error
         dec     eax
-        jz      wait_for_serverdata
+        jz      wait_for_servercommand
+
+;        invoke  con_write_asciiz, str_dbg2
 
 ; extract commands, copy them to "s" buffer
-        add     eax, buffer_ptr                 ; eax = end pointer
+        lea     ecx, [eax + buffer_ptr]         ; ecx = end pointer
         mov     esi, buffer_ptr                 ; esi = current pointer
-  .nextcommand:
         mov     edi, s
   .byteloop:
-        cmp     esi, eax
-        jae     wait_for_serverdata
+        cmp     esi, ecx
+        jae     wait_for_servercommand
         lodsb
         cmp     al, 10                          ; excellent, we might have a command
         je      .got_command
-        cmp     al, 13                          ; just ignore this crap
+        cmp     al, 13                          ; just ignore this byte
         je      .byteloop
         stosb
         jmp     .byteloop
-
-; we have a newline check if its a command
-  .got_command:
+  .got_command:                                 ; we have a newline check if its a command
         xor     al, al
         stosb
-;        push    esi eax
 
-; print it to the screen
-        pushd   s
-        call    [con_write_asciiz]
-        pushd   str4                            ; newline
-        call    [con_write_asciiz]
+        sub     edi, s                          ; length
+        push    edi
 
-;        cmp     byte[s+2], " "
-;        jne     .not_command
+        invoke  con_set_flags, 0x03             ; change color
+        invoke  con_write_asciiz, s             ; print servercommand
+        invoke  con_write_asciiz, str4          ; newline
+        invoke  con_set_flags, 0x07
 
-        lea     ecx, [edi - s]
-        call    server_parser
-
-;  .not_command:
-;        pop     eax esi
-;        jmp     .nextcommand
-
-
-
+        pop     ecx
+        jmp     server_parser                   ; parse command
 
 wait_for_usercommand:
+
+        invoke  con_set_flags, 0x0a
 
         cmp     [status], STATUS_CONNECTED
         je      .connected
@@ -217,17 +176,11 @@ wait_for_usercommand:
         je      .needpass
 
 ; write prompt
-        push    str2
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str2
 ; read string
         mov     esi, s
-        push    256
-        push    esi
-        call    [con_gets]
-
-        call    [con_get_flags]
-        test    eax, 0x200                      ; con window closed?
-        jnz     exit
+        invoke  con_gets, esi, 256
+        invoke  con_set_flags, 0x07
 
         cmp     dword[s], "list"
         je      cmd_list
@@ -235,54 +188,39 @@ wait_for_usercommand:
         cmp     dword[s], "help"
         je      cmd_help
 
-        push    str_unkown
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str_unknown
         jmp     wait_for_usercommand
 
 
   .connected:
 
-        push    str_user
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str_user
         mov     dword[s], "USER"
         mov     byte[s+4], " "
-
-;        mov     [status], STATUS_NEEDPASSWORD
-        inc     [status]
-
         jmp     .send
 
 
   .needpass:
-        push    str_pass
-        call    [con_write_asciiz]
 
+        invoke  con_write_asciiz, str_pass
         mov     dword[s], "PASS"
         mov     byte[s+4], " "
-
-;        mov     [status], STATUS_LOGGED_IN
-        inc     [status]
 
   .send:
 ; read string
         mov     esi, s+5
-        push    256
-        push    esi
-        call    [con_gets]
+        invoke  con_gets, esi, 256
 
         mov     edi, s+5
         mov     ecx, 256
         xor     al, al
         repne   scasb
         lea     esi, [edi-s-1]
-        mcall   send, [socketnum], s
+        mcall   send, [socketnum], s, , 0
 
-        jmp     wait_for_usercommand
-
-
-
+        invoke  con_write_asciiz, str4  ; newline
+        invoke  con_set_flags, 0x07
+        jmp     wait_for_servercommand
 
 
 
@@ -292,37 +230,30 @@ open_dataconnection:
 
         mov     dword[s], "PASV"
         mov     byte[s+4], 10
-        mcall   send, [socketnum], s, 5
-
+        mcall   send, [socketnum], s, 5, 0
         ret
 
   .fail:
-        push    str6
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str6
         ret
 
 
-fail2:
-        push    str6
-        call    [con_write_asciiz]
 
+socket_error:
+        invoke  con_write_asciiz, str6
         jmp     fail.wait
 
 fail:
-        push    str5
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str5
   .wait:
-        push    str10
-        call    [con_write_asciiz]
-        call    [con_getch2]
+        invoke  con_write_asciiz, str10
+        invoke  con_getch2
         jmp     main
 
 done:
-        push    1
-        call    [con_exit]
-exit:
+        invoke  con_exit, 1
 
+exit:
         mcall   close, [socketnum]
         mcall   -1
 
@@ -330,7 +261,7 @@ exit:
 
 ; data
 title   db 'FTP client',0
-str1    db 'FTP client for KolibriOS v0.01',10,10,'Please enter ftp server address.',10,0
+str1    db 'FTP client for KolibriOS v0.02',10,10,'Please enter ftp server address.',10,0
 str2    db '> ',0
 str3    db 'Resolving ',0
 str4    db 10,0
@@ -339,15 +270,18 @@ str6    db 10,'Socket error.',10,0
 str8    db ' (',0
 str9    db ')',10,0
 str10   db 'Push any key to continue.',0
-str11   db 'Connecting',10,0
-str12   db 'Connected!',10,0
+str11   db 'Connecting...',10,0
+str12   db 'Waiting for welcome message.',10,0
 str_user db "username: ",0
 str_pass db "password: ",0
-str_unkown db "unkown command",10,0
+str_unknown db "unknown command",10,0
 str_help db "available commands:",10,10
          db "help       list",10,0
 
 str_open db "opening data socket",10,0
+
+str_dbg db 'debug',10,0
+str_dbg2 db 'debug2',10,0
 
 sockaddr1:
         dw AF_INET4
@@ -360,9 +294,6 @@ sockaddr2:
 .port   dw 0
 .ip     dd 0
         rb 10
-
-include_debug_strings    ; ALWAYS present in data section
-
 
 
 ; import
@@ -386,7 +317,8 @@ import  console,        \
         con_getch2,     'con_getch2',\
         con_set_cursor_pos, 'con_set_cursor_pos',\
         con_write_string, 'con_write_string',\
-        con_get_flags,  'con_get_flags'
+        con_get_flags,  'con_get_flags', \
+        con_set_flags,  'con_set_flags'
 
 
 i_end:
@@ -396,7 +328,6 @@ socketnum       dd ?
 datasocket      dd ?
 buffer_ptr      rb 2*BUFFERSIZE
 status          db ?
-offset          dd ?
 
 s       rb      1024
 

@@ -3,10 +3,10 @@ cmd_list:
         call    open_dataconnection
 
         mov     dword[s], "LIST"
-        mov     word[s+4], 0x0d0a
-        mcall   send, [socketnum], s, 6
+        mov     byte[s+4], 0x0a
+        mcall   send, [socketnum], s, 5
 
-        jmp     wait_for_serverdata
+        jmp     wait_for_servercommand
 
 
 cmd_help:

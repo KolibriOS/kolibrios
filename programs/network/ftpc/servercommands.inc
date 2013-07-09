@@ -3,13 +3,16 @@ server_parser:
 ; Commands are always 3 numbers and followed by a space
 ; If a server decides it needs multiline output,
 ; first lines will have a dash instead of space after numbers,
-; thus they are simply ignored.
+; thus they are simply ignored in this simple command parser.
 
         cmp     dword[s], "150 "
         je      data_ok
 
         cmp     dword[s], "220 "
         je      welcome
+
+        cmp     dword[s], "226 "
+;        je      list_ok
 
         cmp     dword[s], "227 "
         je      pasv_ok
@@ -20,25 +23,31 @@ server_parser:
         cmp     dword[s], "331 "
         je      pass
 
-        ret
+        cmp     dword[s], "421 "
+;        je      timeout
+
+        cmp     dword[s], "530"         ; password incorrect
+        je      welcome
+
+        jmp     wait_for_usercommand
 
 
 welcome:
 
         mov     [status], STATUS_CONNECTED
-        ret
+        jmp     wait_for_usercommand
 
 
 pass:
 
         mov     [status], STATUS_NEEDPASSWORD
-        ret
+        jmp     wait_for_usercommand
 
 
 login_ok:
 
         mov     [status], STATUS_LOGGED_IN
-        ret
+        jmp     wait_for_usercommand
 
 
 pasv_ok:
@@ -65,17 +74,15 @@ pasv_ok:
         mov     byte[sockaddr2.ip+3], bl
 
         call    ascii_dec
-        mov     byte[sockaddr2.port+1], bl
-        call    ascii_dec
         mov     byte[sockaddr2.port+0], bl
+        call    ascii_dec
+        mov     byte[sockaddr2.port+1], bl
 
-        push    str_open
-        call    [con_write_asciiz]
-
+        invoke  con_write_asciiz, str_open
         mcall   connect, [datasocket], sockaddr2, 18
 
   .fail:
-        ret
+        jmp     wait_for_servercommand
 
 
 data_ok:
@@ -85,27 +92,27 @@ data_ok:
         jz      .fail
         dec     eax
         jz      .fail
-
         mov     byte[buffer_ptr + eax], 0
-        pushd   buffer_ptr
-        call    [con_write_asciiz]
+
+        invoke  con_write_asciiz, buffer_ptr
 
   .fail:
-        ret
+        mcall   close, [datasocket]
+        jmp     wait_for_servercommand
 
 
 ascii_dec:
 
         xor     ebx, ebx
-        mov     cl, 3
+        mov     cl, 4                   ; max length is 3 digits + 1 separator
   .loop:
         lodsb
         sub     al, '0'
         jb      .done
         cmp     al, 9
         ja      .done
-        lea     ebx, [ebx*4+ebx]
-        shl     ebx, 1
+        lea     ebx, [ebx*4+ebx]        ; ebx *5
+        shl     ebx, 1                  ; ebx *2
         add     bl, al
         dec     cl
         jnz     .loop
