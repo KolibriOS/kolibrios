@@ -4,7 +4,7 @@ cmd_list:
 
         mov     dword[s], "LIST"
         mov     byte[s+4], 0x0a
-        mcall   send, [socketnum], s, 5
+        mcall   send, [socketnum], s, 5, 0
 
         jmp     wait_for_servercommand
 
@@ -15,6 +15,13 @@ cmd_help:
         call    [con_write_asciiz]
 
         jmp     wait_for_usercommand
+
+cmd_pwd:
+
+        mov     dword[s], "PWD" + 10 shl 24
+        mcall   send, [socketnum], s, 4, 0
+
+        jmp     wait_for_servercommand
 
 cmd_cwd:
 

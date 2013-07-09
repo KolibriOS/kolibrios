@@ -194,6 +194,8 @@ wait_for_usercommand:
 ; read string
         mov     esi, s
         invoke  con_gets, esi, 256
+
+        invoke  con_write_asciiz, str4          ; newline
         invoke  con_set_flags, 0x07
 
         cmp     dword[s], "list"
@@ -207,6 +209,9 @@ wait_for_usercommand:
 
         cmp     dword[s], "retr"
         je      cmd_retr
+
+        cmp     dword[s], "pwd" + 10 shl 24
+        je      cmd_pwd
 
 ;        cmp     dword[s], "stor"
 ;        je      cmd_stor
@@ -284,7 +289,7 @@ exit:
 
 ; data
 title   db 'FTP client',0
-str1    db 'FTP client for KolibriOS v0.03',10,10,'Please enter ftp server address.',10,0
+str1    db 'FTP client for KolibriOS v0.04',10,10,'Please enter ftp server address.',10,0
 str2    db '> ',0
 str3    db 'Resolving ',0
 str4    db 10,0
@@ -298,8 +303,8 @@ str12   db 'Waiting for welcome message.',10,0
 str_user db "username: ",0
 str_pass db "password: ",0
 str_unknown db "unknown command",10,0
-str_help db "available commands:",10,10
-         db "help       list",10,0
+str_help db "available commands:",10
+         db "help    list    cwd     retr    pwd",10,10,0
 
 str_open db "opening data socket",10,0
 
@@ -343,14 +348,18 @@ import  console,        \
 
 i_end:
 
+align 4
+status          db ?
 active_passive  db ?
+
+align 4
 socketnum       dd ?
 datasocket      dd ?
-buffer_ptr      rb BUFFERSIZE
-buffer_ptr2     rb BUFFERSIZE
-status          db ?
 offset          dd ?
 size            dd ?
+
+buffer_ptr      rb BUFFERSIZE+1
+buffer_ptr2     rb BUFFERSIZE+1
 
 s               rb 1024
 
