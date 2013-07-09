@@ -408,7 +408,7 @@ endp
 ;  allocate kernel memory and loads the specified file
 ;
 ; param
-;  file_name= full path to file
+;  file_name= path to file
 ;
 ; retval
 ;  eax= file image in kernel memory
@@ -508,6 +508,136 @@ proc load_file stdcall, file_name:dword
         pop     esi
         ret
 endp
+
+; description
+;  allocate user memory and loads the specified file
+;
+; param
+;  file_name= path to file
+;
+; retval
+;  eax= file image in user memory
+;  ebx= size of file
+;
+; warging
+;  You mast call kernel_free() to delete each file
+;  loaded by the load_file() function
+
+align 4
+proc load_file_umode stdcall, file_name:dword
+           locals
+             attr       dd ?
+             flags      dd ?
+             cr_time    dd ?
+             cr_date    dd ?
+             acc_time   dd ?
+             acc_date   dd ?
+             mod_time   dd ?
+             mod_date   dd ?
+             file_size  dd ?
+
+             km_file    dd ?
+             um_file    dd ?
+           endl
+
+        push    esi
+        push    edi
+        push    ebx
+
+
+        lea     eax, [attr]
+        stdcall get_fileinfo, [file_name], eax   ;find file and get info
+        test    eax, eax
+        jnz     .err_1
+
+        mov     eax, [file_size]
+        cmp     eax, 1024*1024*16                ;to be enough for anybody (c)
+        ja      .err_1
+                                                 ;it is very likely that the file is packed
+        stdcall kernel_alloc, [file_size]        ;with kpack, so allocate memory from kernel heap
+        mov     [km_file], eax
+        test    eax, eax
+        jz      .err_1
+
+        stdcall read_file, [file_name], eax, dword 0, [file_size]
+        cmp     ebx, [file_size]
+
+        jne     .err_2
+
+        mov     eax, [km_file]
+        cmp     dword [eax], 0x4B43504B          ; check kpack signature
+        jne     .raw_file
+
+        mov     ebx, [eax+4]                     ;get real size of file
+        mov     [file_size], ebx
+        stdcall user_alloc, ebx                  ;and allocate memory from user heap
+        mov     [um_file], eax
+        test    eax, eax
+        jz      .err_2
+
+        pushad
+        mov     ecx, unpack_mutex
+        call    mutex_lock
+
+        stdcall unpack, [km_file], [um_file]
+
+        mov     ecx, unpack_mutex
+        call    mutex_unlock
+        popad
+
+        stdcall kernel_free, [km_file]           ;we don't need packed file anymore
+.exit:
+        mov     eax, [um_file]
+        mov     edx, [file_size]
+
+        pop     ebx
+        pop     edi
+        pop     esi
+        ret
+
+
+.raw_file:                                       ; sometimes we load unpacked file
+        stdcall user_alloc, ebx                  ; allocate space from user heap
+        mov     [um_file], eax
+
+        test    eax, eax
+        jz      .err_2
+
+        shr     eax, 10                          ; and remap pages.
+
+        mov     ecx, [file_size]
+        add     ecx, 4095
+        shr     ecx, 12
+
+        mov     esi, [km_file]
+        shr     esi, 10
+        add     esi, page_tabs
+
+        lea     edi, [page_tabs+eax]
+
+        cld
+@@:
+        lodsd
+        and     eax, 0xFFFFF000
+        or      eax, PG_USER
+        stosd
+        loop    @B
+
+        stdcall free_kernel_space, [km_file]     ; release allocated kernel space
+        jmp     .exit                            ; physical pages still in use
+
+.err_2:
+        stdcall kernel_free, [km_file]
+.err_1:
+        xor     eax, eax
+        xor     edx, edx
+
+        pop     ebx
+        pop     edi
+        pop     esi
+        ret
+endp
+
 
 uglobal
 align 4

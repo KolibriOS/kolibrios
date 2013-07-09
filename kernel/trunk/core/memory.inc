@@ -1199,7 +1199,7 @@ f68:
         cmp     ebx, 11
         jb      .fail
 
-        cmp     ebx, 25
+        cmp     ebx, 27
         ja      .fail
 
         jmp     dword [f68call+ebx*4-11*4]
@@ -1310,6 +1310,15 @@ f68:
         mov     [esp+32], eax
         ret
 
+.27:
+        cmp     ecx, OS_BASE
+        jae     .fail
+
+        stdcall load_file_umode, ecx
+        mov     [esp+24], edx
+        mov     [esp+32], eax
+        ret
+
 .fail:
         xor     eax, eax
         mov     [esp+32], eax
@@ -1335,6 +1344,7 @@ f68call:   ; keep this table closer to main code
            dd f68.24   ; set exception handler
            dd f68.25   ; unmask exception
            dd f68.26   ; user_unmap
+           dd f68.27   ; load_file_umode
 
 
 align 4
