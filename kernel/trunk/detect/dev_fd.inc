@@ -33,6 +33,5 @@ wait_cmos:
 
         stdcall attach_int_handler, 6, FDCInterrupt, 0
         DEBUGF  1, "K : Set IDE IRQ6 return code %x\n", eax
-        stdcall enable_irq, 6               ; FDD
 @@:
 

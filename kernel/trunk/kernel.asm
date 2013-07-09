@@ -1138,10 +1138,6 @@ set_interrupts_for_IDE_controllers:
         DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
         stdcall attach_int_handler, 15, IDE_common_irq_handler, 0
         DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
-
-        stdcall enable_irq, 14
-        stdcall enable_irq, 15
-
         jmp     .enable_IDE_interrupt
 ;--------------------------------------
 .sata_ide:
@@ -1159,8 +1155,6 @@ set_interrupts_for_IDE_controllers:
         movzx   eax, al
         stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
         DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [IDE_Interrupt]:1, eax
-
-        stdcall enable_irq, eax
 ;--------------------------------------
 .enable_IDE_interrupt:
         mov     esi, boot_enabling_ide
