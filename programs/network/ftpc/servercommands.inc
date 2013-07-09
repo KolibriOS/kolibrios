@@ -11,7 +11,7 @@ server_parser:
         cmp     dword[s], "220 "
         je      welcome
 
-        cmp     dword[s], "226 "
+;        cmp     dword[s], "226 "
 ;        je      list_ok
 
         cmp     dword[s], "227 "
@@ -20,10 +20,13 @@ server_parser:
         cmp     dword[s], "230 "
         je      login_ok
 
+;        cmp     dword[s], "250"
+;        je      dir_ok
+
         cmp     dword[s], "331 "
         je      pass
 
-        cmp     dword[s], "421 "
+;        cmp     dword[s], "421 "
 ;        je      timeout
 
         cmp     dword[s], "530"         ; password incorrect
@@ -87,14 +90,14 @@ pasv_ok:
 
 data_ok:
 
-        mcall   recv, [datasocket], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT   ; fixme: use other buffer
+        mcall   recv, [datasocket], buffer_ptr2, BUFFERSIZE, MSG_DONTWAIT
         inc     eax
         jz      .fail
         dec     eax
         jz      .fail
-        mov     byte[buffer_ptr + eax], 0
+        mov     byte[buffer_ptr2 + eax], 0
 
-        invoke  con_write_asciiz, buffer_ptr
+        invoke  con_write_asciiz, buffer_ptr2
 
   .fail:
         mcall   close, [datasocket]

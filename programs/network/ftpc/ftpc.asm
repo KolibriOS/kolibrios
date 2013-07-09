@@ -123,18 +123,27 @@ resolve:
 
         invoke  con_write_asciiz, str12
 
+        mov     [offset], 0
+
 wait_for_servercommand:
 
-;        invoke  con_write_asciiz, str_dbg
+        cmp     [offset], 0
+        je      .receive
+        mov     esi, [offset]
+        mov     edi, s
+        mov     ecx, [size]
+        add     ecx, esi
+        jmp     .byteloop
 
 ; receive socket data
+  .receive:
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
         inc     eax
         jz      socket_error
         dec     eax
         jz      wait_for_servercommand
 
-;        invoke  con_write_asciiz, str_dbg2
+        mov     [offset], 0
 
 ; extract commands, copy them to "s" buffer
         lea     ecx, [eax + buffer_ptr]         ; ecx = end pointer
@@ -151,18 +160,23 @@ wait_for_servercommand:
         stosb
         jmp     .byteloop
   .got_command:                                 ; we have a newline check if its a command
+        cmp     esi, ecx
+        je      .no_more_data
+        mov     [offset], esi
+        sub     ecx, esi
+        mov     [size], ecx
+        jmp     .go_cmd
+  .no_more_data:
+        mov     [offset], 0
+  .go_cmd:
         xor     al, al
         stosb
-
-        sub     edi, s                          ; length
-        push    edi
 
         invoke  con_set_flags, 0x03             ; change color
         invoke  con_write_asciiz, s             ; print servercommand
         invoke  con_write_asciiz, str4          ; newline
         invoke  con_set_flags, 0x07
 
-        pop     ecx
         jmp     server_parser                   ; parse command
 
 wait_for_usercommand:
@@ -187,6 +201,9 @@ wait_for_usercommand:
 
         cmp     dword[s], "help"
         je      cmd_help
+
+        cmp     dword[s], "cwd "
+        je      cmd_cwd
 
         invoke  con_write_asciiz, str_unknown
         jmp     wait_for_usercommand
@@ -280,9 +297,6 @@ str_help db "available commands:",10,10
 
 str_open db "opening data socket",10,0
 
-str_dbg db 'debug',10,0
-str_dbg2 db 'debug2',10,0
-
 sockaddr1:
         dw AF_INET4
 .port   dw 0x1500       ; 21
@@ -326,9 +340,12 @@ i_end:
 active_passive  db ?
 socketnum       dd ?
 datasocket      dd ?
-buffer_ptr      rb 2*BUFFERSIZE
+buffer_ptr      rb BUFFERSIZE
+buffer_ptr2     rb BUFFERSIZE
 status          db ?
+offset          dd ?
+size            dd ?
 
-s       rb      1024
+s               rb 1024
 
 mem:

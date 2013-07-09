@@ -15,3 +15,17 @@ cmd_help:
         call    [con_write_asciiz]
 
         jmp     wait_for_usercommand
+
+cmd_cwd:
+
+        mov     dword[s], "CWD "
+
+        mov     ecx, 256
+        xor     al, al
+        mov     edi, s
+        repne scasb
+        lea     esi, [edi - s - 1]
+
+        mcall   send, [socketnum], s, , 0
+
+        jmp     wait_for_servercommand
