@@ -644,9 +644,9 @@ read_mac:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-        DEBUGF  2,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
+        DEBUGF  1,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
-        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+        DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
@@ -683,7 +683,7 @@ transmit:
         ret     8
 
   .fail:
-        DEBUGF  1,"Send failed\n"
+        DEBUGF  2,"Send failed\n"
         ret     8
 
 
@@ -743,7 +743,7 @@ int_handler:
         je      .retaddr
 
         movzx   ecx, word [esi + 8]                     ; Get the packet length
-        DEBUGF  2,"got %u bytes\n", ecx
+        DEBUGF  1,"got %u bytes\n", ecx
         push    ecx
         push    dword [esi + 16]                        ; Get packet pointer
 
@@ -775,7 +775,7 @@ int_handler:
         test    eax, ICR_LSC
         jz      .no_link
 
-        DEBUGF  2,"Link Changed\n"
+        DEBUGF  1,"Link Changed\n"
 
   .no_link:
 
@@ -785,7 +785,7 @@ int_handler:
         test    eax, ICR_TXDW
         jz      .no_tx
 
-        DEBUGF  2,"Transmit done\n"
+        DEBUGF  1,"Transmit done\n"
 
         lea     edi, [device.tx_desc]                   ; Transmit Descriptor Base Address
         push    dword [edi + 16]                        ; Store the data location (for driver)
