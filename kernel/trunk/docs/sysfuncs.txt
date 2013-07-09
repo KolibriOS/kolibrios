@@ -3879,6 +3879,32 @@ Remarks:
     is changed. Signal number corresponds to exception number.
 
 ======================================================================
+====== Function 68, subfunction 26 - release memory pages ============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 26 - subfunction number
+  * ecx = pointer to the memory block, allocated by subfunction 12
+  * edx = offset from the block beginnings
+  * esi = the size of the region of memory to release, in bytes
+Remarks:
+  * function release range of pages from ecx+edx to ecx+edx+esi
+    and set virtual memory into reserved state.
+
+======================================================================
+========== Function 68, subfunction 27 - load file ===================
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 27 - subfunction number
+  * ecx = pointer to ASCIIZ-string with the filename
+Returned value:
+  * eax = pointer to the loaded file, or zero
+  * edx = size of the loaded file, or zero
+Remarks:
+  * function loads file and unpacks, if necessary
+
+======================================================================
 ====================== Function 69 - debugging. ======================
 ======================================================================
 A process can load other process as debugged by set of corresponding
