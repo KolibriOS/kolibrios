@@ -205,6 +205,12 @@ wait_for_usercommand:
         cmp     dword[s], "cwd "
         je      cmd_cwd
 
+        cmp     dword[s], "retr"
+        je      cmd_retr
+
+;        cmp     dword[s], "stor"
+;        je      cmd_stor
+
         invoke  con_write_asciiz, str_unknown
         jmp     wait_for_usercommand
 
