@@ -242,6 +242,7 @@ wait_for_usercommand:
         invoke  con_write_asciiz, str_pass
         mov     dword[s], "PASS"
         mov     byte[s+4], " "
+        invoke  con_set_flags, 0x00     ; black text on black background for password
 
   .send:
 ; read string
@@ -300,7 +301,7 @@ exit:
 
 ; data
 title   db 'FTP client',0
-str1    db 'FTP client for KolibriOS v0.05',10,10,'Please enter ftp server address.',10,0
+str1    db 'FTP client for KolibriOS v0.06',10,10,'Please enter ftp server address.',10,0
 str2    db '> ',0
 str3    db 'Resolving ',0
 str4    db 10,0
