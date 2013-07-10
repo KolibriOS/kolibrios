@@ -127,6 +127,29 @@ cmd_stor:
         jmp     wait_for_servercommand
 
 
+cmd_lcwd:
+
+        mov     esi, s+5
+        mov     ecx, 256-5
+  .loop:
+        lodsb
+        cmp     al, 10
+        je      .done
+        test    al, al
+        je      .done
+        loop    .loop
+  .done:
+        mov     byte[esi-1], 0
+        mcall   30, 1, s+5              ; set working directory
+        mcall   30, 2, s, 256           ; and read it again
+
+        invoke  con_write_asciiz, str_lcwd
+        invoke  con_write_asciiz, s
+        invoke  con_write_asciiz, str4  ; newline
+
+        jmp     wait_for_usercommand
+
+
 
 ; esi   = source ptr
 ; edi   = dest ptr

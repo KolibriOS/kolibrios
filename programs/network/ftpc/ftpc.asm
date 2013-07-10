@@ -222,6 +222,9 @@ wait_for_usercommand:
         cmp     dword[s], "bye" + 10 shl 24
         je      cmd_bye
 
+        cmp     dword[s], "lcwd"
+        je      cmd_lcwd
+
         invoke  con_write_asciiz, str_unknown
         jmp     wait_for_usercommand
 
@@ -311,6 +314,7 @@ str12   db 'Waiting for welcome message.',10,0
 str_user db "username: ",0
 str_pass db "password: ",0
 str_unknown db "unknown command",10,0
+str_lcwd db "local working directory is now: ",0
 
 str_help db "available commands:",10
          db "help - help",10,10
@@ -318,6 +322,7 @@ str_help db "available commands:",10
          db "cwd  - change working directoy on server",10
          db "dele - delete file from server",10
          db "list - list files and folders in current directory",10
+         db "lcwd - change local working directory",10
          db "pwd  - print working directory",10
          db "retr - retreive file from server",10
          db "stor - store file on server",10
