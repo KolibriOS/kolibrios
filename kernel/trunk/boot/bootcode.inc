@@ -47,21 +47,21 @@ printplain:
         popa
         ret
 
-getkey:
+getkey:                         ; Use BIOS INT 16h to read a key from the keyboard
 ; get number in range [bl,bh] (bl,bh in ['0'..'9'])
 ; in: bx=range
 ; out: ax=digit (1..9, 10 for 0)
-        mov     ah, 0
-        int     16h
-        cmp     al, bl
-        jb      getkey
-        cmp     al, bh
+        mov     ah, 0           ; If 'int 16h' is called with 'ah' equal to zero, the BIOS will not return control
+        int     16h             ; to the caller until a key is available in the system type ahead buffer. On return,
+        cmp     al, bl          ; 'al' contains the ASCII code for the key read from the buffer and 'ah' contains
+        jb      getkey          ; the keyboard scan code. Here we compare 'al' with the range of accepted characters.
+        cmp     al, bh          ; If the key pressed is not in the range, continue waiting for another key.
         ja      getkey
-        push    ax
+        push    ax              ; If the pressed key is in the accepted range, save it on the stack and echo to screen.
         call    putchar
         pop     ax
-        and     ax, 0Fh
-        jnz     @f
+        and     ax, 0Fh         ; ASCII code for '0' is 48 (110000b). 0F4=1111b. (110000b AND 1111b) = 0
+        jnz     @f              ; So if key '0' was entered, return 10 in 'ax'
         mov     al, 10
 @@:
         ret
@@ -779,9 +779,9 @@ end if
         mov     si, bdev
         call    print
 if defined extended_primary_loader
-        mov     bx, '12'
+        mov     bx, '12'        ; range accepted for answer: 1-2
 else
-        mov     bx, '14'
+        mov     bx, '14'        ; range accepted for answer: 1-4
 end if
         call    getkey
         mov     [preboot_device], al
@@ -875,12 +875,12 @@ end if
         _setcursor 16,0
 ;        mov     si, ask_dma    // (earlier was: preboot_dma  = use DMA access?)
 ;        call    print
-;        mov     bx, '13'
+;        mov     bx, '13'       ; range accepted for answer: 1-3
 ;        call    getkey
 ;        mov     [preboot_dma], al
         mov     si, ask_bd
         call    print
-        mov     bx, '12'
+        mov     bx, '12'        ; range accepted for answer: 1-2
         call    getkey
         mov     [preboot_biosdisk], al
         _setcursor 11,0
@@ -889,25 +889,25 @@ end if
 ;        _setcursor 16,0
 ;        mov     si, vrrmprint
 ;        call    print
-;        mov     bx, '12'
+;        mov     bx, '12'       ; range accepted for answer: 1-2
 ;        call    getkey
 ;        mov     [preboot_vrrm], al
 ;        _setcursor 12,0
 ;        jmp     .d
-.change_c:                     ; c) preboot_debug = duplicates kernel debug output to the screen
+.change_c:                      ; c) preboot_debug = duplicates kernel debug output to the screen
         _setcursor 16,0
         mov     si, ask_debug
         call    print
-        mov     bx, '12'
+        mov     bx, '12'        ; range accepted for answer: 1-2
         call    getkey
         mov     [preboot_debug], al
         _setcursor 12,0
         jmp     .d
-.change_d:                     ; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
+.change_d:                      ; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
         _setcursor 16,0
         mov     si, ask_launcher
         call    print
-        mov     bx, '12'
+        mov     bx, '12'        ; range accepted for answer: 1-2
         call    getkey
         mov     [preboot_launcher], al
         _setcursor 13,0

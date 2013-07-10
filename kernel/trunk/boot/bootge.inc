@@ -72,7 +72,7 @@ debug_mode_msg db " [c] Duplizieren debuggen Ausgabe auf dem Bildschirm:",0
 ask_debug      db "Duplizieren debuggen Ausgabe auf dem Bildschirm? [1-ja, 2 nein]: ",0
 
 launcher_msg   db " [d] Start LAUNCHER nach Kernel geladen wird:",0
-ask_launcher   db "Starten sie die erste App (LAUNCHER) nach Kernel geladen wird? [1-ja, 2 nein]: ",0
+ask_launcher   db "Starten erste Anwendung nach Kernel geladen wird? [1-ja, 2 nein]: ",0
 
 preboot_device_msg db " [e] Diskettenimage: ",0
 

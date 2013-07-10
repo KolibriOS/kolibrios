@@ -74,7 +74,7 @@ debug_mode_msg: cp850 " [c] Duplicar depurar salida a la pantalla:",0
 ask_debug:      cp850 "¿Duplicar depurar la salida a la pantalla? [1-si, 2-no]: ",0
 
 launcher_msg:   cp850 " [d] Iniciar LAUNCHER después de cargar kernel:",0
-ask_launcher:   cp850 "¿Inicie la primera aplicación (LAUNCHER) después de cargar el kernel? [1-si, 2-no]: ",0
+ask_launcher:   cp850 "¿Inicie la primera aplicación después de cargar el kernel? [1-si, 2-no]: ",0
 
 preboot_device_msg:cp850 " [e] Imagen de disquete: ",0
 

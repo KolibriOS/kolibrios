@@ -70,7 +70,7 @@ debug_mode_msg db " [c] Duplicate debug output to the screen:",0
 ask_debug      db "Duplicate debug output to the screen? [1-yes, 2-no]: ",0
 
 launcher_msg   db " [d] Start LAUNCHER after kernel is loaded:",0
-ask_launcher   db "Start first app (LAUNCHER) after kernel is loaded? [1-yes, 2-no]: ",0
+ask_launcher   db "Start first application (LAUNCHER) after kernel is loaded? [1-yes, 2-no]: ",0
 
 preboot_device_msg db " [e] Floppy image: ",0
 
