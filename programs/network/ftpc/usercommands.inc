@@ -149,6 +149,42 @@ cmd_lcwd:
 
         jmp     wait_for_usercommand
 
+cmd_cdup:
+
+        mov     dword[s], "CDUP"
+        mov     byte[s+4], 0x0a
+        mcall   send, [socketnum], s, 5, 0
+
+        jmp     wait_for_servercommand
+
+cmd_rmd:
+
+        mov     dword[s], "RMD "
+
+        mov     ecx, 256
+        xor     al, al
+        mov     edi, s
+        repne scasb
+        lea     esi, [edi - s - 1]
+
+        mcall   send, [socketnum], s, , 0
+
+        jmp     wait_for_servercommand
+
+cmd_mkd:
+
+        mov     dword[s], "MKD "
+
+        mov     ecx, 256
+        xor     al, al
+        mov     edi, s
+        repne scasb
+        lea     esi, [edi - s - 1]
+
+        mcall   send, [socketnum], s, , 0
+
+        jmp     wait_for_servercommand
+
 
 
 ; esi   = source ptr

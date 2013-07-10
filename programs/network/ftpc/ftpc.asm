@@ -225,6 +225,15 @@ wait_for_usercommand:
         cmp     dword[s], "lcwd"
         je      cmd_lcwd
 
+        cmp     dword[s], "mkd "
+        je      cmd_mkd
+
+        cmp     dword[s], "rmd "
+        je      cmd_rmd
+
+        cmp     dword[s], "cdup"
+        je      cmd_cdup
+
         invoke  con_write_asciiz, str_unknown
         jmp     wait_for_usercommand
 
@@ -301,7 +310,7 @@ exit:
 
 ; data
 title   db 'FTP client',0
-str1    db 'FTP client for KolibriOS v0.06',10,10,'Please enter ftp server address.',10,0
+str1    db 'FTP client for KolibriOS v0.07',10,10,'Please enter ftp server address.',10,0
 str2    db '> ',0
 str3    db 'Resolving ',0
 str4    db 10,0
@@ -314,18 +323,22 @@ str11   db 'Connecting...',10,0
 str12   db 'Waiting for welcome message.',10,0
 str_user db "username: ",0
 str_pass db "password: ",0
-str_unknown db "unknown command",10,0
+str_unknown db "unknown command or insufficient parameters",10,0
 str_lcwd db "local working directory is now: ",0
 
 str_help db "available commands:",10
-         db "help - help",10,10
+         db "help - help",10
+         db 10
          db "bye  - close connection",10
+         db "cdup - change to parent of current directory on server",10
          db "cwd  - change working directoy on server",10
          db "dele - delete file from server",10
          db "list - list files and folders in current directory",10
          db "lcwd - change local working directory",10
+         db "mkd  - make directory on the server",10
          db "pwd  - print working directory",10
          db "retr - retreive file from server",10
+         db "rmd  - remove directory from the server",10
          db "stor - store file on server",10
          db 10,0
 
