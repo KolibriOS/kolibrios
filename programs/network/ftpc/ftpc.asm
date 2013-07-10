@@ -14,12 +14,16 @@
 
 format binary as ""
 
-BUFFERSIZE              = 1024
+BUFFERSIZE              = 4096
 
 STATUS_CONNECTING       = 0
 STATUS_CONNECTED        = 1
 STATUS_NEEDPASSWORD     = 2
 STATUS_LOGGED_IN        = 3
+
+OPERATION_LIST          = 0
+OPERATION_RETR          = 1
+OPERATION_STOR          = 2
 
 use32
 ; standard header
@@ -97,31 +101,27 @@ resolve:
         jnz     fail
 
 ; write results
-        invoke  con_write_asciiz, str8
-;        mov     edi, esi
+        invoke  con_write_asciiz, str8          ; ' (',0
+        mov     eax, [esi+addrinfo.ai_addr]     ; convert IP address to decimal notation
+        mov     eax, [eax+sockaddr_in.sin_addr] ;
+        mov     [sockaddr1.ip], eax             ;
+        invoke  inet_ntoa, eax                  ;
+        invoke  con_write_asciiz, eax           ; print ip
+        invoke  freeaddrinfo, esi               ; free allocated memory
+        invoke  con_write_asciiz, str9          ; ')',10,0
 
-; convert IP address to decimal notation
-        mov     eax, [esi+addrinfo.ai_addr]
-        mov     eax, [eax+sockaddr_in.sin_addr]
-        mov     [sockaddr1.ip], eax
-
-        invoke  inet_ntoa, eax
-; write result
-        invoke  con_write_asciiz, eax
-; free allocated memory
-        invoke  freeaddrinfo, esi
-
-        invoke  con_write_asciiz, str9
+; open the socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      socket_error
         mov     [socketnum], eax
 
+; connect to the server
         invoke  con_write_asciiz, str11
         mcall   connect, [socketnum], sockaddr1, 18
         mov     [status], STATUS_CONNECTING
 
-        invoke  con_write_asciiz, str12
+        invoke  con_write_asciiz, str12         ; 'waiting for welcome'
 
         mov     [offset], 0
 
@@ -175,7 +175,7 @@ wait_for_servercommand:
         invoke  con_set_flags, 0x03             ; change color
         invoke  con_write_asciiz, s             ; print servercommand
         invoke  con_write_asciiz, str4          ; newline
-        invoke  con_set_flags, 0x07
+        invoke  con_set_flags, 0x07             ; reset color
 
         jmp     server_parser                   ; parse command
 
@@ -213,8 +213,14 @@ wait_for_usercommand:
         cmp     dword[s], "pwd" + 10 shl 24
         je      cmd_pwd
 
-;        cmp     dword[s], "stor"
-;        je      cmd_stor
+        cmp     dword[s], "stor"
+        je      cmd_stor
+
+        cmp     dword[s], "dele"
+        je      cmd_dele
+
+        cmp     dword[s], "bye" + 10 shl 24
+        je      cmd_bye
 
         invoke  con_write_asciiz, str_unknown
         jmp     wait_for_usercommand
@@ -239,20 +245,22 @@ wait_for_usercommand:
         mov     esi, s+5
         invoke  con_gets, esi, 256
 
+; find end of string
         mov     edi, s+5
         mov     ecx, 256
         xor     al, al
         repne   scasb
         lea     esi, [edi-s-1]
+; and send it to the server
         mcall   send, [socketnum], s, , 0
 
         invoke  con_write_asciiz, str4  ; newline
-        invoke  con_set_flags, 0x07
+        invoke  con_set_flags, 0x07     ; reset color
         jmp     wait_for_servercommand
 
 
 
-open_dataconnection:
+open_dataconnection:                    ; only passive for now..
         cmp     [status], STATUS_LOGGED_IN
         jne     .fail
 
@@ -289,7 +297,7 @@ exit:
 
 ; data
 title   db 'FTP client',0
-str1    db 'FTP client for KolibriOS v0.04',10,10,'Please enter ftp server address.',10,0
+str1    db 'FTP client for KolibriOS v0.05',10,10,'Please enter ftp server address.',10,0
 str2    db '> ',0
 str3    db 'Resolving ',0
 str4    db 10,0
@@ -303,8 +311,17 @@ str12   db 'Waiting for welcome message.',10,0
 str_user db "username: ",0
 str_pass db "password: ",0
 str_unknown db "unknown command",10,0
+
 str_help db "available commands:",10
-         db "help    list    cwd     retr    pwd",10,10,0
+         db "help - help",10,10
+         db "bye  - close connection",10
+         db "cwd  - change working directoy on server",10
+         db "dele - delete file from server",10
+         db "list - list files and folders in current directory",10
+         db "pwd  - print working directory",10
+         db "retr - retreive file from server",10
+         db "stor - store file on server",10
+         db 10,0
 
 str_open db "opening data socket",10,0
 
@@ -319,7 +336,6 @@ sockaddr2:
 .port   dw 0
 .ip     dd 0
         rb 10
-
 
 ; import
 align 4
@@ -348,15 +364,22 @@ import  console,        \
 
 i_end:
 
-align 4
 status          db ?
 active_passive  db ?
 
-align 4
 socketnum       dd ?
 datasocket      dd ?
 offset          dd ?
 size            dd ?
+operation       dd ?
+
+filestruct:
+.subfn  dd ?
+.offset dd ?
+        dd ?
+.size   dd ?
+.ptr    dd ?
+.name   rb 1024
 
 buffer_ptr      rb BUFFERSIZE+1
 buffer_ptr2     rb BUFFERSIZE+1

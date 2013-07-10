@@ -21,7 +21,7 @@ server_parser:
         je      login_ok
 
 ;        cmp     dword[s], "250"
-;        je      dir_ok
+;        je      op_ok
 
         cmp     dword[s], "331 "
         je      pass
@@ -29,8 +29,11 @@ server_parser:
 ;        cmp     dword[s], "421 "
 ;        je      timeout
 
-        cmp     dword[s], "530"         ; password incorrect
+        cmp     dword[s], "530 "         ; password incorrect
         je      welcome
+
+        cmp     dword[s], "550 "
+        je      close_datacon
 
         jmp     wait_for_usercommand
 
@@ -90,18 +93,58 @@ pasv_ok:
 
 data_ok:
 
+        cmp     [operation], OPERATION_STOR
+        je      .stor
+
+; we are receiving data
         mcall   recv, [datasocket], buffer_ptr2, BUFFERSIZE, 0
         test    ebx, ebx
-        jnz     .fail
+        jnz     .done
         mov     byte[buffer_ptr2 + eax], 0
 
-        invoke  con_write_asciiz, buffer_ptr2
+        cmp     [operation], OPERATION_RETR
+        je      .retr
 
+; not retreiving, just print to console
+        invoke  con_write_asciiz, buffer_ptr2
         jmp     data_ok
 
-  .fail:
+; retreiving, save to file
+  .retr:
+        mov     [filestruct.ptr], buffer_ptr2
+        mov     [filestruct.size], eax
+        push    eax
+        mcall   70, filestruct
+        pop     eax
+        add     [filestruct.offset], eax
+        jmp     data_ok
+
+; storing, send all data
+  .stor:
+        mcall   70, filestruct
+        cmp     eax, 6          ; end of file
+        je      .last_call
+        test    eax, eax        ; error
+;        jne     .fileerror
+        add     [filestruct.offset], ebx
+        mov     esi, ebx
+        mcall   send, [datasocket], buffer_ptr2, , 0
+        jmp     .stor
+
+  .last_call:
+        mov     esi, ebx
+        mcall   send, [datasocket], buffer_ptr2, , 0
+
+  .done:
         mcall   close, [datasocket]
         jmp     wait_for_servercommand
+
+
+
+close_datacon:
+        mcall   close, [datasocket]
+        jmp     wait_for_usercommand
+
 
 
 ascii_dec:
