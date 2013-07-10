@@ -890,6 +890,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
 
         mov     ebx, [offset]
         and     ebx, not 4095           ; is it required ?
+        add     ebx, [base]
 
 .unmap:
         mov     eax, [edx]              ; get page addres
@@ -897,7 +898,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         jz      @F
         test    eax, PG_SHARED          ; page shared ?
         jnz     @F
-        mov     [page_tabs+edx*4], dword 2
+        mov     [edx], dword 2
                                         ; mark page as reserved
         invlpg  [ebx]                   ; when we start using
         call    free_page               ; empty c-o-w page instead this ?
