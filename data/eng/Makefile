@@ -196,6 +196,7 @@ FASM_PROGRAMS:=\
  network/tcpserv:NETWORK/TCPSERV:$(PROGS)/network/tcpserv/tcpserv.asm \
  network/telnet:NETWORK/TELNET:$(PROGS)/network/telnet/telnet.asm \
  network/zeroconf:NETWORK/ZEROCONF:$(PROGS)/network/zeroconf/zeroconf.asm \
+ network/ftpc:NETWORK/FTPC:$(PROGS)/network/ftpc/ftpc.asm \
  network/ftpd:NETWORK/FTPD:$(PROGS)/network/ftpd/ftpd.asm \
  network/tftpc:NETWORK/TFTPC:$(PROGS)/network/tftpc/tftpc.asm \
  network/ircc:NETWORK/IRCC:$(PROGS)/network/ircc/ircc.asm \
