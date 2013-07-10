@@ -700,12 +700,12 @@ clear_vmodes_table:
         mov     di, 1444
         xor     ax, ax
         mov     ah, 1*16+15
-        mov     cx, 70
+        mov     cx, 77
         mov     bp, 12
 .loop_start:
         rep stosw
-        mov     cx, 70
-        add     di, 20
+        mov     cx, 77
+        add     di, 6
         dec     bp
         jns     .loop_start
         pop     es
