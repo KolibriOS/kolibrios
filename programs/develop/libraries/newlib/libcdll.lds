@@ -1,7 +1,7 @@
 
 OUTPUT_FORMAT(pei-i386)
 
-ENTRY("_crt_startup")
+ENTRY("_libc_crt_startup")
 
 SECTIONS
 {
@@ -14,6 +14,7 @@ SECTIONS
     *(.text)
     *(SORT(.text$*))
     *(.text.*)
+     *(.gnu.linkonce.t.*)
         *(.glue_7t)
         *(.glue_7)
         ___CTOR_LIST__ = .; __CTOR_LIST__ = . ;
@@ -23,12 +24,14 @@ SECTIONS
         *(.fini)
     *(.rdata)
     *(SORT(.rdata$*))
-    ___RUNTIME_PSEUDO_RELOC_LIST__ = .;
-    __RUNTIME_PSEUDO_RELOC_LIST__ = .;
+    __rt_psrelocs_start = .;
     *(.rdata_runtime_pseudo_reloc)
+    __rt_psrelocs_end = .;
+    __rt_psrelocs_size = __rt_psrelocs_end - __rt_psrelocs_start;
     ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
     __RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
-    __pei386_runtime_relocator = .;
+    ___RUNTIME_PSEUDO_RELOC_LIST__ = . - __rt_psrelocs_size;
+    __RUNTIME_PSEUDO_RELOC_LIST__ = . - __rt_psrelocs_size;
   }
 
   .data ALIGN(__section_alignment__):
@@ -46,8 +49,10 @@ SECTIONS
 
   .bss ALIGN(__section_alignment__):
   {
+    __bss_start__ = . ;
     *(.bss)
     *(COMMON)
+    __bss_end__ = . ;
   }
 
   .edata ALIGN(__section_alignment__):

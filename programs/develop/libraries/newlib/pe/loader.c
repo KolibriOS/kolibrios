@@ -7,7 +7,7 @@
 #include <setjmp.h>
 #include <envz.h>
 
-#include <sys/kos_io.h>
+#include <kos32sys.h>
 
 #include "list.h"
 #include "pe.h"
@@ -19,7 +19,7 @@
 #define DBG(format,...)
 
 
-void      __fastcall init_loader(void *libc_image);
+void      init_loader(void *libc_image);
 void*     __fastcall create_image(void *raw);
 int       __fastcall link_image(void *img_base);
 int       __fastcall do_exec(uint32_t my_app, uint32_t *params);
@@ -40,6 +40,10 @@ struct app_hdr
     int   stacktop;
     char  *cmdline;
     char  *path;
+    int    reserved;
+    void  *__idata_start;
+    void  *__idata_end;
+    void  (*main)(int argc, char **argv, char **envp);
 };
 
 struct tag_module
@@ -70,12 +74,11 @@ typedef struct
 
 module_t* load_module(const char *name);
 
-LIST_HEAD(dll_list);
 LIST_HEAD(path_list);
 
 static module_t libc_dll;
 static char libc_name[] = "libc.dll";
-static char libc_path[] = "/sys/lib/libc.dll";
+static char libc_path[] = "/KolibriOS/lib/libc.dll";
 
 static inline int IsPowerOf2(uint32_t val)
 {
@@ -137,7 +140,7 @@ int validate_pe(void *raw, size_t raw_size, int is_exec)
 }
 
 
-void __fastcall init_loader(void *libc_image)
+void init_loader(void *libc_image)
 {
 
     PIMAGE_DOS_HEADER        dos;
@@ -145,7 +148,7 @@ void __fastcall init_loader(void *libc_image)
     PIMAGE_EXPORT_DIRECTORY  exp;
 
     struct   app_hdr *header;
-
+#if 0
     dll_path_t *path;
     int len;
     char *p;
@@ -218,6 +221,7 @@ void __fastcall init_loader(void *libc_image)
     DBG("add libraries path %s\n", path->path);
     list_add_tail(&path->list, &path_list);
 #endif
+#endif
 
     INIT_LIST_HEAD(&libc_dll.list);
 
@@ -239,18 +243,18 @@ void __fastcall init_loader(void *libc_image)
     libc_dll.img_exp  = MakePtr(PIMAGE_EXPORT_DIRECTORY,libc_image,
                         nt->OptionalHeader.DataDirectory[0].VirtualAddress);
 
-    list_add_tail(&libc_dll.list, &dll_list);
 };
 
 const module_t* find_module(const char *name)
 {
-    module_t* mod;
+    module_t* mod = &libc_dll;
 
-    list_for_each_entry(mod, &dll_list, list)
+    do
     {
         if( !strncmp(name, mod->img_name, 16))
             return mod;
-    };
+        mod = (module_t*)mod->list.next;
+    }while(mod != &libc_dll);
 
     return load_module(name);
 };
@@ -268,15 +272,6 @@ static inline void sec_copy(void *dst, void *src, size_t len)
     :::"ecx","esi","edi");
 };
 
-static inline void *user_alloc(size_t size)
-{
-    void *val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=eax"(val)
-    :"a"(68),"b"(12),"c"(size));
-    return val;
-}
 
 void* __fastcall create_image(void *raw)
 {
@@ -365,6 +360,9 @@ void* __fastcall create_image(void *raw)
     };
     return img_base;
 };
+
+static jmp_buf loader_env;
+static loader_recursion;
 
 int __fastcall link_image(void *img_base)
 {
@@ -552,6 +550,178 @@ int __fastcall link_image(void *img_base)
         return 0;
 }
 
+int link_app()
+{
+    PIMAGE_IMPORT_DESCRIPTOR imp;
+
+    struct app_hdr *header = NULL;
+
+    int warn = 0;
+
+    if( unlikely(setjmp(loader_env) != 0))
+    {
+        loader_recursion = 0;
+        return 0;
+    };
+
+    imp = (PIMAGE_IMPORT_DESCRIPTOR)header->__idata_start;
+
+    while ( imp->Name )
+    {
+        PIMAGE_DOS_HEADER        expdos;
+        PIMAGE_NT_HEADERS32      expnt;
+        PIMAGE_EXPORT_DIRECTORY  exp;
+        PIMAGE_THUNK_DATA32      thunk;
+
+        void       **iat;
+        char       *libname;
+        uint32_t   *exp_functions;
+        uint16_t   *exp_ordinals;
+        char      **exp_names;
+
+        const module_t *api;
+
+        libname=MakePtr(char*,imp->Name, NULL);
+
+        DBG("import from %s\n",libname);
+
+        api = find_module(libname);
+        if(unlikely(api == NULL))
+        {
+            printf("library %s not found\n", libname);
+            longjmp(loader_env, 1);
+        }
+
+        iat = MakePtr(void**,imp->FirstThunk, NULL);
+
+        if(imp->OriginalFirstThunk !=0 )
+        {
+            thunk = MakePtr(PIMAGE_THUNK_DATA32,imp->OriginalFirstThunk, NULL);
+        }
+        else
+        {
+            thunk = MakePtr(PIMAGE_THUNK_DATA32,imp->FirstThunk, NULL);
+        };
+
+        exp = api->img_exp;
+
+        exp_functions = MakePtr(uint32_t*,exp->AddressOfFunctions,api->start);
+        exp_ordinals = MakePtr(uint16_t*,  exp->AddressOfNameOrdinals,api->start);
+        exp_names = MakePtr(char**, exp->AddressOfNames,api->start);
+
+        while ( thunk->u1.AddressOfData != 0 )
+        {
+            PIMAGE_IMPORT_BY_NAME imp_name;
+
+            if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG)
+            {
+//                ordinal = (*func_list) & 0x7fffffff;
+//               *ImportAddressList = LdrGetExportByOrdinal(ImportedModule->DllBase, Ordinal);
+//                if ((*ImportAddressList) == NULL)
+//                {
+//                    DPRINT1("Failed to import #%ld from %wZ\n", Ordinal, &ImportedModule->FullDllName);
+//                    RtlpRaiseImportNotFound(NULL, Ordinal, &ImportedModule->FullDllName);
+//                    return STATUS_ENTRYPOINT_NOT_FOUND;
+//                }
+            }
+            else
+            {
+                char *export_name;
+                uint16_t   ordinal;
+                void      *function;
+                uint32_t   minn;
+                uint32_t   maxn;
+
+                imp_name = MakePtr(PIMAGE_IMPORT_BY_NAME,
+                              thunk->u1.AddressOfData, NULL);
+                *iat = NULL;
+
+                DBG("import %s", imp_name->Name);
+
+                if(imp_name->Hint < exp->NumberOfNames)
+                {
+                    export_name = MakePtr(char*,exp_names[imp_name->Hint],
+                                          api->start);
+                    if(strcmp(imp_name->Name, export_name) == 0)
+                    {
+                        ordinal = exp_ordinals[imp_name->Hint];
+                        function = MakePtr(void*,exp_functions[ordinal], api->start);
+                        if((uint32_t)function >= (uint32_t)exp)
+                        {
+                            printf("forward %s\n", function);
+                            warn=1;
+                        }
+                        else
+                        {
+                            DBG(" \t\tat %x\n", function);
+                            *iat = function;
+                        };
+                        thunk++;  // Advance to next thunk
+                        iat++;
+                        continue;
+                    };
+                };
+
+
+                minn = 0;
+                maxn = exp->NumberOfNames - 1;
+                while (minn <= maxn)
+                {
+                    int mid;
+                    int res;
+
+                    mid = (minn + maxn) / 2;
+
+                    export_name = MakePtr(char*,exp_names[mid],api->start);
+
+                    res = strcmp(export_name, imp_name->Name);
+                    if (res == 0)
+                    {
+                        ordinal  = exp_ordinals[mid];
+                        function = MakePtr(void*,exp_functions[ordinal], api->start);
+
+                        if((uint32_t)function >= (uint32_t)exp)
+                        {
+                            DBG("forward %s\n", function);
+                            warn=1;
+                        }
+                        else
+                        {
+                            DBG(" \t\tat %x\n", function);
+                            *iat = function;
+                        };
+                        break;
+                    }
+                    else if (minn == maxn)
+                    {
+                        printf(" unresolved %s\n",imp_name->Name);
+                        warn=1;
+                        break;
+                    }
+                    else if (res > 0)
+                    {
+                        maxn = mid - 1;
+                    }
+                    else
+                    {
+                        minn = mid + 1;
+                    }
+                };
+            };
+            thunk++;            // Advance to next thunk
+            iat++;
+        }
+        imp++;  // advance to next IMAGE_IMPORT_DESCRIPTOR
+    };
+
+    if ( !warn )
+        return 1;
+    else
+        return 0;
+}
+
+
+
 void* get_entry_point(void *raw)
 {
     PIMAGE_DOS_HEADER     dos;
@@ -707,7 +877,7 @@ module_t* load_module(const char *name)
         module->img_exp  = MakePtr(PIMAGE_EXPORT_DIRECTORY, img_base,
                            nt->OptionalHeader.DataDirectory[0].VirtualAddress);
 
-        list_add_tail(&module->list, &dll_list);
+        list_add_tail(&module->list, &libc_dll.list);
 
         if( link_image(img_base))
         {

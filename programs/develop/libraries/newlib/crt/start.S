@@ -3,6 +3,12 @@
 
 .global __start
 
+#tls:0  pid process id
+#tls:4  tid reserved for thread slot
+#tls:8  thread's stack low limit
+#tls:12 thread's stack high limit
+#tls:16 reseved for libc
+
 .align 4
 __start:
            movl  $68, %eax
@@ -15,8 +21,8 @@ __start:
            jz    1f
 
            addl %eax, %ecx
-           movl %eax, %fs:4
-           movl %ecx, %fs:8        #save stack base - low limit
+           movl %eax, %fs:8
+           movl %ecx, %fs:12       #save stack base - low limit
                                    #save stack top  - high limit
            movl %ecx, %esp         #reload stack
 
@@ -30,15 +36,8 @@ __start:
            movl 30(%ebx), %eax
            movl %eax, %fs:0        #save pid
 
-           movl $__tls_map, %edi    #init TLS
-           movl $32, %ecx
-           xorl %eax, %eax
-           notl %eax
+           addl $1024, %esp
 
-           rep
-           stosl
-
-           movb  $0xF0, __tls_map
            jmp  ___crt_startup
 1:
            int3                    #trap to debugger

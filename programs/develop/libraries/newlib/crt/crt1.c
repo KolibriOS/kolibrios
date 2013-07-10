@@ -29,8 +29,8 @@
  *       a-good-idea use of include. */
 
 
-extern char __cmdline;
-extern char __pgmname;
+extern char __cmdline[];
+extern char __pgmname[];
 
 extern int main (int, char **, char **);
 
@@ -107,7 +107,7 @@ __crt_startup (void)
 
     arg[0] = &__pgmname;
 
-    if( __cmdline != 0)
+    if( __cmdline[0] != 0)
     {
         _argc = 2;
         arg[1] = &__cmdline;

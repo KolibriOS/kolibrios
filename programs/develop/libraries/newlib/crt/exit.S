@@ -12,7 +12,7 @@ __Exit:
            movl  4(%esp), %edx     #store exit code
            movl  $68, %eax
            movl  $13, %ebx
-           movl  %fs:4, %ecx
+           movl  %fs:8, %ecx
            int   $0x40             #destroy stack
 
            movl  $-1, %eax

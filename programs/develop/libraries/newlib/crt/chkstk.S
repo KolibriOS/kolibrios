@@ -14,7 +14,7 @@ __alloca:
         pushl   %ecx            /* save temp */
         leal    8(%esp), %ecx   /* point past return addr */
         subl    %eax, %ecx
-        cmpl    %fs:4, %ecx     # check low stack limit
+        cmpl    %fs:8, %ecx     # check low stack limit
         jb      1f
 
         movl    %esp, %eax      /* save old stack pointer */
@@ -41,7 +41,7 @@ ___chkstk_ms:
 
 1:
        subl $0x1000, %ecx     /* yes, move pointer down 4k*/
-       cmpl %fs:4, %ecx       /* check low stack limit    */
+       cmpl %fs:8, %ecx       /* check low stack limit    */
        jb 3f
 
        orl $0x0, (%ecx)       /* probe there */

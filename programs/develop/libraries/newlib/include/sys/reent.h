@@ -827,7 +827,7 @@ static inline struct _reent *__getreent(void)
 {
     struct _reent *ent;
     __asm__ __volatile__(
-    "movl %%fs:12, %0"
+    "movl %%fs:16, %0"
     :"=r"(ent));
     return ent;
 };

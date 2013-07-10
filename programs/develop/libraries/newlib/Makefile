@@ -27,15 +27,26 @@ STATIC_SRCS:=					\
 			crt/crt2.c		\
          		crt/chkstk.S		\
          		crt/exit.S		\
-			pe/crtloader.c		\
-			crt/setjmp.S
+			pe/crtloader.c
 
 DLL_SRCS:=					\
 			crt/crtdll.c		\
 			crt/chkstk.S		\
+			crt/exit.S
+
+
+LIBCDLL_SRCS:=					\
+			crt/crtdll.c		\
+			crt/pseudo-reloc.c	\
+			crt/chkstk.S		\
 			crt/exit.S		\
-			crt/setjmp.S		\
 			pe/loader.c
+
+LIBCRT_SRCS:=					\
+			crt/start.S		\
+			crt/chkstk.S		\
+			crt/crt3.c		\
+			pe/crtloader.c
 
 CORE_SRCS:=                   			\
 			argz/buf_findstr.c	\
@@ -43,6 +54,7 @@ CORE_SRCS:=                   			\
          		crt/emutls.c         	\
          		crt/thread.S         	\
          		crt/tls.S            	\
+			crt/setjmp.S		\
          		crt/assert.c         	\
 			crt/cpu_features.c	\
 			ctype/ctype_.c 		\
@@ -300,7 +312,11 @@ AMZ_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(AMZ_SRCS)))
 
 STATIC_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(STATIC_SRCS)))
 
+LIBCRT_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCRT_SRCS)))
+
 DLL_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(DLL_SRCS)))
+
+LIBCDLL_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCDLL_SRCS)))
 
 CORE_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.obj,\
             $(patsubst %.c, %.o, $(CORE_SRCS))))
@@ -335,8 +351,8 @@ LIB_OBJS:=  	$(STATIC_OBJS)
 
 else
 
-LIB_SRCS:=  	$(DLL_SRCS)
-LIB_OBJS:=  	$(DLL_OBJS)
+LIB_SRCS:=  	$(LIBCDLL_SRCS)
+LIB_OBJS:=  	$(LIBCDLL_OBJS)
 
 endif
 
@@ -356,12 +372,15 @@ LIB_OBJS+=				\
 
 
 
-shared: $(NAME).dll libamz.a libc.obj
+shared: $(NAME).dll libcrt.a 
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	ld $(LDFLAGS) -L. -o $@ $(LIB_OBJS) -lgcc
 
+
+libcrt.a: $(LIBCRT_OBJS) Makefile
+	ar rc libcrt.a $(LIBCRT_OBJS)
 
 libamz.a: $(AMZ_OBJS) Makefile
 	ar rc libamz.a $(AMZ_OBJS)

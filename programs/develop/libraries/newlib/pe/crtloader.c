@@ -174,10 +174,10 @@ void* create_image(void *raw)
             }
             reloc = MakePtr(PIMAGE_BASE_RELOCATION, reloc,reloc->SizeOfBlock);
         };
-        printf("unmap base %p offset %x %d page(s)\n",
-                img_base,
-                nt->OptionalHeader.DataDirectory[5].VirtualAddress,
-                (nt->OptionalHeader.DataDirectory[5].Size+4095)>>12);
+//        printf("unmap base %p offset %x %d page(s)\n",
+//                img_base,
+//                nt->OptionalHeader.DataDirectory[5].VirtualAddress,
+//                (nt->OptionalHeader.DataDirectory[5].Size+4095)>>12);
 
         user_unmap(img_base,nt->OptionalHeader.DataDirectory[5].VirtualAddress,
                    nt->OptionalHeader.DataDirectory[5].Size);
@@ -185,6 +185,16 @@ void* create_image(void *raw)
     return img_base;
 };
 
+void* get_entry_point(void *raw)
+{
+    PIMAGE_DOS_HEADER     dos;
+    PIMAGE_NT_HEADERS32   nt;
+
+    dos = (PIMAGE_DOS_HEADER)raw;
+    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
+
+    return  MakePtr(void*, raw, nt->OptionalHeader.AddressOfEntryPoint);
+};
 
 
 void* load_libc()
@@ -195,17 +205,19 @@ void* load_libc()
     ufile_t   uf;
 
     uf = load_file("/kolibrios/lib/libc.dll");
+
     raw_img   = uf.data;
     raw_size  = uf.size;
+
 
     if(raw_img == NULL)
         return NULL;
 
-    printf("libc.dll raw %p, size %d\n", raw_img, raw_size);
+//    printf("libc.dll raw %p, size %d\n", raw_img, raw_size);
 
     if( validate_pe(raw_img, raw_size, 0) == 0)
     {
-        printf("invalide libc.dll\n");
+//        printf("invalide libc.dll\n");
         user_free(raw_img);
     };
 

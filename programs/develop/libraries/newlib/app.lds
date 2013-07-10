@@ -3,8 +3,8 @@
 ENTRY(__start)
 SECTIONS
 {
-    .text 0x000000:
-    {
+   .text 0x000000:
+   {
         LONG(0x554e454D);
         LONG(0x32305445);
         LONG(1);
@@ -15,6 +15,9 @@ SECTIONS
         LONG(___cmdline);
         LONG(___pgmname);     /*  full path    */
         LONG(0);              /*FIXME tls data */
+        LONG(__idata_start)
+        LONG(__idata_end)
+        LONG(_main)
 
         *(.init)
         *(.text)
@@ -31,10 +34,10 @@ SECTIONS
         *(.gcc_exc)
         PROVIDE (etext = .);
         *(.gcc_except_table)
-    }
+   }
 
-    .rdata ALIGN(64) :
-    {
+   .rdata ALIGN(16) :
+   {
         *(.rdata)
         *(SORT(.rdata$*))
         ___RUNTIME_PSEUDO_RELOC_LIST__ = .;
@@ -42,9 +45,9 @@ SECTIONS
         *(.rdata_runtime_pseudo_reloc)
         ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
         __RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
-    }
-    .CRT ALIGN(64) :
-    {
+   }
+   .CRT ALIGN(16) :
+   {
          ___crt_xc_start__ = . ;
         *(SORT(.CRT$XC*))  /* C initialization */
         ___crt_xc_end__ = . ;
@@ -60,10 +63,10 @@ SECTIONS
         ___crt_xt_start__ = . ;
         *(SORT(.CRT$XT*))  /* Termination */
         ___crt_xt_end__ = . ;
-    }
+   }
 
-    .data ALIGN(64) :
-    {
+   .data ALIGN(64) :
+   {
      	PROVIDE ( __data_start__ = .) ;
         *(.data)
         *(.data2)
@@ -74,22 +77,24 @@ SECTIONS
        	PROVIDE ( __data_end__ = .) ;
         *(.data_cygwin_nocopy)
         ___iend = . ;
-    }
+   }
 
-  .idata ALIGN(64):
-  {
-    SORT(*)(.idata$2)
-    SORT(*)(.idata$3)
+   .idata ALIGN(16):
+   {
+      __idata_start = .;
+      SORT(*)(.idata$2)
+      SORT(*)(.idata$3)
     /* These zeroes mark the end of the import list. */
-    LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);
-    SORT(*)(.idata$4)
-    SORT(*)(.idata$5)
-    SORT(*)(.idata$6)
-    SORT(*)(.idata$7)
-  }
+      LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);
+      SORT(*)(.idata$4)
+      SORT(*)(.idata$5)
+      SORT(*)(.idata$6)
+      SORT(*)(.idata$7)
+      __idata_end = .  ;
+   }
 
-    bss ALIGN(64):
-    {
+   bss ALIGN(16):
+   {
         *(.bss)
         *(COMMON)
         . = ALIGN(16);
@@ -99,7 +104,7 @@ SECTIONS
         . = . + 1024 + 16;
         ___stacktop = .;
         ___memsize = . ;
-    }
+   }
 
   /DISCARD/ :
   {

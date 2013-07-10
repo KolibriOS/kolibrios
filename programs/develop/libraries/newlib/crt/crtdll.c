@@ -19,17 +19,20 @@ struct app_hdr
     int   stacktop;
     char  *cmdline;
     char  *path;
+    int    reserved;
+    void  *__idata_start;
+    void  *__idata_end;
+    void  (*main)(int argc, char **argv, char **envp);
 };
 
 int    _argc;
 char **_argv;
 
 
-void    __fastcall init_loader(void *libc_image);
-void*   __fastcall create_image(void *raw);
-int     __fastcall link_image(void *img_base);
 void* get_entry_point(void *raw);
 int (*entry)(int, char **, char **);
+
+void init_loader(void *libc_image);
 
 
 void init_reent();
@@ -45,8 +48,8 @@ __thread_startup (int (*entry)(void*), void *param,
     asm volatile ( "xchgw %bx, %bx");
 
     __asm__ __volatile__(               // save stack limits
-    "movl %0, %%fs:4    \n\t"           // use TLS
-    "movl %1, %%fs:8    \n\t"
+    "movl %0, %%fs:8    \n\t"           // use TLS
+    "movl %1, %%fs:12    \n\t"
     ::"r"(stacklow), "r"(stackhigh));
 
     init_reent();                       // initialize thread reentry structure
@@ -61,16 +64,22 @@ char * __libc_getenv(const char *name)
     return NULL;
 }
 
+void _pei386_runtime_relocator (void);
+int link_app();
+
 char  __appcwd[1024];
 int   __appcwdlen;
 char* __appenv;
 int   __appenv_size;
 
+static char *arg[2];
+
+extern char _tls_map[128];
+
 void  __attribute__((noreturn))
-crt_startup (void *libc_base, void *obj_base, uint32_t *params)
+libc_crt_startup (void *libc_base)
 {
-    struct   app_hdr *header;
-    char *arg[2];
+    struct   app_hdr *header = NULL;
 
     int len;
     char *p;
@@ -78,67 +87,39 @@ crt_startup (void *libc_base, void *obj_base, uint32_t *params)
     void *my_app;
     int retval = 0;
 
-//    user_free(obj_base);
+    _pei386_runtime_relocator();
 
+    memset(_tls_map, 0xFF, 32*4);
+    _tls_map[0] = 0xE0;
     init_reent();
     __initPOSIXHandles();
+
  //   __appenv = load_file("/sys/system.env", &__appenv_size);
 
     init_loader(libc_base);
 
-    my_app = create_image((void*)(params[0]));
-
-    if( link_image(my_app)==0)
+    if( link_app() == 0)
         goto done;
-
-    header = (struct app_hdr*)NULL;
 
     __appcwdlen = strrchr(header->path, '/') - header->path;
     __appcwdlen = __appcwdlen > 1022 ? 1022 : __appcwdlen;
     memcpy(__appcwd, header->path, __appcwdlen);
     set_cwd(__appcwd);
 
-#ifdef BRAVE_NEW_WORLD
-    len = strlen(header->path);
-    p = alloca(len+1);
-    memcpy(p, header->path, len);
-    p[len]=0;
-
-    arg[0] = p;
-#else
     arg[0] = header->path;
-#endif
 
-    _argc = 1;
-
-    if( header->cmdline != 0)
+    if( header->cmdline[0] != 0)
     {
-#ifdef BRAVE_NEW_WORLD
-        len = strlen(header->cmdline);
-        if(len)
-        {
-            p = alloca(len+1);
-            memcpy(p, header->cmdline, len);
-            p[len]=0;
-            _argc = 2;
-            arg[1] = p;
-        };
-#else
         _argc = 2;
         arg[1] = header->cmdline;
-#endif
-    };
+    }
+    else _argc = 1;
 
     _argv = arg;
 
-    entry = get_entry_point(my_app);
-
-//    __asm__ __volatile__("int3");
-
-    retval = entry(_argc, _argv, NULL);
-
+    header->main(_argc, _argv, NULL);
 done:
-    exit (retval);
+    _exit (retval);
 }
 
 
