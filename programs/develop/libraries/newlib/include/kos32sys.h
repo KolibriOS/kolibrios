@@ -240,6 +240,14 @@ static inline void yield(void)
     ::"a"(68), "b"(1));
 };
 
+static inline void delay(uint32_t time)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(5), "b"(time)
+    :"memory");
+};
+
 static inline
 void *user_alloc(size_t size)
 {
@@ -272,6 +280,30 @@ int *user_unmap(void *base, size_t offset, size_t size)
     :"a"(68),"b"(26),"c"(base),"d"(offset),"S"(size));
     return val;
 }
+
+typedef union
+{
+    struct
+    {
+        void   *data;
+        size_t  size;
+    };
+    unsigned long long raw;
+}ufile_t;
+
+
+static inline ufile_t load_file(char *path)
+{
+     ufile_t uf;
+
+     __asm__ __volatile__ (
+     "int $0x40"
+     :"=A"(uf.raw)
+     :"a" (68), "b"(27),"c"(path));
+
+     return uf;
+};
+    
 
 static inline int GetScreenSize()
 {
@@ -339,7 +371,6 @@ void* user_realloc(void *mem, size_t size)
     return val;
 }
 
-void *load_file(const char *path, size_t *len);
 
 void *get_resource(void *data, uint32_t id);
 

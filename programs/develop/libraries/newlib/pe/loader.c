@@ -658,7 +658,7 @@ module_t* load_module(const char *name)
         memcpy(path+dllpath->path_len, name, len);
         path[len+dllpath->path_len]=0;
 
-        raw_img = load_file(path, &raw_size);
+//        raw_img = load_file(path, &raw_size);
         if(raw_img == NULL)
             continue;
 

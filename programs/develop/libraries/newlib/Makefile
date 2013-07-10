@@ -27,6 +27,7 @@ STATIC_SRCS:=					\
 			crt/crt2.c		\
          		crt/chkstk.S		\
          		crt/exit.S		\
+			pe/crtloader.c		\
 			crt/setjmp.S
 
 DLL_SRCS:=					\
@@ -103,7 +104,6 @@ CORE_SRCS:=                   			\
          		sys/read.c           	\
          		sys/write.c          	\
          		sys/fsize.c          	\
-         		sys/fload.c          	\
          		time/asctime.c       	\
          		time/asctime_r.c     	\
          		time/clock.c         	\
@@ -242,6 +242,10 @@ STDIO_SRCS=					\
 			tmpfile.c		\
 			tmpnam.c		\
 			ungetc.c		\
+			vasniprintf.c		\
+			vasnprintf.c		\
+			vdprintf.c		\
+			vdiprintf.c		\
 			vscanf.c		\
 			vsprintf.c		\
 			vsnprintf.c		\
@@ -250,6 +254,7 @@ STDIO_SRCS=					\
 			wsetup.c		\
 			wbuf.c			\
 			sccl.c			\
+			siprintf.c		\
 			sniprintf.c		\
 			snprintf.c		\
 			sprintf.c		\

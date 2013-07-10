@@ -11,8 +11,18 @@ SECTIONS
 
   .text  __image_base__ + . :
   {
-    *(.text) *(.rdata)
-    . = ALIGN(16);
+    *(.text)
+    *(SORT(.text$*))
+    *(.text.*)
+        *(.glue_7t)
+        *(.glue_7)
+        ___CTOR_LIST__ = .; __CTOR_LIST__ = . ;
+                        LONG (-1);*(.ctors); *(.ctor); *(SORT(.ctors.*));  LONG (0);
+        ___DTOR_LIST__ = .; __DTOR_LIST__ = . ;
+                        LONG (-1); *(.dtors); *(.dtor); *(SORT(.dtors.*));  LONG (0);
+        *(.fini)
+    *(.rdata)
+    *(SORT(.rdata$*))
     ___RUNTIME_PSEUDO_RELOC_LIST__ = .;
     __RUNTIME_PSEUDO_RELOC_LIST__ = .;
     *(.rdata_runtime_pseudo_reloc)
@@ -28,6 +38,8 @@ SECTIONS
         *(.data2)
         *(SORT(.data$*))
         *(.jcr)
+     __CRT_MT = .;
+     LONG(0);
        PROVIDE ( __data_end__ = .) ;
         *(.data_cygwin_nocopy)
   }
@@ -50,6 +62,7 @@ SECTIONS
     *(.debug$F)
     *(.drectve)
     *(.note.GNU-stack)
+    *(.eh_frame)
     *(.comment)
     *(.debug_abbrev)
     *(.debug_info)
@@ -59,18 +72,6 @@ SECTIONS
     *(.debug_pubnames)
     *(.debug_aranges)
     *(.debug_ranges)
-  }
-
-  .idata ALIGN(__section_alignment__):
-  {
-    SORT(*)(.idata$2)
-    SORT(*)(.idata$3)
-    /* These zeroes mark the end of the import list. */
-    LONG (0); LONG (0); LONG (0); LONG (0); LONG (0);
-    SORT(*)(.idata$4)
-    SORT(*)(.idata$5)
-    SORT(*)(.idata$6)
-    SORT(*)(.idata$7)
   }
 
   .reloc ALIGN(__section_alignment__) :

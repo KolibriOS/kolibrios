@@ -82,7 +82,7 @@ crt_startup (void *libc_base, void *obj_base, uint32_t *params)
 
     init_reent();
     __initPOSIXHandles();
-    __appenv = load_file("/sys/system.env", &__appenv_size);
+ //   __appenv = load_file("/sys/system.env", &__appenv_size);
 
     init_loader(libc_base);
 
