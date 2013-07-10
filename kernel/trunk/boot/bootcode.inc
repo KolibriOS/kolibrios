@@ -793,6 +793,7 @@ end if
         call    clear_vmodes_table             ;clear vmodes_table
         jmp     .printcfg
 .change_a:
+        call    clear_vmodes_table             ;clear vmodes_table
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
