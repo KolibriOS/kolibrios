@@ -13,14 +13,6 @@ DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
-AMZ_SRCS:= 			 		\
-         		crt/crt_amz.S        	\
-         		crt/chkstk.S         	\
-         		crt/exit.S           	\
-			crt/pseudo-reloc.c	\
-			crt/dllstart.c 		\
-			crt/setjmp.S
-
 STATIC_SRCS:=					\
          		crt/start.S		\
          		crt/crt1.c		\
@@ -30,7 +22,8 @@ STATIC_SRCS:=					\
 			pe/crtloader.c
 
 DLL_SRCS:=					\
-			crt/crtdll.c		\
+			crt/crtbegin.c		\
+			crt/pseudo-reloc.c	\
 			crt/chkstk.S		\
 			crt/exit.S
 
@@ -46,6 +39,7 @@ LIBCRT_SRCS:=					\
 			crt/start.S		\
 			crt/chkstk.S		\
 			crt/crt3.c		\
+			crt/crtbegin.o		\
 			pe/crtloader.c
 
 CORE_SRCS:=                   			\
@@ -308,8 +302,6 @@ MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_
 		f_log10.S f_log10f.S f_logf.S f_tan.S f_tanf.S
 
 
-AMZ_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(AMZ_SRCS)))
-
 STATIC_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(STATIC_SRCS)))
 
 LIBCRT_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCRT_SRCS)))
@@ -372,18 +364,18 @@ LIB_OBJS+=				\
 
 
 
-shared: $(NAME).dll libcrt.a 
+shared: $(NAME).dll libcrt.a libdll.a
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
-	ld $(LDFLAGS) -L. -o $@ $(LIB_OBJS) -lgcc
+	ld $(LDFLAGS) -Map libcmap -L. -o $@ $(LIB_OBJS) -lgcc
 
 
 libcrt.a: $(LIBCRT_OBJS) Makefile
 	ar rc libcrt.a $(LIBCRT_OBJS)
 
-libamz.a: $(AMZ_OBJS) Makefile
-	ar rc libamz.a $(AMZ_OBJS)
+libdll.a: $(DLL_OBJS) Makefile
+	ar rc libdll.a $(DLL_OBJS)
 
 libc.obj: $(NAME).dll
 	fasm pe/libc.asm ./libc.obj
