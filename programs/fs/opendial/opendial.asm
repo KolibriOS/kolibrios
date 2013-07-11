@@ -1312,10 +1312,14 @@ type_title:
 draw_window:
 
 	mcall	12,1
+	
+	call	prepare_system_colors
 
 ;	mcall	0,<10,420>,<10,320>,0x63AABBCC,
 	xor	esi,esi
-	mcall	0,[window_x],[window_y],0x63AABBCC,
+;	mov	edx,[w_work]	; color of work area RRGGBB,8->color
+;	or	edx,0x63000000
+	mcall	0,[window_x],[window_y],0x63AABBCC
 
 ;	mov	ecx,[communication_area]
 ;	add	ecx,4096+4+4
@@ -1337,8 +1341,9 @@ draw_window:
 	add	ax,10
 	mov	[scroll_bar_data_vertical.start_x],ax
 	
-	
-	mcall	13,[window_width],45,0xcccccc
+	mov	edx,[w_work]	; color of work area RRGGBB,8->color
+	or	edx,0x63000000
+	mcall	13,[window_width],45	;,0xcccccc
 
 	push	ecx
 	rol	ecx,16
@@ -1382,13 +1387,15 @@ draw_window:
 	sub	ebx,eax
 	mov	ecx,26 shl 16+15
 
-	mcall	8,,,2,0xffffff
+	mcall	8,,,2,[w_work_button]	;0xffffff
 
 	pusha
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,20 shl 16+2
-	mcall	4,,0x90000000,message_ExitDir_button
+	mov	ecx,[w_work_button_text]
+	or	ecx,0x90000000
+	mcall	4,,,message_ExitDir_button
 	add	ebx,4
 	mcall
 	add	ebx,4
@@ -1403,7 +1410,9 @@ draw_window:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,5 shl 16+4
-	mcall	4,,0x90000000,message_ReloadDir_button
+	mov	ecx,[w_work_button_text]
+	or	ecx,0x90000000
+	mcall	4,,,message_ReloadDir_button
 	pop	ebx
 
 	mov	ebx,[file_browser_data_1.x]
@@ -1430,7 +1439,9 @@ draw_window:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,6 shl 16+ 4
-	mcall	4,,0x90000000,message_cancel_button
+	mov	ecx,[w_work_button_text]
+	or	ecx,0x90000000
+	mcall	4,,,message_cancel_button
 	popa
 
 	sub	ebx,65 shl 16
@@ -1449,14 +1460,54 @@ draw_window:
 	jne	@f
 	sub	ebx,5 shl 16
 @@:
-	
-	mcall	4,,0x90000000	;message_open_button
+	mov	ecx,[w_work_button_text]
+	or	ecx,0x90000000
+	mcall	4	;message_open_button
 	
 ;	mcall	47,0x80000,[file_browser_data_1.ini_file_start],<250,0>,0x0
 ;	mcall	4,<3,420>,0,fb_extension_start,3
 .end:
 	mcall	12,2
 
+	ret
+;---------------------------------------------------------------------
+prepare_system_colors:
+	mcall	48,3,app_colours,10*4
+
+	mov	eax,[w_work]
+	mov	[menu_data_1.bckg_col],eax
+	mov	[menu_data_2.bckg_col],eax
+	mov	[menu_data_3.bckg_col],eax
+
+	mov	[menu_data_1.menu_col],eax
+	mov	[menu_data_2.menu_col],eax
+	mov	[menu_data_3.menu_col],eax
+	
+	mov	[scroll_bar_data_vertical.bckg_col],eax	
+
+	mov	eax,[w_work_button]
+	mov	[menu_data_1.frnt_col],eax
+	mov	[menu_data_2.frnt_col],eax
+	mov	[menu_data_3.frnt_col],eax
+
+	mov	[scroll_bar_data_vertical.frnt_col],eax	
+
+	mov	eax,[w_work_button]
+	mov	[menu_data_1.menu_sel_col],eax
+	mov	[menu_data_2.menu_sel_col],eax
+	mov	[menu_data_3.menu_sel_col],eax
+
+	mov	eax,[w_work_text]
+	mov	[menu_data_1.bckg_text_col],eax
+	mov	[menu_data_2.bckg_text_col],eax
+	mov	[menu_data_3.bckg_text_col],eax
+	
+	mov	eax,[w_work_button_text]
+	mov	[menu_data_1.frnt_text_col],eax
+	mov	[menu_data_2.frnt_text_col],eax
+	mov	[menu_data_3.frnt_text_col],eax
+	
+	mov	[scroll_bar_data_vertical.line_col],eax	
 	ret
 ;---------------------------------------------------------------------
 draw_for_fs_errors:
@@ -1573,32 +1624,32 @@ draw_dir_path:
 	mov	[PathShow_data_1.area_size_x],ax
 	mov	[PathShow_data_1.start_x],bx
 ;--------------------------------------
-; top line
-	mov	ebx,[file_browser_data_1.x]
-	mcall	13,,<7,1>,0x0
+;; top line
+;	mov	ebx,[file_browser_data_1.x]
+;	mcall	13,,<7,1>,0x0
 ; down line
-	push	ebx ecx
-	mcall	,,<21,1>,
-	pop	ecx ebx
+;	push	ebx ecx
+;	mcall	,,<21,1>,
+;	pop	ecx ebx
 ; left line	
-	push	ebx
-	mov	bx,1
-	mov	cx,15
-	mcall
-	pop	ebx
+;	push	ebx
+;	mov	bx,1
+;	mov	cx,15
+;	mcall
+;	pop	ebx
 ; right line
-	mov	ax,bx
-	shr	ebx,16
-	add	bx,ax
-	dec	ebx
-	shl	ebx,16
-	mov	bx,1
-	mcall	13
+;	mov	ax,bx
+;	shr	ebx,16
+;	add	bx,ax
+;	dec	ebx
+;	shl	ebx,16
+;	mov	bx,1
+;	mcall	13
 ;--------------------------------------	
 	mov	ebx,[file_browser_data_1.x]
 	sub	ebx,2
 	add	ebx,1 shl 16
-	mcall	13,,<8,13>,0xffffff
+	mcall	13,,<8,13>,0xffffcc
 ;--------------------------------------
 ; prepare for PathShow
 	push	dword PathShow_data_1
@@ -2992,6 +3043,21 @@ example_name_temp:
 	db 'temp1.asm',0
 ;---------------------------------------------------------------------
 IM_END:
+;---------------------------------------------------------------------
+align 4
+app_colours:
+
+w_frame			rd 1
+w_grab			rd 1
+w_grab_button		rd 1
+w_grab_button_text	rd 1
+w_grab_text		rd 1
+w_work			rd 1
+w_work_button		rd 1
+w_work_button_text	rd 1
+w_work_text		rd 1
+w_work_graph		rd 1
+;---------------------------------------------------------------------
 menu_text_area_1_1:
 rb 256
 ;---------------------------------------------------------------------
