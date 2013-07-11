@@ -120,7 +120,7 @@ graw_main_loop(void)
 
     while(1)
     {
-        ev = wait_for_event(100);
+        ev = wait_for_event(2);
 
         switch(ev)
         {
@@ -141,9 +141,11 @@ graw_main_loop(void)
                 if( key.code == 0x1b)
                     return;
                 continue;
-
-            default:
-                continue;
         };
+        if (graw.draw)
+        {
+            graw.draw();
+        }
+        
     };
 }
