@@ -1,7 +1,7 @@
 
 CC = gcc
 
-CFLAGS = -c -O2 -fomit-frame-pointer
+CFLAGS = -c -O2 -fomit-frame-pointer -DBUILD_DLL
 LDFLAGS = -nostdlib -shared -s -T libcdll.lds --out-implib libcimp.a --image-base 0
 
 LIBC_TOPDIR   = .
@@ -21,11 +21,12 @@ STATIC_SRCS:=					\
          		crt/exit.S		\
 			pe/crtloader.c
 
-DLL_SRCS:=					\
-			crt/crtbegin.c		\
+LIBDLL_SRCS:=					\
+			crt/dllstart.c 		\
+         		crt/chkstk.S         	\
+         		crt/exit.S           	\
 			crt/pseudo-reloc.c	\
-			crt/chkstk.S		\
-			crt/exit.S
+			crt/setjmp.S
 
 
 LIBCDLL_SRCS:=					\
@@ -39,7 +40,6 @@ LIBCRT_SRCS:=					\
 			crt/start.S		\
 			crt/chkstk.S		\
 			crt/crt3.c		\
-			crt/crtbegin.o		\
 			pe/crtloader.c
 
 CORE_SRCS:=                   			\
@@ -306,7 +306,7 @@ STATIC_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(STATIC_SRCS)))
 
 LIBCRT_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCRT_SRCS)))
 
-DLL_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(DLL_SRCS)))
+LIBDLL_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBDLL_SRCS)))
 
 LIBCDLL_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCDLL_SRCS)))
 
@@ -374,11 +374,8 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 libcrt.a: $(LIBCRT_OBJS) Makefile
 	ar rc libcrt.a $(LIBCRT_OBJS)
 
-libdll.a: $(DLL_OBJS) Makefile
-	ar rc libdll.a $(DLL_OBJS)
-
-libc.obj: $(NAME).dll
-	fasm pe/libc.asm ./libc.obj
+libdll.a: $(LIBDLL_OBJS) Makefile
+	ar rc libdll.a $(LIBDLL_OBJS)
 
 
 static: $(NAME).a

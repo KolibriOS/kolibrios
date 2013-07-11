@@ -1,8 +1,6 @@
 
 OUTPUT_FORMAT(pei-i386)
 
-ENTRY("____dll_start")
-
 SECTIONS
 {
 

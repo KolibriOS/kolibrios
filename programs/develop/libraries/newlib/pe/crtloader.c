@@ -209,20 +209,18 @@ void* load_libc()
     raw_img   = uf.data;
     raw_size  = uf.size;
 
-
     if(raw_img == NULL)
         return NULL;
 
 //    printf("libc.dll raw %p, size %d\n", raw_img, raw_size);
 
-    if( validate_pe(raw_img, raw_size, 0) == 0)
+    if(validate_pe(raw_img, raw_size, 0) != 0)
     {
 //        printf("invalide libc.dll\n");
-        user_free(raw_img);
+        img_base = create_image(raw_img);
     };
 
-    img_base = create_image(raw_img);
-
+    user_free(raw_img);
 
     return img_base;
 
