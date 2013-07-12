@@ -1461,6 +1461,12 @@ draw_window:
 	shl	edx,2
 	add	edx,message_open_dialog_button
 	mov	edx,[edx]
+;--------------------------------------	
+	cmp	[open_dialog_type],1
+	jne	@f
+
+	cmp	[focus_pointer],1
+	je	@f
 	
 	mov	eax,[file_browser_data_1.selected_BDVK_adress]
 	test	[eax],byte 0x10
@@ -1468,6 +1474,7 @@ draw_window:
 
 	mov	edx,message_0 	; Open Dir
 @@:
+;--------------------------------------
 	mov	[open_button_coordinates],ebx
 	mov	ecx,[w_work_button_text]
 	or	ecx,0x90000000
@@ -1487,6 +1494,9 @@ draw_open_button_label:
 	cmp	[open_dialog_type],1
 	jne	.exit_1
 
+	cmp	[focus_pointer],1
+	je	draw_save_button_label
+	
 	pusha
 	mov	ebx,[open_button_coordinates]
 	test	ebx,ebx
@@ -1513,6 +1523,19 @@ draw_open_button_label:
 .exit:
 	popa
 .exit_1:
+	ret
+;---------------------------------------------------------------------
+draw_save_button_label:
+	pusha
+	mov	ebx,[open_button_coordinates]
+
+	mov	edx,message_1	; Save
+
+	mov	ecx,[w_work_button_text]
+	or	ecx,0xd0000000
+	mov	edi,[w_work_button]
+	mcall	4	;message_open_button
+	popa
 	ret
 ;---------------------------------------------------------------------
 copy_new_file_name:
