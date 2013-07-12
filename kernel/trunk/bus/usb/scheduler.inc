@@ -20,7 +20,9 @@ if (sizeof.ohci_static_ep=sizeof.uhci_static_ep)&(ohci_static_ep.SoftwarePart=uh
 ; out: edx -> usb_static_ep for the selected list or zero if failed
 proc usb1_select_interrupt_list
 ; inherit some variables from usb_open_pipe
-virtual at ebp-8
+virtual at ebp-12
+.speed          db      ?
+                rb      3
 .bandwidth      dd      ?
 .target         dd      ?
                 dd      ?
@@ -116,19 +118,31 @@ end virtual
         add     edx, sizeof.ohci_static_ep
         dec     ecx
         jnz     .varloop
-; 4. Get the pointer to the best list.
+; 4. Calculate bandwidth for the new pipe.
+        mov     eax, [.maxpacket]
+        mov     cl, [.speed]
+        mov     ch, byte [.endpoint]
+        and     ch, 80h
+        call    calc_usb1_bandwidth
+; 5. Get the pointer to the best list.
         pop     edx             ; restore value from step 2
-        pop     eax             ; purge stack var from prolog
+        pop     ecx             ; purge stack var from prolog
         add     edx, [.target]
-; 5. Calculate bandwidth for the new pipe.
-        mov     eax, [.maxpacket]       ; TODO: calculate real bandwidth
-        and     eax, (1 shl 11) - 1
-; 6. TODO: check that bandwidth for the new pipe plus old bandwidth
-; still fits to maximum allowed by the core specification.
+; 6. Check that bandwidth for the new pipe plus old bandwidth
+; still fits to maximum allowed by the core specification, 90% of 12000 bits.
+        mov     ecx, eax
+        add     ecx, [.bandwidth]
+        cmp     ecx, 10800
+        ja      .no_bandwidth
 ; 7. Convert {o|u}hci_static_ep to usb_static_ep, update bandwidth and return.
         add     edx, ohci_static_ep.SoftwarePart
         add     [edx+usb_static_ep.Bandwidth], eax
         pop     edi ebx         ; restore used registers to be stdcall
+        ret
+.no_bandwidth:
+        dbgstr 'Periodic bandwidth limit reached'
+        xor     edx, edx
+        pop     edi ebx
         ret
 endp
 ; sanity check, part 2
@@ -147,6 +161,10 @@ virtual at esp
 .direction      db      ?
                 rb      2
 end virtual
+; calculate bandwidth on the bus
+        mov     eax, [.maxpacket]
+        mov     ecx, dword [.lowspeed]
+        call    calc_usb1_bandwidth
 ; find list header
         mov     edx, ebx
 @@:
@@ -154,11 +172,61 @@ end virtual
         cmp     [edx+usb_pipe.Controller], esi
         jz      @b
 ; subtract pipe bandwidth
-; TODO: calculate real bandwidth
-        mov     eax, [.maxpacket]
-        and     eax, (1 shl 11) - 1
         sub     [edx+usb_static_ep.Bandwidth], eax
         ret     8
+endp
+
+; Helper procedure for USB1 scheduler: calculate bandwidth on the bus.
+; in: low 11 bits of eax = payload size in bytes
+; in: cl = 0 - full-speed, nonzero - high-speed
+; in: ch = 0 - OUT, nonzero - IN
+; out: eax = maximal bandwidth in FS-bits
+proc calc_usb1_bandwidth
+        and     eax, (1 shl 11) - 1     ; get payload for one transaction
+        add     eax, 3  ; add 3 bytes for other fields in data packet, PID+CRC16
+        test    cl, cl
+        jnz     .low_speed
+; Multiply by 8 for bytes -> bits, by 7/6 to accomodate bit stuffing
+; and by 401/400 for IN transfers to accomodate timers difference
+; 9+107/300 for IN transfers, 9+1/3 for OUT transfers
+; For 0 <= eax < 09249355h, floor(eax * 107/300) = floor(eax * 5B4E81B5h / 2^32).
+; For 0 <= eax < 80000000h, floor(eax / 3) = floor(eax * 55555556h / 2^32).
+        mov     edx, 55555556h
+        test    ch, ch
+        jz      @f
+        mov     edx, 5B4E81B5h
+@@:
+        lea     ecx, [eax*9]
+        mul     edx
+; Add 93 extra bits: 39 bits for Token packet (8 for SYNC, 24 for token+address,
+; 4 extra bits for possible bit stuffing in token+address, 3 for EOP),
+; 18 bits for bus turn-around, 11 bits for SYNC+EOP in Data packet plus 1 bit
+; for possible timers difference, 2 bits for inter-packet delay, 20 bits for
+; Handshake packet, 2 bits for another inter-packet delay.
+        lea     eax, [ecx+edx+93]
+        ret
+.low_speed:
+; Multiply by 8 for bytes -> bits, by 7/6 to accomodate bit stuffing,
+; by 8 for LS -> FS and by 406/50 for IN transfers to accomodate timers difference.
+; 75+59/75 for IN transfers, 74+2/3 for OUT transfers.
+        mov     edx, 0AAAAAABh
+        test    ch, ch
+        mov     ecx, 74
+        jz      @f
+        mov     edx, 0C962FC97h
+        inc     ecx
+@@:
+        imul    ecx, eax
+        mul     edx
+; Add 778 extra bits:
+; 16 bits for PRE packet, 4 bits for hub delay, 8*39 bits for Token packet
+; 8*18 bits for bus turn-around
+; (406/50)*11 bits for SYNC+EOP in Data packet,
+; 8*2 bits for inter-packet delay,
+; 16 bits for PRE packet, 4 bits for hub delay, 8*20 bits for Handshake packet,
+; 8*2 bits for another inter-packet delay.
+        lea     eax, [ecx+edx+778]
+        ret
 endp
 
 ; USB2 scheduler.
@@ -292,23 +360,26 @@ end virtual
         add     edx, sizeof.ehci_static_ep
         dec     ebx
         jnz     .varloop0
-; 5. Get the pointer to the best list.
-        pop     edx             ; restore value from step 3
-        pop     edx             ; get delta calculated in step 3
-        add     edx, [.target]
-; 6. Calculate bandwidth for the new pipe.
-; TODO1: calculate real bandwidth
+; 5. Calculate bandwidth for the new pipe.
         mov     eax, [.maxpacket]
-        mov     ecx, eax
-        and     eax, (1 shl 11) - 1
+        call    calc_hs_bandwidth
+        mov     ecx, [.maxpacket]
         shr     ecx, 11
         inc     ecx
         and     ecx, 3
         imul    eax, ecx
-; 7. TODO2: check that bandwidth for the new pipe plus old bandwidth
+; 6. Get the pointer to the best list.
+        pop     edx             ; restore value from step 3
+        pop     edx             ; get delta calculated in step 3
+        add     edx, [.target]
+; 7. Check that bandwidth for the new pipe plus old bandwidth
 ; still fits to maximum allowed by the core specification
 ; current [.bandwidth] + new bandwidth <= limit;
 ; USB2 specification allows maximum 60000*80% bit times for periodic microframe
+        mov     ecx, [.bandwidth]
+        add     ecx, eax
+        cmp     ecx, 48000
+        ja      .no_bandwidth
 ; 8. Convert {o|u}hci_static_ep to usb_static_ep, update bandwidth and return.
         mov     ecx, [.targetsmask]
         add     [edx+ehci_static_ep.Bandwidths+ecx*2], ax
@@ -316,6 +387,12 @@ end virtual
         movi    eax, 1
         shl     eax, cl
         pop     edi ebx         ; restore used registers to be stdcall
+        ret
+.no_bandwidth:
+        dbgstr 'Periodic bandwidth limit reached'
+        xor     eax, eax
+        xor     edx, edx
+        pop     edi ebx
         ret
 .every_frame:
 ; The pipe should be scheduled every frame in two or more microframes.
@@ -400,17 +477,21 @@ end virtual
         add     esp, 8*4
 ; 12. Get the pointer to the target list (responsible for every microframe).
         lea     edx, [esi+ehci_controller.IntEDs.SoftwarePart+62*sizeof.ehci_static_ep-sizeof.ehci_controller]
-; 13. TODO1: calculate real bandwidth.
+; 13. Calculate bandwidth on the bus.
         mov     eax, [.maxpacket]
-        mov     ecx, eax
-        and     eax, (1 shl 11) - 1
+        call    calc_hs_bandwidth
+        mov     ecx, [.maxpacket]
         shr     ecx, 11
         inc     ecx
         and     ecx, 3
         imul    eax, ecx
-; 14. TODO2: check that current [.bandwidth] + new bandwidth <= limit;
+; 14. Check that current [.bandwidth] + new bandwidth <= limit;
 ; USB2 specification allows maximum 60000*80% bit times for periodic microframe.
-; Update bandwidths including the new pipe.
+        mov     ecx, [.bandwidth]
+        add     ecx, eax
+        cmp     ecx, 48000
+        ja      .no_bandwidth
+; 15. Update bandwidths including the new pipe.
         mov     ecx, [.targetsmask]
         lea     edi, [edx+ehci_static_ep.Bandwidths-ehci_static_ep.SoftwarePart]
 .update_bandwidths:
@@ -421,7 +502,7 @@ end virtual
         add     edi, 2
         test    ecx, ecx
         jnz     .update_bandwidths
-; 15. Return target list and target S-Mask.
+; 16. Return target list and target S-Mask.
         mov     eax, [.targetsmask]
         pop     edi ebx         ; restore used registers to be stdcall
         ret
@@ -433,10 +514,10 @@ endp
 proc ehci_hs_interrupt_list_unlink
 ; get target list
         mov     edx, [ebx+ehci_pipe.BaseList-sizeof.ehci_pipe]
-; TODO: calculate real bandwidth
         movzx   eax, word [ebx+ehci_pipe.Token-sizeof.ehci_pipe+2]
+; calculate bandwidth
+        call    calc_hs_bandwidth
         mov     ecx, [ebx+ehci_pipe.Flags-sizeof.ehci_pipe]
-        and     eax, (1 shl 11) - 1
         shr     ecx, 30
         imul    eax, ecx
         movzx   ecx, byte [ebx+ehci_pipe.Flags-sizeof.ehci_pipe]
@@ -451,6 +532,26 @@ proc ehci_hs_interrupt_list_unlink
         test    ecx, ecx
         jnz     .dec_bandwidth
 ; return
+        ret
+endp
+
+; Helper procedure for USB2 scheduler: calculate bandwidth on the bus.
+; in: low 11 bits of eax = payload size in bytes
+; out: eax = maximal bandwidth in HS-bits
+proc calc_hs_bandwidth
+        and     eax, (1 shl 11) - 1     ; get payload for one transaction
+        add     eax, 3  ; add 3 bytes for other fields in data packet, PID+CRC16
+; Multiply by 8 for bytes -> bits and then by 7/6 to accomodate bit stuffing;
+; total 28/3 = 9+1/3
+        mov     edx, 55555556h
+        lea     ecx, [eax*9]
+        mul     edx
+; Add 989 extra bits: 68 bits for Token packet (32 for SYNC, 24 for token+address,
+; 4 extra bits for possible bit stuffing in token+address, 8 for EOP),
+; 736 bits for bus turn-around, 40 bits for SYNC+EOP in Data packet,
+; 8 bits for inter-packet delay, 49 bits for Handshake packet,
+; 88 bits for another inter-packet delay.
+        lea     eax, [ecx+edx+989]
         ret
 endp
 
