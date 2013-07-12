@@ -311,6 +311,8 @@ key:
 	push	dword file_browser_data_1
 	call	[FileBrowser_key]
 
+	call	draw_open_button_label
+
 	cmp	[file_browser_data_1.draw_scroll_bar],0
 	je	@f
 	call	draw_scrollbar1
@@ -759,6 +761,8 @@ mouse:
 
 	push	dword file_browser_data_1
 	call	[FileBrowser_mouse]
+
+	call	draw_open_button_label
 
 	mov	eax,file_browser_data_1.mouse_keys_delta
 	cmp	[eax],dword 3
@@ -1368,7 +1372,9 @@ draw_window:
 	call	draw_for_fs_errors
 	jmp	.1
 @@:
+	mov	[do_not_draw_open_button_label],1
 	call	draw_draw_file_browser1
+	mov	[do_not_draw_open_button_label],0
 .1:
 	push	dword menu_data_1
 	call	[menu_bar_draw]
@@ -1449,17 +1455,20 @@ draw_window:
 	
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,12 shl 16+4
+	add	ebx,6 shl 16+4
 	
 	mov	edx,[open_dialog_type]
 	shl	edx,2
 	add	edx,message_open_dialog_button
 	mov	edx,[edx]
 	
-	cmp	[open_dialog_type],2	; Select dir
-	jne	@f
-	sub	ebx,5 shl 16
+	mov	eax,[file_browser_data_1.selected_BDVK_adress]
+	test	[eax],byte 0x10
+	jz	@f
+
+	mov	edx,message_0 	; Open Dir
 @@:
+	mov	[open_button_coordinates],ebx
 	mov	ecx,[w_work_button_text]
 	or	ecx,0x90000000
 	mcall	4	;message_open_button
@@ -1469,6 +1478,63 @@ draw_window:
 .end:
 	mcall	12,2
 
+	ret
+;---------------------------------------------------------------------
+draw_open_button_label:
+	cmp	[do_not_draw_open_button_label],1
+	je	.exit_1	
+
+	cmp	[open_dialog_type],1
+	jne	.exit_1
+
+	pusha
+	mov	ebx,[open_button_coordinates]
+	test	ebx,ebx
+	jz	.exit
+
+	mov	edx,[open_dialog_type]
+	shl	edx,2
+	add	edx,message_open_dialog_button
+	mov	edx,[edx]
+	
+	mov	eax,[file_browser_data_1.selected_BDVK_adress]
+	test	[eax],byte 0x10
+	jz	@f
+	
+	mov	edx,message_0	; Open Dir
+	jmp	.1
+@@:
+	call	copy_new_file_name
+.1:
+	mov	ecx,[w_work_button_text]
+	or	ecx,0xd0000000
+	mov	edi,[w_work_button]
+	mcall	4	;message_open_button
+.exit:
+	popa
+.exit_1:
+	ret
+;---------------------------------------------------------------------
+copy_new_file_name:
+	mov	esi,[file_browser_data_1.selected_BDVK_adress]
+	add	esi,40
+	mov	edi,user_selected_name
+	cld
+@@:
+	lodsb
+	stosb
+	test	al,al
+	jnz	@r
+	
+	sub	edi,user_selected_name
+	dec	edi
+	
+	mov	esi,edit1
+	mov	[esi+48],edi ;ed_size
+	mov	[esi+52],edi ;ed_pos
+
+	push	dword name_editboxes
+	call	[edit_box_draw]
 	ret
 ;---------------------------------------------------------------------
 prepare_system_colors:
@@ -1660,14 +1726,6 @@ draw_dir_path:
 	call	[PathShow_draw]
 	
 	ret
-	
-;draw_dir_path_1:
-;	mov	ebx,[file_browser_data_1.x]
-;	mcall	13,,<7,15>,0xffffb0
-;	mov	bx,10
-;	add	ebx,4 shl 16
-;	mcall	4,,0xC0000000,dir_path,,0xffffb0
-;	ret
 ;---------------------------------------------------------------------
 draw_draw_file_browser1:
 	call	draw_dir_path
@@ -1682,7 +1740,8 @@ draw_draw_file_browser1:
 	
 	push	dword file_browser_data_1
 	call	[FileBrowser_draw]
-	
+
+	call	draw_open_button_label
 	
 	call	prepare_scrollbar_data
 
@@ -1701,6 +1760,8 @@ draw_draw_file_browser2:
 
 	push	dword file_browser_data_1
 	call	[FileBrowser_draw]
+
+	call	draw_open_button_label
 
 	xor	eax,eax
 	mov	[file_browser_data_1.all_redraw],eax
@@ -1738,18 +1799,6 @@ prepare_scrollbar_data:
 	ret
 ;---------------------------------------------------------------------
 get_active_pocess:
-;	mcall	9,procinfo,-1
-;	mov	eax,[ebx+30]
-;	mov	[PID],eax
-;	xor	ecx,ecx
-;@@:
-;	inc	ecx
-;	mcall	9,procinfo
-;	mov	eax,[PID]
-;	cmp	eax,[ebx+30]
-;	jne	@r
-;	mov	[active_process],ecx
-
 	mcall	9,procinfo,-1
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
@@ -2738,12 +2787,11 @@ message_file_name:
 	db 'File name:',0
 	
 message_0:
-	db 'Open',0
+	db ' Open ',0
 message_1:
-	db 'Save',0
+	db ' Save ',0
 message_2:
 	db 'Select',0
-	
 	
 title_0:
 	db 'Open Dialog',0
@@ -3044,6 +3092,8 @@ example_name_temp:
 ;---------------------------------------------------------------------
 IM_END:
 ;---------------------------------------------------------------------
+do_not_draw_open_button_label	rb 1
+;---------------------------------------------------------------------
 align 4
 app_colours:
 
@@ -3057,6 +3107,8 @@ w_work_button		rd 1
 w_work_button_text	rd 1
 w_work_text		rd 1
 w_work_graph		rd 1
+;---------------------------------------------------------------------
+open_button_coordinates	rd 1
 ;---------------------------------------------------------------------
 menu_text_area_1_1:
 rb 256
