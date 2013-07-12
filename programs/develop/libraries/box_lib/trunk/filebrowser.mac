@@ -103,6 +103,7 @@ fb_draw_panel:
 	call	fb_calc_folder_sysdata
 	call	fb_draw_panel_selection
 	call	fb_draw_folder_data
+	call	fb_prepare_selected_BDVK_adress
 file_browser_exit
 ;---------------------------------------------------------------------
 fb_draw_panel_1:
@@ -1076,6 +1077,7 @@ fb_mouse:
 	mov	fb_mouse_keys_delta,eax
 ;-------------------------------------------------------
 .exit_fb:
+	call	fb_prepare_selected_BDVK_adress
 file_browser_exit
 ;-------------------------------------------------------
 .mark_mouse:
@@ -1092,17 +1094,6 @@ file_browser_exit
 	mov	eax,3
 	mov	fb_mouse_keys_delta,eax
 	xor	eax,eax
-	mov	ax,fb_start_draw_cursor_line
-	xor	ebx,ebx
-	mov	bx,fb_line_size_y
-	xor	edx,edx
-	div	ebx
-	add	eax,fb_start_draw_line
-	imul	eax,304
-	add	eax,32
-	add	eax,fb_folder_data
-	mov	fb_selected_BDVK_adress,eax
-	xor	eax,eax
 	mov	fb_max_name_temp_size,eax
 	ret
 ;-------------------------------------------------------
@@ -1113,6 +1104,21 @@ file_browser_exit
 	xor	eax,eax
 ;	mov	fb_mouse_keys_delta,eax
 	pop	eax
+	ret
+;*****************************************************************************
+;*****************************************************************************
+fb_prepare_selected_BDVK_adress:
+	xor	eax,eax
+	mov	ax,fb_start_draw_cursor_line
+	xor	ebx,ebx
+	mov	bx,fb_line_size_y
+	xor	edx,edx
+	div	ebx
+	add	eax,fb_start_draw_line
+	imul	eax,304
+	add	eax,32
+	add	eax,fb_folder_data
+	mov	fb_selected_BDVK_adress,eax
 	ret
 ;*****************************************************************************
 ;*****************************************************************************
@@ -1391,6 +1397,7 @@ fb_key:
 	jmp	.mark_all_1
 ;-------------------------------------------------------
 .exit_fb:
+	call	fb_prepare_selected_BDVK_adress
 file_browser_exit
 ;-------------------------------------------------------
 fb_key_table:
