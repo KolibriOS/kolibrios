@@ -68,6 +68,7 @@ __exports:
           reg_service,           'RegService',         \      ; stdcall
           attach_int_handler,    'AttachIntHandler',   \      ; stdcall
           user_alloc,            'UserAlloc',          \      ; stdcall
+          user_alloc_at,         'UserAllocAt',        \      ; stdcall
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr',     \
