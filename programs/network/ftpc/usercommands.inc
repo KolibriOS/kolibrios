@@ -14,8 +14,9 @@ cmd_bye:
 
 cmd_pwd:
 
-        mov     dword[s], "PWD" + 10 shl 24
-        mcall   send, [socketnum], s, 4, 0
+        mov     dword[s], "PWD" + 13 shl 24
+        mov     byte[s+4], 10
+        mcall   send, [socketnum], s, 5, 0
 
         jmp     wait_for_servercommand
 
@@ -27,7 +28,8 @@ cmd_cwd:
         xor     al, al
         mov     edi, s
         repne scasb
-        lea     esi, [edi - s - 1]
+        lea     esi, [edi - s]
+        mov     word [edi - 2], 0x0a0d
 
         mcall   send, [socketnum], s, , 0
 
@@ -42,7 +44,8 @@ cmd_dele:
         xor     al, al
         mov     edi, s
         repne scasb
-        lea     esi, [edi - s - 1]
+        lea     esi, [edi - s]
+        mov     word [edi - 2], 0x0a0d
 
         mcall   send, [socketnum], s, , 0
 
@@ -55,8 +58,8 @@ cmd_list:
         mov     [operation], OPERATION_LIST
 
         mov     dword[s], "LIST"
-        mov     byte[s+4], 0x0a
-        mcall   send, [socketnum], s, 5, 0
+        mov     word[s+4], 0x0a0d
+        mcall   send, [socketnum], s, 6, 0
 
         jmp     wait_for_servercommand
 
@@ -91,7 +94,8 @@ cmd_retr:
         xor     al, al
         mov     edi, s
         repne scasb
-        lea     esi, [edi - s - 1]
+        lea     esi, [edi - s]
+        mov     word [edi - 2], 0x0a0d
         mcall   send, [socketnum], s, , 0
 
         jmp     wait_for_servercommand
@@ -121,7 +125,8 @@ cmd_stor:
         xor     al, al
         mov     edi, s
         repne scasb
-        lea     esi, [edi - s - 1]
+        lea     esi, [edi - s]
+        mov     word [edi - 2], 0x0a0d
         mcall   send, [socketnum], s, , 0
 
         jmp     wait_for_servercommand
@@ -152,8 +157,8 @@ cmd_lcwd:
 cmd_cdup:
 
         mov     dword[s], "CDUP"
-        mov     byte[s+4], 0x0a
-        mcall   send, [socketnum], s, 5, 0
+        mov     word[s+4], 0x0d0a
+        mcall   send, [socketnum], s, 6, 0
 
         jmp     wait_for_servercommand
 
@@ -165,7 +170,8 @@ cmd_rmd:
         xor     al, al
         mov     edi, s
         repne scasb
-        lea     esi, [edi - s - 1]
+        lea     esi, [edi - s]
+        mov     word [edi - 2], 0x0a0d
 
         mcall   send, [socketnum], s, , 0
 
@@ -179,7 +185,8 @@ cmd_mkd:
         xor     al, al
         mov     edi, s
         repne scasb
-        lea     esi, [edi - s - 1]
+        lea     esi, [edi - s]
+        mov     word [edi - 2], 0x0a0d
 
         mcall   send, [socketnum], s, , 0
 

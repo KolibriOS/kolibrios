@@ -271,7 +271,8 @@ wait_for_usercommand:
         mov     ecx, 256
         xor     al, al
         repne   scasb
-        lea     esi, [edi-s-1]
+        lea     esi, [edi-s]
+        mov     word[edi-2], 0x0a0d
 ; and send it to the server
         mcall   send, [socketnum], s, , 0
 
@@ -286,8 +287,8 @@ open_dataconnection:                    ; only passive for now..
         jne     .fail
 
         mov     dword[s], "PASV"
-        mov     byte[s+4], 10
-        mcall   send, [socketnum], s, 5, 0
+        mov     word[s+4], 0x0a0d
+        mcall   send, [socketnum], s, 6, 0
         ret
 
   .fail:
