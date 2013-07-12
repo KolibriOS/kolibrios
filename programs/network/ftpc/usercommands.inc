@@ -145,7 +145,7 @@ cmd_lcwd:
 
         invoke  con_write_asciiz, str_lcwd
         invoke  con_write_asciiz, s
-        invoke  con_write_asciiz, str4  ; newline
+        invoke  con_write_asciiz, str_newline
 
         jmp     wait_for_usercommand
 

@@ -66,7 +66,7 @@ pasv_ok:
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
-        je      fail
+        je      error_socket
         mov     [datasocket], eax
 
         mov     esi, edi
