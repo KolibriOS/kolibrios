@@ -740,12 +740,11 @@ cmdPASV:
 ; 227 Entering Passive Mode (a1,a2,a3,a4,p1,p2)
 ; where a1.a2.a3.a4 is the IP address and p1*256+p2 is the port number.
 
-; '227 ('
+; '227 Entering passive mode ('
         lea     edi, [ebp + thread_data.buffer]
-        mov     eax, '227 '
-        stosd
-        mov     al, '('
-        stosb
+        mov     ecx, str_227.length
+        mov     esi, str_227
+        rep movsb
 ; ip
         movzx   eax, byte [serverip]
         call    dword_to_ascii
@@ -771,7 +770,7 @@ cmdPASV:
         movzx   eax, byte [ebp + thread_data.datasock.sin_port+1]
         call    dword_to_ascii
 ; ')', 13, 10, 0
-        mov     eax, ')' + 0x000a0d00
+        mov     eax, ')' + (0x000a0d shl 8)
         stosd
 
         lea     esi, [edi - thread_data.buffer]
@@ -782,6 +781,12 @@ cmdPASV:
         mcall   send
 
         ret
+
+
+iglobal
+        str_227 db "227 Entering passive mode ("
+        .length = $ - str_227
+endg
 
 ;------------------------------------------------
 ; "PWD"

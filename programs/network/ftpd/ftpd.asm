@@ -76,10 +76,11 @@ macro sendFTP str {
 local string, length
         xor     edi, edi
         mcall   send, [ebp + thread_data.socketnum], string, length
+        invoke  con_write_asciiz, string
 
 iglobal
-string db str, 13, 10
-length = $ - string
+string  db str, 13, 10, 0
+length = $ - string - 1
 \}
 }
 
@@ -87,7 +88,7 @@ include 'commands.inc'
 
 start:
         mcall   68, 11                  ; init heap
-        mcall   40, 1 shl 7             ; we only want network events
+        mcall   40, EVM_STACK           ; we only want network events
 
 ; load libraries
         stdcall dll.Load, @IMPORT
@@ -138,7 +139,7 @@ start:
         add     esp, 8
 
 ; open listening socket
-        mcall   socket, AF_INET4, SOCK_STREAM, 0
+        mcall   socket, AF_INET4, SOCK_STREAM, SO_NONBLOCK      ; we dont want to block on accept
         cmp     eax, -1
         je      sock_err
         mov     [socketnum], eax
@@ -208,7 +209,7 @@ threadstart:
         lea     esp, [eax + thread_data.stack]  ; init stack
         mov     ebp, eax
 
-        mcall   40, 1 shl 7                     ; we only want network events for this thread
+        mcall   40, EVM_STACK                   ; we only want network events for this thread
 
         lea     ebx, [ebp + thread_data.buffer] ; get information about the current process
         or      ecx, -1
@@ -241,15 +242,17 @@ end if
 
         diff16  "threadloop", 0, $
 threadloop:
-; Check if our socket is still connected
-        mcall   send, [ebp + thread_data.socketnum], 0, 0       ; Try to send zero bytes, if socket is closed, this will return -1
-        cmp     eax, -1
-        je      thread_exit
+;; Check if our socket is still connected
+;        mcall   send, [ebp + thread_data.socketnum], 0, 0       ; Try to send zero bytes, if socket is closed, this will return -1
+;        cmp     eax, -1
+;        je      thread_exit
 
         cmp     [alive], 0                                      ; Did main thread take a run for it?
         je      thread_exit
 
-        mcall   10                                              ; Wait for network event
+        mcall   23, 100                                         ; Wait for network event
+        test    eax, eax
+        jz      threadloop
 
         cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
         jne     .not_passive
@@ -282,12 +285,17 @@ threadloop:
 
 ; Check if we received a newline character, if not, wait for more data
         mov     ecx, eax
-        mov     al, 13
+        mov     al, 10
         repne   scasb
         jne     threadloop
 
+        cmp     word[edi-1], 0x0a0d
+        jne     .got_command
+        dec     edi
+
 ; We got a command!
-        mov     byte [edi + 1], 0                       ; append string with zero byte
+  .got_command:
+        mov     byte [edi], 0                           ; append string with zero byte
         lea     esi, [ebp + thread_data.buffer]
         mov     ecx, [ebp + thread_data.buffer_ptr]
         sub     ecx, esi
@@ -332,7 +340,7 @@ thread_exit:
 
 ; initialized data
 
-title           db 'KolibriOS FTP daemon 0.1', 0
+title           db 'FTP daemon', 0
 str1            db 'Starting FTP daemon on port %u.', 0
 str2            db '.', 0
 str2b           db ' OK!',10,0
