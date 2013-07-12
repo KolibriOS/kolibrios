@@ -164,6 +164,7 @@ wait_for_servercommand:
   .no_more_data:
         mov     [offset], 0
   .go_cmd:
+        lea     ecx, [edi - s]                  ; length of command
         xor     al, al
         stosb
 
@@ -292,21 +293,29 @@ open_dataconnection:                    ; only passive for now..
         ret
 
   .fail:
+        invoke  con_get_flags
+        push    eax
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str_err_socket
+        invoke  con_set_flags                           ; reset color
         ret
 
 
 
 error_socket:
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str_err_socket
         jmp     wait_for_keypress
 
 error_resolve:
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str_err_resolve
 
 wait_for_keypress:
+        invoke  con_set_flags, 0x07                     ; reset color to grey
         invoke  con_write_asciiz, str_push
         invoke  con_getch2
+        mcall   close, [socketnum]
         jmp     main
 
 done:
@@ -320,7 +329,7 @@ exit:
 
 ; data
 str_title       db 'FTP client',0
-str_welcome     db 'FTP client for KolibriOS v0.08',10
+str_welcome     db 'FTP client for KolibriOS v0.09',10
                 db 10
                 db 'Please enter ftp server address.',10,0
 

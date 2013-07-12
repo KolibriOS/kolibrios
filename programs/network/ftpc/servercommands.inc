@@ -29,6 +29,9 @@ server_parser:
 ;        cmp     dword[s], "421 "
 ;        je      timeout
 
+        cmp     dword[s], "503 "         ; login first
+        je      welcome
+
         cmp     dword[s], "530 "         ; password incorrect
         je      welcome
 
@@ -58,10 +61,10 @@ login_ok:
 
 pasv_ok:
 
-        sub     ecx, 5
+        sub     ecx, 4
         jb      .fail
         mov     al, "("
-        mov     edi, s + 5
+        mov     edi, s + 4
         repne   scasb
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
@@ -86,8 +89,12 @@ pasv_ok:
 
         invoke  con_write_asciiz, str_open
         mcall   connect, [datasocket], sockaddr2, 18
+;        cmp     eax, -1
+;        je      error_socket
+        jmp     wait_for_servercommand
 
   .fail:
+        invoke  con_write_asciiz, str_unknown
         jmp     wait_for_servercommand
 
 
