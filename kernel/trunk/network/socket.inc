@@ -754,14 +754,14 @@ SOCKET_accept:
 ; Ok, we got a socket ptr
         mov     eax, [esi]
 
-; Convert it to a socket number
-        call    SOCKET_ptr_to_num
-        jz      .invalid        ; FIXME ?
-
 ; Change thread ID to that of the current thread
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.TID], ebx
+
+; Convert it to a socket number
+        call    SOCKET_ptr_to_num
+        jz      .invalid        ; FIXME ?
 
 ; and return it to caller
         mov     [esp+32], eax
@@ -1894,8 +1894,7 @@ SOCKET_notify:
         shl     ecx, 8
         or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Raised a network event!\n"
-
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
         jmp     .done
 
   .unblock:
@@ -2152,13 +2151,20 @@ SOCKET_fork:
         pop     eax
 
 ; Copy structure from current socket to new
-; We start at PID to preserve the socket num, and the 2 pointers at beginning of socket
+; We start at PID to preserve the socket num, 2 pointers and mutex
+; TID will be filled in later
         lea     esi, [ebx + SOCKET.PID]
         lea     edi, [eax + SOCKET.PID]
         mov     ecx, (SOCKET_QUEUE_LOCATION - SOCKET.PID + 3)/4
         rep movsd
 
         and     [eax + SOCKET.options], not SO_ACCEPTCON
+
+; Notify owner of parent socket
+        push    eax
+        mov     eax, ebx
+        call    SOCKET_notify
+        pop     eax
 
         ret
 
