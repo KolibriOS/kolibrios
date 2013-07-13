@@ -21,9 +21,10 @@ STATUS_CONNECTED        = 1
 STATUS_NEEDPASSWORD     = 2
 STATUS_LOGGED_IN        = 3
 
-OPERATION_LIST          = 0
-OPERATION_RETR          = 1
-OPERATION_STOR          = 2
+OPERATION_NONE          = 0
+OPERATION_LIST          = 1
+OPERATION_RETR          = 2
+OPERATION_STOR          = 3
 
 use32
 ; standard header
@@ -287,9 +288,7 @@ open_dataconnection:                    ; only passive for now..
         cmp     [status], STATUS_LOGGED_IN
         jne     .fail
 
-        mov     dword[s], "PASV"
-        mov     word[s+4], 0x0a0d
-        mcall   send, [socketnum], s, 6, 0
+        mcall   send, [socketnum], str_PASV, str_PASV.length, 0
         ret
 
   .fail:
@@ -329,7 +328,7 @@ exit:
 
 ; data
 str_title       db 'FTP client',0
-str_welcome     db 'FTP client for KolibriOS v0.09',10
+str_welcome     db 'FTP client for KolibriOS v0.10',10
                 db 10
                 db 'Please enter ftp server address.',10,0
 
@@ -364,6 +363,12 @@ str_help        db "available commands:",10
                 db "rmd <directory> - remove directory from the server",10
                 db "stor <file>     - store file on the server",10
                 db 10,0
+
+
+; FTP strings
+
+str_PASV        db 'PASV',13,10
+.length = $ - str_PASV
 
 sockaddr1:
         dw AF_INET4
