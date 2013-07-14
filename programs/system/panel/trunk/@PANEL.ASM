@@ -4,6 +4,11 @@
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------------------------------------------
+; version:      2.25
+; last update:  14/07/2013
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Reinstall screen work area after change screen resolution
+;------------------------------------------------------------------------------
 ; version:      2.24
 ; last update:  16/06/2013
 ; changed by:   hidnplayr
@@ -674,28 +679,7 @@ end if
 	mcall	14
 	mov	[screen_size],eax
 
-	
-	mov	ecx,eax
-;eax = [xsize]*65536 + [ysize], где
-	shr	ecx,16
-	and	eax,0xFFFF
-	
-	cmp	[place_attachment],1
-	je	@f
-	ror	eax,16
-	add	eax,[height]
-	rol	eax,16
-	mov	edx,eax
-	jmp	.selected
-;--------------------------------------
-align 4
-@@:
-	sub	eax,[height]
-	mov	edx, eax
-;--------------------------------------
-align 4
-.selected:
-	mcall	48,6
+	call	set_work_ares_pf_screen
 
 	mcall	9,process_info_buffer,-1
 	mov	ecx,[process_info_buffer+30]
@@ -794,6 +778,31 @@ align 4
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
+set_work_ares_pf_screen:
+;eax = [xsize]*65536 + [ysize]
+	mov	ecx,eax
+	shr	ecx,16
+	and	eax,0xFFFF
+	cmp	[place_attachment],1
+	je	@f
+
+	ror	eax,16
+	add	eax,[height]
+	rol	eax,16
+	mov	edx,eax
+	jmp	.selected
+;--------------------------------------
+align 4
+@@:
+	sub	eax,[height]
+	mov	edx, eax
+;--------------------------------------
+align 4
+.selected:	
+	mcall	48,6
+	ret
+;------------------------------------------------------------------------------
+align 4
 red_active:
 red:
 	mov	dword [active_window_changed], 0
@@ -814,6 +823,11 @@ red:
 align 4
 @@:
 	mov	[screen_size],eax
+
+	push	ecx edx
+	call	set_work_ares_pf_screen
+	pop	edx ecx
+
 	sub	ecx,[height]
 	mcall	67,0,,,[height]
 ;--------------------------------------
