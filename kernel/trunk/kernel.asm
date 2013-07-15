@@ -1120,7 +1120,11 @@ end if
 
         mov     ax, [IDE_Interrupt]
         cmp     al, 0xff
-        je      set_interrupts_for_IDE_controllers.end_set_interrupts
+        jne     @f
+
+        mov     [dma_hdd], 0
+        jmp     set_interrupts_for_IDE_controllers.end_set_interrupts
+@@:
 ;-----------------------------------------------------------------------------
 ; set interrupts for IDE Controller
 ;-----------------------------------------------------------------------------
