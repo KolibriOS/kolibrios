@@ -90,7 +90,7 @@ commands:               ; all commands must be in uppercase
 ;        dd 'MDTM', login_first, login_first, login_first, cmd_MDTM
 ;        dd 'MKD',  login_first, login_first, login_first, cmd_MKD
 ;        dd 'MODE', login_first, login_first, login_first, cmd_MODE
-        dd 'NLST', login_first, login_first, login_first, cmdNLST
+;        dd 'NLST', login_first, login_first, login_first, cmdNLST
         dd 'NOOP', login_first, login_first, login_first, cmdNOOP
         dd 'PASS', cmdPASS.0,   cmdPASS    , cmdPASS.2,   cmdPASS.3
         dd 'PASV', login_first, login_first, login_first, cmdPASV
@@ -283,9 +283,9 @@ align 4
 open_datasock:
 
         cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        je      .start
+        je      .already_open
 
-; If we are in active mode, it's time to open a data socket..
+; If we are in active mode, it's time to open the data socket..
         cmp     [ebp + thread_data.mode], MODE_ACTIVE
         jne     .not_active
         mov     ecx, [ebp + thread_data.datasocketnum]
@@ -293,7 +293,13 @@ open_datasock:
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
         cmp     eax, -1
-        jne     .start
+        je      .socketerror
+        invoke  con_write_asciiz, str_datasock2
+        ret
+
+  .already_open:
+        invoke  con_write_asciiz, str_alopen
+        ret
 
   .socketerror:
         add     esp, 4
@@ -323,7 +329,6 @@ open_datasock:
         mov     [ebp + thread_data.passivesocknum], -1
         invoke  con_write_asciiz, str_datasock
 
-  .start:
         ret
 
 
@@ -600,7 +605,7 @@ cmdLIST:
         mov     [ebp + thread_data.mode], MODE_NOTREADY
         mcall   close, [ebp + thread_data.datasocketnum]
 
-        sendFTP "226 Transfer OK"
+        sendFTP "226 List OK"
         ret
 
   .nosuchdir:
@@ -773,12 +778,14 @@ cmdPASV:
         mov     eax, ')' + (0x000a0d shl 8)
         stosd
 
-        lea     esi, [edi - thread_data.buffer]
+        lea     esi, [edi - thread_data.buffer - 1]      ; calculate length, do not cound the trailing 0 byte
         sub     esi, ebp
         mov     ecx, [ebp + thread_data.socketnum]
         lea     edx, [ebp + thread_data.buffer]
         xor     edi, edi
         mcall   send
+
+        invoke  con_write_asciiz, edx
 
         ret
 
@@ -813,7 +820,7 @@ cmdPWD:
 
   .ok:
         mov     dword [edi], '"' + 0x000a0d00    ; '"',13,10,0
-        lea     esi, [edi - thread_data.buffer + 4]
+        lea     esi, [edi - thread_data.buffer + 3]
         sub     esi, ebp
         mov     ecx, [ebp + thread_data.socketnum]
         lea     edx, [ebp + thread_data.buffer]
@@ -991,12 +998,17 @@ cmdSTOR:
         test    [ebp + thread_data.permissions], PERMISSION_WRITE
         jz      permission_denied
 
+        sendFTP " Ready to receive"
 
-;;;;
+
+;;;;    TODO
+
         test    [ebp + thread_data.permissions], ABORT
         jnz     abort_transfer
 
 ;;;;
+
+        sendFTP "226 Transfer OK"
 
         ret
 

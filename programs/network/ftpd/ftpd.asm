@@ -358,6 +358,8 @@ str_pass_err    db 'Password/Username incorrect',10,0
 str_pwd         db 'Current directory is "%s"\n',0
 str_err2        db 'ERROR: cannot open the directory.',10,0
 str_datasock    db 'Passive data socket connected.',10,0
+str_datasock2   db 'Active data socket connected.',10,0
+str_alopen      db 'Data connection already open.',10,0
 str_notfound    db 'ERROR: file not found.',10,0
 str_sockerr     db 'ERROR: socket error.',10,0
 
