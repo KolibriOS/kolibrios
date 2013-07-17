@@ -239,16 +239,39 @@ proc usb_new_device
 ; 2. Store pointer to device data in the pipe structure.
         mov     [ebx+usb_pipe.DeviceData], eax
 ; 3. Init device data, using usb_controller.Resetting* variables.
+        mov     [eax+usb_device_data.TTHub], edi
+        mov     [eax+usb_device_data.TTPort], 0
+        mov     [eax+usb_device_data.NumInterfaces], edi
+        mov     [eax+usb_device_data.DeviceDescrSize], 0
+        mov     dl, [esi+usb_controller.ResettingSpeed]
+        mov     [eax+usb_device_data.Speed], dl
         mov     [eax+usb_device_data.NumPipes], 1
+        push    ebx
+        cmp     dl, USB_SPEED_HS
+        jz      .nott
+        mov     ebx, [esi+usb_controller.ResettingHub]
+        test    ebx, ebx
+        jz      .nott
+        mov     cl, [esi+usb_controller.ResettingPort]
+        mov     edx, [ebx+usb_hub.ConfigPipe]
+        mov     edx, [edx+usb_pipe.DeviceData]
+        cmp     [edx+usb_device_data.TTHub], 0
+        jz      @f
+        mov     cl, [edx+usb_device_data.TTPort]
+        mov     ebx, [edx+usb_device_data.TTHub]
+        jmp     .has_tt
+@@:
+        cmp     [edx+usb_device_data.Speed], USB_SPEED_HS
+        jnz     .nott
+.has_tt:
+        mov     [eax+usb_device_data.TTHub], ebx
+        mov     [eax+usb_device_data.TTPort], cl
+.nott:
+        pop     ebx
         mov     [eax+usb_device_data.ConfigDataSize], edi
         mov     [eax+usb_device_data.Interfaces], edi
         movzx   ecx, [esi+usb_controller.ResettingPort]
-; Note: the following write zeroes
-; usb_device_data.DeviceDescrSize, usb_device_data.NumInterfaces,
-; usb_device_data.Speed.
-        mov     dword [eax+usb_device_data.Port], ecx
-        mov     dl, [esi+usb_controller.ResettingSpeed]
-        mov     [eax+usb_device_data.Speed], dl
+        mov     [eax+usb_device_data.Port], cl
         mov     edx, [esi+usb_controller.ResettingHub]
         mov     [eax+usb_device_data.Hub], edx
 ; 4. Store pointer to the config pipe in the hub data.
@@ -470,9 +493,8 @@ proc usb_after_set_endpoint_size
         mov     [ebx+usb_pipe.DeviceData], eax
         mov     edi, eax
         mov     eax, esi
-repeat sizeof.usb_device_data / 4
-        movsd
-end repeat
+        mov     ecx, sizeof.usb_device_data / 4
+        rep movsd
         pop     edi esi
         call    usb_reinit_pipe_list
 ; 1d. Free the old memory.
@@ -736,7 +758,7 @@ endl
         jmp     .nothing
 @@:
 ; 3. Store the number of interfaces in device data structure.
-        mov     [ebx+usb_device_data.NumInterfaces], dl
+        mov     [ebx+usb_device_data.NumInterfaces], edx
 ; 4. If there is only one interface (which happens quite often),
 ; the memory allocated in usb_know_length_callback is sufficient.
 ; Otherwise (which also happens quite often), reallocate device data.
@@ -775,7 +797,7 @@ endl
         mov     edi, [ebx+usb_device_data.Interfaces]
         add     edi, ebx
         mov     [InterfacesData], edi
-        movzx   ecx, [ebx+usb_device_data.NumInterfaces]
+        mov     ecx, [ebx+usb_device_data.NumInterfaces]
 if sizeof.usb_interface_data <> 8
 You have changed sizeof.usb_interface_data? Modify this place too.
 end if
@@ -837,9 +859,8 @@ end if
 @@:
 ; 7f. Check that the new interface does not overflow allocated table.
         mov     edx, [NumInterfaces]
-        inc     dl
-        jz      .invalid
-        cmp     dl, [ebx+usb_device_data.NumInterfaces]
+        inc     edx
+        cmp     edx, [ebx+usb_device_data.NumInterfaces]
         ja      .invalid
 ; 7g. We have found a new interface. Advance bookkeeping vars.
         mov     [NumInterfaces], edx

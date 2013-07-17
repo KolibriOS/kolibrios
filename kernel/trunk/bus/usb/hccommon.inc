@@ -133,17 +133,22 @@ NumPipes        dd      ?
 ; Number of not-yet-closed pipes.
 Hub             dd      ?
 ; NULL if connected to the root hub, pointer to usb_hub otherwise.
+TTHub           dd      ?
+; Pointer to usb_hub for (the) hub with Transaction Translator for the device,
+; NULL if the device operates in the same speed as the controller.
 Port            db      ?
 ; Port on the hub, zero-based.
+TTPort          db      ?
+; Port on the TTHub, zero-based.
 DeviceDescrSize db      ?
 ; Size of device descriptor.
-NumInterfaces   db      ?
-; Number of interfaces.
 Speed           db      ?
 ; Device speed, one of USB_SPEED_*.
+NumInterfaces   dd      ?
+; Number of interfaces.
 ConfigDataSize  dd      ?
 ; Total size of data associated with the configuration descriptor
-; (including the configuration descriptor itself);
+; (including the configuration descriptor itself).
 Interfaces      dd      ?
 ; Offset from the beginning of this structure to Interfaces field.
 ; Variable-length fields:

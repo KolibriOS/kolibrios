@@ -919,11 +919,11 @@ end virtual
 ; This could fail if the requested bandwidth is not available;
 ; if so, return an error.
         test    word [edi+ehci_pipe.Flags-sizeof.ehci_pipe+2], 3FFFh
-        jnz     .interrupt_fs
+        jnz     .interrupt_tt
         call    ehci_select_hs_interrupt_list
         jmp     .interrupt_common
-.interrupt_fs:
-        call    ehci_select_fs_interrupt_list
+.interrupt_tt:
+        call    ehci_select_tt_interrupt_list
 .interrupt_common:
         test    edx, edx
         jz      .return0
@@ -1310,16 +1310,17 @@ proc ehci_new_device
 ; ehci_init_pipe assumes that the parent pipe is a control pipe.
         movzx   ecx, [esi+usb_controller.ResettingPort]
         mov     edx, [esi+usb_controller.ResettingHub]
+; If the parent hub is high-speed, it is TT for the device.
+; Otherwise, the parent hub itself is behind TT, and the device
+; has the same TT hub+port as the parent hub.
         push    eax
-.find_hs_hub:
         mov     eax, [edx+usb_hub.ConfigPipe]
         mov     eax, [eax+usb_pipe.DeviceData]
         cmp     [eax+usb_device_data.Speed], USB_SPEED_HS
-        jz      .found_hs_hub
-        movzx   ecx, [eax+usb_device_data.Port]
-        mov     edx, [eax+usb_device_data.Hub]
-        jmp     .find_hs_hub
-.found_hs_hub:
+        jz      @f
+        movzx   ecx, [eax+usb_device_data.TTPort]
+        mov     edx, [eax+usb_device_data.TTHub]
+@@:
         mov     edx, [edx+usb_hub.ConfigPipe]
         inc     ecx
         mov     edx, [edx+ehci_pipe.Token-sizeof.ehci_pipe]

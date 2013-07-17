@@ -216,6 +216,7 @@ endp
 proc usb_open_pipe stdcall uses ebx esi edi,\
  config_pipe:dword, endpoint:dword, maxpacket:dword, type:dword, interval:dword
 locals
+tt_vars         rd      (ehci_select_tt_interrupt_list.local_vars_size + 3) / 4
 targetsmask     dd      ?       ; S-Mask for USB2
 bandwidth       dd      ?
 target          dd      ?
@@ -509,7 +510,7 @@ proc usb_pipe_closed
 ; That was the last pipe for the device.
 ; 5. Notify device driver(s) about disconnect.
         call    mutex_unlock
-        movzx   eax, [ecx+usb_device_data.NumInterfaces]
+        mov     eax, [ecx+usb_device_data.NumInterfaces]
         test    eax, eax
         jz      .notify_done
         add     ecx, [ecx+usb_device_data.Interfaces]
