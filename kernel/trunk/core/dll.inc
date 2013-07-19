@@ -1030,8 +1030,6 @@ proc load_library stdcall, file_name:dword
              img_base  dd ?
            endl
 
-        cli
-
 ; resolve file name
         mov     ebx, [file_name]
         lea     edi, [fullname+1]
@@ -1042,6 +1040,8 @@ proc load_library stdcall, file_name:dword
 
 ; scan for required DLL in list of already loaded for this process,
 ; ignore timestamp
+        cli
+
         mov     esi, [CURRENT_TASK]
         shl     esi, 8
         lea     edi, [fullname]
@@ -1065,6 +1065,7 @@ proc load_library stdcall, file_name:dword
         mov     eax, [ecx+DLLDESCR.exports]
         sub     eax, [ecx+DLLDESCR.defaultbase]
         add     eax, [esi+HDLL.base]
+        sti
         ret
 .next_in_process:
         mov     esi, [esi+HDLL.fd]
@@ -1072,10 +1073,12 @@ proc load_library stdcall, file_name:dword
 .not_in_process:
 
 ; scan in full list, compare timestamp
+        sti
         lea     eax, [fileinfo]
         stdcall get_fileinfo, edi, eax
         test    eax, eax
         jnz     .fail
+        cli
         mov     esi, [dll_list.fd]
 .scan_for_dlls:
         cmp     esi, dll_list
@@ -1097,6 +1100,7 @@ proc load_library stdcall, file_name:dword
 
 ; new DLL
 .load_new:
+        sti
 ; load file
         stdcall load_file, edi
         test    eax, eax
@@ -1124,13 +1128,6 @@ proc load_library stdcall, file_name:dword
         mov     dword [esi+DLLDESCR.timestamp], eax
         mov     eax, dword [fileinfo+28]
         mov     dword [esi+DLLDESCR.timestamp+4], eax
-; initialize DLLDESCR struct
-        and     dword [esi+DLLDESCR.refcount], 0; no HDLLs yet; later it will be incremented
-        mov     [esi+DLLDESCR.fd], dll_list
-        mov     eax, [dll_list.bk]
-        mov     [dll_list.bk], esi
-        mov     [esi+DLLDESCR.bk], eax
-        mov     [eax+DLLDESCR.fd], esi
 
 ; calculate size of loaded DLL
         mov     edx, [coff]
@@ -1300,6 +1297,14 @@ proc load_library stdcall, file_name:dword
 
         stdcall kernel_free, [coff]
 
+        cli
+; initialize DLLDESCR struct
+        and     dword [esi+DLLDESCR.refcount], 0; no HDLLs yet; later it will be incremented
+        mov     [esi+DLLDESCR.fd], dll_list
+        mov     eax, [dll_list.bk]
+        mov     [dll_list.bk], esi
+        mov     [esi+DLLDESCR.bk], eax
+        mov     [eax+DLLDESCR.fd], esi
 .dll_already_loaded:
         inc     [esi+DLLDESCR.refcount]
         push    esi
@@ -1372,6 +1377,7 @@ proc load_library stdcall, file_name:dword
         mov     eax, [esi+DLLDESCR.exports]
         sub     eax, [esi+DLLDESCR.defaultbase]
         add     eax, [img_base]
+        sti
         ret
 .fail_and_free_data:
         stdcall kernel_free, [esi+DLLDESCR.data]
@@ -1388,6 +1394,7 @@ proc load_library stdcall, file_name:dword
 .fail_and_dereference:
         mov     eax, 1  ; delete 1 reference
         call    dereference_dll
+        sti
         xor     eax, eax
         ret
 endp
