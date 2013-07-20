@@ -63,12 +63,15 @@ proc fs_execute
 ; [esp+4] = procedure DoRead, [esp+8] = filesize & [esp+12]... - arguments for it
 
        locals
+         cmdline_size  dd ? ; +0 ; cmdline -12
+         cmdline_adr   dd ? ; +4 ; cmdline -8
+         cmdline_flag  dd ? ; +8 ; cmdline -4
          cmdline       rd 64    ;256/4
          filename      rd 256   ;1024/4
-         flags     dd ?
+         flags         dd ?
 
          save_cr3      dd ?
-         slot      dd ?
+         slot          dd ?
          slot_base     dd ?
          file_base     dd ?
          file_size     dd ?
@@ -127,15 +130,73 @@ proc fs_execute
         jmp     .final
 
 .namecopied:
+        xor     eax, eax
+        mov     [cmdline_flag], eax
+        mov     [cmdline_adr], eax
+        mov     [cmdline_size], eax
 
         mov     [cmdline], ebx
         test    ebx, ebx
-        jz      @F
+        jz      .no_copy
+;--------------------------------------
+        pushad
+        pushfd
+        mov     esi, ebx
+        mov     ecx, 65536 ; 64 Kb max for ext.cmdline
+        cld
+@@:
+        dec     ecx
+        jz      .end_string
 
+        lodsb
+        test    al, al
+        jnz     @b
+
+.end_string:
+        mov     eax, 65536 ; 64 Kb max for ext.cmdline
+        sub     eax, ecx
+        mov     [cmdline_size], eax
+        cmp     eax, 255
+        ja      @f
+
+        popfd
+        popad
+        jmp     .old_copy
+
+@@:
+        xor     eax, eax
+        dec     eax
+        mov     [cmdline_flag], eax
+        popfd
+        popad
+; get memory for the extended command line
+        stdcall kernel_alloc, [cmdline_size] ;eax
+        test    eax, eax
+        jz      .old_copy ; get memory failed
+
+        mov     [cmdline_adr], eax
+
+        pushad
+        pushfd
+        mov     esi, ebx
+        mov     edi, eax
+        mov     ecx, [cmdline_size]
+        cld
+        rep movsb
+        popfd
+        popad
+        jmp     .no_copy
+
+.old_copy:
+; clear flag because old method with 256 bytes
+        xor     eax, eax
+        mov     [cmdline_flag], eax
+;--------------------------------------
         lea     eax, [cmdline]
         mov     dword [eax+252], 0
+.copy:
         stdcall strncpy, eax, ebx, 255
-@@:
+.no_copy:
         lea     eax, [filename]
         stdcall load_file, eax
 
@@ -1055,10 +1116,34 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
         ja      @f
 
-        mov     byte [edx], 0  ;force empty string if no cmdline given
         mov     eax, [cmd_line]
+
+        cmp     [edx], dword 0xffffffff ; extended destination tag
+        jne     .no_ext_dest
+
+        mov     edx, [edx+4] ; extended destination for cmdline
+        jmp     .continue
+
+.no_ext_dest:
+        mov     [eax-12], dword 255
+.continue:
+        mov     byte [edx], 0  ;force empty string if no cmdline given
+
         test    eax, eax
         jz      @f
+;--------------------------------------
+        cmp     [eax-4], dword 0xffffffff ; cmdline_flag
+        jne     .old_copy
+
+        push    eax
+        stdcall strncpy, edx, [eax-8], [eax-12]
+        pop     eax
+
+        stdcall kernel_free, [eax-8]
+        jmp     @f
+
+.old_copy:
+;--------------------------------------
         stdcall strncpy, edx, eax, 256
 @@:
         mov     edx, [params]
