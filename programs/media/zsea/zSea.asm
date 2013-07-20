@@ -35,7 +35,7 @@
 	dd IM_END	; size of image
 	dd I_END	; memory for app
 	dd stacktop	; esp
-	dd temp_area	; I_Param
+	dd ext_dest_cmdline	; I_Param
 	dd path		; APPLICATION PACH
 
 include 'lang.inc'
@@ -50,7 +50,10 @@ include '../../proc32.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
         @use_library    ;use load lib macros
 ;******************************************************************************
-
+ext_dest_cmdline:
+	dd 0xffffffff
+	dd temp_area
+;------------------------------------------------------------------------------
 START:				; start of execution
 	mcall	68, 11
 	mcall	66, 1,1
@@ -144,7 +147,7 @@ START:				; start of execution
 
 
 	mov	edi,string	; clear string
-	mov	ecx,256/4	;	length of a string
+	mov	ecx,4096/4	;256/4	;	length of a string
 	xor	eax,eax	;	symbol <0>
 	rep	stosd
 
@@ -165,7 +168,7 @@ START:				; start of execution
 	add	edi,4
 .continue:
 	mov	esi,edi
-	mov	ecx,257	;	strlen
+	mov	ecx,4095 ;257	;	strlen
 	repne scasb
 	lea		ecx, [edi-temp_area]
 

@@ -29,7 +29,7 @@ if not exist bin mkdir zSea_bin\plugins
 @kpack zSea_bin\plugins\scaling.obj
 
 @copy zSea.ini zSea_bin\zSea.ini
-@copy Docs\zSea_keys.txt zSea_bin\zSea_keys.txt
+@copy Docs\zSea_keys_eng.txt zSea_bin\zSea_keys.txt
 @copy buttons.png zSea_bin\buttons\buttons.png
 
 

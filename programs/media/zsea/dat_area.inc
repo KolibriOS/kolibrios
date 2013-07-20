@@ -56,7 +56,7 @@ file_name:
 	rb 1024
 ;----------------------
 temp_area:
-	rb  4096
+	rb  64*1024 ; new max cmdline 64 Kb
 ;----------------------
 procinfo:
 process_info:
