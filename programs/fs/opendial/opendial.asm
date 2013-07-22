@@ -227,6 +227,26 @@ key:
 	je	change_focus_area_press_Tab_key
 	cmp	ah,143	; Tab up
 	je	change_focus_area_check_Tab_key
+; compare for "1,2,3,4,5,6,7,8,9,0,(-),(=)"
+	cmp	ah,2
+	jb	still
+	cmp	ah,13
+	jbe	.12
+; compare for "q,w,e,r,t,y,u,i,o,p,([),(])"	
+	cmp	ah,16
+	jb	still
+	cmp	ah,27
+	jbe	.12
+; compare for "a,s,d,f,g,h,j,k,l,(;),('),(`)"	
+	cmp	ah,30
+	jb	still
+	cmp	ah,41
+	jbe	.12
+; compare for "(\),z,x,c,v,b,n,m,(,),(.),(/)"	
+	cmp	ah,43
+	jb	still
+	cmp	ah,53
+	jbe	.12	
 	jmp	still
 .extended_key:
 	mov	[extended_key],0
@@ -257,38 +277,41 @@ key:
 	je	key_alt_down
 	jmp	still
 ;---------------------------------
+.12:
+	inc	ebx	; 12 - Search with key
+;---------------------------------
 .11:
-	inc	ebx	; 11
+	inc	ebx	; 11 - Invert Mark
 ;---------------------------------
 .10:
-	inc	ebx	; 10
+	inc	ebx	; 10 - Unmark All
 ;---------------------------------
 .9:
-	inc	ebx	; 9
+	inc	ebx	; 9 - Mark All
 ;---------------------------------
 .8:
-	inc	ebx	; 8
+	inc	ebx	; 8 - Insert (Mark)
 ;---------------------------------
 .7:
-	inc	ebx	; 7
+	inc	ebx	; 7 - Enter
 ;---------------------------------
 .6:
-	inc	ebx	; 6
+	inc	ebx	; 6 - End
 ;---------------------------------
 .5:
-	inc	ebx	; 5
+	inc	ebx	; 5 - Home
 ;---------------------------------
 .4:
-	inc	ebx	; 4
+	inc	ebx	; 4 - PageUp
 ;---------------------------------
 .3:
-	inc	ebx	; 3
+	inc	ebx	; 3 - PageDown
 ;---------------------------------
 .2:
-	inc	ebx	; 2
+	inc	ebx	; 2 - arrow up
 ;---------------------------------
 .1:
-	inc	ebx	; 1
+	inc	ebx	; 1 - arrow down
 ;---------------------------------
 	call	.key_action
 	
@@ -306,7 +329,9 @@ key:
 	jmp	still
 ;-------------------------------------------------------
 .key_action:
-	mov	[file_browser_data_1.key_action],ebx
+	mov	[file_browser_data_1.key_action],bx
+	shr	ax,8
+	mov	[file_browser_data_1.key_action_num],ax
 
 	push	dword file_browser_data_1
 	call	[FileBrowser_key]
@@ -621,7 +646,8 @@ button:
 	mcall	-1
 ;---------------------------------------------------------------------
 .reload_dir:
-	call	check_ctrl
+	cmp	[ctrl_flag],bl
+	je	key.12 ; Just symbol 'R' or 'r'
 .reload_dir_1:
 	call	load_next_dir.1
 	jmp	still
@@ -3058,13 +3084,15 @@ file_browser_data_1:
 .start_draw_cursor_line_2	dw 0 ;+166
 .all_redraw			dd 0 ;+168
 .selected_BDVK_adress		dd 0 ;+172
-.key_action			dd 0 ;+176
+.key_action			dw 0 ;+176
+.key_action_num			dw 0 ;+178
 .name_temp_area 		dd name_temp_area ;+180
 .max_name_temp_size		dd 0 ;+184
 .display_name_max_length	dd 0 ;+188
 .draw_panel_selection_flag	dd 0 ;+192
 .mouse_pos_old			dd 0 ;+196
 .marked_counter 		dd 0 ;+200
+.keymap_pointer 		dd keymap_area ;+204
 ;---------------------------------------------------------------------
 PathShow_data_1:
 .type			dd 0	;+0
@@ -3145,6 +3173,9 @@ thread_stack:
 ;---------------------------------------------------------------------
 retrieved_devices_table:
 	rb 200
+;---------------------------------------------------------------------
+keymap_area:
+	rb 128
 ;---------------------------------------------------------------------
 name_temp_area:
 	rb 256
