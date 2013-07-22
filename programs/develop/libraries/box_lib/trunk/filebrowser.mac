@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; File Browser control for Kolibri OS
-; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2009-2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -87,13 +87,15 @@ fb_mouse_keys_tick		equ dword [edi+162]	;dword
 fb_start_draw_cursor_line_2	equ word [edi+166]	;dword
 fb_all_redraw			equ dword [edi+168]	;dword
 fb_selected_BDVK_adress		equ dword [edi+172]	;dword
-fb_key_action			equ dword [edi+176]	;dword
+fb_key_action			equ word [edi+176]	;word
+fb_key_action_num		equ word [edi+178]	;word
 fb_name_temp_area		equ dword [edi+180]	;dword
 fb_max_name_temp_size		equ dword [edi+184]	;dword
 fb_display_name_max_length	equ dword [edi+188]	;dword
 fb_draw_panel_selection_flag	equ dword [edi+192]	;dword
 fb_mouse_pos_old		equ dword [edi+196]	;dword
 fb_marked_counter		equ dword [edi+200]	;dword
+fb_keymap_pointer		equ dword [edi+204]	;dword
 ;---------------------------------------------------------------------
 fb_draw_panel:
 	pusha
@@ -182,7 +184,7 @@ fb_draw_panel_selection:
 	mov	fb_start_draw_cursor_line,cx
 	mov	ebx,fb_size_x
 	add	cx,fb_start_y
-.1:
+;.1:
 	shl	ecx,16
 	mov	cx,fb_line_size_y
 	mov	edx,fb_select_color
@@ -1134,13 +1136,15 @@ fb_prepare_selected_BDVK_adress:
 ; 9 - Mark All
 ; 10 - Unmark All
 ; 11 - Invert Mark
+; 12 - Search with key
 ;*****************************************************************************
 ;*****************************************************************************
 fb_key:
 	pusha
 	mov	edi,dword [esp+36]
 ;-------------------------------------------------------
-	mov	eax,fb_key_action
+	xor	eax,eax
+	mov	ax,fb_key_action
 	shl	eax,2
 	add	eax,dword fb_key_table
 	cmp	eax,fb_key_table.end
@@ -1396,6 +1400,115 @@ fb_key:
 	mov	fb_temp_counter,2
 	jmp	.mark_all_1
 ;-------------------------------------------------------
+;  * bit 0  (mask 1): left Shift is pressed
+;  * bit 1  (mask 2): right Shift is pressed
+;  * bit 2  (mask 4): left Ctrl is pressed
+;  * bit 3  (mask 8): right Ctrl is pressed
+;  * bit 4  (mask 0x10): left Alt is pressed
+;  * bit 5  (mask 0x20): right Alt is pressed
+;  * bit 6  (mask 0x40): CapsLock is on
+;  * bit 7  (mask 0x80): NumLock is on
+;  * bit 8  (mask 0x100): ScrollLock is on
+;  * bit 9  (mask 0x200): left Win is pressed
+;  * bit 10 (mask 0x400): right Win is pressed
+;-------------------------------------------------------
+.search_with_key:
+	mcall	66,3
+	test	al,11b
+	jnz	.shift_layout
+
+	test	al,110000b
+	jnz	.alt_layout
+
+	mov	ecx,1	; Normal
+	jmp	.get_keyboard_layout
+
+.shift_layout:
+	mov	ecx,2	; Shift
+	jmp	.get_keyboard_layout
+
+.alt_layout:
+	mov	ecx,3	; Alt
+.get_keyboard_layout:
+	mcall	26,2,,fb_keymap_pointer
+	xor	eax,eax
+	mov	ax,fb_key_action_num
+	add	eax,fb_keymap_pointer
+	mov	al,[eax]
+	and	eax,0xff
+	call	fb_char_todown
+	mov	ah,al
+	xor	esi,esi
+	push	eax
+	movzx	eax,fb_start_draw_cursor_line
+	movzx	ebx,fb_line_size_y
+	xor	edx,edx
+	div	ebx
+	add	si,ax	;fb_start_draw_cursor_line
+	pop	eax
+	add	esi,fb_start_draw_line
+	mov	ecx,esi
+	xor	ebx,ebx
+	inc	ecx
+	cmp	ecx,fb_folder_block
+	ja	.reset_data
+
+.first_entry:
+	imul	esi,304
+	add	esi,fb_folder_data
+	add	esi,40+32
+@@:
+	add	esi,304
+	mov	al,[esi]
+	call	fb_char_todown
+	cmp	ah,al
+	je	.match
+
+	inc	ecx
+	cmp	ecx,fb_folder_block
+	jb	@b
+
+.reset_data:
+	xor	esi,esi
+	
+	dec	esi
+	cmp	ebx,2
+	jae	.exit_fb
+
+	xor	ecx,ecx
+	inc	ebx
+	jmp	.first_entry
+
+.match:
+	mov	fb_start_draw_line,ecx
+	mov	eax,fb_folder_block
+	mov	ebx,fb_max_panel_line
+	sub	eax,ebx
+	jbe	.1
+
+	cmp	eax,ecx
+	jbe	@f
+	
+	xor	ecx,ecx
+	jmp	.2
+@@:
+	mov	fb_start_draw_line,eax
+	mov	eax,fb_folder_block
+	sub	eax,ecx
+
+	mov	ecx,fb_max_panel_line
+	sub	ecx,eax
+	jmp	.2
+
+.1:
+	xor	eax,eax
+	mov	fb_start_draw_line,eax
+.2:
+	movzx	eax,fb_line_size_y
+	imul	ecx,eax
+	mov	fb_start_draw_cursor_line,cx
+	call	fb_draw_panel_2
+;-------------------------------------------------------
 .exit_fb:
 	call	fb_prepare_selected_BDVK_adress
 file_browser_exit
@@ -1413,19 +1526,20 @@ fb_key_table:
 	dd	fb_key.mark_all		; 9
 	dd	fb_key.unmark_all	; 10
 	dd	fb_key.invert_mark	; 11
+	dd	fb_key.search_with_key	; 12
 .end:
 	dd	0
 ;-------------------------------------------------------
 fb_draw_panel_3:
 	mov	eax,2
 	mov	fb_all_redraw,eax
-	jmp	@f
+	jmp	fb_draw_panel_2.1
 fb_draw_panel_2:
 	xor	eax,eax
 	inc	eax
 	mov	fb_all_redraw,eax
 	call	fb_draw_panel_selection
-@@:
+.1:
 	call	fb_draw_folder_data
 	xor	eax,eax
 	mov	fb_all_redraw,eax
