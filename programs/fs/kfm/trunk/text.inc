@@ -1,4 +1,4 @@
-header_text	  db 'Kolibri File Manager v0.47f 04/07/2013',0
+header_text	  db 'Kolibri File Manager v0.47g 24/07/2013',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -155,10 +155,22 @@ type_files:
      db 'Files:',0
 ;---------------------------------------------------------------------
 type_dir:
-     db 'Dir.:',0
+     db 'Directories:',0
 ;---------------------------------------------------------------------
 type_size:
      db 'Size:',0
+;---------------------------------------------------------------------
+type_create:
+     db 'Create date:',0
+;---------------------------------------------------------------------
+type_change:
+     db 'Change date:',0
+;---------------------------------------------------------------------
+type_access:
+     db 'Access date:',0
+;---------------------------------------------------------------------
+type_limiters_data_time:
+     db '/   /         :   :',0
 ;---------------------------------------------------------------------
 mouse_left_panel:
      db 'Left ',0
@@ -191,8 +203,8 @@ background_tile:
 background_stretch:
     db '\S  '
 ;---------------------------------------------------------------------
-files_information_window_x: dd 100 shl 16 + 250
-files_information_window_y: dd 100 shl 16 + 300
+files_information_window_x: dd 100 shl 16 + 300
+files_information_window_y: dd 100 shl 16 + 200
 ;---------------------------------------------------------------------
 error_window_x: dd 100 shl 16 + 250
 error_window_y: dd 100 shl 16 + 80

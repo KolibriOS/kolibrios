@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; KFM - Kolibri File Manager
-; Copyright (c) 2006 - 2012, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2006 - 2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47e 16.04.2012
+; KFM v0.47g 24/07/2013
 ;---------------------------------------------------------------------
 use32
 org	0x0

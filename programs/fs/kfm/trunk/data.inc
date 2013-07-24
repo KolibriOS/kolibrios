@@ -1,10 +1,36 @@
 ;---------------------------------------------------------------------
 align 4
-files_counter rd 1
-directories_counter rd 1
+files_counter	rd 1
+directories_counter	rd 1
+
 files_size:
-     .low rd 1
-     .high rd 1
+	.low	rd 1
+	.high	rd 1
+;Формат времени:
+;  * +0: byte: секунды
+;  * +1: byte: минуты
+;  * +2: byte: часы
+;  * +3: byte: зарезервировано (0)
+;  * например, 23.59.59 записывается как (в hex) 3B 3B 17 00
+time:
+.create:
+	rd 1
+.access:
+	rd 1
+.change:
+	rd 1
+;Формат даты:
+;  * +0: byte: день
+;  * +1: byte: месяц
+;  * +2: word: год
+;  * например, 25.11.1979 записывается как (в hex) 19 0B BB 07
+date:
+.create:
+	rd 1
+.access:
+	rd 1
+.change:
+	rd 1
 ;---------------------------------------------------------------------
 open_param rd 1
 ;---------------------------------------------------------------------
@@ -90,14 +116,12 @@ align 4
 left_start_draw_line rd 1
 left_folder_block rd 1
 left_start_draw_cursor_line rw 1
-;left_panel_clear_all rb 1
 left_folder_block_1 rd 1
 ;---------------------------------------------------------------------
 align 4
 right_start_draw_line rd 1
 right_folder_block rd 1
 right_start_draw_cursor_line rw 1
-;right_panel_clear_all rb 1
 right_folder_block_1 rd 1
 ;---------------------------------------------------------------------
 align 4
@@ -195,10 +219,6 @@ procinfo:
 align 4
 type_name:
 	rb 512
-;---------------------------------------------------------------------
-align 4
-type_size_string:
-	rb 32
 ;---------------------------------------------------------------------
 align 4
 type_files_string:
