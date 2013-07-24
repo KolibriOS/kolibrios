@@ -541,18 +541,21 @@ proc ini.set_int _f_name, _sec_name, _key_name, _val ;//////////////////////////
 ;;================================================================================================;;
 locals
   buf rb 16
+  bNeg rd 1
 endl
 
         push    ecx edx edi
 
         lea     edi, [buf]
         add     edi, 15
+
         mov     eax, [_val]
+        mov     [bNeg],0
         or      eax, eax
         jns     @f
-        mov     byte[edi], '-'
+        mov     [bNeg],1
         neg     eax
-        inc     edi
+
     @@: mov     ecx, 10
     @@: xor     edx, edx
         idiv    ecx
@@ -561,10 +564,18 @@ endl
         dec     edi
         or      eax, eax
         jnz     @b
+
+        cmp     [bNeg],0
+        je      @f
+        mov     byte[edi], '-'
+        dec     edi
+     @@:
         lea     eax, [buf]
         add     eax, 15
         sub     eax, edi
         inc     edi
+
+
 
         stdcall ini.set_str, [_f_name], [_sec_name], [_key_name], edi, eax
 
@@ -663,6 +674,126 @@ endl
         pop     edi edx ecx
         ret
 endp
+
+
+;;================================================================================================;;
+proc ini.del_section _f_name, _sec_name ;/////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Delete section and all key in this section                                                     ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 - success                                                                              ;;
+;<      -1 - file not found                                                                       ;;
+;<       1 - section not found                                                                    ;;
+;;================================================================================================;;
+locals
+   funcFile     rb 25
+   fileInfo     rb 40
+   begMem       rd 1
+   endMem       rd 1
+   begDel       rd 1
+   endDel       rd 1
+endl
+        push    ebx ecx edi esi
+        mov     dword[funcFile],5               ;get file info
+        mov     dword[funcFile+4],0
+        mov     dword[funcFile+8],0
+        mov     dword[funcFile+12],0
+        lea     eax,[fileInfo]
+        mov     dword[funcFile+16],eax
+        mov     byte[funcFile+20],0
+        m2m     dword[funcFile+21],[_f_name]
+        lea     ebx,[funcFile]
+        mcall   70
+        test    eax,eax
+        jz      @f
+
+        or      eax,-1
+        pop     esi edi ecx ebx
+        ret
+      @@:
+
+        mov     ecx,dword[fileInfo+32]          ;allocation mem for all file
+        mcall   68,12
+
+        mov     [begMem],eax
+        mov     [endMem],eax
+        add     [endMem],ecx
+
+        mov     dword[funcFile],0               ;read file to buffer
+        mov     dword[funcFile+12],ecx
+        mov     dword[funcFile+16],eax
+        lea     ebx,[funcFile]
+        mcall   70
+
+        mov     edi,[begMem]                    ;search begin section
+    .searchSect:
+        mov     al,'['
+        repne   scasb
+        test    ecx,ecx
+        jnz     @f
+        
+        pop     esi edi ecx ebx
+        mov     eax,1
+        ret
+      @@:
+        mov     [begDel],edi
+        mov     esi,[_sec_name]
+      @@:
+        lodsb
+        test    al,al
+        jz      @f
+        scasb
+        jne     .searchSect
+        jmp     @b
+      @@:
+        cmp     byte[edi],']'
+        jne     .searchSect
+
+        dec     [begDel]
+
+        mov     edi,[begDel]                    ;search end section
+        inc     edi
+    .searchEndSect:
+        mov     al,'['
+        repne   scasb
+
+        dec     edi
+        mov     [endDel],edi
+
+        test    ecx,ecx
+        jnz     @f
+        jmp     .SaveToFile
+      @@:
+
+
+        mov     esi,[endDel]
+        mov     edi,[begDel]
+   @@:  lodsb
+        stosb
+        cmp     esi,[endMem]
+        jb      @b
+
+   .SaveToFile:
+        mov     eax,dword[funcFile+12]
+        sub     eax,[endDel]
+        add     eax,[begDel]
+
+        mov     dword[funcFile],2               ;write buffer to file
+        mov     dword[funcFile+12],eax
+        m2m     dword[funcFile+16],[begMem]
+        lea     ebx,[funcFile]
+        mcall   70
+
+        xor     eax,eax
+        pop     esi edi ecx ebx
+        ret
+endp
+
+
+
 
 ;;================================================================================================;;
 proc ini.get_shortcut _f_name, _sec_name, _key_name, _def_val, _modifiers ;///////////////////////;;
@@ -843,6 +974,7 @@ macro shortcut_name [name]
 {
         shortcut_name_with_handler name, .name_handler
 }
+
 ; all names here must be in english
 ; ... or modify lowercasing in macro and in comparison
 .names_table:
@@ -920,4 +1052,6 @@ export                                            \
         ini.set_str       , 'ini_set_str'       , \
         ini.set_int       , 'ini_set_int'       , \
         ini.set_color     , 'ini_set_color'     , \
-        ini.get_shortcut  , 'ini_get_shortcut'
+        ini.get_shortcut  , 'ini_get_shortcut'  , \
+        ini.del_section   , 'ini_del_section'
+        
