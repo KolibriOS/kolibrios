@@ -336,7 +336,6 @@ EXTRA:=\
  Docs/cp866/hot_keys.txt=docs/HOT_KEYS.TXT \
  Docs/cp866/install.txt=docs/INSTALL.TXT \
  Docs/cp866/readme.txt=docs/README.TXT \
- Docs/cp866/stack_ru.txt=docs/STACK_RU.TXT \
  Docs/cp866/sysfuncr.txt=docs/SYSFUNCR.TXT \
  Docs/cp1251/config.txt=docs/CONFIG.WIN.TXT \
  Docs/cp1251/gnu.txt=docs/GNU.WIN.TXT \
@@ -344,8 +343,8 @@ EXTRA:=\
  Docs/cp1251/hot_keys.txt=docs/HOT_KEYS.WIN.TXT \
  Docs/cp1251/install.txt=docs/INSTALL.WIN.TXT \
  Docs/cp1251/readme.txt=docs/README.WIN.TXT \
- Docs/cp1251/stack_ru.txt=docs/STACK_RU.WIN.TXT \
  Docs/cp1251/sysfuncr.txt=docs/SYSFUNCR.WIN.TXT \
+ Docs/stack.txt=docs/STACK.TXT \
  HD_Load/9x2klbr/=distr_data/9x2klbr.exe \
  HD_Load/9x2klbr/=../common/HD_load/9x2klbr/LDKLBR.VXD \
  HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_dos.txt \
@@ -409,7 +408,6 @@ RECODE_TEXT_FILES:=\
   docs/HOT_KEYS.WIN.TXT:docs/HOT_KEYS.TXT \
   docs/INSTALL.WIN.TXT:docs/INSTALL.TXT \
   docs/README.WIN.TXT:docs/README.TXT \
-  docs/STACK_RU.WIN.TXT:docs/STACK_RU.TXT \
   docs/SYSFUNCR.WIN.TXT:docs/SYSFUNCR.TXT \
 #end of list
 
