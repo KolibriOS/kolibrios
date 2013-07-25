@@ -180,13 +180,13 @@ end if
   embed_file 'MTDBG.TXT'         ;e
 if lang eq ru
   embed_file 'SYSFUNCR.TXT'      ;f
-  embed_file 'STACK_RU.TXT'      ;g
 else
   embed_file 'SYSFUNCS.TXT'      ;f
-  embed_file 'STACK.TXT'         ;g
 end if
+  embed_file 'STACK.TXT'         ;g
   embed_file 'KFAR_KEYS.TXT'     ;h
   embed_file 'INI.TXT'           ;i
+  embed_file 'OPENDIAL.TXT'      ;j
 ; -- End of embedding area  -------
 
   dd 0
