@@ -182,8 +182,8 @@ iglobal
       dd sys_apm                 ; 49-Advanced Power Management (APM)
       dd syscall_set_window_shape ; 50-Window shape & scale
       dd syscall_threads         ; 51-Threads
-      dd undefined_syscall       ; 52-Stack driver status
-      dd undefined_syscall       ; 53-Socket interface
+      dd undefined_syscall       ; 52- deprecated Stack driver status
+      dd undefined_syscall       ; 53- deprecated Socket interface
       dd undefined_syscall       ; 54-reserved
       dd sound_interface         ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
