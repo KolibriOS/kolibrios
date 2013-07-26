@@ -9,9 +9,7 @@ dword file_size  = #afile_size;
 dword file_open = #afile_open;
 dword file_read  = #afile_read;
 dword file_close = #afile_close;
-
-dword  am2__ = 0x0;
-dword  bm2__ = 0x0;
+$DD 2 dup 0
 
 
 //import  libio                     , \

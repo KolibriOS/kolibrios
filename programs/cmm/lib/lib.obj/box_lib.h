@@ -17,9 +17,7 @@ dword version_scrollbar = #aVersion_scrollbar;
 
 dword PathShow_prepare = #aPathShow_prepare;
 dword PathShow_draw    = #aPathShow_draw;
-
-dword  am__ = 0x0;
-dword  bm__ = 0x0;
+$DD 2 dup 0
 
 char aEdit_box_draw [9]     = "edit_box\0";
 char aEdit_box_key  [13]    = "edit_box_key\0";

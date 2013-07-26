@@ -12,9 +12,7 @@ dword img_destroy = #aimg_destroy;
 dword img_draw    = #aimg_draw;
 //dword img_flip    = #aimg_flip;
 //dword img_rotate  = #aimg_rotate;
-
-dword  am1__ = 0x0;
-dword  bm1__ = 0x0;
+$DD 2 dup 0
 
 //import  libimg                     , \
 char alibimg_init[9] = "lib_init\0";

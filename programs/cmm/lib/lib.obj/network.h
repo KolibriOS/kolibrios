@@ -11,13 +11,7 @@ dword getaddrinfo_start   = #aGetaddrinfo_start;
 dword getaddrinfo_process = #aGetaddrinfo_process;
 dword getaddrinfo_abort   = #aGetaddrinfo_abort;
 dword freeaddrinfo        = #aFreeaddrinfo;
-
-#ifndef am3__
-dword  am3__ = 0x0;
-#endif
-#ifndef bm3__
-dword  bm3__ = 0x0;
-#endif
+$DD 2 dup 0
 
 char aLib_init[9]              = "lib_init\0";
 char aInet_addr[10]            = "inet_addr\0";

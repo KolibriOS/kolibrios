@@ -11,9 +11,7 @@ dword get_length = #att_get_length;
 dword get_width  = #att_get_width;
 dword text_out = #att_text_out;
 dword init_font = #att_init_font; 
- 
-dword am3__ = 0x0; 
-dword bm3__ = 0x0;
+$DD 2 dup 0
  
 //import  libimg                     , \ 
  
