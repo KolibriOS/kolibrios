@@ -343,15 +343,15 @@ calculate_for_draw_scroll_bar:
      mov   bx,14
      add   ecx,16 shl 16
      sub   cx,31
-     int   0x40
+	mcall
      popa
      xor   edx,edx
      push  ebx
      mov   bx,1
-     int   0x40
+	mcall
      push  ecx
      add   ebx,15 shl 16
-     int   0x40
+	mcall
      pop   ecx
      pop   ebx
      mov   [draw_scroll_character],1
@@ -419,14 +419,14 @@ draw_scroll_bar_srectangle:
      mov   cx,1
      cmp   [draw_scroll_character],2
      je   .draw_center
-     int   0x40
+	mcall
      pusha
      add   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   cx,14
      mov   bx,14
      mov   edx,0xbbddff
-     int   0x40
+	mcall
      xor   edx,edx
      cmp   [draw_scroll_character],1
      jne   .draw_down
@@ -434,42 +434,42 @@ draw_scroll_bar_srectangle:
      mov   bx,7
      add   ecx,8 shl 16
      mov   cx,1
-     int   0x40
+	mcall
      sub   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   bx,5
-     int   0x40
+	mcall
      sub   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   bx,3
-     int   0x40
+	mcall
      sub   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   bx,1
-     int   0x40
+	mcall
      jmp   .continue
 .draw_down:
      add   ebx,3 shl 16
      mov   bx,7
      add   ecx,5 shl 16
      mov   cx,1
-     int   0x40
+	mcall
      add   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   bx,5
-     int   0x40
+	mcall
      add   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   bx,3
-     int   0x40
+	mcall
      add   ecx,1 shl 16
      add   ebx,1 shl 16
      mov   bx,1
-     int   0x40
+	mcall
 .continue:
      popa
      add   ecx,15 shl 16
-     int   0x40
+	mcall
      pop   ecx
      ret
 
@@ -497,11 +497,11 @@ draw_scroll_bar_srectangle:
 .draw_center_continue:
      mov   bx,14
      mov   edx,0xbbddff
-     int   0x40
+	mcall
      xor   edx,edx
      mov   cx,1
      sub   ecx,1 shl 16
-     int   0x40
+	mcall
      pop   ecx
      cmp   [scroll_pointer_1],1
      jne   .right_1
@@ -517,15 +517,15 @@ draw_scroll_bar_srectangle:
      mov   bx,10
      add   ecx,4 shl 16
      mov   cx,1
-     int   0x40
+	mcall
      add   ecx,3 shl 16
      sub   ebx,1 shl 16
      mov   bx,12
-     int   0x40
+	mcall
      add   ebx,1 shl 16
      mov   bx,10
      add   ecx,3 shl 16
-     int   0x40
+	mcall
 .continue_1:
      popa
      ror   ecx,16
@@ -537,7 +537,7 @@ draw_scroll_bar_srectangle:
      add   ecx,[right_scroll_compens]
 .draw_center_continue_2:
      rol   ecx,16
-     int   0x40
+	mcall
      pop   ecx
      ret
 ;---------------------------------------------------------------------

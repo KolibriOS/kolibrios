@@ -44,18 +44,26 @@ window_width	     rd 1
 window_status rd 1
 skin_high	     rd 1
 fbutton_width	     rd 1
+
 left_panel_x:
     .size_x		 rw 1
     .start_x	     rw 1
+
 left_panel_y:
     .size_y		 rw 1
     .start_y	     rw 1
+
 right_panel_x:
     .size_x		 rw 1
     .start_x	     rw 1
+
 right_panel_y:
     .size_y		 rw 1
     .start_y	     rw 1
+    
+left_panel_y_correct_size_y	rw 1
+right_panel_y_correct_size_y	rw 1
+
 drawing_panel_folder rb 1 ; 1-left, 2 right
 ;---------------------------------------------------------------------
 align 4

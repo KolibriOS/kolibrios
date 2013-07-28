@@ -280,7 +280,7 @@ draw_left_menu:
     imul cx,10
     mov  edx,0xffffcc
     mov  eax,13
-    int  0x40
+	mcall
     call draw_menu_Selection
     call draw_menu_data
     ret
@@ -294,7 +294,7 @@ draw_right_menu:
     imul cx,10
     mov  edx,0xffffcc
     mov  eax,13
-    int  0x40
+	mcall
     call draw_menu_Selection
     call draw_menu_data
     ret
@@ -322,7 +322,7 @@ draw_menu_Selection:
     mov  cx,10
     mov  edx,0xbbffbb
     mov  eax,13
-    int  0x40
+	mcall
     pop  ecx ebx
     ret
 ;---------------------------------------------------------------------

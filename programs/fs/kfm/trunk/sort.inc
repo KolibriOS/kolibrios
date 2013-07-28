@@ -19,6 +19,7 @@ left_sort_files:
    sub	 ecx,[left_folder_data]
    mov	 ebx,[appl_memory]
    add	 ecx,ebx
+   add   ecx,4 ; для страховки
    push  ebx
    mov	 [appl_memory],ecx
    mcall 64,1
@@ -46,6 +47,7 @@ left_sort_files:
    rep	 movsd
 ; sub memory for sorting
    pop	 ecx
+   add   ecx,4 ; для страховки
    mov	 [appl_memory],ecx
    mcall 64,1
    cmp	 [exit_to_dir],0
@@ -138,6 +140,12 @@ left_type_sort_1:
    je	 .1
    ja	 .add_counter
 .no_add_counter:
+;	pushad
+;	pushfd
+;	dps	'left_type_sort'
+;	newline
+;	popfd
+;	popad
    call  move_area_for_bdvk
    pop	 edi esi
    jmp	.end
@@ -579,9 +587,29 @@ move_area_for_bdvk:
    sub	 ecx,ebx
    sub	 ecx,eax
    shr	 ecx,2
+;	pushad
+;	pushfd
+;	dph	[appl_memory]
+;	newline
+;	dps	'ECX:'
+;	dpd	ecx
+;	newline
+;	dps	'ESI:'
+;	dpd	esi
+;	newline
+;	dps	'EDI:'
+;	dpd	edi
+;	newline
+;	popfd
+;	popad
    std
    rep	 movsd
-
+;	pushad
+;	pushfd
+;	dps	'move_area_for_bdvk END'
+;	newline
+;	popfd
+;	popad
 ;   mov	 eax,ecx
 ;   mov	 ebx,304
 ;   mov	 edx,0
@@ -654,6 +682,7 @@ right_sort_files:
    push  ecx
    sub	 ecx,[right_folder_data]
    add	 ecx,[esp]
+   add   ecx,4 ; для страховки
    mov	 [appl_memory],ecx
    mcall 64,1
    mov	 edi,[esp]
@@ -680,6 +709,7 @@ right_sort_files:
    rep	 movsd
 ; sub memory for sorting
    pop	 ecx
+   add   ecx,4 ; для страховки
    mov	 [appl_memory],ecx
    mcall 64,1
    cmp	 [exit_to_dir],0
@@ -766,6 +796,12 @@ right_type_sort_1:
    je	 .1
    ja	 .add_counter
 .no_add_counter:
+;	pushad
+;	pushfd
+;	dps	'left_type_sort'
+;	newline
+;	popfd
+;	popad
    call  move_area_for_bdvk
    pop	 edi esi
    jmp	.end

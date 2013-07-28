@@ -22,7 +22,7 @@ progress_bar_delete:
     je   .end
     sub  ebx,13
     mov  edx,delete_type
-    int  0x40
+	mcall
 .end:
     popa
     mov  [draw_all_progressbar],0
@@ -53,7 +53,7 @@ progress_bar_copy:
 @@:
     mov  edx,0xff0000
 .continue_1:
-    int  0x40
+	mcall
     call calculate_progress_data_2
     shr  ecx,16
     mov  bx,cx
@@ -74,7 +74,7 @@ progress_bar_copy:
     mov  edx,move_type_1
 .continue:
 
-    int  0x40
+	mcall
 .end:
     popa
     mov  [draw_all_progressbar],0
@@ -92,7 +92,7 @@ clear_text_area_1:
     mov  bx,ax
     mov  eax,13
     mov  edx, 0x6060ff
-    int  0x40
+	mcall
     pop  ebx
 @@:
     ret
@@ -124,7 +124,7 @@ calculate_progress_data_2:
     sub  si,bx
     mov  bx,si
     mov  edx,0xffffff
-    int  0x40
+	mcall
     pop  ebx
 @@:
     ret
@@ -135,7 +135,7 @@ calculate_progress_data_3:
     cmp  [draw_all_progressbar],0
     je   @f
     mov  edx, 0x6060ff
-    int  0x40
+	mcall
 @@:
     add  ebx,10 shl 16
     sub  ebx,20
@@ -164,7 +164,7 @@ calculate_progress_data_6:
     mov  ebp,[current_progress_value]
     call calculate_progress_data_1
     mov  bx,[temp_progress_value]
-    int  0x40
+	mcall
     call calculate_progress_data_2
     ret
 ;---------------------------------------------------------------------

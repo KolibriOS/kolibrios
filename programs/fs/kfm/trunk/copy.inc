@@ -97,7 +97,7 @@ editbox_copy_name:
 ;-------------------------------------------------------------
 .button_copy:
     mov eax,17
-    int 0x40
+	mcall
     test ah,ah
     jz	.still
     cmp  ah,160
@@ -127,7 +127,7 @@ editbox_copy_name:
 ;-------------------------------------------------------------
 .key_copy:
     mov eax,2
-    int 0x40
+	mcall
     cmp ah,13
     je	.exit_with_copy
     cmp ah,27
@@ -165,10 +165,10 @@ draw_editbox_copy_name:
     mov   esi,0xffffff
     mov   edx,0x40000000+160
     mov   eax,8
-    int   0x40
+	mcall
     add   ebx,50 shl 16
     inc   edx
-    int   0x40
+	mcall
     popa
 
     push  ebx ecx
@@ -182,15 +182,15 @@ draw_editbox_copy_name:
     sub   ebx,1 shl 16
     mov   bx,42
     mov   cx,17
-    int   0x40
+	mcall
     add   ebx,50 shl 16
-    int   0x40
+	mcall
     pop   ecx ebx
     mov   edx,0xff7700
-    int   0x40
+	mcall
     mov   edx,0xaa00
     add   ebx,50 shl 16
-    int   0x40
+	mcall
     pop   ecx ebx
 
     shr   ecx,16
@@ -206,10 +206,10 @@ draw_editbox_copy_name:
     mcall 4, ,0x90ffffff
     add   ebx,18 shl 16+36
     mov   edx,type_yes
-    int   0x40
+	mcall
     add   ebx,56 shl 16
     mov   edx,type_no
-    int   0x40
+	mcall
 	ret
 ;-------------------------------------------------------------
 copy_file_1:

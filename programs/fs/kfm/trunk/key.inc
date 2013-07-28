@@ -88,7 +88,7 @@ key_80:
     jbe  .marked_action   ;still
     mov  ax,[left_start_draw_cursor_line]
     add  ax,10
-    cmp  ax,[left_panel_y.size_y]
+    cmp  ax,[left_panel_y_correct_size_y]
     jae  @f
 .add_1:
     add  [left_start_draw_cursor_line],10
@@ -97,7 +97,7 @@ key_80:
 .all:
     sub  ecx,10 shl 16
     mov  edx,0xffffff
-    int  0x40
+	mcall
     mov  [not_clear_lines],1
     call draw_folder_data
     mov  [not_clear_lines],0
@@ -138,7 +138,7 @@ key_80:
     jbe  .marked_action_1   ;still
     mov  ax,[right_start_draw_cursor_line]
     add  ax,10
-    cmp  ax,[right_panel_y.size_y]
+    cmp  ax,[right_panel_y_correct_size_y]
     jae  @f
 .add_2:
     add  [right_start_draw_cursor_line],10
@@ -178,7 +178,7 @@ key_72:
 .all:    
     add  ecx,10 shl 16
     mov  edx,0xffffff
-    int  0x40
+	mcall
     mov  [not_clear_lines],1
     call draw_folder_data
     mov  [not_clear_lines],0

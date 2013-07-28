@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47g 24/07/2013
+; KFM v0.47h 28/07/2013
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -44,6 +44,7 @@ org	0x0
 ;include   'macros.inc'
 include '../../../macros.inc'
 include '../../../config.inc'		;for nightbuild
+;include '../../../debug.inc'		;for nightbuild
 
 include   'editbox.inc'
 ;use_edit_box
