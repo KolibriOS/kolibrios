@@ -617,7 +617,7 @@ sockaddr2:
 
         rb 10
 
-path            db  '/sys/network.ini'
+path            db  '/sys/network.ini',0
 
 IM_END:
 
