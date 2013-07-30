@@ -172,22 +172,34 @@ START:
         invoke  ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
         mov     edx, inibuf
         call    Ip2dword
-        mcall   76, API_IPv4 + 3, edx
+        mov     ecx, edx
+        mov     ebx, API_IPv4 + 3       ; set IP
+        mov     bh, [device]
+        mcall   76
 
         invoke  ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
         mov     edx, inibuf
         call    Ip2dword
-        mcall   76, API_IPv4 + 9, edx
+        mov     ecx, edx
+        mov     ebx, API_IPv4 + 9       ; set gateway
+        mov     bh, [device]
+        mcall   76
 
         invoke  ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
         mov     edx, inibuf
         call    Ip2dword
-        mcall   76, API_IPv4 + 5, edx
+        mov     ecx, edx
+        mov     ebx, API_IPv4 + 5       ; set DNS
+        mov     bh, [device]
+        mcall   76
 
         invoke  ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
         mov     edx, inibuf
         call    Ip2dword
-        mcall   76, API_IPv4 + 7, edx
+        mov     ecx, edx
+        mov     ebx, API_IPv4 + 7       ; set subnet
+        mov     bh, [device]
+        mcall   76
 
 
         mcall   -1
