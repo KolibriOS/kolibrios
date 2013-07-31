@@ -11,6 +11,17 @@
 include 'pci.inc'
 include 'mii.inc'
 
+; This macro will prepend driver name to all debug output through DEBUGF macro
+; The driver name is taken from my_service label
+
+if defined my_service
+
+        macro DEBUGF _level,_format, [args] {
+        common DEBUGF _level, "%s: " # _format, my_service, args
+        }
+
+end if
+
 ; Kernel variables
 
         PAGESIZE        = 4096

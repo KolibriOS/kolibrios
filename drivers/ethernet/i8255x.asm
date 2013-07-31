@@ -30,7 +30,7 @@ format MS COFF
 
         DEBUG                   = 1
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
 include '../proc32.inc'
 include '../imports.inc'
@@ -194,7 +194,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF 1,"Loading %s driver\n", my_service
+        DEBUGF 1,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -294,7 +294,7 @@ proc service_proc stdcall, ioctl:dword
 
         PCI_find_irq
 
-        DEBUGF  2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
+        DEBUGF  1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
 ; Ok, the eth_device structure is ready, let's probe the device
@@ -376,7 +376,7 @@ ret
 align 4
 probe:
 
-        DEBUGF  1,"Probing i8255x\n"
+        DEBUGF  1,"Probing\n"
 
         PCI_make_bus_master
 
@@ -400,7 +400,7 @@ probe:
         jmp     .found
 
   .notfound:
-        DEBUGF  1,"ERROR: Unsupported device!\n"
+        DEBUGF  2,"Unsupported device!\n"
         or      eax, -1
         ret
 
@@ -427,12 +427,12 @@ reset:
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1,"\nCould not attach int handler!\n"
+        DEBUGF  2,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
   @@:
 
-        DEBUGF  1,"Resetting %s\n", my_service
+        DEBUGF  1,"Resetting\n"
 
 ;---------------
 ; reset the card
@@ -558,7 +558,7 @@ reset:
 
 ; Indicate that we have successfully reset the card
 
-        DEBUGF  1,"Resetting %s complete\n", my_service
+        DEBUGF  1,"Reset complete\n"
 
         mov     [device.mtu], 1514
 
@@ -693,7 +693,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 
@@ -861,7 +861,7 @@ cmd_wait:
 align 4
 ee_read:        ; esi = address to read
 
-        DEBUGF  1,"Eeprom read from 0x%x", esi
+        DEBUGF  1,"Eeprom read from 0x%x\n", esi
 
         set_io  0
         set_io  reg_eeprom
@@ -931,7 +931,7 @@ ee_read:        ; esi = address to read
         out     dx, ax
 
 
-        DEBUGF  1,"=0x%x\n", esi:4
+        DEBUGF  1,"0x%x\n", esi:4
         ret
 
 
@@ -1011,8 +1011,6 @@ ee_write:       ; esi = address to write to, di = data
 align 4
 ee_get_width:
 
-;        DEBUGF  1,"Eeprom get width\n"
-
         set_io  0
         set_io  reg_eeprom
 
@@ -1044,21 +1042,20 @@ ee_get_width:
         test    al, EE_DO
         jnz     .loop
 
-  .give_up:
         xor     al, al
         out     dx, al          ; de-activate eeprom
 
         sub     cl, 3           ; dont count the opcode bits
-
         mov     [device.ee_bus_width], cl
-        DEBUGF  1,"Eeprom width=%u bit\n", ecx
+        DEBUGF  1, "Eeprom width=%u bit\n", ecx
 
+        ret
 
-;-----------------------
-; de-activate the eeprom
+  .give_up:
+        DEBUGF  2, "Eeprom not found!\n"
 
-        xor     eax, eax
-        out     dx, eax
+        xor     al, al
+        out     dx, al          ; de-activate eeprom
 
         ret
 
