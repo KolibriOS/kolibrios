@@ -22,8 +22,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.90"
-#define ABOUT_TITLE "Eolite v1.90"
+#define TITLE "Eolite File Manager v1.91"
+#define ABOUT_TITLE "Eolite v1.91"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -218,10 +218,10 @@ void main()
 						Dir_Up();
 						break;
 				case 24: //cut
-						Copy(#file_path, NOCUT);
+						Copy(#file_path, CUT);
 						break;
 				case 25: //copy
-						Copy(#file_path, CUT);
+						Copy(#file_path, NOCUT);
 						break;
 				case 26: //paste
 						CreateThread(#Paste,#copy_stak);
