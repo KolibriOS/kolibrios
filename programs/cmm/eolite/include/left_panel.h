@@ -1,5 +1,28 @@
 //Leency 2008-2013
 
+#ifdef LANG_RUS
+char *actions[] = {
+	57, "Новый файл", "F7",
+	56, "Новая папка", "F6",
+	60, "Настройки", "F10",
+	0,0,0
+};
+?define T_DEVICES "Устройства"
+?define T_ACTIONS "Действия"
+
+#else
+char *actions[] = {
+	57, "New file", "F7",
+	56, "New folder", "F6",
+	60, "Options", "F10",
+	0,0,0
+};
+
+?define T_DEVICES "Devices"
+?define T_ACTIONS "Actions"
+#endif
+
+
 void Tip(int y, dword caption, id, arrow)
 {
 	int i;
@@ -51,7 +74,7 @@ void SystemDiscsDraw()
 	char dev_name[10], disc_name[100];
 	int i, dev_icon;
 	
-	Tip(56, "Devices", 55, "=");
+	Tip(56, T_DEVICES, 55, "=");
 	for (i=0; i<20; i++) DeleteButton(100+i);
 	for (i=0;i<disc_num;i++)
 	{
@@ -104,17 +127,10 @@ void SystemDiscsDraw()
 	}
 }
 
-
-char *actions[] = {
-	57, "New file", "F7",
-	56, "New folder", "F6",
-	60, "Options", "F10",
-	0,0,0
-};
 void ActionsDraw()
 {
 	int actions_y=disc_num*16+108, lineh=16;
-	Tip(actions_y-18, "Actions", 77, ""); //чруюыютюъ
+	Tip(actions_y-18, T_ACTIONS, 77, ""); //чруюыютюъ
 	for (i=0; actions[i*3]!=0; i++, actions_y+=lineh)
 	{
 		DrawBar(17,actions_y,160,lineh,0xFFFFFF); //схыюх

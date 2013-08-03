@@ -1,5 +1,21 @@
 //Leency 2008-2013
 
+#ifdef LANG_RUS
+char *captions[] = {
+	"Открыть",               "Enter",
+	"Открыть с помощью...",  "CrlEnt",
+	"Открыть как текст",     "F3",
+	"Открыть в HEX",         "F4",
+	//
+	"Копировать",            "Crl+C",
+	"Вырезать",              "Crl+X",
+	"Вставить",              "Crl+V",
+	"Переименовать",         "F2",
+	"Удалить",               "Del",
+	"Обновить",              "F5",
+	0, 0};
+
+#else
 char *captions[] = {
 	"Open",          "Enter",
 	"Open with...",  "CrlEnt",
@@ -11,8 +27,9 @@ char *captions[] = {
 	"Paste",         "Crl+V",
 	"Rename",        "F2",
 	"Delete",        "Del",
-	//"Refresh",       "F5",
+	"Refresh",       "F5",
 	0, 0};
+#endif
 
 proc_info MenuForm;
 

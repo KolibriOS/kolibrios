@@ -4,6 +4,18 @@
 #define BROWSER_PATH    "/sys/htmlv"
 #define BROWSER_LINK    "http://kolibri-n.org/index.php"
 
+#ifdef LANG_RUS
+	?define INTRO_TEXT_1 "О Eolite"
+	?define INTRO_TEXT_2 "Разработчики:"
+	?define INTRO_TEXT_3 "Посетите"
+	?define INTRO_TEXT_4 "Закрыть"
+
+#else
+	?define INTRO_TEXT_1 "About Eolite"
+	?define INTRO_TEXT_2 "Developers:"
+	?define INTRO_TEXT_3 "Visit"
+	?define INTRO_TEXT_4 "Close"
+#endif
 
 void about_dialog()
 {   
@@ -21,17 +33,25 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(600,150,181,232+GetSkinHeight(),0x34,col_work,"About Eolite");
+				DefineAndDrawWindow(600,150,181,232+GetSkinHeight(),0x34,col_work,INTRO_TEXT_1);
 				DrawBar(0,0,172,50,0x8494C4);
 				PutPaletteImage(#logo,85,85,43,7,8,#logo_pal);
 				WriteTextB(46,100,0x90,0xBF40BF,ABOUT_TITLE);
-				WriteText(55,120,0x80,0,"Developers:"); 
+				#ifdef LANG_RUS
+				WriteText(50,120,0x80,0,INTRO_TEXT_2);
+				#else
+				WriteText(55,120,0x80,0,INTRO_TEXT_2);
+				#endif				
 				WriteText(39,130,0x80,0,"Leency & Veliant"); 
 				WriteText(45,140,0x80,0,"KolibriOS Team");
 				WriteText(61,150,0x80,0,"2008-2013");
-				WriteText(29,170,0x80,0,"Visit");
-				DrawLink(66,170,0x80,23, "kolibri-n.org");
-				DrawFlatButton(85,190,70,22,10,0xE4DFE1, "Close");
+				#ifdef LANG_RUS
+				WriteText(19,170,0x80,0,INTRO_TEXT_3);
+				#else
+				WriteText(29,170,0x80,0,INTRO_TEXT_3);
+				#endif				
+				DrawLink(71,170,0x80,23, "kolibri-n.org");
+				DrawFlatButton(85,190,70,22,10,0xE4DFE1, INTRO_TEXT_4);
 				DrawFilledBar(0, 216, 172, 12);
 	}
 }

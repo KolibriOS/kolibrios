@@ -19,11 +19,45 @@
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
 
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
+
+#ifdef LANG_RUS
+	?define T_FILE "Файл"
+	?define T_TYPE "Тип"
+	?define T_SIZE "Размер"
+	?define T_NEW_FOLDER "Новая папка"
+	?define T_NEW_FILE "Новый файл"
+	?define T_DELETE_FILE "Вы действительно хотите удалить"
+	?define T_YES "Да"
+	?define T_NO "Нет"
+	?define T_DEL_ERROR_1 "Ошибка. Папка не пустая."
+	?define T_DEL_ERROR_2 "Ошибка. Файловая система только для чтения."
+	?define NOT_CREATE_FOLDER "Не удалось создать папку."
+	?define NOT_CREATE_FILE "Не удалось создать файл."
+	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
+	
+#else
+	?define T_FILE "File"
+	?define T_TYPE "Type"
+	?define T_SIZE "Size"
+	?define T_NEW_FOLDER "New folder"
+	?define T_NEW_FILE "New file"
+	?define T_DELETE_FILE "Do you really want to delete"
+	?define T_YES "Yes"
+	?define T_NO "No"
+	?define T_DEL_ERROR_1 "Error. Folder isn't empty."
+	?define T_DEL_ERROR_2 "Error. Filesystem read-only."
+	?define NOT_CREATE_FOLDER "Folder can not be created."
+	?define NOT_CREATE_FILE "File can not be created."
+	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
+#endif
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.91"
-#define ABOUT_TITLE "Eolite v1.91"
+#define TITLE "Eolite File Manager v1.92"
+#define ABOUT_TITLE "Eolite v1.92"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -75,7 +109,7 @@ void main()
 
 	files.line_h=18;
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading library /rd/1/lib/box_lib.obj");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
 	SystemDiscsGet();
 	GetIni(1);	
 	if (param)
@@ -377,9 +411,9 @@ void draw_window()
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
 	DrawLeftPanel();
 	//ListBox
-	DrawFlatButton(files.x,40,onLeft(files.x,168),16,31,col_work,"File");
-	DrawFlatButton(onLeft(168,0),40,73,16,32,col_work,"Type");
-	DrawFlatButton(onLeft(95,0),40,68,16,33,col_work,"Size");
+	DrawFlatButton(files.x,40,onLeft(files.x,168),16,31,col_work,T_FILE);
+	DrawFlatButton(onLeft(168,0),40,73,16,32,col_work,T_TYPE);
+	DrawFlatButton(onLeft(95,0),40,68,16,33,col_work,T_SIZE);
 	DrawBar(onLeft(27,0),57,1,onTop(22,57),col_border); //line to the left from the scroll
 	DrawFlatButton(onLeft(27,0),40,16,16,0,col_work,"\x18");
 	DrawFlatButton(onLeft(27,0),onTop(22,0),16,16,0,col_work,"\x19");
@@ -592,8 +626,12 @@ void Del_Form()
 	int dform_x = files.w - 200 / 2 + files.x;
 	//oeia ieii
 	if (!files.count) return;
+	#ifdef LANG_RUS
+	DrawFlatButton(dform_x,160,215,80,0,col_work, ""); //oi?ia
+	#else
 	DrawFlatButton(dform_x,160,200,80,0,col_work, ""); //oi?ia
-	WriteText(dform_x+19,175,0x80,0,"Do you really want to delete");
+	#endif
+	WriteText(dform_x+19,175,0x80,0,T_DELETE_FILE);
 	IF (strlen(#file_name)<28) 
 		{
 			WriteText(strlen(#file_name)*6+dform_x+20,190,0x80,0,"?");
@@ -605,8 +643,8 @@ void Del_Form()
 			ESI = 24;
 			WriteText(dform_x+20,190,0,0,#file_name); //ieoai eiy
 		}
-	DrawFlatButton(dform_x+20,208,70,20,301,0xFFB6B5,"Yes");
-	DrawFlatButton(dform_x+111,208,70,20,302,0xC6DFC6,"No");
+	DrawFlatButton(dform_x+20,208,70,20,301,0xFFB6B5,T_YES);
+	DrawFlatButton(dform_x+111,208,70,20,302,0xC6DFC6,T_NO);
 	del_active=1;
 }
 
@@ -620,8 +658,8 @@ void Del_File(byte dodel)
 		IF (del_rezult)
 		{
 			Write_Error(del_rezult);
-			IF ( itdir) ShowMessage("Error. Folder isn't empty.");
-			IF (!itdir) ShowMessage("Error. Filesystem read-only.");
+			IF ( itdir) ShowMessage(T_DEL_ERROR_1);
+			IF (!itdir) ShowMessage(T_DEL_ERROR_2);
 		}
  	}
 	del_active=0;
@@ -648,7 +686,7 @@ void ReName(byte rename)
 			if (del_rezult!=0)
 			{
 				Write_Error(del_rezult);
-				ShowMessage("Error. Folder isn't empty.");
+				ShowMessage(T_DEL_ERROR_1);
 				return;
 			}
 			ELSE CreateDir(#temp);
@@ -750,30 +788,30 @@ void FnProcess(char N)
 			break;
 		case 6:
 			strcpy(#temp, #path);
-			strcat(#temp, "New folder");
+			strcat(#temp, T_NEW_FOLDER);
 			CreateDir(#temp);
 			if (!EAX){
-				SelectFile("New folder");
+				SelectFile(T_NEW_FOLDER);
 				FnProcess(2);
 			}
 			else
 			{
 				Write_Error(EAX);
-				ShowMessage("Folder can not be created.");
+				ShowMessage(NOT_CREATE_FOLDER);
 			}
 			break;
 		case 7:
 			strcpy(#temp, #path);
-			strcat(#temp, "New file");
+			strcat(#temp, T_NEW_FILE);
 			WriteFile(0, 0, #temp);
 			if (!EAX){
-				SelectFile("New file");
+				SelectFile(T_NEW_FILE);
 				FnProcess(2);
 			}
 			else
 			{
 				Write_Error(EAX);
-				ShowMessage("File can not be created.");
+				ShowMessage(NOT_CREATE_FILE);
 			}
 			break;
 		case 10: //F10

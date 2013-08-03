@@ -7,7 +7,7 @@ dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 void ShowMessage(dword message)
 {
-	DrawFlatButton(Form.width/2-13,160,200,80,0,0xFFB6B5, message);
+	DrawFlatButton(Form.width/2-13,160,220,80,0,0xFFB6B5, message);
 	pause(150);
 	List_ReDraw();
 }
