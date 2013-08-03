@@ -32,27 +32,6 @@
 #include "target-helpers/inline_debug_helper.h"
 #include "target-helpers/inline_sw_helper.h"
 #include <kos32sys.h>
-//#include <windows.h>
-
-/*
-static LRESULT CALLBACK
-window_proc(HWND hWnd,
-            UINT uMsg,
-            WPARAM wParam,
-            LPARAM lParam)
-{
-   switch (uMsg) {
-   case WM_DESTROY:
-      PostQuitMessage(0);
-      break;
-
-   default:
-      return DefWindowProc(hWnd, uMsg, wParam, lParam);
-   }
-
-   return 0;
-}
-*/
 
 static struct {
    void (* draw)(void);
@@ -66,20 +45,26 @@ graw_create_window_and_screen(int x,
                               enum pipe_format format,
                               void **handle)
 {
-   struct sw_winsys *winsys = NULL;
-   struct pipe_screen *screen = NULL;
+    struct sw_winsys *winsys = NULL;
+    struct pipe_screen *screen = NULL;
+    struct pipe_loader_device *dev;
+	int ret;
 
-   if (format != PIPE_FORMAT_B8G8R8X8_UNORM)
-      goto fail;
+    if (format != PIPE_FORMAT_B8G8R8X8_UNORM)
+        goto fail;
 
-   winsys = kos_create_sw_winsys();
-   if (winsys == NULL)
-      goto fail;
+    winsys = kos_create_sw_winsys();
+    if (winsys == NULL)
+        goto fail;
 
-   screen = sw_screen_create(winsys);
+	/* find a hardware device */
+	ret = pipe_loader_probe(&dev, 1);
+
+	/* init a pipe screen */
+	screen = pipe_loader_create_screen(dev, "drivers");
    
-   if (screen == NULL)
-      goto fail;
+    if (screen == NULL)
+        goto fail;
 
     BeginDraw();
     DrawWindow(x, y,width-1,height-1,

@@ -210,10 +210,6 @@ kos_sw_displaytarget_display(struct sw_winsys *winsys,
                              struct sw_displaytarget *dt,
                              void *context_private)
 {
-    /* nasty:
-     */
-//    HDC hDC = (HDC)context_private;
-
     kos_sw_display(winsys, dt);
 }
 
