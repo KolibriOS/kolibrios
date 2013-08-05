@@ -778,7 +778,7 @@ void FnProcess(char N)
 			IF (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 5: //refresh cur dir & devs
-			Tip(56, "Devices", 55, "-");
+			Tip(56, T_DEVICES, 55, "-");
 			Open_Dir(#path,WITH_REDRAW);
 			pause(10);
 			GetIni(1);
