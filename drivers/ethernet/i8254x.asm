@@ -25,7 +25,7 @@ format MS COFF
 
         DEBUG                   = 1
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
         MAX_PKT_SIZE            = 16384         ; Maximum packet size
 
@@ -291,7 +291,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2,"Loading %s driver\n", my_service
+        DEBUGF  1,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -493,7 +493,7 @@ probe:
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1,"\nCould not attach int handler!\n"
+        DEBUGF  2,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
   @@:
@@ -698,7 +698,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 ;-------------------------------------------
 ; Find pointer of device wich made IRQ occur
 

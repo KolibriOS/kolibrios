@@ -20,7 +20,7 @@ format MS COFF
 
         DEBUG                   = 1
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
         MAX_DEVICES             = 4
         MAX_ETH_FRAME_SIZE      = 1514
@@ -371,7 +371,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2,"Loading %s driver\n", my_service
+        DEBUGF  1,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -508,7 +508,7 @@ proc service_proc stdcall, ioctl:dword
 
         dec     [devices]
   .err:
-        DEBUGF  1,"Error, removing all data !\n"
+        DEBUGF  2,"Error, removing all data !\n"
         stdcall KernelFree, ebx
 
   .fail:
@@ -598,7 +598,7 @@ probe:
         jmp     .L1
 
   .no_dev:
-        DEBUGF 1,"PCnet device not found!\n"
+        DEBUGF  1,"device not found!\n"
         mov     eax, 1
         ret
 
@@ -645,7 +645,7 @@ probe:
         cmp     ax, 0x2627
         je      .L9
 
-        DEBUGF 1,"Invalid chip rev\n"
+        DEBUGF  1,"Invalid chip rev\n"
         jmp     .no_dev
   .L2:
         mov     [device.name], device_l2
@@ -684,7 +684,7 @@ probe:
 ;        mov     [device.fdx], 1
         mov     [device.mii], 1
   .L10:
-        DEBUGF 1,"device name: %s\n", [device.name]
+        DEBUGF  1,"device name: %s\n", [device.name]
 
         cmp     [device.fset], 1
         jne     .L11
@@ -723,7 +723,7 @@ reset:
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1,"\nCould not attach int handler!\n"
+        DEBUGF  2,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
   @@:
@@ -802,7 +802,7 @@ reset:
         test    [device.options], PORT_ASEL
         jz      .L9
         mov     ecx, BCR_MIICTL
-        DEBUGF 1,"ASEL, enable auto-negotiation\n"
+        DEBUGF  1,"ASEL, enable auto-negotiation\n"
         call    [device.read_bcr]
         and     eax, not 0x98
         or      eax, 0x20
@@ -861,7 +861,7 @@ reset:
         cmp     [device.phy], MAX_PHYS
         jb      .mii_loop
 
-        DEBUGF  1, "No PHY found!\n"
+        DEBUGF  2, "No PHY found!\n"
 
         or      eax, -1
         ret
@@ -918,7 +918,7 @@ reset:
 
         dec     esi
         jnz     @r
-        DEBUGF 1,"Initialize timeout!\n"
+        DEBUGF  2,"Initialize timeout!\n"
   @@:
 
 ; Start the device and enable interrupts
@@ -934,7 +934,7 @@ reset:
 
         call    check_media
 
-        DEBUGF 1,"reset complete\n"
+        DEBUGF  1,"reset complete\n"
         xor     eax, eax
         ret
 
@@ -942,7 +942,7 @@ reset:
 align 4
 init_ring:
 
-        DEBUGF 1,"init ring\n"
+        DEBUGF  1,"init ring\n"
 
         lea     edi, [device.rx_ring]
         mov     eax, edi
@@ -1039,7 +1039,6 @@ transmit:
 ; get next descriptor 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...
         inc     [device.cur_tx]
         and     [device.cur_tx], TX_RING_SIZE - 1
-        DEBUGF  1," - Packet Sent! "
 
 ; Update stats
         inc     [device.packets_tx]
@@ -1053,7 +1052,7 @@ transmit:
         ret     8
 
   .nospace:
-        DEBUGF  1, 'ERROR: no free transmit descriptors\n'
+        DEBUGF  2, "ERROR: no free transmit descriptors\n"
         stdcall KernelFree, [esp+4]
         or      eax, -1
         ret     8
@@ -1071,7 +1070,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 
@@ -1230,7 +1229,7 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
 ;;;;;;;;;;;;;;;;;;;;;;
 align 4
 read_mac:
-        DEBUGF  1,"Reading MAC"
+        DEBUGF  1,"Reading MAC:\n"
 
         mov     edx, [device.io_addr]
         add     dx, 6
@@ -1239,11 +1238,10 @@ read_mac:
         dec     dx
         in      ax, dx
         push    ax
-        DEBUGF  1,"."
         cmp     edx, [device.io_addr]
         ja      @r
 
-        DEBUGF  1," %x-%x-%x-%x-%x-%x\n",[esp+0]:2,[esp+1]:2,[esp+2]:2,[esp+3]:2,[esp+4]:2,[esp+5]:2
+        DEBUGF  1,"%x-%x-%x-%x-%x-%x\n",[esp+0]:2,[esp+1]:2,[esp+2]:2,[esp+3]:2,[esp+4]:2,[esp+5]:2
 
         lea     edi, [device.mac]
         pop     ax
@@ -1525,7 +1523,7 @@ check_media:
         DEBUGF  1, "check_media\n"
 
         test    [device.mii], 1
-        jnz      mii_link_ok
+        jnz     mii_link_ok
 
         mov     ecx, BCR_LED0
         call    [device.read_bcr]
