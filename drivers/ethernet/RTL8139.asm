@@ -27,7 +27,7 @@ format MS COFF
 
         DEBUG                   = 1
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
 include '../proc32.inc'
 include '../imports.inc'
@@ -237,7 +237,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2, "Loading %s driver\n", my_service
+        DEBUGF  1, "Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -336,7 +336,7 @@ proc service_proc stdcall, ioctl:dword
 
         PCI_find_irq
 
-        DEBUGF  2, "Hooking into device, dev:%x, bus:%x, irq:%x, I/O addr:%x\n",\
+        DEBUGF  1, "Hooking into device, dev:%x, bus:%x, irq:%x, I/O addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
 ; Allocate the receive buffer
@@ -371,11 +371,11 @@ proc service_proc stdcall, ioctl:dword
 ; If the device was already loaded, find the device number and return it in eax
 
   .find_devicenum:
-        DEBUGF  2, "Trying to find device number of already registered device\n"
+        DEBUGF  1, "Trying to find device number of already registered device\n"
         call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
-        DEBUGF  2, "Kernel says: %u\n", eax
+        DEBUGF  1, "Kernel says: %u\n", eax
         ret
 
 ; If an error occured, remove all allocated data and exit (returning -1 in eax)
@@ -385,6 +385,7 @@ proc service_proc stdcall, ioctl:dword
         ; todo: reset device into virgin state
 
   .err:
+        DEBUGF  2, "Error, removing all data !\n"
         stdcall KernelFree, [device.rx_buffer]
         stdcall KernelFree, ebx
 
@@ -425,7 +426,7 @@ ret
 
 align 4
 probe:
-        DEBUGF  2, "Probing %s device\n", my_service
+        DEBUGF  1, "Probing\n"
 
         PCI_make_bus_master
 
@@ -455,7 +456,7 @@ probe:
         mov     ecx, [crosslist+ecx*4]
         mov     [device.name], ecx
 
-        DEBUGF  2, "Chip version: %s\n", ecx
+        DEBUGF  1, "Chip version: %s\n", ecx
 
 ; wake up the chip
         set_io  0
@@ -498,7 +499,7 @@ probe:
         set_io  0
         set_io  REG_9346CR
         out     dx, al
-        DEBUGF  2, "done!\n"
+        DEBUGF  1, "probing done!\n"
 
         xor     eax, eax
 
@@ -512,7 +513,7 @@ probe:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 reset:
-        DEBUGF  2, "Reset\n"
+        DEBUGF  1, "Reset\n"
 
 ; attach int handler
         movzx   eax, [device.irq_line]
@@ -520,7 +521,7 @@ reset:
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1, "\nCould not attach int handler!\n"
+        DEBUGF  2, "Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
        @@:
@@ -538,7 +539,7 @@ reset:
         jz      .reset_completed        ; RST remains 1 during reset
         dec     cx
         jns     .wait_for_reset
-        DEBUGF  1, "Reset timeout!\n"
+        DEBUGF  2, "Reset timeout!\n"
   .reset_completed:
 
 ; unlock config and BMCR registers
@@ -641,7 +642,7 @@ reset:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-        DEBUGF  1, "\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
+        DEBUGF  1, "Transmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
         DEBUGF  1, "To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
@@ -710,7 +711,7 @@ transmit:
         jmp     .send_packet
 
   .fail:
-        DEBUGF  1, "failed!\n"
+        DEBUGF  2, "transmit failed!\n"
         stdcall KernelFree, [esp+4]
         or      eax, -1
         ret     8
@@ -730,7 +731,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1, "\n%s int\n", my_service
+        DEBUGF  1, "INT\n"
 
 ; find pointer of device wich made IRQ occur
         mov     ecx, [devices]
@@ -774,7 +775,7 @@ int_handler:
         test    al, BUFE                        ; test if RX buffer is empty
         jnz     .finish
 
-        DEBUGF  1, "RX: "
+        DEBUGF  1, "RX:\n"
 
         mov     eax, [device.rx_buffer]
         add     eax, [device.rx_data_offset]
@@ -831,7 +832,7 @@ int_handler:
 
         cmp     eax, RX_BUFFER_SIZE
         jb      .no_wrap
-        DEBUGF  1, "Wrapping"
+        DEBUGF  1, "Wrapping\n"
         sub     eax, RX_BUFFER_SIZE
   .no_wrap:
         mov     [device.rx_data_offset], eax
@@ -847,12 +848,12 @@ int_handler:
   .reset_rx:
         test    byte [eax], (1 shl BIT_CRC)
         jz      .no_crc_error
-        DEBUGF  2, "\nCRC error!\n"
+        DEBUGF  2, "RX: CRC error!\n"
 
   .no_crc_error:
         test    byte [eax], (1 shl BIT_FAE)
         jz      .no_fae_error
-        DEBUGF  1, "\nFrame alignment error!\n"
+        DEBUGF  2, "RX: Frame alignment error!\n"
 
   .no_fae_error:
         DEBUGF  1, "Reset RX\n"
@@ -930,7 +931,7 @@ int_handler:
         jz      @f
 
         push    ax
-        DEBUGF  2, "RX-buffer overflow!\n"
+        DEBUGF  2, "RX:buffer overflow!\n"
 
         set_io  0
         set_io  REG_ISR
@@ -944,7 +945,7 @@ int_handler:
         test    ax, ISR_PUN
         jz      @f
 
-        DEBUGF  2, "Packet underrun!\n"
+        DEBUGF  2, "RX:Packet underrun!\n"
 
 ;----------------------------------------------------
 ; Receive FIFO overflow ?
@@ -953,7 +954,7 @@ int_handler:
         jz      @f
 
         push    ax
-        DEBUGF  2, "RX fifo overflow!\n"
+        DEBUGF  2, "RX:fifo overflow!\n"
 
         set_io  0
         set_io  REG_ISR
@@ -970,7 +971,6 @@ int_handler:
         call    cable
 
   .fail:
-        DEBUGF  1, "\n"
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
@@ -1029,7 +1029,7 @@ cable:
 align 4
 write_mac:      ; in: mac pushed onto stack (as 3 words)
 
-        DEBUGF  2, "Writing MAC: "
+        DEBUGF  1, "Writing MAC\n"
 
 ; disable all in command registers
         set_io  0
@@ -1065,7 +1065,7 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         xor     eax, eax
         out     dx, al
 
-        DEBUGF  2, "ok!\n"
+        DEBUGF  1, "MAC write ok!\n"
 
 ; Notice this procedure does not ret, but continues to read_mac instead.
 
@@ -1077,7 +1077,7 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
 ;;;;;;;;;;;;;;;;;;;;;;
 
 read_mac:
-        DEBUGF  2, "Reading MAC: "
+        DEBUGF  2, "Reading MAC:\n"
 
         set_io  0
         lea     edi, [device.mac]

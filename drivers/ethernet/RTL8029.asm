@@ -25,7 +25,7 @@ format MS COFF
 
         DEBUG                   = 1
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 2
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
 include '../proc32.inc'
 include '../imports.inc'
@@ -169,7 +169,7 @@ proc START stdcall, state:dword
         cmp     [state], 1
         jne     .exit
   .entry:
-        DEBUGF  2,"Registering %s driver\n", my_service
+        DEBUGF  1, "Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
   .fail:
@@ -210,7 +210,7 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     @F     ;---------
 
-        DEBUGF  1,"Checking if device is already listed..\n"
+        DEBUGF  1, "Checking if device is already listed..\n"
 
         mov     eax, [IOCTL.input]
 
@@ -296,7 +296,7 @@ proc service_proc stdcall, ioctl:dword
 
   .hook:
 
-        DEBUGF  2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
+        DEBUGF  1, "Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
         call    probe                                                   ; this function will output in eax
@@ -318,15 +318,15 @@ proc service_proc stdcall, ioctl:dword
 ; If the device was already loaded, find the device number and return it in eax
 
   .find_devicenum:
-        DEBUGF  1,"Trying to find device number of already registered device\n"
+        DEBUGF  1, "Trying to find device number of already registered device\n"
         call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
-        DEBUGF  1,"Kernel says: %u\n", eax
+        DEBUGF  1, "Kernel says: %u\n", eax
         ret
 
   .err:
-        DEBUGF  1,"Failed, removing device structure\n"
+        DEBUGF  2, "Failed, removing device structure\n"
         stdcall KernelFree, ebx
 
         jmp     .fail
@@ -362,12 +362,12 @@ create_new_struct:
 
 find_device_num:
 
-        DEBUGF  1,"Trying to find device number of already registered device\n"
+        DEBUGF  1, "Trying to find device number of already registered device\n"
         mov     ebx, eax
         call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
-        DEBUGF  1,"Kernel says: %u\n", eax
+        DEBUGF  1, "Kernel says: %u\n", eax
         ret
 
 
@@ -394,7 +394,7 @@ probe:
         mov     [device.vendor], VENDOR_NONE
         mov     [device.bmem], 0
 
-        DEBUGF  2,"Trying 16-bit mode\n"
+        DEBUGF  1, "Trying 16-bit mode\n"
 
         mov     [device.flags], FLAG_16BIT + FLAG_PIO
         mov     [device.memsize], MEM_32k
@@ -432,8 +432,8 @@ probe:
         repe    cmpsb
         je      ep_set_vendor
 
-        DEBUGF  2,"16-bit mode failed\n"
-        DEBUGF  2,"Trying 8-bit mode\n"
+        DEBUGF  1, "16-bit mode failed\n"
+        DEBUGF  1, "Trying 8-bit mode\n"
 
         mov     [device.flags], FLAG_PIO
         mov     [device.memsize], MEM_16k
@@ -484,25 +484,25 @@ probe:
         repe    cmpsb
         je      ep_set_vendor
 
-        DEBUGF  2,"This is not a valid ne2000 device!\n"
+        DEBUGF  2, "This is not a valid ne2000 device!\n"
         or      eax, -1
         ret
 
 
 ep_set_vendor:
 
-        DEBUGF  2,"Mode ok\n"
+        DEBUGF  1, "Mode ok\n"
 
         cmp     [device.io_addr], ISA_MAX_ADDR
         jbe     .isa
 
-        DEBUGF  2,"Card is using PCI bus\n"
+        DEBUGF  1, "Card is using PCI bus\n"
 
         mov     [device.vendor], VENDOR_NOVELL  ;;; FIXME
         jmp     ep_check_have_vendor
 
   .isa:
-        DEBUGF  2,"Card is using ISA bus\n"
+        DEBUGF  1, "Card is using ISA bus\n"
 
         mov     [device.vendor], VENDOR_NOVELL
 
@@ -526,12 +526,18 @@ ep_check_have_vendor:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 reset:
-        DEBUGF  2,"Resetting device\n"
+        DEBUGF  1, "Resetting device\n"
 
 ; attach int handler
         movzx   eax, [device.irq_line]
-        DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
+        DEBUGF  1, "Attaching int handler to irq %x\n", eax:1
         stdcall AttachIntHandler, eax, int_handler, dword 0
+        test    eax, eax
+        jnz     @f
+        DEBUGF  2, "Could not attach int handler!\n"
+;        or      eax, -1
+;        ret
+       @@:
 
 ; Stop card + DMA
         set_io  0
@@ -656,7 +662,7 @@ reset:
 
 ; Indicate that we have successfully reset the card
         xor     eax, eax
-        DEBUGF  1,"Done!\n"
+        DEBUGF  1, "Done!\n"
 
         ret
 
@@ -673,8 +679,8 @@ transmit:
 
         mov     esi, [esp + 4]
         mov     ecx, [esp + 8]
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n",esi, ecx
-        DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+        DEBUGF  1, "Transmitting packet, buffer:%x, size:%u\n",esi, ecx
+        DEBUGF  1, "To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
         cmp     ecx, ETH_FRAME_LEN
@@ -709,7 +715,7 @@ transmit:
         mov     al, CMD_PS0 + CMD_TXP + CMD_RD2 + CMD_STA
         out     dx, al
 
-        DEBUGF  1,"Packet Sent!\n"
+        DEBUGF  1, "Packet Sent!\n"
 
         inc     [device.packets_tx]
         mov     eax, [esp + 8]                   ; Get packet size in eax
@@ -722,7 +728,7 @@ transmit:
         ret     8
 
   .err:
-        DEBUGF  2,"Transmit error!\n"
+        DEBUGF  2, "Transmit error!\n"
 
         or      eax, -1
         stdcall KernelFree, [esp+4]
@@ -741,7 +747,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1, "INT\n"
 
 ; find pointer of device wich made INT occur
 
@@ -773,7 +779,7 @@ int_handler:
 
   .got_it:
 
-        DEBUGF  1,"Device=%x status=%x\n", ebx, eax:2
+        DEBUGF  1, "Device=%x status=%x\n", ebx, eax:2
 
         push    ebx
 
@@ -860,7 +866,7 @@ int_handler:
 
 ; update stats
 
-        DEBUGF  1,"Received %u bytes\n", ecx
+        DEBUGF  1, "Received %u bytes\n", ecx
 
         add     dword[device.bytes_rx], ecx
         adc     dword[device.bytes_rx + 4], 0
@@ -927,7 +933,7 @@ int_handler:
 
   .no_rx:
         pop     ebx
-        DEBUGF  1,"done\n"
+        DEBUGF  1, "done\n"
 
         set_io  0
         set_io  P0_ISR
@@ -951,7 +957,7 @@ int_handler:
 align 4
 write_mac:      ; in: mac on stack (6 bytes)
 
-        DEBUGF  1,"Writing MAC\n"
+        DEBUGF  1, "Writing MAC\n"
 
         set_io  0
         mov     al, CMD_PS1; + CMD_RD2 + CMD_STP
@@ -978,7 +984,7 @@ write_mac:      ; in: mac on stack (6 bytes)
 
 read_mac:
 
-        DEBUGF  1,"Reading MAC\n"
+        DEBUGF  1, "Reading MAC\n"
 
         xor     esi, esi
         mov     cx, 16
@@ -998,7 +1004,7 @@ read_mac:
   .8bit:
         loop    .loop
 
-        DEBUGF  1,"MAC=%x-%x-%x-%x-%x-%x\n",\
+        DEBUGF  1, "MAC=%x-%x-%x-%x-%x-%x\n",\
         [device.mac]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
 
         ret
@@ -1016,7 +1022,7 @@ read_mac:
 ;***************************************************************************
 PIO_read:
 
-        DEBUGF  1,"PIO Read from %x to %x, %u bytes ", si, edi, cx
+        DEBUGF  1, "PIO Read from %x to %x, %u bytes ", si, edi, cx
 
 ; start DMA
         set_io  0
@@ -1052,7 +1058,7 @@ PIO_read:
         test    [device.flags], FLAG_16BIT
         jz      .8bits
 
-        DEBUGF  1,"(16-bit mode)\n"
+        DEBUGF  1, "(16-bit mode)\n"
 
         shr     cx, 1   ; note that if the number was odd, carry flag will be set
         pushf
@@ -1068,7 +1074,7 @@ PIO_read:
         jmp     .8bits_
 
   .8bits:
-        DEBUGF  1,"(8-bit mode)\n"
+        DEBUGF  1, "(8-bit mode)\n"
 
   .8bits_:
         in      al, dx
@@ -1104,7 +1110,7 @@ PIO_read:
 ;***************************************************************************
 PIO_write:
 
-        DEBUGF  1,"Eth PIO Write from %x to %x, %u bytes ", esi, di, cx
+        DEBUGF  1, "Eth PIO Write from %x to %x, %u bytes ", esi, di, cx
 
         set_io  0
 ;        set_io  P0_COMMAND
@@ -1138,7 +1144,7 @@ PIO_write:
         test    [device.flags], FLAG_16BIT
         jz      .8_bit
 
-        DEBUGF  1,"(16-bit mode)\n"
+        DEBUGF  1, "(16-bit mode)\n"
 
         shr     cx, 1   ; note that if the number was odd, carry flag will be set
         pushf           ; save the flags for later
@@ -1155,7 +1161,7 @@ PIO_write:
 
   .8_bit:
 
-        DEBUGF  1,"(8-bit mode)\n"
+        DEBUGF  1, "(8-bit mode)\n"
 
   .8_bit_:
         lodsb
