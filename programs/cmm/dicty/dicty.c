@@ -5,7 +5,7 @@
 #include "..\lib\file_system.h"
 #include "..\lib\figures.h"
 #include "..\lib\dll.h"
-#include "..\lib\edit_box_lib.h"
+#include "..\lib\lib.obj\box_lib.h"
 
 
 unsigned char speaker[23*40*3]= FROM "speaker.raw";
@@ -34,7 +34,7 @@ void main()
 {   
 	int id, key;
    	mem_Init();
-	load_dll2(boxlib, #edit_box_draw,0);
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/boxlib.obj");
 	
 	program_path[strrchr(#program_path, '/')] = 0;
 	strcpy(#dict_folder, #program_path);
