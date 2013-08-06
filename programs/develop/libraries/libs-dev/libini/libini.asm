@@ -729,12 +729,15 @@ endl
         mcall   70
 
         mov     edi,[begMem]                    ;search begin section
+        jmp     .searchSect
+    .NoFindSect:
+        mov     edi,[begDel]
     .searchSect:
         mov     al,'['
         repne   scasb
         test    ecx,ecx
         jnz     @f
-        
+
         pop     esi edi ecx ebx
         mov     eax,1
         ret
@@ -746,16 +749,15 @@ endl
         test    al,al
         jz      @f
         scasb
-        jne     .searchSect
+        jne     .NoFindSect
         jmp     @b
       @@:
         cmp     byte[edi],']'
-        jne     .searchSect
+        jne     .NoFindSect
 
+        mov     edi,[begDel]
         dec     [begDel]
-
-        mov     edi,[begDel]                    ;search end section
-        inc     edi
+                                       ;search end section
     .searchEndSect:
         mov     al,'['
         repne   scasb
@@ -780,6 +782,7 @@ endl
         mov     eax,dword[funcFile+12]
         sub     eax,[endDel]
         add     eax,[begDel]
+        dec     eax
 
         mov     dword[funcFile],2               ;write buffer to file
         mov     dword[funcFile+12],eax
@@ -1054,4 +1057,3 @@ export                                            \
         ini.set_color     , 'ini_set_color'     , \
         ini.get_shortcut  , 'ini_get_shortcut'  , \
         ini.del_section   , 'ini_del_section'
-        
