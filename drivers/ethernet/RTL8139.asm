@@ -23,7 +23,12 @@ format MS COFF
         MAX_DEVICES             = 16
 
         RBLEN                   = 3 ; Receive buffer size: 0==8K 1==16k 2==32k 3==64k
-        NUM_TX_DESC             = 4
+
+        TXRR                    = 8 ; total retries = 16+(TXRR*16)
+        TX_MXDMA                = 6 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=2048
+        ERTXTH                  = 8 ; in unit of 32 bytes e.g:(8*32)=256
+        RX_MXDMA                = 7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=unlimited
+        RXFTH                   = 7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=no threshold
 
         DEBUG                   = 1
         __DEBUG__               = 1
@@ -119,24 +124,19 @@ public version
         BIT_IFG1                = 25
         BIT_IFG0                = 24
 
-        TXRR                    = 8 ; total retries = 16+(TXRR*16)
-        TX_MXDMA                = 6 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=2048
-        ERTXTH                  = 8 ; in unit of 32 bytes e.g:(8*32)=256
-        RX_MXDMA                = 7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=unlimited
-        RXFTH                   = 7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=no threshold
-
         RX_CONFIG               = (RBLEN shl BIT_RBLEN) or \
                                   (RX_MXDMA shl BIT_RX_MXDMA) or \
                                   (1 shl BIT_NOWRAP) or \
                                   (RXFTH shl BIT_RXFTH) or\
-                                  (1 shl BIT_AB) or \                 ; Accept broadcast packets
-                                  (1 shl BIT_APM) or \                ; Accept physical match packets
-                                  (1 shl BIT_AER) or \                ; Accept error packets
-                                  (1 shl BIT_AR) or \                 ; Accept Runt packets (smaller then 64 bytes)
-                                  (1 shl BIT_AM)                      ; Accept multicast packets
+                                  (1 shl BIT_AB) or \                   ; Accept broadcast packets
+                                  (1 shl BIT_APM) or \                  ; Accept physical match packets
+                                  (1 shl BIT_AER) or \                  ; Accept error packets
+                                  (1 shl BIT_AR) or \                   ; Accept Runt packets (smaller then 64 bytes)
+                                  (1 shl BIT_AM)                        ; Accept multicast packets
 
-        RX_BUFFER_SIZE          = (8192 shl RBLEN);+16
+        RX_BUFFER_SIZE          = (8192 shl RBLEN);+16+1500
         MAX_ETH_FRAME_SIZE      = 1514
+        NUM_TX_DESC             = 4                                     ; not user selectable
 
         EE_93C46_REG_ETH_ID     = 7 ; MAC offset
         EE_93C46_READ_CMD       = (6 shl 6) ; 110b + 6bit address
@@ -177,12 +177,17 @@ public version
         ISR_ROK                 = 1 shl 0
 
         INTERRUPT_MASK          = ISR_ROK or \
+                                  ISR_RER or \
+                                  ISR_TOK or \
+                                  ISR_TER or \
                                   ISR_RXOVW or \
                                   ISR_PUN or \
                                   ISR_FIFOOVW or \
                                   ISR_LENCHG or \
-                                  ISR_TOK or \
-                                  ISR_TER
+                                  ISR_TIMEOUT or \
+                                  ISR_SERR
+
+
 
         TSR_OWN                 = 1 shl 13
         TSR_TUN                 = 1 shl 14
@@ -608,7 +613,7 @@ reset:
         mov     dword[eax], 0                   ; clear receive flags for first packet (really needed??)
         DEBUGF  1, "RX buffer virtual addr=0x%x\n", eax
         GetRealAddr
-        DEBUGF  1, "RX buffer real addr=0x%x\n", eax
+        DEBUGF  1, "RX buffer physical addr=0x%x\n", eax
         set_io  REG_RBSTART
         out     dx, eax
 
@@ -841,7 +846,7 @@ int_handler:
         set_io  0
         set_io  REG_CAPR                        ; update 'Current Address of Packet Read register'
         sub     eax, 0x10                       ; value 0x10 is a constant for CAPR
-        out     dx , ax
+        out     dx, ax
 
         jmp     .receive                        ; check for multiple packets
 
@@ -877,6 +882,8 @@ int_handler:
         test    ax, ISR_TOK + ISR_TER
         jz      @f
 
+        DEBUGF  1, "Transmit done!\n"
+
         push    ax
         mov     ecx, (NUM_TX_DESC-1)*4
   .txdescloop:
@@ -891,29 +898,34 @@ int_handler:
         cmp     [device.TX_DESC+ecx], 0
         je      .notthisone
 
-;  .notxd:
-;        test    eax, TSR_TUN
-;        jz      .nobun
-;        DEBUGF  2, "TX: FIFO Buffer underrun!\n"
-;
-;  .nobun:
-;        test    eax, TSR_OWC
-;        jz      .noowc
-;        DEBUGF  2, "TX: OWC!\n"
-;
-;  .noowc:
-;        test    eax, TSR_TABT
-;        jz      .notabt
-;        DEBUGF  2, "TX: TABT!\n"
-;
-;  .notabt:
-;        test    eax, TSR_CRS
-;        jz      .nocsl
-;        DEBUGF  2, "TX: Carrier Sense Lost!\n"
-;
-;  .nocsl:
+        DEBUGF  1, "TSD: 0x%x\n", eax
 
-        DEBUGF  1, "TX OK: free buffer %x\n", [device.TX_DESC+ecx]:8
+        test    eax, TSR_TUN
+        jz      .no_bun
+        DEBUGF  2, "TX: FIFO Buffer underrun!\n"
+
+  .no_bun:
+        test    eax, TSR_OWC
+        jz      .no_owc
+        DEBUGF  2, "TX: OWC!\n"
+
+  .no_owc:
+        test    eax, TSR_TABT
+        jz      .no_tabt
+        DEBUGF  2, "TX: TABT!\n"
+
+  .no_tabt:
+        test    eax, TSR_CRS
+        jz      .no_csl
+        DEBUGF  2, "TX: Carrier Sense Lost!\n"
+
+  .no_csl:
+        test    eax, TSR_TOK
+        jz      .no_tok
+        DEBUGF  1, "TX: Transmit OK!\n"
+
+  .no_tok:
+        DEBUGF  1, "free transmit buffer 0x%x\n", [device.TX_DESC+ecx]:8
         push    ecx ebx
         stdcall KernelFree, [device.TX_DESC+ecx]
         pop     ebx ecx
@@ -921,7 +933,7 @@ int_handler:
 
   .notthisone:
         sub     ecx, 4
-        ja      .txdescloop
+        jae     .txdescloop
         pop     ax
 
 ;----------------------------------------------------
@@ -988,7 +1000,7 @@ int_handler:
 
 align 4
 cable:
-        DEBUGF  1, "Updating Cable status\n"
+        DEBUGF  1, "Checking link status:\n"
 
         set_io  0
         set_io  REG_MSR
@@ -1003,18 +1015,21 @@ cable:
   .100mbps:
         mov     [device.state], ETH_LINK_100M
         call    NetLinkChanged
+        DEBUGF  1, "100 mbit\n"
 
         ret
 
   .10mbps:
         mov     [device.state], ETH_LINK_10M
         call    NetLinkChanged
+        DEBUGF  1, "10 mbit\n"
 
         ret
 
   .notconnected:
         mov     [device.state], ETH_LINK_DOWN
         call    NetLinkChanged
+        DEBUGF  1, "no link\n"
 
         ret
 
@@ -1077,7 +1092,7 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
 ;;;;;;;;;;;;;;;;;;;;;;
 
 read_mac:
-        DEBUGF  2, "Reading MAC:\n"
+        DEBUGF  1, "Reading MAC:\n"
 
         set_io  0
         lea     edi, [device.mac]
@@ -1087,7 +1102,7 @@ read_mac:
         in      ax, dx
         stosw
 
-        DEBUGF  2, "%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
+        DEBUGF  1, "%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
 
         ret
 
