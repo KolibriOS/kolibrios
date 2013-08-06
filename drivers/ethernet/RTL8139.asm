@@ -547,7 +547,11 @@ reset:
         DEBUGF  2, "Reset timeout!\n"
   .reset_completed:
 
+; Read MAC address
+        call    read_mac
+
 ; unlock config and BMCR registers
+        set_io  0
         set_io  REG_9346CR
         mov     al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EEM0)
         out     dx, al
@@ -560,16 +564,15 @@ reset:
         out     dx, eax
 
 ; enable Rx/Tx
-
         mov     al, (1 shl BIT_RE) or (1 shl BIT_TE)
         set_io  REG_COMMAND
         out     dx, al
 
 ; Rxbuffer size, unlimited dma burst, no wrapping, no rx threshold
 ; accept broadcast packets, accept physical match packets
-        mov     ax, RX_CONFIG
+        mov     eax, RX_CONFIG
         set_io  REG_RXCONFIG
-        out     dx, ax
+        out     dx, eax
 
 ; 1024 bytes DMA burst, total retries = 16 + 8 * 16 = 144
         mov     eax, (TX_MXDMA shl BIT_TX_MXDMA) or (TXRR shl BIT_TXRR) or BIT_IFG1 or BIT_IFG0
@@ -616,9 +619,6 @@ reset:
         DEBUGF  1, "RX buffer physical addr=0x%x\n", eax
         set_io  REG_RBSTART
         out     dx, eax
-
-; Read MAC address
-        call    read_mac
 
 ; enable interrupts
         set_io  0
