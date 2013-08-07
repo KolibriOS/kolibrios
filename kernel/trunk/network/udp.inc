@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -230,7 +230,7 @@ UDP_input:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: checksum mismatch\n"
 
   .dump:
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4 ; pop (balance stack)
         DEBUGF  DEBUG_NETWORK_VERBOSE,"UDP_input: dumping\n"
 

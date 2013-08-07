@@ -929,7 +929,7 @@ SOCKET_receive_dgram:
         rep movsd
   .nd:
 
-        call    kernel_free                                     ; free kernel buffer
+        call    NET_packet_free
         pop     eax                                             ; return number of bytes copied to application
         xor     ebx, ebx
         ret
@@ -1568,7 +1568,7 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 8
 
         ret

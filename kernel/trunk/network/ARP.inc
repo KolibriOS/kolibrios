@@ -293,7 +293,7 @@ ARP_input:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: IP address conflict detected!\n"
 
   .exit:
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4                                          ; pop (balance stack)
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: exiting\n"

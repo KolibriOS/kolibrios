@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2012. All rights reserved.      ;;
+;; Copyright (C) KolibriOS team 2012-2013. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  PPPoE.INC                                                   ;;
@@ -103,7 +103,7 @@ PPPoE_discovery_input:
         popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, 'PPPoE_discovery_input: dumping\n'
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
         ret
 
@@ -229,7 +229,7 @@ PPPoE_session_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_input: dumping\n"
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
         ret
 
