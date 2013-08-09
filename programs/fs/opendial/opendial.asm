@@ -78,6 +78,7 @@
 	dd path
 
 include '../../macros.inc'
+;include '../../debug.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'macros.inc'
@@ -1018,11 +1019,22 @@ get_communication_area:
 	xor	eax,eax
 	mov	al,[param]
 	test	eax,eax
-	jz	@f
+	jz	.exit
 	mcall	68,22,param,,0x01
 	mov	[communication_area],eax
 	movzx	ebx,word [eax+2]
 	mov	[open_dialog_type],ebx
+	cmp	ebx,1
+	jne	@f
+	pushad
+	mov	[focus_pointer],bl
+	mov	edi,edit1
+	mov	[file_browser_data_1.select_panel_counter],0
+	or	[edi+44],dword ed_focus
+	mov	[edi+12],dword 0xffffb0	; color yellow
+	mcall	66,1,0
+	popad
+@@:
 	mov	ebx,[eax+4]
 	cmp	bx,word x_minimal_size ;300
 	jb	@f
@@ -1031,7 +1043,7 @@ get_communication_area:
 	cmp	bx,word y_minimal_size ;200
 	jb	@f
 	mov	[window_y],ebx
-@@:
+.exit:
 	ret
 ;---------------------------------------------------------------------
 load_start_directory:
@@ -1047,7 +1059,7 @@ load_start_directory:
 	mov	esi,[communication_area]
 	add	esi,3840 ;4096-256
 	mov	eax,[esi]
-	test	eax,eax
+	test	al,al
 	jnz	@f
 	mov	esi,example_name_temp
 @@:
@@ -1185,6 +1197,9 @@ file_no_folder:
 	test	al,al
 	je	@f
 	mov	ebx,user_selected_name
+	xor	eax,eax
+	cmp	[ebx],al
+	je	.exit
 @@:
 	cmp	[open_dialog_type],2
 	je	@f
@@ -1210,10 +1225,13 @@ file_no_folder:
 	jz	@f
 	mov	esi,user_selected_name
 @@:
+	xor	eax,eax
+	cmp	[esi],al
+	je	.exit
 	mov	edi,[communication_area]
 	add	edi,3840 ;4096-256
 	call	copy_dir_name
-	
+.exit:
 	mov	eax,[communication_area]
 	mov	[eax],word 1
 	jmp	button.exit
@@ -1569,8 +1587,13 @@ copy_new_file_name:
 	add	esi,40
 	mov	edi,user_selected_name
 	cld
+	lodsb
+	test	al,al
+	jnz	.1
+	ret
 @@:
 	lodsb
+.1:
 	stosb
 	test	al,al
 	jnz	@r
@@ -2460,12 +2483,15 @@ copy_dir_name:
 	pop	edi esi
 .1:
 	xor	eax,eax
+	cmp	[esi],al
+	je	.exit
 	cld
 @@:
 	lodsb
 	stosb
 	test	eax,eax
 	jnz	@b
+.exit:
 	ret
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
