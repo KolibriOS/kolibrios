@@ -4300,6 +4300,7 @@ Parameters:
   * esi = protocol
 Returned value:
   * eax = socket number, -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ============= Function 75, Subfunction 1, Close socket. ==============
@@ -4310,6 +4311,7 @@ Parameters:
   * ecx = socket number
 Returned value:
   * eax = -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ================== Function 75, Subfunction 2, Bind. =================
@@ -4322,6 +4324,7 @@ Parameters:
   * esi = length of sockaddr structure
 Returned value:
   * eax = -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ================= Function 75, Subfunction 3, Listen. ================
@@ -4333,6 +4336,7 @@ Parameters:
   * edx = backlog
 Returned value:
   * eax = -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ================ Function 75, Subfunction 4, Connect. ================
@@ -4345,6 +4349,7 @@ Parameters:
   * esi = length of sockaddr structure
 Returned value:
   * eax = -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ================= Function 75, Subfunction 5, Accept. ================
@@ -4356,7 +4361,8 @@ Parameters:
   * edx = pointer to sockaddr structure
   * esi = length of sockaddr structure
 Returned value:
-  * eax = -1 on error
+  * eax = socket number of accepted socket, -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ================== Function 75, Subfunction 6, Send. =================
@@ -4367,8 +4373,10 @@ Parameters:
   * ecx = socket number
   * edx = pointer to buffer
   * esi = length of buffer
+  * edi = flags
 Returned value:
   * eax = number of bytes copied, -1 on error
+  * ebx = errorcode
 
 ======================================================================
 ================ Function 75, Subfunction 7, Receive. ================
@@ -4382,6 +4390,7 @@ Parameters:
   * edi = flags
 Returned value:
   * eax = number of bytes copied, -1 on error
+  * ebx = errorcode
 
 ======================================================================
 =========== Function 75, Subfunction 8, Set socket options. ==========
@@ -4393,6 +4402,7 @@ Parameters:
   * edx = pointer to optstruct
 Returned value:
   * eax = -1 on error
+  * ebx = errorcode
 Remarks:
 
   Optstruct: dd level
@@ -4410,6 +4420,7 @@ Parameters:
   * edx = pointer to optstruct
 Returned value:
   * eax = -1 on error
+  * ebx = errorcode
 Remarks:
 
   Optstruct: dd level
@@ -4425,7 +4436,7 @@ Parameters:
   * bl = 10 - subfunction number
 Returned value:
   * eax = socketnum1, -1 on error
-  * ebx = socketnum2
+  * ebx = socketnum2, errorcode on error
 Remarks:
 
   Optstruct: dd level
