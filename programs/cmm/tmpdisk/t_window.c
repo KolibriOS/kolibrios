@@ -28,7 +28,7 @@
 	?define INTRO_TEXT_1 " There will be list of mounted"
 	?define INTRO_TEXT_2 " virtual disks."
 	?define INTRO_TEXT_3 " Try to add one..."
-	?define INTRO_TEXT_4 "  Size:"
+	?define INTRO_TEXT_4 "Size:"
 
 	?define NOTIFY_TEXT_NO_DISK    "You need to have at least one disk"
 	?define NOTIFY_TEXT_DISK_LIMIT "Reached the limit of the number of virtual disks"
@@ -52,7 +52,11 @@ unsigned char icons[14*56] = FROM "icons.raw";
 
 int	mouse_dd;
 char disk_size[30]="\0";
-edit_box edit_disk_size= {60,48,5,0xffffff,0x94AECE,0x000000,0xffffff,0,sizeof(disk_size)+2,#disk_size,#mouse_dd, 1000000000000000b};
+#ifdef LANG_RUS
+edit_box edit_disk_size= {60,50,5,0xffffff,0x94AECE,0x000000,0xffffff,0,sizeof(disk_size)+2,#disk_size,#mouse_dd, 0b100000000000000};
+#else
+edit_box edit_disk_size= {60,40,5,0xffffff,0x94AECE,0x000000,0xffffff,0,sizeof(disk_size)+2,#disk_size,#mouse_dd, 0b100000000000000};
+#endif
 
 void Main_Window()
 {
@@ -76,7 +80,7 @@ void Main_Window()
 			break;
 			
 		case evButton:
-            id=GetButtonID();               
+	                id=GetButtonID();               
 			if (id==1) ExitProcess();
 			if (id==10) AddDisk();
 			if (id==11) //del
@@ -104,6 +108,23 @@ void Main_Window()
             break;
         case evKey:
 			key = GetKey();
+			if (key==9)
+			{
+				if ( !asm test edit_disk_size.flags, 2) edit_disk_size.flags=1000000000000010b;
+				else edit_disk_size.flags=1000000000000000b;
+				edit_box_draw stdcall (#edit_disk_size);
+			}				
+			if ( asm test edit_disk_size.flags, 2)
+			{
+				if (key==13)
+				{
+					edit_disk_size.flags=1000000000000000b;
+					edit_box_draw stdcall (#edit_disk_size);
+				}
+				EAX=key<<8;
+				edit_box_key stdcall(#edit_disk_size);
+				break;
+			}
 			if (key==182) if (disk_num<>0) goto _DEL_DISK;
 			if (key==51) AddDisk();
 			if (key==13) OpenTmpDisk();
@@ -131,20 +152,25 @@ void Main_Window()
 				selected+=3;
 				DrawTmpDisks();
 			}
-			EAX=key<<8;
-			edit_box_key stdcall(#edit_disk_size);
+			//EAX=key<<8;
+			//edit_box_key stdcall(#edit_disk_size);
 			break;
          case evReDraw:			
 			sc.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.46",0);
+			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.47",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) return;
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);
-			WriteText(5, 9, 0x80, sc.work_text, INTRO_TEXT_4);
+			#ifdef LANG_RUS
+			WriteText(6, 9, 0x80, sc.work_text, INTRO_TEXT_4);
+			WriteText(117, 9, 0x80, sc.work_text, "MB.");
+			#else
+			WriteText(6, 9, 0x80, sc.work_text, INTRO_TEXT_4);
+			WriteText(107, 9, 0x80, sc.work_text, "MB.");
+			#endif
 			edit_box_draw stdcall (#edit_disk_size);
-			WriteText(115, 9, 0x80, sc.work_text, "MB.");
 			x=6;
 			for (i=0; i<2; i++)
 			{

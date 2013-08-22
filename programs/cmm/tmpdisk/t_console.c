@@ -30,7 +30,7 @@ char Console_Work()
 	char size_t[256];
 
 	strlwr(#param);
-	debug(#param);
+//	debug(#param);
 	
 	switch (param[0])
 	{
