@@ -722,17 +722,20 @@ wait_for_sector_dma_ide0:
 align 4
 .wait:
         call    change_task
-        cmp     [IDE_common_irq_param], irq14_num
-        jnz     .done
+        cmp     [IDE_common_irq_param], 0
+        jz      .done
 
         call    check_hd_wait_timeout
         cmp     [hd_error], 0
         jz      .wait
 
+        pushfd
+        cli
         mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         mov     al, 0
         out     dx, al
+        popfd
 .done:
         pop     edx
         pop     eax
@@ -747,18 +750,21 @@ wait_for_sector_dma_ide1:
 align 4
 .wait:
         call    change_task
-        cmp     [IDE_common_irq_param], irq15_num
-        jnz     .done
+        cmp     [IDE_common_irq_param], 0
+        jz      .done
 
         call    check_hd_wait_timeout
         cmp     [hd_error], 0
         jz      .wait
 
+        pushfd
+        cli
         mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         add     dx, 8
         mov     al, 0
         out     dx, al
+        popfd
 .done:
         pop     edx
         pop     eax
@@ -791,33 +797,72 @@ allow_dma_access    db 0
 endg
 ;-----------------------------------------------------------------------------
 align 4
+IDE_irq_14_handler:
+        cmp     [IDE_common_irq_param], irq14_num
+        jne     .exit
+
+        pushfd
+        cli
+        pushad
+
+        mov     [IDE_common_irq_param], 0
+        mov     dx, [IDEContrRegsBaseAddr]
+        mov     al, 0
+        out     dx, al
+
+        popad
+        popfd
+.exit:
+        mov     al, 1
+        ret
+;-----------------------------------------------------------------------------
+align 4
+IDE_irq_15_handler:
+        cmp     [IDE_common_irq_param], irq15_num
+        jne     .exit
+
+        pushfd
+        cli
+        pushad
+
+        mov     [IDE_common_irq_param], 0
+        mov     dx, [IDEContrRegsBaseAddr]
+        add     dx, 8
+        mov     al, 0
+        out     dx, al
+
+        popad
+        popfd
+.exit:
+        mov     al, 1
+        ret
+;-----------------------------------------------------------------------------
+align 4
 IDE_common_irq_handler:
+        cmp     [IDE_common_irq_param], 0
+        je      .exit
+
         pushfd
         cli
         pushad
 
         xor     ebx, ebx
-        mov     eax, IDE_common_irq_param
-        cmp     [eax], irq15_num
-        mov     [eax], ebx
-        je      @f
-;--------------------------------------
         mov     dx, [IDEContrRegsBaseAddr]
-        mov     al, 0
-        out     dx, al
-        jmp     .end
+        mov     eax, IDE_common_irq_param
+        cmp     [eax], irq14_num
+        mov     [eax], bl
+        xor     eax, eax
+        je      @f
+
+        add     dx, 8
 ;--------------------------------------
 align 4
 @@:
-        mov     dx, [IDEContrRegsBaseAddr]
-        add     dx, 8
-        mov     al, 0
         out     dx, al
-;--------------------------------------
-align 4
-.end:
+
         popad
         popfd
+.exit:
         mov     al, 1
         ret
 ;-----------------------------------------------------------------------------
@@ -849,10 +894,12 @@ hd_read_dma:
         pop     eax
         ret
 .notread:
+; set data for PRD Table
         mov     eax, IDE_descriptor_table
         mov     dword [eax], IDE_DMA
         mov     word [eax+4], 0x2000
         sub     eax, OS_BASE
+; select controller Primary or Secondary
         mov     dx, [IDEContrRegsBaseAddr]
         push    eax
         mov     eax, [hd_address_table]
@@ -862,13 +909,21 @@ hd_read_dma:
         add     edx, 8
 @@:
         push    edx
+; Bus Master IDE PRD Table Address
         add     edx, 4
+; save IDE_descriptor_table
         out     dx, eax
         pop     edx
+; clear Bus Master IDE Command register
         mov     al, 0
         out     dx, al
+; set write to memory
+;        mov     al, 8 ; 1000b
+;        out     dx, al
+; clear Bus Master IDE Status register
+; clear Error bit and Interrupt bit
         add     edx, 2
-        mov     al, 6
+        mov     al, 6 ; 110b
         out     dx, al
 
 ; Select the desired drive
@@ -958,18 +1013,23 @@ hd_read_dma:
         out     dx, al ; ATACommand регистр команд
 ;--------------------------------------
 .continue:
+; select controller Primary or Secondary
         mov     dx, [IDEContrRegsBaseAddr]
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
         jz      @f
         add     dx, 8
 @@:
+; set write to memory and Start Bus Master
         mov     al, 9
         out     dx, al
+
         mov     eax, [CURRENT_TASK]
         mov     [dma_process], eax
+
         mov     eax, [TASK_BASE]
         mov     [dma_slot_ptr], eax
+
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
         jnz     .ide1
@@ -980,6 +1040,7 @@ hd_read_dma:
         mov     [IDE_common_irq_param], irq15_num
 @@:
         popfd
+; wait for interrupt
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
         jnz     .wait_ide1

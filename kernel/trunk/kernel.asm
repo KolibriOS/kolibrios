@@ -1112,6 +1112,18 @@ if preboot_blogesc
         jne     .bll1
 end if
 
+        push    eax edx
+        mov     dx, [IDEContrRegsBaseAddr]
+        xor     eax, eax
+        add     dx, 2
+        in      al, dx
+        DEBUGF  1, "K : Primary Bus Master IDE Status Register %x\n", eax
+
+        add     dx, 8
+        in      al, dx
+        DEBUGF  1, "K : Secondary Bus Master IDE Status Register %x\n", eax
+        pop     edx eax
+
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
@@ -1142,9 +1154,9 @@ set_interrupts_for_IDE_controllers:
         cmp     [IDEContrRegsBaseAddr], 0
         je      .end_set_interrupts
 
-        stdcall attach_int_handler, 14, IDE_common_irq_handler, 0
+        stdcall attach_int_handler, 14, IDE_irq_14_handler, 0
         DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
-        stdcall attach_int_handler, 15, IDE_common_irq_handler, 0
+        stdcall attach_int_handler, 15, IDE_irq_15_handler, 0
         DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
         jmp     .enable_IDE_interrupt
 ;--------------------------------------
