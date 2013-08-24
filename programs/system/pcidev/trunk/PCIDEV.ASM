@@ -18,13 +18,6 @@
 ;        and display basic information about each device
 ;        connected to the PCI Bus.
 ;***************************************************************
-;-----------------------------------------------------------------------------
-
-include 'lang.inc'	;language support
-include '../../../macros.inc'
-
-include	'../../../develop/libraries/box_lib/load_lib.mac'
-;-----------------------------------------------------------------------------
 	use32
 	org 0x0
 	db 'MENUET01'	; 8 byte id
@@ -35,6 +28,10 @@ include	'../../../develop/libraries/box_lib/load_lib.mac'
 	dd stacktop	; esp
 	dd 0	; I_Param
 	dd path		; APPLICATION PATH
+;-----------------------------------------------------------------------------
+include 'lang.inc'	;language support
+include '../../../macros.inc'
+include	'../../../develop/libraries/box_lib/load_lib.mac'
 ;-----------------------------------------------------------------------------
 @use_library	; load_lib macro
 ;-----------------------------------------------------------------------------
