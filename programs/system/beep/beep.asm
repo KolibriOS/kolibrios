@@ -47,6 +47,7 @@ include '../../macros.inc'
 ;-------------------------------------------------------------------------------
 START:
 	mcall	68,1
+	mcall	5,1
 	mcall	26,9
 	cmp	[timer],eax
 	ja	START
