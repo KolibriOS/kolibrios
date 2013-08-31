@@ -49,7 +49,7 @@ void Install()
 	for (i=2; i<256; i++;)
 	{
 		GetProcessInfo(#Process, i);
-		if (i==Form.ID) || (strchr(#Process.name, '/')) || (strchr(#Process.name, 'Z')) continue;
+		if (i==Form.ID) || (strcmp(#Process.name, "OS")==0) continue;
 		KillProcess(i);
 	}
 	//RunProgram("/sys/develop/board", NULL); //temp============

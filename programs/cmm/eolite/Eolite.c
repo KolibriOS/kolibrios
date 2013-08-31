@@ -54,8 +54,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.93"
-#define ABOUT_TITLE "Eolite v1.93"
+#define TITLE "Eolite File Manager v1.94"
+#define ABOUT_TITLE "Eolite v1.94"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -129,6 +129,7 @@ void main()
 			IF (id!=GetActiveProcess()) || (Form.status_window>2) break;
 			IF (rename_active) { edit_box_mouse stdcall(#edit2); break; }
 			
+			if (isdir(#file_path)) debug("dir"); else debug("file");
 			m.get();
 
 			if (m.x > files.x) && (m.x < files.x + files.w) && (m.y > files.y) && (m.y < files.y+files.h) && (!can_select)
@@ -690,7 +691,7 @@ void ReName(byte rename)
 			ELSE CreateDir(#temp);
 			Open_Dir(#path,WITH_REDRAW);
 		}
-		ELSE
+		else
 		{
 			copy_rezult = CopyFile(#file_path,#temp);
 			if (copy_rezult!=0) Write_Error(copy_rezult); else Del_File(true);

@@ -26,12 +26,16 @@
 	BDVK CopyFile_atr;
 	dword error, cbuf;
 	if (error = GetFileInfo(copy_from3, #CopyFile_atr))
+	{
 		debug("Error: CopyFile->GetFileInfo");
+	}
 	else
 	{
 		cbuf = malloc(CopyFile_atr.sizelo);	
 		if (error = ReadFile(0, CopyFile_atr.sizelo, cbuf, copy_from3))
+		{
 			debug("Error: CopyFile->ReadFile");
+		}
 		else
 		{
 			if (error = WriteFile(CopyFile_atr.sizelo, cbuf, copy_in3)) debug("Error: CopyFile->WriteFile");

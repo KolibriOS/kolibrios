@@ -167,8 +167,9 @@ char isdir(dword fpath)
 {
 	BDVK fpath_atr;
 	GetFileInfo(fpath, #fpath_atr);
-	if ( $test fpath_atr.attr, 4 ) return 1; else return 0;
+	if (TestBit( fpath_atr.attr, 4)) return 1; else return 0;
 }
+
 :int GetFile(dword buf, filesize, read_path)
 {
 	BDVK ReadFile_atr;

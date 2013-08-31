@@ -152,6 +152,20 @@ inline fastcall word GetButtonID()
 
 //----------------------------------------
 
+/* ecx = point to structure
+          sysdir_name     rb 64
+          sysdir_path     rb 64
+Пример:  
+dir_name1       db 'addappl',0
+dir_path1       db 'HD0/1',0
+*/
+inline fastcall int SetAddApplDir( ECX)
+{
+	EAX = 30;
+	EBX = 3;
+	$int 0x40
+}
+
 inline fastcall dword GetFreeRAM()
 {
 	$mov eax, 18

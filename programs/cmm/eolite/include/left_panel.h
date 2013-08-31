@@ -148,7 +148,7 @@ void LeftPanelBgDraw()
 	int start_y = actions_y+156;
 	DrawBar(2,41,190,15,col_lpanel);		      //синий прямоугольник - над девайсами
 	DrawBar(17,actions_y+75,160,15,col_lpanel); //синий прямоугольник - под девайсами
-	PutShadow(17,actions_y+75,160,1,1,4);
+	PutShadow(17,actions_y+75,160,1,1,3);
 	PutShadow(18,actions_y+75+1,158,1,1,1);
 	DrawBar(2,56,15,actions_y+103,col_lpanel);	          //синий прямоугольник - слева       
 	DrawBar(177,56,15,actions_y+103,col_lpanel);            //синий прямоугольник - справа
@@ -159,7 +159,7 @@ void LeftPanelBgDraw()
 		DrawBar(2,start_y,190,onTop(start_y,6+268),col_lpanel);
 		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), 8, #blue_hl_pal);
 	}
-	PutShadow(17,start_y,160,1,1,4);
+	PutShadow(17,start_y,160,1,1,3);
 	PutShadow(18,start_y+1,158,1,1,1);
 }
 
