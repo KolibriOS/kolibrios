@@ -1,8 +1,6 @@
 //Leency & Veliant 2008-2013
 //GNU GPL licence.
 
-//êîïèðîâàòü ÷åðåç ïîòîê
-
 //libraries
 #define MEMSIZE 0xA0000
 #include "..\lib\kolibri.h"
@@ -56,8 +54,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.92"
-#define ABOUT_TITLE "Eolite v1.92"
+#define TITLE "Eolite File Manager v1.93"
+#define ABOUT_TITLE "Eolite v1.93"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -157,7 +155,9 @@ void main()
 						break;
 					}
 					if (files.current!=id)
-						List_Current(id-files.current);
+					{
+						if (id<files.visible) List_Current(id-files.current);
+					}
 					else
 						Open();
 				}
@@ -489,11 +489,9 @@ void List_Current(int cur)
 void List_ReDraw()
 {
 	int paint_y;
-	//åñëè ìû â êîíöå ñïèñêà ôàéëîâ ðàçâåðí¸ì îêíî ïîÿâÿòüñÿ ïóñòÿå áåëûå êíîïêè
-	//ýòî åñëè âûäåëåíèå ïîñëå ñõëîïûâàíèÿ îêíà çà êàäðîì
+	//we are in the end of the list => maximize window => there will be white lines after the last element
 	if (files.count-files.first<files.visible) || (files.current>files.visible-1)
 	{ files.first=files.count-files.visible; files.current=files.visible-1; }
-
 	for (j=0; j<files.visible; j++) if (files.current!=j) Line_ReDraw(0xFFFFFF, j); else Line_ReDraw(col_selec, files.current);
 	//in the bottom
 	paint_y = j * files.line_h + files.y;
