@@ -129,7 +129,6 @@ void main()
 			IF (id!=GetActiveProcess()) || (Form.status_window>2) break;
 			IF (rename_active) { edit_box_mouse stdcall(#edit2); break; }
 			
-			if (isdir(#file_path)) debug("dir"); else debug("file");
 			m.get();
 
 			if (m.x > files.x) && (m.x < files.x + files.w) && (m.y > files.y) && (m.y < files.y+files.h) && (!can_select)
