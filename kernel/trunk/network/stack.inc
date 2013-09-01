@@ -618,7 +618,7 @@ checksum_2:
 align 4
 sys_network:
 
-        cmp     ebx, -1
+        cmp     bl, 255
         jne     @f
 
         mov     eax, [NET_RUNNING]
