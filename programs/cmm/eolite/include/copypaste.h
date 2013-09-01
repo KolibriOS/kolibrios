@@ -4,7 +4,7 @@
 byte copy_from[4096], cut_active=0;
 enum {NOCUT, CUT};
 #define WIN_W 300
-#define WIN_H 20
+#define WIN_H 50
 
 
 void Copy(dword pcth, char cut)
@@ -14,11 +14,10 @@ void Copy(dword pcth, char cut)
 }
 
 void copyf_Action(dword filename) {
-	DefineAndDrawWindow(5000,0,WIN_W,WIN_H-1,0x01,col_work,0);
-	DrawBar(WIN_W, 0, 1, WIN_H, 0x333333);
-	DrawBar(0, 0, WIN_W, WIN_H, 0xDDDddd);
-	WriteText(5,6, 0x80, 0, "Copying file:");
-	WriteText(90,6, 0x80, 0, filename);
+	DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_W,GetSkinHeight()+WIN_H-1,0x34,col_work,T_PASTE_WINDOW);
+	WriteText(5,8, 0x80, 0, T_PASTE_WINDOW_TEXT);
+	DrawBar(5, 26, WIN_W-10, 10, col_work);
+	WriteText(5,26, 0x80, 0, filename);
 	//pause(20);
 }
 

@@ -35,7 +35,8 @@
 	?define NOT_CREATE_FOLDER "Не удалось создать папку."
 	?define NOT_CREATE_FILE "Не удалось создать файл."
 	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
-	
+	?define T_PASTE_WINDOW "Копирую..."
+	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -50,12 +51,14 @@
 	?define NOT_CREATE_FOLDER "Folder can not be created."
 	?define NOT_CREATE_FILE "File can not be created."
 	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
+	?define T_PASTE_WINDOW "Copying..."
+	?define T_PASTE_WINDOW_TEXT "Copying file:"
 #endif
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.94"
-#define ABOUT_TITLE "Eolite v1.94"
+#define TITLE "Eolite File Manager v1.95"
+#define ABOUT_TITLE "Eolite v1.95"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
