@@ -375,7 +375,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF 1,"Loading %s driver\n", my_service
+        DEBUGF 1,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -605,7 +605,7 @@ probe:
         jz      .found
         loop    .loop
   .notfound:
-        DEBUGF  1,"Device id not found in list!\n"
+        DEBUGF  2,"Device id not found in list!\n"
         or      eax, -1
         ret
   .found:
@@ -631,10 +631,10 @@ probe:
         setnz   [device.full_bus_master]
         jnz     .boomerang_func
         mov     [device.transmit], vortex_transmit
-        DEBUGF  1,"Device is a vortex type\n"
-        DEBUGF  1,"I'm sorry but vortex code hasnt been tested yet\n"
-        DEBUGF  1,"Please contact me on hidnplayr@kolibrios.org\n"
-        DEBUGF  1,"If you can help me finish it!\n"
+        DEBUGF  2,"Device is a vortex type\n"
+        DEBUGF  2,"I'm sorry but vortex code hasnt been tested yet\n"
+        DEBUGF  2,"Please contact me on hidnplayr@kolibrios.org\n"
+        DEBUGF  2,"If you can help me finish it!\n"
         or      eax, -1
         ret
         jmp     @f
@@ -694,7 +694,7 @@ reset:
         stdcall AttachIntHandler, eax, esi, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1,"\nCould not attach int handler!\n"
+        DEBUGF  2,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
   @@:
@@ -804,7 +804,7 @@ start_device:
         test    ah, 1000b ; linkDetect
         jnz     @f
         loop    .link_detect_loop
-        DEBUGF  1,"Link detect timed-out!\n"
+        DEBUGF  2,"Link detect timed-out!\n"
        @@:
 
 ; print link type
@@ -889,7 +889,7 @@ end if
 ;   Description
 ;      resets the device
 ;   Parameters:
-;      ebp - io_addr
+;
 ;   Return value:
 ;   Destroyed registers
 ;      ax, ecx, edx, esi
@@ -1243,19 +1243,19 @@ try_phy:
 
 
   .fail1:
-        DEBUGF  1,"reset failed!\n"
+        DEBUGF  2,"reset failed!\n"
         pop     eax
         xor     al, al
         ret
 
   .fail2:
-        DEBUGF  1,"This device is not auto-negotiation capable!\n"
+        DEBUGF  2,"This device is not auto-negotiation capable!\n"
         pop     eax
         xor     al, al
         ret
 
   .fail3:
-        DEBUGF  1,"auto-negotiation reset failed!\n"
+        DEBUGF  2,"auto-negotiation reset failed!\n"
         pop     eax
         xor     al, al
         ret
@@ -1271,7 +1271,7 @@ try_phy:
 ;      xcvrSelect by the caller.
 ;      It exits when it finds the first device with a good link.
 ;   Parameters
-;      ebp - io_addr
+;
 ;   Return value
 ;      al - 0
 ;      al - 1
@@ -1483,7 +1483,7 @@ test_packet:
 ;   Parameters
 ;      al -  0: 10Mbps AUI connector
 ;            1: 10BASE-2
-;      ebp - io_addr
+;
 ;   Return value
 ;      al - 0
 ;      al - 1
@@ -1995,7 +1995,7 @@ read_eeprom:
 ;   Description
 ;      initial synchronization
 ;   Parameters
-;      ebp - io_addr
+;
 ;   Return value
 ;   Destroyed registers
 ;      ax, edx, cl
@@ -2163,7 +2163,7 @@ mdio_write:
 ;      al - 0 no error was found
 ;      al - 1 error was found TxReset was needed
 ;   Destroyed registers
-;      eax, ecx, edx, ebp
+;      eax, ecx, edx
 ;
 ;***************************************************************************
 
@@ -2487,7 +2487,7 @@ int_vortex:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 
@@ -2660,7 +2660,7 @@ int_boomerang:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 
