@@ -82,6 +82,14 @@ Print_Device_Name:
         popfd
         popad
         DEBUGF 1, "K : Dev: %s \n", dev_name
+
+        xor     eax, eax
+        mov     ax, [Sector512+64*2]
+        DEBUGF  1, "K : PIO mode %x\n", eax
+        mov     ax, [Sector512+63*2]
+        DEBUGF  1, "K : Multiword DMA mode %x\n", eax
+        mov     ax, [Sector512+88*2]
+        DEBUGF  1, "K : Ultra DMA mode %x\n", eax
    FindHDD_2_2:
         ret
 

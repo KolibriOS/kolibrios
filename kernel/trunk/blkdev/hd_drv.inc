@@ -536,7 +536,6 @@ cache_write_pio:
         inc     edx
         mov     al, 30h ; WRITE SECTOR(S)
         out     dx, al ; ATACommand регистр команд
-        popfd
         jmp     .continue
 ;--------------------------------------
 .lba48:
@@ -576,9 +575,9 @@ cache_write_pio:
         inc     edx
         mov     al, 34h ; WRITE SECTOR(S) EXT
         out     dx, al ; ATACommand регистр команд
-        popfd
 ;--------------------------------------
 .continue:
+        popfd
         call    wait_for_sector_buffer
 
         cmp     [hd_error], 0
@@ -728,7 +727,7 @@ align 4
         call    check_hd_wait_timeout
         cmp     [hd_error], 0
         jz      .wait
-
+; clear Bus Master IDE Command register
         pushfd
         cli
         mov     [IDE_common_irq_param], 0
@@ -736,6 +735,8 @@ align 4
         mov     al, 0
         out     dx, al
         popfd
+;--------------------------------------
+align 4
 .done:
         pop     edx
         pop     eax
@@ -756,7 +757,7 @@ align 4
         call    check_hd_wait_timeout
         cmp     [hd_error], 0
         jz      .wait
-
+; clear Bus Master IDE Command register
         pushfd
         cli
         mov     [IDE_common_irq_param], 0
@@ -765,6 +766,8 @@ align 4
         mov     al, 0
         out     dx, al
         popfd
+;--------------------------------------
+align 4
 .done:
         pop     edx
         pop     eax
@@ -804,14 +807,21 @@ IDE_irq_14_handler:
         pushfd
         cli
         pushad
-
+; clear Bus Master IDE Command register
         mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         mov     al, 0
         out     dx, al
+; clear Bus Master IDE Status register
+; clear Interrupt bit
+        add     edx, 2
+        mov     al, 4 ; 100b
+        out     dx, al
 
         popad
         popfd
+;--------------------------------------
+align 4
 .exit:
         mov     al, 1
         ret
@@ -824,15 +834,22 @@ IDE_irq_15_handler:
         pushfd
         cli
         pushad
-
+; clear Bus Master IDE Command register
         mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         add     dx, 8
         mov     al, 0
         out     dx, al
+; clear Bus Master IDE Status register
+; clear Interrupt bit
+        add     edx, 2
+        mov     al, 4 ; 100b
+        out     dx, al
 
         popad
         popfd
+;--------------------------------------
+align 4
 .exit:
         mov     al, 1
         ret
@@ -845,7 +862,7 @@ IDE_common_irq_handler:
         pushfd
         cli
         pushad
-
+; clear Bus Master IDE Command register
         xor     ebx, ebx
         mov     dx, [IDEContrRegsBaseAddr]
         mov     eax, IDE_common_irq_param
@@ -859,9 +876,16 @@ IDE_common_irq_handler:
 align 4
 @@:
         out     dx, al
+; clear Bus Master IDE Status register
+; clear Interrupt bit
+        add     edx, 2
+        mov     al, 4 ; 100b
+        out     dx, al
 
         popad
         popfd
+;--------------------------------------
+align 4
 .exit:
         mov     al, 1
         ret
@@ -917,15 +941,11 @@ hd_read_dma:
 ; clear Bus Master IDE Command register
         mov     al, 0
         out     dx, al
-; set write to memory
-;        mov     al, 8 ; 1000b
-;        out     dx, al
 ; clear Bus Master IDE Status register
 ; clear Error bit and Interrupt bit
         add     edx, 2
         mov     al, 6 ; 110b
         out     dx, al
-
 ; Select the desired drive
         mov     edx, [hdbase]
         add     edx, 6   ; адрес регистра головок
@@ -1059,8 +1079,9 @@ hd_read_dma:
         jmp     hd_read_dma
 ;-----------------------------------------------------------------------------
 cache_write_dma:
-        mov     eax, [cache_chain_ptr]
+        mov     eax, [cache_chain_ptr] ; for what?
         push    esi
+; set data for PRD Table
         mov     eax, IDE_descriptor_table
         mov     edx, eax
         pusha
@@ -1074,6 +1095,7 @@ cache_write_dma:
         rep movsd
         popa
         sub     eax, OS_BASE
+; select controller Primary or Secondary
         mov     dx, [IDEContrRegsBaseAddr]
         push    eax
         mov     eax, [hd_address_table]
@@ -1083,15 +1105,19 @@ cache_write_dma:
         add     edx, 8
 @@:
         push    edx
+; Bus Master IDE PRD Table Address
         add     edx, 4
+; save IDE_descriptor_table
         out     dx, eax
         pop     edx
+; clear Bus Master IDE Command register
         mov     al, 0
         out     dx, al
+; clear Bus Master IDE Status register
+; clear Error bit and Interrupt bit
         add     edx, 2
         mov     al, 6
         out     dx, al
-
 ; Select the desired drive
         mov     edx, [hdbase]
         add     edx, 6   ; адрес регистра головок
@@ -1180,12 +1206,14 @@ cache_write_dma:
         out     dx, al ; ATACommand регистр команд
 ;--------------------------------------
 .continue:
+; select controller Primary or Secondary
         mov     dx, [IDEContrRegsBaseAddr]
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
         jz      @f
         add     dx, 8
 @@:
+; set write to device and Start Bus Master
         mov     al, 1
         out     dx, al
         mov     eax, [CURRENT_TASK]
@@ -1202,6 +1230,7 @@ cache_write_dma:
         mov     [IDE_common_irq_param], irq15_num
 @@:
         popfd
+; wait for interrupt
         mov     [dma_cur_sector], not 0x40
         mov     eax, [hd_address_table]
         cmp     [hdbase], eax ; 0x1F0
@@ -1217,6 +1246,7 @@ cache_write_dma:
         ret
 ;-----------------------------------------------------------------------------
 uglobal
+align 4
 IDE_Interrupt   dw ?
 IDEContrRegsBaseAddr         dw ?
 IDEContrProgrammingInterface dw ?
