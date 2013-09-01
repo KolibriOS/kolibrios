@@ -10,6 +10,14 @@ to-do:
  Full device detection (like "ATI Radeon 9200") will increase app
  size a lot and probably it is function of particular drivers
 ;-----------------------------------------------------------------------------
+2.3: PCIDEV   02/09/2013
+Author:    Marat Zakiyanov aka Mario79 <mario79@bk.ru>
+Features:
+           added
+                 * added 1 new VendorID
+                 * corrected vendors.add
+				 
+;-----------------------------------------------------------------------------
 2.3: PCIDEV   29/08/2013
 Author:    Marat Zakiyanov aka Mario79 <mario79@bk.ru>
 Features:
