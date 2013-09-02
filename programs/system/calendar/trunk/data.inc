@@ -1,0 +1,260 @@
+; program data: colors, text, vars (todo)
+
+; colors
+COL_WINDOW_BG    equ 0x14aabbcc
+COL_WEEKDAY_BG   equ 0xCCCDDD
+COL_DATES_BG     equ 0xE7E7E7
+COL_DATE_BUTTONS equ 0xE7E7E7
+COL_DATE_CURRENT equ 0x31A4D0
+COL_DATE_CHANGED equ 0xef7840
+COL_TIME_BUTTONS equ 0x5555dd
+COL_GO_TODAY_T   equ 0xd048c8
+COL_MONTH_YEAR_B equ 0x05080d0
+
+COL_NEW_STYLE_T  equ 0xac0000
+
+; multilanguage interface - configuratable in lang.inc
+day_count db 3,0,3,2,3,2,3,3,2,3,2,3
+Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
+
+month_name:
+if lang eq ru
+     db   8
+     db   'Январь  '
+     db   'Февраль '
+     db   'Март    '
+     db   'Апрель  '
+     db   'Май     '
+     db   'Июнь    '
+     db   'Июль    '
+     db   'Август  '
+     db   'Сентябрь'
+     db   'Октябрь '
+     db   'Ноябрь  '
+     db   'Декабрь '
+else if lang eq de
+     db   9
+     db   'Januar   '
+     db   'Februar  '
+     db   'M+rz     '
+     db   'April    '
+     db   'Mai      '
+     db   'Juni     '
+     db   'Juli     '
+     db   'August   '
+     db   'September'
+     db   'Oktober  '
+     db   'November '
+     db   'Dezember '
+else if lang eq fr
+     db   9
+     db   'Janvier  '
+     db   'Fevrier  '
+     db   'Mars     '
+     db   'Avril    '
+     db   'Mai      '
+     db   'Juin     '
+     db   'Juliet   '
+     db   'Aout     '
+     db   'Septembre'
+     db   'Octobre  '
+     db   'Novembre '
+     db   'Decembre '
+else if lang eq fi
+     db   9
+     db   'Tammikuu '
+     db   'Helmikuu '
+     db   'Maaliskuu'
+     db   'Huhtikuu '
+     db   'Toukokuu '
+     db   'Kes+kuu  '
+     db   'Hein+kuu '
+     db   'Elokuu   '
+     db   'Syyskuu  '
+     db   'Lokakuu  '
+     db   'Marraskuu'
+     db   'Joulukuu '
+else if lang eq et
+     db   9
+     db   'Jaanuar  '
+     db   'Veebruar '
+     db   'Mфrts    '
+     db   'Aprill   '
+     db   'Mai      '
+     db   'Juuni    '
+     db   'Juuli    '
+     db   'August   '
+     db   'September'
+     db   'Oktoober '
+     db   'November '
+     db   'Detsember'
+else if lang eq it
+     db   9
+     db   'Gennaio  '
+     db   'Febbraio '
+     db   'Marzo    '
+     db   'Aprile   '
+     db   'Maggio   '
+     db   'Giugno   '
+     db   'Luglio   '
+     db   'Agosto   '
+     db   'Settembre'
+     db   'Ottobre  '
+     db   'Novembre '
+     db   'Dicembre '
+else
+     db   9
+     db   'January  '
+     db   'February '
+     db   'March    '
+     db   'April    '
+     db   'May      '
+     db   'June     '
+     db   'July     '
+     db   'August   '
+     db   'September'
+     db   'October  '
+     db   'November '
+     db   'December '
+end if
+spinner db '< >'
+week_days:
+if lang eq ru
+     db   2
+     db   1
+     db   'Пн'
+     db   'Вт'
+     db   'Ср'
+     db   'Чт'
+     db   'Пт'
+     db   'Сб'
+     db   'Вс'
+else if lang eq de
+     db   2
+     db   7
+     db   'So'
+     db   'Mo'
+     db   'Di'
+     db   'Mi'
+     db   'Do'
+     db   'Fr'
+     db   'Sa'
+else if lang eq fr
+     db   3
+     db   7
+     db   'Dim'
+     db   'Lun'
+     db   'Mar'
+     db   'Mer'
+     db   'Jeu'
+     db   'Ven'
+     db   'Sam'
+else if lang eq fi
+     db   2
+     db   7
+     db   'Su'
+     db   'Ma'
+     db   'Ti'
+     db   'Ke'
+     db   'To'
+     db   'Pe'
+     db   'La'
+else if lang eq et
+     db   3
+     db   7
+     db   'Esm'
+     db   'Tei'
+     db   'Kol'
+     db   'Nel'
+     db   'Ree'
+     db   'Lau'
+     db   'P№h'
+else if lang eq it
+     db   3
+     db   7
+     db   'Dom'
+     db   'Lun'
+     db   'Mar'
+     db   'Mer'
+     db   'Gio'
+     db   'Ven'
+     db   'Sab'
+else
+     db   3
+     db   7
+     db   'Sun'
+     db   'Mon'
+     db   'Tue'
+     db   'Wen'
+     db   'Thi'
+     db   'Fri'
+     db   'Sat'
+end if
+
+title: 	 ; строка заголовка
+if lang eq ru
+     db   'Календарь',0
+else if lang eq ge
+     db   'Kalender',0
+else if lang eq fr
+     db   'Calendrier',0
+else if lang eq et
+     db   'Kalender',0
+else if lang eq it
+     db   'Calendario',0
+else
+     db   'Calendar',0
+end if
+
+n_style:
+if lang eq ru
+     db   'Новый стиль'
+else if lang eq de
+     db   'Neuer Stil'
+else if lang eq fr
+     db   'Nouveau'
+else if lang eq et
+     db   'Uus stiil'
+else if lang eq it
+     db   'Nuovo stile'
+else
+     db   'New style'
+end if
+ns_end:
+today_msg:
+if lang eq ru
+     db   'Сегодня'
+else if lang eq ge
+     db   'Heute'
+else if lang eq fr
+     db   "Aujourd'hui"
+else if lang eq et
+     db   'Tфna'
+else if lang eq it
+     db   'Oggi'
+else
+     db   'Today'
+end if
+today_end:
+focus dd  3
+new_style dd 1
+dropped db 0
+
+sys_text:
+if lang eq ru
+		db  'Время:',0
+else if lang eq it
+		db  '  Ora:',0
+else
+		db  ' Time:',0
+end if
+plus  db  '(+)',0
+minus db  '(-)',0
+set_date_t:
+if lang eq ru
+		db  'Установить дату',0
+else if lang eq it
+		db   'Impostazioni',0
+else
+		db  'Установить дату',0
+end if

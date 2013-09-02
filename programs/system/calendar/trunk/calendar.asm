@@ -1,21 +1,22 @@
-; CALENDAR FOR MENUET v1.0
-; Written in pure assembler by Ivushkin Andrey aka Willow
+; Calendar for KolibriOS
 ;
+; v1.2 - code update by Leency, small design fixes
+; v1.1 - add change time support by DedOK 
+; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
+; also - diamond, spraid, fedesco
 ;
-; Created:      November 1, 2004
-; Last changed: January 13, 2005
-;
-; COMPILE WITH FASM
+; Created: November 1, 2004
 
-WIN_X equ (150 shl 16+270)
+WIN_CW equ 266
+WIN_X equ (5000 shl 16+WIN_CW+9)
 WIN_Y equ (100 shl 16+335)
 
 LINE1	  equ 27 shl 16+16
-B_MONTH_X equ 10 shl 16+158
+B_MONTH_X equ 5 shl 16+158+11
 B_Y	  equ LINE1
 B_MONTH   equ 63 shl 16+32
 
-B_WBAR_X  equ 10 shl 16+250
+B_WBAR_X  equ 5 shl 16+WIN_CW
 B_WBAR_Y  equ 64 shl 16+20
 B_WEEK	  equ 30 shl 16+70
 B_WX_SHIFT equ 32 shl 16
@@ -38,18 +39,13 @@ B_SPIN_WIDTH equ 13
 B_SPIN_X  equ 234 shl 16+B_SPIN_WIDTH
 B_SPIN	  equ 238 shl 16+32
 
-B_DATE_X  equ 26 shl 16+60
-B_DATE_Y  equ 275 shl 16+16
-B_DATE_BSHIFT equ 80 shl 16
-B_DATE	  equ 32 shl 16+280
-B_DATE_SHIFT equ 80 shl 16
-
 B_NS_X	  equ 185 shl 16+75
 B_NS_Y	  equ 48 shl 16+10
 B_NS	  equ 190 shl 16+50
 
 FOCUSABLE equ 5
-SKIP	  equ 1
+
+
 
 use32		     ; включить 32-битный режим ассемблера
 
@@ -65,6 +61,7 @@ use32		     ; включить 32-битный режим ассемблера
   dd	 0x0	     ; зарезервировано
 include 'lang.inc'
 include '..\..\..\macros.inc' ; уменьшает размер программы
+include 'data.inc'
 
 
 
@@ -88,179 +85,7 @@ macro  ShowFocus field,reg
    .exit:
 }
 
-month_name:
-if lang eq ru
-     db   8
-     db   'Январь  '
-     db   'Февраль '
-     db   'Март    '
-     db   'Апрель  '
-     db   'Май     '
-     db   'Июнь    '
-     db   'Июль    '
-     db   'Август  '
-     db   'Сентябрь'
-     db   'Октябрь '
-     db   'Ноябрь  '
-     db   'Декабрь '
-else if lang eq de
-     db   9
-     db   'Januar   '
-     db   'Februar  '
-     db   'M┴rz     '
-     db   'April    '
-     db   'Mai      '
-     db   'Juni     '
-     db   'Juli     '
-     db   'August   '
-     db   'September'
-     db   'Oktober  '
-     db   'November '
-     db   'Dezember '
-else if lang eq fr
-     db   9
-     db   'Janvier  '
-     db   'Fevrier  '
-     db   'Mars     '
-     db   'Avril    '
-     db   'Mai      '
-     db   'Juin     '
-     db   'Juliet   '
-     db   'Aout     '
-     db   'Septembre'
-     db   'Octobre  '
-     db   'Novembre '
-     db   'Decembre '
-else if lang eq fi
-     db   9
-     db   'Tammikuu '
-     db   'Helmikuu '
-     db   'Maaliskuu'
-     db   'Huhtikuu '
-     db   'Toukokuu '
-     db   'Kes┴kuu  '
-     db   'Hein┴kuu '
-     db   'Elokuu   '
-     db   'Syyskuu  '
-     db   'Lokakuu  '
-     db   'Marraskuu'
-     db   'Joulukuu '
-else if lang eq et
-     db   9
-     db   'Jaanuar  '
-     db   'Veebruar '
-     db   'Mфrts    '
-     db   'Aprill   '
-     db   'Mai      '
-     db   'Juuni    '
-     db   'Juuli    '
-     db   'August   '
-     db   'September'
-     db   'Oktoober '
-     db   'November '
-     db   'Detsember'
-else if lang eq it
-     db   9
-     db   'Gennaio  '
-     db   'Febbraio '
-     db   'Marzo    '
-     db   'Aprile   '
-     db   'Maggio   '
-     db   'Giugno   '
-     db   'Luglio   '
-     db   'Agosto   '
-     db   'Settembre'
-     db   'Ottobre  '
-     db   'Novembre '
-     db   'Dicembre '
-else
-     db   9
-     db   'January  '
-     db   'February '
-     db   'March    '
-     db   'April    '
-     db   'May      '
-     db   'June     '
-     db   'July     '
-     db   'August   '
-     db   'September'
-     db   'October  '
-     db   'November '
-     db   'December '
-end if
-spinner db '< >'
-week_days:
-if lang eq ru
-     db   2
-     db   1
-     db   'Пн'
-     db   'Вт'
-     db   'Ср'
-     db   'Чт'
-     db   'Пт'
-     db   'Сб'
-     db   'Вс'
-else if lang eq de
-     db   2
-     db   7
-     db   'So'
-     db   'Mo'
-     db   'Di'
-     db   'Mi'
-     db   'Do'
-     db   'Fr'
-     db   'Sa'
-else if lang eq fr
-     db   3
-     db   7
-     db   'Dim'
-     db   'Lun'
-     db   'Mar'
-     db   'Mer'
-     db   'Jeu'
-     db   'Ven'
-     db   'Sam'
-else if lang eq fi
-     db   2
-     db   7
-     db   'Su'
-     db   'Ma'
-     db   'Ti'
-     db   'Ke'
-     db   'To'
-     db   'Pe'
-     db   'La'
-else if lang eq et
-     db   3
-     db   7
-     db   'Esm'
-     db   'Tei'
-     db   'Kol'
-     db   'Nel'
-     db   'Ree'
-     db   'Lau'
-     db   'P№h'
-else if lang eq it
-     db   3
-     db   7
-     db   'Dom'
-     db   'Lun'
-     db   'Mar'
-     db   'Mer'
-     db   'Gio'
-     db   'Ven'
-     db   'Sab'
-else
-     db   3
-     db   7
-     db   'Sun'
-     db   'Mon'
-     db   'Tue'
-     db   'Wen'
-     db   'Thi'
-     db   'Fri'
-     db   'Sat'
-end if
+
 
 str2int:
     xor  eax,eax
@@ -291,7 +116,7 @@ start:
     jmp  upd		; здесь начинается выполнение программы
 red:			; перерисовать окно
 
-    call draw_window	; вызываем процедуру отрисовки окна
+    call draw_window
 
 still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
@@ -596,38 +421,26 @@ plus_md:
 
 plus_me:
 
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     add  ecx,4096
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+    mcall 22,0x00000000 
     jmp  still
 
 minus_md:
 
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     sub  ecx,256
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+    mcall 22,0x00000000
     jmp  still
 
 minus_me:
 
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     sub  ecx,4096
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+    mcall 22,0x00000000
     jmp  still
 
 set_date:
@@ -666,15 +479,9 @@ additem:
 
 draw_clock:
 
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
-    mov  eax,47
-    mov esi,0x50000000
-    mov  edi,0xaabbcc
-    mov  ebx,0x00020100
-    mov  edx,205*65536+280
-    mcall
+    mcall 47,0x00020100, ,205*65536+280,0x50000000,COL_WINDOW_BG
 
     shr  ecx,8
     add  edx,20*65536
@@ -687,29 +494,16 @@ draw_clock:
 
 draw_window:
 
-
-    mov  eax,12 		   ; функция 12: сообщить ОС об отрисовке окна
-    mov  ebx,1			   ; 1 - начинаем рисовать
-    mcall
-				   ; СОЗДАЁМ ОКНО
-    xor  eax,eax		   ; функция 0 : определить и отрисовать окно
+    mcall 12,1 ; функция 12: сообщить ОС об отрисовке окна
+    xor  eax,eax	; функция 0 : определить и отрисовать окно
     mov  ebx,WIN_X
-  if SKIP eq 0
-    mov  ecx,WIN_Y
-  else
     mov  ecx,WIN_Y-15
-  end if
-    mov  edx,0x14aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
+    mov  edx,COL_WINDOW_BG 	   ; цвет рабочей области  RRGGBB,8->color gl
     mov  edi,title		   ; заголовок
     mcall
     call draw_week
 
-    mov  eax,8
-    mov  ebx,205*65536+7
-    mov  ecx,290*65536+10
-    mov  esi,0x005555dd
-    mov  edx,72
-    mcall
+    mcall 8,205*65536+7,290*65536+10,72,COL_TIME_BUTTONS
 
     mov  ebx,212*65536+7
     inc  edx
@@ -744,29 +538,17 @@ draw_window:
 
     mov  ebx,243*65536+14
     mov  ecx,290*65536+20
-    mov  esi,0x00dd7777
     inc  edx
     mcall
 
-    mov  ebx,10*65536+100
-    mov  ecx,290*65536+20
+    mov  ebx,14*65536+110
+    mov  ecx,285*65536+22
     mov  esi,0x00d5d5d5
     inc  edx
     mcall
 
-    mov  esi,0x05080d0
-  if SKIP eq 0
-    mov  ebx,B_DATE_X
-    mov  ecx,B_DATE_Y
-    mov  edx,eax
-    mcall
-    inc  edx
-    add  ebx,B_DATE_BSHIFT
-    mcall
-    inc  edx
-  else
+    mov  esi,COL_MONTH_YEAR_B
     mov  edx,10
-  end if
     or	 edx,1 shl 29+1 shl 30
     mov  ebx,B_NS_X
     mov  ecx,B_NS_Y
@@ -787,39 +569,14 @@ draw_window:
     mcall
     call draw_days
 
-    mov  eax,4			   ; функция 4 : написать в окне текст
-    mov  ebx,110*65536+280
-    mov  ecx,0x800000ff
-    mov  edx,sys_text
-    mcall
-
-    mov  ebx,149*65536+302
-    mov  edx,minus
-    mcall
-
-    mov  ebx,137*65536+292
-    mov  ecx,0x80ff0000
-    mov  edx,plus
-    mcall
-
-    mov  ebx,15*65536+298
-    mov  ecx,0x00000000
-    mov  esi,15
-    mov  edx,setd
-    mcall
+	; функция 4 : написать в окне текст
+    mcall 4,162*65536+280,0x800000ff,sys_text
+    mcall  ,180*65536+302,0x800000ff,minus
+    mcall  ,180*65536+292,0x80ff0000,plus
+    mcall  , 24*65536+292,0x00000000,set_date_t,15 ;set date text
 
     mov  ecx,0x10ddeeff 	   ; шрифт 1 и цвет ( 0xF0RRGGBB )
 
- if SKIP eq 0
-    mov  ebx,B_DATE
-    mov  edx,datebut
-    mov  esi,9
-    btc  ecx,28
-    mcall
-    add  ebx,B_DATE_SHIFT
-    add  edx,esi
-    mcall
- end if
     mov  edx,n_style
     mov  esi,ns_end-n_style
     mov  ebx,B_NS
@@ -828,11 +585,11 @@ draw_window:
     mov  ecx,0xa0a0a0
     jmp  .int
   .high:
-    mov  ecx,0xac0000;d048c8
+    mov  ecx,COL_NEW_STYLE_T
   .int:
     mcall
 
-    mov  ecx,0xd048c8
+    mov  ecx,COL_GO_TODAY_T
     mov  edx,today_msg
     mov  ebx,B_TODAY
     mov  esi,today_end-today_msg
@@ -854,13 +611,11 @@ draw_window:
 
     call draw_year
     mov  [dropped],0
-    mov  eax,12 		   ; функция 12: сообщить ОС об отрисовке окна
-    mov  ebx,2			   ; 2, закончили рисовать
-    mcall
+    mcall 12,2
     ret 			   ; выходим из процедуры
 
 draw_year:
-    mcall 8,B_YEAR_X,B_Y,5,0x05080d0
+    mcall 8,B_YEAR_X,B_Y,5,COL_MONTH_YEAR_B
     ShowFocus 3,esi
     mcall 47,0x40001,Year,B_YEAR
     ret
@@ -903,7 +658,7 @@ draw_week:
     mov  eax,13
     mov  ebx,B_WBAR_X
     mov  ecx,B_WBAR_Y
-    mov  edx,0x90a0b0
+    mov  edx,COL_WEEKDAY_BG
     mcall
     movzx esi,byte[week_days]
     movzx edi,byte[week_days+1]
@@ -931,7 +686,7 @@ draw_days:
     mov  eax,13
     mov  ebx,B_DBAR_X
     mov  ecx,B_DBAR_Y
-    mov  edx,0xe0e0e0
+    mov  edx,COL_DATES_BG
     mcall
     call count_days
     cmp  ecx,[day_sel]
@@ -948,7 +703,7 @@ draw_days:
     movzx edx,dx
     mov  esi,edi
     shl  esi,21
-    lea  edx,[edx+esi+30 shl 16]
+    lea  edx,[edx+esi+29 shl 16]
     mov  ecx,edi
     add  cl,[week_days+1]
     cmp  ecx,7
@@ -962,27 +717,30 @@ draw_days:
     inc  dword[ecx]
     pusha
     mov  ebx,edx
-    mov  bx,20
-    sub  ebx,3 shl 16
+    mov  bx,31           ; width
+    sub  ebx,8 shl 16
     shrd ecx,edx,16
-    mov  cx,20
-    sub  ecx,7 shl 16
+    mov  cx,29           ; height
+    sub  ecx,12 shl 16
     mov  edx,[number]
     cmp  edx,[day_sel]
     je	 .draw_sel
-    mov  esi,0xe0e0e0
+    mov  esi,COL_DATE_BUTTONS
     jmp  .draw_but
   .draw_sel:
-    mov  esi,0x5080d0
+    mov  esi,COL_DATE_CURRENT
     cmp  [focus],5
     jne  .draw_but
-    mov  esi,0xef7840;0xe26830
+    mov  esi,COL_DATE_CHANGED 
   .draw_but:
     add  edx,200+1 shl 29
     mov  eax,8
     mcall
     popa
     mcall
+	add edx,1 shl 16
+	mcall
+	sub edx,1 shl 16
     pop  ecx
     inc  edi
     cmp  edi,7
@@ -1071,116 +829,6 @@ calculate:
     div  bx
     mov  [firstday],edx
     ret
-
-; Здесь находятся данные программы:
-
-; интерфейс программы многоязычный - задайте язык в lang.inc
-day_count db 3,0,3,2,3,2,3,3,2,3,2,3
-Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
-
-title: 	 ; строка заголовка
-if lang eq ru
-     db   'Календарь',0
-else if lang eq ge
-     db   'Kalender',0
-else if lang eq fr
-     db   'Calendrier',0
-else if lang eq et
-     db   'Kalender',0
-else if lang eq it
-     db   'Calendario',0
-else
-     db   'Calendar',0
-end if
-
-if SKIP eq 0
-datebut:
-if lang eq ru
-     db   '1-я дата '
-     db   '2-я дата '
-else if lang eq fr
-     db   '1ere date'
-     db   '2eme date'
-else if lang eq ge
-     db   ' Datum 1 '
-     db   ' Datum 2 '
-else if lang eq et
-     db   'Kuupфev 1'
-     db   'Kuupфev 2'
-else if lang eq it
-     db   '1a data  '
-     db   '2a data  '
-else
-     db   '1st date '
-     db   '2nd date '
-end if
-end if
-n_style:
-if lang eq ru
-     db   'Новый стиль'
-else if lang eq de
-     db   'Neuer Stil'
-else if lang eq fr
-     db   'Nouveau'
-else if lang eq et
-     db   'Uus stiil'
-else if lang eq it
-     db   'Nuovo stile'
-else
-     db   'New style'
-end if
-ns_end:
-today_msg:
-if lang eq ru
-     db   'Сегодня'
-else if lang eq ge
-     db   'Heute'
-else if lang eq fr
-     db   "Aujourd'hui"
-else if lang eq et
-     db   'Tфna'
-else if lang eq it
-     db   'Oggi'
-else
-     db   'Today'
-end if
-today_end:
-focus dd  3
-new_style dd 1
-dropped db 0
-
-sys_text:
-if lang eq ru
-		db  'системное время',0
-else if lang eq it
-		db   'Ora di sistema',0
-else
-		db  'системное время',0
-end if
-plus:
-if lang eq ru
-		db  'добавить(+)',0
-else if lang eq it
-		db   'Avanti',0
-else
-		db  'добавить(+)',0
-end if
-minus:
-if lang eq ru
-		db  'убрать(-)',0
-else if lang eq it
-		db   'Indietro',0
-else
-		db  'убрать(-)',0
-end if
-setd:
-if lang eq ru
-		db  'Установить дату',0
-else if lang eq it
-		db   'Impostazioni',0
-else
-		db  'Установить дату',0
-end if
 
 I_END:	; конец программы
 firstday  dd ?
