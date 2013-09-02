@@ -788,6 +788,8 @@ con.write_special_char:
         jmp     con.write_char
 .esc_sci:
 ; this is real Esc sequence
+        cmp     al, '?'         ; DEC private mode (DECSET/DECRST sequences)
+        je      .questionmark
         cmp     al, ';'
         jz      .next_arg
         cmp     al, '0'
@@ -804,6 +806,11 @@ con.write_special_char:
         mov     [con_esc_attrs+(ecx-1)*4], edx
         pop     edx ecx eax
         ret
+.questionmark:
+        push    ecx
+        mov     ecx, [con_esc_attr_n]
+        mov     dword[con_esc_attrs+(ecx-1)*4], 0xffffffff
+        pop     ecx
 .next_arg:
         push    eax
         mov     eax, [con_esc_attr_n]
@@ -835,7 +842,38 @@ con.write_special_char:
         jz      .cursor_right
         cmp     al, 'D'
         jz      .cursor_left
+        cmp     al, 'l'
+        je      .dec_rst
+        cmp     al, 'h'
+        je      .dec_set
         ret     ; simply skip unknown sequences
+
+.dec_rst:
+        mov     eax, [con_esc_attrs]
+        cmp     eax, 0xffffffff
+        jne     .no_dec_rst
+        mov     eax, [con_esc_attrs+4]
+        cmp     eax, 25
+        je      .hide_cursor
+.no_dec_rst:
+        ret
+.hide_cursor:
+        mov     [con.cursor_height], 0
+        ret
+
+.dec_set:
+        mov     eax, [con_esc_attrs]
+        cmp     eax, 0xffffffff
+        jne     .no_dec_set
+        mov     eax, [con_esc_attrs+4]
+        cmp     eax, 25
+        je      .show_cursor
+.no_dec_set:
+        ret
+
+.show_cursor:
+        mov     [con.cursor_height], (15*font_height+50)/100    ; default height
+        ret
 .clear:
         mov     eax, [con_esc_attrs]
         test    eax, eax
