@@ -820,7 +820,7 @@ con.write_special_char:
         mov     [con_esc], 0
         mov     [con_sci], 0    ; in any case, leave Esc mode
         cmp     al, 'J'
-        jz      .cls
+        jz      .clear
         cmp     al, 'H'
         jz      .setcursor
         cmp     al, 'f'
@@ -836,7 +836,50 @@ con.write_special_char:
         cmp     al, 'D'
         jz      .cursor_left
         ret     ; simply skip unknown sequences
-.cls:
+.clear:
+        mov     eax, [con_esc_attrs]
+        test    eax, eax
+        jz      .clear_till_end_of_screen       ; <esc>[0J (or <esc>[J)
+        dec     eax
+        jz      .clear_till_start_of_screen     ; <esc>[1J
+        dec     eax
+        je      .cls                            ; <esc>[2J
+        ret     ; unknown sequence
+
+.clear_till_end_of_screen:
+        push    edi ecx
+        mov     ecx, [con.scr_width]
+        imul    ecx, [con.scr_height]
+
+        mov     edi, [con.cur_y]
+        imul    edi, [con.scr_width]
+        add     edi, [con.cur_x]
+
+        sub     ecx, edi
+        shl     edi, 1
+        add     edi, [con.data]
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+
+        and     [con.cur_x], 0
+        and     [con.cur_y], 0
+        pop     ecx edi
+        ret
+
+.clear_till_start_of_screen:
+        push    edi ecx
+        mov     ecx, [con.cur_y]
+        imul    ecx, [con.scr_width]
+        add     ecx, [con.cur_x]
+        mov     edi, [con.data]
+        mov     ah, byte[con_flags]
+        mov     al, ' '
+        rep     stosw
+        pop     ecx edi
+        ret
+
+.cls:   ; clear screen completely
         push    ecx
         and     [con.cur_x], 0
         and     [con.cur_y], 0
