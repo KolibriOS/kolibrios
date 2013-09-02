@@ -2051,6 +2051,7 @@ SOCKET_alloc:
 ; SOCKET_free
 ;
 ; Free socket data memory and remove socket from the list
+; Caller should lock and unlock socket_mutex
 ;
 ; IN:  eax = socket ptr
 ; OUT: /
@@ -2060,11 +2061,6 @@ align 4
 SOCKET_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: %x\n", eax
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_lock
-        popa
 
         call    SOCKET_check
         jz      .error
@@ -2111,12 +2107,6 @@ SOCKET_free:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
 
   .error:
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_unlock
-        popa
-
         ret
 
 ;------------------------------------
@@ -2331,9 +2321,6 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
-        pushf
-        cli     ; FIXME
-
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
         pusha
@@ -2360,11 +2347,6 @@ SOCKET_process_end:
         mov     ebx, [ebx + SOCKET.NextPtr]
 
         pusha
-        mov     ecx, socket_mutex
-        call    mutex_unlock
-        popa
-
-        pusha
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .free
 
@@ -2379,12 +2361,6 @@ SOCKET_process_end:
 
   .closed:
         popa
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_lock
-        popa
-
         jmp     .next_socket_test
 
   .done:
@@ -2394,8 +2370,6 @@ SOCKET_process_end:
         mov     ecx, socket_mutex
         call    mutex_unlock
         popa
-
-        popf
 
         ret
 
