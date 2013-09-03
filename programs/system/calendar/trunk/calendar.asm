@@ -1,50 +1,11 @@
 ; Calendar for KolibriOS
 ;
-; v1.2 - code update by Leency, small design fixes
+; v1.3 - code update, redesign by Leency
 ; v1.1 - add change time support by DedOK 
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
 ;
 ; Created: November 1, 2004
-
-WIN_CW equ 266
-WIN_X equ (5000 shl 16+WIN_CW+9)
-WIN_Y equ (100 shl 16+335)
-
-LINE1	  equ 27 shl 16+16
-B_MONTH_X equ 5 shl 16+158+11
-B_Y	  equ LINE1
-B_MONTH   equ 63 shl 16+32
-
-B_WBAR_X  equ 5 shl 16+WIN_CW
-B_WBAR_Y  equ 64 shl 16+20
-B_WEEK	  equ 30 shl 16+70
-B_WX_SHIFT equ 32 shl 16
-
-B_DBAR_X  equ B_WBAR_X
-B_DBAR_Y  equ 85 shl 16+190
-
-B_DROP	  equ B_MONTH+16
-B_DAYS_Y  equ 100
-B_DAYS_SHIFT equ 30
-
-B_YEAR_X  equ 173 shl 16+58
-B_YEAR	  equ 188 shl 16+32
-
-B_TODAY_X equ 25 shl 16
-B_TODAY_Y equ 48 shl 16+10
-B_TODAY   equ 30 shl 16+50
-
-B_SPIN_WIDTH equ 13
-B_SPIN_X  equ 234 shl 16+B_SPIN_WIDTH
-B_SPIN	  equ 238 shl 16+32
-
-B_NS_X	  equ 185 shl 16+75
-B_NS_Y	  equ 48 shl 16+10
-B_NS	  equ 190 shl 16+50
-
-FOCUSABLE equ 5
-
 
 
 use32		     ; включить 32-битный режим ассемблера
@@ -65,7 +26,7 @@ include 'data.inc'
 
 
 
-macro  ShowFocus field,reg
+macro ShowFocus field,reg
 {
    local  .nofocus, .exit
      cmp  [focus],field
@@ -78,13 +39,19 @@ macro  ShowFocus field,reg
      jmp  .exit
    .nofocus:
    if reg eq
-     mov  ecx,0x10000000
+     mov  ecx,COL_DROPDOWN_T
    else
-     mov  reg,0x10000000
+     mov  reg,COL_DROPDOWN_T
    end if
    .exit:
 }
 
+macro GetSkinHeight
+{
+	mov  eax,48
+	mov  ebx,4
+	int 0x40
+}
 
 
 str2int:
@@ -120,9 +87,7 @@ red:			; перерисовать окно
 
 still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
-    mov  eax,23 		; wait here for event
-    mov  ebx,50
-    mcall
+    mcall 23,50     ; wait here for event
   .evt:
     mov  ebp,[focus]
     cmp  eax,1		; перерисовать окно ?
@@ -136,9 +101,8 @@ still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
     jmp  still		; если другое событие - в начало цикла
 
-  key:			; нажата клавиша на клавиатуре
-    mov  eax,2		; функция 2 - считать код символа
-    mcall		; вызов системы
+  key:
+    mcall 2		; get pressed key
     cmp  ah,9
     jne  no_tab
   .tab:
@@ -205,9 +169,8 @@ still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
 day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
 
-  button:		; нажата кнопка в окне программы
-    mov  eax,17 	; 17 - получить идентификатор нажатой кнопки
-    mcall		; вызов системы
+  button:
+    mcall 17 	; 17 - получить идентификатор нажатой кнопки
     movzx ebx,ah
     cmp  ah,200
     jbe  nodayselect
@@ -360,33 +323,22 @@ reset:
     jmp  still
 
 plus_hd:
-
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     add  ecx,1
     mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+    mcall 22,0x00000000 
     jmp  still
 
 plus_he:
-
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     add  ecx,16
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+    mcall 22,0x00000000 
     jmp  still
 
 minus_hd:
-
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     sub  ecx,1
     mov  eax,22
@@ -494,13 +446,13 @@ draw_clock:
 
 draw_window:
 
-    mcall 12,1 ; функция 12: сообщить ОС об отрисовке окна
-    xor  eax,eax	; функция 0 : определить и отрисовать окно
-    mov  ebx,WIN_X
-    mov  ecx,WIN_Y-15
-    mov  edx,COL_WINDOW_BG 	   ; цвет рабочей области  RRGGBB,8->color gl
-    mov  edi,title		   ; заголовок
-    mcall
+    mcall 12,1
+    mcall 0,WIN_X,WIN_Y-15,COL_WINDOW_BG, ,title ; define window
+	GetSkinHeight
+	mov ecx, eax
+	shl ecx, 16
+	add ecx, 43
+	mcall 13,B_WBAR_X, ,COL_TOOLBAR_BG ; draw toolbar background
     call draw_week
 
     mcall 8,205*65536+7,290*65536+10,72,COL_TIME_BUTTONS
@@ -518,36 +470,36 @@ draw_window:
     inc  edx
     mcall
 
-    mov  ebx,224*65536+7
+    mov  ebx,225*65536+7
     mov  ecx,290*65536+10
     inc  edx
     mcall
 
-    mov  ebx,231*65536+7
+    mov  ebx,232*65536+7
     inc  edx
     mcall
 
-    mov  ebx,224*65536+7
+    mov  ebx,225*65536+7
     mov  ecx,300*65536+10
     inc  edx
     mcall
 
-    mov  ebx,231*65536+7
+    mov  ebx,232*65536+7
     inc  edx
     mcall
 
-    mov  ebx,243*65536+14
+    mov  ebx,244*65536+14
     mov  ecx,290*65536+20
     inc  edx
     mcall
 
     mov  ebx,14*65536+110
     mov  ecx,285*65536+22
-    mov  esi,0x00d5d5d5
+    mov  esi,COL_DATE_BUTTONS
     inc  edx
     mcall
 
-    mov  esi,COL_MONTH_YEAR_B
+    mov  esi,COL_MONTH_YEAR_B   ; new style
     mov  edx,10
     or	 edx,1 shl 29+1 shl 30
     mov  ebx,B_NS_X
@@ -561,10 +513,10 @@ draw_window:
     mov  ebx,B_MONTH_X
     mov  edx,2
     mcall
-    mov  ebx,B_SPIN_X
+    mov  ebx,B_SPIN_X ; <
     inc  edx
     mcall
-    add  ebx,B_SPIN_WIDTH shl 16
+    add  ebx,61 shl 16 ; >
     inc  edx
     mcall
     call draw_days
@@ -597,7 +549,7 @@ draw_window:
 
     mov  ebx,B_SPIN
     mov  edx,spinner
-    mov  esi,3
+    mov  esi,12
     ShowFocus 4
     mcall
 
@@ -612,7 +564,7 @@ draw_window:
     call draw_year
     mov  [dropped],0
     mcall 12,2
-    ret 			   ; выходим из процедуры
+    ret
 
 draw_year:
     mcall 8,B_YEAR_X,B_Y,5,COL_MONTH_YEAR_B
@@ -633,11 +585,8 @@ draw_dropdown:
   .ddd_loop:
     mov  edi,edx
     push ecx
-    mov  ebx,B_MONTH_X
-    mov  ecx,[esp+4]
-    mov  esi,0x6f9fef
-    mov  eax,8
-    mcall
+    mov  esi,COL_DROPDOWN_BG
+    mcall 8,B_MONTH_X,[esp+4]
     shr  eax,1
     mov  ebx,[esp+8]
     xchg edx,[esp+12]
@@ -683,11 +632,6 @@ draw_week:
     ret
 
 draw_days:
-    mov  eax,13
-    mov  ebx,B_DBAR_X
-    mov  ecx,B_DBAR_Y
-    mov  edx,COL_DATES_BG
-    mcall
     call count_days
     cmp  ecx,[day_sel]
     jae  .ok
@@ -696,19 +640,19 @@ draw_days:
     mov  [number],0
     mov  eax,47
     mov  edx,B_DAYS_Y
-    mov  ebx,0x20001
+    mov  ebx,0x10001
     mov  edi,[firstday]
   .dayloop:
     push ecx
     movzx edx,dx
     mov  esi,edi
     shl  esi,21
-    lea  edx,[edx+esi+29 shl 16]
+    lea  edx,[edx+esi+34 shl 16]
     mov  ecx,edi
     add  cl,[week_days+1]
     cmp  ecx,7
     je	 .holiday
-    mov  esi,0x10000000
+    mov  esi,0x10000000 ; COL_DATE_TEXT
     jmp  .noholiday
   .holiday:
     mov  esi,0x10cc1010
@@ -734,13 +678,31 @@ draw_days:
     mov  esi,COL_DATE_CHANGED 
   .draw_but:
     add  edx,200+1 shl 29
-    mov  eax,8
-    mcall
-    popa
-    mcall
+    mcall 8
+	mov    eax, [number]
+    xor    edx, edx
+    mov    ecx, 10
+    div    ecx
+    mov    [remainder], edx
+    mov    [quotient],  eax
+	popa
+	
+	;first number
+	mov ecx,quotient
+    mcall 
 	add edx,1 shl 16
 	mcall
 	sub edx,1 shl 16
+	
+	;second number
+	mov ecx,remainder
+	add edx,9 shl 16
+    mcall 
+	add edx,1 shl 16
+	mcall
+	sub edx,10 shl 16
+	
+	
     pop  ecx
     inc  edi
     cmp  edi,7
@@ -830,7 +792,8 @@ calculate:
     mov  [firstday],edx
     ret
 
-I_END:	; конец программы
+I_END:
+
 firstday  dd ?
 Year dd   ?
 Month dd  ?

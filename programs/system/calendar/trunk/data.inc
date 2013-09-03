@@ -1,17 +1,59 @@
 ; program data: colors, text, vars (todo)
 
 ; colors
-COL_WINDOW_BG    equ 0x14aabbcc
+COL_WINDOW_BG    equ 0x14E7E7E7
+COL_TOOLBAR_BG   equ 0x555555
 COL_WEEKDAY_BG   equ 0xCCCDDD
-COL_DATES_BG     equ 0xE7E7E7
-COL_DATE_BUTTONS equ 0xE7E7E7
+COL_DATE_BUTTONS equ 0xF3F3F3
 COL_DATE_CURRENT equ 0x31A4D0
 COL_DATE_CHANGED equ 0xef7840
 COL_TIME_BUTTONS equ 0x5555dd
 COL_GO_TODAY_T   equ 0xd048c8
-COL_MONTH_YEAR_B equ 0x05080d0
+COL_MONTH_YEAR_B equ 0x0555555 ; 0 for time?
+COL_DROPDOWN_BG  equ 0x666666
+COL_DROPDOWN_T   equ 0x10CCCccc
 
-COL_NEW_STYLE_T  equ 0xac0000
+COL_NEW_STYLE_T  equ 0xef3333
+
+remainder dd 1
+quotient dd 1
+
+; definitions
+WIN_CW equ 266
+WIN_X equ (5000 shl 16+WIN_CW+9)
+WIN_Y equ (100 shl 16+335)
+
+LINE1	  equ 27 shl 16+16
+B_MONTH_X equ 15 shl 16+158
+B_Y	  equ LINE1
+B_MONTH   equ 63 shl 16+32
+
+B_WBAR_X  equ 5 shl 16+WIN_CW
+B_WBAR_Y  equ 64 shl 16+20
+B_WEEK	  equ 34 shl 16+70
+B_WX_SHIFT equ 32 shl 16
+
+B_DROP	  equ B_MONTH+16
+B_DAYS_Y  equ 106
+B_DAYS_SHIFT equ 30
+
+B_YEAR_X  equ 198 shl 16+46
+B_YEAR	  equ 206 shl 16+32
+
+B_SPIN_WIDTH equ 13
+B_SPIN_X  equ 184 shl 16+B_SPIN_WIDTH
+B_SPIN	  equ 188 shl 16+32
+spinner db '<         >'
+
+B_TODAY_X equ 25 shl 16
+B_TODAY_Y equ 48 shl 16+10
+B_TODAY   equ 30 shl 16+50
+
+B_NS_X	  equ 185 shl 16+75
+B_NS_Y	  equ 48 shl 16+10
+B_NS	  equ 190 shl 16+50
+
+FOCUSABLE equ 5
 
 ; multilanguage interface - configuratable in lang.inc
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
@@ -117,7 +159,6 @@ else
      db   'November '
      db   'December '
 end if
-spinner db '< >'
 week_days:
 if lang eq ru
      db   2
@@ -191,7 +232,7 @@ else
      db   'Sat'
 end if
 
-title: 	 ; строка заголовка
+title:
 if lang eq ru
      db   'Календарь',0
 else if lang eq ge
@@ -254,7 +295,7 @@ set_date_t:
 if lang eq ru
 		db  'Установить дату',0
 else if lang eq it
-		db   'Impostazioni',0
+		db   ' Impostazioni ',0
 else
-		db  'Установить дату',0
+		db  '   Set date    ',0
 end if
