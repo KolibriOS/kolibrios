@@ -101,6 +101,7 @@ kernel_export \
               USBOpenPipe,\
               USBNormalTransferAsync,\
               USBControlTransferAsync,\
+              USBGetParam,\
 \
               DiskAdd,\
               DiskMediaChanged,\
