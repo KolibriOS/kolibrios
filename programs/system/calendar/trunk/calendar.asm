@@ -1,6 +1,6 @@
 ; Calendar for KolibriOS
 ;
-; v1.3 - code update, redesign by Leency
+; v1.35 - code update, redesign by Leency
 ; v1.1 - add change time support by DedOK 
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
@@ -32,9 +32,9 @@ macro ShowFocus field,reg
      cmp  [focus],field
      jne  .nofocus
    if reg eq
-     mov  ecx,0x10e7c750;0x10ddeeff
+     mov  ecx,COL_ACTIVE_TEXT
    else
-     mov  reg,0x10e7c750;0x10ddeeff
+     mov  reg,COL_ACTIVE_TEXT
    end if
      jmp  .exit
    .nofocus:
@@ -107,7 +107,7 @@ still:			; ÉãÄÇçõâ ñàäã èêéÉêÄååõ
     jne  no_tab
   .tab:
     cmp  ebp,FOCUSABLE
-    je	 foc_cycle
+    JAE	 foc_cycle
     inc  [focus]
   upd:
     call calculate
@@ -127,13 +127,6 @@ still:			; ÉãÄÇçõâ ñàäã èêéÉêÄååõ
     mov  [Month],edi
     jmp  upd
   .noFkey:
-    cmp  ebp,4
-    jne  no_spinner
-    cmp  ah,176
-    je	 year_dec
-    cmp  ah,179
-    je	 year_inc
-  no_spinner:
     cmp  ebp,2
     jne  .nomonth
     cmp  ah,177
@@ -142,7 +135,7 @@ still:			; ÉãÄÇçõâ ñàäã èêéÉêÄååõ
   .nomonth:
     cmp  ebp,3
     je	 noy_up.year_evt
-    cmp  ebp,5
+    cmp  ebp,4
     jne  still
     mov  ebx,[day_sel]
     cmp  ah,176 	; left arrow
@@ -181,7 +174,7 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     call draw_days
     jmp  still
   .redraw:
-    mov  [focus],5
+    mov  [focus],4
     jmp  red
   nodayselect:
     cmp  ah,100
@@ -250,14 +243,14 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jne  noy_dn
   year_dec:
     dec  [Year]
-    mov  [focus],4
+    mov  [focus],3
     jmp  upd
   noy_dn:
     cmp  ah,4		; year+1
     jne  noy_up
   year_inc:
     inc  [Year]
-    mov  [focus],4
+    mov  [focus],3
     jmp  upd
   noy_up:
     cmp  ah,5
@@ -270,6 +263,11 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jne  still.evt
     mcall 2
   .year_evt:
+    cmp  ah,176
+    je	 year_dec
+    cmp  ah,179
+    je	 year_inc
+	
     mov  ebx,10
     cmp  ah,9
     je	 key.tab
@@ -310,23 +308,17 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
 
 
 reset:
-
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     shl  ecx,16
     shr  ecx,16
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+    mcall 22,0x00000000 
     jmp  still
 
 plus_hd:
     mcall 3
     mov  ecx,eax
     add  ecx,1
-    mov  eax,22
     mcall 22,0x00000000 
     jmp  still
 
@@ -341,38 +333,24 @@ minus_hd:
     mcall 3
     mov  ecx,eax
     sub  ecx,1
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+	mcall 22,0x00000000
     jmp  still
 
 minus_he:
-
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     sub  ecx,16
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+	mcall 22,0x00000000 
     jmp  still
 
 plus_md:
-
-    mov  eax,3
-    mcall
+    mcall 3
     mov  ecx,eax
     add  ecx,256
-    mov  eax,22
-    mov  ebx,0x00000000
-    mcall
-
+	mcall 22,0x00000000 
     jmp  still
 
 plus_me:
-
     mcall 3
     mov  ecx,eax
     add  ecx,4096
@@ -380,7 +358,6 @@ plus_me:
     jmp  still
 
 minus_md:
-
     mcall 3
     mov  ecx,eax
     sub  ecx,256
@@ -388,7 +365,6 @@ minus_md:
     jmp  still
 
 minus_me:
-
     mcall 3
     mov  ecx,eax
     sub  ecx,4096
@@ -396,7 +372,6 @@ minus_me:
     jmp  still
 
 set_date:
-
     mov  eax,0x00000000
     mov ebx,[day_sel]
     call additem
@@ -408,20 +383,15 @@ set_date:
     mov  ebx,[Year]
     call additem
     mov  ecx,eax
-    mov  eax,22
-    mov  ebx,1
-    mcall
-
+    mcall 22,1
     jmp  still
 
 additem:
-
     add  eax,1
     daa
     sub  ebx,1
     cmp  ebx,0
     jne  additem
-
     ret
 
 
@@ -550,7 +520,7 @@ draw_window:
     mov  ebx,B_SPIN
     mov  edx,spinner
     mov  esi,12
-    ShowFocus 4
+	mov  ecx,COL_DROPDOWN_T
     mcall
 
     mov  edx,[Month]
@@ -672,10 +642,10 @@ draw_days:
     mov  esi,COL_DATE_BUTTONS
     jmp  .draw_but
   .draw_sel:
-    mov  esi,COL_DATE_CURRENT
-    cmp  [focus],5
+    mov  esi,COL_DATE_INACTIV
+    cmp  [focus],4
     jne  .draw_but
-    mov  esi,COL_DATE_CHANGED 
+    mov  esi,COL_DATE_ACTIVE
   .draw_but:
     add  edx,200+1 shl 29
     mcall 8
@@ -798,9 +768,7 @@ firstday  dd ?
 Year dd   ?
 Month dd  ?
 day_sel   dd ?
-all_days  dd ?
 
 datestr   dd  ?
 leap_year dd ?
 number	  dd ?
-year_input dd ?

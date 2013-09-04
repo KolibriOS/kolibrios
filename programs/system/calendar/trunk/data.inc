@@ -1,18 +1,18 @@
-; program data: colors, text, vars (todo)
+; program data: colors, text, vars
 
 ; colors
 COL_WINDOW_BG    equ 0x14E7E7E7
 COL_TOOLBAR_BG   equ 0x555555
+COL_ACTIVE_TEXT  equ 0x10e7c750
 COL_WEEKDAY_BG   equ 0xCCCDDD
 COL_DATE_BUTTONS equ 0xF3F3F3
-COL_DATE_CURRENT equ 0x31A4D0
-COL_DATE_CHANGED equ 0xef7840
+COL_DATE_INACTIV equ 0x31A4D0
+COL_DATE_ACTIVE  equ COL_ACTIVE_TEXT
 COL_TIME_BUTTONS equ 0x5555dd
 COL_GO_TODAY_T   equ 0xd048c8
 COL_MONTH_YEAR_B equ 0x0555555 ; 0 for time?
 COL_DROPDOWN_BG  equ 0x666666
 COL_DROPDOWN_T   equ 0x10CCCccc
-
 COL_NEW_STYLE_T  equ 0xef3333
 
 remainder dd 1
@@ -53,7 +53,7 @@ B_NS_X	  equ 185 shl 16+75
 B_NS_Y	  equ 48 shl 16+10
 B_NS	  equ 190 shl 16+50
 
-FOCUSABLE equ 5
+FOCUSABLE equ 4
 
 ; multilanguage interface - configuratable in lang.inc
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
