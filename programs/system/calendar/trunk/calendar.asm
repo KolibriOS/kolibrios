@@ -1,6 +1,6 @@
 ; Calendar for KolibriOS
 ;
-; v1.35 - code update, redesign by Leency
+; v1.2 - v1.4 - new desighn and functionality by Leency
 ; v1.1 - add change time support by DedOK 
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
@@ -8,20 +8,20 @@
 ; Created: November 1, 2004
 
 
-use32		     ; включить 32-битный режим ассемблера
+use32
 
-  org	 0x0	     ; адресация с нуля
+  org	 0x0
 
-  db	 'MENUET01'  ; 8-байтный идентификатор MenuetOS
-  dd	 0x01	     ; версия заголовка (всегда 1)
-  dd	 start	     ; адрес метки, с которой начинается выполнение программ
-  dd	 I_END	     ; размер программы
-  dd	 0x1000      ; количество памяти
-  dd	 0x1000      ; адрес вершины стэка
-  dd	 0x0	     ; адрес буфера для строки параметров (не используется)
-  dd	 0x0	     ; зарезервировано
+  db	 'MENUET01'
+  dd	 0x01
+  dd	 START
+  dd	 I_END
+  dd	 0x1000
+  dd	 0x1000
+  dd	 0x0
+  dd	 0x0
+include '..\..\..\macros.inc'
 include 'lang.inc'
-include '..\..\..\macros.inc' ; уменьшает размер программы
 include 'data.inc'
 
 
@@ -53,6 +53,68 @@ macro GetSkinHeight
 	int 0x40
 }
 
+macro DrawRect color1,color2,color3,color4 ; pizdec... but optimized well
+{
+	; top border-outer
+	push ebx
+	push ecx
+	mov eax,13
+	mov bx,DATE_BUTTON_WIDTH
+	mov edx,color1
+	mov cx,1
+	mcall
+	; left border-outer
+	mov bx,1
+	mov cx,DATE_BUTTON_HEIGHT
+	mcall
+	; top border-inner
+	mov edx,color2
+	add ebx,1 shl 16
+	add ecx,1 shl 16
+	mov bx,DATE_BUTTON_WIDTH-1
+	mov cx,1
+	; left border-inner
+	mcall
+	mov bx,1
+	mov cx,DATE_BUTTON_HEIGHT-2
+	mcall
+	; inner
+	mov edx,color3
+	add ebx,1 shl 16
+	add ecx,1 shl 16
+	mov bx,DATE_BUTTON_WIDTH-4
+	mov cx,DATE_BUTTON_HEIGHT-4
+	mcall
+	; bottom border-inner
+	mov edx,color4
+	add ebx,DATE_BUTTON_WIDTH shl 16
+	sub ebx,4 shl 16
+	mov bx,1
+	mov cx,DATE_BUTTON_HEIGHT-3
+	mcall
+	; rgiht border-outer
+	mov edx,color2
+	add ebx,1 shl 16
+	sub ecx,1 shl 16
+	add cx,1
+	mcall
+	; bottom border-outer
+	mov edx,color2
+	pop ecx
+	pop ebx
+	add ecx,DATE_BUTTON_HEIGHT shl 16
+	sub ecx,1 shl 16
+	add ebx,1 shl 16
+	mov cx,1
+	mcall
+	; left border-outer
+	mov edx,color4
+	add ebx,1 shl 16
+	sub ecx,1 shl 16
+	sub bx,2
+	mcall 
+}
+
 
 str2int:
     xor  eax,eax
@@ -64,7 +126,7 @@ str2int:
     add  al,bl
     ret
 
-start:
+START:
     mcall 29
     mov  [datestr],eax
     mov  esi,datestr
@@ -79,27 +141,33 @@ start:
     test byte[esi],0
     jnz  .no2000
     add  [Year],100
+	mov eax,[Year]
+	mov [curYear], eax
+	mov eax,[Month]
+	mov [curMonth], eax
+	mov eax,[day_sel]
+	mov [curDay], eax
   .no2000:
-    jmp  upd		; здесь начинается выполнение программы
-red:			; перерисовать окно
+    jmp  upd
+red:
 
     call draw_window
 
-still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
+still:
 
     mcall 23,50     ; wait here for event
   .evt:
     mov  ebp,[focus]
-    cmp  eax,1		; перерисовать окно ?
-    je	 red		; если да - на метку red
-    cmp  eax,2		; нажата клавиша ?
-    je	 key		; если да - на key
-    cmp  eax,3		; нажата кнопка ?
-    je	 button 	; если да - на button
+    cmp  eax,1
+    je	 red
+    cmp  eax,2
+    je	 key
+    cmp  eax,3
+    je	 button
 
     call draw_clock
 
-    jmp  still		; если другое событие - в начало цикла
+    jmp  still
 
   key:
     mcall 2		; get pressed key
@@ -154,7 +222,7 @@ still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
   .ok:
     mov  [day_sel],ecx
     call draw_days
-    jmp  still		; вернуться к началу цикла
+    jmp  still
   .chk0:
     cmp  ecx,eax
     jle  still
@@ -163,7 +231,7 @@ still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
 
   button:
-    mcall 17 	; 17 - получить идентификатор нажатой кнопки
+    mcall 17
     movzx ebx,ah
     cmp  ah,200
     jbe  nodayselect
@@ -184,11 +252,10 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     mov  [focus],2
     jmp  upd
   no_list:
-    cmp  ah,1		; идентификатор == 1 ?
-    jne  noclose	; если нет - иди вперёд на noclose
+    cmp  ah,1
+    jne  noclose
   close:
-    or	 eax,-1 	; выход из программы
-    mcall		; вызов системы
+    mcall -1		; clore programm
 
   noclose:
 
@@ -302,7 +369,7 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jmp  .ch_year
   noy_click:
     cmp  ah,10
-    jne  start
+    jne  START
     xor  [new_style],1
     jmp  upd
 
@@ -396,7 +463,7 @@ additem:
 
 
 ;   *********************************************
-;   *******  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА *******
+;   *******             DRAW WINDOW       *******
 ;   *********************************************
 
 draw_clock:
@@ -491,14 +558,13 @@ draw_window:
     mcall
     call draw_days
 
-	; функция 4 : написать в окне текст
+	; draw text in window
     mcall 4,162*65536+280,0x800000ff,sys_text
     mcall  ,180*65536+302,0x800000ff,minus
     mcall  ,180*65536+292,0x80ff0000,plus
     mcall  , 24*65536+292,0x00000000,set_date_t,15 ;set date text
 
-    mov  ecx,0x10ddeeff 	   ; шрифт 1 и цвет ( 0xF0RRGGBB )
-
+    mov  ecx,0x10ddeeff
     mov  edx,n_style
     mov  esi,ns_end-n_style
     mov  ebx,B_NS
@@ -622,7 +688,7 @@ draw_days:
     add  cl,[week_days+1]
     cmp  ecx,7
     je	 .holiday
-    mov  esi,0x10000000 ; COL_DATE_TEXT
+    mov  esi,0x10313138 ; COL_DATE_TEXT
     jmp  .noholiday
   .holiday:
     mov  esi,0x10cc1010
@@ -631,24 +697,44 @@ draw_days:
     inc  dword[ecx]
     pusha
     mov  ebx,edx
-    mov  bx,31           ; width
+    mov  bx,DATE_BUTTON_WIDTH-1
     sub  ebx,8 shl 16
     shrd ecx,edx,16
-    mov  cx,29           ; height
+    mov  cx,DATE_BUTTON_HEIGHT-1
     sub  ecx,12 shl 16
     mov  edx,[number]
     cmp  edx,[day_sel]
     je	 .draw_sel
     mov  esi,COL_DATE_BUTTONS
     jmp  .draw_but
-  .draw_sel:
-    mov  esi,COL_DATE_INACTIV
+.draw_sel:                                  ;draw selected button
+	add  edx,1 shl 30
+	add  edx,200+1 shl 29
+	mcall 8
     cmp  [focus],4
-    jne  .draw_but
-    mov  esi,COL_DATE_ACTIVE
-  .draw_but:
+    jne  .not_active
+	DrawRect COL_DATE_ACTIVE_1,COL_DATE_ACTIVE_2,COL_DATE_ACTIVE_3,COL_DATE_ACTIVE_4
+	jmp .after_draw_but
+.not_active:
+	DrawRect COL_DATE_INACTIVE_1,COL_DATE_INACTIVE_2,COL_DATE_INACTIVE_3,COL_DATE_INACTIVE_4
+	jmp .after_draw_but
+.draw_but:                                   ;draw non selected button
     add  edx,200+1 shl 29
     mcall 8
+.after_draw_but:
+	mov eax,[Year]
+	cmp [curYear],eax
+	jne .out
+	mov eax,[Month]
+	cmp [curMonth],eax
+	jne .out
+	mov eax,[number]
+	cmp [curDay],eax
+	jne .out
+	;DrawRect COL_DATE_INACTIVE_1,COL_DATE_INACTIVE_2,COL_DATE_INACTIVE_3,COL_DATE_INACTIVE_4
+.out:
+	
+	
 	mov    eax, [number]
     xor    edx, edx
     mov    ecx, 10
