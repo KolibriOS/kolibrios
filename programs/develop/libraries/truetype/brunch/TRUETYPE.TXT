@@ -1,0 +1,8 @@
+рисует Юникод-строки на заданном фоне.
+
+int  text_out(short *string, char *buffer, int height, int color,int back_color, int x, int y)
+int __stdcall get_length(short *text, char *buffer, int height, int max_len)
+float __stdcall get_width(short *text, stbtt_fontinfo *buffer, int height)
+int __stdcall init_font(stbtt_fontinfo *font,unsigned char *FontData)
+unsigned char*  __stdcall text_out_mem(short *string, char *buffer, int height, int color,int back_color) 
+
