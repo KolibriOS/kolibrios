@@ -1,6 +1,6 @@
 ; Calendar for KolibriOS
 ;
-; v1.2 - v1.4 - new desighn and functionality by Leency
+; v1.2 - v1.45 - new desighn and functionality by Leency
 ; v1.1 - add change time support by DedOK 
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
@@ -714,14 +714,13 @@ draw_days:
     cmp  [focus],4
     jne  .not_active
 	DrawRect COL_DATE_ACTIVE_1,COL_DATE_ACTIVE_2,COL_DATE_ACTIVE_3,COL_DATE_ACTIVE_4
-	jmp .after_draw_but
+	jmp .out
 .not_active:
 	DrawRect COL_DATE_INACTIVE_1,COL_DATE_INACTIVE_2,COL_DATE_INACTIVE_3,COL_DATE_INACTIVE_4
-	jmp .after_draw_but
+	jmp .out
 .draw_but:                                   ;draw non selected button
     add  edx,200+1 shl 29
     mcall 8
-.after_draw_but:
 	mov eax,[Year]
 	cmp [curYear],eax
 	jne .out
@@ -731,10 +730,13 @@ draw_days:
 	mov eax,[number]
 	cmp [curDay],eax
 	jne .out
-	;DrawRect COL_DATE_INACTIVE_1,COL_DATE_INACTIVE_2,COL_DATE_INACTIVE_3,COL_DATE_INACTIVE_4
+	mov edx,0xff0000
+	mov bx,DATE_BUTTON_WIDTH-2
+	mov cx,2
+	add ebx,1 shl 16
+	add ecx,27 shl 16
+	mcall 13
 .out:
-	
-	
 	mov    eax, [number]
     xor    edx, edx
     mov    ecx, 10
