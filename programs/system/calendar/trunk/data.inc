@@ -296,14 +296,15 @@ dropped db 0
 
 sys_text:
 if lang eq ru
-		db  'Время:',0
+		db  'Время',0
 else if lang eq it
-		db  '  Ora:',0
+		db  '  Ora',0
 else
-		db  ' Time:',0
+		db  ' Time',0
 end if
-plus  db  '(+)',0
-minus db  '(-)',0
+separator  db ':',0
+plus  db  '+',0
+minus db  '-',0
 set_date_t:
 if lang eq ru
 		db  'Установить дату',0
