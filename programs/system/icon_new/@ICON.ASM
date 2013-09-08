@@ -1178,7 +1178,7 @@ NameIconsDat    db ICONS_DAT,0
 align 4
 MaxNumIcon      dd 0           ;количество иконок
 
-bFixIcons       dd 1
+bFixIcons       dd 0
 bNotSave        dd 0
 
 LButtonActiv    dd 0

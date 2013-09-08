@@ -107,7 +107,6 @@ Color Slider              /sys/demos/cslide
 Устройства                /sys/setup
 Установить фон            /sys/media/palitra
 Стиль окон                /sys/desktop
-Менеджер иконок           /sys/icon
 MyKey                     /sys/mykey
 Видеорежим для ATI        /sys/vmode
 #12   **** SENSORS ****

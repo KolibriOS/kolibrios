@@ -102,7 +102,6 @@ Debug board               /sys/develop/board
 Dispositivos              /sys/setup
 Generador de fondo        /sys/media/palitra
 Colores y Apariencia      /sys/desktop
-Iconos                    /sys/icon
 Atajos de teclado         /sys/mykey
 Modo de video ATI         /sys/vmode
 #12    **** SENSORES ****

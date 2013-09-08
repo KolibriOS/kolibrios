@@ -60,7 +60,7 @@ FASM_PROGRAMS:=\
  end:END:$(PROGS)/system/end/light/end.asm \
  gmon:GMON:$(PROGS)/system/gmon/gmon.asm \
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
- icon:ICON:$(PROGS)/system/icon/trunk/icon.asm \
+ @icon:@ICON:$(PROGS)/system/icon_new/@icon.asm \
  cropflat:CROPFLAT:$(PROGS)/system/cropflat/cropflat.asm \
  kbd:KBD:$(PROGS)/system/kbd/trunk/kbd.ASM \
  kpack:KPACK:$(PROGS)/other/kpack/trunk/kpack.asm \
@@ -271,7 +271,6 @@ CMM_PROGRAMS:=\
  HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
  tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
  @notify:@notify:$(PROGS)/cmm/notify/notify.c \
- @rb:@rb:$(PROGS)/cmm/rb/rb.c \
 # end of list
 
 # List of other files to be included in the image file.
@@ -283,7 +282,7 @@ CMM_PROGRAMS:=\
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
  graph:GRAPH hdread:HDREAD \
- icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
+ icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT kolibri.lbl:KOLIBRI.LBL \

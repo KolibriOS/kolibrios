@@ -12,8 +12,8 @@
 /SYS/MEDIA/PALITRA "H 007DCEDF 003C427F" 1 #SET BG
 /SYS/@PANEL           ""          1    # Start panel
 /SYS/SETUP           BOOT         1    # Load device settings
-/SYS/ICON            BOOT         1    # Multithread icon
-/SYS/@RB              ""          1    # Desktop right-click menu
+/SYS/@ICON            ""          1    # Multithread icon
+#/SYS/@RB             ""          1    # Desktop right-click menu
 /SYS/@SS             ASSM         1    # Screensaver
 /SYS/TMPDISK          A1         -1    # Add virtual RAM disk /tmp1/1
 /SYS/SEARCHAP         ""         -1    # Search and mount additional system directory

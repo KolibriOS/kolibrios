@@ -102,7 +102,6 @@ Debug board               /sys/develop/board
 Devices                   /sys/setup
 Background generator      /sys/media/palitra
 Colors & Skin             /sys/desktop
-Icons manager             /sys/icon
 MyKey                     /sys/mykey
 Video mode for ATI        /sys/vmode
 #12    **** SYSTEM SENSORS ****
