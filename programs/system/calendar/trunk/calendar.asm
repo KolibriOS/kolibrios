@@ -1,6 +1,7 @@
 ; Calendar for KolibriOS
 ;
-; v1.2 - v1.45 - new desighn and functionality by Leency
+; v1.5 - time redesign by Heavyiron
+; v1.2 - v1.55 - new desighn and functionality by Leency
 ; v1.1 - add change time support by DedOK 
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
@@ -451,7 +452,7 @@ set_date:
     call additem
     mov  ecx,eax
     mcall 22,1
-    jmp  still
+    jmp  START
 
 additem:
     add  eax,1
@@ -463,14 +464,14 @@ additem:
 
 
 ;   *********************************************
-;   *******             DRAW WINDOW       *******
+;   *******          DRAW WINDOW          *******
 ;   *********************************************
 
 draw_clock:
 
     mcall 3
     mov  ecx,eax
-    mcall 47,0x00020100, ,198*65536+287,0x50000000,COL_WINDOW_BG
+    mcall 47,0x00020100, ,195*65536+287,0x50000000,COL_WINDOW_BG
 
     shr  ecx,8
     add  edx,22*65536
@@ -484,54 +485,54 @@ draw_clock:
 draw_window:
 
     mcall 12,1
-    mcall 0,WIN_X,WIN_Y-15,COL_WINDOW_BG, ,title ; define window
+	mcall 48,5 ;get screen size
+	mov ecx, ebx
+	sub ecx, WIN_H
+	shl ecx, 16
+	add ecx, WIN_H
+	mov ebx, eax
+	sub eax, WIN_W
+	shl ebx, 16
+	add ebx, WIN_W	
+    mcall 0,,,COL_WINDOW_BG, ,title ; define window
+	mcall 63,1,'Y'
 	GetSkinHeight
 	mov ecx, eax
 	shl ecx, 16
 	add ecx, 43
 	mcall 13,B_WBAR_X, ,COL_TOOLBAR_BG ; draw toolbar background
     call draw_week
-
-    mcall 8,196*65536+8,272*65536+10,72,COL_DATE_BUTTONS
-
-    mov  ebx,205*65536+8
-    inc  edx
+    mcall 8,193*65536+8,272*65536+10,72,COL_DATE_BUTTONS
+    mov  ebx,202*65536+8
+    inc  edx ;73
     mcall
-
-    mov  ebx,196*65536+8
+    mov  ebx,193*65536+8
     mov  ecx,298*65536+10
-    inc  edx
+    inc  edx ;74
     mcall
-
-    mov  ebx,205*65536+8
-    inc  edx
+    mov  ebx,202*65536+8
+    inc  edx ;75
     mcall
-
-    mov  ebx,218*65536+8
+    mov  ebx,215*65536+8
     mov  ecx,272*65536+10
-    inc  edx
+    inc  edx ;76
     mcall
-
-    mov  ebx,227*65536+8
-    inc  edx
+    mov  ebx,224*65536+8
+    inc  edx ;77
     mcall
-
-    mov  ebx,218*65536+8
+    mov  ebx,215*65536+8
     mov  ecx,298*65536+10
-    inc  edx
+    inc  edx ;78
     mcall
-
-    mov  ebx,227*65536+8
-    inc  edx
+    mov  ebx,224*65536+8
+    inc  edx ;79
     mcall
-
-    mov  ebx,240*65536+21
+    mov  ebx,237*65536+21
     mov  ecx,273*65536+35
-    inc  edx
+    inc  edx ;80
     or   edx,0x40000000
     mcall
-
-    mov  ebx,14*65536+110
+    mov  ebx,25*65536+110
     mov  ecx,285*65536+22
     mov  esi,COL_DATE_BUTTONS
     mov  edx,81
@@ -560,13 +561,12 @@ draw_window:
     call draw_days
 
 	; draw text in window
-    mcall 4,153*65536+287,0x80000000,sys_text
-    mcall 4,183*65536+287, ,separator
-    mcall  ,214*65536+287
-    mcall  ,236*65536+287
-    mcall  ,188*65536+274, ,plus
-    mcall  ,188*65536+300, ,minus
-    mcall  , 24*65536+292,0x00000000,set_date_t,15 ;set date text
+    mcall 4,157*65536+287,0x80000000,sys_text
+    mcall  ,211*65536+287,,separator
+    mcall  ,233*65536+287
+    mcall  ,185*65536+274, ,plus
+    mcall  ,185*65536+300, ,minus
+    mcall  , 35*65536+292,0x00000000,set_date_t,15 ;set date text
 
 
     mov  ecx,0x10ddeeff
@@ -856,12 +856,3 @@ calculate:
     ret
 
 I_END:
-
-firstday  dd ?
-Year dd   ?
-Month dd  ?
-day_sel   dd ?
-
-datestr   dd  ?
-leap_year dd ?
-number	  dd ?

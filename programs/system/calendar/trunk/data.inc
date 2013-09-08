@@ -1,10 +1,20 @@
-; program data: colors, text, vars
-DATE_BUTTON_WIDTH  equ 32
-DATE_BUTTON_HEIGHT equ 30
+; program data
 
 curMonth dd ?
 curYear dd ?
 curDay dd ?
+
+remainder dd ?
+quotient dd ?
+
+firstday  dd ?
+Year dd   ?
+Month dd  ?
+day_sel   dd ?
+
+datestr   dd  ?
+leap_year dd ?
+number	  dd ?
 
 ; colors
 COL_WINDOW_BG    equ 0x14E7E7E7
@@ -28,20 +38,20 @@ COL_DATE_ACTIVE_2   equ 0xEDA700
 COL_DATE_ACTIVE_3   equ 0xFFCC00
 COL_DATE_ACTIVE_4   equ 0xFFE56B
 
-remainder dd 1
-quotient dd 1
-
 ; definitions
-WIN_CW equ 266
-WIN_X equ (5000 shl 16+WIN_CW+9)
-WIN_Y equ (100 shl 16+335)
+WIN_W equ 275
+WIN_H equ 325
+
+DATE_BUTTON_WIDTH  equ 32
+DATE_BUTTON_HEIGHT equ 30
+
 
 LINE1	  equ 27 shl 16+16
 B_MONTH_X equ 15 shl 16+158
 B_Y	  equ LINE1
 B_MONTH   equ 63 shl 16+32
 
-B_WBAR_X  equ 5 shl 16+WIN_CW
+B_WBAR_X  equ 5 shl 16+WIN_W-9
 B_WBAR_Y  equ 64 shl 16+20
 B_WEEK	  equ 34 shl 16+70
 B_WX_SHIFT equ 32 shl 16
@@ -313,3 +323,4 @@ else if lang eq it
 else
 		db  '   Set date    ',0
 end if
+
