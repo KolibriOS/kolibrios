@@ -603,6 +603,7 @@ draw_window:
     mcall
 
     call draw_year
+    call draw_clock
     mov  [dropped],0
     mcall 12,2
     ret
