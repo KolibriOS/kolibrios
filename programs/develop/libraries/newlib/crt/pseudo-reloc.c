@@ -130,8 +130,8 @@ do_pseudo_reloc (void * start, void * end, void * base)
   /* Check if this is a known version.  */
   if (v2_hdr->version != RP_VERSION_V2)
     {
-      printf("  Unknown pseudo relocation protocol version %d.\n",
-		      (int) v2_hdr->version);
+//      printf("  Unknown pseudo relocation protocol version %d.\n",
+//             (int) v2_hdr->version);
       return;
     }
 
@@ -176,8 +176,8 @@ do_pseudo_reloc (void * start, void * end, void * base)
 	    break;
 	  default:
 	    reldata=0;
-        printf("  Unknown pseudo relocation bit size %d.\n",
-		    (int) (r->flags & 0xff));
+//        printf("  Unknown pseudo relocation bit size %d.\n",
+//           (int) (r->flags & 0xff));
 	    break;
         }
 

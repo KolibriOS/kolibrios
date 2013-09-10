@@ -1,8 +1,5 @@
 
-void _pei386_runtime_relocator (void);
-
-int DllStartup(void *module, int reason);
-
+extern void _pei386_runtime_relocator (void);
 
 int DllStartup(void *module, int reason)
 {

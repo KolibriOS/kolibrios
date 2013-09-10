@@ -2,7 +2,7 @@
 CC = gcc
 
 CFLAGS = -c -O2 -fomit-frame-pointer -DBUILD_DLL
-LDFLAGS = -nostdlib -shared -s -T libcdll.lds --out-implib libcimp.a --image-base 0
+LDFLAGS = -nostdlib -shared -s -T libcdll.lds --output-def libc.orig.def --out-implib libc.dll.a --image-base 0
 
 LIBC_TOPDIR   = .
 LIBC_INCLUDES = $(LIBC_TOPDIR)/include
@@ -40,6 +40,7 @@ LIBCRT_SRCS:=					\
 			crt/start.S		\
 			crt/chkstk.S		\
 			crt/crt3.c		\
+			crt/pseudo-reloc.c	\
 			pe/crtloader.c
 
 CORE_SRCS:=                   			\
@@ -126,8 +127,7 @@ CORE_SRCS:=                   			\
 			time/strftime.c		\
          		time/time.c          	\
          		time/tzlock.c        	\
-         		time/tzvars.c        	\
-			unpack/unpacker.asm
+         		time/tzvars.c
 
 
 STDLIB_SRCS=                 			\
@@ -172,13 +172,15 @@ STDLIB_SRCS=                 			\
 			wctomb_r.c
 
 
-STRING_SRCS=      	memcpy.c    \
-         		memcmp.c             \
-         		memmove.c            \
-         		memset.c             \
-         		memchr.c             \
-         		strcat.c             \
-         		strchr.c             \
+STRING_SRCS=      	memcpy.c    		\
+         		memcmp.c             	\
+         		memmove.c            	\
+         		memset.c             	\
+         		memchr.c             	\
+			stpcpy.c	     	\
+			stpncpy.c		\
+			strcat.c            	\
+         		strchr.c           	\
          		strcmp.c             \
          		strcoll.c            \
          		strcasecmp.c         \
@@ -368,7 +370,10 @@ shared: $(NAME).dll libcrt.a libdll.a
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
-	ld $(LDFLAGS) -Map libcmap -L. -o $@ $(LIB_OBJS) -lgcc
+	ld $(LDFLAGS) --exclude-symbols __chkstk,__chkstk_ms,_alloca -Map libcmap -L. -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
+	sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
+	sed -f cmd1.sed libc.def > mem
+	sed -f cmd2.sed mem >libc.inc 
 
 
 libcrt.a: $(LIBCRT_OBJS) Makefile

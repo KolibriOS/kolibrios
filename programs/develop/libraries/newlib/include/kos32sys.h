@@ -292,7 +292,7 @@ typedef union
 }ufile_t;
 
 
-static inline ufile_t load_file(char *path)
+static inline ufile_t load_file(const char *path)
 {
      ufile_t uf;
 
@@ -303,7 +303,7 @@ static inline ufile_t load_file(char *path)
 
      return uf;
 };
-    
+
 
 static inline int GetScreenSize()
 {
@@ -394,7 +394,7 @@ void Blit(void *bitmap, int dst_x, int dst_y,
                         int src_x, int src_y, int w, int h,
                         int src_w, int src_h, int stride);
 
-                        
+
 #endif
 
 

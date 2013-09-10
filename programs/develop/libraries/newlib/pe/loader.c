@@ -70,7 +70,7 @@ typedef struct
     int   path_len;
 }dll_path_t;
 
-module_t* load_module(const char *name);
+module_t* load_library(const char *name);
 
 LIST_HEAD(path_list);
 
@@ -145,13 +145,12 @@ void init_loader(void *libc_image)
     PIMAGE_NT_HEADERS32      nt;
     PIMAGE_EXPORT_DIRECTORY  exp;
 
-    struct app_hdr          *header;
-    dll_path_t              *path;
+    struct app_hdr  *header = NULL;
+    dll_path_t      *path;
+    int             len;
+    char            *p;
 
 #if 0
-    dll_path_t *path;
-    int len;
-    char *p;
 
     if(__appenv_size)
     {
@@ -197,8 +196,7 @@ void init_loader(void *libc_image)
             };
         };
     };
-
-    header = (struct app_hdr*)NULL;
+#endif
 
     len = strrchr(header->path, '/') - header->path+1;
     p = (char*)malloc(len+1);
@@ -212,7 +210,6 @@ void init_loader(void *libc_image)
     DBG("add libraries path %s\n", path->path);
     list_add_tail(&path->list, &path_list);
 
-#endif
 
     path = (dll_path_t*)malloc(sizeof(dll_path_t));
     INIT_LIST_HEAD(&path->list);
@@ -241,20 +238,6 @@ void init_loader(void *libc_image)
     libc_dll.img_exp  = MakePtr(PIMAGE_EXPORT_DIRECTORY,libc_image,
                         nt->OptionalHeader.DataDirectory[0].VirtualAddress);
 
-};
-
-const module_t* find_module(const char *name)
-{
-    module_t* mod = &libc_dll;
-
-    do
-    {
-        if( !strncmp(name, mod->img_name, 16))
-            return mod;
-        mod = (module_t*)mod->list.next;
-    }while(mod != &libc_dll);
-
-    return load_module(name);
 };
 
 static inline void sec_copy(void *dst, void *src, size_t len)
@@ -397,7 +380,7 @@ int link_image(void *img_base, PIMAGE_IMPORT_DESCRIPTOR imp)
 
         DBG("import from %s\n",libname);
 
-        api = find_module(libname);
+        api = load_library(libname);
         if(unlikely(api == NULL))
         {
             printf("library %s not found\n", libname);
@@ -625,110 +608,159 @@ void *get_proc_address(module_t *module, char *proc_name)
     return function;
 };
 
-
-module_t* load_module(const char *name)
+static void *load_lib_internal(const char *path)
 {
-    dll_path_t *dllpath;
+    PIMAGE_DOS_HEADER        dos;
+    PIMAGE_NT_HEADERS32      nt;
+    PIMAGE_EXPORT_DIRECTORY  exp;
 
-    char        *path;
-    int         len;
+    ufile_t   uf;
+    void     *raw_img;
+    size_t    raw_size;
+    void     *img_base = NULL;
 
-    len = strlen(name);
+    uf = load_file(path);
+    raw_img  = uf.data;
+    raw_size = uf.size;
 
-    list_for_each_entry(dllpath, &path_list, list)
+    if(raw_img == NULL)
+        return NULL;
+
+    if( validate_pe(raw_img, raw_size, 0) == 0)
     {
-        PIMAGE_DOS_HEADER        dos;
-        PIMAGE_NT_HEADERS32      nt;
-        PIMAGE_EXPORT_DIRECTORY  exp;
-
-        module_t *module;
-        ufile_t   uf;
-        void     *raw_img;
-        size_t    raw_size;
-        void     *img_base;
-
-        path = alloca(len+dllpath->path_len+1);
-        memcpy(path, dllpath->path, dllpath->path_len);
-
-        memcpy(path+dllpath->path_len, name, len);
-        path[len+dllpath->path_len]=0;
-
-//        printf("%s %s\n", path);
-
-        uf = load_file(path);
-        raw_img  = uf.data;
-        raw_size = uf.size;
-
-        if(raw_img == NULL)
-            continue;
-
-
-        if( validate_pe(raw_img, raw_size, 0) == 0)
-        {
-            printf("invalide module %s\n", path);
-            user_free(raw_img);
-            continue;
-        };
-
-        img_base = create_image(raw_img);
+        printf("invalide module %s\n", path);
         user_free(raw_img);
-
-        if( unlikely(img_base == NULL) )
-        {
-            printf("cannot create image %s\n",path);
-            continue;
-        };
-
-        module = (module_t*)malloc(sizeof(module_t));
-
-        if(unlikely(module == NULL))
-        {
-            printf("%s epic fail: no enough memory\n",__FUNCTION__);
-            user_free(img_base);
-            return NULL;
-        }
-
-        INIT_LIST_HEAD(&module->list);
-
-        module->img_name = strdup(name);
-        module->img_path = strdup(path);
-        module->start    = img_base;
-        module->entry    = get_entry_point(img_base);
-        module->refcount = 1;
-
-        dos =  (PIMAGE_DOS_HEADER)img_base;
-        nt  =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
-        exp =  MakePtr(PIMAGE_EXPORT_DIRECTORY, img_base,
-                   nt->OptionalHeader.DataDirectory[0].VirtualAddress);
-
-        module->end   = MakePtr(uint32_t,img_base, nt->OptionalHeader.SizeOfImage);
-
-        module->img_hdr  = nt;
-        module->img_sec  = MakePtr(PIMAGE_SECTION_HEADER,nt, sizeof(IMAGE_NT_HEADERS32));
-        module->img_exp  = MakePtr(PIMAGE_EXPORT_DIRECTORY, img_base,
-                           nt->OptionalHeader.DataDirectory[0].VirtualAddress);
-
-        list_add_tail(&module->list, &libc_dll.list);
-
-        if(nt->OptionalHeader.DataDirectory[1].Size)
-        {
-            PIMAGE_IMPORT_DESCRIPTOR imp;
-            int (*dll_startup)(module_t *mod, uint32_t reason);
-
-            imp = MakePtr(PIMAGE_IMPORT_DESCRIPTOR, img_base,
-                        nt->OptionalHeader.DataDirectory[1].VirtualAddress);
-
-            if(link_image(img_base, imp) == 0)
-                return NULL;
-
-            dll_startup = get_proc_address(module, "DllStartup");
-            if( dll_startup )
-                if( 0 == dll_startup(module, 1))
-                    return NULL;
-        };
-        return module;
+        return NULL;
     };
+
+    img_base = create_image(raw_img);
+    user_free(raw_img);
+
+    if( unlikely(img_base == NULL) )
+        printf("cannot create image %s\n",path);
+
+    return img_base;
+}
+
+module_t* load_library(const char *name)
+{
+    PIMAGE_DOS_HEADER        dos;
+    PIMAGE_NT_HEADERS32      nt;
+    PIMAGE_EXPORT_DIRECTORY  exp;
+
+    module_t    *module, *mod = &libc_dll;
+    dll_path_t  *dllpath;
+    char        *path;
+    int          len;
+    char        *libname, *tmp;
+    void        *img_base;
+
+
+/*  check for already loaded libraries  */
+
+    tmp = strrchr(name, '/');
+    libname = path = tmp != NULL ? tmp+1 : (char*)name;
+
+//    printf("path %s\n", path);
+
+    do
+    {
+        if( !strncmp(path, mod->img_name, 16))
+            return mod;
+        mod = (module_t*)mod->list.next;
+    }while(mod != &libc_dll);
+
+    if(name[0] == '/')
+    {
+        path = (char*)name;
+        img_base = load_lib_internal(path);
+    }
+    else
+    {
+        len = strlen(libname);
+        list_for_each_entry(dllpath, &path_list, list)
+        {
+            path = alloca(len+dllpath->path_len+1);
+            memcpy(path, dllpath->path, dllpath->path_len);
+
+            memcpy(path+dllpath->path_len, libname, len);
+            path[len+dllpath->path_len]=0;
+
+            printf("%s\n", path);
+
+            img_base = load_lib_internal(path);
+
+            if( unlikely(img_base == NULL) )
+                continue;
+        };
+    }
+
+    if( unlikely(img_base == NULL) )
+    {
+        printf("unable to load %s\n", name);
+        return NULL;
+    };
+
+    module = (module_t*)malloc(sizeof(module_t));
+
+    if(unlikely(module == NULL))
+    {
+        printf("%s epic fail: no enough memory\n",__FUNCTION__);
+        goto err1;
+    }
+
+    INIT_LIST_HEAD(&module->list);
+
+    module->img_name = strdup(libname);
+    module->img_path = strdup(path);
+    module->start    = img_base;
+    module->entry    = get_entry_point(img_base);
+    module->refcount = 1;
+
+    dos =  (PIMAGE_DOS_HEADER)img_base;
+    nt  =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
+    exp =  MakePtr(PIMAGE_EXPORT_DIRECTORY, img_base,
+               nt->OptionalHeader.DataDirectory[0].VirtualAddress);
+
+    module->end   = MakePtr(uint32_t,img_base, nt->OptionalHeader.SizeOfImage);
+
+    module->img_hdr  = nt;
+    module->img_sec  = MakePtr(PIMAGE_SECTION_HEADER,nt, sizeof(IMAGE_NT_HEADERS32));
+    module->img_exp  = MakePtr(PIMAGE_EXPORT_DIRECTORY, img_base,
+                       nt->OptionalHeader.DataDirectory[0].VirtualAddress);
+
+    list_add_tail(&module->list, &libc_dll.list);
+
+    if(nt->OptionalHeader.DataDirectory[1].Size)
+    {
+        PIMAGE_IMPORT_DESCRIPTOR imp;
+        int (*dll_startup)(module_t *mod, uint32_t reason);
+
+        imp = MakePtr(PIMAGE_IMPORT_DESCRIPTOR, img_base,
+                    nt->OptionalHeader.DataDirectory[1].VirtualAddress);
+
+        if(link_image(img_base, imp) == 0)
+            goto err2;
+
+        dll_startup = get_proc_address(module, "DllStartup");
+        if( dll_startup )
+        {
+            if( 0 == dll_startup(module, 1))
+                goto err2;
+        }
+    };
+
+    return module;
+
+err2:
+    list_del(&module->list);
+    free(module->img_name);
+    free(module->img_path);
+    free(module);
+err1:
+    user_free(img_base);
     return NULL;
+
 };
 
 
