@@ -495,7 +495,6 @@ draw_window:
 	shl ebx, 16
 	add ebx, WIN_W	
     mcall 0,,,COL_WINDOW_BG, ,title ; define window
-	mcall 63,1,'Y'
 	GetSkinHeight
 	mov ecx, eax
 	shl ecx, 16
