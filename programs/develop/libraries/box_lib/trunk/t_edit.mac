@@ -336,80 +336,85 @@ proc ted_key, edit:dword, table:dword, control:dword
 		call ted_draw_main_cursor
 		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
 	@@:
-  cmp ah,75 ;176 ;Left
-  jne @f
-    call ted_draw_cursor_sumb
-    call ted_cur_move_left
-    cmp dl,8
-    jne .no_red_2
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp @f
-    .no_red_2:
-    call ted_draw_main_cursor
-    mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,77 ;179 ;Right
-  jne @f
-    call ted_draw_cursor_sumb
-    call ted_cur_move_right
-    cmp dl,8
-    jne .no_red_3
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp @f
-    .no_red_3:
-    call ted_draw_main_cursor
-    mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,71 ;180 ;Home
-  jne @f
-    call ted_draw_cursor_sumb
-    call ted_cur_move_x_first_char
-    cmp dl,8
-    jne .no_red_4
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp @f
-    .no_red_4:
-    call ted_draw_main_cursor
-    mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,79 ;181 ;End
-  jne @f
-    call ted_draw_cursor_sumb
-    call ted_cur_move_x_last_char
-    cmp dl,8
-    jne .no_red_5
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp @f
-    .no_red_5:
-    call ted_draw_main_cursor
-    mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,73 ;184 ;PageUp
-  jne @f
-    call ted_cur_move_page_up
-    cmp dl,0
-    je @f
-    call ted_scroll_set_redraw
-    stdcall ted_draw,edi
-  @@:
-  cmp ah,81 ;183 ;PageDown
-  jne @f
-    call ted_cur_move_page_down
-    cmp dl,0
-    je @f
-    call ted_scroll_set_redraw
-    stdcall ted_draw,edi
-    mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  @@:
+	cmp ah,75 ;176 ;Left
+	jne @f
+		call ted_draw_cursor_sumb
+		call ted_cur_move_left
+		cmp dl,8
+		jne .no_red_2
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp @f
+		.no_red_2:
+		call ted_draw_main_cursor
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	@@:
+	cmp ah,77 ;179 ;Right
+	jne @f
+		call ted_draw_cursor_sumb
+		call ted_cur_move_right
+		cmp dl,8
+		jne .no_red_3
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp @f
+		.no_red_3:
+		call ted_draw_main_cursor
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	@@:
+	cmp ah,71 ;180 ;Home
+	jne @f
+		call ted_draw_cursor_sumb
+		call ted_cur_move_x_first_char
+		cmp dl,8
+		jne .no_red_4
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp @f
+		.no_red_4:
+		call ted_draw_main_cursor
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	@@:
+	cmp ah,79 ;181 ;End
+	jne @f
+		call ted_draw_cursor_sumb
+		call ted_cur_move_x_last_char
+		cmp dl,8
+		jne .no_red_5
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp @f
+		.no_red_5:
+		call ted_draw_main_cursor
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	@@:
+	cmp ah,73 ;184 ;PageUp
+	jne @f
+		call ted_cur_move_page_up
+		cmp dl,0
+		je @f
+		call ted_scroll_set_redraw
+		stdcall ted_draw,edi
+	@@:
+	cmp ah,81 ;183 ;PageDown
+	jne @f
+		call ted_cur_move_page_down
+		cmp dl,0
+		je @f
+		call ted_scroll_set_redraw
+		stdcall ted_draw,edi
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	@@:
 ;-------------------------------------------------
-;       cmp esi,0
-;       jne .end_key_fun
 	.key_MoveCur:
 
+	;ниже пропускаются служебные клавиши, которые могут давать мусорные символы в окно
+	cmp ah,42 ;[L Shift] когда нажат без других кнопок
+	je .end_key_fun
+	cmp ah,54 ;[R Shift] когда нажат без других кнопок
+	je .end_key_fun
+	cmp ah,58 ;[Caps Lock]
+	je .end_key_fun
 	cmp ah,69 ;[Pause Break]
 	je .end_key_fun
 	cmp ah,120 ;[Fn]
