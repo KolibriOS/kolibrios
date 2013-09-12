@@ -32,6 +32,8 @@
 ;;       - Добавлен режим H (hidden) производит замену фона рабочего стола градиентной заливкой.     |
 ;;       - Большая деоптимизация.                                                                    |
 ;; 0.7.0 - Добавлена пипетка - выбор на среднюю кнопку мыши                                          |
+;; 0.7.5 - Нажатие правой клавишей мыши на ячейку с цветом устанавливает не основой, а дополн. цвет  |
+;;       - Уменьшено мерцание при работе пипетки                                                     |
 ;.....................................................................................................
 ;; All rights reserved.                                                                              |
 ;;                                                                                                   |
@@ -112,16 +114,29 @@ key:                                      ; нажата клавиша на клавиатуре
 ;end_key
 
 mouse:
-    mov     eax,[renmode]
-    cmp     eax,2
-    jnz     still
+    cmp     [renmode],2
+    jne     left
     call    cyrcle_draw
+    jmp     center
+  left:
+    mcall   37,2
+    cmp     al,1b
+    jne     right
+    mov     [mouse_f],1
+    jmp     still
+  right:
+    cmp     al,10b
+    jne     still
+    mov     [mouse_f],2
+    jmp     still
+  center:
     mcall   37,2
     cmp     al,100b
     jne     still
+    mov     [mouse_f],3
     mov     [color],edx
     call    draw_result
-    jmp     still                         ; вернуться к началу цикла
+    jmp     still			  ; вернуться к началу цикла
 ;end_mouse
 
 button:
@@ -497,9 +512,17 @@ mouse_get:
       cmp     esi,0                       ; КОСТЫЛЬ: Сравниваем с нулем
     jz        mouse_exit                  ; КОСТЫЛЬ: Если ноль то сделали всё что могли
     jmp    re_mouse_loop                  ; КОСТЫЛЬ: Если не ноль то попробуем взять соселний пиксель
-    mouse_set:
-    mov     [color],eax                   ; Иначе запоминаем новый цвет
-    call    draw_result                   ; Выводим результат
+    mouse_set:                            ; Иначе запоминаем новый цвет
+      cmp     [mouse_f],1
+      jne     was_right
+      mov     [color],eax
+      call    draw_result
+      jmp     mouse_exit
+    was_right:
+      cmp     [mouse_f],2
+      jne     mouse_exit
+      mov     [color2],eax
+      call    draw_result                   ; Выводим результат
     mouse_exit:
     ret                                   ; Возвращаем управление
 ;end_mouse_get----------------------------------------------------------------------------------------
@@ -544,11 +567,6 @@ draw_palitra:
     ;mov     esi,21                        ; выводить esi символов
     ;mcall
 
-    mov     eax,13
-    mov     edx,0x666666
-    mov     ebx,111*65536+145
-    mov     ecx,  9*65536+145
-    mcall
     ;mov     edx,[color]
     ;mov     ebx,109*65536+150
     ;mov     ecx, 10*65536+150
@@ -562,6 +580,7 @@ draw_palitra:
     jle     end_cyrcle_draw
 
     cyrcle_draw_2:
+	mcall   5,10
     call    desktop_get
     call    mouse_global
 
@@ -604,7 +623,13 @@ draw_palitra:
     mov     ebx,178*65536+11
     mov     ecx, 77*65536+11
     mcall
+    ret
     end_cyrcle_draw:
+    mov     eax,13
+    mov     edx,0x666666
+    mov     ebx,111*65536+145
+    mov     ecx,  9*65536+145
+    mcall
     ret
 
     circle_pixel_read:
@@ -1214,7 +1239,7 @@ circle:
     desctop_w   dd 0                      ; хранит ширину экрана
     desctop_h   dd 0                      ; хранит высоту экрана
     sc          system_colors             ; хранит структуру системных цветов скина
-    title       db 'Palitra v0.7',0       ; хранит имя программы
+    title       db 'Palitra v0.75',0       ; хранит имя программы
     hidden      db 'Hidden',0
     hex         db '#',0                  ; для вывода решётки как текста
     cname       db 'RGBAx'                ; хранит разряды цветов (red,green,blue) x-метка конца
