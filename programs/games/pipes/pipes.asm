@@ -1,6 +1,6 @@
 ;
-;   pipes for menuet {and now kolibri}
-;   v1.2
+;   pipes kolibri
+;   v1.21
 ;   2006 by Mario Birkner
 ;
 ;   l.mod. 27.08.06/15:11
@@ -28,22 +28,16 @@ use32
 	       dd     0x0 , 0x0 	      ; I_Param , I_Icon
 
 START:				; start of execution
-
-     call draw_window
-     call draw_board
+     jmp red
 
 still:
-
-    mov  eax,10 		; wait here for event
-    mcall
-
+    mcall 10            ; wait here for event
     cmp  eax,1			; redraw request ?
      je  red
     cmp  eax,2			; key in buffer ?
      je  key
     cmp  eax,3			; button in buffer ?
      je  button
-
     jmp  still
 
   red:				; redraw
@@ -53,8 +47,7 @@ still:
     jmp  still
 
   key:				; key
-    mov  eax,2			; just read it and ignore
-    mcall
+    mcall 2			; just read it and ignore
     jmp  still
   button:			; button
     call get_input
@@ -64,14 +57,11 @@ still:
 
 get_input:
 pusha
-    mov  eax,17 		; get id
-    mcall
+    mcall 17			; get id
 
     cmp  ah,1			; button id=1 ?
     jne  .noclose
-
-    mov  eax,-1 		; close this program
-    mcall
+    mcall -1			; close this program
   .noclose:
     cmp  ah,4
     jne  .moderate
@@ -454,9 +444,7 @@ ret
 draw_message:
 pusha
     cmp  [stat],0
-    je	.nomessage
-    cmp  [stat],3
-    je	.nomessage
+	je .nomessage
     mov  eax,13
     mov  ebx,146 shl 16 + 200
     mov  ecx,190 shl 16 + 40
@@ -467,6 +455,18 @@ pusha
     mov  edx,fgcolor
     mcall
 
+	cmp  [stat],3
+	jne .stat1
+    mov   eax,4
+    mov   ebx,174 shl 16 +206
+    mov   edx,lbl_start_a_new_game+1
+    movzx esi,byte [lbl_start_a_new_game]
+    mov   ecx,btcolor
+    add   ecx,0x10000000
+    mcall
+    jmp	.nomessage
+
+  .stat1:	
     cmp   [stat],1
      je   .winmessage
     mov   eax,4
@@ -521,9 +521,7 @@ pusha
     add  edx,9		    ;button-id = map-pos + 10;gen_image inkrements
     add  edx,0x80000000     ;first delete previous button
 	mcall
-    movsx edx, byte [map]
-    add  edx,9		    ;button-id = map-pos + 10;gen_image inkrements
-	add  edx,0x50000000     ;no button image - no esi need
+    sub  edx,0x30000000     ;first delete previous button
     mcall
     pop  edx
     push ebx
@@ -552,11 +550,8 @@ ret
 draw_window:
 pusha
 
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,1			   ; 1, start of draw
-    mcall
-
-				   ; DRAW WINDOW
+    mcall 12,1
+	
     mov  eax,0			   ; function 0 : define and draw window
     mov  ebx,100*65536+492	   ; [x start] *65536 + [x size]
     mov  ecx,100*65536+420	   ; [y start] *65536 + [y size]
@@ -588,15 +583,13 @@ pusha
     mov   edx,lbl_score+1
     movsx esi, byte [lbl_score]
     mcall
-    mov   ebx,350 shl 16 +405
+    mov   ebx,340 shl 16 +405
     mov   ecx,fg3color
     mov   edx,lbl_copy+1
     movsx esi,byte [lbl_copy]
     mcall
 
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,2			   ; 2, end of draw
-    mcall
+    mcall 12,2
 
     popa
     ret
@@ -605,10 +598,13 @@ pusha
 ; DATA AREA
 
 
-title  db   'PIPES',0
+title  db   'Pipes',0
 lbl_gameover:
      db 19
      db 'G a m e   O v e r !'
+lbl_start_a_new_game:
+     db 22
+     db 'Start a new game first'
 lbl_win:
      db 32
      db '          G r e a t !           '
@@ -620,8 +616,8 @@ lbl_toolbar:
      db 43
      db 'New Game:     Easy       Moderate      Hard'
 lbl_copy:
-     db 23
-     db 'v1.2 2006,Mario Birkner'
+     db 24
+     db 'v1.21 2006,Mario Birkner'
 lbl_score:
      db 28
      db   'Time:    Score:       Level:'
