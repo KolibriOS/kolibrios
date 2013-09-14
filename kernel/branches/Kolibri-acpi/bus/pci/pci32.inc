@@ -101,17 +101,17 @@ pci_api_drv:
 
 pci_fn_0:
 ; PCI function 0: get pci version (AH.AL)
-        movzx   eax, word [BOOT_VAR+0x9022]
+        movzx   eax, word [BOOT_VARS+0x9022]
         ret
 
 pci_fn_1:
 ; PCI function 1: get last bus in AL
-        mov     al, [BOOT_VAR+0x9021]
+        mov     al, [BOOT_VARS+0x9021]
         ret
 
 pci_fn_2:
 ; PCI function 2: get pci access mechanism
-        mov     al, [BOOT_VAR+0x9020]
+        mov     al, [BOOT_VARS+0x9020]
         ret
 
 pci_service_not_supported:
@@ -156,7 +156,7 @@ align 4
 
 pci_read_reg:
         push    ebx esi
-        cmp     byte [BOOT_VAR+0x9020], 2;what mechanism will we use?
+        cmp     byte [BOOT_VARS+0x9020], 2;what mechanism will we use?
         je      pci_read_reg_2
 
                 ; mechanism 1
@@ -287,7 +287,7 @@ align 4
 
 pci_write_reg:
         push    esi ebx
-        cmp     byte [BOOT_VAR+0x9020], 2;what mechanism will we use?
+        cmp     byte [BOOT_VARS+0x9020], 2;what mechanism will we use?
         je      pci_write_reg_2
 
                 ; mechanism 1
@@ -570,9 +570,9 @@ sys_pcibios:
         cmp     ebp, 1                  ; PCI_FUNCTION_ID
         jnz     .not_PCI_BIOS_PRESENT
         mov     edx, 'PCI '
-        mov     al, [BOOT_VAR + 0x9020]
-        mov     bx, [BOOT_VAR + 0x9022]
-        mov     cl, [BOOT_VAR + 0x9021]
+        mov     al, [BOOT_VARS + 0x9020]
+        mov     bx, [BOOT_VARS + 0x9022]
+        mov     cl, [BOOT_VARS + 0x9021]
         xor     ah, ah
         jmp     .return_abcd
 
@@ -659,6 +659,12 @@ sys_pcibios:
         mov     dword[esp + 32], eax
         ret
 
+PCI_VENDOR_ID           equ 0x00
+PCI_CLASS_REVISION      equ 0x08
+PCI_HEADER_TYPE         equ 0x0E
+PCI_SUBSYSTEM_VENDOR_ID equ 0x2c
+PCI_IRQ_LINE            equ 0x3C
+
 proc pci_enum
         push    ebp
         mov     ebp, esp
@@ -671,7 +677,7 @@ end virtual
         mov     ah, [.bus]
         mov     al, 2
         mov     bh, [.devfn]
-        mov     bl, 0
+        mov     bl, PCI_VENDOR_ID
         call    pci_read_reg
         cmp     eax, 0xFFFFFFFF
         jnz     .has_device
@@ -686,27 +692,38 @@ end virtual
         test    eax, eax
         jz      .nomemory
         mov     edi, eax
-        mov     [edi+PCIDEV.vendor_device_id], ecx
-        mov     eax, pcidev_list
-        mov     ecx, [eax+PCIDEV.bk]
-        mov     [edi+PCIDEV.bk], ecx
-        mov     [edi+PCIDEV.fd], eax
-        mov     [ecx+PCIDEV.fd], edi
-        mov     [eax+PCIDEV.bk], edi
+        mov     [edi+PCIDEV.vid_did], ecx
+        mov     edx, pcidev_list
+        list_add_tail edi, edx
         mov     eax, dword [.devfn]
         mov     word [edi+PCIDEV.devfn], ax
         mov     bh, al
         mov     al, 2
-        mov     bl, 8
+        mov     bl, PCI_CLASS_REVISION
         call    pci_read_reg
-        shr     eax, 8
+        shr     eax, 8                                ;FIXME use byte mask
         mov     [edi+PCIDEV.class], eax
+
+        mov     ah, [.bus]
+        mov     bh, byte [.devfn]
+        mov     al, 2
+        mov     bl, PCI_SUBSYSTEM_VENDOR_ID
+        call    pci_read_reg
+        mov     [edi+PCIDEV.svid_sdid], eax
+
+        mov     ah, [.bus]
+        mov     al, 0
+        mov     bh, [.devfn]
+        mov     bl, PCI_IRQ_LINE
+        call    pci_read_reg
+        mov     [edi+PCIDEV.irq_line], al
+
         test    byte [.devfn], 7
         jnz     .next_func
         mov     ah, [.bus]
         mov     al, 0
         mov     bh, [.devfn]
-        mov     bl, 0Eh
+        mov     bl, PCI_HEADER_TYPE
         call    pci_read_reg
         test    al, al
         js      .next_func
@@ -715,9 +732,222 @@ end virtual
 .next_func:
         inc     dword [.devfn]
         mov     ah, [.bus]
-        cmp     ah, [BOOT_VAR+0x9021]
+        cmp     ah, [BOOT_VARS+0x9021]
         jbe     .loop
 .nomemory:
         leave
         ret
 endp
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;internal functions
+;ecx (bus << 8)|devfn
+;edx register
+
+align 4
+pci_bus:
+.conf1_index:
+; dword CF8 = (0x80000000 | ((reg & 0xF00) << 16) | (bus << 16) | (devfn << 8) | (reg & 0xFC))
+				push	edx
+				mov		eax, edx                	; eax = reg
+				shl		eax, 16                 	; eax = reg << 16
+				shl   ecx, 8                  	; ecx = (bus << 16)|(devfn<<8)
+				mov		al, dl                  	; eax = (reg << 16)|reg
+				and		eax, 0x0F0000FC           ; eax = ((reg & 0xF00) << 16)|(reg & 0xFC)
+				lea		eax, [0x80000000+eax+ecx]
+				mov 	dx, 0xCF8
+				out		dx, eax
+				pop		edx
+				xor		eax, eax
+				ret
+
+align 4
+.conf2_index:
+; byte CF8 = 0xF0 | (fn << 1)
+; byte CFA = bus
+				push	edx
+				mov		eax, ecx                ; (bus << 8)|devfn
+				and		al, 7            				; fn
+				lea		eax, [0xF0+eax+eax]
+				mov 	dx, 0xCF8
+				out		dx, al
+				mov		al, ch                  ; bus
+				mov		dx, 0xCFA
+				out   dx, al
+				pop		edx
+				xor		eax, eax
+				ret
+
+align 4
+.conf1_read8:
+				call  .conf1_index
+				and 	dx, 3
+				add		dx, 0xCFC
+				in		al, dx
+				ret
+
+align 4
+.conf1_read16:
+				call  .conf1_index
+				and 	dx, 2
+				add		dx, 0xCFC
+				in		ax, dx
+				ret
+
+align 4
+.conf1_read32:
+				call  .conf1_index
+				mov  	dx, 0xCFC
+				in		eax, dx
+				ret
+
+align 4
+.conf1_write8:
+				call  .conf1_index
+				mov		eax, [esp+4]
+				and 	dx, 3
+				add		dx, 0xCFC
+				out		dx, al
+				ret   4
+
+align 4
+.conf1_write16:
+				call  .conf1_index
+				mov		eax, [esp+4]
+				and 	dx, 2
+				add		dx, 0xCFC
+				out		dx, ax
+				ret   4
+
+align 4
+.conf1_write32:
+				call  .conf1_index
+				mov		eax, [esp+4]
+				mov		dx, 0xCFC
+				out   dx, eax
+				ret   4
+
+align 4
+.conf2_read8:
+; in (0xC000 | (dev << 8) | reg)
+				call  .conf2_index
+				and		ecx, 0xF1               ;ecx = dev << 3
+				shl		ecx, 5                  ;ecx = dev << 8
+				lea   edx, [0xC000+edx+ecx]
+				in		al, dx
+				ret
+
+align 4
+.conf2_read16:
+				call  .conf2_index
+				and		ecx, 0xF1
+				shl		ecx, 5
+				lea   edx, [0xC000+edx+ecx]
+				in		ax, dx
+				ret
+
+align 4
+.conf2_read32:
+				call  .conf2_index
+				and		ecx, 0xF1
+				shl		ecx, 5
+				lea   edx, [0xC000+edx+ecx]
+				in		eax, dx
+				ret
+
+;proc pci_read8   stdcall, bus:dword, devfn:dword, reg:dword
+;proc pci_read16  stdcall, bus:dword, devfn:dword, reg:dword
+;proc pci_read32  stdcall, bus:dword, devfn:dword, reg:dword
+
+;proc pci_write8  stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+;proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+;proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+
+PCI_R8	equ 0
+PCI_R16	equ 4
+PCI_R32 equ 8
+
+PCI_W8	equ 12
+PCI_W16	equ 16
+PCI_W32 equ 20
+
+align 8
+pci_fn_table:
+pci_bus_read8		dd pci_bus.conf1_read8           ;0
+pci_bus_read16	dd pci_bus.conf1_read16          ;4
+pci_bus_read32	dd pci_bus.conf1_read32          ;8
+pci_bus_write8	dd pci_bus.conf1_write8          ;12
+pci_bus_write16	dd pci_bus.conf1_write16         ;16
+pci_bus_write32 dd pci_bus.conf1_write32         ;20
+
+align 4
+pci_read8:
+				mov		eax, PCI_R8
+				jmp		@F
+
+align 4
+pci_read16:
+				mov		eax, PCI_R16
+				jmp		@F
+
+align 4
+pci_read32:
+				mov		eax, PCI_R32
+
+align 4
+@@:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+
+				xor		ecx, ecx
+				mov   ch, [.bus]
+				mov   cl, [.devfn]
+				movzx edx, word [.pci_reg]
+
+				pushfd
+				cli
+
+				call	dword [pci_fn_table+eax]
+
+				popfd
+
+				ret 	12
+
+align 4
+pci_write8:
+				mov		eax, PCI_W8
+				jmp		@F
+
+align 4
+pci_write16:
+				mov		eax, PCI_W16
+				jmp		@F
+
+align 4
+pci_write32:
+				mov		eax, PCI_W32
+
+align 4
+@@:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+.val      equ esp+16
+
+				xor		ecx, ecx
+				mov   ch, [.bus]
+				mov   cl, [.devfn]
+				movzx edx, word [.pci_reg]
+
+				pushfd
+				cli
+
+				push  dword [esp+20]
+				call	dword [pci_fn_table+eax]
+
+				popfd
+
+				ret 	16

@@ -316,6 +316,11 @@ stack_handler:
         ret
 
 
+align 4
+NET_packet_free:
+        and     dword[esp+4], not 0xfff
+        jmp     kernel_free
+
 
 align 4
 NET_link_changed:
@@ -613,7 +618,7 @@ checksum_2:
 align 4
 sys_network:
 
-        cmp     ebx, -1
+        cmp     bl, 255
         jne     @f
 
         mov     eax, [NET_RUNNING]

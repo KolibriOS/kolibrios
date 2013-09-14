@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
@@ -305,7 +305,7 @@ IPv4_input:                                                     ; TODO: add IPv4
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: dumping\n"
         inc     [IP_packets_dumped]                             ; FIXME: use correct interface
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4                                          ; pop (balance stack)
         ret
 
@@ -485,7 +485,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         push    edx                                                                     ; Push pointer to fragment onto stack
         mov     ebx, [edx + FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
         mov     edx, [edx + FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
-        call    kernel_free                                                             ; free the previous fragment buffer (this uses the value from stack)
+        call    NET_packet_free                                                         ; free the previous fragment buffer (this uses the value from stack)
         pop     eax
         cmp     edx, -1                                                                 ; Check if it is last fragment in chain
         jne     .rebuild_packet_loop
@@ -845,7 +845,7 @@ IPv4_fragment:
         add     esp, 12 + 4 + 6
       .err2:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: dumping\n"
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
 
         ret

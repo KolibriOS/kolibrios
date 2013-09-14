@@ -8,11 +8,6 @@
 $Revision$
 
 
-iglobal
-  ;function pointers.
-  fdc_irq_func    dd fdc_null
-endg
-
 uglobal
   dmasize         db 0x0
   dmamode         db 0x0
@@ -23,11 +18,6 @@ fdc_init:                               ;start with clean tracks.
         mov     al, 0
         mov     ecx, 160
         rep stosb
-        ret
-
-fdc_irq:
-        call    [fdc_irq_func]
-fdc_null:
         ret
 
 save_image:
@@ -64,7 +54,6 @@ save_image_1:
         cmp     [FDD_Track], 80
         jne     save_image_1
 unnecessary_save_image:
-        mov     [fdc_irq_func], fdc_null
         popa
         mov     [flp_status], 0
         ret

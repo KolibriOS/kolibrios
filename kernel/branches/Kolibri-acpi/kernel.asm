@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -79,8 +79,6 @@ VESA_1_2_VIDEO  equ 0      ; enable vesa 1.2 bank switch functions
 
 ; Enabling the next line will enable serial output console
 ;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
-; The following constant, if nonzero, duplicates debug output to the screen.
-debug_direct_print equ 0
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -88,9 +86,16 @@ include "lang.inc"
 include "encoding.inc"
 
 include "const.inc"
+
+iglobal
+; The following variable, if equal to 1, duplicates debug output to the screen.
+debug_direct_print db 0
+; Start the first app (LAUNCHER) after kernel is loaded? (1=yes, 2 or 0=no)
+launcher_start db 1
+endg
+
 max_processes    equ   255
 tss_step         equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
-
 
 os_stack       equ  (os_data_l-gdts)    ; GDTs
 os_code        equ  (os_code_l-gdts)
@@ -265,12 +270,11 @@ B32:
 
 ; SAVE & CLEAR 0-0xffff
 
-        xor     esi, esi
-        mov     edi, (BOOT_VAR-OS_BASE)
-        mov     ecx, 0x10000 / 4
-        rep movsd
         mov     edi, 0x1000
-        mov     ecx, 0xf000 / 4
+        mov     ecx, 0x8000 / 4
+        rep stosd
+        mov     edi, 0xa000
+        mov     ecx, 0x6000 / 4
         rep stosd
 
         call    test_cpu
@@ -305,7 +309,7 @@ include "boot/shutdown.inc" ; shutdown or restart
 org $+0x10000
 use32
 
-__DEBUG__       fix 1
+__DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
 include 'init.inc'
 
@@ -357,54 +361,93 @@ high_code:
         mov     ecx, application_table_mutex
         call    mutex_init
 
+        mov     ecx, ide_mutex
+        call    mutex_init
+        mov     ecx, ide_channel1_mutex
+        call    mutex_init
+        mov     ecx, ide_channel2_mutex
+        call    mutex_init
+;-----------------------------------------------------------------------------
 ; SAVE REAL MODE VARIABLES
+;-----------------------------------------------------------------------------
+save_variables_IDE_controller:
         xor     eax, eax
-        mov     ax, [BOOT_VAR + BOOT_IDE_PI_16]
+        mov     ax, [BOOT_VARS + BOOT_IDE_INTERR_16]
+        mov     [IDE_Interrupt], ax
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_PI_16]
         mov     [IDEContrProgrammingInterface], ax
-        mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR0_16]
-        mov     [IDE_BAR0_val], ax
-
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR0_16]
         cmp     ax, 0
         je      @f
-
         cmp     ax, 1
-        je      @f
-
-        and     ax, 0xfff0
+        jne     .no_PATA_BAR0
+@@:
+        mov     ax, 0x1F0
+        jmp     @f
+.no_PATA_BAR0:
+        and     ax, 0xFFFC
+@@:
         mov     [StandardATABases], ax
         mov     [hd_address_table], eax
         mov     [hd_address_table+8], eax
-@@:
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR1_16]
-        mov     [IDE_BAR1_val], ax
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR2_16]
-        mov     [IDE_BAR2_val], ax
-
+        mov     [IDE_BAR0_val], ax
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR1_16]
         cmp     ax, 0
         je      @f
-
         cmp     ax, 1
+        jne     .no_PATA_BAR1
+@@:
+        mov     ax, 0x3F4
+        jmp     @f
+.no_PATA_BAR1:
+        and     ax, 0xFFFC
+@@:
+        mov     [IDE_BAR1_val], ax
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR2_16]
+        cmp     ax, 0
         je      @f
-
-        and     ax, 0xfff0
+        cmp     ax, 1
+        jne     .no_PATA_BAR2
+@@:
+        mov     ax, 0x170
+        jmp     @f
+.no_PATA_BAR2:
+        and     ax, 0xFFFC
+@@:
         mov     [StandardATABases+2], ax
         mov     [hd_address_table+16], eax
         mov     [hd_address_table+24], eax
+        mov     [IDE_BAR2_val], ax
+;--------------------------------------
+        mov     ax, [BOOT_VARS + BOOT_IDE_BAR3_16]
+        cmp     ax, 0
+        je      @f
+        cmp     ax, 1
+        jne     .no_PATA_BAR3
 @@:
-        mov     ax, [BOOT_VAR + BOOT_IDE_BAR3_16]
+        mov     ax, 0x374
+        jmp     @f
+.no_PATA_BAR3:
+        and     ax, 0xFFFC
+@@:
         mov     [IDE_BAR3_val], ax
 
 ; --------------- APM ---------------------
 
 ; init selectors
-        mov     ebx, [BOOT_VAR+BOOT_APM_ENTRY]        ; offset of APM entry point
-        movzx   eax, word [BOOT_VAR+BOOT_APM_CODE_32] ; real-mode segment base address of
-                                                      ; protected-mode 32-bit code segment
-        movzx   ecx, word [BOOT_VAR+BOOT_APM_CODE_16]; real-mode segment base address of
-                                               ; protected-mode 16-bit code segment
-        movzx   edx, word [BOOT_VAR+BOOT_APM_DATA_16]; real-mode segment base address of
+        mov     ebx, [BOOT_VARS+BOOT_APM_ENTRY]        ; offset of APM entry point
+        movzx   eax, word [BOOT_VARS+BOOT_APM_CODE_32] ; real-mode segment base address of
+                                                                                ; protected-mode 32-bit code segment
+        movzx   ecx, word [BOOT_VARS+BOOT_APM_CODE_16]; real-mode segment base address of
+                                                                                ; protected-mode 16-bit code segment
+        movzx   edx, word [BOOT_VARS+BOOT_APM_DATA_16]; real-mode segment base address of
                                                                                 ; protected-mode 16-bit data segment
 
         shl     eax, 4
@@ -425,37 +468,40 @@ high_code:
         mov     dword[apm_entry], ebx
         mov     word [apm_entry + 4], apm_code_32 - gdts
 
-        mov     eax, [BOOT_VAR + BOOT_APM_VERSION] ; version & flags
+        mov     eax, [BOOT_VARS + BOOT_APM_VERSION] ; version & flags
         mov     [apm_vf], eax
 ; -----------------------------------------
-        mov     al, [BOOT_VAR+BOOT_DMA]            ; DMA access
+        mov     al, [BOOT_VARS+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
-        movzx   eax, byte [BOOT_VAR+BOOT_BPP]      ; bpp
+        movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
         mov     [_display.bpp], eax
         mov     [_display.vrefresh], 60
-
-        movzx   eax, word [BOOT_VAR+BOOT_X_RES]; X max
+        mov     al, [BOOT_VARS+BOOT_DEBUG_PRINT]    ; If nonzero, duplicates debug output to the screen
+        mov     [debug_direct_print], al
+        mov     al, [BOOT_VARS+BOOT_LAUNCHER_START] ; Start the first app (LAUNCHER) after kernel is loaded?
+        mov     [launcher_start], al
+        movzx   eax, word [BOOT_VARS+BOOT_X_RES]; X max
         mov     [_display.width], eax
         mov     [display_width_standard], eax
         dec     eax
         mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
-        movzx   eax, word [BOOT_VAR+BOOT_Y_RES]; Y max
+        movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
         mov     [display_height_standard], eax
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
-        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE] ; screen mode
+        movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE] ; screen mode
         mov     dword [SCR_MODE], eax
-;        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
+;        mov     eax, [BOOT_VAR+0x9014]             ; Vesa 1.2 bnk sw add
 ;        mov     [BANK_SWITCH], eax
         mov     eax, 640 *4                         ; Bytes PerScanLine
-        cmp     [SCR_MODE], word 0x13       ; 320x200
+        cmp     [SCR_MODE], word 0x13               ; 320x200
         je      @f
-        cmp     [SCR_MODE], word 0x12       ; VGA 640x480
+        cmp     [SCR_MODE], word 0x12               ; VGA 640x480
         je      @f
-        movzx   eax, word[BOOT_VAR+BOOT_PITCH]      ; for other modes
+        movzx   eax, word[BOOT_VARS+BOOT_PITCH]      ; for other modes
 @@:
         mov     [_display.pitch], eax
         mov     eax, [_display.width]
@@ -468,7 +514,7 @@ high_code:
 ;                             equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
 
-        mov     esi, BOOT_VAR+0x9080
+        mov     esi, BOOT_VARS+0x9080
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
         mov     edi, BiosDisksData
@@ -476,7 +522,7 @@ high_code:
 
 ; GRAPHICS ADDRESSES
 
-        mov     eax, [BOOT_VAR+BOOT_LFB]
+        mov     eax, [BOOT_VARS+BOOT_LFB]
         mov     [LFBAddress], eax
 
         cmp     [SCR_MODE], word 0100000000000000b
@@ -709,24 +755,32 @@ no_mode_0x12:
 
         mov     esi, boot_enableirq
         call    boot_log
-; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
+; Enable timer IRQ (IRQ0) and co-processor IRQ (IRQ13)
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
         stdcall enable_irq, 2               ; @#$%! PIC
-        stdcall enable_irq, 6               ; FDD
         stdcall enable_irq, 13              ; co-processor
-        stdcall enable_irq, 14
-        stdcall enable_irq, 15
 
-        mov     esi, boot_enablint_ide
+        cmp     [IDEContrProgrammingInterface], 0
+        je      @f
+
+        mov     esi, boot_disabling_ide
         call    boot_log
-; Enable interrupts in IDE controller
-        mov     al, 0
-        mov     dx, 0x3F6
+;--------------------------------------
+; Disable IDE interrupts, because the search
+; for IDE partitions is in the PIO mode.
+;--------------------------------------
+.disable_IDE_interrupt:
+; Disable interrupts in IDE controller for PIO
+        mov     al, 2
+        mov     dx, [IDE_BAR1_val] ;0x3F4
+        add     dx, 2 ;0x3F6
         out     dx, al
-        mov     dl, 0x76
+        mov     dx, [IDE_BAR3_val] ;0x374
+        add     dx, 2 ;0x376
         out     dx, al
-
+@@:
+;-----------------------------------------------------------------------------
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;        mov     esi, boot_detectdisks
 ;        call    boot_log
@@ -790,9 +844,9 @@ end if
         or      ecx, (10+30*6) shl 16
         else if lang eq sp
         or      ecx, (10+33*6) shl 16
-                else
+        else
         or      ecx, (10+29*6) shl 16
-                end if
+        end if
         sub     ecx, 10
         mov     edx, 0xFFFFFF
         mov     ebx, [MEM_AMOUNT]
@@ -867,9 +921,9 @@ end if
         add     ecx, (10+19*6) shl 16 - 10
         else if lang eq sp
         add     ecx, (10+25*6) shl 16 - 10
-                else
+        else
         add     ecx, (10+17*6) shl 16 - 10
-                end if
+        end if
 
         mov     edx, 0xFFFFFF
         xor     edi, edi
@@ -919,24 +973,12 @@ end if
                 [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
 ; LOAD FIRST APPLICATION
+        cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
+        jnz     first_app_found
+
         cli
-
-;        cmp   byte [BOOT_VAR+0x9030],1
-;        jne   no_load_vrr_m
-
-;        mov     ebp, vrr_m
-;        call    fs_execute_from_sysdir
-;
-;;        cmp   eax,2                  ; if vrr_m app found (PID=2)
-;       sub   eax,2
-;        jz    first_app_found
-;
-;no_load_vrr_m:
-
         mov     ebp, firstapp
         call    fs_execute_from_sysdir
-
-;        cmp   eax,2                  ; continue if a process has been loaded
         test    eax, eax
         jns     first_app_found
 
@@ -989,6 +1031,7 @@ endg
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
+        DEBUGF  1, "K : IRQ1 error code %x\n", eax
 .no_keyboard:
 
 ; SET MOUSE
@@ -1056,6 +1099,7 @@ end if
         DEBUGF  1, "K : BAR3 %x \n", [IDE_BAR3_val]:4
         DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
         DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
+        DEBUGF  1, "K : IDE_Interrupt %x \n", [IDE_Interrupt]:4
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -1068,9 +1112,84 @@ if preboot_blogesc
         jne     .bll1
 end if
 
+        push    eax edx
+        mov     dx, [IDEContrRegsBaseAddr]
+        xor     eax, eax
+        add     dx, 2
+        in      al, dx
+        DEBUGF  1, "K : Primary Bus Master IDE Status Register %x\n", eax
+
+        add     dx, 8
+        in      al, dx
+        DEBUGF  1, "K : Secondary Bus Master IDE Status Register %x\n", eax
+        pop     edx eax
+
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
+        cmp     [IDEContrProgrammingInterface], 0
+        je      set_interrupts_for_IDE_controllers.continue
+
+        mov     ax, [IDE_Interrupt]
+        cmp     al, 0xff
+        jne     @f
+
+        mov     [dma_hdd], 0
+        jmp     set_interrupts_for_IDE_controllers.end_set_interrupts
+@@:
+;-----------------------------------------------------------------------------
+; set interrupts for IDE Controller
+;-----------------------------------------------------------------------------
+        mov     esi, boot_set_int_IDE
+        call    boot_log
+set_interrupts_for_IDE_controllers:
+        mov     ax, [IDEContrProgrammingInterface]
+        cmp     ax, 0x0180
+        je      .pata_ide
+
+        cmp     ax, 0x018a
+        jne     .sata_ide
+;--------------------------------------
+.pata_ide:
+        cmp     [IDEContrRegsBaseAddr], 0
+        je      .end_set_interrupts
+
+        stdcall attach_int_handler, 14, IDE_irq_14_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
+        stdcall attach_int_handler, 15, IDE_irq_15_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
+        jmp     .enable_IDE_interrupt
+;--------------------------------------
+.sata_ide:
+        cmp     ax, 0x0185
+        je      .sata_ide_1
+
+        cmp     ax, 0x018f
+        jne     .end_set_interrupts
+;--------------------------------------
+.sata_ide_1:
+        cmp     [IDEContrRegsBaseAddr], 0
+        je      .end_set_interrupts
+
+        mov     ax, [IDE_Interrupt]
+        movzx   eax, al
+        stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [IDE_Interrupt]:1, eax
+;--------------------------------------
+.enable_IDE_interrupt:
+        mov     esi, boot_enabling_ide
+        call    boot_log
+; Enable interrupts in IDE controller for DMA
+        mov     al, 0
+        mov     dx, [IDE_BAR1_val] ;0x3F4
+        add     dx, 2 ;0x3F6
+        out     dx, al
+        mov     dx, [IDE_BAR3_val] ;0x374
+        add     dx, 2 ;0x376
+        out     dx, al
+;--------------------------------------
+.end_set_interrupts:
+;-----------------------------------------------------------------------------
         cmp     [dma_hdd], 0
         je      .print_pio
 .print_dma:
@@ -1196,8 +1315,8 @@ proc osloop_has_work?
         jnz     .yes
         call    stack_handler_has_work?
         jnz     .yes
-        call    check_fdd_motor_status_has_work?
-        jnz     .yes
+;        call    check_fdd_motor_status_has_work?
+;        jnz     .yes
         call    check_ATAPI_device_event_has_work?
         jnz     .yes
         call    check_lights_state_has_work?
@@ -1288,10 +1407,10 @@ set_variables:
         loop    .fl60
         push    eax
 
-        mov     ax, [BOOT_VAR+BOOT_Y_RES]
+        mov     ax, [BOOT_VARS+BOOT_Y_RES]
         shr     ax, 1
         shl     eax, 16
-        mov     ax, [BOOT_VAR+BOOT_X_RES]
+        mov     ax, [BOOT_VARS+BOOT_X_RES]
         shr     ax, 1
         mov     [MOUSE_X], eax
         call    wakeup_osloop
@@ -1639,7 +1758,7 @@ endg
         dec     ecx
         jnz     noprma
         mov     eax, [hd_address_table]
-        mov     [cdbase], eax    ;0x1f0
+        mov     [cdbase], eax   ;0x1f0
         mov     [cdid], 0xa0
 noprma:
 
@@ -1658,7 +1777,7 @@ nosema:
         dec     ecx
         jnz     nosesl
         mov     eax, [hd_address_table+16]
-        mov     [cdbase], eax    ;0x170
+        mov     [cdbase], eax   ;0x170
         mov     [cdid], 0xb0
 nosesl:
         ret
@@ -1675,76 +1794,17 @@ endg
         ret
    nsyse5:
 
-        sub     ebx, 2          ; HD BASE
+        sub     ebx, 2          ; HD BASE - obsolete
         jnz     nsyse7
 
-        test    ecx, ecx
-        jz      nosethd
-
-        cmp     ecx, 4
-        ja      nosethd
-        mov     [hd_base], cl
-
-        cmp     ecx, 1
-        jnz     noprmahd
-        mov     eax, [hd_address_table]
-        mov     [hdbase], eax    ;0x1f0
-        and     dword [hdid], 0x0
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   noprmahd:
-
-        cmp     ecx, 2
-        jnz     noprslhd
-        mov     eax, [hd_address_table]
-        mov     [hdbase], eax  ;0x1f0
-        mov     [hdid], 0x10
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   noprslhd:
-
-        cmp     ecx, 3
-        jnz     nosemahd
-        mov     eax, [hd_address_table+16]
-        mov     [hdbase], eax	;0x170
-        and     dword [hdid], 0x0
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   nosemahd:
-
-        cmp     ecx, 4
-        jnz     noseslhd
-	mov	eax,[hd_address_table+16]
-        mov     [hdbase], eax	;0x170
-        mov     [hdid], 0x10
-        mov     dword [hdpos], ecx
-;     call set_FAT32_variables
-   noseslhd:
-        call    reserve_hd1
-        call    reserve_hd_channel
-        call    free_hd_channel
-        and     dword [hd1_status], 0     ; free
    nosethd:
         ret
 
-iglobal
-hd_base db 0
-endg
-
 nsyse7:
 
-;     cmp  eax,8                      ; HD PARTITION
+;     cmp  eax,8                      ; HD PARTITION - obsolete
         dec     ebx
         jnz     nsyse8
-        mov     [fat32part], ecx
-;     call set_FAT32_variables
-        call    reserve_hd1
-        call    reserve_hd_channel
-        call    free_hd_channel
-;       pusha
-        call    choice_necessity_partition_1
-;       popa
-        and     dword [hd1_status], 0   ; free
         ret
 
 nsyse8:
@@ -1845,7 +1905,7 @@ ngsyse5:
 ;     cmp  eax,7
         sub     ebx, 2
         jnz     ngsyse7
-        movzx   eax, [hd_base]
+        xor     eax, eax
         mov     [esp+32], eax
         ret
 ngsyse7:
@@ -2178,7 +2238,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         jl      exit_for_anyone
         cmp     ecx, 4
         jg      exit_for_anyone
-        mov     [BOOT_VAR+0x9030], cl
+        mov     [BOOT_VARS+0x9030], cl
 
         mov     eax, [TASK_COUNT]
         mov     [SYS_SHUTDOWN], al
@@ -2586,8 +2646,8 @@ UID_KOLIBRI=2    ;russian
 
 iglobal
 version_inf:
-  db 0,7,7,0  ; version 0.7.7.0
-  db 0
+        db 0,7,7,0  ; version 0.7.7.0
+        db 0
 .rev    dd __REV__
 version_end:
 endg
@@ -4833,10 +4893,12 @@ if defined debug_com_base
 end if
 
         mov     [msg_board_data+ecx], bl
-if debug_direct_print
+; // if debug_direct_print == 1
+        cmp     byte [debug_direct_print], 1
+        jnz     @f
         pusha
 iglobal
-msg_board_pos   dd      234*65536+10
+msg_board_pos   dd      (42*6)*65536+10 ; for printing debug output on the screen
 endg
         lea     edx, [msg_board_data+ecx]
         mov     ecx, 0x40FFFFFF
@@ -4848,14 +4910,15 @@ endg
         add     word [msg_board_pos+2], 6
         cmp     bl, 10
         jnz     @f
-        mov     word [msg_board_pos+2], 234
+        mov     word [msg_board_pos+2], (42*6)
         add     word [msg_board_pos], 10
         mov     ax, word [Screen_Max_Y]
         cmp     word [msg_board_pos], ax
         jbe     @f
         mov     word [msg_board_pos], 10
 @@:
-end if
+; // end if
+
 if 0
         pusha
         mov     al, bl
@@ -5632,7 +5695,7 @@ undefined_syscall:                      ; Undefined system call
 align 4
 system_shutdown:          ; shut down the system
 
-        cmp     byte [BOOT_VAR+0x9030], 1
+        cmp     byte [BOOT_VARS+0x9030], 1
         jne     @F
         ret
 @@:
@@ -5657,11 +5720,11 @@ if ~ defined extended_primary_loader
         rep movsb
 end if
 
-        mov     esi, BOOT_VAR    ; restore 0x0 - 0xffff
-        mov     edi, OS_BASE
-        mov     ecx, 0x10000/4
-        cld
-        rep movsd
+;        mov     esi, BOOT_VAR    ; restore 0x0 - 0xffff
+;        mov     edi, OS_BASE
+;        mov     ecx, 0x10000/4
+;        cld
+;        rep movsd
 
         call    restorefatchain
 

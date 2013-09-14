@@ -1,210 +1,123 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-
 iglobal
   szKernel            db 'KERNEL', 0
   szVersion           db 'version',0
-
-  szRegService        db 'RegService',0
-  szGetService        db 'GetService',0
-  szServiceHandler    db 'ServiceHandler',0
-  szAttachIntHandler  db 'AttachIntHandler',0
-;  szGetIntHandler     db 'GetIntHandler', 0
-  szFpuSave           db 'FpuSave',0
-  szFpuRestore        db 'FpuRestore',0
-  szReservePortArea   db 'ReservePortArea',0
-  szBoot_Log          db 'Boot_Log',0
-
-  szMutexInit         db 'MutexInit',0
-  szMutexLock         db 'MutexLock',0
-  szMutexUnlock       db 'MutexUnlock',0
-
-  szPciApi            db 'PciApi', 0
-  szPciRead32         db 'PciRead32', 0
-  szPciRead16         db 'PciRead16', 0
-  szPciRead8          db 'PciRead8', 0
-  szPciWrite8         db 'PciWrite8',0
-  szPciWrite16        db 'PciWrite16',0
-  szPciWrite32        db 'PciWrite32',0
-
-  szAllocPage         db 'AllocPage',0
-  szAllocPages        db 'AllocPages',0
-  szFreePage          db 'FreePage',0
-  szGetPgAddr         db 'GetPgAddr',0
-  szMapPage           db 'MapPage',0
-  szMapSpace          db 'MapSpace',0
-  szMapIoMem          db 'MapIoMem',0
-  szCommitPages       db 'CommitPages',0
-  szReleasePages      db 'ReleasePages',0
-
-  szAllocKernelSpace  db 'AllocKernelSpace',0
-  szFreeKernelSpace   db 'FreeKernelSpace',0
-  szKernelAlloc       db 'KernelAlloc',0
-  szKernelFree        db 'KernelFree',0
-  szUserAlloc         db 'UserAlloc',0
-  szUserFree          db 'UserFree',0
-  szKmalloc           db 'Kmalloc',0
-  szKfree             db 'Kfree',0
-  szCreateRingBuffer  db 'CreateRingBuffer',0
-
-  szGetPid            db 'GetPid',0
-  szCreateObject      db 'CreateObject',0
-  szDestroyObject     db 'DestroyObject',0
-  szCreateEvent       db 'CreateEvent',0
-  szRaiseEvent        db 'RaiseEvent',0
-  szWaitEvent         db 'WaitEvent',0
-  szDestroyEvent      db 'DestroyEvent',0
-  szClearEvent        db 'ClearEvent',0
-
-  szLoadCursor        db 'LoadCursor',0
-
-  szSysMsgBoardStr    db 'SysMsgBoardStr', 0
-  szSysMsgBoard       db 'SysMsgBoard', 0
-  szGetCurrentTask    db 'GetCurrentTask',0
-  szLFBAddress        db 'LFBAddress',0
-  szLoadFile          db 'LoadFile',0
-  szSendEvent         db 'SendEvent',0
-  szSetMouseData      db 'SetMouseData',0
-  szSetKeyboardData   db 'SetKeyboardData',0
-  szRegKeyboard       db 'RegKeyboard',0
-  szDelKeyboard       db 'DelKeyboard',0
-  szSleep             db 'Sleep',0
-  szGetTimerTicks     db 'GetTimerTicks',0
-
-  szGetDisplay        db 'GetDisplay',0
-  szSetScreen         db 'SetScreen',0
-
-  szStrncat           db 'strncat',0
-  szStrncpy           db 'strncpy',0
-  szstrncmp           db 'strncmp',0
-  szStrnlen           db 'strnlen',0
-  szStrchr            db 'strchr',0
-  szStrrchr           db 'strrchr',0
-
-  szDiskAdd           db 'DiskAdd',0
-  szDiskDel           db 'DiskDel',0
-  szDiskMediaChanged  db 'DiskMediaChanged',0
-
-  szTimerHS           db 'TimerHS',0
-  szCancelTimerHS     db 'CancelTimerHS',0
-
-  szRegUSBDriver      db 'RegUSBDriver',0
-  szUSBOpenPipe       db 'USBOpenPipe',0
-  szUSBClosePipe      db 'USBClosePipe',0
-  szUSBNormalTransferAsync db 'USBNormalTransferAsync',0
-  szUSBControlTransferAsync db 'USBControlTransferAsync',0
-
-  szNetRegDev         db 'NetRegDev',0
-  szNetUnRegDev       db 'NetUnRegDev',0
-  szNetPtrToNum       db 'NetPtrToNum',0
-  szNetLinkChanged    db 'NetLinkChanged',0
-  szEth_input         db 'Eth_input',0
-
-align 16
-kernel_export:
-  dd szRegService      , reg_service
-  dd szGetService      , get_service
-  dd szServiceHandler  , srv_handler
-  dd szAttachIntHandler, attach_int_handler
-;  dd szGetIntHandler   , get_int_handler
-  dd szFpuSave         , fpu_save
-  dd szFpuRestore      , fpu_restore
-  dd szReservePortArea , r_f_port_area
-  dd szBoot_Log        , boot_log
-
-  dd szMutexInit       , mutex_init            ;gcc fastcall
-  dd szMutexLock       , mutex_lock            ;gcc fastcall
-  dd szMutexUnlock     , mutex_unlock          ;gcc fastcall
-
-  dd szPciApi          , pci_api_drv
-  dd szPciRead32       , pci_read32
-  dd szPciRead16       , pci_read16
-  dd szPciRead8        , pci_read8
-  dd szPciWrite8       , pci_write8
-  dd szPciWrite16      , pci_write16
-  dd szPciWrite32      , pci_write32
-
-  dd szAllocPage       , alloc_page            ;stdcall
-  dd szAllocPages      , alloc_pages           ;stdcall
-  dd szFreePage        , free_page
-  dd szMapPage         , map_page              ;stdcall
-  dd szMapSpace        , map_space
-  dd szMapIoMem        , map_io_mem            ;stdcall
-  dd szGetPgAddr       , get_pg_addr
-  dd szCommitPages     , commit_pages          ;not implemented
-  dd szReleasePages    , release_pages
-
-  dd szAllocKernelSpace, alloc_kernel_space    ;stdcall
-  dd szFreeKernelSpace , free_kernel_space     ;stdcall
-  dd szKernelAlloc     , kernel_alloc          ;stdcall
-  dd szKernelFree      , kernel_free           ;stdcall
-  dd szUserAlloc       , user_alloc            ;stdcall
-  dd szUserFree        , user_free             ;stdcall
-  dd szKmalloc         , malloc
-  dd szKfree           , free
-  dd szCreateRingBuffer, create_ring_buffer    ;stdcall
-
-  dd szGetPid          , get_pid
-  dd szCreateObject    , create_kernel_object
-  dd szDestroyObject   , destroy_kernel_object
-  dd szCreateEvent     , create_event          ;see EVENT.inc for specification
-  dd szRaiseEvent      , raise_event           ;see EVENT.inc for specification
-  dd szWaitEvent       , wait_event            ;see EVENT.inc for specification
-  dd szDestroyEvent    , destroy_event         ;see EVENT.inc for specification
-  dd szClearEvent      , clear_event           ;see EVENT.inc for specification
-
-  dd szLoadCursor      , load_cursor           ;stdcall
-
-  dd szSysMsgBoardStr  , sys_msg_board_str
-  dd szSysMsgBoard     , sys_msg_board
-  dd szGetCurrentTask  , get_curr_task
-  dd szLoadFile        , load_file             ;retval eax, ebx
-  dd szSendEvent       , send_event            ;see EVENT.inc for specification
-  dd szSetMouseData    , set_mouse_data        ;stdcall
-  dd szSetKeyboardData , set_keyboard_data
-  dd szRegKeyboard     , register_keyboard
-  dd szDelKeyboard     , delete_keyboard
-  dd szSleep           , delay_ms
-  dd szGetTimerTicks   , get_timer_ticks
-
-  dd szGetDisplay      , get_display
-  dd szSetScreen       , set_screen
-
-  dd szStrncat         , strncat
-  dd szStrncpy         , strncpy
-  dd szstrncmp         , strncmp
-  dd szStrnlen         , strnlen
-  dd szStrchr          , strchr
-  dd szStrrchr         , strrchr
-
-  dd szDiskAdd         , disk_add
-  dd szDiskDel         , disk_del
-  dd szDiskMediaChanged, disk_media_changed
-
-  dd szTimerHS         , timer_hs
-  dd szCancelTimerHS   , cancel_timer_hs
-
-  dd szRegUSBDriver    , reg_usb_driver
-  dd szUSBOpenPipe     , usb_open_pipe
-  dd szUSBClosePipe    , usb_close_pipe
-  dd szUSBNormalTransferAsync, usb_normal_transfer_async
-  dd szUSBControlTransferAsync, usb_control_async
-
-  dd szNetRegDev       , NET_add_device
-  dd szNetUnRegDev     , NET_remove_device
-  dd szNetPtrToNum     , NET_ptr_to_num
-  dd szNetLinkChanged  , NET_link_changed
-  dd szEth_input       , ETH_input
-
-exp_lfb:
-  dd szLFBAddress      , 0
-  dd 0                      ;terminator, must be zero
-
 endg
+
+ align 4
+__exports:
+          export 'KERNEL',   \
+          alloc_kernel_space,    'AllocKernelSpace',   \      ; stdcall
+          alloc_page,            'AllocPage',          \      ; gcc ABI
+          alloc_pages,           'AllocPages',         \      ; stdcall
+          commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
+\
+          disk_add,              'DiskAdd',            \      ;stdcall
+          disk_del,              'DiskDel',            \
+          disk_media_changed,    'DiskMediaChanged',   \      ;stdcall
+\
+          create_event,          'CreateEvent',        \      ; ecx, esi
+          destroy_event,         'DestroyEvent',       \      ;
+          raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi
+          wait_event,            'WaitEvent',          \      ; eax, ebx
+          wait_event_timeout,    'WaitEventTimeout',   \      ; eax, ebx, ecx
+          get_event_ex,          'GetEvent',           \      ; edi
+          clear_event,           'ClearEvent',         \      ;see EVENT.inc for specification
+          send_event,            'SendEvent',          \      ;see EVENT.inc for specification
+\
+          create_kernel_object,  'CreateObject',       \
+          create_ring_buffer,    'CreateRingBuffer',   \      ; stdcall
+          destroy_kernel_object, 'DestroyObject',      \
+          free_kernel_space,     'FreeKernelSpace',    \      ; stdcall
+          free_page,             'FreePage',           \      ; eax
+          kernel_alloc,          'KernelAlloc',        \      ; stdcall
+          kernel_free,           'KernelFree',         \      ; stdcall
+          malloc,                'Kmalloc',            \
+          free,                  'Kfree',              \
+          map_io_mem,            'MapIoMem',           \      ; stdcall
+          map_page,              'MapPage',            \      ; stdcall
+          get_pg_addr,           'GetPgAddr',          \      ; eax
+          map_space,             'MapSpace',           \
+          release_pages,         'ReleasePages',       \
+\
+          mutex_init,            'MutexInit',          \      ; gcc fastcall
+          mutex_lock,            'MutexLock',          \      ; gcc fastcall
+          mutex_unlock,          'MutexUnlock',        \      ; gcc fastcall
+\
+          get_display,           'GetDisplay',         \
+          set_screen,            'SetScreen',          \
+          window._.get_rect,     'GetWindowRect',      \      ; gcc fastcall
+          pci_api_drv,           'PciApi',             \
+          pci_read8,             'PciRead8',           \      ; stdcall
+          pci_read16,            'PciRead16',          \      ; stdcall
+          pci_read32,            'PciRead32',          \      ; stdcall
+          pci_write8,            'PciWrite8',          \      ; stdcall
+          pci_write16,           'PciWrite16',         \      ; stdcall
+          pci_write32,           'PciWrite32',         \      ; stdcall
+\
+          get_pid,               'GetPid',             \
+          get_service,           'GetService',         \      ;
+          reg_service,           'RegService',         \      ; stdcall
+          attach_int_handler,    'AttachIntHandler',   \      ; stdcall
+          user_alloc,            'UserAlloc',          \      ; stdcall
+          user_alloc_at,         'UserAllocAt',        \      ; stdcall
+          user_free,             'UserFree',           \      ; stdcall
+          unmap_pages,           'UnmapPages',         \      ; eax, ecx
+          sys_msg_board_str,     'SysMsgBoardStr',     \
+          sys_msg_board,         'SysMsgBoard',        \
+          get_timer_ticks,       'GetTimerTicks',      \
+          get_stack_base,        'GetStackBase',       \
+          delay_hs,              'Delay',              \      ; ebx
+          set_mouse_data,        'SetMouseData',       \      ;
+          set_keyboard_data,     'SetKeyboardData',    \      ; gcc fastcall
+          register_keyboard,     'RegKeyboard',        \
+          delete_keyboard,       'DelKeyboard',        \
+          get_cpu_freq,          'GetCpuFreq',         \
+\
+          srv_handler,           'ServiceHandler',     \
+          fpu_save,              'FpuSave',            \
+          fpu_restore,           'FpuRestore',         \
+          r_f_port_area,         'ReservePortArea',    \
+          boot_log,              'Boot_Log',           \
+\
+          load_cursor,           'LoadCursor',         \      ;stdcall
+\
+          get_curr_task,         'GetCurrentTask',     \
+          load_file,             'LoadFile',           \      ;retval eax, ebx
+          delay_ms,              'Sleep',              \
+\
+          strncat,               'strncat',            \
+          strncpy,               'strncpy',            \
+          strncmp,               'strncmp',            \
+          strnlen,               'strnlen',            \
+          strchr,                'strchr',             \
+          strrchr,               'strrchr',            \
+\
+          timer_hs,              'TimerHS',            \
+          cancel_timer_hs,       'CancelTimerHS',      \
+\
+          reg_usb_driver,        'RegUSBDriver',       \
+          usb_open_pipe,         'USBOpenPipe',        \
+          usb_close_pipe,        'USBClosePipe',       \
+          usb_normal_transfer_async, 'USBNormalTransferAsync', \
+          usb_control_async,     'USBControlTransferAsync', \
+          usb_get_param,         'USBGetParam',        \
+\
+          NET_add_device,        'NetRegDev',          \
+          NET_remove_device,     'NetUnRegDev',        \
+          NET_ptr_to_num,        'NetPtrToNum',        \
+          NET_link_changed,      'NetLinkChanged',     \
+          ETH_input,             'Eth_input',          \
+\
+          0,                     'LFBAddress' ; must be the last one
+load kernel_exports_count dword from __exports + 24
+load kernel_exports_addresses dword from __exports + 28
+exp_lfb = OS_BASE + kernel_exports_addresses + (kernel_exports_count - 1) * 4 - 4

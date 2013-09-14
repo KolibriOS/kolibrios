@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ICMP.INC                                                       ;;
@@ -304,7 +304,7 @@ ICMP_input:
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: dumping\n"
 
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4 ; pop (balance stack)
 
         ret

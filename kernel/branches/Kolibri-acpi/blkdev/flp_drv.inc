@@ -185,17 +185,9 @@ FDCDataInput:
 ;* ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ КОНТРОЛЛЕРА НГМД *
 ;*********************************************
 FDCInterrupt:
-; Установить флаг прерывани
+; Установить флаг прерывания
         mov     [FDD_IntFlag], 1
-        ret
-
-
-;******************************************
-;* УСТАНОВИТЬ НОВЫЙ ОБРАБОТЧИК ПРЕРЫВАНИЙ *
-;*             НГМД                       *
-;******************************************
-SetUserInterrupts:
-        mov     [fdc_irq_func], FDCInterrupt
+        mov     al, 1
         ret
 
 ;*******************************************
@@ -212,9 +204,9 @@ WaitFDCInterrupt:
         mov     [TickCounter], eax
 ; Ожидать установки флага прерывания НГМД
 @@TestRS_2:
+        call    change_task
         cmp     [FDD_IntFlag], 0
         jnz     @@End_7           ;прерывание произошло
-        call    change_task
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter]
         cmp     eax, 50 ;25   ;5 ;ожидать 5 тиков

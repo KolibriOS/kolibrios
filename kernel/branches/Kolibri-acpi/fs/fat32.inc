@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  FAT32.INC                                                      ;;
@@ -58,16 +58,15 @@ PUSHAD_ESI equ [esp+4]
 PUSHAD_EDI equ [esp+0]
 
 ; Internal data for every FAT partition.
-struct FAT
-p       PARTITION       ; must be the first item
+struct FAT PARTITION
 fs_type              db ?
 fat16_root           db 0       ; flag for fat16 rootdir
 fat_change           db 0       ; 1=fat has changed
                      db ?       ; alignment
 Lock                 MUTEX ?    ; currently operations with one partition
-                                 ; can not be executed in parallel since the
-                                 ; legacy code is not ready; this mutex guards
-                                 ; all operations
+                                ; can not be executed in parallel since the
+                                ; legacy code is not ready; this mutex guards
+                                ; all operations
 SECTORS_PER_FAT      dd 0x1f3a
 NUMBER_OF_FATS       dd 0x2
 SECTORS_PER_CLUSTER  dd 0x8
@@ -115,12 +114,13 @@ uglobal
 align 4
  Sector512:                      ; label for dev_hdcd.inc
   buffer:
-                       times 512 db 0
+                times 512 db 0
 endg
 
 iglobal
 align 4
 fat_user_functions:
+        dd      free
         dd      (fat_user_functions_end - fat_user_functions - 4) / 4
         dd      fat_Read
         dd      fat_ReadFolder
@@ -138,17 +138,15 @@ endg
 ; these labels are located before the main function to make
 ; most of jumps to these be short
 fat_create_partition.free_return0:
-        push    ebx
         mov     eax, ebp
         call    free
-        pop     ebx
         pop     ebp
 fat_create_partition.return0:
         xor     eax, eax
         ret
 fat_create_partition:
 ; bootsector must have been successfully read
-        cmp     dword [esp+4], 1
+        cmp     dword [esp+4], 0
         jnz     .return0
 ; bootsector signature must be correct
         cmp     word [ebx+0x1fe], 0xaa55
@@ -170,16 +168,17 @@ fat_create_partition:
         call    malloc
         test    eax, eax
         jz      .return0
-        mov     ecx, [ebp+8]
-        mov     dword [eax+FAT.p.FirstSector], ecx
-        mov     ecx, [ebp+12]
-        mov     dword [eax+FAT.p.FirstSector+4], ecx
-        mov     ecx, [ebp+16]
-        mov     dword [eax+FAT.p.Length], ecx
-        mov     ecx, [ebp+20]
-        mov     dword [eax+FAT.p.Length+4], ecx
-        mov     [eax+FAT.p.Disk], esi
-        mov     [eax+FAT.p.FSUserFunctions], fat_user_functions
+        mov     ecx, dword [ebp+PARTITION.FirstSector]
+        mov     dword [eax+FAT.FirstSector], ecx
+        mov     ecx, dword [ebp+PARTITION.FirstSector+4]
+        mov     dword [eax+FAT.FirstSector+4], ecx
+        mov     ecx, dword [ebp+PARTITION.Length]
+        mov     dword [eax+FAT.Length], ecx
+        mov     ecx, dword [ebp+PARTITION.Length+4]
+        mov     dword [eax+FAT.Length+4], ecx
+        mov     ecx, [ebp+PARTITION.Disk]
+        mov     [eax+FAT.Disk], ecx
+        mov     [eax+FAT.FSUserFunctions], fat_user_functions
         or      [eax+FAT.fat_in_cache], -1
         mov     [eax+FAT.fat_change], 0
         push    ebp
@@ -226,8 +225,8 @@ fat_create_partition:
         jnz     @f
         mov     eax, [ebx+0x20]         ; total sector count
 @@:
-        mov     dword [ebp+FAT.p.Length], eax
-        and     dword [ebp+FAT.p.Length+4], 0
+        mov     dword [ebp+FAT.Length], eax
+        and     dword [ebp+FAT.Length+4], 0
         sub     eax, [ebp+FAT.DATA_START]       ; eax = count of data sectors
         xor     edx, edx
         div     [ebp+FAT.SECTORS_PER_CLUSTER]
@@ -262,7 +261,6 @@ fat_create_partition:
         mov     [ebp+FAT.fatEND], 0x0FFFFFF8
         mov     [ebp+FAT.fatMASK], 0x0FFFFFFF
         mov     al, 32
-        mov     [fs_type], al
         mov     [ebp+FAT.fs_type], al
         mov     eax, ebp
         pop     ebp
@@ -274,7 +272,6 @@ fat_create_partition:
         mov     [ebp+FAT.fatEND], 0x0000FFF8
         mov     [ebp+FAT.fatMASK], 0x0000FFFF
         mov     al, 16
-        mov     [fs_type], al
         mov     [ebp+FAT.fs_type], al
         mov     eax, ebp
         pop     ebp
@@ -769,42 +766,6 @@ hd_find_lfn:
         ret     4
 
 ;----------------------------------------------------------------
-;
-;  fs_HdRead - LFN variant for reading hard disk
-;
-;  Obsolete, will be replaced with filesystem-specific functions.
-;
-;  esi  points to filename
-;  ebx  pointer to 64-bit number = first wanted byte, 0+
-;       may be ebx=0 - start from first byte
-;  ecx  number of bytes to read, 0+
-;  edx  mem location to return data
-;
-;  ret ebx = bytes read or 0xffffffff file not found
-;      eax = 0 ok read or other = errormsg
-;
-;--------------------------------------------------------------
-fs_HdRead:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdRead
-        cmp     [fs_type], 2
-        jz      ext2_HdRead
-        or      ebx, -1
-        mov     eax, ERROR_UNKNOWN_FS
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_Read
-        pop     ebp
-        ret
-
-;----------------------------------------------------------------
 ; fat_Read - FAT16/32 implementation of reading a file
 ; in:  ebp = pointer to FAT structure
 ; in:  esi+[esp+4] = name
@@ -942,43 +903,6 @@ fat_Read:
         pop     eax edx
         sub     ebx, edx
         jmp     .reteof
-
-;----------------------------------------------------------------
-;
-;  fs_HdReadFolder - LFN variant for reading hard disk folder
-;
-;  Obsolete, will be replaced with filesystem-specific functions.
-;
-;  esi  points to filename
-;  ebx  pointer to structure 32-bit number = first wanted block, 0+
-;                          & flags (bitfields)
-; flags: bit 0: 0=ANSI names, 1=UNICODE names
-;  ecx  number of blocks to read, 0+
-;  edx  mem location to return data
-;
-;  ret ebx = blocks read or 0xffffffff folder not found
-;      eax = 0 ok read or other = errormsg
-;
-;--------------------------------------------------------------
-fs_HdReadFolder:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdReadFolder
-        cmp     [fs_type], 2
-        jz      ext2_HdReadFolder
-        movi    eax, ERROR_UNSUPPORTED_FS
-        or      ebx, -1
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_ReadFolder
-        pop     ebp
-        ret
 
 ;----------------------------------------------------------------
 ; fat_ReadFolder - FAT16/32 implementation of reading a folder
@@ -1377,52 +1301,6 @@ fat_get_sector:
         pop     ecx
         ret
 
-;----------------------------------------------------------------
-;
-;  fs_HdRewrite - LFN variant for writing hard disk
-;
-;  Obsolete, will be replaced with filesystem-specific functions.
-;
-;  esi  points to filename
-;  ebx  ignored (reserved)
-;  ecx  number of bytes to write, 0+
-;  edx  mem location to data
-;
-;  ret ebx = number of written bytes
-;      eax = 0 ok read or other = errormsg
-;
-;--------------------------------------------------------------
-fs_HdCreateFolder:
-        mov     al, 1
-        jmp     fs_HdRewrite.common
-
-fs_HdRewrite:
-        xor     eax, eax
-.common:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdRewrite
-        cmp     [fs_type], 2
-        jz      ext2_HdRewrite
-        mov     eax, ERROR_UNKNOWN_FS
-        xor     ebx, ebx
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        test    eax, eax
-        mov     eax, fat_CreateFolder
-        jnz     @f
-        mov     eax, fat_Rewrite
-@@:
-        call    eax
-        pop     ebp
-        ret
-
 fshrad:
         call    fat_unlock
         mov     eax, ERROR_ACCESS_DENIED
@@ -1441,7 +1319,7 @@ fat_CreateFolder:
         jmp     fat_Rewrite.common
 
 ;----------------------------------------------------------------
-; fat_HdRewrite - FAT16/32 implementation of creating a new file
+; fat_Rewrite - FAT16/32 implementation of creating a new file
 ; in:  ebp = pointer to FAT structure
 ; in:  esi+[esp+4] = name
 ; in:  ebx = pointer to parameters from sysfunc 70
@@ -1988,51 +1866,16 @@ fat_Rewrite:
         mov     [edi-32+20], cx
         jmp     .writedircont
 
-;----------------------------------------------------------------
-;
-;  fs_HdWrite - LFN variant for writing to hard disk
-;
-;  Obsolete, will be replaced with filesystem-specific functions.
-;
-;  esi  points to filename
-;  ebx  pointer to 64-bit number = first wanted byte, 0+
-;       may be ebx=0 - start from first byte
-;  ecx  number of bytes to write, 0+
-;  edx  mem location to data
-;
-;  ret ebx = bytes written (maybe 0)
-;      eax = 0 ok write or other = errormsg
-;
-;--------------------------------------------------------------
 fat_Write.access_denied:
         push    ERROR_ACCESS_DENIED
-fs_HdWrite.ret0:
+fat_Write.ret0:
         pop     eax
         xor     ebx, ebx
         ret
 
-fs_HdWrite.ret11:
+fat_Write.ret11:
         push    ERROR_DEVICE
-        jmp     fs_HdWrite.ret0
-
-fs_HdWrite:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdWrite
-        cmp     [fs_type], 2
-        jz      ext2_HdWrite
-        push    ERROR_UNKNOWN_FS
-        jmp     .ret0
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_Write
-        pop     ebp
-        ret
+        jmp     fat_Write.ret0
 
 ;----------------------------------------------------------------
 ; fat_Write - FAT16/32 implementation of writing to file
@@ -2051,7 +1894,7 @@ fat_Write:
         pop     edi
         push    eax
         call    fat_unlock
-        jmp     fs_HdWrite.ret0
+        jmp     .ret0
 .found:
 ; FAT does not support files larger than 4GB
         cmp     dword [ebx+8], 0
@@ -2060,7 +1903,7 @@ fat_Write:
         pop     edi
         push    ERROR_END_OF_FILE
         call    fat_unlock
-        jmp     fs_HdWrite.ret0
+        jmp     .ret0
 @@:
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
@@ -2362,39 +2205,6 @@ hd_extend_file:
         ret
 
 ;----------------------------------------------------------------
-;
-;  fs_HdSetFileEnd - set end of file on hard disk
-;
-;  Obsolete, will be replaced with filesystem-specific functions.
-;
-;  esi  points to filename
-;  ebx  points to 64-bit number = new file size
-;  ecx  ignored (reserved)
-;  edx  ignored (reserved)
-;
-;  ret eax = 0 ok or other = errormsg
-;
-;--------------------------------------------------------------
-fs_HdSetFileEnd:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdSetFileEnd
-        cmp     [fs_type], 2
-        jz      ext2_HdSetFileEnd
-        movi    eax, ERROR_UNKNOWN_FS
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_SetFileEnd
-        pop     ebp
-        ret
-
-;----------------------------------------------------------------
 ; fat_SetFileEnd - FAT16/32 implementation of setting end-of-file
 ; in:  ebp = pointer to FAT structure
 ; in:  esi+[esp+4] = name
@@ -2634,25 +2444,6 @@ fat_SetFileEnd:
         movi    eax, ERROR_FAT_TABLE
         ret
 
-fs_HdGetFileInfo:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdGetFileInfo
-        cmp     [fs_type], 2
-        jz      ext2_HdGetFileInfo
-        mov     eax, ERROR_UNKNOWN_FS
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_GetFileInfo
-        pop     ebp
-        ret
-
 ;----------------------------------------------------------------
 ; fat_GetFileInfo - FAT16/32 implementation of getting file info
 ; in:  ebp = pointer to FAT structure
@@ -2685,25 +2476,6 @@ fat_GetFileInfo:
         call    fat_unlock
         pop     eax
         pop     edi
-        ret
-
-fs_HdSetFileInfo:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdSetFileInfo
-        cmp     [fs_type], 2
-        jz      ext2_HdSetFileInfo
-        mov     eax, ERROR_UNKNOWN_FS
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_SetFileInfo
-        pop     ebp
         ret
 
 ;----------------------------------------------------------------
@@ -2739,36 +2511,6 @@ fat_SetFileInfo:
         call    fat_unlock
         pop     eax
         pop     edi
-        ret
-
-;----------------------------------------------------------------
-;
-;  fs_HdDelete - delete file or empty folder from hard disk
-;
-;  Obsolete, will be replaced with filesystem-specific functions.
-;
-;  esi  points to filename
-;
-;  ret  eax = 0 ok or other = errormsg
-;
-;--------------------------------------------------------------
-fs_HdDelete:
-        cmp     [fs_type], 16
-        jz      @f
-        cmp     [fs_type], 32
-        jz      @f
-        cmp     [fs_type], 1
-        jz      ntfs_HdDelete
-        cmp     [fs_type], 2
-        jz      ext2_HdDelete
-        movi    eax, ERROR_UNKNOWN_FS
-        ret
-@@:
-        sub     ebx, 4
-        push    ebp
-        mov     ebp, [fs_dependent_data_start.partition]
-        call    fat_Delete
-        pop     ebp
         ret
 
 ;----------------------------------------------------------------

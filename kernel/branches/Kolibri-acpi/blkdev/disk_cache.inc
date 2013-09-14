@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3284 $
+$Revision: 3742 $
 
 ; This function is intended to replace the old 'hd_read' function when
 ; [hdd_appl_data] = 0, so its input/output parameters are the same, except
@@ -14,19 +14,7 @@ $Revision: 3284 $
 ; eax is relative to partition start
 ; out: eax = error code; 0 = ok
 fs_read32_sys:
-; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
-; this request should be processed by hd_read.
-        cmp     [ebp+PARTITION.Disk], 'old'
-        jnz     @f
-        add     eax, dword [ebp+PARTITION.FirstSector]
-        mov     [hdd_appl_data], 0
-        call    hd_read
-        mov     [hdd_appl_data], 1      ; restore to default state
-        mov     eax, [hd_error]
-        ret
-@@:
-; In the normal case, save ecx, set ecx to SysCache and let the common part
-; do its work.
+; Save ecx, set ecx to SysCache and let the common part do its work.
         push    ecx
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.SysCache
@@ -39,18 +27,7 @@ fs_read32_sys:
 ; eax is relative to partition start
 ; out: eax = error code; 0 = ok
 fs_read32_app:
-; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
-; this request should be processed by hd_read.
-        cmp     [ebp+PARTITION.Disk], 'old'
-        jnz     @f
-        add     eax, dword [ebp+PARTITION.FirstSector]
-        mov     [hdd_appl_data], 1
-        call    hd_read
-        mov     eax, [hd_error]
-        ret
-@@:
-; In the normal case, save ecx, set ecx to AppCache and let the common part
-; do its work.
+; Save ecx, set ecx to AppCache and let the common part do its work.
         push    ecx
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.AppCache
@@ -185,19 +162,7 @@ end virtual
 ; eax is relative to partition start
 ; out: eax = error code; 0 = ok
 fs_write32_sys:
-; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
-; this request should be processed by hd_write.
-        cmp     [ebp+PARTITION.Disk], 'old'
-        jnz     @f
-        add     eax, dword [ebp+PARTITION.FirstSector]
-        mov     [hdd_appl_data], 0
-        call    hd_write
-        mov     [hdd_appl_data], 1      ; restore to default state
-        mov     eax, [hd_error]
-        ret
-@@:
-; In the normal case, save ecx, set ecx to SysCache and let the common part
-; do its work.
+; Save ecx, set ecx to SysCache and let the common part do its work.
         push    ecx
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.SysCache
@@ -210,18 +175,7 @@ fs_write32_sys:
 ; eax is relative to partition start
 ; out: eax = error code; 0 = ok
 fs_write32_app:
-; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
-; this request should be processed by hd_write.
-        cmp     [ebp+PARTITION.Disk], 'old'
-        jnz     @f
-        add     eax, dword [ebp+PARTITION.FirstSector]
-        mov     [hdd_appl_data], 1
-        call    hd_write
-        mov     eax, [hd_error]
-        ret
-@@:
-; In the normal case, save ecx, set ecx to AppCache and let the common part
-; do its work.
+; Save ecx, set ecx to AppCache and let the common part do its work.
         push    ecx
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.AppCache
@@ -622,17 +576,6 @@ disk_free_cache:
 ; This function flushes all modified data from both caches for the given DISK.
 ; esi = pointer to DISK
 disk_sync:
-; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
-; this request should be processed by write_cache.
-        cmp     esi, 'old'
-        jnz     @f
-        mov     [hdd_appl_data], 0
-        call    write_cache
-        mov     [hdd_appl_data], 1
-        call    write_cache
-        mov     eax, [hd_error]
-        ret
-@@:
 ; The algorithm is straightforward.
         push    esi
         push    esi     ; for second write_cache64

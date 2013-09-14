@@ -54,8 +54,10 @@ if lang eq ru
   boot_v86machine:  cp866 'Инициализация системы V86 машины',0
   boot_inittimer:   cp866 'Инициализация системного таймера (IRQ0)',0
   boot_initapic:    cp866 'Попытка инициализации APIC',0
-  boot_enableirq:   cp866 'Включить прерывания 2, 6, 13, 14, 15',0
-  boot_enablint_ide:cp866 'Разрешение прерываний в контроллере IDE',0
+  boot_enableirq:   cp866 'Включить прерывания 2, 13',0
+  boot_disabling_ide:cp866 'Запрещение прерываний в контроллере IDE',0
+  boot_enabling_ide:cp866 'Разрешение прерываний в контроллере IDE',0
+  boot_set_int_IDE: cp866 'Установка обработчиков прерываний IDE',0
   boot_detectfloppy:cp866 'Поиск floppy дисководов',0
   boot_detecthdcd:  cp866 'Поиск жестких дисков и ATAPI приводов',0
   boot_getcache:    cp866 'Получение памяти для кэша',0
@@ -95,8 +97,10 @@ else
   boot_v86machine   db   'Initialize system V86 machine',0
   boot_inittimer    db   'Initialize system timer (IRQ0)',0
   boot_initapic     db   'Try to initialize APIC',0
-  boot_enableirq    db   'Enable interrupts 2, 6, 13, 14, 15',0
-  boot_enablint_ide db   'Enable interrupts in IDE controller',0
+  boot_enableirq    db   'Enable interrupts 2, 13',0
+  boot_disabling_ide db   'Disable interrupts in IDE controller',0
+  boot_enabling_ide db   'Enable interrupts in IDE controller',0
+  boot_set_int_IDE  db   'Set handler of interrupts for IDE',0
   boot_detectfloppy db   'Search floppy drives',0
   boot_detecthdcd   db   'Search hard drives and ATAPI drives',0
   boot_getcache     db   'Get memory for cache',0
@@ -164,8 +168,6 @@ else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
 
-bootpath       db  '/KOLIBRI    '
-bootpath2      db  0
 vmode          db  '/sys/drivers/VMODE.MDR',0
 ;vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
@@ -327,240 +329,233 @@ diff16 "end of .data segment",0,$
 
 align 16
 cur_saved_data:
-                  rb 4096
+                    rb 4096
 fpu_data:
-                  rb 512
+                    rb 512
 
-mem_block_list    rd 64*2
-mem_used_list     rd 64*2
-mem_hash_cnt      rd 64
+mem_block_list      rd 64*2
+mem_used_list       rd 64*2
+mem_hash_cnt        rd 64
 
-MEM_AMOUNT        rd 1
+cpu_freq            rq 1
 
-cpu_freq          rq 1
+heap_mutex          MUTEX
+heap_size           rd 1
+heap_free           rd 1
+heap_blocks         rd 1
+free_blocks         rd 1
 
-heap_mutex        MUTEX
-heap_size         rd 1
-heap_free         rd 1
-heap_blocks       rd 1
-free_blocks       rd 1
-
-mem_block_mask    rd 2
-next_memblock     rd 1
+mem_block_mask      rd 2
+next_memblock       rd 1
 
 
-mst MEM_STATE
+mst                 MEM_STATE
 
-page_start        rd 1
-page_end          rd 1
-sys_page_map      rd 1
-os_stack_seg      rd 1
+page_start          rd 1
+page_end            rd 1
+sys_page_map        rd 1
+os_stack_seg        rd 1
 
 
-srv.fd            rd 1
-srv.bk            rd 1
+srv.fd              rd 1
+srv.bk              rd 1
 
 
 align 16
 
-_display          display_t
+_display            display_t
 
-_WinMapAddress    rd 1
-_WinMapSize       rd 1
+_WinMapAddress      rd 1
+_WinMapSize         rd 1
 
-LFBAddress        rd 1
-Screen_Max_X      rd 1
-Screen_Max_Y      rd 1
+LFBAddress          rd 1
+Screen_Max_X        rd 1
+Screen_Max_Y        rd 1
 
-SCR_MODE          rw 2
+SCR_MODE            rw 2
 
-PUTPIXEL          rd 1
-GETPIXEL          rd 1
+PUTPIXEL            rd 1
+GETPIXEL            rd 1
 
 if VESA_1_2_VIDEO
-BANK_SWITCH       rd 1  reserved for vesa 1.2
-BANK_RW           rd 1
+BANK_SWITCH         rd 1  reserved for vesa 1.2
+BANK_RW             rd 1
 end if
 
-REDRAW_BACKGROUND rb 4
+REDRAW_BACKGROUND   rb 4
 
+align 4
 draw_data:          rb 16*256
 BPSLine_calc_area   rd 1440
 d_width_calc_area   rd 1140
 
-mouseunder        rd 16*24
+mouseunder          rd 16*24
 
-MOUSE_PICTURE     rd 1
+MOUSE_PICTURE       rd 1
 
-MOUSE_SCROLL_H    rw 1
-MOUSE_X:          rw 1
-MOUSE_Y:          rw 1
-MOUSE_SCROLL_V    rw 1
+MOUSE_SCROLL_H      rw 1
+MOUSE_X:            rw 1
+MOUSE_Y:            rw 1
+MOUSE_SCROLL_V      rw 1
 
-X_UNDER           rw 1
-Y_UNDER           rw 1
-COLOR_TEMP        rd 1
-MOUSE_COLOR_MEM   rd 1
+X_UNDER             rw 1
+Y_UNDER             rw 1
+COLOR_TEMP          rd 1
+MOUSE_COLOR_MEM     rd 1
 
-BTN_DOWN:         rb 4
+BTN_DOWN:           rb 4
 
-def_cursor        rd 1
-def_cursor_clock  rd 1
-current_cursor    rd 1
-hw_cursor         rd 1
-cur_saved_base    rd 1
+align 4
+def_cursor          rd 1
+def_cursor_clock    rd 1
+current_cursor      rd 1
+hw_cursor           rd 1
+cur_saved_base      rd 1
 
-cur.lock          rd 1   ;1 - lock update, 2- hide
-cur.left          rd 1   ;cursor clip box
-cur.top           rd 1
-cur.right         rd 1
-cur.bottom        rd 1
-cur.w             rd 1
-cur.h             rd 1
+cur.lock            rd 1   ;1 - lock update, 2- hide
+cur.left            rd 1   ;cursor clip box
+cur.top             rd 1
+cur.right           rd 1
+cur.bottom          rd 1
+cur.w               rd 1
+cur.h               rd 1
 
-ipc_tmp           rd 1
-ipc_pdir          rd 1
-ipc_ptab          rd 1
+ipc_tmp             rd 1
+ipc_pdir            rd 1
+ipc_ptab            rd 1
 
-proc_mem_map      rd 1
-proc_mem_pdir     rd 1
-proc_mem_tab      rd 1
+proc_mem_map        rd 1
+proc_mem_pdir       rd 1
+proc_mem_tab        rd 1
 
-tmp_task_pdir     rd 1
-tmp_task_ptab     rd 1
+tmp_task_pdir       rd 1
+tmp_task_ptab       rd 1
 
-default_io_map    rd 1
+default_io_map      rd 1
 
-LFBSize           rd 1
+LFBSize             rd 1
 
-current_slot      rd 1
-
-BTN_ADDR          rd 1
-BTN_COUNT         rb 4
-BTN_BUFF          rd 255
-
-KEY_COUNT         rb 4
-KEY_BUFF          rb 128
-
-
-SYS_SHUTDOWN      rb 4
-
+current_slot        rd 1
 
 ; status
-hd1_status                  rd 1  ; 0 - free : other - pid
-application_table_owner     rd 1  ; 0 - free : other - pid
-application_table_mutex     MUTEX
+hd1_status                      rd 1  ; 0 - free : other - pid
+application_table_owner         rd 1  ; 0 - free : other - pid
+application_table_mutex         MUTEX
 
 ; device addresses
-mididp            rd 1
-midisp            rd 1
+mididp                          rd 1
+midisp                          rd 1
 
-cdbase            rd 1
-cdid              rd 1
+cdbase                          rd 1
+cdid                            rd 1
 
-hdbase            rd 1    ; for boot 0x1f0
-hdid              rd 1
-hdpos             rd 1    ; for boot 0x1
+hdbase                          rd 1    ; for boot 0x1f0
+hdid                            rd 1
+hdpos                           rd 1    ; for boot 0x1
 label   known_part dword
-fat32part         rd 1    ; for boot 0x1
-cdpos             rd 1
+fat32part                       rd 1    ; for boot 0x1
+cdpos                           rd 1
 
 ;CPUID information
-cpu_vendor        rd 3
-cpu_sign          rd 1
-cpu_info          rd 1
-cpu_caps          rd 4
+cpu_vendor                      rd 3
+cpu_sign                        rd 1
+cpu_info                        rd 1
+cpu_caps                        rd 4
 
 
-pg_data           PG_DATA
-heap_test         rd 1
+pg_data                         PG_DATA
+heap_test                       rd 1
 
-buttontype        rd 1
-windowtypechanged rd 1
+buttontype                      rd 1
+windowtypechanged               rd 1
 
-hd_entries        rd 1     ;unused ? 0xfe10
+hd_entries                      rd 1     ;unused ? 0xfe10
 
-mouse_active          rd 1
-mouse_pause           rd 1
+mouse_active                    rd 1
+mouse_pause                     rd 1
 
-redrawmouse_unconditional rd 1
+redrawmouse_unconditional       rd 1
 
-img_background        rd 1
-mem_BACKGROUND        rd 1
-static_background_data rd 1
+img_background                  rd 1
+mem_BACKGROUND                  rd 1
+static_background_data          rd 1
 
-BgrDrawMode             rd 1
-BgrDataWidth            rd 1
-BgrDataHeight           rd 1
+BgrDrawMode                     rd 1
+BgrDataWidth                    rd 1
+BgrDataHeight                   rd 1
 
-skin_data              rd 1
+skin_data                       rd 1
 
 cache_ide0:
-cache_ide0_pointer            rd 1
-cache_ide0_size               rd 1   ; not use
-cache_ide0_data_pointer       rd 1
-cache_ide0_system_data_size   rd 1   ; not use
-cache_ide0_appl_data_size     rd 1   ; not use
-cache_ide0_system_data        rd 1
-cache_ide0_appl_data          rd 1
-cache_ide0_system_sad_size    rd 1
-cache_ide0_appl_sad_size      rd 1
-cache_ide0_search_start       rd 1
-cache_ide0_appl_search_start  rd 1
+cache_ide0_pointer              rd 1
+cache_ide0_size                 rd 1   ; not use
+cache_ide0_data_pointer         rd 1
+cache_ide0_system_data_size     rd 1   ; not use
+cache_ide0_appl_data_size       rd 1   ; not use
+cache_ide0_system_data          rd 1
+cache_ide0_appl_data            rd 1
+cache_ide0_system_sad_size      rd 1
+cache_ide0_appl_sad_size        rd 1
+cache_ide0_search_start         rd 1
+cache_ide0_appl_search_start    rd 1
 
 cache_ide1:
-cache_ide1_pointer            rd 1
-cache_ide1_size               rd 1   ; not use
-cache_ide1_data_pointer       rd 1
-cache_ide1_system_data_size   rd 1   ; not use
-cache_ide1_appl_data_size     rd 1   ; not use
-cache_ide1_system_data        rd 1
-cache_ide1_appl_data          rd 1
-cache_ide1_system_sad_size    rd 1
-cache_ide1_appl_sad_size      rd 1
-cache_ide1_search_start       rd 1
-cache_ide1_appl_search_start  rd 1
+cache_ide1_pointer              rd 1
+cache_ide1_size                 rd 1   ; not use
+cache_ide1_data_pointer         rd 1
+cache_ide1_system_data_size     rd 1   ; not use
+cache_ide1_appl_data_size       rd 1   ; not use
+cache_ide1_system_data          rd 1
+cache_ide1_appl_data            rd 1
+cache_ide1_system_sad_size      rd 1
+cache_ide1_appl_sad_size        rd 1
+cache_ide1_search_start         rd 1
+cache_ide1_appl_search_start    rd 1
 
 cache_ide2:
-cache_ide2_pointer            rd 1
-cache_ide2_size               rd 1   ; not use
-cache_ide2_data_pointer       rd 1
-cache_ide2_system_data_size   rd 1   ; not use
-cache_ide2_appl_data_size     rd 1   ; not use
-cache_ide2_system_data        rd 1
-cache_ide2_appl_data          rd 1
-cache_ide2_system_sad_size    rd 1
-cache_ide2_appl_sad_size      rd 1
-cache_ide2_search_start       rd 1
-cache_ide2_appl_search_start  rd 1
+cache_ide2_pointer              rd 1
+cache_ide2_size                 rd 1   ; not use
+cache_ide2_data_pointer         rd 1
+cache_ide2_system_data_size     rd 1   ; not use
+cache_ide2_appl_data_size       rd 1   ; not use
+cache_ide2_system_data          rd 1
+cache_ide2_appl_data            rd 1
+cache_ide2_system_sad_size      rd 1
+cache_ide2_appl_sad_size        rd 1
+cache_ide2_search_start         rd 1
+cache_ide2_appl_search_start    rd 1
 
 cache_ide3:
-cache_ide3_pointer            rd 1
-cache_ide3_size               rd 1   ; not use
-cache_ide3_data_pointer       rd 1
-cache_ide3_system_data_size   rd 1   ; not use
-cache_ide3_appl_data_size     rd 1   ; not use
-cache_ide3_system_data        rd 1
-cache_ide3_appl_data          rd 1
-cache_ide3_system_sad_size    rd 1
-cache_ide3_appl_sad_size      rd 1
-cache_ide3_search_start       rd 1
-cache_ide3_appl_search_start  rd 1
+cache_ide3_pointer              rd 1
+cache_ide3_size                 rd 1   ; not use
+cache_ide3_data_pointer         rd 1
+cache_ide3_system_data_size     rd 1   ; not use
+cache_ide3_appl_data_size       rd 1   ; not use
+cache_ide3_system_data          rd 1
+cache_ide3_appl_data            rd 1
+cache_ide3_system_sad_size      rd 1
+cache_ide3_appl_sad_size        rd 1
+cache_ide3_search_start         rd 1
+cache_ide3_appl_search_start    rd 1
 
-debug_step_pointer rd 1
-hdd_appl_data rb 1 ; 0 = system cache, 1 - application cache
-cd_appl_data rb 1 ; 0 = system cache, 1 - application cache
+debug_step_pointer              rd 1
 
-lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
-pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled
-timer_ticks_enable rb 1         ; for cd driver
+lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
+pci_access_enabled              rd 1  ; 0 = disabled , 1 = enabled
 
-NumBiosDisks    rd 1
-BiosDisksData   rb 200h
-BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
-BiosDiskPartitions rd 80h
+hdd_appl_data                   rb 1  ; 0 = system cache, 1 - application cache
+cd_appl_data                    rb 1  ; 0 = system cache, 1 - application cache
+
+timer_ticks_enable              rb 1  ; for cd driver
+
+align 4
+NumBiosDisks                    rd 1
+BiosDisksData                   rb 200h
+BiosDiskCaches                  rb 80h*(cache_ide1-cache_ide0)
+BiosDiskPartitions              rd 80h
+
 align 16
-DRIVE_DATA:     rb DRIVE_DATA_SIZE
+DRIVE_DATA:                     rb DRIVE_DATA_SIZE
 
 IncludeUGlobals
 
@@ -572,33 +567,17 @@ end if
 
 org (OS_BASE+0x0100000)
 
-RAMDISK:        rb 2880*512
-RAMDISK_FAT:    rb 2856*2
-FLOPPY_FAT:     rb 2856*2
+RAMDISK:                        rb 2880*512
+RAMDISK_FAT:                    rb 2856*2
+FLOPPY_FAT:                     rb 2856*2
 
 _CLEAN_ZONE:
 
 align 4096
-_IDE_DMA        rb 16*512
-BgrAuxTable     rb 32768
-BUTTON_INFO     rb 64*1024
-RESERVED_PORTS: rb 64*1024
-BOOT_VAR:       rb 64*1024
-sys_pgmap:      rb 1024*1024/8
+_IDE_DMA                        rb 16*512
+BgrAuxTable                     rb 32768
+BUTTON_INFO                     rb 64*1024
+RESERVED_PORTS:                 rb 64*1024
+FLOPPY_BUFF:                    rb 18*512           ;one track
 
-align 4096
-
-SLOT_BASE:      rb 64*1024
-FLOPPY_BUFF:    rb 16*1024
-
-
-window_data:    rb 8192
-CURRENT_TASK:   rb 8192
-WIN_STACK:      rb 0x400
-WIN_POS:        rb 0x800
-
-CDDataBuf:      rb 4096
-
-idts            rq 0x41
-
-
+sys_pgmap:                      rb 1024*1024/8

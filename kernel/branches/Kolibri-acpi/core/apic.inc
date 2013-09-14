@@ -26,29 +26,20 @@ APIC_ISR        equ 0x100
 APIC_ESR        equ 0x280
 APIC_ICRL       equ 0x300
 APIC_ICRH       equ 0x310
-APIC_LVT_LINT0	equ	0x350
-APIC_LVT_LINT1	equ	0x360
+APIC_LVT_LINT0  equ 0x350
+APIC_LVT_LINT1  equ 0x360
 APIC_LVT_err    equ 0x370
 
 ; APIC timer
-APIC_LVT_timer	equ	0x320
-APIC_timer_div	equ	0x3e0
-APIC_timer_init	equ	0x380
-APIC_timer_cur	equ	0x390
+APIC_LVT_timer  equ 0x320
+APIC_timer_div  equ 0x3e0
+APIC_timer_init equ 0x380
+APIC_timer_cur  equ 0x390
 ; IOAPIC
-IOAPIC_ID               equ  0x0
-IOAPIC_VER              equ  0x1
-IOAPIC_ARB              equ  0x2
-IOAPIC_REDTBL           equ  0x10
-
-IPI_INIT                equ  (0x5 shl 8)
-IPI_START               equ  (0x6 shl 8)
-IPI_LEVEL_ASSERT        equ  (0x1 shl 14)
-SHORTHAND_ALL_EXCL      equ  (0x3 shl 18)
-
-CMD_IPI_INIT            equ  (IPI_INIT+SHORTHAND_ALL_EXCL)
-
-
+IOAPIC_ID       equ 0x0
+IOAPIC_VER      equ 0x1
+IOAPIC_ARB      equ 0x2
+IOAPIC_REDTBL   equ 0x10
 
 align 4
 APIC_init:
@@ -85,13 +76,13 @@ APIC_init:
 @@:
         mov     [IRQ_COUNT], eax
 
-	; Reroute IOAPIC & mask all interrupts
+        ; Reroute IOAPIC & mask all interrupts
         xor     ecx, ecx
         mov     eax, IOAPIC_REDTBL
 @@:
         mov     ebx, eax
         call    IOAPIC_read
-        mov     ah, 0x09; Delivery Mode: Lowest Priority, Destination Mode: Logical
+        mov     ah, 0x08; Delivery Mode: Fixed, Destination Mode: Logical
         mov     al, cl
         add     al, 0x20; vector
         or      eax, 0x10000; Mask Interrupt
@@ -138,31 +129,31 @@ LAPIC_init:
         mov     [LAPIC_BASE], eax
         mov     esi, eax
 
-	; Program Destination Format Register for Flat mode.
+        ; Program Destination Format Register for Flat mode.
         mov     eax, [esi + APIC_DFR]
         or      eax, 0xf0000000
         mov     [esi + APIC_DFR], eax
 
-	; Program Logical Destination Register.
+        ; Program Logical Destination Register.
         mov     eax, [esi + APIC_LDR]
         ;and  eax, 0xff000000
         and     eax, 0x00ffffff
         or      eax, 0x01000000;!!!!!!!!!!!!
         mov     [esi + APIC_LDR], eax
 
-	; Task Priority Register initialization.
+        ; Task Priority Register initialization.
         mov     eax, [esi + APIC_TPR]
         and     eax, 0xffffff00
         mov     [esi + APIC_TPR], eax
 
-	; Flush the queue
+        ; Flush the queue
         mov     edx, 0
 .nxt2:
         mov     ecx, 32
         mov     eax, [esi + APIC_ISR + edx]
 .nxt:
         shr     eax, 1
-        jnc      @f
+        jnc     @f
         mov     dword [esi + APIC_EOI], 0; EOI
 @@:
         loop    .nxt
@@ -171,41 +162,41 @@ LAPIC_init:
         cmp     edx, 0x170
         jbe     .nxt2
 
-	; Spurious-Interrupt Vector Register initialization.
+        ; Spurious-Interrupt Vector Register initialization.
         mov     eax, [esi + APIC_SVR]
         or      eax, 0x1ff
         and     eax, 0xfffffdff
         mov     [esi + APIC_SVR], eax
 
-	; Initialize LVT LINT0 register. (INTR)
+        ; Initialize LVT LINT0 register. (INTR)
         mov     eax, 0x00700
         ; mov eax, 0x10700
         mov     [esi + APIC_LVT_LINT0], eax
 
-	; Initialize LVT LINT1 register. (NMI)
+        ; Initialize LVT LINT1 register. (NMI)
         mov     eax, 0x00400
         mov     [esi + APIC_LVT_LINT1], eax
 
-	; Initialize LVT Error register.
+        ; Initialize LVT Error register.
         mov     eax, [esi + APIC_LVT_err]
         or      eax, 0x10000; bit 16
         mov     [esi + APIC_LVT_err], eax
 
-	; LAPIC timer
-	; pre init
-;        mov     dword[esi + APIC_timer_div], 1011b; 1
-;        mov     dword[esi + APIC_timer_init], 0xffffffff; max val
-;        push  esi
-;        mov esi, 640        ; wait 0.64 sec
-;        call  delay_ms
-;        pop esi
-;        mov     eax, [esi + APIC_timer_cur]; read current tick couner
-;        xor eax, 0xffffffff       ; eax = 0xffffffff - eax
-;        shr eax, 6          ; eax /= 64; APIC ticks per 0.01 sec
+        ; LAPIC timer
+        ; pre init
+        mov     dword[esi + APIC_timer_div], 1011b; 1
+        mov     dword[esi + APIC_timer_init], 0xffffffff; max val
+        push    esi
+        mov     esi, 640    ; wait 0.64 sec
+        call    delay_ms
+        pop     esi
+        mov     eax, [esi + APIC_timer_cur]; read current tick couner
+        xor     eax, 0xffffffff   ; eax = 0xffffffff - eax
+        shr     eax, 6      ; eax /= 64; APIC ticks per 0.01 sec
 
-	; Start (every 0.01 sec)
-;        mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
-;        mov dword[esi + APIC_timer_init], eax
+        ; Start (every 0.01 sec)
+        mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
+        mov     dword[esi + APIC_timer_init], eax
 
 .done:
         ret
@@ -225,9 +216,9 @@ IOAPIC_read:
 
 align 4
 IOAPIC_write:
-; in :	EAX - IOAPIC register
-;	EBX - value
-; out:	none
+; in :  EAX - IOAPIC register
+;       EBX - value
+; out:  none
         push    esi
         mov     esi, [IOAPIC_base]
         mov     [esi], eax
@@ -259,7 +250,7 @@ PIC_init:
         out     0xA1, al
 
         call    IRQ_mask_all
-	; mov	dword[irq_type_to_set], IRQ_TYPE_PIC
+        ; mov   dword[irq_type_to_set], IRQ_TYPE_PIC
         ret
 
 ; -----------------------------------------
@@ -283,20 +274,20 @@ unmask_timer:
         stdcall enable_irq, 0
         ret
 @@:
-	; use PIT
-	; in some systems PIT no connected to IOAPIC
-	; mov	eax, 0x14
-	; call	IOAPIC_read
-	; mov	ah, 0x09		; Delivery Mode: Lowest Priority, Destination Mode: Logical
-	; mov	al, 0x20
-	; or	eax, 0x10000		; Mask Interrupt
-	; mov	ebx, eax
-	; mov	eax, 0x14
-	; call	IOAPIC_write
-	; stdcall enable_irq, 2
-	; ret
+        ; use PIT
+        ; in some systems PIT no connected to IOAPIC
+        ; mov   eax, 0x14
+        ; call  IOAPIC_read
+        ; mov   ah, 0x09                ; Delivery Mode: Lowest Priority, Destination Mode: Logical
+        ; mov   al, 0x20
+        ; or    eax, 0x10000            ; Mask Interrupt
+        ; mov   ebx, eax
+        ; mov   eax, 0x14
+        ; call  IOAPIC_write
+        ; stdcall enable_irq, 2
+        ; ret
 
-	; use LAPIC timer
+        ; use LAPIC timer
         mov     esi, [LAPIC_BASE]
         mov     eax, [esi + APIC_LVT_timer]
         and     eax, 0xfffeffff
@@ -443,40 +434,9 @@ pci_irq_fixup:
 
 .done:
 .fail:
-        pop ebp
+        pop     ebp
         ret
 
-if 0
-align 4
-start_ap:
-;eax= cpu id
-
-;        xchg bx, bx
-
-        test    eax, eax              ;do not start self
-        jz      .exit
-
-        cmp     eax, [cpu_count]
-        jae     .exit
-
-        mov     eax, [smpt+eax*4]
-        shl     eax, 24
-
-        mov     [esi+APIC_ICRH], eax
-        mov     [esi+APIC_ICRL], dword (IPI_INIT+IPI_LEVEL_ASSERT)
-
-        mov     ecx, 10000
-@@:
-        loop    @B
-
-CMD_IPI_START equ (IPI_START+IPI_LEVEL_ASSERT)+((0x10000+__ap_start_16) shr 12)
-
-        mov     [esi+APIC_ICRH], eax
-        mov     [esi+APIC_ICRL], dword CMD_IPI_START
-.exit:
-        ret
-
-end if
 
 
 

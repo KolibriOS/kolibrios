@@ -184,17 +184,54 @@ DRIVE_DATA_SIZE     equ (16+PARTITION_COUNT*100)
 
 OS_BASE             equ 0x80000000
 
-TASK_COUNT          equ (CURRENT_TASK+0x04)
-TASK_BASE           equ (CURRENT_TASK+0x10)
-TASK_DATA           equ (CURRENT_TASK+0x20)
-TASK_EVENT          equ (CURRENT_TASK+0x20)
-FDD_BUFF            equ (OS_BASE+0x000D000)
+window_data         equ (OS_BASE+0x0001000)
+
+CURRENT_TASK        equ (OS_BASE+0x0003000)
+TASK_COUNT          equ (OS_BASE+0x0003004)
+TASK_BASE           equ (OS_BASE+0x0003010)
+TASK_DATA           equ (OS_BASE+0x0003020)
+TASK_EVENT          equ (OS_BASE+0x0003020)
+
+CDDataBuf           equ (OS_BASE+0x0005000)
+
+;unused                 0x6000 - 0x8fff
+
+BOOT_VARS           equ (OS_BASE)               ;0x9000
+
+idts                equ (OS_BASE+0x000B100)
+WIN_STACK           equ (OS_BASE+0x000C000)
+WIN_POS             equ (OS_BASE+0x000C400)
+FDD_BUFF            equ (OS_BASE+0x000D000)     ;512
+
+WIN_TEMP_XY         equ (OS_BASE+0x000F300)
+KEY_COUNT           equ (OS_BASE+0x000F400)
+KEY_BUFF            equ (OS_BASE+0x000F401)
+
+BTN_COUNT           equ (OS_BASE+0x000F500)
+BTN_BUFF            equ (OS_BASE+0x000F501)
+
+
+BTN_ADDR            equ (OS_BASE+0x000FE88)
+MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
+
+SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
+TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
+
+
+TMP_STACK_TOP       equ 0x006CC00
 
 sys_pgdir           equ (OS_BASE+0x006F000)
 
+SLOT_BASE           equ (OS_BASE+0x0080000)
+
 VGABasePtr          equ (OS_BASE+0x00A0000)
+
 CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
 IDE_DMA             equ (_IDE_DMA-OS_BASE)
+
+; unused?
+SB16Buffer          equ (OS_BASE+0x02A0000)
+SB16_Status         equ (OS_BASE+0x02B0000)
 
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 
@@ -258,12 +295,14 @@ BOOT_Y_RES          equ 0x900C    ;word   Y res
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
-BOOT_LOG            equ 0x901D    ;byte   not used anymore (0 or 1 : enable system log display)
+;BOOT_LOG            equ 0x901D    ;byte   not used anymore (0 or 1 : enable system log display)
+BOOT_LAUNCHER_START equ 0x901D    ;byte  (0 or 1) start the first app (right now it's LAUNCHER) after kernel is loaded?
 ;BOOT_DIRECT_LFB     equ 0x901E    ;byte   0 or 1 : enable direct lfb write, paging disabled
+BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to the screen.
 BOOT_DMA            equ 0x901F    ;
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
 BOOT_VRR            equ 0x9030    ;byte   VRR start enabled 1, 2-no
-BOOT_IDE_BASE_ADDR  equ 0x9031    ;word   IDEContrRegsBaseAddr
+BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr
 BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
 
 BOOT_APM_ENTRY      equ 0x9040
@@ -277,6 +316,7 @@ BOOT_IDE_BAR1_16    equ 0x9058
 BOOT_IDE_BAR2_16    equ 0x905A
 BOOT_IDE_BAR3_16    equ 0x905C
 BOOT_IDE_PI_16      equ 0x905E
+BOOT_IDE_INTERR_16  equ 0x9060
 
 TMP_FILE_NAME       equ     0
 TMP_CMD_LINE        equ  1024
@@ -463,12 +503,13 @@ struct  MUTEX
 ends
 
 struct  PCIDEV
-        bk              dd ?
-        fd              dd ?
-        vendor_device_id dd ?
+        list            LHEAD
+        vid_did         dd ?
         class           dd ?
+        svid_sdid       dd ?
         devfn           db ?
         bus             db ?
+        irq_line        db ?
 ends
 
 ; The following macro assume that we are on uniprocessor machine.

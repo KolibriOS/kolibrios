@@ -15,12 +15,10 @@ $Revision: 2455 $
 
 
 d80x25_bottom:
-          db       186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '
-          db       'NO WARRANTY         ',186
-          db       186,' See file COPYING for details                             '
-          db       '                    ',186
+          db       186,' KolibriOS comes with ABSOLUTELY NO WARRANTY. See file COP'
+          db       'YING for details    ',186
           line_full_bottom
-d80x25_bottom_num = 3
+d80x25_bottom_num = 2
 
 msg_apm   db      " APM x.x ", 0
 novesa    db      "Display: EGA/CGA",13,10,0
@@ -54,7 +52,7 @@ diskload  db      "Loading diskette: 00 %",8,8,8,8,0
 pros      db      "00"
 backspace2 db     8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Press [abcd] to change settings, press [Enter] to continue booting",13,10,0
+start_msg db      "Press [abcde] to change settings, press [Enter] to continue booting",13,10,0
 time_msg  db      " or wait "
 time_str  db      " 5 seconds"
           db      " before automatical continuation",13,10,0
@@ -68,7 +66,13 @@ usebd_msg db      " [b] Add disks visible by BIOS:",0
 on_msg    db      " on",13,10,0
 off_msg   db      " off",13,10,0
 
-preboot_device_msg db " [c] Floppy image: ",0
+debug_mode_msg db " [c] Duplicate debug output to the screen:",0
+ask_debug      db "Duplicate debug output to the screen? [1-yes, 2-no]: ",0
+
+launcher_msg   db " [d] Start LAUNCHER after kernel is loaded:",0
+ask_launcher   db "Start first application (LAUNCHER) after kernel is loaded? [1-yes, 2-no]: ",0
+
+preboot_device_msg db " [e] Floppy image: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0

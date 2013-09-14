@@ -11,6 +11,8 @@ DEBUG           = 1
 
 include 'proc32.inc'
 include 'imports.inc'
+include '../struct.inc'
+
 
 VID_INTEL         = 0x8086
 VID_NVIDIA        = 0x10DE
@@ -149,10 +151,24 @@ public START
 public service_proc
 public version
 
+struct  SRV
+        srv_name        rb 16    ;ASCIIZ string
+        magic           dd ?     ;+0x10 ;'SRV '
+        size            dd ?     ;+0x14 ;size of structure SRV
+        fd              dd ?     ;+0x18 ;next SRV descriptor
+        bk              dd ?     ;+0x1C ;prev SRV descriptor
+        base            dd ?     ;+0x20 ;service base address
+        entry           dd ?     ;+0x24 ;service START function
+        srv_proc        dd ?     ;+0x28 ;user mode service handler
+        srv_proc_ex     dd ?     ;+0x2C ;kernel mode service handler
+ends
+
+
 section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
+        mov     eax, [srv_entry]
         cmp     [state], 1
         jne     .stop
 
@@ -161,9 +177,16 @@ proc START stdcall, state:dword
         call    SysMsgBoardStr
      end if
 
+        test    eax, eax
+        jnz     .done
         call    detect_controller
         ret
-  .stop:
+.stop:
+        test    eax, eax
+        jz      .done
+        leave
+        jmp     eax
+.done:
         xor     eax, eax
         ret
 endp
@@ -237,7 +260,11 @@ proc detect_controller
      end if
 
         stdcall GetService, dword[edi+4]
+        test    eax, eax
+        jz      .err
 
+        mov     edx, [eax+SRV.entry]
+        mov     [srv_entry], edx
         ret
 
   .err:
@@ -252,130 +279,132 @@ proc detect_controller
 endp
 
 align 4
-devices dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH0 shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH2 shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH3 shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH4 shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH5 shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH6 shl 16)+VID_INTEL, intelac97
-        dd (CTRL_ICH7 shl 16)+VID_INTEL, intelac97
+devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH0 shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH2 shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH3 shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH4 shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH5 shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH6 shl 16)+VID_INTEL, intelac97
+                dd (CTRL_ICH7 shl 16)+VID_INTEL, intelac97
 
-        dd (CTRL_NFORCE  shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_NFORCE2 shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_NFORCE3 shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_MCP04   shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_CK804   shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_CK8     shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_CK8S    shl 16)+VID_NVIDIA, intelac97
-        dd (CTRL_MCP51   shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_NFORCE  shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_NFORCE2 shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_NFORCE3 shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_MCP04   shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_CK804   shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_CK8     shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_CK8S    shl 16)+VID_NVIDIA, intelac97
+                dd (CTRL_MCP51   shl 16)+VID_NVIDIA, intelac97
 
-        dd (CTRL_VT82C686  shl 16)+VID_VIA, vt823x
-        dd (CTRL_VT8233_5  shl 16)+VID_VIA, vt823x
+                dd (CTRL_VT82C686  shl 16)+VID_VIA, vt823x
+                dd (CTRL_VT8233_5  shl 16)+VID_VIA, vt823x
 
-        dd (CTRL_SIS  shl 16)+VID_SIS, sis
+                dd (CTRL_SIS  shl 16)+VID_SIS, sis
 
-        dd (CTRL_FM801 shl 16)+VID_FM801, fm801
+                dd (CTRL_FM801 shl 16)+VID_FM801, fm801
 
-        dd (0x5000 shl 16)+0x1274, ensoniq
-        dd (0x5880 shl 16)+0x1274, ensoniq
+                dd (0x5000 shl 16)+0x1274, ensoniq
+                dd (0x5880 shl 16)+0x1274, ensoniq
 
-        dd (CTRL_CT0200 shl 16)+VID_CREATIVE, emu10k1x
+                dd (CTRL_CT0200 shl 16)+VID_CREATIVE, emu10k1x
 ; Intel
-         dd (CTRL_INTEL_SCH2    shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_HPT     shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_CPT     shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_PGB     shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_PPT1    shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801F  shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_63XXESB shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801G  shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801H  shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801_UNK1  shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801I  shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801_UNK2  shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801JI shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_82801JD shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_PCH     shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_PCH2    shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_SCH     shl 16)+VID_INTEL, intelhda
-         dd (CTRL_INTEL_LPT     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_SCH2    shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_HPT     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_CPT     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PGB     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PPT1    shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801F  shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_63XXESB shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801G  shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801H  shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801_UNK1  shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801I  shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801_UNK2  shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801JI shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_82801JD shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PCH     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_PCH2    shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_SCH     shl 16)+VID_INTEL, intelhda
+                dd (CTRL_INTEL_LPT     shl 16)+VID_INTEL, intelhda
 ; Nvidia
-         dd (CTRL_NVIDIA_MCP51    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP55    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP61_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP61_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP65_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP65_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP67_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP67_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP73_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP73_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP78_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP78_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP78_3  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP78_4  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP79_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP79_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP79_3  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP79_4  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_0BE2     shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_0BE3     shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_0BE4     shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GT100    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GT106    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GT108    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GT104    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GT116    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP89_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP89_2  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP89_3  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_MCP89_4  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GF119    shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GF110_1  shl 16)+VID_NVIDIA, intelhda
-         dd (CTRL_NVIDIA_GF110_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP51    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP55    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP61_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP61_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP65_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP65_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP67_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP67_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP73_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP73_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP78_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP78_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP78_3  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP78_4  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP79_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP79_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP79_3  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP79_4  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_0BE2     shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_0BE3     shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_0BE4     shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GT100    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GT106    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GT108    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GT104    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GT116    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP89_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP89_2  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP89_3  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_MCP89_4  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GF119    shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GF110_1  shl 16)+VID_NVIDIA, intelhda
+                dd (CTRL_NVIDIA_GF110_2  shl 16)+VID_NVIDIA, intelhda
 ; ATI
-         dd (CTRL_ATI_SB450   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_SB600   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RS600   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RS690   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RS780   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RS_UNK1 shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_R600    shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV610   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV620   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV630   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV635   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV670   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV710   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV730   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV740   shl 16)+VID_ATI, intelhda
-         dd (CTRL_ATI_RV770   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_SB450   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_SB600   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RS600   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RS690   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RS780   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RS_UNK1 shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_R600    shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV610   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV620   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV630   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV635   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV670   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV710   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV730   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV740   shl 16)+VID_ATI, intelhda
+                dd (CTRL_ATI_RV770   shl 16)+VID_ATI, intelhda
 ; AMD
-         dd (CTRL_AMD_HUDSON shl 16)+VID_AMD, intelhda
+                dd (CTRL_AMD_HUDSON shl 16)+VID_AMD, intelhda
 ; VIA
-         dd (CTRL_VIA_VT82XX shl 16)+VID_VIA, intelhda
-         dd (CTRL_VIA_VT61XX shl 16)+VID_VIA, intelhda
-         dd (CTRL_VIA_VT71XX shl 16)+VID_VIA, intelhda
+                dd (CTRL_VIA_VT82XX shl 16)+VID_VIA, intelhda
+                dd (CTRL_VIA_VT61XX shl 16)+VID_VIA, intelhda
+                dd (CTRL_VIA_VT71XX shl 16)+VID_VIA, intelhda
 ; SiS
-         dd (CTRL_SIS_966    shl 16)+VID_SIS, intelhda
+                dd (CTRL_SIS_966    shl 16)+VID_SIS, intelhda
 ; ULI
-         dd (CTRL_ULI_M5461  shl 16)+VID_ULI, intelhda
+                dd (CTRL_ULI_M5461  shl 16)+VID_ULI, intelhda
 ; Teradici
-         dd (CTRL_TERA_UNK1  shl 16)+VID_ULI, intelhda
+                dd (CTRL_TERA_UNK1  shl 16)+VID_ULI, intelhda
 ; Creative
-         dd (CTRL_CREATIVE_CA0110_IBG     shl 16)+VID_CREATIVE, intelhda
-         dd (CTRL_CREATIVE_SOUND_CORE3D_1 shl 16)+VID_CREATIVE, intelhda
-         dd (CTRL_CREATIVE_SOUND_CORE3D_2 shl 16)+VID_CREATIVE, intelhda
+                dd (CTRL_CREATIVE_CA0110_IBG     shl 16)+VID_CREATIVE, intelhda
+                dd (CTRL_CREATIVE_SOUND_CORE3D_1 shl 16)+VID_CREATIVE, intelhda
+                dd (CTRL_CREATIVE_SOUND_CORE3D_2 shl 16)+VID_CREATIVE, intelhda
 ; RDC Semiconductor
-         dd (CTRL_RDC_R3010  shl 16)+VID_RDC, intelhda
+                dd (CTRL_RDC_R3010  shl 16)+VID_RDC, intelhda
 ; VMware
-         dd (CTRL_VMWARE_UNK1  shl 16)+VID_VMWARE, intelhda
+                dd (CTRL_VMWARE_UNK1  shl 16)+VID_VMWARE, intelhda
 
-        dd 0    ;terminator
+                dd 0    ;terminator
 
 
-version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
+version         dd (5 shl 16) or (API_VERSION and 0xFFFF)
+
+srv_entry       dd 0
 
 intelac97       db 'INTELAC97', 0
 vt823x          db 'VT823X', 0
@@ -389,5 +418,6 @@ msgInit         db 'Detecting hardware...',13,10,0
 msgFail         db 'No compatible soundcard found!',13,10,0
 msgLoading      db 'Loading ',0
 msgNewline      db 13,10,0
+
 
 section '.data' data readable writable align 16

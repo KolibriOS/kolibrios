@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 2381 $
+$Revision: 3598 $
 
 ; Simple implementation of timers. All timers are organized in a double-linked
 ; list, and the OS loop after every timer tick processes the list.

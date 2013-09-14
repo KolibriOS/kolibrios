@@ -97,7 +97,7 @@ LOOP_input:
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "LOOP_input: dumping\n"
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
         ret
 

@@ -47,21 +47,21 @@ printplain:
         popa
         ret
 
-getkey:
+getkey:                         ; Use BIOS INT 16h to read a key from the keyboard
 ; get number in range [bl,bh] (bl,bh in ['0'..'9'])
 ; in: bx=range
 ; out: ax=digit (1..9, 10 for 0)
-        mov     ah, 0
-        int     16h
-        cmp     al, bl
-        jb      getkey
-        cmp     al, bh
+        mov     ah, 0           ; If 'int 16h' is called with 'ah' equal to zero, the BIOS will not return control
+        int     16h             ; to the caller until a key is available in the system type ahead buffer. On return,
+        cmp     al, bl          ; 'al' contains the ASCII code for the key read from the buffer and 'ah' contains
+        jb      getkey          ; the keyboard scan code. Here we compare 'al' with the range of accepted characters.
+        cmp     al, bh          ; If the key pressed is not in the range, continue waiting for another key.
         ja      getkey
-        push    ax
+        push    ax              ; If the pressed key is in the accepted range, save it on the stack and echo to screen.
         call    putchar
         pop     ax
-        and     ax, 0Fh
-        jnz     @f
+        and     ax, 0Fh         ; ASCII code for '0' is 48 (110000b). 0F4=1111b. (110000b AND 1111b) = 0
+        jnz     @f              ; So if key '0' was entered, return 10 in 'ax'
         mov     al, 10
 @@:
         ret
@@ -145,7 +145,7 @@ FirstDataSector dw      0                       ; begin of data
 ;
 ;=========================================================================
 
-include 'bootvesa.inc'                 ;Include source for boot vesa
+include 'bootvesa.inc'                 ;Include source for boot vesa 
 if defined extended_primary_loader
 include 'parsers.inc'
 end if
@@ -217,7 +217,7 @@ if defined extended_primary_loader
 ; save current position
         push    si
 ; compare strings
-        repz    cmpsb
+        repz cmpsb
         jnz     .next_variant2
 ; strings are equal; look for "=" with possible spaces before and after
 @@:
@@ -434,8 +434,11 @@ sayerr:
         xor     si, si  ; device index = 0
         int     0x1A
         jnc     .found_1 ; Parallel IDE Controller
-
+; Controller not found!
+        xor     ax, ax
+        mov     [es:BOOT_IDE_PI_16], ax
         jmp     .nopci
+;--------------------------------------
 .found_1:
 ; get memory base BAR4
         mov     ax, 0xB10A
@@ -443,47 +446,67 @@ sayerr:
         push    cx
         int     0x1A
         jc      .no_BAR4        ;.nopci
-        and     cx, 0xFFF0      ; clear address decode type
+        and     cx, 0xFFFC      ; clear address decode type
         mov     [es:BOOT_IDE_BASE_ADDR], cx
 .no_BAR4:
         pop     cx
-.found: 
+;--------------------------------------
+.found:
+; get Interrupt Line
+        mov     ax, 0xB10A
+        mov     di, 0x3c        ; memory base is config register at 0x3c
+        push    cx
+        int     0x1A
+        jc      .no_Interrupt        ;.nopci
+
+        mov     [es:BOOT_IDE_INTERR_16], cx
+.no_Interrupt:
+        pop     cx
+;--------------------------------------
 ; get memory base BAR0
         mov     ax, 0xB10A
         mov     di, 0x10        ; memory base is config register at 0x10
         push    cx
         int     0x1A
         jc      .no_BAR0        ;.nopci
+
         mov     [es:BOOT_IDE_BAR0_16], cx
 .no_BAR0:
         pop     cx
+;--------------------------------------
 ; get memory base BAR1
         mov     ax, 0xB10A
         mov     di, 0x14        ; memory base is config register at 0x14
         push    cx
         int     0x1A
         jc      .no_BAR1        ;.nopci
+
         mov     [es:BOOT_IDE_BAR1_16], cx
 .no_BAR1:
         pop     cx
+;--------------------------------------
 ; get memory base BAR2
         mov     ax, 0xB10A
         mov     di, 0x18        ; memory base is config register at 0x18
         push    cx
         int     0x1A
         jc      .no_BAR2        ;.nopci
+
         mov     [es:BOOT_IDE_BAR2_16], cx
 .no_BAR2:
         pop     cx
+;--------------------------------------
 ; get memory base BAR3
         mov     ax, 0xB10A
         mov     di, 0x1C        ; memory base is config register at 0x1c
         push    cx
         int     0x1A
         jc      .no_BAR3        ;.nopci
+
         mov     [es:BOOT_IDE_BAR3_16], cx
 .no_BAR3:
         pop     cx
+;--------------------------------------
 .nopci:
 ; \end{Mario79}
 
@@ -519,9 +542,9 @@ wait_loop:       ; variant 2
         mov     ax, 0x5300
         xor     bx, bx
         int     0x15
-        jc      apm_end                           ; APM not found
+        jc      apm_end                 ; APM not found
         test    cx, 2
-        jz      apm_end                           ; APM 32-bit protected-mode interface not supported
+        jz      apm_end                 ; APM 32-bit protected-mode interface not supported
         mov     [es:BOOT_APM_VERSION], ax         ; Save APM Version
         mov     [es:BOOT_APM_FLAGS], cx           ; Save APM flags
 
@@ -564,18 +587,20 @@ end if
 
 noloaderblock:
 ; DISPLAY VESA INFORMATION
-         call    print_vesa_info
-         call    calc_vmodes_table
-         call    check_first_parm  ;check and enable cursor_pos
+        call    print_vesa_info
+        call    calc_vmodes_table
+        call    check_first_parm   ;check and enable cursor_pos
 
 ; \begin{diamond}[30.11.2005]
 cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
-; b) preboot_dma  = use DMA access?
-; c) preboot_vrrm = use VRR?
-; d) preboot_device = from what boot?
+; b) preboot_biosdisk  = use BIOS disks through V86 emulation? // (earlier was: preboot_dma  = use DMA access?)
+; c) preboot_debug = duplicates kernel debug output to the screen // (earlier was: preboot_vrrm = use VRR?)
+;    // VRR is an obsolete functionality, used only with CRT monitors: increase display frequency by reducing screen resolution
+; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
+; e) preboot_device = from where to boot?
 
 ; determine default settings
 if ~ defined extended_primary_loader
@@ -609,12 +634,14 @@ end if
 ; following 4 lines set variables to 1 if its current value is 0
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
+        cmp     byte [di+preboot_launcher-preboot_device], 1        ; Start LAUNCHER by default
+        adc     byte [di+preboot_launcher-preboot_device], 0        
 ;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
 ;        adc     byte [di+preboot_biosdisk-preboot_device], 0
 ;; default value for VRR is OFF
 ;        cmp     byte [di+preboot_vrrm-preboot_device], 0
-;        jnz	@f
-;        mov	byte [di+preboot_vrrm-preboot_device], 2
+;        jnz    @f
+;        mov    byte [di+preboot_vrrm-preboot_device], 2
 ;@@:
 ; notify user
         _setcursor 5,2
@@ -638,7 +665,7 @@ end if
         mov     si, curvideo_msg
         call    print
 
-            call    draw_current_vmode
+        call    draw_current_vmode
 
         mov     si, usebd_msg
         cmp     [preboot_biosdisk], 1
@@ -646,6 +673,12 @@ end if
 ;        mov     si, vrrm_msg
 ;        cmp     [preboot_vrrm], 1
 ;        call    .say_on_off
+        mov     si, debug_mode_msg
+        cmp     [preboot_debug], 1
+        call    .say_on_off
+        mov     si, launcher_msg
+        cmp     [preboot_launcher], 1
+        call    .say_on_off
         mov     si, preboot_device_msg
         call    print
         mov     al, [preboot_device]
@@ -719,7 +752,7 @@ end if
 @@:
         push    cx
         mov     cx, 76
-        rep     stosw
+        rep stosw
         pop     cx
         add     di, 4*2
         loop    @b
@@ -729,32 +762,38 @@ end if
         cmp     al, 13
         jz      .continue
         or      al, 20h
-        cmp     al, 'a'
+        cmp     al, 'a'         ; select graphical mode
         jz      .change_a
-        cmp     al, 'b'
+        cmp     al, 'q'         ; Trick to make 'A' key on azerty keyboard work
+        je      .change_a
+        cmp     al, 'b'         ; use BIOS disks? // (selecting YES will make BIOS disks visible as /bd)
         jz      .change_b
-;        cmp     al, 'c'
-;        jz      .change_c
-        cmp     al, 'c'		; 'd'
+        cmp     al, 'c'         ; load kernel in debug mode?  // (earlier was: use VRR?)
+        jz      .change_c
+        cmp     al, 'd'         ; start launcher after kernel is loaded?
+        jz      .change_d
+        cmp     al, 'e'         ; select boot origin
         jnz     .show_remarks
-        _setcursor 15,0
+; e) preboot_device = from where to boot?
+        _setcursor 16,0
         mov     si, bdev
         call    print
 if defined extended_primary_loader
-        mov     bx, '12'
+        mov     bx, '12'        ; range accepted for answer: 1-2
 else
-        mov     bx, '14'
+        mov     bx, '14'        ; range accepted for answer: 1-4
 end if
         call    getkey
         mov     [preboot_device], al
-        _setcursor 13,0
+        _setcursor 14,0
 .d:
 if ~ defined extended_primary_loader
         mov     [.bSettingsChanged], 1
 end if
         call    clear_vmodes_table             ;clear vmodes_table
-        jmp    .printcfg
+        jmp     .printcfg
 .change_a:
+        call    clear_vmodes_table             ;clear vmodes_table
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
@@ -830,32 +869,50 @@ end if
         push    word [es:bp+6]
         pop     word [number_vm]
         mov     word [preboot_graph], bp          ;save choose
+        
+        jmp     .d
 
-        jmp    .d
-
-.change_b:
-        _setcursor 15,0
-;        mov     si, ask_dma
+.change_b:                      ; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
+        _setcursor 16,0
+;        mov     si, ask_dma    // (earlier was: preboot_dma  = use DMA access?)
 ;        call    print
-;        mov     bx, '13'
+;        mov     bx, '13'       ; range accepted for answer: 1-3
 ;        call    getkey
 ;        mov     [preboot_dma], al
         mov     si, ask_bd
         call    print
-        mov     bx, '12'
+        mov     bx, '12'        ; range accepted for answer: 1-2
         call    getkey
         mov     [preboot_biosdisk], al
         _setcursor 11,0
         jmp     .d
-;.change_c:
-;        _setcursor 15,0
+;.change_c:                     ; //  VRR is an obsolete functionality, used only with CRT monitors
+;        _setcursor 16,0
 ;        mov     si, vrrmprint
 ;        call    print
-;        mov     bx, '12'
+;        mov     bx, '12'       ; range accepted for answer: 1-2
 ;        call    getkey
 ;        mov     [preboot_vrrm], al
 ;        _setcursor 12,0
 ;        jmp     .d
+.change_c:                      ; c) preboot_debug = duplicates kernel debug output to the screen
+        _setcursor 16,0
+        mov     si, ask_debug
+        call    print
+        mov     bx, '12'        ; range accepted for answer: 1-2
+        call    getkey
+        mov     [preboot_debug], al
+        _setcursor 12,0
+        jmp     .d
+.change_d:                      ; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
+        _setcursor 16,0
+        mov     si, ask_launcher
+        call    print
+        mov     bx, '12'        ; range accepted for answer: 1-2
+        call    getkey
+        mov     [preboot_launcher], al
+        _setcursor 13,0
+        jmp     .d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .say_on_off:
         pushf
@@ -963,7 +1020,7 @@ end if
         _setcursor 6,0
         mov     si, loading_msg
         call    print
-        _setcursor 15,0
+        _setcursor 16,0
 if ~ defined extended_primary_loader
         cmp     [.bSettingsChanged], 0
         jz      .load
@@ -1005,9 +1062,9 @@ if ~ defined extended_primary_loader
         pop     ds
         mov     si, space_msg
         mov     byte [si+80], 0
-        _setcursor 15,0
+        _setcursor 16,0
         call    printplain
-        _setcursor 15,0
+        _setcursor 16,0
 .load:
 end if
 ; \end{diamond}[02.12.2005]
@@ -1028,7 +1085,15 @@ end if
 ;; VRR_M USE
 ;
 ;        mov     al,[preboot_vrrm]
-;        mov     [es:0x9030], al
+;        mov     [es:BOOT_VRR], al              ;// 0x9030
+
+; Set kernel DEBUG mode - if nonzero, duplicates debug output to the screen.
+        mov     al, [preboot_debug]
+        mov     [es:BOOT_DEBUG_PRINT], al       ;// 0x901E
+
+; Start the first app (right now it's LAUNCHER) after kernel is loaded?
+        mov     al, [preboot_launcher]
+        mov     [es:BOOT_LAUNCHER_START], al    ;// 0x901D        
 
 ; BOOT DEVICE
 
@@ -1075,7 +1140,7 @@ include '../detect/biosmem.inc'
 ; TODO: !!!! read only first sector and set variables !!!!!
 ; ...
 ; TODO: !!! then read flippy image track by track
-
+        
         mov     cx, 0x0001      ; startcyl,startsector
 .a1:
         push    cx dx
@@ -1167,7 +1232,7 @@ include '../detect/biosmem.inc'
 ; and copy them to extended memory
         mov     si, movedesc
         mov     [si+8*2+3], bh          ; from
-
+        
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_RsvdSecCnt]
@@ -1175,7 +1240,7 @@ include '../detect/biosmem.inc'
         mul     cx
         push    ax                      ; save to stack count of words in boot+FAT
         xchg    ax, cx
-
+        
         push    es
         push    ds
         pop     es
@@ -1201,7 +1266,7 @@ sayerr_memmove:
 ; TODO: BPB_NumFATs !!!!!
         add     bx, word [BPB_BytsPerSec]       ; !!! TODO: may be need multiply by BPB_RsvdSecCnt !!!
         mov     byte [si+8*2+3], bh     ; bx - begin of FAT
-
+        
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_FATSz16]
@@ -1216,12 +1281,12 @@ sayerr_memmove:
         pop     es
         test    ah, ah
         jnz     sayerr_floppy
-
+        
         mov     ax, cx
         shl     ax, 1
         and     eax, 0ffffh             ; ax - count of bytes in FAT
         add     dword [si+8*3+2], eax
-
+        
 ; reading RootDir
 ; TODO: BPB_NumFATs
         add     bx, ax
@@ -1246,7 +1311,7 @@ sayerr_memmove:
         pop     bx
         push    bx
         add     word [FirstDataSector], bx      ; Begin of data region of floppy
-
+        
 ; read RootDir
         call    conv_abs_to_THS
         pop     ax

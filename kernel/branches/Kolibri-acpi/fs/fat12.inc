@@ -221,7 +221,7 @@ read_chs_sector:
 frnoread2_1:
         cmp     [esp+16], dword 0; eof without read ?
         je      frnoread_1
-        mov     [fdc_irq_func], fdc_null
+
         pop     edi esi edx ecx
         add     esp, 4
         pop     ebx; ebx <- eax : size of file
@@ -354,7 +354,6 @@ check_label:
         mov     [FDD_Track], 0; Цилиндр
         mov     [FDD_Head], 0; Сторона
         mov     [FDD_Sector], 1; Сектор
-        call    SetUserInterrupts
         call    FDDMotorON
         call    RecalibrateFDD
         cmp     [FDC_Status], 0
@@ -409,7 +408,6 @@ save_flp_root_1:
         cmp     [FDD_Sector], 16
         jne     save_flp_root_1
 unnecessary_root_save:
-        mov     [fdc_irq_func], fdc_null
         popa
         ret
 
@@ -445,7 +443,6 @@ save_flp_fat_1:
         jne     unnecessary_flp_fat_save
         mov     [root_read], 0
 unnecessary_flp_fat_save:
-        mov     [fdc_irq_func], fdc_null
         popa
         ret
 
@@ -1703,7 +1700,7 @@ fs_FloppyWrite:
 ; now ebx=start pos, ecx=end pos, both lie inside file
         sub     ecx, ebx
         jz      .ret
-        call    SetUserInterrupts
+
 .write_loop:
 ; skip unmodified sectors
         cmp     dword [esp], 0x200
@@ -1794,7 +1791,6 @@ fs_FloppyWrite:
         and     dword [esp], 0
         jmp     .write_loop
 .done:
-        mov     [fdc_irq_func], fdc_null
         jmp     .ret
 
 floppy_extend_file.zero_size:
@@ -1948,7 +1944,6 @@ fs_FloppySetFileEnd:
         mov     al, 11
 @@:
 .doret:
-        mov     [fdc_irq_func], fdc_null
         ret
 .expand:
         push    ecx
@@ -1981,7 +1976,6 @@ fs_FloppySetFileEnd:
         call    save_flp_fat
         cmp     [FDC_Status], 0
         jnz     .device_err
-        call    SetUserInterrupts
 ; now zero new data
 ; edi = current cluster, [esp+12]=new size, [esp+4]=old size, [esp]=return code
 .zero_loop:
@@ -2074,7 +2068,7 @@ fs_FloppySetFileEnd:
         add     eax, 31
         and     edi, 0x1FF
         jz      .truncate_done
-        call    SetUserInterrupts
+
         pusha
         call    read_chs_sector
         popa

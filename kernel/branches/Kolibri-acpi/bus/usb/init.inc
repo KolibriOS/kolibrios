@@ -54,7 +54,7 @@ proc usb_init
         mov     esi, pcidev_list
         push    0
 .kickoff:
-        mov     esi, [esi+PCIDEV.fd]
+        mov     esi, [esi+PCIDEV.list.next]
         cmp     esi, pcidev_list
         jz      .done_kickoff
         cmp     word [esi+PCIDEV.class+1], 0x0C03
@@ -92,7 +92,7 @@ proc usb_init
 ; for all EHCI controllers.
         mov     eax, pcidev_list
 .scan_ehci:
-        mov     eax, [eax+PCIDEV.fd]
+        mov     eax, [eax+PCIDEV.list.next]
         cmp     eax, pcidev_list
         jz      .done_ehci
         cmp     [eax+PCIDEV.class], 0x0C0320
@@ -105,7 +105,7 @@ proc usb_init
 ; for all UHCI and OHCI controllers.
         mov     eax, pcidev_list
 .scan_usb1:
-        mov     eax, [eax+PCIDEV.fd]
+        mov     eax, [eax+PCIDEV.list.next]
         cmp     eax, pcidev_list
         jz      .done_usb1
         mov     edi, uhci_hardware_func

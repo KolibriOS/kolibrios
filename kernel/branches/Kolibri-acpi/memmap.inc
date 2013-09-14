@@ -108,10 +108,10 @@
 ;   F604  byte        (unused?) mouse port: 1 ps2, 2 com1, 3 com2
 ;   F605  ->   FAFF   free (1k2)
 ;   FB00  ->   FB0F   mouse memory 00 chunk count, that includes:
-;   FB08 word	    -- mouse H-scroll
-;   FB0A word	    -- mouse x 
+;   FB08 word       -- mouse H-scroll
+;   FB0A word       -- mouse x 
 ;   FB0C word         -- mouse y
-;   FB0E word	    -- mouse V-scroll
+;   FB0E word       -- mouse V-scroll
 ;   FB10  ->   FB17   mouse color mem
 ;   FB21              x move
 ;   FB22              y move
@@ -124,13 +124,13 @@
 ;   FC00  ->   FCFE   com1/ps2 buffer
 ;   FCFF              com1/ps2 buffer count starting from FC00
 ;   FD00  ->   FDFF   free (256)
-;   FE00  dword       screen x size		
-;   FE04  dword       screen y size		
-;   FE08  dword       screen y multiplier	
-;   FE0C  dword       screen mode	
+;   FE00  dword       screen x size             
+;   FE04  dword       screen y size             
+;   FE08  dword       screen y multiplier       
+;   FE0C  dword       screen mode       
 ;   FE10  ->   FE7F   free (112)
 ;   FE80  dword       address of LFB in physical
-;   FE84  dword       address of applications memory start in physical	?
+;   FE84  dword       address of applications memory start in physical  ?
 ;   FE88  dword       address of button list
 ;   FE8C  dword       memory to use 
 ;   FE90  ->   FEFF   free (112)
@@ -196,12 +196,12 @@
 ;
 ; 0x80090000 ->  9FFFF   tmp (64k) - unused?
 ; 0x800A0000 ->  AFFFF   screen access area
-; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k)	?
-; 0x80100000 -> 27FFFF   diskette image	(1m5)
-; 0x80280000 -> 281FFF   ramdisk fat	(8k)
-; 0x80282000 -> 283FFF   floppy  fat	(8k)
+; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k)        ?
+; 0x80100000 -> 27FFFF   diskette image (1m5)
+; 0x80280000 -> 281FFF   ramdisk fat    (8k)
+; 0x80282000 -> 283FFF   floppy  fat    (8k)
 ;
-; 0x80284000 -> 28BFFF   HDD DMA AREA	(32k)
+; 0x80284000 -> 28BFFF   HDD DMA AREA   (32k)
 ; 0x8028C000 -> 297FFF   free (48k)
 ;
 ; 0x80298000 -> 29FFFF   auxiliary table for background smoothing code (32k)

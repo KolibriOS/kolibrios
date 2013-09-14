@@ -768,6 +768,8 @@ check_ATAPI_device_event:
         cmp     [cd_status], 0
         jne     .end
         mov     [IDE_Channel_2], 1
+        mov     ecx, ide_channel2_mutex
+        call    mutex_lock
         call    reserve_ok2
         mov     [ChannelNumber], 2
         mov     [DiskNumber], 1
@@ -791,6 +793,8 @@ check_ATAPI_device_event:
         cmp     [cd_status], 0
         jne     .end
         mov     [IDE_Channel_2], 1
+        mov     ecx, ide_channel2_mutex
+        call    mutex_lock
         call    reserve_ok2
         mov     [ChannelNumber], 2
         mov     [DiskNumber], 0
@@ -814,6 +818,8 @@ check_ATAPI_device_event:
         cmp     [cd_status], 0
         jne     .end
         mov     [IDE_Channel_1], 1
+        mov     ecx, ide_channel1_mutex
+        call    mutex_lock
         call    reserve_ok2
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 1
@@ -837,6 +843,8 @@ check_ATAPI_device_event:
         cmp     [cd_status], 0
         jne     .end
         mov     [IDE_Channel_1], 1
+        mov     ecx, ide_channel1_mutex
+        call    mutex_lock
         call    reserve_ok2
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 0

@@ -34,92 +34,6 @@ proc get_notify stdcall, p_ev:dword
         jmp     .wait
 endp
 
-align 4
-proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 6
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        call    pci_read_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 5
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        call    pci_read_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 4
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        call    pci_read_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 8
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        mov     ecx, [val]
-        call    pci_write_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 9
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        mov     ecx, [val]
-        call    pci_write_reg
-        pop     ebx
-        ret
-endp
-
-align 4
-proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-        push    ebx
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ah, byte [bus]
-        mov     al, 10
-        mov     bh, byte [devfn]
-        mov     bl, byte [reg]
-        mov     ecx, [val]
-        call    pci_write_reg
-        pop     ebx
-        ret
-endp
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code
@@ -509,42 +423,166 @@ proc load_file stdcall, file_name:dword
         ret
 endp
 
+; description
+;  allocate user memory and loads the specified file
+;
+; param
+;  file_name= path to file
+;
+; retval
+;  eax= file image in user memory
+;  ebx= size of file
+;
+; warging
+;  You mast call kernel_free() to delete each file
+;  loaded by the load_file() function
+
+align 4
+proc load_file_umode stdcall, file_name:dword
+           locals
+             attr       dd ?
+             flags      dd ?
+             cr_time    dd ?
+             cr_date    dd ?
+             acc_time   dd ?
+             acc_date   dd ?
+             mod_time   dd ?
+             mod_date   dd ?
+             file_size  dd ?
+
+             km_file    dd ?
+             um_file    dd ?
+           endl
+
+        push    esi
+        push    edi
+        push    ebx
+
+
+        lea     eax, [attr]
+        stdcall get_fileinfo, [file_name], eax   ;find file and get info
+        test    eax, eax
+        jnz     .err_1
+
+        mov     eax, [file_size]
+        cmp     eax, 1024*1024*16                ;to be enough for anybody (c)
+        ja      .err_1
+                                                 ;it is very likely that the file is packed
+        stdcall kernel_alloc, [file_size]        ;with kpack, so allocate memory from kernel heap
+        mov     [km_file], eax
+        test    eax, eax
+        jz      .err_1
+
+        stdcall read_file, [file_name], eax, dword 0, [file_size]
+        cmp     ebx, [file_size]
+
+        jne     .err_2
+
+        mov     eax, [km_file]
+        cmp     dword [eax], 0x4B43504B          ; check kpack signature
+        jne     .raw_file
+
+        mov     ebx, [eax+4]                     ;get real size of file
+        mov     [file_size], ebx
+        stdcall user_alloc, ebx                  ;and allocate memory from user heap
+        mov     [um_file], eax
+        test    eax, eax
+        jz      .err_2
+
+        pushad
+        mov     ecx, unpack_mutex
+        call    mutex_lock
+
+        stdcall unpack, [km_file], [um_file]
+
+        mov     ecx, unpack_mutex
+        call    mutex_unlock
+        popad
+
+        stdcall kernel_free, [km_file]           ;we don't need packed file anymore
+.exit:
+        mov     eax, [um_file]
+        mov     edx, [file_size]
+
+        pop     ebx
+        pop     edi
+        pop     esi
+        ret
+
+
+.raw_file:                                       ; sometimes we load unpacked file
+        stdcall user_alloc, ebx                  ; allocate space from user heap
+        mov     [um_file], eax
+
+        test    eax, eax
+        jz      .err_2
+
+        shr     eax, 10                          ; and remap pages.
+
+        mov     ecx, [file_size]
+        add     ecx, 4095
+        shr     ecx, 12
+
+        mov     esi, [km_file]
+        shr     esi, 10
+        add     esi, page_tabs
+
+        lea     edi, [page_tabs+eax]
+
+        cld
+@@:
+        lodsd
+        and     eax, 0xFFFFF000
+        or      eax, PG_USER
+        stosd
+        loop    @B
+
+        stdcall free_kernel_space, [km_file]     ; release allocated kernel space
+        jmp     .exit                            ; physical pages still in use
+
+.err_2:
+        stdcall kernel_free, [km_file]
+.err_1:
+        xor     eax, eax
+        xor     edx, edx
+
+        pop     ebx
+        pop     edi
+        pop     esi
+        ret
+endp
+
+
 uglobal
 align 4
 unpack_mutex MUTEX
 endg
 
 align 4
-proc get_proc_ex stdcall, proc_name:dword, imports:dword
-
+proc get_proc_ex stdcall uses ebx esi, proc_name:dword, imports:dword
+        mov     ebx, [imports]
+        test    ebx, ebx
+        jz      .end
+        xor     esi, esi
 .look_up:
-        mov     edx, [imports]
-        test    edx, edx
-        jz      .end
-        mov     edx, [edx]
-        test    edx, edx
-        jz      .end
-.next:
-        mov     eax, [edx]
-        test    eax, eax
-        jz      .next_table
 
-        push    edx
+        mov     eax, [ebx+32]
+        mov     eax, [OS_BASE+eax+esi*4]
+        add     eax, OS_BASE
         stdcall strncmp, eax, [proc_name], 256
-        pop     edx
         test    eax, eax
         jz      .ok
 
-        add     edx, 8
-        jmp     .next
-.next_table:
-        add     [imports], 4
-        jmp     .look_up
-.ok:
-        mov     eax, [edx+4]
-        ret
+        inc     esi
+        cmp     esi, [ebx+24]
+        jb      .look_up
 .end:
         xor     eax, eax
+        ret
+.ok:
+        mov     eax, [ebx+28]
+        mov     eax, [OS_BASE+eax+esi*4]
+        add     eax, OS_BASE
         ret
 endp
 
@@ -713,8 +751,6 @@ proc load_driver stdcall, driver_name:dword
              img_base  dd ?
              start     dd ?
 
-             exports   dd ?   ;fake exports table
-                       dd ?
              file_name rb 13+16+4+1      ; '/sys/drivers/<up-to-16-chars>.obj'
            endl
 
@@ -803,13 +839,10 @@ proc load_driver stdcall, driver_name:dword
         add     ecx, [sym]
         mov     [strings], ecx
 
-        lea     ebx, [exports]
-        mov     dword [ebx], kernel_export
-        mov     dword [ebx+4], 0
         lea     eax, [edx+20]
 
         stdcall fix_coff_symbols, eax, [sym], [edx+COFF_HEADER.nSymbols], \
-                [strings], ebx
+                [strings], __exports
         test    eax, eax
         jz      .link_fail
 
@@ -911,8 +944,6 @@ proc load_library stdcall, file_name:dword
              img_base  dd ?
            endl
 
-        cli
-
 ; resolve file name
         mov     ebx, [file_name]
         lea     edi, [fullname+1]
@@ -923,6 +954,8 @@ proc load_library stdcall, file_name:dword
 
 ; scan for required DLL in list of already loaded for this process,
 ; ignore timestamp
+        cli
+
         mov     esi, [CURRENT_TASK]
         shl     esi, 8
         lea     edi, [fullname]
@@ -946,6 +979,7 @@ proc load_library stdcall, file_name:dword
         mov     eax, [ecx+DLLDESCR.exports]
         sub     eax, [ecx+DLLDESCR.defaultbase]
         add     eax, [esi+HDLL.base]
+        sti
         ret
 .next_in_process:
         mov     esi, [esi+HDLL.fd]
@@ -953,10 +987,12 @@ proc load_library stdcall, file_name:dword
 .not_in_process:
 
 ; scan in full list, compare timestamp
+        sti
         lea     eax, [fileinfo]
         stdcall get_fileinfo, edi, eax
         test    eax, eax
         jnz     .fail
+        cli
         mov     esi, [dll_list.fd]
 .scan_for_dlls:
         cmp     esi, dll_list
@@ -978,6 +1014,7 @@ proc load_library stdcall, file_name:dword
 
 ; new DLL
 .load_new:
+        sti
 ; load file
         stdcall load_file, edi
         test    eax, eax
@@ -1005,13 +1042,6 @@ proc load_library stdcall, file_name:dword
         mov     dword [esi+DLLDESCR.timestamp], eax
         mov     eax, dword [fileinfo+28]
         mov     dword [esi+DLLDESCR.timestamp+4], eax
-; initialize DLLDESCR struct
-        and     dword [esi+DLLDESCR.refcount], 0; no HDLLs yet; later it will be incremented
-        mov     [esi+DLLDESCR.fd], dll_list
-        mov     eax, [dll_list.bk]
-        mov     [dll_list.bk], esi
-        mov     [esi+DLLDESCR.bk], eax
-        mov     [eax+DLLDESCR.fd], esi
 
 ; calculate size of loaded DLL
         mov     edx, [coff]
@@ -1181,6 +1211,14 @@ proc load_library stdcall, file_name:dword
 
         stdcall kernel_free, [coff]
 
+        cli
+; initialize DLLDESCR struct
+        and     dword [esi+DLLDESCR.refcount], 0; no HDLLs yet; later it will be incremented
+        mov     [esi+DLLDESCR.fd], dll_list
+        mov     eax, [dll_list.bk]
+        mov     [dll_list.bk], esi
+        mov     [esi+DLLDESCR.bk], eax
+        mov     [eax+DLLDESCR.fd], esi
 .dll_already_loaded:
         inc     [esi+DLLDESCR.refcount]
         push    esi
@@ -1253,6 +1291,7 @@ proc load_library stdcall, file_name:dword
         mov     eax, [esi+DLLDESCR.exports]
         sub     eax, [esi+DLLDESCR.defaultbase]
         add     eax, [img_base]
+        sti
         ret
 .fail_and_free_data:
         stdcall kernel_free, [esi+DLLDESCR.data]
@@ -1269,6 +1308,7 @@ proc load_library stdcall, file_name:dword
 .fail_and_dereference:
         mov     eax, 1  ; delete 1 reference
         call    dereference_dll
+        sti
         xor     eax, eax
         ret
 endp

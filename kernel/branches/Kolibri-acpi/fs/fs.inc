@@ -318,86 +318,6 @@ endg
   fs_noflpdisk:
   ;*****************************************************************
 
-        mov     eax, [edi+1]
-        cmp     eax, 'HD0 '
-        je      fs_yesharddisk_IDE0
-        cmp     eax, 'HD1 '
-        je      fs_yesharddisk_IDE1
-        cmp     eax, 'HD2 '
-        je      fs_yesharddisk_IDE2
-        cmp     eax, 'HD3 '
-        je      fs_yesharddisk_IDE3
-        jmp     old_path_harddisk
-fs_yesharddisk_IDE0:
-        call    reserve_hd1
-        mov     [hdbase], 0x1f0
-        mov     [hdid], 0x0
-        mov     [hdpos], 1
-        jmp     fs_yesharddisk_partition
-fs_yesharddisk_IDE1:
-        call    reserve_hd1
-        mov     [hdbase], 0x1f0
-        mov     [hdid], 0x10
-        mov     [hdpos], 2
-        jmp     fs_yesharddisk_partition
-fs_yesharddisk_IDE2:
-        call    reserve_hd1
-        mov     [hdbase], 0x170
-        mov     [hdid], 0x0
-        mov     [hdpos], 3
-        jmp     fs_yesharddisk_partition
-fs_yesharddisk_IDE3:
-        call    reserve_hd1
-        mov     [hdbase], 0x170
-        mov     [hdid], 0x10
-        mov     [hdpos], 4
-fs_yesharddisk_partition:
-        call    reserve_hd_channel
-;    call  choice_necessity_partition
-;    jmp   fs_yesharddisk_all
-        jmp     fs_for_new_semantic
-
-choice_necessity_partition:
-        mov     eax, [edi+1+12]
-        call    StringToNumber
-        mov     [fat32part], eax
-choice_necessity_partition_1:
-        mov     ecx, [hdpos]
-        xor     eax, eax
-        mov     [hd_entries], eax; entries in hd cache
-        mov     edx, DRIVE_DATA+2
-        cmp     ecx, 0x80
-        jb      search_partition_array
-        mov     ecx, 4
- search_partition_array:
-        mov     bl, [edx]
-        movzx   ebx, bl
-        add     eax, ebx
-        inc     edx
-        loop    search_partition_array
-        mov     ecx, [hdpos]
-        mov     edx, BiosDiskPartitions
-        sub     ecx, 0x80
-        jb      .s
-        je      .f
- @@:
-        mov     ebx, [edx]
-        add     edx, 4
-        add     eax, ebx
-        loop    @b
-        jmp     .f
- .s:
-        sub     eax, ebx
- .f:
-        add     eax, [known_part];   add   eax,[fat32part]
-        dec     eax
-        xor     edx, edx
-        imul    eax, 100
-        add     eax, DRIVE_DATA+0xa
-        mov     [transfer_adress], eax
-        call    partition_data_transfer_1
-        ret
-
  old_path_harddisk:
         mov     eax, [edi+1]
         cmp     eax, 'HD  '
@@ -416,27 +336,7 @@ choice_necessity_partition_1:
 
   fs_no_LBA_read:
 
-        cmp     byte [edi+1+11], 0; directory read
-        je      fs_give_dir1
-        call    reserve_hd1
- fs_for_new_semantic:
-        call    choice_necessity_partition
-
-  fs_yesharddisk_all:
-        mov     eax, 1
-        mov     ebx, [esp+24+24]
-        cmp     [hdpos], 0      ; is hd base set?
-        jz      hd_err_return
-        cmp     [fat32part], 0  ; is partition set?
-        jnz     @f
 hd_err_return:
-        call    free_hd_channel
-        and     [hd1_status], 0
-        jmp     file_system_return
-@@:
-
-        call    free_hd_channel
-        and     [hd1_status], 0
 
   fs_noharddisk:
 ; \begin{diamond}[18.03.2006]
@@ -542,7 +442,10 @@ LBA_read:
 
   lbarl1:
 
-        call    reserve_hd1
+        pushad
+        mov     ecx, ide_mutex
+        call    mutex_lock
+        popad
 
         push    eax
         push    ecx
@@ -633,6 +536,10 @@ LBA_read:
         mov     [hd_error], 0
         mov     [hd1_status], 0
         add     esp, 2*4
+        pushad
+        mov     ecx, ide_mutex
+        call    mutex_unlock
+        popad
 
         ret
 

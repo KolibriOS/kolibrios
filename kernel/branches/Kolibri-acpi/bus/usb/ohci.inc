@@ -924,7 +924,12 @@ endp
 ; esi -> usb_controller, eax -> usb_gtd for the first TD,
 ; [ebp+12] = endpoint, [ebp+16] = maxpacket, [ebp+20] = type
 proc ohci_init_pipe
-virtual at ebp+8
+virtual at ebp-12
+.speed          db      ?
+                rb      3
+.bandwidth      dd      ?
+.target         dd      ?
+                rd      2
 .config_pipe    dd      ?
 .endpoint       dd      ?
 .maxpacket      dd      ?
@@ -944,6 +949,8 @@ end virtual
         shl     edx, 7
         or      eax, edx
         mov     [edi+ohci_pipe.Flags-sizeof.ohci_pipe], eax
+        bt      eax, 13
+        setc    [.speed]
         mov     eax, [.maxpacket]
         mov     word [edi+ohci_pipe.Flags+2-sizeof.ohci_pipe], ax
         cmp     [.type], CONTROL_PIPE

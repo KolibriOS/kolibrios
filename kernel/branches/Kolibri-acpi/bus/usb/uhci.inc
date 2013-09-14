@@ -1375,7 +1375,12 @@ endp
 ; [ebp+12] = endpoint, [ebp+16] = maxpacket, [ebp+20] = type
 proc uhci_init_pipe
 ; inherit some variables from the parent usb_open_pipe
-virtual at ebp+8
+virtual at ebp-12
+.speed          db      ?
+                rb      3
+.bandwidth      dd      ?
+.target         dd      ?
+                rd      2
 .config_pipe    dd      ?
 .endpoint       dd      ?
 .maxpacket      dd      ?
@@ -1413,6 +1418,8 @@ end virtual
         mov     al, USB_PID_IN
 @@:
         mov     [edi+uhci_pipe.Token-sizeof.uhci_pipe], eax
+        bt      eax, 20
+        setc    [.speed]
 ; 4. Initialize the first TD:
 ; copy Token from uhci_pipe.Token zeroing reserved bit 20,
 ; set ControlStatus for future transfers, bit make it inactive,

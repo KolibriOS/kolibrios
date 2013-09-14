@@ -754,14 +754,14 @@ SOCKET_accept:
 ; Ok, we got a socket ptr
         mov     eax, [esi]
 
-; Convert it to a socket number
-        call    SOCKET_ptr_to_num
-        jz      .invalid        ; FIXME ?
-
 ; Change thread ID to that of the current thread
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.TID], ebx
+
+; Convert it to a socket number
+        call    SOCKET_ptr_to_num
+        jz      .invalid        ; FIXME ?
 
 ; and return it to caller
         mov     [esp+32], eax
@@ -871,6 +871,9 @@ SOCKET_receive:
         test    edi, MSG_DONTWAIT
         jnz     .return_err
 
+        test    [eax + SOCKET.state], SS_CANTRCVMORE
+        jnz     .return_err
+
 ;        test    [eax + SOCKET.options], SO_NONBLOCK
 ;        jnz     .return_err
 
@@ -926,7 +929,7 @@ SOCKET_receive_dgram:
         rep movsd
   .nd:
 
-        call    kernel_free                                     ; free kernel buffer
+        call    NET_packet_free
         pop     eax                                             ; return number of bytes copied to application
         xor     ebx, ebx
         ret
@@ -1565,7 +1568,7 @@ SOCKET_input:
         call    mutex_unlock
         popa
 
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 8
 
         ret
@@ -1891,8 +1894,7 @@ SOCKET_notify:
         shl     ecx, 8
         or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Raised a network event!\n"
-
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
         jmp     .done
 
   .unblock:
@@ -2049,6 +2051,7 @@ SOCKET_alloc:
 ; SOCKET_free
 ;
 ; Free socket data memory and remove socket from the list
+; Caller should lock and unlock socket_mutex
 ;
 ; IN:  eax = socket ptr
 ; OUT: /
@@ -2058,11 +2061,6 @@ align 4
 SOCKET_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: %x\n", eax
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_lock
-        popa
 
         call    SOCKET_check
         jz      .error
@@ -2109,12 +2107,6 @@ SOCKET_free:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
 
   .error:
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_unlock
-        popa
-
         ret
 
 ;------------------------------------
@@ -2149,13 +2141,20 @@ SOCKET_fork:
         pop     eax
 
 ; Copy structure from current socket to new
-; We start at PID to preserve the socket num, and the 2 pointers at beginning of socket
+; We start at PID to preserve the socket num, 2 pointers and mutex
+; TID will be filled in later
         lea     esi, [ebx + SOCKET.PID]
         lea     edi, [eax + SOCKET.PID]
         mov     ecx, (SOCKET_QUEUE_LOCATION - SOCKET.PID + 3)/4
         rep movsd
 
         and     [eax + SOCKET.options], not SO_ACCEPTCON
+
+; Notify owner of parent socket
+        push    eax
+        mov     eax, ebx
+        call    SOCKET_notify
+        pop     eax
 
         ret
 
@@ -2322,9 +2321,6 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
-        pushf
-        cli     ; FIXME
-
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
         pusha
@@ -2351,11 +2347,6 @@ SOCKET_process_end:
         mov     ebx, [ebx + SOCKET.NextPtr]
 
         pusha
-        mov     ecx, socket_mutex
-        call    mutex_unlock
-        popa
-
-        pusha
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .free
 
@@ -2370,12 +2361,6 @@ SOCKET_process_end:
 
   .closed:
         popa
-
-        pusha
-        mov     ecx, socket_mutex
-        call    mutex_lock
-        popa
-
         jmp     .next_socket_test
 
   .done:
@@ -2385,8 +2370,6 @@ SOCKET_process_end:
         mov     ecx, socket_mutex
         call    mutex_unlock
         popa
-
-        popf
 
         ret
 

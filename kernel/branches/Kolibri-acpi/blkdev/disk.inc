@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3460 $
+$Revision: 3742 $
 
 ; =============================================================================
 ; ================================= Constants =================================
@@ -186,9 +186,9 @@ struct  PARTITION
 ; Pointer to parent DISK structure.
         FSUserFunctions dd ?
 ; Handlers for the sysfunction 70h. This field is a pointer to the following
-; array. The first dword is a number of supported subfunctions, other dwords
+; array. The first dword is pointer to disconnect handler.
+; The first dword is a number of supported subfunctions, other dwords
 ; point to handlers of corresponding subfunctions.
-; This field is 0 if file system is not recognized.
 ; ...fs-specific data may follow...
 ends
 
@@ -501,7 +501,8 @@ disk_media_dereference:
         jz      .nofree
 .freeloop:
         lodsd
-        call    free
+        mov     ecx, [eax+PARTITION.FSUserFunctions]
+        call    dword [ecx]
         dec     edi
         jnz     .freeloop
 .nofree:
@@ -727,7 +728,7 @@ disk_scan_partitions:
 ; 10. This is not an  MBR. The media is not partitioned. Create one partition
 ; which covers all the media and abort the loop.
         stdcall disk_add_partition, 0, 0, \
-                dword [esi+DISK.MediaInfo.Capacity], dword [esi+DISK.MediaInfo.Capacity+4]
+                dword [esi+DISK.MediaInfo.Capacity], dword [esi+DISK.MediaInfo.Capacity+4], esi
         jmp     .done
 .mbr:
 ; 11. Process all entries of the new MBR/EBR
@@ -855,7 +856,7 @@ irp type,\
         adc     edx, 0
         push    ecx
         stdcall disk_add_partition, eax, edx, \
-                [ecx+PARTITION_TABLE_ENTRY.Length], 0
+                [ecx+PARTITION_TABLE_ENTRY.Length], 0, esi
         pop     ecx
 .nothing:
 ; 5. Return.
@@ -869,7 +870,10 @@ irp type,\
 ; This is an internal function called from disk_scan_partitions and
 ; process_partition_table_entry. It adds one partition to the list of
 ; partitions for the media.
-proc disk_add_partition stdcall uses ebx edi, start:qword, length:qword
+; Important note: start, length, disk MUST be present and
+; MUST be in the same order as in PARTITION structure.
+; esi duplicates [disk].
+proc disk_add_partition stdcall uses ebx edi, start:qword, length:qword, disk:dword
 ; 1. Check that this partition will not exceed the limit on total number.
         cmp     [esi+DISK.NumPartitions], MAX_NUM_PARTITIONS
         jae     .nothing
@@ -974,25 +978,32 @@ disk_detect_partition:
 virtual at ebp+8
 .start  dq      ?
 .length dq      ?
-end virtual
-; When disk_add_partition is called, ebx contains a pointer to
-; a two-sectors-sized buffer. This function saves ebx in the stack
-; immediately before ebp.
-virtual at ebp-4
-.buffer dd      ?
+.disk   dd      ?
 end virtual
 ; 1. Read the bootsector to the buffer.
-        mov     al, DISKFUNC.read
-        mov     ebx, [.buffer]
-        add     ebx, 512
-        push    1
-        stdcall disk_call_driver, ebx, dword [.start], dword [.start+4], esp
+; When disk_add_partition is called, ebx contains a pointer to
+; a three-sectors-sized buffer. This function saves ebx in the stack
+; immediately before ebp.
+        mov     ebx, [ebp-4] ; get buffer
+        add     ebx, 512     ; advance over MBR data to bootsector data
+        add     ebp, 8       ; ebp points to part of PARTITION structure
+        xor     eax, eax     ; first sector of the partition
+        call    fs_read32_sys
+        push    eax
 ; 2. Run tests for all supported filesystems. If at least one test succeeded,
 ; go to 4.
-; For tests: qword [ebp+8] = partition start, qword [ebp+10h] = partition
-; length, [esp] = 0 if reading bootsector failed or 1 if succeeded,
-; ebx points to the buffer for bootsector.
+; For tests:
+; ebp -> first three fields of PARTITION structure, .start, .length, .disk;
+; [esp] = error code after bootsector read: 0 = ok, otherwise = failed,
+; ebx points to the buffer for bootsector,
+; ebx+512 points to 512-bytes buffer that can be used for anything.
         call    fat_create_partition
+        test    eax, eax
+        jnz     .success
+        call    ntfs_create_partition
+        test    eax, eax
+        jnz     .success
+        call    ext2_create_partition
         test    eax, eax
         jnz     .success
 ; 3. No file system has recognized the volume, so just allocate the PARTITION
@@ -1001,21 +1012,29 @@ end virtual
         call    malloc
         test    eax, eax
         jz      .nothing
-        mov     edx, dword [.start]
+        mov     edx, dword [ebp+PARTITION.FirstSector]
         mov     dword [eax+PARTITION.FirstSector], edx
-        mov     edx, dword [.start+4]
+        mov     edx, dword [ebp+PARTITION.FirstSector+4]
         mov     dword [eax+PARTITION.FirstSector+4], edx
-        mov     edx, dword [.length]
+        mov     edx, dword [ebp+PARTITION.Length]
         mov     dword [eax+PARTITION.Length], edx
-        mov     edx, dword [.length+4]
+        mov     edx, dword [ebp+PARTITION.Length+4]
         mov     dword [eax+PARTITION.Length+4], edx
         mov     [eax+PARTITION.Disk], esi
-        and     [eax+PARTITION.FSUserFunctions], 0
+        mov     [eax+PARTITION.FSUserFunctions], default_fs_functions
 .success:
 .nothing:
+        sub     ebp, 8 ; restore ebp
 ; 4. Return with eax = pointer to PARTITION or NULL.
         pop     ecx
         ret
+
+iglobal
+align 4
+default_fs_functions:
+        dd      free
+        dd      0       ; no user functions
+endg
 
 ; This function is called from file_system_lfn.
 ; This handler gets the control each time when fn 70 is called
@@ -1200,15 +1219,13 @@ fs_dyndisk:
         mov     eax, [edx+DISK.Partitions]
         mov     eax, [eax+ecx*4]
         mov     edi, [eax+PARTITION.FSUserFunctions]
-        test    edi, edi
-        jz      .nofs
         mov     ecx, [ebx]
-        cmp     [edi], ecx
+        cmp     [edi+4], ecx
         jbe     .unsupported
         push    edx
         push    ebp
         mov     ebp, eax
-        call    dword [edi+4+ecx*4]
+        call    dword [edi+8+ecx*4]
         pop     ebp
         pop     edx
         mov     dword [esp+32], eax
@@ -1225,6 +1242,8 @@ fs_dyndisk:
         mov     dword [esp+32], ERROR_FILE_NOT_FOUND
         jmp     .cleanup
 .unsupported:
+        cmp     edi, default_fs_functions
+        jz      .nofs
         mov     dword [esp+32], ERROR_UNSUPPORTED_FS
         jmp     .cleanup
 .nomedia:

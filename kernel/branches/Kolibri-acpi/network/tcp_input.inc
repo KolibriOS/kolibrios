@@ -69,7 +69,7 @@ TCP_input:
         inc     [TCP_segments_missed + edi]
 
         add     esp, sizeof.TCP_queue_entry - 8
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
 
         ret
@@ -1455,9 +1455,8 @@ align 4
         jnz     @f
 
         test    ecx, ecx
-        jnz     .final_processing
+        jz      .final_processing
        @@:
-
 
 ; The segment is in order?
         mov     eax, [edx + TCP_header.SequenceNumber]
@@ -1490,6 +1489,8 @@ align 4
         jmp     .data_done
 
   .out_of_order:
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order\n"
 
 ; Uh-oh, some data is out of order, lets call TCP reassemble for help
 
@@ -1622,7 +1623,7 @@ align 4
   .dumpit:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
         jmp     .loop
 
@@ -1695,6 +1696,6 @@ align 4
   .drop_no_socket:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop (no socket)\n"
 
-        call    kernel_free
+        call    NET_packet_free
         add     esp, 4
         jmp     .loop

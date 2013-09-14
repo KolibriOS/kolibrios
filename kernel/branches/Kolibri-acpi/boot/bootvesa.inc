@@ -193,7 +193,7 @@ calc_vmodes_table:
         mov     word [es:bx], 640
         mov     word [es:bx+2], 480
         mov     word [es:bx+6], 0x13
-
+        
         mov     word [es:bx+10], 640
         mov     word [es:bx+12], 480
         mov     word [es:bx+16], 0x12
@@ -383,7 +383,7 @@ if defined extended_primary_loader
 else
         mov     si, word [preboot_graph]
         test    si, si
-        jnz      .no_zero        ;if no zero
+        jnz     .no_zero         ;if no zero
 end if
 .zerro:
 ;        mov     ax,modes_table
@@ -397,19 +397,19 @@ end if
         mov     si, modes_table
         call    .loops
         test    ax, ax
-        jz     .ok_found_mode
+        jz      .ok_found_mode
         mov     ax, 800
         mov     bx, 600
         mov     si, modes_table
         call    .loops
         test    ax, ax
-        jz     .ok_found_mode
+        jz      .ok_found_mode
         mov     ax, 640
         mov     bx, 480
         mov     si, modes_table
         call    .loops
         test    ax, ax
-        jz     .ok_found_mode
+        jz      .ok_found_mode
 
         mov     si, modes_table
 if ~ defined extended_primary_loader
@@ -426,7 +426,7 @@ if ~ defined extended_primary_loader
         mov     si, modes_table
         call    .loops
         test    ax, ax
-        jz     .ok_found_mode
+        jz      .ok_found_mode
 
         mov     si, modes_table
 ;        cmp     ax,modes_table
@@ -484,10 +484,10 @@ end if
         jmp     .loops
 .ok:
         xor     ax, ax
-	ret
+        ret
 .exit:
         or      ax, -1
-	ret
+        ret
 
 
 ;-----------------------------------------------------------------------------
@@ -700,14 +700,14 @@ clear_vmodes_table:
         mov     di, 1444
         xor     ax, ax
         mov     ah, 1*16+15
-        mov     cx, 70
+        mov     cx, 77
         mov     bp, 12
 .loop_start:
-        rep     stosw
-        mov     cx, 70
-        add     di, 20
+        rep stosw
+        mov     cx, 77
+        add     di, 6
         dec     bp
-        jns		.loop_start
+        jns     .loop_start
         pop     es
         popa
         ret
@@ -720,7 +720,7 @@ set_vmode:
 
         mov     si, word [preboot_graph]           ;[preboot_graph]
         mov     cx, word [es:si+6]           ; number of mode
-
+        
 
         mov     ax, word [es:si+0]           ; resolution X
         mov     bx, word [es:si+2]           ; resolution Y

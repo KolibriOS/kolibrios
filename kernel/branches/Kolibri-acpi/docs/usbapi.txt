@@ -60,8 +60,7 @@ called several times with the same 'configdescr' and different 'interfacedescr'.
 The returned value NULL means that the initialization has failed.
 Any other value means that configuration was successful; the kernel does not
 try to interpret the value. It can be, for example, pointer to the internal
-data allocated with Kmalloc, or index in some internal table. Remember that
-Kmalloc() is NOT stdcall, it destroys ebx.
+data allocated with Kmalloc, or index in some internal table.
 
 The driver can implement the function
 
@@ -173,22 +172,20 @@ The parameter 'length' is the number of bytes transferred. For
 control transfers, this includes 8 bytes from SETUP stage, so
 0 means that SETUP stage failed and 'size'+8 means full transfer.
 The parameter 'status' is nonzero if an error occured.
-USB_STATUS_OK		= 0	; no error
-USB_STATUS_CRC		= 1	; CRC error
-USB_STATUS_BITSTUFF	= 2	; bit stuffing violation
-USB_STATUS_TOGGLE	= 3	; data toggle mismatch
-USB_STATUS_STALL	= 4	; device returned STALL
-USB_STATUS_NORESPONSE	= 5	; device not responding
-USB_STATUS_PIDCHECK	= 6	; invalid PID check bits
-USB_STATUS_WRONGPID	= 7	; unexpected PID value
-USB_STATUS_OVERRUN	= 8	; too many data from endpoint
-USB_STATUS_UNDERRUN	= 9	; too few data from endpoint
-USB_STATUS_BUFOVERRUN	= 12	; overflow of internal controller buffer
-				; possible only for isochronous transfers
-USB_STATUS_BUFUNDERRUN	= 13	; underflow of internal controller buffer
-				; possible only for isochronous transfers
-USB_STATUS_CLOSED	= 16	; pipe closed, either explicitly with USBClosePipe
-				; or due to device disconnect
+USB_STATUS_OK           = 0     ; no error
+USB_STATUS_CRC          = 1     ; CRC error
+USB_STATUS_BITSTUFF     = 2     ; bit stuffing violation
+USB_STATUS_TOGGLE       = 3     ; data toggle mismatch
+USB_STATUS_STALL        = 4     ; device returned STALL
+USB_STATUS_NORESPONSE   = 5     ; device not responding
+USB_STATUS_PIDCHECK     = 6     ; invalid PID check bits
+USB_STATUS_WRONGPID     = 7     ; unexpected PID value
+USB_STATUS_OVERRUN      = 8     ; too many data from endpoint
+USB_STATUS_UNDERRUN     = 9     ; too few data from endpoint
+USB_STATUS_BUFOVERRUN   = 12    ; overflow of internal controller buffer
+USB_STATUS_BUFUNDERRUN  = 13    ; underflow of internal controller buffer
+USB_STATUS_CLOSED       = 16    ; pipe closed, either explicitly with USBClosePipe
+                                ; or due to device disconnect
 
 If several transfers are queued for the same pipe, their callback functions
 are called in the same order as they were queued.
@@ -196,3 +193,13 @@ When a pipe is closed, either explicitly with USBClosePipe, or
 implicitly due to device disconnect, all callback functions are called
 with USB_STATUS_CLOSED. The call to DeviceDisconnected() occurs after
 all callbacks.
+
+void* __stdcall USBGetParam(void* pipe0, int param);
+Returns miscellaneous parameters of the device.
+pipe0 is the pointer to the config pipe.
+param = 0: return pointer to device descriptor
+param = 1: return pointer to config descriptor, same as passed to AddDevice
+param = 2: return speed at which the device is operating, one of
+        USB_SPEED_FS = 0 ; full-speed
+        USB_SPEED_LS = 1 ; low-speed
+        USB_SPEED_HS = 2 ; high-speed
