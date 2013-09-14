@@ -247,6 +247,10 @@ show_error_parameters:
         DEBUGF  1, "K : EDX : %x ESI : %x EDI : %x\n", [reg_edx+4], [reg_esi+4], [reg_edi+4]
         DEBUGF  1, "K : EBP : %x EIP : %x ESP : %x\n", [reg_ebp+4], [reg_eip+4], ebx
         DEBUGF  1, "K : Flags : %x CS : %x (%s)\n", [reg_eflags+4], eax, edi
+        DEBUGF  1, "K : Stack dump:\n"
+        DEBUGF  1, "K : [ESP+00]: %x [ESP+04]: %x [ESP+08]: %x\n", [ebx], [ebx+4], [ebx+8]
+        DEBUGF  1, "K : [ESP+12]: %x [ESP+16]: %x [ESP+20]: %x\n", [ebx+12], [ebx+16], [ebx+20]
+        DEBUGF  1, "K : [ESP+24]: %x [ESP+28]: %x [ESP+32]: %x\n", [ebx+24], [ebx+28], [ebx+32]
         ret
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
