@@ -857,13 +857,6 @@ align 4
 				in		eax, dx
 				ret
 
-;proc pci_read8   stdcall, bus:dword, devfn:dword, reg:dword
-;proc pci_read16  stdcall, bus:dword, devfn:dword, reg:dword
-;proc pci_read32  stdcall, bus:dword, devfn:dword, reg:dword
-
-;proc pci_write8  stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-;proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-;proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 
 PCI_R8	equ 0
 PCI_R16	equ 4
@@ -873,81 +866,207 @@ PCI_W8	equ 12
 PCI_W16	equ 16
 PCI_W32 equ 20
 
-align 8
-pci_fn_table:
-pci_bus_read8		dd pci_bus.conf1_read8           ;0
-pci_bus_read16	dd pci_bus.conf1_read16          ;4
-pci_bus_read32	dd pci_bus.conf1_read32          ;8
-pci_bus_write8	dd pci_bus.conf1_write8          ;12
-pci_bus_write16	dd pci_bus.conf1_write16         ;16
-pci_bus_write32 dd pci_bus.conf1_write32         ;20
 
 align 4
-pci_read8:
-				mov		eax, PCI_R8
-				jmp		@F
+pci_conf1_rw:
+;internal function
+;eax accessor
+;ecx (bus << 8)|devfn
 
-align 4
-pci_read16:
-				mov		eax, PCI_R16
-				jmp		@F
+.val      equ esp+4
 
-align 4
-pci_read32:
-				mov		eax, PCI_R32
-
-align 4
-@@:
-.bus			equ esp+4
-.devfn 		equ esp+8
-.pci_reg 	equ esp+12
-
-				xor		ecx, ecx
-				mov   ch, [.bus]
-				mov   cl, [.devfn]
-				movzx edx, word [.pci_reg]
+; dword CF8 = (0x80000000 | ((reg & 0xF00) << 16) | (bus << 16) | (devfn << 8) | (reg & 0xFC))
 
 				pushfd
 				cli
 
-				call	dword [pci_fn_table+eax]
-
+				push  edx
+				push  eax
+				mov		eax, edx                	; eax = reg
+				shl		eax, 16                 	; eax = reg << 16
+				shl   ecx, 8                  	; ecx = (bus << 16)|(devfn<<8)
+				mov		al, dl                  	; eax = (reg << 16)|reg
+				and		eax, 0x0F0000FC           ; eax = ((reg & 0xF00) << 16)|(reg & 0xFC)
+				lea		eax, [0x80000000+eax+ecx]
+				mov 	dx, 0xCF8
+				out		dx, eax
+				pop		eax
+				pop   edx
+				jmp   dword [.fntab+eax]
+.r32:
+				mov  	dx, 0xCFC
+				in		eax, dx
+.rdone:
 				popfd
-
-				ret 	12
+				ret
+.r16:
+				and 	dx, 2
+				add		dx, 0xCFC
+				in		al, dx
+				jmp   .rdone
+.r8:
+				and 	dx, 3
+				add		dx, 0xCFC
+				in		al, dx
+				jmp   .rdone
+.w32:
+				mov		eax, [esp+8]
+				mov		dx, 0xCFC
+				out   dx, eax
+.wdone:
+				popfd
+				ret   4
+.w16:
+				mov		eax, [esp+8]
+				and 	dx, 2
+				add		dx, 0xCFC
+				out		dx, ax
+				jmp   .wdone
+.w8:
+				mov		eax, [esp+8]
+				and 	dx, 3
+				add		dx, 0xCFC
+				out		dx, al
+				jmp   .wdone
 
 align 4
-pci_write8:
-				mov		eax, PCI_W8
-				jmp		@F
+.fntab:
+				dd .r8
+				dd .r16
+				dd .r32
+				dd .w8
+				dd .w16
+				dd .w32
 
 align 4
-pci_write16:
+pci_fn_rw	dd pci_conf1_rw
+
+;proc pci_bus_read8   fastcall, busaddr:dword, reg:dword
+;proc pci_bus_read16  fastcall, busaddr:dword, reg:dword
+;proc pci_bus_read32  fastcall, busaddr:dword, reg:dword
+
+align 4
+pci_bus_read8:
+				xor	eax, eax
+				jmp	dword [pci_fn_rw]
+
+align 4
+pci_bus_read16:
+				mov		eax, PCI_R16
+				jmp	dword [pci_fn_rw]
+
+align 4
+pci_bus_read32:
+				mov		eax, PCI_R32
+				jmp	dword [pci_fn_rw]
+
+;proc pci_bus_write8  fastcall, busaddr:dword, reg:dword, val: dword
+;proc pci_bus_write16 fastcall, busaddr:dword, reg:dword, val: dword
+;proc pci_bus_write32 fastcall, busaddr:dword, reg:dword, val: dword
+
+align 4
+pci_bus_write8:
+				mov	  eax, PCI_W8
+				jmp	dword [pci_fn_rw]
+
+align 4
+pci_bus_write16:
 				mov		eax, PCI_W16
-				jmp		@F
+				jmp	dword [pci_fn_rw]
 
 align 4
-pci_write32:
+pci_bus_write32:
 				mov		eax, PCI_W32
+				jmp	dword [pci_fn_rw]
+
+;deprecated proc pci_read8   stdcall, bus:dword, devfn:dword, reg:dword
+;deprecated proc pci_read16  stdcall, bus:dword, devfn:dword, reg:dword
+;deprecated proc pci_read32  stdcall, bus:dword, devfn:dword, reg:dword
 
 align 4
-@@:
+pci_read8:
 .bus			equ esp+4
 .devfn 		equ esp+8
 .pci_reg 	equ esp+12
 .val      equ esp+16
 
-				xor		ecx, ecx
+				movzx ecx, byte [.devfn]
 				mov   ch, [.bus]
-				mov   cl, [.devfn]
 				movzx edx, word [.pci_reg]
+				call	pci_bus_read8
+				ret 	12
 
-				pushfd
-				cli
+align 4
+pci_read16:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+.val      equ esp+16
 
-				push  dword [esp+20]
-				call	dword [pci_fn_table+eax]
+				movzx ecx, byte [.devfn]
+				mov   ch, [.bus]
+				movzx edx, word [.pci_reg]
+				call	pci_bus_read16
+				ret 	12
 
-				popfd
+align 4
+pci_read32:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+.val      equ esp+16
 
+				movzx ecx, byte [.devfn]
+				mov   ch, [.bus]
+				movzx edx, word [.pci_reg]
+				call	pci_bus_read32
+				ret 	12
+
+;deprecated proc pci_write8  stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+;deprecated proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+;deprecated proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+
+align 4
+pci_write8:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+.val      equ esp+16
+
+				movzx ecx, byte [.devfn]
+				mov   ch, [.bus]
+				movzx edx, word [.pci_reg]
+				push	dword [esp+16]
+				call	pci_bus_write8
 				ret 	16
+
+align 4
+pci_write16:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+.val      equ esp+16
+
+				movzx ecx, byte [.devfn]
+				mov   ch, [.bus]
+				movzx edx, word [.pci_reg]
+				push	dword [esp+16]
+				call	pci_bus_write16
+				ret 	16
+
+align 4
+pci_write32:
+.bus			equ esp+4
+.devfn 		equ esp+8
+.pci_reg 	equ esp+12
+.val      equ esp+16
+
+				movzx ecx, byte [.devfn]
+				mov   ch, [.bus]
+				movzx edx, word [.pci_reg]
+				push	dword [esp+16]
+				call	pci_bus_write32
+				ret 	16
+
+
+
