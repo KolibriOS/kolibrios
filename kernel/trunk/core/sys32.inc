@@ -247,10 +247,83 @@ show_error_parameters:
         DEBUGF  1, "K : EDX : %x ESI : %x EDI : %x\n", [reg_edx+4], [reg_esi+4], [reg_edi+4]
         DEBUGF  1, "K : EBP : %x EIP : %x ESP : %x\n", [reg_ebp+4], [reg_eip+4], ebx
         DEBUGF  1, "K : Flags : %x CS : %x (%s)\n", [reg_eflags+4], eax, edi
+
         DEBUGF  1, "K : Stack dump:\n"
-        DEBUGF  1, "K : [ESP+00]: %x [ESP+04]: %x [ESP+08]: %x\n", [ebx], [ebx+4], [ebx+8]
-        DEBUGF  1, "K : [ESP+12]: %x [ESP+16]: %x [ESP+20]: %x\n", [ebx+12], [ebx+16], [ebx+20]
-        DEBUGF  1, "K : [ESP+24]: %x [ESP+28]: %x [ESP+32]: %x\n", [ebx+24], [ebx+28], [ebx+32]
+        push    eax ebx ecx edx
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, "K : [ESP+00]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [ESP+04]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [ESP+08]: %x\n",[ebx]        
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, "K : [ESP+12]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [ESP+16]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [ESP+20]: %x\n",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, "K : [ESP+24]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [ESP+28]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [ESP+32]: %x\n",[ebx]        
+        pop     edx ecx ebx eax
+        ret
+.error_ESP:
+        pop     edx ecx ebx eax
+        DEBUGF  1, "\n"
+        DEBUGF  1, "K : Unexpected end of the stack\n"
+        ret
+;--------------------------------------
+.check_ESP:
+        push    ebx
+        shr     ebx, 12
+        mov     ecx, ebx
+        shr     ecx, 10
+        mov     edx, [master_tab+ecx*4]
+        test    edx, PG_MAP
+        jz      .fail             ;page table is not created
+                                  ;incorrect address in the program
+
+        mov     eax, [page_tabs+ebx*4]
+        test    eax, 2
+        jz      .fail             ;address not reserved for use. error
+        
+        pop     ebx        
+        xor     eax, eax
+        ret        
+        
+.fail:
+        pop     ebx
+        xor     eax, eax
+        dec     eax
         ret
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
