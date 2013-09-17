@@ -1803,7 +1803,7 @@ dd 1675
           sysdir_path     rb 64
 Пример:
 dir_name1       db 'KolibriOS',0
-                rb 64-8
+                rb 64-10
 dir_path1       db 'HD0/1',0
                 rb 64-6
 Возвращаемое значение:
