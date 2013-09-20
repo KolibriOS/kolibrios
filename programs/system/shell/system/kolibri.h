@@ -13,38 +13,45 @@
 #define E_PARAM		33
 
 
+#pragma pack(push,1)
 typedef struct 
 {
-unsigned	p00 __attribute__((packed));
-unsigned	p04 __attribute__((packed));
-unsigned	p08 __attribute__((packed));
-unsigned	p12 __attribute__((packed));
-unsigned	p16 __attribute__((packed));
-char		p20 __attribute__((packed));
-char		*p21 __attribute__((packed));
-} kol_struct70 __attribute__((packed));
+unsigned	p00;
+unsigned	p04;
+unsigned	p08;
+unsigned	p12;
+unsigned	p16;
+char		p20;
+char		*p21;
+} kol_struct70;
+#pragma pack(pop)
 
 
+#pragma pack(push,1)
 typedef struct
 {
-unsigned	p00 __attribute__((packed));
-char		p04 __attribute__((packed));
-char		p05[3] __attribute__((packed));
-unsigned	p08 __attribute__((packed));
-unsigned	p12 __attribute__((packed));
-unsigned	p16 __attribute__((packed));
-unsigned	p20 __attribute__((packed));
-unsigned	p24 __attribute__((packed));
-unsigned	p28 __attribute__((packed));
-unsigned	p32[2] __attribute__((packed));
-unsigned	p40 __attribute__((packed));
-} kol_struct_BDVK __attribute__((packed));
+unsigned	p00;
+char		p04;
+char		p05[3];
+unsigned	p08;
+unsigned	p12;
+unsigned	p16;
+unsigned	p20;
+unsigned	p24;
+unsigned	p28;
+unsigned	p32[2];
+unsigned	p40;
+} kol_struct_BDVK;
+#pragma pack(pop)
 
+
+#pragma pack(push,1)
 typedef struct
 {
-char	*name __attribute__((packed));
-void	*data __attribute__((packed));
-} kol_struct_import __attribute__((packed));
+char	*name;
+void	*data;
+} kol_struct_import;
+#pragma pack(pop)
 
 
 void kol_exit();
