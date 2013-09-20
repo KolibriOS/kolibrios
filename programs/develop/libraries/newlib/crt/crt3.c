@@ -38,6 +38,8 @@ void __main (){};
 
 void* get_entry_point(void *raw);
 
+void _pei386_runtime_relocator (void){};
+
 void  __attribute__((noreturn))
 __crt_startup (void)
 {
@@ -45,11 +47,12 @@ __crt_startup (void)
     void    *img;
     void __attribute__((noreturn)) (*entry)(void *img);
 
+//    _pei386_runtime_relocator();
+
     img = load_libc();
 
     if(img == NULL)
     {
-        asm("int3");
         asm ("int $0x40" ::"a"(-1));
     };
 

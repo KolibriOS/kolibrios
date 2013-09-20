@@ -39,7 +39,7 @@ static inline int IsPowerOf2(uint32_t val)
     return (val & (val - 1)) == 0;
 }
 
-int validate_pe(void *raw, size_t raw_size, int is_exec)
+int validate_pe(void *raw, size_t raw_size)
 {
     PIMAGE_DOS_HEADER     dos;
     PIMAGE_NT_HEADERS32   nt;
@@ -63,13 +63,7 @@ int validate_pe(void *raw, size_t raw_size, int is_exec)
     if(nt->FileHeader.Machine != IMAGE_FILE_MACHINE_I386)
         return 0;
 
-    if(is_exec && (nt->FileHeader.Characteristics & IMAGE_FILE_DLL))
-        return 0;
-
     if(nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
-        return 0;
-
-    if( is_exec && nt->OptionalHeader.ImageBase != 0)
         return 0;
 
     if(nt->OptionalHeader.SectionAlignment < 4096)
@@ -214,7 +208,7 @@ void* load_libc()
 
 //    printf("libc.dll raw %p, size %d\n", raw_img, raw_size);
 
-    if(validate_pe(raw_img, raw_size, 0) != 0)
+    if(validate_pe(raw_img, raw_size) != 0)
     {
 //        printf("invalide libc.dll\n");
         img_base = create_image(raw_img);

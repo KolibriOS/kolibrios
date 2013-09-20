@@ -686,7 +686,7 @@ module_t* load_library(const char *name)
             memcpy(path+dllpath->path_len, libname, len);
             path[len+dllpath->path_len]=0;
 
-            printf("%s\n", path);
+//            printf("%s\n", path);
 
             img_base = load_lib_internal(path);
 

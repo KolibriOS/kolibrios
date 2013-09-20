@@ -106,12 +106,12 @@ typedef struct _IMAGE_NT_HEADERS
 
 typedef struct _IMAGE_SECTION_HEADER
 {
-	BYTE Name[IMAGE_SIZEOF_SHORT_NAME];
+    BYTE Name[IMAGE_SIZEOF_SHORT_NAME];
     union
     {
         DWORD PhysicalAddress;
-		DWORD VirtualSize;
-	} Misc;
+        DWORD VirtualSize;
+    } Misc;
     DWORD   VirtualAddress;
     DWORD   SizeOfRawData;
     DWORD   PointerToRawData;

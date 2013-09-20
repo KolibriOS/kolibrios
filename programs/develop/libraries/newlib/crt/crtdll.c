@@ -22,7 +22,7 @@ struct app_hdr
     int    reserved;
     void  *__idata_start;
     void  *__idata_end;
-    void  (*main)(int argc, char **argv, char **envp);
+    int  (*main)(int argc, char **argv, char **envp);
 };
 
 int    _argc;
@@ -117,9 +117,9 @@ libc_crt_startup (void *libc_base)
 
     _argv = arg;
 
-    header->main(_argc, _argv, NULL);
+    retval = header->main(_argc, _argv, NULL);
 done:
-    _exit (retval);
+    exit (retval);
 }
 
 
