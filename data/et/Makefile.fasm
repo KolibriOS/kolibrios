@@ -1,0 +1,60 @@
+# This is not a independent Makefile; it is auxiliary file
+# included from main Makefile.
+# It depends on the following variables and macro:
+# $(FASM_PROGRAMS) is a list of all programs to build with FASM rule;
+# $(binarypart) is a macro which converts from $(1)=item of $(FASM_PROGRAMS)
+# to space-escaped full name of binary, $(respace) unescapes spaces;
+# $(fbinary) and $(fsource) gives space-unescaped full name of binary
+# and source (respectively) of $(f)=item of $(FASM_PROGRAMS).
+
+# Define the rule for all FASM programs.
+# Yes, this looks like a black magic.
+# But it is not so scary as it seems.
+# First, we define "meta-rule" as a rule which is
+# macro depending on $(fasmprog).
+# Second, the construction foreach+eval creates
+# usual rules, one for each $(fasmprog) in $(FASM_PROGRAMS).
+# Note that meta-rule is double-expanded, first
+# time as the arg of eval - it is the place where $(fasmprog)
+# gets expanded - and second time as the rule;
+# so all $ which are expected to expand at the second time should be escaped.
+# And all $ which are expected to be expanded by the shell should be escaped
+# twice, so they become $$$$.
+
+# The arguments of macro fasm_meta_rule:
+# $(1) = name of binary file,
+# $(2) = name of main source file.
+# $(3) = folder of binary file - without spaces.
+# $(4) = name of program - without path and extension,
+define fasm_meta_rule
+$(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
+	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
+	(fasm -m 65536 "$$<" "$$@" -s $$$$tmpfile && \
+	fasmdep -e $$$$tmpfile > .deps/$(4).Po && \
+	rm $$$$tmpfile) || (rm $$$$tmpfile; false)
+	kpack --nologo "$$@"
+-include .deps/$(4).Po
+endef
+
+define fasm_nokpack_meta_rule
+$(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
+	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
+	(fasm -m 65536 "$$<" "$$@" -s $$$$tmpfile && \
+	fasmdep -e $$$$tmpfile > .deps/$(4).Po && \
+	rm $$$$tmpfile) || (rm $$$$tmpfile; false)
+-include .deps/$(4).Po
+endef
+
+progname=$(call respace,$(basename $(notdir $(call binarypart,$(f)))))
+binarydir=$(subst ./,,$(dir $(call binarypart,$(f))))
+$(foreach f,$(FASM_PROGRAMS) $(FASM_PROGRAMS_CD) $(SKIN_SOURCES),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
+$(foreach f,$(FASM_NOKPACK_PROGRAMS),$(eval $(call fasm_nokpack_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
+
+# Rule for the kernel differs: it uses kerpack instead of kpack.
+kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
+	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
+	(fasm -m 131072 "$<" "$@" -s $$tmpfile && \
+	fasmdep -e $$tmpfile > .deps/kernel.Po && \
+	rm $$tmpfile) || (rm $$tmpfile; false)
+	kerpack "$@"
+-include .deps/kernel.Po

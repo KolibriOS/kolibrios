@@ -87,7 +87,11 @@ time_bgr_color = 0x66cc
 ;PANEL_HEIGHT = 18
 ML_SIZE = 10
 MR_SIZE = 10
+if lang eq et
+MENU_SIZE = 60
+else
 MENU_SIZE = 50
+end if
 CLD_SIZE = 20
 TAB_SIZE = 75	;60
 TRAY_SIZE = 140

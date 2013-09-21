@@ -26,7 +26,7 @@ m_icon:
 lsz m_text,\
   ru, "åÖçû",\
   en, "MENU",\
-  et, "MEN--",\
+  et, "MEN‹‹",\
   sp, "MENU"
 
 mi_text		db 'WAVETETRBGRDGPL '

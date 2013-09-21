@@ -91,6 +91,8 @@ if preboot_blogesc
 end if
 else if lang eq sp
   include 'data32sp.inc'
+else if lang eq et
+  include 'data32et.inc'
 else
   boot_initirq      db   'Initialize IRQ',0
   boot_picinit      db   'Initialize PIC',0
@@ -137,7 +139,7 @@ start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
 msg_module     db 'in module ',0
-if ~ lang eq sp
+if ~ lang eq sp et
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 end if
@@ -164,7 +166,7 @@ firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
 ud_user_message: cp866 'Ошибка: неподдерживаемая инструкция процессора',0
-else if ~ lang eq sp
+else if ~ lang eq sp et
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
 

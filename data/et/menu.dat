@@ -1,0 +1,160 @@
+#0    **** MAIN ****
+Mängud             >      /@1
+Demod              >      /@4
+Graafika           >      /@6
+Multimeedia        >      /@7
+Arendus            >      /@8
+Süsteem            >      /@10
+Andmetöötlus       >      /@14
+Võrk               >      /@15
+Teised             >      /@18
+Abi                       /sys/docpack
+Käivita programm          /sys/run
+Sule                      /sys/end
+#1    **** GAMES ****
+Loogika mängud     >      /@2
+Arcades            >      /@3
+Memory Blocks             /sys/games/mblocks
+FreeCell                  /sys/games/freecell
+Pipes                     /sys/games/pipes
+Kosilka                   /sys/games/kosilka
+RockeT ForceS             /sys/games/rforces
+Find Numbers              /sys/games/FindNumbers
+#2 **** LOGICAL GAMES ****
+C4                        /sys/games/c4
+15                        /sys/games/15
+Mine                      /sys/games/mine
+Just Clicks               /sys/games/clicks
+Checkers                  /sys/games/checkers
+SQ_GAME                   /sys/games/sq_game
+Color Lines               /sys/games/lines
+Flood-it!                 /sys/games/flood-it
+MegaMaze                  /sys/games/megamaze
+Sea Fight                 /sys/games/sw
+Sudoku                    /sys/games/sudoku
+Go-moku                   /sys/games/gomoku
+Reversi                   /sys/games/reversi
+#3 **** ARCADES ****
+Tetris                    /sys/games/tetris
+Pong                      /sys/games/pong
+New Pong                  /sys/games/pong3
+Red Square                /sys/games/rsquare
+Xonix                     /sys/games/xonix
+ArcanII                   /sys/games/arcanii
+Phenix                    /sys/games/phenix
+Snake                     /sys/games/snake
+#4    **** DEMOS ****
+3D                 >      /@5
+Circle                    /sys/demos/circle
+Fractal                   /sys/demos/tinyfrac
+Color demo                /sys/demos/colorref
+Eyes                      /sys/demos/eyes
+Tube                      /sys/demos/tube
+Plasma                    /sys/demos/plasma
+Moveback                  /sys/demos/movback
+Life                      /sys/demos/life2
+TranTest                  /sys/demos/trantest
+WEB                       /sys/demos/web
+FireWork                  /sys/demos/firework
+UnvWater                  /sys/demos/unvwater
+#5  **** 3D demos ****
+ScreenSaver               /sys/3d/crownscr
+3D-labyrinth              /sys/3d/free3d04
+Heart                     /sys/3d/3dsheart
+View3DS                   /sys/3d/view3ds
+CubeLine                  /sys/3d/cubeline
+Gears                     /sys/3d/gears
+3D-waved area             /sys/3d/3dwav
+#6   **** GRAPHICS ****
+Image viewer KIV          /sys/media/kiv
+Image viewer zSea         /KolibriOS/media/zsea/zsea
+Animage                   /sys/media/animage
+Image Filtering           /sys/media/imgf/imgf
+Palitra                   /sys/media/palitra
+#7   **** MULTIMEDIA ****
+Fplay - video             /KolibriOS/media/fplay-full
+MidAMP                    /sys/media/midamp
+CD player                 /sys/media/cdp
+#8    **** PROGRAMMING ****
+Examples           >      /@9
+Arhivaator KPack          /sys/kpack
+Flat Assembler            /sys/develop/fasm
+Silumisaken               /sys/develop/board
+Silur                     /sys/develop/mtdbg
+Hex2Dec2Bin               /sys/develop/h2d2b
+ASCII-koodid              /sys/develop/keyascii
+SCAN-koodid               /sys/develop/scancode
+#9    **** EXAMPLES ****
+Lõimed                    /sys/develop/thread
+IPC                       /sys/develop/ipc
+Color slider              /sys/demos/cslide
+Konsooli näide 1          /sys/develop/testcon2
+Konsooli näide 2          /sys/develop/test_gets
+Message Boxes example     /sys/demos/use_mb
+#10    **** SYSTEM ****
+Sätted             >      /@11
+Süsteemi sensorid  >      /@12
+Töö failidega      >      /@13
+Testimine          >      /@19
+Hõlbustus seaded   >      /@20
+Silumisaken               /sys/develop/board
+#11    **** SETTINGS ****
+Seadmed                   /sys/setup
+Tausta genereerijaor      /sys/media/palitra
+Värvid & Teemad           /sys/desktop
+MyKey                     /sys/mykey
+ATI video reziim          /sys/vmode
+#12    **** SYSTEM SENSORS ****
+Protsesside haldur        /sys/cpu
+PCI seadmed               /sys/pcidev
+Testi graafika kiirust    /sys/mgb
+CPUID                     /sys/cpuid
+Ghost Monitor             /sys/gmon
+K. Bus disconnected       /sys/kbd
+HDD info                  /sys/hdd_info
+Read HDD                  /sys/hdread
+#13  **** WORK WITH FILES ****
+KFAR                      /sys/File Managers/kfar
+KFM                       /sys/File Managers/kfm
+Eolite                    /sys/File Managers/Eolite
+SHELL konsool             /sys/shell
+Salvesta RD tõmmis        /sys/rdsave
+#14 **** DATA PROCESSING ****
+Kalkulaator               /sys/calc
+Teksti redaktor           /sys/tinypad
+TextEdit                  /sys/develop/t_edit
+Tabelarvutus              /sys/table
+Graph builder             /sys/graph
+Hex-Editor                /sys/develop/heed
+#15    **** NET ****
+Teenused           >      /@16
+Kliendid           >      /@17
+Zero-Config               /sys/network/zeroconf
+Võrgu seadistus           /sys/network/netcfg
+Võrgu staatus             /sys/network/netstat
+#16    **** SERVERS ****
+FTP daemon                /sys/network/ftpd
+#17   **** CLIENTS ****
+IRC klient                /sys/network/ircc
+TFTP klient               /sys/network/tftpc
+Ping                      /sys/network/ping
+Telnet klient             /sys/network/telnet
+Synergy klient            /sys/network/synergyc
+DNS otsing                /sys/network/nslookup
+Interneti allalaadija     /sys/network/downloader
+Tekstipõhine brauser      /sys/htmlv
+#18    **** OTHER ****
+Analoogkell               /sys/demos/aclock
+Digitaalne kell           /sys/demos/bcdclk
+Taimer                    /sys/demos/timer
+Ekraani tõmmis            /sys/scrshoot
+Kalender                  /sys/calendar
+RTF faili lugeja          /sys/rtfread
+#19    **** SYSTEM TESTS ****
+Protection test           /sys/test
+Monitor test              /sys/disptest
+#20    **** SYSTEM SPECIAL ****
+Ekraani suurendusklaas    /sys/magnify
+Ekraani klaviatuur        /sys/zkey
+Märgistiku tabel          /sys/ASCIIVju
+##

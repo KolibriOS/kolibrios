@@ -144,6 +144,8 @@ use16
 
 if lang eq sp
 include "kernelsp.inc"  ; spanish kernel messages
+else if lang eq et
+version db    'Kolibri OS  versioon 0.7.7.0+    ',13,10,13,10,0
 else
 version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
 end if

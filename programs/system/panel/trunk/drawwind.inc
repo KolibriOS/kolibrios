@@ -288,7 +288,11 @@ align 4
 	sub	bx,3
 	mov	ecx,[PanelText_color]
 	or	ecx,0x10000000
+	if lang eq et
+	mcall	4,,,m_text,5
+	else
 	mcall	4,,,m_text,4
+	end if
 ;--------------------------------------
 align 4
 no_menu:

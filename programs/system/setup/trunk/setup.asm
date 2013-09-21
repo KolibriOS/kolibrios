@@ -571,8 +571,8 @@ nogr:
 nofr:
         cmp     eax,5
         jnz     noet
-        mov     [text00+LLL*1+28],dword 'ESTO'
-        mov     [text00+LLL*1+32],dword 'NIAN'
+        mov     [text00+LLL*1+28],dword 'EEST'
+        mov     [text00+LLL*1+32],dword 'I   '
 ;--------------------------------------
 noet:
         cmp     eax,6
@@ -621,8 +621,8 @@ nogr5:
 nofr5:
         cmp     eax,5
         jne     noet5
-        mov     [text00+LLL*0+28],dword 'ESTO'
-        mov     [text00+LLL*0+32],dword 'NIAN'
+        mov     [text00+LLL*0+28],dword 'EEST'
+        mov     [text00+LLL*0+32],dword 'I   '
 ;--------------------------------------
 noet5:
         mov     eax,[lba_read]
@@ -710,8 +710,16 @@ onoff:
         je      exitsub
         mov     ebx,'çÖí '
         ret
-;--------------------------------------
 norus1:
+        cmp     [syslang],6
+        jne     noet1
+        mov     ebx,'SEES'
+        cmp     eax,1
+        je      exitsub
+        mov     ebx,'VƒL.'
+        ret
+;--------------------------------------
+noet1:
         mov     ebx,'ON  '
         cmp     eax,1
         je      exitsub
@@ -754,9 +762,16 @@ loadtxt:
         mov     edi,text00
         mov     ecx,LLL*(text1_strings + text2_strings)/4+1
         cmp     [syslang],4
-        jne     norus
+        jne     loadet
 
         mov     esi,textrus
+        jmp     sload		
+loadet:
+        mov     edi,text00
+        mov     ecx,LLL*(text1_strings + text2_strings)/4+1
+        cmp     [syslang],6
+        jne     norus
+		mov     esi,textet
         jmp     sload
 ;--------------------------------------
 norus:
@@ -805,7 +820,17 @@ text1_strings = 7
 
         db 'NOTE:                                           Apply all  '
         db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       Save all   '
-text2_strings = 2
+textet:
+        db 'S¸steemi keel             : ENGLISH         - +    Kinnita '
+        db 'Klaviatuuri paigutus      : ENGLISH         - +    Kinnita '
+        db 'LBA lugemine lubatud      : VƒL.            - +    Kinnita '
+        db 'PCI juurdep‰‰s programm.  : VƒL.            - +    Kinnita '
+        db 'Hiire kursori kiirus      : 1               - +    Kinnita '
+        db 'Hiire kursori viide       : 0x00a           - +    Kinnita '
+        db 'SPEAKER disabled          : VƒL.            - +    Kinnita '
+        db 'MƒRKUS:                                        Kinnita kıik'
+        db 'SALVESTA SEADED ENNE KOLIBRIST VƒLJUMIST      Salvesta kıik'
+text2_strings = 3
 ;-------------------------------------------------------------------------------
 title   db 'System setup',0
 

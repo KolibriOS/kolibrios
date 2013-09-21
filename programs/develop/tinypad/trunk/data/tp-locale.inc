@@ -108,7 +108,7 @@ popup_res mm.Run,\
   et,'Käivita'		,'F9'	  ,Run	   ,\
   et,'Kompileeri'	,'Ctrl+F9',Compile ,\
   et,'-'		,''	  ,	   ,\
-  et,'Debug board'	,''	  ,DbgBoard,\
+  et,'Silumis paneel'	,''	  ,DbgBoard,\
   et,'Süsteemi funktsioonid' ,''	  ,SysFuncs
 
 popup_res mm.Encoding,\
@@ -144,7 +144,7 @@ popup_res mm.Options,\
 \
   et,'Välimus...'	     ,'',Appearance  ,\
   et,'-'		     ,'',	     ,\
-  et,'Secure selection'      ,'',SecureSel   ,\
+  et,'Turvaline valimine'      ,'',SecureSel   ,\
   et,'Automaatsed sulud'     ,'',AutoBrackets,\
   et,'Automaatsed taandread' ,'',AutoIndents ,\
   et,'Tark tabulatsioon'     ,'',SmartTabs   ,\

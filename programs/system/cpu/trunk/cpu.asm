@@ -683,7 +683,7 @@ tbts:   db 'EELMINE LEHT   JÄRGMINE LEHT                     REBOODI SÜSTEEM'
 tbte:
 tbts_3  db 'START'
 tbte_2:
-check_text      db '@ on/off',0
+check_text      db '@ sees/väl.',0
 title   db 'Protsessid - Ctrl/Alt/Del'
 ;--------------------------------------
 else if lang eq ru

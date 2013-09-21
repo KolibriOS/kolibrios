@@ -1,0 +1,2560 @@
+000  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+001  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+002  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+003  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+004  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+005  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+006  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+007  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+008  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+009  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+010  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+011  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+012  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+013  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+014  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+015  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+016  I
+     I
+ooo  I
+oooo I
+oooooI
+oooo I
+ooo  I
+     I
+     I
+     I
+017  I
+     I
+  oooI
+ ooooI
+oooooI
+ ooooI
+  oooI
+     I
+     I
+     I
+018  I
+  o  I
+ ooo I
+o o oI
+  o  I
+o o oI
+ ooo I
+  o  I
+     I
+     I
+019  I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+     I
+ o o I
+     I
+     I
+020  I
+ ooooI
+o o oI
+o o oI
+ ooooI
+  o oI
+  o oI
+ oo oI
+     I
+     I
+021  I
+ ooooI
+o    I
+ ooo I
+o   oI
+ ooo I
+    oI
+oooo I
+     I
+     I
+022  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+oooooI
+     I
+023  I
+  o  I
+ ooo I
+o o oI
+  o  I
+o o oI
+ ooo I
+oooooI
+     I
+     I
+024  I
+  o  I
+ ooo I
+o o oI
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+025  I
+  o  I
+  o  I
+  o  I
+  o  I
+o o oI
+ ooo I
+  o  I
+     I
+     I
+026  I
+     I
+  o  I
+   o I
+oooooI
+   o I
+  o  I
+     I
+     I
+     I
+027  I
+     I
+  o  I
+ o   I
+oooooI
+ o   I
+  o  I
+     I
+     I
+     I
+028  I
+     I
+     I
+     I
+ o   I
+     I
+     I
+     I
+     I
+     I
+029  I
+ oo  I
+o  o I
+ oo  I
+     I
+     I
+     I
+     I
+     I
+     I
+030  I
+     I
+  o  I
+ ooo I
+oooooI
+oooooI
+     I
+     I
+     I
+     I
+031  I
+     I
+     I
+oooooI
+oooooI
+ ooo I
+  o  I
+     I
+     I
+     I
+032  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+033  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+  o  I
+     I
+     I
+034  I
+ o o I
+ o o I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+035  I
+ o o I
+ o o I
+oooooI
+ o o I
+oooooI
+ o o I
+ o o I
+     I
+     I
+036  I
+  o  I
+ ooooI
+o o  I
+ ooo I
+  o oI
+oooo I
+  o  I
+     I
+     I
+037  I
+oo   I
+oo  oI
+   o I
+  o  I
+ o   I
+o  ooI
+   ooI
+     I
+     I
+038  I
+ ooo I
+o    I
+o    I
+ o   I
+o o oI
+o  o I
+ oo oI
+     I
+     I
+039  I
+  o  I
+  o  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+040  I
+   o I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+   o I
+     I
+     I
+041  I
+ o   I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+ o   I
+     I
+     I
+042  I
+     I
+  o  I
+o o oI
+ ooo I
+o o oI
+  o  I
+     I
+     I
+     I
+043  I
+     I
+  o  I
+  o  I
+oooooI
+  o  I
+  o  I
+     I
+     I
+     I
+044  I
+     I
+     I
+     I
+     I
+     I
+ oo  I
+  o  I
+ o   I
+     I
+045  I
+     I
+     I
+     I
+oooooI
+     I
+     I
+     I
+     I
+     I
+046  I
+     I
+     I
+     I
+     I
+     I
+ oo  I
+ oo  I
+     I
+     I
+047  I
+    oI
+   o I
+   o I
+  o  I
+ o   I
+ o   I
+o    I
+     I
+     I
+048  I
+ ooo I
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+049  I
+  o  I
+ oo  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+050  I
+ ooo I
+o   oI
+    oI
+ ooo I
+o    I
+o    I
+oooooI
+     I
+     I
+051  I
+ ooo I
+o   oI
+    oI
+  oo I
+    oI
+o   oI
+ ooo I
+     I
+     I
+052  I
+   o I
+  oo I
+ o o I
+ o o I
+oooooI
+   o I
+  oooI
+     I
+     I
+053  I
+oooooI
+o    I
+o    I
+oooo I
+    oI
+o   oI
+ ooo I
+     I
+     I
+054  I
+  oo I
+ o   I
+o    I
+oooo I
+o   oI
+o   oI
+ ooo I
+     I
+     I
+055  I
+oooooI
+    oI
+   o I
+  o  I
+ o   I
+ o   I
+ o   I
+     I
+     I
+056  I
+ ooo I
+o   oI
+o   oI
+ ooo I
+o   oI
+o   oI
+ ooo I
+     I
+     I
+057  I
+ ooo I
+o   oI
+o   oI
+ ooooI
+    oI
+   o I
+ oo  I
+     I
+     I
+058  I
+     I
+ oo  I
+ oo  I
+     I
+     I
+ oo  I
+ oo  I
+     I
+     I
+059  I
+     I
+ oo  I
+ oo  I
+     I
+     I
+ oo  I
+  o  I
+ o   I
+     I
+060  I
+     I
+   ooI
+ oo  I
+o    I
+ oo  I
+   ooI
+     I
+     I
+     I
+061  I
+     I
+     I
+oooooI
+     I
+oooooI
+     I
+     I
+     I
+     I
+062  I
+     I
+oo   I
+  oo I
+    oI
+  oo I
+oo   I
+     I
+     I
+     I
+063  I
+ ooo I
+o   oI
+   o I
+  o  I
+  o  I
+     I
+  o  I
+     I
+     I
+064  I
+ ooo I
+o   oI
+o oooI
+o oooI
+o oo I
+o    I
+ ooo I
+     I
+     I
+065  I
+  o  I
+ o o I
+o   oI
+o   oI
+oooooI
+o   oI
+o   oI
+     I
+     I
+066  I
+oooo I
+o   oI
+o   oI
+oooo I
+o   oI
+o   oI
+oooo I
+     I
+     I
+067  I
+ ooo I
+o   oI
+o    I
+o    I
+o    I
+o   oI
+ ooo I
+     I
+     I
+068  I
+ooo  I
+o  o I
+o   oI
+o   oI
+o   oI
+o  o I
+ooo  I
+     I
+     I
+069  I
+oooooI
+o    I
+o    I
+oooo I
+o    I
+o    I
+oooooI
+     I
+     I
+070  I
+oooooI
+o    I
+o    I
+oooo I
+o    I
+o    I
+o    I
+     I
+     I
+071  I
+ ooo I
+o   oI
+o    I
+o  ooI
+o   oI
+o   oI
+ ooooI
+     I
+     I
+072  I
+o   oI
+o   oI
+o   oI
+oooooI
+o   oI
+o   oI
+o   oI
+     I
+     I
+073  I
+ ooo I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+ ooo I
+     I
+     I
+074  I
+   ooI
+    oI
+    oI
+    oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+075  I
+o   oI
+o  o I
+o o  I
+oo   I
+o o  I
+o  o I
+o   oI
+     I
+     I
+076  I
+o    I
+o    I
+o    I
+o    I
+o    I
+o    I
+oooooI
+     I
+     I
+77   I
+o   oI
+oo ooI
+o o oI
+o o oI
+o   oI
+o   oI
+o   oI
+     I
+     I
+78   I
+o   oI
+oo  oI
+oo  oI
+o o oI
+o  ooI
+o  ooI
+o   oI
+     I
+     I
+79   I
+ ooo I
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+080  I
+oooo I
+o   oI
+o   oI
+oooo I
+o    I
+o    I
+o    I
+     I
+     I
+81   I
+ ooo I
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+   ooI
+     I
+82   I
+oooo I
+o   oI
+o   oI
+oooo I
+o o  I
+o  o I
+o   oI
+     I
+     I
+83   I
+ ooo I
+o   oI
+o    I
+ ooo I
+    oI
+o   oI
+ ooo I
+     I
+     I
+84   I
+oooooI
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+85   I
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+86   I
+o   oI
+o   oI
+o   oI
+ o o I
+ o o I
+  o  I
+  o  I
+     I
+     I
+87   I
+o   oI
+o   oI
+o   oI
+o o oI
+o o oI
+oo ooI
+o   oI
+     I
+     I
+88   I
+o   oI
+o   oI
+ o o I
+  o  I
+ o o I
+o   oI
+o   oI
+     I
+     I
+89   I
+o   oI
+o   oI
+ o o I
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+090  I
+oooooI
+    oI
+   o I
+  o  I
+ o   I
+o    I
+oooooI
+     I
+     I
+91   I
+ ooo I
+ o   I
+ o   I
+ o   I
+ o   I
+ o   I
+ ooo I
+     I
+     I
+92   I
+o    I
+ o   I
+ o   I
+  o  I
+   o I
+   o I
+    oI
+     I
+     I
+93   I
+ ooo I
+   o I
+   o I
+   o I
+   o I
+   o I
+ ooo I
+     I
+     I
+94   I
+  o  I
+ o o I
+o   oI
+     I
+     I
+     I
+     I
+     I
+     I
+95   I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+oooooI
+     I
+96   I
+  o  I
+   o I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+97   I
+     I
+     I
+ ooo I
+    oI
+ ooooI
+o   oI
+ ooooI
+     I
+     I
+98   I
+o    I
+o    I
+oooo I
+o   oI
+o   oI
+o   oI
+oooo I
+     I
+     I
+99   I
+     I
+     I
+ ooooI
+o    I
+o    I
+o    I
+ ooooI
+     I
+     I
+100  I
+    oI
+    oI
+ ooooI
+o   oI
+o   oI
+o   oI
+ ooooI
+     I
+     I
+101  I
+     I
+     I
+ ooo I
+o   oI
+oooooI
+o    I
+ ooo I
+     I
+     I
+102  I
+  oooI
+ o   I
+oooo I
+ o   I
+ o   I
+ o   I
+ o   I
+     I
+     I
+103  I
+     I
+     I
+ ooooI
+o   oI
+o   oI
+o   oI
+ ooooI
+    oI
+ ooo I
+104  I
+o    I
+o    I
+oooo I
+o   oI
+o   oI
+o   oI
+o   oI
+     I
+     I
+105  I
+  o  I
+     I
+ oo  I
+  o  I
+  o  I
+  o  I
+ ooo I
+     I
+     I
+106  I
+   o I
+     I
+  oo I
+   o I
+   o I
+   o I
+   o I
+   o I
+ooo  I
+107  I
+o    I
+o    I
+o  o I
+o o  I
+oo   I
+o o  I
+o  o I
+     I
+     I
+108  I
+ oo  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+ ooo I
+     I
+     I
+109  I
+     I
+     I
+oo o I
+o o oI
+o o oI
+o o oI
+o   oI
+     I
+     I
+110  I
+     I
+     I
+o oo I
+oo  oI
+o   oI
+o   oI
+o   oI
+     I
+     I
+111  I
+     I
+     I
+ ooo I
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+112  I
+     I
+     I
+oooo I
+o   oI
+o   oI
+o   oI
+oooo I
+o    I
+o    I
+113  I
+     I
+     I
+ ooooI
+o   oI
+o   oI
+o   oI
+ ooooI
+    oI
+    oI
+114  I
+     I
+     I
+ o ooI
+ oo  I
+ o   I
+ o   I
+ o   I
+     I
+     I
+115  I
+     I
+     I
+ ooooI
+o    I
+ ooo I
+    oI
+oooo I
+     I
+     I
+116  I
+  o  I
+  o  I
+ ooo I
+  o  I
+  o  I
+  o  I
+   ooI
+     I
+     I
+117  I
+     I
+     I
+o   oI
+o   oI
+o   oI
+o  ooI
+ oo oI
+     I
+     I
+118  I
+     I
+     I
+oo ooI
+ o o I
+ o o I
+  o  I
+  o  I
+     I
+     I
+119  I
+     I
+     I
+o   oI
+o o oI
+o o oI
+o o oI
+ o o I
+     I
+     I
+120  I
+     I
+     I
+o   oI
+ o o I
+  o  I
+ o o I
+o   oI
+     I
+     I
+121  I
+     I
+     I
+o   oI
+o   oI
+o   oI
+o   oI
+ ooooI
+    oI
+ ooo I
+122  I
+     I
+     I
+oooooI
+   o I
+  o  I
+ o   I
+oooooI
+     I
+     I
+123  I
+   o I
+  o  I
+  o  I
+ o   I
+  o  I
+  o  I
+   o I
+     I
+     I
+124  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+125  I
+ o   I
+  o  I
+  o  I
+   o I
+  o  I
+  o  I
+ o   I
+     I
+     I
+126  I
+     I
+     I
+ o   I
+o o oI
+   o I
+     I
+     I
+     I
+     I
+127  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+128  I
+  o  I
+ o o I
+o   oI
+o   oI
+oooooI
+o   oI
+o   oI
+     I
+     I
+0    I
+oooo I
+o    I
+o    I
+oooo I
+o   oI
+o   oI
+oooo I
+     I
+     I
+130  I
+oooo I
+o   oI
+o   oI
+oooo I
+o   oI
+o   oI
+oooo I
+     I
+     I
+0    I
+ ooooI
+ o   I
+ o   I
+ o   I
+ o   I
+ o   I
+ o   I
+     I
+     I
+132  I
+  oo I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+oooooI
+o   oI
+     I
+0    I
+oooooI
+o    I
+o    I
+oooo I
+o    I
+o    I
+oooooI
+     I
+     I
+0    I
+o o oI
+o o oI
+o o oI
+ ooo I
+o o oI
+o o oI
+o o oI
+     I
+     I
+0    I
+ ooo I
+o   oI
+    oI
+   o I
+    oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+o   oI
+o  ooI
+o  ooI
+o o oI
+oo  oI
+oo  oI
+o   oI
+     I
+     I
+0    I
+o o oI
+o  ooI
+o  ooI
+o o oI
+oo  oI
+oo  oI
+o   oI
+     I
+     I
+0    I
+o   oI
+o  o I
+o o  I
+oo   I
+o o  I
+o  o I
+o   oI
+     I
+     I
+0    I
+  oooI
+ o  oI
+ o  oI
+ o  oI
+ o  oI
+ o  oI
+o   oI
+     I
+     I
+140  I
+o   oI
+oo ooI
+o o oI
+o o oI
+o   oI
+o   oI
+o   oI
+     I
+     I
+0    I
+o   oI
+o   oI
+o   oI
+oooooI
+o   oI
+o   oI
+o   oI
+     I
+     I
+142  I
+ ooo I
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+oooooI
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+o   oI
+     I
+     I
+0    I
+oooo I
+o   oI
+o   oI
+oooo I
+o    I
+o    I
+o    I
+     I
+     I
+0    I
+ ooo I
+o   oI
+o    I
+o    I
+o    I
+o   oI
+ ooo I
+     I
+     I
+0    I
+oooooI
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+0    I
+o   oI
+o   oI
+o   oI
+ ooooI
+    oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+ ooo I
+o o oI
+o o oI
+o o oI
+ ooo I
+  o  I
+  o  I
+     I
+     I
+0    I
+o   oI
+o   oI
+ o o I
+  o  I
+ o o I
+o   oI
+o   oI
+     I
+     I
+150  I
+o  o I
+o  o I
+o  o I
+o  o I
+o  o I
+o  o I
+oooooI
+    oI
+     I
+0    I
+o   oI
+o   oI
+o   oI
+ ooooI
+    oI
+    oI
+    oI
+     I
+     I
+152  I
+o o oI
+o o oI
+o o oI
+o o oI
+o o oI
+o o oI
+oooooI
+     I
+     I
+0    I
+o o oI
+o o oI
+o o oI
+o o oI
+o o oI
+o o oI
+oooooI
+    oI
+     I
+0    I
+oo   I
+ o   I
+ ooo I
+ o  oI
+ o  oI
+ o  oI
+ ooo I
+     I
+     I
+0    I
+o   oI
+o   oI
+ooo oI
+o  ooI
+o  ooI
+o  ooI
+ooo oI
+     I
+     I
+0    I
+ o   I
+ o   I
+ ooo I
+ o  oI
+ o  oI
+ o  oI
+ ooo I
+     I
+     I
+0    I
+ ooo I
+o   oI
+    oI
+ ooooI
+    oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+o  o I
+o o oI
+o o oI
+ooo oI
+o o oI
+o o oI
+o  o I
+     I
+     I
+0    I
+ ooooI
+o   oI
+o   oI
+ ooooI
+  o oI
+ o  oI
+o   oI
+     I
+     I
+160  I
+     I
+     I
+ ooo I
+    oI
+ ooooI
+o   oI
+ ooooI
+     I
+     I
+0    I
+ ooo I
+o    I
+ ooo I
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+oooo I
+o   oI
+oooo I
+o   oI
+oooo I
+     I
+     I
+0    I
+     I
+     I
+ ooooI
+ o   I
+ o   I
+ o   I
+ o   I
+     I
+     I
+0    I
+     I
+     I
+  oo I
+ o o I
+ o o I
+ o o I
+oooooI
+o   oI
+     I
+0    I
+     I
+     I
+ ooo I
+o   oI
+oooooI
+o    I
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+o o oI
+o o oI
+ ooo I
+o o oI
+o o oI
+     I
+     I
+0    I
+     I
+     I
+ ooo I
+o   oI
+  oo I
+o   oI
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+o   oI
+o  ooI
+o o oI
+oo  oI
+o   oI
+     I
+     I
+0    I
+ o o I
+  o  I
+o   oI
+o  ooI
+o o oI
+oo  oI
+o   oI
+     I
+     I
+170  I
+     I
+     I
+o   oI
+o  o I
+ooo  I
+o  o I
+o   oI
+     I
+     I
+0    I
+     I
+     I
+  oooI
+ o  oI
+ o  oI
+ o  oI
+o   oI
+     I
+     I
+0    I
+     I
+     I
+o   oI
+oo ooI
+o o oI
+o o oI
+o   oI
+     I
+     I
+0    I
+     I
+     I
+o   oI
+o   oI
+oooooI
+o   oI
+o   oI
+     I
+     I
+0    I
+     I
+     I
+ ooo I
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+oooooI
+o   oI
+o   oI
+o   oI
+o   oI
+     I
+     I
+176  I
+ o  oI
+o  o I
+  o  I
+ o  oI
+o  o I
+  o  I
+ o  oI
+o  o I
+  o  I
+177  I
+ o o I
+o o oI
+ o o I
+o o oI
+ o o I
+o o oI
+ o o I
+o o oI
+ o o I
+178  I
+oo ooI
+o oo I
+ oo oI
+oo ooI
+o oo I
+ oo oI
+oo ooI
+o oo I
+ oo oI
+179  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+  o  I
+180  I
+  o  I
+  o  I
+  o  I
+  o  I
+ooo  I
+  o  I
+  o  I
+  o  I
+  o  I
+181  I
+  o  I
+  o  I
+  o  I
+ooo  I
+  o  I
+ooo  I
+  o  I
+  o  I
+  o  I
+182  I
+ o o I
+ o o I
+ o o I
+ o o I
+oo o I
+ o o I
+ o o I
+ o o I
+ o o I
+183  I
+     I
+     I
+     I
+     I
+oooo I
+ o o I
+ o o I
+ o o I
+ o o I
+184  I
+     I
+     I
+     I
+ooo  I
+  o  I
+ooo  I
+  o  I
+  o  I
+  o  I
+185  I
+ o o I
+ o o I
+ o o I
+oo o I
+   o I
+oo o I
+ o o I
+ o o I
+ o o I
+186  I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+ o o I
+187  I
+     I
+     I
+     I
+oooo I
+   o I
+oo o I
+ o o I
+ o o I
+ o o I
+188  I
+ o o I
+ o o I
+ o o I
+oo o I
+   o I
+oooo I
+     I
+     I
+     I
+189  I
+ o o I
+ o o I
+ o o I
+ o o I
+oooo I
+     I
+     I
+     I
+     I
+190  I
+  o  I
+  o  I
+  o  I
+ooo  I
+  o  I
+ooo  I
+     I
+     I
+     I
+191  I
+     I
+     I
+     I
+     I
+ooo  I
+  o  I
+  o  I
+  o  I
+  o  I
+192  I
+  o  I
+  o  I
+  o  I
+  o  I
+  oooI
+     I
+     I
+     I
+     I
+193  I
+  o  I
+  o  I
+  o  I
+  o  I
+oooooI
+     I
+     I
+     I
+     I
+194  I
+     I
+     I
+     I
+     I
+oooooI
+  o  I
+  o  I
+  o  I
+  o  I
+195  I
+  o  I
+  o  I
+  o  I
+  o  I
+  oooI
+  o  I
+  o  I
+  o  I
+  o  I
+196  I
+o o oI
+ o o I
+o   oI
+o   oI
+oooooI
+o   oI
+o   oI
+     I
+     I
+197  I
+  o  I
+  o  I
+  o  I
+  o  I
+oooooI
+  o  I
+  o  I
+  o  I
+  o  I
+198  I
+  o  I
+  o  I
+  o  I
+  oooI
+  o  I
+  oooI
+  o  I
+  o  I
+  o  I
+199  I
+ o o I
+ o o I
+ o o I
+ o o I
+ o ooI
+ o o I
+ o o I
+ o o I
+ o o I
+200  I
+ o o I
+ o o I
+ o o I
+ o ooI
+ o   I
+ ooooI
+     I
+     I
+     I
+201  I
+     I
+     I
+     I
+ ooooI
+ o   I
+ o ooI
+ o o I
+ o o I
+ o o I
+202  I
+ o o I
+ o o I
+ o o I
+oo ooI
+     I
+oooooI
+     I
+     I
+     I
+203  I
+     I
+     I
+     I
+oooooI
+     I
+oo ooI
+ o o I
+ o o I
+ o o I
+204  I
+ o o I
+ o o I
+ o o I
+ o ooI
+ o   I
+ o ooI
+ o o I
+ o o I
+ o o I
+205  I
+     I
+     I
+     I
+oooooI
+     I
+oooooI
+     I
+     I
+     I
+206  I
+ o o I
+ o o I
+ o o I
+oo ooI
+     I
+oo ooI
+ o o I
+ o o I
+ o o I
+207  I
+  o  I
+  o  I
+  o  I
+oooooI
+     I
+oooooI
+     I
+     I
+     I
+208  I
+ o o I
+ o o I
+ o o I
+ o o I
+oooooI
+     I
+     I
+     I
+     I
+209  I
+     I
+     I
+     I
+oooooI
+     I
+oooooI
+  o  I
+  o  I
+  o  I
+210  I
+ o   I
+     I
+     I
+     I
+oooooI
+ o o I
+ o o I
+ o o I
+ o o I
+211  I
+ o o I
+ o o I
+ o o I
+ o o I
+ ooooI
+     I
+     I
+     I
+     I
+212  I
+  o  I
+  o  I
+  o  I
+  oooI
+  o  I
+  oooI
+     I
+     I
+     I
+213  I
+ o  oI
+o oo I
+ ooo I
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+214  I
+o   oI
+ ooo I
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+215  I
+ o o I
+ o o I
+ o o I
+ o o I
+oo ooI
+ o o I
+ o o I
+ o o I
+ o o I
+216  I
+  o  I
+  o  I
+  o  I
+oooooI
+     I
+oooooI
+  o  I
+  o  I
+  o  I
+217  I
+  o  I
+  o  I
+  o  I
+  o  I
+ooo  I
+     I
+     I
+     I
+     I
+218  I
+     I
+     I
+     I
+     I
+  oooI
+  o  I
+  o  I
+  o  I
+  o  I
+219  I
+oooooI
+oooooI
+oooooI
+oooooI
+oooooI
+oooooI
+oooooI
+oooooI
+oooooI
+220  I
+o   oI
+     I
+o   oI
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+221  I
+ooo  I
+ooo  I
+ooo  I
+ooo  I
+ooo  I
+ooo  I
+ooo  I
+ooo  I
+ooo  I
+222  I
+  oooI
+  oooI
+  oooI
+  oooI
+  oooI
+  oooI
+  oooI
+  oooI
+  oooI
+223  I
+oooooI
+oooooI
+oooooI
+oooooI
+oooooI
+     I
+     I
+     I
+     I
+0    I
+     I
+     I
+oooo I
+o   oI
+o   oI
+o   oI
+oooo I
+o    I
+o    I
+225  I
+     I
+     I
+ ooooI
+o    I
+o    I
+o    I
+ ooooI
+     I
+     I
+0    I
+     I
+     I
+oooooI
+  o  I
+  o  I
+  o  I
+  o  I
+     I
+     I
+0    I
+     I
+     I
+o   oI
+o   oI
+o   oI
+o   oI
+ ooooI
+    oI
+ ooo I
+228  I
+     I
+o   oI
+ ooo I
+    oI
+ ooooI
+o   oI
+ ooooI
+     I
+     I
+0    I
+     I
+     I
+o   oI
+ o o I
+  o  I
+ o o I
+o   oI
+     I
+     I
+230  I
+     I
+     I
+o  o I
+o  o I
+o  o I
+o  o I
+oooooI
+    oI
+     I
+0    I
+     I
+     I
+o   oI
+o   oI
+ ooooI
+    oI
+    oI
+     I
+     I
+0    I
+     I
+     I
+o o oI
+o o oI
+o o oI
+o o oI
+oooooI
+     I
+     I
+0    I
+     I
+     I
+o o oI
+o o oI
+o o oI
+o o oI
+oooooI
+    oI
+    oI
+0    I
+     I
+     I
+oo   I
+ o   I
+ ooo I
+ o  oI
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+o   oI
+o   oI
+ooo oI
+o  ooI
+ooo oI
+     I
+     I
+0    I
+     I
+     I
+o    I
+o    I
+ooo  I
+o  o I
+ooo  I
+     I
+     I
+0    I
+     I
+     I
+ ooo I
+o   oI
+  oooI
+o   oI
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+o  o I
+o o oI
+ooo oI
+o o oI
+o  o I
+     I
+     I
+0    I
+     I
+     I
+ ooooI
+o   oI
+ ooooI
+ o  oI
+o   oI
+     I
+     I
+240  I
+ o o I
+oooooI
+o    I
+ooo  I
+o    I
+o    I
+oooooI
+     I
+     I
+0    I
+ o o I
+     I
+ ooo I
+o   oI
+oooooI
+o    I
+ ooo I
+     I
+     I
+0    I
+ ooo I
+o   oI
+o    I
+oooo I
+o    I
+o   oI
+ ooo I
+     I
+     I
+0    I
+     I
+     I
+ ooo I
+o   oI
+ooo  I
+o   oI
+ ooo I
+     I
+     I
+0    I
+ o o I
+     I
+ ooo I
+  o  I
+  o  I
+  o  I
+ ooo I
+     I
+     I
+246  I
+     I
+ o  oI
+o oo I
+ ooo I
+o   oI
+o   oI
+ ooo I
+     I
+     I
+246  I
+     I
+     I
+ o o I
+ ooo I
+o   oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+ o o I
+  o  I
+o   oI
+o   oI
+ o o I
+  o  I
+ o   I
+o    I
+     I
+0    I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+0    I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+250  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+0    I
+ ooo I
+oooooI
+ooo oI
+oo ooI
+ ooo I
+     I
+     I
+     I
+     I
+0    I
+     I
+o   oI
+     I
+o   oI
+o   oI
+o   oI
+ ooo I
+     I
+     I
+0    I
+    oI
+oooooI
+o    I
+o    I
+o    I
+o    I
+o    I
+     I
+     I
+0    I
+     I
+   o I
+oooo I
+o    I
+o    I
+o    I
+o    I
+     I
+     I
+255  I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I
+     I

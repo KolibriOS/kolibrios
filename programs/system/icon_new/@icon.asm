@@ -1253,7 +1253,14 @@ if lang eq ru
  RMenuProp      db 'Свойства',0
  RMenuOffMoving db 'Закрепить иконки',0
  RMenuOnMoving  db 'Открепить иконки',0
-
+else if lang eq et
+ RMenuRedrawFon db 'Vфrskenda',0
+ RMenuAlign     db 'Tїmme vїrgule',0
+ RMenuAdd       db 'Lisa',0
+ RMenuDel       db 'Kustuta',0
+ RMenuProp      db 'Omadused',0
+ RMenuOffMoving db 'Paranda ikoonid',0
+ RMenuOnMoving  db '─ra paranda ikoone',0
 else
 
  RMenuRedrawFon db 'Redraw',0
@@ -1271,7 +1278,10 @@ if lang eq ru
  ErrRunProg     db 'Ошибка запуска программы',0
  WarningSave    db 'Не забудьте сохранить изменения, запустить RDSave',0
  ErrNotFoundIni db 'Не найден icon.ini',0
-
+else if lang eq et
+ ErrRunProg     db 'Programmi kфivitamise viga',0
+ WarningSave    db '─ra unusta muudatusi salvestada, kфivita RDSave',0
+ ErrNotFoundIni db 'icon.ini ei leitud',0
 else
 
  ErrRunProg     db 'Error runing program',0
@@ -1296,6 +1306,18 @@ DCaptIcon       db 'Иконка',0
 DCaptCreate     db 'Создать',0
 DCaptProperties db 'Изменить',0
 DCaptCancel     db 'Отменить',0
+
+else if lang eq et
+DTitle          db 'Lisa ikoon',0
+
+DCaptName       db 'Nimi',0
+DCaptPath       db 'Asukoht',0
+DCaptParams     db 'Parameetrid',0
+DCaptIcon       db 'Ikoon',0
+;DCaptChange     db '.',0
+DCaptCreate     db 'Loo',0
+DCaptProperties db 'Muuda',0
+DCaptCancel     db 'Katkesta',0
 
 else
 DTitle          db 'Add icon',0

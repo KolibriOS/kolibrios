@@ -309,6 +309,8 @@ if lang eq ru
 		db  'Ç‡•¨Ô',0
 else if lang eq it
 		db  '  Ora',0
+else if lang eq et
+		db  ' Aeg ',0
 else
 		db  ' Time',0
 end if
@@ -320,6 +322,8 @@ if lang eq ru
 		db  'ì·‚†≠Æ¢®‚Ï §†‚„',0
 else if lang eq it
 		db   ' Impostazioni ',0
+else if lang eq et
+		db   ' M‰‰ra kuup‰ev ',0
 else
 		db  '   Set date    ',0
 end if
