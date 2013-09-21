@@ -78,17 +78,6 @@ finddlg_handler:
 
 	mov	ecx,[esp]
 
-	mov	ebp,tb_find
-	mov	eax,[p_info.client_box.width]
-	sub	eax,6*(s_2find.size+2)+1
-	add	eax,6*(s_2find.size+2)*65536
-	mov	dword[tbox.width],eax
-	add	ecx,-18*65536+1
-	mov	dword[tbox.height],ecx
-	call	textbox.draw
-
-	pop	ecx
-
 	cmp	[bot_mode2],0
 	je	@f
 	mov	ebp,tb_replace
@@ -100,6 +89,17 @@ finddlg_handler:
 	mov	dword[tbox.height],ecx
 	call	textbox.draw
     @@:
+
+	pop	ecx
+
+	mov	ebp,tb_find
+	mov	eax,[p_info.client_box.width]
+	sub	eax,6*(s_2find.size+2)+1
+	add	eax,6*(s_2find.size+2)*65536
+	mov	dword[tbox.width],eax
+	add	ecx,-18*65536+1
+	mov	dword[tbox.height],ecx
+	call	textbox.draw
 
 	ret
 
@@ -662,11 +662,13 @@ botdlg.button:
 	movzx	eax,[tb_replace.length]
 	mov	esi,tb_replace.text
 	mov	edi,[copy_buf]
-	stosd
+;	stosd
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,eax
 	jecxz	.lp1
 	rep	movsb
-  .lp1: add	eax,4
+  .lp1: add	eax,sizeof.EDITOR_LINE_DATA
 	mov	[copy_size],eax
 	mov	[copy_count],1
 
