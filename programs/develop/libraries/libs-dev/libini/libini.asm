@@ -397,6 +397,7 @@ endl
 
         invoke  file.close, [f.fh]
         pop     edi esi ebx
+        mcall   68,13,[f.buf]
         xor     eax, eax
         ret
 
@@ -789,6 +790,8 @@ endl
         m2m     dword[funcFile+16],[begMem]
         lea     ebx,[funcFile]
         mcall   70
+
+        mcall   68,13,[begMem]
 
         xor     eax,eax
         pop     esi edi ecx ebx
