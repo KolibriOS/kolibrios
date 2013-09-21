@@ -38,7 +38,6 @@ BegData         equ fiStdIco.point
 include 'lang.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
-;include '../../API.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 ;include '../../debug.inc'
@@ -49,6 +48,7 @@ START:          ; start of execution
         stdcall dll.Load,IMPORTS
         test    eax,eax
         jnz     ErrLoadLibs
+;-------------------------------------------------------------------------------
 
 ; unpack deflate
         mov     eax,[unpack_DeflateUnpack2]
@@ -141,11 +141,8 @@ START:          ; start of execution
         and     eax,0FFh
         mov     [sbIcons.max_area],eax
 
-  ;    int3
-;        mov     eax,1
-;        mov     eax,[IconsOffs+eax*4]
-;        stdcall [ini_del_section],IconIni,eax
-;    ret
+        stdcall [OpenDialog_Init],OpenDialog_data
+
         jmp     MSGRedrawIcons
 
 messages:
@@ -301,6 +298,7 @@ LButtonPress:
 
 ;-------------------------------------------------------------------------------
 MovingIcon:
+;int3
         stdcall GetNumIcon,[MouseX],[MouseY],-1
         mov     [SelIcon],eax
         stdcall RestoreBackgrnd,[SelIcon]
@@ -369,9 +367,9 @@ MovingIcon:
 ;qweqwe:
 
         mov    [MovingActiv],1
-        mcall   51,1,MovingWnd,stack_dlg        ;CreateThread MovingWnd,stack_dlg
+        mcall   51,1,MovingWnd,stack_move        ;CreateThread MovingWnd,stack_dlg
    .WaitLB:
-        mcall   37,2    ;GetMouseKey
+        mcall   37,2            ;GetMouseKey
         test    al,001b
         jz      .endWaitLB
 
@@ -458,7 +456,7 @@ RButtonPress:
         jmp     @b
      @@:
 
-        mcall   51,1,RButtonWin,stack_dlg       ;CreateThread RButtonWin,stack_dlg
+        mcall   51,1,RButtonWin,stack_rb       ;CreateThread RButtonWin,stack_dlg
 
         jmp     messages
 
@@ -1178,12 +1176,15 @@ NameIconsDat    db ICONS_DAT,0
 align 4
 MaxNumIcon      dd 0           ;количество иконок
 
-bFixIcons       dd 0
+bFixIcons       dd 1
 bNotSave        dd 0
 
 LButtonActiv    dd 0
 RButtonActiv    dd 0
 MovingActiv     dd 0
+DlgAddActiv     dd 0
+
+slotDlgAdd      dd 0
 
 IconIni         db '/rd/1/icon.ini',0
 
@@ -1242,6 +1243,7 @@ import  libini,\
 ;----- RButton.inc -------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 secRButt        db 'rbmenu',0
+keyMenuColor    db 'menucolor',0
 
 if lang eq ru
  RMenuRedrawFon db 'Перерисовать',0
@@ -1291,7 +1293,6 @@ DCaptName       db 'Имя',0
 DCaptPath       db 'Путь',0
 DCaptParams     db 'Параметры',0
 DCaptIcon       db 'Иконка',0
-;DCaptChange     db '.',0
 DCaptCreate     db 'Создать',0
 DCaptProperties db 'Изменить',0
 DCaptCancel     db 'Отменить',0
@@ -1303,7 +1304,6 @@ DCaptName       db 'Name',0
 DCaptPath       db 'Path',0
 DCaptParams     db 'Parameters',0
 DCaptIcon       db 'Icon',0
-;DCaptChange     db '.',0
 DCaptCreate     db 'Create',0
 DCaptProperties db 'Change',0
 DCaptCancel     db 'Cancel',0
@@ -1404,6 +1404,7 @@ AddX            rd 1
 AddY            rd 1
 
 SelIcon         rd 1
+DlgSelIcon      rd 1
 
 sc              system_colors
 
@@ -1438,12 +1439,17 @@ DAreaIcon       rb 256+1
 
 align 4
 RBProcInfo      rb 1024
-align 4
+RBMenuColor     rd 1
+
+
 
 ; OpenDialog
 temp_dir_pach   rb 1024
 fname_Info      rb 1024
 ;-------------------------------------------------------------------------------
+                rb 256
+stack_move:
+stack_rb:
                 rb 1024
 stack_dlg:
 align 4

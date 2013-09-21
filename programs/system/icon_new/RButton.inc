@@ -13,7 +13,7 @@ idbRProp     equ 105
 
 ;---- thread for rbutton -----------------------------------------------------------------------
 RButtonWin:
-        mcall	40,100101b	;SetMaskMessage 100101b
+        mcall   40,100101b      ;SetMaskMessage 100101b
 
         stdcall GetNumIcon,[MouseX],[MouseY],-1
         mov     [SelIcon],eax
@@ -37,7 +37,7 @@ RButtonWin:
 
 
 RBWRedraw:
-        mcall	12,1	;RedrawWinBeg
+        mcall   12,1    ;RedrawWinBeg
         mov     ebx,[MouseX]
         shl     ebx,16
         mov     bx,[RMenuW]
@@ -63,7 +63,7 @@ RBWRedraw:
 
         xor     ebx,ebx
         mov     bx,[RMenuW]
-        mov     esi,0888888h
+        mov     esi,[RBMenuColor];0888888h
         mcall   8
 
         mov     ebx,50000h
@@ -93,7 +93,7 @@ RBWRedraw:
         mov     cx,dx
 
                                    ;первая разделительная линия
-        mcall   38,,,0888888h
+        mcall   38,,,[RBMenuColor];0888888h
         add     ecx,00010001h
         mcall     ,,,
 
@@ -103,7 +103,7 @@ RBWRedraw:
         shl     ecx,16
         mov     cx,16
 
-        mcall   8,,,idbRRedrawFon,0888888h  ;3 кнопки второго блока
+        mcall   8,,,idbRRedrawFon,[RBMenuColor];0888888h  ;3 кнопки второго блока
         add     ecx,00100000h
         mcall    ,,,idbRAlign
         add     ecx,00100000h
@@ -134,7 +134,7 @@ RBWRedraw:
         mov     dx,cx
         shl     ecx,16
         mov     cx,dx
-        mcall   38,,,0888888h
+        mcall   38,,,[RBMenuColor];0888888h
         add     ecx,00010001h
         mcall     ,,,
        ;------------
@@ -146,9 +146,9 @@ RBWRedraw:
         cmp     dword[SelIcon],-1
         je      @f
 
-        mcall   8,,,idbRDel,0888888h
+        mcall   8,,,idbRDel,[RBMenuColor];0888888h
         add     ecx,00100000h
-        mcall    ,,,idbRProp,0888888h
+        mcall    ,,,idbRProp,[RBMenuColor];0888888h
 
         mov     ebx,50000h
         mov     bx,word[esp]
@@ -160,7 +160,7 @@ RBWRedraw:
         jmp     .endRM
       @@:
 
-        mcall   8,,,idbRAdd,0888888h
+        mcall   8,,,idbRAdd,[RBMenuColor];0888888h
         mov     ebx,50000h
         mov     bx,word[esp]
         add     bx,16*3+4+5
@@ -169,14 +169,14 @@ RBWRedraw:
       .endRM:
 
         pop     ecx
-        mcall	12,2	;RedrawWinEnd
+        mcall   12,2    ;RedrawWinEnd
 
-        mcall	9,RBProcInfo,-1		;GetThreadInfo RBProcInfo,-1
+        mcall   9,RBProcInfo,-1         ;GetThreadInfo RBProcInfo,-1
         mcall   18,21,dword[RBProcInfo+30]
         m2m     dword[RBSlot],eax
 
 RBWMessages:
-        mcall	10		;WaitMessage
+        mcall   10              ;WaitMessage
         dec     eax
         jz      RBWRedraw
         sub     eax,2
@@ -186,7 +186,7 @@ RBWMessages:
         jmp     RBWMessages
 
 RBWButton:
-        mcall	17		;GetButtonPressed
+        mcall   17              ;GetButtonPressed
         shr     eax,8
         cmp     eax,idbRRedrawFon
         jz      RBRedrawFon
@@ -212,10 +212,10 @@ RBWButton:
         jmp     RBWExit
 
 RBWMouse:
-        mcall	37,2		;GetMouseKey
+        mcall   37,2            ;GetMouseKey
         test    eax,111b
         jz      RBWMessages
-        mcall	37,0		;GetMousePos
+        mcall   37,0            ;GetMousePos
         xor     ebx,ebx
         mov     bx,ax           ;y
         shr     eax,16          ;x
@@ -231,7 +231,7 @@ RBWMouse:
 RBWExit:
         mcall   68,13,[RBUser]
         mov     [RButtonActiv],0
-        mcall	-1	;ExitProcess
+        mcall   -1      ;ExitProcess
 
 
 RBRedrawFon:
@@ -266,8 +266,11 @@ RBFixIcons:
         jmp     RBWExit
 
 RBAdd:
-      ;  mov     [DlgAddActiv],1
-        mcall	51,1,DlgAdd,stack_dlg		;CreateThread DlgAdd,stack_dlg
+        cmp     [DlgAddActiv],1
+        je      RBWSetActivWin
+        mov     [DlgAddActiv],1
+
+        mcall   51,1,DlgAdd,stack_dlg           ;CreateThread DlgAdd,stack_dlg
         jmp     RBWExit
 
 RBDelete:
@@ -289,10 +292,16 @@ RBDelete:
         jmp     RBRedrawFon
 
 RBPropeties:
-    ;    mov     [DlgAddActiv],1
-        mcall	51,1,DlgProp,stack_dlg		;CreateThread DlgProp,stack_dlg
+        cmp     [DlgAddActiv],1
+        je      RBWSetActivWin
+        mov     [DlgAddActiv],1
+
+        mcall   51,1,DlgProp,stack_dlg          ;CreateThread DlgProp,stack_dlg
         jmp     RBWExit
 
+RBWSetActivWin:
+        mcall   18,3,[slotDlgAdd]
+        jmp     RBWExit
 
 
 proc AlignIcons
@@ -443,6 +452,19 @@ proc GetUserBut stdcall,f_name,sec_name,key_name,key_value
 
         push    ebx esi edi
 
+        mov     edi,[key_name]
+        mov     esi,keyMenuColor
+    @@: lodsb
+        scasb
+        jne     @f
+        test    al,al
+        jnz     @b
+
+        stdcall [ini_get_color],[f_name],[sec_name],[key_name],0888888h
+        mov     [RBMenuColor],eax
+        ret
+   @@:
+
         mov     edi,[key_name]           ;определяем ширину меню
         xor     eax,eax
         or      ecx,-1
@@ -491,7 +513,7 @@ endp
 
 proc Ini_SavePos stdcall,f_name,sec_name
         push    ebx edi esi
-;int3
+
         xor     ebx,ebx
   .SearchSect:
         mov     edi,[IconsOffs+ebx*4]
@@ -520,6 +542,7 @@ proc Ini_SavePos stdcall,f_name,sec_name
         repne   scasb
         repne   scasb
 
+;int3
         movzx   eax,word[edi+2]
         test    eax,8000h
         jz      @f

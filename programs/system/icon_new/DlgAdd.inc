@@ -6,7 +6,9 @@ idbCancel       equ 1
 
 DlgAdd:
 DlgProp:
+
         mov     eax,[SelIcon]
+        mov     [DlgSelIcon],eax
         cmp     eax,-1
         jne     SetProp
 
@@ -92,9 +94,13 @@ SetProp:
 
 
 startDlg:
+        mcall   9,RBProcInfo,-1
+        mcall   18,21,dword[RBProcInfo+30]
+        mov     [slotDlgAdd],eax
+
         or      [edtName.flags],ed_focus
 
-        mcall	40,100111b	;SetMaskMessage 100111b
+        mcall   40,100111b      ;SetMaskMessage 100111b
         xor     eax,eax
         mov     dword[MaxPage],0
       @@:
@@ -107,8 +113,6 @@ startDlg:
         jne     @f
         mov     dword[MaxPage],1
       @@:
-
-        stdcall [OpenDialog_Init],OpenDialog_data
 
 DReDraw:
         mcall   48,3,sc,40
@@ -141,7 +145,7 @@ DReDraw:
         call    DRedraw
 
 DMessages:
-        mcall	10		;WaitMessage
+        mcall   10              ;WaitMessage
 
         dec     eax
         jz      DReDraw
@@ -157,7 +161,7 @@ DMessages:
 
 ;---------------------------------------------------------------------
 DKey:
-        mcall	2		;GetKeyPressed
+        mcall   2               ;GetKeyPressed
         cmp     ah,1Bh
         je      DExit
         cmp     ah,9  ;Tab
@@ -210,7 +214,7 @@ DNextEdit:
         jmp     DMessages
 ;---------------------------------------------------------------------
 DButton:
-        mcall	17		;GetButtonPressed
+        mcall   17              ;GetButtonPressed
         cmp     ah, idbCancel
         je      DExit
         cmp     ah,idbChange
@@ -234,10 +238,10 @@ DMouse:
         call    DrawStdIcons
       @@:
 
-        mcall	37,2		;GetMouseKey
+        mcall   37,2            ;GetMouseKey
         test    eax,1
         jz      DMessages
-        mcall	37,1		;GetMouseWinPos
+        mcall   37,1            ;GetMouseWinPos
 
         test    eax,10001000h
         jne     DMessages
@@ -332,14 +336,14 @@ DSaveIcon:
         mcall   70,fiRunProg
 
 
-        cmp     [SelIcon],-1
+        cmp     [DlgSelIcon],-1
         je      @f
                        ;удаляем из ini старую иконку
-        mov     ebx,[SelIcon]
+        mov     ebx,[DlgSelIcon]
         mov     eax,[IconsOffs+ebx*4]
         stdcall [ini_del_section],IconIni,eax
 
-        stdcall EditIcon,[SelIcon],DAreaIcon,DAreaName,DAreaPath,DAreaParams
+        stdcall EditIcon,[DlgSelIcon],DAreaIcon,DAreaName,DAreaPath,DAreaParams
         jmp     DExitAndSave
      @@:
         stdcall AddIcon,[AddX],[AddY],DAreaIcon,DAreaName,DAreaPath,DAreaParams
@@ -354,11 +358,13 @@ DExitAndSave:
          stdcall [ini_set_int],IconIni,DAreaName,keyY,[MouseY]
 
 DExit:
-        mcall	-1		;ExitProcess
+        mov     [DlgAddActiv],0
+        mov     [slotDlgAdd],0
+        mcall   -1              ;ExitThread
 
 ;##################################################################
 proc DRedraw
-        mcall	12,1		;RedrawWinBeg
+        mcall   12,1            ;RedrawWinBeg
         mov     edx,[sc.work]
         or      edx,33000000h
         mcall   0,<100,400>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+185>,,,DTitle
@@ -404,7 +410,7 @@ if lang eq ru
         or      ecx,80000000h
         mcall    ,<309,35+END_ICONS_AREAH>,,DCaptCancel
 
-        cmp     [SelIcon],-1
+        cmp     [DlgSelIcon],-1
         jne     @f
         mpack   ebx,255,35+END_ICONS_AREAH
         mov     edx,DCaptCreate
@@ -419,7 +425,7 @@ else
         mcall    ,<315,35+END_ICONS_AREAH>,,DCaptCancel
 
 
-        cmp     [SelIcon],-1
+        cmp     [DlgSelIcon],-1
         jne     @f
         mpack   ebx,257,35+END_ICONS_AREAH
         mov     edx,DCaptCreate
@@ -437,7 +443,7 @@ end if
 
         call DrawSelIcon
 
-        mcall	12,2		;RedrawWinEnd
+        mcall   12,2            ;RedrawWinEnd
         ret
 endp
 
