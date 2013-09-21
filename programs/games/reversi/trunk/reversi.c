@@ -68,6 +68,7 @@ int OpponentScore[8][8];
 	//	Notes:	
 	//
 	void DrawBoard() {
+
 		int i;
 		for(i=0;i<=8;i++)  
 		{
@@ -489,6 +490,33 @@ int OpponentScore[8][8];
 //		} else {
 //			ShowAbout();
 		}
+
+                int _user = 0;
+                int _computer = 0;
+                int c, r;
+
+                for (c=0; c<8; c++)
+                    for (r=0; r<8; r++) {
+                            if (TheBoard[c][r] == User)
+                                       _user++;
+                            if (TheBoard[c][r] == Computer)
+                                       _computer++;
+                            }
+
+                // do not use sprintf function here please! ( sprintf(score, "User: %d - Computer: %d", _user, _computer); )
+                char score[64];
+                char tmp[8];
+                strcpy(score, "User (black): ");
+                itoa(_user++, tmp, 10);
+                strcat(score, tmp);
+                strcat(score, " - Computer (white): ");
+                itoa(_computer++, tmp, 10);
+                strcat(score, tmp);
+
+                __menuet__bar(58, 8, 250, 16, 0x777777);
+                __menuet__write_text(58,8,0x333333,score, strlen(score));
+
+
 	}
 	// End of paint
 
