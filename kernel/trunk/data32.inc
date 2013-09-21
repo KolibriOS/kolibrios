@@ -385,7 +385,7 @@ end if
 REDRAW_BACKGROUND   rb 4
 
 align 4
-draw_data:          rb 16*256
+draw_data:          rb 32*256
 BPSLine_calc_area   rd 1440
 d_width_calc_area   rd 1140
 
