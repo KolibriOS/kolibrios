@@ -139,7 +139,7 @@ start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
 msg_module     db 'in module ',0
-if ~ lang eq sp et
+if ~ lang eq sp
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 end if
@@ -166,7 +166,7 @@ firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
 ud_user_message: cp866 'Ошибка: неподдерживаемая инструкция процессора',0
-else if ~ lang eq sp et
+else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
 
