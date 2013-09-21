@@ -98,19 +98,19 @@ __crt_startup (void)
 
     __do_global_ctors();
 
-    __appcwdlen = strrchr(&__pgmname, '/') - &__pgmname + 1;
+    __appcwdlen = strrchr(&__pgmname[0], '/') - &__pgmname[0] + 1;
     __appcwdlen = __appcwdlen > 1023 ? 1023 : __appcwdlen;
     memcpy(__appcwd, &__pgmname, __appcwdlen);
     __appcwd[__appcwdlen] = 0;
 
     set_cwd(__appcwd);
 
-    arg[0] = &__pgmname;
+    arg[0] = &__pgmname[0];
 
     if( __cmdline[0] != 0)
     {
         _argc = 2;
-        arg[1] = &__cmdline;
+        arg[1] = &__cmdline[0];
     } else _argc = 1;
 
     _argv = arg;

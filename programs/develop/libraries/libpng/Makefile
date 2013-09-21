@@ -1,27 +1,31 @@
 
-LIBRARY= libpng
+LIBRARY= libpng16
 
 CC=gcc
-CPP=gcc -E
-AR= ar rc
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
 
-CFLAGS = -c -O2 -fomit-frame-pointer
+LD = ld
 
-LDIMPORT:= -nostdlib --out-implib libpngimp.a 
+AR= ar
 
-LDFLAGS:=  -shared -s -T../newlib/dll.lds --image-base 0
+STRIP = $(PREFIX)strip
+
+LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib libpng.dll.a
+
+INCLUDES= -I. -I../newlib/include -I../zlib
+
+LIBPATH:= -L../newlib -L../zlib
+
+LIBS:=  -ldll -lc.dll -lz.dll
 
 DEFS = -DHAVE_CONFIG_H
+
 
 LIBPNG_DEFINES = -DPNG_CONFIGURE_LIBPNG 
 
 DEFINES= $(DEFS) $(LIBPNG_DEFINES)
 
-INCLUDES= -I../newlib/include -I../zlib
 
-LIBPATH:= -L../newlib -L../zlib
-
-LIBS:=  -lamz -lgcc -lzimp -lcimp 
 
 SOURCES = png.c pngerror.c pngget.c pngmem.c pngpread.c	\
 	  pngread.c pngrio.c pngrtran.c pngrutil.c	\
@@ -41,8 +45,11 @@ all:$(LIBRARY).a $(LIBRARY).dll
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
 
-$(LIBRARY).dll: $(OBJECTS) Makefile
-	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS) symbols.def 
+$(LIBRARY).dll: libpng16.def $(OBJECTS) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@  libpng16.def $(OBJECTS) $(LIBS)
+	$(STRIP) $@
+	sed -f ../newlib/cmd1.sed libpng16.def > mem
+	sed -f ../newlib/cmd2.sed mem >libpng.inc
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
