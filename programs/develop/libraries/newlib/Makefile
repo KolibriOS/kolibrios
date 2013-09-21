@@ -1,5 +1,7 @@
 
 CC = gcc
+AR = ar rc
+LD = ld
 
 CFLAGS = -c -O2 -fomit-frame-pointer -DBUILD_DLL
 LDFLAGS = -nostdlib -shared -s -T libcdll.lds --output-def libc.orig.def --out-implib libc.dll.a --image-base 0
@@ -370,23 +372,23 @@ shared: $(NAME).dll libcrt.a libdll.a
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
-	ld $(LDFLAGS) --exclude-symbols __chkstk,__chkstk_ms,_alloca -Map libcmap -L. -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
+	$(LD) $(LDFLAGS) --exclude-symbols __chkstk,__chkstk_ms,_alloca -Map libcmap -L. -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
 	sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
 	sed -f cmd1.sed libc.def > mem
 	sed -f cmd2.sed mem >libc.inc 
 
 
 libcrt.a: $(LIBCRT_OBJS) Makefile
-	ar rc libcrt.a $(LIBCRT_OBJS)
+	$(AR) libcrt.a $(LIBCRT_OBJS)
 
 libdll.a: $(LIBDLL_OBJS) Makefile
-	ar rc libdll.a $(LIBDLL_OBJS)
+	$(AR) libdll.a $(LIBDLL_OBJS)
 
 
 static: $(NAME).a
 
 $(NAME).a: $(LIB_OBJS) $(SRC_DEP) Makefile
-	ar rc $(NAME).a $(LIB_OBJS)
+	$(AR) $(NAME).a $(LIB_OBJS)
 
 
 
