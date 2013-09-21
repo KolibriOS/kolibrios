@@ -1,0 +1,18 @@
+LIBC {
+        global: *;
+        local:  _PathLocale;
+                __NFiles;
+                __NHandles;
+                __OSHandles;
+                __appcwd;
+                __appcwdlen;
+                __appenv;
+                __appenv_size;
+                __atexit_lock;
+                __cpu_features;
+                __fdlib_version;
+                __hexdig;
+                __initPOSIXHandles;
+                _argc;
+                _argv;
+};
