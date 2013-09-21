@@ -345,4 +345,4 @@ import libfreetype,\
     tt_cmap8_class_rec,'tt_cmap8_class_rec',\
     tt_default_graphics_state,'tt_default_graphics_state',\
     tt_driver_class,'tt_driver_class',\
-    winfnt_driver_class,'winfnt_driver_class',\
+    winfnt_driver_class,'winfnt_driver_class'

@@ -1,46 +1,80 @@
-# Makefile for zlib
-# Copyright (C) 1995-2010 Jean-loup Gailly.
+# Makefile for zlib, derived from Makefile.dj2.
+# Modified for mingw32 by C. Spieler, 6/16/98.
+# Updated for zlib 1.2.x by Christian Spieler and Cosmin Truta, Mar-2003.
+# Last updated: Mar 2012.
+# Tested under Cygwin and MinGW.
+
+# Copyright (C) 1995-2003 Jean-loup Gailly.
 # For conditions of distribution and use, see copyright notice in zlib.h
 
-CC=gcc
-CPP=gcc -E
+STATICLIB = libz.a
+SHAREDLIB = zlib.dll
+IMPLIB    = libz.dll.a
 
-CFLAGS= -O3 -c -fomit-frame-pointer
+PREFIX =
+CC = $(PREFIX)gcc
+CFLAGS = $(LOC) -U_Win32 -U_WIN32 -U__MINGW32__ -O3 -Wall -fomit-frame-pointer 
+
+AS = $(CC)
+ASFLAGS = $(LOC) -Wall
+
+LD = ld
+LDFLAGS = $(LOC)
+
+AR = $(PREFIX)ar
+ARFLAGS = rcs
+
+STRIP = $(PREFIX)strip
 
 LDIMPORT:= -nostdlib --out-implib libzimp.a 
 
-LDFLAGS:=  -shared -s -T ../newlib/dll.lds --image-base 0
+LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB) 
 
 INCLUDES= -I../newlib/include
 
 LIBPATH:= -L../newlib
 
-LIBS:=  -lamz -lgcc -lcimp
-
-AR=ar rc
-
-OBJC =	adler32.o compress.o crc32.o deflate.o		\
-	gzclose.o gzlib.o gzread.o gzwrite.o		\
-	infback.o inffast.o inflate.o inftrees.o	\
-	trees.o uncompr.o zutil.o
+LIBS:=  -ldll -lc.dll
 
 
-# to use the asm code: make OBJA=match.o, PIC_OBJA=match.lo
+OBJS = adler32.o compress.o crc32.o deflate.o gzclose.o gzlib.o gzread.o \
+       gzwrite.o infback.o inffast.o inflate.o inftrees.o trees.o uncompr.o zutil.o
 OBJA =
 
-OBJS = $(OBJC) $(OBJA)
-
-all: libz.a zlib.dll
-
-libz.a: $(OBJS)
-	$(AR) $@ $(OBJS)
-
-zlib.dll: $(OBJECTS) Makefile
-#	dlltool -d zlib.def -Dlibz.dll -e exports.o -l libzimp.a
-	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJS) $(LIBS) zlib.def 
+all: $(STATICLIB) $(SHAREDLIB) $(IMPLIB)
 
 
-%.o: %.c Makefile
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
+.c.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+.S.o:
+	$(AS) $(ASFLAGS) -c -o $@ $<
+
+$(STATICLIB): $(OBJS) $(OBJA)
+	$(AR) $(ARFLAGS) $@ $(OBJS) $(OBJA)
+
+$(IMPLIB): $(SHAREDLIB)
+
+$(SHAREDLIB): zlib.def $(OBJS) $(OBJA)
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ zlib.def $(OBJS) $(OBJA) $(LIBS) 
+	$(STRIP) $@
+	sed -f ../newlib/cmd1.sed zlib.def > mem
+	sed -f ../newlib/cmd2.sed mem >zlib.inc 
 
 
+
+adler32.o: zlib.h zconf.h
+compress.o: zlib.h zconf.h
+crc32.o: crc32.h zlib.h zconf.h
+deflate.o: deflate.h zutil.h zlib.h zconf.h
+gzclose.o: zlib.h zconf.h gzguts.h
+gzlib.o: zlib.h zconf.h gzguts.h
+gzread.o: zlib.h zconf.h gzguts.h
+gzwrite.o: zlib.h zconf.h gzguts.h
+inffast.o: zutil.h zlib.h zconf.h inftrees.h inflate.h inffast.h
+inflate.o: zutil.h zlib.h zconf.h inftrees.h inflate.h inffast.h
+infback.o: zutil.h zlib.h zconf.h inftrees.h inflate.h inffast.h
+inftrees.o: zutil.h zlib.h zconf.h inftrees.h
+trees.o: deflate.h zutil.h zlib.h zconf.h trees.h
+uncompr.o: zlib.h zconf.h
+zutil.o: zutil.h zlib.h zconf.h
