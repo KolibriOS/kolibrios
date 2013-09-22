@@ -14,7 +14,93 @@ fg3color equ  0x007F7F55
 btcolor  equ  0x005B6200
 
 include '..\..\macros.inc'
-
+include 'lang.inc'
+; fetch the UTF-8 character in string+offs to char
+; common part for all encodings: translate pseudographics
+; Pseudographics for the boot screen:
+; 0x2500 -> 0xC4, 0x2502 -> 0xB3, 0x250C -> 0xDA, 0x2510 -> 0xBF,
+; 0x2514 -> 0xC0, 0x2518 -> 0xD9, 0x252C -> 0xC2, 0x2534 -> 0xC1, 0x2551 -> 0xBA
+macro fetch_utf8_char string, offs, char, graph
+{ local first_byte, b
+  virtual at 0
+    db string
+    if offs >= $
+      char = -1
+    else
+      ; fetch first byte
+      load first_byte byte from offs
+      if first_byte < 0x80
+        char = first_byte
+        offs = offs + 1
+      else if first_byte < 0xC0
+        .err Invalid UTF-8 string
+      else if first_byte < 0xE0
+        char = first_byte and 0x1F
+        load b byte from offs + 1
+        char = (char shl 6) + (b and 0x3F)
+        offs = offs + 2
+      else if first_byte < 0xF0
+        char = first_byte and 0xF
+        load b byte from offs + 1
+        char = (char shl 6) + (b and 0x3F)
+        load b byte from offs + 2
+        char = (char shl 6) + (b and 0x3F)
+        offs = offs + 3
+      else if first_byte < 0xF8
+        char = first_byte and 0x7
+        load b byte from offs + 1
+        char = (char shl 6) + (b and 0x3F)
+        load b byte from offs + 2
+        char = (char shl 6) + (b and 0x3F)
+        load b byte from offs + 3
+        char = (char shl 6) + (b and 0x3F)
+        offs = offs + 4
+      else
+        .err Invalid UTF-8 string
+      end if
+    end if
+  end virtual
+  if char = 0x2500
+    graph = 0xC4
+  else if char = 0x2502
+    graph = 0xB3
+  else if char = 0x250C
+    graph = 0xDA
+  else if char = 0x2510
+    graph = 0xBF
+  else if char = 0x2514
+    graph = 0xC0
+  else if char = 0x2518
+    graph = 0xD9
+  else if char = 0x252C
+    graph = 0xC2
+  else if char = 0x2534
+    graph = 0xC1
+  else if char = 0x2551
+    graph = 0xBA
+  else
+    graph = 0
+  end if
+}
+; Latin-1 encoding
+; 0x00-0xFF - trivial map
+macro latin1 [arg]
+{ local offs, char, graph
+  offs = 0
+  while 1
+    fetch_utf8_char arg, offs, char, graph
+    if char = -1
+      break
+    end if
+    if graph
+      db graph
+    else if char < 0x100
+      db char
+    else
+      .err Failed to convert to Latin-1
+    end if
+  end while
+}
 use32
 
 	       org    0x0
@@ -323,7 +409,11 @@ mov  ebx,50 shl 16 +15
 mov  ecx,395 shl 16 +15
 mov  edx,bgcolor
 mcall
+if lang eq et
+add  ebx,60 shl 16 + 30
+else
 add  ebx,60 shl 16 + 20
+end if
 mcall
 add  ebx,80 shl 16
 mcall
@@ -335,7 +425,11 @@ mov  esi,fg2color
 mcall
 mov  ebx,0x50000
 mov  ecx,[score]
+if lang eq et
+add  edx,70 shl 16
+else
 add  edx,60 shl 16
+end if
 mcall
 mov  ebx,0x20000
 mov  ecx,[level]
@@ -596,8 +690,31 @@ pusha
 
 
 ; DATA AREA
-
-
+if lang eq et
+title  db  'Torud',0
+lbl_gameover:
+     db 19
+     latin1 'M ä n g   L ä b i !'
+lbl_start_a_new_game:
+     db 21
+     latin1 'Alusta enne uut mängu'
+lbl_win:
+     db 32
+     latin1 '          T u b l i !           '
+     latin1 '          Lähme edasi!          '
+lbl_yscore:
+     db 12
+     latin1 'Sinu tulemus:'
+lbl_toolbar:
+     db 43
+     latin1 'Uus mäng:     Lihtne     Keskmine     Raske'
+lbl_copy:
+     db 24
+     latin1 'v1.21 2006,Mario Birkner'
+lbl_score:
+     db 28
+     latin1   'Aeg:    Tulemus:       Tase:'
+else
 title  db   'Pipes',0
 lbl_gameover:
      db 19
@@ -621,6 +738,7 @@ lbl_copy:
 lbl_score:
      db 28
      db   'Time:    Score:       Level:'
+end if
 stat	db 3  ;0=gameplay 1=won 2-lost 3=stopped
 speed	db 0
 time	dd 0

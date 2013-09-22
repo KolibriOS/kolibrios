@@ -24,7 +24,7 @@
   boot_setostask:    latin1   'Seadistan OS protsessi',0
   boot_allirqs:      latin1   'Unmasking IRQs',0
   boot_tsc:          latin1   'Loen TSC',0
-  boot_cpufreq:      latin1   'CPU sagedus on ','    ',' MHz',0
+  boot_cpufreq:      latin1   'CPU sagedus on ','     ',' MHz',0
   boot_pal_ega:      latin1   'Seadistan EGA/CGA 320x200 paletti',0
   boot_pal_vga:      latin1   'Seadistan VGA 640x480 paletti',0
   boot_failed:       latin1   'Esimese programmi käivitamine ebaõnnestus',0

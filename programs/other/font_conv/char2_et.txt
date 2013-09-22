@@ -2278,16 +2278,16 @@ o     oI
       oI
 oooooo I
        I
-0      I
-   o   I
-   o   I
-  ooo  I
- o o o I
-o  o  oI
- o o o I
-  ooo  I
-   o   I
-   o   I
+228    I
+o    o I
+       I
+oooooo I
+      oI
+ ooooooI
+o     oI
+ ooooooI
+       I
+       I
 0      I
        I
        I
