@@ -31,36 +31,32 @@
 #include <stdlib.h>
 #include "pixman-private.h"
 
-static source_image_class_t
-linear_gradient_classify (pixman_image_t *image,
-                          int             x,
-                          int             y,
-                          int             width,
-                          int             height)
+static pixman_bool_t
+linear_gradient_is_horizontal (pixman_image_t *image,
+			       int             x,
+			       int             y,
+			       int             width,
+			       int             height)
 {
-    source_image_t *source = (source_image_t *)image;
     linear_gradient_t *linear = (linear_gradient_t *)image;
     pixman_vector_t v;
     pixman_fixed_32_32_t l;
     pixman_fixed_48_16_t dx, dy;
     double inc;
-    source_image_class_t class;
 
-    class = SOURCE_IMAGE_CLASS_UNKNOWN;
-
-    if (source->common.transform)
+    if (image->common.transform)
     {
 	/* projective transformation */
-	if (source->common.transform->matrix[2][0] != 0 ||
-	    source->common.transform->matrix[2][1] != 0 ||
-	    source->common.transform->matrix[2][2] == 0)
+	if (image->common.transform->matrix[2][0] != 0 ||
+	    image->common.transform->matrix[2][1] != 0 ||
+	    image->common.transform->matrix[2][2] == 0)
 	{
-	    return class;
+	    return FALSE;
 	}
 
-	v.vector[0] = source->common.transform->matrix[0][1];
-	v.vector[1] = source->common.transform->matrix[1][1];
-	v.vector[2] = source->common.transform->matrix[2][2];
+	v.vector[0] = image->common.transform->matrix[0][1];
+	v.vector[1] = image->common.transform->matrix[1][1];
+	v.vector[2] = image->common.transform->matrix[2][2];
     }
     else
     {
@@ -75,7 +71,7 @@ linear_gradient_classify (pixman_image_t *image,
     l = dx * dx + dy * dy;
 
     if (l == 0)
-	return class;	
+	return FALSE;
 
     /*
      * compute how much the input of the gradient walked changes
@@ -87,43 +83,44 @@ linear_gradient_classify (pixman_image_t *image,
 
     /* check that casting to integer would result in 0 */
     if (-1 < inc && inc < 1)
-	class = SOURCE_IMAGE_CLASS_HORIZONTAL;
+	return TRUE;
 
-    return class;
+    return FALSE;
 }
 
-static void
-linear_gradient_get_scanline_32 (pixman_image_t *image,
-                                 int             x,
-                                 int             y,
-                                 int             width,
-                                 uint32_t *      buffer,
-                                 const uint32_t *mask)
+static uint32_t *
+linear_get_scanline_narrow (pixman_iter_t  *iter,
+			    const uint32_t *mask)
 {
+    pixman_image_t *image  = iter->image;
+    int             x      = iter->x;
+    int             y      = iter->y;
+    int             width  = iter->width;
+    uint32_t *      buffer = iter->buffer;
+
     pixman_vector_t v, unit;
     pixman_fixed_32_32_t l;
     pixman_fixed_48_16_t dx, dy;
     gradient_t *gradient = (gradient_t *)image;
-    source_image_t *source = (source_image_t *)image;
     linear_gradient_t *linear = (linear_gradient_t *)image;
     uint32_t *end = buffer + width;
     pixman_gradient_walker_t walker;
 
-    _pixman_gradient_walker_init (&walker, gradient, source->common.repeat);
+    _pixman_gradient_walker_init (&walker, gradient, image->common.repeat);
 
     /* reference point is the center of the pixel */
     v.vector[0] = pixman_int_to_fixed (x) + pixman_fixed_1 / 2;
     v.vector[1] = pixman_int_to_fixed (y) + pixman_fixed_1 / 2;
     v.vector[2] = pixman_fixed_1;
 
-    if (source->common.transform)
+    if (image->common.transform)
     {
-	if (!pixman_transform_point_3d (source->common.transform, &v))
-	    return;
-	
-	unit.vector[0] = source->common.transform->matrix[0][0];
-	unit.vector[1] = source->common.transform->matrix[1][0];
-	unit.vector[2] = source->common.transform->matrix[2][0];
+	if (!pixman_transform_point_3d (image->common.transform, &v))
+	    return iter->buffer;
+
+	unit.vector[0] = image->common.transform->matrix[0][0];
+	unit.vector[1] = image->common.transform->matrix[1][0];
+	unit.vector[2] = image->common.transform->matrix[2][0];
     }
     else
     {
@@ -219,18 +216,48 @@ linear_gradient_get_scanline_32 (pixman_image_t *image,
 	    v.vector[2] += unit.vector[2];
 	}
     }
+
+    iter->y++;
+
+    return iter->buffer;
 }
 
-static void
-linear_gradient_property_changed (pixman_image_t *image)
+static uint32_t *
+linear_get_scanline_wide (pixman_iter_t *iter, const uint32_t *mask)
 {
-    image->common.get_scanline_32 = linear_gradient_get_scanline_32;
-    image->common.get_scanline_64 = _pixman_image_get_scanline_generic_64;
+    uint32_t *buffer = linear_get_scanline_narrow (iter, NULL);
+
+    pixman_expand_to_float (
+	(argb_t *)buffer, buffer, PIXMAN_a8r8g8b8, iter->width);
+
+    return buffer;
+}
+
+void
+_pixman_linear_gradient_iter_init (pixman_image_t *image, pixman_iter_t  *iter)
+{
+    if (linear_gradient_is_horizontal (
+	    iter->image, iter->x, iter->y, iter->width, iter->height))
+    {
+	if (iter->iter_flags & ITER_NARROW)
+	    linear_get_scanline_narrow (iter, NULL);
+	else
+	    linear_get_scanline_wide (iter, NULL);
+
+	iter->get_scanline = _pixman_iter_get_scanline_noop;
+    }
+    else
+    {
+	if (iter->iter_flags & ITER_NARROW)
+	    iter->get_scanline = linear_get_scanline_narrow;
+	else
+	    iter->get_scanline = linear_get_scanline_wide;
+    }
 }
 
 PIXMAN_EXPORT pixman_image_t *
-pixman_image_create_linear_gradient (pixman_point_fixed_t *        p1,
-                                     pixman_point_fixed_t *        p2,
+pixman_image_create_linear_gradient (const pixman_point_fixed_t *  p1,
+                                     const pixman_point_fixed_t *  p2,
                                      const pixman_gradient_stop_t *stops,
                                      int                           n_stops)
 {
@@ -254,8 +281,6 @@ pixman_image_create_linear_gradient (pixman_point_fixed_t *        p1,
     linear->p2 = *p2;
 
     image->type = LINEAR;
-    image->common.classify = linear_gradient_classify;
-    image->common.property_changed = linear_gradient_property_changed;
 
     return image;
 }

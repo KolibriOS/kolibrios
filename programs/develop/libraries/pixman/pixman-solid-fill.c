@@ -26,56 +26,6 @@
 #endif
 #include "pixman-private.h"
 
-static void
-solid_fill_get_scanline_32 (pixman_image_t *image,
-                            int             x,
-                            int             y,
-                            int             width,
-                            uint32_t *      buffer,
-                            const uint32_t *mask)
-{
-    uint32_t *end = buffer + width;
-    uint32_t color = image->solid.color_32;
-
-    while (buffer < end)
-	*(buffer++) = color;
-
-    return;
-}
-
-static void
-solid_fill_get_scanline_64 (pixman_image_t *image,
-			    int             x,
-			    int             y,
-			    int             width,
-			    uint32_t *      buffer,
-			    const uint32_t *mask)
-{
-    uint64_t *b = (uint64_t *)buffer;
-    uint64_t *e = b + width;
-    uint64_t color = image->solid.color_64;
-
-    while (b < e)
-	*(b++) = color;
-}
-
-static source_image_class_t
-solid_fill_classify (pixman_image_t *image,
-                     int             x,
-                     int             y,
-                     int             width,
-                     int             height)
-{
-    return SOURCE_IMAGE_CLASS_HORIZONTAL;
-}
-
-static void
-solid_fill_property_changed (pixman_image_t *image)
-{
-    image->common.get_scanline_32 = solid_fill_get_scanline_32;
-    image->common.get_scanline_64 = solid_fill_get_scanline_64;
-}
-
 static uint32_t
 color_to_uint32 (const pixman_color_t *color)
 {
@@ -86,18 +36,21 @@ color_to_uint32 (const pixman_color_t *color)
         (color->blue >> 8);
 }
 
-static uint64_t
-color_to_uint64 (const pixman_color_t *color)
+static argb_t
+color_to_float (const pixman_color_t *color)
 {
-    return
-        ((uint64_t)color->alpha << 48) |
-        ((uint64_t)color->red << 32) |
-        ((uint64_t)color->green << 16) |
-        ((uint64_t)color->blue);
+    argb_t result;
+
+    result.a = pixman_unorm_to_float (color->alpha, 16);
+    result.r = pixman_unorm_to_float (color->red, 16);
+    result.g = pixman_unorm_to_float (color->green, 16);
+    result.b = pixman_unorm_to_float (color->blue, 16);
+
+    return result;
 }
 
 PIXMAN_EXPORT pixman_image_t *
-pixman_image_create_solid_fill (pixman_color_t *color)
+pixman_image_create_solid_fill (const pixman_color_t *color)
 {
     pixman_image_t *img = _pixman_image_allocate ();
 
@@ -107,10 +60,7 @@ pixman_image_create_solid_fill (pixman_color_t *color)
     img->type = SOLID;
     img->solid.color = *color;
     img->solid.color_32 = color_to_uint32 (color);
-    img->solid.color_64 = color_to_uint64 (color);
-
-    img->common.classify = solid_fill_classify;
-    img->common.property_changed = solid_fill_property_changed;
+    img->solid.color_float = color_to_float (color);
 
     return img;
 }

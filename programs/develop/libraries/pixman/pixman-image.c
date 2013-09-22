@@ -30,7 +30,50 @@
 #include <assert.h>
 
 #include "pixman-private.h"
-#include "pixman-combine32.h"
+
+static const pixman_color_t transparent_black = { 0, 0, 0, 0 };
+
+static void
+gradient_property_changed (pixman_image_t *image)
+{
+    gradient_t *gradient = &image->gradient;
+    int n = gradient->n_stops;
+    pixman_gradient_stop_t *stops = gradient->stops;
+    pixman_gradient_stop_t *begin = &(gradient->stops[-1]);
+    pixman_gradient_stop_t *end = &(gradient->stops[n]);
+
+    switch (gradient->common.repeat)
+    {
+    default:
+    case PIXMAN_REPEAT_NONE:
+	begin->x = INT32_MIN;
+	begin->color = transparent_black;
+	end->x = INT32_MAX;
+	end->color = transparent_black;
+	break;
+
+    case PIXMAN_REPEAT_NORMAL:
+	begin->x = stops[n - 1].x - pixman_fixed_1;
+	begin->color = stops[n - 1].color;
+	end->x = stops[0].x + pixman_fixed_1;
+	end->color = stops[0].color;
+	break;
+
+    case PIXMAN_REPEAT_REFLECT:
+	begin->x = - stops[0].x;
+	begin->color = stops[0].color;
+	end->x = pixman_int_to_fixed (2) - stops[n - 1].x;
+	end->color = stops[n - 1].color;
+	break;
+
+    case PIXMAN_REPEAT_PAD:
+	begin->x = INT32_MIN;
+	begin->color = stops[0].color;
+	end->x = INT32_MAX;
+	end->color = stops[n - 1].color;
+	break;
+    }
+}
 
 pixman_bool_t
 _pixman_init_gradient (gradient_t *                  gradient,
@@ -39,54 +82,100 @@ _pixman_init_gradient (gradient_t *                  gradient,
 {
     return_val_if_fail (n_stops > 0, FALSE);
 
-    gradient->stops = pixman_malloc_ab (n_stops, sizeof (pixman_gradient_stop_t));
+    /* We allocate two extra stops, one before the beginning of the stop list,
+     * and one after the end. These stops are initialized to whatever color
+     * would be used for positions outside the range of the stop list.
+     *
+     * This saves a bit of computation in the gradient walker.
+     *
+     * The pointer we store in the gradient_t struct still points to the
+     * first user-supplied struct, so when freeing, we will have to
+     * subtract one.
+     */
+    gradient->stops =
+	pixman_malloc_ab (n_stops + 2, sizeof (pixman_gradient_stop_t));
     if (!gradient->stops)
 	return FALSE;
 
+    gradient->stops += 1;
     memcpy (gradient->stops, stops, n_stops * sizeof (pixman_gradient_stop_t));
-
     gradient->n_stops = n_stops;
 
-    gradient->stop_range = 0xffff;
+    gradient->common.property_changed = gradient_property_changed;
 
     return TRUE;
 }
 
-/*
- * By default, just evaluate the image at 32bpp and expand.  Individual image
- * types can plug in a better scanline getter if they want to. For example
- * we  could produce smoother gradients by evaluating them at higher color
- * depth, but that's a project for the future.
- */
 void
-_pixman_image_get_scanline_generic_64 (pixman_image_t * image,
-                                       int              x,
-                                       int              y,
-                                       int              width,
-                                       uint32_t *       buffer,
-                                       const uint32_t * mask)
+_pixman_image_init (pixman_image_t *image)
 {
-    uint32_t *mask8 = NULL;
+    image_common_t *common = &image->common;
 
-    /* Contract the mask image, if one exists, so that the 32-bit fetch
-     * function can use it.
-     */
-    if (mask)
+    pixman_region32_init (&common->clip_region);
+
+    common->alpha_count = 0;
+    common->have_clip_region = FALSE;
+    common->clip_sources = FALSE;
+    common->transform = NULL;
+    common->repeat = PIXMAN_REPEAT_NONE;
+    common->filter = PIXMAN_FILTER_NEAREST;
+    common->filter_params = NULL;
+    common->n_filter_params = 0;
+    common->alpha_map = NULL;
+    common->component_alpha = FALSE;
+    common->ref_count = 1;
+    common->property_changed = NULL;
+    common->client_clip = FALSE;
+    common->destroy_func = NULL;
+    common->destroy_data = NULL;
+    common->dirty = TRUE;
+}
+
+pixman_bool_t
+_pixman_image_fini (pixman_image_t *image)
+{
+    image_common_t *common = (image_common_t *)image;
+
+    common->ref_count--;
+
+    if (common->ref_count == 0)
     {
-	mask8 = pixman_malloc_ab (width, sizeof(uint32_t));
-	if (!mask8)
-	    return;
+	if (image->common.destroy_func)
+	    image->common.destroy_func (image, image->common.destroy_data);
 
-	pixman_contract (mask8, (uint64_t *)mask, width);
+	pixman_region32_fini (&common->clip_region);
+
+	free (common->transform);
+	free (common->filter_params);
+
+	if (common->alpha_map)
+	    pixman_image_unref ((pixman_image_t *)common->alpha_map);
+
+	if (image->type == LINEAR ||
+	    image->type == RADIAL ||
+	    image->type == CONICAL)
+	{
+	    if (image->gradient.stops)
+	    {
+		/* See _pixman_init_gradient() for an explanation of the - 1 */
+		free (image->gradient.stops - 1);
+	    }
+
+	    /* This will trigger if someone adds a property_changed
+	     * method to the linear/radial/conical gradient overwriting
+	     * the general one.
+	     */
+	    assert (
+		image->common.property_changed == gradient_property_changed);
+	}
+
+	if (image->type == BITS && image->bits.free_me)
+	    free (image->bits.free_me);
+
+	return TRUE;
     }
 
-    /* Fetch the source image into the first half of buffer. */
-    _pixman_image_get_scanline_32 (image, x, y, width, (uint32_t*)buffer, mask8);
-
-    /* Expand from 32bpp to 64bpp in place. */
-    pixman_expand ((uint64_t *)buffer, buffer, PIXMAN_a8r8g8b8, width);
-
-    free (mask8);
+    return FALSE;
 }
 
 pixman_image_t *
@@ -95,68 +184,9 @@ _pixman_image_allocate (void)
     pixman_image_t *image = malloc (sizeof (pixman_image_t));
 
     if (image)
-    {
-	image_common_t *common = &image->common;
-
-	pixman_region32_init (&common->clip_region);
-
-	common->alpha_count = 0;
-	common->have_clip_region = FALSE;
-	common->clip_sources = FALSE;
-	common->transform = NULL;
-	common->repeat = PIXMAN_REPEAT_NONE;
-	common->filter = PIXMAN_FILTER_NEAREST;
-	common->filter_params = NULL;
-	common->n_filter_params = 0;
-	common->alpha_map = NULL;
-	common->component_alpha = FALSE;
-	common->ref_count = 1;
-	common->classify = NULL;
-	common->client_clip = FALSE;
-	common->destroy_func = NULL;
-	common->destroy_data = NULL;
-	common->dirty = TRUE;
-    }
+	_pixman_image_init (image);
 
     return image;
-}
-
-source_image_class_t
-_pixman_image_classify (pixman_image_t *image,
-                        int             x,
-                        int             y,
-                        int             width,
-                        int             height)
-{
-    if (image->common.classify)
-	return image->common.classify (image, x, y, width, height);
-    else
-	return SOURCE_IMAGE_CLASS_UNKNOWN;
-}
-
-void
-_pixman_image_get_scanline_32 (pixman_image_t *image,
-                               int             x,
-                               int             y,
-                               int             width,
-                               uint32_t *      buffer,
-                               const uint32_t *mask)
-{
-    image->common.get_scanline_32 (image, x, y, width, buffer, mask);
-}
-
-/* Even thought the type of buffer is uint32_t *, the function actually expects
- * a uint64_t *buffer.
- */
-void
-_pixman_image_get_scanline_64 (pixman_image_t *image,
-                               int             x,
-                               int             y,
-                               int             width,
-                               uint32_t *      buffer,
-                               const uint32_t *unused)
-{
-    image->common.get_scanline_64 (image, x, y, width, buffer, unused);
 }
 
 static void
@@ -178,39 +208,9 @@ pixman_image_ref (pixman_image_t *image)
 PIXMAN_EXPORT pixman_bool_t
 pixman_image_unref (pixman_image_t *image)
 {
-    image_common_t *common = (image_common_t *)image;
-
-    common->ref_count--;
-
-    if (common->ref_count == 0)
+    if (_pixman_image_fini (image))
     {
-	if (image->common.destroy_func)
-	    image->common.destroy_func (image, image->common.destroy_data);
-
-	pixman_region32_fini (&common->clip_region);
-
-	if (common->transform)
-	    free (common->transform);
-
-	if (common->filter_params)
-	    free (common->filter_params);
-
-	if (common->alpha_map)
-	    pixman_image_unref ((pixman_image_t *)common->alpha_map);
-
-	if (image->type == LINEAR ||
-	    image->type == RADIAL ||
-	    image->type == CONICAL)
-	{
-	    if (image->gradient.stops)
-		free (image->gradient.stops);
-	}
-
-	if (image->type == BITS && image->bits.free_me)
-	    free (image->bits.free_me);
-
 	free (image);
-
 	return TRUE;
     }
 
@@ -238,54 +238,27 @@ _pixman_image_reset_clip_region (pixman_image_t *image)
     image->common.have_clip_region = FALSE;
 }
 
-static pixman_bool_t out_of_bounds_workaround = TRUE;
-
-/* Old X servers rely on out-of-bounds accesses when they are asked
- * to composite with a window as the source. They create a pixman image
- * pointing to some bogus position in memory, but then they set a clip
- * region to the position where the actual bits are.
+/* Executive Summary: This function is a no-op that only exists
+ * for historical reasons.
+ *
+ * There used to be a bug in the X server where it would rely on
+ * out-of-bounds accesses when it was asked to composite with a
+ * window as the source. It would create a pixman image pointing
+ * to some bogus position in memory, but then set a clip region
+ * to the position where the actual bits were.
  *
  * Due to a bug in old versions of pixman, where it would not clip
  * against the image bounds when a clip region was set, this would
- * actually work. So by default we allow certain out-of-bound access
- * to happen unless explicitly disabled.
+ * actually work. So when the pixman bug was fixed, a workaround was
+ * added to allow certain out-of-bound accesses. This function disabled
+ * those workarounds.
  *
- * Fixed X servers should call this function to disable the workaround.
+ * Since 0.21.2, pixman doesn't do these workarounds anymore, so now
+ * this function is a no-op.
  */
 PIXMAN_EXPORT void
 pixman_disable_out_of_bounds_workaround (void)
 {
-    out_of_bounds_workaround = FALSE;
-}
-
-static pixman_bool_t
-source_image_needs_out_of_bounds_workaround (bits_image_t *image)
-{
-    if (image->common.clip_sources                      &&
-        image->common.repeat == PIXMAN_REPEAT_NONE      &&
-	image->common.have_clip_region			&&
-        out_of_bounds_workaround)
-    {
-	if (!image->common.client_clip)
-	{
-	    /* There is no client clip, so if the clip region extends beyond the
-	     * drawable geometry, it must be because the X server generated the
-	     * bogus clip region.
-	     */
-	    const pixman_box32_t *extents =
-		pixman_region32_extents (&image->common.clip_region);
-
-	    if (extents->x1 >= 0 && extents->x2 <= image->width &&
-		extents->y1 >= 0 && extents->y2 <= image->height)
-	    {
-		return FALSE;
-	    }
-	}
-
-	return TRUE;
-    }
-
-    return FALSE;
 }
 
 static void
@@ -315,7 +288,23 @@ compute_image_info (pixman_image_t *image)
 	    if (image->common.transform->matrix[0][1] == 0 &&
 		image->common.transform->matrix[1][0] == 0)
 	    {
+		if (image->common.transform->matrix[0][0] == -pixman_fixed_1 &&
+		    image->common.transform->matrix[1][1] == -pixman_fixed_1)
+		{
+		    flags |= FAST_PATH_ROTATE_180_TRANSFORM;
+		}
 		flags |= FAST_PATH_SCALE_TRANSFORM;
+	    }
+	    else if (image->common.transform->matrix[0][0] == 0 &&
+	             image->common.transform->matrix[1][1] == 0)
+	    {
+		pixman_fixed_t m01 = image->common.transform->matrix[0][1];
+		pixman_fixed_t m10 = image->common.transform->matrix[1][0];
+
+		if (m01 == -pixman_fixed_1 && m10 == pixman_fixed_1)
+		    flags |= FAST_PATH_ROTATE_90_TRANSFORM;
+		else if (m01 == pixman_fixed_1 && m10 == -pixman_fixed_1)
+		    flags |= FAST_PATH_ROTATE_270_TRANSFORM;
 	    }
 	}
 
@@ -338,9 +327,54 @@ compute_image_info (pixman_image_t *image)
     case PIXMAN_FILTER_GOOD:
     case PIXMAN_FILTER_BEST:
 	flags |= (FAST_PATH_BILINEAR_FILTER | FAST_PATH_NO_CONVOLUTION_FILTER);
+
+	/* Here we have a chance to optimize BILINEAR filter to NEAREST if
+	 * they are equivalent for the currently used transformation matrix.
+	 */
+	if (flags & FAST_PATH_ID_TRANSFORM)
+	{
+	    flags |= FAST_PATH_NEAREST_FILTER;
+	}
+	else if (
+	    /* affine and integer translation components in matrix ... */
+	    ((flags & FAST_PATH_AFFINE_TRANSFORM) &&
+	     !pixman_fixed_frac (image->common.transform->matrix[0][2] |
+				 image->common.transform->matrix[1][2])) &&
+	    (
+		/* ... combined with a simple rotation */
+		(flags & (FAST_PATH_ROTATE_90_TRANSFORM |
+			  FAST_PATH_ROTATE_180_TRANSFORM |
+			  FAST_PATH_ROTATE_270_TRANSFORM)) ||
+		/* ... or combined with a simple non-rotated translation */
+		(image->common.transform->matrix[0][0] == pixman_fixed_1 &&
+		 image->common.transform->matrix[1][1] == pixman_fixed_1 &&
+		 image->common.transform->matrix[0][1] == 0 &&
+		 image->common.transform->matrix[1][0] == 0)
+		)
+	    )
+	{
+	    /* FIXME: there are some affine-test failures, showing that
+	     * handling of BILINEAR and NEAREST filter is not quite
+	     * equivalent when getting close to 32K for the translation
+	     * components of the matrix. That's likely some bug, but for
+	     * now just skip BILINEAR->NEAREST optimization in this case.
+	     */
+	    pixman_fixed_t magic_limit = pixman_int_to_fixed (30000);
+	    if (image->common.transform->matrix[0][2] <= magic_limit  &&
+	        image->common.transform->matrix[1][2] <= magic_limit  &&
+	        image->common.transform->matrix[0][2] >= -magic_limit &&
+	        image->common.transform->matrix[1][2] >= -magic_limit)
+	    {
+		flags |= FAST_PATH_NEAREST_FILTER;
+	    }
+	}
 	break;
 
     case PIXMAN_FILTER_CONVOLUTION:
+	break;
+
+    case PIXMAN_FILTER_SEPARABLE_CONVOLUTION:
+	flags |= FAST_PATH_SEPARABLE_CONVOLUTION_FILTER;
 	break;
 
     default:
@@ -408,6 +442,7 @@ compute_image_info (pixman_image_t *image)
 	else
 	{
 	    code = image->bits.format;
+	    flags |= FAST_PATH_BITS_IMAGE;
 	}
 
 	if (!PIXMAN_FORMAT_A (image->bits.format)				&&
@@ -419,9 +454,6 @@ compute_image_info (pixman_image_t *image)
 	    if (image->common.repeat != PIXMAN_REPEAT_NONE)
 		flags |= FAST_PATH_IS_OPAQUE;
 	}
-
-	if (source_image_needs_out_of_bounds_workaround (&image->bits))
-	    flags |= FAST_PATH_NEEDS_WORKAROUND;
 
 	if (image->bits.read_func || image->bits.write_func)
 	    flags &= ~FAST_PATH_NO_ACCESSORS;
@@ -445,6 +477,7 @@ compute_image_info (pixman_image_t *image)
 
 	/* Fall through */
 
+    case CONICAL:
     case LINEAR:
 	code = PIXMAN_unknown;
 
@@ -486,8 +519,9 @@ compute_image_info (pixman_image_t *image)
      * if all channels are opaque, so we simply turn it off
      * unconditionally for those images.
      */
-    if (image->common.alpha_map					||
-	image->common.filter == PIXMAN_FILTER_CONVOLUTION	||
+    if (image->common.alpha_map						||
+	image->common.filter == PIXMAN_FILTER_CONVOLUTION		||
+        image->common.filter == PIXMAN_FILTER_SEPARABLE_CONVOLUTION     ||
 	image->common.component_alpha)
     {
 	flags &= ~(FAST_PATH_IS_OPAQUE | FAST_PATH_SAMPLES_OPAQUE);
@@ -509,7 +543,8 @@ _pixman_image_validate (pixman_image_t *image)
 	 * property_changed() can make use of the flags
 	 * to set up accessors etc.
 	 */
-	image->common.property_changed (image);
+	if (image->common.property_changed)
+	    image->common.property_changed (image);
 
 	image->common.dirty = FALSE;
     }
@@ -590,13 +625,19 @@ pixman_image_set_transform (pixman_image_t *          image,
     if (common->transform == transform)
 	return TRUE;
 
-    if (memcmp (&id, transform, sizeof (pixman_transform_t)) == 0)
+    if (!transform || memcmp (&id, transform, sizeof (pixman_transform_t)) == 0)
     {
 	free (common->transform);
 	common->transform = NULL;
 	result = TRUE;
 
 	goto out;
+    }
+
+    if (common->transform &&
+	memcmp (common->transform, transform, sizeof (pixman_transform_t)) == 0)
+    {
+	return TRUE;
     }
 
     if (common->transform == NULL)
@@ -623,6 +664,9 @@ PIXMAN_EXPORT void
 pixman_image_set_repeat (pixman_image_t *image,
                          pixman_repeat_t repeat)
 {
+    if (image->common.repeat == repeat)
+	return;
+
     image->common.repeat = repeat;
 
     image_property_changed (image);
@@ -640,6 +684,19 @@ pixman_image_set_filter (pixman_image_t *      image,
     if (params == common->filter_params && filter == common->filter)
 	return TRUE;
 
+    if (filter == PIXMAN_FILTER_SEPARABLE_CONVOLUTION)
+    {
+	int width = pixman_fixed_to_int (params[0]);
+	int height = pixman_fixed_to_int (params[1]);
+	int x_phase_bits = pixman_fixed_to_int (params[2]);
+	int y_phase_bits = pixman_fixed_to_int (params[3]);
+	int n_x_phases = (1 << x_phase_bits);
+	int n_y_phases = (1 << y_phase_bits);
+
+	return_val_if_fail (
+	    n_params == 4 + n_x_phases * width + n_y_phases * height, FALSE);
+    }
+    
     new_params = NULL;
     if (params)
     {
@@ -667,6 +724,9 @@ PIXMAN_EXPORT void
 pixman_image_set_source_clipping (pixman_image_t *image,
                                   pixman_bool_t   clip_sources)
 {
+    if (image->common.clip_sources == clip_sources)
+	return;
+
     image->common.clip_sources = clip_sources;
 
     image_property_changed (image);
@@ -681,6 +741,9 @@ pixman_image_set_indexed (pixman_image_t *        image,
                           const pixman_indexed_t *indexed)
 {
     bits_image_t *bits = (bits_image_t *)image;
+
+    if (bits->indexed == indexed)
+	return;
 
     bits->indexed = indexed;
 
@@ -744,6 +807,9 @@ PIXMAN_EXPORT void
 pixman_image_set_component_alpha   (pixman_image_t *image,
                                     pixman_bool_t   component_alpha)
 {
+    if (image->common.component_alpha == component_alpha)
+	return;
+
     image->common.component_alpha = component_alpha;
 
     image_property_changed (image);
@@ -822,19 +888,47 @@ pixman_image_get_format (pixman_image_t *image)
     if (image->type == BITS)
 	return image->bits.format;
 
-    return 0;
+    return PIXMAN_null;
 }
 
 uint32_t
-_pixman_image_get_solid (pixman_image_t *     image,
-                         pixman_format_code_t format)
+_pixman_image_get_solid (pixman_implementation_t *imp,
+			 pixman_image_t *         image,
+                         pixman_format_code_t     format)
 {
     uint32_t result;
 
-    _pixman_image_get_scanline_32 (image, 0, 0, 1, &result, NULL);
+    if (image->type == SOLID)
+    {
+	result = image->solid.color_32;
+    }
+    else if (image->type == BITS)
+    {
+	if (image->bits.format == PIXMAN_a8r8g8b8)
+	    result = image->bits.bits[0];
+	else if (image->bits.format == PIXMAN_x8r8g8b8)
+	    result = image->bits.bits[0] | 0xff000000;
+	else if (image->bits.format == PIXMAN_a8)
+	    result = (*(uint8_t *)image->bits.bits) << 24;
+	else
+	    goto otherwise;
+    }
+    else
+    {
+	pixman_iter_t iter;
+
+    otherwise:
+	_pixman_implementation_src_iter_init (
+	    imp, &iter, image, 0, 0, 1, 1,
+	    (uint8_t *)&result,
+	    ITER_NARROW, image->common.flags);
+	
+	result = *iter.get_scanline (&iter, NULL);
+    }
 
     /* If necessary, convert RGB <--> BGR. */
-    if (PIXMAN_FORMAT_TYPE (format) != PIXMAN_TYPE_ARGB)
+    if (PIXMAN_FORMAT_TYPE (format) != PIXMAN_TYPE_ARGB
+	&& PIXMAN_FORMAT_TYPE (format) != PIXMAN_TYPE_ARGB_SRGB)
     {
 	result = (((result & 0xff000000) >>  0) |
 	          ((result & 0x00ff0000) >> 16) |

@@ -78,11 +78,11 @@ radial_compute_color (double                    a,
 {
     /*
      * In this function error propagation can lead to bad results:
-     *  - det can have an unbound error (if b*b-a*c is very small),
+     *  - discr can have an unbound error (if b*b-a*c is very small),
      *    potentially making it the opposite sign of what it should have been
      *    (thus clearing a pixel that would have been colored or vice-versa)
-     *    or propagating the error to sqrtdet;
-     *    if det has the wrong sign or b is very small, this can lead to bad
+     *    or propagating the error to sqrtdiscr;
+     *    if discr has the wrong sign or b is very small, this can lead to bad
      *    results
      *
      *  - the algorithm used to compute the solutions of the quadratic
@@ -92,7 +92,7 @@ radial_compute_color (double                    a,
      *
      *  - the above problems are worse if a is small (as inva becomes bigger)
      */
-    double det;
+    double discr;
 
     if (a == 0)
     {
@@ -109,22 +109,33 @@ radial_compute_color (double                    a,
 	}
 	else
 	{
-	    if (t * dr > mindr)
+	    if (t * dr >= mindr)
 		return _pixman_gradient_walker_pixel (walker, t);
 	}
 
 	return 0;
     }
 
-    det = fdot (b, a, 0, b, -c, 0);
-    if (det >= 0)
+    discr = fdot (b, a, 0, b, -c, 0);
+    if (discr >= 0)
     {
-	double sqrtdet, t0, t1;
+	double sqrtdiscr, t0, t1;
 
-	sqrtdet = sqrt (det);
-	t0 = (b + sqrtdet) * inva;
-	t1 = (b - sqrtdet) * inva;
+	sqrtdiscr = sqrt (discr);
+	t0 = (b + sqrtdiscr) * inva;
+	t1 = (b - sqrtdiscr) * inva;
 
+	/*
+	 * The root that must be used is the biggest one that belongs
+	 * to the valid range ([0,1] for PIXMAN_REPEAT_NONE, any
+	 * solution that results in a positive radius otherwise).
+	 *
+	 * If a > 0, t0 is the biggest solution, so if it is valid, it
+	 * is the correct result.
+	 *
+	 * If a < 0, only one of the solutions can be valid, so the
+	 * order in which they are tested is not important.
+	 */
 	if (repeat == PIXMAN_REPEAT_NONE)
 	{
 	    if (0 <= t0 && t0 <= pixman_fixed_1)
@@ -134,9 +145,9 @@ radial_compute_color (double                    a,
 	}
 	else
 	{
-	    if (t0 * dr > mindr)
+	    if (t0 * dr >= mindr)
 		return _pixman_gradient_walker_pixel (walker, t0);
-	    else if (t1 * dr > mindr)
+	    else if (t1 * dr >= mindr)
 		return _pixman_gradient_walker_pixel (walker, t1);
 	}
     }
@@ -144,19 +155,14 @@ radial_compute_color (double                    a,
     return 0;
 }
 
-static void
-radial_gradient_get_scanline_32 (pixman_image_t *image,
-                                 int             x,
-                                 int             y,
-                                 int             width,
-                                 uint32_t *      buffer,
-                                 const uint32_t *mask)
+static uint32_t *
+radial_get_scanline_narrow (pixman_iter_t *iter, const uint32_t *mask)
 {
     /*
      * Implementation of radial gradients following the PDF specification.
      * See section 8.7.4.5.4 Type 3 (Radial) Shadings of the PDF Reference
      * Manual (PDF 32000-1:2008 at the time of this writing).
-     * 
+     *
      * In the radial gradient problem we are given two circles (c₁,r₁) and
      * (c₂,r₂) that define the gradient itself.
      *
@@ -173,7 +179,7 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
      *
      * The graphical result is the same as drawing the valid (radius > 0)
      * circles with increasing t in [-inf, +inf] (or in [0,1] if the gradient
-     * is not repeated) using SOURCE operatior composition.
+     * is not repeated) using SOURCE operator composition.
      *
      * It looks like a cone pointing towards the viewer if the ending circle
      * is smaller than the starting one, a cone pointing inside the page if
@@ -184,14 +190,14 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
      * in, compute the t values for that point, solving for t in:
      *
      *     length((1-t)·c₁ + t·(c₂) - p) = (1-t)·r₁ + t·r₂
-     * 
+     *
      * Let's rewrite it in a simpler way, by defining some auxiliary
      * variables:
      *
      *     cd = c₂ - c₁
      *     pd = p - c₁
      *     dr = r₂ - r₁
-     *     lenght(t·cd - pd) = r₁ + t·dr
+     *     length(t·cd - pd) = r₁ + t·dr
      *
      * which actually means
      *
@@ -217,7 +223,7 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
      *     B = pdx·cdx + pdy·cdy + r₁·dr
      *     C = pdx² + pdy² - r₁²
      *     At² - 2Bt + C = 0
-     * 
+     *
      * The solutions (unless the equation degenerates because of A = 0) are:
      *
      *     t = (B ± ⎷(B² - A·C)) / A
@@ -233,9 +239,13 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
      *   <=> for every p, the radiuses associated with the two t solutions
      *       have opposite sign
      */
+    pixman_image_t *image = iter->image;
+    int x = iter->x;
+    int y = iter->y;
+    int width = iter->width;
+    uint32_t *buffer = iter->buffer;
 
     gradient_t *gradient = (gradient_t *)image;
-    source_image_t *source = (source_image_t *)image;
     radial_gradient_t *radial = (radial_gradient_t *)image;
     uint32_t *end = buffer + width;
     pixman_gradient_walker_t walker;
@@ -246,16 +256,16 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
     v.vector[1] = pixman_int_to_fixed (y) + pixman_fixed_1 / 2;
     v.vector[2] = pixman_fixed_1;
 
-    _pixman_gradient_walker_init (&walker, gradient, source->common.repeat);
+    _pixman_gradient_walker_init (&walker, gradient, image->common.repeat);
 
-    if (source->common.transform)
+    if (image->common.transform)
     {
-	if (!pixman_transform_point_3d (source->common.transform, &v))
-	    return;
-	
-	unit.vector[0] = source->common.transform->matrix[0][0];
-	unit.vector[1] = source->common.transform->matrix[1][0];
-	unit.vector[2] = source->common.transform->matrix[2][0];
+	if (!pixman_transform_point_3d (image->common.transform, &v))
+	    return iter->buffer;
+
+	unit.vector[0] = image->common.transform->matrix[0][0];
+	unit.vector[1] = image->common.transform->matrix[1][0];
+	unit.vector[2] = image->common.transform->matrix[2][0];
     }
     else
     {
@@ -325,7 +335,7 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
 						radial->delta.radius,
 						radial->mindr,
 						&walker,
-						source->common.repeat);
+						image->common.repeat);
 	    }
 
 	    b += db;
@@ -370,14 +380,14 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
 						    radial->delta.radius,
 						    radial->mindr,
 						    &walker,
-						    source->common.repeat);
+						    image->common.repeat);
 		}
 		else
 		{
 		    *buffer = 0;
 		}
 	    }
-	    
+
 	    ++buffer;
 
 	    v.vector[0] += unit.vector[0];
@@ -385,18 +395,34 @@ radial_gradient_get_scanline_32 (pixman_image_t *image,
 	    v.vector[2] += unit.vector[2];
 	}
     }
+
+    iter->y++;
+    return iter->buffer;
 }
 
-static void
-radial_gradient_property_changed (pixman_image_t *image)
+static uint32_t *
+radial_get_scanline_wide (pixman_iter_t *iter, const uint32_t *mask)
 {
-    image->common.get_scanline_32 = radial_gradient_get_scanline_32;
-    image->common.get_scanline_64 = _pixman_image_get_scanline_generic_64;
+    uint32_t *buffer = radial_get_scanline_narrow (iter, NULL);
+
+    pixman_expand_to_float (
+	(argb_t *)buffer, buffer, PIXMAN_a8r8g8b8, iter->width);
+
+    return buffer;
+}
+
+void
+_pixman_radial_gradient_iter_init (pixman_image_t *image, pixman_iter_t *iter)
+{
+    if (iter->iter_flags & ITER_NARROW)
+	iter->get_scanline = radial_get_scanline_narrow;
+    else
+	iter->get_scanline = radial_get_scanline_wide;
 }
 
 PIXMAN_EXPORT pixman_image_t *
-pixman_image_create_radial_gradient (pixman_point_fixed_t *        inner,
-                                     pixman_point_fixed_t *        outer,
+pixman_image_create_radial_gradient (const pixman_point_fixed_t *  inner,
+                                     const pixman_point_fixed_t *  outer,
                                      pixman_fixed_t                inner_radius,
                                      pixman_fixed_t                outer_radius,
                                      const pixman_gradient_stop_t *stops,
@@ -441,8 +467,5 @@ pixman_image_create_radial_gradient (pixman_point_fixed_t *        inner,
 
     radial->mindr = -1. * pixman_fixed_1 * radial->c1.radius;
 
-    image->common.property_changed = radial_gradient_property_changed;
-
     return image;
 }
-

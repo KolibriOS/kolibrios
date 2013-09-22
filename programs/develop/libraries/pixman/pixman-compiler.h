@@ -18,6 +18,18 @@
 #  define FUNC     ((const char*) ("???"))
 #endif
 
+#if defined (__GNUC__)
+#  define unlikely(expr) __builtin_expect ((expr), 0)
+#else
+#  define unlikely(expr)  (expr)
+#endif
+
+#if defined (__GNUC__)
+#  define MAYBE_UNUSED  __attribute__((unused))
+#else
+#  define MAYBE_UNUSED
+#endif
+
 #ifndef INT16_MIN
 # define INT16_MIN              (-32767-1)
 #endif
@@ -41,6 +53,19 @@
 #ifndef UINT32_MAX
 # define UINT32_MAX             (4294967295U)
 #endif
+
+#ifndef INT64_MIN
+# define INT64_MIN              (-9223372036854775807-1)
+#endif
+
+#ifndef INT64_MAX
+# define INT64_MAX              (9223372036854775807)
+#endif
+
+#ifndef SIZE_MAX
+# define SIZE_MAX               ((size_t)-1)
+#endif
+
 
 #ifndef M_PI
 # define M_PI			3.14159265358979323846
@@ -74,6 +99,10 @@
 #   define PIXMAN_EXPORT
 #endif
 
+/* member offsets */
+#define CONTAINER_OF(type, member, data)				\
+    ((type *)(((uint8_t *)data) - offsetof (type, member)))
+
 /* TLS */
 #if defined(PIXMAN_NO_TLS)
 
@@ -82,10 +111,10 @@
 #   define PIXMAN_GET_THREAD_LOCAL(name)				\
     (&name)
 
-#elif defined(TOOLCHAIN_SUPPORTS__THREAD)
+#elif defined(TLS)
 
 #   define PIXMAN_DEFINE_THREAD_LOCAL(type, name)			\
-    static __thread type name
+    static TLS type name
 #   define PIXMAN_GET_THREAD_LOCAL(name)				\
     (&name)
 
@@ -191,8 +220,7 @@
 		value = tls_ ## name ## _alloc ();			\
 	}								\
 	return value;							\
-    }									\
-    extern int no_such_variable						
+    }
 
 #   define PIXMAN_GET_THREAD_LOCAL(name)				\
     tls_ ## name ## _get ()

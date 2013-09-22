@@ -10,6 +10,15 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
+/* Whether we have feenableexcept() */
+/* #undef HAVE_FEENABLEEXCEPT */
+
+/* Define to 1 if we have <fenv.h> */
+#define HAVE_FENV_H 1
+
+/* Whether the tool chain supports __float128 */
+#define HAVE_FLOAT128 /**/
+
 /* Define to 1 if you have the `getisax' function. */
 /* #undef HAVE_GETISAX */
 
@@ -25,8 +34,14 @@
 /* Define to 1 if you have the `pixman-1' library (-lpixman-1). */
 /* #undef HAVE_LIBPIXMAN_1 */
 
+/* Whether we have libpng */
+/* #undef HAVE_LIBPNG */
+
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
+
+/* Whether we have mmap() */
+#define HAVE_MMAP
 
 /* Whether we have mprotect() */
 #define HAVE_MPROTECT 1
@@ -72,13 +87,13 @@
 #define PACKAGE "pixman"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT ""pixman@lists.freedesktop.org""
+#define PACKAGE_BUGREPORT "pixman@lists.freedesktop.org"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "pixman"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "pixman 0.20.2"
+#define PACKAGE_STRING "pixman 0.30.2"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "pixman"
@@ -87,7 +102,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.20.2"
+#define PACKAGE_VERSION "0.30.2"
 
 /* enable TIMER_BEGIN/TIMER_END macros */
 /* #undef PIXMAN_TIMERS */
@@ -98,8 +113,14 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
-/* Whether the tool chain supports __thread */
-//#define TOOLCHAIN_SUPPORTS__THREAD /**/
+/* The compiler supported TLS storage class */
+#define TLS __thread
+
+/* Whether the tool chain supports __attribute__((constructor)) */
+#define TOOLCHAIN_SUPPORTS_ATTRIBUTE_CONSTRUCTOR /**/
+
+/* use ARM IWMMXT compiler intrinsics */
+/* #undef USE_ARM_IWMMXT */
 
 /* use ARM NEON assembly optimizations */
 /* #undef USE_ARM_NEON */
@@ -110,20 +131,26 @@
 /* use GNU-style inline assembler */
 #define USE_GCC_INLINE_ASM 1
 
-/* use MMX compiler intrinsics */
-#define USE_MMX 1
+/* use Loongson Multimedia Instructions */
+/* #undef USE_LOONGSON_MMI */
+
+/* use MIPS DSPr2 assembly optimizations */
+/* #undef USE_MIPS_DSPR2 */
 
 /* use OpenMP in the test suite */
-//#define USE_OPENMP 1
+/* #undef USE_OPENMP */
 
 /* use SSE2 compiler intrinsics */
-//#define USE_SSE2 1
+#define USE_SSE2 1
 
 /* use VMX compiler intrinsics */
 /* #undef USE_VMX */
 
+/* use x86 MMX compiler intrinsics */
+#define USE_X86_MMX 1
+
 /* Version number of package */
-#define VERSION "0.20.2"
+#define VERSION "0.30.2"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -142,3 +169,6 @@
 #ifndef __cplusplus
 /* #undef inline */
 #endif
+
+/* Define to sqrt if you do not have the `sqrtf' function. */
+/* #undef sqrtf */
