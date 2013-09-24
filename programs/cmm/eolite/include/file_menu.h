@@ -14,6 +14,20 @@ char *captions[] = {
 	"“¤ «¨âì",               "Del",
 	"Ž¡­®¢¨âì",              "F5",
 	0, 0};
+#elif LANG_EST
+char *captions[] = {
+	"Ava",            "Enter",
+	"Ava ...",        "CrlEnt",
+	"Vaata tekstina", "F3",
+	"Vaata HEX",      "F4",
+	//
+	"Kopeeri",        "Crl+C",
+	"Lõika",          "Crl+X",
+	"Aseta",          "Crl+V",
+	"Nimeta ümber",   "F2",
+	"Kustuta",        "Del",
+	"Värskenda",      "F5",
+	0, 0};
 
 #else
 char *captions[] = {

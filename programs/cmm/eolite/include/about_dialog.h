@@ -9,7 +9,11 @@
 	?define INTRO_TEXT_2 "Разработчики:"
 	?define INTRO_TEXT_3 "Посетите"
 	?define INTRO_TEXT_4 "Закрыть"
-
+#elif LANG_EST
+	?define INTRO_TEXT_1 "Programmis Eolite"
+	?define INTRO_TEXT_2 "Arendajad:"
+	?define INTRO_TEXT_3 "K№lasta"
+	?define INTRO_TEXT_4 "Sulge"
 #else
 	?define INTRO_TEXT_1 "About Eolite"
 	?define INTRO_TEXT_2 "Developers:"

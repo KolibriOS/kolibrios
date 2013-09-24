@@ -10,6 +10,17 @@ char *actions[] = {
 ?define T_DEVICES "Устройства"
 ?define T_ACTIONS "Действия"
 
+#elif LANG_EST
+char *actions[] = {
+	57, "Uus fail", "F7",
+	56, "Uus kataloog", "F6",
+	60, "Seaded", "F10",
+	0,0,0
+};
+
+?define T_DEVICES "Seadmed"
+?define T_ACTIONS "Toimingud"
+
 #else
 char *actions[] = {
 	57, "New file", "F7",

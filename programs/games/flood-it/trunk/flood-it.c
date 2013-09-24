@@ -49,6 +49,26 @@ char *BOARD_SIZES[]={ "S", "L", 0 };
 	"[Q] [W] [E]",
 	"[A] [S] [D]",
 	0}; 
+#elif LANG_EST
+	char *BUTTON_CAPTIONS[]={ "Uus mäng [F2]", "Abi      [F1]", "Välju   [Esc]", 0}; 
+	char CLICKS_TEXT[]="Klikki:   /";
+	char LEVELS_TEXT[]="Väli:";
+	
+	char HELP_WINDOW_CAPTION[]="Help";
+	char *HELP_TEXT[]={	"Kuidas mängida mängu Flood-it?",
+	"",
+	"Ujuta kogu mänguväli üle ühe värviga lubatud käikude arvuga.",
+	"Mängu alustad ülemisest vasakust nurgast ja edened valides ühe värvi",
+	"vajutades nuppudele vasakul. Kui sa muudad värvi pragusel alal,",
+	"siis iga kokkupuutuv sama värv muutub samaks. Nii saad ujutada",
+	"teised alad mänguväljal üle. Valida saad 2 mänguvälja suuruse",
+	"vahel. Proovi väli üle ujutada etteandtud käikude arvuga!",
+	"Kaasahaarav ja lõbus!",
+	"",
+	"Mängida saab ka klaviatuuriga:",
+	"[Q] [W] [E]",
+	"[A] [S] [D]",
+	0}; 
 #else
 	char *BUTTON_CAPTIONS[]={ "New Game [F2]", "Help     [F1]", "Exit    [Esc]", 0}; 
 	char CLICKS_TEXT[]="Clicks:   /";

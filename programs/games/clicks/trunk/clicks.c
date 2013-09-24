@@ -27,6 +27,9 @@ int blocks_matrix[28*28]; //цвета для поля с квадратиками
 #ifdef LANG_RUS
 	char NEW_GAME_TEXT[]=" ‡ ­®ў® [F2]";
 	char REZULT_TEXT[]="ђҐ§г«мв в: ";
+#elif LANG_EST
+	char NEW_GAME_TEXT[]="Uus mдng [F2]";
+	char REZULT_TEXT[]="Tulemus: ";
 #else
 	char NEW_GAME_TEXT[]="New Game [F2]";
 	char REZULT_TEXT[]="Rezult: ";
