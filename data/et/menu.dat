@@ -100,7 +100,7 @@ Hõlbustus seaded   >      /@20
 Silumisaken               /sys/develop/board
 #11    **** SETTINGS ****
 Seadmed                   /sys/setup
-Tausta genereerijaor      /sys/media/palitra
+Tausta genereerija        /sys/media/palitra
 Värvid & Teemad           /sys/desktop
 MyKey                     /sys/mykey
 ATI video reziim          /sys/vmode

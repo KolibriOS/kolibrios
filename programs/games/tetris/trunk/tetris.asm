@@ -844,6 +844,13 @@ if lang eq ru
   text           db 'éÁ™®:',0
   game_finished: db '  çéÇÄü',0
 
+else if lang eq et
+
+  title          db 'TETRIS 1.61 - NOOLED & T‹HIK',0
+  labe           db 'PAUS',0
+  text           db 'Tulemus:',0
+  game_finished: db 'UUS MƒNG',0
+
 else
 
   title          db 'TETRIS 1.61 - ARROWS & SPACE',0
