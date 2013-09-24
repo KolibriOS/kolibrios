@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) 2010 KolibriOS team.     All rights reserved.  ;;
+;; Copyright (C) 2010-13 KolibriOS team.  All rights reserved.  ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  HT.inc                                                      ;;                                                    ;;
@@ -113,9 +113,8 @@ fusion_pcie_init:
 	xchg	dl, al
 	mov	dword[mmio_pcie_cfg_addr-OS_BASE], eax	; store the physical address
 	mov	ecx, edx
-	and	dl, 1
-	jz	$				; bit[0] = 1 means no PCIe mapping allowed. Stop.
-	shr	cl, 2				; ecx = log2(number of buses)
+
+	shr	cl, 2
 	mov	word[PCIe_bus_range-OS_BASE], cx
 	sub	cl, 2
 	jae	@f
@@ -158,19 +157,35 @@ fusion_pcie_init:
 
 create_mmio_pte:
 	mov	ecx, mmio_pte				; physical address
-	or	ecx, (PG_NOCACHE + PG_SHARED + PG_SW)
+	or	ecx, (PG_NOCACHE + PG_SHARED + PG_UW)
 	mov	ebx, FUSION_MMIO			; linear address
 	shr	ebx, 20
 	add	ebx, (sys_pgdir - OS_BASE)		; PgDir entry @
 	mov	dword[ebx], ecx 			; Fusion MMIO tables
 
-; ---- short page mapping  ----
+; ---- map APIC regs  ----
 .map_apic_mmio:
 	mov	ecx, 0x01B	; APIC BAR
 	rdmsr
 	and	eax, 0xFFFFF000 			; physical address
-	or	eax, (PG_NOCACHE + PG_SHARED + PG_SW)
-	mov	dword[mmio_pte + 0], eax
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)
+	mov	ebx, mmio_pte
+	mov	[ebx], eax
+
+; ---- map GPU MMRegs  ----
+.map_gpu_mmr:
+	mov	eax, [mmio_pcie_cfg_addr-OS_BASE]	; PCIe space
+	add	eax, 0x08018				; b:0, d:1, f:0, reg=18
+	mov	eax, [eax]
+
+	xor	al, al					; physical address
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)
+@@:
+	add   bl, 4
+	mov	[ebx], eax
+	add   eax, 0x01000
+	cmp   bl, 16*4	  ; map 15 pages
+	jb    @b
 
 	ret	; <<< OK >>>
 
@@ -308,6 +323,7 @@ apic_data:
     .counter dd ?
     .ticks   dd ?
     .t_freq  dd ?
+    .gpu_r6998 dd ?
 endg
 
 apic_timer_reset:
@@ -321,8 +337,48 @@ apic_timer_reset:
 	mov	edx, [ebx]
 	and	edx, 0xFFFEFF00
 	or	edx, 0x0002003F 			; int vector + restart
-	mov	[ebx], edx
+;--     mov     [ebx], edx
 	mov	dword [LAPIC_BAR + 0x380], eax		; load APICTIC
+
+; ret
+
+init_hw_cursor:
+	call	alloc_page			 ; eax = phys. addr
+	push	eax
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_UW)	 ; i like dirty hacks
+	mov	[mmio_pte + OS_BASE + 15*4], eax ; mapped to the end of GPU MMRegs
+	mov	edi, GPU_CURSOR 		 ; lin. addr
+	invlpg	[edi]
+	xor	ecx, ecx
+.fill64pix:
+	xor	ebx, ebx
+	mov	eax, 0x80000000 		; black, non-transparent
+.check_pix:
+	cmp	ebx, ecx
+	jbe	@f
+	xor	eax, eax			; transparent
+@@:
+	mov	[edi + ebx*4], eax
+	inc	ebx
+	cmp	bl, 64
+	jb	.check_pix
+	inc	ecx
+	cmp	ecx, 16
+	je	@f
+	add	edi, 64*4			; new line
+	jmp	.fill64pix
+@@:
+	pop	eax
+	mov	dword[GPU_MMR + 0x0699C], eax	     ; cur_surface_addr
+	mov	dword[GPU_MMR + 0x069A0], 0x000F000F ; cur_size    = 16x16
+	mov	dword[GPU_MMR + 0x069A4], 0	     ; cur_adr_hi
+	mov	dword[GPU_MMR + 0x069A8], 0x02000100 ; cur_pos     = 512,256
+	mov	dword[GPU_MMR + 0x069AC], 0	     ; cur_hotspot = 0,0
+
+	mov	dword[GPU_MMR + 0x06998], 0x00000301 ; set it!
+
+
+
 	ret
 
 

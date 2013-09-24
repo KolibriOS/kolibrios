@@ -322,7 +322,9 @@ PCIe_CONFIG_SPACE   equ 0xF0000000
 USER_DMA_BUFFER     equ 0xFD000000    ; linear addr.
 USER_DMA_SIZE	    equ 0x00800000
 FUSION_MMIO	    equ 0xFD800000
-LAPIC_BAR	    equ 0xFD800000    ; ==
+LAPIC_BAR	    equ 0xFD800000    ; 1  page
+GPU_MMR 	    equ 0xFD801000    ; 14 pages
+GPU_CURSOR	    equ 0xFD80F000    ; 1  page
 
 page_tabs	    equ 0xFDC00000
 app_page_tabs	    equ 0xFDC00000
