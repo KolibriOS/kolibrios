@@ -143,7 +143,7 @@ load_libraries l_libs_start,load_lib_end
 	jne	@f
 	mcall	-1 ;exit if not open box_lib.obj
 @@:
-	mcall	40,0x27 ;маска системных событий
+	mcall	40,0x80000027 ;маска системных событий
 ;---------------------------------------------------------------------
 init_checkboxes2 ch1_dbg,ch1_dbg+ch_struc_size
 ;---------------------------------------------------------------------
