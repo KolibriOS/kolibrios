@@ -1143,11 +1143,10 @@ block_end dd ?
 
 ;---------------------------------------------------------------------
 I_END:                             ; метка конца программы
-
-procinfo process_information
 rb RTFSIZE
 esp1:
 rb ESPSIZE
+procinfo process_information
 procinfo2 process_information
 ;---------------------------------------------------------------------
 temp_dir_pach:
