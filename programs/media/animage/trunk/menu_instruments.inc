@@ -165,7 +165,7 @@ no_new:
 	jne	still
 ;---------------------------------------------------------------------
 open_1:
-	mcall	40,100111b
+	mcall	40,0x80000027 ; 100111b
 
 	mov	eax,file_path
 	mov	ebx,[ScreenPointer]
@@ -311,7 +311,7 @@ no_save_:
 ;---------------------------------------------------------------------
 save1:
 save_enter:
-	mcall	40,100111b
+	mcall	40,0x80000027 ; 100111b
 
 	call	analizing_picture_to_palette
 
