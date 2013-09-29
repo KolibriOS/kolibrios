@@ -28,7 +28,7 @@ start:
 	jz	@f
 		mcall -1 ;exit not correct
 	@@:
-	mcall 40,0x27
+	mcall 40,0x80000027
 	mcall 48, 3, sys_colors, 40
 	edit_boxes_set_sys_color edit1,editboxes_end,sys_colors
 
