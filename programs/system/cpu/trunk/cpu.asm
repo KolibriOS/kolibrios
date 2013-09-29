@@ -582,6 +582,12 @@ show_process_info:
         test    [window_status],10b             ; window is minimized to panel
         jnz     .exit
 
+        mov     ecx,display_processes
+        mov     edi,tasklist
+        xor     eax,eax
+        cld
+        rep     stosd
+
         mov     edi,[list_start]
         mov     [list_add],edi
         mov     dword [index],0
