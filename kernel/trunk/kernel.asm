@@ -1102,6 +1102,7 @@ end if
         DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
         DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
         DEBUGF  1, "K : IDE_Interrupt %x \n", [IDE_Interrupt]:4
+
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -3792,10 +3793,6 @@ newdw2:
 
         mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]
-        mov     ecx, [edi + WDATA.box.width]
-        mov     edx, [edi + WDATA.box.height]
-        add     ecx, eax
-        add     edx, ebx
 
         mov     ecx, [draw_limits.bottom] ; ecx = area y end     ebx = window y start
         cmp     ecx, ebx
@@ -3894,6 +3891,64 @@ align 4
 align 4
 newdw8:
 nobgrd:
+;--------------------------------------
+        push    eax  edi ebp
+        mov     edi, [esp+12]
+        cmp     edi, 1
+        je      .found
+
+        mov     eax, [draw_limits.left]
+        mov     ebx, [draw_limits.top]
+        mov     ecx, [draw_limits.right]
+        sub     ecx, eax
+        test    ecx, ecx
+        jz      .not_found
+
+        mov     edx, [draw_limits.bottom]
+        sub     edx, ebx
+        test    edx, edx
+        jz      .not_found
+
+; eax - x, ebx - y
+; ecx - size x, edx - size y
+        add     ebx, edx
+;--------------------------------------
+align 4
+.start_y:
+        push    ecx
+;--------------------------------------
+align 4
+.start_x:
+        add     eax, ecx
+        mov     ebp, [d_width_calc_area + ebx*4]
+        add     ebp, [_WinMapAddress]
+        movzx   ebp, byte[eax+ebp] ; get value for current point
+        cmp     ebp, edi
+        jne     @f
+
+        pop     ecx
+        jmp     .found
+;--------------------------------------
+align 4
+@@:
+        sub     eax, ecx
+
+        dec     ecx
+        jnz     .start_x
+
+        pop     ecx
+        dec     ebx
+        dec     edx
+        jnz     .start_y
+;--------------------------------------
+align 4
+.not_found:
+        pop     ebp edi eax
+        jmp     ricino
+;--------------------------------------
+align 4
+.found:
+        pop     ebp edi eax
 
         mov     [eax + WDATA.fl_redraw], byte 1  ; mark as redraw
 ;--------------------------------------
