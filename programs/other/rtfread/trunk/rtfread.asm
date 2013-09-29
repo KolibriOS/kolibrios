@@ -86,7 +86,7 @@ help_end:
 
 START:
         mcall 68, 11
-        mcall 40, 0x27
+        mcall 40, 0x80000027
 
 load_libraries l_libs_start,end_l_libs
 
