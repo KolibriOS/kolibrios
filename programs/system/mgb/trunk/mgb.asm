@@ -112,7 +112,7 @@ load_libraries l_libs_start,end_l_libs
 	push	dword OpenDialog_data
 	call	[OpenDialog_Init]
 ;---------------------------------------------------------------------
-	mcall	40,0x27
+	mcall	40,0x80000027
 red:
 	call	draw_window
 still:
@@ -595,7 +595,7 @@ int2str:
 ;---------------------------------------------------------------------
 thread_comment:
 	or	dword [wFlags],1
-	mcall	40,0x27
+	mcall	40,0x80000027
 	mov	esi,comment_string_1
 	cld
 @@:
