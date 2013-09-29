@@ -55,7 +55,7 @@ include '../../../develop/libraries/box_lib/load_lib.mac'
 
 START:
 	mcall	68,11
-	mcall	40,100111b
+	mcall	40,0x80000027
 
 load_libraries l_libs_start,load_lib_end
 	cmp eax,-1
