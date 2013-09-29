@@ -38,7 +38,7 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 
 	cmp	[par],byte 0
 	jne	read_par
-	mcall	40,EVM_MOUSE+EVM_BUTTON+EVM_KEY+EVM_REDRAW
+	mcall	40,EVM_MOUSE+EVM_BUTTON+EVM_KEY+EVM_REDRAW+EVM_MOUSE_FILTER
 red:
 	mcall	48,3,sc,40
 	edit_boxes_set_sys_color input_fn,input_fn_end,sc
