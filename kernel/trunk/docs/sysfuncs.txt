@@ -2010,7 +2010,7 @@ Parameters:
   * eax = 40 - function number
   * ebx = mask: bit i corresponds to event i+1 (see list of events)
     (set bit permits notice on event)
-    bit 31: active/inactive filter
+    bit 31: mouse active/inactive filter
     bit 31 = 0 - inactive window receive mouse events
     bit 31 = 1 - inactive window does not receive mouse events
     bit 30: cursor position filter
