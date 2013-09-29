@@ -134,7 +134,7 @@ reset_events:
 
 ; Report events
 ; defaults + mouse
-        mcall   40, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
+        mcall   40,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER
 
 redraw:
         call    draw_window
