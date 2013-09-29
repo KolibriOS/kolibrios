@@ -82,7 +82,7 @@ START:
         jnz     exit
 
 stop_transfer:
-        mcall   40, 00100111b
+        mcall   40, 0x80000027 ; 00100111b
 
 red_win:
         call draw_window
@@ -288,7 +288,7 @@ start_transfer:
         mov     esi, edi
         mcall   send, [socketnum], I_END
 
-        mcall   40, 10000101b
+        mcall   40, 0x80000085 ; 10000101b
 
         mov     [last_ack], 0
 
