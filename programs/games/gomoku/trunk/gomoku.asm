@@ -19,8 +19,7 @@ AttackFactor dw 1	; Importance of attack (1..16)
 
 START:
 
-	mcall	40,100111b
-	mcall	40,100111b
+	mcall	40,0x80000027
 	mcall	3
 	mov	[rsx1],ax
 	shr	eax,16
