@@ -126,7 +126,7 @@ START:
         mcall   68, 11                  ; init heap so we can allocate memory dynamically
 
 ; wanted events
-        mcall   40, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_STACK + EVM_MOUSE
+        mcall   40,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_STACK+EVM_MOUSE+EVM_MOUSE_FILTER
 
 ; load libraries
         stdcall dll.Load, @IMPORT
