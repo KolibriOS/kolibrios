@@ -14,7 +14,7 @@ idbRProp     equ 105
 ;---- thread for rbutton -----------------------------------------------------------------------
 RButtonWin:
         mcall   40,100101b      ;SetMaskMessage 100101b
-
+	mcall	48,3,sc,40
         stdcall GetNumIcon,[MouseX],[MouseY],-1
         mov     [SelIcon],eax
 
@@ -63,7 +63,7 @@ RBWRedraw:
 
         xor     ebx,ebx
         mov     bx,[RMenuW]
-        mov     esi,[RBMenuColor];0888888h
+        mov     esi,[sc.work]	;[RBMenuColor];0888888h
         mcall   8
 
         mov     ebx,50000h
@@ -93,7 +93,8 @@ RBWRedraw:
         mov     cx,dx
 
                                    ;первая разделительная линия
-        mcall   38,,,[RBMenuColor];0888888h
+;        mcall   38,,,[RBMenuColor];0888888h
+        mcall   38,,,[sc.work]
         add     ecx,00010001h
         mcall     ,,,
 
@@ -103,7 +104,8 @@ RBWRedraw:
         shl     ecx,16
         mov     cx,16
 
-        mcall   8,,,idbRRedrawFon,[RBMenuColor];0888888h  ;3 кнопки второго блока
+;        mcall   8,,,idbRRedrawFon,[RBMenuColor];0888888h  ;3 кнопки второго блока
+        mcall   8,,,idbRRedrawFon,[sc.work]
         add     ecx,00100000h
         mcall    ,,,idbRAlign
         add     ecx,00100000h
@@ -134,7 +136,8 @@ RBWRedraw:
         mov     dx,cx
         shl     ecx,16
         mov     cx,dx
-        mcall   38,,,[RBMenuColor];0888888h
+;        mcall   38,,,[RBMenuColor];0888888h
+        mcall   38,,,[sc.work]
         add     ecx,00010001h
         mcall     ,,,
        ;------------
@@ -146,9 +149,11 @@ RBWRedraw:
         cmp     dword[SelIcon],-1
         je      @f
 
-        mcall   8,,,idbRDel,[RBMenuColor];0888888h
+;        mcall   8,,,idbRDel,[RBMenuColor];0888888h
+        mcall   8,,,idbRDel,[sc.work]
         add     ecx,00100000h
-        mcall    ,,,idbRProp,[RBMenuColor];0888888h
+;        mcall    ,,,idbRProp,[RBMenuColor];0888888h
+        mcall    ,,,idbRProp,[sc.work]
 
         mov     ebx,50000h
         mov     bx,word[esp]
@@ -160,7 +165,8 @@ RBWRedraw:
         jmp     .endRM
       @@:
 
-        mcall   8,,,idbRAdd,[RBMenuColor];0888888h
+;        mcall   8,,,idbRAdd,[RBMenuColor];0888888h
+        mcall   8,,,idbRAdd,[sc.work]
         mov     ebx,50000h
         mov     bx,word[esp]
         add     bx,16*3+4+5
