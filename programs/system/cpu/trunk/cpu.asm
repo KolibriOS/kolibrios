@@ -53,11 +53,6 @@ window_y_size=430
 @use_library    ;use load lib macros
 ;------------------------------------------------------------------------------
 START:                          ; start of execution
-	mcall	9,process_info_buffer,-1
-	mov	ecx,[ebx+30]	; PID
-	mcall	18,21
-	mov	[active_process],eax	; WINDOW SLOT
-;------------------------------------------------------------------------------	
         mcall   68,11
 sys_load_library  library_name, cur_dir_path, library_path, system_path, \
 err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
@@ -100,6 +95,9 @@ red:
 align 4
 still:
         mcall   23,100          ; wait here for event 1 sec.
+	
+	test	eax,eax
+	jz	still_end
 
         dec     eax                   ; redraw request ?
         jz      red
@@ -109,10 +107,6 @@ still:
 
         dec     eax                   ; button in buffer ?
         jz      button
-
-	mcall	18,7
-	cmp	[active_process],eax
-	jne	still_end
 
         push    dword edit1
         call    [edit_box_mouse]
@@ -769,7 +763,6 @@ curposy         rd 1
 index           rd 1
 tasklist        rd display_processes
 time_counter    rd 1
-active_process  rd 1
 
 window_status           rd 1
 client_area_x_size      rd 1
