@@ -233,12 +233,14 @@ dword strstri(dword searchin, usestr_s)
 }
 
 
-void strcpyb(dword search_in, copyin, startstr, endstr)
+unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
 {
 	dword startp, endp;
-	startp = strstr(search_in, startstr) + strlen(startstr);
+	dword copyin_start_off = copyin;
+	if (startstr==0) startp = search_in; else startp = strstr(search_in, startstr) + strlen(startstr);
 	endp = strstri(startp, endstr);
-	if (startp==endp) return;
+	if (endp==0) endp = startp+strlen(search_in);
+	//if (startp==endp) return 0;
 	do
 	{ 
 		DSBYTE[copyin] = DSBYTE[startp];
@@ -247,6 +249,7 @@ void strcpyb(dword search_in, copyin, startstr, endstr)
 	}
 	while (startp<endp);
 	DSBYTE[copyin] = '\0';
+	return copyin_start_off;
 }
 
 

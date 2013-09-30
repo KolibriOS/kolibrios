@@ -1,11 +1,33 @@
 #define SOCKET_PASSIVE 0
 #define SOCKET_ACTIVE  1
+
+inline fastcall int GetNumOfActiveNetworkDevices()
+{
+	$mov eax,74
+	BL = -1;
+	$int 0x40
+} 
+
+inline fastcall dword OpenUnixSocket( ECX, EDX, ESI, EDI)
+{
+	$mov eax,75
+	$mov bl,0
+	$int 0x40
+} 
+
+
+
+
+
+/* ======================= OLD =========================*/
+
 inline fastcall dword OpenSocket( ECX, EDX, ESI, EDI)
 {
 	$mov eax,53
 	$mov ebx,5
 	$int 0x40
 } 
+
 
 inline fastcall dword CloseSocket( ECX )
 {

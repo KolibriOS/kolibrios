@@ -150,22 +150,6 @@ inline fastcall word GetButtonID()
 	$shr eax,8
 }
 
-//----------------------------------------
-
-/* ecx = point to structure
-          sysdir_name     rb 64
-          sysdir_path     rb 64
-Пример:  
-dir_name1       db 'addappl',0
-dir_path1       db 'HD0/1',0
-*/
-inline fastcall int SetAddApplDir( ECX)
-{
-	EAX = 30;
-	EBX = 3;
-	$int 0x40
-}
-
 inline fastcall dword GetFreeRAM()
 {
 	$mov eax, 18
@@ -381,15 +365,15 @@ inline fastcall void debugch( ECX)
 }
 //------------------------------------------------------------------------------
 
-void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAreaColor, EDI, ESI)
+void DefineAndDrawWindow(dword x, y, size_w, size_h, byte WindowType,dword WindowAreaColor, EDI, ESI)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
 	$int 0x40
 	
 	EAX = 0;
-	EBX = x << 16 + sizeX;
-	ECX = y << 16 + sizeY;
+	EBX = x << 16 + size_w; 
+	ECX = y << 16 + size_h;
 	EDX = WindowType << 24 | WindowAreaColor;
 	$int 0x40
 
