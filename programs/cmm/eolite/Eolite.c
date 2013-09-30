@@ -73,8 +73,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.95"
-#define ABOUT_TITLE "Eolite v1.95"
+#define TITLE "Eolite File Manager v1.96"
+#define ABOUT_TITLE "Eolite v1.96"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;

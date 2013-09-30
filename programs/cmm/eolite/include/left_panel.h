@@ -50,11 +50,12 @@ path_string disk_list[30];
 int disc_num;
 dword devbuf;
 
+
 void SystemDiscsGet()
 {
 	unsigned char dev_name[10], sys_discs[10];
 	unsigned int i1, j1, dev_num, dev_disc_num;
-	
+	unsigned int nullbuf;
 	disc_num=0;
 	if (devbuf) free(devbuf);
 	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
@@ -76,13 +77,18 @@ void SystemDiscsGet()
 			strcpy(#disk_list[disc_num].Item, #sys_discs);
 			disc_num++;
 		}
+		if (strcmp(#disk_list[disc_num-1].Item, "/rd/1/")==0) if (GetDir(nullbuf, nullbuf, "/kolibrios/", DIRS_ALL)==0)
+		{
+			strcpy(#disk_list[disc_num].Item, "/kolibrios/");
+			disc_num++;	
+		}
 	}
 }
 
 
 void SystemDiscsDraw()
 {    
-	char dev_name[10], disc_name[100];
+	char dev_name[15], disc_name[100];
 	int i, dev_icon;
 	
 	Tip(56, T_DEVICES, 55, "=");
@@ -95,9 +101,13 @@ void SystemDiscsDraw()
 		dev_name[strlen(#dev_name)-1]=NULL;
 		switch(dev_name[1])
 		{
+			case 'k':
+				dev_icon=0;
+				strcpy(#disc_name, "Programs ");
+				break;
 			case 'r':
 				dev_icon=0;
-				strcpy(#disc_name, "SYS disk ");
+				strcpy(#disc_name, "System ");
 				break;
 			case 'c':
 				dev_icon=1;
