@@ -364,9 +364,15 @@ EXTRA:=\
  HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot_1251.txt \
  HD_Load/USB_boot_old/MeOSload.com=distr_data/MeOSload_for_usb_boot_old.com \
  HD_Load/USB_boot_old/enable.exe=distr_data/enable_for_usb_boot_old.exe \
- games/=../common/games \
- games/fara=games/fara \
+ games/fceu=../common/games/fceu \
+ games/pig=../common/games/pig \
  games/soko/soko=games/soko \
+ games/soko=../common/games/soko/ \
+ games/lrl=../common/games/lrl \
+ games/lrl.hsr=../common/games/lrl.hsr \
+ games/lrl.lev=../common/games/lrl.lev \
+ games/fara=games/fara \
+ games/fara.gfx=../common/games/fara.gfx \
  kolibrios/media/fplay-full=../common/media/fplay-full \
  kolibrios/media/zsea/zsea=distr_data/zsea \
  kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
@@ -442,7 +448,12 @@ mkisofs_extra_targets:=$(call respace,$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(su
 distribution_extra_targets:=$(call respace,$(foreach f,$(DISTRIBUTION_EXTRA),$(word 2,$(subst =, ,$(f)))))
 
 # Define a command for creating a symlink for an item in DISTRIBUTION_EXTRA.
-makelink_item_command=ln -sr $(word 2,$(subst =, ,$(f))) distribution_kit/$(word 1,$(subst =, ,$(f)))
+extra_item_dst=distribution_kit/$(word 1,$(subst =, ,$(f)))
+extra_item_src=$(word 2,$(subst =, ,$(f)))
+makelink_item_command=$(if $(notdir $(extra_item_src)), \
+ ln -sr $(extra_item_src) $(extra_item_dst), \
+ ln -sr $(extra_item_src)* $(extra_item_dst) \
+ )
 # Join all $(makelink_command) for all items from DISTRIBUTION_EXTRA.
 make_distribution_links:=$(foreach f,$(DISTRIBUTION_EXTRA),$(makelink_item_command)$(newline))
 # Define a command for creating all directories for DISTRIBUTION_EXTRA.
