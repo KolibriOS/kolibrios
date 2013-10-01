@@ -36,11 +36,9 @@
 /* A structure representing an open-ended horizontal span of constant
  * pixel coverage. */
 typedef struct _cairo_half_open_span {
-    /* The inclusive x-coordinate of the start of the span. */
-    int x;
-
-    /* The pixel coverage for the pixels to the right. */
-    int coverage;
+    int32_t x; /* The inclusive x-coordinate of the start of the span. */
+    uint8_t coverage; /* The pixel coverage for the pixels to the right. */
+    uint8_t inverse; /* between regular mask and clip */
 } cairo_half_open_span_t;
 
 /* Span renderer interface. Instances of renderers are provided by
@@ -73,17 +71,6 @@ struct _cairo_scan_converter {
     /* Destroy this scan converter. */
     cairo_destroy_func_t	destroy;
 
-    /* Add a single edge to the converter. */
-    cairo_status_t (*add_edge) (void		    *abstract_converter,
-				const cairo_point_t *p1,
-				const cairo_point_t *p2,
-				int top, int bottom,
-				int dir);
-
-    /* Add a polygon (set of edges) to the converter. */
-    cairo_status_t (*add_polygon) (void		    *abstract_converter,
-				   const cairo_polygon_t  *polygon);
-
     /* Generates coverage spans for rows for the added edges and calls
      * the renderer function for each row. After generating spans the
      * only valid thing to do with the converter is to destroy it. */
@@ -101,13 +88,43 @@ _cairo_tor_scan_converter_create (int			xmin,
 				  int			ymin,
 				  int			xmax,
 				  int			ymax,
-				  cairo_fill_rule_t	fill_rule);
+				  cairo_fill_rule_t	fill_rule,
+				  cairo_antialias_t	antialias);
+cairo_private cairo_status_t
+_cairo_tor_scan_converter_add_polygon (void		*converter,
+				       const cairo_polygon_t *polygon);
+
+cairo_private cairo_scan_converter_t *
+_cairo_tor22_scan_converter_create (int			xmin,
+				    int			ymin,
+				    int			xmax,
+				    int			ymax,
+				    cairo_fill_rule_t	fill_rule,
+				    cairo_antialias_t	antialias);
+cairo_private cairo_status_t
+_cairo_tor22_scan_converter_add_polygon (void		*converter,
+					 const cairo_polygon_t *polygon);
+
+cairo_private cairo_scan_converter_t *
+_cairo_mono_scan_converter_create (int			xmin,
+				   int			ymin,
+				   int			xmax,
+				   int			ymax,
+				   cairo_fill_rule_t	fill_rule);
+cairo_private cairo_status_t
+_cairo_mono_scan_converter_add_polygon (void		*converter,
+					const cairo_polygon_t *polygon);
+
+cairo_private cairo_scan_converter_t *
+_cairo_clip_tor_scan_converter_create (cairo_clip_t *clip,
+				       cairo_polygon_t *polygon,
+				       cairo_fill_rule_t fill_rule,
+				       cairo_antialias_t antialias);
 
 typedef struct _cairo_rectangular_scan_converter {
     cairo_scan_converter_t base;
 
-    int xmin, xmax;
-    int ymin, ymax;
+    cairo_box_t extents;
 
     struct _cairo_rectangular_scan_converter_chunk {
 	struct _cairo_rectangular_scan_converter_chunk *next;

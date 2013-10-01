@@ -55,24 +55,6 @@ cairo_skia_surface_create_for_data (unsigned char *data,
 				    int height,
 				    int stride);
 
-cairo_public unsigned char *
-cairo_skia_surface_get_data (cairo_surface_t *surface);
-
-cairo_public cairo_format_t
-cairo_skia_surface_get_format (cairo_surface_t *surface);
-
-cairo_public int
-cairo_skia_surface_get_width (cairo_surface_t *surface);
-
-cairo_public int
-cairo_skia_surface_get_height (cairo_surface_t *surface);
-
-cairo_public int
-cairo_skia_surface_get_stride (cairo_surface_t *surface);
-
-cairo_public cairo_surface_t *
-cairo_skia_surface_get_image (cairo_surface_t *surface);
-
 CAIRO_END_DECLS
 
 #else

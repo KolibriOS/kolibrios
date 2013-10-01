@@ -154,6 +154,9 @@ _cairo_paginated_surface_create (cairo_surface_t				*target,
 cairo_private cairo_surface_t *
 _cairo_paginated_surface_get_target (cairo_surface_t *surface);
 
+cairo_private cairo_surface_t *
+_cairo_paginated_surface_get_recording (cairo_surface_t *surface);
+
 cairo_private cairo_bool_t
 _cairo_surface_is_paginated (cairo_surface_t *surface);
 

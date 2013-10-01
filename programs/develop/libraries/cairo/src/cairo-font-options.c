@@ -47,14 +47,15 @@
  * time the font options implied by a surface are just right and do not 
  * need any changes, but for pixel-based targets tweaking font options 
  * may result in superior output on a particular display.
- */
+ **/
 
 static const cairo_font_options_t _cairo_font_options_nil = {
     CAIRO_ANTIALIAS_DEFAULT,
     CAIRO_SUBPIXEL_ORDER_DEFAULT,
     CAIRO_LCD_FILTER_DEFAULT,
     CAIRO_HINT_STYLE_DEFAULT,
-    CAIRO_HINT_METRICS_DEFAULT
+    CAIRO_HINT_METRICS_DEFAULT,
+    CAIRO_ROUND_GLYPH_POS_DEFAULT
 };
 
 /**
@@ -71,6 +72,7 @@ _cairo_font_options_init_default (cairo_font_options_t *options)
     options->lcd_filter = CAIRO_LCD_FILTER_DEFAULT;
     options->hint_style = CAIRO_HINT_STYLE_DEFAULT;
     options->hint_metrics = CAIRO_HINT_METRICS_DEFAULT;
+    options->round_glyph_positions = CAIRO_ROUND_GLYPH_POS_DEFAULT;
 }
 
 void
@@ -82,6 +84,7 @@ _cairo_font_options_init_copy (cairo_font_options_t		*options,
     options->lcd_filter = other->lcd_filter;
     options->hint_style = other->hint_style;
     options->hint_metrics = other->hint_metrics;
+    options->round_glyph_positions = other->round_glyph_positions;
 }
 
 /**
@@ -95,6 +98,8 @@ _cairo_font_options_init_copy (cairo_font_options_t		*options,
  *   valid pointer; if memory cannot be allocated, then a special
  *   error object is returned where all operations on the object do nothing.
  *   You can check for this with cairo_font_options_status().
+ *
+ * Since: 1.0
  **/
 cairo_font_options_t *
 cairo_font_options_create (void)
@@ -124,6 +129,8 @@ cairo_font_options_create (void)
  *   valid pointer; if memory cannot be allocated, then a special
  *   error object is returned where all operations on the object do nothing.
  *   You can check for this with cairo_font_options_status().
+ *
+ * Since: 1.0
  **/
 cairo_font_options_t *
 cairo_font_options_copy (const cairo_font_options_t *original)
@@ -150,6 +157,8 @@ cairo_font_options_copy (const cairo_font_options_t *original)
  *
  * Destroys a #cairo_font_options_t object created with
  * cairo_font_options_create() or cairo_font_options_copy().
+ *
+ * Since: 1.0
  **/
 void
 cairo_font_options_destroy (cairo_font_options_t *options)
@@ -168,6 +177,8 @@ cairo_font_options_destroy (cairo_font_options_t *options)
  * font options object
  *
  * Return value: %CAIRO_STATUS_SUCCESS or %CAIRO_STATUS_NO_MEMORY
+ *
+ * Since: 1.0
  **/
 cairo_status_t
 cairo_font_options_status (cairo_font_options_t *options)
@@ -189,7 +200,9 @@ slim_hidden_def (cairo_font_options_status);
  * Merges non-default options from @other into @options, replacing
  * existing values. This operation can be thought of as somewhat
  * similar to compositing @other onto @options with the operation
- * of %CAIRO_OPERATION_OVER.
+ * of %CAIRO_OPERATOR_OVER.
+ *
+ * Since: 1.0
  **/
 void
 cairo_font_options_merge (cairo_font_options_t       *options,
@@ -211,6 +224,8 @@ cairo_font_options_merge (cairo_font_options_t       *options,
 	options->hint_style = other->hint_style;
     if (other->hint_metrics != CAIRO_HINT_METRICS_DEFAULT)
 	options->hint_metrics = other->hint_metrics;
+    if (other->round_glyph_positions != CAIRO_ROUND_GLYPH_POS_DEFAULT)
+	options->round_glyph_positions = other->round_glyph_positions;
 }
 slim_hidden_def (cairo_font_options_merge);
 
@@ -224,6 +239,8 @@ slim_hidden_def (cairo_font_options_merge);
  * Return value: %TRUE if all fields of the two font options objects match.
  *	Note that this function will return %FALSE if either object is in
  *	error.
+ *
+ * Since: 1.0
  **/
 cairo_bool_t
 cairo_font_options_equal (const cairo_font_options_t *options,
@@ -241,7 +258,8 @@ cairo_font_options_equal (const cairo_font_options_t *options,
 	    options->subpixel_order == other->subpixel_order &&
 	    options->lcd_filter == other->lcd_filter &&
 	    options->hint_style == other->hint_style &&
-	    options->hint_metrics == other->hint_metrics);
+	    options->hint_metrics == other->hint_metrics &&
+	    options->round_glyph_positions == other->round_glyph_positions);
 }
 slim_hidden_def (cairo_font_options_equal);
 
@@ -256,6 +274,8 @@ slim_hidden_def (cairo_font_options_equal);
  * Return value: the hash value for the font options object.
  *   The return value can be cast to a 32-bit type if a
  *   32-bit hash value is needed.
+ *
+ * Since: 1.0
  **/
 unsigned long
 cairo_font_options_hash (const cairo_font_options_t *options)
@@ -278,6 +298,8 @@ slim_hidden_def (cairo_font_options_hash);
  *
  * Sets the antialiasing mode for the font options object. This
  * specifies the type of antialiasing to do when rendering text.
+ *
+ * Since: 1.0
  **/
 void
 cairo_font_options_set_antialias (cairo_font_options_t *options,
@@ -297,6 +319,8 @@ slim_hidden_def (cairo_font_options_set_antialias);
  * Gets the antialiasing mode for the font options object.
  *
  * Return value: the antialiasing mode
+ *
+ * Since: 1.0
  **/
 cairo_antialias_t
 cairo_font_options_get_antialias (const cairo_font_options_t *options)
@@ -317,6 +341,8 @@ cairo_font_options_get_antialias (const cairo_font_options_t *options)
  * the display device when rendering with an antialiasing mode of
  * %CAIRO_ANTIALIAS_SUBPIXEL. See the documentation for
  * #cairo_subpixel_order_t for full details.
+ *
+ * Since: 1.0
  **/
 void
 cairo_font_options_set_subpixel_order (cairo_font_options_t   *options,
@@ -337,6 +363,8 @@ slim_hidden_def (cairo_font_options_set_subpixel_order);
  * See the documentation for #cairo_subpixel_order_t for full details.
  *
  * Return value: the subpixel order for the font options object
+ *
+ * Since: 1.0
  **/
 cairo_subpixel_order_t
 cairo_font_options_get_subpixel_order (const cairo_font_options_t *options)
@@ -356,8 +384,6 @@ cairo_font_options_get_subpixel_order (const cairo_font_options_t *options)
  * specifies how pixels are filtered when rendered with an antialiasing
  * mode of %CAIRO_ANTIALIAS_SUBPIXEL. See the documentation for
  * #cairo_lcd_filter_t for full details.
- *
- * Since: 1.8
  **/
 void
 _cairo_font_options_set_lcd_filter (cairo_font_options_t *options,
@@ -377,8 +403,6 @@ _cairo_font_options_set_lcd_filter (cairo_font_options_t *options,
  * See the documentation for #cairo_lcd_filter_t for full details.
  *
  * Return value: the LCD filter for the font options object
- *
- * Since: 1.8
  **/
 cairo_lcd_filter_t
 _cairo_font_options_get_lcd_filter (const cairo_font_options_t *options)
@@ -390,6 +414,41 @@ _cairo_font_options_get_lcd_filter (const cairo_font_options_t *options)
 }
 
 /**
+ * _cairo_font_options_set_round_glyph_positions:
+ * @options: a #cairo_font_options_t
+ * @round: the new rounding value
+ *
+ * Sets the rounding options for the font options object. If rounding is set, a
+ * glyph's position will be rounded to integer values.
+ **/
+void
+_cairo_font_options_set_round_glyph_positions (cairo_font_options_t *options,
+					       cairo_round_glyph_positions_t  round)
+{
+    if (cairo_font_options_status (options))
+	return;
+
+    options->round_glyph_positions = round;
+}
+
+/**
+ * _cairo_font_options_get_round_glyph_positions:
+ * @options: a #cairo_font_options_t
+ *
+ * Gets the glyph position rounding option for the font options object.
+ *
+ * Return value: The round glyph posistions flag for the font options object.
+ **/
+cairo_round_glyph_positions_t
+_cairo_font_options_get_round_glyph_positions (const cairo_font_options_t *options)
+{
+    if (cairo_font_options_status ((cairo_font_options_t *) options))
+	return CAIRO_ROUND_GLYPH_POS_DEFAULT;
+
+    return options->round_glyph_positions;
+}
+
+/**
  * cairo_font_options_set_hint_style:
  * @options: a #cairo_font_options_t
  * @hint_style: the new hint style
@@ -398,6 +457,8 @@ _cairo_font_options_get_lcd_filter (const cairo_font_options_t *options)
  * This controls whether to fit font outlines to the pixel grid,
  * and if so, whether to optimize for fidelity or contrast.
  * See the documentation for #cairo_hint_style_t for full details.
+ *
+ * Since: 1.0
  **/
 void
 cairo_font_options_set_hint_style (cairo_font_options_t *options,
@@ -418,6 +479,8 @@ slim_hidden_def (cairo_font_options_set_hint_style);
  * See the documentation for #cairo_hint_style_t for full details.
  *
  * Return value: the hint style for the font options object
+ *
+ * Since: 1.0
  **/
 cairo_hint_style_t
 cairo_font_options_get_hint_style (const cairo_font_options_t *options)
@@ -437,6 +500,8 @@ cairo_font_options_get_hint_style (const cairo_font_options_t *options)
  * controls whether metrics are quantized to integer values in
  * device units.
  * See the documentation for #cairo_hint_metrics_t for full details.
+ *
+ * Since: 1.0
  **/
 void
 cairo_font_options_set_hint_metrics (cairo_font_options_t *options,
@@ -457,6 +522,8 @@ slim_hidden_def (cairo_font_options_set_hint_metrics);
  * See the documentation for #cairo_hint_metrics_t for full details.
  *
  * Return value: the metrics hinting mode for the font options object
+ *
+ * Since: 1.0
  **/
 cairo_hint_metrics_t
 cairo_font_options_get_hint_metrics (const cairo_font_options_t *options)

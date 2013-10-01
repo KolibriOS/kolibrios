@@ -12,7 +12,7 @@
 /* #undef CAIRO_CAN_TEST_PDF_SURFACE */
 
 /* Define to 1 if the PS backend can be tested (needs ghostscript) */
-/* #undef CAIRO_CAN_TEST_PS_SURFACE */
+//#define CAIRO_CAN_TEST_PS_SURFACE 1
 
 /* Define to 1 if the SVG backend can be tested */
 /* #undef CAIRO_CAN_TEST_SVG_SURFACE */
@@ -24,7 +24,8 @@
 /* Define to 1 to enable cairo's cairo-script-interpreter feature */
 //#define CAIRO_HAS_INTERPRETER 1
 
-#define CAIRO_NO_MUTEX 1
+/* Define to 1 to enable cairo's cairo-perf-utils feature */
+/* #undef CAIRO_HAS_PERF_UTILS */
 
 /* Define to 1 to enable cairo's pthread feature */
 /* #undef CAIRO_HAS_PTHREAD */
@@ -46,11 +47,14 @@
 
 /* Define to 1 to disable certain code paths that rely heavily on double
    precision floating-point calculation */
-/* #undef DISABLE_SOME_FLOATING_POINT */
+#define DISABLE_SOME_FLOATING_POINT 1
 
 /* Define to 1 if your system stores words within floats with the most
    significant word first */
 /* #undef FLOAT_WORDS_BIGENDIAN */
+
+/* Enable pixman glyph cache */
+#define HAS_PIXMAN_GLYPHS 1
 
 /* Define to 1 if you have the `alarm' function. */
 //#define HAVE_ALARM 1
@@ -63,7 +67,7 @@
 #define HAVE_BUILTIN_RETURN_ADDRESS 1
 
 /* Define to 1 if you have the <byteswap.h> header file. */
-#define HAVE_BYTESWAP_H 1
+//#define HAVE_BYTESWAP_H 1
 
 /* Define to 1 if you have the `clock_gettime' function. */
 //#define HAVE_CLOCK_GETTIME 1
@@ -98,32 +102,38 @@
 /* Define to 1 if you have the <fenv.h> header file. */
 #define HAVE_FENV_H 1
 
-/* Define to 1 if you have the `ffs' function. */
-#define HAVE_FFS 1
-
 /* Define to 1 if you have the `flockfile' function. */
 #define HAVE_FLOCKFILE 1
 
 /* Define to 1 if you have the `fork' function. */
 //#define HAVE_FORK 1
 
-/* FT_Bitmap_Size structure includes y_ppem field */
-/* #undef HAVE_FT_BITMAP_SIZE_Y_PPEM */
+/* Define to 1 if you have the `FT_Get_X11_Font_Format' function. */
+//#define HAVE_FT_GET_X11_FONT_FORMAT 1
 
 /* Define to 1 if you have the `FT_GlyphSlot_Embolden' function. */
-/* #undef HAVE_FT_GLYPHSLOT_EMBOLDEN */
+#define HAVE_FT_GLYPHSLOT_EMBOLDEN 1
+
+/* Define to 1 if you have the `FT_GlyphSlot_Oblique' function. */
+#define HAVE_FT_GLYPHSLOT_OBLIQUE 1
 
 /* Define to 1 if you have the `FT_Library_SetLcdFilter' function. */
-/* #undef HAVE_FT_LIBRARY_SETLCDFILTER */
+//#define HAVE_FT_LIBRARY_SETLCDFILTER 1
 
 /* Define to 1 if you have the `FT_Load_Sfnt_Table' function. */
-/* #undef HAVE_FT_LOAD_SFNT_TABLE */
+#define HAVE_FT_LOAD_SFNT_TABLE 1
+
+/* Define to 1 if you have the `funlockfile' function. */
+//#define HAVE_FUNLOCKFILE 1
 
 /* Whether you have gcov */
 /* #undef HAVE_GCOV */
 
+/* Define to 1 if you have the `getline' function. */
+//#define HAVE_GETLINE 1
+
 /* Enable if your compiler supports the Intel __sync_* atomic primitives */
-#define HAVE_INTEL_ATOMIC_PRIMITIVES 1
+//#define HAVE_INTEL_ATOMIC_PRIMITIVES 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -132,7 +142,10 @@
 /* #undef HAVE_IO_H */
 
 /* Define to 1 if you have the <libgen.h> header file. */
-#define HAVE_LIBGEN_H 1
+#undef HAVE_LIBGEN_H
+
+/* Define to 1 if you have the `rt' library (-lrt). */
+//#define HAVE_LIBRT 1
 
 /* Enable if you have libatomic-ops-dev installed */
 /* #undef HAVE_LIB_ATOMIC_OPS */
@@ -142,6 +155,9 @@
 
 /* Define to 1 if you have the Valgrind lockdep tool */
 /* #undef HAVE_LOCKDEP */
+
+/* Define to 1 if you have lzo available */
+//#define HAVE_LZO 1
 
 /* Define to 1 if you have the Valgrind memfault tool */
 /* #undef HAVE_MEMFAULT */
@@ -192,17 +208,23 @@
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
 
+/* Define to 1 if you have the `strndup' function. */
+//#define HAVE_STRNDUP 1
+
 /* Define to 1 if you have the <sys/int_types.h> header file. */
 /* #undef HAVE_SYS_INT_TYPES_H */
 
+/* Define to 1 if you have the <sys/ioctl.h> header file. */
+//#define HAVE_SYS_IOCTL_H 1
+
 /* Define to 1 if you have the <sys/mman.h> header file. */
-//#define HAVE_SYS_MMAN_H 1
+#define HAVE_SYS_MMAN_H 1
 
 /* Define to 1 if you have the <sys/poll.h> header file. */
-//#define HAVE_SYS_POLL_H 1
+#define HAVE_SYS_POLL_H 1
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
-//#define HAVE_SYS_SOCKET_H 1
+#define HAVE_SYS_SOCKET_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
@@ -212,6 +234,9 @@
 
 /* Define to 1 if you have the <sys/un.h> header file. */
 #define HAVE_SYS_UN_H 1
+
+/* Define to 1 if you have the <sys/wait.h> header file. */
+//#define HAVE_SYS_WAIT_H 1
 
 /* Define to 1 if you have the <time.h> header file. */
 #define HAVE_TIME_H 1
@@ -228,8 +253,6 @@
 /* Define to 1 if you have Valgrind */
 /* #undef HAVE_VALGRIND */
 
-/* Define to 1 if you have the `vasnprintf' function. */
-/* #undef HAVE_VASNPRINTF */
 
 /* Define to 1 if you have the `waitpid' function. */
 //#define HAVE_WAITPID 1
@@ -247,9 +270,6 @@
    */
 #define LT_OBJDIR ".libs/"
 
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-/* #undef NO_MINUS_C_MINUS_O */
-
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "http://bugs.freedesktop.org/enter_bug.cgi?product=cairo"
 
@@ -263,13 +283,13 @@
 #define PACKAGE_TARNAME USE_cairo_INSTEAD
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL ""
+#define PACKAGE_URL "http://cairographics.org/"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION USE_cairo_version_OR_cairo_version_string_INSTEAD
 
 /* Shared library file extension */
-#define SHARED_LIB_EXT "so"
+#define SHARED_LIB_EXT "dll"
 
 /* The size of `int', as computed by sizeof. */
 #define SIZEOF_INT 4
@@ -341,7 +361,12 @@
 
 
 /* Define to 1 if the X Window System is missing or not being used. */
-#define X_DISPLAY_MISSING 1
+/* #undef X_DISPLAY_MISSING */
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */

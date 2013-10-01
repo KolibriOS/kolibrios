@@ -33,10 +33,13 @@
  *	Kristian Høgsberg <krh@redhat.com>
  */
 
-#define _BSD_SOURCE /* for snprintf() */
+
+//#define _BSD_SOURCE /* for snprintf() */
 #include "cairoint.h"
 
 #include "cairo-output-stream-private.h"
+
+#include "cairo-array-private.h"
 #include "cairo-error-private.h"
 #include "cairo-compiler-private.h"
 
@@ -319,7 +322,7 @@ _cairo_dtostr (char *buffer, size_t size, double d, cairo_bool_t limited_precisi
     assert (decimal_point_len != 0);
 
     if (limited_precision) {
-	snprintf (buffer, size, "%.*f", FIXED_POINT_DECIMAL_DIGITS, d);
+        snprintf (buffer, size, "%.*f", FIXED_POINT_DECIMAL_DIGITS, d);
     } else {
 	/* Using "%f" to print numbers less than 0.1 will result in
 	 * reduced precision due to the default 6 digits after the

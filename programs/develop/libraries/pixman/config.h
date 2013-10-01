@@ -35,7 +35,7 @@
 /* #undef HAVE_LIBPIXMAN_1 */
 
 /* Whether we have libpng */
-/* #undef HAVE_LIBPNG */
+#define HAVE_LIBPNG 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -117,7 +117,7 @@
 #define TLS __thread
 
 /* Whether the tool chain supports __attribute__((constructor)) */
-#define TOOLCHAIN_SUPPORTS_ATTRIBUTE_CONSTRUCTOR /**/
+//#define TOOLCHAIN_SUPPORTS_ATTRIBUTE_CONSTRUCTOR /**/
 
 /* use ARM IWMMXT compiler intrinsics */
 /* #undef USE_ARM_IWMMXT */

@@ -34,6 +34,8 @@
  */
 
 #include "cairoint.h"
+
+#include "cairo-error-private.h"
 #include "cairo-image-info-private.h"
 
 static uint32_t

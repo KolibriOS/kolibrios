@@ -45,6 +45,7 @@ typedef struct {
 } cairo_reference_count_t;
 
 #define _cairo_reference_count_inc(RC) _cairo_atomic_int_inc (&(RC)->ref_count)
+#define _cairo_reference_count_dec(RC) _cairo_atomic_int_dec (&(RC)->ref_count)
 #define _cairo_reference_count_dec_and_test(RC) _cairo_atomic_int_dec_and_test (&(RC)->ref_count)
 
 #define CAIRO_REFERENCE_COUNT_INIT(RC, VALUE) ((RC)->ref_count = (VALUE))

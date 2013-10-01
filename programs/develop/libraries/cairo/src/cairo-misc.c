@@ -41,7 +41,7 @@
 #include "cairoint.h"
 #include "cairo-error-private.h"
 
-COMPILE_TIME_ASSERT (CAIRO_STATUS_LAST_STATUS < CAIRO_INT_STATUS_UNSUPPORTED);
+COMPILE_TIME_ASSERT ((int)CAIRO_STATUS_LAST_STATUS < (int)CAIRO_INT_STATUS_UNSUPPORTED);
 COMPILE_TIME_ASSERT (CAIRO_INT_STATUS_LAST_STATUS <= 127);
 
 /**
@@ -49,7 +49,7 @@ COMPILE_TIME_ASSERT (CAIRO_INT_STATUS_LAST_STATUS <= 127);
  * @Title: Error handling
  * @Short_Description: Decoding cairo's status
  * @See_Also: cairo_status(), cairo_surface_status(), cairo_pattern_status(),
- *            cairo_font_face_status(), cairo_scaled_font_status(),
+ *            cairo_font_face_status(), cairo_scaled_font_status(), 
  *            cairo_region_status()
  *
  * Cairo uses a single status type to represent all kinds of errors.  A status
@@ -62,7 +62,7 @@ COMPILE_TIME_ASSERT (CAIRO_INT_STATUS_LAST_STATUS <= 127);
  * the mean time, it is safe to call all cairo functions normally even if the
  * underlying object is in an error status.  This means that no error handling
  * code is required before or after each individual cairo function call.
- */
+ **/
 
 /* Public stuff */
 
@@ -73,7 +73,9 @@ COMPILE_TIME_ASSERT (CAIRO_INT_STATUS_LAST_STATUS <= 127);
  * Provides a human-readable description of a #cairo_status_t.
  *
  * Returns: a string representation of the status
- */
+ *
+ * Since: 1.0
+ **/
 const char *
 cairo_status_to_string (cairo_status_t status)
 {
@@ -150,6 +152,10 @@ cairo_status_to_string (cairo_status_t status)
 	return "the device type is not appropriate for the operation";
     case CAIRO_STATUS_DEVICE_ERROR:
 	return "an operation to the device caused an unspecified error";
+    case CAIRO_STATUS_INVALID_MESH_CONSTRUCTION:
+	return "invalid operation during mesh pattern construction";
+    case CAIRO_STATUS_DEVICE_FINISHED:
+	return "the target device has been finished";
     default:
     case CAIRO_STATUS_LAST_STATUS:
 	return "<unknown error status>";
@@ -176,7 +182,7 @@ cairo_status_to_string (cairo_status_t status)
  *          freed using cairo_glyph_free()
  *
  * Since: 1.8
- */
+ **/
 cairo_glyph_t *
 cairo_glyph_allocate (int num_glyphs)
 {
@@ -199,12 +205,11 @@ slim_hidden_def (cairo_glyph_allocate);
  * for glyphs.
  *
  * Since: 1.8
- */
+ **/
 void
 cairo_glyph_free (cairo_glyph_t *glyphs)
 {
-    if (glyphs)
-	free (glyphs);
+    free (glyphs);
 }
 slim_hidden_def (cairo_glyph_free);
 
@@ -227,7 +232,7 @@ slim_hidden_def (cairo_glyph_free);
  *          freed using cairo_text_cluster_free()
  *
  * Since: 1.8
- */
+ **/
 cairo_text_cluster_t *
 cairo_text_cluster_allocate (int num_clusters)
 {
@@ -250,12 +255,11 @@ slim_hidden_def (cairo_text_cluster_allocate);
  * for text clusters.
  *
  * Since: 1.8
- */
+ **/
 void
 cairo_text_cluster_free (cairo_text_cluster_t *clusters)
 {
-    if (clusters)
-	free (clusters);
+    free (clusters);
 }
 slim_hidden_def (cairo_text_cluster_free);
 
@@ -279,7 +283,7 @@ slim_hidden_def (cairo_text_cluster_free);
  *               %CAIRO_STATUS_INVALID_CLUSTERS on error.
  *               The error is either invalid UTF-8 input,
  *               or bad cluster mapping.
- */
+ **/
 cairo_status_t
 _cairo_validate_text_clusters (const char		   *utf8,
 			       int			    utf8_len,

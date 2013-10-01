@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -Wall -Winline -fomit-frame-pointer
 
 LD = ld
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(LIBRARY).dll.a
+LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib lib$(LIBRARY).dll.a
 
 STRIP = $(PREFIX)strip
 
@@ -15,6 +15,7 @@ LIBPATH:= -L../newlib
 
 LIBS:=  -ldll -lc.dll -lgcc
 
+#DEFINES = -DHAVE_CONFIG_H -DPIXMAN_NO_TLS
 DEFINES = -DHAVE_CONFIG_H
 
 

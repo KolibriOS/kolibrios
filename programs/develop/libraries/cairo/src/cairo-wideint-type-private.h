@@ -80,6 +80,9 @@
 #ifndef INT32_MAX
 # define INT32_MAX	(2147483647)
 #endif
+#ifndef UINT32_MAX
+# define UINT32_MAX     (4294967295U)
+#endif
 
 #if HAVE_BYTESWAP_H
 # include <byteswap.h>
@@ -101,13 +104,13 @@
 #if !HAVE_UINT64_T
 
 typedef struct _cairo_uint64 {
-    uint32_t	lo, hi;
-} cairo_uint64_t, cairo_int64_t;
+   uint32_t   lo, hi;
+/ cairo_uint64_t, cairo_int64_t;
 
 #else
 
 typedef uint64_t    cairo_uint64_t;
-typedef int64_t	    cairo_int64_t;
+typedef int64_t     cairo_int64_t;
 
 #endif
 

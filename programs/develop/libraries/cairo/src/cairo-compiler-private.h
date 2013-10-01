@@ -114,7 +114,9 @@
 
 /* slim_internal.h */
 #define CAIRO_HAS_HIDDEN_SYMBOLS 1
-#if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)) && defined(__ELF__) && !defined(__sun)
+#if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)) && \
+    (defined(__ELF__) || defined(__APPLE__)) &&			\
+    !defined(__sun)
 #define cairo_private_no_warn	__attribute__((__visibility__("hidden")))
 #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
 #define cairo_private_no_warn	__hidden
@@ -181,17 +183,8 @@
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 2) && defined(__OPTIMIZE__)
-#define _CAIRO_BOOLEAN_EXPR(expr)                   \
- __extension__ ({                               \
-   int _cairo_boolean_var_;                         \
-   if (expr)                                    \
-      _cairo_boolean_var_ = 1;                      \
-   else                                         \
-      _cairo_boolean_var_ = 0;                      \
-   _cairo_boolean_var_;                             \
-})
-#define likely(expr) (__builtin_expect (_CAIRO_BOOLEAN_EXPR(expr), 1))
-#define unlikely(expr) (__builtin_expect (_CAIRO_BOOLEAN_EXPR(expr), 0))
+#define likely(expr) (__builtin_expect (!!(expr), 1))
+#define unlikely(expr) (__builtin_expect (!!(expr), 0))
 #else
 #define likely(expr) (expr)
 #define unlikely(expr) (expr)
@@ -203,30 +196,22 @@
 #endif
 
 #if (defined(__WIN32__) && !defined(__WINE__)) || defined(_MSC_VER)
-#define snprintf _snprintf
-#define popen _popen
-#define pclose _pclose
+#define access _access
+#define fdopen _fdopen
 #define hypot _hypot
+#define pclose _pclose
+#define popen _popen
+#define snprintf _snprintf
+#define strdup _strdup
+#define unlink _unlink
+#define vsnprintf _vsnprintf
 #endif
 
 #ifdef _MSC_VER
+#ifndef __cplusplus
 #undef inline
 #define inline __inline
-
-/* Add a definition of ffs */
-#include <intrin.h>
-#pragma intrinsic(_BitScanForward)
-static __forceinline int
-ffs (int x)
-{
-    unsigned long i;
-
-    if (_BitScanForward(&i, x) != 0)
-	return i + 1;
-
-    return 0;
-}
-
+#endif
 #endif
 
 #if defined(_MSC_VER) && defined(_M_IX86)

@@ -43,6 +43,7 @@
 #define CAIRO_PDF_OPERATORS_H
 
 #include "cairo-compiler-private.h"
+#include "cairo-error-private.h"
 #include "cairo-types-private.h"
 
 /* The glyph buffer size is based on the expected maximum glyphs in a
@@ -52,9 +53,10 @@
  */
 #define PDF_GLYPH_BUFFER_SIZE 200
 
-typedef cairo_status_t (*cairo_pdf_operators_use_font_subset_t) (unsigned int  font_id,
-								 unsigned int  subset_id,
-								 void         *closure);
+typedef cairo_int_status_t
+(*cairo_pdf_operators_use_font_subset_t) (unsigned int  font_id,
+					  unsigned int  subset_id,
+					  void         *closure);
 
 typedef struct _cairo_pdf_glyph {
     unsigned int glyph_index;
@@ -81,6 +83,7 @@ typedef struct _cairo_pdf_operators {
     double cur_x; /* Current position in PDF text space (Tm in the PDF reference) */
     double cur_y;
     int hex_width;
+    cairo_bool_t is_latin;
     int num_glyphs;
     double glyph_buf_x_pos;
     cairo_pdf_glyph_t glyphs[PDF_GLYPH_BUFFER_SIZE];
@@ -128,8 +131,8 @@ cairo_private void
 _cairo_pdf_operators_reset (cairo_pdf_operators_t	 *pdf_operators);
 
 cairo_private cairo_int_status_t
-_cairo_pdf_operators_clip (cairo_pdf_operators_t 	*pdf_operators,
-			   cairo_path_fixed_t		*path,
+_cairo_pdf_operators_clip (cairo_pdf_operators_t	*pdf_operators,
+			   const cairo_path_fixed_t	*path,
 			   cairo_fill_rule_t		 fill_rule);
 
 cairo_private cairo_int_status_t
@@ -139,19 +142,19 @@ _cairo_pdf_operators_emit_stroke_style (cairo_pdf_operators_t		*pdf_operators,
 
 cairo_private cairo_int_status_t
 _cairo_pdf_operators_stroke (cairo_pdf_operators_t	*pdf_operators,
-			     cairo_path_fixed_t		*path,
+			     const cairo_path_fixed_t	*path,
 			     const cairo_stroke_style_t	*style,
 			     const cairo_matrix_t	*ctm,
 			     const cairo_matrix_t	*ctm_inverse);
 
 cairo_private cairo_int_status_t
-_cairo_pdf_operators_fill (cairo_pdf_operators_t 	*pdf_operators,
-			   cairo_path_fixed_t		*path,
-			   cairo_fill_rule_t	 	fill_rule);
+_cairo_pdf_operators_fill (cairo_pdf_operators_t	*pdf_operators,
+			   const cairo_path_fixed_t	*path,
+			   cairo_fill_rule_t		fill_rule);
 
 cairo_private cairo_int_status_t
 _cairo_pdf_operators_fill_stroke (cairo_pdf_operators_t		*pdf_operators,
-				  cairo_path_fixed_t		*path,
+				  const cairo_path_fixed_t	*path,
 				  cairo_fill_rule_t		 fill_rule,
 				  const cairo_stroke_style_t	*style,
 				  const cairo_matrix_t		*ctm,
