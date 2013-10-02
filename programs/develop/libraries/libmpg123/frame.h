@@ -38,10 +38,11 @@ struct al_table
 /* the output buffer, used to be pcm_sample, pcm_point and audiobufsize */
 struct outbuffer
 {
-	unsigned char *data;
+	unsigned char *data; /* main data pointer, aligned */
 	unsigned char *p; /* read pointer  */
 	size_t fill; /* fill from read pointer */
-	size_t size; /* that's actually more like a safe size, after we have more than that, flush it */
+	size_t size;
+	unsigned char *rdata; /* unaligned base pointer */
 };
 
 struct audioformat
@@ -65,9 +66,7 @@ struct mpg123_pars_struct
 	int rva; /* (which) rva to do: 0: nothing, 1: radio/mix/track 2: album/audiophile */
 	long halfspeed;
 	long doublespeed;
-#ifndef WIN32
 	long timeout;
-#endif
 #define NUM_CHANNELS 2
 	char audio_caps[NUM_CHANNELS][MPG123_RATES+1][MPG123_ENCODINGS];
 /*	long start_frame; */ /* frame offset to begin with */
@@ -79,9 +78,17 @@ struct mpg123_pars_struct
 	long resync_limit;
 	long index_size; /* Long, because: negative values have a meaning. */
 	long preframes;
+#ifndef NO_FEEDER
+	long feedpool;
+	long feedbuffer;
+#endif
 };
 
-
+enum frame_state_flags
+{
+	 FRAME_ACCURATE      = 0x1  /**<     0001 Positions are considered accurate. */
+	,FRAME_FRANKENSTEIN  = 0x2  /**<     0010 This stream is concatenated. */
+};
 
 /* There is a lot to condense here... many ints can be merged as flags; though the main space is still consumed by buffers. */
 struct mpg123_handle_struct
@@ -152,7 +159,7 @@ struct mpg123_handle_struct
 
 #ifndef NO_LAYER3
 #if (defined OPT_3DNOW || defined OPT_3DNOWEXT)
-		void (*dct36)(real *,real *,real *,real *,real *);
+		void (*the_dct36)(real *,real *,real *,real *,real *);
 #endif
 #endif
 
@@ -201,9 +208,10 @@ struct mpg123_handle_struct
 	int freesize;  /* free format frame size */
 	enum mpg123_vbr vbr; /* 1 if variable bitrate was detected */
 	off_t num; /* frame offset ... */
+	off_t input_offset; /* byte offset of this frame in input stream */
 	off_t playnum; /* playback offset... includes repetitions, reset at seeks */
 	off_t audio_start; /* The byte offset in the file where audio data begins. */
-	char accurate; /* Flag to see if we trust the frame number. */
+	int state_flags;
 	char silent_resync; /* Do not complain for the next n resyncs. */
 	unsigned char* xing_toc; /* The seek TOC from Xing header. */
 	int freeformat;
@@ -239,7 +247,9 @@ struct mpg123_handle_struct
 	unsigned char *bsbuf;
 	unsigned char *bsbufold;
 	int bsnum;
+	/* That is the header matching the last read frame body. */
 	unsigned long oldhead;
+	/* That is the header that is supposedly the first of the stream. */
 	unsigned long firsthead;
 	int abr_rate;
 #ifdef FRAME_INDEX
@@ -257,12 +267,14 @@ struct mpg123_handle_struct
 	off_t lastframe;   /* last frame to decode (for gapless or num_frames limit) */
 	off_t ignoreframe; /* frames to decode but discard before firstframe */
 #ifdef GAPLESS
+	off_t gapless_frames; /* frame count for the gapless part */
 	off_t firstoff; /* number of samples to ignore from firstframe */
 	off_t lastoff;  /* number of samples to use from lastframe */
 	off_t begin_s;  /* overall begin offset in samples */
 	off_t begin_os;
 	off_t end_s;    /* overall end offset in samples */
 	off_t end_os;
+	off_t fullend_os; /* gapless_frames translated to output samples */
 #endif
 	unsigned int crc; /* Well, I need a safe 16bit type, actually. But wider doesn't hurt. */
 	struct reader *rd; /* pointer to the reading functions */
@@ -281,6 +293,41 @@ struct mpg123_handle_struct
 #ifndef NO_ICY
 	struct icy_meta icy;
 #endif
+	/*
+		More variables needed for decoders, layerX.c.
+		This time it is not about static variables but about the need for alignment which cannot be guaranteed on the stack by certain compilers (Sun Studio).
+		We do not require the compiler to align stuff for our hand-written assembly. We only hope that it's able to align stuff for SSE and similar ops it generates itself.
+	*/
+	/*
+		Those layer-specific structs could actually share memory, as they are not in use simultaneously. One might allocate on decoder switch, too.
+		They all reside in one lump of memory (after each other), allocated to layerscratch.
+	*/
+	real *layerscratch;
+#ifndef NO_LAYER1
+	struct
+	{
+		real (*fraction)[SBLIMIT]; /* ALIGNED(16) real fraction[2][SBLIMIT]; */
+	} layer1;
+#endif
+#ifndef NO_LAYER2
+	struct
+	{
+		real (*fraction)[4][SBLIMIT]; /* ALIGNED(16) real fraction[2][4][SBLIMIT] */
+	} layer2;
+#endif
+#ifndef NO_LAYER3
+	/* These are significant chunks of memory already... */
+	struct
+	{
+		real (*hybrid_in)[SBLIMIT][SSLIMIT];  /* ALIGNED(16) real hybridIn[2][SBLIMIT][SSLIMIT]; */
+		real (*hybrid_out)[SSLIMIT][SBLIMIT]; /* ALIGNED(16) real hybridOut[2][SSLIMIT][SBLIMIT]; */
+	} layer3;
+#endif
+	/* A place for storing additional data for the large file wrapper.
+	   This is cruft! */
+	void *wrapperdata;
+	/* A callback used to properly destruct the wrapper data. */
+	void (*wrapperclean)(void*);
 };
 
 /* generic init, does not include dynamic buffers */
@@ -328,8 +375,7 @@ MPEG 2.5
 #ifdef GAPLESS
 /* well, I take that one for granted... at least layer3 */
 #define GAPLESS_DELAY 529
-/* still fine-tuning the "real music" window... see read_frame */
-void frame_gapless_init(mpg123_handle *fr, off_t b, off_t e);
+void frame_gapless_init(mpg123_handle *fr, off_t framecount, off_t bskip, off_t eskip);
 void frame_gapless_realinit(mpg123_handle *fr);
 void frame_gapless_update(mpg123_handle *mh, off_t total_samples);
 /*void frame_gapless_position(mpg123_handle* fr);
@@ -337,6 +383,9 @@ void frame_gapless_bytify(mpg123_handle *fr);
 void frame_gapless_ignore(mpg123_handle *fr, off_t frames);*/
 /* void frame_gapless_buffercheck(mpg123_handle *fr); */
 #endif
+
+/* Number of samples the decoding of the current frame should yield. */
+off_t frame_expect_outsamples(mpg123_handle *fr);
 
 /* Skip this frame... do some fake action to get away without actually decoding it. */
 void frame_skip(mpg123_handle *fr);
@@ -350,14 +399,12 @@ void frame_skip(mpg123_handle *fr);
 */
 off_t frame_ins2outs(mpg123_handle *fr, off_t ins);
 off_t frame_outs(mpg123_handle *fr, off_t num);
+/* This one just computes the expected sample count for _this_ frame. */
+off_t frame_expect_outsampels(mpg123_handle *fr);
 off_t frame_offset(mpg123_handle *fr, off_t outs);
 void frame_set_frameseek(mpg123_handle *fr, off_t fe);
 void frame_set_seek(mpg123_handle *fr, off_t sp);
 off_t frame_tell_seek(mpg123_handle *fr);
 /* Take a copy of the Xing VBR TOC for fuzzy seeking. */
 int frame_fill_toc(mpg123_handle *fr, unsigned char* in);
-
-
-/* adjust volume to current outscale and rva values if wanted */
-void do_rva(mpg123_handle *fr);
 #endif

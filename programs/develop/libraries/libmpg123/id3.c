@@ -35,7 +35,7 @@ static const text_converter text_converters[4] =
 	convert_utf8
 };
 
-const unsigned int encoding_widths[4] = { 1, 2, 2, 1 };
+static const unsigned int encoding_widths[4] = { 1, 2, 2, 1 };
 
 /* the code starts here... */
 
@@ -186,7 +186,7 @@ void id3_link(mpg123_handle *fr)
 	ID3v2 standard says that there should be one text frame of specific type per tag, and subsequent tags overwrite old values.
 	So, I always replace the text that may be stored already (perhaps with a list of zero-separated strings, though).
 */
-void store_id3_text(mpg123_string *sb, char *source, size_t source_size, const int noquiet, const int notranslate)
+static void store_id3_text(mpg123_string *sb, char *source, size_t source_size, const int noquiet, const int notranslate)
 {
 	if(!source_size)
 	{
@@ -247,7 +247,7 @@ void id3_to_utf8(mpg123_string *sb, unsigned char encoding, const unsigned char 
 	text_converters[encoding](sb, source, source_size, noquiet);
 }
 
-char *next_text(char* prev, int encoding, size_t limit)
+static char *next_text(char* prev, int encoding, size_t limit)
 {
 	char *text = prev;
 	size_t width = encoding_widths[encoding];
@@ -274,7 +274,7 @@ char *next_text(char* prev, int encoding, size_t limit)
 
 		text += width;
 	}
-	if(text-prev >= limit) text = NULL;
+	if((size_t)(text-prev) >= limit) text = NULL;
 
 	return text;
 }
@@ -352,7 +352,7 @@ static void process_comment(mpg123_handle *fr, enum frame_types tt, char *realda
 	   Reminder: No bailing out from here on without freeing the local comment data! */
 	store_id3_text(&xcom->description, descr-1, text-descr+1, NOQUIET, fr->p.flags & MPG123_PLAIN_ID3TEXT);
 	if(tt == comment)
-	store_id3_text(&localcom.description, descr-1, text-descr+1, NOQUIET, 1);
+	store_id3_text(&localcom.description, descr-1, text-descr+1, NOQUIET, 0);
 
 	text[-1] = encoding; /* Byte abusal for encoding... */
 	store_id3_text(&xcom->text, text-1, realsize+1-(text-realdata), NOQUIET, fr->p.flags & MPG123_PLAIN_ID3TEXT);
@@ -379,7 +379,7 @@ static void process_comment(mpg123_handle *fr, enum frame_types tt, char *realda
 		if((rva_mode > -1) && (fr->rva.level[rva_mode] <= rva_level))
 		{
 			/* Only translate the contents in here where we really need them. */
-			store_id3_text(&localcom.text, text-1, realsize+1-(text-realdata), NOQUIET, 1);
+			store_id3_text(&localcom.text, text-1, realsize+1-(text-realdata), NOQUIET, 0);
 			if(localcom.text.fill > 0)
 			{
 				fr->rva.gain[rva_mode] = (float) atof(localcom.text.p);
@@ -393,7 +393,7 @@ static void process_comment(mpg123_handle *fr, enum frame_types tt, char *realda
 	free_mpg123_text(&localcom);
 }
 
-void process_extra(mpg123_handle *fr, char* realdata, size_t realsize, int rva_level, char *id)
+static void process_extra(mpg123_handle *fr, char* realdata, size_t realsize, int rva_level, char *id)
 {
 	/* Text encoding          $xx */
 	/* Description        ... $00 (00) */
@@ -424,10 +424,16 @@ void process_extra(mpg123_handle *fr, char* realdata, size_t realsize, int rva_l
 	}
 	memcpy(xex->id, id, 4);
 	init_mpg123_text(&localex); /* For our local copy. */
+
+	/* The outside storage gets reencoded to UTF-8 only if not requested otherwise.
+	   Remember that we really need the -1 here to hand in the encoding byte!*/
 	store_id3_text(&xex->description, descr-1, text-descr+1, NOQUIET, fr->p.flags & MPG123_PLAIN_ID3TEXT);
-	store_id3_text(&localex.description, descr-1, text-descr+1, NOQUIET, 1);
+	/* Our local copy is always stored in UTF-8! */
+	store_id3_text(&localex.description, descr-1, text-descr+1, NOQUIET, 0);
+	/* At first, only store the outside copy of the payload. We may not need the local copy. */
 	text[-1] = encoding;
 	store_id3_text(&xex->text, text-1, realsize-(text-realdata)+1, NOQUIET, fr->p.flags & MPG123_PLAIN_ID3TEXT);
+
 	/* Now check if we would like to interpret this extra info for RVA. */
 	if(localex.description.fill > 0)
 	{
@@ -454,7 +460,7 @@ void process_extra(mpg123_handle *fr, char* realdata, size_t realsize, int rva_l
 		if((rva_mode > -1) && (fr->rva.level[rva_mode] <= rva_level))
 		{
 			/* Now we need the translated copy of the data. */
-			store_id3_text(&localex.text, text-1, realsize-(text-realdata)+1, NOQUIET, 1);
+			store_id3_text(&localex.text, text-1, realsize-(text-realdata)+1, NOQUIET, 0);
 			if(localex.text.fill > 0)
 			{
 				if(is_peak)
@@ -479,7 +485,7 @@ void process_extra(mpg123_handle *fr, char* realdata, size_t realsize, int rva_l
    Note that not all frames survived to 2.4; the mapping goes to 2.3 .
    A notable miss is the old RVA frame, which is very unspecific anyway.
    This function returns -1 when a not known 3 char ID was encountered, 0 otherwise. */
-int promote_framename(mpg123_handle *fr, char *id) /* fr because of VERBOSE macros */
+static int promote_framename(mpg123_handle *fr, char *id) /* fr because of VERBOSE macros */
 {
 	size_t i;
 	char *old[] =
@@ -530,7 +536,6 @@ int parse_new_id3(mpg123_handle *fr, unsigned long first4bytes)
 	unsigned char flags = 0;
 	int ret = 1;
 	int ret2;
-	unsigned char* tagdata = NULL;
 	unsigned char major = first4bytes & 0xff;
 	debug1("ID3v2: major tag version: %i", major);
 	if(major == 0xff) return 0; /* Invalid... */
@@ -582,10 +587,17 @@ int parse_new_id3(mpg123_handle *fr, unsigned long first4bytes)
 #ifndef NO_ID3V2
 	if(VERBOSE2) fprintf(stderr,"Note: ID3v2.%i rev %i tag of %lu bytes\n", major, buf[0], length);
 	/* skip if unknown version/scary flags, parse otherwise */
-	if((flags & UNKNOWN_FLAGS) || (major > 4) || (major < 2))
+	if(fr->p.flags & MPG123_SKIP_ID3V2 || ((flags & UNKNOWN_FLAGS) || (major > 4) || (major < 2)))
 	{
-		/* going to skip because there are unknown flags set */
-		if(NOQUIET) warning2("ID3v2: Won't parse the ID3v2 tag with major version %u and flags 0x%xu - some extra code may be needed", major, flags);
+		if(NOQUIET)
+		{
+			if(fr->p.flags & MPG123_SKIP_ID3V2)
+			{
+				if(VERBOSE3) fprintf(stderr, "Note: Skipping ID3v2 tag per user request.\n");
+			}
+			else /* Must be because of scary Tag properties. */
+			warning2("ID3v2: Won't parse the ID3v2 tag with major version %u and flags 0x%xu - some extra code may be needed", major, flags);
+		}
 #endif
 		if((ret2 = fr->rd->skip_bytes(fr,length)) < 0) /* will not store data in backbuff! */
 		ret = ret2;
@@ -593,6 +605,7 @@ int parse_new_id3(mpg123_handle *fr, unsigned long first4bytes)
 	}
 	else
 	{
+		unsigned char* tagdata = NULL;
 		fr->id3v2.version = major;
 		/* try to interpret that beast */
 		if((tagdata = (unsigned char*) malloc(length+1)) != NULL)
@@ -641,6 +654,7 @@ int parse_new_id3(mpg123_handle *fr, unsigned long first4bytes)
 						{
 							/* 4 or 3 bytes id */
 							strncpy(id, (char*) tagdata+pos, head_part);
+							id[head_part] = 0; /* terminate for 3 or 4 bytes */
 							pos += head_part;
 							tagpos += head_part;
 							/* size as 32 bits or 28 bits */
@@ -790,7 +804,8 @@ int parse_new_id3(mpg123_handle *fr, unsigned long first4bytes)
 			}
 			else
 			{
-				if(NOQUIET) error("ID3v2: Duh, not able to read ID3v2 tag data.");
+				/* There are tags with zero length. Strictly not an error, then. */
+				if(length > 0 && NOQUIET && ret2 != MPG123_NEED_MORE) error("ID3v2: Duh, not able to read ID3v2 tag data.");
 				ret = ret2;
 			}
 tagparse_cleanup:
@@ -851,7 +866,7 @@ static void convert_latin1(mpg123_string *sb, const unsigned char* s, size_t l, 
 	 1: big endian
 
 	This modifies source and len to indicate the data _after_ the BOM(s).
-	Note on nasty data: The last encountered BOM determines the endianess.
+	Note on nasty data: The last encountered BOM determines the endianness.
 	I have seen data with multiple BOMS, namely from "the" id3v2 program.
 	Not nice, but what should I do?
 */
@@ -898,7 +913,7 @@ static void convert_utf16bom(mpg123_string *sb, const unsigned char* s, size_t l
 	debug1("convert_utf16 with length %lu", (unsigned long)l);
 
 	bom_endian = check_bom(&s, &l);
-	debug1("UTF16 endianess check: %i", bom_endian);
+	debug1("UTF16 endianness check: %i", bom_endian);
 
 	if(bom_endian == -1) /* little-endian */
 	{

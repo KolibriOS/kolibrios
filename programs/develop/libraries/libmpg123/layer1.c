@@ -1,7 +1,7 @@
 /*
 	layer1.c: the layer 1 decoder
 
-	copyright 1995-2008 by the mpg123 project - free software under the terms of the LGPL 2.1
+	copyright 1995-2009 by the mpg123 project - free software under the terms of the LGPL 2.1
 	see COPYING and AUTHORS files in distribution or http://mpg123.org
 	initially written by Michael Hipp
 
@@ -11,7 +11,7 @@
 #include "mpg123lib_intern.h"
 #include "getbits.h"
 
-void I_step_one(unsigned int balloc[], unsigned int scale_index[2][SBLIMIT],mpg123_handle *fr)
+static void I_step_one(unsigned int balloc[], unsigned int scale_index[2][SBLIMIT],mpg123_handle *fr)
 {
 	unsigned int *ba=balloc;
 	unsigned int *sca = (unsigned int *) scale_index;
@@ -55,7 +55,7 @@ void I_step_one(unsigned int balloc[], unsigned int scale_index[2][SBLIMIT],mpg1
 	}
 }
 
-void I_step_two(real fraction[2][SBLIMIT],unsigned int balloc[2*SBLIMIT], unsigned int scale_index[2][SBLIMIT],mpg123_handle *fr)
+static void I_step_two(real fraction[2][SBLIMIT],unsigned int balloc[2*SBLIMIT], unsigned int scale_index[2][SBLIMIT],mpg123_handle *fr)
 {
 	int i,n;
 	int smpb[2*SBLIMIT]; /* values: 0-65535 */
@@ -129,7 +129,7 @@ int do_layer1(mpg123_handle *fr)
 	int i,stereo = fr->stereo;
 	unsigned int balloc[2*SBLIMIT];
 	unsigned int scale_index[2][SBLIMIT];
-	ALIGNED(16) real fraction[2][SBLIMIT];
+	real (*fraction)[SBLIMIT] = fr->layer1.fraction; /* fraction[2][SBLIMIT] */
 	int single = fr->single;
 
 	fr->jsbound = (fr->mode == MPG_MD_JOINT_STEREO) ? (fr->mode_ext<<2)+4 : 32;

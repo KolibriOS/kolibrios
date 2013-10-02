@@ -1,7 +1,7 @@
 /*
 	layer2.c: the layer 2 decoder, root of mpg123
 
-	copyright 1994-2008 by the mpg123 project - free software under the terms of the LGPL 2.1
+	copyright 1994-2009 by the mpg123 project - free software under the terms of the LGPL 2.1
 	see COPYING and AUTHORS files in distribution or http://mpg123.org
 	initially written by Michael Hipp
 
@@ -94,7 +94,7 @@ real* init_layer12_table(mpg123_handle *fr, real *table, int m)
 real* init_layer12_table_mmx(mpg123_handle *fr, real *table, int m)
 {
 	int i,j;
-	if(!fr->p.down_sample)
+	if(!fr->p.down_sample) 
 	{
 		for(j=3,i=0;i<63;i++,j--)
 			*table++ = DOUBLE_TO_REAL(16384 * mulmul[m] * pow(2.0,(double) j / 3.0));
@@ -114,7 +114,7 @@ real* init_layer12_table_mmx(mpg123_handle *fr, real *table, int m)
 
 #ifndef NO_LAYER2
 
-void II_step_one(unsigned int *bit_alloc,int *scale,mpg123_handle *fr)
+static void II_step_one(unsigned int *bit_alloc,int *scale,mpg123_handle *fr)
 {
 	int stereo = fr->stereo-1;
 	int sblimit = fr->II_sblimit;
@@ -167,17 +167,17 @@ void II_step_one(unsigned int *bit_alloc,int *scale,mpg123_handle *fr)
 	if(*bita++)
 	switch(*scfsi++)
 	{
-		case 0:
+		case 0: 
 			*scale++ = getbits_fast(fr, 6);
 			*scale++ = getbits_fast(fr, 6);
 			*scale++ = getbits_fast(fr, 6);
 		break;
-		case 1 :
+		case 1 : 
 			*scale++ = sc = getbits_fast(fr, 6);
 			*scale++ = sc;
 			*scale++ = getbits_fast(fr, 6);
 		break;
-		case 2:
+		case 2: 
 			*scale++ = sc = getbits_fast(fr, 6);
 			*scale++ = sc;
 			*scale++ = sc;
@@ -191,7 +191,7 @@ void II_step_one(unsigned int *bit_alloc,int *scale,mpg123_handle *fr)
 }
 
 
-void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int *scale,mpg123_handle *fr,int x1)
+static void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int *scale,mpg123_handle *fr,int x1)
 {
 	int i,j,k,ba;
 	int stereo = fr->stereo;
@@ -206,17 +206,17 @@ void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int *scale
 		step = alloc1->bits;
 		for(j=0;j<stereo;j++)
 		{
-			if( (ba=*bita++) )
+			if( (ba=*bita++) ) 
 			{
 				k=(alloc2 = alloc1+ba)->bits;
-				if( (d1=alloc2->d) < 0)
+				if( (d1=alloc2->d) < 0) 
 				{
 					real cm=fr->muls[k][scale[x1]];
 					fraction[j][0][i] = REAL_MUL_SCALE_LAYER12(DOUBLE_TO_REAL_15((int)getbits(fr, k) + d1), cm);
 					fraction[j][1][i] = REAL_MUL_SCALE_LAYER12(DOUBLE_TO_REAL_15((int)getbits(fr, k) + d1), cm);
 					fraction[j][2][i] = REAL_MUL_SCALE_LAYER12(DOUBLE_TO_REAL_15((int)getbits(fr, k) + d1), cm);
-				}
-				else
+				}        
+				else 
 				{
 					const int *table[] = { 0,0,0,grp_3tab,0,grp_5tab,0,0,0,grp_9tab };
 					unsigned int idx,*tab,m=scale[x1];
@@ -224,7 +224,7 @@ void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int *scale
 					tab = (unsigned int *) (table[d1] + idx + idx + idx);
 					fraction[j][0][i] = REAL_SCALE_LAYER12(fr->muls[*tab++][m]);
 					fraction[j][1][i] = REAL_SCALE_LAYER12(fr->muls[*tab++][m]);
-					fraction[j][2][i] = REAL_SCALE_LAYER12(fr->muls[*tab][m]);
+					fraction[j][2][i] = REAL_SCALE_LAYER12(fr->muls[*tab][m]);  
 				}
 				scale+=3;
 			}
@@ -277,10 +277,10 @@ void II_step_two(unsigned int *bit_alloc,real fraction[2][4][SBLIMIT],int *scale
 	Historic comment...
 	should we use individual scalefac for channel 2 or
 	is the current way the right one , where we just copy channel 1 to
-	channel 2 ??
+	channel 2 ?? 
 	The current 'strange' thing is, that we throw away the scalefac
 	values for the second channel ...!!
-	-> changed .. now we use the scalefac values of channel one !!
+	-> changed .. now we use the scalefac values of channel one !! 
 */
 	}
 
@@ -331,7 +331,9 @@ int do_layer2(mpg123_handle *fr)
 	int clip=0;
 	int i,j;
 	int stereo = fr->stereo;
-	ALIGNED(16) real fraction[2][4][SBLIMIT]; /* pick_table clears unused subbands */
+	/* pick_table clears unused subbands */
+	/* replacement for real fraction[2][4][SBLIMIT], needs alignment. */
+	real (*fraction)[4][SBLIMIT] = fr->layer2.fraction;
 	unsigned int bit_alloc[64];
 	int scale[192];
 	int single = fr->single;
@@ -341,7 +343,7 @@ int do_layer2(mpg123_handle *fr)
 
 	if(fr->jsbound > fr->II_sblimit)
 	{
-//       fprintf(stderr, "Truncating stereo boundary to sideband limit.\n");
+		fprintf(stderr, "Truncating stereo boundary to sideband limit.\n");
 		fr->jsbound=fr->II_sblimit;
 	}
 
@@ -354,7 +356,7 @@ int do_layer2(mpg123_handle *fr)
 	for(i=0;i<SCALE_BLOCK;i++)
 	{
 		II_step_two(bit_alloc,fraction,scale,fr,i>>2);
-		for(j=0;j<3;j++)
+		for(j=0;j<3;j++) 
 		{
 			if(single != SINGLE_STEREO)
 			clip += (fr->synth_mono)(fraction[single][j], fr);

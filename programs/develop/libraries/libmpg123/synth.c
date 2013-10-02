@@ -10,20 +10,11 @@
 #include "sample.h"
 #include "debug.h"
 
-/* Stereo-related synth, wrapping over _some_ plain synth. */
-int synth_stereo_wrap(real *bandPtr_l, real *bandPtr_r, mpg123_handle *fr)
-{
-	int clip;
-	clip  = (fr->synth)(bandPtr_l, 0, fr, 0);
-	clip += (fr->synth)(bandPtr_r, 1, fr, 1);
-	return clip;
-}
-
 /*
 	Part 1: All synth functions that produce signed short.
 	That is:
 		- synth_1to1 with cpu-specific variants (synth_1to1_i386, synth_1to1_i586 ...)
-		- synth_1to1_mono and synth_1to1_mono2stereo; which use fr->synths.plain[r_1to1][f_16].
+		- synth_1to1_mono and synth_1to1_m2s; which use fr->synths.plain[r_1to1][f_16].
 	Nearly every decoder variant has it's own synth_1to1, while the mono conversion is shared.
 */
 
@@ -40,7 +31,7 @@ int synth_stereo_wrap(real *bandPtr_l, real *bandPtr_r, mpg123_handle *fr)
 /* Mono-related synths; they wrap over _some_ synth_1to1. */
 #define SYNTH_NAME       fr->synths.plain[r_1to1][f_16]
 #define MONO_NAME        synth_1to1_mono
-#define MONO2STEREO_NAME synth_1to1_mono2stereo
+#define MONO2STEREO_NAME synth_1to1_m2s
 #include "synth_mono.h"
 #undef SYNTH_NAME
 #undef MONO_NAME
@@ -152,7 +143,7 @@ int synth_1to1_mmx(real *bandPtr, int channel, mpg123_handle *fr, int final)
 #ifdef ACCURATE_ROUNDING
 /* This is defined in assembler. */
 int synth_1to1_sse_accurate_asm(real *window, real *b0, short *samples, int bo1);
-int synth_1to1_stereo_sse_accurate_asm(real *window, real *b0l, real *b0r, short *samples, int bo1);
+int synth_1to1_s_sse_accurate_asm(real *window, real *b0l, real *b0r, short *samples, int bo1);
 void dct64_real_sse(real *out0, real *out1, real *samples);
 /* This is just a hull to use the mpg123 handle. */
 int synth_1to1_sse(real *bandPtr,int channel, mpg123_handle *fr, int final)
@@ -232,7 +223,7 @@ int synth_1to1_stereo_sse(real *bandPtr_l, real *bandPtr_r, mpg123_handle *fr)
 		dct64_real_sse(bufr[0]+fr->bo,bufr[1]+fr->bo+1,bandPtr_r);
 	}
 
-	clip = synth_1to1_stereo_sse_accurate_asm(fr->decwin, b0l, b0r, samples, bo1);
+	clip = synth_1to1_s_sse_accurate_asm(fr->decwin, b0l, b0r, samples, bo1);
 
 	fr->buffer.fill += 128;
 
@@ -271,7 +262,7 @@ int synth_1to1_3dnowext(real *bandPtr, int channel, mpg123_handle *fr, int final
 #ifdef ACCURATE_ROUNDING
 /* Assembler routines. */
 int synth_1to1_x86_64_accurate_asm(real *window, real *b0, short *samples, int bo1);
-int synth_1to1_stereo_x86_64_accurate_asm(real *window, real *b0l, real *b0r, short *samples, int bo1);
+int synth_1to1_s_x86_64_accurate_asm(real *window, real *b0l, real *b0r, short *samples, int bo1);
 void dct64_real_x86_64(real *out0, real *out1, real *samples);
 /* Hull for C mpg123 API */
 int synth_1to1_x86_64(real *bandPtr,int channel, mpg123_handle *fr, int final)
@@ -352,7 +343,7 @@ int synth_1to1_stereo_x86_64(real *bandPtr_l, real *bandPtr_r, mpg123_handle *fr
 		dct64_real_x86_64(bufr[0]+fr->bo,bufr[1]+fr->bo+1,bandPtr_r);
 	}
 
-	clip = synth_1to1_stereo_x86_64_accurate_asm(fr->decwin, b0l, b0r, samples, bo1);
+	clip = synth_1to1_s_x86_64_accurate_asm(fr->decwin, b0l, b0r, samples, bo1);
 
 	fr->buffer.fill += 128;
 
@@ -361,7 +352,7 @@ int synth_1to1_stereo_x86_64(real *bandPtr_l, real *bandPtr_r, mpg123_handle *fr
 #else
 /* This is defined in assembler. */
 int synth_1to1_x86_64_asm(short *window, short *b0, short *samples, int bo1);
-int synth_1to1_stereo_x86_64_asm(short *window, short *b0l, short *b0r, short *samples, int bo1);
+int synth_1to1_s_x86_64_asm(short *window, short *b0l, short *b0r, short *samples, int bo1);
 void dct64_x86_64(short *out0, short *out1, real *samples);
 /* This is just a hull to use the mpg123 handle. */
 int synth_1to1_x86_64(real *bandPtr,int channel, mpg123_handle *fr, int final)
@@ -440,7 +431,7 @@ int synth_1to1_stereo_x86_64(real *bandPtr_l,real *bandPtr_r, mpg123_handle *fr)
 		dct64_x86_64(bufr[0]+fr->bo,bufr[1]+fr->bo+1,bandPtr_r);
 	}
 
-	clip = synth_1to1_stereo_x86_64_asm((short *)fr->decwins, b0l, b0r, samples, bo1);
+	clip = synth_1to1_s_x86_64_asm((short *)fr->decwins, b0l, b0r, samples, bo1);
 
 	fr->buffer.fill += 128;
 
@@ -543,6 +534,188 @@ int synth_1to1_arm(real *bandPtr,int channel, mpg123_handle *fr, int final)
 #endif
 #endif
 
+#ifdef OPT_NEON
+#ifdef ACCURATE_ROUNDING
+/* This is defined in assembler. */
+int synth_1to1_neon_accurate_asm(real *window, real *b0, short *samples, int bo1);
+int synth_1to1_s_neon_accurate_asm(real *window, real *b0l, real *b0r, short *samples, int bo1);
+void dct64_real_neon(real *out0, real *out1, real *samples);
+/* Hull for C mpg123 API */
+int synth_1to1_neon(real *bandPtr,int channel, mpg123_handle *fr, int final)
+{
+	short *samples = (short *) (fr->buffer.data+fr->buffer.fill);
+
+	real *b0, **buf;
+	int bo1;
+	int clip;
+
+	if(fr->have_eq_settings) do_equalizer(bandPtr,channel,fr->equalizer);
+
+	if(!channel)
+	{
+		fr->bo--;
+		fr->bo &= 0xf;
+		buf = fr->real_buffs[0];
+	}
+	else
+	{
+		samples++;
+		buf = fr->real_buffs[1];
+	}
+
+	if(fr->bo & 0x1)
+	{
+		b0 = buf[0];
+		bo1 = fr->bo;
+		dct64_real_neon(buf[1]+((fr->bo+1)&0xf),buf[0]+fr->bo,bandPtr);
+	}
+	else
+	{
+		b0 = buf[1];
+		bo1 = fr->bo+1;
+		dct64_real_neon(buf[0]+fr->bo,buf[1]+fr->bo+1,bandPtr);
+	}
+
+	clip = synth_1to1_neon_accurate_asm(fr->decwin, b0, samples, bo1);
+
+	if(final) fr->buffer.fill += 128;
+
+	return clip;
+}
+
+int synth_1to1_stereo_neon(real *bandPtr_l, real *bandPtr_r, mpg123_handle *fr)
+{
+	short *samples = (short *) (fr->buffer.data+fr->buffer.fill);
+
+	real *b0l, *b0r, **bufl, **bufr;
+	int bo1;
+	int clip;
+
+	if(fr->have_eq_settings)
+	{
+		do_equalizer(bandPtr_l,0,fr->equalizer);
+		do_equalizer(bandPtr_r,1,fr->equalizer);
+	}
+
+	fr->bo--;
+	fr->bo &= 0xf;
+	bufl = fr->real_buffs[0];
+	bufr = fr->real_buffs[1];
+
+	if(fr->bo & 0x1)
+	{
+		b0l = bufl[0];
+		b0r = bufr[0];
+		bo1 = fr->bo;
+		dct64_real_neon(bufl[1]+((fr->bo+1)&0xf),bufl[0]+fr->bo,bandPtr_l);
+		dct64_real_neon(bufr[1]+((fr->bo+1)&0xf),bufr[0]+fr->bo,bandPtr_r);
+	}
+	else
+	{
+		b0l = bufl[1];
+		b0r = bufr[1];
+		bo1 = fr->bo+1;
+		dct64_real_neon(bufl[0]+fr->bo,bufl[1]+fr->bo+1,bandPtr_l);
+		dct64_real_neon(bufr[0]+fr->bo,bufr[1]+fr->bo+1,bandPtr_r);
+	}
+
+	clip = synth_1to1_s_neon_accurate_asm(fr->decwin, b0l, b0r, samples, bo1);
+
+	fr->buffer.fill += 128;
+
+	return clip;
+}
+#else
+/* This is defined in assembler. */
+int synth_1to1_neon_asm(short *window, short *b0, short *samples, int bo1);
+int synth_1to1_s_neon_asm(short *window, short *b0l, short *b0r, short *samples, int bo1);
+void dct64_neon(short *out0, short *out1, real *samples);
+/* Hull for C mpg123 API */
+int synth_1to1_neon(real *bandPtr,int channel, mpg123_handle *fr, int final)
+{
+	short *samples = (short *) (fr->buffer.data+fr->buffer.fill);	
+	short *b0, **buf;
+	int clip; 
+	int bo1;
+
+	if(fr->have_eq_settings) do_equalizer(bandPtr,channel,fr->equalizer);
+
+	if(!channel)
+	{
+		fr->bo--;
+		fr->bo &= 0xf;
+		buf = fr->short_buffs[0];
+	}
+	else
+	{
+		samples++;
+		buf = fr->short_buffs[1];
+	}
+
+	if(fr->bo & 0x1) 
+	{
+		b0 = buf[0];
+		bo1 = fr->bo;
+		dct64_neon(buf[1]+((fr->bo+1)&0xf),buf[0]+fr->bo,bandPtr);
+	}
+	else
+	{
+		b0 = buf[1];
+		bo1 = fr->bo+1;
+		dct64_neon(buf[0]+fr->bo,buf[1]+fr->bo+1,bandPtr);
+	}
+
+	clip = synth_1to1_neon_asm((short *)fr->decwins, b0, samples, bo1);
+
+	if(final) fr->buffer.fill += 128;
+
+	return clip;
+}
+
+int synth_1to1_stereo_neon(real *bandPtr_l,real *bandPtr_r, mpg123_handle *fr)
+{
+	short *samples = (short *) (fr->buffer.data+fr->buffer.fill);
+	short *b0l, *b0r, **bufl, **bufr;
+	int clip; 
+	int bo1;
+
+	if(fr->have_eq_settings)
+	{
+		do_equalizer(bandPtr_l,0,fr->equalizer);
+		do_equalizer(bandPtr_r,1,fr->equalizer);
+	}
+
+	fr->bo--;
+	fr->bo &= 0xf;
+	bufl = fr->short_buffs[0];
+	bufr = fr->short_buffs[1];
+
+	if(fr->bo & 0x1) 
+	{
+		b0l = bufl[0];
+		b0r = bufr[0];
+		bo1 = fr->bo;
+		dct64_neon(bufl[1]+((fr->bo+1)&0xf),bufl[0]+fr->bo,bandPtr_l);
+		dct64_neon(bufr[1]+((fr->bo+1)&0xf),bufr[0]+fr->bo,bandPtr_r);
+	}
+	else
+	{
+		b0l = bufl[1];
+		b0r = bufr[1];
+		bo1 = fr->bo+1;
+		dct64_neon(bufl[0]+fr->bo,bufl[1]+fr->bo+1,bandPtr_l);
+		dct64_neon(bufr[0]+fr->bo,bufr[1]+fr->bo+1,bandPtr_r);
+	}
+
+	clip = synth_1to1_s_neon_asm((short *)fr->decwins, b0l, b0r, samples, bo1);
+
+	fr->buffer.fill += 128;
+
+	return clip;
+}
+#endif
+#endif
+
 #ifndef NO_DOWNSAMPLE
 
 /*
@@ -565,7 +738,7 @@ int synth_1to1_arm(real *bandPtr,int channel, mpg123_handle *fr, int final)
 
 #define SYNTH_NAME       fr->synths.plain[r_2to1][f_16]
 #define MONO_NAME        synth_2to1_mono
-#define MONO2STEREO_NAME synth_2to1_mono2stereo
+#define MONO2STEREO_NAME synth_2to1_m2s
 #include "synth_mono.h"
 #undef SYNTH_NAME
 #undef MONO_NAME
@@ -602,7 +775,7 @@ int synth_1to1_arm(real *bandPtr,int channel, mpg123_handle *fr, int final)
 
 #define SYNTH_NAME       fr->synths.plain[r_4to1][f_16] /* This is just for the _i386 one... gotta check if it is really useful... */
 #define MONO_NAME        synth_4to1_mono
-#define MONO2STEREO_NAME synth_4to1_mono2stereo
+#define MONO2STEREO_NAME synth_4to1_m2s
 #include "synth_mono.h"
 #undef SYNTH_NAME
 #undef MONO_NAME
@@ -630,7 +803,7 @@ int synth_1to1_arm(real *bandPtr,int channel, mpg123_handle *fr, int final)
 /* These are all in one header, there's no flexibility to gain. */
 #define SYNTH_NAME       synth_ntom
 #define MONO_NAME        synth_ntom_mono
-#define MONO2STEREO_NAME synth_ntom_mono2stereo
+#define MONO2STEREO_NAME synth_ntom_m2s
 #include "synth_ntom.h"
 #undef SYNTH_NAME
 #undef MONO_NAME

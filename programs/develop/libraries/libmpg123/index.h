@@ -50,6 +50,9 @@ int fi_resize(struct frame_index *fi, size_t newsize);
 /* Append a frame position, reducing index density if needed. */
 void fi_add(struct frame_index *fi, off_t pos);
 
+/* Replace the frame index */
+int fi_set(struct frame_index *fi, off_t *offsets, off_t step, size_t fill);
+
 /* Empty the index (setting fill=0 and step=1), but keep current size. */
 void fi_reset(struct frame_index *fi);
 

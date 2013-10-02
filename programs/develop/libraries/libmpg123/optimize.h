@@ -37,7 +37,7 @@ enum optdec
 { /* autodec needs to be =0 and the first, nodec needs to be the last -- for loops! */
 	autodec=0, generic, generic_dither, idrei,
 	ivier, ifuenf, ifuenf_dither, mmx,
-	dreidnow, dreidnowext, altivec, sse, x86_64, arm,
+	dreidnow, dreidnowext, altivec, sse, x86_64, arm, neon,
 	nodec
 };
 enum optcla { nocla=0, normal, mmxsse };
@@ -67,7 +67,8 @@ enum optcla decclass(const enum optdec);
 #ifdef REAL_IS_FIXED
 #if (defined OPT_I486)  || (defined OPT_I586) || (defined OPT_I586_DITHER) \
  || (defined OPT_MMX)   || (defined OPT_SSE)  || (defined_OPT_ALTIVEC) \
- || (defined OPT_3DNOW) || (defined OPT_3DNOWEXT) || (defined OPT_X86_64) || (defined OPT_GENERIC_DITHER)
+ || (defined OPT_3DNOW) || (defined OPT_3DNOWEXT) || (defined OPT_X86_64) \
+ || (defined OPT_NEON) || (defined OPT_GENERIC_DITHER)
 #error "Bad decoder choice together with fixed point math!"
 #endif
 #endif
@@ -184,6 +185,13 @@ extern const int costab_mmxsse[];
 #endif
 #endif
 
+#ifdef OPT_NEON
+#define OPT_MMXORSSE
+#ifndef OPT_MULTI
+#	define defopt neon
+#endif
+#endif
+
 /* used for multi opt mode and the single 3dnow mode to have the old 3dnow test flag still working */
 void check_decoders(void);
 
@@ -198,7 +206,7 @@ void check_decoders(void);
 #	define defopt nodec
 
 #	if (defined OPT_3DNOW || defined OPT_3DNOWEXT)
-#		define opt_dct36(fr) ((fr)->cpu_opts.dct36)
+#		define opt_dct36(fr) ((fr)->cpu_opts.the_dct36)
 #	endif
 
 #endif /* OPT_MULTI else */

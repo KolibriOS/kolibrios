@@ -11,9 +11,10 @@
 #define MPG123_H_INTERN
 
 #define MPG123_RATES 9
-#define MPG123_ENCODINGS 10
+#define MPG123_ENCODINGS 12
 
 #include "config.h" /* Load this before _anything_ */
+#include "intsym.h" /* Prefixing of internal symbols that still are public in a static lib. */
 
 /* ABI conformance for other compilers.
    mpg123 needs 16byte-aligned stack for SSE and friends.
@@ -24,8 +25,14 @@
 #    define attribute_align_arg __attribute__((force_align_arg_pointer))
 /* The gcc that can align the stack does not need the check... nor does it work with gcc 4.3+, anyway. */
 #else
+
 #    define attribute_align_arg
-#    define NEED_ALIGNCHECK /* Other compilers get code to catch misaligned stack. */
+/* Other compilers get code to catch misaligned stack.
+   Well, except Sun Studio, which accepts the aligned attribute but does not honor it. */
+#if !defined(__SUNPRO_C)
+#    define NEED_ALIGNCHECK
+#endif
+
 #endif
 #endif
 #else
@@ -130,7 +137,7 @@ static inline long scale_rounded(long x, int shift)
 		"srwi %0, %0, %4 \n\t" \
 		"rlwimi %0, %1, %5, 0, %6 \n\t" \
 		: "=&r" (_mull), "=&r" (_mulh) \
-		: "%r" (_x), "r" (_y), "i" (radix), "i" (32-(radix)), "i" ((radix)-1) \
+		: "r" (_x), "r" (_y), "i" (radix), "i" (32-(radix)), "i" ((radix)-1) \
 	); \
 	_mull; \
 })
@@ -146,7 +153,7 @@ static inline long scale_rounded(long x, int shift)
 		"slw %1, %1, %2 \n\t" \
 		"or %0, %0, %1 \n\t" \
 		: "=&r" (_mull), "=&r" (_mulh), "=&r" (_radix2) \
-		: "%r" (_x), "r" (_y), "r" (_radix) \
+		: "r" (_x), "r" (_y), "r" (_radix) \
 		: "cc" \
 	); \
 	_mull; \
@@ -161,7 +168,7 @@ static inline long scale_rounded(long x, int shift)
 		"mov %0, %0, lsr %4 \n\t" \
 		"orr %0, %0, %1, lsl %5 \n\t" \
 		: "=&r" (_mull), "=&r" (_mulh) \
-		: "%r" (_x), "r" (_y), "M" (radix), "M" (32-(radix)) \
+		: "r" (_x), "r" (_y), "M" (radix), "M" (32-(radix)) \
 	); \
 	_mull; \
 })
@@ -173,9 +180,10 @@ static inline long scale_rounded(long x, int shift)
 		"smull %0, %1, %3, %4 \n\t" \
 		"mov %0, %0, lsr %5 \n\t" \
 		"rsb %2, %5, #32 \n\t" \
-		"orr %0, %0, %1, lsl %2 \n\t" \
+		"mov %1, %1, lsl %2 \n\t" \
+		"orr %0, %0, %1 \n\t" \
 		: "=&r" (_mull), "=&r" (_mulh), "=&r" (_radix2) \
-		: "%r" (_x), "r" (_y), "r" (_radix) \
+		: "r" (_x), "r" (_y), "r" (_radix) \
 	); \
 	_mull; \
 })
@@ -306,16 +314,25 @@ static inline long scale_rounded(long x, int shift)
 #include "frame.h"
 
 /* fr is a mpg123_handle* by convention here... */
-#define NOQUIET  0 /*(!(fr->p.flags & MPG123_QUIET))*/
+#define NOQUIET  (!(fr->p.flags & MPG123_QUIET))
 #define VERBOSE  (NOQUIET && fr->p.verbose)
 #define VERBOSE2 (NOQUIET && fr->p.verbose > 1)
 #define VERBOSE3 (NOQUIET && fr->p.verbose > 2)
 #define VERBOSE4 (NOQUIET && fr->p.verbose > 3)
-#define PVERB(mp, level) 0 /*(!((mp)->flags & MPG123_QUIET) && (mp)->verbose >= (level)) */
+#define PVERB(mp, level) (!((mp)->flags & MPG123_QUIET) && (mp)->verbose >= (level))
 
 int decode_update(mpg123_handle *mh);
 /* residing in format.c  */
+off_t samples_to_storage(mpg123_handle *fr , off_t s);
 off_t samples_to_bytes(mpg123_handle *fr , off_t s);
 off_t bytes_to_samples(mpg123_handle *fr , off_t b);
+/* Postprocessing format conversion of freshly decoded buffer. */
+void postprocess_buffer(mpg123_handle *fr);
+
+/* If networking is enabled and we really mean internal networking, the timeout_read function is available. */
+#if defined (NETWORK) && !defined (WANT_WIN32_SOCKETS)
+/* Does not work with win32 */
+#define TIMEOUT_READ
+#endif
 
 #endif

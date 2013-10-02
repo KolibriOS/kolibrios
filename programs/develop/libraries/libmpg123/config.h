@@ -2,11 +2,20 @@
 /* src/config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define if your architecture wants/needs/can use attribute_align_arg and
-   alignment checks. It's for 32bit x86... */
+   alignment checks. It is for 32bit x86... */
 #define ABI_ALIGN_FUN 1
 
 /* Define to use proper rounding. */
 /* #undef ACCURATE_ROUNDING */
+
+/* Define if building universal (internal helper macro) */
+/* #undef AC_APPLE_UNIVERSAL_BUILD */
+
+/* Define if .balign is present. */
+#define ASMALIGN_BALIGN 1
+
+/* Define if .align just takes byte count. */
+/* #undef ASMALIGN_BYTE */
 
 /* Define if .align takes 3 for alignment of 2^3=8 bytes instead of 8. */
 /* #undef ASMALIGN_EXP */
@@ -14,20 +23,20 @@
 /* Define if __attribute__((aligned(16))) shall be used */
 #define CCALIGN 1
 
-/* Define if checking of stack alignment is wanted. */
-#define CHECK_ALIGN 1
-
 /* Define if debugging is enabled. */
 /* #undef DEBUG */
 
 /* The default audio output module(s) to use */
-#define DEFAULT_OUTPUT_MODULE "win32"
+#define DEFAULT_OUTPUT_MODULE "dummy"
 
 /* Define if building with dynamcally linked libmpg123 */
 #define DYNAMIC_BUILD 1
 
+/* Use EFBIG as substitude for EOVERFLOW, mingw.org may lack the latter */
+#define EOVERFLOW EFBIG
+
 /* Define if FIFO support is enabled. */
-/* #undef FIFO */
+#define FIFO 1
 
 /* Define if frame index should be used. */
 #define FRAME_INDEX 1
@@ -77,6 +86,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 /* #undef HAVE_DLFCN_H */
 
+/* Define if getaddrinfo accepts the AI_ADDRCONFIG flag */
+/* #undef HAVE_GAI_ADDRCONFIG */
+
 /* Define to 1 if you have the `getaddrinfo' function. */
 /* #undef HAVE_GETADDRINFO */
 
@@ -108,7 +120,7 @@
 #define HAVE_LOCALE_H 1
 
 /* Define if libltdl is available */
-/* #undef HAVE_LTDL */
+#define HAVE_LTDL 1
 
 /* Define to 1 if you have the <machine/soundcard.h> header file. */
 /* #undef HAVE_MACHINE_SOUNDCARD_H */
@@ -150,7 +162,7 @@
 /* #undef HAVE_RANDOM */
 
 /* Define to 1 if you have the <sched.h> header file. */
-/* #undef HAVE_SCHED_H */
+#define HAVE_SCHED_H 1
 
 /* Define to 1 if you have the `sched_setscheduler' function. */
 /* #undef HAVE_SCHED_SETSCHEDULER */
@@ -236,9 +248,6 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
 
-/* Define to 1 if you have the <windows.h> header file. */
-#define HAVE_WINDOWS_H 1
-
 /* Define to indicate that float storage follows IEEE754. */
 #define IEEE_FLOAT 1
 
@@ -246,42 +255,46 @@
 #define INDEX_SIZE 1000
 
 /* Define if IPV6 support is enabled. */
-/* #undef IPV6 */
+#define IPV6 1
+
+/* Define this to the size of long type in bits, used for LFS small/native
+   alias functions. */
+#define LFS_ALIAS_BITS 32
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
 #define LT_OBJDIR ".libs/"
 
-/* Define if network support is enabled. */
-/* #undef NETWORK */
+/* The suffix for module files. */
+#define MODULE_FILE_SUFFIX ".la"
 
 /* Define to disable 16 bit integer output. */
 /* #undef NO_16BIT */
 
-/* Define to disable 32 bit integer output. */
+/* Define to disable 32 bit and 24 bit integer output. */
 #define NO_32BIT 1
 
 /* Define to disable 8 bit integer output. */
-#define NO_8BIT  1
+#define NO_8BIT 1
 
 /* Define to disable downsampled decoding. */
 /* #undef NO_DOWNSAMPLE */
 
 /* Define to disable error messages in combination with a return value (the
    return is left intact). */
-#define NO_ERETURN 1
+/* #undef NO_ERETURN */
 
 /* Define to disable error messages. */
-#define NO_ERROR 1
+/* #undef NO_ERRORMSG */
 
 /* Define to disable feeder and buffered readers. */
-#define NO_FEEDER 1
+/* #undef NO_FEEDER */
 
 /* Define to disable ICY handling. */
-#define NO_ICY   1
+/* #undef NO_ICY */
 
 /* Define to disable ID3v2 parsing. */
-#define NO_ID3V2 1
+/* #undef NO_ID3V2 */
 
 /* Define to disable layer I. */
 /* #undef NO_LAYER1 */
@@ -293,16 +306,16 @@
 /* #undef NO_LAYER3 */
 
 /* Define to disable ntom resampling. */
-#define NO_NTOM 1
+/* #undef NO_NTOM */
 
 /* Define to disable real output. */
 #define NO_REAL 1
 
 /* Define to disable string functions. */
-#define NO_STRING
+/* #undef NO_STRING */
 
 /* Define to disable warning messages. */
-#define NO_WARNING 1
+/* #undef NO_WARNING */
 
 /* Name of package */
 #define PACKAGE "mpg123"
@@ -314,13 +327,16 @@
 #define PACKAGE_NAME "mpg123"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "mpg123 1.9.0"
+#define PACKAGE_STRING "mpg123 1.15.4"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "mpg123"
 
+/* Define to the home page for this package. */
+#define PACKAGE_URL ""
+
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.9.0"
+#define PACKAGE_VERSION "1.15.4"
 
 /* Define if portaudio v18 API is wanted. */
 /* #undef PORTAUDIO18 */
@@ -344,10 +360,27 @@
 #define STDC_HEADERS 1
 
 /* Define if modules are enabled */
-/* #undef USE_MODULES */
+#define USE_MODULES 1
 
 /* Version number of package */
-#define VERSION "1.9.0"
+#define VERSION "1.15.4"
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+/* #  undef WORDS_BIGENDIAN */
+# endif
+#endif
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */
@@ -384,3 +417,6 @@
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef uint32_t */
+
+/* Define to `unsigned long' if <sys/types.h> does not define. */
+/* #undef uintptr_t */

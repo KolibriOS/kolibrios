@@ -41,7 +41,7 @@ null_one:
 	.long	65535
 
 	.text
-	ALIGN16,,15
+	ALIGN16
 	/* void SYNTH_NAME(real *bandPtr, int channel, short *samples, short *buffs, int *bo, float *decwins) */
 .globl SYNTH_NAME
 SYNTH_NAME:

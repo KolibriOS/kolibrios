@@ -31,8 +31,6 @@ struct cpuflags
 	unsigned int ext;
 };
 
-extern struct cpuflags cpu_flags;
-
 unsigned int getcpuflags(struct cpuflags* cf);
 
 /* checks the family */
