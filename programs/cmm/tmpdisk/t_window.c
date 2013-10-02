@@ -6,7 +6,7 @@
 #ifdef LANG_RUS
 	unsigned char *but_text[]={
 	"Добавить диск [F2]",
-	"Удалить диск [Del]",
+	"Удалить диск [Ins]",
 	"Добавить [Ctrl+Enter]",
 	0};
 	
@@ -21,7 +21,7 @@
 #else
 	unsigned char *but_text[]={
 	"Add disk [F2]",
-	"Delete disk [Del]",
+	"Delete disk [Ins]",
 	"Add [Ctrl+Enter]",
 	0};
 	
@@ -126,7 +126,7 @@ void Main_Window()
 				break;
 			}
 			if (key==182) if (disk_num<>0) goto _DEL_DISK;
-			if (key==51) AddDisk();
+			if (key==185) AddDisk();
 			if (key==13) OpenTmpDisk();
 			if (key==178)
 			{
