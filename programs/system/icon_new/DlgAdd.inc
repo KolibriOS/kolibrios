@@ -367,7 +367,14 @@ proc DRedraw
         mcall   12,1            ;RedrawWinBeg
         mov     edx,[sc.work]
         or      edx,33000000h
-        mcall   0,<100,400>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+185>,,,DTitle
+        cmp     [DlgSelIcon],-1
+        jne      @f
+        mov     edi,DTitleAdd
+        jmp     .l1
+      @@:
+        mov     edi,DTitleProp
+      .l1:
+        mcall   0,<100,400>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+185>,,,
 
         stdcall [edit_box_draw],edtName
         stdcall [edit_box_draw],edtExePath

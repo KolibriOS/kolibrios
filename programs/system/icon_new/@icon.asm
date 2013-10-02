@@ -48,7 +48,6 @@ START:          ; start of execution
         stdcall dll.Load,IMPORTS
         test    eax,eax
         jnz     ErrLoadLibs
-;-------------------------------------------------------------------------------
 
 ; unpack deflate
         mov     eax,[unpack_DeflateUnpack2]
@@ -141,8 +140,11 @@ START:          ; start of execution
         and     eax,0FFh
         mov     [sbIcons.max_area],eax
 
-        stdcall [OpenDialog_Init],OpenDialog_data
-
+  ;    int3
+;        mov     eax,1
+;        mov     eax,[IconsOffs+eax*4]
+;        stdcall [ini_del_section],IconIni,eax
+;    ret
         jmp     MSGRedrawIcons
 
 messages:
@@ -298,7 +300,6 @@ LButtonPress:
 
 ;-------------------------------------------------------------------------------
 MovingIcon:
-;int3
         stdcall GetNumIcon,[MouseX],[MouseY],-1
         mov     [SelIcon],eax
         stdcall RestoreBackgrnd,[SelIcon]
@@ -367,9 +368,9 @@ MovingIcon:
 ;qweqwe:
 
         mov    [MovingActiv],1
-        mcall   51,1,MovingWnd,stack_move        ;CreateThread MovingWnd,stack_dlg
+        mcall   51,1,MovingWnd,stack_dlg        ;CreateThread MovingWnd,stack_dlg
    .WaitLB:
-        mcall   37,2            ;GetMouseKey
+        mcall   37,2    ;GetMouseKey
         test    al,001b
         jz      .endWaitLB
 
@@ -456,7 +457,7 @@ RButtonPress:
         jmp     @b
      @@:
 
-        mcall   51,1,RButtonWin,stack_rb       ;CreateThread RButtonWin,stack_dlg
+        mcall   51,1,RButtonWin,stack_dlg       ;CreateThread RButtonWin,stack_dlg
 
         jmp     messages
 
@@ -1184,8 +1185,6 @@ RButtonActiv    dd 0
 MovingActiv     dd 0
 DlgAddActiv     dd 0
 
-slotDlgAdd      dd 0
-
 IconIni         db '/rd/1/icon.ini',0
 
 
@@ -1195,6 +1194,7 @@ keyParams       db 'param',0
 keyIco          db 'ico',0
 keyX            db 'x',0
 keyY            db 'y',0
+keyMenuColor    db 'menucolor',0
 
 ;-------------------------------------------------------------------------------
 IMPORTS:
@@ -1243,7 +1243,6 @@ import  libini,\
 ;----- RButton.inc -------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 secRButt        db 'rbmenu',0
-keyMenuColor    db 'menucolor',0
 
 if lang eq ru
  RMenuRedrawFon db 'Перерисовать',0
@@ -1253,14 +1252,7 @@ if lang eq ru
  RMenuProp      db 'Свойства',0
  RMenuOffMoving db 'Закрепить иконки',0
  RMenuOnMoving  db 'Открепить иконки',0
-else if lang eq et
- RMenuRedrawFon db 'Vфrskenda',0
- RMenuAlign     db 'Tїmme vїrgule',0
- RMenuAdd       db 'Lisa',0
- RMenuDel       db 'Kustuta',0
- RMenuProp      db 'Omadused',0
- RMenuOffMoving db 'Paranda ikoonid',0
- RMenuOnMoving  db '─ra paranda ikoone',0
+
 else
 
  RMenuRedrawFon db 'Redraw',0
@@ -1278,10 +1270,7 @@ if lang eq ru
  ErrRunProg     db 'Ошибка запуска программы',0
  WarningSave    db 'Не забудьте сохранить изменения, запустить RDSave',0
  ErrNotFoundIni db 'Не найден icon.ini',0
-else if lang eq et
- ErrRunProg     db 'Programmi kфivitamise viga',0
- WarningSave    db '─ra unusta muudatusi salvestada, kфivita RDSave',0
- ErrNotFoundIni db 'icon.ini ei leitud',0
+
 else
 
  ErrRunProg     db 'Error runing program',0
@@ -1297,35 +1286,27 @@ pthNotify       db '/rd/1/@notify',0
 ;------- AddDlg.inc ---------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 if lang eq ru
-DTitle          db 'Добавить иконку',0
+DTitleAdd       db 'Добавить иконку',0
+DTitleProp      db 'Изменить иконку',0
 
 DCaptName       db 'Имя',0
 DCaptPath       db 'Путь',0
 DCaptParams     db 'Параметры',0
 DCaptIcon       db 'Иконка',0
+;DCaptChange     db '.',0
 DCaptCreate     db 'Создать',0
 DCaptProperties db 'Изменить',0
 DCaptCancel     db 'Отменить',0
 
-else if lang eq et
-DTitle          db 'Lisa ikoon',0
-
-DCaptName       db 'Nimi',0
-DCaptPath       db 'Asukoht',0
-DCaptParams     db 'Parameetrid',0
-DCaptIcon       db 'Ikoon',0
-;DCaptChange     db '.',0
-DCaptCreate     db 'Loo',0
-DCaptProperties db 'Muuda',0
-DCaptCancel     db 'Katkesta',0
-
 else
-DTitle          db 'Add icon',0
+DTitleAdd       db 'Add icon',0
+DTitleProp      db 'Change icon',0
 
 DCaptName       db 'Name',0
 DCaptPath       db 'Path',0
 DCaptParams     db 'Parameters',0
 DCaptIcon       db 'Icon',0
+;DCaptChange     db '.',0
 DCaptCreate     db 'Create',0
 DCaptProperties db 'Change',0
 DCaptCancel     db 'Cancel',0
@@ -1427,6 +1408,7 @@ AddY            rd 1
 
 SelIcon         rd 1
 DlgSelIcon      rd 1
+slotDlgAdd      rd 1
 
 sc              system_colors
 
@@ -1434,6 +1416,7 @@ align 4
 bufStdIco       rb 40
 IconsOffs       rd 100
 PIcoDB          rd 1
+
 
 align 4
 icon_count      rd 1
@@ -1451,7 +1434,7 @@ RMenuH          rw 1
 RMenuHsb        rw 1
 
 MaxPage         rd 1
-
+RBMenuColor     rd 1
 mouse_dd        rd 1
 
 DAreaName       rb NAME_LENGTH+1
@@ -1461,17 +1444,12 @@ DAreaIcon       rb 256+1
 
 align 4
 RBProcInfo      rb 1024
-RBMenuColor     rd 1
-
-
+align 4
 
 ; OpenDialog
 temp_dir_pach   rb 1024
 fname_Info      rb 1024
 ;-------------------------------------------------------------------------------
-                rb 256
-stack_move:
-stack_rb:
                 rb 1024
 stack_dlg:
 align 4
