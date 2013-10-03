@@ -109,6 +109,10 @@ download:
         DEBUGF  1, "Starting download\n"
 
         call    parse_url
+
+        cmp     [server_ip], 0
+        je      error
+
         call    open_socket
         call    send_request
 
