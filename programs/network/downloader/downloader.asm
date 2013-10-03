@@ -111,7 +111,7 @@ download:
         call    parse_url
 
         cmp     [server_ip], 0
-        je      error
+        je      dns_error
 
         call    open_socket
         call    send_request
@@ -129,6 +129,7 @@ download:
 
         mcall   68, 13, [final_buffer]  ; free buffer
 
+dns_error:
         cmp     byte [params], 0
         jne     exit
 
