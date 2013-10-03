@@ -5,8 +5,8 @@
 
 #ifdef LANG_RUS
 	unsigned char *but_text[]={
-	"Добавить диск [F2]",
-	"Удалить диск [Ins]",
+	"Добавить диск [Ins]",
+	"Удалить диск [Del]",
 	"Добавить [Ctrl+Enter]",
 	0};
 	
@@ -20,8 +20,8 @@
 	
 #else
 	unsigned char *but_text[]={
-	"Add disk [F2]",
-	"Delete disk [Ins]",
+	"Add disk [Ins]",
+	"Delete disk [Del]",
 	"Add [Ctrl+Enter]",
 	0};
 	
