@@ -12,11 +12,15 @@ use32
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
 include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
-include '../trunk/mem.inc'
-include '../trunk/dll.inc'
+include '../../../../programs/dll.inc'
+
+vox_offs_tree_table equ 4
+vox_offs_data equ 12
+txt_buf rb 8
+include '../trunk/vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel creator 8.08.12',0 ;подпись окна
+caption db 'Voxel creator 03.10.13',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -386,29 +390,6 @@ need_node:
 	.end_f:
 	ret
 
-;
-;x0y0 - x1y0
-;x1y0 - x1y1
-;x0y1 - x0y0
-;x1y1 - x0y1
-align 4
-proc vox_obj_rot_z uses eax ebx ecx, v_obj:dword
-	mov ebx,[v_obj]
-	add ebx,vox_offs_tree_table
-	mov ecx,2
-	cld
-	@@:
-		mov eax,dword[ebx]
-		mov byte[ebx+1],al
-		mov byte[ebx+3],ah
-		shr eax,16
-		mov byte[ebx],al
-		mov byte[ebx+2],ah
-		add ebx,4
-		loop @b
-	ret
-endp
-
 align 4
 draw_window:
 pushad
@@ -524,6 +505,7 @@ draw_pok:
 	;обновление подписи размера файла
 	mov edi,txt_f_size.size
 	mov dword[edi],0
+	mov dword[edi+4],0
 	mov eax,dword[vox_obj_size]
 	mov ebx,txt_pref
 	.cycle:
@@ -533,6 +515,7 @@ draw_pok:
 		add ebx,4
 		jmp .cycle
 	@@:
+
 	call convert_int_to_str
 	stdcall str_cat, edi,ebx
 	stdcall str_cat, edi,txt_space ;завершающий пробел

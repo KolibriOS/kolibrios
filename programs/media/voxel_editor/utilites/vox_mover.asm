@@ -12,9 +12,9 @@ use32
 include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
 include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
-include '../trunk/mem.inc'
-include '../trunk/dll.inc'
+include '../../../../programs/dll.inc'
 include '../trunk/vox_draw.inc'
+include '../trunk/vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'Voxel mover 13.09.12',0 ;подпись окна

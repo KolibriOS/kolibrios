@@ -14,9 +14,10 @@ include '../../../../programs/proc32.inc'
 include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
 include '../../../dll.inc'
 include 'vox_draw.inc'
+include 'vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 16.11.12',0 ;подпись окна
+caption db 'Voxel editor 03.10.13',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -33,7 +34,7 @@ image_data dd 0 ;указатель на временную память. для нужен преобразования изображ
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*23
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*24
 image_data_toolbar dd 0
 cursors_count equ 4
 IMAGE_CURSORS_SIZE equ 4096*cursors_count ;размер картинки с курсорами
@@ -512,6 +513,9 @@ pushad
 	add ebx,25 shl 16
 	mov edx,25
 	int 0x40
+	add ebx,25 shl 16
+	mov edx,26
+	int 0x40
 
 	; *** рисование иконок на кнопках ***
 	mov eax,7
@@ -537,10 +541,13 @@ pushad
 	add edx,(25 shl 16) ;camera 3g 2g
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;поворот 1
+	add edx,(25 shl 16) ;поворот z
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;поворот 2
+	add edx,(25 shl 16) ;поворот x
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;поворот y
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;сдвиг плоскости +
@@ -717,70 +724,74 @@ button:
 	@@:
 	cmp ah,9
 	jne @f
-		call but_3
+		call but_r_z
 	@@:
 	cmp ah,10
 	jne @f
-		call but_4
+		call but_r_x
 	@@:
 	cmp ah,11
 	jne @f
-		call but_plane_inc
+		call but_r_y
 	@@:
 	cmp ah,12
 	jne @f
-		call but_plane_dec
+		call but_plane_inc
 	@@:
 	cmp ah,13
 	jne @f
-		call but_mode_pen
+		call but_plane_dec
 	@@:
 	cmp ah,14
 	jne @f
-		call but_mode_brush
+		call but_mode_pen
 	@@:
 	cmp ah,15
 	jne @f
-		call but_mode_clear
+		call but_mode_brush
 	@@:
 	cmp ah,16
+	jne @f
+		call but_mode_clear
+	@@:
+	cmp ah,17
 	jne @f
 		stdcall set_pen_mode,PEN_MODE_SELECT_COLOR,3,((9 shl 8)+9) shl 16
 		call draw_palete
 	@@:
-	cmp ah,17
+	cmp ah,18
 	jne @f
 		call but_light
 	@@:
-	cmp ah,18
+	cmp ah,19
 	jne @f
 		call but_rend_2_2
 	@@:
-	cmp ah,19
+	cmp ah,20
 	jne @f
 		call but_brush_copy
 	@@:
-	cmp ah,20
+	cmp ah,21
 	jne @f
 		call but_brush_draw
 	@@:
-	cmp ah,21
+	cmp ah,22
 	jne @f
 		call but_brush_clear
 	@@:
-	cmp ah,22
+	cmp ah,23
 	jne @f
 		call but_bru_w_m
 	@@:
-	cmp ah,23
+	cmp ah,24
 	jne @f
 		call but_bru_w_p
 	@@:
-	cmp ah,24
+	cmp ah,25
 	jne @f
 		call but_bru_h_m
 	@@:
-	cmp ah,25
+	cmp ah,26
 	jne @f
 		call but_bru_h_p
 	@@:
@@ -976,14 +987,20 @@ but_zoom_m:
 	ret
 
 align 4
-but_3:
+but_r_z:
 	stdcall vox_obj_rot_z, [open_file_vox]
 	call draw_objects
 	ret
 
 align 4
-but_4:
+but_r_x:
 	stdcall vox_obj_rot_x, [open_file_vox]
+	call draw_objects
+	ret
+
+align 4
+but_r_y:
+	stdcall vox_obj_rot_y, [open_file_vox]
 	call draw_objects
 	ret
 

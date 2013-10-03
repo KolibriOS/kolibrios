@@ -87,56 +87,6 @@ proc get_mouse_ev_scale uses ebx ecx edx, h_br:dword, coord_x:dword, coord_y:dwo
 endp
 
 ;
-;x0y0 - x1y0
-;x1y0 - x1y1
-;x0y1 - x0y0
-;x1y1 - x0y1
-align 4
-proc vox_obj_rot_z uses eax ebx ecx, v_obj:dword
-	mov ebx,[v_obj]
-	add ebx,vox_offs_tree_table
-	mov ecx,2
-	cld
-	@@:
-		mov eax,dword[ebx]
-		mov byte[ebx+1],al
-		mov byte[ebx+3],ah
-		shr eax,16
-		mov byte[ebx],al
-		mov byte[ebx+2],ah
-		add ebx,4
-		loop @b
-	ret
-endp
-
-;
-;y0z0 - y0z1
-;y0z1 - y1z1
-;y1z1 - y1z0
-;y1z0 - y0z0
-align 4
-proc vox_obj_rot_x uses eax ebx ecx, v_obj:dword
-	mov ebx,[v_obj]
-	add ebx,vox_offs_tree_table
-	mov eax,dword[ebx]
-	mov ecx,dword[ebx+4]
-
-	mov byte[ebx+4],al
-	mov byte[ebx+5],ah
-	shr eax,16
-	mov byte[ebx+0],al
-	mov byte[ebx+1],ah
-
-	mov byte[ebx+6],cl
-	mov byte[ebx+7],ch
-	shr ecx,16
-	mov byte[ebx+2],cl
-	mov byte[ebx+3],ch
-
-	ret
-endp
-
-;
 ;output:
 ; eax - число узлов в объекте v_obj
 align 4
