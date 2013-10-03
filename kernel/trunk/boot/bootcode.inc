@@ -433,7 +433,7 @@ sayerr:
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found_1 ; Parallel IDE Controller
+        jnc     .found ; Parallel IDE Controller
 ; Controller not found!
         xor     ax, ax
         mov     [es:BOOT_IDE_PI_16], ax
