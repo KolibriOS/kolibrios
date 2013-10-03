@@ -36,11 +36,14 @@ BegData         equ fiStdIco.point
         dd 0            ; path
 ;------------------------------------------------------------------------------
 include 'lang.inc'
+include 'lang.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 ;include '../../debug.inc'
+
+include 'bgredraw.inc'
 
 ;------------------------------------------------------------------------------
 START:          ; start of execution
@@ -128,7 +131,7 @@ START:          ; start of execution
 
         call    FillIconsOffs
 
-        mcall   40,0110000b
+        mcall   40,0100000b
 
         mov     eax,[icon_count]
         mov     bl,ICONS_DRAW_COUNTH
@@ -145,40 +148,17 @@ START:          ; start of execution
 ;        mov     eax,[IconsOffs+eax*4]
 ;        stdcall [ini_del_section],IconIni,eax
 ;    ret
-        jmp     MSGRedrawIcons
+        ;jmp     MSGRedrawIcons
+        mcall   51,1,BGRedrawThread,stack_bredraw
+
 
 messages:
         mcall   10
-        sub     eax,5
-        jz      MSGRedrawIcons
-        dec     eax
+        sub     eax,6
         jz      MSGMouse
 
         jmp     messages
 
-MSGRedrawIcons:
-
-        mcall   48,5
-        mov     dx,ax
-        shr     eax,16
-        sub     dx,ax
-        mov     [ScreenX],dx
-        mov     ax,bx
-        shr     ebx,16
-        sub     ax,bx
-        mov     [ScreenY],ax
-
-        mov     ecx,[MaxNumIcon]
-        test    ecx,ecx
-        jz      .NoDraw
-        xor     ebx,ebx
-    @@: push    ecx
-        stdcall DrawIcon,ebx,0
-        inc     ebx
-        pop     ecx
-        loop    @b
-   .NoDraw:
-        jmp     messages
 
 MSGMouse:
         mcall   37,0    ;GetMousePos
@@ -260,6 +240,7 @@ LButtonPress:
       @@:
         ;Yield
         mcall   5,1     ;Sleep   1
+
         jmp     WaitLB
    endWaitLB:
 
@@ -302,6 +283,7 @@ LButtonPress:
 MovingIcon:
         stdcall GetNumIcon,[MouseX],[MouseY],-1
         mov     [SelIcon],eax
+        mov     [IconNoDraw],eax
         stdcall RestoreBackgrnd,[SelIcon]
 
 ;        mov     ecx,[MaxNumIcon]
@@ -440,6 +422,7 @@ MovingIcon:
 
         mov     [bNotSave],1
 
+        mov     [IconNoDraw],-1
         jmp     messages
 
 ;-------------------------------------------------------------------------------
@@ -1176,6 +1159,7 @@ IconsFile       db ICON_STRIP,0
 NameIconsDat    db ICONS_DAT,0
 align 4
 MaxNumIcon      dd 0           ;количество иконок
+IconNoDraw      dd -1           ;-1 либо номер иконки, которую не надо рисовать( когда её таскают :))
 
 bFixIcons       dd 1
 bNotSave        dd 0
@@ -1186,6 +1170,7 @@ MovingActiv     dd 0
 DlgAddActiv     dd 0
 
 IconIni         db '/rd/1/icon.ini',0
+
 
 
 ;keyName         db 'name',0
@@ -1453,6 +1438,8 @@ fname_Info      rb 1024
                 rb 1024
 stack_dlg:
 align 4
+                rb 1024
+stack_bredraw:
                 rb 1024
 stack_area:
 ;------------------------------------------------------------------------------
