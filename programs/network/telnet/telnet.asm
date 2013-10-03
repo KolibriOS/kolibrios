@@ -257,8 +257,14 @@ thread:
         mcall   40, 0
   .loop:
         call    [con_getch2]
-        mov     byte [send_data], al
-        mcall   send, [socketnum], send_data, 1
+        mov     [send_data], ax
+        xor     esi, esi
+        inc     esi
+        test    al, al
+        jnz     @f
+        inc     esi
+  @@:
+        mcall   send, [socketnum], send_data
 
         call    [con_get_flags]
         test    eax, 0x200                      ; con window closed?
@@ -268,7 +274,11 @@ thread:
 ; data
 title   db      'Telnet',0
 str1    db      'Telnet for KolibriOS',10,10,\
-                'Please enter URL of telnet server (for example: towel.blinkenlights.nl:23)',10,10,0
+                'Please enter URL of telnet server (host:port)',10,10,\
+                'fun stuff:',10,\
+                'telehack.com            - arpanet simulator',10,\
+                'towel.blinkenlights.nl  - ASCII Star Wars',10,\
+                'miku.acm.uiuc.edu       - Nyan cat',10,10,0
 str2    db      '> ',0
 str3    db      'Connecting to ',0
 str4    db      10,0
@@ -316,7 +326,7 @@ i_end:
 
 socketnum       dd ?
 buffer_ptr      rb BUFFERSIZE+1
-send_data       rb 1
+send_data       dw ?
 
 hostname        rb 1024
 
