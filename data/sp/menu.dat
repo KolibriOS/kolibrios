@@ -136,6 +136,7 @@ Network status            /sys/network/netstat
 FTP daemon                /sys/network/ftpd
 #17   **** CLIENTES ****
 Cliente IRC               /sys/network/ircc
+Cliente FTP               /sys/network/ftpc
 Cliente TFTP              /sys/network/tftpc
 Ping                      /sys/network/ping
 Cliente Telnet            /sys/network/telnet

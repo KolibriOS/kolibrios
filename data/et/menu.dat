@@ -136,6 +136,7 @@ Võrgu staatus             /sys/network/netstat
 FTP daemon                /sys/network/ftpd
 #17   **** CLIENTS ****
 IRC klient                /sys/network/ircc
+FTP klient                /sys/network/ftpc
 TFTP klient               /sys/network/tftpc
 Ping                      /sys/network/ping
 Telnet klient             /sys/network/telnet

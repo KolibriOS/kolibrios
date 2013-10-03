@@ -135,6 +135,7 @@ Network status            /sys/network/netstat
 Demone FTP                /sys/network/ftpd
 #17   **** CLIENTS ****
 Client IRC                /sys/network/ircc
+Client FTP                /sys/network/ftpc
 Client TFTP               /sys/network/tftpc
 Ping                      /sys/network/ping
 Client Telnet             /sys/network/telnet

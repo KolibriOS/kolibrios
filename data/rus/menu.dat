@@ -140,6 +140,7 @@ Network status            /sys/network/netstat
 FTP daemon                /sys/network/ftpd
 #17   **** CLIENTS ****
 IRC client                /sys/network/ircc
+FTP client                /sys/network/ftpc
 TFTP client               /sys/network/tftpc
 Ping                      /sys/network/ping
 Telnet client             /sys/network/telnet
