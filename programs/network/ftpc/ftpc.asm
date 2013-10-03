@@ -348,6 +348,8 @@ str_unknown     db "Unknown command or insufficient parameters - type help for m
 str_lcwd        db "Local working directory is now: ",0
 
 str_open        db "opening data socket",10,0
+str_close       db "closing data socket",10,0
+str2b           db '.',0
 
 str_help        db "available commands:",10
                 db 10

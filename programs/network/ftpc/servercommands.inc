@@ -12,7 +12,7 @@ server_parser:
         je      welcome
 
 ;        cmp     dword[s], "226 "
-;        je      list_ok
+;        je      transfer_ok
 
         cmp     dword[s], "227 "
         je      pasv_ok
@@ -100,6 +100,8 @@ pasv_ok:
 
 data_ok:
 
+        invoke  con_write_asciiz, str2b
+
         cmp     [operation], OPERATION_STOR
         je      .stor
 
@@ -143,12 +145,14 @@ data_ok:
         mcall   send, [datasocket], buffer_ptr2, , 0
 
   .done:
+        invoke  con_write_asciiz, str_close
         mcall   close, [datasocket]
         jmp     wait_for_servercommand
 
 
 
 close_datacon:
+        invoke  con_write_asciiz, str_close
         mcall   close, [datasocket]
         jmp     wait_for_usercommand
 
