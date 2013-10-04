@@ -17,6 +17,7 @@
 
 	?define NOTIFY_TEXT_NO_DISK    "Для начала добавьте хотя бы один диск"
 	?define NOTIFY_TEXT_DISK_LIMIT "Достигнут предел количества виртуальных дисков"
+	?define FREE_RAM_TEXT "Размер свободной оперативной памяти: "
 	
 #else
 	unsigned char *but_text[]={
@@ -32,6 +33,7 @@
 
 	?define NOTIFY_TEXT_NO_DISK    "You need to have at least one disk"
 	?define NOTIFY_TEXT_DISK_LIMIT "Reached the limit of the number of virtual disks"
+	?define FREE_RAM_TEXT "Free RAM size: "
 #endif
 
 struct path_string { unsigned char Item[256]; };
@@ -51,12 +53,8 @@ unsigned char icons[14*56] = FROM "icons.raw";
 #define BOTPANELH 20
 
 int	mouse_dd;
-char disk_size[30]="\0";
-#ifdef LANG_RUS
-edit_box edit_disk_size= {60,50,5,0xffffff,0x94AECE,0x000000,0xffffff,0,sizeof(disk_size)+2,#disk_size,#mouse_dd, 0b100000000000000};
-#else
-edit_box edit_disk_size= {60,40,5,0xffffff,0x94AECE,0x000000,0xffffff,0,sizeof(disk_size)+2,#disk_size,#mouse_dd, 0b100000000000000};
-#endif
+char disk_size[30];
+edit_box edit_disk_size= {50,0,5,0xffffff,0x94AECE,0x000000,0xffffff,0,4,#disk_size,#mouse_dd, 1000000000000010b};
 
 void Main_Window()
 {
@@ -69,13 +67,14 @@ void Main_Window()
 	fr = itoa(fr / 2048);
 	strcat(#disk_size, fr);
 	edit_disk_size.size = strlen(#disk_size);
+	edit_disk_size.left = strlen(INTRO_TEXT_4)*6 + 10;
 	SetEventMask(0x27);
 	loop()
 	{
 		switch(WaitEvent()) 
 		{
 		case evMouse:
-			IF (GetProcessSlot(Form.ID)-GetActiveProcess()!=0) break;
+			if (GetProcessSlot(Form.ID)-GetActiveProcess()!=0) break;
 			edit_box_mouse stdcall (#edit_disk_size);
 			break;
 			
@@ -157,27 +156,20 @@ void Main_Window()
 			break;
          case evReDraw:			
 			sc.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.47",0);
+			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.5",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
 			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
 			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.work_graph);
-			#ifdef LANG_RUS
 			WriteText(6, 9, 0x80, sc.work_text, INTRO_TEXT_4);
-			WriteText(117, 9, 0x80, sc.work_text, "MB.");
-			#else
-			WriteText(6, 9, 0x80, sc.work_text, INTRO_TEXT_4);
-			WriteText(107, 9, 0x80, sc.work_text, "MB.");
-			#endif
+			WriteText(edit_disk_size.left + edit_disk_size.width + 8, 9, 0x80, sc.work_text, "MB.");
 			edit_box_draw stdcall (#edit_disk_size);
-			x=6;
-			for (i=0; i<2; i++)
+			for (i=0, x=6; i<2; i++, x+=strlen(but_text[i])*6+37)
 			{
 				DefineButton(x,25, strlen(but_text[i])*6+28,19, 10+i, sc.work_button);
 				_PutImage(x+3,28,  14,14,   i*14*14*3+#icons);
 				WriteText(x+22,31, 0x80, sc.work_button_text, but_text[i]);
-				x+=strlen(but_text[i])*6+37; 
 			}			
 			GetDisks();
 			DrawTmpDisks();
@@ -226,13 +218,15 @@ unsigned int disk_pos_y[]={60,85,110,60,85,110,60,85,110,60,85,110};
 
 void DrawTmpDisks()
 {
+	char free_ram_text[60];
 	int i,FreeRAM=GetFreeRAM()/1024;
 	DrawBar(0,51, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
 	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
-	WriteText(10, Form.cheight-13, 0x80, sc.work_text, "Free RAM size:");
-	WriteText(100, Form.cheight-13, 0x80, sc.work_text, itoa(FreeRAM));
-	WriteText(strlen(itoa(FreeRAM))*6 + 100, Form.cheight-13, 0x80, sc.work_text, " MB");
+	strcpy(#free_ram_text, FREE_RAM_TEXT);
+	strcat(#free_ram_text, itoa(FreeRAM));
+	strcat(#free_ram_text, " MB");
+	WriteText(10, Form.cheight-13, 0x80, sc.work_text, #free_ram_text);
 	if (disk_num==0)
 	{
 		WriteText(17,65,    0x90, 0x777777, INTRO_TEXT_1);

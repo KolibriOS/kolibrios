@@ -3,6 +3,10 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef LANG_RUS
+	?define ADD_DISK_TEXT "пробую добавить виртуальный диск"
+	?define DELETE_DISK_TEXT "пробую удалить виртуальный диск"
+	?define DONT_KNOW_DISK_SIZE_TEXT "его размер не указан, 10% свободной ОЗУ будет использовано"
+	?define NEW_DISK_TEXT "размер диска будет: "
 	char *rezult_text[]={
 	"операция успешно завершена",
 	"неизвестный IOCTL, неверный размер предоставляемых данных...",
@@ -13,6 +17,10 @@
 	"неизвестная ошибка O_o",
 	0};
 #else
+	?define ADD_DISK_TEXT "trying to add disk"
+	?define DELETE_DISK_TEXT "trying to delete virtual disk"
+	?define DONT_KNOW_DISK_SIZE_TEXT "its size is not specified, 10% from free RAM will be used"
+	?define NEW_DISK_TEXT "new DiskSize: "
 	char *rezult_text[]={
 	"operation completed successfully",
 	"unknown IOCTL code, wrong input/output size...",
@@ -42,7 +50,7 @@ char Console_Work()
 			ExitProcess();
 			break;
 		case 'd': //єфрышЄ№ фшёъ
-			debug("trying to delete disk");
+			debug(DELETE_DISK_TEXT);
 			del_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
 			ioctl.io_code  = DEV_DEL_DISK;
@@ -52,20 +60,19 @@ char Console_Work()
 			ioctl.out_size = 0;
 			break;
 		case 'a': //фюсртшЄ№ фшёъ
-			debug("trying to add disk");
+			debug(ADD_DISK_TEXT);
 			disk_size= strchr(#param, 's');
 			if (!disk_size)
 			{
 				add_disk.DiskSize = GetFreeRAM() / 5;
-				debug("disk size is not specified");
-				strcpy(#size_t, "10% from free RAM will be used, new DiskSize: ");
-				strcat(#size_t, itoa(add_disk.DiskSize/2048));
-				strcat(#size_t, " MB");
-				debug(#size_t);
+				debug(DONT_KNOW_DISK_SIZE_TEXT);
 			}				
 			else
 				add_disk.DiskSize = atoi(#param+disk_size)*2048;
-
+			strcpy(#size_t, NEW_DISK_TEXT);
+			strcat(#size_t, itoa(add_disk.DiskSize/2048));
+			strcat(#size_t, " MB");
+			debug(#size_t);
 			add_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
 			ioctl.io_code  = DEV_ADD_DISK;
