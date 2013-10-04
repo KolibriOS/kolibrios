@@ -117,6 +117,7 @@ Read HDD                  /sys/hdread
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
+Virtual disks             /sys/tmpdisk
 SHELL konsool             /sys/shell
 Salvesta RD tõmmis        /sys/rdsave
 #14 **** DATA PROCESSING ****

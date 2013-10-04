@@ -1,52 +1,52 @@
-#0    **** MAIN ****
+#0    **** Главное меню ****
 Игры               >      /@1
 Демки              >      /@4
 Графика            >      /@6
 Мультимедиа        >      /@7
 Разработка         >      /@8
 Система            >      /@10
-Обработка данных   >      /@14
-Сеть               >      /@15
-Разное             >      /@18
-Помощь                    /sys/docpack
+Обработка данных   >      /@16
+Сеть               >      /@17
+Разное             >      /@20
+Документация              /sys/docpack
 Запуск программы          /sys/run
 Завершение работы         /sys/end
-#1    **** GAMES ****
+#1    **** Игры ****
 Логические         >      /@2
 Аркады             >      /@3
+RockeT ForceS             /sys/games/rforces
+Трубопровод               /sys/games/pipes
 Memory Blocks             /sys/games/mblocks
 FreeCell                  /sys/games/freecell
-Трубопровод               /sys/games/pipes
-Косилка                   /sys/games/kosilka
-RockeT ForceS             /sys/games/rforces
 Атака                     /sys/games/ataka
 Find Numbers              /sys/games/FindNumbers
-#2    **** ЛОГИЧЕСКИЕ ****
-C4                        /sys/games/c4
-15                        /sys/games/15
-Сапёр                     /sys/games/mine
-Just Clicks               /sys/games/clicks
-Шашки                     /sys/games/checkers
-SQ_Game                   /sys/games/sq_game
+#2    **** Игры -> Логические ****
 Цветные линии             /sys/games/lines
-Миллионер                 /sys/games/whowtbam
-Лабиринт                  /sys/games/megamaze
-Flood-it!                 /sys/games/flood-it
 Морской бой               /sys/games/sw
+Шашки                     /sys/games/checkers
 Судоку                    /sys/games/sudoku
 Гомоку                    /sys/games/gomoku
+Just Clicks               /sys/games/clicks
+Миллионер                 /sys/games/whowtbam
+SQ_Game                   /sys/games/sq_game
+C4                        /sys/games/c4
+15                        /sys/games/15
+Flood-it!                 /sys/games/flood-it
 Реверси                   /sys/games/reversi
-#3    **** АРКАДЫ ****
-Тетрис                    /sys/games/tetris
-Понг                      /sys/games/pong
-Новый Понг                /sys/games/pong3
-Red Square                /sys/games/rsquare
-Xonix                     /sys/games/xonix
+Сапёр                     /sys/games/mine
+Лабиринт                  /sys/games/megamaze
+#3    **** Игры -> Аркады ****
 ArcanII                   /sys/games/arcanii
-PheniX                    /sys/games/phenix
+Red Square                /sys/games/rsquare
 Падение                   /sys/games/padenie
+Косилка                   /sys/games/kosilka
 Змейка                    /sys/games/snake
-#4    **** DEMOS ****
+Тетрис                    /sys/games/tetris
+Xonix                     /sys/games/xonix
+PheniX                    /sys/games/phenix
+Новый Понг                /sys/games/pong3
+Понг                      /sys/games/pong
+#4    **** Демки ****
 Трёхмерные         >      /@5
 Кружок                    /sys/demos/circle
 Фрактал Мандельброта      /sys/demos/tinyfrac
@@ -60,7 +60,7 @@ TranTest                  /sys/demos/trantest
 Паутинка                  /sys/demos/web
 Фейерверк                 /sys/demos/firework
 UnvWater                  /sys/demos/unvwater
-#5    **** 3D demos ****
+#5    **** Демки -> 3D ****
 Скринсейвер               /sys/3d/crownscr
 3D-Лабиринт               /sys/3d/free3d04
 Сердце                    /sys/3d/3dsheart
@@ -69,17 +69,17 @@ CubeLine                  /sys/3d/cubeline
 Шестерёнки                /sys/3d/gears
 FlatWave                  /sys/3d/flatwav
 3D-Волны                  /sys/3d/3dwav
-#6    **** GRAPHICS ****
+#6    **** Графика ****
 Просмотр фото KIV         /sys/media/kiv
 Просмотр фото zSea        /KolibriOS/media/zsea/zsea
 Редактор Animage          /sys/media/animage
 Наложение фильтров        /sys/media/imgf/imgf
 Палитра                   /sys/media/palitra
-#7    **** MULTIMEDIA ****
-Fplay - видео             /KolibriOS/media/fplay-full
+#7    **** Мультимедиа ****
+Видеоплеер Fplay          /KolibriOS/media/fplay-full
 Midi-плеер                /sys/media/midamp
 CD-плейер                 /sys/media/cdp
-#8    **** PROGRAMMING ****
+#8    **** Разработка ****
 Примеры            >      /@9
 Упаковщик KPack           /sys/kpack
 Flat Assembler            /sys/develop/fasm
@@ -89,27 +89,27 @@ Flat Assembler            /sys/develop/fasm
 Hex2Dec2Bin               /sys/develop/h2d2b
 ASCII-коды                /sys/develop/keyascii
 SCAN-коды                 /sys/develop/scancode
-#9    **** EXAMPLES ****
+#9    **** Разработка -> Примеры ****
 Потоки                    /sys/develop/thread
 IPC                       /sys/develop/ipc
 Color Slider              /sys/demos/cslide
 Консольный пример 1       /sys/develop/testcon2
 Консольный пример 2       /sys/develop/test_gets
 Окна сообщений            /sys/demos/use_mb
-#10   **** SYSTEM ****
-Настройка          >      /@11
+#10    **** Система ****
+Настройки          >      /@11
 Системные сенсоры  >      /@12
 Работа с файлами   >      /@13
-Тестирование       >      /@19
-Спец. возможности  >      /@20
+Тестирование       >      /@14
+Спец. возможности  >      /@15
 Доска отладки             /sys/develop/board
-#11   **** SETUP ****
+#11    **** Система -> Настройки ****
 Устройства                /sys/setup
 Установить фон            /sys/media/palitra
 Стиль окон                /sys/desktop
-MyKey                     /sys/mykey
+Горячие клавиши           /sys/mykey
 Видеорежим для ATI        /sys/vmode
-#12   **** SENSORS ****
+#12    **** Система -> Сенсоры ****
 Диспетчер процессов       /sys/cpu
 PCI-устройства            /sys/pcidev
 CPUID                     /sys/cpuid
@@ -117,52 +117,53 @@ GHOST Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD информер              /sys/hdd_info
 Чтение HDD                /sys/hdread
-#13   **** File Managers ****
-KFAR                      /sys/File Managers/kfar
+#13    **** Система -> Работа с файлами ****
 KFM                       /sys/File Managers/kfm
+KFAR                      /sys/File Managers/kfar
 Eolite                    /sys/File Managers/Eolite
+Виртуальные диски         /sys/tmpdisk
 Консоль SHELL             /sys/shell
 Сохранение образа         /sys/rdsave
-#14   **** ОБРАБОТКА ДАННЫХ ****
+#14   **** Система -> Тестирование ****
+Тест монитора             /sys/disptest
+Графический бенчмарк      /sys/mgb
+Тест защиты               /sys/test
+#15   **** Система -> Спец.возможности ****
+Экранная лупа             /sys/magnify
+Экранная клавиатура       /sys/zkey
+Таблица символов          /sys/ASCIIVju
+#16    **** Обработка данных ****
 Калькулятор               /sys/calc
 Редактор Tinypad          /sys/tinypad
 Редактор TextEdit         /sys/develop/t_edit
 Табличный процессор       /sys/table
 Построение графиков       /sys/graph
 HEX-редактор              /sys/develop/heed
-#15   **** NET ****
-Серверы            >      /@16
-Клиенты            >      /@17
-Zero-Config               /sys/network/zeroconf
-Network Config            /sys/network/netcfg
-Network status            /sys/network/netstat
-#16    **** SERVERS ****
+#17    **** Сеть ****
+Серверы            >      /@18
+Клиенты            >      /@19
+Авто (network.ini)        /sys/network/zeroconf
+Найстройки сети           /sys/network/netcfg
+Статус подключения        /sys/network/netstat
+#18   **** Сеть -> Серверы ****
 FTP daemon                /sys/network/ftpd
-#17   **** CLIENTS ****
-IRC client                /sys/network/ircc
-FTP client                /sys/network/ftpc
-TFTP client               /sys/network/tftpc
+#19   **** Сеть -> Клиенты ****
+IRC клиент                /sys/network/ircc
+FTP клиент                /sys/network/ftpc
+TFTP клиент               /sys/network/tftpc
 Ping                      /sys/network/ping
-Telnet client             /sys/network/telnet
-Synergy client            /sys/network/synergyc
+Telnet                    /sys/network/telnet
+Synergy клиент            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
 Интернет загрузчик        /sys/network/downloader
 Текстовый браузер         /sys/htmlv
-#18   **** OTHER ****
-Аналоговые часы           /sys/demos/aclock
-Бинарные часы             /sys/demos/bcdclk
-Таймер                    /sys/demos/timer
+#20   **** Разное ****
 Создание скриншотов       /sys/scrshoot
 Календарь                 /sys/calendar
+Аналоговые часы           /sys/demos/aclock
 Просмотр RTF              /sys/rtfread
 Таблица Менделеева        /sys/period
 Тренажёр KJ|ABuIIIA       /sys/games/klavisha
-#19   **** SYSTEM TESTS ****
-Тест защиты               /sys/test
-Тест монитора             /sys/disptest
-Графический бенчмарк      /sys/mgb
-#20   **** SYSTEM SPECIAL ****
-Экранная лупа             /sys/magnify
-Экранная клавиатура       /sys/zkey
-Таблица символов          /sys/ASCIIVju
+Бинарные часы             /sys/demos/bcdclk
+Таймер                    /sys/demos/timer
 ##

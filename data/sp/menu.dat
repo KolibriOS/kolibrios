@@ -117,6 +117,7 @@ Leer HDD                  /sys/hdread
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
+Virtual disks             /sys/tmpdisk
 SHELL                     /sys/shell
 Guardar im gen RD         /sys/rdsave
 #14 **** PROCESO DE DATOS ****
