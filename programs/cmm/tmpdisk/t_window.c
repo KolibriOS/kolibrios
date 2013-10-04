@@ -66,7 +66,7 @@ void Main_Window()
 	fr = GetFreeRAM() / 5;
 	fr = itoa(fr / 2048);
 	strcat(#disk_size, fr);
-	edit_disk_size.size = strlen(#disk_size);
+	edit_disk_size.size = edit_disk_size.pos = strlen(#disk_size);
 	edit_disk_size.left = strlen(INTRO_TEXT_4)*6 + 10;
 	SetEventMask(0x27);
 	loop()
