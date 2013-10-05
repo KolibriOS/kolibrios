@@ -85,7 +85,7 @@ SystemColors colors;
 inline void fastcall mouse_enable()
 {
   $mov eax,40
-  $mov ebx,100111b
+  $mov ebx,0xC0000027
   $int 0x40
 }
 
@@ -93,7 +93,7 @@ inline void fastcall mouse_enable()
 inline void fastcall mouse_disable()
 {
   $mov eax,40
-  $mov ebx,000111b
+  $mov ebx,0xC0000007
   $int 0x40
 }
 
