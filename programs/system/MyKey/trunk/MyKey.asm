@@ -91,7 +91,7 @@ get_mykey_window_slot_number:
 	mov	[mykey_window], eax
 
 set_event_mask:
-	mcall	 40, 39
+	mcall	 40, 0xC0000027
 
 red:
       .test_slot:
@@ -899,9 +899,9 @@ RunProgram:
     ret
   .err_out:
     if lang eq it
-		print    "Impossibile caricare il programma"
+		print	 "Impossibile caricare il programma"
     else
-		print    "Can't load program"
+		print	 "Can't load program"
     end if
     popa
     stc
