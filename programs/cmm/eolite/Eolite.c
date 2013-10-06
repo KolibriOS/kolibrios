@@ -73,8 +73,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.96"
-#define ABOUT_TITLE "Eolite v1.96"
+#define TITLE "Eolite File Manager v1.97"
+#define ABOUT_TITLE "Eolite v1.97"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -666,18 +666,37 @@ void Del_Form()
 }
 
 	
+void Del_File2(dword way)
+{    
+	int del_rezult;
+	dword dirbuf, fcount, i, filename;
+	char del_from[4096], error;
+	del_rezult = DeleteFile(way);
+		if (del_rezult)
+		{
+			error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
+			for (i=0; i<fcount; i++)
+			{
+				filename = i*304+dirbuf+72;
+				strcpy(#del_from, way);
+				chrcat(#del_from, '/');
+				strcat(#del_from, filename);
+				if ( TestBit(ESDWORD[filename-40], 4) )
+					Del_File2(#del_from);
+				else
+					DeleteFile(#del_from);
+			}
+			DeleteFile(way);
+		}
+}
+
+
 void Del_File(byte dodel)
 {    
 	int del_rezult;
-	IF (dodel==true)
+	if (dodel==true)
 	{
-		del_rezult = DeleteFile(#file_path);
-		IF (del_rezult)
-		{
-			Write_Error(del_rezult);
-			IF ( itdir) ShowMessage(T_DEL_ERROR_1);
-			IF (!itdir) ShowMessage(T_DEL_ERROR_2);
-		}
+		Del_File2(#file_path);
  	}
 	del_active=0;
 	DeleteButton(301); DeleteButton(302);
