@@ -36,12 +36,11 @@ BegData         equ fiStdIco.point
         dd 0            ; path
 ;------------------------------------------------------------------------------
 include 'lang.inc'
-include 'lang.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
-;include '../../debug.inc'
+;include '../include/debug.inc'
 
 include 'bgredraw.inc'
 
@@ -412,17 +411,15 @@ MovingIcon:
       @@:
 
         stdcall SetPosition,[SelIcon],eax,ebx
-        mcall   15,3
+
 
         m2m     [PIcoDB],[BegData]
         stdcall [ini_enum_sections],IconIni,Ini_SavePos  ;in RButton.inc
 
-;        mov     dword[fInfo],2
-;        mcall   70,fInfo
-
         mov     [bNotSave],1
-
         mov     [IconNoDraw],-1
+        mcall   15,3
+
         jmp     messages
 
 ;-------------------------------------------------------------------------------
@@ -1106,7 +1103,6 @@ endp
 include 'RButton.inc'
 include 'DlgAdd.inc'
 include 'Moving.inc'
-;include 'Ico.inc'
 
 ;'Eolite',0,'/sys/File managers/eolite',0,'/hd0/3/Muzik',0,'1',0,00010001h
 ;-------------------------------------------------------------------------------
