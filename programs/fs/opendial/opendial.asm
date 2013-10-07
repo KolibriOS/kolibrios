@@ -658,6 +658,11 @@ button:
 	jmp	still
 ;---------------------------------------------------------------------
 .open_dir_or_file:
+	mov	eax,[file_browser_data_1.folder_data]
+	mov	eax,[eax+4]
+	test	eax,eax
+	jz	button.exit
+
 	cmp	[open_dialog_type],2	;Select	dir
 	je	file_no_folder
 	
