@@ -248,6 +248,8 @@ stack_init:
         mov     ecx, (NET_DEVICES_MAX + 2)
         rep stosd
 
+        ETH_init
+
         PPPoE_init
 
         IPv4_init
