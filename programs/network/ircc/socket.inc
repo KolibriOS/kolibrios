@@ -111,7 +111,7 @@ socket_write_userinfo:
         dec     ecx
         jnz     .loop
   .done:
-        mov     ax, 0x0d0a
+        mov     ax, 0x0a0d
         stosw
 
         mov     eax, 'USER'
@@ -144,7 +144,7 @@ socket_write_userinfo:
         dec     ecx
         jnz     .loop3
   .done3:
-        mov     ax, 0x0d0a
+        mov     ax, 0x0a0d
         stosw
 
         lea     esi, [edi - packetbuf]

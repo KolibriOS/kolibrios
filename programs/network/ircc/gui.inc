@@ -1,3 +1,15 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;                                                                 ;;
+;;         GNU GENERAL PUBLIC LICENSE                              ;;
+;;          Version 2, June 1991                                   ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 draw_window:
 
         pusha
@@ -47,7 +59,7 @@ draw_window:
         mov     ecx, TOP_Y SHL 16 + TOP_Y
         mcall
 
-        mov     edi, [window_open]
+        mov     edi, [window_active]
         cmp     [edi + window.type], WINDOWTYPE_CHANNEL
         jne     .not_channel
 
@@ -81,8 +93,7 @@ draw_window:
         call    [edit_box_draw]
 
 ; tabs
-
-        call    draw_windownames
+        call    draw_windowtabs
 
         popa
         ret
@@ -93,7 +104,7 @@ redraw_channel_list:
 
 ; First, calculate scrollbar
 
-        mov     ebx, [window_open]
+        mov     ebx, [window_active]
         mov     eax, [ebx + window.users]       ; number of users in the open window
         mov     [scroll1.max_area], eax
 
@@ -138,7 +149,6 @@ redraw_channel_list:
 print_channel_list:
 
         pusha
-; Now, draw the usernames themselves
 
 ; first, draw an invisible button
         mov     ebx, [xsize]
@@ -149,21 +159,21 @@ print_channel_list:
         mov     ecx, [ysize]
         add     ecx, TEXT_Y shl 16 - (TEXT_Y + 15)        ;;;;;   + 10???
         push    ecx ebx
-        mov     edx, 50 + 1 shl 29 + 1 shl 30
+        mov     edx, WINDOW_BTN_LIST + 1 shl 29 + 1 shl 30
         mcall   8
 
-; now draw rectangle to clear the names
+; draw rectangle to clear previously printed names
         pop     ebx ecx
         mov     edx, [colors.work]
         mcall   13
 
-; now draw the names according with scrollbar position and window size
+; now draw the names according to the scrollbar position and window size
         mov     eax, [scroll1.position]
         xor     edx, edx
         mov     ecx, MAX_NICK_LEN
         mul     ecx
         mov     edx, eax
-        mov     eax, [window_open]
+        mov     eax, [window_active]
         mov     ebp, [eax + window.selected]
         add     edx, [eax + window.data_ptr]
         sub     ebp, [scroll1.position]
@@ -269,12 +279,17 @@ draw_channel_text:
         pop     ecx
         loop    .dct
 
+        mov     eax, [window_active]
+        and     [eax + window.flags], not FLAG_UPDATED  ; clear the 'window is updated' flag
+
         popa
         ret
 
 
 
-draw_windownames:
+draw_windowtabs:
+
+; Create the buttons
 
         mov     eax, 8
         mov     ebx, 5 shl 16 + 120
@@ -283,7 +298,7 @@ draw_windownames:
         mov     edi, windows
   .more_btn:
         mov     esi, [colors.work_button]
-        cmp     [window_open], edi
+        cmp     [window_active], edi
         jne     @f
         not     esi
         and     esi, 0x00ffffff
@@ -295,21 +310,47 @@ draw_windownames:
         cmp     [edi + window.data_ptr], 0
         jne     .more_btn
 
+; Draw the windownames onto the buttons
+
         mov     eax, 4
         mov     ebx, 10 shl 16 + 15
-        mov     ecx, [colors.work_button_text]
-        or      ecx, 0x80000000         ; ASCIIZ string
-        lea     edx, [windows + window.name]
         mov     esi, MAX_WINDOWS
+        mov     edi, windows
   .more:
+        mov     ecx, [colors.work_button_text]
+        test    [edi + window.flags], FLAG_UPDATED
+        jz      @f
+        mov     ecx, 0x00aa0000 ; RED!
+  @@:
+        or      ecx, 0x80000000         ; ASCIIZ string
+        lea     edx, [edi + window.name]
         mcall
-        add     edx, sizeof.window
-        cmp     byte[edx], 0
+        add     edi, sizeof.window      ; get ptr to next window
+        cmp     [edi + window.data_ptr], 0
         je      .enough
         add     ebx, 125 shl 16
         dec     esi
         jnz     .more
   .enough:
+
+; Draw the close window button
+
+        mov     edi, [window_active]
+        cmp     [edi + window.type], WINDOWTYPE_SERVER  ; dont let the user close server window
+        je      @f
+
+        mov     eax, 8
+        mov     ebx, [xsize]
+        sub     ebx, 12
+        shl     ebx, 16
+        mov     bx, 12
+        mov     ecx, 6 shl 16 + 12
+        mov     edx, WINDOW_BTN_CLOSE
+;        mov     esi, [colors.work_button]
+        mov     esi, 0x00aa0000         ; red !
+        mcall
+
+  @@:
 
         ret
 

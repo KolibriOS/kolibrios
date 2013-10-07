@@ -66,6 +66,8 @@ TIMESTAMP               = 3     ; 3 = hh:mm:ss, 2 = hh:mm, 0 = no timestamp
 MAX_WINDOWNAME_LEN      = 256
 
 WINDOW_BTN_START        = 100
+WINDOW_BTN_CLOSE        = 2
+WINDOW_BTN_LIST         = 3
 
 SCROLLBAR_WIDTH         = 12
 
@@ -126,7 +128,7 @@ START:
         mcall   68, 11                  ; init heap so we can allocate memory dynamically
 
 ; wanted events
-        mcall   40,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_STACK+EVM_MOUSE+EVM_MOUSE_FILTER
+        mcall   40, EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_STACK+EVM_MOUSE+EVM_MOUSE_FILTER
 
 ; load libraries
         stdcall dll.Load, @IMPORT
@@ -182,12 +184,13 @@ START:
 ; get settings from ini
         invoke  ini.get_str, path, str_user, str_nick, user_nick, MAX_NICK_LEN, default_nick
         invoke  ini.get_str, path, str_user, str_real, user_real_name, MAX_REAL_LEN, default_real
+        invoke  ini.get_str, path, str_user, str_quitmsg, quit_msg, 250, default_quit
 
 ; Welcome user
         mov     esi, str_welcome
         call    print_text2
 
-        call    draw_window ;;; FIXME (gui is not correctly drawn first time)
+        call    draw_window ;;; FIXME (gui is not correctly drawn first time because of window sizes)
 
 redraw:
         call    draw_window
@@ -211,7 +214,7 @@ still:
 
         call    process_network_event
 
-        mov     edx, [window_open]
+        mov     edx, [window_active]
         test    [edx + window.flags], FLAG_UPDATED
         jz      .no_update
         and     [edx + window.flags], not FLAG_UPDATED
@@ -226,13 +229,22 @@ still:
 button:
 
         mcall   17              ; get id
-        shr     eax, 8
+        ror     eax, 8
 
         cmp     ax, 1           ; close program
         je      exit
 
-        cmp     ax, 50
+        cmp     ax, WINDOW_BTN_CLOSE
         jne     @f
+
+        call    window_close
+        jmp     still
+
+  @@:
+        cmp     ax, WINDOW_BTN_LIST
+        jne     @f
+
+        push    eax
 
         mcall   37, 1           ; Get mouse position
         sub     ax, TEXT_Y
@@ -241,10 +253,26 @@ button:
         and     eax, 0x000000ff
         inc     eax
         add     eax, [scroll1.position]
-        mov     ebx, [window_open]
+        mov     ebx, [window_active]
         mov     [ebx + window.selected], eax
 
         call    print_channel_list
+
+        pop     eax
+        test    eax, 1 shl 25   ; Right mouse button pressed?
+        jz      still
+
+; Right mouse BTN was pressed, open chat window
+        mov     ebx, [window_active]
+        mov     eax, [ebx + window.selected]
+        dec     eax
+        imul    eax, MAX_NICK_LEN
+        mov     ebx, [ebx + window.data_ptr]
+        lea     esi, [ebx + window_data.names + eax]
+        call    window_open
+        push    [window_print]
+        pop     [window_active]
+        call    redraw
 
         jmp     still
 
@@ -262,12 +290,20 @@ button:
         add     edx, windows
         cmp     [edx + window.data_ptr], 0
         je      exit
-        mov     [window_open], edx
+        mov     [window_active], edx
         call    window_refresh
         call    draw_window
 
         jmp     still
+
 exit:
+
+        cmp     [socketnum], 0
+        je      @f
+        mov     esi, quit_msg
+        call    cmd_usr_quit_server
+  @@:
+
         mcall   -1
 
 
@@ -290,7 +326,7 @@ main_window_key:
         push    dword edit1
         call    [edit_box_draw]
 
-        mov     edx, [window_open]
+        mov     edx, [window_active]
         mov     edx, [edx + window.data_ptr]
         add     edx, window_data.text
         call    draw_channel_text
@@ -348,9 +384,11 @@ str_user                db 'user', 0
 str_nick                db 'nick', 0
 str_real                db 'realname', 0
 str_email               db 'email', 0
+str_quitmsg             db 'quitmsg', 0
 
 default_nick            db 'kolibri_user', 0
 default_real            db 'Kolibri User', 0
+default_quit            db 'KolibriOS forever', 0
 
 str_welcome             db 10
                         db ' ______________________           __   __               __',10
@@ -397,7 +435,7 @@ irc_data                dd 0x0                  ; encoder
 textbox_width           dd 80                   ; in characters, not pixels ;)
 pos                     dd 66 * 11              ; encoder
 
-window_open             dd windows
+window_active           dd windows
 window_print            dd windows
 
 scroll                  dd 1
@@ -460,6 +498,7 @@ irc_server_name rb MAX_SERVER_NAME
 
 user_nick       rb MAX_NICK_LEN
 user_real_name  rb MAX_REAL_LEN
+quit_msg        rb 250
 
 windows         rb MAX_WINDOWS*sizeof.window
 

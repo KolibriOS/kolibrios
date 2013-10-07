@@ -28,7 +28,7 @@ user_parser:
 
 ; TODO: dont send if it's a server window?
 
-        push    [window_open]   ; print to the current window
+        push    [window_active]   ; print to the current window
         pop     [window_print]
         call    window_refresh
 
@@ -42,9 +42,9 @@ user_parser:
         mov     esi, user_nick
         call    print_text2
 
-        mov     bl,'>'
+        mov     bl, '>'
         call    print_character
-        mov     bl,' '
+        mov     bl, ' '
         call    print_character
 
         mov     eax, [edit1.size]
@@ -61,7 +61,7 @@ user_parser:
         mov     dword[packetbuf], 'priv'
         mov     dword[packetbuf+4], 'msg '
 
-        mov     esi, [window_open]
+        mov     esi, [window_active]
         add     esi, window.name
         mov     edi, packetbuf+8
         mov     ecx, MAX_WINDOWNAME_LEN
@@ -103,6 +103,7 @@ user_commands:
 ; TODO: All other commands require a connection to the server.
         dd      'quer', cmd_usr_quer
         dd      'quit', cmd_usr_quit
+        dd      'part', cmd_usr_part
 
         .number = ($ - user_commands) / 8
 
@@ -132,14 +133,13 @@ server_command:
 
 cmd_usr_quit:
 
-        cmp     [edit1.size], 5
-        je      .ok
-        jb      cmd_usr_send
-        cmp     byte[usercommand+5], ' '
-        jne     cmd_usr_send
+        mov     esi, quit_msg
 
-  .ok:
-        call    cmd_usr_send
+        cmp     byte[usercommand+5], ' '
+        jne     .default_msg
+        lea     esi,[usercommand+6]
+  .default_msg:
+        call    cmd_usr_quit_server
 
         mcall   close, [socketnum]
 
@@ -150,6 +150,31 @@ cmd_usr_quit:
         add     edi, sizeof.window
         dec     ecx
         jnz     .loop
+
+        ret
+
+
+
+; esi = quit message
+cmd_usr_quit_server:
+
+; User wants to close a channel, send PART command to server
+        mov     dword[packetbuf], 'QUIT'
+        mov     word[packetbuf+4], ' :'
+        lea     edi, [packetbuf+6]
+; Append our quit msg
+  @@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @r
+; end the command with a CRLF
+        dec     edi
+        mov     ax, 0x0a0d
+        stosw
+
+        lea     esi, [edi - packetbuf]                  ; calculate length
+        mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
 
         ret
 
@@ -305,6 +330,46 @@ cmd_usr_code:
 
 
 
+; User typed a part command
+cmd_usr_part:
+
+        cmp     byte[usercommand+5], 13 ; parameters given?
+        jne     cmd_usr_send
+
+        mov     esi, [window_active]      ; window is not a server window?
+        cmp     [esi + window.type], WINDOWTYPE_SERVER
+        je      @f
+
+        call    window_close            ; OK, close currently open (channel/chat/..) window
+  @@:
+
+        ret
+
+; Send part command to server
+; esi must point to channel name (ASCIIZ)
+cmd_usr_part_channel:
+
+; User wants to close a channel, send PART command to server
+        mov     dword[packetbuf], 'PART'
+        mov     byte[packetbuf+4], ' '
+        lea     edi, [packetbuf+5]
+  @@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @r
+; end the command with a CRLF
+        dec     edi
+        mov     ax, 0x0a0d
+        stosw
+
+        lea     esi, [edi - packetbuf]                  ; calculate length
+        mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
+
+        ret
+
+
+; The user typed some undefined command, just recode it and send to the server
 cmd_usr_send:
 
         mov     esi, usercommand+1

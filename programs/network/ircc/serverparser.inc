@@ -134,100 +134,6 @@ skip_nick:
         ret
 
 
-align 4
-find_window:                            ; esi is ptr to windowname
-
-        push    esi
-
-        mov     edi, esi
-        call    compare_to_nick
-        jne     .nochat
-
-        mov     esi, servercommand+1
-  .nochat:
-
-; now search for window in list
-        mov     ebx, windows
-        mov     [window_print], ebx     ; set first window (server window) as default output window
-  .scanloop:
-        cmp     [ebx + window.data_ptr], 0
-        je      .create_it
-        push    esi
-        lea     edi, [ebx + window.name]
-        mov     ecx, MAX_WINDOWNAME_LEN
-        repe    cmpsb
-        pop     esi
-        cmp     byte[edi-1], 0
-        je      .got_it
-        add     ebx, sizeof.window
-        ; TODO: check buffer limits ?
-        jmp     .scanloop
-
-; create channel window - search for empty slot
-  .create_it:
-        mov     ebx, windows
-        mov     ecx, MAX_WINDOWS
-  .scanloop2:
-        cmp     [ebx + window.data_ptr], 0
-        je      .free_found
-        add     ebx, sizeof.window
-        dec     ecx
-        jnz     .scanloop2
-; Error: no more available windows!
-        jmp     .just_skip
-
-  .free_found:
-        push    ebx
-        call    window_create
-        pop     ebx
-        test    eax, eax
-        jz      .just_skip
-        mov     [ebx + window.data_ptr], eax
-        mov     [ebx + window.type], WINDOWTYPE_CHAT
-        mov     [ebx + window.flags], 0
-
-        call    window_set_name
-
-        mov     [window_open], ebx
-        mov     [window_print], ebx
-        call    window_refresh
-
-        call    draw_windownames
-        jmp     .just_skip
-
-; found it!
-  .got_it:
-        mov     [window_print], ebx
-        call    window_refresh
-
-  .just_skip:
-        pop     esi
-  .skip1:
-; skip text
-        lodsb
-        test    al, al
-        jz      .quit
-        cmp     al, ' '
-        jne     .skip1
-        dec     esi
-; now skip trailing spaces and semicolons
-  .skip2:
-        lodsb
-        test    al, al
-        jz      .quit
-        cmp     al, ' '
-        je      .skip2
-        cmp     al, ':'
-        je      .skip2
-        dec     esi
-
-  .quit:
-        ret
-
-
-
-
-
 
 cmd_328:
 cmd_421:
@@ -307,7 +213,7 @@ cmd_ping:
 cmd_privmsg:
 
         add     esi, 8          ; skip 'PRIVMSG '
-        call    find_window     ; esi now points to end of destination name
+        call    window_open     ; esi now points to end of destination name
 
         cmp     byte[esi], 1
         je      cmd_ctcp
@@ -367,6 +273,8 @@ end if
         call    print_character
 
         ret
+
+
 
 cmd_ctcp:
         inc     esi
@@ -520,7 +428,7 @@ cmd_part:
         add     esi, 5  ; skip 'PART '
         push    esi
         call    skip_nick
-        call    find_window
+        call    window_open
         pop     esi
 
 ; Is it me who parted?
@@ -595,7 +503,7 @@ cmd_join:
 
         call    window_set_name
 
-        mov     [window_open], ebx
+        mov     [window_active], ebx
         mov     [window_print], ebx
         call    window_refresh
 
@@ -619,7 +527,7 @@ cmd_join:
 
   .no_new_window:
         push    esi
-        call    find_window
+        call    window_open
 
         mov     esi, action_header
         call    print_text2
@@ -726,7 +634,7 @@ cmd_kick:
 ; find the channel user has been kicked from
         push    esi
         call    skip_nick
-        call    find_window
+        call    window_open
 
         mov     esi, action_header_short
         call    print_text2
@@ -806,7 +714,7 @@ cmd_353:                ; channel usernames reply
         call    skip_nick
         inc     esi     ; channel type '*', '=' or '@'
         inc     esi     ; ' '
-        call    find_window
+        call    window_open
 
 ; now find window ptr and check if this is the first 353 message
         mov     ebx, [window_print]
@@ -843,7 +751,7 @@ cmd_366:        ; channel usernames end
 
         add     esi, 4          ; skip '366 '
         call    skip_nick
-        call    find_window
+        call    window_open
 
         mov     ebx, [window_print]
         and     [ebx + window.flags], not FLAG_RECEIVING_NAMES
@@ -857,7 +765,7 @@ cmd_topic:
 
         add     esi, 4          ; skip '332 '
         call    skip_nick
-        call    find_window
+        call    window_open
 
         push    esi
         mov     esi, action_header
@@ -879,7 +787,7 @@ cmd_333:
 
         add     esi, 4          ; skip '333 '
         call    skip_nick               ;;;;
-        call    find_window
+        call    window_open
 
 ;        mov     ecx, 2  ; number of spaces to find    ;;; CHECKME
 ;  .loop:

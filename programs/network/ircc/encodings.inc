@@ -220,8 +220,7 @@ print_character:
         mov     [pos], eax
 
   newdata:
-        mov     eax, [window_print]
-        or      [eax + window.flags], FLAG_UPDATED
+        call    window_is_updated
 
         popa
         ret
