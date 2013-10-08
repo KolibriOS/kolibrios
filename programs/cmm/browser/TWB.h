@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.99.02a";
+char version[]=" Text-based Browser 0.99.03";
 
 
 struct TWebBrowser {
@@ -224,9 +224,6 @@ void TWebBrowser::Scan(int id)
 			if (!BrowserHistory.GoForward()) return;
 			OpenPage();
 			return;
-		case 255:  //F12
-			RunProgram("/rd/1/HTMLv_old", #URL);
-			return;
 		case 052:  //F3
 			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
 			return;
@@ -255,7 +252,10 @@ void TWebBrowser::Scan(int id)
 			strcpy(#editURL, "http://kolibri-n.org/index.php");
 		case GOTOURL:
 		case 0x0D: //enter
-			strcpy(#URL, #editURL);
+			//почему ttp://? √оспода, отличный вопрос. ƒело в том, что это хак. 
+			//strstr() если не нашло возвращает 0 и в случае успеха возвращает 0. “ак что это хак.
+			if ((strstr(#editURL,"ttp://")==0) && (editURL[0]!='/')) strcpy(#URL,"http://"); else URL[0] = 0;
+			strcat(#URL, #editURL);
 			OpenPage();
 			return;
 		case 173:	//ctrl+enter
