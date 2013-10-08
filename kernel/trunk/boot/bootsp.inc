@@ -17,10 +17,8 @@ $Revision: 2455 $
 
 
 d80x25_bottom:
-          cp850    '║ KolibriOS y viene ABSOLUTAMENTE SIN GARANTíA.            '
-          cp850    '                    ║'
-          cp850    '║ Lee el archivo COPYING por más detalles                  '
-          cp850    '                    ║'
+          cp850    '║ KolibriOS viene ABSOLUTAMENTE SIN GARANTíA. Lee el archivo COPYING por más   ║'
+          cp850    '║ detalles. Por favor, informar de los errores en: http://board.kolibrios.org  ║'
           line_full_bottom
 d80x25_bottom_num = 3
 
@@ -83,7 +81,7 @@ preboot_device_msgs dw 0,pdm1,pdm2,0
 pdm1:     cp850   "disquete real",13,10,0
 pdm2:     cp850   "C:\kolibri.img (FAT32)",13,10,0
 else
-preboot_device_msgs dw 0,pdm1,pdm2,pdm3
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1:     cp850   "disquete real",13,10,0
 pdm2:     cp850   "C:\kolibri.img (FAT32)",13,10,0
 pdm3:     cp850   "usar imagen ya cargada",13,10,0
@@ -104,6 +102,7 @@ _rs:cp850 '║                   │  ????x????@??  SVGA VESA      │ │',13,1
 _bt:cp850 '║                   └───────────────────────────────┴─┘',13,10,0
 
 remark1:cp850   "Los valores por defecto puede que no funcionen en algunas configuraciones.",0
-remark2:cp850   "Si el sistema no inicia, prueba deshabilitar la opción [b].",0
-remarks dw      remark1, remark2
-num_remarks = 2
+remark2:cp850   "Si el sistema no inicia, prueba deshabilitar la opción [b]. Si se bloquea",0
+remark3:cp850   "después de arrancar, habilite la opción [c], desactivar [d] y hacer fotos.",0
+remarks dw      remark1, remark2, remark3
+num_remarks = 3

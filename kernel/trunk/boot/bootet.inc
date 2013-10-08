@@ -15,10 +15,10 @@ $Revision$
 
  
 d80x25_bottom:
-          latin1   '║ KolibriOS on IGASUGUSE GARANTIITA. Vaata faili COPYING'
-          latin1   ' info saamiseks        ║'
+          latin1   '║ KolibriOS on IGASUGUSE GARANTIITA. Vaata faili COPYING info saamiseks. Kui   ║'
+          latin1   '║ leiate vigu, anna neist palun teada aadressil: http://board.kolibrios.org    ║'
           line_full_bottom
-d80x25_bottom_num = 2
+d80x25_bottom_num = 3
 
 msg_apm:  latin1  " APM x.x ", 0
 novesa:   latin1  "Ekraan: EGA/CGA",13,10,0
@@ -79,7 +79,7 @@ preboot_device_msgs dw 0,pdm1,pdm2,0
 pdm1:     latin1  "reaalne diskett",13,10,0
 pdm2:     latin1  "kolibri.img",13,10,0
 else
-preboot_device_msgs dw 0,pdm1,pdm2,pdm3
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1:     latin1  "reaalne diskett",13,10,0
 pdm2:     latin1  "C:\kolibri.img (FAT32)",13,10,0
 pdm3:     latin1  "kasuta juba laaditud kujutist",13,10,0
@@ -100,6 +100,7 @@ _rs:latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,
 _bt:latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
 remark1:latin1  "Vaikimisi väärtused on kasutatavad enamikes arvutites, kuid mitte kõigis.",0
-remark2:latin1  "Kui süsteem ei käivitu, proovige lülitada kirje [b] välja.",0
-remarks dw      remark1, remark2
-num_remarks = 2
+remark2:latin1  "Kui süsteem ei käivitu, proovige lülitada kirje [b] välja. Kui see läheb",0
+remark3:latin1  "kinni pärast käivitamist, võimaldama valik [c], keelake [d] ja teha foto.",0
+remarks dw      remark1, remark2, remark3
+num_remarks = 3
