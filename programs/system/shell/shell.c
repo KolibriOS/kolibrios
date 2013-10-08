@@ -128,10 +128,16 @@ con_set_cursor_height(con_get_font_height()-1);
 
 ALIASES = malloc(128*1024);
 
-if (strlen(PARAM) > 0)
+if (PARAM[0] == 0) strcpy(CMD, ".shell");
+else
+{
+	if (PARAM[0] == '/')
+	{
+		strcpy(cur_dir, PARAM);
+		*strrchr(cur_dir, '/')=0;
+	}
 	strcpy(CMD, PARAM);
-else 
-	strcpy(CMD, ".shell");
+}
 
 command_execute();
 
