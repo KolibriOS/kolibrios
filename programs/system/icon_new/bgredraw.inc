@@ -2,14 +2,6 @@ BGRedrawThread:
 
         mcall   40,010000b
 
-
-BGRTmessages:
-        mcall   10
-        sub     eax,5
-        jz      BGRTRedrawIcons
-
-        jmp     BGRTmessages
-
 BGRTRedrawIcons:
         mcall   48,5
         mov     dx,ax
@@ -34,8 +26,15 @@ BGRTRedrawIcons:
         pop     ecx
         loop    @b
    .NoDraw:
-        jmp     BGRTmessages
 
+
+
+BGRTmessages:
+        mcall   10
+        sub     eax,5
+        jz      BGRTRedrawIcons
+
+        jmp     BGRTmessages
 
 
 
