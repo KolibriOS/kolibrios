@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.99.03";
+char version[]=" Text-based Browser 0.99.04";
 
 
 struct TWebBrowser {
@@ -249,7 +249,7 @@ void TWebBrowser::Scan(int id)
 			return;
 			
 		case HOME:
-			strcpy(#editURL, "http://kolibri-n.org/index.php");
+			strcpy(#editURL, "http://kolibrios.org/en/index.htm");
 		case GOTOURL:
 		case 0x0D: //enter
 			//почему ttp://? Господа, отличный вопрос. Дело в том, что это хак. 
@@ -310,9 +310,14 @@ void TWebBrowser::GetNewUrl(){
 	}
 		
 	IF (!strcmpn(#URL,"./", 2)) strcpy(#URL, #URL+2); //игнорим :)
-	if (URL[0] == '/') strcpy(#URL, #URL+1);
-
 	strcpy(#editURL, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+
+	if (URL[0] == '/')
+	{
+		i = strchr(#editURL+8, '/');
+		editURL[i+7]=0;
+		strcpy(#URL, #URL+1);
+	}
 		
 	_CUT_ST_LEVEL_MARK:
 		

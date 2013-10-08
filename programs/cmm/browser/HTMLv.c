@@ -1,5 +1,5 @@
 //HTML Viewer in C--
-//Copyright 2007-2012 by Veliant & Leency
+//Copyright 2007-2013 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable...
 //home icon - rachel fu, GPL licence
 
@@ -64,7 +64,7 @@ void main()
 	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Warning: library doesn't exists - TrueType"w); use_truetype = 2; }
 	else init_font(#fontlol);
 	
-	if (!URL) strcpy(#URL, "/sys/home.htm");
+	if (!URL) strcpy(#URL, "/sys/index.htm");
 	strcpy(#editURL, #URL);
 	
 	Form.width=WIN_W;
