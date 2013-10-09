@@ -165,6 +165,9 @@ fb_calc_max_panel_line:
 fb_draw_panel_selection:
 	cmp	fb_all_redraw,2
 	je	.end
+	mov	eax,fb_folder_block
+	test	eax,eax
+	jz	.end
 	xor	eax,eax
 	cmp	fb_select_panel_counter,eax
 	je	.end
