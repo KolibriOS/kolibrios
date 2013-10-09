@@ -21,11 +21,14 @@ use32
 
 include 'lang.inc'	;language support
 
-include 'ASPAPI.INC'
 include 'string.inc'
-include 'macros.inc'
-include 'editbox_ex.mac'
-include 'load_lib.mac'
+;include 'macros.inc'
+include '../../../macros.inc'
+include 'ASPAPI.INC'
+;include 'editbox_ex.mac'
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+;include 'load_lib.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../dll.inc'
 
 include 'debug.inc'

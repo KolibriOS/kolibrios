@@ -1,4 +1,4 @@
-include 'proc32.inc'
+include '../../../proc32.inc'
 
 macro start_draw_window x,y,xsize,ysize,areacolor,caption,capsize
 {
