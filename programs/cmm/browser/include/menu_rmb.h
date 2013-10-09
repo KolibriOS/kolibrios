@@ -1,23 +1,29 @@
-//Leency - 2012
+//Leency - 2012-2013
 
-#define ITEM_HEIGHT 18
-#define ITEM_WIDTH  138
+#define ITEM_HEIGHT 19
+#define ITEM_WIDTH  165
+dword col_work    = 0xE4DFE1;
+dword col_border  = 0x9098B0;
 
 char *ITEMS_LIST[]={
-//"Old HTMLv        F12",255,
-"View in Tinypad   F3",52,
-"WIN               F5",54,
-"DOS           Ctrl+D",04,
-"KOI           Ctrl+K",11,
-"UTF           Ctrl+U",21,
-"Line breaks ON"      ,03,
-"Free image cache"    ,02,
+"WIN                  F5",54,
+"DOS              Ctrl+D",04,
+"KOI              Ctrl+K",11,
+"UTF              Ctrl+U",21,
+#ifdef LANG_RUS
+"€бе®¤­ЁЄ бва ­Ёжл    F3",52,
+"ЋзЁбвЁвм Єни Є авЁ­®Є"  ,02,
+//"TrueType fonts"       ,05,
+#else
+"View source          F3",52,
+"Free image cache"       ,02,
+#endif
 //"TrueType fonts"      ,05,
 0}; 
 
 
-proc_info MenuForm;
 
+proc_info MenuForm;
 	
 void menu_rmb()
 {
@@ -77,19 +83,19 @@ void menu_rmb()
 				
 		case evReDraw:
 				while (ITEMS_LIST[items_num*2]) items_num++;
-				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x01,0x10FFFFFF,0,0x01fffFFF);
+				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,ITEM_WIDTH+2,items_num*ITEM_HEIGHT+4,0x01, 0, 0, 0x01fffFFF);
+				DrawPopup(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+2,0, -1,col_border);
 
-				DrawRectangle(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x777777); //ободок
 				_ITEMS_DRAW:
 				for (i=0; i<items_num; i++;)
 				{
-					if (i<>items_cur) EDX=0xFFFFFF; else EDX=0x94AECE;
-					DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, EDX);
-					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i*2]);
-					if (ITEMS_LIST[i*2+1]==3) && (pre_text==2) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
-					if (ITEMS_LIST[i*2+1]==5) && (use_truetype==1) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
+					if (i<>items_cur) EDX=col_work; else EDX=0x94AECE;
+					DrawBar(2, i*ITEM_HEIGHT+2, ITEM_WIDTH-2, ITEM_HEIGHT, EDX);
+					if (i<>items_cur) WriteText(19,i*ITEM_HEIGHT+9,0x80,0xf2f2f2,ITEMS_LIST[i*2]);
+					WriteText(18,i*ITEM_HEIGHT+8,0x80,0x000000,ITEMS_LIST[i*2]);
+					//if (ITEMS_LIST[i*2+1]==5) && (use_truetype==1) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+9, 4, 4, 0x444444);
 				}
-				DrawBar(33, cur_encoding+1*ITEM_HEIGHT+8, 4, 4, 0x444444); //показывает выбраную кодировку
+				DrawBar(7, cur_encoding*ITEM_HEIGHT+9, 4, 4, 0x444444); //показывает выбраную кодировку
 	}
 }
 

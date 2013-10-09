@@ -8,7 +8,18 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.99.05";
+
+#ifndef AUTOBUILD
+	#include "lang.h--"
+#endif
+
+#ifdef LANG_RUS
+	char version[]=" Текстовый браузер 0.99.07";
+#else
+	char version[]=" Text-based Browser 0.99.07";
+#endif
+
+
 
 
 struct TWebBrowser {
@@ -203,10 +214,6 @@ void TWebBrowser::Scan(int id)
 			break;
 		case 002: //free img cache
 			FreeImgCache();
-			break;
-		case 003:
-			if (!pre_text) pre_text=2;
-				else pre_text=0;
 			break;			
 		case 005: //truetype
 			if (use_truetype == 2) 

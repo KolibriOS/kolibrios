@@ -119,8 +119,9 @@ void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 :void DrawPopup(dword x,y,w,h,skinned, col_work,col_border)
 {
 	DrawRectangle(x,y,w,h,col_border);
-	DrawRectangle3D(x+1,y+1,w-2,h-2,0xFFFfff,col_work);
-	DrawBar(x+2,y+2,w-3,h-3,col_work);
+	DrawBar(x+1,y+1,w-1,1,0xFFFfff);
+	DrawBar(x+1,y+2,1,h-3,0xFFFfff);
+	if (col_work!=-1) DrawBar(x+2,y+2,w-2,h-2,col_work);
 	DrawPopupShadow(x,y,w,h-1,skinned);
 }
 
