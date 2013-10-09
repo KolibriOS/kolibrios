@@ -22,8 +22,8 @@ proc_info Form;
 
 char edword[256], search_word[256], translate_result[4096], dict_folder[4096], cur_dict[256];
 #define DICT_DIRECROTY "dictionaries"
-#define PRONOUNCED_FILE "/tmp9/1/dicty/pronounced.txt"
-#define SPEECH_PATH "/tmp9/1/media/speech/speech"
+#define PRONOUNCED_FILE "/sys/pronounced.txt"
+#define SPEECH_PATH "/kolibrios/media/speech/speech"
 dword dir_buf, file_buf, fsize;
 
 int mouse_dd, speaker_id;

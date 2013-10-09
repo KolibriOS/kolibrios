@@ -34,7 +34,7 @@ char program_path[4096];
 
 struct mouse
 {
-	signed int x,y,lkm,pkm,hor,vert;
+	signed x,y,lkm,pkm,hor,vert;
 	void get();
 };
 
@@ -48,6 +48,8 @@ void mouse::get()
 	$and	ebx,0x0000FFFF
 	x = EAX;
 	y = EBX;
+	if (x>6000) x-=65535;
+	if (y>6000) y-=65535;
 	EAX = 37;
 	EBX = 2;
 	$int	0x40
@@ -65,7 +67,6 @@ void mouse::get()
 	$and	ebx,0x0000FFFF
 	//hor = EAX;
 	vert = EBX;
-	if (y>6000) y=0;
 }
 
 

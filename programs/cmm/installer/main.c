@@ -48,6 +48,34 @@ int DefineWindow(dword wtitle, wbutton)
 	return 1;
 }
 
+
+struct sysdir
+{
+   char name[64];
+   char path[64];
+} sysdir;
+
+
+int SetAddApplDir(dword tName, tPath)
+{
+	int i;
+	strcpy(#sysdir.name, tName);
+	strcpy(#sysdir.path, tPath);
+	if (sysdir.name[0]=='/') strcpy(#sysdir.name, #sysdir.name+1);
+	if (sysdir.path[0]=='/') strcpy(#sysdir.path, #sysdir.path+1);
+	i = strlen(#sysdir.name);
+	if (sysdir.name[i]=='/') sysdir.name[i]='\0';
+	i = strlen(#sysdir.path);
+	if (sysdir.path[i]=='/') sysdir.path[i]='\0';
+	debug(#sysdir.name);
+	debug(#sysdir.path);
+	$mov eax, 30
+	$mov ebx, 3
+	ECX = #sysdir;
+	$int 0x40
+}
+
+
 #include "tmp_add.c"
 #include "hallo.c";
 #include "installation.c";

@@ -28,7 +28,6 @@ char *captions[] = {
 	"Kustuta",        "Del",
 	"Värskenda",      "F5",
 	0, 0};
-
 #else
 char *captions[] = {
 	"Open",          "Enter",
@@ -101,10 +100,7 @@ void FileMenu()
 				GetProcessInfo(#MenuForm, SelfInfo);
 				DrawRectangle(0,0,linew+1,ccount*lineh+2,col_border);
 				DrawBar(1,1,linew,1,0xFFFfff);
-				PutShadow(linew+2,1,1,ccount*lineh+2,0,2);
-				PutShadow(linew+3,2,1,ccount*lineh+2,0,1);
-				PutShadow(1,ccount*lineh+3,linew+2,1,0,2);
-				PutShadow(2,ccount*lineh+4,linew+1,1,0,1);
+				DrawPopupShadow(1,1,linew,ccount*lineh,0);
 
 				_ITEMS_DRAW:
 				for (index=0; captions[index*2]!=0; index++)

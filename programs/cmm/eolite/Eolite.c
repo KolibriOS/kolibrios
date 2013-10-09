@@ -73,8 +73,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.97"
-#define ABOUT_TITLE "Eolite v1.97"
+#define TITLE "Eolite File Manager v1.97.2"
+#define ABOUT_TITLE "Eolite v1.97.2"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -640,28 +640,23 @@ inline Sorting()
 
 void Del_Form()
 {
-	int dform_x = files.w - 200 / 2 + files.x;
-	//oeia ieii
+	int dform_x = files.w - 200 / 2 + files.x-3;
 	if (!files.count) return;
-	#ifdef LANG_RUS
-	DrawFlatButton(dform_x,160,215,80,0,col_work, ""); //oi?ia
-	#else
-	DrawFlatButton(dform_x,160,200,80,0,col_work, ""); //oi?ia
-	#endif
-	WriteText(dform_x+19,175,0x80,0,T_DELETE_FILE);
+	DrawPopup(dform_x,160,213,80,1,col_work,col_border);
+	WriteText(-strlen(T_DELETE_FILE)*3+107+dform_x,175,0x80,0,T_DELETE_FILE);
 	IF (strlen(#file_name)<28) 
-		{
-			WriteText(strlen(#file_name)*6+dform_x+20,190,0x80,0,"?");
-			WriteText(dform_x+20,190,0x80,0,#file_name); //ieoai eiy
-		}
-	ELSE
-		{
-			WriteText(164+dform_x,190,0x80,0,"...?");
-			ESI = 24;
-			WriteText(dform_x+20,190,0,0,#file_name); //ieoai eiy
-		}
-	DrawFlatButton(dform_x+20,208,70,20,301,0xFFB6B5,T_YES);
-	DrawFlatButton(dform_x+111,208,70,20,302,0xC6DFC6,T_NO);
+	{
+		WriteText(strlen(#file_name)*3+107+dform_x+2,190,0x80,0,"?");
+		WriteText(-strlen(#file_name)*3+107+dform_x,190,0x80,0,#file_name);
+	}
+	else
+	{
+		WriteText(164+dform_x,190,0x80,0,"...?");
+		ESI = 24;
+		WriteText(dform_x+20,190,0,0,#file_name);
+	}
+	DrawFlatButton(dform_x+26,208,70,20,301,0xFFB6B5,T_YES);
+	DrawFlatButton(dform_x+119,208,70,20,302,0xC6DFC6,T_NO);
 	del_active=1;
 }
 

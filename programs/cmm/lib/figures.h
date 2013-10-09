@@ -96,16 +96,32 @@ void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 }
 
 
-:void PutShadow(dword x,y,w,h,border,strength)
+:void PutShadow(dword x,y,w,h,skinned,strength)
 {
 	proc_info wForm;
 	dword shadow_buf, skin_height;
 	shadow_buf = mem_Alloc(w*h*3);
  	GetProcessInfo(#wForm, SelfInfo);
-	CopyScreen(shadow_buf, 5*border+x+wForm.left, GetSkinHeight()*border+y+wForm.top, w, h);
+	CopyScreen(shadow_buf, 5*skinned+x+wForm.left, GetSkinHeight()*skinned+y+wForm.top, w, h);
 	ShadowImage(shadow_buf, w, h, strength);
 	_PutImage(x,y,w,h,shadow_buf);
 	mem_Free(shadow_buf);
+}
+
+:void DrawPopupShadow(dword x,y,w,h,skinned)
+{
+	PutShadow(w+x+1,y,1,h+2,skinned,2);
+	PutShadow(w+x+2,y+1,1,h+2,skinned,1);
+	PutShadow(x,y+h+2,w+2,1,skinned,2);
+	PutShadow(x+1,y+h+3,w+1,1,skinned,1);
+}
+
+:void DrawPopup(dword x,y,w,h,skinned, col_work,col_border)
+{
+	DrawRectangle(x,y,w,h,col_border);
+	DrawRectangle3D(x+1,y+1,w-2,h-2,0xFFFfff,col_work);
+	DrawBar(x+2,y+2,w-3,h-3,col_work);
+	DrawPopupShadow(x,y,w,h-1,skinned);
 }
 
 :void GrayScaleImage(dword color_image, w, h)
