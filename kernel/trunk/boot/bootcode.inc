@@ -806,6 +806,9 @@ end if
 
 .change_a:
         call    clear_vmodes_table             ;clear vmodes_table
+
+        mov     si, word [cursor_pos]
+        mov     word [cursor_pos_old], si
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
@@ -816,8 +819,12 @@ end if
         mov     si, word [cursor_pos]
 
         cmp     al, 27              ; If ESC was pressed, do not change the value
-        jz      .esc_pressed        ; Just exit the resolution selection box
-        
+        jnz     @f                   ; Just exit the resolution selection box
+
+        mov     si, word [cursor_pos_old]
+        mov     word [cursor_pos], si
+        jmp     .esc_pressed
+@@:
         cmp     ah, 0x48;x,0x48E0               ; up
         jne     .down
         cmp     si, modes_table
