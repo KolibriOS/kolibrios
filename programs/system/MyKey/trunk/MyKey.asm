@@ -900,8 +900,10 @@ RunProgram:
   .err_out:
     if lang eq it
 		print	 "Impossibile caricare il programma"
+
     else
 		print	 "Can't load program"
+
     end if
     popa
     stc
@@ -920,8 +922,10 @@ mykey_window	dd	0	   ; Slot number of MyKey
 ; Input Thread Title
 if lang eq it
 	it_labelt	db	"Inserisci hotkey e nome   "
+
 else
 	it_labelt	db	"Input hotkey and it's name"
+
 end if
 ;labellen:
 it_edit edit_box 180, 20, 30, 0xffffff, 0xAA80, 0x0000ff, 0x0, 0x0, 31, it_buf_cmd_line, 0, 0
@@ -932,8 +936,10 @@ it_keycode	  db	  0
 it_hotkey_addr	  dd	  0
 if lang eq it
 	it_hint 	  db	  'o premi Esc per cancellare',0
+
 else
 	it_hint 	  db	  'or press Esc to cancel',0
+
 end if
 ;########### Input Thread data end   ############
 
@@ -944,12 +950,14 @@ if lang eq it
 	SaveKeyText	db 'Salva',0
 	;DeleteKeyText   db 'Delete',0
 	;ManageKeyText   db 'Manage',0
+
 else
 	AddKeyText	db 'Add',0
 	ReloadKeyText	db 'Reload',0
 	SaveKeyText	db 'Save',0
 	;DeleteKeyText   db 'Delete',0
 	;ManageKeyText   db 'Manage',0
+
 end if
 
 hotkeys_num   db 0;15
@@ -973,11 +981,13 @@ if lang eq it
 	head_f_i:
 	head_f_l		db 'Errore di sistema',0
 	err_message_import	db 'Error di importazione di box_lib.obj',0
+
 else
 	err_message_found_lib	db "Can't find box_lib.obj",0
 	head_f_i:
 	head_f_l		db 'System error',0
 	err_message_import	db 'Error on import box_lib.obj',0
+
 end if
 align 4
 myimport:
