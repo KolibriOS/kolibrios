@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.99.04";
+char version[]=" Text-based Browser 0.99.05";
 
 
 struct TWebBrowser {
@@ -258,7 +258,6 @@ void TWebBrowser::Scan(int id)
 			strcat(#URL, #editURL);
 			OpenPage();
 			return;
-		case 173:	//ctrl+enter
 		case SEARCHWEB:
 			strcpy(#URL, #search_path);
 			strcat(#URL, #editURL);
@@ -298,7 +297,7 @@ void TWebBrowser::Scan(int id)
 }
 
 
-char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/rd/", "/fd/", "/bd/", "/hd/", "/cd/", "/tmp/", 0};
+char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/kolibrios/", "/rd/", "/bd", "/hd", "/cd", "/tmp", "/usbhd", 0};
 //dword TWebBrowser::GetNewUrl(dword CUR_URL, NEW_URL){
 void TWebBrowser::GetNewUrl(){
 	int i, len;

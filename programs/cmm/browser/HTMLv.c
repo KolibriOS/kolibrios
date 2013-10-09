@@ -158,7 +158,7 @@ void main()
 				WB1.Scan(key);
 				
 				_EDIT_MARK:
-				if (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#address_box);} //адресная строка
+				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);} //адресная строка
 				break;
 			case evReDraw:
 				Draw_Window();
