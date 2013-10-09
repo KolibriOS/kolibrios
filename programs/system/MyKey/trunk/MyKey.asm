@@ -900,7 +900,7 @@ RunProgram:
   .err_out:
     if lang eq it
 		print	 "Impossibile caricare il programma"
-
+;--------------------------------------
     else
 		print	 "Can't load program"
 
@@ -922,7 +922,7 @@ mykey_window	dd	0	   ; Slot number of MyKey
 ; Input Thread Title
 if lang eq it
 	it_labelt	db	"Inserisci hotkey e nome   "
-
+;--------------------------------------
 else
 	it_labelt	db	"Input hotkey and it's name"
 
@@ -936,7 +936,7 @@ it_keycode	  db	  0
 it_hotkey_addr	  dd	  0
 if lang eq it
 	it_hint 	  db	  'o premi Esc per cancellare',0
-
+;--------------------------------------
 else
 	it_hint 	  db	  'or press Esc to cancel',0
 
@@ -950,7 +950,7 @@ if lang eq it
 	SaveKeyText	db 'Salva',0
 	;DeleteKeyText   db 'Delete',0
 	;ManageKeyText   db 'Manage',0
-
+;--------------------------------------
 else
 	AddKeyText	db 'Add',0
 	ReloadKeyText	db 'Reload',0
@@ -981,7 +981,7 @@ if lang eq it
 	head_f_i:
 	head_f_l		db 'Errore di sistema',0
 	err_message_import	db 'Error di importazione di box_lib.obj',0
-
+;--------------------------------------
 else
 	err_message_found_lib	db "Can't find box_lib.obj",0
 	head_f_i:
