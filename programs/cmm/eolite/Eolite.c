@@ -31,7 +31,7 @@
 	?define T_YES "Да"
 	?define T_NO "Нет"
 	?define T_DEL_ERROR_1 "Ошибка. Папка не пустая."
-	?define T_DEL_ERROR_2 "Ошибка. Файловая система только для чтения."
+	?define WAIT_DELETING_FOLDER "Удаляется папка. Подожите..."
 	?define NOT_CREATE_FOLDER "Не удалось создать папку."
 	?define NOT_CREATE_FILE "Не удалось создать файл."
 	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
@@ -47,7 +47,7 @@
 	?define T_YES "Jah"
 	?define T_NO "Ei"
 	?define T_DEL_ERROR_1 "Viga. Kataloog ei ole t№hi."
-	?define T_DEL_ERROR_2 "Viga. Failis№steem ainult loetav."
+	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Kataloogi ei saa luua."
 	?define NOT_CREATE_FILE "Faili ei saa luua."
 	?define ERROR_1 "Viga teegi laadimisel /rd/1/lib/box_lib.obj"
@@ -63,7 +63,7 @@
 	?define T_YES "Yes"
 	?define T_NO "No"
 	?define T_DEL_ERROR_1 "Error. Folder isn't empty."
-	?define T_DEL_ERROR_2 "Error. Filesystem read-only."
+	?define WAIT_DELETING_FOLDER "Deleting folder. Please, wait..."
 	?define NOT_CREATE_FOLDER "Folder can not be created."
 	?define NOT_CREATE_FILE "File can not be created."
 	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
@@ -73,8 +73,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.97.2"
-#define ABOUT_TITLE "Eolite v1.97.2"
+#define TITLE "Eolite File Manager v1.97.7"
+#define ABOUT_TITLE "Eolite v1.97.7"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -640,14 +640,14 @@ inline Sorting()
 
 void Del_Form()
 {
-	int dform_x = files.w - 200 / 2 + files.x-3;
+	int dform_x = Form.width/2-13;
 	if (!files.count) return;
-	DrawPopup(dform_x,160,213,80,1,col_work,col_border);
-	WriteText(-strlen(T_DELETE_FILE)*3+107+dform_x,175,0x80,0,T_DELETE_FILE);
+	DrawPopup(dform_x,160,220,80,1,col_work,col_border);
+	WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,0,T_DELETE_FILE);
 	IF (strlen(#file_name)<28) 
 	{
-		WriteText(strlen(#file_name)*3+107+dform_x+2,190,0x80,0,"?");
-		WriteText(-strlen(#file_name)*3+107+dform_x,190,0x80,0,#file_name);
+		WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,0,"?");
+		WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,0,#file_name);
 	}
 	else
 	{
@@ -655,46 +655,50 @@ void Del_Form()
 		ESI = 24;
 		WriteText(dform_x+20,190,0,0,#file_name);
 	}
-	DrawFlatButton(dform_x+26,208,70,20,301,0xFFB6B5,T_YES);
-	DrawFlatButton(dform_x+119,208,70,20,302,0xC6DFC6,T_NO);
+	DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_YES);
+	DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_NO);
 	del_active=1;
 }
 
 	
 void Del_File2(dword way)
 {    
-	int del_rezult;
 	dword dirbuf, fcount, i, filename;
 	char del_from[4096], error;
-	del_rezult = DeleteFile(way);
-		if (del_rezult)
+	if (DeleteFile(way))
+	{
+		error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
+		for (i=0; i<fcount; i++)
 		{
-			error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
-			for (i=0; i<fcount; i++)
-			{
-				filename = i*304+dirbuf+72;
-				strcpy(#del_from, way);
-				chrcat(#del_from, '/');
-				strcat(#del_from, filename);
-				if ( TestBit(ESDWORD[filename-40], 4) )
-					Del_File2(#del_from);
-				else
-					DeleteFile(#del_from);
-			}
-			DeleteFile(way);
+			//need redraw window during this process
+			//like this:
+			//if CheckEvent()==Redraw DrawWindow();
+			//i'm too tired to code now...
+			filename = i*304+dirbuf+72;
+			strcpy(#del_from, way);
+			chrcat(#del_from, '/');
+			strcat(#del_from, filename);
+			if ( TestBit(ESDWORD[filename-40], 4) )
+				Del_File2(#del_from);
+			else
+				DeleteFile(#del_from);
 		}
+		DeleteFile(way);
+	}
 }
 
 
 void Del_File(byte dodel)
 {    
-	int del_rezult;
 	if (dodel==true)
 	{
+		List_ReDraw();
+		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 		Del_File2(#file_path);
  	}
 	del_active=0;
-	DeleteButton(301); DeleteButton(302);
+	DeleteButton(301);
+	DeleteButton(302);
 	Open_Dir(#path,WITH_REDRAW);
 }
 
@@ -717,7 +721,7 @@ void ReName(byte rename)
 			if (del_rezult!=0)
 			{
 				Write_Error(del_rezult);
-				ShowMessage(T_DEL_ERROR_1);
+				ShowMessage(T_DEL_ERROR_1, 150);
 				return;
 			}
 			ELSE CreateDir(#temp);
@@ -828,7 +832,7 @@ void FnProcess(char N)
 			else
 			{
 				Write_Error(EAX);
-				ShowMessage(NOT_CREATE_FOLDER);
+				ShowMessage(NOT_CREATE_FOLDER, 150);
 			}
 			break;
 		case 7:
@@ -842,7 +846,7 @@ void FnProcess(char N)
 			else
 			{
 				Write_Error(EAX);
-				ShowMessage(NOT_CREATE_FILE);
+				ShowMessage(NOT_CREATE_FILE, 150);
 			}
 			break;
 		case 10: //F10

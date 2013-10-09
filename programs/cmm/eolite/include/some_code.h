@@ -5,11 +5,14 @@ dword onLeft(dword right,left) {EAX=Form.width-right-left;}
 dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 
-void ShowMessage(dword message)
+void ShowMessage(dword message, pause_duration)
 {
-	DrawFlatButton(Form.width/2-13,160,220,80,0,0xFFB6B5, message);
-	pause(150);
-	List_ReDraw();
+	int form_x=Form.width/2-13;
+	int form_y=160;
+	DrawPopup(form_x,form_y,220,80,1,col_work,col_border);
+	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,0,message);
+	pause(pause_duration);
+	if (pause_duration) List_ReDraw();
 }
 
 inline fastcall signed int _strrchr( ESI,BL)
