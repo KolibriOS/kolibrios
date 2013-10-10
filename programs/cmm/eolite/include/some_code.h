@@ -7,7 +7,7 @@ dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 void ShowMessage(dword message, pause_duration)
 {
-	int form_x=Form.width/2-13;
+	int form_x=files.w-220/2+files.x;
 	int form_y=160;
 	DrawPopup(form_x,form_y,220,80,1,col_work,col_border);
 	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,0,message);

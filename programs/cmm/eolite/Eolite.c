@@ -73,8 +73,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.97.7"
-#define ABOUT_TITLE "Eolite v1.97.7"
+#define TITLE "Eolite File Manager v1.98"
+#define ABOUT_TITLE "Eolite v1.98"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -438,6 +438,7 @@ void draw_window()
 	DrawFlatButton(onLeft(27,0),onTop(22,0),16,16,0,col_work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
+	//if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 	if (rename_active) FnProcess(2);
 }
 
@@ -640,24 +641,31 @@ inline Sorting()
 
 void Del_Form()
 {
-	int dform_x = Form.width/2-13;
-	if (!files.count) return;
-	DrawPopup(dform_x,160,220,80,1,col_work,col_border);
-	WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,0,T_DELETE_FILE);
-	IF (strlen(#file_name)<28) 
+	int dform_x=files.w-220/2+files.x;
+	if (del_active==2)
 	{
-		WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,0,"?");
-		WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,0,#file_name);
+		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 	}
 	else
 	{
-		WriteText(164+dform_x,190,0x80,0,"...?");
-		ESI = 24;
-		WriteText(dform_x+20,190,0,0,#file_name);
+		if (!files.count) return;
+		DrawPopup(dform_x,160,220,80,1,col_work,col_border);
+		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,0,T_DELETE_FILE);
+		IF (strlen(#file_name)<28) 
+		{
+			WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,0,"?");
+			WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,0,#file_name);
+		}
+		else
+		{
+			WriteText(164+dform_x,190,0x80,0,"...?");
+			ESI = 24;
+			WriteText(dform_x+20,190,0,0,#file_name);
+		}
+		DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_YES);
+		DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_NO);		
+		del_active=1;
 	}
-	DrawFlatButton(dform_x+27,208,70,20,301,0xFFB6B5,T_YES);
-	DrawFlatButton(dform_x+120,208,70,20,302,0xC6DFC6,T_NO);
-	del_active=1;
 }
 
 	
@@ -670,10 +678,7 @@ void Del_File2(dword way)
 		error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
 		for (i=0; i<fcount; i++)
 		{
-			//need redraw window during this process
-			//like this:
-			//if CheckEvent()==Redraw DrawWindow();
-			//i'm too tired to code now...
+			if (CheckEvent()==evReDraw) draw_window();
 			filename = i*304+dirbuf+72;
 			strcpy(#del_from, way);
 			chrcat(#del_from, '/');
@@ -692,6 +697,7 @@ void Del_File(byte dodel)
 {    
 	if (dodel==true)
 	{
+		del_active=2;
 		List_ReDraw();
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 		Del_File2(#file_path);
