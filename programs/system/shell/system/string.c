@@ -125,16 +125,16 @@ char* strchr(const char* string, int c)
 
 char* strrchr(const char* string, int c)
 {
-	int last_found;
+	char* last_found;
 	while (*string)
 	{
 		if (*string==c)
 		{
-			last_found = string;
+			last_found = (char*)string;
 		}
 		string++;
 	}	
-	return (char*)last_found;
+	return last_found;
 }
 
 
