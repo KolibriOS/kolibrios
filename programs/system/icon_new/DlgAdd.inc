@@ -140,7 +140,7 @@ DReDraw:
         edit_boxes_set_sys_color edtName,edtExePath,sc
         edit_boxes_set_sys_color edtExePath,edtParams,sc
         edit_boxes_set_sys_color edtParams,edtIcon,sc
-        edit_boxes_set_sys_color edtIcon,endEdits,sc
+        ;edit_boxes_set_sys_color edtIcon,endEdits,sc
 
         call    DRedraw
 
@@ -169,7 +169,7 @@ DKey:
         stdcall [edit_box_key],edtName
         stdcall [edit_box_key],edtExePath
         stdcall [edit_box_key],edtParams
-        stdcall [edit_box_key],edtIcon
+        ;stdcall [edit_box_key],edtIcon
 
         jmp     DMessages
 
@@ -181,8 +181,8 @@ DNextEdit:
         jne      .DNE2
         test    [edtParams.flags],ed_focus
         jne      .DNE3
-        test    [edtIcon.flags],ed_focus
-        jne      .DNE4
+        ;test    [edtIcon.flags],ed_focus
+        ;jne      .DNE4
         jmp     DMessages
 
     .DNE1:
@@ -206,12 +206,12 @@ DNextEdit:
         stdcall [edit_box_draw],edtIcon
         jmp     DMessages
 
-    .DNE4:
-        and     [edtIcon.flags],not ed_focus
-        or      [edtName.flags],ed_focus
-        stdcall [edit_box_draw],edtName
-        stdcall [edit_box_draw],edtIcon
-        jmp     DMessages
+    ;.DNE4:
+    ;    and     [edtIcon.flags],not ed_focus
+    ;    or      [edtName.flags],ed_focus
+    ;    stdcall [edit_box_draw],edtName
+    ;    stdcall [edit_box_draw],edtIcon
+    ;    jmp     DMessages
 ;---------------------------------------------------------------------
 DButton:
         mcall   17              ;GetButtonPressed
@@ -228,7 +228,7 @@ DMouse:
         stdcall [edit_box_mouse],edtName
         stdcall [edit_box_mouse],edtExePath
         stdcall [edit_box_mouse],edtParams
-        stdcall [edit_box_mouse],edtIcon
+;        stdcall [edit_box_mouse],edtIcon
 
         push    [sbIcons.position]
         stdcall [scrollbar_h_mouse],sbIcons
@@ -312,7 +312,7 @@ DMouse:
     .RedrawNum:
 
 
-        stdcall [edit_box_draw],edtIcon
+;        stdcall [edit_box_draw],edtIcon
 
 
         call    DrawSelIcon
@@ -331,6 +331,20 @@ DSetExePath:
         jmp     DMessages;DReDraw;
 
 DSaveIcon:
+        mov     edi,DAreaName
+        mov     esi,secRButt
+    @@: lodsb
+        scasb
+        jne     @f
+        test    al,al
+        jnz     @b
+
+        mov     dword[fiRunProg+8],ErrName
+        mov     dword[fiRunProg+21],pthNotify
+        mcall   70,fiRunProg
+
+        jmp     DMessages
+    @@:
         mov     dword[fiRunProg+8],WarningSave
         mov     dword[fiRunProg+21],pthNotify
         mcall   70,fiRunProg
@@ -366,7 +380,7 @@ DExit:
 proc DRedraw
         mcall   12,1            ;RedrawWinBeg
         mov     edx,[sc.work]
-        or      edx,33000000h
+        or      edx,34000000h
         cmp     [DlgSelIcon],-1
         jne      @f
         mov     edi,DTitleAdd
@@ -374,12 +388,12 @@ proc DRedraw
       @@:
         mov     edi,DTitleProp
       .l1:
-        mcall   0,<100,400>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+185>,,,
+        mcall   0,<100,400>,<100,(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH+165>,,,
 
         stdcall [edit_box_draw],edtName
         stdcall [edit_box_draw],edtExePath
         stdcall [edit_box_draw],edtParams
-        stdcall [edit_box_draw],edtIcon
+;        stdcall [edit_box_draw],edtIcon
 
         call    DrawStdIcons
 
@@ -410,7 +424,7 @@ proc DRedraw
         mcall   4,<30+IMG_SIZE,10>,,DCaptName
         mcall    ,<30+IMG_SIZE,30>,,DCaptPath
         mcall    ,<30+IMG_SIZE,50>,,DCaptParams
-        mcall    ,<30+IMG_SIZE,70>,,DCaptIcon
+        ;mcall    ,<30+IMG_SIZE,70>,,DCaptIcon
 
 if lang eq ru
         mov     ecx,[sc.work_button_text]
@@ -640,7 +654,7 @@ proc DrawSelIcon
         dec     edx
         jnz     .DrawLine
 
-        mcall   7,IconArea,<IMG_SIZE,IMG_SIZE>,<15,25>
+        mcall   7,IconArea,<IMG_SIZE,IMG_SIZE>,<15,15>
 
         ret
 endp

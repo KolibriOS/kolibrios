@@ -11,7 +11,7 @@ NAME_LENGTH     equ 11
 MIN_NO_MOVING   equ 8
                            ;для диалога создания/редактирования
 ICONSX          equ 20
-ICONSY          equ 100
+ICONSY          equ 80
 ICONS_DRAW_COUNTW equ 10  ;количество иконок в ширину
 ICONS_DRAW_COUNTH equ 2   ;количество иконок в высоту
 SPCW            equ 3     ;пробел между иконками по горизонтали
@@ -40,9 +40,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
-;include '../include/debug.inc'
-
-include 'bgredraw.inc'
+;include '../../debug.inc'
 
 ;------------------------------------------------------------------------------
 START:          ; start of execution
@@ -1100,6 +1098,7 @@ proc LoadIconsData stdcall,f_name,sec_name
         ret
 endp
 
+include 'bgredraw.inc'
 include 'RButton.inc'
 include 'DlgAdd.inc'
 include 'Moving.inc'
@@ -1251,13 +1250,13 @@ if lang eq ru
  ErrRunProg     db 'Ошибка запуска программы',0
  WarningSave    db 'Не забудьте сохранить изменения, запустить RDSave',0
  ErrNotFoundIni db 'Не найден icon.ini',0
-
+ ErrName        db 'Имя "rbmenu" зарезервировано',0
 else
 
  ErrRunProg     db 'Error runing program',0
  WarningSave    db 'Do not forget to save the changes, run the RDSave',0
  ErrNotFoundIni db 'icon.ini not found',0
-
+ ErrName        db 'The Name "rbmenu" reserved',0
 end if
 
 
