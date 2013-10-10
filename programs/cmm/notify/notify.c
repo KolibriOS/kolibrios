@@ -19,7 +19,10 @@ int WIN_X,
 
 int delay = 400;
 
-#include "lang.h--"
+#ifndef AUTOBUILD
+	#include "lang.h--"
+#endif
+
 #ifdef LANG_RUS
 	?define DEFAULT_TEXT "Эта программа показывает уведомления.";
 #else

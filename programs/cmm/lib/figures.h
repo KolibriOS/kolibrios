@@ -1,6 +1,6 @@
 //#include "strings.h"
 
-void DrawRectangle(dword x,y,w,h,color1)
+:void DrawRectangle(dword x,y,w,h,color1)
 {
 	if (w<=0) || (h<=0) return;
 	DrawBar(x,y,w,1,color1);
@@ -9,7 +9,7 @@ void DrawRectangle(dword x,y,w,h,color1)
 	DrawBar(x+w,y,1,h+1,color1);
 }
 
-void DrawRectangle3D(dword x,y,w,h,color1,color2)
+:void DrawRectangle3D(dword x,y,w,h,color1,color2)
 {
 	if (w<=0) || (h<=0) return;
 	DrawBar(x,y,w+1,1,color1);
@@ -18,7 +18,7 @@ void DrawRectangle3D(dword x,y,w,h,color1,color2)
 	DrawBar(x,y+h,w,1,color2);
 }
 
-void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
+:void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 {
 	DefineButton(x,y,w,h,id,color_b);
 	WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
