@@ -142,7 +142,7 @@ DReDraw:
         edit_boxes_set_sys_color edtParams,edtIcon,sc
         ;edit_boxes_set_sys_color edtIcon,endEdits,sc
 
-        call    DRedraw
+        call    DRedrawWin
 
 DMessages:
         mcall   10              ;WaitMessage
@@ -201,9 +201,9 @@ DNextEdit:
 
     .DNE3:
         and     [edtParams.flags],not ed_focus
-        or      [edtIcon.flags],ed_focus
+        or      [edtName.flags],ed_focus
         stdcall [edit_box_draw],edtParams
-        stdcall [edit_box_draw],edtIcon
+        stdcall [edit_box_draw],edtName
         jmp     DMessages
 
     ;.DNE4:
@@ -312,7 +312,7 @@ DMouse:
     .RedrawNum:
 
 
-;        stdcall [edit_box_draw],edtIcon
+      ;  stdcall [edit_box_draw],edtIcon
 
 
         call    DrawSelIcon
@@ -377,7 +377,7 @@ DExit:
         mcall   -1              ;ExitThread
 
 ;##################################################################
-proc DRedraw
+proc DRedrawWin
         mcall   12,1            ;RedrawWinBeg
         mov     edx,[sc.work]
         or      edx,34000000h
@@ -474,6 +474,15 @@ local IcoX:DWORD,\
       IcoY:DWORD,\
       iIcon:DWORD
 
+      @@:                      ;ждём, когда освободится буффер
+        cmp     [bIcoBuff],1
+        jne     @f
+        mcall   5,1
+        jmp     @b
+      @@:
+
+        mov     [bIcoBuff],1 ;блокируем IconArea
+
         mov     ecx,[sbIcons.position]
         xor     eax,eax
         m2m     dword[iIcon],0
@@ -490,7 +499,6 @@ local IcoX:DWORD,\
         add     esi,[raw_pointer]
 
         mov     [IcoX],ICONSX
-
 
         mov     ecx,ICONS_DRAW_COUNTW
   .DrawIcons:
@@ -517,7 +525,7 @@ local IcoX:DWORD,\
         mov     eax,[sc.work]
      @@:
 
-        mov     word[edi],ax
+        mov     [edi],ax
         shr     eax,16
         mov     [edi+2],al
         add     edi,3
@@ -585,6 +593,8 @@ local IcoX:DWORD,\
         loop    .DrawIcons2
 
    .endProc:
+
+        mov     [bIcoBuff],0           ;разблокируем буфер
         ret
 endp
 

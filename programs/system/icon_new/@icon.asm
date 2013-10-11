@@ -1,5 +1,3 @@
-;На потом: добавит загрузку ico и возможность выбора иконки не из iconstrp
-
 ICONS_DAT       equ '/rd/1/icons.dat'
 ICON_STRIP      equ '/rd/1/iconstrp.png'
 ICON_SIZE       equ 68
@@ -29,8 +27,8 @@ BegData         equ fiStdIco.point
         db 'MENUET01'   ; 8 byte id
         dd 0x01         ; header version
         dd START        ; start of code
-        dd I_END       ; size of image
-        dd ENDMEM        ; memory for app
+        dd I_END        ; size of image
+        dd ENDMEM       ; memory for app
         dd stack_area   ; esp
         dd 0            ; boot parameters
         dd 0            ; path
@@ -140,14 +138,8 @@ START:          ; start of execution
         and     eax,0FFh
         mov     [sbIcons.max_area],eax
 
-  ;    int3
-;        mov     eax,1
-;        mov     eax,[IconsOffs+eax*4]
-;        stdcall [ini_del_section],IconIni,eax
-;    ret
-        ;jmp     MSGRedrawIcons
         mcall   51,1,BGRedrawThread,stack_bredraw
-
+        stdcall [OpenDialog_Init],OpenDialog_data
 
 messages:
         mcall   10
@@ -357,7 +349,7 @@ MovingIcon:
         mcall   5,1     ;Sleep 1
         jmp     .WaitLB
    .endWaitLB:
-        mov    [MovingActiv],0
+
 
         mcall   37,0            ;GetMousePos
         xor     ebx,ebx
@@ -416,7 +408,8 @@ MovingIcon:
 
         mov     [bNotSave],1
         mov     [IconNoDraw],-1
-        mcall   15,3
+
+        mov    [MovingActiv],0          ;только теперь отключаем окно с мышью
 
         jmp     messages
 
@@ -515,8 +508,6 @@ local   IconData:DWORD
         jne     GetIconInd
 
    PathToIcon:
-        ;stdcall LoadIcon,edi
-        ;mov     esi,eax
         mov     al,30h           ;заглушка!!!!!!!!!!!!!
         mov     byte[edi+1],0
 
@@ -1158,6 +1149,7 @@ IconNoDraw      dd -1           ;-1 либо номер иконки, которую не надо рисовать(
 
 bFixIcons       dd 1
 bNotSave        dd 0
+bIcoBuff        dd 0            ;1, если IconArea занят
 
 LButtonActiv    dd 0
 RButtonActiv    dd 0
@@ -1256,7 +1248,7 @@ else
  ErrRunProg     db 'Error runing program',0
  WarningSave    db 'Do not forget to save the changes, run the RDSave',0
  ErrNotFoundIni db 'icon.ini not found',0
- ErrName        db 'The Name "rbmenu" reserved',0
+ ErrName        db 'The name "rbmenu" reserved',0
 end if
 
 
@@ -1342,7 +1334,7 @@ OpenDialog_data:
 .opendir_pach           dd temp_dir_pach        ;+16
 .dir_default_pach       dd communication_area_default_pach      ;+20
 .start_path             dd open_dialog_path     ;+24
-.draw_window            dd DRedraw;draw_window_for_OD   ;+28
+.draw_window            dd DRedrawWin;draw_window_for_OD   ;+28
 .status                 dd 0    ;+32
 .openfile_pach          dd DAreaPath;fname_Info   ;+36
 .filename_area          dd 0;DAreaPath        ;+40
@@ -1374,6 +1366,8 @@ I_END:
 ;##### UDATA ###################################################################
 IconArea        rb 4*ICON_SIZE*ICON_SIZE
 ;\
+
+
 
 ScreenX         rw 1
 ScreenY         rw 1

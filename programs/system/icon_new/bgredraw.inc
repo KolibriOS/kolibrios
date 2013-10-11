@@ -3,6 +3,15 @@ BGRedrawThread:
         mcall   40,010000b
 
 BGRTRedrawIcons:
+     @@:
+        cmp     [bIcoBuff],1   ;для блокировки пререрисовки иконок
+        jne     @f
+        mcall   5,1
+        jmp     @b
+     @@:
+
+        mov     [bIcoBuff],1
+
         mcall   48,5
         mov     dx,ax
         shr     eax,16
@@ -27,6 +36,7 @@ BGRTRedrawIcons:
         loop    @b
    .NoDraw:
 
+        mov     [bIcoBuff],0
 
 
 BGRTmessages:
