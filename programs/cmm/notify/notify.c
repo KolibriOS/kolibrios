@@ -1,4 +1,4 @@
-//notify 0.7
+//notify 0.8
 //SoUrcerer 2010, Leency 2012-2013, GNU GPLv2
 
 #define MEMSIZE 0x2F00
@@ -7,7 +7,9 @@
 #include "..\lib\mem.h" 
 #include "..\lib\figures.h" 
 
-?define PADDING 12;
+dword shadow_buf_24, shadow_buf_32, lighter_pixel1, lighter_pixel2;
+
+?define PADDING 15;
 
 int SCREEN_SIZE_X,
     SCREEN_SIZE_Y;
@@ -16,6 +18,9 @@ int WIN_X,
 	WIN_Y,
     WIN_SIZE_X=256,
     WIN_SIZE_Y=28;
+
+int TEXT_X=PADDING,
+	TEXT_Y;
 
 int delay = 400;
 
@@ -30,7 +35,20 @@ int delay = 400;
 #endif
 
 void PutText(dword x, y) {
-	WriteText(x,y, 0x80, 0, #param);
+	WriteBufText(x,y, 0x88, 0, #param, shadow_buf_32);
+}
+
+void Text()
+{
+	PutText(TEXT_X-1,TEXT_Y+1);
+	PutText(TEXT_X-1,TEXT_Y-1);
+	PutText(TEXT_X-1,TEXT_Y  );
+	PutText(TEXT_X+1,TEXT_Y-1);
+	PutText(TEXT_X+1,TEXT_Y  );
+	PutText(TEXT_X+1,TEXT_Y+1);
+	PutText(TEXT_X,  TEXT_Y+1);
+	PutText(TEXT_X,  TEXT_Y-1);
+	WriteBufText(TEXT_X, TEXT_Y, 0x88, 0xFFFfff, #param, shadow_buf_32);
 }
 
 inline fastcall int GetClientTop()
@@ -42,24 +60,51 @@ inline fastcall int GetClientTop()
     $shr eax, 16
 }
 
-dword shadow_buf, lighter_pixel1, lighter_pixel2;
+void from24to32(dword src, dst, Width, Height)
+{
+conv24to32:
+	$mov esi, src
+	$mov edi, dst
+		
+	$mov eax, Width
+	//$mul ESDWORD[Height]
+	$mul Height
+	$mov ecx, eax
+	$xor al, al 
+_next:	
+	$movsw
+	$movsb
+	$stosb 	
+	$loop _next
+}
+
+
 void GetBackground()
 {
-	CopyScreen(shadow_buf, WIN_X, WIN_Y, WIN_SIZE_X, WIN_SIZE_Y);
-	CopyScreen(lighter_pixel1, WIN_X, WIN_Y, 1, 1);
-	CopyScreen(lighter_pixel2, WIN_X, WIN_Y+WIN_SIZE_Y, 1, 1);
-	ShadowImage(shadow_buf, WIN_SIZE_X, WIN_SIZE_Y, 6);
-	ShadowImage(lighter_pixel1, 1, 1, 2);
-	ShadowImage(lighter_pixel2, 1, 1, 2);
+	int i;
+
+	for (i=1; i<=6; i++)
+	{
+		ShadowImage(shadow_buf_24, WIN_SIZE_X, WIN_SIZE_Y, 1);
+		if (i%2 == 0) ShadowImage(lighter_pixel1, 1, 1, 1);
+		if (i%2 == 0) ShadowImage(lighter_pixel2, 1, 1, 1);
+		from24to32(shadow_buf_24, shadow_buf_32+8, WIN_SIZE_X, WIN_SIZE_Y);
+		Text();
+		PutPaletteImage(shadow_buf_32+8,WIN_SIZE_X,WIN_SIZE_Y,0,0,32,0);
+		PutPixel(0,0,ESDWORD[lighter_pixel1]);
+		PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);
+		pause(5);
+	}
+}
+
+void Exit()
+{
+	ExitProcess();
 }
 
 
 void main()
-{   
-	int TEXT_X=4,
-	    TEXT_Y=12;
-	char drawn;
-	
+{	
 	if (!param)	strcpy(#param, DEFAULT_TEXT);
 	if (strlen(#param)*6>WIN_SIZE_X)
 	{
@@ -70,17 +115,22 @@ void main()
 	SCREEN_SIZE_X=GetScreenWidth()+1;	
 	WIN_X = SCREEN_SIZE_X-WIN_SIZE_X-1;
 	WIN_Y = GetClientTop();
-	TEXT_X = -6*strlen(#param)+WIN_SIZE_X/2;
-	TEXT_Y = WIN_SIZE_Y/2-3;
+	TEXT_X = -6*strlen(#param)+WIN_SIZE_X/2+1;
+	TEXT_Y = WIN_SIZE_Y/2-4;
 	
 	//emulate multithread :)
 	while (GetPixelColor(SCREEN_SIZE_X-1, SCREEN_SIZE_X, WIN_Y)==0x333333) WIN_Y+=WIN_SIZE_Y+17;
 
 	mem_Init();
-	shadow_buf = malloc(WIN_SIZE_X*WIN_SIZE_Y*3);
+	shadow_buf_24 = malloc(WIN_SIZE_X*WIN_SIZE_Y*3);
+	shadow_buf_32 = malloc(WIN_SIZE_X*WIN_SIZE_Y*4+8);
 	lighter_pixel1 = malloc(3);
 	lighter_pixel2 = malloc(3);
-	GetBackground();
+	CopyScreen(shadow_buf_24, WIN_X, WIN_Y, WIN_SIZE_X, WIN_SIZE_Y);
+	CopyScreen(lighter_pixel1, WIN_X, WIN_Y, 1, 1);
+	CopyScreen(lighter_pixel2, WIN_X, WIN_Y+WIN_SIZE_Y, 1, 1);
+	ESDWORD[shadow_buf_32] = WIN_SIZE_X;
+	ESDWORD[shadow_buf_32+4] = WIN_SIZE_Y;
 
 	loop()
 	{
@@ -88,40 +138,18 @@ void main()
 		switch(EAX & 0xFF)
 		{
 		case evButton:
-			ExitProcess();
+			Exit();
 			break;
          
 		case evReDraw:
 			DefineAndDrawWindow(WIN_X+1,WIN_Y,WIN_SIZE_X, WIN_SIZE_Y-1, 0x01, 0, 0, 0x01fffFFF);
-			if (drawn==1)
-			{
-				drawn=2;
-				MoveSize(0,0,-1,-1);
-				pause(3);
-				GetBackground();
-				MoveSize(WIN_X,WIN_Y,-1,-1);
-				drawn=1;
-			} 
-			DefineButton(0,0, WIN_SIZE_X, WIN_SIZE_Y, 1+BT_HIDE+BT_NOFRAME, 0);
-
-			_PutImage(0,0,WIN_SIZE_X,WIN_SIZE_Y,shadow_buf);
-			PutPixel(0,0,ESDWORD[lighter_pixel1]);
-			PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);
 			DrawBar(WIN_SIZE_X,0, 1, WIN_SIZE_Y, 0x333333);
-
-			PutText(TEXT_X-1,TEXT_Y+1);
-			PutText(TEXT_X-1,TEXT_Y-1);
-			PutText(TEXT_X-1,TEXT_Y  );
-			PutText(TEXT_X+1,TEXT_Y-1);
-			PutText(TEXT_X+1,TEXT_Y  );
-			PutText(TEXT_X+1,TEXT_Y+1);
-			PutText(TEXT_X,  TEXT_Y+1);
-			PutText(TEXT_X,  TEXT_Y-1);
-			WriteText(TEXT_X,  TEXT_Y,   0x80, 0xFFFfff, #param);
-			if (drawn==0) drawn=1;
+			DefineButton(0,0, WIN_SIZE_X, WIN_SIZE_Y, 1+BT_HIDE+BT_NOFRAME, 0);
+			GetBackground();
 			break;
+
 		default:
-			ExitProcess();
+			Exit();
       }
    }
 }
