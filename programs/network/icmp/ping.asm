@@ -143,8 +143,11 @@ mainloop:
 
         mcall   23, 300 ; 3 seconds time-out
         mcall   26,9
-        neg     [time_reference]
-        add     [time_reference], eax
+        sub     eax, [time_reference]
+        xor     edx, edx
+        mov     cx, 10
+        mul     cx
+        mov     [time_reference], eax
 
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT
         cmp     eax, -1
@@ -251,12 +254,12 @@ str5    db      'Name resolution failed.',10,0
 str6    db      'Could not open socket',10,0
 
 str11   db      'Answer: ',0
-str7    db      'bytes=%u seq=%u time=%u0 ms',10,0
+str7    db      'bytes=%u seq=%u time=%u ms',10,0
 str8    db      'timeout!',10,0
 str9    db      'miscompare at offset %u',10,0
 str10   db      10,'Press any key to exit',0
 
-str12   db      10,'Ping stats:',10,'%u packets sent, %u packets received',10,'average response time=%u0 ms',10,0
+str12   db      10,'Ping stats:',10,'%u packets sent, %u packets received',10,'average response time=%u ms',10,0
 
 sockaddr1:
         dw AF_INET4
