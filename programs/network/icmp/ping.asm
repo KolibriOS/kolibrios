@@ -12,9 +12,12 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; TODO: more precise timer, ttl, user selectable size/number of packets
+
 format binary as ""
 
 BUFFERSIZE      = 1500
+IDENTIFIER      = 0x1337
 
 use32
         org     0x0
@@ -122,12 +125,18 @@ resolve:
 
         mov     [count], 4
 
-mainloop:
         push    str3
         call    [con_write_asciiz]
+
         push    [ip_ptr]
         call    [con_write_asciiz]
 
+        push    (icmp_packet.length - ICMP_Packet.Data)
+        push    str3b
+        call    [con_printf]
+
+mainloop:
+        inc     [stats.tx]
         mcall   26,9
         mov     [time_reference], eax
         mcall   send, [socketnum], icmp_packet, icmp_packet.length, 0
@@ -137,23 +146,44 @@ mainloop:
         neg     [time_reference]
         add     [time_reference], eax
 
-        mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
+        mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT
         cmp     eax, -1
         je      .no_response
 
+        sub     eax, ICMP_Packet.Data
+        jb      .no_response            ; FIXME: use other error message?
+        mov     [recvd], eax
+
+        cmp     word[buffer_ptr + ICMP_Packet.Identifier], IDENTIFIER
+        jne     .no_response            ; FIXME: use other error message?
+
+; OK, we have a response, update stats and let the user know
+        inc     [stats.rx]
+        mov     eax, [time_reference]
+        add     [stats.time], eax
+
+        push    str11                   ; TODO: print IP address of packet sender
+        call    [con_write_asciiz]
+
 ; validate the packet
         lea     esi, [buffer_ptr + ICMP_Packet.Data]
+        mov     ecx, [recvd]
         mov     edi, icmp_packet.data
-        mov     ecx, 32/4
-        repe    cmpsd
+        repe    cmpsb
         jne     .miscomp
 
+; All OK, print to the user!
         push    [time_reference]
+        movzx   eax, word[buffer_ptr + ICMP_Packet.SequenceNumber]
+        push    eax
+        push    [recvd]
+
         push    str7
         call    [con_printf]
 
         jmp     continue
 
+; Error in packet, print it to user
   .miscomp:
         sub     edi, icmp_packet.data
         push    edi
@@ -161,32 +191,49 @@ mainloop:
         call    [con_printf]
         jmp     continue
 
+; Timeout!
   .no_response:
         push    str8
         call    [con_write_asciiz]
 
+; Send more ICMP packets ?
    continue:
         dec     [count]
         jz      done
+
         mcall   5, 100  ; wait a second
-        inc     [icmp_packet.id]
+
+        inc     [icmp_packet.seq]
         jmp     mainloop
 
-
-
+; Done..
 done:
+        xor     edx, edx
+        mov     eax, [stats.time]
+        div     [stats.rx]
+        push    eax
+        push    [stats.rx]
+        push    [stats.tx]
+        push    str12
+        call    [con_printf]
+
         push    str10
         call    [con_write_asciiz]
         call    [con_getch2]
         push    1
         call    [con_exit]
+
+; Finally.. exit!
 exit:
         mcall   -1
 
+; DNS error
 fail:
         push    str5
         call    [con_write_asciiz]
         jmp     done
+
+; Socket error
 fail2:
         push    str6
         call    [con_write_asciiz]
@@ -196,14 +243,20 @@ fail2:
 ; data
 title   db      'ICMP - echo client',0
 str2    db      '> ',0
-str3    db      'Ping to ',0
+str3    db      'Pinging to ',0
+str3b   db      ' with %u data bytes',10,0
+
 str4    db      10,0
 str5    db      'Name resolution failed.',10,0
 str6    db      'Could not open socket',10,0
-str7    db      ' time= %u0ms',10,0
-str8    db      ' timeout!',10,0
-str9    db      ' miscompare at offset %u',10,0
+
+str11   db      'Answer: ',0
+str7    db      'bytes=%u seq=%u time=%u0 ms',10,0
+str8    db      'timeout!',10,0
+str9    db      'miscompare at offset %u',10,0
 str10   db      10,'Press any key to exit',0
+
+str12   db      10,'Ping stats:',10,'%u packets sent, %u packets received',10,'average response time=%u0 ms',10,0
 
 sockaddr1:
         dw AF_INET4
@@ -214,7 +267,12 @@ sockaddr1:
 time_reference  dd ?
 ip_ptr          dd ?
 count           dd ?
+recvd           dd ?    ; received number of bytes in last packet
 
+stats:
+        .tx     dd 0
+        .rx     dd 0
+        .time   dd 0
 
 ; import
 align 4
@@ -242,9 +300,9 @@ socketnum       dd ?
 icmp_packet:    db 8            ; type
                 db 0            ; code
                 dw 0            ;
- .id            dw 0x0000       ; identifier
- .seq           dw 0x0001       ; sequence number
- .data          db 'abcdefghijklmnopqrstuvwxyz012345678'
+ .id            dw IDENTIFIER   ; identifier
+ .seq           dw 0x0000       ; sequence number
+ .data          db 'abcdefghijklmnopqrstuvwxyz012345'
  .length = $ - icmp_packet
 
 I_END:
