@@ -363,6 +363,8 @@ request:
 
         DEBUGF  2, "Setting IP using DHCP\n"
 
+        mov     [notify_struct.msg], str_connected
+        mcall   70, notify_struct
         call    dhcp_end
 
         mov     ebx, API_IPv4 + 3
@@ -629,7 +631,16 @@ sockaddr2:
 
         rb 10
 
-path            db  '/sys/network.ini',0
+notify_struct:
+        dd 7            ; run application
+        dd 0
+ .msg   dd 0
+        dd 0
+        dd 0
+        db '/sys/@notify', 0
+
+str_connected   db 'You are now connected to the network.', 0
+path            db '/sys/network.ini',0
 
 IM_END:
 
