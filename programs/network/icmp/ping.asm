@@ -59,9 +59,12 @@ start:
 ; main loop
         cmp     byte[s], 0
         jne     resolve
+
+        push    str_welcome
+        call    [con_write_asciiz]
 main:
 ; write prompt
-        push    str2
+        push    str_prompt
         call    [con_write_asciiz]
 ; read string
         mov     esi, s
@@ -81,6 +84,11 @@ main:
         jnz     @b
         mov     byte [esi-2], al
         pop     esi
+
+; reset stats
+        mov     [stats.tx], 0
+        mov     [stats.rx], 0
+        mov     [stats.time], 0
 
 resolve:
 ; resolve name
@@ -211,41 +219,47 @@ mainloop:
 
 ; Done..
 done:
+        cmp     [stats.rx], 0
+        jne     @f
+        xor     eax, eax
+        jmp     .zero
+  @@:
         xor     edx, edx
         mov     eax, [stats.time]
         div     [stats.rx]
+  .zero:
         push    eax
         push    [stats.rx]
         push    [stats.tx]
         push    str12
         call    [con_printf]
-
-        push    str10
-        call    [con_write_asciiz]
-        call    [con_getch2]
-        push    1
-        call    [con_exit]
-
-; Finally.. exit!
-exit:
-        mcall   -1
+        jmp     main
 
 ; DNS error
 fail:
         push    str5
         call    [con_write_asciiz]
-        jmp     done
+        jmp     main
 
 ; Socket error
 fail2:
         push    str6
         call    [con_write_asciiz]
-        jmp     done
+        jmp     main
+
+; Finally.. exit!
+exit:
+        push    1
+        call    [con_exit]
+
+        mcall   -1
 
 
 ; data
-title   db      'ICMP - echo client',0
-str2    db      '> ',0
+title   db      'ICMP echo (ping) client',0
+str_welcome db  'Please enter the hostname or IP-address of the host you want to ping,',10
+            db  'or just press enter to exit.',10,0
+str_prompt  db  10,'> ',0
 str3    db      'Pinging to ',0
 str3b   db      ' with %u data bytes',10,0
 
@@ -257,7 +271,6 @@ str11   db      'Answer: ',0
 str7    db      'bytes=%u seq=%u time=%u ms',10,0
 str8    db      'timeout!',10,0
 str9    db      'miscompare at offset %u',10,0
-str10   db      10,'Press any key to exit',0
 
 str12   db      10,'Ping stats:',10,'%u packets sent, %u packets received',10,'average response time=%u ms',10,0
 
@@ -273,9 +286,9 @@ count           dd ?
 recvd           dd ?    ; received number of bytes in last packet
 
 stats:
-        .tx     dd 0
-        .rx     dd 0
-        .time   dd 0
+        .tx     dd ?
+        .rx     dd ?
+        .time   dd ?
 
 ; import
 align 4
