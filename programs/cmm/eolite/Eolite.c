@@ -1,6 +1,10 @@
 //Leency & Veliant 2008-2013
 //GNU GPL licence.
 
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
+
 //libraries
 #define MEMSIZE 0xA0000
 #include "..\lib\kolibri.h"
@@ -16,10 +20,6 @@
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
-
-#ifndef AUTOBUILD
-#include "lang.h--"
-#endif
 
 #ifdef LANG_RUS
 	?define T_FILE "Файл"
@@ -37,6 +37,7 @@
 	?define ERROR_1 "Ошибка при загрузке библиотеки /rd/1/lib/box_lib.obj"
 	?define T_PASTE_WINDOW "Копирую..."
 	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
+	?define T_CANCEL_PASTE "Копирование прекращено. Папка скопирована не полностью."
 #elif LANG_EST
 	?define T_FILE "Fail"
 	?define T_TYPE "T№№p"
@@ -53,6 +54,7 @@
 	?define ERROR_1 "Viga teegi laadimisel /rd/1/lib/box_lib.obj"
 	?define T_PASTE_WINDOW "Kopeerin..."
 	?define T_PASTE_WINDOW_TEXT "Kopeerin faili:"
+	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -69,12 +71,13 @@
 	?define ERROR_1 "Error while loading library /rd/1/lib/box_lib.obj"
 	?define T_PASTE_WINDOW "Copying..."
 	?define T_PASTE_WINDOW_TEXT "Copying file:"
+	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
 #endif
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.98"
-#define ABOUT_TITLE "Eolite v1.98"
+#define TITLE "Eolite File Manager v1.98.3"
+#define ABOUT_TITLE "Eolite v1.98.3"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -101,7 +104,7 @@ byte
 
 proc_info Form;
 mouse m;
-int mouse_dd, scroll_used, scroll_size;
+int mouse_dd, scroll_used, scroll_size, sorting_arrow_x;
 dword buf, off;
 dword file_mas[6898];
 int j, i;
@@ -280,9 +283,9 @@ void main()
 						CreateThread(#Paste,#copy_stak);
 						break;
 				case 31...33: //sort
-						IF(sort_num==1) DrawFilledBar(onLeft(192,168)/2+210,42,6,10);
-						IF(sort_num==2) DrawFilledBar(onLeft(115,0),42,6,10);
-						IF(sort_num==3) DrawFilledBar(onLeft(44,0),42,6,10);
+						IF(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
+						IF(sort_num==2) DrawFilledBar(sorting_arrow_x,42,6,10);
+						IF(sort_num==3) DrawFilledBar(sorting_arrow_x,42,6,10);
 						sort_num=id-30;
 						Open_Dir(#path,WITH_REDRAW);
 						break;
@@ -595,9 +598,10 @@ void Open_Dir(dword dir_path, redraw){
 		HistoryPath(ADD_NEW_PATH);
 		files.visible = files.h / files.line_h;
 		IF (files.count < files.visible) files.visible = files.count;
-		IF (sort_num==1) WriteText(Form.width+60/2,45,0x80,col_border,"\x19");
-		IF (sort_num==2) WriteText(Form.width-115,45,0x80,col_border,"\x19");
-		IF (sort_num==3) WriteText(Form.width-44,45,0x80,col_border,"\x19");
+		IF (sort_num==1) sorting_arrow_x = Form.width+60/2;
+		IF (sort_num==2) sorting_arrow_x = Form.width-115;
+		IF (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
+		WriteText(sorting_arrow_x,45,0x80,col_border,"\x19");
 		IF (redraw!=ONLY_SHOW) Sorting();
 		IF (redraw!=ONLY_OPEN) List_ReDraw();
 	}
@@ -642,6 +646,7 @@ inline Sorting()
 void Del_Form()
 {
 	int dform_x=files.w-220/2+files.x;
+	if (strcmp(#file_name,".")==0) || (strcmp(#file_name,"..")==0) return;
 	if (del_active==2)
 	{
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
@@ -668,14 +673,15 @@ void Del_Form()
 	}
 }
 
-	
-void Del_File2(dword way)
+int del_error;
+int Del_File2(dword way)
 {    
 	dword dirbuf, fcount, i, filename;
-	char del_from[4096], error;
-	if (DeleteFile(way))
+	int error;
+	char del_from[4096];
+	if (isdir(way))
 	{
-		error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL);
+		if (error = GetDir(#dirbuf, #fcount, way, DIRS_ONLYREAL)) del_error = error;
 		for (i=0; i<fcount; i++)
 		{
 			if (CheckEvent()==evReDraw) draw_window();
@@ -686,21 +692,24 @@ void Del_File2(dword way)
 			if ( TestBit(ESDWORD[filename-40], 4) )
 				Del_File2(#del_from);
 			else
-				DeleteFile(#del_from);
+			{
+				if (error = DeleteFile(#del_from)) del_error = error;
+			}
 		}
-		DeleteFile(way);
 	}
+	if (error = DeleteFile(way)) del_error = error;
 }
 
 
 void Del_File(byte dodel)
-{    
+{   
 	if (dodel==true)
 	{
 		del_active=2;
-		List_ReDraw();
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
+		del_error = 0;
 		Del_File2(#file_path);
+		if (del_error) Write_Error(del_error);
  	}
 	del_active=0;
 	DeleteButton(301);
