@@ -408,8 +408,6 @@ parse_result:
 
 ; first, find end of headers
   .next_byte:
-        cmp     dword[edi], 0x0d0a0d0a  ; мне лень читать стандарт, пусть будут оба варианта
-        je      .end_of_headers
         cmp     dword[edi], 0x0a0d0a0d
         je      .end_of_headers
         inc     edi
