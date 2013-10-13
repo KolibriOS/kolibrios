@@ -160,6 +160,8 @@ resolve:
         mov     [socketnum], eax
 
         mcall   connect, [socketnum], sockaddr1, 18
+        test    eax, eax
+        jnz     socket_err
 
         mcall   40, 1 shl 7 ; + 7
         call    [con_cls]

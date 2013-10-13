@@ -608,21 +608,31 @@ align 4
 
   .block:
         test    [eax + SOCKET.options], SO_NONBLOCK
-        jz      .loop
+        jz      .waitforit
 
         mov     dword[esp+20], EWOULDBLOCK
         mov     dword[esp+32], -1
         ret
 
+  .waitforit:
+        push    eax
+        stdcall timer_hs, 300, 0, .wake, eax            ; FIXME: make timeout a constant
+        pop     eax
+
   .loop:
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
-        je      .fail
+        cmp     [eax + SOCKET.errorcode], 0
+        jne     .fail
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         je      .established
-        ja      .fail
 
         call    SOCKET_block
         jmp     .loop
+
+  .wake:
+        mov     eax, [esp+4]
+        mov     [eax + SOCKET.errorcode], ETIMEDOUT
+        call    SOCKET_notify.unblock
+        ret     4
 
   .fail:
         mov     eax, [eax + SOCKET.errorcode]
