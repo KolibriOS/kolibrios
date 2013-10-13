@@ -34,7 +34,6 @@ else
 	{
 	strcpy(temp, cur_dir);
 	strcat(temp, file);
-	
 	if ( !file_check(temp) )
 		k70.p00 = 2;
 	else

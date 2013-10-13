@@ -1,15 +1,6 @@
 
 /// ===========================================================
 
-void command_clear()
-{
-for (;CMD_POS;CMD_POS--)
-	printf("%c %c", 8, 8);
-CMD[0]='\0';
-}
-
-/// ===========================================================
-
 void command_history_add(char command[])
 {
 
@@ -49,11 +40,11 @@ if (	(0 != strcmp( CMD_HISTORY[0], CMD)) &&
 void command_get()
 {
 unsigned key;
-//unsigned pos = 0;
-int hist;
 
-CMD_POS = 0;
-CMD_NUM = 0;
+unsigned i;
+unsigned cmdLen = 0;
+unsigned cmdPos = 0;
+CMD[0] = '\0';
 
 for (;;)
 	{
@@ -64,74 +55,159 @@ for (;;)
 		switch (key)
 			{
 			case 27: // ESC
-				command_clear();
+                                for (i = cmdPos; i < cmdLen; i++)
+                                    printf(" ");
+                                for (i = cmdLen; i > 0; i--)
+                                    printf("%c %c", 8, 8);
+                                cmdLen = 0;
+                                cmdPos = 0;
+                                CMD[0] = '\0';
 				break;
 
-			case 13: // ENTER
-				CMD[CMD_POS] = '\0';
-				printf("\n\r");
 
+			case 13: // ENTER
+				printf("\n\r");
 				command_history_add(CMD);
 				return;
 
+
 			case 8: // BACKSPACE
-				if (CMD_POS > 0)
+				if (cmdPos > 0)
 					{
-					printf ("%c %c", 8, 8);
-					CMD_POS--;
+                                        for (i = cmdPos-1; i < cmdLen; i++)
+                                            CMD[i] = CMD[i+1];
+
+                                        for (i = 0; i < cmdLen-cmdPos; i++)
+					    printf (" ");
+
+                                        for (i = 0; i < cmdLen; i++)
+					    printf ("%c %c", 8, 8);
+
+					printf("%s", CMD);
+
+                                        for (i = 0; i < cmdLen-cmdPos; i++)
+                                            printf("%c", 8);
+
+                                        cmdPos--;
+                                        cmdLen--;
 					}
 				break;
+
 
 			case 9: // TAB
 				break;
 
+
 			default:
-				if (CMD_POS < 255)
+				if (cmdLen < 255)
 					{
-					
 					if ( kol_key_control() & 0x40 ) // если включён CapsLock
-						if ( (kol_key_control() & 1) || (kol_key_control() & 2)) // если нажаты шифты 
+						if ( (kol_key_control() & 1) || (kol_key_control() & 2)) // если нажаты шифты
 							key = tolower(key);
 						else
 							key = toupper(key);
 
-					CMD[CMD_POS] = key;
-					CMD_POS++;
-					printf("%c", key);
+                                        for (i = cmdLen+1; i > cmdPos; i--)
+                                            CMD[i] = CMD[i-1];
+
+					CMD[cmdPos] = key;
+
+                                        for (i = cmdPos; i > 0; i--)
+                                            printf("%c %c", 8, 8);
+
+					printf("%s", CMD);
+
+                                        for (i = 0; i < cmdLen-cmdPos; i++)
+                                            printf("%c", 8);
+
+					cmdPos++;
+                                        cmdLen++;
 					}
 					break;
-			};
-		}
-	else	// обработка расширенных клавиш
-		{
-		key = (key>>8)&0xff;
-//		printf ("%d\n\r", key);
 
+                        }
+                }
+                else
+                {
+       		key = (key>>8)&0xff;
 		switch (key)
 			{
+                        case 83: // Del
+                             if (cmdPos < cmdLen)
+                                {
+                                for (i = cmdPos; i < cmdLen; i++)
+                                    CMD[i] = CMD[i+1];
+
+                                for (i = 0; i < cmdLen-cmdPos; i++)
+                                    printf(" ");
+
+                                for (i = 0; i < cmdLen-cmdPos; i++)
+                                    printf("%c", 8);
+
+                                for (i = cmdPos; i < cmdLen; i++)
+                                    printf("%c", CMD[i]);
+
+                                for (i = 0; i < cmdLen-cmdPos; i++)
+                                    printf("%c", 8);
+
+                                cmdLen--;
+                                }
+
+                             break;
+
+                        case 75: // Left
+                             if (cmdPos > 0)
+                                {
+                                printf("%c", 8);
+                                cmdPos--;
+                                }
+                             break;
+
+
+                        case 77: // Right
+                             if (cmdPos < cmdLen)
+                                {
+                                printf("%c", CMD[cmdPos]);
+                                cmdPos++;
+                                }
+                             break;
+
 
 			case 80: // Down
-				for (hist = 0; hist < CMD_HISTORY_NUM; hist++)
+				for (i = 0; i < CMD_HISTORY_NUM; i++)
 					{
-					command_clear();
+
+                                        for (i = cmdPos; i < cmdLen; i++)
+                                            printf(" ");
+
+                                        for (i = cmdLen; i > 0; i--)
+                                            printf("%c %c", 8, 8);
 
 					if (CMD_NUM < CMD_HISTORY_NUM-1)
 						CMD_NUM++;
 					else
 						CMD_NUM = 0;
-				
+
 					printf(	CMD_HISTORY[CMD_NUM] );
 					strcpy(CMD, CMD_HISTORY[CMD_NUM]);
-					if ((CMD_POS = strlen(CMD)) != 0)
+                                        cmdLen = strlen(CMD);
+					if ((cmdPos = strlen(CMD)) != 0)
 						break;
+
 					}
 
 				break;
 
+
 			case 72: // Up
-				for (hist = 0; hist < CMD_HISTORY_NUM; hist++)
+				for (i = 0; i < CMD_HISTORY_NUM; i++)
 					{
-					command_clear();
+
+                                        for (i = cmdPos; i < cmdLen; i++)
+                                            printf(" ");
+
+                                        for (i = cmdLen; i > 0; i--)
+                                            printf("%c %c", 8, 8);
 
 					if (CMD_NUM > 0)
 						CMD_NUM--;
@@ -140,21 +216,22 @@ for (;;)
 
 					printf(	CMD_HISTORY[CMD_NUM] );
 					strcpy(CMD, CMD_HISTORY[CMD_NUM]);
-					if ((CMD_POS = strlen(CMD)) != 0)
+                                        cmdLen = strlen(CMD);
+					if ((cmdPos = strlen(CMD)) != 0)
 						break;
 					}
 				break;
 
+
 			case 0: // console window closed
 				cmd_exit(NULL);
 
-			};
-		}
-		
-	}
+                        }
+
+                }
+        }
+
 }
-
-
 
 /// ===========================================================
 

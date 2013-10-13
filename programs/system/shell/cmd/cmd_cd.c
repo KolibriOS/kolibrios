@@ -10,7 +10,7 @@ if (NULL == dir)
 	#if LANG_ENG
 		printf("  cd <directory>\n\r");
 	#elif LANG_RUS
-		printf("  cd <äèðåêòîðèÿ>\n\r");
+		printf("  cd <¤¨à¥ªâ®à¨ï>\n\r");
 	#endif
 	return TRUE;
 	}

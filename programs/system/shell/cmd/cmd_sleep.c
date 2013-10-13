@@ -8,7 +8,7 @@ if (!strlen(param))
 	#if LANG_ENG
 		printf("    sleep <time in the 1/100 of second>\n\r");
 	#elif LANG_RUS
-		printf("  sleep <интервал в сотых доля секунды>\n\r");
+		printf("  sleep <���ࢠ� � ���� ���� ᥪ㭤�>\n\r");
 	#endif
 	return TRUE;
 	}

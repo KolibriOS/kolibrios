@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.6.4"
+#define SHELL_VERSION "0.7.0"
 
 extern char	PATH[256];
 extern char	PARAM[256];
@@ -20,8 +20,6 @@ char		CMD[256];
 char		CMD_HISTORY[CMD_HISTORY_NUM][256];
 char		CMD_NUM;
 char		CMD_HISTORY_NUM_REAL = 0;
-
-unsigned	CMD_POS;
 
 /// ===========================================================
 
