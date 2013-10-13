@@ -131,6 +131,7 @@ struct  TCP_SOCKET              IP_SOCKET
         timer_persist           dd ?
         timer_keepalive         dd ? ; keepalive/syn timeout
         timer_timed_wait        dd ? ; also used as 2msl timer
+        timer_connect           dd ?
 
 ; extra
 
@@ -141,6 +142,7 @@ struct  TCP_SOCKET              IP_SOCKET
 
         temp_bits               db ?
                                 rb 3 ; align
+
 
 ends
 
@@ -616,8 +618,10 @@ align 4
 
   .waitforit:
         push    eax
-        stdcall timer_hs, 300, 0, .wake, eax            ; FIXME: make timeout a constant
-        pop     eax
+        stdcall timer_hs, 300, 0, .timeout, eax ; FIXME: make timeout a constant
+        pop     ebx
+        mov     [ebx + TCP_SOCKET.timer_connect], eax
+        mov     eax, ebx
 
   .loop:
         cmp     [eax + SOCKET.errorcode], 0
@@ -628,7 +632,7 @@ align 4
         call    SOCKET_block
         jmp     .loop
 
-  .wake:
+  .timeout:
         mov     eax, [esp+4]
         mov     [eax + SOCKET.errorcode], ETIMEDOUT
         call    SOCKET_notify.unblock
@@ -641,6 +645,7 @@ align 4
         ret
 
   .established:
+        stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
         mov     dword[esp+32], 0
         ret
 
