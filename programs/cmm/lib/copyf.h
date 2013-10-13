@@ -58,7 +58,7 @@
 		free(dirbuf);
 		return error;
 	}
-	
+
 	if (chrnum(in2, '/')>2) && (error = CreateDir(in2))
 	{
 		debug("Error: CopyFolder->CreateDir");
@@ -84,7 +84,7 @@
 		}
 		else
 		{
-			copyf_Action(filename);
+			copyf_Draw_Progress(filename);
 			if (error=CopyFile(#copy_from2, #copy_in2)) 
 			{
 				if (fabs(error)==8) { debug("Stop copying."); break;} //TODO: may be need grobal var like stop_all
@@ -96,26 +96,45 @@
 	return error;
 }
 
-
-unsigned char *ERROR_TEXT[]={
-"Code #0 - No error",
-"Error #1 - Base or partition of a hard disk is not defined",
-"Error #2 - Function isn't supported for this file system",
-"Error #3 - Unknown file system",
-"Error #4 - Reserved, is never returned",
-"Error #5 - File or folder not found",
-"Error #6 - End of file, EOF",
-"Error #7 - Pointer lies outside of application memory",
-"Error #8 - Too less disk space",
-"Error #9 - FAT table is destroyed",
-"Error #10 - Access denied",
-"Error #11 - Device error",
-0, 0, 0, 0, 0, 0, 0, 0, 0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 
-"Error #30 - Not enough memory",
-"Error #31 - File is not executable",
-"Error #32 - Too many processes",
-0}; 
+#ifdef LANG_RUS
+	unsigned char *ERROR_TEXT[]={
+	"Код #0: успешно",
+	"Ошибка #1: не определена база и/или раздел жёсткого диска",
+	"Ошибка #2: функция не поддерживается для этой файловой системы",
+	"Ошибка #3: неивзесная файловая система",
+	0,
+	"Ошибка #5: файл или папка не найдены",
+	"Ошибка #6: конец файла",
+	"Ошибка #7: указатель находится все памяти приложения",
+	"Ошибка #8: недостаточно места на диске",
+	"Ошибка #9: таблица FAT разрушена",
+	"Ошибка #10: доступ запрещен",
+	"Ошибка #11: ошибка устройсва",
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	"Ошибка #30: недостаточно памяти",
+	"Ошибка #31: файл не является исполняемым",
+	"Ошибка #32: слишком много процессов", 0};
+#else
+	unsigned char *ERROR_TEXT[]={
+	"Code #0 - No error, compleated successfully",
+	"Error #1 - Base or partition of a hard disk is not defined",
+	"Error #2 - Function isn't supported for this file system",
+	"Error #3 - Unknown file system",
+	0,
+	"Error #5 - File or folder not found",
+	"Error #6 - End of file",
+	"Error #7 - Pointer lies outside of application memory",
+	"Error #8 - Too less disk space",
+	"Error #9 - FAT table is destroyed",
+	"Error #10 - Access denied",
+	"Error #11 - Device error",
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	"Error #30 - Not enough memory",
+	"Error #31 - File is not executable",
+	"Error #32 - Too many processes", 0};
+#endif
 
 :dword get_error(int N)
 {
