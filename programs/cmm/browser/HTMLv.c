@@ -16,14 +16,25 @@
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\libimg_lib.h"
-#include "..\lib\lib.obj\truetype.h"
+#include "..\lib\list_box.h"
 //images
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
 
+#ifndef AUTOBUILD
+	#include "lang.h--"
+#endif
+
+#ifdef LANG_RUS
+	char version[]=" ’ҐЄбв®ўл© Ўа г§Ґа 0.99.08";
+	?define IMAGES_CACHE_CLEARED "Љни Є авЁ­®Є ®зЁйҐ­"
+#else
+	char version[]=" Text-based Browser 0.99.08";
+	?define IMAGES_CACHE_CLEARED "Images cache cleared"
+#endif
+
 
 #define URL param
-int use_truetype = 0;
 char fontlol[64];
 
 char editURL[sizeof(URL)],
@@ -47,6 +58,8 @@ proc_info Form;
 char stak[512];
 mouse m;
 
+int action_buf;
+
 #include "TWB.h"
 #include "include\menu_rmb.h"
 
@@ -55,14 +68,12 @@ void main()
 {
 	int btn, key;
 	int half_scroll_size;
-	int scroll_used=0;
+	int scroll_used=0, show_menu;
 	
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	if (load_dll2(libio, #libio_init,1)!=0) debug("Error: library doesn't exists - libio"w);
 	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Error: library doesn't exists - libimg"w);
-	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Warning: library doesn't exists - TrueType"w); use_truetype = 2; }
-	else init_font(#fontlol);
 	
 	if (!URL) strcpy(#URL, "/sys/index.htm");
 	strcpy(#editURL, #URL);
@@ -88,20 +99,28 @@ void main()
 				};*/
 				
 				btn=GetProcessSlot(Form.ID); 
-				if (btn<>GetActiveProcess()) break; //если окно не активно на события мыши не реагируем
+				if (btn<>GetActiveProcess()) break;
 
 				edit_box_mouse stdcall (#address_box);
 
 				m.get();
 				
-				if (m.pkm) && (m.y>WB1.top) && (m.y<Form.height) && (filesize)
+				if (m.y>WB1.top) && (m.y<Form.height) && (filesize)
 				{
-					SwitchToAnotherThread();
-					CreateThread(#menu_rmb,#stak);
-					break; 
+					if (m.pkm)
+					{
+						show_menu = 1;
+					}
+					if (!m.pkm) && (show_menu)
+					{
+						show_menu = 0;
+						SwitchToAnotherThread();
+						CreateThread(#menu_rmb,#stak);
+						break; 
+					}
 				}
 
-				if (m.vert==65535) //прокрутка колёсиком
+				if (m.vert==65535)
 				{
 					if (lines.first==0) break;
 					if (lines.first>3) lines.first-=2; ELSE lines.first=1;
@@ -111,7 +130,8 @@ void main()
 				if (m.vert==1)
 				{
 					if(lines.visible+lines.first+3>=lines.all) WB1.Scan(181);
-					ELSE	{
+					else
+					{
 						lines.first+=2;
 						WB1.Scan(ID2);
 					}
@@ -120,11 +140,11 @@ void main()
 				
 				if (!m.lkm) scroll_used=0;
 				if (m.x>=scroll1.start_x) && (m.x<=scroll1.start_x+scroll1.size_x) 
-					&& (m.y>=scroll1.start_y+scroll1.btn_height) && (-scroll1.btn_height+scroll1.start_y+scroll1.size_y>m.y)
-					&& (lines.all>lines.visible) && (m.lkm)
-					{
-						scroll_used=1;
-					}
+				&& (m.y>=scroll1.start_y+scroll1.btn_height) && (-scroll1.btn_height+scroll1.start_y+scroll1.size_y>m.y)
+				&& (lines.all>lines.visible) && (m.lkm)
+				{
+					scroll_used=1;
+				}
 				
 				if (scroll_used)
 				{
@@ -161,6 +181,7 @@ void main()
 				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);} //адресная строка
 				break;
 			case evReDraw:
+				if (action_buf) { WB1.Scan(action_buf); action_buf=0;}
 				Draw_Window();
 				break;
 			default:

@@ -9,18 +9,6 @@ dword
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
 
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
-
-#ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.07";
-#else
-	char version[]=" Text-based Browser 0.99.07";
-#endif
-
-
-
 
 struct TWebBrowser {
 	int left, top, width, height, line_h;
@@ -130,15 +118,7 @@ void TWebBrowser::DrawPage()
 		start_y = stroka * 10 + top + magrin_left;
 		line_length = strlen(#line) * 6;
 
-		if (use_truetype == 1)
-		{
-			//line_length =  get_length stdcall (#line,-1,16,line_length);
-			text_out stdcall (#line, #fontlol, 17, text_colors[text_color_index], start_x, start_y-3);
-		}
-		else
-		{
-			WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
-		}
+		WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
 		IF (b_text)	WriteBufText(start_x+1, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
 		IF (i_text) DrawBufSkew(start_x, 0, line_length, line_h);
 		IF (s_text) DrawBufBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
@@ -215,14 +195,6 @@ void TWebBrowser::Scan(int id)
 		case 002: //free img cache
 			FreeImgCache();
 			break;			
-		case 005: //truetype
-			if (use_truetype == 2) 
-			{
-				RunProgram("@notify", "Library does not exists /rd/1/lib/truetype.obj"w);
-				return;
-			}
-			if (use_truetype == 1) use_truetype=0; else use_truetype=1;
-			break;
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
 			OpenPage();
@@ -443,11 +415,11 @@ void TWebBrowser::ParseHTML(dword bword){
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
 	DrawBufFill();
-	line = NULL;
 	strcpy(#page_links,"|");
 	strcpy(#header, #version);
 	stroka = -lines.first;
 	stolbec = 0;
+	line = 0;
 
 	if (pre_text<>2)
 	{
@@ -784,31 +756,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		DrawBufBar(5, WB1.line_h/2, WB1.width-10, 1, hr_color);
 		TextGoDown(left1, top1+WB1.line_h, width1);
 	}
-	/*
-	if (!chTag("input"))
-	{
-		do{
-			if (!strcmp(#parametr, "type="))
-			{
-				if ((!strcmp(#options, "radio")) || (!strcmp(#options, "checkbox")))
-				{
-					if (!anchor) && (stroka > 0) CheckBox(stolbec*6 + left1,top1-2,10,10, 0, "\0", 0x888888, text_colors[text_color_index], 0);
-					stolbec+=2;
-				}
-				if ((!strcmp(#options, "text")) || (!strcmp(#options, "password")))
-				{
-					if (!anchor) && (stroka > 0) CheckBox(stolbec*6 + left1,top1-2,90,10, 0, "\0", 0x555555, 0, 0);
-					stolbec+=16;
-				}
-				if ((!strcmp(#options, "button")) || (!strcmp(#options, "file")) || (!strcmp(#options, "submit")))
-				{
-					if (!anchor) && (stroka > 0) DrawCaptButton(stolbec*6 + left1,top1-2,60,10, 0, 0xCCCccc, 0, "Button");
-					stolbec+=21;
-				}
-			}
-		} while(GetNextParam());
-	}
-	*/
 	if (!chTag("img"))
 	{
 		Images( left1, top1, width1);

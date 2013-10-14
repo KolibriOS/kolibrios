@@ -1,10 +1,5 @@
 //Leency - 2012-2013
 
-#define ITEM_HEIGHT 19
-#define ITEM_WIDTH  165
-dword col_work    = 0xE4DFE1;
-dword col_border  = 0x9098B0;
-
 char *ITEMS_LIST[]={
 "WIN                  F5",54,
 "DOS              Ctrl+D",04,
@@ -13,89 +8,87 @@ char *ITEMS_LIST[]={
 #ifdef LANG_RUS
 "€бе®¤­ЁЄ бва ­Ёжл    F3",52,
 "ЋзЁбвЁвм Єни Є авЁ­®Є"  ,02,
-//"TrueType fonts"       ,05,
 #else
 "View source          F3",52,
 "Free image cache"       ,02,
 #endif
-//"TrueType fonts"      ,05,
 0}; 
 
 
-
-proc_info MenuForm;
-	
 void menu_rmb()
 {
 	mouse mm;
-	int items_num, items_cur;
-	int id1, key, i;
-	
+	proc_info MenuForm;
+	llist menu;
+	int overid, key, N;
+	dword col_work    = 0xE4DFE1;
+	dword col_border  = 0x9098B0;
+
+	menu.w = 165;
+	menu.line_h = 19;
+	while (ITEMS_LIST[menu.count*2]) menu.count++;
 	SetEventMask(100111b); 
 
 	loop() switch(WaitEvent())
 	{
 	case evMouse:
-				mm.get();
-
 				GetProcessInfo(#MenuForm, SelfInfo);
-				id1=GetProcessSlot(MenuForm.ID);
-				if (id1<>GetActiveProcess()) ExitProcess();			
-				
-				id1=mm.y/ITEM_HEIGHT;
-				if (id1<0) || (id1+1>items_num) || (mm.x<0) || (mm.x>ITEM_WIDTH) break;
+				N=GetProcessSlot(MenuForm.ID);
+				if (N<>GetActiveProcess()) ExitProcess();
+
+				mm.get();				
+				overid=mm.y/menu.line_h;
+				if (overid<0) || (overid+1>menu.count) || (mm.x<0) || (mm.x>menu.w) break;
 				if (mm.lkm) || (mm.pkm)
 				{
-					ActivateWindow(GetProcessSlot(Form.ID));
-					SendWindowMessage(evButton, ITEMS_LIST[items_cur*2+1]);
-					SwitchToAnotherThread();
+					action_buf = ITEMS_LIST[menu.current*2+1];
 					ExitProcess();
 				}
-				if (items_cur<>id1)
+				if (menu.current<>overid)
 				{
-					items_cur=id1;
+					menu.current=overid;
 					goto _ITEMS_DRAW;
 				}
-				break;
-				
-		case evButton: 
 				break;
 				
 		case evKey:
 				key = GetKey();
 				if (key==27) ExitProcess();
-				if (key==178) && (items_cur)
+				if (key==178) && (menu.current)
 				{
-					items_cur--;
+					menu.current--;
 					goto _ITEMS_DRAW;
 				}
-				if (key==177) && (items_cur+1<items_num)
+				if (key==177) && (menu.current+1<menu.count)
 				{
-					items_cur++;
+					menu.current++;
 					goto _ITEMS_DRAW;
 				}
 				if (key==13)
 				{
-					WB1.Scan(ITEMS_LIST[items_cur*2+1]);
+					action_buf = ITEMS_LIST[menu.current*2+1];
 					ExitProcess();
 				}
 				break;
 				
 		case evReDraw:
-				while (ITEMS_LIST[items_num*2]) items_num++;
-				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,ITEM_WIDTH+2,items_num*ITEM_HEIGHT+4,0x01, 0, 0, 0x01fffFFF);
-				DrawPopup(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+2,0, -1,col_border);
+				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,menu.w+2,menu.count*menu.line_h+4,0x01, 0, 0, 0x01fffFFF);
+				DrawPopup(0,0,menu.w,menu.count*menu.line_h+3,0, col_work,col_border);
+				//PutPixel();
 
 				_ITEMS_DRAW:
-				for (i=0; i<items_num; i++;)
+				for (N=0; N<menu.count; N++;)
 				{
-					if (i<>items_cur) EDX=col_work; else EDX=0x94AECE;
-					DrawBar(2, i*ITEM_HEIGHT+2, ITEM_WIDTH-2, ITEM_HEIGHT, EDX);
-					if (i<>items_cur) WriteText(19,i*ITEM_HEIGHT+9,0x80,0xf2f2f2,ITEMS_LIST[i*2]);
-					WriteText(18,i*ITEM_HEIGHT+8,0x80,0x000000,ITEMS_LIST[i*2]);
-					//if (ITEMS_LIST[i*2+1]==5) && (use_truetype==1) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+9, 4, 4, 0x444444);
+					if (N==menu.current) 
+						DrawBar(2, N*menu.line_h+2, menu.w-3, menu.line_h, 0x94AECE);
+					else
+					{
+						DrawBar(2, N*menu.line_h+2, menu.w-3, menu.line_h, col_work);
+						WriteText(19,N*menu.line_h+9,0x80,0xf2f2f2,ITEMS_LIST[N*2]);
+					}
+					WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N*2]);
 				}
-				DrawBar(7, cur_encoding*ITEM_HEIGHT+9, 4, 4, 0x444444); //показывает выбраную кодировку
+				DrawBar(7, cur_encoding*menu.line_h+9, 4, 4, 0x444444); //show current encoding
 	}
 }
 

@@ -24,6 +24,7 @@ void FreeImgCache()
 		if (pics[num_of_pics].image) img_destroy stdcall (pics[num_of_pics].image);
 		pics[num_of_pics].path = NULL;
 	}
+	notify(IMAGES_CACHE_CLEARED);
 }
 
 
