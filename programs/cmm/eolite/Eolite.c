@@ -76,8 +76,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.98.3"
-#define ABOUT_TITLE "Eolite v1.98.3"
+#define TITLE "Eolite File Manager v1.98.4"
+#define ABOUT_TITLE "Eolite v1.98.4"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -108,8 +108,9 @@ int mouse_dd, scroll_used, scroll_size, sorting_arrow_x;
 dword buf, off;
 dword file_mas[6898];
 int j, i;
+int action_buf;
 
-edit_box edit2= {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
+edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
@@ -403,8 +404,28 @@ void main()
 			}                         
 			break;
 		case evReDraw:
+			if (action_buf) { menu_action(action_buf); action_buf=0;}
 			draw_window();
 	}
+}
+
+void menu_action(dword id)
+{
+	if (id==COPY_PASTE_END)
+	{
+		FnProcess(5);
+		SelectFile(#copy_to+strrchr(#copy_to,'/'));
+	}
+	if (id==100) Open();
+	if (id==201) notify("Not compleated yet");
+	if (id==202) FnProcess(3); //F3
+	if (id==203) FnProcess(4); //F4
+	if (id==104) Copy(#file_path, NOCUT);
+	if (id==105) Copy(#file_path, CUT);
+	if (id==106) CreateThread(#Paste,#copy_stak);
+	if (id==107) FnProcess(2);
+	if (id==108) Del_Form();
+	if (id==109) FnProcess(5);
 }
 
 

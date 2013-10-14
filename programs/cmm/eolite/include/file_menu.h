@@ -10,9 +10,9 @@ char *file_captions[] = {
 	"Копировать",            "Crl+C",104,
 	"Вырезать",              "Crl+X",105,
 	"Вставить",              "Crl+V",106,
-	"Переименовать",         "F2",107,
+	"Переименовать",         "F2",207,
 	"Удалить",               "Del",108,
-	"Обновить",              "F5",109,
+	"Обновить папку",        "F5",109,
 	0, 0, 0};
 #elif LANG_EST
 char *file_captions[] = {
@@ -23,7 +23,7 @@ char *file_captions[] = {
 	"Kopeeri",        "Crl+C",104,
 	"Lїika",          "Crl+X",105,
 	"Aseta",          "Crl+V",106,
-	"Nimeta №mber",   "F2",107,
+	"Nimeta №mber",   "F2",207,
 	"Kustuta",        "Del",108,
 	"Vфrskenda",      "F5",109,
 	0, 0, 0};
@@ -36,7 +36,7 @@ char *file_captions[] = {
 	"Copy",          "Crl+C",104,
 	"Cut",           "Crl+X",105,
 	"Paste",         "Crl+V",106,
-	"Rename",        "F2",107,
+	"Rename",        "F2",207,
 	"Delete",        "Del",108,
 	"Refresh",       "F5",109,
 	0, 0, 0};
@@ -76,17 +76,7 @@ void FileMenu()
 				break;
 
 		case evButton: 
-				id=GetButtonID();
-				if (id==100) Open();
-				if (id==201) notify("Not compleated yet");
-				if (id==202) FnProcess(3); //F3
-				if (id==203) FnProcess(4); //F4
-				if (id==104) Copy(#file_path, NOCUT);
-				if (id==105) Copy(#file_path, CUT);
-				if (id==106) CreateThread(#Paste,#copy_stak);
-				if (id==107) FnProcess(2);
-				if (id==108) Del_Form();
-				if (id==109) FnProcess(5);
+				action_buf = GetButtonID();
 				ExitProcess();
 				break;
 				

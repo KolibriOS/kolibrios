@@ -74,7 +74,6 @@ void menu_rmb()
 		case evReDraw:
 				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,menu.w+2,menu.count*menu.line_h+4,0x01, 0, 0, 0x01fffFFF);
 				DrawPopup(0,0,menu.w,menu.count*menu.line_h+3,0, col_work,col_border);
-				//PutPixel();
 
 				_ITEMS_DRAW:
 				for (N=0; N<menu.count; N++;)

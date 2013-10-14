@@ -1,8 +1,8 @@
 //Leency 2008-2013
 
 
-byte copy_from[4096], cut_active=0;
-enum {NOCUT, CUT};
+byte copy_from[4096], copy_to[4096], cut_active=0;
+enum {NOCUT, CUT, COPY_PASTE_END};
 #define WIN_W 300
 #define WIN_H 50
 
@@ -28,7 +28,7 @@ void copyf_Draw_Progress(dword filename) {
 
 void Paste()
 {
-	char copy_to[4096], copy_rezult;
+	char copy_rezult;
 	
 	if (!copy_from) ExitProcess();
 	strcpy(#copy_to, #path);
@@ -55,9 +55,7 @@ void Paste()
 		copy_from=NULL;
 		cut_active=false;
 	}
+	action_buf = COPY_PASTE_END;
 	ActivateWindow(GetProcessSlot(Form.ID));
-	SendWindowMessage(evKey, 54);
-	SelectFile(#copy_to+strrchr(#copy_to,'/'));
-	pause(20);
 	ExitProcess();
 }
