@@ -115,6 +115,7 @@ MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
 ENOBUFS                 = 1
+EINPROGRESS             = 2
 EOPNOTSUPP              = 4
 EWOULDBLOCK             = 6
 ENOTCONN                = 9
@@ -125,6 +126,7 @@ ENOMEM                  = 18
 EADDRINUSE              = 20
 ECONNREFUSED            = 61
 ECONNRESET              = 52
+EISCONN                 = 56
 ETIMEDOUT               = 60
 ECONNABORTED            = 53
 

@@ -498,6 +498,12 @@ SOCKET_connect:
         cmp     esi, 8
         jb      .invalid
 
+        cmp     [eax + SOCKET.state], SS_ISCONNECTING
+        je      .already
+
+        test    [eax + SOCKET.options], SO_ACCEPTCON
+        jnz     .notsupp
+
         cmp     word [edx], AF_INET4
         je      .af_inet4
 
@@ -511,10 +517,20 @@ SOCKET_connect:
         mov     dword[esp+32], -1
         ret
 
+  .already:
+        mov     dword[esp+20], EALREADY
+        mov     dword[esp+32], -1
+        ret
+
+  .eisconn:
+        mov     dword[esp+20], EISCONN
+        mov     dword[esp+32], -1
+        ret
+
   .af_inet4:
         cmp     [eax + IP_SOCKET.LocalIP], 0
         jne     @f
-        push    [IP_LIST + 4]                               ; FIXME !i!i!i!
+        push    [IP_LIST + 4]                               ; FIXME: use correct local IP
         pop     [eax + IP_SOCKET.LocalIP]
        @@:
 
@@ -539,6 +555,7 @@ align 4
         call    mutex_lock
         popa
 
+; Fill in remote port and IP, overwriting eventually previous values
         pushw   [edx + 2]
         pop     [eax + UDP_SOCKET.RemotePort]
 
@@ -559,11 +576,16 @@ align 4
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
 
+        call    SOCKET_is_connected
+
         mov     dword[esp+32], 0
         ret
 
 align 4
   .tcp:
+        test    [eax + SOCKET.state], SS_ISCONNECTED
+        jnz     .eisconn
+
         pusha
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
@@ -589,7 +611,6 @@ align 4
         mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
 
         TCP_sendseqinit eax
-;        mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
 
         mov     ebx, eax
         lea     eax, [ebx + STREAM_SOCKET.snd]
@@ -598,13 +619,14 @@ align 4
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create              ; TODO: same here
 
-        pusha
+        push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
-        popa
+        pop     eax
 
-        push    ebx
-        mov     eax, ebx
+        call    SOCKET_is_connecting
+
+        push    eax
         call    TCP_output
         pop     eax
 
@@ -612,13 +634,13 @@ align 4
         test    [eax + SOCKET.options], SO_NONBLOCK
         jz      .waitforit
 
-        mov     dword[esp+20], EWOULDBLOCK
         mov     dword[esp+32], -1
+        mov     dword[esp+20], EINPROGRESS
         ret
 
   .waitforit:
         push    eax
-        stdcall timer_hs, 300, 0, .timeout, eax ; FIXME: make timeout a constant
+        stdcall timer_hs, 300, 0, .timeout, eax         ; FIXME: make timeout a constant
         pop     ebx
         mov     [ebx + TCP_SOCKET.timer_connect], eax
         mov     eax, ebx
@@ -635,17 +657,20 @@ align 4
   .timeout:
         mov     eax, [esp+4]
         mov     [eax + SOCKET.errorcode], ETIMEDOUT
+        and     [eax + SOCKET.state], not SS_ISCONNECTING
         call    SOCKET_notify.unblock
         ret     4
 
   .fail:
         mov     eax, [eax + SOCKET.errorcode]
+        mov     [eax + SOCKET.errorcode], 0             ; Clear the error, we only need to send it to the caller once
         mov     [esp+20], eax
         mov     dword[esp+32], -1
         ret
 
   .established:
         stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
+        mov     dword[esp+20], EISCONN
         mov     dword[esp+32], 0
         ret
 
@@ -2405,10 +2430,10 @@ SOCKET_is_connecting:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connecting: %x\n", eax
 
-        and     [eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
-        or      [eax + SOCKET.options], SS_ISCONNECTING
+        and     [eax + SOCKET.state], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+        or      [eax + SOCKET.state], SS_ISCONNECTING
 
-        jmp     SOCKET_notify
+        ret
 
 
 
