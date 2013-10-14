@@ -124,9 +124,9 @@ START:          ; start of execution
    @@:
 ;######################################################################
 
-        call    FillIconsOffs
+        call    FillIconsOffs                  ;заполняет MaxNumIcon,IconsOffs
 
-        mcall   40,0100000b
+        mcall   40,0100000b                    ;нужны только события мыши, перерисовка иконок будет в другом потоке
 
         mov     eax,[icon_count]
         mov     bl,ICONS_DRAW_COUNTH
@@ -138,7 +138,7 @@ START:          ; start of execution
         and     eax,0FFh
         mov     [sbIcons.max_area],eax
 
-        mcall   51,1,BGRedrawThread,stack_bredraw
+        mcall   51,1,BGRedrawThread,stack_bredraw       ;запускаем поток перерисовки иконок
         stdcall [OpenDialog_Init],OpenDialog_data
 
 messages:
@@ -339,7 +339,7 @@ MovingIcon:
 ;qweqwe:
 
         mov    [MovingActiv],1
-        mcall   51,1,MovingWnd,stack_dlg        ;CreateThread MovingWnd,stack_dlg
+        mcall   51,1,MovingWnd,stack_mov        ;CreateThread MovingWnd,stack_dlg
    .WaitLB:
         mcall   37,2    ;GetMouseKey
         test    al,001b
@@ -1149,7 +1149,6 @@ IconNoDraw      dd -1           ;-1 либо номер иконки, которую не надо рисовать(
 
 bFixIcons       dd 1
 bNotSave        dd 0
-bIcoBuff        dd 0            ;1, если IconArea занят
 
 LButtonActiv    dd 0
 RButtonActiv    dd 0
@@ -1367,8 +1366,9 @@ I_END:
 IconArea        rb 4*ICON_SIZE*ICON_SIZE
 ;\
 
+sc              system_colors
 
-
+align 4
 ScreenX         rw 1
 ScreenY         rw 1
 
@@ -1383,10 +1383,11 @@ AddY            rd 1
 SelIcon         rd 1
 DlgSelIcon      rd 1
 slotDlgAdd      rd 1
+DlgBufImg       rb IMG_SIZE*IMG_SIZE*3
 
-sc              system_colors
 
-align 4
+
+
 bufStdIco       rb 40
 IconsOffs       rd 100
 PIcoDB          rd 1
@@ -1424,12 +1425,13 @@ align 4
 temp_dir_pach   rb 1024
 fname_Info      rb 1024
 ;-------------------------------------------------------------------------------
-                rb 1024
+                rb 512
+stack_mov:
+                rb 512
 stack_dlg:
-align 4
-                rb 1024
+                rb 512
 stack_bredraw:
-                rb 1024
+                rb 512
 stack_area:
 ;------------------------------------------------------------------------------
 ENDMEM:

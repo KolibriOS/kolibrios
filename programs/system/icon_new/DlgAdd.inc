@@ -474,15 +474,6 @@ local IcoX:DWORD,\
       IcoY:DWORD,\
       iIcon:DWORD
 
-      @@:                      ;ждём, когда освободится буффер
-        cmp     [bIcoBuff],1
-        jne     @f
-        mcall   5,1
-        jmp     @b
-      @@:
-
-        mov     [bIcoBuff],1 ;блокируем IconArea
-
         mov     ecx,[sbIcons.position]
         xor     eax,eax
         m2m     dword[iIcon],0
@@ -510,7 +501,7 @@ local IcoX:DWORD,\
   .DrawIcoStolb:
         push    ecx
 
-        mov     edi,IconArea
+        mov     edi,DlgBufImg
         mov     edx,IMG_SIZE
 
     .DrawLine:
@@ -538,7 +529,7 @@ local IcoX:DWORD,\
         mov     edx,[IcoX]
         shl     edx,16
         mov     dx,word[IcoY]
-        mcall   7,IconArea,<IMG_SIZE,IMG_SIZE>
+        mcall   7,DlgBufImg,<IMG_SIZE,IMG_SIZE>
 
         inc     [iIcon]
         mov     eax,[iIcon]
@@ -557,7 +548,7 @@ local IcoX:DWORD,\
     .endDrawIcon:
 
         mov     ecx,IMG_SIZE*IMG_SIZE
-        mov     edi,IconArea
+        mov     edi,DlgBufImg
         mov     eax,[sc.work]
         mov     ebx,eax
         shr     ebx,16
@@ -581,7 +572,7 @@ local IcoX:DWORD,\
         mov     edx,[IcoX]
         shl     edx,16
         mov     dx,word[IcoY]
-        mcall   7,IconArea,<IMG_SIZE,IMG_SIZE>
+        mcall   7,DlgBufImg,<IMG_SIZE,IMG_SIZE>
 
      .Dalee:
         add     dword[IcoY],IMG_SIZE+SPCH
@@ -594,7 +585,6 @@ local IcoX:DWORD,\
 
    .endProc:
 
-        mov     [bIcoBuff],0           ;разблокируем буфер
         ret
 endp
 
@@ -641,7 +631,7 @@ proc DrawSelIcon
         add     esi,[raw_pointer]
         add     esi,44
 
-        mov     edi,IconArea
+        mov     edi,DlgBufImg
         mov     edx,IMG_SIZE
     .DrawLine:
 
@@ -664,7 +654,7 @@ proc DrawSelIcon
         dec     edx
         jnz     .DrawLine
 
-        mcall   7,IconArea,<IMG_SIZE,IMG_SIZE>,<15,15>
+        mcall   7,DlgBufImg,<IMG_SIZE,IMG_SIZE>,<15,15>
 
         ret
 endp
