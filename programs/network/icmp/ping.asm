@@ -73,9 +73,9 @@ main:
         call    [con_gets]
 ; check for exit
         test    eax, eax
-        jz      done
+        jz      exit
         cmp     byte [esi], 10
-        jz      done
+        jz      exit
 ; delete terminating '\n'
         push    esi
 @@:
