@@ -11,22 +11,51 @@ idbRAdd      equ 103
 idbRDel      equ 104
 idbRProp     equ 105
 
+DELTA_COLOR  equ 70
+
 ;---- thread for rbutton -----------------------------------------------------------------------
 RButtonWin:
         mcall   40,100101b      ;SetMaskMessage 100101b
-	mcall	48,3,sc,40
+        mcall   48,3,sc,40
+
+        mov     eax,[sc.work]     ;вычисляем цвет светлее фонового
+        rol     eax,16
+        add     al,DELTA_COLOR
+        jnc     @f
+        mov     al,0FFh
+      @@:
+        rol     eax,16
+        add     al,DELTA_COLOR
+        jnc     @f
+        mov     al,0FFh
+      @@:
+        add     ah,DELTA_COLOR
+        jnc     @f
+        mov     ah,0FFh
+      @@:
+        mov     [sc.workH],eax
+
+        mov     eax,[sc.work]     ;вычисляем цвет темнее фонового
+        rol     eax,16
+        sub     al,DELTA_COLOR
+        jnc     @f
+        mov     al,0FFh
+      @@:
+        rol     eax,16
+        sub     al,DELTA_COLOR
+        jnc     @f
+        mov     al,0FFh
+      @@:
+        sub     ah,DELTA_COLOR
+        jnc     @f
+        mov     ah,0FFh
+      @@:
+        mov     [sc.workL],eax
+
+
+
         stdcall GetNumIcon,[MouseX],[MouseY],-1
         mov     [SelIcon],eax
-
-        cmp     eax,-1
-        jne     @f
-        mov     [RMenuH],16*4+3+3
-        mov     [RMenuHsb],16*4+3+3
-        jmp     .rbw1
-      @@:
-        mov     [RMenuH],16*5+3+3
-        mov     [RMenuHsb],16*5+3+3
-    .rbw1:
 
         mov     [NumUserButt],0
         mov     [RMenuW],0
@@ -35,6 +64,16 @@ RButtonWin:
         mov     [RBUser],eax
         stdcall [ini_enum_keys],IconIni,secRButt,GetUserBut
 
+        cmp     [SelIcon],-1
+        jne     @f
+        mov     [RMenuH],16*4
+        mov     eax,[NumUserButt]
+        shl     eax,4
+        add     [RMenuH],ax
+        jmp     .rbw1
+      @@:
+        mov     [RMenuH],16*5
+    .rbw1:
 
 RBWRedraw:
         mcall   12,1    ;RedrawWinBeg
@@ -44,11 +83,19 @@ RBWRedraw:
         mov     ecx,[MouseY]
         shl     ecx,16
         mov     cx,[RMenuH]
-        mov     edx,0177CCFFh
+        mov     edx,01000000h
         mov     esi,01000000h
         xor     eax,eax
         int     40h
 
+        and     ebx,0FFFFh      ;фоновый прямоугольник
+        inc     bx
+        and     ecx,0FFFFh
+        inc     cx
+        mcall   13,,,[sc.work]
+
+        cmp     [SelIcon],-1       ;если клик по иконке, то пункты пользователя не нужны
+        jne     .NoDrawUserBut
        ;-----------
         mov     ecx,[NumUserButt]
   .DrawUB:
@@ -57,14 +104,15 @@ RBWRedraw:
         mov     eax,[NumUserButt]
         sub     eax,ecx
         mov     edx,eax      ;button ID
+        or      edx,60000000h
         shl     eax,4+16          ;*16*10000h
         mov     ecx,eax
         mov     cx,16
 
         xor     ebx,ebx
         mov     bx,[RMenuW]
-        mov     esi,[sc.work]	;[RBMenuColor];0888888h
-        mcall   8
+        mov     esi,[sc.work]
+        mcall   8                       ;определили
 
         mov     ebx,50000h
         shr     ecx,16
@@ -76,44 +124,58 @@ RBWRedraw:
         mov     eax,[NumUserButt]
         sub     eax,[esp]
         mov     edx,[RBUser+eax*8]
-
-        mcall   4
+        mcall   4                      ;подписали
 
         pop     ecx
         loop    .DrawUB
 
        ;-----------
+.NoDrawUserBut:
+                                        ;определение кнопок для иконок
         xor     ebx,ebx
         mov     bx,[RMenuW]
-        mov     cx,[RMenuH]
-        sub     cx,[RMenuHsb]
-        push    ecx
-        mov     dx,cx
-        shl     ecx,16
-        mov     cx,dx
 
-                                   ;первая разделительная линия
-;        mcall   38,,,[RBMenuColor];0888888h
-        mcall   38,,,[sc.work]
-        add     ecx,00010001h
-        mcall     ,,,
-
-       ;------------
-        mov     ecx,[esp]
-        add     ecx,2
+        xor     eax,eax
+        cmp     [SelIcon],-1
+        jne     @f
+        mov     eax,[NumUserButt]
+     @@:
+        shl     eax,4
+        mov     cx,ax
         shl     ecx,16
         mov     cx,16
+        push    ecx                     ;отсюда рисовать кнопки (по высоте)
 
-;        mcall   8,,,idbRRedrawFon,[RBMenuColor];0888888h  ;3 кнопки второго блока
-        mcall   8,,,idbRRedrawFon,[sc.work]
-        add     ecx,00100000h
-        mcall    ,,,idbRAlign
-        add     ecx,00100000h
-        mcall    ,,,idbRFixIcons
 
+        mcall   8,,,60000000h or idbRRedrawFon,[sc.work]
+        add     ecx,16*10000h
+        mcall    ,,,60000000h or idbRAlign
+        add     ecx,16*10000h
+        mcall    ,,,60000000h or idbRFixIcons
+        add     ecx,16*10000h
+
+        cmp     dword[SelIcon],-1
+        je      @f
+
+        mcall    ,,,60000000h or idbRDel,
+        add     ecx,16*10000h
+        mcall    ,,,60000000h or idbRProp,
+        jmp     .endRM1
+      @@:
+        mcall    ,,,60000000h or idbRAdd,
+      .endRM1:
+
+                                        ;подписи к кнопкам
+        xor     eax,eax
+        cmp     [SelIcon],-1
+        jne     @f
+        mov     eax,[NumUserButt]
+      @@:
+        shl     eax,4
         mov     ebx,50000h
-        mov     bx,word[esp]
-        add     bx,2+5
+        mov     bx,ax
+
+        add     bx,5
         mcall   4,,80000000h,RMenuRedrawFon
         add     ebx,16
         mcall    ,,,RMenuAlign
@@ -127,52 +189,19 @@ RBWRedraw:
         mov     edx,RMenuOnMoving
      .RBWR1:
         mcall
+        add     ebx,16
 
-       ;------------
-        xor     ebx,ebx               ;вторая разделительная линия
-        mov     bx,[RMenuW]
-        mov     ecx,[esp]
-        add     ecx,16*3+2
-        mov     dx,cx
-        shl     ecx,16
-        mov     cx,dx
-;        mcall   38,,,[RBMenuColor];0888888h
-        mcall   38,,,[sc.work]
-        add     ecx,00010001h
-        mcall     ,,,
-       ;------------
-                                     ;1 или 2 кнопки третьего блока
-        mov     ecx,[esp]
-        add     ecx,16*3+4
-        shl     ecx,16
-        mov     cx,16
         cmp     dword[SelIcon],-1
         je      @f
 
-;        mcall   8,,,idbRDel,[RBMenuColor];0888888h
-        mcall   8,,,idbRDel,[sc.work]
-        add     ecx,00100000h
-;        mcall    ,,,idbRProp,[RBMenuColor];0888888h
-        mcall    ,,,idbRProp,[sc.work]
-
-        mov     ebx,50000h
-        mov     bx,word[esp]
-        add     bx,16*3+4+5
-        mcall   4,,80000000h,RMenuDel
+        mcall    ,,,RMenuDel
         add     bx,16
-        mcall    ,,         ,RMenuProp
-
-        jmp     .endRM
+        mcall    ,,,RMenuProp
+        jmp     .endRM2
       @@:
 
-;        mcall   8,,,idbRAdd,[RBMenuColor];0888888h
-        mcall   8,,,idbRAdd,[sc.work]
-        mov     ebx,50000h
-        mov     bx,word[esp]
-        add     bx,16*3+4+5
-        mcall   4,,80000000h,RMenuAdd
-
-      .endRM:
+        mcall    ,,,RMenuAdd
+      .endRM2:
 
         pop     ecx
         mcall   12,2    ;RedrawWinEnd
@@ -218,21 +247,40 @@ RBWButton:
         jmp     RBWExit
 
 RBWMouse:
+        cmp     [PredItem],-1
+        je      @f
+        mov     eax,[PredItem]
+        xor     ebx,ebx
+        mov     bx,[RMenuW]
+        mov     cx,ax
+        shl     ecx,16
+        mov     cx,ax
+        mcall   38,,,[sc.work]
+        add     ecx,00100010h
+        mcall    ,,,[sc.work]
+      @@:
+        call    ClickInWin
+        jnc     @f
+        mcall   37,1          ;положение мыши относительно окна
+        and     eax,0FFF0h
+        mov     [PredItem],eax
+        xor     ebx,ebx
+        mov     bx,[RMenuW]
+        mov     cx,ax
+        shl     ecx,16
+        mov     cx,ax
+        mcall   38,,,[sc.workL]
+        add     ecx,00100010h
+        mcall    ,,,[sc.workH]
+      @@:
+
+
         mcall   37,2            ;GetMouseKey
         test    eax,111b
         jz      RBWMessages
-        mcall   37,0            ;GetMousePos
-        xor     ebx,ebx
-        mov     bx,ax           ;y
-        shr     eax,16          ;x
 
-        xor     ecx,ecx
-        mov     cx,bx
-        mov     bx,ax
-
-        mcall   34
-        cmp     eax,[RBSlot]
-        je      RBWMessages
+        call    ClickInWin
+        jc      RBWMessages
 
 RBWExit:
         mcall   68,13,[RBUser]
@@ -308,6 +356,26 @@ RBPropeties:
 RBWSetActivWin:
         mcall   18,3,[slotDlgAdd]
         jmp     RBWExit
+
+proc ClickInWin        ;Carry flag = 1, если клик в окне
+        mcall   37,0            ;GetMousePos
+        xor     ebx,ebx
+        mov     bx,ax           ;y
+        shr     eax,16          ;x
+
+        xor     ecx,ecx
+        mov     cx,bx
+        mov     bx,ax
+
+        mcall   34
+        cmp     eax,[RBSlot]
+        jne     @f
+        stc
+        ret
+      @@:
+        clc
+        ret
+endp
 
 
 proc AlignIcons
@@ -458,19 +526,6 @@ proc GetUserBut stdcall,f_name,sec_name,key_name,key_value
 
         push    ebx esi edi
 
-        mov     edi,[key_name]
-        mov     esi,keyMenuColor
-    @@: lodsb
-        scasb
-        jne     @f
-        test    al,al
-        jnz     @b
-
-        stdcall [ini_get_color],[f_name],[sec_name],[key_name],0888888h
-        mov     [RBMenuColor],eax
-        ret
-   @@:
-
         mov     edi,[key_name]           ;определяем ширину меню
         xor     eax,eax
         or      ecx,-1
@@ -510,7 +565,6 @@ proc GetUserBut stdcall,f_name,sec_name,key_name,key_value
         mov     [RBUser+ebx*8+8],edi
 
         inc     [NumUserButt]
-        add     [RMenuH],16
 
         pop     edi esi ebx
         mov     eax,1

@@ -1,3 +1,5 @@
+;иногда неверно определяется ширина менюшки
+
 ICONS_DAT       equ '/rd/1/icons.dat'
 ICON_STRIP      equ '/rd/1/iconstrp.png'
 ICON_SIZE       equ 68
@@ -29,7 +31,7 @@ BegData         equ fiStdIco.point
         dd START        ; start of code
         dd I_END        ; size of image
         dd ENDMEM       ; memory for app
-        dd stack_area   ; esp
+        dd stack_main   ; esp
         dd 0            ; boot parameters
         dd 0            ; path
 ;------------------------------------------------------------------------------
@@ -428,7 +430,7 @@ RButtonPress:
         jmp     @b
      @@:
 
-        mcall   51,1,RButtonWin,stack_dlg       ;CreateThread RButtonWin,stack_dlg
+        mcall   51,1,RButtonWin,stack_rmenu       ;CreateThread RButtonWin,stack_rmenu
 
         jmp     messages
 
@@ -846,6 +848,7 @@ local posX:WORD,\
      @@:
 
         xor     ebx,ebx
+        mov     ebx,[NumIconI]
    .TestIcon:
         cmp     dword[NumIconI],-1
         je      @f
@@ -1165,7 +1168,6 @@ keyParams       db 'param',0
 keyIco          db 'ico',0
 keyX            db 'x',0
 keyY            db 'y',0
-keyMenuColor    db 'menucolor',0
 
 ;-------------------------------------------------------------------------------
 IMPORTS:
@@ -1215,24 +1217,27 @@ import  libini,\
 ;-------------------------------------------------------------------------------
 secRButt        db 'rbmenu',0
 
+PredItem        dd -1
+
 if lang eq ru
+ RMenuOffMoving db 'Закрепить иконки',0
+ RMenuOnMoving  db 'Открепить иконки',0
  RMenuRedrawFon db 'Перерисовать',0
  RMenuAlign     db 'Выровнять по сетке',0
  RMenuAdd       db 'Добавить',0
  RMenuDel       db 'Удалить',0
  RMenuProp      db 'Свойства',0
- RMenuOffMoving db 'Закрепить иконки',0
- RMenuOnMoving  db 'Открепить иконки',0
 
 else
 
+ RMenuOffMoving db 'Fix the icons',0
+ RMenuOnMoving  db 'Unfix the icons',0
  RMenuRedrawFon db 'Redraw',0
  RMenuAlign     db 'Snap to Grid',0
  RMenuAdd       db 'Add',0
  RMenuDel       db 'Delete',0
  RMenuProp      db 'Properties',0
- RMenuOffMoving db 'Fix the icons',0
- RMenuOnMoving  db 'Unfix the icons',0
+
 
 end if
 
@@ -1249,7 +1254,6 @@ else
  ErrNotFoundIni db 'icon.ini not found',0
  ErrName        db 'The name "rbmenu" reserved',0
 end if
-
 
 pthNotify       db '/rd/1/@notify',0
 
@@ -1277,7 +1281,6 @@ DCaptName       db 'Name',0
 DCaptPath       db 'Path',0
 DCaptParams     db 'Parameters',0
 DCaptIcon       db 'Icon',0
-;DCaptChange     db '.',0
 DCaptCreate     db 'Create',0
 DCaptProperties db 'Change',0
 DCaptCancel     db 'Cancel',0
@@ -1367,6 +1370,8 @@ IconArea        rb 4*ICON_SIZE*ICON_SIZE
 ;\
 
 sc              system_colors
+sc.workL        rd 1
+sc.workH        rd 1
 
 align 4
 ScreenX         rw 1
@@ -1406,10 +1411,8 @@ NumUserButt     rd 1
 RBUser          rd 16*2+1
 RMenuW          rw 1
 RMenuH          rw 1
-RMenuHsb        rw 1
 
 MaxPage         rd 1
-RBMenuColor     rd 1
 mouse_dd        rd 1
 
 DAreaName       rb NAME_LENGTH+1
@@ -1421,17 +1424,20 @@ align 4
 RBProcInfo      rb 1024
 align 4
 
-; OpenDialog
+
+;------ OpenDialog -------------------------------
 temp_dir_pach   rb 1024
 fname_Info      rb 1024
+
 ;-------------------------------------------------------------------------------
                 rb 512
-stack_mov:
+stack_mov:                      ;одновременно таскать и держать открытым менюшку невозможно
+stack_rmenu:
                 rb 512
 stack_dlg:
                 rb 512
 stack_bredraw:
                 rb 512
-stack_area:
+stack_main:
 ;------------------------------------------------------------------------------
 ENDMEM:
