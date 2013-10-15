@@ -910,6 +910,44 @@ IPv4_get_frgmnt_num:
         ret
 
 
+;-----------------------------------------------------------------
+;
+; IPv4_connect
+;
+;   IN: eax = socket pointer
+;  OUT: eax = 0 ok / -1 error
+;       ebx = error code
+;
+;-------------------------
+align 4
+IPv4_connect:
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+
+; Fill in local IP
+        cmp     [eax + IP_SOCKET.LocalIP], 0
+        jne     @f
+        push    [IP_LIST + 4]                                   ; FIXME: use correct local IP
+        pop     [eax + IP_SOCKET.LocalIP]
+
+; Fill in remote IP
+        pushd   [edx + 4]
+        pop     [eax + IP_SOCKET.RemoteIP]
+
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up data receiving queue
+        pop     eax
+
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+
+        xor     eax, eax
+        ret
+
+
 ;---------------------------------------------------------------------------
 ;
 ; IPv4_API

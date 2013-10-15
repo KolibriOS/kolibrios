@@ -39,6 +39,7 @@ struct  SOCKET
 
         snd_proc                dd ?
         rcv_proc                dd ?
+        connect_proc            dd ?
 
 ends
 
@@ -150,7 +151,6 @@ struct  UDP_SOCKET              IP_SOCKET
 
         LocalPort               dw ? ; network byte order
         RemotePort              dw ? ; network byte order
-        firstpacket             db ?
 
 ends
 
@@ -311,6 +311,7 @@ SOCKET_open:
         mov     [eax + SOCKET.Domain], ecx
         mov     [eax + SOCKET.Type], edx
         mov     [eax + SOCKET.Protocol], esi
+        mov     [eax + SOCKET.connect_proc], connect_notsupp
 
         cmp     ecx, AF_INET4
         jne     .no_inet4
@@ -359,6 +360,7 @@ align 4
         mov     [eax + SOCKET.Protocol], IP_PROTO_UDP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_udp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.connect_proc], UDP_connect
         ret
 
 align 4
@@ -366,6 +368,7 @@ align 4
         mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+        mov     [eax + SOCKET.connect_proc], TCP_connect
 
         TCP_init_socket eax
         ret
@@ -375,6 +378,7 @@ align 4
   .raw_ip:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.connect_proc], IPv4_connect
         ret
 
 
@@ -382,6 +386,7 @@ align 4
   .raw_icmp:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_icmp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.connect_proc], IPv4_connect
         ret
 
 align 4
@@ -504,8 +509,12 @@ SOCKET_connect:
         test    [eax + SOCKET.options], SO_ACCEPTCON
         jnz     .notsupp
 
-        cmp     word [edx], AF_INET4
-        je      .af_inet4
+        call    [eax + SOCKET.connect_proc]
+
+        mov     dword[esp+20], ebx
+        mov     dword[esp+32], eax
+        ret
+
 
   .notsupp:
         mov     dword[esp+20], EOPNOTSUPP
@@ -522,177 +531,11 @@ SOCKET_connect:
         mov     dword[esp+32], -1
         ret
 
-  .eisconn:
-        mov     dword[esp+20], EISCONN
-        mov     dword[esp+32], -1
-        ret
 
-  .af_inet4:
-        cmp     [eax + IP_SOCKET.LocalIP], 0
-        jne     @f
-        push    [IP_LIST + 4]                               ; FIXME: use correct local IP
-        pop     [eax + IP_SOCKET.LocalIP]
-       @@:
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
-        je      .udp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        je      .tcp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_IP
-        je      .ip
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
-        je      .ip
-
-        jmp     .notsupp
-
-align 4
-  .udp:
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        popa
-
-; Fill in remote port and IP, overwriting eventually previous values
-        pushw   [edx + 2]
-        pop     [eax + UDP_SOCKET.RemotePort]
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-        cmp     [eax + UDP_SOCKET.LocalPort], 0
-        jne     @f
-        call    SOCKET_find_port
-       @@:
-
-        mov     [eax + UDP_SOCKET.firstpacket], 0
-
-        push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
-        pop     eax
-
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
-
-        call    SOCKET_is_connected
-
-        mov     dword[esp+32], 0
-        ret
-
-align 4
-  .tcp:
-        test    [eax + SOCKET.state], SS_ISCONNECTED
-        jnz     .eisconn
-
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        popa
-
-        pushw   [edx + 2]
-        pop     [eax + TCP_SOCKET.RemotePort]
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-        cmp     [eax + TCP_SOCKET.LocalPort], 0
-        jne     @f
-        call    SOCKET_find_port
-       @@:
-
-        mov     [eax + TCP_SOCKET.timer_persist], 0
-        mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
-
-        push    [TCP_sequence_num]
-        add     [TCP_sequence_num], 6400
-        pop     [eax + TCP_SOCKET.ISS]
-        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
-
-        TCP_sendseqinit eax
-
-        mov     ebx, eax
-        lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_create              ; TODO: check if memory was available or not
-
-        lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create              ; TODO: same here
-
-        push    ebx
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
-        pop     eax
-
-        call    SOCKET_is_connecting
-
-        push    eax
-        call    TCP_output
-        pop     eax
-
-  .block:
-        test    [eax + SOCKET.options], SO_NONBLOCK
-        jz      .waitforit
-
-        mov     dword[esp+32], -1
-        mov     dword[esp+20], EINPROGRESS
-        ret
-
-  .waitforit:
-        push    eax
-        stdcall timer_hs, 300, 0, .timeout, eax         ; FIXME: make timeout a constant
-        pop     ebx
-        mov     [ebx + TCP_SOCKET.timer_connect], eax
-        mov     eax, ebx
-
-  .loop:
-        cmp     [eax + SOCKET.errorcode], 0
-        jne     .fail
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
-        je      .established
-
-        call    SOCKET_block
-        jmp     .loop
-
-  .timeout:
-        mov     eax, [esp+4]
-        mov     [eax + SOCKET.errorcode], ETIMEDOUT
-        and     [eax + SOCKET.state], not SS_ISCONNECTING
-        call    SOCKET_notify.unblock
-        ret     4
-
-  .fail:
-        mov     eax, [eax + SOCKET.errorcode]
-        mov     [eax + SOCKET.errorcode], 0             ; Clear the error, we only need to send it to the caller once
-        mov     [esp+20], eax
-        mov     dword[esp+32], -1
-        ret
-
-  .established:
-        stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
-        mov     dword[esp+20], EISCONN
-        mov     dword[esp+32], 0
-        ret
-
-
-align 4
-  .ip:
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        popa
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-        push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
-        pop     eax
-
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
-
-        mov     dword[esp+32], 0
+connect_notsupp:
+        xor     eax, eax
+        dec     eax
+        mov     ebx, EOPNOTSUPP
         ret
 
 

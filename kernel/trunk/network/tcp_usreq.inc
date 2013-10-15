@@ -74,6 +74,137 @@ TCP_usrclosed:
         ret
 
 
+;-------------------------
+;
+; TCP_connect
+;
+;  IN:  eax = socket ptr
+;  OUT: eax = 0 ok / -1 error
+;       ebx = error code
+;
+;-------------------------
+align 4
+TCP_connect:
+
+        test    [eax + SOCKET.state], SS_ISCONNECTED
+        jnz     .eisconn
+
+        push    eax
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        pop     eax
+
+; Fill in local IP
+        cmp     [eax + IP_SOCKET.LocalIP], 0
+        jne     @f
+        push    [IP_LIST + 4]                                   ; FIXME: use correct local IP
+        pop     [eax + IP_SOCKET.LocalIP]
+
+; Fill in remote port and IP
+        pushw   [edx + 2]
+        pop     [eax + TCP_SOCKET.RemotePort]
+
+        pushd   [edx + 4]
+        pop     [eax + IP_SOCKET.RemoteIP]
+
+; Find a local port, if user didnt define one
+        cmp     [eax + TCP_SOCKET.LocalPort], 0
+        jne     @f
+        call    SOCKET_find_port
+       @@:
+
+; Start the TCP sequence
+        mov     [eax + TCP_SOCKET.timer_persist], 0
+        mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
+
+        push    [TCP_sequence_num]
+        add     [TCP_sequence_num], 6400
+        pop     [eax + TCP_SOCKET.ISS]
+        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
+
+        TCP_sendseqinit eax
+
+        mov     ebx, eax
+        lea     eax, [ebx + STREAM_SOCKET.snd]
+        call    SOCKET_ring_create
+        test    eax, eax
+        jz      .nomem
+
+        lea     eax, [ebx + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_create
+        test    eax, eax
+        jz      .nomem
+
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        pop     eax
+
+        call    SOCKET_is_connecting
+
+; Now send the SYN packet to remote end
+        push    eax
+        call    TCP_output
+        pop     eax
+
+  .block:
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jz      .waitforit
+
+        xor     eax, eax
+        dec     eax
+        mov     ebx, EINPROGRESS
+        ret
+
+  .nomem:
+        xor     eax, eax
+        dec     eax
+        mov     ebx, ENOMEM
+        ret
+
+  .eisconn:
+        xor     eax, eax
+        dec     eax
+        mov     ebx, EISCONN
+        ret
+
+  .waitforit:
+        push    eax
+        stdcall timer_hs, TCP_time_connect, 0, .timeout, eax
+        pop     ebx
+        mov     [ebx + TCP_SOCKET.timer_connect], eax
+        mov     eax, ebx
+
+  .loop:
+        cmp     [eax + SOCKET.errorcode], 0
+        jne     .fail
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        je      .established
+
+        call    SOCKET_block
+        jmp     .loop
+
+  .timeout:
+        mov     eax, [esp+4]
+        mov     [eax + SOCKET.errorcode], ETIMEDOUT
+        and     [eax + SOCKET.state], not SS_ISCONNECTING
+        call    SOCKET_notify.unblock
+        ret     4
+
+  .fail:
+        mov     ebx, [eax + SOCKET.errorcode]
+        mov     [eax + SOCKET.errorcode], 0                     ; Clear the error, we only need to send it to the caller once
+        xor     eax, eax
+        dec     eax
+        ret
+
+  .established:
+        stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
+
+        xor     eax, eax
+        ret
+
+
 
 
 ;-------------------------

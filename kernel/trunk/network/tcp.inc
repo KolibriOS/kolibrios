@@ -71,6 +71,8 @@ TCP_time_rtt_default    = 5           ; default Round Trip Time (3,2s)
 TCP_time_srtt_default   = 0           ;
 TCP_time_max_idle       = 8*TCP_time_keep_interval      ; FIXME
 
+TCP_time_connect        = 300         ; in 1/100s (default=3s)
+
 ; timer constants
 TCP_max_rxtshift        = 12          ; max retransmissions waiting for ACK
 TCP_max_keepcnt         = 8           ; max keepalive probes
