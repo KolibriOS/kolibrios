@@ -24,10 +24,10 @@ m_icon:
 	dd 0xffffff
 
 lsz m_text,\
-  ru, "åÖçû",\
-  en, "MENU",\
+  ru, "å•≠Ó",\
+  en, "Menu",\
   et, "MEN‹‹",\
-  sp, "MENU"
+  sp, "Menu"
 
 mi_text		db 'WAVETETRBGRDGPL '
 
@@ -118,14 +118,14 @@ menu_button_y:
 width:			dd 0	;305
 height:			dd 30	;18
 soften_height:		dd 5
-button_top_offset:	dd 3
-button_bottom_offset:	dd 3
+button_top_offset:	dd 0
+button_bottom_offset:	dd 0
 ;------------------------------------------------------------------------------
 ; INI flags
 ;buttons 	dd 1	;  0 no frames  ; 1 frames
 soften_up:	dd 1	;  0 no         ; 1 yes
 soften_down:	dd 0	;  0 no         ; 1 yes
-minimize_left:	dd 1
+minimize_left:	dd 0
 minimize_right:	dd 1
 ;icons_position	dd 95	; not used!
 menu_enable:	dd 1

@@ -25,9 +25,10 @@ draw_tray_buttons:
 ;--------------------------------------
 align 4	
 @@:
-	mov	ecx,3 shl 16
-	add	ecx,[height]
-	sub	cx,6
+;	mov	ecx,3 shl 16
+;	add	ecx,[height]
+;	sub	cx,6
+	mov	ecx,[height]
 	mov	esi,[wcolor]
 	mov	eax,8
 ;--------------------------------------
@@ -39,9 +40,10 @@ align 4
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
-	add	ebx,CLOCK_SIZE-2
+	add	ebx,CLOCK_SIZE+1
+	mcall	,,,0x60000000+2	; time/date button
+        sub     ebx,3
 	mov	[pos_x_clock],ebx
-	mcall	,,,0x40000000+2	; time/date button
 ;--------------------------------------
 align 4	
 @@:
@@ -53,9 +55,10 @@ align 4
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
-	add	ebx,CPU_USAGE_SIZE-2
+	add	ebx,CPU_USAGE_SIZE+1
+	mcall	,,,0x60000000+18	;button 18 - sysmeter_name (GMON)
+        sub     ebx,3
 	mov	[pos_x_cpu_usage],ebx
-	mcall	,,,0x40000000+18	;button 18 - sysmeter_name (GMON)
 ;--------------------------------------
 align 4	
 @@:
@@ -67,9 +70,10 @@ align 4
 	mov	ebx,[max_x]
 	sub	ebx,[offset_x_tray]
 	shl	ebx,16
-	add	ebx,CHLANG_SIZE-2
+	add	ebx,CHLANG_SIZE+1
+	mcall	,,,0x60000000+16	;button 16 - chang language
+        sub     ebx,3
 	mov	[pos_x_cpu_chlang],ebx
-	mcall	,,,0x40000000+16	;button 16 - chang language
 ;--------------------------------------
 align 4	
 @@:
@@ -83,11 +87,11 @@ align 4
 	shl	ebx,16
 	add	ebx,10
 	mov	[pos_x_page_list],ebx
-	mcall	,,,0x40000000+22	;button 22 - page list decrease
+	mcall	,,,0x60000000+22	;button 22 - page list decrease
 	
 	add	ebx,24 shl 16
 	
-	mcall	,,,0x40000000+21	;button 21 - page list decrease
+	mcall	,,,0x60000000+21	;button 21 - page list decrease
 ;--------------------------------------
 align 4	
 @@:

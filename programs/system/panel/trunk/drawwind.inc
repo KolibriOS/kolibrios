@@ -256,7 +256,8 @@ draw_menu_and_clean_desktop:
 ;--------------------------------------
 align 4
 @@:
-	call	calculate_button_y_coordinate_and_size
+;	call	calculate_button_y_coordinate_and_size
+        mov     ecx, [height]
 	mov	edx, 0x40d1ff01
 ;	mov	edx, 0xd1ff01
 ;	add	edx, [button_frames]
@@ -278,11 +279,13 @@ align 4
 	and	eax,0xffff
 	mov	[menu_button_y.size],eax
 
+	call	calculate_button_y_coordinate_and_size
 	mov	edx,[MenuButton_color]	;0x44aa44
 	mov	esi,[wcolor]
+        add     ebx,3 shl 16 - 5
 	call	draw_appl_button	
 
-	add	ebx, 8*65536
+	add	ebx, 6*65536
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
@@ -320,10 +323,12 @@ align 4
 ; Inserted code for drawing buttons 103, 104, 105 (Clean, Restore, Exchange windows)
 	mov	esi, dword [system_colours+24]    ; drawing buttons
 	and	esi, 0x00ffffff
-	mov	edx, 0x40000000 + 103
-	call	calculate_button_y_coordinate_and_size
+	mov	edx, 0x60000000 + 103
+;	call	calculate_button_y_coordinate_and_size
+        mov     ecx, [height]
 	mcall	8	;,,<3,13>
 	
+	call	calculate_button_y_coordinate_and_size
 	mov	edx,[CleanDesktopButton_color]	;time_bgr_color
 	mov	esi,[wcolor]
 	call	draw_appl_button
@@ -411,9 +416,10 @@ align 4
 	mov	edx,edi
 	add	edx,52
 	or	edx,0x60000000
-	mov	ecx, 1*65536
-	add	ecx, [height]
-	sub	ecx,3
+;	mov	ecx, 1*65536
+;	add	ecx, [height]
+;	sub	ecx,3
+	mov	ecx, [height]
 	mcall	8,,,,[wcolor]
 
 	inc	edi

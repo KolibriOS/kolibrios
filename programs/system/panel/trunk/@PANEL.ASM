@@ -997,7 +997,7 @@ noid16:
 	test	eax,eax
 	jz	@f
 
-	mcall	18,3,edi
+	mcall	18,2,edi
 	jmp	still
 ;--------------------------------------
 align 4 
