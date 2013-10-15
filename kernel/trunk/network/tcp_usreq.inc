@@ -89,10 +89,10 @@ TCP_connect:
         test    [eax + SOCKET.state], SS_ISCONNECTED
         jnz     .eisconn
 
-        push    eax
+        push    eax edx
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
-        pop     eax
+        pop     edx eax
 
 ; Fill in local IP
         cmp     [eax + IP_SOCKET.LocalIP], 0

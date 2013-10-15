@@ -327,10 +327,10 @@ UDP_connect:
         call    UDP_disconnect
   @@:
 
-        push    eax
+        push    eax edx
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
-        pop     eax
+        pop     edx eax
 
 ; Fill in local IP
         cmp     [eax + IP_SOCKET.LocalIP], 0

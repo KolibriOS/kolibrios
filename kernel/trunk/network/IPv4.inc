@@ -922,10 +922,10 @@ IPv4_get_frgmnt_num:
 align 4
 IPv4_connect:
 
-        pusha
+        push    eax edx
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
-        popa
+        pop     edx eax
 
 ; Fill in local IP
         cmp     [eax + IP_SOCKET.LocalIP], 0
@@ -937,8 +937,9 @@ IPv4_connect:
         pushd   [edx + 4]
         pop     [eax + IP_SOCKET.RemoteIP]
 
+; Set up data receiving queue
         push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up data receiving queue
+        init_queue (eax + SOCKET_QUEUE_LOCATION)
         pop     eax
 
         lea     ecx, [eax + SOCKET.mutex]
