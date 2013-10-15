@@ -423,7 +423,7 @@ void menu_action(dword id)
 	if (id==104) Copy(#file_path, NOCUT);
 	if (id==105) Copy(#file_path, CUT);
 	if (id==106) CreateThread(#Paste,#copy_stak);
-	if (id==107) FnProcess(2);
+	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
 }
