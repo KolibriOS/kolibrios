@@ -258,7 +258,7 @@ align 4
 @@:
 ;	call	calculate_button_y_coordinate_and_size
         mov     ecx, [height]
-	mov	edx, 0x40d1ff01
+	mov	edx, 0x60d1ff01
 ;	mov	edx, 0xd1ff01
 ;	add	edx, [button_frames]
 	mcall	8,,,,[wcolor]	; MENU BUTTON
