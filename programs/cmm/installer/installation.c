@@ -45,24 +45,27 @@ void Install()
 	proc_info Process;
 
 	ShowProgress("Mounting virtual disk...");
-	if (TmpDiskAdd(9, 100)!=0) RunProgram("/sys/tmpdisk", "a9s100");
-	for (i=2; i<256; i++;)
+	//if (TmpDiskAdd(9, 100)!=0) RunProgram("/sys/tmpdisk", "a9s100");
+	for (i=0; i<256; i++;)
 	{
 		GetProcessInfo(#Process, i);
 		if (i==Form.ID) || (strcmp(#Process.name, "OS")==0) continue;
+		//debug(#Process.name);
 		KillProcess(i);
 	}
 	//RunProgram("/sys/develop/board", NULL); //temp============
 	RunProgram("/sys/REFRSCRN", NULL);
-	pause(100);
+	//pause(100);
 	ShowProgress("Copying files...");
-	copyf("/sys/docpack", "/tmp9/1/docpack");
+	copyf("/sys/docpack", "/kolibrios/docpack");
 	DeleteFile("/sys/docpack");
 	copyf(abspath("sys"), "/rd/1");
-	copyf(abspath("tmp"), "/tmp9/1");
+	//copyf(abspath("tmp"), "/tmp9/1");
+	SetAddApplDir("kolibrios", abspath("kolibrios"));
+
 	ShowProgress("Post install actions...");
 	RunProgram("/sys/launcher", NULL);
-	SetSystemSkin("/tmp9/1/skins/latte.skn");
+	SetSystemSkin("/kolibrios/skins/latte.skn");
 	EndLoop();
 }
 
@@ -102,3 +105,4 @@ void EndLoop()
 					DrawLink(TEXTX, BLACK_H*2+85, 0x80, 11, "http://kolibri-n.org/donate.php");
 	}
 }
+

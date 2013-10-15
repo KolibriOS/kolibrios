@@ -76,8 +76,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.98.4"
-#define ABOUT_TITLE "Eolite v1.98.4"
+#define TITLE "Eolite File Manager v1.98.5"
+#define ABOUT_TITLE "Eolite v1.98.5"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -753,22 +753,28 @@ void ReName(byte rename)
 		if (strcmp(#file_path,#temp)!=0) && (file_name)
 		if (itdir)
 		{
-			del_rezult = DeleteFile(#file_path);
-			if (del_rezult!=0)
+			if (del_rezult = DeleteFile(#file_path))
 			{
 				Write_Error(del_rezult);
 				ShowMessage(T_DEL_ERROR_1, 150);
 				return;
 			}
-			ELSE CreateDir(#temp);
+			if (CreateDir(#temp)) CreateDir(#file_path);
 			Open_Dir(#path,WITH_REDRAW);
+			SelectFile(#edit_name);
 		}
 		else
 		{
-			copy_rezult = CopyFile(#file_path,#temp);
-			if (copy_rezult!=0) Write_Error(copy_rezult); else Del_File(true);
+			if (copy_rezult = CopyFile(#file_path,#temp))
+			{
+				Write_Error(copy_rezult);
+			}
+			else
+			{
+				Del_File(true);
+				SelectFile(#edit_name);
+			}
 		}
-		SelectFile(#edit_name);
 	}
 	Line_ReDraw(col_selec,files.current);
 }

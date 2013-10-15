@@ -120,7 +120,7 @@
 {
 	DrawRectangle(x,y,w,h,col_border);
 	DrawBar(x+1,y+1,w-1,1,0xFFFfff);
-	DrawBar(x+1,y+2,1,h-3,0xFFFfff);
+	DrawBar(x+1,y+2,1,h-2,0xFFFfff);
 	if (col_work!=-1) DrawBar(x+2,y+2,w-2,h-2,col_work);
 	DrawPopupShadow(x,y,w,h-1,skinned);
 }
