@@ -76,8 +76,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.98.6"
-#define ABOUT_TITLE "Eolite v1.98.6"
+#define TITLE "Eolite File Manager v1.98.7"
+#define ABOUT_TITLE "Eolite v1.98.7"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -87,6 +87,8 @@ dword col_lpanel  = 0x00699C;
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 char tmp_disk_del_param[3]="d0";
 struct path_string { char Item[4096]; };
+
+int active_about=0;
 
 llist files;
 

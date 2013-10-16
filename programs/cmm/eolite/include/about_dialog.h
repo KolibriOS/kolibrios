@@ -24,16 +24,26 @@
 void about_dialog()
 {   
 	byte id;
+	IF (active_about) ExitProcess();
+	active_about=1;
 	loop() switch(WaitEvent())
 	{
 		case evButton: 
 				id=GetButtonID();
-				IF (id==1) || (id==10) ExitProcess();
+				IF (id==1) || (id==10) 
+				{
+					active_about=0;
+					ExitProcess();
+				}
 				IF (id==23) RunProgram(BROWSER_PATH, BROWSER_LINK);
 				break;
 				
 		case evKey:
-				IF (GetKey()==27) ExitProcess();
+				IF (GetKey()==27)
+				{
+					active_about=0;
+					ExitProcess();
+				}
 				break;
 				
 		case evReDraw:
