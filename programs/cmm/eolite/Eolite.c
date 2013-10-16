@@ -76,8 +76,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.98.7"
-#define ABOUT_TITLE "Eolite v1.98.7"
+#define TITLE "Eolite File Manager v1.98.8"
+#define ABOUT_TITLE "Eolite v1.98.8"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -116,15 +116,16 @@ edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_nam
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
-#include "include\copypaste.h"
-#include "include\some_code.h"
+#include "include\copy.h"
+#include "include\other.h"
 #include "include\sorting.h"
-#include "include\icons_f.h"
+#include "include\icons.h"
 #include "include\ini.h"
 #include "include\left_panel.h"
 #include "include\history.h"
-#include "include\file_menu.h"
-#include "include\about_dialog.h"
+#include "include\menu.h"
+#include "include\about.h"
+#include "include\open_with.h"
 
 void main() 
 {
@@ -158,12 +159,12 @@ void main()
 
 			if (m.x > files.x) && (m.x < files.x + files.w) && (m.y > files.y) && (m.y < files.y+files.h) && (!can_select)
 			{
-				m_selected = m.y - 57 / files.line_h;
+				m_selected = m.y - files.y / files.line_h;
 				if (m.lkm) can_select = 1;
 				if (m.pkm)
 				{
 					can_show = 1;
-					if (m.y - 57 / files.line_h != files.current) can_select = 1;
+					if (m.y - files.y / files.line_h != files.current) can_select = 1;
 				}
 			}
 
@@ -171,9 +172,9 @@ void main()
 			if (!m.lkm) && (!m.pkm) && (can_select)
 			{
 				can_select = 0;
-				if (m.y>=57)
+				if (m.y>=files.y)
 				{
-					id = m.y - 57 / files.line_h;
+					id = m.y - files.y / files.line_h;
 					if (id!=m_selected)
 					{
 						can_show=0;
@@ -193,7 +194,7 @@ void main()
 			if (!m.pkm) && (!m.lkm) && (can_show)
 			{
 				can_show = 0;
-				if (m.y>=57)
+				if (m.y>=files.y)
 				{
 					SwitchToAnotherThread();
 					CreateThread(#FileMenu,#menu_stak);
@@ -209,7 +210,7 @@ void main()
 				break;
 			}
 
-			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>40) && (m.y<57)
+			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>40) && (m.y<files.y)
 			{
 				IF (m.lkm==1) DrawRectangle3D(onLeft(26,0),41,14,14,0xC7C7C7,0xFFFFFF);
 				WHILE (m.lkm==1) && (files.first>0)
@@ -241,11 +242,11 @@ void main()
 			
 			if (scroll_used)
 			{
-				IF (scroll_size/2+57>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+57; //anee eo?ni? iaa ieiii
+				IF (scroll_size/2+files.y>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+files.y; //anee eo?ni? iaa ieiii
 				id=files.first;
 				j= scroll_size/2;
-				files.first = m.y -j -57 * files.count;
-				files.first /= onTop(22,57);
+				files.first = m.y -j -files.y * files.count;
+				files.first /= onTop(22,files.y);
 				IF (files.visible+files.first>files.count) files.first=files.count-files.visible;
 				IF (id!=files.first) List_ReDraw();
 			}
@@ -406,8 +407,8 @@ void main()
 			}                         
 			break;
 		case evReDraw:
-			if (action_buf) { menu_action(action_buf); action_buf=0;}
 			draw_window();
+			if (action_buf) { menu_action(action_buf); action_buf=0;}
 	}
 }
 
@@ -419,7 +420,12 @@ void menu_action(dword id)
 		SelectFile(#copy_to+strrchr(#copy_to,'/'));
 	}
 	if (id==100) Open();
-	if (id==201) notify("Not compleated yet");
+	if (id==201) 
+	{
+		pause(10);
+		SwitchToAnotherThread();
+		CreateThread(#OpenWith,#open_with_stak);
+	}
 	if (id==202) FnProcess(3); //F3
 	if (id==203) FnProcess(4); //F4
 	if (id==104) Copy(#file_path, NOCUT);
@@ -459,7 +465,7 @@ void draw_window()
 	DrawFlatButton(files.x,40,onLeft(files.x,168),16,31,col_work,T_FILE);
 	DrawFlatButton(onLeft(168,0),40,73,16,32,col_work,T_TYPE);
 	DrawFlatButton(onLeft(95,0),40,68,16,33,col_work,T_SIZE);
-	DrawBar(onLeft(27,0),57,1,onTop(22,57),col_border); //line to the left from the scroll
+	DrawBar(onLeft(27,0),files.y,1,onTop(22,files.y),col_border); //line to the left from the scroll
 	DrawFlatButton(onLeft(27,0),40,16,16,0,col_work,"\x18");
 	DrawFlatButton(onLeft(27,0),onTop(22,0),16,16,0,col_work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
@@ -552,7 +558,7 @@ void Line_ReDraw(dword color, filenum){
 	dword text_col=0,
 	      name_len=0,
 	      attr,
-	      y=filenum*files.line_h+57;
+	      y=filenum*files.line_h+files.y;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
 	DrawBar(files.x+3,y+17,16,1,color);
@@ -904,4 +910,5 @@ stop:
 
 char about_stak[512];
 char menu_stak[512];
+char open_with_stak[512];
 char copy_stak[4096];

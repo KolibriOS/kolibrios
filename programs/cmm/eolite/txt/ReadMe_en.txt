@@ -8,8 +8,9 @@ http://board.kolibrios.org/viewtopic.php?f=9&t=973
 
 
 ==Authors==
-Leency - programming and design.
-Veliant - programming and support. Inactive now.
+Leency
+Veliant
+Punk_Joker 
 lev
 <Lrz>
 Nable

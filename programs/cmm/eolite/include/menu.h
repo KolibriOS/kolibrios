@@ -46,31 +46,36 @@ char *file_captions[] = {
 void FileMenu()
 {
 	mouse mm;
-	word id, key, slot, index, start_y;
+	word slot, index, start_y;
+	llist menu;
 	proc_info MenuForm;
-	int ccount=0, cur=0, newi, linew=10, lineh=18, texty;
+	int texty, newi;
+
+	menu.ClearList();
+	menu.SetSizes(m.x+Form.left+5,m.y+Form.top+GetSkinHeight(),10,0,0,18);
 	for (index=0; file_captions[index]!=0; index+=3)
 	{
 		if (itdir) && (file_captions[index+2]>=200) continue;
-		if (strlen(file_captions[index])>linew) linew = strlen(file_captions[index]);
-		ccount++;
+		if (strlen(file_captions[index])>menu.w) menu.w = strlen(file_captions[index]);
+		menu.count++;
 	}
-	linew = linew + 3 * 6 + 50;
-	texty = lineh/2-4;
+	menu.w = menu.w + 3 * 6 + 50;
+	menu.h = menu.count*menu.line_h;
+	texty = menu.line_h/2-4;
 	SetEventMask(100111b);
-
 	goto _MENU_DRAW;
+	
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
 				slot = GetProcessSlot(MenuForm.ID);
 				if (slot != GetActiveProcess()) ExitProcess();
 				mm.get();
-				newi = mm.y - 1 / lineh;
-				if (mm.y<=0) || (mm.y>ccount*lineh+5) || (mm.x<0) || (mm.x>linew) newi=-1;
-				if (cur<>newi)
+				newi = mm.y - 1 / menu.line_h;
+				if (mm.y<=0) || (mm.y>menu.h+5) || (mm.x<0) || (mm.x>menu.w) newi=-1;
+				if (menu.current<>newi)
 				{
-					cur=newi;
+					menu.current=newi;
 					goto _ITEMS_DRAW;
 				}
 				break;
@@ -81,34 +86,34 @@ void FileMenu()
 				break;
 				
 		case evKey:
-				IF (GetKey()==27) ExitProcess();
+				if (GetKey()==27) ExitProcess();
 				break;
 				
 		case evReDraw: _MENU_DRAW:
-				DefineAndDrawWindow(m.x+Form.left+5,m.y+Form.top+GetSkinHeight(),linew+3,ccount*lineh+6,0x01, 0, 0, 0x01fffFFF);
+				DefineAndDrawWindow(menu.x, menu.y,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				DrawRectangle(0,0,linew+1,ccount*lineh+2,col_border);
-				DrawBar(1,1,linew,1,0xFFFfff);
-				DrawPopupShadow(1,1,linew,ccount*lineh,0);
+				DrawRectangle(0,0,menu.w+1,menu.h+2,col_border);
+				DrawBar(1,1,menu.w,1,0xFFFfff);
+				DrawPopupShadow(1,1,menu.w,menu.h,0);
 
 				_ITEMS_DRAW:
 				for (index=0, start_y=0; file_captions[index*3]!=0; index++)
 				{
-					DefineButton(1,start_y+1,linew,lineh-1,file_captions[index*3+2]+BT_HIDE+BT_NOFRAME,0xFFFFFF);
+					DefineButton(1,start_y+1,menu.w,menu.line_h-1,file_captions[index*3+2]+BT_HIDE+BT_NOFRAME,0xFFFFFF);
 					if ((itdir) && (file_captions[index*3+2]>=200)) continue;
-					DrawBar(1,start_y+2,1,lineh,0xFFFfff);
-					if (start_y/lineh==cur)
+					DrawBar(1,start_y+2,1,menu.line_h,0xFFFfff);
+					if (start_y/menu.line_h==menu.current)
 					{
-						DrawBar(2,start_y+2,linew-1,lineh,0xFFFfff);
+						DrawBar(2,start_y+2,menu.w-1,menu.line_h,0xFFFfff);
 					}
 					else
 					{
-						DrawBar(2,start_y+2,linew-1,lineh,col_work);
+						DrawBar(2,start_y+2,menu.w-1,menu.line_h,col_work);
 						WriteText(8,start_y+texty+3,0x80,0xf2f2f2,file_captions[index*3]);
 					}
 					WriteText(7,start_y+texty+2,0x80,0x000000,file_captions[index*3]);
-					WriteText(-strlen(file_captions[index*3+1])*6-6+linew,start_y+texty+2,0x80,0x888888,file_captions[index*3+1]);
-					start_y+=lineh;
+					WriteText(-strlen(file_captions[index*3+1])*6-6+menu.w,start_y+texty+2,0x80,0x888888,file_captions[index*3+1]);
+					start_y+=menu.line_h;
 				}
 	}
 }
