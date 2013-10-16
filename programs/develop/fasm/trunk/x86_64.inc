@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2012, Tomasz Grysztar.
+; Copyright (c) 1999-2013, Tomasz Grysztar.
 ; All rights reserved.
 
 simple_instruction_except64:
@@ -2989,6 +2989,7 @@ jmp_instruction:
 	jmp	instruction_assembled
       calculate_jump_offset:
 	add	edi,2
+	mov	ebp,[addressing_space]
 	call	calculate_relative_offset
 	sub	edi,2
 	ret
@@ -5982,6 +5983,27 @@ movbe_instruction:
 	mov	al,[operand_size]
 	call	operand_autodetect
 	jmp	instruction_ready
+adx_instruction:
+	mov	[base_code],0Fh
+	mov	[extended_code],38h
+	mov	[supplemental_code],0F6h
+	mov	[operand_prefix],al
+	call	get_reg_mem
+	jc	adx_reg_reg
+	mov	al,[operand_size]
+	cmp	al,4
+	je	instruction_ready
+	cmp	al,8
+	jne	invalid_operand_size
+	call	operand_64bit
+	jmp	instruction_ready
+      adx_reg_reg:
+	cmp	ah,4
+	je	nomem_instruction_ready
+	cmp	ah,8
+	jne	invalid_operand_size
+	call	operand_64bit
+	jmp	nomem_instruction_ready
 
 simple_vmx_instruction:
 	mov	ah,al
@@ -6251,6 +6273,7 @@ xbegin_instruction:
       xbegin_16bit:
 	call	get_address_word_value
 	add	edi,4
+	mov	ebp,[addressing_space]
 	call	calculate_relative_offset
 	sub	edi,4
 	shl	eax,16
@@ -6264,6 +6287,7 @@ xbegin_instruction:
 	call	get_address_qword_value
       xbegin_address_ok:
 	add	edi,5
+	mov	ebp,[addressing_space]
 	call	calculate_relative_offset
 	sub	edi,5
 	mov	edx,eax
@@ -6383,6 +6407,7 @@ get_jump_operator:
 get_address:
 	mov	[segment_register],0
 	mov	[address_size],0
+	mov	[free_address_range],0
 	mov	al,[code_type]
 	shr	al,3
 	mov	[value_size],al
@@ -6422,6 +6447,7 @@ get_address:
 	mov	edx,[address_symbol]
 	mov	[symbol_identifier],edx
 	mov	edx,[address_high]
+	mov	ebp,[addressing_space]
 	call	calculate_relative_offset
 	mov	[address_high],edx
 	cdq

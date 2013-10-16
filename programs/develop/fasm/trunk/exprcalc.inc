@@ -1,6 +1,7 @@
 
+
 ; flat assembler core
-; Copyright (c) 1999-2012, Tomasz Grysztar.
+; Copyright (c) 1999-2013, Tomasz Grysztar.
 ; All rights reserved.
 
 calculate_expression:
@@ -169,6 +170,8 @@ calculate_expression:
 	stos	dword [edi]
 	mov	[edi-8+13],cl
       got_label:
+	test	byte [ebx+9],4
+	jnz	invalid_use_of_symbol
 	cmp	[symbols_file],0
 	je	label_reference_ok
 	cmp	[next_pass_needed],0
@@ -214,25 +217,27 @@ calculate_expression:
       make_current_offset_label:
 	xor	edx,edx
 	xor	ch,ch
-	sub	eax,dword [org_origin]
-	sbb	edx,dword [org_origin+4]
-	sbb	ch,[org_origin_sign]
+	mov	ebp,[addressing_space]
+	sub	eax,[ds:ebp]
+	sbb	edx,[ds:ebp+4]
+	sbb	ch,[ds:ebp+8]
 	jp	current_offset_label_ok
 	call	recoverable_overflow
       current_offset_label_ok:
 	stos	dword [edi]
 	mov	eax,edx
 	stos	dword [edi]
-	mov	eax,[org_registers]
+	mov	eax,[ds:ebp+10h]
 	stos	dword [edi]
-	mov	cl,[labels_type]
+	mov	cl,[ds:ebp+9]
 	mov	[edi-12+12],cx
-	mov	eax,[org_symbol]
+	mov	eax,[ds:ebp+14h]
 	mov	[edi-12+16],eax
 	add	edi,8
 	jmp	calculation_loop
       org_origin_label:
-	mov	eax,[org_start]
+	mov	eax,[addressing_space]
+	mov	eax,[eax+18h]
 	jmp	make_current_offset_label
       counter_label:
 	mov	eax,[counter]
@@ -286,17 +291,27 @@ calculate_expression:
 	mov	[error_info],ebx
 	jmp	calculation_loop
       calculate_add:
-	mov	ecx,[ebx+16]
-	cmp	byte [edi+12],0
-	je	add_values
-	mov	ecx,[edi+16]
-	cmp	byte [ebx+12],0
-	je	add_values
-	call	recoverable_misuse
-      add_values:
+	xor	ah,ah
+	mov	ah,[ebx+12]
 	mov	al,[edi+12]
-	or	[ebx+12],al
+	or	al,al
+	jz	add_values
+	or	ah,ah
+	jz	add_relocatable
+	add	ah,al
+	jnz	invalid_add
+	mov	ecx,[edi+16]
+	cmp	ecx,[ebx+16]
+	je	add_values
+      invalid_add:
+	call	recoverable_misuse
+	jmp	add_values
+      add_relocatable:
+	mov	ah,al
+	mov	ecx,[edi+16]
 	mov	[ebx+16],ecx
+      add_values:
+	mov	[ebx+12],ah
 	mov	eax,[edi]
 	add	[ebx],eax
 	mov	eax,[edi+4]
@@ -310,31 +325,29 @@ calculate_expression:
 	jz	calculation_loop
 	push	esi
 	mov	esi,ebx
-	lea	ebx,[edi+10]
-	mov	cl,[edi+8]
+	mov	cl,[edi+10]
+	mov	al,[edi+8]
 	call	add_register
-	lea	ebx,[edi+11]
-	mov	cl,[edi+9]
+	mov	cl,[edi+11]
+	mov	al,[edi+9]
 	call	add_register
 	pop	esi
 	jmp	calculation_loop
       add_register:
-	or	cl,cl
+	or	al,al
 	jz	add_register_done
       add_register_start:
-	cmp	[esi+8],cl
+	cmp	[esi+8],al
 	jne	add_in_second_slot
-	mov	al,[ebx]
-	add	[esi+10],al
+	add	[esi+10],cl
 	jo	value_out_of_range
 	jnz	add_register_done
 	mov	byte [esi+8],0
 	ret
       add_in_second_slot:
-	cmp	[esi+9],cl
+	cmp	[esi+9],al
 	jne	create_in_first_slot
-	mov	al,[ebx]
-	add	[esi+11],al
+	add	[esi+11],cl
 	jo	value_out_of_range
 	jnz	add_register_done
 	mov	byte [esi+9],0
@@ -342,16 +355,14 @@ calculate_expression:
       create_in_first_slot:
 	cmp	byte [esi+8],0
 	jne	create_in_second_slot
-	mov	[esi+8],cl
-	mov	al,[ebx]
-	mov	[esi+10],al
+	mov	[esi+8],al
+	mov	[esi+10],cl
 	ret
       create_in_second_slot:
 	cmp	byte [esi+9],0
 	jne	invalid_expression
-	mov	[esi+9],cl
-	mov	al,[ebx]
-	mov	[esi+11],al
+	mov	[esi+9],al
+	mov	[esi+11],cl
       add_register_done:
 	ret
       out_of_range:
@@ -362,6 +373,8 @@ calculate_expression:
 	mov	al,[edi+12]
 	or	al,al
 	jz	sub_values
+	or	ah,ah
+	jz	negate_relocatable
 	cmp	al,ah
 	jne	invalid_sub
 	xor	ah,ah
@@ -370,6 +383,12 @@ calculate_expression:
 	je	sub_values
       invalid_sub:
 	call	recoverable_misuse
+	jmp	sub_values
+      negate_relocatable:
+	neg	al
+	mov	ah,al
+	mov	ecx,[edi+16]
+	mov	[ebx+16],ecx
       sub_values:
 	mov	[ebx+12],ah
 	mov	eax,[edi]
@@ -387,18 +406,18 @@ calculate_expression:
 	jz	calculation_loop
 	push	esi
 	mov	esi,ebx
-	lea	ebx,[edi+10]
-	mov	cl,[edi+8]
+	mov	cl,[edi+10]
+	mov	al,[edi+8]
 	call	sub_register
-	lea	ebx,[edi+11]
-	mov	cl,[edi+9]
+	mov	cl,[edi+11]
+	mov	al,[edi+9]
 	call	sub_register
 	pop	esi
 	jmp	calculation_loop
       sub_register:
-	or	cl,cl
+	or	al,al
 	jz	add_register_done
-	neg	byte [ebx]
+	neg	cl
 	jo	value_out_of_range
 	jmp	add_register_start
       calculate_mul:
@@ -420,6 +439,7 @@ calculate_expression:
 	xor	bl,bl
 	cmp	byte [esi+13],0
 	je	mul_first_sign_ok
+	xor	bl,-1
 	mov	eax,[esi]
 	mov	edx,[esi+4]
 	not	eax
@@ -430,10 +450,20 @@ calculate_expression:
 	mov	[esi+4],edx
 	or	eax,edx
 	jz	mul_overflow
-	xor	bl,-1
       mul_first_sign_ok:
 	cmp	byte [edi+13],0
 	je	mul_second_sign_ok
+	xor	bl,-1
+	cmp	byte [esi+8],0
+	je	mul_first_register_sign_ok
+	neg	byte [esi+10]
+	jo	invalid_expression
+      mul_first_register_sign_ok:
+	cmp	byte [esi+9],0
+	je	mul_second_register_sign_ok
+	neg	byte [esi+11]
+	jo	invalid_expression
+      mul_second_register_sign_ok:
 	mov	eax,[edi]
 	mov	edx,[edi+4]
 	not	eax
@@ -444,7 +474,6 @@ calculate_expression:
 	mov	[edi+4],edx
 	or	eax,edx
 	jz	mul_overflow
-	xor	bl,-1
       mul_second_sign_ok:
 	cmp	dword [esi+4],0
 	jz	mul_numbers
@@ -875,12 +904,17 @@ calculate_expression:
 	not	dword [edi]
 	jmp	finish_not
       calculate_neg:
-	cmp	word [edi+8],0
-	jne	invalid_expression
-	cmp	byte [edi+12],0
-	je	neg_ok
-	call	recoverable_misuse
-      neg_ok:
+	cmp	byte [edi+8],0
+	je	neg_first_register_ok
+	neg	byte [edi+10]
+	jo	invalid_expression
+      neg_first_register_ok:
+	cmp	byte [edi+9],0
+	je	neg_second_register_ok
+	neg	byte [edi+11]
+	jo	invalid_expression
+      neg_second_register_ok:
+	neg	byte [edi+12]
 	xor	eax,eax
 	xor	edx,edx
 	xor	cl,cl
@@ -1105,13 +1139,13 @@ calculate_expression:
 	mov	[esi+13],bl
 	ret
       store_label_reference:
-	mov	eax,[display_buffer]
+	mov	eax,[tagged_blocks]
 	mov	dword [eax-4],2
 	mov	dword [eax-8],4
 	sub	eax,8+4
 	cmp	eax,edi
 	jbe	out_of_memory
-	mov	[display_buffer],eax
+	mov	[tagged_blocks],eax
 	mov	[eax],ebx
 	ret
       convert_fp:
@@ -1520,18 +1554,22 @@ get_value:
 get_address_word_value:
 	mov	[address_size],2
 	mov	[value_size],2
+	mov	[free_address_range],0
 	jmp	calculate_address
 get_address_dword_value:
 	mov	[address_size],4
 	mov	[value_size],4
+	mov	[free_address_range],0
 	jmp	calculate_address
 get_address_qword_value:
 	mov	[address_size],8
 	mov	[value_size],8
+	mov	[free_address_range],0
 	jmp	calculate_address
 get_address_value:
 	mov	[address_size],0
 	mov	[value_size],8
+	or	[free_address_range],-1
       calculate_address:
 	cmp	byte [esi],'.'
 	je	invalid_address
@@ -1542,17 +1580,22 @@ get_address_value:
 	mov	[address_sign],al
 	mov	al,[edi+12]
 	mov	[value_type],al
+	cmp	al,0
+	je	address_size_ok
+	jg	get_address_symbol_size
+	neg	al
+      get_address_symbol_size:
 	cmp	al,6
 	je	special_address_type_32bit
 	cmp	al,5
 	je	special_address_type_32bit
-	ja	invalid_use_of_symbol
+	ja	invalid_address_type
 	test	al,1
-	jnz	invalid_use_of_symbol
-	or	al,al
-	jz	address_size_ok
+	jnz	invalid_address_type
 	shl	al,5
 	jmp	address_symbol_ok
+      invalid_address_type:
+	call	recoverable_misuse
       special_address_type_32bit:
 	mov	al,40h
       address_symbol_ok:
@@ -1621,11 +1664,11 @@ get_address_value:
 	je	sib_allowed
 	cmp	al,0Fh
 	je	check_ip_relative_address
-	or	cl,cl
-	jz	check_word_value
 	cmp	cl,1
-	je	check_word_value
-	jmp	invalid_address
+	ja	invalid_address
+	cmp	[free_address_range],0
+	jne	check_qword_value
+	jmp	check_word_value
       address_sizes_do_not_match:
 	cmp	al,0Fh
 	jne	invalid_address
@@ -1636,10 +1679,14 @@ get_address_value:
       check_ip_relative_address:
 	or	bl,bl
 	jnz	invalid_address
-	cmp	bh,0F4h
-	je	check_dword_value
 	cmp	bh,0F8h
+	je	check_rip_relative_address
+	cmp	bh,0F4h
 	jne	invalid_address
+	cmp	[free_address_range],0
+	jne	check_qword_value
+	jmp	check_dword_value
+      check_rip_relative_address:
 	mov	eax,[edi]
 	cdq
 	cmp	edx,[edi+4]
@@ -1694,6 +1741,8 @@ get_address_value:
 	mov	bh,bl
 	dec	cl
       check_immediate_address:
+	cmp	[free_address_range],0
+	jne	check_qword_value
 	mov	al,[address_size]
 	and	al,0Fh
 	cmp	al,2
@@ -1778,19 +1827,19 @@ calculate_relative_offset:
 	jne	relative_offset_ok
 	test	bh,bh
 	setne	ch
-	cmp	bx,word [org_registers]
+	cmp	bx,[ds:ebp+10h]
 	je	origin_registers_ok
 	xchg	bh,bl
 	xchg	ch,cl
-	cmp	bx,word [org_registers]
+	cmp	bx,[ds:ebp+10h]
 	jne	invalid_value
       origin_registers_ok:
-	cmp	cx,word [org_registers+2]
+	cmp	cx,[ds:ebp+10h+2]
 	jne	invalid_value
 	mov	bl,[address_sign]
-	add	eax,dword [org_origin]
-	adc	edx,dword [org_origin+4]
-	adc	bl,[org_origin_sign]
+	add	eax,[ds:ebp]
+	adc	edx,[ds:ebp+4]
+	adc	bl,[ds:ebp+8]
 	sub	eax,edi
 	sbb	edx,0
 	sbb	bl,0
@@ -1802,7 +1851,7 @@ calculate_relative_offset:
 	jnz	relative_offset_unallowed
 	cmp	bl,6
 	je	plt_relative_offset
-	mov	bh,[labels_type]
+	mov	bh,[ds:ebp+9]
 	cmp	bl,bh
 	je	set_relative_offset_type
 	cmp	bx,0402h
@@ -1813,16 +1862,16 @@ calculate_relative_offset:
 	cmp	[value_type],0
 	je	relative_offset_ok
 	mov	[value_type],0
-	cmp	ecx,[org_symbol]
+	cmp	ecx,[ds:ebp+14h]
 	je	relative_offset_ok
 	mov	[value_type],3
       relative_offset_ok:
 	ret
       plt_relative_offset:
 	mov	[value_type],7
-	cmp	[labels_type],2
+	cmp	byte [ds:ebp+9],2
 	je	relative_offset_ok
-	cmp	[labels_type],4
+	cmp	byte [ds:ebp+9],4
 	jne	recoverable_misuse
 	ret
 
@@ -1906,6 +1955,8 @@ calculate_logical_expression:
 	je	given_false
 	cmp	al,'1'
 	je	given_true
+	cmp	al,'('
+	jne	invalid_value
 	call	get_value_for_comparison
 	mov	bh,[value_sign]
 	push	eax edx [symbol_identifier] ebx ecx
@@ -1922,6 +1973,8 @@ calculate_logical_expression:
 	je	logical_number
 	inc	esi
 	mov	[compare_type],al
+	cmp	byte [esi],'('
+	jne	invalid_value
 	call	get_value_for_comparison
 	cmp	bl,[esp+4]
 	jne	values_not_relative
@@ -2173,6 +2226,8 @@ skip_symbol:
 	je	skip_label
 	cmp	al,3
 	je	skip_label
+	cmp	al,4
+	je	skip_special_label
 	cmp	al,20h
 	jb	skip_assembler_symbol
 	cmp	al,'('
@@ -2188,6 +2243,9 @@ skip_symbol:
 	add	esi,2
       skip_assembler_symbol:
 	inc	esi
+	jmp	skip_done
+      skip_special_label:
+	add	esi,4
 	jmp	skip_done
       skip_address:
 	mov	al,[esi]

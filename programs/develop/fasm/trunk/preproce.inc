@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2012, Tomasz Grysztar.
+; Copyright (c) 1999-2013, Tomasz Grysztar.
 ; All rights reserved.
 
 preprocessor:
@@ -38,7 +38,7 @@ preprocessor:
 	mov	[labels_list],eax
 	xor	eax,eax
 	mov	[source_start],eax
-	mov	[display_buffer],eax
+	mov	[tagged_blocks],eax
 	mov	[hash_tree],eax
 	mov	[error],eax
 	mov	[macro_status],al
@@ -195,13 +195,13 @@ convert_line:
 	lods	byte [esi]
 	stos	byte [edi]
 	cmp	al,0Ah
-	je	missing_end_quote
+	je	no_end_quote
 	cmp	al,0Dh
-	je	missing_end_quote
+	je	no_end_quote
 	or	al,al
-	jz	missing_end_quote
+	jz	no_end_quote
 	cmp	al,1Ah
-	je	missing_end_quote
+	je	no_end_quote
 	cmp	al,ah
 	jne	copy_string
 	lods	byte [esi]
@@ -243,6 +243,9 @@ convert_line:
 	stos	byte [edi]
 	inc	byte [ecx]
 	jmp	group_backslashes
+      no_end_quote:
+	mov	byte [ebx-5],0
+	jmp	missing_end_quote
       backslashed_symbol:
 	cmp	al,1Ah
 	je	unexpected_end_of_file
@@ -554,6 +557,9 @@ preprocess_line:
 	call	get_preprocessor_symbol
 	jnc	symbolic_constant_in_label
 	lea	esi,[esi+ecx+1]
+	cmp	byte [esi],':'
+	jne	preprocess_instruction
+	inc	esi
 	jmp	preprocess_instruction
       symbolic_constant_in_label:
 	mov	ebx,[edx+8]
@@ -570,6 +576,9 @@ preprocess_line:
 	je	label_constant_ok
 	cmp	byte [ebx],':'
 	jne	label_broken
+	inc	ebx
+	cmp	byte [ebx],':'
+	jne	check_for_broken_label
 	inc	ebx
 	jmp	check_for_broken_label
       label_broken:
@@ -1685,6 +1694,7 @@ do_irp:
 	or	[default_argument_value],-1
 	call	skip_macro_argument_value
 	inc	esi
+	jmp	irp_parameters_start
       irps_name_ok:
 	cmp	al,','
 	jne	invalid_macro_arguments
