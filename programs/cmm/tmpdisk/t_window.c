@@ -59,14 +59,11 @@ edit_box edit_disk_size= {50,0,5,0xffffff,0x94AECE,0x000000,0xffffff,0,4,#disk_s
 void Main_Window()
 {
 	unsigned int id, key, err;
-	int i, x, fr;
+	int i, x;
 	
    	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/boxlib.obj");
-	fr = GetFreeRAM() / 5;
-	fr = itoa(fr / 2048);
-	strcat(#disk_size, fr);
-	edit_disk_size.size = edit_disk_size.pos = strlen(#disk_size);
+	GetSizeDisk();
 	edit_disk_size.left = strlen(INTRO_TEXT_4)*6 + 10;
 	SetEventMask(0x27);
 	loop()
@@ -177,6 +174,15 @@ void Main_Window()
 	}
 }
 
+void GetSizeDisk()
+{
+	int fr;
+	fr = GetFreeRAM() / 5;
+	fr = itoa(fr / 2048);
+	strcpy(#disk_size, fr);
+	edit_disk_size.size = edit_disk_size.pos = strlen(#disk_size);
+	edit_box_draw stdcall (#edit_disk_size);
+}
 
 void OpenTmpDisk()
 {
@@ -273,6 +279,7 @@ void AddDisk()
 	pause(5);
 	GetDisks();
 	DrawTmpDisks();
+	GetSizeDisk();
 }
 
 
