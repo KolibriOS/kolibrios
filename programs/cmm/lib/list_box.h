@@ -2,9 +2,9 @@
 
 struct llist
 {
-	int x, y, w, h, min_h;
-	int line_h;
+	int x, y, w, h, min_h, line_h;
 	int count, visible, first, current;
+	int current_temp;
 	void ClearList();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);

@@ -30,14 +30,14 @@ char *ext[]={
 
 #include "imgs\icons.txt"
 
-void Put_icon(dword extension, yy, fairing_color)
+void Put_icon(dword extension, xx, yy, fairing_color)
 { 
 	int icon_n=0, i;
 	for (i=0; ext[i]!=0; i+=2;)	if (!strcmp(extension, ext[i]))	{ icon_n = ext[i+1]; break;	}
 
 	ficons_pal[0] = fairing_color;
-	PutPaletteImage(icon_n*16*15+#ficons,16,15,files.x+3,yy,8,#ficons_pal);
-	if (fairing_color!=0xFFFfff) IconFairing(icon_n, files.x+3, yy, fairing_color);
+	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);
+	if (fairing_color!=0xFFFfff) IconFairing(icon_n, xx, yy, fairing_color);
 	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*3+Form.cwidth-120,yy+4,0x80,0,extension);
 }
 
@@ -49,16 +49,16 @@ void IconFairing(dword filenum, x,y, color)
 		case 0...1: //file
 		case 3: //настройки
 			RIGHT_PAINT:
-			DrawBar(205,y,4,1,color);
-			DrawBar(206,y+1,3,1,color);
-			DrawBar(207,y+2,2,1,color);
-			PutPixel(208,y+3,color);
+			PutPixel(x+10,y,color);
+			PutPixel(x+11,y+1,color);
+			PutPixel(x+12,y+2,color);
+			PutPixel(x+13,y+3,color);
 			return;
 		case 2: //html
-			DrawBar(195,y,1,7,color);
-			DrawBar(196,y,1,6,color);
-			DrawBar(195,y+10,1,5,color);
-			DrawBar(196,y+11,1,4,color);
+			DrawBar(x,y,1,7,color);
+			DrawBar(x+1,y,1,6,color);
+			DrawBar(x,y+10,1,5,color);
+			DrawBar(x+1,y+11,1,4,color);
 			GOTO RIGHT_PAINT;
 		case 9: //inc
 			DrawBar(208,y,1,3,color);
@@ -75,7 +75,7 @@ void IconFairing(dword filenum, x,y, color)
 			PutPixel(209,y+5,color);
 			return;
 		case 10: //font
-			DrawBar(196,y+1,1,13,color);
+			DrawBar(x+1,y+1,1,13,color);
 			DrawBar(197,y+1,1,11,color);
 			DrawBar(198,y+1,1,10,color);
 			DrawBar(199,y+1,1,9,color);
@@ -104,42 +104,42 @@ void IconFairing(dword filenum, x,y, color)
 			PutPixel(210,y,color); 
 			return;
 		case 16...17: //folder
-			DrawBar(195,y,1,15,color);
+			DrawBar(x,y,1,15,color);
 			DrawBar(203,y,8,2,color);
 			IF (filenum==17) PutPixel(206,y+1,0x1A7B17); //green arrow part
-			DrawBar(196,y+13,15,2,color);
-			PutPixel(196,y,color); //.точки
+			DrawBar(x+1,y+13,15,2,color);
+			PutPixel(x+1,y,color); //.точки
 			PutPixel(202,y,color);
 			PutPixel(210,y+2,color);
-			PutPixel(196,y+12,color);
+			PutPixel(x+1,y+12,color);
 			PutPixel(210,y+12,color);
 			return;
 		case 18: //картридж
-			DrawBar(195,y+11,1,2,color);
+			DrawBar(x,y+11,1,2,color);
 			DrawBar(210,y+11,1,2,color);
-			DrawBar(195,y+13,16,1,color);
+			DrawBar(x,y+13,16,1,color);
 			return;
 		case 24: //образ
-			DrawBar(195,y,6,1,color);
-			DrawBar(195,y+1,4,1,color);
-			DrawBar(195,y+2,3,1,color);
-			DrawBar(195,y+3,2,2,color);
+			DrawBar(x,y,6,1,color);
+			DrawBar(x,y+1,4,1,color);
+			DrawBar(x,y+2,3,1,color);
+			DrawBar(x,y+3,2,2,color);
 			
-			DrawBar(195,y+5,1,5,color);
+			DrawBar(x,y+5,1,5,color);
 			
-			DrawBar(195,y+10,2,2,color);
-			DrawBar(195,y+12,3,1,color);
-			DrawBar(195,y+13,4,1,color);
-			DrawBar(195,y+14,6,1,color);			
+			DrawBar(x,y+10,2,2,color);
+			DrawBar(x,y+12,3,1,color);
+			DrawBar(x,y+13,4,1,color);
+			DrawBar(x,y+14,6,1,color);			
 
-			DrawBar(195+11,y,5,1,color);
-			DrawBar(195+13,y+1,3,1,color);
-			DrawBar(195+14,y+2,2,1,color);
-			DrawBar(195+15,y+3,1,2,color);
+			DrawBar(x+11,y,5,1,color);
+			DrawBar(x+13,y+1,3,1,color);
+			DrawBar(x+14,y+2,2,1,color);
+			DrawBar(x+15,y+3,1,2,color);
 			
-			DrawBar(195+15,y+10,1,2,color);
-			DrawBar(195+14,y+12,2,1,color);
-			DrawBar(195+13,y+13,3,1,color);
-			DrawBar(195+11,y+14,5,1,color);
+			DrawBar(x+15,y+10,1,2,color);
+			DrawBar(x+14,y+12,2,1,color);
+			DrawBar(x+13,y+13,3,1,color);
+			DrawBar(x+11,y+14,5,1,color);
 	}
 }

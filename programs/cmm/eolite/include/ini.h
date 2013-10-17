@@ -13,31 +13,20 @@ void GetIni(byte onload)
 	char bukva[2];
 	int errornum, tj;
 	static dword buff, fsize;
-	//читаем файл
 	if (onload==1)
 	{
 		free(buff);
 		if (!GetFile(#buff, #fsize, abspath("Eolite.ini"))) notify("Eolite.ini not found. Defaults will be used.");
 	}
-	//парсим его
 	for (tj=0; tj<fsize; tj++;) 
 	{   
 		bukva = ESBYTE[buff+tj];
 		switch (bukva)
 		{
-			case ';':
-				InfType=COMMENT;
-				break;				
-			case '[':
-				InfType=SECTION;
-				section=NULL;
-				break;
-			case ']':
-				InfType=PARAM;
-				break;
-			case '=':
-				InfType=OPTION;
-				break;
+			case ';': InfType=COMMENT; break;				
+			case '[': InfType=SECTION; section=NULL; break;
+			case ']': InfType=PARAM; break;
+			case '=': InfType=OPTION; break;
 			case 0x0a:
 			case 0x0d:
 				InfType=PARAM;
@@ -45,16 +34,10 @@ void GetIni(byte onload)
 				IF (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
 				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
 				
-				/*if (!strcmp(#section,"UserDirectories")) && (parametr) && (onload)
-				{
-					copystr(#parametr, #disk_list[disc_num].Item);
-					disc_num++;
-				}*/
-				
 				IF (parametr) && (!strcmp(#file_name+strrchr(#file_name,'.'),#parametr)) && (!onload)
 				{
 					errornum=RunProgram(#option,#file_path);
-					IF (errornum<0) Write_Error(errornum); //если ошибочка вышла при запуске
+					IF (errornum<0) Write_Error(errornum);
 					return;
 				}
 				parametr=option=NULL;
@@ -68,7 +51,8 @@ void GetIni(byte onload)
 	if (file_path) && (!onload)
 	{
 		errornum=RunProgram(#file_path,NULL); 
-		if (errornum<0) Write_Error(errornum); //если ошибочка вышла при запуске
+		if (errornum==-31) menu_action(201); else if (errornum<0) Write_Error(errornum);
+		return;
 	}
 }
 

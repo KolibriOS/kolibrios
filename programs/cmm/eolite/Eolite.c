@@ -6,7 +6,7 @@
 #endif
 
 //libraries
-#define MEMSIZE 0xA0000
+#define MEMSIZE 0xD0000
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
@@ -38,6 +38,7 @@
 	?define T_PASTE_WINDOW "Копирую..."
 	?define T_PASTE_WINDOW_TEXT "Копируется файл:"
 	?define T_CANCEL_PASTE "Копирование прекращено. Папка скопирована не полностью."
+	?define T_SELECT_APP_TO_OPEN_WITH "Выберите программу для открытия файла"
 #elif LANG_EST
 	?define T_FILE "Fail"
 	?define T_TYPE "T№№p"
@@ -55,6 +56,7 @@
 	?define T_PASTE_WINDOW "Kopeerin..."
 	?define T_PASTE_WINDOW_TEXT "Kopeerin faili:"
 	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
+	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
 #else
 	?define T_FILE "File"
 	?define T_TYPE "Type"
@@ -72,12 +74,13 @@
 	?define T_PASTE_WINDOW "Copying..."
 	?define T_PASTE_WINDOW_TEXT "Copying file:"
 	?define T_CANCEL_PASTE "Copy process terminated. Folder copied incompletely."
+	?define T_SELECT_APP_TO_OPEN_WITH "Select application to open file"
 #endif
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.98.8"
-#define ABOUT_TITLE "Eolite v1.98.8"
+#define TITLE "Eolite File Manager v1.99"
+#define ABOUT_TITLE "Eolite v1.99"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -422,7 +425,6 @@ void menu_action(dword id)
 	if (id==100) Open();
 	if (id==201) 
 	{
-		pause(10);
 		SwitchToAnotherThread();
 		CreateThread(#OpenWith,#open_with_stak);
 	}
@@ -570,14 +572,14 @@ void Line_ReDraw(dword color, filenum){
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
-		Put_icon(off+_strrchr(off,'.'), files.line_h/2-7+y, color);
+		Put_icon(off+_strrchr(off,'.'), files.x+3, files.line_h/2-7+y, color);
 		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
 	}
 	else
 		if (!strcmp("..",off))
-			Put_icon("..", files.line_h/2-7+y, color);
+			Put_icon("..", files.x+3, files.line_h/2-7+y, color);
 		else
-			Put_icon("<DIR>", files.line_h/2-7+y, color);
+			Put_icon("<DIR>", files.x+3, files.line_h/2-7+y, color);
 	if ( TestBit(attr, 1) ) || ( TestBit(attr, 2) ) text_col=0xA6A6B7; //system or hiden?
 	if (color!=0xFFFfff)
 	{
