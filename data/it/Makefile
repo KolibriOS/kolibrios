@@ -233,7 +233,7 @@ FASM_NOKPACK_PROGRAMS:=\
 # Format of an item is exactly the same as in the previous list.
 NASM_PROGRAMS:=\
  demos/aclock:DEMOS/ACLOCK:$(PROGS)/demos/aclock/trunk/aclock.asm \
- demos/timer:DEMOS/Timer:$(PROGS)/other/Timer/Timer.asm \
+ demos/timer:DEMOS/TIMER:$(PROGS)/other/Timer/Timer.asm \
  games/c4:GAMES/C4:$(PROGS)/games/c4/trunk/c4.asm \
 # end of list
 
