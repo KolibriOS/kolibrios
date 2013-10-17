@@ -94,7 +94,6 @@ FASM_PROGRAMS:=\
  demos/firework:DEMOS/FIREWORK:$(PROGS)/demos/firework/trunk/firework.asm \
  demos/movback:DEMOS/MOVBACK:$(PROGS)/demos/movback/trunk/movback.asm \
  demos/plasma:DEMOS/PLASMA:$(PROGS)/demos/plasma/trunk/plasma.asm \
- demos/timer:DEMOS/TIMER:$(PROGS)/demos/timer/trunk/timer.asm \
  demos/tinyfrac:DEMOS/TINYFRAC:$(PROGS)/demos/tinyfrac/trunk/tinyfrac.asm \
  demos/trantest:DEMOS/TRANTEST:$(PROGS)/demos/trantest/trunk/trantest.asm \
  demos/tube:DEMOS/TUBE:$(PROGS)/demos/tube/trunk/tube.asm \
@@ -234,6 +233,7 @@ FASM_NOKPACK_PROGRAMS:=\
 # Format of an item is exactly the same as in the previous list.
 NASM_PROGRAMS:=\
  demos/aclock:DEMOS/ACLOCK:$(PROGS)/demos/aclock/trunk/aclock.asm \
+ demos/timer:DEMOS/Timer:$(PROGS)/other/Timer/Timer.asm
  games/c4:GAMES/C4:$(PROGS)/games/c4/trunk/c4.asm \
 # end of list
 
