@@ -21,7 +21,7 @@ void OpenWith()
 				slot = GetProcessSlot(MenuForm.ID);
 				if (slot != GetActiveProcess()) ExitProcess();
 				mm.get();
-				if (m.lkm) ExitProcess();
+				if (mm.lkm) ExitProcess();
 				break;
 				
 		case evKey:
