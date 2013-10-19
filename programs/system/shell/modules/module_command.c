@@ -1,39 +1,28 @@
 
 /// ===========================================================
 
-void command_history_add(char command[])
+void command_history_add()
 {
 
-if (	(0 != strcmp( CMD_HISTORY[0], CMD)) &&
-	(0 != strcmp( CMD_HISTORY[1], CMD)) &&
-	(0 != strcmp( CMD_HISTORY[2], CMD)) &&
-	(0 != strcmp( CMD_HISTORY[3], CMD)) &&
-        (0 != strcmp( CMD_HISTORY[4], CMD)) &&
-        (0 != strcmp( CMD_HISTORY[5], CMD)) &&
-        (0 != strcmp( CMD_HISTORY[6], CMD)) &&
-        (0 != strcmp( CMD_HISTORY[7], CMD)) &&
-        (0 != strcmp( CMD_HISTORY[8], CMD)) &&
-	(0 != strcmp( CMD_HISTORY[9], CMD)) )
+int i;
 
-	{
-        strcpy(CMD_HISTORY[9], CMD_HISTORY[8]);
-        strcpy(CMD_HISTORY[8], CMD_HISTORY[7]);
-	strcpy(CMD_HISTORY[7], CMD_HISTORY[6]);
-        strcpy(CMD_HISTORY[6], CMD_HISTORY[5]);
-	strcpy(CMD_HISTORY[5], CMD_HISTORY[4]);
-	strcpy(CMD_HISTORY[4], CMD_HISTORY[3]);
-	strcpy(CMD_HISTORY[3], CMD_HISTORY[2]);
-	strcpy(CMD_HISTORY[2], CMD_HISTORY[1]);
-	strcpy(CMD_HISTORY[1], CMD_HISTORY[0]);
+for (i = 0; i < CMD_HISTORY_NUM_REAL; i++)
+    if ( 0 == strcmp( CMD_HISTORY[i], CMD ) )
+       return;
 
-	strcpy(CMD_HISTORY[0], CMD);
-	
-	if (CMD_HISTORY_NUM_REAL < CMD_HISTORY_NUM)
-		CMD_HISTORY_NUM_REAL++;
-	
-	}
+for (i = CMD_HISTORY_NUM_REAL; i > 0 ; i--)
+	strcpy(CMD_HISTORY[i], CMD_HISTORY[i-1]);
+
+strcpy(CMD_HISTORY[0], CMD);
+
+if (CMD_HISTORY_NUM_REAL < CMD_HISTORY_NUM-1)
+	CMD_HISTORY_NUM_REAL++;
+
+CMD_NUM = 0;
 
 }
+
+
 
 /// ===========================================================
 
@@ -67,7 +56,7 @@ for (;;)
 
 			case 13: // ENTER
 				printf("\n\r");
-				command_history_add(CMD);
+				command_history_add();
 				return;
 
 
@@ -174,51 +163,51 @@ for (;;)
 
 
 			case 80: // Down
-				for (i = 0; i < CMD_HISTORY_NUM; i++)
+
+				if (CMD_HISTORY_NUM_REAL > 0)
 					{
 
-                                        for (i = cmdPos; i < cmdLen; i++)
-                                            printf(" ");
+					for (i = cmdPos; i < cmdLen; i++)
+						printf(" ");
 
-                                        for (i = cmdLen; i > 0; i--)
-                                            printf("%c %c", 8, 8);
+					for (i = cmdLen; i > 0; i--)
+						printf("%c %c", 8, 8);
 
-					if (CMD_NUM < CMD_HISTORY_NUM-1)
-						CMD_NUM++;
-					else
+				    if (CMD_NUM < CMD_HISTORY_NUM_REAL-1)
+				        CMD_NUM++;
+				    else
 						CMD_NUM = 0;
 
 					printf(	CMD_HISTORY[CMD_NUM] );
 					strcpy(CMD, CMD_HISTORY[CMD_NUM]);
-                                        cmdLen = strlen(CMD);
-					if ((cmdPos = strlen(CMD)) != 0)
-						break;
+					cmdLen = strlen(CMD);
+					cmdPos = strlen(CMD);
 
 					}
-
+			
 				break;
 
 
 			case 72: // Up
-				for (i = 0; i < CMD_HISTORY_NUM; i++)
+				if (CMD_HISTORY_NUM_REAL > 0)
 					{
 
-                                        for (i = cmdPos; i < cmdLen; i++)
-                                            printf(" ");
+					for (i = cmdPos; i < cmdLen; i++)
+						printf(" ");
 
-                                        for (i = cmdLen; i > 0; i--)
-                                            printf("%c %c", 8, 8);
+					for (i = cmdLen; i > 0; i--)
+						printf("%c %c", 8, 8);
 
-					if (CMD_NUM > 0)
-						CMD_NUM--;
-					else
-						CMD_NUM = CMD_HISTORY_NUM-1;
+				    if (CMD_NUM > 0)
+				        CMD_NUM--;
+				    else
+						CMD_NUM = CMD_HISTORY_NUM_REAL-1;
 
 					printf(	CMD_HISTORY[CMD_NUM] );
 					strcpy(CMD, CMD_HISTORY[CMD_NUM]);
-                                        cmdLen = strlen(CMD);
-					if ((cmdPos = strlen(CMD)) != 0)
-						break;
+					cmdLen = strlen(CMD);
+					cmdPos = strlen(CMD);
+
 					}
 				break;
 
