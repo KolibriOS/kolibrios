@@ -18,7 +18,7 @@
 
 $Revision: 3515 $
 
-MAX_FRAGMENTS                   = 64
+IPv4_MAX_FRAGMENTS              = 64
 
 struct  IPv4_header
 
