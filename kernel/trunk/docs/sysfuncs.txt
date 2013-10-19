@@ -33,7 +33,7 @@ Parameters:
       * other possible values (from 5 up to 15) are reserved,
         function call with such Y is ignored
     * RR, GG, BB = accordingly red, green, blue components of a color
-      of the working area of the window (are ignored for style Y=2)
+      of the working area of the window (are ignored for style Y=1)
     * X = DCBA (bits)
       * A = 1 - window has caption; for styles Y=3,4 caption string
                   must be passed in edi, for other styles use
@@ -46,7 +46,7 @@ Parameters:
     of a type I and II, and ignored for styles Y=1,3:
   * esi = 0xXYRRGGBB - color of the header
     * RR, GG, BB define color
-    * Y=0 - usual window, Y=1 - unmovable window
+    * Y=0 - usual window, Y=1 - unmovable window (works for all window styles)
     * X defines a gradient of header: X=0 - no gradient,
       X=8 - usual gradient,
       for windows of a type II X=4 - negative gradient
