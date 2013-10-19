@@ -260,7 +260,6 @@ UDP_output:
 
         sub     esp, 8                                          ; Data ptr and data size will be placed here
         push    edx esi
-        mov     ebx, [eax + SOCKET.device]
         mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
         mov     di, IP_PROTO_UDP shl 8 + 128

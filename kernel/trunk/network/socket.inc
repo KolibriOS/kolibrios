@@ -421,6 +421,9 @@ SOCKET_bind:
         cmp     esi, 2
         jb      .invalid
 
+        cmp     [eax + UDP_SOCKET.LocalPort], 0         ; Socket can only be bound once
+        jnz     .invalid
+
         cmp     word [edx], AF_INET4
         je      .af_inet4
 
@@ -456,17 +459,21 @@ SOCKET_bind:
 
   .tcp:
   .udp:
-        mov     ebx, [edx + 4]                  ; First, fill in the IP
-        test    ebx, ebx                        ; If IP is 0, use default
-        jnz     @f
-        mov     ebx, [IP_LIST + 4]      ;;;;; FIXME !i!i!i
-       @@:
-        mov     [eax + IP_SOCKET.LocalIP], ebx
 
-        mov     bx, [edx + 2]                   ; Now fill in the local port if it's still available
-        call    SOCKET_check_port
-        jz      .addrinuse                      ; ZF is set by socket_check_port, on error
+        pushd   [edx + 4]                       ; First, fill in the IP
+        popd    [eax + IP_SOCKET.LocalIP]
 
+        mov     bx, [edx + 2]                   ; Did caller specify a local port?
+        test    bx, bx
+        jnz     .just_check
+        call    SOCKET_find_port                ; Nope, find an ephemeral one
+        jmp     .done
+
+  .just_check:
+        call    SOCKET_check_port               ; Yes, check if it's still available
+        jz      .addrinuse                      ; ZF is set by socket_check_port on error
+
+  .done:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: local ip=%u.%u.%u.%u\n",\
         [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
         [eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
