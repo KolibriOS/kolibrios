@@ -80,8 +80,9 @@ void SystemDiscsGet()
 		if (strcmp(#disk_list[disc_num-1].Item, "/rd/1/")==0) if (GetDir(nullbuf, nullbuf, "/kolibrios/", DIRS_ALL)==0)
 		{
 			strcpy(#disk_list[disc_num].Item, "/kolibrios/");
+			kolibrios_drive = true;
 			disc_num++;	
-		}
+		} else kolibrios_drive = false;
 	}
 }
 

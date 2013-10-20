@@ -22,7 +22,7 @@ char *ext[]={
 "3ds", 20, "ico", 20, "cur", 20, "ani", 20, "vox", 20,
 "img", 21, "ima", 21,
 "dll", 22, "obj", 22, "dict",22,
-"rar", 23, "zip", 23, "cab", 23, "tar", 23, "ajr", 23, "jar", 23, "7z",  23, "gz",  23,
+"rar", 23, "zip", 23, "cab", 23, "tar", 23, "ajr", 23, "jar", 23, "7z", 23, "gz", 23, "kexp", 23,
 "iso", 24, "cue", 24, "nrg", 24, "mdf", 24,
 "grf", 25,
 0,0};
@@ -30,9 +30,9 @@ char *ext[]={
 
 #include "imgs\icons.txt"
 
-void Put_icon(dword extension, xx, yy, fairing_color)
+void Put_icon(dword extension, xx, yy, fairing_color, default_icon)
 { 
-	int icon_n=0, i;
+	int icon_n=default_icon, i;
 	for (i=0; ext[i]!=0; i+=2;)	if (!strcmp(extension, ext[i]))	{ icon_n = ext[i+1]; break;	}
 
 	ficons_pal[0] = fairing_color;
@@ -61,33 +61,33 @@ void IconFairing(dword filenum, x,y, color)
 			DrawBar(x+1,y+11,1,4,color);
 			GOTO RIGHT_PAINT;
 		case 9: //inc
-			DrawBar(208,y,1,3,color);
-			DrawBar(209,y,2,4,color);
-			DrawBar(210,y,1,15,color);
-			PutPixel(198,y+14,color);
-			DrawBar(199,y+13,1,2,color);
-			DrawBar(200,y+12,10,3,color);
-			PutPixel(205,y+11,color);
-			DrawBar(206,y+10,1,2,color);
-			DrawBar(207,y+9,1,3,color);
-			PutPixel(207,y+7,color);
-			DrawBar(208,y+6,2,7,color);
-			PutPixel(209,y+5,color);
+			DrawBar(x+13,y,1,3,color);
+			DrawBar(x+14,y,2,4,color);
+			DrawBar(x+15,y,1,15,color);
+			PutPixel(x+3,y+14,color);
+			DrawBar(x+4,y+13,1,2,color);
+			DrawBar(x+5,y+12,10,3,color);
+			PutPixel(x+10,y+11,color);
+			DrawBar(x+11,y+10,1,2,color);
+			DrawBar(x+12,y+9,1,3,color);
+			PutPixel(x+12,y+7,color);
+			DrawBar(x+13,y+6,2,7,color);
+			PutPixel(x+14,y+5,color);
 			return;
 		case 10: //font
 			DrawBar(x+1,y+1,1,13,color);
-			DrawBar(197,y+1,1,11,color);
-			DrawBar(198,y+1,1,10,color);
-			DrawBar(199,y+1,1,9,color);
-			DrawBar(200,y+1,1,7,color);
-			DrawBar(201,y+1,1,5,color);
-			DrawBar(202,y+1,1,4,color);
-			DrawBar(203,y+1,1,2,color);
-			DrawBar(209,y+1,1,13,color);
-			DrawBar(208,y+1,1,11,color);
-			PutPixel(204,y+6,color);
-			DrawBar(203,y+10,2,1,color);
-			DrawBar(202,y+11,2,3,color);
+			DrawBar(x+2,y+1,1,11,color);
+			DrawBar(x+3,y+1,1,10,color);
+			DrawBar(x+4,y+1,1,9,color);
+			DrawBar(x+5,y+1,1,7,color);
+			DrawBar(x+6,y+1,1,5,color);
+			DrawBar(x+7,y+1,1,4,color);
+			DrawBar(x+8,y+1,1,2,color);
+			DrawBar(x+14,y+1,1,13,color);
+			DrawBar(x+13,y+1,1,11,color);
+			PutPixel(x+9,y+6,color);
+			DrawBar(x+8,y+10,2,1,color);
+			DrawBar(x+7,y+11,2,3,color);
 			return;
 		case 12: //audio
 			PutPixel(x+2,y+9,color);
@@ -101,22 +101,22 @@ void IconFairing(dword filenum, x,y, color)
 			PutPixel(x+13,y+13,color);
 			return;
 		case 13: //skin
-			PutPixel(210,y,color); 
+			PutPixel(x+15,y,color); 
 			return;
 		case 16...17: //folder
 			DrawBar(x,y,1,15,color);
-			DrawBar(203,y,8,2,color);
-			IF (filenum==17) PutPixel(206,y+1,0x1A7B17); //green arrow part
+			DrawBar(x+8,y,8,2,color);
+			IF (filenum==17) PutPixel(x+11,y+1,0x1A7B17); //green arrow part
 			DrawBar(x+1,y+13,15,2,color);
 			PutPixel(x+1,y,color); //.точки
-			PutPixel(202,y,color);
-			PutPixel(210,y+2,color);
+			PutPixel(x+7,y,color);
+			PutPixel(x+15,y+2,color);
 			PutPixel(x+1,y+12,color);
-			PutPixel(210,y+12,color);
+			PutPixel(x+15,y+12,color);
 			return;
 		case 18: //картридж
 			DrawBar(x,y+11,1,2,color);
-			DrawBar(210,y+11,1,2,color);
+			DrawBar(x+15,y+11,1,2,color);
 			DrawBar(x,y+13,16,1,color);
 			return;
 		case 24: //образ

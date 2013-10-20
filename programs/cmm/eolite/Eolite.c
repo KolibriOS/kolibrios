@@ -79,8 +79,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v1.99"
-#define ABOUT_TITLE "Eolite v1.99"
+#define TITLE "Eolite File Manager v2.0"
+#define ABOUT_TITLE "Eolite v2.0"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -109,7 +109,7 @@ byte
 
 proc_info Form;
 mouse m;
-int mouse_dd, scroll_used, scroll_size, sorting_arrow_x;
+int mouse_dd, scroll_used, scroll_size, sorting_arrow_x, kolibrios_drive;
 dword buf, off;
 dword file_mas[6898];
 int j, i;
@@ -200,7 +200,7 @@ void main()
 				if (m.y>=files.y)
 				{
 					SwitchToAnotherThread();
-					CreateThread(#FileMenu,#menu_stak);
+					CreateThread(#FileMenu,#menu_stak+4092);
 				}
 				break;
 			}
@@ -287,7 +287,7 @@ void main()
 						Copy(#file_path, NOCUT);
 						break;
 				case 26: //paste
-						CreateThread(#Paste,#copy_stak);
+						CreateThread(#Paste,#copy_stak+4092);
 						break;
 				case 31...33: //sort
 						IF(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
@@ -360,7 +360,7 @@ void main()
 							Copy(#file_path, NOCUT);
 							break;
 					case 022: //Ctrl+V
-							CreateThread(#Paste,#copy_stak);
+							CreateThread(#Paste,#copy_stak+4092);
 							break;
 					case 027: //Esc
 							IF (rename_active==1) ReName(false);
@@ -426,13 +426,13 @@ void menu_action(dword id)
 	if (id==201) 
 	{
 		SwitchToAnotherThread();
-		CreateThread(#OpenWith,#open_with_stak);
+		CreateThread(#OpenWith,#open_with_stak+4092);
 	}
 	if (id==202) FnProcess(3); //F3
 	if (id==203) FnProcess(4); //F4
 	if (id==104) Copy(#file_path, NOCUT);
 	if (id==105) Copy(#file_path, CUT);
-	if (id==106) CreateThread(#Paste,#copy_stak);
+	if (id==106) CreateThread(#Paste,#copy_stak+4092);
 	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
@@ -572,14 +572,14 @@ void Line_ReDraw(dword color, filenum){
 
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
-		Put_icon(off+_strrchr(off,'.'), files.x+3, files.line_h/2-7+y, color);
+		Put_icon(off+_strrchr(off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
 		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
 	}
 	else
 		if (!strcmp("..",off))
-			Put_icon("..", files.x+3, files.line_h/2-7+y, color);
+			Put_icon("..", files.x+3, files.line_h/2-7+y, color, 0);
 		else
-			Put_icon("<DIR>", files.x+3, files.line_h/2-7+y, color);
+			Put_icon("<DIR>", files.x+3, files.line_h/2-7+y, color, 0);
 	if ( TestBit(attr, 1) ) || ( TestBit(attr, 2) ) text_col=0xA6A6B7; //system or hiden?
 	if (color!=0xFFFfff)
 	{
@@ -845,7 +845,7 @@ void FnProcess(char N)
 	{
 		case 1:
 			SwitchToAnotherThread();
-			CreateThread(#about_dialog,#about_stak);
+			CreateThread(#about_dialog,#about_stak+4092);
 			break;
 		case 2:
 			if (!files.count) break;
@@ -910,7 +910,7 @@ void FnProcess(char N)
 
 stop:
 
-char about_stak[512];
-char menu_stak[512];
-char open_with_stak[512];
+char menu_stak[4096];
 char copy_stak[4096];
+char open_with_stak[4096];
+char about_stak[4096];

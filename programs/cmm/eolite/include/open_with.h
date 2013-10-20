@@ -1,7 +1,7 @@
 //Leency 2013
 
 llist app_list;
-struct app_list_string { char item[1024]; char icon; };
+struct app_list_string { char item[1024]; char ext[5]; };
 app_list_string app_paths[100];
 
 int GetListOfPrograms()
@@ -10,8 +10,6 @@ int GetListOfPrograms()
 	char bukva[2];
 	int tj, ti;
 	static dword buff, fsize;
-
-	debug("GetListOfPrograms()");
 
 	free(buff);
 	if (!GetFile(#buff, #fsize, abspath("Eolite.ini")))
@@ -31,18 +29,20 @@ int GetListOfPrograms()
 			case '=': InfType=OPTION; break;
 			case 0x0a:
 			case 0x0d:
-				InfType=PARAM;				
-				if (!strcmp(#section,"Associations")) && (option)
+				if (!strcmp(#section,"Associations")) && (option) && (InfType!=COMMENT)
 				{
 					for (ti=0; ti<app_list.count; ti++) //do not add duplications
 					{
-						if (strcmp(#app_paths[ti].item, #option)==0) GOTO _OUT;
+						if (strcmp(#app_paths[ti].item, #option)==0) goto _OUT;
 					}
-					// for (i=0; ext[i]!=0; i+=2;) if (!strcmp(extension, ext[i])) { icon_n = ext[i+1]; break;	}
+					if (kolibrios_drive==false) && (strstr(#option,"kolibrios/")!=0) goto _OUT;
 					strcpy(#app_paths[app_list.count].item, #option);
+					if (strlen(#parametr)<=5) && (parametr[0]) strcpy(#app_paths[app_list.count].ext, #parametr);
+					else strcpy(#app_paths[app_list.count].ext, "kex");
 					app_list.count++;
 				}
 				_OUT:
+				InfType=PARAM;
 				parametr=option=NULL;
 				break;
 			default:
@@ -61,7 +61,7 @@ void OpenWith()
 	#define OPEN_LIST_VISIBLE_N 12
 	#define OPEN_LIST_LINE_H 20
 	#define PANEL_H 40
-	#define PADDING 8;
+	#define PADDING 8
 	int WIN_H;
 	mouse mm;
 	word key, slot;
@@ -93,6 +93,11 @@ void OpenWith()
 						app_list.current = app_list.current_temp;
 						DrawAppList();
 					}
+					if (mm.lkm)
+					{
+						RunProgram(#app_paths[app_list.current].item, #file_path);
+						ExitProcess();
+					}
 				}
 
 				break;
@@ -100,11 +105,15 @@ void OpenWith()
 		case evKey:
 				key = GetKey();
 				if (key==27) ExitProcess();
-				break;
-
-		case evButton:
-				RunProgram(#app_paths[GetButtonID()-10].item, #file_path);
-				ExitProcess();
+				if (key==13) { RunProgram(#app_paths[app_list.current].item, #file_path); ExitProcess(); }
+				if (key==177) //down
+				{
+					if (app_list.KeyDown()) DrawAppList();
+				}
+				if (key==178) //up
+				{
+					if (app_list.KeyUp()) DrawAppList();
+				}
 				break;
 				
 		case evReDraw: _APP_LIST_DRAW:
@@ -115,7 +124,7 @@ void OpenWith()
 				DrawPopup(0,0,MenuForm.width-2,MenuForm.height-2,0, col_work, col_border);
 				DrawRectangle(app_list.x-1, app_list.y-2, app_list.w+1, app_list.h+2, col_border);
 
-				Put_icon(#file_name+_strrchr(#file_name,'.'), 10, 13, col_work);
+				Put_icon(#file_name+_strrchr(#file_name,'.'), 10, 13, col_work, 0);
 				WriteText(35,10, 0x80, 0, T_SELECT_APP_TO_OPEN_WITH);
 				WriteText(35,23, 0x80, 0, #file_name);
 
@@ -125,13 +134,19 @@ void OpenWith()
 
 void DrawAppList()
 {
+	#define SCROLL_WIDTH 5
+	llist tiny_scroll;
 	dword index, col_bg;
 	for (index = 0; (index<app_list.visible) && (index+app_list.first<app_list.count); index++)
 	{
-		DefineButton(app_list.x, index*app_list.line_h+app_list.y, app_list.w, app_list.line_h-1, index+app_list.first+10+BT_HIDE+BT_NOFRAME, 0);
 		if (index+app_list.first==app_list.current) col_bg = col_selec; else col_bg = 0xFFFfff;
 		DrawBar(app_list.x, index*app_list.line_h+app_list.y, app_list.w, app_list.line_h, col_bg);
-		Put_icon("kex", app_list.x+4, index*app_list.line_h+app_list.y+2, col_bg);
-		WriteText(app_list.x+23, index*app_list.line_h+app_list.y+7, 0x80, 0, #app_paths[index+app_list.first].item);
+		Put_icon(#app_paths[index+app_list.first].ext, app_list.x+4, index*app_list.line_h+app_list.y+2, col_bg, 6);
+		WriteText(app_list.x+25, index*app_list.line_h+app_list.y+7, 0x80, 0, #app_paths[index+app_list.first].item);
 	}
+	tiny_scroll.h = app_list.w*app_list.visible/app_list.count;
+	tiny_scroll.x = app_list.x+app_list.w-SCROLL_WIDTH-1;
+	tiny_scroll.y = app_list.first * app_list.h / app_list.count + app_list.y;
+	if (tiny_scroll.y + tiny_scroll.h - app_list.y > app_list.h) tiny_scroll.y = app_list.y + app_list.h - tiny_scroll.h-1;
+	DrawBar(tiny_scroll.x, tiny_scroll.y, SCROLL_WIDTH, tiny_scroll.h, 0x555555); //scroll
 }
