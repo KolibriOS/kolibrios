@@ -78,7 +78,9 @@
 	dd path
 
 include '../../macros.inc'
-;include '../../debug.inc'
+;define __DEBUG__ 1
+;define __DEBUG_LEVEL__ 1
+;include '../../debug-fdo.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'macros.inc'
@@ -1093,6 +1095,10 @@ load_start_directory:
 	ret
 ;---------------------------------------------------------------------
 load_next_dir:
+	mov	ebx,[file_browser_data_1.folder_block]
+	test	ebx,ebx
+	jz	.exit
+
 	mov	ebx,[file_browser_data_1.selected_BDVK_adress]
 	add	ebx,40
 	test	[ebx-40],byte 0x10
@@ -1126,6 +1132,7 @@ load_next_dir:
 	mov	[edi+44],eax
 	mov	[edi+12],dword 0xffffff	; color white
 	call	draw_draw_file_browser1
+.exit:
 	ret
 .exit_dir:
 	mov	esi,dir_path
@@ -1555,6 +1562,10 @@ draw_open_button_label:
 	shl	edx,2
 	add	edx,message_open_dialog_button
 	mov	edx,[edx]
+	
+	mov	eax,[file_browser_data_1.folder_block]
+	test	eax,eax
+	jz	.1
 	
 	mov	eax,[file_browser_data_1.selected_BDVK_adress]
 	test	[eax],byte 0x10
@@ -2268,6 +2279,9 @@ compare_expansion:
 prepare_extension_and_mark:
 	mov	esi,[dirinfo.return]
 	mov	ebp,[esi+4]
+	test	ebp,ebp
+	jz	.end
+
 	add	esi,32+40
 .start:
 	push	esi
@@ -2283,6 +2297,7 @@ prepare_extension_and_mark:
 	add	esi,304
 	dec	ebp
 	jnz	.start
+.end:
 	ret
 ;---------------------------------------------------------------------
 search_extension_start:
@@ -3175,6 +3190,8 @@ example_name_temp:
 IM_END:
 ;---------------------------------------------------------------------
 do_not_draw_open_button_label	rb 1
+;---------------------------------------------------------------------
+;include_debug_strings
 ;---------------------------------------------------------------------
 align 4
 app_colours:
