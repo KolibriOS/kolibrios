@@ -6,6 +6,8 @@ struct llist
 	int count, visible, first, current;
 	int current_temp;
 	void ClearList();
+	int KeyDown();
+	int KeyUp();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);
 }; 
@@ -43,4 +45,35 @@ int llist::MouseScroll(dword scroll_state)
 		return 1;
 	}
 	return 0;
+}
+
+int llist::KeyDown()
+{
+	if (current-first+1<visible)
+	{
+		if (current+1>=count) return -1;
+		current++;
+	}
+	else 
+	{
+		if (visible+first>=count) return -1;
+		first++;
+		current++;
+	}
+	return 1;
+}
+
+int llist::KeyUp()
+{
+	if (current>first) 
+	{
+		current--;
+	}
+	else
+	{
+		if (first==0) return -1;
+		first--;
+		current--;
+	}
+	return 1;
 }

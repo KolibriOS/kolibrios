@@ -18,7 +18,10 @@
 	if (isdir(from1))
 		return CopyFolder(from1, in1);
 	else
+	{
+		copyf_Draw_Progress(from1+strchr(from1, '/'));
 		return CopyFile(from1, in1);
+	}
 }
 
 :int CopyFile(dword copy_from3, copy_in3)
