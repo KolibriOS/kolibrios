@@ -2211,6 +2211,11 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
+        cmp     [net_sockets + SOCKET.NextPtr], 0       ; Are there any active sockets at all?
+        je      .quickret                               ; nope, exit immediately
+
+; TODO: run the following code in another thread, to avoid deadlock
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
         pusha
@@ -2261,6 +2266,7 @@ SOCKET_process_end:
         call    mutex_unlock
         popa
 
+  .quickret:
         ret
 
 
