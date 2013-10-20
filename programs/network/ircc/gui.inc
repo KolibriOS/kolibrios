@@ -225,68 +225,6 @@ print_channel_list:
         ret
 
 
-
-
-draw_channel_text:
-
-        pusha
-
-        mov     eax, 4                  ; draw text
-        mov     ebx, TEXT_X shl 16 + TEXT_Y
-        mov     ecx, 12                 ; 12 lines max ?
-        mov     esi, [textbox_width]
-
-  .dct:
-        pusha
-        mov     cx, bx
-        shl     ecx, 16
-        mov     cx, 9                   ; character height
-        mov     eax, 13                 ; draw rectangle
-        mov     ebx, TEXT_X shl 16
-        mov     bx, word[textbox_width]
-        imul    bx, 6                   ; character width
-        mov     edx, [colors.work]
-        mcall
-        popa
-
-        push    ecx
-        mov     ecx, [colors.work_text]
-        cmp     word[edx], '* '
-        jne     .no_red
-        mov     ecx, 0x00aa0000
-        jmp     .draw
-  .no_red:
-
-        cmp     word[edx], '**'
-        jne     .no_light_blue
-        cmp     byte[edx+2], '*'
-        jne     .no_light_blue
-        mov     ecx, 0x000000aa
-        jmp     .draw
-  .no_light_blue:
-
-        cmp     byte[edx], '#'
-        jne     .no_blue
-        mov     ecx, 0x0000aa00
-;        jmp     .draw
-  .no_blue:
-
-  .draw:
-        mcall
-        add     edx, [textbox_width]
-        add     ebx, 10                 ; height distance between lines
-
-        pop     ecx
-        loop    .dct
-
-        mov     eax, [window_active]
-        and     [eax + window.flags], not FLAG_UPDATED  ; clear the 'window is updated' flag
-
-        popa
-        ret
-
-
-
 draw_windowtabs:
 
 ; Create the buttons

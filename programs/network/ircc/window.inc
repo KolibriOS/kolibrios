@@ -65,11 +65,12 @@ window_set_name:    ; esi = ptr to name, ebx = window ptr
 
 window_refresh:
 
-; set the correct buffer pointers       ; FIXME: what is it good for?
-        mov     eax, [textbox_width]    ;
-        imul    eax, 11                 ;
-        mov     [pos], eax              ;
+; set text write cursor to beginning of last line
+        mov     eax, [textbox_width]
+        imul    eax, TEXTBOX_LINES - 1
+        mov     [text_pos], eax
 
+; set the textbuffer pointer
         mov     eax, [window_print]
         mov     eax, [eax + window.data_ptr]
         add     eax, window_data.text
@@ -232,41 +233,6 @@ window_open:
   .quit:
         ret
 
-
-print_text:                             ; eax = start ptr
-                                        ; dl = end char
-        pusha
-  ptr2:
-        mov     bl, [eax]
-
-        cmp     bl, dl
-        je      ptr_ret
-        cmp     bl, 0
-        je      ptr_ret
-        call    print_character
-
-        inc     eax
-        jmp     ptr2
-
-  ptr_ret:
-        popa
-        ret
-
-
-print_text2:                            ; esi = ptr to ASCIIZ string
-
-        pusha
-  .loop:
-        lodsb
-        test    al, al
-        jz      .done
-        mov     bl, al
-        call    print_character
-        jmp     .loop
-
-  .done:
-        popa
-        ret
 
 
 if TIMESTAMP

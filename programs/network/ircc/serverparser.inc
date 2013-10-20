@@ -48,7 +48,7 @@ server_commands:
 
         dd      '322 ', cmd_322         ; RPL_LIST
         dd      '323 ', cmd_323         ; RPL_LISTEND
-        dd      '328 ', cmd_328
+        dd      '328 ', cmd_328         ; RPL_CHANNEL_URL
         dd      '332 ', cmd_topic
         dd      '333 ', cmd_333         ; nickname and time of topic
         dd      '353 ', cmd_353         ; name reply

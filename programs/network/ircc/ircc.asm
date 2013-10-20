@@ -73,6 +73,7 @@ SCROLLBAR_WIDTH         = 12
 
 USERLIST_X              = 98
 
+TEXTBOX_LINES           = 12
 
 format binary as ""
 
@@ -121,6 +122,7 @@ include "userparser.inc"
 include "socket.inc"
 include "gui.inc"
 include "users.inc"
+include "textbox.inc"
 
 
 START:
@@ -163,8 +165,6 @@ START:
         mov     [ebx + window.data_ptr], eax
         mov     [ebx + window.flags], 0
         mov     [ebx + window.type], WINDOWTYPE_SERVER
-        add     eax, window_data.text
-        mov     [text_start], eax
 
         call    window_refresh
 
@@ -431,15 +431,11 @@ sockaddr1:
 status                  dd STATUS_DISCONNECTED
 
 text_start              dd ?                    ; pointer to current textbox data
-irc_data                dd 0x0                  ; encoder
 textbox_width           dd 80                   ; in characters, not pixels ;)
-pos                     dd 66 * 11              ; encoder
+text_pos                dd ?                    ; text writing cursor
 
 window_active           dd windows
 window_print            dd windows
-
-scroll                  dd 1
-                        dd 12
 
 align 4
 @IMPORT:
