@@ -660,16 +660,20 @@ button:
 	jmp	still
 ;---------------------------------------------------------------------
 .open_dir_or_file:
+	cmp	[open_dialog_type],0	;Open file
+	jne	@f
+
 	mov	eax,[file_browser_data_1.folder_data]
 	mov	eax,[eax+4]
 	test	eax,eax
 	jz	button.exit
-
+@@:
 	cmp	[open_dialog_type],2	;Select	dir
 	je	file_no_folder
 	
 	cmp	[open_dialog_type],1	;Save file
 	jne	@f
+
 	mov	al,[focus_pointer]
 	test	al,al
 	jne	file_no_folder	
@@ -1140,6 +1144,9 @@ load_next_dir:
 	jmp	.1
 ;---------------------------------------------------------------------
 error_handler:
+	mcall	66,2
+	mov	[error_handler_store_input_mode],eax
+	mcall	66,1,1
 .red:
 	call	.draw_window
 ;------------------------------------
@@ -1192,12 +1199,25 @@ error_handler:
 	jmp	button.exit
 ;------------------------------------
 .exit:
+	cmp	[open_dialog_type],1
+	jne	@f
+
+	mov	esi,root_pach
+	mov	edi,dir_path
+	call	copy_dir_name.1
+	mov	esi,root_pach
+	mov	edi,previous_dir_path
+	call	copy_dir_name.1
+	jmp	.restore_input_mode
+@@:
 	mov	esi,previous_dir_path
 	mov	edi,dir_path
 	call	copy_dir_name.1
 	mov	esi,start_pach
 	mov	edi,previous_dir_path
 	call	copy_dir_name.1
+.restore_input_mode:
+	mcall	66,1,[error_handler_store_input_mode]
 	ret
 ;---------------------------------------------------------------------
 file_no_folder:
@@ -1675,13 +1695,11 @@ draw_for_fs_errors:
 	sub	ebx,20
 	add	ecx,10 shl 16
 	sub	ecx,20
-	mov	edx,0xff0000
-	mcall
 
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,5 shl 16+15
-	mcall	4,,0x90ffffff,load_directory_error_type
+	mcall	4,,0x90000000,load_directory_error_type
 
 	add	ebx,20
 	mcall	4,,,dir_path	
@@ -1692,6 +1710,9 @@ draw_for_fs_errors:
 	mov	edx,[eax]
 	add	ebx,20
 	mcall	4
+	
+	add	ebx,20
+	mcall	,,,error_help_text
 
 	pop	ecx ebx
 
@@ -1713,13 +1734,14 @@ draw_for_fs_errors:
 	add	ecx,eax
 	mov	cx,15
 
-	mcall	8,,,5,0xffffff
+	mcall	8,,,5,[w_work_button]	;0xffffff
 
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,4 shl 16+4
-	mcall	4,,0x90000000,message_cancel_button
-
+	mov	ecx,[w_work_button_text]
+	add	ecx,0x90000000
+	mcall	4,,,message_cancel_button
 
 	ret
 ;---------------------------------------------------------------------	
@@ -2811,6 +2833,9 @@ load_directory_error_type:
 convert_icons_error_type:
 	db 'Unsupported or corrupt data for icons file',0
 ;---------------------------------------------------------------------
+error_help_text:
+	db 'For continue press <Esc> key or <Cancel>',0
+;---------------------------------------------------------------------
 align	4
 error_fs_text_pointers:
 	dd error_fs_text_0
@@ -3208,6 +3233,8 @@ w_work_text		rd 1
 w_work_graph		rd 1
 ;---------------------------------------------------------------------
 open_button_coordinates	rd 1
+;---------------------------------------------------------------------
+error_handler_store_input_mode rd 1
 ;---------------------------------------------------------------------
 menu_text_area_1_1:
 rb 256
