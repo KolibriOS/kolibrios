@@ -14,7 +14,10 @@
  * In the debug case, 1 means unlocked, 0 means locked. (the values
  * are inverted, to catch initialization bugs)
  *
- * No atomicity anywhere, we are on UP.
+ * No atomicity anywhere, we are on UP. However, we still need
+ * the compiler barriers, because we do not want the compiler to
+ * move potentially faulting instructions (notably user accesses)
+ * into the locked sequence, resulting in non-atomic execution.
  */
 
 #ifdef CONFIG_DEBUG_SPINLOCK

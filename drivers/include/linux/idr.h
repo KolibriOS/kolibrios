@@ -48,6 +48,7 @@ struct idr {
 	struct idr_layer *id_free;
 	int			layers;	/* only valid w/o concurrent changes */
 	int		  id_free_cnt;
+	int			cur;	/* current pos for cyclic allocation */
 	spinlock_t		lock;
 };
 
@@ -79,10 +80,9 @@ struct idr {
  */
 
 void *idr_find_slowpath(struct idr *idp, int id);
-int idr_pre_get(struct idr *idp, gfp_t gfp_mask);
-int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
 void idr_preload(gfp_t gfp_mask);
 int idr_alloc(struct idr *idp, void *ptr, int start, int end, gfp_t gfp_mask);
+int idr_alloc_cyclic(struct idr *idr, void *ptr, int start, int end, gfp_t gfp_mask);
 int idr_for_each(struct idr *idp,
 		 int (*fn)(int id, void *p, void *data), void *data);
 void *idr_get_next(struct idr *idp, int *nextid);
@@ -105,7 +105,7 @@ static inline void idr_preload_end(void)
 
 /**
  * idr_find - return pointer for given id
- * @idp: idr handle
+ * @idr: idr handle
  * @id: lookup key
  *
  * Return the pointer given the id it has been registered with.  A %NULL
@@ -126,30 +126,68 @@ static inline void *idr_find(struct idr *idr, int id)
 }
 
 /**
- * idr_get_new - allocate new idr entry
- * @idp: idr handle
- * @ptr: pointer you want associated with the id
- * @id: pointer to the allocated handle
- *
- * Simple wrapper around idr_get_new_above() w/ @starting_id of zero.
- */
-static inline int idr_get_new(struct idr *idp, void *ptr, int *id)
-{
-	return idr_get_new_above(idp, ptr, 0, id);
-}
-
-/**
  * idr_for_each_entry - iterate over an idr's elements of a given type
  * @idp:     idr handle
  * @entry:   the type * to use as cursor
  * @id:      id entry's key
+ *
+ * @entry and @id do not need to be initialized before the loop, and
+ * after normal terminatinon @entry is left with the value NULL.  This
+ * is convenient for a "not found" value.
  */
-#define idr_for_each_entry(idp, entry, id)				\
-	for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
-	     entry != NULL;                                             \
-	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
+#define idr_for_each_entry(idp, entry, id)			\
+	for (id = 0; ((entry) = idr_get_next(idp, &(id))) != NULL; ++id)
 
-void __idr_remove_all(struct idr *idp);	/* don't use */
+/*
+ * Don't use the following functions.  These exist only to suppress
+ * deprecated warnings on EXPORT_SYMBOL()s.
+ */
+int __idr_pre_get(struct idr *idp, gfp_t gfp_mask);
+int __idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
+void __idr_remove_all(struct idr *idp);
+
+/**
+ * idr_pre_get - reserve resources for idr allocation
+ * @idp:	idr handle
+ * @gfp_mask:	memory allocation flags
+ *
+ * Part of old alloc interface.  This is going away.  Use
+ * idr_preload[_end]() and idr_alloc() instead.
+ */
+static inline int __deprecated idr_pre_get(struct idr *idp, gfp_t gfp_mask)
+{
+	return __idr_pre_get(idp, gfp_mask);
+}
+
+/**
+ * idr_get_new_above - allocate new idr entry above or equal to a start id
+ * @idp: idr handle
+ * @ptr: pointer you want associated with the id
+ * @starting_id: id to start search at
+ * @id: pointer to the allocated handle
+ *
+ * Part of old alloc interface.  This is going away.  Use
+ * idr_preload[_end]() and idr_alloc() instead.
+ */
+static inline int __deprecated idr_get_new_above(struct idr *idp, void *ptr,
+						 int starting_id, int *id)
+{
+	return __idr_get_new_above(idp, ptr, starting_id, id);
+}
+
+/**
+ * idr_get_new - allocate new idr entry
+ * @idp:     idr handle
+ * @ptr: pointer you want associated with the id
+ * @id: pointer to the allocated handle
+ *
+ * Part of old alloc interface.  This is going away.  Use
+ * idr_preload[_end]() and idr_alloc() instead.
+ */
+static inline int __deprecated idr_get_new(struct idr *idp, void *ptr, int *id)
+{
+	return __idr_get_new_above(idp, ptr, 0, id);
+}
 
 /**
  * idr_remove_all - remove all ids from the given idr tree
@@ -193,8 +231,22 @@ void ida_remove(struct ida *ida, int id);
 void ida_destroy(struct ida *ida);
 void ida_init(struct ida *ida);
 
+int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
+		   gfp_t gfp_mask);
+void ida_simple_remove(struct ida *ida, unsigned int id);
+
+/**
+ * ida_get_new - allocate new ID
+ * @ida:	idr handle
+ * @p_id:	pointer to the allocated handle
+ *
+ * Simple wrapper around ida_get_new_above() w/ @starting_id of zero.
+ */
+static inline int ida_get_new(struct ida *ida, int *p_id)
+{
+	return ida_get_new_above(ida, 0, p_id);
+}
+
 void __init idr_init_cache(void);
-
-
 
 #endif /* __IDR_H__ */

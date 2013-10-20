@@ -40,7 +40,7 @@
 #include <linux/list.h>
 #include <drm/drm_hashtab.h>
 #include <linux/kref.h>
-#include <linux/rcupdate.h>
+//#include <linux/rcupdate.h>
 #include <ttm/ttm_memory.h>
 
 /**

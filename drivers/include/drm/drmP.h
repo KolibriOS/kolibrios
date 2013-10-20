@@ -388,6 +388,7 @@ struct drm_waitlist {
 	spinlock_t read_lock;
 	spinlock_t write_lock;
 };
+#endif
 
 struct drm_freelist {
 	int initialized;	       /**< Freelist in use */
@@ -400,7 +401,6 @@ struct drm_freelist {
 	atomic_t wfh;		       /**< If waiting for high mark */
 	spinlock_t lock;
 };
-#endif
 
 typedef struct drm_dma_handle {
 	dma_addr_t busaddr;
@@ -408,7 +408,6 @@ typedef struct drm_dma_handle {
 	size_t size;
 } drm_dma_handle_t;
 
-#if 0
 /**
  * Buffer entry.  There is one of this for each buffer size order.
  */
@@ -438,7 +437,6 @@ struct drm_prime_file_private {
 	struct list_head head;
 	struct mutex lock;
 };
-#endif
 
 /** File private data */
 struct drm_file {
@@ -1027,7 +1025,7 @@ struct drm_info_list {
 struct drm_info_node {
 	struct list_head list;
 	struct drm_minor *minor;
-	struct drm_info_list *info_ent;
+	const struct drm_info_list *info_ent;
 	struct dentry *dent;
 };
 
@@ -1226,12 +1224,6 @@ static inline int drm_dev_to_irq(struct drm_device *dev)
 
 #if 0
 
-#ifdef __alpha__
-#define drm_get_pci_domain(dev) dev->hose->index
-#else
-#define drm_get_pci_domain(dev) 0
-#endif
-
 #if __OS_HAS_AGP
 static inline int drm_core_has_AGP(struct drm_device *dev)
 {
@@ -1246,38 +1238,27 @@ static inline int drm_core_has_MTRR(struct drm_device *dev)
 {
 	return drm_core_check_feature(dev, DRIVER_USE_MTRR);
 }
-
-#define DRM_MTRR_WC		MTRR_TYPE_WRCOMB
-
-static inline int drm_mtrr_add(unsigned long offset, unsigned long size,
-			       unsigned int flags)
-{
-	return mtrr_add(offset, size, flags, 1);
-}
-
-static inline int drm_mtrr_del(int handle, unsigned long offset,
-			       unsigned long size, unsigned int flags)
-{
-	return mtrr_del(handle, offset, size);
-}
-
 #else
 #define drm_core_has_MTRR(dev) (0)
-
-#define DRM_MTRR_WC		0
-
-static inline int drm_mtrr_add(unsigned long offset, unsigned long size,
-			       unsigned int flags)
-{
-	return 0;
-}
-
-static inline int drm_mtrr_del(int handle, unsigned long offset,
-			       unsigned long size, unsigned int flags)
-{
-	return 0;
-}
 #endif
+
+static inline void drm_device_set_unplugged(struct drm_device *dev)
+{
+	smp_wmb();
+	atomic_set(&dev->unplugged, 1);
+}
+
+static inline int drm_device_is_unplugged(struct drm_device *dev)
+{
+	int ret = atomic_read(&dev->unplugged);
+	smp_rmb();
+	return ret;
+}
+
+static inline bool drm_modeset_is_locked(struct drm_device *dev)
+{
+	return mutex_is_locked(&dev->mode_config.mutex);
+}
 
 /******************************************************************/
 /** \name Internal function definitions */
@@ -1528,8 +1509,7 @@ extern struct idr drm_minors_idr;
 extern struct drm_local_map *drm_getsarea(struct drm_device *dev);
 
 				/* Proc support (drm_proc.h) */
-extern int drm_proc_init(struct drm_minor *minor, int minor_id,
-			 struct proc_dir_entry *root);
+extern int drm_proc_init(struct drm_minor *minor, struct proc_dir_entry *root);
 extern int drm_proc_cleanup(struct drm_minor *minor, struct proc_dir_entry *root);
 
 				/* Debugfs support */

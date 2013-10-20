@@ -55,7 +55,6 @@ extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
  * struct i2c_driver - represent an I2C device driver
  * @class: What kind of i2c device we instantiate (for detect)
  * @attach_adapter: Callback for bus addition (deprecated)
- * @detach_adapter: Callback for bus removal (deprecated)
  * @probe: Callback for device binding
  * @remove: Callback for device unbinding
  * @shutdown: Callback for device shutdown
@@ -92,12 +91,10 @@ extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 struct i2c_driver {
 	unsigned int class;
 
-	/* Notifies the driver that a new bus has appeared or is about to be
-	 * removed. You should avoid using this, it will be removed in a
-	 * near future.
+	/* Notifies the driver that a new bus has appeared. You should avoid
+	 * using this, it will be removed in a near future.
 	 */
 	int (*attach_adapter)(struct i2c_adapter *) __deprecated;
-	int (*detach_adapter)(struct i2c_adapter *) __deprecated;
 
 	/* Standard driver model interfaces */
 	int (*probe)(struct i2c_client *, const struct i2c_device_id *);
@@ -192,9 +189,6 @@ struct i2c_board_info {
 	unsigned short	addr;
 	void		*platform_data;
 	struct dev_archdata	*archdata;
-#ifdef CONFIG_OF
-	struct device_node *of_node;
-#endif
 	int		irq;
 };
 

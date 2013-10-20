@@ -175,20 +175,7 @@ static void idr_mark_full(struct idr_layer **pa, int id)
 	}
 }
 
-/**
- * idr_pre_get - reserve resources for idr allocation
- * @idp:	idr handle
- * @gfp_mask:	memory allocation flags
- *
- * This function should be called prior to calling the idr_get_new* functions.
- * It preallocates enough memory to satisfy the worst possible allocation. The
- * caller should pass in GFP_KERNEL if possible.  This of course requires that
- * no spinning locks be held.
- *
- * If the system is REALLY out of memory this function returns %0,
- * otherwise %1.
- */
-int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
+int __idr_pre_get(struct idr *idp, gfp_t gfp_mask)
 {
 	while (idp->id_free_cnt < MAX_IDR_FREE) {
        struct idr_layer *new;
@@ -199,13 +186,12 @@ int idr_pre_get(struct idr *idp, gfp_t gfp_mask)
    }
    return 1;
 }
-EXPORT_SYMBOL(idr_pre_get);
+EXPORT_SYMBOL(__idr_pre_get);
 
 /**
  * sub_alloc - try to allocate an id without growing the tree depth
  * @idp: idr handle
  * @starting_id: id to start search at
- * @id: pointer to the allocated handle
  * @pa: idr_layer[MAX_IDR_LEVEL] used as backtrack buffer
  * @gfp_mask: allocation mask for idr_layer_alloc()
  * @layer_idr: optional idr passed to idr_layer_alloc()
@@ -367,25 +353,7 @@ static void idr_fill_slot(struct idr *idr, void *ptr, int id,
 		idr_mark_full(pa, id);
 }
 
-/**
- * idr_get_new_above - allocate new idr entry above or equal to a start id
- * @idp: idr handle
- * @ptr: pointer you want associated with the id
- * @starting_id: id to start search at
- * @id: pointer to the allocated handle
- *
- * This is the allocate id function.  It should be called with any
- * required locks.
- *
- * If allocation from IDR's private freelist fails, idr_get_new_above() will
- * return %-EAGAIN.  The caller should retry the idr_pre_get() call to refill
- * IDR's preallocation and then retry the idr_get_new_above() call.
- *
- * If the idr is full idr_get_new_above() will return %-ENOSPC.
- *
- * @id returns a value in the range @starting_id ... %0x7fffffff
- */
-int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
+int __idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
 {
 	struct idr_layer *pa[MAX_IDR_LEVEL + 1];
 	int rv;
@@ -398,7 +366,7 @@ int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
 	*id = rv;
     return 0;
 }
-EXPORT_SYMBOL(idr_get_new_above);
+EXPORT_SYMBOL(__idr_get_new_above);
 
 /**
  * idr_preload - preload for idr_alloc()
@@ -496,9 +464,7 @@ EXPORT_SYMBOL_GPL(idr_alloc);
 
 static void idr_remove_warning(int id)
 {
-	printk(KERN_WARNING
-		"idr_remove called for id=%d which is not allocated.\n", id);
-//   dump_stack();
+	WARN(1, "idr_remove called for id=%d which is not allocated.\n", id);
 }
 
 static void sub_remove(struct idr *idp, int shift, int id)
@@ -548,8 +514,7 @@ void idr_remove(struct idr *idp, int id)
 	struct idr_layer *p;
 	struct idr_layer *to_free;
 
-	/* see comment in idr_find_slowpath() */
-	if (WARN_ON_ONCE(id < 0))
+	if (id < 0)
 		return;
 
 	sub_remove(idp, (idp->layers - 1) * IDR_BITS, id);
@@ -646,15 +611,7 @@ void *idr_find_slowpath(struct idr *idp, int id)
 	int n;
 	struct idr_layer *p;
 
-	/*
-	 * If @id is negative, idr_find() used to ignore the sign bit and
-	 * performed lookup with the rest of bits, which is weird and can
-	 * lead to very obscure bugs.  We're now returning NULL for all
-	 * negative IDs but just in case somebody was depending on the sign
-	 * bit being ignored, let's trigger WARN_ON_ONCE() so that they can
-	 * be detected and fixed.  WARN_ON_ONCE() can later be removed.
-	 */
-	if (WARN_ON_ONCE(id < 0))
+	if (id < 0)
 		return NULL;
 
 	p = rcu_dereference_raw(idp->top);
@@ -804,8 +761,7 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
 	int n;
 	struct idr_layer *p, *old_p;
 
-	/* see comment in idr_find_slowpath() */
-	if (WARN_ON_ONCE(id < 0))
+	if (id < 0)
 		return ERR_PTR(-EINVAL);
 
 	p = idp->top;
@@ -838,7 +794,7 @@ EXPORT_SYMBOL(idr_replace);
 #endif
 
 
-void idr_init_cache(void)
+void __init idr_init_cache(void)
 {
     //idr_layer_cache = kmem_cache_create("idr_layer_cache",
     //           sizeof(struct idr_layer), 0, SLAB_PANIC, NULL);
@@ -858,7 +814,6 @@ void idr_init(struct idr *idp)
 }
 EXPORT_SYMBOL(idr_init);
 
-#if 0
 
 /**
  * DOC: IDA description
@@ -1002,7 +957,7 @@ int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
 	if (ida->idr.id_free_cnt || ida->free_bitmap) {
 		struct idr_layer *p = get_from_free_list(&ida->idr);
 		if (p)
-			kmem_cache_free(idr_layer_cache, p);
+			kfree(p);
 	}
 
 	return 0;
@@ -1052,8 +1007,7 @@ void ida_remove(struct ida *ida, int id)
 	return;
 
  err:
-	printk(KERN_WARNING
-	       "ida_remove called for id=%d which is not allocated.\n", id);
+	WARN(1, "ida_remove called for id=%d which is not allocated.\n", id);
 }
 EXPORT_SYMBOL(ida_remove);
 
@@ -1083,8 +1037,6 @@ void ida_init(struct ida *ida)
 }
 EXPORT_SYMBOL(ida_init);
 
-
-#endif
 
 
 unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
