@@ -8,6 +8,8 @@ struct llist
 	void ClearList();
 	int KeyDown();
 	int KeyUp();
+	int KeyHome();
+	int KeyEnd();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);
 }; 
@@ -51,12 +53,12 @@ int llist::KeyDown()
 {
 	if (current-first+1<visible)
 	{
-		if (current+1>=count) return -1;
+		if (current+1>=count) return 0;
 		current++;
 	}
 	else 
 	{
-		if (visible+first>=count) return -1;
+		if (visible+first>=count) return 0;
 		first++;
 		current++;
 	}
@@ -71,9 +73,25 @@ int llist::KeyUp()
 	}
 	else
 	{
-		if (first==0) return -1;
+		if (first==0) return 0;
 		first--;
 		current--;
 	}
+	return 1;
+}
+
+int llist::KeyHome()
+{
+	if (current==0) && (first==0) return 0;
+	current=0;
+	first=0;
+	return 1;
+}
+
+int llist::KeyEnd()
+{
+	if (current==count-1) && (first==count-visible) return 0;
+	current=count-1;
+	first=count-visible;
 	return 1;
 }

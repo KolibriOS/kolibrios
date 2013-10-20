@@ -106,13 +106,21 @@ void OpenWith()
 				key = GetKey();
 				if (key==27) ExitProcess();
 				if (key==13) { RunProgram(#app_paths[app_list.current].item, #file_path); ExitProcess(); }
-				if (key==177) //down
+				if (key==177)
 				{
 					if (app_list.KeyDown()) DrawAppList();
 				}
-				if (key==178) //up
+				if (key==178)
 				{
 					if (app_list.KeyUp()) DrawAppList();
+				}
+				if (key==180)
+				{
+					if (app_list.KeyHome()) DrawAppList();
+				}
+				if (key==181)
+				{
+					if (app_list.KeyEnd()) DrawAppList();
 				}
 				break;
 				
@@ -144,9 +152,10 @@ void DrawAppList()
 		Put_icon(#app_paths[index+app_list.first].ext, app_list.x+4, index*app_list.line_h+app_list.y+2, col_bg, 6);
 		WriteText(app_list.x+25, index*app_list.line_h+app_list.y+7, 0x80, 0, #app_paths[index+app_list.first].item);
 	}
-	tiny_scroll.h = app_list.w*app_list.visible/app_list.count;
 	tiny_scroll.x = app_list.x+app_list.w-SCROLL_WIDTH-1;
-	tiny_scroll.y = app_list.first * app_list.h / app_list.count + app_list.y;
-	if (tiny_scroll.y + tiny_scroll.h - app_list.y > app_list.h) tiny_scroll.y = app_list.y + app_list.h - tiny_scroll.h-1;
+	tiny_scroll.h = app_list.h * app_list.visible / app_list.count;
+	tiny_scroll.y = app_list.h * app_list.first / app_list.count + app_list.y;
+	debugi(tiny_scroll.y + tiny_scroll.h - app_list.y - app_list.h);
+	if (tiny_scroll.y + tiny_scroll.h - app_list.y - app_list.h >= 0) tiny_scroll.y = app_list.y + app_list.h - tiny_scroll.h-1;
 	DrawBar(tiny_scroll.x, tiny_scroll.y, SCROLL_WIDTH, tiny_scroll.h, 0x555555); //scroll
 }
