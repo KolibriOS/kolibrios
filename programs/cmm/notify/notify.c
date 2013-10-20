@@ -78,21 +78,32 @@ _next:
 	$loop _next
 }
 
+void DrawBackground()
+{
+	PutPaletteImage(shadow_buf_32+8,WIN_SIZE_X,WIN_SIZE_Y,0,0,32,0);
+	PutPixel(0,0,ESDWORD[lighter_pixel1]);
+	PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);	
+}
 
 void GetBackground()
 {
 	int i;
+	static int was_once;
 
+	if (was_once)
+	{
+		DrawBackground();
+		return;
+	}
 	for (i=1; i<=6; i++)
 	{
+		was_once = 1;
 		ShadowImage(shadow_buf_24, WIN_SIZE_X, WIN_SIZE_Y, 1);
 		if (i%2 == 0) ShadowImage(lighter_pixel1, 1, 1, 1);
 		if (i%2 == 0) ShadowImage(lighter_pixel2, 1, 1, 1);
 		from24to32(shadow_buf_24, shadow_buf_32+8, WIN_SIZE_X, WIN_SIZE_Y);
 		Text();
-		PutPaletteImage(shadow_buf_32+8,WIN_SIZE_X,WIN_SIZE_Y,0,0,32,0);
-		PutPixel(0,0,ESDWORD[lighter_pixel1]);
-		PutPixel(0,WIN_SIZE_Y-1,ESDWORD[lighter_pixel2]);
+		DrawBackground();
 		pause(5);
 	}
 }
