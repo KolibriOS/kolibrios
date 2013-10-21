@@ -79,8 +79,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.0"
-#define ABOUT_TITLE "Eolite v2.0"
+#define TITLE "Eolite File Manager v2.0.1"
+#define ABOUT_TITLE "Eolite v2.0.1"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -92,6 +92,7 @@ char tmp_disk_del_param[3]="d0";
 struct path_string { char Item[4096]; };
 
 int active_about=0;
+word about_window;
 
 llist files;
 
@@ -256,7 +257,11 @@ void main()
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
 			id=GetButtonID();
-			if (id==1) ExitProcess();
+			if (id==1)
+			{
+				KillProcess(about_window);
+				ExitProcess();
+			}
 			if (rename_active) break;
 			if (del_active)
 			{
@@ -368,6 +373,13 @@ void main()
 							IF (rename_active==1) {ReName(true); break;}
 							Open();
 							break; 
+					case 173: //Ctrl+Enter
+							if (!itdir)
+							{
+								SwitchToAnotherThread();
+								CreateThread(#OpenWith,#open_with_stak+4092);
+							}
+							break;
 					case 178: //up
 							List_Current(-1);
 							break;
@@ -840,7 +852,7 @@ void FnProcess(char N)
 	{
 		case 1:
 			SwitchToAnotherThread();
-			CreateThread(#about_dialog,#about_stak+4092);
+			about_window=CreateThread(#about_dialog,#about_stak+4092);
 			break;
 		case 2:
 			if (!files.count) break;
