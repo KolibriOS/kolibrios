@@ -8,9 +8,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 include 'ext2.inc'
-include 'blocks.asm'
-include 'inode.asm'
-include 'resource.asm'
+include 'blocks.inc'
+include 'inode.inc'
+include 'resource.inc'
 
 iglobal
 align 4
@@ -197,6 +197,11 @@ proc ext2_create_partition
         test    eax, eax
         jnz     .error
 
+        ;call    ext2_sb_update
+        ; Sync the disk.
+        ;mov     esi, [ebp + PARTITION.Disk]
+        ;call    disk_sync                       ; eax contains error code, if any.
+
         mov     eax, ebp                        ; Return pointer to EXTFS.
         pop     edi esi ebp ebx
         ret
@@ -252,6 +257,7 @@ endp
 ;               eax = error code (0 implies no error)
 ;---------------------------------------------------------------------
 ext2_ReadFolder:
+        ;DEBUGF  1, "Reading folder.\n"
         call    ext2_lock
         cmp     byte [esi], 0
         jz      .root_folder
@@ -306,7 +312,7 @@ ext2_ReadFolder:
         add     edx, 32                                 ; edx = mem to return.
 
         xor     ecx, ecx                                ; Get number of first block.
-        call    ext2_get_inode_block
+        call    ext2_inode_get_block
         test    eax, eax
         jnz     .error_get_block
 
@@ -355,7 +361,7 @@ ext2_ReadFolder:
         ; Read the next block.
         push    ecx
         mov     ecx, [edi]
-        call    ext2_get_inode_block
+        call    ext2_inode_get_block
         test    eax, eax
         jnz     .error_get_block
 
@@ -482,6 +488,8 @@ ext2_ReadFolder:
         lea     edi, [edx + 12]
         mov     ecx, 20 / 4
         rep stosd
+
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
 
     .error_bad_len:
@@ -497,7 +505,7 @@ ext2_ReadFolder:
         push    eax
         call    ext2_unlock
         pop     eax
-
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
         
     .error_empty_dir:                                   ; inode of folder without blocks.
@@ -518,6 +526,7 @@ ext2_ReadFolder:
 ;               eax = error code (0 implies no error)
 ;---------------------------------------------------------------------
 ext2_Read:
+        ;DEBUGF  1, "Attempting read.\n"
         call    ext2_lock
         cmp     byte [esi], 0
         jnz     @F
@@ -607,7 +616,7 @@ ext2_Read:
         
         push    ecx
         mov     ecx, eax
-        call    ext2_get_inode_block
+        call    ext2_inode_get_block
         test    eax, eax
         jnz     .error_at_first_block
 
@@ -651,7 +660,7 @@ ext2_Read:
         
         inc     dword [esp]
         mov     ecx, [esp]
-        call    ext2_get_inode_block
+        call    ext2_inode_get_block
 
         test    eax, eax
         jnz     .error_at_read_cycle
@@ -674,7 +683,7 @@ ext2_Read:
 
         pop     ecx                                     ; Pop block counter in ECX.
         inc     ecx
-        call    ext2_get_inode_block
+        call    ext2_inode_get_block
         
         test    eax, eax
         jnz     .error_at_finish_block
@@ -705,6 +714,7 @@ ext2_Read:
         ret
     @@:
         xor     eax, eax
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
         
     .only_one_block:
@@ -722,6 +732,8 @@ ext2_Read:
         push    eax
         call    ext2_unlock
         pop     eax
+
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
 
 ;---------------------------------------------------------------------
@@ -732,6 +744,7 @@ ext2_Read:
 ; Output:       eax = error code.
 ;---------------------------------------------------------------------
 ext2_GetFileInfo:
+        ;DEBUGF  1, "Calling for file info.\n"
         call    ext2_lock
         mov     edx, [ebx + 16]
         cmp     byte [esi], 0
@@ -749,6 +762,8 @@ ext2_GetFileInfo:
         push    eax
         call    ext2_unlock
         pop     eax
+
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
 
     .is_root:      
@@ -801,6 +816,7 @@ ext2_GetFileInfo:
 
         call    ext2_unlock
         xor     eax, eax
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
 
 ;---------------------------------------------------------------------
@@ -811,6 +827,13 @@ ext2_GetFileInfo:
 ; Output:       eax = error code.
 ;---------------------------------------------------------------------
 ext2_SetFileInfo:
+        test    [ebp + EXTFS.partition_flags], EXT2_RO
+        jz      @F
+
+        mov     eax, ERROR_UNSUPPORTED_FS
+        ret
+
+    @@:    
         push    edx esi edi ebx
         call    ext2_lock
         mov     edx, [ebx + 16]
@@ -888,6 +911,14 @@ ext2_SetFileInfo:
 ; Output:       eax = error code.
 ;---------------------------------------------------------------------
 ext2_Delete:
+        ;DEBUGF  1, "Attempting Delete.\n"
+        test    [ebp + EXTFS.partition_flags], EXT2_RO
+        jz      @F
+
+        mov     eax, ERROR_UNSUPPORTED_FS
+        ret
+ 
+    @@:    
         push    ebx ecx edx esi edi
         call    ext2_lock
 
@@ -971,7 +1002,7 @@ ext2_Delete:
 
     @@:
         push    ecx
-        call    ext2_get_inode_block
+        call    ext2_inode_get_block
         test    eax, eax
         jnz     .error_stack8
         mov     eax, ecx
@@ -989,6 +1020,11 @@ ext2_Delete:
         jmp     @B
 
     @@:
+        ; Free indirect blocks.
+        call    ext2_inode_free_indirect_blocks
+        test    eax, eax
+        jnz     .error_stack4
+
         ; Clear the inode, and add deletion time.
         mov     edi, [ebp + EXTFS.ext2_save_inode]
         xor     eax, eax
@@ -1047,6 +1083,7 @@ ext2_Delete:
         pop     eax
 
         pop     edi esi edx ecx ebx
+        ;DEBUGF  1, "And returning with: %x.\n", eax
         ret
 
     .error_stack8:
@@ -1071,12 +1108,20 @@ ext2_Delete:
 ; Output:       eax = error code.
 ;---------------------------------------------------------------------
 ext2_CreateFolder:
+        ;DEBUGF  1, "Attempting to create folder.\n"
+        test    [ebp + EXTFS.partition_flags], EXT2_RO
+        jz      @F
+
+        mov     eax, ERROR_UNSUPPORTED_FS
+        ret
+ 
+    @@:    
         push    ebx ecx edx esi edi
         call    ext2_lock
 
         add     esi, [esp + 20 + 4]
 
-        ; Can't create root, but for CreateFile already existing directory is success.
+        ; Can't create root, but for CreateFolder already existing directory is success.
         cmp     byte [esi], 0
         jz      .success
 
@@ -1194,6 +1239,7 @@ ext2_CreateFolder:
         pop     eax
 
         pop     edi esi edx ecx ebx
+        ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
 
     .error:
@@ -1210,12 +1256,464 @@ ext2_CreateFolder:
         mov     eax, ERROR_DISK_FULL
         jmp     .return
 
-self_link:   db ".", 0
-parent_link: db "..", 0
+self_link   db ".", 0
+parent_link db "..", 0
 
+;---------------------------------------------------------------------
+; Rewrite a file.
+; Input:        esi + [esp + 4] = file name.
+;               ebx = pointer to paramteres from sysfunc 70.
+;               ebp = pointer to EXTFS structure.
+; Output:       eax = error code.
+;               ebx = bytes written.
+;---------------------------------------------------------------------
 ext2_Rewrite:
-ext2_Write:
-ext2_SetFileEnd:
-        xor     ebx, ebx
+        ;DEBUGF  1, "Attempting Rewrite.\n"
+        test    [ebp + EXTFS.partition_flags], EXT2_RO
+        jz      @F
+
         mov     eax, ERROR_UNSUPPORTED_FS
         ret
+ 
+    @@:
+        push    ecx edx esi edi
+        pushad
+
+        call    ext2_lock
+
+        add     esi, [esp + 16 + 32 + 4]
+        ; Can't create root.
+        cmp     byte [esi], 0
+        jz      .error_access_denied
+
+        push    esi 
+        stdcall ext2_inode_find, 0
+        pop     esi
+
+        ; If the file is there, delete it.
+        test    eax, eax
+        jnz     @F
+
+        pushad
+
+        push    eax
+        call    ext2_unlock
+        pop     eax
+
+        push    dword 0x00000000
+        call    ext2_Delete
+        add     esp, 4
+
+        push    eax
+        call    ext2_lock
+        pop     eax
+
+        test    eax, eax
+        jnz     .error_access_denied_delete
+
+        popad
+    @@:
+        ; Find parent.
+        call    ext2_inode_find_parent
+        test    eax, eax
+        jnz     .error_access_denied
+
+        ; Inode ID for preference.
+        mov     eax, esi
+        call    ext2_inode_alloc
+        test    eax, eax
+        jnz     .error_full
+
+        ; Save allocated inode in EDX; filename is in EDI; parent ID in ESI.
+        mov     edx, ebx
+
+        push    edi
+
+        xor     al, al
+        mov     edi, [ebp + EXTFS.ext2_temp_inode]
+        mov     ecx, [ebp + EXTFS.inode_size]
+        rep stosb
+
+        mov     edi, [ebp + EXTFS.ext2_temp_inode]
+        add     edi, EXT2_INODE_STRUC.i_atime
+        call    current_unix_time
+
+        add     edi, 8
+        call    current_unix_time
+
+        pop     edi
+
+        mov     ebx, [ebp + EXTFS.ext2_temp_inode]
+        mov     [ebx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
+        mov     eax, edx
+        call    ext2_inode_write
+        test    eax, eax
+        jnz     .error
+
+        ; Link parent to child.
+        mov     eax, esi
+        mov     ebx, edx
+        mov     esi, edi
+        mov     dl, EXT2_FT_REG_FILE
+        call    ext2_inode_link
+        test    eax, eax
+        jnz     .error
+
+        popad
+        push    eax
+        call    ext2_unlock
+        pop     eax
+
+        push    dword 0x00000000
+        call    ext2_Write
+        add     esp, 4
+
+        push    eax
+        call    ext2_lock
+        pop     eax
+
+    .success:
+        push    eax
+        call    ext2_sb_update
+
+        ; Sync the disk.
+        mov     esi, [ebp + PARTITION.Disk]
+        call    disk_sync                       ; eax contains error code, if any.
+        pop     eax
+
+    .return:
+        push    eax
+        call    ext2_unlock
+        pop     eax
+
+        pop     edi esi edx ecx
+
+        ;DEBUGF  1, "And returning with: %x.\n", eax
+        ret
+
+    .error:       
+        mov     eax, ERROR_ACCESS_DENIED
+        jmp     .success
+
+    .error_access_denied_delete:
+        popad
+
+    .error_access_denied:
+        popad
+        xor     ebx, ebx
+
+        mov     eax, ERROR_ACCESS_DENIED
+        jmp     .return
+
+    .error_full:
+        popad
+        xor     ebx, ebx
+
+        mov     eax, ERROR_DISK_FULL
+        jmp     .return
+
+;---------------------------------------------------------------------
+; Write to a file.
+; Input:        esi + [esp + 4] = file name.
+;               ebx = pointer to paramteres from sysfunc 70.
+;               ebp = pointer to EXTFS structure.
+; Output:       eax = error code.
+;               ebx = number of bytes written.
+;---------------------------------------------------------------------
+ext2_Write:
+        ;DEBUGF 1, "Attempting write, "
+        test    [ebp + EXTFS.partition_flags], EXT2_RO
+        jz      @F
+
+        mov     eax, ERROR_UNSUPPORTED_FS
+        ret
+ 
+    @@:    
+        push    ecx edx esi edi
+        call    ext2_lock
+
+        add     esi, [esp + 16 + 4]
+
+        ; Can't write to root.
+        cmp     byte [esi], 0
+        jz      .error
+
+        push    ebx ecx edx
+        stdcall ext2_inode_find, 0
+        pop     edx ecx ebx
+        ; If file not there, error.
+        xor     ecx, ecx
+        test    eax, eax
+        jnz     .error_file_not_found
+
+        ; Save the inode.
+        push    esi
+
+        ; Check if it's a file.
+        mov     edx, [ebp + EXTFS.ext2_save_inode]
+        cmp     [edx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
+        jne     .error
+
+        mov     eax, esi
+        mov     ecx, [ebx + 4]
+
+        call    ext2_inode_extend
+        xor     ecx, ecx
+        test    eax, eax
+        jnz     .error_device
+
+        ; ECX contains the size to write, and ESI points to it.
+        mov     ecx, [ebx + 0x0C]
+        mov     esi, [ebx + 0x10]
+
+        ; Save the size of the inode.
+        mov     eax, [edx + EXT2_INODE_STRUC.i_size]
+        push    eax
+
+        xor     edx, edx
+        div     [ebp + EXTFS.block_size]
+
+        test    edx, edx
+        jz      .start_aligned
+
+        ; Start isn't aligned, so deal with the non-aligned bytes.
+        mov     ebx, [ebp + EXTFS.block_size]
+        sub     ebx, edx
+
+        cmp     ebx, ecx
+        jbe     @F
+
+        ; If the size to copy fits in current block, limit to that, instead of the entire block.
+        mov     ebx, ecx
+
+    @@:
+        ; Copy EBX bytes, in EAX indexed block.
+        push    eax
+        call    ext2_inode_read_entry
+        test    eax, eax
+        pop     eax
+        jnz     .error_inode_size
+
+        push    ecx
+        
+        mov     ecx, ebx
+        mov     edi, ebx
+        add     edi, edx
+        rep movsb
+
+        pop     ecx
+
+        ; Write the block.
+        call    ext2_inode_write_entry
+        test    eax, eax
+        jnz     .error_inode_size
+
+        add     [esp], ebx
+        sub     ecx, ebx
+        jz      .write_inode
+
+    .start_aligned:
+        cmp     ecx, [ebp + EXTFS.block_size]
+        jb      @F
+
+        mov     eax, [esp]
+        xor     edx, edx
+        div     [ebp + EXTFS.block_size]
+
+        push    eax
+        mov     edx, [esp + 8]
+        call    ext2_inode_blank_entry
+        test    eax, eax
+        pop     eax
+        jnz     .error_inode_size
+
+        push    ecx
+
+        mov     ecx, [ebp + EXTFS.block_size]
+        mov     edi, [ebp + EXTFS.ext2_save_block]
+        rep movsb
+
+        pop     ecx
+
+        call    ext2_inode_write_entry
+        test    eax, eax
+        jnz     .error_inode_size
+
+        mov     eax, [ebp + EXTFS.block_size]
+        sub     ecx, eax
+        add     [esp], eax
+        jmp     .start_aligned        
+
+    ; Handle the remaining bytes.
+    @@:
+        test    ecx, ecx
+        jz      .write_inode
+
+        mov     eax, [esp]
+        xor     edx, edx
+        div     [ebp + EXTFS.block_size]
+
+        push    eax
+        call    ext2_inode_read_entry
+        test    eax, eax
+        pop     eax
+        jz      @F
+
+        push    eax
+        mov     edx, [esp + 8]
+
+        call    ext2_inode_blank_entry
+        test    eax, eax
+        pop     eax
+        jnz     .error_inode_size
+
+    @@:
+        push    ecx
+        mov     edi, [ebp + EXTFS.ext2_save_block]
+        rep movsb
+        pop     ecx
+
+        call    ext2_inode_write_entry
+        test    eax, eax
+        jnz     .error_inode_size
+
+        add     [esp], ecx
+        xor     ecx, ecx
+
+    .write_inode:
+        mov     ebx, [ebp + EXTFS.ext2_temp_inode]
+        pop     eax
+        mov     [ebx + EXT2_INODE_STRUC.i_size], eax
+        mov     eax, [esp]
+
+        call    ext2_inode_write
+        test    eax, eax
+        jnz     .error_device
+
+    .success:
+        call    ext2_sb_update
+
+        ; Sync the disk.
+        mov     esi, [ebp + PARTITION.Disk]
+        call    disk_sync                       ; eax contains error code, if any.
+
+    .return:
+        push    eax
+        call    ext2_unlock
+        pop     eax
+
+        add     esp, 4
+
+        mov     ebx, [esp + 12]
+        sub     ebx, ecx
+        pop     edi esi edx ecx
+
+        ;DEBUGF  1, "and returning with: %x.\n", eax
+        ret
+
+    .error:
+        mov     eax, ERROR_ACCESS_DENIED
+        jmp     .return
+
+    .error_file_not_found:
+        mov     eax, ERROR_FILE_NOT_FOUND
+        jmp     .return
+
+    .error_inode_size:
+        mov     ebx, [ebp + EXTFS.ext2_temp_inode]
+        pop     eax
+        mov     [ebx + EXT2_INODE_STRUC.i_size], eax
+        mov     eax, [esp]
+
+        call    ext2_inode_write
+
+    .error_device:        
+        call    ext2_sb_update
+
+        ; Sync the disk.
+        mov     esi, [ebp + PARTITION.Disk]
+        call    disk_sync                       ; eax contains error code, if any.
+
+        mov     eax, ERROR_DEVICE
+        jmp     .return
+
+;---------------------------------------------------------------------
+; Set the end of a file.
+; Input:        esi + [esp + 4] = file name.
+;               ebx = pointer to paramteres from sysfunc 70.
+;               ebp = pointer to EXTFS structure.
+; Output:       eax = error code.
+;---------------------------------------------------------------------
+ext2_SetFileEnd:
+        test    [ebp + EXTFS.partition_flags], EXT2_RO
+        jz      @F
+
+        mov     eax, ERROR_UNSUPPORTED_FS
+        ret
+ 
+    @@:    
+        push    ebx ecx edx esi edi
+        call    ext2_lock
+
+        add     esi, [esp + 20 + 4]
+
+        ; Can't write to root.
+        cmp     byte [esi], 0
+        jz      .error
+
+        stdcall ext2_inode_find, 0
+        ; If file not there, error.
+        test    eax, eax
+        jnz     .error_file_not_found
+
+        ; Check if it's a file.
+        mov     edx, [ebp + EXTFS.ext2_save_inode]
+        cmp     [edx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
+        jne     .error
+
+        mov     eax, esi
+        mov     ecx, [ebx + 4]
+        call    ext2_inode_extend
+        test    eax, eax
+        jnz     .error_disk_full
+
+        mov     eax, esi
+        call    ext2_inode_truncate
+        test    eax, eax
+        jnz     .error_disk_full
+
+        mov     eax, esi
+        mov     ebx, [ebp + EXTFS.ext2_temp_inode]
+        call    ext2_inode_write
+
+        call    ext2_sb_update
+
+        ; Sync the disk.
+        mov     esi, [ebp + PARTITION.Disk]
+        call    disk_sync                       ; eax contains error code, if any.
+
+    .return:
+        push    eax
+        call    ext2_unlock
+        pop     eax
+
+        pop     edi esi edx ecx ebx
+        ret
+
+    .error:
+        mov     eax, ERROR_ACCESS_DENIED
+        jmp     .return
+
+    .error_file_not_found:
+        mov     eax, ERROR_FILE_NOT_FOUND
+        jmp     .return
+
+    .error_disk_full:        
+        call    ext2_sb_update
+
+        ; Sync the disk.
+        mov     esi, [ebp + PARTITION.Disk]
+        call    disk_sync                       ; eax contains error code, if any.
+
+        mov     eax, ERROR_DISK_FULL
+        jmp     .return

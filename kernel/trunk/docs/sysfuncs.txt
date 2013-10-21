@@ -3953,7 +3953,7 @@ Format of the information structure:
   * +0: dword: 2 = subfunction number
   * +4: dword: 0 (reserved)
   * +8: dword: 0 (reserved)
-  * +12 = +0xC: dword: number of bytes to read
+  * +12 = +0xC: dword: number of bytes to write
   * +16 = +0x10: dword: pointer to data
   * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
     given in the general description

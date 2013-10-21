@@ -7,6 +7,13 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Future jobs for driver, in order of preference:
+;     * clean up existing extents support.
+;     * add b-tree directories support.
+;     * add long file support.
+;     * add journal support.
+;     * add minor features that come with ext3/4.
+
 ; Recommended move to some kernel-wide bitmap handling code (with a bit of abstraction, of course).
 
 ;---------------------------------------------------------------------
@@ -86,6 +93,7 @@ bitmap_find_free_bit:
 
         ; We found the value. Let's return with it.
         add     esp, 4
+
         add     eax, edx
         jmp     .return
         
