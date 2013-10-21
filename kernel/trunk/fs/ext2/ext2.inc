@@ -490,6 +490,20 @@ EXT2_S_IFMT          = 0xF000           ; Mask for file type.
 EXT2_S_IFREG         = 0x8000           ; Regular file.
 EXT2_S_IFDIR         = 0x4000           ; Directory.
 
+EXT2_S_IRUSR         = 0x0100           ; User read
+EXT2_S_IWUSR         = 0x0080           ; User write
+EXT2_S_IXUSR         = 0x0040           ; User execute
+EXT2_S_IRGRP         = 0x0020           ; Group read
+EXT2_S_IWGRP         = 0x0010           ; Group write
+EXT2_S_IXGRP         = 0x0008           ; Group execute
+EXT2_S_IROTH         = 0x0004           ; Others read
+EXT2_S_IWOTH         = 0x0002           ; Others write
+EXT2_S_IXOTH         = 0x0001           ; Others execute
+
+PERMISSIONS          = EXT2_S_IRUSR or EXT2_S_IWUSR \
+                       or EXT2_S_IRGRP or EXT2_S_IWGRP \
+                       or EXT2_S_IROTH or EXT2_S_IWOTH
+
 ; File type defining values in directory entry.
 EXT2_FT_REG_FILE     = 1                ; Regular file.
 EXT2_FT_DIR          = 2                ; Directory.

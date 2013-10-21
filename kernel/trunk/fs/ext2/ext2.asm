@@ -744,7 +744,7 @@ ext2_Read:
 ; Output:       eax = error code.
 ;---------------------------------------------------------------------
 ext2_GetFileInfo:
-        ;DEBUGF  1, "Calling for file info.\n"
+        ;DEBUGF  1, "Calling for file info, for: %s.\n", esi
         call    ext2_lock
         mov     edx, [ebx + 16]
         cmp     byte [esi], 0
@@ -762,7 +762,6 @@ ext2_GetFileInfo:
         push    eax
         call    ext2_unlock
         pop     eax
-
         ;DEBUGF  1, "Returning with: %x.\n", eax
         ret
 
@@ -1164,7 +1163,7 @@ ext2_CreateFolder:
         pop     edi
 
         mov     ebx, [ebp + EXTFS.ext2_temp_inode]
-        mov     [ebx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFDIR
+        mov     [ebx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFDIR or PERMISSIONS
         mov     eax, edx
         call    ext2_inode_write
         test    eax, eax
@@ -1344,7 +1343,7 @@ ext2_Rewrite:
         pop     edi
 
         mov     ebx, [ebp + EXTFS.ext2_temp_inode]
-        mov     [ebx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
+        mov     [ebx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG or PERMISSIONS
         mov     eax, edx
         call    ext2_inode_write
         test    eax, eax
@@ -1451,8 +1450,8 @@ ext2_Write:
 
         ; Check if it's a file.
         mov     edx, [ebp + EXTFS.ext2_save_inode]
-        cmp     [edx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
-        jne     .error
+        test    [edx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
+        jz      .error
 
         mov     eax, esi
         mov     ecx, [ebx + 4]
