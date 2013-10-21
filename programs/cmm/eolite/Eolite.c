@@ -208,8 +208,7 @@ void main()
 
 			if (m.vert)
 			{
-				files.MouseScroll(m.vert);
-				List_ReDraw();
+				if (files.MouseScroll(m.vert)) List_ReDraw();
 				break;
 			}
 
@@ -376,14 +375,10 @@ void main()
 							List_Current(1);
 							break;
 					case 180: //home
-							files.first=0;
-							files.current=0;
-							List_ReDraw();
+							if (files.KeyHome()) List_ReDraw();
 							break;
 					case 181: //end
-							files.first = files.count - files.visible;
-							files.current = files.visible - 1;
-							List_ReDraw();
+							if (files.KeyEnd()) List_ReDraw();
 							break;
 					case 183: //Page Down
 							List_Current(files.visible-1);
