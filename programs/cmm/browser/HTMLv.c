@@ -26,10 +26,10 @@
 #endif
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.08";
+	char version[]=" Текстовый браузер 0.99.09";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 #else
-	char version[]=" Text-based Browser 0.99.08";
+	char version[]=" Text-based Browser 0.99.09";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 #endif
 
@@ -55,7 +55,7 @@ proc_info Form;
 #define WIN_H 480
 
 
-char stak[512];
+char stak[4096];
 mouse m;
 
 int action_buf;
@@ -115,7 +115,7 @@ void main()
 					{
 						show_menu = 0;
 						SwitchToAnotherThread();
-						CreateThread(#menu_rmb,#stak);
+						CreateThread(#menu_rmb,#stak+4092);
 						break; 
 					}
 				}

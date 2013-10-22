@@ -26,7 +26,8 @@ void menu_rmb()
 
 	menu.w = 165;
 	menu.line_h = 19;
-	while (ITEMS_LIST[menu.count*2]) menu.count++;
+	menu.first = 0;
+	while (ITEMS_LIST[menu.count*2]) {menu.count++; menu.visible++;}
 	SetEventMask(100111b); 
 
 	loop() switch(WaitEvent())
@@ -54,16 +55,7 @@ void menu_rmb()
 		case evKey:
 				key = GetKey();
 				if (key==27) ExitProcess();
-				if (key==178) && (menu.current)
-				{
-					menu.current--;
-					goto _ITEMS_DRAW;
-				}
-				if (key==177) && (menu.current+1<menu.count)
-				{
-					menu.current++;
-					goto _ITEMS_DRAW;
-				}
+				if (menu.ProcessKey(key)) goto _ITEMS_DRAW;
 				if (key==13)
 				{
 					action_buf = ITEMS_LIST[menu.current*2+1];
