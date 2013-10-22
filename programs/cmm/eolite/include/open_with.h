@@ -106,22 +106,7 @@ void OpenWith()
 				key = GetKey();
 				if (key==27) ExitProcess();
 				if (key==13) { RunProgram(#app_paths[app_list.current].item, #file_path); ExitProcess(); }
-				if (key==177)
-				{
-					if (app_list.KeyDown()) DrawAppList();
-				}
-				if (key==178)
-				{
-					if (app_list.KeyUp()) DrawAppList();
-				}
-				if (key==180)
-				{
-					if (app_list.KeyHome()) DrawAppList();
-				}
-				if (key==181)
-				{
-					if (app_list.KeyEnd()) DrawAppList();
-				}
+				if (app_list.ProcessKey(key)) DrawAppList();
 				break;
 				
 		case evReDraw: _APP_LIST_DRAW:
