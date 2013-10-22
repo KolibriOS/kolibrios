@@ -6,6 +6,7 @@ struct llist
 	int count, visible, first, current;
 	int current_temp;
 	void ClearList();
+	int ProcessKey(dword key);
 	int KeyDown();
 	int KeyUp();
 	int KeyHome();
@@ -45,6 +46,18 @@ int llist::MouseScroll(dword scroll_state)
 	{
 		if (visible+first+3 >= count) first = count - visible; else first+=2;
 		return 1;
+	}
+	return 0;
+}
+
+int llist::ProcessKey(dword key)
+{
+	switch(key)
+	{
+		case 177: return KeyDown();
+		case 178: return KeyUp();
+		case 180: return KeyHome();
+		case 181: return KeyEnd();
 	}
 	return 0;
 }
