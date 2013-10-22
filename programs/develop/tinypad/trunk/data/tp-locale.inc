@@ -21,7 +21,14 @@ menubar_res main_menu,\
   et,'Otsi'	,mm.Search  ,onshow.search ,\
   et,'K‰ivita'	,mm.Run     ,onshow.run    ,\
   et,'Kodeering',mm.Encoding,onshow.recode ,\
-  et,'Seaded'	,mm.Options ,onshow.options
+  et,'Seaded'	,mm.Options ,onshow.options,\
+\
+  sp,'Archivo' ,mm.File    ,onshow.file   ,\
+  sp,'Editar'  ,mm.Edit    ,onshow.edit   ,\
+  sp,'Buscar' ,mm.Search  ,onshow.search ,\
+  sp,'Ejecutar'  ,mm.Run     ,onshow.run    ,\
+  sp,'CodificaciÛn',mm.Encoding,onshow.recode ,\
+  sp,'Opciones' ,mm.Options ,onshow.options
 
 popup_res mm.File,\
   ru,'çÆ¢Î©'	       ,'Ctrl+N'      ,New   ,\
@@ -49,7 +56,16 @@ popup_res mm.File,\
   et,'-'		 ,''		,      ,\
   et,'Sulge'		 ,'Ctrl+F4'	,Close ,\
   et,'-'		 ,''		,      ,\
-  et,'V‰lju'		 ,'Alt+X'	,Exit
+  et,'V‰lju'		 ,'Alt+X'	,Exit,\
+\
+  sp,'Nuevo'   ,'Ctrl+N'  ,New   ,\
+  sp,'Abrir...'   ,'Ctrl+O'  ,Open  ,\
+  sp,'Guardar'  ,'Ctrl+S'  ,Save  ,\
+  sp,'Guardar como...','Ctrl+Shift+S',SaveAs,\
+  sp,'-'   ,''    ,      ,\
+  sp,'Cerrar'   ,'Ctrl+F4' ,Close ,\
+  sp,'-'   ,''    ,      ,\
+  sp,'Salir'  ,'Alt+X' ,Exit
 
 popup_res mm.Edit,\
   ru,'ÇÎ‡•ß†‚Ï'    ,'Ctrl+X',Cut   ,\
@@ -71,7 +87,14 @@ popup_res mm.Edit,\
   et,'Kleebi'	 ,'Ctrl+V',Insert,\
   et,'Kustuta'	 ,''	  ,Delete,\
   et,'-'	 ,''	  ,	 ,\
-  et,'Vali kıik' ,'Ctrl+A',SelAll
+  et,'Vali kıik' ,'Ctrl+A',SelAll,\
+\
+  en,'Cortar'   ,'Ctrl+X',Cut   ,\
+  en,'Copiar'  ,'Ctrl+C',Copy  ,\
+  en,'Pegar'   ,'Ctrl+V',Insert,\
+  en,'Eliminar'  ,''    ,Delete,\
+  en,'-'   ,''    ,  ,\
+  en,'Seleccionar todo','Ctrl+A',SelAll
 
 popup_res mm.Search,\
   ru,'è•‡•©‚®...' ,'Ctrl+G',Position,\
@@ -90,7 +113,13 @@ popup_res mm.Search,\
   et,'-'	    ,''      ,	      ,\
   et,'Leia...'	    ,'Ctrl+F',Find    ,\
   et,'Leia j‰rgmine','F3'    ,FindNext,\
-  et,'Asenda...'    ,'Ctrl+H',Replace
+  et,'Asenda...'    ,'Ctrl+H',Replace ,\
+\
+  sp,'PosiciÛn...','Ctrl+G',Position,\
+  sp,'-'    ,''    ,      ,\
+  sp,'Buscar...'    ,'Ctrl+F',Find    ,\
+  sp,'Buscar siguiente'  ,'F3'    ,FindNext,\
+  sp,'Reemplazar...' ,'Ctrl+H',Replace
 
 popup_res mm.Run,\
   ru,'á†Ø„·‚®‚Ï'	,'F9'	  ,Run	   ,\
@@ -109,7 +138,13 @@ popup_res mm.Run,\
   et,'Kompileeri'	,'Ctrl+F9',Compile ,\
   et,'-'		,''	  ,	   ,\
   et,'Silumis paneel'	,''	  ,DbgBoard,\
-  et,'S¸steemi funktsioonid' ,''	  ,SysFuncs
+  et,'S¸steemi funktsioonid' ,''	  ,SysFuncs,\
+\
+  sp,'Ejecutar'    ,'F9'   ,Run     ,\
+  sp,'Compilar'    ,'Ctrl+F9',Compile ,\
+  sp,'-'    ,''   ,    ,\
+  sp,'DepuraciÛn'  ,''   ,DbgBoard,\
+  sp,'Funciones del sistema' ,''   ,SysFuncs
 
 popup_res mm.Encoding,\
   @!,<'CP866  ',0x1A,' CP1251'>,'',CP866.CP1251,\
@@ -150,81 +185,107 @@ popup_res mm.Options,\
   et,'Tark tabulatsioon'     ,'',SmartTabs   ,\
   et,'Optimaalne t‰itmine salvestamisel','',OptimalFill ,\
   et,'-'		     ,'',	     ,\
-  et,'Rea numbrid'	     ,'',LineNumbers
+  et,'Rea numbrid'	     ,'',LineNumbers ,\
+\
+  sp,'Apariencia...'       ,'',Appearance  ,\
+  sp,'-'         ,'',      ,\
+  sp,'SelecciÛn segura'      ,'',SecureSel   ,\
+  sp,'ParÈntesis autom·ticos'    ,'',AutoBrackets,\
+  sp,'IdentaciÛn autom·tica'     ,'',AutoIndents ,\
+  sp,'TabulaciÛn inteligente'      ,'',SmartTabs   ,\
+  sp,'Llenado Ûptimo al guardar','',OptimalFill ,\
+  sp,'-'         ,'',      ,\
+  sp,'N˙meros en lÌneas'      ,'',LineNumbers
 
 lsz s_defname,\
   en,<'Untitled',0>,\
   ru,<'Å•ßÎ¨Ô≠≠Î©',0>,\
-  et,<'Nimetu',0>
+  et,<'Nimetu',0>,\
+  sp,<'Sin tÌtulo',0>
 
 lsz s_modified,\
   ru,'àß¨•≠•≠Æ',\
   en,'Modified',\
-  et,'Muudetud'
+  et,'Muudetud',\
+  sp,'Modificado'
 
 lsz s_2filename,\
   ru,'à¨Ô ‰†©´†:',\
   en,'Filename:',\
-  et,'Faili nimi:'
+  et,'Faili nimi:',\
+  sp,'Nombre de archivo:'
 lsz s_2open,\
   ru,'é‚™‡Î‚Ï',\
   en,'Open',\
-  et,'Ava'
+  et,'Ava',\
+  sp,'Abrir'
 lsz s_2save,\
   ru,'ëÆÂ‡†≠®‚Ï',\
   en,'Save',\
-  et,'Salvesta'
+  et,'Salvesta',\
+  sp,'Guardar'
 lsz s_2save_no,\
   ru,'ç•‚',\
   en,'No',\
-  et,'Ei'
+  et,'Ei',\
+  sp,'No'
 lsz s_2find,\
   ru,'ç†©‚®',\
   en,'Find',\
-  et,'Leia'
+  et,'Leia',\
+  sp,'Buscar'
 db ':'
 lsz s_2replace,\
   ru,'á†¨•≠®‚Ï',\
   en,'Replace',\
-  et,'Asenda'
+  et,'Asenda',\
+  sp,'Reemplazar'
 db ':'
 lsz s_2cancel,\
   ru,'é‚¨•≠†',\
   en,'Cancel',\
-  et,'T¸hista'
+  et,'T¸hista',\
+  sp,'Cancelar'
 lsz s_color,\
   ru,'ñ¢•‚: 0x',\
   en,'Color: 0x',\
-  et,'V‰rv: 0x'
+  et,'V‰rv: 0x',\
+  sp,'Color: 0x'
 lsz s_tabpos,\
   ru,'ê†·ØÆ´Æ¶•≠®• ß†™´†§Æ™',\
   en,'Tabs placement',\
-  et,'Saki asetus'
+  et,'Saki asetus',\
+  sp,'Lugar de tabulador'
 
 lsz s_enter_filename,\
   ru,<'Ç¢•§®‚• ®¨Ô ‰†©´†',0>,\
   en,<'Enter filename',0>,\
-  et,<'Sisesta faili nimi',0>
+  et,<'Sisesta faili nimi',0>,\
+  sp,<'Ingresa el nombre del archivo',0>
 
 lsz s_ask_save,\
   ru,<'Ü•´†•‚• ·ÆÂ‡†≠®‚Ï?',0>,\
   en,<'Would you like to save?',0>,\
-  et,<'Kas soovite salvestada?',0>	; Now correct
+  et,<'Kas soovite salvestada?',0>,\	; Now correct
+  sp,<'øQuieres guardar?',0>
 
 lsz s_enter_text_to_find,\
   ru,<'Ç¢•§®‚• ‚•™·‚ §´Ô ØÆ®·™†',0>,\
   en,<'Enter text to find',0>,\
-  et,<'Sisesta otsitav tekst',0>
+  et,<'Sisesta otsitav tekst',0>,\
+  sp,<'Ingresa el texto a buscar',0>
 
 lsz s_enter_text_to_replace,\
   ru,<'Ç¢•§®‚• ‚•™·‚ §´Ô ß†¨•≠Î',0>,\
   en,<'Enter text to replace',0>,\
-  et,<'Sisesta asendatav tekst',0>
+  et,<'Sisesta asendatav tekst',0>,\
+  sp,<'Ingresa el texto a reemplazar',0>
 
 lsz s_text_not_found,\
   ru,<'ÑÆ·‚®£≠„‚ ™Æ≠•Ê ‰†©´†, ‚•™·‚ ≠• ≠†©§•≠',0>,\
   en,<'Reached end of file, text not found',0>,\
-  et,<'Faili lıpp, teksti ei leitud',0>
+  et,<'Faili lıpp, teksti ei leitud',0>,\
+  sp,<'Se llegÛ al final del archivo, texto no encontrado',0>
 
 lszc s_fs_error,b,\
   ru,<'éØ•‡†Ê®Ô ß†¢•‡Ë•≠† „·Ø•Ë≠Æ (0)',0>,\
@@ -264,7 +325,20 @@ lszc s_fs_error,b,\
   et,<'Ketas t‰is (8)',0>,\
   et,<'FAT tabel h‰vitatud (9)',0>,\
   et,<'Juurdep‰‰s keelatud (10)',0>,\
-  et,<'Seadme viga (11)',0>
+  et,<'Seadme viga (11)',0>,\
+\
+  sp,<'OperaciÛn ejecutada correctamente (0)',0>,\
+  sp,<'',0>,\
+  sp,<'La funciÛn no est· soportada por el sistema de archivos dado (2)',0>,\
+  sp,<'Sistema de archivos desconocido (3)',0>,\
+  sp,<'',0>,\
+  sp,<'No es posible abrir el archivo (5)',0>,\
+  sp,<'OperaciÛn ejecutada correctamente (6)',0>,\
+  sp,<'El puntero est· fuera de la memoria de la aplicaciÛn (7)',0>,\
+  sp,<'El disco est· lleno (8)',0>,\
+  sp,<'La tabla FAT est· destruida (9)',0>,\
+  sp,<'Acceso denegado (10)',0>,\
+  sp,<'Error de dispositivo (11)',0>
 
 lszc s_appearance,b,\
   ru,'í•™·‚',\
@@ -298,12 +372,24 @@ lszc s_appearance,b,\
   et,'Stringid',\
   et,'Kommentaarid',\
   et,'Muudetud read',\
-  et,'Salvestatud read'
+  et,'Salvestatud read',\
+\
+  sp,'Texto',\
+  sp,'Fondo',\
+  sp,'Texto de selecciÛn',\
+  sp,'Fondo de selecciÛn',\
+  sp,'SÌmbolos',\
+  sp,'N˙meros',\
+  sp,'Cadenas',\
+  sp,'Comentarios',\
+  sp,'LÌneas modificadas',\
+  sp,'LÌneas guardadas'
 
 lsz sysfuncs_filename,\
   ru,<'SYSFUNCR.TXT',0>,\
   en,<'SYSFUNCS.TXT',0>,\
-  et,<'SYSFUNCET.TXT',0>
+  et,<'SYSFUNCET.TXT',0>,\
+  sp,<'SYSFUNCS.TXT',0>
 
 sz s_example,'/sys/example.asm'
 sz s_still  ,'still'
