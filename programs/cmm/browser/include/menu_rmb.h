@@ -24,10 +24,11 @@ void menu_rmb()
 	dword col_work    = 0xE4DFE1;
 	dword col_border  = 0x9098B0;
 
-	menu.w = 165;
-	menu.line_h = 19;
-	menu.first = 0;
+	menu.first = menu.current = 0;
 	while (ITEMS_LIST[menu.count*2]) {menu.count++; menu.visible++;}
+	menu.line_h = 19;
+	menu.w = 165;
+	menu.h = menu.count * menu.line_h;
 	SetEventMask(100111b); 
 
 	loop() switch(WaitEvent())
@@ -37,19 +38,9 @@ void menu_rmb()
 				N=GetProcessSlot(MenuForm.ID);
 				if (N<>GetActiveProcess()) ExitProcess();
 
-				mm.get();				
-				overid=mm.y/menu.line_h;
-				if (overid<0) || (overid+1>menu.count) || (mm.x<0) || (mm.x>menu.w) break;
-				if (mm.lkm) || (mm.pkm)
-				{
-					action_buf = ITEMS_LIST[menu.current*2+1];
-					ExitProcess();
-				}
-				if (menu.current<>overid)
-				{
-					menu.current=overid;
-					goto _ITEMS_DRAW;
-				}
+				mm.get();
+				if (menu.ProcessMouse(mm.x, mm.y)) goto _ITEMS_DRAW;
+				if (mm.lkm) || (mm.pkm) { action_buf = ITEMS_LIST[menu.current*2+1]; ExitProcess(); }
 				break;
 				
 		case evKey:

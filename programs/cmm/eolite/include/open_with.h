@@ -79,25 +79,12 @@ void OpenWith()
 				slot = GetProcessSlot(MenuForm.ID);
 				if (slot != GetActiveProcess()) ExitProcess();
 				mm.get();
-				//if (mm.lkm) ExitProcess();
-				if (mm.vert)
+				if (mm.vert) && (app_list.MouseScroll(mm.vert)) DrawAppList();
+				if (app_list.ProcessMouse(mm.x, mm.y)) DrawAppList();
+				if (app_list.MouseOver(mm.x, mm.y)) && (mm.lkm)
 				{
-					app_list.MouseScroll(mm.vert);
-					DrawAppList();
-				}
-				if (mm.x>app_list.x) && (mm.x<app_list.x+app_list.w) && (mm.y>app_list.y) && (mm.y<app_list.y+app_list.h)
-				{
-					app_list.current_temp = mm.y - app_list.y / app_list.line_h + app_list.first;
-					if (app_list.current_temp != app_list.current)
-					{
-						app_list.current = app_list.current_temp;
-						DrawAppList();
-					}
-					if (mm.lkm)
-					{
-						RunProgram(#app_paths[app_list.current].item, #file_path);
-						ExitProcess();
-					}
+					RunProgram(#app_paths[app_list.current].item, #file_path);
+					ExitProcess();
 				}
 
 				break;

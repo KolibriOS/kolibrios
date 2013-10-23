@@ -53,7 +53,7 @@ void FileMenu()
 	int index;
 
 	menu.ClearList();
-	menu.SetSizes(m.x+Form.left+5,m.y+Form.top+GetSkinHeight(),10,0,0,18);
+	menu.SetSizes(0,0,10,0,0,18);
 	for (index=0; file_captions[index]!=0; index+=3)
 	{
 		if (itdir) && (file_captions[index+2]>=200) continue;
@@ -72,13 +72,7 @@ void FileMenu()
 				slot = GetProcessSlot(MenuForm.ID);
 				if (slot != GetActiveProcess()) ExitProcess();
 				mm.get();
-				menu.current_temp = mm.y - 1 / menu.line_h;
-				if (mm.y<=0) || (mm.y>menu.h+5) || (mm.x<0) || (mm.x>menu.w) menu.current_temp = -1;
-				if (menu.current<>menu.current_temp)
-				{
-					menu.current=menu.current_temp;
-					MenuListRedraw();
-				}
+				if (menu.ProcessMouse(mm.x, mm.y)) MenuListRedraw();
 				if (mm.lkm) {action_buf = cur_action_buf; pause(5); ExitProcess(); }
 				break;
 				
@@ -90,7 +84,7 @@ void FileMenu()
 				break;
 				
 		case evReDraw: _MENU_DRAW:
-				DefineAndDrawWindow(menu.x, menu.y,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
+				DefineAndDrawWindow(m.x+Form.left+5, m.y+Form.top+GetSkinHeight(),menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
 				DrawRectangle(0,0,menu.w+1,menu.h+2,sc.work_graph);
 				DrawBar(1,1,menu.w,1,0xFFFfff);

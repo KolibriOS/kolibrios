@@ -7,6 +7,8 @@ struct llist
 	int current_temp;
 	void ClearList();
 	int ProcessKey(dword key);
+	int MouseOver(int xx, yy);
+	int ProcessMouse(int xx, yy);
 	int KeyDown();
 	int KeyUp();
 	int KeyHome();
@@ -46,6 +48,26 @@ int llist::MouseScroll(dword scroll_state)
 	{
 		if (visible+first+3 >= count) first = count - visible; else first+=2;
 		return 1;
+	}
+	return 0;
+}
+
+int llist::MouseOver(int xx, yy)
+{
+	if (xx>x) && (xx<x+w) && (yy>y) && (yy<y+h) return 1;
+	return 0;
+}
+
+int llist::ProcessMouse(int xx, yy)
+{
+	if (MouseOver(xx, yy))
+	{
+		current_temp = yy - y / line_h + first;
+		if (current_temp != current)
+		{
+			current = current_temp;
+			return 1;
+		}
 	}
 	return 0;
 }
