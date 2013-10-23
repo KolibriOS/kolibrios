@@ -59,6 +59,75 @@
 #define DRM_REDUNDANT_VBLIRQ_THRESH_NS 1000000
 
 
+irqreturn_t device_irq_handler(struct drm_device *dev)
+{
+
+    printf("video irq\n");
+
+//    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
+
+    return dev->driver->irq_handler(0, dev);
+}
+
+/**
+ * Install IRQ handler.
+ *
+ * \param dev DRM device.
+ *
+ * Initializes the IRQ related data. Installs the handler, calling the driver
+ * \c irq_preinstall() and \c irq_postinstall() functions
+ * before and after the installation.
+ */
+int drm_irq_install(struct drm_device *dev)
+{
+	int ret;
+    unsigned long sh_flags = 0;
+	char *irqname;
+
+
+	if (drm_dev_to_irq(dev) == 0)
+		return -EINVAL;
+
+    mutex_lock(&dev->struct_mutex);
+
+    /* Driver must have been initialized */
+    if (!dev->dev_private) {
+            mutex_unlock(&dev->struct_mutex);
+            return -EINVAL;
+    }
+
+    if (dev->irq_enabled) {
+            mutex_unlock(&dev->struct_mutex);
+            return -EBUSY;
+    }
+    dev->irq_enabled = 1;
+    mutex_unlock(&dev->struct_mutex);
+
+    DRM_DEBUG("irq=%d\n", drm_dev_to_irq(dev));
+
+    /* Before installing handler */
+    if (dev->driver->irq_preinstall)
+            dev->driver->irq_preinstall(dev);
+
+    ret = !AttachIntHandler(drm_dev_to_irq(dev), device_irq_handler, (u32)dev);
+
+    /* After installing handler */
+    if (dev->driver->irq_postinstall)
+            ret = dev->driver->irq_postinstall(dev);
+
+    if (ret < 0) {
+            DRM_ERROR(__FUNCTION__);
+    }
+
+    u16_t cmd = PciRead16(dev->pdev->busnr, dev->pdev->devfn, 4);
+    cmd&= ~(1<<10);
+    PciWrite16(dev->pdev->busnr, dev->pdev->devfn, 4, cmd);
+
+    return ret;
+}
+EXPORT_SYMBOL(drm_irq_install);
+
+
 static inline u64 div_u64(u64 dividend, u32 divisor)
 {
         u32 remainder;
@@ -81,7 +150,6 @@ u64 div64_u64(u64 dividend, u64 divisor)
 
         return div_u64(dividend, d);
 }
-
 
 /**
  * drm_calc_timestamping_constants - Calculate and
@@ -175,6 +243,10 @@ void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
 #if 0
     unsigned long irqflags;
 
+	/* vblank is not initialized (IRQ not installed ?), or has been freed */
+	if (!dev->num_crtcs)
+		return;
+
     if (dev->vblank_inmodeset[crtc]) {
         spin_lock_irqsave(&dev->vbl_lock, irqflags);
         dev->vblank_disable_allowed = 1;
@@ -188,3 +260,7 @@ void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
 #endif
 }
 EXPORT_SYMBOL(drm_vblank_post_modeset);
+
+
+
+
