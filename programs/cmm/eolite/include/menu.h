@@ -92,7 +92,7 @@ void FileMenu()
 		case evReDraw: _MENU_DRAW:
 				DefineAndDrawWindow(menu.x, menu.y,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				DrawRectangle(0,0,menu.w+1,menu.h+2,col_border);
+				DrawRectangle(0,0,menu.w+1,menu.h+2,sc.work_graph);
 				DrawBar(1,1,menu.w,1,0xFFFfff);
 				DrawPopupShadow(1,1,menu.w,menu.h,0);
 				MenuListRedraw();
@@ -115,10 +115,10 @@ void MenuListRedraw()
 		}
 		else
 		{
-			DrawBar(2,start_y+2,menu.w-1,menu.line_h,col_work);
+			DrawBar(2,start_y+2,menu.w-1,menu.line_h,sc.work);
 			WriteText(8,start_y+texty+3,0x80,0xf2f2f2,file_captions[index*3]);
 		}
-		WriteText(7,start_y+texty+2,0x80,0x000000,file_captions[index*3]);
+		WriteText(7,start_y+texty+2,0x80,sc.work_text,file_captions[index*3]);
 		WriteText(-strlen(file_captions[index*3+1])*6-6+menu.w,start_y+texty+2,0x80,0x888888,file_captions[index*3+1]);
 		start_y+=menu.line_h;
 	}	

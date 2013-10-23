@@ -39,10 +39,10 @@ void Tip(int y, dword caption, id, arrow)
 	int i;
 	DrawBar(17,y,160,1,0xEFEDEE);
 	DrawFilledBar(17, y+1, 160, 16);
-	WriteText(25,y+5,0x80,0,caption);
+	WriteText(25,y+5,0x80,sc.work_text,caption);
 	IF (id<>0) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0); //кнопа для стрелки
-	WriteText(165,y+5,0x80,0,arrow); //стрелка вниз
-	DrawBar(17,y+17,160,1,col_border);		//подчёркивание
+	WriteText(165,y+5,0x80,sc.work_text,arrow); //стрелка вниз
+	DrawBar(17,y+17,160,1,sc.work_graph);		//подчёркивание
 }
 
 

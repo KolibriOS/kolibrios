@@ -79,13 +79,9 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.0.2"
-#define ABOUT_TITLE "Eolite v2.0.2"
-dword col_work    = 0xE4DFE1;
-dword col_border  = 0x9098B0; //A0A0B8; //0x819FC5;
-dword col_padding = 0xC8C9C9;
-dword col_selec   = 0x94AECE;
-dword col_lpanel  = 0x00699C;
+#define TITLE "Eolite File Manager v2.0.3"
+#define ABOUT_TITLE "Eolite v2.0.3"
+dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 char tmp_disk_del_param[3]="d0";
@@ -109,6 +105,7 @@ byte
 	itdir;
 
 proc_info Form;
+system_colors sc;
 mouse m;
 int mouse_dd, scroll_used, scroll_size, sorting_arrow_x, kolibrios_drive;
 dword buf, off;
@@ -131,6 +128,24 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\about.h"
 #include "include\open_with.h"
 
+void SetAppColors()
+{
+	sc.work = 0xE4DFE1;
+	sc.work_text = 0;
+	sc.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
+	sc.work_button_text = 0x000000;
+	col_padding = 0xC8C9C9;
+	col_selec   = 0x94AECE;
+	col_lpanel  = 0x00699C;
+	/*
+	sc.get();
+	for (i=0; i<=14; i++) col_palette[i] = sc.work;
+	toolbar_pal[0]= goto_about_pal[0] = sc.work = sc.work;
+	col_lpanel = sc.work_graph;
+	for (i=0; i<=99; i++) blue_hl_pal[i] = sc.work_graph;
+	*/
+}
+
 void main() 
 {
 	word key, id, can_show, can_select, m_selected;
@@ -139,7 +154,8 @@ void main()
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
 	SystemDiscsGet();
-	GetIni(1);	
+	GetIni(1);
+	SetAppColors();
 	if (param)
 	{
 		strcpy(#path, #param);
@@ -448,7 +464,7 @@ void menu_action(dword id)
 
 void draw_window()
 {
-	DefineAndDrawWindow(40,20,550,500,0x73,col_work,TITLE);
+	DefineAndDrawWindow(40,20,550,500,0x73,sc.work,TITLE);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	files.SetSizes(192, 57, onLeft(192,27), onTop(57,6), disc_num*16+195,files.line_h);
@@ -457,26 +473,26 @@ void draw_window()
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
 
 	PutPaletteImage(#toolbar,246,34,0,0,8,#toolbar_pal);
-	DrawBar(127, 8, 1, 25, col_border);
-	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,col_work);
-	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,col_work);
-	DrawBar(246,0,onLeft(246,60),12, col_work); //upper editbox
-	DrawBar(246,29,onLeft(246,60),5,col_work);  //under editbox
-	DrawRectangle(246,12,onLeft(66,246),16,col_border);
+	DrawBar(127, 8, 1, 25, sc.work_graph);
+	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,sc.work);
+	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,sc.work);
+	DrawBar(246,0,onLeft(246,60),12, sc.work); //upper editbox
+	DrawBar(246,29,onLeft(246,60),5,sc.work);  //under editbox
+	DrawRectangle(246,12,onLeft(66,246),16,sc.work_graph);
 	DefineButton(onLeft(34,0),6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
 	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
 	//main rectangles
-	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),col_border);
+	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),sc.work_graph);
 	DrawRectangle(0,39,Form.cwidth-1,onTop(44,0),col_palette[4]); //bg
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
 	DrawLeftPanel();
 	//ListBox
-	DrawFlatButton(files.x,40,onLeft(files.x,168),16,31,col_work,T_FILE);
-	DrawFlatButton(onLeft(168,0),40,73,16,32,col_work,T_TYPE);
-	DrawFlatButton(onLeft(95,0),40,68,16,33,col_work,T_SIZE);
-	DrawBar(onLeft(27,0),files.y,1,onTop(22,files.y),col_border); //line to the left from the scroll
-	DrawFlatButton(onLeft(27,0),40,16,16,0,col_work,"\x18");
-	DrawFlatButton(onLeft(27,0),onTop(22,0),16,16,0,col_work,"\x19");
+	DrawFlatButton(files.x,40,onLeft(files.x,168),16,31,sc.work,T_FILE);
+	DrawFlatButton(onLeft(168,0),40,73,16,32,sc.work,T_TYPE);
+	DrawFlatButton(onLeft(95,0),40,68,16,33,sc.work,T_SIZE);
+	DrawBar(files.x+files.w,files.y,1,onTop(22,files.y),sc.work_graph); //line to the left from the scroll
+	DrawFlatButton(files.x+files.w,40,16,16,0,sc.work,"\x18");
+	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
 	Open_Dir(#path,ONLY_SHOW);
 	if (del_active) Del_Form();
 	//if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
@@ -557,8 +573,8 @@ void List_ReDraw()
 	//in the bottom
 	paint_y = j * files.line_h + files.y;
 	DrawBar(files.x,paint_y,files.w,onTop(paint_y,6),0xFFFFFF);
-	DrawBar(Form.cwidth-159,paint_y,1,onTop(paint_y,6),col_work);
-	DrawBar(Form.cwidth-86,paint_y,1,onTop(paint_y,6),col_work);
+	DrawBar(Form.cwidth-159,paint_y,1,onTop(paint_y,6),sc.work);
+	DrawBar(Form.cwidth-86,paint_y,1,onTop(paint_y,6),sc.work);
 	Scroll();
 }
 
@@ -606,8 +622,8 @@ void Line_ReDraw(dword color, filenum){
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}
-	DrawBar(Form.cwidth-159,y,1,files.line_h,col_work); //gray line 1
-	DrawBar(Form.cwidth-86,y,1,files.line_h,col_work); //gray line 2
+	DrawBar(Form.cwidth-159,y,1,files.line_h,sc.work); //gray line 1
+	DrawBar(Form.cwidth-86,y,1,files.line_h,sc.work); //gray line 2
 }
 
 
@@ -639,7 +655,7 @@ void Open_Dir(dword dir_path, redraw){
 		IF (sort_num==1) sorting_arrow_x = Form.width+60/2;
 		IF (sort_num==2) sorting_arrow_x = Form.width-115;
 		IF (sort_num==3) sorting_arrow_x = strlen(T_SIZE)*3-30+files.x+files.w;
-		WriteText(sorting_arrow_x,45,0x80,col_border,"\x19");
+		WriteText(sorting_arrow_x,45,0x80,sc.work_graph,"\x19");
 		IF (redraw!=ONLY_SHOW) Sorting();
 		IF (redraw!=ONLY_OPEN) List_ReDraw();
 	}
@@ -692,12 +708,12 @@ void Del_Form()
 	else
 	{
 		if (!files.count) return;
-		DrawPopup(dform_x,160,220,80,1,col_work,col_border);
-		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,0,T_DELETE_FILE);
+		DrawPopup(dform_x,160,220,80,1,sc.work,sc.work_graph);
+		WriteText(-strlen(T_DELETE_FILE)*3+110+dform_x,175,0x80,sc.work_text,T_DELETE_FILE);
 		IF (strlen(#file_name)<28) 
 		{
-			WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,0,"?");
-			WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,0,#file_name);
+			WriteText(strlen(#file_name)*3+110+dform_x+2,190,0x80,sc.work_text,"?");
+			WriteText(-strlen(#file_name)*3+110+dform_x,190,0x80,sc.work_text,#file_name);
 		}
 		else
 		{

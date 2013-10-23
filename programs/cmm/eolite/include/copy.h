@@ -14,10 +14,10 @@ void Copy(dword pcth, char cut)
 }
 
 void copyf_Draw_Progress(dword filename) {
-	DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_W,GetSkinHeight()+WIN_H-1,0x34,col_work,T_PASTE_WINDOW);
-	WriteText(5,8, 0x80, 0, T_PASTE_WINDOW_TEXT);
-	DrawBar(5, 26, WIN_W-10, 10, col_work);
-	WriteText(5,26, 0x80, 0, filename);
+	DefineAndDrawWindow(Form.left+Form.width-200,Form.top+90,WIN_W,GetSkinHeight()+WIN_H-1,0x34,sc.work,T_PASTE_WINDOW);
+	WriteText(5,8, 0x80, sc.work_text, T_PASTE_WINDOW_TEXT);
+	DrawBar(5, 26, WIN_W-10, 10, sc.work);
+	WriteText(5,26, 0x80, sc.work_text, filename);
 	if (CheckEvent()==evButton) 
 	{
 		notify(T_CANCEL_PASTE);

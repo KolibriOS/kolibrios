@@ -9,8 +9,8 @@ void ShowMessage(dword message, pause_duration)
 {
 	int form_x=files.w-220/2+files.x;
 	int form_y=160;
-	DrawPopup(form_x,form_y,220,80,1,col_work,col_border);
-	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,0,message);
+	DrawPopup(form_x,form_y,220,80,1,sc.work,sc.work_graph);
+	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,sc.work_text,message);
 	pause(pause_duration);
 	if (pause_duration) List_ReDraw();
 }
@@ -60,12 +60,12 @@ inline fastcall void Scroll() { //Прокрутка
 void DrawFlatButton(dword x,y,width,height,id,color,text)
 {
 	int fill_h;
-	DrawRectangle(x,y,width,height,col_border);
+	DrawRectangle(x,y,width,height,sc.work_graph);
 	DrawRectangle3D(x+1,y+1,width-2,height-2,0xFEFEFE,col_padding);
-	PutPixel(x+width-1, y+1, col_work);
+	PutPixel(x+width-1, y+1, col_padding);
 	if (color!=-1) DrawFilledBar(x+2, y+2, width-3, height-3);
 	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text);
+	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,sc.work_text,text);
 }
 
 void DrawFilledBar(dword x, y, w, h)

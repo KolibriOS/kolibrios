@@ -47,7 +47,7 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(600,150,181,232+GetSkinHeight(),0x34,col_work,INTRO_TEXT_1);
+				DefineAndDrawWindow(600,150,181,228+GetSkinHeight(),0x34,sc.work,INTRO_TEXT_1);
 				DrawBar(0,0,172,50,0x8494C4);
 				PutPaletteImage(#logo,85,85,43,7,8,#logo_pal);
 				WriteTextB(46,100,0x90,0xBF40BF,ABOUT_TITLE);
@@ -66,6 +66,5 @@ void about_dialog()
 				#endif				
 				DrawLink(71,170,0x80,23, "kolibri-n.org");
 				DrawFlatButton(85,190,70,22,10,0xE4DFE1, INTRO_TEXT_4);
-				DrawFilledBar(0, 216, 172, 12);
 	}
 }

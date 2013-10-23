@@ -114,12 +114,12 @@ void OpenWith()
 				DefineAndDrawWindow(files.w-WIN_W/2+files.x+Form.left+6, 
 				files.h-WIN_H/2+files.y+Form.top+GetSkinHeight(),WIN_W+1,WIN_H,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
-				DrawPopup(0,0,MenuForm.width-2,MenuForm.height-2,0, col_work, col_border);
-				DrawRectangle(app_list.x-1, app_list.y-2, app_list.w+1, app_list.h+2, col_border);
+				DrawPopup(0,0,MenuForm.width-2,MenuForm.height-2,0, sc.work, sc.work_graph);
+				DrawRectangle(app_list.x-1, app_list.y-2, app_list.w+1, app_list.h+2, sc.work_graph);
 
-				Put_icon(#file_name+_strrchr(#file_name,'.'), 10, 13, col_work, 0);
-				WriteText(35,10, 0x80, 0, T_SELECT_APP_TO_OPEN_WITH);
-				WriteText(35,23, 0x80, 0, #file_name);
+				Put_icon(#file_name+_strrchr(#file_name,'.'), 10, 13, sc.work, 0);
+				WriteText(35,10, 0x80, sc.work_text, T_SELECT_APP_TO_OPEN_WITH);
+				WriteText(35,23, 0x80, sc.work_text, #file_name);
 
 				DrawAppList();
 	}
