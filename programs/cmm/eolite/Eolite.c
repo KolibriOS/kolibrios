@@ -177,7 +177,7 @@ void main()
 			
 			m.get();
 
-			if (m.x > files.x) && (m.x < files.x + files.w) && (m.y > files.y) && (m.y < files.y+files.h) && (!can_select)
+			if (files.MouseOver(m.x, m.y)) && (!can_select)
 			{
 				m_selected = m.y - files.y / files.line_h;
 				if (m.lkm) can_select = 1;

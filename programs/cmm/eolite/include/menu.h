@@ -97,7 +97,6 @@ void MenuListRedraw()
 {
 	int start_y=0;
 	int index;
-	int texty = menu.line_h/2-4;
 	for (index=0; file_captions[index*3]!=0; index++)
 	{
 		if ((itdir) && (file_captions[index*3+2]>=200)) continue;
@@ -110,10 +109,10 @@ void MenuListRedraw()
 		else
 		{
 			DrawBar(2,start_y+2,menu.w-1,menu.line_h,sc.work);
-			WriteText(8,start_y+texty+3,0x80,0xf2f2f2,file_captions[index*3]);
+			WriteText(8,start_y+menu.text_y+3,0x80,0xf2f2f2,file_captions[index*3]);
 		}
-		WriteText(7,start_y+texty+2,0x80,sc.work_text,file_captions[index*3]);
-		WriteText(-strlen(file_captions[index*3+1])*6-6+menu.w,start_y+texty+2,0x80,0x888888,file_captions[index*3+1]);
+		WriteText(7,start_y+menu.text_y+2,0x80,sc.work_text,file_captions[index*3]);
+		WriteText(-strlen(file_captions[index*3+1])*6-6+menu.w,start_y+menu.text_y+2,0x80,0x888888,file_captions[index*3+1]);
 		start_y+=menu.line_h;
 	}	
 }

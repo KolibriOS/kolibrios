@@ -2,9 +2,8 @@
 
 struct llist
 {
-	int x, y, w, h, min_h, line_h;
+	int x, y, w, h, min_h, line_h, text_y;
 	int count, visible, first, current;
-	int current_temp;
 	void ClearList();
 	int ProcessKey(dword key);
 	int MouseOver(int xx, yy);
@@ -32,7 +31,9 @@ void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
 	h = hh;
 	min_h = min_hh;
 	line_h = line_hh;
+	text_y = line_hh / 2 - 4;
 	visible = h / line_h;
+	if (visible > count) visible=count;
 }
 
 
@@ -60,10 +61,11 @@ int llist::MouseOver(int xx, yy)
 
 int llist::ProcessMouse(int xx, yy)
 {
+	int current_temp;
 	if (MouseOver(xx, yy))
 	{
 		current_temp = yy - y / line_h + first;
-		if (current_temp != current)
+		if (current_temp != current) && (current_temp<count)
 		{
 			current = current_temp;
 			return 1;
