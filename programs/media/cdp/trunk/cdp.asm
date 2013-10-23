@@ -753,13 +753,12 @@ draw_window:
     mov  esi,0x8099bbff            ; color of grab bar  RRGGBB,8->color glide
     mov  edi,0x0099bbee            ; color of frames    RRGGBB
     mcall
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x1000ffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
+                                   ; WINDOW TITLE
     mcall
+	mov eax,71
+	mov ebx,1
+	mov ecx,labelt
+	int 40h
 
     mov  eax,13                    ;bar
     mov  ebx,8 shl 16 + 204
@@ -1295,7 +1294,7 @@ no_cda: db 'Audio CD not found'
 no_cda_len:
 
 labelt:
-   db   'CD player'
+   db   'CD player',0
 labellen:
 
 help1: db 'HotKeys:                       '
