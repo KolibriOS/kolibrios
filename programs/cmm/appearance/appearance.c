@@ -142,7 +142,7 @@ void main()
 
 	mem_Init();
 	if (param) strcpy(#folder_path, #param);
-	list[SKINS].current = list[WALLPAPERS].current = 0;
+	list[SKINS].current = list[WALLPAPERS].current = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
 	GetFiles(WALLPAPERS);
 	list[active].SetSizes(0, 230, 350, 400-PANEL_H, 40, 18);
@@ -154,20 +154,13 @@ void main()
 	  	case evMouse:
 	  		mm.get();
 	  		if (mm.vert) && (list[active].MouseScroll(mm.vert)) Draw_List();
-	  		/*
 	  		if (mouse_clicked)
 	  		{
-	  			if (!mm.lkm) && (list[active].ProcessMouse(mm.x, mm.y)) Apply();
+	  			if (!mm.lkm) && (active==SKINS) && (list[SKINS].ProcessMouse(mm.x, mm.y)) Apply();
+	  			if (!mm.lkm) && (active==WALLPAPERS) && (list[WALLPAPERS].ProcessMouse(mm.x, mm.y)) Apply();
 	  			mouse_clicked=0;
 	  		}
-	  		if (mm.lkm) && (list[active].MouseOver(mm.x, mm.y)) mouse_clicked=1;
-	  		*/
-	  		EAX = active;
-	  		if (mm.lkm) 
-	  		{
-	  			if (active==SKINS) && (list[SKINS].ProcessMouse(mm.x, mm.y)) Apply();
-	  			if if (active==WALLPAPERS) && (list[WALLPAPERS].ProcessMouse(mm.x, mm.y)) Apply();
-	  		}
+	  		if (mm.lkm) && (list[SKINS].MouseOver(mm.x, mm.y)) mouse_clicked=1;
 	  		break;
 
 		case evButton:

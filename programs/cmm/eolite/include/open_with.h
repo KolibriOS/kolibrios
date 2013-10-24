@@ -64,20 +64,19 @@ void OpenWith()
 	#define PADDING 8
 	int WIN_H;
 	mouse mm;
-	word key, slot;
+	word key;
 	proc_info MenuForm;
 
 	app_list.ClearList();
-	app_list.SetSizes(PADDING,PANEL_H+1,WIN_W-PADDING-PADDING,OPEN_LIST_VISIBLE_N*OPEN_LIST_LINE_H,150,OPEN_LIST_LINE_H);
 	if (!app_list.count) if (GetListOfPrograms()==-1) return;
+	app_list.SetSizes(PADDING,PANEL_H+1,WIN_W-PADDING-PADDING,OPEN_LIST_VISIBLE_N*OPEN_LIST_LINE_H,150,OPEN_LIST_LINE_H);
 	SetEventMask(100111b);
 	goto _APP_LIST_DRAW;
 
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-				slot = GetProcessSlot(MenuForm.ID);
-				if (slot != GetActiveProcess()) ExitProcess();
+				if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
 				mm.get();
 				if (mm.vert) && (app_list.MouseScroll(mm.vert)) DrawAppList();
 				if (app_list.ProcessMouse(mm.x, mm.y)) DrawAppList();

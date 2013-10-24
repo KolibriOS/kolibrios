@@ -66,7 +66,7 @@ int action_buf;
 
 void main()
 {
-	int btn, key;
+	int key, btn;
 	int half_scroll_size;
 	int scroll_used=0, show_menu;
 	
@@ -98,8 +98,7 @@ void main()
 					//break;
 				};*/
 				
-				btn=GetProcessSlot(Form.ID); 
-				if (btn<>GetActiveProcess()) break;
+				if (!CheckActiveProcess(Form.ID)) break;
 
 				edit_box_mouse stdcall (#address_box);
 

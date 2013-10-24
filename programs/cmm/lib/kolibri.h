@@ -218,6 +218,13 @@ inline fastcall int GetActiveProcess()
 	$int 0x40
 }
 
+:int CheckActiveProcess(int Form_ID)
+{
+	int id=GetProcessSlot(Form_ID);
+	if (id==GetActiveProcess()) return 1;
+	return 0;
+}
+
 inline fastcall void ActivateWindow( ECX)
 {
 	EAX = 18;

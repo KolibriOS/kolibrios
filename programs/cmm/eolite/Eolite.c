@@ -170,10 +170,8 @@ void main()
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-			IF (del_active) break;		
-			id=GetProcessSlot(Form.ID); 
-			IF (id!=GetActiveProcess()) || (Form.status_window>2) break;
-			IF (rename_active) { edit_box_mouse stdcall(#edit2); break; }
+			if (del_active) || (!CheckActiveProcess(Form.ID)) || (Form.status_window>2) break;
+			if (rename_active) { edit_box_mouse stdcall(#edit2); break; }
 			
 			m.get();
 

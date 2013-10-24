@@ -80,10 +80,8 @@ void window()
 	loop() switch(WaitEvent())
 	{
 	case evMouse:
+				if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
 				m.get();
-
-				id1=GetProcessSlot(MenuForm.ID);
-				if (id1<>GetActiveProcess()) ExitProcess();
 				id1=m.y-1/ITEM_HEIGHT;
 				if (m.y<0) || (id1+1>items_num) || (m.x<0) || (m.x>ITEM_WIDTH) break;
 				if (m.lkm) || (m.pkm)

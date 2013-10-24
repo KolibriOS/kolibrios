@@ -48,7 +48,7 @@ int cur_action_buf;
 void FileMenu()
 {
 	mouse mm;
-	word slot, key;
+	word key;
 	proc_info MenuForm;
 	int index;
 
@@ -69,8 +69,7 @@ void FileMenu()
 	loop() switch(WaitEvent())
 	{
 		case evMouse:
-				slot = GetProcessSlot(MenuForm.ID);
-				if (slot != GetActiveProcess()) ExitProcess();
+				if (!CheckActiveProcess(MenuForm.ID)) ExitProcess();
 				mm.get();
 				if (menu.ProcessMouse(mm.x, mm.y)) MenuListRedraw();
 				if (mm.lkm) {action_buf = cur_action_buf; pause(5); ExitProcess(); }
