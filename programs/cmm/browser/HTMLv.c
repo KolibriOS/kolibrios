@@ -3,6 +3,10 @@
 //Asper, lev, Lrz, Barsuk, Nable...
 //home icon - rachel fu, GPL licence
 
+#ifndef AUTOBUILD
+	#include "lang.h--"
+#endif
+
 //libraries
 #define MEMSIZE 0x100000
 #include "..\lib\kolibri.h"
@@ -20,10 +24,6 @@
 //images
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
-
-#ifndef AUTOBUILD
-	#include "lang.h--"
-#endif
 
 #ifdef LANG_RUS
 	char version[]=" Текстовый браузер 0.99.09";
