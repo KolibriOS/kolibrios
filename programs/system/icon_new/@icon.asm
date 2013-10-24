@@ -847,15 +847,15 @@ local posX:WORD,\
         ret
      @@:
 
-        xor     ebx,ebx
-        mov     ebx,[NumIconI]
+        mov     ebx,ecx
+        dec     ebx
    .TestIcon:
         cmp     dword[NumIconI],-1
         je      @f
 
         cmp     ebx,[NumIconI]
         jne     @f
-        inc     ebx
+        dec     ebx
         dec     ecx
         test    ecx,ecx
         jz      .NoIcon
@@ -903,12 +903,12 @@ local posX:WORD,\
         jmp     .OkIcon
      @@:
 
-        inc     ebx
+        dec     ebx
         pop     ecx
 
-        ;loop    .TestIcon
-        dec     ecx
-        jnz     .TestIcon
+        loop    .TestIcon
+        ;dec     ecx
+        ;jnz     .TestIcon
         jmp     .NoIcon
    .OkIcon:
         mov     eax,ebx
@@ -1220,10 +1220,12 @@ secRButt        db 'rbmenu',0
 PredItem        dd -1
 
 if lang eq ru
- RMenuOffMoving db 'Закрепить иконки',0
- RMenuOnMoving  db 'Открепить иконки',0
  RMenuRedrawFon db 'Перерисовать',0
  RMenuAlign     db 'Выровнять по сетке',0
+
+ RMenuOffMoving db 'Закрепить иконки',0
+ RMenuOnMoving  db 'Открепить иконки',0
+
  RMenuAdd       db 'Добавить',0
  RMenuDel       db 'Удалить',0
  RMenuProp      db 'Свойства',0
@@ -1391,8 +1393,6 @@ slotDlgAdd      rd 1
 DlgBufImg       rb IMG_SIZE*IMG_SIZE*3
 
 
-
-
 bufStdIco       rb 40
 IconsOffs       rd 100
 PIcoDB          rd 1
@@ -1406,9 +1406,11 @@ strip_file_size rd 1
 cur_band_compensation rd 1
 
 ;---- RButton -----------------------------------------------------------------------
+MinRMenuW       rd 1
+
 bufIni          rb 40
-NumUserButt     rd 1
-RBUser          rd 16*2+1
+NumMenuButt     rd 1
+RBMenuCP        rd MAX_USER_BUTTONS*2         ;указатели на подпись и путь с прогой (Caption(dd), Path(dd)) и запасной (dd) для завершающего нуля
 RMenuW          rw 1
 RMenuH          rw 1
 
