@@ -100,7 +100,7 @@ static void vmw_sou_add_active(struct vmw_private *vmw_priv,
 /**
  * Send the fifo command to create a screen.
  */
-static int vmw_sou_fifo_create(struct vmw_private *dev_priv,
+int vmw_sou_fifo_create(struct vmw_private *dev_priv,
 			       struct vmw_screen_object_unit *sou,
 			       uint32_t x, uint32_t y,
 			       struct drm_display_mode *mode)
@@ -114,7 +114,9 @@ static int vmw_sou_fifo_create(struct vmw_private *dev_priv,
 		SVGAScreenObject obj;
 	} *cmd;
 
-	BUG_ON(!sou->buffer);
+//   BUG_ON(!sou->buffer);
+
+    ENTER();
 
 	fifo_size = sizeof(*cmd);
 	cmd = vmw_fifo_reserve(dev_priv, fifo_size);
@@ -141,12 +143,17 @@ static int vmw_sou_fifo_create(struct vmw_private *dev_priv,
 	}
 
 	/* Ok to assume that buffer is pinned in vram */
-	vmw_bo_get_guest_ptr(&sou->buffer->base, &cmd->obj.backingStore.ptr);
+//   vmw_bo_get_guest_ptr(&sou->buffer->base, &cmd->obj.backingStore.ptr);
+
+    cmd->obj.backingStore.ptr.gmrId = SVGA_GMR_FRAMEBUFFER;
+    cmd->obj.backingStore.ptr.offset = 0;
 	cmd->obj.backingStore.pitch = mode->hdisplay * 4;
 
 	vmw_fifo_commit(dev_priv, fifo_size);
 
 	sou->defined = true;
+
+    LEAVE();
 
 	return 0;
 }
@@ -437,6 +444,8 @@ static int vmw_sou_init(struct vmw_private *dev_priv, unsigned unit)
 	struct drm_encoder *encoder;
 	struct drm_crtc *crtc;
 
+    ENTER();
+
 	sou = kzalloc(sizeof(*sou), GFP_KERNEL);
 	if (!sou)
 		return -ENOMEM;
@@ -471,7 +480,7 @@ static int vmw_sou_init(struct vmw_private *dev_priv, unsigned unit)
 	drm_object_attach_property(&connector->base,
 				      dev->mode_config.dirty_info_property,
 				      1);
-
+    LEAVE();
 	return 0;
 }
 
@@ -572,3 +581,164 @@ void vmw_kms_screen_object_update_implicit_fb(struct vmw_private *dev_priv,
 	dev_priv->sou_priv->implicit_fb =
 		vmw_framebuffer_to_vfb(sou->base.crtc.fb);
 }
+
+#include "bitmap.h"
+
+typedef struct
+{
+    kobj_t     header;
+
+    uint32_t  *data;
+    uint32_t   hot_x;
+    uint32_t   hot_y;
+
+    struct list_head   list;
+//    struct drm_i915_gem_object  *cobj;
+}cursor_t;
+
+
+struct tag_display
+{
+    int  x;
+    int  y;
+    int  width;
+    int  height;
+    int  bpp;
+    int  vrefresh;
+    int  pitch;
+    int  lfb;
+
+    int  supported_modes;
+    struct drm_device    *ddev;
+    struct drm_connector *connector;
+    struct drm_crtc      *crtc;
+
+    struct list_head   cursors;
+
+    cursor_t   *cursor;
+    int       (*init_cursor)(cursor_t*);
+    cursor_t* (__stdcall *select_cursor)(cursor_t*);
+    void      (*show_cursor)(int show);
+    void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
+    void      (__stdcall *restore_cursor)(int x, int y);
+    void      (*disable_mouse)(void);
+    u32  mask_seqno;
+    u32  check_mouse;
+    u32  check_m_pixel;
+    u32  dirty;
+    void (*update)(void);
+};
+
+extern struct drm_device *main_device;
+
+bool set_mode(struct drm_device *dev, struct drm_connector *connector,
+              videomode_t *reqmode, bool strict)
+{
+    struct drm_display_mode  *mode = NULL, *tmpmode;
+    struct vmw_private *dev_priv = vmw_priv(main_device);
+    struct vmw_screen_object_unit *sou;
+    display_t *os_display;
+
+    bool ret = false;
+
+    ENTER();
+
+//    dbgprintf("width %d height %d vrefresh %d\n",
+//               reqmode->width, reqmode->height, reqmode->freq);
+
+    list_for_each_entry(tmpmode, &connector->modes, head)
+    {
+        if( (drm_mode_width(tmpmode)    == reqmode->width)  &&
+            (drm_mode_height(tmpmode)   == reqmode->height) &&
+            (drm_mode_vrefresh(tmpmode) == reqmode->freq) )
+        {
+            mode = tmpmode;
+            goto do_set;
+        }
+    };
+
+    if( (mode == NULL) && (strict == false) )
+    {
+        list_for_each_entry(tmpmode, &connector->modes, head)
+        {
+            if( (drm_mode_width(tmpmode)  == reqmode->width)  &&
+                (drm_mode_height(tmpmode) == reqmode->height) )
+            {
+                mode = tmpmode;
+                goto do_set;
+            }
+        };
+    };
+
+do_set:
+
+    if( mode != NULL )
+    {
+        struct drm_framebuffer   *fb;
+        struct drm_encoder       *encoder;
+        struct drm_crtc          *crtc;
+
+//        char  con_edid[128];
+        const char *con_name;
+        const char *enc_name;
+
+        encoder = connector->encoder;
+        crtc = encoder->crtc;
+
+
+//        fb = list_first_entry(&dev->mode_config.fb_kernel_list,
+//                              struct drm_framebuffer, filp_head);
+
+//        memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+
+//        dbgprintf("Manufacturer: %s Model %x Serial Number %u\n",
+//        manufacturer_name(con_edid + 0x08),
+//        (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+//        (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+//            + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+
+        con_name = drm_get_connector_name(connector);
+        enc_name = drm_get_encoder_name(encoder);
+
+        dbgprintf("set mode %d %d connector %s encoder %s\n",
+                   mode->hdisplay, mode->vdisplay, con_name, enc_name);
+
+        os_display = GetDisplay();
+
+#if 0
+        sou = vmw_crtc_to_sou(crtc);
+        sou->defined = true;
+
+        ret = vmw_sou_fifo_destroy(dev_priv, sou);
+        if (unlikely(ret != 0))
+            return ret;
+
+        ret = vmw_sou_fifo_create(dev_priv, sou, 0, 0, mode);
+
+#else   /*   sledgehammer  */
+
+        vmw_write(dev_priv,SVGA_REG_WIDTH,  mode->hdisplay);
+        vmw_write(dev_priv,SVGA_REG_HEIGHT, mode->vdisplay);
+        vmw_write(dev_priv,SVGA_REG_BITS_PER_PIXEL, 32);
+        ret = 0;
+#endif
+        if (ret == 0)
+        {
+            os_display->width    = mode->hdisplay;
+            os_display->height   = mode->vdisplay;
+            os_display->pitch    = mode->hdisplay*4;
+            os_display->vrefresh = drm_mode_vrefresh(mode);
+
+            sysSetScreen(os_display->width, os_display->height, os_display->pitch);
+
+            dbgprintf("new mode %d x %d pitch %d\n",
+                       os_display->width, os_display->height, os_display->pitch);
+        }
+        else
+            DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
+                       os_display->width, os_display->height, crtc);
+    }
+
+    LEAVE();
+    return ret;
+};

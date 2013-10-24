@@ -32,7 +32,7 @@
 #include <drm/drm_crtc_helper.h>
 #include "vmwgfx_drv.h"
 
-#define VMWGFX_NUM_DISPLAY_UNITS 8
+#define VMWGFX_NUM_DISPLAY_UNITS 1
 
 
 #define vmw_framebuffer_to_vfb(x) \

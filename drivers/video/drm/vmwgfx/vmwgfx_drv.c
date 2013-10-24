@@ -627,13 +627,14 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
 	if (unlikely(ret != 0))
 		goto out_no_kms;
 
-   if (dev_priv->enable_fb) {
+    if (dev_priv->enable_fb) {
        ret = vmw_3d_resource_inc(dev_priv, true);
        if (unlikely(ret != 0))
            goto out_no_fifo;
 //       vmw_fb_init(dev_priv);
-   }
+    }
 
+    LEAVE();
 	return 0;
 
 out_no_fifo:
@@ -962,6 +963,122 @@ static void vmw_master_drop(struct drm_device *dev,
 		vmw_fb_on(dev_priv);
 }
 
+
+static void vmw_remove(struct pci_dev *pdev)
+{
+	struct drm_device *dev = pci_get_drvdata(pdev);
+
+	drm_put_dev(dev);
+}
+
+static int vmwgfx_pm_notifier(struct notifier_block *nb, unsigned long val,
+			      void *ptr)
+{
+	struct vmw_private *dev_priv =
+		container_of(nb, struct vmw_private, pm_nb);
+	struct vmw_master *vmaster = dev_priv->active_master;
+
+	switch (val) {
+	case PM_HIBERNATION_PREPARE:
+	case PM_SUSPEND_PREPARE:
+		ttm_suspend_lock(&vmaster->lock);
+
+		/**
+		 * This empties VRAM and unbinds all GMR bindings.
+		 * Buffer contents is moved to swappable memory.
+		 */
+		vmw_execbuf_release_pinned_bo(dev_priv);
+		vmw_resource_evict_all(dev_priv);
+		ttm_bo_swapout_all(&dev_priv->bdev);
+
+		break;
+	case PM_POST_HIBERNATION:
+	case PM_POST_SUSPEND:
+	case PM_POST_RESTORE:
+		ttm_suspend_unlock(&vmaster->lock);
+
+		break;
+	case PM_RESTORE_PREPARE:
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+/**
+ * These might not be needed with the virtual SVGA device.
+ */
+
+static int vmw_pci_suspend(struct pci_dev *pdev, pm_message_t state)
+{
+	struct drm_device *dev = pci_get_drvdata(pdev);
+	struct vmw_private *dev_priv = vmw_priv(dev);
+
+	if (dev_priv->num_3d_resources != 0) {
+		DRM_INFO("Can't suspend or hibernate "
+			 "while 3D resources are active.\n");
+		return -EBUSY;
+	}
+
+	pci_save_state(pdev);
+	pci_disable_device(pdev);
+	pci_set_power_state(pdev, PCI_D3hot);
+	return 0;
+}
+
+static int vmw_pci_resume(struct pci_dev *pdev)
+{
+	pci_set_power_state(pdev, PCI_D0);
+	pci_restore_state(pdev);
+	return pci_enable_device(pdev);
+}
+
+static int vmw_pm_suspend(struct device *kdev)
+{
+	struct pci_dev *pdev = to_pci_dev(kdev);
+	struct pm_message dummy;
+
+	dummy.event = 0;
+
+	return vmw_pci_suspend(pdev, dummy);
+}
+
+static int vmw_pm_resume(struct device *kdev)
+{
+	struct pci_dev *pdev = to_pci_dev(kdev);
+
+	return vmw_pci_resume(pdev);
+}
+
+static int vmw_pm_prepare(struct device *kdev)
+{
+	struct pci_dev *pdev = to_pci_dev(kdev);
+	struct drm_device *dev = pci_get_drvdata(pdev);
+	struct vmw_private *dev_priv = vmw_priv(dev);
+
+	/**
+	 * Release 3d reference held by fbdev and potentially
+	 * stop fifo.
+	 */
+	dev_priv->suspended = true;
+	if (dev_priv->enable_fb)
+			vmw_3d_resource_dec(dev_priv, true);
+
+	if (dev_priv->num_3d_resources != 0) {
+
+		DRM_INFO("Can't suspend or hibernate "
+			 "while 3D resources are active.\n");
+
+		if (dev_priv->enable_fb)
+			vmw_3d_resource_inc(dev_priv, true);
+		dev_priv->suspended = false;
+		return -EBUSY;
+	}
+
+	return 0;
+}
+
 #endif
 
 
@@ -1004,6 +1121,41 @@ static struct drm_driver driver = {
 //   .minor = VMWGFX_DRIVER_MINOR,
 //   .patchlevel = VMWGFX_DRIVER_PATCHLEVEL
 };
+
+
+int vmw_init(void)
+{
+    static pci_dev_t device;
+    const struct pci_device_id  *ent;
+    int  err;
+
+    ENTER();
+
+    ent = find_pci_device(&device, vmw_pci_id_list);
+    if( unlikely(ent == NULL) )
+    {
+        dbgprintf("device not found\n");
+        return -ENODEV;
+    };
+
+    DRM_INFO("device %x:%x\n", device.pci_dev.vendor,
+                                device.pci_dev.device);
+    drm_global_init();
+
+    err = drm_get_dev(&device.pci_dev, ent);
+    LEAVE();
+
+    return err;
+}
+
+
+
+//module_init(vmwgfx_init);
+//module_exit(vmwgfx_exit);
+
+MODULE_AUTHOR("VMware Inc. and others");
+MODULE_DESCRIPTION("Standalone drm driver for the VMware SVGA device");
+MODULE_LICENSE("GPL and additional rights");
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
@@ -1066,7 +1218,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
-//    ret = init_display_kms(dev);
+    ret = kms_init(dev);
 
     if (ret)
         goto err_g4;
@@ -1083,37 +1235,3 @@ err_g4:
 
     return ret;
 }
-
-int vmw_init(void)
-{
-    static pci_dev_t device;
-    const struct pci_device_id  *ent;
-    int  err;
-
-    ent = find_pci_device(&device, vmw_pci_id_list);
-    if( unlikely(ent == NULL) )
-    {
-        dbgprintf("device not found\n");
-        return -ENODEV;
-    };
-
-
-    DRM_INFO("device %x:%x\n", device.pci_dev.vendor,
-                                device.pci_dev.device);
-
-    drm_global_init();
-
-    err = drm_get_dev(&device.pci_dev, ent);
-
-    return err;
-}
-
-
-
-//module_init(vmwgfx_init);
-//module_exit(vmwgfx_exit);
-
-MODULE_AUTHOR("VMware Inc. and others");
-MODULE_DESCRIPTION("Standalone drm driver for the VMware SVGA device");
-MODULE_LICENSE("GPL and additional rights");
-

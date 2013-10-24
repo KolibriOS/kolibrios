@@ -28,10 +28,9 @@
 #define rmb()   asm volatile("lfence" : : : "memory")
 #define wmb()   asm volatile("sfence" : : : "memory")
 
+#include "vmwgfx_drv.h"
 #include <drm/drmP.h>
 #include <drm/ttm/ttm_bo_driver.h>
-#include "vmwgfx_drv.h"
-
 
 #define VMW_PPN_SIZE sizeof(unsigned long)
 

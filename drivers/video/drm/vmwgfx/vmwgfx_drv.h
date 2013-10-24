@@ -414,7 +414,6 @@ static inline uint32_t vmw_read(struct vmw_private *dev_priv,
 	return val;
 }
 
-
 int vmw_3d_resource_inc(struct vmw_private *dev_priv, bool unhide_svga);
 void vmw_3d_resource_dec(struct vmw_private *dev_priv, bool hide_svga);
 
@@ -783,5 +782,12 @@ static inline struct ttm_mem_global *vmw_mem_glob(struct vmw_private *dev_priv)
 	return (struct ttm_mem_global *) dev_priv->mem_global_ref.object;
 }
 
+typedef struct
+{
+  int width;
+  int height;
+  int bpp;
+  int freq;
+}videomode_t;
 
 #endif

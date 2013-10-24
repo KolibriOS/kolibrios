@@ -1897,6 +1897,10 @@ static struct drm_display_mode vmw_kms_connector_builtin[] = {
 	{ DRM_MODE("1856x1392", DRM_MODE_TYPE_DRIVER, 218250, 1856, 1952,
 		   2176, 2528, 0, 1392, 1393, 1396, 1439, 0,
 		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC) },
+    { DRM_MODE("1920x1080", DRM_MODE_TYPE_DRIVER, 148500, 1920, 2008,
+           2052, 2200, 0, 1080, 1084, 1089, 1125, 0,
+           DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC),
+           .vrefresh = 60, },
 	/* 1920x1200@60Hz */
 	{ DRM_MODE("1920x1200", DRM_MODE_TYPE_DRIVER, 193250, 1920, 2056,
 		   2256, 2592, 0, 1200, 1203, 1209, 1245, 0,
@@ -1906,9 +1910,9 @@ static struct drm_display_mode vmw_kms_connector_builtin[] = {
 		   2256, 2600, 0, 1440, 1441, 1444, 1500, 0,
 		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC) },
 	/* 2560x1600@60Hz */
-	{ DRM_MODE("2560x1600", DRM_MODE_TYPE_DRIVER, 348500, 2560, 2752,
+/*   { DRM_MODE("2560x1600", DRM_MODE_TYPE_DRIVER, 348500, 2560, 2752,
 		   3032, 3504, 0, 1600, 1603, 1609, 1658, 0,
-		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC) },
+           DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC) }, */
 	/* Terminate */
 	{ DRM_MODE("", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) },
 };

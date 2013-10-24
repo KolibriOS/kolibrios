@@ -92,7 +92,6 @@ int vmw_ttm_global_init(struct vmw_private *dev_priv)
 
     LEAVE();
 	return 0;
-
 out_no_bo:
 	drm_global_item_unref(&dev_priv->mem_global_ref);
 	return ret;

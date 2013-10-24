@@ -59,7 +59,7 @@ int driver_wq_state;
 int x86_clflush_size;
 unsigned int tsc_khz;
 
-int i915_modeset = 1;
+int kms_modeset = 1;
 
 u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
@@ -98,7 +98,6 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     enum_pci_devices();
 
     err = vmw_init();
-
     if(err)
     {
         dbgprintf("Epic Fail :(\n");
@@ -187,24 +186,25 @@ int _stdcall display_handler(ioctl_t *io)
             *outp  = DISPLAY_VERSION;
             retval = 0;
             break;
-#if 0
+
         case SRV_ENUM_MODES:
-//            dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
-//                       inp, io->inp_size, io->out_size );
+            dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
+                       inp, io->inp_size, io->out_size );
             check_output(4);
 //            check_input(*outp * sizeof(videomode_t));
-            if( i915_modeset)
+            if( kms_modeset)
                 retval = get_videomodes((videomode_t*)inp, outp);
             break;
 
         case SRV_SET_MODE:
-//            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
-//                       inp, io->inp_size);
+            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
+                       inp, io->inp_size);
             check_input(sizeof(videomode_t));
-            if( i915_modeset )
+            if( kms_modeset )
                 retval = set_user_mode((videomode_t*)inp);
             break;
 
+#if 0
         case SRV_GET_CAPS:
             retval = get_driver_caps((hwcaps_t*)inp);
             break;
@@ -809,4 +809,263 @@ void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
                        buf, len, true);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+#include "vmwgfx_kms.h"
+
+void kms_update();
+
+//#define iowrite32(v, addr)      writel((v), (addr))
+
+//#include "bitmap.h"
+
+extern struct drm_device *main_device;
+
+typedef struct
+{
+    kobj_t     header;
+
+    uint32_t  *data;
+    uint32_t   hot_x;
+    uint32_t   hot_y;
+
+    struct list_head   list;
+//    struct drm_i915_gem_object  *cobj;
+}cursor_t;
+
+#define CURSOR_WIDTH 64
+#define CURSOR_HEIGHT 64
+
+struct tag_display
+{
+    int  x;
+    int  y;
+    int  width;
+    int  height;
+    int  bpp;
+    int  vrefresh;
+    int  pitch;
+    int  lfb;
+
+    int  supported_modes;
+    struct drm_device    *ddev;
+    struct drm_connector *connector;
+    struct drm_crtc      *crtc;
+
+    struct list_head   cursors;
+
+    cursor_t   *cursor;
+    int       (*init_cursor)(cursor_t*);
+    cursor_t* (__stdcall *select_cursor)(cursor_t*);
+    void      (*show_cursor)(int show);
+    void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
+    void      (__stdcall *restore_cursor)(int x, int y);
+    void      (*disable_mouse)(void);
+    u32  mask_seqno;
+    u32  check_mouse;
+    u32  check_m_pixel;
+    u32  dirty;
+    void (*update)(void);
+};
+
+static display_t *os_display;
+
+static int count_connector_modes(struct drm_connector* connector)
+{
+    struct drm_display_mode  *mode;
+    int count = 0;
+
+    list_for_each_entry(mode, &connector->modes, head)
+    {
+        count++;
+    };
+    return count;
+};
+
+int kms_init(struct drm_device *dev)
+{
+    struct drm_connector    *connector;
+    struct drm_connector_helper_funcs *connector_funcs;
+    struct drm_encoder      *encoder;
+    struct drm_crtc         *crtc = NULL;
+    struct drm_framebuffer  *fb;
+
+    cursor_t  *cursor;
+    int        mode_count;
+    u32_t      ifl;
+    int        err;
+
+    ENTER();
+
+    crtc = list_entry(dev->mode_config.crtc_list.next, typeof(*crtc), head);
+    encoder = list_entry(dev->mode_config.encoder_list.next, typeof(*encoder), head);
+    connector = list_entry(dev->mode_config.connector_list.next, typeof(*connector), head);
+    connector->encoder = encoder;
+
+    mode_count = count_connector_modes(connector);
+    if(mode_count == 0)
+    {
+        struct drm_display_mode *mode;
+
+        connector->funcs->fill_modes(connector,
+                                     dev->mode_config.max_width,
+                                     dev->mode_config.max_height);
+
+        list_for_each_entry(mode, &connector->modes, head)
+        mode_count++;
+    };
+
+    printf("%s %d\n",__FUNCTION__, mode_count);
+
+    DRM_DEBUG_KMS("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
+               connector, connector->base.id,
+               connector->status, connector->encoder,
+               crtc, crtc->base.id );
+
+    DRM_DEBUG_KMS("[Select CRTC:%d]\n", crtc->base.id);
+
+    os_display = GetDisplay();
+
+    ifl = safe_cli();
+    {
+        os_display->ddev = dev;
+        os_display->connector = connector;
+        os_display->crtc = crtc;
+        os_display->supported_modes = mode_count;
+        os_display->update = kms_update;
+
+//        struct intel_crtc *intel_crtc = to_intel_crtc(os_display->crtc);
+
+//        list_for_each_entry(cursor, &os_display->cursors, list)
+//        {
+//            init_cursor(cursor);
+//        };
+
+//        os_display->restore_cursor(0,0);
+//        os_display->init_cursor    = init_cursor;
+//        os_display->select_cursor  = select_cursor_kms;
+//        os_display->show_cursor    = NULL;
+//        os_display->move_cursor    = move_cursor_kms;
+//        os_display->restore_cursor = restore_cursor;
+//        os_display->disable_mouse  = disable_mouse;
+
+//        intel_crtc->cursor_x = os_display->width/2;
+//        intel_crtc->cursor_y = os_display->height/2;
+
+//        select_cursor_kms(os_display->cursor);
+    };
+    safe_sti(ifl);
+
+    main_device = dev;
+
+#ifdef __HWA__
+    err = init_bitmaps();
+#endif
+
+    LEAVE();
+
+    return 0;
+};
+
+
+void kms_update()
+{
+    struct vmw_private *dev_priv = vmw_priv(main_device);
+    size_t fifo_size;
+    int i;
+
+    struct {
+        uint32_t header;
+        SVGAFifoCmdUpdate body;
+    } *cmd;
+
+    fifo_size = sizeof(*cmd);
+
+    cmd = vmw_fifo_reserve(dev_priv, fifo_size);
+    if (unlikely(cmd == NULL)) {
+        DRM_ERROR("Fifo reserve failed.\n");
+        return;
+    }
+
+    cmd->header = cpu_to_le32(SVGA_CMD_UPDATE);
+    cmd->body.x = 0;
+    cmd->body.y = 0;
+    cmd->body.width  = os_display->width; //cpu_to_le32(clips->x2 - clips->x1);
+    cmd->body.height = os_display->height; //cpu_to_le32(clips->y2 - clips->y1);
+
+    vmw_fifo_commit(dev_priv, fifo_size);
+}
+
+int get_videomodes(videomode_t *mode, int *count)
+{
+    int err = -1;
+
+    dbgprintf("mode %x count %d\n", mode, *count);
+
+    if( *count == 0 )
+    {
+        *count = os_display->supported_modes;
+        err = 0;
+    }
+    else if( mode != NULL )
+    {
+        struct drm_display_mode  *drmmode;
+        int i = 0;
+
+        if( *count > os_display->supported_modes)
+            *count = os_display->supported_modes;
+
+        list_for_each_entry(drmmode, &os_display->connector->modes, head)
+        {
+            if( i < *count)
+            {
+                mode->width  = drm_mode_width(drmmode);
+                mode->height = drm_mode_height(drmmode);
+                mode->bpp    = 32;
+                mode->freq   = drm_mode_vrefresh(drmmode);
+                i++;
+                mode++;
+            }
+            else break;
+        };
+        *count = i;
+        err = 0;
+    };
+    return err;
+};
+
+
+bool set_mode(struct drm_device *dev, struct drm_connector *connector,
+              videomode_t *reqmode, bool strict);
+
+
+int set_user_mode(videomode_t *mode)
+{
+    int err = -1;
+
+    dbgprintf("width %d height %d vrefresh %d\n",
+               mode->width, mode->height, mode->freq);
+
+    if( (mode->width  != 0)  &&
+        (mode->height != 0)  &&
+        (mode->freq   != 0 ) &&
+        ( (mode->width   != os_display->width)  ||
+          (mode->height  != os_display->height) ||
+          (mode->freq    != os_display->vrefresh) ) )
+    {
+        if( set_mode(os_display->ddev, os_display->connector, mode, true) )
+            err = 0;
+    };
+
+    return err;
+};
 

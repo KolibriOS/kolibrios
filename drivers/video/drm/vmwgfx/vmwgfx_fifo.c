@@ -398,7 +398,7 @@ static void vmw_fifo_res_copy(struct vmw_fifo_state *fifo_state,
 		chunk_size = bytes;
 
 	iowrite32(bytes, fifo_mem + SVGA_FIFO_RESERVED);
-//   mb();
+    mb();
     memcpy(fifo_mem + (next_cmd >> 2), buffer, chunk_size);
 	rest = bytes - chunk_size;
 	if (rest)
@@ -466,7 +466,7 @@ void vmw_fifo_commit(struct vmw_private *dev_priv, uint32_t bytes)
 
 	if (reserveable)
 		iowrite32(0, fifo_mem + SVGA_FIFO_RESERVED);
-//   mb();
+    mb();
 //   up_write(&fifo_state->rwsem);
 	vmw_fifo_ping_host(dev_priv, SVGA_SYNC_GENERIC);
 	mutex_unlock(&fifo_state->fifo_mutex);
