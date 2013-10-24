@@ -159,33 +159,14 @@ RBWRedraw:
 
        ;----------- определяем и рисуем кнопки
         mov     ecx,[NumMenuButt]
+        xor     eax,eax
   .DrawUB:
         push    ecx
 
-        mov     eax,[NumMenuButt]
-        sub     eax,ecx
-        mov     edx,eax      ;button ID = от 0 до NumMenuButt
-        or      edx,60000000h
-        shl     eax,4+16          ;*16*10000h
-        mov     ecx,eax
-        mov     cx,16
-
-        xor     ebx,ebx
-        mov     bx,[RMenuW]
-        mov     esi,[sc.work]
-        mcall   8                       ;определили
-
-        mov     ebx,70000h
-        shr     ecx,16
-        mov     bx,cx
-        add     bx,7
-
-        mov     ecx,80000000h
-
-        mov     eax,[NumMenuButt]
-        sub     eax,[esp]
-        mov     edx,[RBMenuCP+eax*8]
-        mcall   4                      ;подписали
+        push    eax
+        stdcall DrawRBLine,eax,0
+        pop     eax
+        add     eax,16
 
         pop     ecx
         loop    .DrawUB
@@ -467,7 +448,6 @@ proc DrawRBLine y,active
 
         mcall
 
-
         mov     bx,[RMenuW]                 ;право
         shl     ebx,16
         mov     bx,[RMenuW]
@@ -484,10 +464,6 @@ proc DrawRBLine y,active
 
         mcall
 
-
-
-
-
         mov     eax,[y]
         shr     eax,4
         mov     edx,[RBMenuCP+eax*8]
@@ -503,8 +479,6 @@ proc DrawRBLine y,active
        @@:
         mov     ecx,[sc.work_text]
       .L2:
-
-
 
         or      ecx,80000000h
 
