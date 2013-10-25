@@ -515,7 +515,7 @@ $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootl
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
- games/.dir lib/.dir media/.dir network/.dir allskins/.dir distr_data/.dir .deps/.dir:
+ games/.dir lib/.dir media/.dir network/.dir settings/.dir allskins/.dir distr_data/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@
 develop/info/.dir: develop/.dir
