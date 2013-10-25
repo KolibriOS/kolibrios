@@ -279,7 +279,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 #
 # yogev_ezra: Removed '3dsheart' to free some space on RAMDISK. This demo has 90% in common with VIEW3DS 
-OTHER_FILES:=autorun.dat:AUTORUN.DAT \
+OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
  graph:GRAPH hdread:HDREAD \
  settings/icon.ini:SETTINGS/ICON.INI \

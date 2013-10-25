@@ -284,7 +284,7 @@ CMM_PROGRAMS:=\
 # Some of them are auto-built with special rules, some just exist before build.
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
-OTHER_FILES:=autorun.dat:AUTORUN.DAT \
+OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
  graph:GRAPH hdread:HDREAD \
  settings/icon.ini:SETTINGS/ICON.INI \
