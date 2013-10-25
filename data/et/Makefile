@@ -288,7 +288,8 @@ CMM_PROGRAMS:=\
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
  graph:GRAPH hdread:HDREAD \
- icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
+ settings/icon.ini:SETTINGS/ICON.INI \
+ iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK \
  settings/keymap.key:SETTINGS/KEYMAP.KEY \
  settings/lang.ini:SETTINGS/LANG.INI \
