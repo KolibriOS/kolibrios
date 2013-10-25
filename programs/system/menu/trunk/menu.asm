@@ -881,7 +881,7 @@ fileinfo:
  .size		 dd 0		; bytes to read
  .return	 dd procinfo	; return data pointer
  .name:
-     db   '/sys/MENU.DAT',0   ; ASCIIZ dir & filename
+     db   '/SYS/SETTINGS/MENU.DAT',0   ; ASCIIZ dir & filename
 ;--------------------------------------
 align 4
 fileinfo_start:
