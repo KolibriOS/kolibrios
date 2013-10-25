@@ -283,8 +283,10 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
  graph:GRAPH hdread:HDREAD \
  icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
- kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
- kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
+ kernel.mnt:KERNEL.MNT kerpack:KERPACK \
+ settings/keymap.key:SETTINGS/KEYMAP.KEY \
+ settings/lang.ini:SETTINGS/LANG.INI \ 
+ kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC \
  menu.dat:MENU.DAT settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
