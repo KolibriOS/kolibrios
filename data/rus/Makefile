@@ -290,7 +290,8 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC \
  settings/menu.dat:SETTINGS/MENU.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
- settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA setup.dat:SETUP.DAT \
+ settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA \
+ settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \

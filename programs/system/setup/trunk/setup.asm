@@ -853,7 +853,7 @@ save_fileinfo:
         dd 0
         dd 28
         dd keyboard
-file_name:      db '/sys/setup.dat',0
+file_name:      db '/SYS/SETTINGS/SETUP.DAT',0
 ;-------------------------------------------------------------------------------
 keyboard        dd 0x0
 syslang         dd 0x4  ; 4 - rus
