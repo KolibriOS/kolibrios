@@ -1049,7 +1049,7 @@ ascii_keymap:
 	     db 128 dup(?)
 ctrl_key_names db  'LShift LCtrl LAlt RAlt RCtrl RShift',0
 aPlus	       db  ' + ',0
-aIni	       db  'mykey.ini',0
+aIni	       db  'settings/mykey.ini',0
 aMain	       db  'main',0
 aKeynum        db  'keynum',0
 aHotkey        db  'hotkey',0,0,0

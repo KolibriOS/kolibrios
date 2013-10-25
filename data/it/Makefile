@@ -262,7 +262,7 @@ COPY_FILES:=\
  games/soko-9.lev:GAMES/SOKO-9.LEV:$(PROGS)/games/soko/trunk/SOKO-9.LEV \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
- mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey_it.ini \
+ settings/mykey.ini:SETTINGS/MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey_it.ini \
 # end of list
 
 # The list of all C-- programs with one main C-- file.

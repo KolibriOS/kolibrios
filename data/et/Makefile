@@ -262,7 +262,7 @@ COPY_FILES:=\
  games/soko-9.lev:GAMES/SOKO-9.LEV:$(PROGS)/games/soko/trunk/SOKO-9.LEV \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
- mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
+ settings/mykey.ini:SETTINGS/MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
  example.asm:EXAMPLE.ASM:$(PROGS)/develop/examples/example/trunk/example.asm \
 # end of list
 
