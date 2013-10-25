@@ -291,7 +291,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK \
  settings/keymap.key:SETTINGS/KEYMAP.KEY \
- settings/lang.ini:SETTINGS/LANG.INI \ 
+ settings/lang.ini:SETTINGS/LANG.INI \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC \
  menu.dat:MENU.DAT settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI setup.dat:SETUP.DAT \

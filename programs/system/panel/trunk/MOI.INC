@@ -433,5 +433,5 @@ point2		dd 0
 		db 0
 		dd ini_file
 ;------------------------------------------------------------------------------
-key_file: db	  '/rd/1/keymap.key',0
-ini_file: db	  '/rd/1/lang.ini',0
+key_file: db	  '/rd/1/settings/keymap.key',0
+ini_file: db	  '/rd/1/settings/lang.ini',0
