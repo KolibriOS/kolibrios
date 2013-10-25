@@ -290,7 +290,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
- menu.dat:MENU.DAT kolibri.lbl:KOLIBRI.LBL \
+ menu.dat:MENU.DAT settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  panel.ini:PANEL.INI setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
@@ -387,12 +387,12 @@ EXTRA:=\
 DISTRIBUTION_EXTRA:=\
  $(EXTRA) \
  /readme.txt=distr_data/readme_distr.txt \
- /kolibri.lbl=kolibri.lbl \
+ /kolibri.lbl=settings/kolibri.lbl \
 #end of list
 MKISOFS_EXTRA:=\
  $(EXTRA) \
  /=distr_data/readme.txt \
- /=kolibri.lbl \
+ /=settings/kolibri.lbl \
 #end of list
 
 # Some macro for convenient work.

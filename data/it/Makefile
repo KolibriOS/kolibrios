@@ -290,7 +290,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
- menu.dat:MENU.DAT kolibri.lbl:KOLIBRI.LBL \
+ menu.dat:MENU.DAT settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  panel.ini:PANEL.INI setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
@@ -332,7 +332,7 @@ MKISOFS_EXTRA:=\
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \
- /=kolibri.lbl \
+ /=settings/kolibri.lbl \
  Skins/=$(REPOSITORY)/skins/authors.txt \
  Docs/config.txt=docs/CONFIG.TXT \
  Docs/copying.txt=docs/COPYING.TXT \

@@ -28,7 +28,7 @@
 	use32
 	org	0x0
 
-	db	'MENUET01'
+	db 'MENUET01'
 	dd 0x01
 	dd START
 	dd IM_END
@@ -68,7 +68,7 @@ start_dir:
 	db '/',0
 ;-------------------------------------------------------------------------------
 basic_file_path:
-	db '/rd/1/'
+	db '/sys/settings/'
 basic_file_name:
 	db 'kolibri.lbl',0
 additional_dir_name:

@@ -285,7 +285,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  icon.ini:ICON.INI iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
- menu.dat:MENU.DAT kolibri.lbl:KOLIBRI.LBL \
+ menu.dat:MENU.DAT settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  panel.ini:PANEL.INI pipetka:PIPETKA setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
@@ -394,13 +394,13 @@ DISTRIBUTION_EXTRA:=\
  $(EXTRA) \
  /readme.txt=distr_data/readme_distr.txt \
  /readme_dos.txt=distr_data/readme_dos_distr.txt \
- /kolibri.lbl=kolibri.lbl \
+ /kolibri.lbl=settings/kolibri.lbl \
 #end of list
 MKISOFS_EXTRA:=\
  $(EXTRA) \
  /=distr_data/readme.txt \
  /=distr_data/readme_dos.txt \
- /=kolibri.lbl \
+ /=settings/kolibri.lbl \
 #end of list
 
 # Text files which need to be recoded to cp1251 from native aka cp866
