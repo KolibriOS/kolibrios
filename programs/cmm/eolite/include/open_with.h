@@ -126,7 +126,6 @@ void DrawAppList()
 	tiny_scroll.x = app_list.x+app_list.w-SCROLL_WIDTH-1;
 	tiny_scroll.h = app_list.h * app_list.visible / app_list.count;
 	tiny_scroll.y = app_list.h * app_list.first / app_list.count + app_list.y;
-	debugi(tiny_scroll.y + tiny_scroll.h - app_list.y - app_list.h);
 	if (tiny_scroll.y + tiny_scroll.h - app_list.y - app_list.h >= 0) tiny_scroll.y = app_list.y + app_list.h - tiny_scroll.h-1;
 	DrawBar(tiny_scroll.x, tiny_scroll.y, SCROLL_WIDTH, tiny_scroll.h, 0x555555); //scroll
 }
