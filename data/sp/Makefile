@@ -483,6 +483,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA/ImgF
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
+	mmd -i $(BUILD_DIR)/kolibri.img ::SETTINGS
 	$(mcopy_all_items)
 
 # The second goal: LiveCD image.
