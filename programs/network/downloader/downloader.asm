@@ -1021,7 +1021,7 @@ connclose_end:
 base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
                 db '0123456789+/'
 
-inifile         db '/sys/network.ini', 0
+inifile         db '/sys/settings/network.ini', 0
 
 sec_proxy:
 key_proxy       db 'proxy', 0

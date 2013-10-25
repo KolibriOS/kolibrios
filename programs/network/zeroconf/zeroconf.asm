@@ -640,7 +640,7 @@ notify_struct:
         db '/sys/@notify', 0
 
 str_connected   db 'You are now connected to the network.', 0
-path            db '/sys/network.ini',0
+path            db '/sys/settings/network.ini',0
 
 IM_END:
 

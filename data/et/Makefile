@@ -319,7 +319,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  ../common/media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
  ../common/media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
  ../common/media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
- network.ini:NETWORK.INI \
+ settings/network.ini:SETTINGS/NETWORK.INI \
  network/ftpd.ini:NETWORK/FTPD.INI \
  network/users.ini:NETWORK/USERS.INI \
 #end of list
