@@ -36,6 +36,8 @@ BegData         equ fiStdIco.point
         dd 0            ; path
 ;------------------------------------------------------------------------------
 include 'lang.inc'
+
+include 'lang.inc'
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
@@ -1141,7 +1143,7 @@ fiIni   dd 5           ;для ini файла
         dd 0
         dd 0
         dd bufIni
-        db '/rd/1/icon.ini',0
+        db '/rd/1/settings/icon.ini',0
 
 
 IconsFile       db ICON_STRIP,0
@@ -1158,9 +1160,9 @@ RButtonActiv    dd 0
 MovingActiv     dd 0
 DlgAddActiv     dd 0
 
-IconIni         db '/rd/1/icon.ini',0
+IconIni         db '/rd/1/settings/icon.ini',0
 
-
+pthNotify       db '/rd/1/@notify',0
 
 ;keyName         db 'name',0
 keyPath         db 'path',0
@@ -1222,42 +1224,32 @@ PredItem        dd -1
 if lang eq ru
  RMenuRedrawFon db 'Перерисовать',0
  RMenuAlign     db 'Выровнять по сетке',0
-
  RMenuOffMoving db 'Закрепить иконки',0
  RMenuOnMoving  db 'Открепить иконки',0
-
  RMenuAdd       db 'Добавить',0
  RMenuDel       db 'Удалить',0
  RMenuProp      db 'Свойства',0
-
 else
-
- RMenuOffMoving db 'Fix the icons',0
- RMenuOnMoving  db 'Unfix the icons',0
  RMenuRedrawFon db 'Redraw',0
  RMenuAlign     db 'Snap to Grid',0
+ RMenuOffMoving db 'Fix the icons',0
+ RMenuOnMoving  db 'Unfix the icons',0
  RMenuAdd       db 'Add',0
  RMenuDel       db 'Delete',0
  RMenuProp      db 'Properties',0
-
-
 end if
 
 if lang eq ru
-
  ErrRunProg     db 'Ошибка запуска программы',0
  WarningSave    db 'Не забудьте сохранить изменения, запустить RDSave',0
  ErrNotFoundIni db 'Не найден icon.ini',0
  ErrName        db 'Имя "rbmenu" зарезервировано',0
 else
-
  ErrRunProg     db 'Error runing program',0
  WarningSave    db 'Do not forget to save the changes, run the RDSave',0
  ErrNotFoundIni db 'icon.ini not found',0
  ErrName        db 'The name "rbmenu" reserved',0
 end if
-
-pthNotify       db '/rd/1/@notify',0
 
 ;-------------------------------------------------------------------------------
 ;------- AddDlg.inc ---------------------------------------------------------------
@@ -1319,6 +1311,7 @@ sbIcons:
  .r_size_x   dw 0
  .r_start_x  dw 0
  .r_size_y   dw 0
+
  .r_start_y  dw 0
  .m_pos      dd 0
  .m_pos2     dd 0
