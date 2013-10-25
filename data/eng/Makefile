@@ -292,7 +292,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
- panel.ini:PANEL.INI setup.dat:SETUP.DAT \
+ settings/panel.ini:SETTINGS/PANEL.INI setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \

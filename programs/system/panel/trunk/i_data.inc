@@ -190,7 +190,7 @@ aMouseEmul		db 'MouseEmul',0
 ;------------------------------------------------------------------------------
 plugins_directory               db 0
 
-ini_file_name                   db 'panel.ini',0
+ini_file_name                   db 'settings/panel.ini',0
 
 system_dir_Libini			db '/sys/lib/libini.obj',0
 
