@@ -5,8 +5,8 @@
  * to reduce the amount of pointless cruft we feed to gcc when only
  * exporting a simple symbol or two.
  *
- * If you feel the need to add #include <linux/foo.h> to this file
- * then you are doing something wrong and should go away silently.
+ * Try not to add #includes here.  It slows compilation and makes kernel
+ * hackers place grumpy comments in header files.
  */
 #define EXPORT_SYMBOL(sym)
 #define EXPORT_SYMBOL_GPL(sym)

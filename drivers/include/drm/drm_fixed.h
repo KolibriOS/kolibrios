@@ -20,10 +20,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  *
  * Authors: Dave Airlie
- *          Christian Konig
+ *          Christian König
  */
 #ifndef DRM_FIXED_H
 #define DRM_FIXED_H
+
+#include <linux/math64.h>
 
 typedef union dfixed {
 	u32 full;

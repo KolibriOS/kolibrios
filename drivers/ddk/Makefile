@@ -28,6 +28,7 @@ NAME_SRCS:=  				\
 		linux/firmware.c	\
 		linux/kref.c		\
 		linux/list_sort.c	\
+		linux/rbtree.c		\
 		linux/dmapool.c		\
 		linux/ctype.c		\
 		linux/string.c		\

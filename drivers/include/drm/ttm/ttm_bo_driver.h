@@ -520,7 +520,7 @@ struct ttm_bo_global {
  * @man: An array of mem_type_managers.
  * @fence_lock: Protects the synchronizing members on *all* bos belonging
  * to this device.
- * @addr_space_mm: Range manager for the device address space.
+ * @vma_manager: Address space manager
  * lru_lock: Spinlock that protects the buffer+device lru lists and
  * ddestroy lists.
  * @val_seq: Current validation sequence.
@@ -774,6 +774,56 @@ extern int ttm_mem_io_lock(struct ttm_mem_type_manager *man,
 			   bool interruptible);
 extern void ttm_mem_io_unlock(struct ttm_mem_type_manager *man);
 
+extern void ttm_bo_del_sub_from_lru(struct ttm_buffer_object *bo);
+extern void ttm_bo_add_to_lru(struct ttm_buffer_object *bo);
+
+/**
+ * ttm_bo_reserve_nolru:
+ *
+ * @bo: A pointer to a struct ttm_buffer_object.
+ * @interruptible: Sleep interruptible if waiting.
+ * @no_wait: Don't sleep while trying to reserve, rather return -EBUSY.
+ * @use_ticket: If @bo is already reserved, Only sleep waiting for
+ * it to become unreserved if @ticket->stamp is older.
+ *
+ * Will not remove reserved buffers from the lru lists.
+ * Otherwise identical to ttm_bo_reserve.
+ *
+ * Returns:
+ * -EDEADLK: The reservation may cause a deadlock.
+ * Release all buffer reservations, wait for @bo to become unreserved and
+ * try again. (only if use_sequence == 1).
+ * -ERESTARTSYS: A wait for the buffer to become unreserved was interrupted by
+ * a signal. Release all buffer reservations and return to user-space.
+ * -EBUSY: The function needed to sleep, but @no_wait was true
+ * -EALREADY: Bo already reserved using @ticket. This error code will only
+ * be returned if @use_ticket is set to true.
+ */
+static inline int ttm_bo_reserve_nolru(struct ttm_buffer_object *bo,
+				       bool interruptible,
+				       bool no_wait, bool use_ticket,
+				       struct ww_acquire_ctx *ticket)
+{
+	int ret = 0;
+/*
+	if (no_wait) {
+		bool success;
+		if (WARN_ON(ticket))
+			return -EBUSY;
+
+		success = ww_mutex_trylock(&bo->resv->lock);
+		return success ? 0 : -EBUSY;
+	}
+
+	if (interruptible)
+		ret = ww_mutex_lock_interruptible(&bo->resv->lock, ticket);
+	else
+		ret = ww_mutex_lock(&bo->resv->lock, ticket);
+	if (ret == -EINTR)
+		return -ERESTARTSYS;
+*/
+	return ret;
+}
 
 /**
  * ttm_bo_reserve:
@@ -884,7 +934,7 @@ static inline void ttm_bo_unreserve_ticket(struct ttm_buffer_object *bo,
 		ttm_bo_add_to_lru(bo);
 		spin_unlock(&bo->glob->lru_lock);
 	}
-	ww_mutex_unlock(&bo->resv->lock);
+//   ww_mutex_unlock(&bo->resv->lock);
 }
 
 /**

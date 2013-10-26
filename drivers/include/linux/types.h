@@ -116,11 +116,10 @@ typedef		__u8		uint8_t;
 typedef		__u16		uint16_t;
 typedef		__u32		uint32_t;
 
-#if defined(__GNUC__)
 typedef		__u64		uint64_t;
 typedef		__u64		u_int64_t;
-typedef		__s64		int64_t;
-#endif
+
+typedef __signed__ long long int64_t;
 
 /* this is a special 64bit data type that is 8-byte aligned */
 #define aligned_u64 __u64 __attribute__((aligned(8)))

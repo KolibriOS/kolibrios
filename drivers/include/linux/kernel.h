@@ -49,12 +49,24 @@
 )
 
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+#define DIV_ROUND_UP_ULL(ll,d) \
+        ({ unsigned long long _tmp = (ll)+(d)-1; do_div(_tmp, d); _tmp; })
 #define DIV_ROUND_CLOSEST(x, divisor)(                  \
 {                                                       \
          typeof(divisor) __divisor = divisor;            \
          (((x) + ((__divisor) / 2)) / (__divisor));      \
 }                                                       \
 )
+
+
+#define clamp_t(type, val, min, max) ({         \
+        type __val = (val);                     \
+        type __min = (min);                     \
+        type __max = (max);                     \
+        __val = __val < __min ? __min: __val;   \
+        __val > __max ? __max: __val; })
+
+
 
 /**
  * upper_32_bits - return bits 32-63 of a number
@@ -252,11 +264,6 @@ static inline void *dev_get_drvdata(struct device *dev)
 #define in_dbg_master() (0)
 
 #define HZ 100
-
-#define time_after(a,b)         \
-        (typecheck(unsigned long, a) && \
-        typecheck(unsigned long, b) && \
-        ((long)(b) - (long)(a) < 0))
 
 struct tvec_base;
 
