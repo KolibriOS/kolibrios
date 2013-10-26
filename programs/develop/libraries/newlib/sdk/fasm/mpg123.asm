@@ -129,59 +129,31 @@ main:
         xor     ebx, ebx             ;totalcount
 
 .inner:
+    ;    int3
+        mov     [count], 0
         call    [mpg123_read]
+        mov     ebx, [count]
         test    eax, eax
         jz      @F
-        mov     [done], eax
-        jmp     .check_done
+        test    ebx, ebx
+        jz      .done
 @@:
-        mov     eax, [count]
-        add     [esp+4], eax
-        add     ebx, eax
-        sub     [esp+8], eax
-        shl     eax, 1
-        cmp     eax, [esp+8]
-        jb      .inner
-
-.check_done:
-        cmp     [done], 0
-        je      @F
-
-        cmp     ebx, 4096
-        jae     .write_out
-
-        mov     edi, [esp+16]
-        mov     ecx, 4096
-        sub     ecx, ebx
-        rep     movsb
-        mov     ebx, 4096
-
-        jmp     .write_out
-@@:
-        mov     [count], 0
-        cmp     ebx, 8192
-        jb      .inner
-
 .write_out:
-
+        add     ebx, 4095
+        and     ebx, -4096
         mov     esi, [esp+16]
-@@:
-        cmp     ebx, 4096
-        jb      @F
-
-        stdcall WaveOut, [hBuff], esi, 4096
-        sub     ebx, 4096
-        add     esi, 4096
-        add     [esp+8], dword 4096
-        jmp     @B
-@@:
+        stdcall WaveOut, [hBuff], esi, ebx
+        mov     [esp+8], dword 0x40000
         mov     edi, [esp+16]
-        mov     ecx, ebx
-        rep     movsb
         mov     [esp+4], edi
         jmp     .inner
-
 .done:
+        mov     edi, [esp+16]
+        mov     ecx, 4096
+        xor     eax, eax
+        rep     stosd
+        mov     esi, [esp+16]
+        stdcall WaveOut, [hBuff], esi, 16384
         add     esp, 20
         pop     edi
         pop     esi
@@ -691,3 +663,5 @@ __pgmname: rb 1024
            rb 16
 __stack:
 __bssend:
+
+

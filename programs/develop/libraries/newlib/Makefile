@@ -375,7 +375,7 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	$(LD) $(LDFLAGS) --exclude-symbols __chkstk,__chkstk_ms,_alloca -Map libcmap -L. -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
 	sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
 	sed -f cmd1.sed libc.def > mem
-	sed -f cmd2.sed mem >libc.inc 
+	sed -f newlib.sed mem >libc.inc 
 
 
 libcrt.a: $(LIBCRT_OBJS) Makefile

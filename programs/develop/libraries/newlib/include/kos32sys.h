@@ -45,6 +45,21 @@ typedef struct
   int           out_size;
 }ioctl_t;
 
+
+static inline
+void DefineButton(uint32_t x_w, uint32_t y_h, uint32_t id, uint32_t color)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(8),
+      "b"(x_w),
+      "c"(y_h),
+      "d"(id),
+      "S"(color));
+
+
+};
+
 static inline
 void BeginDraw(void)
 {
@@ -166,6 +181,16 @@ oskey_t get_key(void)
     return val;
 }
 
+static inline
+uint32_t get_os_button()
+{
+    uint32_t val;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(val)
+    :"a"(17));
+    return val>>8;
+};
 
 static inline uint32_t get_service(char *name)
 {
