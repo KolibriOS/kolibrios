@@ -1,12 +1,20 @@
 newrating:
 
-cmp [FRS], 266
-jz f266
-cmp [FRS], 333
-jz f333
-cmp [FRS], 400
-jz f400
+cmp [freqbb], 151
+jl f266
 
+cmp [freqbb], 150
+ja ft
+
+jmp vyxod
+ft:
+
+cmp [freqbb], 180
+ja f400
+
+cmp [freqbb], 181
+jl f333
+jmp vyxod
 f266:
 
 ;формулы вычисления XP-рейтинга Athlon-ов (Tbred, Barton):
@@ -14,6 +22,7 @@ f266:
 ;XP+ (Freq<2000MHz) = 1000 + (Freq-1000)*1,5 = Freq*1.5-500
 ;XP+ (Freq>=2000MHz) = 900 + (Freq-1000)*1,5 = Freq*1.5-600
 
+   mov [FRS], 266
 
    cmp [total], 2000
    jl pal
@@ -41,7 +50,7 @@ jmp vyxod
 
 f333:
 
-
+mov [FRS], 333
 
 
  cmp [L2], 256
@@ -97,7 +106,7 @@ jmp vyxod
 jmp vyxod
 
 f400:
-
+mov [FRS], 400
 
 ;FSB400/512kB:
 ;XP+ = Freq*1.5 - 100

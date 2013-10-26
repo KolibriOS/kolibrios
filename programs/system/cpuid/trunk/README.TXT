@@ -5,7 +5,7 @@ ENGLISH
 Hi! My name is Sergey Kuzmin aka Wildwest. 
 This is one of the mostly famous program for KolibriOS/MenuetOS.
 I called it CPUID. CPUID talks with you CPU and show log. 
-Current version is 2.21 and you can use it on your own risk without any warranty. 
+Current version is 2.28 and you can use it on your own risk without any warranty. 
 E-mail me (kuzmin_serg@list.ru) if you have some problems or suggestions.
 All righs on this program are mine, except parts of code written by other developers.
 
@@ -31,14 +31,16 @@ People from international KolibriOS/MenuetOS team help me and I wish to mention 
 
  Iliya Mikhailov (Russia) for piece of code from his great GMON;
 
- Pavel Rymovskiy (Belarus) and Leency (Ukraine) for their work, which enhance look & feel of CPUID.
+ Pavel Rymovskiy (Belarus) and Kirill Lipatov (Ukraine) for their work, which enhance look & feel of CPUID
+
+ fedesco (Italy) for makefile for compilation on *nix systems and for translation to Italian language.
                                                                              
  Also I want to thank folks which help me by testing and suggestions -        
  Sonny, Smiddy and all the RU-Team.                                          
 
 Please, test it and e-mail me screenshot.
 
-The CPUID thread with announcements and discussion is at http://meos.sysbin.com/viewtopic.php?t=594
+The CPUID thread with announcements and discussion is at http://board.kolibrios.org/viewtopic.php?f=42&t=594
 
 Bye...
 
@@ -48,13 +50,13 @@ RUSSIAN
 Привет! Меня зовут Сергей Кузьмин aka Wildwest. 
 Это одна из самых известных программ для KolibriOS/MenuetOS.
 Она называется CPUID и показывает результаты идентификации процессора.
-Это версия 2.21 и ВЫ можете её использовать на свой собственный риск безо всяких гарантий.
+Это версия 2.28 и ВЫ можете её использовать на свой собственный риск безо всяких гарантий.
 Если будут какие-то проблемы или предложения, то напишите мне (kuzmin_serg@list.ru).
 Все права на программу принадлежат мне, кроме прав на части, написанных остальными разработчиками.
 
 Следующие версии будут выкладываться на страничке: http://coolthemes.narod.ru/files.html
 
-Люди из международной команды MenuetOS помогали мне и я хотел бы упомянуть их здесь:
+Люди из международной команды KolibriOS/MenuetOS помогали мне и я хотел бы упомянуть их здесь:
 
  Ville Turjanmaa (Финляндия), написавшего MenuetOS; 
                                                                              
@@ -68,20 +70,22 @@ RUSSIAN
                                                                              
  Марата Закиянова (Россия) за его любезное предложение помочь с созданием дополнительного окна;
                                                                              
- Андрея Халявина (Россия) за его терпение в процессе отладки теста произовительности ; 
+ Андрея Халявина (Россия) за его терпение в процессе отладки теста произовительности; 
 
  Евгения Гречникова (Россия) за чистку кода и оптимизацию;
 
  Илью Михайлова (Россия) за кусок кода из его замечательной программы GMON;
 
- Павла Рымовского (Белоруссия) и  Leency (Украина) за работу, спосособствовавшую улучшению внешнего вида CPUID.
+ Павла Рымовского (Белоруссия) и  Кирилла Липатова (Украина) за работу, спосособствовавшую улучшению внешнего вида CPUID;
+
+ fedesco (Италия) за makefile для компиляции в *nix-системах и перевод интерфейса на итальянский язык.
                                                                              
  Также я хочу поблагодарить людей, помогавших мне тестированием и предложениями -        
- Sonny, Smiddy и всю "советскую команду" KolibriOS/MenuetOS .                                      
+ Sonny, Smiddy и всю "советскую команду" KolibriOS/MenuetOS.                                      
 
 Пожалуйста, протестируйте программу и пришлите мне скриншот по e-mail.
 
-До встреч на форуме(http://meos.sysbin.com/viewtopic.php?t=594).
+До встреч на форуме http://board.kolibrios.org/viewtopic.php?f=42&t=594
 
 
 

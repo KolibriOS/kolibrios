@@ -1,19 +1,19 @@
 ;******************************************************************************
-; project name:    CPUID                                                      *
-; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures                *
-; compiler:        flat assembler 1.67.21                                     *
-; version:         2.21                                                        *
-; last update:     18th May 2007         1st 2nd 3rd 4th 5th 6th 7th 8th 9th  *
-; maintained by:   Sergey Kuzmin aka Wildwest                                 *
-; e-mail:          kuzmin_serg@list.ru                                        *
-; site:            http://coolthemes.narod.ru/files.html                      *
-; license:         Copyright 2004-2007 Sergey Kuzmin and co-authors           *
-;                  Rules:                                                     *
-;                  1)you can use pieces of code in your project, but should   *
-;                    mention the original author (include copyright notice);  *
-;                  2)if you modify CPUID (improve, port, translate, etc) send *
-;                    your changes to the maintainer or make about post changes*
-;                    at forum  http://meos.sysbin.com                         *
+; project name:  CPUID                                                        *
+; platform:      KolibriOS, x86 (IA-32), x86-64 achitectures                  *
+; compiler:      flat assembler 1.70.03                                       *
+; version:       2.28                                                         *
+; last update:   23rd October 2013                                            *
+; maintained by: Sergey Kuzmin aka Wildwest                                   *
+; e-mail:        kuzmin_serg@list.ru                                          *
+; site:          http://coolthemes.narod.ru/files.html                        *
+; license:       Copyright 2004-2013 Sergey Kuzmin and co-authors             *
+;                Rules:                                                       *
+;                1)you can use pieces of code in your project, but should     *
+;                mention the original author (include copyright notice);      *
+;                2)if you modify CPUID (improve, port, translate, etc) send   *
+;                your changes to the maintainer or make about post changes    *
+;                at forum  http://board.kolibrios.org/viewtopic.php?f=42&t=594*
 ;-----------------------------------------------------------------------------*
 ; English comments                                                            *
 ;------------------------------------------------------------------------------
@@ -28,8 +28,7 @@ use32
   dd	 0x0
   dd	 0x0
 
-include 'lang.inc'				; language support
-
+include 'lang.inc'                              ; language support
 include '..\..\..\macros.inc' ; useful macroses
 include 'draw.inc'
 include 'brand.inc'           ;Brand ID decoding
@@ -165,15 +164,15 @@ jz maybe_athlon
 cmp dword[smallvendor], 'ntel'
 jnz no_full   ; if not AMD or Intel
 
-detect_it:
-cmp [f], 0Fh
-jne no_full
+;detect_it:
+;cmp [f], 0Fh
+;jne no_full   fixed calculation of extended model for Intel
 
 full:
 
 mov ecx, eax	      ; get Extended model
 shr ecx,16	      ;shift it to the correct position
-and ecx, 0000000Fh
+and ecx, 0000000Fh 
 shl ecx, 4
 add ecx, [m]
 mov dword[em],ecx     ;  effective    model
@@ -199,7 +198,7 @@ jmp fut
 
 maybe_athlon:
 mov eax, 0x80000001		  ; CPUID ext. function 0x80000001
-cpuid
+cpuid				    
 mov ecx, eax
 shr ecx,8	  ;   shift it to the correct position
 and ecx,0000000Fh ;   get CPU family
@@ -241,15 +240,15 @@ mov  dword [myname], $612F6E
     mov   [myname+44],edx
 
 .noname:
-red:
+red:			
 
 ;mov byte [multiplier], 115;     ; for testing
 
-call multipl			      ; get multiplier
+call multipl			      ; get multiplier 
 mov byte [multiplier], cl
 
 mov   dword [freqbb], 0
-mov   dword [freqll], 0
+mov   dword [freqll], 0 
 
 mov   ebx, dword [multiplier]
 test  ebx, ebx
@@ -306,7 +305,7 @@ PROCCORE:    ;   Who are you?
 ; SiS - "SiS SiS SiS "
 ; Transmeta - "GenuineTMx86"       +
 ; National Semiconductor - "Geode by NSC"
-
+; Vortex - "Vortex86 SoC"       + initial support
   cmp dword[smallvendor], 'ntel'
   jz Intel
   cmp dword[smallvendor], 'cAMD'
@@ -317,6 +316,8 @@ PROCCORE:    ;   Who are you?
   jz Centaur
   cmp dword[smallvendor], 'Mx86'
   jz Transmeta
+  cmp dword[smallvendor], ' SoC'
+  jz Vortex
 
 ; cmp ecx, 'UMC '
 ; jz .UMC
@@ -467,9 +468,9 @@ mov [L2],ecx
         Text    100,70,0x80000000
         jmp     MMXtest
 A6:
-        mov     [FRS], 266  ;!!!!!!
+;        mov     [FRS], 266  ;!!!!!!
 
-        Number  315,90,0,3,dword [FRS],0x000000; MHz
+;        Number  315,90,0,3,dword [FRS],0x000000; MHz 
 
         call    newrating; !!!!
 
@@ -481,9 +482,9 @@ A6:
 
 A8:
 
-        mov     [FRS], 266	;!!!!!!
+;        mov     [FRS], 266	;!!!!!!
 
-        Number  315,90,0,3,dword [FRS],0x000000; MHz
+;        Number  315,90,0,3,dword [FRS],0x000000; MHz
 
         cmp     [L2], 256
         jl      .App  ; Applebred
@@ -501,10 +502,10 @@ A8:
 
 AA:
 
-        mov     [FRS], 333; !!!!
+;        mov     [FRS], 333; !!!!
         Text    245,70,0x00000000,pr, prlen-pr
 
-        Number  315,90,0,3,dword [FRS],0x000000; MHz
+;        Number  315,90,0,3,dword [FRS],0x000000; MHz 
 
         mov     edx, Atat
         cmp     [L2], 256
@@ -525,7 +526,7 @@ fif:  ;  AMD-64    Family=15
 ;AMD AthlonTM 64 and  AMD OpteronTM  Processors" 25759.pdf
 
 ; checking sse3 for new AMD's is needed
-    cmp [m],$1	; Dual-core Opteron
+    cmp [m],$1	; Dual-core Opteron      
     jz .AF1
     cmp [m],$3	; Toledo 1024 0.09   // Manchester     ||Windsor Dual Core not supported
     jz .AF3
@@ -772,7 +773,7 @@ Text 110,70,0x00000000,P66, P66len-P66
     jmp MMXtest
 .I67:
     mov [micron], 25
-Text 110,70,0x00000000,P67, P67len-P67
+Text 110,70,0x00000000,P67, P67len-P67 ;but if SSE4.1 supported then it is Intel Core (Penryn) 
     jmp MMXtest
 .I68:
     mov [micron], 18
@@ -789,7 +790,7 @@ Text 110,70,0x00000000,P69 , P69len-P69
     jmp MMXtest
 .I6A:
     mov [micron], 18
-Text 110,70,0x00000000,P6A, P6Alen-P6A
+Text 110,70,0x00000000,P6A, P6Alen-P6A ;but if SSE4.2 supported then it is Intel Core (Nehalem) 
     jmp MMXtest
 .I6B:
     mov [micron], 13
@@ -1214,6 +1215,38 @@ OutProcName:
         Text    100,70,0
 
 ;----
+;---------------------------------- new 
+Vortex:
+
+Text 15, 190,0x00000000,cache, cachelen-cache
+
+	mov	esi, vortex
+	call	load_gif
+PutImage 135,107,201,49,img_area+8
+;PutImage 130,127,201,49,img_area+8
+;         place   size
+
+    cmp [f], $5
+    jz .V54 ;fivvtx
+;.fivvtx:	  ;Family=5
+;    cmp [m],$4
+;    jz .V54
+.V54:
+    mov [micron], 13
+    mov [L1i], 16
+    mov [L1d], 16
+    mov [L2], 256
+    mov [wayl2], 4
+    mov [wayli], 4
+    mov [wayld], 4
+Text 75,70,0x00000000,Vortexn, Vortexnlen-Vortexn
+;Text 110,70,0x00000000,V54, V54len-V54
+    jmp MMXtest
+
+;---------------------
+
+
+
 MMXtest:	     ; MMX test and Brand ID decoding
 
 call decodebrand  ; get Brand ID
@@ -1344,7 +1377,7 @@ jmp FREEZE ; maybe we should close application or just made some Warning and jum
 ;----------------
 still:
 
-; затем переходим в цикл ожидания событий
+; waiting for events
 event_wait:
 
     ;================_RAM_==============
@@ -1375,72 +1408,73 @@ event_wait:
 
 ;==============================
 
-	mov	eax,23	     ; функция 23: ожидание события
-	mov	ebx,50	     ; ждемс 0.5 сек
+	mov	eax,23	     ; function 23 - event wait
+	mov	ebx,50	     ; wait for 0.5 second
 	mcall
 
-    cmp  eax,1		;
+    cmp  eax,1		; 
     je	 red		;  redraw
-    cmp  eax,2		;
+    cmp  eax,2		; 
     je	 key		;  key
-    cmp  eax,3		;
+    cmp  eax,3		; 
     je	 button 	;  button
-    jmp  still		;
-  key:			;
-    mcall		;
-    jmp  still		;
-  button:		;
-    mov  eax,17 	;
-    mcall		;
+    jmp  still		; 
+  key:			; 
+    mcall		; 
+    jmp  still		; 
+  button:		; 
+    mov  eax,17 	; 
+    mcall		; 
     cmp  ah,1		;  = 1 ?
     je	close		; close
 
     cmp  ah,2		;  = 2 ?
-    je	thread_start	;
-			;
-    cmp  ah,3		;  = 3 ?
+    je	thread_start	; 
+			; 
+;    cmp  ah,3		;  = 3 ?
     jne  still
 
-vybor:
 
- Number 310,70,0,4,dword [rating],0xFFFFFF ;
+;vybor:
 
- Number 315,90,0,3,dword [FRS]; MHz
+; Number 310,70,0,4,dword [rating],0xFFFFFF ;
 
-cmp [FRS], 266
-jz .s1
-cmp [FRS], 333
-jz .s2
-cmp [FRS], 400
-jz .s3
+; Number 315,90,0,3,dword [FRS]; MHz 
 
-.s1:
-mov [FRS], 333
-.rating:
-call newrating
- Number 310,70,0,4,dword [rating],0x000000
+;cmp [FRS], 266
+;jz .s1
+;cmp [FRS], 333
+;jz .s2
+;cmp [FRS], 400
+;jz .s3
 
- Number 315,90,0,3,dword [FRS]; MHz
-jmp  still
+;.s1:
+;mov [FRS], 333
+;.rating:;
+;call newrating
+; Number 310,70,0,4,dword [rating],0x000000
 
-.s2:
-mov [FRS], 400
-jmp .rating
-
-.s3:
-mov [FRS], 266
-jmp .rating
+; Number 315,90,0,3,dword [FRS]; MHz 
+;jmp  still
+;
+;.s2:
+;mov [FRS], 400
+;jmp .rating
+;
+;.s3:
+;mov [FRS], 266
+;jmp .rating
 
 close:
-    mov   eax,-1
-    mcall
+    mov   eax,-1	
+    mcall	       
 
 ;**************************** THREAD-SECOND WINDOW
 thread_start:
 
-    cmp  [num_win2],0
+    cmp  [num_win2],0	
 
-    jne  still
+    jne  still		
 
 ;================================================RSA test
 
@@ -1470,37 +1504,37 @@ CreateTread window_2,thread2_esp
   jmp  still
 
 window_2:
-    mov  [num_win2],1
-    call draw_window_2
+    mov  [num_win2],1	
+    call draw_window_2	
 
-still_2:
+still_2:		
 
-    mov  eax,10
-    mcall
+    mov  eax,10 	
+    mcall		
 
-    cmp  eax,1
+    cmp  eax,1		
     je	 window_2	;  window_2
-    cmp  eax,2		;
+    cmp  eax,2		; 
     je	 key_2		;  key_2
-    cmp  eax,3		;
+    cmp  eax,3		; 
     je	 button_2	;  button_2
 
-    jmp  still_2	;
+    jmp  still_2	; 
 
-  key_2:		;
-    mcall		;
-    jmp  still_2	;
+  key_2:		; 
+    mcall		; 
+    jmp  still_2	; 
 
-  button_2:		;
-    mov  eax,17 	; 17
-    mcall		;
+  button_2:		; 
+    mov  eax,17 	; 17 
+    mcall		; 
 
     cmp  ah,1		; = 1 ?
     jne  still_2	; noclose
 
-    mov  [num_win2],0	;
+    mov  [num_win2],0	; 
 
-    or	 eax,-1 	;
+    or	 eax,-1 	; 
     mcall
 
 draw_window_2:
@@ -1654,19 +1688,19 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
   cmp [f], $6
   jne cont
 
-   Button 240,85,69,15,3,0x030000FF  ;  button for rating
+;   Button 240,85,69,15,3,0x030000FF  ;  button for rating
 
-    Text 245,90,0x00FFFFFF,FR, FRlen-FR
+;    Text 245,90,0x00FFFFFF,FR, FRlen-FR ; text at button
 
    call newrating; !!!!
 
      cont:
 
 
-    Text 15,50,0x00000000,tsum, tsumlen-tsum   ;
-    Text 15,90,,cpuname, cpunamelen-cpuname;
+    Text 15,50,0x00000000,tsum, tsumlen-tsum   ; 
+    Text 15,90,,cpuname, cpunamelen-cpuname; 
     Text 255,250,,typen, typenlen-typen;
-    Text 175, 50,,tech, techlen-tech;
+    Text 175, 50,,tech, techlen-tech; 
 
     Number 82,50,0,4,dword [total],0x000000; MHz
     Number 110,50,0,2,dword [sot]; KHz
@@ -1676,7 +1710,7 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
     Text 15,230,,cache4, cache4len-cache4
 
 
-    Number 75,110,1*256,1,dword [f],0x000000 ;
+    Number 75,110,1*256,1,dword [f],0x000000 ; 
     Number 75,130,,,dword [m]
     Number 75,150,,,dword [s]
 
@@ -1712,7 +1746,7 @@ Number 289,30,0,2,dword [freqll]
 ;-
 Text 15,250,,brandid, brandidlen-brandid
 
-    ret 		;
+    ret 		; 
 
 load_gif:
         mov     edi, img_area
@@ -1723,565 +1757,1120 @@ include 'gif_lite.inc'        ; parse GIF files
 
 ; DATA AREA
 
-title	 db   'CPUID 2.21 by S.Kuzmin & the KolibriOS team',0
+title	 db   'CPUID 2.28 by S.Kuzmin & the KolibriOS team',0
+
 
 tsum:
+
 if lang eq it
-		db 'Frequenza:     .   MHz'
+
+                db 'Frequenza:     .   MHz'
+
 else
-		db 'Frequency:     .   MHz'
+
+                db 'Frequency:     .   MHz'
+
 end if
 
+ 
+
+ 
 
 tsumlen:
 
+ 
+
 total dd 0x0
+
 total1 dd 0x0
+
 rating dd 0x0
+
 rat dd 0x0  ;
 
+ 
+
 ram:
+
 if lang eq it
-		db 'RAM libera:        su'
+
+                db 'RAM libera:        su'
+
 else
-		db 'Available RAM:     out of'
+
+                db 'Available RAM:     out of'
+
 end if
 
+ 
+
+ 
 
 ramlen:
 
+ 
+
 NEF:
+
 db 'EXTENDED FEATURES ARE NOT AVAILABLE'
+
 NEFlen:
 
+ 
+
 mb :
+
 db 'MB'
+
 mblen:
 
+ 
+
 ;logcpus :
+
 ;db 'Number of logical CPU:'
+
 ;logcpuslen:
 
+ 
+
 speed :
+
 if lang eq it
-		db 'Performance'
+
+                db 'Performance'
+
 else
-		db 'PERFORMANCE:'
+
+                db 'PERFORMANCE:'
+
 end if
 
+ 
+
+ 
 
 speedlen:
 
+ 
+
 kbpersec:
+
 db 'KB/SEC'
+
 kbperseclen:
 
+ 
+
 instruct:
+
 if lang eq it
-		db 'Set istruzioni'
+
+                db 'Set istruzioni'
+
 else
-		db 'Instruction sets'
+
+                db 'Instruction sets'
+
 end if
 
+ 
+
+ 
 
 instructlen:
 
+ 
+
 standard    db 'Standard and Extended features plus Performance test',0
 
-FR:
-    db 'Choose FSB:'
-FRlen:
+ 
+
+;FR:
+
+;    db 'Choose FSB:'
+
+;FRlen:
+
+ 
 
 STDCA:
+
     db 'Highest STD call is         '
+
 STDCAlen:
 
+ 
+
 EXTCA:
+
     db 'Highest EXT call is         h'
+
 EXTCAlen:
 
+ 
+
 brandid:
+
     db 'Brand:'
+
 brandidlen:
 
+ 
+
 oblom:
+
 if lang eq it
-		db 'CPUID non e disponibile'
+
+                db 'CPUID non e disponibile'
+
 else
-		db 'SORRY, CPUID IS NOT AVAILABLE'
+
+                db 'SORRY, CPUID IS NOT AVAILABLE'
+
 end if
 
+ 
+
 oblomlen:
+
 other:
+
 if lang eq it
-		db 'Questo vendor non e supportato'
+
+                db 'Questo vendor non e supportato'
+
 else
-		db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
+
+                db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
+
 end if
+
+ 
 
 otherlen:
 
+ 
+
 cpuname:
+
 if lang eq it
-		db 'Vendor CPU              '
+
+                db 'Vendor CPU              '
+
 else
-		db 'CPU VENDOR:             '
+
+                db 'CPU VENDOR:             '
+
 end if
+
+ 
 
 cpunamelen:
+
 fam:
+
 if lang eq it
-		db 'Famiglia:   std    ext'
+
+                db 'Famiglia:   std    ext'
+
 else
-		db 'FAMILY:     std    ext'
+
+                db 'FAMILY:     std    ext'
+
 end if
 
+ 
+
+ 
 
 famlen:
+
 mode:
+
 if lang eq it
-		db 'Modello:    std    ext'
+
+                db 'Modello:    std    ext'
+
 else
-		db 'MODEL:      std    ext'
+
+                db 'MODEL:      std    ext'
+
 end if
 
+ 
+
 modelen:
+
 step:
+
 if lang eq it
-		db 'Stepping:'
+
+                db 'Stepping:'
+
 else
-		db 'STEPPING:'
+
+                db 'STEPPING:'
+
 end if
+
+ 
 
 steplen:
 
+ 
+
 cache2:
 
+ 
+
     db 'L1(data):     KB       -way set     -byte line size'
+
 cache2len:
 
+ 
+
 cache:
+
     db 'L1(inst):     KB       -way set     -byte line size'
+
 cachelen:
+
+ 
 
 cache3:
 
+ 
+
     db 'L2:      KB            -way set     -byte line size'
+
 cache3len:
 
+ 
+
 cache4:
+
     db 'L3:      KB            -way set     -byte line size'
+
 cache4len:
+
+ 
 
 cacheP4:
 
+ 
+
     db 'L1(inst):     Kuops    -way set     -byte line size'
+
 cacheP4len:
 
+ 
+
 tech:
+
 if lang eq it
-		db 'Tecnologia: 0.   micron '
+
+                db 'Tecnologia: 0.   micron '
+
 else
-		db 'Technology: 0.   micron '
+
+                db 'Technology: 0.   micron '
+
 end if
 
+ 
+
+ 
 
 techlen:
 
+ 
+
 typen:
+
 if lang eq it
-		db 'Tipo:'
+
+                db 'Tipo:'
+
 else
-		db 'Type:'
+
+                db 'Type:'
+
 end if
+
+ 
 
 typenlen:
 
+ 
+
 pr:
+
   db 'P-rating:'
+
 prlen:
 
+ 
+
 multil:
+
   db 'Multiplier:   .'
+
 multillen:
 
+ 
+
 freql:
+
   db 'System clock:     .   MHz'
+
 freqllen:
 
+ 
+
 name:
+
 if lang eq it
-		db 'Codename:'
+
+                db 'Codename:'
+
 else
-		db 'CODENAME:'
+
+                db 'CODENAME:'
+
 end if
+
+ 
 
 namelen:
 
+ 
+
 AMDn:
+
     db 'AMD'
+
 AMDnlen:
+
 Inteln:
+
     db 'Intel'
+
 Intelnlen:
+
 Cyrixn:
+
     db 'Cyrix'
+
 Cyrixnlen:
+
 IDTn:
+
      db 'IDT/Centaur'
+
 IDTnlen:
+
 Centaurn:
+
      db 'VIA'
+
 Centaurnlen:
 
+ 
+
 Tranmsmetan:
+
      db 'Transmeta'
+
 Tranmsmetanlen:
 
+
+Vortexn:
+    db 'Vortex86'
+Vortexnlen:
+
+
 MMXs:
+
     db 'MMX:         '
+
 MMXslen:
 
+ 
+
 mmxp:
+
     db 'MMX+:         '
+
 mmxplen:
 
+ 
+
 HTT:
+
     db 'HTT:          '
+
 HTTlen:
 
+ 
+
 HTTn:
+
     db 'HTT:         '
+
 HTTnlen:
 
+ 
+
 sse3:
+
     db 'SSE3:         '
+
 sse3len:
+
 now:
+
     db '3DNOW!:         '
+
 nowlen:
+
 nowp:
+
     db '3DNOW!+:         '
+
 nowplen:
+
+ 
 
 ;-Type
 
+ 
+
 t1      db      'OEM',0
+
 t2      db      'Overdrive',0
+
 t3      db      'Dual',0
+
 t4      db      'Unknown',0
 
+ 
+
 ;----------Intel
+
 P50:
+
 db 'P5 A-step'
+
 P50len:
+
 P5:
+
 db 'P5'
+
 P5len:
+
 P54T:
+
 db 'P24T Overdrive'
+
 P54Tlen:
+
 P54C:
+
 db 'P54C'
+
 P54Clen:
+
 P55C:
+
 db 'P55C (with MMX)'
+
 P55Clen:
+
 ; ---
+
 P60:
+
 db 'Pentium Pro A-step'
+
 P60len:
+
 P61:
+
 db 'Pentium Pro'
+
 P61len:
+
 P63:
+
 db 'Pentium II (Klamath)'
+
 P63len:
+
 P65:
+
 db 'Pentium II (Deschutes)'
+
 P65len:
+
 P66:
+
 db 'Celeron (Medocino)'
+
 P66len:
+
 P67:
+
 db 'Pentium III (Katmai)'
+
 P67len:
+
 P68:
+
 db 'Pentium III (Coppermine)'
+
 P68len:
+
 P69:
+
 db 'Pentium M (Banias)'
+
 P69len:
+
 P6A:
+
 db 'Pentium III Xeon (Cascades)'
+
 P6Alen:
+
 P6B:
+
 db 'Pentium III (Tualatin)'
+
 P6Blen:
+
 P6D:
+
 db 'Pentium M (Dothan)'
+
 P6Dlen:
+
 P6E:
+
 db 'Pentium M (Yonah)/ Core'
+
 P6Elen:
+
 P6F:
+
 db 'Pentium D (Conroe)/ Core 2 (Kentsfield)'
+
 P6Flen:
+
 ;---
+
 PS0:
+
 db 'Itanium (IA-64)'
+
 PS0len:
+
 ;------------
+
 PF0:
+
 db 'Pentium 4 (Willamete)'
+
 PF0len:
+
 PF2:
+
 db 'Pentium 4 (Northwood)'
+
 PF2len:
+
 PF3:
+
 db 'Pentium 4 (Prescott)'
+
 PF3len:
+
 PF5:
+
 db 'Pentium 4 (Tejas)'
+
 PF5len:
+
 PF6:
+
 db 'Pentium 4 (Presler)'
+
 PF6len:
+
 ;----------------Intel Celerons
+
 P65c:
+
 db 'Celeron (Covington)'
+
 P65clen:
+
 P68c:
+
 db 'Celeron (Coppermine)'
+
 P68clen:
+
 P6Bc:
+
 db 'Celeron (Tualatin)'
+
 P6Bclen:
+
 PF0c:
+
 db 'Celeron (Willamete)'
+
 PF0clen:
+
 PF2c:
+
 db 'Celeron (Northwood)'
+
 PF2clen:
+
 PF3c:
+
 db 'Celeron (Prescott)'
+
 PF3clen:
+
 PF5c:
+
 db 'Celeron D (Texas)'
+
 PF5clen:
+
 PF6c:
+
 db 'Celeron D (Presler)'
+
 PF6clen:
+
 ;---------AMD
+
 A50     db 'K5 (PR75, PR90, PR100)',0
+
 A51     db '5k86 (PR120, PR133)',0
+
 A52     db '5k86 (PR166)',0
+
 A53     db '5k86 (PR200)',0
+
 A56     db 'K6',0
+
 A57     db 'K6',0
+
 A58     db 'K6-2',0
+
 A59     db 'K6-III',0
+
 A5D     db 'K6-2+ or K6-III+',0
+
 ;-------------------
+
 At1     db 'Athlon',0
+
 At2     db 'Athlon',0
+
 At3     db 'Duron (Spitfire)',0
+
 At4     db 'Athlon (Thunderbird)',0
+
 At6     db 'AthlonXP (Palomino)',0
+
 At7     db 'Duron (Morgan)',0
+
 At8     db 'AthlonXP (Thoroughbred)',0
+
 At8a    db 'Duron (Applebred)',0
+
 Ata     db 'AthlonXP (Barton)',0
+
 Atat    db 'AthlonXP (Thorton)',0
+
 ;-------------------
+
 AF1:
+
 db 'Dual-core Opteron'
+
 AF1len:
+
 AF3:
+
 db 'Athlon 64 (Toledo)'
+
 AF3len:
+
 AF4:
+
 db 'Athlon 64 (ClawHammer)'
+
 AF4len:
+
 AF5:
+
 db 'Opteron/Athlon 64 FX (SledgeHammer)'
+
 AF5len:
 
+ 
+
 AFC:
+
 db 'Athlon 64 (Newcastle)'
+
 AFClen:
 
+ 
+
 AFF:
+
 db 'Athlon 64 (Winchester)'
+
 AFFlen:
 
+ 
+
 AFS:
+
 db 'Athlon 64 (San Diego)'
+
 AFSlen:
 
+ 
+
 AFV:
+
 db 'Athlon 64 (Venice)'
+
 AFVlen:
 
+ 
+
 AFCs:
+
 db 'Sempron (Paris)'
+
 AFCslen:
 
+ 
+
 AFCsp:
+
 db 'Sempron (Palermo)'
+
 AFCsplen:
 
+ 
+
 ;---------Cyrix
+
 C52:
+
 db '6x86 M1'
+
 C52len:
+
 C54:
+
 db 'MediaGX'
+
 C54len:
+
 C60:
+
 db '6x86MX M2'
+
 C60len:
+
 C65:
+
 db 'C3 (Cyrix M2)' ;?
+
 C65len:
+
 ;--------IDT
+
 V54:
+
 db 'WinChip C6'
+
 V54len:
+
 V58:
+
 db 'WinChip 2'
+
 V58len:
+
 V59:
+
 db 'WinChip 3'
+
 V59len:
+
 ;-------VIA
+
 V66:
+
 db 'C3 (Samuel)'  ; Joshua is unreleased 065
+
 V66len:
+
 V67:
+
 db 'C3 (Samuel2/Ezra)' ; ?
+
 V67len:
+
 V68:
+
 db 'C3 (Ezra-T/Eden)' ;?
+
 V68len:
+
 V69:
+
 db 'C3 (Antaur/Nehemiah)' ;?
+
 V69len:
+
 VA:
+
 db 'C7 (Esther)' ;?
+
 VAlen:
+
 ;---------Transmeta
+
 T5:
+
 db 'Crusoe' ;
+
 T5len:
+
 TF:
+
 db 'Efficeon' ;
+
 TFlen:
+
 ;---------
+
 NG:
+
     db 'Next generation CPU'
+
 NGlen:
 
+ 
+
 stm:
+
 if lang eq it
-		db 'Nome:  '
+
+                db 'Nome:  '
+
 else
-		db 'Internal name:'
+
+                db 'Internal name:'
+
 end if
+
+ 
 
 stmlen:
 
-athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120
-		db	190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
-athlonmcoef:	db	110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
-		db	30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
-athloncoef3	db	45, 50, 40, 55, 25, 30, 60, 35
-p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4 (Willamete)
-coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
-tualatcoeff	db	120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
+ 
+
+athloncoef      db      110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120
+
+                db      190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
+
+athlonmcoef:    db      110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
+
+                db      30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
+
+athloncoef3     db      45, 50, 40, 55, 25, 30, 60, 35
+
+p4coef          db      160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150    ; Pentium 4 (Willamete)
+
+coppercoeff     db       50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
+
+tualatcoeff     db      120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
+
+ 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;
+
 ;  include images and unpacking- and hasharea
-;
-include 'logos.inc' ; include file where gif's are stored
-img_area:	   ; image is going to be unpacked to here
-rb 201*49*3+8	   ; image resolution (bits to reserve)
 
-img_area2:	   ; image is going to be unpacked to here
-rb 93*24*3+8	   ; image resolution (bits to reserve)
+;
+
+include 'logos.inc' ; include file where gif's are stored
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 I_END:
 
+img_area:          ; image is going to be unpacked to here
+rb 201*49*3+8      ; image resolution (bits to reserve)
+
+img_area2:         ; image is going to be unpacked to here
+rb 93*24*3+8       ; image resolution (bits to reserve)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; RSA test data
+
 align 4
+
   num1 rd 40
+
   num2 rd 40
+
   num3 rd 40
+
   iter rd 1
+
   openkey rd 1
+
+ 
 
 IncludeUGlobals
 
+ 
+
 ost dd ?
+
 sot dd ?
+
 f dd ?
+
 m dd ?
+
 s dd ?
+
 t dd ?
 
+ 
+
 ef dd ?
+
 em dd ?
 
+ 
+
 multiplier dd ?
+
 multa dd ?
+
 multb dd ?
 
+ 
+
 smallvendor dd ?
+
 L1d  dd ?
+
 L1i  dd ?
+
 L2   dd ?
+
 L3   dd ?
+
 micron dd ?
+
 brand dd ?
 
+ 
+
 ram_size_a dd ?
+
 ram_size_t dd ?
 
+ 
+
 stdc dd ?
+
 extc dd ?
 
+ 
+
 FRS dd ?
+
 freqsel db ?
+
 sse3sup db ?
 
+ 
+
 freqbb dd ?
+
 freqll dd ?
 
+ 
+
 wayli dd ?
+
 lineli dd ?
 
+ 
+
 wayld dd ?
+
 lineld dd ?
 
+ 
+
 wayl2 dd ?
+
 linel2 dd ?
 
+ 
+
 wayl3 dd ?
+
 linel3 dd ?
+
+ 
 
 ;number_of_log_cpus dd ?
 
+ 
+
 che db ? ; numbers of calls for Intel caches detection
 
+ 
+
 myname:
+
    rb 48
+
 mynamelen:
+
+ 
 
 align 4
 
+ 
+
   thread2_stack_area rb 64
+
   thread2_esp = $
+
 U_END:

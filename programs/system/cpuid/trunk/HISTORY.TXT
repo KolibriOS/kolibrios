@@ -1,16 +1,16 @@
 ;******************************************************************************
 ; project name:    CPUID
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures
-; compability:     CPUID works in MS Windows by means of emulator KlbrInWin from Diamond  (http://diamondz.land.ru)
-; compiler:        flat assembler 1.67.21
-; version:         2.21
-; last update:     18th May 2007
+; compability:     CPUID works in MS Windows by means of emulator KlbrInWin from Diamond http://board.kolibrios.org/viewtopic.php?f=23&t=1273
+; compiler:        flat assembler 1.70.03
+; version:         2.28
+; last update:     23rd October 2013
 ; maintained by:   Sergey Kuzmin aka Wildwest
 ; e-mail:          kuzmin_serg@list.ru
 ; site:            http://coolthemes.narod.ru/files.html
 ;******************************************************************************
 ; Summary:
-;        supported vendors  - Intel, AMD, VIA, Cyrix, IDT (Centaur),Transmeta
+;        supported vendors  - Intel, AMD, VIA, Cyrix, IDT (Centaur),Transmeta, Vortex86
 ;        displayed features - CPU frequency;
 ;                             Internal Name;
 ;                             Multiplier and System Clock frequency;
@@ -34,14 +34,26 @@
 ; update caches descriptors for intel Core 1/2
 ; quantity of logical CPU/cores - requires APIC ID analysis
 ; newest AMD/Intel codename detection
+; improve support of Vortex86
 ;******************************************************************************
 ;HISTORY:
-;3.0: CPUID   18/05/2007 (not finished)
+;2.3: CPUID   23/10/2013 (not finished)
 ;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;            Pavel Rymovskiy aka Heavyiron <Heavyiron@pisem.net>
+;            fedesco
 ;Features:  
+;          (+)  'choose FSB' button removed and related code changed in the way it would use FSB value detected by Ghost's code;
+;          (+)  fixed calculation of Extended model for newest Intel;
+;          (+)  initial support of new vendor Vortex86 - logo, caches, technology;
+;          (+)  Italian translation by fedesco;
+;          (+)  makefile for *nix by fedesco;
+;          (+)  new cache descriptors for Intel;
+;          (+)  fixed typo, which makes output of Brand ID for AMD CPU's at incorrect place by Heavyiron;
 ;          (+)  fixed typo, which makes selection of incorrect codename for AMD F8x CPU's; 
 ;Known issues: Sempron marked as AthlonXP
 ;              second window doesn't closed when you close main window
+;              incorrect multiplier detection for newest CPU
+;              incorrect cache detection for several models of newest Intel CPU, because they designed for another cache detection approach
 ;-----------------------------------------------------------------------------
 ;2.2: CPUID   01/05/2007
 ;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>

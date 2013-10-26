@@ -16,5 +16,9 @@ file 'transmet.gif'       ;include gif file
 via:
 file 'via.gif'            ;include gif file
 
+vortex:
+file 'vortex.gif'            ;include gif file
+
 knopka:
 file 'knopka.gif'            ;include gif file
+
