@@ -261,7 +261,7 @@ COPY_FILES:=\
  games/soko-8.lev:GAMES/SOKO-8.LEV:$(PROGS)/games/soko/trunk/SOKO-8.LEV \
  games/soko-9.lev:GAMES/SOKO-9.LEV:$(PROGS)/games/soko/trunk/SOKO-9.LEV \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
- .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
+ settings/.shell:SETTINGS/.shell:$(PROGS)/system/shell/bin/eng/.shell \
  settings/mykey.ini:SETTINGS/MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey_it.ini \
 # end of list
 

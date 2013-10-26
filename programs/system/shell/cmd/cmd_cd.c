@@ -22,7 +22,7 @@ if (  ( 0 == strcmp(dir, "..") ) && ( 0 != strcmp(cur_dir, "/")) )
 	{
 	cur_dir[strlen(cur_dir)-1]='\0';
 	dir_truncate(cur_dir);
-	return FALSE;
+	return TRUE;
 	}
 
 if ( '/' == dir[0])

@@ -254,7 +254,7 @@ COPY_FILES:=\
  fonts/litt.chr:FONTS/LITT.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/LITT.CHR \
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
- .shell:.shell:$(PROGS)/system/shell/bin/rus/.shell \
+ settings/.shell:SETTINGS/.shell:$(PROGS)/system/shell/bin/rus/.shell \
  settings/mykey.ini:SETTINGS/MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
  example.asm:EXAMPLE.ASM:$(PROGS)/develop/examples/example/trunk/rus/example.asm \
 # end of list

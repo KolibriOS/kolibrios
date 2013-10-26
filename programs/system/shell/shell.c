@@ -128,7 +128,13 @@ con_set_cursor_height(con_get_font_height()-1);
 
 ALIASES = malloc(128*1024);
 
-if (PARAM[0] == 0) strcpy(CMD, ".shell");
+if (PARAM[0] == 0)
+   {
+   strcpy(CMD, cur_dir);
+   strcat(CMD, ".shell");
+   if ( !file_check(CMD) )
+       strcpy(CMD, "/sys/settings/.shell");
+   }
 else
 {
 	if (PARAM[0] == '/')
