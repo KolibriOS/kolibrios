@@ -5568,13 +5568,13 @@ syscall_reserveportarea:                ; ReservePortArea and FreePortArea
 
 align 4
 syscall_threads:                        ; CreateThreads
-; eax=1 create thread
 ;
-;   ebx=thread start
-;   ecx=thread stack value
+;   ecx=thread entry point
+;   edx=thread stack pointer
 ;
 ; on return : eax = pid
 
+        xor     ebx, ebx
         call    new_sys_threads
 
         mov     [esp+32], eax

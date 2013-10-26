@@ -924,10 +924,17 @@ proc write_process_memory
         ret
 endp
 
+;ebx = 1 - kernel thread
+;ecx=thread entry point
+;edx=thread stack pointer
+;creation flags  0x01 - debugged
+;                0x02 - kernel
+
 align 4
 proc new_sys_threads
        locals
-         slot      dd ?
+         slot          dd ?
+         flags         dd ?
          app_cmdline   dd ? ;0x00
          app_path      dd ? ;0x04
          app_eip       dd ? ;0x08
@@ -935,16 +942,15 @@ proc new_sys_threads
          app_mem       dd ? ;0x10
        endl
 
-        cmp     ebx, 1
-        jne     .failed     ;other subfunctions
+        shl     ebx, 1
+        mov     [flags], ebx
 
         xor     eax, eax
         mov     [app_eip], ecx
         mov     [app_cmdline], eax
         mov     [app_esp], edx
         mov     [app_path], eax
-       ;mov    esi,new_process_loading
-       ;call   sys_msg_board_str
+
         call    lock_application_table
 
         call    get_new_process_place
@@ -998,10 +1004,8 @@ proc new_sys_threads
 
         lea     eax, [app_cmdline]
         stdcall set_app_params , [slot], eax, dword 0, \
-                dword 0,dword 0
+                dword 0, [flags]
 
-       ;mov    esi,new_process_running
-       ;call   sys_msg_board_str                ;output information about succefull startup
         mov     eax, [process_number]           ;set result
         call    unlock_application_table
         ret
@@ -1203,18 +1207,17 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     [ebx+REG_ECX], eax
         mov     [ebx+REG_EAX], eax
 
-        mov     eax, [esi+0x08]  ;app_eip
-        mov     [ebx+REG_EIP], eax;app_entry
+        mov     eax, [esi+0x08]             ;app_eip
+        mov     [ebx+REG_EIP], eax          ;app_entry
         mov     [ebx+REG_CS], dword app_code
         mov     ecx, USER_PRIORITY
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8                      ; created by kernel?
-        cmp     [SLOT_BASE+eax+APPDATA.dir_table], sys_pgdir - OS_BASE
-        jnz     @f
-        cmp     [app_path], 0               ; it is a thread?
-        jnz     @f
+
+        test    byte [flags], 2
+        jz      @F
+
         mov     [ebx+REG_CS], dword os_code ; kernel thread
         mov     ecx, MAX_PRIORITY
+
 @@:
         mov     [ebx+REG_EFLAGS], dword EFL_IOPL1+EFL_IF
 
@@ -1238,8 +1241,6 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     [CURRENT_TASK+ebx+TASKDATA.state], dl
         lea     edx, [SLOT_BASE+ebx*8]
         call    scheduler_add_thread
-       ;mov    esi,new_process_running
-       ;call   sys_msg_board_str     ;output information about succefull startup
         ret
 endp
 
