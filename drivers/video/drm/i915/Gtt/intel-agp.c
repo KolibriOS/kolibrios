@@ -25,7 +25,7 @@
 #define PCI_DEVICE_ID_INTEL_82945GM_HB  0x27A0
 
 
-int intel_gmch_probe(struct pci_dev *pdev,
+int intel_gmch_probe(struct pci_dev *bridge_pdev, struct pci_dev *gpu_pdev,
                       struct agp_bridge_data *bridge);
 
 int intel_agp_enabled;
@@ -62,7 +62,8 @@ static int __devinit agp_intel_probe(struct pci_dev *pdev,
 
     bridge->capndx = cap_ptr;
 
-    if (intel_gmch_probe(pdev, bridge))
+	if (intel_gmch_probe(pdev, NULL, bridge))
+
     {
 //        pci_set_drvdata(pdev, bridge);
 //        err = agp_add_bridge(bridge);

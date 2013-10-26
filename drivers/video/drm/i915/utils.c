@@ -104,22 +104,6 @@ void shmem_file_delete(struct file *filep)
         kfree(filep->pages);
 }
 
-/**
- * hdmi_avi_infoframe_init() - initialize an HDMI AVI infoframe
- * @frame: HDMI AVI infoframe
- *
- * Returns 0 on success or a negative error code on failure.
- */
-int hdmi_avi_infoframe_init(struct hdmi_avi_infoframe *frame)
-{
-    memset(frame, 0, sizeof(*frame));
-
-    frame->type = HDMI_INFOFRAME_TYPE_AVI;
-    frame->version = 2;
-    frame->length = 13;
-
-    return 0;
-}
 
 
 static void *check_bytes8(const u8 *start, u8 value, unsigned int bytes)
@@ -507,6 +491,16 @@ void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
 {
     print_hex_dump(KERN_DEBUG, prefix_str, prefix_type, 16, 1,
                        buf, len, true);
+}
+
+void *kmemdup(const void *src, size_t len, gfp_t gfp)
+{
+    void *p;
+
+    p = kmalloc(len, gfp);
+    if (p)
+        memcpy(p, src, len);
+    return p;
 }
 
 

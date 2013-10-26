@@ -26,8 +26,8 @@ struct pci_device {
     uint8_t     revision;
 };
 
-extern struct drm_device *main_device;
-extern struct drm_file   *drm_file_handlers[256];
+struct drm_device *main_device;
+struct drm_file   *drm_file_handlers[256];
 
 void cpu_detect();
 
@@ -63,8 +63,7 @@ int i915_modeset = 1;
 
 u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
-
-    int     err = 0;
+    int err = 0;
 
     if(action != 1)
     {
@@ -80,8 +79,9 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/tmp1/1/i915.log");
+//        strcpy(log, "/tmp1/1/i915.log");
 //        strcpy(log, "/RD/1/DRIVERS/i915.log");
+        strcpy(log, "/BD1/4/i915.log");
 
         if(!dbg_open(log))
         {
@@ -89,7 +89,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf(" i915 v3.10\n cmdline: %s\n", cmdline);
+    dbgprintf(" i915 v3.12-6\n cmdline: %s\n", cmdline);
 
     cpu_detect();
 //    dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -97,12 +97,12 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     enum_pci_devices();
 
     err = i915_init();
-
     if(err)
     {
         dbgprintf("Epic Fail :(\n");
         return 0;
     };
+    init_display_kms(main_device);
 
     err = RegService("DISPLAY", display_handler);
 
@@ -110,7 +110,9 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         dbgprintf("Set DISPLAY handler\n");
 
     struct drm_i915_private *dev_priv = main_device->dev_private;
+
     driver_wq_state = 1;
+
     run_workqueue(dev_priv->wq);
 
     return err;
@@ -140,10 +142,10 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
 
 #define SRV_GET_PCI_INFO            20
-#define SRV_GET_PARAM           21
-#define SRV_I915_GEM_CREATE     22
-#define SRV_DRM_GEM_CLOSE       23
-#define SRV_I915_GEM_PIN        24
+#define SRV_GET_PARAM               21
+#define SRV_I915_GEM_CREATE         22
+#define SRV_DRM_GEM_CLOSE           23
+#define SRV_I915_GEM_PIN            24
 #define SRV_I915_GEM_SET_CACHEING   25
 #define SRV_I915_GEM_GET_APERTURE   26
 #define SRV_I915_GEM_PWRITE         27

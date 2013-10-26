@@ -1,0 +1,123 @@
+
+CC = gcc
+FASM = e:/fasm/fasm.exe
+
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32
+
+DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
+DRV_INCLUDES    = /d/kos/kolibri/drivers/include
+DRM_TOPDIR   	= $(CURDIR)/..
+
+INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
+		-I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/asm \
+		-I./ -I./render
+
+CFLAGS_OPT = -Os -march=i686 -msse2 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe
+CFLAGS_OPT+= -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields -flto
+CFLAGS   = -c $(INCLUDES) $(DEFINES) $(CFLAGS_OPT)
+
+LIBPATH:= $(DDK_TOPDIR)
+
+LIBS:=    libddk.a libcore.a libgcc.a
+
+LDFLAGS = -e,_drvEntry,-nostdlib,-shared,-s,--image-base,0,--file-alignment,512,--section-alignment,4096
+
+
+NAME:=	  i915
+
+HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
+			$(DRV_INCLUDES)/linux/list.h		\
+			$(DRV_INCLUDES)/linux/pci.h		\
+			$(DRV_INCLUDES)/drm/drm.h		\
+			$(DRV_INCLUDES)/drm/drmP.h		\
+			$(DRV_INCLUDES)/drm/drm_edid.h		\
+			$(DRV_INCLUDES)/drm/drm_crtc.h		\
+			$(DRV_INCLUDES)/drm/drm_mode.h		\
+			$(DRV_INCLUDES)/drm/drm_mm.h		\
+			i915_drv.h				\
+			bitmap.h
+
+NAME_SRC=		main.c					\
+			pci.c					\
+			dvo_ch7017.c				\
+			dvo_ch7xxx.c				\
+			dvo_ivch.c				\
+			dvo_ns2501.c				\
+			dvo_sil164.c				\
+			dvo_tfp410.c				\
+			i915_dma.c				\
+			i915_drv.c				\
+			i915_gem.c				\
+			i915_gem_context.c			\
+			i915_gem_gtt.c				\
+			i915_gem_execbuffer.c			\
+			i915_gem_stolen.c			\
+			i915_gem_tiling.c			\
+			i915_irq.c				\
+			intel_bios.c				\
+			intel_crt.c				\
+			intel_ddi.c				\
+			intel_display.c				\
+			intel_dp.c				\
+			intel_dvo.c				\
+			intel_fb.c				\
+			intel_hdmi.c				\
+			intel_i2c.c				\
+			intel_lvds.c				\
+			intel_modes.c				\
+			intel_opregion.c			\
+			intel_panel.c				\
+			intel_pm.c				\
+			intel_ringbuffer.c			\
+			intel_sdvo.c				\
+			intel_sideband.c			\
+			intel_sprite.c				\
+			intel_uncore.c				\
+			kms_display.c				\
+			utils.c					\
+			../hdmi.c				\
+			Gtt/intel-agp.c				\
+			Gtt/intel-gtt.c				\
+			../drm_global.c				\
+			../drm_drv.c				\
+			../drm_vma_manager.c			\
+			$(DRM_TOPDIR)/i2c/i2c-core.c		\
+			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
+			$(DRM_TOPDIR)/drm_crtc.c		\
+			$(DRM_TOPDIR)/drm_crtc_helper.c		\
+			$(DRM_TOPDIR)/drm_dp_helper.c		\
+			$(DRM_TOPDIR)/drm_edid.c		\
+			$(DRM_TOPDIR)/drm_fb_helper.c		\
+			$(DRM_TOPDIR)/drm_gem.c			\
+			$(DRM_TOPDIR)/drm_irq.c			\
+			$(DRM_TOPDIR)/drm_mm.c			\
+			$(DRM_TOPDIR)/drm_modes.c		\
+			$(DRM_TOPDIR)/drm_pci.c			\
+			$(DRM_TOPDIR)/drm_rect.c		\
+			$(DRM_TOPDIR)/drm_stub.c
+
+SRC_DEP:=
+
+
+NAME_OBJS = $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
+            $(patsubst %.c, %.o, $(NAME_SRC))))
+
+
+
+all: $(NAME).dll
+
+$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) i915.lds Makefile.lto
+	$(CC) $(CFLAGS_OPT) -fwhole-program -nostdlib -Wl,-L$(LIBPATH),$(LDFLAGS),-T,i915.lds -o $@ $(NAME_OBJS) $(LIBS)
+
+
+%.o : %.c $(HFILES) Makefile.lto
+	$(CC) $(CFLAGS) $(DEFINES) -o $@ $<
+
+%.o : %.S $(HFILES) Makefile.lto
+	as -o $@ $<
+
+
+clean:
+	-rm -f ../*/*.o
+
+

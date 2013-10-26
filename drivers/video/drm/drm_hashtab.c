@@ -94,7 +94,6 @@ static struct hlist_node *drm_ht_find_key(struct drm_open_hash *ht,
 	return NULL;
 }
 
-
 static struct hlist_node *drm_ht_find_key_rcu(struct drm_open_hash *ht,
 					      unsigned long key)
 {

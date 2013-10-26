@@ -35,16 +35,12 @@
 
 #define I915_EXEC_SECURE        (1<<9)
 #define I915_EXEC_IS_PINNED     (1<<10)
+#define I915_EXEC_VEBOX         (4<<0)
 
 #define wmb() asm volatile ("sfence")
 
 struct drm_i915_gem_object *get_fb_obj();
 
-static inline __attribute__((const))
-bool is_power_of_2(unsigned long n)
-{
-    return (n != 0 && ((n & (n - 1)) == 0));
-}
 
 static unsigned long
 copy_to_user(void __user *to, const void *from, unsigned long n)
@@ -204,7 +200,8 @@ static inline int use_cpu_reloc(struct drm_i915_gem_object *obj)
 static int
 i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 				   struct eb_objects *eb,
-				   struct drm_i915_gem_relocation_entry *reloc)
+				   struct drm_i915_gem_relocation_entry *reloc,
+				   struct i915_address_space *vm)
 {
 	struct drm_device *dev = obj->base.dev;
 	struct drm_gem_object *target_obj;
@@ -218,7 +215,7 @@ i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 		return -ENOENT;
 
 	target_i915_obj = to_intel_bo(target_obj);
-	target_offset = target_i915_obj->gtt_offset;
+	target_offset = i915_gem_obj_ggtt_offset(target_i915_obj);
 
 	/* Sandybridge PPGTT errata: We need a global gtt mapping for MI and
 	 * pipe_control writes because the gpu doesn't properly redirect them
@@ -308,7 +305,7 @@ i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 			return ret;
 
 		/* Map the page containing the relocation we're going to perform.  */
-		reloc->offset += obj->gtt_offset;
+        reloc->offset += i915_gem_obj_ggtt_offset(obj);
         reloc_page = (void*)MapIoMem(reloc->offset & PAGE_MASK, 4096, 3);
 		reloc_entry = (uint32_t __iomem *)
 			(reloc_page + (reloc->offset & ~PAGE_MASK));
@@ -324,7 +321,8 @@ i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 
 static int
 i915_gem_execbuffer_relocate_object(struct drm_i915_gem_object *obj,
-				    struct eb_objects *eb)
+				    struct eb_objects *eb,
+				    struct i915_address_space *vm)
 {
 #define N_RELOC(x) ((x) / sizeof(struct drm_i915_gem_relocation_entry))
 	struct drm_i915_gem_relocation_entry stack_reloc[N_RELOC(64)];
@@ -347,7 +345,8 @@ i915_gem_execbuffer_relocate_object(struct drm_i915_gem_object *obj,
 		do {
 			u64 offset = r->presumed_offset;
 
-			ret = i915_gem_execbuffer_relocate_entry(obj, eb, r);
+			ret = i915_gem_execbuffer_relocate_entry(obj, eb, r,
+								 vm);
 			if (ret)
 				return ret;
 
@@ -367,13 +366,15 @@ i915_gem_execbuffer_relocate_object(struct drm_i915_gem_object *obj,
 static int
 i915_gem_execbuffer_relocate_object_slow(struct drm_i915_gem_object *obj,
 					 struct eb_objects *eb,
-					 struct drm_i915_gem_relocation_entry *relocs)
+					 struct drm_i915_gem_relocation_entry *relocs,
+					 struct i915_address_space *vm)
 {
 	const struct drm_i915_gem_exec_object2 *entry = obj->exec_entry;
 	int i, ret;
 
 	for (i = 0; i < entry->relocation_count; i++) {
-		ret = i915_gem_execbuffer_relocate_entry(obj, eb, &relocs[i]);
+		ret = i915_gem_execbuffer_relocate_entry(obj, eb, &relocs[i],
+							 vm);
 		if (ret)
 			return ret;
 	}
@@ -382,7 +383,8 @@ i915_gem_execbuffer_relocate_object_slow(struct drm_i915_gem_object *obj,
 }
 
 static int
-i915_gem_execbuffer_relocate(struct eb_objects *eb)
+i915_gem_execbuffer_relocate(struct eb_objects *eb,
+			     struct i915_address_space *vm)
 {
 	struct drm_i915_gem_object *obj;
 	int ret = 0;
@@ -394,9 +396,9 @@ i915_gem_execbuffer_relocate(struct eb_objects *eb)
 	 * acquire the struct mutex again. Obviously this is bad and so
 	 * lockdep complains vehemently.
 	 */
-//   pagefault_disable();
+//	pagefault_disable();
 	list_for_each_entry(obj, &eb->objects, exec_list) {
-		ret = i915_gem_execbuffer_relocate_object(obj, eb);
+		ret = i915_gem_execbuffer_relocate_object(obj, eb, vm);
 		if (ret)
 			break;
 	}
@@ -418,6 +420,7 @@ need_reloc_mappable(struct drm_i915_gem_object *obj)
 static int
 i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 				   struct intel_ring_buffer *ring,
+				   struct i915_address_space *vm,
 				   bool *need_reloc)
 {
 	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
@@ -426,20 +429,16 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 	bool need_fence, need_mappable;
 	int ret;
 
-//    ENTER();
-
 	need_fence =
 		has_fenced_gpu_access &&
 		entry->flags & EXEC_OBJECT_NEEDS_FENCE &&
 		obj->tiling_mode != I915_TILING_NONE;
 	need_mappable = need_fence || need_reloc_mappable(obj);
 
-	ret = i915_gem_object_pin(obj, entry->alignment, need_mappable, false);
+	ret = i915_gem_object_pin(obj, vm, entry->alignment, need_mappable,
+				  false);
 	if (ret)
-    {
-        FAIL();
 		return ret;
-    };
 
 	entry->flags |= __EXEC_OBJECT_HAS_PIN;
 
@@ -447,10 +446,7 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 		if (entry->flags & EXEC_OBJECT_NEEDS_FENCE) {
 			ret = i915_gem_object_get_fence(obj);
 			if (ret)
-            {
-                FAIL();
 				return ret;
-            };
 
 			if (i915_gem_object_pin_fence(obj))
 				entry->flags |= __EXEC_OBJECT_HAS_FENCE;
@@ -467,8 +463,8 @@ i915_gem_execbuffer_reserve_object(struct drm_i915_gem_object *obj,
 		obj->has_aliasing_ppgtt_mapping = 1;
 	}
 
-	if (entry->offset != obj->gtt_offset) {
-	entry->offset = obj->gtt_offset;
+	if (entry->offset != i915_gem_obj_offset(obj, vm)) {
+		entry->offset = i915_gem_obj_offset(obj, vm);
 		*need_reloc = true;
 	}
 
@@ -489,7 +485,7 @@ i915_gem_execbuffer_unreserve_object(struct drm_i915_gem_object *obj)
 {
 	struct drm_i915_gem_exec_object2 *entry;
 
-	if (!obj->gtt_space)
+	if (!i915_gem_obj_bound_any(obj))
 		return;
 
 	entry = obj->exec_entry;
@@ -506,14 +502,13 @@ i915_gem_execbuffer_unreserve_object(struct drm_i915_gem_object *obj)
 static int
 i915_gem_execbuffer_reserve(struct intel_ring_buffer *ring,
 			    struct list_head *objects,
+			    struct i915_address_space *vm,
 			    bool *need_relocs)
 {
 	struct drm_i915_gem_object *obj;
 	struct list_head ordered_objects;
 	bool has_fenced_gpu_access = INTEL_INFO(ring->dev)->gen < 4;
 	int retry;
-
-//    ENTER();
 
 	INIT_LIST_HEAD(&ordered_objects);
 	while (!list_empty(objects)) {
@@ -562,31 +557,35 @@ i915_gem_execbuffer_reserve(struct intel_ring_buffer *ring,
 		list_for_each_entry(obj, objects, exec_list) {
 			struct drm_i915_gem_exec_object2 *entry = obj->exec_entry;
 			bool need_fence, need_mappable;
+			u32 obj_offset;
 
-			if (!obj->gtt_space)
+			if (!i915_gem_obj_bound(obj, vm))
 				continue;
 
+			obj_offset = i915_gem_obj_offset(obj, vm);
 			need_fence =
 				has_fenced_gpu_access &&
 				entry->flags & EXEC_OBJECT_NEEDS_FENCE &&
 				obj->tiling_mode != I915_TILING_NONE;
 			need_mappable = need_fence || need_reloc_mappable(obj);
 
-			if ((entry->alignment && obj->gtt_offset & (entry->alignment - 1)) ||
+
+			if ((entry->alignment &&
+			     obj_offset & (entry->alignment - 1)) ||
 			    (need_mappable && !obj->map_and_fenceable))
-				ret = i915_gem_object_unbind(obj);
+				ret = i915_vma_unbind(i915_gem_obj_to_vma(obj, vm));
 			else
-				ret = i915_gem_execbuffer_reserve_object(obj, ring, need_relocs);
+				ret = i915_gem_execbuffer_reserve_object(obj, ring, vm, need_relocs);
 			if (ret)
 				goto err;
 		}
 
 		/* Bind fresh objects */
 		list_for_each_entry(obj, objects, exec_list) {
-			if (obj->gtt_space)
+			if (i915_gem_obj_bound(obj, vm))
 				continue;
 
-			ret = i915_gem_execbuffer_reserve_object(obj, ring, need_relocs);
+			ret = i915_gem_execbuffer_reserve_object(obj, ring, vm, need_relocs);
 			if (ret)
 				goto err;
 		}
@@ -596,10 +595,7 @@ err:		/* Decrement pin count for bound objects */
 			i915_gem_execbuffer_unreserve_object(obj);
 
 		if (ret != -ENOSPC || retry++)
-        {
-//            LEAVE();
 			return ret;
-        };
 
 //       ret = i915_gem_evict_everything(ring->dev);
 		if (ret)
@@ -613,7 +609,8 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
 				  struct drm_file *file,
 				  struct intel_ring_buffer *ring,
 				  struct eb_objects *eb,
-				  struct drm_i915_gem_exec_object2 *exec)
+				  struct drm_i915_gem_exec_object2 *exec,
+				  struct i915_address_space *vm)
 {
 	struct drm_i915_gem_relocation_entry *reloc;
 	struct drm_i915_gem_object *obj;
@@ -697,14 +694,15 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
 			goto err;
 
 	need_relocs = (args->flags & I915_EXEC_NO_RELOC) == 0;
-	ret = i915_gem_execbuffer_reserve(ring, &eb->objects, &need_relocs);
+	ret = i915_gem_execbuffer_reserve(ring, &eb->objects, vm, &need_relocs);
 	if (ret)
 		goto err;
 
 	list_for_each_entry(obj, &eb->objects, exec_list) {
 		int offset = obj->exec_entry - exec;
 		ret = i915_gem_execbuffer_relocate_object_slow(obj, eb,
-							       reloc + reloc_offset[offset]);
+							       reloc + reloc_offset[offset],
+							       vm);
 		if (ret)
 			goto err;
 	}
@@ -727,6 +725,7 @@ i915_gem_execbuffer_move_to_gpu(struct intel_ring_buffer *ring,
 {
 	struct drm_i915_gem_object *obj;
 	uint32_t flush_domains = 0;
+	bool flush_chipset = false;
 	int ret;
 
 	list_for_each_entry(obj, objects, exec_list) {
@@ -735,12 +734,12 @@ i915_gem_execbuffer_move_to_gpu(struct intel_ring_buffer *ring,
 			return ret;
 
 		if (obj->base.write_domain & I915_GEM_DOMAIN_CPU)
-			i915_gem_clflush_object(obj);
+			flush_chipset |= i915_gem_clflush_object(obj, false);
 
 		flush_domains |= obj->base.write_domain;
 	}
 
-	if (flush_domains & I915_GEM_DOMAIN_CPU)
+	if (flush_chipset)
 		i915_gem_chipset_flush(ring->dev);
 
 	if (flush_domains & I915_GEM_DOMAIN_GTT)
@@ -803,6 +802,7 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
 
 static void
 i915_gem_execbuffer_move_to_active(struct list_head *objects,
+				   struct i915_address_space *vm,
 				   struct intel_ring_buffer *ring)
 {
 	struct drm_i915_gem_object *obj;
@@ -817,12 +817,14 @@ i915_gem_execbuffer_move_to_active(struct list_head *objects,
 		obj->base.read_domains = obj->base.pending_read_domains;
 		obj->fenced_gpu_access = obj->pending_fenced_gpu_access;
 
+		/* FIXME: This lookup gets fixed later <-- danvet */
+		list_move_tail(&i915_gem_obj_to_vma(obj, vm)->mm_list, &vm->active_list);
 		i915_gem_object_move_to_active(obj, ring);
 		if (obj->base.write_domain) {
 			obj->dirty = 1;
 			obj->last_write_seqno = intel_ring_get_seqno(ring);
 			if (obj->pin_count) /* check for potential scanout */
-				intel_mark_fb_busy(obj);
+				intel_mark_fb_busy(obj, ring);
 		}
 
 		trace_i915_gem_object_change_domain(obj, old_read, old_write);
@@ -832,13 +834,14 @@ i915_gem_execbuffer_move_to_active(struct list_head *objects,
 static void
 i915_gem_execbuffer_retire_commands(struct drm_device *dev,
 				    struct drm_file *file,
-				    struct intel_ring_buffer *ring)
+				    struct intel_ring_buffer *ring,
+				    struct drm_i915_gem_object *obj)
 {
 	/* Unconditionally force add_request to emit a full flush. */
 	ring->gpu_caches_dirty = true;
 
 	/* Add a breadcrumb for the completion of the batch buffer */
-	(void)i915_add_request(ring, file, NULL);
+	(void)__i915_add_request(ring, file, obj, NULL);
 }
 
 static int
@@ -870,7 +873,8 @@ static int
 i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 		       struct drm_file *file,
 		       struct drm_i915_gem_execbuffer2 *args,
-		       struct drm_i915_gem_exec_object2 *exec)
+		       struct drm_i915_gem_exec_object2 *exec,
+		       struct i915_address_space *vm)
 {
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	struct eb_objects *eb;
@@ -884,17 +888,11 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 	bool need_relocs;
 
 	if (!i915_gem_check_execbuffer(args))
-	{
-        FAIL();
 		return -EINVAL;
-	}
 
 	ret = validate_exec_list(exec, args->buffer_count);
 	if (ret)
-    {
-        FAIL();
 		return ret;
-    };
 
 	flags = 0;
 	if (args->flags & I915_EXEC_SECURE) {
@@ -911,21 +909,29 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 		break;
 	case I915_EXEC_BSD:
 		ring = &dev_priv->ring[VCS];
-		if (ctx_id != 0) {
+		if (ctx_id != DEFAULT_CONTEXT_ID) {
 			DRM_DEBUG("Ring %s doesn't support contexts\n",
 				  ring->name);
-            FAIL();
 			return -EPERM;
 		}
 		break;
 	case I915_EXEC_BLT:
 		ring = &dev_priv->ring[BCS];
-		if (ctx_id != 0) {
+		if (ctx_id != DEFAULT_CONTEXT_ID) {
 			DRM_DEBUG("Ring %s doesn't support contexts\n",
 				  ring->name);
 			return -EPERM;
 		}
 		break;
+	case I915_EXEC_VEBOX:
+		ring = &dev_priv->ring[VECS];
+		if (ctx_id != DEFAULT_CONTEXT_ID) {
+			DRM_DEBUG("Ring %s doesn't support contexts\n",
+				  ring->name);
+			return -EPERM;
+		}
+		break;
+
 	default:
 		DRM_DEBUG("execbuf with unknown ring: %d\n",
 			  (int)(args->flags & I915_EXEC_RING_MASK));
@@ -1003,7 +1009,7 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 	if (ret)
 		goto pre_mutex_err;
 
-	if (dev_priv->mm.suspended) {
+	if (dev_priv->ums.mm_suspended) {
 		mutex_unlock(&dev->struct_mutex);
 		ret = -EBUSY;
 		goto pre_mutex_err;
@@ -1028,17 +1034,17 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 
 	/* Move the objects en-masse into the GTT, evicting if necessary. */
 	need_relocs = (args->flags & I915_EXEC_NO_RELOC) == 0;
-	ret = i915_gem_execbuffer_reserve(ring, &eb->objects, &need_relocs);
+	ret = i915_gem_execbuffer_reserve(ring, &eb->objects, vm, &need_relocs);
 	if (ret)
 		goto err;
 
 	/* The objects are in their final locations, apply the relocations. */
 	if (need_relocs)
-		ret = i915_gem_execbuffer_relocate(eb);
+		ret = i915_gem_execbuffer_relocate(eb, vm);
 	if (ret) {
 		if (ret == -EFAULT) {
 			ret = i915_gem_execbuffer_relocate_slow(dev, args, file, ring,
-								eb, exec);
+								eb, exec, vm);
 			BUG_ON(!mutex_is_locked(&dev->struct_mutex));
 		}
 		if (ret)
@@ -1089,7 +1095,8 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 			goto err;
 	}
 
-	exec_start = batch_obj->gtt_offset + args->batch_start_offset;
+	exec_start = i915_gem_obj_offset(batch_obj, vm) +
+		args->batch_start_offset;
 	exec_len = args->batch_len;
 	if (cliprects) {
 
@@ -1103,8 +1110,8 @@ i915_gem_do_execbuffer(struct drm_device *dev, void *data,
 
 	trace_i915_gem_ring_dispatch(ring, intel_ring_get_seqno(ring), flags);
 
-	i915_gem_execbuffer_move_to_active(&eb->objects, ring);
-	i915_gem_execbuffer_retire_commands(dev, file, ring);
+	i915_gem_execbuffer_move_to_active(&eb->objects, vm, ring);
+	i915_gem_execbuffer_retire_commands(dev, file, ring, batch_obj);
 
 err:
 	eb_destroy(eb);
@@ -1112,7 +1119,7 @@ err:
 	mutex_unlock(&dev->struct_mutex);
 
 pre_mutex_err:
-	kfree(cliprects);
+    kfree(cliprects);
 	return ret;
 }
 
@@ -1122,16 +1129,14 @@ int
 i915_gem_execbuffer2(struct drm_device *dev, void *data,
 		     struct drm_file *file)
 {
+	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct drm_i915_gem_execbuffer2 *args = data;
 	struct drm_i915_gem_exec_object2 *exec2_list = NULL;
 	int ret;
 
-//    ENTER();
-
 	if (args->buffer_count < 1 ||
 	    args->buffer_count > UINT_MAX / sizeof(*exec2_list)) {
 		DRM_DEBUG("execbuf2 with %d buffers\n", args->buffer_count);
-        FAIL();
 		return -EINVAL;
 	}
 
@@ -1140,7 +1145,6 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 	if (exec2_list == NULL) {
 		DRM_DEBUG("Failed to allocate exec list for %d buffers\n",
 			  args->buffer_count);
-        FAIL();
 		return -ENOMEM;
 	}
 	ret = copy_from_user(exec2_list,
@@ -1155,7 +1159,8 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 		return -EFAULT;
 	}
 
-	ret = i915_gem_do_execbuffer(dev, data, file, args, exec2_list);
+	ret = i915_gem_do_execbuffer(dev, data, file, args, exec2_list,
+				     &dev_priv->gtt.base);
 	if (!ret) {
 		/* Copy the new buffer offsets back to the user's exec list. */
 		ret = copy_to_user((void __user *)(uintptr_t)args->buffers_ptr,

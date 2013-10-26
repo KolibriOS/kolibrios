@@ -17,9 +17,6 @@
 
 #include "bitmap.h"
 
-extern struct drm_device *main_device;
-
-
 typedef struct
 {
     kobj_t     header;
@@ -146,7 +143,6 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
     return -1;
 
 do_set:
-
 
     encoder = connector->encoder;
     crtc = encoder->crtc;
@@ -365,8 +361,6 @@ int init_display_kms(struct drm_device *dev)
     };
     safe_sti(ifl);
 
-    main_device = dev;
-
 #ifdef __HWA__
     err = init_bitmaps();
 #endif
@@ -471,16 +465,23 @@ int init_cursor(cursor_t *cursor)
         if (unlikely(obj == NULL))
             return -ENOMEM;
 
-        ret = i915_gem_object_pin(obj, CURSOR_WIDTH*CURSOR_HEIGHT*4, true, true);
+        ret = i915_gem_obj_ggtt_pin(obj, CURSOR_WIDTH*CURSOR_HEIGHT*4, true, true);
         if (ret) {
             drm_gem_object_unreference(&obj->base);
             return ret;
         }
 
+        ret = i915_gem_object_set_to_gtt_domain(obj, true);
+        if (ret)
+        {
+            i915_gem_object_unpin(obj);
+            drm_gem_object_unreference(&obj->base);
+            return ret;
+        }
 /* You don't need to worry about fragmentation issues.
  * GTT space is continuous. I guarantee it.                           */
 
-        mapped = bits = (u32*)MapIoMem(dev_priv->gtt.mappable_base + obj->gtt_offset,
+        mapped = bits = (u32*)MapIoMem(dev_priv->gtt.mappable_base + i915_gem_obj_ggtt_offset(obj),
                     CURSOR_WIDTH*CURSOR_HEIGHT*4, PG_SW);
 
         if (unlikely(bits == NULL))
@@ -612,7 +613,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     os_display->cursor = cursor;
 
     if (!dev_priv->info->cursor_needs_physical)
-       intel_crtc->cursor_addr = cursor->cobj->gtt_offset;
+       intel_crtc->cursor_addr = i915_gem_obj_ggtt_offset(cursor->cobj);
     else
         intel_crtc->cursor_addr = (addr_t)cursor->cobj;
 
@@ -714,7 +715,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
         };
 #endif
 
-    };
+     };
 
 
     slot = *((u8*)CURRENT_TASK);
@@ -855,20 +856,26 @@ void getrawmonotonic(struct timespec *ts)
     ts->tv_nsec = (tmp - ts->tv_sec*100)*10000000;
 }
 
-void set_normalized_timespec(struct timespec *ts, time_t sec, long nsec)
+void set_normalized_timespec(struct timespec *ts, time_t sec, s64 nsec)
 {
-        while (nsec >= NSEC_PER_SEC) {
-                nsec -= NSEC_PER_SEC;
-                ++sec;
-        }
-        while (nsec < 0) {
-                nsec += NSEC_PER_SEC;
-                --sec;
-        }
-        ts->tv_sec = sec;
-        ts->tv_nsec = nsec;
+    while (nsec >= NSEC_PER_SEC) {
+        /*
+         * The following asm() prevents the compiler from
+         * optimising this loop into a modulo operation. See
+         * also __iter_div_u64_rem() in include/linux/time.h
+         */
+        asm("" : "+rm"(nsec));
+        nsec -= NSEC_PER_SEC;
+        ++sec;
+    }
+    while (nsec < 0) {
+        asm("" : "+rm"(nsec));
+        nsec += NSEC_PER_SEC;
+        --sec;
+    }
+    ts->tv_sec = sec;
+    ts->tv_nsec = nsec;
 }
-
 
 void
 prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state)

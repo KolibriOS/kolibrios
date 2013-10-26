@@ -27,6 +27,7 @@
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
 #include <syscall.h>
+#include <linux/jiffies.h>
 #include <errno.h>
 #include <linux/i2c.h>
 #include <linux/i2c-algo-bit.h>
@@ -43,7 +44,7 @@
 	} while (0)
 #else
 #define bit_dbg(level, dev, format, args...) \
-    do { /* dbgprintf(format, ##args); */ } while (0)
+	do {} while (0)
 #endif /* DEBUG */
 
 /* ----- global variables ---------------------------------------------	*/

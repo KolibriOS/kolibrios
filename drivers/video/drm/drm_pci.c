@@ -84,6 +84,330 @@ drm_dma_handle_t *drm_pci_alloc(struct drm_device * dev, size_t size, size_t ali
 	return dmah;
 }
 
+EXPORT_SYMBOL(drm_pci_alloc);
+
+#if 0
+/**
+ * \brief Free a PCI consistent memory block without freeing its descriptor.
+ *
+ * This function is for internal use in the Linux-specific DRM core code.
+ */
+void __drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
+{
+	unsigned long addr;
+	size_t sz;
+
+	if (dmah->vaddr) {
+		/* XXX - Is virt_to_page() legal for consistent mem? */
+		/* Unreserve */
+		for (addr = (unsigned long)dmah->vaddr, sz = dmah->size;
+		     sz > 0; addr += PAGE_SIZE, sz -= PAGE_SIZE) {
+			ClearPageReserved(virt_to_page(addr));
+		}
+		dma_free_coherent(&dev->pdev->dev, dmah->size, dmah->vaddr,
+				  dmah->busaddr);
+	}
+}
+
+/**
+ * \brief Free a PCI consistent memory block
+ */
+void drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
+{
+	__drm_pci_free(dev, dmah);
+	kfree(dmah);
+}
+
+EXPORT_SYMBOL(drm_pci_free);
+
+
+static int drm_get_pci_domain(struct drm_device *dev)
+{
+#ifndef __alpha__
+	/* For historical reasons, drm_get_pci_domain() is busticated
+	 * on most archs and has to remain so for userspace interface
+	 * < 1.4, except on alpha which was right from the beginning
+	 */
+	if (dev->if_version < 0x10004)
+		return 0;
+#endif /* __alpha__ */
+
+	return pci_domain_nr(dev->pdev->bus);
+}
+
+static int drm_pci_get_irq(struct drm_device *dev)
+{
+	return dev->pdev->irq;
+}
+
+static const char *drm_pci_get_name(struct drm_device *dev)
+{
+	struct pci_driver *pdriver = dev->driver->kdriver.pci;
+	return pdriver->name;
+}
+
+static int drm_pci_set_busid(struct drm_device *dev, struct drm_master *master)
+{
+	int len, ret;
+	struct pci_driver *pdriver = dev->driver->kdriver.pci;
+	master->unique_len = 40;
+	master->unique_size = master->unique_len;
+	master->unique = kmalloc(master->unique_size, GFP_KERNEL);
+	if (master->unique == NULL)
+		return -ENOMEM;
+
+
+	len = snprintf(master->unique, master->unique_len,
+		       "pci:%04x:%02x:%02x.%d",
+		       drm_get_pci_domain(dev),
+		       dev->pdev->bus->number,
+		       PCI_SLOT(dev->pdev->devfn),
+		       PCI_FUNC(dev->pdev->devfn));
+
+	if (len >= master->unique_len) {
+		DRM_ERROR("buffer overflow");
+		ret = -EINVAL;
+		goto err;
+	} else
+		master->unique_len = len;
+
+	dev->devname =
+		kmalloc(strlen(pdriver->name) +
+			master->unique_len + 2, GFP_KERNEL);
+
+	if (dev->devname == NULL) {
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	sprintf(dev->devname, "%s@%s", pdriver->name,
+		master->unique);
+
+	return 0;
+err:
+	return ret;
+}
+
+static int drm_pci_set_unique(struct drm_device *dev,
+			      struct drm_master *master,
+			      struct drm_unique *u)
+{
+	int domain, bus, slot, func, ret;
+	const char *bus_name;
+
+	master->unique_len = u->unique_len;
+	master->unique_size = u->unique_len + 1;
+	master->unique = kmalloc(master->unique_size, GFP_KERNEL);
+	if (!master->unique) {
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	if (copy_from_user(master->unique, u->unique, master->unique_len)) {
+		ret = -EFAULT;
+		goto err;
+	}
+
+	master->unique[master->unique_len] = '\0';
+
+	bus_name = dev->driver->bus->get_name(dev);
+	dev->devname = kmalloc(strlen(bus_name) +
+			       strlen(master->unique) + 2, GFP_KERNEL);
+	if (!dev->devname) {
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	sprintf(dev->devname, "%s@%s", bus_name,
+		master->unique);
+
+	/* Return error if the busid submitted doesn't match the device's actual
+	 * busid.
+	 */
+	ret = sscanf(master->unique, "PCI:%d:%d:%d", &bus, &slot, &func);
+	if (ret != 3) {
+		ret = -EINVAL;
+		goto err;
+	}
+
+	domain = bus >> 8;
+	bus &= 0xff;
+
+	if ((domain != drm_get_pci_domain(dev)) ||
+	    (bus != dev->pdev->bus->number) ||
+	    (slot != PCI_SLOT(dev->pdev->devfn)) ||
+	    (func != PCI_FUNC(dev->pdev->devfn))) {
+		ret = -EINVAL;
+		goto err;
+	}
+	return 0;
+err:
+	return ret;
+}
+
+
+static int drm_pci_irq_by_busid(struct drm_device *dev, struct drm_irq_busid *p)
+{
+	if ((p->busnum >> 8) != drm_get_pci_domain(dev) ||
+	    (p->busnum & 0xff) != dev->pdev->bus->number ||
+	    p->devnum != PCI_SLOT(dev->pdev->devfn) || p->funcnum != PCI_FUNC(dev->pdev->devfn))
+		return -EINVAL;
+
+	p->irq = dev->pdev->irq;
+
+	DRM_DEBUG("%d:%d:%d => IRQ %d\n", p->busnum, p->devnum, p->funcnum,
+		  p->irq);
+	return 0;
+}
+
+static int drm_pci_agp_init(struct drm_device *dev)
+{
+	if (drm_core_has_AGP(dev)) {
+		if (drm_pci_device_is_agp(dev))
+			dev->agp = drm_agp_init(dev);
+		if (drm_core_check_feature(dev, DRIVER_REQUIRE_AGP)
+		    && (dev->agp == NULL)) {
+			DRM_ERROR("Cannot initialize the agpgart module.\n");
+			return -EINVAL;
+		}
+		if (dev->agp) {
+			dev->agp->agp_mtrr = arch_phys_wc_add(
+				dev->agp->agp_info.aper_base,
+				dev->agp->agp_info.aper_size *
+				1024 * 1024);
+		}
+	}
+	return 0;
+}
+
+static void drm_pci_agp_destroy(struct drm_device *dev)
+{
+	if (drm_core_has_AGP(dev) && dev->agp) {
+		arch_phys_wc_del(dev->agp->agp_mtrr);
+		drm_agp_clear(dev);
+		drm_agp_destroy(dev->agp);
+		dev->agp = NULL;
+	}
+}
+
+static struct drm_bus drm_pci_bus = {
+	.bus_type = DRIVER_BUS_PCI,
+	.get_irq = drm_pci_get_irq,
+	.get_name = drm_pci_get_name,
+	.set_busid = drm_pci_set_busid,
+	.set_unique = drm_pci_set_unique,
+	.irq_by_busid = drm_pci_irq_by_busid,
+	.agp_init = drm_pci_agp_init,
+	.agp_destroy = drm_pci_agp_destroy,
+};
+#endif
+
+/**
+ * Register.
+ *
+ * \param pdev - PCI device structure
+ * \param ent entry from the PCI ID table with device type flags
+ * \return zero on success or a negative number on failure.
+ *
+ * Attempt to gets inter module "drm" information. If we are first
+ * then register the character device and inter module information.
+ * Try and register, if we fail to register, backout previous work.
+ */
+int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
+		    struct drm_driver *driver)
+{
+    static struct drm_device drm_dev;
+    static struct drm_file   drm_file;
+
+	struct drm_device *dev;
+    struct drm_file   *priv;
+
+	int ret;
+
+    dev  = &drm_dev;
+    priv = &drm_file;
+
+    drm_file_handlers[0] = priv;
+
+ //   ret = pci_enable_device(pdev);
+ //   if (ret)
+ //       goto err_g1;
+
+    pci_set_master(pdev);
+
+    if ((ret = drm_fill_in_dev(dev, ent, driver))) {
+        printk(KERN_ERR "DRM: Fill_in_dev failed.\n");
+        goto err_g2;
+    }
+
+	DRM_DEBUG("\n");
+
+
+	dev->pdev = pdev;
+	dev->pci_device = pdev->device;
+	dev->pci_vendor = pdev->vendor;
+
+#ifdef __alpha__
+	dev->hose = pdev->sysdata;
+#endif
+
+//   mutex_lock(&drm_global_mutex);
+
+	if ((ret = drm_fill_in_dev(dev, ent, driver))) {
+		printk(KERN_ERR "DRM: Fill_in_dev failed.\n");
+		goto err_g2;
+	}
+
+#if 0
+	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+		pci_set_drvdata(pdev, dev);
+		ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
+		if (ret)
+			goto err_g2;
+	}
+
+	if (drm_core_check_feature(dev, DRIVER_RENDER) && drm_rnodes) {
+		ret = drm_get_minor(dev, &dev->render, DRM_MINOR_RENDER);
+		if (ret)
+			goto err_g21;
+	}
+
+	if ((ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY)))
+		goto err_g3;
+#endif
+
+	if (dev->driver->load) {
+		ret = dev->driver->load(dev, ent->driver_data);
+		if (ret)
+			goto err_g4;
+	}
+
+    if (dev->driver->open) {
+        ret = dev->driver->open(dev, priv);
+        if (ret < 0)
+            goto err_g4;
+    }
+
+
+//   mutex_unlock(&drm_global_mutex);
+	return 0;
+
+err_g4:
+//   drm_put_minor(&dev->primary);
+err_g3:
+//   if (dev->render)
+//       drm_put_minor(&dev->render);
+err_g21:
+//   if (drm_core_check_feature(dev, DRIVER_MODESET))
+//       drm_put_minor(&dev->control);
+err_g2:
+//   pci_disable_device(pdev);
+err_g1:
+//   kfree(dev);
+//   mutex_unlock(&drm_global_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(drm_get_pci_dev);
 
 int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
 {

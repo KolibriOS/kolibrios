@@ -62,7 +62,7 @@
 irqreturn_t device_irq_handler(struct drm_device *dev)
 {
 
-    printf("video irq\n");
+//    printf("video irq\n");
 
 //    printf("device %p driver %p handler %p\n", dev, dev->driver, dev->driver->irq_handler) ;
 
@@ -116,6 +116,7 @@ int drm_irq_install(struct drm_device *dev)
             ret = dev->driver->irq_postinstall(dev);
 
     if (ret < 0) {
+		dev->irq_enabled = 0;
             DRM_ERROR(__FUNCTION__);
     }
 
@@ -128,11 +129,6 @@ int drm_irq_install(struct drm_device *dev)
 EXPORT_SYMBOL(drm_irq_install);
 
 
-static inline u64 div_u64(u64 dividend, u32 divisor)
-{
-        u32 remainder;
-        return div_u64_rem(dividend, divisor, &remainder);
-}
 
 
 u64 div64_u64(u64 dividend, u64 divisor)
@@ -260,7 +256,3 @@ void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
 #endif
 }
 EXPORT_SYMBOL(drm_vblank_post_modeset);
-
-
-
-

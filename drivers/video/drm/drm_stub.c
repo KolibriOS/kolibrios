@@ -35,6 +35,7 @@
 
 #include <linux/slab.h>
 #include <drm/drmP.h>
+#include <drm/drm_core.h>
 
 struct va_format {
     const char *fmt;
@@ -44,12 +45,16 @@ struct va_format {
 unsigned int drm_debug = 0;	/* 1 to enable debug output */
 EXPORT_SYMBOL(drm_debug);
 
+unsigned int drm_rnodes = 0;	/* 1 to enable experimental render nodes API */
+EXPORT_SYMBOL(drm_rnodes);
+
 unsigned int drm_vblank_offdelay = 5000;    /* Default to 5000 msecs. */
 EXPORT_SYMBOL(drm_vblank_offdelay);
 
 unsigned int drm_timestamp_precision = 20;  /* Default to 20 usecs. */
 EXPORT_SYMBOL(drm_timestamp_precision);
 
+struct idr drm_minors_idr;
 int drm_err(const char *func, const char *format, ...)
 {
 	struct va_format vaf;
@@ -86,6 +91,45 @@ void drm_ut_debug_printk(unsigned int request_level,
 }
 EXPORT_SYMBOL(drm_ut_debug_printk);
 
+int drm_fill_in_dev(struct drm_device *dev,
+			   const struct pci_device_id *ent,
+			   struct drm_driver *driver)
+{
+	int retcode;
+
+	INIT_LIST_HEAD(&dev->filelist);
+	INIT_LIST_HEAD(&dev->ctxlist);
+	INIT_LIST_HEAD(&dev->vmalist);
+	INIT_LIST_HEAD(&dev->maplist);
+	INIT_LIST_HEAD(&dev->vblank_event_list);
+
+	spin_lock_init(&dev->count_lock);
+	spin_lock_init(&dev->event_lock);
+	mutex_init(&dev->struct_mutex);
+	mutex_init(&dev->ctxlist_mutex);
+
+//	if (drm_ht_create(&dev->map_hash, 12)) {
+//		return -ENOMEM;
+//	}
+
+    dev->driver = driver;
+
+	if (driver->driver_features & DRIVER_GEM) {
+		retcode = drm_gem_init(dev);
+		if (retcode) {
+			DRM_ERROR("Cannot initialize graphics execution "
+				  "manager (GEM)\n");
+			goto error_out_unreg;
+		}
+	}
+
+	return 0;
+
+error_out_unreg:
+//   drm_lastclose(dev);
+	return retcode;
+}
+EXPORT_SYMBOL(drm_fill_in_dev);
 /**
  * Compute size order.  Returns the exponent of the smaller power of two which
  * is greater or equal to given number.

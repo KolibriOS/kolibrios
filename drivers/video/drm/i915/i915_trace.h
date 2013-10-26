@@ -24,6 +24,8 @@
 #define trace_i915_ring_wait_begin(a)
 #define trace_i915_gem_object_pwrite(a, b, c)
 #define trace_i915_gem_request_add(a, b)
-#define trace_i915_gem_ring_dispatch(a, b, c);
+#define trace_i915_gem_ring_dispatch(a, b, c)
+#define trace_i915_vma_bind(a, b)
+#define trace_i915_vma_unbind(a)
 
 #endif

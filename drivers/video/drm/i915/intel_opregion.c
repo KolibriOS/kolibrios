@@ -112,6 +112,10 @@ struct opregion_asle {
        u8 rsvd[102];
 } __attribute__((packed));
 
+/* Driver readiness indicator */
+#define ASLE_ARDY_READY		(1 << 0)
+#define ASLE_ARDY_NOT_READY	(0 << 0)
+
 /* ASLE irq request bits */
 #define ASLE_SET_ALS_ILLUM     (1 << 0)
 #define ASLE_SET_BACKLIGHT     (1 << 1)
@@ -124,6 +128,12 @@ struct opregion_asle {
 #define ASLE_BACKLIGHT_FAILED	(1<<12)
 #define ASLE_PFIT_FAILED	(1<<14)
 #define ASLE_PWM_FREQ_FAILED	(1<<16)
+
+/* Technology enabled indicator */
+#define ASLE_TCHE_ALS_EN	(1 << 0)
+#define ASLE_TCHE_BLC_EN	(1 << 1)
+#define ASLE_TCHE_PFIT_EN	(1 << 2)
+#define ASLE_TCHE_PFMB_EN	(1 << 3)
 
 /* ASLE backlight brightness to set */
 #define ASLE_BCLP_VALID                (1<<31)
@@ -197,6 +207,8 @@ int intel_opregion_setup(struct drm_device *dev)
 	if (mboxes & MBOX_ASLE) {
 		DRM_DEBUG_DRIVER("ASLE supported\n");
 		opregion->asle = base + OPREGION_ASLE_OFFSET;
+
+		iowrite32(ASLE_ARDY_NOT_READY, &opregion->asle->ardy);
 	}
 
 	return 0;
