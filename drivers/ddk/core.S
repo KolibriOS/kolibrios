@@ -13,6 +13,7 @@
     .global _CreateEvent
     .global _CreateObject
     .global _CreateRingBuffer
+    .global _CreateThread
 
     .global _Delay
     .global _DestroyEvent
@@ -81,6 +82,7 @@
     .def  _CreateEvent;       .scl  2;  .type 32; .endef
     .def  _CreateObject;      .scl  2;  .type 32; .endef
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
+    .def  _CreateThread;      .scl  2;  .type 32; .endef
 
     .def  _Delay;             .scl  2;  .type 32; .endef
     .def  _DestroyEvent;      .scl  2;  .type 32; .endef
@@ -149,6 +151,7 @@ _AttachIntHandler:
 _CreateEvent:
 _CreateObject:
 _CreateRingBuffer:
+_CreateThread:
 
 _Delay:
 
@@ -219,8 +222,8 @@ _WaitEventTimeout:
 
         .ascii " -export:CreateEvent"          #
         .ascii " -export:CreateObject"         #
-
         .ascii " -export:CreateRingBuffer"     # stdcall
+        .ascii " -export:CreateThread"         #
 
         .ascii " -export:Delay"                # stdcall
 

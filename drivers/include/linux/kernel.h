@@ -12,7 +12,7 @@
 #include <linux/types.h>
 #include <linux/compiler.h>
 #include <linux/bitops.h>
-
+#include <linux/errno.h>
 #include <linux/typecheck.h>
 
 #define __init

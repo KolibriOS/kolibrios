@@ -36,6 +36,7 @@
 #include <ttm/ttm_placement.h>
 #include <drm/drm_mm.h>
 #include <drm/drm_global.h>
+#include <drm/drm_vma_manager.h>
 //#include <linux/workqueue.h>
 //#include <linux/fs.h>
 #include <linux/spinlock.h>
@@ -538,14 +539,13 @@ struct ttm_bo_device {
 	struct list_head device_list;
 	struct ttm_bo_global *glob;
 	struct ttm_bo_driver *driver;
-	rwlock_t vm_lock;
 	struct ttm_mem_type_manager man[TTM_NUM_MEM_TYPES];
 	spinlock_t fence_lock;
+
 	/*
-	 * Protected by the vm lock.
+	 * Protected by internal locks.
 	 */
-	struct rb_root addr_space_rb;
-	struct drm_mm addr_space_mm;
+	struct drm_vma_offset_manager vma_manager;
 
 	/*
 	 * Protected by the global:lru lock.

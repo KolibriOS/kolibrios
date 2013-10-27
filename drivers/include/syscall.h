@@ -143,6 +143,19 @@ int dbgprintf(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static inline int CreateKernelThread(void *entry)
+{
+    int pid;
+     __asm__ __volatile__ (
+     "call *__imp__CreateThread"
+     :"=a"(pid)
+     :"b"(1),"c"(entry),"d"(0)
+     :"memory");
+     __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
+     return pid;
+};
+
+
 static inline evhandle_t CreateEvent(kevent_t *ev, u32_t flags)
 {
      evhandle_t evh;
