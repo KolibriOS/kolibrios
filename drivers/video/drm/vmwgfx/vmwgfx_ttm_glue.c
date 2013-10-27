@@ -26,7 +26,6 @@
  **************************************************************************/
 
 #include <drm/drmP.h>
-#include <drm/drm_global.h>
 #include "vmwgfx_drv.h"
 
 #if 0

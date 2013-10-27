@@ -26,10 +26,13 @@ struct pci_device {
     uint8_t     revision;
 };
 
-extern struct drm_device *main_device;
-extern struct drm_file   *drm_file_handlers[256];
+struct drm_device *main_device;
+struct drm_file   *drm_file_handlers[256];
 
 int vmw_init(void);
+int kms_init(struct drm_device *dev);
+void kms_update();
+
 void cpu_detect();
 
 void parse_cmdline(char *cmdline, char *log);
@@ -61,6 +64,23 @@ unsigned int tsc_khz;
 
 int kms_modeset = 1;
 
+
+void vmw_driver_thread()
+{
+    dbgprintf("%s\n",__FUNCTION__);
+
+//    run_workqueue(dev_priv->wq);
+
+    while(driver_wq_state)
+    {
+        kms_update();
+        delay(1);
+    };
+     __asm__ __volatile__ (
+     "int $0x40"
+     ::"a"(-1));
+}
+
 u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
 
@@ -80,9 +100,9 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-//        strcpy(log, "/tmp1/1/vmw.log");
+       strcpy(log, "/tmp1/1/vmw.log");
 //        strcpy(log, "/RD/1/DRIVERS/VMW.log");
-        strcpy(log, "/HD0/1/vmw.log");
+//        strcpy(log, "/HD0/1/vmw.log");
 
         if(!dbg_open(log))
         {
@@ -90,7 +110,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf(" vmw v3.10\n cmdline: %s\n", cmdline);
+    dbgprintf(" vmw v3.12-rc6\n cmdline: %s\n", cmdline);
 
     cpu_detect();
     dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -103,15 +123,16 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         dbgprintf("Epic Fail :(\n");
         return 0;
     };
+    kms_init(main_device);
 
     err = RegService("DISPLAY", display_handler);
 
     if( err != 0)
         dbgprintf("Set DISPLAY handler\n");
 
-//    struct drm_i915_private *dev_priv = main_device->dev_private;
-//    driver_wq_state = 1;
-//    run_workqueue(dev_priv->wq);
+    driver_wq_state = 1;
+
+    CreateKernelThread(vmw_driver_thread);
 
     return err;
 };
@@ -446,25 +467,7 @@ void get_pci_info(struct pci_device *dev)
 #include <ddk.h>
 #include <linux/mm.h>
 #include <drm/drmP.h>
-#include <linux/hdmi.h>
 #include <linux/ctype.h>
-
-/**
- * hdmi_avi_infoframe_init() - initialize an HDMI AVI infoframe
- * @frame: HDMI AVI infoframe
- *
- * Returns 0 on success or a negative error code on failure.
- */
-int hdmi_avi_infoframe_init(struct hdmi_avi_infoframe *frame)
-{
-    memset(frame, 0, sizeof(*frame));
-
-    frame->type = HDMI_INFOFRAME_TYPE_AVI;
-    frame->version = 2;
-    frame->length = 13;
-
-    return 0;
-}
 
 
 static void *check_bytes8(const u8 *start, u8 value, unsigned int bytes)
@@ -873,9 +876,8 @@ struct tag_display
     u32  mask_seqno;
     u32  check_mouse;
     u32  check_m_pixel;
-    u32  dirty;
-    void (*update)(void);
 };
+
 
 static display_t *os_display;
 
@@ -941,7 +943,7 @@ int kms_init(struct drm_device *dev)
         os_display->connector = connector;
         os_display->crtc = crtc;
         os_display->supported_modes = mode_count;
-        os_display->update = kms_update;
+//        os_display->update = kms_update;
 
 //        struct intel_crtc *intel_crtc = to_intel_crtc(os_display->crtc);
 
@@ -964,8 +966,6 @@ int kms_init(struct drm_device *dev)
 //        select_cursor_kms(os_display->cursor);
     };
     safe_sti(ifl);
-
-    main_device = dev;
 
 #ifdef __HWA__
     err = init_bitmaps();
@@ -1067,5 +1067,59 @@ int set_user_mode(videomode_t *mode)
     };
 
     return err;
+};
+
+struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags)
+{
+    struct file *filep;
+    int count;
+
+    filep = malloc(sizeof(*filep));
+
+    if(unlikely(filep == NULL))
+        return ERR_PTR(-ENOMEM);
+
+    count = size / PAGE_SIZE;
+
+    filep->pages = kzalloc(sizeof(struct page *) * count, 0);
+    if(unlikely(filep->pages == NULL))
+    {
+        kfree(filep);
+        return ERR_PTR(-ENOMEM);
+    };
+
+    filep->count     = count;
+    filep->allocated = 0;
+    filep->vma       = NULL;
+
+//    printf("%s file %p pages %p count %d\n",
+//              __FUNCTION__,filep, filep->pages, count);
+
+    return filep;
+}
+
+struct page *shmem_read_mapping_page_gfp(struct file *filep,
+                                         pgoff_t index, gfp_t gfp)
+{
+    struct page *page;
+
+//    dbgprintf("%s, file %p index %d\n", __FUNCTION__, filep, index);
+
+    if(unlikely(index >= filep->count))
+        return ERR_PTR(-EINVAL);
+
+    page = filep->pages[index];
+
+    if(unlikely(page == NULL))
+    {
+        page = (struct page *)AllocPage();
+
+        if(unlikely(page == NULL))
+            return ERR_PTR(-ENOMEM);
+
+        filep->pages[index] = page;
+    };
+
+    return page;
 };
 

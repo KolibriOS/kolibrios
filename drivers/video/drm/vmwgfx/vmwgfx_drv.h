@@ -340,7 +340,6 @@ struct vmw_private {
 	 */
 
 	bool stealth;
-	bool is_opened;
 	bool enable_fb;
 
 	/**
@@ -781,6 +780,9 @@ static inline struct ttm_mem_global *vmw_mem_glob(struct vmw_private *dev_priv)
 {
 	return (struct ttm_mem_global *) dev_priv->mem_global_ref.object;
 }
+
+extern struct drm_device *main_device;
+extern struct drm_file   *drm_file_handlers[256];
 
 typedef struct
 {

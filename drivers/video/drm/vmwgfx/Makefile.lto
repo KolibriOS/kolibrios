@@ -14,14 +14,15 @@ DRV_INCLUDES = $(DRV_TOPDIR)/include
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
 		-I$(DRV_INCLUDES)/linux
 
-CFLAGS   = -c -O2 $(INCLUDES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS_OPT = -Os -march=i686 -msse2 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe
+CFLAGS_OPT+= -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields -flto
+CFLAGS   = -c $(INCLUDES) $(DEFINES) $(CFLAGS_OPT)
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
 LIBS:=    -lddk -lcore -lgcc
 
-LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0\
-	  --file-alignment 512 --section-alignment 4096
+LDFLAGS = -e,_drvEntry,-nostdlib,-shared,-s,--image-base,0,--file-alignment,512,--section-alignment,4096
 
 
 NAME:=	  vmwgfx
@@ -88,16 +89,17 @@ NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
 
 all: $(NAME).dll
 
-$(NAME).dll: $(NAME_OBJS) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a vmw.lds Makefile
-	$(LD) -L$(LIBPATH) $(LDFLAGS) -T vmw.lds -o $@ $(NAME_OBJS) $(LIBS)
+$(NAME).dll: $(NAME_OBJS) $(SRC_DEP) $(HFILES) vmw.lds Makefile
+	$(CC) $(CFLAGS_OPT) -fwhole-program -nostdlib -Wl,-L$(LIBPATH),$(LDFLAGS),-T,vmw.lds -o $@ $(NAME_OBJS) libddk.a libcore.a libgcc.a
 	kpack $@  
 
 
-%.o : %.c $(HFILES) Makefile
+%.o : %.c $(HFILES) Makefile.lto
 	$(CC) $(CFLAGS) $(DEFINES) -o $@ $<
 
-%.o : %.S $(HFILES) Makefile
-	$(AS) -o $@ $<
+%.o : %.S $(HFILES) Makefile.lto
+	as -o $@ $<
+
 
 clean: 
 	-rm -f */*.o

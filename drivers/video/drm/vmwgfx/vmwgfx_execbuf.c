@@ -1352,7 +1352,6 @@ int vmw_execbuf_fence_commands(struct drm_file *file_priv,
 	return 0;
 }
 
-
 /**
  * vmw_execbuf_copy_fence_user - copy fence object information to
  * user-space.
@@ -1595,8 +1594,6 @@ out_unlock:
 
 	return ret;
 }
-
-
 
 /**
  * vmw_execbuf_unpin_panic - Idle the fifo and unpin the query buffer.

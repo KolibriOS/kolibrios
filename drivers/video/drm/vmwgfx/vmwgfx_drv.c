@@ -41,10 +41,6 @@
 #define VMW_MIN_INITIAL_WIDTH 800
 #define VMW_MIN_INITIAL_HEIGHT 600
 
-struct drm_device *main_device;
-
-struct drm_file *drm_file_handlers[256];
-
 #if 0
 /**
  * Fully encoded drm commands. Might move to vmw_drm.h
@@ -128,7 +124,7 @@ struct drm_file *drm_file_handlers[256];
  * Ioctl definitions.
  */
 
-static struct drm_ioctl_desc vmw_ioctls[] = {
+static const struct drm_ioctl_desc vmw_ioctls[] = {
 	VMW_IOCTL_DEF(VMW_GET_PARAM, vmw_getparam_ioctl,
 		      DRM_AUTH | DRM_UNLOCKED),
 	VMW_IOCTL_DEF(VMW_ALLOC_DMABUF, vmw_dmabuf_alloc_ioctl,
@@ -616,8 +612,10 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
 	}
 
 	dev_priv->fman = vmw_fence_manager_init(dev_priv);
-	if (unlikely(dev_priv->fman == NULL))
+	if (unlikely(dev_priv->fman == NULL)) {
+		ret = -ENOMEM;
 		goto out_no_fman;
+	}
 
 	vmw_kms_save_vga(dev_priv);
 #endif
@@ -633,6 +631,8 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
            goto out_no_fifo;
 //       vmw_fb_init(dev_priv);
     }
+
+    main_device = dev;
 
     LEAVE();
 	return 0;
@@ -777,7 +777,7 @@ static long vmw_unlocked_ioctl(struct file *filp, unsigned int cmd,
 
 	if ((nr >= DRM_COMMAND_BASE) && (nr < DRM_COMMAND_END)
 	    && (nr < DRM_COMMAND_BASE + dev->driver->num_ioctls)) {
-		struct drm_ioctl_desc *ioctl =
+		const struct drm_ioctl_desc *ioctl =
 		    &vmw_ioctls[nr - DRM_COMMAND_BASE];
 
 		if (unlikely(ioctl->cmd_drv != cmd)) {
@@ -790,29 +790,12 @@ static long vmw_unlocked_ioctl(struct file *filp, unsigned int cmd,
 	return drm_ioctl(filp, cmd, arg);
 }
 
-static int vmw_firstopen(struct drm_device *dev)
-{
-	struct vmw_private *dev_priv = vmw_priv(dev);
-	dev_priv->is_opened = true;
-
-	return 0;
-}
-
 static void vmw_lastclose(struct drm_device *dev)
 {
-	struct vmw_private *dev_priv = vmw_priv(dev);
 	struct drm_crtc *crtc;
 	struct drm_mode_set set;
 	int ret;
 
-	/**
-	 * Do nothing on the lastclose call from drm_unload.
-	 */
-
-	if (!dev_priv->is_opened)
-		return;
-
-	dev_priv->is_opened = false;
 	set.x = 0;
 	set.y = 0;
 	set.fb = NULL;
@@ -1082,12 +1065,10 @@ static int vmw_pm_prepare(struct device *kdev)
 #endif
 
 
-
-
 static struct drm_driver driver = {
 	.driver_features = DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED |
 	DRIVER_MODESET,
-//   .load = vmw_driver_load,
+   .load = vmw_driver_load,
 //   .unload = vmw_driver_unload,
 //   .firstopen = vmw_firstopen,
 //   .lastclose = vmw_lastclose,
@@ -1122,6 +1103,22 @@ static struct drm_driver driver = {
 //   .patchlevel = VMWGFX_DRIVER_PATCHLEVEL
 };
 
+#if 0
+static struct pci_driver vmw_pci_driver = {
+	.name = VMWGFX_DRIVER_NAME,
+	.id_table = vmw_pci_id_list,
+	.probe = vmw_probe,
+	.remove = vmw_remove,
+	.driver = {
+		.pm = &vmw_pm_ops
+	}
+};
+
+static int vmw_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+{
+	return drm_get_pci_dev(pdev, ent, &driver);
+}
+#endif
 
 int vmw_init(void)
 {
@@ -1138,100 +1135,18 @@ int vmw_init(void)
         return -ENODEV;
     };
 
+    drm_core_init();
+
     DRM_INFO("device %x:%x\n", device.pci_dev.vendor,
                                 device.pci_dev.device);
-    drm_global_init();
 
-    err = drm_get_dev(&device.pci_dev, ent);
+    err = drm_get_pci_dev(&device.pci_dev, ent, &driver);
     LEAVE();
 
     return err;
 }
 
 
-
-//module_init(vmwgfx_init);
-//module_exit(vmwgfx_exit);
-
 MODULE_AUTHOR("VMware Inc. and others");
 MODULE_DESCRIPTION("Standalone drm driver for the VMware SVGA device");
 MODULE_LICENSE("GPL and additional rights");
-
-int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
-{
-    static struct drm_device drm_dev;
-    static struct drm_file   drm_file;
-
-    struct drm_device *dev;
-    struct drm_file   *priv;
-
-    int ret;
-
-    dev  = &drm_dev;
-    priv = &drm_file;
-
-    drm_file_handlers[0] = priv;
-
- //   ret = pci_enable_device(pdev);
- //   if (ret)
- //       goto err_g1;
-
-    pci_set_master(pdev);
-
- //   if ((ret = drm_fill_in_dev(dev, pdev, ent, driver))) {
- //       printk(KERN_ERR "DRM: Fill_in_dev failed.\n");
- //       goto err_g2;
- //   }
-
-    dev->pdev = pdev;
-    dev->pci_device = pdev->device;
-    dev->pci_vendor = pdev->vendor;
-
-    INIT_LIST_HEAD(&dev->filelist);
-    INIT_LIST_HEAD(&dev->ctxlist);
-    INIT_LIST_HEAD(&dev->vmalist);
-    INIT_LIST_HEAD(&dev->maplist);
-
-    spin_lock_init(&dev->count_lock);
-    mutex_init(&dev->struct_mutex);
-    mutex_init(&dev->ctxlist_mutex);
-
-    INIT_LIST_HEAD(&priv->lhead);
-    INIT_LIST_HEAD(&priv->fbs);
-    INIT_LIST_HEAD(&priv->event_list);
-    init_waitqueue_head(&priv->event_wait);
-    priv->event_space = 4096; /* set aside 4k for event buffer */
-
-    idr_init(&priv->object_idr);
-    spin_lock_init(&priv->table_lock);
-
-    dev->driver = &driver;
-
-    if (dev->driver->open) {
-        ret = dev->driver->open(dev, priv);
-        if (ret < 0)
-            goto err_g4;
-    }
-
-    ret = vmw_driver_load(dev, ent->driver_data );
-
-    if (ret)
-        goto err_g4;
-
-    ret = kms_init(dev);
-
-    if (ret)
-        goto err_g4;
-
-    return 0;
-
-err_g4:
-//err_g3:
-//    if (drm_core_check_feature(dev, DRIVER_MODESET))
-//        drm_put_minor(&dev->control);
-//err_g2:
-//    pci_disable_device(pdev);
-//err_g1:
-
-    return ret;
-}

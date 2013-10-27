@@ -629,13 +629,11 @@ struct tag_display
     void (*update)(void);
 };
 
-extern struct drm_device *main_device;
-
 bool set_mode(struct drm_device *dev, struct drm_connector *connector,
               videomode_t *reqmode, bool strict)
 {
     struct drm_display_mode  *mode = NULL, *tmpmode;
-    struct vmw_private *dev_priv = vmw_priv(main_device);
+    struct vmw_private *dev_priv = vmw_priv(dev);
     struct vmw_screen_object_unit *sou;
     display_t *os_display;
 
