@@ -39,6 +39,10 @@
 #include <linux/mm.h>
 #include <linux/module.h>
 
+#define TTM_ASSERT_LOCKED(param)
+#define TTM_DEBUG(fmt, arg...)
+#define TTM_BO_HASH_ORDER 13
+
 #define pr_err(fmt, ...) \
         printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
 
@@ -219,7 +223,6 @@ void ttm_bo_del_sub_from_lru(struct ttm_buffer_object *bo)
 }
 EXPORT_SYMBOL(ttm_bo_del_sub_from_lru);
 
-
 /*
  * Call bo->mutex locked.
  */
@@ -230,7 +233,7 @@ static int ttm_bo_add_ttm(struct ttm_buffer_object *bo, bool zero_alloc)
 	int ret = 0;
 	uint32_t page_flags = 0;
 
-//   TTM_ASSERT_LOCKED(&bo->mutex);
+	TTM_ASSERT_LOCKED(&bo->mutex);
 	bo->ttm = NULL;
 
 	if (bdev->need_dma32)
@@ -609,13 +612,7 @@ static void ttm_bo_release(struct kref *kref)
 	struct ttm_bo_device *bdev = bo->bdev;
 	struct ttm_mem_type_manager *man = &bdev->man[bo->mem.mem_type];
 
-	write_lock(&bdev->vm_lock);
-	if (likely(bo->vm_node != NULL)) {
-//       rb_erase(&bo->vm_rb, &bdev->addr_space_rb);
-		drm_mm_put_block(bo->vm_node);
-		bo->vm_node = NULL;
-	}
-	write_unlock(&bdev->vm_lock);
+	drm_vma_offset_remove(&bdev->vma_manager, &bo->vma_node);
 	ttm_mem_io_lock(man, false);
 //   ttm_mem_io_free_vm(bo);
 	ttm_mem_io_unlock(man);
@@ -1125,6 +1122,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 	bo->resv = &bo->ttm_resv;
 //   reservation_object_init(bo->resv);
 	atomic_inc(&bo->glob->bo_count);
+	drm_vma_node_reset(&bo->vma_node);
 
 	ret = ttm_bo_check_placement(bo, placement);
 
@@ -1303,6 +1301,7 @@ out_no_drp:
     kfree(glob);
     return ret;
 }
+EXPORT_SYMBOL(ttm_bo_global_init);
 
 
 int ttm_bo_device_init(struct ttm_bo_device *bdev,
@@ -1315,7 +1314,6 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
 
     ENTER();
 
-//	rwlock_init(&bdev->vm_lock);
 	bdev->driver = driver;
 
 	memset(bdev->man, 0, sizeof(bdev->man));
@@ -1328,9 +1326,8 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
 	if (unlikely(ret != 0))
 		goto out_no_sys;
 
-	bdev->addr_space_rb = RB_ROOT;
-	drm_mm_init(&bdev->addr_space_mm, file_page_offset, 0x10000000);
-
+	drm_vma_offset_manager_init(&bdev->vma_manager, file_page_offset,
+				    0x10000000);
 //	INIT_DELAYED_WORK(&bdev->wq, ttm_bo_delayed_workqueue);
 	INIT_LIST_HEAD(&bdev->ddestroy);
 	bdev->dev_mapping = NULL;
