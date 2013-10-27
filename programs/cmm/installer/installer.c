@@ -7,9 +7,8 @@
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
 #include "..\lib\copyf.h"
-//*.obj libraries
-#include "..\lib\lib.obj\box_lib.h"
 
+#include "add_appl_dir.c";
 
 #define LOGOW 16
 #define LOGOH 16
@@ -52,9 +51,6 @@ int DefineWindow(dword wtitle, wbutton)
 	return 1;
 }
 
-#include "add_appl_dir.c";
-#include "dialogs.c";
-
 void main()
 {
 	mem_Init();
@@ -91,7 +87,7 @@ void InstallationLoop(int dialog_t)
 					{
 						if !(DefineWindow("Installation Started", "Stop")) break;
 						//iclock[0]><iclock[1]; 
-						_PutImage(Form.cwidth-LOGOW/2, Fprm.height-LOGOH/2+BLACK_H, LOGOW,LOGOH, LOGOW*LOGOH*3*iclock[0]+ #logo);
+						_PutImage(Form.cwidth-LOGOW/2, Form.height-LOGOH/2, LOGOW,LOGOH, LOGOW*LOGOH*3*iclock[0]+ #logo);
 
 						if (!started)
 						{
@@ -104,7 +100,7 @@ void InstallationLoop(int dialog_t)
 					{
 						if !(DefineWindow("Installation complete", "Exit")) break;
 						WriteText(TEXTX, BLACK_H*2, 0x80, 0, T_END);
-						DrawLink(TEXTX, BLACK_H*2+55, 0x80, 11, "http://kolibri-n.org");
+						DrawLink(TEXTX, BLACK_H*2+15, 0x80, 11, "http://kolibri-n.org");
 					}
 	}
 }
