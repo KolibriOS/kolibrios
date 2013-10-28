@@ -1,4 +1,4 @@
- ;;; Docky v0.4 by eAndrew
+ ;;; Docky v0.4.3 by eAndrew
 
     use32
     org     0x0
@@ -18,7 +18,7 @@
 	    dll.Load
 ;-------------------------------------------------------------------------------
 ICON_SIZE	 equ  32 * 32 * 3
-IMAGE_FILE_SIZE  equ  ICON_SIZE * 29
+IMAGE_FILE_SIZE  equ  ICON_SIZE   * 29
 IMAGE_DATA_SIZE  equ  32 * 32 * 4 * 29
 ;================================================================================
 proc main
@@ -285,6 +285,8 @@ proc event_redraw
 
     mcall   0, <[win.x], [win.width]>, <[win.y], [win.height]>, [color.frame], [color.frame], [color.frame]
 
+    mov     eax, 13
+
     and     ebx, 0x0000FFFF
     add     ebx, 0x00010000
     sub     ebx, 0x00000001
@@ -293,7 +295,7 @@ proc event_redraw
     add     ecx, 0x00010000
     sub     ecx, 0x00000001
 
-    mcall   13, , , [color.framein]
+    mcall   , , , [color.framein]
 
 
     add     ebx, 0x00010000
@@ -302,7 +304,7 @@ proc event_redraw
     add     ecx, 0x00010000
     sub     ecx, 0x00000002
 
-    mcall   13, , , [color.bg]
+    mcall   , , , [color.bg]
 
     mov     edi, 0
   @@:
@@ -310,15 +312,18 @@ proc event_redraw
     je	    @f
 
     push    edi
-    imul    esi, edi, 42
-    shl     esi, 16
-    add     esi, 41
+    mov     eax, 8
+    mov     edx, 0x60000002
+    mov     esi, [color.bg]
+    imul    edi, 42
+    shl     edi, 16
+    add     edi, 41
     cmp     byte[win.isvert], 1
     je	    .vert_btn
-    mcall   8, esi, <0, 42>, 0x60000002, [color.bg]
+    mcall   , edi, <0, 42>
     jmp     .endbtn
  .vert_btn:
-    mcall   8, <0, 42>, esi, 0x60000002, [color.bg]
+    mcall   , <0, 42>, edi
  .endbtn:
     pop     edi
 
@@ -329,6 +334,7 @@ proc event_redraw
  .draw_separator:
     push    ebx
     push    ecx
+    mov     eax, 13
     mov     ebx, edi
     imul    ebx, 42
     add     ebx, 41
@@ -336,19 +342,21 @@ proc event_redraw
     add     ebx, 1
     cmp     byte[win.isvert], 1
     je	    .vert_draw_sep
-    mcall   13, , <0, 43>, [color.frame]
+    mcall   , , <0, 43>, [color.frame]
     sub     ebx, 0x00010000
-    mcall   13, , <1, 41>, [color.framein]
+    mov     edx, [color.framein]
+    mcall   , , <1, 41>
     add     ebx, 0x00020000
-    mcall   13, , <1, 41>, [color.framein]
+    mcall   , , <1, 41>
     jmp     .end_inner_sep
  .vert_draw_sep:
     mov     ecx, ebx
-    mcall   13, <0, 43>, , [color.frame]
+    mcall   , <0, 43>, , [color.frame]
     sub     ecx, 0x00010000
-    mcall   13, <1, 41>, , [color.framein]
+    mov     edx, [color.framein]
+    mcall   , <1, 41>
     add     ecx, 0x00020000
-    mcall   13, <1, 41>, , [color.framein]
+    mcall   , <1, 41>
  .end_inner_sep:
     pop     ecx
     pop     ebx
@@ -485,10 +493,12 @@ proc event_mouse
     add     edx, 512
     mcall   51, 1, n_main
 
-    mcall   18, 7
+    mov     eax, 18
+
+    mcall   , 7
     mov     [win.psid], eax
 
-    mcall   18, 3, [win.sid]
+    mcall   , 3, [win.sid]
 
     mov     byte[win.state], 1
 
@@ -677,6 +687,8 @@ n_event_redraw:
 
     mcall   0, <[nwin.x], [nwin.width]>, <[nwin.y], [nwin.height]>, [color.frame], [color.frame], [color.frame]
 
+    mov     eax, 13
+
     and     ebx, 0x0000FFFF
     add     ebx, 0x00010000
     sub     ebx, 0x00000001
@@ -685,7 +697,7 @@ n_event_redraw:
     add     ecx, 0x00010000
     sub     ecx, 0x00000001
 
-    mcall   13, , , [color.framein]
+    mcall   , , , [color.framein]
 
 
     add     ebx, 0x00010000
@@ -694,7 +706,7 @@ n_event_redraw:
     add     ecx, 0x00010000
     sub     ecx, 0x00000002
 
-    mcall   13, , , [color.bg]
+    mcall   , , , [color.bg]
 
     mov     edx, [win.button_index]
     imul    edx, 16
