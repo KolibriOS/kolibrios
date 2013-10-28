@@ -37,15 +37,13 @@ proc main
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, -1
     mov     [dock_items.location], eax
 
-    invoke  ini.get_str, ini_data.file_name, ini_data.settings_name, ini_data.skin_name, ini_data.skin_file, 32, 0
-
-    invoke  ini.get_color, ini_data.skin_dir, ini_data.skin_name, ini_data.color_bg, 0x0
+    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_bg, 0x0
     mov     [color.bg], eax
-    invoke  ini.get_color, ini_data.skin_dir, ini_data.skin_name, ini_data.color_frame, 0xFFFFFF
+    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_frame, 0xFFFFFF
     mov     [color.frame], eax
-    invoke  ini.get_color, ini_data.skin_dir, ini_data.skin_name, ini_data.color_framein, 0x888888
+    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_framein, 0x888888
     mov     [color.framein], eax
-    invoke  ini.get_color, ini_data.skin_dir, ini_data.skin_name, ini_data.color_text, 0xFFFFFF
+    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_text, 0xFFFFFF
     or	    eax, 0x80000000
     mov     [color.text], eax
 
@@ -732,10 +730,6 @@ img_data:
 ini_data:
  .file_name:
     db	    "/sys/settings/Docky.ini", 0
- .skin_dir:
-    db	    "/sys/settings/Docky skins/"
- .skin_file:
-    db	    32 dup(0)
  .path_name:
     db	    "path", 0
  .param_name:
@@ -749,8 +743,6 @@ ini_data:
     db	    "@SETTINGS", 0
  .location_name:
     db	    "location", 0
- .skin_name:
-    db	    "skin", 0
  .color_bg:
     db	    "bg", 0
  .color_frame:
