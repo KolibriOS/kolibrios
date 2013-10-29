@@ -1,5 +1,3 @@
- ;;; Docky v0.4.3 by eAndrew
-
     use32
     org     0x0
 ;-------------------------------------------------------------------------------
@@ -10,6 +8,7 @@
     include "../../../proc32.inc"
     include "../../../dll.inc"
     include "../../../develop/libraries/box_lib/load_lib.mac"
+   ;include "../../../debug.inc"
 
     @use_library_mem	 \
 	    mem.Alloc,	 \
@@ -39,6 +38,8 @@ proc main
 
     invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_bg, 0x0
     mov     [color.bg], eax
+    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_bg_line, 0x080808
+    mov     [color.bg_line], eax
     invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_frame, 0xFFFFFF
     mov     [color.frame], eax
     invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_framein, 0x888888
@@ -72,12 +73,35 @@ proc main
     mov     edi, 0
     add     eax, 24
     mov     eax, [eax]
-    mov     ecx, [color.bg]
  .setalpha:
     mov     ebx, [eax + edi]
     shr     ebx, 24
     cmp     ebx, 0
     jne     .nonalpha
+
+    pushad
+    mov     eax, edi
+    mov     edx, 0
+    mov     ebx, 128
+    div     ebx
+
+    mov     edx, 0
+    mov     ebx, 2
+    div     ebx
+
+    mov     edx, 0
+    div     ebx
+
+    cmp     edx, 1
+    je	    .set_bg_line
+ .set_bg:
+    popad
+    mov     ecx, [color.bg]
+    jmp     .set_ecx
+ .set_bg_line:
+    popad
+    mov     ecx, [color.bg_line]
+ .set_ecx:
     mov     [eax + edi], ecx
  .nonalpha:
     add     edi, 4
@@ -134,7 +158,7 @@ proc main
     jmp     .SETDEF
 
  .HORZ_WIDTH:
-    mov     eax, 42
+    mov     eax, 40
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     dec     eax
@@ -161,7 +185,7 @@ proc main
     ret
 
  .HORZ_HEIGHT:
-    mov     dword[win.height_opn], 42
+    mov     dword[win.height_opn], 40
     mov     dword[win.height_hdn], 0
 
     ret
@@ -171,7 +195,7 @@ proc main
     and     eax, 0xFFFF
     dec     eax
     mov     [win.y_hdn], eax
-    sub     eax, 42
+    sub     eax, 40
     mov     [win.y_opn], eax
 
     ret
@@ -183,7 +207,7 @@ proc main
     ret
 
  .VERT_WIDTH:
-    mov     dword[win.width_opn], 42
+    mov     dword[win.width_opn], 40
     mov     dword[win.width_hdn], 0
 
     ret
@@ -200,13 +224,13 @@ proc main
     and     eax, 0xFFFF0000
     shr     eax, 16
     mov     [win.x_hdn], eax
-    sub     eax, 42
+    sub     eax, 40
     mov     [win.x_opn], eax
 
     ret
 
  .VERT_HEIGHT:
-    mov     eax, 42
+    mov     eax, 40
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     dec     eax
@@ -306,6 +330,20 @@ proc event_redraw
 
     mcall   , , , [color.bg]
 
+    mov     edi, 2
+    mov     eax, 13
+    mov     ebx, 2 shl 16
+    add     ebx, [win.width]
+    sub     ebx, 3
+    mov     ecx, 2 shl 16 + 2
+    mov     edx, [color.bg_line]
+  @@:
+    mcall
+    add     ecx, 4 shl 16
+    add     edi, 4
+    cmp     edi, [win.height]
+    jl	    @b
+
     mov     edi, 0
   @@:
     cmp     edi, [dock_items.count]
@@ -315,48 +353,68 @@ proc event_redraw
     mov     eax, 8
     mov     edx, 0x60000002
     mov     esi, [color.bg]
-    imul    edi, 42
+    imul    edi, 40
     shl     edi, 16
-    add     edi, 41
+    add     edi, 39
     cmp     byte[win.isvert], 1
     je	    .vert_btn
-    mcall   , edi, <0, 42>
+    mcall   , edi, <0, 40>
     jmp     .endbtn
  .vert_btn:
-    mcall   , <0, 42>, edi
+    mcall   , <0, 40>, edi
  .endbtn:
     pop     edi
 
+ .draw_Sseparator:
+    push    ebx
+    push    ecx
+    mov     eax, 13
+    mov     ebx, edi
+    imul    ebx, 40
+    add     ebx, 40
+    shl     ebx, 16
+    add     ebx, 1
+    cmp     byte[win.isvert], 1
+    je	    .vert_Sdraw_sep
+    mcall   , , <6, 29>, [color.framein]
+    jmp     .end_Sinner_sep
+ .vert_Sdraw_sep:
+    mov     ecx, ebx
+    mcall   , <6, 29>, , [color.framein]
+ .end_Sinner_sep:
+    pop     ecx
+    pop     ebx
+ .end_Sseparator:
+
     cmp     byte[dock_items.separator + edi], 1
-    je	    .draw_separator
-    jmp     .end_separator
+    jne     .end_separator
 
  .draw_separator:
     push    ebx
     push    ecx
     mov     eax, 13
     mov     ebx, edi
-    imul    ebx, 42
-    add     ebx, 41
+    imul    ebx, 40
+    add     ebx, 39
     shl     ebx, 16
     add     ebx, 1
     cmp     byte[win.isvert], 1
     je	    .vert_draw_sep
-    mcall   , , <0, 43>, [color.frame]
+    mcall   , , <0, 41>, [color.frame]
     sub     ebx, 0x00010000
     mov     edx, [color.framein]
-    mcall   , , <1, 41>
+    mcall   , , <1, 39>
     add     ebx, 0x00020000
-    mcall   , , <1, 41>
+    mcall   , , <1, 39>
     jmp     .end_inner_sep
  .vert_draw_sep:
     mov     ecx, ebx
-    mcall   , <0, 43>, , [color.frame]
+    mcall   , <0, 41>, , [color.frame]
     sub     ecx, 0x00010000
     mov     edx, [color.framein]
-    mcall   , <1, 41>
+    mcall   , <1, 39>
     add     ecx, 0x00020000
-    mcall   , <1, 41>
+    mcall   , <1, 39>
  .end_inner_sep:
     pop     ecx
     pop     ebx
@@ -366,13 +424,13 @@ proc event_redraw
     je	    .vert_dig
     mov     edx, ebx
     and     edx, 0xFFFF0000
-    add     edx, 0x00050005
+    add     edx, 0x00040004
     jmp     .digend
  .vert_dig:
     mov     edx, ecx
     and     edx, 0xFFFF0000
     shr     edx, 16
-    add     edx, 0x00050005
+    add     edx, 0x00040004
  .digend:
 
     imul    ebx, edi, 4
@@ -420,6 +478,11 @@ proc event_button
 
     mcall   70, file_exec
 
+    mov     ecx, eax
+    mcall   18, 21
+    and     eax, 0xFFFF
+    mov     [win.psid], eax
+
   @@:
     jmp     main_loop
 endp
@@ -454,7 +517,7 @@ proc event_mouse
 
  .nxt:
     mov     edx, 0
-    mov     ebx, 42
+    mov     ebx, 40
     div     ebx
 
     cmp     eax, [dock_items.count]
@@ -472,15 +535,15 @@ proc event_mouse
 
  .nxt2:
     mov     eax, [win.button_index]
-    imul    eax, 42
+    imul    eax, 40
     cmp     byte[win.isvert], 1
     je	    .vert_name
-    sub     eax, 13
+    sub     eax, 15
     add     eax, [win.x]
     mov     [nwin.x], eax
     jmp     .vert_end
  .vert_name:
-    add     eax, 13
+    add     eax, 12
     add     eax, [win.y]
     mov     [nwin.y], eax
  .vert_end:
@@ -619,22 +682,22 @@ n_main:
     jmp     .left
  .top:
     mov     eax, [win.height_opn]
-    add     eax, 5
+    add     eax, 4
     mov     [nwin.y], eax
     jmp     @f
  .right:
     mov     eax, [win.x_opn]
-    sub     eax, 73
+    sub     eax, 72
     mov     [nwin.x], eax
     jmp     @f
  .bottom:
     mov     eax, [win.y_opn]
-    sub     eax, 21
+    sub     eax, 20
     mov     [nwin.y], eax
     jmp     @f
  .left:
     mov     eax, [win.width_opn]
-    add     eax, 5
+    add     eax, 4
     mov     [nwin.x], eax
   @@:
     mov     dword[nwin.width], 68
@@ -708,6 +771,20 @@ n_event_redraw:
 
     mcall   , , , [color.bg]
 
+    mov     edi, 0
+    mov     eax, 13
+    mov     ebx, 2 shl 16
+    add     ebx, [nwin.width]
+    sub     ebx, 3
+    mov     ecx, 2 shl 16 + 2
+    mov     edx, [color.bg_line]
+  @@:
+    mcall
+    add     ecx, 4 shl 16
+    add     edi, 4
+    cmp     edi, 16
+    jne     @b
+
     mov     edx, [win.button_index]
     imul    edx, 16
     add     edx, dock_items.name
@@ -757,6 +834,8 @@ ini_data:
     db	    "location", 0
  .color_bg:
     db	    "bg", 0
+ .color_bg_line:
+    db	    "bg_line", 0
  .color_frame:
     db	    "frame", 0
  .color_framein:
@@ -852,6 +931,8 @@ __stackend:
 ;================================================================================
 color:
  .bg:
+    rd	    1
+ .bg_line:
     rd	    1
  .frame:
     rd	    1
