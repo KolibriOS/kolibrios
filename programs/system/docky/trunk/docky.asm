@@ -498,7 +498,7 @@ proc event_mouse
     mcall   , 7
     mov     [win.psid], eax
 
-    mcall   , 3, [win.sid]
+    mcall   18, 3, [win.sid]
 
     mov     byte[win.state], 1
 
