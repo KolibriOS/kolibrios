@@ -11,6 +11,7 @@
 /SYS/NETWORK/ZEROCONF ""          1    # Network configuration
 /SYS/MEDIA/PALITRA "H 007DCEDF 003C427F" 1 #SET BG
 /SYS/@PANEL           ""          1    # Start panel
+/SYS/@DOCKY           ""          1    # Start docky
 /SYS/SETUP           BOOT         1    # Load device settings
 /SYS/@ICON            ""          1    # Multithread icon
 #/SYS/@RB             ""          1    # Desktop right-click menu

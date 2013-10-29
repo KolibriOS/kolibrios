@@ -45,6 +45,7 @@ FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
+ @docky:@DOCKY:$(PROGS)/system/docky/trunk/DOCKY.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
