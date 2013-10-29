@@ -83,7 +83,8 @@ void FileMenu()
 				break;
 				
 		case evReDraw: _MENU_DRAW:
-				DefineAndDrawWindow(m.x+Form.left+5, m.y+Form.top+GetSkinHeight(),menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
+				if (menu_call_mouse) DefineAndDrawWindow(m.x+Form.left+5, m.y+Form.top+GetSkinHeight(),menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
+				else DefineAndDrawWindow(Form.left+files.x+15, files.line_h*files.current+files.y+Form.top+30,menu.w+3,menu.h+6,0x01, 0, 0, 0x01fffFFF);
 				GetProcessInfo(#MenuForm, SelfInfo);
 				DrawRectangle(0,0,menu.w+1,menu.h+2,sc.work_graph);
 				DrawBar(1,1,menu.w,1,0xFFFfff);
