@@ -49,45 +49,45 @@ keymap_alt:
 
 
 if lang eq ru
-  boot_initirq:     cp866 'Инициализация IRQ',0
-  boot_picinit:     cp866 'Инициализация PIC',0
-  boot_v86machine:  cp866 'Инициализация системы V86 машины',0
-  boot_inittimer:   cp866 'Инициализация системного таймера (IRQ0)',0
-  boot_initapic:    cp866 'Попытка инициализации APIC',0
-  boot_enableirq:   cp866 'Включить прерывания 2, 13',0
-  boot_disabling_ide:cp866 'Запрещение прерываний в контроллере IDE',0
-  boot_enabling_ide:cp866 'Разрешение прерываний в контроллере IDE',0
-  boot_set_int_IDE: cp866 'Установка обработчиков прерываний IDE',0
-  boot_detectfloppy:cp866 'Поиск floppy дисководов',0
-  boot_detecthdcd:  cp866 'Поиск жестких дисков и ATAPI приводов',0
-  boot_getcache:    cp866 'Получение памяти для кэша',0
-  boot_detectpart:  cp866 'Поиск разделов на дисковых устройствах',0
-  boot_init_sys:    cp866 'Инициализация системного каталога /sys',0
-  boot_loadlibs:    cp866 'Загрузка библиотек (.obj)',0
-  boot_memdetect:   cp866 'Количество оперативной памяти','     ',' Мб',0
-  boot_tss:         cp866 'Установка TSSs',0
-  boot_cpuid:       cp866 'Чтение CPUIDs',0
-;  boot_devices:     cp866 'Поиск устройств',0
-  boot_timer:       cp866 'Установка таймера',0
-  boot_irqs:        cp866 'Переопределение IRQ',0
-  boot_setmouse:    cp866 'Установка мыши',0
-  boot_windefs:     cp866 'Установка настроек окон по умолчанию',0
-  boot_bgr:         cp866 'Установка фона',0
-  boot_resirqports: cp866 'Резервирование IRQ и портов',0
-  boot_setrports:   cp866 'Установка адресов IRQ',0
-  boot_setostask:   cp866 'Создание процесса ядра',0
-  boot_allirqs:     cp866 'Открытие всех IRQ',0
-  boot_tsc:         cp866 'Чтение TSC',0
-  boot_cpufreq:     cp866 'Частота процессора ','    ',' МГц',0
-  boot_pal_ega:     cp866 'Установка EGA/CGA 320x200 палитры',0
-  boot_pal_vga:     cp866 'Установка VGA 640x480 палитры',0
-  boot_failed:      cp866 'Загрузка первого приложения не удалась',0
-  boot_mtrr:        cp866 'Установка MTRR',0
+  boot_initirq      cp866 'Инициализация IRQ',0
+  boot_picinit      cp866 'Инициализация PIC',0
+  boot_v86machine   cp866 'Инициализация системы V86 машины',0
+  boot_inittimer    cp866 'Инициализация системного таймера (IRQ0)',0
+  boot_initapic     cp866 'Попытка инициализации APIC',0
+  boot_enableirq    cp866 'Включить прерывания 2, 13',0
+  boot_disabling_ide cp866 'Запрещение прерываний в контроллере IDE',0
+  boot_enabling_ide cp866 'Разрешение прерываний в контроллере IDE',0
+  boot_set_int_IDE  cp866 'Установка обработчиков прерываний IDE',0
+  boot_detectfloppy cp866 'Поиск floppy дисководов',0
+  boot_detecthdcd   cp866 'Поиск жестких дисков и ATAPI приводов',0
+  boot_getcache     cp866 'Получение памяти для кэша',0
+  boot_detectpart   cp866 'Поиск разделов на дисковых устройствах',0
+  boot_init_sys     cp866 'Инициализация системного каталога /sys',0
+  boot_loadlibs     cp866 'Загрузка библиотек (.obj)',0
+  boot_memdetect    cp866 'Количество оперативной памяти','     ',' Мб',0
+  boot_tss          cp866 'Установка TSSs',0
+  boot_cpuid        cp866 'Чтение CPUIDs',0
+;  boot_devices      cp866 'Поиск устройств',0
+  boot_timer        cp866 'Установка таймера',0
+  boot_irqs         cp866 'Переопределение IRQ',0
+  boot_setmouse     cp866 'Установка мыши',0
+  boot_windefs      cp866 'Установка настроек окон по умолчанию',0
+  boot_bgr          cp866 'Установка фона',0
+  boot_resirqports  cp866 'Резервирование IRQ и портов',0
+  boot_setrports    cp866 'Установка адресов IRQ',0
+  boot_setostask    cp866 'Создание процесса ядра',0
+  boot_allirqs      cp866 'Открытие всех IRQ',0
+  boot_tsc          cp866 'Чтение TSC',0
+  boot_cpufreq      cp866 'Частота процессора ','    ',' МГц',0
+  boot_pal_ega      cp866 'Установка EGA/CGA 320x200 палитры',0
+  boot_pal_vga      cp866 'Установка VGA 640x480 палитры',0
+  boot_failed       cp866 'Загрузка первого приложения не удалась',0
+  boot_mtrr         cp866 'Установка MTRR',0
 
-  boot_APIC_found:  cp866 'APIC включен', 0
-  boot_APIC_nfound: cp866 'APIC не найден', 0
+  boot_APIC_found   cp866 'APIC включен', 0
+  boot_APIC_nfound  cp866 'APIC не найден', 0
 if preboot_blogesc
-  boot_tasking:     cp866 'Все готово для запуска, нажмитре ESC для старта',0
+  boot_tasking      cp866 'Все готово для запуска, нажмитре ESC для старта',0
 end if
 else if lang eq sp
   include 'data32sp.inc'
@@ -165,7 +165,7 @@ read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
-ud_user_message: cp866 'Ошибка: неподдерживаемая инструкция процессора',0
+ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
 else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
 end if

@@ -93,11 +93,11 @@ save_quest db     "Remember current settings? [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
 end if
 
-_st:latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
-_r1:latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
-_r2:latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
-_rs:latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
-_bt:latin1 '║                   └───────────────────────────────┴─┘',13,10,0
+_st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
+_r1 latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
+_r2 latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
+_rs latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
+_bt latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
 remark1 db      "Default values were selected to match most of configurations, but not all.",0
 remark2 db      "If the system does not boot, try to disable option [b]. If the system gets",0

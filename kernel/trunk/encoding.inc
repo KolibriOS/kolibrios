@@ -97,6 +97,12 @@ macro cp866 [arg]
   end while
 }
 
+struc cp866 [arg]
+{
+common
+  cp866 arg
+}
+
 ; Latin-1 encoding
 ; 0x00-0xFF - trivial map
 macro latin1 [arg]
@@ -115,6 +121,12 @@ macro latin1 [arg]
       .err Failed to convert to Latin-1
     end if
   end while
+}
+
+struc latin1 [arg]
+{
+common
+  latin1 arg
 }
 
 ; CP850 encoding
@@ -146,4 +158,10 @@ macro cp850 [arg]
       err Failed to convert to CP850
     end if
   end while
+}
+
+struc cp850 [arg]
+{
+common
+  cp850 arg
 }
