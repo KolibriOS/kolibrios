@@ -1084,8 +1084,8 @@ void ironlake_edp_panel_vdd_off(struct intel_dp *intel_dp, bool sync)
 		 * time from now (relative to the power down delay)
 		 * to keep the panel power up across a sequence of operations
 		 */
-//       schedule_delayed_work(&intel_dp->panel_vdd_work,
-//                     msecs_to_jiffies(intel_dp->panel_power_cycle_delay * 5));
+		schedule_delayed_work(&intel_dp->panel_vdd_work,
+				      msecs_to_jiffies(intel_dp->panel_power_cycle_delay * 5));
 	}
 }
 

@@ -400,8 +400,6 @@ static void intel_enable_fbc(struct drm_crtc *crtc, unsigned long interval)
 
 	dev_priv->fbc.fbc_work = work;
 
-	DRM_DEBUG_KMS("scheduling delayed FBC enable\n");
-
 	/* Delay the actual enabling to let pageflipping cease and the
 	 * display to settle before starting the compression. Note that
 	 * this delay also serves a second purpose: it allows for a

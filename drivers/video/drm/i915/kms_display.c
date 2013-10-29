@@ -428,6 +428,13 @@ int set_user_mode(videomode_t *mode)
     return err;
 };
 
+void i915_dpms(struct drm_device *dev, int mode)
+{
+    struct drm_connector_funcs *f = os_display->connector->funcs;
+
+    f->dpms(os_display->connector, mode);
+};
+
 void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
     list_del(&cursor->list);

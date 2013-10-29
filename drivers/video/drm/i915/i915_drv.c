@@ -31,9 +31,9 @@
 #include <drm/drmP.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
+#include "i915_trace.h"
 #include "intel_drv.h"
 
-#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
 #include <errno-base.h>
@@ -136,7 +136,7 @@ module_param_named(preliminary_hw_support, i915_preliminary_hw_support, int, 060
 MODULE_PARM_DESC(preliminary_hw_support,
 		"Enable preliminary hardware support.");
 
-int i915_disable_power_well __read_mostly = 0;
+int i915_disable_power_well __read_mostly = 1;
 module_param_named(disable_power_well, i915_disable_power_well, int, 0600);
 MODULE_PARM_DESC(disable_power_well,
 		 "Disable the power well when possible (default: true)");
@@ -150,7 +150,7 @@ module_param_named(fastboot, i915_fastboot, bool, 0600);
 MODULE_PARM_DESC(fastboot, "Try to skip unnecessary mode sets at boot time "
 		 "(default: false)");
 
-int i915_enable_pc8 __read_mostly = 0;
+int i915_enable_pc8 __read_mostly = 1;
 module_param_named(enable_pc8, i915_enable_pc8, int, 0600);
 MODULE_PARM_DESC(enable_pc8, "Enable support for low power package C states (PC8+) (default: true)");
 
@@ -564,6 +564,7 @@ static void intel_resume_hotplug(struct drm_device *dev)
 	/* Just fire off a uevent and let userspace tell us what to do */
 	drm_helper_hpd_irq_event(dev);
 }
+
 static int __i915_drm_thaw(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;

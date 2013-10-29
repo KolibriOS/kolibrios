@@ -1411,14 +1411,19 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	if (IS_VALLEYVIEW(dev))
 		dev_priv->num_plane = 2;
 
+	if (HAS_POWER_WELL(dev))
+		i915_init_power_well(dev);
     ret = i915_load_modeset_init(dev);
     if (ret < 0) {
         DRM_ERROR("failed to init modeset\n");
             goto out_gem_unload;
     }
 
+	if (INTEL_INFO(dev)->num_pipes) {
     /* Must be done after probing outputs */
-
+		intel_opregion_init(dev);
+//		acpi_video_register();
+	}
 
 	if (IS_GEN5(dev))
 		intel_gpu_ips_init(dev_priv);
@@ -1561,7 +1566,7 @@ int i915_driver_open(struct drm_device *dev, struct drm_file *file)
 	struct drm_i915_file_private *file_priv;
 
 	DRM_DEBUG_DRIVER("\n");
-	file_priv = kmalloc(sizeof(*file_priv), GFP_KERNEL);
+	file_priv = kzalloc(sizeof(*file_priv), GFP_KERNEL);
 	if (!file_priv)
 		return -ENOMEM;
 

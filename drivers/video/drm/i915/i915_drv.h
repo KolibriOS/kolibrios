@@ -1217,6 +1217,7 @@ typedef struct drm_i915_private {
 		} hpd_mark;
 	} hpd_stats[HPD_NUM_PINS];
 	u32 hpd_event_bits;
+	struct timer_list hotplug_reenable_timer;
 
 	int num_plane;
 

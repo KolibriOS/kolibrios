@@ -1078,8 +1078,8 @@ static void output_poll_execute(struct work_struct *work)
 	if (changed)
 		drm_kms_helper_hotplug_event(dev);
 
-//   if (repoll)
-//       schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
+	if (repoll)
+		schedule_delayed_work(delayed_work, DRM_OUTPUT_POLL_PERIOD);
 }
 
 void drm_kms_helper_poll_disable(struct drm_device *dev)
@@ -1104,8 +1104,8 @@ void drm_kms_helper_poll_enable(struct drm_device *dev)
 			poll = true;
 	}
 
-//   if (poll)
-//       schedule_delayed_work(&dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
+	if (poll)
+		schedule_delayed_work(&dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
 }
 EXPORT_SYMBOL(drm_kms_helper_poll_enable);
 

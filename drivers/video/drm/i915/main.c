@@ -61,6 +61,89 @@ unsigned int tsc_khz;
 
 int i915_modeset = 1;
 
+typedef union __attribute__((packed))
+{
+    uint32_t val;
+    struct
+    {
+        uint8_t   state;
+        uint8_t   code;
+        uint16_t  ctrl_key;
+    };
+}oskey_t;
+
+static inline oskey_t get_key(void)
+{
+    oskey_t val;
+    asm volatile("int $0x40":"=a"(val):"a"(2));
+    return val;
+};
+
+void i915_dpms(struct drm_device *dev, int mode);
+
+void i915_driver_thread()
+{
+    struct drm_i915_private *dev_priv = main_device->dev_private;
+    struct workqueue_struct *cwq = dev_priv->wq;
+    static int dpms = 1;
+    static int dpms_lock = 0;
+    oskey_t   key;
+    unsigned long irqflags;
+    int tmp;
+
+    printf("%s\n",__FUNCTION__);
+
+    asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(1),"c"(1));
+    asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(4),"c"(0x46),"d"(0x330));
+    asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(4),"c"(0xC6),"d"(0x330));
+
+    while(driver_wq_state != 0)
+    {
+        key = get_key();
+
+        if( (key.val != 1) && (key.state == 0x02))
+        {
+            if(key.code == 0x46 && dpms_lock == 0)
+            {
+                dpms_lock = 1;
+                if(dpms == 1)
+                {
+                    i915_dpms(main_device, DRM_MODE_DPMS_OFF);
+                    printf("dpms off\n");
+                }
+                else
+                {
+                    i915_dpms(main_device, DRM_MODE_DPMS_ON);
+                    printf("dpms on\n");
+                };
+                dpms ^= 1;
+                }
+            else if(key.code == 0xC6)
+                dpms_lock = 0;
+        };
+
+        spin_lock_irqsave(&cwq->lock, irqflags);
+
+        while (!list_empty(&cwq->worklist))
+        {
+            struct work_struct *work = list_entry(cwq->worklist.next,
+                                        struct work_struct, entry);
+            work_func_t f = work->func;
+            list_del_init(cwq->worklist.next);
+
+            spin_unlock_irqrestore(&cwq->lock, irqflags);
+            f(work);
+            spin_lock_irqsave(&cwq->lock, irqflags);
+        }
+
+        spin_unlock_irqrestore(&cwq->lock, irqflags);
+
+        delay(1);
+    };
+
+    asm volatile ("int $0x40"::"a"(-1));
+}
+
 u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
     int err = 0;
@@ -79,9 +162,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-//        strcpy(log, "/tmp1/1/i915.log");
-//        strcpy(log, "/RD/1/DRIVERS/i915.log");
-        strcpy(log, "/BD1/4/i915.log");
+        strcpy(log, "/tmp1/1/i915.log");
 
         if(!dbg_open(log))
         {
@@ -109,11 +190,9 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( err != 0)
         dbgprintf("Set DISPLAY handler\n");
 
-    struct drm_i915_private *dev_priv = main_device->dev_private;
-
     driver_wq_state = 1;
 
-    run_workqueue(dev_priv->wq);
+    CreateKernelThread(i915_driver_thread);
 
     return err;
 };

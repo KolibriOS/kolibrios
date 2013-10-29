@@ -486,7 +486,6 @@ i915_disable_pipestat(drm_i915_private_t *dev_priv, int pipe, u32 mask)
 		POSTING_READ(reg);
 }
 
-#if 0
 /**
  * i915_enable_asle_pipestat - enable ASLE pipestat for OpRegion
  */
@@ -506,7 +505,6 @@ static void i915_enable_asle_pipestat(struct drm_device *dev)
 
 	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
 }
-#endif
 
 /**
  * i915_pipe_enabled - check if a pipe is enabled
@@ -749,8 +747,8 @@ static void i915_hotplug_work_func(struct work_struct *work)
 	  * some connectors */
 	if (hpd_disabled) {
 		drm_kms_helper_poll_enable(dev);
-//       mod_timer(&dev_priv->hotplug_reenable_timer,
-//             jiffies + msecs_to_jiffies(I915_REENABLE_HOTPLUG_DELAY));
+		mod_timer(&dev_priv->hotplug_reenable_timer,
+			  GetTimerTicks() + msecs_to_jiffies(I915_REENABLE_HOTPLUG_DELAY));
 	}
 
 	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
@@ -821,7 +819,6 @@ static void notify_ring(struct drm_device *dev,
 	wake_up_all(&ring->irq_queue);
 }
 
-#if 0
 static void gen6_pm_rps_work(struct work_struct *work)
 {
 	drm_i915_private_t *dev_priv = container_of(work, drm_i915_private_t,
@@ -875,8 +872,8 @@ static void gen6_pm_rps_work(struct work_struct *work)
 		 * fire when there's activity or once after we've entered
 		 * RC6, and then won't be re-armed until the next RPS interrupt.
 		 */
-		mod_delayed_work(dev_priv->wq, &dev_priv->rps.vlv_work,
-				 msecs_to_jiffies(100));
+//		mod_delayed_work(dev_priv->wq, &dev_priv->rps.vlv_work,
+//				 msecs_to_jiffies(100));
 	}
 
 	mutex_unlock(&dev_priv->rps.hw_lock);
@@ -928,21 +925,9 @@ static void ivybridge_parity_work(struct work_struct *work)
 
 	mutex_unlock(&dev_priv->dev->struct_mutex);
 
-	parity_event[0] = I915_L3_PARITY_UEVENT "=1";
-	parity_event[1] = kasprintf(GFP_KERNEL, "ROW=%d", row);
-	parity_event[2] = kasprintf(GFP_KERNEL, "BANK=%d", bank);
-	parity_event[3] = kasprintf(GFP_KERNEL, "SUBBANK=%d", subbank);
-	parity_event[4] = NULL;
-
-	kobject_uevent_env(&dev_priv->dev->primary->kdev.kobj,
-			   KOBJ_CHANGE, parity_event);
-
 	DRM_DEBUG("Parity error: Row = %d, Bank = %d, Sub bank = %d.\n",
 		  row, bank, subbank);
 
-	kfree(parity_event[3]);
-	kfree(parity_event[2]);
-	kfree(parity_event[1]);
 }
 
 static void ivybridge_parity_error_irq_handler(struct drm_device *dev)
@@ -958,8 +943,6 @@ static void ivybridge_parity_error_irq_handler(struct drm_device *dev)
 
 	queue_work(dev_priv->wq, &dev_priv->l3_parity.error_work);
 }
-
-#endif
 
 static void ilk_gt_irq_handler(struct drm_device *dev,
 			       struct drm_i915_private *dev_priv,
@@ -989,11 +972,11 @@ static void snb_gt_irq_handler(struct drm_device *dev,
 		      GT_BSD_CS_ERROR_INTERRUPT |
 		      GT_RENDER_CS_MASTER_ERROR_INTERRUPT)) {
 		DRM_ERROR("GT error interrupt 0x%08x\n", gt_iir);
-//       i915_handle_error(dev, false);
+		i915_handle_error(dev, false);
 	}
 
-//	if (gt_iir & GT_GEN7_L3_PARITY_ERROR_INTERRUPT)
-//		ivybridge_handle_parity_error(dev);
+	if (gt_iir & GT_RENDER_L3_PARITY_ERROR_INTERRUPT)
+		ivybridge_parity_error_irq_handler(dev);
 }
 
 #define HPD_STORM_DETECT_PERIOD 1000
@@ -1022,25 +1005,35 @@ static inline void intel_hpd_irq_handler(struct drm_device *dev,
 			continue;
 
 		dev_priv->hpd_event_bits |= (1 << i);
-//        if (!time_in_range(GetTimerTicks(), dev_priv->hpd_stats[i].hpd_last_jiffies,
-//                  dev_priv->hpd_stats[i].hpd_last_jiffies
-//                  + msecs_to_jiffies(HPD_STORM_DETECT_PERIOD))) {
-//            dev_priv->hpd_stats[i].hpd_last_jiffies = GetTimerTicks;
-//           dev_priv->hpd_stats[i].hpd_cnt = 0;
-//       } else if (dev_priv->hpd_stats[i].hpd_cnt > HPD_STORM_THRESHOLD) {
-//           dev_priv->hpd_stats[i].hpd_mark = HPD_MARK_DISABLED;
-//           DRM_DEBUG_KMS("HPD interrupt storm detected on PIN %d\n", i);
-//           ret = true;
-//       } else {
+		if (!time_in_range(GetTimerTicks(), dev_priv->hpd_stats[i].hpd_last_jiffies,
+                  dev_priv->hpd_stats[i].hpd_last_jiffies
+                  + msecs_to_jiffies(HPD_STORM_DETECT_PERIOD))) {
+			dev_priv->hpd_stats[i].hpd_last_jiffies = GetTimerTicks();
+           dev_priv->hpd_stats[i].hpd_cnt = 0;
+			DRM_DEBUG_KMS("Received HPD interrupt on PIN %d - cnt: 0\n", i);
+       } else if (dev_priv->hpd_stats[i].hpd_cnt > HPD_STORM_THRESHOLD) {
+           dev_priv->hpd_stats[i].hpd_mark = HPD_MARK_DISABLED;
+			dev_priv->hpd_event_bits &= ~(1 << i);
+           DRM_DEBUG_KMS("HPD interrupt storm detected on PIN %d\n", i);
+			storm_detected = true;
+		} else {
 			dev_priv->hpd_stats[i].hpd_cnt++;
-//       }
+			DRM_DEBUG_KMS("Received HPD interrupt on PIN %d - cnt: %d\n", i,
+				      dev_priv->hpd_stats[i].hpd_cnt);
+		}
 	}
 
 	if (storm_detected)
 		dev_priv->display.hpd_irq_setup(dev);
 	spin_unlock(&dev_priv->irq_lock);
 
-
+	/*
+	 * Our hotplug handler can grab modeset locks (by calling down into the
+	 * fb helpers). Hence it must not be run on our own dev-priv->wq work
+	 * queue for otherwise the flush_work in the pageflip code will
+	 * deadlock.
+	 */
+	schedule_work(&dev_priv->hotplug_work);
 }
 
 static void gmbus_irq_handler(struct drm_device *dev)
@@ -1077,7 +1070,7 @@ static void gen6_rps_irq_handler(struct drm_i915_private *dev_priv, u32 pm_iir)
 
 		if (pm_iir & PM_VEBOX_CS_ERROR_INTERRUPT) {
 			DRM_ERROR("VEBOX CS error interrupt 0x%08x\n", pm_iir);
-//           i915_handle_error(dev_priv->dev, false);
+			i915_handle_error(dev_priv->dev, false);
 		}
 	}
 }
@@ -1152,8 +1145,8 @@ static irqreturn_t valleyview_irq_handler(int irq, void *arg)
 		if (pipe_stats[0] & PIPE_GMBUS_INTERRUPT_STATUS)
 			gmbus_irq_handler(dev);
 
-//        if (pm_iir & GEN6_PM_DEFERRED_EVENTS)
-//            gen6_queue_rps_work(dev_priv, pm_iir);
+		if (pm_iir)
+			gen6_rps_irq_handler(dev_priv, pm_iir);
 
 		I915_WRITE(GTIIR, gt_iir);
 		I915_WRITE(GEN6_PMIIR, pm_iir);
@@ -1310,19 +1303,19 @@ static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
 	if (de_iir & DE_AUX_CHANNEL_A)
 		dp_aux_irq_handler(dev);
 
-#if 0
 	if (de_iir & DE_GSE)
 		intel_opregion_asle_intr(dev);
 
+#if 0
 	if (de_iir & DE_PIPEA_VBLANK)
 		drm_handle_vblank(dev, 0);
 
 	if (de_iir & DE_PIPEB_VBLANK)
 		drm_handle_vblank(dev, 1);
+#endif
 
 	if (de_iir & DE_POISON)
 		DRM_ERROR("Poison interrupt\n");
-#endif
 
 	if (de_iir & DE_PIPEA_FIFO_UNDERRUN)
 		if (intel_set_cpu_fifo_underrun_reporting(dev, PIPE_A, false))
@@ -1365,8 +1358,8 @@ static void ivb_display_irq_handler(struct drm_device *dev, u32 de_iir)
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int i;
 
-//	if (de_iir & DE_ERR_INT_IVB)
-//		ivb_err_int_handler(dev);
+	if (de_iir & DE_ERR_INT_IVB)
+		ivb_err_int_handler(dev);
 
 	if (de_iir & DE_AUX_CHANNEL_A_IVB)
 		dp_aux_irq_handler(dev);
@@ -1508,7 +1501,6 @@ static void i915_error_wake_up(struct drm_i915_private *dev_priv,
 		wake_up_all(&dev_priv->gpu_error.reset_queue);
 }
 
-#if 0
 /**
  * i915_error_work_func - do process context error handling work
  * @work: work struct
@@ -1528,8 +1520,6 @@ static void i915_error_work_func(struct work_struct *work)
 	char *reset_done_event[] = { I915_ERROR_UEVENT "=0", NULL };
 	int ret;
 
-	kobject_uevent_env(&dev->primary->kdev.kobj, KOBJ_CHANGE, error_event);
-
 	/*
 	 * Note that there's only one work item which does gpu resets, so we
 	 * need not worry about concurrent gpu resets potentially incrementing
@@ -1542,8 +1532,6 @@ static void i915_error_work_func(struct work_struct *work)
 	 */
 	if (i915_reset_in_progress(error) && !i915_terminally_wedged(error)) {
 		DRM_DEBUG_DRIVER("resetting chip\n");
-		kobject_uevent_env(&dev->primary->kdev.kobj, KOBJ_CHANGE,
-				   reset_event);
 
 		/*
 		 * All state reset _must_ be completed before we update the
@@ -1551,9 +1539,9 @@ static void i915_error_work_func(struct work_struct *work)
 		 * pending state and not properly drop locks, resulting in
 		 * deadlocks with the reset work.
 		 */
-		ret = i915_reset(dev);
+//       ret = i915_reset(dev);
 
-		intel_display_handle_reset(dev);
+//       intel_display_handle_reset(dev);
 
 		if (ret == 0) {
 			/*
@@ -1566,11 +1554,8 @@ static void i915_error_work_func(struct work_struct *work)
 			 * updates before
 			 * the counter increment.
 			 */
-			smp_mb__before_atomic_inc();
 			atomic_inc(&dev_priv->gpu_error.reset_counter);
 
-			kobject_uevent_env(&dev->primary->kdev.kobj,
-					   KOBJ_CHANGE, reset_done_event);
 		} else {
 			atomic_set(&error->reset_counter, I915_WEDGED);
 	}
@@ -1689,7 +1674,7 @@ void i915_handle_error(struct drm_device *dev, bool wedged)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
-	i915_capture_error_state(dev);
+//   i915_capture_error_state(dev);
 	i915_report_and_clear_eir(dev);
 
 	if (wedged) {
@@ -1721,6 +1706,7 @@ void i915_handle_error(struct drm_device *dev, bool wedged)
 	schedule_work(&dev_priv->gpu_error.work);
 }
 
+#if 0
 static void __always_unused i915_pageflip_stall_check(struct drm_device *dev, int pipe)
 {
 	drm_i915_private_t *dev_priv = dev->dev_private;
@@ -2040,7 +2026,6 @@ static void i915_hangcheck_elapsed(unsigned long data)
 //                   DRM_ERROR("Hangcheck timer elapsed... %s idle\n",
 //                         ring->name);
 //                   wake_up_all(&ring->irq_queue);
-//                   ring->hangcheck.score += HUNG;
 //               } else
 					busy = false;
 			} else {
@@ -2541,8 +2526,8 @@ static irqreturn_t i8xx_irq_handler(int irq, void *arg)
 		 * interrupts (for non-MSI).
 		 */
 		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
-//       if (iir & I915_RENDER_COMMAND_PARSER_ERROR_INTERRUPT)
-//           i915_handle_error(dev, false);
+		if (iir & I915_RENDER_COMMAND_PARSER_ERROR_INTERRUPT)
+			i915_handle_error(dev, false);
 
 		for_each_pipe(pipe) {
 			int reg = PIPESTAT(pipe);
@@ -2656,7 +2641,7 @@ static int i915_irq_postinstall(struct drm_device *dev)
 	I915_WRITE(IER, enable_mask);
 	POSTING_READ(IER);
 
-//	intel_opregion_enable_asle(dev);
+	i915_enable_asle_pipestat(dev);
 
 	return 0;
 }
@@ -2716,8 +2701,8 @@ static irqreturn_t i915_irq_handler(int irq, void *arg)
 		 * interrupts (for non-MSI).
 		 */
 		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
-//       if (iir & I915_RENDER_COMMAND_PARSER_ERROR_INTERRUPT)
-//           i915_handle_error(dev, false);
+		if (iir & I915_RENDER_COMMAND_PARSER_ERROR_INTERRUPT)
+			i915_handle_error(dev, false);
 
 		for_each_pipe(pipe) {
 			int reg = PIPESTAT(pipe);
@@ -2771,8 +2756,8 @@ static irqreturn_t i915_irq_handler(int irq, void *arg)
 				blc_event = true;
 		}
 
-//		if (blc_event || (iir & I915_ASLE_INTERRUPT))
-//			intel_opregion_asle_intr(dev);
+		if (blc_event || (iir & I915_ASLE_INTERRUPT))
+			intel_opregion_asle_intr(dev);
 
 		/* With MSI, interrupts are only generated when iir
 		 * transitions from zero to nonzero.  If another bit got
@@ -2890,7 +2875,7 @@ static int i965_irq_postinstall(struct drm_device *dev)
 	I915_WRITE(PORT_HOTPLUG_EN, 0);
 	POSTING_READ(PORT_HOTPLUG_EN);
 
-//	intel_opregion_enable_asle(dev);
+	i915_enable_asle_pipestat(dev);
 
 	return 0;
 }
@@ -2954,8 +2939,8 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
 		 * interrupts (for non-MSI).
 		 */
 		spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
-//       if (iir & I915_RENDER_COMMAND_PARSER_ERROR_INTERRUPT)
-//           i915_handle_error(dev, false);
+		if (iir & I915_RENDER_COMMAND_PARSER_ERROR_INTERRUPT)
+			i915_handle_error(dev, false);
 
 		for_each_pipe(pipe) {
 			int reg = PIPESTAT(pipe);
@@ -3014,8 +2999,8 @@ static irqreturn_t i965_irq_handler(int irq, void *arg)
 		}
 
 
-//		if (blc_event || (iir & I915_ASLE_INTERRUPT))
-//			intel_opregion_asle_intr(dev);
+		if (blc_event || (iir & I915_ASLE_INTERRUPT))
+			intel_opregion_asle_intr(dev);
 
 		if (pipe_stats[0] & PIPE_GMBUS_INTERRUPT_STATUS)
 			gmbus_irq_handler(dev);
@@ -3066,13 +3051,52 @@ static void i965_irq_uninstall(struct drm_device * dev)
 	I915_WRITE(IIR, I915_READ(IIR));
 }
 
+static void i915_reenable_hotplug_timer_func(unsigned long data)
+{
+	drm_i915_private_t *dev_priv = (drm_i915_private_t *)data;
+	struct drm_device *dev = dev_priv->dev;
+	struct drm_mode_config *mode_config = &dev->mode_config;
+	unsigned long irqflags;
+	int i;
+
+	spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+	for (i = (HPD_NONE + 1); i < HPD_NUM_PINS; i++) {
+		struct drm_connector *connector;
+
+		if (dev_priv->hpd_stats[i].hpd_mark != HPD_DISABLED)
+			continue;
+
+		dev_priv->hpd_stats[i].hpd_mark = HPD_ENABLED;
+
+		list_for_each_entry(connector, &mode_config->connector_list, head) {
+			struct intel_connector *intel_connector = to_intel_connector(connector);
+
+			if (intel_connector->encoder->hpd_pin == i) {
+				if (connector->polled != intel_connector->polled)
+					DRM_DEBUG_DRIVER("Reenabling HPD on connector %s\n",
+							 drm_get_connector_name(connector));
+				connector->polled = intel_connector->polled;
+				if (!connector->polled)
+					connector->polled = DRM_CONNECTOR_POLL_HPD;
+			}
+		}
+	}
+	if (dev_priv->display.hpd_irq_setup)
+		dev_priv->display.hpd_irq_setup(dev);
+	spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+}
+
 void intel_irq_init(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
 	INIT_WORK(&dev_priv->hotplug_work, i915_hotplug_work_func);
+	INIT_WORK(&dev_priv->gpu_error.work, i915_error_work_func);
+	INIT_WORK(&dev_priv->rps.work, gen6_pm_rps_work);
+	INIT_WORK(&dev_priv->l3_parity.error_work, ivybridge_parity_work);
 
-//	pm_qos_add_request(&dev_priv->pm_qos, PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
+	setup_timer(&dev_priv->hotplug_reenable_timer, i915_reenable_hotplug_timer_func,
+		    (unsigned long) dev_priv);
 
 
 //	dev->driver->get_scanout_position = i915_get_crtc_scanoutpos;

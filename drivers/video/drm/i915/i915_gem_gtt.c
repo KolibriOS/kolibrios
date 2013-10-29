@@ -581,10 +581,9 @@ static void gen6_ggtt_clear_range(struct i915_address_space *vm,
 	const int max_entries = gtt_total_entries(dev_priv->gtt) - first_entry;
 	int i;
 
-//   if (WARN(num_entries > max_entries,
-//        "First entry = %d; Num entries = %d (max=%d)\n",
-//        first_entry, num_entries, max_entries))
-   if (num_entries > max_entries)
+	if (WARN(num_entries > max_entries,
+		 "First entry = %d; Num entries = %d (max=%d)\n",
+		 first_entry, num_entries, max_entries))
         num_entries = max_entries;
 
 	scratch_pte = vm->pte_encode(vm->scratch.addr, I915_CACHE_LLC);

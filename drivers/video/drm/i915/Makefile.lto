@@ -53,6 +53,7 @@ NAME_SRC=		main.c					\
 			i915_gem_execbuffer.c			\
 			i915_gem_stolen.c			\
 			i915_gem_tiling.c			\
+			i915_gpu_error.c			\
 			i915_irq.c				\
 			intel_bios.c				\
 			intel_crt.c				\
