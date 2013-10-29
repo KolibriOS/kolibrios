@@ -18,6 +18,7 @@ MAX_COLOR_WORD_LEN equ 40
 maxChars equ 100002 ;(...+2)
 BUF_SIZE equ 4096 ;buffer for copy|paste
 maxSyntaxFileSize equ 410000
+TOOLBAR_ICONS_SIZE equ 1200*18
 
 include '../../proc32.inc'
 ;include '../../config.inc'
@@ -131,7 +132,10 @@ load_libraries l_libs_start,load_lib_end
 	stdcall [OpenDialog_Init],OpenDialog_data
 
 ; init toolbar file
-	load_image_file 'te_icon.png', bmp_icon,1200*18
+	load_image_file 'te_icon.png', bmp_icon,TOOLBAR_ICONS_SIZE*2 ;умножение на 2 для серых кнопок
+	mov eax,[bmp_icon]
+	add eax,TOOLBAR_ICONS_SIZE
+	stdcall img_to_gray, [bmp_icon],eax,(TOOLBAR_ICONS_SIZE)/3
 ;---------------------------------------------------------------------
 ; читаем файл с курсорами и линиями
 	load_image_file 'tl_sys_16.png', icon_tl_sys,54+3*256*13

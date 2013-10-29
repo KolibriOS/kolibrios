@@ -322,7 +322,7 @@ draw_but_icon:
 		shr esi,16
 		add esi,20
 		cmp esi,[procinfo.client_box.width]
-		jge @f ;кнопка не влезла в экран
+		jge @f ;кнопка не влезла в окно
 			mov esi,[sc.work_button]
 			int 0x40 ;ставим кнопку
 			mov eax,7 ;bmp
@@ -330,12 +330,12 @@ draw_but_icon:
 	pop esi edx ecx
 
 	cmp eax,7
-	jne @f ;кнопка не влезла в экран
-	mov ebx,ecx
-	ror ebx,16
-	cmp bx,0x4000
-	jne @f
+	jne @f ;кнопка не влезла в окно
 		mov ebx,[bmp_icon]
+		bt ecx,30 ;if (ecx or 0x40000000)
+		jc .gray
+			add ebx,TOOLBAR_ICONS_SIZE ;перемещаемся на серые кнопки
+		.gray:
 		push ecx
 		and ecx,0xffff
 		imul ecx,1200
@@ -348,4 +348,31 @@ draw_but_icon:
 	@@:
 	pop ebx eax
 	ret
+
+;descrition:
+; функция для генерирования серых иконок
+;input:
+; buf_rgb - буфер с входным 24 битным цветным изображением
+; buf_g24 - буфер с выходным 24 битным серым изображением
+; pixels - число пикселей в изображении
+align 4
+proc img_to_gray uses eax ebx ecx edi esi, buf_rgb:dword, buf_g24:dword, pixels:dword
+	mov esi,[buf_rgb]
+	mov edi,[buf_g24]
+	mov ecx,[pixels]
+	@@:
+		movzx eax,byte[esi]
+		movzx ebx,byte[esi+1]
+		add eax,ebx
+		movzx ebx,byte[esi+2]
+		add eax,ebx
+		shr eax,2
+		mov ah,al
+		mov word[edi],ax
+		mov byte[edi+2],al
+		add esi,3
+		add edi,3
+		loop @b
+	ret
+endp
 

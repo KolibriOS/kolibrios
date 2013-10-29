@@ -486,7 +486,7 @@ tree_file_struct:
 
 if lang eq ru
 
-hed db 'Текстовый редактор 12.03.13',0 ;подпись окна
+hed db 'Текстовый редактор 29.10.13',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -597,7 +597,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 12.03.13',0
+hed db 'Text editor 29.10.13',0
 
 menu_text_area:
 db 'File',0
