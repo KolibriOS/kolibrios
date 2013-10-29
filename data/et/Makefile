@@ -45,7 +45,7 @@ FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
- @docky:@DOCKY:$(PROGS)/system/docky/trunk/DOCKY.ASM \
+ @docky:@DOCKY:$(PROGS)/system/docky/trunk/docky.asm \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -298,7 +298,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/menu.dat:SETTINGS/MENU.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI \
- settings/docky.ini:SETTINGS/DOCKY.INI \
+ ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
