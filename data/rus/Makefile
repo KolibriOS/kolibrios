@@ -292,7 +292,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/menu.dat:SETTINGS/MENU.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA \
- settings/panel.ini:SETTINGS/DOCKY.INI \
+ settings/docky.ini:SETTINGS/DOCKY.INI \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
