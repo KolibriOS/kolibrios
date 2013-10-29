@@ -94,7 +94,7 @@ int queue_delayed_work(struct workqueue_struct *wq,
 //    dbgprintf("%s %p queue: %p\n", __FUNCTION__, &dwork->work, wq);
 
     work->data = wq;
-    TimerHs(delay,0, delayed_work_timer_fn, dwork);
+    TimerHS(delay,0, delayed_work_timer_fn, dwork);
     return 1;
 }
 
@@ -102,5 +102,22 @@ int queue_delayed_work(struct workqueue_struct *wq,
 bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay)
 {
     return queue_delayed_work(system_wq, dwork, delay);
+}
+
+int mod_timer(struct timer_list *timer, unsigned long expires)
+{
+    int ret = 0;
+    expires - GetTimerTicks();
+
+    if(timer->handle)
+    {
+        CancelTimerHS(timer->handle);
+        timer->handle = 0;
+        ret = 1;
+    };
+
+    timer->handle = TimerHS(expires, 0, timer->function, timer->data);
+
+    return ret;
 }
 

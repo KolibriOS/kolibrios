@@ -273,9 +273,16 @@ struct timer_list {
 
          void (*function)(unsigned long);
          unsigned long data;
-
-//         struct tvec_base *base;
+         u32  handle;
 };
+
+#define setup_timer(_timer, _fn, _data)                                 \
+        do {                                                            \
+                (_timer)->function = (_fn);                             \
+                (_timer)->data = (_data);                               \
+                (_timer)->handle = 0;                                   \
+        } while (0)
+
 
 struct timespec {
     long tv_sec;                 /* seconds */

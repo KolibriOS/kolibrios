@@ -55,8 +55,10 @@ void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 addr_t IMPORT  GetStackBase(void)__asm__("GetStackBase");
 u32_t  IMPORT  GetPid(void)__asm__("GetPid");
 
-u32 STDCALL TimerHs(u32 delay, u32 interval,
-                    void *fn, void *data)asm("TimerHs");
+u32 STDCALL TimerHS(u32 delay, u32 interval,
+                    void *fn, void *data)asm("TimerHS");
+
+void STDCALL CancelTimerHS(u32 handle)asm("CancelTimerHS");
 
 u64 IMPORT GetCpuFreq()__asm__("GetCpuFreq");
 

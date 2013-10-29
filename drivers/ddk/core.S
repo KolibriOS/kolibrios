@@ -10,6 +10,7 @@
 
     .global _AttachIntHandler
 
+    .global _CancelTimerHS
     .global _CreateEvent
     .global _CreateObject
     .global _CreateRingBuffer
@@ -64,7 +65,7 @@
     .global _SetScreen
     .global _SysMsgBoardStr
 
-    .global _TimerHs
+    .global _TimerHS
 
     .global _UserAlloc
     .global _UserFree
@@ -79,6 +80,7 @@
 
     .def  _AttachIntHandler;  .scl  2;  .type 32; .endef
 
+    .def  _CancelTimerHS;     .scl  2;  .type 32; .endef
     .def  _CreateEvent;       .scl  2;  .type 32; .endef
     .def  _CreateObject;      .scl  2;  .type 32; .endef
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
@@ -133,7 +135,7 @@
     .def  _SetKeyboardData;   .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
 
-    .def  _TimerHs;           .scl  2;  .type 32; .endef
+    .def  _TimerHS;           .scl  2;  .type 32; .endef
 
     .def  _UserAlloc;         .scl  2;  .type 32; .endef
     .def  _UserFree;          .scl  2;  .type 32; .endef
@@ -148,6 +150,7 @@ _AllocPages:
 
 _AttachIntHandler:
 
+_CancelTimerHS:
 _CreateEvent:
 _CreateObject:
 _CreateRingBuffer:
@@ -202,7 +205,7 @@ _SetKeyboardData:
 _SetScreen:
 _SysMsgBoardStr:
 
-_TimerHs:
+_TimerHS:
 
 _UserAlloc:
 _UserFree:
@@ -220,16 +223,15 @@ _WaitEventTimeout:
 
         .ascii " -export:AttachIntHandler"     # stdcall
 
+        .ascii " -export:CancelTimerHS"        # stfcall
         .ascii " -export:CreateEvent"          #
         .ascii " -export:CreateObject"         #
         .ascii " -export:CreateRingBuffer"     # stdcall
         .ascii " -export:CreateThread"         #
 
         .ascii " -export:Delay"                # stdcall
-
         .ascii " -export:DestroyEvent"
         .ascii " -export:DestroyObject"
-
         .ascii " -export:DiskAdd"              # stdcall
         .ascii " -export:DiskMediaChanged"     # stdcall
 
@@ -237,7 +239,6 @@ _WaitEventTimeout:
         .ascii " -export:FreePage"             #
 
         .ascii " -export:GetCpuFreq"           #
-
         .ascii " -export:GetDisplay"           # stdcall
         .ascii " -export:GetEvent"             #
         .ascii " -export:GetPid"               #
@@ -276,7 +277,7 @@ _WaitEventTimeout:
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
 
-        .ascii " -export:TimerHs"              # stdcall
+        .ascii " -export:TimerHS"              # stdcall
 
         .ascii " -export:UserAlloc"            # stdcall
         .ascii " -export:UserFree"             # stdcall

@@ -61,6 +61,7 @@ struct workqueue_struct *alloc_workqueue_key(const char *fmt,
 #define alloc_ordered_workqueue(fmt, flags, args...)            \
         alloc_workqueue(fmt, WQ_UNBOUND | (flags), 1, ##args)
 
+bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
 int queue_delayed_work(struct workqueue_struct *wq,
                         struct delayed_work *dwork, unsigned long delay);
 
@@ -80,6 +81,10 @@ bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay);
         (_work)->work.func = _func;             \
     } while (0)
 
+static inline bool schedule_work(struct work_struct *work)
+{
+    return queue_work(system_wq, work);
+}
 
 
 #endif  /*  _LINUX_WORKQUEUE_H  */
