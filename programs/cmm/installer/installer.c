@@ -12,20 +12,14 @@
 
 #define LOGOW 16
 #define LOGOH 16
-#define BLACK_H 40
-#define TEXTX 20
-#define WIN_W 300
-#define WIN_H 200
+#define WIN_W 240
+#define WIN_H 140
 
 unsigned char logo[LOGOW*LOGOH*3]= FROM "img\logo.raw";
+char iclock[3]={1,2};
 
 proc_info Form;
 system_colors sc;
-char dialog;
-enum {
-	INSTALL,
-	END
-};
 
 #ifdef LANG_RUS
 	?define T_WTITILE "Установка Kolibri N9"
@@ -35,72 +29,32 @@ enum {
 	?define T_END "KolibriN install complete."
 #endif
 
-
-int DefineWindow(dword wtitle, wbutton)
-{
-	sc.get();
-	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2-30, WIN_W+9, WIN_H+GetSkinHeight()+4,0x74,0,T_WTITILE);
-	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return 0; //rolled_up
-
-	DrawBar(0, 0, Form.cwidth, BLACK_H, 0);
-	_PutImage(BLACK_H-LOGOW/2, BLACK_H-LOGOH/2, LOGOW,LOGOH, #logo);
-	WriteTextB(BLACK_H-LOGOW + LOGOW, BLACK_H-6/2, 0x90, 0xFFFfff, wtitle);
-	DrawBar(0, BLACK_H, Form.cwidth, Form.cheight-BLACK_H, 0xFFFfff);
-	DrawCaptButton(Form.cwidth-107, Form.cheight-40, 90, 24, 10, sc.work_button, sc.work_button_text,wbutton);
-	return 1;
-}
-
 void main()
 {
+	byte id, started=false;
 	mem_Init();
-	InstallationLoop(INSTALL);
-}
-
-char iclock[3]={1,2};
-
-void InstallationLoop(int dialog_t)
-{
-	byte id, key, started=false;
-	int free_ram;
-	unsigned char free_ram_text[256];
-
-	dialog = dialog_t;
-	goto _DRAW_WIN;
    
 	loop() switch(WaitEvent())
 	{						   
 			case evButton:
-					id=GetButtonID();
-					if (id == 01) ExitProcess();
-					if (id == 11) RunProgram("/sys/htmlv", "http://kolibri-n.org/index.php");
-					if (id == 10)
-					{
-						if (dialog==INSTALL) InstallationLoop(END);
-						else if (dialog==END) ExitProcess();
-					}
+					if (GetButtonID() == 01) ExitProcess();
 					break;
 					
 			case evReDraw: 
-					_DRAW_WIN:
-					if (dialog==INSTALL)
-					{
-						if !(DefineWindow("Installation Started", "Stop")) break;
-						//iclock[0]><iclock[1]; 
-						_PutImage(Form.cwidth-LOGOW/2, Form.height-LOGOH/2, LOGOW,LOGOH, LOGOW*LOGOH*3*iclock[0]+ #logo);
+					sc.get();
+					DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2-30, WIN_W+9, WIN_H+GetSkinHeight()+4,
+					0x34,0xFFFfff,T_WTITILE);
+					GetProcessInfo(#Form, SelfInfo);
+					if (Form.status_window>2) break;
 
-						if (!started)
-						{
-							started = true;
-							if (GetFreeRAM()/1024<15) notify("Too less free ram. May cause problems");
-							Install();
-						}
-					}
-					if (dialog==END)
+					_PutImage(Form.cwidth-LOGOW/2, Form.height-LOGOH/2, LOGOW,LOGOH, LOGOW*LOGOH*3*iclock[0]+ #logo); //iclock[0]><iclock[1]; 
+					WriteTextB(-strlen(T_WTITILE)*6+Form.cwidth/2, Form.cheight - 35, 0x90, 0, T_WTITILE);
+
+					if (!started)
 					{
-						if !(DefineWindow("Installation complete", "Exit")) break;
-						WriteText(TEXTX, BLACK_H*2, 0x80, 0, T_END);
-						DrawLink(TEXTX, BLACK_H*2+15, 0x80, 11, "http://kolibri-n.org");
+						started = true;
+						if (GetFreeRAM()/1024<15) notify("Too less free ram. May cause problems");
+						Install();
 					}
 	}
 }
@@ -109,23 +63,22 @@ void InstallationLoop(int dialog_t)
 void Install()
 {
 	int i;
+	dword temp;
 	proc_info Process;
 
-	for (i=0; i<256; i++;)
+
+	for (i=0; i<1000; i++;)
 	{
 		GetProcessInfo(#Process, i);
-		if (i==Form.ID) || (strcmp(#Process.name, "OS")==0) continue;
-		KillProcess(i);
+		if (strcmp(#Process.name, "@ICON")==0) KillProcess(Process.ID);
 	}
 	SetAddApplDir("kolibrios", abspath("kolibrios")+1);
 	RunProgram("/sys/REFRSCRN", NULL);
 	copyf(abspath("sys"), "/rd/1");
 	RunProgram("/sys/launcher", NULL);
 	SetSystemSkin("/kolibrios/skins/latte.skn");
-	InstallationLoop(END);
-	//===to tmp===
-	// RunProgram("/sys/tmpdisk", "a9s100");
-	// copyf(abspath("tmp"), "/tmp9/1");
+	notify(T_END);
+	ExitProcess();
 }
 
 void copyf_Draw_Progress(dword filename) { return; }

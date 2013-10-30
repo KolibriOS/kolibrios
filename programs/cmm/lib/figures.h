@@ -127,7 +127,7 @@
 
 :void GrayScaleImage(dword color_image, w, h)
 {
-	dword i,j, gray,rr,gg,bb;
+	dword i,gray,rr,gg,bb;
 	for (i = 0; i < w*h*3; i+=3)
 	{
 		rr = DSBYTE[i+color_image];

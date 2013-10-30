@@ -180,7 +180,7 @@ struct proc_info
 	#define SelfInfo -1
 	dword	use_cpu;
 	word	pos_in_stack,num_slot,rezerv1;
-	char	name[11];
+	unsigned char name[11];
 	char	rezerv2;
 	dword	adress,use_memory,ID,left,top,width,height;
 	word	status_slot,rezerv3;

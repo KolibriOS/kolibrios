@@ -235,9 +235,15 @@ enum
 :dword abspath(dword relative_path) //GetAbsolutePathFromRelative()
 {
 	char absolute_path[4096];
-	if (ESBYTE[relative_path]=='/') return relative_path;
-	strcpy(#absolute_path, #program_path);
-	absolute_path[strrchr(#absolute_path, '/')] = '\0';
-	strcat(#absolute_path, relative_path);
+	if (ESBYTE[relative_path]=='/')
+	{
+		strcpy(#absolute_path, relative_path);
+	}
+	else
+	{
+		strcpy(#absolute_path, #program_path);
+		absolute_path[strrchr(#absolute_path, '/')] = '\0';
+		strcat(#absolute_path, relative_path);
+	}
 	return #absolute_path;
 }
