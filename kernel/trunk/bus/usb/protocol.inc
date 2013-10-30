@@ -202,8 +202,7 @@ proc usb_new_device
 ; For now, we need sizeof.usb_device_data and extra 8 bytes for GET_DESCRIPTOR
 ; input and output, see usb_after_set_address. Later we will reallocate it
 ; to actual size needed for descriptors.
-        push    sizeof.usb_device_data + 8
-        pop     eax
+        movi    eax, sizeof.usb_device_data + 8
         push    ecx
         call    malloc
         pop     ecx
@@ -498,10 +497,7 @@ proc usb_after_set_endpoint_size
         pop     edi esi
         call    usb_reinit_pipe_list
 ; 1d. Free the old memory.
-; Note that free destroys ebx.
-        push    ebx
         call    free
-        pop     ebx
         pop     eax
 ; 2. Issue control transfer GET_DESCRIPTOR(DEVICE) for full descriptor.
 ; restore length saved in step 1a
