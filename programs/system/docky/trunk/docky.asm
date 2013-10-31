@@ -8,26 +8,22 @@
     include "../../../proc32.inc"
     include "../../../dll.inc"
     include "../../../develop/libraries/box_lib/load_lib.mac"
-   ;include "../../../debug.inc"
+
+    include "DATA.INC"
+    include "NAME.INC"
 
     @use_library_mem	 \
 	    mem.Alloc,	 \
 	    mem.Free,	 \
 	    mem.ReAlloc, \
 	    dll.Load
-;-------------------------------------------------------------------------------
-ICON_SIZE	 equ  32 * 32 * 3
-IMAGE_FILE_SIZE  equ  ICON_SIZE   * 29
-IMAGE_DATA_SIZE  equ  32 * 32 * 4 * 29
 ;================================================================================
-proc main
+main:
 ; ==== Init ====
     mcall   18, 7
     mov     [win.psid], eax
 
     mcall   40, 100101b
-
-    mov     dword[file_exec.proc], 7
 
 ; ==== Load libs ====
     load_libraries load_lib_start, load_lib_end
@@ -36,32 +32,32 @@ proc main
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, -1
     mov     [dock_items.location], eax
 
-    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_bg, 0x0
-    mov     [color.bg], eax
-    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_bg_line, 0x080808
-    mov     [color.bg_line], eax
-    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_frame, 0xFFFFFF
-    mov     [color.frame], eax
-    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_framein, 0x888888
-    mov     [color.framein], eax
-    invoke  ini.get_color, ini_data.file_name, ini_data.settings_name, ini_data.color_text, 0xFFFFFF
-    or	    eax, 0x80000000
-    mov     [color.text], eax
+    mcall   48, 3, color
+    or	    dword[color.bg],	0x10000000
+    or	    dword[color.frame], 0x10000000
+    or	    dword[color.text],	0x80000000
 
     invoke  ini.sections, ini_data.file_name, sections_callback
 
 ; ==== Config LibIMG ====
-    stdcall mem.Alloc, dword IMAGE_FILE_SIZE
+    mov     dword[fi.p00], 5
+    mov     dword[fi.p16], buf_128
+    mov     dword[fi.p21], img_data.file_name
+
+    mcall   70, fi
+
+    mov     edx, [buf_128 + 32]
+    imul    edx, 10
+
+    stdcall mem.Alloc, edx
     mov     [img_data.rgb_object], eax
 
-    mov     dword[img_data.file.proc], 0
-    mov     dword[img_data.file.position], 0
-    mov     dword[img_data.file.size], dword IMAGE_FILE_SIZE
-    m2m     dword[img_data.file.buffer], dword[img_data.rgb_object]
-    mov     byte[img_data.file + 20], 0
-    mov     dword[img_data.file.name], img_data.file_name
+    mov     dword[fi.p00], 0
+    mov     dword[fi.p12], edx
+    m2m     dword[fi.p16], dword[img_data.rgb_object]
+    mov     dword[fi.p21], img_data.file_name
 
-    mcall   70, img_data.file
+    mcall   70, fi
 
     cmp     ebx, 0xFFFFFFFF
     je	    @f
@@ -79,33 +75,11 @@ proc main
     cmp     ebx, 0
     jne     .nonalpha
 
-    pushad
-    mov     eax, edi
-    mov     edx, 0
-    mov     ebx, 128
-    div     ebx
-
-    mov     edx, 0
-    mov     ebx, 2
-    div     ebx
-
-    mov     edx, 0
-    div     ebx
-
-    cmp     edx, 1
-    je	    .set_bg_line
- .set_bg:
-    popad
     mov     ecx, [color.bg]
-    jmp     .set_ecx
- .set_bg_line:
-    popad
-    mov     ecx, [color.bg_line]
- .set_ecx:
     mov     [eax + edi], ecx
  .nonalpha:
     add     edi, 4
-    cmp     edi, IMAGE_DATA_SIZE
+    cmp     edi, ICONS_SIZE_RGB
     jne     .setalpha
 
   ; === CONVERTING TO BGR
@@ -158,9 +132,10 @@ proc main
     jmp     .SETDEF
 
  .HORZ_WIDTH:
-    mov     eax, 40
+    mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
+    add     eax, 24
     dec     eax
     mov     [win.width_opn], eax
     mov     [win.width_hdn], eax
@@ -185,7 +160,7 @@ proc main
     ret
 
  .HORZ_HEIGHT:
-    mov     dword[win.height_opn], 40
+    mov     dword[win.height_opn], BUTTON_SIZE
     mov     dword[win.height_hdn], 0
 
     ret
@@ -207,7 +182,7 @@ proc main
     ret
 
  .VERT_WIDTH:
-    mov     dword[win.width_opn], 40
+    mov     dword[win.width_opn], BUTTON_SIZE
     mov     dword[win.width_hdn], 0
 
     ret
@@ -224,13 +199,13 @@ proc main
     and     eax, 0xFFFF0000
     shr     eax, 16
     mov     [win.x_hdn], eax
-    sub     eax, 40
+    sub     eax, BUTTON_SIZE
     mov     [win.x_opn], eax
 
     ret
 
  .VERT_HEIGHT:
-    mov     eax, 40
+    mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     dec     eax
@@ -279,12 +254,11 @@ proc main
     mov     [win.sid], eax
 
     call    main_loop
-
+;-------------------------------------------------------------------------------
 exit:
     stdcall mem.Free, [img_data.rgb_object]
     mcall   18, 2, [nwin.sid]
     mcall   -1
-endp
 ;-------------------------------------------------------------------------------
 proc main_loop
     mcall   10
@@ -304,45 +278,10 @@ proc main_loop
     ret
 endp
 ;-------------------------------------------------------------------------------
-proc event_redraw
+event_redraw:
     mcall   12, 1
 
-    mcall   0, <[win.x], [win.width]>, <[win.y], [win.height]>, [color.frame], [color.frame], [color.frame]
-
-    mov     eax, 13
-
-    and     ebx, 0x0000FFFF
-    add     ebx, 0x00010000
-    sub     ebx, 0x00000001
-
-    and     ecx, 0x0000FFFF
-    add     ecx, 0x00010000
-    sub     ecx, 0x00000001
-
-    mcall   , , , [color.framein]
-
-
-    add     ebx, 0x00010000
-    sub     ebx, 0x00000002
-
-    add     ecx, 0x00010000
-    sub     ecx, 0x00000002
-
-    mcall   , , , [color.bg]
-
-    mov     edi, 2
-    mov     eax, 13
-    mov     ebx, 2 shl 16
-    add     ebx, [win.width]
-    sub     ebx, 3
-    mov     ecx, 2 shl 16 + 2
-    mov     edx, [color.bg_line]
-  @@:
-    mcall
-    add     ecx, 4 shl 16
-    add     edi, 4
-    cmp     edi, [win.height]
-    jl	    @b
+    mcall   0, <[win.x], [win.width]>, <[win.y], [win.height]>, [color.bg], [color.bg], [color.frame]
 
     mov     edi, 0
   @@:
@@ -353,38 +292,18 @@ proc event_redraw
     mov     eax, 8
     mov     edx, 0x60000002
     mov     esi, [color.bg]
-    imul    edi, 40
+    imul    edi, BUTTON_SIZE
+    add     edi, 12
     shl     edi, 16
-    add     edi, 39
+    add     edi, BUTTON_SIZE
     cmp     byte[win.isvert], 1
     je	    .vert_btn
-    mcall   , edi, <0, 40>
+    mcall   , edi, <0, BUTTON_SIZE>
     jmp     .endbtn
  .vert_btn:
-    mcall   , <0, 40>, edi
+    mcall   , <0, BUTTON_SIZE>, edi
  .endbtn:
     pop     edi
-
- .draw_Sseparator:
-    push    ebx
-    push    ecx
-    mov     eax, 13
-    mov     ebx, edi
-    imul    ebx, 40
-    add     ebx, 40
-    shl     ebx, 16
-    add     ebx, 1
-    cmp     byte[win.isvert], 1
-    je	    .vert_Sdraw_sep
-    mcall   , , <6, 29>, [color.framein]
-    jmp     .end_Sinner_sep
- .vert_Sdraw_sep:
-    mov     ecx, ebx
-    mcall   , <6, 29>, , [color.framein]
- .end_Sinner_sep:
-    pop     ecx
-    pop     ebx
- .end_Sseparator:
 
     cmp     byte[dock_items.separator + edi], 1
     jne     .end_separator
@@ -392,29 +311,23 @@ proc event_redraw
  .draw_separator:
     push    ebx
     push    ecx
+
     mov     eax, 13
     mov     ebx, edi
-    imul    ebx, 40
-    add     ebx, 39
+    imul    ebx, BUTTON_SIZE
+    add     ebx, BUTTON_SIZE
+    add     ebx, 12
+    dec     ebx
     shl     ebx, 16
     add     ebx, 1
+
     cmp     byte[win.isvert], 1
     je	    .vert_draw_sep
-    mcall   , , <0, 41>, [color.frame]
-    sub     ebx, 0x00010000
-    mov     edx, [color.framein]
-    mcall   , , <1, 39>
-    add     ebx, 0x00020000
-    mcall   , , <1, 39>
+    mcall   , , <4, 36>, [color.frame]
     jmp     .end_inner_sep
  .vert_draw_sep:
     mov     ecx, ebx
-    mcall   , <0, 41>, , [color.frame]
-    sub     ecx, 0x00010000
-    mov     edx, [color.framein]
-    mcall   , <1, 39>
-    add     ecx, 0x00020000
-    mcall   , <1, 39>
+    mcall   , <4, 36>, , [color.frame]
  .end_inner_sep:
     pop     ecx
     pop     ebx
@@ -424,19 +337,19 @@ proc event_redraw
     je	    .vert_dig
     mov     edx, ebx
     and     edx, 0xFFFF0000
-    add     edx, 0x00040004
+    add     edx, 0x00060006
     jmp     .digend
  .vert_dig:
     mov     edx, ecx
     and     edx, 0xFFFF0000
     shr     edx, 16
-    add     edx, 0x00040004
+    add     edx, 0x00060006
  .digend:
 
     imul    ebx, edi, 4
     add     ebx, dock_items.icon
     mov     ebx, [ebx]
-    imul    ebx, ICON_SIZE
+    imul    ebx, ICON_SIZE_BGR
     add     ebx, [img_data.rgb_object]
 
     mcall   7, , <32, 32>
@@ -448,9 +361,8 @@ proc event_redraw
     mcall   12, 2
 
     jmp     main_loop
-endp
 ;-------------------------------------------------------------------------------
-proc event_button
+event_button:
     mcall   17
 
     cmp     ah, 1
@@ -468,26 +380,29 @@ proc event_button
     mov     edi, [win.button_index]
     imul    edi, 256
 
+    mov     dword[fi.p00], 7
+
     mov     esi, edi
     add     esi, dock_items.path
-    mov     dword[file_exec.file], esi
+    mov     dword[fi.p21], esi
 
     mov     esi, edi
     add     esi, dock_items.param
-    mov     dword[file_exec.param], esi
+    mov     dword[fi.p08], esi
 
-    mcall   70, file_exec
+    mcall   70, fi
 
     mov     ecx, eax
     mcall   18, 21
     and     eax, 0xFFFF
     mov     [win.psid], eax
 
+    jmp     wnd_hide
+
   @@:
     jmp     main_loop
-endp
 ;-------------------------------------------------------------------------------
-proc event_mouse
+event_mouse:
     mcall   37, 1
     mov     edi, eax
     mov     esi, eax
@@ -495,15 +410,15 @@ proc event_mouse
     and     esi, 0xFFFF
 
     cmp     edi, 0
-    jl	    @f
+    jl	    wnd_hide
     dec     edi
     cmp     edi, [win.width]
-    jg	    @f
+    jg	    wnd_hide
     cmp     esi, 0
-    jl	    @f
+    jl	    wnd_hide
     dec     esi
     cmp     esi, [win.height]
-    jg	    @f
+    jg	    wnd_hide
 
     mov     eax, [dock_items.location]
     and     eax, 1b
@@ -516,8 +431,9 @@ proc event_mouse
     mov     eax, esi
 
  .nxt:
+    sub     eax, 12
     mov     edx, 0
-    mov     ebx, 40
+    mov     ebx, BUTTON_SIZE
     div     ebx
 
     cmp     eax, [dock_items.count]
@@ -535,22 +451,21 @@ proc event_mouse
 
  .nxt2:
     mov     eax, [win.button_index]
-    imul    eax, 40
+    imul    eax, BUTTON_SIZE
     cmp     byte[win.isvert], 1
     je	    .vert_name
-    sub     eax, 15
     add     eax, [win.x]
     mov     [nwin.x], eax
     jmp     .vert_end
  .vert_name:
-    add     eax, 12
     add     eax, [win.y]
     mov     [nwin.y], eax
  .vert_end:
     mov     byte[nwin.change_shape], 1
+    mcall   13, <0, [win.width]>, <[win.height], 1>, [color.frame]
 
     cmp     byte[win.state], 1
-    je	    .end_cmp
+    je	    main_loop
 
     mov     edx, esp
     add     edx, 512
@@ -579,11 +494,12 @@ proc event_mouse
 
     mcall   67, [win.x], [win.y], [win.width], [win.height]
 
-    call     event_redraw
+    jmp     event_redraw
 
-  @@:
+;-------------------------------------------------------------------------------
+wnd_hide:
     cmp     byte[win.state], 0
-    je	    .end_cmp
+    je	    main_loop
 
     mov     byte[nwin.close], 1
 
@@ -606,11 +522,7 @@ proc event_mouse
 
     mcall   67, [win.x], [win.y], [win.width], [win.height]
 
-    call     event_redraw
-
-  .end_cmp:
-    jmp     main_loop
-endp
+    jmp     event_redraw
 ;-------------------------------------------------------------------------------
 proc sections_callback, _file_name, _section_name
     mov     eax, [_section_name]
@@ -672,386 +584,4 @@ proc sections_callback, _file_name, _section_name
     ret
 endp
 ;-------------------------------------------------------------------------------
-n_main:
-    cmp     dword[dock_items.location], 1
-    je	    .top
-    cmp     dword[dock_items.location], 4
-    je	    .right
-    cmp     dword[dock_items.location], 3
-    je	    .bottom
-    jmp     .left
- .top:
-    mov     eax, [win.height_opn]
-    add     eax, 4
-    mov     [nwin.y], eax
-    jmp     @f
- .right:
-    mov     eax, [win.x_opn]
-    sub     eax, 72
-    mov     [nwin.x], eax
-    jmp     @f
- .bottom:
-    mov     eax, [win.y_opn]
-    sub     eax, 20
-    mov     [nwin.y], eax
-    jmp     @f
- .left:
-    mov     eax, [win.width_opn]
-    add     eax, 4
-    mov     [nwin.x], eax
-  @@:
-    mov     dword[nwin.width], 68
-    mov     dword[nwin.height], 16
-
-    mcall   40, 1b
-
-    mcall   9, win.procinfo, -1
-    mov     ecx, [win.procinfo + 30]
-    mcall   18, 21
-    and     eax, 0xFFFF
-    mov     [nwin.sid], eax
-;-------------------------------------------------------------------------------
-n_main_loop:
-    mcall   23, 1
-
-    cmp     eax, EV_IDLE
-    je	    n_event_idle
-    cmp     eax, EV_REDRAW
-    je	    n_event_redraw
-
-    jmp     n_main_loop
-;-------------------------------------------------------------------------------
-n_event_idle:
-    cmp     byte[nwin.close], 1
-    jne     @f
-
-    mov     byte[nwin.close], 0
-    mcall   -1
-
-  @@:
-    cmp     byte[win.button_index], 100
-    jne     @f
-
-    mcall   67, 0, 0, 0, 0
-    jmp     .end
-
-  @@:
-    cmp     byte[nwin.change_shape], 1
-    jne     .end
-
-    mov     byte[nwin.change_shape], 0
-    mcall   67, [nwin.x], [nwin.y], [nwin.width], [nwin.height]
-
- .end:
-    jmp     n_main_loop
-;-------------------------------------------------------------------------------
-n_event_redraw:
-    mcall   12, 1
-
-    mcall   0, <[nwin.x], [nwin.width]>, <[nwin.y], [nwin.height]>, [color.frame], [color.frame], [color.frame]
-
-    mov     eax, 13
-
-    and     ebx, 0x0000FFFF
-    add     ebx, 0x00010000
-    sub     ebx, 0x00000001
-
-    and     ecx, 0x0000FFFF
-    add     ecx, 0x00010000
-    sub     ecx, 0x00000001
-
-    mcall   , , , [color.framein]
-
-
-    add     ebx, 0x00010000
-    sub     ebx, 0x00000002
-
-    add     ecx, 0x00010000
-    sub     ecx, 0x00000002
-
-    mcall   , , , [color.bg]
-
-    mov     edi, 0
-    mov     eax, 13
-    mov     ebx, 2 shl 16
-    add     ebx, [nwin.width]
-    sub     ebx, 3
-    mov     ecx, 2 shl 16 + 2
-    mov     edx, [color.bg_line]
-  @@:
-    mcall
-    add     ecx, 4 shl 16
-    add     edi, 4
-    cmp     edi, 16
-    jne     @b
-
-    mov     edx, [win.button_index]
-    imul    edx, 16
-    add     edx, dock_items.name
-
-    mov     eax, 0
-  @@:
-    inc     eax
-    cmp     byte[edx+eax], 0
-    jne     @b
-
-    imul    eax, 3
-    mov     ebx, 34
-    sub     ebx, eax
-    inc     ebx
-    shl     ebx, 16
-    add     ebx, 5
-
-    mcall   4, , [color.text]
-
-    mcall   12, 2
-
-    jmp     n_main_loop
-;-------------------------------------------------------------------------------
-img_data:
- .file_name:
-    db	    "/sys/iconstrp.png", 0
- .cfg_text:
-    db	    "R", 0
- .ext_text:
-    db	    "X", 0
-;-------------------------------------------------------------------------------
-ini_data:
- .file_name:
-    db	    "/sys/settings/Docky.ini", 0
- .path_name:
-    db	    "path", 0
- .param_name:
-    db	    "param", 0
- .icon_name:
-    db	    "icon", 0
- .separator_name:
-    db	    "separator", 0
-
- .settings_name:
-    db	    "@SETTINGS", 0
- .location_name:
-    db	    "location", 0
- .color_bg:
-    db	    "bg", 0
- .color_bg_line:
-    db	    "bg_line", 0
- .color_frame:
-    db	    "frame", 0
- .color_framein:
-    db	    "framein", 0
- .color_text:
-    db	    "text", 0
-;-------------------------------------------------------------------------------
-load_lib_start:
-    lib1    l_libs img.name,	     \
-		   sys_path,	     \
-		   file_name,	     \
-		   img.dir,	     \
-		   error,	     \
-		   error,	     \
-		   img, 	     \
-		   error,	     \
-		   error
-
-    lib2    l_libs ini.name,	     \
-		   sys_path,	     \
-		   file_name,	     \
-		   ini.dir,	     \
-		   error,	     \
-		   error,	     \
-		   ini, 	     \
-		   error,	     \
-		   error
-load_lib_end:
-;-------------------------------------------------------------------------------
-img:
- .init	   \
-    dd	    .init_T
- .toRGB    \
-    dd	    .toRGB_T
- .decode   \
-    dd	    .decode_T
- .destroy  \
-    dd	    .destroy_T
-
-    dd	    0, 0
-
- .init_T:
-    db	    "lib_init", 0
- .toRGB_T:
-    db	    "img_to_rgb2", 0
- .decode_T:
-    db	    "img_decode", 0
- .destroy_T:
-    db	    "img_destroy", 0
-
- .dir:
-    db	    "/sys/lib/"
- .name:
-    db	    "libimg.obj", 0
-;-------------------------------------------------------------------------------
-ini:
- .init	   \
-    dd	    .init_T
- .sections \
-    dd	    .sections_T
- .get_int  \
-    dd	    .get_int_T
- .get_str  \
-    dd	    .get_str_T
- .get_color\
-    dd	    .get_color_T
-
-    dd	    0, 0
-
- .init_T:
-    db	    "lib_init", 0
- .sections_T:
-    db	    "ini_enum_sections", 0
- .get_int_T:
-    db	    "ini_get_int", 0
- .get_str_T:
-    db	    "ini_get_str", 0
- .get_color_T:
-    db	    "ini_get_color", 0
-
- .dir:
-    db	    "/sys/lib/"
- .name:
-    db	    "libini.obj", 0
-;-------------------------------------------------------------------------------
-error:
-    db	    0
-;-------------------------------------------------------------------------------
-__dataend:
-;================================================================================
-    rb	    1024
-__stackend:
-;================================================================================
-color:
- .bg:
-    rd	    1
- .bg_line:
-    rd	    1
- .frame:
-    rd	    1
- .framein:
-    rd	    1
- .text:
-    rd	    1
-;-------------------------------------------------------------------------------
-win:
- .x:
-    rd	    1
- .y:
-    rd	    1
- .width:
-    rd	    1
- .height:
-    rd	    1
-
- .x_hdn:
-    rd	    1
- .y_hdn:
-    rd	    1
- .width_hdn:
-    rd	    1
- .height_hdn:
-    rd	    1
-
- .x_opn:
-    rd	    1
- .y_opn:
-    rd	    1
- .width_opn:
-    rd	    1
- .height_opn:
-    rd	    1
-
- .sid:
-    rd	    1
- .psid:
-    rd	    1
- .procinfo:
-    rb	    1024
- .state:
-    rb	    1
- .button_index:
-    rd	    1
-
- .isvert:
-    rb	    1
-;-------------------------------------------------------------------------------
-nwin:
- .x:
-    rd	    1
- .y:
-    rd	    1
- .width:
-    rd	    1
- .height:
-    rd	    1
-
- .visible:
-    rd	    1
- .sid:
-    rd	    1
- .change_shape:
-    rb	    1
- .close:
-    rb	    1
-;-------------------------------------------------------------------------------
-img_data.object:
-    rd	    1
-img_data.rgb_object:
-    rd	    1
-img_data.file:
- .proc:
-    rd	    1
- .position:
-    rd	    1
-    rd	    1
- .size:
-    rd	    1
- .buffer:
-    rd	    1
-    rb	    1
- .name:
-    rd	    1
-;-------------------------------------------------------------------------------
-file_exec:
- .proc:
-    rd	    1
-    rd	    1
- .param:
-    rd	    1
-    rd	    1
-    rd	    1
-    rb	    1
- .file:
-    rd	    1
-;-------------------------------------------------------------------------------
-dock_items:
- .count:
-    rd	    1
- .name:
-    rb	    16	* 20
- .path:
-    rb	    256 * 20
- .param:
-    rb	    256 * 20
- .icon:
-    rd	    1	* 20
- .separator:
-    rb	    1	* 20
- .location:
-    rd	    1
-;-------------------------------------------------------------------------------
-sys_path:
-    rb	    4096
-file_name:
-    rb	    4096
-;-------------------------------------------------------------------------------
-__memend:
-;================================================================================
+    include "MEMORY.INC"
