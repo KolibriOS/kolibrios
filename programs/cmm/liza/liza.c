@@ -10,7 +10,7 @@
 #include "..\lib\figures.h"
 #include "..\lib\file_system.h"
 #include "..\lib\list_box.h"
-#include "..\lib\socket.h"
+#include "..\lib\socket_new.h"
 //*.obj libraries
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\network.h"
@@ -24,10 +24,8 @@ byte in_out_mail[18*36] = FROM "in_out_mail.raw";
 //connection algorithm
 enum {
 	STOP,
-	GET_PORT,
-	GET_SERVER_IP,
-	GET_SOCKET,
-	CONNECT,
+	RESOLVE,
+	OPEN_CONNECTION,
 	GET_ANSWER_CONNECT,
 	SEND_USER,
 	GET_ANSWER_USER,
@@ -38,7 +36,8 @@ enum {
 	SEND_NSTAT,
 	GET_ANSWER_NSTAT,
 	SEND_RETR,
-	GET_ANSWER_RETR
+	GET_ANSWER_RETR,
+	FAILED
 };
 
 //WindowDefinitions
@@ -46,9 +45,10 @@ enum {
 #define WIN_H         440
 #define WIN_MIN_W     500
 #define WIN_MIN_H     380
-#define LOGIN_HEADER   "Login - Email client Liza 0.8a"
-#define OPTIONS_HEADER "Options - Email client Liza 0.8a"
-#define MAILBOX_HEADER "Mail Box - Email client Liza 0.8a"
+#define LOGIN_HEADER   "Login - Email client Liza 0.9"
+#define OPTIONS_HEADER "Options - Email client Liza 0.9"
+#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9"
+#define BUFFERSIZE		512	
 proc_info Form;
 system_colors sc;
 #define LBUMP 0xFFFfff
@@ -59,34 +59,20 @@ dword cur_st_text;
 
 //connection data
 #define DEFAULT_POP_PORT 110;
-dword local_port=1000;
 char POP_server_path[128];
-dword POP_server_IP;
 dword POP_server_port;
 char login[128];
 char request[256+22];
 int request_len;
 char connection_status;
-dword socket;
+dword socketnum;
+
+sockaddr_in sockaddr;
 
 int aim;
 int ticks;
 
-//global data for server response
-char immbuffer[512];
-int immpointer;
-
-void immfree(){
-	immpointer=0;
-	immbuffer[immpointer]='\0';
-}
-
-void immputc(char agot_char){				
-	immbuffer[immpointer]=agot_char;
-	immpointer++;
-	immbuffer[immpointer]='\0';
-	if (immpointer>511) {immpointer=0; debug ("IMM BUFFER OVERFLOW ERROR"); aim=NULL;}
-}
+char immbuffer[BUFFERSIZE];
 
 #include "settings.c"
 #include "login.c"
@@ -127,9 +113,7 @@ void OpenMailDat()
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
 	{
-		//strcpy(#email_text, "eiroglif@yandex.ru"); //temporarily, for testing
 		strcpy(#email_text, "example@mail.com");
-		//strcpy(#pass_text, "rostov");
 	}
 	else
 	{
@@ -147,7 +131,7 @@ void OpenMailDat()
 void SaveAndExit()
 {
 	char write_data[512], pass_b64[256];
-	CloseSocket(socket);
+	Close(socketnum);
 	strcpy(#write_data, #email_text);
 	strcat(#write_data, "\n");
 	base64_encode stdcall (#pass_text, #pass_b64, strlen(#pass_text));

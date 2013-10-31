@@ -1,12 +1,16 @@
 //Leency & SoUrcerer, LGPL
 
-void ParceMail()
+void ParseMail()
 {
 	dword line_off, new_buf;
 	char tline[256];
 
-	if ( mailpointer-mailbuffer>9 ) if ( (strncmp(mailpointer-5,"\r\n.\r\n",5)==0) || (strncmp(mailpointer-3,"\n.\n",3)==0) )
+	if ( mailpointer-mailbuffer>9 ) if (strncmp(mailpointer-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
 	{
+		debug("End of mail detected");
+		mailpointer = mailpointer - 5;
+		*mailpointer='\0';
+		
 		if (strstr(mailbuffer, "+OK")!=mailbuffer) 
 		{
 			aim = GET_ANSWER_RETR;

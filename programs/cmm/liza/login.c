@@ -38,7 +38,7 @@ void LoginBoxLoop()
 				if (id==11)	OptionsLoop();
 				if (id==12)
 				{
-					if (!aim) aim=GET_PORT; else aim=NULL;
+					if (!aim) aim=RESOLVE; else aim=NULL;
 					GetSettings();
 					SetLoginStatus(NULL, NULL);
 					DrawLoginScreen();
@@ -60,7 +60,7 @@ void LoginBoxLoop()
 				if (key==13)
 				{
 					if (aim) break;
-					aim=GET_PORT;
+					aim=RESOLVE;
 					GetSettings();
 					SetLoginStatus(NULL, NULL);
 					DrawLoginScreen();
@@ -81,70 +81,62 @@ void LoginBoxLoop()
 				if (!pass_text) { notify("Enter password!"); aim=NULL; }
 				if ((!login) || (!POP_server_path)) { notify("Email should be such as username@somesite.com"); aim=NULL; }
 				
-				if (aim == GET_PORT)
+				if (aim == RESOLVE)
 				{
-					SetLoginStatus(5, "Search for free local port...");
-					local_port = GetFreePort(1000);
-					if (!local_port) { notify("Error: There is no free local ports"); aim=NULL; break;}
-					SetLoginStatus(12, "Obtain server IP...");
-					aim = GET_SERVER_IP;
-				}
+					SetLoginStatus(1, "Resolving server address...");	
+					
+					sockaddr.sin_family = AF_INET4;
+					AX = POP_server_port;
+					$xchg	al, ah
+					sockaddr.sin_port = AX;
+					sockaddr.sin_addr = GetIPfromAdress(#POP_server_path);					
+					if (!sockaddr.sin_addr) { SetLoginStatus(12, "Can't obtain server IP."); aim = FAILED; break;}
 
-				if (aim == GET_SERVER_IP)
-				{
-					POP_server_IP = GetIPfromAdress(#POP_server_path);
-					if (!POP_server_IP) { SetLoginStatus(12, "Can't obtain server IP. Retry..."); break; }
-					SetLoginStatus(25, "Obtain to open socket..."w);
-					aim = GET_SOCKET;
-				}
-
-				if (aim == GET_SOCKET)
-				{
-					socket = OpenSocket(local_port, POP_server_port, POP_server_IP, SOCKET_ACTIVE);
-					if (socket == 0xffffffff) { SetLoginStatus(25, "Error obtaining socket. Retry..."); break;}
-					SetLoginStatus(40, "Establish a connection...");
-					aim = CONNECT;
-				}
-
-				if (aim == CONNECT)
-				{
-					connection_status=StatusSocket(socket);
-					if (connection_status==0) {notify("Connection to server isn't possible"); aim=NULL; break; };
-					if (connection_status==7) {SetLoginStatus(40, "Server disconnected. Retry..."); break; };
-					if (connection_status!=4) break; //0-connection isn't possible, 2-connecting, 4-connected, 7-server disconnected
-					SetLoginStatus(55, "Connection established. Reading answer...");
-					immfree();
-					aim = GET_ANSWER_CONNECT;
+					aim = OPEN_CONNECTION;	
 				}
 				
+				if (aim == OPEN_CONNECTION)
+				{
+					SetLoginStatus(1, "Connecting to server...");	
+					
+					socketnum = Socket(AF_INET4, SOCK_STREAM, 0);
+					if (socketnum == 0xffffffff) { SetLoginStatus(13, "Cannot open socket."); aim = FAILED; break;}
+					Connect(socketnum, #sockaddr, 16);
+					SetLoginStatus(55, "Connection established. Waiting for answer...");
+					aim = GET_ANSWER_CONNECT;	
+				}
+
+		
 				if (aim == GET_ANSWER_CONNECT)
 				{
-					if (!PollSocket(socket)) break;
-					socket_char=ReadSocket(socket);
-					immputc(socket_char);
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffff) || (ticks < 2)) { SetLoginStatus(61, "Connection failed"); aim = FAILED; break;}
+					immbuffer[ticks]='\0';					
 					
-					if (socket_char=='\n')
+					if (immbuffer[ticks-2]=='\n')
 					{
 						debug(#immbuffer);
 						if (strstr(#immbuffer,"+OK"))
 						{
 							SetLoginStatus(60, "Verifying username...");
 							aim = SEND_USER;
-							immfree();
 						}
 						else
 						{
-							immfree(); 
 							//aim=NULL; //may don't need retry?
 							SetLoginStatus(55, "Failed to connect to server. Retry...");
 						}
+					}
+					else
+					{
+						SetLoginStatus(103, "Connection failed"); 
 					}
 				}
 
 				if (aim == SEND_USER)
 				{
 					request_len = GetRequest("USER", #login);
-					WriteSocket(socket,request_len,#request);
+					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) { SetLoginStatus(60, "Failed to send USER. Retry..."); break;}
 					SetLoginStatus(70, "Login verifying...");
 					debug("Send USER, awaiting answer...");
@@ -153,18 +145,22 @@ void LoginBoxLoop()
 
 				if (aim == GET_ANSWER_USER)
 				{
-					if (!PollSocket(socket)) break;
-					socket_char=ReadSocket(socket);
-					immputc(socket_char);
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffffff) || (ticks < 2)) { SetLoginStatus(81, "Connection failed"); break;}
+					immbuffer[ticks]='\0';						
 					
-					if (socket_char=='\n') 
+					if (immbuffer[ticks-2]=='\n') 
 					{
 						debug("GOT::");
 						debug(#immbuffer);
 						if (strstr(#immbuffer,"+OK"))
-							{ aim = SEND_PASS; SetLoginStatus(80, "Verifying password..."); immfree(); }
+							{ aim = SEND_PASS; SetLoginStatus(80, "Verifying password...");}
 						else
-							{ notify("Wrong username"); immfree(); aim=NULL;}
+							{ notify("Wrong username"); aim=NULL;}
+					}
+					else
+					{
+						SetLoginStatus(103, "Connection failed"); 
 					}
 				}
 
@@ -172,18 +168,18 @@ void LoginBoxLoop()
 				{		
 					debug("\n Send PASS, awaiting answer...");			
 					request_len = GetRequest("PASS", #pass_text);
-					WriteSocket(socket,request_len,#request);
+					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) { SetLoginStatus(80, "Failed to send PASS. Retry..."); break;}
 					aim = GET_ANSWER_PASS;
 				}
 
 				if (aim == GET_ANSWER_PASS)
 				{	
-					if (!PollSocket(socket)) break;
-					socket_char=ReadSocket(socket);
-					immputc(socket_char);
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffff) || (ticks < 2)) { SetLoginStatus(101, "Server disconnected"); break;}
+					immbuffer[ticks]='\0';						
 					
-					if (socket_char=='\n')
+					if (immbuffer[ticks-2]=='\n')
 					{
 						debug("GOT::");
 						debug(#immbuffer);
@@ -191,15 +187,17 @@ void LoginBoxLoop()
 						{
 							SetLoginStatus(100, "Entering mailbox...");
 							aim=SEND_NSTAT;
-							immfree();
 							MailBoxLoop();
 						}
 						else
 						{
 							notify("Wrong password");
 							aim=NULL;
-							immfree();
 						}
+					}
+					else
+					{
+						SetLoginStatus(103, "Connection failed"); 
 					}
 				
 				}

@@ -132,7 +132,7 @@ void MailBoxLoop()
 				if (id==EXIT_MAIL) 
 				{
 					StopLoading();
-					CloseSocket(socket);
+					Close(socketnum);
 					LoginBoxLoop();
 				}
 				if (id==CHANGE_CHARSET) 
@@ -208,18 +208,17 @@ void MailBoxLoop()
 				{
 					debug("Counting mail, awaiting answer...");			
 					request_len = GetRequest("STAT", NULL);
-					WriteSocket(socket,request_len,#request);
+					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) { debug("Error sending STAT. Retry..."w); break;}
 					aim = GET_ANSWER_NSTAT;
 				}
 				
 				if (aim == GET_ANSWER_NSTAT)
 				{
-					if (!PollSocket(socket)) break;
-					socket_char=ReadSocket(socket);
-					immputc(socket_char);
-					
-					if (socket_char=='\n')
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffff) || (ticks < 2)) break;
+										
+					if (immbuffer[ticks-2]=='\n')
 					{
 						debug("GOT::");
 						debug(#immbuffer);
@@ -232,13 +231,11 @@ void MailBoxLoop()
 							listbuffer = mem_Alloc(30*mail_list.count); //24* original
 							listpointer = listbuffer;	
 							aim = SEND_NLIST;
-							debug("Recieving mail list...");
-							immfree();
+							debug("Receiving mail list...");
 						}
 						else
 						{
 							notify("Sorry, can't recieve your mail");
-							immfree();
 							aim=NULL;    //aim = SEND_NLIST;
 						}
 					}
@@ -248,21 +245,19 @@ void MailBoxLoop()
 				{		
 					WriteText(5, Form.cheight-11, 0x80, sc.work_text, "Send LIST, awaiting answer...");
 					request_len = GetRequest("LIST", NULL);
-					WriteSocket(socket,request_len,#request);
+					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) {debug("Error while sending LIST. Retry..."); break;}
 					aim = GET_ANSWER_NLIST;
 				}
 
 				if (aim == GET_ANSWER_NLIST)
-				{	
-					ticks = PollSocket(socket);
-					if (!ticks) break;
-					for (;ticks>0;ticks--)
-					{
-						socket_char=ReadSocket(socket);
-						listputc(socket_char);
-						
-						if (socket_char=='.') //this way of checking end of message IS BAD
+				{		
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffffff) || (ticks < 3)) break;					
+
+					//for (;ticks>0;ticks--)
+					//{				
+						if (immbuffer[ticks-3]=='.') 	//this way of checking end of message IS BAD
 						{
 							aim = SEND_RETR;
 							debug("Got mail list");
@@ -271,8 +266,9 @@ void MailBoxLoop()
 							atr.CreateArray();
 							atr.SetSizes();
 						}
-					} 
+					//} 
 				}
+				
 				if (aim == SEND_RETR)
 				{
 					from = to = date = subj = cur_charset = NULL;
@@ -280,46 +276,46 @@ void MailBoxLoop()
 					DrawMailBox();
 					debug("Send RETR, awaiting answer...");
 					request_len = GetRequest("RETR", itoa(mail_list.current+1));
-					WriteSocket(socket,request_len,#request);
+					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) { notify("Error while trying to get letter from server"); aim=NULL; break;}
 
 					mailbuffer = free(mailbuffer);
 					letter_size = atr.GetSize(mail_list.current+1) + 1024;
 					mailbuffer = malloc(letter_size);
+					if (!mailbuffer) {debug("alloc error!"); aim=NULL; break;}					
 					mailpointer = mailbuffer;
 					aim = GET_ANSWER_RETR;
 				}
+				
 				if (aim == GET_ANSWER_RETR)
 				{
-					ticks=PollSocket(socket);
-					if (!ticks) break;
+					ticks = Receive(socketnum, mailpointer, letter_size + mailbuffer - mailpointer , MSG_DONTWAIT);
+					if (ticks == 0xffffffff) break;	
+					if (ticks == 0) break;					
+					//debugi(EAX);
+					
+					mailpointer = mailpointer + ticks;
+					//*mailpointer='\0';
+					//debug(mailbuffer); 
 
-					for (;ticks>0;ticks--)
+					if (!aim) continue;
+
+					if (letter_size + mailbuffer - mailpointer - 2 < 0)
 					{
-						socket_char=ReadSocket(socket);
-						//debugch(socket_char);
-						*mailpointer=socket_char;
-						mailpointer++;
-						*mailpointer='\0';
-						if (!aim) continue;
+						debug("Resizing buffer");
+						letter_size += 4096;
+						mailbuffer = realloc(mailbuffer, letter_size);
+						if (!mailbuffer) {debug("Realloc error!"); aim=NULL; break;}
+					}
 
-						if (letter_size + mailbuffer - mailpointer - 2 < 0)
-						{
-							debug("Buffer overflow!!1 Realloc..."w);
-							letter_size += 4096;
-							mailbuffer = realloc(mailbuffer, letter_size);
-							if (!mailbuffer) {debug("Relloc error!"); aim=NULL; break;}
-						}
+					if (letter_size>9000)
+					{
+						id = mailpointer - mailbuffer * 100 ;
+						id /= letter_size - 1024;
+						if (id!=cur_st_percent) SetMailBoxStatus( id , NULL);
+					}
 
-						if (letter_size>9000)
-						{
-							id = mailpointer - mailbuffer * 100 ;
-							id /= letter_size - 1024;
-							if (id!=cur_st_percent) SetMailBoxStatus( id , NULL);
-						}
-
-						ParceMail();
-					} 
+					ParseMail();
 				}
 
 		}
@@ -491,7 +487,6 @@ void StopLoading()
 	aim = NULL;
 	mailbuffer = free(mailbuffer);
 	to = from = date = subj = cur_charset = NULL;
-	while (PollSocket(socket)) ReadSocket(socket);	
 }
 
 int GetMailCount(){
