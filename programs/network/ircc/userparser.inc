@@ -3,6 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
@@ -11,6 +12,9 @@
 
 
 user_parser:
+
+        push    [window_active]   ; print to the current window
+        pop     [window_print]
 
         mov     eax, [edit1.size]
         test    eax, eax
@@ -25,16 +29,11 @@ user_parser:
         jne     sdts_ret
 
 ; Ok, we said something, print it to our textbox
-
 ; TODO: dont send if it's a server window?
 
-        push    [window_active]   ; print to the current window
-        pop     [window_print]
-        call    window_refresh
-
-        if      TIMESTAMP
+        if TIMESTAMP
         call    print_timestamp
-        end     if
+        end if
 
         mov     bl, '<'
         call    print_character
@@ -57,9 +56,8 @@ user_parser:
         call    print_character
 
 ; and now send it to the server
-
-        mov     dword[packetbuf], 'priv'
-        mov     dword[packetbuf+4], 'msg '
+        mov     dword[packetbuf], 'PRIV'
+        mov     dword[packetbuf+4], 'MSG '
 
         mov     esi, [window_active]
         add     esi, window.name
@@ -82,8 +80,9 @@ user_parser:
         inc     ecx
         call    recode
 
-        mov     al, 10
-        stosb
+; end the command with a CRLF
+        mov     ax, 0x0a0d
+        stosw
 
         lea     esi, [edi - packetbuf]
         mcall   send, [socketnum], packetbuf, , 0
@@ -100,10 +99,13 @@ user_commands:
         dd      'serv', cmd_usr_server
         dd      'help', cmd_usr_help
         dd      'code', cmd_usr_code
-; TODO: All other commands require a connection to the server.
+
+; All following commands require a connection to the server. TODO: verify connection
         dd      'quer', cmd_usr_quer
         dd      'quit', cmd_usr_quit
         dd      'part', cmd_usr_part
+        dd      'ctcp', cmd_usr_ctcp
+        dd      'msg ', cmd_usr_msg
 
         .number = ($ - user_commands) / 8
 
@@ -131,22 +133,94 @@ server_command:
 
 
 
-cmd_usr_quit:
+cmd_usr_msg:
 
+        lea     esi, [usercommand+5]
+
+        mov     dword[packetbuf], 'PRIV'
+        mov     dword[packetbuf+4], 'MSG '
+        lea     edi, [packetbuf+8]
+
+  @@:
+        lodsb
+        test    al, al
+        jz      .fail
+        cmp     al, 10
+        je      .fail
+        cmp     al, 13
+        je      .fail
+        stosb
+        cmp     al, ' '
+        jne     @r
+
+        mov     al, ':'
+        stosb
+
+        push    edi
+  @@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, 10
+        je      @f
+        cmp     al, 13
+        je      @f
+        stosb
+        jmp     @r
+  @@:
+; end the command with a CRLF
+        mov     ax, 0x0a0d
+        stosw
+        mov     byte[edi], 0
+
+        lea     esi, [edi - packetbuf]
+        mcall   send, [socketnum], packetbuf, , 0
+
+; now print to the window
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, msg_header
+        call    print_text2
+
+        mov     eax, packetbuf+8
+        mov     dl, ' '
+        call    print_text
+
+        mov     bl, '*'
+        call    print_character
+
+        mov     bl, ' '
+        call    print_character
+
+        pop     esi
+        call    print_text2
+
+  .fail:
+        ret
+
+
+
+cmd_usr_quit:
         mov     esi, quit_msg
 
         cmp     byte[usercommand+5], ' '
-        jne     .default_msg
-        lea     esi,[usercommand+6]
-  .default_msg:
+        jne     .with_message
+        lea     esi, [usercommand+6]
+  .with_message:
         call    cmd_usr_quit_server
 
         mcall   close, [socketnum]
+        mov     [status], STATUS_DISCONNECTED
 
         mov     ecx, MAX_WINDOWS
         mov     edi, windows
   .loop:
-        mov     [edi + window.flags], FLAG_CLOSE
+        mov     [window_print], edi
+        push    edi ecx
+        call    window_close
+        pop     ecx edi
         add     edi, sizeof.window
         dec     ecx
         jnz     .loop
@@ -165,11 +239,14 @@ cmd_usr_quit_server:
 ; Append our quit msg
   @@:
         lodsb
-        stosb
+        cmp     al, 13
+        je      @f
         test    al, al
-        jnz     @r
+        jz      @f
+        stosb
+        jmp     @r
+  @@:
 ; end the command with a CRLF
-        dec     edi
         mov     ax, 0x0a0d
         stosw
 
@@ -184,31 +261,37 @@ cmd_usr_quit_server:
 cmd_usr_nick:
 
         cmp     [edit1.size], 5
-        je      .justprint
+        je      .dontsend
         cmp     byte[usercommand+5], ' '
-        jne     cmd_usr_send
+        jne     .fail
+        cmp     [socketnum], 0
+        je      .dontsend
 
+        mov     dword[usercommand+1], 'NICK'
+        mov     esi, [edit1.size]
+        mov     word[usercommand + esi], 0x0a0d
+        inc     esi
+        mcall   send, [socketnum], usercommand+1, , 0
+
+  .fail:
+
+        ret
+
+  .dontsend:
         mov     ecx, MAX_NICK_LEN
         mov     esi, usercommand+6
         mov     edi, user_nick
-  .loop:
+  @@:
         lodsb
         cmp     al, 13
-        je      .done
+        je      @f
         stosb
         dec     ecx
-        jnz     .loop
-  .done:
+        jnz     @r
+  @@:
         xor     al, al
         stosb
 
-        cmp     [socketnum], 0
-        je      .justprint
-
-        lea     esi, [edi - usercommand]
-        mcall   send, [socketnum], usercommand+1, , 0
-
-  .justprint:
         mov     esi, str_nickchange
         call    print_text2
         mov     esi, user_nick
@@ -299,13 +382,11 @@ cmd_usr_quer:
         call    window_create
         test    eax, eax
         jz      .error
-        mov     [ebx + window.data_ptr], eax
+        mov     [ebx + window.type], WINDOWTYPE_CHAT
 
         mov     esi, usercommand+7
         call    window_set_name
 
-        mov     [ebx + window.type], WINDOWTYPE_CHAT
-        mov     [ebx + window.flags], 0
 
   .error:
 
@@ -333,17 +414,32 @@ cmd_usr_code:
 ; User typed a part command
 cmd_usr_part:
 
-        cmp     byte[usercommand+5], 13 ; parameters given?
-        jne     cmd_usr_send
+        cmp     byte[usercommand+5], 13         ; parameters given?
+        jne     cmd_usr_send                    ; yes, send command straight to server
 
-        mov     esi, [window_active]      ; window is not a server window?
+; close active window
+cmd_usr_close_window:
+
+        mov     esi, [window_active]
+        mov     [window_print], esi
         cmp     [esi + window.type], WINDOWTYPE_SERVER
-        je      @f
+        je      .not_channel
 
-        call    window_close            ; OK, close currently open (channel/chat/..) window
-  @@:
+        lea     esi, [esi + window.name]
+        call    cmd_usr_part_channel
+        call    window_close
+        ret
+
+  .not_channel:
+        cmp     [esi + window.type], WINDOWTYPE_CHAT
+        jne     .not_chat
+
+        call    window_close
+  .not_chat:
 
         ret
+
+
 
 ; Send part command to server
 ; esi must point to channel name (ASCIIZ)
@@ -355,16 +451,78 @@ cmd_usr_part_channel:
         lea     edi, [packetbuf+5]
   @@:
         lodsb
-        stosb
         test    al, al
-        jnz     @r
+        jz      @f
+        cmp     al, 13
+        je      @f
+        cmp     al, 10
+        je      @f
+        stosb
+        jmp     @r
+  @@:
 ; end the command with a CRLF
-        dec     edi
         mov     ax, 0x0a0d
         stosw
 
         lea     esi, [edi - packetbuf]                  ; calculate length
         mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
+
+        ret
+
+
+cmd_usr_ctcp:
+
+        cmp     byte[usercommand+5], ' '
+        jne     cmd_usr_send
+
+        mov     esi, usercommand+6
+; prepare a 'PRIVMSG '
+        mov     dword[packetbuf], 'PRIV'
+        mov     dword[packetbuf+4], 'MSG '
+        lea     edi, [packetbuf+8]
+
+; append the destination (nickname/channel)
+  @@:
+        lodsb
+        test    al, al
+        jz      .fail
+        cmp     al, ' '
+        je      @f
+        stosb
+        jmp     @r
+  @@:
+
+        mov     ax, ' :'
+        stosw
+        mov     al, 0x01
+        stosb
+
+; copy the message itself
+  @@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, 13
+        je      @f
+        cmp     al, 10
+        je      @f
+        stosb
+        jmp     @r
+  @@:
+
+; end of message
+        mov     al, 0x01
+        stosb
+        mov     ax, 0x0a0d
+        stosw
+
+; now send it away
+        lea     esi, [edi - packetbuf]                  ; calculate length
+        mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
+
+;; TODO: print to window
+
+  .fail:
 
         ret
 
@@ -382,4 +540,8 @@ cmd_usr_send:
         mcall   send, [socketnum], packetbuf, , 0
 
         ret
+
+
+
+
 

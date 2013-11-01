@@ -3,12 +3,17 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; TODO: work correctly with user prefixes.
+; use first byte of nick for prefix ONLY (use a space for those that do not have special powers..)
+
+user_prefixes db '~&@%+ ', 0    ; in descending order
 
 ; esi is ptr to nick
 ; ebx is ptr to window
@@ -21,7 +26,7 @@ user_add:
         mov     edi, [ebx + window.data_ptr]
         add     edi, window_data.names
         mov     ebp, [ebx + window.users]
-        inc     ebp     ; CHECKME
+        inc     ebp             ; CHECKME
 
         push    esi edi
   .restart:
@@ -78,8 +83,7 @@ user_add:
 ; mov all trailing usernames by MAX_NICK_LEN bytes
         push    esi edi
         mov     esi, [ebx + window.data_ptr]
-        add     esi, window_data.names + MAX_NICK_LEN * (MAX_USERS - 1)
-
+        add     esi, window_data.names + MAX_NICK_LEN * (MAX_USERS - 1) - 4     ; -4 because we're copying backward, dword wise
         mov     ecx, esi
         sub     ecx, edi
         add     ecx, MAX_NICK_LEN
@@ -98,6 +102,10 @@ user_add:
         je      .done
         cmp     al, '!'
         je      .done
+        cmp     al, 13
+        je      .done
+        cmp     al, 10
+        je      .done
         stosb
         loop    .fill
   .done:
@@ -105,6 +113,7 @@ user_add:
         stosb
 
         inc     [ebx + window.users]
+        or      [ebx + window.flags], FLAG_UPDATED
 
         ret
 
@@ -128,7 +137,7 @@ user_remove:
         rep     movsd
 
         dec     [ebx + window.users]
-        xor     eax, eax
+        or      [ebx + window.flags], FLAG_UPDATED
 
         ret
 

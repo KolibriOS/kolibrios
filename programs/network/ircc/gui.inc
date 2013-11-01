@@ -3,6 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
@@ -10,7 +11,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-draw_window:
+
+draw_window:    ; Completely redraw the window, recalculate all coordinates and sizes
 
         pusha
 
@@ -37,6 +39,12 @@ draw_window:
         add     esi, ebx
         mcall   67, -1, -1                      ; set the new sizes
 
+        popa
+
+  .dont_resize:
+
+        pusha
+
         mcall   12, 1
         xor     eax, eax                        ; draw window
         mov     ebx, WIN_MIN_X
@@ -49,39 +57,76 @@ draw_window:
 
         mov     ebx, [xsize]
         mov     ecx, [ysize]
-        sub     cx, 15 ;;;;
+        sub     cx, BOTTOM_Y ;;;;
         push    cx
         shl     ecx, 16
         pop     cx
         mov     edx, [colors.work_graph]
-        mcall   38                              ; draw line
-
+        mcall   38                              ; draw bottom line
         mov     ecx, TOP_Y SHL 16 + TOP_Y
-        mcall
+        mcall                                   ; draw top line
 
+; calculate available space for textbox and coordinates for scrollbars
+        mov     eax, [ysize]
+        sub     eax, TOP_Y + BOTTOM_Y - 1   ;;;;
+        mov     [scroll2.y_size], ax
+        mov     [scroll1.y_size], ax
+        sub     eax, 4 ;;;;
+        xor     edx, edx
+        mov     ecx, FONT_HEIGHT
+        div     ecx
+        mov     [textbox_height], eax
+        mov     [scroll2.cur_area], eax
+        mov     [scroll1.cur_area], eax
+
+        mov     eax, [xsize]
+        sub     eax, SCROLLBAR_WIDTH
+        mov     [scroll1.x_pos], ax
+        mov     edi, [window_active]
+        cmp     [edi + window.type], WINDOWTYPE_CHANNEL
+        jne     @f
+        sub     eax, USERLIST_WIDTH + SCROLLBAR_WIDTH + 2
+  @@:
+        mov     [scroll2.x_pos], ax
+        sub     eax, 10
+        xor     edx, edx
+        mov     ecx, FONT_WIDTH
+        div     ecx
+        mov     [textbox_width], eax
+
+; recalculate text line breaks (because height/width might have changed..)
+        mov     edi, [window_active]
+        mov     esi, [edi + window.text_start]
+        call    text_insert_newlines
+        mov     [edi + window.text_lines], edx
+        mov     [edi + window.text_scanned], esi
+
+; and redraw the textbox (and scrollbar if needed)
+        mov     [scroll2.all_redraw], 1
+        call    draw_channel_text
+
+; Draw userlist if active window is a channel
         mov     edi, [window_active]
         cmp     [edi + window.type], WINDOWTYPE_CHANNEL
         jne     .not_channel
 
         ; draw a vertical separator line
+        ; TODO: dont draw this if we draw textbox scrollbar ??
         mov     ebx, [xsize]
-        sub     ebx, USERLIST_X + SCROLLBAR_WIDTH + 3
+        sub     ebx, USERLIST_WIDTH + SCROLLBAR_WIDTH + 3
         push    bx
         shl     ebx, 16
         pop     bx
         mov     ecx, [ysize]
-        add     ecx, TOP_Y SHL 16 -(15) ;;;;
-        mcall
+        add     ecx, TOP_Y SHL 16 -(BOTTOM_Y) ;;;;
+        mov     edx, [colors.work_graph]
+        mcall   38
 
-        call    redraw_channel_list
-
+        mov     [scroll1.all_redraw], 1
+        call    draw_channel_list
   .not_channel:
-        mov     edx, [edi + window.data_ptr]
-        add     edx, window_data.text
-        call    draw_channel_text
 
-; editbox
-
+; draw editbox
         mov     eax, [ysize]
         sub     eax, 12 ;;;;;;
         mov     [edit1.top], eax
@@ -92,7 +137,7 @@ draw_window:
         push    dword edit1
         call    [edit_box_draw]
 
-; tabs
+; draw tabs
         call    draw_windowtabs
 
         popa
@@ -100,31 +145,15 @@ draw_window:
 
 
 
-redraw_channel_list:
+draw_channel_list:
 
-; First, calculate scrollbar
-
-        mov     ebx, [window_active]
-        mov     eax, [ebx + window.users]       ; number of users in the open window
-        mov     [scroll1.max_area], eax
-
-        mov     eax, [ysize]
-        sub     eax, TOP_Y + 15 ;;;;
-        push    eax
-        mov     [scroll1.y_size], ax
-
-        mov     eax, [xsize]
-        sub     eax, SCROLLBAR_WIDTH
-        mov     [scroll1.x_pos], ax
-
-        pop     eax                             ; scrollbar height
-        xor     edx, edx
-        mov     ecx, 10
-        div     ecx
-        mov     [scroll1.cur_area], eax
+        pusha
 
         ; Do we need a scrollbar?
-        cmp     eax, [scroll1.max_area]
+        mov     ebx, [window_active]
+        mov     eax, [ebx + window.users]
+        mov     [scroll1.max_area], eax
+        cmp     [scroll1.cur_area], eax
         jae     .noscroll
 
         ; Is the current position greater then the max position?
@@ -132,42 +161,37 @@ redraw_channel_list:
         ja      @f
         mov     [scroll1.position], eax
   @@:
-
         ; OK, draw the scrollbar
-        mov     [scroll1.all_redraw], 1
-
         push    dword scroll1
-        call    [scrollbar_v_draw]
+        call    [scrollbar_draw]
 
-        jmp     print_channel_list
+        ; dont redraw scrollbar completely next time,
+        ; unless draw_window asks us to by setting [scroll1.all_redraw] back to 1
+        mov     [scroll1.all_redraw], 0
+        jmp     .scroll_done
 
   .noscroll:
         mov     [scroll1.position], 0
+  .scroll_done:
 
-
-
-print_channel_list:
-
-        pusha
-
-; first, draw an invisible button
+        ; draw an invisible button, where the usernames will go
         mov     ebx, [xsize]
-        sub     ebx, USERLIST_X + SCROLLBAR_WIDTH
+        sub     ebx, USERLIST_WIDTH + SCROLLBAR_WIDTH
         shl     ebx, 16
         push    ebx
-        mov     bx, USERLIST_X
+        mov     bx, USERLIST_WIDTH
         mov     ecx, [ysize]
-        add     ecx, TEXT_Y shl 16 - (TEXT_Y + 15)        ;;;;;   + 10???
+        add     ecx, TEXT_Y shl 16 - (TEXT_Y + 16)
         push    ecx ebx
         mov     edx, WINDOW_BTN_LIST + 1 shl 29 + 1 shl 30
         mcall   8
 
-; draw rectangle to clear previously printed names
+        ; draw a filled rectangle to clear previously printed names
         pop     ebx ecx
         mov     edx, [colors.work]
         mcall   13
 
-; now draw the names according to the scrollbar position and window size
+; now, draw the names according to the scrollbar position and window size
         mov     eax, [scroll1.position]
         xor     edx, edx
         mov     ecx, MAX_NICK_LEN
@@ -185,8 +209,7 @@ print_channel_list:
         or      ecx, 0x80000000                 ; ASCIIZ string
         mov     eax, 4                          ; draw text
 
-        mov     edi, [ysize]                    ; Calculate how many names will fit on screen
-        sub     edi, TEXT_Y + 15 ;+ 10           ;;;;;
+        mov     edi, [textbox_height]           ; how many names will fit on screen
   .loop:
         cmp     byte[edx], 0                    ; end of list?
         je      .done
@@ -196,7 +219,7 @@ print_channel_list:
                                                 ; yes, highlight it
         pusha
         mov     cx, bx
-        mov     bx, USERLIST_X
+        mov     bx, USERLIST_WIDTH
         shl     ecx, 16
         mov     cx, 10 - 1
         mov     edx, 0x00000055                 ; blue!
@@ -214,10 +237,10 @@ print_channel_list:
         mcall
 
   .next:
-        add     edx, MAX_NICK_LEN               ; next name
-        add     ebx, 10                         ; height distance between lines
-        sub     edi, 10
-        ja      .loop
+        add     edx, MAX_NICK_LEN
+        add     ebx, FONT_HEIGHT
+        dec     edi
+        jnz     .loop
 
   .done:
         popa

@@ -3,6 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
@@ -12,13 +13,13 @@
 
 socket_connect:
 
-;        cmp     [status], STATUS_CONNECTED     ; TODO
-;        je      disconnect
-
 ; ignore if status is not "disconnected"
         cmp     [status], STATUS_DISCONNECTED
-        jne     .nothing
+        jne     .reconnect
 
+        if TIMESTAMP
+        call    print_timestamp
+        end if
         mov     esi, str_connecting
         call    print_text2
         mov     esi, irc_server_name
@@ -63,12 +64,14 @@ socket_connect:
         cmp     eax, -1
         jz      .fail_refused
 
-  .nothing:
         ret
 
   .fail:
         mov     [status], STATUS_DISCONNECTED
 
+        if TIMESTAMP
+        call    print_timestamp
+        end if
         mov     esi, str_sockerr
         call    print_text2
 
@@ -77,6 +80,9 @@ socket_connect:
   .fail_dns:
         mov     [status], STATUS_DISCONNECTED
 
+        if TIMESTAMP
+        call    print_timestamp
+        end if
         mov     esi, str_dnserr
         call    print_text2
 
@@ -85,11 +91,26 @@ socket_connect:
   .fail_refused:
         mov     [status], STATUS_DISCONNECTED
 
+        if TIMESTAMP
+        call    print_timestamp
+        end if
         mov     esi, str_refused
         call    print_text2
 
         ret
 
+  .reconnect:
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+        mov     esi, str_reconnect
+        call    print_text2
+
+        mov     esi, quit_msg
+        call    cmd_usr_quit.with_message
+
+        jmp     socket_connect
 
 
 socket_write_userinfo:
@@ -180,25 +201,11 @@ process_network_event:
         inc     [status]
 
   .connected:
-        call    read_incoming_data
+        call    socket_receive
         ret
 
 
-disconnect:
-
-        cmp     [status], STATUS_DISCONNECTED
-        je      .nothing
-
-        mcall   close, [socketnum]
-
-        mov     [status], STATUS_DISCONNECTED
-
-  .nothing:
-        ret
-
-
-
-read_incoming_data:
+socket_receive:
 
         pusha
 

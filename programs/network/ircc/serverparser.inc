@@ -3,6 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
@@ -48,7 +49,9 @@ server_commands:
 
         dd      '322 ', cmd_322         ; RPL_LIST
         dd      '323 ', cmd_323         ; RPL_LISTEND
+        dd      '324 ', cmd_324 ;;;;
         dd      '328 ', cmd_328         ; RPL_CHANNEL_URL
+        dd      '329 ', cmd_329
         dd      '332 ', cmd_topic
         dd      '333 ', cmd_333         ; nickname and time of topic
         dd      '353 ', cmd_353         ; name reply
@@ -110,6 +113,8 @@ compare_to_nick:
         pop     esi
         ret
 
+
+
 align 4
 skip_nick:
 
@@ -135,6 +140,8 @@ skip_nick:
 
 
 
+cmd_324:
+cmd_329:
 cmd_328:
 cmd_421:
 cmd_372:
@@ -149,11 +156,16 @@ cmd_notice:
         jne     .gogogo
 
         mov     byte [esi-1], 0
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
         push    esi
         mov     esi, str_1
         call    print_text2
-        mov     esi, servercommand+1
-        call    print_text2
+        mov     eax, servercommand+1
+        mov     dl, '!'
+        call    print_text
         mov     esi, str_2
         call    print_text2
         pop     esi
@@ -177,11 +189,10 @@ cmd_notice:
         cmp     byte [esi], ':'
         je      .loop2
 
+  .fail:
         call    print_text2
         mov     esi, str_newline
         call    print_text2
-
-  .fail:
 
         ret
 
@@ -212,19 +223,20 @@ cmd_ping:
 
 cmd_privmsg:
 
+        mov     eax, dword[esi+4]
+        or      eax, 0x20202020
+        cmp     eax, 'msg '
+        jne     .fail
         add     esi, 8          ; skip 'PRIVMSG '
         call    window_open     ; esi now points to end of destination name
 
-        cmp     byte[esi], 1
+        cmp     byte[esi], 1    ; Client to Client protocol?
         je      cmd_ctcp
 
-        cmp     dword[esi], 'ACTI'      ; Action?
-        je      .action
-
-; nope, just plain old privmsg
-if TIMESTAMP
+; nope, just plain old privmsg, print it using '<nick> message' format
+        if TIMESTAMP
         call    print_timestamp
-end if
+        end if
 
         push    esi
         mov     bl, '<'
@@ -249,49 +261,36 @@ end if
   .fail:
         ret
 
-  .action:
-        add     esi, 8
-        push    esi
-        if TIMESTAMP
-        call    print_timestamp
-        end if
-
-        mov     esi, action_header_short
-        call    print_text2
-
-        mov     eax, servercommand+1
-        mov     dl, ' '
-        call    print_text
-
-        mov     bl, ' '
-        call    print_character
-
-        pop     esi
-        call    print_text2
-
-        mov     bl, 10
-        call    print_character
-
-        ret
 
 
 
 cmd_ctcp:
+
+        cmp     byte [esi+4], ' '
+        jne     .fail
         inc     esi
+        mov     eax, dword[esi]
+        or      eax, 0x20202020
 
-        cmp     dword[esi], 'VERS'
+        cmp     eax, 'vers'
         je      .version
-
-        cmp     dword[esi], 'TIME'
+        cmp     eax, 'time'
         je      .time
-
-        cmp     dword[esi], 'PING'
+        cmp     eax, 'ping'
         je      .ping
+        cmp     eax, 'acti'
+        je      .action
+;        cmp     eax, 'dcc '    ; TODO
+;        je      cmd_dcc
+
+; Unknown CTCP command: TODO: just print to window??
+
+  .fail:
 
         ret
 
   .time:
-        mov     byte [esi+4], ' '
+        mov     byte[esi+4], ' '
         lea     edi, [esi+5]
 
         ; TODO: add system date (fn 29) in human readable format
@@ -375,12 +374,52 @@ cmd_ctcp:
 
         ret
 
+  .action:
+        add     esi, 7
+        push    esi
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, action_header
+        call    print_text2
+
+        mov     eax, servercommand+1    ; print nickname
+        mov     dl, '!'
+        call    print_text
+
+        mov     bl, ' '
+        call    print_character
+
+        pop     esi
+        call    print_text2             ; print message
+
+        mov     bl, 10
+        call    print_character
+
+        ret
+
+
+cmd_dcc:
+        add     esi, 4
+        mov     eax, dword[esi]
+        or      eax, 0x202020
+
+        cmp     eax, 'send'
+        je      .send
+
+        ret
+
+  .send:
+
+        ret
+
 
 
 ctcp_reply:
 
         push    esi
-
         mov     dword [usercommand], 'NOTI'
         mov     dword [usercommand+4], 'CE  '
 
@@ -425,27 +464,34 @@ ctcp_reply:
 
 
 cmd_part:
+
+        cmp     byte [esi+4], ' '
+        jne     .fail
         add     esi, 5  ; skip 'PART '
-        push    esi
-        call    skip_nick
-        call    window_open
-        pop     esi
 
 ; Is it me who parted?
         mov     edi, servercommand+1
         call    compare_to_nick
         jne     .dont_close
 
-; yes, close the window
-        mov     edi, [window_print]
-        mov     [edi + window.flags], FLAG_UPDATED + FLAG_CLOSE
+; yes, close the window (if its open)
+        call    window_find
+        test    ebx, ebx
+        jz      @f
+        call    window_close
+  @@:
+  .fail:
 
         ret
+
 
 ; somebody else parted, just print message
   .dont_close:
         push    esi
-        mov     esi, action_header
+        call    skip_nick
+        call    window_open
+
+        mov     esi, part_header
         call    print_text2
 
         mov     eax, servercommand+1
@@ -471,6 +517,9 @@ cmd_part:
 
 
 cmd_join:
+
+        cmp     byte [esi+4], ' '
+        jne     .fail
         add     esi, 5  ; skip 'JOIN '
 
 ; compare nick: did we join a channel?
@@ -488,27 +537,26 @@ cmd_join:
         dec     ecx
         jnz     .loop
 ; Error: no more available windows!! ;;;;; TODO
-  .fail:
+
         ret
 
   .free_found:
-        push    ebx
         call    window_create
-        pop     ebx
         test    eax, eax
         jz      .fail
-        mov     [ebx + window.data_ptr], eax
         mov     [ebx + window.type], WINDOWTYPE_CHANNEL
-        mov     [ebx + window.flags], 0
 
         call    window_set_name
 
         mov     [window_active], ebx
         mov     [window_print], ebx
-        call    window_refresh
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
 
         push    esi
-        mov     esi, action_header
+        mov     esi, join_header
         call    print_text2
 
         mov     esi, str_talking
@@ -529,7 +577,11 @@ cmd_join:
         push    esi
         call    window_open
 
-        mov     esi, action_header
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, join_header
         call    print_text2
 
         mov     eax, servercommand+1
@@ -549,58 +601,71 @@ cmd_join:
         mov     esi, servercommand+1
         call    user_add
 
+  .fail:
+
         ret
 
 
 
 
 cmd_nick:
-; NOTE: This command applies to a user, and thus has no specific channel
-        add     esi, 5  ; skip 'NICK '
 
-        cmp     byte[esi], ':'          ; TODO: skip all spaces and semicolons?
+        cmp     byte[esi+4], ' '
+        jne     .fail
+        add     esi, 5          ; skip 'NICK '
+        cmp     byte[esi], ':'
         jne     @f
         inc     esi
-       @@:
-
-; Change the nick in the current userlist. TODO: check other channels too!
-        push    esi
-        mov     ebx, [window_print]
-
-        mov     esi, servercommand+1
-        call    user_remove
-
-        mov     esi, [esp]
-        call    user_add
-
-        call    redraw_channel_list
+  @@:
 
 ; Is it me who changed nick?
+        push    esi
         mov     edi, servercommand+1
         call    compare_to_nick
-        pop     esi
         jne     .not_me
 
         mov     ecx, MAX_NICK_LEN-1
-        push    esi
-  .copyloop:
+        mov     esi, [esp]
+  @@:
         lodsb
         test    al, al
-        jz      .copydone
+        jz      @f
         cmp     al, ' '
-        je      .copydone
+        je      @f
+        cmp     al, 10
+        je      @f
+        cmp     al, 13
+        je      @f
         stosb
         dec     ecx
-        jnz     .copyloop
-  .copydone:
+        jnz     @r
+  @@:
         xor     al, al
         stosb
-        pop     esi
   .not_me:
 
-; Now print a message on the current channel
-        push    esi
-        mov     esi, action_header_short
+        mov     ebx, windows
+        mov     ecx, MAX_WINDOWS
+  .window_loop:
+        push    ecx ebx
+        cmp     [ebx + window.type], WINDOWTYPE_CHANNEL
+        jne     .next_window
+
+        mov     esi, servercommand+1
+        call    user_remove
+        test    edi, edi
+        jz      .next_window
+
+        mov     esi, [esp + 8]
+        call    user_add
+
+        mov     [window_print], ebx
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, nick_header
         call    print_text2
 
         mov     eax, servercommand+1
@@ -610,11 +675,21 @@ cmd_nick:
         mov     esi, is_now_known_as
         call    print_text2
 
-        pop     esi
+        mov     esi, [esp + 8]  ; FIXME: dont print the 0x0a0d!!!
         call    print_text2
 
         mov     esi, str_newline
         call    print_text2
+
+  .next_window:
+        pop     ebx ecx
+        add     ebx, sizeof.window
+        dec     ecx
+        jnz     .window_loop
+
+        pop     esi
+
+  .fail:
 
         ret
 
@@ -622,6 +697,9 @@ cmd_nick:
 
 
 cmd_kick:
+
+        cmp     byte [esi+4], ' '
+        jne     .fail
         add     esi, 5  ; skip 'KICK '
 ; Is it me who got kicked?
         mov     edi, servercommand+1
@@ -636,7 +714,11 @@ cmd_kick:
         call    skip_nick
         call    window_open
 
-        mov     esi, action_header_short
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, kick_header
         call    print_text2
 
         mov     eax, servercommand+1
@@ -656,14 +738,38 @@ cmd_kick:
         mov     esi, servercommand+1
         call    user_remove
 
+  .fail:
+
         ret
 
 
 
 cmd_quit:
-; NOTE: This command applies to a user, and thus has no specific channel
 
-        mov     esi, action_header
+        cmp     byte [esi+4], ' '
+        jne     .fail
+
+        mov     ebx, windows
+        mov     ecx, MAX_WINDOWS
+
+  .window_loop:
+        push    ecx
+        cmp     [ebx + window.type], WINDOWTYPE_CHANNEL
+        jne     .next_window
+
+        mov     esi, servercommand+1
+        call    user_remove
+        test    edi, edi
+        jz      .next_window
+
+        push    ebx
+        mov     [window_print], ebx
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, quit_header
         call    print_text2
 
         mov     eax, servercommand+1
@@ -673,10 +779,16 @@ cmd_quit:
         mov     esi, has_quit_irc
         call    print_text2
 
-; TODO: check other channels on same server too!
-        mov     ebx, [window_print]
-        mov     esi, servercommand+1
-        call    user_remove
+; TODO: check if quit message was given, and print it to the window
+        pop     ebx
+  .next_window:
+        pop     ecx
+        add     ebx, sizeof.window
+        dec     ecx
+        jnz     .window_loop
+
+  .fail:
+
 
         ret
 
@@ -684,14 +796,35 @@ cmd_quit:
 
 cmd_mode:
 
+        cmp     byte [esi+4], ' '
+        jne     .fail
         add     esi, 5  ; skip 'MODE '
+        call    window_find
+        test    ebx, ebx
+        jz      .fail
 
+; skip channel name
+  @@:
+        lodsb
+        test    al, al
+        jz      .fail
+        cmp     al, 10
+        je      .fail
+        cmp     al, 13
+        je      .fail
+        cmp     al, ' '
+        jne     @r
         push    esi
-        mov     esi, action_header_short
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, mode_header
         call    print_text2
 
         mov     eax, servercommand+1
-        mov     dl, ' '
+        mov     dl, '!'
         call    print_text
 
         mov     esi, sets_mode
@@ -704,6 +837,8 @@ cmd_mode:
         call    print_text2
 
 ;;; TODO: change username if needed
+
+  .fail:
 
         ret
 
@@ -739,7 +874,7 @@ cmd_353:                ; channel usernames reply
         jmp     .add
 
   .done:
-        call    redraw_channel_list
+        call    draw_channel_list
 
         ret
 
@@ -767,8 +902,12 @@ cmd_topic:
         call    skip_nick
         call    window_open
 
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
         push    esi
-        mov     esi, action_header
+        mov     esi, topic_header
         call    print_text2
 
         mov     esi, str_topic
@@ -799,8 +938,12 @@ cmd_333:
 ;        dec     ecx
 ;        jnz     .loop   ; find some more spaces
 
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
         push    esi
-        mov     esi, action_header
+        mov     esi, topic_header
         call    print_text2
 
         mov     esi, str_setby
@@ -819,18 +962,20 @@ cmd_333:
   .fail:
         ret
 
-cmd_322:
+cmd_322:        ; LIST
+
         add     esi, 4
 
+        mov     [window_print], windows         ; FIXME
         call    skip_nick
-
-        call    print_text2
-
+        mov     eax, esi
+        mov     dl, 13
+        call    print_text
         mov     esi, str_newline
         call    print_text2
 
         ret
 
-cmd_323:
+cmd_323:        ; LIST END
 
         ret

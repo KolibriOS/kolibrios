@@ -3,6 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
@@ -10,11 +11,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+; in:  window ptr in ebx
+; out: eax = 0 on error
 window_create:
 
+        push    ebx
 ; allocate the window data block
         mcall   68, 12, sizeof.window_data
         test    eax, eax
+        pop     ebx
         jz      .fail
 
 ; fill it with all zeros
@@ -24,6 +29,19 @@ window_create:
         xor     eax, eax
         rep     stosd
         pop     eax
+
+        mov     [ebx + window.data_ptr], eax
+        mov     [ebx + window.flags], 0
+
+        add     eax, window_data.text+1         ; let text begin at offset 1, this way the text will be prepended with a 0
+        mov     [ebx + window.text_start], eax
+        mov     [ebx + window.text_print], eax
+        mov     [ebx + window.text_write], eax
+        mov     [ebx + window.text_scanned], eax
+        mov     [ebx + window.text_lines], 0
+        mov     [ebx + window.text_line_print], 0
+        add     eax, TEXT_BUFFERSIZE-1
+        mov     [ebx + window.text_end], eax
 
   .fail:
         ret
@@ -63,32 +81,16 @@ window_set_name:    ; esi = ptr to name, ebx = window ptr
 
 
 
-window_refresh:
-
-; set text write cursor to beginning of last line
-        mov     eax, [textbox_width]
-        imul    eax, TEXTBOX_LINES - 1
-        mov     [text_pos], eax
-
-; set the textbuffer pointer
-        mov     eax, [window_print]
-        mov     eax, [eax + window.data_ptr]
-        add     eax, window_data.text
-        mov     [text_start], eax
-
-        ret
-
-
-
 window_is_updated:
 
         mov     edi, [window_print]
+        cmp     edi, [window_active]
+        je      .skip
         test    [edi + window.flags], FLAG_UPDATED
         jnz     .skip
-
         or      [edi + window.flags], FLAG_UPDATED
 
-; now play a sound :)
+; TODO: make some noise
 
         call    draw_windowtabs         ; highlight updated tabs
   .skip:
@@ -97,19 +99,10 @@ window_is_updated:
 
 
 
-window_close:
-
-; If current window is a channel, send part command to server
-        mov     esi, [window_active]
-        cmp     [esi + window.type], WINDOWTYPE_CHANNEL
-        jne     .not_channel
-
-        lea     esi, [esi + window.name]
-        call    cmd_usr_part_channel
-  .not_channel:
+window_close:   ; closes the 'print' window
 
 ; Remove the window (overwrite current structure with trailing ones)
-        mov     edi, [window_active]
+        mov     edi, [window_print]
         push    [edi + window.data_ptr]         ; remember data ptr so we can free it later
         lea     esi, [edi + sizeof.window]
         mov     ecx, windows + MAX_WINDOWS*sizeof.window
@@ -131,13 +124,53 @@ window_close:
         jne     @f
         sub     edi, sizeof.window
         mov     [window_active], edi
-        mov     [window_print], edi
+        mov     [window_print], edi  ;;;;;;;;
   @@:
 
 ; At last, redraw everything
         call    draw_window
 
         ret
+
+
+
+window_find:    ; esi = window name
+; search for window in list
+        mov     ebx, windows
+        mov     [window_print], ebx     ; set first window (server window) as default output window
+        mov     eax, MAX_WINDOWS
+  .scanloop:
+        push    esi
+        cmp     [ebx + window.type], WINDOWTYPE_NONE
+        je      .try_next
+        lea     edi, [ebx + window.name]
+        mov     ecx, MAX_WINDOWNAME_LEN
+        repe    cmpsb
+        cmp     byte[edi-1], 0
+        jne     .try_next
+        cmp     byte[esi-1], 0
+        je      .got_it
+        cmp     byte[esi-1], 10
+        je      .got_it
+        cmp     byte[esi-1], 13
+        je      .got_it
+        cmp     byte[esi-1], ' '
+        je      .got_it
+  .try_next:
+        pop     esi
+        add     ebx, sizeof.window
+        dec     eax
+        jnz     .scanloop
+
+        xor     ebx, ebx
+        ret
+
+  .got_it:
+        pop     esi                 ;;; TODO: dont reset ESI  ?
+        mov     [window_print], ebx
+        ret
+
+
 
 
 
@@ -157,22 +190,9 @@ window_open:
         mov     esi, servercommand+1
   .nochat:
 
-; now search for window in list
-        mov     ebx, windows
-        mov     [window_print], ebx     ; set first window (server window) as default output window
-  .scanloop:
-        cmp     [ebx + window.data_ptr], 0
-        je      .create_it
-        push    esi
-        lea     edi, [ebx + window.name]
-        mov     ecx, MAX_WINDOWNAME_LEN
-        repe    cmpsb
-        pop     esi
-        cmp     byte[edi-1], 0
-        je      .got_it
-        add     ebx, sizeof.window
-        ; TODO: check buffer limits ?
-        jmp     .scanloop
+        call    window_find
+        test    ebx, ebx
+        jne     .got_it
 
 ; create channel window - search for empty slot
   .create_it:
@@ -185,31 +205,20 @@ window_open:
         dec     ecx
         jnz     .scanloop2
 ; Error: no more available windows!
-        jmp     .just_skip
+        jmp     .got_it ; TODO: return error
 
   .free_found:
-        push    ebx
         call    window_create
-        pop     ebx
         test    eax, eax
-        jz      .just_skip
-        mov     [ebx + window.data_ptr], eax
-        mov     [ebx + window.type], WINDOWTYPE_CHAT
-        mov     [ebx + window.flags], 0
+        jz      .got_it ; TODO: return error
+        mov     [ebx + window.type], WINDOWTYPE_CHAT    ; FIXME: let caller handle this ?
 
         call    window_set_name
         mov     [window_print], ebx
-        call    window_refresh
 
         call    draw_windowtabs
-        jmp     .just_skip
 
-; found it!
   .got_it:
-        mov     [window_print], ebx
-        call    window_refresh
-
-  .just_skip:
         pop     esi
   .skip1:
 ; skip text
@@ -232,42 +241,3 @@ window_open:
 
   .quit:
         ret
-
-
-
-if TIMESTAMP
-print_timestamp:
-
-        pusha
-        mcall   3                       ; get system time
-
-        mov     bl, '['
-        call    print_character
-        mov     ecx, TIMESTAMP
-  .loop:
-        mov     bl, al
-        shr     bl, 4
-        add     bl, '0'
-        call    print_character
-
-        mov     bl, al
-        and     bl, 0x0f
-        add     bl, '0'
-        call    print_character
-
-        dec     ecx
-        jz      .done
-
-        mov     bl, ':'
-        call    print_character
-        shr     eax, 8
-        jmp     .loop
-  .done:
-        mov     bl, ']'
-        call    print_character
-        mov     bl, ' '
-        call    print_character
-
-        popa
-        ret
-end if
