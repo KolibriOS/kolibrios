@@ -9,7 +9,6 @@ void ParseMail()
 	{
 		debug("End of mail detected");
 		mailpointer = mailpointer - 5;
-		*mailpointer='\0';
 		
 		if (strstr(mailbuffer, "+OK")!=mailbuffer) 
 		{
@@ -19,7 +18,7 @@ void ParseMail()
 			return;
 		}
 		aim=NULL;
-		DSBYTE[mailpointer+1] = '\0';
+		DSBYTE[mailpointer] = '\0';
 		debug("Real letter size:");
 		debugi(mailpointer - mailbuffer);
 
@@ -31,7 +30,7 @@ void ParseMail()
 			if (EAX==-1) debug("Too small buffer to convert QUOTED-PRINTABLE");
 			else
 			{
-				mailbuffer = free(mailbuffer);
+				free(mailbuffer);
 				mailbuffer = new_buf;
 				mailpointer = strlen(mailbuffer) + mailbuffer;
 			}
@@ -41,7 +40,7 @@ void ParseMail()
 		GetHeader(#to,   "\nTo:");
 		GetHeader(#date, "\nDate:");
 		GetHeader(#subj, "\nSubject:");
-		mdata = strstr(mailbuffer, "\n\r") + 3;
+		mdata = strstr(mailbuffer, "\n") + 3;
 		debug ("converting to dos");
 		ConvertToDOS(mdata, mailbuffer);
 		FromHTMLtoTXT();

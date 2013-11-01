@@ -227,7 +227,7 @@ void MailBoxLoop()
 							mail_list.count = GetMailCount();
 							debug("Letters:");
 							debug(itoa(mail_list.count));
-							listbuffer = free(listbuffer);
+							free(listbuffer);
 							listbuffer = mem_Alloc(30*mail_list.count); //24* original
 							listpointer = listbuffer;	
 							aim = SEND_NLIST;
@@ -252,21 +252,21 @@ void MailBoxLoop()
 
 				if (aim == GET_ANSWER_NLIST)
 				{		
-					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
-					if ((ticks == 0xffffffff) || (ticks < 3)) break;					
-
-					//for (;ticks>0;ticks--)
-					//{				
-						if (immbuffer[ticks-3]=='.') 	//this way of checking end of message IS BAD
-						{
-							aim = SEND_RETR;
-							debug("Got mail list");
-							DrawMailBox();
-
-							atr.CreateArray();
-							atr.SetSizes();
-						}
-					//} 
+					ticks = Receive(socketnum, listpointer, listbuffer + 30*mail_list.count - listpointer, MSG_DONTWAIT);
+					if (ticks == 0xffffffff) break;	
+					listpointer = listpointer + ticks;	
+					
+					if (listpointer - listbuffer < 5) break;
+					if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a	
+					{
+						aim = SEND_RETR;
+						debug("Got mail list");
+						DrawMailBox();
+						
+						*listpointer='\0';
+						atr.CreateArray();
+						atr.SetSizes();
+					}
 				}
 				
 				if (aim == SEND_RETR)
@@ -279,7 +279,7 @@ void MailBoxLoop()
 					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) { notify("Error while trying to get letter from server"); aim=NULL; break;}
 
-					mailbuffer = free(mailbuffer);
+					free(mailbuffer);
 					letter_size = atr.GetSize(mail_list.current+1) + 1024;
 					mailbuffer = malloc(letter_size);
 					if (!mailbuffer) {debug("alloc error!"); aim=NULL; break;}					
@@ -290,8 +290,7 @@ void MailBoxLoop()
 				if (aim == GET_ANSWER_RETR)
 				{
 					ticks = Receive(socketnum, mailpointer, letter_size + mailbuffer - mailpointer , MSG_DONTWAIT);
-					if (ticks == 0xffffffff) break;	
-					if (ticks == 0) break;					
+					if (ticks == 0xffffffff) break;		
 					//debugi(EAX);
 					
 					mailpointer = mailpointer + ticks;
@@ -497,40 +496,27 @@ int GetMailCount(){
 
 
 
-
-
-
-
-
-void listputc(char agot_char){		
-	*listpointer=agot_char;
-	listpointer++;
-	*listpointer='\0';
-}
-
 int GetLetterSize_(int number){
-	char serch_num[24];
+	char search_num[24];
 	char letter_size1[24];
-	strcpy(#serch_num, "\n");
-	strcat(#serch_num, itoa(number));
-	strcat(#serch_num, " ");
-	strcpyb(listbuffer, #letter_size1, #serch_num, "\n");
+	strcpy(#search_num, "\n");			// 0x0d, 0x0a
+	strcat(#search_num, itoa(number));
+	strcat(#search_num, " ");
+	strcpyb(listbuffer, #letter_size1, #search_num, "\x0d");
 	return atoi(#letter_size1); 
 }
 
 
-
-
 void letter_attr::CreateArray()
 {
-	mails_db = free(mails_db);
+	free(mails_db);
 	mails_db = malloc( mail_list.count * sizeof(atr) );
 }
 
 void letter_attr::SetSizes()
 {
 	int i;
-	for (i=0; i < mail_list.count; i++)
+	for (i=1; i < mail_list.count; i++)
 	{
 		ESDWORD[sizeof(atr)*i+#mails_db+#atr.size-#atr] = GetLetterSize_(i);
 		ESDWORD[sizeof(atr)*i+#mails_db+#atr.subject-#atr] = ' ';
