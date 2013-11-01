@@ -40,7 +40,7 @@ void ParseMail()
 		GetHeader(#to,   "\nTo:");
 		GetHeader(#date, "\nDate:");
 		GetHeader(#subj, "\nSubject:");
-		mdata = strstr(mailbuffer, "\n") + 3;
+		mdata = strstr(mailbuffer, "\n\r") + 3;		// 0x0d 0x0a, 0x0a
 		debug ("converting to dos");
 		ConvertToDOS(mdata, mailbuffer);
 		FromHTMLtoTXT();
