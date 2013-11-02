@@ -300,8 +300,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/panel.ini:SETTINGS/PANEL.INI \
  ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
  settings/setup.dat:SETTINGS/SETUP.DAT \
- shell:SHELL table:TABLE \
- vmode:VMODE 3d/3dsheart:3D/3DSHEART \
+ shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
