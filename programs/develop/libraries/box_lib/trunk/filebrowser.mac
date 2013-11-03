@@ -1344,6 +1344,10 @@ fb_key:
 	ret
 ;-------------------------------------------------------
 .mark_all:
+	mov	eax,fb_folder_block
+	test	eax,eax
+	jz	.exit_fb
+
 	mov	fb_temp_counter,0
 .mark_all_1:	
 	mov	ebp,fb_folder_block
@@ -1401,10 +1405,18 @@ fb_key:
 	ret
 ;-------------------------------------------------------
 .unmark_all:
+	mov	eax,fb_folder_block
+	test	eax,eax
+	jz	.exit_fb
+
 	mov	fb_temp_counter,1
 	jmp	.mark_all_1
 ;-------------------------------------------------------
 .invert_mark:
+	mov	eax,fb_folder_block
+	test	eax,eax
+	jz	.exit_fb
+
 	mov	fb_temp_counter,2
 	jmp	.mark_all_1
 ;-------------------------------------------------------
