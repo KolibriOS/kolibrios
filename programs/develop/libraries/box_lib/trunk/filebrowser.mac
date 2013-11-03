@@ -1310,6 +1310,10 @@ fb_key:
 	jmp	.arrow_down	
 ;-------------------------------------------------------
 .mark_1:
+	mov	eax,fb_folder_block
+	test	eax,eax
+	jz	.exit
+
 	xor	eax,eax
 	mov	ax,fb_start_draw_cursor_line
 	xor	edx,edx
@@ -1336,6 +1340,7 @@ fb_key:
 	inc	al
 	and	al,1
 	mov	[esi],al
+.exit:
 	ret
 ;-------------------------------------------------------
 .mark_all:
