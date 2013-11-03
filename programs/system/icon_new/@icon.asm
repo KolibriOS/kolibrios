@@ -1267,13 +1267,13 @@ if lang eq ru
  RMenuDel	db 'Удалить',0
  RMenuProp	db 'Свойства',0
 else
- RMenuRedrawFon db 'Redraw',0
- RMenuAlign	db 'Snap to Grid',0
- RMenuOffMoving db 'Fix the icons',0
- RMenuOnMoving	db 'Unfix the icons',0
- RMenuAdd	db 'Add',0
- RMenuDel	db 'Delete',0
- RMenuProp	db 'Properties',0
+ RMenuRedrawFon db 'Refresh',0
+ RMenuAlign     db 'Snap to Grid',0
+ RMenuOffMoving db 'Lock icons',0
+ RMenuOnMoving  db 'Unlock icons',0
+ RMenuAdd       db 'New icon',0
+ RMenuDel       db 'Delete',0
+ RMenuProp      db 'Properties',0
 end if
 
 if lang eq ru
@@ -1285,7 +1285,7 @@ else
  ErrRunProg	db 'Error runing program',0
  WarningSave	db 'Do not forget to save the changes, run the RDSave',0
  ErrNotFoundIni db 'icon.ini not found',0
- ErrName	db 'The name "rbmenu" reserved',0
+ ErrName	db 'The name "rbmenu" is reserved',0
 end if
 
 ;-------------------------------------------------------------------------------
