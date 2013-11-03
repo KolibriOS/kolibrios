@@ -1,4 +1,10 @@
  n_main:
+    mov     dword[nwin.width], 67
+    mov     dword[nwin.height], 16
+
+    mov     dword[nwin.bgwidth], 66
+    mov     dword[nwin.bgheight], 1
+
     cmp     dword[dock_items.location], 1
     je	    .top
     cmp     dword[dock_items.location], 4
@@ -6,27 +12,52 @@
     cmp     dword[dock_items.location], 3
     je	    .bottom
     jmp     .left
+
  .top:
     mov     eax, [win.height_opn]
     mov     [nwin.y], eax
+
+    mov     dword[nwin.bgx], 1
+
     jmp     @f
- .right:
-    mov     eax, [win.x_opn]
-    sub     eax, 72
-    mov     [nwin.x], eax
-    jmp     @f
- .bottom:
-    mov     eax, [win.y_opn]
-    sub     eax, 20
-    mov     [nwin.y], eax
-    jmp     @f
+
  .left:
     mov     eax, [win.width_opn]
-    add     eax, 4
     mov     [nwin.x], eax
+
+    mov     dword[nwin.bgy], 1
+    mov     dword[nwin.bgwidth], 1
+    mov     eax, [nwin.height]
+    dec     eax
+    mov     dword[nwin.bgheight], eax
+
+    jmp     @f
+
+ .bottom:
+    mov     eax, [win.y_opn]
+    sub     eax, 16
+    mov     [nwin.y], eax
+
+    mov     dword[nwin.bgx], 1
+    mov     eax, [nwin.height]
+    mov     [nwin.bgy], eax
+
+    jmp     @f
+
+ .right:
+    mov     eax, [win.x_opn]
+    sub     eax, 67
+    mov     [nwin.x], eax
+
+    mov     eax, [nwin.width]
+    mov     [nwin.bgx], eax
+    mov     dword[nwin.bgy], 1
+    mov     dword[nwin.bgwidth], 1
+    mov     eax, [nwin.height]
+    dec     eax
+    mov     dword[nwin.bgheight], eax
+
   @@:
-    mov     dword[nwin.width], 67
-    mov     dword[nwin.height], 16
 
     mcall   40, 1b
 
@@ -75,9 +106,7 @@ n_event_redraw:
 
     mcall   0, <[nwin.x], [nwin.width]>, <[nwin.y], [nwin.height]>, [color.bg], [color.bg], [color.frame]
 
-    dec     dword[nwin.width]
-    mcall   13, <1, [nwin.width]>, <0, 1>, [color.bg]
-    inc     dword[nwin.width]
+    mcall   13, <[nwin.bgx], [nwin.bgwidth]>, <[nwin.bgy], [nwin.bgheight]>, [color.bg]
 
     mov     edx, [win.button_index]
     imul    edx, 16
@@ -92,9 +121,9 @@ n_event_redraw:
     imul    eax, 3
     mov     ebx, 34
     sub     ebx, eax
-    inc     ebx
+    add     ebx, 1
     shl     ebx, 16
-    add     ebx, 4
+    add     ebx, 5
 
     mcall   4, , [color.text]
 

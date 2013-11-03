@@ -71,6 +71,15 @@ nwin:
  .height:
     rd	    1
 
+ .bgx:
+    rd	    1
+ .bgy:
+    rd	    1
+ .bgwidth:
+    rd	    1
+ .bgheight:
+    rd	    1
+
  .visible:
     rd	    1
  .sid:

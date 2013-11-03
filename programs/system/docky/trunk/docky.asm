@@ -8,6 +8,7 @@
     include "../../../proc32.inc"
     include "../../../dll.inc"
     include "../../../develop/libraries/box_lib/load_lib.mac"
+    ;include "../../../debug.inc"
 
     include "DATA.INC"
     include "NAME.INC"
@@ -161,7 +162,7 @@ main:
 
  .HORZ_HEIGHT:
     mov     dword[win.height_opn], BUTTON_SIZE
-    mov     dword[win.height_hdn], 0
+    mov     dword[win.height_hdn], 3
 
     ret
 
@@ -170,7 +171,7 @@ main:
     and     eax, 0xFFFF
     dec     eax
     mov     [win.y_hdn], eax
-    sub     eax, 40
+    sub     eax, 43
     mov     [win.y_opn], eax
 
     ret
@@ -183,7 +184,7 @@ main:
 
  .VERT_WIDTH:
     mov     dword[win.width_opn], BUTTON_SIZE
-    mov     dword[win.width_hdn], 0
+    mov     dword[win.width_hdn], 3
 
     ret
 
@@ -301,6 +302,7 @@ event_redraw:
     mcall   , edi, <0, BUTTON_SIZE>
     jmp     .endbtn
  .vert_btn:
+    sub     edi, 12 shl 16
     mcall   , <0, BUTTON_SIZE>, edi
  .endbtn:
     pop     edi
@@ -326,6 +328,7 @@ event_redraw:
     mcall   , , <4, 36>, [color.frame]
     jmp     .end_inner_sep
  .vert_draw_sep:
+    sub     ebx, 12 shl 16
     mov     ecx, ebx
     mcall   , <4, 36>, , [color.frame]
  .end_inner_sep:
@@ -429,6 +432,7 @@ event_mouse:
 
  .vert:
     mov     eax, esi
+    add     eax, 12
 
  .nxt:
     sub     eax, 12
@@ -456,13 +460,16 @@ event_mouse:
     je	    .vert_name
     add     eax, [win.x]
     mov     [nwin.x], eax
+    mov     byte[nwin.change_shape], 1
+    mcall   13, <0, [win.width]>, <[win.height], 1>, [color.frame]
     jmp     .vert_end
  .vert_name:
     add     eax, [win.y]
+    add     eax, 14
     mov     [nwin.y], eax
- .vert_end:
     mov     byte[nwin.change_shape], 1
-    mcall   13, <0, [win.width]>, <[win.height], 1>, [color.frame]
+    mcall   13, <[win.width], 1>, <0, [win.height]>, [color.frame]
+ .vert_end:
 
     cmp     byte[win.state], 1
     je	    main_loop
