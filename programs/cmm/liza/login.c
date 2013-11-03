@@ -246,7 +246,7 @@ int GetRequest(dword command, text)
 	strcpy(#request, command);
 	if (text)
 	{
-		strcat(#request, " ");
+		chrcat(#request, ' ');
 		strcat(#request, text);
 	}
 	strcat(#request, "\n");

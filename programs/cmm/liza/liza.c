@@ -114,9 +114,7 @@ void OpenMailDat()
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
 	{
-		//strcpy(#email_text, "example@mail.com");
-		strcpy(#email_text, "eiroglif@yandex.ru"); //temporarily, for testing
-		strcpy(#pass_text, "rostov");
+		strcpy(#email_text, "example@mail.com");
 	}
 	else
 	{
@@ -136,7 +134,7 @@ void SaveAndExit()
 	char write_data[512], pass_b64[256];
 	Close(socketnum);
 	strcpy(#write_data, #email_text);
-	strcat(#write_data, "\n");
+	chrcat(#write_data, '\n');
 	base64_encode stdcall (#pass_text, #pass_b64, strlen(#pass_text));
 	strcat(#write_data, #pass_b64);
 	WriteFile(strlen(#write_data)+1, #write_data, "/sys/network/mail.dat");
