@@ -163,32 +163,8 @@ void MailBoxLoop()
 			case evKey:
 				key = GetKey();
 
-				if (key == 177){ //down
-					if (aim) break;
-					if (mail_list.current >= mail_list.count-1) break;
-					mail_list.current++ ;
-					if (mail_list.current >= mail_list.first + mail_list.visible) mail_list.first++ ;
-					DrawMailList();
-					aim = SEND_RETR;
-				}
-				if (key == 178){ //up
-					if (aim) break;
-					if (mail_list.current<=0) break;
-					mail_list.current-- ;
-					if (mail_list.current < mail_list.first) mail_list.first-- ;
-					DrawMailList();
-					aim = SEND_RETR;
-				}
-				if (key == 180){ //home
-					if (aim) break;
-					mail_list.first = mail_list.current = 0;
-					DrawMailList();
-					aim = SEND_RETR;
-				}
-				if (key == 181){ //end
-					if (aim) break;
-					mail_list.first = mail_list.count - mail_list.visible;
-					mail_list.current = mail_list.count - 1; 
+				if (!aim) && (mail_list.ProcessKey(key))
+				{
 					DrawMailList();
 					aim = SEND_RETR;
 				}
@@ -285,11 +261,13 @@ void MailBoxLoop()
 					if (!mailbuffer) {debug("alloc error!"); aim=NULL; break;}					
 					mailpointer = mailbuffer;
 					aim = GET_ANSWER_RETR;
+					debugi(letter_size);
 				}
 				
 				if (aim == GET_ANSWER_RETR)
 				{
 					ticks = Receive(socketnum, mailpointer, letter_size + mailbuffer - mailpointer , MSG_DONTWAIT);
+					debugi(ticks);
 					if (ticks == 0xffffffff) break;		
 					//debugi(EAX);
 					
@@ -352,27 +330,23 @@ void DrawToolbar()
 	DrawBar(0, mail_list.y-1, mail_list.w,1, 0xf0f0f0);
 }
 
-
 void DrawMailList()
 {
 	int i, on_y, on_x, direction;
+	dword sel_col;
 	mail_list.visible = mail_list.h / mail_list.line_h;
 
 	for (i=30; i<150; i++) DeleteButton(i); 
 	for (i=0; (i<mail_list.visible) && (i+mail_list.first<mail_list.count); i++)
 	{
 		on_y = i*mail_list.line_h + mail_list.y;
-		if (mail_list.current==mail_list.first+i)
-		{
-			DrawBar(0, on_y, mail_list.w, mail_list.line_h-1, 0xEEEeee);
-		}
-		else
-		{
-			DrawBar(0, on_y, mail_list.w, mail_list.line_h-1, 0xFFFfff);
-		}
+		if (mail_list.current==mail_list.first+i) sel_col=0xEEEeee; else sel_col=0xFFFfff;
+		DrawBar(0, on_y, mail_list.w, mail_list.line_h-1, sel_col);
 		direction = atr.GetDirection(i+mail_list.first+1);
 		on_x = strlen(itoa(i+mail_list.first+1))*6;
-		_PutImage(on_x + 18, mail_list.line_h-12/2+ on_y, 18,12, sizeof(in_out_mail)/3*direction + #in_out_mail);
+		letter_icons_pal[0]=sel_col;
+		PutPaletteImage(sizeof(letter_icons)/3*direction + #letter_icons, 18,12, on_x+18,
+			mail_list.line_h-12/2+ on_y, 8, #letter_icons_pal);
 		WriteText(on_x + 42, on_y+5, 0x80, 0, atr.GetSubject(i+mail_list.first+1));
 		DefineButton(0, on_y, mail_list.w-1, mail_list.line_h, 30+i+BT_HIDE+BT_NOFRAME);
 		DrawBar(0, on_y + mail_list.line_h-1, mail_list.w, 1, 0xCCCccc);

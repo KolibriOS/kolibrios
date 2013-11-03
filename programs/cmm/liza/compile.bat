@@ -1,5 +1,5 @@
 ..\C--\C-- liza.c
-@del liza_mail
-@rename liza.com liza_mail
+@del liza
+@rename liza.com liza
 @del warning.txt
 @pause

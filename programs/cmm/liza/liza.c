@@ -2,24 +2,25 @@
 
 //libraries
 #define MEMSIZE 0xA0000
-#include "..\lib\kolibri.h"
-#include "..\lib\strings.h"
-#include "..\lib\mem.h"
-#include "..\lib\dll.h"
-#include "..\lib\encoding.h"
-#include "..\lib\figures.h"
-#include "..\lib\file_system.h"
-#include "..\lib\list_box.h"
-#include "..\lib\socket_new.h"
+#include "../lib/kolibri.h"
+#include "../lib/strings.h"
+#include "../lib/mem.h"
+#include "../lib/dll.h"
+#include "../lib/encoding.h"
+#include "../lib/figures.h"
+#include "../lib/file_system.h"
+#include "../lib/list_box.h"
+#include "../lib/socket_new.h"
 //*.obj libraries
-#include "..\lib\lib.obj\box_lib.h"
-#include "..\lib\lib.obj\network.h"
-#include "..\lib\lib.obj\libio_lib.h"
-#include "..\lib\lib.obj\libimg_lib.h"
-#include "..\lib\lib.obj\netcode.h"
-#include "..\lib\lib.obj\iconv.h"
+#include "../lib/lib.obj/box_lib.h"
+#include "../lib/lib.obj/network.h"
+#include "../lib/lib.obj/libio_lib.h"
+#include "../lib/lib.obj/libimg_lib.h"
+#include "../lib/lib.obj/netcode.h"
+#include "../lib/lib.obj/iconv.h"
 //images
-byte in_out_mail[18*36] = FROM "in_out_mail.raw";
+byte letter_icons[sizeof(file "img/letter_icons.raw")] = FROM "img/letter_icons.raw";
+#include "img/letter_icons.h"
 
 //connection algorithm
 enum {
@@ -45,9 +46,9 @@ enum {
 #define WIN_H         440
 #define WIN_MIN_W     500
 #define WIN_MIN_H     380
-#define LOGIN_HEADER   "Login - Email client Liza 0.9a"
-#define OPTIONS_HEADER "Options - Email client Liza 0.9a"
-#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9a"
+#define LOGIN_HEADER   "Login - Email client Liza 0.9b"
+#define OPTIONS_HEADER "Options - Email client Liza 0.9b"
+#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9b"
 #define BUFFERSIZE		512	
 proc_info Form;
 system_colors sc;
@@ -113,7 +114,9 @@ void OpenMailDat()
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
 	{
-		strcpy(#email_text, "example@mail.com");
+		//strcpy(#email_text, "example@mail.com");
+		strcpy(#email_text, "eiroglif@yandex.ru"); //temporarily, for testing
+		strcpy(#pass_text, "rostov");
 	}
 	else
 	{
