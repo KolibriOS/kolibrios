@@ -1543,6 +1543,9 @@ draw_window:
 
 	cmp	[focus_pointer],1
 	je	@f
+
+	cmp	[error_window],0
+	jne	@f
 	
 	mov	eax,[file_browser_data_1.selected_BDVK_adress]
 	test	[eax],byte 0x10
