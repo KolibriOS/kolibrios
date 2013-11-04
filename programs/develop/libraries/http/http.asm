@@ -607,7 +607,7 @@ locals
         pageaddr        dd ?
 endl
 
-        DEBUGF  1, "URL: %s\n", [URL]
+        DEBUGF  1, "parsing URL: %s\n", [URL]
 
 ; remove any leading protocol text
         mov     esi, [URL]
@@ -622,7 +622,7 @@ endl
         dec     ecx
         jnz     .loop1
 
-; URL invalid !
+        DEBUGF  1, "Invalid URL\n"
         xor     eax, eax
         ret
 
@@ -636,15 +636,16 @@ endl
         sub     esi, [URL]              ; calculate total length of URL
         mov     [urlsize], esi
 
-;;; FIXME: urls with no pageaddr are not parsed correctly!!
 
 ; now look for page delimiter - it's a '/' character
         mov     ecx, esi                ; URL length
         mov     edi, [URL]
         mov     al, '/'
         repne   scasb
+        jne     @f
         dec     edi                     ; return one char, '/' must be part of the pageaddr
         inc     ecx                     ;
+  @@:
         push    ecx edi                 ; remember the pointer and length of pageaddr
 
         mov     ecx, edi
@@ -662,7 +663,7 @@ endl
         xor     al, al
         stosb
 
-        mov     [pageaddr], null_str    ; assume there is no pageaddr
+        mov     [pageaddr], str_slash   ; assume there is no pageaddr
         pop     esi ecx
         test    ecx, ecx
         jz      .no_page
@@ -770,7 +771,7 @@ base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
                 db '0123456789+/'
 
 str_cl          db 'content-length', 0
-null_str        db 0
+str_slash       db '/', 0
 str_te          db 'transfer-encoding', 0
 
 include_debug_strings
