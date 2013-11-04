@@ -236,21 +236,31 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ;;================================================================================================;;
         pusha
         mov     ebp, [identifier]
+
+; Receive some data
         mcall   recv, [ebp + http_msg.socket], [ebp + http_msg.write_ptr], \
                       [ebp + http_msg.buffer_length], MSG_DONTWAIT
         cmp     eax, 0xffffffff
         je      .check_socket
         DEBUGF  1, "Received %u bytes\n", eax
 
+; Update pointers
         mov     edi, [ebp + http_msg.write_ptr]
         add     [ebp + http_msg.write_ptr], eax
         sub     [ebp + http_msg.buffer_length], eax
         jz      .got_all_data
+
+; If data is chunked, combine chunks into contiguous data.
+        test    [ebp + http_msg.flags], FLAG_CHUNKED
+        jnz     .chunk_loop
+
+; Did we detect the header yet?
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
         jnz     .header_parsed
 
+; We havent found the header yet, search for it..
         sub     eax, 4
-        jl      .no_header
+        jl      .need_more_data
   .scan:
         ; scan for end of header (empty line)
         cmp     dword[edi], 0x0a0d0a0d                  ; end of header
@@ -260,12 +270,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         inc     edi
         dec     eax
         jnz     .scan
-
-  .no_header:
-        popa
-        xor     eax, eax
-        dec     eax
-        ret
 
   .end_of_header:
         add     edi, 4 - http_msg.data
@@ -397,34 +401,29 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         jz      .invalid_header
 
         mov     ebx, dword[eax]
-        or      eax, 0x20202020
+        or      ebx, 0x20202020
         cmp     ebx, 'chun'
         jne     .invalid_header
         mov     ebx, dword[eax+4]
-        or      eax, 0x00202020
-        and     eax, 0x00ffffff
+        or      ebx, 0x00202020
+        and     ebx, 0x00ffffff
         cmp     ebx, 'ked'
         jne     .invalid_header
 
         or      [ebp + http_msg.flags], FLAG_CHUNKED
-
         DEBUGF  1, "Transfer type is: chunked\n"
 
 ; Set chunk pointer where first chunk should begin.
-        mov     eax, [ebp + http_msg.header_length]
-        add     eax, http_msg.data
+        lea     eax, [ebp + http_msg.data]
+        add     eax, [ebp + http_msg.header_length]
         mov     [ebp + http_msg.chunk_ptr], eax
 
-  .header_parsed:
-; If data is chunked, combine chunks into contiguous data if so.
-        test    [ebp + http_msg.flags], FLAG_CHUNKED
-        jz      .not_chunked
-
-  .chunkloop:
+  .chunk_loop:
         mov     ecx, [ebp + http_msg.write_ptr]
         sub     ecx, [ebp + http_msg.chunk_ptr]
-        jb      .not_finished
+        jb      .need_more_data_chunked
 
+; TODO: make sure we have the complete chunkline header
         mov     esi, [ebp + http_msg.chunk_ptr]
         xor     ebx, ebx
   .chunk_hexloop:
@@ -433,12 +432,12 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         jb      .chunk_
         cmp     al, 9
         jbe     .chunk_hex
-        sub     al, 'A' - '0'
+        sub     al, 'A' - '0' - 10
         jb      .chunk_
-        cmp     al, 5
+        cmp     al, 15
         jbe     .chunk_hex
         sub     al, 'a' - 'A'
-        cmp     al, 5
+        cmp     al, 15
         ja      .chunk_
   .chunk_hex:
         shl     ebx, 4
@@ -448,7 +447,8 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         DEBUGF  1, "got chunk of %u bytes\n", ebx
 ; If chunk size is 0, all chunks have been received.
         test    ebx, ebx
-        jz      .got_all_data   ; last chunk, hooray! FIXME: what if it wasnt a valid hex number???
+        jz      .got_all_data_chunked           ; last chunk, hooray! FIXME: what if it wasnt a valid hex number???
+        mov     edi, [ebp + http_msg.chunk_ptr] ; we'll need this in about 25 lines...
         add     [ebp + http_msg.chunk_ptr], ebx
 
 ; Chunkline ends with a CR, LF or simply LF
@@ -459,34 +459,55 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         jmp     .end_of_chunkline?
 
   .end_of_chunkline:
-; Now move all received data to the left (remove chunk header).
-; Meanwhile, update write_ptr and content_length accordingly.
-        mov     edi, [ebp + http_msg.chunk_ptr]
-        mov     ecx, [ebp + http_msg.write_ptr]
-        sub     ecx, esi
+; Realloc buffer, make it 'chunksize' bigger.
+        mov     eax, [ebp + http_msg.buffer_length]
+        add     eax, ebx
+        invoke  mem.realloc, ebp, eax
+        or      eax, eax
+        jz      .no_ram
+        add     [ebp + http_msg.buffer_length], ebx
+
+; Update write ptr
         mov     eax, esi
         sub     eax, edi
         sub     [ebp + http_msg.write_ptr], eax
+
+; Now move all received data to the left (remove chunk header).
+; Update content_length accordingly.
+        mov     ecx, [ebp + http_msg.write_ptr]
+        sub     ecx, esi
         add     [ebp + http_msg.content_length], ecx
         rep     movsb
-        jmp     .chunkloop
+        jmp     .chunk_loop
 
-  .not_chunked:
 ; Check if we got all the data.
+  .header_parsed:
         mov     eax, [ebp + http_msg.header_length]
         add     eax, [ebp + http_msg.content_length]
         cmp     eax, [ebp + http_msg.buffer_length]
         je      .got_all_data
-
-  .not_finished:
-;        DEBUGF  1, "Needs more processing...\n"
+  .need_more_data:
         popa
         xor     eax, eax
         dec     eax
         ret
 
+  .need_more_data_chunked:
+        add     [ebp + http_msg.content_length], eax
+        popa
+        xor     eax, eax
+        dec     eax
+        ret
+
+  .got_all_data_chunked:
+        mov     eax, [ebp + http_msg.chunk_ptr]
+        sub     eax, [ebp + http_msg.header_length]
+        sub     eax, http_msg.data
+        sub     eax, ebp
+        mov     [ebp + http_msg.content_length], eax
+
   .got_all_data:
-        DEBUGF  1, "We got all the data!\n"
+        DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_length]
         or      [ebp + http_msg.flags], FLAG_GOT_DATA
         mcall   close, [ebp + http_msg.socket]
         popa
@@ -495,7 +516,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
   .check_socket:
         cmp     ebx, EWOULDBLOCK
-        je      .not_finished
+        je      .need_more_data
         DEBUGF  1, "ERROR: socket error %u\n", ebx
 
         or      [ebp + http_msg.flags], FLAG_SOCKET_ERROR
