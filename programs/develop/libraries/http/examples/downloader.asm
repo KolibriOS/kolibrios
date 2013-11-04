@@ -31,12 +31,12 @@ use32
         dd      params          ; I_PARAM
         dd      0x0             ; I_Path
 
-include '../../macros.inc'
-include '../../proc32.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../dll.inc'
-include '../../debug-fdo.inc'
-include '../../develop/libraries/http/http.inc'
+include '../../../../macros.inc'
+include '../../../../proc32.inc'
+include '../../../../dll.inc'
+include '../../../../debug-fdo.inc'
+include '../../box_lib/trunk/box_lib.mac'
+include '../../http/http.inc'
 
 virtual at 0
         http_msg http_msg
@@ -55,6 +55,8 @@ START:
         cmp     byte[params], 0         ; no parameters ?
         je      reset_events            ; load the GUI
 
+        inc     [silently]
+
 download:
 
         DEBUGF  1, "Starting download\n"
@@ -68,6 +70,9 @@ download:
         invoke  HTTP_process, [identifier]
         test    eax, eax
         jnz     .loop
+
+        test    [silently], 0xff
+        jnz     save
 
 reset_events:
         DEBUGF  1, "resetting events\n"
@@ -143,15 +148,14 @@ save:
         mov     [final_buffer], ebx
         mcall   70, fileinfo
 
-  .done:
-
-; TODO: if called from command line, then exit
+        test    [silently], 0xff
+        jnz     exit
 
         mov     ecx, [sc.work_text]
         or      ecx, 0x80000000
         mcall   4, <10, 93>, , download_complete
 
-        ret
+        jmp     still
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -204,7 +208,6 @@ library lib_http,       'http.obj', \
 
 import  lib_http, \
         HTTP_get                , 'get' , \
-        find_header_field       , 'find_header_field' , \
         HTTP_process            , 'process'
 
 import  box_lib, \
@@ -231,9 +234,10 @@ include_debug_strings
 ;---------------------------------------------------------------------
 
 type_pls        db 'URL:', 0
-button_text     db 'DOWNLOAD     STOP     RESAVE', 0
+button_text     db 'DOWNLOAD     STOP      SAVE', 0
 download_complete db 'File saved as /rd/1/.download', 0
 title           db 'HTTP Downloader', 0
+silently        db 0
 
 ;---------------------------------------------------------------------
 document_user   db 'http://'
