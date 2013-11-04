@@ -11,8 +11,9 @@ scroll_bar scroll2 = { 17,200,210, LIST_INFO_H,18,0,115,15,0,0xCCCccc,0xD2CED0,0
 char *listbuffer;
 char *listpointer;
 
-char *mailbuffer;
-char *mailpointer;
+char *mailstart;
+char *mailend;
+int mailsize;
 
 
 enum {
@@ -32,15 +33,13 @@ void MailBoxLoop()
 	int key, id;
 	mouse m;
 	int panels_drag = 0;
-	char socket_char;
-	int letter_size;
 	dword line_col, text_col;
 
 	mail_list.h = Form.cheight/4;
 	mail_list.ClearList();
 	SetMailBoxStatus( NULL , NULL);
 	cur_charset = 0;
-	aim=SEND_NSTAT;
+	aim = SEND_NSTAT;
 	
 	goto _MB_DRAW;
 
@@ -98,8 +97,8 @@ void MailBoxLoop()
 				if (id==GET_MAIL) aim = SEND_NSTAT;
 				if (id==SAVE_LETTER)
 				{
-					if (!mailbuffer) break;
-					WriteFile(strlen(mailbuffer), mailbuffer, "mail.txt");
+					if (!mailstart) break;
+					WriteFile(strlen(mailstart), mailstart, "mail.txt");
 					pause(10);
 					RunProgram("tinypad", "mail.txt");
 				}
@@ -180,8 +179,6 @@ void MailBoxLoop()
 						if (strstr(#immbuffer,"+OK"))
 						{
 							mail_list.count = GetMailCount();
-							debug("Letters:");
-							debug(itoa(mail_list.count));
 							free(listbuffer);
 							listbuffer = mem_Alloc(30*mail_list.count); //24* original
 							listpointer = listbuffer;	
@@ -235,44 +232,45 @@ void MailBoxLoop()
 						StopConnect("Error while trying to get letter from server");
 						break;
 					}
-					letter_size = atr.GetSize(mail_list.current+1) + 1024;
-					free(mailbuffer);
-					if (!mailbuffer = malloc(letter_size))
+					mailsize = atr.GetSize(mail_list.current+1) + 1024;
+					free(mailstart);
+					if (!mailstart = malloc(mailsize))
 					{
 						debug("alloc error!");
 						aim=NULL;
 						break;
 					}
-					mailpointer = mailbuffer;
+					mailend = mailstart;
 					aim = GET_ANSWER_RETR;
 				}
 				
 				if (aim == GET_ANSWER_RETR)
 				{
-					aim=NULL;
-					break;
-					ticks = Receive(socketnum, mailpointer, letter_size + mailbuffer - mailpointer , MSG_DONTWAIT);
-					if (ticks == 0xffffffff) break;		
+					ticks = Receive(socketnum, mailend, mailsize + mailstart - mailend, MSG_DONTWAIT);
+					if (ticks == 0xffffffff) break;
 					
-					mailpointer = mailpointer + ticks;
+					mailend = mailend + ticks;
 
 					if (!aim) break;
 
-					if (letter_size + mailbuffer - mailpointer - 2 < 0)
+					if (mailsize + mailstart - mailend - 2 < 0)
 					{
 						debug("Resizing buffer");
-						letter_size += 4096;
-						mailbuffer = realloc(mailbuffer, letter_size);
-						if (!mailbuffer) { StopConnect("Realloc error!"); break;}
+						mailsize += 4096;
+						mailstart = realloc(mailstart, mailsize);
+						if (!mailstart) { StopConnect("Realloc error!"); break;}
 					}
 
-					if (letter_size>9000)
+					if (mailsize>9000)
 					{
-						id = mailpointer - mailbuffer * 100 ;
-						id /= letter_size - 1024;
+						id = mailend - mailstart * 100 ;
+						id /= mailsize - 1024;
 						if (id!=cur_st_percent) SetMailBoxStatus( id , NULL);
 					}
 
+					//debug(mailstart);
+					//pause(10);
+					//debug("======================");
 					ParseMail();
 				}
 
@@ -368,7 +366,7 @@ void DrawLetter()
 	letter_view.SetSizes(0, mail_list.y+mail_list.h+LIST_INFO_H+1, Form.cwidth - scroll2.size_x - 1, 
 		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 60, 12);
 
-	if (mailbuffer) && (!aim)
+	if (mailstart) && (!aim)
 	{
 		for ( ; i < letter_view.first; i++) cur_line = GetNextLine(cur_line);
 
@@ -377,7 +375,7 @@ void DrawLetter()
 			next_line = GetNextLine(cur_line);
 			line_text = CopyBetweenOffsets(cur_line, next_line);
 			cur_line = next_line;
-			if (cur_line >= mailpointer) || (cur_line==1) break;
+			if (cur_line >= mailend) || (cur_line==1) break;
 			DrawBar(letter_view.x, i*letter_view.line_h + letter_view.y, letter_view.w, letter_view.line_h, 0xFFFfff);
 			if (line_text) { WriteText(letter_view.x+5, i*letter_view.line_h+letter_view.y+3, 0x80, 0, line_text); free(line_text);}
 		}
@@ -430,8 +428,7 @@ void DrawStatusBar()
 
 void SetMailBoxStatus(dword percent1, text1)
 {
-	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, sc.work, 0xC3C3C3, 0x54B1D6, sc.work_text, percent1, text1);
-	cur_st_percent = percent1;
+	if (text1) WriteText(3, Form.cheight -status_bar_h + 3, 0x80, sc.work_text, text1);
 	cur_st_text = text1;
 }
 
@@ -439,7 +436,7 @@ void SetMailBoxStatus(dword percent1, text1)
 void StopLoading()
 {
 	aim = NULL;
-	mailbuffer = free(mailbuffer);
+	mailstart = free(mailstart);
 	to = from = date = subj = cur_charset = NULL;
 }
 
@@ -449,16 +446,15 @@ int GetMailCount(){
 	return atoi(#tmpbuf4);
 }
 
-
-
-int GetLetterSize_(int number){
-	char search_num[24];
-	char letter_size1[24];
-	strcpy(#search_num, "\n");			// 0x0d, 0x0a
-	strcat(#search_num, itoa(number));
-	strcat(#search_num, " ");
-	strcpyb(listbuffer, #letter_size1, #search_num, "\x0d");
-	return atoi(#letter_size1); 
+int GetLetterSize_(int number)
+{
+   char search_num[24];
+   char mailsize1[24];
+   strcpy(#search_num, "\n");       // 0x0d, 0x0a
+   itoa_(#search_num+1, number);
+   chrcat(#search_num, ' ');
+   strcpyb(listbuffer, #mailsize1, #search_num, "\x0d");
+   return atoi(#mailsize1); 
 }
 
 

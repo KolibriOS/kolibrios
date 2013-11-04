@@ -45,9 +45,9 @@ enum {
 #define WIN_H         440
 #define WIN_MIN_W     500
 #define WIN_MIN_H     380
-#define LOGIN_HEADER   "Login - Email client Liza 0.9b"
-#define OPTIONS_HEADER "Options - Email client Liza 0.9b"
-#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9b"
+#define LOGIN_HEADER   "Login - Email client Liza 0.9e"
+#define OPTIONS_HEADER "Options - Email client Liza 0.9e"
+#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9e"
 #define BUFFERSIZE		512	
 proc_info Form;
 system_colors sc;
@@ -145,6 +145,23 @@ void SaveAndExit()
 	ExitProcess();
 }
 
+int GetRequest(dword command, text)
+{
+	strcpy(#request, command);
+	if (text)
+	{
+		chrcat(#request, ' ');
+		strcat(#request, text);
+	}
+	strcat(#request, "\n");
+	return strlen(#request);
+}
+
+void StopConnect(dword message)
+{
+	if (message) notify(message);
+	aim = STOP;
+}
 
 stop:
 

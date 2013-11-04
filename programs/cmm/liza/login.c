@@ -12,11 +12,7 @@ unsigned char pass_text[32];
 edit_box login_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(email_text)+2,#email_text,#mouse_dd,0b10};
 edit_box pass_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(pass_text)+2,#pass_text,#mouse_dd,0b1};
 
-void StopConnect(dword message)
-{
-	if (message) notify(message);
-	aim = STOP;
-}
+
 
 
 void LoginBoxLoop()
@@ -226,18 +222,6 @@ void DrawLoginScreen()
 	SetLoginStatus(cur_st_text);
 }
 
-
-int GetRequest(dword command, text)
-{
-	strcpy(#request, command);
-	if (text)
-	{
-		chrcat(#request, ' ');
-		strcat(#request, text);
-	}
-	strcat(#request, "\n");
-	return strlen(#request);
-}
 
 void GetServerPathAndLogin()
 {

@@ -220,8 +220,8 @@ inline fastcall int GetActiveProcess()
 
 :int CheckActiveProcess(int Form_ID)
 {
-	int id=GetProcessSlot(Form_ID);
-	if (id==GetActiveProcess()) return 1;
+	int id9=GetProcessSlot(Form_ID);
+	if (id9==GetActiveProcess()) return 1;
 	return 0;
 }
 

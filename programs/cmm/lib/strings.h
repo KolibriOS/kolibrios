@@ -265,41 +265,6 @@ unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
 	*to = '\0';
 }*/
 
-dword itoa( ESI)
-{
-	unsigned char buffer[11];
-	$pusha
-
-	EDI = #buffer;
-	ECX = 10;
-	if (ESI < 0)
-	{
-		 $mov     al, '-'
-		 $stosb
-		 $neg     esi
-	}
-
-	$mov     eax, esi
-	$push    -'0'
-F2:
-	$xor     edx, edx
-	$div     ecx
-	$push    edx
-	$test    eax, eax
-	$jnz     F2
-F3:
-	$pop     eax
-	$add     al, '0'
-	$stosb
-	$jnz     F3
-	
-	$mov     al, '\0'
-	$stosb
-
-	$popa
-    return #buffer;
-} 
-
 
 inline fastcall dword atoi( EDI)
 {
@@ -362,10 +327,77 @@ inline fastcall strttl( EDX)
 	}while(AL!=0);
 }
 
+unsigned char buffer[11];
+dword itoa( ESI)
+{
+	$pusha
+	EDI = #buffer;
+	ECX = 10;
+	if (ESI < 0)
+	{
+		 $mov     al, '-'
+		 $stosb
+		 $neg     esi
+	}
+
+	$mov     eax, esi
+	$push    -'0'
+F2:
+	$xor     edx, edx
+	$div     ecx
+	$push    edx
+	$test    eax, eax
+	$jnz     F2
+F3:
+	$pop     eax
+	$add     al, '0'
+	$stosb
+	$jnz     F3
+	
+	$mov     al, '\0'
+	$stosb
+
+	$popa
+    return #buffer;
+}
+
+inline fastcall itoa_(signed int EDI, ESI)
+{
+	$pusha
+	EBX = EDI;
+	ECX = 10;
+	if (ESI > 90073741824)
+	{
+		 $mov     al, '-'
+		 $stosb
+		 $neg     esi
+	}
+
+	$mov     eax, esi
+	$push    -'0'
+F2:
+	$xor     edx, edx
+	$div     ecx
+	$push    edx
+	$test    eax, eax
+	$jnz     F2
+F3:
+	$pop     eax
+	$add     al, '0'
+	$stosb
+	$jnz     F3
+	
+	$mov     al, '\0'
+	$stosb
+
+	$popa
+    return EBX;
+}  
+
 void debugi(dword d_int)
 {
-	char tmpch[11];
-	strcpy(#tmpch, itoa(d_int));
+	char tmpch[12];
+	itoa_(#tmpch, d_int);
 	debug(#tmpch);
 }
 

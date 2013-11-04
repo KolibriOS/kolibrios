@@ -5,44 +5,39 @@ void ParseMail()
 	dword line_off, new_buf;
 	char tline[256];
 
-	if ( mailpointer-mailbuffer>9 ) if (strncmp(mailpointer-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
+	if ( mailend-mailstart > 9) if (strncmp(mailend-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
 	{
-		debug("End of mail detected");
-		mailpointer = mailpointer - 5;
-		
-		if (strstr(mailbuffer, "+OK")!=mailbuffer) 
+		mailend -= 5;
+		if (strstr(mailstart, "+OK")!=mailstart) 
 		{
 			aim = GET_ANSWER_RETR;
-			mailpointer = mailbuffer;
+			mailend = mailstart;
 			debug("GET_ANSWER_RETR != +OK, retry GET_ANSWER_RETR");
 			return;
 		}
 		aim=NULL;
-		DSBYTE[mailpointer] = '\0';
-		debug("Real letter size:");
-		debugi(mailpointer - mailbuffer);
+		DSBYTE[mailend] = '\0';
+		mailsize = mailend - mailstart;
 
-		if (strstri(mailbuffer, "quoted-printable")!=0)
+		if (strstri(mailstart, "quoted-printable")!=0)
 		{
-			debug ("getting qp");
-			new_buf = malloc(mailpointer-mailbuffer);
-			qp_decode stdcall (mailbuffer, new_buf, mailpointer-mailbuffer);
+			new_buf = malloc(mailend-mailstart);
+			qp_decode stdcall (mailstart, new_buf, mailend-mailstart);
 			if (EAX==-1) debug("Too small buffer to convert QUOTED-PRINTABLE");
 			else
 			{
-				free(mailbuffer);
-				mailbuffer = new_buf;
-				mailpointer = strlen(mailbuffer) + mailbuffer;
+				free(mailstart);
+				mailstart = new_buf;
+				mailsize = strlen(mailstart);
+				mailend = mailsize + mailstart;
 			}
 		}
-		debug ("getting list info");
 		GetHeader(#from, "\nFrom:");
 		GetHeader(#to,   "\nTo:");
 		GetHeader(#date, "\nDate:");
 		GetHeader(#subj, "\nSubject:");
-		mdata = strstr(mailbuffer, "\n\r") + 3;		// 0x0d 0x0a, 0x0a
-		debug ("converting to dos");
-		ConvertToDOS(mdata, mailbuffer);
+		mdata = strstr(mailstart, "\n\r") + 3;		// 0x0d 0x0a, 0x0a
+		ConvertToDOS(mdata, mailstart);
 		FromHTMLtoTXT();
 		letter_view.first = letter_view.count = 0;
 		
@@ -87,13 +82,13 @@ void FromHTMLtoTXT()
 {
 	dword cur_chr, txt_buf_srt, txt_buf_end, is_tag=0;
 	int i;
-	if (strstri(mdata, "<html>")==0) && (strstri(mailbuffer, "text/html")==0) {debug("no html tags found"); return;}
+	if (strstri(mdata, "<html>")==0) && (strstri(mailstart, "text/html")==0) {debug("no html tags found"); return;}
 	debug ("converting: html -> txt");
 	cur_chr = mdata;
-	txt_buf_srt = malloc(mailpointer - mailbuffer);
+	txt_buf_srt = malloc(mailend - mailstart);
 	txt_buf_end = txt_buf_srt;
 
-	while (cur_chr < mailpointer)
+	while (cur_chr < mailend)
 	{
 		if (DSBYTE[cur_chr]=='<') is_tag = 1;
 		if (!is_tag)
@@ -107,7 +102,7 @@ void FromHTMLtoTXT()
 	}
 	DSBYTE[txt_buf_end] = '\0';
 	strcpy(mdata, txt_buf_srt);
-	mailpointer = strlen(mailbuffer) + mailbuffer; //тупо везде это ставить
+	mailend = strlen(mailstart) + mailstart;
 	free(txt_buf_srt);
 }
 
@@ -147,7 +142,7 @@ void GetHeader(dword workstr, searchstr)
 	char tmpbuf[512];
 	dword Qoff;
 
-	strcpyb(mailbuffer, workstr, searchstr, "\n");
+	strcpyb(mailstart, workstr, searchstr, "\n");
 	if (strstri(workstr, "?Q?"))
 	{
 		qp_decode stdcall (workstr, #tmpbuf, strlen(workstr));

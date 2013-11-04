@@ -21,6 +21,8 @@ struct letter_attr
 letter_attr atr;
 dword mails_db;
 
+
+
 void letter_attr::CreateArray()
 {
    free(mails_db);

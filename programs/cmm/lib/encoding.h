@@ -108,20 +108,12 @@ inline fastcall void utf8rutodos( ESI)
 			CASE 0xA9: // (c) --- вылет О_о
 			{
 			  ESBYTE[EDI] = 'c';
-			  //ESBYTE[EDI] = '(';
-			  //ESBYTE[EDI+1] = 'c';
-			  //ESBYTE[EDI+2] = ')';
-			  //EDI+=2;
 			  ESI++;
 			  BREAK;
 			}
 			CASE 0xAE: // (r)
 			{
 			  ESBYTE[EDI] = 'r';
-			  //ESBYTE[EDI] = '(';
-			  //ESBYTE[EDI+1] = 'r';
-			  //ESBYTE[EDI+2] = ')';
-			  //EDI+=2;
 			  ESI++;
 			  BREAK;
 			} 
@@ -162,7 +154,7 @@ inline fastcall void utf8rutodos( ESI)
   FOR (;j<2;j++)
   {
     ch=ESBYTE[htmlcolor+j];
-    IF (ch==0x0d) || (ch=='\9') RETURN '';
+    IF (ch==0x0d) || (ch=='\9') RETURN 0;
     IF ((ch>='0') && (ch<='9')) ch -= '0';
     IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
     IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
@@ -172,6 +164,7 @@ inline fastcall void utf8rutodos( ESI)
   AL=symbol;
 }
 
+
 :dword ConvertMemSize(unsigned int bytes)
 {
   unsigned char size_prefix[8], size_nm[4];
@@ -180,7 +173,7 @@ inline fastcall void utf8rutodos( ESI)
   else if (bytes>=1024) strcpy(#size_nm, " Kb");
   else strcpy(#size_nm, " b ");
   while (bytes>1023) bytes/=1024;
-  strcpy(#size_prefix, itoa(bytes));
+  itoa_(#size_prefix, bytes);
   strcat(#size_prefix, #size_nm);
   return #size_prefix;
 }
