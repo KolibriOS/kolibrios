@@ -3,33 +3,10 @@
 #define LIST_INFO_H 59
 int status_bar_h = 15;
 
-llist mail_list;
-llist letter_view;
 scroll_bar scroll1 = { 17,200,210, LIST_INFO_H-3,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 scroll_bar scroll2 = { 17,200,210, LIST_INFO_H,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-char from[256];
-char to[256];
-char date[256];
-char subj[256];
-dword mdata;
 
-struct letter_attr
-{
-   char adress[sizeof(to)];
-   char subject[sizeof(subj)];
-   byte direction;
-   int size;
-   void CreateArray();
-   void SetSizes();
-   void SetAtrFromCurr(int N);
-   int  GetSize(int N);
-   char GetDirection(int N);
-   dword GetSubject(int N);
-   dword GetAdress(int N);
-};
-letter_attr atr;
-dword mails_db;
 
 char *listbuffer;
 char *listpointer;
@@ -63,6 +40,7 @@ void MailBoxLoop()
 	mail_list.ClearList();
 	SetMailBoxStatus( NULL , NULL);
 	cur_charset = 0;
+	aim=SEND_NSTAT;
 	
 	goto _MB_DRAW;
 
@@ -72,7 +50,7 @@ void MailBoxLoop()
 		switch(EAX & 0xFF)
 		{
 			case evMouse:
-				IF (GetProcessSlot(Form.ID)-GetActiveProcess()!=0) break;
+				IF (!CheckActiveProcess(Form.ID)) break;
 				m.get();
 				
 				if (!m.lkm) panels_drag=0;
@@ -110,6 +88,8 @@ void MailBoxLoop()
 				{
 					if (letter_view.MouseScroll(m.vert)) DrawLetter();
 				}
+				//if (!m.lkm) && (menu.ProcessMouse(mm.x, mm.y)) && 
+				//if (!m.lkm) && if (menu.ProcessMouse(mm.x, mm.y)) DrawMenuList();
 
 				break;				
 			case evButton:
@@ -182,7 +162,7 @@ void MailBoxLoop()
 			default:
 				if (aim == SEND_NSTAT)
 				{
-					debug("Counting mail, awaiting answer...");			
+					SetLoginStatus("Counting mail, awaiting answer...");			
 					request_len = GetRequest("STAT", NULL);
 					Send(socketnum, #request, request_len, 0);
 					if (EAX == 0xffffffff) { debug("Error sending STAT. Retry..."w); break;}
@@ -196,7 +176,6 @@ void MailBoxLoop()
 										
 					if (immbuffer[ticks-2]=='\n')
 					{
-						debug("GOT::");
 						debug(#immbuffer);
 						if (strstr(#immbuffer,"+OK"))
 						{
@@ -211,8 +190,7 @@ void MailBoxLoop()
 						}
 						else
 						{
-							notify("Sorry, can't recieve your mail");
-							aim=NULL;    //aim = SEND_NLIST;
+							StopConnect("Sorry, can't recieve your mail");
 						}
 					}
 				}
@@ -252,37 +230,40 @@ void MailBoxLoop()
 					DrawMailBox();
 					debug("Send RETR, awaiting answer...");
 					request_len = GetRequest("RETR", itoa(mail_list.current+1));
-					Send(socketnum, #request, request_len, 0);
-					if (EAX == 0xffffffff) { notify("Error while trying to get letter from server"); aim=NULL; break;}
-
-					free(mailbuffer);
+					if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
+					{
+						StopConnect("Error while trying to get letter from server");
+						break;
+					}
 					letter_size = atr.GetSize(mail_list.current+1) + 1024;
-					mailbuffer = malloc(letter_size);
-					if (!mailbuffer) {debug("alloc error!"); aim=NULL; break;}					
+					free(mailbuffer);
+					if (!mailbuffer = malloc(letter_size))
+					{
+						debug("alloc error!");
+						aim=NULL;
+						break;
+					}
 					mailpointer = mailbuffer;
 					aim = GET_ANSWER_RETR;
-					debugi(letter_size);
 				}
 				
 				if (aim == GET_ANSWER_RETR)
 				{
+					aim=NULL;
+					break;
 					ticks = Receive(socketnum, mailpointer, letter_size + mailbuffer - mailpointer , MSG_DONTWAIT);
-					debugi(ticks);
 					if (ticks == 0xffffffff) break;		
-					//debugi(EAX);
 					
 					mailpointer = mailpointer + ticks;
-					//*mailpointer='\0';
-					//debug(mailbuffer); 
 
-					if (!aim) continue;
+					if (!aim) break;
 
 					if (letter_size + mailbuffer - mailpointer - 2 < 0)
 					{
 						debug("Resizing buffer");
 						letter_size += 4096;
 						mailbuffer = realloc(mailbuffer, letter_size);
-						if (!mailbuffer) {debug("Realloc error!"); aim=NULL; break;}
+						if (!mailbuffer) { StopConnect("Realloc error!"); break;}
 					}
 
 					if (letter_size>9000)
@@ -481,42 +462,5 @@ int GetLetterSize_(int number){
 }
 
 
-void letter_attr::CreateArray()
-{
-	free(mails_db);
-	mails_db = malloc( mail_list.count * sizeof(atr) );
-}
 
-void letter_attr::SetSizes()
-{
-	int i;
-	for (i=1; i < mail_list.count; i++)
-	{
-		ESDWORD[sizeof(atr)*i+#mails_db+#atr.size-#atr] = GetLetterSize_(i);
-		ESDWORD[sizeof(atr)*i+#mails_db+#atr.subject-#atr] = ' ';
-		ESDWORD[sizeof(atr)*i+#mails_db+#atr.subject-#atr+1] = '\0';
-	}
-}
-
-void letter_attr::SetAtrFromCurr(int N)
-{
-	byte mail_direction=0;
-	if (strstri(#to, #email_text))
-	{
-		mail_direction = 1;
-		strcpy(sizeof(atr)*N+#mails_db+#atr.adress-#atr, #from);
-	}
-	if (strstri(#from, #email_text))
-	{
-		mail_direction = 2;
-		strcpy(sizeof(atr)*N+#mails_db+#atr.adress-#atr, #to);
-	}
-	ESBYTE[sizeof(atr)*N+#mails_db+#atr.direction-#atr] = mail_direction;
-	strcpy(sizeof(atr)*N+#mails_db+#atr.subject-#atr, #subj);
-}
-
-int letter_attr::GetSize(int N) { return ESDWORD[sizeof(atr)*N+#mails_db+#atr.size-#atr]; }
-char letter_attr::GetDirection(int N) { return ESBYTE[sizeof(atr)*N+#mails_db+#atr.direction-#atr]; }
-dword letter_attr::GetSubject(int N) { return sizeof(atr)*N+#mails_db+#atr.subject-#atr; }
-dword letter_attr::GetAdress(int N) { return sizeof(atr)*N+#mails_db+#atr.adress-#atr; }
 

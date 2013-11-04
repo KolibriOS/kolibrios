@@ -18,7 +18,7 @@ edit_box SMTP_server_box       = {210,190,140,0xffffff,0x94AECE,0xffc90E,0xfffff
 edit_box SMTP_server_port_box  = {210,190,165,0xffffff,0x94AECE,0xffc90E,0xffffff,0,5,#SMTP_server_port1,#mouse_opt,0b1000000000000000};
 
 
-void OptionsLoop()
+void SettingsDialog()
 {
 	int key, id;
 

@@ -37,8 +37,7 @@ enum {
 	SEND_NSTAT,
 	GET_ANSWER_NSTAT,
 	SEND_RETR,
-	GET_ANSWER_RETR,
-	FAILED
+	GET_ANSWER_RETR
 };
 
 //WindowDefinitions
@@ -75,8 +74,12 @@ int ticks;
 
 char immbuffer[BUFFERSIZE];
 
+llist mail_list;
+llist letter_view;
+
 #include "settings.c"
 #include "login.c"
+#include "letter_attr.c"
 #include "mail_box.c"
 #include "parselist.c"
 
@@ -114,7 +117,8 @@ void OpenMailDat()
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
 	{
-		strcpy(#email_text, "example@mail.com");
+		strcpy(#email_text, "testliza@ya.ru"); //temporarily, for testing
+		strcpy(#pass_text, "kolibri");
 	}
 	else
 	{
