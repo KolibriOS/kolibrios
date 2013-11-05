@@ -45,9 +45,9 @@ enum {
 #define WIN_H         440
 #define WIN_MIN_W     500
 #define WIN_MIN_H     380
-#define LOGIN_HEADER   "Login - Email client Liza 0.9e"
-#define OPTIONS_HEADER "Options - Email client Liza 0.9e"
-#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9e"
+#define LOGIN_HEADER   "Login - Email client Liza 0.9.2"
+#define OPTIONS_HEADER "Options - Email client Liza 0.9.2"
+#define MAILBOX_HEADER "Mail Box - Email client Liza 0.9.2"
 #define BUFFERSIZE		512	
 proc_info Form;
 system_colors sc;
@@ -117,7 +117,7 @@ void OpenMailDat()
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
 	{
-		strcpy(#email_text, "testliza@ya.ru"); //temporarily, for testing
+		strcpy(#email_text, "testliza@ya.ru"); 
 		strcpy(#pass_text, "kolibri");
 	}
 	else
@@ -131,8 +131,6 @@ void OpenMailDat()
 	login_box.size = login_box.pos = strlen(#email_text);
 }
 
-
-
 void SaveAndExit()
 {
 	char write_data[512], pass_b64[256];
@@ -144,6 +142,7 @@ void SaveAndExit()
 	WriteFile(strlen(#write_data)+1, #write_data, "/sys/network/mail.dat");
 	ExitProcess();
 }
+
 
 int GetRequest(dword command, text)
 {
@@ -161,6 +160,7 @@ void StopConnect(dword message)
 {
 	if (message) notify(message);
 	aim = STOP;
+	Close(socketnum);
 }
 
 stop:

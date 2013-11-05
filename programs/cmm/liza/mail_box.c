@@ -27,6 +27,117 @@ enum {
 	CLOSE_CHANGE_CHARSET
 };
 
+void MailBoxNetworkProcess()
+{
+	int load_persent;
+	if (aim) switch(aim)
+	{
+		case SEND_NSTAT:
+				SetLoginStatus("Counting mail, awaiting answer...");			
+				request_len = GetRequest("STAT", NULL);
+				Send(socketnum, #request, request_len, 0);
+				if (EAX == 0xffffffff) { debug("Error sending STAT. Retry..."w); break;}
+				aim = GET_ANSWER_NSTAT;
+				break;
+
+		case GET_ANSWER_NSTAT:
+				ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+				if ((ticks == 0xffffff) || (ticks < 2)) break;
+									
+				if (immbuffer[ticks-2]=='\n')
+				{
+					debug(#immbuffer);
+					if (strstr(#immbuffer,"+OK"))
+					{
+						strcpyb(#immbuffer, #param, "+OK ", " ");
+						mail_list.count = atoi(#param);
+						free(listbuffer);
+						listbuffer = mem_Alloc(30*mail_list.count); //24* original
+						listpointer = listbuffer;	
+						aim = SEND_NLIST;
+						debug("Receiving mail list...");
+					}
+					else
+					{
+						StopConnect("Sorry, can't recieve your mail");
+					}
+				}
+				break;
+
+		case SEND_NLIST:
+				WriteText(5, Form.cheight-11, 0x80, sc.work_text, "Send LIST, awaiting answer...");
+				request_len = GetRequest("LIST", NULL);
+				Send(socketnum, #request, request_len, 0);
+				if (EAX == 0xffffffff) {debug("Error while sending LIST. Retry..."); break;}
+				else aim = GET_ANSWER_NLIST;
+				break;
+
+		case GET_ANSWER_NLIST:
+				ticks = Receive(socketnum, listpointer, listbuffer + 30*mail_list.count - listpointer, MSG_DONTWAIT);
+				if (ticks == 0xffffffff) break;	
+				listpointer = listpointer + ticks;	
+				
+				if (listpointer - listbuffer < 5) break;
+				if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a	
+				{
+					aim = SEND_RETR;
+					debug("Got mail list");
+					DrawMailBox();
+					
+					*listpointer='\0';
+					atr.CreateArray();
+					atr.SetSizes();
+				}
+				break;
+
+		case SEND_RETR:
+				from = to = date = subj = cur_charset = NULL;
+				letter_view.ClearList();
+				DrawMailBox();
+				debug("Send RETR, awaiting answer...");
+				request_len = GetRequest("RETR", itoa(mail_list.current+1));
+				if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
+				{
+					StopConnect("Error while trying to get letter from server");
+					break;
+				}
+				mailsize = atr.GetSize(mail_list.current+1) + 1024;
+				free(mailstart);
+				if (!mailstart = malloc(mailsize))
+				{
+					debug("alloc error!");
+					aim=NULL;
+					break;
+				}
+				mailend = mailstart;
+				aim = GET_ANSWER_RETR;
+			
+		case GET_ANSWER_RETR:
+				ticks = Receive(socketnum, mailend, mailsize + mailstart - mailend, MSG_DONTWAIT);
+				if (ticks == 0xffffffff) break;
+				
+				mailend = mailend + ticks;
+
+				if (!aim) break;
+
+				if (mailsize + mailstart - mailend - 2 < 0)
+				{
+					debug("Resizing buffer");
+					mailsize += 4096;
+					mailstart = realloc(mailstart, mailsize);
+					if (!mailstart) { StopConnect("Realloc error!"); break;}
+				}
+
+				//if (mailsize>9000)
+				{
+					load_persent = mailend - mailstart * 100 ;
+					load_persent /= mailsize - 1024;
+					if (load_persent != cur_st_percent) SetMailBoxStatus( load_persent , NULL);
+				}
+				ParseMail();
+	}
+}
+
 
 void MailBoxLoop()
 {
@@ -159,121 +270,7 @@ void MailBoxLoop()
 
 				break;
 			default:
-				if (aim == SEND_NSTAT)
-				{
-					SetLoginStatus("Counting mail, awaiting answer...");			
-					request_len = GetRequest("STAT", NULL);
-					Send(socketnum, #request, request_len, 0);
-					if (EAX == 0xffffffff) { debug("Error sending STAT. Retry..."w); break;}
-					aim = GET_ANSWER_NSTAT;
-				}
-				
-				if (aim == GET_ANSWER_NSTAT)
-				{
-					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
-					if ((ticks == 0xffffff) || (ticks < 2)) break;
-										
-					if (immbuffer[ticks-2]=='\n')
-					{
-						debug(#immbuffer);
-						if (strstr(#immbuffer,"+OK"))
-						{
-							mail_list.count = GetMailCount();
-							free(listbuffer);
-							listbuffer = mem_Alloc(30*mail_list.count); //24* original
-							listpointer = listbuffer;	
-							aim = SEND_NLIST;
-							debug("Receiving mail list...");
-						}
-						else
-						{
-							StopConnect("Sorry, can't recieve your mail");
-						}
-					}
-				}
-
-				if (aim == SEND_NLIST)
-				{		
-					WriteText(5, Form.cheight-11, 0x80, sc.work_text, "Send LIST, awaiting answer...");
-					request_len = GetRequest("LIST", NULL);
-					Send(socketnum, #request, request_len, 0);
-					if (EAX == 0xffffffff) {debug("Error while sending LIST. Retry..."); break;}
-					aim = GET_ANSWER_NLIST;
-				}
-
-				if (aim == GET_ANSWER_NLIST)
-				{		
-					ticks = Receive(socketnum, listpointer, listbuffer + 30*mail_list.count - listpointer, MSG_DONTWAIT);
-					if (ticks == 0xffffffff) break;	
-					listpointer = listpointer + ticks;	
-					
-					if (listpointer - listbuffer < 5) break;
-					if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a	
-					{
-						aim = SEND_RETR;
-						debug("Got mail list");
-						DrawMailBox();
-						
-						*listpointer='\0';
-						atr.CreateArray();
-						atr.SetSizes();
-					}
-				}
-				
-				if (aim == SEND_RETR)
-				{
-					from = to = date = subj = cur_charset = NULL;
-					letter_view.ClearList();
-					DrawMailBox();
-					debug("Send RETR, awaiting answer...");
-					request_len = GetRequest("RETR", itoa(mail_list.current+1));
-					if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
-					{
-						StopConnect("Error while trying to get letter from server");
-						break;
-					}
-					mailsize = atr.GetSize(mail_list.current+1) + 1024;
-					free(mailstart);
-					if (!mailstart = malloc(mailsize))
-					{
-						debug("alloc error!");
-						aim=NULL;
-						break;
-					}
-					mailend = mailstart;
-					aim = GET_ANSWER_RETR;
-				}
-				
-				if (aim == GET_ANSWER_RETR)
-				{
-					ticks = Receive(socketnum, mailend, mailsize + mailstart - mailend, MSG_DONTWAIT);
-					if (ticks == 0xffffffff) break;
-					
-					mailend = mailend + ticks;
-
-					if (!aim) break;
-
-					if (mailsize + mailstart - mailend - 2 < 0)
-					{
-						debug("Resizing buffer");
-						mailsize += 4096;
-						mailstart = realloc(mailstart, mailsize);
-						if (!mailstart) { StopConnect("Realloc error!"); break;}
-					}
-
-					if (mailsize>9000)
-					{
-						id = mailend - mailstart * 100 ;
-						id /= mailsize - 1024;
-						if (id!=cur_st_percent) SetMailBoxStatus( id , NULL);
-					}
-
-					//debug(mailstart);
-					//pause(10);
-					//debug("======================");
-					ParseMail();
-				}
-
+				MailBoxNetworkProcess();
 		}
 	}
 }
@@ -293,16 +290,13 @@ void DrawToolbar()
 	#define BUT_Y 7
 	#define BUT_H 22
 	#define BUT_W 74
-	#define BUT_SPACE 11
 	int toolbar_w = BUT_Y + BUT_H + BUT_Y + 3;
 	mail_list.SetSizes(0, toolbar_w, Form.cwidth - scroll1.size_x - 1, mail_list.h, 60,18);
 
 	DrawBar(0,0, Form.cwidth,toolbar_w-3, sc.work);
-	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,      sc.work_button, sc.work_button_text,"Get mail");
-	DrawCaptButton(BUT_W+BUT_SPACE   + 10, BUT_Y, BUT_W, BUT_H, SEND_MAIL,     sc.work_button, sc.work_button_text,"Send Email");
-	DrawCaptButton(BUT_W+BUT_SPACE*2 + 10, BUT_Y, BUT_W, BUT_H, DELETE_LETTER, sc.work_button, sc.work_button_text,"Delete");
-	DrawCaptButton(BUT_W+BUT_SPACE*3 + 10, BUT_Y, BUT_W, BUT_H, SAVE_LETTER,   sc.work_button, sc.work_button_text,"Save");
-	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,     sc.work_button, sc.work_button_text,"< Exit");
+	DrawCaptButton(10                    , BUT_Y, BUT_W, BUT_H, GET_MAIL,    sc.work_button, sc.work_button_text,"Get mail");
+	DrawCaptButton(BUT_W+ 20, BUT_Y, BUT_W+10, BUT_H, SAVE_LETTER, sc.work_button, sc.work_button_text,"Save letter");
+	DrawCaptButton(Form.cwidth-BUT_W - 10, BUT_Y, BUT_W, BUT_H, EXIT_MAIL,   sc.work_button, sc.work_button_text,"< Exit");
 
 	DrawBar(0, mail_list.y-3, mail_list.w,1, sc.work_graph);
 	DrawBar(0, mail_list.y-2, mail_list.w,1, 0xdfdfdf);
@@ -428,7 +422,8 @@ void DrawStatusBar()
 
 void SetMailBoxStatus(dword percent1, text1)
 {
-	if (text1) WriteText(3, Form.cheight -status_bar_h + 3, 0x80, sc.work_text, text1);
+	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, sc.work, 0xC3C3C3, 0x54B1D6, sc.work_text, percent1, text1);
+	cur_st_percent = percent1;
 	cur_st_text = text1;
 }
 
@@ -438,12 +433,6 @@ void StopLoading()
 	aim = NULL;
 	mailstart = free(mailstart);
 	to = from = date = subj = cur_charset = NULL;
-}
-
-int GetMailCount(){
-	char tmpbuf4[512];
-	strcpyb(#immbuffer, #tmpbuf4, "+OK ", " ");
-	return atoi(#tmpbuf4);
 }
 
 int GetLetterSize_(int number)

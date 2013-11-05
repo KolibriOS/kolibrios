@@ -13,15 +13,106 @@ edit_box login_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,size
 edit_box pass_box= {PANEL_W-6,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(pass_text)+2,#pass_text,#mouse_dd,0b1};
 
 
+void LoginNetworkProcess()
+{
+	if (aim) switch(aim)
+	{
+		case RESOLVE:
+					if (!email_text) StopConnect("Enter email!");
+					if (!pass_text) StopConnect("Enter password!");
+					if ((!login) || (!POP_server_path)) StopConnect("Email should be such as username@somesite.com");
+					if (!aim) return;
+
+					sockaddr.sin_family = AF_INET4;
+					AX = POP_server_port;
+					$xchg	al, ah
+					sockaddr.sin_port = AX;
+					sockaddr.sin_addr = GetIPfromAdress(#POP_server_path);					
+					if (!sockaddr.sin_addr) { StopConnect("Can't obtain server IP."); break;}
+					else aim = OPEN_CONNECTION;
+					break;
+		case OPEN_CONNECTION:
+					socketnum = Socket(AF_INET4, SOCK_STREAM, 0);
+					if (socketnum == 0xffffffff) { StopConnect("Cannot open socket."); break;}
+					Connect(socketnum, #sockaddr, 16);
+					aim = GET_ANSWER_CONNECT;
+					break;
+		case GET_ANSWER_CONNECT:
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffff) || (ticks < 2)) { StopConnect("Connection failed"); break;}
+					immbuffer[ticks]='\0';					
+					if (immbuffer[ticks-2]=='\n')
+					{
+						if (strstr(#immbuffer,"+OK"))
+							aim = SEND_USER;
+						else
+							StopConnect("Failed to connect to server. Retry...");
+					}
+					break;
+		case SEND_USER:
+					request_len = GetRequest("USER", #login);
+					if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
+					{
+						SetLoginStatus("Failed to send USER. Retry...");
+						break;
+					}
+					else aim = GET_ANSWER_USER;
+					break;
+		case GET_ANSWER_USER:
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffffff) || (ticks < 2)) { SetLoginStatus("Connection failed"); break;}
+					immbuffer[ticks]='\0';						
+					if (immbuffer[ticks-2]=='\n') 
+					{
+						if (strstr(#immbuffer,"+OK"))
+							aim = SEND_PASS;
+						else
+						{
+							debug(#immbuffer);
+							StopConnect("Wrong username");
+						}
+					}
+					else
+					{
+						StopConnect("Connection failed"); 
+					}
+					break;
+		case SEND_PASS:
+					request_len = GetRequest("PASS", #pass_text);
+					if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
+					{
+						SetLoginStatus("Failed to send PASS. Retry...");
+						break;
+					}
+					else aim = GET_ANSWER_PASS;
+					break;
+		case GET_ANSWER_PASS:
+					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
+					if ((ticks == 0xffffff) || (ticks < 2)) { SetLoginStatus("Server disconnected"); break;}
+					immbuffer[ticks]='\0';						
+					
+					if (immbuffer[ticks-2]=='\n')
+					{
+						if (strstr(#immbuffer,"+OK")) MailBoxLoop();
+						else
+						{
+							StopConnect("Wrong password or POP3 disabled");
+							debug(#immbuffer);
+						}
+					}
+					else
+					{
+						StopConnect("Connection failed"); 
+					}
+	}
+}
 
 
 void LoginBoxLoop()
 {
 	int key, id;
-	char socket_char;
 
 	SetLoginStatus(NULL);
-
 	goto _LB_DRAW;
 	loop()
 	{
@@ -75,114 +166,7 @@ void LoginBoxLoop()
 				break;
 
 			default:
-				if (!aim) break;
-				if (!email_text) StopConnect("Enter email!");
-				if (!pass_text) StopConnect("Enter password!");
-				if ((!login) || (!POP_server_path)) StopConnect("Email should be such as username@somesite.com");
-				
-				if (aim == RESOLVE)
-				{
-					sockaddr.sin_family = AF_INET4;
-					AX = POP_server_port;
-					$xchg	al, ah
-					sockaddr.sin_port = AX;
-					sockaddr.sin_addr = GetIPfromAdress(#POP_server_path);					
-					if (!sockaddr.sin_addr) { StopConnect("Can't obtain server IP."); break;}
-					aim = OPEN_CONNECTION;
-					break;
-				}
-				
-				if (aim == OPEN_CONNECTION)
-				{
-					socketnum = Socket(AF_INET4, SOCK_STREAM, 0);
-					if (socketnum == 0xffffffff) { StopConnect("Cannot open socket."); break;}
-					Connect(socketnum, #sockaddr, 16);
-					aim = GET_ANSWER_CONNECT;
-					break;
-				}
-
-		
-				if (aim == GET_ANSWER_CONNECT)
-				{
-					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
-					if ((ticks == 0xffffff) || (ticks < 2)) { StopConnect("Connection failed"); break;}
-					immbuffer[ticks]='\0';					
-					
-					if (immbuffer[ticks-2]=='\n')
-					{
-						if (strstr(#immbuffer,"+OK"))
-							aim = SEND_USER;
-						else
-							StopConnect("Failed to connect to server. Retry...");
-					}
-				}
-
-				if (aim == SEND_USER)
-				{
-					request_len = GetRequest("USER", #login);
-					if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
-					{
-						SetLoginStatus("Failed to send USER. Retry...");
-						break;
-					}
-					aim = GET_ANSWER_USER;
-				}
-
-				if (aim == GET_ANSWER_USER)
-				{
-					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
-					if ((ticks == 0xffffffff) || (ticks < 2)) { SetLoginStatus("Connection failed"); break;}
-					immbuffer[ticks]='\0';						
-					
-					if (immbuffer[ticks-2]=='\n') 
-					{
-						if (strstr(#immbuffer,"+OK"))
-							aim = SEND_PASS;
-						else
-						{
-							debug(#immbuffer);
-							StopConnect("Wrong username");
-						}
-					}
-					else
-					{
-						StopConnect("Connection failed"); 
-					}
-				}
-
-				if (aim == SEND_PASS)
-				{		
-					request_len = GetRequest("PASS", #pass_text);
-					if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
-					{
-						SetLoginStatus("Failed to send PASS. Retry...");
-						break;
-					}
-					aim = GET_ANSWER_PASS;
-				}
-
-				if (aim == GET_ANSWER_PASS)
-				{	
-					ticks = Receive(socketnum, #immbuffer, BUFFERSIZE, 0);
-					if ((ticks == 0xffffff) || (ticks < 2)) { SetLoginStatus("Server disconnected"); break;}
-					immbuffer[ticks]='\0';						
-					
-					if (immbuffer[ticks-2]=='\n')
-					{
-						if (strstr(#immbuffer,"+OK")) MailBoxLoop();
-						else
-						{
-							StopConnect("Wrong password or POP3 disabled");
-							debug(#immbuffer);
-						}
-					}
-					else
-					{
-						StopConnect("Connection failed"); 
-					}
-				
-				}
-				
+				LoginNetworkProcess();				
 		}
 	}
 }
@@ -223,27 +207,15 @@ void DrawLoginScreen()
 }
 
 
-void GetServerPathAndLogin()
-{
-	int i=strchr(#email_text,'@');
-	
-	POP_server_path=login=NULL;
-
-	if (i)
-	{
-		strcpy(#POP_server_path, "pop.");
-		strcat(#POP_server_path, #email_text+i);
-	}
-	strcpy(#login, #email_text);
-	login[i-1]=NULL;
-}
-
-
 void GetSettings()
 {
-	GetServerPathAndLogin();
+	int at_pos = strchr(#email_text,'@');
+	strlcpy(#login, #email_text, at_pos-1);
+
 	if (checked[CUSTOM])
 	{
+		strcpy(#POP_server_path, "pop.");
+		strcat(#POP_server_path, #email_text+at_pos);
 		POP_server_port = DEFAULT_POP_PORT;
 	}
 	if (checked[MANUAL])
