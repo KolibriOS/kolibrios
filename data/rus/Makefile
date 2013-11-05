@@ -281,9 +281,10 @@ CMM_PROGRAMS:=\
 #
 OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
- graph:GRAPH hdread:HDREAD \
+ graph:GRAPH \
+ ../common/hdread:HDREAD \
  settings/icon.ini:SETTINGS/ICON.INI \
- iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
+ ../common/iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT \
  ../common/kerpack:KERPACK \
  settings/keymap.key:SETTINGS/KEYMAP.KEY \
