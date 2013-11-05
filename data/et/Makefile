@@ -305,9 +305,11 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  ../common/3d/cubeline:3D/CUBELINE \
  ../common/3d/gears:3D/GEARS \
  ../common/3d/house.3ds:3D/HOUSE.3DS \
- demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \
- demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
- demos/use_mb:DEMOS/USE_MB \
+ ../common/demos/ak47.lif:DEMOS/AK47.LIF \
+ ../common/demos/life2:DEMOS/LIFE2 \
+ ../common/demos/relay.lif:DEMOS/RELAY.LIF \
+ ../common/demos/rpento.lif:DEMOS/RPENTO.LIF \
+ ../common/demos/use_mb:DEMOS/USE_MB \
  ../common/File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  ../common/File|Managers/icons.ini:File|Managers/ICONS.INI \
  ../common/File|Managers/kfar.ini:File|Managers/KFAR.INI \
