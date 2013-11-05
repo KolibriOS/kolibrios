@@ -323,8 +323,8 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  ../common/media/ImgF/dither.obj:MEDIA/ImgF/dither.obj \
  ../common/media/ImgF/invSol.obj:MEDIA/ImgF/invSol.obj \
  settings/network.ini:SETTINGS/NETWORK.INI \
- network/ftpd.ini:NETWORK/FTPD.INI \
- network/users.ini:NETWORK/USERS.INI \
+ ../common/network/ftpd.ini:NETWORK/FTPD.INI \
+ ../common/network/users.ini:NETWORK/USERS.INI \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
 
