@@ -309,7 +309,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \
  games/kosilka:GAMES/KOSILKA \
  ../common/lib/msgbox.obj:LIB/MSGBOX.OBJ \
- ../common/lib/pixlib.obj:LIB/PIXLIB.OBJ 
+ ../common/lib/pixlib.obj:LIB/PIXLIB.OBJ \
  ../common/lib/sort.obj:LIB/SORT.OBJ \
  ../common/lib/iconv.obj:LIB/ICONV.OBJ \
  ../common/lib/netcode.obj:LIB/NETCODE.OBJ \
