@@ -308,8 +308,9 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \
  games/kosilka:GAMES/KOSILKA \
- lib/msgbox.obj:LIB/MSGBOX.OBJ \
- lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
+ ../common/lib/msgbox.obj:LIB/MSGBOX.OBJ \
+ ../common/lib/pixlib.obj:LIB/PIXLIB.OBJ 
+ ../common/lib/sort.obj:LIB/SORT.OBJ \
  ../common/lib/iconv.obj:LIB/ICONV.OBJ \
  ../common/lib/netcode.obj:LIB/NETCODE.OBJ \
  media/ac97snd:MEDIA/AC97SND \
