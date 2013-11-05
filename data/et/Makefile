@@ -302,7 +302,9 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
- 3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
+ ../common/3d/cubeline:3D/CUBELINE \
+ ../common/3d/gears:3D/GEARS \
+ ../common/3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
