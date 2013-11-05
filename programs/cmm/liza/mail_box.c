@@ -439,7 +439,7 @@ int GetLetterSize_(int number)
 {
    char search_num[24];
    char mailsize1[24];
-   strcpy(#search_num, "\n");       // 0x0d, 0x0a
+   strcpy(#search_num, "\x0a");       // 0x0d, 0x0a
    itoa_(#search_num+1, number);
    chrcat(#search_num, ' ');
    strcpyb(listbuffer, #mailsize1, #search_num, "\x0d");
