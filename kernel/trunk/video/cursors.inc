@@ -295,6 +295,8 @@ proc set_cursor stdcall, hcursor:dword
 ;           jne .fail
         mov     ebx, [current_slot]
         xchg    eax, [ebx+APPDATA.cursor]
+        mov     [redrawmouse_unconditional], 1
+        call    __sys_draw_pointer
         ret
 ;--------------------------------------
 align 4
