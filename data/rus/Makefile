@@ -310,6 +310,8 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  games/kosilka:GAMES/KOSILKA \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
+ ../common/lib/iconv.obj:LIB/ICONV.OBJ \
+ ../common/lib/netcode.obj:LIB/NETCODE.OBJ \
  media/ac97snd:MEDIA/AC97SND \
  ../common/media/ImgF/ImgF:MEDIA/ImgF/ImgF \
  ../common/media/ImgF/cEdg.obj:MEDIA/ImgF/cEdg.obj \
