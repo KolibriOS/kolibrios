@@ -308,10 +308,10 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
- File|Managers/eolite.ini:File|Managers/EOLITE.INI \
- File|Managers/icons.ini:File|Managers/ICONS.INI \
- File|Managers/kfar.ini:File|Managers/KFAR.INI \
- File|Managers/kfm.ini:File|Managers/KFM.INI \
+ ../common/File|Managers/eolite.ini:File|Managers/EOLITE.INI \
+ ../common/File|Managers/icons.ini:File|Managers/ICONS.INI \
+ ../common/File|Managers/kfar.ini:File|Managers/KFAR.INI \
+ ../common/File|Managers/kfm.ini:File|Managers/KFM.INI \
  games/checkers:GAMES/CHECKERS \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \

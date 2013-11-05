@@ -300,10 +300,10 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
- File|Managers/eolite.ini:File|Managers/EOLITE.INI \
- File|Managers/icons.ini:File|Managers/ICONS.INI \
- File|Managers/kfar.ini:File|Managers/KFAR.INI \
- File|Managers/kfm.ini:File|Managers/KFM.INI \
+ ../common/File|Managers/eolite.ini:File|Managers/EOLITE.INI \
+ ../common/File|Managers/icons.ini:File|Managers/ICONS.INI \
+ ../common/File|Managers/kfar.ini:File|Managers/KFAR.INI \
+ ../common/File|Managers/kfm.ini:File|Managers/KFM.INI \
  games/appdata.dat:GAMES/APPDATA.DAT games/ataka:GAMES/ATAKA \
  games/basekurs.kla:GAMES/BASEKURS.KLA games/checkers:GAMES/CHECKERS \
  games/megamaze:GAMES/MEGAMAZE games/padenie:GAMES/PADENIE \
