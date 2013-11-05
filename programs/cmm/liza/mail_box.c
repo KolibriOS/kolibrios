@@ -128,7 +128,7 @@ void MailBoxNetworkProcess()
 					if (!mailstart) { StopConnect("Realloc error!"); break;}
 				}
 
-				//if (mailsize>9000)
+				if (mailsize>9000)
 				{
 					load_persent = mailend - mailstart * 100 ;
 					load_persent /= mailsize - 1024;

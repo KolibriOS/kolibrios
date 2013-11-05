@@ -75,6 +75,7 @@ L2:
 
 inline fastcall int strlcpy(dword ESI, EDI, EBX)
 {
+	if (EBX<0) return -1;
 	EDX=0;
 	do {
 		DSBYTE[ESI]=DSBYTE[EDI];
