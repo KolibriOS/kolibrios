@@ -284,16 +284,18 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  graph:GRAPH hdread:HDREAD \
  settings/icon.ini:SETTINGS/ICON.INI \
  iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
- kernel.mnt:KERNEL.MNT kerpack:KERPACK \
+ kernel.mnt:KERNEL.MNT \
+ ../common/kerpack:KERPACK \
  settings/keymap.key:SETTINGS/KEYMAP.KEY \
  settings/lang.ini:SETTINGS/LANG.INI \
- kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC \
+ ../common/kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC \
  settings/menu.dat:SETTINGS/MENU.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA \
  ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
  settings/setup.dat:SETTINGS/SETUP.DAT \
- shell:SHELL table:TABLE vmode:VMODE \
+ shell:SHELL table:TABLE \
+ ../common/vmode:VMODE \
  ../common/3d/cubeline:3D/CUBELINE \
  ../common/3d/gears:3D/GEARS \
  ../common/3d/house.3ds:3D/HOUSE.3DS \
