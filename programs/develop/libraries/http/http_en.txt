@@ -1,0 +1,36 @@
+
+get(*url);
+	*url = pointer to ASCIIZ URL
+Initiates a HTTP connection, using 'GET' method.
+ - returns 0 on error, identifier otherwise.
+
+head(*url);
+	*url = pointer to ASCIIZ URL
+Initiate a HTTP connection, using 'HEAD' method.
+ - returns 0 on error, identifier otherwise
+
+post(*url, *content-type, content-length);
+	*url = pointer to ASCIIZ URL
+	*content-type = pointer to ASCIIZ string containing content type.
+	content-length = length of the content (in bytes).
+Initiate a HTTP connection, using 'POST' method.
+The content itself must be send to the socket (which you can find in the structure),
+using system function 75, 6.
+ - returns 0 on error, identifier otherwise
+
+process(identifier);
+	identifier = identifier which one of the previous functions returned
+This procedure will handle all incoming data for a connection and place it in the buffer.
+As long as the procedure expects more data, -1 is returned and the procedure must be called again.
+ - When transfer is done, the procedure will return 0. 
+
+All data is placed together with some flags and other attributes in the http_msg structure.
+This structure is defined in http.inc (and not copied here because it might still change.)
+The identifier used by the functions is actually a pointer to this structure.
+In the dword named .flags, the library will set various bit-flags indicating the status of the process.
+(When a transfer is done, one should check these bit-flags to find out if the transfer was error-free.)
+All received data is placed at the end of this structure, including HTTP headers.
+The dword .status contains the status code received from the server (e.g. 200 for OK).
+In header_length you'll find the length of the header as soon as it has been received.
+In content_length you'll find the length of the content (not counting headers). 
+In content_received, you'll find the number of bytes already received (not counting headers).

@@ -34,5 +34,6 @@ struc http_msg {
         .status         dd ?
         .header_length  dd ?
         .content_length dd ?
+        .content_received   dd ?
         .data:
 }

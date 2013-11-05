@@ -33,5 +33,6 @@ struct  http_msg{
         dword   status;
         dword   header_length;
         dword   content_length;
+        dword   content_received;
         char    data;
 };

@@ -65,6 +65,7 @@ macro HTTP_init_buffer buffer, socketnum {
         mov     [eax + http_msg.status], 0
         mov     [eax + http_msg.header_length], 0
         mov     [eax + http_msg.content_length], 0
+        mov     [eax + http_msg.content_received], 0
 }
 
 section '.flat' code readable align 16
@@ -292,7 +293,7 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_post URL, content, content_type, content_length ;///////////////////////////////////////;;
+proc HTTP_post URL, content_type, content_length ;////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;?                                                                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -383,11 +384,6 @@ endl
         jz      .error
         DEBUGF  1, "Request has been sent to server.\n"
 
-        mcall   send, [socketnum], [content], [content_length]
-        test    eax, eax
-        jz      .error
-        DEBUGF  1, "Data has been sent to server.\n"
-
         HTTP_init_buffer [buffer], [socketnum]
 ;        mov     eax, [buffer]
 
@@ -411,6 +407,10 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = -1 (not finished) / 0 finished                                                           ;;
 ;;================================================================================================;;
+locals
+        received        dd ?
+endl
+
         pusha
         mov     ebp, [identifier]
 
@@ -426,6 +426,8 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         add     [ebp + http_msg.write_ptr], eax
         sub     [ebp + http_msg.buffer_length], eax
         jz      .got_all_data
+
+        mov     [received], eax
 
 ; If data is chunked, combine chunks into contiguous data.
         test    [ebp + http_msg.flags], FLAG_CHUNKED
@@ -555,17 +557,18 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         DEBUGF  1, "Content-length: %u\n", edx
 
 ; Resize buffer according to content-length.
-        mov     eax, [ebp + http_msg.header_length]
-        add     eax, [ebp + http_msg.content_length]
-        add     eax, http_msg.data
+        add     edx, [ebp + http_msg.header_length]
+        add     edx, http_msg.data
 
-        mov     ecx, eax
+        mov     ecx, edx
         sub     ecx, [ebp + http_msg.write_ptr]
         mov     [ebp + http_msg.buffer_length], ecx
 
-        invoke  mem.realloc, ebp, eax
+        invoke  mem.realloc, ebp, edx
         or      eax, eax
         jz      .no_ram
+        mov     eax, [received]
+        sub     eax, [ebp + http_msg.header_length]
         jmp     .header_parsed  ; hooray!
 
   .no_content:
@@ -653,16 +656,16 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ; Update content_length accordingly.
         mov     ecx, [ebp + http_msg.write_ptr]
         sub     ecx, esi
-        add     [ebp + http_msg.content_length], ecx
+        add     [ebp + http_msg.content_received], ecx
         rep     movsb
         jmp     .chunk_loop
 
 ; Check if we got all the data.
   .header_parsed:
-        mov     eax, [ebp + http_msg.header_length]
-        add     eax, [ebp + http_msg.content_length]
-        cmp     eax, [ebp + http_msg.buffer_length]
-        je      .got_all_data
+        add     [ebp + http_msg.content_received], eax
+        mov     eax, [ebp + http_msg.content_length]
+        cmp     eax, [ebp + http_msg.content_received]
+        jae     .got_all_data
   .need_more_data:
         popa
         xor     eax, eax
@@ -670,7 +673,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         ret
 
   .need_more_data_chunked:
-        add     [ebp + http_msg.content_length], eax
+        add     [ebp + http_msg.content_received], eax
         popa
         xor     eax, eax
         dec     eax
@@ -682,6 +685,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         sub     eax, http_msg.data
         sub     eax, ebp
         mov     [ebp + http_msg.content_length], eax
+        mov     [ebp + http_msg.content_received], eax
   .got_all_data:
         DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_length]
         or      [ebp + http_msg.flags], FLAG_GOT_DATA
@@ -970,15 +974,23 @@ endp
 ;     edi = ptr where to store ascii
 ascii_dec:
 
+        push    -'0'
         mov     ecx, 10
   .loop:
         xor     edx, edx
         div     ecx
         add     dl, '0'
-        mov     byte[edi], dl
-        inc     edi
+        push    edx
         test    eax, eax
         jnz     .loop
+
+  .loop2:
+        pop     eax
+        add     al, '0'
+        jz      .done
+        stosb
+        jmp     .loop2
+  .done:
 
         ret
 
