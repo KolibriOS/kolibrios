@@ -51,6 +51,22 @@ macro copy_till_zero {
   @@:
 }
 
+macro HTTP_init_buffer buffer, socketnum {
+
+        mov     eax, buffer
+        push    socketnum
+        popd    [eax + http_msg.socket]
+        lea     esi, [eax + http_msg.data]
+        mov     [eax + http_msg.flags], 0
+        mov     [eax + http_msg.write_ptr], esi
+        mov     [eax + http_msg.buffer_length], BUFFERSIZE -  http_msg.data
+        mov     [eax + http_msg.chunk_ptr], 0
+
+        mov     [eax + http_msg.status], 0
+        mov     [eax + http_msg.header_length], 0
+        mov     [eax + http_msg.content_length], 0
+}
+
 section '.flat' code readable align 16
 
 ;;===========================================================================;;
@@ -108,6 +124,7 @@ locals
         sockaddr        dd ?
         socketnum       dd ?
         buffer          dd ?
+        port            dd ?
 endl
 
 ; split the URL into hostname and pageaddr
@@ -121,59 +138,29 @@ endl
         cmp     [proxyAddr], 0
         jne     .proxy_done
 
-        ; TODO
   .proxy_done:
 
-; Resolve the hostname
-        DEBUGF  1, "Resolving hostname\n"
-        push    esp     ; reserve stack place
-        push    esp     ; fourth parameter
-        push    0       ; third parameter
-        push    0       ; second parameter
-        push    [hostname]
-        call    [getaddrinfo]
-        pop     esi
-        test    eax, eax
-        jnz     .error
+;;;;
+        mov     [port], 80      ;;;; FIXME
 
-; getaddrinfo returns addrinfo struct, make the pointer to sockaddr struct
-        mov     esi, [esi + addrinfo.ai_addr]
-        mov     [sockaddr], esi
-        mov     eax, [esi + sockaddr_in.sin_addr]
-        test    eax, eax
-        jz      .error
-
-        DEBUGF  1, "Server ip=%u.%u.%u.%u\n", \
-        [esi + sockaddr_in.sin_addr]:1, [esi + sockaddr_in.sin_addr + 1]:1, \
-        [esi + sockaddr_in.sin_addr + 2]:1, [esi + sockaddr_in.sin_addr + 3]:1
-
-        mov     [esi + sockaddr_in.sin_family], AF_INET4
-        mov     [esi + sockaddr_in.sin_port], 80 shl 8  ;;; FIXME
-
-; Connect to the server.
-        mcall   socket, AF_INET4, SOCK_STREAM, 0
+; Connect to the other side.
+        stdcall open_connection, [hostname], [port]
         test    eax, eax
         jz      .error
         mov     [socketnum], eax
-        DEBUGF  1, "Socket: 0x%x\n", eax
-
-        mcall   connect, [socketnum], [sockaddr], 18
-        test    eax, eax
-        jnz     .error
-        DEBUGF  1, "Socket is now connected.\n"
-
-        ; TODO: free address buffer(s)
 
 ; Create the HTTP request.
         invoke  mem.alloc, BUFFERSIZE
         test    eax, eax
         jz      .error
         mov     [buffer], eax
+        mov     edi, eax
         DEBUGF  1, "Buffer has been allocated.\n"
 
-        mov     dword[eax], 'GET '
-        lea     edi, [eax + 4]
-        mov     esi, [pageaddr] ; TODO: for proxy use http:// and then full URL
+        mov     esi, str_get
+        copy_till_zero
+
+        mov     esi, [pageaddr]
         copy_till_zero
 
         mov     esi, str_http11
@@ -190,7 +177,7 @@ endl
         mov     byte[edi], 0
         DEBUGF  1, "Request:\n%s", [buffer]
 
-; now send the request
+; Send the request
         mov     esi, edi
         sub     esi, [buffer]   ; length
         xor     edi, edi        ; flags
@@ -200,19 +187,209 @@ endl
         jz      .error
         DEBUGF  1, "Request has been sent to server.\n"
 
-; Now that we have sent the request, re-purpose buffer as receive buffer
-        mov     eax, [buffer]
-        push    [socketnum]
-        popd    [eax + http_msg.socket]
-        lea     esi, [eax + http_msg.data]
-        mov     [eax + http_msg.flags], 0
-        mov     [eax + http_msg.write_ptr], esi
-        mov     [eax + http_msg.buffer_length], BUFFERSIZE -  http_msg.data
-        mov     [eax + http_msg.chunk_ptr], 0
+        HTTP_init_buffer [buffer], [socketnum]
 
-        mov     [eax + http_msg.status], 0
-        mov     [eax + http_msg.header_length], 0
-        mov     [eax + http_msg.content_length], 0
+        ret                     ; return buffer ptr
+
+  .error:
+        DEBUGF  1, "Error!\n"
+        xor     eax, eax        ; return 0 = error
+        ret
+
+endp
+
+
+
+;;================================================================================================;;
+proc HTTP_head URL ;///////////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;?                                                                                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _                                                                                              ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 (error) / buffer ptr                                                                   ;;
+;;================================================================================================;;
+locals
+        hostname        dd ?
+        pageaddr        dd ?
+        sockaddr        dd ?
+        socketnum       dd ?
+        buffer          dd ?
+        port            dd ?
+endl
+
+; split the URL into hostname and pageaddr
+        stdcall parse_url, [URL]
+        test    eax, eax
+        jz      .error
+        mov     [hostname], eax
+        mov     [pageaddr], ebx
+
+; Do we need to use a proxy?
+        cmp     [proxyAddr], 0
+        jne     .proxy_done
+
+        ; TODO: set hostname to that of the
+  .proxy_done:
+
+;;;;
+        mov     [port], 80      ;;;; FIXME
+
+; Connect to the other side.
+        stdcall open_connection, [hostname], [port]
+        test    eax, eax
+        jz      .error
+        mov     [socketnum], eax
+
+; Create the HTTP request.
+        invoke  mem.alloc, BUFFERSIZE
+        test    eax, eax
+        jz      .error
+        mov     [buffer], eax
+        mov     edi, eax
+        DEBUGF  1, "Buffer has been allocated.\n"
+
+        mov     esi, str_head
+        copy_till_zero
+
+        mov     esi, [pageaddr]
+        copy_till_zero
+
+        mov     esi, str_http11
+        mov     ecx, str_http11.length
+        rep     movsb
+
+        mov     esi, [hostname]
+        copy_till_zero
+
+        mov     esi, str_close
+        mov     ecx, str_close.length
+        rep     movsb
+
+        mov     byte[edi], 0
+        DEBUGF  1, "Request:\n%s", [buffer]
+
+; Send the request
+        mov     esi, edi
+        sub     esi, [buffer]   ; length
+        xor     edi, edi        ; flags
+
+        mcall   send, [socketnum], [buffer]
+        test    eax, eax
+        jz      .error
+        DEBUGF  1, "Request has been sent to server.\n"
+
+        HTTP_init_buffer [buffer], [socketnum]
+
+        ret                     ; return buffer ptr
+
+  .error:
+        DEBUGF  1, "Error!\n"
+        xor     eax, eax        ; return 0 = error
+        ret
+
+endp
+
+
+;;================================================================================================;;
+proc HTTP_post URL, content, content_type, content_length ;///////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;?                                                                                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _                                                                                              ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 (error) / buffer ptr                                                                   ;;
+;;================================================================================================;;
+locals
+        hostname        dd ?
+        pageaddr        dd ?
+        sockaddr        dd ?
+        socketnum       dd ?
+        buffer          dd ?
+        port            dd ?
+endl
+
+; split the URL into hostname and pageaddr
+        stdcall parse_url, [URL]
+        test    eax, eax
+        jz      .error
+        mov     [hostname], eax
+        mov     [pageaddr], ebx
+
+; Do we need to use a proxy?
+        cmp     [proxyAddr], 0
+        jne     .proxy_done
+
+        ; TODO: set hostname to that of the
+  .proxy_done:
+
+;;;;
+        mov     [port], 80      ;;;; FIXME
+
+; Connect to the other side.
+        stdcall open_connection, [hostname], [port]
+        test    eax, eax
+        jz      .error
+        mov     [socketnum], eax
+
+; Create the HTTP request.
+        invoke  mem.alloc, BUFFERSIZE
+        test    eax, eax
+        jz      .error
+        mov     [buffer], eax
+        mov     edi, eax
+        DEBUGF  1, "Buffer has been allocated.\n"
+
+        mov     esi, str_post
+        copy_till_zero
+
+        mov     esi, [pageaddr]
+        copy_till_zero
+
+        mov     esi, str_http11
+        mov     ecx, str_http11.length
+        rep     movsb
+
+        mov     esi, [hostname]
+        copy_till_zero
+
+        mov     esi, str_post_cl
+        mov     ecx, str_post_cl.length
+        rep     movsb
+
+        mov     eax, [content_length]
+        call    ascii_dec
+
+        mov     esi, str_post_ct
+        mov     ecx, str_post_ct.length
+        rep     movsb
+
+        mov     esi, [content_type]
+        rep     movsb
+
+        mov     esi, str_close
+        mov     ecx, str_close.length
+        rep     movsb
+
+        mov     byte[edi], 0
+        DEBUGF  1, "Request:\n%s", [buffer]
+
+; Send the request
+        mov     esi, edi
+        sub     esi, [buffer]   ; length
+        xor     edi, edi        ; flags
+        mcall   send, [socketnum], [buffer]
+        test    eax, eax
+        jz      .error
+        DEBUGF  1, "Request has been sent to server.\n"
+
+        mcall   send, [socketnum], [content], [content_length]
+        test    eax, eax
+        jz      .error
+        DEBUGF  1, "Data has been sent to server.\n"
+
+        HTTP_init_buffer [buffer], [socketnum]
+;        mov     eax, [buffer]
 
         ret                     ; return buffer ptr
 
@@ -505,7 +682,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         sub     eax, http_msg.data
         sub     eax, ebp
         mov     [ebp + http_msg.content_length], eax
-
   .got_all_data:
         DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_length]
         or      [ebp + http_msg.flags], FLAG_GOT_DATA
@@ -610,6 +786,80 @@ endp
 
 
 ; internal procedures start here:
+
+;;================================================================================================;;
+proc open_connection hostname, port ;/////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;?                                                                                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _                                                                                              ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = -1 (error) / 0                                                                           ;;
+;;================================================================================================;;
+
+locals
+        sockaddr        dd ?
+        socketnum       dd ?
+endl
+
+; Resolve the hostname
+        DEBUGF  1, "Resolving hostname\n"
+        push    esp     ; reserve stack place
+        push    esp     ; fourth parameter
+        push    0       ; third parameter
+        push    0       ; second parameter
+        push    [hostname]
+        call    [getaddrinfo]
+        pop     esi
+        test    eax, eax
+        jnz     .error1
+
+; getaddrinfo returns addrinfo struct, make the pointer to sockaddr struct
+        mov     esi, [esi + addrinfo.ai_addr]
+        mov     [sockaddr], esi
+        mov     eax, [esi + sockaddr_in.sin_addr]
+        test    eax, eax
+        jz      .error2
+
+        DEBUGF  1, "Server ip=%u.%u.%u.%u\n", \
+        [esi + sockaddr_in.sin_addr]:1, [esi + sockaddr_in.sin_addr + 1]:1, \
+        [esi + sockaddr_in.sin_addr + 2]:1, [esi + sockaddr_in.sin_addr + 3]:1
+
+        mov     [esi + sockaddr_in.sin_family], AF_INET4
+        mov     eax, [port]
+        xchg    al, ah
+        mov     [esi + sockaddr_in.sin_port], ax
+
+; Connect to the server.
+        mcall   socket, AF_INET4, SOCK_STREAM, 0
+        test    eax, eax
+        jz      .error2
+        mov     [socketnum], eax
+        DEBUGF  1, "Socket: 0x%x\n", eax
+
+        mcall   connect, [socketnum], [sockaddr], 18
+        test    eax, eax
+        jnz     .error2
+        DEBUGF  1, "Socket is now connected.\n"
+
+; free allocated memory
+        push    [sockaddr]
+        call    [freeaddrinfo]
+
+        mov     eax, [socketnum]
+        ret
+
+  .error2:
+
+; free allocated memory
+        push    [sockaddr]
+        call    [freeaddrinfo]
+
+  .error1:
+        xor     eax, eax
+        ret
+
+endp
 
 
 ;;================================================================================================;;
@@ -716,7 +966,21 @@ endl
 endp
 
 
+; in: eax = number
+;     edi = ptr where to store ascii
+ascii_dec:
 
+        mov     ecx, 10
+  .loop:
+        xor     edx, edx
+        div     ecx
+        add     dl, '0'
+        mov     byte[edi], dl
+        inc     edi
+        test    eax, eax
+        jnz     .loop
+
+        ret
 
 
 ;;================================================================================================;;
@@ -759,11 +1023,11 @@ export  \
         lib_init                , 'lib_init'            , \
         0x00010001              , 'version'             , \
         HTTP_get                , 'get'                 , \
+        HTTP_head               , 'head'                , \
+        HTTP_post               , 'post'                , \
         find_header_field       , 'find_header_field'   , \
         HTTP_process            , 'process'
 
-;        HTTP_head               , 'head'                , \
-;        HTTP_post               , 'post'                , \
 ;        HTTP_put                , 'put'                 , \
 ;        HTTP_delete             , 'delete'              , \
 ;        HTTP_trace              , 'trace'               , \
@@ -783,6 +1047,10 @@ key_password    db 'password', 0
 
 str_http11      db ' HTTP/1.1', 13, 10, 'Host: '
   .length       = $ - str_http11
+str_post_cl     db 13, 10, 'Content-Length: '
+  .length       = $ - str_post_cl
+str_post_ct     db 13, 10, 'Content-Type: '
+  .length       = $ - str_post_ct
 str_close       db 13, 10, 'User-Agent: KolibriOS libHTTP/1.0', 13, 10, 'Connection: Close', 13, 10, 13, 10
   .length       = $ - str_close
 str_proxy_auth  db 13, 10, 'Proxy-Authorization: Basic '
@@ -794,6 +1062,9 @@ base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 str_cl          db 'content-length', 0
 str_slash       db '/', 0
 str_te          db 'transfer-encoding', 0
+str_get         db 'GET ', 0
+str_head        db 'HEAD ', 0
+str_post        db 'POST ', 0
 
 include_debug_strings
 
