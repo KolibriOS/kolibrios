@@ -1,4 +1,5 @@
 //Leency & SoUrcerer, LGPL
+//Hidnplayer
 
 #define LIST_INFO_H 59
 int status_bar_h = 15;
@@ -33,7 +34,7 @@ void MailBoxNetworkProcess()
 	if (aim) switch(aim)
 	{
 		case SEND_NSTAT:
-				SetLoginStatus("Counting mail, awaiting answer...");			
+				SetMailBoxStatus(NULL, "Counting mail, awaiting answer...");			
 				request_len = GetRequest("STAT", NULL);
 				Send(socketnum, #request, request_len, 0);
 				if (EAX == 0xffffffff) { debug("Error sending STAT. Retry..."w); break;}
@@ -81,7 +82,7 @@ void MailBoxNetworkProcess()
 				if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a	
 				{
 					aim = SEND_RETR;
-					debug("Got mail list");
+					debug("goto SEND_RETR");
 					DrawMailBox();
 					
 					*listpointer='\0';
@@ -94,7 +95,6 @@ void MailBoxNetworkProcess()
 				from = to = date = subj = cur_charset = NULL;
 				letter_view.ClearList();
 				DrawMailBox();
-				debug("Send RETR, awaiting answer...");
 				request_len = GetRequest("RETR", itoa(mail_list.current+1));
 				if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
 				{
@@ -103,7 +103,8 @@ void MailBoxNetworkProcess()
 				}
 				mailsize = atr.GetSize(mail_list.current+1) + 1024;
 				free(mailstart);
-				if (!mailstart = malloc(mailsize))
+				mailstart = malloc(mailsize);
+				if (!mailstart)
 				{
 					debug("alloc error!");
 					aim=NULL;
@@ -111,15 +112,13 @@ void MailBoxNetworkProcess()
 				}
 				mailend = mailstart;
 				aim = GET_ANSWER_RETR;
+				debug("goto GET_ANSWER_RETR");
+				break;
 			
 		case GET_ANSWER_RETR:
 				ticks = Receive(socketnum, mailend, mailsize + mailstart - mailend, MSG_DONTWAIT);
 				if (ticks == 0xffffffff) break;
-				
-				mailend = mailend + ticks;
-
-				if (!aim) break;
-
+				mailend += ticks;
 				if (mailsize + mailstart - mailend - 2 < 0)
 				{
 					debug("Resizing buffer");
@@ -127,7 +126,6 @@ void MailBoxNetworkProcess()
 					mailstart = realloc(mailstart, mailsize);
 					if (!mailstart) { StopConnect("Realloc error!"); break;}
 				}
-
 				if (mailsize>9000)
 				{
 					load_persent = mailend - mailstart * 100 ;
@@ -143,7 +141,7 @@ void MailBoxLoop()
 {
 	int key, id;
 	mouse m;
-	int panels_drag = 0;
+	int panels_drag=0, clicked_list=0;
 	dword line_col, text_col;
 
 	mail_list.h = Form.cheight/4;
@@ -198,8 +196,14 @@ void MailBoxLoop()
 				{
 					if (letter_view.MouseScroll(m.vert)) DrawLetter();
 				}
-				//if (!m.lkm) && (menu.ProcessMouse(mm.x, mm.y)) && 
-				//if (!m.lkm) && if (menu.ProcessMouse(mm.x, mm.y)) DrawMenuList();
+				if (m.lkm) && (mail_list.MouseOver(m.x, m.y)) && (!clicked_list) clicked_list=1;
+				if (!m.lkm) && (clicked_list) if (mail_list.ProcessMouse(m.x, m.y)) 
+				{
+					clicked_list = 0;
+					if (aim) break;
+					DrawMailList();
+					aim = SEND_RETR;
+				}
 
 				break;				
 			case evButton:
@@ -240,14 +244,6 @@ void MailBoxLoop()
 					}
 				}
 				if (id==CLOSE_CHANGE_CHARSET) goto _MB_DRAW;
-
-				if (id>=30)
-				{
-					if (aim) break;
-					mail_list.current = mail_list.first + id - 30;
-					DrawMailList();
-					aim = SEND_RETR;
-				}
 
 				break;				
 			case evKey:
@@ -321,7 +317,6 @@ void DrawMailList()
 		PutPaletteImage(sizeof(letter_icons)/3*direction + #letter_icons, 18,12, on_x+18,
 			mail_list.line_h-12/2+ on_y, 8, #letter_icons_pal);
 		WriteText(on_x + 42, on_y+5, 0x80, 0, atr.GetSubject(i+mail_list.first+1));
-		DefineButton(0, on_y, mail_list.w-1, mail_list.line_h, 30+i+BT_HIDE+BT_NOFRAME);
 		DrawBar(0, on_y + mail_list.line_h-1, mail_list.w, 1, 0xCCCccc);
 		WriteText(10, on_y+5, 0x80, 0, itoa(i+mail_list.first+1));
 		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertMemSize(atr.GetSize(i+mail_list.first+1)));
@@ -347,8 +342,8 @@ void DrawLetterInfo()
 	WriteText (45, lt_y+20, 0x80, sc.work_text, #to);
 	WriteTextB(10, lt_y+32, 0x80, sc.work_text, "Date:");
 	WriteText (45, lt_y+32, 0x80, sc.work_text, #date);
-	WriteTextB(10, lt_y+44, 0x80, sc.work_text, "Subject:");
-	WriteText (66, lt_y+44, 0x80, sc.work_text, #subj);
+	WriteTextB(10, lt_y+44, 0x80, sc.work_text, "Subj:");
+	WriteText (45, lt_y+44, 0x80, sc.work_text, #subj);
 }
 
 void DrawLetter()
@@ -364,7 +359,7 @@ void DrawLetter()
 	{
 		for ( ; i < letter_view.first; i++) cur_line = GetNextLine(cur_line);
 
-		for (i=0; i < letter_view.h / letter_view.line_h; i++)
+		for (i=0; i < letter_view.visible; i++)
 		{
 			next_line = GetNextLine(cur_line);
 			line_text = CopyBetweenOffsets(cur_line, next_line);

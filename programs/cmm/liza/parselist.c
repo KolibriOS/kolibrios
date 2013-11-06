@@ -5,9 +5,10 @@ void ParseMail()
 	dword line_off, new_buf;
 	char tline[256];
 
-	if ( mailend-mailstart > 9) if (strncmp(mailend-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
+	if ( mailend-mailstart > 9) && (strncmp(mailend-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
 	{
 		mailend -= 5;
+		DSBYTE[mailend] = '\0';
 		if (strstr(mailstart, "+OK")!=mailstart) 
 		{
 			aim = GET_ANSWER_RETR;
@@ -16,13 +17,13 @@ void ParseMail()
 			return;
 		}
 		aim=NULL;
-		DSBYTE[mailend] = '\0';
 		mailsize = mailend - mailstart;
 
+		debug("Getting QP");
 		if (strstri(mailstart, "quoted-printable")!=0)
 		{
-			new_buf = malloc(mailend-mailstart);
-			qp_decode stdcall (mailstart, new_buf, mailend-mailstart);
+			new_buf = malloc(mailsize);
+			qp_decode stdcall (mailstart, new_buf, mailsize);
 			if (EAX==-1) debug("Too small buffer to convert QUOTED-PRINTABLE");
 			else
 			{
@@ -32,12 +33,16 @@ void ParseMail()
 				mailend = mailsize + mailstart;
 			}
 		}
+		debug("GetHeaders: From, To, Date, Subject");
 		GetHeader(#from, "\nFrom:");
 		GetHeader(#to,   "\nTo:");
 		GetHeader(#date, "\nDate:");
 		GetHeader(#subj, "\nSubject:");
-		mdata = strstr(mailstart, "\n\r") + 3;		// 0x0d 0x0a, 0x0a
+		debug("Get mdata");
+		mdata = strstr(mailstart, "\x0a\x0d") + 3;		// 0x0d 0x0a, 0x0a
+		debug("ConvertToDOS");
 		ConvertToDOS(mdata, mailstart);
+		debug("FromHTMLtoTXT");
 		FromHTMLtoTXT();
 		letter_view.first = letter_view.count = 0;
 		
@@ -47,6 +52,7 @@ void ParseMail()
 			line_off = GetNextLine(line_off);
 			letter_view.count++;	
 		}
+		debug("SetAtrFromCurr");
 		atr.SetAtrFromCurr(mail_list.current+1);
 		DrawMailBox();
 	}
@@ -83,7 +89,7 @@ void FromHTMLtoTXT()
 	dword cur_chr, txt_buf_srt, txt_buf_end, is_tag=0;
 	int i;
 	if (strstri(mdata, "<html>")==0) && (strstri(mailstart, "text/html")==0) {debug("no html tags found"); return;}
-	debug ("converting: html -> txt");
+	debug ("Mail got <html> code");
 	cur_chr = mdata;
 	txt_buf_srt = malloc(mailend - mailstart);
 	txt_buf_end = txt_buf_srt;
@@ -137,13 +143,20 @@ dword CopyBetweenOffsets(dword start, end) //do not forget to free(line) after u
 	return line;
 }
 
+
 void GetHeader(dword workstr, searchstr)
 {
 	char tmpbuf[512];
 	dword Qoff;
+	int q_start, b_start;
 
 	strcpyb(mailstart, workstr, searchstr, "\n");
-	if (strstri(workstr, "?Q?"))
+	debug(searchstr);
+	debug(workstr);
+	if (strlen(workstr)<8) return;
+	q_start = strstri(workstr, "?Q?");
+	b_start = strstri(workstr, "?B?");
+	if (q_start)
 	{
 		qp_decode stdcall (workstr, #tmpbuf, strlen(workstr));
 		ConvertToDOS(#tmpbuf, workstr);	
@@ -151,9 +164,11 @@ void GetHeader(dword workstr, searchstr)
 		Qoff = strstri(workstr, "?Q?");
 		strcpy(workstr, Qoff);
 	}
-	if (strstr(workstr, "?B?"))
+
+	//any text that goes after "?=" deletes now
+	if (b_start)
 	{
-		base64_decode stdcall (strstri(workstr, "?B?"), #tmpbuf, strlen(workstr));
+		base64_decode stdcall (b_start, #tmpbuf, strlen(b_start)-5);
 		ConvertToDOS(#tmpbuf, workstr);	
 		strcpy(workstr, #tmpbuf);
 	}
