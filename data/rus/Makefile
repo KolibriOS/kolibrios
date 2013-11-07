@@ -294,6 +294,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA \
  ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
+ ../common/settings/wallpaper.dat:SETTINGS/WALLPAPER.dat \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE \
  ../common/vmode:VMODE \
