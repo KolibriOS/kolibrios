@@ -1,21 +1,21 @@
 # Syntaxis is: <Program_Name> <Parameter(s)> <Delay_Time>
 # Use "parameter value" for parameters with spaces. Use "" if no parameter is required.
-# Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds. 
+# Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds.
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
-#/SYS/CROPFLAT "XS800 YS480"       1    # set limits of screen
-#/SYS/COMMOUSE        ""           1    # COM mice detector
-#/SYS/DEVELOP/BOARD   ""           1    # Load DEBUG board
-#/SYS/refrscrn        ""           1    # Refresh screen
-/SYS/NETWORK/NETCFG  A            1    #
-/SYS/NETWORK/ZEROCONF ""          1    # Network configuration
-/SYS/MEDIA/PALITRA "H 007DCEDF 003C427F" 1 #SET BG
-/SYS/@PANEL           ""          1    # Start panel
-/SYS/@DOCKY           ""          1    # Start docky
-/SYS/SETUP           BOOT         1    # Load device settings
-/SYS/@ICON            ""          1    # Multithread icon
-#/SYS/@RB             ""          1    # Desktop right-click menu
-/SYS/@SS             ASSM         1    # Screensaver
-/SYS/TMPDISK          A1         -1    # Add virtual RAM disk /tmp1/1
-/SYS/SEARCHAP         ""         -1    # Search and mount additional system directory
+#/SYS/CROPFLAT "XS800 YS480"	   1	# set limits of screen
+#/SYS/COMMOUSE	      ""	   1	# COM mice detector
+#/SYS/DEVELOP/BOARD   ""	   1	# Load DEBUG board
+#/SYS/refrscrn	      ""	   1	# Refresh screen
+/SYS/NETWORK/NETCFG  A		  1    #
+/SYS/NETWORK/ZEROCONF ""	  1    # Network configuration
+/SYS/MEDIA/PALITRA   "H"	  1    # SET BG
+/SYS/@PANEL	      ""	  1    # Start panel
+/SYS/@DOCKY	      ""	  1    # Start docky
+/SYS/SETUP	     BOOT	  1    # Load device settings
+/SYS/@ICON	      ""	  1    # Multithread icon
+#/SYS/@RB	      ""	   1	# Desktop right-click menu
+/SYS/@SS	     ASSM	  1    # Screensaver
+/SYS/TMPDISK	      A1	 -1    # Add virtual RAM disk /tmp1/1
+/SYS/SEARCHAP	      ""	 -1    # Search and mount additional system directory
 ### Hello, ASM World! ###
