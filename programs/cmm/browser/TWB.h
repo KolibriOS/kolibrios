@@ -25,7 +25,9 @@ struct TWebBrowser {
 TWebBrowser WB1;
 
 byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text,
-	link, ignor_text, li_tab, cur_encoding;
+	link, ignor_text, li_tab, cur_encoding, text_align;
+
+enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 dword text_colors[300],
 	text_color_index,
@@ -368,6 +370,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (blink<400) blink=400; else for ( ; blink>400; blink--;) DeleteButton(blink);
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
+	text_align = ALIGN_LEFT;
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
 	DrawBufFill();
@@ -427,7 +430,6 @@ void TWebBrowser::ParseHTML(dword bword){
 				bukva = ESBYTE[bword];
 				chrcat(#tag, bukva);
 			}
-			
 			bukva = GetUnicodeSymbol();
 			if (bukva) goto DEFAULT_MARK;
 			break;
@@ -565,7 +567,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 
 	
-	IF(!chTag("q")) strcat(#line, "\"");
+	IF(!chTag("q")) chrcat(#line, '\"');
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
@@ -654,10 +656,30 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
 		return;
 	}
+	if (!chTag("center"))
+	{
+		if (rez) text_align = ALIGN_CENTER;
+		if (!rez) text_align = ALIGN_LEFT;
+	}
+	if (!chTag("right"))
+	{
+		if (rez) text_align = ALIGN_RIGHT;
+		if (!rez) text_align = ALIGN_LEFT;
+	}
 	if (!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
+		if (rez)
+		{
+			if (!strcmp(#parametr, "align=")) && (!strcmp(#options,"center")) text_align = ALIGN_CENTER;
+			if (!strcmp(#parametr, "align=")) && (!strcmp(#options,"right")) text_align = ALIGN_RIGHT;
+			b_text = 1;
+		}
+		if (!rez)
+		{
+			text_align = ALIGN_LEFT;
+			b_text = 0;
+		}
 		TextGoDown(left1, top1, width1);
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
-		b_text = rez;
 		strcpy(#oldtag, #tag);
 		return;
 	}
