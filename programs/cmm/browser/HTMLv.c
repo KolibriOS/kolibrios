@@ -26,10 +26,10 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.09";
+	char version[]=" Текстовый браузер 0.99.1";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 #else
-	char version[]=" Text-based Browser 0.99.09";
+	char version[]=" Text-based Browser 0.99.1";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 #endif
 
