@@ -660,13 +660,18 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		if (rez) text_align = ALIGN_CENTER;
 		if (!rez) text_align = ALIGN_LEFT;
+		return;
 	}
 	if (!chTag("right"))
 	{
 		if (rez) text_align = ALIGN_RIGHT;
 		if (!rez) text_align = ALIGN_LEFT;
+		return;
 	}
 	if (!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
+		TextGoDown(left1, top1, width1);
+		IF(rez) TextGoDown(left1, top1 + 10, width1);
+		strcpy(#oldtag, #tag);
 		if (rez)
 		{
 			if (!strcmp(#parametr, "align=")) && (!strcmp(#options,"center")) text_align = ALIGN_CENTER;
@@ -678,9 +683,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			text_align = ALIGN_LEFT;
 			b_text = 0;
 		}
-		TextGoDown(left1, top1, width1);
-		IF(rez) TextGoDown(left1, top1 + 10, width1);
-		strcpy(#oldtag, #tag);
 		return;
 	}
 	else
