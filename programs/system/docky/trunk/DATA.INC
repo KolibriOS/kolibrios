@@ -1,10 +1,17 @@
+set_img:
+    db	    0, 0, 1, 0, 0, 0
+    db	    0, 0, 0, 1, 0, 0
+    db	    1, 0, 0, 1, 0, 0
+    db	    0, 1, 1, 1, 0, 0
+    db	    0, 0, 0, 0, 1, 0
+    db	    0, 0, 0, 0, 0, 1
+;-------------------------------------------------------------------------------
+cfg_app:
+    db	    "dockycfg", 0
+;-------------------------------------------------------------------------------
 img_data:
  .file_name:
     db	    "/sys/iconstrp.png", 0
- .cfg_text:
-    db	    "R", 0
- .ext_text:
-    db	    "X", 0
 ;-------------------------------------------------------------------------------
 ini_data:
  .file_name:
@@ -16,10 +23,10 @@ ini_data:
  .icon_name:
     db	    "icon", 0
  .separator_name:
-    db	    "separator", 0
+    db	    "$", 0
 
  .settings_name:
-    db	    "@SETTINGS", 0
+    db	    "@", 0
  .location_name:
     db	    "location", 0
 ;-------------------------------------------------------------------------------
@@ -100,8 +107,6 @@ ini:
 ICON_SIZE	 equ  32 * 32
 ICON_SIZE_BGR	 equ  ICON_SIZE * 3
 ICON_SIZE_RGB	 equ  ICON_SIZE * 4
-ICONS_SIZE_RGB	 equ  ICON_SIZE_RGB * 29
-ICONS_SIZE_FILE  equ  ICON_SIZE_BGR * 29
 
 BUTTON_SIZE	 equ  44
 ;-------------------------------------------------------------------------------

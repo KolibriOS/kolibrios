@@ -30,15 +30,16 @@ main:
     load_libraries load_lib_start, load_lib_end
 
 ; ==== Config LibINI ====
-    invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, -1
+    invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, 1
     mov     [dock_items.location], eax
 
+    invoke  ini.sections, ini_data.file_name, sections_callback
+
+; ==== Load colors ====
     mcall   48, 3, color
     or	    dword[color.bg],	0x10000000
     or	    dword[color.frame], 0x10000000
     or	    dword[color.text],	0x80000000
-
-    invoke  ini.sections, ini_data.file_name, sections_callback
 
 ; ==== Config LibIMG ====
     mov     dword[fi.p00], 5
@@ -67,7 +68,12 @@ main:
     mov     dword[img_data.object], eax
 
   ; === ALPHA ===
-    mov     edi, 0
+    mov     edi, eax
+    add     edi, 8
+    mov     edi, [edi]
+    imul    edi, 128
+    sub     edi, 4
+
     add     eax, 24
     mov     eax, [eax]
  .setalpha:
@@ -79,8 +85,8 @@ main:
     mov     ecx, [color.bg]
     mov     [eax + edi], ecx
  .nonalpha:
-    add     edi, 4
-    cmp     edi, ICONS_SIZE_RGB
+    sub     edi, 4
+    cmp     edi, 0
     jne     .setalpha
 
   ; === CONVERTING TO BGR
@@ -132,6 +138,7 @@ main:
     call    .VERT_X_LEFT
     jmp     .SETDEF
 
+;-------------------------------------------------------------------------------
  .HORZ_WIDTH:
     mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
@@ -143,29 +150,26 @@ main:
 
     ret
 
+;-------------------------------------------------------------------------------
  .HORZ_X:
     mcall   14
-    shr     eax, 16
-    mov     ebx, 2
-    mov     edx, 0
-    div     ebx
-    mov     edx, 0
-    mov     ecx, eax
-
-    mov     eax, [win.width_opn]
-    div     ebx
-    sub     ecx, eax
-    mov     [win.x_opn], ecx
-    mov     [win.x_hdn], ecx
+    shr     eax, 17
+    mov     ecx, [win.width_opn]
+    shr     ecx, 1
+    sub     eax, ecx
+    mov     [win.x_opn], eax
+    mov     [win.x_hdn], eax
 
     ret
 
+;-------------------------------------------------------------------------------
  .HORZ_HEIGHT:
-    mov     dword[win.height_opn], BUTTON_SIZE
     mov     dword[win.height_hdn], 3
+    mov     dword[win.height_opn], BUTTON_SIZE
 
     ret
 
+;-------------------------------------------------------------------------------
  .HORZ_Y_BOTTOM:
     mcall   14
     and     eax, 0xFFFF
@@ -182,14 +186,15 @@ main:
 
     ret
 
+;-------------------------------------------------------------------------------
  .VERT_WIDTH:
     mov     dword[win.width_opn], BUTTON_SIZE
     mov     dword[win.width_hdn], 3
 
     ret
 
+;-------------------------------------------------------------------------------
  .VERT_X_LEFT:
-
     mov     dword[win.x_opn], 0
     mov     dword[win.x_hdn], 0
 
@@ -205,35 +210,34 @@ main:
 
     ret
 
+;-------------------------------------------------------------------------------
  .VERT_HEIGHT:
     mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     dec     eax
+    add     eax, 12
     mov     [win.height_opn], eax
     mov     [win.height_hdn], eax
 
     ret
 
+;-------------------------------------------------------------------------------
  .VERT_Y:
     mcall   14
     and     eax, 0xFFFF
-    mov     edx, 0
-    mov     ebx, 2
-    div     ebx
-    mov     esi, eax
+    shr     eax, 1
 
-    mov     eax, [win.height_opn]
-    mov     edx, 0
-    mov     ebx, 2
-    div     ebx
-    sub     esi, eax
+    mov     esi, [win.height_opn]
+    shr     esi, 1
+    sub     eax, esi
 
-    mov     [win.y_hdn], esi
-    mov     [win.y_opn], esi
+    mov     [win.y_hdn], eax
+    mov     [win.y_opn], eax
 
     ret
 
+;-------------------------------------------------------------------------------
  .SETDEF:
     mov     eax, [win.width_hdn]
     mov     [win.width], eax
@@ -247,6 +251,7 @@ main:
     mov     eax, [win.y_hdn]
     mov     [win.y], eax
 
+;-------------------------------------------------------------------------------
 ; ==== START ====
     mcall   9, win.procinfo, -1
     mov     ecx, [win.procinfo + 30]
@@ -261,7 +266,7 @@ exit:
     mcall   18, 2, [nwin.sid]
     mcall   -1
 ;-------------------------------------------------------------------------------
-proc main_loop
+main_loop:
     mcall   10
 
     cmp     eax, EV_REDRAW
@@ -274,15 +279,13 @@ proc main_loop
     je	    event_mouse
 
     jmp     main_loop
-
- .end:
-    ret
-endp
 ;-------------------------------------------------------------------------------
 event_redraw:
     mcall   12, 1
 
-    mcall   0, <[win.x], [win.width]>, <[win.y], [win.height]>, [color.bg], [color.bg], [color.frame]
+    mov     esi, [color.bg]
+    or	    esi, 0x01000000
+    mcall   0, <[win.x], [win.width]>, <[win.y], [win.height]>, [color.bg], , [color.frame]
 
     mov     edi, 0
   @@:
@@ -361,6 +364,60 @@ event_redraw:
     jmp     @b
   @@:
 
+ ; ==== DRAW SETTINGS ====
+    cmp     byte[win.isvert], 1
+    je	    .cfg_vert
+
+    mov     ebx, [win.width]
+    sub     ebx, 10
+    shl     ebx, 16
+    add     ebx, 8
+    mcall   8, , <2, BUTTON_SIZE - 4>, 0x60000003
+    jmp     @f
+
+ .cfg_vert:
+    mov     ecx, [win.height]
+    sub     ecx, 10
+    shl     ecx, 16
+    add     ecx, 8
+    mcall   8, <2, BUTTON_SIZE - 4>, , 0x60000003
+  @@:
+
+ ; ==== cfg image ====
+    mov     edi, 0
+  @@:
+    cmp     byte[set_img + edi], 0
+    je	    .notdraw
+
+    mov     eax, edi
+    mov     edx, 0
+    mov     ebx, 6
+    div     ebx
+    mov     ebx, edx
+    mov     ecx, eax
+
+    add     ebx, [win.width]
+    cmp     byte[win.isvert], 0
+    je	    .cfg_hoz
+    sub     ebx, [win.width]
+    add     ebx, [win.height]
+ .cfg_hoz:
+    sub     ebx, 10
+    add     ecx, 18
+
+    cmp     byte[win.isvert], 0
+    je	    .cfg_draw
+
+    xchg    ebx, ecx
+
+  .cfg_draw:
+    mcall   1, , , [color.frame]
+
+ .notdraw:
+    inc     edi
+    cmp     edi, 36
+    jne     @b
+
     mcall   12, 2
 
     jmp     main_loop
@@ -373,6 +430,9 @@ event_button:
 
     cmp     ah, 2
     je	    .button_dock
+
+    cmp     ah, 3
+    je	    .button_cfg
 
     jmp     @f
 
@@ -393,6 +453,18 @@ event_button:
     add     esi, dock_items.param
     mov     dword[fi.p08], esi
 
+    mcall   70, fi
+
+    mov     ecx, eax
+    mcall   18, 21
+    and     eax, 0xFFFF
+    mov     [win.psid], eax
+
+    jmp     wnd_hide
+
+ .button_cfg:
+    mov     dword[fi.p00], 7
+    mov     dword[fi.p21], cfg_app
     mcall   70, fi
 
     mov     ecx, eax

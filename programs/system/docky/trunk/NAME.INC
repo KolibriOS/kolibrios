@@ -81,6 +81,8 @@ n_event_idle:
     cmp     byte[nwin.close], 1
     jne     @f
 
+    mcall   13, <0, [win.width]>, <[win.height], 1>, [color.frame]
+
     mov     byte[nwin.close], 0
     mcall   -1
 
@@ -128,5 +130,7 @@ n_event_redraw:
     mcall   4, , [color.text]
 
     mcall   12, 2
+
+    mcall   18, 3, [nwin.sid]
 
     jmp     n_main_loop
