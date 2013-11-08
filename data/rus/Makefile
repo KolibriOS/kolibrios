@@ -308,7 +308,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  ../common/demos/use_mb:DEMOS/USE_MB \
  ../common/File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  ../common/File|Managers/icons.ini:File|Managers/ICONS.INI \
- ../common/File|Managers/kfar.ini:File|Managers/KFAR.INI \
+ File|Managers/kfar.ini:File|Managers/KFAR.INI \
  ../common/File|Managers/kfm.ini:File|Managers/KFM.INI \
  games/appdata.dat:GAMES/APPDATA.DAT games/ataka:GAMES/ATAKA \
  games/basekurs.kla:GAMES/BASEKURS.KLA games/checkers:GAMES/CHECKERS \
