@@ -562,7 +562,7 @@ draw_window:
     call draw_days
 
 	; draw text in window
-    mcall 4,157*65536+302,0x80CCCCCC,sys_text
+    mcall 4,157*65536+301,0x80CCCCCC,sys_text
     mcall  ,211*65536+301,,separator
     mcall  ,233*65536+301
     mcall  ,185*65536+289, ,plus
