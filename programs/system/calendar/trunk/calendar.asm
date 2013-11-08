@@ -471,7 +471,7 @@ draw_clock:
 
     mcall 3
     mov  ecx,eax
-    mcall 47,0x00020100, ,195*65536+287,0x50000000,COL_WINDOW_BG
+    mcall 47,0x00020100, ,195*65536+301,0x50CCCCCC,COL_TOOLBAR_BG
 
     shr  ecx,8
     add  edx,22*65536
@@ -500,40 +500,42 @@ draw_window:
 	shl ecx, 16
 	add ecx, 43
 	mcall 13,B_WBAR_X, ,COL_TOOLBAR_BG ; draw toolbar background
+	mcall 13,B_WBAR_X,BT_WBAR_Y,COL_TOOLBAR_BG ; draw toolbar background
+
     call draw_week
-    mcall 8,193*65536+8,272*65536+10,72,COL_DATE_BUTTONS
+    mcall 8,193*65536+8,287*65536+10,72,COL_TOOLBAR_BG
     mov  ebx,202*65536+8
     inc  edx ;73
     mcall
     mov  ebx,193*65536+8
-    mov  ecx,298*65536+10
+    mov  ecx,311*65536+10
     inc  edx ;74
     mcall
     mov  ebx,202*65536+8
     inc  edx ;75
     mcall
     mov  ebx,215*65536+8
-    mov  ecx,272*65536+10
+    mov  ecx,287*65536+10
     inc  edx ;76
     mcall
     mov  ebx,224*65536+8
     inc  edx ;77
     mcall
     mov  ebx,215*65536+8
-    mov  ecx,298*65536+10
+    mov  ecx,311*65536+10
     inc  edx ;78
     mcall
     mov  ebx,224*65536+8
     inc  edx ;79
     mcall
-    mov  ebx,237*65536+21
-    mov  ecx,273*65536+35
-    inc  edx ;80
-    or   edx,0x40000000
-    mcall
+    ;mov  ebx,237*65536+21
+    ;mov  ecx,281*65536+35
+    ;inc  edx ;80
+    ;or   edx,0x40CCFF44
+    ;mcall
     mov  ebx,25*65536+110
-    mov  ecx,285*65536+22
-    mov  esi,COL_DATE_BUTTONS
+    mov  ecx,293*65536+22
+    mov  esi,COL_TOOLBAR_BG
     mov  edx,81
     mcall
 
@@ -560,12 +562,12 @@ draw_window:
     call draw_days
 
 	; draw text in window
-    mcall 4,157*65536+287,0x80000000,sys_text
-    mcall  ,211*65536+287,,separator
-    mcall  ,233*65536+287
-    mcall  ,185*65536+274, ,plus
-    mcall  ,185*65536+300, ,minus
-    mcall  , 35*65536+292,0x00000000,set_date_t,15 ;set date text
+    mcall 4,157*65536+302,0x80CCCCCC,sys_text
+    mcall  ,211*65536+301,,separator
+    mcall  ,233*65536+301
+    mcall  ,185*65536+289, ,plus
+    mcall  ,185*65536+313, ,minus
+    mcall  , 35*65536+300,0x00CCCCCC,set_date_t,15 ;set date text
 
 
     mov  ecx,0x10ddeeff

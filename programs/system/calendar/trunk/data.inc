@@ -40,7 +40,7 @@ COL_DATE_ACTIVE_4   equ 0xFFE56B
 
 ; definitions
 WIN_W equ 275
-WIN_H equ 325
+WIN_H equ 326
 
 DATE_BUTTON_WIDTH  equ 32
 DATE_BUTTON_HEIGHT equ 30
@@ -51,7 +51,9 @@ B_MONTH_X equ 15 shl 16+158
 B_Y	  equ LINE1
 B_MONTH   equ 63 shl 16+32
 
-B_WBAR_X  equ 5 shl 16+WIN_W-9
+BT_WBAR_Y equ 283 shl 16+43
+
+B_WBAR_X  equ 1 shl 16+WIN_W-1
 B_WBAR_Y  equ 64 shl 16+20
 B_WEEK	  equ 34 shl 16+70
 B_WX_SHIFT equ 32 shl 16
