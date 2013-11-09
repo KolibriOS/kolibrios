@@ -216,7 +216,6 @@ main:
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     dec     eax
-    add     eax, 12
     mov     [win.height_opn], eax
     mov     [win.height_hdn], eax
 
@@ -281,6 +280,10 @@ main_loop:
     jmp     main_loop
 ;-------------------------------------------------------------------------------
 event_redraw:
+    call    DRAW_WINDOW
+    jmp     main_loop
+;-------------------------------------------------------------------------------
+DRAW_WINDOW:
     mcall   12, 1
 
     mov     esi, [color.bg]
@@ -324,11 +327,11 @@ event_redraw:
     add     ebx, 12
     dec     ebx
     shl     ebx, 16
-    add     ebx, 1
+    add     ebx, 2
 
     cmp     byte[win.isvert], 1
     je	    .vert_draw_sep
-    mcall   , , <4, 36>, [color.frame]
+    mcall   , , <4,  36>, [color.frame]
     jmp     .end_inner_sep
  .vert_draw_sep:
     sub     ebx, 12 shl 16
@@ -364,63 +367,9 @@ event_redraw:
     jmp     @b
   @@:
 
- ; ==== DRAW SETTINGS ====
-    cmp     byte[win.isvert], 1
-    je	    .cfg_vert
-
-    mov     ebx, [win.width]
-    sub     ebx, 10
-    shl     ebx, 16
-    add     ebx, 8
-    mcall   8, , <2, BUTTON_SIZE - 4>, 0x60000003
-    jmp     @f
-
- .cfg_vert:
-    mov     ecx, [win.height]
-    sub     ecx, 10
-    shl     ecx, 16
-    add     ecx, 8
-    mcall   8, <2, BUTTON_SIZE - 4>, , 0x60000003
-  @@:
-
- ; ==== cfg image ====
-    mov     edi, 0
-  @@:
-    cmp     byte[set_img + edi], 0
-    je	    .notdraw
-
-    mov     eax, edi
-    mov     edx, 0
-    mov     ebx, 6
-    div     ebx
-    mov     ebx, edx
-    mov     ecx, eax
-
-    add     ebx, [win.width]
-    cmp     byte[win.isvert], 0
-    je	    .cfg_hoz
-    sub     ebx, [win.width]
-    add     ebx, [win.height]
- .cfg_hoz:
-    sub     ebx, 10
-    add     ecx, 18
-
-    cmp     byte[win.isvert], 0
-    je	    .cfg_draw
-
-    xchg    ebx, ecx
-
-  .cfg_draw:
-    mcall   1, , , [color.frame]
-
- .notdraw:
-    inc     edi
-    cmp     edi, 36
-    jne     @b
-
     mcall   12, 2
 
-    jmp     main_loop
+    ret
 ;-------------------------------------------------------------------------------
 event_button:
     mcall   17
@@ -430,9 +379,6 @@ event_button:
 
     cmp     ah, 2
     je	    .button_dock
-
-    cmp     ah, 3
-    je	    .button_cfg
 
     jmp     @f
 
@@ -462,22 +408,11 @@ event_button:
 
     jmp     wnd_hide
 
- .button_cfg:
-    mov     dword[fi.p00], 7
-    mov     dword[fi.p21], cfg_app
-    mcall   70, fi
-
-    mov     ecx, eax
-    mcall   18, 21
-    and     eax, 0xFFFF
-    mov     [win.psid], eax
-
-    jmp     wnd_hide
-
   @@:
     jmp     main_loop
 ;-------------------------------------------------------------------------------
 event_mouse:
+  ; ==== IS MOUSE INNER ====
     mcall   37, 1
     mov     edi, eax
     mov     esi, eax
@@ -494,6 +429,8 @@ event_mouse:
     dec     esi
     cmp     esi, [win.height]
     jg	    wnd_hide
+
+  ; ==== COUNT INDEX ====
 
     mov     eax, [dock_items.location]
     and     eax, 1b
@@ -523,7 +460,13 @@ event_mouse:
     cmp     [win.button_index], eax
     je	    .nxt2
 
+    push    dword[win.button_index]
+    pop     dword[win.prev_index]
+
     mov     [win.button_index], eax
+
+ ; ==== DRAW SELECTION ====
+    call    DRAW_SELECTION
 
  .nxt2:
     mov     eax, [win.button_index]
@@ -543,6 +486,7 @@ event_mouse:
     mcall   13, <[win.width], 1>, <0, [win.height]>, [color.frame]
  .vert_end:
 
+ ; ==== OPEN/CLOSE WINDOW ====
     cmp     byte[win.state], 1
     je	    main_loop
 
@@ -573,7 +517,9 @@ event_mouse:
 
     mcall   67, [win.x], [win.y], [win.width], [win.height]
 
-    jmp     event_redraw
+    call    DRAW_WINDOW
+    call    DRAW_SELECTION
+    jmp     main_loop
 
 ;-------------------------------------------------------------------------------
 wnd_hide:
@@ -601,7 +547,99 @@ wnd_hide:
 
     mcall   67, [win.x], [win.y], [win.width], [win.height]
 
-    jmp     event_redraw
+    call    DRAW_WINDOW
+    jmp     main_loop
+;-------------------------------------------------------------------------------
+DRAW_SELECTION:
+    mov     ebx, [win.prev_index]
+    imul    ebx, BUTTON_SIZE
+    add     ebx, 14
+    shl     ebx, 16
+    add     ebx, 40
+    mov     ecx, 0x00020028
+
+    cmp     byte[win.isvert], 1
+    jne     @f
+    xchg    ebx, ecx
+    sub     ecx, 0x000C0000
+  @@:
+
+    mcall   13, , , [color.bg]
+
+    mov     edx, ebx
+    shr     ecx, 16
+    mov     dx, cx
+    add     edx, 0x00040004
+
+    mov     ebx, [win.prev_index]
+    imul    ebx, 4
+    add     ebx, dock_items.icon
+    mov     ebx, [ebx]
+    imul    ebx, ICON_SIZE_BGR
+    add     ebx, [img_data.rgb_object]
+
+    mcall   7, , <32, 32>
+
+    mov     ebx, [win.button_index]
+    imul    ebx, BUTTON_SIZE
+    add     ebx, 14
+    shl     ebx, 16
+    add     ebx, 40
+    mov     ecx, 0x00020028
+
+    cmp     byte[win.isvert], 1
+    jne     @f
+    xchg    ebx, ecx
+    sub     ecx, 0x000C0000
+  @@:
+
+    mcall   13, , , [color.bt]
+
+    mov     edx, ebx
+    shr     ecx, 16
+    mov     dx, cx
+    add     edx, 0x00040004
+
+    mov     ecx, [win.button_index]
+    imul    ecx, 4
+    add     ecx, dock_items.icon
+    mov     ecx, [ecx]
+    imul    ecx, ICON_SIZE_BGR
+    add     ecx, [img_data.rgb_object]
+
+    mov     ebx, sel_img
+
+    mov     edi, 0
+  @@:
+    mov     al, byte[ecx + 2]
+    shl     eax, 8
+    mov     al, byte[ecx + 1]
+    shl     eax, 8
+    mov     al, byte[ecx + 0]
+
+    or	    eax, 0x10000000
+    cmp     eax, [color.bg]
+    jne     .notbg
+    mov     eax, [color.bt]
+ .notbg:
+
+    mov     byte[ebx + 0], al
+    shr     eax, 8
+    mov     byte[ebx + 1], al
+    shr     eax, 8
+    mov     byte[ebx + 2], al
+
+    add     ebx, 3
+    add     ecx, 3
+
+    add     edi, 3
+
+    cmp     edi, 1024 * 3
+    jne     @b
+
+    mcall   7, sel_img, <32, 32>
+
+    ret
 ;-------------------------------------------------------------------------------
 proc sections_callback, _file_name, _section_name
     mov     eax, [_section_name]

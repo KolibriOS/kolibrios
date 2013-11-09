@@ -35,10 +35,12 @@
 
  .bottom:
     mov     eax, [win.y_opn]
-    sub     eax, 16
+    sub     eax, 17
     mov     [nwin.y], eax
 
     mov     dword[nwin.bgx], 1
+    mov     eax, [nwin.height]
+
     mov     eax, [nwin.height]
     mov     [nwin.bgy], eax
 
@@ -46,7 +48,7 @@
 
  .right:
     mov     eax, [win.x_opn]
-    sub     eax, 67
+    sub     eax, 68
     mov     [nwin.x], eax
 
     mov     eax, [nwin.width]
