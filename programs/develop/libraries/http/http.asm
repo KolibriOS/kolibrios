@@ -410,10 +410,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = -1 (not finished) / 0 finished                                                           ;;
 ;;================================================================================================;;
-locals
-        received        dd ?
-endl
-
         pusha
         mov     ebp, [identifier]
 
@@ -430,8 +426,6 @@ endl
         sub     [ebp + http_msg.buffer_length], eax
         jz      .got_all_data
 
-        mov     [received], eax
-
 ; If data is chunked, combine chunks into contiguous data.
         test    [ebp + http_msg.flags], FLAG_CHUNKED
         jnz     .chunk_loop
@@ -440,9 +434,11 @@ endl
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
         jnz     .header_parsed
 
+        push    eax
+
 ; We havent found the header yet, search for it..
         sub     eax, 4
-        jl      .need_more_data
+        jl      .need_more_data_pop
   .scan:
         ; scan for end of header (empty line)
         cmp     dword[edi], 0x0a0d0a0d                  ; end of header
@@ -452,6 +448,7 @@ endl
         inc     edi
         dec     eax
         jnz     .scan
+        jmp     .need_more_data_pop
 
   .end_of_header:
         add     edi, 4 - http_msg.data
@@ -569,8 +566,9 @@ endl
 
         invoke  mem.realloc, ebp, edx
         or      eax, eax
-        jz      .no_ram
-        mov     eax, [received]
+        jz      .no_ram_pop
+
+        pop     eax
         sub     eax, [ebp + http_msg.header_length]
         jmp     .header_parsed  ; hooray!
 
@@ -595,6 +593,8 @@ endl
 
         or      [ebp + http_msg.flags], FLAG_CHUNKED
         DEBUGF  1, "Transfer type is: chunked\n"
+
+        pop     eax
 
 ; Set chunk pointer where first chunk should begin.
         lea     eax, [ebp + http_msg.data]
@@ -674,6 +674,9 @@ endl
         mov     eax, [ebp + http_msg.content_length]
         cmp     eax, [ebp + http_msg.content_received]
         jae     .got_all_data
+        jmp     .need_more_data
+  .need_more_data_pop:
+        pop     eax
   .need_more_data:
         popa
         xor     eax, eax
@@ -713,12 +716,15 @@ endl
         ret
 
   .invalid_header:
+        pop     eax
         DEBUGF  1, "ERROR: invalid header\n"
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
         popa
         xor     eax, eax
         ret
 
+  .no_ram_pop:
+        pop     eax
   .no_ram:
         DEBUGF  1, "ERROR: out of RAM\n"
         or      [ebp + http_msg.flags], FLAG_NO_RAM
