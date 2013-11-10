@@ -439,6 +439,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ; We havent found the header yet, search for it..
         sub     eax, 4
         jl      .need_more_data_pop
+        inc     eax
   .scan:
         ; scan for end of header (empty line)
         cmp     dword[edi], 0x0a0d0a0d                  ; end of header
