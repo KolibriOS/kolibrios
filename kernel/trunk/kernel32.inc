@@ -171,6 +171,7 @@ include "core/v86.inc"      ; virtual-8086 manager
 include "core/irq.inc"      ; irq handling functions
 include "core/apic.inc"     ; Interrupt Controller functions
 include "core/timers.inc"
+include "core/clipboard.inc" ; custom clipboard
 
 ; GUI stuff
 include "gui/window.inc"

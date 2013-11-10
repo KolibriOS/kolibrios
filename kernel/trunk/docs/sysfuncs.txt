@@ -2411,6 +2411,70 @@ Returned value:
     </UL>
 
 ======================================================================
+==================== Function 54, subfunction 0 ======================
+============== Get the number of slots in the clipboard. =============
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 0 - subfunction number
+Returned value:
+  * eax = slots in the clipboard
+  * eax = -1 - main list area not found
+
+======================================================================
+==================== Function 54, subfunction 1 ======================
+================= Read the data from the clipboard. ==================
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 1 - subfunction number
+  * eсx = slot number
+Returned value:
+  * eax = if successful - pointer to a memory with data
+  * eax = 1 - error
+  * eax = -1 - main list area not found
+
+======================================================================
+==================== Function 54, subfunction 2 ======================
+================= Write the data to the clipboard. ===================
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 2 - subfunction number
+  * eсx = the number of bytes to be copied
+  * edx = a pointer to a buffer for data to be copied
+Returned value:
+  * eax = 0 - success
+  * eax = 1 - error
+  * eax = -1 - main list area not found
+ 
+======================================================================
+===================== Function 54, subfunction 3 =====================
+================ Delete the last slot in the clipboard ===============
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 3 - subfunction number
+Returned value:
+  * eax = 0 - success
+  * eax = 1 - error
+  * eax = -1 - main list area not found
+  
+======================================================================
+===================== Function 54, subfunction 4 =====================
+===================== Alarm reset the lock buffer ====================
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 4 - subfunction number
+Returned value:
+  * eax = 0 - success
+  * eax = -1 - main list area not found or no blocking
+Remarks:
+  * Used in exceptional cases, where no responsible or killed
+    application blocked the clipboard operations.
+
+======================================================================
  Function 55, subfunction 55 - begin to play data on built-in speaker.
 ======================================================================
 Parameters:

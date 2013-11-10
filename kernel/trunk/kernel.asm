@@ -698,6 +698,19 @@ no_mode_0x12:
         mov     [mem_BACKGROUND], 4
         mov     [img_background], static_background_data
 
+; set clipboard
+
+        xor     eax, eax
+        mov     [clipboard_slots], eax
+        mov     [clipboard_write_lock], eax
+        stdcall kernel_alloc, 4096
+        test    eax, eax
+        jnz     @f
+
+        dec     eax
+@@:
+        mov     [clipboard_main_list], eax
+
 ; SET UP OS TASK
 
         mov     esi, boot_setostask

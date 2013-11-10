@@ -184,7 +184,7 @@ iglobal
       dd syscall_threads         ; 51-Threads
       dd undefined_syscall       ; 52- deprecated Stack driver status
       dd undefined_syscall       ; 53- deprecated Socket interface
-      dd undefined_syscall       ; 54-reserved
+      dd sys_clipboard           ; 54-Custom clipboard
       dd sound_interface         ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
       dd sys_pcibios             ; 57-PCI BIOS32
