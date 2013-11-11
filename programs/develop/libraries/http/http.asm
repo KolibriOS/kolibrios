@@ -105,13 +105,13 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         invoke  ini.get_str, inifile, sec_proxy, key_user, proxyUser, 256, proxyUser
         invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
 
-        DEBUGF  1, "HTTP library: init OK"
+        DEBUGF  1, "HTTP library: init OK\n"
 
         xor     eax, eax
         ret
 
   .error:
-        DEBUGF  1, "ERROR loading libraries"
+        DEBUGF  1, "ERROR loading libraries\n"
 
         xor     eax, eax
         inc     eax
@@ -452,48 +452,54 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         test    [ebp + http_msg.flags], FLAG_CHUNKED
         jnz     .chunk_loop
 
-; Did we detect the header yet?
+; Did we detect the (final) header yet?
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
         jnz     .header_parsed
 
-        push    eax
-
-; We havent found the header yet, search for it..
-        sub     eax, 4
-        jl      .need_more_data_pop
-        inc     eax
-  .scan:
+; We havent found the (final) header yet, search for it..
+  .scan_again:
+        ; eax = total number of bytes received so far
+        mov     eax, [ebp + http_msg.write_ptr]
+        sub     eax, http_msg.data
+        sub     eax, ebp
+        sub     eax, [ebp + http_msg.header_length]
+        ; edi is ptr to begin of header
+        lea     edi, [ebp + http_msg.data]
+        add     edi, [ebp + http_msg.header_length]
+        ; put it in esi for next proc too
+        mov     esi, edi
+        sub     eax, 3
+        jle     .need_more_data
+  .scan_loop:
         ; scan for end of header (empty line)
         cmp     dword[edi], 0x0a0d0a0d                  ; end of header
         je      .end_of_header
-        cmp     word[edi+2], 0x0a0a
+        cmp     word[edi+2], 0x0a0a                     ; notice the use of offset + 2, to calculate header length correctly :)
         je      .end_of_header
         inc     edi
         dec     eax
-        jnz     .scan
-        jmp     .need_more_data_pop
+        jnz     .scan_loop
+        jmp     .need_more_data
 
   .end_of_header:
         add     edi, 4 - http_msg.data
         sub     edi, ebp
-        mov     [ebp + http_msg.header_length], edi
-        or      [ebp + http_msg.flags], FLAG_GOT_HEADER
+        mov     [ebp + http_msg.header_length], edi     ; If this isnt the final header, we'll use this as an offset to find real header.
         DEBUGF  1, "Header length: %u\n", edi
 
 ; Ok, we have found header:
-        cmp     dword[ebp + http_msg.data], 'HTTP'
+        cmp     dword[esi], 'HTTP'
         jne     .invalid_header
-        cmp     dword[ebp + http_msg.data+4], '/1.0'
+        cmp     dword[esi+4], '/1.0'
         je      .http_1.0
-        cmp     dword[ebp + http_msg.data+4], '/1.1'
+        cmp     dword[esi+4], '/1.1'
         jne     .invalid_header
         or      [ebp + http_msg.flags], FLAG_HTTP11
   .http_1.0:
-        cmp     byte[ebp + http_msg.data+8], ' '
+        cmp     byte[esi+8], ' '
         jne     .invalid_header
-        DEBUGF  1, "Header seems valid.\n"
 
-        lea     esi, [ebp + http_msg.data+9]
+        add     esi, 9
         xor     eax, eax
         xor     ebx, ebx
         mov     ecx, 3
@@ -508,8 +514,14 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         add     ebx, eax
         dec     ecx
         jnz     .statusloop
-        mov     [ebp + http_msg.status], ebx
+
+; Ignore "100 - Continue" headers
+        cmp     ebx, 100
+        je      .scan_again
+
         DEBUGF  1, "Status: %u\n", ebx
+        mov     [ebp + http_msg.status], ebx
+        or      [ebp + http_msg.flags], FLAG_GOT_HEADER
 
 ; Now, convert all header names to lowercase.
 ; This way, it will be much easier to find certain header fields, later on.
@@ -589,10 +601,12 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
         invoke  mem.realloc, ebp, edx
         or      eax, eax
-        jz      .no_ram_pop
+        jz      .no_ram
 
-        pop     eax
+        mov     eax, [ebp + http_msg.write_ptr]
         sub     eax, [ebp + http_msg.header_length]
+        sub     eax, http_msg.data
+        sub     eax, ebp
         jmp     .header_parsed  ; hooray!
 
   .no_content:
@@ -616,8 +630,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
         or      [ebp + http_msg.flags], FLAG_CHUNKED
         DEBUGF  1, "Transfer type is: chunked\n"
-
-        pop     eax
 
 ; Set chunk pointer where first chunk should begin.
         lea     eax, [ebp + http_msg.data]
@@ -698,8 +710,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         cmp     eax, [ebp + http_msg.content_received]
         jae     .got_all_data
         jmp     .need_more_data
-  .need_more_data_pop:
-        pop     eax
+
   .need_more_data:
         popa
         xor     eax, eax
@@ -747,8 +758,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
         jmp     .disconnect
 
-  .no_ram_pop:
-        pop     eax
   .no_ram:
         DEBUGF  1, "ERROR: out of RAM\n"
         or      [ebp + http_msg.flags], FLAG_NO_RAM
