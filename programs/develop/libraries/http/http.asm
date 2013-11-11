@@ -105,10 +105,14 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         invoke  ini.get_str, inifile, sec_proxy, key_user, proxyUser, 256, proxyUser
         invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
 
+        DEBUGF  1, "HTTP library: init OK"
+
         xor     eax, eax
         ret
 
   .error:
+        DEBUGF  1, "ERROR loading libraries"
+
         xor     eax, eax
         inc     eax
 
