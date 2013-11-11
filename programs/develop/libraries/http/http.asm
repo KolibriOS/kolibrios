@@ -57,7 +57,7 @@ macro HTTP_init_buffer buffer, socketnum {
         push    socketnum
         popd    [eax + http_msg.socket]
         lea     esi, [eax + http_msg.data]
-        mov     [eax + http_msg.flags], 0
+        mov     [eax + http_msg.flags], FLAG_CONNECTED
         mov     [eax + http_msg.write_ptr], esi
         mov     [eax + http_msg.buffer_length], BUFFERSIZE -  http_msg.data
         mov     [eax + http_msg.chunk_ptr], 0
@@ -413,6 +413,9 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         pusha
         mov     ebp, [identifier]
 
+        test    [ebp + http_msg.flags], FLAG_CONNECTED
+        jz      .connection_closed
+
 ; Receive some data
         mcall   recv, [ebp + http_msg.socket], [ebp + http_msg.write_ptr], \
                       [ebp + http_msg.buffer_length], MSG_DONTWAIT
@@ -700,7 +703,8 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     [ebp + http_msg.content_received], eax
   .got_all_data:
         DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_length]
-        or      [ebp + http_msg.flags], FLAG_GOT_DATA
+        or      [ebp + http_msg.flags], FLAG_GOT_ALL_DATA
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
         mcall   close, [ebp + http_msg.socket]
         popa
         xor     eax, eax
@@ -712,6 +716,9 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         DEBUGF  1, "ERROR: socket error %u\n", ebx
 
         or      [ebp + http_msg.flags], FLAG_SOCKET_ERROR
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
+  .connection_closed:
         popa
         xor     eax, eax
         ret
@@ -720,6 +727,8 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         pop     eax
         DEBUGF  1, "ERROR: invalid header\n"
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
         popa
         xor     eax, eax
         ret
@@ -729,8 +738,63 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
   .no_ram:
         DEBUGF  1, "ERROR: out of RAM\n"
         or      [ebp + http_msg.flags], FLAG_NO_RAM
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
         popa
         xor     eax, eax
+        ret
+
+endp
+
+
+
+
+;;================================================================================================;;
+proc HTTP_free identifier ;///////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Free the http_msg structure                                                                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
+;;------------------------------------------------------------------------------------------------;;
+;< none                                                                                           ;;
+;;================================================================================================;;
+
+        pusha
+        mov     ebp, [identifier]
+
+        test    [ebp + http_msg.flags], FLAG_CONNECTED
+        jz      .not_connected
+
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
+
+  .not_connected:
+        invoke  mem.free, ebp
+
+        popa
+        ret
+
+endp
+
+
+
+;;================================================================================================;;
+proc HTTP_stop identifier ;///////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Stops the open connection                                                                      ;;
+;;------------------------------------------------------------------------------------------------;;
+;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
+;;------------------------------------------------------------------------------------------------;;
+;< none                                                                                           ;;
+;;================================================================================================;;
+
+        pusha
+        mov     ebp, [identifier]
+
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
+
+        popa
         ret
 
 endp
@@ -806,6 +870,7 @@ proc find_header_field identifier, headername ;/////////////////////////////////
         ret
 
 endp
+
 
 
 
@@ -1079,7 +1144,9 @@ export  \
         HTTP_head               , 'head'                , \
         HTTP_post               , 'post'                , \
         find_header_field       , 'find_header_field'   , \
-        HTTP_process            , 'process'
+        HTTP_process            , 'process'             , \
+        HTTP_free               , 'free'                , \
+        HTTP_stop               , 'stop'
 
 ;        HTTP_put                , 'put'                 , \
 ;        HTTP_delete             , 'delete'              , \

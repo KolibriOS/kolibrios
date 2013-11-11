@@ -133,7 +133,7 @@ mouse:
 
 exit:
         DEBUGF  1, "Exiting\n"
-        mcall   68, 13, [identifier]    ; free buffer
+        invoke  HTTP_free, [identifier] ; free buffer
 fail:
         or      eax, -1 ; close this program
         mcall
@@ -208,7 +208,8 @@ library lib_http,       'http.obj', \
 
 import  lib_http, \
         HTTP_get                , 'get' , \
-        HTTP_process            , 'process'
+        HTTP_process            , 'process'     ,\
+        HTTP_free               , 'free'
 
 import  box_lib, \
         edit_box_draw,  'edit_box', \

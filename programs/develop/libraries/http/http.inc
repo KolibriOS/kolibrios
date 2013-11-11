@@ -15,9 +15,10 @@
 
 FLAG_HTTP11             = 1 shl 0
 FLAG_GOT_HEADER         = 1 shl 1
-FLAG_GOT_DATA           = 1 shl 2
+FLAG_GOT_ALL_DATA       = 1 shl 2
 FLAG_CONTENT_LENGTH     = 1 shl 3
 FLAG_CHUNKED            = 1 shl 4
+FLAG_CONNECTED          = 1 shl 5
 
 ; error flags go into the upper word
 FLAG_INVALID_HEADER     = 1 shl 16
