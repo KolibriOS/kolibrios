@@ -87,7 +87,7 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
 ;> ecx = pointer to memory reallocation routine                              ;;
 ;> edx = pointer to library loading routine                                  ;;
 ;;---------------------------------------------------------------------------;;
-;< eax = 1 (fail) / 0 (ok) (library initialization result)                   ;;
+;< eax = 1 (fail) / 0 (ok)                                                   ;;
 ;;===========================================================================;;
         mov     [mem.alloc], eax
         mov     [mem.free], ebx
@@ -95,8 +95,8 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         mov     [dll.load], edx
 
         invoke  dll.load, @IMPORT
-        or      eax, eax
-        jz      .ok
+        test    eax, eax
+        jnz     .error
 
 ; load proxy settings
         invoke  ini.get_str, inifile, sec_proxy, key_proxy, proxyAddr, 256, proxyAddr
@@ -106,13 +106,13 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
 
         xor     eax, eax
-        inc     eax
         ret
 
-  .ok:
+  .error:
         xor     eax, eax
-        ret
+        inc     eax
 
+        ret
 
 
 
@@ -421,6 +421,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         pusha
         mov     ebp, [identifier]
 
+; If the connection is closed, return immediately
         test    [ebp + http_msg.flags], FLAG_CONNECTED
         jz      .connection_closed
 
@@ -431,6 +432,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         je      .check_socket
         DEBUGF  1, "Received %u bytes\n", eax
 
+; Update timestamp
         push    eax
         mcall   29, 9
         mov     [ebp + http_msg.timestamp], eax
@@ -888,6 +890,143 @@ endp
 
 
 
+;;================================================================================================;;
+proc URI_escape URI ;/////////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;?                                                                                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> URI = ptr to ASCIIZ URI                                                                        ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 (error) / ptr to ASCIIZ URI                                                            ;;
+;;================================================================================================;;
+
+        pusha
+
+        invoke  mem.alloc, URLMAXLEN
+        test    eax, eax
+        jz      .error
+        mov     [esp + 7 * 4], eax              ; return ptr in eax
+        mov     esi, [URI]
+        mov     edi, eax
+        xor     ebx, ebx
+        xor     ecx, ecx
+  .loop:
+        lodsb
+        test    al, al
+        jz      .done
+
+        mov     cl, al
+        and     cl, 0x1f
+        mov     bl, al
+        shr     bl, 5
+        bt      dword[bits_must_escape + ebx], ecx
+        jc      .escape
+
+        stosb
+        jmp     .loop
+
+  .escape:
+        mov     al, '%'
+        stosb
+        mov     bl, byte[esi-1]
+        shr     bl, 4
+        mov     al, byte[str_hex + ebx]
+        stosb
+        mov     bl, byte[esi-1]
+        and     bl, 0x0f
+        mov     al, byte[str_hex + ebx]
+        stosb
+        jmp     .loop
+
+
+  .done:
+        stosb
+
+        popa
+        ret
+
+  .error:
+        popa
+        xor     eax, eax
+        ret
+
+endp
+
+
+
+;;================================================================================================;;
+proc URI_unescape URI ;///////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;?                                                                                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> URI = ptr to ASCIIZ URI                                                                        ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 (error) / ptr to ASCIIZ URI                                                            ;;
+;;================================================================================================;;
+
+        pusha
+
+        invoke  mem.alloc, URLMAXLEN
+        test    eax, eax
+        jz      .error
+        mov     [esp + 7 * 4], eax              ; return ptr in eax
+        mov     esi, [URI]
+        mov     edi, eax
+  .loop:
+        lodsb
+        test    al, al
+        jz      .done
+
+        cmp     al, '%'
+        je      .unescape
+
+        stosb
+        jmp     .loop
+
+  .unescape:
+        xor     ebx, ebx
+        xor     ecx, ecx
+  .unescape_nibble:
+        lodsb
+        sub     al, '0'
+        jb      .fail
+        cmp     al, 9
+        jbe     .nibble_ok
+        sub     al, 'A' - '0' - 10
+        jb      .fail
+        cmp     al, 15
+        jbe     .nibble_ok
+        sub     al, 'a' - 'A'
+        cmp     al, 15
+        ja      .fail
+  .nibble_ok:
+        shl     bl, 8
+        or      bl, al
+        dec     ecx
+        jc      .unescape_nibble
+        mov     al, bl
+        stosb
+        jmp     .loop
+
+  .fail:
+        DEBUGF  1, "ERROR: invalid URI!\n"
+        jmp     .loop
+
+  .done:
+        stosb
+
+        popa
+        ret
+
+  .error:
+        popa
+        xor     eax, eax
+        ret
+
+endp
+
+
+
 
 
 ;;================================================================================================;;
@@ -1161,7 +1300,9 @@ export  \
         find_header_field       , 'find_header_field'   , \
         HTTP_process            , 'process'             , \
         HTTP_free               , 'free'                , \
-        HTTP_stop               , 'stop'
+        HTTP_stop               , 'stop'                , \
+        URI_escape              , 'escape'              , \
+        URI_unescape            , 'unescape'
 
 ;        HTTP_put                , 'put'                 , \
 ;        HTTP_delete             , 'delete'              , \
@@ -1200,6 +1341,20 @@ str_te          db 'transfer-encoding', 0
 str_get         db 'GET ', 0
 str_head        db 'HEAD ', 0
 str_post        db 'POST ', 0
+
+bits_must_escape:
+dd      0xffffffff                                                      ; 00-1F
+dd      1 shl 0 + 1 shl 2 + 1 shl 3 + 1 shl 5 + 1 shl 28 + 1 shl 30     ; "#%<>
+dd      1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 30                       ;[\]^
+dd      1 shl 0 + 1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 31             ;`{|} DEL
+
+dd      0xffffffff
+dd      0xffffffff
+dd      0xffffffff
+dd      0xffffffff
+
+str_hex:
+db '0123456789ABCDEF'
 
 include_debug_strings
 
