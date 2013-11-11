@@ -96,3 +96,22 @@ struct  ARP_entry
         status  dw ?
         TTL     dw ?
 ends
+
+
+; Socket error codes
+; Error Codes
+ENOBUFS                 = 1
+EINPROGRESS             = 2
+EOPNOTSUPP              = 4
+EWOULDBLOCK             = 6
+ENOTCONN                = 9
+EALREADY                = 10
+EINVAL                  = 11
+EMSGSIZE                = 12
+ENOMEM                  = 18
+EADDRINUSE              = 20
+ECONNREFUSED            = 61
+ECONNRESET              = 52
+EISCONN                 = 56
+ETIMEDOUT               = 60
+ECONNABORTED            = 53
