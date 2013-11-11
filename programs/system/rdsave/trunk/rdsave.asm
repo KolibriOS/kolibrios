@@ -1,438 +1,434 @@
-;
 ;   RDsave для Kolibri (0.6.5.0 и старше)
-;   Save RAM disk to a hard or floppy drive
-;
-; version:	1.3
-; last update:  08/09/2010
-; written by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      select path with OpenDialog,
-;               keys 1,2,3,4 for select options
+;   Save RAM-disk to hard or floppy drive
 ;---------------------------------------------------------------------
 ;   Mario79 2005
 ;   Heavyiron 12.02.2007
 ;   <Lrz>     11.05.2009 - для работы нужна системная библиотека box_lib.obj
-;   Компилировать FASM'ом
-;
+;   Mario79   08.09.2010 - select path with OpenDialog,keys 1,2,3,4 for select options
+;   Heavyiron 01.12.2013 - new logic
 ;---------------------------------------------------------------------
-include 'lang.inc'
-include '../../../config.inc'		;for nightbuild
-include '..\..\..\macros.inc'
-
 appname equ 'RDsave '
-version equ '1.3'
+version equ '1.4'
+debug   equ no
 
-use32 	     ; включить 32-битный режим ассемблера
-org	 0x0	     ; адресация с нуля
+use32        ; включить 32-битный режим ассемблера
+org 0x0      ; адресация с нуля
 
-	db 'MENUET01'  ; 8-байтный идентификатор MenuetOS
-	dd 0x01	     ; версия заголовка (всегда 1)
-	dd START	     ; адрес первой команды
-	dd IM_END	     ; размер программы
-	dd I_END	     ; количество памяти
-	dd stacktop     ; адрес вершины стэка
-	dd 0x0	     ; адрес буфера для параметров (не используется)
-	dd cur_dir_path
+db 'MENUET01'    ; 8-байтный идентификатор MenuetOS
+dd 0x01          ; версия заголовка (всегда 1)
+dd START         ; адрес первой команды
+dd IM_END        ; размер программы
+dd I_END         ; количество памяти
+dd stacktop      ; адрес вершины стека
+dd PARAMS        ; адрес буфера для параметров
+dd cur_dir_path
 
-;include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
+
+include 'lang.inc'
+include '../../../macros.inc'
+if debug eq yes
+include '../../../debug.inc'
+end if
+include '../../../proc32.inc'
+include '../../../dll.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-	@use_library
+include 'str.inc'
 
-;use_edit_box
-;al equ eax      ; \ decrease kpack'ed size
-;purge mov       ; /
-
+        @use_library
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
 ;---------------------------------------------------------------------
 align 4
 START:
-	mcall	68,11
+;---------------------------------------------------------------------
+        mcall  48,3,sc,sizeof.system_colors
+        mcall  68,11
 
 load_libraries l_libs_start,end_l_libs
+        inc     eax
+        test    eax,eax
+        jz      close
 
-	cmp	eax,-1
-	jz	close
+stdcall dll.Init,[init_lib]
 
-	mov	edi,filename_area
-	mov	esi,start_temp_file_name
-	xor	eax,eax
-	cld
+invoke  ini_get_int,ini_file,asettings,aautoclose,0
+        mov   [autoclose],eax
+
+        mov   ecx,PARAMS
+        cmp   byte[ecx], 0
+        je    no_params
+        cmp   byte[ecx], 'h'
+        je    @f
+        cmp   byte[ecx], 'H'
+        jne   .no_h
 @@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
+        mov   [hidden],1
+        jmp   no_params
+.no_h:
+        mov   [param],1
+        mov   ah,2
+        jmp   noclose
 
+no_params:
 
-	mov	edi,fname_buf
-	mov	esi,path4
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
+invoke  ini_get_str,ini_file,apath,apath,fname_buf,4096,path
 
-;OpenDialog	initialisation
-	push    dword OpenDialog_data
-	call    [OpenDialog_Init]
+stdcall _lstrcpy,filename_area,start_temp_file_name
+
+;---------------------------------------------------------------------
+stdcall _lstrcpy,check_dir,fname_buf
+        call    check_path
+        test    eax,eax
+        jz      path_ok
+        cmp     eax,6
+        je      path_ok
+;---------------------------------------------------------------------
+if debug eq yes
+dps 'read_folder_error'
+newline
+end if
+;---------------------------------------------------------------------
+
+stdcall _lstrcpy,fname_buf,communication_area_default_path
+
+        mov     [hidden],0
+
+;OpenDialog     initialisation
+        push    dword OpenDialog_data
+        call    [OpenDialog_Init]
 
 ; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
-
-	mcall	40,100111b
-red:			; перерисовать окно
-	mcall	48,3,sc,sizeof.system_colors
-
-	call	draw_window	; вызываем процедуру отрисовки окна
+        push    dword PathShow_data_1
+        call    [PathShow_prepare]
+        call    draw_window
+        mov     ah,3
+        mov     ecx,fname_buf
+        jmp     noclose
 ;---------------------------------------------------------------------
-;---  ЦИКЛ ОБРАБОТКИ СОБЫТИЙ  ----------------------------------------
+path_ok:
+;OpenDialog     initialisation
+        push    dword OpenDialog_data
+        call    [OpenDialog_Init]
+
+; prepare for PathShow
+        push    dword PathShow_data_1
+        call    [PathShow_prepare]
+
+        mcall   40,0x00000027
+
+        cmp     [hidden],1
+        jne     red
+        mov     ah,2
+        mov     ecx,fname_buf
+        jmp     noclose
+red:
+        call    draw_window
 ;---------------------------------------------------------------------
 still:
-	mcall 10
+        mcall 10
 
-	dec	eax	 ; перерисовать окно?
-	jz	red	 ; если да - на метку red
-	dec	eax
-	jz	key
-	dec	eax
-	jz	button
-
-	jmp	still
+        dec     eax      ; перерисовать окно?
+        jz      red      ; если да - на метку red
+        dec     eax
+        jz      key
+        dec     eax
+        jz      button
+        jmp     still
 ;---------------------------------------------------------------------
 button:
-	mcall	17	; получить идентификатор нажатой кнопки
-	cmp	ah,1		 ; кнопка с id=1("закрыть")?
-	jne	noclose
+        mcall   17      ; получить идентификатор нажатой кнопки
+        dec     ah
+        jz      close
+        mov     ecx,fname_buf
+        cmp     ah,1             ; кнопка с id=1("закрыть")?
+        jne     noclose
 close:
-	or	 eax,-1 	 ; функция -1: завершить программу
-	mcall
-
-noclose:
-	push	eax
-	call	clear_err
-	pop	eax
-	push	16
-	xor	ebx,ebx
-	inc	ebx	; 16.1 = save to /FD/1
-	cmp	ah,2
-	je	doit
-	inc	ebx	; 16.2 = save to /FD/2
-	cmp	ah,3
-	je	doit
-	pop	ebx
-	push	18
-	mov	bl,6	; 18.6 = save to specified folder
-	mov	ecx, path3
-	cmp	ah,4
-	je	doit
-
-; invoke OpenDialog
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
-	cmp	[OpenDialog_data.status],1
-	jne	still
-
-; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
-
-	call	draw_PathShow
-
-	mov	ecx,fname_buf ;path4
-doit:
-	pop	eax
-	mcall
-	call	check_for_error
-	jmp	still
+        or       eax,-1          ; функция -1: завершить программу
+        mcall
 ;---------------------------------------------------------------------
 key:
-	mcall	2
-	cmp	ah,0x31
-	jb	still
-	cmp	ah,0x34
-	ja	still
-	sub	ah,0x30
-	inc	ah
-	jmp	noclose
+        mcall   2
+        cmp     ah,0x1b
+        je      close
+        mov     ecx,fname_buf
+        cmp     ah,0x0D
+        jne     @f
+        mov     ah,2
+        jmp     noclose
+@@:
+        cmp     ah,9h
+        jne     still
 ;---------------------------------------------------------------------
-check_for_error:		      ;Обработчик ошибок
-	mov	ecx,[sc.work_text]
-	mov	edx,ok
-	test	eax,eax
-	jz	print
-	mov	ecx,0xdd2222
-	add	edx,error3 - ok
-	dec	eax
-	dec	eax
-	jz	print
-	add	edx,error5 - error3
-	dec	eax
-	dec	eax
-	jz	print
-	add	edx,error8 - error5
-	dec	eax
-	dec	eax
-	dec	eax
-	jz	print
-	add	edx,error9 - error8
-	dec	eax
-	jz	print
-	add	edx,error10 - error9
-	dec	eax
-	jz	print
-	add	edx,error11 - error10
-	dec	eax
-	jz	print
-	add	edx,aUnknownError - error11
-print:
-	mov	eax,4				   ;надписи
-	mov	ebx,20 shl 16 + 148
-	or	ecx,0x80000000
-	mcall
-	ret
+noclose:
+        push  16
+        mov   ebx,1
+        cmp   byte[ecx+1],'f'
+        je    @f
+        cmp   byte[ecx+1],'F'
+        jne   not_fdd
+@@:
+        cmp   byte[ecx+4],'1'
+        jne   @f
+        cmp   ah,2
+        je    doit
+@@:
+        inc   ebx
+        cmp   ah,2
+        je    doit
+not_fdd:
+        push  18
+        mov   ebx,6     ; 18.6 = save to specified folder
+        cmp   ah,2
+        je    doit
+
+; invoke OpenDialog
+        push    dword OpenDialog_data
+        call    [OpenDialog_Start]
+        cmp     [OpenDialog_data.status],1
+        jne     still
+
+; prepare for PathShow
+        push    dword PathShow_data_1
+        call    [PathShow_prepare]
+        call    draw_window
+        mov     ecx,fname_buf
+        mov     ah,2
+        jmp     noclose
+
+doit:
+        call    save_ini
+        pop     eax
+        mcall
+        call    check_for_error
+        cmp     [param],1
+        je      @f
+        jmp     still
+@@:
+        jmp     no_params
+
 ;---------------------------------------------------------------------
-clear_err:
-	mov	eax,13
-	mov	ebx,15 shl 16 + 240
-	mov	ecx,145 shl 16 +15
-	mov	edx,[sc.work]
-	mcall
-	ret
+check_for_error:                      ;Обработчик ошибок
+stdcall _lstrcpy,check_dir,ok
+stdcall _lstrcat,check_dir,fname_buf
+        mov     edx,check_dir
+        test    eax,eax
+        jz      print_ok
+        cmp     ebx,6
+        je      @f
+        mov     edx,error11
+        jmp     print_err
+@@:     
+        mov     edi, error_msg
+        cmp     eax, 11
+        ja      .unknown
+        mov     esi, [errors+eax*4]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        mov     edx, error_msg
+        jmp     print_err
+.unknown:
+        mov     edx, aUnknownError
+print_err:
+        mov   dword [is_notify + 8], edx
+        mcall 70, is_notify
+        ret
+print_ok:
+        mov   dword [is_notify + 8], edx
+        mcall 70, is_notify
+        cmp     [hidden],1
+        je      close
+        cmp   [autoclose],0
+        je   @f
+        mcall 5,50
+        jmp   close
+@@:
+        ret
 ;---------------------------------------------------------------------
 draw_PathShow:
-	pusha
-	mcall	13,<8,172>,<110,15>,0xffffff
-; draw for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_draw]
-	popa
-	ret
+        pushad
+        mcall   13,<15,280>,<32,16>,0xffffff
+        push    dword PathShow_data_1
+        call    [PathShow_draw]
+        popad
+        ret
 ;---------------------------------------------------------------------
-;---  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА  ----------------------------------
+save_ini:
+        pushad
+        stdcall _lstrlen,fname_buf
+        invoke  ini_set_str,ini_file,apath,apath,fname_buf,eax
+        invoke  ini_set_int,ini_file,asettings,aautoclose,[autoclose]
+        popad
+        ret
+;---------------------------------------------------------------------
+check_path:
+stdcall _lstrlen,check_dir 
+        mov     edi,check_dir
+        add     edi,eax
+@@:
+        mov     byte [edi],0 
+        dec     edi 
+        cmp     byte [edi],'/' 
+        jne     @b
+
+if debug eq yes
+dps     'read_folder_name: '
+        mov     edx,check_dir
+        call    debug_outstr
+newline
+end if
+        mcall   70,read_folder
+        ret
+;---------------------------------------------------------------------
+;---  Draw window  ---------------------------------------------------
 ;---------------------------------------------------------------------
 draw_window:
-	mcall	12,1	; функция 12: сообщить ОС об отрисовке окна
-			; 1 - начинаем рисовать
-					 ; СОЗДАЁМ ОКНО
-	xor	eax,eax			 ; функция 0 : определить и отрисовать окно
-	mov	ebx,200 shl 16 + 300	 ; [x старт] *65536 + [x размер]
-	mov	ecx,200 shl 16 + 190	 ; [y старт] *65536 + [y размер]
-	mov	edx,[sc.work]		 ; цвет рабочей области  RRGGBB,8->color gl
-	or	edx,0x34000000
-	mov	edi,title			; ЗАГОЛОВОК ОКНА
-	mcall
+        mcall   12,1
 
-	call	draw_PathShow
+        mov     edx,[sc.work]
+        or      edx,0x34000000
+        mcall   0,<200,400>,<200,120>, , ,title
 
-;отрисовка теней кнопок
-	mcall	13,<194,60>,<34,15>,0x444444
+;buttons
+        mcall   8,<198,70>,<68,20>,2,[sc.work_button]
+        inc     edx
+        mcall    ,<125,70>,
+        inc     edx
+        mcall    ,<300,75>,<30,20>
 
-	add	ecx,20 shl 16
-	mcall
+;labels
+        mov     ecx,[sc.work_button_text]
+        or      ecx,0x80000000
+        mcall   4,<134,75>, ,save
+        mcall    ,<215,75>, ,cansel
+        mcall    ,<315,36>, ,select
+        
+        mov     ecx,[sc.work]
+        mov     dword [frame_data.font_backgr_color],ecx
+        push    dword frame_data
+        call    [Frame_draw]
 
-	add	ecx,20 shl 16
-	mcall
+        call    draw_PathShow
 
-	add	ecx,40 shl 16
-	mcall
-;отрисовка кнопок
-	sub	ebx,4 shl 16
-	sub	ecx,4 shl 16
-	mcall	8,,,5,[sc.work_button]
-
-	sub	ecx,40 shl 16
-	dec	edx
-	mcall
-
-	sub	ecx,20 shl 16
-	dec	edx
-	mcall
-
-	sub	ecx,20 shl 16
-	dec	edx
-	mcall
-; надписи
-	mov	ecx,[sc.work_text]
-	or	ecx,0x80000000
-	mcall	4,<10,12>,,label1
-
-	mov	ebx,150 shl 16 + 35
-	mov	edx,path1
-	mcall
-
-	add	ebx,20
-	mov	edx,path2
-	mcall
-
-	mov	ebx,75 shl 16 + 75
-	mov	edx,path3
-	mcall
-
-	mov	ebx,30 shl 16 + 97
-	mov	edx,label2
-	mcall
-
-	mov	ebx,40 shl 16 + 135
-	mov	edx,label3
-	mcall
-
-	mov	ecx,[sc.work_button_text]
-	or	ecx,0x80000000
-	mov	ebx,195 shl 16 + 35
-	mov	edx,save
-	mcall
-
-	push	edx
-	mov	edx,key_help
-	call	key_help_correct
-	pop	edx
-
-	add ebx,20
-	mcall
-
-	push	edx
-	mov	edx,key_help+2
-	call	key_help_correct
-	pop	edx
-
-	add ebx,20
-	mcall
-
-	push	edx
-	mov	edx,key_help+4
-	call	key_help_correct
-	pop	edx
-
-	mov	edx,select
-	add ebx,40
-	mcall
-
-	mov	edx,key_help+6
-	call	key_help_correct
-
-	mcall	12,2	; функция 12: сообщить ОС об отрисовке окна
-			; 2, закончили рисовать
-	ret		; выходим из процедуры
-;---------------------------------------------------------------------
-key_help_correct:
-	push	ebx
-	ror	ebx,16
-	mov	bx,270
-	rol	ebx,16
-	pusha
-	mov	ecx,ebx
-	sub	ebx,3 shl 16
-	mov	bx,13
-	sub	cx,3
-	shl	ecx,16
-	mov	cx,13
-	mcall	13,,,[sc.work_graph]
-	popa
-	mcall
-	pop	ebx
-	ret
-;---------------------------------------------------------------------
-;---  ДАННЫЕ ПРОГРАММЫ  ----------------------------------------------
-;---------------------------------------------------------------------
-
-title	db appname,version,0
+        mcall   12,2
+        ret
 
 ;---------------------------------------------------------------------
-PathShow_data_1:
-.type			dd 0	;+0
-.start_y		dw 113	;+4
-.start_x		dw 10	;+6
-.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
-.area_size_x		dw 170	;+10
-.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
-.background_flag	dd 0	;+16
-.font_color		dd 0x0	;+20
-.background_color	dd 0x0	;+24
-.text_pointer		dd fname_buf	;+28
-.work_area_pointer	dd text_work_area	;+32
-.temp_text_length	dd 0	;+36
+;---  Data  ----------------------------------------------------------
 ;---------------------------------------------------------------------
 if lang eq ru
-save		db 'Сохранить',0
-select		db ' Выбрать',0
-label1		db 'Выберите куда сохранить содержимое RAM-диска:',0
-label2		db 'Или выберите полный путь к файлу:',0
-label3		db 'Все папки должны существовать',0
-ok		db 'RAM-диск сохранен успешно',0
-error3		db 'Неизвестная файловая система',0
-error5		db 'Несуществующий путь',0
-error8		db 'Нет места на диске',0
-error9		db 'Таблица FAT разрушена',0
-error10 	db 'Доступ запрещен',0
-error11 	db 'Ошибка устройства',0
-aUnknownError 	db 'Неизвестная ошибка',0
+save            db 'Сохранить',0
+cansel          db 'Отмена',0
+select          db 'Изменить',0
+label1          db ' Образ будет сохранен в: ',0
+ok              db 'RAM-диск сохранен успешно в ',0
+error1          db 'Не определена база и/или раздел жёсткого диска',0
+error2          db 'Функция не поддерживается для данной файловой системы',0
+error3          db 'Неизвестная файловая система',0
+error4          db 'Странно... Ошибка 4',0
+error5          db 'Несуществующий путь',0
+error6          db 'Файл закончился',0
+error7          db 'Указатель вне памяти приложения',0
+error8          db 'Диск заполнен',0
+error9          db 'Файловая структура разрушена',0
+error10         db 'Доступ запрещён',0
+error11         db 'Ошибка устройства',0
+aUnknownError   db  'Неизвестная ошибка',0
 ;---------------------------------------------------------------------
 else if lang eq et
-save		db 'Salvesta',0
-select		db ' Valige',0
-label1		db 'Vali №ks variantidest:',0
-label2		db 'Vїi valige teekond failinimeni:',0
-label3		db 'Kїik kataloogid peavad eksisteerima',0
-ok		db 'RAM-ketas salvestatud edukalt',0
-error3		db 'Tundmatu failis№steem',0
-error5		db 'Vigane teekond',0
-error8		db 'Ketas tфis',0
-error9		db 'FAT tabel vigane',0
-error10 	db 'Juurdepффs keelatud',0
-error11 	db 'Seadme viga',0
-aUnknownError 	db 'Tundmatu viga',0
+save            db 'Salvesta',0
+cansel          db 'Cansel',0
+select          db ' Valige',0
+label1          db ' RAM-drive will be saved as: ',0
+ok              db 'RAM-ketas salvestatud edukalt ',0
+error1          db 'Hard disk base and/or partition not defined',0
+error2          db 'The file system does not support this function',0
+error3          db 'Tundmatu failis№steem',0
+error4          db 'Strange... Error 4',0
+error5          db 'Vigane teekond',0
+error6          db 'End of file',0
+error7          db 'Pointer is outside of application memory',0
+error8          db 'Ketas tфis',0
+error9          db 'FAT tabel vigane',0
+error10         db 'Juurdepффs keelatud',0
+error11         db 'Seadme viga',0
+aUnknownError   db 'Tundmatu viga',0
 ;---------------------------------------------------------------------
 else if lang eq it
-save		db 'Salva',0
-select		db 'Seleziona',0
-label1		db 'Seleziona cosa salvare:',0
-label2		db ' oppure seleziona il file:',0
-label3		db 'Tutte le cartelle devono esistere',0
-ok		db 'Il RAM-drivet e stato salvato',0
-error3		db 'Filesystem sconosciuto',0
-error5		db 'Percorso non valido',0
-error8		db 'Disco pieno',0
-error9		db 'Tabella FAT corrotta',0
-error10 	db 'Accesso negato',0
-error11 	db 'Errore di device',0
-aUnknownError 	db 'Errore sconosciuto',0
+save            db '  Salva',0
+cansel          db 'Cansel',0
+select          db 'Seleziona',0
+label1          db ' RAM-drive will be saved as: ',0
+ok              db 'Il RAM-drivet e stato salvato ',0
+error1          db 'Hard disk base and/or partition not defined',0
+error2          db 'The file system does not support this function',0
+error3          db 'Filesystem sconosciuto',0
+error4          db 'Strange... Error 4',0
+error5          db 'Percorso non valido',0
+error6          db 'End of file',0
+error7          db 'Pointer is outside of application memory',0
+error8          db 'Disco pieno',0
+error9          db 'Tabella FAT corrotta',0
+error10         db 'Accesso negato',0
+error11         db 'Errore di device',0
+aUnknownError   db 'Errore sconosciuto',0
 ;---------------------------------------------------------------------
 else
-save		db '  Save',0
-select		db ' Select',0
-label1		db 'Select one of the variants:',0
-label2		db '  Or select full path to file:',0
-label3		db '    All folders must exist',0
-ok		db 'RAM-drive was saved successfully',0
-error3		db 'Unknown file system',0
-error5		db 'Incorrect path',0
-error8		db 'Disk is full',0
-error9		db 'FAT table corrupted',0
-error10 	db 'Access denied',0
-error11 	db 'Device error',0
-aUnknownError 	db 'Unknown error',0
+save            db '  Save',0
+cansel          db 'Cansel',0
+select          db ' Select',0
+label1          db ' RAM-drive will be saved as: ',0
+ok              db 'RAM-drive was saved successfully in ',0
+error1          db 'Hard disk base and/or partition not defined',0
+error2          db 'The file system does not support this function',0
+error3          db 'Unknown file system',0
+error4          db 'Strange... Error 4',0
+error5          db 'Incorrect path',0
+error6          db 'End of file',0
+error7          db 'Pointer is outside of application memory',0
+error8          db 'Disk is full',0
+error9          db 'File structure is destroyed',0
+error10         db 'Access denied',0
+error11         db 'Device error',0
+aUnknownError   db 'Unknown error',0
 
 end if
-;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-;DATA данные
+
+title   db appname,version,0
+;---------------------------------------------------------------------
+errors:
+        dd      ok
+        dd      error1
+        dd      error2
+        dd      error3
+        dd      error4
+        dd      error5
+        dd      error6
+        dd      error7
+        dd      error8
+        dd      error9
+        dd      error10
+        dd      error11
+;---------------------------------------------------------------------
+;Lib_DATA
 ;Всегда соблюдать последовательность в имени.
-system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
-system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+system_dir_Boxlib       db '/sys/lib/box_lib.obj',0
+system_dir_ProcLib      db '/sys/lib/proc_lib.obj',0
+system_dir_libini       db '/sys/lib/libini.obj',0
+;---------------------------------------------------------------------
 head_f_i:
-head_f_l	db 'System error',0
+head_f_l        db 'System error',0
 
-err_message_found_lib1	db 'box_lib.obj - Not found!',0
-err_message_found_lib2	db 'proc_lib.obj - Not found!',0
+err_message_found_lib1  db 'box_lib.obj - Not found!',0
+err_message_found_lib2  db 'proc_lib.obj - Not found!',0
+err_message_found_lib3  db 'libini.obj - Not found!',0
 
-err_message_import1	db 'box_lib.obj - Wrong import!',0
-err_message_import2	db 'proc_lib.obj - Wrong import!',0
-
+err_message_import1     db 'box_lib.obj - Wrong import!',0
+err_message_import2     db 'proc_lib.obj - Wrong import!',0
+err_message_import3     db 'libini.obj - Wrong import!',0
 ;---------------------------------------------------------------------
 l_libs_start:
 
@@ -442,185 +438,200 @@ err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
 library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
 err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
 
+library03  l_libs system_dir_libini+9, cur_dir_path, library_path, system_dir_libini, \
+err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
+
 end_l_libs:
 ;---------------------------------------------------------------------
 OpenDialog_data:
-.type			dd 1	; Save
-.procinfo		dd procinfo	;+4
-.com_area_name		dd communication_area_name	;+8
-.com_area		dd 0	;+12
-.opendir_pach		dd temp_dir_pach	;+16
-.dir_default_pach	dd communication_area_default_pach	;+20
-.start_path		dd open_dialog_path	;+24
-.draw_window		dd draw_window	;+28
-.status			dd 0	;+32
-.openfile_pach 		dd fname_buf	;+36
-.filename_area		dd filename_area	;+40
-.filter_area		dd Filter
+.type                   dd 1    ; Save
+.procinfo               dd procinfo     ;+4
+.com_area_name          dd communication_area_name      ;+8
+.com_area               dd 0    ;+12
+.opendir_path           dd temp_dir_path        ;+16
+.dir_default_path       dd communication_area_default_path      ;+20
+.start_path             dd open_dialog_path     ;+24
+.draw_window            dd draw_window  ;+28
+.status                 dd 0    ;+32
+.openfile_pach          dd fname_buf    ;+36
+.filename_area          dd filename_area        ;+40
+.filter_area            dd Filter
 .x:
-.x_size			dw 420 ;+48 ; Window X size
-.x_start		dw 10 ;+50 ; Window X position
+.x_size                 dw 420 ;+48 ; Window X size
+.x_start                dw 200 ;+50 ; Window X position
 .y:
-.y_size			dw 320 ;+52 ; Window y size
-.y_start		dw 10 ;+54 ; Window Y position
+.y_size                 dw 320 ;+52 ; Window y size
+.y_start                dw 120 ;+54 ; Window Y position
 
 communication_area_name:
-	db 'FFFFFFFF_open_dialog',0
+        db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
 if __nightbuild eq yes
     db '/sys/MANAGERS/opendial',0
 else
     db '/sys/File Managers/opendial',0
 end if
-communication_area_default_pach:
-	db '/hd0/1/kolibri',0
+communication_area_default_path:
+        db '/',0
 
 Filter:
-dd	Filter.end - Filter
+dd      Filter.end - Filter
 .1:
-db	'IMG',0
-db	'IMA',0
+db      'IMG',0
+db      'IMA',0
 .end:
-db	0
+db      0
 
-start_temp_file_name:	db 'kolibri.img',0
+start_temp_file_name:   db 'kolibri.img',0
 
 ;---------------------------------------------------------------------
 align 4
 ProcLib_import:
-OpenDialog_Init		dd aOpenDialog_Init
-OpenDialog_Start	dd aOpenDialog_Start
-;OpenDialog__Version	dd aOpenDialog_Version
+OpenDialog_Init         dd aOpenDialog_Init
+OpenDialog_Start        dd aOpenDialog_Start
         dd      0
         dd      0
-aOpenDialog_Init	db 'OpenDialog_init',0
-aOpenDialog_Start	db 'OpenDialog_start',0
-;aOpenDialog_Version	db 'Version_OpenDialog',0
+aOpenDialog_Init        db 'OpenDialog_init',0
+aOpenDialog_Start       db 'OpenDialog_start',0
+;---------------------------------------------------------------------
+PathShow_data_1:
+.type                   dd 0    ;+0
+.start_y                dw 36   ;+4
+.start_x                dw 20   ;+6
+.font_size_x            dw 6    ;+8     ; 6 - for font 0, 8 - for font 1
+.area_size_x            dw 270  ;+10
+.font_number            dd 0    ;+12    ; 0 - monospace, 1 - variable
+.background_flag        dd 0    ;+16
+.font_color             dd 0    ;+20
+.background_color       dd 0    ;+24
+.text_pointer           dd fname_buf    ;+28
+.work_area_pointer      dd text_work_area       ;+32
+.temp_text_length       dd 0    ;+36
 ;---------------------------------------------------------------------
 align 4
 Box_lib_import:
-;init_lib		dd a_init
-;version_lib		dd a_version
+;edit_box_draw           dd aEdit_box_draw
+;edit_box_key            dd aEdit_box_key
+;edit_box_mouse          dd aEdit_box_mouse
+;version_ed              dd aVersion_ed
 
+PathShow_prepare        dd sz_PathShow_prepare
+PathShow_draw           dd sz_PathShow_draw
+Frame_draw              dd sz_Frame_draw
+                        dd 0
+                        dd 0
 
-;edit_box_draw		dd aEdit_box_draw
-;edit_box_key		dd aEdit_box_key
-;edit_box_mouse		dd aEdit_box_mouse
-;version_ed		dd aVersion_ed
+;aEdit_box_draw          db 'edit_box',0
+;aEdit_box_key           db 'edit_box_key',0
+;aEdit_box_mouse         db 'edit_box_mouse',0
+;aVersion_ed             db 'version_ed',0
 
-;check_box_draw		dd aCheck_box_draw
-;check_box_mouse	dd aCheck_box_mouse
-;version_ch		dd aVersion_ch
+sz_PathShow_prepare     db 'PathShow_prepare',0
+sz_PathShow_draw        db 'PathShow_draw',0
 
-;option_box_draw	dd aOption_box_draw
-;option_box_mouse	dd aOption_box_mouse
-;version_op		dd aVersion_op
-
-;scrollbar_ver_draw	dd aScrollbar_ver_draw
-;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
-;scrollbar_hor_draw	dd aScrollbar_hor_draw
-;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
-;version_scrollbar	dd aVersion_scrollbar
-
-;dinamic_button_draw	dd aDbutton_draw
-;dinamic_button_mouse	dd aDbutton_mouse
-;version_dbutton	dd aVersion_dbutton
-
-;menu_bar_draw		dd aMenu_bar_draw
-;menu_bar_mouse		dd aMenu_bar_mouse
-;menu_bar_activate	dd aMenu_bar_activate
-;version_menu_bar	dd aVersion_menu_bar
-
-;FileBrowser_draw	dd aFileBrowser_draw
-;FileBrowser_mouse	dd aFileBrowser_mouse
-;FileBrowser_key	dd aFileBrowser_key
-;Version_FileBrowser	dd aVersion_FileBrowser
-
-PathShow_prepare	dd sz_PathShow_prepare
-PathShow_draw		dd sz_PathShow_draw
-;Version_path_show	dd szVersion_path_show
-			dd 0
-			dd 0
-
-;a_init			db 'lib_init',0
-;a_version		db 'version',0
-
-;aEdit_box_draw		db 'edit_box',0
-;aEdit_box_key		db 'edit_box_key',0
-;aEdit_box_mouse	db 'edit_box_mouse',0
-;aVersion_ed		db 'version_ed',0
-
-;aCheck_box_draw	db 'check_box_draw',0
-;aCheck_box_mouse	db 'check_box_mouse',0
-;aVersion_ch		db 'version_ch',0
-
-;aOption_box_draw	db 'option_box_draw',0
-;aOption_box_mouse	db 'option_box_mouse',0
-;aVersion_op		db 'version_op',0
-
-;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
-;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
-;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
-;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
-;aVersion_scrollbar	db 'version_scrollbar',0
-
-;aDbutton_draw		db 'dbutton_draw',0
-;aDbutton_mouse		db 'dbutton_mouse',0
-;aVersion_dbutton	db 'version_dbutton',0
-
-;aMenu_bar_draw		db 'menu_bar_draw',0
-;aMenu_bar_mouse		db 'menu_bar_mouse',0
-;aMenu_bar_activate	db 'menu_bar_activate',0
-;aVersion_menu_bar	db 'version_menu_bar',0
-
-;aFileBrowser_draw	db 'FileBrowser_draw',0
-;aFileBrowser_mouse	db 'FileBrowser_mouse',0
-;aFileBrowser_key	db 'FileBrowser_key',0
-;aVersion_FileBrowser	db 'version_FileBrowser',0
-
-sz_PathShow_prepare	db 'PathShow_prepare',0
-sz_PathShow_draw	db 'PathShow_draw',0
-;szVersion_path_show	db 'version_PathShow',0
+sz_Frame_draw           db 'frame_draw',0
+;szVersion_frame        db 'version_frame',0
+;---------------------------------------------------------------------
+frame_data:
+.type                   dd 0 ;+0
+.x:
+.x_size                 dw 374 ;+4
+.x_start                dw 8 ;+6
+.y:
+.y_size                 dw 45 ;+8
+.y_start                dw 17 ;+10
+.ext_fr_col             dd 0x888888 ;+12
+.int_fr_col             dd 0xffffff ;+16
+.draw_text_flag         dd 1 ;+20
+.text_pointer           dd label1 ;+24
+.text_position          dd 0 ;+28
+.font_number            dd 0 ;+32
+.font_size_y            dd 9 ;+36
+.font_color             dd 0x0 ;+40
+.font_backgr_color      dd 0xdddddd ;+44
+;---------------------------------------------------------------------
+align 4
+libini_import:
+init_lib     dd a_init
+ini_get_str  dd aini_get_str
+ini_get_int  dd aini_get_int
+ini_set_str  dd aini_set_str
+ini_set_int  dd aini_set_int
+             dd 0
+             dd 0
+a_init       db 'lib_init',0
+aini_get_str db 'ini_get_str',0
+aini_get_int db 'ini_get_int',0
+aini_set_str db 'ini_set_str',0
+aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
-path1	db '/fd/1/',0
-path2	db '/fd/2/',0
-path3	db '/hd0/1/kolibri.img',0
-path4	db '/hd0/1/kolibri/kolibri.img',0  ;для резервного сохранения
+apath db 'path',0
+asettings db 'settings',0
+aautoclose db 'autoclose',0
+path    db '/hd2/1/kolibri.img',0
+ini_file db  '/sys/settings/rdsave.ini',0
+;ini_file db  '/sys/rdsave.ini',0
 ;---------------------------------------------------------------------
-key_help:
-	db '1',0
-	db '2',0
-	db '3',0
-	db '4',0
+is_notify:
+    dd    7, 0, ok, 0, 0
+    db    "/rd/1/@notify", 0
+    
+read_folder:
+.subfunction    dd 1
+.start          dd 0
+.flags          dd 0
+.size           dd 1
+.return         dd folder_data
+                db 0
+.name:          dd check_dir
+
+param dd 0
+hidden dd 0
 ;---------------------------------------------------------------------
 IM_END:
 ;---------------------------------------------------------------------
+align 4
+PARAMS:
+       rb 256
+ini_path:
+        rb 4096
+check_dir:
+        rb 4096
+
 sc     system_colors
-mouse_dd	rd 1
+
+;mouse_dd  rd 1
+
+autoclose rd 1
+
+error_msg rb 128
+
+folder_data:
+        rb 304*32+32 ; 9 Kb
 ;---------------------------------------------------------------------
 cur_dir_path:
-	rb 4096
+        rb 4096
 ;---------------------------------------------------------------------
 library_path:
-	rb 4096
+        rb 4096
 ;---------------------------------------------------------------------
-temp_dir_pach:
-	rb 4096
+temp_dir_path:
+        rb 4096
 ;---------------------------------------------------------------------
 fname_buf:
-	rb 4096
+        rb 4096
 ;---------------------------------------------------------------------
 procinfo:
-	rb 1024
+        rb 1024
 ;---------------------------------------------------------------------
 filename_area:
-	rb 256
+        rb 256
 ;---------------------------------------------------------------------
 text_work_area:
-	rb 1024
+        rb 1024
 ;---------------------------------------------------------------------
-align 4
-	rb 4096
+align 32
+        rb 4096
 stacktop:
-I_END:	; метка конца программы
+I_END:  ; метка конца программы

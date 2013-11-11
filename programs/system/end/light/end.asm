@@ -2,71 +2,83 @@
 ; END
 ; KolibriOS Team 2005-2013
 ;
-include "lang.inc"
-include "..\..\..\macros.inc"
 ; <diamond> note that 'mov al,xx' is shorter than 'mov eax,xx'
 ;           and if we know that high 24 bits of eax are zero, we can use 1st form
 ;           the same about ebx,ecx,edx
 
-meos_app_start
-code
-draw_window:
-    mov   al,12
-    mcall ,1
+use32        ; включить 32-битный режим ассемблера
+org 0x0      ; адресация с нуля
 
-    mov  al,14
-    mcall                                    ;eax=14 - get screen max x & max y
-    movzx ecx,ax
-    shr  eax,17
-    shl  eax,16
-    lea  ebx,[eax-110 shl 16+222]
-    shr  ecx,1
-    shl  ecx,16
-    lea  ecx,[ecx-65 shl 16+137]
+db 'MENUET01'    ; 8-байтный идентификатор MenuetOS
+dd 0x01          ; версия заголовка (всегда 1)
+dd START         ; адрес первой команды
+dd IM_END        ; размер программы
+dd I_END         ; количество памяти
+dd stacktop      ; адрес вершины стека
+dd 0x0           ; адрес буфера для параметров
+dd cur_dir_path
 
-    xor eax,eax
-    mcall  , , ,0x019098b0,0x01000000        ;define and draw window
+include 'lang.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../dll.inc'
+include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 
-    mov   al,13
-    mcall   ,<0,223> ,<0,275>
-    mcall   ,<1,221>,<1,136>,0xffffff
-    mcall   ,<2,220>,<2,135>,0xe4dfe1
-    mcall   ,<16,189>,<97,23>,0x9098b0
+        @use_library
 
-    mov    al,8
-    mcall   ,<16,90> ,<20,27>,4,0x990022     ;eax=8 - draw buttons
-    mcall   ,<113,90>,       ,2,0xaa7700
-    mcall   ,        ,<54,27>,1,0x777777
-    mcall   ,<16,90> ,       ,3,0x007700
-    mcall   ,<17,186>,<98,20>,5,0xe4dfe1
+align 4
+START:
 
-    mov   al,4
-    mcall  ,<28,105>,0x80000000,label4        ;eax=4 - write text
-    mcall  ,<35,24> ,0x80ffffff,label2
-    mcall  ,<34,58> ,          ,label3
-    mcall  ,<47,37> ,          ,label5
-    mcall  ,<43,71> ,          ,label6
+load_libraries l_libs_start,end_l_libs
+        inc     eax
+        test    eax,eax
+        jz      close
 
-    mov   al,12
-    mcall   ,2
+push    dword check1
+call    [init_checkbox2]
 
+stdcall dll.Init,[init_lib]
+
+invoke  ini_get_int,ini_file,asettings,aautosave,0
+        mov   [autosave],eax
+        cmp   eax,1
+        jne   @f
+        bts   dword [check1.flags],1
+@@:
+        mcall   40,0x00000027
+redraw:
+    call draw_window
 still:
     mov  al,10
     mcall                                    ;wait here for event
     dec  eax
-    jz   draw_window
+    jz   redraw
     dec  eax
-    jnz  button
+    jz   key
+    dec  eax
+    jz   button
 
+    push dword check1
+    call [check_box_mouse2]
+    bt   dword [check1.flags],1
+    jnc  @f
+    mov  [autosave],1
+    jmp  still
+@@:
+    mov  [autosave],0
+    jmp  still
+    
+key:
     mov  al,2
     mcall                                    ;eax=2 - get key code
     mov  al,ah
      cmp  al,13
      jz   restart
      cmp  al,19
-     jz   run_rdsave
+     jz   checkbox
      cmp  al,27
-     jz   close_1
+     jz   close
      cmp  al,180
      jz   restart_kernel
      cmp  al,181
@@ -74,45 +86,127 @@ still:
      jmp  still
 
 button:
-    mov  al,17
-    mcall                                    ;eax=17 - get pressed button id
+    mcall 17                                 ;eax=17 - get pressed button id
     xchg al,ah
     dec  eax
-    jz   close_1
+    jz   close
     dec  eax
     jz   restart_kernel
     dec  eax
     jz   restart
     dec  eax
-    jnz   run_rdsave
-;    dec  eax                                ; we have only one button left, this is close button
-;    jnz  still
+    jnz  checkbox
 
 power_off:
     push 2
     jmp  mcall_and_close
+
 restart:
     push 3
     jmp  mcall_and_close
+
 restart_kernel:
     push 4
+
 mcall_and_close:
+    invoke  ini_set_int,ini_file,asettings,aautosave,[autosave]
+    cmp  [autosave],1
+    jne   no_save
+    mcall 70,rdsave
+    test  eax,eax
+    js    no_save
+    mov   ecx,eax
+    mcall 18,21
+    mov   ecx,eax
+@@:
+    push ecx
+    mcall 23,50
+    dec   eax
+    jnz   no_red
+    call draw_window
+no_red: 
+    pop   ecx
+    mcall 9,proc_info
+    cmp   [proc_info+50],9
+    je    no_save
+    jmp   @b
+no_save:
     pop  ecx
-    mov  al,18
-    mcall   ,9
+    mcall 18,9
 
-close_1:
-    or  eax,-1
-    mcall  
+close:
+    mcall -1
 
-run_rdsave:
-    mov  al,70
-    mcall   ,rdsave
-    jmp still
+checkbox:
+    btc   dword [check1.flags],1
+    jc    .1
+    mov   [autosave],1
+    jmp   .draw
+.1:
+    mov   [autosave],0
+.draw:
+    push  dword check1
+    call  [check_box_draw2]
+    jmp    still
+    
+draw_window:
+    mov   al,12
+    mcall ,1
+
+    mcall 14                                 ;eax=14 - get screen max x & max y
+    movzx ecx,ax
+    shr  eax,17
+    shl  eax,16
+    lea  ebx,[eax-110 shl 16+222]
+    shr  ecx,1
+    shl  ecx,16
+    lea  ecx,[ecx-70 shl 16+117]
+
+    xor eax,eax
+    mcall  , , ,0x019098b0,0x01000000        ;define and draw window
+
+    mov   al,13
+    mcall   ,<0,223> ,<0,118>
+    mcall   ,<1,221>,<1,116>,0xffffff
+    mcall   ,<2,220>,<2,115>,0xe4dfe1
+
+    mov    al,8
+    mcall   ,<16,90> ,<20,27>,4,0x990022     ;eax=8 - draw buttons
+    mcall   ,<113,90>,       ,2,0xaa7700
+    mcall   ,        ,<54,27>,1,0x777777
+    mcall   ,<16,90> ,       ,3,0x007700
+
+    push  dword check1
+    call  [check_box_draw2]
+    
+    mcall 4,<27,24> ,0x90ffffff,label2        ;eax=4 - write text
+    mcall  ,<23,58> ,          ,label3
+    mcall  ,<47,37> ,0x90ffffff,label5
+    mcall  ,<44,71> ,          ,label6
+
+    mov   al,12
+    mcall   ,2
+    ret
 
 data
 include 'data.inc'
 
-udata
+;---------------------------------------------------------------------
+IM_END:
+;---------------------------------------------------------------------
+align 4
 
-meos_app_end
+proc_info  rb 1024
+
+autosave rd 1
+;---------------------------------------------------------------------
+cur_dir_path:
+        rb 4096
+;---------------------------------------------------------------------
+library_path:
+        rb 4096
+;---------------------------------------------------------------------
+align 32
+        rb 4096
+stacktop:
+I_END:  ; метка конца программы
