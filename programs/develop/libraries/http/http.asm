@@ -730,7 +730,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mcall   29, 9
         sub     eax, TIMEOUT
         cmp     eax, [ebp + http_msg.timestamp]
-        ja      .need_more_data
+        jb      .need_more_data
         DEBUGF  1, "ERROR: timeout\n"
         or      [ebp + http_msg.flags], FLAG_TIMEOUT_ERROR
         jmp     .disconnect
