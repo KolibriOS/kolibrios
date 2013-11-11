@@ -24,6 +24,7 @@ FLAG_CONNECTED          = 1 shl 5
 FLAG_INVALID_HEADER     = 1 shl 16
 FLAG_NO_RAM             = 1 shl 17
 FLAG_SOCKET_ERROR       = 1 shl 18
+FLAG_TIMEOUT_ERROR      = 1 shl 19
 
 struc http_msg {
         .socket         dd ?
@@ -31,7 +32,7 @@ struc http_msg {
         .write_ptr      dd ?
         .buffer_length  dd ?
         .chunk_ptr      dd ?
-
+        .timestamp      dd ?
         .status         dd ?
         .header_length  dd ?
         .content_length dd ?

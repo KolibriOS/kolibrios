@@ -19,6 +19,7 @@
 
         URLMAXLEN       = 65535
         BUFFERSIZE      = 4096
+        TIMEOUT         = 1000  ; in 1/100 s
 
         __DEBUG__       = 1
         __DEBUG_LEVEL__ = 1
@@ -66,6 +67,12 @@ macro HTTP_init_buffer buffer, socketnum {
         mov     [eax + http_msg.header_length], 0
         mov     [eax + http_msg.content_length], 0
         mov     [eax + http_msg.content_received], 0
+
+        push    eax ebp
+        mov     ebp, eax
+        mcall   29, 9
+        mov     [ebp + http_msg.timestamp], eax
+        pop     ebp eax
 }
 
 section '.flat' code readable align 16
@@ -387,6 +394,7 @@ endl
         DEBUGF  1, "Request has been sent to server.\n"
 
         HTTP_init_buffer [buffer], [socketnum]
+
 ;        mov     eax, [buffer]
 
         ret                     ; return buffer ptr
@@ -422,6 +430,11 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         cmp     eax, 0xffffffff
         je      .check_socket
         DEBUGF  1, "Received %u bytes\n", eax
+
+        push    eax
+        mcall   29, 9
+        mov     [ebp + http_msg.timestamp], eax
+        pop     eax
 
 ; Update pointers
         mov     edi, [ebp + http_msg.write_ptr]
@@ -712,34 +725,36 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
   .check_socket:
         cmp     ebx, EWOULDBLOCK
-        je      .need_more_data
-        DEBUGF  1, "ERROR: socket error %u\n", ebx
+        jne     .socket_error
 
-        or      [ebp + http_msg.flags], FLAG_SOCKET_ERROR
-        and     [ebp + http_msg.flags], not FLAG_CONNECTED
-        mcall   close, [ebp + http_msg.socket]
-  .connection_closed:
-        popa
-        xor     eax, eax
-        ret
+        mcall   29, 9
+        sub     eax, TIMEOUT
+        cmp     eax, [ebp + http_msg.timestamp]
+        ja      .need_more_data
+        DEBUGF  1, "ERROR: timeout\n"
+        or      [ebp + http_msg.flags], FLAG_TIMEOUT_ERROR
+        jmp     .disconnect
 
   .invalid_header:
         pop     eax
         DEBUGF  1, "ERROR: invalid header\n"
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
-        and     [ebp + http_msg.flags], not FLAG_CONNECTED
-        mcall   close, [ebp + http_msg.socket]
-        popa
-        xor     eax, eax
-        ret
+        jmp     .disconnect
 
   .no_ram_pop:
         pop     eax
   .no_ram:
         DEBUGF  1, "ERROR: out of RAM\n"
         or      [ebp + http_msg.flags], FLAG_NO_RAM
+        jmp     .disconnect
+
+  .socket_error:
+        DEBUGF  1, "ERROR: socket error %u\n", ebx
+        or      [ebp + http_msg.flags], FLAG_SOCKET_ERROR
+  .disconnect:
         and     [ebp + http_msg.flags], not FLAG_CONNECTED
         mcall   close, [ebp + http_msg.socket]
+  .connection_closed:
         popa
         xor     eax, eax
         ret
