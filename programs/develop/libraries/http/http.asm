@@ -99,11 +99,13 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         jnz     .error
 
 ; load proxy settings
+        pusha
         invoke  ini.get_str, inifile, sec_proxy, key_proxy, proxyAddr, 256, proxyAddr
         invoke  ini.get_int, inifile, sec_proxy, key_proxyport, 80
         mov     [proxyPort], eax
         invoke  ini.get_str, inifile, sec_proxy, key_user, proxyUser, 256, proxyUser
         invoke  ini.get_str, inifile, sec_proxy, key_password, proxyPassword, 256, proxyPassword
+        popa
 
         DEBUGF  1, "HTTP library: init OK\n"
 
@@ -138,6 +140,8 @@ locals
         buffer          dd ?
         port            dd ?
 endl
+
+        pusha
 
 ; split the URL into hostname and pageaddr
         stdcall parse_url, [URL]
@@ -201,10 +205,13 @@ endl
 
         HTTP_init_buffer [buffer], [socketnum]
 
-        ret                     ; return buffer ptr
+        popa
+        mov     eax, [buffer]   ; return buffer ptr
+        ret
 
   .error:
         DEBUGF  1, "Error!\n"
+        popa
         xor     eax, eax        ; return 0 = error
         ret
 
@@ -230,6 +237,7 @@ locals
         port            dd ?
 endl
 
+        pusha
 ; split the URL into hostname and pageaddr
         stdcall parse_url, [URL]
         test    eax, eax
@@ -293,10 +301,13 @@ endl
 
         HTTP_init_buffer [buffer], [socketnum]
 
+        popa
+        mov     eax, [buffer]
         ret                     ; return buffer ptr
 
   .error:
         DEBUGF  1, "Error!\n"
+        popa
         xor     eax, eax        ; return 0 = error
         ret
 
@@ -323,6 +334,7 @@ locals
         port            dd ?
 endl
 
+        pusha
 ; split the URL into hostname and pageaddr
         stdcall parse_url, [URL]
         test    eax, eax
@@ -399,12 +411,13 @@ endl
 
         HTTP_init_buffer [buffer], [socketnum]
 
-;        mov     eax, [buffer]
-
+        popa
+        mov     eax, [buffer]
         ret                     ; return buffer ptr
 
   .error:
         DEBUGF  1, "Error!\n"
+        popa
         xor     eax, eax        ; return 0 = error
         ret
 
