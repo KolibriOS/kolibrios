@@ -719,10 +719,10 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ; Check if we got all the data.
   .header_parsed:
         add     [ebp + http_msg.content_received], eax
-        mov     eax, [ebp + http_msg.content_length]
-        cmp     eax, [ebp + http_msg.content_received]
+        mov     eax, [ebp + http_msg.content_received]
+        cmp     eax, [ebp + http_msg.content_length]
         jae     .got_all_data
-        jmp     .need_more_data
+;        jmp     .need_more_data
 
   .need_more_data:
         popa
@@ -745,7 +745,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     [ebp + http_msg.content_length], eax
         mov     [ebp + http_msg.content_received], eax
   .got_all_data:
-        DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_length]
+        DEBUGF  1, "We got all the data! (%u bytes)\n", [ebp + http_msg.content_received]
         or      [ebp + http_msg.flags], FLAG_GOT_ALL_DATA
         and     [ebp + http_msg.flags], not FLAG_CONNECTED
         mcall   close, [ebp + http_msg.socket]
