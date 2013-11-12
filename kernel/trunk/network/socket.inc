@@ -755,13 +755,13 @@ SOCKET_receive:
         call    [eax + SOCKET.rcv_proc]
         pop     edi
 
+        test    [eax + SOCKET.state], SS_CANTRCVMORE
+        jnz     .return
+
         cmp     ebx, EWOULDBLOCK
         jne     .return
 
         test    edi, MSG_DONTWAIT
-        jnz     .return_err
-
-        test    [eax + SOCKET.state], SS_CANTRCVMORE
         jnz     .return_err
 
 ;        test    [eax + SOCKET.options], SO_NONBLOCK
@@ -775,10 +775,10 @@ SOCKET_receive:
         push    EINVAL
         pop     ebx
   .return_err:
-        mov     eax, -1
+        mov     ecx, -1
   .return:
         mov     [esp+20], ebx
-        mov     [esp+32], eax
+        mov     [esp+32], ecx
         ret
 
 
@@ -799,7 +799,7 @@ SOCKET_receive_dgram:
         cmp     ecx, ebx                                        ; If data segment does not fit in applications buffer, abort
         ja      .too_small
 
-        push    ecx
+        push    eax ecx
         push    [esi + socket_queue_entry.buf_ptr]              ; save the buffer addr so we can clear it later
         mov     esi, [esi + socket_queue_entry.data_ptr]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
@@ -820,12 +820,12 @@ SOCKET_receive_dgram:
   .nd:
 
         call    NET_packet_free
-        pop     eax                                             ; return number of bytes copied to application
+        pop     ecx eax                                         ; return number of bytes copied to application
         xor     ebx, ebx
         ret
 
   .too_small:
-        mov     eax, -1
+        mov     ecx, -1
         push    EMSGSIZE
         pop     ebx
         ret
@@ -870,21 +870,23 @@ SOCKET_receive_stream:
         mov     edi, edx
         xor     edx, edx
 
+        push    eax
         add     eax, STREAM_SOCKET.rcv
         call    SOCKET_ring_read                                ; copy data from kernel buffer to application buffer
         call    SOCKET_ring_free                                ; free read memory
+        pop     eax
 
-        mov     eax, ecx                                        ; return number of bytes copied
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
 
   .wouldblock:
         push    EWOULDBLOCK
         pop     ebx
+        xor     ecx, ecx
         ret
 
   .peek:
-        mov     eax, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+        mov     ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
         xor     ebx, ebx
         ret
 
@@ -2083,6 +2085,7 @@ SOCKET_num_to_ptr:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
         jz      .error
+                diff16 "tetten", 0, $
         cmp     [eax + SOCKET.Number], ecx
         jne     .next_socket
 
