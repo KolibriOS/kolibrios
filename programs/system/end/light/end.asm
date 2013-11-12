@@ -42,11 +42,11 @@ stdcall dll.Init,[init_lib]
 
 invoke  ini_get_int,ini_file,asettings,aautosave,0
         mov   [autosave],eax
-        cmp   eax,1
-        jne   @f
+        dec   eax
+        jnz   @f
         bts   dword [check1.flags],1
 @@:
-        mcall   40,0x00000027
+        mcall   40,0x80000027
 redraw:
     call draw_window
 still:
@@ -74,16 +74,18 @@ key:
     mcall                                    ;eax=2 - get key code
     mov  al,ah
      cmp  al,13
-     jz   restart
+     je   restart
      cmp  al,19
-     jz   checkbox
-     cmp  al,27
-     jz   close
+     je   checkbox
      cmp  al,180
-     jz   restart_kernel
+     je   restart_kernel
      cmp  al,181
-     jz   power_off
-     jmp  still
+     je   power_off
+     cmp  al,27
+     jne   still
+
+close:
+    mcall -1
 
 button:
     mcall 17                                 ;eax=17 - get pressed button id
@@ -120,7 +122,7 @@ mcall_and_close:
     mov   ecx,eax
 @@:
     push ecx
-    mcall 23,50
+    mcall 23,100
     dec   eax
     jnz   no_red
     call draw_window
@@ -133,9 +135,6 @@ no_red:
 no_save:
     pop  ecx
     mcall 18,9
-
-close:
-    mcall -1
 
 checkbox:
     btc   dword [check1.flags],1
@@ -151,18 +150,19 @@ checkbox:
     
 draw_window:
     mov   al,12
-    mcall ,1
+    mcall   ,1
 
-    mcall 14                                 ;eax=14 - get screen max x & max y
+    mov   al,14
+    mcall                                    ;eax=14 - get screen max x & max y
     movzx ecx,ax
-    shr  eax,17
-    shl  eax,16
-    lea  ebx,[eax-110 shl 16+222]
-    shr  ecx,1
-    shl  ecx,16
-    lea  ecx,[ecx-70 shl 16+117]
+    shr   eax,17
+    shl   eax,16
+    lea   ebx,[eax-110 shl 16+222]
+    shr   ecx,1
+    shl   ecx,16
+    lea   ecx,[ecx-70 shl 16+117]
 
-    xor eax,eax
+    xor   eax,eax
     mcall  , , ,0x019098b0,0x01000000        ;define and draw window
 
     mov   al,13
@@ -170,25 +170,26 @@ draw_window:
     mcall   ,<1,221>,<1,116>,0xffffff
     mcall   ,<2,220>,<2,115>,0xe4dfe1
 
-    mov    al,8
+    mov   al,8
     mcall   ,<16,90> ,<20,27>,4,0x990022     ;eax=8 - draw buttons
     mcall   ,<113,90>,       ,2,0xaa7700
     mcall   ,        ,<54,27>,1,0x777777
     mcall   ,<16,90> ,       ,3,0x007700
 
+    mov   al,4
+    mcall   ,<27,24> ,0x90ffffff,label2        ;eax=4 - write text
+    mcall   ,<23,58> ,          ,label3
+    mcall   ,<47,37> ,          ,label5
+    mcall   ,<41,71> ,          ,label6
+
     push  dword check1
     call  [check_box_draw2]
-    
-    mcall 4,<27,24> ,0x90ffffff,label2        ;eax=4 - write text
-    mcall  ,<23,58> ,          ,label3
-    mcall  ,<47,37> ,0x90ffffff,label5
-    mcall  ,<44,71> ,          ,label6
 
     mov   al,12
     mcall   ,2
     ret
-
-data
+;---------------------------------------------------------------------
+;data
 include 'data.inc'
 
 ;---------------------------------------------------------------------

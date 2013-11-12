@@ -35,7 +35,7 @@ end if
   label5:
       db   '(End)          (Home)',0
   label6:
-      db   '(Enter)         (Esc)',0
+      db   '(Enter)          (Esc)',0
 
 rdsave:
         dd  7,0,hide,0,0
@@ -90,7 +90,7 @@ aini_get_int db 'ini_get_int',0
 aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
-check1 check_box2 20 shl 16 +8,93 shl 16 +8,6,0xffffff,0,0,label4
+check1 check_box2 20 shl 16 +8,96 shl 16 +8,6,0xffffff,0,0,label4
 
 hide        db 'h',0
 asettings   db 'settings',0
