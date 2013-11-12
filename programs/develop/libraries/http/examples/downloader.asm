@@ -141,7 +141,7 @@ fail:
 
 save:
         mov     ebp, [identifier]
-        mov     eax, [ebp + http_msg.content_length]
+        mov     eax, [ebp + http_msg.content_received]
         mov     [final_size], eax
         lea     ebx, [ebp + http_msg.data]
         add     ebx, [ebp + http_msg.header_length]

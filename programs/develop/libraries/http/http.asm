@@ -447,6 +447,9 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
                       [ebp + http_msg.buffer_length], MSG_DONTWAIT
         cmp     eax, 0xffffffff
         je      .check_socket
+
+        test    eax, eax
+        jz      .server_closed
         DEBUGF  1, "Received %u bytes\n", eax
 
 ; Update timestamp
@@ -616,6 +619,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         or      eax, eax
         jz      .no_ram
 
+  .not_chunked:
         mov     eax, [ebp + http_msg.write_ptr]
         sub     eax, [ebp + http_msg.header_length]
         sub     eax, http_msg.data
@@ -629,17 +633,17 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ; Try to find 'transfer-encoding' header.
         stdcall find_header_field, ebp, str_te
         test    eax, eax
-        jz      .invalid_header
+        jz      .not_chunked
 
         mov     ebx, dword[eax]
         or      ebx, 0x20202020
         cmp     ebx, 'chun'
-        jne     .invalid_header
+        jne     .not_chunked
         mov     ebx, dword[eax+4]
         or      ebx, 0x00202020
         and     ebx, 0x00ffffff
         cmp     ebx, 'ked'
-        jne     .invalid_header
+        jne     .not_chunked
 
         or      [ebp + http_msg.flags], FLAG_CHUNKED
         DEBUGF  1, "Transfer type is: chunked\n"
@@ -719,10 +723,21 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ; Check if we got all the data.
   .header_parsed:
         add     [ebp + http_msg.content_received], eax
+        test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
+        jz      .need_more_data_and_space
         mov     eax, [ebp + http_msg.content_received]
         cmp     eax, [ebp + http_msg.content_length]
         jae     .got_all_data
-;        jmp     .need_more_data
+        jmp     .need_more_data
+
+  .need_more_data_and_space:
+        mov     eax, [ebp + http_msg.write_ptr]
+        add     eax, BUFFERSIZE
+        sub     eax, ebp
+        invoke  mem.realloc, ebp, eax
+        or      eax, eax
+        jz      .no_ram
+        mov     [ebp + http_msg.buffer_length], BUFFERSIZE
 
   .need_more_data:
         popa
@@ -763,6 +778,19 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         jb      .need_more_data
         DEBUGF  1, "ERROR: timeout\n"
         or      [ebp + http_msg.flags], FLAG_TIMEOUT_ERROR
+        jmp     .disconnect
+
+  .server_closed:
+        DEBUGF  1, "server closed connection, transfer complete?\n"
+        test    [ebp + http_msg.flags], FLAG_GOT_HEADER
+        jz      .server_error
+        test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
+        jz      .got_all_data
+
+  .server_error:
+        pop     eax
+        DEBUGF  1, "ERROR: server closed connection unexpectedly\n"
+        or      [ebp + http_msg.flags], FLAG_TRANSFER_FAILED
         jmp     .disconnect
 
   .invalid_header:
@@ -1059,6 +1087,8 @@ endp
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;! Internal procedures section                                                                    ;;
+;;                                                                                                ;;
+;; NOTICE: These procedures do not follow stdcall conventions and thus may destroy any register.  ;;
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;

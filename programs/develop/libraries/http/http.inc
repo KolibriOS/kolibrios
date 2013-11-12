@@ -25,6 +25,7 @@ FLAG_INVALID_HEADER     = 1 shl 16
 FLAG_NO_RAM             = 1 shl 17
 FLAG_SOCKET_ERROR       = 1 shl 18
 FLAG_TIMEOUT_ERROR      = 1 shl 19
+FLAG_TRANSFER_FAILED    = 1 shl 20
 
 struc http_msg {
 
