@@ -61,7 +61,7 @@ download:
 
         DEBUGF  1, "Starting download\n"
 
-        invoke  HTTP_get, params
+        invoke  HTTP_get, params, 0
         test    eax, eax
         jz      fail
         mov     [identifier], eax

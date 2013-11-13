@@ -124,11 +124,12 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
 
 
 ;;================================================================================================;;
-proc HTTP_get URL ;///////////////////////////////////////////////////////////////////////////////;;
+proc HTTP_get URL, add_header ;///////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Initiates a HTTP connection, using 'GET' method.                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> URL = pointer to ASCIIZ URL                                                                    ;;
+;> URL          = pointer to ASCIIZ URL                                                           ;;
+;> add_header   = pointer to additional header parameters (ASCIIZ), or null for none.             ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / buffer ptr                                                                   ;;
 ;;================================================================================================;;
@@ -149,6 +150,7 @@ endl
         jz      .error
         mov     [hostname], eax
         mov     [pageaddr], ebx
+        mov     [port], ecx
 
 ; Do we need to use a proxy?
         cmp     [proxyAddr], 0
@@ -157,7 +159,6 @@ endl
   .proxy_done:
 
 ;;;;
-        mov     [port], 80      ;;;; FIXME
 
 ; Connect to the other side.
         stdcall open_connection, [hostname], [port]
@@ -185,6 +186,12 @@ endl
 
         mov     esi, [hostname]
         copy_till_zero
+
+        mov     esi, [add_header]
+        test    esi, esi
+        jz      @f
+        copy_till_zero
+  @@:
 
         mov     esi, str_close
         mov     ecx, str_close.length
@@ -220,11 +227,12 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_head URL ;//////////////////////////////////////////////////////////////////////////////;;
+proc HTTP_head URL, add_header ;//////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Initiates a HTTP connection, using 'HEAD' method.                                              ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> URL = pointer to ASCIIZ URL                                                                    ;;
+;> URL          = pointer to ASCIIZ URL                                                           ;;
+;> add_header   = pointer to additional header parameters (ASCIIZ), or null for none.             ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / buffer ptr                                                                   ;;
 ;;================================================================================================;;
@@ -244,6 +252,7 @@ endl
         jz      .error
         mov     [hostname], eax
         mov     [pageaddr], ebx
+        mov     [port], ecx
 
 ; Do we need to use a proxy?
         cmp     [proxyAddr], 0
@@ -253,7 +262,6 @@ endl
   .proxy_done:
 
 ;;;;
-        mov     [port], 80      ;;;; FIXME
 
 ; Connect to the other side.
         stdcall open_connection, [hostname], [port]
@@ -281,6 +289,12 @@ endl
 
         mov     esi, [hostname]
         copy_till_zero
+
+        mov     esi, [add_header]
+        test    esi, esi
+        jz      @f
+        copy_till_zero
+  @@:
 
         mov     esi, str_close
         mov     ecx, str_close.length
@@ -315,11 +329,12 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_post URL, content_type, content_length ;////////////////////////////////////////////////;;
+proc HTTP_post URL, add_header, content_type, content_length ;////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Initiates a HTTP connection, using 'GET' method.                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> URL                  = pointer to ASCIIZ URL                                                   ;;
+;> add_header           = pointer to additional header parameters (ASCIIZ), or null for none.     ;;
 ;> content_type         = pointer to ASCIIZ string containing content type                        ;;
 ;> content_length       = length of content (in bytes)                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -341,6 +356,7 @@ endl
         jz      .error
         mov     [hostname], eax
         mov     [pageaddr], ebx
+        mov     [port], ecx
 
 ; Do we need to use a proxy?
         cmp     [proxyAddr], 0
@@ -350,7 +366,6 @@ endl
   .proxy_done:
 
 ;;;;
-        mov     [port], 80      ;;;; FIXME
 
 ; Connect to the other side.
         stdcall open_connection, [hostname], [port]
@@ -391,7 +406,13 @@ endl
         rep     movsb
 
         mov     esi, [content_type]
-        rep     movsb
+        copy_till_zero
+
+        mov     esi, [add_header]
+        test    esi, esi
+        jz      @f
+        copy_till_zero
+  @@:
 
         mov     esi, str_close
         mov     ecx, str_close.length
@@ -1264,9 +1285,11 @@ endl
 
         mov     eax, [hostname]
         mov     ebx, [pageaddr]
+        mov     ecx, 80                 ;;;; FIXME
 
         DEBUGF  1, "hostname: %s\n", eax
         DEBUGF  1, "pageaddr: %s\n", ebx
+        DEBUGF  1, "port: %u\n", ecx
 
         ret
 
