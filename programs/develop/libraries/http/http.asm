@@ -200,11 +200,15 @@ endl
         mov     byte[edi], 0
         DEBUGF  1, "Request:\n%s", [buffer]
 
+; Free unused memory
+        push    edi
+        invoke  mem.free, [pageaddr]
+        invoke  mem.free, [hostname]
+        pop     esi
+
 ; Send the request
-        mov     esi, edi
         sub     esi, [buffer]   ; length
         xor     edi, edi        ; flags
-
         mcall   send, [socketnum], [buffer]
         test    eax, eax
         jz      .error
@@ -303,11 +307,16 @@ endl
         mov     byte[edi], 0
         DEBUGF  1, "Request:\n%s", [buffer]
 
+
+; Free unused memory
+        push    edi
+        invoke  mem.free, [pageaddr]
+        invoke  mem.free, [hostname]
+        pop     esi
+
 ; Send the request
-        mov     esi, edi
         sub     esi, [buffer]   ; length
         xor     edi, edi        ; flags
-
         mcall   send, [socketnum], [buffer]
         test    eax, eax
         jz      .error
@@ -421,8 +430,13 @@ endl
         mov     byte[edi], 0
         DEBUGF  1, "Request:\n%s", [buffer]
 
+; Free unused memory
+        push    edi
+        invoke  mem.free, [pageaddr]
+        invoke  mem.free, [hostname]
+        pop     esi
+
 ; Send the request
-        mov     esi, edi
         sub     esi, [buffer]   ; length
         xor     edi, edi        ; flags
         mcall   send, [socketnum], [buffer]
@@ -600,7 +614,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         DEBUGF  1, "Header names converted to lowercase:\n%s\n", esi
 
 ; Check for content-length header field.
-        stdcall find_header_field, ebp, str_cl
+        stdcall HTTP_find_header_field, ebp, str_cl
         test    eax, eax
         jz      .no_content
         or      [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
@@ -652,7 +666,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
 ; We didnt find 'content-length', maybe server is using chunked transfer encoding?
 ; Try to find 'transfer-encoding' header.
-        stdcall find_header_field, ebp, str_te
+        stdcall HTTP_find_header_field, ebp, str_te
         test    eax, eax
         jz      .not_chunked
 
@@ -894,7 +908,7 @@ endp
 
 
 ;;================================================================================================;;
-proc find_header_field identifier, headername ;///////////////////////////////////////////////////;;
+proc HTTP_find_header_field identifier, headername ;//////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Find a header field in the received HTTP header                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -1251,6 +1265,8 @@ endl
   @@:
         push    ecx edi                 ; remember the pointer and length of pageaddr
 
+
+; Create new buffer and put hostname in it
         mov     ecx, edi
         sub     ecx, [URL]
         inc     ecx                     ; we will add a 0 byte at the end
@@ -1376,7 +1392,7 @@ export  \
         HTTP_get                , 'get'                 , \
         HTTP_head               , 'head'                , \
         HTTP_post               , 'post'                , \
-        find_header_field       , 'find_header_field'   , \
+        HTTP_find_header_field  , 'find_header_field'   , \
         HTTP_process            , 'process'             , \
         HTTP_free               , 'free'                , \
         HTTP_stop               , 'stop'                , \
