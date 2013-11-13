@@ -4,5 +4,5 @@ OBJS := parser.o
 
 OUTFILE = libo.o
 
-CFLAGS += -I ../../include/ -I ../../include/dom/ -I ../../ -I ../ -I ./ -I /home/sourcerer/kos_src/newenginek/kolibri/include
+CFLAGS += -I ./ -I ../../include/ -I ../../src/ -I ../../../libhubbub/include/ -I ../../../libwapcaplet/include/
 include $(MENUETDEV)/makefiles/Makefile_for_o_lib

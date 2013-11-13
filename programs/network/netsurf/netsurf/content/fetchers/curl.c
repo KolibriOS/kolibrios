@@ -28,6 +28,9 @@
  * ::max_cached_fetch_handles in this ring.
  */
 
+
+#include "http.c"
+
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -155,7 +158,6 @@ lwc_intern_string("http", SLEN("http"), &scheme);
 
 bool fetch_curl_initialise(lwc_string *scheme)
 {
-
 LOG(("curl initi lwc\n"));
 	return true; /* Always succeeds */
 }
@@ -363,70 +365,76 @@ asm volatile ("int $0x40":"=a"(error):"a"(18), "b"(18), "c"(k));
 return error;
 }
 
+
 static void fetch_curl_process(struct fetch_curl_context *ctx) {
-	
-	int pid=execl ("/sys/network/downloader", ctx->path, 0);
-	
-	
-	
-//	while (is_pid(pid)) {
-	kill_pid(pid);
-//	}
-	
-	pid=execl ("/sys/network/downloader", ctx->path, 0);
-	
-	char ps[255];
-	sprintf(ps, "pid %d", pid);
-	execl ("/sys/network/@notify", ps, 0);
-	
-	
-	while (is_pid(pid));
-	
-	
-	sprintf(ps, "Yay! Finished");
-	execl ("/sys/network/@notify", ps, 0);
-	
-	
-	/*
-	char pzz[255];
-	sprintf(pzz, "Pid is %d", pid);
-	execl ("/sys/@notify", pzz, 0); */
-	//int status;
-	//waitpid(pid, &status, 0); 
-	
+	char ps[96], str[128];
+	sprintf(ps, "Yay! Path is %s", ctx->path);
+	execl ("/sys/@notify", ps, 0);
 	
 	fetch_msg msg;
-	//const char * buf = "<html><body><h1>Hello, file fetcher!</h1></body></html>";
 
- FILE *infile;
-  infile = fopen("/sys/.download", "rb");
+ /* ERSATZ DOWNLOADER */
  
-  if (infile == NULL) {
-    printf("file does not exist.\n");
-    return -1;
-  }
- 
-  fseek(infile, 0, SEEK_END);
-  size_t file_size = ftell(infile);
-  rewind(infile);
- 
-  char *buffer = (char*)malloc(file_size * sizeof(char));
-  if (buffer == NULL) {
-    fclose(infile);
-    printf("Error allocating %d bytes.\n", file_size * sizeof(char));
-    return -1;
-  }
-  size_t bytes_read = fread(buffer, sizeof(char), file_size, infile);
-  if (bytes_read != file_size) {
-    printf("Have read only %d bytes of %d.\n", bytes_read, file_size);
-    free(buffer);
-    fclose(infile);
-    return -1;
-  }
-  fclose(infile);
+ /*
+char zapzap[]="<html><body><h1>HOOLE!</h1></body></html>";
+size_t file_size=strlen(zapzap);
+char *buffer = (char*)malloc(file_size * sizeof(char));
+memcpy(buffer, zapzap, file_size * sizeof(char));
+*/
+
+
   
- 
-	
+
+
+    __menuet__debug_out("AHOY!\n");
+	struct http_msg *http_ahoy;
+
+	unsigned int wererat = 0;
+    char * pa=ctx->path;
+    asm volatile ("pusha");
+    wererat = http_get(pa);
+	asm volatile ("popa");
+	__menuet__debug_out("HTTP GOT!\n");
+	int result;
+
+    http_ahoy=wererat;
+
+    sprintf (str, "Header %d bytes, content %d bytes, recieved %d bytes\n", http_ahoy->header_length, http_ahoy->content_length, http_ahoy->content_received);
+    __menuet__debug_out(str);
+
+    asm volatile ("pusha");
+    result = http_process(wererat);
+    asm volatile ("popa");
+    while (result == -1)  {
+		asm volatile ("pusha");
+		result = http_process(wererat);
+		asm volatile ("popa");
+	}
+
+    http_ahoy=wererat;
+    
+    sprintf (str, "Header %d bytes, content %d bytes, recieved %d bytes\n", http_ahoy->header_length, http_ahoy->content_length, http_ahoy->content_received);
+    __menuet__debug_out(str);
+
+    
+    __menuet__debug_out("All content is here\n");
+    
+	size_t file_size=http_ahoy->content_received;
+	char *buffer = (char*)malloc(file_size * sizeof(char));
+	memcpy(buffer, &(http_ahoy->data)+http_ahoy->header_length, file_size);
+
+	// http_free(wererat);
+    __menuet__debug_out("memcopied\n==\n");
+
+	//__menuet__debug_out(buffer);
+	//__menuet__debug_out("memcopied\n==\n");
+
+
+//char zapzap[]="<html><body><h1>HOOLE!</h1></body></html>";
+//file_size=strlen(zapzap);
+//char *buffer = (char*)malloc(file_size * sizeof(char));
+//memcpy(buffer, zapzap, file_size * sizeof(char));
+
 
 /* fetch is going to be successful */
 	fetch_set_http_code(ctx->fetchh, 200);
@@ -436,8 +444,6 @@ static void fetch_curl_process(struct fetch_curl_context *ctx) {
 	 * fetch_file_send_callback().
 	 */
 
-	__menuet__debug_out(fetch_filetype(ctx->path));
-	__menuet__debug_out("\n");
 	
 	if (fetch_curl_send_header(ctx, "Content-Type: %s", 
 			fetch_filetype(ctx->path)))
@@ -447,7 +453,7 @@ static void fetch_curl_process(struct fetch_curl_context *ctx) {
 	/* main data loop */
 
 		msg.type = FETCH_DATA;
-		msg.data.header_or_data.buf = (const uint8_t *) buffer;
+		msg.data.header_or_data.buf = (const uint8_t *) buffer;//&(http_ahoy->data) ; //buffer;
 		msg.data.header_or_data.len = file_size;
 		fetch_curl_send_callback(&msg, ctx);
 			

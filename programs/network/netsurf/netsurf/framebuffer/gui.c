@@ -435,7 +435,7 @@ process_cmdline(int argc, char** argv)
 		fewidth = nsoption_int(window_width);
 		feheight = nsoption_int(window_height);
 	} else {
-		fewidth = 800; //640;
+		fewidth = 790; //640;
 		feheight = 560; //400;
 	}
 
@@ -540,6 +540,25 @@ main(int argc, char** argv)
 	freopen( "stderr.log", "w", stderr );
 	freopen( "stdout.log", "w", stdout );
 	
+
+	char p[256];
+	char **z;
+	z=0x20;
+	strcpy(p, *z);
+	
+	__menuet__debug_out("PATH1...\n");
+	__menuet__debug_out(p);
+	__menuet__debug_out("PATH1...\n");
+	
+	*(strrchr(p, '/')+1)='\0';
+	
+	strcpy(strrchr(p, '/')+1, "res/");
+	
+	__menuet__debug_out("PATH1...\n");
+	__menuet__debug_out(p);
+	__menuet__debug_out("PATH1...\n");
+
+	asm volatile ("int $0x40"::"a"(30), "b"(1), "c"(p));
 	
 	LOG(("Registering surfaces for SDL and RAM.."));
 	
@@ -552,14 +571,22 @@ main(int argc, char** argv)
 	_nsfb_register_surface(NSFB_SURFACE_RAM, &ram_rtns, "ram");
 	_nsfb_register_surface(NSFB_SURFACE_ABLE, &able_rtns, "able");
 	_nsfb_register_surface(NSFB_SURFACE_KOLIBRI, &kolibri_rtns, "kolibri");
-
-	respaths = fb_init_resource("/hd0/1/res/:/bd0/1/res/:/tmp9/1/netsurf/res/:res/:fonts/");
+	
+	
+	//respaths = fb_init_resource("/kolibrios/:/hd0/1/res/:/bd0/1/res/:/tmp9/1/netsurf/res/:res/:fonts/:");
+	respaths = fb_init_resource(p);
 
 	options = filepath_find(respaths, "Choices");
 	messages = filepath_find(respaths, "messages");
 
-	netsurf_init(&argc, &argv, options, "res/messages");
+	__menuet__debug_out("===path to msg\n");
+	__menuet__debug_out(messages);
+	__menuet__debug_out("\n===path to msg\n");
 	
+	//netsurf_init(&argc, &argv, options, "res/messages");
+	netsurf_init(&argc, &argv, options, messages);
+	extern HTTP_INIT();
+	HTTP_INIT();
 	LOG(("NS init okay"));
 	
 	free(messages);

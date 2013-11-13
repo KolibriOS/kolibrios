@@ -40,6 +40,29 @@ asm("popa");
 }
 
 
+unsigned kol_mouse_posw()
+{
+unsigned error;
+asm volatile ("int $0x40":"=a"(error):"a"(37), "b"(1));
+return error;
+}
+
+
+unsigned kol_mouse_btn()
+{
+unsigned error;
+asm volatile ("int $0x40":"=a"(error):"a"(37), "b"(2));
+return error;
+}
+
+unsigned kol_scancodes()
+{
+unsigned error;
+asm volatile ("int $0x40":"=a"(error):"a"(66), "b"(1), "c"(1));
+return error;
+}
+
+
 void kolibri_redraw(nsfb_t *nsfb){
 	
 
@@ -47,16 +70,35 @@ void kolibri_redraw(nsfb_t *nsfb){
 
 }
 
+
+unsigned kol_skin_h()
+{
+unsigned error;
+asm volatile ("int $0x40":"=a"(error):"a"(48), "b"(4));
+return error;
+}
+
+unsigned kol_area(char *data)
+{
+unsigned error;
+asm volatile ("int $0x40":"=a"(error):"a"(9), "b"(data), "c"(0xffffffff));
+return error;
+}
+
+
 void kolibri_window_redraw(nsfb_t *nsfb){
 	
  __menuet__window_redraw(1);
- __menuet__define_window(100,100,nsfb->width,nsfb->height,0x43000080,0x800000FF,0x000080);
- __menuet__write_text(3,3,0xFFFFFF,"Netsurf",7);
-__menuet__debug_out("f65 is mighty!\n");
+ __menuet__define_window(100,100,nsfb->width+9,nsfb->height+kol_skin_h(),0x34000080,0x800000FF,"Netsurf");
+ //__menuet__write_text(3,3,0xFFFFFF,"Netsurf",7);
+//__menuet__debug_out("f65 is mighty!\n");
 
 //here put image pixels! it's 32bpp
  f65(0,0, nsfb->width, nsfb->height, pixels);
  __menuet__window_redraw(2);
+ 
+ 
+ 
 }
 
 
@@ -84,9 +126,9 @@ kolibricopy(nsfb_t *nsfb, nsfb_bbox_t *srcbox, nsfb_bbox_t *dstbox)
     tw = dstbox->x1 - dstbox->x0;
     th = dstbox->y1 - dstbox->y0;
     
-    char pst[255];
-    sprintf (pst, "Src %d,%d %dx%d Dst %d,%d %dx%d \n", x,y,w,h,tx,ty,tw,th);
-    __menuet__debug_out(pst);
+   // char pst[255];
+  //  sprintf (pst, "Src %d,%d %dx%d Dst %d,%d %dx%d \n", x,y,w,h,tx,ty,tw,th);
+   // __menuet__debug_out(pst);
     
     int px, py, pp;
     
@@ -134,6 +176,8 @@ unsigned pz, pb;
 static int kolibri_initialise(nsfb_t *nsfb)
 {
     enum nsfb_format_e fmt;
+
+	kol_scancodes(); 
 
 pz=0;
 pb=0;
@@ -187,30 +231,110 @@ static int kolibri_finalise(nsfb_t *nsfb)
 }
 
 
-unsigned kol_mouse_posw()
-{
-unsigned error;
-asm volatile ("int $0x40":"=a"(error):"a"(37), "b"(1));
-return error;
+
+int isup(int scan){
+	return (scan&0x80)>>7;
 }
 
-
-unsigned kol_mouse_btn()
-{
-unsigned error;
-asm volatile ("int $0x40":"=a"(error):"a"(37), "b"(2));
-return error;
+int scan2key(int scan){
+	int keycode=(scan&0x0FF7F);
+	/* MAIN KB - NUMS */
+	if (keycode == 0x02) return NSFB_KEY_1;
+	if (keycode == 0x03) return NSFB_KEY_2;
+	if (keycode == 0x04) return NSFB_KEY_3;
+	if (keycode == 0x05) return NSFB_KEY_4;
+	if (keycode == 0x06) return NSFB_KEY_5;
+	if (keycode == 0x07) return NSFB_KEY_6;
+	if (keycode == 0x08) return NSFB_KEY_7;
+	if (keycode == 0x09) return NSFB_KEY_8;
+	if (keycode == 0x0A) return NSFB_KEY_9;
+	if (keycode == 0x0B) return NSFB_KEY_0;
+	
+	if (keycode == 0x10) return NSFB_KEY_q;
+	if (keycode == 0x11) return NSFB_KEY_w;
+	if (keycode == 0x12) return NSFB_KEY_e;
+	if (keycode == 0x13) return NSFB_KEY_r;
+	if (keycode == 0x14) return NSFB_KEY_t;
+	if (keycode == 0x15) return NSFB_KEY_y;
+	if (keycode == 0x16) return NSFB_KEY_u;
+	if (keycode == 0x17) return NSFB_KEY_i;
+	if (keycode == 0x18) return NSFB_KEY_o;
+	if (keycode == 0x19) return NSFB_KEY_p;
+	if (keycode == 0x1A) return NSFB_KEY_LEFTBRACKET;
+	if (keycode == 0x1B) return NSFB_KEY_RIGHTBRACKET;
+	
+	if (keycode == 0x1E) return NSFB_KEY_a;
+	if (keycode == 0x1F) return NSFB_KEY_s;
+	if (keycode == 0x20) return NSFB_KEY_d;
+	if (keycode == 0x21) return NSFB_KEY_f;
+	if (keycode == 0x22) return NSFB_KEY_g;
+	if (keycode == 0x23) return NSFB_KEY_h;
+	if (keycode == 0x24) return NSFB_KEY_j;
+	if (keycode == 0x25) return NSFB_KEY_k;
+	if (keycode == 0x26) return NSFB_KEY_l;
+	
+	if (keycode == 0x2C) return NSFB_KEY_z;
+	if (keycode == 0x2D) return NSFB_KEY_x;
+	if (keycode == 0x2E) return NSFB_KEY_c;
+	if (keycode == 0x2F) return NSFB_KEY_v;
+	if (keycode == 0x30) return NSFB_KEY_b;
+	if (keycode == 0x31) return NSFB_KEY_n;
+	if (keycode == 0x32) return NSFB_KEY_m;
+	
+	if (keycode == 0x27) return NSFB_KEY_SEMICOLON;
+	if (keycode == 0x28) return NSFB_KEY_QUOTEDBL;
+	if (keycode == 0x2B) return NSFB_KEY_BACKSLASH;
+	if (keycode == 0x33) return NSFB_KEY_COMMA;
+	if (keycode == 0x34) return NSFB_KEY_PERIOD;
+	if (keycode == 0x35) return NSFB_KEY_SLASH;
+	if (keycode == 0x0C) return NSFB_KEY_MINUS;
+	if (keycode == 0x0D) return NSFB_KEY_EQUALS;
+	
+	if (keycode == 0x0E) return NSFB_KEY_BACKSPACE;
+	if (keycode == 0xE053) return NSFB_KEY_DELETE;
+	if (keycode == 0x2A) return NSFB_KEY_LSHIFT;
+	if (keycode == 0x36) return NSFB_KEY_RSHIFT;
+	
+	if (keycode == 0x1C) return NSFB_KEY_RETURN;
+	
+	if (keycode == 0xE04B) return NSFB_KEY_LEFT;
+	if (keycode == 0xE04D) return NSFB_KEY_RIGHT;
+	if (keycode == 0xE048) return NSFB_KEY_UP;
+	if (keycode == 0xE050) return NSFB_KEY_DOWN;
+	
+	if (keycode == 0x3F) return NSFB_KEY_F5;
+	
+	if (keycode == 0x39) return NSFB_KEY_SPACE;
+	if (keycode == 0x01) return NSFB_KEY_ESCAPE;
+	
+	if (keycode == 0x38) return NSFB_KEY_LALT;
+	if (keycode == 0x1D) return NSFB_KEY_LCTRL;
+	if (keycode == 0xE038) return NSFB_KEY_RALT;
+	if (keycode == 0xE01D) return NSFB_KEY_RCTRL;
+	
+	
+	if (keycode == 0xE047) return NSFB_KEY_HOME;
+	if (keycode == 0xE04F) return NSFB_KEY_END;
+	if (keycode == 0xE049) return NSFB_KEY_PAGEUP;
+	if (keycode == 0xE051) return NSFB_KEY_PAGEDOWN;
+	
+	return NSFB_KEY_UNKNOWN;
+	
 }
 
+int ispowerkey(int scan){
+	return (scan&0xE000)>>15;
+}
 
 
 static bool kolibri_input(nsfb_t *nsfb, nsfb_event_t *event, int timeout)
 {
     int got_event;
-    
+    static int scanfull=0;
 
     nsfb = nsfb; /* unused */
 
+	
        got_event = __menuet__check_for_event();
 
     if (got_event == 0) {
@@ -225,9 +349,39 @@ static bool kolibri_input(nsfb_t *nsfb, nsfb_event_t *event, int timeout)
 	}
 
     if (got_event==2) { //key pressed
-    event->type = NSFB_EVENT_KEY_UP;
-	event->value.keycode = __menuet__getkey();
+    int scanz = __menuet__getkey();
+    
+    //char dbs[64];
+    
+    //__menuet__debug_out("KEY PRESSED\n");
+    
+   // sprintf (dbs, "FULLKEY BEFORE: F:%x\n", scanfull);
+	//__menuet__debug_out(dbs);
+	
+	if (scanz==0xE0) {
+		scanfull=0xE000;
+		return true;
+	} else {
+		scanfull=scanfull+scanz;
+	}
+	
+    //sprintf (dbs, "FULLKEY AFTER: F:%x\n", scanfull);
+	//__menuet__debug_out(dbs);
+    
+    
+	if (isup(scanfull)==1) {
+	event->type = NSFB_EVENT_KEY_UP;} else {
+	event->type = NSFB_EVENT_KEY_DOWN;}
+		
+	event->value.keycode = scan2key(scanfull);
+	
+	//sprintf (dbs, "KEY: %x F:%x %d %d\n", scanz, scanfull, isup(scanz), scan2key(scanz));
+	//__menuet__debug_out(dbs);
+	
+	scanfull=0;
+	
 	return true;
+
 	}
 	
 	if (got_event==3) { //key pressed

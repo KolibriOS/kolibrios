@@ -1,6 +1,5 @@
 # Sources
-OBJS := surface.o able.o ram.o linux.o sdl.o
-
+OBJS := surface.o able.o ram.o linux.o sdl.o kolibri.o
 
 OUTFILE = sup.o
 
