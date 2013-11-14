@@ -79,8 +79,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.0.4"
-#define ABOUT_TITLE "Eolite v2.0.4"
+#define TITLE "Eolite File Manager v2.15"
+#define ABOUT_TITLE "Eolite v2.15"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -103,6 +103,7 @@ byte
 	rename_active=0,
 	del_active=0,
 	show_dev_name=1,
+	real_files_names_case=0,
 	sort_num=2,
 	itdir;
 
@@ -310,6 +311,13 @@ void main()
 				case 26: //paste
 						CreateThread(#Paste,#copy_stak+4092);
 						break;
+				case 27:
+						strcpy(#temp, "Ram Disk free space: ");
+						i = GetFreeRamDiskClusters() / 2;
+						itoa_(#temp+21, i);
+						strcat(#temp, "Kb");
+						notify(#temp);
+						break;
 				case 31...33: //sort
 						IF(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
 						IF(sort_num==2) DrawFilledBar(sorting_arrow_x,42,6,10);
@@ -396,11 +404,7 @@ void main()
 							CreateThread(#FileMenu,#menu_stak+4092);
 							break;
 					case 173: //Ctrl+Enter
-							if (!itdir)
-							{
-								SwitchToAnotherThread();
-								CreateThread(#OpenWith,#open_with_stak+4092);
-							}
+							if (!itdir) ShowOpenWithDialog();
 							break;
 					case 178: //up
 							List_Current(-1);
@@ -444,6 +448,8 @@ void main()
 	}
 }
 
+
+
 void menu_action(dword id)
 {
 	if (id==COPY_PASTE_END)
@@ -452,11 +458,7 @@ void menu_action(dword id)
 		SelectFile(#copy_to+strrchr(#copy_to,'/'));
 	}
 	if (id==100) Open();
-	if (id==201) 
-	{
-		SwitchToAnotherThread();
-		CreateThread(#OpenWith,#open_with_stak+4092);
-	}
+	if (id==201) ShowOpenWithDialog();
 	if (id==202) FnProcess(3); //F3
 	if (id==203) FnProcess(4); //F4
 	if (id==104) Copy(#file_path, NOCUT);
@@ -470,7 +472,7 @@ void menu_action(dword id)
 
 void draw_window()
 {
-	DefineAndDrawWindow(40,20,550,500,0x73,sc.work,TITLE);
+	DefineAndDrawWindow(40,20,550,500,0x73,sc.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	files.SetSizes(192, 57, onLeft(192,27), onTop(57,6), disc_num*16+195,files.line_h);
@@ -650,7 +652,8 @@ void Open_Dir(dword dir_path, redraw){
 			return;
 		}
 		maxcount = sizeof(file_mas)/sizeof(dword)-1;
-		if (files.count>maxcount) files.count = maxcount;		
+		if (files.count>maxcount) files.count = maxcount;
+		DrawRamDiskSpace();
 	}
 	if (files.count!=-1)
 	{
@@ -680,7 +683,7 @@ inline Sorting()
 	}
 	FOR (j=files.count-1, off=files.count-1*304+buf+32; j>=0; j--, off-=304;)  //files | folders
 	{
-		strttl(off+40);
+		if (!real_files_names_case) strttl(off+40);
 		if (TestBit(ESDWORD[off],4)) //directory?
 		{
 			file_mas[k]=j;
@@ -823,7 +826,7 @@ void SelectFile(dword that_file)
 {
 	files.first=files.current=0;
    	Open_Dir(#path,ONLY_OPEN);
-	strttl(that_file);
+	if (!real_files_names_case) strttl(that_file);
 	for (i=files.count-1; i>=0; i--;)
 		if (!strcmp(file_mas[i]*304+buf+72,that_file)) break;
 	List_Current(i);

@@ -1,6 +1,6 @@
 char *ext[]={
 "..",   17,
-"<DIR>",16,
+"<dir>",16, "<DIR>",16,
 "txt", 1, "doc", 1, "rtf", 1, "odt", 1, "log", 1, "docx",1,
 "htm", 2, "html",2, "mht", 2,
 "ini", 3, "js",  3, "conf",3, "inf", 3,
@@ -30,10 +30,18 @@ char *ext[]={
 
 #include "imgs\icons.txt"
 
-void Put_icon(dword extension, xx, yy, fairing_color, default_icon)
-{ 
-	int icon_n=default_icon, i;
-	for (i=0; ext[i]!=0; i+=2;)	if (!strcmp(extension, ext[i]))	{ icon_n = ext[i+1]; break;	}
+void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
+{
+	int i;
+
+	if (extension) for (i=0; ext[i]!=0; i+=2;)
+	{
+		if (strcmpi(extension, ext[i])==0)
+		{
+			icon_n = ext[i+1];
+			break;
+		}
+	}
 
 	ficons_pal[0] = fairing_color;
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,xx,yy,8,#ficons_pal);

@@ -33,11 +33,15 @@ void GetIni(byte onload)
 				IF (!strcmp(#parametr,"SelectionColor")) edit2.shift_color=col_selec=StrToCol(#option);
 				IF (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
 				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
+				IF (!strcmp(#parametr,"RealFileNamesCase")) real_files_names_case=atoi(#option);
 				
 				IF (parametr) && (!strcmp(#file_name+strrchr(#file_name,'.'),#parametr)) && (!onload)
 				{
-					errornum=RunProgram(#option,#file_path);
-					IF (errornum<0) Write_Error(errornum);
+					errornum = RunProgram(#option,#file_path);
+					if (errornum<0)
+					{
+						if (errornum==-5) ShowOpenWithDialog(); else Write_Error(errornum);
+					}
 					return;
 				}
 				parametr=option=NULL;
@@ -50,7 +54,7 @@ void GetIni(byte onload)
 	}
 	if (file_path) && (!onload)
 	{
-		errornum=RunProgram(#file_path,NULL); 
+		errornum = RunProgram(#file_path,NULL); 
 		if (errornum==-31) menu_action(201); else if (errornum<0) Write_Error(errornum);
 		return;
 	}

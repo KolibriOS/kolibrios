@@ -1,36 +1,32 @@
 //Leency 2008-2013
 
 #ifdef LANG_RUS
-char *actions[] = {
-	57, "Новый файл", "F7",
-	56, "Новая папка", "F6",
-	60, "Настройки", "F10",
-	0,0,0
-};
-?define T_DEVICES "Устройства"
-?define T_ACTIONS "Действия"
-
+	?define T_DEVICES "Устройства"
+	?define T_ACTIONS "Действия"
+	char *actions[] = {
+		57, "Новый файл", "F7",
+		56, "Новая папка", "F6",
+		60, "Настройки", "F10",
+		0,0,0
+	};
 #elif LANG_EST
-char *actions[] = {
-	57, "Uus fail", "F7",
-	56, "Uus kataloog", "F6",
-	60, "Seaded", "F10",
-	0,0,0
-};
-
-?define T_DEVICES "Seadmed"
-?define T_ACTIONS "Toimingud"
-
+	?define T_DEVICES "Seadmed"
+	?define T_ACTIONS "Toimingud"
+	char *actions[] = {
+		57, "Uus fail", "F7",
+		56, "Uus kataloog", "F6",
+		60, "Seaded", "F10",
+		0,0,0
+	};
 #else
-char *actions[] = {
-	57, "New file", "F7",
-	56, "New folder", "F6",
-	60, "Options", "F10",
-	0,0,0
-};
-
-?define T_DEVICES "Devices"
-?define T_ACTIONS "Actions"
+	?define T_DEVICES "Devices"
+	?define T_ACTIONS "Actions"
+	char *actions[] = {
+		57, "New file", "F7",
+		56, "New folder", "F6",
+		60, "Options", "F10",
+		0,0,0
+	};
 #endif
 
 
@@ -77,15 +73,30 @@ void SystemDiscsGet()
 			strcpy(#disk_list[disc_num].Item, #sys_discs);
 			disc_num++;
 		}
-		if (strcmp(#disk_list[disc_num-1].Item, "/rd/1/")==0) if (GetDir(nullbuf, nullbuf, "/kolibrios/", DIRS_ALL)==0)
+		if (strcmp(#disk_list[disc_num-1].Item, "/rd/1/")==0) 
 		{
-			strcpy(#disk_list[disc_num].Item, "/kolibrios/");
-			kolibrios_drive = true;
-			disc_num++;	
-		} else kolibrios_drive = false;
+			if (GetDir(nullbuf, nullbuf, "/kolibrios/", DIRS_ALL)==0)
+			{
+				strcpy(#disk_list[disc_num].Item, "/kolibrios/");
+				kolibrios_drive = true;
+				disc_num++;	
+			} else kolibrios_drive = false;
+		}
 	}
 }
 
+void DrawRamDiskSpace()
+{
+	int free_rd_space = GetFreeRamDiskClusters() * 49 / ALL_RD_CLUSTERS;
+	DefineButton(120, 80, 49, 4, 27+BT_HIDE, 0);
+	if (!free_rd_space)
+		DrawBar(121, 81, 49-free_rd_space, 3, 0xFF0000);
+	else
+	{
+		DrawBar(121, 81, 49-free_rd_space, 3, 0x7A7F84);
+		DrawBar(121+49-free_rd_space, 81, free_rd_space, 3, 0xC4C4C4);
+	}
+}
 
 void SystemDiscsDraw()
 {    
@@ -109,6 +120,7 @@ void SystemDiscsDraw()
 			case 'r':
 				dev_icon=0;
 				strcpy(#disc_name, "System ");
+				DrawRamDiskSpace();
 				break;
 			case 'c':
 				dev_icon=1;
@@ -143,8 +155,7 @@ void SystemDiscsDraw()
 				strcpy(#disc_name, "Unknown ");				
 		}
 		strcat(#disc_name, #dev_name);
-		if (show_dev_name) WriteText(45,i*16+79,0x80,0,#disc_name);
-			else WriteText(45,i*16+79,0x80,0,#dev_name);
+		if (show_dev_name) WriteText(45,i*16+79,0x80,0,#disc_name); else WriteText(45,i*16+79,0x80,0,#dev_name);
 		_PutImage(21,i*16+76, 14,13, dev_icon*14*13*3+#devices);
 	}
 }

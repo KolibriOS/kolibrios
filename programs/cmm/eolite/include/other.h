@@ -75,3 +75,38 @@ void DrawFilledBar(dword x, y, w, h)
 	for (i=0; i<fill_h; i++) DrawBar(x, y+i, w, 1, col_palette[14-i]);	
 	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);		
 }
+
+
+
+
+
+
+struct rd_info
+{
+	dword function_number, reserved[4];
+	char path[4];
+} rd_info;
+
+#define ALL_RD_CLUSTERS 2847
+int GetFreeRamDiskClusters()
+{
+	dword free_size;
+	static dword old_free_size;
+
+	rd_info.function_number = 15;
+	strcpy(#rd_info.path, "/rd");
+	$mov eax,58
+	$mov ebx, #rd_info;
+	$int 0x40
+	if (EAX==0)
+	{
+		free_size=ECX;
+		old_free_size = ECX;
+	}
+	else
+	{
+		debugi(EAX);
+		free_size = old_free_size;
+	}
+	return free_size;
+}

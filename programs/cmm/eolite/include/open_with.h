@@ -1,5 +1,11 @@
 //Leency 2013
 
+void ShowOpenWithDialog()
+{
+	SwitchToAnotherThread();
+	CreateThread(#OpenWith,#open_with_stak+4092);	
+}
+
 llist app_list;
 struct app_list_string { char item[1024]; char ext[5]; };
 app_list_string app_paths[100];
