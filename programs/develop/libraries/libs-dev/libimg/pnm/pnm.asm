@@ -158,6 +158,18 @@ endl
 
   .header_parsed:
 
+        cmp     [data_type], PNM_RAW
+        jne     @f
+        mov     ecx, [width]
+        imul    ecx, [height]
+        lea     eax, [ecx*3]
+        mov     edx, [_data]
+        add     edx, [_length]
+        sub     edx, esi
+        cmp     eax, edx
+        ja      .error
+    @@:
+
 	mov	eax, [pnm_type]
 	cmp	eax, PNM_PBM
 	je	.pbm
@@ -171,6 +183,11 @@ endl
 include	'pbm.asm'
 include	'pgm.asm'
 include	'ppm.asm'
+
+  .error:
+        popa
+        xor     eax, eax
+        ret
 
   .quit:
 	popa
