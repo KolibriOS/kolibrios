@@ -214,6 +214,24 @@ LS3:
   }
 }
 
+dword strcmpi(dword cmp1, cmp2)
+{
+	char si, ue;
+
+	loop()
+	{ 
+		si = DSBYTE[cmp1];
+		ue = DSBYTE[cmp2];
+		if (si>='A') && (si<='Z') si +=32;
+		if (ue>='A') && (ue<='Z') ue +=32;
+		if (si != ue) return -1;
+		cmp1++;
+		cmp2++;
+		if ((DSBYTE[cmp1]=='\0') && (DSBYTE[cmp2]=='\0')) return 0;
+		if (DSBYTE[cmp1]=='\0') return -1;
+		if (DSBYTE[cmp2]=='\0') return 1;
+	}
+}
 
 dword strstri(dword searchin, usestr_s)
 {
