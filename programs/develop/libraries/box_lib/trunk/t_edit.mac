@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 20.06.2012 IgorA
+; файл последний раз изменялся 13.11.2013 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -2512,9 +2512,11 @@ proc ted_but_copy, edit:dword
 	call ted_get_pos_by_coords
 	mov esi,ebx
 
-	xor ecx,ecx
+	mov ecx,12 ;system buffer header size
 	mov ebx,ted_buffer
-	;mov edx,ted_tex
+	mov dword[ebx+4],0 ;text data
+	mov dword[ebx+8],1 ;code 866
+	add ebx,ecx
 	@@:
 		cmp edx,ted_tex_1 ;end of file
 		jle @f
@@ -2536,6 +2538,10 @@ proc ted_but_copy, edit:dword
 
 	cmp ecx,0
 	je .end_f
+		mov ebx,ted_buffer
+		mov eax,ted_buffer_size
+		mov dword[ebx],eax
+		mcall 54,2,ted_buffer_size,ted_buffer
 		call ted_draw_buffer
 		cmp ted_fun_draw_panel_buttons,0
 		je .end_f
@@ -2548,13 +2554,66 @@ endp
 
 align 4
 proc ted_but_paste, edit:dword
-	push eax ebx esi edi
+	pushad
 	mov edi,dword[edit]
 
+	mcall 54,0
+	cmp eax,1
+	jl .no_buf_r
+
+	mov esi,eax
+	.cycle: ;обратный цикл по слотам
+	dec esi ;номер текущего, проверяемого слота
+	mcall 54,1,esi ;read system buffer
+	cmp eax,1
+	je .no_buf_r
+	cmp eax,-1
+	je .no_buf_r
+		mov ecx,dword[eax]
+		cmp ecx,1 ;size
+		jl .no_buf_r
+		cmp dword[eax+4],0 ;text
+		je @f
+			cmp esi,1
+			jge .cycle ;если в буфере не текст, а слотов в буфере несколько, пробуем перейти к верхнему слоту
+			jmp .no_buf_r
+		@@:
+		cmp dword[eax+8],1 ;866
+		je @f
+			cmp esi,1
+			jge .cycle ;если в буфере текст не в кодировке 866 ... пробуем перейти к верхнему слоту
+			jmp .no_buf_r
+		@@:
+		;копирование текста из системного буфера во внутренний
+		cmp ecx,ted_buffer_size
+		jle @f
+			mov ecx,ted_buffer_size
+		@@:
+		mov edi,ted_buffer
+		mov esi,eax
+		add	esi,4 ;12
+		mov dword[edi],ecx
+		add edi,4 ;12
+		sub ecx,4 ;12
+		rep movsb
+		mov edi,dword[edit]
+
+		mov esi,eax
+		add	esi,12
+		jmp .buf_r
+	.no_buf_r:
+		
+	;если не удалось прочитать данные из системного буфера, попадаем сюда
 	mov esi,ted_buffer
+	cmp dword[esi],1 ;проверяем есть ли данные во внутреннем буфере
+	jl .no_paste ;если вообще ничего не удалось прочитать идем на выход
+	add esi,12 ;system buffer header size
+	.buf_r:
+	
+	mov edx,esi
 	call tl_strlen
 	cmp eax,1
-	jl @f
+	jl .no_paste
 		mov esi,eax
 		call ted_set_undo
 		mov ebx,ted_opt_ed_change_time+ted_opt_ed_move_cursor
@@ -2563,13 +2622,13 @@ proc ted_but_paste, edit:dword
 		jne .del
 			mov ebx,ted_opt_ed_move_cursor
 		.del:
-		stdcall ted_text_add,edi,ted_buffer,esi,ebx
+		stdcall ted_text_add,edi,edx,esi,ebx
 		stdcall ted_draw,edi
 		cmp ted_fun_draw_panel_buttons,0
-		je @f
+		je .no_paste
 			call ted_fun_draw_panel_buttons
-	@@:
-	pop edi esi ebx eax
+	.no_paste:
+	popad
 	ret
 endp
 
@@ -3249,8 +3308,8 @@ proc ted_draw_buffer
 	pushad
 
 	mov eax,ted_buffer
-	cmp byte[eax],0 ;смотрим 1-й символ из буфера
-	je @f
+	cmp dword[eax],1 ;смотрим размер буфера
+	jl @f
 		mov ebx,ted_rec_l
 		add bx,300
 		cmp ebx,ted_wnd_w ;сравниваем координату для вывод текста
@@ -3264,6 +3323,7 @@ proc ted_draw_buffer
 		or ecx,0x40000000
 
 		mov edx,ted_buffer
+		add edx,12
 		mov esi,edx
 		mov edi,ted_color_wnd_work ;edi - destroy not pointer to tedit
 		call tl_strlen

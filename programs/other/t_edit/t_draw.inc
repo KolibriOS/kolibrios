@@ -54,7 +54,7 @@ and ecx,0xffff
   call draw_but_icon
 or ecx,0x40000000
 
-cmp byte[buf],0
+cmp dword[buf],0
 jne @f
 and ecx,0xffff
 @@:
@@ -356,23 +356,27 @@ draw_but_icon:
 ; buf_g24 - буфер с выходным 24 битным серым изображением
 ; pixels - число пикселей в изображении
 align 4
-proc img_to_gray uses eax ebx ecx edi esi, buf_rgb:dword, buf_g24:dword, pixels:dword
+proc img_to_gray, buf_rgb:dword, buf_g24:dword, pixels:dword
+pushad
 	mov esi,[buf_rgb]
 	mov edi,[buf_g24]
 	mov ecx,[pixels]
+	mov ebx,3
 	@@:
 		movzx eax,byte[esi]
-		movzx ebx,byte[esi+1]
-		add eax,ebx
-		movzx ebx,byte[esi+2]
-		add eax,ebx
-		shr eax,2
+		movzx edx,byte[esi+1]
+		add eax,edx
+		movzx edx,byte[esi+2]
+		add eax,edx
+		xor edx,edx
+		div ebx ;shr eax,2
 		mov ah,al
 		mov word[edi],ax
 		mov byte[edi+2],al
 		add esi,3
 		add edi,3
 		loop @b
+popad
 	ret
 endp
 
