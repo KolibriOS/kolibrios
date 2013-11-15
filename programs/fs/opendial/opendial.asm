@@ -1546,7 +1546,11 @@ draw_window:
 
 	cmp	[error_window],0
 	jne	@f
-	
+
+	mov	eax,[file_browser_data_1.folder_block]
+	test	eax,eax
+	jz	@f
+
 	mov	eax,[file_browser_data_1.selected_BDVK_adress]
 	test	[eax],byte 0x10
 	jz	@f
