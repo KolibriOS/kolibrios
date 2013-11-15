@@ -7,6 +7,8 @@
     include "../../macros.inc"
 ;===============================================================================
 @code:
+    mov     [tabs.index], byte 2
+
     mcall   48, 3, color, 40
 ;-------------------------------------------------------------------------------
 main_loop:
@@ -38,6 +40,9 @@ event_button:
     cmp     ah, 0x13
     je	    .tabs.panel
 
+    cmp     ah, 0x44
+    je	    .checkbox_fsize
+
     jmp     main_loop
 
  .tabs.walls:
@@ -56,13 +61,22 @@ event_button:
     mov     [tabs.index], byte 3
     call    win.draw
     jmp     main_loop
+
+ .checkbox_fsize:
+    mov     al, 1
+    sub     al, byte [win.docky.fsize]
+    mov     [win.docky.fsize], al
+    push    183
+    push    win.docky.fsize
+    call    checkbox.draw
+    jmp     main_loop
 ;-------------------------------------------------------------------------------
 win.draw:
     mcall   12, 1
 
     mov     edx, [color.work]
     or	    edx, 0x34000000
-    mcall   0, <128, 256>, <128, 360>, , , win.title
+    mcall   0, <128, 256>, <128, 299>, , , win.title
 
     call    tabs.draw
 
@@ -142,24 +156,107 @@ tabs.draw:
     ret
 ;-------------------------------------------------------------------------------
 tabs.walls.draw:
-    mcall   8, <20, 50>, < 50, 20>, 0x20, [color.workE]
     ret
 ;-------------------------------------------------------------------------------
 tabs.skins.draw:
-    mcall   8, <40, 40>, < 60, 30>, 0x30, [color.workE]
-    mcall    ,	       , < 99, 30>, 0x31
     ret
 ;-------------------------------------------------------------------------------
 tabs.docky.draw:
-    mcall   8, <50, 10>, < 50, 10>, 0x40, [color.workE]
-    mcall    ,	       , < 70, 10>, 0x41
-    mcall    ,	       , < 90, 10>, 0x42
-    mcall    ,	       , <110, 10>, 0x43
+  ; == FRAME: POSITION == ;
+    mcall   13, <10, 226>, <48, 112>, [color.workE]
+    mcall     , <11, 224>, <49, 110>, [color.textE]
+    mcall     , <12, 222>, <50, 108>, [color.work]
+
+    mov     ecx, [color.text]
+    or	    ecx, 0xC0000000
+    mcall   4, <20, 45>, , tabs.docky.frame_pos_title, , [color.work]
+
+    mcall   8, < 81, 84>, < 64, 24>, 0x40, [color.workE]
+    mcall    , < 58, 64>, < 91, 24>, 0x41
+    mcall    , <125, 64>, < 91, 24>, 0x42
+    mcall    , < 81, 84>, <118, 24>, 0x43
+
+    mov     ecx, [color.textE]
+    or	    ecx, 0x80000000
+    mcall   4, <115,  73>, , tabs.docky.button_top
+    mcall    , < 79, 100>, , tabs.docky.button_left
+    mcall    , <106, 127>, , tabs.docky.button_bottom
+    mcall    , <143, 100>, , tabs.docky.button_right
+
+  ; == FRAME: SETTINGS == ;
+    mcall   13, <10, 226>, <170, 40>, [color.workE]
+    mcall     , <11, 224>, <171, 38>, [color.textE]
+    mcall     , <12, 222>, <172, 36>, [color.work]
+
+    mov     ecx, [color.text]
+    or	    ecx, 0xC0000000
+    mcall   4, <20, 167>, , tabs.docky.frame_set_title, , [color.work]
+
+    mcall   8, <20, 206>, <182, 16>, 0x60000044
+
+    mov     ecx, [color.text]
+    or	    ecx, 0x80000000
+    mcall   4, <20, 187>, , tabs.docky.checkbox_fsize_title
+
+    push    183
+    push    win.docky.fsize
+    call    checkbox.draw
+
+  ; == FRAME: THEARD == ;
+    mcall   13, <10, 226>, <220, 44>, [color.workE]
+    mcall     , <11, 224>, <221, 42>, [color.textE]
+    mcall     , <12, 222>, <222, 40>, [color.work]
+
+    mov     ecx, [color.text]
+    or	    ecx, 0xC0000000
+    mcall   4, <20, 217>, , tabs.docky.frame_theard_title, , [color.work]
+
+    mcall   8, < 20,  98>, <230, 24>, 0x45, [color.workE]
+    mcall   8, <128,  98>,	    , 0x46
+
+    mov     ecx, [color.textE]
+    or	    ecx, 0x80000000
+    mcall   4, < 54,  238>, , tabs.docky.button_close
+    mcall    , <139,  238>, , tabs.docky.button_start
+
     ret
 ;-------------------------------------------------------------------------------
 tabs.panel.draw:
-    mcall   8, <70, 20>, <70, 20>, 0x20, [color.workE]
-    mcall   4, <30, 50>, [color.text], tabs.panel_title
+    ret
+;-------------------------------------------------------------------------------
+checkbox.draw:
+    pop     ebp
+    pop     edi
+    pop     ecx
+    push    ebp
+
+    shl     ecx, 16
+    mov     cx, 16
+    mcall   13, <188, 34>, , [color.workE]
+    sub     ecx, 2
+    add     ecx, 0x00010000
+    mcall     , <189, 32>, , [color.textE]
+
+    mov     eax, 13
+    mov     edx, [color.workE]
+    cmp     [edi], byte 0
+    je	    .draw_off
+ .draw_on:
+    mcall   , <189, 6>
+    mov     edi, ecx
+    shr     edi, 16
+    add     edi, 3
+    mcall   4, <189, edi>, [color.text], checkbox.on, 5
+
+    ret
+
+ .draw_off:
+    mov     edx, [color.work]
+    mcall   , <215, 6>
+    mov     edi, ecx
+    shr     edi, 16
+    add     edi, 3
+    mcall   4, <189, edi>, [color.text], checkbox.off, 5
     ret
 ;===============================================================================
 win.title:
@@ -174,11 +271,43 @@ tabs.docky_title:
 tabs.panel_title:
     db	    "Panel"
 
+tabs.docky.frame_pos_title:
+    db	    " Position ", 0
+tabs.docky.button_top:
+    db	    "TOP", 0
+tabs.docky.button_left:
+    db	    "LEFT", 0
+tabs.docky.button_bottom:
+    db	    "BOTTOM", 0
+tabs.docky.button_right:
+    db	    "RIGHT", 0
+
+tabs.docky.frame_set_title:
+    db	    " Settings ", 0
+tabs.docky.checkbox_fsize_title:
+    db	    "Full size mode", 0
+
+tabs.docky.frame_theard_title:
+    db	    " Theard ", 0
+tabs.docky.button_close:
+    db	    "Close", 0
+tabs.docky.button_start:
+    db	    "Start/Restart", 0
+
+
+checkbox.on:
+    db	    "  ON "
+checkbox.off:
+    db	    " OFF "
+
 @data:
 ;===============================================================================
     rb	    2048
 @stack:
 ;-------------------------------------------------------------------------------
+win.docky.fsize:
+    rb	    1
+
 tabs.index:
     rb	    1
 
