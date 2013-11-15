@@ -6,6 +6,7 @@
 ;;  HTTP library for KolibriOS                                     ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
+;;   Proxy code written by CleverMouse                             ;;
 ;;                                                                 ;;
 ;;         GNU GENERAL PUBLIC LICENSE                              ;;
 ;;          Version 2, June 1991                                   ;;
@@ -152,14 +153,6 @@ endl
         mov     [pageaddr], ebx
         mov     [port], ecx
 
-; Do we need to use a proxy?
-        cmp     [proxyAddr], 0
-        jne     .proxy_done
-
-  .proxy_done:
-
-;;;;
-
 ; Connect to the other side.
         stdcall open_connection, [hostname], [port]
         test    eax, eax
@@ -177,6 +170,14 @@ endl
         mov     esi, str_get
         copy_till_zero
 
+; If we are using a proxy, send complete URL, otherwise send only page address.
+        cmp     [proxyAddr], 0
+        je      .no_proxy
+        mov     esi, str_http           ; prepend 'http://'
+        copy_till_zero
+        mov     esi, [hostname]
+        copy_till_zero
+  .no_proxy:
         mov     esi, [pageaddr]
         copy_till_zero
 
@@ -191,6 +192,11 @@ endl
         test    esi, esi
         jz      @f
         copy_till_zero
+  @@:
+
+        cmp     byte[proxyUser], 0
+        je      @f
+        call    append_proxy_auth_header
   @@:
 
         mov     esi, str_close
@@ -258,15 +264,6 @@ endl
         mov     [pageaddr], ebx
         mov     [port], ecx
 
-; Do we need to use a proxy?
-        cmp     [proxyAddr], 0
-        jne     .proxy_done
-
-        ; TODO: set hostname to that of the
-  .proxy_done:
-
-;;;;
-
 ; Connect to the other side.
         stdcall open_connection, [hostname], [port]
         test    eax, eax
@@ -284,6 +281,14 @@ endl
         mov     esi, str_head
         copy_till_zero
 
+; If we are using a proxy, send complete URL, otherwise send only page address.
+        cmp     [proxyAddr], 0
+        je      .no_proxy
+        mov     esi, str_http           ; prepend 'http://'
+        copy_till_zero
+        mov     esi, [hostname]
+        copy_till_zero
+  .no_proxy:
         mov     esi, [pageaddr]
         copy_till_zero
 
@@ -298,6 +303,11 @@ endl
         test    esi, esi
         jz      @f
         copy_till_zero
+  @@:
+
+        cmp     byte[proxyUser], 0
+        je      @f
+        call    append_proxy_auth_header
   @@:
 
         mov     esi, str_close
@@ -367,15 +377,6 @@ endl
         mov     [pageaddr], ebx
         mov     [port], ecx
 
-; Do we need to use a proxy?
-        cmp     [proxyAddr], 0
-        jne     .proxy_done
-
-        ; TODO: set hostname to that of the
-  .proxy_done:
-
-;;;;
-
 ; Connect to the other side.
         stdcall open_connection, [hostname], [port]
         test    eax, eax
@@ -393,6 +394,14 @@ endl
         mov     esi, str_post
         copy_till_zero
 
+; If we are using a proxy, send complete URL, otherwise send only page address.
+        cmp     [proxyAddr], 0
+        je      .no_proxy
+        mov     esi, str_http           ; prepend 'http://'
+        copy_till_zero
+        mov     esi, [hostname]
+        copy_till_zero
+  .no_proxy:
         mov     esi, [pageaddr]
         copy_till_zero
 
@@ -408,7 +417,7 @@ endl
         rep     movsb
 
         mov     eax, [content_length]
-        call    ascii_dec
+        call    eax_ascii_dec
 
         mov     esi, str_post_ct
         mov     ecx, str_post_ct.length
@@ -421,6 +430,11 @@ endl
         test    esi, esi
         jz      @f
         copy_till_zero
+  @@:
+
+        cmp     byte[proxyUser], 0
+        je      @f
+        call    append_proxy_auth_header
   @@:
 
         mov     esi, str_close
@@ -1147,6 +1161,15 @@ locals
         socketnum       dd ?
 endl
 
+        cmp     [proxyAddr], 0
+        je      .no_proxy
+
+        mov     [hostname], proxyAddr
+
+        push    [proxyPort]
+        pop     [port]
+  .no_proxy:
+
 ; Resolve the hostname
         DEBUGF  1, "Resolving hostname\n"
         push    esp     ; reserve stack place
@@ -1216,12 +1239,14 @@ proc parse_url URL ;////////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / ptr to ASCIIZ hostname                                                       ;;
 ;< ebx = ptr to ASCIIZ pageaddr                                                                   ;;
+;< ecx = port number                                                                              ;;
 ;;================================================================================================;;
 
 locals
         urlsize         dd ?
         hostname        dd ?
         pageaddr        dd ?
+        port            dd ?
 endl
 
         DEBUGF  1, "parsing URL: %s\n", [URL]
@@ -1238,10 +1263,7 @@ endl
         inc     esi
         dec     ecx
         jnz     .loop1
-
-        DEBUGF  1, "Invalid URL\n"
-        xor     eax, eax
-        ret
+        jmp     .invalid
 
   .skip_proto:
         inc     esi                     ; skip the two '/'
@@ -1266,7 +1288,7 @@ endl
         push    ecx edi                 ; remember the pointer and length of pageaddr
 
 
-; Create new buffer and put hostname in it
+; Create new buffer and put hostname in it.
         mov     ecx, edi
         sub     ecx, [URL]
         inc     ecx                     ; we will add a 0 byte at the end
@@ -1282,10 +1304,40 @@ endl
         xor     al, al
         stosb
 
+; Check if user provided a port, and convert it if so.
+        mov     esi, [hostname]
+        mov     [port], 80              ; default port if user didnt provide one
+  .portloop:
+        lodsb
+        test    al, al
+        jz      .no_port
+        cmp     al, ':'
+        jne     .portloop
+
+        push    esi
+        call    ascii_dec_ebx
+        pop     edi
+        cmp     byte[esi-1], 0
+        jne     .invalid
+        cmp     [proxyAddr], 0          ; remove port number from hostname
+        jne     @f                      ; unless when we are using proxy
+        mov     byte[edi-1], 0
+  @@:
+        test    ebx, ebx
+        je      .invalid
+        cmp     ebx, 0xffff
+        ja      .invalid
+        mov     [port], ebx
+  .no_port:
+
+
+; Did user provide a pageaddr?
         mov     [pageaddr], str_slash   ; assume there is no pageaddr
         pop     esi ecx
         test    ecx, ecx
         jz      .no_page
+
+; Create new buffer and put pageaddr into it.
         inc     ecx                     ; we will add a 0 byte at the end
         invoke  mem.alloc, ecx
         or      eax, eax
@@ -1297,11 +1349,11 @@ endl
         rep     movsb
         xor     al, al
         stosb
-  .no_page:
 
+  .no_page:
         mov     eax, [hostname]
         mov     ebx, [pageaddr]
-        mov     ecx, 80                 ;;;; FIXME
+        mov     ecx, [port]
 
         DEBUGF  1, "hostname: %s\n", eax
         DEBUGF  1, "pageaddr: %s\n", ebx
@@ -1310,14 +1362,101 @@ endl
         ret
 
   .no_mem:
+        DEBUGF  1, "Out of memory!\n"
+        xor     eax, eax
+        ret
+
+  .invalid:
+        DEBUGF  1, "Invalid URL!\n"
         xor     eax, eax
         ret
 
 endp
 
 
+
+
+
 ;;================================================================================================;;
-proc ascii_dec ;//////////////////////////////////////////////////////////////////////////////////;;
+proc append_proxy_auth_header ;///////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Appends the proxy authentication header                                                        ;;
+;;------------------------------------------------------------------------------------------------;;
+;> /                                                                                              ;;
+;;------------------------------------------------------------------------------------------------;;
+;< /                                                                                              ;;
+;;================================================================================================;;
+        mov     esi, str_proxy_auth
+        mov     ecx, str_proxy_auth.length
+        rep     movsb
+; base64-encode string <user>:<password>
+        mov     esi, proxyUser
+
+apah000:
+        lodsb
+        test    al, al
+        jz      apah001
+        call    encode_base64_byte
+        jmp     apah000
+
+apah001:
+        mov     al, ':'
+        call    encode_base64_byte
+        mov     esi, proxyPassword
+
+apah002:
+        lodsb
+        test    al, al
+        jz      apah003
+        call    encode_base64_byte
+        jmp     apah002
+
+apah003:
+        call    encode_base64_final
+        ret
+
+encode_base64_byte:
+        inc     ecx
+        shl     edx, 8
+        mov     dl, al
+        cmp     ecx, 3
+        je      ebb001
+        ret
+
+ebb001:
+        shl     edx, 8
+        inc     ecx
+
+ebb002:
+        rol     edx, 6
+        xor     eax, eax
+        xchg    al, dl
+        mov     al, [base64_table+eax]
+        stosb
+        loop    ebb002
+        ret
+
+encode_base64_final:
+        mov     al, 0
+        test    ecx, ecx
+        jz      ebf000
+        call    encode_base64_byte
+        test    ecx, ecx
+        jz      ebf001
+        call    encode_base64_byte
+        mov     byte [edi-2], '='
+
+ebf001:
+        mov     byte [edi-1], '='
+
+ebf000:
+        ret
+
+endp
+
+
+;;================================================================================================;;
+proc eax_ascii_dec ;//////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Convert eax to ASCII decimal number                                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -1343,6 +1482,35 @@ proc ascii_dec ;////////////////////////////////////////////////////////////////
         jz      .done
         stosb
         jmp     .loop2
+  .done:
+
+        ret
+
+endp
+
+
+;;================================================================================================;;
+proc ascii_dec_ebx ;//////////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Convert ASCII decimal number to ebx                                                            ;;
+;;------------------------------------------------------------------------------------------------;;
+;> esi = ptr where to read ASCII decimal number                                                   ;;
+;;------------------------------------------------------------------------------------------------;;
+;> ebx = number                                                                                   ;;
+;;================================================================================================;;
+
+        xor     eax, eax
+        xor     ebx, ebx
+  .loop:
+        lodsb
+        sub     al, '0'
+        jb      .done
+        cmp     al, 9
+        ja      .done
+        lea     ebx, [ebx + 4*ebx]
+        shl     ebx, 1
+        add     ebx, eax
+        jmp     .loop
   .done:
 
         ret
@@ -1426,6 +1594,8 @@ str_close       db 13, 10, 'User-Agent: KolibriOS libHTTP/1.0', 13, 10, 'Connect
   .length       = $ - str_close
 str_proxy_auth  db 13, 10, 'Proxy-Authorization: Basic '
   .length       = $ - str_proxy_auth
+
+str_http        db 'http://', 0
 
 base64_table    db 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
                 db '0123456789+/'
