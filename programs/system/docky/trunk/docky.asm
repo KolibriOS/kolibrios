@@ -32,6 +32,8 @@ main:
 ; ==== Config LibINI ====
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.location_name, 1
     mov     [dock_items.location], eax
+    invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.fsize_name, 0
+    mov     [dock_items.fsize], eax
 
     invoke  ini.sections, ini_data.file_name, sections_callback
 
@@ -140,11 +142,18 @@ main:
 
 ;-------------------------------------------------------------------------------
  .HORZ_WIDTH:
+    cmp     [dock_items.fsize], byte 1
+    je	    @f
     mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     add     eax, 24
     dec     eax
+    jmp     .set_hw
+  @@:
+    mcall   14
+    shr     eax, 16
+ .set_hw:
     mov     [win.width_opn], eax
     mov     [win.width_hdn], eax
 
@@ -212,10 +221,17 @@ main:
 
 ;-------------------------------------------------------------------------------
  .VERT_HEIGHT:
+    cmp     [dock_items.fsize], byte 1
+    je	    @f
     mov     eax, BUTTON_SIZE
     mov     ebx, [dock_items.count]
     imul    eax, ebx
     dec     eax
+    jmp     .set_vh
+  @@:
+    mcall   14
+    and     eax, 0xFFFF
+ .set_vh:
     mov     [win.height_opn], eax
     mov     [win.height_hdn], eax
 

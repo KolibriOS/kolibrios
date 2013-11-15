@@ -5,11 +5,25 @@
     dd	    1, @code, @data, @mem, @stack, 0, 0
 ;-------------------------------------------------------------------------------
     include "../../macros.inc"
+    include "../../proc32.inc"
+    include "../../dll.inc"
+    ;include "../../debug.inc"
 ;===============================================================================
 @code:
+    mcall   9, buffer, -1
+    mov     ecx, [buffer + 30]
+    mcall   18, 21
+    mov     [win.sid], eax
+;-------------------------------------------------------------------------------
+    mcall   68, 11
+    stdcall dll.Load, @import
+;-------------------------------------------------------------------------------
     mov     [tabs.index], byte 2
-
+;-------------------------------------------------------------------------------
     mcall   48, 3, color, 40
+;-------------------------------------------------------------------------------
+    invoke  ini.iget, ini.docky, ini.docky.sect.cfg, ini.docky.keys.fsize, 0
+    mov     [docky.fsize], al
 ;-------------------------------------------------------------------------------
 main_loop:
     mcall   10
@@ -40,8 +54,22 @@ event_button:
     cmp     ah, 0x13
     je	    .tabs.panel
 
+    cmp     ah, 0x40
+    je	    .docky.button_top
+    cmp     ah, 0x41
+    je	    .docky.button_left
+    cmp     ah, 0x42
+    je	    .docky.button_bottom
+    cmp     ah, 0x43
+    je	    .docky.button_right
+
     cmp     ah, 0x44
-    je	    .checkbox_fsize
+    je	    .docky.checkbox_fsize
+
+    cmp     ah, 0x45
+    je	    .docky.kill
+    cmp     ah, 0x46
+    je	    .docky.start
 
     jmp     main_loop
 
@@ -62,13 +90,44 @@ event_button:
     call    win.draw
     jmp     main_loop
 
- .checkbox_fsize:
+ .docky.button_top:
+    invoke  ini.iset, ini.docky, ini.docky.sect.cfg, ini.docky.keys.location, 1
+    call    docky.apply
+    jmp     main_loop
+ .docky.button_left:
+    invoke  ini.iset, ini.docky, ini.docky.sect.cfg, ini.docky.keys.location, 2
+    call    docky.apply
+    jmp     main_loop
+ .docky.button_bottom:
+    invoke  ini.iset, ini.docky, ini.docky.sect.cfg, ini.docky.keys.location, 3
+    call    docky.apply
+    jmp     main_loop
+ .docky.button_right:
+    invoke  ini.iset, ini.docky, ini.docky.sect.cfg, ini.docky.keys.location, 4
+    call    docky.apply
+    jmp     main_loop
+
+ .docky.checkbox_fsize:
     mov     al, 1
-    sub     al, byte [win.docky.fsize]
-    mov     [win.docky.fsize], al
+    sub     al, byte [docky.fsize]
+    mov     [docky.fsize], al
     push    183
-    push    win.docky.fsize
+    push    docky.fsize
     call    checkbox.draw
+
+    xor     eax, eax
+    mov     al, [docky.fsize]
+    invoke  ini.iset, ini.docky, ini.docky.sect.cfg, ini.docky.keys.fsize, eax
+    call    docky.apply
+
+    jmp     main_loop
+
+ .docky.kill:
+    call    docky.kill
+    jmp     main_loop
+ .docky.start:
+    call    docky.kill
+    call    docky.start
     jmp     main_loop
 ;-------------------------------------------------------------------------------
 win.draw:
@@ -173,8 +232,8 @@ tabs.docky.draw:
 
     mcall   8, < 81, 84>, < 64, 24>, 0x40, [color.workE]
     mcall    , < 58, 64>, < 91, 24>, 0x41
-    mcall    , <125, 64>, < 91, 24>, 0x42
-    mcall    , < 81, 84>, <118, 24>, 0x43
+    mcall    , < 81, 84>, <118, 24>, 0x42
+    mcall    , <125, 64>, < 91, 24>, 0x43
 
     mov     ecx, [color.textE]
     or	    ecx, 0x80000000
@@ -199,20 +258,20 @@ tabs.docky.draw:
     mcall   4, <20, 187>, , tabs.docky.checkbox_fsize_title
 
     push    183
-    push    win.docky.fsize
+    push    docky.fsize
     call    checkbox.draw
 
   ; == FRAME: THEARD == ;
-    mcall   13, <10, 226>, <220, 44>, [color.workE]
-    mcall     , <11, 224>, <221, 42>, [color.textE]
-    mcall     , <12, 222>, <222, 40>, [color.work]
+    mcall   13, <10, 226>, <219, 44>, [color.workE]
+    mcall     , <11, 224>, <220, 42>, [color.textE]
+    mcall     , <12, 222>, <221, 40>, [color.work]
 
     mov     ecx, [color.text]
     or	    ecx, 0xC0000000
     mcall   4, <20, 217>, , tabs.docky.frame_theard_title, , [color.work]
 
-    mcall   8, < 20,  98>, <230, 24>, 0x45, [color.workE]
-    mcall   8, <128,  98>,	    , 0x46
+    mcall   8, < 20,  98>, <231, 20>, 0x45, [color.workE]
+    mcall    , <128,  98>,	    , 0x46
 
     mov     ecx, [color.textE]
     or	    ecx, 0x80000000
@@ -258,7 +317,62 @@ checkbox.draw:
     add     edi, 3
     mcall   4, <189, edi>, [color.text], checkbox.off, 5
     ret
+;-------------------------------------------------------------------------------
+docky.kill:
+    mov     dl, 0
+    mcall   9, buffer, -1
+    mov     ecx, eax
+ .search:
+    mcall   9, buffer
+    cmp     [buffer + 10], dword "@doc"
+    je	    .kill
+    cmp     [buffer + 10], dword "@DOC"
+    jne     .continue
+ .kill:
+    mov     dl, 1
+    mcall   18, 2
+ .continue:
+    dec     ecx
+    cmp     ecx, 0
+    jne     .search
+
+    ret
+;-------------------------------------------------------------------------------
+docky.start:
+    mov     [buffer +  0], dword 7
+    mov     [buffer +  4], dword 0
+    mov     [buffer +  8], dword 0
+    mov     [buffer + 20], dword "@doc"
+    mov     [buffer + 24], word  "ky"
+    mov     [buffer + 26], byte  0
+    mcall   70, buffer
+
+    mcall   5, 5
+    mcall   18, 3, [win.sid]
+
+    ret
+;-------------------------------------------------------------------------------
+docky.apply:
+    call    docky.kill
+    cmp     dl, byte 0
+    je	    .end
+    call    docky.start
+ .end:
+    ret
 ;===============================================================================
+@import:
+    library ini, "libini.obj"
+    import  ini, ini.iget, "ini_get_int", ini.iset, "ini_set_int"
+;===============================================================================
+ini.docky:
+    db	    "settings/docky.ini", 0
+ .sect.cfg:
+    db	    "@", 0
+ .keys.fsize:
+    db	    "fsize", 0
+ .keys.location:
+    db	    "location", 0
+
 win.title:
     db	    "Desktop configuration", 0
 
@@ -305,7 +419,10 @@ checkbox.off:
     rb	    2048
 @stack:
 ;-------------------------------------------------------------------------------
-win.docky.fsize:
+win.sid:
+    rd	    1
+
+docky.fsize:
     rb	    1
 
 tabs.index:
@@ -322,5 +439,8 @@ color:
     rd	    1
  .text:
     rd	    2
+
+buffer:
+    rb	    1024
 
 @mem:
