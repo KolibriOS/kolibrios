@@ -2,18 +2,21 @@
 get(*url, *add_header);
 	*url = pointer to ASCIIZ URL
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.
+			Every additional parameter must end with CR LF bytes, including the last line.
 Initiates a HTTP connection, using 'GET' method.
  - returns 0 on error, identifier otherwise.
 
 head(*url, *add_header);
 	*url = pointer to ASCIIZ URL
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
+			Every additional parameter must end with CR LF bytes, including the last line.	
 Initiate a HTTP connection, using 'HEAD' method.
  - returns 0 on error, identifier otherwise
 
 post(*url, *add_header, *content-type, content-length);
 	*url = pointer to ASCIIZ URL
 	*add_header = pointer to ASCIIZ additional header parameters, or null for none.	
+			Every additional parameter must end with CR LF bytes, including the last line.
 	*content-type = pointer to ASCIIZ string containing content type.
 	content-length = length of the content (in bytes).
 Initiate a HTTP connection, using 'POST' method.
