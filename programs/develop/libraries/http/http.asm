@@ -44,13 +44,14 @@ virtual at 0
 end virtual
 
 macro copy_till_zero {
-  @@:
+local   .copyloop, .copydone
+  .copyloop:
         lodsb
         test    al, al
-        jz      @f
+        jz      .copydone
         stosb
-        jmp     @r
-  @@:
+        jmp     .copyloop
+  .copydone:
 }
 
 macro HTTP_init_buffer buffer, socketnum {
@@ -188,15 +189,18 @@ endl
         mov     esi, [hostname]
         copy_till_zero
 
+        cmp     byte[proxyUser], 0
+        je      @f
+        call    append_proxy_auth_header
+  @@:
+
+        mov     ax, 0x0a0d
+        stosw
+
         mov     esi, [add_header]
         test    esi, esi
         jz      @f
         copy_till_zero
-  @@:
-
-        cmp     byte[proxyUser], 0
-        je      @f
-        call    append_proxy_auth_header
   @@:
 
         mov     esi, str_close
@@ -299,15 +303,18 @@ endl
         mov     esi, [hostname]
         copy_till_zero
 
+        cmp     byte[proxyUser], 0
+        je      @f
+        call    append_proxy_auth_header
+  @@:
+
+        mov     ax, 0x0a0d
+        stosw
+
         mov     esi, [add_header]
         test    esi, esi
         jz      @f
         copy_till_zero
-  @@:
-
-        cmp     byte[proxyUser], 0
-        je      @f
-        call    append_proxy_auth_header
   @@:
 
         mov     esi, str_close
@@ -426,15 +433,18 @@ endl
         mov     esi, [content_type]
         copy_till_zero
 
+        cmp     byte[proxyUser], 0
+        je      @f
+        call    append_proxy_auth_header
+  @@:
+
+        mov     ax, 0x0a0d
+        stosw
+
         mov     esi, [add_header]
         test    esi, esi
         jz      @f
         copy_till_zero
-  @@:
-
-        cmp     byte[proxyUser], 0
-        je      @f
-        call    append_proxy_auth_header
   @@:
 
         mov     esi, str_close
@@ -1590,10 +1600,10 @@ str_post_cl     db 13, 10, 'Content-Length: '
   .length       = $ - str_post_cl
 str_post_ct     db 13, 10, 'Content-Type: '
   .length       = $ - str_post_ct
-str_close       db 13, 10, 'User-Agent: KolibriOS libHTTP/1.0', 13, 10, 'Connection: Close', 13, 10, 13, 10
-  .length       = $ - str_close
 str_proxy_auth  db 13, 10, 'Proxy-Authorization: Basic '
   .length       = $ - str_proxy_auth
+str_close       db 'User-Agent: KolibriOS libHTTP/1.0', 13, 10, 'Connection: Close', 13, 10, 13, 10
+  .length       = $ - str_close
 
 str_http        db 'http://', 0
 
