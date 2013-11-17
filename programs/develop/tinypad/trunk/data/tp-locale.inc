@@ -89,12 +89,12 @@ popup_res mm.Edit,\
   et,'-'	 ,''	  ,	 ,\
   et,'Vali kıik' ,'Ctrl+A',SelAll,\
 \
-  en,'Cortar'   ,'Ctrl+X',Cut   ,\
-  en,'Copiar'  ,'Ctrl+C',Copy  ,\
-  en,'Pegar'   ,'Ctrl+V',Insert,\
-  en,'Eliminar'  ,''    ,Delete,\
-  en,'-'   ,''    ,  ,\
-  en,'Seleccionar todo','Ctrl+A',SelAll
+  sp,'Cortar'   ,'Ctrl+X',Cut   ,\
+  sp,'Copiar'  ,'Ctrl+C',Copy  ,\
+  sp,'Pegar'   ,'Ctrl+V',Insert,\
+  sp,'Eliminar'  ,''    ,Delete,\
+  sp,'-'   ,''    ,  ,\
+  sp,'Seleccionar todo','Ctrl+A',SelAll
 
 popup_res mm.Search,\
   ru,'è•‡•©‚®...' ,'Ctrl+G',Position,\
