@@ -28,7 +28,7 @@
 #ifndef KGEM_H
 #define KGEM_H
 
-#define HAS_DEBUG_FULL 0
+#define HAS_DEBUG_FULL 1
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -39,14 +39,6 @@
 
 #include "compiler.h"
 #include "intel_list.h"
-
-static inline void delay(uint32_t time)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(5), "b"(time)
-    :"memory");
-};
 
 #undef  DBG
 

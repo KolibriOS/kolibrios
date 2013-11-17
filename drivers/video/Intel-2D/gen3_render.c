@@ -134,8 +134,8 @@ static uint32_t gen3_get_blend_cntl(int op,
 	uint32_t sblend;
 	uint32_t dblend;
 
-    sblend = BLENDFACT_ONE;  
-    dblend = BLENDFACT_INV_SRC_ALPHA; 
+    sblend = BLENDFACT_ONE;
+    dblend = BLENDFACT_INV_SRC_ALPHA;
 
 #if 0
 	if (op <= PictOpSrc) /* for clear and src disable blending */
@@ -1837,7 +1837,7 @@ gen3_blit_tex(struct sna *sna,
               uint8_t op, bool scale,
 		      PixmapPtr src, struct kgem_bo *src_bo,
 		      PixmapPtr mask,struct kgem_bo *mask_bo,
-		      PixmapPtr dst, struct kgem_bo *dst_bo, 
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
               int32_t src_x, int32_t src_y,
               int32_t msk_x, int32_t msk_y,
               int32_t dst_x, int32_t dst_y,
@@ -1868,9 +1868,9 @@ gen3_blit_tex(struct sna *sna,
 
     tmp->src.bo = src_bo;
 	tmp->src.pict_format = PICT_x8r8g8b8;
-	
+
 	gen3_composite_channel_set_format(&tmp->src, tmp->src.pict_format);
-	
+
     tmp->src.width  = src->drawable.width;
     tmp->src.height = src->drawable.height;
 
@@ -1912,11 +1912,11 @@ gen3_blit_tex(struct sna *sna,
 		tmp->floats_per_vertex += tmp->src.is_affine ? 2 : 4;
 	if (!is_constant_ps(tmp->mask.u.gen3.type))
 		tmp->floats_per_vertex += tmp->mask.is_affine ? 2 : 4;
-	DBG(("%s: floats_per_vertex = 2 + %d + %d = %d [specialised emitter? %d]\n", __FUNCTION__,
-	     !is_constant_ps(tmp->src.u.gen3.type) ? tmp->src.is_affine ? 2 : 4 : 0,
-	     !is_constant_ps(tmp->mask.u.gen3.type) ? tmp->mask.is_affine ? 2 : 4 : 0,
-	     tmp->floats_per_vertex,
-	     tmp->prim_emit != gen3_emit_composite_primitive));
+//	DBG(("%s: floats_per_vertex = 2 + %d + %d = %d [specialised emitter? %d]\n", __FUNCTION__,
+//	     !is_constant_ps(tmp->src.u.gen3.type) ? tmp->src.is_affine ? 2 : 4 : 0,
+//	     !is_constant_ps(tmp->mask.u.gen3.type) ? tmp->mask.is_affine ? 2 : 4 : 0,
+//	     tmp->floats_per_vertex,
+//	     tmp->prim_emit != gen3_emit_composite_primitive));
 	tmp->floats_per_rect = 3 * tmp->floats_per_vertex;
 
 	tmp->blt   = gen3_render_composite_blt;

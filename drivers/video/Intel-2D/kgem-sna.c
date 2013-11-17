@@ -75,7 +75,7 @@ search_snoop_cache(struct kgem *kgem, unsigned int num_pages, unsigned flags);
 #define DEBUG_SYNC 0
 #endif
 
-#define SHOW_BATCH 0
+#define SHOW_BATCH 1
 
 #if 0
 #define ASSERT_IDLE(kgem__, handle__) assert(!__kgem_busy(kgem__, handle__))
@@ -136,7 +136,7 @@ struct local_i915_gem_cacheing {
 	uint32_t cacheing;
 };
 
-#define LOCAL_IOCTL_I915_GEM_SET_CACHEING SRV_I915_GEM_SET_CACHEING
+#define LOCAL_IOCTL_I915_GEM_SET_CACHEING SRV_I915_GEM_SET_CACHING
 
 struct local_fbinfo {
 	int width;
@@ -215,7 +215,7 @@ static bool gem_set_tiling(int fd, uint32_t handle, int tiling, int stride)
 
 		ret = ioctl(fd, DRM_IOCTL_I915_GEM_SET_TILING, &set_tiling);
 	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-*/	
+*/
 	return false;//ret == 0;
 }
 
@@ -228,10 +228,10 @@ static bool gem_set_cacheing(int fd, uint32_t handle, int cacheing)
 	arg.cacheing = cacheing;
 	return drmIoctl(fd, LOCAL_IOCTL_I915_GEM_SET_CACHEING, &arg) == 0;
 }
-	
-	
 
-	
+
+
+
 
 static bool __kgem_throttle_retire(struct kgem *kgem, unsigned flags)
 {
@@ -335,12 +335,12 @@ static int gem_write(int fd, uint32_t handle,
 	}
 	return drmIoctl(fd, DRM_IOCTL_I915_GEM_PWRITE, &pwrite);
 }
-	
+
 
 bool __kgem_busy(struct kgem *kgem, int handle)
 {
 	struct drm_i915_gem_busy busy;
-    
+
 	VG_CLEAR(busy);
 	busy.handle = handle;
 	busy.busy = !kgem->wedged;
@@ -594,12 +594,12 @@ total_ram_size(void)
 {
     uint32_t  data[9];
     size_t    size = 0;
-    
+
     asm volatile("int $0x40"
         : "=a" (size)
         : "a" (18),"b"(20), "c" (data)
         : "memory");
-    
+
     return size != -1 ? size : 0;
 }
 
@@ -3638,7 +3638,7 @@ struct kgem_bo *kgem_create_cpu_2d(struct kgem *kgem,
 
 		return NULL;
 }
- 
+
 
 #endif
 
@@ -3790,7 +3790,7 @@ uint32_t kgem_add_reloc(struct kgem *kgem,
 		}
         return 0;
     };
-        
+
 	index = kgem->nreloc++;
 	assert(index < ARRAY_SIZE(kgem->reloc));
 	kgem->reloc[index].offset = pos * sizeof(kgem->batch[0]);
@@ -3913,6 +3913,48 @@ static void kgem_trim_vma_cache(struct kgem *kgem, int type, int bucket)
 	}
 }
 
+void *kgem_bo_map__async(struct kgem *kgem, struct kgem_bo *bo)
+{
+	void *ptr;
+
+	DBG(("%s: handle=%d, offset=%d, tiling=%d, map=%p, domain=%d\n", __FUNCTION__,
+	     bo->handle, bo->presumed_offset, bo->tiling, bo->map, bo->domain));
+
+	assert(!bo->purged);
+	assert(bo->proxy == NULL);
+	assert(list_is_empty(&bo->list));
+
+	if (bo->tiling == I915_TILING_NONE && !bo->scanout && kgem->has_llc) {
+		DBG(("%s: converting request for GTT map into CPU map\n",
+		     __FUNCTION__));
+		return kgem_bo_map__cpu(kgem, bo);
+	}
+
+	if (IS_CPU_MAP(bo->map))
+		kgem_bo_release_map(kgem, bo);
+
+	ptr = bo->map;
+	if (ptr == NULL) {
+		assert(kgem_bo_size(bo) <= kgem->aperture_mappable / 2);
+
+		kgem_trim_vma_cache(kgem, MAP_GTT, bucket(bo));
+
+		ptr = __kgem_bo_map__gtt(kgem, bo);
+		if (ptr == NULL)
+			return NULL;
+
+		/* Cache this mapping to avoid the overhead of an
+		 * excruciatingly slow GTT pagefault. This is more an
+		 * issue with compositing managers which need to frequently
+		 * flush CPU damage to their GPU bo.
+		 */
+		bo->map = ptr;
+		DBG(("%s: caching GTT vma for %d\n", __FUNCTION__, bo->handle));
+	}
+
+	return ptr;
+}
+
 
 void *kgem_bo_map(struct kgem *kgem, struct kgem_bo *bo)
 {
@@ -4015,6 +4057,10 @@ void *kgem_bo_map__gtt(struct kgem *kgem, struct kgem_bo *bo)
 	return ptr;
 }
 
+void *kgem_bo_map__debug(struct kgem *kgem, struct kgem_bo *bo)
+{
+	return kgem_bo_map__async(kgem, bo);
+}
 
 void *kgem_bo_map__cpu(struct kgem *kgem, struct kgem_bo *bo)
 {
@@ -4180,9 +4226,9 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
 	ret = drmIoctl(kgem->fd, SRV_FBINFO, fb);
 	if( ret != 0 )
 	    return 0;
-    
+
     size = fb->pitch * fb->height / PAGE_SIZE;
-     
+
   	bo = __kgem_bo_alloc(-2, size);
 	if (!bo) {
 		return 0;
@@ -4193,11 +4239,11 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
 	bo->pitch     = fb->pitch;
     bo->tiling    = I915_TILING_NONE;
     bo->scanout   = 1;
-	fb->fb_bo     = bo;    
+	fb->fb_bo     = bo;
 
 //    printf("fb width %d height %d pitch %d bo %p\n",
 //            fb->width, fb->height, fb->pitch, fb->fb_bo);
-            
+
     return 1;
 };
 
@@ -4207,29 +4253,29 @@ int kgem_update_fb(struct kgem *kgem, struct sna_fb *fb)
     struct kgem_bo *bo;
     size_t size;
     int ret;
-    
+
     bo = fb->fb_bo;
-    
+
 	ret = drmIoctl(kgem->fd, SRV_FBINFO, fb);
 	if( ret != 0 )
 	    return 0;
 
-	fb->fb_bo = bo;    
-    
+	fb->fb_bo = bo;
+
     size = fb->pitch * fb->height / PAGE_SIZE;
 
     if((size != bo->size.pages.count) ||
-       (fb->pitch != bo->pitch))      
+       (fb->pitch != bo->pitch))
     {
         bo->size.pages.count = size;
 	    bo->pitch     = fb->pitch;
 
     printf("fb width %d height %d pitch %d bo %p\n",
             fb->width, fb->height, fb->pitch, fb->fb_bo);
-	    
+
         return 1;
     }
-            
+
     return 0;
 };
 
