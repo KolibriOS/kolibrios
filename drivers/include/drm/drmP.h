@@ -185,7 +185,7 @@ int drm_err(const char *func, const char *format, ...);
 /** \name Begin the DRM... */
 /*@{*/
 
-#define DRM_DEBUG_CODE 2	  /**< Include debugging code if > 1, then
+#define DRM_DEBUG_CODE 0     /**< Include debugging code if > 1, then
 				     also include looping detection. */
 
 #define DRM_MAGIC_HASH_ORDER  4  /**< Size of key hash table. Must be power of 2. */

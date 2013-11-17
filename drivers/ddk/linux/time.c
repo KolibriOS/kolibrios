@@ -162,3 +162,38 @@ timespec_to_jiffies(const struct timespec *value)
 
 }
 
+s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
+{
+        u64 quotient;
+
+        if (dividend < 0) {
+                quotient = div_u64_rem(-dividend, abs(divisor), (u32 *)remainder);
+                *remainder = -*remainder;
+                if (divisor > 0)
+                        quotient = -quotient;
+        } else {
+                quotient = div_u64_rem(dividend, abs(divisor), (u32 *)remainder);
+                if (divisor < 0)
+                        quotient = -quotient;
+        }
+        return quotient;
+}
+
+struct timespec ns_to_timespec(const s64 nsec)
+{
+        struct timespec ts;
+        s32 rem;
+
+        if (!nsec)
+                return (struct timespec) {0, 0};
+
+        ts.tv_sec = div_s64_rem(nsec, NSEC_PER_SEC, &rem);
+        if (unlikely(rem < 0)) {
+                ts.tv_sec--;
+                rem += NSEC_PER_SEC;
+        }
+        ts.tv_nsec = rem;
+
+        return ts;
+}
+
