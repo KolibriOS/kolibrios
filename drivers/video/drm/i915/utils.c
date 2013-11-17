@@ -41,8 +41,6 @@ struct page *shmem_read_mapping_page_gfp(struct file *filep,
 {
     struct page *page;
 
-//    dbgprintf("%s, file %p index %d\n", __FUNCTION__, filep, index);
-
     if(unlikely(index >= filep->count))
         return ERR_PTR(-EINVAL);
 
@@ -56,6 +54,9 @@ struct page *shmem_read_mapping_page_gfp(struct file *filep,
             return ERR_PTR(-ENOMEM);
 
         filep->pages[index] = page;
+//        printf("file %p index %d page %x\n", filep, index, page);
+//        delay(1);
+
     };
 
     return page;

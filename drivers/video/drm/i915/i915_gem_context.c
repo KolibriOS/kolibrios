@@ -289,6 +289,8 @@ void i915_gem_context_fini(struct drm_device *dev)
 	 * to default context. So we need to unreference the base object once
 	 * to offset the do_switch part, so that i915_gem_context_unreference()
 	 * can then free the base object correctly. */
+	drm_gem_object_unreference(&dctx->obj->base);
+	i915_gem_context_unreference(dctx);
 }
 
 static int context_idr_cleanup(int id, void *p, void *data)
@@ -307,7 +309,7 @@ void i915_gem_context_close(struct drm_device *dev, struct drm_file *file)
 	struct drm_i915_file_private *file_priv = file->driver_priv;
 
 	mutex_lock(&dev->struct_mutex);
-//	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
+	idr_for_each(&file_priv->context_idr, context_idr_cleanup, NULL);
 	idr_destroy(&file_priv->context_idr);
 	mutex_unlock(&dev->struct_mutex);
 }
@@ -493,7 +495,6 @@ int i915_switch_context(struct intel_ring_buffer *ring,
 	return do_switch(to);
 }
 
-#if 0
 int i915_gem_context_create_ioctl(struct drm_device *dev, void *data,
 				  struct drm_file *file)
 {
@@ -545,11 +546,10 @@ int i915_gem_context_destroy_ioctl(struct drm_device *dev, void *data,
 		return -ENOENT;
 	}
 
-
+	idr_remove(&ctx->file_priv->context_idr, ctx->id);
+	i915_gem_context_unreference(ctx);
 	mutex_unlock(&dev->struct_mutex);
 
 	DRM_DEBUG_DRIVER("HW context %d destroyed\n", args->ctx_id);
 	return 0;
 }
-
-#endif

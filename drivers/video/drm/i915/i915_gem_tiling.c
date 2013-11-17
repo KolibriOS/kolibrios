@@ -80,24 +80,6 @@
  * to match what the GPU expects.
  */
 
-#define I915_TILING_NONE   0
-#define I915_TILING_X       1
-#define I915_TILING_Y       2
-
-#define I915_BIT_6_SWIZZLE_NONE     0
-#define I915_BIT_6_SWIZZLE_9        1
-#define I915_BIT_6_SWIZZLE_9_10     2
-#define I915_BIT_6_SWIZZLE_9_11     3
-#define I915_BIT_6_SWIZZLE_9_10_11  4
-/* Not seen by userland */
-#define I915_BIT_6_SWIZZLE_UNKNOWN  5
-/* Seen by userland. */
-#define I915_BIT_6_SWIZZLE_9_17     6
-#define I915_BIT_6_SWIZZLE_9_10_17  7
-
-
-
-
 /**
  * Detects bit 6 swizzling of address lookup between IGD access and CPU
  * access through main memory.
@@ -218,7 +200,6 @@ i915_gem_detect_bit_6_swizzle(struct drm_device *dev)
 	dev_priv->mm.bit_6_swizzle_y = swizzle_y;
 }
 
-#if 0
 /* Check pitch constriants for all chips & tiling formats */
 static bool
 i915_tiling_ok(struct drm_device *dev, int stride, int size, int tiling_mode)
@@ -470,6 +451,7 @@ i915_gem_get_tiling(struct drm_device *dev, void *data,
 	return 0;
 }
 
+#if 0
 /**
  * Swap every 64 bytes of this page around, to account for it having a new
  * bit 17 of its physical address and therefore being interpreted differently

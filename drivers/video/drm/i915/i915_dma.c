@@ -377,6 +377,7 @@ static int i915_emit_cmds(struct drm_device * dev, int *buffer, int dwords)
 
 	return 0;
 }
+#endif
 
 int
 i915_emit_box(struct drm_device *dev,
@@ -419,6 +420,7 @@ i915_emit_box(struct drm_device *dev,
 	return 0;
 }
 
+#if 0
 /* XXX: Emitting the counter should really be moved to part of the IRQ
  * emit. For now, do it in both places:
  */
@@ -913,7 +915,7 @@ static int i915_flip_bufs(struct drm_device *dev, void *data,
 }
 #endif
 
-static int i915_getparam(struct drm_device *dev, void *data,
+int i915_getparam(struct drm_device *dev, void *data,
 			 struct drm_file *file_priv)
 {
 	drm_i915_private_t *dev_priv = dev->dev_private;
@@ -960,6 +962,9 @@ static int i915_getparam(struct drm_device *dev, void *data,
 	case I915_PARAM_HAS_BLT:
 		value = intel_ring_initialized(&dev_priv->ring[BCS]);
 		break;
+	case I915_PARAM_HAS_VEBOX:
+		value = intel_ring_initialized(&dev_priv->ring[VECS]);
+		break;
 	case I915_PARAM_HAS_RELAXED_FENCING:
 		value = 1;
 		break;
@@ -977,6 +982,9 @@ static int i915_getparam(struct drm_device *dev, void *data,
 		break;
 	case I915_PARAM_HAS_LLC:
 		value = HAS_LLC(dev);
+		break;
+	case I915_PARAM_HAS_WT:
+		value = HAS_WT(dev);
 		break;
 	case I915_PARAM_HAS_ALIASING_PPGTT:
 		value = dev_priv->mm.aliasing_ppgtt ? 1 : 0;
@@ -1000,7 +1008,7 @@ static int i915_getparam(struct drm_device *dev, void *data,
 		value = 1;
         break;
 	case I915_PARAM_HAS_EXEC_HANDLE_LUT:
-        value = 1;
+        value = 0; //1;
         break;
 	default:
 		DRM_DEBUG("Unknown parameter %d\n", param->param);
@@ -1692,7 +1700,3 @@ int i915_driver_device_is_agp(struct drm_device * dev)
 #endif
 
 
-int gem_getparam(struct drm_device *dev, void *data)
-{
-    return i915_getparam(dev, data, NULL);
-};

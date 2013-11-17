@@ -484,8 +484,6 @@ drm_gem_close_ioctl(struct drm_device *dev, void *data,
  * Note that the name does not hold a reference; when the object
  * is freed, the name goes away.
  */
-
-#if 0
 int
 drm_gem_flink_ioctl(struct drm_device *dev, void *data,
 		    struct drm_file *file_priv)
@@ -572,6 +570,7 @@ drm_gem_open_ioctl(struct drm_device *dev, void *data,
 	return 0;
 }
 
+#if 0
 /**
  * Called at device open time, sets up the structure for handling refcounting
  * of mm objects.

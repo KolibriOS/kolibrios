@@ -45,7 +45,8 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
              int src_x, int src_y, u32 w, u32 h);
 
 void get_pci_info(struct pci_device *dev);
-int gem_getparam(struct drm_device *dev, void *data);
+int i915_getparam(struct drm_device *dev, void *data,
+             struct drm_file *file_priv);
 
 int i915_mask_update(struct drm_device *dev, void *data,
             struct drm_file *file);
@@ -221,22 +222,31 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
 
 #define SRV_GET_PCI_INFO            20
-#define SRV_GET_PARAM               21
+#define SRV_I915_GET_PARAM              21
 #define SRV_I915_GEM_CREATE         22
 #define SRV_DRM_GEM_CLOSE           23
-#define SRV_I915_GEM_PIN            24
-#define SRV_I915_GEM_SET_CACHEING   25
-#define SRV_I915_GEM_GET_APERTURE   26
-#define SRV_I915_GEM_PWRITE         27
-#define SRV_I915_GEM_BUSY           28
-#define SRV_I915_GEM_SET_DOMAIN     29
-#define SRV_I915_GEM_MMAP           30
-#define SRV_I915_GEM_MMAP_GTT       31
-#define SRV_I915_GEM_THROTTLE       32
-#define SRV_FBINFO                  33
-#define SRV_I915_GEM_EXECBUFFER2    34
-#define SRV_MASK_UPDATE             35
+#define SRV_DRM_GEM_FLINK               24
+#define SRV_DRM_GEM_OPEN                25
+#define SRV_I915_GEM_PIN                26
+#define SRV_I915_GEM_UNPIN              27
+#define SRV_I915_GEM_SET_CACHING        28
+#define SRV_I915_GEM_PWRITE             29
+#define SRV_I915_GEM_BUSY               30
+#define SRV_I915_GEM_SET_DOMAIN         31
+#define SRV_I915_GEM_MMAP               32
+#define SRV_I915_GEM_SET_TILING         33
+#define SRV_I915_GEM_GET_TILING         34
+#define SRV_I915_GEM_GET_APERTURE       35
+#define SRV_I915_GEM_MMAP_GTT           36
+#define SRV_I915_GEM_THROTTLE           37
+#define SRV_I915_GEM_EXECBUFFER2        38
+#define SRV_I915_GEM_WAIT               39
+#define SRV_I915_GEM_CONTEXT_CREATE     40
+#define SRV_I915_GEM_CONTEXT_DESTROY    41
+#define SRV_I915_REG_READ               42
 
+#define SRV_FBINFO                      43
+#define SRV_MASK_UPDATE                 44
 
 
 #define check_input(size) \
@@ -316,8 +326,8 @@ int _stdcall display_handler(ioctl_t *io)
             retval = 0;
             break;
 
-        case SRV_GET_PARAM:
-            retval = gem_getparam(main_device, inp);
+        case SRV_I915_GET_PARAM:
+            retval = i915_getparam(main_device, inp, file);
             break;
 
         case SRV_I915_GEM_CREATE:
@@ -328,16 +338,24 @@ int _stdcall display_handler(ioctl_t *io)
             retval = drm_gem_close_ioctl(main_device, inp, file);
             break;
 
+        case SRV_DRM_GEM_FLINK:
+            retval = drm_gem_flink_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_DRM_GEM_OPEN:
+            retval = drm_gem_open_ioctl(main_device, inp, file);
+            break;
+
         case SRV_I915_GEM_PIN:
             retval = i915_gem_pin_ioctl(main_device, inp, file);
             break;
 
-        case SRV_I915_GEM_SET_CACHEING:
-            retval = i915_gem_set_caching_ioctl(main_device, inp, file);
+        case SRV_I915_GEM_UNPIN:
+            retval = i915_gem_unpin_ioctl(main_device, inp, file);
             break;
 
-        case SRV_I915_GEM_GET_APERTURE:
-            retval = i915_gem_get_aperture_ioctl(main_device, inp, file);
+        case SRV_I915_GEM_SET_CACHING:
+            retval = i915_gem_set_caching_ioctl(main_device, inp, file);
             break;
 
         case SRV_I915_GEM_PWRITE:
@@ -352,31 +370,60 @@ int _stdcall display_handler(ioctl_t *io)
             retval = i915_gem_set_domain_ioctl(main_device, inp, file);
             break;
 
-        case SRV_I915_GEM_THROTTLE:
-            retval = i915_gem_throttle_ioctl(main_device, inp, file);
-            break;
-
         case SRV_I915_GEM_MMAP:
             retval = i915_gem_mmap_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_SET_TILING:
+            retval = i915_gem_set_tiling(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_GET_TILING:
+            retval = i915_gem_get_tiling(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_GET_APERTURE:
+//            printf("SRV_I915_GEM_GET_APERTURE ");
+            retval = i915_gem_get_aperture_ioctl(main_device, inp, file);
+//            printf(" retval=%d\n", retval);
             break;
 
         case SRV_I915_GEM_MMAP_GTT:
             retval = i915_gem_mmap_gtt_ioctl(main_device, inp, file);
             break;
 
+        case SRV_I915_GEM_THROTTLE:
+            retval = i915_gem_throttle_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_EXECBUFFER2:
+//            printf("SRV_I915_GEM_EXECBUFFER2\n");
+            retval = i915_gem_execbuffer2(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_WAIT:
+            retval = i915_gem_wait_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_CONTEXT_CREATE:
+            retval = i915_gem_context_create_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_GEM_CONTEXT_DESTROY:
+            retval = i915_gem_context_destroy_ioctl(main_device, inp, file);
+            break;
+
+        case SRV_I915_REG_READ:
+            retval = i915_reg_read_ioctl(main_device, inp, file);
+            break;
 
         case SRV_FBINFO:
             retval = i915_fbinfo(inp);
             break;
 
-        case SRV_I915_GEM_EXECBUFFER2:
-            retval = i915_gem_execbuffer2(main_device, inp, file);
-            break;
-
         case SRV_MASK_UPDATE:
             retval = i915_mask_update(main_device, inp, file);
             break;
-
     };
 
     return retval;
@@ -521,3 +568,6 @@ void get_pci_info(struct pci_device *dev)
     dev->device_id  = pdev->device;
     dev->revision   = pdev->revision;
 };
+
+
+

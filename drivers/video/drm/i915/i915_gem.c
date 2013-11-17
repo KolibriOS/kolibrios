@@ -1321,8 +1321,6 @@ i915_gem_mmap_ioctl(struct drm_device *dev, void *data,
 	if (obj == NULL)
 		return -ENOENT;
 
-    //dbgprintf("%s offset %lld size %lld\n",
-//                __FUNCTION__, args->offset, args->size);
 	/* prime objects have no backing filp to GEM mmap
 	 * pages from.
 	 */
@@ -2330,17 +2328,74 @@ i915_gem_object_flush_active(struct drm_i915_gem_object *obj)
  * function completes. A similar but shorter * race condition exists in the busy
  * ioctl
  */
+int
+i915_gem_wait_ioctl(struct drm_device *dev, void *data, struct drm_file *file)
+{
+	drm_i915_private_t *dev_priv = dev->dev_private;
+	struct drm_i915_gem_wait *args = data;
+	struct drm_i915_gem_object *obj;
+	struct intel_ring_buffer *ring = NULL;
+	struct timespec timeout_stack, *timeout = NULL;
+	unsigned reset_counter;
+	u32 seqno = 0;
+	int ret = 0;
 
+	if (args->timeout_ns >= 0) {
+		timeout_stack = ns_to_timespec(args->timeout_ns);
+		timeout = &timeout_stack;
+	}
 
+	ret = i915_mutex_lock_interruptible(dev);
+	if (ret)
+		return ret;
 
+    if(args->bo_handle == -2)
+    {
+        obj = get_fb_obj();
+        drm_gem_object_reference(&obj->base);
+    }
+    else
+	obj = to_intel_bo(drm_gem_object_lookup(dev, file, args->bo_handle));
+	if (&obj->base == NULL) {
+		mutex_unlock(&dev->struct_mutex);
+		return -ENOENT;
+	}
 
+	/* Need to make sure the object gets inactive eventually. */
+	ret = i915_gem_object_flush_active(obj);
+	if (ret)
+		goto out;
 
+	if (obj->active) {
+		seqno = obj->last_read_seqno;
+		ring = obj->ring;
+	}
 
+	if (seqno == 0)
+		 goto out;
 
+	/* Do this after OLR check to make sure we make forward progress polling
+	 * on this IOCTL with a 0 timeout (like busy ioctl)
+	 */
+	if (!args->timeout_ns) {
+		ret = -ETIME;
+		goto out;
+	}
 
+	drm_gem_object_unreference(&obj->base);
+	reset_counter = atomic_read(&dev_priv->gpu_error.reset_counter);
+	mutex_unlock(&dev->struct_mutex);
 
+	ret = __wait_seqno(ring, seqno, reset_counter, true, timeout);
+	if (timeout)
+		args->timeout_ns = timespec_to_ns(timeout);
+	return ret;
 
-
+out:
+	drm_gem_object_unreference(&obj->base);
+	mutex_unlock(&dev->struct_mutex);
+	return ret;
+}
 
 /**
  * i915_gem_object_sync - sync an object to a ring.
@@ -3613,6 +3668,9 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 	if (WARN_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
 		return -EBUSY;
 
+//    if( obj == get_fb_obj())
+//        return 0;
+
 	WARN_ON(map_and_fenceable && !i915_is_ggtt(vm));
 
 	vma = i915_gem_obj_to_vma(obj, vm);
@@ -3720,8 +3778,6 @@ unlock:
 	return ret;
 }
 
-#if 0
-
 int
 i915_gem_unpin_ioctl(struct drm_device *dev, void *data,
 		     struct drm_file *file)
@@ -3734,6 +3790,12 @@ i915_gem_unpin_ioctl(struct drm_device *dev, void *data,
 	if (ret)
 		return ret;
 
+    if(args->handle == -2)
+    {
+        obj = get_fb_obj();
+        drm_gem_object_reference(&obj->base);
+    }
+    else
 	obj = to_intel_bo(drm_gem_object_lookup(dev, file, args->handle));
 	if (&obj->base == NULL) {
 		ret = -ENOENT;
@@ -3758,8 +3820,6 @@ unlock:
 	mutex_unlock(&dev->struct_mutex);
 	return ret;
 }
-
-#endif
 
 int
 i915_gem_busy_ioctl(struct drm_device *dev, void *data,
@@ -3894,10 +3954,7 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 
 	obj = i915_gem_object_alloc(dev);
 	if (obj == NULL)
-    {
-        FAIL();
 		return NULL;
-    };
 
 	if (drm_gem_object_init(dev, &obj->base, size) != 0) {
 		i915_gem_object_free(obj);
@@ -4214,8 +4271,6 @@ i915_gem_init_hw(struct drm_device *dev)
 
 	return 0;
 }
-
-#define LFB_SIZE 0xC00000
 
 int i915_gem_init(struct drm_device *dev)
 {
