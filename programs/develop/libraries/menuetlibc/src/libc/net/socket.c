@@ -18,7 +18,7 @@ int socket(int domain, int type, int protocol)
   return __ret;
 }
 
-int close_socket(int s)
+int closesocket(int s)
 {
   int __ret;
   __asm__("int $0x40":"=a"(__ret):"a"(_SOCKETF),"b"(_CLOSESF),"c"(s));

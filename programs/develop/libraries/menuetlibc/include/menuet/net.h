@@ -131,7 +131,7 @@ struct addrinfo {
 
 unsigned long inet_addr(char *cp);
 int socket(int domain, int type, int protocol); 
-int close_socket(int s);
+int closesocket(int s);
 int bind(int sockfd, struct sockaddr *my_addr, int addrlen);
 int listen(int s, int backlog);
 int connect(int sockfd, const struct sockaddr *serv_addr, int addrlen);
