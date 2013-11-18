@@ -36,7 +36,7 @@ typedef struct
  unsigned char c_char;
  unsigned char c_back;
  unsigned char c_color;
-} char_info_t __attribute__((packed));
+} char_info_t;
 
 typedef struct
 {
