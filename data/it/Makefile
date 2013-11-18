@@ -179,6 +179,7 @@ FASM_PROGRAMS:=\
  lib/libini.obj:LIB/LIBINI.OBJ:$(PROGS)/develop/libraries/libs-dev/libini/libini.asm \
  lib/libio.obj:LIB/LIBIO.OBJ:$(PROGS)/develop/libraries/libs-dev/libio/libio.asm \
  lib/network.obj:LIB/NETWORK.OBJ:$(PROGS)/develop/libraries/network/network.asm \
+ lib/http.obj:LIB/HTTP.OBJ:$(PROGS)/develop/libraries/http/http.asm \
  lib/proc_lib.obj:LIB/PROC_LIB.OBJ:$(PROGS)/develop/libraries/proc_lib/trunk/proc_lib.asm \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ:$(PROGS)/media/zsea/plugins/png/cnv_png.asm \
  media/animage:MEDIA/ANIMAGE:$(PROGS)/media/animage/trunk/animage.asm \
