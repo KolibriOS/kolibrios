@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 13.11.2013 IgorA
+; файл последний раз изменялся 18.11.2013 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -774,6 +774,27 @@ proc ted_on_open_file
 	push esi
 
 	stdcall ted_clear,edi,0 ;чистим не всю память, потому что ниже будем ее заполнять новыми даными
+
+	;когда символ завершения строки только 10 (без 13)
+	mov edx,ted_tex
+	mov ecx,ebx
+	@@:
+		cmp byte[edx],13
+		je .no_10 ;если найден символ 13, то 10-е игнорируем
+		inc edx
+		loop @b
+	mov edx,ted_tex
+	mov ecx,ebx
+	.s_10:
+		cmp byte[edx],10
+		jne @f
+			mov byte[edx],13 ;меняем 10-й символ конца строки
+		@@:
+		inc edx
+		loop .s_10
+	.no_10:
+
+	;переводим открытый файл внутрь элемента t_edit
 	mov eax,ebx
 	mov ecx,ebx
 	add eax,2
