@@ -32,7 +32,7 @@ int blocks_matrix[28*28]; //цвета для поля с квадратиками
 	char REZULT_TEXT[]="Tulemus: ";
 #else
 	char NEW_GAME_TEXT[]="New Game [F2]";
-	char REZULT_TEXT[]="Rezult: ";
+	char REZULT_TEXT[]="Result: ";
 #endif
 
 
@@ -165,7 +165,7 @@ void move_blocks(int button_id) //если фишка одна, то не удаляем
 
 void draw_window()
 {
-	int j, PANEL_Y;
+	int PANEL_Y;
 	proc_info Form;
 
 	sc.get();
