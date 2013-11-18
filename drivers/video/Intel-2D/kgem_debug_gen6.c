@@ -39,8 +39,6 @@
 
 #include "kgem_debug.h"
 
-#define ErrorF printf
-
 static struct state {
 	struct vertex_buffer {
 		int handle;

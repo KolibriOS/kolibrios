@@ -30,11 +30,7 @@ struct sna_composite_rectangles {
 struct sna_composite_op {
     fastcall void (*blt)(struct sna *sna, const struct sna_composite_op *op,
                  const struct sna_composite_rectangles *r);
-    fastcall void (*box)(struct sna *sna,
-                 const struct sna_composite_op *op,
-                 const BoxRec *box);
-    void (*boxes)(struct sna *sna, const struct sna_composite_op *op,
-              const BoxRec *box, int nbox);
+
     void (*done)(struct sna *sna, const struct sna_composite_op *op);
 
     struct sna_damage **damage;
@@ -155,7 +151,7 @@ struct sna_copy_op {
 
 struct sna_render {
 	int active;
-	
+
 	int caps;
 
 	int max_3d_size;
@@ -192,9 +188,6 @@ struct sna_render {
 		      struct sna_video *video,
 		      struct sna_video_frame *frame,
 		      RegionPtr dstRegion,
-		      short src_w, short src_h,
-		      short drw_w, short drw_h,
-		      short dx, short dy,
 		      PixmapPtr pixmap);
 
 	bool (*fill_boxes)(struct sna *sna,
@@ -358,10 +351,10 @@ struct gen5_render_state {
 	int ve_id;
 	uint32_t drawrect_offset;
 	uint32_t drawrect_limit;
+	uint32_t last_pipelined_pointers;
 	uint16_t last_primitive;
 	int16_t floats_per_vertex;
 	uint16_t surface_table;
-	uint16_t last_pipelined_pointers;
 
 	bool needs_invariant;
 };
@@ -505,17 +498,15 @@ bool sna_get_rgba_from_pixel(uint32_t pixel,
 			     uint32_t format);
 bool sna_picture_is_solid(PicturePtr picture, uint32_t *color);
 
-void no_render_init(struct sna *sna);
-
-bool gen2_render_init(struct sna *sna);
-bool gen3_render_init(struct sna *sna);
-bool gen4_render_init(struct sna *sna);
-bool gen5_render_init(struct sna *sna);
-bool gen6_render_init(struct sna *sna);
-bool gen7_render_init(struct sna *sna);
+const char *no_render_init(struct sna *sna);
+const char *gen2_render_init(struct sna *sna, const char *backend);
+const char *gen3_render_init(struct sna *sna, const char *backend);
+const char *gen4_render_init(struct sna *sna, const char *backend);
+const char *gen5_render_init(struct sna *sna, const char *backend);
+const char *gen6_render_init(struct sna *sna, const char *backend);
+const char *gen7_render_init(struct sna *sna, const char *backend);
 
 #if 0
-
 bool sna_tiling_composite(uint32_t op,
 			  PicturePtr src,
 			  PicturePtr mask,
@@ -683,7 +674,8 @@ inline static void sna_render_composite_redirect_init(struct sna_composite_op *o
 bool
 sna_render_composite_redirect(struct sna *sna,
 			      struct sna_composite_op *op,
-			      int x, int y, int width, int height);
+			      int x, int y, int width, int height,
+			      bool partial);
 
 void
 sna_render_composite_redirect_done(struct sna *sna,
@@ -691,8 +683,8 @@ sna_render_composite_redirect_done(struct sna *sna,
 
 bool
 sna_composite_mask_is_opaque(PicturePtr mask);
-
 #endif
+
 void sna_vertex_init(struct sna *sna);
 
 static inline void sna_vertex_lock(struct sna_render *r)
@@ -725,5 +717,70 @@ static inline bool sna_vertex_wait__locked(struct sna_render *r)
 //		pthread_cond_wait(&r->wait, &r->lock);
 	return was_active;
 }
+
+#define alphaless(format) PICT_FORMAT(PICT_FORMAT_BPP(format),		\
+				      PICT_FORMAT_TYPE(format),		\
+				      0,				\
+				      PICT_FORMAT_R(format),		\
+				      PICT_FORMAT_G(format),		\
+				      PICT_FORMAT_B(format))
+static bool
+gen3_blit_tex(struct sna *sna,
+              uint8_t op, bool scale,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
+static bool
+gen4_blit_tex(struct sna *sna,
+              uint8_t op, bool scale,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
+
+static bool
+gen5_blit_tex(struct sna *sna,
+              uint8_t op, bool scale,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
+
+static bool
+gen6_blit_tex(struct sna *sna,
+              uint8_t op, bool scale,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
+
+static bool
+gen7_blit_tex(struct sna *sna,
+              uint8_t op, bool scale,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp);
 
 #endif /* SNA_RENDER_H */

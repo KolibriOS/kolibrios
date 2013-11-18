@@ -37,19 +37,46 @@
 #define must_check __attribute__((warn_unused_result))
 #define constant __attribute__((const))
 #define pure __attribute__((pure))
-#define __packed__ __attribute__((__packed__))
+#define tightly_packed __attribute__((__packed__))
 #define flatten __attribute__((flatten))
+#define page_aligned __attribute__((aligned(4096)))
 #else
 #define likely(expr) (expr)
 #define unlikely(expr) (expr)
 #define noinline
-#define force_inline
+#define force_inline inline
 #define fastcall
 #define must_check
 #define constant
 #define pure
-#define __packed__
+#define tighly_packed
 #define flatten
+#define page_aligned
+#endif
+
+#define HAS_GCC(major, minor) defined(__GNUC__) && (__GNUC__ > (major) || __GNUC__ == (major) && __GNUC_MINOR__ >= (minor))
+
+#if HAS_GCC(4, 5)
+#define sse2 __attribute__((target("sse2,fpmath=sse")))
+#define sse4_2 __attribute__((target("sse4.2,sse2,fpmath=sse")))
+#endif
+
+#if HAS_GCC(4, 7)
+#define avx2 __attribute__((target("avx2,sse4.2,sse2,fpmath=sse")))
+#endif
+
+#if HAS_GCC(4, 6) && defined(__OPTIMIZE__)
+#define fast __attribute__((optimize("Ofast")))
+#else
+#define fast
+#endif
+
+#if HAS_GCC(4, 6) && defined(__OPTIMIZE__)
+#define fast_memcpy __attribute__((optimize("Ofast"))) __attribute__((target("inline-all-stringops")))
+#elif HAS_GCC(4, 5) && defined(__OPTIMIZE__)
+#define fast_memcpy __attribute__((target("inline-all-stringops")))
+#else
+#define fast_memcpy
 #endif
 
 #ifdef HAVE_VALGRIND

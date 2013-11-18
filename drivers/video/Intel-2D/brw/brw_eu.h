@@ -2239,8 +2239,6 @@ void brw_CMP(struct brw_compile *p,
 	     struct brw_reg src0,
 	     struct brw_reg src1);
 
-void brw_print_reg(struct brw_reg reg);
-
 static inline void brw_math_invert(struct brw_compile *p,
 				   struct brw_reg dst,
 				   struct brw_reg src)

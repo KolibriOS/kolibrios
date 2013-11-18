@@ -1224,6 +1224,8 @@ struct gen7_sampler_state {
 
 /* Surface state DW0 */
 #define GEN7_SURFACE_RC_READ_WRITE	(1 << 8)
+#define GEN7_SURFACE_VALIGN_4           (1 << 16)
+#define GEN7_SURFACE_HALIGN_8           (1 << 15)
 #define GEN7_SURFACE_TILED		(1 << 14)
 #define GEN7_SURFACE_TILED_Y		(1 << 13)
 #define GEN7_SURFACE_FORMAT_SHIFT	18

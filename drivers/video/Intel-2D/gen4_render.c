@@ -51,6 +51,7 @@
  */
 #define FORCE_SPANS 0
 #define FORCE_NONRECTILINEAR_SPANS -1
+#define FORCE_FLUSH 1 /* https://bugs.freedesktop.org/show_bug.cgi?id=55500 */
 
 #define NO_COMPOSITE 0
 #define NO_COMPOSITE_SPANS 0
@@ -60,6 +61,8 @@
 #define NO_FILL_ONE 0
 #define NO_FILL_BOXES 0
 #define NO_VIDEO 0
+
+#define MAX_FLUSH_VERTICES 6
 
 #define GEN4_GRF_BLOCKS(nreg)    ((nreg + 15) / 16 - 1)
 
@@ -286,8 +289,24 @@ static uint32_t gen4_get_card_format(PictFormat format)
         return GEN4_SURFACEFORMAT_B8G8R8A8_UNORM;
     case PICT_x8r8g8b8:
         return GEN4_SURFACEFORMAT_B8G8R8X8_UNORM;
+	case PICT_a8b8g8r8:
+		return GEN4_SURFACEFORMAT_R8G8B8A8_UNORM;
+	case PICT_x8b8g8r8:
+		return GEN4_SURFACEFORMAT_R8G8B8X8_UNORM;
+	case PICT_a2r10g10b10:
+		return GEN4_SURFACEFORMAT_B10G10R10A2_UNORM;
+	case PICT_x2r10g10b10:
+		return GEN4_SURFACEFORMAT_B10G10R10X2_UNORM;
+	case PICT_r8g8b8:
+		return GEN4_SURFACEFORMAT_R8G8B8_UNORM;
+	case PICT_r5g6b5:
+		return GEN4_SURFACEFORMAT_B5G6R5_UNORM;
+	case PICT_a1r5g5b5:
+		return GEN4_SURFACEFORMAT_B5G5R5A1_UNORM;
     case PICT_a8:
         return GEN4_SURFACEFORMAT_A8_UNORM;
+	case PICT_a4r4g4b4:
+		return GEN4_SURFACEFORMAT_B4G4R4A4_UNORM;
     }
 }
 
@@ -299,8 +318,22 @@ static uint32_t gen4_get_dest_format(PictFormat format)
     case PICT_a8r8g8b8:
     case PICT_x8r8g8b8:
         return GEN4_SURFACEFORMAT_B8G8R8A8_UNORM;
+	case PICT_a8b8g8r8:
+	case PICT_x8b8g8r8:
+		return GEN4_SURFACEFORMAT_R8G8B8A8_UNORM;
+	case PICT_a2r10g10b10:
+	case PICT_x2r10g10b10:
+		return GEN4_SURFACEFORMAT_B10G10R10A2_UNORM;
+	case PICT_r5g6b5:
+		return GEN4_SURFACEFORMAT_B5G6R5_UNORM;
+	case PICT_x1r5g5b5:
+	case PICT_a1r5g5b5:
+		return GEN4_SURFACEFORMAT_B5G5R5A1_UNORM;
     case PICT_a8:
         return GEN4_SURFACEFORMAT_A8_UNORM;
+	case PICT_a4r4g4b4:
+	case PICT_x4r4g4b4:
+		return GEN4_SURFACEFORMAT_B4G4R4A4_UNORM;
     }
 }
 
@@ -393,7 +426,7 @@ gen4_bind_bo(struct sna *sna,
 	assert(sna->kgem.gen != 040 || !kgem_bo_is_snoop(bo));
 
 	/* After the first bind, we manage the cache domains within the batch */
-	offset = kgem_bo_get_binding(bo, format);
+	offset = kgem_bo_get_binding(bo, format | is_dst << 31);
 	if (offset) {
 		if (is_dst)
 			kgem_bo_mark_dirty(bo);
@@ -408,9 +441,10 @@ gen4_bind_bo(struct sna *sna,
 		 GEN4_SURFACE_BLEND_ENABLED |
 		 format << GEN4_SURFACE_FORMAT_SHIFT);
 
-	if (is_dst)
+	if (is_dst) {
+		ss[0] |= GEN4_SURFACE_RC_READ_WRITE;
 		domains = I915_GEM_DOMAIN_RENDER << 16 | I915_GEM_DOMAIN_RENDER;
-	else
+	} else
 		domains = I915_GEM_DOMAIN_SAMPLER << 16;
 	ss[1] = kgem_add_reloc(&sna->kgem, offset + 1, bo, domains, 0);
 
@@ -421,7 +455,7 @@ gen4_bind_bo(struct sna *sna,
 	ss[4] = 0;
 	ss[5] = 0;
 
-	kgem_bo_set_binding(bo, format, offset);
+	kgem_bo_set_binding(bo, format | is_dst << 31, offset);
 
 	DBG(("[%x] bind bo(handle=%d, addr=%d), format=%d, width=%d, height=%d, pitch=%d, tiling=%d -> %s\n",
 	     offset, bo->handle, ss[1],
@@ -476,7 +510,7 @@ static void gen4_emit_primitive(struct sna *sna)
 static bool gen4_rectangle_begin(struct sna *sna,
 				 const struct sna_composite_op *op)
 {
-	int id = op->u.gen4.ve_id;
+	unsigned int id = 1 << op->u.gen4.ve_id;
 	int ndwords;
 
 	if (sna_vertex_wait__locked(&sna->render) && sna->render.vertex_offset)
@@ -484,13 +518,14 @@ static bool gen4_rectangle_begin(struct sna *sna,
 
 	/* 7xpipelined pointers + 6xprimitive + 1xflush */
 	ndwords = op->need_magic_ca_pass? 20 : 6;
-	if ((sna->render.vb_id & (1 << id)) == 0)
+	if ((sna->render.vb_id & id) == 0)
 		ndwords += 5;
+	ndwords += 2*FORCE_FLUSH;
 
 	if (!kgem_check_batch(&sna->kgem, ndwords))
 		return false;
 
-	if ((sna->render.vb_id & (1 << id)) == 0)
+	if ((sna->render.vb_id & id) == 0)
 		gen4_emit_vertex_buffer(sna, op);
 	if (sna->render.vertex_offset == 0)
 		gen4_emit_primitive(sna);
@@ -508,7 +543,8 @@ static int gen4_get_rectangles__flush(struct sna *sna,
 			return rem;
 	}
 
-	if (!kgem_check_batch(&sna->kgem, op->need_magic_ca_pass ? 25 : 6))
+	if (!kgem_check_batch(&sna->kgem,
+			      2*FORCE_FLUSH + (op->need_magic_ca_pass ? 25 : 6)))
 		return 0;
 	if (!kgem_check_reloc_and_exec(&sna->kgem, 2))
 		return 0;
@@ -534,6 +570,27 @@ inline static int gen4_get_rectangles(struct sna *sna,
 	int rem;
 
 	assert(want);
+#if FORCE_FLUSH
+	rem = sna->render.vertex_offset;
+	if (sna->kgem.nbatch == sna->render_state.gen4.last_primitive)
+		rem = sna->kgem.nbatch - 5;
+	if (rem) {
+		rem = MAX_FLUSH_VERTICES - (sna->render.vertex_index - sna->render.vertex_start) / 3;
+		if (rem <= 0) {
+			if (sna->render.vertex_offset) {
+				gen4_vertex_flush(sna);
+				if (gen4_magic_ca_pass(sna, op))
+					gen4_emit_pipelined_pointers(sna, op, op->op,
+								     op->u.gen4.wm_kernel);
+			}
+			OUT_BATCH(MI_FLUSH | MI_INHIBIT_RENDER_CACHE_FLUSH);
+			rem = MAX_FLUSH_VERTICES;
+		}
+	} else
+		rem = MAX_FLUSH_VERTICES;
+	if (want > rem)
+		want = rem;
+#endif
 
 start:
 	rem = vertex_space(sna);
@@ -552,8 +609,8 @@ start:
 			goto start;
 	}
 
-	assert(op->floats_per_rect >= vertex_space(sna));
 	assert(rem <= vertex_space(sna));
+	assert(op->floats_per_rect <= rem);
 	if (want > 1 && want * op->floats_per_rect > rem)
 		want = rem / op->floats_per_rect;
 
@@ -673,7 +730,7 @@ gen4_get_batch(struct sna *sna, const struct sna_composite_op *op)
 {
 	kgem_set_mode(&sna->kgem, KGEM_RENDER, op->dst.bo);
 
-	if (!kgem_check_batch_with_surfaces(&sna->kgem, 150, 4)) {
+	if (!kgem_check_batch_with_surfaces(&sna->kgem, 150 + 50*FORCE_FLUSH, 4)) {
 		DBG(("%s: flushing batch: %d < %d+%d\n",
 		     __FUNCTION__, sna->kgem.surface - sna->kgem.nbatch,
 		     150, 4*8));
@@ -904,6 +961,8 @@ gen4_emit_state(struct sna *sna,
 {
 	bool flush;
 
+	assert(op->dst.bo->exec);
+
 	flush = wm_binding_table & 1;
 	if (kgem_bo_is_dirty(op->src.bo) || kgem_bo_is_dirty(op->mask.bo)) {
 		DBG(("%s: flushing dirty (%d, %d), forced? %d\n", __FUNCTION__,
@@ -984,22 +1043,449 @@ gen4_render_composite_blt(struct sna *sna,
 	op->prim_emit(sna, op, r);
 }
 
+#if 0
+fastcall static void
+gen4_render_composite_box(struct sna *sna,
+			  const struct sna_composite_op *op,
+			  const BoxRec *box)
+{
+	struct sna_composite_rectangles r;
 
+	DBG(("  %s: (%d, %d), (%d, %d)\n",
+	     __FUNCTION__,
+	     box->x1, box->y1, box->x2, box->y2));
 
+	gen4_get_rectangles(sna, op, 1, gen4_bind_surfaces);
 
+	r.dst.x = box->x1;
+	r.dst.y = box->y1;
+	r.width  = box->x2 - box->x1;
+	r.height = box->y2 - box->y1;
+	r.mask = r.src = r.dst;
 
+	op->prim_emit(sna, op, &r);
+}
 
+static void
+gen4_render_composite_boxes__blt(struct sna *sna,
+				 const struct sna_composite_op *op,
+				 const BoxRec *box, int nbox)
+{
+	DBG(("%s(%d) delta=(%d, %d), src=(%d, %d)/(%d, %d), mask=(%d, %d)/(%d, %d)\n",
+	     __FUNCTION__, nbox, op->dst.x, op->dst.y,
+	     op->src.offset[0], op->src.offset[1],
+	     op->src.width, op->src.height,
+	     op->mask.offset[0], op->mask.offset[1],
+	     op->mask.width, op->mask.height));
 
+	do {
+		int nbox_this_time;
 
+		nbox_this_time = gen4_get_rectangles(sna, op, nbox,
+						     gen4_bind_surfaces);
+		nbox -= nbox_this_time;
 
+		do {
+			struct sna_composite_rectangles r;
 
+			DBG(("  %s: (%d, %d), (%d, %d)\n",
+			     __FUNCTION__,
+			     box->x1, box->y1, box->x2, box->y2));
 
+			r.dst.x = box->x1;
+			r.dst.y = box->y1;
+			r.width  = box->x2 - box->x1;
+			r.height = box->y2 - box->y1;
+			r.mask = r.src = r.dst;
+			op->prim_emit(sna, op, &r);
+			box++;
+		} while (--nbox_this_time);
+	} while (nbox);
+}
 
+static void
+gen4_render_composite_boxes(struct sna *sna,
+			    const struct sna_composite_op *op,
+			    const BoxRec *box, int nbox)
+{
+	DBG(("%s: nbox=%d\n", __FUNCTION__, nbox));
 
+	do {
+		int nbox_this_time;
+		float *v;
 
+		nbox_this_time = gen4_get_rectangles(sna, op, nbox,
+						     gen4_bind_surfaces);
+		assert(nbox_this_time);
+		nbox -= nbox_this_time;
 
+		v = sna->render.vertices + sna->render.vertex_used;
+		sna->render.vertex_used += nbox_this_time * op->floats_per_rect;
 
+		op->emit_boxes(op, box, nbox_this_time, v);
+		box += nbox_this_time;
+	} while (nbox);
+}
 
+#if !FORCE_FLUSH
+static void
+gen4_render_composite_boxes__thread(struct sna *sna,
+				    const struct sna_composite_op *op,
+				    const BoxRec *box, int nbox)
+{
+	DBG(("%s: nbox=%d\n", __FUNCTION__, nbox));
+
+	sna_vertex_lock(&sna->render);
+	do {
+		int nbox_this_time;
+		float *v;
+
+		nbox_this_time = gen4_get_rectangles(sna, op, nbox,
+						     gen4_bind_surfaces);
+		assert(nbox_this_time);
+		nbox -= nbox_this_time;
+
+		v = sna->render.vertices + sna->render.vertex_used;
+		sna->render.vertex_used += nbox_this_time * op->floats_per_rect;
+
+		sna_vertex_acquire__locked(&sna->render);
+		sna_vertex_unlock(&sna->render);
+
+		op->emit_boxes(op, box, nbox_this_time, v);
+		box += nbox_this_time;
+
+		sna_vertex_lock(&sna->render);
+		sna_vertex_release__locked(&sna->render);
+	} while (nbox);
+	sna_vertex_unlock(&sna->render);
+}
+#endif
+
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
+static uint32_t gen4_bind_video_source(struct sna *sna,
+				       struct kgem_bo *src_bo,
+				       uint32_t src_offset,
+				       int src_width,
+				       int src_height,
+				       int src_pitch,
+				       uint32_t src_surf_format)
+{
+	struct gen4_surface_state *ss;
+
+	sna->kgem.surface -= sizeof(struct gen4_surface_state_padded) / sizeof(uint32_t);
+
+	ss = memset(sna->kgem.batch + sna->kgem.surface, 0, sizeof(*ss));
+	ss->ss0.surface_type = GEN4_SURFACE_2D;
+	ss->ss0.surface_format = src_surf_format;
+	ss->ss0.color_blend = 1;
+
+	ss->ss1.base_addr =
+		kgem_add_reloc(&sna->kgem,
+			       sna->kgem.surface + 1,
+			       src_bo,
+			       I915_GEM_DOMAIN_SAMPLER << 16,
+			       src_offset);
+
+	ss->ss2.width  = src_width - 1;
+	ss->ss2.height = src_height - 1;
+	ss->ss3.pitch  = src_pitch - 1;
+
+	return sna->kgem.surface * sizeof(uint32_t);
+}
+
+static void gen4_video_bind_surfaces(struct sna *sna,
+				     const struct sna_composite_op *op)
+{
+	bool dirty = kgem_bo_is_dirty(op->dst.bo);
+	struct sna_video_frame *frame = op->priv;
+	uint32_t src_surf_format;
+	uint32_t src_surf_base[6];
+	int src_width[6];
+	int src_height[6];
+	int src_pitch[6];
+	uint32_t *binding_table;
+	uint16_t offset;
+	int n_src, n;
+
+	src_surf_base[0] = 0;
+	src_surf_base[1] = 0;
+	src_surf_base[2] = frame->VBufOffset;
+	src_surf_base[3] = frame->VBufOffset;
+	src_surf_base[4] = frame->UBufOffset;
+	src_surf_base[5] = frame->UBufOffset;
+
+	if (is_planar_fourcc(frame->id)) {
+		src_surf_format = GEN4_SURFACEFORMAT_R8_UNORM;
+		src_width[1]  = src_width[0]  = frame->width;
+		src_height[1] = src_height[0] = frame->height;
+		src_pitch[1]  = src_pitch[0]  = frame->pitch[1];
+		src_width[4]  = src_width[5]  = src_width[2]  = src_width[3] =
+			frame->width / 2;
+		src_height[4] = src_height[5] = src_height[2] = src_height[3] =
+			frame->height / 2;
+		src_pitch[4]  = src_pitch[5]  = src_pitch[2]  = src_pitch[3] =
+			frame->pitch[0];
+		n_src = 6;
+	} else {
+		if (frame->id == FOURCC_UYVY)
+			src_surf_format = GEN4_SURFACEFORMAT_YCRCB_SWAPY;
+		else
+			src_surf_format = GEN4_SURFACEFORMAT_YCRCB_NORMAL;
+
+		src_width[0]  = frame->width;
+		src_height[0] = frame->height;
+		src_pitch[0]  = frame->pitch[0];
+		n_src = 1;
+	}
+
+	gen4_get_batch(sna, op);
+
+	binding_table = gen4_composite_get_binding_table(sna, &offset);
+	binding_table[0] =
+		gen4_bind_bo(sna,
+			     op->dst.bo, op->dst.width, op->dst.height,
+			     gen4_get_dest_format(op->dst.format),
+			     true);
+	for (n = 0; n < n_src; n++) {
+		binding_table[1+n] =
+			gen4_bind_video_source(sna,
+					       frame->bo,
+					       src_surf_base[n],
+					       src_width[n],
+					       src_height[n],
+					       src_pitch[n],
+					       src_surf_format);
+	}
+
+	gen4_emit_state(sna, op, offset | dirty);
+}
+
+static bool
+gen4_render_video(struct sna *sna,
+		  struct sna_video *video,
+		  struct sna_video_frame *frame,
+		  RegionPtr dstRegion,
+		  PixmapPtr pixmap)
+{
+	struct sna_composite_op tmp;
+	int dst_width = dstRegion->extents.x2 - dstRegion->extents.x1;
+	int dst_height = dstRegion->extents.y2 - dstRegion->extents.y1;
+	int src_width = frame->src.x2 - frame->src.x1;
+	int src_height = frame->src.y2 - frame->src.y1;
+	float src_offset_x, src_offset_y;
+	float src_scale_x, src_scale_y;
+	int nbox, pix_xoff, pix_yoff;
+	struct sna_pixmap *priv;
+	BoxPtr box;
+
+	DBG(("%s: %dx%d -> %dx%d\n", __FUNCTION__,
+	     src_width, src_height, dst_width, dst_height));
+
+	priv = sna_pixmap_force_to_gpu(pixmap, MOVE_READ | MOVE_WRITE);
+	if (priv == NULL)
+		return false;
+
+	memset(&tmp, 0, sizeof(tmp));
+
+	tmp.op = PictOpSrc;
+	tmp.dst.pixmap = pixmap;
+	tmp.dst.width  = pixmap->drawable.width;
+	tmp.dst.height = pixmap->drawable.height;
+	tmp.dst.format = sna_format_for_depth(pixmap->drawable.depth);
+	tmp.dst.bo = priv->gpu_bo;
+
+	if (src_width == dst_width && src_height == dst_height)
+		tmp.src.filter = SAMPLER_FILTER_NEAREST;
+	else
+		tmp.src.filter = SAMPLER_FILTER_BILINEAR;
+	tmp.src.repeat = SAMPLER_EXTEND_PAD;
+	tmp.src.bo = frame->bo;
+	tmp.mask.bo = NULL;
+	tmp.u.gen4.wm_kernel =
+		is_planar_fourcc(frame->id) ? WM_KERNEL_VIDEO_PLANAR : WM_KERNEL_VIDEO_PACKED;
+	tmp.u.gen4.ve_id = 2;
+	tmp.is_affine = true;
+	tmp.floats_per_vertex = 3;
+	tmp.floats_per_rect = 9;
+	tmp.priv = frame;
+
+	if (!kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL)) {
+		kgem_submit(&sna->kgem);
+		assert(kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL));
+	}
+
+	gen4_video_bind_surfaces(sna, &tmp);
+	gen4_align_vertex(sna, &tmp);
+
+	/* Set up the offset for translating from the given region (in screen
+	 * coordinates) to the backing pixmap.
+	 */
+#ifdef COMPOSITE
+	pix_xoff = -pixmap->screen_x + pixmap->drawable.x;
+	pix_yoff = -pixmap->screen_y + pixmap->drawable.y;
+#else
+	pix_xoff = 0;
+	pix_yoff = 0;
+#endif
+
+	src_scale_x = (float)src_width / dst_width / frame->width;
+	src_offset_x = (float)frame->src.x1 / frame->width - dstRegion->extents.x1 * src_scale_x;
+
+	src_scale_y = (float)src_height / dst_height / frame->height;
+	src_offset_y = (float)frame->src.y1 / frame->height - dstRegion->extents.y1 * src_scale_y;
+
+	box = REGION_RECTS(dstRegion);
+	nbox = REGION_NUM_RECTS(dstRegion);
+	do {
+		int n;
+
+		n = gen4_get_rectangles(sna, &tmp, nbox,
+					gen4_video_bind_surfaces);
+		assert(n);
+		nbox -= n;
+
+		do {
+			BoxRec r;
+
+			r.x1 = box->x1 + pix_xoff;
+			r.x2 = box->x2 + pix_xoff;
+			r.y1 = box->y1 + pix_yoff;
+			r.y2 = box->y2 + pix_yoff;
+
+			OUT_VERTEX(r.x2, r.y2);
+			OUT_VERTEX_F(box->x2 * src_scale_x + src_offset_x);
+			OUT_VERTEX_F(box->y2 * src_scale_y + src_offset_y);
+
+			OUT_VERTEX(r.x1, r.y2);
+			OUT_VERTEX_F(box->x1 * src_scale_x + src_offset_x);
+			OUT_VERTEX_F(box->y2 * src_scale_y + src_offset_y);
+
+			OUT_VERTEX(r.x1, r.y1);
+			OUT_VERTEX_F(box->x1 * src_scale_x + src_offset_x);
+			OUT_VERTEX_F(box->y1 * src_scale_y + src_offset_y);
+
+			if (!DAMAGE_IS_ALL(priv->gpu_damage)) {
+				sna_damage_add_box(&priv->gpu_damage, &r);
+				sna_damage_subtract_box(&priv->cpu_damage, &r);
+			}
+			box++;
+		} while (--n);
+	} while (nbox);
+	gen4_vertex_flush(sna);
+
+	return true;
+}
+
+static int
+gen4_composite_picture(struct sna *sna,
+		       PicturePtr picture,
+		       struct sna_composite_channel *channel,
+		       int x, int y,
+		       int w, int h,
+		       int dst_x, int dst_y,
+		       bool precise)
+{
+	PixmapPtr pixmap;
+	uint32_t color;
+	int16_t dx, dy;
+
+	DBG(("%s: (%d, %d)x(%d, %d), dst=(%d, %d)\n",
+	     __FUNCTION__, x, y, w, h, dst_x, dst_y));
+
+	channel->is_solid = false;
+	channel->card_format = -1;
+
+	if (sna_picture_is_solid(picture, &color))
+		return gen4_channel_init_solid(sna, channel, color);
+
+	if (picture->pDrawable == NULL) {
+		int ret;
+
+		if (picture->pSourcePict->type == SourcePictTypeLinear)
+			return gen4_channel_init_linear(sna, picture, channel,
+							x, y,
+							w, h,
+							dst_x, dst_y);
+
+		DBG(("%s -- fixup, gradient\n", __FUNCTION__));
+		ret = -1;
+		if (!precise)
+			ret = sna_render_picture_approximate_gradient(sna, picture, channel,
+								      x, y, w, h, dst_x, dst_y);
+		if (ret == -1)
+			ret = sna_render_picture_fixup(sna, picture, channel,
+						       x, y, w, h, dst_x, dst_y);
+		return ret;
+	}
+
+	if (picture->alphaMap) {
+		DBG(("%s -- fallback, alphamap\n", __FUNCTION__));
+		return sna_render_picture_fixup(sna, picture, channel,
+						x, y, w, h, dst_x, dst_y);
+	}
+
+	if (!gen4_check_repeat(picture)) {
+		DBG(("%s: unknown repeat mode fixup\n", __FUNCTION__));
+		return sna_render_picture_fixup(sna, picture, channel,
+						x, y, w, h, dst_x, dst_y);
+	}
+
+	if (!gen4_check_filter(picture)) {
+		DBG(("%s: unhandled filter fixup\n", __FUNCTION__));
+		return sna_render_picture_fixup(sna, picture, channel,
+						x, y, w, h, dst_x, dst_y);
+	}
+
+	channel->repeat = picture->repeat ? picture->repeatType : RepeatNone;
+	channel->filter = picture->filter;
+
+	pixmap = get_drawable_pixmap(picture->pDrawable);
+	get_drawable_deltas(picture->pDrawable, pixmap, &dx, &dy);
+
+	x += dx + picture->pDrawable->x;
+	y += dy + picture->pDrawable->y;
+
+	channel->is_affine = sna_transform_is_affine(picture->transform);
+	if (sna_transform_is_integer_translation(picture->transform, &dx, &dy)) {
+		DBG(("%s: integer translation (%d, %d), removing\n",
+		     __FUNCTION__, dx, dy));
+		x += dx;
+		y += dy;
+		channel->transform = NULL;
+		channel->filter = PictFilterNearest;
+	} else
+		channel->transform = picture->transform;
+
+	channel->pict_format = picture->format;
+	channel->card_format = gen4_get_card_format(picture->format);
+	if (channel->card_format == -1)
+		return sna_render_picture_convert(sna, picture, channel, pixmap,
+						  x, y, w, h, dst_x, dst_y,
+						  false);
+
+	if (too_large(pixmap->drawable.width, pixmap->drawable.height))
+		return sna_render_picture_extract(sna, picture, channel,
+						  x, y, w, h, dst_x, dst_y);
+
+	return sna_render_pixmap_bo(sna, channel, pixmap,
+				    x, y, w, h, dst_x, dst_y);
+}
+
+static void gen4_composite_channel_convert(struct sna_composite_channel *channel)
+{
+	DBG(("%s: repeat %d -> %d, filter %d -> %d\n",
+	     __FUNCTION__,
+	     channel->repeat, gen4_repeat(channel->repeat),
+	     channel->filter, gen4_repeat(channel->filter)));
+	channel->repeat = gen4_repeat(channel->repeat);
+	channel->filter = gen4_filter(channel->filter);
+	if (channel->card_format == (unsigned)-1)
+		channel->card_format = gen4_get_card_format(channel->pict_format);
+}
+#endif
 
 static void
 gen4_render_composite_done(struct sna *sna,
@@ -1014,134 +1500,495 @@ gen4_render_composite_done(struct sna *sna,
 
 }
 
+#if 0
+static bool
+gen4_composite_set_target(struct sna *sna,
+			  struct sna_composite_op *op,
+			  PicturePtr dst,
+			  int x, int y, int w, int h,
+			  bool partial)
+{
+	BoxRec box;
 
+	op->dst.pixmap = get_drawable_pixmap(dst->pDrawable);
+	op->dst.width  = op->dst.pixmap->drawable.width;
+	op->dst.height = op->dst.pixmap->drawable.height;
+	op->dst.format = dst->format;
+	if (w && h) {
+		box.x1 = x;
+		box.y1 = y;
+		box.x2 = x + w;
+		box.y2 = y + h;
+	} else
+		sna_render_picture_extents(dst, &box);
 
+	op->dst.bo = sna_drawable_use_bo (dst->pDrawable,
+					  PREFER_GPU | FORCE_GPU | RENDER_GPU,
+					  &box, &op->damage);
+	if (op->dst.bo == NULL)
+		return false;
 
+	get_drawable_deltas(dst->pDrawable, op->dst.pixmap,
+			    &op->dst.x, &op->dst.y);
 
+	DBG(("%s: pixmap=%p, format=%08x, size=%dx%d, pitch=%d, delta=(%d,%d),damage=%p\n",
+	     __FUNCTION__,
+	     op->dst.pixmap, (int)op->dst.format,
+	     op->dst.width, op->dst.height,
+	     op->dst.bo->pitch,
+	     op->dst.x, op->dst.y,
+	     op->damage ? *op->damage : (void *)-1));
 
+	assert(op->dst.bo->proxy == NULL);
 
+	if (too_large(op->dst.width, op->dst.height) &&
+	    !sna_render_composite_redirect(sna, op, x, y, w, h, partial))
+		return false;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	return true;
+}
 
 static bool
-gen4_blit_tex(struct sna *sna,
-              uint8_t op, bool scale,
-		      PixmapPtr src, struct kgem_bo *src_bo,
-		      PixmapPtr mask,struct kgem_bo *mask_bo,
-		      PixmapPtr dst, struct kgem_bo *dst_bo, 
-              int32_t src_x, int32_t src_y,
-              int32_t msk_x, int32_t msk_y,
-              int32_t dst_x, int32_t dst_y,
-              int32_t width, int32_t height,
-              struct sna_composite_op *tmp)
+try_blt(struct sna *sna,
+	PicturePtr dst, PicturePtr src,
+	int width, int height)
 {
+	if (sna->kgem.mode != KGEM_RENDER) {
+		DBG(("%s: already performing BLT\n", __FUNCTION__));
+		return true;
+	}
 
-    DBG(("%s: %dx%d, current mode=%d\n", __FUNCTION__,
-         width, height, sna->kgem.ring));
+	if (too_large(width, height)) {
+		DBG(("%s: operation too large for 3D pipe (%d, %d)\n",
+		     __FUNCTION__, width, height));
+		return true;
+	}
 
-    tmp->op = PictOpSrc;
+	if (too_large(dst->pDrawable->width, dst->pDrawable->height))
+		return true;
 
-    tmp->dst.pixmap = dst;
-    tmp->dst.bo     = dst_bo;
-    tmp->dst.width  = dst->drawable.width;
-    tmp->dst.height = dst->drawable.height;
-    tmp->dst.format = PICT_x8r8g8b8;
+	/* The blitter is much faster for solids */
+	if (sna_picture_is_solid(src, NULL))
+		return true;
 
+	/* is the source picture only in cpu memory e.g. a shm pixmap? */
+	return picture_is_cpu(sna, src);
+}
 
-	tmp->src.repeat = RepeatNone;
-	tmp->src.filter = PictFilterNearest;
-    tmp->src.is_affine = true;
+static bool
+check_gradient(PicturePtr picture, bool precise)
+{
+	switch (picture->pSourcePict->type) {
+	case SourcePictTypeSolidFill:
+	case SourcePictTypeLinear:
+		return false;
+	default:
+		return precise;
+	}
+}
 
-    tmp->src.bo = src_bo;
-	tmp->src.pict_format = PICT_x8r8g8b8;
-    tmp->src.card_format = gen4_get_card_format(tmp->src.pict_format);
-    tmp->src.width  = src->drawable.width;
-    tmp->src.height = src->drawable.height;
+static bool
+has_alphamap(PicturePtr p)
+{
+	return p->alphaMap != NULL;
+}
+
+static bool
+need_upload(struct sna *sna, PicturePtr p)
+{
+	return p->pDrawable && untransformed(p) &&
+		!is_gpu(sna, p->pDrawable, PREFER_GPU_RENDER);
+}
+
+static bool
+source_is_busy(PixmapPtr pixmap)
+{
+	struct sna_pixmap *priv = sna_pixmap(pixmap);
+	if (priv == NULL)
+		return false;
+
+	if (priv->clear)
+		return false;
+
+	if (priv->gpu_bo && kgem_bo_is_busy(priv->gpu_bo))
+		return true;
+
+	if (priv->cpu_bo && kgem_bo_is_busy(priv->cpu_bo))
+		return true;
+
+	return priv->gpu_damage && !priv->cpu_damage;
+}
+
+static bool
+source_fallback(struct sna *sna, PicturePtr p, PixmapPtr pixmap, bool precise)
+{
+	if (sna_picture_is_solid(p, NULL))
+		return false;
+
+	if (p->pSourcePict)
+		return check_gradient(p, precise);
+
+	if (!gen4_check_repeat(p) || !gen4_check_format(p->format))
+		return true;
+
+	/* soft errors: perfer to upload/compute rather than readback */
+	if (pixmap && source_is_busy(pixmap))
+		return false;
+
+	return has_alphamap(p) || !gen4_check_filter(p) || need_upload(sna, p);
+}
+
+static bool
+gen4_composite_fallback(struct sna *sna,
+			PicturePtr src,
+			PicturePtr mask,
+			PicturePtr dst)
+{
+	PixmapPtr src_pixmap;
+	PixmapPtr mask_pixmap;
+	PixmapPtr dst_pixmap;
+	bool src_fallback, mask_fallback;
+
+	if (!gen4_check_dst_format(dst->format)) {
+		DBG(("%s: unknown destination format: %d\n",
+		     __FUNCTION__, dst->format));
+		return true;
+	}
+
+	dst_pixmap = get_drawable_pixmap(dst->pDrawable);
+
+	src_pixmap = src->pDrawable ? get_drawable_pixmap(src->pDrawable) : NULL;
+	src_fallback = source_fallback(sna, src, src_pixmap,
+				       dst->polyMode == PolyModePrecise);
+
+	if (mask) {
+		mask_pixmap = mask->pDrawable ? get_drawable_pixmap(mask->pDrawable) : NULL;
+		mask_fallback = source_fallback(sna, mask, mask_pixmap,
+						dst->polyMode == PolyModePrecise);
+	} else {
+		mask_pixmap = NULL;
+		mask_fallback = false;
+	}
+
+	/* If we are using the destination as a source and need to
+	 * readback in order to upload the source, do it all
+	 * on the cpu.
+	 */
+	if (src_pixmap == dst_pixmap && src_fallback) {
+		DBG(("%s: src is dst and will fallback\n",__FUNCTION__));
+		return true;
+	}
+	if (mask_pixmap == dst_pixmap && mask_fallback) {
+		DBG(("%s: mask is dst and will fallback\n",__FUNCTION__));
+		return true;
+	}
+
+	/* If anything is on the GPU, push everything out to the GPU */
+	if (dst_use_gpu(dst_pixmap)) {
+		DBG(("%s: dst is already on the GPU, try to use GPU\n",
+		     __FUNCTION__));
+		return false;
+	}
+
+	if (src_pixmap && !src_fallback) {
+		DBG(("%s: src is already on the GPU, try to use GPU\n",
+		     __FUNCTION__));
+		return false;
+	}
+	if (mask_pixmap && !mask_fallback) {
+		DBG(("%s: mask is already on the GPU, try to use GPU\n",
+		     __FUNCTION__));
+		return false;
+	}
+
+	/* However if the dst is not on the GPU and we need to
+	 * render one of the sources using the CPU, we may
+	 * as well do the entire operation in place onthe CPU.
+	 */
+	if (src_fallback) {
+		DBG(("%s: dst is on the CPU and src will fallback\n",
+		     __FUNCTION__));
+		return true;
+	}
+
+	if (mask_fallback) {
+		DBG(("%s: dst is on the CPU and mask will fallback\n",
+		     __FUNCTION__));
+		return true;
+	}
+
+	if (too_large(dst_pixmap->drawable.width,
+		      dst_pixmap->drawable.height) &&
+	    dst_is_cpu(dst_pixmap)) {
+		DBG(("%s: dst is on the CPU and too large\n", __FUNCTION__));
+		return true;
+	}
+
+	DBG(("%s: dst is not on the GPU and the operation should not fallback\n",
+	     __FUNCTION__));
+	return dst_use_cpu(dst_pixmap);
+}
+
+static int
+reuse_source(struct sna *sna,
+	     PicturePtr src, struct sna_composite_channel *sc, int src_x, int src_y,
+	     PicturePtr mask, struct sna_composite_channel *mc, int msk_x, int msk_y)
+{
+	uint32_t color;
+
+	if (src_x != msk_x || src_y != msk_y)
+		return false;
+
+	if (src == mask) {
+		DBG(("%s: mask is source\n", __FUNCTION__));
+		*mc = *sc;
+		mc->bo = kgem_bo_reference(mc->bo);
+		return true;
+	}
+
+	if (sna_picture_is_solid(mask, &color))
+		return gen4_channel_init_solid(sna, mc, color);
+
+	if (sc->is_solid)
+		return false;
+
+	if (src->pDrawable == NULL || mask->pDrawable != src->pDrawable)
+		return false;
+
+	DBG(("%s: mask reuses source drawable\n", __FUNCTION__));
+
+	if (!sna_transform_equal(src->transform, mask->transform))
+		return false;
+
+	if (!sna_picture_alphamap_equal(src, mask))
+		return false;
+
+	if (!gen4_check_repeat(mask))
+		return false;
+
+	if (!gen4_check_filter(mask))
+		return false;
+
+	if (!gen4_check_format(mask->format))
+		return false;
+
+	DBG(("%s: reusing source channel for mask with a twist\n",
+	     __FUNCTION__));
+
+	*mc = *sc;
+	mc->repeat = gen4_repeat(mask->repeat ? mask->repeatType : RepeatNone);
+	mc->filter = gen4_filter(mask->filter);
+	mc->pict_format = mask->format;
+	mc->card_format = gen4_get_card_format(mask->format);
+	mc->bo = kgem_bo_reference(mc->bo);
+	return true;
+}
+
+static bool
+gen4_render_composite(struct sna *sna,
+		      uint8_t op,
+		      PicturePtr src,
+		      PicturePtr mask,
+		      PicturePtr dst,
+		      int16_t src_x, int16_t src_y,
+		      int16_t msk_x, int16_t msk_y,
+		      int16_t dst_x, int16_t dst_y,
+		      int16_t width, int16_t height,
+		      struct sna_composite_op *tmp)
+{
+	DBG(("%s: %dx%d, current mode=%d\n", __FUNCTION__,
+	     width, height, sna->kgem.mode));
+
+	if (op >= ARRAY_SIZE(gen4_blend_op))
+		return false;
+
+	if (mask == NULL &&
+	    try_blt(sna, dst, src, width, height) &&
+	    sna_blt_composite(sna, op,
+			      src, dst,
+			      src_x, src_y,
+			      dst_x, dst_y,
+			      width, height,
+			      tmp, false))
+		return true;
+
+	if (gen4_composite_fallback(sna, src, mask, dst))
+		return false;
+
+	if (need_tiling(sna, width, height))
+		return sna_tiling_composite(op, src, mask, dst,
+					    src_x, src_y,
+					    msk_x, msk_y,
+					    dst_x, dst_y,
+					    width, height,
+					    tmp);
+
+	if (!gen4_composite_set_target(sna, tmp, dst,
+				       dst_x, dst_y, width, height,
+				       op > PictOpSrc || dst->pCompositeClip->data)) {
+		DBG(("%s: failed to set composite target\n", __FUNCTION__));
+		return false;
+	}
+
+	tmp->op = op;
+	switch (gen4_composite_picture(sna, src, &tmp->src,
+				       src_x, src_y,
+				       width, height,
+				       dst_x, dst_y,
+				       dst->polyMode == PolyModePrecise)) {
+	case -1:
+		DBG(("%s: failed to prepare source\n", __FUNCTION__));
+		goto cleanup_dst;
+	case 0:
+		if (!gen4_channel_init_solid(sna, &tmp->src, 0))
+			goto cleanup_dst;
+		/* fall through to fixup */
+	case 1:
+		if (mask == NULL &&
+		    sna_blt_composite__convert(sna,
+					       dst_x, dst_y, width, height,
+					       tmp))
+			return true;
+
+		gen4_composite_channel_convert(&tmp->src);
+		break;
+	}
 
 	tmp->is_affine = tmp->src.is_affine;
 	tmp->has_component_alpha = false;
 	tmp->need_magic_ca_pass = false;
 
- 	tmp->mask.repeat = SAMPLER_EXTEND_NONE;
-	tmp->mask.filter = SAMPLER_FILTER_NEAREST;
-    tmp->mask.is_affine = true;
+	if (mask) {
+		if (mask->componentAlpha && PICT_FORMAT_RGB(mask->format)) {
+			tmp->has_component_alpha = true;
 
-    tmp->mask.bo = mask_bo;
-    tmp->mask.pict_format = PIXMAN_a8;
-    tmp->mask.card_format = gen4_get_card_format(tmp->mask.pict_format);
-    tmp->mask.width  = mask->drawable.width;
-    tmp->mask.height = mask->drawable.height;
+			/* Check if it's component alpha that relies on a source alpha and on
+			 * the source value.  We can only get one of those into the single
+			 * source value that we get to blend with.
+			 */
+			if (gen4_blend_op[op].src_alpha &&
+			    (gen4_blend_op[op].src_blend != GEN4_BLENDFACTOR_ZERO)) {
+				if (op != PictOpOver) {
+					DBG(("%s -- fallback: unhandled component alpha blend\n",
+					     __FUNCTION__));
 
-    if( scale )
-    {
-        tmp->src.scale[0] = 1.f/width;
-        tmp->src.scale[1] = 1.f/height;
-    }
-    else
-    {
-        tmp->src.scale[0] = 1.f/src->drawable.width;
-        tmp->src.scale[1] = 1.f/src->drawable.height;
-    }
-//    tmp->src.offset[0] = -dst_x;
-//    tmp->src.offset[1] = -dst_y;
+					goto cleanup_src;
+				}
 
+				tmp->need_magic_ca_pass = true;
+				tmp->op = PictOpOutReverse;
+			}
+		}
 
-    tmp->mask.scale[0] = 1.f/mask->drawable.width;
-    tmp->mask.scale[1] = 1.f/mask->drawable.height;
-//    tmp->mask.offset[0] = -dst_x;
-//    tmp->mask.offset[1] = -dst_y;
+		if (!reuse_source(sna,
+				  src, &tmp->src, src_x, src_y,
+				  mask, &tmp->mask, msk_x, msk_y)) {
+			switch (gen4_composite_picture(sna, mask, &tmp->mask,
+						       msk_x, msk_y,
+						       width, height,
+						       dst_x, dst_y,
+						       dst->polyMode == PolyModePrecise)) {
+			case -1:
+				DBG(("%s: failed to prepare mask\n", __FUNCTION__));
+				goto cleanup_src;
+			case 0:
+				if (!gen4_channel_init_solid(sna, &tmp->mask, 0))
+					goto cleanup_src;
+				/* fall through to fixup */
+			case 1:
+				gen4_composite_channel_convert(&tmp->mask);
+				break;
+			}
+		}
+
+		tmp->is_affine &= tmp->mask.is_affine;
+	}
 
 	tmp->u.gen4.wm_kernel =
 		gen4_choose_composite_kernel(tmp->op,
 					     tmp->mask.bo != NULL,
 					     tmp->has_component_alpha,
 					     tmp->is_affine);
-	tmp->u.gen4.ve_id = gen4_choose_composite_emitter(tmp);
+	tmp->u.gen4.ve_id = gen4_choose_composite_emitter(sna, tmp);
 
 	tmp->blt   = gen4_render_composite_blt;
+	tmp->box   = gen4_render_composite_box;
+	tmp->boxes = gen4_render_composite_boxes__blt;
+	if (tmp->emit_boxes) {
+		tmp->boxes = gen4_render_composite_boxes;
+#if !FORCE_FLUSH
+		tmp->thread_boxes = gen4_render_composite_boxes__thread;
+#endif
+	}
 	tmp->done  = gen4_render_composite_done;
 
 	if (!kgem_check_bo(&sna->kgem,
 			   tmp->dst.bo, tmp->src.bo, tmp->mask.bo,
 			   NULL)) {
 		kgem_submit(&sna->kgem);
+		if (!kgem_check_bo(&sna->kgem,
+				     tmp->dst.bo, tmp->src.bo, tmp->mask.bo,
+				     NULL))
+			goto cleanup_mask;
 	}
 
 	gen4_bind_surfaces(sna, tmp);
 	gen4_align_vertex(sna, tmp);
 	return true;
+
+cleanup_mask:
+	if (tmp->mask.bo)
+		kgem_bo_destroy(&sna->kgem, tmp->mask.bo);
+cleanup_src:
+	if (tmp->src.bo)
+		kgem_bo_destroy(&sna->kgem, tmp->src.bo);
+cleanup_dst:
+	if (tmp->redirect.real_bo)
+		kgem_bo_destroy(&sna->kgem, tmp->dst.bo);
+	return false;
 }
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 static void
 gen4_render_flush(struct sna *sna)
@@ -1230,7 +2077,7 @@ static uint32_t gen4_create_vs_unit_state(struct sna_static_stream *stream)
 }
 
 static uint32_t gen4_create_sf_state(struct sna_static_stream *stream,
-				     int gen, uint32_t kernel)
+				     uint32_t kernel)
 {
 	struct gen4_sf_unit_state *sf;
 
@@ -1384,7 +2231,7 @@ static bool gen4_render_setup(struct sna *sna)
 	}
 
 	state->vs = gen4_create_vs_unit_state(&general);
-	state->sf = gen4_create_sf_state(&general, sna->kgem.gen, sf);
+	state->sf = gen4_create_sf_state(&general, sf);
 
 	wm_state = sna_static_stream_map(&general,
 					  sizeof(*wm_state) * KERNEL_COUNT *
@@ -1421,19 +2268,51 @@ static bool gen4_render_setup(struct sna *sna)
 	return state->general_bo != NULL;
 }
 
-
-bool gen4_render_init(struct sna *sna)
+const char *gen4_render_init(struct sna *sna, const char *backend)
 {
 	if (!gen4_render_setup(sna))
-		return false;
+		return backend;
 
 	sna->kgem.retire = gen4_render_retire;
 	sna->kgem.expire = gen4_render_expire;
 
+#if 0
+#if !NO_COMPOSITE
+	sna->render.composite = gen4_render_composite;
 	sna->render.prefer_gpu |= PREFER_GPU_RENDER;
+#endif
+#if !NO_COMPOSITE_SPANS
+	sna->render.check_composite_spans = gen4_check_composite_spans;
+	sna->render.composite_spans = gen4_render_composite_spans;
+	if (0)
+		sna->render.prefer_gpu |= PREFER_GPU_SPANS;
+#endif
+
+#if !NO_VIDEO
+	sna->render.video = gen4_render_video;
+#endif
+
+#if !NO_COPY_BOXES
+	sna->render.copy_boxes = gen4_render_copy_boxes;
+#endif
+#if !NO_COPY
+	sna->render.copy = gen4_render_copy;
+#endif
+
+#if !NO_FILL_BOXES
+	sna->render.fill_boxes = gen4_render_fill_boxes;
+#endif
+#if !NO_FILL
+	sna->render.fill = gen4_render_fill;
+#endif
+#if !NO_FILL_ONE
+	sna->render.fill_one = gen4_render_fill_one;
+#endif
+
+#endif
 
     sna->render.blit_tex = gen4_blit_tex;
-
+    sna->render.caps = HW_BIT_BLIT | HW_TEX_BLIT;
 
 	sna->render.flush = gen4_render_flush;
 	sna->render.reset = gen4_render_reset;
@@ -1441,8 +2320,95 @@ bool gen4_render_init(struct sna *sna)
 
 	sna->render.max_3d_size = GEN4_MAX_3D_SIZE;
 	sna->render.max_3d_pitch = 1 << 18;
-    sna->render.caps = HW_BIT_BLIT | HW_TEX_BLIT;
-	
+	return sna->kgem.gen >= 045 ? "Eaglelake (gen4.5)" : "Broadwater (gen4)";
+}
+
+static bool
+gen4_blit_tex(struct sna *sna,
+              uint8_t op, bool scale,
+		      PixmapPtr src, struct kgem_bo *src_bo,
+		      PixmapPtr mask,struct kgem_bo *mask_bo,
+		      PixmapPtr dst, struct kgem_bo *dst_bo,
+              int32_t src_x, int32_t src_y,
+              int32_t msk_x, int32_t msk_y,
+              int32_t dst_x, int32_t dst_y,
+              int32_t width, int32_t height,
+              struct sna_composite_op *tmp)
+{
+
+    DBG(("%s: %dx%d, current mode=%d\n", __FUNCTION__,
+         width, height, sna->kgem.ring));
+
+    tmp->op = PictOpSrc;
+
+    tmp->dst.pixmap = dst;
+    tmp->dst.bo     = dst_bo;
+    tmp->dst.width  = dst->drawable.width;
+    tmp->dst.height = dst->drawable.height;
+    tmp->dst.format = PICT_x8r8g8b8;
+
+
+	tmp->src.repeat = RepeatNone;
+	tmp->src.filter = PictFilterNearest;
+    tmp->src.is_affine = true;
+
+    tmp->src.bo = src_bo;
+	tmp->src.pict_format = PICT_x8r8g8b8;
+    tmp->src.card_format = gen4_get_card_format(tmp->src.pict_format);
+    tmp->src.width  = src->drawable.width;
+    tmp->src.height = src->drawable.height;
+
+	tmp->is_affine = tmp->src.is_affine;
+	tmp->has_component_alpha = false;
+	tmp->need_magic_ca_pass = false;
+
+ 	tmp->mask.repeat = SAMPLER_EXTEND_NONE;
+	tmp->mask.filter = SAMPLER_FILTER_NEAREST;
+    tmp->mask.is_affine = true;
+
+    tmp->mask.bo = mask_bo;
+    tmp->mask.pict_format = PIXMAN_a8;
+    tmp->mask.card_format = gen4_get_card_format(tmp->mask.pict_format);
+    tmp->mask.width  = mask->drawable.width;
+    tmp->mask.height = mask->drawable.height;
+
+    if( scale )
+    {
+        tmp->src.scale[0] = 1.f/width;
+        tmp->src.scale[1] = 1.f/height;
+    }
+    else
+    {
+        tmp->src.scale[0] = 1.f/src->drawable.width;
+        tmp->src.scale[1] = 1.f/src->drawable.height;
+    }
+//    tmp->src.offset[0] = -dst_x;
+//    tmp->src.offset[1] = -dst_y;
+
+
+    tmp->mask.scale[0] = 1.f/mask->drawable.width;
+    tmp->mask.scale[1] = 1.f/mask->drawable.height;
+//    tmp->mask.offset[0] = -dst_x;
+//    tmp->mask.offset[1] = -dst_y;
+
+	tmp->u.gen4.wm_kernel =
+		gen4_choose_composite_kernel(tmp->op,
+					     tmp->mask.bo != NULL,
+					     tmp->has_component_alpha,
+					     tmp->is_affine);
+	tmp->u.gen4.ve_id = gen4_choose_composite_emitter(sna, tmp);
+
+	tmp->blt   = gen4_render_composite_blt;
+	tmp->done  = gen4_render_composite_done;
+
+	if (!kgem_check_bo(&sna->kgem,
+			   tmp->dst.bo, tmp->src.bo, tmp->mask.bo,
+			   NULL)) {
+		kgem_submit(&sna->kgem);
+	}
+
+	gen4_bind_surfaces(sna, tmp);
+	gen4_align_vertex(sna, tmp);
 	return true;
 }
 

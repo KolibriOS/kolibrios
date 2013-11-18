@@ -107,6 +107,7 @@
  * There are no requirements for a list head, any struct list can be a list
  * head.
  */
+
 struct list {
     struct list *next, *prev;
 };

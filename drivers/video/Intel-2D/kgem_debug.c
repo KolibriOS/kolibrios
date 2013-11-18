@@ -37,22 +37,6 @@
 
 #include "kgem_debug.h"
 
-#include <kos32sys.h>
-
-/*
-void
-ErrorF(const char *f, ...)
-{
-    va_list args;
-
-    va_start(args, f);
-    VErrorF(f, args);
-    va_end(args);
-}
-*/
-
-#define ErrorF printf
-
 struct drm_i915_gem_relocation_entry *
 kgem_debug_get_reloc_entry(struct kgem *kgem, uint32_t offset)
 {
@@ -388,8 +372,6 @@ decode_2d(struct kgem *kgem, uint32_t offset)
 
 static int (*decode_3d(int gen))(struct kgem*, uint32_t)
 {
-	return kgem_gen6_decode_3d;
-/*
 	if (gen >= 0100) {
 	} else if (gen >= 070) {
 		return kgem_gen7_decode_3d;
@@ -401,18 +383,12 @@ static int (*decode_3d(int gen))(struct kgem*, uint32_t)
 		return kgem_gen4_decode_3d;
 	} else if (gen >= 030) {
 		return kgem_gen3_decode_3d;
-	} else if (gen >= 020) {
-		return kgem_gen2_decode_3d;
 	}
 	assert(0);
-*/
 }
 
 static void (*finish_state(int gen))(struct kgem*)
 {
-
-    return kgem_gen6_finish_state;
-/*
 	if (gen >= 0100) {
 	} else if (gen >= 070) {
 		return kgem_gen7_finish_state;
@@ -424,11 +400,8 @@ static void (*finish_state(int gen))(struct kgem*)
 		return kgem_gen4_finish_state;
 	} else if (gen >= 030) {
 		return kgem_gen3_finish_state;
-	} else if (gen >= 020) {
-		return kgem_gen2_finish_state;
 	}
 	assert(0);
-*/
 }
 
 void __kgem_batch_debug(struct kgem *kgem, uint32_t nbatch)
