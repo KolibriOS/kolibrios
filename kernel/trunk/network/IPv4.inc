@@ -319,7 +319,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         xchg    al, ah
         shl     ax, 3
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: fragmented packet offset=%u id=%x\n", ax, [edx + IPv4_header.Identification]:4
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: fragmented packet offset=%u id=%x ptr=0x%x\n", ax, [edx + IPv4_header.Identification]:4, edx
 
         test    ax, ax                                          ; Is this the first packet of the fragment?
         jz      .is_first_fragment
@@ -460,12 +460,12 @@ IPv4_input:                                                     ; TODO: add IPv4
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Fragment offset=%u\n", cx
 
         lea     edi, [eax + ecx]                                                        ; Notice that edi will be equal to eax for first fragment
-        movzx   ebx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.VersionAndIHL]          ; Find header size (in ebx) of fragment
+        movzx   ebx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.VersionAndIHL]     ; Find header size (in ebx) of fragment
         and     bx, 0x000F                                                              ;
         shl     bx, 2                                                                   ;
 
-        lea     esi, [edx + sizeof.IPv4_FRAGMENT_entry]                                      ; Set esi to the correct begin of fragment
-        movzx   ecx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]            ; Calculate total length of fragment
+        lea     esi, [edx + sizeof.IPv4_FRAGMENT_entry]                                 ; Set esi to the correct begin of fragment
+        movzx   ecx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]       ; Calculate total length of fragment
         xchg    cl, ch                                                                  ;  intel byte order
 
         cmp     edi, eax                                                                ; Is this packet the first fragment ?
@@ -474,6 +474,8 @@ IPv4_input:                                                     ; TODO: add IPv4
         add     esi, ebx                                                                ;
   .first_fragment:
 
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Copying %u bytes from 0x%x to 0x%x\n", ecx, esi, edi
         push    cx                                                                      ; First copy dword-wise, then byte-wise
         shr     cx, 2                                                                   ;
         rep movsd                                                                       ;
@@ -482,11 +484,12 @@ IPv4_input:                                                     ; TODO: add IPv4
         rep movsb                                                                       ;
 
         push    eax
+        push    [edx + IPv4_FRAGMENT_entry.Owner]                                  ; we need to remeber the owner, in case this is the last packet
+        push    [edx + IPv4_FRAGMENT_entry.NextPtr]                                ; Set edx to the next pointer
         push    edx                                                                     ; Push pointer to fragment onto stack
-        mov     ebx, [edx + IPv4_FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
-        mov     edx, [edx + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Next Fragment: 0x%x\n", edx
         call    NET_packet_free                                                         ; free the previous fragment buffer (this uses the value from stack)
-        pop     eax
+        pop     edx ebx eax
         cmp     edx, -1                                                                 ; Check if it is last fragment in chain
         jne     .rebuild_packet_loop
 
@@ -497,6 +500,8 @@ IPv4_input:                                                     ; TODO: add IPv4
         add     esp, 8
         xchg    cl, ch
         push    ecx
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet is now de-fragmented\n"
 
         push    eax
         jmp     .handle_it          ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
