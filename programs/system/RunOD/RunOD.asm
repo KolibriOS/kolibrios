@@ -1,6 +1,6 @@
    ; Run with OpenDialog ;
-; this source can be compiled ;
-   ; with FASM or NASM ;
+
+
 
 org 0
 use32
@@ -82,10 +82,10 @@ start_:
         add eax, 1024
         mov [od.filename_area], eax
 
-				add eax, 4096 - 1024
+        add eax, 4096 - 1024
         mov [od.opendir_path], eax
 
-				add eax, 4096
+        add eax, 4096
         mov [od.openfile_path], eax
 
         push od
@@ -152,6 +152,11 @@ start_:
         jmp .loop
 ; ----------------------- ;
 .no_key_enter:
+        cmp ah, 185
+        jne .no_key_insert
+        call on_button_browse
+        jmp .loop
+.no_key_insert:        
         push edit1
         call [edit_box_key]
         jmp .loop
@@ -613,7 +618,7 @@ edit1:
 .max                dd 4096
 .text               dd 0
 .mouse_variable     dd 0
-.flags              dd 2
+.flags              dd 0x4002 ; always focus
 .size               dd 0
 .pos                dd 0
 .offset             dd 0
