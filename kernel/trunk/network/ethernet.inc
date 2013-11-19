@@ -159,10 +159,10 @@ ETH_process_input:
         cmp     ax, ETHER_PROTO_PPP_SESSION
         je      PPPoE_session_input
 
-        DEBUGF  DEBUG_NETWORK_ERROR, "ETH_input: Unknown packet type=%x\n", ax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: Unknown packet type=%x\n", ax
 
   .dump:
-        DEBUGF  DEBUG_NETWORK_VERBOSE,"ETH_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: dumping\n"
         call    NET_packet_free
         add     esp, 4
         ret
