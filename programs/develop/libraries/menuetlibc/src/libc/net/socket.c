@@ -47,8 +47,6 @@ int recv(int sockfd, void *buf, int len, int flags)
   return __ret;
 }
 
-
-
 // --------------------------------------------------------------
 
 __u32 __menuet__open_UDP_socket(__u32 local_port,__u32 remote_port,__u32 remote_ip)

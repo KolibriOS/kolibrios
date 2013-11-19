@@ -27,7 +27,7 @@ extern "C" {
 #define SOCK_RAW    3
   
 // Socket options
-#define SO_NONBLOCK ((long)(1))
+#define SO_NONBLOCK 1 << 31
   
 // IP protocols
 #define IPPROTO_IP   0
@@ -57,13 +57,13 @@ extern "C" {
 #define AI_SUPPORTED 0x40F
   
 // For system function 76
-#define API_ETH   ((int)(0))
-#define API_IPv4  ((int)(1))
-#define API_ICMP  ((int)(2))
-#define API_UDP   ((int)(3))
-#define API_TCP   ((int)(4))
-#define API_ARP   ((int)(5))
-#define API_PPPOE ((int)(6))
+#define API_ETH   0 << 16
+#define API_IPv4  1 << 16
+#define API_ICMP  2 << 16
+#define API_UDP   3 << 16
+#define API_TCP   4 << 16
+#define API_ARP   5 << 16
+#define API_PPPOE 6 << 16
   
 // Socket flags for user calls
 #define MSG_PEEK     0x02
