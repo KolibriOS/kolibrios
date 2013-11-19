@@ -484,8 +484,8 @@ IPv4_input:                                                     ; TODO: add IPv4
         rep movsb                                                                       ;
 
         push    eax
-        push    [edx + IPv4_FRAGMENT_entry.Owner]                                  ; we need to remeber the owner, in case this is the last packet
-        push    [edx + IPv4_FRAGMENT_entry.NextPtr]                                ; Set edx to the next pointer
+        push    [edx + IPv4_FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
+        push    [edx + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
         push    edx                                                                     ; Push pointer to fragment onto stack
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Next Fragment: 0x%x\n", edx
         call    NET_packet_free                                                         ; free the previous fragment buffer (this uses the value from stack)
@@ -497,14 +497,10 @@ IPv4_input:                                                     ; TODO: add IPv4
         xchg    cl, ch
         mov     edx, eax
         mov     [edx + IPv4_header.TotalLength], cx
-        add     esp, 8
+        add     esp, 12
         xchg    cl, ch
-        push    ecx
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet is now de-fragmented\n"
-
-        push    eax
-        jmp     .handle_it          ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
+        push    ecx edx                 ; size and pointer
+        jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
 
   .destroy_slot_pop:
         add     esp, 4
