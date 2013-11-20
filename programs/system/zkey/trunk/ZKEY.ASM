@@ -25,6 +25,9 @@ C_KEYCOLOR equ 0x00344556 ; Control button color
 L_KEYCOLOR equ 0x00258778 ; Lock button color
 TEXTCOLOR  equ 0x00FFFFFF ; Button caption color
 
+ASCII_KEYMAP_SIZE equ 128
+PROCINFO_SIZE equ 1024
+PROCINFO_BUFF equ ascii_keymap + ASCII_KEYMAP_SIZE
 
 STARTAPP:
 	mov	ecx, 1	   ; to send scancodes.
@@ -164,12 +167,19 @@ draw_window:
   mul	byte [keyboard_mode]
   add	eax, SwitchText
   stdcall draw_button, 513,28,46,20,106,0x00700000,eax,6,TEXTCOLOR	 ; Scan/ASCII switch
+  
+  xor	al, al
+  xchg	al, [red_type]
+  test	al, 2
+  jnz	.skip_end_draw_window ; if we draw switch button without redraw window then end_draw_window not need
+  
 @@:
  .draw_indicators_area:
   call lights_on
 
-  mov	byte [red_type], 0
   end_draw_window
+  
+.skip_end_draw_window:  
 ret
 
 get_zkey_window_slot_number:
@@ -184,8 +194,15 @@ set_event_mask:
 
 still:
 	call	get_receiver_window_slot_number
-
-
+	call	get_receiver_window_keyboard_mode ; return in ecx keyboard_mode for set_keyboard_mode
+	call	set_keyboard_mode
+; delete_switch_button 
+	mov eax, 8 
+	mov edx, 0x80700000
+	int	0x40 
+ mov	byte [red_type], 2
+	call	draw_window.draw_switch_button
+ 
 	mov	eax, 10 	      ; Wait for an event in the queue.
 	int	0x40
 
@@ -368,6 +385,14 @@ get_receiver_window_slot_number:
 	mov	[receiver_window], eax
       @@:
   ret
+
+get_receiver_window_keyboard_mode:
+	mov	eax, 9
+	mov	ebx, PROCINFO_BUFF
+	mov	ecx, [receiver_window]
+	int	0x40
+	movzx	ecx, byte [ebx + 75]
+	ret
 
 ;************************************
 ;*  input: edx = code of the key    *
