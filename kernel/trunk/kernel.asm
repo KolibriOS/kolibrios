@@ -1107,6 +1107,8 @@ end if
         mov     al, 1                             ; at least one CPU
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
+        
+include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         DEBUGF  1, "K : BAR0 %x \n", [IDE_BAR0_val]:4
         DEBUGF  1, "K : BAR1 %x \n", [IDE_BAR1_val]:4
