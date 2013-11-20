@@ -367,6 +367,7 @@ Returned value:
       * bit 1 (mask 2): window is minimized to panel
       * bit 2 (mask 4): window is rolled up
     * +71 = +0x47: dword: event mask
+    * +75 = +0x4B: byte: keyboard mode(ASCII = 0; SCAN = 1)
 Remarks:
   * Slots are numbered starting from 1.
   * Returned value is not a total number of threads, because there
@@ -411,7 +412,7 @@ Remarks:
     of its window are considered to be zero.
   * Coordinates of the client area are relative to the window.
   * At the moment only the part of the buffer by a size
-    71 = 0x37 bytes is used. Nevertheless it is recommended to use
+    76 = 0x4C bytes is used. Nevertheless it is recommended to use
     1-Kb buffer for the future compatibility, in the future
     some fields can be added.
 
