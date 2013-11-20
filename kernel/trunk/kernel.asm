@@ -3265,6 +3265,10 @@ sys_cpuusage:
     ; Event mask (+71)
         mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
         stosd
+        
+    ; Keyboard mode (+75)
+        mov     al, byte [ecx*8 + SLOT_BASE + APPDATA.keyboard_mode]
+        stosb    
 
         pop     esi
         pop     edi
