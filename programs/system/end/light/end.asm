@@ -152,6 +152,7 @@ no_red:
 no_save:
     pop  ecx
   mcall 18,9
+ret
 
 checkbox:
     btc   dword [check1.flags],1
