@@ -125,7 +125,7 @@ if fade=1
     call    draw_window
 else
     mov   al,4
-    mcall   ,<50,110> ,0x80000000,label7        ;eax=4 - write text
+    mcall   ,<50,110> ,0x800000cc,label7        ;eax=4 - write text
 end if
 
     invoke  ini_set_int,ini_file,asettings,aautosave,[autosave]
