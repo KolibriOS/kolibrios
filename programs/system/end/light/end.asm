@@ -5,17 +5,18 @@
 ; <diamond> note that 'mov al,xx' is shorter than 'mov eax,xx'
 ;           and if we know that high 24 bits of eax are zero, we can use 1st form
 ;           the same about ebx,ecx,edx
+fade equ 0
 
-use32        ; тъы■ўшЄ№ 32-сшЄэ√щ Ёхцшь рёёхьсыхЁр
-org 0x0      ; рфЁхёрЎш  ё эєы 
+use32        ; включить 32-битный режим ассемблера
+org 0x0      ; адресация с нуля
 
-db 'MENUET01'    ; 8-срщЄэ√щ шфхэЄшЇшърЄюЁ MenuetOS
-dd 0x01          ; тхЁёш  чруюыютър (тёхуфр 1)
-dd START         ; рфЁхё яхЁтющ ъюьрэф√
-dd IM_END        ; ЁрчьхЁ яЁюуЁрьь√
-dd I_END         ; ъюышўхёЄтю ярь Єш
-dd stacktop      ; рфЁхё тхЁ°шэ√ ёЄхър
-dd 0x0           ; рфЁхё сєЇхЁр фы  ярЁрьхЄЁют
+db 'MENUET01'    ; 8-байтный идентификатор MenuetOS
+dd 0x01          ; версия заголовка (всегда 1)
+dd START         ; адрес первой команды
+dd IM_END        ; размер программы
+dd I_END         ; количество памяти
+dd stacktop      ; адрес вершины стека
+dd 0x0           ; адрес буфера для параметров
 dd cur_dir_path
 
 include 'lang.inc'
@@ -68,7 +69,7 @@ still:
 @@:
     mov  [autosave],0
     jmp  still
-    
+
 key:
     mov  al,2
     mcall                                    ;eax=2 - get key code
@@ -111,6 +112,22 @@ restart_kernel:
     push 4
 
 mcall_and_close:
+if fade=1
+ ; === FADE IN ===
+    mov eax, color1
+  @@:
+    mov ebx, [eax + 32]
+    mov [eax], ebx
+    add eax, 4
+    cmp eax, color21
+    jne @b
+
+    call    draw_window
+else
+    mov   al,4
+    mcall   ,<50,110> ,0x80000000,label7        ;eax=4 - write text
+end if
+
     invoke  ini_set_int,ini_file,asettings,aautosave,[autosave]
     cmp  [autosave],1
     jne   no_save
@@ -126,7 +143,7 @@ mcall_and_close:
     dec   eax
     jnz   no_red
     call draw_window
-no_red: 
+no_red:
     pop   ecx
     mcall 9,proc_info
     cmp   [proc_info+50],9
@@ -134,8 +151,7 @@ no_red:
     jmp   @b
 no_save:
     pop  ecx
-    mcall 18,9
-ret
+  mcall 18,9
 
 checkbox:
     btc   dword [check1.flags],1
@@ -148,7 +164,7 @@ checkbox:
     push  dword check1
     call  [check_box_draw2]
     jmp    still
-    
+
 draw_window:
     mov   al,12
     mcall   ,1
@@ -161,27 +177,27 @@ draw_window:
     lea   ebx,[eax-110 shl 16+222]
     shr   ecx,1
     shl   ecx,16
-    lea   ecx,[ecx-70 shl 16+117]
+    lea   ecx,[ecx-70 shl 16+122]
 
     xor   eax,eax
-    mcall  , , ,0x019098b0,0x01000000        ;define and draw window
+    mcall  , , ,[color1],0x01000000        ;define and draw window
 
     mov   al,13
-    mcall   ,<0,223> ,<0,118>
-    mcall   ,<1,221>,<1,116>,0xffffff
-    mcall   ,<2,220>,<2,115>,0xe4dfe1
+    mcall   ,<0,223> ,<0,123>
+    mcall   ,<1,221>,<1,121>,[color2]
+    mcall   ,<2,220>,<2,120>, [color3]
 
     mov   al,8
-    mcall   ,<16,90> ,<20,27>,4,0x990022     ;eax=8 - draw buttons
-    mcall   ,<113,90>,       ,2,0xaa7700
-    mcall   ,        ,<54,27>,1,0x777777
-    mcall   ,<16,90> ,       ,3,0x007700
+    mcall   ,<16,90> ,<20,27>,4,[color4]     ;eax=8 - draw buttons
+    mcall   ,<113,90>,       ,2,[color5]
+    mcall   ,        ,<54,27>,1,[color6]
+    mcall   ,<16,90> ,       ,3,[color7]
 
     mov   al,4
-    mcall   ,<27,24> ,0x90ffffff,label2        ;eax=4 - write text
-    mcall   ,<23,58> ,          ,label3
-    mcall   ,<47,37> ,          ,label5
-    mcall   ,<41,71> ,          ,label6
+    mcall   ,<27,24> ,[color8],label2        ;eax=4 - write text
+    mcall   ,<23,58> ,        ,label3
+    mcall   ,<47,37> ,        ,label5
+    mcall   ,<41,71> ,        ,label6
 
     push  dword check1
     call  [check_box_draw2]
@@ -192,7 +208,6 @@ draw_window:
 ;---------------------------------------------------------------------
 ;data
 include 'data.inc'
-
 ;---------------------------------------------------------------------
 IM_END:
 ;---------------------------------------------------------------------
@@ -211,4 +226,4 @@ library_path:
 align 32
         rb 4096
 stacktop:
-I_END:  ; ьхЄър ъюэЎр яЁюуЁрьь√
+I_END:  ; метка конца программы

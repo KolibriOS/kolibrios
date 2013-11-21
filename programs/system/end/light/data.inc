@@ -1,8 +1,8 @@
 if lang eq ru
   label2:
-      db   'Выключить        Ядро',0
+      db   'Выключить       Ядро',0
   label3:
-      db   'Перезапуск      Отмена',0
+      db   'Перезапуск     Отмена',0
   label4:
       db   'Сохранить настройки (Ctrl-S)',0
 
@@ -33,9 +33,9 @@ else
 end if
 
   label5:
-      db   '(End)          (Home)',0
+      db   '(End)         (Home)',0
   label6:
-      db   '(Enter)          (Esc)',0
+      db   '(Enter)         (Esc)',0
 
 rdsave:
         dd  7,0,hide,0,0
@@ -90,9 +90,54 @@ aini_get_int db 'ini_get_int',0
 aini_set_int db 'ini_set_int',0
 ;---------------------------------------------------------------------
 
-check1 check_box2 20 shl 16 +8,96 shl 16 +8,6,0xffffff,0,0,label4
+check1 check_box2 20 shl 16 +8,93 shl 16 +8,6,0xffffff,0,0,label4
 
 hide        db 'h',0
 asettings   db 'settings',0
 aautosave   db 'autosave',0
 ini_file db  '/sys/settings/rdsave.ini',0
+
+
+If fade=1
+color1 dd 0x019098d0
+color2 dd 0xFFFFFF
+color3 dd 0xe4dfe1
+
+color4 dd 0x990022
+color5 dd 0xaa7700
+color6 dd 0x777777
+color7 dd 0x007700
+
+color8 dd 0x90FFFFFF
+
+color21 dd 0x01505890
+color22 dd 0xbfbfbf
+color23 dd 0xa49fa1
+
+color24 dd 0x590011
+color25 dd 0x593700
+color26 dd 0x373737
+color27 dd 0x003700
+
+color28 dd 0x90bfbfbf
+else
+color1 dd 0x019098d0
+color2 dd 0xFFFFFF
+color3 dd 0xe4dfe1
+
+color4 dd 0x990022
+color5 dd 0xaa7700
+color6 dd 0x777777
+color7 dd 0x007700
+
+color8 dd 0x90FFFFFF
+
+if lang eq ru
+  label7:
+      db   'Сохранение образа...',0
+else
+  label7:
+      db   'Saving RAM-drive...',0
+end if
+
+end if
