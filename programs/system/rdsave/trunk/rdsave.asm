@@ -8,7 +8,7 @@
 ;   Heavyiron 01.12.2013 - new logic
 ;---------------------------------------------------------------------
 appname equ 'RDsave '
-version equ '1.4'
+version equ '1.41'
 debug   equ no
 
 use32        ; включить 32-битный режим ассемблера
@@ -54,30 +54,31 @@ stdcall dll.Init,[init_lib]
 
 invoke  ini_get_int,ini_file,asettings,aautoclose,0
         mov   [autoclose],eax
+invoke  ini_get_str,ini_file,apath,apath,fname_buf,4096,path
+stdcall _lstrcpy,ini_path,fname_buf
 
-        mov   ecx,PARAMS
-        cmp   byte[ecx], 0
+stdcall _lstrcpy,filename_area,start_temp_file_name
+
+        mov   eax,PARAMS
+        cmp   byte[eax], 0
         je    no_params
-        cmp   byte[ecx], 'h'
+        cmp   byte[eax], 'h'
         je    @f
-        cmp   byte[ecx], 'H'
+        cmp   byte[eax], 'H'
         jne   .no_h
 @@:
         mov   [hidden],1
         jmp   no_params
 .no_h:
         mov   [param],1
+        stdcall _lstrcpy,fname_buf,eax
+        xor   eax,eax
         mov   ah,2
         jmp   noclose
 
-no_params:
-
-invoke  ini_get_str,ini_file,apath,apath,fname_buf,4096,path
-
-stdcall _lstrcpy,filename_area,start_temp_file_name
-
 ;---------------------------------------------------------------------
-stdcall _lstrcpy,check_dir,fname_buf
+no_params:
+stdcall _lstrcpy,check_dir,ini_path
         call    check_path
         test    eax,eax
         jz      path_ok
@@ -120,7 +121,6 @@ path_ok:
         cmp     [hidden],1
         jne     red
         mov     ah,2
-        mov     ecx,fname_buf
         jmp     noclose
 red:
         call    draw_window
@@ -140,7 +140,6 @@ button:
         mcall   17      ; получить идентификатор нажатой кнопки
         dec     ah
         jz      close
-        mov     ecx,fname_buf
         cmp     ah,1             ; кнопка с id=1("закрыть")?
         jne     noclose
 close:
@@ -151,7 +150,6 @@ key:
         mcall   2
         cmp     ah,0x1b
         je      close
-        mov     ecx,fname_buf
         cmp     ah,0x0D
         jne     @f
         mov     ah,2
@@ -161,6 +159,7 @@ key:
         jne     still
 ;---------------------------------------------------------------------
 noclose:
+        mov     ecx,fname_buf
         push  16
         mov   ebx,1
         cmp   byte[ecx+1],'f'
@@ -197,7 +196,24 @@ not_fdd:
         jmp     noclose
 
 doit:
+        cmp     [param],0
+        jne     @f
         call    save_ini
+@@:
+        cmp   byte[ecx+1],'r'
+        je    @f
+        cmp   byte[ecx+1],'R'
+        jne   not_rd
+@@:
+        mov   edx,rdError
+        call  print_err
+        cmp     [param],1
+        je      @f
+        jmp     still
+@@:
+        mov     [param],0
+        jmp     no_params
+not_rd:
         pop     eax
         mcall
         call    check_for_error
@@ -205,6 +221,7 @@ doit:
         je      @f
         jmp     still
 @@:
+        mov     [param],0
         jmp     no_params
 
 ;---------------------------------------------------------------------
@@ -219,34 +236,63 @@ stdcall _lstrcat,check_dir,fname_buf
         mov     edx,error11
         jmp     print_err
 @@:     
-        mov     edi, error_msg
         cmp     eax, 11
         ja      .unknown
-        mov     esi, [errors+eax*4]
-@@:
-        lodsb
-        stosb
-        test    al, al
-        jnz     @b
+        mov     edx, [errors+eax*4]
+        stdcall _lstrcat,error_msg,edx
         mov     edx, error_msg
         jmp     print_err
 .unknown:
         mov     edx, aUnknownError
 print_err:
-        mov   dword [is_notify + 8], edx
-        mcall 70, is_notify
+        pushad
+        stdcall _lstrlen,ini_path
+        invoke  ini_set_str,ini_file,apath,apath,ini_path,eax
+        stdcall _lstrcpy,fname_buf,ini_path
+        popad
+        cmp     [hidden],1
+        je      @f
+        cmp     [param],1
+        je      @f
+        stdcall _lstrlen,edx
+        imul    eax,6
+        mov     ebx,390
+        sub     ebx,eax
+        sar     ebx,1
+        shl     ebx,16
+        add     ebx,96
+        mov     ecx,[sc.work_text]
+        or      ecx,0xc0880000
+        mcall   4, , , , ,[sc.work]
+        ret
+@@:
+        mov     dword [is_notify + 8], edx
+        mcall   70, is_notify
         ret
 print_ok:
-        mov   dword [is_notify + 8], edx
-        mcall 70, is_notify
         cmp     [hidden],1
+        je       @f
+        cmp     [param],1
+        je       @f
+        stdcall _lstrlen,edx
+        imul    eax,6
+        mov     ebx,390
+        sub     ebx,eax
+        sar     ebx,1
+        shl     ebx,16
+        add     ebx,96
+        mov     ecx,[sc.work_text]
+        or      ecx,0xc0008800
+        mcall   4, , , , ,[sc.work]
+        mcall   5,100
+        cmp     [autoclose],1
         je      close
-        cmp   [autoclose],0
-        je   @f
-        mcall 5,50
-        jmp   close
-@@:
         ret
+@@:
+        mov     dword [is_notify + 8], edx
+        mcall   70, is_notify
+        mcall   5,100
+        jmp     close
 ;---------------------------------------------------------------------
 draw_PathShow:
         pushad
@@ -290,7 +336,7 @@ draw_window:
 
         mov     edx,[sc.work]
         or      edx,0x34000000
-        mcall   0,<200,400>,<200,120>, , ,title
+        mcall   0,<200,400>,<200,130>, , ,title
 
 ;buttons
         mcall   8,<198,70>,<68,20>,2,[sc.work_button]
@@ -336,7 +382,9 @@ error8          db 'Диск заполнен',0
 error9          db 'Файловая структура разрушена',0
 error10         db 'Доступ запрещён',0
 error11         db 'Ошибка устройства',0
-aUnknownError   db  'Неизвестная ошибка',0
+aUnknownError   db 'Неизвестная ошибка',0
+rdError         db 'Нельзя сохранять образ в самого себя',0
+error_msg       db 'Ошибка: ',0
 ;---------------------------------------------------------------------
 else if lang eq et
 save            db 'Salvesta',0
@@ -356,6 +404,8 @@ error9          db 'FAT tabel vigane',0
 error10         db 'Juurdepффs keelatud',0
 error11         db 'Seadme viga',0
 aUnknownError   db 'Tundmatu viga',0
+rdError         db 'You can't save image on itself',0
+error_msg       db 'Viga: ',0
 ;---------------------------------------------------------------------
 else if lang eq it
 save            db '  Salva',0
@@ -375,6 +425,8 @@ error9          db 'Tabella FAT corrotta',0
 error10         db 'Accesso negato',0
 error11         db 'Errore di device',0
 aUnknownError   db 'Errore sconosciuto',0
+rdError         db 'You can't save image on itself',0
+error_msg       db 'Errore: ',0
 ;---------------------------------------------------------------------
 else
 save            db '  Save',0
@@ -394,10 +446,9 @@ error9          db 'File structure is destroyed',0
 error10         db 'Access denied',0
 error11         db 'Device error',0
 aUnknownError   db 'Unknown error',0
-
+rdError         db 'You can't save image on itself',0
+error_msg       db 'Error: ',0
 end if
-
-title   db appname,version,0
 ;---------------------------------------------------------------------
 errors:
         dd      ok
@@ -413,6 +464,9 @@ errors:
         dd      error10
         dd      error11
 ;---------------------------------------------------------------------
+
+title   db appname,version,0
+
 ;Lib_DATA
 ;Всегда соблюдать последовательность в имени.
 system_dir_Boxlib       db '/sys/lib/box_lib.obj',0
@@ -601,11 +655,7 @@ check_dir:
 
 sc     system_colors
 
-;mouse_dd  rd 1
-
 autoclose rd 1
-
-error_msg rb 128
 
 folder_data:
         rb 304*32+32 ; 9 Kb
