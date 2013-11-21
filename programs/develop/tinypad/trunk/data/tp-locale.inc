@@ -58,13 +58,13 @@ popup_res mm.File,\
   et,'-'		 ,''		,      ,\
   et,'Välju'		 ,'Alt+X'	,Exit,\
 \
-  sp,'Nuevo'   ,'Ctrl+N'  ,New   ,\
+  sp,'Nuevo'   ,'Ctrl+N'  ,New	 ,\
   sp,'Abrir...'   ,'Ctrl+O'  ,Open  ,\
-  sp,'Guardar'  ,'Ctrl+S'  ,Save  ,\
+  sp,'Guardar'	,'Ctrl+S'  ,Save  ,\
   sp,'Guardar como...','Ctrl+Shift+S',SaveAs,\
-  sp,'-'   ,''    ,      ,\
-  sp,'Cerrar'   ,'Ctrl+F4' ,Close ,\
-  sp,'-'   ,''    ,      ,\
+  sp,'-'   ,''	  ,	 ,\
+  sp,'Cerrar'	,'Ctrl+F4' ,Close ,\
+  sp,'-'   ,''	  ,	 ,\
   sp,'Salir'  ,'Alt+X' ,Exit
 
 popup_res mm.Edit,\
@@ -89,11 +89,11 @@ popup_res mm.Edit,\
   et,'-'	 ,''	  ,	 ,\
   et,'Vali kõik' ,'Ctrl+A',SelAll,\
 \
-  sp,'Cortar'   ,'Ctrl+X',Cut   ,\
+  sp,'Cortar'	,'Ctrl+X',Cut	,\
   sp,'Copiar'  ,'Ctrl+C',Copy  ,\
   sp,'Pegar'   ,'Ctrl+V',Insert,\
-  sp,'Eliminar'  ,''    ,Delete,\
-  sp,'-'   ,''    ,  ,\
+  sp,'Eliminar'  ,''	,Delete,\
+  sp,'-'   ,''	  ,  ,\
   sp,'Seleccionar todo','Ctrl+A',SelAll
 
 popup_res mm.Search,\
@@ -116,34 +116,38 @@ popup_res mm.Search,\
   et,'Asenda...'    ,'Ctrl+H',Replace ,\
 \
   sp,'Posición...','Ctrl+G',Position,\
-  sp,'-'    ,''    ,      ,\
+  sp,'-'    ,''    ,	  ,\
   sp,'Buscar...'    ,'Ctrl+F',Find    ,\
-  sp,'Buscar siguiente'  ,'F3'    ,FindNext,\
+  sp,'Buscar siguiente'  ,'F3'	  ,FindNext,\
   sp,'Reemplazar...' ,'Ctrl+H',Replace
 
 popup_res mm.Run,\
   ru,'‡ ¯ãáâ¨âì'	,'F9'	  ,Run	   ,\
+  ru,'‡ ¯ãáâ¨âì ¢ ¤¥¡ ££¥à¥','F10',Debug   ,\
   ru,'Š®¬¯¨«¨à®¢ âì'	,'Ctrl+F9',Compile ,\
   ru,'-'		,''	  ,	   ,\
   ru,'„®áª  ®â« ¤ª¨'	,''	  ,DbgBoard,\
   ru,'‘¨áâ¥¬­ë¥ äã­ªæ¨¨',''	  ,SysFuncs,\
 \
   en,'Run'		,'F9'	  ,Run	   ,\
+  en,'Run in debugger'	,'F10'	  ,Debug   ,\
   en,'Compile'		,'Ctrl+F9',Compile ,\
   en,'-'		,''	  ,	   ,\
   en,'Debug board'	,''	  ,DbgBoard,\
   en,'System functions' ,''	  ,SysFuncs,\
 \
   et,'Käivita'		,'F9'	  ,Run	   ,\
+  et,'Käivita aastal siluri'	 ,'F10'    ,Debug   ,\
   et,'Kompileeri'	,'Ctrl+F9',Compile ,\
   et,'-'		,''	  ,	   ,\
   et,'Silumis paneel'	,''	  ,DbgBoard,\
   et,'Süsteemi funktsioonid' ,''	  ,SysFuncs,\
 \
   sp,'Ejecutar'    ,'F9'   ,Run     ,\
+  sp,'Ejecutar en el depurador'     ,'F10'    ,Debug   ,\
   sp,'Compilar'    ,'Ctrl+F9',Compile ,\
   sp,'-'    ,''   ,    ,\
-  sp,'Depuración'  ,''   ,DbgBoard,\
+  sp,'Depuración'  ,''	 ,DbgBoard,\
   sp,'Funciones del sistema' ,''   ,SysFuncs
 
 popup_res mm.Encoding,\
@@ -187,14 +191,14 @@ popup_res mm.Options,\
   et,'-'		     ,'',	     ,\
   et,'Rea numbrid'	     ,'',LineNumbers ,\
 \
-  sp,'Apariencia...'       ,'',Appearance  ,\
-  sp,'-'         ,'',      ,\
+  sp,'Apariencia...'	   ,'',Appearance  ,\
+  sp,'-'	 ,'',	   ,\
   sp,'Selección segura'      ,'',SecureSel   ,\
-  sp,'Paréntesis automáticos'    ,'',AutoBrackets,\
-  sp,'Identación automática'     ,'',AutoIndents ,\
-  sp,'Tabulación inteligente'      ,'',SmartTabs   ,\
+  sp,'Paréntesis automáticos'	 ,'',AutoBrackets,\
+  sp,'Identación automática'	 ,'',AutoIndents ,\
+  sp,'Tabulación inteligente'	   ,'',SmartTabs   ,\
   sp,'Llenado óptimo al guardar','',OptimalFill ,\
-  sp,'-'         ,'',      ,\
+  sp,'-'	 ,'',	   ,\
   sp,'Números en líneas'      ,'',LineNumbers
 
 lsz s_defname,\

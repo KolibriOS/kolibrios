@@ -2,8 +2,8 @@
 ; project name:      TINYPAD
 ; compiler:          flat assembler 1.67.21
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
-; version:           SVN (4.0.5)
-; last update:       2008-07-18 (Jul 18, 2008)
+; version:           SVN (4.0.7)
+; last update:       2013-11-21 (Nov 21, 2013)
 ; minimal kernel:    revision #823 (svn://kolibrios.org/kernel/trunk)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
@@ -35,7 +35,7 @@ include 'tinypad.inc'
 
 header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,ini_path
 
-APP_VERSION equ 'SVN (4.0.6)'
+APP_VERSION equ 'SVN (4.0.7)'
 
 TRUE = 1
 FALSE = 0
@@ -193,9 +193,9 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	xor	eax,eax
 	mov	[edi],al
 ;---------------------------------------------------------------------
-;OpenDialog	initialisation
-	push    dword OpenDialog_data
-	call    [OpenDialog_Init]
+;OpenDialog     initialisation
+	push	dword OpenDialog_data
+	call	[OpenDialog_Init]
 ;---------------------------------------------------------------------
 
 
@@ -242,8 +242,8 @@ still:
 	mov	[OpenDialog_data.type],eax
 	popa
 ; invoke OpenDialog
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+	push	dword OpenDialog_data
+	call	[OpenDialog_Start]
 
 	cmp	[OpenDialog_data.status],1
 	jne	.3
@@ -257,7 +257,7 @@ still:
 	mov	eax,edi
 	mov	[tb_opensave.length],al
 	popa
-	
+
 	cmp	[bot_mode2],0
 	je	.2
 	call	save_file
@@ -293,7 +293,7 @@ copy_str_2:
 	xor	eax,eax
 	mov	[esi],al
 	inc	esi
-	mov	edi,edx	; edi filename_area
+	mov	edi,edx ; edi filename_area
 	call	copy_str_1
 	ret
 ;-----------------------------------------------------------------------------
@@ -466,7 +466,9 @@ endp
 ;-----------------------------------------------------------------------------
 proc start_fasm ;/////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-; BL = run after compile
+; BL = 0 - compile
+; BL = 1 - run after compile
+; BL = 2 - run under mtdbg after compile
 ;-----------------------------------------------------------------------------
 ; FASM infile,outfile,/path/to/files[,run]
 ;-----------------------------------------------------------------------------
@@ -516,11 +518,15 @@ proc start_fasm ;/////////////////////////////////////////////////////////////
 	sub	ecx,esi
 	rep	movsb
 
-	cmp	bl,0 ; run outfile ?
+	cmp	bl,0 ; compile outfile ?
 	je	@f
 	mov	dword[edi],',run'
+	cmp	bl,1 ; run outfile ?
+	je	do_run
+	mov	dword[edi],',dbg'
+do_run:
 	add	edi,4
-    @@:
+		@@:
 	mov	al,0
 	stosb
 
@@ -696,7 +702,7 @@ temp_dir_pach:
 	rb 4096
 ;---------------------------------------------------------------------
 fname_Info:
-	rb 4096            ; filename
+	rb 4096 	   ; filename
 ;---------------------------------------------------------------------
 filename_area:
 	rb 256

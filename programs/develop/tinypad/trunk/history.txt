@@ -1,6 +1,10 @@
 
 HISTORY:
 
+4.0.7 (21/11/2013, Sergey Tyrnov aka tserj)
+  new feature:
+    - Run in debugger by F10
+
 4.0.6 (26/09/2010, Marat Zakiyanov aka Mario79, aka Mario)
   new features:
     - Select file path with OpenDialog for Load and Save.

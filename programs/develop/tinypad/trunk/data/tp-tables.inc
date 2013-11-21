@@ -62,6 +62,7 @@ accel_table_main dd		    \
   0x0000001C,key.return 	   ,\ ; Return
   0x0000003D,key.f3		   ,\ ; F3
   0x00000043,key.f9		   ,\ ; F9
+  0x00000044,key.f10		   ,\ ; F10
   0x00000147,key.home		   ,\ ; Home
   0x00000148,key.up		   ,\ ; Up
   0x00000149,key.pgup		   ,\ ; PageUp

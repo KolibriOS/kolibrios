@@ -132,6 +132,10 @@ NoOutDebugInfo:
 	jne	@f
 	mov	[_run_outfile],1
 @@:
+	cmp	[esi], dword ',dbg'
+	jne	@f
+	mov	[_run_outfile],2
+@@:
 	mov	[_mode],CONSOLE_MODE
 	jmp	start
 ;---------------------------------------------------------------------
@@ -662,6 +666,12 @@ display_bytes_count:
 	mov	edx,outfile
 	call	make_fullpaths
 	xor	ecx,ecx
+
+	cmp	[_run_outfile],2 ; param is ',dbg'
+	jne	run
+	mcall	70,file_info_debug
+	jmp	@f
+run:
 	mcall	70,file_info_start
 @@:
 	jmp	exit_program

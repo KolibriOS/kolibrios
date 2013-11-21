@@ -18,6 +18,7 @@ define mm.Search.FindNext key.f3
 define mm.Search.Replace  key.ctrl_h
 
 define mm.Run.Run      key.f9
+define mm.Run.Debug    key.f10
 define mm.Run.Compile  key.ctrl_f9
 define mm.Run.DbgBoard open_debug_board
 define mm.Run.SysFuncs open_sysfuncs_txt
