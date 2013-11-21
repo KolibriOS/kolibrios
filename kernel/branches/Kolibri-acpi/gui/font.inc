@@ -233,6 +233,8 @@ align 4
 FONT_I:
   if lang eq sp
   file 'char_sp.mt'
+  else if lang eq et
+  file 'char_et.mt'
   else
   file 'char.mt'
   end if
@@ -241,6 +243,8 @@ align 4
 FONT_II:
   if lang eq sp
   file 'char2_sp.mt'
+  else if lang eq et
+  file 'char2_et.mt'
   else
   file 'char2.mt'
   end if

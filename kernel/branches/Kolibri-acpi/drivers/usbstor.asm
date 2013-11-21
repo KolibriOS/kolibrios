@@ -1002,13 +1002,12 @@ proc inquiry_callback
 ; to allow the USB thread to continue working and handling those requests.
 ; 4. Thus, create a temporary kernel thread which would do it.
         mov     edx, [esp+8]
-        push    ebx ecx
-        movi    eax, 51
+        push    ebx ecx esi edi
         movi    ebx, 1
         mov     ecx, new_disk_thread
         ; edx = parameter
-        int     0x40
-        pop     ecx ebx
+        call    CreateThread
+        pop     edi esi ecx ebx
         cmp     eax, -1
         jnz     .nothing
 ; on error, reverse step 3

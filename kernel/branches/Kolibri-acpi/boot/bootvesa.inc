@@ -79,6 +79,7 @@ virtual at $A000
 modes_table:
 end virtual
 cursor_pos  dw 0         ;временное хранение курсора.
+cursor_pos_old  dw 0
 home_cursor dw 0    ;current shows rows a table
 end_cursor  dw 0     ;end of position current shows rows a table
 scroll_start dw 0    ;start position of scroll bar

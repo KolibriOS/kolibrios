@@ -39,6 +39,7 @@ struct  SOCKET
 
         snd_proc                dd ?
         rcv_proc                dd ?
+        connect_proc            dd ?
 
 ends
 
@@ -131,6 +132,7 @@ struct  TCP_SOCKET              IP_SOCKET
         timer_persist           dd ?
         timer_keepalive         dd ? ; keepalive/syn timeout
         timer_timed_wait        dd ? ; also used as 2msl timer
+        timer_connect           dd ?
 
 ; extra
 
@@ -142,13 +144,13 @@ struct  TCP_SOCKET              IP_SOCKET
         temp_bits               db ?
                                 rb 3 ; align
 
+
 ends
 
 struct  UDP_SOCKET              IP_SOCKET
 
         LocalPort               dw ? ; network byte order
         RemotePort              dw ? ; network byte order
-        firstpacket             db ?
 
 ends
 
@@ -309,6 +311,7 @@ SOCKET_open:
         mov     [eax + SOCKET.Domain], ecx
         mov     [eax + SOCKET.Type], edx
         mov     [eax + SOCKET.Protocol], esi
+        mov     [eax + SOCKET.connect_proc], connect_notsupp
 
         cmp     ecx, AF_INET4
         jne     .no_inet4
@@ -357,6 +360,7 @@ align 4
         mov     [eax + SOCKET.Protocol], IP_PROTO_UDP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_udp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.connect_proc], UDP_connect
         ret
 
 align 4
@@ -364,6 +368,7 @@ align 4
         mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_stream
+        mov     [eax + SOCKET.connect_proc], TCP_connect
 
         TCP_init_socket eax
         ret
@@ -373,6 +378,7 @@ align 4
   .raw_ip:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.connect_proc], IPv4_connect
         ret
 
 
@@ -380,6 +386,7 @@ align 4
   .raw_icmp:
         mov     [eax + SOCKET.snd_proc], SOCKET_send_icmp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        mov     [eax + SOCKET.connect_proc], IPv4_connect
         ret
 
 align 4
@@ -413,6 +420,9 @@ SOCKET_bind:
 
         cmp     esi, 2
         jb      .invalid
+
+        cmp     [eax + UDP_SOCKET.LocalPort], 0         ; Socket can only be bound once
+        jnz     .invalid
 
         cmp     word [edx], AF_INET4
         je      .af_inet4
@@ -449,17 +459,21 @@ SOCKET_bind:
 
   .tcp:
   .udp:
-        mov     ebx, [edx + 4]                  ; First, fill in the IP
-        test    ebx, ebx                        ; If IP is 0, use default
-        jnz     @f
-        mov     ebx, [IP_LIST + 4]      ;;;;; FIXME !i!i!i
-       @@:
-        mov     [eax + IP_SOCKET.LocalIP], ebx
 
-        mov     bx, [edx + 2]                   ; Now fill in the local port if it's still available
-        call    SOCKET_check_port
-        jz      .addrinuse                      ; ZF is set by socket_check_port, on error
+        pushd   [edx + 4]                       ; First, fill in the IP
+        popd    [eax + IP_SOCKET.LocalIP]
 
+        mov     bx, [edx + 2]                   ; Did caller specify a local port?
+        test    bx, bx
+        jnz     .just_check
+        call    SOCKET_find_port                ; Nope, find an ephemeral one
+        jmp     .done
+
+  .just_check:
+        call    SOCKET_check_port               ; Yes, check if it's still available
+        jz      .addrinuse                      ; ZF is set by socket_check_port on error
+
+  .done:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_bind: local ip=%u.%u.%u.%u\n",\
         [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
         [eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
@@ -496,8 +510,18 @@ SOCKET_connect:
         cmp     esi, 8
         jb      .invalid
 
-        cmp     word [edx], AF_INET4
-        je      .af_inet4
+        cmp     [eax + SOCKET.state], SS_ISCONNECTING
+        je      .already
+
+        test    [eax + SOCKET.options], SO_ACCEPTCON
+        jnz     .notsupp
+
+        call    [eax + SOCKET.connect_proc]
+
+        mov     dword[esp+20], ebx
+        mov     dword[esp+32], eax
+        ret
+
 
   .notsupp:
         mov     dword[esp+20], EOPNOTSUPP
@@ -509,150 +533,16 @@ SOCKET_connect:
         mov     dword[esp+32], -1
         ret
 
-  .af_inet4:
-        cmp     [eax + IP_SOCKET.LocalIP], 0
-        jne     @f
-        push    [IP_LIST + 4]                               ; FIXME !i!i!i!
-        pop     [eax + IP_SOCKET.LocalIP]
-       @@:
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
-        je      .udp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        je      .tcp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_IP
-        je      .ip
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
-        je      .ip
-
-        jmp     .notsupp
-
-align 4
-  .udp:
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        popa
-
-        pushw   [edx + 2]
-        pop     [eax + UDP_SOCKET.RemotePort]
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-        cmp     [eax + UDP_SOCKET.LocalPort], 0
-        jne     @f
-        call    SOCKET_find_port
-       @@:
-
-        mov     [eax + UDP_SOCKET.firstpacket], 0
-
-        push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
-        pop     eax
-
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
-
-        mov     dword[esp+32], 0
-        ret
-
-align 4
-  .tcp:
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        popa
-
-        pushw   [edx + 2]
-        pop     [eax + TCP_SOCKET.RemotePort]
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-        cmp     [eax + TCP_SOCKET.LocalPort], 0
-        jne     @f
-        call    SOCKET_find_port
-       @@:
-
-        mov     [eax + TCP_SOCKET.timer_persist], 0
-        mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
-
-        push    [TCP_sequence_num]
-        add     [TCP_sequence_num], 6400
-        pop     [eax + TCP_SOCKET.ISS]
-        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
-
-        TCP_sendseqinit eax
-;        mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
-
-        mov     ebx, eax
-        lea     eax, [ebx + STREAM_SOCKET.snd]
-        call    SOCKET_ring_create              ; TODO: check if memory was available or not
-
-        lea     eax, [ebx + STREAM_SOCKET.rcv]
-        call    SOCKET_ring_create              ; TODO: same here
-
-        pusha
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
-        popa
-
-        push    ebx
-        mov     eax, ebx
-        call    TCP_output
-        pop     eax
-
-  .block:
-        test    [eax + SOCKET.options], SO_NONBLOCK
-        jz      .loop
-
-        mov     dword[esp+20], EWOULDBLOCK
+  .already:
+        mov     dword[esp+20], EALREADY
         mov     dword[esp+32], -1
         ret
 
-  .loop:
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
-        je      .fail
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
-        je      .established
-        ja      .fail
 
-        call    SOCKET_block
-        jmp     .loop
-
-  .fail:
-        mov     eax, [eax + SOCKET.errorcode]
-        mov     [esp+20], eax
-        mov     dword[esp+32], -1
-        ret
-
-  .established:
-        mov     dword[esp+32], 0
-        ret
-
-
-align 4
-  .ip:
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_lock
-        popa
-
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.RemoteIP]
-
-        push    eax
-        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
-        pop     eax
-
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
-
-        mov     dword[esp+32], 0
+connect_notsupp:
+        xor     eax, eax
+        dec     eax
+        mov     ebx, EOPNOTSUPP
         ret
 
 
@@ -865,13 +755,13 @@ SOCKET_receive:
         call    [eax + SOCKET.rcv_proc]
         pop     edi
 
+        test    [eax + SOCKET.state], SS_CANTRCVMORE
+        jnz     .return
+
         cmp     ebx, EWOULDBLOCK
         jne     .return
 
         test    edi, MSG_DONTWAIT
-        jnz     .return_err
-
-        test    [eax + SOCKET.state], SS_CANTRCVMORE
         jnz     .return_err
 
 ;        test    [eax + SOCKET.options], SO_NONBLOCK
@@ -885,10 +775,10 @@ SOCKET_receive:
         push    EINVAL
         pop     ebx
   .return_err:
-        mov     eax, -1
+        mov     ecx, -1
   .return:
         mov     [esp+20], ebx
-        mov     [esp+32], eax
+        mov     [esp+32], ecx
         ret
 
 
@@ -909,7 +799,7 @@ SOCKET_receive_dgram:
         cmp     ecx, ebx                                        ; If data segment does not fit in applications buffer, abort
         ja      .too_small
 
-        push    ecx
+        push    eax ecx
         push    [esi + socket_queue_entry.buf_ptr]              ; save the buffer addr so we can clear it later
         mov     esi, [esi + socket_queue_entry.data_ptr]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
@@ -930,12 +820,12 @@ SOCKET_receive_dgram:
   .nd:
 
         call    NET_packet_free
-        pop     eax                                             ; return number of bytes copied to application
+        pop     ecx eax                                         ; return number of bytes copied to application
         xor     ebx, ebx
         ret
 
   .too_small:
-        mov     eax, -1
+        mov     ecx, -1
         push    EMSGSIZE
         pop     ebx
         ret
@@ -980,21 +870,23 @@ SOCKET_receive_stream:
         mov     edi, edx
         xor     edx, edx
 
+        push    eax
         add     eax, STREAM_SOCKET.rcv
         call    SOCKET_ring_read                                ; copy data from kernel buffer to application buffer
         call    SOCKET_ring_free                                ; free read memory
+        pop     eax
 
-        mov     eax, ecx                                        ; return number of bytes copied
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
 
   .wouldblock:
         push    EWOULDBLOCK
         pop     ebx
+        xor     ecx, ecx
         ret
 
   .peek:
-        mov     eax, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+        mov     ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
         xor     ebx, ebx
         ret
 
@@ -2193,6 +2085,7 @@ SOCKET_num_to_ptr:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
         jz      .error
+                diff16 "tetten", 0, $
         cmp     [eax + SOCKET.Number], ecx
         jne     .next_socket
 
@@ -2321,6 +2214,11 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
+        cmp     [net_sockets + SOCKET.NextPtr], 0       ; Are there any active sockets at all?
+        je      .quickret                               ; nope, exit immediately
+
+; TODO: run the following code in another thread, to avoid deadlock
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: %x\n", edx
 
         pusha
@@ -2371,6 +2269,7 @@ SOCKET_process_end:
         call    mutex_unlock
         popa
 
+  .quickret:
         ret
 
 
@@ -2390,10 +2289,10 @@ SOCKET_is_connecting:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_is_connecting: %x\n", eax
 
-        and     [eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
-        or      [eax + SOCKET.options], SS_ISCONNECTING
+        and     [eax + SOCKET.state], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+        or      [eax + SOCKET.state], SS_ISCONNECTING
 
-        jmp     SOCKET_notify
+        ret
 
 
 

@@ -15,10 +15,8 @@ $Revision$
 
 
 d80x25_bottom:
-           db       186,' KolibriOS wird ohne jegliche Garantie vertrieben.     '
-           db       '                       ',186
-           db       186,' Details stehen in der Datei COPYING                   '
-           db       '                       ',186
+           db       186,' KolibriOS wird ohne jegliche Garantie vertrieben. Details stehen in der      ',186
+           db       186,' Datei COPYING. Bitte melden Sie Fehler bei: http://board.kolibrios.org       ',186           
           line_full_bottom
 d80x25_bottom_num = 3
 
@@ -81,7 +79,7 @@ preboot_device_msgs dw 0,pdm1,pdm2,0
 pdm1      db      "Echte Diskette",13,10,0
 pdm2      db      "kolibri.img",13,10,0
 else
-preboot_device_msgs dw 0,pdm1,pdm2,pdm3
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1      db      "Echte Diskette",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "Nutze bereits geladenes Image",13,10,0
@@ -95,13 +93,15 @@ save_quest db     "Aktuelle Einstellungen speichern? [y/n]: ",0
 loader_block_error db "Bootloader Daten ungueltig, Kann nicht fortfahren. Angehalten.",0
 end if
 
-_st:latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
-_r1:latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
-_r2:latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
-_rs:latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
-_bt:latin1 '║                   └───────────────────────────────┴─┘',13,10,0
+_st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
+_r1 latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
+_r2 latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
+_rs latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
+_bt latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
 remark1 db      "Die Standardwerte sind fur die meisten gewahlt, aber nicht fur jedermann.",0
-remark2 db      "Wenn das System nicht bootet, versuchen, das Element [b] deaktivieren.",0
-remarks dw      remark1, remark2
-num_remarks = 2
+remark2 db      "Wenn das System nicht bootet, das Option [b] deaktivieren versuchen. Wenn es",0
+remark3 db      "nach dem Booten hangen bleibt, aktivieren Sie Option [c], deaktivieren [d]",0
+remark4 db      "und machen Fotos.",0
+remarks dw      remark1, remark2, remark3, remark4
+num_remarks = 4

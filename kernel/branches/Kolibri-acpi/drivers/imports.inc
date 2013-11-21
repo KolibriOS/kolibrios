@@ -60,6 +60,7 @@ kernel_export \
               CreateRingBuffer,\
 \
               GetPid,\
+              CreateThread,\
               CreateObject,\
               DestroyObject,\
               CreateEvent,\

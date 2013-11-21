@@ -512,7 +512,7 @@ disk_init_cache:
 
         push    edi
         mov     edi, [esi+DISK.SysCache.pointer]
-        lea     ecx, [ecx*3]
+        lea     ecx, [(ecx+1)*3]
         xor     eax, eax
         rep stosd
         pop     edi
@@ -527,7 +527,7 @@ disk_init_cache:
 
         push    edi
         mov     edi, [esi+DISK.AppCache.pointer]
-        lea     ecx, [ecx*3]
+        lea     ecx, [(ecx+1)*3]
         xor     eax, eax
         rep stosd
         pop     edi

@@ -9,7 +9,7 @@ $Revision$
 
 
 ; Full ASCII code font
-; only õ and ä added
+; only õ,ä,ü added
 ; Kaitz
 ET_FNT:
  fontfile file "ETFONT.FNT"

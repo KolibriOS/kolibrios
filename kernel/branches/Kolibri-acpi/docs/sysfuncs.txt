@@ -33,7 +33,7 @@ Parameters:
       * other possible values (from 5 up to 15) are reserved,
         function call with such Y is ignored
     * RR, GG, BB = accordingly red, green, blue components of a color
-      of the working area of the window (are ignored for style Y=2)
+      of the working area of the window (are ignored for style Y=1)
     * X = DCBA (bits)
       * A = 1 - window has caption; for styles Y=3,4 caption string
                   must be passed in edi, for other styles use
@@ -46,7 +46,7 @@ Parameters:
     of a type I and II, and ignored for styles Y=1,3:
   * esi = 0xXYRRGGBB - color of the header
     * RR, GG, BB define color
-    * Y=0 - usual window, Y=1 - unmovable window
+    * Y=0 - usual window, Y=1 - unmovable window (works for all window styles)
     * X defines a gradient of header: X=0 - no gradient,
       X=8 - usual gradient,
       for windows of a type II X=4 - negative gradient
@@ -367,6 +367,7 @@ Returned value:
       * bit 1 (mask 2): window is minimized to panel
       * bit 2 (mask 4): window is rolled up
     * +71 = +0x47: dword: event mask
+    * +75 = +0x4B: byte: keyboard mode(ASCII = 0; SCAN = 1)
 Remarks:
   * Slots are numbered starting from 1.
   * Returned value is not a total number of threads, because there
@@ -411,7 +412,7 @@ Remarks:
     of its window are considered to be zero.
   * Coordinates of the client area are relative to the window.
   * At the moment only the part of the buffer by a size
-    71 = 0x37 bytes is used. Nevertheless it is recommended to use
+    76 = 0x4C bytes is used. Nevertheless it is recommended to use
     1-Kb buffer for the future compatibility, in the future
     some fields can be added.
 
@@ -1785,7 +1786,7 @@ Parameters:
           sysdir_path     rb 64
 For example:
 dir_name1       db 'KolibriOS',0
-                rb 64-8
+                rb 64-10
 dir_path1       db 'HD0/1',0
                 rb 64-6
 Returned value:
@@ -2010,7 +2011,7 @@ Parameters:
   * eax = 40 - function number
   * ebx = mask: bit i corresponds to event i+1 (see list of events)
     (set bit permits notice on event)
-    bit 31: active/inactive filter
+    bit 31: mouse active/inactive filter
     bit 31 = 0 - inactive window receive mouse events
     bit 31 = 1 - inactive window does not receive mouse events
     bit 30: cursor position filter
@@ -2409,6 +2410,70 @@ Returned value:
   * eax = -1 - error (there is too many threads)
   * otherwise eax = TID - thread identifier
     </UL>
+
+======================================================================
+==================== Function 54, subfunction 0 ======================
+============== Get the number of slots in the clipboard. =============
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 0 - subfunction number
+Returned value:
+  * eax = slots in the clipboard
+  * eax = -1 - main list area not found
+
+======================================================================
+==================== Function 54, subfunction 1 ======================
+================= Read the data from the clipboard. ==================
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 1 - subfunction number
+  * eсx = slot number
+Returned value:
+  * eax = if successful - pointer to a memory with data
+  * eax = 1 - error
+  * eax = -1 - main list area not found
+
+======================================================================
+==================== Function 54, subfunction 2 ======================
+================= Write the data to the clipboard. ===================
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 2 - subfunction number
+  * eсx = the number of bytes to be copied
+  * edx = a pointer to a buffer for data to be copied
+Returned value:
+  * eax = 0 - success
+  * eax = 1 - error
+  * eax = -1 - main list area not found
+ 
+======================================================================
+===================== Function 54, subfunction 3 =====================
+================ Delete the last slot in the clipboard ===============
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 3 - subfunction number
+Returned value:
+  * eax = 0 - success
+  * eax = 1 - error
+  * eax = -1 - main list area not found
+  
+======================================================================
+===================== Function 54, subfunction 4 =====================
+===================== Alarm reset the lock buffer ====================
+======================================================================
+Parameters:
+  * eax = 54 - function number
+  * ebx = 4 - subfunction number
+Returned value:
+  * eax = 0 - success
+  * eax = -1 - main list area not found or no blocking
+Remarks:
+  * Used in exceptional cases, where no responsible or killed
+    application blocked the clipboard operations.
 
 ======================================================================
  Function 55, subfunction 55 - begin to play data on built-in speaker.
@@ -3953,7 +4018,7 @@ Format of the information structure:
   * +0: dword: 2 = subfunction number
   * +4: dword: 0 (reserved)
   * +8: dword: 0 (reserved)
-  * +12 = +0xC: dword: number of bytes to read
+  * +12 = +0xC: dword: number of bytes to write
   * +16 = +0x10: dword: pointer to data
   * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
     given in the general description

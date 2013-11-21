@@ -182,7 +182,7 @@ UDP_input:
 ;
 ; FIXME: UDP should check remote IP, but not under all circumstances!
 
-        cmp     [eax + UDP_SOCKET.firstpacket], 0
+        cmp     [eax + UDP_SOCKET.RemotePort], 0
         je      .updateport
 
         cmp     [eax + UDP_SOCKET.RemotePort], cx
@@ -211,8 +211,6 @@ UDP_input:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "UDP_input: new remote port=%x\n", cx ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.RemotePort], cx
-        inc     [eax + UDP_SOCKET.firstpacket]
-
         jmp     .updatesock
 
   .dump_:
@@ -262,7 +260,6 @@ UDP_output:
 
         sub     esp, 8                                          ; Data ptr and data size will be placed here
         push    edx esi
-        mov     ebx, [eax + SOCKET.device]
         mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
         mov     di, IP_PROTO_UDP shl 8 + 128
@@ -308,6 +305,84 @@ UDP_output:
         add     esp, 4+4+8
         or      eax, -1
         ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; UDP_connect
+;
+;   IN: eax = socket pointer
+;  OUT: eax = 0 ok / -1 error
+;       ebx = error code
+;
+;-------------------------
+align 4
+UDP_connect:
+
+        test    [eax + SOCKET.state], SS_ISCONNECTED
+        jz      @f
+        call    UDP_disconnect
+  @@:
+
+        push    eax edx
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        pop     edx eax
+
+; Fill in local IP
+        cmp     [eax + IP_SOCKET.LocalIP], 0
+        jne     @f
+        push    [IP_LIST + 4]                                   ; FIXME: use correct local IP
+        pop     [eax + IP_SOCKET.LocalIP]
+
+; Fill in remote port and IP, overwriting eventually previous values
+        pushw   [edx + 2]
+        pop     [eax + UDP_SOCKET.RemotePort]
+
+        pushd   [edx + 4]
+        pop     [eax + IP_SOCKET.RemoteIP]
+
+; Find a local port, if user didnt define one
+        cmp     [eax + UDP_SOCKET.LocalPort], 0
+        jne     @f
+        call    SOCKET_find_port
+       @@:
+
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up data receiving queue
+        pop     eax
+
+        push    eax
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        pop     eax
+
+        call    SOCKET_is_connected
+
+        xor     eax, eax
+        ret
+
+
+;-----------------------------------------------------------------
+;
+; UDP_disconnect
+;
+;   IN: eax = socket pointer
+;  OUT: eax = socket pointer
+;
+;-------------------------
+align 4
+UDP_disconnect:
+
+        ; TODO: remove the pending received data
+
+        call    SOCKET_is_disconnected
+
+        ret
+
+
 
 
 

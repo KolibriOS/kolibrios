@@ -51,18 +51,20 @@ getkey:                         ; Use BIOS INT 16h to read a key from the keyboa
 ; get number in range [bl,bh] (bl,bh in ['0'..'9'])
 ; in: bx=range
 ; out: ax=digit (1..9, 10 for 0)
-        mov     ah, 0           ; If 'int 16h' is called with 'ah' equal to zero, the BIOS will not return control
-        int     16h             ; to the caller until a key is available in the system type ahead buffer. On return,
-        cmp     al, bl          ; 'al' contains the ASCII code for the key read from the buffer and 'ah' contains
-        jb      getkey          ; the keyboard scan code. Here we compare 'al' with the range of accepted characters.
-        cmp     al, bh          ; If the key pressed is not in the range, continue waiting for another key.
-        ja      getkey
+        mov     ah, 0       ; If 'int 16h' is called with 'ah' equal to zero, the BIOS will not return control to the caller
+        int     16h         ; until a key is available in the system type ahead buffer. On return, 'al' contains the ASCII
+        cmp     al, 27      ; code for the key read from the buffer and 'ah' contains the keyboard scan code. (27=>ESC)
+        jz      @f          ; If ESC is pressed, return (user doesn't want to change any value).
+        cmp     al, bl      ; Compare 'al' (ASCII code of key pressed) with 'bl' (lowest accepted char from the range).
+        jb      getkey      ; ASCII code is below lowest accepted value => continue waiting for another key.
+        cmp     al, bh      ; Compare 'al' (ASCII code of key pressed) with 'bh' (highest accepted char from the range).
+        ja      getkey      ; ASCII code is above highest accepted value => continue waiting for another key.
         push    ax              ; If the pressed key is in the accepted range, save it on the stack and echo to screen.
         call    putchar
         pop     ax
-        and     ax, 0Fh         ; ASCII code for '0' is 48 (110000b). 0F4=1111b. (110000b AND 1111b) = 0
-        jnz     @f              ; So if key '0' was entered, return 10 in 'ax'
-        mov     al, 10
+        and     ax, 0Fh     ; Convert ASCII code to number: '1'->1, '2'->2, etc. 0Fh=1111b.
+        jnz     @f          ; ASCII code for '0' is 48 (110000b). (110000b AND 1111b) = 0
+        mov     al, 10      ; So if key '0' was entered, return 10 in 'ax'
 @@:
         ret
 
@@ -77,6 +79,18 @@ macro _setcursor row,column
 {
         mov     dx, row*256 + column
         call    setcursor
+}
+
+macro _ask_question question,range,variable_to_set
+{
+        _setcursor 16,0
+        mov     si, question    ; Print the question
+        call    print
+        mov     bx, range       ; range accepted for answer
+        call    getkey
+        cmp     al, 27          ; If ESC was pressed, do not change the value
+        jz      .esc_pressed
+        mov     [variable_to_set], al
 }
 
 boot_read_floppy:
@@ -433,7 +447,7 @@ sayerr:
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found_1 ; Parallel IDE Controller
+        jnc     .found ; Parallel IDE Controller
 ; Controller not found!
         xor     ax, ax
         mov     [es:BOOT_IDE_PI_16], ax
@@ -775,25 +789,26 @@ end if
         cmp     al, 'e'         ; select boot origin
         jnz     .show_remarks
 ; e) preboot_device = from where to boot?
-        _setcursor 16,0
-        mov     si, bdev
-        call    print
 if defined extended_primary_loader
-        mov     bx, '12'        ; range accepted for answer: 1-2
+        _ask_question bdev,'12',preboot_device              ; range accepted for answer: 1-2
 else
-        mov     bx, '14'        ; range accepted for answer: 1-4
+        _ask_question bdev,'14',preboot_device              ; range accepted for answer: 1-4
 end if
-        call    getkey
-        mov     [preboot_device], al
         _setcursor 14,0
+
 .d:
 if ~ defined extended_primary_loader
         mov     [.bSettingsChanged], 1
 end if
+.esc_pressed:
         call    clear_vmodes_table             ;clear vmodes_table
         jmp     .printcfg
+
 .change_a:
         call    clear_vmodes_table             ;clear vmodes_table
+
+        mov     si, word [cursor_pos]
+        mov     word [cursor_pos_old], si
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
@@ -803,6 +818,13 @@ end if
 
         mov     si, word [cursor_pos]
 
+        cmp     al, 27              ; If ESC was pressed, do not change the value
+        jnz     @f                   ; Just exit the resolution selection box
+
+        mov     si, word [cursor_pos_old]
+        mov     word [cursor_pos], si
+        jmp     .esc_pressed
+@@:
         cmp     ah, 0x48;x,0x48E0               ; up
         jne     .down
         cmp     si, modes_table
@@ -873,17 +895,13 @@ end if
         jmp     .d
 
 .change_b:                      ; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
-        _setcursor 16,0
+;        _setcursor 16,0
 ;        mov     si, ask_dma    // (earlier was: preboot_dma  = use DMA access?)
 ;        call    print
 ;        mov     bx, '13'       ; range accepted for answer: 1-3
 ;        call    getkey
 ;        mov     [preboot_dma], al
-        mov     si, ask_bd
-        call    print
-        mov     bx, '12'        ; range accepted for answer: 1-2
-        call    getkey
-        mov     [preboot_biosdisk], al
+        _ask_question ask_bd,'12',preboot_biosdisk              ; range accepted for answer: 1-2
         _setcursor 11,0
         jmp     .d
 ;.change_c:                     ; //  VRR is an obsolete functionality, used only with CRT monitors
@@ -896,21 +914,11 @@ end if
 ;        _setcursor 12,0
 ;        jmp     .d
 .change_c:                      ; c) preboot_debug = duplicates kernel debug output to the screen
-        _setcursor 16,0
-        mov     si, ask_debug
-        call    print
-        mov     bx, '12'        ; range accepted for answer: 1-2
-        call    getkey
-        mov     [preboot_debug], al
+        _ask_question ask_debug,'12',preboot_debug              ; range accepted for answer: 1-2
         _setcursor 12,0
         jmp     .d
 .change_d:                      ; d) preboot_launcher = start the first app (right now it's LAUNCHER) after kernel is loaded?
-        _setcursor 16,0
-        mov     si, ask_launcher
-        call    print
-        mov     bx, '12'        ; range accepted for answer: 1-2
-        call    getkey
-        mov     [preboot_launcher], al
+        _ask_question ask_launcher,'12',preboot_launcher        ; range accepted for answer: 1-2
         _setcursor 13,0
         jmp     .d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;

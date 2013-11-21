@@ -458,7 +458,6 @@ proc load_file_umode stdcall, file_name:dword
         push    edi
         push    ebx
 
-
         lea     eax, [attr]
         stdcall get_fileinfo, [file_name], eax   ;find file and get info
         test    eax, eax
@@ -484,10 +483,25 @@ proc load_file_umode stdcall, file_name:dword
 
         mov     ebx, [eax+4]                     ;get real size of file
         mov     [file_size], ebx
-        stdcall user_alloc, ebx                  ;and allocate memory from user heap
+        stdcall user_alloc, ebx                  ;and allocate space from user heap
         mov     [um_file], eax
         test    eax, eax
         jz      .err_2
+
+        mov     edx, [file_size]                 ;preallocate page memory
+        shr     eax, 10
+        lea     edi, [page_tabs+eax]
+        add     edx, 4095
+        shr     edx, 12
+@@:
+        call    alloc_page
+        test    eax, eax
+        jz      .err_3
+
+        or      eax, PG_UW
+        stosd
+        dec     edx
+        jnz     @B
 
         pushad
         mov     ecx, unpack_mutex
@@ -501,14 +515,27 @@ proc load_file_umode stdcall, file_name:dword
 
         stdcall kernel_free, [km_file]           ;we don't need packed file anymore
 .exit:
+
+        mov     edi, [um_file]
+        mov     esi, [um_file]
+        mov     eax, [file_size]
+        mov     edx, eax
+
+        add     edi, eax                         ;cleanup remain space
+        mov     ecx, 4096                        ;from file end
+        and     eax, 4095
+        jz      @f
+        sub     ecx, eax
+        xor     eax, eax
+        cld
+        rep stosb
+@@:
         mov     eax, [um_file]
-        mov     edx, [file_size]
 
         pop     ebx
         pop     edi
         pop     esi
         ret
-
 
 .raw_file:                                       ; sometimes we load unpacked file
         stdcall user_alloc, ebx                  ; allocate space from user heap
@@ -533,13 +560,14 @@ proc load_file_umode stdcall, file_name:dword
 @@:
         lodsd
         and     eax, 0xFFFFF000
-        or      eax, PG_USER
+        or      eax, PG_UW
         stosd
         loop    @B
 
         stdcall free_kernel_space, [km_file]     ; release allocated kernel space
         jmp     .exit                            ; physical pages still in use
-
+.err_3:
+        stdcall user_free, [um_file]
 .err_2:
         stdcall kernel_free, [km_file]
 .err_1:

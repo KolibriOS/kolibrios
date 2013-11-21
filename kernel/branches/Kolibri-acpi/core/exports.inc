@@ -82,6 +82,8 @@ __exports:
           delete_keyboard,       'DelKeyboard',        \
           get_cpu_freq,          'GetCpuFreq',         \
 \
+          new_sys_threads,       'CreateThread',       \      ; ebx, ecx, edx
+\
           srv_handler,           'ServiceHandler',     \
           fpu_save,              'FpuSave',            \
           fpu_restore,           'FpuRestore',         \

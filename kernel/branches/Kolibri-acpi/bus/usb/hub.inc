@@ -105,6 +105,9 @@ ConfigPipe              dd      ?
 StatusPipe              dd      ?
 NumPorts                dd      ?
 ; Number of downstream ports; from 1 to 255.
+MaxPacketSize           dd      ?
+; Maximum packet size for interrupt endpoint.
+; Usually equals ceil((1+NumPorts)/8), but some hubs give additional bytes.
 Actions                 dd      ?
 ; Bitfield with HUB_* constants.
 PoweredOnTime           dd      ?
@@ -250,10 +253,11 @@ end virtual
 ; the pointer is in edx.
 ; 2. Allocate memory for the hub descriptor.
 ; Maximum length (assuming 255 downstream ports) is 40 bytes.
+; Allocate 4 extra bytes to keep wMaxPacketSize.
 ; 2a. Save registers.
         push    edx
 ; 2b. Call the allocator.
-        movi    eax, 40
+        movi    eax, 44
         call    malloc
 ; 2c. Restore registers.
         pop     ecx
@@ -267,7 +271,11 @@ end virtual
         movzx   eax, [ecx+usb_endpoint_descr.bEndpointAddress]
         movzx   edx, [ecx+usb_endpoint_descr.bInterval]
         movzx   ecx, [ecx+usb_endpoint_descr.wMaxPacketSize]
+        test    ecx, (1 shl 11) - 1
+        jz      .free
+        push    ecx
         stdcall usb_open_pipe, ebx, eax, ecx, INTERRUPT_PIPE, edx
+        pop     ecx
 ; If failed, free the memory allocated in step 2,
 ; say something to the debug board and return error.
         test    eax, eax
@@ -275,6 +283,8 @@ end virtual
 ; 4. Send control query for the hub descriptor,
 ; pass status pipe as a callback parameter,
 ; allow short packets.
+        and     ecx, (1 shl 11) - 1
+        mov     [esi+40], ecx
         mov     dword [esi], 0xA0 + \   ; class-specific request
                 (USB_GET_DESCRIPTOR shl 8) + \
                 (0 shl 16) + \          ; descriptor index 0
@@ -352,8 +362,9 @@ end if
         cmp     [length], edx
         jb      .invalid
 ; 5. Allocate the memory for usb_hub structure.
-; Total size of variable-length data is ALIGN_UP(2*(floor(NumPorts/8)+1),4)+8*NumPorts.
-        lea     edx, [sizeof.usb_hub+(edx-sizeof.usb_hub_descr)*2+3]
+; Total size of variable-length data is ALIGN_UP(floor(NumPorts/8)+1+MaxPacketSize,4)+8*NumPorts.
+        add     edx, [eax+40]
+        add     edx, sizeof.usb_hub - sizeof.usb_hub_descr + 3
         and     edx, not 3
         lea     eax, [edx+ecx*8]
         push    ecx edx
@@ -374,6 +385,8 @@ end if
         mov     [ebx+usb_hub.StatusPipe], eax
         push    esi edi
         mov     esi, [buffer]
+        mov     eax, [esi+40]
+        mov     [ebx+usb_hub.MaxPacketSize], eax
 ; The following commands load bNbrPorts, wHubCharacteristics, bPwrOn2PwrGood.
         mov     edx, dword [esi+usb_hub_descr.bNbrPorts]
         mov     dl, 0
@@ -487,11 +500,8 @@ endp
 ; Called when initial configuration is done and when a previous notification
 ; has been processed.
 proc usb_hub_wait_change
-        mov     ecx, [eax+usb_hub.NumPorts]
-        shr     ecx, 3
-        inc     ecx
         stdcall usb_normal_transfer_async, [eax+usb_hub.StatusPipe], \
-                [eax+usb_hub.StatusChangePtr], ecx, usb_hub_changed, eax, 1
+                [eax+usb_hub.StatusChangePtr], [eax+usb_hub.MaxPacketSize], usb_hub_changed, eax, 1
         ret
 endp
 
@@ -513,6 +523,7 @@ proc usb_hub_changed stdcall, pipe:dword, status:dword, buffer:dword, length:dwo
         shr     ecx, 3
         inc     ecx
         sub     ecx, [length]
+        jbe     .restart
         push    eax edi
         mov     edi, [buffer]
         add     edi, [length]

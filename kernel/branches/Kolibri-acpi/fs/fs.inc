@@ -24,6 +24,8 @@ iglobal
 
 if lang eq sp
 include 'fs/fs-sp.inc'
+else if lang eq et
+include 'fs/fs-et.inc'
 else
 dir0:
              db  'HARDDISK   '

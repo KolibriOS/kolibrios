@@ -310,15 +310,16 @@ ICMP_input:
         ret
 
 
+if 0
 ;-----------------------------------------------------------------
 ;
 ; ICMP_output
 ;
 ; IN:  eax = dest ip
-;      ebx = source ip
+;      bh  = type
+;      bl  = code
 ;      ecx = data length
-;      dh  = type
-;      dl  = code
+;      edx = source ip
 ;      esi = data offset
 ;      edi = identifier shl 16 + sequence number
 ;
@@ -328,10 +329,7 @@ ICMP_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Creating ICMP Packet\n"
 
-        push    esi edi dx
-
-        mov     edx, [eax + IP_SOCKET.LocalIP]
-        mov     eax, [eax + IP_SOCKET.RemoteIP]
+        push    esi edi bx
         add     ecx, sizeof.ICMP_header
         mov     di, IP_PROTO_ICMP SHL 8 + 128           ; TTL
         call    IPv4_output
@@ -374,13 +372,14 @@ ICMP_output:
         DEBUGF  DEBUG_NETWORK_ERROR, "Creating ICMP Packet failed\n"
         add     esp, 2*4 + 2
         ret
+end if
 
 
 
 
 ;-----------------------------------------------------------------
 ;
-; ICMP_output
+; ICMP_output_raw
 ;
 ; IN:  eax = socket ptr
 ;      ecx = data length

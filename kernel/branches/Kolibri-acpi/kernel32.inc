@@ -171,6 +171,7 @@ include "core/v86.inc"      ; virtual-8086 manager
 include "core/irq.inc"      ; irq handling functions
 include "core/apic.inc"     ; Interrupt Controller functions
 include "core/timers.inc"
+include "core/clipboard.inc" ; custom clipboard
 
 ; GUI stuff
 include "gui/window.inc"
@@ -191,7 +192,8 @@ include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
 include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
-include "fs/ext2.inc"     ; read / write for ext2 filesystem
+include "fs/ext2/ext2.asm"     ; read / write for ext2 filesystem
+include "fs/xfs.asm"      ; read / write for xfs filesystem
 
 ; sound
 

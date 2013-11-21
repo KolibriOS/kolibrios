@@ -17,6 +17,7 @@
 $Revision: 3346 $
 
 ETH_FRAME_MINIMUM       = 60
+ETH_QUEUE_SIZE          = 255
 
 struct  ETH_header
 
@@ -32,11 +33,39 @@ struct  ETH_DEVICE      NET_DEVICE
 
 ends
 
+struct  ETH_queue_entry
+
+        device          dd ?
+        packet          dd ?
+        size            dd ?
+
+ends
+
 iglobal
 align 4
 
         ETH_BROADCAST   dp  0xffffffffffff
 endg
+
+uglobal
+align 4
+        ETH_input_event dd ?
+        ETH_queue       rd (ETH_QUEUE_SIZE*sizeof.ETH_queue_entry + sizeof.queue)/4
+endg
+
+macro   ETH_init {
+
+        init_queue ETH_queue
+
+        movi    ebx, 1
+        mov     ecx, ETH_process_input
+        call    new_sys_threads
+        test    eax, eax
+        jns     @f
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for ethernet, error %d\n', eax
+  @@:
+
+}
 
 ;-----------------------------------------------------------------
 ;
@@ -53,10 +82,62 @@ endg
 ;-----------------------------------------------------------------
 align 4
 ETH_input:
-        mov     eax, [esp]
-        mov     ecx, [esp+4]
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE,"ETH_input: size=%u\n", ecx
+        push    ebx
+        mov     esi, esp
+
+        pushf
+        cli
+        add_to_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .fail
+        popf
+
+        add     esp, sizeof.ETH_queue_entry
+
+        xor     edx, edx
+        mov     eax, [ETH_input_event]
+        mov     ebx, [eax + EVENT.id]
+        xor     esi, esi
+        call    raise_event
+
+        ret
+
+  .fail:
+        popf
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH incoming queue is full, discarding packet!\n"
+
+        add     esp, sizeof.ETH_queue_entry - 8
+        call    NET_packet_free
+        add     esp, 4
+
+        ret
+
+
+
+
+align 4
+ETH_process_input:
+
+        xor     esi, esi
+        mov     ecx, MANUAL_DESTROY
+        call    create_event
+        mov     [ETH_input_event], eax
+
+  .wait:
+        mov     eax, [ETH_input_event]
+        mov     ebx, [eax + EVENT.id]
+        call    wait_event
+
+  .loop:
+        get_from_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .wait
+
+        mov     eax, [esi + ETH_queue_entry.packet]
+        mov     ecx, [esi + ETH_queue_entry.size]
+        mov     ebx, [esi + ETH_queue_entry.device]
+
+        pushd   .loop   ; return address
+        push    ecx eax
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: size=%u\n", ecx
         sub     ecx, sizeof.ETH_header
         jb      .dump
 
@@ -78,10 +159,10 @@ ETH_input:
         cmp     ax, ETHER_PROTO_PPP_SESSION
         je      PPPoE_session_input
 
-        DEBUGF  DEBUG_NETWORK_ERROR, "ETH_input: Unknown packet type=%x\n", ax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: Unknown packet type=%x\n", ax
 
   .dump:
-        DEBUGF  DEBUG_NETWORK_VERBOSE,"ETH_input: dumping\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: dumping\n"
         call    NET_packet_free
         add     esp, 4
         ret

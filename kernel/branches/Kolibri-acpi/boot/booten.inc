@@ -15,10 +15,10 @@ $Revision: 2455 $
 
 
 d80x25_bottom:
-          db       186,' KolibriOS comes with ABSOLUTELY NO WARRANTY. See file COP'
-          db       'YING for details    ',186
+          db       186,' KolibriOS comes with ABSOLUTELY NO WARRANTY. See file COPYING for details    ',186
+          db       186,' If you find any bugs, please report them at: http://board.kolibrios.org      ',186
           line_full_bottom
-d80x25_bottom_num = 2
+d80x25_bottom_num = 3
 
 msg_apm   db      " APM x.x ", 0
 novesa    db      "Display: EGA/CGA",13,10,0
@@ -79,7 +79,7 @@ preboot_device_msgs dw 0,pdm1,pdm2,0
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 else
-preboot_device_msgs dw 0,pdm1,pdm2,pdm3
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "use already loaded image",13,10,0
@@ -93,13 +93,14 @@ save_quest db     "Remember current settings? [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
 end if
 
-_st:latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
-_r1:latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
-_r2:latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
-_rs:latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
-_bt:latin1 '║                   └───────────────────────────────┴─┘',13,10,0
+_st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
+_r1 latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
+_r2 latin1 '║                   │  640x480  VGA 16 colors       │ │',13,10,0
+_rs latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
+_bt latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
 remark1 db      "Default values were selected to match most of configurations, but not all.",0
-remark2 db      "If the system does not boot, try to disable the item [b].",0
-remarks dw      remark1, remark2
-num_remarks = 2
+remark2 db      "If the system does not boot, try to disable option [b]. If the system gets",0
+remark3 db      "stuck after booting, enable option [c], disable option [d] and make photo.",0
+remarks dw      remark1, remark2, remark3
+num_remarks = 3

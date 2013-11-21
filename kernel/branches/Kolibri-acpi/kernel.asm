@@ -144,6 +144,8 @@ use16
 
 if lang eq sp
 include "kernelsp.inc"  ; spanish kernel messages
+else if lang eq et
+version db    'Kolibri OS  versioon 0.7.7.0+    ',13,10,13,10,0
 else
 version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
 end if
@@ -696,6 +698,19 @@ no_mode_0x12:
         mov     [mem_BACKGROUND], 4
         mov     [img_background], static_background_data
 
+; set clipboard
+
+        xor     eax, eax
+        mov     [clipboard_slots], eax
+        mov     [clipboard_write_lock], eax
+        stdcall kernel_alloc, 4096
+        test    eax, eax
+        jnz     @f
+
+        dec     eax
+@@:
+        mov     [clipboard_main_list], eax
+
 ; SET UP OS TASK
 
         mov     esi, boot_setostask
@@ -1093,6 +1108,8 @@ end if
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
 
+include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
+
         DEBUGF  1, "K : BAR0 %x \n", [IDE_BAR0_val]:4
         DEBUGF  1, "K : BAR1 %x \n", [IDE_BAR1_val]:4
         DEBUGF  1, "K : BAR2 %x \n", [IDE_BAR2_val]:4
@@ -1100,6 +1117,7 @@ end if
         DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
         DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
         DEBUGF  1, "K : IDE_Interrupt %x \n", [IDE_Interrupt]:4
+
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -3248,6 +3266,10 @@ sys_cpuusage:
         mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
         stosd
 
+    ; Keyboard mode (+75)
+        mov     al, byte [ecx*8 + SLOT_BASE + APPDATA.keyboard_mode]
+        stosb    
+
         pop     esi
         pop     edi
 
@@ -3790,10 +3812,6 @@ newdw2:
 
         mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]
-        mov     ecx, [edi + WDATA.box.width]
-        mov     edx, [edi + WDATA.box.height]
-        add     ecx, eax
-        add     edx, ebx
 
         mov     ecx, [draw_limits.bottom] ; ecx = area y end     ebx = window y start
         cmp     ecx, ebx
@@ -3892,6 +3910,64 @@ align 4
 align 4
 newdw8:
 nobgrd:
+;--------------------------------------
+        push    eax  edi ebp
+        mov     edi, [esp+12]
+        cmp     edi, 1
+        je      .found
+
+        mov     eax, [draw_limits.left]
+        mov     ebx, [draw_limits.top]
+        mov     ecx, [draw_limits.right]
+        sub     ecx, eax
+        test    ecx, ecx
+        jz      .not_found
+
+        mov     edx, [draw_limits.bottom]
+        sub     edx, ebx
+        test    edx, edx
+        jz      .not_found
+
+; eax - x, ebx - y
+; ecx - size x, edx - size y
+        add     ebx, edx
+;--------------------------------------
+align 4
+.start_y:
+        push    ecx
+;--------------------------------------
+align 4
+.start_x:
+        add     eax, ecx
+        mov     ebp, [d_width_calc_area + ebx*4]
+        add     ebp, [_WinMapAddress]
+        movzx   ebp, byte[eax+ebp] ; get value for current point
+        cmp     ebp, edi
+        jne     @f
+
+        pop     ecx
+        jmp     .found
+;--------------------------------------
+align 4
+@@:
+        sub     eax, ecx
+
+        dec     ecx
+        jnz     .start_x
+
+        pop     ecx
+        dec     ebx
+        dec     edx
+        jnz     .start_y
+;--------------------------------------
+align 4
+.not_found:
+        pop     ebp edi eax
+        jmp     ricino
+;--------------------------------------
+align 4
+.found:
+        pop     ebp edi eax
 
         mov     [eax + WDATA.fl_redraw], byte 1  ; mark as redraw
 ;--------------------------------------
@@ -5511,13 +5587,13 @@ syscall_reserveportarea:                ; ReservePortArea and FreePortArea
 
 align 4
 syscall_threads:                        ; CreateThreads
-; eax=1 create thread
 ;
-;   ebx=thread start
-;   ecx=thread stack value
+;   ecx=thread entry point
+;   edx=thread stack pointer
 ;
 ; on return : eax = pid
 
+        xor     ebx, ebx
         call    new_sys_threads
 
         mov     [esp+32], eax

@@ -162,7 +162,7 @@ FDCDataInput:
         mov     [FDC_Status], FDC_Normal
 ; Проверить готовность контроллера к передаче данных
         mov     DX, 3F4h  ;(порт состояния FDC)
-        xor     CX, CX    ;установить счетчик тайм-аута
+        mov     ecx, 0x10000 ;установить счетчик тайм-аута
 @@TestRS_1:
         in      AL, DX    ;прочитать регистр RS
         and     AL, 0C0h  ;выдлить разряды 6 и 7
@@ -197,8 +197,6 @@ WaitFDCInterrupt:
         pusha
 ; Сбросить байт состояния операции
         mov     [FDC_Status], FDC_Normal
-; Сбросить флаг прерывани
-        mov     [FDD_IntFlag], 0
 ; Обнулить счетчик тиков
         mov     eax, [timer_ticks]
         mov     [TickCounter], eax
@@ -372,6 +370,8 @@ RecalibrateFDD:
 SeekTrack:
         pusha
         call    save_timer_fdd_motor
+; Сбросить флаг прерывания
+        mov     [FDD_IntFlag], 0
 ; Подать команду "Поиск"
         mov     AL, 0Fh
         call    FDCDataOutput
@@ -431,6 +431,8 @@ SeekTrack:
 ReadSector:
         pushad
         call    save_timer_fdd_motor
+; Сбросить флаг прерывания
+        mov     [FDD_IntFlag], 0
 ; Установить скорость передачи 500 Кбайт/с
         mov     AX, 0
         mov     DX, 03F7h
@@ -531,6 +533,8 @@ ReadSectWithRetr:
 WriteSector:
         pushad
         call    save_timer_fdd_motor
+; Сбросить флаг прерывания
+        mov     [FDD_IntFlag], 0
 ; Установить скорость передачи 500 Кбайт/с
         mov     AX, 0
         mov     DX, 03F7h

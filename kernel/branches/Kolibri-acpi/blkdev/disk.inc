@@ -1006,6 +1006,9 @@ end virtual
         call    ext2_create_partition
         test    eax, eax
         jnz     .success
+        call    xfs_create_partition
+        test    eax, eax
+        jnz     .success
 ; 3. No file system has recognized the volume, so just allocate the PARTITION
 ; structure without extra fields.
         movi    eax, sizeof.PARTITION
