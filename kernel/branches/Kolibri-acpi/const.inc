@@ -221,6 +221,10 @@ TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 TMP_STACK_TOP       equ 0x006CC00
 
 sys_pgdir           equ (OS_BASE+0x006F000)
+lfb_pd_0            equ (OS_BASE+0x0070000)
+lfb_pd_1            equ (OS_BASE+0x0071000)
+lfb_pd_2            equ (OS_BASE+0x0072000)
+lfb_pd_3            equ (OS_BASE+0x0073000)
 
 SLOT_BASE           equ (OS_BASE+0x0080000)
 
@@ -248,7 +252,7 @@ kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
 LFB_BASE            equ 0xFE000000
-
+LFB_SIZE            equ 12*1024*1024
 
 new_app_base        equ 0;
 

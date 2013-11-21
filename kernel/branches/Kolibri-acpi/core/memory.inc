@@ -351,10 +351,8 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
 endp
 
 align 4
-proc init_LFB
-           locals
-             pg_count dd ?
-           endl
+init_LFB:
+        xchg bx, bx
 
         cmp     dword [LFBAddress], -1
         jne     @f
@@ -383,61 +381,33 @@ proc init_LFB
 @@:
         call    init_mtrr
 
-        mov     edx, LFB_BASE
-        mov     esi, [LFBAddress]
-        mov     edi, 0x00C00000
-        mov     dword [exp_lfb+4], edx
-
-        shr     edi, 12
-        mov     [pg_count], edi
-        shr     edi, 10
-
-        bt      [cpu_caps], CAPS_PSE
-        jnc     .map_page_tables
-        or      esi, PG_LARGE+PG_UW
-        mov     edx, sys_pgdir+(LFB_BASE shr 20)
-@@:
-        mov     [edx], esi
-        add     edx, 4
-        add     esi, 0x00400000
-        dec     edi
-        jnz     @B
-
-        bt      [cpu_caps], CAPS_PGE
-        jnc     @F
-        or      dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
-@@:
-        mov     dword [LFBAddress], LFB_BASE
-        mov     eax, cr3      ;flush TLB
-        mov     cr3, eax
-        ret
-
-.map_page_tables:
-
-@@:
-        call    alloc_page
-        stdcall map_page_table, edx, eax
-        add     edx, 0x00400000
-        dec     edi
-        jnz     @B
-
+        xor     edx, edx
         mov     eax, [LFBAddress]
-        mov     edi, page_tabs + (LFB_BASE shr 10)
-        or      eax, PG_UW
-        mov     ecx, [pg_count]
-        cld
-@@:
+        bt      [cpu_caps], CAPS_PGE
+        setc    dh                            ;eliminate branch and
+        mov     ecx, LFB_SIZE/4096
+        mov     edi, lfb_pd_0
+        lea     eax, [eax+edx+PG_UW]          ;set PG_GLOBAL if supported
+
+.map_pte:
         stosd
         add     eax, 0x1000
-        dec     ecx
-        jnz     @B
+        loop    .map_pte
 
+        mov     ecx, (LFB_SIZE/4096)/1024
+        mov     edi, sys_pgdir+(LFB_BASE shr 20)
+        lea     eax, [(lfb_pd_0-OS_BASE)+PG_UW]
+
+.map_pde:
+        stosd
+        add     eax, 0x1000
+        loop    .map_pde
+
+        mov     dword [exp_lfb+4], LFB_BASE
         mov     dword [LFBAddress], LFB_BASE
-        mov     eax, cr3      ;flush TLB
+        mov     eax, cr3                      ;flush TLB
         mov     cr3, eax
-
         ret
-endp
 
 align 4
 proc new_mem_resize stdcall, new_size:dword
