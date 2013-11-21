@@ -13,16 +13,19 @@ saverd_fileinfo:
         dd      2               ; subfunction: write
         dd      0               ; (reserved)
         dd      0               ; (reserved)
-        dd      1440*1024       ; size 1440 Kb
+.size:
+        dd      0
         dd      RAMDISK
         db      0
 .name:
         dd      ?
 endg
 sysfn_saveramdisk:      ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
-        call    restorefatchain
         mov     ebx, saverd_fileinfo
-        mov     [saverd_fileinfo.name], ecx
+        mov     [ebx+21], ecx
+        mov     eax, [ramdisk_actual_size]
+        shl     eax, 9
+        mov     [ebx+12], eax
         pushad
         call    file_system_lfn_protected ;in ebx
         popad

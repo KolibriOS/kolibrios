@@ -185,11 +185,9 @@ include "gui/button.inc"
 
 include "blkdev/disk.inc" ; support for plug-n-play disks
 include "blkdev/disk_cache.inc" ; caching for plug-n-play disks
-include "fs/fs.inc"       ; syscall
-include "fs/fat32.inc"    ; read / write for fat32 filesystem
-include "fs/ntfs.inc"     ; read / write for ntfs filesystem
-include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
+include "fs/fat.inc"      ; read / write for fat filesystem
+include "fs/ntfs.inc"     ; read / write for ntfs filesystem
 include "fs/fs_lfn.inc"    ; syscall, version 2
 include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
 include "fs/ext2/ext2.asm"     ; read / write for ext2 filesystem

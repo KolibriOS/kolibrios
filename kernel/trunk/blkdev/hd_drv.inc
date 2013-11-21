@@ -47,6 +47,10 @@ hd0_data        HD_DATA         ?,    0, 1
 hd1_data        HD_DATA         ?, 0x10, 2
 hd2_data        HD_DATA         ?,    0, 3
 hd3_data        HD_DATA         ?, 0x10, 4
+
+hd_address_table:
+        dd      0x1f0, 0x00, 0x1f0, 0x10
+        dd      0x170, 0x00, 0x170, 0x10
 endg
 
 uglobal
@@ -644,14 +648,6 @@ hd_write_error:
         DEBUGF 1,"K : FS - HD write error\n"
         end if
         ret
-;-----------------------------------------------------------------------------
-hd_lba_error:
-        if lang eq sp
-        DEBUGF 1,"K : FS - HD error en LBA\n"
-        else
-        DEBUGF 1,"K : FS - HD LBA error\n"
-        end if
-        jmp     LBA_read_ret
 ;-----------------------------------------------------------------------------
 align 4
 wait_for_hd_idle:

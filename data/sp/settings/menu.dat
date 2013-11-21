@@ -112,7 +112,6 @@ CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus desconectado       /sys/kbd
 Informaci¢n de HDD        /sys/hdd_info
-Leer HDD                  /sys/hdread
 #13  **** ARCHIVOS ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm

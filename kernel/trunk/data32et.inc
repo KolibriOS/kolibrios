@@ -2,6 +2,7 @@
   boot_picinit       latin1   'Algväärtustan PIC',0
   boot_v86machine    latin1   'Algväärtustan süsteemi V86 masinat',0
   boot_inittimer     latin1   'Algväärtustan süsteemi taimerit (IRQ0)',0
+  boot_initramdisk   latin1   'Initialize ramdisk',0
   boot_initapic      latin1   'Proovin Algväärtustada APIC',0
   boot_enableirq     latin1   'Luban katkestused 2, 13',0
   boot_disabling_ide latin1   'Keelan IDE kontrolleri katkestused',0

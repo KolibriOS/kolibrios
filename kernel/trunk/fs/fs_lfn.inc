@@ -30,18 +30,6 @@ image_of_ebx EQU esp+20
 iglobal
 ; in this table names must be in lowercase
 rootdirs:
-        db      2,'rd'
-        dd      fs_OnRamdisk
-        dd      fs_NextRamdisk
-        db      7,'ramdisk'
-        dd      fs_OnRamdisk
-        dd      fs_NextRamdisk
-        db      2,'fd'
-        dd      fs_OnFloppy
-        dd      fs_NextFloppy
-        db      10,'floppydisk'
-        dd      fs_OnFloppy
-        dd      fs_NextFloppy
 ;**********************************************
         db      3,'cd0'
         dd      fs_OnCd0
@@ -60,10 +48,6 @@ rootdirs:
 
 
 virtual_root_query:
-        dd      fs_HasRamdisk
-        db      'rd',0
-        dd      fs_HasFloppy
-        db      'fd',0
 ;**********************************************
         dd      fs_HasCd0
         db      'cd0',0
@@ -436,71 +420,9 @@ file_system_lfn:
 ;     ebp = 0 or pointer to rest of name from folder addressed by esi
 ; out: [image_of_eax]=image of eax, [image_of_ebx]=image of ebx
 
-fs_OnRamdisk:
-        cmp     ecx, 1
-        jnz     file_system_lfn.notfound
-        mov     eax, [ebx]
-        cmp     eax, fs_NumRamdiskServices
-        jae     .not_impl
-        mov     ecx, [ebx+12]
-        mov     edx, [ebx+16]
-   ;     add     edx, std_application_base_address
-        add     ebx, 4
-        call    dword [fs_RamdiskServices + eax*4]
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-.not_impl:
-        mov     dword [image_of_eax], 2       ; not implemented
-        ret
-
 fs_NotImplemented:
         mov     eax, 2
         ret
-
-fs_RamdiskServices:
-        dd      fs_RamdiskRead
-        dd      fs_RamdiskReadFolder
-        dd      fs_RamdiskRewrite
-        dd      fs_RamdiskWrite
-        dd      fs_RamdiskSetFileEnd
-        dd      fs_RamdiskGetFileInfo
-        dd      fs_RamdiskSetFileInfo
-        dd      0
-        dd      fs_RamdiskDelete
-        dd      fs_RamdiskCreateFolder
-fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
-
-fs_OnFloppy:
-        cmp     ecx, 2
-        ja      file_system_lfn.notfound
-        mov     eax, [ebx]
-        cmp     eax, fs_NumFloppyServices
-        jae     fs_OnRamdisk.not_impl
-        call    reserve_flp
-        mov     [flp_number], cl
-        mov     ecx, [ebx+12]
-        mov     edx, [ebx+16]
-   ;     add     edx, std_application_base_address
-        add     ebx, 4
-        call    dword [fs_FloppyServices + eax*4]
-        and     [flp_status], 0
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-
-fs_FloppyServices:
-        dd      fs_FloppyRead
-        dd      fs_FloppyReadFolder
-        dd      fs_FloppyRewrite
-        dd      fs_FloppyWrite
-        dd      fs_FloppySetFileEnd
-        dd      fs_FloppyGetFileInfo
-        dd      fs_FloppySetFileInfo
-        dd      0
-        dd      fs_FloppyDelete
-        dd      fs_FloppyCreateFolder
-fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 ;*******************************************************
 fs_OnCd0:
@@ -584,16 +506,6 @@ fs_CdServices:
 fs_NumCdServices = ($ - fs_CdServices)/4
 
 ;*******************************************************
-
-fs_HasRamdisk:
-        mov     al, 1   ; we always have ramdisk
-        ret
-fs_HasFloppy:
-        cmp     byte [DRIVE_DATA], 0
-        setnz   al
-        ret
-
-;*******************************************************
 fs_HasCd0:
         test    byte [DRIVE_DATA+1], 10000000b
         setnz   al
@@ -616,36 +528,6 @@ fs_HasCd3:
 ; in: eax = partition number, from which start to scan
 ; out: CF=1 => no more partitions
 ;      CF=0 => eax=next partition number
-
-fs_NextRamdisk:
-; we always have /rd/1
-        test    eax, eax
-        stc
-        jnz     @f
-        mov     al, 1
-        clc
-@@:
-        ret
-
-fs_NextFloppy:
-; we have /fd/1 iff (([DRIVE_DATA] and 0xF0) != 0) and /fd/2 iff (([DRIVE_DATA] and 0x0F) != 0)
-        test    byte [DRIVE_DATA], 0xF0
-        jz      .no1
-        test    eax, eax
-        jnz     .no1
-        inc     eax
-        ret     ; CF cleared
-.no1:
-        test    byte [DRIVE_DATA], 0x0F
-        jz      .no2
-        cmp     al, 2
-        jae     .no2
-        mov     al, 2
-        clc
-        ret
-.no2:
-        stc
-        ret
 
 ;*******************************************************
 fs_NextCd:

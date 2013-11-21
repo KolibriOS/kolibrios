@@ -759,9 +759,10 @@ no_mode_0x12:
 ; Initialize system timer (IRQ0)
         call    PIT_init
 
-; CALCULATE FAT CHAIN FOR RAMDISK
-
-        call    calculatefatchain
+; Register ramdisk file system
+        mov     esi, boot_initramdisk
+        call    boot_log
+        call    ramdisk_init
 
         mov     esi, boot_initapic
         call    boot_log
@@ -1333,8 +1334,8 @@ proc osloop_has_work?
         jnz     .yes
         call    stack_handler_has_work?
         jnz     .yes
-;        call    check_fdd_motor_status_has_work?
-;        jnz     .yes
+        call    check_fdd_motor_status_has_work?
+        jnz     .yes
         call    check_ATAPI_device_event_has_work?
         jnz     .yes
         call    check_lights_state_has_work?
@@ -2673,29 +2674,14 @@ endg
 align 4
 sys_cachetodiskette:
         cmp     ebx, 1
-        jne     .no_floppy_a_save
-        mov     [flp_number], 1
-        jmp     .save_image_on_floppy
-;--------------------------------------
-align 4
-.no_floppy_a_save:
+        jb      .no_floppy_save
         cmp     ebx, 2
-        jne     .no_floppy_b_save
-        mov     [flp_number], 2
-;--------------------------------------
-align 4
-.save_image_on_floppy:
+        ja      .no_floppy_save
         call    save_image
-        mov     [esp + 32], dword 0
-        cmp     [FDC_Status], 0
-        je      .yes_floppy_save
-;--------------------------------------
-align 4
-.no_floppy_b_save:
+        mov     [esp + 32], eax
+        ret
+.no_floppy_save:
         mov     [esp + 32], dword 1
-;--------------------------------------
-align 4
-.yes_floppy_save:
         ret
 ;------------------------------------------------------------------------------
 uglobal
@@ -5266,19 +5252,6 @@ align 4
 
 align 4
 
-syscall_openramdiskfile:                ; OpenRamdiskFile
-
-        mov     eax, ebx
-        mov     ebx, ecx
-        mov     ecx, edx
-        mov     edx, esi
-        mov     esi, 12
-        call    fileread
-        mov     [esp+32], eax
-        ret
-
-align 4
-
 syscall_drawrect:                       ; DrawRect
 
         mov     edi, edx ; color + gradient
@@ -5783,12 +5756,11 @@ yes_shutdown_param:
         cli
 
 if ~ defined extended_primary_loader
-        mov     eax, kernel_file ; load kernel.mnt to 0x7000:0
-        movi    esi, 12
-        xor     ebx, ebx
-        or      ecx, -1
-        mov     edx, OS_BASE+0x70000
-        call    fileread
+; load kernel.mnt to 0x7000:0
+        mov     ebx, kernel_file_load
+        pushad
+        call    file_system_lfn
+        popad
 
         mov     esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
         mov     edi, OS_BASE+0x40000
@@ -5801,8 +5773,6 @@ end if
 ;        mov     ecx, 0x10000/4
 ;        cld
 ;        rep movsd
-
-        call    restorefatchain
 
         call    IRQ_mask_all
 

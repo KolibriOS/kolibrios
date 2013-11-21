@@ -198,8 +198,7 @@
 ; 0x800A0000 ->  AFFFF   screen access area
 ; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k)        ?
 ; 0x80100000 -> 27FFFF   diskette image (1m5)
-; 0x80280000 -> 281FFF   ramdisk fat    (8k)
-; 0x80282000 -> 283FFF   floppy  fat    (8k)
+; 0x80280000 -> 283FFF   free (16k)
 ;
 ; 0x80284000 -> 28BFFF   HDD DMA AREA   (32k)
 ; 0x8028C000 -> 297FFF   free (48k)
