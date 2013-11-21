@@ -404,7 +404,7 @@ error9          db 'FAT tabel vigane',0
 error10         db 'Juurdep‰‰s keelatud',0
 error11         db 'Seadme viga',0
 aUnknownError   db 'Tundmatu viga',0
-rdError         db 'You can't save image on itself',0
+rdError         db "You can't save image on itself",0
 error_msg       db 'Viga: ',0
 ;---------------------------------------------------------------------
 else if lang eq it
@@ -425,7 +425,7 @@ error9          db 'Tabella FAT corrotta',0
 error10         db 'Accesso negato',0
 error11         db 'Errore di device',0
 aUnknownError   db 'Errore sconosciuto',0
-rdError         db 'You can't save image on itself',0
+rdError         db "You can't save image on itself",0
 error_msg       db 'Errore: ',0
 ;---------------------------------------------------------------------
 else
@@ -446,7 +446,7 @@ error9          db 'File structure is destroyed',0
 error10         db 'Access denied',0
 error11         db 'Device error',0
 aUnknownError   db 'Unknown error',0
-rdError         db 'You can't save image on itself',0
+rdError         db "You can't save image on itself",0
 error_msg       db 'Error: ',0
 end if
 ;---------------------------------------------------------------------
