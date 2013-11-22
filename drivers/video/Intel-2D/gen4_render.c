@@ -2391,11 +2391,11 @@ gen4_blit_tex(struct sna *sna,
 //    tmp->mask.offset[0] = -dst_x;
 //    tmp->mask.offset[1] = -dst_y;
 
-	tmp->u.gen4.wm_kernel =
-		gen4_choose_composite_kernel(tmp->op,
-					     tmp->mask.bo != NULL,
-					     tmp->has_component_alpha,
-					     tmp->is_affine);
+    tmp->u.gen4.wm_kernel = WM_KERNEL_MASK;
+//       gen4_choose_composite_kernel(tmp->op,
+//                        tmp->mask.bo != NULL,
+//                        tmp->has_component_alpha,
+//                        tmp->is_affine);
 	tmp->u.gen4.ve_id = gen4_choose_composite_emitter(sna, tmp);
 
 	tmp->blt   = gen4_render_composite_blt;

@@ -302,6 +302,8 @@ static uint32_t gen5_get_card_format(PictFormat format)
 
 static uint32_t gen5_get_dest_format(PictFormat format)
 {
+	return GEN5_SURFACEFORMAT_B8G8R8A8_UNORM;
+#if 0
 	switch (format) {
 	default:
 		return -1;
@@ -325,6 +327,7 @@ static uint32_t gen5_get_dest_format(PictFormat format)
 	case PICT_x4r4g4b4:
 		return GEN5_SURFACEFORMAT_B4G4R4A4_UNORM;
 	}
+#endif
 }
 typedef struct gen5_surface_state_padded {
 	struct gen5_surface_state state;
@@ -2447,11 +2450,12 @@ gen5_blit_tex(struct sna *sna,
     tmp->mask.scale[1] = 1.f/mask->drawable.height;
 
 
-	tmp->u.gen5.wm_kernel =
-		gen5_choose_composite_kernel(tmp->op,
-					     tmp->mask.bo != NULL,
-					     tmp->has_component_alpha,
-					     tmp->is_affine);
+    tmp->u.gen5.wm_kernel = WM_KERNEL_MASK;
+
+//       gen5_choose_composite_kernel(tmp->op,
+//                        tmp->mask.bo != NULL,
+//                        tmp->has_component_alpha,
+//                        tmp->is_affine);
 	tmp->u.gen5.ve_id = gen4_choose_composite_emitter(sna, tmp);
 
 	tmp->blt   = gen5_render_composite_blt;

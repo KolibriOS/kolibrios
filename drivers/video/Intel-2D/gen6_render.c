@@ -2727,9 +2727,7 @@ fallback:
 	op->done = gen6_render_copy_done;
 	return true;
 }
-#endif
 
-#if 0
 static void
 gen6_emit_fill_state(struct sna *sna, const struct sna_composite_op *op)
 {

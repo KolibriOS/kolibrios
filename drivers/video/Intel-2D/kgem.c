@@ -5326,7 +5326,7 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
 	bo->domain    = DOMAIN_GTT;
 	bo->unique_id = kgem_get_unique_id(kgem);
 	bo->pitch     = fb->pitch;
-    bo->tiling    = I915_TILING_NONE;
+    bo->tiling    = I915_TILING_X;
     bo->scanout   = 1;
 	fb->fb_bo     = bo;
 
