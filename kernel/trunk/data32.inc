@@ -179,7 +179,7 @@ kernel_file_load:
         dd      0       ; subfunction
         dq      0       ; offset in file
         dd      0x30000 ; number of bytes to read
-        dd      0x70000 ; buffer for data
+        dd      OS_BASE + 0x70000 ; buffer for data
         db      '/RD/1/KERNEL.MNT',0
 
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
