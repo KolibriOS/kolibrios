@@ -273,7 +273,6 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 	idr_remove(&filp->object_idr, handle);
 	spin_unlock(&filp->table_lock);
 
-//   drm_gem_remove_prime_handles(obj, filp);
 
 	if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, filp);
@@ -316,12 +315,6 @@ drm_gem_handle_create_tail(struct drm_file *file_priv,
 		return ret;
 	}
 	*handlep = ret;
-
-//   ret = drm_vma_node_allow(&obj->vma_node, file_priv->filp);
-//   if (ret) {
-//       drm_gem_handle_delete(file_priv, *handlep);
-//       return ret;
-//   }
 
 	if (dev->driver->gem_open_object) {
 		ret = dev->driver->gem_open_object(obj, file_priv);

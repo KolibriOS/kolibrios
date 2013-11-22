@@ -783,18 +783,9 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
                         return (void __iomem *)(unsigned long)
                                 pci_resource_start(pdev, PCI_ROM_RESOURCE);
                 } else {
-                        /* assign the ROM an address if it doesn't have one */
-//                        if (res->parent == NULL &&
-//                            pci_assign_resource(pdev,PCI_ROM_RESOURCE))
-                                return NULL;
-//                        start = pci_resource_start(pdev, PCI_ROM_RESOURCE);
-//                        *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
-//                        if (*size == 0)
-//                                return NULL;
+    				start = (loff_t)0xC0000;
+    				*size = 0x20000; /* cover C000:0 through E000:0 */
 
-                        /* Enable ROM space decodes */
-//                        if (pci_enable_rom(pdev))
-//                                return NULL;
                 }
         }
 

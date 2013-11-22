@@ -28,10 +28,10 @@ struct pci_device {
 
 struct drm_device *main_device;
 struct drm_file   *drm_file_handlers[256];
+videomode_t usermode;
 
 void cpu_detect();
 
-void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
 
@@ -50,6 +50,15 @@ int i915_getparam(struct drm_device *dev, void *data,
 
 int i915_mask_update(struct drm_device *dev, void *data,
             struct drm_file *file);
+
+struct cmdtable cmdtable[]= {
+    CMDENTRY("-pm=", i915_powersave),
+    CMDENTRY("-rc6=", i915_enable_rc6),
+    CMDENTRY("-fbc=", i915_enable_fbc),
+    CMDENTRY("-ppgt=", i915_enable_ppgtt),
+    CMDENTRY("-pc8=", i915_enable_pc8),
+    {NULL, 0}
+};
 
 
 static char  log[256];
@@ -158,8 +167,22 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
+    printf("i915 v3.12\n\nusage: i915 [options]\n"
+           "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 0 - false)\n");
+    printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"
+           "              Different stages can be selected via bitmask values\n"
+           "              (0 = disable; 1 = enable rc6; 2 = enable deep rc6; 4 = enable deepest rc6).\n"
+           "              For example, 3 would enable rc6 and deep rc6, and 7 would enable everything.\n"
+           "              default: -1 (use per-chip default)\n");
+    printf("-fbc=<-1,0,1> Enable frame buffer compression for power savings\n"
+           "              (default: 0 - false)\n");
+    printf("-ppgt=<0,1>   Enable PPGTT (default: 0 - false)\n");
+    printf("-pc8=<0,1>    Enable support for low power package C states (PC8+) (default: 0 - false)\n");
+    printf("-l<path>      path to log file\n");
+    printf("-m<WxHxHz>    set videomode\n");
+
     if( cmdline && *cmdline )
-        parse_cmdline(cmdline, log);
+        parse_cmdline(cmdline, cmdtable, log, &usermode);
 
     if(!dbg_open(log))
     {
@@ -171,7 +194,6 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf(" i915 v3.12-6\n cmdline: %s\n", cmdline);
 
     cpu_detect();
 //    dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -184,7 +206,8 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         dbgprintf("Epic Fail :(\n");
         return 0;
     };
-    init_display_kms(main_device);
+
+    init_display_kms(main_device, &usermode);
 
     err = RegService("DISPLAY", display_handler);
 
@@ -458,38 +481,6 @@ int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
 };
 
 
-static char* parse_path(char *p, char *log)
-{
-    char  c;
-
-    while( (c = *p++) == ' ');
-        p--;
-    while( (c = *log++ = *p++) && (c != ' '));
-    *log = 0;
-
-    return p;
-};
-
-void parse_cmdline(char *cmdline, char *log)
-{
-    char *p = cmdline;
-
-    char c = *p++;
-
-    while( c )
-    {
-        if( c == '-')
-        {
-            switch(*p++)
-            {
-                case 'l':
-                    p = parse_path(p, log);
-                    break;
-            };
-        };
-        c = *p++;
-    };
-};
 
 
 static inline void __cpuid(unsigned int *eax, unsigned int *ebx,
@@ -571,3 +562,137 @@ void get_pci_info(struct pci_device *dev)
 
 
 
+char *strstr(const char *cs, const char *ct);
+
+static int my_atoi(char **cmd)
+{
+    char* p = *cmd;
+    int val = 0;
+    int sign = 1;
+
+    if(*p == '-')
+    {
+        sign = -1;
+        p++;
+    };
+
+    for (;; *p++) {
+        switch (*p) {
+        case '0' ... '9':
+            val = 10*val+(*p-'0');
+            break;
+        default:
+            *cmd = p;
+            return val*sign;
+        }
+    }
+}
+
+char* parse_mode(char *p, videomode_t *mode)
+{
+    char c;
+
+    while( (c = *p++) == ' ');
+
+    if( c )
+    {
+        p--;
+
+        mode->width = my_atoi(&p);
+        if(*p == 'x') p++;
+
+        mode->height = my_atoi(&p);
+        if(*p == 'x') p++;
+
+        mode->bpp = 32;
+
+        mode->freq = my_atoi(&p);
+
+        if( mode->freq == 0 )
+            mode->freq = 60;
+    }
+
+    return p;
+};
+
+
+static char* parse_path(char *p, char *log)
+{
+    char  c;
+
+    while( (c = *p++) == ' ');
+        p--;
+    while( (c = *log++ = *p++) && (c != ' '));
+    *log = 0;
+
+    return p;
+};
+
+void parse_cmdline(char *cmdline, struct cmdtable *table, char *log, videomode_t *mode)
+{
+    char *p = cmdline;
+    char *p1;
+    int val;
+    char c = *p++;
+
+    if( table )
+    {
+        while(table->key)
+        {
+            if(p1 = strstr(cmdline, table->key))
+            {
+                p1+= table->size;
+                *table->val = my_atoi(&p1);
+//                printf("%s %d\n", table->key, *table->val);
+            }
+            table++;
+        }
+    }
+
+    while( c )
+    {
+        if( c == '-')
+        {
+            switch(*p++)
+            {
+                case 'l':
+                    p = parse_path(p, log);
+                    break;
+
+                case 'm':
+                    p = parse_mode(p, mode);
+                    break;
+            };
+        };
+        c = *p++;
+    };
+};
+
+char *strstr(const char *cs, const char *ct)
+{
+int d0, d1;
+register char *__res;
+__asm__ __volatile__(
+    "movl %6,%%edi\n\t"
+    "repne\n\t"
+    "scasb\n\t"
+    "notl %%ecx\n\t"
+    "decl %%ecx\n\t"    /* NOTE! This also sets Z if searchstring='' */
+    "movl %%ecx,%%edx\n"
+    "1:\tmovl %6,%%edi\n\t"
+    "movl %%esi,%%eax\n\t"
+    "movl %%edx,%%ecx\n\t"
+    "repe\n\t"
+    "cmpsb\n\t"
+    "je 2f\n\t"     /* also works for empty string, see above */
+    "xchgl %%eax,%%esi\n\t"
+    "incl %%esi\n\t"
+    "cmpb $0,-1(%%eax)\n\t"
+    "jne 1b\n\t"
+    "xorl %%eax,%%eax\n\t"
+    "2:"
+    : "=a" (__res), "=&c" (d0), "=&S" (d1)
+    : "0" (0), "1" (0xffffffff), "2" (cs), "g" (ct)
+    : "dx", "di");
+return __res;
+}

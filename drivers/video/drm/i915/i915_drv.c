@@ -62,7 +62,7 @@ MODULE_PARM_DESC(panel_ignore_lid,
 		"Override lid status (0=autodetect, 1=autodetect disabled [default], "
 		"-1=force lid closed, -2=force lid open)");
 
-unsigned int i915_powersave __read_mostly = 1;
+unsigned int i915_powersave __read_mostly = 0;
 module_param_named(powersave, i915_powersave, int, 0600);
 MODULE_PARM_DESC(powersave,
 		"Enable powersavings, fbc, downclocking, etc. (default: true)");
@@ -72,7 +72,7 @@ module_param_named(semaphores, i915_semaphores, int, 0600);
 MODULE_PARM_DESC(semaphores,
 		"Use semaphores for inter-ring sync (default: -1 (use per-chip defaults))");
 
-int i915_enable_rc6 __read_mostly = -1;
+int i915_enable_rc6 __read_mostly = 0;
 module_param_named(i915_enable_rc6, i915_enable_rc6, int, 0400);
 MODULE_PARM_DESC(i915_enable_rc6,
 		"Enable power-saving render C-state 6. "
@@ -81,7 +81,7 @@ MODULE_PARM_DESC(i915_enable_rc6,
 		"For example, 3 would enable rc6 and deep rc6, and 7 would enable everything. "
 		"default: -1 (use per-chip default)");
 
-int i915_enable_fbc __read_mostly = -1;
+int i915_enable_fbc __read_mostly = 0;
 module_param_named(i915_enable_fbc, i915_enable_fbc, int, 0600);
 MODULE_PARM_DESC(i915_enable_fbc,
 		"Enable frame buffer compression for power savings "
@@ -150,7 +150,7 @@ module_param_named(fastboot, i915_fastboot, bool, 0600);
 MODULE_PARM_DESC(fastboot, "Try to skip unnecessary mode sets at boot time "
 		 "(default: false)");
 
-int i915_enable_pc8 __read_mostly = 1;
+int i915_enable_pc8 __read_mostly = 0;
 module_param_named(enable_pc8, i915_enable_pc8, int, 0600);
 MODULE_PARM_DESC(enable_pc8, "Enable support for low power package C states (PC8+) (default: true)");
 

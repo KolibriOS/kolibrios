@@ -43,12 +43,7 @@
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
 
-static struct drm_i915_gem_object *fb_obj;
-
-struct drm_i915_gem_object *get_fb_obj()
-{
-    return fb_obj;
-};
+struct drm_i915_gem_object *fb_obj;
 
 struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
 {
@@ -105,6 +100,8 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	struct device *device = &dev->pdev->dev;
 	int size, ret;
 
+    ENTER();
+
 	/* we don't do packed 24bpp */
 	if (sizes->surface_bpp == 24)
 		sizes->surface_bpp = 32;
@@ -113,49 +110,29 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	mode_cmd.height = sizes->surface_height;
 
 	mode_cmd.pitches[0] = ALIGN(mode_cmd.width * ((sizes->surface_bpp + 7) /
-						      8), 64);
+                              8), 512);
 	mode_cmd.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
 							  sizes->surface_depth);
 
 	size = mode_cmd.pitches[0] * mode_cmd.height;
 	size = ALIGN(size, PAGE_SIZE);
-	obj = i915_gem_alloc_object(dev, size);
+	obj = fb_obj;
 	if (!obj) {
 		DRM_ERROR("failed to allocate framebuffer\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
+    obj->stride = mode_cmd.pitches[0];
+
 	mutex_lock(&dev->struct_mutex);
 
-#if 0
-// skip this part and use existing framebiffer
-
 	/* Flush everything out, we'll be doing GTT only from now on */
-	ret = intel_pin_and_fence_fb_obj(dev, obj, false);
+	ret = intel_pin_and_fence_fb_obj(dev, obj, NULL);
 	if (ret) {
 		DRM_ERROR("failed to pin fb: %d\n", ret);
 		goto out_unref;
 	}
-#endif
-
-/***********************************************************************/
-    {
-#define LFB_SIZE 0xC00000
-
-        static struct drm_mm_node lfb_vm_node;
-
-        lfb_vm_node.size = LFB_SIZE;
-        lfb_vm_node.start = 0;
-        lfb_vm_node.mm = NULL;
-
-        obj->pin_count = 2;
-        obj->cache_level = I915_CACHE_NONE;
-	    obj->base.write_domain = 0;
-	    obj->base.read_domains = I915_GEM_DOMAIN_GTT;
-
-    }
-/***********************************************************************/
 
 	info = framebuffer_alloc(0, device);
 	if (!info) {
@@ -194,6 +171,8 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	info->screen_base = (void*) 0xFE000000;
 	info->screen_size = size;
 
+	/* This driver doesn't need a VT switch to restore the mode on resume */
+	info->skip_vt_switch = true;
 
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
 	drm_fb_helper_fill_var(info, &ifbdev->helper, sizes->fb_width, sizes->fb_height);
@@ -206,9 +185,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 
 
 	mutex_unlock(&dev->struct_mutex);
-
-    fb_obj = obj;
-
 	return 0;
 
 out_unpin:

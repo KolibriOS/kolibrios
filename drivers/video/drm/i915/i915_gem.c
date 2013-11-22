@@ -26,6 +26,7 @@
  */
 
 #include <drm/drmP.h>
+#include <drm/drm_vma_manager.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
 #include "i915_trace.h"
@@ -2619,6 +2620,9 @@ static void i965_write_fence_reg(struct drm_device *dev, int reg,
 		POSTING_READ(fence_reg + 4);
 
 		I915_WRITE(fence_reg + 0, val);
+
+        dbgprintf("%s val %x%x\n",__FUNCTION__, (int)(val >> 32), (int)val);
+
 	POSTING_READ(fence_reg);
 	} else {
 		I915_WRITE(fence_reg + 4, 0);
@@ -3667,9 +3671,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 
 	if (WARN_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT))
 		return -EBUSY;
-
-//    if( obj == get_fb_obj())
-//        return 0;
 
 	WARN_ON(map_and_fenceable && !i915_is_ggtt(vm));
 

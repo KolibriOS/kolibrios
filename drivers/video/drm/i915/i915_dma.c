@@ -1156,7 +1156,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
     if (ret)
         DRM_INFO("failed to find VBIOS tables\n");
 
-
+    fb_obj = kos_gem_fb_object_create(dev,0,12*1024*1024);
 
 	/* Initialise stolen first so that we may reserve preallocated
 	 * objects for the BIOS to KMS transition.
@@ -1523,6 +1523,8 @@ int i915_driver_unload(struct drm_device *dev)
 	del_timer_sync(&dev_priv->gpu_error.hangcheck_timer);
 	cancel_work_sync(&dev_priv->gpu_error.work);
 	i915_destroy_error_state(dev);
+
+	cancel_delayed_work_sync(&dev_priv->pc8.enable_work);
 
 	if (dev->pdev->msi_enabled)
 		pci_disable_msi(dev->pdev);

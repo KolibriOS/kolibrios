@@ -106,6 +106,7 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
     struct drm_framebuffer  *fb         = NULL;
     struct drm_crtc         *crtc;
     struct drm_encoder      *encoder;
+    struct drm_i915_gem_object *fb_obj;
     struct drm_mode_set     set;
     char *con_name;
     char *enc_name;
@@ -162,14 +163,16 @@ do_set:
     if (crtc->invert_dimensions)
         swap(hdisplay, vdisplay);
 
+    fb_obj = get_fb_obj();
     fb = fb_helper->fb;
 
     fb->width  = reqmode->width;
     fb->height = reqmode->height;
-    fb->pitches[0]  = ALIGN(reqmode->width * 4, 64);
-    fb->pitches[1]  = ALIGN(reqmode->width * 4, 64);
-    fb->pitches[2]  = ALIGN(reqmode->width * 4, 64);
-    fb->pitches[3]  = ALIGN(reqmode->width * 4, 64);
+
+    fb->pitches[0]  = fb->pitches[1]  = fb->pitches[2]  =
+                      fb->pitches[3]  = ALIGN(reqmode->width * 4, 512);
+
+    fb_obj->stride = fb->pitches[0];
 
     fb->bits_per_pixel = 32;
     fb->depth = 24;
@@ -177,6 +180,8 @@ do_set:
     crtc->fb = fb;
     crtc->enabled = true;
     os_display->crtc = crtc;
+
+    i915_gem_object_put_fence(fb_obj);
 
     set.crtc = crtc;
     set.x = 0;
@@ -261,7 +266,7 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
 };
 
 
-int init_display_kms(struct drm_device *dev)
+int init_display_kms(struct drm_device *dev, videomode_t *usermode)
 {
     struct drm_connector    *connector;
     struct drm_connector_helper_funcs *connector_funcs;
@@ -272,6 +277,10 @@ int init_display_kms(struct drm_device *dev)
     cursor_t  *cursor;
     u32_t      ifl;
     int        err;
+
+    ENTER();
+
+    mutex_lock(&dev->mode_config.mutex);
 
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
@@ -289,19 +298,21 @@ int init_display_kms(struct drm_device *dev)
         connector->encoder = encoder;
         crtc = encoder->crtc;
 
-        DRM_DEBUG_KMS("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
+        DRM_DEBUG_KMS("CONNECTOR %p ID:%d status:%d ENCODER %x CRTC %p ID:%d\n",
                connector, connector->base.id,
                connector->status, connector->encoder,
                crtc, crtc->base.id );
-
         break;
     };
 
     if(connector == NULL)
     {
-        DRM_ERROR("No active connectors!\n");
+        DRM_DEBUG_KMS("No active connectors!\n");
+        mutex_unlock(&dev->mode_config.mutex);
         return -1;
     };
+
+    dbgprintf("CRTC %p\n", crtc);
 
     if(crtc == NULL)
     {
@@ -310,24 +321,28 @@ int init_display_kms(struct drm_device *dev)
 
         list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
         {
+            dbgprintf("tmp_crtc %p\n", tmp_crtc);
             if (encoder->possible_crtcs & crtc_mask)
             {
                 crtc = tmp_crtc;
                 encoder->crtc = crtc;
+                dbgprintf("CRTC %p\n", crtc);
                 break;
             };
             crtc_mask <<= 1;
         };
     };
 
+    dbgprintf("CRTC %p\n", crtc);
+
     if(crtc == NULL)
     {
-        DRM_ERROR("No CRTC for encoder %d\n", encoder->base.id);
+        DRM_DEBUG_KMS("No CRTC for encoder %d\n", encoder->base.id);
+        mutex_unlock(&dev->mode_config.mutex);
         return -1;
     };
 
-
-    DRM_DEBUG_KMS("[Select CRTC:%d]\n", crtc->base.id);
+    DRM_DEBUG_KMS("[Select CRTC: %p ID:%d]\n",crtc, crtc->base.id);
 
     os_display = GetDisplay();
     os_display->ddev = dev;
@@ -361,9 +376,52 @@ int init_display_kms(struct drm_device *dev)
     };
     safe_sti(ifl);
 
+    if( (usermode->width == 0) ||
+        (usermode->height == 0))
+    {
+        struct drm_display_mode *mode;
+
+//        connector->funcs->fill_modes(connector, dev->mode_config.max_width,
+//                                     dev->mode_config.max_height);
+
+        list_for_each_entry(mode, &connector->modes, head)
+        {
+            printf("check mode w:%d h:%d %dHz\n",
+                    drm_mode_width(mode), drm_mode_height(mode),
+                    drm_mode_vrefresh(mode));
+
+            if( os_display->width  == drm_mode_width(mode)  &&
+                os_display->height == drm_mode_height(mode) &&
+                drm_mode_vrefresh(mode) == 60)
+            {
+                usermode->width  = os_display->width;
+                usermode->height = os_display->height;
+                usermode->freq   = 60;
+                break;
+
+            }
+        }
+
+        if( usermode->width  == 0 ||
+            usermode->height == 0)
+        {
+            mode = list_entry(connector->modes.next, typeof(*mode), head);
+
+            usermode->width  = drm_mode_width(mode);
+            usermode->height = drm_mode_height(mode);
+            usermode->freq   = drm_mode_vrefresh(mode);
+        };
+    };
+
+    mutex_unlock(&dev->mode_config.mutex);
+
+    set_mode(dev, os_display->connector, usermode, false);
+
 #ifdef __HWA__
     err = init_bitmaps();
 #endif
+
+    LEAVE();
 
     return 0;
 };

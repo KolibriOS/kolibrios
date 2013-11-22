@@ -299,9 +299,29 @@ static int context_idr_cleanup(int id, void *p, void *data)
 
 	BUG_ON(id == DEFAULT_CONTEXT_ID);
 
-
-
+	i915_gem_context_unreference(ctx);
 	return 0;
+}
+
+struct i915_ctx_hang_stats *
+i915_gem_context_get_hang_stats(struct drm_device *dev,
+				struct drm_file *file,
+				u32 id)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct drm_i915_file_private *file_priv = file->driver_priv;
+	struct i915_hw_context *ctx;
+
+	if (id == DEFAULT_CONTEXT_ID)
+		return &file_priv->hang_stats;
+
+	ctx = NULL;
+	if (!dev_priv->hw_contexts_disabled)
+		ctx = i915_gem_context_get(file->driver_priv, id);
+	if (ctx == NULL)
+		return ERR_PTR(-ENOENT);
+
+	return &ctx->hang_stats;
 }
 
 void i915_gem_context_close(struct drm_device *dev, struct drm_file *file)

@@ -1828,6 +1828,8 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
 	u32 alignment;
 	int ret;
 
+    ENTER();
+
 	switch (obj->tiling_mode) {
 	case I915_TILING_NONE:
 		if (IS_BROADWATER(dev) || IS_CRESTLINE(dev))
@@ -1876,6 +1878,9 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
 	i915_gem_object_pin_fence(obj);
 
 	dev_priv->mm.interruptible = true;
+
+    LEAVE();
+
 	return 0;
 
 err_unpin:
@@ -2240,15 +2245,28 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
 	}
 
 	mutex_lock(&dev->struct_mutex);
-//   ret = intel_pin_and_fence_fb_obj(dev,
-//                    to_intel_framebuffer(fb)->obj,
-//                    NULL);
-//   if (ret != 0) {
-//       mutex_unlock(&dev->struct_mutex);
-//       DRM_ERROR("pin & fence failed\n");
-//       return ret;
-//   }
+    ret = intel_pin_and_fence_fb_obj(dev,
+                    to_intel_framebuffer(fb)->obj,
+                    NULL);
+    if (ret != 0) {
+       mutex_unlock(&dev->struct_mutex);
+       DRM_ERROR("pin & fence failed\n");
+       return ret;
+    }
 
+	/* Update pipe size and adjust fitter if needed */
+	if (i915_fastboot) {
+		I915_WRITE(PIPESRC(intel_crtc->pipe),
+			   ((crtc->mode.hdisplay - 1) << 16) |
+			   (crtc->mode.vdisplay - 1));
+		if (!intel_crtc->config.pch_pfit.enabled &&
+		    (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS) ||
+		     intel_pipe_has_type(crtc, INTEL_OUTPUT_EDP))) {
+			I915_WRITE(PF_CTL(intel_crtc->pipe), 0);
+			I915_WRITE(PF_WIN_POS(intel_crtc->pipe), 0);
+			I915_WRITE(PF_WIN_SZ(intel_crtc->pipe), 0);
+		}
+	}
 
 	ret = dev_priv->display.update_plane(crtc, fb, x, y);
 	if (ret) {
@@ -2317,9 +2335,10 @@ static void intel_fdi_normal_train(struct drm_crtc *crtc)
 			   FDI_FE_ERRC_ENABLE);
 }
 
-static bool pipe_has_enabled_pch(struct intel_crtc *intel_crtc)
+static bool pipe_has_enabled_pch(struct intel_crtc *crtc)
 {
-	return intel_crtc->base.enabled && intel_crtc->config.has_pch_encoder;
+	return crtc->base.enabled && crtc->active &&
+		crtc->config.has_pch_encoder;
 }
 
 static void ivb_modeset_global_resources(struct drm_device *dev)
@@ -2971,6 +2990,48 @@ static void ironlake_pch_transcoder_set_timings(struct intel_crtc *crtc,
 		   I915_READ(VSYNCSHIFT(cpu_transcoder)));
 }
 
+static void cpt_enable_fdi_bc_bifurcation(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	uint32_t temp;
+
+	temp = I915_READ(SOUTH_CHICKEN1);
+	if (temp & FDI_BC_BIFURCATION_SELECT)
+		return;
+
+	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_B)) & FDI_RX_ENABLE);
+	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_C)) & FDI_RX_ENABLE);
+
+	temp |= FDI_BC_BIFURCATION_SELECT;
+	DRM_DEBUG_KMS("enabling fdi C rx\n");
+	I915_WRITE(SOUTH_CHICKEN1, temp);
+	POSTING_READ(SOUTH_CHICKEN1);
+}
+
+static void ivybridge_update_fdi_bc_bifurcation(struct intel_crtc *intel_crtc)
+{
+	struct drm_device *dev = intel_crtc->base.dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+
+	switch (intel_crtc->pipe) {
+	case PIPE_A:
+		break;
+	case PIPE_B:
+		if (intel_crtc->config.fdi_lanes > 2)
+			WARN_ON(I915_READ(SOUTH_CHICKEN1) & FDI_BC_BIFURCATION_SELECT);
+		else
+			cpt_enable_fdi_bc_bifurcation(dev);
+
+		break;
+	case PIPE_C:
+		cpt_enable_fdi_bc_bifurcation(dev);
+
+		break;
+	default:
+		BUG();
+	}
+}
+
 /*
  * Enable PCH resources required for PCH ports:
  *   - PCH PLLs
@@ -2988,6 +3049,9 @@ static void ironlake_pch_enable(struct drm_crtc *crtc)
 	u32 reg, temp;
 
 	assert_pch_transcoder_disabled(dev_priv, pipe);
+
+	if (IS_IVYBRIDGE(dev))
+		ivybridge_update_fdi_bc_bifurcation(intel_crtc);
 
 	/* Write the TU size bits before fdi link training, so that error
 	 * detection works. */
@@ -3852,12 +3916,12 @@ static void intel_crtc_disable(struct drm_crtc *crtc)
 	assert_plane_disabled(dev->dev_private, to_intel_crtc(crtc)->plane);
 	assert_pipe_disabled(dev->dev_private, to_intel_crtc(crtc)->pipe);
 
-//	if (crtc->fb) {
-//		mutex_lock(&dev->struct_mutex);
-//		intel_unpin_fb_obj(to_intel_framebuffer(crtc->fb)->obj);
-//		mutex_unlock(&dev->struct_mutex);
-//		crtc->fb = NULL;
-//	}
+	if (crtc->fb) {
+		mutex_lock(&dev->struct_mutex);
+		intel_unpin_fb_obj(to_intel_framebuffer(crtc->fb)->obj);
+		mutex_unlock(&dev->struct_mutex);
+		crtc->fb = NULL;
+	}
 
 	/* Update computed state. */
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
@@ -4977,6 +5041,22 @@ static bool i9xx_get_pipe_config(struct intel_crtc *crtc,
 	if (!(tmp & PIPECONF_ENABLE))
 		return false;
 
+	if (IS_G4X(dev) || IS_VALLEYVIEW(dev)) {
+		switch (tmp & PIPECONF_BPC_MASK) {
+		case PIPECONF_6BPC:
+			pipe_config->pipe_bpp = 18;
+			break;
+		case PIPECONF_8BPC:
+			pipe_config->pipe_bpp = 24;
+			break;
+		case PIPECONF_10BPC:
+			pipe_config->pipe_bpp = 30;
+			break;
+		default:
+			break;
+		}
+	}
+
 	intel_get_pipe_timings(crtc, pipe_config);
 
 	i9xx_get_pfit_config(crtc, pipe_config);
@@ -5570,48 +5650,6 @@ static bool ironlake_compute_clocks(struct drm_crtc *crtc,
 	return true;
 }
 
-static void cpt_enable_fdi_bc_bifurcation(struct drm_device *dev)
-{
-	struct drm_i915_private *dev_priv = dev->dev_private;
-	uint32_t temp;
-
-	temp = I915_READ(SOUTH_CHICKEN1);
-	if (temp & FDI_BC_BIFURCATION_SELECT)
-		return;
-
-	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_B)) & FDI_RX_ENABLE);
-	WARN_ON(I915_READ(FDI_RX_CTL(PIPE_C)) & FDI_RX_ENABLE);
-
-	temp |= FDI_BC_BIFURCATION_SELECT;
-	DRM_DEBUG_KMS("enabling fdi C rx\n");
-	I915_WRITE(SOUTH_CHICKEN1, temp);
-	POSTING_READ(SOUTH_CHICKEN1);
-}
-
-static void ivybridge_update_fdi_bc_bifurcation(struct intel_crtc *intel_crtc)
-{
-	struct drm_device *dev = intel_crtc->base.dev;
-	struct drm_i915_private *dev_priv = dev->dev_private;
-
-	switch (intel_crtc->pipe) {
-	case PIPE_A:
-		break;
-	case PIPE_B:
-		if (intel_crtc->config.fdi_lanes > 2)
-			WARN_ON(I915_READ(SOUTH_CHICKEN1) & FDI_BC_BIFURCATION_SELECT);
-		else
-			cpt_enable_fdi_bc_bifurcation(dev);
-
-		break;
-	case PIPE_C:
-		cpt_enable_fdi_bc_bifurcation(dev);
-
-		break;
-	default:
-		BUG();
-	}
-}
-
 int ironlake_get_lanes_required(int target_clock, int link_bw, int bpp)
 {
 	/*
@@ -5805,9 +5843,6 @@ static int ironlake_crtc_mode_set(struct drm_crtc *crtc,
 					     &intel_crtc->config.fdi_m_n);
 	}
 
-	if (IS_IVYBRIDGE(dev))
-		ivybridge_update_fdi_bc_bifurcation(intel_crtc);
-
 	ironlake_set_pipeconf(crtc);
 
 	/* Set up the display plane register */
@@ -5874,6 +5909,23 @@ static bool ironlake_get_pipe_config(struct intel_crtc *crtc,
 	tmp = I915_READ(PIPECONF(crtc->pipe));
 	if (!(tmp & PIPECONF_ENABLE))
 		return false;
+
+	switch (tmp & PIPECONF_BPC_MASK) {
+	case PIPECONF_6BPC:
+		pipe_config->pipe_bpp = 18;
+		break;
+	case PIPECONF_8BPC:
+		pipe_config->pipe_bpp = 24;
+		break;
+	case PIPECONF_10BPC:
+		pipe_config->pipe_bpp = 30;
+		break;
+	case PIPECONF_12BPC:
+		pipe_config->pipe_bpp = 36;
+		break;
+	default:
+		break;
+	}
 
 	if (I915_READ(PCH_TRANSCONF(crtc->pipe)) & TRANS_ENABLE) {
 		struct intel_shared_dpll *pll;
@@ -7050,22 +7102,22 @@ mode_fits_in_fbdev(struct drm_device *dev,
 	struct drm_i915_gem_object *obj;
 	struct drm_framebuffer *fb;
 
-//	if (dev_priv->fbdev == NULL)
-//		return NULL;
-
-//	obj = dev_priv->fbdev->ifb.obj;
-//	if (obj == NULL)
+	if (dev_priv->fbdev == NULL)
 		return NULL;
 
-//	if (obj->base.size < mode->vdisplay * fb->pitch)
+	obj = dev_priv->fbdev->ifb.obj;
+	if (obj == NULL)
+		return NULL;
+
+	fb = &dev_priv->fbdev->ifb.base;
 	if (fb->pitches[0] < intel_framebuffer_pitch_for_width(mode->hdisplay,
 							       fb->bits_per_pixel))
-//		return NULL;
+		return NULL;
 
 	if (obj->base.size < mode->vdisplay * fb->pitches[0])
 		return NULL;
 
-//	return fb;
+	return fb;
 }
 
 bool intel_get_load_detect_pipe(struct drm_connector *connector,
@@ -8597,6 +8649,9 @@ intel_pipe_config_compare(struct drm_device *dev,
 	PIPE_CONF_CHECK_X(dpll_hw_state.fp0);
 	PIPE_CONF_CHECK_X(dpll_hw_state.fp1);
 
+	if (IS_G4X(dev) || INTEL_INFO(dev)->gen >= 5)
+		PIPE_CONF_CHECK_I(pipe_bpp);
+
 #undef PIPE_CONF_CHECK_X
 #undef PIPE_CONF_CHECK_I
 #undef PIPE_CONF_CHECK_FLAGS
@@ -9952,10 +10007,6 @@ static void intel_init_quirks(struct drm_device *dev)
 		     q->subsystem_device == PCI_ANY_ID))
 			q->hook(dev);
 	}
-//	for (i = 0; i < ARRAY_SIZE(intel_dmi_quirks); i++) {
-//		if (dmi_check_system(*intel_dmi_quirks[i].dmi_id_list) != 0)
-//			intel_dmi_quirks[i].hook(dev);
-//	}
 }
 
 /* Disable the VGA plane that we never use */
@@ -10471,11 +10522,9 @@ void intel_modeset_cleanup(struct drm_device *dev)
 
 	/* flush any delayed tasks or pending work */
 	flush_scheduled_work();
-//   cancel_work_sync(&dev_priv->hotplug_work);
-//   cancel_work_sync(&dev_priv->rps.work);
 
-	/* flush any delayed tasks or pending work */
-//   flush_scheduled_work();
+	/* destroy backlight, if any, before the connectors */
+	intel_panel_destroy_backlight(dev);
 
 	drm_mode_config_cleanup(dev);
 #endif

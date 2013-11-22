@@ -509,10 +509,12 @@ struct i915_address_space {
 
 	/* FIXME: Need a more generic return type */
 	gen6_gtt_pte_t (*pte_encode)(dma_addr_t addr,
-				     enum i915_cache_level level);
+				     enum i915_cache_level level,
+				     bool valid); /* Create a valid PTE */
 	void (*clear_range)(struct i915_address_space *vm,
 			    unsigned int first_entry,
-			    unsigned int num_entries);
+			    unsigned int num_entries,
+			    bool use_scratch);
 	void (*insert_entries)(struct i915_address_space *vm,
 			       struct sg_table *st,
 			       unsigned int first_entry,
@@ -2071,6 +2073,8 @@ void i915_ppgtt_bind_object(struct i915_hw_ppgtt *ppgtt,
 void i915_ppgtt_unbind_object(struct i915_hw_ppgtt *ppgtt,
 			      struct drm_i915_gem_object *obj);
 
+void i915_check_and_clear_faults(struct drm_device *dev);
+void i915_gem_suspend_gtt_mappings(struct drm_device *dev);
 void i915_gem_restore_gtt_mappings(struct drm_device *dev);
 int __must_check i915_gem_gtt_prepare_object(struct drm_i915_gem_object *obj);
 void i915_gem_gtt_bind_object(struct drm_i915_gem_object *obj,
@@ -2340,6 +2344,12 @@ timespec_to_jiffies_timeout(const struct timespec *value)
 	return min_t(unsigned long, MAX_JIFFY_OFFSET, j + 1);
 }
 
+static inline int mutex_trylock(struct mutex *lock)
+{
+    if (likely(atomic_cmpxchg(&lock->count, 1, 0) == 1))
+        return 1;
+    return 0;
+}
 
 typedef struct
 {
@@ -2349,19 +2359,27 @@ typedef struct
   int freq;
 }videomode_t;
 
-
-static inline int mutex_trylock(struct mutex *lock)
+struct cmdtable
 {
-    if (likely(atomic_cmpxchg(&lock->count, 1, 0) == 1))
-        return 1;
-    return 0;
-}
+    char *key;
+    int   size;
+    int  *val;
+};
+
+#define CMDENTRY(key, val) {(key), (sizeof(key)-1), &val}
+
+void parse_cmdline(char *cmdline, struct cmdtable *table, char *log, videomode_t *mode);
+struct drm_i915_gem_object
+*kos_gem_fb_object_create(struct drm_device *dev, u32 gtt_offset, u32 size);
+
+extern struct drm_i915_gem_object *fb_obj;
+static struct drm_i915_gem_object *get_fb_obj()
+{
+    return fb_obj;
+};
 
 
 #define ioread32(addr)          readl(addr)
-
-
-
 
 
 #endif
