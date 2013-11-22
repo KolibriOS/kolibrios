@@ -71,7 +71,7 @@ extern "C" {
   
   
 struct in_addr {
-  unsigned long s_addr;
+    unsigned int s_addr;
 };
 
 struct sockaddr {
@@ -79,22 +79,22 @@ struct sockaddr {
     char              sa_data[14];  // 14 bytes of protocol address
 }; 
 
-struct sockaddr_in {
-        short sin_family;  // sa_family_t
-        unsigned short sin_port;  // in_port_t
-        struct in_addr sin_addr;
-        char sin_zero[8];
+struct sockaddr_in { // IPv4 only, we need sockaddr_in6 for IPv6
+    short int          sin_family;  // Address family, AF_INET
+    unsigned short int sin_port;    // Port number
+    struct in_addr     sin_addr;    // Internet address
+    unsigned char      sin_zero[8]; // Same size as struct sockaddr
 };
   
 struct addrinfo {
-        int ai_flags;  // bitmask of AI_*
-        int longai_family;  // PF_*
-        int ai_socktype;  //SOCK_*
-        int ai_protocol;  // 0 or IPPROTO_*
-        int ai_addrlen;  // length of ai_addr
-        char *ai_canonname;
-        struct sockaddr *ai_addr;  // struct sockaddr*
-        struct addrinfo *ai_next;  // struct addrinfo*
+    int              ai_flags;     // AI_PASSIVE, AI_CANONNAME, etc.
+    int              ai_family;    // AF_INET, AF_INET6, AF_UNSPEC
+    int              ai_socktype;  // SOCK_STREAM, SOCK_DGRAM
+    int              ai_protocol;  // use 0 for "any"
+    int              ai_addrlen;   // size of ai_addr in bytes
+    struct sockaddr *ai_addr;      // struct sockaddr_in or _in6
+    char            *ai_canonname; // full canonical hostname
+    struct addrinfo *ai_next;      // linked list, next node
 };
   
 #define EAI_ADDRFAMILY 1
@@ -129,7 +129,6 @@ struct addrinfo {
 #define ECONNABORTED  53
 
 
-unsigned long inet_addr(char *cp);
 int socket(int domain, int type, int protocol); 
 int closesocket(int s);
 int bind(int sockfd, struct sockaddr *my_addr, int addrlen);
@@ -138,11 +137,17 @@ int connect(int sockfd, const struct sockaddr *serv_addr, int addrlen);
 int accept(int s, struct sockaddr *addr, int *addrlen);
 int send(int s, const void *buf, int len, int flags);
 int recv(int sockfd, void *buf, int len, int flags);
-// Review int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen);
-// Review int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen);
-// Add socketpair()
+
+// extern from src/libc/menuetos/netowrk.c
+#define __stdcall __attribute__((stdcall))
+extern void NETWORK_INIT();
+extern void (* __stdcall freeaddrinfo)(struct addrinfo* ai);
+extern int (* __stdcall getaddrinfo)( const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo **res);
+extern char * (* __stdcall inet_ntoa)(struct in_addr in);
+extern unsigned long (* __stdcall inet_addr)( const char* hostname);
 
 
+// Old stuff
 //---------------------------------------------  
 
 #define __NET_stack_rd_cfg_word	0

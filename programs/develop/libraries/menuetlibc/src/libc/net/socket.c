@@ -1,16 +1,6 @@
 #include <menuet/net.h>
 
 
-unsigned long inet_addr(char *cp)
-{
-  // Adapted from here http://stackoverflow.com/a/1684635
-  unsigned long __ret;
-  unsigned int c1,c2,c3,c4;
-  sscanf(cp, "%d.%d.%d.%d", &c1,&c2,&c3,&c4);
-  __ret = (unsigned long)c4+c3*256+c2*256*256+c1*256*256*256;
-  return htonl(__ret);
-}
-
 int socket(int domain, int type, int protocol)
 {
   int __ret;
@@ -46,6 +36,10 @@ int recv(int sockfd, void *buf, int len, int flags)
   __asm__("int $0x40":"=a"(__ret):"a"(_SOCKETF),"b"(_RECEIVESF),"c"(sockfd),"d"(buf),"S"(len),"D"(flags));
   return __ret;
 }
+
+
+
+
 
 // --------------------------------------------------------------
 
