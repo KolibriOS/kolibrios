@@ -549,7 +549,7 @@ char *string(char *buf, char *end, const char *s, struct printf_spec spec)
 {
 	int len, i;
 
-	if ((unsigned long)s < PAGE_SIZE)
+    if (s == NULL)
 		s = "(null)";
 
 	len = strnlen(s, spec.precision);
