@@ -59,12 +59,6 @@ virtual_root_query:
         db      'cd3',0
 ;**********************************************
         dd      0
-
-fs_additional_handlers:
-        dd      dyndisk_handler, dyndisk_enum_root
-; add new handlers here
-        dd      0
-
 endg
 
 file_system_lfn_protected:
@@ -241,7 +235,6 @@ file_system_lfn:
 
 .readroot:
 ; virtual root folder - special handler
-        mov     esi, virtual_root_query
         mov     ebp, [ebx+12]
         mov     edx, [ebx+16]
     ;    add     edx, std_application_base_address
@@ -253,9 +246,51 @@ file_system_lfn:
         mov     ecx, 32/4
         rep stosd
         mov     byte [edx], 1   ; version
+        sub     esp, 16
+.readroot_ah_loop2:
+        push    edi
+        lea     edi, [esp+4]
+        call    dyndisk_enum_root
+        pop     edi
+        test    eax, eax
+        jz      .readroot_done_dynamic
+        inc     dword [edx+8]
+        dec     dword [esp+16]
+        jns     .readroot_ah_loop2
+        dec     ebp
+        js      .readroot_ah_loop2
+        push    eax
+        xor     eax, eax
+        inc     dword [edx+4]
+        mov     dword [edi], 0x10       ; attributes: folder
+        mov     dword [edi+4], ebx
+        add     edi, 8
+        mov     ecx, 40/4-2
+        rep stosd
+        push    esi edi
+        lea     esi, [esp+12]
+@@:
+        lodsb
+        stosb
+        test    bl, 1
+        jz      .ansi3
+        mov     byte [edi], 0
+        inc     edi
+.ansi3:
+        test    al, al
+        jnz     @b
+        pop     edi esi eax
+        add     edi, 520
+        test    bl, 1
+        jnz     .readroot_ah_loop2
+        sub     edi, 520-264
+        jmp     .readroot_ah_loop2
+.readroot_done_dynamic:
+        add     esp, 16
+        mov     esi, virtual_root_query
 .readroot_loop:
         cmp     dword [esi], eax
-        jz      .readroot_done_static
+        jz      .readroot_done
         call    dword [esi]
         add     esi, 4
         test    eax, eax
@@ -296,54 +331,7 @@ file_system_lfn:
         jnz     .readroot_loop
         sub     edi, 520-264
         jmp     .readroot_loop
-.readroot_done_static:
-        mov     esi, fs_additional_handlers-8
-        sub     esp, 16
-.readroot_ah_loop:
-        add     esi, 8
-        cmp     dword [esi], 0
-        jz      .readroot_done
-        xor     eax, eax
-.readroot_ah_loop2:
-        push    edi
-        lea     edi, [esp+4]
-        call    dword [esi+4]
-        pop     edi
-        test    eax, eax
-        jz      .readroot_ah_loop
-        inc     dword [edx+8]
-        dec     dword [esp+16]
-        jns     .readroot_ah_loop2
-        dec     ebp
-        js      .readroot_ah_loop2
-        push    eax
-        xor     eax, eax
-        inc     dword [edx+4]
-        mov     dword [edi], 0x10       ; attributes: folder
-        mov     dword [edi+4], ebx
-        add     edi, 8
-        mov     ecx, 40/4-2
-        rep stosd
-        push    esi edi
-        lea     esi, [esp+12]
-@@:
-        lodsb
-        stosb
-        test    bl, 1
-        jz      .ansi3
-        mov     byte [edi], 0
-        inc     edi
-.ansi3:
-        test    al, al
-        jnz     @b
-        pop     edi esi eax
-        add     edi, 520
-        test    bl, 1
-        jnz     .readroot_ah_loop2
-        sub     edi, 520-264
-        jmp     .readroot_ah_loop2
 .readroot_done:
-        add     esp, 16
         pop     eax
         mov     ebx, [edx+4]
         xor     eax, eax
@@ -355,14 +343,7 @@ file_system_lfn:
         mov     [image_of_ebx], ebx
         ret
 .notfound_try:
-        mov     edi, fs_additional_handlers
-@@:
-        cmp     dword [edi], 0
-        jz      .notfound
-        call    dword [edi]
-        scasd
-        scasd
-        jmp     @b
+        call    dyndisk_handler
 .notfound:
         mov     dword [image_of_eax], ERROR_FILE_NOT_FOUND
         and     dword [image_of_ebx], 0
