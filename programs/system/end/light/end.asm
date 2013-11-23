@@ -123,14 +123,17 @@ if fade=1
     jne @b
 
     call    draw_window
-else
-    mov   al,4
-    mcall   ,<50,110> ,0x800000cc,label7        ;eax=4 - write text
 end if
 
     invoke  ini_set_int,ini_file,asettings,aautosave,[autosave]
     cmp  [autosave],1
     jne   no_save
+
+if fade=0
+    mov   al,4
+    mcall   ,<50,110> ,0x800000cc,label7        ;eax=4 - write text
+end if
+
     mcall 70,rdsave
     test  eax,eax
     js    no_save
