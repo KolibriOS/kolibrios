@@ -888,6 +888,8 @@ OnStep:
         cmp     [step_num], 0
         jg      .stepone
         mov     esi, [curarg]
+        cmp     esi, 0
+        jz	    .stepone
         cmp     byte [esi], 0
         jz      .stepone
         call    get_hex_number
@@ -1000,6 +1002,8 @@ OnProceed:
         cmp     [proc_num], 0
         jg      .procone
         mov     esi, [curarg]
+        cmp     esi, 0
+        jz      .procone
         cmp     byte [esi], 0
         jz      .procone
         call    get_hex_number
@@ -2355,7 +2359,7 @@ include 'disasm.inc'
 caption_str db 'Kolibri Debugger',0
 caption_len = $ - caption_str
 
-begin_str db    'Kolibri Debugger, version 0.32',10
+begin_str db    'Kolibri Debugger, version 0.33',10
         db      'Hint: type "help" for help, "quit" for quit'
 newline db      10,0
 prompt  db      '> ',0
