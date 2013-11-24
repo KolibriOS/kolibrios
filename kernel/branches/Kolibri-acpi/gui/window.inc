@@ -2036,9 +2036,9 @@ window._.window_activate: ;////////////////////////////////////////////////////
 
         ; if type of current active window is 3 or 4, it must be redrawn
         mov     ebx, [TASK_COUNT]
-        
+
 ;       DEBUGF  1, "K : TASK_COUNT (0x%x)\n", ebx
-        
+
         movzx   ebx, word[WIN_POS + ebx * 2]
         shl     ebx, 5
         add     eax, window_data
@@ -2068,13 +2068,13 @@ align 4
         cmp     eax, [TASK_COUNT]
         jae     .move_self_up
         inc     eax
-        
+
 ;       push    ebx
 ;       xor     ebx,ebx
 ;       mov     bx,[WIN_STACK + eax * 2]
 ;       DEBUGF  1, "K : DEC WIN_STACK (0x%x)\n",ebx
 ;       pop     ebx
-        
+
         cmp     [WIN_STACK + eax * 2], bx
         jbe     .next_stack_window
         dec     word[WIN_STACK + eax * 2]
@@ -2162,7 +2162,7 @@ align 4
         mov     word[MOUSE_SCROLL_V], 0
         pop     ebx eax
         ret
-;------------------------------------------------------------------------------ 
+;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
 window._.check_window_draw: ;//////////////////////////////////////////////////

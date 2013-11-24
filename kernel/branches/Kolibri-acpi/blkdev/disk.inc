@@ -1213,7 +1213,39 @@ fs_dyndisk_next_nomedia:
 ; ecx = partition number, esi+ebp = ASCIIZ name
 fs_dyndisk:
         dec     ecx     ; convert to zero-based partition index
-        pop     edx edx edx eax ; edx = pointer to DISK, eax = NULL or edx
+        pop     edx edx edx ; edx = pointer to DISK, dword [esp] = NULL or edx
+; If the driver does not support insert notifications and we are the only fs
+; operation with this disk, ask the driver whether the media
+; was inserted/removed/changed. Otherwise, assume that media status is valid.
+        test    byte [edx+DISK.DriverFlags], DISK_NO_INSERT_NOTIFICATION
+        jz      .media_accurate
+        push    ecx esi
+        mov     esi, edx
+        cmp     dword [esp+8], 0
+        jz      .test_no_media
+        cmp     [esi+DISK.MediaRefCount], 2
+        jnz     .media_accurate_pop
+        lea     edx, [esi+DISK.MediaInfo]
+        and     [edx+DISKMEDIAINFO.Flags], 0
+        mov     al, DISKFUNC.querymedia
+        stdcall disk_call_driver, edx
+        test    eax, eax
+        jz      .media_accurate_pop
+        stdcall disk_media_dereference  ; drop our reference so that disk_media_changed could close the media
+        stdcall disk_media_changed, esi, 0
+        and     dword [esp+8], 0        ; no media
+.test_no_media:
+        stdcall disk_media_changed, esi, 1      ; issue fake notification
+                ; if querymedia() inside disk_media_changed returns error, the notification is ignored
+        cmp     [esi+DISK.MediaInserted], 0
+        jz      .media_accurate_pop
+        lock inc [esi+DISK.MediaRefCount]
+        mov     dword [esp+8], esi
+.media_accurate_pop:
+        mov     edx, esi
+        pop     esi ecx
+.media_accurate:
+        pop     eax
         test    eax, eax
         jz      .nomedia
 .main:
@@ -1252,30 +1284,6 @@ fs_dyndisk:
 .nomedia:
         test    ecx, ecx
         jnz     .notfound
-        test    byte [edx+DISK.DriverFlags], DISK_NO_INSERT_NOTIFICATION
-        jz      .deverror
-; if the driver does not support insert notifications and we are the only fs
-; operation with this disk, issue the fake insert notification; if media is
-; still not inserted, 'disk_media_changed' will detect this and do nothing
-        lea     ecx, [edx+DISK.MediaLock]
-        call    mutex_lock
-        cmp     [edx+DISK.MediaRefCount], 1
-        jnz     .noluck
-        call    mutex_unlock
-        push    edx
-        stdcall disk_media_changed, edx, 1
-        pop     edx
-        lea     ecx, [edx+DISK.MediaLock]
-        call    mutex_lock
-        cmp     [edx+DISK.MediaInserted], 0
-        jz      .noluck
-        lock inc [edx+DISK.MediaRefCount]
-        call    mutex_unlock
-        xor     ecx, ecx
-        jmp     .main
-.noluck:
-        call    mutex_unlock
-.deverror:
         mov     dword [esp+32], ERROR_DEVICE
         mov     esi, edx
         call    disk_dereference

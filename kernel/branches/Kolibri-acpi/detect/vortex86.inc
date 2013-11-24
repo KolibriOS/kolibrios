@@ -36,14 +36,20 @@ Vortex86SoClist:                        ; List of Vortex86 CPUs known today. Add
 Vortex86SoCnum = ($ - Vortex86SoClist) / 4      ; Calculate the total number of known Vortex86 CPUs (if id=Vortex86SoCnum+1 --> unknown SoC)
 endg
 
+; When in debug mode, perform SoC detection regardless of the actual CPU vendor (even for vendors other than DMP)
+; When in normal (not debug) mode, check the CPU vendor first, and perform SoC detection only if vendor is 'Vortex86 SoC'
+if ~ VORTEX86DEBUG        
+        cmp     [cpu_vendor], 'Vort'
+        jnz     .Vortex86end            ; If the CPU vendor is not 'Vortex86 SoC', skip the SoC detection
+end if        
+
         mov     dx, 0xcf8               ; CF8h = Vortex86 PCI Configuration Address port
         mov     eax, 0x80000090         ; 0x80000090 = Starting PCI address to read from (32-bit register - accessed as DWORD)
         out     dx, eax                 ; Send request to PCI address port to retrieve data from this address
         mov     dx, 0xcfc               ; CFCh = Vortex86 PCI Configuration Data port
         in      eax, dx                 ; Read data (SoC type) from PCI data port
 
-if VORTEX86DEBUG        
-; // Used for debug purposes: testing in emulator and in non-Vortex86 CPU computers
+if VORTEX86DEBUG                        ; When in debug mode, pretend that we received port output equal to "VORTEX86DEBUGVALUE"
         mov     eax, VORTEX86DEBUGVALUE
 end if        
         
@@ -55,10 +61,9 @@ end if
         cmp     ax, 4d44h               ; Check whether it's Vortex86 family (all Vortex86 SoC have ID in form of "0xNN504d44")
         jnz     .notVortex86
         shr     eax, 16                 ; Discard lower word in EAX which is always 4d44h in Vortex86 family
-        cmp     al, 50h                 ; The 3rd byte is always 50h in Vortex86 SoC
+        cmp     al, 50h                 ; The 3rd byte is always 50h in Vortex86 SoC (if this is the case, we need just the highest byte)
         jnz     .notVortex86
-        shr     ax, 8                   ; Discard 3rd byte in EAX, the highest byte determines the SoC type
-        mov     bl, al                  ; Copy SoC type to BL since EAX (that contains AL) is used implicitly in "LODSD" command below
+        mov     bl, ah                  ; Copy SoC type to BL since EAX (that includes AH) is used implicitly in "LODSD" command below
         mov     esi, Vortex86SoClist    ; ESI points to the start of Vortex86SoClist (used implicitly in "LODSD" command below)
         xor     ecx, ecx                ; Zero ECX (it is used as counter)
         cld                             ; Clears the DF flag in the EFLAGS register (DF=0 --> String operations increment ESI)
@@ -83,7 +88,7 @@ end if
         
 .unknownVortex86:
         mov     [Vortex86CPUid], cl                 ; Save the CPUid (Vortex86SoCnum+1=Unknown Vortex86)
-        DEBUGF  1, "unknown Vortex86 CPU (has id=%d, last known is %d)\n", [Vortex86CPUid]:1, Vortex86SoCnum
+        DEBUGF  1, "unknown Vortex86 CPU (id=%d, last known is %d)\n", [Vortex86CPUid]:1, Vortex86SoCnum
         jmp     .Vortex86end
         
 .notVortex86:                           ; In case this register is used by other CPUs for other purpose, it's interesting what it contains

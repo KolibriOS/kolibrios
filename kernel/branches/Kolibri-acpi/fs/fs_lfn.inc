@@ -30,18 +30,6 @@ image_of_ebx EQU esp+20
 iglobal
 ; in this table names must be in lowercase
 rootdirs:
-        db      2,'rd'
-        dd      fs_OnRamdisk
-        dd      fs_NextRamdisk
-        db      7,'ramdisk'
-        dd      fs_OnRamdisk
-        dd      fs_NextRamdisk
-        db      2,'fd'
-        dd      fs_OnFloppy
-        dd      fs_NextFloppy
-        db      10,'floppydisk'
-        dd      fs_OnFloppy
-        dd      fs_NextFloppy
 ;**********************************************
         db      3,'cd0'
         dd      fs_OnCd0
@@ -60,10 +48,6 @@ rootdirs:
 
 
 virtual_root_query:
-        dd      fs_HasRamdisk
-        db      'rd',0
-        dd      fs_HasFloppy
-        db      'fd',0
 ;**********************************************
         dd      fs_HasCd0
         db      'cd0',0
@@ -75,12 +59,6 @@ virtual_root_query:
         db      'cd3',0
 ;**********************************************
         dd      0
-
-fs_additional_handlers:
-        dd      dyndisk_handler, dyndisk_enum_root
-; add new handlers here
-        dd      0
-
 endg
 
 file_system_lfn_protected:
@@ -257,7 +235,6 @@ file_system_lfn:
 
 .readroot:
 ; virtual root folder - special handler
-        mov     esi, virtual_root_query
         mov     ebp, [ebx+12]
         mov     edx, [ebx+16]
     ;    add     edx, std_application_base_address
@@ -269,9 +246,51 @@ file_system_lfn:
         mov     ecx, 32/4
         rep stosd
         mov     byte [edx], 1   ; version
+        sub     esp, 16
+.readroot_ah_loop2:
+        push    edi
+        lea     edi, [esp+4]
+        call    dyndisk_enum_root
+        pop     edi
+        test    eax, eax
+        jz      .readroot_done_dynamic
+        inc     dword [edx+8]
+        dec     dword [esp+16]
+        jns     .readroot_ah_loop2
+        dec     ebp
+        js      .readroot_ah_loop2
+        push    eax
+        xor     eax, eax
+        inc     dword [edx+4]
+        mov     dword [edi], 0x10       ; attributes: folder
+        mov     dword [edi+4], ebx
+        add     edi, 8
+        mov     ecx, 40/4-2
+        rep stosd
+        push    esi edi
+        lea     esi, [esp+12]
+@@:
+        lodsb
+        stosb
+        test    bl, 1
+        jz      .ansi3
+        mov     byte [edi], 0
+        inc     edi
+.ansi3:
+        test    al, al
+        jnz     @b
+        pop     edi esi eax
+        add     edi, 520
+        test    bl, 1
+        jnz     .readroot_ah_loop2
+        sub     edi, 520-264
+        jmp     .readroot_ah_loop2
+.readroot_done_dynamic:
+        add     esp, 16
+        mov     esi, virtual_root_query
 .readroot_loop:
         cmp     dword [esi], eax
-        jz      .readroot_done_static
+        jz      .readroot_done
         call    dword [esi]
         add     esi, 4
         test    eax, eax
@@ -312,54 +331,7 @@ file_system_lfn:
         jnz     .readroot_loop
         sub     edi, 520-264
         jmp     .readroot_loop
-.readroot_done_static:
-        mov     esi, fs_additional_handlers-8
-        sub     esp, 16
-.readroot_ah_loop:
-        add     esi, 8
-        cmp     dword [esi], 0
-        jz      .readroot_done
-        xor     eax, eax
-.readroot_ah_loop2:
-        push    edi
-        lea     edi, [esp+4]
-        call    dword [esi+4]
-        pop     edi
-        test    eax, eax
-        jz      .readroot_ah_loop
-        inc     dword [edx+8]
-        dec     dword [esp+16]
-        jns     .readroot_ah_loop2
-        dec     ebp
-        js      .readroot_ah_loop2
-        push    eax
-        xor     eax, eax
-        inc     dword [edx+4]
-        mov     dword [edi], 0x10       ; attributes: folder
-        mov     dword [edi+4], ebx
-        add     edi, 8
-        mov     ecx, 40/4-2
-        rep stosd
-        push    esi edi
-        lea     esi, [esp+12]
-@@:
-        lodsb
-        stosb
-        test    bl, 1
-        jz      .ansi3
-        mov     byte [edi], 0
-        inc     edi
-.ansi3:
-        test    al, al
-        jnz     @b
-        pop     edi esi eax
-        add     edi, 520
-        test    bl, 1
-        jnz     .readroot_ah_loop2
-        sub     edi, 520-264
-        jmp     .readroot_ah_loop2
 .readroot_done:
-        add     esp, 16
         pop     eax
         mov     ebx, [edx+4]
         xor     eax, eax
@@ -371,14 +343,7 @@ file_system_lfn:
         mov     [image_of_ebx], ebx
         ret
 .notfound_try:
-        mov     edi, fs_additional_handlers
-@@:
-        cmp     dword [edi], 0
-        jz      .notfound
-        call    dword [edi]
-        scasd
-        scasd
-        jmp     @b
+        call    dyndisk_handler
 .notfound:
         mov     dword [image_of_eax], ERROR_FILE_NOT_FOUND
         and     dword [image_of_ebx], 0
@@ -436,71 +401,9 @@ file_system_lfn:
 ;     ebp = 0 or pointer to rest of name from folder addressed by esi
 ; out: [image_of_eax]=image of eax, [image_of_ebx]=image of ebx
 
-fs_OnRamdisk:
-        cmp     ecx, 1
-        jnz     file_system_lfn.notfound
-        mov     eax, [ebx]
-        cmp     eax, fs_NumRamdiskServices
-        jae     .not_impl
-        mov     ecx, [ebx+12]
-        mov     edx, [ebx+16]
-   ;     add     edx, std_application_base_address
-        add     ebx, 4
-        call    dword [fs_RamdiskServices + eax*4]
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-.not_impl:
-        mov     dword [image_of_eax], 2       ; not implemented
-        ret
-
 fs_NotImplemented:
         mov     eax, 2
         ret
-
-fs_RamdiskServices:
-        dd      fs_RamdiskRead
-        dd      fs_RamdiskReadFolder
-        dd      fs_RamdiskRewrite
-        dd      fs_RamdiskWrite
-        dd      fs_RamdiskSetFileEnd
-        dd      fs_RamdiskGetFileInfo
-        dd      fs_RamdiskSetFileInfo
-        dd      0
-        dd      fs_RamdiskDelete
-        dd      fs_RamdiskCreateFolder
-fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
-
-fs_OnFloppy:
-        cmp     ecx, 2
-        ja      file_system_lfn.notfound
-        mov     eax, [ebx]
-        cmp     eax, fs_NumFloppyServices
-        jae     fs_OnRamdisk.not_impl
-        call    reserve_flp
-        mov     [flp_number], cl
-        mov     ecx, [ebx+12]
-        mov     edx, [ebx+16]
-   ;     add     edx, std_application_base_address
-        add     ebx, 4
-        call    dword [fs_FloppyServices + eax*4]
-        and     [flp_status], 0
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
-        ret
-
-fs_FloppyServices:
-        dd      fs_FloppyRead
-        dd      fs_FloppyReadFolder
-        dd      fs_FloppyRewrite
-        dd      fs_FloppyWrite
-        dd      fs_FloppySetFileEnd
-        dd      fs_FloppyGetFileInfo
-        dd      fs_FloppySetFileInfo
-        dd      0
-        dd      fs_FloppyDelete
-        dd      fs_FloppyCreateFolder
-fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 ;*******************************************************
 fs_OnCd0:
@@ -584,16 +487,6 @@ fs_CdServices:
 fs_NumCdServices = ($ - fs_CdServices)/4
 
 ;*******************************************************
-
-fs_HasRamdisk:
-        mov     al, 1   ; we always have ramdisk
-        ret
-fs_HasFloppy:
-        cmp     byte [DRIVE_DATA], 0
-        setnz   al
-        ret
-
-;*******************************************************
 fs_HasCd0:
         test    byte [DRIVE_DATA+1], 10000000b
         setnz   al
@@ -616,36 +509,6 @@ fs_HasCd3:
 ; in: eax = partition number, from which start to scan
 ; out: CF=1 => no more partitions
 ;      CF=0 => eax=next partition number
-
-fs_NextRamdisk:
-; we always have /rd/1
-        test    eax, eax
-        stc
-        jnz     @f
-        mov     al, 1
-        clc
-@@:
-        ret
-
-fs_NextFloppy:
-; we have /fd/1 iff (([DRIVE_DATA] and 0xF0) != 0) and /fd/2 iff (([DRIVE_DATA] and 0x0F) != 0)
-        test    byte [DRIVE_DATA], 0xF0
-        jz      .no1
-        test    eax, eax
-        jnz     .no1
-        inc     eax
-        ret     ; CF cleared
-.no1:
-        test    byte [DRIVE_DATA], 0x0F
-        jz      .no2
-        cmp     al, 2
-        jae     .no2
-        mov     al, 2
-        clc
-        ret
-.no2:
-        stc
-        ret
 
 ;*******************************************************
 fs_NextCd:

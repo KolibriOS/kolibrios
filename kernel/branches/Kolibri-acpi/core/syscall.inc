@@ -7,20 +7,6 @@
 
 $Revision$
 
-; Old style system call converter
-align 16
-cross_order:
-        ; load all registers in crossed order
-        mov     eax, ebx
-        mov     ebx, ecx
-        mov     ecx, edx
-        mov     edx, esi
-        mov     esi, edi
-        movzx   edi, byte[esp+28 + 4]
-        sub     edi, 53
-        call    dword [servetable+edi*4]
-        ret
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                            ;;
 ;;                     SYSENTER ENTRY                         ;;
@@ -109,24 +95,6 @@ iglobal
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SYSTEM FUNCTIONS TABLE ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  align 4
-  servetable:
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd file_system             ; 58-Common file system interface
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; NEW SYSTEM FUNCTIONS TABLE ;;
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   align 4
   servetable2:
 
@@ -136,7 +104,7 @@ iglobal
       dd sys_clock               ; 3-GetTime
       dd syscall_writetext       ; 4-WriteText
       dd delay_hs_unprotected    ; 5-DelayHs
-      dd syscall_openramdiskfile ; 6-OpenRamdiskFile
+      dd undefined_syscall       ; 6-deprecated OpenRamdiskFile
       dd syscall_putimage        ; 7-PutImage
       dd syscall_button          ; 8-DefineButton
       dd sys_cpuusage            ; 9-GetProcessInfo
@@ -188,7 +156,7 @@ iglobal
       dd sound_interface         ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
       dd sys_pcibios             ; 57-PCI BIOS32
-      dd cross_order             ; 58-Common file system interface
+      dd undefined_syscall       ; 58-deprecated Common file system interface
       dd undefined_syscall       ; 59-reserved
       dd sys_IPC                 ; 60-Inter Process Communication
       dd sys_gs                  ; 61-Direct graphics access

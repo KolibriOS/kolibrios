@@ -2,6 +2,7 @@
   boot_picinit:     cp850   'Inicializar PIC',0
   boot_v86machine:  cp850   'Inicializar sistema V86',0
   boot_inittimer:   cp850   'Inicializar reloj del sistema (IRQ0)',0
+  boot_initramdisk  cp850   'Initialize ramdisk',0
   boot_initapic:    cp850   'Prueba inicializar APIC',0
   boot_enableirq:   cp850   'Habilitar interrupciones 2, 13',0
   boot_disabling_ide:cp850   'Habiliar interrupciones en controladores IDE',0

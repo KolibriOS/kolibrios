@@ -660,10 +660,6 @@ terminate: ; terminate application
         call    free_cd_channel
         and     [cd_status], 0
 @@:
-        cmp     [flp_status], esi
-        jnz     @f
-        and     [flp_status], 0
-@@:
         pop     esi
         cmp     [bgrlockpid], esi
         jnz     @f

@@ -51,7 +51,7 @@ keymap_alt:
 if lang eq ru
   boot_initirq      cp866 'Инициализация IRQ',0
   boot_picinit      cp866 'Инициализация PIC',0
-  boot_v86machine   cp866 'Инициализация системы V86 машины',0
+  boot_v86machine   cp866 'Инициализация системной V86 машины',0
   boot_inittimer    cp866 'Инициализация системного таймера (IRQ0)',0
   boot_initapic     cp866 'Попытка инициализации APIC',0
   boot_enableirq    cp866 'Включить прерывания 2, 13',0
@@ -69,6 +69,7 @@ if lang eq ru
   boot_cpuid        cp866 'Чтение CPUIDs',0
 ;  boot_devices      cp866 'Поиск устройств',0
   boot_timer        cp866 'Установка таймера',0
+  boot_initramdisk  cp866 'Инициализация рамдиска',0
   boot_irqs         cp866 'Переопределение IRQ',0
   boot_setmouse     cp866 'Установка мыши',0
   boot_windefs      cp866 'Установка настроек окон по умолчанию',0
@@ -98,6 +99,7 @@ else
   boot_picinit      db   'Initialize PIC',0
   boot_v86machine   db   'Initialize system V86 machine',0
   boot_inittimer    db   'Initialize system timer (IRQ0)',0
+  boot_initramdisk  db   'Initialize ramdisk',0
   boot_initapic     db   'Try to initialize APIC',0
   boot_enableirq    db   'Enable interrupts 2, 13',0
   boot_disabling_ide db   'Disable interrupts in IDE controller',0
@@ -172,7 +174,13 @@ end if
 
 vmode          db  '/sys/drivers/VMODE.MDR',0
 ;vrr_m          db  'VRR_M',0
-kernel_file    db  'KERNEL  MNT'
+kernel_file_load:
+; load kernel.mnt to 0x7000:0
+        dd      0       ; subfunction
+        dq      0       ; offset in file
+        dd      0x30000 ; number of bytes to read
+        dd      OS_BASE + 0x70000 ; buffer for data
+        db      '/RD/1/KERNEL.MNT',0
 
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 
@@ -570,8 +578,7 @@ end if
 org (OS_BASE+0x0100000)
 
 RAMDISK:                        rb 2880*512
-RAMDISK_FAT:                    rb 2856*2
-FLOPPY_FAT:                     rb 2856*2
+                                rb 2856*4               ; not used
 
 _CLEAN_ZONE:
 
