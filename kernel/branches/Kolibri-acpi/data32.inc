@@ -379,8 +379,6 @@ _WinMapAddress      rd 1
 _WinMapSize         rd 1
 
 LFBAddress          rd 1
-Screen_Max_X        rd 1
-Screen_Max_Y        rd 1
 
 SCR_MODE            rw 2
 

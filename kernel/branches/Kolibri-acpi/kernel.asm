@@ -486,13 +486,11 @@ save_variables_IDE_controller:
         mov     [_display.width], eax
         mov     [display_width_standard], eax
         dec     eax
-        mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
         movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
         mov     [display_height_standard], eax
         dec     eax
-        mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
         movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE] ; screen mode
         mov     dword [SCR_MODE], eax
@@ -2191,9 +2189,6 @@ restore_default_cursor_before_killing:
 
         movzx   eax, word [MOUSE_Y]
         movzx   ebx, word [MOUSE_X]
-;        mov     ecx, [Screen_Max_X]
-;        inc     ecx
-;        mul     ecx
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [_WinMapAddress]
@@ -2500,10 +2495,10 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 ;* mouse centered - start code- Mario79
 ;mouse_centered:
 ;        push  eax
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         shr     eax, 1
         mov     [MOUSE_X], ax
-        mov     eax, [Screen_Max_Y]
+        mov     eax, [_display.height]
         shr     eax, 1
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
@@ -2545,11 +2540,11 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
 ;     cmp  ecx,4  ; set mouse pointer position
         dec     ecx
         jnz     .set_mouse_button
-        cmp     dx, word[Screen_Max_Y]
-        ja      .end
+        cmp     dx, word[_display.width]
+        jae     .end
         rol     edx, 16
-        cmp     dx, word[Screen_Max_X]
-        ja      .end
+        cmp     dx, word[_display.height]
+        jae      .end
         mov     [MOUSE_X], edx
         call    wakeup_osloop
         ret
@@ -2636,9 +2631,7 @@ sysfn_set_screen_sizes:
         mov     eax, ecx
         mov     ecx, [_display.pitch]
         mov     [_display.width], eax
-        dec     eax
         mov     [_display.height], edx
-        dec     edx
 ; eax - new Screen_Max_X
 ; edx - new Screen_Max_Y
         mov     [do_not_touch_winmap], 1
@@ -2975,22 +2968,22 @@ nosb8:
         jnz     nosb9
 ; ecx = [left]*65536 + [right]
 ; edx = [top]*65536 + [bottom]
-        mov     eax, [Screen_Max_X]
-        mov     ebx, [Screen_Max_Y]
+        mov     eax, [_display.width]
+        mov     ebx, [_display.height]
 ; check [right]
         cmp     cx, ax
-        ja      .exit
+        jae     .exit
 ; check [left]
         ror     ecx, 16
         cmp     cx, ax
-        ja      .exit
+        jae     .exit
 ; check [bottom]
         cmp     dx, bx
-        ja      .exit
+        jae     .exit
 ; check [top]
         ror     edx, 16
         cmp     dx, bx
-        ja      .exit
+        jae     .exit
 
         movzx   eax, cx  ; [left]
         movzx   ebx, dx  ; [top]
@@ -3028,8 +3021,8 @@ force_redraw_background:
         and     [draw_data+32 + RECT.left], 0
         and     [draw_data+32 + RECT.top], 0
         push    eax ebx
-        mov     eax, [Screen_Max_X]
-        mov     ebx, [Screen_Max_Y]
+        mov     eax, [_display.width]
+        mov     ebx, [_display.height]
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], ebx
         pop     ebx eax
@@ -3385,9 +3378,9 @@ sys_redrawstat:
         add     edx, draw_data - CURRENT_TASK
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         mov     [edx + RECT.right], eax
-        mov     eax, [Screen_Max_Y]
+        mov     eax, [_display.height]
         mov     [edx + RECT.bottom], eax
 
   srl1:
@@ -3517,26 +3510,6 @@ modify_pce:
         ret
 ;---------------------------------------------------------------------------------------------
 
-
-; check if pixel is allowed to be drawn
-
-;checkpixel:
-;        push    eax edx
-
-;;        mov     edx, [Screen_Max_X] ; screen x size
-;;        inc     edx
-;;        imul    edx, ebx
-;        mov     edx, [d_width_calc_area + ebx*4]
-;        add     eax, [_WinMapAddress]
-;        mov     dl, [eax+edx]; lea eax, [...]
-
-;        xor     ecx, ecx
-;        mov     eax, [CURRENT_TASK]
-;        cmp     al, dl
-;        setne   cl
-
-;        pop     edx eax
-;        ret
 
 iglobal
   cpustring db 'CPU',0
@@ -4974,9 +4947,9 @@ endg
         jnz     @f
         mov     word [msg_board_pos+2], (42*6)
         add     word [msg_board_pos], 10
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, word [_display.height]
         cmp     word [msg_board_pos], ax
-        jbe     @f
+        jb      @f
         mov     word [msg_board_pos], 10
 @@:
 ; // end if
@@ -5193,9 +5166,9 @@ sys_gs:                         ; direct screen access
 
 
 .1:                             ; resolution
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         shl     eax, 16
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, word [_display.height]
         add     eax, 0x00010001
         mov     [esp+32], eax
         ret
@@ -5281,9 +5254,9 @@ syscall_drawrect:                       ; DrawRect
 
 align 4
 syscall_getscreensize:                  ; GetScreenSize
-        mov     ax, word [Screen_Max_X]
+        mov     ax, word [_display.width]
         shl     eax, 16
-        mov     ax, word [Screen_Max_Y]
+        mov     ax, word [_display.height]
         mov     [esp + 32], eax
         ret
 
@@ -5349,10 +5322,10 @@ syscall_cdaudio:                        ; CD
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel_WinMap:                       ; GetPixel WinMap
-        cmp     ebx, [Screen_Max_X]
-        jbe     @f
-        cmp     ecx, [Screen_Max_Y]
-        jbe     @f
+        cmp     ebx, [_display.width]
+        jb      @f
+        cmp     ecx, [_display.height]
+        jb      @f
         xor     eax, eax
         jmp     .store
 ;--------------------------------------
@@ -5369,8 +5342,7 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel:                       ; GetPixel
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
+        mov     ecx, [_display.width]
         xor     edx, edx
         mov     eax, ebx
         div     ecx
@@ -5615,8 +5587,6 @@ set_screen:
         pushfd
         cli
 
-        mov     [Screen_Max_X], eax
-        mov     [Screen_Max_Y], edx
         mov     [_display.pitch], ecx
 
         mov     [screen_workarea.right], eax
@@ -5658,8 +5628,8 @@ set_screen:
         call    repos_windows
         xor     eax, eax
         xor     ebx, ebx
-        mov     ecx, [Screen_Max_X]
-        mov     edx, [Screen_Max_Y]
+        mov     ecx, [_display.width]
+        mov     edx, [_display.height]
         call    calculatescreen
         pop     edi
         pop     esi

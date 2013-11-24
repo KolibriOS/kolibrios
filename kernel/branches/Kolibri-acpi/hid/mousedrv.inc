@@ -111,9 +111,6 @@ save_draw_mouse:
         push    eax
         push    ebx
 
-;        mov     ecx, [Screen_Max_X]
-;        inc     ecx
-;        mul     ecx
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [_WinMapAddress]
@@ -494,9 +491,10 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
 ;--------------------------------------
 align 4
 @@M1:
-        cmp     ax, word [Screen_Max_X];ScreenLength
+        cmp     ax, word [_display.width]
         jl      @@M2
-        mov     ax, word [Screen_Max_X];ScreenLength-1
+        mov     ax, word [_display.width]
+        dec     ax
 ;--------------------------------------
 align 4
 @@M2:
@@ -514,9 +512,10 @@ align 4
 ;--------------------------------------
 align 4
 @@M3:
-        cmp     ax, word [Screen_Max_Y];ScreenHeigth
+        cmp     ax, word [_display.height]
         jl      @@M4
-        mov     ax, word [Screen_Max_Y];ScreenHeigth-1
+        mov     ax, word [_display.height]
+        dec     ax
 ;--------------------------------------
 align 4
 @@M4:

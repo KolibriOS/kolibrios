@@ -618,15 +618,17 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         add     edx, eax
         mov     [cur_saved_base], edx
 
-        cmp     ebx, [Screen_Max_X]
-        jbe     @F
-        mov     ebx, [Screen_Max_X]
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
+        dec     ebx
 ;--------------------------------------
 align 4
 @@:
-        cmp     edi, [Screen_Max_Y]
-        jbe     @F
-        mov     edi, [Screen_Max_Y]
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
+        dec     edi
 ;--------------------------------------
 align 4
 @@:
@@ -736,15 +738,17 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         lea     edx, [LFB_BASE+eax+ecx*4]
         mov     [cur_saved_base], edx
 
-        cmp     ebx, [Screen_Max_X]
-        jbe     @F
-        mov     ebx, [Screen_Max_X]
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
+        dec     ebx
 ;--------------------------------------
 align 4
 @@:
-        cmp     edi, [Screen_Max_Y]
-        jbe     @F
-        mov     edi, [Screen_Max_Y]
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
+        dec     edi
 ;--------------------------------------
 align 4
 @@:

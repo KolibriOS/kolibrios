@@ -394,9 +394,9 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         mov     [mouse.active_sys_window.new_box.left], eax
     @@:
         add     eax, [mouse.active_sys_window.new_box.width]
-        cmp     eax, [Screen_Max_X]
+        cmp     eax, [_display.width]
         jl      @f
-        sub     eax, [Screen_Max_X]
+        sub     eax, [_display.width]
         sub     [mouse.active_sys_window.new_box.left], eax
     @@:
         mov     eax, [mouse.active_sys_window.new_box.top]
@@ -406,9 +406,9 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         mov     [mouse.active_sys_window.new_box.top], eax
     @@:
         add     eax, [mouse.active_sys_window.new_box.height]
-        cmp     eax, [Screen_Max_Y]
+        cmp     eax, [_display.height]
         jle     .call_window_handler
-        sub     eax, [Screen_Max_Y]
+        sub     eax, [_display.height]
         sub     [mouse.active_sys_window.new_box.top], eax
         jmp     .call_window_handler
 
@@ -458,14 +458,14 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         mov     [mouse.active_sys_window.new_box.height], eax
     @@:
         add     eax, [mouse.active_sys_window.new_box.top]
-        cmp     eax, [Screen_Max_Y]
-        jle     .check_resize_e
-        sub     eax, [Screen_Max_Y]
+        cmp     eax, [_display.height]
+        jl      .check_resize_e
+        sub     eax, [_display.height]
         neg     eax
         add     [mouse.active_sys_window.new_box.height], eax
-        mov     ecx, [Screen_Max_Y]
+        mov     ecx, [_display.height]
         cmp     ecx, eax
-        jge     .check_resize_e
+        jg      .check_resize_e
         mov     [mouse.active_sys_window.new_box.height], ecx
 
   .check_resize_e:
@@ -484,14 +484,14 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         mov     [mouse.active_sys_window.new_box.width], eax
     @@:
         add     eax, [mouse.active_sys_window.new_box.left]
-        cmp     eax, [Screen_Max_X]
-        jle     .call_window_handler
-        sub     eax, [Screen_Max_X]
+        cmp     eax, [_display.width]
+        jl      .call_window_handler
+        sub     eax, [_display.height]
         neg     eax
         add     [mouse.active_sys_window.new_box.width], eax
-        mov     ecx, [Screen_Max_X]
+        mov     ecx, [_display.height]
         cmp     ecx, eax
-        jge     .call_window_handler
+        jg      .call_window_handler
         mov     [mouse.active_sys_window.new_box.width], ecx
 
   .call_window_handler:
@@ -523,9 +523,6 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
 ;< esi = process slot
 ;< edi = pointer to WDATA struct
 ;------------------------------------------------------------------------------
-;        mov     esi, [Screen_Max_X]
-;        inc     esi
-;        imul    esi, [mouse.state.pos.y]
         mov     esi, [mouse.state.pos.y]
         mov     esi, [d_width_calc_area + esi*4]
 

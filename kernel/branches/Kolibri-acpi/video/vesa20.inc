@@ -23,13 +23,6 @@ $Revision$
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
-;Screen_Max_X             equ     0xfe00
-;Screen_Max_Y            equ     0xfe04
-;BytesPerScanLine        equ     0xfe08
-;LFBAddress              equ     0xfe80
-;ScreenBPP               equ     0xfbf1
-
-
 
 ;-----------------------------------------------------------------------------
 ; getpixel
@@ -225,8 +218,7 @@ align 4
         add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 ; winmap new line increment
-        mov     eax, [Screen_Max_X]
-        inc     eax
+        mov     eax, [_display.width]
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
@@ -249,8 +241,6 @@ align 4
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [putimg.abs_cy]
-;        imul    eax, [Screen_Max_X]
-;        add     eax, [putimg.abs_cy]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [putimg.abs_cx]
@@ -695,12 +685,11 @@ __sys_putpixel:
                        ;            for example drawwindow_III and drawwindow_IV
 ; edi = 0x00000001 force
 
-;;;        mov  [novesachecksum], dword 0
         pushad
-        cmp     [Screen_Max_X], eax
-        jb      .exit
-        cmp     [Screen_Max_Y], ebx
-        jb      .exit
+        cmp     eax, [_display.width]
+        jae     .exit
+        cmp     ebx, [_display.height]
+        jae     .exit
         test    edi, 1           ; force ?
         jnz     .forced
 
@@ -889,9 +878,6 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 calculate_edi:
-;        mov     edi, ebx
-;        imul    edi, [Screen_Max_X]
-;        add     edi, ebx
         mov     edi, [d_width_calc_area + ebx*4]
         add     edi, eax
         ret
@@ -1223,9 +1209,8 @@ align 4
 .end_y:
         mov     [drbar.real_sy], ebx
 ; line_inc_map
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         sub     eax, [drbar.real_sx]
-        inc     eax
         mov     [drbar.line_inc_map], eax
 ; line_inc_scr
         mov     eax, [drbar.real_sx]
@@ -1244,8 +1229,6 @@ align 4
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [drbar.abs_cy]
-;        imul    eax, [Screen_Max_X]
-;        add     eax, [drbar.abs_cy]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [drbar.abs_cx]
@@ -1769,23 +1752,21 @@ align 4
 vesa20_drawbackground_stretch:
         pushad
 ; Helper variables
-; calculate 2^32*(BgrDataWidth-1) mod (ScreenWidth-1)
+; calculate 2^32*(BgrDataWidth) mod (ScreenWidth)
         mov     eax, [BgrDataWidth]
-        dec     eax
         xor     edx, edx
-        div     dword [Screen_Max_X]
+        div     dword [_display.width]
         push    eax     ; high
         xor     eax, eax
-        div     dword [Screen_Max_X]
+        div     dword [_display.width]
         push    eax     ; low
 ; the same for height
         mov     eax, [BgrDataHeight]
-        dec     eax
         xor     edx, edx
-        div     dword [Screen_Max_Y]
+        div     dword [_display.height]
         push    eax     ; high
         xor     eax, eax
-        div     dword [Screen_Max_Y]
+        div     dword [_display.height]
         push    eax     ; low
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
@@ -1939,8 +1920,7 @@ sdp4:
 ; advance edi, ebp to next scan line
         sub     eax, [draw_data+32+RECT.left]
         sub     ebp, eax
-        add     ebp, [Screen_Max_X]
-        add     ebp, 1
+        add     ebp, [_display.width]
         sub     edi, eax
         sub     edi, eax
         sub     edi, eax
@@ -1971,7 +1951,7 @@ align 4
         push    edi
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
-        mov     ecx, [Screen_Max_X]
+        mov     ecx, [_display.width]
         inc     ecx
         rep movsd
         jmp     bgr_resmooth1
