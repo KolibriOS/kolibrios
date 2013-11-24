@@ -1108,7 +1108,7 @@ end if
         mov     al, 1                             ; at least one CPU
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
-        
+
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         DEBUGF  1, "K : BAR0 %x \n", [IDE_BAR0_val]:4
@@ -3251,10 +3251,10 @@ sys_cpuusage:
     ; Event mask (+71)
         mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
         stosd
-        
+
     ; Keyboard mode (+75)
         mov     al, byte [ecx*8 + SLOT_BASE + APPDATA.keyboard_mode]
-        stosb    
+        stosb
 
         pop     esi
         pop     edi
@@ -5611,13 +5611,7 @@ set_screen:
 ; eax - new Screen_Max_X
 ; ecx - new BytesPerScanLine
 ; edx - new Screen_Max_Y
-        cmp     eax, [Screen_Max_X]
-        jne     .set
 
-        cmp     edx, [Screen_Max_Y]
-        jne     .set
-        ret
-.set:
         pushfd
         cli
 
