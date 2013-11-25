@@ -8,7 +8,7 @@
 ;   Heavyiron 01.12.2013 - new logic
 ;---------------------------------------------------------------------
 appname equ 'RDsave '
-version equ '1.41'
+version equ '1.42'
 debug   equ no
 
 use32        ; включить 32-битный режим ассемблера
@@ -50,14 +50,13 @@ load_libraries l_libs_start,end_l_libs
         test    eax,eax
         jz      close
 
-stdcall dll.Init,[init_lib]
+        stdcall dll.Init,[init_lib]
 
-invoke  ini_get_int,ini_file,asettings,aautoclose,0
-        mov   [autoclose],eax
-invoke  ini_get_str,ini_file,apath,apath,fname_buf,4096,path
-stdcall _lstrcpy,ini_path,fname_buf
-
-stdcall _lstrcpy,filename_area,start_temp_file_name
+        invoke  ini_get_int,ini_file,asettings,aautoclose,0
+        mov     [autoclose],eax
+        invoke  ini_get_str,ini_file,apath,apath,fname_buf,4096,path
+        stdcall _lstrcpy,ini_path,fname_buf
+        stdcall _lstrcpy,filename_area,start_temp_file_name
 
         mov   eax,PARAMS
         cmp   byte[eax], 0
@@ -72,13 +71,12 @@ stdcall _lstrcpy,filename_area,start_temp_file_name
 .no_h:
         mov   [param],1
         stdcall _lstrcpy,fname_buf,eax
-        xor   eax,eax
         mov   ah,2
         jmp   noclose
 
 ;---------------------------------------------------------------------
 no_params:
-stdcall _lstrcpy,check_dir,ini_path
+        stdcall _lstrcpy,check_dir,ini_path
         call    check_path
         test    eax,eax
         jz      path_ok
@@ -90,9 +88,8 @@ dps 'read_folder_error'
 newline
 end if
 ;---------------------------------------------------------------------
-
-stdcall _lstrcpy,fname_buf,communication_area_default_path
-
+default_path:
+        stdcall _lstrcpy,fname_buf,communication_area_default_path
         mov     [hidden],0
 
 ;OpenDialog     initialisation
@@ -102,9 +99,11 @@ stdcall _lstrcpy,fname_buf,communication_area_default_path
 ; prepare for PathShow
         push    dword PathShow_data_1
         call    [PathShow_prepare]
+
+        mcall   40,0x00000027
+
         call    draw_window
         mov     ah,3
-        mov     ecx,fname_buf
         jmp     noclose
 ;---------------------------------------------------------------------
 path_ok:
@@ -138,13 +137,11 @@ still:
 ;---------------------------------------------------------------------
 button:
         mcall   17      ; получить идентификатор нажатой кнопки
-        dec     ah
-        jz      close
         cmp     ah,1             ; кнопка с id=1("закрыть")?
         jne     noclose
 close:
-        or       eax,-1          ; функция -1: завершить программу
-        mcall
+        mcall   -1          ; функция -1: завершить программу
+        
 ;---------------------------------------------------------------------
 key:
         mcall   2
@@ -191,44 +188,38 @@ not_fdd:
         push    dword PathShow_data_1
         call    [PathShow_prepare]
         call    draw_window
-        mov     ecx,fname_buf
         mov     ah,2
         jmp     noclose
 
 doit:
         cmp     [param],0
-        jne     @f
+        jne      @f
         call    save_ini
 @@:
-        cmp   byte[ecx+1],'r'
-        je    @f
-        cmp   byte[ecx+1],'R'
-        jne   not_rd
-@@:
-        mov   edx,rdError
-        call  print_err
-        cmp     [param],1
+        cmp     byte[ecx+1],'r'
         je      @f
-        jmp     still
+        cmp     byte[ecx+1],'R'
+        jne     not_rd
 @@:
-        mov     [param],0
-        jmp     no_params
+        mov     edx,rdError
+        call    print_err
+        jmp     still
 not_rd:
+        cmp     [hidden],0
+        jne      @f
+        pusha
+        mov     ecx,[sc.work_text]
+        or      ecx,0xc0000088
+        mcall   4,<132,96>, ,label2, ,[sc.work]
+        popa
+@@:
         pop     eax
         mcall
         call    check_for_error
-        cmp     [param],1
-        je      @f
         jmp     still
-@@:
-        mov     [param],0
-        jmp     no_params
 
 ;---------------------------------------------------------------------
 check_for_error:                      ;Обработчик ошибок
-stdcall _lstrcpy,check_dir,ok
-stdcall _lstrcat,check_dir,fname_buf
-        mov     edx,check_dir
         test    eax,eax
         jz      print_ok
         cmp     ebx,6
@@ -239,17 +230,18 @@ stdcall _lstrcat,check_dir,fname_buf
         cmp     eax, 11
         ja      .unknown
         mov     edx, [errors+eax*4]
+        stdcall _lstrcpy,error_msg,error
         stdcall _lstrcat,error_msg,edx
         mov     edx, error_msg
         jmp     print_err
 .unknown:
         mov     edx, aUnknownError
+
 print_err:
-        pushad
         stdcall _lstrlen,ini_path
+        pusha
         invoke  ini_set_str,ini_file,apath,apath,ini_path,eax
-        stdcall _lstrcpy,fname_buf,ini_path
-        popad
+        popa
         cmp     [hidden],1
         je      @f
         cmp     [param],1
@@ -258,8 +250,7 @@ print_err:
         imul    eax,6
         mov     ebx,390
         sub     ebx,eax
-        sar     ebx,1
-        shl     ebx,16
+        shl     ebx,15
         add     ebx,96
         mov     ecx,[sc.work_text]
         or      ecx,0xc0880000
@@ -268,64 +259,64 @@ print_err:
 @@:
         mov     dword [is_notify + 8], edx
         mcall   70, is_notify
-        ret
+        mov     [param],0
+        mov     [hidden],0
+        stdcall _lstrcpy,fname_buf,ini_path
+        jmp     no_params
+
 print_ok:
         cmp     [hidden],1
         je       @f
         cmp     [param],1
         je       @f
+        mov     edx,ok
         stdcall _lstrlen,edx
         imul    eax,6
         mov     ebx,390
         sub     ebx,eax
-        sar     ebx,1
-        shl     ebx,16
+        shl     ebx,15
         add     ebx,96
         mov     ecx,[sc.work_text]
         or      ecx,0xc0008800
         mcall   4, , , , ,[sc.work]
-        mcall   5,100
+        mcall   5,200
         cmp     [autoclose],1
         je      close
         ret
 @@:
+        stdcall _lstrcpy,check_dir,ok
+        stdcall _lstrcat,check_dir,fname_buf
+        mov     edx,check_dir
         mov     dword [is_notify + 8], edx
         mcall   70, is_notify
-        mcall   5,100
         jmp     close
+
 ;---------------------------------------------------------------------
 draw_PathShow:
-        pushad
+        pusha
         mcall   13,<15,280>,<32,16>,0xffffff
         push    dword PathShow_data_1
         call    [PathShow_draw]
-        popad
+        popa
         ret
 ;---------------------------------------------------------------------
 save_ini:
-        pushad
+        pusha
         stdcall _lstrlen,fname_buf
         invoke  ini_set_str,ini_file,apath,apath,fname_buf,eax
         invoke  ini_set_int,ini_file,asettings,aautoclose,[autoclose]
-        popad
+        popa
         ret
 ;---------------------------------------------------------------------
 check_path:
 stdcall _lstrlen,check_dir 
-        mov     edi,check_dir
-        add     edi,eax
+        add     eax,check_dir
 @@:
-        mov     byte [edi],0 
-        dec     edi 
-        cmp     byte [edi],'/' 
+        dec     eax
+        cmp     byte [eax],'/' 
         jne     @b
+        mov     byte [eax+1],0 
 
-if debug eq yes
-dps     'read_folder_name: '
-        mov     edx,check_dir
-        call    debug_outstr
-newline
-end if
         mcall   70,read_folder
         ret
 ;---------------------------------------------------------------------
@@ -339,7 +330,7 @@ draw_window:
         mcall   0,<200,400>,<200,130>, , ,title
 
 ;buttons
-        mcall   8,<198,70>,<68,20>,2,[sc.work_button]
+        mcall   8,<198,70>,<68,20>,1,[sc.work_button]
         inc     edx
         mcall    ,<125,70>,
         inc     edx
@@ -349,7 +340,7 @@ draw_window:
         mov     ecx,[sc.work_button_text]
         or      ecx,0x80000000
         mcall   4,<134,75>, ,save
-        mcall    ,<215,75>, ,cansel
+        mcall    ,<215,75>, ,cancel
         mcall    ,<315,36>, ,select
         
         mov     ecx,[sc.work]
@@ -367,87 +358,91 @@ draw_window:
 ;---------------------------------------------------------------------
 if lang eq ru
 save            db 'Сохранить',0
-cansel          db 'Отмена',0
+cancel          db 'Отмена',0
 select          db 'Изменить',0
 label1          db ' Образ будет сохранен в: ',0
-ok              db 'RAM-диск сохранен успешно в ',0
-error1          db 'Не определена база и/или раздел жёсткого диска',0
-error2          db 'Функция не поддерживается для данной файловой системы',0
-error3          db 'Неизвестная файловая система',0
-error4          db 'Странно... Ошибка 4',0
-error5          db 'Несуществующий путь',0
-error6          db 'Файл закончился',0
-error7          db 'Указатель вне памяти приложения',0
-error8          db 'Диск заполнен',0
-error9          db 'Файловая структура разрушена',0
-error10         db 'Доступ запрещён',0
+label2          db 'Сохранение образа...',0
+ok              db 'RAM-диск сохранен успешно ',0
+error1          db 'не определена база и/или раздел жёсткого диска',0
+error2          db 'функция не поддерживается для данной файловой системы',0
+error3          db 'неизвестная файловая система',0
+error4          db 'странно... Ошибка 4',0
+error5          db 'несуществующий путь',0
+error6          db 'файл закончился',0
+error7          db 'указатель вне памяти приложения',0
+error8          db 'диск заполнен',0
+error9          db 'файловая структура разрушена',0
+error10         db 'доступ запрещён',0
 error11         db 'Ошибка устройства',0
 aUnknownError   db 'Неизвестная ошибка',0
 rdError         db 'Нельзя сохранять образ в самого себя',0
-error_msg       db 'Ошибка: ',0
+error           db 'Ошибка: ',0
 ;---------------------------------------------------------------------
 else if lang eq et
 save            db 'Salvesta',0
-cansel          db 'Cansel',0
+cancel          db 'Cancel',0
 select          db ' Valige',0
 label1          db ' RAM-drive will be saved as: ',0
+label2          db 'Saving in progress...',0
 ok              db 'RAM-ketas salvestatud edukalt ',0
-error1          db 'Hard disk base and/or partition not defined',0
-error2          db 'The file system does not support this function',0
-error3          db 'Tundmatu failis№steem',0
-error4          db 'Strange... Error 4',0
-error5          db 'Vigane teekond',0
-error6          db 'End of file',0
-error7          db 'Pointer is outside of application memory',0
-error8          db 'Ketas tфis',0
+error1          db 'hard disk base and/or partition not defined',0
+error2          db 'the file system does not support this function',0
+error3          db 'tundmatu failis№steem',0
+error4          db 'strange... Error 4',0
+error5          db 'vigane teekond',0
+error6          db 'end of file',0
+error7          db 'pointer is outside of application memory',0
+error8          db 'ketas tфis',0
 error9          db 'FAT tabel vigane',0
-error10         db 'Juurdepффs keelatud',0
+error10         db 'juurdepффs keelatud',0
 error11         db 'Seadme viga',0
 aUnknownError   db 'Tundmatu viga',0
 rdError         db "You can't save image on itself",0
-error_msg       db 'Viga: ',0
+error           db 'Viga: ',0
 ;---------------------------------------------------------------------
 else if lang eq it
 save            db '  Salva',0
-cansel          db 'Cansel',0
+cancel          db 'Cancel',0
 select          db 'Seleziona',0
 label1          db ' RAM-drive will be saved as: ',0
+label2          db 'Saving in progress...',0
 ok              db 'Il RAM-drivet e stato salvato ',0
-error1          db 'Hard disk base and/or partition not defined',0
-error2          db 'The file system does not support this function',0
-error3          db 'Filesystem sconosciuto',0
-error4          db 'Strange... Error 4',0
-error5          db 'Percorso non valido',0
-error6          db 'End of file',0
-error7          db 'Pointer is outside of application memory',0
-error8          db 'Disco pieno',0
-error9          db 'Tabella FAT corrotta',0
-error10         db 'Accesso negato',0
+error1          db 'hard disk base and/or partition not defined',0
+error2          db 'the file system does not support this function',0
+error3          db 'filesystem sconosciuto',0
+error4          db 'strange... Error 4',0
+error5          db 'percorso non valido',0
+error6          db 'end of file',0
+error7          db 'pointer is outside of application memory',0
+error8          db 'disco pieno',0
+error9          db 'tabella FAT corrotta',0
+error10         db 'accesso negato',0
 error11         db 'Errore di device',0
 aUnknownError   db 'Errore sconosciuto',0
 rdError         db "You can't save image on itself",0
-error_msg       db 'Errore: ',0
+error           db 'Errore: ',0
 ;---------------------------------------------------------------------
 else
 save            db '  Save',0
-cansel          db 'Cansel',0
+cancel          db 'Cancel',0
 select          db ' Select',0
 label1          db ' RAM-drive will be saved as: ',0
-ok              db 'RAM-drive was saved successfully in ',0
-error1          db 'Hard disk base and/or partition not defined',0
-error2          db 'The file system does not support this function',0
-error3          db 'Unknown file system',0
-error4          db 'Strange... Error 4',0
-error5          db 'Incorrect path',0
-error6          db 'End of file',0
-error7          db 'Pointer is outside of application memory',0
-error8          db 'Disk is full',0
-error9          db 'File structure is destroyed',0
-error10         db 'Access denied',0
+label2          db 'Saving in progress...',0
+ok              db 'RAM-drive was saved successfully ',0
+error1          db 'hard disk base and/or partition not defined',0
+error2          db 'the file system does not support this function',0
+error3          db 'unknown file system',0
+error4          db 'strange... Error 4',0
+error5          db 'incorrect path',0
+error6          db 'end of file',0
+error7          db 'pointer is outside of application memory',0
+error8          db 'disk is full',0
+error9          db 'file structure is destroyed',0
+error10         db 'access denied',0
 error11         db 'Device error',0
 aUnknownError   db 'Unknown error',0
 rdError         db "You can't save image on itself",0
-error_msg       db 'Error: ',0
+error           db 'Error: ',0
 end if
 ;---------------------------------------------------------------------
 errors:
@@ -656,6 +651,9 @@ check_dir:
 sc     system_colors
 
 autoclose rd 1
+
+error_msg:
+        rb 1024
 
 folder_data:
         rb 304*32+32 ; 9 Kb
