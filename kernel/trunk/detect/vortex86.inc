@@ -44,7 +44,7 @@ if ~ VORTEX86DEBUG
 end if        
 
         mov     dx, 0xcf8               ; CF8h = Vortex86 PCI Configuration Address port
-        mov     eax, 0x80000090         ; 0x80000090 = Starting PCI address to read from (32-bit register - accessed as DWORD)
+        mov     eax, OS_BASE+0x90       ; 0x80000090 = Starting PCI address to read from (32-bit register - accessed as DWORD)
         out     dx, eax                 ; Send request to PCI address port to retrieve data from this address
         mov     dx, 0xcfc               ; CFCh = Vortex86 PCI Configuration Data port
         in      eax, dx                 ; Read data (SoC type) from PCI data port
@@ -54,44 +54,44 @@ if VORTEX86DEBUG                        ; When in debug mode, pretend that we re
 end if        
         
         DEBUGF  1, "K : Vortex86 SoC register returned 0x"
-        test    eax, eax                ; We need to break out in case the result is '\0' since otherwise we will fail at NULL string
-        jz      .nullPCIoutput
-        mov     [Vortex86CPUcode], eax
-        DEBUGF  1, "%x (%s): ", eax, Vortex86CPUcode
-        cmp     ax, 4d44h               ; Check whether it's Vortex86 family (all Vortex86 SoC have ID in form of "0xNN504d44")
-        jnz     .notVortex86
-        shr     eax, 16                 ; Discard lower word in EAX which is always 4d44h in Vortex86 family
-        cmp     al, 50h                 ; The 3rd byte is always 50h in Vortex86 SoC (if this is the case, we need just the highest byte)
-        jnz     .notVortex86
-        mov     bl, ah                  ; Copy SoC type to BL since EAX (that includes AH) is used implicitly in "LODSD" command below
+        test    eax, eax                ; Check whether the port output was '\0'
+        jz      .nullPCIoutput          ; In case the result is '\0' (NULL), skip further testing and exit
+        mov     [Vortex86CPUcode], eax                      ; Save HEX CPU code to Vortex86CPUcode (so it can be used later)
+        DEBUGF  1, "%x (%s): ", eax, Vortex86CPUcode        ; Print the CPU code (as HEX and as string) to debug log
+
+        mov     ebx, 0x444d5000         ; Apply Vortex86 CPU code mask (all Vortex86 SoC have ID in form of "0xNN504d44")
+        bswap   eax                     ; Assumed it is Vortex86 SoC, the highest byte identifies the exact CPU, so move it to the lowest byte
+        mov     bl, al                  ; Copy SoC type to BL since EAX (that includes AL) is used implicitly in "LODSD" command below
+        cmp     eax, ebx                ; Now see whether the 3 higher bytes were "0x504d44" (which means it's Vortex86)
+        jnz     .notVortex86            ; Sorry, it's not Vortex86 - go say so and exit
+
         mov     esi, Vortex86SoClist    ; ESI points to the start of Vortex86SoClist (used implicitly in "LODSD" command below)
         xor     ecx, ecx                ; Zero ECX (it is used as counter)
         cld                             ; Clears the DF flag in the EFLAGS register (DF=0 --> String operations increment ESI)
 @@:
+        inc     ecx                     ; Increment our counter
         cmp     ecx, Vortex86SoCnum     ; Check if we iterated Vortex86SoCnum times already (i.e. went over the entire Vortex86SoClist)
         ja      .unknownVortex86        ; If the entire list was tested and our CPU is not in that list, it is unknown Vortex86 SoC
-        inc     ecx                     ; Increment our counter
         lodsd                           ; Load DWORD at address DS:ESI into EAX (puts 1 line from Vortex86SoClist into EAX, then increments ESI)
         cmp     bl, al                  ; Check if our CPU matches the current record in the list
         jne     @b                      ; No match --> repeat with next record
-        
+
         shr     eax, 8                              ; Match found --> drop the SoC type code from Vortex86SoClist name and replace it with \0
         mov     dword [Vortex86SoCname+8], eax      ; Concatenate it with prefix to receive complete SoC name (\0 is string termination)
         mov     [Vortex86CPUid], cl                 ; Save the CPUid (1=Vortex86SX, 2=Vortex86DX, ..., Vortex86SoCnum+1=Unknown Vortex86)
-        
-        DEBUGF  1, "%s (id=%d)\n", Vortex86SoCname, [Vortex86CPUid]:1
-        jmp     .Vortex86end            ; Say what we have found (CPU name and id) and exit
-
-.nullPCIoutput:                         ; Emulators and non-Vortex86 CPU computers will usually return \0 in this register
-        DEBUGF  1, "0 (NULL)\n"
+        DEBUGF  1, "%s (id=%d)\n", Vortex86SoCname, [Vortex86CPUid]:1               ; Say what we have found (CPU name and id)
         jmp     .Vortex86end
-        
+
+.notVortex86:                           ; In case this register is used by other CPUs for other purpose, it's interesting what it contains
+        DEBUGF  1, "not a Vortex86 CPU\n"
+        jmp     .Vortex86end
+
 .unknownVortex86:
         mov     [Vortex86CPUid], cl                 ; Save the CPUid (Vortex86SoCnum+1=Unknown Vortex86)
         DEBUGF  1, "unknown Vortex86 CPU (id=%d, last known is %d)\n", [Vortex86CPUid]:1, Vortex86SoCnum
         jmp     .Vortex86end
-        
-.notVortex86:                           ; In case this register is used by other CPUs for other purpose, it's interesting what it contains
-        DEBUGF  1, "not a Vortex86 CPU\n"
+
+.nullPCIoutput:                         ; Emulators and non-Vortex86 CPU computers will usually return \0 in this register
+        DEBUGF  1, "0 (NULL)\n"
 
 .Vortex86end:
