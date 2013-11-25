@@ -112,6 +112,22 @@ endl
         ja      .nodma
         cmp     [dma_hdd], 1
         jnz     .nodma
+;--------------------------------------
+        push    eax
+        mov     eax, [hd_address_table]
+        cmp     [hdbase], eax ; 0x1F0
+        pop     eax
+        jnz     @f
+
+        test    [DRIVE_DATA+1], byte 10100000b
+        jnz     .nodma
+
+        jmp     .dma
+@@:
+        test    [DRIVE_DATA+1], byte 1010b
+        jnz     .nodma
+.dma:
+;--------------------------------------
         call    hd_read_dma
         jmp     @f
 .nodma:
@@ -204,6 +220,22 @@ endl
         jae     .nodma
         cmp     [dma_hdd], 1
         jnz     .nodma
+;--------------------------------------
+        push    eax
+        mov     eax, [hd_address_table]
+        cmp     [hdbase], eax ; 0x1F0
+        pop     eax
+        jnz     @f
+
+        test    [DRIVE_DATA+1], byte 10100000b
+        jnz     .nodma
+
+        jmp     .dma
+@@:
+        test    [DRIVE_DATA+1], byte 1010b
+        jnz     .nodma
+.dma:
+;--------------------------------------
         call    cache_write_dma
         jmp     .common
 .nodma:
@@ -803,23 +835,37 @@ IDE_irq_14_handler:
         pushfd
         cli
         pushad
-; clear Bus Master IDE Command register
         mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
-        mov     al, 0
-        out     dx, al
+; test whether it is our interrupt?
+        add     edx, 2
+        in      al, dx
+        test    al, 100b
+        jz      @f
 ; clear Bus Master IDE Status register
 ; clear Interrupt bit
-        add     edx, 2
-        mov     al, 4 ; 100b
         out     dx, al
-
+; clear Bus Master IDE Command register
+        sub     edx, 2
+        xor     eax, eax
+        out     dx, al
+; read status register and remove the interrupt request
+        mov     edx, [hdbase]
+        add     edx, 0x7
+        in      al, dx
+        popad
+        popfd
+        mov     al, 1
+        ret
+;--------------------------------------
+align 4
+@@:
         popad
         popfd
 ;--------------------------------------
 align 4
 .exit:
-        mov     al, 1
+        mov     al, 0
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -830,24 +876,38 @@ IDE_irq_15_handler:
         pushfd
         cli
         pushad
-; clear Bus Master IDE Command register
         mov     [IDE_common_irq_param], 0
         mov     dx, [IDEContrRegsBaseAddr]
         add     dx, 8
-        mov     al, 0
-        out     dx, al
+; test whether it is our interrupt?
+        add     edx, 2
+        in      al, dx
+        test    al, 100b
+        jz      @f
 ; clear Bus Master IDE Status register
 ; clear Interrupt bit
-        add     edx, 2
-        mov     al, 4 ; 100b
         out     dx, al
-
+; clear Bus Master IDE Command register
+        sub     edx, 2
+        mov     al, 0
+        out     dx, al
+; read status register and remove the interrupt request
+        mov     edx, [hdbase]
+        add     edx, 0x7
+        in      al, dx
+        popad
+        popfd
+        mov     al, 1
+        ret
+;--------------------------------------
+align 4
+@@:
         popad
         popfd
 ;--------------------------------------
 align 4
 .exit:
-        mov     al, 1
+        mov     al, 0
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -858,32 +918,46 @@ IDE_common_irq_handler:
         pushfd
         cli
         pushad
-; clear Bus Master IDE Command register
         xor     ebx, ebx
         mov     dx, [IDEContrRegsBaseAddr]
         mov     eax, IDE_common_irq_param
         cmp     [eax], irq14_num
         mov     [eax], bl
-        xor     eax, eax
         je      @f
 
         add     dx, 8
 ;--------------------------------------
 align 4
 @@:
-        out     dx, al
+; test whether it is our interrupt?
+        add     edx, 2
+        in      al, dx
+        test    al, 100b
+        jz      @f
 ; clear Bus Master IDE Status register
 ; clear Interrupt bit
-        add     edx, 2
-        mov     al, 4 ; 100b
         out     dx, al
-
+; clear Bus Master IDE Command register
+        sub     edx, 2
+        xor     eax, eax
+        out     dx, al
+; read status register and remove the interrupt request
+        mov     edx, [hdbase]
+        add     edx, 0x7
+        in      al, dx
+        popad
+        popfd
+        mov     al, 1
+        ret
+;--------------------------------------
+align 4
+@@:
         popad
         popfd
 ;--------------------------------------
 align 4
 .exit:
-        mov     al, 1
+        mov     al, 0
         ret
 ;-----------------------------------------------------------------------------
 align 4

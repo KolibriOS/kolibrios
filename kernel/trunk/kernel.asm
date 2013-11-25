@@ -1200,12 +1200,28 @@ set_interrupts_for_IDE_controllers:
         call    boot_log
 ; Enable interrupts in IDE controller for DMA
         mov     al, 0
+        mov     ah, [DRIVE_DATA+1]
+        test    ah, 10100000b
+        jz      @f
+
+        DEBUGF  1, "K : IDE CH1 PIO, because ATAPI drive present\n"
+        jmp     .ch2_check
+@@:
         mov     dx, [IDE_BAR1_val] ;0x3F4
         add     dx, 2 ;0x3F6
         out     dx, al
+        DEBUGF  1, "K : IDE CH1 DMA enabled\n"
+.ch2_check:
+        test    ah, 1010b
+        jz      @f
+
+        DEBUGF  1, "K : IDE CH2 PIO, because ATAPI drive present\n"
+        jmp     .end_set_interrupts
+@@:
         mov     dx, [IDE_BAR3_val] ;0x374
         add     dx, 2 ;0x376
         out     dx, al
+        DEBUGF  1, "K : IDE CH2 DMA enabled\n"
 ;--------------------------------------
 .end_set_interrupts:
 ;-----------------------------------------------------------------------------

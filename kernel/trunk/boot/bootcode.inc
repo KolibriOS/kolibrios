@@ -432,14 +432,14 @@ sayerr:
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found
+        jnc     .found_1
 ; c) class 1, subclass 1, programming interface 0x85
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x85
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found
+        jnc     .found_1
 ; d) class 1, subclass 1, programming interface 0x8A
 ; This is a Parallel IDE Controller which uses IRQs 14 and 15.
         mov     ax, 0xB103
@@ -447,7 +447,7 @@ sayerr:
         mov     [es:BOOT_IDE_PI_16], cx
         xor     si, si  ; device index = 0
         int     0x1A
-        jnc     .found ; Parallel IDE Controller
+        jnc     .found_1 ; Parallel IDE Controller
 ; Controller not found!
         xor     ax, ax
         mov     [es:BOOT_IDE_PI_16], ax
