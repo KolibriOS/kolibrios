@@ -29,6 +29,7 @@
  */
 
 #include <linux/export.h>
+#include <linux/scatterlist.h>
 #include <drm/drmP.h>
 
 extern int x86_clflush_size;
@@ -37,6 +38,7 @@ static inline void clflush(volatile void *__p)
 {
     asm volatile("clflush %0" : "+m" (*(volatile char*)__p));
 }
+
 #if 0
 static void
 drm_clflush_page(struct page *page)
@@ -75,12 +77,12 @@ drm_clflush_ipi_handler(void *null)
 void
 drm_clflush_pages(struct page *pages[], unsigned long num_pages)
 {
-    uint8_t *page_virtual;
+    uint8_t *pva;
     unsigned int i, j;
 
-    page_virtual = AllocKernelSpace(4096);
+    pva = AllocKernelSpace(4096);
 
-    if(page_virtual != NULL)
+    if(pva != NULL)
     {
         dma_addr_t *src, *dst;
         u32 count;
@@ -88,44 +90,45 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
         for (i = 0; i < num_pages; i++)
         {
             mb();
-//            asm volatile("mfence");
-
-            MapPage(page_virtual,*pages++, 0x001);
+            MapPage(pva, page_to_phys(pages[i]), 0x001);
             for (j = 0; j < PAGE_SIZE; j += x86_clflush_size)
-                clflush(page_virtual + j);
-            mb();
+                clflush(pva + j);
         }
-        FreeKernelSpace(page_virtual);
+        FreeKernelSpace(pva);
     }
-
+    mb();
 }
 EXPORT_SYMBOL(drm_clflush_pages);
 
-#if 0
 void
 drm_clflush_sg(struct sg_table *st)
 {
-#if defined(CONFIG_X86)
-	if (cpu_has_clflush) {
 		struct sg_page_iter sg_iter;
+    struct page *page;
 
+    uint8_t *pva;
+    unsigned int i;
+
+    pva = AllocKernelSpace(4096);
+    if( pva != NULL)
+    {
 		mb();
 		for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
-			drm_clflush_page(sg_page_iter_page(&sg_iter));
-		mb();
+        {
+            page = sg_page_iter_page(&sg_iter);
 
-		return;
-	}
+            MapPage(pva,page_to_phys(page), 0x001);
 
-	if (on_each_cpu(drm_clflush_ipi_handler, NULL, 1) != 0)
-		printk(KERN_ERR "Timed out waiting for cache flush.\n");
-#else
-	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
-	WARN_ON_ONCE(1);
-#endif
+            for (i = 0; i < PAGE_SIZE; i += x86_clflush_size)
+                clflush(pva + i);
+        };
+        FreeKernelSpace(pva);
+    };
+    mb();
 }
 EXPORT_SYMBOL(drm_clflush_sg);
 
+#if 0
 void
 drm_clflush_virt_range(char *addr, unsigned long length)
 {

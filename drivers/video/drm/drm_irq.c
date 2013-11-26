@@ -84,6 +84,8 @@ int drm_irq_install(struct drm_device *dev)
     unsigned long sh_flags = 0;
 	char *irqname;
 
+	if (!drm_core_check_feature(dev, DRIVER_HAVE_IRQ))
+		return -EINVAL;
 
 	if (drm_dev_to_irq(dev) == 0)
 		return -EINVAL;
@@ -202,6 +204,97 @@ void drm_calc_timestamping_constants(struct drm_crtc *crtc)
 		  crtc->base.id, (int) dotclock/1000, (int) framedur_ns,
 		  (int) linedur_ns, (int) pixeldur_ns);
 }
+EXPORT_SYMBOL(drm_calc_timestamping_constants);
+
+/**
+ * drm_calc_vbltimestamp_from_scanoutpos - helper routine for kms
+ * drivers. Implements calculation of exact vblank timestamps from
+ * given drm_display_mode timings and current video scanout position
+ * of a crtc. This can be called from within get_vblank_timestamp()
+ * implementation of a kms driver to implement the actual timestamping.
+ *
+ * Should return timestamps conforming to the OML_sync_control OpenML
+ * extension specification. The timestamp corresponds to the end of
+ * the vblank interval, aka start of scanout of topmost-leftmost display
+ * pixel in the following video frame.
+ *
+ * Requires support for optional dev->driver->get_scanout_position()
+ * in kms driver, plus a bit of setup code to provide a drm_display_mode
+ * that corresponds to the true scanout timing.
+ *
+ * The current implementation only handles standard video modes. It
+ * returns as no operation if a doublescan or interlaced video mode is
+ * active. Higher level code is expected to handle this.
+ *
+ * @dev: DRM device.
+ * @crtc: Which crtc's vblank timestamp to retrieve.
+ * @max_error: Desired maximum allowable error in timestamps (nanosecs).
+ *             On return contains true maximum error of timestamp.
+ * @vblank_time: Pointer to struct timeval which should receive the timestamp.
+ * @flags: Flags to pass to driver:
+ *         0 = Default.
+ *         DRM_CALLED_FROM_VBLIRQ = If function is called from vbl irq handler.
+ * @refcrtc: drm_crtc* of crtc which defines scanout timing.
+ *
+ * Returns negative value on error, failure or if not supported in current
+ * video mode:
+ *
+ * -EINVAL   - Invalid crtc.
+ * -EAGAIN   - Temporary unavailable, e.g., called before initial modeset.
+ * -ENOTSUPP - Function not supported in current display mode.
+ * -EIO      - Failed, e.g., due to failed scanout position query.
+ *
+ * Returns or'ed positive status flags on success:
+ *
+ * DRM_VBLANKTIME_SCANOUTPOS_METHOD - Signal this method used for timestamping.
+ * DRM_VBLANKTIME_INVBL - Timestamp taken while scanout was in vblank interval.
+ *
+ */
+int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
+					  int *max_error,
+					  struct timeval *vblank_time,
+					  unsigned flags,
+					  struct drm_crtc *refcrtc)
+{
+//	ktime_t stime, etime, mono_time_offset;
+	struct timeval tv_etime;
+	struct drm_display_mode *mode;
+	int vbl_status, vtotal, vdisplay;
+	int vpos, hpos, i;
+	s64 framedur_ns, linedur_ns, pixeldur_ns, delta_ns, duration_ns;
+	bool invbl;
+
+	if (crtc < 0 || crtc >= dev->num_crtcs) {
+		DRM_ERROR("Invalid crtc %d\n", crtc);
+		return -EINVAL;
+	}
+
+	/* Scanout position query not supported? Should not happen. */
+	if (!dev->driver->get_scanout_position) {
+		DRM_ERROR("Called from driver w/o get_scanout_position()!?\n");
+		return -EIO;
+	}
+
+	mode = &refcrtc->hwmode;
+	vtotal = mode->crtc_vtotal;
+	vdisplay = mode->crtc_vdisplay;
+
+	/* Durations of frames, lines, pixels in nanoseconds. */
+	framedur_ns = refcrtc->framedur_ns;
+	linedur_ns  = refcrtc->linedur_ns;
+	pixeldur_ns = refcrtc->pixeldur_ns;
+
+	/* If mode timing undefined, just return as no-op:
+	 * Happens during initial modesetting of a crtc.
+	 */
+	if (vtotal <= 0 || vdisplay <= 0 || framedur_ns == 0) {
+		DRM_DEBUG("crtc %d: Noop due to uninitialized mode.\n", crtc);
+		return -EAGAIN;
+	}
+
+	return -EIO;
+}
+EXPORT_SYMBOL(drm_calc_vbltimestamp_from_scanoutpos);
 
 
 /**

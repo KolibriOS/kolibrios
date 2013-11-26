@@ -3,9 +3,7 @@
 
 //#include <linux/stringify.h>
 #include <linux/types.h>
-//#include <linux/tracepoint.h>
 
-//#define WARN_ON(x)
 
 #define trace_i915_gem_object_create(x)
 #define trace_i915_gem_object_destroy(x)
@@ -27,5 +25,7 @@
 #define trace_i915_gem_ring_dispatch(a, b, c)
 #define trace_i915_vma_bind(a, b)
 #define trace_i915_vma_unbind(a)
+#define trace_i915_gem_object_clflush(a)
+#define trace_i915_reg_rw(a, b, c, d, e)
 
 #endif

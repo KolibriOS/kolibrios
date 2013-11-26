@@ -1292,10 +1292,42 @@ unlock:
 	return ret;
 }
 
+/**
+ * Called when user space has done writes to this buffer
+ */
+int
+i915_gem_sw_finish_ioctl(struct drm_device *dev, void *data,
+			 struct drm_file *file)
+{
+	struct drm_i915_gem_sw_finish *args = data;
+	struct drm_i915_gem_object *obj;
+	int ret = 0;
 
+    if(args->handle == -2)
+    {
+       printf("%s handle %d\n", __FUNCTION__, args->handle);
+       return 0;
+    }
 
+	ret = i915_mutex_lock_interruptible(dev);
+	if (ret)
+		return ret;
 
+	obj = to_intel_bo(drm_gem_object_lookup(dev, file, args->handle));
+	if (&obj->base == NULL) {
+		ret = -ENOENT;
+		goto unlock;
+	}
 
+	/* Pinned buffers may be scanout, so flush the cache */
+	if (obj->pin_display)
+		i915_gem_object_flush_cpu_write_domain(obj, true);
+
+	drm_gem_object_unreference(&obj->base);
+unlock:
+	mutex_unlock(&dev->struct_mutex);
+	return ret;
+}
 
 /**
  * Maps the contents of an object, returning the address it is mapped
@@ -3115,54 +3147,9 @@ i915_gem_clflush_object(struct drm_i915_gem_object *obj,
 	 */
 	if (!force && cpu_cache_is_coherent(obj->base.dev, obj->cache_level))
 		return false;
-#if 0
-     if(obj->mapped != NULL)
-     {
-        uint8_t *page_virtual;
-        unsigned int i;
 
-        page_virtual = obj->mapped;
-        asm volatile("mfence");
-        for (i = 0; i < obj->base.size; i += x86_clflush_size)
-            clflush(page_virtual + i);
-        asm volatile("mfence");
-     }
-     else
-     {
-        uint8_t *page_virtual;
-        unsigned int i;
-        page_virtual = AllocKernelSpace(obj->base.size);
-        if(page_virtual != NULL)
-        {
-            dma_addr_t *src, *dst;
-            u32 count;
-
-#define page_tabs  0xFDC00000      /* really dirty hack */
-
-            src =  obj->pages.page;
-            dst =  &((dma_addr_t*)page_tabs)[(u32_t)page_virtual >> 12];
-            count = obj->base.size/4096;
-
-            while(count--)
-            {
-                *dst++ = (0xFFFFF000 & *src++) | 0x001 ;
-            };
-
-            asm volatile("mfence");
-            for (i = 0; i < obj->base.size; i += x86_clflush_size)
-                clflush(page_virtual + i);
-            asm volatile("mfence");
-            FreeKernelSpace(page_virtual);
-        }
-        else
-        {
-            asm volatile (
-            "mfence         \n"
-            "wbinvd         \n"                 /* this is really ugly  */
-            "mfence");
-        }
-     }
-#endif
+	trace_i915_gem_object_clflush(obj);
+	drm_clflush_sg(obj->pages);
 
 	return true;
 }

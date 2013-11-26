@@ -184,15 +184,10 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, cmdtable, log, &usermode);
 
-    if(!dbg_open(log))
-    {
-        strcpy(log, "/tmp1/1/i915.log");
-
-        if(!dbg_open(log))
+    if( *log && !dbg_open(log))
         {
             printf("Can't open %s\nExit\n", log);
             return 0;
-        };
     }
 
     cpu_detect();
@@ -622,7 +617,9 @@ static char* parse_path(char *p, char *log)
 
     while( (c = *p++) == ' ');
         p--;
-    while( (c = *log++ = *p++) && (c != ' '));
+    while((c = *p++) && (c != ' '))
+        *log++ = c;
+
     *log = 0;
 
     return p;
@@ -643,7 +640,6 @@ void parse_cmdline(char *cmdline, struct cmdtable *table, char *log, videomode_t
             {
                 p1+= table->size;
                 *table->val = my_atoi(&p1);
-//                printf("%s %d\n", table->key, *table->val);
             }
             table++;
         }
@@ -696,3 +692,5 @@ __asm__ __volatile__(
     : "dx", "di");
 return __res;
 }
+
+

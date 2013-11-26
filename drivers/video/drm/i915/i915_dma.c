@@ -1215,6 +1215,7 @@ static int i915_load_modeset_init(struct drm_device *dev)
 cleanup_gem:
 	mutex_lock(&dev->struct_mutex);
 	i915_gem_cleanup_ringbuffer(dev);
+	i915_gem_context_fini(dev);
 	mutex_unlock(&dev->struct_mutex);
 	i915_gem_cleanup_aliasing_ppgtt(dev);
 cleanup_irq:
@@ -1421,11 +1422,18 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
 	if (HAS_POWER_WELL(dev))
 		i915_init_power_well(dev);
+
+	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
     ret = i915_load_modeset_init(dev);
     if (ret < 0) {
         DRM_ERROR("failed to init modeset\n");
             goto out_gem_unload;
     }
+	} else {
+		/* Start out suspended in ums mode. */
+		dev_priv->ums.mm_suspended = 1;
+	}
+
 
 	if (INTEL_INFO(dev)->num_pipes) {
     /* Must be done after probing outputs */

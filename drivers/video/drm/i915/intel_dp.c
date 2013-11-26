@@ -3053,7 +3053,7 @@ void intel_dp_encoder_destroy(struct drm_encoder *encoder)
 	i2c_del_adapter(&intel_dp->adapter);
 	drm_encoder_cleanup(encoder);
 	if (is_edp(intel_dp)) {
-//		cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
+		cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
 		mutex_lock(&dev->mode_config.mutex);
 		ironlake_panel_vdd_off_sync(intel_dp);
 		mutex_unlock(&dev->mode_config.mutex);
@@ -3493,7 +3493,7 @@ intel_dp_init_connector(struct intel_digital_port *intel_dig_port,
 	if (!intel_edp_init_connector(intel_dp, intel_connector)) {
 		i2c_del_adapter(&intel_dp->adapter);
 	if (is_edp(intel_dp)) {
-//           cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
+			cancel_delayed_work_sync(&intel_dp->panel_vdd_work);
 			mutex_lock(&dev->mode_config.mutex);
 			ironlake_panel_vdd_off_sync(intel_dp);
 			mutex_unlock(&dev->mode_config.mutex);

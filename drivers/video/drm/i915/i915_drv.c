@@ -637,7 +637,8 @@ static int i915_drm_thaw(struct drm_device *dev)
 		mutex_lock(&dev->struct_mutex);
 		i915_gem_restore_gtt_mappings(dev);
 		mutex_unlock(&dev->struct_mutex);
-	}
+	} else if (drm_core_check_feature(dev, DRIVER_MODESET))
+		i915_check_and_clear_faults(dev);
 
 	__i915_drm_thaw(dev);
 
@@ -949,14 +950,9 @@ int i915_init(void)
 
     DRM_INFO("device %x:%x\n", device.pci_dev.vendor,
                                 device.pci_dev.device);
-/*
-    if (intel_info->gen != 3) {
 
-    } else if (init_agp() != 0) {
-        DRM_ERROR("drm/i915 can't work without intel_agp module!\n");
-        return -ENODEV;
-    }
-*/
+    driver.driver_features |= DRIVER_MODESET;
+
     err = drm_get_pci_dev(&device.pci_dev, ent, &driver);
 
     return err;

@@ -6161,7 +6161,7 @@ static void __hsw_disable_package_c8(struct drm_i915_private *dev_priv)
 	if (dev_priv->pc8.disable_count != 1)
 		return;
 
-//   cancel_delayed_work_sync(&dev_priv->pc8.enable_work);
+	cancel_delayed_work_sync(&dev_priv->pc8.enable_work);
 	if (!dev_priv->pc8.enabled)
 		return;
 
@@ -7566,7 +7566,7 @@ static void intel_crtc_destroy(struct drm_crtc *crtc)
 	spin_unlock_irqrestore(&dev->event_lock, flags);
 
 	if (work) {
-//		cancel_work_sync(&work->work);
+		cancel_work_sync(&work->work);
 		kfree(work);
 	}
 

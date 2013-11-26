@@ -197,7 +197,6 @@ do_set:
     {
         os_display->width    = fb->width;
         os_display->height   = fb->height;
-        os_display->pitch    = fb->pitches[0];
         os_display->vrefresh = drm_mode_vrefresh(mode);
 
         sysSetScreen(fb->width, fb->height, fb->pitches[0]);
@@ -208,7 +207,6 @@ do_set:
     else
         DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
                    fb->width, fb->height, crtc);
-
 
     return ret;
 }
@@ -381,12 +379,9 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     {
         struct drm_display_mode *mode;
 
-//        connector->funcs->fill_modes(connector, dev->mode_config.max_width,
-//                                     dev->mode_config.max_height);
-
         list_for_each_entry(mode, &connector->modes, head)
         {
-            printf("check mode w:%d h:%d %dHz\n",
+            dbgprintf("check mode w:%d h:%d %dHz\n",
                     drm_mode_width(mode), drm_mode_height(mode),
                     drm_mode_vrefresh(mode));
 

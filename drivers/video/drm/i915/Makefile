@@ -81,6 +81,7 @@ NAME_SRC=		main.c					\
 			../hdmi.c				\
 			Gtt/intel-agp.c				\
 			Gtt/intel-gtt.c				\
+			../drm_cache.c				\
 			../drm_global.c				\
 			../drm_drv.c				\
 			../drm_vma_manager.c			\

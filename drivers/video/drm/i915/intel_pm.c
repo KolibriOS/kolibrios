@@ -363,9 +363,9 @@ static void intel_cancel_fbc_work(struct drm_i915_private *dev_priv)
 	 * dev_priv->fbc.fbc_work, so we can perform the cancellation
 	 * entirely asynchronously.
 	 */
-//	if (cancel_delayed_work(&dev_priv->fbc_work->work))
+	if (cancel_delayed_work(&dev_priv->fbc.fbc_work->work))
 		/* tasklet was killed before being run, clean up */
-//		kfree(dev_priv->fbc_work);
+		kfree(dev_priv->fbc.fbc_work);
 
 	/* Mark the work as no longer wanted so that if it does
 	 * wake-up (because the work was already running and waiting
@@ -4608,8 +4608,11 @@ void intel_disable_gt_powersave(struct drm_device *dev)
 	if (IS_IRONLAKE_M(dev)) {
 		ironlake_disable_drps(dev);
 		ironlake_disable_rc6(dev);
-	} else if (INTEL_INFO(dev)->gen >= 6 && !IS_VALLEYVIEW(dev)) {
-//		cancel_delayed_work_sync(&dev_priv->rps.delayed_resume_work);
+	} else if (INTEL_INFO(dev)->gen >= 6) {
+		cancel_delayed_work_sync(&dev_priv->rps.delayed_resume_work);
+		cancel_work_sync(&dev_priv->rps.work);
+		if (IS_VALLEYVIEW(dev))
+			cancel_delayed_work_sync(&dev_priv->rps.vlv_work);
 		mutex_lock(&dev_priv->rps.hw_lock);
 		if (IS_VALLEYVIEW(dev))
 			valleyview_disable_rps(dev);
