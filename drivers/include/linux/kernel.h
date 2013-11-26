@@ -283,11 +283,19 @@ struct timer_list {
                 (_timer)->handle = 0;                                   \
         } while (0)
 
+int del_timer(struct timer_list *timer);
+
+# define del_timer_sync(t)              del_timer(t)
 
 struct timespec {
     long tv_sec;                 /* seconds */
     long tv_nsec;                /* nanoseconds */
 };
+
+
+#define mb()    asm volatile("mfence" : : : "memory")
+#define rmb()   asm volatile("lfence" : : : "memory")
+#define wmb()   asm volatile("sfence" : : : "memory")
 
 
 #define build_mmio_read(name, size, type, reg, barrier)     \

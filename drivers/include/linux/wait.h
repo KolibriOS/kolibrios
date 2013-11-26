@@ -1,11 +1,13 @@
 #ifndef _LINUX_WAIT_H
 #define _LINUX_WAIT_H
 
+
 #include <linux/list.h>
 #include <syscall.h>
 
 typedef struct __wait_queue wait_queue_t;
 typedef int (*wait_queue_func_t)(wait_queue_t *wait, unsigned mode, int flags, void *key);
+int default_wake_function(wait_queue_t *wait, unsigned mode, int flags, void *key);
 
 typedef struct __wait_queue_head wait_queue_head_t;
 
@@ -21,6 +23,10 @@ struct __wait_queue_head
     spinlock_t lock;
     struct list_head task_list;
 };
+static inline int waitqueue_active(wait_queue_head_t *q)
+{
+	return !list_empty(&q->task_list);
+}
 
 static inline void __add_wait_queue(wait_queue_head_t *head, wait_queue_t *new)
 {

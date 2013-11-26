@@ -104,6 +104,51 @@ bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay)
     return queue_delayed_work(system_wq, dwork, delay);
 }
 
+bool mod_delayed_work(struct workqueue_struct *wq,
+                                    struct delayed_work *dwork,
+                                    unsigned long delay)
+{
+    return queue_delayed_work(wq, dwork, delay);
+}
+
+int del_timer(struct timer_list *timer)
+{
+    int ret = 0;
+
+    if(timer->handle)
+    {
+        CancelTimerHS(timer->handle);
+        timer->handle = 0;
+        ret = 1;
+    };
+    return ret;
+};
+
+bool cancel_work_sync(struct work_struct *work)
+{
+    unsigned long flags;
+    int ret = 0;
+
+    spin_lock_irqsave(&system_wq->lock, flags);
+    if(!list_empty(&work->entry))
+    {
+        list_del(&work->entry);
+        ret = 1;
+    };
+    spin_unlock_irqrestore(&system_wq->lock, flags);
+    return ret;
+}
+
+bool cancel_delayed_work(struct delayed_work *dwork)
+{
+    return cancel_work_sync(&dwork->work);
+}
+
+bool cancel_delayed_work_sync(struct delayed_work *dwork)
+{
+    return cancel_work_sync(&dwork->work);
+}
+
 int mod_timer(struct timer_list *timer, unsigned long expires)
 {
     int ret = 0;

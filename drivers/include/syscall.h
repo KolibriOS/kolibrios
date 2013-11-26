@@ -522,8 +522,6 @@ static inline void __SysMsgBoardStr(char *text)
     ::"S" (text));
 };
 
-#define rmb()   asm volatile("lfence":::"memory")
-
 static inline void *vzalloc(unsigned long size)
 {
     void *mem;

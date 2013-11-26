@@ -321,10 +321,6 @@ static inline void *kzalloc(size_t size, uint32_t flags)
 struct drm_file;
 
 
-#define DRM_MEMORYBARRIER() __asm__ __volatile__("lock; addl $0,0(%esp)")
-#define mb() __asm__ __volatile__("lock; addl $0,0(%esp)")
-
-
 #define PAGE_SHIFT      12
 #define PAGE_SIZE       (1UL << PAGE_SHIFT)
 #define PAGE_MASK       (~(PAGE_SIZE-1))

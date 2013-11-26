@@ -740,6 +740,9 @@ struct drm_bus {
 	void (*agp_destroy)(struct drm_device *dev);
 
 };
+#endif
+
+#define DRM_IRQ_ARGS            int irq, void *arg
 
 /**
  * DRM driver structure. This structure represent the common code for
@@ -748,17 +751,7 @@ struct drm_bus {
  */
 struct drm_driver {
 	int (*load) (struct drm_device *, unsigned long flags);
-	int (*firstopen) (struct drm_device *);
 	int (*open) (struct drm_device *, struct drm_file *);
-	void (*preclose) (struct drm_device *, struct drm_file *file_priv);
-	void (*postclose) (struct drm_device *, struct drm_file *);
-	void (*lastclose) (struct drm_device *);
-	int (*unload) (struct drm_device *);
-	int (*suspend) (struct drm_device *, pm_message_t state);
-	int (*resume) (struct drm_device *);
-	int (*dma_ioctl) (struct drm_device *dev, void *data, struct drm_file *file_priv);
-	int (*dma_quiescent) (struct drm_device *);
-	int (*context_dtor) (struct drm_device *dev, int context);
 
 	/**
 	 * get_vblank_counter - get raw hardware vblank counter
@@ -804,20 +797,6 @@ struct drm_driver {
 	 * interrupts will have to stay on to keep the count accurate.
 	 */
 	void (*disable_vblank) (struct drm_device *dev, int crtc);
-
-	/**
-	 * Called by \c drm_device_is_agp.  Typically used to determine if a
-	 * card is really attached to AGP or not.
-	 *
-	 * \param dev  DRM device handle
-	 *
-	 * \returns
-	 * One of three values is returned depending on whether or not the
-	 * card is absolutely \b not AGP (return of 0), absolutely \b is AGP
-	 * (return of 1), or may or may not be AGP (return of 2).
-	 */
-	int (*device_is_agp) (struct drm_device *dev);
-
 	/**
 	 * Called by vblank timestamping code.
 	 *
@@ -887,22 +866,6 @@ struct drm_driver {
 	int (*irq_postinstall) (struct drm_device *dev);
 	void (*irq_uninstall) (struct drm_device *dev);
 
-	/* Master routines */
-	int (*master_create)(struct drm_device *dev, struct drm_master *master);
-	void (*master_destroy)(struct drm_device *dev, struct drm_master *master);
-	/**
-	 * master_set is called whenever the minor master is set.
-	 * master_drop is called whenever the minor master is dropped.
-	 */
-
-	int (*master_set)(struct drm_device *dev, struct drm_file *file_priv,
-			  bool from_open);
-	void (*master_drop)(struct drm_device *dev, struct drm_file *file_priv,
-			    bool from_release);
-
-	int (*debugfs_init)(struct drm_minor *minor);
-	void (*debugfs_cleanup)(struct drm_minor *minor);
-
 	/**
 	 * Driver-specific constructor for drm_gem_objects, to set up
 	 * obj->driver_private.
@@ -913,80 +876,8 @@ struct drm_driver {
 	void (*gem_free_object) (struct drm_gem_object *obj);
 	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
-
-	/* prime: */
-	/* export handle -> fd (see drm_gem_prime_handle_to_fd() helper) */
-	int (*prime_handle_to_fd)(struct drm_device *dev, struct drm_file *file_priv,
-				uint32_t handle, uint32_t flags, int *prime_fd);
-	/* import fd -> handle (see drm_gem_prime_fd_to_handle() helper) */
-	int (*prime_fd_to_handle)(struct drm_device *dev, struct drm_file *file_priv,
-				int prime_fd, uint32_t *handle);
-	/* export GEM -> dmabuf */
-	struct dma_buf * (*gem_prime_export)(struct drm_device *dev,
-				struct drm_gem_object *obj, int flags);
-	/* import dmabuf -> GEM */
-	struct drm_gem_object * (*gem_prime_import)(struct drm_device *dev,
-				struct dma_buf *dma_buf);
-
-	/* vga arb irq handler */
-	void (*vgaarb_irq)(struct drm_device *dev, bool state);
-
-	/* dumb alloc support */
-	int (*dumb_create)(struct drm_file *file_priv,
-			   struct drm_device *dev,
-			   struct drm_mode_create_dumb *args);
-	int (*dumb_map_offset)(struct drm_file *file_priv,
-			       struct drm_device *dev, uint32_t handle,
-			       uint64_t *offset);
-	int (*dumb_destroy)(struct drm_file *file_priv,
-			    struct drm_device *dev,
-			    uint32_t handle);
-
-	/* Driver private ops for this object */
-	const struct vm_operations_struct *gem_vm_ops;
-
-	int major;
-	int minor;
-	int patchlevel;
-	char *name;
-	char *desc;
-	char *date;
-
-	u32 driver_features;
-	int dev_priv_size;
-	const struct drm_ioctl_desc *ioctls;
-	int num_ioctls;
-	const struct file_operations *fops;
-	union {
-		struct pci_driver *pci;
-		struct platform_device *platform_device;
-		struct usb_driver *usb;
-	} kdriver;
-	struct drm_bus *bus;
-
-	/* List of devices hanging off this driver */
-	struct list_head device_list;
-};
-
-#endif
-
-#define DRM_IRQ_ARGS            int irq, void *arg
-
-struct drm_driver {
-	int (*load) (struct drm_device *, unsigned long flags);
-	int (*open) (struct drm_device *, struct drm_file *);
-
-    irqreturn_t (*irq_handler) (DRM_IRQ_ARGS);
-    void (*irq_preinstall) (struct drm_device *dev);
-    int (*irq_postinstall) (struct drm_device *dev);
-
-	int (*gem_init_object) (struct drm_gem_object *obj);
-	void (*gem_free_object) (struct drm_gem_object *obj);
-	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
-	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 	u32 driver_features;
 };
-
 
 #define DRM_MINOR_UNASSIGNED 0
 #define DRM_MINOR_LEGACY 1

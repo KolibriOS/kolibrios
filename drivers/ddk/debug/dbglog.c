@@ -135,15 +135,17 @@ int dbgprintf(const char* format, ...)
 
     if( len )
     {
-        SysMsgBoardStr(txtbuf);
-
+        if( dbgfile.path)
+        {
 /*  do not write into log file if interrupts disabled */
 
-        if ( (get_eflags() & (1 << 9)) && dbgfile.path)
-        {
-            write_file(dbgfile.path,txtbuf,dbgfile.offset,len,&writes);
-            dbgfile.offset+=writes;
-        };
+            if ( get_eflags() & (1 << 9) )
+            {
+                write_file(dbgfile.path,txtbuf,dbgfile.offset,len,&writes);
+                dbgfile.offset+=writes;
+            };
+        }
+        else SysMsgBoardStr(txtbuf);
     };
     return len;
 }
