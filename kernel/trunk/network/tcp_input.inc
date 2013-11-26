@@ -882,7 +882,9 @@ TCP_process_input:
 
         mov     eax, [ebx + TCP_SOCKET.SND_WND]
         cmp     eax, [ebx + TCP_SOCKET.SND_CWND]
-        cmova   eax, [ebx + TCP_SOCKET.SND_CWND]
+        jbe     @f
+        mov     eax, [ebx + TCP_SOCKET.SND_CWND]
+  @@:
         shr     eax, 1
         push    edx
         xor     edx, edx
@@ -1067,7 +1069,9 @@ TCP_process_input:
         pop     ecx
 
         cmp     esi, eax
-        cmova   esi, eax
+        jbe     @f
+        mov     esi, eax
+  @@:
         mov     [ebx + TCP_SOCKET.SND_CWND], esi
 
 ;------------------------------------------
