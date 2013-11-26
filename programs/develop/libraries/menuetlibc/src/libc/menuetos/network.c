@@ -1,4 +1,5 @@
 #include <menuet/os.h>
+#include <menuet/net.h>
 
 
 #define NULL 0
@@ -12,7 +13,6 @@ extern int mem_ReAlloc();
 int kol_exit(){
   __menuet__sys_exit();
 }
-
 
 int (* __stdcall network_init)();
 void (* __stdcall freeaddrinfo)(struct addrinfo* ai);

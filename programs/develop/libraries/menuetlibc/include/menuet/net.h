@@ -43,7 +43,7 @@ extern "C" {
 
 #define PF_UNSPEC AF_UNSPEC
 #define PF_LOCAL  AF_LOCAL
-#define PF_INET4  AF_INET4
+#define PF_INET  AF_INET
 #define PF_INET6  AF_INET6
   
 // Flags for addrinfo
