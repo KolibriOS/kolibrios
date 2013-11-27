@@ -592,7 +592,6 @@ proc ehci_kickoff_bios
 ; corrupted.
 ; Use a value from MMIO as a starting point.
         mov     edx, [eax+EhciCapParamsReg]
-        DEBUGF 1,'K : edx=%x\n',edx
         movzx   edi, byte [eax+EhciCapLengthReg]
         add     edi, eax
         push    0
@@ -1394,12 +1393,18 @@ proc ehci_process_deferred
 ; There was a connect or disconnect event at this port.
 ; 3g. Disconnect the old device on this port, if any.
 ; If the port was resetting, indicate fail; later stages will process it.
+; Ignore connect event immediately after resetting.
         cmp     [esi+usb_controller.ResettingHub], 0
-        jnz     @f
+        jnz     .csc.noreset
         cmp     cl, [esi+usb_controller.ResettingPort]
+        jnz     .csc.noreset
+        cmp     [esi+usb_controller.ResettingStatus], 2
         jnz     @f
-        mov     [esi+usb_controller.ResettingStatus], -1
+        test    al, 1
+        jnz     .nextport
 @@:
+        mov     [esi+usb_controller.ResettingStatus], -1
+.csc.noreset:
         bts     [esi+usb_controller.NewDisconnected], ecx
 ; 3h. Change connected status. For the connection event, also store
 ; the connection time; any further processing is permitted only after
