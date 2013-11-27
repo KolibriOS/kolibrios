@@ -957,10 +957,16 @@ hw_start:
         GetRealAddr
         set_io  REG_TxDescStartAddr
         out     dx, eax
+        set_io  REG_TxDescStartAddr + 4
+        xor     eax, eax
+        out     dx, eax
 
         lea     eax, [device.rx_ring]
         GetRealAddr
         set_io  REG_RxDescStartAddr
+        out     dx, eax
+        xor     eax, eax
+        set_io  REG_RxDescStartAddr + 4
         out     dx, eax
 
         set_io  REG_Cfg9346
