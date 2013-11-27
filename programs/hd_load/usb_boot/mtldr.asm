@@ -5,10 +5,10 @@
 	format	binary
 	use16
 
-out_string = 0x7DA2
-read_cluster = 0x7D0A
-relative_read = 0x7D18
-next_cluster = 0x7D5C
+out_string = 0x7DAB
+read_cluster = 0x7D15
+relative_read = 0x7D22
+next_cluster = 0x7D65
 
 	org	0x8000
 start:

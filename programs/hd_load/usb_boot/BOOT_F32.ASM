@@ -10,33 +10,39 @@
 	times 57h db 0
 ;	file 'bt2.dat':3,57h
 @@:
+	cmp	byte [si], 80h
+	jnz	@f
+	mov	eax, [si+8]
+	mov	[cs:7C1Ch], eax
+@@:
 	xor	eax, eax
 	mov	ds, ax
 	mov	ss, ax
 	mov	sp, 7C00h
+	mov	bp, sp
 	mov	[boot_drive], dl
 	cld
 	sti
 	push	800h
 	pop	es
-	movzx	ebx, word [7C0Eh]	; reserved_sect
+	movzx	ebx, word [bp+0Eh]	; reserved_sect
 	mov	[fat_start], ebx
-	mov	al, byte [7C10h]	; num_fats
-	mul	dword [7C24h]		; sect_fat
+	mov	al, byte [bp+10h]	; num_fats
+	mul	dword [bp+24h]		; sect_fat
 	add	eax, ebx
 ; cluster 2 begins from sector eax
-	movzx	ebx, byte [7C0Dh]	; sects_per_clust
+	movzx	ebx, byte [bp+0Dh]	; sects_per_clust
 	add	bx, bx
 	sub	eax, ebx
 	mov	[data_start], eax
-	mov	eax, [7C2Ch]		; root_cluster
+	mov	eax, [bp+2Ch]		; root_cluster
 	and	eax, 0FFFFFFFh
 fat32_parse_dir:
 	xor	bx, bx
 	mov	di, bx
 	push	eax
 	call	read_cluster
-	movzx	cx, byte [7C0Dh]	; sects_per_clust
+	movzx	cx, byte [bp+0Dh]	; sects_per_clust
 	shl	cx, 4			; *0x200/0x20
 scan_cluster:
 	cmp	byte [es:di], 0
@@ -65,7 +71,7 @@ file_found:
 	push	eax
 	call	read_cluster
 	mov	ax, es
-	movzx	cx, byte [7C0Dh]
+	movzx	cx, byte [bp+0Dh]
 	shl	cx, 5
 	add	ax, cx
 	mov	es, ax
@@ -82,7 +88,7 @@ sayerr:
 
 read_cluster:
 ; in: eax = cluster, bx->buffer
-	movzx	ecx, byte [7C0Dh]
+	movzx	ecx, byte [bp+0Dh]
 	mul	ecx
 	add	eax, [data_start]
 
@@ -91,7 +97,7 @@ read_cluster:
 ;     cx = number of sectors
 ;     es:bx -> buffer
 read:
-	add	eax, [7C1Ch]	; hidden sectors
+	add	eax, [bp+1Ch]	; hidden sectors
 	push	es
 read_loop:
 	pushad
