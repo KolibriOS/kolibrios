@@ -222,7 +222,7 @@ end virtual
 ; 1. Check that the maximal nesting is not exceeded:
 ; 5 non-root hubs is the maximum according to the spec.
         mov     ebx, [.pipe]
-        movi    ecx, 5
+        push    5
         mov     eax, ebx
 .count_parents:
         mov     eax, [eax+usb_pipe.DeviceData]
@@ -230,11 +230,13 @@ end virtual
         test    eax, eax
         jz      .depth_ok
         mov     eax, [eax+usb_hub.ConfigPipe]
-        dec     ecx
+        dec     dword [esp]
         jnz     .count_parents
+        pop     eax
         dbgstr 'Hub chain is too long'
         jmp     .return0
 .depth_ok:
+        pop     eax
 ; Hubs use one IN interrupt endpoint for polling the device
 ; 2. Locate the descriptor of the interrupt endpoint.
 ; Loop over all descriptors owned by this interface.
