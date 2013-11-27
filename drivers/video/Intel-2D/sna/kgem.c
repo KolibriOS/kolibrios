@@ -2655,6 +2655,16 @@ void _kgem_submit(struct kgem *kgem)
 			execbuf.batch_len = batch_end*sizeof(uint32_t);
 			execbuf.flags = kgem->ring | kgem->batch_flags;
 
+   		    if (DEBUG_DUMP)
+            {
+                int fd = open("/tmp1/1/batchbuffer.bin", O_CREAT|O_WRONLY|O_BINARY);
+				if (fd != -1) {
+                    write(fd, kgem->batch, size);
+					close(fd);
+				}
+                else printf("SNA: failed to write batchbuffer\n");
+                asm volatile("int3");
+			}
 
 			ret = drmIoctl(kgem->fd,
 				       DRM_IOCTL_I915_GEM_EXECBUFFER2,
@@ -2676,8 +2686,8 @@ void _kgem_submit(struct kgem *kgem)
 				ret = drmIoctl(kgem->fd, DRM_IOCTL_I915_GEM_SET_DOMAIN, &set_domain);
 			}
 			if (ret == -1) {
-//				DBG(("%s: GPU hang detected [%d]\n",
-//				     __FUNCTION__, errno));
+				DBG(("%s: GPU hang detected [%d]\n",
+				     __FUNCTION__, errno));
 				kgem_throttle(kgem);
 				kgem->wedged = true;
 

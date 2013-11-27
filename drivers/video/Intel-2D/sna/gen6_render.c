@@ -3496,7 +3496,7 @@ gen6_blit_tex(struct sna *sna,
     tmp->dst.bo     = dst_bo;
     tmp->dst.width  = dst->drawable.width;
     tmp->dst.height = dst->drawable.height;
-    tmp->dst.format = PICT_x8r8g8b8;
+    tmp->dst.format = PICT_a8r8g8b8;
 
 
 	tmp->src.repeat = SAMPLER_EXTEND_NONE;
