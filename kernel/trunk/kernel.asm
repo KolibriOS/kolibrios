@@ -796,6 +796,13 @@ no_mode_0x12:
         add     dx, 2 ;0x376
         out     dx, al
 @@:
+; read status register and remove the interrupt request
+        mov     dx, [IDE_BAR0_val] ;0x1F0
+        add     dx, 0x7 ;0x1F7
+        in      al, dx
+        mov     dx, [IDE_BAR2_val] ;0x170
+        add     dx, 0x7 ;0x177
+        in      al, dx
 ;-----------------------------------------------------------------------------
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;        mov     esi, boot_detectdisks
