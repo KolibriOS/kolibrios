@@ -796,13 +796,6 @@ no_mode_0x12:
         add     dx, 2 ;0x376
         out     dx, al
 @@:
-; read status register and remove the interrupt request
-        mov     dx, [IDE_BAR0_val] ;0x1F0
-        add     dx, 0x7 ;0x1F7
-        in      al, dx
-        mov     dx, [IDE_BAR2_val] ;0x170
-        add     dx, 0x7 ;0x177
-        in      al, dx
 ;-----------------------------------------------------------------------------
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;        mov     esi, boot_detectdisks
@@ -888,7 +881,34 @@ end if
 
         mov     [pci_access_enabled], 1
         call    pci_enum
-
+;-----------------------------------------------------------------------------
+        mov     dx, [IDEContrRegsBaseAddr]
+; test whether it is our interrupt?
+        add     dx, 2
+        in      al, dx
+        test    al, 100b
+        jz      @f
+; clear Bus Master IDE Status register
+; clear Interrupt bit
+        out     dx, al
+@@:
+        add     dx, 8
+; test whether it is our interrupt?
+        in      al, dx
+        test    al, 100b
+        jz      @f
+; clear Bus Master IDE Status register
+; clear Interrupt bit
+        out     dx, al
+@@:
+; read status register and remove the interrupt request
+        mov     dx, [IDE_BAR0_val] ;0x1F0
+        add     dx, 0x7 ;0x1F7
+        in      al, dx
+        mov     dx, [IDE_BAR2_val] ;0x170
+        add     dx, 0x7 ;0x177
+        in      al, dx
+;-----------------------------------------------------------------------------
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         stdcall load_driver, szVidintel
