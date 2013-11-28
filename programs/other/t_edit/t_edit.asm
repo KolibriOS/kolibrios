@@ -1,7 +1,4 @@
-;Огромная благодарность Maxxxx32, Diamond, Heavyiron
-;и другим программистам, а также
-;Теплову Алексею (<Lrz> www.lrz.land.ru)
-
+;Огромная благодарность всем, кто помогал: кодом/советом/дизайном ...
 
 use32
   org 0x0
@@ -18,7 +15,7 @@ MAX_COLOR_WORD_LEN equ 40
 maxChars equ 100002 ;(...+2)
 BUF_SIZE equ 4096 ;buffer for copy|paste
 maxSyntaxFileSize equ 410000
-TOOLBAR_ICONS_SIZE equ 1200*18
+TOOLBAR_ICONS_SIZE equ 1200*20
 
 include '../../proc32.inc'
 ;include '../../config.inc'
@@ -88,41 +85,34 @@ icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
 align 4
 start:
-  mcall 48,3,sc,sizeof.system_colors
+	mcall 48,3,sc,sizeof.system_colors
 
-  mcall 68,11
-  or eax,eax
-  jz button.exit
+	mcall 68,11
+	or eax,eax
+	jz button.exit
 
-  mcall 66,1,1 ;scan code
-  mcall 40,0xC0000027
+	mcall 66,1,1 ;scan code
+	mcall 40,0xC0000027
 
-  mov esi,file_name
-  call strlen
-  mov ecx,eax
-  mov edi,openfile_path
-  cld
-  rep movsb ;копируем имя файла в буфер edit1
+	mov esi,file_name
+	call strlen
+	mov ecx,eax
+	mov edi,openfile_path
+	cld
+	rep movsb ;копируем имя файла в буфер openfile_path
 
 load_libraries l_libs_start,load_lib_end
 
 ;проверка на сколько удачно загузились библиотеки
-	mov	ebp,lib0
+mov	ebp,lib0
+.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
 	mcall -1 ;exit not correct
 @@:
-	mov	ebp,lib1 ;
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall -1 ;exit not correct
-@@:
-
-	cmp dword[version_text_edit],3
-	jge @f
-		stdcall [mb_create],msgbox_10,thread
-		mcall -1
-	@@:
+	add ebp,ll_struc_size
+	cmp ebp,load_lib_end
+	jl .test_lib_open
 
 ;---------------------------------------------------------------------
 	stdcall [ted_init], tedit0
@@ -130,6 +120,10 @@ load_libraries l_libs_start,load_lib_end
 
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
+	mov eax,[sc.work_button_text]
+	mov [PathShow_data_1.font_color],eax
+	mov eax,[sc.work_button]
+	mov [PathShow_data_1.background_color],eax
 
 ; init toolbar file
 	load_image_file 'te_icon.png', bmp_icon,TOOLBAR_ICONS_SIZE*2 ;умножение на 2 для серых кнопок
@@ -223,7 +217,6 @@ mov ecx,ebx
 	je @f ;if file names exist
 		mov esi,openfile_path
 		call strlen ;eax=strlen
-		mov [edit1.size],eax
 		call but_no_msg_OpenFile
 	@@:
 
@@ -276,23 +269,18 @@ draw_window:
 	mov edx,txtFile
 	int 0x40
 
-  stdcall [edit_box_draw], dword edit1
-  stdcall [menu_bar_draw], dword menu_data_1
+	stdcall [PathShow_draw], dword PathShow_data_1
+	stdcall [menu_bar_draw], dword menu_data_1
 
-  call draw_but_toolbar
+	call draw_but_toolbar
 
-  stdcall [ted_draw], tedit0
+	stdcall [ted_draw], tedit0
 
-  mcall 12,2
-  ret
+	mcall 12,2
+	ret
 
 align 4
 mouse:
-	stdcall [edit_box_mouse], dword edit1
-
-	test word [edit1.flags],10b ;ed_focus ;если не в фокусе, выходим
-	jne still
-
 	stdcall [ted_mouse], tedit0
 
 	cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
@@ -313,7 +301,7 @@ mouse:
 	je button.exit	
 	cmp dword[menu_data_1.cursor_out],3
 	jne @f
-		stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]
+		call ted_but_save_file
 	@@:
 	cmp dword[menu_data_1.cursor_out],2
 	jne @f
@@ -369,26 +357,6 @@ key:
   mcall 2 ;получаем код нажатой клавиши
   stdcall [tl_key], tree1
 
-  test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
-  je @f
-    cmp ah,0x80 ;if key up
-    ja still
-    cmp ah,42 ;[Shift] (left)
-    je still
-    cmp ah,54 ;[Shift] (right)
-    je still
-    cmp ah,56 ;[Alt]
-    je still
-    cmp ah,29 ;[Ctrl]
-    je still
-    cmp ah,69 ;[Pause Break]
-    je still
-
-    stdcall KeyConvertToASCII, dword conv_tabl
-    stdcall [edit_box_key], dword edit1
-    jmp still
-  @@:
-
   test word [edit2.flags],10b;ed_focus ; если не в фокусе, выходим
   je @f
     cmp ah,0x80 ;if key up
@@ -431,7 +399,7 @@ button:
   @@:
   cmp ah,5
   jne @f
-    stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]
+    call ted_but_save_file
   @@:
   cmp ah,6
   jne @f
@@ -493,6 +461,14 @@ button:
   jne @f
     stdcall but_synt_show, tedit0
   @@:
+  cmp ah,21
+  jne @f
+    stdcall [ted_but_convert_by_table],tedit0,tbl_1251_866
+  @@:
+  cmp ah,22
+  jne @f
+    stdcall [ted_but_convert_by_table],tedit0,tbl_866_1251
+  @@:
 
   cmp ah,200
   jne @f
@@ -522,8 +498,20 @@ button:
 	stdcall dword[tl_data_clear], tree1
 	mcall -1 ;выход из программы
 
+PathShow_data_1:
+.type			dd 0	;+0
+.start_y		dw 9	;+4
+.start_x		dw 222	;+6
+.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.area_size_x		dw 200	;+10
+.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 1	;+16
+.font_color		dd 0x0	;+20
+.background_color	dd 0xffffff	;+24
+.text_pointer		dd openfile_path	;+28
+.work_area_pointer	dd text_work_area	;+32
+.temp_text_length	dd 0	;+36
 
-edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 4090, openfile_path, mouse_dd, 0
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 unpac_mem dd 0
@@ -587,17 +575,19 @@ IncludeUGlobals
     thread_coords:
 	rb 1024
 stacktop:
-	sys_path:
+	sys_path: ;путь откуда запустился исполняемый файл
 		rb 4096
-	file_name:
+	file_name: ;параметры запуска
 		rb 4096
-	file_name_rez:
+	syntax_path: ;имя подключаемого файла синтаксиса
 		rb 4096
 	plugin_path:
 		rb 4096
-	openfile_path:
+	openfile_path: ;полный путь к файлу с которым идет работа
 		rb 4096
-	filename_area:
+	text_work_area: ;путь к файлу, который показывается в окне
+		rb 4096
+	filename_area: ;имя файла для диалога открытия/закрытия
 		rb 256
 	file_info:
 		rb 40

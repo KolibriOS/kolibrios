@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 18.11.2013 IgorA
+; файл последний раз изменялся 27.11.2013 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -1264,6 +1264,38 @@ ted_char_add:
   call ted_text_colored
   ret
 
+;description:
+; функция для смены кодировок
+;input:
+; table - таблица для перекодировки
+align 4
+proc ted_but_convert_by_table uses eax edx edi esi, edit:dword, table:dword
+	mov edi,dword[edit]
+	mov esi,dword[table]
+	mov edx,ted_tex
+	.cycle:
+		;переходим на следующий символ
+		mov edx,dword[edx+6]
+		cmp edx,1
+		jle .end_text
+		imul edx,sizeof.symbol
+		add edx,ted_tex
+
+		movzx eax,byte[edx]
+		add eax,esi
+		mov al,byte[eax]
+		cmp al,0
+		je @f
+			mov byte[edx],al ;меняем кодировку символа
+		@@:
+		jmp .cycle
+	.end_text:
+	;cmp esi,0
+	;je @f
+		stdcall ted_draw,edi ;обновляем окно
+	;@@:
+	ret
+endp
 
 ;input:
 ; edi = pointer to tedit struct
@@ -4038,7 +4070,7 @@ ted_wnd_main_mouse_scroll:
 	ret
 
 align 4
-proc ted_but_save_file, edit:dword, file:dword, f_name:dword
+proc ted_save_file, edit:dword, file:dword, f_name:dword
   pushad
   mov edi,dword[edit]
 

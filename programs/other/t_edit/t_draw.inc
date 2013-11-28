@@ -94,20 +94,28 @@ and ecx,0xffff
   call draw_but_icon
 or ecx,0x40000000
 
-  inc cx
-  mov edx,400*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,400*65536+25
+	call draw_but_icon
 
-  inc cx
-  mov edx,425*65536+25
-  call draw_but_icon
+	inc cx
+	mov edx,425*65536+25
+	call draw_but_icon
 
-  mov cx,17
-  mov edx,450*65536+25
-  call draw_but_icon
+	mov cx,17 ;выбор файла подсветки
+	mov edx,450*65536+25
+	call draw_but_icon
 
-  popad
-  ret
+	mov cx,18 ;cp 1251 -> 866
+	mov edx,425*65536+2
+	call draw_but_icon
+
+	mov cx,19 ;cp 866 -> 1251
+	mov edx,450*65536+2
+	call draw_but_icon
+
+	popad
+	ret
 
 ;txtBUp db 24
 ;txtBDn db 25
@@ -332,7 +340,7 @@ draw_but_icon:
 	cmp eax,7
 	jne @f ;кнопка не влезла в окно
 		mov ebx,[bmp_icon]
-		bt ecx,30 ;if (ecx or 0x40000000)
+		bt ecx,30 ;if (ecx & 0x40000000)
 		jc .gray
 			add ebx,TOOLBAR_ICONS_SIZE ;перемещаемся на серые кнопки
 		.gray:

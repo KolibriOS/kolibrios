@@ -311,9 +311,9 @@ dd	sz_PathShow_prepare,		path_show.prepare
 dd	sz_PathShow_draw,		path_show.draw
 dd	szVersion_path_show,		0x00010001
 
-dd	sz_ted_but_save_file,		ted_but_save_file
 dd	sz_ted_but_sumb_upper,		ted_but_sumb_upper
 dd	sz_ted_but_sumb_lover,		ted_but_sumb_lover
+dd	sz_ted_but_convert_by_table,	ted_but_convert_by_table
 dd	sz_ted_can_save,		ted_can_save
 dd	sz_ted_clear,			ted_clear
 dd	sz_ted_delete,			ted_delete
@@ -325,6 +325,7 @@ dd	sz_ted_is_select,		ted_is_select
 dd	sz_ted_key,			ted_key
 dd	sz_ted_mouse,			ted_mouse
 dd	sz_ted_open_file,		ted_open_file
+dd	sz_ted_save_file,		ted_save_file
 dd	sz_ted_text_add,		ted_text_add
 dd	sz_ted_but_select_word, 	ted_but_select_word
 dd	sz_ted_but_cut, 		ted_but_cut
@@ -335,7 +336,7 @@ dd	sz_ted_but_redo,		ted_but_redo
 dd	sz_ted_but_reverse,		ted_but_reverse
 dd	sz_ted_but_find_next,		ted_but_find_next
 dd	sz_ted_text_colored,		ted_text_colored
-dd	sz_ted_version, 		0x00000003
+dd	sz_ted_version, 		0x00000004
 
 dd	sz_Frame_draw,			frame.draw
 dd	szVersion_frame,		0x00010001
@@ -416,9 +417,9 @@ sz_PathShow_prepare		db 'PathShow_prepare',0
 sz_PathShow_draw		db 'PathShow_draw',0
 szVersion_path_show		db 'version_PathShow',0
 
-sz_ted_but_save_file		db 'ted_but_save_file',0
 sz_ted_but_sumb_upper		db 'ted_but_sumb_upper',0
 sz_ted_but_sumb_lover		db 'ted_but_sumb_lover',0
+sz_ted_but_convert_by_table	db 'ted_but_convert_by_table',0
 sz_ted_can_save 		db 'ted_can_save',0
 sz_ted_clear			db 'ted_clear',0
 sz_ted_delete			db 'ted_delete',0
@@ -430,6 +431,7 @@ sz_ted_is_select		db 'ted_is_select',0
 sz_ted_key			db 'ted_key',0
 sz_ted_mouse			db 'ted_mouse',0
 sz_ted_open_file		db 'ted_open_file',0
+sz_ted_save_file		db 'ted_save_file',0
 sz_ted_text_add 		db 'ted_text_add',0
 sz_ted_but_select_word		db 'ted_but_select_word',0
 sz_ted_but_cut			db 'ted_but_cut',0

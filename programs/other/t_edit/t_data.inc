@@ -95,9 +95,9 @@ import_box_lib:
 	tl_node_lev_inc dd sz_tl_node_lev_inc
 	tl_node_lev_dec dd sz_tl_node_lev_dec
 
-	ted_but_save_file dd sz_ted_but_save_file
 	ted_but_sumb_upper dd sz_ted_but_sumb_upper
 	ted_but_sumb_lover dd sz_ted_but_sumb_lover
+	ted_but_convert_by_table dd sz_ted_but_convert_by_table
 	ted_can_save dd sz_ted_can_save
 	ted_clear dd sz_ted_clear
 	ted_delete dd sz_ted_delete
@@ -109,6 +109,7 @@ import_box_lib:
 	ted_key dd sz_ted_key
 	ted_mouse dd sz_ted_mouse
 	ted_open_file dd sz_ted_open_file
+	ted_save_file dd sz_ted_save_file
 	ted_text_add dd sz_ted_text_add
 	ted_but_select_word dd sz_ted_but_select_word
 	ted_but_cut dd sz_ted_but_cut
@@ -120,6 +121,9 @@ import_box_lib:
 	ted_but_find_next dd sz_ted_but_find_next
 	ted_text_colored dd sz_ted_text_colored
 	version_text_edit dd sz_ted_version
+
+	PathShow_prepare	dd sz_PathShow_prepare
+	PathShow_draw		dd sz_PathShow_draw
 
 dd 0,0
 	alib_init0 db 'lib_init',0
@@ -163,9 +167,9 @@ dd 0,0
 	sz_tl_node_lev_inc db 'tl_node_lev_inc',0
 	sz_tl_node_lev_dec db 'tl_node_lev_dec',0
 
-	sz_ted_but_save_file	db 'ted_but_save_file',0
 	sz_ted_but_sumb_upper	db 'ted_but_sumb_upper',0
 	sz_ted_but_sumb_lover	db 'ted_but_sumb_lover',0
+	sz_ted_but_convert_by_table db 'ted_but_convert_by_table',0
 	sz_ted_can_save 		db 'ted_can_save',0
 	sz_ted_clear			db 'ted_clear',0
 	sz_ted_delete			db 'ted_delete',0
@@ -177,6 +181,7 @@ dd 0,0
 	sz_ted_key				db 'ted_key',0
 	sz_ted_mouse			db 'ted_mouse',0
 	sz_ted_open_file		db 'ted_open_file',0
+	sz_ted_save_file		db 'ted_save_file',0
 	sz_ted_text_add 		db 'ted_text_add',0
 	sz_ted_but_select_word	db 'ted_but_select_word',0
 	sz_ted_but_cut			db 'ted_but_cut',0
@@ -188,6 +193,9 @@ dd 0,0
 	sz_ted_but_find_next	db 'ted_but_find_next',0
 	sz_ted_text_colored		db 'ted_text_colored',0
 	sz_ted_version db 'version_text_edit',0
+
+	sz_PathShow_prepare	db 'PathShow_prepare',0
+	sz_PathShow_draw	db 'PathShow_draw',0
 
 align 4
 import_proclib:
@@ -486,7 +494,7 @@ tree_file_struct:
 
 if lang eq ru
 
-hed db 'Текстовый редактор 14.11.13',0 ;подпись окна
+hed db 'Текстовый редактор 28.11.13',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -580,14 +588,6 @@ msgbox_9:
   db 0
   db 'Закрыть',0
   db 0
-msgbox_10:
-  db 1,0
-  db 'Внимание',0
-  db 'Вы используете старую версию библиотеки ',39,'box_lib.obj',39,'.',13,\
-	'Попробуйте найти библиотеку в которой',13,\
-	'элемент ',39,'t_edit',39,' имеет версию 3.',0
-  db 'Закрыть',0
-  db 0
 
 txtFile db 'Файл:',0
 txtFindCapt db 'Поиск',0
@@ -597,7 +597,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 14.11.13',0
+hed db 'Text editor 28.11.13',0
 
 menu_text_area:
 db 'File',0
@@ -689,14 +689,6 @@ msgbox_9:
   .fdp:
   rb 100
   db 0
-  db 'Close',0
-  db 0
-msgbox_10:
-  db 1,0
-  db 'Warning',0
-  db 'You are using an older version of the library ',39,'box_lib.obj',39,'.',13,\
-	'Try to find a library in which the element',13,\
-	39,'t_edit',39,' has a version 3.',13,0
   db 'Close',0
   db 0
 

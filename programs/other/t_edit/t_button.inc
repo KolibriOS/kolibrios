@@ -63,7 +63,7 @@ On_SaveAndNewFile:
   push edi
   mov edi, tedit0
 
-  stdcall [ted_but_save_file],edi,run_file_70,[edit1.text]
+  call ted_but_save_file
   cmp ted_err_save,0
   jne @f
     call On_NewFile
@@ -76,7 +76,7 @@ On_SaveAndNewFile:
 align 4
 but_no_msg_OpenFile:
 	push eax ebx
-	stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]
+	stdcall [ted_open_file], tedit0,run_file_70,openfile_path
 	call ted_messages_after_open_file
 	pop ebx eax
 	ret
@@ -115,20 +115,19 @@ ted_but_open_file:
 	@@:
 	cmp [OpenDialog_data.status],1
 	jne .ret_f
-		mov esi,[OpenDialog_data.openfile_path]
-		call strlen
-		mov [edit1.size],eax
-		mov [edit1.pos],eax
-		stdcall [edit_box_draw], edit1
+		stdcall [PathShow_prepare], PathShow_data_1
+		stdcall [PathShow_draw], PathShow_data_1
 
 		;ищем есть ли файл подсветки для открываемого текстового файла
-		mov edx,[edit1.text]
+		mov esi,[OpenDialog_data.openfile_path]
+		call strlen
+		mov edx,openfile_path
 		add edx,eax
 		.f_beg:
 		cmp byte[edx],'.'
 		je .found
 			dec edx
-			cmp edx,[edit1.text]
+			cmp edx,openfile_path
 			jg .f_beg
 		.found:
 		inc edx ;edx - указатель на расширение открытого файла
@@ -150,12 +149,28 @@ ted_but_open_file:
 			call open_unpac_synt_file
 		.end_0:
 
-		stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]
+		stdcall [ted_open_file], tedit0,run_file_70,openfile_path
 		call ted_messages_after_open_file
 
 	.ret_f:
 	popad
 	ret
+
+;description:
+; функция сохранения файла с вызовом окна диалога
+align 4
+proc ted_but_save_file
+	;*** вызов диалогового окна для сохранения файла
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
+	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Start],OpenDialog_data
+	cmp [OpenDialog_data.status],1 ;if status==1 then save
+	jne .end_save_file
+		stdcall [PathShow_prepare], PathShow_data_1
+		stdcall [ted_save_file],tedit0,run_file_70,openfile_path
+	.end_save_file:
+	ret
+endp
 
 ;description:
 ; копирование памяти
@@ -216,6 +231,7 @@ ted_messages_after_open_file:
 		jl .ret_f
 			stdcall [mb_create],msgbox_1,thread
 	.ret_f:
+	stdcall [PathShow_prepare], PathShow_data_1
 	pop edi ecx
 	ret
 
@@ -265,8 +281,8 @@ push eax edi esi
 	cld
 	rep movsb
 
-	copy_path ebx,fn_syntax_dir,file_name_rez,0
-	copy_path file_name_rez,sys_path,file_name,0
+	copy_path ebx,fn_syntax_dir,syntax_path,0
+	copy_path syntax_path,sys_path,file_name,0
 	mov edi, tedit0
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
@@ -308,24 +324,46 @@ pop esi edi eax
 ;description:
 ; вызов/скрытие панели поиска
 align 4
-proc ted_but_find
-  push edi
-  mov edi,tedit0
+proc ted_but_find uses edi
+	mov edi,tedit0
 
-  cmp ted_panel_id,TED_PANEL_NULL
-  je @f
-    mov ted_panel_id,TED_PANEL_NULL
-    mov ted_wnd_l,0
-    jmp .e_if
-  @@:
-    mov ted_panel_id,TED_PANEL_FIND
-    mov ted_wnd_l,TED_PANEL_WIDTH
-  .e_if:
-  call EvSize
-  stdcall [ted_draw],edi
-  pop edi
-  ret
+	cmp ted_panel_id,TED_PANEL_NULL
+	je @f
+		mov ted_panel_id,TED_PANEL_NULL
+		mov ted_wnd_l,0
+		jmp .e_if
+	@@:
+		mov ted_panel_id,TED_PANEL_FIND
+		mov ted_wnd_l,TED_PANEL_WIDTH
+	.e_if:
+	call EvSize
+	stdcall [ted_draw],edi
+	ret
 endp
+
+align 4
+tbl_1251_866:
+rb 128
+db   0,  0,  0,  0,  0,  0,  0,  0,  0,0,0,0,0,0,0,0 ;128
+db   0,  0,  0,  0,  0,  0,  0,  0,  0,0,0,0,0,0,0,0 ;144
+db   0,  0,  0,  0,  0,  0,  0,  0,240,0,0,0,0,0,0,0 ;160
+db   0,  0,  0,  0,  0,  0,  0,  0,241,0,0,0,0,0,0,0 ;176
+db 128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143 ;192
+db 144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159 ;208
+db 160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175 ;224
+db 224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239 ;240
+
+align 4
+tbl_866_1251:
+rb 128
+db 192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207 ;128
+db 208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223 ;144
+db 224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239 ;160
+db   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;176
+db   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;192
+db   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;208
+db 240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255 ;224
+db 168,184,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;240
 
 align 4
 ted_on_find_err:
