@@ -13,6 +13,8 @@ $Revision$
 
 VORTEX86DEBUG = 0                       ; For testing in emulators and in non-Vortex86 CPU computers, set this to 1
 VORTEX86DEBUGVALUE = 0x35504d44         ; FAKE port output = used for testing
+NORTH_BRIDGE = 0x80000000               ; Base address of Vortex86 PCI North Bridge
+SOUTH_BRIDGE = 0x80003800               ; Base address of Vortex86 PCI South Bridge
 
 ; Detect Vortex86 CPU and generate CPU name in string format (PCI address at 93H~90H in Vortex86 North Bridge contains SoC type)
 ; Available Vortex86 CPU codes taken from Coreboot project. New codes should be added to "Vortex86SoClist" below
@@ -44,8 +46,8 @@ if ~ VORTEX86DEBUG
         jnz     .Vortex86end            ; If the CPU vendor is not 'Vortex86 SoC', skip the SoC detection
 end if
 
-        mov     eax, OS_BASE+0x90       ; 0x80000090 = Starting PCI address to read from (32-bit register - accessed as DWORD)
-        call    .Vortex86PCIreg         ; Get the CPU code from Vortex86 SoC PCI register (Register Offset: 93H~90H)
+        mov     eax, NORTH_BRIDGE+0x90  ; 0x80000090 = PCI Configuration Address Register to read from (32-bit register - accessed as DWORD)
+        call    .Vortex86PCIreg         ; Get the CPU code from Vortex86 SoC North Bridge PCI register (Register Offset: 93H~90H)
 
 if VORTEX86DEBUG                        ; When in debug mode, pretend that we received port output equal to "VORTEX86DEBUGVALUE"
         mov     eax, VORTEX86DEBUGVALUE
@@ -91,14 +93,26 @@ end if
         DEBUGF  1, "unknown Vortex86 CPU (id=%d)\n", [Vortex86CPUid]:1          ; Inform the user that the CPU is Vortex86 but name is unknown
 
 .Vortex86:
-        mov     eax, OS_BASE+0xA0       ; 0x800000A0 = Starting PCI address to read from (32-bit register - accessed as DWORD)
-        call    .Vortex86PCIreg         ; Get current flags of Vortex86SoC Host Control Register (Register Offset: A3h~A0h)
+        mov     eax, NORTH_BRIDGE+0x60  ; 0x80000060 = PCI Configuration Address Register to read from (32-bit register - accessed as DWORD)
+        call    .Vortex86PCIreg         ; Get current flags of Vortex86SoC North Bridge STRAP Register (Register Offset: 63h~60h)
+        DEBUGF  1, "K : Vortex86 STRAP Register (63h~60h) returned 0x%x\n",eax
+
+        mov     eax, SOUTH_BRIDGE+0xC0  ; 0x800038C0 = PCI Configuration Address Register to read from (32-bit register - accessed as DWORD)
+        call    .Vortex86PCIreg         ; Flags of Vortex86 South Bridge Internal Peripheral Feature Control Register (Register Offset: C3h~C0h)
+        DEBUGF  1, "K : Vortex86 Internal Peripheral Feature Control Register (C3h~C0h) returned 0x%x\n",eax
+
+        mov     eax, SOUTH_BRIDGE+0xCC  ; 0x800038CC = PCI Configuration Address Register to read from (8-bit register - accessed as BYTE)
+        call    .Vortex86PCIreg         ; Flags of Vortex86 South Bridge Internal Peripheral Feature Control Register III (Register Offset: CCh)
+        DEBUGF  1, "K : Vortex86 Internal Peripheral Feature Control Register III (CCh) returned 0x%x\n",al
+        
+        mov     eax, NORTH_BRIDGE+0xA0  ; 0x800000A0 = PCI Configuration Address Register to read from (32-bit register - accessed as DWORD)
+        call    .Vortex86PCIreg         ; Get current flags of Vortex86SoC North Bridge Host Control Register (Register Offset: A3h~A0h)
         DEBUGF  1, "K : Vortex86 Host Control Register (A3h~A0h) returned 0x%x: CPU speed is ",eax
         mov     bl, al                  ; The lower byte of Vortex86 Host Control Register contains CPU speed modifier and MMX support status
         mov     bh, al                  ; Backup the current AL value, so later we can test whether the value has changed
         and     bl, 00000111b           ; CPU speed modifier is stored in bits 0-2. Value=0 means MAX speed, other values - speed reduction
         jz      .Vortex86CPUspeedMAX    ; 0s in bits 0-2: CPU is at MAX speed (no need to modify)
-        inc     bl                      ; The actual value is 1 less than 'Divide by' setting (value '001' means 'Divide by 2', etc.)
+        inc     ebx                     ; The actual value is 1 less than 'Divide by' setting (value '001' means 'Divide by 2', etc.)
         DEBUGF  1, "reduced (divide by %d).\nK : Vortex86 changing CPU speed to ", bl    ; Print the current CPU speed modifier to the log
         and     al, 11111000b           ; At least one of the bits 0-2 contains 1: CPU is at reduced speed. Set bits 0-2 to 0s to change to MAX
 .Vortex86CPUspeedMAX:
