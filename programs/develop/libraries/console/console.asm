@@ -1874,10 +1874,23 @@ con.key:
         int     0x40    ; eax = control key state
         test    dh, dh
         jnz     .extended
+        test    al, 0x80        ; numlock
+        jnz     .numlock
         bt      [scan_has_ascii], edx
         jnc     .extended
-        test    al, 0x30
+        test    al, 0x30        ; alt
         jnz     .extended
+        test    al, 0x80        ; numlock
+        jz      .no_numlock
+  .numlock:
+        cmp     dl, 71
+        jb      .no_numlock
+        cmp     dl, 83
+        ja      .no_numlock
+        mov     dh, [con.extended_numlock+edx-71]
+        xchg    dl, dh
+        jmp     .gotcode
+  .no_numlock:
 ; key has ASCII code
         push    eax edx
         push    2
@@ -2420,6 +2433,11 @@ con.extended_shift:
         db      54h,55h,56h,57h,58h,59h,5Ah,5Bh,5Ch,5Dh,00h,00h
         db      47h,48h,49h,4Ah,4Bh,4Ch,4Dh,4Eh,4Fh,50h,51h,52h,53h,00h,00h,00h,87h,88h
         times 0x80-0x59 db 0
+con.extended_numlock:
+        db      '7', '8', '9', '-'
+        db      '4', '5', '6', '+'
+        db      '1', '2', '3'
+        db      '0', '.'
 
 ; В текущей реализации значения по умолчанию таковы.
 ; В будущем они, возможно, будут считываться как параметры из ini-файла console.ini.
