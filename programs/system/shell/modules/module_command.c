@@ -64,7 +64,7 @@ for (;;)
 				if (cmdPos > 0)
 					{
                                         for (i = cmdPos-1; i < cmdLen; i++)
-                                            CMD[i] = CMD[i+1];
+											CMD[i] = CMD[i+1];
 
                                         for (i = 0; i < cmdLen-cmdPos; i++)
 					    printf (" ");
@@ -178,7 +178,7 @@ for (;;)
 				    else
 						CMD_NUM = 0;
 
-					printf(	CMD_HISTORY[CMD_NUM] );
+					printf(	"%s", CMD_HISTORY[CMD_NUM] );
 					strcpy(CMD, CMD_HISTORY[CMD_NUM]);
 					cmdLen = strlen(CMD);
 					cmdPos = strlen(CMD);
@@ -203,7 +203,7 @@ for (;;)
 				    else
 						CMD_NUM = CMD_HISTORY_NUM_REAL-1;
 
-					printf(	CMD_HISTORY[CMD_NUM] );
+					printf(	"%s", CMD_HISTORY[CMD_NUM] );
 					strcpy(CMD, CMD_HISTORY[CMD_NUM]);
 					cmdLen = strlen(CMD);
 					cmdPos = strlen(CMD);
