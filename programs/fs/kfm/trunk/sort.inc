@@ -227,12 +227,15 @@ left_size_date_sort_1:
 ;---------------------------------------------------------------------
 left_prepare_extension_start:
    xor	 ebp,ebp
+   cmp	[left_folder_block],ebp
+   je	.exit
    mov	 esi,[left_folder_data]
    add	 esi,32+40
 .start:
    call  prepare_extension_start_all
    cmp	 ebp,[left_folder_block]
    jb	 .start
+.exit:
    ret
 ;---------------------------------------------------------------------
 prepare_extension_start_all:
@@ -314,12 +317,15 @@ left_prepare_extension_start_1:
 ;---------------------------------------------------------------------
 right_prepare_extension_start:
    xor	 ebp,ebp
+   cmp	[right_folder_block],ebp
+   je	.exit
    mov	 esi,[right_folder_data]
    add	 esi,32+40
 .start:
    call  prepare_extension_start_all
    cmp	 ebp,[right_folder_block]
    jb	 .start
+.exit:
    ret
 ;---------------------------------------------------------------------
 right_prepare_extension_start_1:
