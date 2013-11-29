@@ -386,7 +386,18 @@ sys_resize_app_memory:
 ;        cmp    eax,1
         dec     ebx
         jnz     .no_application_mem_resize
+
+        mov     eax, [pg_data.pages_free]
+        shl     eax, 12
+        cmp     eax, ecx
+        jae     @f
+
+        xor     eax, eax
+        inc     eax
+        jmp     .store_result
+@@:
         stdcall new_mem_resize, ecx
+.store_result:
         mov     [esp+32], eax
 .no_application_mem_resize:
         ret
