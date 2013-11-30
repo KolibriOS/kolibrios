@@ -1361,8 +1361,9 @@ endp
 proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
-
-	mov	eax,14
+; unknown how many times the user wants to press "Enter",
+; so you should do a little more value
+	mov	eax,14*100
 	call	editor_realloc_lines
 
 	mov	ecx,[cur_editor.Caret.Y]
