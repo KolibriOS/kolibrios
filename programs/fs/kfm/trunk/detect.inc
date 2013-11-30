@@ -104,6 +104,9 @@ device_detect_f70:
     mov   eax,[temp_counter_1]
     cmp   eax,[left_folder_block_1]
     jb	  .start_temp_counter_1
+    ret
+;---------------------------------------------------------------------    
+select_starting_directories:
     mov   esi,retrieved_devices_table+1
     call  copy_folder_name
     mov   esi,retrieved_devices_table+3

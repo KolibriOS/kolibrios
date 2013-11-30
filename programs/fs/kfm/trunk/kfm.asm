@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47h 28/07/2013
+; KFM v0.47h 30/11/2013
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -81,6 +81,7 @@ START:
     call  add_memory_for_folders
     call  device_detect
     call  device_detect_f70
+    call  select_starting_directories
     mcall 66, 1, 1
 ;    call  draw_window
 ;    xor   eax,eax
