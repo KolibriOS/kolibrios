@@ -880,7 +880,7 @@ static bool test_has_pinned_batches(struct kgem *kgem)
 
 static bool kgem_init_pinned_batches(struct kgem *kgem)
 {
-	int count[2] = { 2, 1 };
+	int count[2] = { 2, 2 };
 	int size[2] = { 1, 2 };
 	int n, i;
 

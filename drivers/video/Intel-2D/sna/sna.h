@@ -37,11 +37,11 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _SNA_H_
 #define _SNA_H_
 
-#include <stdint.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <stdint.h>
 
 #include "compiler.h"
 
@@ -51,8 +51,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <errno.h>
 #include <kos32sys.h>
 
-#include "intel_driver.h"
 #include "pciaccess.h"
+#include "intel_driver.h"
 
 #include <drm.h>
 #include <i915_drm.h>
@@ -382,6 +382,7 @@ typedef struct _Picture {
 
 struct sna_fb
 {
+    uint32_t  name;
     uint32_t  width;
     uint32_t  height;
     uint32_t  pitch;

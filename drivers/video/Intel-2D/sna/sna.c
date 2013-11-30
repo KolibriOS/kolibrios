@@ -39,13 +39,13 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <memory.h>
 #include <malloc.h>
-#include <kos32sys.h>
-#include <pixlib2.h>
 #include "i915_pciids.h"
 
 #include "compiler.h"
 #include "sna.h"
-#include "intel_driver.h"
+
+#include <pixlib2.h>
+#include <kos32sys.h>
 
 #define to_surface(x) (surface_t*)((x)->handle)
 
@@ -92,8 +92,6 @@ struct kgem_bo *kgem_bo_from_handle(struct kgem *kgem, int handle,
 void kgem_close_batches(struct kgem *kgem);
 void sna_bo_destroy(struct kgem *kgem, struct kgem_bo *bo);
 
-const struct intel_device_info *
-intel_detect_chipset(struct pci_device *pci);
 
 static bool sna_solid_cache_init(struct sna *sna);
 
@@ -936,26 +934,6 @@ intel_detect_chipset(struct pci_device *pci)
         return (const struct intel_device_info*)ent->match_data;
     else
         return &intel_generic_info;
-
-#if 0
-	for (i = 0; intel_chipsets[i].name != NULL; i++) {
-		if (DEVICE_ID(pci) == intel_chipsets[i].token) {
-			name = intel_chipsets[i].name;
-			break;
-		}
-	}
-	if (name == NULL) {
-		xf86DrvMsg(scrn->scrnIndex, X_WARNING, "unknown chipset\n");
-		name = "unknown";
-	} else {
-		xf86DrvMsg(scrn->scrnIndex, from,
-			   "Integrated Graphics Chipset: Intel(R) %s\n",
-			   name);
-	}
-
-	scrn->chipset = name;
-#endif
-
 }
 
 int intel_get_device_id(int fd)
