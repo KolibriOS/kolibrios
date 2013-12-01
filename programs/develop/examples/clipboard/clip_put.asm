@@ -117,7 +117,7 @@ operation_result_text:
 buffer_data:
 	dd buffer_data.end - buffer_data
 	dd 0	; type 'text'
-	dd 866	; text encoding
+	dd 1	; cp866 text encoding
 	db 'Test message to the clipboard'
 .end:
 ;---------------------------------------------------------------------

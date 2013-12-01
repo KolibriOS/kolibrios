@@ -127,7 +127,7 @@ draw_clipboard:
 	cmp	[eax],dword 0
 	jne	.no_relevant_data_1
 	add	eax,4	
-	cmp	[eax],dword 866
+	cmp	[eax],dword 1 ; cp866
 	jne	.no_relevant_data_2
 	
 	add	eax,4
