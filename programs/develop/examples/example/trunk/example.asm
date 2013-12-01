@@ -122,7 +122,7 @@ draw_window:
 ; Data can be freely mixed with code to any parts of the image.
 ; Only the header information is required at the beginning of the image.
  
-text    db  "It look's like you have just compiled   "
+text    db  "It looks like you have just compiled    "
         db  "your first program for KolibriOS.       "
         db  "                                        "
         db  "Congratulations!                        ", 0
