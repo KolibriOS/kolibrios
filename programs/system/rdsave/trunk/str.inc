@@ -42,43 +42,15 @@
 ; lpStr - указатель на строку ASCIIZ 
 ; На выходе: EAX - длина строки без учета завершающего 
 ; нулевого байта 
-;----------------------------------------------------- 
-;proc    _lstrlen lpStr:DWORD
-;        push    edi ecx 
-;  
-;        cld 
-;        mov     edi,[lpStr] 
-;        xor     ecx,ecx 
-;        dec     ecx 
-;        xor     eax,eax 
-;        repne   scasb 
-;        not     ecx 
-;        dec     ecx 
-;        mov     eax,ecx 
-;  
-;        pop     ecx edi 
-;        ret 
-;endp
-
-;----------------------------------------------------- 
-; Функция получения длины строки 
-;----------------------------------------------------- 
-; lpStr - указатель на строку ASCIIZ 
-; На выходе: EAX - длина строки без учета завершающего 
-; нулевого байта 
 ;-----------------------------------------------------
 proc _lstrlen lpStr:DWORD
-	push	ebx
-	mov	ebx,[lpStr]
-	xor	eax,eax
-    @@: cmp	byte[ebx+eax],0
-	je	@f
-	inc	eax
-	jmp	@b
-    @@: pop	ebx
-	ret
+        mov     eax, [lpStr]
+@@:     inc     eax
+        cmp     byte [eax], 0
+        jne     @b
+        sub     eax, [lpStr]
+        ret
 endp
-
 ;----------------------------------------------------- 
 ; Функция быстрого слияния двух строк 
 ; используются функции _lstrlen, _lstrcpy 

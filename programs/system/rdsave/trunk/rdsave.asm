@@ -8,7 +8,7 @@
 ;   Heavyiron 01.12.2013 - new logic
 ;---------------------------------------------------------------------
 appname equ 'RDsave '
-version equ '1.42'
+version equ '1.43'
 debug   equ no
 
 use32        ; включить 32-битный режим ассемблера
@@ -205,12 +205,14 @@ doit:
         call    print_err
         jmp     still
 not_rd:
-        cmp     [hidden],0
+        cmp      [hidden],0
         jne      @f
         pusha
-        mov     ecx,[sc.work_text]
-        or      ecx,0xc0000088
-        mcall   4,<132,96>, ,label2, ,[sc.work]
+        stdcall  _lstrcpy,msg,label2
+        mov      eax,[sc.work_text]
+        or       eax,0xc0000088
+        mov      [color],eax
+        call    print_msg
         popa
 @@:
         pop     eax
@@ -230,9 +232,9 @@ check_for_error:                      ;Обработчик ошибок
         cmp     eax, 11
         ja      .unknown
         mov     edx, [errors+eax*4]
-        stdcall _lstrcpy,error_msg,error
-        stdcall _lstrcat,error_msg,edx
-        mov     edx, error_msg
+        stdcall _lstrcpy,msg,error
+        stdcall _lstrcat,msg,edx
+        mov     edx,msg
         jmp     print_err
 .unknown:
         mov     edx, aUnknownError
@@ -242,19 +244,15 @@ print_err:
         pusha
         invoke  ini_set_str,ini_file,apath,apath,ini_path,eax
         popa
+        stdcall _lstrcpy,msg,edx
         cmp     [hidden],1
         je      @f
         cmp     [param],1
         je      @f
-        stdcall _lstrlen,edx
-        imul    eax,6
-        mov     ebx,390
-        sub     ebx,eax
-        shl     ebx,15
-        add     ebx,96
-        mov     ecx,[sc.work_text]
-        or      ecx,0xc0880000
-        mcall   4, , , , ,[sc.work]
+        mov      ecx,[sc.work_text]
+        or       ecx,0xc0880000
+        mov      [color],ecx
+        call    print_msg
         ret
 @@:
         mov     dword [is_notify + 8], edx
@@ -265,32 +263,39 @@ print_err:
         jmp     no_params
 
 print_ok:
-        cmp     [hidden],1
+        cmp      [hidden],1
         je       @f
-        cmp     [param],1
+        cmp      [param],1
         je       @f
-        mov     edx,ok
-        stdcall _lstrlen,edx
-        imul    eax,6
+        stdcall  _lstrcpy,msg,ok
+        mov      ecx,[sc.work_text]
+        or       ecx,0xc0008800
+        mov      [color],ecx
+        call     print_msg
+        mcall    5,100
+        cmp      [autoclose],1
+        je       close
+        ret
+@@:
+        stdcall  _lstrcpy,msg,ok
+        stdcall  _lstrcat,msg,fname_buf
+        mov      edx,msg
+        mov      dword [is_notify + 8], edx
+        mcall    70, is_notify
+        mcall    5,100
+        jmp      close
+;---------------------------------------------------------------------
+print_msg:
+        mcall   13,<5,380>,<96,10>,[sc.work]
+        stdcall _lstrlen,msg
+        lea     eax,[eax+eax*2]
+        add     eax,eax
         mov     ebx,390
         sub     ebx,eax
         shl     ebx,15
         add     ebx,96
-        mov     ecx,[sc.work_text]
-        or      ecx,0xc0008800
-        mcall   4, , , , ,[sc.work]
-        mcall   5,200
-        cmp     [autoclose],1
-        je      close
+        mcall   4, ,[color],msg, ,[sc.work]
         ret
-@@:
-        stdcall _lstrcpy,check_dir,ok
-        stdcall _lstrcat,check_dir,fname_buf
-        mov     edx,check_dir
-        mov     dword [is_notify + 8], edx
-        mcall   70, is_notify
-        jmp     close
-
 ;---------------------------------------------------------------------
 draw_PathShow:
         pusha
@@ -349,6 +354,7 @@ draw_window:
         call    [Frame_draw]
 
         call    draw_PathShow
+        call    print_msg
 
         mcall   12,2
         ret
@@ -652,7 +658,9 @@ sc     system_colors
 
 autoclose rd 1
 
-error_msg:
+color   rd 1
+
+msg:
         rb 1024
 
 folder_data:
@@ -682,4 +690,4 @@ text_work_area:
 align 32
         rb 4096
 stacktop:
-I_END:  ; метка конца программы
+I_END:
