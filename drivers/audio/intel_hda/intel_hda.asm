@@ -13,7 +13,7 @@ DEBUG_IRQ	equ 0
 
 USE_SINGLE_MODE   equ  0   ; 1 = Single mode; 0 = Normal mode.
 
-TEST_VERSION_NUMBER  equ '018d'
+TEST_VERSION_NUMBER  equ '018e'
 
 ;Asper+ [
 SDO_TAG  equ 1	      ;Asper: Output stream tag id (any number except 0)
@@ -2338,14 +2338,17 @@ proc  azx_codec_create
 ;        if USE_FIRST_CODEC
 ;           cmp     ecx, 1
 ;        else
-	   cmp	   ecx, 3
+	   cmp	   ecx, 4
 ;        end if
 	   jl	   .next_slot
 	   mov	   eax, -1
 	   jmp	   .out
   .init:
+	   push    ecx edx
 	   stdcall snd_hda_codec_init
-	   xor	   eax, eax
+	   pop	   edx ecx
+	   test    eax, eax
+	   jnz	   @b
   .out:
 	   pop	   edx	ecx  ebx
 	   ret
@@ -2900,6 +2903,7 @@ if DEBUG
     msgCodecOK		     db 'codec probed OK',13,10,0
     msgCodecError	     db 'codec probe error disabling it...',13,10,0
     emsgNoAFGorMFGFound      db 'no AFG or MFG node found',13,10,0
+    msgNoAFGFound	     db 'no AFG node found, trying another codec',13,10,0
     emsgNoMem		     db 'hda_codec: cannot malloc',13,10,0
     msgConnect		     db 'CONNECT: NID=',0
     msgIdx		     db ' IDX=',0

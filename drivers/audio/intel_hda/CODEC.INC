@@ -13,15 +13,15 @@ proc make_codec_cmd stdcall, nid:dword, direct:dword, verb:dword, parm:dword
     shl    eax, 28
     mov    ebx, [direct]
     shl    ebx, 27
-    or	   eax, ebx
+    or     eax, ebx
     mov    ebx, [nid]
     shl    ebx, 20
-    or	   eax, ebx
+    or     eax, ebx
     mov    ebx, [verb]
     shl    ebx, 8
-     or     eax, ebx
+    or     eax, ebx
     mov    ebx, [parm]
-    or	   eax, ebx
+    or     eax, ebx
     pop    ebx
     ret
  .err:
@@ -32,11 +32,11 @@ endp
 
 ;; Send and receive a verb
 proc  codec_exec_verb stdcall, cmd:dword;, res:dword <- returned in eax
-    push   ebx	edx
+    push   ebx  edx
     mov    ebx, [cmd]
     cmp    ebx, -1
     jne    @f
-    pop    edx	ebx
+    pop    edx  ebx
     mov    eax, -1
     ret
   @@:
@@ -61,7 +61,7 @@ proc  codec_exec_verb stdcall, cmd:dword;, res:dword <- returned in eax
     mov    edx, eax
   if  FDEBUG
     test   edx, edx
-    jz	   .end_debug
+    jz     .end_debug
     push   eax esi
     mov    esi, msgVerbAnswer
     call   SysMsgBoardStr
@@ -80,10 +80,10 @@ proc  codec_exec_verb stdcall, cmd:dword;, res:dword <- returned in eax
 
     mov    eax, [ctrl.rirb_error]
     test   eax, eax
-    jz	   .l1
+    jz     .l1
 
     mov    eax, [ctrl.response_reset]
-    jz	   @f
+    jz     @f
 
   if  DEBUG
     push   esi
@@ -101,7 +101,7 @@ proc  codec_exec_verb stdcall, cmd:dword;, res:dword <- returned in eax
   @@:
     mov    eax, edx
 
-    pop    edx	ebx
+    pop    edx  ebx
     ret
 endp
 
@@ -163,7 +163,7 @@ proc  snd_hda_sequence_write stdcall, seq:dword
     ;jnz      @b
     ;______________________________________
     cmp      dword [esi], 0
-    je	     .out
+    je       .out
     movzx    ecx, word [esi] ; NID
     movzx    ebx, word [esi+2] ; verb
     and      bx, 0x0FFF
@@ -192,7 +192,7 @@ macro  snd_hda_param_read  nid, param
 ;; Returns the number of sub-nodes.
 ;;
 proc  snd_hda_get_sub_nodes stdcall, nid:dword;, start_id:dword  <- returned in upper word of eax
-    snd_hda_param_read	[nid], AC_PAR_NODE_COUNT
+    snd_hda_param_read  [nid], AC_PAR_NODE_COUNT
 
     cmp      eax, -1
     jne      @f
@@ -217,20 +217,20 @@ endp
 ;;
 proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dword   ;Asper: Complete translation!
     locals
-       parm	     dd ?
+       parm          dd ?
        conn_len      dd ?
-       conns	     dd 0
-       shift	     db 8
+       conns         dd 0
+       shift         db 8
        num_elements  dd 4
-       mask	     dd 0x7F
-       wcaps	     dd ?
+       mask          dd 0x7F
+       wcaps         dd ?
        prev_nid      dw 1 ;Asper: Hmm.. Probably ALSA bug that it isn't initialized. I suppose to init it with 1.
     endl
 
     push     ebx ecx edx edi esi
     mov      edi, [conn_list]
     test     edi, edi
-    jz	     .err_out
+    jz       .err_out
     mov      ecx, [max_conns]
     cmp      ecx, 0
     jle      .err_out
@@ -241,7 +241,7 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
     mov      [wcaps], eax
     stdcall  get_wcaps_type, ebx
     cmp      eax, AC_WID_VOL_KNB
-    je	     .conn_list_ok
+    je       .conn_list_ok
     test     ebx, AC_WCAP_CONN_LIST
     jnz      .conn_list_ok
   if DEBUG
@@ -256,11 +256,11 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
     jmp      .out
   .conn_list_ok:
 
-    snd_hda_param_read	[nid], AC_PAR_CONNLIST_LEN
+    snd_hda_param_read  [nid], AC_PAR_CONNLIST_LEN
     mov      [parm], eax
 
     test     eax, AC_CLIST_LONG
-    jz	     @f
+    jz       @f
     ; long form
     mov      [shift], 16
     mov      [num_elements], 2
@@ -268,7 +268,7 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
   @@:
     and      eax, AC_CLIST_LENGTH
     test     eax, eax
-    jz	     .out ; no connection
+    jz       .out ; no connection
 
     mov      [conn_len], eax
     cmp      eax, 1
@@ -300,7 +300,7 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
     mov      eax, ecx
   .mod:
     cmp      eax, edx
-    jl	     .mod_counted
+    jl       .mod_counted
     sub      eax, edx
     jmp      .mod
   .mod_counted:
@@ -360,13 +360,13 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
     pop      ecx
 
     test     ebx, ebx
-    jz	     .range_zero
+    jz       .range_zero
     ; ranges between the previous and this one
     movzx    esi, word [prev_nid]
     test     esi, esi
-    jz	     .l2
+    jz       .l2
     cmp      esi, eax
-    jl	     @f
+    jl       @f
   .l2:
  if DEBUG
     push     eax esi
@@ -394,7 +394,7 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
     mov      ebx, [conns]
   .next_conn2:
     cmp      ebx, [max_conns]
-    jl	     @f
+    jl       @f
  if DEBUG
     push     esi
     mov      esi, emsgTooManyConns
@@ -422,7 +422,7 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
 
     mov      ebx, [conns]
     cmp      ebx, [max_conns]
-    jl	     @f
+    jl       @f
  if DEBUG
     push     esi
     mov      esi, emsgTooManyConns
@@ -444,7 +444,7 @@ proc  snd_hda_get_connections stdcall, nid:dword, conn_list:dword, max_conns:dwo
   .continue:
     inc      ecx
     cmp      ecx, [conn_len]
-    jl	     .next_conn
+    jl       .next_conn
 
      mov     eax, [conns]
   .out:
@@ -512,6 +512,22 @@ proc  snd_hda_codec_init    ; We use just one codec (the first found)
      test    eax, eax
      jnz     @f
 
+     ;Asper+: try to use another codec if possible [
+  if DEBUG
+     push    esi
+     mov     esi, msgNoAFGFound
+     call    SysMsgBoardStr
+     pop     esi
+  end  if
+     push    ecx
+     inc     eax
+     mov     ecx, [codec.addr]
+     shl     eax, cl
+     pop     ecx
+     cmp     eax, [ctrl.codec_mask]
+     jl      .skip_codec
+     ;Asper+]
+
      mov     eax, [codec.mfg]
      test    eax, eax
      jnz     @f
@@ -521,6 +537,7 @@ proc  snd_hda_codec_init    ; We use just one codec (the first found)
      call    SysMsgBoardStr
      pop     esi
   end  if
+  .skip_codec:
      mov     eax, -1
      ret
   @@:
@@ -560,6 +577,7 @@ proc  snd_hda_codec_init    ; We use just one codec (the first found)
      ; power up all before initialization
      stdcall snd_hda_set_power_state, ebx, AC_PWRST_D0
 
+     xor     eax, eax
      pop     ebx
      ret
 endp
@@ -820,9 +838,9 @@ proc  read_pin_defaults
 
 if FDEBUG
    push   eax esi
-   mov	  esi, msgPinCfgs
+   mov    esi, msgPinCfgs
    call   SysMsgBoardStr
-   pop	  esi eax
+   pop    esi eax
 end if
 
 
@@ -972,7 +990,7 @@ proc hda_codec_setup_stream stdcall, nid:dword, stream_tag:dword, channel_id:dwo
      or      eax, [channel_id]
      stdcall snd_hda_codec_write, [nid], 0, AC_VERB_SET_CHANNEL_STREAMID, eax
 
-     mov     eax, 1000	; wait 1 ms
+     mov     eax, 1000  ; wait 1 ms
      call    StallExec
 
      stdcall snd_hda_codec_write, [nid], 0, AC_VERB_SET_STREAM_FORMAT, [format]
@@ -998,7 +1016,7 @@ proc snd_hda_codec_cleanup_stream stdcall, nid:dword
      pop     esi
   end if
      stdcall snd_hda_codec_write, [nid], 0, AC_VERB_SET_CHANNEL_STREAMID, 0
-  if 0	; keep the format
+  if 0  ; keep the format
      mov     eax, 1000000  ; wait 100 ms
      call    StallExec
      stdcall snd_hda_codec_write, [nid], 0, AC_VERB_SET_STREAM_FORMAT, 0
@@ -1180,7 +1198,7 @@ proc snd_hda_set_power_state stdcall, fg:dword, power_state:dword
      stdcall snd_hda_codec_read, [fg], 0, AC_VERB_GET_POWER_STATE, 0
      cmp     eax, ebx
      je      .out
-     mov     eax, 1000	; msleep(1);
+     mov     eax, 1000  ; msleep(1);
      call    StallExec
      dec     ecx
      jnz     .wait_D0
@@ -1194,21 +1212,21 @@ endp
 
 ; codec vendors
 align 16
-msg_Cirrus	     db 'Cirrus Logic ',0
-msg_Motorola	     db 'Motorola ',0
+msg_Cirrus       db 'Cirrus Logic ',0
+msg_Motorola       db 'Motorola ',0
 msg_SiliconImage     db 'Silicon Image ',0
-msg_Realtek	     db 'Realtek ',0
-msg_Creative	     db 'Creative ',0
-msg_IDT 	     db 'IDT ',0
-msg_LSI 	     db 'LSI ',0
+msg_Realtek       db 'Realtek ',0
+msg_Creative       db 'Creative ',0
+msg_IDT        db 'IDT ',0
+msg_LSI        db 'LSI ',0
 msg_AnalogDevices    db 'Analog Devices ',0
-msg_CMedia	     db 'C-Media ',0
-msg_Conexant	     db 'Conexant ',0
-msg_Chrontel	     db 'Chrontel ',0
-msg_LG		     db 'LG ',0
-msg_Wolfson	     db 'Wolfson Microelectronics ',0
-msg_Qumranet	     db 'Qumranet ',0
-msg_SigmaTel	     db 'SigmaTel ',0
+msg_CMedia       db 'C-Media ',0
+msg_Conexant       db 'Conexant ',0
+msg_Chrontel       db 'Chrontel ',0
+msg_LG         db 'LG ',0
+msg_Wolfson       db 'Wolfson Microelectronics ',0
+msg_Qumranet       db 'Qumranet ',0
+msg_SigmaTel       db 'SigmaTel ',0
 ac_unknown     db 'unknown manufacturer ',0
 
 chip_unknown   db 'unknown codec id ', 0
@@ -1239,105 +1257,105 @@ hda_vendor_ids:
      dd    0x8384, msg_SigmaTel, chips_SigmaTel
      dd    0 ; terminator
 
-align 16	     ;known codecs
-chips_ATI	     dd 0xAA01, chip_ATIR6XX
-		     dd 0xFF
+align 16             ;known codecs
+chips_ATI            dd 0xAA01, chip_ATIR6XX
+                     dd 0xFF
 
-chips_Cirrus	     dd 0xFF
-chips_Motorola	     dd 0xFF
+chips_Cirrus         dd 0xFF
+chips_Motorola       dd 0xFF
 
 chips_SiliconImage   dd 0x1392, chip_SI1392
-		     dd 0xFF
+                     dd 0xFF
 
-chips_NVidia	     dd 0x0002, chip_MCP78
-		     dd 0xFF
+chips_NVidia         dd 0x0002, chip_MCP78
+                     dd 0xFF
 
-chips_Realtek	     dd 0x0262, chip_ALC262
-		     dd 0x0268, chip_ALC268
-		     dd 0x0269, chip_ALC269
-		     dd 0x0272, chip_ALC272
-		     dd 0x0662, chip_ALC662
-		     dd 0x0663, chip_ALC663
-		     dd 0x0883, chip_ALC883
-		     dd 0x0887, chip_ALC887
-		     dd 0x0888, chip_ALC888
-		     dd 0x0889, chip_ALC889
-		     dd 0xFF
+chips_Realtek        dd 0x0262, chip_ALC262
+                     dd 0x0268, chip_ALC268
+                     dd 0x0269, chip_ALC269
+                     dd 0x0272, chip_ALC272
+                     dd 0x0662, chip_ALC662
+                     dd 0x0663, chip_ALC663
+                     dd 0x0883, chip_ALC883
+                     dd 0x0887, chip_ALC887
+                     dd 0x0888, chip_ALC888
+                     dd 0x0889, chip_ALC889
+                     dd 0xFF
 
-chips_Creative	     dd 0xFF
+chips_Creative       dd 0xFF
 
-chips_VIA	     dd 0xE721, chip_VT1708B_1
-		     dd 0x0397, chip_VT17085_0
-		     dd 0xFF
+chips_VIA            dd 0xE721, chip_VT1708B_1
+                     dd 0x0397, chip_VT17085_0
+                     dd 0xFF
 
-chips_IDT	     dd 0xFF
+chips_IDT            dd 0xFF
 
-chips_LSI	     dd 0x1039, chip_LSI1039
-                 dd 0x1040, chip_LSI1040
-                 dd 0x3026, chip_LSI3026
-                 dd 0x3055, chip_LSI3055
-                 dd 0xFF
+chips_LSI            dd 0x1039, chip_LSI1039
+                     dd 0x1040, chip_LSI1040
+                     dd 0x3026, chip_LSI3026
+                     dd 0x3055, chip_LSI3055
+                     dd 0xFF
 
-chips_Analog	     dd 0x1986, chip_AD1986A
-		     dd 0x198B, chip_AD198B
-		     dd 0xFF
+chips_Analog         dd 0x1986, chip_AD1986A
+                     dd 0x198B, chip_AD198B
+                     dd 0xFF
 
-chips_CMedia	     dd 0xFF
+chips_CMedia         dd 0xFF
 
-chips_Conexant	     dd 0x5045, chip_CX20549
-		     dd 0x5051, chip_CX20561
-		     dd 0xFF
+chips_Conexant       dd 0x5045, chip_CX20549
+                     dd 0x5051, chip_CX20561
+                     dd 0xFF
 
-chips_Chrontel	     dd 0xFF
-chips_LG	     dd 0xFF
-chips_Wolfson	     dd 0xFF
-chips_Intel	     dd 0xFF
+chips_Chrontel       dd 0xFF
+chips_LG             dd 0xFF
+chips_Wolfson        dd 0xFF
+chips_Intel          dd 0xFF
 
-chips_Qumranet	     dd 0x0010, chip_HDA_OUTPUT
-		     dd 0x0020, chip_HDA_DUPLEX
-		     dd 0xFF
+chips_Qumranet       dd 0x0010, chip_HDA_OUTPUT
+                     dd 0x0020, chip_HDA_DUPLEX
+                     dd 0xFF
 
-chips_SigmaTel	     dd 0x7680, chip_STAC9221
-		     dd 0x7682, chip_STAC9221_A2
-		     dd 0xFF
+chips_SigmaTel       dd 0x7680, chip_STAC9221
+                     dd 0x7682, chip_STAC9221_A2
+                     dd 0xFF
 
 align 16
 ;AnalogDevices
-chip_AD1986A	     db 'AD1986A',13,10,0
-chip_AD198B	     db 'AD198B',13,10,0
+chip_AD1986A         db 'AD1986A',13,10,0
+chip_AD198B          db 'AD198B',13,10,0
 
 ;ATI
-chip_ATIR6XX	     db 'ATIR6XX',13,10,0
+chip_ATIR6XX         db 'ATIR6XX',13,10,0
 
 ;Silicon Image
-chip_SI1392	     db 'SI1392',13,10,0
+chip_SI1392          db 'SI1392',13,10,0
 
 ;NVidia
-chip_MCP78	     db 'MCP78',13,10,0
+chip_MCP78           db 'MCP78',13,10,0
 
 ;Realtek
-chip_ALC262	     db 'ALC262',13,10,0
-chip_ALC268	     db 'ALC268',13,10,0
-chip_ALC269	     db 'ALC269',13,10,0
-chip_ALC272	     db 'ALC272',13,10,0
-chip_ALC662	     db 'ALC662',13,10,0
-chip_ALC663	     db 'ALC663',13,10,0
-chip_ALC883	     db 'ALC883',13,10,0
-chip_ALC887	     db 'ALC887',13,10,0
-chip_ALC888	     db 'ALC888',13,10,0
-chip_ALC889	     db 'ALC889',13,10,0
+chip_ALC262          db 'ALC262',13,10,0
+chip_ALC268          db 'ALC268',13,10,0
+chip_ALC269          db 'ALC269',13,10,0
+chip_ALC272          db 'ALC272',13,10,0
+chip_ALC662          db 'ALC662',13,10,0
+chip_ALC663          db 'ALC663',13,10,0
+chip_ALC883          db 'ALC883',13,10,0
+chip_ALC887          db 'ALC887',13,10,0
+chip_ALC888          db 'ALC888',13,10,0
+chip_ALC889          db 'ALC889',13,10,0
 
 ;Sigmatel
-chip_STAC9221	     db 'STAC9221',13,10,0
+chip_STAC9221        db 'STAC9221',13,10,0
 chip_STAC9221_A2     db 'STAC9221_A2',13,10,0
 
 ;VIA
-chip_VT1708B_1	     db 'VT1708B_1',13,10,0
-chip_VT17085_0	     db 'VT17085_0',13,10,0
+chip_VT1708B_1       db 'VT1708B_1',13,10,0
+chip_VT17085_0       db 'VT17085_0',13,10,0
 
 ;Conexant
-chip_CX20549	     db 'CX20549',13,10,0
-chip_CX20561	     db 'CX20561',13,10,0
+chip_CX20549         db 'CX20549',13,10,0
+chip_CX20561         db 'CX20561',13,10,0
 
 ;Qumranet
 chip_HDA_OUTPUT      db 'HDA-OUTPUT',13,10,0
