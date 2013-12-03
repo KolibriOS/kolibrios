@@ -1344,7 +1344,7 @@ chip_HDA_OUTPUT      db 'HDA-OUTPUT',13,10,0
 chip_HDA_DUPLEX      db 'HDA-DUPLEX',13,10,0
 
 ;LSI
-chip_LSI1039         db 'LSI1039 (Agere Systems HDA Modem)',13,10,0
-chip_LSI1040         db 'LSI1040 (Agere Systems HDA Modem)',13,10,0
-chip_LSI3026         db 'LSI3026 (Agere Systems HDA Modem)',13,10,0
-chip_LSI3055         db 'LSI3055 (Agere Systems HDA Modem)',13,10,0
+chip_LSI1039         db '1039 (Agere Systems HDA Modem)',13,10,0
+chip_LSI1040         db '1040 (Agere Systems HDA Modem)',13,10,0
+chip_LSI3026         db '3026 (Agere Systems HDA Modem)',13,10,0
+chip_LSI3055         db '3055 (Agere Systems HDA Modem)',13,10,0
