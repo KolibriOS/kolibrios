@@ -1271,7 +1271,12 @@ chips_VIA	     dd 0xE721, chip_VT1708B_1
 		     dd 0xFF
 
 chips_IDT	     dd 0xFF
-chips_LSI	     dd 0xFF
+
+chips_LSI	     dd 0x1039, chip_LSI1039
+                 dd 0x1040, chip_LSI1040
+                 dd 0x3026, chip_LSI3026
+                 dd 0x3055, chip_LSI3055
+                 dd 0xFF
 
 chips_Analog	     dd 0x1986, chip_AD1986A
 		     dd 0x198B, chip_AD198B
@@ -1338,3 +1343,8 @@ chip_CX20561	     db 'CX20561',13,10,0
 chip_HDA_OUTPUT      db 'HDA-OUTPUT',13,10,0
 chip_HDA_DUPLEX      db 'HDA-DUPLEX',13,10,0
 
+;LSI
+chip_LSI1039         db 'LSI1039 (Agere Systems HDA Modem)',13,10,0
+chip_LSI1040         db 'LSI1040 (Agere Systems HDA Modem)',13,10,0
+chip_LSI3026         db 'LSI3026 (Agere Systems HDA Modem)',13,10,0
+chip_LSI3055         db 'LSI3055 (Agere Systems HDA Modem)',13,10,0
