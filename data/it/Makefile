@@ -52,7 +52,7 @@ FASM_PROGRAMS:=\
  calc:CALC:$(PROGS)/other/calc/trunk/calc.asm \
  calendar:CALENDAR:$(PROGS)/system/calendar/trunk/calendar.asm \
  colrdial:COLRDIAL:$(PROGS)/system/colrdial/color_dialog.asm \
- commouse:COMMOUSE:$(PROGS)/system/commouse/trunk/commouse.asm \
+ loaddrv:LOADDRV:$(PROGS)/system/loaddrv/loaddrv.asm \
  cpu:CPU:$(PROGS)/system/cpu/trunk/cpu.asm \
  cpuid:CPUID:$(PROGS)/system/cpuid/trunk/CPUID.ASM \
  desktop:DESKTOP:$(PROGS)/system/desktop/trunk/desktop.asm \
