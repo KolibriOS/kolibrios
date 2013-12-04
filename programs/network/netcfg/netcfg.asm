@@ -254,7 +254,7 @@ Start_Enum:
 
         cmp     byte [PCI_Class], 6     ; bridge type device
         jne     nextDev
-        cmp     byte [PCI_SubClass], 80 ; PCI-other bridge (for nvidia chipset)
+        cmp     byte [PCI_SubClass], 0x80 ; PCI-other bridge (for nvidia chipset)
         jne     nextDev
        @@:
 
