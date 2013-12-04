@@ -254,19 +254,8 @@ Start_Enum:
 
         cmp     byte [PCI_Class], 6     ; bridge type device
         jne     nextDev
-
-        cmp     byte [PCI_SubClass], 7  ; Cardbus bridge
+        cmp     byte [PCI_SubClass], 80 ; PCI-other bridge (for nvidia chipset)
         jne     nextDev
-
-        mov     bl, 6                   ; get a dword
-        mov     bh, byte [V_Bus]        ; bus of pci device
-        mov     ch, byte [V_Dev]        ; device number/function
-        mov     cl, 0x40                ; offset to subsystem device/vendor id
-        mcall   62                      ; get ID's
-
-        mov     word [PCI_Device], ax   ; There is a device here, save the ID's
-        shr     eax, 16                 ;
-        mov     word [PCI_Vendor], ax   ;
        @@:
 
         cmp     byte[param], 0
