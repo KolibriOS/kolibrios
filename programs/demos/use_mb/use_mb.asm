@@ -12,8 +12,9 @@ use32
   dd 0x0 ;library_path
   dd cur_dir_path
 
-include 'macros.inc'
-include 'load_lib.mac'
+include '../../macros.inc'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include 'lang.inc'
 
 @use_library
 
@@ -193,14 +194,21 @@ but_5:
 
   jmp still
 
-
+if lang eq ru
   txt136 db 'простое',0
   txt137 db '3 кнопки',0
   txt138 db '3 строки',0
   txt139 db 'большое',0
   txt140 db 'mb_reinit',0
-
-hed db 'Пример использования MsgBox',0
+  hed db 'Пример использования MsgBox',0
+else
+  txt136 db 'Simple',0
+  txt137 db '3 buttons',0
+  txt138 db '3 lines',0
+  txt139 db 'Big',0
+  txt140 db 'mb_reinit',0
+  hed db 'MsgBox usage example',0
+end if  
 ;sc system_colors
 
 
@@ -208,16 +216,28 @@ hed db 'Пример использования MsgBox',0
 msgbox_1:
   dw 0
   db 'MBox',0 ;+2 = +MB_TEXT_OFFSET
+if lang eq ru
   db 'Пример',0
   db 'Вижу',0 ;button1
   db 0
+else
+  db 'Example',0
+  db 'I see!',0 ;button1
+end if  
 msgbox_2:
   dw 0
-  db 'MBox 3 but',0 ;+2 = +MB_TEXT_OFFSET
+  db 'MBox 3 buttons',0 ;+2 = +MB_TEXT_OFFSET
+if lang eq ru
   db 'Пример с 3-мя кнопками',0
   db 'Да',0 ;button1
   db 'Отмена',0 ;button2
   db 'Помощь',0 ;button3
+else
+  db '3 buttons example',0
+  db 'Yes',0 ;button1
+  db 'Cancel',0 ;button2
+  db 'Help',0 ;button3
+end if
   db 0
 msgbox_2_funct:
   dd 0
@@ -227,12 +247,21 @@ msgbox_2_funct:
 msgbox_3:
   dw 0
   db 'MBox 3 lines',0 ;+2 = +MB_TEXT_OFFSET
+if lang eq ru
   db 'Строка 1',13,'Строка 2',13,'Строка 3',0
   db '2009 г.',0 ;button1
+else
+  db 'Line 1',13,'Line 2',13,'Line 3',0
+  db 'Year 2009',0 ;button1
+end if  
   db 0
 msgbox_4:
   dw 0
+if lang eq ru
   db 'Введите день',0 ;+2 = +MB_TEXT_OFFSET
+else
+  db 'Select day',0 ;+2 = +MB_TEXT_OFFSET
+end if
   db '  @@@@@@@@@@@@            @@@@@@@@',13
   db ' @............@          @........@',13
   db '@..............@        @..........@',13
@@ -252,6 +281,7 @@ msgbox_4:
   db '       @......@....@..@....@.....@@..@',13
   db '       @......@....@..@....@.........@',13
   db '        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@',0
+if lang eq ru
   db 'Пн',0
   db 'Вт',0
   db 'Ср',0
@@ -259,19 +289,41 @@ msgbox_4:
   db 'Пт',0
   db 'Сб',0
   db 'Воскресение',0
+else
+  db 'Sun',0
+  db 'Mon',0
+  db 'Tue',0
+  db 'Wed',0
+  db 'Thu',0
+  db 'Fri',0
+  db 'Sat',0
+end if
   db 0
 msgbox_5:
   dw 0
+if lang eq ru
   db 'Сообщение',0 ;+2 = +MB_TEXT_OFFSET
   db 'Выполняю процесс ...',0
   db 'Остановить',0
   db 'Прервать',0
+else
+  db 'Message',0 ;+2 = +MB_TEXT_OFFSET
+  db 'Running process ...',0
+  db 'Stop',0
+  db 'Abort',0
+end if
   db 0
 msgbox_5_2:
   dw 0
+if lang eq ru
   db 'Сообщение',0 ;+2 = +MB_TEXT_OFFSET
   db 'Все закончено',0
   db 'Закрыть окно',0
+else
+  db 'Message',0 ;+2 = +MB_TEXT_OFFSET
+  db 'All finished',0
+  db 'Close window',0
+end if
   db 0
 
 ;--------------------------------------------------
@@ -332,8 +384,11 @@ fun_show_help:
   call draw_square
   ret
 sh_help db 0
+if lang eq ru
 txt_help db 'Помощь...'
-
+else
+txt_help db 'Help...'
+end if
 
 i_end: ;конец кода
     rb 1024
