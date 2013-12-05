@@ -219,11 +219,11 @@ msgbox_1:
 if lang eq ru
   db 'Пример',0
   db 'Вижу',0 ;button1
-  db 0
 else
   db 'Example',0
   db 'I see!',0 ;button1
-end if  
+end if
+  db 0
 msgbox_2:
   dw 0
   db 'MBox 3 buttons',0 ;+2 = +MB_TEXT_OFFSET
@@ -349,7 +349,7 @@ draw_square:
   cmp byte[sh_help],0
   je @f
     push eax ebx ecx edx
-    mov eax,13 ;Ёшёютрэшх яЁ ьюєуюы№эшър
+    mov eax,13 ;рисование прямоугольника
     mov ebx,105*65536+70
     mov ecx,15*65536+50
     mov edx,0x8080ff
