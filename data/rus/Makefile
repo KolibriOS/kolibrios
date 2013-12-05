@@ -179,6 +179,7 @@ FASM_PROGRAMS:=\
  lib/libimg.obj:LIB/LIBIMG.OBJ:$(PROGS)/develop/libraries/libs-dev/libimg/libimg.asm \
  lib/libini.obj:LIB/LIBINI.OBJ:$(PROGS)/develop/libraries/libs-dev/libini/libini.asm \
  lib/libio.obj:LIB/LIBIO.OBJ:$(PROGS)/develop/libraries/libs-dev/libio/libio.asm \
+ lib/msgbox.obj:LIB/MSGBOX.OBJ:$(PROGS)/develop/libraries/msgbox/msgbox.asm \
  lib/network.obj:LIB/NETWORK.OBJ:$(PROGS)/develop/libraries/network/network.asm \
  lib/http.obj:LIB/HTTP.OBJ:$(PROGS)/develop/libraries/http/http.asm \
  lib/proc_lib.obj:LIB/PROC_LIB.OBJ:$(PROGS)/develop/libraries/proc_lib/trunk/proc_lib.asm \
@@ -316,7 +317,6 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \
  games/kosilka:GAMES/KOSILKA \
- ../common/lib/msgbox.obj:LIB/MSGBOX.OBJ \
  ../common/lib/pixlib.obj:LIB/PIXLIB.OBJ \
  ../common/lib/sort.obj:LIB/SORT.OBJ \
  ../common/lib/iconv.obj:LIB/ICONV.OBJ \
