@@ -98,6 +98,7 @@ FASM_PROGRAMS:=\
  demos/trantest:DEMOS/TRANTEST:$(PROGS)/demos/trantest/trunk/trantest.asm \
  demos/tube:DEMOS/TUBE:$(PROGS)/demos/tube/trunk/tube.asm \
  demos/unvwater:DEMOS/UNVWATER:$(PROGS)/demos/unvwater/trunk/unvwater.asm \
+ demos/use_mb:DEMOS/USE_MB:$(PROGS)/demos/use_mb/use_mb.asm \
  demos/web:DEMOS/WEB:$(PROGS)/demos/web/trunk/web.asm \
  develop/board:DEVELOP/BOARD:$(PROGS)/system/board/trunk/board.asm \
  develop/cObj:DEVELOP/cObj:$(PROGS)/develop/cObj/trunk/cObj.asm \
@@ -311,7 +312,6 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  ../common/demos/life2:DEMOS/LIFE2 \
  ../common/demos/relay.lif:DEMOS/RELAY.LIF \
  ../common/demos/rpento.lif:DEMOS/RPENTO.LIF \
- ../common/demos/use_mb:DEMOS/USE_MB \
  ../common/File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  ../common/File|Managers/icons.ini:File|Managers/ICONS.INI \
  ../common/File|Managers/kfar.ini:File|Managers/KFAR.INI \
