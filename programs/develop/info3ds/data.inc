@@ -1,7 +1,7 @@
 if lang eq ru
-capt db 'info 3ds версия 12.09.11',0 ;подпись окна
+capt db 'info 3ds версия 06.12.13',0 ;подпись окна
 else
-capt db 'info 3ds version 12.09.11',0 ;window caption
+capt db 'info 3ds version 06.12.13',0 ;window caption
 end if
 
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
@@ -52,7 +52,8 @@ type_bloks:
 block_3ds 0x0002,5,1,txt_0002
 block_3ds 0x3d3e,5,1 ; [+] mesh version
 block_3ds 0x0011,4,1,txt_0011
-block_3ds CHUNK_ambient_color,3,0 ; [-] ambient color
+block_3ds 0x0100,3,1,txt_0100
+block_3ds CHUNK_ambient_color,3,0,txt_2100 ; [-] ambient color
 block_3ds CHUNK_OBJMESH, 3,0,txt_3d3d
 block_3ds CHUNK_OBJBLOCK,3,1,txt_4000
 block_3ds CHUNK_TRIMESH, 3,0,txt_4100
@@ -70,16 +71,18 @@ block_3ds 0xa020,4,0,txt_a020
 block_3ds 0xa030,4,0,txt_a030
 block_3ds CHUNK_TEXTURE, 3,0,txt_a200
 block_3ds CHUNK_MAPFILE, 6,1,txt_a300
-block_3ds CHUNK_KEYFRAMER,   3,0,txt_b000
+block_3ds CHUNK_KEYFRAMER,   7,0,txt_b000
 block_3ds CHUNK_TRACKINFO,   3,0,txt_b002
 block_3ds CHUNK_TRACKOBJNAME,3,1,txt_b010
+block_3ds 0xb011,3,1,txt_b011
 block_3ds CHUNK_TRACKPIVOT,  3,1,txt_b013
+block_3ds 0xb014,3,1,txt_b014
 block_3ds CHUNK_TRACKPOS,    3,1,txt_b020
 block_3ds CHUNK_TRACKROTATE, 3,1,txt_b021
-block_3ds CHUNK_TRACKCAMERA, 3,0,txt_b003
-block_3ds CHUNK_TRACKFOV,    3,1,txt_b023
-block_3ds CHUNK_TRACKROLL,   3,1,txt_b024
-block_3ds CHUNK_TRACKCAMTGT, 3,0,txt_b004
+block_3ds CHUNK_TRACKCAMERA, 7,0,txt_b003
+block_3ds CHUNK_TRACKFOV,    7,1,txt_b023
+block_3ds CHUNK_TRACKROLL,   7,1,txt_b024
+block_3ds CHUNK_TRACKCAMTGT, 7,0,txt_b004
 
 ;--- далее не во всех блоках смог найти описание на русском языке
 block_3ds 0x4111, 3,1,txt_4111
@@ -126,6 +129,11 @@ block_3ds 0xa08e, 3,1,txt_a08e
 if lang eq ru
 txt_0002 db '3ds версия',0
 txt_0011 db 'Цвет rgb (байтовый формат)',0
+;txt_0012 db 'LIN_COLOR_24',0
+;txt_0030 db 'Percentage value (int)',0
+;txt_0031 db 'Percentage value (float)',0
+txt_0100 db 'Master scale',0
+txt_2100 db 'Цвет окружающей среды',0
 txt_3d3d db 'Набор объектов',0
 txt_4000 db 'Объект (с именем)',0
 txt_4100 db 'Треугольные сетки',0
@@ -137,16 +145,22 @@ txt_4160 db 'Матрица перевода',0
 txt_4600 db 'Свет',0
 txt_4700 db 'Камера',0
 txt_a000 db 'Название материала',0
+;txt_a100 db 'MAT_SHADING',0
 txt_a010 db 'Окружающий цвет',0
 txt_a020 db 'Диффузный цвет',0
 txt_a030 db 'Зеркальный цвет',0
 txt_a200 db 'Текстура материала 1',0
 txt_a300 db 'Имя файла текстуры',0
+;txt_a353 db 'MAT_MAP_TEXBLUR',0
 txt_afff db 'Материал',0
 txt_b000 db 'Информация об анимации',0
 txt_b002 db 'Поведение объекта',0
+;txt_b009 db 'KFCURTIME',0
+;txt_b00a db 'KFHDR',0
 txt_b010 db 'Название объекта',0
+txt_b011 db 'Имя экземпляра',0
 txt_b013 db 'Центр вращения объекта',0
+txt_b014 db 'Bound box',0
 txt_b020 db 'Траектория движения',0
 txt_b021 db 'Траектория вращения',0
 txt_b003 db 'Поведение камеры',0
@@ -194,10 +208,14 @@ txt_a088 db 'Face map',0
 txt_a08a db 'In tranc',0
 txt_a08c db 'Soften',0
 txt_a08e db 'Wire in units',0
+
+txt_not_delete db 'Не могу удалить выбранный блок. Он защищен.',0
 else
 
 txt_0002 db '3ds version',0
 txt_0011 db 'Color rgb (byte format)',0
+txt_0100 db 'Master scale',0
+txt_2100 db 'Ambient color',0
 txt_3d3d db 'Editor chunk',0
 txt_4000 db 'Object (with name)',0
 txt_4100 db 'Triangular mesh',0
@@ -218,7 +236,9 @@ txt_afff db 'Meterial',0
 txt_b000 db 'Keyframer',0
 txt_b002 db 'Mesh information',0
 txt_b010 db 'Object name',0
+txt_b011 db 'Instance name',0
 txt_b013 db 'Object pivot point',0
+txt_b014 db 'Bound box',0
 txt_b020 db 'Position track',0
 txt_b021 db 'Rotation track',0
 txt_b003 db 'Camera information',0
@@ -266,6 +286,8 @@ txt_a088 db 'Face map',0
 txt_a08a db 'In tranc',0
 txt_a08c db 'Soften',0
 txt_a08e db 'Wire in units',0
+
+txt_not_delete db 'I can not delete the selected chunk. It is protected.',0
 end if
 
 if lang eq ru

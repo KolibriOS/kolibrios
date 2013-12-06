@@ -32,12 +32,34 @@ pushad
 	stdcall [tl_node_get_data],tree1
 	pop ebx
 	xor edx,edx
+	mov dword[capt_p],txt_q
 	cmp ebx,0
-	je @f
+	je .no_points
 		mov ebx,dword[ebx] ;получаем значение сдвига выбранного блока
 		add ebx,dword[open_file_lif]
-		mov dx,word[ebx+6] ;колличество точек
-	@@:
+
+		cmp word[ebx],CHUNK_VERTLIST
+		jne @f
+			movzx edx,word[ebx+6] ;колличество точек
+			add ebx,8
+			mov dword[capt_p],txt_4110
+			jmp .no_points
+		@@:
+		cmp word[ebx],0xb013
+		jne @f
+			inc edx
+			add ebx,6
+			mov dword[capt_p],txt_b013
+			jmp .no_points
+		@@:
+		cmp word[ebx],0xb014
+		jne @f
+			mov edx,2
+			add ebx,6
+			mov dword[capt_p],txt_b014
+			;jmp .no_points
+		@@:
+	.no_points:
 
 	;настройка списка объектов
 	mov dword[tree3.info_max_count],2
@@ -48,11 +70,8 @@ pushad
 	mov eax,dword[icon_toolbar]
 	mov dword[tree3.data_img],eax
 
-	cmp ebx,0
+	cmp edx,0
 	je .no_object
-		cmp word[ebx],CHUNK_VERTLIST
-		jne .no_object ;если не тот объект
-		add ebx,8
 		mov word[NumberSymbolsAD],5
 		finit
 		.new_point:
@@ -94,7 +113,7 @@ pushad
 	mcall 12,1
 
 	xor eax,eax
-	mov edi,txt_4110 ;caption
+	mov edi,dword[capt_p] ;children window caption
 	mov bx,word[procinfo.box.left]
 	add bx,word[buf_0.l]
 	shl ebx,16
@@ -288,6 +307,8 @@ prop_button:
 	stdcall dword[tl_data_clear], tree3
 	mov byte[prop_wnd_run],0 ;обнуляем счетчик окон
 	mcall -1 ;выход из программы
+
+capt_p dd 0
 
 ;дерево с объектами в пользовательском файле
 tree3 tree_list MAX_OBJECT_SIZE,3,\

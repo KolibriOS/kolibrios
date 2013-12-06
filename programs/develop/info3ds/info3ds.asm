@@ -34,6 +34,7 @@ ends
 run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 open_file_lif dd 0 ;указатель на память для открытия файлов 3ds
+open_file_size dd 0 ;размер открытого файла
 
 ;
 fn_toolbar db 'toolbar.png',0
@@ -44,7 +45,7 @@ image_data_toolbar dd 0
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*7+54 ;размер bmp файла с иконками объектов
+TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*8+54 ;размер bmp файла с иконками объектов
 ;
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 
@@ -100,13 +101,16 @@ ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
 FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
 align 4
-file_3ds:
+file_3ds: ;переменные используемые при открытии файла
 .offs: dd 0 ;+0 указатель на начало блока
 .size: dd 0 ;+4 размер блока (для 1-го параметра = размер файла 3ds)
 rb 8*MAX_FILE_LEVEL
 
-size_one_list equ 40
-list_offs_text equ 12 ;сдвиг начала текста в листе
+size_one_list equ 42
+list_offs_chunk_del equ 8 ;может ли блок удалятся
+list_offs_chunk_lev equ 9 ;уровень блока (прописан в данные узла)
+list_offs_p_data equ 10 ;указатель на подпись блока
+list_offs_text equ 14 ;сдвиг начала текста в листе
 buffer rb size_one_list ;буфер для добавления структур в список tree1
 
 txt_3ds_symb db 0,0
@@ -226,7 +230,7 @@ end if
 			mov dword[offs_last_timer],eax
 			call buf_draw_beg
 			stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs,5,35,0xb000
-			mov edx,dword[ebx+8]
+			mov edx,dword[ebx+list_offs_p_data]
 			cmp edx,0 ;смотрим есть ли описание блока
 			je .no_info
 				stdcall [buf2d_draw_text], buf_0, buf_1,edx,5,45,0xb000
@@ -353,21 +357,22 @@ pushad
 	int 0x40
 
 	mov ebx,(30 shl 16)+20
-	mov ecx,(5 shl 16)+20
 	mov edx,4
 	int 0x40
 
 	cmp byte[can_save],0
 	je @f
 		mov ebx,(55 shl 16)+20
-		mov ecx,(5 shl 16)+20
 		mov edx,5
 		int 0x40
 	@@:
 
 	mov ebx,(85 shl 16)+20
-	mov ecx,(5 shl 16)+20
 	mov edx,6 ;окно с координатами
+	int 0x40
+
+	mov ebx,(110 shl 16)+20
+	mov edx,7 ;удаление блока
 	int 0x40
 
 	mov eax,7
@@ -385,7 +390,16 @@ pushad
 		add ebx,IMAGE_TOOLBAR_ICON_SIZE
 		mov edx,(57 shl 16)+7 ;save
 		int 0x40
+		sub ebx,IMAGE_TOOLBAR_ICON_SIZE
 	@@:
+
+	add ebx,4*IMAGE_TOOLBAR_ICON_SIZE
+	mov edx,(87 shl 16)+7
+	int 0x40
+
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	mov edx,(112 shl 16)+7
+	int 0x40
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw],dword tree1
@@ -422,6 +436,10 @@ button:
 	jne @f
 		call but_wnd_coords
 	@@:
+	cmp ah,7
+	jne @f
+		call but_delete_chunk
+	@@:
 
 	cmp ah,1
 	jne still
@@ -441,7 +459,6 @@ but_new_file:
 	mov byte[can_save],0
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
 	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
-	;;;call draw_window
 	stdcall [tl_draw], tree1
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	ret
@@ -469,11 +486,19 @@ but_open_file:
 	cmp ebx,0xffffffff
 	je .end_open_file
 
-	;add ebx,[open_file_lif]
-	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
+	mov [open_file_size],ebx
 	;mcall 71,1,openfile_path
 
 	mov byte[can_save],0
+	call init_tree
+	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
+
+	.end_open_file:
+	popad
+	ret
+
+align 4
+init_tree:
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
 
 	mov esi,dword[open_file_lif]
@@ -532,10 +557,6 @@ but_open_file:
 		stdcall [tl_cur_beg], tree1
 		stdcall [tl_draw], tree1
 	.end_open:
-
-	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
-	.end_open_file:
-	popad
 	ret
 
 ;анализ данных блока
@@ -676,6 +697,8 @@ block_children:
 	ret
 
 ;переход к следущему блоку текущего уровня
+;input:
+; eax - адрес структуры с переменными
 align 4
 block_next:
 push ebx
@@ -722,6 +745,8 @@ popad
 
 ;input:
 ; esi - указатель на анализируемые данные
+; level - уровень вложенности узла
+; size_bl - размер блока
 align 4
 proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 	pushad
@@ -734,13 +759,22 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 		mov dword[buffer],eax ;смещение блока
 		mov ecx,dword[size_bl]
 		mov dword[buffer+4],ecx ;размер блока (используется в функции buf_draw_hex_table для рисования линии)
+		mov ecx,dword[bl_found]
+		cmp ecx,0
+		je @f
+			;... здесь нужен другой алгоритм защиты от удаления
+			mov cl,byte[ecx+4]
+		@@:
+		mov byte[buffer+list_offs_chunk_del],cl
+		mov ecx,[level]
+		mov byte[buffer+list_offs_chunk_lev],cl
 		mov ecx,dword[info_bl]
-		mov dword[buffer+8],ecx
+		mov dword[buffer+list_offs_p_data],ecx
 		stdcall hex_in_str, buffer+list_offs_text,dword[esi+1],2
 		stdcall hex_in_str, buffer+list_offs_text+2,dword[esi],2 ;код 3ds блока
 		cmp ecx,0
 		jne @f
-			mov byte[buffer+list_offs_text+4],0 ;0 - символ конеца строки
+			mov byte[buffer+list_offs_text+4],0 ;0 - символ конца строки
 			jmp .no_capt
 		@@:
 			mov byte[buffer+list_offs_text+4],' '
@@ -857,6 +891,61 @@ but_wnd_coords:
 	@@:
 	ret
 
+;description:
+; удаление выбранного блока из открытого файла
+align 4
+but_delete_chunk:
+	pushad
+	stdcall [tl_node_get_data],tree1
+	pop ebx
+	cmp ebx,0
+	je .end_f
+	cmp byte[ebx+list_offs_chunk_del],0 ;если блок защищен от удаления
+	jne .notify
+
+	;(1) копирование нижней части файла
+	mov edx,dword[ebx+4] ;размер блока
+	sub [open_file_size],edx ;изменение размеров файла
+	mov ecx,[open_file_size]
+	mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
+	sub ecx,eax ;ecx - размер нижней сдвигаемой части файла
+	add eax,dword[open_file_lif] ;получаем значение сдвига в памяти
+	mov edi,eax
+	mov esi,eax
+	add esi,edx
+	mov al,byte[ebx+list_offs_chunk_lev] ;берем уровень текущего узла
+	rep movsb
+	mov byte[can_save],1
+
+	;(2) изменение размеров родительских блоков
+	cmp al,0
+	je .end_2
+	.cycle_2:
+	stdcall [tl_cur_perv], tree1
+	stdcall [tl_node_get_data],tree1
+	pop ebx
+	cmp ebx,0
+	je .end_2
+		cmp byte[ebx+list_offs_chunk_lev],al
+		jge .cycle_2
+		mov al,byte[ebx+list_offs_chunk_lev]
+		mov ecx,[ebx]
+		add ecx,[open_file_lif]
+		sub dword[ecx+2],edx
+		cmp al,0 ;если самый верхний узел, то al=0
+		jne .cycle_2
+	.end_2:
+	
+	;(3) обновление списка tree1
+	call init_tree
+	call draw_window
+
+	jmp .end_f
+	.notify:
+	notify_window_run txt_not_delete
+	.end_f:
+	popad
+	ret
 
 ;input:
 ; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
@@ -1215,7 +1304,7 @@ buf_1:
 	db 24 ;+20 bit in pixel
 
 el_focus dd tree1
-tree1 tree_list size_one_list,200+2, tl_key_no_edit+tl_draw_par_line,\
+tree1 tree_list size_one_list,300+2, tl_key_no_edit+tl_draw_par_line,\
 	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,195-16,250, 16,list_offs_text,0, el_focus,\
 	w_scr_t1,0
 
