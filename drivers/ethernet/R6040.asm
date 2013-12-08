@@ -823,6 +823,8 @@ transmit:
         dec     eax
   .fail:
         DEBUGF  1,"Send failed\n"
+        stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 

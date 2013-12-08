@@ -633,23 +633,23 @@ probe:
         call    read_mac
         call    PHY_config
 
-;       DEBUGF  1,"K :   Set MAC Reg C+CR Offset 0x82h = 0x01h\n"
+        DEBUGF  1,"Set MAC Reg C+CR Offset 0x82h = 0x01h\n"
         set_io  0
         set_io  0x82
         mov     al, 0x01
         out     dx, al
         cmp     [tpc.mcfg], MCFG_METHOD_03
         jae     @f
-;       DEBUGF  1,"K :   Set PCI Latency=0x40\n"
-;       stdcall pci_write_config_byte,PCI_LATENCY_TIMER,0x40
+        DEBUGF  1,"Set PCI Latency=0x40\n"
+        PCI_adjust_latency 0x40
    @@:
         cmp     [tpc.mcfg], MCFG_METHOD_02
         jne     @f
-;       DEBUGF  1,"K :   Set MAC Reg C+CR Offset 0x82h = 0x01h\n"
+        DEBUGF  1,"Set MAC Reg C+CR Offset 0x82h = 0x01h\n"
         set_io  0x82
         mov     al, 0x01
         out     dx, al
-;       DEBUGF  1,"K :   Set PHY Reg 0x0bh = 0x00h\n"
+        DEBUGF  1,"Set PHY Reg 0x0bh = 0x00h\n"
         WRITE_GMII_REG 0x0b, 0x0000      ; w 0x0b 15 0 0
     @@:
         ; if TBI is not enabled
@@ -736,7 +736,7 @@ reset:
 align 4
 PHY_config:
 
-        DEBUGF  1,"hw_PHY_config: priv.mcfg=%d, priv.pcfg=%d\n",[tpc.mcfg],[tpc.pcfg]
+        DEBUGF  1,"hw_PHY_config: priv.mcfg=%d, priv.pcfg=%d\n", [tpc.mcfg], [tpc.pcfg]
 
         cmp     [tpc.mcfg], MCFG_METHOD_04
         jne     .not_4
@@ -1103,8 +1103,8 @@ transmit:
 
   .fail:
         DEBUGF  1,"transmit failed\n"
-        or      eax, -1
         stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 
@@ -1122,7 +1122,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 

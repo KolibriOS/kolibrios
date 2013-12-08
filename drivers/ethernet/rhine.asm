@@ -1461,6 +1461,7 @@ transmit:
 
   .fail:
         DEBUGF  2, "Transmit Failed!\n"
+        stdcall KernelFree, [esp+4]
         or      eax, -1         ; Transmit failed
         ret     8
 

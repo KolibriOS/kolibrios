@@ -729,9 +729,8 @@ transmit:
 
   .err:
         DEBUGF  2, "Transmit error!\n"
-
-        or      eax, -1
         stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 

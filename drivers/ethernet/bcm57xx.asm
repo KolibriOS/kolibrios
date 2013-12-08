@@ -352,10 +352,13 @@ transmit:
         add     dword [device.bytes_tx], eax
         adc     dword [device.bytes_tx + 4], 0
 
+        xor     eax, eax
         ret     8
 
   .fail:
         DEBUGF  1,"Send failed\n"
+        stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 

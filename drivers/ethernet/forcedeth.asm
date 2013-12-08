@@ -1843,8 +1843,8 @@ transmit:
         ret     8
 
   .fail:
-        xor     eax, eax
-        inc     eax
+        stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 

@@ -656,7 +656,6 @@ transmit:
         cmp     dword [esp + 8], 60
         jb      .fail
 
-
 ; Program the descriptor (use legacy mode)
         lea     edi, [device.tx_desc]                   ; Transmit Descriptor Base Address
         mov     dword [edi + 16], eax                   ; Store the data location (for driver)
@@ -680,10 +679,13 @@ transmit:
         add     dword [device.bytes_tx], eax
         adc     dword [device.bytes_tx + 4], 0
 
+        xor     eax, eax
         ret     8
 
   .fail:
         DEBUGF  2,"Send failed\n"
+        stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 

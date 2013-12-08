@@ -2228,7 +2228,7 @@ vortex_transmit:
         set_io  REG_MASTER_STATUS
         in      ax, dx
         test    ah, 0x80
-        jnz     .finish ; no DMA for sending
+        jnz     .fail ; no DMA for sending
 ; program frame address to be sent
         set_io  REG_MASTER_ADDRESS
         mov     eax, [esp+4]
@@ -2243,12 +2243,14 @@ vortex_transmit:
         set_io  REG_COMMAND
         mov     ax, (10100b shl 11) + 1 ; StartDMADown
         out     dx, ax
-.finish:
-        call    KernelFree
-        add     esp, 4
-        ret
+  .finish:
+        xor     eax, eax
+        ret     8
 
-
+  .fail:
+        stdcall KernelFree, [esp+4]
+        or      eax, -1
+        ret     8
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                         ;;

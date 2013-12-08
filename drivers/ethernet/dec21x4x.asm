@@ -622,7 +622,7 @@ reset:
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1,"\nCould not attach int handler!\n"
+        DEBUGF  2,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
   @@:
@@ -1010,8 +1010,8 @@ transmit:
 
   .fail:
         DEBUGF  1,"transmit failed\n"
-        or      eax, -1
         stdcall KernelFree, [esp+4]
+        or      eax, -1
         ret     8
 
 
