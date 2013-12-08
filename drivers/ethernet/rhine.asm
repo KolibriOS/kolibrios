@@ -1456,11 +1456,12 @@ transmit:
         add     dword [device.bytes_tx], ecx
         adc     dword [device.bytes_tx + 4], 0
 
+        xor     eax, eax        ; Transmit succesfull
         ret     8
 
   .fail:
         DEBUGF  2, "Transmit Failed!\n"
-
+        or      eax, -1         ; Transmit failed
         ret     8
 
 
