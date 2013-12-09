@@ -1,15 +1,14 @@
-;иногда неверно определяется ширина менюшки
-
-ICONS_DAT	equ '/rd/1/icons.dat'
 ICON_STRIP	equ '/rd/1/iconstrp.png'
-ICON_SIZE	equ 68
-IMG_SIZE	equ 32
-TEXT_BOTTOM_Y	equ 14
-IMAGE_TOP_Y	equ 10	  ;>=1
-ALIGN_SIZE	equ 68
-NAME_LENGTH	equ 11
-MIN_NO_MOVING	equ 8
-			   ;для диалога создания/редактирования
+ICON_INI	equ '/rd/1/settings/icon.ini'
+ICON_SIZE	equ 68	  ;размер области для иконки с надписью
+IMG_SIZE	equ 32	  ;размер иконок
+TEXT_BOTTOM_Y	equ 14	  ;отступ по Y текста от низа иконки
+IMAGE_TOP_Y	equ 10	  ;>=1 Координата Y иконки в области для данной иконки
+ALIGN_SIZE	equ 68	  ;размер сетки выравнивания
+NAME_LENGTH	equ 11	 ;длина имени иконки
+MIN_NO_MOVING	equ 8	 ;через столько пикселей сдвига мыши начинается таскание иконки
+
+		     ;--------для диалога создания/редактирования
 ICONSX		equ 20
 ICONSY		equ 80
 ICONS_DRAW_COUNTW equ 10  ;количество иконок в ширину
@@ -41,7 +40,6 @@ include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 ;include '../../debug.inc'
-
 ;------------------------------------------------------------------------------
 START:		; start of execution
 	mcall	68,11
@@ -96,8 +94,8 @@ START:		; start of execution
 
 ;########## загружаем данные иконок в память ##########################
 
-	mcall	70,fiIni		     ;выделяем память, достаточной для хранения ini файла. Её точно хватит для хранения данных об иконках
-	test	eax,eax
+	mcall	70,fiIni		     ;выделяем память, достаточной для хранения ini файла.
+	test	eax,eax 		;Её точно хватит для хранения данных об иконках
 	jnz	ErrorIni
 
 	cmp	dword[bufIni+32],0
@@ -113,6 +111,13 @@ START:		; start of execution
   NoErrIni:
 	m2m	[PIcoDB],[BegData]
 
+
+
+	mov	edi,IconsID
+	xor	eax,eax
+	mov	ecx,100h/4
+	rep stosd
+	mov	[nLoadIcon],0
 	stdcall [ini_enum_sections],IconIni,LoadIconsData
 ;int3
 	mov	eax,dword[PIcoDB]
@@ -125,7 +130,6 @@ START:		; start of execution
 	mov	dword[SizeData],0
    @@:
 ;######################################################################
-
 	call	FillIconsOffs		       ;заполняет MaxNumIcon,IconsOffs
 
 	mcall	40,0100000b		       ;нужны только события мыши, перерисовка иконок будет в другом потоке
@@ -142,6 +146,8 @@ START:		; start of execution
 
 	mcall	51,1,BGRedrawThread,stack_bredraw	;запускаем поток перерисовки иконок
 	stdcall [OpenDialog_Init],OpenDialog_data
+
+;dph [MaxNumIcon]
 
 messages:
 	mcall	10
@@ -188,6 +194,7 @@ close:
 	mcall	-1
 
 LButtonPress:
+
 	stdcall GetNumIcon,[MouseX],[MouseY],-1
 ;int3
 	cmp	eax,-1
@@ -421,7 +428,6 @@ MovingIcon:
 
 	stdcall SetPosition,[SelIcon],eax,ebx
 
-
 	m2m	[PIcoDB],[BegData]
 	stdcall [ini_enum_sections],IconIni,Ini_SavePos  ;in RButton.inc
 
@@ -435,8 +441,6 @@ MovingIcon:
 ;-------------------------------------------------------------------------------
 
 RButtonPress:
-	cmp	[RButtonActiv],1
-	je	messages
 	mov	[RButtonActiv],1
 
      @@:
@@ -657,8 +661,6 @@ local	IconData:DWORD
 	ret
 endp
 
-
-
 proc RestoreBackgrnd,NumIcon:DWORD
 	push	ebx edi
 	mov	eax,[NumIcon]
@@ -710,308 +712,6 @@ proc RestoreBackgrnd,NumIcon:DWORD
 	ret
 endp
 
-;ret eax=numIcon
-proc AddIcon stdcall,x,y,lpIcon,lpName,lpExeFile,lpParams
-	push	ebx edi esi
-
-	mov	eax,[x]
-	mov	ebx,[y]
-
-	xor	edx,edx
-	test	eax,8000h
-	jnz	@f
-	mov	dx,[wsW]    ;если надо, то преобразовываем в
-	shr	edx,1		;отрицательные координаты
-	add	dx,[wsX]
-	cmp	eax,edx
-	jbe	@f
-	sub	ax,[wsW]
-	inc	eax
-      @@:
-
-	test	ebx,8000h
-	jnz	@f
-	mov	dx,[wsY]
-	shr	edx,1
-	add	dx,[wsH]
-	cmp	ebx,edx
-	jbe	@f
-	sub	bx,[wsH]
-	inc	ebx
-      @@:
-				;поправка на случай выхода за край экрана
-
-	test	eax,8000h
-	jnz	@f
-	mov	dx,[wsXe]
-	sub	edx,ICON_SIZE
-	cmp	eax,edx
-	jbe	@f
-	mov	eax,edx
-     @@:
-
-	test	ebx,8000h
-	jnz	@f
-	mov	dx,[wsYe]
-	sub	edx,ICON_SIZE
-	cmp	ebx,edx
-	jbe	@f
-	mov	ebx,edx
-     @@:
-
-	mov	[x],eax
-	mov	[y],ebx
-
-	xor	al,al
-	or	ecx,-1
-	mov	edi,[lpName]
-	repne	scasb
-	sub	edi,[lpName]
-	mov	ebx,edi
-	mov	edi,[lpExeFile]
-	repne	scasb
-	sub	edi,[lpExeFile]
-	add	ebx,edi
-	mov	edi,[lpParams]
-	repne	scasb
-	sub	edi,[lpParams]
-	add	ebx,edi
-	mov	edi,[lpIcon]
-	repne	scasb
-	sub	edi,[lpIcon]
-	add	ebx,edi
-	add	ebx,4
-	mov	ecx,dword[SizeData]
-	add	ecx,ebx
-	mov	edx,[IconsOffs]
-	mcall	68,20
-
-	mov	edx,dword[SizeData]
-	mov	dword[SizeData],ecx
-	mov	dword[BegData],eax
-	mov	edi,eax
-	add	edi,edx
-	mov	esi,[lpName]
-    @@: lodsb
-	stosb
-	test	al,al
-	jnz	@b
-
-	mov	esi,[lpExeFile]
-    @@: lodsb
-	stosb
-	test	al,al
-	jnz	@b
-
-	mov	esi,[lpParams]
-    @@: lodsb
-	stosb
-	test	al,al
-	jnz	@b
-
-	mov	esi,[lpIcon]
-    @@: lodsb
-	stosb
-	test	al,al
-	jnz	@b
-
-	mov	eax,[x]
-	mov	ebx,[y]
-	shl	eax,16
-	mov	ax,bx
-	mov	dword[edi],eax
-
-	stdcall FillIconsOffs
-
-	pop	esi edi ebx
-	ret
-endp
-
-
-proc EditIcon stdcall,NumIcon,lpIcon,lpName,lpExeFile,lpParams
-	push	edi
-	mov	eax,[NumIcon]
-	mov	edi,[IconsOffs+eax*4]
-	xor	al,al
-	or	ecx,-1
-	repne	scasb
-	repne	scasb
-	repne	scasb
-	repne	scasb
-	push	dword[edi]
-	stdcall DelIcon,[NumIcon]
-	pop	edx
-	xor	eax,eax
-	mov	ax,dx
-	shr	edx,16
-	stdcall AddIcon,edx,eax,DAreaIcon,DAreaName,DAreaPath,DAreaParams
-	pop	edi
-	ret
-endp
-
-proc SetPosition stdcall,NumIcon,x,y
-	push	edi
-	mov	eax,[NumIcon]
-	mov	edi,[IconsOffs+eax*4]
-	xor	al,al
-	or	ecx,-1
-	repne	scasb
-	repne	scasb
-	repne	scasb
-	repne	scasb
-	mov	eax,[x]
-	shl	eax,16
-	mov	ax,word[y]
-	mov	dword[edi],eax
-	pop	edi
-	ret
-endp
-
-proc GetNumIcon stdcall,x,y,NumIconI  ;номер иконки, который проверять не надо или -1
-local posX:WORD,\
-      posY:WORD
-	push	ebx edi
-	mov	ecx,[MaxNumIcon]
-	test	ecx,ecx
-	jnz	@f
-	or	eax,-1
-	pop	edi ebx
-	ret
-     @@:
-
-	mov	ebx,ecx
-	dec	ebx
-   .TestIcon:
-	cmp	dword[NumIconI],-1
-	je	@f
-
-	cmp	ebx,[NumIconI]
-	jne	@f
-	dec	ebx
-	dec	ecx
-	test	ecx,ecx
-	jz	.NoIcon
-     @@:
-
-	push	ecx
-
-	or	ecx,-1
-	xor	al,al
-	mov	edi,[IconsOffs+ebx*4]
-	repne	scasb
-	repne	scasb
-	repne	scasb
-	repne	scasb
-
-	mov	ax,[edi+2]
-	test	ax,8000h
-	jz	@f
-	add	ax,[wsXe]
-	jmp	.gni1
-      @@:
-	add	ax,[wsX]
-     .gni1:
-	mov	[posX],ax
-
-	mov	ax,[edi]
-	test	ax,8000h
-	jz	@f
-	add	ax,[wsYe]
-	jmp	.gni2
-      @@:
-	add	ax,[wsY]
-     .gni2:
-
-	mov	[posY],ax
-
-	mov	eax,[x]
-	mov	edx,[y]
-
-	cmp	ax,[posX]
-	jb	@f
-	add	word[posX],ICON_SIZE
-	cmp	ax,[posX]
-	ja	@f
-
-	cmp	dx,[posY]
-	jb	@f
-	add	word[posY],ICON_SIZE
-	cmp	dx,[posY]
-	ja	@f
-
-	jmp	.OkIcon
-     @@:
-
-	dec	ebx
-	pop	ecx
-
-	;loop    .TestIcon
-	dec	ecx
-	jnz	.TestIcon
-	jmp	.NoIcon
-   .OkIcon:
-	mov	eax,ebx
-	pop	edi ebx
-	ret
-   .NoIcon:
-	or	eax,-1
-	pop	edi ebx
-	ret
-endp
-
-proc DelIcon stdcall,NumIcon
-	push	ebx edi esi
-
-	cmp	[MaxNumIcon],0
-	je	.end
-
-	cmp	[MaxNumIcon],1
-	je	.OhneIco
-
-	mov	ebx,[NumIcon]
-
-	mov	eax,[MaxNumIcon]
-	dec	eax
-	mov	[MaxNumIcon],eax
-	cmp	ebx,eax
-	je	@f
-
-	shl	ebx,2
-
-	mov	ecx,dword[BegData]
-	add	ecx,dword[SizeData]
-	sub	ecx,[IconsOffs+4+ebx]
-
-	mov	edx,[IconsOffs+4+ebx]
-	sub	edx,[IconsOffs+ebx]
-	sub	dword[SizeData],edx
-
-	mov	esi,[IconsOffs+4+ebx]
-	mov	edi,[IconsOffs+ebx]
-	rep	movsb
-	jmp	.endDel
-
-     @@:
-	mov	ecx,dword[BegData]
-	add	ecx,dword[SizeData]
-	sub	ecx,[IconsOffs+ebx*4]
-	sub	dword[SizeData],ecx
-
-  .endDel:
-	stdcall FillIconsOffs
-	jmp	.end
-
-.OhneIco:
-	mov	edi,[BegData]
-	mov	[SizeData],0
-	mov	dword[edi],0
-	mov	[MaxNumIcon],0
-	mov	dword[IconsOffs],0
-   .end:
-	mcall	15,3
-	pop	esi edi ebx
-	ret
-endp
 				 ;заполняет MaxNumIcon,IconsOffs
 proc FillIconsOffs
 	push	ebx edi
@@ -1031,6 +731,7 @@ proc FillIconsOffs
 	add	ebx,dword[BegData]
 	or	ecx,-1
  .CalcNumIc:
+
 	repne	scasb
 	repne	scasb
 	repne	scasb
@@ -1046,6 +747,7 @@ proc FillIconsOffs
    @@:
 
 	mov	dword[IconsOffs+edx],0
+
 	pop	edi ebx
 	ret
 endp
@@ -1066,12 +768,26 @@ proc LoadIconsData stdcall,f_name,sec_name
 	ret
      .lid1:
 
+
+	mov	ebx,[sec_name]		;копируем ID
+	mov	ax,[ebx]
+	mov	edi,[nLoadIcon]
+	mov	word[edi*4+IconsID],ax
+	mov	word[edi*4+IconsID+2],0
+
 	mov	edi,[PIcoDB]
-	mov	esi,[sec_name]
-    @@: lodsb
-	stosb
-	test	al,al
-	jnz	@b
+	stdcall [ini_get_str],[f_name],[sec_name],keyName,edi,4096,0
+	test	eax,eax
+	jz	@f
+	xor	eax,eax
+	pop	edi esi ebx
+	ret
+     @@:
+	xor	al,al
+	or	ecx,-1
+	repne	scasb
+
+
 
 	stdcall [ini_get_str],[f_name],[sec_name],keyPath,edi,4096,0
 	test	eax,eax
@@ -1126,11 +842,61 @@ proc LoadIconsData stdcall,f_name,sec_name
 	add	edi,4
 	mov	[PIcoDB],edi
 
+	inc	[nLoadIcon]
+
 	mov	eax,1
 	pop	edi esi ebx
 	ret
 endp
 
+proc GenerateID ;ax = ID
+	push	ebx edi
+	mov	ebx,[MaxNumIcon]
+	test	ebx,ebx
+	jnz	@f
+	mov	eax,'00'
+	pop	edi ebx
+	ret
+     @@:
+
+	mov	eax,dword[IconsID+ebx*4-4]
+  .inc:
+	inc	ah
+	cmp	ah,'9'+1
+	jne	@f
+	mov	ah,'A'
+       @@:
+	cmp	ah,'F'+1
+	jne	@f
+	mov	ah,'0'
+	inc	al
+       @@:
+	cmp	al,'9'+1
+	jne	@f
+	mov	al,'A'
+       @@:
+	cmp	al,'F'+1
+	jne	@f
+	mov	al,'0'
+       @@:
+
+
+	mov	edi,IconsID
+	;cmp     dword[edi],0
+	;je      @f
+	mov	ecx,100h
+    @@: scasd
+	je	.inc
+	cmp	dword[edi],0
+	je	@f
+	loop	@b
+     @@:
+
+	pop	edi ebx
+	ret
+endp
+
+include 'iconman.inc'
 include 'bgredraw.inc'
 include 'RButton.inc'
 include 'DlgAdd.inc'
@@ -1180,14 +946,15 @@ fiIni	dd 5	       ;для ini файла
 	dd 0
 	dd 0
 	dd bufIni
-	db '/rd/1/settings/icon.ini',0
+	db 0
+	dd IconIni
 
 
 IconsFile	db ICON_STRIP,0
-NameIconsDat	db ICONS_DAT,0
+
 align 4
-MaxNumIcon	dd 0	       ;количество иконок
-IconNoDraw	dd -1		;-1 либо номер иконки, которую не надо рисовать( когда её таскают :))
+MaxNumIcon	dd 0		;количество иконок
+IconNoDraw	dd -1		;-1 либо номер иконки, которую не надо рисовать( когда её таскают )
 
 bFixIcons	dd 1
 bNotSave	dd 0
@@ -1197,11 +964,11 @@ RButtonActiv	dd 0
 MovingActiv	dd 0
 DlgAddActiv	dd 0
 
-IconIni 	db '/rd/1/settings/icon.ini',0
+IconIni 	db ICON_INI,0
 
 pthNotify	db '/rd/1/@notify',0
 
-;keyName         db 'name',0
+keyName 	db 'name',0
 keyPath 	db 'path',0
 keyParams	db 'param',0
 keyIco		db 'ico',0
@@ -1210,41 +977,42 @@ keyY		db 'y',0
 
 ;-------------------------------------------------------------------------------
 IMPORTS:
-library cnv_png,'cnv_png.obj',\
+library cnv_png ,'cnv_png.obj',\
 	archiver,'archiver.obj',\
-	box_lib,'box_lib.obj',\
+	box_lib ,'box_lib.obj',\
 	proc_lib,'proc_lib.obj',\
-	libini,'libini.obj'
+	libini	,'libini.obj'
 
 import	cnv_png,\
-	cnv_png_import.Start,'START',\
-	cnv_png_import.Version,'version',\
-	cnv_png_import.Check,'Check_Header',\
-	cnv_png_import.Assoc,'Associations'
+	cnv_png_import.Start	,'START',\
+	cnv_png_import.Version	,'version',\
+	cnv_png_import.Check	,'Check_Header',\
+	cnv_png_import.Assoc	,'Associations'
 
 import	archiver,\
-	unpack_DeflateUnpack2,'deflate_unpack2'
+	unpack_DeflateUnpack2	,'deflate_unpack2'
 
 import	box_lib,\
-	edit_box_draw,'edit_box',\
-	edit_box_key,'edit_box_key',\
-	edit_box_mouse,'edit_box_mouse',\
-	scrollbar_h_draw,'scrollbar_h_draw',\
-	scrollbar_h_mouse,'scrollbar_h_mouse'
+	edit_box_draw		,'edit_box',\
+	edit_box_key		,'edit_box_key',\
+	edit_box_mouse		,'edit_box_mouse',\
+	scrollbar_h_draw	,'scrollbar_h_draw',\
+	scrollbar_h_mouse	,'scrollbar_h_mouse'
 
 import	proc_lib,\
-	OpenDialog_Init,'OpenDialog_init',\
-	OpenDialog_Start,'OpenDialog_start'
+	OpenDialog_Init 	,'OpenDialog_init',\
+	OpenDialog_Start	,'OpenDialog_start'
 
 import	libini,\
-	ini_enum_sections,'ini_enum_sections',\
-	ini_enum_keys,'ini_enum_keys',\
-	ini_get_str,'ini_get_str',\
-	ini_set_str,'ini_set_str',\
-	ini_get_color,'ini_get_color',\
-	ini_get_int,'ini_get_int',\
-	ini_set_int,'ini_set_int',\
-	ini_del_section,'ini_del_section'
+	ini_enum_sections	,'ini_enum_sections',\
+	ini_enum_keys		,'ini_enum_keys',\
+	ini_get_str		,'ini_get_str',\
+	ini_set_str		,'ini_set_str',\
+	ini_get_color		,'ini_get_color',\
+	ini_get_int		,'ini_get_int',\
+	ini_set_int		,'ini_set_int',\
+	ini_del_section 	,'ini_del_section',\
+	ini_exist_sect		,'ini_exist_sect'
 
 
 ;ini.get_str (f_name, sec_name, key_name, buffer, buf_len, def_val)
@@ -1254,6 +1022,13 @@ import	libini,\
 ;-------------------------------------------------------------------------------
 ;----- RButton.inc -------------------------------------------------------------
 ;-------------------------------------------------------------------------------
+
+if lang eq ru
+ MinRMenuW	 dd 18*6+10
+else
+ MinRMenuW	 dd 15*6+10
+end if
+
 secRButt	db 'rbmenu',0
 
 PredItem	dd -1
@@ -1267,13 +1042,13 @@ if lang eq ru
  RMenuDel	db 'Удалить',0
  RMenuProp	db 'Свойства',0
 else
- RMenuRedrawFon db 'Refresh',0
- RMenuAlign     db 'Snap to Grid',0
- RMenuOffMoving db 'Lock icons',0
- RMenuOnMoving  db 'Unlock icons',0
- RMenuAdd       db 'New icon',0
- RMenuDel       db 'Delete',0
- RMenuProp      db 'Properties',0
+ RMenuRedrawFon db 'Redraw',0
+ RMenuAlign	db 'Snap to Grid',0
+ RMenuOffMoving db 'Fix the icons',0
+ RMenuOnMoving	db 'Unfix the icons',0
+ RMenuAdd	db 'Add',0
+ RMenuDel	db 'Delete',0
+ RMenuProp	db 'Properties',0
 end if
 
 if lang eq ru
@@ -1285,7 +1060,7 @@ else
  ErrRunProg	db 'Error runing program',0
  WarningSave	db 'Do not forget to save the changes, run the RDSave',0
  ErrNotFoundIni db 'icon.ini not found',0
- ErrName	db 'The name "rbmenu" is reserved',0
+ ErrName	db 'The name "rbmenu" reserved',0
 end if
 
 ;-------------------------------------------------------------------------------
@@ -1320,11 +1095,11 @@ end if
 ;/не менять положение
 edtName    edit_box NAME_LENGTH*6+4,70+20+IMG_SIZE,6,0FFFFFFh,06F9480h,0FFh,0h,0,NAME_LENGTH,\
 		DAreaName,mouse_dd,0,0,0
-edtExePath edit_box 281-3-20-IMG_SIZE,70+20+IMG_SIZE,26,0FFFFFFh,06F9480h,0FFh,0h,0,256,\
+edtExePath edit_box 281-3-20-IMG_SIZE,70+20+IMG_SIZE,26,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
 		DAreaPath,mouse_dd,0,0,0
-edtParams  edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,46,0FFFFFFh,06F9480h,0FFh,0h,0,256,\
+edtParams  edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,46,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
 		DAreaParams,mouse_dd,0,0,0
-edtIcon    edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,66,0FFFFFFh,06F9480h,0FFh,0h,0,256,\
+edtIcon    edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,66,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
 		DAreaIcon,mouse_dd,0,0,0
 endEdits:
 ;\
@@ -1421,7 +1196,6 @@ MouseX		rd 1
 MouseY		rd 1
 
 RBSlot		rd 1
-
 AddX		rd 1
 AddY		rd 1
 
@@ -1430,11 +1204,14 @@ DlgSelIcon	rd 1
 slotDlgAdd	rd 1
 DlgBufImg	rb IMG_SIZE*IMG_SIZE*3
 
-
+align 4
 bufStdIco	rb 40
-IconsOffs	rd 100
+IconsOffs	rd 100		;таблица с указателями на конкретные иконки(для ускорения)
 PIcoDB		rd 1
+nLoadIcon	rd 1		;номер читаемой из ini иконки
+IconsID 	rd 100		;ID иконок - 2 байтa + байт 0 + выравнивающий байт - строка с 2мя шеснадцетиричными цифрами
 
+nameSection	rb 4
 
 align 4
 icon_count	rd 1
@@ -1444,7 +1221,6 @@ strip_file_size rd 1
 cur_band_compensation rd 1
 
 ;---- RButton -----------------------------------------------------------------------
-MinRMenuW	rd 1
 
 bufIni		rb 40
 NumMenuButt	rd 1
@@ -1456,9 +1232,9 @@ MaxPage 	rd 1
 mouse_dd	rd 1
 
 DAreaName	rb NAME_LENGTH+1
-DAreaPath	rb 256+1
-DAreaParams	rb 256+1
-DAreaIcon	rb 256+1
+DAreaPath	rb 255+1
+DAreaParams	rb 255+1
+DAreaIcon	rb 255+1
 
 align 4
 RBProcInfo	rb 1024

@@ -24,7 +24,7 @@ DlgProp:
 	cmp	bx,[wsY]
 	jae	@f
 	mov	bx,[wsY]
-      @@:			    ;eax,ebx - реальная координата. Все координаты в проге относительно левого верхнего угла рабочей области
+      @@:			    ;eax,ebx - Ёхры№эр  ъююЁфшэрЄр. ┬ёх ъююЁфшэрЄ√ т яЁюух юЄэюёшЄхы№эю ыхтюую тхЁїэхую єуыр Ёрсюўхщ юсырёЄш
 
 	xor	edx,edx
 	mov	dx,[wsXe]
@@ -41,7 +41,7 @@ DlgProp:
 	mov	ebx,edx
       @@:
 
-	xor	edx,edx 	     ;преобразовываем в относительные
+	xor	edx,edx 	     ;яЁхюсЁрчют√трхь т юЄэюёшЄхы№э√х
 	mov	dx,[wsW]
 	shr	edx,1
 	add	dx,[wsX]
@@ -408,25 +408,35 @@ DSaveIcon:
 
 	cmp	[DlgSelIcon],-1
 	je	@f
-		       ;удаляем из ini старую иконку
-	mov	ebx,[DlgSelIcon]
-	mov	eax,[IconsOffs+ebx*4]
-	stdcall [ini_del_section],IconIni,eax
-
+		       
 	stdcall EditIcon,[DlgSelIcon],DAreaIcon,DAreaName,DAreaPath,DAreaParams
+	mov	ebx,[DlgSelIcon]
+	mov	eax,[IconsID+ebx*4]
 	jmp	DExitAndSave
      @@:
+
+	call	GenerateID
+
+	mov	ebx,[MaxNumIcon]
+	mov	[IconsID+ebx*4],eax
+	push	eax
 	stdcall AddIcon,[AddX],[AddY],DAreaIcon,DAreaName,DAreaPath,DAreaParams
-	;jmp     DExitAndSave
+	pop	eax
+
 ;-------------------------------------------------------------------------------
 DExitAndSave:
 
-	 stdcall [ini_set_str],IconIni,DAreaName,keyPath,DAreaPath,dword[edtExePath.size]
-	 stdcall [ini_set_str],IconIni,DAreaName,keyParams,DAreaParams,dword[edtParams.size]
-	 stdcall [ini_set_str],IconIni,DAreaName,keyIco,DAreaIcon,dword[edtIcon.size]
-	 stdcall [ini_set_int],IconIni,DAreaName,keyX,[MouseX]
-	 stdcall [ini_set_int],IconIni,DAreaName,keyY,[MouseY]
+	mov	dword[nameSection],eax
+	stdcall [ini_set_str],IconIni,nameSection,keyName,DAreaName,dword[edtName.size]
+	stdcall [ini_set_str],IconIni,nameSection,keyPath,DAreaPath,dword[edtExePath.size]
+	stdcall [ini_set_str],IconIni,nameSection,keyParams,DAreaParams,dword[edtParams.size]
+	stdcall [ini_set_str],IconIni,nameSection,keyIco,DAreaIcon,dword[edtIcon.size]
 
+	cmp	[DlgSelIcon],-1
+	jne	@f
+	stdcall [ini_set_int],IconIni,nameSection,keyX,[MouseX]
+	stdcall [ini_set_int],IconIni,nameSection,keyY,[MouseY]
+      @@:
 DExit:
 	mov	[DlgAddActiv],0
 	mov	[slotDlgAdd],0
@@ -614,7 +624,7 @@ local IcoX:DWORD,\
 	add	edi,3
 	loop	@b
 
-				     ;затирание не использованых мест
+				     ;чрЄшЁрэшх эх шёяюы№чютрэ√ї ьхёЄ
 	jmp	.Dalee
 
   .DrawIcons2:
@@ -657,7 +667,7 @@ proc DrawSelIcon
 	cmp	al,'/'
 	jne	.GetIconInd
    .PathToIcon:
-	mov	al,30h		 ;заглушка!!!!!!!!!!!!!
+	mov	al,30h		 ;чруыє°ър!!!!!!!!!!!!!
 	mov	byte[edi+1],0
    .GetIconInd:
 ;int3

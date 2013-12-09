@@ -1,18 +1,10 @@
 
-DELTA_COLOR  equ 70
-COLOR_SEL_BUT equ 00F7092Dh
+DELTA_COLOR	equ 70
+COLOR_SEL_BUT	equ 00F7092Dh
 MAX_USER_BUTTONS equ 30
 
 ;---- thread for rbutton -----------------------------------------------------------------------
 RButtonWin:
-       if lang eq ru
-	mov	[MinRMenuW],18*6+10
-       else
-	mov	[MinRMenuW],15*6+10
-       end if
-
-
-
 	mcall	40,100101b	;SetMaskMessage 100101b
 	mcall	48,3,sc,40
 
@@ -372,10 +364,58 @@ RBAdd:
 
 RBDelete:
 	mov	eax,[SelIcon]
-	mov	eax,[IconsOffs+eax*4]
+	lea	eax,[IconsID+eax*4]
 	stdcall [ini_del_section],IconIni,eax
 
 	stdcall DelIcon,[SelIcon]
+	mov	ebx,[SelIcon]
+	lea	edi,[IconsID+ebx*4-4]
+	lea	esi,[edi+4]
+	mov	ecx,[MaxNumIcon]
+	sub	ecx,[SelIcon]
+;dph ecx
+	test	ecx,ecx
+	jz	@f
+	rep movsd
+     @@:
+;debug_newline
+;dpsP IconsID+4*0
+;dps ' '
+;dpsP IconsID+4*1
+;dps ' '
+;dpsP IconsID+4*2
+;dps ' '
+;dpsP IconsID+4*3
+;dps ' '
+;dpsP IconsID+4*4
+;dps ' '
+;dpsP IconsID+4*5
+;dps ' '
+;dpsP IconsID+4*6
+;dps ' '
+;dpsP IconsID+4*7
+;dps ' '
+;dpsP IconsID+4*8
+;dps ' '
+;dpsP IconsID+4*9
+;dps ' '
+;dpsP IconsID+4*10
+;dps ' '
+;dpsP IconsID+4*11
+;dps ' '
+;dpsP IconsID+4*12
+;dps ' '
+;dpsP IconsID+4*13
+;dps ' '
+;dpsP IconsID+4*14
+;dps ' '
+;dpsP IconsID+4*15
+;dps ' '
+;dpsP IconsID+4*16
+;dps ' '
+;dpsP IconsID+4*17
+;debug_newline
+
 
 	mov	dword[fiRunProg+8],WarningSave
 	mov	dword[fiRunProg+21],pthNotify
@@ -501,7 +541,6 @@ proc DrawRBLine y,active
 	ret
 endp
 
-
 proc MouseInWin        ;Carry flag = 1, если клик в окне
 	mcall	37,0		;GetMousePos
 	xor	ebx,ebx
@@ -521,7 +560,6 @@ proc MouseInWin        ;Carry flag = 1, если клик в окне
 	clc
 	ret
 endp
-
 
 proc AlignIcons
 local posX:WORD,\
@@ -715,19 +753,14 @@ endp
 proc Ini_SavePos stdcall,f_name,sec_name
 	push	ebx edi esi
 
+	mov	ebx,[sec_name]
+	xor	eax,eax
+	mov	ax,[ebx]
+
 	xor	ebx,ebx
   .SearchSect:
-	mov	edi,[IconsOffs+ebx*4]
-	mov	esi,[sec_name]
-      @@:
-	lodsb
-	scasb
-	jne	@f
-	test	al,al
-	jnz	@b
-
-	jmp	.IcoDataFound
-      @@:
+	cmp	eax,[IconsID+ebx*4]
+	je	.IcoDataFound
 
 	inc	ebx
 	cmp	ebx,[MaxNumIcon]
@@ -738,19 +771,14 @@ proc Ini_SavePos stdcall,f_name,sec_name
 	ret
 
 .IcoDataFound:
+	xor	al,al
+	mov	edi,[IconsOffs+ebx*4]
+
 	or	ecx,-1
 	repne	scasb
 	repne	scasb
 	repne	scasb
-
-;int3
-	movzx	eax,word[edi+2]
-	test	eax,8000h
-	jz	@f
-	or	eax,0FFFF0000h
-     @@:
-
-	stdcall [ini_set_int],[f_name],[sec_name],keyX,eax
+	repne	scasb
 
 	movzx	eax,word[edi]
 	test	eax,8000h
@@ -759,6 +787,15 @@ proc Ini_SavePos stdcall,f_name,sec_name
      @@:
 
 	stdcall [ini_set_int],[f_name],[sec_name],keyY,eax
+
+	movzx	eax,word[edi+2]
+
+	test	eax,8000h
+	jz	@f
+	or	eax,0FFFF0000h
+     @@:
+
+	stdcall [ini_set_int],[f_name],[sec_name],keyX,eax
 
 	mov	eax,1
 	pop	esi edi ebx
