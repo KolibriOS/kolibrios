@@ -92,8 +92,8 @@ struct  TCP_SOCKET              IP_SOCKET
         SND_MAX                 dd ?
 
 ; congestion control
-        SND_CWND                dd ?
-        SND_SSTHRESH            dd ?
+        SND_CWND                dd ?    ; congestion window
+        SND_SSTHRESH            dd ?    ; slow start threshold
 
 ;----------------------
 ; Transmit timing stuff
@@ -2085,7 +2085,6 @@ SOCKET_num_to_ptr:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
         jz      .error
-                diff16 "tetten", 0, $
         cmp     [eax + SOCKET.Number], ecx
         jne     .next_socket
 

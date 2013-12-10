@@ -78,7 +78,11 @@ TCP_input:
 
 
 align 4
-TCP_process_input:
+proc TCP_process_input
+
+locals
+        dataoffset      dd ?
+endl
 
         xor     esi, esi
         mov     ecx, MANUAL_DESTROY
@@ -123,12 +127,13 @@ TCP_process_input:
   .checksum_ok:
 
 ; Verify the data offset
-        and     [edx + TCP_header.DataOffset], 0xf0                     ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
-        shr     [edx + TCP_header.DataOffset], 2
-        cmp     [edx + TCP_header.DataOffset], sizeof.TCP_header        ; Now see if it's at least the size of a standard TCP header
-        jb      .drop_no_socket                                         ; If not, drop the packet
-
         movzx   eax, [edx + TCP_header.DataOffset]
+        and     al, 0xf0                        ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
+        shr     al, 2
+        cmp     al, sizeof.TCP_header           ; Now see if it's at least the size of a standard TCP header
+        jb      .drop_no_socket                 ; If not, drop the packet
+        mov     [dataoffset], eax
+
         sub     ecx, eax                                                ; substract TCP header size from total segment size
         jb      .drop_no_socket                                         ; If total segment size is less then the advertised header size, drop packet
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: %u bytes of data\n", ecx
@@ -267,17 +272,17 @@ TCP_process_input:
 ;--------------------
 ; Process TCP options
 
+;;; FIXME: for LISTEN, options should be called after we determined route, we need it for MSS
+;;;        cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
+;;;        jz      .not_uni_xfer                           ; also no header prediction
+
         push    ecx
 
-        movzx   ecx, [edx + TCP_header.DataOffset]
+        mov     ecx, [dataoffset]
         cmp     ecx, sizeof.TCP_header                  ; Does header contain any options?
         je      .no_options
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Segment has options\n"
-
-;;; FIXME: for LISTEN, options should be called after we determined route, we need it for MSS
-;;;        cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
-;;;        jz      .not_uni_xfer                           ; also no header prediction
 
         add     ecx, edx
         lea     esi, [edx + sizeof.TCP_header]
@@ -311,9 +316,10 @@ TCP_process_input:
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
 
+        xor     eax, eax
         lodsw
         rol     ax, 8
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Maxseg=%u\n", ax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Maxseg=%u\n", eax
         call    TCP_mss
        @@:
         jmp     .opt_loop
@@ -538,7 +544,7 @@ TCP_process_input:
 
         add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
 
-        movzx   esi, [edx + TCP_header.DataOffset]
+        mov     esi, [dataoffset]
         add     esi, edx
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_write                       ; Add the data to the socket buffer
@@ -583,8 +589,9 @@ TCP_process_input:
 ;----------------------------
 ; trim any data not in window
 
-; check for duplicate data at beginning of segment (635)
+; 1. Check for duplicate data at beginning of segment
 
+; Calculate number of bytes we need to drop
         mov     eax, [ebx + TCP_SOCKET.RCV_NXT]
         sub     eax, [edx + TCP_header.SequenceNumber]
         jle     .no_duplicate
@@ -609,7 +616,7 @@ TCP_process_input:
         dec     eax
   .no_dup_syn:
 
-; Check for entire duplicate segment (646)
+; 2. Check for entire duplicate segment
         cmp     eax, ecx                ; eax holds number of bytes to drop, ecx is data size
         jb      .duplicate
         jnz     @f
@@ -623,16 +630,19 @@ TCP_process_input:
 
 ; send an ACK and resynchronize and drop any data.
 ; But keep on processing for RST or ACK
-        DEBUGF  DEBUG_NETWORK_VERBOSE,  "616\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         mov     eax, ecx
-;TODO: update stats
+
+;;; TODO: update stats
 
 ;-----------------------------------------------
 ; Remove duplicate data and update urgent offset
 
   .duplicate:
-;;; TODO: 677
+        DEBUGF  1,  "TCP_input: trimming duplicate data\n"
+
+; Trim data from left side of window
+        add     [dataoffset], eax
         add     [edx + TCP_header.SequenceNumber], eax
         sub     ecx, eax
 
@@ -643,10 +653,10 @@ TCP_process_input:
        @@:
 
 ;--------------------------------------------------
-; Handle data that arrives after process terminates (687)
+; Handle data that arrives after process terminates
 
   .no_duplicate:
-        cmp     [ebx + SOCKET.PID], 0
+        cmp     [ebx + SOCKET.PID], 0                   ;;; TODO: use socket flags instead??
         jne     .not_terminated
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
         jbe     .not_terminated
@@ -655,11 +665,11 @@ TCP_process_input:
 
         mov     eax, ebx
         call    TCP_close
-;;;TODO: update stats
+;;; TODO: update stats
         jmp     .respond_seg_reset
 
 ;----------------------------------------
-; Remove data beyond right edge of window (700-736)
+; Remove data beyond right edge of window
 
   .not_terminated:
         mov     eax, [edx + TCP_header.SequenceNumber]
@@ -688,29 +698,26 @@ TCP_process_input:
         jmp     .findpcb        ; FIXME: skip code for unscaling window, ...
   .no_new_request:
 
-; If window is closed can only take segments at window edge, and have to drop data and PUSH from
+; If window is closed, we can only take segments at window edge, and have to drop data and PUSH from
 ; incoming segments. Continue processing, but remember to ACK. Otherwise drop segment and ACK
 
         cmp     [ebx + TCP_SOCKET.RCV_WND], 0
         jne     .drop_after_ack
-        mov     eax, [edx + TCP_header.SequenceNumber]
-        cmp     eax, [ebx + TCP_SOCKET.RCV_NXT]
+        mov     esi, [edx + TCP_header.SequenceNumber]
+        cmp     esi, [ebx + TCP_SOCKET.RCV_NXT]
         jne     .drop_after_ack
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE,  "690\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 ;;; TODO: update stats
-        jmp     .no_excess_data
   .dont_drop_all:
 ;;; TODO: update stats
-;;; TODO: 733
-
-        sub     ecx, eax
+        DEBUGF  1, "Trimming %u bytes from the right of the window\n"
+        sub     ecx, eax        ; remove data from the right side of window (decrease data length)
         and     [ebx + TCP_SOCKET.t_flags], not (TH_PUSH or TH_FIN)
   .no_excess_data:
 
 ;-----------------
-; Record timestamp (737-746)
+; Record timestamp
 
 ; If last ACK falls within this segments sequence numbers, record its timestamp
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
@@ -1359,7 +1366,16 @@ align 4
 
         inc     [edx + TCP_header.SequenceNumber]
 
-;;; TODO: Drop any received data that follows receive window (590)
+; Drop any received data that doesnt fit in the receive window.
+        cmp     ecx, [ebx + TCP_SOCKET.RCV_WND]
+        jbe     .dont_trim
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: received data does not fit in window, trimming %u bytes\n", eax
+        mov     ecx, [ebx + TCP_SOCKET.RCV_WND]
+        and     [edx + TCP_header.Flags], not (TH_FIN)
+;;; TODO: update stats
+
+  .dont_trim:
 
         mov     eax, [edx + TCP_header.SequenceNumber]
         mov     [ebx + TCP_SOCKET.RCV_UP], eax
@@ -1479,7 +1495,7 @@ align 4
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK
 
         pusha
-        movzx   esi, [edx + TCP_header.DataOffset]
+        mov     esi, [dataoffset]
         add     esi, edx
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_write                       ; Add the data to the socket buffer
@@ -1493,14 +1509,15 @@ align 4
         jmp     .data_done
 
   .out_of_order:
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order!\nSequencenumber is %u, we expected %u.\n", \
+        [edx + TCP_header.SequenceNumber], [ebx + TCP_SOCKET.RCV_NXT]
 
 ; Uh-oh, some data is out of order, lets call TCP reassemble for help
 
         call    TCP_reassemble
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE,  "1470\n"
+; Generate ACK immediately, to let the other end know that a segment was received out of order,
+; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
   .data_done:
@@ -1703,3 +1720,5 @@ align 4
         call    NET_packet_free
         add     esp, 4
         jmp     .loop
+
+endp
