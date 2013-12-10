@@ -181,6 +181,7 @@ FASM_PROGRAMS:=\
  lib/libio.obj:LIB/LIBIO.OBJ:$(PROGS)/develop/libraries/libs-dev/libio/libio.asm \
  lib/msgbox.obj:LIB/MSGBOX.OBJ:$(PROGS)/develop/libraries/msgbox/msgbox.asm \
  lib/network.obj:LIB/NETWORK.OBJ:$(PROGS)/develop/libraries/network/network.asm \
+ lib/sort.obj:LIB/SORT.OBJ:$(PROGS)/develop/libraries/sorter/sort.asm \
  lib/http.obj:LIB/HTTP.OBJ:$(PROGS)/develop/libraries/http/http.asm \
  lib/proc_lib.obj:LIB/PROC_LIB.OBJ:$(PROGS)/develop/libraries/proc_lib/trunk/proc_lib.asm \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ:$(PROGS)/media/zsea/plugins/png/cnv_png.asm \
@@ -322,7 +323,6 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  games/kosilka:GAMES/KOSILKA \
  ../common/lib/pixlib.obj:LIB/PIXLIB.OBJ \
- ../common/lib/sort.obj:LIB/SORT.OBJ \
  ../common/lib/iconv.obj:LIB/ICONV.OBJ \
  ../common/lib/netcode.obj:LIB/NETCODE.OBJ \
  media/ac97snd:MEDIA/AC97SND \
