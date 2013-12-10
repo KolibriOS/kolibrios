@@ -46,6 +46,10 @@ include '../../../macros.inc'
 include '../../../config.inc'		;for nightbuild
 ;include '../../../debug.inc'		;for nightbuild
 
+;define __DEBUG__ 1
+;define __DEBUG_LEVEL__ 1
+;include '../../../debug-fdo.inc'
+
 include   'editbox.inc'
 ;use_edit_box
 use_edit_box procinfo
@@ -482,7 +486,9 @@ include   'file_inf.inc'
 include   'text.inc'
 ;---------------------------------------------------------------------
 I_END:
+;include_debug_strings
 ;---------------------------------------------------------------------
 include   'data.inc'
 ;---------------------------------------------------------------------
+align 4096
 mem:
