@@ -31,6 +31,18 @@ add_write_file:
    ret
 ;---------------------------------------------------------------------
 proc_read_left_folder:
+   mov   ebx,304
+   push  ebx ecx
+   mov   ecx,[appl_memory]
+   add   ecx,ebx
+   mov   [esp],ebx
+   mov   ebx,[appl_memory]
+   mov   [esp+4],ebx
+   mov   [appl_memory],ecx
+   mcall 64,1
+   call  move_up_right_table
+   pop   ecx ebx
+
    xor   eax,eax
    mov   [left_marked_counter],eax
    mov	 [read_folder.start],eax    ;dword 0
@@ -143,6 +155,10 @@ error_handler:
    ret
 ;---------------------------------------------------------------------
 proc_read_right_folder:
+   mov   ecx,[appl_memory]
+   add   ecx,304
+   mov   [appl_memory],ecx
+   mcall 64,1
    xor   eax,eax
    mov   [right_marked_counter],eax
    mov	 [read_folder_1.start],eax      ;dword 0
