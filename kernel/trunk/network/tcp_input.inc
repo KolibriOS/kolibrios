@@ -82,6 +82,7 @@ proc TCP_process_input
 
 locals
         dataoffset      dd ?
+        timestamp       dd ?
 endl
 
         xor     esi, esi
@@ -98,6 +99,7 @@ endl
         get_from_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .wait
 
         push    [esi + TCP_queue_entry.timestamp]
+        pop     [timestamp]
         push    [esi + TCP_queue_entry.buffer_ptr]
 
         mov     ebx, [esi + TCP_queue_entry.device_ptr]
@@ -372,6 +374,7 @@ endl
        @@:
 
         lodsd
+        bswap   eax
         mov     [ebx + TCP_SOCKET.ts_val], eax
         lodsd                                   ; timestamp echo reply
         mov     [ebx + TCP_SOCKET.ts_ecr], eax
@@ -386,11 +389,11 @@ endl
         test    eax, eax
         jz      .no_paws
         cmp     eax, [ebx + TCP_SOCKET.ts_val]
-        jge     .no_paws
+        jbe     .no_paws
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: PAWS: detected an old segment\n"
 
-        mov     eax, [esp+4+4]                          ; tcp_now
+        mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
 
         pop     ecx
@@ -482,7 +485,7 @@ endl
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp_rtt
-        mov     eax, [esp + 4]                          ; timestamp when this segment was received
+        mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    TCP_xmit_timer
@@ -542,12 +545,11 @@ endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Header prediction: we are receiving %u bytes\n", ecx
 
-        add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
-
         mov     esi, [dataoffset]
         add     esi, edx
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_write                       ; Add the data to the socket buffer
+        add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
 
         mov     eax, ebx
         call    SOCKET_notify
@@ -734,7 +736,7 @@ endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Recording timestamp\n"
 
-        mov     eax, [esp + 4]                                  ; tcp_now
+        mov     eax, [timestamp]
         mov     [ebx + TCP_SOCKET.ts_recent_age], eax
         mov     eax, [ebx + TCP_SOCKET.ts_val]
         mov     [ebx + TCP_SOCKET.ts_recent], eax
@@ -1008,7 +1010,7 @@ endl
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
         jz      .timestamp_not_present
-        mov     eax, [esp+4]
+        mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    TCP_xmit_timer
@@ -1645,7 +1647,6 @@ align 4
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
         call    NET_packet_free
-        add     esp, 4
         jmp     .loop
 
 ;---------
@@ -1718,7 +1719,6 @@ align 4
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop (no socket)\n"
 
         call    NET_packet_free
-        add     esp, 4
         jmp     .loop
 
 endp

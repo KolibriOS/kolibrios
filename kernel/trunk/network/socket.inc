@@ -1562,10 +1562,10 @@ SOCKET_ring_write:
         pop     ecx
 
 ; unlock mutex
-        push    eax ecx
+        pusha
         lea     ecx, [eax + RING_BUFFER.mutex]
         call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
-        pop     ecx eax
+        popa
 
         ret
 
