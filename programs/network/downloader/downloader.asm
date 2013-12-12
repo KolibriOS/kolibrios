@@ -369,9 +369,9 @@ read_incoming_data:
   .read:
         mcall   recv, [socketnum], [pos], BUFFERSIZE, 0
         inc     eax             ; -1 = error (socket closed?)
+        jz      .error
+        dec     eax             ; 0 bytes means the remote end closed the connection
         jz      .no_more_data
-        dec     eax             ; 0 bytes...
-        jz      .read
 
         DEBUGF  1, "Got chunk of %u bytes\n", eax
 
@@ -384,6 +384,9 @@ read_incoming_data:
         ; TODO: parse header and resize buffer only once
         pop     eax
         jmp     .read
+
+  .error:
+        DEBUGF  1, "Socket error: %u\n", ebx
         
   .no_more_data:
         mov     eax, [buf_ptr]
