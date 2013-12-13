@@ -83,6 +83,7 @@ proc TCP_process_input
 locals
         dataoffset      dd ?
         timestamp       dd ?
+        temp_bits       db ?
 endl
 
         xor     esi, esi
@@ -218,7 +219,7 @@ endl
 ;---------------------------
 ; disable all temporary bits
 
-        mov     [ebx + TCP_SOCKET.temp_bits], 0
+        mov     [temp_bits], 0
 
 ;---------------------------------------
 ; unscale the window into a 32 bit value
@@ -252,7 +253,7 @@ endl
 
         mov     ebx, eax
 
-        mov     [ebx + TCP_SOCKET.temp_bits], TCP_BIT_DROPSOCKET        ;;; FIXME: should we take over bits from previous socket?
+        mov     [temp_bits], TCP_BIT_DROPSOCKET
 
         push    dword [edi + 4]                         ; Ipv4 destination addres
         pop     [ebx + IP_SOCKET.LocalIP]
@@ -378,7 +379,7 @@ endl
         mov     [ebx + TCP_SOCKET.ts_val], eax
         lodsd                                   ; timestamp echo reply
         mov     [ebx + TCP_SOCKET.ts_ecr], eax
-        or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
+        or      [temp_bits], TCP_BIT_TIMESTAMP
 
         ; Since we have a timestamp, lets do the paws test right away!
 
@@ -483,7 +484,7 @@ endl
 
 ; Update RTT estimators
 
-        test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
+        test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp_rtt
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
@@ -713,16 +714,16 @@ endl
 ;;; TODO: update stats
   .dont_drop_all:
 ;;; TODO: update stats
-        DEBUGF  1, "Trimming %u bytes from the right of the window\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Trimming %u bytes from the right of the window\n"
         sub     ecx, eax        ; remove data from the right side of window (decrease data length)
-        and     [ebx + TCP_SOCKET.t_flags], not (TH_PUSH or TH_FIN)
+        and     [edx + TCP_header.Flags], not (TH_PUSH or TH_FIN)
   .no_excess_data:
 
 ;-----------------
 ; Record timestamp
 
 ; If last ACK falls within this segments sequence numbers, record its timestamp
-        test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
+        test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp
         mov     eax, [ebx + TCP_SOCKET.last_ack_sent]
         sub     eax, [edx + TCP_header.SequenceNumber]
@@ -1004,11 +1005,11 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: acceptable ACK for %u bytes\n", edi
 
 ;------------------------------------------
-; RTT measurements and retransmission timer  (912-926)
+; RTT measurements and retransmission timer
 
 ; If we have a timestamp, update smoothed RTT
 
-        test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
+        test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .timestamp_not_present
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
@@ -1039,7 +1040,7 @@ endl
         cmp     eax, [edx + TCP_header.AckNumber]
         jne     .more_data
         and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission
-        or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_NEEDOUTPUT
+        or      [temp_bits], TCP_BIT_NEEDOUTPUT
         jmp     .no_restart
   .more_data:
         test    [ebx + TCP_SOCKET.timer_flags], timer_flag_persist
@@ -1241,7 +1242,7 @@ align 4
         TCP_rcvseqinit ebx
 
         mov     [ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
-        mov     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+        or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         mov     [ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval  ;;;; macro
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_keepalive
 
@@ -1251,7 +1252,7 @@ align 4
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
 
-        and     [ebx + TCP_SOCKET.temp_bits], not TCP_BIT_DROPSOCKET
+        and     [temp_bits], not TCP_BIT_DROPSOCKET
 
         pusha
         mov     eax, ebx
@@ -1431,7 +1432,7 @@ align 4
         push    [edx + TCP_header.AckNumber]
         pop     [ebx + TCP_SOCKET.SND_WL2]
 
-        or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_NEEDOUTPUT
+        or      [temp_bits], TCP_BIT_NEEDOUTPUT
 
   .no_window_update:
 
@@ -1521,7 +1522,6 @@ align 4
 ; Generate ACK immediately, to let the other end know that a segment was received out of order,
 ; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
-
   .data_done:
 
 ;---------------
@@ -1540,7 +1540,7 @@ align 4
         mov     eax, ebx
         call    SOCKET_cant_recv_more
 
-        mov     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+        or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         inc     [ebx + TCP_SOCKET.RCV_NXT]
 
   .not_first_fin:
@@ -1562,29 +1562,54 @@ align 4
         dd      .fin_timed              ; TCPS_TIMED_WAIT
 
   .fin_syn_est:
-
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
         jmp     .final_processing
 
   .fin_wait1:
-
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSING
         jmp     .final_processing
 
   .fin_wait2:
-
         mov     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
         mov     eax, ebx
         call    TCP_cancel_timers
-        mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
-        or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
         call    SOCKET_is_disconnected
-        jmp     .final_processing
 
   .fin_timed:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
         or      [ebx + TCP_SOCKET.timer_flags], timer_flag_wait
-        jmp     .final_processing
+
+;-----------------
+; Final processing
+
+  .final_processing:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Final processing\n"
+
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        pop     eax
+
+        test    [temp_bits], TCP_BIT_NEEDOUTPUT
+        jnz     .need_output
+
+        test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW
+        jz      .dumpit
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK now!\n"
+
+  .need_output:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: need output\n"
+        call    TCP_output
+
+  .dumpit:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
+
+        call    NET_packet_free
+        jmp     .loop
+
+
+;-----------------
+; Drop the segment
 
 
   .drop_after_ack:
@@ -1620,34 +1645,6 @@ align 4
         test    [edx + TCP_header.Flags], TH_SYN
         jnz     .respond_syn
         jmp     .dumpit
-
-;-----------------
-; Final processing
-
-  .final_processing:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Final processing\n"
-
-        push    ebx
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
-        pop     eax
-
-        test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_NEEDOUTPUT
-        jnz     .need_output
-
-        test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW
-        jz      .dumpit
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK now!\n"
-
-  .need_output:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: need output\n"
-        call    TCP_output
-
-  .dumpit:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
-
-        call    NET_packet_free
-        jmp     .loop
 
 ;---------
 ; Respond
@@ -1709,7 +1706,7 @@ align 4
         popa
 
   .destroy_new_socket:
-        test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_DROPSOCKET
+        test    [temp_bits], TCP_BIT_DROPSOCKET
         jz      .drop_no_socket
 
         mov     eax, ebx

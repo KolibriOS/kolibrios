@@ -141,10 +141,6 @@ struct  TCP_SOCKET              IP_SOCKET
 
         seg_next                dd ? ; re-assembly queue
 
-        temp_bits               db ?
-                                rb 3 ; align
-
-
 ends
 
 struct  UDP_SOCKET              IP_SOCKET

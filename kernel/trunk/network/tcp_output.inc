@@ -26,7 +26,11 @@ $Revision: 3289 $
 ;
 ;-----------------------------------------------------------------
 align 4
-TCP_output:
+proc TCP_output
+
+locals
+        temp_bits       db ?
+endl
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x\n", eax
 
@@ -57,7 +61,7 @@ TCP_output:
 
   .not_idle:
   .again:
-        mov     [eax + TCP_SOCKET.temp_bits], 0
+        mov     [temp_bits], 0
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]         ; calculate offset (71)
         sub     ebx, [eax + TCP_SOCKET.SND_UNA]         ;
@@ -145,7 +149,7 @@ TCP_output:
         jbe     @f
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        or      [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        or      [temp_bits], TCP_BIT_SENDALOT
        @@:
 
 ;--------------------------------------------
@@ -406,8 +410,40 @@ TCP_send:
         jbe     .no_overflow
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        or      [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        or      [temp_bits], TCP_BIT_SENDALOT
   .no_overflow:
+
+;----------------------------------------------------
+; Calculate the receive window.
+; Dont shrink window, but avoid silly window syndrome
+
+        mov     ebx, SOCKET_MAXDATA
+        sub     ebx, [eax + STREAM_SOCKET.rcv.size]
+
+        cmp     ebx, SOCKET_MAXDATA/4
+        jae     @f
+        cmp     ebx, [eax + TCP_SOCKET.t_maxseg]
+        jae     @f
+        xor     ebx, ebx
+  @@:
+
+        cmp     ebx, TCP_max_win
+        jbe     @f
+        mov     ebx, TCP_max_win
+  @@:
+
+        mov     ecx, [eax + TCP_SOCKET.RCV_ADV]
+        sub     ecx, [eax + TCP_SOCKET.RCV_NXT]
+        cmp     ebx, ecx
+        ja      @f
+        mov     ebx, ecx
+  @@:
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: window = %u\n", ebx
+
+        mov     cl, [eax + TCP_SOCKET.RCV_SCALE]
+        shr     ebx, cl
+        xchg    bl, bh
 
 ;-----------------------------------------------------------------
 ; Start by pushing all TCP header values in reverse order on stack
@@ -415,7 +451,7 @@ TCP_send:
 
         pushw   0       ;        .UrgentPointer          dw ?
         pushw   0       ;        .Checksum               dw ?
-        pushw   0x00a0  ;        .Window                 dw ?    ;;;;;;; FIXME (370)
+        pushw   bx      ;        .Window                 dw ?
         shl     edi, 2  ;        .DataOffset             db ?  only 4 left-most bits
         shl     dx, 8
         or      dx, di  ;        .Flags                  db ?
@@ -566,7 +602,7 @@ TCP_send:
         push    [eax + TCP_SOCKET.RCV_NXT]
         pop     [eax + TCP_SOCKET.last_ack_sent]
 
-; and flags
+; clear the ACK flags
         and     [eax + TCP_SOCKET.t_flags], not (TF_ACKNOW + TF_DELACK)
 
 ;--------------
@@ -582,7 +618,7 @@ TCP_send:
 ;-----------------------------
 ; Check if we need more output
 
-        test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        test    [temp_bits], TCP_BIT_SENDALOT
         jnz     TCP_output.again
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: success!\n"
@@ -622,7 +658,4 @@ TCP_send:
         ret
 
 
-
-
-
-
+endp
