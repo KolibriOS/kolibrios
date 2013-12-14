@@ -49,6 +49,7 @@
 
 #define intel_debug_fallback printf
 
+#define DBG printf
 
 // refer vol2, 3d rasterization 3.8.1
 

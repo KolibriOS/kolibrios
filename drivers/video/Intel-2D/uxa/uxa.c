@@ -132,6 +132,8 @@ void sna_set_bo_handle(bitmap_t *bitmap, int handle)
 int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
                   int w, int h, int src_x, int src_y)
 {
+//    DBG("%s\n", __FUNCTION__);
+
     struct _Pixmap pixSrc, pixMask;
     struct intel_pixmap privSrc;
     struct _Picture pictSrc, pictDst;
@@ -174,24 +176,17 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
 
     uxa_update_fb(intel);
 
-//    pixDst.drawable.bitsPerPixel = 32;
-//    pixDst.drawable.width  = sna_fb.width;
-//    pixDst.drawable.height = sna_fb.height;
-
-//   pixMask.drawable.bitsPerPixel = 8;
-//    pixMask.drawable.width  = update.width;
-//    pixMask.drawable.height = update.height;
-
     i965_prepare_composite(PictOpSrc, &pictSrc, NULL, &pictDst,
                            &pixSrc, NULL, &fb_pixmap);
 
-
     i965_composite(&fb_pixmap, src_x, src_y, 0, 0,
-                    dst_x, dst_y, w, h);
+                    dst_x+winx, dst_y+winy, w, h);
 
     i830_done_composite(&fb_pixmap);
 
 	intel_batch_submit();
+
+//    DBG("%s done\n", __FUNCTION__);
 
     return 0;
 };
@@ -238,11 +233,15 @@ int uxa_update_fb(struct intel_screen_private *intel)
     size_t size;
     int ret;
 
+//    DBG("%s\n", __FUNCTION__);
+
     ret = drmIoctl(intel->scrn, SRV_FBINFO, &fb);
 	if( ret != 0 )
 	    return ret;
 
     ipix = (struct intel_pixmap*)fb_pixmap.private;
+
+    list_init(&ipix->batch);
     ipix->stride = fb.pitch;
     ipix->tiling = fb.tiling;
 
@@ -299,6 +298,14 @@ int uxa_init(uint32_t service)
 		printf("Memory manager initialization failed\n");
 		goto err1;
     };
+
+	list_init(&intel->batch_pixmaps);
+
+	if ((INTEL_INFO(intel)->gen == 060)) {
+		intel->wa_scratch_bo =
+			drm_intel_bo_alloc(intel->bufmgr, "wa scratch",
+					   4096, 4096);
+	}
 
     if( uxa_init_fb(intel) != 0)
         goto err1;

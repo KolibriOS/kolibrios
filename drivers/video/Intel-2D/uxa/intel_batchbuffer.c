@@ -45,6 +45,8 @@
 
 #define DUMP_BATCHBUFFERS NULL // "/tmp/i915-batchbuffers.dump"
 
+#define DBG printf
+
 static void intel_end_vertex(intel_screen_private *intel)
 {
 	if (intel->vertex_bo) {
@@ -289,7 +291,7 @@ void intel_batch_submit()
 					 struct intel_pixmap,
 					 batch);
 
-		entry->busy = -1;
+ 		entry->busy = -1;
 		entry->dirty = 0;
 		list_del(&entry->batch);
 	}
