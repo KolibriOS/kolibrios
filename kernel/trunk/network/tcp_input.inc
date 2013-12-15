@@ -567,12 +567,13 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Header prediction failed\n"
 
 ; Calculate receive window size
-
         push    edx
-        mov     eax, SOCKETBUFFSIZE
+        mov     eax, SOCKET_MAXDATA
         sub     eax, [ebx + STREAM_SOCKET.rcv.size]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Space in receive buffer=%d\n", eax
         mov     edx, [ebx + TCP_SOCKET.RCV_ADV]
         sub     edx, [ebx + TCP_SOCKET.RCV_NXT]
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "Current advertised window=%d\n", edx
         cmp     eax, edx
         jg      @f
         mov     eax, edx
@@ -1189,12 +1190,9 @@ endl
         call    mutex_unlock
         pop     ebx
 
-        push    ebx
         mov     eax, ebx
-        call    TCP_disconnect
-        pop     ebx
-
-        jmp     .destroy_new_socket
+        call    TCP_close
+        jmp     .drop_no_socket
 
   .ack_tw:
         mov     [ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL

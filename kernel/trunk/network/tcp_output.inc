@@ -32,7 +32,7 @@ locals
         temp_bits       db ?
 endl
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x\n", eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x state=%u\n", eax, [eax + TCP_SOCKET.t_state]
 
         push    eax
         lea     ecx, [eax + SOCKET.mutex]

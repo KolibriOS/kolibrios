@@ -714,6 +714,11 @@ SOCKET_close:
 
         call    TCP_usrclosed
 
+        test    eax, eax
+        jz      @f
+        call    TCP_output                                      ; If connection is not closed yet, send the FIN
+  @@:
+
         ret
 
 
@@ -2196,7 +2201,7 @@ SOCKET_check_owner:
 ;
 ; Kernel calls this function when a certain process ends
 ; This function will check if the process had any open sockets
-; And update them accordingly
+; And update them accordingly (clean up)
 ;
 ; IN:  edx = pid
 ; OUT: /
@@ -2242,7 +2247,7 @@ SOCKET_process_end:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     .free
 
-        call    TCP_close
+        call    TCP_disconnect
         jmp     .closed
 
   .free:
@@ -2347,20 +2352,9 @@ SOCKET_is_disconnected:
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
 
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        je      .tcp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
-        je      .udp
 
         jmp     SOCKET_notify
 
-  .tcp:
-  .udp:
-        mov     [eax + UDP_SOCKET.LocalPort], 0         ; UDP and TCP structs store localport at the same offset
-        mov     [eax + UDP_SOCKET.RemotePort], 0
-
-        jmp     SOCKET_notify
 
 
 ;-----------------------------------------------------------------
