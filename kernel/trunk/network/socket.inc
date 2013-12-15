@@ -28,7 +28,7 @@ struct  SOCKET
         PID                     dd ? ; process ID
         TID                     dd ? ; thread ID
         Domain                  dd ? ; INET/LOCAL/..
-        Type                    dd ? ; RAW/STREAM/DGRAP
+        Type                    dd ? ; RAW/STREAM/DGRAM
         Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
         errorcode               dd ?
         device                  dd ? ; driver pointer, socket pointer if it's an LOCAL socket
@@ -711,12 +711,8 @@ SOCKET_close:
         ret
 
   .tcp:
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED    ; state must be LISTEN, SYN_SENT or CLOSED
-        jb      .free
 
         call    TCP_usrclosed
-        call    TCP_output      ;;;; Fixme: is this nescessary??
-        call    SOCKET_free
 
         ret
 

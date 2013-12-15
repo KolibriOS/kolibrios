@@ -152,7 +152,9 @@ TCP_drop:
 
         mov     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
 
+        push    eax
         call    TCP_output
+        pop     eax
 
 ;;; TODO: update stats
 
