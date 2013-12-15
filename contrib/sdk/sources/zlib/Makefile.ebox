@@ -32,7 +32,7 @@ LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image
 
 INCLUDES= -I../newlib/include
 
-LIBPATH:= -L../../import -L../../static
+LIBPATH:= -L../../lib
 
 LIBS:=  -ldll -lc.dll
 
@@ -52,7 +52,7 @@ all: $(STATICLIB) $(SHAREDLIB) $(IMPLIB) Makefile
 
 $(STATICLIB): $(OBJS) $(OBJA) Makefile
 	$(AR) $(ARFLAGS) $@ $(OBJS) $(OBJA)
-	mv -f libz.a ../../static
+	mv -f libz.a ../../lib
 
 $(IMPLIB): $(SHAREDLIB)
 
@@ -61,8 +61,8 @@ $(SHAREDLIB): zlib.def $(OBJS) $(OBJA) Makefile
 	$(STRIP) $@
 	sed -f ../newlib/cmd1.sed zlib.def > mem
 	sed -f ../newlib/cmd2.sed mem >zlib.inc 
-	mv -f zlib.dll ../../lib
-	mv -f libz.dll.a ../../import   
+	mv -f zlib.dll ../../bin
+	mv -f libz.dll.a ../../lib   
 
 
 adler32.o: zlib.h zconf.h

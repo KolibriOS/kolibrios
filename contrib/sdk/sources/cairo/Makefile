@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -c -O2 -ffast-math -Wall -Winline -Wno-attributes -fomit-frame-pointer
 
 LD = ld
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
+LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
 
 STRIP = $(PREFIX)strip
 
@@ -151,7 +151,7 @@ all: $(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
-	mv -f $(LIBRARY).a ../../static
+	mv -f $(LIBRARY).a ../../lib
 
 
 $(LIBRARY).dll: $(OBJECTS) Makefile

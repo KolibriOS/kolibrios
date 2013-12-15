@@ -15,7 +15,7 @@ DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
-LIBPATH:= -L ../../static
+LIBPATH:= -L ../../lib
 
 STATIC_SRCS:=					\
          		crt/start.S		\
@@ -380,10 +380,10 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	sed -f newlib.sed mem > libc.inc
 
 install: libc.dll libc.dll.a libapp.a libdll.a
-	mv -f libc.dll ../../lib
-	mv -f libc.dll.a ../../import   
-	mv -f libapp.a ../../static
-	mv -f libdll.a ../../static
+	mv -f libc.dll ../../bin
+	mv -f libc.dll.a ../../lib   
+	mv -f libapp.a ../../lib
+	mv -f libdll.a ../../lib
 
 libapp.a: $(LIBCRT_OBJS) Makefile
 	$(AR) libapp.a $(LIBCRT_OBJS)

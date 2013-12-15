@@ -4,9 +4,6 @@ EXPORTS,'EXPORTS',\
     __cairo_contour_add_point,'__cairo_contour_add_point',\
     __cairo_contour_remove_last_chain,'__cairo_contour_remove_last_chain',\
     __cairo_no_compositor,'__cairo_no_compositor',\ 
-    __chkstk,'__chkstk',\ 
-    __chkstk_ms,'__chkstk_ms',\ 
-    _alloca,'_alloca',\ 
     _cairo_analysis_surface_create,'_cairo_analysis_surface_create',\
     _cairo_analysis_surface_get_bounding_box,'_cairo_analysis_surface_get_bounding_box',\
     _cairo_analysis_surface_get_ctm,'_cairo_analysis_surface_get_ctm',\
@@ -781,7 +778,6 @@ EXPORTS,'EXPORTS',\
     _do_cairo_gstate_backend_to_user_distance,'_do_cairo_gstate_backend_to_user_distance',\
     _do_cairo_gstate_user_to_backend,'_do_cairo_gstate_user_to_backend',\
     _do_cairo_gstate_user_to_backend_distance,'_do_cairo_gstate_user_to_backend_distance',\
-    _nm____ctype_ptr__,'_nm____ctype_ptr__',\ 
     _pixman_format_from_masks,'_pixman_format_from_masks',\
     _pixman_format_to_masks,'_pixman_format_to_masks',\
     _pixman_image_add_traps,'_pixman_image_add_traps',\
@@ -1115,5 +1111,3 @@ EXPORTS,'EXPORTS',\
     cairo_user_to_device_distance,'cairo_user_to_device_distance',\
     cairo_version,'cairo_version',\
     cairo_version_string,'cairo_version_string',\
-    longjmp,'longjmp',\
-    setjmp,'setjmp',\

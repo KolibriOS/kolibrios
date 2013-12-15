@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -c -O2 -march=pentium-mmx -ffast-math -Wall -Winline -Wno-attributes -fomit-frame-pointer
 
 LD = ld
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
+LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
 
 STRIP = $(PREFIX)strip
 
@@ -14,7 +14,7 @@ DEFINES = -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER -DHAVE_CONFIG_H
 INCLUDES = -I. -I../newlib/include -I../pixman -I../zlib -I../libpng -I../freetype/include
 
 
-LIBPATH:= -L../../import -L../../static
+LIBPATH:= -L../../lib
 
 LIBS:=  -ldll -lgcc -lfreetype.dll -lz.dll -lpixman-1.dll -lpng16.dll -lc.dll
 
@@ -151,7 +151,7 @@ all: $(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
-	mv -f $(LIBRARY).a ../../static
+	mv -f $(LIBRARY).a ../../lib
 
 
 $(LIBRARY).dll: $(OBJECTS) Makefile
@@ -160,8 +160,8 @@ $(LIBRARY).dll: $(OBJECTS) Makefile
 	sed -e "s/ @[^ ]*//" $(LIBRARY).orig.def > $(LIBRARY).def
 	sed -f ../newlib/cmd1.sed $(LIBRARY).def > mem
 	sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
-	mv -f $@ ../../lib
-	mv -f $(LIBRARY).dll.a ../../import   
+	mv -f $@ ../../bin
+	mv -f $(LIBRARY).dll.a ../../lib   
 
 %.o : %.c 
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

@@ -60,7 +60,7 @@ all:$(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
-	mv -f $(LIBRARY).a ../../static
+	mv -f $(LIBRARY).a ../../lib
 
 $(LIBRARY).dll: $(LIBRARY).def $(OBJECTS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBRARY).def $(OBJECTS) $(LIBS)

@@ -11,7 +11,7 @@ STRIP = $(PREFIX)strip
 
 INCLUDES= -I../newlib/include -I./include -I./include/freetype/config 
 
-LIBPATH:= -L../../import -L../../static
+LIBPATH:= -L../../lib
 
 LIBS:=  -ldll -lc.dll -lgcc
 
@@ -69,15 +69,15 @@ all:lib$(LIBRARY).a $(LIBRARY).dll
 
 lib$(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs lib$(LIBRARY).a $(OBJECTS)
-	mv -f lib$(LIBRARY).a ../../static
+	mv -f lib$(LIBRARY).a ../../lib
 
 $(LIBRARY).dll: lib$(LIBRARY).def $(OBJECTS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ lib$(LIBRARY).def $(OBJECTS) $(LIBS)
 	$(STRIP) $@
 	sed -f ../newlib/cmd1.sed lib$(LIBRARY).def > mem
 	sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
-	mv -f $@ ../../lib
-	mv -f lib$(LIBRARY).dll.a ../../import   
+	mv -f $@ ../../bin
+	mv -f lib$(LIBRARY).dll.a ../../lib   
 	
 
 %.o : %.c Makefile

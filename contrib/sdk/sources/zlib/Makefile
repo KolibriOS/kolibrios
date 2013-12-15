@@ -52,7 +52,7 @@ all: $(STATICLIB) $(SHAREDLIB) $(IMPLIB) Makefile
 
 $(STATICLIB): $(OBJS) $(OBJA) Makefile
 	$(AR) $(ARFLAGS) $@ $(OBJS) $(OBJA)
-	mv -f libz.a ../../static
+	mv -f libz.a ../../lib
 
 $(IMPLIB): $(SHAREDLIB)
 

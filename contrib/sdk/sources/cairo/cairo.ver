@@ -1,0 +1,10 @@
+LIBDRM {
+    global: DllStartup;
+            *;
+    local:  __chkstk;
+    	    __chkstk_ms;
+    	    _alloca;
+	    _nm____ctype_ptr__;
+	    longjmp;
+	    setjmp;
+};
