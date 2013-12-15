@@ -1,0 +1,14 @@
+TODO covering gallivm/llvmpipe
+==============================
+
+Goal: GL3.0 support in llvmpipe
+-------------------------------
+
+EXT_packed_float support.
+ARB_depth_buffer_float support.
+EXT_framebuffer_sRGB support.
+MSAA support.
+
+Goal: extension parity with softpipe:
+-------------------------------------
+

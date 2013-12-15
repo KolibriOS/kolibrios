@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=@libdir@
+includedir=@includedir@
+
+Name: xatracker
+Description: Xorg Gallium3D acceleration library
+Version: @XA_VERSION@
+Libs: -L${libdir} -lxatracker
