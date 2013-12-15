@@ -1,0 +1,5 @@
+LIBAVUTIL_52 {
+        global: DllStartup;
+                av*; ff_*;
+        local: *;
+};

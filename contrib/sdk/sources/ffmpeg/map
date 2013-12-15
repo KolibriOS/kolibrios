@@ -1,0 +1,932 @@
+Archive member included because of file (symbol)
+
+../../lib/libdll.a(dllstart.o)
+                              (DllStartup)
+../../lib/libdll.a(pseudo-reloc.o)
+                              ../../lib/libdll.a(dllstart.o) (_pei386_runtime_relocator)
+libavutil/avutil.lib(dclfs00287.o)
+                              libswscale/input.o (av_pix_fmt_desc_get)
+libavutil/avutil.lib(dclfs00208.o)
+                              libswscale/input.o (av_log)
+libavutil/avutil.lib(dclfs00152.o)
+                              libswscale/swscale.o (av_get_cpu_flags)
+libavutil/avutil.lib(dclfs00218.o)
+                              libswscale/swscale.o (av_malloc)
+libavutil/avutil.lib(dclfs00138.o)
+                              libswscale/swscale.o (av_free)
+libavutil/avutil.lib(dclfs00162.o)
+                              libswscale/swscale_unscaled.o (av_get_pix_fmt_name)
+libavutil/avutil.lib(dclfs00219.o)
+                              libswscale/utils.o (av_mallocz)
+libavutil/avutil.lib(dclfs00139.o)
+                              libswscale/utils.o (av_freep)
+libavutil/avutil.lib(dclfs00142.o)
+                              libswscale/utils.o (av_get_bits_per_pixel)
+libavutil/avutil.lib(dclfs00267.o)
+                              libswscale/utils.o (av_opt_set_defaults)
+libavutil/avutil.lib(dclfs00292.o)
+                              libswscale/utils.o (av_pix_fmt_swap_endianness)
+libavutil/avutil.lib(dclfs00291.o)
+                              libswscale/utils.o (av_pix_fmt_get_chroma_sub_sample)
+libavutil/avutil.lib(dclfh.o)
+                              libavutil/avutil.lib(dclfs00287.o) (_head_libavutil_avutil_lib)
+libavutil/avutil.lib(dclft.o)
+                              libavutil/avutil.lib(dclfh.o) (_libavutil_avutil_lib_iname)
+../../lib/libc.dll.a(d000155.o)
+                              libswscale/input.o (abort)
+../../lib/libc.dll.a(d000359.o)
+                              libswscale/swscale.o (memcpy)
+../../lib/libc.dll.a(d000361.o)
+                              libswscale/swscale.o (memset)
+../../lib/libc.dll.a(d000180.o)
+                              libswscale/utils.o (ceil)
+../../lib/libc.dll.a(d000187.o)
+                              libswscale/utils.o (cos)
+../../lib/libc.dll.a(d000373.o)
+                              libswscale/utils.o (pow)
+../../lib/libc.dll.a(d000413.o)
+                              libswscale/utils.o (sin)
+../../lib/libc.dll.a(d000360.o)
+                              libswscale/utils.o (memmove)
+../../lib/libc.dll.a(d000358.o)
+                              libswscale/utils.o (memcmp)
+../../lib/libc.dll.a(d000423.o)
+                              libswscale/utils.o (sqrt)
+../../lib/libc.dll.a(d000211.o)
+                              libswscale/utils.o (exp)
+../../lib/libc.dll.a(d000000.o)
+                              ../../lib/libc.dll.a(d000155.o) (_head_libc_dll)
+../../lib/libc.dll.a(d000508.o)
+                              ../../lib/libc.dll.a(d000000.o) (libc_dll_iname)
+../../lib/libgcc.a(_ctors.o)  ../../lib/libdll.a(dllstart.o) (__CTOR_LIST__)
+../../lib/libgcc.a(_divdi3.o)
+                              libswscale/utils.o (__divdi3)
+
+Allocating common symbols
+Common symbol       size              file
+
+ff_rgb24toyv12      0x4               libswscale/rgb2rgb.o
+__DTOR_LIST__       0x10              ../../lib/libgcc.a(_ctors.o)
+yuyvtoyuv422        0x4               libswscale/rgb2rgb.o
+rgb15to16           0x4               libswscale/rgb2rgb.o
+rgb32to15           0x4               libswscale/rgb2rgb.o
+rgb15tobgr24        0x4               libswscale/rgb2rgb.o
+rgb32tobgr16        0x4               libswscale/rgb2rgb.o
+planar2x            0x4               libswscale/rgb2rgb.o
+uyvytoyuv420        0x4               libswscale/rgb2rgb.o
+rgb32tobgr15        0x4               libswscale/rgb2rgb.o
+rgb24tobgr32        0x4               libswscale/rgb2rgb.o
+yv12toyuy2          0x4               libswscale/rgb2rgb.o
+yuv422ptoyuy2       0x4               libswscale/rgb2rgb.o
+rgb16to32           0x4               libswscale/rgb2rgb.o
+rgb24tobgr15        0x4               libswscale/rgb2rgb.o
+rgb16to15           0x4               libswscale/rgb2rgb.o
+uyvytoyuv422        0x4               libswscale/rgb2rgb.o
+rgb16tobgr24        0x4               libswscale/rgb2rgb.o
+rgb24to16           0x4               libswscale/rgb2rgb.o
+rgb24tobgr24        0x4               libswscale/rgb2rgb.o
+__CTOR_LIST__       0x10              ../../lib/libgcc.a(_ctors.o)
+yvu9_to_yuy2        0x4               libswscale/rgb2rgb.o
+rgb32tobgr24        0x4               libswscale/rgb2rgb.o
+yuyvtoyuv420        0x4               libswscale/rgb2rgb.o
+shuffle_bytes_2103  0x4               libswscale/rgb2rgb.o
+vu9_to_vu12         0x4               libswscale/rgb2rgb.o
+rgb15to32           0x4               libswscale/rgb2rgb.o
+rgb24tobgr16        0x4               libswscale/rgb2rgb.o
+rgb32to16           0x4               libswscale/rgb2rgb.o
+rgb24to15           0x4               libswscale/rgb2rgb.o
+yv12touyvy          0x4               libswscale/rgb2rgb.o
+yuv422ptouyvy       0x4               libswscale/rgb2rgb.o
+interleaveBytes     0x4               libswscale/rgb2rgb.o
+yuy2toyv12          0x4               libswscale/rgb2rgb.o
+
+Discarded input sections
+
+ .eh_frame      0x0000000000000000       0x44 ../../lib/libdll.a(dllstart.o)
+ .eh_frame      0x0000000000000000       0x64 ../../lib/libdll.a(pseudo-reloc.o)
+ .eh_frame      0x0000000000000000     0x1a54 libswscale/input.o
+ .eh_frame      0x0000000000000000       0x40 libswscale/options.o
+ .eh_frame      0x0000000000000000     0x23a8 libswscale/output.o
+ .drectve       0x0000000000000000      0x38c libswscale/rgb2rgb.o
+ .eh_frame      0x0000000000000000      0xa48 libswscale/rgb2rgb.o
+ .eh_frame      0x0000000000000000      0x3a0 libswscale/swscale.o
+ .eh_frame      0x0000000000000000      0x830 libswscale/swscale_unscaled.o
+ .eh_frame      0x0000000000000000      0x5e0 libswscale/utils.o
+ .eh_frame      0x0000000000000000      0xeb8 libswscale/x86/rgb2rgb.o
+ .eh_frame      0x0000000000000000      0x994 libswscale/x86/swscale.o
+ .eh_frame      0x0000000000000000      0x2bc libswscale/x86/yuv2rgb.o
+ .eh_frame      0x0000000000000000      0x498 libswscale/yuv2rgb.o
+ .debug_abbrev  0x0000000000000000       0x9c ../../lib/libgcc.a(_ctors.o)
+ .debug_info    0x0000000000000000      0x2a9 ../../lib/libgcc.a(_ctors.o)
+ .debug_line    0x0000000000000000       0x94 ../../lib/libgcc.a(_ctors.o)
+ .debug_pubnames
+                0x0000000000000000       0x36 ../../lib/libgcc.a(_ctors.o)
+ .debug_abbrev  0x0000000000000000      0x185 ../../lib/libgcc.a(_divdi3.o)
+ .debug_info    0x0000000000000000      0x51f ../../lib/libgcc.a(_divdi3.o)
+ .debug_line    0x0000000000000000       0xfc ../../lib/libgcc.a(_divdi3.o)
+ .debug_frame   0x0000000000000000       0x34 ../../lib/libgcc.a(_divdi3.o)
+ .debug_loc     0x0000000000000000      0x380 ../../lib/libgcc.a(_divdi3.o)
+ .debug_pubnames
+                0x0000000000000000       0x1f ../../lib/libgcc.a(_divdi3.o)
+ .debug_aranges
+                0x0000000000000000       0x20 ../../lib/libgcc.a(_divdi3.o)
+ .debug_ranges  0x0000000000000000       0x68 ../../lib/libgcc.a(_divdi3.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+                0x0000000000000000                __image_base__ = 0x0
+                0x0000000000000000                __dll__ = 0x0
+                0x0000000000000000                ___ImageBase = 0x0
+                0x0000000000001000                __section_alignment__ = 0x1000
+                0x0000000000000200                __file_alignment__ = 0x200
+                0x0000000000000004                __major_os_version__ = 0x4
+                0x0000000000000000                __minor_os_version__ = 0x0
+                0x0000000000000001                __major_image_version__ = 0x1
+                0x0000000000000000                __minor_image_version__ = 0x0
+                0x0000000000000004                __major_subsystem_version__ = 0x4
+                0x0000000000000000                __minor_subsystem_version__ = 0x0
+                0x0000000000000003                __subsystem__ = 0x3
+                0x0000000000200000                __size_of_stack_reserve__ = 0x200000
+                0x0000000000001000                __size_of_stack_commit__ = 0x1000
+                0x0000000000100000                __size_of_heap_reserve__ = 0x100000
+                0x0000000000001000                __size_of_heap_commit__ = 0x1000
+                0x0000000000000000                __loader_flags__ = 0x0
+                0x0000000000000000                __dll_characteristics__ = 0x0
+                0x0000000000000290                . = SIZEOF_HEADERS
+                0x0000000000001000                . = ALIGN (__section_alignment__)
+
+.text           0x0000000000001000    0x51c00
+ *(.text)
+ .text          0x0000000000001000       0x40 ../../lib/libdll.a(dllstart.o)
+                0x0000000000001000                DllStartup
+ .text          0x0000000000001040      0x170 ../../lib/libdll.a(pseudo-reloc.o)
+                0x0000000000001040                _pei386_runtime_relocator
+ .text          0x00000000000011b0     0x6d40 libswscale/input.o
+ .text          0x0000000000007ef0       0x20 libswscale/options.o
+                0x0000000000007f00                sws_get_class
+ .text          0x0000000000007f10    0x16c30 libswscale/output.o
+ .text          0x000000000001eb40     0x1b10 libswscale/rgb2rgb.o
+                0x000000000001f630                ff_rgb24toyv12_c
+                0x000000000001ff10                rgb32to24
+                0x000000000001ff50                rgb24to32
+                0x000000000001ffa0                rgb16tobgr32
+                0x0000000000020020                rgb12to15
+                0x00000000000200a0                rgb16to24
+                0x0000000000020110                rgb16tobgr16
+                0x0000000000020150                rgb16tobgr15
+                0x00000000000201a0                rgb15tobgr32
+                0x0000000000020210                rgb15to24
+                0x0000000000020280                rgb15tobgr16
+                0x00000000000202d0                rgb15tobgr15
+                0x0000000000020320                rgb12tobgr12
+                0x0000000000020370                shuffle_bytes_0321
+                0x00000000000203b0                shuffle_bytes_1230
+                0x00000000000203f0                shuffle_bytes_3012
+                0x0000000000020430                shuffle_bytes_3210
+                0x0000000000020470                rgb48tobgr48_nobswap
+                0x00000000000204c0                rgb48tobgr48_bswap
+                0x0000000000020520                rgb64tobgr48_nobswap
+                0x0000000000020570                rgb64tobgr48_bswap
+                0x00000000000205c0                rgb64to48_nobswap
+                0x0000000000020600                rgb64to48_bswap
+ .text          0x0000000000020650     0x3460 libswscale/swscale.o
+                0x0000000000022a30                ff_getSwsFunc
+                0x0000000000022ca0                sws_scale
+ .text          0x0000000000023ab0     0x5410 libswscale/swscale_unscaled.o
+                0x0000000000025540                sws_convertPalette8ToPacked32
+                0x0000000000025580                sws_convertPalette8ToPacked24
+                0x0000000000027ff0                ff_get_unscaled_swscale
+ .text          0x0000000000028ec0     0x1f70 libswscale/utils.o
+                0x0000000000029090                swscale_version
+                0x00000000000290a0                swscale_configuration
+                0x00000000000290b0                swscale_license
+                0x00000000000290c0                sws_isSupportedInput
+                0x00000000000290e0                sws_isSupportedOutput
+                0x0000000000029100                sws_isSupportedEndiannessConversion
+                0x0000000000029120                sws_format_name
+                0x0000000000029150                sws_setColorspaceDetails
+                0x0000000000029df0                sws_getColorspaceDetails
+                0x0000000000029e60                sws_alloc_context
+                0x0000000000029e90                sws_allocVec
+                0x0000000000029f00                sws_getConstVec
+                0x0000000000029f50                sws_getIdentityVec
+                0x0000000000029f70                sws_scaleVec
+                0x0000000000029fb0                sws_normalizeVec
+                0x000000000002a010                sws_getGaussianVec
+                0x000000000002a130                sws_shiftVec
+                0x000000000002a1e0                sws_addVec
+                0x000000000002a2f0                sws_subVec
+                0x000000000002a400                sws_convVec
+                0x000000000002a4e0                sws_cloneVec
+                0x000000000002a520                sws_printVec2
+                0x000000000002a640                sws_freeVec
+                0x000000000002a670                sws_getDefaultFilter
+                0x000000000002aa30                sws_freeFilter
+                0x000000000002aa80                sws_freeContext
+                0x000000000002ac80                sws_getContext
+                0x000000000002ad10                sws_getCachedContext
+ .text          0x000000000002ae30     0x1a10 libswscale/x86/input.o
+                0x000000000002ae30                ff_rgb24ToY_mmx
+                0x000000000002aec0                ff_bgr24ToY_mmx
+                0x000000000002aef0                ff_rgb24ToUV_mmx
+                0x000000000002afd0                ff_bgr24ToUV_mmx
+                0x000000000002b0b0                ff_rgb24ToY_sse2
+                0x000000000002b170                ff_bgr24ToY_sse2
+                0x000000000002b230                ff_rgb24ToUV_sse2
+                0x000000000002b360                ff_bgr24ToUV_sse2
+                0x000000000002b490                ff_rgb24ToY_ssse3
+                0x000000000002b540                ff_bgr24ToY_ssse3
+                0x000000000002b5f0                ff_rgb24ToUV_ssse3
+                0x000000000002b700                ff_bgr24ToUV_ssse3
+                0x000000000002b810                ff_rgbaToY_mmx
+                0x000000000002b8a0                ff_bgraToY_mmx
+                0x000000000002b8d0                ff_argbToY_mmx
+                0x000000000002b900                ff_abgrToY_mmx
+                0x000000000002b930                ff_rgbaToUV_mmx
+                0x000000000002ba20                ff_bgraToUV_mmx
+                0x000000000002bb10                ff_argbToUV_mmx
+                0x000000000002bc00                ff_abgrToUV_mmx
+                0x000000000002bcf0                ff_rgbaToY_sse2
+                0x000000000002bda0                ff_bgraToY_sse2
+                0x000000000002bdd0                ff_argbToY_sse2
+                0x000000000002be00                ff_abgrToY_sse2
+                0x000000000002be30                ff_rgbaToUV_sse2
+                0x000000000002bf40                ff_bgraToUV_sse2
+                0x000000000002c050                ff_argbToUV_sse2
+                0x000000000002c160                ff_abgrToUV_sse2
+                0x000000000002c270                ff_yuyvToY_mmx
+                0x000000000002c2c0                ff_uyvyToY_mmx
+                0x000000000002c300                ff_yuyvToUV_mmx
+                0x000000000002c360                ff_uyvyToUV_mmx
+                0x000000000002c3c0                ff_nv12ToUV_mmx
+                0x000000000002c420                ff_nv21ToUV_mmx
+                0x000000000002c480                ff_yuyvToY_sse2
+                0x000000000002c500                ff_uyvyToY_sse2
+                0x000000000002c580                ff_yuyvToUV_sse2
+                0x000000000002c630                ff_uyvyToUV_sse2
+                0x000000000002c6e0                ff_nv12ToUV_sse2
+                0x000000000002c790                ff_nv21ToUV_sse2
+ .text          0x000000000002c840      0xd30 libswscale/x86/output.o
+                0x000000000002c840                ff_yuv2planeX_8_mmxext
+                0x000000000002c980                ff_yuv2planeX_9_mmxext
+                0x000000000002ca10                ff_yuv2planeX_10_mmxext
+                0x000000000002caa0                ff_yuv2planeX_8_sse2
+                0x000000000002cb90                ff_yuv2planeX_9_sse2
+                0x000000000002cc30                ff_yuv2planeX_10_sse2
+                0x000000000002ccd0                ff_yuv2planeX_8_sse4
+                0x000000000002cdb0                ff_yuv2planeX_9_sse4
+                0x000000000002ce50                ff_yuv2planeX_10_sse4
+                0x000000000002cef0                ff_yuv2planeX_16_sse4
+                0x000000000002cfb0                ff_yuv2plane1_8_mmx
+                0x000000000002d020                ff_yuv2plane1_16_mmx
+                0x000000000002d0a0                ff_yuv2plane1_9_mmxext
+                0x000000000002d100                ff_yuv2plane1_10_mmxext
+                0x000000000002d160                ff_yuv2plane1_8_sse2
+                0x000000000002d220                ff_yuv2plane1_9_sse2
+                0x000000000002d2e0                ff_yuv2plane1_10_sse2
+                0x000000000002d3a0                ff_yuv2plane1_16_sse2
+                0x000000000002d490                ff_yuv2plane1_16_sse4
+ .text          0x000000000002d570     0x5910 libswscale/x86/rgb2rgb.o
+ .text          0x0000000000032e80     0x6660 libswscale/x86/scale.o
+                0x0000000000032e80                ff_hscale8to15_4_mmx
+                0x0000000000032ef0                ff_hscale8to15_8_mmx
+                0x0000000000032f80                ff_hscale8to15_X_mmx
+                0x0000000000033020                ff_hscale9to15_4_mmx
+                0x0000000000033080                ff_hscale9to15_8_mmx
+                0x0000000000033100                ff_hscale9to15_X_mmx
+                0x0000000000033190                ff_hscale10to15_4_mmx
+                0x00000000000331f0                ff_hscale10to15_8_mmx
+                0x0000000000033270                ff_hscale10to15_X_mmx
+                0x0000000000033300                ff_hscale12to15_4_mmx
+                0x0000000000033360                ff_hscale12to15_8_mmx
+                0x00000000000333e0                ff_hscale12to15_X_mmx
+                0x0000000000033470                ff_hscale14to15_4_mmx
+                0x00000000000334d0                ff_hscale14to15_8_mmx
+                0x0000000000033550                ff_hscale14to15_X_mmx
+                0x00000000000335e0                ff_hscale16to15_4_mmx
+                0x0000000000033660                ff_hscale16to15_8_mmx
+                0x0000000000033700                ff_hscale16to15_X_mmx
+                0x00000000000337b0                ff_hscale8to19_4_mmx
+                0x0000000000033830                ff_hscale8to19_8_mmx
+                0x00000000000338d0                ff_hscale8to19_X_mmx
+                0x0000000000033980                ff_hscale9to19_4_mmx
+                0x0000000000033a00                ff_hscale9to19_8_mmx
+                0x0000000000033a90                ff_hscale9to19_X_mmx
+                0x0000000000033b30                ff_hscale10to19_4_mmx
+                0x0000000000033bb0                ff_hscale10to19_8_mmx
+                0x0000000000033c40                ff_hscale10to19_X_mmx
+                0x0000000000033ce0                ff_hscale12to19_4_mmx
+                0x0000000000033d60                ff_hscale12to19_8_mmx
+                0x0000000000033df0                ff_hscale12to19_X_mmx
+                0x0000000000033e90                ff_hscale14to19_4_mmx
+                0x0000000000033f10                ff_hscale14to19_8_mmx
+                0x0000000000033fa0                ff_hscale14to19_X_mmx
+                0x0000000000034040                ff_hscale16to19_4_mmx
+                0x00000000000340d0                ff_hscale16to19_8_mmx
+                0x0000000000034180                ff_hscale16to19_X_mmx
+                0x0000000000034240                ff_hscale8to15_4_sse2
+                0x00000000000342e0                ff_hscale8to15_8_sse2
+                0x00000000000343b0                ff_hscale8to15_X4_sse2
+                0x0000000000034490                ff_hscale8to15_X8_sse2
+                0x0000000000034550                ff_hscale9to15_4_sse2
+                0x00000000000345d0                ff_hscale9to15_8_sse2
+                0x0000000000034680                ff_hscale9to15_X4_sse2
+                0x0000000000034750                ff_hscale9to15_X8_sse2
+                0x0000000000034800                ff_hscale10to15_4_sse2
+                0x0000000000034880                ff_hscale10to15_8_sse2
+                0x0000000000034930                ff_hscale10to15_X4_sse2
+                0x0000000000034a00                ff_hscale10to15_X8_sse2
+                0x0000000000034ab0                ff_hscale12to15_4_sse2
+                0x0000000000034b30                ff_hscale12to15_8_sse2
+                0x0000000000034be0                ff_hscale12to15_X4_sse2
+                0x0000000000034cb0                ff_hscale12to15_X8_sse2
+                0x0000000000034d60                ff_hscale14to15_4_sse2
+                0x0000000000034de0                ff_hscale14to15_8_sse2
+                0x0000000000034e90                ff_hscale14to15_X4_sse2
+                0x0000000000034f60                ff_hscale14to15_X8_sse2
+                0x0000000000035010                ff_hscale16to15_4_sse2
+                0x00000000000350b0                ff_hscale16to15_8_sse2
+                0x0000000000035190                ff_hscale16to15_X4_sse2
+                0x0000000000035280                ff_hscale16to15_X8_sse2
+                0x0000000000035350                ff_hscale8to19_4_sse2
+                0x00000000000353f0                ff_hscale8to19_8_sse2
+                0x00000000000354d0                ff_hscale8to19_X4_sse2
+                0x00000000000355c0                ff_hscale8to19_X8_sse2
+                0x0000000000035690                ff_hscale9to19_4_sse2
+                0x0000000000035720                ff_hscale9to19_8_sse2
+                0x00000000000357e0                ff_hscale9to19_X4_sse2
+                0x00000000000358c0                ff_hscale9to19_X8_sse2
+                0x0000000000035980                ff_hscale10to19_4_sse2
+                0x0000000000035a10                ff_hscale10to19_8_sse2
+                0x0000000000035ad0                ff_hscale10to19_X4_sse2
+                0x0000000000035bb0                ff_hscale10to19_X8_sse2
+                0x0000000000035c70                ff_hscale12to19_4_sse2
+                0x0000000000035d00                ff_hscale12to19_8_sse2
+                0x0000000000035dc0                ff_hscale12to19_X4_sse2
+                0x0000000000035ea0                ff_hscale12to19_X8_sse2
+                0x0000000000035f60                ff_hscale14to19_4_sse2
+                0x0000000000035ff0                ff_hscale14to19_8_sse2
+                0x00000000000360b0                ff_hscale14to19_X4_sse2
+                0x0000000000036190                ff_hscale14to19_X8_sse2
+                0x0000000000036250                ff_hscale16to19_4_sse2
+                0x0000000000036300                ff_hscale16to19_8_sse2
+                0x00000000000363f0                ff_hscale16to19_X4_sse2
+                0x00000000000364f0                ff_hscale16to19_X8_sse2
+                0x00000000000365d0                ff_hscale8to15_4_ssse3
+                0x0000000000036660                ff_hscale8to15_8_ssse3
+                0x0000000000036700                ff_hscale8to15_X4_ssse3
+                0x00000000000367d0                ff_hscale8to15_X8_ssse3
+                0x0000000000036880                ff_hscale9to15_4_ssse3
+                0x00000000000368f0                ff_hscale9to15_8_ssse3
+                0x0000000000036980                ff_hscale9to15_X4_ssse3
+                0x0000000000036a40                ff_hscale9to15_X8_ssse3
+                0x0000000000036ae0                ff_hscale10to15_4_ssse3
+                0x0000000000036b50                ff_hscale10to15_8_ssse3
+                0x0000000000036be0                ff_hscale10to15_X4_ssse3
+                0x0000000000036ca0                ff_hscale10to15_X8_ssse3
+                0x0000000000036d40                ff_hscale12to15_4_ssse3
+                0x0000000000036db0                ff_hscale12to15_8_ssse3
+                0x0000000000036e40                ff_hscale12to15_X4_ssse3
+                0x0000000000036f00                ff_hscale12to15_X8_ssse3
+                0x0000000000036fa0                ff_hscale14to15_4_ssse3
+                0x0000000000037010                ff_hscale14to15_8_ssse3
+                0x00000000000370a0                ff_hscale14to15_X4_ssse3
+                0x0000000000037160                ff_hscale14to15_X8_ssse3
+                0x0000000000037200                ff_hscale16to15_4_ssse3
+                0x0000000000037290                ff_hscale16to15_8_ssse3
+                0x0000000000037340                ff_hscale16to15_X4_ssse3
+                0x0000000000037420                ff_hscale16to15_X8_ssse3
+                0x00000000000374e0                ff_hscale8to19_4_ssse3
+                0x0000000000037580                ff_hscale8to19_8_ssse3
+                0x0000000000037630                ff_hscale8to19_X4_ssse3
+                0x0000000000037710                ff_hscale8to19_X8_ssse3
+                0x00000000000377c0                ff_hscale9to19_4_ssse3
+                0x0000000000037840                ff_hscale9to19_8_ssse3
+                0x00000000000378e0                ff_hscale9to19_X4_ssse3
+                0x00000000000379a0                ff_hscale9to19_X8_ssse3
+                0x0000000000037a50                ff_hscale10to19_4_ssse3
+                0x0000000000037ad0                ff_hscale10to19_8_ssse3
+                0x0000000000037b70                ff_hscale10to19_X4_ssse3
+                0x0000000000037c30                ff_hscale10to19_X8_ssse3
+                0x0000000000037ce0                ff_hscale12to19_4_ssse3
+                0x0000000000037d60                ff_hscale12to19_8_ssse3
+                0x0000000000037e00                ff_hscale12to19_X4_ssse3
+                0x0000000000037ec0                ff_hscale12to19_X8_ssse3
+                0x0000000000037f70                ff_hscale14to19_4_ssse3
+                0x0000000000037ff0                ff_hscale14to19_8_ssse3
+                0x0000000000038090                ff_hscale14to19_X4_ssse3
+                0x0000000000038150                ff_hscale14to19_X8_ssse3
+                0x0000000000038200                ff_hscale16to19_4_ssse3
+                0x00000000000382a0                ff_hscale16to19_8_ssse3
+                0x0000000000038360                ff_hscale16to19_X4_ssse3
+                0x0000000000038450                ff_hscale16to19_X8_ssse3
+                0x0000000000038510                ff_hscale8to19_4_sse4
+                0x00000000000385a0                ff_hscale8to19_8_sse4
+                0x0000000000038650                ff_hscale8to19_X4_sse4
+                0x0000000000038730                ff_hscale8to19_X8_sse4
+                0x00000000000387e0                ff_hscale9to19_4_sse4
+                0x0000000000038860                ff_hscale9to19_8_sse4
+                0x0000000000038900                ff_hscale9to19_X4_sse4
+                0x00000000000389c0                ff_hscale9to19_X8_sse4
+                0x0000000000038a60                ff_hscale10to19_4_sse4
+                0x0000000000038ae0                ff_hscale10to19_8_sse4
+                0x0000000000038b80                ff_hscale10to19_X4_sse4
+                0x0000000000038c40                ff_hscale10to19_X8_sse4
+                0x0000000000038ce0                ff_hscale12to19_4_sse4
+                0x0000000000038d60                ff_hscale12to19_8_sse4
+                0x0000000000038e00                ff_hscale12to19_X4_sse4
+                0x0000000000038ec0                ff_hscale12to19_X8_sse4
+                0x0000000000038f60                ff_hscale14to19_4_sse4
+                0x0000000000038fe0                ff_hscale14to19_8_sse4
+                0x0000000000039080                ff_hscale14to19_X4_sse4
+                0x0000000000039140                ff_hscale14to19_X8_sse4
+                0x00000000000391e0                ff_hscale16to19_4_sse4
+                0x0000000000039280                ff_hscale16to19_8_sse4
+                0x0000000000039340                ff_hscale16to19_X4_sse4
+                0x0000000000039420                ff_hscale16to19_X8_sse4
+ .text          0x00000000000394e0     0x63b0 libswscale/x86/swscale.o
+                0x000000000003f330                updateMMXDitherTables
+ .text          0x000000000003f890     0x1510 libswscale/x86/yuv2rgb.o
+ .text          0x0000000000040da0     0x56f0 libswscale/yuv2rgb.o
+                0x00000000000462f0                sws_getCoefficients
+                0x0000000000046310                ff_yuv2rgb_get_func_ptr
+ .text          0x0000000000046490        0x8 libavutil/avutil.lib(dclfs00287.o)
+                0x0000000000046490                av_pix_fmt_desc_get
+ .text          0x0000000000046498        0x8 libavutil/avutil.lib(dclfs00208.o)
+                0x0000000000046498                av_log
+ .text          0x00000000000464a0        0x8 libavutil/avutil.lib(dclfs00152.o)
+                0x00000000000464a0                av_get_cpu_flags
+ .text          0x00000000000464a8        0x8 libavutil/avutil.lib(dclfs00218.o)
+                0x00000000000464a8                av_malloc
+ .text          0x00000000000464b0        0x8 libavutil/avutil.lib(dclfs00138.o)
+                0x00000000000464b0                av_free
+ .text          0x00000000000464b8        0x8 libavutil/avutil.lib(dclfs00162.o)
+                0x00000000000464b8                av_get_pix_fmt_name
+ .text          0x00000000000464c0        0x8 libavutil/avutil.lib(dclfs00219.o)
+                0x00000000000464c0                av_mallocz
+ .text          0x00000000000464c8        0x8 libavutil/avutil.lib(dclfs00139.o)
+                0x00000000000464c8                av_freep
+ .text          0x00000000000464d0        0x8 libavutil/avutil.lib(dclfs00142.o)
+                0x00000000000464d0                av_get_bits_per_pixel
+ .text          0x00000000000464d8        0x8 libavutil/avutil.lib(dclfs00267.o)
+                0x00000000000464d8                av_opt_set_defaults
+ .text          0x00000000000464e0        0x8 libavutil/avutil.lib(dclfs00292.o)
+                0x00000000000464e0                av_pix_fmt_swap_endianness
+ .text          0x00000000000464e8        0x8 libavutil/avutil.lib(dclfs00291.o)
+                0x00000000000464e8                av_pix_fmt_get_chroma_sub_sample
+ .text          0x00000000000464f0        0x0 libavutil/avutil.lib(dclfh.o)
+ .text          0x00000000000464f0        0x0 libavutil/avutil.lib(dclft.o)
+ .text          0x00000000000464f0        0x8 ../../lib/libc.dll.a(d000155.o)
+                0x00000000000464f0                abort
+ .text          0x00000000000464f8        0x8 ../../lib/libc.dll.a(d000359.o)
+                0x00000000000464f8                memcpy
+ .text          0x0000000000046500        0x8 ../../lib/libc.dll.a(d000361.o)
+                0x0000000000046500                memset
+ .text          0x0000000000046508        0x8 ../../lib/libc.dll.a(d000180.o)
+                0x0000000000046508                ceil
+ .text          0x0000000000046510        0x8 ../../lib/libc.dll.a(d000187.o)
+                0x0000000000046510                cos
+ .text          0x0000000000046518        0x8 ../../lib/libc.dll.a(d000373.o)
+                0x0000000000046518                pow
+ .text          0x0000000000046520        0x8 ../../lib/libc.dll.a(d000413.o)
+                0x0000000000046520                sin
+ .text          0x0000000000046528        0x8 ../../lib/libc.dll.a(d000360.o)
+                0x0000000000046528                memmove
+ .text          0x0000000000046530        0x8 ../../lib/libc.dll.a(d000358.o)
+                0x0000000000046530                memcmp
+ .text          0x0000000000046538        0x8 ../../lib/libc.dll.a(d000423.o)
+                0x0000000000046538                sqrt
+ .text          0x0000000000046540        0x8 ../../lib/libc.dll.a(d000211.o)
+                0x0000000000046540                exp
+ .text          0x0000000000046548        0x0 ../../lib/libgcc.a(_ctors.o)
+ .text          0x0000000000046548      0x180 ../../lib/libgcc.a(_divdi3.o)
+                0x0000000000046548                __divdi3
+ *(SORT(.text$*))
+ *(.text.*)
+ .text.unlikely
+                0x00000000000466c8      0xe1c libswscale/input.o
+                0x00000000000466c8                ff_sws_init_input_funcs
+ .text.unlikely
+                0x00000000000474e4      0x8e4 libswscale/output.o
+                0x00000000000474e4                ff_sws_init_output_funcs
+ .text.unlikely
+                0x0000000000047dc8      0x148 libswscale/rgb2rgb.o
+                0x0000000000047dc8                sws_rgb2rgb_init
+ .text.unlikely
+                0x0000000000047f10     0x39a4 libswscale/utils.o
+                0x0000000000049ec9                sws_init_context
+ .text.unlikely
+                0x000000000004b8b4      0x2cc libswscale/x86/rgb2rgb.o
+                0x000000000004b8b4                rgb2rgb_init_x86
+ .text.unlikely
+                0x000000000004bb80     0x3338 libswscale/x86/swscale.o
+                0x000000000004bb80                ff_sws_init_swscale_x86
+ .text.unlikely
+                0x000000000004eeb8       0x9c libswscale/x86/yuv2rgb.o
+                0x000000000004eeb8                ff_yuv2rgb_init_x86
+ .text.unlikely
+                0x000000000004ef54     0x12b8 libswscale/yuv2rgb.o
+                0x000000000004f056                ff_yuv2rgb_c_init_tables
+ *(.gnu.linkonce.t.*)
+ *(.glue_7t)
+ *(.glue_7)
+                0x000000000005020c                ___CTOR_LIST__ = .
+                0x000000000005020c                __CTOR_LIST__ = .
+                0x000000000005020c        0x4 LONG 0xffffffffffffffff
+ *(.ctors)
+ *(.ctor)
+ *(SORT(.ctors.*))
+                0x0000000000050210        0x4 LONG 0x0
+                0x0000000000050214                ___DTOR_LIST__ = .
+                0x0000000000050214                __DTOR_LIST__ = .
+                0x0000000000050214        0x4 LONG 0xffffffffffffffff
+ *(.dtors)
+ *(.dtor)
+ *(SORT(.dtors.*))
+                0x0000000000050218        0x4 LONG 0x0
+ *(.fini)
+                0x0000000000050220                . = ALIGN (0x10)
+ *fill*         0x000000000005021c        0x4 
+                0x0000000000050220                ___crt_xc_start__ = .
+ *(SORT(.CRT$XC*))
+                0x0000000000050220                ___crt_xc_end__ = .
+                0x0000000000050220                ___crt_xi_start__ = .
+ *(SORT(.CRT$XI*))
+                0x0000000000050220                ___crt_xi_end__ = .
+                0x0000000000050220                ___crt_xl_start__ = .
+ *(SORT(.CRT$XL*))
+                0x0000000000050220                ___crt_xp_start__ = .
+ *(SORT(.CRT$XP*))
+                0x0000000000050220                ___crt_xp_end__ = .
+                0x0000000000050220                ___crt_xt_start__ = .
+ *(SORT(.CRT$XT*))
+                0x0000000000050220                ___crt_xt_end__ = .
+                0x0000000000050220                . = ALIGN (0x10)
+ *(.rdata)
+ .rdata         0x0000000000050220       0x44 libswscale/input.o
+ *fill*         0x0000000000050264       0x1c 
+ .rdata         0x0000000000050280      0xb40 libswscale/options.o
+                0x00000000000502a0                sws_context_class
+ .rdata         0x0000000000050dc0      0x188 libswscale/output.o
+                0x0000000000050e18                ff_dither_8x8_220
+                0x0000000000050e60                ff_dither_8x8_73
+                0x0000000000050ea8                ff_dither_8x8_32
+                0x0000000000050ef0                ff_dither_4x4_16
+                0x0000000000050f18                ff_dither_2x2_8
+                0x0000000000050f30                ff_dither_2x2_4
+ .rdata         0x0000000000050f48      0x330 libswscale/swscale.o
+                0x0000000000051230                ff_dither_8x8_128
+ *fill*         0x0000000000051278        0x8 
+ .rdata         0x0000000000051280      0x600 libswscale/swscale_unscaled.o
+ .rdata         0x0000000000051880      0xc60 libswscale/utils.o
+ .rdata         0x00000000000524e0      0x128 libswscale/x86/rgb2rgb.o
+ .rdata         0x0000000000052608      0x130 libswscale/x86/swscale.o
+                0x0000000000052680                ff_w1111
+                0x0000000000052688                ff_bgr2UVOffset
+                0x0000000000052690                ff_bgr2YOffset
+                0x0000000000052698                ff_bgr2VCoeff
+                0x00000000000526a0                ff_bgr2UCoeff
+                0x00000000000526a8                ff_bgr2YCoeff
+                0x00000000000526b0                ff_M24C
+                0x00000000000526b8                ff_M24B
+                0x00000000000526c0                ff_M24A
+                0x00000000000526f8                ff_dither8
+                0x0000000000052708                ff_dither4
+ .rdata         0x0000000000052738       0x58 libswscale/x86/yuv2rgb.o
+ *fill*         0x0000000000052790       0x10 
+ .rdata         0x00000000000527a0      0x240 libswscale/yuv2rgb.o
+                0x0000000000052960                ff_yuv2rgb_coeffs
+ *(SORT(.rdata$*))
+ .rdata$zzz     0x00000000000529e0       0x14 ../../lib/libdll.a(dllstart.o)
+ .rdata$zzz     0x00000000000529f4       0x14 ../../lib/libdll.a(pseudo-reloc.o)
+ .rdata$zzz     0x0000000000052a08       0x14 libswscale/input.o
+ .rdata$zzz     0x0000000000052a1c       0x14 libswscale/options.o
+ .rdata$zzz     0x0000000000052a30       0x14 libswscale/output.o
+ .rdata$zzz     0x0000000000052a44       0x14 libswscale/rgb2rgb.o
+ .rdata$zzz     0x0000000000052a58       0x14 libswscale/swscale.o
+ .rdata$zzz     0x0000000000052a6c       0x14 libswscale/swscale_unscaled.o
+ .rdata$zzz     0x0000000000052a80       0x14 libswscale/utils.o
+ .rdata$zzz     0x0000000000052a94       0x14 libswscale/x86/rgb2rgb.o
+ .rdata$zzz     0x0000000000052aa8       0x14 libswscale/x86/swscale.o
+ .rdata$zzz     0x0000000000052abc       0x14 libswscale/x86/yuv2rgb.o
+ .rdata$zzz     0x0000000000052ad0       0x14 libswscale/yuv2rgb.o
+                0x0000000000052ae4                __rt_psrelocs_start = .
+ *(.rdata_runtime_pseudo_reloc)
+                0x0000000000052ae4                __rt_psrelocs_end = .
+                0x0000000000000000                __rt_psrelocs_size = (__rt_psrelocs_end - __rt_psrelocs_start)
+                0x0000000000052ae4                ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .
+                0x0000000000052ae4                __RUNTIME_PSEUDO_RELOC_LIST_END__ = .
+                0x0000000000052ae4                ___RUNTIME_PSEUDO_RELOC_LIST__ = (. - __rt_psrelocs_size)
+                0x0000000000052ae4                __RUNTIME_PSEUDO_RELOC_LIST__ = (. - __rt_psrelocs_size)
+
+.rodata         0x0000000000053000      0x200
+ .rodata        0x0000000000053000       0x40 libswscale/x86/input.o
+ .rodata        0x0000000000053040       0xc0 libswscale/x86/output.o
+ .rodata        0x0000000000053100       0x40 libswscale/x86/scale.o
+
+.data           0x0000000000054000      0x200
+                0x0000000000054000                PROVIDE (__data_start__, .)
+ *(.data)
+ .data          0x0000000000054000        0x0 ../../lib/libdll.a(dllstart.o)
+ .data          0x0000000000054000        0x0 ../../lib/libdll.a(pseudo-reloc.o)
+ .data          0x0000000000054000        0x0 libswscale/input.o
+ .data          0x0000000000054000        0x0 libswscale/options.o
+ .data          0x0000000000054000        0x0 libswscale/output.o
+ .data          0x0000000000054000        0x0 libswscale/rgb2rgb.o
+ .data          0x0000000000054000        0x0 libswscale/swscale.o
+ .data          0x0000000000054000        0x0 libswscale/swscale_unscaled.o
+ .data          0x0000000000054000        0x0 libswscale/utils.o
+ .data          0x0000000000054000        0x0 libswscale/x86/rgb2rgb.o
+ .data          0x0000000000054000        0x0 libswscale/x86/swscale.o
+ .data          0x0000000000054000        0x0 libswscale/x86/yuv2rgb.o
+ .data          0x0000000000054000        0x0 libswscale/yuv2rgb.o
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00287.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00208.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00152.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00218.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00138.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00162.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00219.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00139.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00142.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00267.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00292.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfs00291.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclfh.o)
+ .data          0x0000000000054000        0x0 libavutil/avutil.lib(dclft.o)
+ .data          0x0000000000054000        0x0 ../../lib/libgcc.a(_ctors.o)
+ .data          0x0000000000054000        0x0 ../../lib/libgcc.a(_divdi3.o)
+ *(.data2)
+ *(SORT(.data$*))
+ *(.jcr)
+                0x0000000000054000                __CRT_MT = .
+                0x0000000000054000        0x4 LONG 0x0
+                0x0000000000054004                PROVIDE (__data_end__, .)
+ *(.data_cygwin_nocopy)
+
+.bss            0x0000000000055000     0x80c0
+                0x0000000000055000                __bss_start__ = .
+ *(.bss)
+ .bss           0x0000000000055000        0x0 ../../lib/libdll.a(dllstart.o)
+ .bss           0x0000000000055000        0x4 ../../lib/libdll.a(pseudo-reloc.o)
+ .bss           0x0000000000055004        0x0 libswscale/input.o
+ .bss           0x0000000000055004        0x0 libswscale/options.o
+ .bss           0x0000000000055004        0x0 libswscale/output.o
+ .bss           0x0000000000055004        0x0 libswscale/rgb2rgb.o
+ .bss           0x0000000000055004        0x8 libswscale/swscale.o
+ .bss           0x000000000005500c        0x0 libswscale/swscale_unscaled.o
+ *fill*         0x000000000005500c       0x14 
+ .bss           0x0000000000055020     0x8000 libswscale/utils.o
+ .bss           0x000000000005d020        0x0 libswscale/x86/rgb2rgb.o
+ .bss           0x000000000005d020        0x0 libswscale/x86/swscale.o
+ .bss           0x000000000005d020        0x0 libswscale/x86/yuv2rgb.o
+ .bss           0x000000000005d020        0x0 libswscale/yuv2rgb.o
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00287.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00208.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00152.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00218.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00138.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00162.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00219.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00139.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00142.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00267.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00292.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfs00291.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclfh.o)
+ .bss           0x000000000005d020        0x0 libavutil/avutil.lib(dclft.o)
+ .bss           0x000000000005d020        0x0 ../../lib/libgcc.a(_ctors.o)
+ .bss           0x000000000005d020        0x0 ../../lib/libgcc.a(_divdi3.o)
+ *(COMMON)
+ COMMON         0x000000000005d020       0x80 libswscale/rgb2rgb.o
+                0x000000000005d020                ff_rgb24toyv12
+                0x000000000005d024                yuyvtoyuv422
+                0x000000000005d028                rgb15to16
+                0x000000000005d02c                rgb32to15
+                0x000000000005d030                rgb15tobgr24
+                0x000000000005d034                rgb32tobgr16
+                0x000000000005d038                planar2x
+                0x000000000005d03c                uyvytoyuv420
+                0x000000000005d040                rgb32tobgr15
+                0x000000000005d044                rgb24tobgr32
+                0x000000000005d048                yv12toyuy2
+                0x000000000005d04c                yuv422ptoyuy2
+                0x000000000005d050                rgb16to32
+                0x000000000005d054                rgb24tobgr15
+                0x000000000005d058                rgb16to15
+                0x000000000005d05c                uyvytoyuv422
+                0x000000000005d060                rgb16tobgr24
+                0x000000000005d064                rgb24to16
+                0x000000000005d068                rgb24tobgr24
+                0x000000000005d06c                yvu9_to_yuy2
+                0x000000000005d070                rgb32tobgr24
+                0x000000000005d074                yuyvtoyuv420
+                0x000000000005d078                shuffle_bytes_2103
+                0x000000000005d07c                vu9_to_vu12
+                0x000000000005d080                rgb15to32
+                0x000000000005d084                rgb24tobgr16
+                0x000000000005d088                rgb32to16
+                0x000000000005d08c                rgb24to15
+                0x000000000005d090                yv12touyvy
+                0x000000000005d094                yuv422ptouyvy
+                0x000000000005d098                interleaveBytes
+                0x000000000005d09c                yuy2toyv12
+ COMMON         0x000000000005d0a0       0x20 ../../lib/libgcc.a(_ctors.o)
+                0x000000000005d0c0                __bss_end__ = .
+
+.edata          0x000000000005e000      0x600
+ *(.edata)
+ .edata         0x000000000005e000      0x422 dll stuff
+
+/DISCARD/
+ *(.debug$S)
+ *(.debug$T)
+ *(.debug$F)
+ *(.drectve)
+ *(.note.GNU-stack)
+ *(.eh_frame)
+ *(.comment)
+ *(.debug_abbrev)
+ *(.debug_info)
+ *(.debug_line)
+ *(.debug_frame)
+ *(.debug_loc)
+ *(.debug_pubnames)
+ *(.debug_aranges)
+ *(.debug_ranges)
+
+.idata          0x000000000005f000      0x400
+ SORT(*)(.idata$2)
+ .idata$2       0x000000000005f000       0x14 ../../lib/libc.dll.a(d000000.o)
+                0x000000000005f000                _head_libc_dll
+ .idata$2       0x000000000005f014       0x14 libavutil/avutil.lib(dclfh.o)
+                0x000000000005f014                _head_libavutil_avutil_lib
+ SORT(*)(.idata$3)
+                0x000000000005f028        0x4 LONG 0x0
+                0x000000000005f02c        0x4 LONG 0x0
+                0x000000000005f030        0x4 LONG 0x0
+                0x000000000005f034        0x4 LONG 0x0
+                0x000000000005f038        0x4 LONG 0x0
+ SORT(*)(.idata$4)
+ .idata$4       0x000000000005f03c        0x0 ../../lib/libc.dll.a(d000000.o)
+ .idata$4       0x000000000005f03c        0x4 ../../lib/libc.dll.a(d000155.o)
+ .idata$4       0x000000000005f040        0x4 ../../lib/libc.dll.a(d000180.o)
+ .idata$4       0x000000000005f044        0x4 ../../lib/libc.dll.a(d000187.o)
+ .idata$4       0x000000000005f048        0x4 ../../lib/libc.dll.a(d000211.o)
+ .idata$4       0x000000000005f04c        0x4 ../../lib/libc.dll.a(d000358.o)
+ .idata$4       0x000000000005f050        0x4 ../../lib/libc.dll.a(d000359.o)
+ .idata$4       0x000000000005f054        0x4 ../../lib/libc.dll.a(d000360.o)
+ .idata$4       0x000000000005f058        0x4 ../../lib/libc.dll.a(d000361.o)
+ .idata$4       0x000000000005f05c        0x4 ../../lib/libc.dll.a(d000373.o)
+ .idata$4       0x000000000005f060        0x4 ../../lib/libc.dll.a(d000413.o)
+ .idata$4       0x000000000005f064        0x4 ../../lib/libc.dll.a(d000423.o)
+ .idata$4       0x000000000005f068        0x4 ../../lib/libc.dll.a(d000508.o)
+ .idata$4       0x000000000005f06c        0x0 libavutil/avutil.lib(dclfh.o)
+ .idata$4       0x000000000005f06c        0x4 libavutil/avutil.lib(dclfs00138.o)
+ .idata$4       0x000000000005f070        0x4 libavutil/avutil.lib(dclfs00139.o)
+ .idata$4       0x000000000005f074        0x4 libavutil/avutil.lib(dclfs00142.o)
+ .idata$4       0x000000000005f078        0x4 libavutil/avutil.lib(dclfs00152.o)
+ .idata$4       0x000000000005f07c        0x4 libavutil/avutil.lib(dclfs00162.o)
+ .idata$4       0x000000000005f080        0x4 libavutil/avutil.lib(dclfs00208.o)
+ .idata$4       0x000000000005f084        0x4 libavutil/avutil.lib(dclfs00218.o)
+ .idata$4       0x000000000005f088        0x4 libavutil/avutil.lib(dclfs00219.o)
+ .idata$4       0x000000000005f08c        0x4 libavutil/avutil.lib(dclfs00267.o)
+ .idata$4       0x000000000005f090        0x4 libavutil/avutil.lib(dclfs00287.o)
+ .idata$4       0x000000000005f094        0x4 libavutil/avutil.lib(dclfs00291.o)
+ .idata$4       0x000000000005f098        0x4 libavutil/avutil.lib(dclfs00292.o)
+ .idata$4       0x000000000005f09c        0x4 libavutil/avutil.lib(dclft.o)
+ SORT(*)(.idata$5)
+ .idata$5       0x000000000005f0a0        0x0 ../../lib/libc.dll.a(d000000.o)
+ .idata$5       0x000000000005f0a0        0x4 ../../lib/libc.dll.a(d000155.o)
+                0x000000000005f0a0                _imp__abort
+ .idata$5       0x000000000005f0a4        0x4 ../../lib/libc.dll.a(d000180.o)
+                0x000000000005f0a4                _imp__ceil
+ .idata$5       0x000000000005f0a8        0x4 ../../lib/libc.dll.a(d000187.o)
+                0x000000000005f0a8                _imp__cos
+ .idata$5       0x000000000005f0ac        0x4 ../../lib/libc.dll.a(d000211.o)
+                0x000000000005f0ac                _imp__exp
+ .idata$5       0x000000000005f0b0        0x4 ../../lib/libc.dll.a(d000358.o)
+                0x000000000005f0b0                _imp__memcmp
+ .idata$5       0x000000000005f0b4        0x4 ../../lib/libc.dll.a(d000359.o)
+                0x000000000005f0b4                _imp__memcpy
+ .idata$5       0x000000000005f0b8        0x4 ../../lib/libc.dll.a(d000360.o)
+                0x000000000005f0b8                _imp__memmove
+ .idata$5       0x000000000005f0bc        0x4 ../../lib/libc.dll.a(d000361.o)
+                0x000000000005f0bc                _imp__memset
+ .idata$5       0x000000000005f0c0        0x4 ../../lib/libc.dll.a(d000373.o)
+                0x000000000005f0c0                _imp__pow
+ .idata$5       0x000000000005f0c4        0x4 ../../lib/libc.dll.a(d000413.o)
+                0x000000000005f0c4                _imp__sin
+ .idata$5       0x000000000005f0c8        0x4 ../../lib/libc.dll.a(d000423.o)
+                0x000000000005f0c8                _imp__sqrt
+ .idata$5       0x000000000005f0cc        0x4 ../../lib/libc.dll.a(d000508.o)
+ .idata$5       0x000000000005f0d0        0x0 libavutil/avutil.lib(dclfh.o)
+ .idata$5       0x000000000005f0d0        0x4 libavutil/avutil.lib(dclfs00138.o)
+                0x000000000005f0d0                _imp__av_free
+ .idata$5       0x000000000005f0d4        0x4 libavutil/avutil.lib(dclfs00139.o)
+                0x000000000005f0d4                _imp__av_freep
+ .idata$5       0x000000000005f0d8        0x4 libavutil/avutil.lib(dclfs00142.o)
+                0x000000000005f0d8                _imp__av_get_bits_per_pixel
+ .idata$5       0x000000000005f0dc        0x4 libavutil/avutil.lib(dclfs00152.o)
+                0x000000000005f0dc                _imp__av_get_cpu_flags
+ .idata$5       0x000000000005f0e0        0x4 libavutil/avutil.lib(dclfs00162.o)
+                0x000000000005f0e0                _imp__av_get_pix_fmt_name
+ .idata$5       0x000000000005f0e4        0x4 libavutil/avutil.lib(dclfs00208.o)
+                0x000000000005f0e4                _imp__av_log
+ .idata$5       0x000000000005f0e8        0x4 libavutil/avutil.lib(dclfs00218.o)
+                0x000000000005f0e8                _imp__av_malloc
+ .idata$5       0x000000000005f0ec        0x4 libavutil/avutil.lib(dclfs00219.o)
+                0x000000000005f0ec                _imp__av_mallocz
+ .idata$5       0x000000000005f0f0        0x4 libavutil/avutil.lib(dclfs00267.o)
+                0x000000000005f0f0                _imp__av_opt_set_defaults
+ .idata$5       0x000000000005f0f4        0x4 libavutil/avutil.lib(dclfs00287.o)
+                0x000000000005f0f4                _imp__av_pix_fmt_desc_get
+ .idata$5       0x000000000005f0f8        0x4 libavutil/avutil.lib(dclfs00291.o)
+                0x000000000005f0f8                _imp__av_pix_fmt_get_chroma_sub_sample
+ .idata$5       0x000000000005f0fc        0x4 libavutil/avutil.lib(dclfs00292.o)
+                0x000000000005f0fc                _imp__av_pix_fmt_swap_endianness
+ .idata$5       0x000000000005f100        0x4 libavutil/avutil.lib(dclft.o)
+ SORT(*)(.idata$6)
+ .idata$6       0x000000000005f104        0x8 ../../lib/libc.dll.a(d000155.o)
+ .idata$6       0x000000000005f10c        0x8 ../../lib/libc.dll.a(d000180.o)
+ .idata$6       0x000000000005f114        0x8 ../../lib/libc.dll.a(d000187.o)
+ .idata$6       0x000000000005f11c        0x8 ../../lib/libc.dll.a(d000211.o)
+ .idata$6       0x000000000005f124        0xc ../../lib/libc.dll.a(d000358.o)
+ .idata$6       0x000000000005f130        0xc ../../lib/libc.dll.a(d000359.o)
+ .idata$6       0x000000000005f13c        0xc ../../lib/libc.dll.a(d000360.o)
+ .idata$6       0x000000000005f148        0xc ../../lib/libc.dll.a(d000361.o)
+ .idata$6       0x000000000005f154        0x8 ../../lib/libc.dll.a(d000373.o)
+ .idata$6       0x000000000005f15c        0x8 ../../lib/libc.dll.a(d000413.o)
+ .idata$6       0x000000000005f164        0x8 ../../lib/libc.dll.a(d000423.o)
+ .idata$6       0x000000000005f16c        0xa libavutil/avutil.lib(dclfs00138.o)
+ .idata$6       0x000000000005f176        0xc libavutil/avutil.lib(dclfs00139.o)
+ .idata$6       0x000000000005f182       0x18 libavutil/avutil.lib(dclfs00142.o)
+ .idata$6       0x000000000005f19a       0x14 libavutil/avutil.lib(dclfs00152.o)
+ .idata$6       0x000000000005f1ae       0x16 libavutil/avutil.lib(dclfs00162.o)
+ .idata$6       0x000000000005f1c4        0xa libavutil/avutil.lib(dclfs00208.o)
+ .idata$6       0x000000000005f1ce        0xc libavutil/avutil.lib(dclfs00218.o)
+ .idata$6       0x000000000005f1da        0xe libavutil/avutil.lib(dclfs00219.o)
+ .idata$6       0x000000000005f1e8       0x16 libavutil/avutil.lib(dclfs00267.o)
+ .idata$6       0x000000000005f1fe       0x16 libavutil/avutil.lib(dclfs00287.o)
+ .idata$6       0x000000000005f214       0x24 libavutil/avutil.lib(dclfs00291.o)
+ .idata$6       0x000000000005f238       0x1e libavutil/avutil.lib(dclfs00292.o)
+ SORT(*)(.idata$7)
+ *fill*         0x000000000005f256        0x2 
+ .idata$7       0x000000000005f258        0x4 ../../lib/libc.dll.a(d000155.o)
+ .idata$7       0x000000000005f25c        0x4 ../../lib/libc.dll.a(d000180.o)
+ .idata$7       0x000000000005f260        0x4 ../../lib/libc.dll.a(d000187.o)
+ .idata$7       0x000000000005f264        0x4 ../../lib/libc.dll.a(d000211.o)
+ .idata$7       0x000000000005f268        0x4 ../../lib/libc.dll.a(d000358.o)
+ .idata$7       0x000000000005f26c        0x4 ../../lib/libc.dll.a(d000359.o)
+ .idata$7       0x000000000005f270        0x4 ../../lib/libc.dll.a(d000360.o)
+ .idata$7       0x000000000005f274        0x4 ../../lib/libc.dll.a(d000361.o)
+ .idata$7       0x000000000005f278        0x4 ../../lib/libc.dll.a(d000373.o)
+ .idata$7       0x000000000005f27c        0x4 ../../lib/libc.dll.a(d000413.o)
+ .idata$7       0x000000000005f280        0x4 ../../lib/libc.dll.a(d000423.o)
+ .idata$7       0x000000000005f284        0xc ../../lib/libc.dll.a(d000508.o)
+                0x000000000005f284                libc_dll_iname
+ .idata$7       0x000000000005f290        0x4 libavutil/avutil.lib(dclfs00138.o)
+ .idata$7       0x000000000005f294        0x4 libavutil/avutil.lib(dclfs00139.o)
+ .idata$7       0x000000000005f298        0x4 libavutil/avutil.lib(dclfs00142.o)
+ .idata$7       0x000000000005f29c        0x4 libavutil/avutil.lib(dclfs00152.o)
+ .idata$7       0x000000000005f2a0        0x4 libavutil/avutil.lib(dclfs00162.o)
+ .idata$7       0x000000000005f2a4        0x4 libavutil/avutil.lib(dclfs00208.o)
+ .idata$7       0x000000000005f2a8        0x4 libavutil/avutil.lib(dclfs00218.o)
+ .idata$7       0x000000000005f2ac        0x4 libavutil/avutil.lib(dclfs00219.o)
+ .idata$7       0x000000000005f2b0        0x4 libavutil/avutil.lib(dclfs00267.o)
+ .idata$7       0x000000000005f2b4        0x4 libavutil/avutil.lib(dclfs00287.o)
+ .idata$7       0x000000000005f2b8        0x4 libavutil/avutil.lib(dclfs00291.o)
+ .idata$7       0x000000000005f2bc        0x4 libavutil/avutil.lib(dclfs00292.o)
+ .idata$7       0x000000000005f2c0       0x10 libavutil/avutil.lib(dclft.o)
+                0x000000000005f2c0                _libavutil_avutil_lib_iname
+
+.reloc          0x0000000000060000     0x1800
+ *(.reloc)
+ .reloc         0x0000000000060000     0x16f0 dll stuff
+LOAD ../../lib/libdll.a
+LOAD libswscale/input.o
+LOAD libswscale/options.o
+LOAD libswscale/output.o
+LOAD libswscale/rgb2rgb.o
+LOAD libswscale/swscale.o
+LOAD libswscale/swscale_unscaled.o
+LOAD libswscale/utils.o
+LOAD libswscale/x86/input.o
+LOAD libswscale/x86/output.o
+LOAD libswscale/x86/rgb2rgb.o
+LOAD libswscale/x86/scale.o
+LOAD libswscale/x86/swscale.o
+LOAD libswscale/x86/yuv2rgb.o
+LOAD libswscale/yuv2rgb.o
+LOAD libavutil/avutil.lib
+LOAD ../../lib/libdll.a
+LOAD ../../lib/libz.dll.a
+LOAD ../../lib/libc.dll.a
+LOAD ../../lib/libgcc.a
+OUTPUT(libswscale/swscale-2.dll pei-i386)
+LOAD dll stuff

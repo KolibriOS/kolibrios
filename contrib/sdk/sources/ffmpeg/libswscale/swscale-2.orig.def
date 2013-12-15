@@ -1,0 +1,37 @@
+EXPORTS
+    sws_addVec @1
+    sws_allocVec @2
+    sws_alloc_context @3
+    sws_cloneVec @4
+    sws_context_class @5 DATA
+    sws_convVec @6
+    sws_convertPalette8ToPacked24 @7
+    sws_convertPalette8ToPacked32 @8
+    sws_format_name @9
+    sws_freeContext @10
+    sws_freeFilter @11
+    sws_freeVec @12
+    sws_getCachedContext @13
+    sws_getCoefficients @14
+    sws_getColorspaceDetails @15
+    sws_getConstVec @16
+    sws_getContext @17
+    sws_getDefaultFilter @18
+    sws_getGaussianVec @19
+    sws_getIdentityVec @20
+    sws_get_class @21
+    sws_init_context @22
+    sws_isSupportedEndiannessConversion @23
+    sws_isSupportedInput @24
+    sws_isSupportedOutput @25
+    sws_normalizeVec @26
+    sws_printVec2 @27
+    sws_rgb2rgb_init @28
+    sws_scale @29
+    sws_scaleVec @30
+    sws_setColorspaceDetails @31
+    sws_shiftVec @32
+    sws_subVec @33
+    swscale_configuration @34
+    swscale_license @35
+    swscale_version @36

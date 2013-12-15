@@ -1,0 +1,4 @@
+LIBSWSCALE_2 {
+        global: swscale_*; sws_*;
+        local: *;
+};

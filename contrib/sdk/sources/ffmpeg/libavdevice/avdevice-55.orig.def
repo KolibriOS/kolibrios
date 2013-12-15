@@ -1,0 +1,6 @@
+EXPORTS
+    DllStartup @1
+    avdevice_configuration @2
+    avdevice_license @3
+    avdevice_register_all @4
+    avdevice_version @5
