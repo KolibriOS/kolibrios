@@ -34,7 +34,7 @@ STRIP=strip
 CP=cp -p
 LN_S=ln -s -f
 CPPFLAGS= -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=32 -D_LARGEFILE_SOURCE -U__STRICT_ANSI__
-CFLAGS=  -I../newlib/include -U_Win32 -U_WIN32 -U__MINGW32__ -std=c99 -march=pentium-mmx -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-parentheses -Wno-switch -Wno-format-zero-length -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes -Wno-pointer-to-int-cast -Wstrict-prototypes -O2 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -Werror=implicit-function-declaration -Werror=missing-prototypes -Werror=return-type -Werror=vla
+CFLAGS=  -I../newlib/include -U_Win32 -U_WIN32 -U__MINGW32__ -std=c99 -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-parentheses -Wno-switch -Wno-format-zero-length -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes -Wno-pointer-to-int-cast -Wstrict-prototypes -O2 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -Werror=implicit-function-declaration -Werror=missing-prototypes -Werror=return-type -Werror=vla
 CXXFLAGS=  -D__STDC_CONSTANT_MACROS
 ASFLAGS=  -I../newlib/include -U_Win32 -U_WIN32 -U__MINGW32__
 AS_C=-c

@@ -60,11 +60,6 @@ struct list sf_list;
 
 int uxa_update_fb(struct intel_screen_private *intel);
 
-int sna_create_mask()
-{
-    return 0;
-};
-
 static void i830_done_composite(PixmapPtr dest)
 {
 	intel_screen_private *intel = intel_get_screen_private();

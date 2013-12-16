@@ -13,7 +13,7 @@ IMPLIB    = libz.dll.a
 
 PREFIX =
 CC = $(PREFIX)gcc
-CFLAGS = $(LOC) -U_Win32 -U_WIN32 -U__MINGW32__ -O3 -Wall -fomit-frame-pointer 
+CFLAGS = $(LOC) -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fomit-frame-pointer 
 
 AS = $(CC)
 ASFLAGS = $(LOC) -Wall
@@ -36,6 +36,9 @@ LIBPATH:= -L../../lib
 
 LIBS:=  -ldll -lc.dll
 
+ifeq ($(findstring ebox,$(MAKECMDGOALS)),ebox)
+CFLAGS+=-march=pentium-mmx
+endif
 
 OBJS = adler32.o compress.o crc32.o deflate.o gzclose.o gzlib.o gzread.o \
        gzwrite.o infback.o inffast.o inflate.o inftrees.o trees.o uncompr.o zutil.o
@@ -43,6 +46,7 @@ OBJA =
 
 all: $(STATICLIB) $(SHAREDLIB) $(IMPLIB) Makefile
 
+ebox: $(STATICLIB) $(SHAREDLIB) $(IMPLIB) Makefile
 
 .c.o:
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<

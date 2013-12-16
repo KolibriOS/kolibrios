@@ -57,6 +57,7 @@ uint32_t init_pixlib(uint32_t caps)
 	if (service != 0)
 		return caps & hw_caps;
 
+#ifndef BUILD_EBOX
 	service = get_service("DISPLAY");
 	if (service == 0)
 		goto fail;
@@ -84,6 +85,7 @@ uint32_t init_pixlib(uint32_t caps)
 			   (hw_caps & HW_VID_BLIT) != 0 ? "HW_VID_BLIT " : "");
 
 	return caps & hw_caps;
+#endif
 
   fail:
 	service = 0;
@@ -279,4 +281,9 @@ int resize_bitmap(bitmap_t * bitmap)
 	sf->pitch  = pitch;
 
 	return 0;
+};
+
+int sna_create_mask()
+{
+    return 0;
 };

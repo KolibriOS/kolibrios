@@ -20,11 +20,13 @@ LIBS:=  -ldll -lc.dll -lz.dll
 
 DEFS = -DHAVE_CONFIG_H
 
-
 LIBPNG_DEFINES = -DPNG_CONFIGURE_LIBPNG 
 
 DEFINES= $(DEFS) $(LIBPNG_DEFINES)
 
+ifeq ($(findstring ebox,$(MAKECMDGOALS)),ebox)
+CFLAGS+=-march=pentium-mmx
+endif
 
 
 SOURCES = png.c pngerror.c pngget.c pngmem.c pngpread.c	\
@@ -41,6 +43,7 @@ OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 
 all:$(LIBRARY).a $(LIBRARY).dll
 
+ebox:$(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)

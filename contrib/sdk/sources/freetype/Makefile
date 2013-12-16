@@ -62,10 +62,15 @@ SOURCES =				\
  
 OBJECTS     = $(patsubst %.c, %.o, $(SOURCES))
 
+ifeq ($(findstring ebox,$(MAKECMDGOALS)),ebox)
+CFLAGS+=-march=pentium-mmx
+endif
+
 # targets 
 
 all:lib$(LIBRARY).a $(LIBRARY).dll
 
+ebox:lib$(LIBRARY).a $(LIBRARY).dll
 
 lib$(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs lib$(LIBRARY).a $(OBJECTS)
