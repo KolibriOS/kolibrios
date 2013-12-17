@@ -7,12 +7,25 @@
 #include <pixlib2.h>
 #include <kos32sys.h>
 
+void* load_library(const char *name);
+
+struct pix_driver
+{
+    char *name;
+
+    int (*create_bitmap)(bitmap_t * bitmap);
+    int (*destroy_bitmap)(bitmap_t * bitmap);
+    int (*lock_bitmap)(bitmap_t * bitmap);
+    int (*blit)(bitmap_t * bitmap, bool scale, int dst_x, int dst_y,
+                int w, int h, int src_x, int src_y);
+    int (*resize_bitmap)(bitmap_t * bitmap);
+    void (*fini)(void);
+};
 
 #define DISPLAY_VERSION         0x0200	/*      2.00     */
 
 #define SRV_GETVERSION              0
 #define SRV_GET_CAPS                3
-
 
 #define BUFFER_SIZE(n) ((n)*sizeof(uint32_t))
 #define __ALIGN_MASK(x,mask)  (((x)+(mask))&~(mask))
@@ -31,26 +44,15 @@ typedef struct
 	uint32_t flags;
 } surface_t;
 
-
-int sna_init(uint32_t service);
-void sna_fini();
-
-int sna_create_bitmap(bitmap_t * bitmap);
-int sna_destroy_bitmap(bitmap_t * bitmap);
-int sna_lock_bitmap(bitmap_t * bitmap);
-int sna_resize_bitmap(bitmap_t *bitmap);
-//int sna_blit_copy(bitmap_t * src_bitmap, int dst_x, int dst_y,
-//				  int w, int h, int src_x, int src_y);
-int sna_blit_tex(bitmap_t * src_bitmap, bool scale, int dst_x, int dst_y,
-				 int w, int h, int src_x, int src_y);
-
-
 static uint32_t service;
 static uint32_t hw_caps;
-
+static struct pix_driver pix_driver;
 
 uint32_t init_pixlib(uint32_t caps)
 {
+    void *lib;
+    uint32_t (*drventry)(uint32_t service, struct pix_driver *driver);
+
 	uint32_t api_version;
 	ioctl_t io;
 
@@ -75,7 +77,18 @@ uint32_t init_pixlib(uint32_t caps)
 		(DISPLAY_VERSION < (api_version >> 16)))
 		goto fail;
 
-	hw_caps = sna_init(service);
+    lib = load_library("intel-sna.drv");
+    if(lib == 0)
+        lib = load_library("intel-uxa.drv");
+    if(lib == 0)
+        goto fail;
+
+    drventry = get_proc_address(lib, "DrvInit");
+
+    if( drventry == NULL)
+        goto fail;
+
+    hw_caps = drventry(service, &pix_driver);
 
 	if (hw_caps)
 		printf("2D caps %s%s%s\n",
@@ -93,9 +106,8 @@ uint32_t init_pixlib(uint32_t caps)
 void done_pixlib()
 {
 	if (hw_caps != 0)
-		sna_fini();
+        pix_driver.fini();
 };
-
 
 int create_bitmap(bitmap_t * bitmap)
 {
@@ -108,8 +120,8 @@ int create_bitmap(bitmap_t * bitmap)
 	bitmap->data = (void *) -1;
 	bitmap->pitch = -1;
 
-	if (bitmap->flags &= hw_caps)
-		return sna_create_bitmap(bitmap);
+    if (bitmap->flags &= hw_caps)
+       return pix_driver.create_bitmap(bitmap);
 
 	pitch = ALIGN(bitmap->width * 4, 16);
 	max_pitch = ALIGN(bitmap->max_width * 4, 16);
@@ -152,8 +164,8 @@ int destroy_bitmap(bitmap_t * bitmap)
 {
 	surface_t *sf = to_surface(bitmap);
 
-	if (sf->flags & hw_caps)
-		return sna_destroy_bitmap(bitmap);
+    if (sf->flags & hw_caps)
+        return pix_driver.destroy_bitmap(bitmap);
 
 	user_free(sf->data);
 	free(sf);
@@ -172,8 +184,8 @@ int lock_bitmap(bitmap_t * bitmap)
 	if (bitmap->data != (void *) -1)
 		return 0;
 
-	if (sf->flags & hw_caps)
-		return sna_lock_bitmap(bitmap);
+    if (sf->flags & hw_caps)
+       return pix_driver.lock_bitmap(bitmap);
 
 	bitmap->data = sf->data;
 	bitmap->pitch = sf->pitch;
@@ -189,8 +201,8 @@ int blit_bitmap(bitmap_t * bitmap, int dst_x, int dst_y,
 
 	surface_t *sf = to_surface(bitmap);
 
-	if (sf->flags & hw_caps & HW_BIT_BLIT)
-		return sna_blit_tex(bitmap, false, dst_x, dst_y, w, h, src_x, src_y);
+    if (sf->flags & hw_caps & HW_BIT_BLIT)
+        return pix_driver.blit(bitmap, false, dst_x, dst_y, w, h, src_x, src_y);
 
 	bc.dstx     = dst_x;
 	bc.dsty     = dst_y;
@@ -220,8 +232,8 @@ int fplay_blit_bitmap(bitmap_t * bitmap, int dst_x, int dst_y, int w, int h)
 
 	surface_t *sf = to_surface(bitmap);
 
-	if (sf->flags & hw_caps & HW_TEX_BLIT)
-		return sna_blit_tex(bitmap, true, dst_x, dst_y, w, h, 0, 0);
+    if (sf->flags & hw_caps & HW_TEX_BLIT)
+        return pix_driver.blit(bitmap, true, dst_x, dst_y, w, h, 0, 0);
 
 	bc.dstx = dst_x;
 	bc.dsty = dst_y;
@@ -253,10 +265,8 @@ int resize_bitmap(bitmap_t * bitmap)
 
 	surface_t *sf = to_surface(bitmap);
 
-	if (sf->flags & hw_caps)
-	{
-		return sna_resize_bitmap(bitmap);
-	};
+    if (sf->flags & hw_caps)
+        return pix_driver.resize_bitmap(bitmap);
 
 	pitch = ALIGN(bitmap->width * 4, 16);
 	size = ALIGN(pitch * bitmap->height, 4096);
@@ -280,3 +290,9 @@ int resize_bitmap(bitmap_t * bitmap)
 
 	return 0;
 };
+
+int sna_create_mask()
+{
+    return 0;
+}
+

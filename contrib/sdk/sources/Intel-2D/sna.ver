@@ -1,0 +1,15 @@
+LIBDRM {
+    global: DllStartup;
+            DrvInit;
+	    sna_bitmap_from_handle;
+    	    sna_blit_tex;
+    	    sna_create_mask;
+    	    sna_set_bo_handle;
+
+    local:  __chkstk;
+    	    __chkstk_ms;
+    	    _alloca;
+            __uxa_lock;
+            _nm__tls_alloc;
+            *;
+};
