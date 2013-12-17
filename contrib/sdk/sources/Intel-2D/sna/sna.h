@@ -98,6 +98,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define DBG(x)
 #endif
 
+# define ENTER() printf("ENTER %s\n", __FUNCTION__)
+# define LEAVE() printf("LEAVE %s\n", __FUNCTION__)
+# define FAIL() printf("FAIL %s\n", __FUNCTION__)
+
 #define DEBUG_NO_BLT 0
 
 #define DEBUG_FLUSH_BATCH 0

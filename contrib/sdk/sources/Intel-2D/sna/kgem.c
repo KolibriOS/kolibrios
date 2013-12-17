@@ -47,6 +47,7 @@
 
 #include "sna_cpuid.h"
 
+
 static struct kgem_bo *
 search_linear_cache(struct kgem *kgem, unsigned int num_pages, unsigned flags);
 
@@ -2936,6 +2937,8 @@ void kgem_cleanup_cache(struct kgem *kgem)
 	unsigned int i;
 	int n;
 
+    ENTER();
+
 	/* sync to the most recent request */
 	for (n = 0; n < ARRAY_SIZE(kgem->requests); n++) {
 		if (!list_is_empty(&kgem->requests[n])) {
@@ -2983,6 +2986,8 @@ void kgem_cleanup_cache(struct kgem *kgem)
 
 	kgem->need_purge = false;
 	kgem->need_expire = false;
+
+    LEAVE();
 }
 
 static struct kgem_bo *
@@ -5388,14 +5393,18 @@ void sna_bo_destroy(struct kgem *kgem, struct kgem_bo *bo)
 void kgem_close_batches(struct kgem *kgem)
 {
     int n;
-
+    ENTER();
 	for (n = 0; n < ARRAY_SIZE(kgem->pinned_batches); n++) {
-		while (!list_is_empty(&kgem->pinned_batches[n])) {
-			kgem_bo_destroy(kgem,
+		while (!list_is_empty(&kgem->pinned_batches[n]))
+        {
+			struct kgem_bo *bo =
 					list_first_entry(&kgem->pinned_batches[n],
-							 struct kgem_bo, list));
+							 struct kgem_bo, list);
+			list_del(&bo->list);
+			kgem_bo_destroy(kgem,bo);
 		}
 	}
+    LEAVE();
 };
 
 struct kgem_bo *kgem_bo_from_handle(struct kgem *kgem, int handle,

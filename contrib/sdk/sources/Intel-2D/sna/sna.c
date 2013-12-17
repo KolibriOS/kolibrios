@@ -49,6 +49,13 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define to_surface(x) (surface_t*)((x)->handle)
 
+typedef struct {
+    int l;
+    int t;
+    int r;
+    int b;
+} rect_t;
+
 static struct sna_fb sna_fb;
 static int    tls_mask;
 
@@ -268,6 +275,8 @@ err1:
 
 void sna_fini()
 {
+    ENTER();
+
     if( sna_device )
     {
         struct kgem_bo *mask;
@@ -279,12 +288,13 @@ void sna_fini()
         sna_device->render.fini(sna_device);
         if(mask)
             kgem_bo_destroy(&sna_device->kgem, mask);
-        kgem_close_batches(&sna_device->kgem);
+//        kgem_close_batches(&sna_device->kgem);
    	    kgem_cleanup_cache(&sna_device->kgem);
 
    	    sna_device = NULL;
         __lock_release_recursive(__sna_lock);
     };
+    LEAVE();
 }
 
 #if 0
@@ -697,6 +707,104 @@ err_1:
     return -1;
 };
 
+#define MI_LOAD_REGISTER_IMM		(0x22<<23)
+#define MI_WAIT_FOR_EVENT			(0x03<<23)
+
+static bool sna_emit_wait_for_scanline_gen6(struct sna *sna,
+                        rect_t *crtc,
+					    int pipe, int y1, int y2,
+					    bool full_height)
+{
+	uint32_t *b;
+	uint32_t event;
+
+//	if (!sna->kgem.has_secure_batches)
+//		return false;
+
+	assert(y1 >= 0);
+	assert(y2 > y1);
+	assert(sna->kgem.mode == KGEM_RENDER);
+
+	/* Always program one less than the desired value */
+	if (--y1 < 0)
+		y1 = crtc->b;
+	y2--;
+
+	/* The scanline granularity is 3 bits */
+	y1 &= ~7;
+	y2 &= ~7;
+	if (y2 == y1)
+		return false;
+
+	event = 1 << (3*full_height + pipe*8);
+
+	b = kgem_get_batch(&sna->kgem);
+	sna->kgem.nbatch += 10;
+
+	b[0] = MI_LOAD_REGISTER_IMM | 1;
+	b[1] = 0x44050; /* DERRMR */
+	b[2] = ~event;
+	b[3] = MI_LOAD_REGISTER_IMM | 1;
+	b[4] = 0x4f100; /* magic */
+	b[5] = (1 << 31) | (1 << 30) | pipe << 29 | (y1 << 16) | y2;
+	b[6] = MI_WAIT_FOR_EVENT | event;
+	b[7] = MI_LOAD_REGISTER_IMM | 1;
+	b[8] = 0x44050; /* DERRMR */
+	b[9] = ~0;
+
+	sna->kgem.batch_flags |= I915_EXEC_SECURE;
+
+	return true;
+}
+
+bool
+sna_wait_for_scanline(struct sna *sna,
+		      rect_t *crtc,
+		      rect_t *clip)
+{
+	bool full_height;
+	int y1, y2, pipe;
+	bool ret;
+
+//	if (sna->flags & SNA_NO_VSYNC)
+//		return false;
+
+	/*
+	 * Make sure we don't wait for a scanline that will
+	 * never occur
+	 */
+	y1 = clip->t - crtc->t;
+	if (y1 < 0)
+		y1 = 0;
+	y2 = clip->b - crtc->t;
+	if (y2 > crtc->b - crtc->t)
+		y2 = crtc->b - crtc->t;
+//	DBG(("%s: clipped range = %d, %d\n", __FUNCTION__, y1, y2));
+//	printf("%s: clipped range = %d, %d\n", __FUNCTION__, y1, y2);
+
+	if (y2 <= y1 + 4)
+		return false;
+
+	full_height = y1 == 0 && y2 == crtc->b - crtc->t;
+
+	pipe = 0;
+	DBG(("%s: pipe=%d, y1=%d, y2=%d, full_height?=%d\n",
+	     __FUNCTION__, pipe, y1, y2, full_height));
+
+	if (sna->kgem.gen >= 0100)
+		ret = false;
+//	else if (sna->kgem.gen >= 075)
+//		ret = sna_emit_wait_for_scanline_hsw(sna, crtc, pipe, y1, y2, full_height);
+//	else if (sna->kgem.gen >= 070)
+//		ret = sna_emit_wait_for_scanline_ivb(sna, crtc, pipe, y1, y2, full_height);
+	else if (sna->kgem.gen >= 060)
+		ret =sna_emit_wait_for_scanline_gen6(sna, crtc, pipe, y1, y2, full_height);
+//	else if (sna->kgem.gen >= 040)
+//		ret = sna_emit_wait_for_scanline_gen4(sna, crtc, pipe, y1, y2, full_height);
+
+	return ret;
+}
+
 
 bool
 gen6_composite(struct sna *sna,
@@ -786,6 +894,22 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
 
     __lock_acquire_recursive(__sna_lock);
 
+    {
+        rect_t crtc, clip;
+
+        crtc.l = 0;
+        crtc.t = 0;
+        crtc.r = sna_fb.width-1;
+        crtc.b = sna_fb.height-1;
+
+        clip.l = winx+dst_x;
+        clip.t = winy+dst_y;
+        clip.r = clip.l+w-1;
+        clip.b = clip.t+h-1;
+
+        kgem_set_mode(&sna_device->kgem, KGEM_RENDER, sna_fb.fb_bo);
+        sna_wait_for_scanline(sna_device, &crtc, &clip);
+    }
 
     if( sna_device->render.blit_tex(sna_device, PictOpSrc,scale,
 		      &src, src_bo,

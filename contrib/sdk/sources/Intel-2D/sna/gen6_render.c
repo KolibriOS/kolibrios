@@ -3327,7 +3327,9 @@ static void gen6_render_reset(struct sna *sna)
 
 static void gen6_render_fini(struct sna *sna)
 {
+    ENTER();
     kgem_bo_destroy(&sna->kgem, sna->render_state.gen6.general_bo);
+    LEAVE();
 }
 
 static bool is_gt2(struct sna *sna)
