@@ -43,9 +43,12 @@
 
 #include "egl_dri2.h"
 
-int sna_bitmap_from_handle(bitmap_t *bitmap, uint32_t handle);
-void sna_set_bo_handle(bitmap_t *bitmap, int handle);
-int sna_blit_tex(bitmap_t *bitmap, int scale, int dst_x, int dst_y,
+void* load_library(const char *name);
+void *get_proc_address(void *module, char *proc_name);
+
+int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
+void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
+int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int dst_x, int dst_y,
                   int w, int h, int src_x, int src_y);
 
 static struct gbm_bo *
@@ -379,7 +382,7 @@ dri2_swap_buffers(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw)
             bm.max_height = bo->base.base.height;
             bm.flags      = HW_TEX_BLIT;
 
-            if( sna_bitmap_from_handle(&bm, bo->base.base.handle.s32))
+            if( blit_bitmap_from_handle(&bm, bo->base.base.handle.s32))
             {
                 printf("sna_bitmap_from_handle failed\n");
             }
@@ -391,8 +394,8 @@ dri2_swap_buffers(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw)
 //                              bo->base.base.height, (int)bo->base.base.stride,
 //                              bo->base.base.format);
 
-            sna_set_bo_handle(&bm, bo->base.base.handle.s32);
-            sna_blit_tex(&bm, 0, 5, 20, bm.width, bm.height, 0, 0);
+            blit_set_bo_handle(&bm, bo->base.base.handle.s32);
+            blit_blit_tex(&bm, 0, 5, 20, bm.width, bm.height, 0, 0);
         }
       }
 #endif
@@ -482,6 +485,8 @@ dri2_initialize_drm(_EGLDriver *drv, _EGLDisplay *disp)
 {
    struct dri2_egl_display *dri2_dpy;
    struct gbm_device *gbm;
+   void *lib;
+
    int fd = -1;
    int i;
 
@@ -509,6 +514,26 @@ dri2_initialize_drm(_EGLDriver *drv, _EGLDisplay *disp)
    if (dri2_dpy->gbm_dri->base.type != GBM_DRM_DRIVER_TYPE_DRI) {
       free(dri2_dpy);
       return EGL_FALSE;
+   }
+
+
+   lib = load_library("intel-sna.drv");
+   if(lib)
+   {
+       blit_bitmap_from_handle = get_proc_address(lib,"sna_bitmap_from_handle");
+       blit_set_bo_handle = get_proc_address(lib,"sna_set_bo_handle");
+       blit_blit_tex = get_proc_address(lib,"sna_blit_tex");
+   }
+   else
+   {
+       lib = load_library("intel-uxa.drv");
+       if(lib)
+       {
+           blit_bitmap_from_handle = get_proc_address(lib,"uxa_bitmap_from_handle");
+           blit_set_bo_handle = get_proc_address(lib,"uxa_set_bo_handle");
+           blit_blit_tex = get_proc_address(lib,"uxa_blit_tex");
+       }
+       else return EGL_FALSE;
    }
 
    dri2_dpy->fd = fd;
