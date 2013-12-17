@@ -485,8 +485,8 @@ sna_wait_for_scanline(struct sna *sna,
 	 * never occur
 	 */
 	y1 = clip->t - crtc->t;
-	if (y1 < 0)
-		y1 = 0;
+    if (y1 < 1)
+        y1 = 1;
 	y2 = clip->b - crtc->t;
 	if (y2 > crtc->b - crtc->t)
 		y2 = crtc->b - crtc->t;
@@ -970,6 +970,7 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
 
     __lock_acquire_recursive(__sna_lock);
 
+#if 1
     {
         rect_t crtc, clip;
 
@@ -986,6 +987,7 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
         kgem_set_mode(&sna_device->kgem, KGEM_RENDER, sna_fb.fb_bo);
         sna_wait_for_scanline(sna_device, &crtc, &clip);
     }
+#endif
 
     if( sna_device->render.blit_tex(sna_device, PictOpSrc,scale,
               &src, src_bo,
