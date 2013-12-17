@@ -682,7 +682,7 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
 		if ((page_offset + remain) > PAGE_SIZE)
 			page_length = PAGE_SIZE - page_offset;
 
-        MapPage(vaddr, page_base, PG_SW|PG_NOCACHE);
+        MapPage(vaddr, dev_priv->gtt.mappable_base+page_base, PG_SW|PG_NOCACHE);
 
         memcpy(vaddr+page_offset, user_data, page_length);
 
@@ -716,7 +716,7 @@ shmem_pwrite_fast(struct page *page, int shmem_page_offset, int page_length,
 	if (unlikely(page_do_bit17_swizzling))
 		return -EINVAL;
 
-	vaddr = (char *)MapIoMem((addr_t)page, 4096, PG_SW);
+	vaddr = (char *)MapIoMem((addr_t)page, 4096, PG_SW|PG_NOCACHE);
 	if (needs_clflush_before)
 		drm_clflush_virt_range(vaddr + shmem_page_offset,
 				       page_length);

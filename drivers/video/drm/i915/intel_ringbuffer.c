@@ -1247,8 +1247,8 @@ static int intel_init_ring_buffer(struct drm_device *dev,
 	}
 
 	obj = NULL;
-//   if (!HAS_LLC(dev))
-//       obj = i915_gem_object_create_stolen(dev, ring->size);
+	if (!HAS_LLC(dev))
+		obj = i915_gem_object_create_stolen(dev, ring->size);
 	if (obj == NULL)
     obj = i915_gem_alloc_object(dev, ring->size);
 	if (obj == NULL) {

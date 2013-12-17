@@ -75,10 +75,12 @@ NAME_SRC=		main.c					\
 			intel_sprite.c				\
 			intel_uncore.c				\
 			kms_display.c				\
+			kos_gem_fb.c				\
 			utils.c					\
 			../hdmi.c				\
 			Gtt/intel-agp.c				\
 			Gtt/intel-gtt.c				\
+			../drm_cache.c				\
 			../drm_global.c				\
 			../drm_drv.c				\
 			../drm_vma_manager.c			\

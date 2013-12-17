@@ -108,8 +108,8 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
     struct drm_encoder      *encoder;
     struct drm_i915_gem_object *fb_obj;
     struct drm_mode_set     set;
-    char *con_name;
-    char *enc_name;
+    const char *con_name;
+    const char *enc_name;
     unsigned hdisplay, vdisplay;
     int ret;
 
@@ -263,13 +263,85 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
     return def_connector;
 };
 
+struct drm_connector *get_active_connector(struct drm_device *dev)
+{
+    struct drm_connector *tmp = NULL;
+    struct drm_connector_helper_funcs *connector_funcs;
+    struct drm_encoder      *encoder;
+
+    list_for_each_entry(tmp, &dev->mode_config.connector_list, head)
+    {
+        if( tmp->status != connector_status_connected)
+            continue;
+
+        connector_funcs = tmp->helper_private;
+        encoder = connector_funcs->best_encoder(tmp);
+        if( encoder == NULL)
+        {
+            DRM_DEBUG_KMS("CONNECTOR %x ID: %d no active encoders\n",
+                      tmp, tmp->base.id);
+            continue;
+        };
+
+        tmp->encoder = encoder;
+
+        DRM_DEBUG_KMS("CONNECTOR %p ID:%d status:%d ENCODER %x CRTC %p ID:%d\n",
+               tmp, tmp->base.id, tmp->status, tmp->encoder,
+               tmp->encoder->crtc, tmp->encoder->crtc->base.id );
+
+        return tmp;
+    };
+
+    return NULL;
+}
+
+struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_encoder *encoder)
+    {
+        struct drm_crtc *tmp_crtc;
+        int crtc_mask = 1;
+
+        list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
+        {
+            if (encoder->possible_crtcs & crtc_mask)
+            {
+            encoder->crtc = tmp_crtc;
+            dbgprintf("CRTC %p\n", tmp_crtc);
+            return tmp_crtc;
+            };
+            crtc_mask <<= 1;
+        };
+    return NULL;
+    };
+
+int get_boot_mode(struct drm_connector *connector, videomode_t *usermode)
+{
+    struct drm_display_mode *mode;
+
+    list_for_each_entry(mode, &connector->modes, head)
+    {
+        dbgprintf("check mode w:%d h:%d %dHz\n",
+                drm_mode_width(mode), drm_mode_height(mode),
+                drm_mode_vrefresh(mode));
+
+        if( os_display->width  == drm_mode_width(mode)  &&
+            os_display->height == drm_mode_height(mode) &&
+            drm_mode_vrefresh(mode) == 60)
+        {
+            usermode->width  = os_display->width;
+            usermode->height = os_display->height;
+            usermode->freq   = 60;
+            return 1;
+        }
+    }
+    return 0;
+}
 
 int init_display_kms(struct drm_device *dev, videomode_t *usermode)
 {
     struct drm_connector    *connector;
     struct drm_connector_helper_funcs *connector_funcs;
     struct drm_encoder      *encoder;
-    struct drm_crtc         *crtc = NULL;
+    struct drm_crtc         *crtc;
     struct drm_framebuffer  *fb;
 
     cursor_t  *cursor;
@@ -280,29 +352,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
 
     mutex_lock(&dev->mode_config.mutex);
 
-    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
-    {
-        if( connector->status != connector_status_connected)
-            continue;
-
-        connector_funcs = connector->helper_private;
-        encoder = connector_funcs->best_encoder(connector);
-        if( encoder == NULL)
-        {
-            DRM_DEBUG_KMS("CONNECTOR %x ID: %d no active encoders\n",
-                      connector, connector->base.id);
-            continue;
-        }
-        connector->encoder = encoder;
-        crtc = encoder->crtc;
-
-        DRM_DEBUG_KMS("CONNECTOR %p ID:%d status:%d ENCODER %x CRTC %p ID:%d\n",
-               connector, connector->base.id,
-               connector->status, connector->encoder,
-               crtc, crtc->base.id );
-        break;
-    };
-
+    connector = get_active_connector(dev) ;
     if(connector == NULL)
     {
         DRM_DEBUG_KMS("No active connectors!\n");
@@ -310,26 +360,11 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
         return -1;
     };
 
-    dbgprintf("CRTC %p\n", crtc);
+    encoder = connector->encoder;
+    crtc = encoder->crtc;
 
     if(crtc == NULL)
-    {
-        struct drm_crtc *tmp_crtc;
-        int crtc_mask = 1;
-
-        list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
-        {
-            dbgprintf("tmp_crtc %p\n", tmp_crtc);
-            if (encoder->possible_crtcs & crtc_mask)
-            {
-                crtc = tmp_crtc;
-                encoder->crtc = crtc;
-                dbgprintf("CRTC %p\n", crtc);
-                break;
-            };
-            crtc_mask <<= 1;
-        };
-    };
+        crtc = get_possible_crtc(dev, encoder);
 
     dbgprintf("CRTC %p\n", crtc);
 
@@ -377,31 +412,11 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     if( (usermode->width == 0) ||
         (usermode->height == 0))
     {
+        if( !get_boot_mode(connector, usermode))
+        {
         struct drm_display_mode *mode;
 
-        list_for_each_entry(mode, &connector->modes, head)
-        {
-            dbgprintf("check mode w:%d h:%d %dHz\n",
-                    drm_mode_width(mode), drm_mode_height(mode),
-                    drm_mode_vrefresh(mode));
-
-            if( os_display->width  == drm_mode_width(mode)  &&
-                os_display->height == drm_mode_height(mode) &&
-                drm_mode_vrefresh(mode) == 60)
-            {
-                usermode->width  = os_display->width;
-                usermode->height = os_display->height;
-                usermode->freq   = 60;
-                break;
-
-            }
-        }
-
-        if( usermode->width  == 0 ||
-            usermode->height == 0)
-        {
             mode = list_entry(connector->modes.next, typeof(*mode), head);
-
             usermode->width  = drm_mode_width(mode);
             usermode->height = drm_mode_height(mode);
             usermode->freq   = drm_mode_vrefresh(mode);
@@ -483,7 +498,7 @@ int set_user_mode(videomode_t *mode)
 
 void i915_dpms(struct drm_device *dev, int mode)
 {
-    struct drm_connector_funcs *f = os_display->connector->funcs;
+    const struct drm_connector_funcs *f = os_display->connector->funcs;
 
     f->dpms(os_display->connector, mode);
 };
@@ -684,23 +699,19 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     return old;
 };
 
-struct sna_fb
+int i915_fbinfo(struct drm_i915_fb_info *fb)
 {
-    uint32_t  width;
-    uint32_t  height;
-    uint32_t  pitch;
-    uint32_t  tiling;
-};
+    struct drm_i915_gem_object *obj = get_fb_obj();
 
-int i915_fbinfo(struct sna_fb *fb)
-{
+    fb->name   = obj->base.name;
     fb->width  = os_display->width;
     fb->height = os_display->height;
-    fb->pitch  = os_display->pitch;
-    fb->tiling = 0;
+    fb->pitch  = obj->stride;
+    fb->tiling = obj->tiling_mode;
 
     return 0;
-};
+}
+
 
 typedef struct
 {
@@ -710,14 +721,6 @@ typedef struct
     int bottom;
 }rect_t;
 
-struct drm_i915_mask {
-    __u32 handle;
-    __u32 width;
-    __u32 height;
-    __u32 bo_size;
-    __u32 bo_pitch;
-    __u32 bo_map;
-};
 
 #define CURRENT_TASK             (0x80003000)
 
@@ -740,7 +743,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
     static unsigned int mask_seqno[256];
     rect_t winrc;
     u32    slot;
-    int    ret;
+    int    ret=0;
 
      if(mask->handle == -2)
      {
@@ -788,13 +791,13 @@ int i915_mask_update(struct drm_device *dev, void *data,
 
         ret = i915_mutex_lock_interruptible(dev);
         if (ret)
-            return ret;
+            goto err1;
 
         ret = i915_gem_object_set_to_cpu_domain(to_intel_bo(obj), true);
         if(ret !=0 )
         {
-            dbgprintf("%s fail\n", __FUNCTION__);
-            return ret;
+            dbgprintf("%s: i915_gem_object_set_to_cpu_domain failed\n", __FUNCTION__);
+            goto err2;
         };
 
 //        printf("width %d height %d\n", winrc.right, winrc.bottom);
@@ -886,13 +889,20 @@ int i915_mask_update(struct drm_device *dev, void *data,
             };
         };
         safe_sti(ifl);
+
+        ret = i915_gem_object_set_to_gtt_domain(to_intel_bo(obj), false);
+        if(ret != 0 )
+        {
+            dbgprintf("%s: i915_gem_object_set_to_gtt_domain failed\n", __FUNCTION__);
+        };
     }
 
+err2:
+    mutex_unlock(&dev->struct_mutex);
+err1:
     drm_gem_object_unreference(obj);
 
-    mutex_unlock(&dev->struct_mutex);
-
-    return 0;
+    return ret;
 }
 
 

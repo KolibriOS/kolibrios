@@ -187,8 +187,30 @@ kos_gem_fb_object_create(struct drm_device *dev,
     list_add_tail(&obj->global_list, &dev_priv->mm.bound_list);
     list_add_tail(&vma->mm_list, &ggtt->inactive_list);
 
+    mutex_lock(&dev->object_name_lock);
+    idr_preload(GFP_KERNEL);
+
+    if (!obj->base.name) {
+        ret = idr_alloc(&dev->object_name_idr, &obj->base, 1, 0, GFP_NOWAIT);
+        if (ret < 0)
+            goto err_gem;
+
+        obj->base.name = ret;
+
+        /* Allocate a reference for the name table.  */
+        drm_gem_object_reference(&obj->base);
+
+        printf("%s allocate fb name %d\n", __FUNCTION__, obj->base.name );
+    }
+
+    idr_preload_end();
+    mutex_unlock(&dev->object_name_lock);
+    drm_gem_object_unreference(&obj->base);
     return obj;
 
+err_gem:
+    idr_preload_end();
+    mutex_unlock(&dev->object_name_lock);
 err_vma:
     i915_gem_vma_destroy(vma);
 err_out:

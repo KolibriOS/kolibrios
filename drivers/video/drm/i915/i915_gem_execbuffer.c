@@ -37,7 +37,6 @@
 #define I915_EXEC_IS_PINNED     (1<<10)
 #define I915_EXEC_VEBOX         (4<<0)
 
-#define wmb() asm volatile ("sfence")
 
 struct drm_i915_gem_object *get_fb_obj();
 
@@ -206,6 +205,56 @@ static inline int use_cpu_reloc(struct drm_i915_gem_object *obj)
 }
 
 static int
+relocate_entry_cpu(struct drm_i915_gem_object *obj,
+		   struct drm_i915_gem_relocation_entry *reloc)
+{
+	uint32_t page_offset = offset_in_page(reloc->offset);
+	char *vaddr;
+	int ret = -EINVAL;
+
+	ret = i915_gem_object_set_to_cpu_domain(obj, 1);
+	if (ret)
+		return ret;
+
+    vaddr = (char *)MapIoMem((addr_t)i915_gem_object_get_page(obj,
+                                 reloc->offset >> PAGE_SHIFT), 4096, 3);
+	*(uint32_t *)(vaddr + page_offset) = reloc->delta;
+    FreeKernelSpace(vaddr);
+
+	return 0;
+}
+
+static int
+relocate_entry_gtt(struct drm_i915_gem_object *obj,
+		   struct drm_i915_gem_relocation_entry *reloc)
+{
+	struct drm_device *dev = obj->base.dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	uint32_t __iomem *reloc_entry;
+	void __iomem *reloc_page;
+	int ret = -EINVAL;
+
+	ret = i915_gem_object_set_to_gtt_domain(obj, true);
+	if (ret)
+		return ret;
+
+	ret = i915_gem_object_put_fence(obj);
+	if (ret)
+		return ret;
+
+	/* Map the page containing the relocation we're going to perform.  */
+	reloc->offset += i915_gem_obj_ggtt_offset(obj);
+    reloc_page = (void*)MapIoMem(dev_priv->gtt.mappable_base +
+                                 (reloc->offset & PAGE_MASK), 4096, 0x18|3);
+	reloc_entry = (uint32_t __iomem *)
+		(reloc_page + offset_in_page(reloc->offset));
+	iowrite32(reloc->delta, reloc_entry);
+    FreeKernelSpace(reloc_page);
+
+	return 0;
+}
+
+static int
 i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 				   struct eb_objects *eb,
 				   struct drm_i915_gem_relocation_entry *reloc,
@@ -287,39 +336,13 @@ i915_gem_execbuffer_relocate_entry(struct drm_i915_gem_object *obj,
 	/* We can't wait for rendering with pagefaults disabled */
 
 	reloc->delta += target_offset;
-	if (use_cpu_reloc(obj)) {
-		uint32_t page_offset = reloc->offset & ~PAGE_MASK;
-		char *vaddr;
+	if (use_cpu_reloc(obj))
+		ret = relocate_entry_cpu(obj, reloc);
+	else
+		ret = relocate_entry_gtt(obj, reloc);
 
-		ret = i915_gem_object_set_to_cpu_domain(obj, 1);
 		if (ret)
 			return ret;
-
-        vaddr = (char *)MapIoMem((addr_t)i915_gem_object_get_page(obj,
-                                 reloc->offset >> PAGE_SHIFT), 4096, 3);
-		*(uint32_t *)(vaddr + page_offset) = reloc->delta;
-        FreeKernelSpace(vaddr);
-	} else {
-		struct drm_i915_private *dev_priv = dev->dev_private;
-		uint32_t __iomem *reloc_entry;
-		void __iomem *reloc_page;
-
-		ret = i915_gem_object_set_to_gtt_domain(obj, true);
-		if (ret)
-			return ret;
-
-		ret = i915_gem_object_put_fence(obj);
-		if (ret)
-			return ret;
-
-		/* Map the page containing the relocation we're going to perform.  */
-        reloc->offset += i915_gem_obj_ggtt_offset(obj);
-        reloc_page = (void*)MapIoMem(reloc->offset & PAGE_MASK, 4096, 3);
-		reloc_entry = (uint32_t __iomem *)
-			(reloc_page + (reloc->offset & ~PAGE_MASK));
-		iowrite32(reloc->delta, reloc_entry);
-        FreeKernelSpace(reloc_page);
-	}
 
 	/* and update the user's relocation entry */
 	reloc->presumed_offset = target_offset;
