@@ -1030,4 +1030,22 @@ struct drm_i915_reg_read {
 	__u64 offset;
 	__u64 val; /* Return value */
 };
+
+struct drm_i915_mask {
+    __u32 handle;
+    __u32 width;
+    __u32 height;
+    __u32 bo_size;
+    __u32 bo_pitch;
+    __u32 bo_map;
+};
+
+struct drm_i915_fb_info {
+        __u32 name;
+        __u32 width;
+        __u32 height;
+        __u32 pitch;
+        __u32 tiling;
+};
+
 #endif /* _UAPI_I915_DRM_H_ */

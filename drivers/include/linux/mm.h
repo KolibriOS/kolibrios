@@ -12,4 +12,6 @@
 /* to align the pointer to the (next) page boundary */
 #define PAGE_ALIGN(addr) ALIGN(addr, PAGE_SIZE)
 
+#define offset_in_page(p)       ((unsigned long)(p) & ~PAGE_MASK)
+
 #endif
