@@ -38,7 +38,6 @@ include '../../network.inc'
 
 start:
 
-        cld
         mov     edi, path       ; Calculate the length of zero-terminated string
         xor     al, al
         mov     ecx, 1024
@@ -49,6 +48,7 @@ start:
         movsb
 
         mcall   68, 11
+        mcall   66, 1, 1
 
         stdcall dll.Load, @IMPORT
         test    eax, eax
@@ -111,6 +111,7 @@ start:
         call    [con_write_asciiz]
 
         mcall   40, EVM_STACK
+        mcall   10
 
 login:
         call    wait_for_data
@@ -118,14 +119,14 @@ login:
         push    buffer_ptr + 4
         call    [con_write_asciiz]
 
-        cmp     dword [buffer_ptr], 11 shl 24
-        jne     login
+        cmp     dword [buffer_ptr], 11 shl 24   ; length of string
+        jne     error
         cmp     dword [buffer_ptr + 4], 'Syne'
-        jne     login
+        jne     error
         cmp     word [buffer_ptr + 8], 'rg'
-        jne     login
+        jne     error
         cmp     byte [buffer_ptr + 10], 'y'
-        jne     login
+        jne     error
 
         push    str2
         call    [con_write_asciiz]
@@ -184,6 +185,18 @@ mainloop:
         cmp     dword [edi + 4], 'CIAK' ; resolution changed?
         je      .ciak
 
+;        cmp     dword [edi + 4], 'DMWM' ; mouse wheel moved
+;        je      .dmwm
+
+        cmp     dword [edi + 4], 'DKDN' ; Key pressed
+        je      .dkdn
+
+        cmp     dword [edi + 4], 'DKUP' ; key up
+        je      .dkup
+
+        cmp     dword [edi + 4], 'DKRP' ; key auto repeat
+        je      .dkrp
+
         push    str3
         call    [con_write_asciiz]
 
@@ -217,7 +230,8 @@ mainloop:
 
 
   .calv:
-        mcall   send, [socketnum], calv, calv.length, 0     ; looks like ping-pong event
+        mcall   send, [socketnum], calv, calv.length, 0                 ; keepalive
+
         jmp     .next
 
 
@@ -239,11 +253,12 @@ mainloop:
         bswap   edx
         mcall   18, 19, 4
         mcall   send, [socketnum], cnop, cnop.length, 0     ; reply with NOP
-        push    str4
-        call    [con_write_asciiz]
         jmp     .next
 
   .cout:
+        ; TODO: hide cursor
+        push    str8
+        call    [con_write_asciiz]
         jmp     .next
 
   .dmdn:
@@ -251,8 +266,6 @@ mainloop:
         or      [mousestate], eax
         mcall   18, 19, 5, [mousestate]
         mcall   send, [socketnum], cnop, cnop.length, 0     ; reply with NOP
-        push    str5
-        call    [con_write_asciiz]
         jmp     .next
 
   .dmup:
@@ -261,19 +274,39 @@ mainloop:
         and     [mousestate], eax
         mcall   18, 19, 5, [mousestate]
         mcall   send, [socketnum], cnop, cnop.length, 0     ; reply with NOP
-        push    str5
-        call    [con_write_asciiz]
         jmp     .next
 
   .ciak:
+        jmp     .next
+
+;  .dmwm:
+;        jmp     .next
+
+  .dkdn:
+        movzx   edx, word[edi + 8 + 4]  ; key button
+        rol     dx, 8
+        mcall   72, 1, 2                ; send key
+        jmp     .next
+
+  .dkrp:
+        movzx   edx, word[edi + 8 + 6]
+        rol     dx, 8
+        mcall   72, 1, 2                ; send key
+        jmp     .next
+
+  .dkup:
+        movzx   edx, word[edi + 8 + 4]
+        rol     dx, 8
+        add     edx, 128
+        mcall   72, 1, 2                ; send key
+
         jmp     .next
 
 error:
         push    str_err
         call    [con_write_asciiz]
 
-;        call    [con_gets]
-
+wait_for_key:
         call    [con_getch2]
 
         mcall   close, [socketnum]
@@ -287,13 +320,22 @@ exit:
 
 wait_for_data:
         mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
-        cmp     eax, -1
-        je      wait_for_data
+        inc     eax
+        jz      error
+        dec     eax
+        jz      closed
 
         cmp     eax, 8
         jb      wait_for_data   ; FIXME
 
         ret
+
+closed:
+
+        push    str_cls
+        call    [con_write_asciiz]
+
+        jmp     wait_for_key
 
 
 
@@ -305,10 +347,10 @@ str7    db      'Connected!',10,0
 str2    db      10,'Handshake received',10,0
 str3    db      'Unsupported command: ',0
 newline db      10,0
-str4    db      'mouse moved',10,0
-str5    db      'mouse buttons changed',10,0
-str6    db      'Enter screen',10,0
+str6    db      'Entering screen',10,0
+str8    db      'Leaving screen',10,0
 str_err db      'Uh-Oh.. some error occured !',10,'Press any key to quit.',0
+str_cls db      'Server disconnected',10,0
 
 screeninfo:
         dd (screeninfo.length - 4) shl 24
@@ -341,7 +383,7 @@ mousestate      dd 0
 sockaddr1:
         dw AF_INET4
 .port   dw 0
-.ip     dd 192 + 168 shl 8 + 1 shl 16 + 115 shl 24
+.ip     dd 0
         rb 10
 
 filename        db      '.ini', 0
