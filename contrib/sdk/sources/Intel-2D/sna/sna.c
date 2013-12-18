@@ -43,6 +43,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "compiler.h"
 #include "sna.h"
+#include "sna_reg.h"
 
 #include <pixlib2.h>
 #include <kos32sys.h>
@@ -421,6 +422,139 @@ typedef struct
 #define MI_LOAD_REGISTER_IMM		(0x22<<23)
 #define MI_WAIT_FOR_EVENT			(0x03<<23)
 
+static bool sna_emit_wait_for_scanline_hsw(struct sna *sna,
+                        rect_t *crtc,
+                        int pipe, int y1, int y2,
+                        bool full_height)
+{
+    uint32_t event;
+    uint32_t *b;
+
+    if (!sna->kgem.has_secure_batches)
+        return false;
+
+    b = kgem_get_batch(&sna->kgem);
+    sna->kgem.nbatch += 17;
+
+    switch (pipe) {
+    default: assert(0);
+    case 0: event = 1 << 0; break;
+    case 1: event = 1 << 8; break;
+    case 2: event = 1 << 14; break;
+    }
+
+    b[0] = MI_LOAD_REGISTER_IMM | 1;
+    b[1] = 0x44050; /* DERRMR */
+    b[2] = ~event;
+    b[3] = MI_LOAD_REGISTER_IMM | 1;
+    b[4] = 0xa188; /* FORCEWAKE_MT */
+    b[5] = 2 << 16 | 2;
+
+    /* The documentation says that the LOAD_SCAN_LINES command
+     * always comes in pairs. Don't ask me why. */
+    switch (pipe) {
+    default: assert(0);
+    case 0: event = 0 << 19; break;
+    case 1: event = 1 << 19; break;
+    case 2: event = 4 << 19; break;
+    }
+    b[8] = b[6] = MI_LOAD_SCAN_LINES_INCL | event;
+    b[9] = b[7] = (y1 << 16) | (y2-1);
+
+    switch (pipe) {
+    default: assert(0);
+    case 0: event = 1 << 0; break;
+    case 1: event = 1 << 8; break;
+    case 2: event = 1 << 14; break;
+    }
+    b[10] = MI_WAIT_FOR_EVENT | event;
+
+    b[11] = MI_LOAD_REGISTER_IMM | 1;
+    b[12] = 0xa188; /* FORCEWAKE_MT */
+    b[13] = 2 << 16;
+    b[14] = MI_LOAD_REGISTER_IMM | 1;
+    b[15] = 0x44050; /* DERRMR */
+    b[16] = ~0;
+
+    sna->kgem.batch_flags |= I915_EXEC_SECURE;
+    return true;
+}
+
+
+static bool sna_emit_wait_for_scanline_ivb(struct sna *sna,
+                        rect_t *crtc,
+                        int pipe, int y1, int y2,
+                        bool full_height)
+{
+    uint32_t *b;
+    uint32_t event;
+    uint32_t forcewake;
+
+    if (!sna->kgem.has_secure_batches)
+        return false;
+
+    assert(y1 >= 0);
+    assert(y2 > y1);
+    assert(sna->kgem.mode);
+
+    /* Always program one less than the desired value */
+    if (--y1 < 0)
+        y1 = crtc->b;
+    y2--;
+
+    switch (pipe) {
+    default:
+        assert(0);
+    case 0:
+        event = 1 << (full_height ? 3 : 0);
+        break;
+    case 1:
+        event = 1 << (full_height ? 11 : 8);
+        break;
+    case 2:
+        event = 1 << (full_height ? 21 : 14);
+        break;
+    }
+
+    if (sna->kgem.gen == 071)
+        forcewake = 0x1300b0; /* FORCEWAKE_VLV */
+    else
+        forcewake = 0xa188; /* FORCEWAKE_MT */
+
+    b = kgem_get_batch(&sna->kgem);
+
+    /* Both the LRI and WAIT_FOR_EVENT must be in the same cacheline */
+    if (((sna->kgem.nbatch + 6) >> 4) != (sna->kgem.nbatch + 10) >> 4) {
+        int dw = sna->kgem.nbatch + 6;
+        dw = ALIGN(dw, 16) - dw;
+        while (dw--)
+            *b++ = MI_NOOP;
+    }
+
+    b[0] = MI_LOAD_REGISTER_IMM | 1;
+    b[1] = 0x44050; /* DERRMR */
+    b[2] = ~event;
+    b[3] = MI_LOAD_REGISTER_IMM | 1;
+    b[4] = forcewake;
+    b[5] = 2 << 16 | 2;
+    b[6] = MI_LOAD_REGISTER_IMM | 1;
+    b[7] = 0x70068 + 0x1000 * pipe;
+    b[8] = (1 << 31) | (1 << 30) | (y1 << 16) | y2;
+    b[9] = MI_WAIT_FOR_EVENT | event;
+    b[10] = MI_LOAD_REGISTER_IMM | 1;
+    b[11] = forcewake;
+    b[12] = 2 << 16;
+    b[13] = MI_LOAD_REGISTER_IMM | 1;
+    b[14] = 0x44050; /* DERRMR */
+    b[15] = ~0;
+
+    sna->kgem.nbatch = b - sna->kgem.batch + 16;
+
+    sna->kgem.batch_flags |= I915_EXEC_SECURE;
+    return true;
+}
+
+
 static bool sna_emit_wait_for_scanline_gen6(struct sna *sna,
                         rect_t *crtc,
 					    int pipe, int y1, int y2,
@@ -468,6 +602,65 @@ static bool sna_emit_wait_for_scanline_gen6(struct sna *sna,
 	return true;
 }
 
+static bool sna_emit_wait_for_scanline_gen4(struct sna *sna,
+                        rect_t *crtc,
+                        int pipe, int y1, int y2,
+                        bool full_height)
+{
+    uint32_t event;
+    uint32_t *b;
+
+    if (pipe == 0) {
+        if (full_height)
+            event = MI_WAIT_FOR_PIPEA_SVBLANK;
+        else
+            event = MI_WAIT_FOR_PIPEA_SCAN_LINE_WINDOW;
+    } else {
+        if (full_height)
+            event = MI_WAIT_FOR_PIPEB_SVBLANK;
+        else
+            event = MI_WAIT_FOR_PIPEB_SCAN_LINE_WINDOW;
+    }
+
+    b = kgem_get_batch(&sna->kgem);
+    sna->kgem.nbatch += 5;
+
+    /* The documentation says that the LOAD_SCAN_LINES command
+     * always comes in pairs. Don't ask me why. */
+    b[2] = b[0] = MI_LOAD_SCAN_LINES_INCL | pipe << 20;
+    b[3] = b[1] = (y1 << 16) | (y2-1);
+    b[4] = MI_WAIT_FOR_EVENT | event;
+
+    return true;
+}
+
+static bool sna_emit_wait_for_scanline_gen2(struct sna *sna,
+                        rect_t *crtc,
+                        int pipe, int y1, int y2,
+                        bool full_height)
+{
+    uint32_t *b;
+
+    /*
+     * Pre-965 doesn't have SVBLANK, so we need a bit
+     * of extra time for the blitter to start up and
+     * do its job for a full height blit
+     */
+    if (full_height)
+        y2 -= 2;
+
+    b = kgem_get_batch(&sna->kgem);
+    sna->kgem.nbatch += 5;
+
+    /* The documentation says that the LOAD_SCAN_LINES command
+     * always comes in pairs. Don't ask me why. */
+    b[2] = b[0] = MI_LOAD_SCAN_LINES_INCL | pipe << 20;
+    b[3] = b[1] = (y1 << 16) | (y2-1);
+    b[4] = MI_WAIT_FOR_EVENT | 1 << (1 + 4*pipe);
+
+    return true;
+}
+
 bool
 sna_wait_for_scanline(struct sna *sna,
 		      rect_t *crtc,
@@ -504,14 +697,16 @@ sna_wait_for_scanline(struct sna *sna,
 
 	if (sna->kgem.gen >= 0100)
 		ret = false;
-//	else if (sna->kgem.gen >= 075)
-//		ret = sna_emit_wait_for_scanline_hsw(sna, crtc, pipe, y1, y2, full_height);
-//	else if (sna->kgem.gen >= 070)
-//		ret = sna_emit_wait_for_scanline_ivb(sna, crtc, pipe, y1, y2, full_height);
+    else if (sna->kgem.gen >= 075)
+        ret = sna_emit_wait_for_scanline_hsw(sna, crtc, pipe, y1, y2, full_height);
+    else if (sna->kgem.gen >= 070)
+        ret = sna_emit_wait_for_scanline_ivb(sna, crtc, pipe, y1, y2, full_height);
 	else if (sna->kgem.gen >= 060)
 		ret =sna_emit_wait_for_scanline_gen6(sna, crtc, pipe, y1, y2, full_height);
-//	else if (sna->kgem.gen >= 040)
-//		ret = sna_emit_wait_for_scanline_gen4(sna, crtc, pipe, y1, y2, full_height);
+    else if (sna->kgem.gen >= 040)
+        ret = sna_emit_wait_for_scanline_gen4(sna, crtc, pipe, y1, y2, full_height);
+    else
+        ret = sna_emit_wait_for_scanline_gen2(sna, crtc, pipe, y1, y2, full_height);
 
 	return ret;
 }
@@ -970,7 +1165,7 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
 
     __lock_acquire_recursive(__sna_lock);
 
-#if 1
+#if 0
     {
         rect_t crtc, clip;
 
