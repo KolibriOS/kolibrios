@@ -46,8 +46,10 @@
  * KHRONOS_APICALL and KHRONOS_APIENTRY are defined in KHR/khrplatform.h
  */
 
-#ifndef EGLAPI
-#define EGLAPI KHRONOS_APICALL
+#if defined(BUILD_GL32)
+#   define EGLAPI __declspec(dllexport)
+#else
+#   define EGLAPI __declspec(dllimport)
 #endif
 
 #ifndef EGLAPIENTRY

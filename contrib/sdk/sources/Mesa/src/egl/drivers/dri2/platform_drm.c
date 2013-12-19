@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright © 2011 Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,9 +46,9 @@
 void* load_library(const char *name);
 void *get_proc_address(void *module, char *proc_name);
 
-int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
-void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
-int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int vsync, int dst_x, int dst_y,
+static int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
+static void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
+static int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int vsync, int dst_x, int dst_y,
                   int w, int h, int src_x, int src_y);
 
 static struct gbm_bo *
