@@ -116,8 +116,8 @@ endl
         je      .checksum_ok
 
 ; re-calculate the checksum (if not already done by hw)
-;        test    [ebx + NET_DEVICE.hwacc], HWACC_TCP_IPv4_IN
-;        jnz     .checksum_ok
+        test    [ebx + NET_DEVICE.hwacc], NET_HWACC_TCP_IPv4_IN
+        jnz     .checksum_ok
 
         push    ecx esi
         pushw   [esi + TCP_header.Checksum]

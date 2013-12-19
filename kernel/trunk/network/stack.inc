@@ -29,7 +29,7 @@ uglobal
 endg
 
 DEBUG_NETWORK_ERROR     = 1
-DEBUG_NETWORK_VERBOSE   = 1
+DEBUG_NETWORK_VERBOSE   = 0
 
 NET_DEVICES_MAX         = 16
 ARP_BLOCK               = 1             ; true or false
