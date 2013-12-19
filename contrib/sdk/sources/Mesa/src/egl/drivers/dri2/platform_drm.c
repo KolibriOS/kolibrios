@@ -48,7 +48,7 @@ void *get_proc_address(void *module, char *proc_name);
 
 int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
 void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
-int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int dst_x, int dst_y,
+int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int vsync, int dst_x, int dst_y,
                   int w, int h, int src_x, int src_y);
 
 static struct gbm_bo *
@@ -395,7 +395,7 @@ dri2_swap_buffers(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw)
 //                              bo->base.base.format);
 
             blit_set_bo_handle(&bm, bo->base.base.handle.s32);
-            blit_blit_tex(&bm, 0, 5, 20, bm.width, bm.height, 0, 0);
+            blit_blit_tex(&bm, 0, 0, 5, 20, bm.width, bm.height, 0, 0);
         }
       }
 #endif
