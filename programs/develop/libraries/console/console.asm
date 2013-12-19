@@ -1917,12 +1917,33 @@ con.key:
         mov     ecx, con.extended_alt
         test    al, 0x30
         jnz     .xlat
+
         mov     ecx, con.extended_shift
         test    al, 3
         jnz     .xlat
+
         mov     ecx, con.extended_ctrl
         test    al, 0xC
         jnz     .xlat
+
+        cmp     dl, 28
+        jne     @f
+        shl     dx, 8
+        mov     dl, 13
+        jmp     .gotcode
+@@:
+        cmp     dl, 53
+        jne     @f
+        shl     dx, 8
+        mov     dl, '/'
+        jmp     .gotcode
+@@:
+        cmp     dl, 55
+        jne     @f
+        shl     dx, 8
+        mov     dl, '*'
+        jmp     .gotcode
+@@:
         xchg    dl, dh
         cmp     dh, 0x57
         jz      @f
