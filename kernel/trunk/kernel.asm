@@ -2586,6 +2586,7 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
         cmp     dx, word[Screen_Max_X]
         ja      .end
         mov     [MOUSE_X], edx
+        mov     [mouse_active], 1
         call    wakeup_osloop
         ret
  .set_mouse_button:
