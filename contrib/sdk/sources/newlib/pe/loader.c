@@ -750,6 +750,8 @@ module_t* load_library(const char *name)
         }
     };
 
+//    printf("module %s %p - %p\n", name, module->start, module->end);
+
     return module;
 
 err2:

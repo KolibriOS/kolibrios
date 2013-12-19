@@ -15,7 +15,7 @@ static void __do_global_ctors ()
     }
 }
 
-int DllStartup(void *module, int reason)
+int __attribute__((externally_visible)) DllStartup(void *module, int reason)
 {
     if(reason == 1)
     {

@@ -4,12 +4,11 @@ EGL = egl
 CC = gcc
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -O2 -march=i686 -msse2
-CFLAGS_OPT+= -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe
-CFLAGS_OPT+= -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields -flto
+CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
 LD = ld
-LDFLAGS = -nostdlib,-shared,-s,--image-base,0,-T,../newlib/dll.lds,--out-implib,lib$(EGL).dll.a,-e,_DllStartup
+LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds --out-implib lib$(EGL).dll.a -e _DllStartup
 
 STRIP = $(PREFIX)strip
 
@@ -58,7 +57,7 @@ EGL_OBJS     = $(patsubst %.c, %.o, $(EGL_SRC))
 all:$(EGL).dll
 
 $(EGL).dll: $(EGL_OBJS) Makefile
-	$(CC) $(CFLAGS_OPT) -fwhole-program -nostdlib -Wl,$(LIBPATH),$(LDFLAGS) -o $@ egl.def $(EGL_OBJS) $(LIBS)
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ egl.def $(EGL_OBJS) $(LIBS)
 	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
 	mv -f $@ ../../bin
