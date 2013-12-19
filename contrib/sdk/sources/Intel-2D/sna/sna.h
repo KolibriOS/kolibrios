@@ -391,6 +391,8 @@ struct sna_fb
     uint32_t  height;
     uint32_t  pitch;
     uint32_t  tiling;
+    uint32_t  crtc;
+    uint32_t  pipe;
 
     struct kgem_bo *fb_bo;
 };

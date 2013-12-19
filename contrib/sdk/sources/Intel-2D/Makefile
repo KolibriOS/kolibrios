@@ -69,7 +69,7 @@ endif
 
 # targets 
 
-all:$(LIBRARY).dll intel-sna.drv intel-uxa.drv
+all:$(LIBRARY).dll intel-sna.drv
 uxa:$(LIBRARY).dll
 ebox:$(LIBRARY).dll
 

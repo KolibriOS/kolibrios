@@ -5,22 +5,12 @@
 #include <malloc.h>
 #include <stdbool.h>
 #include <pixlib2.h>
+#include "pixdriver.h"
+
 #include <kos32sys.h>
 
 void* load_library(const char *name);
 
-struct pix_driver
-{
-    char *name;
-
-    int (*create_bitmap)(bitmap_t * bitmap);
-    int (*destroy_bitmap)(bitmap_t * bitmap);
-    int (*lock_bitmap)(bitmap_t * bitmap);
-    int (*blit)(bitmap_t * bitmap, bool scale, int dst_x, int dst_y,
-                int w, int h, int src_x, int src_y);
-    int (*resize_bitmap)(bitmap_t * bitmap);
-    void (*fini)(void);
-};
 
 #define DISPLAY_VERSION         0x0200	/*      2.00     */
 
@@ -202,7 +192,7 @@ int blit_bitmap(bitmap_t * bitmap, int dst_x, int dst_y,
 	surface_t *sf = to_surface(bitmap);
 
     if (sf->flags & hw_caps & HW_BIT_BLIT)
-        return pix_driver.blit(bitmap, false, dst_x, dst_y, w, h, src_x, src_y);
+        return pix_driver.blit(bitmap, 0, 0, dst_x, dst_y, w, h, src_x, src_y);
 
 	bc.dstx     = dst_x;
 	bc.dsty     = dst_y;
@@ -233,7 +223,7 @@ int fplay_blit_bitmap(bitmap_t * bitmap, int dst_x, int dst_y, int w, int h)
 	surface_t *sf = to_surface(bitmap);
 
     if (sf->flags & hw_caps & HW_TEX_BLIT)
-        return pix_driver.blit(bitmap, true, dst_x, dst_y, w, h, 0, 0);
+        return pix_driver.blit(bitmap, 1, 1, dst_x, dst_y, w, h, 0, 0);
 
 	bc.dstx = dst_x;
 	bc.dsty = dst_y;

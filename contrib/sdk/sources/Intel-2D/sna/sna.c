@@ -46,6 +46,8 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "sna_reg.h"
 
 #include <pixlib2.h>
+#include "../pixdriver.h"
+
 #include <kos32sys.h>
 
 #define to_surface(x) (surface_t*)((x)->handle)
@@ -56,20 +58,6 @@ typedef struct {
     int r;
     int b;
 } rect_t;
-
-struct pix_driver
-{
-    char *name;
-
-    int (*create_bitmap)(bitmap_t * bitmap);
-    int (*destroy_bitmap)(bitmap_t * bitmap);
-    int (*lock_bitmap)(bitmap_t * bitmap);
-    int (*blit)(bitmap_t * bitmap, bool scale, int dst_x, int dst_y,
-                int w, int h, int src_x, int src_y);
-    int (*resize_bitmap)(bitmap_t * bitmap);
-    void (*fini)(void);
-};
-
 
 static struct sna_fb sna_fb;
 static int    tls_mask;
@@ -691,7 +679,7 @@ sna_wait_for_scanline(struct sna *sna,
 
 	full_height = y1 == 0 && y2 == crtc->b - crtc->t;
 
-	pipe = 0;
+    pipe = sna_fb.pipe;
 	DBG(("%s: pipe=%d, y1=%d, y2=%d, full_height?=%d\n",
 	     __FUNCTION__, pipe, y1, y2, full_height));
 
@@ -1092,8 +1080,8 @@ err_1:
 
 
 
-int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
-                  int w, int h, int src_x, int src_y)
+int sna_blit_tex(bitmap_t *bitmap, int scale, int vsync,
+                 int dst_x, int dst_y,int w, int h, int src_x, int src_y)
 
 {
     surface_t *sf = to_surface(bitmap);
@@ -1165,7 +1153,7 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
 
     __lock_acquire_recursive(__sna_lock);
 
-#if 0
+    if(vsync)
     {
         rect_t crtc, clip;
 
@@ -1182,7 +1170,6 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
         kgem_set_mode(&sna_device->kgem, KGEM_RENDER, sna_fb.fb_bo);
         sna_wait_for_scanline(sna_device, &crtc, &clip);
     }
-#endif
 
     if( sna_device->render.blit_tex(sna_device, PictOpSrc,scale,
               &src, src_bo,
@@ -1223,8 +1210,6 @@ int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
 
 static void sna_fini()
 {
-    ENTER();
-
     if( sna_device )
     {
         struct kgem_bo *mask;
@@ -1242,7 +1227,6 @@ static void sna_fini()
         sna_device = NULL;
         __lock_release_recursive(__sna_lock);
     };
-    LEAVE();
 }
 
 uint32_t DrvInit(uint32_t service, struct pix_driver *driver)
