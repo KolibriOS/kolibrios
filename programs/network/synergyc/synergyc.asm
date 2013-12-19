@@ -67,6 +67,8 @@ start:
         push    str0
         call    [con_write_asciiz]
 
+restart:
+
         invoke  ini.get_str, path, str_remote, str_ip, buffer_ptr, 16, 0
         test    eax, eax
         jnz     error
@@ -106,12 +108,13 @@ start:
         mov     [sockaddr1.ip], eax
 
         mcall   connect, [socketnum], sockaddr1, 18
+        test    eax, eax
+        jnz     error
 
         push    str7
         call    [con_write_asciiz]
 
         mcall   40, EVM_STACK
-        mcall   10
 
 login:
         call    wait_for_data
@@ -262,14 +265,20 @@ mainloop:
         jmp     .next
 
   .dmdn:
-        movzx   eax, byte [edi + 8]
+        movzx   eax, byte[edi + 8]
+        cmp     eax, 5
+        ja      .next
+        movzx   eax, [mousecodes + eax]
         or      [mousestate], eax
         mcall   18, 19, 5, [mousestate]
         mcall   send, [socketnum], cnop, cnop.length, 0     ; reply with NOP
         jmp     .next
 
   .dmup:
-        movzx   eax, byte [edi + 8]
+        movzx   eax, byte[edi + 8]
+        cmp     eax, 5
+        ja      .next
+        movzx   eax, [mousecodes + eax]
         not     eax
         and     [mousestate], eax
         mcall   18, 19, 5, [mousestate]
@@ -335,7 +344,11 @@ closed:
         push    str_cls
         call    [con_write_asciiz]
 
-        jmp     wait_for_key
+        mcall   close, [socketnum]
+
+        mcall   5, 200
+
+        jmp     restart
 
 
 
@@ -377,6 +390,7 @@ cnop:
         db 'CNOP'
   .length = $ - cnop
 
+mousecodes      db 0, 1b, 100b, 10b, 1000b, 10000b
 mousestate      dd 0
 
 
@@ -422,5 +436,5 @@ align   4
 i_end:
 socketnum       dd ?
 buffer_ptr      rb BUFFERSIZE
-path            rb 4096    ; stack
+path            rb 4096
 mem:
