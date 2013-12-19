@@ -29,7 +29,7 @@ uglobal
 endg
 
 DEBUG_NETWORK_ERROR     = 1
-DEBUG_NETWORK_VERBOSE   = 0
+DEBUG_NETWORK_VERBOSE   = 1
 
 NET_DEVICES_MAX         = 16
 ARP_BLOCK               = 1             ; true or false
@@ -152,7 +152,8 @@ NET_LINK_PPP            = 2     ; Point to Point Protocol (PPPoE, ...)
 NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
 
 ; Hardware acceleration bits
-HWACC_TCP_IPv4          = 1 shl 0
+NET_HWACC_TCP_IPv4_IN   = 1 shl 0
+NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
 
 struct  NET_DEVICE
 

@@ -21,8 +21,7 @@ $Revision: 3289 $
 ; TCP_output
 ;
 ; IN:  eax = socket pointer
-;
-; OUT: /
+; OUT: eax = 0 on success/errorcode
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -177,31 +176,31 @@ endl
         jz      .len_zero
 
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
-        je      TCP_send
+        je      .send
 
         add     ebx, esi                                ; offset + length
         cmp     ebx, [eax + STREAM_SOCKET.snd.size]
         jb      @f
 
         test    [eax + TCP_SOCKET.t_flags], TF_NODELAY
-        jnz     TCP_send
+        jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_MAX]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        je      TCP_send
+        je      .send
        @@:
 
         test    [eax + TCP_SOCKET.t_force], -1  ;;;
-        jnz     TCP_send
+        jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.max_sndwnd]
         shr     ebx, 1
         cmp     esi, ebx
-        jae     TCP_send
+        jae     .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_MAX]
-        jb      TCP_send
+        jb      .send
 
   .len_zero:
 
@@ -233,9 +232,10 @@ endl
         mov     edi, [eax + TCP_SOCKET.t_maxseg]
         shl     edi, 1
 
-;        cmp     ebx, edi
-;        jae     TCP_send
+        cmp     ebx, edi
+        jae     .send
 
+        shl     ebx, 1
 ;        cmp     ebx, [eax + TCP_SOCKET.]    ;;; TODO: check with receive buffer high water mark
 ;        jae     TCP_send
 
@@ -244,17 +244,15 @@ endl
 ;--------------------------
 ; Should a segment be sent? (174)
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: 174\n"
-
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW   ; we need to ACK
-        jnz     TCP_send
+        jnz     .send
 
         test    dl, TH_SYN + TH_RST                     ; we need to send a SYN or RST
-        jnz     TCP_send
+        jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_UP]          ; when urgent pointer is beyond start of send bufer
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        ja      TCP_send
+        ja      .send
 
         test    dl, TH_FIN
         jz      .enter_persist  ; no reason to send, enter persist state
@@ -262,11 +260,11 @@ endl
 ; FIN was set, only send if not already sent, or on retransmit
 
         test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
-        jz      TCP_send
+        jz      .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        je      TCP_send
+        je      .send
 
 ;--------------------
 ; Enter persist state (191)
@@ -302,13 +300,6 @@ endl
         ret
 
 
-
-
-
-
-
-
-
 ;-----------------------------------------------
 ;
 ; Send a segment (222)
@@ -318,8 +309,7 @@ endl
 ;  dl = flags
 ;
 ;-----------------------------------------------
-align 4
-TCP_send:
+  .send:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: socket=%x length=%u flags=%x\n", eax, esi, dl
 
@@ -570,7 +560,13 @@ TCP_send:
 ;--------------------
 ; Create the checksum
 
+        xor     dx, dx
+        test    [ebx + NET_DEVICE.hwacc], NET_HWACC_TCP_IPv4_OUT
+        jnz     .checksum_ok
+
         TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
+
+  .checksum_ok:
         mov     [esi + TCP_header.Checksum], dx
 
 ;----------------

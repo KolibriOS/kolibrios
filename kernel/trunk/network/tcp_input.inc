@@ -643,7 +643,7 @@ endl
 ; Remove duplicate data and update urgent offset
 
   .duplicate:
-        DEBUGF  1,  "TCP_input: trimming duplicate data\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: trimming duplicate data\n"
 
 ; Trim data from left side of window
         add     [dataoffset], eax
