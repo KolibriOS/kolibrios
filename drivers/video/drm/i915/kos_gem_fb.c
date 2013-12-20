@@ -200,7 +200,7 @@ kos_gem_fb_object_create(struct drm_device *dev,
         /* Allocate a reference for the name table.  */
         drm_gem_object_reference(&obj->base);
 
-        printf("%s allocate fb name %d\n", __FUNCTION__, obj->base.name );
+        DRM_DEBUG_KMS("%s allocate fb name %d\n", __FUNCTION__, obj->base.name );
     }
 
     idr_preload_end();

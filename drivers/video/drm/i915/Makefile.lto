@@ -16,9 +16,9 @@ CFLAGS_OPT = -Os -march=i686 -msse2 -fomit-frame-pointer -fno-builtin-printf -mn
 CFLAGS_OPT+= -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields -flto
 CFLAGS   = -c $(INCLUDES) $(DEFINES) $(CFLAGS_OPT)
 
-LIBPATH:= $(DDK_TOPDIR)
+LIBPATH:= ../../../ddk
 
-LIBS:=    libddk.a libcore.a libgcc.a
+LIBS:=    -lddk -lcore -lgcc
 
 LDFLAGS = -e,_drvEntry,-nostdlib,-shared,-s,--image-base,0,--file-alignment,512,--section-alignment,4096
 

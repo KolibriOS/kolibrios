@@ -1828,8 +1828,6 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
 	u32 alignment;
 	int ret;
 
-    ENTER();
-
 	switch (obj->tiling_mode) {
 	case I915_TILING_NONE:
 		if (IS_BROADWATER(dev) || IS_CRESTLINE(dev))
@@ -1878,8 +1876,6 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
 	i915_gem_object_pin_fence(obj);
 
 	dev_priv->mm.interruptible = true;
-
-    LEAVE();
 
 	return 0;
 

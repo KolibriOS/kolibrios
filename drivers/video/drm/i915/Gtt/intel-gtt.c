@@ -435,7 +435,7 @@ static int intel_gtt_init(void)
         return -ENOMEM;
     }
 
-    asm volatile("wbinvd");
+    asm volatile("wbinvd":::"memory");
 
 	intel_private.stolen_size = intel_gtt_stolen_size();
 
@@ -578,6 +578,60 @@ void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries)
 	}
 	readl(intel_private.gtt+i-1);
 }
+static void intel_i915_setup_chipset_flush(void)
+{
+	int ret;
+	u32 temp;
+
+	pci_read_config_dword(intel_private.bridge_dev, I915_IFPADDR, &temp);
+	if (!(temp & 0x1)) {
+//		intel_alloc_chipset_flush_resource();
+//		intel_private.resource_valid = 1;
+//		pci_write_config_dword(intel_private.bridge_dev, I915_IFPADDR, (intel_private.ifp_resource.start & 0xffffffff) | 0x1);
+	} else {
+		temp &= ~1;
+
+		intel_private.resource_valid = 1;
+		intel_private.ifp_resource.start = temp;
+		intel_private.ifp_resource.end = temp + PAGE_SIZE;
+//		ret = request_resource(&iomem_resource, &intel_private.ifp_resource);
+		/* some BIOSes reserve this area in a pnp some don't */
+//		if (ret)
+//			intel_private.resource_valid = 0;
+	}
+}
+
+static void intel_i965_g33_setup_chipset_flush(void)
+{
+	u32 temp_hi, temp_lo;
+	int ret;
+
+	pci_read_config_dword(intel_private.bridge_dev, I965_IFPADDR + 4, &temp_hi);
+	pci_read_config_dword(intel_private.bridge_dev, I965_IFPADDR, &temp_lo);
+
+	if (!(temp_lo & 0x1)) {
+
+//		intel_alloc_chipset_flush_resource();
+
+//		intel_private.resource_valid = 1;
+//		pci_write_config_dword(intel_private.bridge_dev, I965_IFPADDR + 4,
+//			upper_32_bits(intel_private.ifp_resource.start));
+//		pci_write_config_dword(intel_private.bridge_dev, I965_IFPADDR, (intel_private.ifp_resource.start & 0xffffffff) | 0x1);
+	} else {
+		u64 l64;
+
+		temp_lo &= ~0x1;
+		l64 = ((u64)temp_hi << 32) | temp_lo;
+
+		intel_private.resource_valid = 1;
+		intel_private.ifp_resource.start = l64;
+		intel_private.ifp_resource.end = l64 + PAGE_SIZE;
+//		ret = request_resource(&iomem_resource, &intel_private.ifp_resource);
+		/* some BIOSes reserve this area in a pnp some don't */
+//		if (ret)
+//			intel_private.resource_valid = 0;
+	}
+}
 
 static void intel_i9xx_setup_flush(void)
 {
@@ -589,20 +643,18 @@ static void intel_i9xx_setup_flush(void)
         return;
 
     /* setup a resource for this object */
-//    intel_private.ifp_resource.name = "Intel Flush Page";
-//    intel_private.ifp_resource.flags = IORESOURCE_MEM;
-
-    intel_private.resource_valid = 0;
+	intel_private.ifp_resource.name = "Intel Flush Page";
+	intel_private.ifp_resource.flags = IORESOURCE_MEM;
 
     /* Setup chipset flush for 915 */
-//    if (IS_G33 || INTEL_GTT_GEN >= 4) {
-//        intel_i965_g33_setup_chipset_flush();
-//    } else {
-//        intel_i915_setup_chipset_flush();
-//    }
+	if (IS_G33 || INTEL_GTT_GEN >= 4) {
+		intel_i965_g33_setup_chipset_flush();
+	} else {
+		intel_i915_setup_chipset_flush();
+	}
 
-//    if (intel_private.ifp_resource.start)
-//        intel_private.i9xx_flush_page = ioremap_nocache(intel_private.ifp_resource.start, PAGE_SIZE);
+	if (intel_private.ifp_resource.start)
+		intel_private.i9xx_flush_page = ioremap(intel_private.ifp_resource.start, PAGE_SIZE);
     if (!intel_private.i9xx_flush_page)
         dev_err(&intel_private.pcidev->dev,
             "can't ioremap flush page - no chipset flushing\n");

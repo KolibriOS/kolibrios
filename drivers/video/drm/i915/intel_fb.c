@@ -100,8 +100,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	struct device *device = &dev->pdev->dev;
 	int size, ret;
 
-    ENTER();
-
 	/* we don't do packed 24bpp */
 	if (sizes->surface_bpp == 24)
 		sizes->surface_bpp = 32;

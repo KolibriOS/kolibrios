@@ -319,7 +319,7 @@ int get_boot_mode(struct drm_connector *connector, videomode_t *usermode)
 
     list_for_each_entry(mode, &connector->modes, head)
     {
-        dbgprintf("check mode w:%d h:%d %dHz\n",
+        DRM_DEBUG_KMS("check mode w:%d h:%d %dHz\n",
                 drm_mode_width(mode), drm_mode_height(mode),
                 drm_mode_vrefresh(mode));
 
@@ -348,8 +348,6 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     u32_t      ifl;
     int        err;
 
-    ENTER();
-
     mutex_lock(&dev->mode_config.mutex);
 
     connector = get_active_connector(dev) ;
@@ -365,8 +363,6 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
 
     if(crtc == NULL)
         crtc = get_possible_crtc(dev, encoder);
-
-    dbgprintf("CRTC %p\n", crtc);
 
     if(crtc == NULL)
     {
@@ -701,6 +697,9 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 
 int i915_fbinfo(struct drm_i915_fb_info *fb)
 {
+    struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
+    struct intel_crtc *crtc = to_intel_crtc(os_display->crtc);
+
     struct drm_i915_gem_object *obj = get_fb_obj();
 
     fb->name   = obj->base.name;
@@ -708,6 +707,8 @@ int i915_fbinfo(struct drm_i915_fb_info *fb)
     fb->height = os_display->height;
     fb->pitch  = obj->stride;
     fb->tiling = obj->tiling_mode;
+    fb->crtc   = crtc->base.base.id;
+    fb->pipe   = crtc->pipe;
 
     return 0;
 }

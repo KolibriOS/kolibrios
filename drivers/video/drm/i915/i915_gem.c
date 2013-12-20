@@ -2652,9 +2652,6 @@ static void i965_write_fence_reg(struct drm_device *dev, int reg,
 		POSTING_READ(fence_reg + 4);
 
 		I915_WRITE(fence_reg + 0, val);
-
-        dbgprintf("%s val %x%x\n",__FUNCTION__, (int)(val >> 32), (int)val);
-
 	POSTING_READ(fence_reg);
 	} else {
 		I915_WRITE(fence_reg + 4, 0);
