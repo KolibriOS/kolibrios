@@ -120,6 +120,8 @@ void SystemDiscsDraw()
 			case 'r':
 				dev_icon=0;
 				strcpy(#disc_name, "System ");
+				if (!drw_ram_disk_space)
+				  break;
 				DrawRamDiskSpace();
 				break;
 			case 'c':

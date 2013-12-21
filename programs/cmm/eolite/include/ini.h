@@ -34,6 +34,7 @@ void GetIni(byte onload)
 				IF (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
 				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
 				IF (!strcmp(#parametr,"RealFileNamesCase")) real_files_names_case=atoi(#option);
+				IF (!strcmp(#parametr,"DrwRamDiskSpace")) drw_ram_disk_space=atoi(#option);
 				
 				IF (parametr) && (!strcmp(#file_name+strrchr(#file_name,'.'),#parametr)) && (!onload)
 				{
