@@ -1046,6 +1046,8 @@ struct drm_i915_fb_info {
         __u32 height;
         __u32 pitch;
         __u32 tiling;
+        __u32 crtc;
+        __u32 pipe;
 };
 
 #endif /* _UAPI_I915_DRM_H_ */
