@@ -33,13 +33,6 @@
 #include "intel_drv.h"
 //#include <linux/dma_remapping.h>
 
-#define I915_EXEC_SECURE        (1<<9)
-#define I915_EXEC_IS_PINNED     (1<<10)
-#define I915_EXEC_VEBOX         (4<<0)
-
-
-struct drm_i915_gem_object *get_fb_obj();
-
 
 static unsigned long
 copy_to_user(void __user *to, const void *from, unsigned long n)
@@ -115,9 +108,6 @@ eb_lookup_objects(struct eb_objects *eb,
 	for (i = 0; i < args->buffer_count; i++) {
 		struct drm_i915_gem_object *obj;
 
-        if(exec[i].handle == -2)
-            obj = get_fb_obj();
-        else
 		    obj = to_intel_bo(idr_find(&file->object_idr, exec[i].handle));
 		if (obj == NULL) {
 			spin_unlock(&file->table_lock);
@@ -137,10 +127,6 @@ eb_lookup_objects(struct eb_objects *eb,
 		list_add_tail(&obj->exec_list, &eb->objects);
 
 		obj->exec_entry = &exec[i];
-
-        if(exec[i].handle == -2)
-            continue;
-
 		if (eb->and < 0) {
 			eb->lut[i] = obj;
 		} else {
@@ -158,10 +144,6 @@ eb_lookup_objects(struct eb_objects *eb,
 static struct drm_i915_gem_object *
 eb_get_object(struct eb_objects *eb, unsigned long handle)
 {
-
-    if(handle == -2)
-        return get_fb_obj();
-
 	if (eb->and < 0) {
 		if (handle >= -eb->and)
 			return NULL;
@@ -381,9 +363,12 @@ i915_gem_execbuffer_relocate_object(struct drm_i915_gem_object *obj,
 			if (ret)
 				return ret;
 
+		if (r->presumed_offset != offset)
+		{
             memcpy(&user_relocs->presumed_offset,
                    &r->presumed_offset,
                    sizeof(r->presumed_offset));
+		}
 
 			user_relocs++;
 			r++;
@@ -823,11 +808,7 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
 		 * to read, but since we may need to update the presumed
 		 * offsets during execution, check for full write access.
 		 */
-//       if (!access_ok(VERIFY_WRITE, ptr, length))
-//           return -EFAULT;
 
-//       if (fault_in_multipages_readable(ptr, length))
-//           return -EFAULT;
 	}
 
 	return 0;

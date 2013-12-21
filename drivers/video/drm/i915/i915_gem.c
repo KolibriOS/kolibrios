@@ -43,12 +43,6 @@ extern int x86_clflush_size;
 #define PROT_WRITE      0x2             /* page can be written */
 #define MAP_SHARED      0x01            /* Share changes */
 
-#undef mb
-#undef rmb
-#undef wmb
-#define mb() asm volatile("mfence")
-#define rmb() asm volatile ("lfence")
-#define wmb() asm volatile ("sfence")
 
 struct drm_i915_gem_object *get_fb_obj();
 
@@ -66,10 +60,6 @@ static inline void clflush(volatile void *__p)
 #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
 
 
-#define I915_EXEC_CONSTANTS_MASK        (3<<6)
-#define I915_EXEC_CONSTANTS_REL_GENERAL (0<<6) /* default */
-#define I915_EXEC_CONSTANTS_ABSOLUTE    (1<<6)
-#define I915_EXEC_CONSTANTS_REL_SURFACE (2<<6) /* gen4/5 only */
 
 static void i915_gem_object_flush_gtt_write_domain(struct drm_i915_gem_object *obj);
 static void i915_gem_object_flush_cpu_write_domain(struct drm_i915_gem_object *obj,
@@ -911,11 +901,6 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
 	if (args->size == 0)
 		return 0;
 
-     if(args->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, args->handle);
-        return 0;
-     }
 
 	ret = i915_mutex_lock_interruptible(dev);
 	if (ret)
@@ -1234,13 +1219,6 @@ i915_gem_set_domain_ioctl(struct drm_device *dev, void *data,
 	uint32_t write_domain = args->write_domain;
 	int ret;
 
-
-     if(args->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, args->handle);
-        return 0;
-     }
-
 	/* Only handle setting domains to types used by the CPU. */
 	if (write_domain & I915_GEM_GPU_DOMAINS)
 		return -EINVAL;
@@ -1303,12 +1281,6 @@ i915_gem_sw_finish_ioctl(struct drm_device *dev, void *data,
 	struct drm_i915_gem_object *obj;
 	int ret = 0;
 
-    if(args->handle == -2)
-    {
-       printf("%s handle %d\n", __FUNCTION__, args->handle);
-       return 0;
-    }
-
 	ret = i915_mutex_lock_interruptible(dev);
 	if (ret)
 		return ret;
@@ -1342,13 +1314,7 @@ i915_gem_mmap_ioctl(struct drm_device *dev, void *data,
 {
 	struct drm_i915_gem_mmap *args = data;
 	struct drm_gem_object *obj;
-	unsigned long addr = 0;
-
-     if(args->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, args->handle);
-        return 0;
-     }
+	unsigned long addr;
 
 	obj = drm_gem_object_lookup(dev, file, args->handle);
 	if (obj == NULL)
@@ -1457,34 +1423,7 @@ i915_gem_get_gtt_alignment(struct drm_device *dev, uint32_t size,
 	return i915_gem_get_gtt_size(dev, size, tiling_mode);
 }
 
-/**
- * i915_gem_get_unfenced_gtt_alignment - return required GTT alignment for an
- *					 unfenced object
- * @dev: the device
- * @size: size of the object
- * @tiling_mode: tiling mode of the object
- *
- * Return the required GTT alignment for an object, only taking into account
- * unfenced tiled surface requirements.
- */
-uint32_t
-i915_gem_get_unfenced_gtt_alignment(struct drm_device *dev,
-				    uint32_t size,
-				    int tiling_mode)
-{
-	/*
-	 * Minimum alignment is 4k (GTT page size) for sane hw.
-	 */
-	if (INTEL_INFO(dev)->gen >= 4 || IS_G33(dev) ||
-	    tiling_mode == I915_TILING_NONE)
-		return 4096;
 
-	/* Previous hardware however needs to be aligned to a power-of-two
-	 * tile height. The simplest method for determining this is to reuse
-	 * the power-of-tile object size.
-	 */
-	return i915_gem_get_gtt_size(dev, size, tiling_mode);
-}
 
 int
 i915_gem_mmap_gtt(struct drm_file *file,
@@ -1767,6 +1706,11 @@ i915_gem_object_get_pages(struct drm_i915_gem_object *obj)
 
 	if (obj->pages)
 		return 0;
+
+	if (obj->madv != I915_MADV_WILLNEED) {
+		DRM_ERROR("Attempting to obtain a purgeable object\n");
+		return -EINVAL;
+	}
 
 	BUG_ON(obj->pages_pin_count);
 
@@ -2382,12 +2326,6 @@ i915_gem_wait_ioctl(struct drm_device *dev, void *data, struct drm_file *file)
 	if (ret)
 		return ret;
 
-    if(args->bo_handle == -2)
-    {
-        obj = get_fb_obj();
-        drm_gem_object_reference(&obj->base);
-    }
-    else
 	obj = to_intel_bo(drm_gem_object_lookup(dev, file, args->bo_handle));
 	if (&obj->base == NULL) {
 		mutex_unlock(&dev->struct_mutex);
@@ -3350,12 +3288,6 @@ int i915_gem_get_caching_ioctl(struct drm_device *dev, void *data,
 	struct drm_i915_gem_object *obj;
 	int ret;
 
-     if(args->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, args->handle);
-        return 0;
-     }
-
 	ret = i915_mutex_lock_interruptible(dev);
 	if (ret)
 		return ret;
@@ -3394,12 +3326,6 @@ int i915_gem_set_caching_ioctl(struct drm_device *dev, void *data,
 	struct drm_i915_gem_object *obj;
 	enum i915_cache_level level;
 	int ret;
-
-     if(args->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, args->handle);
-        return 0;
-     }
 
 	switch (args->caching) {
 	case I915_CACHING_NONE:
@@ -3717,12 +3643,6 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
 	struct drm_i915_gem_object *obj;
 	int ret;
 
-     if(args->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, args->handle);
-        return 0;
-     }
-
 	ret = i915_mutex_lock_interruptible(dev);
 	if (ret)
 		return ret;
@@ -3775,12 +3695,6 @@ i915_gem_unpin_ioctl(struct drm_device *dev, void *data,
 	if (ret)
 		return ret;
 
-    if(args->handle == -2)
-    {
-        obj = get_fb_obj();
-        drm_gem_object_reference(&obj->base);
-    }
-    else
 	obj = to_intel_bo(drm_gem_object_lookup(dev, file, args->handle));
 	if (&obj->base == NULL) {
 		ret = -ENOENT;
@@ -3818,12 +3732,6 @@ i915_gem_busy_ioctl(struct drm_device *dev, void *data,
 	if (ret)
 		return ret;
 
-    if(args->handle == -2)
-    {
-        obj = get_fb_obj();
-        drm_gem_object_reference(&obj->base);
-    }
-    else
         obj = to_intel_bo(drm_gem_object_lookup(dev, file, args->handle));
 	if (&obj->base == NULL) {
 		ret = -ENOENT;

@@ -1876,7 +1876,6 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
 	i915_gem_object_pin_fence(obj);
 
 	dev_priv->mm.interruptible = true;
-
 	return 0;
 
 err_unpin:

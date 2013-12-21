@@ -120,7 +120,7 @@ static int intelfb_create(struct drm_fb_helper *helper,
 		ret = -ENOMEM;
 		goto out;
 	}
-
+    obj->has_global_gtt_mapping = 0;
     obj->stride = mode_cmd.pitches[0];
 
 	mutex_lock(&dev->struct_mutex);

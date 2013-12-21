@@ -182,7 +182,7 @@ kos_gem_fb_object_create(struct drm_device *dev,
         }
     }
 
-    obj->has_global_gtt_mapping = 1;
+//    obj->has_global_gtt_mapping = 1;
 
     list_add_tail(&obj->global_list, &dev_priv->mm.bound_list);
     list_add_tail(&vma->mm_list, &ggtt->inactive_list);
