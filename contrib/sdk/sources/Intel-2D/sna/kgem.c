@@ -2937,8 +2937,6 @@ void kgem_cleanup_cache(struct kgem *kgem)
 	unsigned int i;
 	int n;
 
-    ENTER();
-
 	/* sync to the most recent request */
 	for (n = 0; n < ARRAY_SIZE(kgem->requests); n++) {
 		if (!list_is_empty(&kgem->requests[n])) {
@@ -2986,8 +2984,6 @@ void kgem_cleanup_cache(struct kgem *kgem)
 
 	kgem->need_purge = false;
 	kgem->need_expire = false;
-
-    LEAVE();
 }
 
 static struct kgem_bo *
@@ -5324,6 +5320,9 @@ void kgem_bo_set_binding(struct kgem_bo *bo, uint32_t format, uint16_t offset)
 int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
 {
     struct kgem_bo *bo;
+	struct drm_gem_open open_arg;
+	struct drm_i915_gem_get_tiling get_tiling;
+
     size_t size;
     int ret;
 
@@ -5331,22 +5330,37 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
 	if( ret != 0 )
 	    return 0;
 
-    size = fb->pitch * fb->height / PAGE_SIZE;
+	open_arg.name = fb->name;
+	ret = drmIoctl(kgem->fd, DRM_IOCTL_GEM_OPEN, &open_arg);
+	if (ret != 0) {
+		printf("Couldn't reference %s handle 0x%08x\n",
+		    fb->name, fb->name);
+		return NULL;
+	}
+	size = open_arg.size / PAGE_SIZE;
 
-  	bo = __kgem_bo_alloc(-2, size);
+  	bo = __kgem_bo_alloc(open_arg.handle, size);
 	if (!bo) {
+		return 0;
+	}
+
+	get_tiling.handle = bo->handle;
+	ret = drmIoctl(kgem->fd,DRM_IOCTL_I915_GEM_GET_TILING,&get_tiling);
+	if (ret != 0) {
+        printf("%s: couldn't get tiling for handle %d\n", __FUNCTION__, bo->handle);
+//		drm_intel_gem_bo_unreference(&bo_gem->bo);
 		return 0;
 	}
 
 	bo->domain    = DOMAIN_GTT;
 	bo->unique_id = kgem_get_unique_id(kgem);
 	bo->pitch     = fb->pitch;
-    bo->tiling    = I915_TILING_X;
+    bo->tiling    = get_tiling.tiling_mode;
     bo->scanout   = 1;
 	fb->fb_bo     = bo;
 
-//    printf("fb width %d height %d pitch %d bo %p\n",
-//            fb->width, fb->height, fb->pitch, fb->fb_bo);
+    printf("fb handle %d w: %d h: %d pitch %d tilng %d bo %p\n",
+            bo->handle, fb->width, fb->height, fb->pitch, fb->tiling, fb->fb_bo);
 
     return 1;
 };
@@ -5393,7 +5407,6 @@ void sna_bo_destroy(struct kgem *kgem, struct kgem_bo *bo)
 void kgem_close_batches(struct kgem *kgem)
 {
     int n;
-    ENTER();
 	for (n = 0; n < ARRAY_SIZE(kgem->pinned_batches); n++) {
 		while (!list_is_empty(&kgem->pinned_batches[n]))
         {
@@ -5404,7 +5417,6 @@ void kgem_close_batches(struct kgem *kgem)
 			kgem_bo_destroy(kgem,bo);
 		}
 	}
-    LEAVE();
 };
 
 struct kgem_bo *kgem_bo_from_handle(struct kgem *kgem, int handle,
