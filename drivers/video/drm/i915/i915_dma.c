@@ -1015,11 +1015,6 @@ int i915_getparam(struct drm_device *dev, void *data,
 		return -EINVAL;
 	}
 
-//   if (DRM_COPY_TO_USER(param->value, &value, sizeof(int))) {
-//       DRM_ERROR("DRM_COPY_TO_USER failed\n");
-//       return -EFAULT;
-//   }
-
     *param->value = value;
 
 	return 0;

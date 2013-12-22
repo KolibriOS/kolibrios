@@ -296,7 +296,7 @@ struct drm_connector *get_active_connector(struct drm_device *dev)
 }
 
 struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_encoder *encoder)
-    {
+{
         struct drm_crtc *tmp_crtc;
         int crtc_mask = 1;
 
@@ -311,7 +311,7 @@ struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_encoder *e
             crtc_mask <<= 1;
         };
     return NULL;
-    };
+};
 
 int get_boot_mode(struct drm_connector *connector, videomode_t *usermode)
 {
@@ -746,12 +746,6 @@ int i915_mask_update(struct drm_device *dev, void *data,
     u32    slot;
     int    ret=0;
 
-     if(mask->handle == -2)
-     {
-        printf("%s handle %d\n", __FUNCTION__, mask->handle);
-        return 0;
-     }
-
     obj = drm_gem_object_lookup(dev, file, mask->handle);
     if (obj == NULL)
         return -ENOENT;
@@ -795,7 +789,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
             goto err1;
 
         ret = i915_gem_object_set_to_cpu_domain(to_intel_bo(obj), true);
-        if(ret !=0 )
+        if(ret != 0 )
         {
             dbgprintf("%s: i915_gem_object_set_to_cpu_domain failed\n", __FUNCTION__);
             goto err2;
@@ -827,7 +821,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
 
             while( tmp_h--)
             {
-                int tmp_w = mask->bo_pitch;
+                int tmp_w = mask->width;
 
                 u8* tmp_src = src_offset;
                 u8* tmp_dst = dst_offset;
@@ -875,7 +869,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
                     tmp_dst += 32;
                 }
 
-                while( tmp_w > 0 )
+                if( tmp_w >= 16 )
                 {
                     __asm__ __volatile__ (
                     "movdqu     (%0),   %%xmm0            \n"
@@ -887,6 +881,33 @@ int i915_mask_update(struct drm_device *dev, void *data,
                     tmp_src += 16;
                     tmp_dst += 16;
                 }
+
+                if( tmp_w >= 8 )
+                {
+                    __asm__ __volatile__ (
+                    "movq       (%0),   %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "movq       %%xmm0,   (%%edi)         \n"
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0");
+                    tmp_w -= 8;
+                    tmp_src += 8;
+                    tmp_dst += 8;
+                }
+                if( tmp_w >= 4 )
+                {
+                    __asm__ __volatile__ (
+                    "movd       (%0),   %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "movd       %%xmm0,   (%%edi)         \n"
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0");
+                    tmp_w -= 4;
+                    tmp_src += 4;
+                    tmp_dst += 4;
+                }
+                while(tmp_w--)
+                    *tmp_dst++ = (*tmp_src++ == (u8)slot) ? 0xFF:0x00;
             };
         };
         safe_sti(ifl);
