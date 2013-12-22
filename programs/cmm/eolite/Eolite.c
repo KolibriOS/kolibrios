@@ -79,8 +79,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.15.2"
-#define ABOUT_TITLE "Eolite v2.15.2"
+#define TITLE "Eolite File Manager v2.15.3"
+#define ABOUT_TITLE "Eolite v2.15.3"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -102,8 +102,8 @@ byte
 byte
 	rename_active=0,
 	del_active=0,
-	show_dev_name=0,
-	drw_ram_disk_space=1,
+	show_dev_name=1,
+	drw_ram_disk_space=0,
 	real_files_names_case=0,
 	sort_num=2,
 	itdir;
@@ -654,7 +654,7 @@ void Open_Dir(dword dir_path, redraw){
 		}
 		maxcount = sizeof(file_mas)/sizeof(dword)-1;
 		if (files.count>maxcount) files.count = maxcount;
-		DrawRamDiskSpace();
+		if (drw_ram_disk_space) DrawRamDiskSpace();
 	}
 	if (files.count!=-1)
 	{
