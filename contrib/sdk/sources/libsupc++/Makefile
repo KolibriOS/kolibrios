@@ -1,5 +1,5 @@
 
-LIBRARY= libsup++
+LIBRARY= libsupc++
 
 CC=gcc
 CPP=g++

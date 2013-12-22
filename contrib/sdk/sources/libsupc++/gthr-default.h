@@ -72,8 +72,8 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #include <_mingw.h>
 #endif
 
-#ifndef ___GLIBCXX_UNUSED_PARAM
-#define ___GLIBCXX_UNUSED_PARAM(x) x
+#ifndef __UNUSED_PARAM
+#define __UNUSED_PARAM(x) x
 #endif
 
 #ifdef _LIBOBJC
@@ -295,7 +295,7 @@ __gthread_objc_mutex_unlock (objc_mutex_t mutex)
 
 /* Allocate a condition.  */
 int
-__gthread_objc_condition_allocate (objc_condition_t ___GLIBCXX_UNUSED_PARAM(condition))
+__gthread_objc_condition_allocate (objc_condition_t __UNUSED_PARAM(condition))
 {
   /* Unimplemented.  */
   return -1;
@@ -303,7 +303,7 @@ __gthread_objc_condition_allocate (objc_condition_t ___GLIBCXX_UNUSED_PARAM(cond
 
 /* Deallocate a condition.  */
 int
-__gthread_objc_condition_deallocate (objc_condition_t ___GLIBCXX_UNUSED_PARAM(condition))
+__gthread_objc_condition_deallocate (objc_condition_t __UNUSED_PARAM(condition))
 {
   /* Unimplemented.  */
   return -1;
@@ -311,8 +311,8 @@ __gthread_objc_condition_deallocate (objc_condition_t ___GLIBCXX_UNUSED_PARAM(co
 
 /* Wait on the condition */
 int
-__gthread_objc_condition_wait (objc_condition_t ___GLIBCXX_UNUSED_PARAM(condition),
-			       objc_mutex_t ___GLIBCXX_UNUSED_PARAM(mutex))
+__gthread_objc_condition_wait (objc_condition_t __UNUSED_PARAM(condition),
+			       objc_mutex_t __UNUSED_PARAM(mutex))
 {
   /* Unimplemented.  */
   return -1;
@@ -320,7 +320,7 @@ __gthread_objc_condition_wait (objc_condition_t ___GLIBCXX_UNUSED_PARAM(conditio
 
 /* Wake up all threads waiting on this condition.  */
 int
-__gthread_objc_condition_broadcast (objc_condition_t ___GLIBCXX_UNUSED_PARAM(condition))
+__gthread_objc_condition_broadcast (objc_condition_t __UNUSED_PARAM(condition))
 {
   /* Unimplemented.  */
   return -1;
@@ -328,7 +328,7 @@ __gthread_objc_condition_broadcast (objc_condition_t ___GLIBCXX_UNUSED_PARAM(con
 
 /* Wake up one thread waiting on this condition.  */
 int
-__gthread_objc_condition_signal (objc_condition_t ___GLIBCXX_UNUSED_PARAM(condition))
+__gthread_objc_condition_signal (objc_condition_t __UNUSED_PARAM(condition))
 {
   /* Unimplemented.  */
   return -1;
