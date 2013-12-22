@@ -79,8 +79,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.15.1"
-#define ABOUT_TITLE "Eolite v2.15.1"
+#define TITLE "Eolite File Manager v2.15.2"
+#define ABOUT_TITLE "Eolite v2.15.2"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -102,7 +102,7 @@ byte
 byte
 	rename_active=0,
 	del_active=0,
-	show_dev_name=1,
+	show_dev_name=0,
 	drw_ram_disk_space=1,
 	real_files_names_case=0,
 	sort_num=2,
@@ -877,8 +877,16 @@ void FnProcess(char N)
 	switch(N)
 	{
 		case 1:
-			SwitchToAnotherThread();
-			about_window=CreateThread(#about_dialog,#about_stak+4092);
+			if (!active_about) 
+			{
+				SwitchToAnotherThread();
+				about_window=CreateThread(#about_dialog,#about_stak+4092);
+				break;
+			}
+			else
+			{
+				ActivateWindow(GetProcessSlot(about_window));
+			}
 			break;
 		case 2:
 			if (!files.count) break;
