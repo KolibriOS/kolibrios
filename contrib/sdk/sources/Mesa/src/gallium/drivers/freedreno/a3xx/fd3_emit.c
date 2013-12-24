@@ -81,7 +81,7 @@ fd3_emit_constant(struct fd_ringbuffer *ring,
 	if (prsc) {
 		struct fd_bo *bo = fd_resource(prsc)->bo;
 		OUT_RELOC(ring, bo, offset,
-				CP_LOAD_STATE_1_STATE_TYPE(ST_CONSTANTS));
+				CP_LOAD_STATE_1_STATE_TYPE(ST_CONSTANTS), 0);
 	} else {
 		OUT_RING(ring, CP_LOAD_STATE_1_EXT_SRC_ADDR(0) |
 				CP_LOAD_STATE_1_STATE_TYPE(ST_CONSTANTS));
@@ -212,7 +212,7 @@ emit_textures(struct fd_ringbuffer *ring,
 	for (i = 0; i < tex->num_textures; i++) {
 		struct fd3_pipe_sampler_view *view =
 				fd3_pipe_sampler_view(tex->textures[i]);
-		OUT_RELOC(ring, view->tex_resource->bo, 0, 0);
+		OUT_RELOC(ring, view->tex_resource->bo, 0, 0, 0);
 		/* I think each entry is a ptr to mipmap level.. for now, just
 		 * pad w/ null's until I get around to actually implementing
 		 * mipmap support..
@@ -279,9 +279,9 @@ fd3_emit_gmem_restore_tex(struct fd_ringbuffer *ring, struct pipe_surface *psurf
 			CP_LOAD_STATE_1_EXT_SRC_ADDR(0));
 	OUT_RING(ring, A3XX_TEX_CONST_0_FMT(fd3_pipe2tex(psurf->format)) |
 			0x40000000 | // XXX
-			fd3_tex_swiz(psurf->format,  PIPE_SWIZZLE_BLUE, PIPE_SWIZZLE_GREEN,
-					PIPE_SWIZZLE_RED, PIPE_SWIZZLE_ALPHA));
-	OUT_RING(ring, A3XX_TEX_CONST_1_FETCHSIZE(fd3_pipe2fetchsize(psurf->format)) |
+			fd3_tex_swiz(psurf->format,  PIPE_SWIZZLE_RED, PIPE_SWIZZLE_GREEN,
+					PIPE_SWIZZLE_BLUE, PIPE_SWIZZLE_ALPHA));
+	OUT_RING(ring, A3XX_TEX_CONST_1_FETCHSIZE(TFETCH_DISABLE) |
 			A3XX_TEX_CONST_1_WIDTH(psurf->width) |
 			A3XX_TEX_CONST_1_HEIGHT(psurf->height));
 	OUT_RING(ring, A3XX_TEX_CONST_2_PITCH(rsc->pitch * rsc->cpp) |
@@ -296,7 +296,7 @@ fd3_emit_gmem_restore_tex(struct fd_ringbuffer *ring, struct pipe_surface *psurf
 			CP_LOAD_STATE_0_NUM_UNIT(1));
 	OUT_RING(ring, CP_LOAD_STATE_1_STATE_TYPE(ST_CONSTANTS) |
 			CP_LOAD_STATE_1_EXT_SRC_ADDR(0));
-	OUT_RELOC(ring, rsc->bo, 0, 0);
+	OUT_RELOC(ring, rsc->bo, 0, 0, 0);
 }
 
 void
@@ -322,7 +322,7 @@ fd3_emit_vertex_bufs(struct fd_ringbuffer *ring,
 				COND(switchnext, A3XX_VFD_FETCH_INSTR_0_SWITCHNEXT) |
 				A3XX_VFD_FETCH_INSTR_0_INDEXCODE(i) |
 				A3XX_VFD_FETCH_INSTR_0_STEPRATE(1));
-		OUT_RELOC(ring, rsc->bo, vbufs[i].offset, 0);
+		OUT_RELOC(ring, rsc->bo, vbufs[i].offset, 0, 0);
 
 		OUT_PKT0(ring, REG_A3XX_VFD_DECODE_INSTR(i), 1);
 		OUT_RING(ring, A3XX_VFD_DECODE_INSTR_CONSTFILL |
@@ -481,12 +481,12 @@ fd3_emit_restore(struct fd_context *ctx)
 
 	OUT_PKT0(ring, REG_A3XX_SP_VS_PVT_MEM_CTRL_REG, 3);
 	OUT_RING(ring, 0x08000001);                  /* SP_VS_PVT_MEM_CTRL_REG */
-	OUT_RELOC(ring, fd3_ctx->vs_pvt_mem, 0, 0);  /* SP_VS_PVT_MEM_ADDR_REG */
+	OUT_RELOC(ring, fd3_ctx->vs_pvt_mem, 0,0,0); /* SP_VS_PVT_MEM_ADDR_REG */
 	OUT_RING(ring, 0x00000000);                  /* SP_VS_PVT_MEM_SIZE_REG */
 
 	OUT_PKT0(ring, REG_A3XX_SP_FS_PVT_MEM_CTRL_REG, 3);
 	OUT_RING(ring, 0x08000001);                  /* SP_FS_PVT_MEM_CTRL_REG */
-	OUT_RELOC(ring, fd3_ctx->fs_pvt_mem, 0, 0);  /* SP_FS_PVT_MEM_ADDR_REG */
+	OUT_RELOC(ring, fd3_ctx->fs_pvt_mem, 0,0,0); /* SP_FS_PVT_MEM_ADDR_REG */
 	OUT_RING(ring, 0x00000000);                  /* SP_FS_PVT_MEM_SIZE_REG */
 
 	OUT_PKT0(ring, REG_A3XX_PC_VERTEX_REUSE_BLOCK_CNTL, 1);
@@ -536,8 +536,8 @@ fd3_emit_restore(struct fd_context *ctx)
 	OUT_PKT0(ring, REG_A3XX_UNKNOWN_0C3D, 1);
 	OUT_RING(ring, 0x00000001);        /* UNKNOWN_0C3D */
 
-	OUT_PKT0(ring, REG_A3XX_UNKNOWN_0E00, 1);
-	OUT_RING(ring, 0x00000000);        /* UNKNOWN_0E00 */
+	OUT_PKT0(ring, REG_A3XX_HLSQ_PERFCOUNTER0_SELECT, 1);
+	OUT_RING(ring, 0x00000000);        /* HLSQ_PERFCOUNTER0_SELECT */
 
 	OUT_PKT0(ring, REG_A3XX_HLSQ_CONST_VSPRESV_RANGE_REG, 2);
 	OUT_RING(ring, A3XX_HLSQ_CONST_VSPRESV_RANGE_REG_STARTENTRY(0) |
@@ -549,7 +549,7 @@ fd3_emit_restore(struct fd_context *ctx)
 	OUT_RING(ring, 0x00000001);        /* UCHE_CACHE_MODE_CONTROL_REG */
 
 	OUT_PKT0(ring, REG_A3XX_VSC_SIZE_ADDRESS, 1);
-	OUT_RELOC(ring, fd3_ctx->vsc_size_mem, 0, 0); /* VSC_SIZE_ADDRESS */
+	OUT_RELOC(ring, fd3_ctx->vsc_size_mem, 0, 0, 0); /* VSC_SIZE_ADDRESS */
 
 	OUT_PKT0(ring, REG_A3XX_GRAS_CL_CLIP_CNTL, 1);
 	OUT_RING(ring, 0x00000000);                  /* GRAS_CL_CLIP_CNTL */

@@ -924,6 +924,18 @@ gen6_blorp_emit_depth_disable(struct brw_context *brw,
    OUT_BATCH(0);
    OUT_BATCH(0);
    ADVANCE_BATCH();
+
+   BEGIN_BATCH(3);
+   OUT_BATCH(_3DSTATE_HIER_DEPTH_BUFFER << 16 | (3 - 2));
+   OUT_BATCH(0);
+   OUT_BATCH(0);
+   ADVANCE_BATCH();
+
+   BEGIN_BATCH(3);
+   OUT_BATCH(_3DSTATE_STENCIL_BUFFER << 16 | (3 - 2));
+   OUT_BATCH(0);
+   OUT_BATCH(0);
+   ADVANCE_BATCH();
 }
 
 
@@ -951,6 +963,9 @@ void
 gen6_blorp_emit_drawing_rectangle(struct brw_context *brw,
                                   const brw_blorp_params *params)
 {
+   if (brw->gen == 6)
+      intel_emit_post_sync_nonzero_flush(brw);
+
    BEGIN_BATCH(4);
    OUT_BATCH(_3DSTATE_DRAWING_RECTANGLE << 16 | (4 - 2));
    OUT_BATCH(0);

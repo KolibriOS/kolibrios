@@ -259,6 +259,7 @@ brw_update_texture_surface(struct gl_context *ctx,
    uint32_t *surf;
    uint32_t tile_x, tile_y;
 
+   /* BRW_NEW_UNIFORM_BUFFER */
    if (tObj->Target == GL_TEXTURE_BUFFER) {
       brw_update_buffer_texture_surface(ctx, unit, binding_table, surf_index);
       return;
@@ -806,6 +807,7 @@ const struct brw_tracked_state brw_texture_surfaces = {
    .dirty = {
       .mesa = _NEW_TEXTURE,
       .brw = BRW_NEW_BATCH |
+             BRW_NEW_UNIFORM_BUFFER |
              BRW_NEW_VERTEX_PROGRAM |
              BRW_NEW_FRAGMENT_PROGRAM,
       .cache = 0

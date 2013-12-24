@@ -36,10 +36,6 @@
 #include "common/native.h"
 #include "common/native_helper.h"
 
-#ifdef HAVE_WAYLAND_BACKEND
-#include "common/native_wayland_drm_bufmgr_helper.h"
-#endif
-
 #include "gbm_gallium_drmint.h"
 
 struct drm_config;
@@ -67,10 +63,6 @@ struct drm_display {
    struct drm_surface **shown_surfaces;
    /* save the original settings of the CRTCs */
    struct drm_crtc *saved_crtcs;
-
-#ifdef HAVE_WAYLAND_BACKEND
-   struct wl_drm *wl_server_drm; /* for EGL_WL_bind_wayland_display */
-#endif
 };
 
 struct drm_config {

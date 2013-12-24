@@ -1255,7 +1255,7 @@ dri2_create_image_wayland_wl_buffer(_EGLDisplay *disp, _EGLContext *ctx,
    EGLint err;
    int32_t plane;
 
-   if (!wayland_buffer_is_drm(&buffer->buffer))
+   if (!wayland_buffer_is_drm(dri2_dpy->wl_server_drm, &buffer->buffer))
        return NULL;
 
    err = _eglParseImageAttribList(&attrs, disp, attr_list);
@@ -1663,9 +1663,10 @@ dri2_query_wayland_buffer_wl(_EGLDriver *drv, _EGLDisplay *disp,
                              EGLint attribute, EGLint *value)
 {
    struct wl_drm_buffer *buffer = (struct wl_drm_buffer *) _buffer;
+   struct dri2_egl_display *dri2_dpy = dri2_egl_display(disp);
    const struct wl_drm_components_descriptor *format;
 
-   if (!wayland_buffer_is_drm(&buffer->buffer))
+   if (!wayland_buffer_is_drm(dri2_dpy->wl_server_drm, &buffer->buffer))
       return EGL_FALSE;
 
    format = buffer->driver_format;

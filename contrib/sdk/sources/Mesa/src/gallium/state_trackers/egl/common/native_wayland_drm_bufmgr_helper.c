@@ -77,7 +77,7 @@ egl_g3d_wl_drm_common_query_buffer(struct native_display *ndpy,
    struct wl_drm_buffer *buffer = (struct wl_drm_buffer *) _buffer;
    struct pipe_resource *resource = buffer->driver_buffer;
 
-   if (!wayland_buffer_is_drm(&buffer->buffer))
+   if (!wayland_buffer_is_drm(ndpy->wl_server_drm, &buffer->buffer))
       return EGL_FALSE;
 
    switch (attribute) {

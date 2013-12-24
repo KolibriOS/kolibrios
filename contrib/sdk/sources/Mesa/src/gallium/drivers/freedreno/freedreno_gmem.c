@@ -71,12 +71,16 @@ calculate_tiles(struct fd_context *ctx)
 {
 	struct fd_gmem_stateobj *gmem = &ctx->gmem;
 	struct pipe_scissor_state *scissor = &ctx->max_scissor;
-	uint32_t cpp = util_format_get_blocksize(ctx->framebuffer.cbufs[0]->format);
+	struct pipe_framebuffer_state *pfb = &ctx->framebuffer;
 	uint32_t gmem_size = ctx->screen->gmemsize_bytes;
 	uint32_t minx, miny, width, height;
 	uint32_t nbins_x = 1, nbins_y = 1;
 	uint32_t bin_w, bin_h;
 	uint32_t max_width = 992;
+	uint32_t cpp = 4;
+
+	if (pfb->cbufs[0])
+		cpp = util_format_get_blocksize(pfb->cbufs[0]->format);
 
 	if ((gmem->cpp == cpp) &&
 			!memcmp(&gmem->scissor, scissor, sizeof(gmem->scissor))) {
@@ -84,10 +88,17 @@ calculate_tiles(struct fd_context *ctx)
 		return;
 	}
 
-	minx = scissor->minx & ~31; /* round down to multiple of 32 */
-	miny = scissor->miny & ~31;
-	width = scissor->maxx - minx;
-	height = scissor->maxy - miny;
+	if (fd_mesa_debug & FD_DBG_DSCIS) {
+		minx = 0;
+		miny = 0;
+		width = pfb->width;
+		height = pfb->height;
+	} else {
+		minx = scissor->minx & ~31; /* round down to multiple of 32 */
+		miny = scissor->miny & ~31;
+		width = scissor->maxx - minx;
+		height = scissor->maxy - miny;
+	}
 
 // TODO we probably could optimize this a bit if we know that
 // Z or stencil is not enabled for any of the draw calls..
@@ -132,9 +143,7 @@ static void
 render_tiles(struct fd_context *ctx)
 {
 	struct fd_gmem_stateobj *gmem = &ctx->gmem;
-	uint32_t i, yoff = 0;
-
-	yoff= gmem->miny;
+	uint32_t i, yoff = gmem->miny;
 
 	ctx->emit_tile_init(ctx);
 
@@ -143,13 +152,13 @@ render_tiles(struct fd_context *ctx)
 		uint32_t bh = gmem->bin_h;
 
 		/* clip bin height: */
-		bh = MIN2(bh, gmem->height - yoff);
+		bh = MIN2(bh, gmem->miny + gmem->height - yoff);
 
 		for (j = 0; j < gmem->nbins_x; j++) {
 			uint32_t bw = gmem->bin_w;
 
 			/* clip bin width: */
-			bw = MIN2(bw, gmem->width - xoff);
+			bw = MIN2(bw, gmem->minx + gmem->width - xoff);
 
 			DBG("bin_h=%d, yoff=%d, bin_w=%d, xoff=%d",
 					bh, yoff, bw, xoff);
@@ -205,15 +214,15 @@ fd_gmem_render_tiles(struct pipe_context *pctx)
 
 	if (sysmem) {
 		DBG("rendering sysmem (%s/%s)",
-			util_format_name(pfb->cbufs[0]->format),
-			pfb->zsbuf ? util_format_name(pfb->zsbuf->format) : "none");
+			util_format_short_name(pipe_surface_format(pfb->cbufs[0])),
+			util_format_short_name(pipe_surface_format(pfb->zsbuf)));
 		render_sysmem(ctx);
 	} else {
 		struct fd_gmem_stateobj *gmem = &ctx->gmem;
-		DBG("rendering %dx%d tiles (%s/%s)", gmem->nbins_x, gmem->nbins_y,
-			util_format_name(pfb->cbufs[0]->format),
-			pfb->zsbuf ? util_format_name(pfb->zsbuf->format) : "none");
 		calculate_tiles(ctx);
+		DBG("rendering %dx%d tiles (%s/%s)", gmem->nbins_x, gmem->nbins_y,
+			util_format_short_name(pipe_surface_format(pfb->cbufs[0])),
+			util_format_short_name(pipe_surface_format(pfb->zsbuf)));
 		render_tiles(ctx);
 	}
 
@@ -225,7 +234,8 @@ fd_gmem_render_tiles(struct pipe_context *pctx)
 
 	/* update timestamps on render targets: */
 	timestamp = fd_ringbuffer_timestamp(ctx->ring);
-	fd_resource(pfb->cbufs[0]->texture)->timestamp = timestamp;
+	if (pfb->cbufs[0])
+		fd_resource(pfb->cbufs[0]->texture)->timestamp = timestamp;
 	if (pfb->zsbuf)
 		fd_resource(pfb->zsbuf->texture)->timestamp = timestamp;
 

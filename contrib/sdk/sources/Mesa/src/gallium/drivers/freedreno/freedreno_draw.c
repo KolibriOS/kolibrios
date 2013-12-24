@@ -104,7 +104,7 @@ fd_draw_emit(struct fd_context *ctx, const struct pipe_draw_info *info)
 			src_sel, idx_type, IGNORE_VISIBILITY));
 	OUT_RING(ring, info->count);       /* NumIndices */
 	if (info->indexed) {
-		OUT_RELOC(ring, idx_bo, idx_offset, 0);
+		OUT_RELOC(ring, idx_bo, idx_offset, 0, 0);
 		OUT_RING (ring, idx_size);
 	}
 }
@@ -193,8 +193,8 @@ fd_clear(struct pipe_context *pctx, unsigned buffers,
 	}
 
 	DBG("%x depth=%f, stencil=%u (%s/%s)", buffers, depth, stencil,
-			util_format_name(pfb->cbufs[0]->format),
-			pfb->zsbuf ? util_format_name(pfb->zsbuf->format) : "none");
+		util_format_short_name(pipe_surface_format(pfb->cbufs[0])),
+		util_format_short_name(pipe_surface_format(pfb->zsbuf)));
 
 	ctx->clear(ctx, buffers, color, depth, stencil);
 

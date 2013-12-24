@@ -209,9 +209,6 @@ st_draw_vbo(struct gl_context *ctx,
    if (st->dirty.st || ctx->NewDriverState) {
       st_validate_state(st);
 
-      if (st->vertex_array_out_of_memory)
-         return;
-
 #if 0
       if (MESA_VERBOSE & VERBOSE_GLSL) {
          check_uniforms(ctx);
@@ -219,6 +216,10 @@ st_draw_vbo(struct gl_context *ctx,
 #else
       (void) check_uniforms;
 #endif
+   }
+
+   if (st->vertex_array_out_of_memory) {
+      return;
    }
 
    util_draw_init_info(&info);

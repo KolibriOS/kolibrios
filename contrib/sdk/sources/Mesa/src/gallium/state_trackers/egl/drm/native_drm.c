@@ -39,6 +39,10 @@
 #include <libudev.h>
 #endif
 
+#ifdef HAVE_WAYLAND_BACKEND
+#include "common/native_wayland_drm_bufmgr_helper.h"
+#endif
+
 static boolean
 drm_display_is_format_supported(struct native_display *ndpy,
                                 enum pipe_format fmt, boolean is_color)
@@ -207,14 +211,14 @@ drm_display_bind_wayland_display(struct native_display *ndpy,
 {
    struct drm_display *drmdpy = drm_display(ndpy);
 
-   if (drmdpy->wl_server_drm)
+   if (ndpy->wl_server_drm)
       return FALSE;
 
-   drmdpy->wl_server_drm = wayland_drm_init(wl_dpy,
+   ndpy->wl_server_drm = wayland_drm_init(wl_dpy,
          drmdpy->device_name,
          &wl_drm_callbacks, ndpy, 0);
 
-   if (!drmdpy->wl_server_drm)
+   if (!ndpy->wl_server_drm)
       return FALSE;
    
    return TRUE;
@@ -224,13 +228,11 @@ static boolean
 drm_display_unbind_wayland_display(struct native_display *ndpy,
                                     struct wl_display *wl_dpy)
 {
-   struct drm_display *drmdpy = drm_display(ndpy);
-
-   if (!drmdpy->wl_server_drm)
+   if (!ndpy->wl_server_drm)
       return FALSE;
 
-   wayland_drm_uninit(drmdpy->wl_server_drm);
-   drmdpy->wl_server_drm = NULL;
+   wayland_drm_uninit(ndpy->wl_server_drm);
+   ndpy->wl_server_drm = NULL;
 
    return TRUE;
 }

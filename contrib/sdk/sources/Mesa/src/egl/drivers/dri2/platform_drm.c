@@ -46,9 +46,9 @@
 void* load_library(const char *name);
 void *get_proc_address(void *module, char *proc_name);
 
-static int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
-static void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
-static int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int vsync, int dst_x, int dst_y,
+int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
+void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
+int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int vsync, int dst_x, int dst_y,
                   int w, int h, int src_x, int src_y);
 
 static struct gbm_bo *
@@ -267,14 +267,10 @@ dri2_get_buffers_with_format(__DRIdrawable *driDrawable,
    struct dri2_egl_surface *dri2_surf = loaderPrivate;
    int i, j;
 
-//   printf("dri2_get_buffers_with_format count %d\n", count);
-
    dri2_surf->buffer_count = 0;
    for (i = 0, j = 0; i < 2 * count; i += 2, j++) {
       assert(attachments[i] < __DRI_BUFFER_COUNT);
       assert(dri2_surf->buffer_count < 5);
-
-//      printf("attachments %d\n",attachments[i]);
 
       switch (attachments[i]) {
       case __DRI_BUFFER_BACK_LEFT:

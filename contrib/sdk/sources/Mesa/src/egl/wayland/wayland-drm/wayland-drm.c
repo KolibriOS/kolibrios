@@ -45,6 +45,7 @@ struct wl_drm {
         uint32_t flags;
 
 	struct wayland_drm_callbacks *callbacks;
+        struct wl_buffer_interface buffer_interface;
 };
 
 static void
@@ -62,10 +63,6 @@ buffer_destroy(struct wl_client *client, struct wl_resource *resource)
 {
 	wl_resource_destroy(resource);
 }
-
-const static struct wl_buffer_interface drm_buffer_interface = {
-	buffer_destroy
-};
 
 static void
 create_buffer(struct wl_client *client, struct wl_resource *resource,
@@ -107,7 +104,7 @@ create_buffer(struct wl_client *client, struct wl_resource *resource,
 	buffer->buffer.resource.object.id = id;
 	buffer->buffer.resource.object.interface = &wl_buffer_interface;
 	buffer->buffer.resource.object.implementation =
-		(void (**)(void)) &drm_buffer_interface;
+		(void (**)(void)) &drm->buffer_interface;
 	buffer->buffer.resource.data = buffer;
 
 	buffer->buffer.resource.destroy = destroy_buffer;
@@ -246,6 +243,7 @@ wayland_drm_init(struct wl_display *display, char *device_name,
 	drm->callbacks = callbacks;
 	drm->user_data = user_data;
         drm->flags = flags;
+        drm->buffer_interface.destroy = buffer_destroy;
 
 	wl_display_add_global(display, &wl_drm_interface, drm, bind_drm);
 
@@ -263,10 +261,10 @@ wayland_drm_uninit(struct wl_drm *drm)
 }
 
 int
-wayland_buffer_is_drm(struct wl_buffer *buffer)
+wayland_buffer_is_drm(struct wl_drm *drm, struct wl_buffer *buffer)
 {
 	return buffer->resource.object.implementation == 
-		(void (**)(void)) &drm_buffer_interface;
+		(void (**)(void)) &drm->buffer_interface;
 }
 
 uint32_t

@@ -53,6 +53,8 @@ struct r600_resource_texture {
 	struct r600_resource_texture	*flushed_depth_texture;
 	boolean				is_flushing_texture;
 	struct radeon_surface		surface;
+
+	unsigned mipmap_shift;
 };
 
 struct r600_surface {

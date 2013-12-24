@@ -831,8 +831,6 @@ intelCreateBuffer(__DRIscreen * driScrnPriv,
       fb->Visual.sRGBCapable = true;
    }
 
-    printf("\n%s doubleBufferMode %d\n\n", __FUNCTION__,mesaVis->doubleBufferMode );
-
    /* setup the hardware-based renderbuffers */
    rb = intel_create_renderbuffer(rgbFormat, num_samples);
    _mesa_add_renderbuffer(fb, BUFFER_FRONT_LEFT, &rb->Base.Base);

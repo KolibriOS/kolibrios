@@ -246,6 +246,10 @@ struct native_display {
    const struct native_display_buffer *buffer;
    const struct native_display_modeset *modeset;
    const struct native_display_wayland_bufmgr *wayland_bufmgr;
+
+#ifdef HAVE_WAYLAND_BACKEND
+   struct wl_drm *wl_server_drm; /* for EGL_WL_bind_wayland_display */
+#endif
 };
 
 /**

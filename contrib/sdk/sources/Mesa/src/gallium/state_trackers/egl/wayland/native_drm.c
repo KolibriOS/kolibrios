@@ -268,7 +268,7 @@ wayland_drm_display_bind_wayland_display(struct native_display *ndpy,
    if (drmdpy->wl_server_drm)
       return FALSE;
 
-   drmdpy->wl_server_drm =
+   ndpy->wl_server_drm =
       wayland_drm_init(wl_dpy, drmdpy->device_name,
                        &wl_drm_callbacks, ndpy, 0);
 

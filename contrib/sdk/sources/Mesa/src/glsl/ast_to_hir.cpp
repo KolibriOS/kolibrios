@@ -2682,7 +2682,7 @@ ast_declarator_list::hir(exec_list *instructions,
                                precision_names[this->type->qualifier.precision],
                                type_name);
          }
-      } else {
+      } else if (this->type->specifier->structure == NULL) {
          _mesa_glsl_warning(&loc, state, "empty declaration");
       }
    }

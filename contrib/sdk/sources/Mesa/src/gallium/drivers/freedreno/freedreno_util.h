@@ -33,8 +33,10 @@
 #include <freedreno_ringbuffer.h>
 
 #include "pipe/p_format.h"
+#include "pipe/p_state.h"
 #include "util/u_debug.h"
 #include "util/u_math.h"
+#include "util/u_half.h"
 
 #include "adreno_common.xml.h"
 #include "adreno_pm4.xml.h"
@@ -47,10 +49,11 @@ enum adreno_pa_su_sc_draw fd_polygon_mode(unsigned mode);
 enum adreno_stencil_op fd_stencil_op(unsigned op);
 
 
-#define FD_DBG_MSGS   0x1
-#define FD_DBG_DISASM 0x2
-#define FD_DBG_DCLEAR 0x4
-#define FD_DBG_DGMEM  0x8
+#define FD_DBG_MSGS     0x01
+#define FD_DBG_DISASM   0x02
+#define FD_DBG_DCLEAR   0x04
+#define FD_DBG_DGMEM    0x08
+#define FD_DBG_DSCIS    0x10
 extern int fd_mesa_debug;
 
 #define DBG(fmt, ...) \
@@ -77,6 +80,15 @@ static inline uint32_t DRAW(enum pc_di_primtype prim_type,
 			(1                 << 14);
 }
 
+
+static inline enum pipe_format
+pipe_surface_format(struct pipe_surface *psurf)
+{
+	if (!psurf)
+		return PIPE_FORMAT_NONE;
+	return psurf->format;
+}
+
 #define LOG_DWORDS 0
 
 
@@ -92,25 +104,36 @@ OUT_RING(struct fd_ringbuffer *ring, uint32_t data)
 
 static inline void
 OUT_RELOC(struct fd_ringbuffer *ring, struct fd_bo *bo,
-		uint32_t offset, uint32_t or)
-{
-	if (LOG_DWORDS) {
-		DBG("ring[%p]: OUT_RELOC  %04x:  %p+%u", ring,
-				(uint32_t)(ring->cur - ring->last_start), bo, offset);
-	}
-	fd_ringbuffer_emit_reloc(ring, bo, offset, or);
-}
-
-/* shifted reloc: */
-static inline void
-OUT_RELOCS(struct fd_ringbuffer *ring, struct fd_bo *bo,
 		uint32_t offset, uint32_t or, int32_t shift)
 {
 	if (LOG_DWORDS) {
-		DBG("ring[%p]: OUT_RELOCS  %04x:  %p+%u << %d", ring,
+		DBG("ring[%p]: OUT_RELOC   %04x:  %p+%u << %d", ring,
 				(uint32_t)(ring->cur - ring->last_start), bo, offset, shift);
 	}
-	fd_ringbuffer_emit_reloc_shift(ring, bo, offset, or, shift);
+	fd_ringbuffer_reloc(ring, &(struct fd_reloc){
+		.bo = bo,
+		.flags = FD_RELOC_READ,
+		.offset = offset,
+		.or = or,
+		.shift = shift,
+	});
+}
+
+static inline void
+OUT_RELOCW(struct fd_ringbuffer *ring, struct fd_bo *bo,
+		uint32_t offset, uint32_t or, int32_t shift)
+{
+	if (LOG_DWORDS) {
+		DBG("ring[%p]: OUT_RELOC   %04x:  %p+%u << %d", ring,
+				(uint32_t)(ring->cur - ring->last_start), bo, offset, shift);
+	}
+	fd_ringbuffer_reloc(ring, &(struct fd_reloc){
+		.bo = bo,
+		.flags = FD_RELOC_READ | FD_RELOC_WRITE,
+		.offset = offset,
+		.or = or,
+		.shift = shift,
+	});
 }
 
 static inline void BEGIN_RING(struct fd_ringbuffer *ring, uint32_t ndwords)
@@ -143,7 +166,7 @@ OUT_IB(struct fd_ringbuffer *ring, struct fd_ringmarker *start,
 		struct fd_ringmarker *end)
 {
 	OUT_PKT3(ring, CP_INDIRECT_BUFFER_PFD, 2);
-	fd_ringbuffer_emit_reloc_ring(ring, start);
+	fd_ringbuffer_emit_reloc_ring(ring, start, end);
 	OUT_RING(ring, fd_ringmarker_dwords(start, end));
 }
 

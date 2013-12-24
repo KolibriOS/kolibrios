@@ -62,6 +62,10 @@
 #include "libkms/libkms.h"
 #endif
 
+#if XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(1,14,99,2,0)
+#define DamageUnregister(d, dd) DamageUnregister(dd)
+#endif
+
 /*
  * Functions and symbols exported to Xorg via pointers.
  */
