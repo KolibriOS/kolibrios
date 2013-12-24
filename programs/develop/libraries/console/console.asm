@@ -1867,6 +1867,10 @@ con.key:
         cmp     al, 0x46
         jz      con.msg_loop
         mov     edx, eax
+        cmp     dl, 0x4e
+        je      .numpad
+        cmp     dl, 0x4a
+        je      .numpad
         push    66
         pop     eax
         push    3
@@ -1887,6 +1891,7 @@ con.key:
         jb      .no_numlock
         cmp     dl, 83
         ja      .no_numlock
+  .numpad:
         mov     dh, [con.extended_numlock+edx-71]
         xchg    dl, dh
         jmp     .gotcode
