@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47h 11/12/2013
+; KFM v0.47i 24/12/2013
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -96,12 +96,23 @@ START:
     call  proc_read_left_folder
     test  eax,eax
     jz	  @f
+
     cmp   eax,6
     jne   read_folder_error
 @@:
     call  proc_read_right_folder
     test  eax,eax
     jz	  @f
+
+    cmp   eax,6
+    je    @f
+; if /hd read error for start then use /rd
+    mov   esi,retrieved_devices_table+1
+    call  copy_folder_name_1
+    call  proc_read_right_folder
+    test  eax,eax
+    jz	  @f
+
     cmp   eax,6
     jne   read_folder_1_error
 @@:

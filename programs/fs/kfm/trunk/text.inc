@@ -1,4 +1,4 @@
-header_text	  db 'Kolibri File Manager v0.47h 11/12/2013',0
+header_text	  db 'Kolibri File Manager v0.47i 24/12/2013',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
