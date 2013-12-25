@@ -1078,7 +1078,7 @@ void kgem_init(struct kgem *kgem, int fd, struct pci_device *dev, unsigned gen)
     DBG(("%s: maximum batch size? %d\n", __FUNCTION__,
          kgem->batch_size));
 
-	kgem->min_alignment = 4;
+	kgem->min_alignment = 16;
     if (gen < 040)
         kgem->min_alignment = 64;
 
