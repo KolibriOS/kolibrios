@@ -4,6 +4,7 @@ struct llist
 {
 	int x, y, w, h, min_h, line_h, text_y;
 	int count, visible, first, current;
+	int active;
 	void ClearList();
 	int ProcessKey(dword key);
 	int MouseOver(int xx, yy);

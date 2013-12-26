@@ -34,10 +34,10 @@ void main()
 	RunProgram("/sys/REFRSCRN", NULL);
 	copyf(abspath("sys"), "/rd/1");
 	RunProgram("/sys/launcher", NULL);
-	SetSystemSkin("/kolibrios/res/skins/Octo - flat.skn");
+	SetSystemSkin("/kolibrios/res/skins/OpusN.skn");
+	notify(T_END);
 	DeleteFile("/sys/3d/free3d04");
 	DeleteFile("/sys/games/invaders");
-	notify(T_END);
 	ExitProcess();	
 }
 

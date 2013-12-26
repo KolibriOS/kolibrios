@@ -30,13 +30,13 @@ void GetIni(byte onload)
 			case 0x0a:
 			case 0x0d:
 				InfType=PARAM;
-				IF (!strcmp(#parametr,"SelectionColor")) edit2.shift_color=col_selec=StrToCol(#option);
-				IF (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
-				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
-				IF (!strcmp(#parametr,"RealFileNamesCase")) real_files_names_case=atoi(#option);
-				IF (!strcmp(#parametr,"DrwRamDiskSpace")) drw_ram_disk_space=atoi(#option);
+				if (!strcmp(#parametr,"SelectionColor")) edit2.shift_color=col_selec=StrToCol(#option);
+				if (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
+				if (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
+				if (!strcmp(#parametr,"RealFileNamesCase")) real_files_names_case=atoi(#option);
+				if (!strcmp(#parametr,"DrwRamDiskSpace")) drw_ram_disk_space=atoi(#option);
 				
-				IF (parametr) && (!strcmp(#file_name+strrchr(#file_name,'.'),#parametr)) && (!onload)
+				if (parametr) && (!strcmpi(#file_name+strrchr(#file_name,'.'),#parametr)) && (!onload)
 				{
 					errornum = RunProgram(#option,#file_path);
 					if (errornum<0)
