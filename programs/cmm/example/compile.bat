@@ -1,4 +1,4 @@
-..\C--\C-- example.c
+C-- example.c
 @del example
 @rename example.com example
 @pause

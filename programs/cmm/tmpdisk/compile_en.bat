@@ -1,6 +1,6 @@
 @echo #define LANG_ENG 1 >lang.h--
 
-..\C--\C-- tmpdisk.c
+C-- tmpdisk.c
 @del tmpdisk
 @rename tmpdisk.com tmpdisk
 @del warning.txt

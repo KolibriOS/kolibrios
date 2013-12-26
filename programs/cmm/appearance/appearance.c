@@ -16,20 +16,20 @@
 
 #ifdef LANG_RUS
 	?define WINDOW_HEADER "Усправление темой"
-	?define T_SKINS       "Тема окон"
-	?define T_WALLPAPERS  "Обои рабочего стола"
+	?define T_SKINS       "   Тема окон"
+	?define T_WALLPAPERS  "   Обои рабочего стола"
 #else
 	?define WINDOW_HEADER "Appearance"
-	?define T_SKINS       "Skins"
-	?define T_WALLPAPERS  "Wallpappers"
+	?define T_SKINS       "   Skins"
+	?define T_WALLPAPERS  "   Wallpappers"
 #endif
 
 unsigned char icons[sizeof(file "icons.raw")]= FROM "icons.raw";
 
 
 #define PANEL_H 30
-#define SKINS_STANDART_PATH "/sys/res/skins/"
-#define WALP_STANDART_PATH "/sys/res/wallpapers/"
+#define SKINS_STANDART_PATH "/kolibrios/res/skins/"
+#define WALP_STANDART_PATH "/kolibrios/res/wallpapers/"
 
 llist list[2];
 int active;
@@ -94,20 +94,19 @@ void Draw_List()
 			if (sc.work_button<>sc.work)
 			{
 				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.work_button);
-				WriteText(11+23,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
+				WriteText(12,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
 			}
 			else
 			{
 				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.grab_button);
-				WriteText(11+23,yyy+list[active].text_y,0x80,sc.grab_button_text, #temp_filename);
+				WriteText(12,yyy+list[active].text_y,0x80,sc.grab_button_text, #temp_filename);
 			}
 		}
 		else
 		{
 			DrawBar(0,yyy,list[active].w, list[active].line_h, 0xFFFfff);
-			WriteText(11+23,yyy+list[active].text_y,0x80,0, #temp_filename);
+			WriteText(12,yyy+list[active].text_y,0x80,0, #temp_filename);
 		}
-		_PutImage(11,yyy+2,  16,15,   list[WALLPAPERS].active*16*15*3+#icons);
 	}
 	DrawBar(0,list[active].visible*list[active].line_h+list[active].y, list[active].w, -list[active].visible*list[active].line_h+ list[active].h, 0xFFFfff);
 	DrawScroller();
@@ -253,6 +252,7 @@ void DrawTab(dword x,y, but_id, is_active, text)
 	} 
 	DrawRectangle(x,y, w,h, sc.work_graph);
 	DrawCaptButton(x+1,y+1, w-2,h-1, but_id, col_bg, col_text, text);
+	_PutImage(x+6,y+4,  16,15,   but_id-2*16*15*3+#icons);
 }
 
 

@@ -26,10 +26,10 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.1";
+	char version[]=" Текстовый браузер 0.99.11";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 #else
-	char version[]=" Text-based Browser 0.99.1";
+	char version[]=" Text-based Browser 0.99.11";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 #endif
 
@@ -60,8 +60,8 @@ mouse m;
 
 int action_buf;
 
-#include "TWB.h"
-#include "include\menu_rmb.h"
+#include "..\TWB\TWB.c"
+#include "menu_rmb.h"
 
 
 void main()

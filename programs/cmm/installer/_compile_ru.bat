@@ -1,7 +1,7 @@
 @del lang.h--
 @echo #define LANG_RUS 1 >lang.h--
 
-..\C--\C-- installer.c
+C-- installer.c
 @del installer.kex
 @rename installer.com installer.kex
 @pause

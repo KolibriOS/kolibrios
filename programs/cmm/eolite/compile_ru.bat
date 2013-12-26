@@ -3,7 +3,7 @@
 
 @del Eolite
 cls
-..\C--\c-- Eolite.c
+c-- Eolite.c
 @rename Eolite.com Eolite
 @del warning.txt
 @del lang.h--
