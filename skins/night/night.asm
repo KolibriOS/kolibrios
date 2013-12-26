@@ -14,8 +14,8 @@ SKIN_PARAMS \
   dtp             = 'default.dtp'          ; dtp colors
 
 SKIN_BUTTONS \
-  close    = [-16:5][10:10],\             ; buttons coordinates
-  minimize = [-33:5][10:10]               ; [left:top][width:height]
+  close    = [-18:3][14:14],\             ; buttons coordinates
+  minimize = [-35:3][14:14]               ; [left:top][width:height]
 
 SKIN_BITMAPS \
   left active   = bmp_left,\              ; skin bitmaps pointers
