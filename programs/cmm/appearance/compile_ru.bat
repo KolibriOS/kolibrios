@@ -1,7 +1,7 @@
 @del lang.h--
 @echo #define LANG_RUS 1 >lang.h--
 
-..\C--\C-- appearance.c
+C-- appearance.c
 @del appearance.kex
 @rename appearance.com appearance.kex
 @del warning.txt

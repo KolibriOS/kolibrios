@@ -16,7 +16,7 @@
 
 #ifdef LANG_RUS
 	?define WINDOW_HEADER "Усправление темой"
-	?define T_SKINS       "Окна"
+	?define T_SKINS       "Тема окон"
 	?define T_WALLPAPERS  "Обои рабочего стола"
 #else
 	?define WINDOW_HEADER "Appearance"
@@ -24,14 +24,16 @@
 	?define T_WALLPAPERS  "Wallpappers"
 #endif
 
+unsigned char icons[sizeof(file "icons.raw")]= FROM "icons.raw";
+
 
 #define PANEL_H 30
-#define SKINS_STANDART_PATH "/sys/skins/"
-#define WALP_STANDART_PATH "/sys/wallpapers/"
+#define SKINS_STANDART_PATH "/sys/res/skins/"
+#define WALP_STANDART_PATH "/sys/res/wallpapers/"
 
 llist list[2];
 int active;
-enum { SKINS, WALLPAPERS };
+enum { WALLPAPERS, SKINS };
 
 char folder_path[4096];
 char cur_file_path[4096];
@@ -61,8 +63,8 @@ void Open_Dir()
 
 	for (j=0; j<filesnum; j++)
 	{
-		strlwr(j*304 + buf+72);
 		strcpy(#temp_filename, j*304 + buf+72);
+		strlwr(#temp_filename);
 		if (active==SKINS) if (strcmp(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
 		if (active==WALLPAPERS) if (strcmp(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
 		cur = list[active].count;
@@ -76,6 +78,7 @@ void Open_Dir()
 void Draw_List()
 {
 	int i;
+	int yyy;
 	list[SKINS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 40, 20);
 	list[WALLPAPERS].SetSizes(0, PANEL_H, Form.cwidth-scroll1.size_x-1, Form.cheight-PANEL_H, 40, 20);
 	
@@ -83,40 +86,42 @@ void Draw_List()
 	{
 		cur = list[active].first;
 		strcpy(#temp_filename, files_mas[i+cur]*304 + buf+72);
+		temp_filename[strlen(#temp_filename)-4] = 0;
+		yyy = i*list[active].line_h+list[active].y;
 		
 		if (list[active].current-list[active].first==i)
 		{
 			if (sc.work_button<>sc.work)
 			{
-				DrawBar(0, i*list[active].line_h+list[active].y, list[active].w, list[active].line_h, sc.work_button);
-				WriteText(11,i*list[active].line_h+list[active].text_y+list[active].y,0x80,sc.work_button_text, #temp_filename);
+				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.work_button);
+				WriteText(11+23,yyy+list[active].text_y,0x80,sc.work_button_text, #temp_filename);
 			}
 			else
 			{
-				DrawBar(0, i*list[active].line_h+list[active].y, list[active].w, list[active].line_h, sc.grab_button);
-				WriteText(11,i*list[active].line_h+list[active].text_y+list[active].y,0x80,sc.grab_button_text, #temp_filename);
-			}	
+				DrawBar(0, yyy, list[active].w, list[active].line_h, sc.grab_button);
+				WriteText(11+23,yyy+list[active].text_y,0x80,sc.grab_button_text, #temp_filename);
+			}
 		}
 		else
 		{
-			DrawBar(0,i*list[active].line_h+list[active].y,list[active].w, list[active].line_h, 0xFFFfff);
-			WriteText(11,i*list[active].line_h+list[active].text_y+list[active].y,0x80,0, #temp_filename);
+			DrawBar(0,yyy,list[active].w, list[active].line_h, 0xFFFfff);
+			WriteText(11+23,yyy+list[active].text_y,0x80,0, #temp_filename);
 		}
+		_PutImage(11,yyy+2,  16,15,   list[WALLPAPERS].active*16*15*3+#icons);
 	}
 	DrawBar(0,list[active].visible*list[active].line_h+list[active].y, list[active].w, -list[active].visible*list[active].line_h+ list[active].h, 0xFFFfff);
 	DrawScroller();
 }
 
-void GetFiles(int set_active)
+void GetFiles()
 {
-	active = set_active;
-	if (active==SKINS)
+	if (list[SKINS].active)
 	{
 		strcpy(#folder_path, SKINS_STANDART_PATH);
 		Open_Dir();
 		if (!list[active].count) notify("No skins were found");
 	}
-	if (active==WALLPAPERS)
+	if (list[WALLPAPERS].active)
 	{
 		strcpy(#folder_path, WALP_STANDART_PATH);
 		Open_Dir();
@@ -126,18 +131,19 @@ void GetFiles(int set_active)
 
 void Apply()
 {
-	if (active==SKINS)
+	if (list[SKINS].active)
 	{
 		strcpy(#cur_file_path, #folder_path);
-		cur = list[active].current;
+		cur = list[SKINS].current;
 		strcat(#cur_file_path, files_mas[cur]*304 + buf+72);
 		SetSystemSkin(#cur_file_path);
+		//Draw_List();
 	} 
-	if (active==WALLPAPERS)
+	if (list[WALLPAPERS].active)
 	{
 		strcpy(#cur_file_path, "\\S__");
 		strcat(#cur_file_path, #folder_path);
-		cur = list[active].current;
+		cur = list[WALLPAPERS].current;
 		strcat(#cur_file_path, files_mas[cur]*304 + buf+72);
 		RunProgram("/sys/media/kiv", #cur_file_path);
 		Draw_List();
@@ -146,8 +152,8 @@ void Apply()
 
 OpenFile()
 {
-	if (active==SKINS) RunProgram("/sys/desktop", #cur_file_path);
-	if (active==WALLPAPERS) RunProgram("/sys/media/kiv", #cur_file_path);
+	if (list[SKINS].active) RunProgram("/sys/desktop", #cur_file_path);
+	if (list[WALLPAPERS].active) RunProgram("/sys/media/kiv", #cur_file_path);
 }
 
 
@@ -157,12 +163,13 @@ void main()
 	mouse mm;
 
 	mem_Init();
+	SetEventMask(0x27);
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("Fatal Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	list[SKINS].current = list[WALLPAPERS].current = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
-	GetFiles(WALLPAPERS);
-	list[active].SetSizes(0, 230, 350, 400-PANEL_H, 40, 18);
-	SetEventMask(0x27);
+	TabClick(WALLPAPERS);
+	list[WALLPAPERS].SetSizes(0, 230, 350, 400-PANEL_H, 40, 18);
+	list[SKINS].SetSizes(0, 230, 350, 400-PANEL_H, 40, 18);
 	loop()
 	{
 	  switch(WaitEvent()) 
@@ -178,35 +185,36 @@ void main()
 			}
 		
 	  		mm.get();
-	  		if (mm.vert) && (list[active].MouseScroll(mm.vert)) Draw_List();
+
+	  		if (mm.vert)
+	  		{
+	  			if (list[SKINS].active) && (list[SKINS].MouseScroll(mm.vert)) Draw_List();
+	  			if (list[WALLPAPERS].active) && (list[WALLPAPERS].MouseScroll(mm.vert)) Draw_List();
+	  		} 
+
 	  		if (mouse_clicked)
 	  		{
-	  			if (!mm.lkm) && (active==SKINS) && (list[SKINS].ProcessMouse(mm.x, mm.y)) Apply();
-	  			if (!mm.lkm) && (active==WALLPAPERS) && (list[WALLPAPERS].ProcessMouse(mm.x, mm.y)) Apply();
+	  			if (!mm.lkm) && (list[SKINS].active) && (list[SKINS].ProcessMouse(mm.x, mm.y)) Apply();
+	  			if (!mm.lkm) && (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessMouse(mm.x, mm.y)) Apply();
 	  			mouse_clicked=0;
 	  		}
 	  		if (mm.lkm) && (list[SKINS].MouseOver(mm.x, mm.y)) mouse_clicked=1;
 	  		break;
 
+
 		case evButton:
 			id=GetButtonID();
 			if (id==1) ExitProcess();
-			if (id==2) TabClick(SKINS);
-			if (id==3) TabClick(WALLPAPERS);
+			if (id==2) TabClick(WALLPAPERS);
+			if (id==3) TabClick(SKINS);
 			break;
 	  
 		case evKey:
 			key = GetKey();
-			if (active==SKINS) && (list[SKINS].ProcessKey(key)) Apply();
-			if (active==WALLPAPERS) && (list[WALLPAPERS].ProcessKey(key)) Apply();
+			if (list[SKINS].active) && (list[SKINS].ProcessKey(key)) Apply();
+			if (list[WALLPAPERS].active) && (list[WALLPAPERS].ProcessKey(key)) Apply();
 			IF (key==013) OpenFile();
-			if (key==9) //Tab
-			{
-				if (active==SKINS)
-					TabClick(WALLPAPERS);
-				else
-					TabClick(SKINS);
-			}
+			if (key==9) if (list[SKINS].active) TabClick(WALLPAPERS); else TabClick(SKINS);
 			IF (key==182) //Del
 			{
 				DeleteFile(#cur_file_path);
@@ -217,7 +225,7 @@ void main()
 		 
 		 case evReDraw:
 			sc.get();			
-			DefineAndDrawWindow(30,80,list[active].w+9,list[active].h+4+GetSkinHeight(),0x73,0xE4DFE1,WINDOW_HEADER);
+			DefineAndDrawWindow(30,80,list[active].w+9,list[active].h+4+GetSkinHeight(),0x73,0xE4DFE1,WINDOW_HEADER,0);
 			GetProcessInfo(#Form, SelfInfo);
 			IF (Form.status_window>=2) break;
 			DrawTabs();
@@ -226,18 +234,34 @@ void main()
    }
 }
 
+#define BT_PADDING 16
+
+void DrawTab(dword x,y, but_id, is_active, text)
+{
+	dword col_bg, col_text;
+	dword w=strlen(text)*6+BT_PADDING, h=21;
+
+	if (is_active)
+	{
+		col_bg=sc.work_button;
+		col_text=sc.work_button_text;
+	}
+	else
+	{
+		col_bg=sc.work;
+		col_text=sc.work_text;
+	} 
+	DrawRectangle(x,y, w,h, sc.work_graph);
+	DrawCaptButton(x+1,y+1, w-2,h-1, but_id, col_bg, col_text, text);
+}
+
 
 void DrawTabs()
 {
-	dword col_bg, col_text;
 	DrawBar(0,0, Form.cwidth, PANEL_H-1, sc.work);
 
-	if (active==SKINS) {col_bg=sc.work_button; col_text=sc.work_button_text;} else {col_bg=sc.work; col_text=sc.work_text;} 
-	DrawRectangle(10-1,7-1, 65+2, 21+2, sc.work_graph);
-	DrawCaptButton(10,7, 65, 21, 2, col_bg, col_text, T_SKINS); //вокруг рисовать пмятоуг
-	if (active==WALLPAPERS) {col_bg=sc.work_button; col_text=sc.work_button_text;} else {col_bg=sc.work; col_text=sc.work_text;} 
-	DrawRectangle(90-1,7-1, strlen(T_WALLPAPERS)*6+16+2, 21+2, sc.work_graph);
-	DrawCaptButton(90,7, strlen(T_WALLPAPERS)*6+16, 21, 3, col_bg, col_text, T_WALLPAPERS);
+	DrawTab(10,7, 2, list[WALLPAPERS].active, T_WALLPAPERS);
+	DrawTab(strlen(T_WALLPAPERS)*6+BT_PADDING+21,7, 3, list[SKINS].active, T_SKINS);
 
 	DrawBar(0,PANEL_H-2, Form.cwidth, 1, sc.work_graph);
 	DrawBar(0,PANEL_H-1, Form.cwidth, 1, 0xEEEeee);
@@ -245,7 +269,18 @@ void DrawTabs()
 
 void TabClick(int N)
 {
-	GetFiles(N);
+	if (N==SKINS) 
+	{
+		list[SKINS].active = 1;	
+		list[WALLPAPERS].active = 0;	
+	}
+	if (N==WALLPAPERS) 
+	{
+		list[SKINS].active = 0;	
+		list[WALLPAPERS].active = 1;	
+	}
+	active = N;
+	GetFiles();
 	DrawTabs();
 	Draw_List();
 }
