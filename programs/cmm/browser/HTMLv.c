@@ -20,7 +20,6 @@
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\libimg_lib.h"
-#include "..\lib\list_box.h"
 //images
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
@@ -60,6 +59,7 @@ mouse m;
 
 int action_buf;
 
+#include "history.h"
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
 
@@ -123,16 +123,16 @@ void main()
 				{
 					if (lines.first==0) break;
 					if (lines.first>3) lines.first-=2; ELSE lines.first=1;
-					WB1.Scan(ID1);
+					Scan(ID1);
 					break;
 				} 
 				if (m.vert==1)
 				{
-					if(lines.visible+lines.first+3>=lines.all) WB1.Scan(181);
+					if(lines.visible+lines.first+3>=lines.all) Scan(181);
 					else
 					{
 						lines.first+=2;
-						WB1.Scan(ID2);
+						Scan(ID2);
 					}
 					break;
 				}
@@ -165,7 +165,7 @@ void main()
 				}
 				ELSE
 				{
-					WB1.Scan(btn);
+					Scan(btn);
 				}
 				break;
 			case evKey:
@@ -174,13 +174,13 @@ void main()
 				if (address_box.flags & 0b10) SWITCH(key) //если активна строка адреса игнорируем некоторые кнопки
 					{ CASE 52: CASE 53: CASE 54: goto _EDIT_MARK; } 
 
-				WB1.Scan(key);
+				Scan(key);
 				
 				_EDIT_MARK:
 				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);} //адресна€ строка
 				break;
 			case evReDraw:
-				if (action_buf) { WB1.Scan(action_buf); action_buf=0;}
+				if (action_buf) { Scan(action_buf); action_buf=0;}
 				Draw_Window();
 				break;
 			default:
@@ -242,6 +242,152 @@ void Draw_Window()
 	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
 	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, ID2+BT_HIDE, 0xE4DFE1);
 }
+
+
+void Scan(int id)
+{
+	if (id >= 400)
+	{
+		GetURLfromPageLinks(id);
+		
+		//#1
+		if (URL[0] == '#')
+		{
+			strcpy(#anchor, #URL+strrchr(#URL, '#'));
+			
+			strcpy(#URL, BrowserHistory.CurrentUrl());
+			
+			lines.first=lines.all-lines.visible;
+			WB1.ShowPage();
+			return;
+		}
+		//liner.ru#1
+		if (strrchr(#URL, '#')<>-1)
+		{
+			strcpy(#anchor, #URL+strrchr(#URL, '#'));
+			URL[strrchr(#URL, '#')-1] = 0x00; //заглушка
+		}
+		
+		WB1.GetNewUrl();
+		
+		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
+		{
+			//if (strstr(#URL,"http:")) 
+			RunProgram("/sys/media/kiv", #URL);
+			strcpy(#editURL, BrowserHistory.CurrentUrl());
+			strcpy(#URL, BrowserHistory.CurrentUrl());
+			return;
+		}
+		if (!strcmpn(#URL,"mailto:", 7))
+		{
+			RunProgram("@notify", #URL);
+			strcpy(#editURL, BrowserHistory.CurrentUrl());
+			strcpy(#URL, BrowserHistory.CurrentUrl());
+			return;
+		}
+
+		WB1.OpenPage();
+		return;
+	}
+	
+	IF(lines.all < lines.visible) SWITCH(id) //если мало строк игнорируем некоторые кнопки
+	{ CASE 183: CASE 184: CASE 180: CASE 181: return; } 
+	
+	switch (id)
+	{
+		case 011: //Ctrk+K 
+			WB1.ReadHtml(_KOI);
+			break;
+		case 021: //Ctrl+U
+			WB1.ReadHtml(_UTF);
+			break;
+		case 004: //Ctrl+D
+			WB1.ReadHtml(_DOS);
+			break;
+		case 002: //free img cache
+			FreeImgCache();
+			break;			
+		case BACK:
+			if (!BrowserHistory.GoBack()) return;
+			WB1.OpenPage();
+			return;
+		case FORWARD:
+			if (!BrowserHistory.GoForward()) return;
+			WB1.OpenPage();
+			return;
+		case 052:  //F3
+			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
+			return;
+		case 054: //F5
+			IF(address_box.flags & 0b10) break;
+		case REFRESH:
+			if (GetProcessSlot(downloader_id)<>0)
+			{
+				KillProcess(downloader_id);
+				pause(20);
+				Draw_Window();
+				return;
+			}
+			anchor_line_num=lines.first; //весЄлый костыль :–
+			anchor[0]='|';
+			WB1.OpenPage();
+			return;
+		case 014: //Ctrl+N новое окно
+		case 020: //Ctrl+T нова€ вкладка
+		case NEWTAB:
+			MoveSize(190,80,OLD,OLD);
+			RunProgram(#program_path, #URL);
+			return;
+			
+		case HOME:
+			strcpy(#editURL, "http://kolibrios.org/en/index.htm");
+		case GOTOURL:
+		case 0x0D: //enter
+			//почему ttp://? √оспода, отличный вопрос. ƒело в том, что это хак. 
+			//strstr() если не нашло возвращает 0 и в случае успеха возвращает 0. “ак что это хак.
+			if ((strstr(#editURL,"ttp://")==0) && (editURL[0]!='/')) strcpy(#URL,"http://"); else URL[0] = 0;
+			strcat(#URL, #editURL);
+			WB1.OpenPage();
+			return;
+		case SEARCHWEB:
+			strcpy(#URL, #search_path);
+			strcat(#URL, #editURL);
+			WB1.OpenPage();
+			return;
+
+		case ID1: //мотаем вверх
+			IF(lines.first <= 0) return;
+			lines.first--;
+			break; 
+		case ID2: //мотаем вниз
+			IF(lines.visible + lines.first >= lines.all) return;
+			lines.first++;
+			break; 
+		case 183: //PgDown
+			IF(lines.first == lines.all - lines.visible) return;
+			lines.first += lines.visible + 2;
+			IF(lines.visible + lines.first > lines.all) lines.first = lines.all - lines.visible;
+			break;
+		case 184: //PgUp
+			IF(lines.first == 0) return;
+			lines.first -= lines.visible - 2;
+			IF(lines.first < 0) lines.first = 0;
+			break;
+		case 180: //home
+			IF(lines.first == 0) return;
+			lines.first = 0;
+			break; 
+		case 181: //end
+			IF (lines.first == lines.all - lines.visible) return;
+			lines.first = lines.all - lines.visible;
+			break; 
+		default:
+			return;
+	}
+	WB1.ParseHTML(buf);
+}
+
+
 
 
 stop:

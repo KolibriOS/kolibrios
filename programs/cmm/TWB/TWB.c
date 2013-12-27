@@ -1,3 +1,5 @@
+#include "..\lib\list_box.h"
+
 
 int	downloader_id;
 
@@ -12,7 +14,7 @@ char search_path[]="http://nigma.ru/index.php?s=";
 
 struct TWebBrowser {
 	int left, top, width, height, line_h;
-	void Scan(int);
+	llist list;
 	void GetNewUrl();
 	void OpenPage();
 	void ReadHtml(byte);
@@ -46,7 +48,6 @@ char line[500],
 	options[4096],
 	anchor[256];
 
-#include "..\TWB\history.h"
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
@@ -90,148 +91,6 @@ void TWebBrowser::DrawPage()
 }
 //=======================================================================
 
-void TWebBrowser::Scan(int id)
-{
-	if (id >= 400)
-	{
-		GetURLfromPageLinks(id);
-		
-		//#1
-		if (URL[0] == '#')
-		{
-			strcpy(#anchor, #URL+strrchr(#URL, '#'));
-			
-			strcpy(#URL, BrowserHistory.CurrentUrl());
-			
-			lines.first=lines.all-lines.visible;
-			ShowPage();
-			return;
-		}
-		//liner.ru#1
-		if (strrchr(#URL, '#')<>-1)
-		{
-			strcpy(#anchor, #URL+strrchr(#URL, '#'));
-			URL[strrchr(#URL, '#')-1] = 0x00; //заглушка
-		}
-		
-		GetNewUrl();
-		
-		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
-		{
-			//if (strstr(#URL,"http:")) 
-			RunProgram("/sys/media/kiv", #URL);
-			strcpy(#editURL, BrowserHistory.CurrentUrl());
-			strcpy(#URL, BrowserHistory.CurrentUrl());
-			return;
-		}
-		if (!strcmpn(#URL,"mailto:", 7))
-		{
-			RunProgram("@notify", #URL);
-			strcpy(#editURL, BrowserHistory.CurrentUrl());
-			strcpy(#URL, BrowserHistory.CurrentUrl());
-			return;
-		}
-
-		OpenPage();
-		return;
-	}
-	
-	IF(lines.all < lines.visible) SWITCH(id) //если мало строк игнорируем некоторые кнопки
-	{ CASE 183: CASE 184: CASE 180: CASE 181: return; } 
-	
-	switch (id)
-	{
-		case 011: //Ctrk+K 
-			ReadHtml(_KOI);
-			break;
-		case 021: //Ctrl+U
-			ReadHtml(_UTF);
-			break;
-		case 004: //Ctrl+D
-			ReadHtml(_DOS);
-			break;
-		case 002: //free img cache
-			FreeImgCache();
-			break;			
-		case BACK:
-			if (!BrowserHistory.GoBack()) return;
-			OpenPage();
-			return;
-		case FORWARD:
-			if (!BrowserHistory.GoForward()) return;
-			OpenPage();
-			return;
-		case 052:  //F3
-			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
-			return;
-		case 054: //F5
-			IF(address_box.flags & 0b10) break;
-		case REFRESH:
-			if (GetProcessSlot(downloader_id)<>0)
-			{
-				KillProcess(downloader_id);
-				pause(20);
-				Draw_Window();
-				return;
-			}
-			anchor_line_num=lines.first; //весёлый костыль :Р
-			anchor[0]='|';
-			OpenPage();
-			return;
-		case 014: //Ctrl+N новое окно
-		case 020: //Ctrl+T новая вкладка
-		case NEWTAB:
-			MoveSize(190,80,OLD,OLD);
-			RunProgram(#program_path, #URL);
-			return;
-			
-		case HOME:
-			strcpy(#editURL, "http://kolibrios.org/en/index.htm");
-		case GOTOURL:
-		case 0x0D: //enter
-			//почему ttp://? Господа, отличный вопрос. Дело в том, что это хак. 
-			//strstr() если не нашло возвращает 0 и в случае успеха возвращает 0. Так что это хак.
-			if ((strstr(#editURL,"ttp://")==0) && (editURL[0]!='/')) strcpy(#URL,"http://"); else URL[0] = 0;
-			strcat(#URL, #editURL);
-			OpenPage();
-			return;
-		case SEARCHWEB:
-			strcpy(#URL, #search_path);
-			strcat(#URL, #editURL);
-			OpenPage();
-			return;
-
-		case ID1: //мотаем вверх
-			IF(lines.first <= 0) return;
-			lines.first--;
-			break; 
-		case ID2: //мотаем вниз
-			IF(lines.visible + lines.first >= lines.all) return;
-			lines.first++;
-			break; 
-		case 183: //PgDown
-			IF(lines.first == lines.all - lines.visible) return;
-			lines.first += lines.visible + 2;
-			IF(lines.visible + lines.first > lines.all) lines.first = lines.all - lines.visible;
-			break;
-		case 184: //PgUp
-			IF(lines.first == 0) return;
-			lines.first -= lines.visible - 2;
-			IF(lines.first < 0) lines.first = 0;
-			break;
-		case 180: //home
-			IF(lines.first == 0) return;
-			lines.first = 0;
-			break; 
-		case 181: //end
-			IF (lines.first == lines.all - lines.visible) return;
-			lines.first = lines.all - lines.visible;
-			break; 
-		default:
-			return;
-	}
-	ParseHTML(buf);
-}
 
 
 char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/kolibrios/", "/rd/", "/bd", "/hd", "/cd", "/tmp", "/usbhd", 0};
