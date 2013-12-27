@@ -3,6 +3,7 @@
 struct llist
 {
 	int x, y, w, h, min_h, line_h, text_y;
+	int column_max;
 	int count, visible, first, current;
 	int active;
 	void ClearList();

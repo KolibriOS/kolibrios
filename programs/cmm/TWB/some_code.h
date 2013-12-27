@@ -1,11 +1,7 @@
 
-enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT };
+enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 enum { _WIN, _DOS, _KOI, _UTF };
 
-#define ID1         178
-#define ID2         177
-
-                      
 
 dword get_URL_part(int len) {
 	char temp1[sizeof(URL)];

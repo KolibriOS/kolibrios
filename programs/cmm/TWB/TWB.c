@@ -1,5 +1,3 @@
-#include "..\lib\list_box.h"
-
 
 int	downloader_id;
 
@@ -11,12 +9,9 @@ dword
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
 
-struct lines{
-	int visible, all, first, column_max;
-};
 
 struct TWebBrowser {
-	llist list;
+	llist list; //need #include "..\lib\list_box.h"
 	void GetNewUrl();
 	void OpenPage();
 	void ReadHtml(byte);
@@ -73,7 +68,7 @@ void TWebBrowser::DrawPage()
 		return;
 	}
 	
-	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
+	if (stroka >= 0) && (stroka - 2 < list.visible) && (line) && (!anchor)
 	{
 		start_x = stolbec * 6 + list.x + magrin_left;
 		start_y = stroka * 10 + list.y + magrin_left;
@@ -172,25 +167,15 @@ void TWebBrowser::OpenPage()
 	pre_text =0;
 	if (!strcmp(get_URL_part(5),"http:")))
 	{
-		KillProcess(downloader_id); //убиваем старый процесс
+		KillProcess(downloader_id);
 		DeleteFile(#download_path);
 		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
 		downloader_id = RunProgram("/sys/network/downloader", #URL);
-		//Browser Hack v2.0
-		/*
-		pause(60);
-		if (GetProcessSlot(downloader_id)<>0)
-		{
-			debug("Browser Hack v2.0: Killing downloader and trying to run it one more!");
-			KillProcess(downloader_id); //убиваем старый процесс
-			downloader_id = RunProgram("/sys/network/downloader", #URL);
-		}
-		*/
-		IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
+		IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
 		Draw_Window();
 		return;
 	}
-	lines.first = lines.all =0;
+	list.first = list.count =0;
 	ReadHtml(_WIN);
 	WB1.ShowPage();
 }
@@ -237,7 +222,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	DrawBufFill();
 	strcpy(#page_links,"|");
 	strcpy(#header, #version);
-	stroka = -lines.first;
+	stroka = -list.first;
 	stolbec = 0;
 	line = 0;
 
@@ -335,13 +320,13 @@ void TWebBrowser::ParseHTML(dword bword){
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
 
-			if (stolbec + strlen(#line) > lines.column_max) //============the same as NEXT_MARK
+			if (stolbec + strlen(#line) > list.column_max) //============the same as NEXT_MARK
 			{
 				perenos_num = strrchr(#line, ' ');
-				if (!perenos_num) && (strlen(#line)>lines.column_max) perenos_num=lines.column_max;
+				if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
 				strcpy(#temp, #line + perenos_num); //перенос по словам
 				line[perenos_num] = 0x00;
-				if (stroka-1 > lines.visible) && (lines.first <>0) break 1; //уходим...
+				if (stroka-1 > list.visible) && (list.first <>0) break 1; //уходим...
 				DrawPage();
 				strcpy(#line, #temp);				
 				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
@@ -363,14 +348,14 @@ void TWebBrowser::ParseHTML(dword bword){
 			}
 			if (strlen(#line)<sizeof(line)) chrcat(#line, bukva);
 
-			if (stolbec + strlen(#line) > lines.column_max)
+			if (stolbec + strlen(#line) > list.column_max)
 			{
 			NEXT_MARK:
 				perenos_num = strrchr(#line, ' ');
-				if (!perenos_num) && (strlen(#line)>lines.column_max) perenos_num=lines.column_max;
+				if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
 				strcpy(#temp, #line + perenos_num); //перенос по словам
 				line[perenos_num] = 0x00;
-				if (stroka-1 > lines.visible) && (lines.first <>0) break 1; //уходим...
+				if (stroka-1 > list.visible) && (list.first <>0) break 1; //уходим...
 				DrawPage();
 				strcpy(#line, #temp);			
 				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
@@ -381,15 +366,15 @@ void TWebBrowser::ParseHTML(dword bword){
 	DrawPage(); //рисует последнюю строку, потом это надо убрать, оптимизировав код
 	TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
 
-	if (lines.visible * 10 + 25 <= list.h)
-		DrawBar(list.x, lines.visible * 10 + list.y + 25, list.w, -lines.visible * 10 + list.h - 25, bg_color);
+	if (list.visible * 10 + 25 <= list.h)
+		DrawBar(list.x, list.visible * 10 + list.y + 25, list.w, -list.visible * 10 + list.h - 25, bg_color);
 	if (stroka * 10 + 5 <= list.h)
 		DrawBar(list.x, stroka * 10 + list.y + 5, list.w, -stroka * 10 + list.h - 5, bg_color); //закрашиваем всё до конца
-	if (lines.first == 0) lines.all = stroka;
+	if (list.first == 0) list.count = stroka;
 	if (anchor) //если посреди текста появится новый якорь - будет бесконечный цикл
 	{
 		anchor=NULL;
-		lines.first=anchor_line_num;
+		list.first=anchor_line_num;
 		ParseHTML(buf);
 	}
 	DrawScroller();
@@ -432,7 +417,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
-		if (!strcmp(#anchor, #options))	anchor_line_num=lines.first+stroka;
+		if (!strcmp(#anchor, #options))	anchor_line_num=list.first+stroka;
 	}
 	
 	if (!chTag("body"))
@@ -458,7 +443,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			do{
 				if (!strcmp(#parametr, "href="))
 				{
-					if (stroka - 1 > lines.visible) || (stroka < -2) return;
+					if (stroka - 1 > list.visible) || (stroka < -2) return;
 					
 					text_color_index++;
 					text_colors[text_color_index] = text_colors[text_color_index-1];
@@ -473,7 +458,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				{
 					if (!strcmp(#anchor, #options))
 					{
-						anchor_line_num=lines.first+stroka;
+						anchor_line_num=list.first+stroka;
 					}
 				}
 			} while(GetNextParam());
@@ -578,7 +563,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		if (rez)
 		{
 			TextGoDown(left1, top1, width1);
-			if (stroka > -1) && (stroka - 2 < lines.visible) DrawBufBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
+			if (stroka > -1) && (stroka - 2 < list.visible) DrawBufBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
 		}
 		return;
 	}
@@ -629,9 +614,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
 {
-	scroll1.max_area = lines.all;
-	scroll1.cur_area = lines.visible;
-	scroll1.position = lines.first;
+	scroll1.max_area = list.count;
+	scroll1.cur_area = list.visible;
+	scroll1.position = list.first;
 
 	scroll1.all_redraw=1;
 	scroll1.start_x = WB1.list.x + WB1.list.w;

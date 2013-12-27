@@ -42,6 +42,8 @@ void Images(int left1, top1, width1)
 			
 			if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
 			{
+				debug("image options:");
+				debug(#options);
 				//get path: absolute or relative
 				if (options[0]=='/')
 					strcpy(#img_path, #options);
@@ -50,6 +52,8 @@ void Images(int left1, top1, width1)
 					img_path[strrchr(#img_path, '/')] = '\0';
 					strcat(#img_path, #options);
 				}		
+				debug("image img_path:");
+				debug(#img_path);
 				cur_pic=GetOrSetPicNum(#img_path);
 				if (!pics[cur_pic].path)
 				{
