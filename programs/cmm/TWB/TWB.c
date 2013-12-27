@@ -11,9 +11,11 @@ dword
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
 
+struct lines{
+	int visible, all, first, column_max;
+};
 
 struct TWebBrowser {
-	int left, top, width, height, line_h;
 	llist list;
 	void GetNewUrl();
 	void OpenPage();
@@ -73,13 +75,13 @@ void TWebBrowser::DrawPage()
 	
 	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
 	{
-		start_x = stolbec * 6 + left + magrin_left;
-		start_y = stroka * 10 + top + magrin_left;
+		start_x = stolbec * 6 + list.x + magrin_left;
+		start_y = stroka * 10 + list.y + magrin_left;
 		line_length = strlen(#line) * 6;
 
 		WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
 		IF (b_text)	WriteBufText(start_x+1, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
-		IF (i_text) DrawBufSkew(start_x, 0, line_length, line_h);
+		IF (i_text) DrawBufSkew(start_x, 0, line_length, list.line_h);
 		IF (s_text) DrawBufBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
 		IF (u_text) DrawBufBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
 		IF (link) {
@@ -202,12 +204,12 @@ void TWebBrowser::ShowPage()
 
 	if (!filesize)
 	{
-		DrawBar(left, top, width+scroll1.size_x+1, height, 0xFFFFFF); //fill all
-		if (GetProcessSlot(downloader_id)<>0) WriteText(left + 10, top + 18, 0x80, 0, "Loading...");
+		DrawBar(list.x, list.y, list.w+scroll1.size_x+1, list.h, 0xFFFFFF); //fill all
+		if (GetProcessSlot(downloader_id)<>0) WriteText(list.x + 10, list.y + 18, 0x80, 0, "Loading...");
 		else
 		{
-			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
-			if (!strcmp(get_URL_part(5),"http:"))) WriteText(left + 10, top + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
+			WriteText(list.x + 10, list.y + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
+			if (!strcmp(get_URL_part(5),"http:"))) WriteText(list.x + 10, list.y + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
 		}
 		//return;
 	}
@@ -342,12 +344,12 @@ void TWebBrowser::ParseHTML(dword bword){
 				if (stroka-1 > lines.visible) && (lines.first <>0) break 1; //уходим...
 				DrawPage();
 				strcpy(#line, #temp);				
-				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
+				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
 			}
 			DrawPage();
 			line=NULL;
 
-			if (tag) WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
+			if (tag) WhatTextStyle(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //обработка тегов
 
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
@@ -371,18 +373,18 @@ void TWebBrowser::ParseHTML(dword bword){
 				if (stroka-1 > lines.visible) && (lines.first <>0) break 1; //уходим...
 				DrawPage();
 				strcpy(#line, #temp);			
-				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
+				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
 			}
 		}
 	}
 
 	DrawPage(); //рисует последнюю строку, потом это надо убрать, оптимизировав код
-	TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
+	TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
 
-	if (lines.visible * 10 + 25 <= height)
-		DrawBar(left, lines.visible * 10 + top + 25, width, -lines.visible * 10 + height - 25, bg_color);
-	if (stroka * 10 + 5 <= height)
-		DrawBar(left, stroka * 10 + top + 5, width, -stroka * 10 + height - 5, bg_color); //закрашиваем всё до конца
+	if (lines.visible * 10 + 25 <= list.h)
+		DrawBar(list.x, lines.visible * 10 + list.y + 25, list.w, -lines.visible * 10 + list.h - 25, bg_color);
+	if (stroka * 10 + 5 <= list.h)
+		DrawBar(list.x, stroka * 10 + list.y + 5, list.w, -stroka * 10 + list.h - 5, bg_color); //закрашиваем всё до конца
 	if (lines.first == 0) lines.all = stroka;
 	if (anchor) //если посреди текста появится новый якорь - будет бесконечный цикл
 	{
@@ -576,7 +578,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		if (rez)
 		{
 			TextGoDown(left1, top1, width1);
-			if (stroka > -1) && (stroka - 2 < lines.visible) DrawBufBar(li_tab * 5 * 6 + left1 - 5, line_h/2-3, 2, 2, 0x555555);
+			if (stroka > -1) && (stroka - 2 < lines.visible) DrawBufBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
 		}
 		return;
 	}
@@ -600,8 +602,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		if (strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options); else hr_color = 0x999999;
 		TextGoDown(left1, top1, width1);
-		DrawBufBar(5, WB1.line_h/2, WB1.width-10, 1, hr_color);
-		TextGoDown(left1, top1+WB1.line_h, width1);
+		DrawBufBar(5, WB1.list.line_h/2, WB1.list.w-10, 1, hr_color);
+		TextGoDown(left1, top1+WB1.list.line_h, width1);
 	}
 	if (!chTag("img"))
 	{
@@ -632,8 +634,8 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 	scroll1.position = lines.first;
 
 	scroll1.all_redraw=1;
-	scroll1.start_x = WB1.left + WB1.width;
-	scroll1.size_y=WB1.height;
+	scroll1.start_x = WB1.list.x + WB1.list.w;
+	scroll1.size_y=WB1.list.h;
 
 	scrollbar_v_draw(#scroll1);
 }

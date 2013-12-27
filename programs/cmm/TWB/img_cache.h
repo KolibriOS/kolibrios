@@ -42,9 +42,14 @@ void Images(int left1, top1, width1)
 			
 			if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
 			{
-				img_path[strrchr(#img_path, '/')] = '\0'; //обрезаем её урл до последнего /
-				strcat(#img_path, #options);
-				
+				//get path: absolute or relative
+				if (options[0]=='/')
+					strcpy(#img_path, #options);
+				else
+				{
+					img_path[strrchr(#img_path, '/')] = '\0';
+					strcat(#img_path, #options);
+				}		
 				cur_pic=GetOrSetPicNum(#img_path);
 				if (!pics[cur_pic].path)
 				{
@@ -53,7 +58,7 @@ void Images(int left1, top1, width1)
 				}
 			}
 		}
-			if (!strcmp(#parametr,"alt="))
+		if (!strcmp(#parametr,"alt="))
 		{
 			strcpy(#alt, "[");
 			strcat(#alt, #options);
@@ -72,23 +77,23 @@ void Images(int left1, top1, width1)
 	h = DSWORD[pics[cur_pic].image+8];
 	if (w > width1) w = width1;
 	
-	if (stroka==0) DrawBar(WB1.left, WB1.top, WB1.width-15, 5, bg_color); //закрашиваем первую строку
+	if (stroka==0) DrawBar(WB1.list.x, WB1.list.y, WB1.list.w-15, 5, bg_color); //закрашиваем первую строку
 	stroka+=h/10;
-	if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
-	if (top1<WB1.top) //если часть изображения сверху
+	if (top1+h<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
+	if (top1<WB1.list.y) //если часть изображения сверху
 	{
-		img_lines_first=WB1.top-top1;
+		img_lines_first=WB1.list.y-top1;
 		h=h-img_lines_first;
-		top1=WB1.top;
+		top1=WB1.list.y;
 	}
-	if (top1>WB1.top+WB1.height-h-5) //если часть изображения снизу
+	if (top1>WB1.list.y+WB1.list.h-h-5) //если часть изображения снизу
 	{
-		h=WB1.top+WB1.height-top1-5;
+		h=WB1.list.y+WB1.list.h-top1-5;
 	}	
 	if (h<=0) return;
 	if (anchor) return;
 	
 	img_draw stdcall (pics[cur_pic].image, left1-5, top1, w, h,0,img_lines_first);
-	DrawBar(left1+w - 5, top1, WB1.width-w, h, bg_color);
+	DrawBar(left1+w - 5, top1, WB1.list.w-w, h, bg_color);
 	IF (link) UnsafeDefineButton(left1 - 5, top1, w, h-1, blink + BT_HIDE, 0xB5BFC9);
 }

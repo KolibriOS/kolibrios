@@ -40,9 +40,6 @@ char editURL[sizeof(URL)],
 	page_links[12000],
 	header[2048];
 
-struct lines{
-	int visible, all, first, column_max;
-};
 
 int	mouse_dd;
 edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(editURL),#editURL,#mouse_dd,2,19,19};
@@ -90,13 +87,15 @@ void main()
 		switch(EAX & 0xFF)
 		{
 			CASE evMouse:
-				/*scrollbar_v_mouse (#scroll1);      //конченый скролл притормажимает, идём "своим путём"
+				/*
+				//not work well, so we are use custom way of processing scroll
+				scrollbar_v_mouse (#scroll1);
 				if (lines.first <> scroll1.position)
 				{
 					lines.first = scroll1.position;
 					WB1.ParseHTML(buf, filesize);
-					//break;
-				};*/
+				};
+				*/
 				
 				if (!CheckActiveProcess(Form.ID)) break;
 
@@ -104,7 +103,7 @@ void main()
 
 				m.get();
 				
-				if (m.y>WB1.top) && (m.y<Form.height) && (filesize)
+				if (m.y>WB1.list.y) && (m.y<Form.height) && (filesize)
 				{
 					if (m.pkm)
 					{
@@ -147,10 +146,10 @@ void main()
 				
 				if (scroll_used)
 				{
-					half_scroll_size = WB1.height - 16 * lines.visible / lines.all - 3 /2;
-					if (half_scroll_size+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.top; //если курсор над окном
+					half_scroll_size = WB1.list.h - 16 * lines.visible / lines.all - 3 /2;
+					if (half_scroll_size+WB1.list.y>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.list.y; //если курсор над окном
 					btn=lines.first; //сохраняем старое количество
-					lines.first = m.y -half_scroll_size -WB1.top * lines.all / WB1.height;
+					lines.first = m.y -half_scroll_size -WB1.list.y * lines.all / WB1.list.h;
 					if (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
 					if (btn<>lines.first) WB1.ParseHTML(buf); //чтоб лишний раз не перерисовывать
 				}
@@ -199,12 +198,9 @@ void main()
 void SetElementSizes()
 {
 	address_box.width = Form.width-266;
-	WB1.top = 44;
-	WB1.width = Form.width - 10 - scroll1.size_x;
-	WB1.height = Form.height - WB1.top - GetSkinHeight() - 4;
-	WB1.line_h = 10;
-	lines.column_max = WB1.width - 30 / 6;
-	lines.visible = WB1.height - 3 / WB1.line_h - 2;
+	WB1.list.SetSizes(0, 44, Form.width - 10 - scroll1.size_x, Form.cheight - 44, 0, 10);
+	lines.column_max = WB1.list.w - 30 / 6;
+	lines.visible = WB1.list.h - 3 / WB1.list.line_h - 2;
 	DrawBufInit();
 }
 
