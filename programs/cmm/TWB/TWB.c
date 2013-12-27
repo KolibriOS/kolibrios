@@ -6,14 +6,24 @@ dword
 	filesize,
 	blink;
 
+#define URL param
+
+int	mouse_twb;
+edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
+scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+
+char editURL[sizeof(URL)],
+	page_links[12000],
+	header[2048];
+
+
+
 char download_path[]="/rd/1/.download";
-char search_path[]="http://nigma.ru/index.php?s=";
 
 
 struct TWebBrowser {
 	llist list; //need #include "..\lib\list_box.h"
 	void GetNewUrl();
-	void OpenPage();
 	void ReadHtml(byte);
 	void ShowPage();
 	void ParseHTML(dword);
@@ -45,6 +55,7 @@ char line[500],
 	options[4096],
 	anchor[256];
 
+#include "..\TWB\history.h"
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
@@ -157,30 +168,6 @@ void TWebBrowser::ReadHtml(byte encoding)
 }
 
 
-void TWebBrowser::OpenPage()
-{
-	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	KillProcess(downloader_id);
-	strcpy(#editURL, #URL);
-	BrowserHistory.AddUrl();
-	strcpy(#header, #version);
-	pre_text =0;
-	if (!strcmp(get_URL_part(5),"http:")))
-	{
-		KillProcess(downloader_id);
-		DeleteFile(#download_path);
-		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
-		downloader_id = RunProgram("/sys/network/downloader", #URL);
-		IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
-		Draw_Window();
-		return;
-	}
-	list.first = list.count =0;
-	ReadHtml(_WIN);
-	WB1.ShowPage();
-}
-
-
 void TWebBrowser::ShowPage()
 {
 	address_box.size = address_box.pos = strlen(#editURL);
@@ -189,7 +176,7 @@ void TWebBrowser::ShowPage()
 
 	if (!filesize)
 	{
-		DrawBar(list.x, list.y, list.w+scroll1.size_x+1, list.h, 0xFFFFFF); //fill all
+		DrawBar(list.x, list.y, list.w+scroll_wv.size_x+1, list.h, 0xFFFFFF); //fill all
 		if (GetProcessSlot(downloader_id)<>0) WriteText(list.x + 10, list.y + 18, 0x80, 0, "Loading...");
 		else
 		{
@@ -614,14 +601,14 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
 {
-	scroll1.max_area = list.count;
-	scroll1.cur_area = list.visible;
-	scroll1.position = list.first;
+	scroll_wv.max_area = list.count;
+	scroll_wv.cur_area = list.visible;
+	scroll_wv.position = list.first;
 
-	scroll1.all_redraw=1;
-	scroll1.start_x = WB1.list.x + WB1.list.w;
-	scroll1.size_y=WB1.list.h;
+	scroll_wv.all_redraw=1;
+	scroll_wv.start_x = WB1.list.x + WB1.list.w;
+	scroll_wv.size_y=WB1.list.h;
 
-	scrollbar_v_draw(#scroll1);
+	scrollbar_v_draw(#scroll_wv);
 }
 

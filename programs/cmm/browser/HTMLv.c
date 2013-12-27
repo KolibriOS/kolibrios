@@ -26,38 +26,25 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" ’ҐЄбв®ўл© Ўа г§Ґа 0.99.3";
-	?define IMAGES_CACHE_CLEARED "Љни Є авЁ­®Є ®зЁйҐ­"
+	char version[]=" ����⮢� ��㧥� 0.99.31";
+	?define IMAGES_CACHE_CLEARED "��� ���⨭�� ��饭"
 #else
-	char version[]=" Text-based Browser 0.99.3";
+	char version[]=" Text-based Browser 0.99.31";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 #endif
-
-
-#define URL param
-char fontlol[64];
-
-char editURL[sizeof(URL)],
-	page_links[12000],
-	header[2048];
-
-
-int	mouse_dd;
-edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(editURL),#editURL,#mouse_dd,2,19,19};
-scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-
 
 proc_info Form;
 #define WIN_W 640
 #define WIN_H 480
 
+char search_path[]="http://nigma.ru/index.php?s=";
 
 char stak[4096];
 mouse m;
-
 int action_buf;
 
-#include "history.h"
+
+
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
 
@@ -79,7 +66,7 @@ void main()
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
-	WB1.OpenPage();
+	OpenPage();
 
 	SetEventMask(0x27);
 	loop()
@@ -90,10 +77,10 @@ void main()
 			CASE evMouse:
 				/*
 				//not work well, so we are use custom way of processing scroll
-				scrollbar_v_mouse (#scroll1);
-				if (WB1.list.first <> scroll1.position)
+				scrollbar_v_mouse (#scroll_wv);
+				if (WB1.list.first <> scroll_wv.position)
 				{
-					WB1.list.first = scroll1.position;
+					WB1.list.first = scroll_wv.position;
 					WB1.ParseHTML(buf, filesize);
 				};
 				*/
@@ -125,8 +112,8 @@ void main()
 				}
 				
 				if (!m.lkm) scroll_used=0;
-				if (m.x>=scroll1.start_x) && (m.x<=scroll1.start_x+scroll1.size_x) 
-				&& (m.y>=scroll1.start_y+scroll1.btn_height) && (-scroll1.btn_height+scroll1.start_y+scroll1.size_y>m.y)
+				if (m.x>=scroll_wv.start_x) && (m.x<=scroll_wv.start_x+scroll_wv.size_x) 
+				&& (m.y>=scroll_wv.start_y+scroll_wv.btn_height) && (-scroll_wv.btn_height+scroll_wv.start_y+scroll_wv.size_y>m.y)
 				&& (WB1.list.count>WB1.list.visible) && (m.lkm)
 				{
 					scroll_used=1;
@@ -135,11 +122,11 @@ void main()
 				if (scroll_used)
 				{
 					half_scroll_size = WB1.list.h - 16 * WB1.list.visible / WB1.list.count - 3 /2;
-					if (half_scroll_size+WB1.list.y>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.list.y; //åñëè êóðñîð íàä îêíîì
-					btn=WB1.list.first; //ñîõðàíÿåì ñòàðîå êîëè÷åñòâî
+					if (half_scroll_size+WB1.list.y>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.list.y;
+					btn=WB1.list.first;
 					WB1.list.first = m.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn<>WB1.list.first) WB1.ParseHTML(buf); //÷òîá ëèøíèé ðàç íå ïåðåðèñîâûâàòü
+					if (btn<>WB1.list.first) WB1.ParseHTML(buf);
 				}
 
 				break;
@@ -158,13 +145,13 @@ void main()
 			case evKey:
 				key = GetKey();
 				
-				if (address_box.flags & 0b10) SWITCH(key) //åñëè àêòèâíà ñòðîêà àäðåñà èãíîðèðóåì íåêîòîðûå êíîïêè
+				if (address_box.flags & 0b10) SWITCH(key)
 					{ CASE 52: CASE 53: CASE 54: goto _EDIT_MARK; } 
 
 				Scan(key);
 				
 				_EDIT_MARK:
-				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);} //àäðåñíàÿ ñòðîêà
+				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
 				break;
 			case evReDraw:
 				if (action_buf) { Scan(action_buf); action_buf=0;}
@@ -185,8 +172,8 @@ void main()
 
 void SetElementSizes()
 {
-	address_box.width = Form.width-266;
-	WB1.list.SetSizes(0, 44, Form.width - 10 - scroll1.size_x, Form.cheight - 44, 0, 10);
+	address_box.width = Form.width - 266;
+	WB1.list.SetSizes(0, 44, Form.width - 10 - scroll_wv.size_x, Form.cheight - 44, 0, 10);
 	WB1.list.column_max = WB1.list.w - 30 / 6;
 	WB1.list.visible = WB1.list.h - 3 / WB1.list.line_h - 2;
 	DrawBufInit();
@@ -223,8 +210,8 @@ void Draw_Window()
 	SetElementSizes();
 	WB1.ShowPage();
 
-	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, BTN_UP+BT_HIDE, 0xE4DFE1);
-	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, BTN_DOWN+BT_HIDE, 0xE4DFE1);
+	DefineButton(scroll_wv.start_x+1, scroll_wv.start_y+1, 16, 16, BTN_UP+BT_HIDE, 0xE4DFE1);
+	DefineButton(scroll_wv.start_x+1, scroll_wv.start_y+scroll_wv.size_y-18, 16, 16, BTN_DOWN+BT_HIDE, 0xE4DFE1);
 }
 
 
@@ -251,16 +238,17 @@ void Scan(int id)
 
 		case 002: //free img cache
 			FreeImgCache();
+			notify(IMAGES_CACHE_CLEARED);
 			WB1.ParseHTML(buf);
 			return;
 
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
-			WB1.OpenPage();
+			OpenPage();
 			return;
 		case FORWARD:
 			if (!BrowserHistory.GoForward()) return;
-			WB1.OpenPage();
+			OpenPage();
 			return;
 		case 052:  //F3
 			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL);
@@ -280,7 +268,7 @@ void Scan(int id)
 			}
 			anchor_line_num=WB1.list.first;
 			anchor[0]='|';
-			WB1.OpenPage();
+			OpenPage();
 			return;
 		case 014:
 		case 020:
@@ -295,12 +283,12 @@ void Scan(int id)
 		case 0x0D: //enter
 			if ((strstr(#editURL,"ttp://")==0) && (editURL[0]!='/')) strcpy(#URL,"http://"); else URL[0] = 0;
 			strcat(#URL, #editURL);
-			WB1.OpenPage();
+			OpenPage();
 			return;
 		case SEARCHWEB:
 			strcpy(#URL, #search_path);
 			strcat(#URL, #editURL);
-			WB1.OpenPage();
+			OpenPage();
 			return;
 
 		case 183: //PgDown
@@ -320,15 +308,15 @@ void Scan(int id)
 			return;
 
 		case 178:
-		case BTN_UP: //мотаем вверх
-			IF(WB1.list.first <= 0) return;
+		case BTN_UP: //������ �����
+			if (WB1.list.first <= 0) return;
 			WB1.list.first--;
 			WB1.ParseHTML(buf);
 			return;
 
 		case 177: 
-		case BTN_DOWN: //мотаем вниз
-			IF(WB1.list.visible + WB1.list.first >= WB1.list.count) return;
+		case BTN_DOWN: //������ ����
+			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
 			WB1.list.first++;
 			WB1.ParseHTML(buf);
 			return;
@@ -365,7 +353,7 @@ void ProcessLinks(int id)
 	if (strrchr(#URL, '#')<>-1)
 	{
 		strcpy(#anchor, #URL+strrchr(#URL, '#'));
-		URL[strrchr(#URL, '#')-1] = 0x00; //çàãëóøêà
+		URL[strrchr(#URL, '#')-1] = 0x00;
 	}
 	
 	WB1.GetNewUrl();
@@ -386,11 +374,32 @@ void ProcessLinks(int id)
 		return;
 	}
 
-	WB1.OpenPage();
+	OpenPage();
 	return;
 }
 
-
+void OpenPage()
+{
+	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	KillProcess(downloader_id);
+	strcpy(#editURL, #URL);
+	BrowserHistory.AddUrl();
+	strcpy(#header, #version);
+	pre_text =0;
+	if (!strcmp(get_URL_part(5),"http:")))
+	{
+		KillProcess(downloader_id);
+		DeleteFile(#download_path);
+		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
+		downloader_id = RunProgram("/sys/network/downloader", #URL);
+		IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
+		Draw_Window();
+		return;
+	}
+	WB1.list.first = WB1.list.count =0;
+	WB1.ReadHtml(_WIN);
+	WB1.ShowPage();
+}
 
 
 
