@@ -1,10 +1,9 @@
 
 int	downloader_id;
 
-dword
-	buf,
-	filesize,
-	blink;
+dword buf;
+dword filesize;
+dword blink;
 
 #define URL param
 
@@ -12,9 +11,9 @@ int	mouse_twb;
 edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-char editURL[sizeof(URL)],
-	page_links[12000],
-	header[2048];
+char editURL[sizeof(URL)];
+char page_links[12000];
+char header[2048];
 
 
 
@@ -33,27 +32,28 @@ struct TWebBrowser {
 };	
 TWebBrowser WB1;
 
-byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text,
-	link, ignor_text, li_tab, cur_encoding, text_align;
+byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
+	link, ignor_text, cur_encoding, text_align;
+byte condition_text_active, condition_text_val, condition_href, condition_max;
 
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
-dword text_colors[300],
-	text_color_index,
-	link_color,
-	bg_color;
+dword text_colors[300];
+dword text_color_index;
+dword link_color;
+dword bg_color;
 
-int stroka,
-	stolbec,
-	tab_len,
-	anchor_line_num;
+int stroka;
+int stolbec;
+int tab_len;
+int anchor_line_num;
 	
-char line[500],
-	tag[100],
-	tagparam[10000],
-	parametr[1200],
-	options[4096],
-	anchor[256];
+char line[500];
+char tag[100];
+char tagparam[10000];
+char parametr[1200];
+char options[4096];
+char anchor[256];
 
 #include "..\TWB\history.h"
 #include "..\TWB\colors.h"
@@ -202,7 +202,9 @@ void TWebBrowser::ParseHTML(dword bword){
 	
 	if (blink<400) blink=400; else for ( ; blink>400; blink--;) DeleteButton(blink);
 	b_text = i_text = u_text = s_text = blq_text = 
-	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
+	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
+	condition_text_val = condition_text_active = 0; //обнуляем теги
+	condition_max = 10;
 	text_align = ALIGN_LEFT;
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
@@ -223,7 +225,8 @@ void TWebBrowser::ParseHTML(dword bword){
 	for ( ; buf+filesize > bword; bword++;)
 	{
 		bukva = ESBYTE[bword];
-		if (ignor_text) && (bukva<>'<') continue;
+		if (ignor_text) && (bukva!='<') continue;
+		if (condition_text_active) && (condition_text_val != condition_href) && (bukva!='<') continue;
 		switch (bukva)
 		{
 		case 0x0a:
@@ -263,8 +266,7 @@ void TWebBrowser::ParseHTML(dword bword){
 				bukva = ESBYTE[bword];
 				chrcat(#tag, bukva);
 			}
-			bukva = GetUnicodeSymbol();
-			if (bukva) goto DEFAULT_MARK;
+			if (bukva = GetUnicodeSymbol()) goto DEFAULT_MARK;
 			break;
 		case '<':
 			bword++; //промотаем символ <
@@ -304,6 +306,10 @@ void TWebBrowser::ParseHTML(dword bword){
 			strlwr(#tag);
 			strlwr(#tagparam);
 
+			if (condition_text_active) && (condition_text_val != condition_href) 
+			{
+				if (strcmp(#tag, "/condition")!=0) break;
+			}
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
 
@@ -410,6 +416,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (!chTag("body"))
 	{
 		do{
+			if (!strcmp(#parametr, "condition_max=")) { condition_max = options[0]-'0'; debugi(condition_max); }
 			if (!strcmp(#parametr, "link=")) link_color = GetColor(#options);
 			if (!strcmp(#parametr, "text=")) text_colors[0]=GetColor(#options);
 			if (!strcmp(#parametr, "bgcolor="))
@@ -542,6 +549,12 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		li_text = rez;
 		IF(rez == 0) return;
 		TextGoDown(left1, top1, width1);
+		return;
+	}
+	if (!chTag("condition"))
+	{
+		condition_text_active = rez;
+		if (rez) && (!strcmp(#parametr, "show_if=")) condition_text_val = atoi(#options);
 		return;
 	}
 	if(!chTag("li")) || (!chTag("dt")) //надо сделать вложенные списки

@@ -5,8 +5,9 @@ void ParseMail()
 	dword line_off, new_buf;
 	char tline[256];
 
-	if ( mailend-mailstart > 9) && (strncmp(mailend-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
+	if ( mailend-mailstart > 9) if (strncmp(mailend-5,"\n.\n",5)==0) // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a
 	{
+		aim = STOP;
 		mailend -= 5;
 		DSBYTE[mailend] = '\0';
 		if (strstr(mailstart, "+OK")!=mailstart) 
@@ -16,9 +17,7 @@ void ParseMail()
 			debug("GET_ANSWER_RETR != +OK, retry GET_ANSWER_RETR");
 			return;
 		}
-		aim=NULL;
 		mailsize = mailend - mailstart;
-
 		debug("Getting QP");
 		if (strstri(mailstart, "quoted-printable")!=0)
 		{
@@ -33,13 +32,15 @@ void ParseMail()
 				mailend = mailsize + mailstart;
 			}
 		}
+		debug("ProcessBase64");
+		ProcessBase64();
 		debug("GetHeaders: From, To, Date, Subject");
 		GetHeader(#from, "\nFrom:");
 		GetHeader(#to,   "\nTo:");
 		GetHeader(#date, "\nDate:");
 		GetHeader(#subj, "\nSubject:");
 		debug("Get mdata");
-		mdata = strstr(mailstart, "\x0a\x0d") + 3;		// 0x0d 0x0a, 0x0a
+		mdata = strstr(mailstart, "\x0a\x0d") + 3;
 		debug("ConvertToDOS");
 		ConvertToDOS(mdata, mailstart);
 		debug("FromHTMLtoTXT");
@@ -151,6 +152,7 @@ void GetHeader(dword workstr, searchstr)
 	int q_start, b_start;
 
 	strcpyb(mailstart, workstr, searchstr, "\n");
+	/*
 	debug(searchstr);
 	debug(workstr);
 	if (strlen(workstr)<8) return;
@@ -173,4 +175,48 @@ void GetHeader(dword workstr, searchstr)
 		strcpy(workstr, #tmpbuf);
 	}
 	if (strlen(workstr)+10*6-Form.cwidth>0) { workstr=Form.cwidth/6+workstr-12; DSBYTE[workstr]='\0';}
+	*/
 }
+
+
+
+void ProcessBase64()
+{
+	int b_start, b_end, b_size, b_buf;
+	int clean_mailstart;
+
+	b_start = strstr(mailstart, "?B?");
+	debug("b_size");
+	debugi(b_start);
+	if (b_start)
+	{
+		b_end = strstr(b_start, "?=");
+		debug("b_end");
+		debugi(b_end);
+		b_size = b_end - b_start;
+		debug("b_size");
+		debugi(b_size);
+		b_buf = malloc(b_size);
+		strcpyb(mailstart, b_buf, "?B?", "?=");
+		debug("b_buf");
+		debug(b_buf);
+
+		base64_decode stdcall (b_buf, b_buf, b_size-3);
+		ConvertToDOS(b_buf, mailstart);	
+		if (b_size<strlen(b_buf)) notify("base64 overflow");
+
+		clean_mailstart = malloc(strlen(mailstart));
+		strlcpy(clean_mailstart, mailstart, b_start-mailstart);
+		strcat(clean_mailstart, b_buf);
+		strcat(clean_mailstart, b_end+2);
+		free(b_buf);
+		free(mailstart);
+		mailsize = strlen(clean_mailstart);
+		mailstart = clean_mailstart;
+		mailend = mailstart + mailsize;
+		ProcessBase64();
+	}
+}
+
+
+//

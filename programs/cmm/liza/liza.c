@@ -84,6 +84,11 @@ llist letter_view;
 #include "parselist.c"
 
 
+
+/* TWB integration */
+char version[]=" WebView 0.1";
+#include "../TWB/TWB.c"
+
 void main()
 {
 	mem_Init();

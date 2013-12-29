@@ -26,11 +26,13 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.31";
+	char version[]=" Текстовый браузер 0.99.5";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
+	?define T_LAST_SLIDE "Это последний слайд"
 #else
-	char version[]=" Text-based Browser 0.99.31";
+	char version[]=" Text-based Browser 0.99.5";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
+	?define T_LAST_SLIDE "This slide is the last"
 #endif
 
 proc_info Form;
@@ -338,19 +340,30 @@ void ProcessLinks(int id)
 {
 	GetURLfromPageLinks(id);
 	
+	//$1 - Condition Script
+	if (URL[0] == '$')
+	{
+		if (URL[1]=='-') && (condition_href) condition_href--;
+		if (URL[1]=='+') 
+		{
+			if (condition_href<condition_max) condition_href++; else notify(T_LAST_SLIDE);
+		}
+		if (URL[1]!='-') && (URL[1]!='+') condition_href = atoi(#URL+1);
+		strcpy(#URL, BrowserHistory.CurrentUrl());
+		WB1.ShowPage();
+		return;
+	}
 	//#1
 	if (URL[0] == '#')
 	{
-		strcpy(#anchor, #URL+strrchr(#URL, '#'));
-		
+		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
 		strcpy(#URL, BrowserHistory.CurrentUrl());
-		
 		WB1.list.first=WB1.list.count-WB1.list.visible;
 		WB1.ShowPage();
 		return;
 	}
 	//liner.ru#1
-	if (strrchr(#URL, '#')<>-1)
+	if (strrchr(#URL, '#')!=-1)
 	{
 		strcpy(#anchor, #URL+strrchr(#URL, '#'));
 		URL[strrchr(#URL, '#')-1] = 0x00;
