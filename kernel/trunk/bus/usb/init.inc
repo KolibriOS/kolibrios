@@ -29,18 +29,19 @@
 ;   ProcessDeferred and sleeps until this moment is reached or the thread
 ;   is awakened by IRQ handler.
 
+iglobal
+uhci_service_name:
+        db      'UHCI',0
+ohci_service_name:
+        db      'OHCI',0
+ehci_service_name:
+        db      'EHCI',0
+endg
+
 ; Initializes the USB subsystem.
 proc usb_init
 ; 1. Initialize all locks.
         mov     ecx, usb_controllers_list_mutex
-        call    mutex_init
-        mov     ecx, usb1_ep_mutex
-        call    mutex_init
-        mov     ecx, usb_gtd_mutex
-        call    mutex_init
-        mov     ecx, ehci_ep_mutex
-        call    mutex_init
-        mov     ecx, ehci_gtd_mutex
         call    mutex_init
 ; 2. Kick off BIOS from all USB controllers, calling the corresponding function
 ; *hci_kickoff_bios. Also count USB controllers for the next step.
@@ -59,18 +60,33 @@ proc usb_init
         jz      .done_kickoff
         cmp     word [esi+PCIDEV.class+1], 0x0C03
         jnz     .kickoff
-        mov     eax, uhci_kickoff_bios
+        mov     ebx, uhci_service_name
         cmp     byte [esi+PCIDEV.class], 0x00
         jz      .do_kickoff
-        mov     eax, ohci_kickoff_bios
+        mov     ebx, ohci_service_name
         cmp     byte [esi+PCIDEV.class], 0x10
         jz      .do_kickoff
-        mov     eax, ehci_kickoff_bios
+        mov     ebx, ehci_service_name
         cmp     byte [esi+PCIDEV.class], 0x20
         jnz     .kickoff
 .do_kickoff:
         inc     dword [esp]
-        call    eax
+        push    ebx esi
+        stdcall get_service, ebx
+        pop     esi ebx
+        test    eax, eax
+        jz      .driver_fail
+        mov     edx, [eax+USBSRV.usb_func]
+        cmp     [edx+usb_hardware_func.Version], USBHC_VERSION
+        jnz     .driver_invalid
+        mov     [esi+PCIDEV.owner], eax
+        call    [edx+usb_hardware_func.BeforeInit]
+        jmp     .kickoff
+.driver_fail:
+        DEBUGF 1,'K : failed to load driver %s\n',ebx
+        jmp     .kickoff
+.driver_invalid:
+        DEBUGF 1,'K : driver %s has wrong version\n',ebx
         jmp     .kickoff
 .done_kickoff:
         pop     eax
@@ -97,7 +113,6 @@ proc usb_init
         jz      .done_ehci
         cmp     [eax+PCIDEV.class], 0x0C0320
         jnz     .scan_ehci
-        mov     edi, ehci_hardware_func
         call    usb_init_controller
         jmp     .scan_ehci
 .done_ehci:
@@ -108,10 +123,8 @@ proc usb_init
         mov     eax, [eax+PCIDEV.fd]
         cmp     eax, pcidev_list
         jz      .done_usb1
-        mov     edi, uhci_hardware_func
         cmp     [eax+PCIDEV.class], 0x0C0300
         jz      @f
-        mov     edi, ohci_hardware_func
         cmp     [eax+PCIDEV.class], 0x0C0310
         jnz     .scan_usb1
 @@:
@@ -238,11 +251,8 @@ usb_controllers_list_mutex      MUTEX
 endg
 
 include "memory.inc"
+include "common.inc"
 include "hccommon.inc"
 include "pipe.inc"
-include "ohci.inc"
-include "uhci.inc"
-include "ehci.inc"
 include "protocol.inc"
 include "hub.inc"
-include "scheduler.inc"

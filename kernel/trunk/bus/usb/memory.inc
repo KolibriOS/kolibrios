@@ -12,77 +12,6 @@
 
 ; Data for one pool: dd pointer to the first page, MUTEX lock.
 
-uglobal
-; Structures in UHCI and OHCI have equal sizes.
-; Thus, functions and data for allocating/freeing can be shared;
-; we keep them here rather than in controller-specific files.
-align 4
-; Data for UHCI and OHCI endpoints pool.
-usb1_ep_first_page      dd      ?
-usb1_ep_mutex           MUTEX
-; Data for UHCI and OHCI general transfer descriptors pool.
-usb_gtd_first_page      dd      ?
-usb_gtd_mutex           MUTEX
-endg
-
-; sanity check: structures in UHCI and OHCI should be the same for allocation
-if (sizeof.ohci_pipe = sizeof.uhci_pipe)
-
-; Allocates one endpoint structure for UHCI/OHCI.
-; Returns pointer to software part (usb_pipe) in eax.
-proc usb1_allocate_endpoint
-        push    ebx
-        mov     ebx, usb1_ep_mutex
-        stdcall usb_allocate_common, (sizeof.ohci_pipe + sizeof.usb_pipe + 0Fh) and not 0Fh
-        test    eax, eax
-        jz      @f
-        add     eax, sizeof.ohci_pipe
-@@:
-        pop     ebx
-        ret
-endp
-
-; Free one endpoint structure for UHCI/OHCI.
-; Stdcall with one argument, pointer to software part (usb_pipe).
-proc usb1_free_endpoint
-        sub     dword [esp+4], sizeof.ohci_pipe
-        jmp     usb_free_common
-endp
-
-else
-; sanity check continued
-.err allocate_endpoint/free_endpoint must be different for OHCI and UHCI
-end if
-
-; sanity check: structures in UHCI and OHCI should be the same for allocation
-if (sizeof.ohci_gtd = sizeof.uhci_gtd)
-
-; Allocates one general transfer descriptor structure for UHCI/OHCI.
-; Returns pointer to software part (usb_gtd) in eax.
-proc usb1_allocate_general_td
-        push    ebx
-        mov     ebx, usb_gtd_mutex
-        stdcall usb_allocate_common, (sizeof.ohci_gtd + sizeof.usb_gtd + 0Fh) and not 0Fh
-        test    eax, eax
-        jz      @f
-        add     eax, sizeof.ohci_gtd
-@@:
-        pop     ebx
-        ret
-endp
-
-; Free one general transfer descriptor structure for UHCI/OHCI.
-; Stdcall with one argument, pointer to software part (usb_gtd).
-proc usb1_free_general_td
-        sub     dword [esp+4], sizeof.ohci_gtd
-        jmp     usb_free_common
-endp
-
-else
-; sanity check continued
-.err allocate_general_td/free_general_td must be different for OHCI and UHCI
-end if
-
 ; Allocator for fixed-size blocks: allocate a block.
 ; [ebx-4] = pointer to the first page, ebx = pointer to MUTEX structure.
 proc usb_allocate_common
@@ -187,12 +116,12 @@ end virtual
         ret     4
 endp
 
-; Helper procedure for OHCI: translate physical address in ecx
+; Helper procedure: translate physical address in ecx
 ; of some transfer descriptor to linear address.
+; in: eax = address of first page
 proc usb_td_to_virt
 ; Traverse all pages used for transfer descriptors, looking for the one
 ; with physical address as in ecx.
-        mov     eax, [usb_gtd_first_page]
 @@:
         test    eax, eax
         jz      .zero

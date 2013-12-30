@@ -147,6 +147,9 @@ FASM_PROGRAMS:=\
  drivers/rtl8139.obj:DRIVERS/RTL8139.obj:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.obj:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
  drivers/sis900.obj:DRIVERS/SIS900.obj:$(REPOSITORY)/drivers/ethernet/sis900.asm \
+ drivers/uhci.sys:DRIVERS/UHCI.SYS:$(REPOSITORY)/drivers/usb/uhci.asm \
+ drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
+ drivers/ehci.sys:DRIVERS/EHCI.SYS:$(REPOSITORY)/drivers/usb/ehci.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \

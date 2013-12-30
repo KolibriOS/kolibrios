@@ -1262,3 +1262,14 @@ end virtual
 .nothing:
         retn    4
 endp
+
+; Helper function for USB2 scheduler.
+; in: eax -> usb_hub
+; out: ecx = TT think time for the hub in FS-bytes
+proc usb_get_tt_think_time
+        movzx   ecx, [eax+usb_hub.HubCharacteristics]
+        shr     ecx, 5
+        and     ecx, 3
+        inc     ecx
+        ret
+endp

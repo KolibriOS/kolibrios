@@ -85,13 +85,12 @@ L3:
         mov     ecx, eax
         add     edi, DWORD PTR [edx+260]
 
+        add     ecx, 3
         shr     ecx, 2
         rep movsd
 
 L4:
         mov     ecx, DWORD PTR [edx+256]
-        add     ecx, 4095
-        and     ecx, -4096
         cmp     ecx, eax
         jbe     L6
         sub     ecx, eax
@@ -178,6 +177,10 @@ L23:
         mov     ecx, DWORD PTR [eax-4]
         mov     DWORD PTR [esp+48], edi
         mov     edx, DWORD PTR [eax-20]
+        test    edx, edx
+        jnz     @f
+        mov     edx, ecx
+@@:
         mov     DWORD PTR [esp+52], 0
         add     ecx, ebp
         add     edx, ebp

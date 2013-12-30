@@ -1,7 +1,17 @@
 ; Code for EHCI controllers.
-; Note: it should be moved to an external driver,
-; it was convenient to have this code compiled into the kernel during initial
-; development, but there are no reasons to keep it here.
+
+; Standard driver stuff
+format PE DLL native
+entry start
+__DEBUG__ equ 1
+__DEBUG_LEVEL__ equ 1
+section '.reloc' data readable discardable fixups
+section '.text' code readable executable
+include '../proc32.inc'
+include '../struct.inc'
+include '../macros.inc'
+include '../fdo.inc'
+include '../../kernel/trunk/bus/usb/common.inc'
 
 ; =============================================================================
 ; ================================= Constants =================================
@@ -246,6 +256,11 @@ CapabilityParams        dd      ?
 DeferredActions         dd      ?
 ; Bitmask of events from EhciStatusReg which were observed by the IRQ handler
 ; and needs to be processed in the IRQ thread.
+PortRoutes              rb      16
+; Companion port route description.
+; Each byte describes routing of one port, value = PCI function.
+; This field must be the last one:
+; UHCI/OHCI code uses this field without knowing the entire structure.
 ends
 
 if ehci_controller.IntEDs mod 32
@@ -258,8 +273,10 @@ end if
 iglobal
 align 4
 ehci_hardware_func:
+        dd      USBHC_VERSION
         dd      'EHCI'
         dd      sizeof.ehci_controller
+        dd      ehci_kickoff_bios
         dd      ehci_init
         dd      ehci_process_deferred
         dd      ehci_set_device_address
@@ -276,11 +293,38 @@ ehci_hardware_func:
         dd      ehci_alloc_transfer
         dd      ehci_insert_transfer
         dd      ehci_new_device
+ehci_name db    'EHCI',0
 endg
 
 ; =============================================================================
 ; =================================== Code ====================================
 ; =============================================================================
+
+; Called once when driver is loading and once at shutdown.
+; When loading, must initialize itself, register itself in the system
+; and return eax = value obtained when registering.
+proc start
+virtual at esp
+                dd      ? ; return address
+.reason         dd      ? ; DRV_ENTRY or DRV_EXIT
+.cmdline        dd      ? ; normally NULL
+end virtual
+        cmp     [.reason], DRV_ENTRY
+        jnz     .nothing
+        mov     ecx, ehci_ep_mutex
+        invoke  MutexInit
+        mov     ecx, ehci_gtd_mutex
+        invoke  MutexInit
+        push    esi edi
+        mov     esi, [USBHCFunc]
+        mov     edi, usbhc_api
+        movi    ecx, sizeof.usbhc_func/4
+        rep movsd
+        pop     edi esi
+        invoke  RegUSBDriver, ehci_name, 0, ehci_hardware_func
+.nothing:
+        ret
+endp
 
 ; Controller-specific initialization function.
 ; Called from usb_init_controller. Initializes the hardware and
@@ -313,7 +357,7 @@ if (ehci_controller.IntEDs mod 0x1000) <> 0
 .err assertion failed
 end if
         add     eax, ehci_controller.IntEDs
-        call    get_phys_addr
+        call    [GetPhysAddr]
 ; 2b. Fill first 32 entries.
         inc     eax
         inc     eax     ; set Type to EHCI_TYPE_QH
@@ -372,24 +416,15 @@ end if
         call    ehci_init_static_endpoint
 ; 4. Create a virtual memory area to talk with the controller.
 ; 4a. Enable memory & bus master access.
-        mov     ch, [.bus]
-        mov     cl, 1
-        mov     eax, ecx
-        mov     bh, [.devfn]
-        mov     bl, 4
-        call    pci_read_reg
+        invoke  PciRead16, dword [.bus], dword [.devfn], 4
         or      al, 6
-        xchg    eax, ecx
-        call    pci_write_reg
+        invoke  PciWrite16, dword [.bus], dword [.devfn], 4, eax
 ; 4b. Read memory base address.
-        mov     ah, [.bus]
-        mov     al, 2
-        mov     bl, 10h
-        call    pci_read_reg
+        invoke  PciRead32, dword [.bus], dword [.devfn], 10h
 ;       DEBUGF 1,'K : phys MMIO %x\n',eax
         and     al, not 0Fh
 ; 4c. Create mapping for physical memory. 200h bytes are always sufficient.
-        stdcall map_io_mem, eax, 200h, PG_SW+PG_NOCACHE
+        invoke  MapIoMem, eax, 200h, PG_SW+PG_NOCACHE
         test    eax, eax
         jz      .fail
 ;       DEBUGF 1,'K : MMIO %x\n',eax
@@ -397,9 +432,71 @@ if ehci_controller.MMIOBase1 <> ehci_controller.BulkED + sizeof.ehci_static_ep
 .err assertion failed
 end if
         stosd   ; fill ehci_controller.MMIOBase1
+; 5. Read basic parameters of the controller.
+; 5a. Structural parameters.
+        mov     ebx, [eax+EhciStructParamsReg]
+; 5b. Port routing rules.
+; If bit 7 in HCSPARAMS is set, read and unpack EhciPortRouteReg.
+; Otherwise, bits 11:8 are N_PCC = number of ports per companion,
+; bits 15:12 are number of companions, maybe zero,
+; first N_PCC ports are routed to the first companion and so on.
+        xor     esi, esi
+        test    bl, bl
+        js      .read_routes
+        test    bh, 0x0F
+        jz      .no_companions
+        test    bh, 0xF0
+        jz      .no_companions
+        xor     edx, edx
+.fill_routes:
+        movzx   ecx, bh
+        and     ecx, 15
+@@:
+        mov     byte [edi+esi+ehci_controller.PortRoutes-(ehci_controller.MMIOBase1+4)], dl
+        inc     esi
+        cmp     esi, 16
+        jz      .routes_filled
+        dec     ecx
+        jnz     @b
+        movzx   ecx, bh
+        shr     ecx, 4
+        inc     edx
+        cmp     edx, ecx
+        jb      .fill_routes
+.no_companions:
+        mov     byte [edi+esi+ehci_controller.PortRoutes-(ehci_controller.MMIOBase1+4)], 0xFF
+        inc     esi
+        cmp     esi, 16
+        jnz     .no_companions
+        jmp     .routes_filled
+.read_routes:
+rept 2 counter
+{
+        mov     ecx, [eax+EhciPortRouteReg+(counter-1)*4]
+@@:
+        mov     edx, ecx
+        shr     ecx, 4
+        and     edx, 15
+        mov     byte [edi+esi+ehci_controller.PortRoutes-(ehci_controller.MMIOBase1+4)], dl
+        inc     esi
+        cmp     esi, 8*counter
+        jnz     @b
+}
+.routes_filled:
+;        DEBUGF 1,'K : EhciPortRouteReg: %x %x\n',[eax+EhciPortRouteReg],[eax+EhciPortRouteReg+4]
+;        DEBUGF 1,'K : routes:\nK : '
+;rept 8 counter
+;{
+;        DEBUGF 1,' %x',[edi+ehci_controller.PortRoutes-(ehci_controller.MMIOBase1+4)+counter-1]:2
+;}
+;        DEBUGF 1,'\nK : '
+;rept 8 counter
+;{
+;        DEBUGF 1,' %x',[edi+ehci_controller.PortRoutes+8-(ehci_controller.MMIOBase1+4)+counter-1]:2
+;}
+;        DEBUGF 1,'\n'
         movzx   ecx, byte [eax+EhciCapLengthReg]
         mov     edx, [eax+EhciCapParamsReg]
-        mov     ebx, [eax+EhciStructParamsReg]
         add     eax, ecx
 if ehci_controller.MMIOBase2 <> ehci_controller.MMIOBase1 + 4
 .err assertion failed
@@ -426,7 +523,7 @@ end if
         and     dword [edi+EhciCommandReg], not 1
 @@:
         movi    esi, 1
-        call    delay_ms
+        invoke  Sleep
         test    dword [edi+EhciStatusReg], 1 shl 12
         jnz     .stopped
         loop    @b
@@ -438,7 +535,7 @@ end if
         movi    ecx, 50
 @@:
         movi    esi, 1
-        call    delay_ms
+        invoke  Sleep
         test    dword [edi+EhciCommandReg], 2
         jz      .reset_ok
         loop    @b
@@ -455,25 +552,21 @@ end if
         mov     dword [edi+EhciCtrlDataSegReg], 0
 @@:
 ; 7b. Hook interrupt and enable appropriate interrupt sources.
-        mov     ah, [.bus]
-        mov     al, 0
-        mov     bh, [.devfn]
-        mov     bl, 3Ch
-        call    pci_read_reg
+        invoke  PciRead8, dword [.bus], dword [.devfn], 3Ch
 ; al = IRQ
-        DEBUGF 1,'K : attaching to IRQ %x\n',al
+;        DEBUGF 1,'K : attaching to IRQ %x\n',al
         movzx   eax, al
-        stdcall attach_int_handler, eax, ehci_irq, esi
+        invoke  AttachIntHandler, eax, ehci_irq, esi
 ;       mov     dword [edi+EhciStatusReg], 111111b      ; clear status
 ; disable Frame List Rollover interrupt, enable all other sources
         mov     dword [edi+EhciInterruptReg], 110111b
 ; 7c. Inform the controller of the address of periodic lists head.
         lea     eax, [esi-sizeof.ehci_controller]
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     dword [edi+EhciPeriodicListReg], eax
 ; 7d. Inform the controller of the address of asynchronous lists head.
         lea     eax, [esi+ehci_controller.ControlED-sizeof.ehci_controller]
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     dword [edi+EhciAsyncListReg], eax
 ; 7e. Configure operational details and run the controller.
         mov     dword [edi+EhciCommandReg], \
@@ -498,7 +591,7 @@ end if
         jz      @f
         push    esi
         movi    esi, 20
-        call    delay_ms
+        invoke  Sleep
         pop     esi
 @@:
 ; 9. Return pointer to usb_controller.
@@ -510,7 +603,7 @@ end if
 .fail_unmap:
         pop     eax
         push    eax
-        stdcall free_kernel_space, [eax+ehci_controller.MMIOBase1]
+        invoke  FreeKernelSpace, [eax+ehci_controller.MMIOBase1]
 .fail:
         pop     ecx
         xor     eax, eax
@@ -529,7 +622,7 @@ proc ehci_init_static_endpoint
         test    esi, esi
         jz      @f
         mov     eax, esi
-        call    get_phys_addr
+        invoke  GetPhysAddr
         inc     eax
         inc     eax     ; set Type to EHCI_TYPE_QH
 @@:
@@ -537,7 +630,8 @@ proc ehci_init_static_endpoint
         mov     [edi+ehci_static_ep.NextList], esi
         mov     byte [edi+ehci_static_ep.OverlayToken], 1 shl 6 ; halted
         add     edi, ehci_static_ep.SoftwarePart
-        call    usb_init_static_endpoint
+        mov     eax, [USBHCFunc]
+        call    [eax+usbhc_func.usb_init_static_endpoint]
         add     edi, sizeof.ehci_static_ep - ehci_static_ep.SoftwarePart
         ret
 endp
@@ -565,14 +659,10 @@ endp
 ; deal with USB devices.
 proc ehci_kickoff_bios
 ; 1. Get the physical address of MMIO registers.
-        mov     ah, [esi+PCIDEV.bus]
-        mov     bh, [esi+PCIDEV.devfn]
-        mov     al, 2
-        mov     bl, 10h
-        call    pci_read_reg
+        invoke  PciRead32, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], 10h
         and     al, not 0Fh
 ; 2. Create mapping for physical memory. 200h bytes are always sufficient.
-        stdcall map_io_mem, eax, 200h, PG_SW+PG_NOCACHE
+        invoke  MapIoMem, eax, 200h, PG_SW+PG_NOCACHE
         test    eax, eax
         jz      .nothing
         push    eax     ; push argument for step 8
@@ -604,10 +694,7 @@ proc ehci_kickoff_bios
         test    bl, 3
         jnz     .no_capability
 ; In each iteration, read the current dword,
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 2
-        mov     bh, [esi+PCIDEV.devfn]
-        call    pci_read_reg
+        invoke  PciRead32, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx
 ; check, whether the capability ID is take-ownership ID = 1,
         cmp     al, 1
         jz      .found_bios_handoff
@@ -632,16 +719,11 @@ proc ehci_kickoff_bios
         jz      .has_ownership
 ; 4c. Request ownership.
         inc     ebx
-        mov     cl, 1
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 0
-        call    pci_write_reg
+        invoke  PciWrite8, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx, 1
 ; 4d. Some BIOSes set ownership flag, but forget to watch for change-ownership
 ; requests; if so, there is no sense in waiting.
         inc     ebx
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 2
-        call    pci_read_reg
+        invoke  PciRead32, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx
         dec     ebx
         dec     ebx
         test    ah, 20h
@@ -650,14 +732,12 @@ proc ehci_kickoff_bios
 ; If successful, go to 5.
         mov     dword [esp], 1000
 @@:
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 0
-        call    pci_read_reg
+        invoke  PciRead8, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx
         test    al, 1
         jz      .has_ownership
         push    esi
         movi    esi, 1
-        call    delay_ms
+        invoke  Sleep
         pop     esi
         dec     dword [esp]
         jnz     @b
@@ -665,22 +745,15 @@ proc ehci_kickoff_bios
 .force_ownership:
 ; 4f. BIOS has not responded within the timeout.
 ; Let's just clear BIOS ownership flag and hope that everything will be ok.
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 0
-        mov     cl, 0
-        call    pci_write_reg
+        invoke  PciWrite8, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx, 0
 .has_ownership:
 ; 5. Just in case clear all SMI event sources except change-ownership.
         dbgstr 'has_ownership'
         inc     ebx
         inc     ebx
-        mov     ah, [esi+PCIDEV.bus]
-        mov     al, 2
-        mov     ecx, eax
-        call    pci_read_reg
+        invoke  PciRead16, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx
         and     ax, 2000h
-        xchg    eax, ecx
-        call    pci_write_reg
+        invoke  PciWrite16, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], ebx, eax
 .has_ownership2:
         pop     ecx
 ; 6. Disable all controller interrupts until the system will be ready to
@@ -689,7 +762,7 @@ proc ehci_kickoff_bios
 ; 7. Now we can unblock interrupts in the processor.
         popf
 ; 8. Release memory mapping created in step 2 and return.
-        call    free_kernel_space
+        invoke  FreeKernelSpace
 .nothing:
         ret
 endp
@@ -717,7 +790,6 @@ end virtual
         mov     edi, [esi+ehci_controller.MMIOBase2-sizeof.ehci_controller]
         spin_lock_irqsave [esi+usb_controller.WaitSpinlock]
         mov     eax, [edi+EhciStatusReg]
-;       DEBUGF 1,'K : [%d] EHCI status %x\n',[timer_ticks],eax
 ; 3. Check whether that interrupt has been generated by our controller.
 ; (One IRQ can be shared by several devices.)
         and     eax, [edi+EhciInterruptReg]
@@ -739,7 +811,7 @@ end virtual
         or      [esi+ehci_controller.DeferredActions-sizeof.ehci_controller], eax
         spin_unlock_irqrestore [esi+usb_controller.WaitSpinlock]
         inc     ebx
-        call    usb_wakeup_if_needed
+        invoke  usbhc_api.usb_wakeup_if_needed
 ; 6. Interrupt processed; return non-zero.
         mov     al, 1
         pop     edi esi ebx     ; restore used registers to be cdecl
@@ -751,8 +823,7 @@ endp
 ; in: esi -> usb_controller, ebx -> usb_pipe, cl = address
 proc ehci_set_device_address
         mov     byte [ebx+ehci_pipe.Token-sizeof.ehci_pipe], cl
-        call    usb_subscribe_control
-        ret
+        jmp     [usbhc_api.usb_subscribe_control]
 endp
 
 ; This procedure returns USB device address from the ehci_pipe structure.
@@ -785,8 +856,7 @@ proc ehci_set_endpoint_packet_size
         or      eax, ecx
         mov     [ebx+ehci_pipe.Token-sizeof.ehci_pipe], eax
 ; Wait until hardware cache is evicted.
-        call    usb_subscribe_control
-        ret
+        jmp     [usbhc_api.usb_subscribe_control]
 endp
 
 uglobal
@@ -804,7 +874,7 @@ endg
 proc ehci_alloc_pipe
         push    ebx
         mov     ebx, ehci_ep_mutex
-        stdcall usb_allocate_common, (sizeof.ehci_pipe + sizeof.usb_pipe + 1Fh) and not 1Fh
+        invoke  usbhc_api.usb_allocate_common, (sizeof.ehci_pipe + sizeof.usb_pipe + 1Fh) and not 1Fh
         test    eax, eax
         jz      @f
         add     eax, sizeof.ehci_pipe
@@ -821,7 +891,7 @@ virtual at esp
 .ptr    dd      ?
 end virtual
         sub     [.ptr], sizeof.ehci_pipe
-        jmp     usb_free_common
+        jmp     [usbhc_api.usb_free_common]
 endp
 
 ; This procedure is called from API usb_open_pipe and processes
@@ -853,7 +923,7 @@ end virtual
         mov     [eax+ehci_gtd.AlternateNextTD-sizeof.ehci_gtd], 1
 ; 3. Store physical address of the first TD.
         sub     eax, sizeof.ehci_gtd
-        call    get_phys_addr
+        call    [GetPhysAddr]
         mov     [edi+ehci_pipe.Overlay.NextTD-sizeof.ehci_pipe], eax
 ; 4. Fill ehci_pipe.Flags except for S- and C-masks.
 ; Copy location from the config pipe.
@@ -945,7 +1015,7 @@ end virtual
         mov     ecx, [edx+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart]
         mov     [edi+ehci_pipe.NextQH-sizeof.ehci_pipe], ecx
         lea     eax, [edi-sizeof.ehci_pipe]
-        call    get_phys_addr
+        call    [GetPhysAddr]
         inc     eax
         inc     eax
         mov     [edx+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart], eax
@@ -963,7 +1033,7 @@ endp
 proc ehci_new_port
 ; 1. If the device operates at low-speed, just release it to a companion.
         mov     eax, [edi+EhciPortsReg+ecx*4]
-        DEBUGF 1,'K : [%d] EHCI %x port %d state is %x\n',[timer_ticks],esi,ecx,eax
+        DEBUGF 1,'K : EHCI %x port %d state is %x\n',esi,ecx,eax
         mov     edx, eax
         and     ah, 0Ch
         cmp     ah, 4
@@ -996,17 +1066,17 @@ proc ehci_new_port
         and     al, not (4 or 2Ah)
         mov     [edi+EhciPortsReg+ecx*4], eax
 ; 3. Store the current time and set status to 1 = reset signalling active.
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         mov     [esi+usb_controller.ResetTime], eax
         mov     [esi+usb_controller.ResettingStatus], 1
 ;       dbgstr 'high-speed or full-speed device, resetting'
-        DEBUGF 1,'K : [%d] EHCI %x: port %d has HS or FS device, resetting\n',[timer_ticks],esi,ecx
+        DEBUGF 1,'K : EHCI %x: port %d has HS or FS device, resetting\n',esi,ecx
         pop     edi
 .nothing:
         ret
 .low_speed:
 ;       dbgstr 'low-speed device, releasing'
-        DEBUGF 1,'K : [%d] EHCI %x: port %d has LS device, releasing\n',[timer_ticks],esi,ecx
+        DEBUGF 1,'K : EHCI %x: port %d has LS device, releasing\n',esi,ecx
         or      dh, 20h
         and     dl, not 2Ah
         mov     [edi+EhciPortsReg+ecx*4], edx
@@ -1051,7 +1121,8 @@ endl
 ; allocate full descriptors (of maximal possible size).
 ; 2a. Calculate size of one descriptor: must be a multiple of transfer size
 ; and must be not greater than 4001h.
-        movzx   ecx, word [ebx+ohci_pipe.Flags+2-sizeof.ohci_pipe]
+        movzx   ecx, word [ebx+ehci_pipe.Token+2-sizeof.ehci_pipe]
+        and     ecx, (1 shl 11) - 1
         mov     eax, 4001h
         xor     edx, edx
         mov     edi, eax
@@ -1092,7 +1163,7 @@ endl
         mov     eax, [ebx+usb_pipe.Controller]
         add     eax, ehci_controller.StopQueueTD - sizeof.ehci_controller
 @@:
-        call    get_phys_addr
+        call    [GetPhysAddr]
         mov     edx, [origTD]
 @@:
         cmp     edx, [esp]
@@ -1106,7 +1177,7 @@ endl
 .fail:
         mov     edi, ehci_hardware_func
         mov     eax, [td]
-        stdcall usb_undo_tds, [origTD]
+        invoke  usbhc_api.usb_undo_tds, [origTD]
         xor     eax, eax
         ret
 endp
@@ -1134,7 +1205,7 @@ end virtual
         jz      .nothing
 ; 2. Initialize controller-independent parts of both TDs.
         push    eax
-        call    usb_init_transfer
+        invoke  usbhc_api.usb_init_transfer
         pop     eax
 ; 3. Copy PID to the new descriptor.
         mov     edx, [ecx+ehci_gtd.Token-sizeof.ehci_gtd]
@@ -1145,7 +1216,7 @@ end virtual
         push    eax
 ; 5. Store the physical address of the next descriptor.
         sub     eax, sizeof.ehci_gtd
-        call    get_phys_addr
+        call    [GetPhysAddr]
         mov     [ecx+ehci_gtd.NextTD-sizeof.ehci_gtd], eax
 ; 6. For zero-length transfers, store zero in all fields for buffer addresses.
 ; Otherwise, fill them with real values.
@@ -1157,7 +1228,7 @@ end repeat
         cmp     [.packetSize], eax
         jz      @f
         mov     eax, [.buffer]
-        call    get_phys_addr
+        call    [GetPhysAddr]
         mov     [ecx+ehci_gtd.BufferPointers-sizeof.ehci_gtd], eax
         and     eax, 0xFFF
         mov     edx, [.packetSize]
@@ -1166,25 +1237,25 @@ end repeat
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x1000
-        call    get_pg_addr
+        call    [GetPgAddr]
         mov     [ecx+ehci_gtd.BufferPointers+4-sizeof.ehci_gtd], eax
         sub     edx, 0x1000
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x2000
-        call    get_pg_addr
+        call    [GetPgAddr]
         mov     [ecx+ehci_gtd.BufferPointers+8-sizeof.ehci_gtd], eax
         sub     edx, 0x1000
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x3000
-        call    get_pg_addr
+        call    [GetPgAddr]
         mov     [ecx+ehci_gtd.BufferPointers+12-sizeof.ehci_gtd], eax
         sub     edx, 0x1000
         jbe     @f
         mov     eax, [.buffer]
         add     eax, 0x4000
-        call    get_pg_addr
+        call    [GetPgAddr]
         mov     [ecx+ehci_gtd.BufferPointers+16-sizeof.ehci_gtd], eax
 @@:
 ; 7. Fill Token field:
@@ -1242,10 +1313,10 @@ endp
 proc ehci_port_reset_done
         movzx   ecx, [esi+usb_controller.ResettingPort]
         and     dword [edi+EhciPortsReg+ecx*4], not 12Ah
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         mov     [esi+usb_controller.ResetTime], eax
         mov     [esi+usb_controller.ResettingStatus], 2
-        DEBUGF 1,'K : [%d] EHCI %x: reset port %d done\n',[timer_ticks],esi,ecx
+;        DEBUGF 1,'K : EHCI %x: reset port %d done\n',esi,ecx
         ret
 endp
 
@@ -1258,21 +1329,23 @@ proc ehci_port_init
         xor     eax, eax
         xchg    al, [esi+usb_controller.ResettingStatus]
         test    al, al
-        js      usb_test_pending_port
+        jns     @f
+        jmp     [usbhc_api.usb_test_pending_port]
+@@:
 ; 2. Get the port status. High-speed devices should be now enabled,
 ; full-speed devices are left disabled;
 ; if the port is disabled, release it to a companion and continue to
 ; next device (if there is one).
         movzx   ecx, [esi+usb_controller.ResettingPort]
         mov     eax, [edi+EhciPortsReg+ecx*4]
-        DEBUGF 1,'K : [%d] EHCI %x status of port %d is %x\n',[timer_ticks],esi,ecx,eax
+        DEBUGF 1,'K : EHCI %x status of port %d is %x\n',esi,ecx,eax
         test    al, 4
         jnz     @f
 ;       DEBUGF 1,'K : USB port disabled after reset, status = %x\n',eax
         dbgstr 'releasing to companion'
         or      ah, 20h
         mov     [edi+EhciPortsReg+ecx*4], eax
-        jmp     usb_test_pending_port
+        jmp     [usbhc_api.usb_test_pending_port]
 @@:
 ; 3. Call the worker procedure to notify the protocol layer
 ; about new EHCI device. It is high-speed.
@@ -1284,7 +1357,7 @@ proc ehci_port_init
 ; (no memory, no bus address), disable the port and stop the initialization.
 .disable_exit:
         and     dword [edi+EhciPortsReg+ecx*4], not (4 or 2Ah)
-        jmp     usb_test_pending_port
+        jmp     [usbhc_api.usb_test_pending_port]
 .nothing:
         ret
 endp
@@ -1307,20 +1380,10 @@ proc ehci_new_device
 ; of the last high-speed hub (the closest to the device hub)
 ; for split transactions, and set ControlEndpoint bit in eax;
 ; ehci_init_pipe assumes that the parent pipe is a control pipe.
+        push    eax
         movzx   ecx, [esi+usb_controller.ResettingPort]
         mov     edx, [esi+usb_controller.ResettingHub]
-; If the parent hub is high-speed, it is TT for the device.
-; Otherwise, the parent hub itself is behind TT, and the device
-; has the same TT hub+port as the parent hub.
-        push    eax
-        mov     eax, [edx+usb_hub.ConfigPipe]
-        mov     eax, [eax+usb_pipe.DeviceData]
-        cmp     [eax+usb_device_data.Speed], USB_SPEED_HS
-        jz      @f
-        movzx   ecx, [eax+usb_device_data.TTPort]
-        mov     edx, [eax+usb_device_data.TTHub]
-@@:
-        mov     edx, [edx+usb_hub.ConfigPipe]
+        invoke  usbhc_api.usb_get_tt
         inc     ecx
         mov     edx, [edx+ehci_pipe.Token-sizeof.ehci_pipe]
         shl     ecx, 23
@@ -1338,7 +1401,7 @@ proc ehci_new_device
         push    edx     ; ehci_pipe.Flags
         push    eax     ; ehci_pipe.Token
 ; 6. Notify the protocol layer.
-        call    usb_new_device
+        invoke  usbhc_api.usb_new_device
 ; 7. Cleanup the stack after step 5 and return.
         add     esp, sizeof.ehci_pipe - ehci_pipe.Flags + 8
         pop     ecx ebx ; restore used registers
@@ -1378,7 +1441,7 @@ proc ehci_process_deferred
         mov     [edi+EhciPortsReg+ecx*4], eax
         mov     ebx, eax
         mov     eax, [edi+EhciPortsReg+ecx*4]
-        DEBUGF 1,'K : [%d] EHCI %x: status of port %d changed to %x\n',[timer_ticks],esi,ecx,ebx
+        DEBUGF 1,'K : EHCI %x: status of port %d changed to %x\n',esi,ecx,ebx
 ; 3e. Handle overcurrent.
 ; Note: that needs work.
         test    bl, 20h ; overcurrent change
@@ -1411,7 +1474,7 @@ proc ehci_process_deferred
 ; USB_CONNECT_DELAY ticks.
         test    al, 1
         jz      .disconnect
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         mov     [esi+usb_controller.ConnectedTime+ecx*4], eax
         bts     [esi+usb_controller.NewConnected], ecx
         jmp     .nextport
@@ -1435,7 +1498,7 @@ proc ehci_process_deferred
 .skip_roothub:
 ; 4. Process disconnect events. This should be done after step 3
 ; (which includes the first stage of disconnect processing).
-        call    usb_disconnect_stage2
+        invoke  usbhc_api.usb_disconnect_stage2
 ; 5. Check for previously connected devices.
 ; If there is a connected device which was connected less than
 ; USB_CONNECT_DELAY ticks ago, plan to wake up when the delay will be over.
@@ -1447,7 +1510,7 @@ proc ehci_process_deferred
 .portloop2:
         bt      [esi+usb_controller.NewConnected], ecx
         jnc     .noconnect
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         sub     eax, [esi+usb_controller.ConnectedTime+ecx*4]
         sub     eax, USB_CONNECT_DELAY
         jge     .connected
@@ -1488,7 +1551,7 @@ proc ehci_process_deferred
 ; Satisfy a request when InterruptOnAsyncAdvance fired.
         test    byte [esp+4], 20h
         jz      @f
-        dbgstr 'async advance int'
+;        dbgstr 'async advance int'
         mov     eax, [esi+usb_controller.WaitPipeRequestAsync]
         mov     [esi+usb_controller.ReadyPipeHeadAsync], eax
 @@:
@@ -1531,7 +1594,7 @@ proc ehci_process_deferred
         cmp     [esi+usb_controller.ResettingStatus], 1
         jnz     .no_reset_in_progress
 ; 8b. Yep. Test whether it should be stopped.
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         sub     eax, [esi+usb_controller.ResetTime]
         sub     eax, USB_RESET_TIME
         jge     .reset_done
@@ -1549,7 +1612,7 @@ proc ehci_process_deferred
         cmp     [esi+usb_controller.ResettingStatus], 0
         jz      .skip_reset
 ; 8f. Yep. Test whether it should be stopped.
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         sub     eax, [esi+usb_controller.ResetTime]
         sub     eax, USB_RESET_RECOVERY_TIME
         jge     .reset_recovery_done
@@ -1568,7 +1631,7 @@ proc ehci_process_deferred
 ; 9. Process wait-done notifications, test for new wait requests.
 ; Note: that must be done after steps 4 and 7 which could create new requests.
 ; 9a. Call the worker function.
-        call    usb_process_wait_lists
+        invoke  usbhc_api.usb_process_wait_lists
 ; 9b. If it reports that an asynchronous endpoint should be removed,
 ; doorbell InterruptOnAsyncAdvance and schedule wakeup in 1s
 ; (sometimes it just does not fire).
@@ -1577,7 +1640,7 @@ proc ehci_process_deferred
         mov     edx, [esi+usb_controller.WaitPipeListAsync]
         mov     [esi+usb_controller.WaitPipeRequestAsync], edx
         or      dword [edi+EhciCommandReg], 1 shl 6
-        dbgstr 'async advance doorbell'
+;        dbgstr 'async advance doorbell'
         cmp     dword [esp], 100
         jb      @f
         mov     dword [esp], 100
@@ -1649,7 +1712,7 @@ proc ehci_process_updated_list
 ; of the queue until a) the last descriptor (not the part of the queue itself)
 ; or b) an active (not yet processed by the hardware) descriptor is reached.
         lea     ecx, [ebx+usb_pipe.Lock]
-        call    mutex_lock
+        invoke  MutexLock
         mov     ebx, [ebx+usb_pipe.LastTD]
         push    ebx
         mov     ebx, [ebx+usb_gtd.NextVirt]
@@ -1663,13 +1726,13 @@ proc ehci_process_updated_list
 ; Release the queue lock while processing one descriptor:
 ; callback function could (and often would) schedule another transfer.
         push    ecx
-        call    mutex_unlock
+        invoke  MutexUnlock
         call    ehci_process_updated_td
         pop     ecx
-        call    mutex_lock
+        invoke  MutexLock
         jmp     .tdloop
 .tddone:
-        call    mutex_unlock
+        invoke  MutexUnlock
         pop     ebx
 ; End of internal loop, restore pointer to the next pipe
 ; and continue the external loop.
@@ -1695,7 +1758,7 @@ proc ehci_process_updated_td
 ;       DEBUGF 1,'K : %x %x %x %x\n',[eax+16],[eax+20],[eax+24],[eax+28]
 ;@@:
 ; 1. Remove this descriptor from the list of descriptors for this pipe.
-        call    usb_unlink_td
+        invoke  usbhc_api.usb_unlink_td
 ; 2. Calculate actual number of bytes transferred.
         mov     eax, [ebx+ehci_gtd.Token-sizeof.ehci_gtd]
         lea     edx, [eax+eax]
@@ -1723,21 +1786,7 @@ proc ehci_process_updated_td
 ; 4. Either the descriptor in ebx was processed without errors,
 ; or all necessary error actions were taken and ebx points to the last
 ; related descriptor.
-; 4a. Test whether it is the last descriptor in the transfer
-; <=> it has an associated callback.
-        mov     eax, [ebx+usb_gtd.Callback]
-        test    eax, eax
-        jz      .nocallback
-; 4b. It has an associated callback; call it with corresponding parameters.
-        stdcall_verify eax, [ebx+usb_gtd.Pipe], ecx, \
-                [ebx+usb_gtd.Buffer], edx, [ebx+usb_gtd.UserData]
-        jmp     .callback
-.nocallback:
-; 4c. It is an intermediate descriptor. Add its length to the length
-; in the following descriptor.
-        mov     eax, [ebx+usb_gtd.NextVirt]
-        add     [eax+usb_gtd.Length], edx
-.callback:
+        invoke  usbhc_api.usb_process_gtd
 ; 5. Free the current descriptor and return the next one.
         push    [ebx+usb_gtd.NextVirt]
         stdcall ehci_free_td, ebx
@@ -1765,12 +1814,12 @@ proc ehci_process_updated_td
 ; for this transfer. Free and unlink non-final descriptors.
 ; Final descriptor will be freed in step 5.
 .look_final:
-        call    usb_is_final_packet
+        invoke  usbhc_api.usb_is_final_packet
         jnc     .found_final
         push    [ebx+usb_gtd.NextVirt]
         stdcall ehci_free_td, ebx
         pop     ebx
-        call    usb_unlink_td
+        invoke  usbhc_api.usb_unlink_td
         jmp     .look_final
 .found_final:
 ; 6c. Restore the status saved in 6a and transform it to the error code.
@@ -1822,7 +1871,7 @@ proc ehci_process_updated_td
         push    [ebx+usb_gtd.NextVirt]
         stdcall ehci_free_td, ebx
         pop     ebx
-        call    usb_unlink_td
+        invoke  usbhc_api.usb_unlink_td
         pop     ecx
 .normal:
 ; 6f. For bulk/interrupt transfers we have no choice but halt the queue,
@@ -1882,7 +1931,7 @@ endp
 proc ehci_alloc_td
         push    ebx
         mov     ebx, ehci_gtd_mutex
-        stdcall usb_allocate_common, (sizeof.ehci_gtd + sizeof.usb_gtd + 1Fh) and not 1Fh
+        invoke  usbhc_api.usb_allocate_common, (sizeof.ehci_gtd + sizeof.usb_gtd + 1Fh) and not 1Fh
         test    eax, eax
         jz      @f
         add     eax, sizeof.ehci_gtd
@@ -1896,5 +1945,15 @@ endp
 ; EHCI has no additional data, so just free ehci_gtd structure.
 proc ehci_free_td
         sub     dword [esp+4], sizeof.ehci_gtd
-        jmp     usb_free_common
+        jmp     [usbhc_api.usb_free_common]
 endp
+
+include 'ehci_scheduler.inc'
+
+section '.data' readable writable
+include '../peimport.inc'
+include_debug_strings
+IncludeIGlobals
+IncludeUGlobals
+align 4
+usbhc_api usbhc_func

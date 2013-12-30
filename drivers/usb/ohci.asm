@@ -1,7 +1,17 @@
 ; Code for OHCI controllers.
-; Note: it should be moved to an external driver,
-; it was convenient to have this code compiled into the kernel during initial
-; development, but there are no reasons to keep it here.
+
+; Standard driver stuff
+format PE DLL native
+entry start
+__DEBUG__ equ 1
+__DEBUG_LEVEL__ equ 1
+section '.reloc' data readable discardable fixups
+section '.text' code readable executable
+include '../proc32.inc'
+include '../struct.inc'
+include '../macros.inc'
+include '../fdo.inc'
+include '../../kernel/trunk/bus/usb/common.inc'
 
 ; =============================================================================
 ; ================================= Constants =================================
@@ -183,6 +193,8 @@ DoneListEndPtr  dd      ?
 ; Pointer to dword which should receive a pointer to the next item in DoneList.
 ; If DoneList is empty, this is a pointer to DoneList itself;
 ; otherwise, this is a pointer to NextTD field of the last item in DoneList.
+EhciCompanion   dd      ?
+; Pointer to usb_controller for EHCI companion, if any, or NULL.
 ends
 
 if ohci_controller.IntEDs mod 16
@@ -290,8 +302,10 @@ ends
 iglobal
 align 4
 ohci_hardware_func:
+        dd      USBHC_VERSION
         dd      'OHCI'
         dd      sizeof.ohci_controller
+        dd      ohci_kickoff_bios
         dd      ohci_init
         dd      ohci_process_deferred
         dd      ohci_set_device_address
@@ -299,20 +313,49 @@ ohci_hardware_func:
         dd      ohci_port_disable
         dd      ohci_new_port.reset
         dd      ohci_set_endpoint_packet_size
-        dd      usb1_allocate_endpoint
-        dd      usb1_free_endpoint
+        dd      ohci_alloc_pipe
+        dd      ohci_free_pipe
         dd      ohci_init_pipe
         dd      ohci_unlink_pipe
-        dd      usb1_allocate_general_td
-        dd      usb1_free_general_td
+        dd      ohci_alloc_gtd
+        dd      ohci_free_gtd
         dd      ohci_alloc_transfer
         dd      ohci_insert_transfer
         dd      ohci_new_device
+ohci_name db    'OHCI',0
 endg
 
 ; =============================================================================
 ; =================================== Code ====================================
 ; =============================================================================
+
+; Called once when driver is loading and once at shutdown.
+; When loading, must initialize itself, register itself in the system
+; and return eax = value obtained when registering.
+proc start
+virtual at esp
+                dd      ? ; return address
+.reason         dd      ? ; DRV_ENTRY or DRV_EXIT
+.cmdline        dd      ? ; normally NULL
+end virtual
+        cmp     [.reason], DRV_ENTRY
+        jnz     .nothing
+        mov     ecx, ohci_ep_mutex
+        and     dword [ecx-4], 0
+        invoke  MutexInit
+        mov     ecx, ohci_gtd_mutex
+        and     dword [ecx-4], 0
+        invoke  MutexInit
+        push    esi edi
+        mov     esi, [USBHCFunc]
+        mov     edi, usbhc_api
+        movi    ecx, sizeof.usbhc_func/4
+        rep movsd
+        pop     edi esi
+        invoke  RegUSBDriver, ohci_name, 0, ohci_hardware_func
+.nothing:
+        ret
+endp
 
 ; Controller-specific initialization function.
 ; Called from usb_init_controller. Initializes the hardware and
@@ -338,7 +381,7 @@ if ohci_controller.IntEDs >= 0x1000
 .err assertion failed
 end if
         lea     esi, [eax+ohci_controller.IntEDs+32*sizeof.ohci_static_ep]
-        call    get_pg_addr
+        invoke  GetPgAddr
         add     eax, ohci_controller.IntEDs
         movi    ecx, 32
         mov     edx, ecx
@@ -383,23 +426,14 @@ end if
         call    ohci_init_static_endpoint
 ; 4. Create a virtual memory area to talk with the controller.
 ; 4a. Enable memory & bus master access.
-        mov     ch, [.bus]
-        mov     cl, 0
-        mov     eax, ecx
-        mov     bh, [.devfn]
-        mov     bl, 4
-        call    pci_read_reg
+        invoke  PciRead16, dword [.bus], dword [.devfn], 4
         or      al, 6
-        xchg    eax, ecx
-        call    pci_write_reg
+        invoke  PciWrite16, dword [.bus], dword [.devfn], 4, eax
 ; 4b. Read memory base address.
-        mov     ah, [.bus]
-        mov     al, 2
-        mov     bl, 10h
-        call    pci_read_reg
+        invoke  PciRead32, dword [.bus], dword [.devfn], 10h
         and     al, not 0Fh
 ; 4c. Create mapping for physical memory. 256 bytes are sufficient.
-        stdcall map_io_mem, eax, 100h, PG_SW+PG_NOCACHE
+        invoke  MapIoMem, eax, 100h, PG_SW+PG_NOCACHE
         test    eax, eax
         jz      .fail
         stosd   ; fill ohci_controller.MMIOBase
@@ -422,7 +456,7 @@ end if
         mov     [edi+OhciCommandStatusReg], ecx
 @@:
         mov     esi, ecx
-        call    delay_ms
+        invoke  Sleep
         test    [edi+OhciCommandStatusReg], ecx
         jz      .resetdone
         dec     edx
@@ -454,7 +488,7 @@ end if
         pop     esi     ; restore pointer to ohci_controller saved in step 1
 ; 6a. Physical address of HCCA.
         mov     eax, esi
-        call    get_pg_addr
+        invoke  GetPgAddr
         mov     [edi+OhciHCCAReg], eax
 ; 6b. Transition to operational state and clear all Enable bits.
         mov     cl, 2 shl 6
@@ -475,28 +509,29 @@ end if
 ;       mov     [edi+OhciDoneHeadReg], eax
 ; 6e. Enable processing of all lists with control:bulk ratio = 1:1.
         mov     dword [edi+OhciControlReg], 10111100b
-; 7. Get number of ports.
+; 7. Find the EHCI companion.
+; Note: this assumes that EHCI is initialized before USB1 companions.
         add     esi, sizeof.ohci_controller
+        mov     ebx, dword [.devfn]
+        invoke  usbhc_api.usb_find_ehci_companion
+        mov     [esi+ohci_controller.EhciCompanion-sizeof.ohci_controller], eax
+; 8. Get number of ports.
         mov     eax, [edi+OhciRhDescriptorAReg]
         and     eax, 0xF
         mov     [esi+usb_controller.NumPorts], eax
-; 8. Initialize DoneListEndPtr to point to DoneList.
+; 9. Initialize DoneListEndPtr to point to DoneList.
         lea     eax, [esi+ohci_controller.DoneList-sizeof.ohci_controller]
         mov     [esi+ohci_controller.DoneListEndPtr-sizeof.ohci_controller], eax
-; 9. Hook interrupt.
-        mov     ah, [.bus]
-        mov     al, 0
-        mov     bh, [.devfn]
-        mov     bl, 3Ch
-        call    pci_read_reg
+; 10. Hook interrupt.
+        invoke  PciRead8, dword [.bus], dword [.devfn], 3Ch
 ; al = IRQ
         movzx   eax, al
-        stdcall attach_int_handler, eax, ohci_irq, esi
-; 10. Enable controller interrupt on HcDoneHead writeback and RootHubStatusChange.
+        invoke  AttachIntHandler, eax, ohci_irq, esi
+; 11. Enable controller interrupt on HcDoneHead writeback and RootHubStatusChange.
         mov     dword [edi+OhciInterruptEnableReg], 80000042h
         DEBUGF 1,'K : OHCI controller at %x:%x with %d ports initialized\n',[.bus]:2,[.devfn]:2,[esi+usb_controller.NumPorts]
-; 11. Initialize ports of the controller.
-; 11a. Initiate power up, disable all ports, clear all "changed" bits.
+; 12. Initialize ports of the controller.
+; 12a. Initiate power up, disable all ports, clear all "changed" bits.
         mov     dword [edi+OhciRhStatusReg], 10000h     ; SetGlobalPower
         xor     ecx, ecx
 @@:
@@ -504,20 +539,20 @@ end if
         inc     ecx
         cmp     ecx, [esi+usb_controller.NumPorts]
         jb      @b
-; 11b. Wait for power up.
+; 12b. Wait for power up.
 ; VirtualBox has AReg == 0, delay_ms doesn't like zero value; ignore zero delay
         push    esi
         mov     esi, [edi+OhciRhDescriptorAReg]
         shr     esi, 24
         add     esi, esi
         jz      @f
-        call    delay_ms
+        invoke  Sleep
 @@:
         pop     esi
-; 11c. Ports are powered up; now it is ok to process connect/disconnect events.
+; 12c. Ports are powered up; now it is ok to process connect/disconnect events.
         mov     [esi+ohci_controller.PoweredUp-sizeof.ohci_controller], 1
                 ; IRQ handler doesn't accept connect/disconnect events before this point
-; 11d. We could miss some events while waiting for powering up;
+; 12d. We could miss some events while waiting for powering up;
 ; scan all ports manually and check for connected devices.
         xor     ecx, ecx
 .port_loop:
@@ -527,23 +562,23 @@ end if
 ; and save the connected time.
 ; Note that ConnectedTime must be set before 'connected' mark,
 ; otherwise the code in ohci_process_deferred could use incorrect time.
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         mov     [esi+usb_controller.ConnectedTime+ecx*4], eax
         lock bts [esi+usb_controller.NewConnected], ecx
 .next_port:
         inc     ecx
         cmp     ecx, [esi+usb_controller.NumPorts]
         jb      .port_loop
-; 12. Return pointer to usb_controller.
+; 13. Return pointer to usb_controller.
         xchg    eax, esi
         ret
 .fail_unmap:
-; On error after step 4, release the virtual memory area.
-        stdcall free_kernel_space, edi
+; On error after step 5, release the virtual memory area.
+        invoke  FreeKernelSpace, edi
 .fail:
 ; On error, free the ohci_controller structure and return zero.
 ; Note that the pointer was placed in the stack at step 1.
-; Note also that there can be no errors after step 8,
+; Note also that there can be no errors after step 6,
 ; where that pointer is popped from the stack.
         pop     ecx
 .nothing:
@@ -561,7 +596,7 @@ proc ohci_init_static_endpoint
         mov     [edi+ohci_static_ep.NextED], eax
         mov     [edi+ohci_static_ep.NextList], esi
         add     edi, ohci_static_ep.SoftwarePart
-        call    usb_init_static_endpoint
+        invoke  usbhc_api.usb_init_static_endpoint
         add     edi, sizeof.ohci_static_ep - ohci_static_ep.SoftwarePart
         ret
 endp
@@ -591,14 +626,10 @@ endp
 ; deal with USB devices.
 proc ohci_kickoff_bios
 ; 1. Get the physical address of MMIO registers.
-        mov     ah, [esi+PCIDEV.bus]
-        mov     bh, [esi+PCIDEV.devfn]
-        mov     al, 2
-        mov     bl, 10h
-        call    pci_read_reg
+        invoke  PciRead32, dword [esi+PCIDEV.bus], dword [esi+PCIDEV.devfn], 10h
         and     al, not 0Fh
 ; 2. Create mapping for physical memory. 256 bytes are sufficient.
-        stdcall map_io_mem, eax, 100h, PG_SW+PG_NOCACHE
+        invoke  MapIoMem, eax, 100h, PG_SW+PG_NOCACHE
         test    eax, eax
         jz      .nothing
 ; 3. Some BIOSes enable controller interrupts as a result of giving
@@ -625,7 +656,7 @@ proc ohci_kickoff_bios
         jz      .has_ownership
         push    esi
         movi    esi, 1
-        call    delay_ms
+        invoke  Sleep
         pop     esi
         loop    @b
         dbgstr 'warning: taking OHCI ownership from BIOS timeout'
@@ -636,7 +667,7 @@ proc ohci_kickoff_bios
 ; 6. Now we can unblock interrupts in the processor.
         popf
 ; 7. Release memory mapping created in step 2 and return.
-        stdcall free_kernel_space, eax
+        invoke  FreeKernelSpace, eax
 .nothing:
         ret
 endp
@@ -703,7 +734,8 @@ end virtual
         xor     ebx, ebx
         test    ecx, ecx
         jz      .tddone
-        call    usb_td_to_virt
+        mov     eax, [ohci_gtd_first_page]
+        invoke  usbhc_api.usb_td_to_virt
         test    eax, eax
         jz      .tddone
         lea     edx, [eax+ohci_gtd.NextTD]
@@ -718,7 +750,8 @@ end virtual
         lea     ebx, [eax+sizeof.ohci_gtd]
         test    ecx, ecx
         jz      .tddone
-        call    usb_td_to_virt
+        mov     eax, [ohci_gtd_first_page]
+        invoke  usbhc_api.usb_td_to_virt
         test    eax, eax
         jnz     .tdloop
 .tddone:
@@ -845,7 +878,7 @@ end virtual
         jz      .disconnect
 ; Note: ConnectedTime must be stored before setting the 'connected' bit,
 ; otherwise ohci_process_deferred could use an old time.
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         mov     [esi+usb_controller.ConnectedTime+ecx*4], eax
         lock bts [esi+usb_controller.NewConnected], ecx
         jmp     .nextport
@@ -858,8 +891,8 @@ end virtual
         jz      .nextport
         test    al, 10h
         jnz     .nextport
-        mov     edx, [timer_ticks]
-        mov     [esi+usb_controller.ResetTime], edx
+        invoke  GetTimerTicks
+        mov     [esi+usb_controller.ResetTime], eax
         mov     [esi+usb_controller.ResettingStatus], 2
         inc     ebx
 .nextport:
@@ -871,7 +904,7 @@ end virtual
 ; 12. Restore the stack after step 6.
         pop     eax
 ; 13. Notify the USB thread if some deferred processing is required.
-        call    usb_wakeup_if_needed
+        invoke  usbhc_api.usb_wakeup_if_needed
 ; 14. Interrupt processed; return something non-zero.
         mov     al, 1
         pop     edi esi ebx     ; restore used registers to be stdcall
@@ -884,8 +917,7 @@ endp
 proc ohci_set_device_address
         mov     byte [ebx+ohci_pipe.Flags-sizeof.ohci_pipe], cl
 ; Wait until the hardware will forget the old value.
-        call    usb_subscribe_control
-        ret
+        jmp     [usbhc_api.usb_subscribe_control]
 endp
 
 ; This procedure returns USB device address from the usb_pipe structure.
@@ -914,8 +946,7 @@ endp
 proc ohci_set_endpoint_packet_size
         mov     byte [ebx+ohci_pipe.Flags+2-sizeof.ohci_pipe], cl
 ; Wait until the hardware will forget the old value.
-        call    usb_subscribe_control
-        ret
+        jmp     [usbhc_api.usb_subscribe_control]
 endp
 
 ; This procedure is called from API usb_open_pipe and processes
@@ -938,7 +969,7 @@ virtual at ebp-12
 end virtual
 ; 1. Initialize the queue of transfer descriptors: empty.
         sub     eax, sizeof.ohci_gtd
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     [edi+ohci_pipe.TailP-sizeof.ohci_pipe], eax
         mov     [edi+ohci_pipe.HeadP-sizeof.ohci_pipe], eax
 ; 2. Generate ohci_pipe.Flags, see the description in ohci_pipe.
@@ -991,7 +1022,7 @@ end virtual
         mov     ecx, [edx+ohci_pipe.NextED-sizeof.ohci_pipe]
         mov     [edi+ohci_pipe.NextED-sizeof.ohci_pipe], ecx
         lea     eax, [edi-sizeof.ohci_pipe]
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     [edx+ohci_pipe.NextED-sizeof.ohci_pipe], eax
 ; 4. Return something non-zero.
         ret
@@ -1114,7 +1145,7 @@ endl
 .fail:
         mov     edi, ohci_hardware_func
         mov     eax, [td]
-        stdcall usb_undo_tds, [origTD]
+        invoke  usbhc_api.usb_undo_tds, [origTD]
         xor     eax, eax
         ret
 endp
@@ -1137,18 +1168,18 @@ virtual at ebp-8
 .direction      dd      ?
 end virtual
 ; 1. Allocate the next TD.
-        call    usb1_allocate_general_td
+        call    ohci_alloc_gtd
         test    eax, eax
         jz      .nothing
 ; 2. Initialize controller-independent parts of both TDs.
         push    eax
-        call    usb_init_transfer
+        invoke  usbhc_api.usb_init_transfer
         pop     eax
 ; 3. Save the returned value (next descriptor).
         push    eax
 ; 4. Store the physical address of the next descriptor.
         sub     eax, sizeof.ohci_gtd
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     [ecx+ohci_gtd.NextTD-sizeof.ohci_gtd], eax
 ; 5. For zero-length transfers, store zero in both fields for buffer addresses.
 ; Otherwise, fill them with real values.
@@ -1158,12 +1189,12 @@ end virtual
         cmp     [.packetSize], eax
         jz      @f
         mov     eax, [.buffer]
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     [ecx+ohci_gtd.CurBufPtr-sizeof.ohci_gtd], eax
         mov     eax, [.buffer]
         add     eax, [.packetSize]
         dec     eax
-        call    get_phys_addr
+        invoke  GetPhysAddr
         mov     [ecx+ohci_gtd.BufEnd-sizeof.ohci_gtd], eax
 @@:
 ; 6. Generate Flags field:
@@ -1225,7 +1256,9 @@ proc ohci_port_after_reset
         xor     eax, eax
         xchg    al, [esi+usb_controller.ResettingStatus]
         test    al, al
-        js      usb_test_pending_port
+        jns     @f
+        jmp     [usbhc_api.usb_test_pending_port]
+@@:
 ; If the controller has disabled the port (e.g. overcurrent),
 ; continue to next device (if there is one).
         movzx   ecx, [esi+usb_controller.ResettingPort]
@@ -1233,13 +1266,13 @@ proc ohci_port_after_reset
         test    al, 2
         jnz     @f
         DEBUGF 1,'K : USB port disabled after reset, status=%x\n',eax
-        jmp     usb_test_pending_port
+        jmp     [usbhc_api.usb_test_pending_port]
 @@:
         push    ecx
 ; 2. Get LowSpeed bit to bit 0 of eax and call the worker procedure
 ; to notify the protocol layer about new OHCI device.
         mov     eax, [edi+OhciRhPortStatusReg+ecx*4]
-        DEBUGF 1,'K : port_after_reset [%d] status of port %d is %x\n',[timer_ticks],ecx,eax
+        DEBUGF 1,'K : port_after_reset, status of port %d is %x\n',ecx,eax
         shr     eax, 9
         call    ohci_new_device
         pop     ecx
@@ -1249,7 +1282,7 @@ proc ohci_port_after_reset
         jnz     .nothing
 .disable_exit:
         mov     dword [edi+OhciRhPortStatusReg+ecx*4], 1
-        jmp     usb_test_pending_port
+        jmp     [usbhc_api.usb_test_pending_port]
 .nothing:
         ret
 endp
@@ -1272,7 +1305,7 @@ proc ohci_new_device
         sub     esp, 12 ; ignored fields
         push    eax     ; .Flags
 ; 4. Notify the protocol layer.
-        call    usb_new_device
+        invoke  usbhc_api.usb_new_device
 ; 5. Cleanup the stack after step 3 and return.
         add     esp, 20
         ret
@@ -1287,7 +1320,7 @@ proc ohci_process_deferred
 ; 1. Initialize the return value.
         push    -1
 ; 2. Process disconnect events.
-        call    usb_disconnect_stage2
+        invoke  usbhc_api.usb_disconnect_stage2
 ; 3. Check for connected devices.
 ; If there is a connected device which was connected less than
 ; USB_CONNECT_DELAY ticks ago, plan to wake up when the delay will be over.
@@ -1299,7 +1332,15 @@ proc ohci_process_deferred
 .portloop:
         bt      [esi+usb_controller.NewConnected], ecx
         jnc     .noconnect
-        mov     eax, [timer_ticks]
+; If this port is shared with the EHCI companion and we see the connect event,
+; then the device is USB1 dropped by EHCI,
+; so EHCI has already waited for debounce delay, we can proceed immediately.
+        cmp     [esi+ohci_controller.EhciCompanion-sizeof.ohci_controller], 0
+        jz      .portloop.test_time
+        dbgstr 'port is shared with EHCI, skipping initial debounce'
+        jmp     .connected
+.portloop.test_time:
+        invoke  GetTimerTicks
         sub     eax, [esi+usb_controller.ConnectedTime+ecx*4]
         sub     eax, USB_CONNECT_DELAY
         jge     .connected
@@ -1321,7 +1362,7 @@ proc ohci_process_deferred
 ; 4. Check for end of reset signalling. If so, call ohci_port_after_reset.
         cmp     [esi+usb_controller.ResettingStatus], 2
         jnz     .no_reset_recovery
-        mov     eax, [timer_ticks]
+        invoke  GetTimerTicks
         sub     eax, [esi+usb_controller.ResetTime]
         sub     eax, USB_RESET_RECOVERY_TIME
         jge     .reset_done
@@ -1353,7 +1394,7 @@ proc ohci_process_deferred
 ; 6. Process wait-done notifications, test for new wait requests.
 ; Note: that must be done after steps 2 and 5 which could create new requests.
 ; 6a. Call the worker function from main USB code.
-        call    usb_process_wait_lists
+        invoke  usbhc_api.usb_process_wait_lists
 ; 6b. If no new requests, skip the rest of this step.
         test    eax, eax
         jz      @f
@@ -1402,7 +1443,7 @@ proc ohci_process_finalized_td
         jmp     .next_td2
 @@:
 ; 2. Remove the descriptor from the descriptors queue.
-        call    usb_unlink_td
+        invoke  usbhc_api.usb_unlink_td
 ; 3. Get number of bytes that remain to be transferred.
 ; If CurBufPtr is zero, everything was transferred.
         xor     edx, edx
@@ -1429,30 +1470,19 @@ proc ohci_process_finalized_td
         neg     edx
 ; 4. Check for error. If so, go to 7.
         push    ebx
-        mov     eax, [ebx+ohci_gtd.Flags-sizeof.ohci_gtd]
-        shr     eax, 28
+        mov     ecx, [ebx+ohci_gtd.Flags-sizeof.ohci_gtd]
+        shr     ecx, 28
         jnz     .error
 .notify:
 ; 5. Successful completion.
-; 5a. Check whether this descriptor has an associated callback.
-        mov     ecx, [ebx+usb_gtd.Callback]
-        test    ecx, ecx
-        jz      .ok_nocallback
-; 5b. If so, call the callback.
-        stdcall_verify ecx, [ebx+usb_gtd.Pipe], eax, \
-                [ebx+usb_gtd.Buffer], edx, [ebx+usb_gtd.UserData]
-        jmp     .next_td
-.ok_nocallback:
-; 5c. Otherwise, add length of the current descriptor to the next descriptor.
-        mov     eax, [ebx+usb_gtd.NextVirt]
-        add     [eax+usb_gtd.Length], edx
+        invoke  usbhc_api.usb_process_gtd
 .next_td:
 ; 6. Free the current descriptor and advance to the next item.
 ; If the current item is the last in the list,
 ; set DoneListEndPtr to pointer to DoneList.
         cmp     ebx, [esp]
         jz      @f
-        stdcall usb1_free_general_td, ebx
+        stdcall ohci_free_gtd, ebx
 @@:
         pop     ebx
         lea     eax, [ebx+ohci_gtd.NextTD-sizeof.ohci_gtd]
@@ -1477,7 +1507,7 @@ proc ohci_process_finalized_td
 ; Free the current item, set ebx to the next item, continue to 5a.
         test    ebx, ebx
         jz      @f
-        stdcall usb1_free_general_td, ebx
+        stdcall ohci_free_gtd, ebx
 @@:
         pop     ebx
         ret
@@ -1485,7 +1515,7 @@ proc ohci_process_finalized_td
 ; 7. There was an error while processing this descriptor.
 ; The hardware has stopped processing the queue.
 ; 7a. Save status and length.
-        push    eax
+        push    ecx
         push    edx
 ;       DEBUGF 1,'K : TD failed:\n'
 ;       DEBUGF 1,'K : %x %x %x %x\n',[ebx-sizeof.ohci_gtd],[ebx-sizeof.ohci_gtd+4],[ebx-sizeof.ohci_gtd+8],[ebx-sizeof.ohci_gtd+12]
@@ -1496,7 +1526,7 @@ proc ohci_process_finalized_td
 ; for this transfer.
 ; Free and unlink non-final descriptors, except the current one.
 ; Final descriptor will be freed in step 6.
-        call    usb_is_final_packet
+        invoke  usbhc_api.usb_is_final_packet
         jnc     .found_final
         mov     ebx, [ebx+usb_gtd.NextVirt]
 virtual at esp
@@ -1505,11 +1535,11 @@ virtual at esp
 .current_item   dd      ?
 end virtual
 .look_final:
-        call    usb_unlink_td
-        call    usb_is_final_packet
+        invoke  usbhc_api.usb_unlink_td
+        invoke  usbhc_api.usb_is_final_packet
         jnc     .found_final
         push    [ebx+usb_gtd.NextVirt]
-        stdcall usb1_free_general_td, ebx
+        stdcall ohci_free_gtd, ebx
         pop     ebx
         jmp     .look_final
 .found_final:
@@ -1530,14 +1560,14 @@ end virtual
 .advance_queue:
         mov     eax, [ebx+usb_gtd.NextVirt]
         sub     eax, sizeof.ohci_gtd
-        call    get_phys_addr
+        invoke  GetPhysAddr
         or      eax, edx
         mov     [ecx+ohci_pipe.HeadP-sizeof.ohci_pipe], eax
         push    ebx
         mov     ebx, ecx
         call    ohci_notify_new_work
         pop     ebx
-        pop     edx eax
+        pop     edx ecx
         jmp     .notify
 ; 7d. Abort the entire transfer.
 ; There are two cases: either there is only one transfer stage
@@ -1553,10 +1583,10 @@ end virtual
         cmp     ebx, [.current_item]
         push    [ebx+usb_gtd.NextVirt]
         jz      @f
-        stdcall usb1_free_general_td, ebx
+        stdcall ohci_free_gtd, ebx
 @@:
         pop     ebx
-        call    usb_unlink_td
+        invoke  usbhc_api.usb_unlink_td
 .halted:
 ; 7e. For bulk/interrupt transfers we have no choice but halt the queue,
 ; the driver should intercede (through some API which is not written yet).
@@ -1597,3 +1627,60 @@ proc ohci_unlink_pipe
         mov     [eax+ohci_pipe.NextED-sizeof.ohci_pipe], edx
         ret
 endp
+
+; Allocates one endpoint structure for OHCI.
+; Returns pointer to software part (usb_pipe) in eax.
+proc ohci_alloc_pipe
+        push    ebx
+        mov     ebx, ohci_ep_mutex
+        invoke  usbhc_api.usb_allocate_common, (sizeof.ohci_pipe + sizeof.usb_pipe + 0Fh) and not 0Fh
+        test    eax, eax
+        jz      @f
+        add     eax, sizeof.ohci_pipe
+@@:
+        pop     ebx
+        ret
+endp
+
+; Free one endpoint structure for OHCI.
+; Stdcall with one argument, pointer to software part (usb_pipe).
+proc ohci_free_pipe
+        sub     dword [esp+4], sizeof.ohci_pipe
+        jmp     [usbhc_api.usb_free_common]
+endp
+
+; Allocates one general transfer descriptor structure for OHCI.
+; Returns pointer to software part (usb_gtd) in eax.
+proc ohci_alloc_gtd
+        push    ebx
+        mov     ebx, ohci_gtd_mutex
+        invoke  usbhc_api.usb_allocate_common, (sizeof.ohci_gtd + sizeof.usb_gtd + 0Fh) and not 0Fh
+        test    eax, eax
+        jz      @f
+        add     eax, sizeof.ohci_gtd
+@@:
+        pop     ebx
+        ret
+endp
+
+; Free one general transfer descriptor structure for OHCI.
+; Stdcall with one argument, pointer to software part (usb_gtd).
+proc ohci_free_gtd
+        sub     dword [esp+4], sizeof.ohci_gtd
+        jmp     [usbhc_api.usb_free_common]
+endp
+
+include 'usb1_scheduler.inc'
+define_controller_name ohci
+
+section '.data' readable writable
+include '../peimport.inc'
+include_debug_strings
+IncludeIGlobals
+IncludeUGlobals
+align 4
+usbhc_api usbhc_func
+ohci_ep_first_page      dd      ?
+ohci_ep_mutex           MUTEX
+ohci_gtd_first_page     dd      ?
+ohci_gtd_mutex          MUTEX

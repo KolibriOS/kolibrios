@@ -214,10 +214,35 @@ proc get_service stdcall, sz_name:dword
         mov     edx, [edx+SRV.fd]
         jmp     @B
 .not_load:
+        mov     eax, [sz_name]
+; Try to load .dll driver first. If not, fallback to .obj.
+        push    edi
+        sub     esp, 36
+        mov     edi, esp
+        mov     dword [edi], '/sys'
+        mov     dword [edi+4], '/dri'
+        mov     dword [edi+8], 'vers'
+        mov     byte [edi+12], '/'
+@@:
+        mov     dl, [eax]
+        mov     [edi+13], dl
+        inc     eax
+        inc     edi
+        test    dl, dl
+        jnz     @b
+        mov     dword [edi+12], '.sys'
+        mov     byte [edi+16], 0
+        mov     edi, esp
+        stdcall load_pe_driver, edi, 0
+        add     esp, 36
+        pop     edi
+        test    eax, eax
+        jnz     .nothing
         pop     ebp
         jmp     load_driver
 .ok:
         mov     eax, edx
+.nothing:
         ret
 endp
 

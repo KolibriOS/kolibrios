@@ -29,11 +29,6 @@ USB_DEVICE_QUALIFIER_DESCR   = 6
 USB_OTHER_SPEED_CONFIG_DESCR = 7
 USB_INTERFACE_POWER_DESCR    = 8
 
-; Possible speeds of USB devices
-USB_SPEED_FS = 0 ; full-speed
-USB_SPEED_LS = 1 ; low-speed
-USB_SPEED_HS = 2 ; high-speed
-
 ; Compile-time setting. If set, the code will dump all descriptors as they are
 ; read to the debug board.
 USB_DUMP_DESCRIPTORS = 1
@@ -370,7 +365,7 @@ proc usb_set_address_callback stdcall, pipe:dword, status:dword, buffer:dword, l
 ; so setting the address could take some time until the cache is evicted.
 ; Thus, the call is asynchronous; meet us in usb_after_set_address when it will
 ; be safe to continue.
-        dbgstr 'address set in device'
+;        dbgstr 'address set in device'
         call    [eax+usb_hardware_func.SetDeviceAddress]
 ; 2b. If the port is in non-root hub, clear 'reset in progress' flag.
 ; In any case, proceed to 4.
@@ -409,7 +404,7 @@ endp
 ; is cleared after request from usb_set_address_callback.
 ; in: ebx -> usb_pipe
 proc usb_after_set_address
-        dbgstr 'address set for controller'
+;        dbgstr 'address set for controller'
 ; Issue control transfer GET_DESCRIPTOR(DEVICE_DESCR) for first 8 bytes.
 ; Remember, we still do not know the actual packet size;
 ; 8-bytes-request is safe.

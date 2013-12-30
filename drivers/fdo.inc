@@ -236,9 +236,11 @@ debug_beginf
 	pushad
 	movzx	ecx,al
 	mov	ebx,1
-;        mov     ecx,sys_msg_board
-;        call    ecx ; sys_msg_board
-	stdcall  SysMsgBoard
+if defined SysMsgBoard._pe_import
+        invoke  SysMsgBoard
+else
+	stdcall SysMsgBoard
+end if
 	popad
 	ret
 debug_endf
@@ -251,9 +253,11 @@ debug_beginf
 	movzx	ecx,byte[edx]
 	or	cl,cl
 	jz	.l2
-;        mov     ecx,sys_msg_board
-;        call    ecx ; sys_msg_board
-	stdcall  SysMsgBoard
+if defined SysMsgBoard._pe_import
+        invoke  SysMsgBoard
+else
+	stdcall SysMsgBoard
+end if
 	inc	edx
 	jmp	.l1
   .l2:	ret

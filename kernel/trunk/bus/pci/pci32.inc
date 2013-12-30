@@ -694,7 +694,8 @@ end virtual
         mov     [ecx+PCIDEV.fd], edi
         mov     [eax+PCIDEV.bk], edi
         mov     eax, dword [.devfn]
-        mov     word [edi+PCIDEV.devfn], ax
+        mov     dword [edi+PCIDEV.devfn], eax
+        mov     dword [edi+PCIDEV.owner], 0
         mov     bh, al
         mov     al, 2
         mov     bl, 8
