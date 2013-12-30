@@ -110,15 +110,17 @@ L2:
         mov     edi, DWORD PTR [esp+32]
         cmp     DWORD PTR [edi+164], 0
         je      L9
+        pushd   [edi+164]
         mov     esi, ebp
         mov     ecx, ebp
         sub     esi, DWORD PTR [edi+52]
         add     ecx, DWORD PTR [edi+160]
         mov     eax, esi
         shr     eax, 16
-        mov     DWORD PTR [esp+12], eax
-        jmp     L11
+        mov     DWORD PTR [esp+16], eax
 L12:
+        mov     eax, [ecx+4]
+        sub     [esp], eax
         lea     ebx, [eax-8]
         xor     edi, edi
         shr     ebx, 1
@@ -135,7 +137,7 @@ L14:
         je      L18
         dec     ax
         jne     L15
-        mov     eax, DWORD PTR [esp+12]
+        mov     eax, DWORD PTR [esp+16]
         add     WORD PTR [edx+ebp], ax
 L17:
         add     WORD PTR [edx+ebp], si
@@ -148,9 +150,9 @@ L13:
         jne     L14
         add     ecx, DWORD PTR [ecx+4]
 L11:
-        mov     eax, DWORD PTR [ecx+4]
-        test    eax, eax
-        jne     L12
+        cmp     dword [esp], 0
+        jg      L12
+        pop     eax
 L9:
         mov     edx, DWORD PTR [esp+32]
         cmp     DWORD PTR [edx+132], 0
