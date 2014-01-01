@@ -28,7 +28,7 @@ struct  SOCKET
         PID                     dd ? ; process ID
         TID                     dd ? ; thread ID
         Domain                  dd ? ; INET/LOCAL/..
-        Type                    dd ? ; RAW/STREAM/DGRAP
+        Type                    dd ? ; RAW/STREAM/DGRAM
         Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
         errorcode               dd ?
         device                  dd ? ; driver pointer, socket pointer if it's an LOCAL socket
@@ -92,8 +92,8 @@ struct  TCP_SOCKET              IP_SOCKET
         SND_MAX                 dd ?
 
 ; congestion control
-        SND_CWND                dd ?
-        SND_SSTHRESH            dd ?
+        SND_CWND                dd ?    ; congestion window
+        SND_SSTHRESH            dd ?    ; slow start threshold
 
 ;----------------------
 ; Transmit timing stuff
@@ -140,10 +140,6 @@ struct  TCP_SOCKET              IP_SOCKET
         ts_val                  dd ?
 
         seg_next                dd ? ; re-assembly queue
-
-        temp_bits               db ?
-                                rb 3 ; align
-
 
 ends
 
@@ -715,12 +711,13 @@ SOCKET_close:
         ret
 
   .tcp:
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED    ; state must be LISTEN, SYN_SENT or CLOSED
-        jb      .free
 
         call    TCP_usrclosed
-        call    TCP_output      ;;;; Fixme: is this nescessary??
-        call    SOCKET_free
+
+        test    eax, eax
+        jz      @f
+        call    TCP_output                                      ; If connection is not closed yet, send the FIN
+  @@:
 
         ret
 
@@ -1562,10 +1559,10 @@ SOCKET_ring_write:
         pop     ecx
 
 ; unlock mutex
-        push    eax ecx
+        pusha
         lea     ecx, [eax + RING_BUFFER.mutex]
         call    mutex_unlock                                    ; TODO: check what registers this function actually destroys
-        pop     ecx eax
+        popa
 
         ret
 
@@ -2085,7 +2082,6 @@ SOCKET_num_to_ptr:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
         jz      .error
-                diff16 "tetten", 0, $
         cmp     [eax + SOCKET.Number], ecx
         jne     .next_socket
 
@@ -2205,7 +2201,7 @@ SOCKET_check_owner:
 ;
 ; Kernel calls this function when a certain process ends
 ; This function will check if the process had any open sockets
-; And update them accordingly
+; And update them accordingly (clean up)
 ;
 ; IN:  edx = pid
 ; OUT: /
@@ -2251,7 +2247,7 @@ SOCKET_process_end:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     .free
 
-        call    TCP_close
+        call    TCP_disconnect
         jmp     .closed
 
   .free:
@@ -2356,20 +2352,9 @@ SOCKET_is_disconnected:
         and     [eax + SOCKET.state], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.state], SS_CANTRCVMORE + SS_CANTSENDMORE
 
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        je      .tcp
-
-        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
-        je      .udp
 
         jmp     SOCKET_notify
 
-  .tcp:
-  .udp:
-        mov     [eax + UDP_SOCKET.LocalPort], 0         ; UDP and TCP structs store localport at the same offset
-        mov     [eax + UDP_SOCKET.RemotePort], 0
-
-        jmp     SOCKET_notify
 
 
 ;-----------------------------------------------------------------

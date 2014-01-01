@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -57,7 +57,6 @@ TCP_usrclosed:
 
   .wait1:
         mov     [eax + TCP_SOCKET.t_state], TCPS_FIN_WAIT_1
-        ; TODO: set timer?
         pop     ebx
         ret
 
@@ -68,7 +67,6 @@ TCP_usrclosed:
 
   .disc:
         call    SOCKET_is_disconnected
-        ; TODO: set timer?
   .ret:
         pop     ebx
         ret
@@ -202,35 +200,4 @@ TCP_connect:
         stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
 
         xor     eax, eax
-        ret
-
-
-
-
-;-------------------------
-;
-; TCP_disconnect
-;
-;  IN:  eax = socket ptr
-;  OUT: eax = socket ptr
-;
-;-------------------------
-align 4
-TCP_disconnect:
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_disconnect: %x\n", eax
-
-        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
-        jb      TCP_close
-
-
-; TODO: implement LINGER ?
-
-        call    SOCKET_is_disconnecting
-        call    TCP_usrclosed
-
-        push    eax
-        call    TCP_output
-        pop     eax
-
         ret

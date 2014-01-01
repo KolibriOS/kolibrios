@@ -284,8 +284,7 @@ proc alloc_kernel_space stdcall, size:dword
         cmp     eax, [heap_free]
         ja      .error
 
-        mov     ecx, heap_mutex
-        call    mutex_lock
+        spin_lock_irqsave heap_mutex
 
         mov     eax, [size]
 
@@ -345,8 +344,7 @@ proc alloc_kernel_space stdcall, size:dword
 
         call    md.add_to_used
 
-        mov     ecx, heap_mutex
-        call    mutex_unlock
+        spin_unlock_irqrestore heap_mutex
         mov     eax, [esi+block_base]
         pop     edi
         pop     esi
@@ -364,8 +362,7 @@ proc alloc_kernel_space stdcall, size:dword
         jmp     .add_used
 
 .error_unlock:
-        mov     ecx, heap_mutex
-        call    mutex_unlock
+        spin_unlock_irqrestore heap_mutex
 .error:
         xor     eax, eax
         pop     edi
@@ -377,8 +374,7 @@ endp
 align 4
 proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 
-        mov     ecx, heap_mutex
-        call    mutex_lock
+        spin_lock_irqsave heap_mutex
 
         mov     eax, [base]
 
@@ -446,8 +442,7 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
         lea     edx, [mem_block_list+eax*8]
         list_add edi, edx
 .m_eq:
-        mov     ecx, heap_mutex
-        call    mutex_unlock
+        spin_unlock_irqrestore heap_mutex
         xor     eax, eax
         not     eax
         ret
@@ -459,8 +454,7 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
         jmp     .add_block
 
 .fail:
-        mov     ecx, heap_mutex
-        call    mutex_unlock
+        spin_unlock_irqrestore heap_mutex
         xor     eax, eax
         ret
 endp
@@ -544,17 +538,15 @@ proc kernel_free stdcall, base:dword
 
         push    ebx esi
 
-        mov     ecx, heap_mutex
-        call    mutex_lock
+        spin_lock_irqsave heap_mutex
 
         mov     eax, [base]
         call    md.find_used
 
-        mov     ecx, heap_mutex
         cmp     [esi+block_flags], USED_BLOCK
         jne     .fail
 
-        call    mutex_unlock
+        spin_unlock_irqrestore heap_mutex
 
         mov     eax, [esi+block_base]
         mov     ecx, [esi+block_size]
@@ -564,7 +556,7 @@ proc kernel_free stdcall, base:dword
         pop     esi ebx
         ret
 .fail:
-        call    mutex_unlock
+        spin_unlock_irqrestore heap_mutex
         xor     eax, eax
         pop     esi ebx
         ret

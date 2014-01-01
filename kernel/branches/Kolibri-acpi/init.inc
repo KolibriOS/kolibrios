@@ -41,6 +41,8 @@ proc mem_test
         mov     [BOOT_VARS-OS_BASE + 0x9108], eax
         mov     [BOOT_VARS-OS_BASE + 0x910C], edi
         mov     [BOOT_VARS-OS_BASE + 0x9110], eax
+        inc     eax
+        mov     [BOOT_VARS-OS_BASE + 0x9114], eax
 .ret:
         ret
 endp

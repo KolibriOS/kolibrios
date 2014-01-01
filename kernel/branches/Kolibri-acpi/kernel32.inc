@@ -237,6 +237,8 @@ include "blkdev/ide_cache.inc"
 
 ; HD drive controller
 include "blkdev/hd_drv.inc"
+; Access through BIOS
+include "blkdev/bd_drv.inc"
 
 ; CD drive controller
 

@@ -2540,10 +2540,10 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
 ;     cmp  ecx,4  ; set mouse pointer position
         dec     ecx
         jnz     .set_mouse_button
-        cmp     dx, word[_display.width]
+        cmp     dx, word[_display.height]
         jae     .end
         rol     edx, 16
-        cmp     dx, word[_display.height]
+        cmp     dx, word[_display.width]
         jae      .end
         mov     [MOUSE_X], edx
         call    wakeup_osloop

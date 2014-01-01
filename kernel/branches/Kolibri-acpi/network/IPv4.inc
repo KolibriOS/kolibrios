@@ -19,6 +19,13 @@
 $Revision: 3515 $
 
 IPv4_MAX_FRAGMENTS              = 64
+IPv4_MAX_ROUTES                 = 64
+
+IPv4_ROUTE_FLAG_UP              = 1 shl 0
+IPv4_ROUTE_FLAG_GATEWAY         = 1 shl 1
+IPv4_ROUTE_FLAG_HOST            = 1 shl 2
+IPv4_ROUTE_FLAG_D               = 1 shl 3       ; Route was created by a redirect
+IPv4_ROUTE_FLAG_M               = 1 shl 4       ; Route was modified by a redirect
 
 struct  IPv4_header
 
@@ -54,6 +61,16 @@ struct  IPv4_FRAGMENT_entry             ; This structure will replace the ethern
                                         ; Ip header begins here (we will need the IP header to re-construct the complete packet)
 ends
 
+struct  IPv4_ROUTE
+
+        Destination             dd ?
+        Gateway                 dd ?
+        Flags                   dd ?
+        Use                     dd ?
+        Interface               dd ?
+
+ends
+
 
 uglobal
 align 4
@@ -69,6 +86,8 @@ align 4
         IPv4_packets_dumped     rd NET_DEVICES_MAX
 
         IPv4_FRAGMENT_LIST      rb IPv4_MAX_FRAGMENTS * sizeof.IPv4_FRAGMENT_slot
+
+        IPv4_ROUTES             rd IPv4_MAX_ROUTES * sizeof.IPv4_ROUTE
 
 endg
 

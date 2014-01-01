@@ -45,6 +45,7 @@ __exports:
           map_io_mem,            'MapIoMem',           \      ; stdcall
           map_page,              'MapPage',            \      ; stdcall
           get_pg_addr,           'GetPgAddr',          \      ; eax
+          get_phys_addr,         'GetPhysAddr',        \      ; eax
           map_space,             'MapSpace',           \
           release_pages,         'ReleasePages',       \
 \
@@ -112,6 +113,7 @@ __exports:
           usb_normal_transfer_async, 'USBNormalTransferAsync', \
           usb_control_async,     'USBControlTransferAsync', \
           usb_get_param,         'USBGetParam',        \
+          usb_hc_func,           'USBHCFunc',          \
 \
           NET_add_device,        'NetRegDev',          \
           NET_remove_device,     'NetUnRegDev',        \

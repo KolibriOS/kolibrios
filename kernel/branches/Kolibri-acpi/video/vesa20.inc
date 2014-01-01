@@ -1952,7 +1952,6 @@ align 4
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
         mov     ecx, [_display.width]
-        inc     ecx
         rep movsd
         jmp     bgr_resmooth1
 ;--------------------------------------

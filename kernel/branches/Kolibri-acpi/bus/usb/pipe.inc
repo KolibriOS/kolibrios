@@ -1,195 +1,5 @@
 ; Functions for USB pipe manipulation: opening/closing, sending data etc.
 ;
-; =============================================================================
-; ================================= Constants =================================
-; =============================================================================
-; USB pipe types
-CONTROL_PIPE = 0
-ISOCHRONOUS_PIPE = 1
-BULK_PIPE = 2
-INTERRUPT_PIPE = 3
-
-; Status codes for transfer callbacks.
-; Taken from OHCI as most verbose controller in this sense.
-USB_STATUS_OK           = 0     ; no error
-USB_STATUS_CRC          = 1     ; CRC error
-USB_STATUS_BITSTUFF     = 2     ; bit stuffing violation
-USB_STATUS_TOGGLE       = 3     ; data toggle mismatch
-USB_STATUS_STALL        = 4     ; device returned STALL
-USB_STATUS_NORESPONSE   = 5     ; device not responding
-USB_STATUS_PIDCHECK     = 6     ; invalid PID check bits
-USB_STATUS_WRONGPID     = 7     ; unexpected PID value
-USB_STATUS_OVERRUN      = 8     ; too many data from endpoint
-USB_STATUS_UNDERRUN     = 9     ; too few data from endpoint
-USB_STATUS_BUFOVERRUN   = 12    ; overflow of internal controller buffer
-USB_STATUS_BUFUNDERRUN  = 13    ; underflow of internal controller buffer
-USB_STATUS_CLOSED       = 16    ; pipe closed
-                                ; either explicitly with USBClosePipe
-                                ; or implicitly due to device disconnect
-
-; flags for usb_pipe.Flags
-USB_FLAG_CLOSED     = 1         ; pipe is closed, no new transfers
-; pipe is closed, return error instead of submitting any new transfer
-USB_FLAG_CAN_FREE   = 2
-; pipe is closed via explicit call to USBClosePipe, so it can be freed without
-; any driver notification; if this flag is not set, then the pipe is closed due
-; to device disconnect, so it must remain valid until return from disconnect
-; callback provided by the driver
-USB_FLAG_EXTRA_WAIT = 4
-; The pipe was in wait list, while another event occured;
-; when the first wait will be done, reinsert the pipe to wait list
-USB_FLAG_CLOSED_BIT = 0 ; USB_FLAG_CLOSED = 1 shl USB_FLAG_CLOSED_BIT
-
-; =============================================================================
-; ================================ Structures =================================
-; =============================================================================
-
-; Pipe descriptor.
-; * An USB pipe is described by two structures, for hardware and for software.
-; * This is the software part. The hardware part is defined in a driver
-;   of the corresponding controller.
-; * The hardware part is located immediately before usb_pipe,
-;   both are allocated at once by controller-specific code
-;   (it knows the total length, which depends on the hardware part).
-struct usb_pipe
-Controller      dd      ?
-; Pointer to usb_controller structure corresponding to this pipe.
-; Must be the first dword after hardware part, see *hci_new_device.
-;
-; Every endpoint is included into one of processing lists:
-; * Bulk list contains all Bulk endpoints.
-; * Control list contains all Control endpoints.
-; * Several Periodic lists serve Interrupt endpoints with different interval.
-;   - There are N=2^n "leaf" periodic lists for N ms interval, one is processed
-;     in the frames 0,N,2N,..., another is processed in the frames
-;     1,1+N,1+2N,... and so on. The hardware starts processing of periodic
-;     endpoints in every frame from the list identified by lower n bits of the
-;     frame number; the addresses of these N lists are written to the
-;     controller data area during the initialization.
-;   - We assume that n=5, N=32 to simplify the code and compact the data.
-;     OHCI works in this way. UHCI and EHCI actually have n=10, N=1024,
-;     but this is an overkill for interrupt endpoints; the large value of N is
-;     useful only for isochronous transfers in UHCI and EHCI. UHCI/EHCI code
-;     initializes "leaf" lists k,k+32,k+64,...,k+(1024-32) to the same value,
-;     giving essentially N=32.
-;     This restriction means that the actual maximum interval of polling any
-;     interrupt endpoint is 32ms, which seems to be a reasonable value.
-;   - Similarly, there are 16 lists for 16-ms interval, 8 lists for 8-ms
-;     interval and so on. Finally, there is one list for 1ms interval. Their
-;     addresses are not directly known to the controller.
-;   - The hardware serves endpoints following a physical link from the hardware
-;     part.
-;   - The hardware links are organized as follows. If the list item is not the
-;     last, it's hardware link points to the next item. The hardware link of
-;     the last item points to the first item of the "next" list.
-;   - The "next" list for k-th and (k+M)-th periodic lists for interval 2M ms
-;     is the k-th periodic list for interval M ms, M >= 1. In this scheme,
-;     if two "previous" lists are served in the frames k,k+2M,k+4M,...
-;     and k+M,k+3M,k+5M,... correspondingly, the "next" list is served in
-;     the frames k,k+M,k+2M,k+3M,k+4M,k+5M,..., which is exactly what we want.
-;   - The links between Periodic, Control, Bulk lists and the processing of
-;     Isochronous endpoints are controller-specific.
-; * The head of every processing list is a static entry which does not
-;   correspond to any real pipe. It is described by usb_static_ep
-;   structure, not usb_pipe. For OHCI and UHCI, sizeof.usb_static_ep plus
-;   sizeof hardware part is 20h, the total number of lists is
-;   32+16+8+4+2+1+1+1 = 65, so all these structures fit in one page,
-;   leaving space for other data. This is another reason for 32ms limit.
-; * Static endpoint descriptors are kept in *hci_controller structure.
-; * All items in every processing list, including the static head, are
-;   organized in a double-linked list using .NextVirt and .PrevVirt fields.
-; * [[item.NextVirt].PrevVirt] = [[item.PrevVirt].NextVirt] for all items.
-NextVirt        dd      ?
-; Next endpoint in the processing list.
-; See also PrevVirt field and the description before NextVirt field.
-PrevVirt        dd      ?
-; Previous endpoint in the processing list.
-; See also NextVirt field and the description before NextVirt field.
-;
-; Every pipe has the associated transfer queue, that is, the double-linked
-; list of Transfer Descriptors aka TD. For Control, Bulk and Interrupt
-; endpoints this list consists of usb_gtd structures
-; (GTD = General Transfer Descriptors), for Isochronous endpoints
-; this list consists of usb_itd structures, which are not developed yet.
-; The pipe needs to know only the last TD; the first TD can be
-; obtained as [[pipe.LastTD].NextVirt].
-LastTD          dd      ?
-; Last TD in the transfer queue.
-;
-; All opened pipes corresponding to the same physical device are organized in
-; the double-linked list using .NextSibling and .PrevSibling fields.
-; The head of this list is kept in usb_device_data structure (OpenedPipeList).
-; This list is used when the device is disconnected and all pipes for the
-; device should be closed.
-; Also, all pipes closed due to disconnect must remain valid at least until
-; driver-provided disconnect function returns; all should-be-freed-but-not-now
-; pipes for one device are organized in another double-linked list with
-; the head in usb_device_data.ClosedPipeList; this list uses the same link
-; fields, one pipe can never be in both lists.
-NextSibling     dd      ?
-; Next pipe for the physical device.
-PrevSibling     dd      ?
-; Previous pipe for the physical device.
-;
-; When hardware part of pipe is changed, some time is needed before further
-; actions so that hardware reacts on this change. During that time,
-; all changed pipes are organized in single-linked list with the head
-; usb_controller.WaitPipeList* and link field NextWait.
-; Currently there are two possible reasons to change:
-; change of address/packet size in initial configuration,
-; close of the pipe. They are distinguished by USB_FLAG_CLOSED.
-NextWait        dd      ?
-Lock            MUTEX
-; Mutex that guards operations with transfer queue for this pipe.
-Type            db      ?
-; Type of pipe, one of {CONTROL,ISOCHRONOUS,BULK,INTERRUPT}_PIPE.
-Flags           db      ?
-; Combination of flags, USB_FLAG_*.
-                rb      2       ; dword alignment
-DeviceData      dd      ?
-; Pointer to usb_device_data, common for all pipes for one device.
-ends
-
-; This structure describes the static head of every list of pipes.
-struct usb_static_ep
-; software fields
-Bandwidth       dd      ?
-; valid only for interrupt/isochronous USB1 lists
-; The offsets of the following two fields must be the same in this structure
-; and in usb_pipe.
-NextVirt        dd      ?
-PrevVirt        dd      ?
-ends
-
-; This structure represents one transfer descriptor
-; ('g' stands for "general" as opposed to isochronous usb_itd).
-; Note that one transfer can have several descriptors:
-; a control transfer has three stages.
-; Additionally, every controller has a limit on transfer length with
-; one descriptor (packet size for UHCI, 1K for OHCI, 4K for EHCI),
-; large transfers must be split into individual packets according to that limit.
-struct usb_gtd
-Callback        dd      ?
-; Zero for intermediate descriptors, pointer to callback function
-; for final descriptor. See the docs for description of the callback.
-UserData        dd      ?
-; Dword which is passed to Callback as is, not used by USB code itself.
-; Two following fields organize all descriptors for one pipe in
-; the linked list.
-NextVirt        dd      ?
-PrevVirt        dd      ?
-Pipe            dd      ?
-; Pointer to the parent usb_pipe.
-Buffer          dd      ?
-; Pointer to data for this descriptor.
-Length          dd      ?
-; Length of data for this descriptor.
-ends
-
-; =============================================================================
-; =================================== Code ====================================
-; =============================================================================
-
 USB_STDCALL_VERIFY = 1
 macro stdcall_verify [arg]
 {
@@ -216,7 +26,7 @@ endp
 proc usb_open_pipe stdcall uses ebx esi edi,\
  config_pipe:dword, endpoint:dword, maxpacket:dword, type:dword, interval:dword
 locals
-tt_vars         rd      (ehci_select_tt_interrupt_list.local_vars_size + 3) / 4
+tt_vars         rd      24      ; should be enough for ehci_select_tt_interrupt_list
 targetsmask     dd      ?       ; S-Mask for USB2
 bandwidth       dd      ?
 target          dd      ?
@@ -807,6 +617,27 @@ proc usb_unlink_td
         mov     [edx+usb_gtd.PrevVirt], eax
         mov     [eax+usb_gtd.NextVirt], edx
         call    mutex_unlock
+        ret
+endp
+
+; One part of transfer is completed, run the associated callback
+; or update total length in the next part of transfer.
+; in: ebx -> usb_gtd, ecx = status, edx = length
+proc usb_process_gtd
+; 1. Test whether it is the last descriptor in the transfer
+; <=> it has an associated callback.
+        mov     eax, [ebx+usb_gtd.Callback]
+        test    eax, eax
+        jz      .nocallback
+; 2. It has an associated callback; call it with corresponding parameters.
+        stdcall_verify eax, [ebx+usb_gtd.Pipe], ecx, \
+                [ebx+usb_gtd.Buffer], edx, [ebx+usb_gtd.UserData]
+        ret
+.nocallback:
+; 3. It is an intermediate descriptor. Add its length to the length
+; in the following descriptor.
+        mov     eax, [ebx+usb_gtd.NextVirt]
+        add     [eax+usb_gtd.Length], edx
         ret
 endp
 

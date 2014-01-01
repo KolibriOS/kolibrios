@@ -1884,7 +1884,6 @@ align 4
         ; get WinMap start
         push    esi
         mov     esi, [_display.width]
-;        imul    edi, ebx
         mov     edi, [d_width_calc_area + ebx*4]
 
         add     edi, eax

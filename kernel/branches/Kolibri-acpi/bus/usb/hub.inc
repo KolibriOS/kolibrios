@@ -219,30 +219,48 @@ virtual at esp
 .config         dd      ?       ; pointer to usb_config_descr
 .interface      dd      ?       ; pointer to usb_interface_descr
 end virtual
+; 1. Check that the maximal nesting is not exceeded:
+; 5 non-root hubs is the maximum according to the spec.
+        mov     ebx, [.pipe]
+        push    5
+        mov     eax, ebx
+.count_parents:
+        mov     eax, [eax+usb_pipe.DeviceData]
+        mov     eax, [eax+usb_device_data.Hub]
+        test    eax, eax
+        jz      .depth_ok
+        mov     eax, [eax+usb_hub.ConfigPipe]
+        dec     dword [esp]
+        jnz     .count_parents
+        pop     eax
+        dbgstr 'Hub chain is too long'
+        jmp     .return0
+.depth_ok:
+        pop     eax
 ; Hubs use one IN interrupt endpoint for polling the device
-; 1. Locate the descriptor of the interrupt endpoint.
+; 2. Locate the descriptor of the interrupt endpoint.
 ; Loop over all descriptors owned by this interface.
 .lookep:
-; 1a. Skip the current descriptor.
+; 2a. Skip the current descriptor.
         movzx   eax, [edx+usb_descr.bLength]
         add     edx, eax
         sub     ecx, eax
         jb      .errorep
-; 1b. Length of data left must be at least sizeof.usb_endpoint_descr.
+; 2b. Length of data left must be at least sizeof.usb_endpoint_descr.
         cmp     ecx, sizeof.usb_endpoint_descr
         jb      .errorep
-; 1c. If we have found another interface descriptor but not found our endpoint,
+; 2c. If we have found another interface descriptor but not found our endpoint,
 ; this is an error: all subsequent descriptors belong to that interface
 ; (or further interfaces).
         cmp     [edx+usb_endpoint_descr.bDescriptorType], USB_INTERFACE_DESCR
         jz      .errorep
-; 1d. Ignore all interface-related descriptors except endpoint descriptor.
+; 2d. Ignore all interface-related descriptors except endpoint descriptor.
         cmp     [edx+usb_endpoint_descr.bDescriptorType], USB_ENDPOINT_DESCR
         jnz     .lookep
-; 1e. Length of endpoint descriptor must be at least sizeof.usb_endpoint_descr.
+; 2e. Length of endpoint descriptor must be at least sizeof.usb_endpoint_descr.
         cmp     [edx+usb_endpoint_descr.bLength], sizeof.usb_endpoint_descr
         jb      .errorep
-; 1f. Ignore all endpoints except for INTERRUPT IN.
+; 2f. Ignore all endpoints except for INTERRUPT IN.
         cmp     [edx+usb_endpoint_descr.bEndpointAddress], 0
         jge     .lookep
         mov     al, [edx+usb_endpoint_descr.bmAttributes]
@@ -251,23 +269,22 @@ end virtual
         jnz     .lookep
 ; We have located the descriptor for INTERRUPT IN endpoint,
 ; the pointer is in edx.
-; 2. Allocate memory for the hub descriptor.
+; 3. Allocate memory for the hub descriptor.
 ; Maximum length (assuming 255 downstream ports) is 40 bytes.
 ; Allocate 4 extra bytes to keep wMaxPacketSize.
-; 2a. Save registers.
+; 3a. Save registers.
         push    edx
-; 2b. Call the allocator.
+; 3b. Call the allocator.
         movi    eax, 44
         call    malloc
-; 2c. Restore registers.
+; 3c. Restore registers.
         pop     ecx
-; 2d. If failed, say something to the debug board and return error.
+; 3d. If failed, say something to the debug board and return error.
         test    eax, eax
         jz      .nomemory
-; 2e. Store the pointer in esi. xchg eax,r32 is one byte shorter than mov.
+; 3e. Store the pointer in esi. xchg eax,r32 is one byte shorter than mov.
         xchg    esi, eax
-; 3. Open a pipe for the status endpoint with descriptor found in step 1.
-        mov     ebx, [.pipe]
+; 4. Open a pipe for the status endpoint with descriptor found in step 1.
         movzx   eax, [ecx+usb_endpoint_descr.bEndpointAddress]
         movzx   edx, [ecx+usb_endpoint_descr.bInterval]
         movzx   ecx, [ecx+usb_endpoint_descr.wMaxPacketSize]
@@ -276,11 +293,11 @@ end virtual
         push    ecx
         stdcall usb_open_pipe, ebx, eax, ecx, INTERRUPT_PIPE, edx
         pop     ecx
-; If failed, free the memory allocated in step 2,
+; If failed, free the memory allocated in step 3,
 ; say something to the debug board and return error.
         test    eax, eax
         jz      .free
-; 4. Send control query for the hub descriptor,
+; 5. Send control query for the hub descriptor,
 ; pass status pipe as a callback parameter,
 ; allow short packets.
         and     ecx, (1 shl 11) - 1
@@ -291,7 +308,7 @@ end virtual
                 (USB_HUB_DESCRIPTOR shl 24)
         mov     dword [esi+4], 40 shl 16
         stdcall usb_control_async, ebx, esi, esi, 40, usb_hub_got_config, eax, 1
-; 5. If failed, free the memory allocated in step 2,
+; 6. If failed, free the memory allocated in step 3,
 ; say something to the debug board and return error.
         test    eax, eax
         jz      .free
@@ -1244,4 +1261,15 @@ end virtual
         pop     ebx
 .nothing:
         retn    4
+endp
+
+; Helper function for USB2 scheduler.
+; in: eax -> usb_hub
+; out: ecx = TT think time for the hub in FS-bytes
+proc usb_get_tt_think_time
+        movzx   ecx, [eax+usb_hub.HubCharacteristics]
+        shr     ecx, 5
+        and     ecx, 3
+        inc     ecx
+        ret
 endp

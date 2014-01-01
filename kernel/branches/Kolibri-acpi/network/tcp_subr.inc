@@ -152,7 +152,9 @@ TCP_drop:
 
         mov     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
 
+        push    eax
         call    TCP_output
+        pop     eax
 
 ;;; TODO: update stats
 
@@ -169,8 +171,35 @@ TCP_drop:
 
 
 
+;-------------------------
+;
+; TCP_disconnect
+;
+;  IN:  eax = socket ptr
+;  OUT: eax = socket ptr / 0
+;
+;-------------------------
+align 4
+TCP_disconnect:
 
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_disconnect: %x\n", eax
 
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        jb      TCP_close       ; Connection not yet synchronised, just get rid of the socket
+
+; TODO: implement LINGER
+
+        call    SOCKET_is_disconnecting
+        call    TCP_usrclosed
+
+        test    eax, eax
+        jz      @f
+        push    eax
+        call    TCP_output
+        pop     eax
+  @@:
+
+        ret
 
 
 ;-------------------------
@@ -178,7 +207,7 @@ TCP_drop:
 ; TCP_close
 ;
 ;  IN:  eax = socket ptr
-;  OUT: eax = socket ptr
+;  OUT: /
 ;
 ;-------------------------
 align 4
@@ -190,7 +219,9 @@ TCP_close:
 ;;; TODO: update slow start threshold
 
         call    SOCKET_is_disconnected
-;;        call    SOCKET_free
+        call    SOCKET_free
+
+        xor     eax, eax
 
         ret
 

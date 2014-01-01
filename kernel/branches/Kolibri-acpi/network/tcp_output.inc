@@ -21,14 +21,17 @@ $Revision: 3289 $
 ; TCP_output
 ;
 ; IN:  eax = socket pointer
-;
-; OUT: /
+; OUT: eax = 0 on success/errorcode
 ;
 ;-----------------------------------------------------------------
 align 4
-TCP_output:
+proc TCP_output
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x\n", eax
+locals
+        temp_bits       db ?
+endl
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: socket=%x state=%u\n", eax, [eax + TCP_SOCKET.t_state]
 
         push    eax
         lea     ecx, [eax + SOCKET.mutex]
@@ -57,7 +60,7 @@ TCP_output:
 
   .not_idle:
   .again:
-        mov     [eax + TCP_SOCKET.temp_bits], 0
+        mov     [temp_bits], 0
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]         ; calculate offset (71)
         sub     ebx, [eax + TCP_SOCKET.SND_UNA]         ;
@@ -145,7 +148,7 @@ TCP_output:
         jbe     @f
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        or      [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        or      [temp_bits], TCP_BIT_SENDALOT
        @@:
 
 ;--------------------------------------------
@@ -173,31 +176,31 @@ TCP_output:
         jz      .len_zero
 
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
-        je      TCP_send
+        je      .send
 
         add     ebx, esi                                ; offset + length
         cmp     ebx, [eax + STREAM_SOCKET.snd.size]
         jb      @f
 
         test    [eax + TCP_SOCKET.t_flags], TF_NODELAY
-        jnz     TCP_send
+        jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_MAX]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        je      TCP_send
+        je      .send
        @@:
 
         test    [eax + TCP_SOCKET.t_force], -1  ;;;
-        jnz     TCP_send
+        jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.max_sndwnd]
         shr     ebx, 1
         cmp     esi, ebx
-        jae     TCP_send
+        jae     .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_MAX]
-        jb      TCP_send
+        jb      .send
 
   .len_zero:
 
@@ -229,9 +232,10 @@ TCP_output:
         mov     edi, [eax + TCP_SOCKET.t_maxseg]
         shl     edi, 1
 
-;        cmp     ebx, edi
-;        jae     TCP_send
+        cmp     ebx, edi
+        jae     .send
 
+        shl     ebx, 1
 ;        cmp     ebx, [eax + TCP_SOCKET.]    ;;; TODO: check with receive buffer high water mark
 ;        jae     TCP_send
 
@@ -240,17 +244,15 @@ TCP_output:
 ;--------------------------
 ; Should a segment be sent? (174)
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: 174\n"
-
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW   ; we need to ACK
-        jnz     TCP_send
+        jnz     .send
 
         test    dl, TH_SYN + TH_RST                     ; we need to send a SYN or RST
-        jnz     TCP_send
+        jnz     .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_UP]          ; when urgent pointer is beyond start of send bufer
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        ja      TCP_send
+        ja      .send
 
         test    dl, TH_FIN
         jz      .enter_persist  ; no reason to send, enter persist state
@@ -258,11 +260,11 @@ TCP_output:
 ; FIN was set, only send if not already sent, or on retransmit
 
         test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
-        jz      TCP_send
+        jz      .send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        je      TCP_send
+        je      .send
 
 ;--------------------
 ; Enter persist state (191)
@@ -298,13 +300,6 @@ TCP_output:
         ret
 
 
-
-
-
-
-
-
-
 ;-----------------------------------------------
 ;
 ; Send a segment (222)
@@ -314,8 +309,7 @@ TCP_output:
 ;  dl = flags
 ;
 ;-----------------------------------------------
-align 4
-TCP_send:
+  .send:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: socket=%x length=%u flags=%x\n", eax, esi, dl
 
@@ -406,8 +400,40 @@ TCP_send:
         jbe     .no_overflow
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        or      [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        or      [temp_bits], TCP_BIT_SENDALOT
   .no_overflow:
+
+;----------------------------------------------------
+; Calculate the receive window.
+; Dont shrink window, but avoid silly window syndrome
+
+        mov     ebx, SOCKET_MAXDATA
+        sub     ebx, [eax + STREAM_SOCKET.rcv.size]
+
+        cmp     ebx, SOCKET_MAXDATA/4
+        jae     @f
+        cmp     ebx, [eax + TCP_SOCKET.t_maxseg]
+        jae     @f
+        xor     ebx, ebx
+  @@:
+
+        cmp     ebx, TCP_max_win
+        jbe     @f
+        mov     ebx, TCP_max_win
+  @@:
+
+        mov     ecx, [eax + TCP_SOCKET.RCV_ADV]
+        sub     ecx, [eax + TCP_SOCKET.RCV_NXT]
+        cmp     ebx, ecx
+        ja      @f
+        mov     ebx, ecx
+  @@:
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: window = %u\n", ebx
+
+        mov     cl, [eax + TCP_SOCKET.RCV_SCALE]
+        shr     ebx, cl
+        xchg    bl, bh
 
 ;-----------------------------------------------------------------
 ; Start by pushing all TCP header values in reverse order on stack
@@ -415,7 +441,7 @@ TCP_send:
 
         pushw   0       ;        .UrgentPointer          dw ?
         pushw   0       ;        .Checksum               dw ?
-        pushw   0x00a0  ;        .Window                 dw ?    ;;;;;;; FIXME (370)
+        pushw   bx      ;        .Window                 dw ?
         shl     edi, 2  ;        .DataOffset             db ?  only 4 left-most bits
         shl     dx, 8
         or      dx, di  ;        .Flags                  db ?
@@ -534,7 +560,13 @@ TCP_send:
 ;--------------------
 ; Create the checksum
 
+        xor     dx, dx
+        test    [ebx + NET_DEVICE.hwacc], NET_HWACC_TCP_IPv4_OUT
+        jnz     .checksum_ok
+
         TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
+
+  .checksum_ok:
         mov     [esi + TCP_header.Checksum], dx
 
 ;----------------
@@ -566,7 +598,7 @@ TCP_send:
         push    [eax + TCP_SOCKET.RCV_NXT]
         pop     [eax + TCP_SOCKET.last_ack_sent]
 
-; and flags
+; clear the ACK flags
         and     [eax + TCP_SOCKET.t_flags], not (TF_ACKNOW + TF_DELACK)
 
 ;--------------
@@ -582,7 +614,7 @@ TCP_send:
 ;-----------------------------
 ; Check if we need more output
 
-        test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        test    [temp_bits], TCP_BIT_SENDALOT
         jnz     TCP_output.again
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: success!\n"
@@ -622,7 +654,4 @@ TCP_send:
         ret
 
 
-
-
-
-
+endp

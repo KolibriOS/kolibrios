@@ -143,6 +143,62 @@ align 4
         TCP_input_event         dd ?
 endg
 
+uglobal
+align 4
+
+        TCPS_accepts            dd ?    ; #SYNs received in LISTEN state
+        TCPS_closed             dd ?    ; #connections closed (includes drops)
+        TCPS_connattempt        dd ?    ; #connections initiated (calls to connect)
+        TCPS_conndrops          dd ?    ; #embryonic connections dropped (before SYN received)
+        TCPS_connects           dd ?    ; #connections established actively or passively
+        TCPS_delack             dd ?    ; #delayed ACKs sent
+        TCPS_drops              dd ?    ; #connections dropped (after SYN received)
+        TCPS_keepdrops          dd ?    ; #connections dropped in keepalive (established or awaiting SYN)
+        TCPS_keepprobe          dd ?    ; #keepalive probes sent
+        TCPS_keeptimeo          dd ?    ; #times keepalive timer or connections-establishment timer expire
+        TCPS_pawsdrop           dd ?    ; #segments dropped due to PAWS
+        TCPS_pcbcachemiss       dd ?    ; #times PCB cache comparison fails
+        TCPS_persisttimeo       dd ?    ; #times persist timer expires
+        TCPS_predack            dd ?    ; #times header prediction correct for ACKs
+        TCPS_preddat            dd ?    ; #times header prediction correct for data packets
+        TCPS_rcvackbyte         dd ?    ; #bytes ACKed by received ACKs
+        TCPS_rcvackpack         dd ?    ; #received ACK packets
+        TCPS_rcvacktoomuch      dd ?    ; #received ACKs for unsent data
+        TCPS_rcvafterclose      dd ?    ; #packets received after connection closed
+        TCPS_rcvbadoff          dd ?    ; #packets received with invalid header length
+        TCPS_rcvbadsum          dd ?    ; #packets received with checksum errors
+        TCPS_rcvbyte            dd ?    ; #bytes received in sequence
+        TCPS_rcvbyteafterwin    dd ?    ; #bytes received beyond advertised window
+        TCPS_rcvdupack          dd ?    ; #duplicate ACKs received
+        TCPS_rcvdupbyte         dd ?    ; #bytes receivedin completely duplicate packets
+        TCPS_rcvduppack         dd ?    ; #packets received with completely duplicate bytes
+        TCPS_rcvoobyte          dd ?    ; #out-of-order bytes received
+        TCPS_rcvoopack          dd ?    ; #out-of-order packets received
+        TCPS_rcvpack            dd ?    ; #packets received in sequence
+        TCPS_rcvpackafterwin    dd ?    ; #packets with some data beyond advertised window
+        TCPS_rcvpartdupbyte     dd ?    ; #duplicate bytes in part-duplicate packets
+        TCPS_rcvpartduppack     dd ?    ; #packets with some duplicate data
+        TCPS_rcvshort           dd ?    ; #packets received too short
+        TCPS_rcvtotal           dd ?    ; #total packets received
+        TCPS_rcvwinprobe        dd ?    ; #window probe packets received
+        TCPS_rcvwinupd          dd ?    ; #received window update packets
+        TCPS_rexmttimeo         dd ?    ; #retransmission timeouts
+        TCPS_rttupdated         dd ?    ; #times RTT estimators updated
+        TCPS_segstimed          dd ?    ; #segments for which TCP tried to measure RTT
+        TCPS_sndacks            dd ?    ; #ACK-only packets sent (data length = 0)
+        TCPS_sndbyte            dd ?    ; #data bytes sent
+        TCPS_sndctrl            dd ?    ; #control (SYN, FIN, RST) packets sent (data length = 0)
+        TCPS_sndpack            dd ?    ; #data packets sent (data length > 0)
+        TCPS_sndprobe           dd ?    ; #window probes sent (1 byte of data forced by persist timer)
+        TCPS_sndrexmitbyte      dd ?    ; #data bytes retransmitted
+        TCPS_sndrexmitpack      dd ?    ; #data packets retransmitted
+        TCPS_sndtotal           dd ?    ; total #packets sent
+        TCPS_sndurg             dd ?    ; #packets sent with URG-only (data length=0)
+        TCPS_sndwinup           dd ?    ; #window update-only packets sent (data length=0)
+        TCPS_timeoutdrop        dd ?    ; #connections dropped in retransmission timeout
+
+endg
+
 
 ;-----------------------------------------------------------------
 ;

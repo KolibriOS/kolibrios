@@ -1223,22 +1223,7 @@ f68:
         cmp     edx, OS_BASE
         jae     .fail
 
-        mov     edi, edx
-        stdcall load_PE, ecx
-        mov     esi, eax
-        test    eax, eax
-        jz      @F
-
-        push    edi
-        push    DRV_ENTRY
-        call    eax
-        add     esp, 8
-        test    eax, eax
-        jz      @F
-
-        mov     [eax+SRV.entry], esi
-
-@@:
+        stdcall load_pe_driver, ecx, edx
         mov     [esp+32], eax
         ret
 .22:
@@ -1318,25 +1303,31 @@ f68call:   ; keep this table closer to main code
 
 
 align 4
-proc load_pe_driver stdcall, file:dword
+proc load_pe_driver stdcall, file:dword, cmdline:dword
+        push    esi
 
         stdcall load_PE, [file]
         test    eax, eax
         jz      .fail
 
         mov     esi, eax
-        stdcall eax, DRV_ENTRY
+        push    [cmdline]
+        push    DRV_ENTRY
+        call    eax
+        pop     ecx
+        pop     ecx
         test    eax, eax
         jz      .fail
 
         mov     [eax+SRV.entry], esi
+        pop     esi
         ret
 
 .fail:
         xor     eax, eax
+        pop     esi
         ret
 endp
-
 
 align 4
 proc init_mtrr
@@ -1385,9 +1376,9 @@ proc init_mtrr
         xor     eax, eax
         xor     edx, edx
 @@:
-        wrmsr
         inc     ecx
-        cmp     ecx, 0x210
+        wrmsr
+        cmp     ecx, 0x20F
         jb      @b
 ; enable MTRRs
         pop     eax

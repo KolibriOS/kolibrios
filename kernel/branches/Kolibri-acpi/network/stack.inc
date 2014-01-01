@@ -110,7 +110,7 @@ SS_MORETOCOME           = 0x4000
 SS_BLOCKED              = 0x8000
 
 
-SOCKET_MAXDATA          = 4096*32       ; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA          = 4096*8        ; must be 4096*(power of 2) where 'power of 2' is at least 8
 MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
@@ -152,7 +152,8 @@ NET_LINK_PPP            = 2     ; Point to Point Protocol (PPPoE, ...)
 NET_LINK_IEEE802.11     = 3     ; IEEE 802.11 (WiFi)
 
 ; Hardware acceleration bits
-HWACC_TCP_IPv4          = 1 shl 0
+NET_HWACC_TCP_IPv4_IN   = 1 shl 0
+NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
 
 struct  NET_DEVICE
 

@@ -458,6 +458,23 @@ if DUMP_PACKETS
         DEBUGF 1,'\n'
 end if
         stdcall USBNormalTransferAsync, [esi+usb_device_data.OutPipe], edx, command_block_wrapper.sizeof, request_callback1, esi, 0
+        test    eax, eax
+        jz      .nothing
+; 5. If the next stage is data stage in the same direction, enqueue it here.
+        cmp     [esi+usb_device_data.Command.Flags], 0
+        js      .nothing
+        cmp     [esi+usb_device_data.Command.Length], 0
+        jz      .nothing
+        mov     edx, [esi+usb_device_data.RequestsQueue+request_queue_item.Next]
+if DUMP_PACKETS
+        DEBUGF 1,'K : USBSTOR out:'
+        mov     eax, [edx+request_queue_item.Buffer]
+        mov     ecx, [esi+usb_device_data.Command.Length]
+        call    debug_dump
+        DEBUGF 1,'\n'
+end if
+        stdcall USBNormalTransferAsync, [esi+usb_device_data.OutPipe], [edx+request_queue_item.Buffer], [esi+usb_device_data.Command.Length], request_callback2, esi, 0
+.nothing:
         ret
 endp
 
@@ -526,28 +543,21 @@ end virtual
 ; 3. Increment the stage.
         mov     edx, [ecx+usb_device_data.RequestsQueue+request_queue_item.Next]
         inc     [edx+request_queue_item.Stage]
-; 4. If there is no data, skip this stage.
+; 4. Check whether we need to send the data.
+; 4a. If there is no data, skip this stage.
         cmp     [ecx+usb_device_data.Command.Length], 0
         jz      ..request_get_status
-; 5. Initiate USB transfer. If this fails, go to the error handler.
-        mov     eax, [ecx+usb_device_data.InPipe]
+; 4b. If data were enqueued in the first stage, do nothing, wait for request_callback2.
         cmp     [ecx+usb_device_data.Command.Flags], 0
-        js      @f
-        mov     eax, [ecx+usb_device_data.OutPipe]
-if DUMP_PACKETS
-        DEBUGF 1,'K : USBSTOR out:'
-        push    eax ecx
-        mov     eax, [edx+request_queue_item.Buffer]
-        mov     ecx, [ecx+usb_device_data.Command.Length]
-        call    debug_dump
-        pop     ecx eax
-        DEBUGF 1,'\n'
-end if
-@@:
-        stdcall USBNormalTransferAsync, eax, [edx+request_queue_item.Buffer], [ecx+usb_device_data.Command.Length], request_callback2, ecx, 0
+        jns     .nothing
+; 5. Initiate USB transfer. If this fails, go to the error handler.
+        stdcall USBNormalTransferAsync, [ecx+usb_device_data.InPipe], [edx+request_queue_item.Buffer], [ecx+usb_device_data.Command.Length], request_callback2, ecx, 0
         test    eax, eax
         jz      .error
-; 6. Return.
+; 6. The status stage goes to the same direction, enqueue it now.
+        mov     ecx, [.calldata]
+        jmp     ..enqueue_status
+.nothing:
         ret     20
 .error:
 ; Error.
@@ -596,15 +606,20 @@ end if
         test    eax, eax
         jnz     .error
 ; No error.
+; If the previous stage was in same direction, do nothing; status request is already enqueued.
+        cmp     [ecx+usb_device_data.Command.Flags], 0
+        js      .nothing
 ..request_get_status:
 ; 3. Increment the stage.
         mov     edx, [ecx+usb_device_data.RequestsQueue+request_queue_item.Next]
         inc     [edx+request_queue_item.Stage]
 ; 4. Initiate USB transfer. If this fails, go to the error handler.
+..enqueue_status:
         lea     edx, [ecx+usb_device_data.Status]
         stdcall USBNormalTransferAsync, [ecx+usb_device_data.InPipe], edx, command_status_wrapper.sizeof, request_callback3, ecx, 0
         test    eax, eax
         jz      .error
+.nothing:
         ret     20
 .error:
 ; Error.

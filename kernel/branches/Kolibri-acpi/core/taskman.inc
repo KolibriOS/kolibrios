@@ -517,6 +517,7 @@ end if
         add     edi, page_tabs
 .remap:
         lodsd
+        and     eax, 0xFFFFF000
         or      eax, ebx; force user level r/w access
         stosd
         add     edx, 0x1000
@@ -1208,7 +1209,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     [ebx+REG_EAX], eax
 
         mov     eax, [esi+0x08]  ;app_eip
-        mov     [ebx+REG_EIP], eax;app_entry
+        mov     [ebx+REG_EIP], eax          ;app_entry
         mov     [ebx+REG_CS], dword app_code
         mov     ecx, USER_PRIORITY
 

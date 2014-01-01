@@ -514,6 +514,8 @@ struct  PCIDEV
         devfn           db ?
         bus             db ?
         irq_line        db ?
+                        rb 1
+        owner           dd ? ; pointer to SRV or 0
 ends
 
 ; The following macro assume that we are on uniprocessor machine.

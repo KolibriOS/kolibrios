@@ -230,7 +230,7 @@ ICMP_input:
         test    eax, eax
         jnz     @f
         call    NET_ptr_to_num4
-        inc     [UDP_PACKETS_TX + edi]
+        inc     [ICMP_PACKETS_TX + edi]
        @@:
         ret
 

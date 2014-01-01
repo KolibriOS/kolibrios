@@ -35,7 +35,7 @@ LOOPBACK_DEVICE:
         .packets_rx     dd 0
 
         .link_state     dd -1
-        .hwacc          dd 0
+        .hwacc          dd NET_HWACC_TCP_IPv4_IN + NET_HWACC_TCP_IPv4_OUT
 
         .namestr        db 'loopback', 0
 
