@@ -75,8 +75,7 @@ include 'libini_p.asm'
 ;;================================================================================================;;
 proc ini.enum_sections _f_name, _callback ;///////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Enumerate sections, calling callback function for each of them                                 ;;
-;;------------------------------------------------------------------------------------------------;;
+;? Enumerate sections, calling c2------------------------------------------------------------------;;
 ;> _f_name = ini filename <asciiz>                                                                ;;
 ;> _callback = callback function address: func(f_name, sec_name), where                           ;;
 ;>   f_name = ini filename (as passed to the function) <asciiz>                                   ;;
@@ -85,89 +84,89 @@ proc ini.enum_sections _f_name, _callback ;/////////////////////////////////////
 ;< eax = -1 (error) / 0                                                                           ;;
 ;;================================================================================================;;
 locals
-  f       IniFile
+  f	  IniFile
   f_addr  dd ?
   sec_buf dd ?
 endl
 
-        push    ebx esi edi
+	push	ebx esi edi
 
-        cld
+	cld
 
-        invoke  mem.alloc, ini.MAX_NAME_LEN
-        or      eax, eax
-        jz      .exit_error.2
-        mov     [sec_buf], eax
+	invoke	mem.alloc, ini.MAX_NAME_LEN
+	or	eax, eax
+	jz	.exit_error.2
+	mov	[sec_buf], eax
 
-        xor     eax, eax
-        mov     [f.fh], eax
-        mov     [f.buf], eax
-        invoke  file.open, [_f_name], O_READ
-        cmp     eax, 32
-        jb      .exit_file_error
-        mov     [f.fh], eax
-        invoke  mem.alloc, ini.MEM_SIZE
-        or      eax, eax
-        jz      .exit_error
-        mov     [f.buf], eax
-        lea     ebx, [f]
-        mov     [f_addr], ebx
+	xor	eax, eax
+	mov	[f.fh], eax
+	mov	[f.buf], eax
+	invoke	file.open, [_f_name], O_READ
+	cmp	eax, 32
+	jb	.exit_file_error
+	mov	[f.fh], eax
+	invoke	mem.alloc, ini.MEM_SIZE
+	or	eax, eax
+	jz	.exit_error
+	mov	[f.buf], eax
+	lea	ebx, [f]
+	mov	[f_addr], ebx
 
-        invoke  file.seek, [f.fh], 0, SEEK_SET
-        stdcall libini._.preload_block, [f_addr]
+	invoke	file.seek, [f.fh], 0, SEEK_SET
+	stdcall libini._.preload_block, [f_addr]
 
   .next_section:
-        stdcall libini._.find_next_section, [f_addr]
-        or      eax, eax
-        jnz     .exit_error
+	stdcall libini._.find_next_section, [f_addr]
+	or	eax, eax
+	jnz	.exit_error
 
-        stdcall libini._.get_char, [f_addr]
-        stdcall libini._.skip_spaces, [f_addr]
-        mov     edi, [sec_buf]
+	stdcall libini._.get_char, [f_addr]
+	stdcall libini._.skip_spaces, [f_addr]
+	mov	edi, [sec_buf]
     @@: stdcall libini._.get_char, [f_addr]
-        cmp     al, ']'
-        je      @f
-        or      al, al
-        jz      .exit_ok
-        cmp     al, 13
-        je      .next_section
-        cmp     al, 10
-        je      .next_section
-        stosb
-        jmp     @b
-    @@: xor     al, al
-        stosb
-        add     edi, -2
-    @@: cmp     byte[edi], 32
-        ja      @f
-        mov     byte[edi], 0
-        dec     edi
-        jmp     @b
+	cmp	al, ']'
+	je	@f
+	or	al, al
+	jz	.exit_ok
+	cmp	al, 13
+	je	.next_section
+	cmp	al, 10
+	je	.next_section
+	stosb
+	jmp	@b
+    @@: xor	al, al
+	stosb
+	add	edi, -2
+    @@: cmp	byte[edi], 32
+	ja	@f
+	mov	byte[edi], 0
+	dec	edi
+	jmp	@b
     @@:
-        pushad
-        mov     eax, [f_addr]
-        stdcall [_callback], [_f_name], [sec_buf]
-        or      eax, eax
-        popad
-        jnz     .next_section
+	pushad
+	mov	eax, [f_addr]
+	stdcall [_callback], [_f_name], [sec_buf]
+	or	eax, eax
+	popad
+	jnz	.next_section
 
   .exit_ok:
-        invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
-        invoke  mem.free, [sec_buf]
-        xor     eax, eax
-        pop     edi esi ebx
-        ret
+	invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
+	invoke	mem.free, [sec_buf]
+	xor	eax, eax
+	pop	edi esi ebx
+	ret
 
   .exit_error:
-        invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
+	invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
   .exit_file_error:
-        invoke  mem.free, [sec_buf]
+	invoke	mem.free, [sec_buf]
   .exit_error.2:
-        or      eax, -1
-        pop     edi esi ebx
-        ret
+	or	eax, -1
+	pop	edi esi ebx
+	ret
 endp
 
 ;;================================================================================================;;
@@ -186,91 +185,91 @@ proc ini.enum_keys _f_name, _sec_name, _callback ;//////////////////////////////
 ;< eax = -1 (error) / 0                                                                           ;;
 ;;================================================================================================;;
 locals
-  f       IniFile
+  f	  IniFile
   f_addr  dd ?
   key_buf dd ?
   val_buf dd ?
 endl
 
-        push    ebx esi edi
+	push	ebx esi edi
 
-        cld
+	cld
 
-        invoke  mem.alloc, ini.MAX_NAME_LEN
-        or      eax, eax
-        jz      .exit_error.3
-        mov     [key_buf], eax
-        invoke  mem.alloc, ini.MAX_VALUE_LEN
-        or      eax, eax
-        jz      .exit_error.2
-        mov     [val_buf], eax
+	invoke	mem.alloc, ini.MAX_NAME_LEN
+	or	eax, eax
+	jz	.exit_error.3
+	mov	[key_buf], eax
+	invoke	mem.alloc, ini.MAX_VALUE_LEN
+	or	eax, eax
+	jz	.exit_error.2
+	mov	[val_buf], eax
 
-        xor     eax, eax
-        mov     [f.fh], eax
-        mov     [f.buf], eax
-        invoke  file.open, [_f_name], O_READ
-        cmp     eax, 32
-        jb      .exit_file_error
-        mov     [f.fh], eax
-        invoke  mem.alloc, ini.MEM_SIZE
-        or      eax, eax
-        jz      .exit_error
-        mov     [f.buf], eax
-        lea     ebx, [f]
-        mov     [f_addr], ebx
-        stdcall libini._.find_section, ebx, [_sec_name]
-        or      eax, eax
-        jnz     .exit_error
+	xor	eax, eax
+	mov	[f.fh], eax
+	mov	[f.buf], eax
+	invoke	file.open, [_f_name], O_READ
+	cmp	eax, 32
+	jb	.exit_file_error
+	mov	[f.fh], eax
+	invoke	mem.alloc, ini.MEM_SIZE
+	or	eax, eax
+	jz	.exit_error
+	mov	[f.buf], eax
+	lea	ebx, [f]
+	mov	[f_addr], ebx
+	stdcall libini._.find_section, ebx, [_sec_name]
+	or	eax, eax
+	jnz	.exit_error
 
   .next_key:
-        stdcall libini._.skip_line, [f_addr]
-        stdcall libini._.skip_nonblanks, [f_addr]
-        or      al, al
-        jz      .exit_error
-        cmp     al, '['
-        je      .exit_error
-        mov     edi, [key_buf]
+	stdcall libini._.skip_line, [f_addr]
+	stdcall libini._.skip_nonblanks, [f_addr]
+	or	al, al
+	jz	.exit_error
+	cmp	al, '['
+	je	.exit_error
+	mov	edi, [key_buf]
     @@: stdcall libini._.get_char, [f_addr]
-        or      al, al
-        jz      .exit_error
-        cmp     al, '='
-        je      @f
-        stosb
-        jmp     @b
+	or	al, al
+	jz	.exit_error
+	cmp	al, '='
+	je	@f
+	stosb
+	jmp	@b
     @@:
-        xor     al, al
-        stosb
-        add     edi, -2
-    @@: cmp     byte[edi], 32
-        ja      @f
-        mov     byte[edi], 0
-        dec     edi
-        jmp     @b
+	xor	al, al
+	stosb
+	add	edi, -2
+    @@: cmp	byte[edi], 32
+	ja	@f
+	mov	byte[edi], 0
+	dec	edi
+	jmp	@b
     @@: stdcall libini._.low.read_value, [f_addr], [val_buf], ini.MAX_VALUE_LEN
-        pushad
-        stdcall [_callback], [_f_name], [_sec_name], [key_buf], [val_buf]
-        or      eax, eax
-        popad
-        jnz     .next_key
+	pushad
+	stdcall [_callback], [_f_name], [_sec_name], [key_buf], [val_buf]
+	or	eax, eax
+	popad
+	jnz	.next_key
 
-    @@: invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
-        xor     eax, eax
-        stosb
-        pop     edi esi ebx
-        ret
+    @@: invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
+	xor	eax, eax
+	stosb
+	pop	edi esi ebx
+	ret
 
   .exit_error:
-        invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
+	invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
   .exit_file_error:
-        invoke  mem.free, [val_buf]
+	invoke	mem.free, [val_buf]
   .exit_error.2:
-        invoke  mem.free, [key_buf]
+	invoke	mem.free, [key_buf]
   .exit_error.3:
-        or      eax, -1
-        pop     edi esi ebx
-        ret
+	or	eax, -1
+	pop	edi esi ebx
+	ret
 endp
 
 ;;================================================================================================;;
@@ -289,57 +288,57 @@ proc ini.get_str _f_name, _sec_name, _key_name, _buffer, _buf_len, _def_val ;///
 ;< [_buffer] = [_def_val] (error) / found key value <asciiz>                                      ;;
 ;;================================================================================================;;
 locals
-  f      IniFile
+  f	 IniFile
   f_addr dd ?
 endl
 
-        push    ebx esi edi
+	push	ebx esi edi
 
-        xor     eax, eax
-        mov     [f.fh], eax
-        mov     [f.buf], eax
-        invoke  file.open, [_f_name], O_READ
-        cmp     eax, 32
-        jb      .exit_file_error
-        mov     [f.fh], eax
-        invoke  mem.alloc, ini.MEM_SIZE
-        or      eax, eax
-        jz      .exit_error
-        mov     [f.buf], eax
-        lea     ebx, [f]
-        mov     [f_addr], ebx
-        stdcall libini._.find_section, ebx, [_sec_name]
-        or      eax, eax
-        jnz     .exit_error
+	xor	eax, eax
+	mov	[f.fh], eax
+	mov	[f.buf], eax
+	invoke	file.open, [_f_name], O_READ
+	cmp	eax, 32
+	jb	.exit_file_error
+	mov	[f.fh], eax
+	invoke	mem.alloc, ini.MEM_SIZE
+	or	eax, eax
+	jz	.exit_error
+	mov	[f.buf], eax
+	lea	ebx, [f]
+	mov	[f_addr], ebx
+	stdcall libini._.find_section, ebx, [_sec_name]
+	or	eax, eax
+	jnz	.exit_error
 
-        stdcall libini._.find_key, ebx, [_key_name]
-        or      eax, eax
-        jnz     .exit_error
+	stdcall libini._.find_key, ebx, [_key_name]
+	or	eax, eax
+	jnz	.exit_error
 
-        stdcall libini._.low.read_value, [f_addr], [_buffer], [_buf_len]
-    @@: invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
-        xor     eax, eax
-        pop     edi esi ebx
-        ret
+	stdcall libini._.low.read_value, [f_addr], [_buffer], [_buf_len]
+    @@: invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
+	xor	eax, eax
+	pop	edi esi ebx
+	ret
 
   .exit_error:
-        invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
+	invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
   .exit_file_error:
-        mov     edi, [_buffer]
-        mov     esi, [_def_val]
-        xor     al, al
-        or      esi, esi
-        jz      .exit_error.2
+	mov	edi, [_buffer]
+	mov	esi, [_def_val]
+	xor	al, al
+	or	esi, esi
+	jz	.exit_error.2
     @@: lodsb
   .exit_error.2:
-        stosb
-        or      al, al
-        jnz     @b
-        or      eax, -1
-        pop     edi esi ebx
-        ret
+	stosb
+	or	al, al
+	jnz	@b
+	or	eax, -1
+	pop	edi esi ebx
+	ret
 endp
 
 ;;================================================================================================;;
@@ -356,97 +355,112 @@ proc ini.set_str _f_name, _sec_name, _key_name, _buffer, _buf_len ;/////////////
 ;< eax = -1 (error) / 0                                                                           ;;
 ;;================================================================================================;;
 locals
-  f      IniFile
+  f	 IniFile
   f_addr dd ?
 endl
 
-        push    ebx esi edi
+	push	ebx esi edi
 
-        xor     eax, eax
-        mov     [f.fh], eax
-        mov     [f.buf], eax
-        invoke  file.open, [_f_name], O_READ + O_WRITE + O_CREATE
-        cmp     eax, 32
-        jb      .exit_file_error
-        mov     [f.fh], eax
-        invoke  mem.alloc, ini.MEM_SIZE
-        or      eax, eax
-        jz      .exit_error
-        mov     [f.buf], eax
-        lea     ebx, [f]
-        mov     [f_addr], ebx
+	xor	eax, eax
+	mov	[f.fh], eax
+	mov	[f.buf], eax
+	invoke	file.open, [_f_name], O_READ + O_WRITE + O_CREATE
+	cmp	eax, 32
+	jb	.exit_file_error
+	mov	[f.fh], eax
+	invoke	mem.alloc, ini.MEM_SIZE
+	or	eax, eax
+	jz	.exit_error
+	mov	[f.buf], eax
+	lea	ebx, [f]
+	mov	[f_addr], ebx
 
-        stdcall libini._.find_section, ebx, [_sec_name]
-        or      eax, eax
-        jnz     .create_section
+						;/GerdtR - bugfix: at end of file required empty line
+	invoke	file.seek, [f.fh],2,SEEK_END
+	invoke	file.read, [f.fh],[f.buf],2
+	mov	edx,[f.buf]
+	cmp	word[edx],0A0Dh
+	je	@f
+	mov	word[edx],0A0Dh
+	invoke	file.seek, [f.fh],0,SEEK_END
+	invoke	file.write, [f.fh],[f.buf],2
+    @@:
 
-        stdcall libini._.find_key, ebx, [_key_name]
-        or      eax, eax
-        jnz     .create_key
+;        lea    ebx, [f]
+						;\GerdtR
+
+	stdcall libini._.find_section, ebx, [_sec_name]
+	or	eax, eax
+	jnz	.create_section
+
+	stdcall libini._.find_key, ebx, [_key_name]
+	or	eax, eax
+	jnz	.create_key
 
   .modify_key:
-        stdcall libini._.get_value_length, [f_addr]
-        sub     eax, [_buf_len]
-        stdcall libini._.shift_content, [f_addr], eax
+	stdcall libini._.get_value_length, [f_addr]
+	sub	eax, [_buf_len]
+	stdcall libini._.shift_content, [f_addr], eax
 
   .modify_key.ex:
-        invoke  file.tell, [f.fh]
-        sub     eax, [f.cnt]
-        invoke  file.seek, [f.fh], eax, SEEK_SET
-        invoke  file.write, [f.fh], [_buffer], [_buf_len]
+	invoke	file.tell, [f.fh]
+	sub	eax, [f.cnt]
+	invoke	file.seek, [f.fh], eax, SEEK_SET
+	invoke	file.write, [f.fh], [_buffer], [_buf_len]
 
-        invoke  file.close, [f.fh]
-        pop     edi esi ebx
-        mcall   68,13,[f.buf]
-        xor     eax, eax
-        ret
+	invoke	file.close, [f.fh]
+	pop	edi esi ebx
+	mcall	68,13,[f.buf]
+	xor	eax, eax
+	ret
 
   .create_key:
-        mov     edi, [f.buf]
-        add     edi, ini.BLOCK_SIZE
-        push    edi
+	mov	edi, [f.buf]
+	add	edi, ini.BLOCK_SIZE
+	push	edi
 
   .create_key.ex:
-        mov     esi, [_key_name]
-        call    libini._.string_copy
-        mov     byte[edi], '='
-        inc     edi
-        mov     esi, [_buffer]
-        mov     ecx, [_buf_len]
-        rep     movsb
-        mov     word[edi], 0x0A0D
-        add     edi, 2
-        mov     eax, edi
+	mov	esi, [_key_name]
+	call	libini._.string_copy
+	mov	byte[edi], '='
+	inc	edi
+	mov	esi, [_buffer]
+	mov	ecx, [_buf_len]
+	rep	movsb
+	mov	word[edi], 0x0A0D
+	add	edi, 2
+	mov	eax, edi
 
-        pop     edi
-        sub     eax, edi
-        mov     [_buffer], edi
-        mov     [_buf_len], eax
-        neg     eax
-        stdcall libini._.shift_content, [f_addr], eax
+	pop	edi
+	sub	eax, edi
+	mov	[_buffer], edi
+	mov	[_buf_len], eax
+	neg	eax
+	stdcall libini._.shift_content, [f_addr], eax
 
-        jmp     .modify_key.ex
+	jmp	.modify_key.ex
 
   .create_section:
-        mov     edi, [f.buf]
-        add     edi, ini.BLOCK_SIZE
-        push    edi
+	mov	edi, [f.buf]
+	add	edi, ini.BLOCK_SIZE
+	push	edi
 
-        mov     esi, [_sec_name]
-        mov     byte[edi], '['
-        inc     edi
-        call    libini._.string_copy
-        mov     dword[edi], ']' + (0x0A0D shl 8)
-        add     edi, 3
+	mov	esi, [_sec_name]
 
-        jmp     .create_key.ex
+	mov	byte[edi], '['
+	inc	edi
+	call	libini._.string_copy
+	mov	dword[edi], ']' + (0x0A0D shl 8)
+	add	edi, 3
+
+	jmp	.create_key.ex
 
   .exit_error:
-        invoke  file.close, [f.fh]
+	invoke	file.close, [f.fh]
   .exit_file_error:
-        pop     edi esi ebx
-        or      eax, -1
-        ret
+	pop	edi esi ebx
+	or	eax, -1
+	ret
 endp
 
 ;;================================================================================================;;
@@ -462,70 +476,70 @@ proc ini.get_int _f_name, _sec_name, _key_name, _def_val ;//////////////////////
 ;< eax = [_def_val] (error) / found key value <dword>                                             ;;
 ;;================================================================================================;;
 locals
-  f      IniFile
+  f	 IniFile
   f_addr dd ?
 endl
 
-        push    edx ebx esi edi
+	push	edx ebx esi edi
 
-        xor     eax, eax
-        mov     [f.fh], eax
-        mov     [f.buf], eax
-        invoke  file.open, [_f_name], O_READ
-        cmp     eax, 32
-        jb      .exit_file_error
-        mov     [f.fh], eax
-        invoke  mem.alloc, ini.MEM_SIZE
-        or      eax, eax
-        jz      .exit_error
-        mov     [f.buf], eax
-        lea     ebx, [f]
-        mov     [f_addr], ebx
-        stdcall libini._.find_section, ebx, [_sec_name]
-        or      eax, eax
-        jnz     .exit_error
+	xor	eax, eax
+	mov	[f.fh], eax
+	mov	[f.buf], eax
+	invoke	file.open, [_f_name], O_READ
+	cmp	eax, 32
+	jb	.exit_file_error
+	mov	[f.fh], eax
+	invoke	mem.alloc, ini.MEM_SIZE
+	or	eax, eax
+	jz	.exit_error
+	mov	[f.buf], eax
+	lea	ebx, [f]
+	mov	[f_addr], ebx
+	stdcall libini._.find_section, ebx, [_sec_name]
+	or	eax, eax
+	jnz	.exit_error
 
-        stdcall libini._.find_key, ebx, [_key_name]
-        or      eax, eax
-        jnz     .exit_error
+	stdcall libini._.find_key, ebx, [_key_name]
+	or	eax, eax
+	jnz	.exit_error
 
-        stdcall libini._.skip_spaces, [f_addr]
-        xor     eax, eax
-        xor     ebx, ebx
-        xor     edx, edx
-        stdcall libini._.get_char, [f_addr]
-        cmp     al, '-'
-        jne     .lp1
-        inc     bh
+	stdcall libini._.skip_spaces, [f_addr]
+	xor	eax, eax
+	xor	ebx, ebx
+	xor	edx, edx
+	stdcall libini._.get_char, [f_addr]
+	cmp	al, '-'
+	jne	.lp1
+	inc	bh
     @@: stdcall libini._.get_char, [f_addr]
-  .lp1: cmp     al, '0'
-        jb      @f
-        cmp     al, '9'
-        ja      @f
-        inc     bl
-        add     eax, -'0'
-        imul    edx, 10
-        add     edx, eax
-        jmp     @b
+  .lp1: cmp	al, '0'
+	jb	@f
+	cmp	al, '9'
+	ja	@f
+	inc	bl
+	add	eax, -'0'
+	imul	edx, 10
+	add	edx, eax
+	jmp	@b
     @@:
-        or      bl, bl
-        jz      .exit_error
-        or      bh, bh
-        jz      @f
-        neg     edx
-    @@: invoke  file.close, [f.fh]
-        invoke  mem.free, [f.buf]
-        mov     eax, edx
-        pop     edi esi ebx edx
-        ret
+	or	bl, bl
+	jz	.exit_error
+	or	bh, bh
+	jz	@f
+	neg	edx
+    @@: invoke	file.close, [f.fh]
+	invoke	mem.free, [f.buf]
+	mov	eax, edx
+	pop	edi esi ebx edx
+	ret
 
   .exit_error:
-        invoke  file.close, [f.fh]
+	invoke	file.close, [f.fh]
   .exit_file_error:
-        invoke  mem.free, [f.buf]
-        mov     eax, [_def_val]
-        pop     edi esi ebx edx
-        ret
+	invoke	mem.free, [f.buf]
+	mov	eax, [_def_val]
+	pop	edi esi ebx edx
+	ret
 endp
 
 ;;================================================================================================;;
@@ -545,43 +559,43 @@ locals
   bNeg rd 1
 endl
 
-        push    ecx edx edi
+	push	ecx edx edi
 
-        lea     edi, [buf]
-        add     edi, 15
+	lea	edi, [buf]
+	add	edi, 15
 
-        mov     eax, [_val]
-        mov     [bNeg],0
-        or      eax, eax
-        jns     @f
-        mov     [bNeg],1
-        neg     eax
+	mov	eax, [_val]
+	mov	[bNeg],0
+	or	eax, eax
+	jns	@f
+	mov	[bNeg],1
+	neg	eax
 
-    @@: mov     ecx, 10
-    @@: xor     edx, edx
-        idiv    ecx
-        add     dl, '0'
-        mov     [edi], dl
-        dec     edi
-        or      eax, eax
-        jnz     @b
+    @@: mov	ecx, 10
+    @@: xor	edx, edx
+	idiv	ecx
+	add	dl, '0'
+	mov	[edi], dl
+	dec	edi
+	or	eax, eax
+	jnz	@b
 
-        cmp     [bNeg],0
-        je      @f
-        mov     byte[edi], '-'
-        dec     edi
+	cmp	[bNeg],0
+	je	@f
+	mov	byte[edi], '-'
+	dec	edi
      @@:
-        lea     eax, [buf]
-        add     eax, 15
-        sub     eax, edi
-        inc     edi
+	lea	eax, [buf]
+	add	eax, 15
+	sub	eax, edi
+	inc	edi
 
 
 
-        stdcall ini.set_str, [_f_name], [_sec_name], [_key_name], edi, eax
+	stdcall ini.set_str, [_f_name], [_sec_name], [_key_name], edi, eax
 
-        pop     edi edx ecx
-        ret
+	pop	edi edx ecx
+	ret
 endp
 
 ;;================================================================================================;;
@@ -600,37 +614,37 @@ locals
   buf rb 14
 endl
 
-        push    ebx esi edi
+	push	ebx esi edi
 
-        lea     esi, [buf]
-        stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], esi, 14, 0
-        cmp     byte[esi],0
-        je      .exit_error
+	lea	esi, [buf]
+	stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], esi, 14, 0
+	cmp	byte[esi],0
+	je	.exit_error
 
-        xor     ebx, ebx
-        stdcall libini._.str_to_int
-        movzx   ebx, al
-        shl     ebx, 16
-        lodsb
-        cmp     al, ','
-        jne     @f
-        stdcall libini._.str_to_int
-        mov     bh, al
-        lodsb
-        cmp     al, ','
-        jne     @f
-        stdcall libini._.str_to_int
-        mov     bl, al
+	xor	ebx, ebx
+	stdcall libini._.str_to_int
+	movzx	ebx, al
+	shl	ebx, 16
+	lodsb
+	cmp	al, ','
+	jne	@f
+	stdcall libini._.str_to_int
+	mov	bh, al
+	lodsb
+	cmp	al, ','
+	jne	@f
+	stdcall libini._.str_to_int
+	mov	bl, al
 
-    @@: mov     eax, ebx
+    @@: mov	eax, ebx
 
-        pop     edi esi ebx
-        ret
+	pop	edi esi ebx
+	ret
 
   .exit_error:
-        mov     eax, [_def_val]
-        pop     edi esi ebx
-        ret
+	mov	eax, [_def_val]
+	pop	edi esi ebx
+	ret
 endp
 
 ;;================================================================================================;;
@@ -649,31 +663,31 @@ locals
   buf rb 16
 endl
 
-        push    ecx edx edi
+	push	ecx edx edi
 
-        lea     edi, [buf]
-        mov     ecx, 10
-        mov     ebx, [_val]
-        mov     eax, ebx
-        shr     eax, 16
-        and     eax, 0x0ff
-        stdcall libini._.int_to_str
-        mov     byte[edi], ','
-        inc     edi
-        movzx   eax, bh
-        stdcall libini._.int_to_str
-        mov     byte[edi], ','
-        inc     edi
-        movzx   eax, bl
-        stdcall libini._.int_to_str
+	lea	edi, [buf]
+	mov	ecx, 10
+	mov	ebx, [_val]
+	mov	eax, ebx
+	shr	eax, 16
+	and	eax, 0x0ff
+	stdcall libini._.int_to_str
+	mov	byte[edi], ','
+	inc	edi
+	movzx	eax, bh
+	stdcall libini._.int_to_str
+	mov	byte[edi], ','
+	inc	edi
+	movzx	eax, bl
+	stdcall libini._.int_to_str
 
-        lea     eax, [buf]
-        sub     edi, eax
+	lea	eax, [buf]
+	sub	edi, eax
 
-        stdcall ini.set_str, [_f_name], [_sec_name], [_key_name], eax, edi
+	stdcall ini.set_str, [_f_name], [_sec_name], [_key_name], eax, edi
 
-        pop     edi edx ecx
-        ret
+	pop	edi edx ecx
+	ret
 endp
 
 
@@ -690,115 +704,114 @@ proc ini.del_section _f_name, _sec_name ;///////////////////////////////////////
 ;<       1 - section not found                                                                    ;;
 ;;================================================================================================;;
 locals
-   funcFile     rb 25
-   fileInfo     rb 40
-   begMem       rd 1
-   endMem       rd 1
-   begDel       rd 1
-   endDel       rd 1
+   funcFile	rb 25
+   fileInfo	rb 40
+   begMem	rd 1
+   endMem	rd 1
+   begDel	rd 1
+   endDel	rd 1
 endl
-        push    ebx ecx edi esi
-        mov     dword[funcFile],5               ;get file info
-        mov     dword[funcFile+4],0
-        mov     dword[funcFile+8],0
-        mov     dword[funcFile+12],0
-        lea     eax,[fileInfo]
-        mov     dword[funcFile+16],eax
-        mov     byte[funcFile+20],0
-        m2m     dword[funcFile+21],[_f_name]
-        lea     ebx,[funcFile]
-        mcall   70
-        test    eax,eax
-        jz      @f
+	push	ebx ecx edi esi
+	xor	eax,eax
+	mov	dword[funcFile],5		;get file info
+	mov	dword[funcFile+4],eax
+	mov	dword[funcFile+8],eax
+	mov	dword[funcFile+12],eax
+	lea	eax,[fileInfo]
+	mov	dword[funcFile+16],eax
+	mov	byte[funcFile+20],0
+	m2m	dword[funcFile+21],[_f_name]
+	lea	ebx,[funcFile]
+	mcall	70
+	test	eax,eax
+	jz	@f
 
-        or      eax,-1
-        pop     esi edi ecx ebx
-        ret
+	or	eax,-1
+	pop	esi edi ecx ebx
+	ret
       @@:
 
-        mov     ecx,dword[fileInfo+32]          ;allocation mem for all file
-        mcall   68,12
+	mov	ecx,dword[fileInfo+32]		;allocation mem for all file
+	mcall	68,12
 
-        mov     [begMem],eax
-        mov     [endMem],eax
-        add     [endMem],ecx
+	mov	[begMem],eax
+	mov	[endMem],eax
+	add	[endMem],ecx
 
-        mov     dword[funcFile],0               ;read file to buffer
-        mov     dword[funcFile+12],ecx
-        mov     dword[funcFile+16],eax
-        lea     ebx,[funcFile]
-        mcall   70
+	mov	dword[funcFile],0		;read file to buffer
+	mov	dword[funcFile+12],ecx
+	mov	dword[funcFile+16],eax
+	lea	ebx,[funcFile]
+	mcall	70
 
-        mov     edi,[begMem]                    ;search begin section
-        jmp     .searchSect
+	mov	edi,[begMem]			;search begin section
+	jmp	.searchSect
     .NoFindSect:
-        mov     edi,[begDel]
+	mov	edi,[begDel]
     .searchSect:
-        mov     al,'['
-        repne   scasb
-        test    ecx,ecx
-        jnz     @f
+	mov	al,'['
+	repne	scasb
+	test	ecx,ecx
+	jnz	@f
 
-        pop     esi edi ecx ebx
-        mov     eax,1
-        ret
+	pop	esi edi ecx ebx
+	mov	eax,1
+	ret
       @@:
-        mov     [begDel],edi
-        mov     esi,[_sec_name]
+	mov	[begDel],edi
+	mov	esi,[_sec_name]
       @@:
-        lodsb
-        test    al,al
-        jz      @f
-        scasb
-        jne     .NoFindSect
-        jmp     @b
+	lodsb
+	test	al,al
+	jz	@f
+	scasb
+	jne	.NoFindSect
+	jmp	@b
       @@:
-        cmp     byte[edi],']'
-        jne     .NoFindSect
+	cmp	byte[edi],']'
+	jne	.NoFindSect
 
-        mov     edi,[begDel]
-        dec     [begDel]
-                                       ;search end section
+	mov	edi,[begDel]
+	dec	[begDel]
+				       ;search end section
     .searchEndSect:
-        mov     al,'['
-        repne   scasb
+	mov	al,'['
+	repne	scasb
 
-        dec     edi
-        mov     [endDel],edi
+	dec	edi
+	mov	[endDel],edi
 
-        test    ecx,ecx
-        jnz     @f
-        jmp     .SaveToFile
+	test	ecx,ecx
+	jnz	@f
+	jmp	.SaveToFile
       @@:
 
 
-        mov     esi,[endDel]
-        mov     edi,[begDel]
-   @@:  lodsb
-        stosb
-        cmp     esi,[endMem]
-        jb      @b
+	mov	esi,[endDel]
+	mov	edi,[begDel]
+   @@:	lodsb
+	stosb
+	cmp	esi,[endMem]
+	jb	@b
 
    .SaveToFile:
-        mov     eax,dword[funcFile+12]
-        sub     eax,[endDel]
-        add     eax,[begDel]
-        dec     eax
+	mov	eax,dword[funcFile+12]
+	sub	eax,[endDel]
+	add	eax,[begDel]
+	dec	eax
 
-        mov     dword[funcFile],2               ;write buffer to file
-        mov     dword[funcFile+12],eax
-        m2m     dword[funcFile+16],[begMem]
-        lea     ebx,[funcFile]
-        mcall   70
+	mov	dword[funcFile],2		;write buffer to file
+	mov	dword[funcFile+12],eax
+	m2m	dword[funcFile+16],[begMem]
+	lea	ebx,[funcFile]
+	mcall	70
 
-        mcall   68,13,[begMem]
+	mcall	68,13,[begMem]
 
-        xor     eax,eax
-        pop     esi edi ecx ebx
-        ret
+	xor	eax,eax
+	pop	esi edi ecx ebx
+	ret
 endp
-
-
 
 
 ;;================================================================================================;;
@@ -819,94 +832,94 @@ locals
   buf rb 64
 endl
 
-        push    ebx esi edi
+	push	ebx esi edi
 
-        lea     esi, [buf]
-        stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], esi, 64, 0
-        cmp     byte[esi],0
-        je      .exit_error
+	lea	esi, [buf]
+	stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], esi, 64, 0
+	cmp	byte[esi],0
+	je	.exit_error
 
-        xor     ebx, ebx        ; ebx holds the value of modifiers
+	xor	ebx, ebx	; ebx holds the value of modifiers
 .loop:
 ; test for end
-        xor     eax, eax
-        cmp     byte [esi], al
-        jz      .exit_ok        ; exit with scancode zero
+	xor	eax, eax
+	cmp	byte [esi], al
+	jz	.exit_ok	; exit with scancode zero
 ; skip all '+'s
-        cmp     byte [esi], '+'
-        jnz     @f
-        inc     esi
-        jmp     .loop
+	cmp	byte [esi], '+'
+	jnz	@f
+	inc	esi
+	jmp	.loop
 @@:
 ; test for names
-        mov     edi, .names_table
-        xor     edx, edx
+	mov	edi, .names_table
+	xor	edx, edx
 .names_loop:
-        movzx   ecx, byte [edi]
-        inc     edi
-        push    esi
+	movzx	ecx, byte [edi]
+	inc	edi
+	push	esi
 @@:
-        lodsb
-        or      al, 20h
-        scasb
-        loopz   @b
-        jz      .name_found
-        pop     esi
-        lea     edi, [edi+ecx+4]
-        inc     edx
-        cmp     byte [edi], 0
-        jnz     .names_loop
+	lodsb
+	or	al, 20h
+	scasb
+	loopz	@b
+	jz	.name_found
+	pop	esi
+	lea	edi, [edi+ecx+4]
+	inc	edx
+	cmp	byte [edi], 0
+	jnz	.names_loop
 ; special test: functional keys F<number>
-        cmp     byte [esi], 'f'
-        jz      @f
-        cmp     byte [esi], 'F'
-        jnz     .no_fx
+	cmp	byte [esi], 'f'
+	jz	@f
+	cmp	byte [esi], 'F'
+	jnz	.no_fx
 @@:
-        mov     edi, esi
-        inc     esi
-        call    libini._.str_to_int
-        test    eax, eax
-        jnz     .fx
-        mov     esi, edi
+	mov	edi, esi
+	inc	esi
+	call	libini._.str_to_int
+	test	eax, eax
+	jnz	.fx
+	mov	esi, edi
 .no_fx:
 ; name not found, that must be usual key
-        movzx   eax, byte [esi]
-        stdcall libini._.ascii_to_scan, eax
-        test    eax, eax
-        jz      .exit_error
+	movzx	eax, byte [esi]
+	stdcall libini._.ascii_to_scan, eax
+	test	eax, eax
+	jz	.exit_error
 ; all is ok
 .exit_ok:
-        mov     ecx, [_modifiers]
-        test    ecx, ecx
-        jz      @f
-        mov     [ecx], ebx
+	mov	ecx, [_modifiers]
+	test	ecx, ecx
+	jz	@f
+	mov	[ecx], ebx
 
 @@:
 
-        pop     edi esi ebx
-        ret
+	pop	edi esi ebx
+	ret
 
 .exit_error:
-        mov     eax, [_def_val]
-        pop     edi esi ebx
-        ret
+	mov	eax, [_def_val]
+	pop	edi esi ebx
+	ret
 ; handler for Fx
 ; eax = number
 .fx:
-        cmp     eax, 10
-        ja      @f
-        add     eax, 3Bh-1
-        jmp     .exit_ok
+	cmp	eax, 10
+	ja	@f
+	add	eax, 3Bh-1
+	jmp	.exit_ok
 @@:
-        add     eax, 57h-11
-        jmp     .exit_ok
+	add	eax, 57h-11
+	jmp	.exit_ok
 ; handlers for names
 .name_found:
-        pop     eax     ; ignore saved esi
-        call    dword [edi]
-        cmp     edx, .num_modifiers
-        jae     .exit_ok
-        jmp     .loop
+	pop	eax	; ignore saved esi
+	call	dword [edi]
+	cmp	edx, .num_modifiers
+	jae	.exit_ok
+	jmp	.loop
 ; modifiers
 ; syntax of value for each modifier:
 ; 0 = none, 1 = exactly one of L+R, 2 = both L+R, 3 = L, 4 = R
@@ -918,47 +931,47 @@ endl
 macro shortcut_handle_modifiers name,reg,shift
 {
 local .set2,.set3,.set4
-.#name#_handler:        ; generic modifier
-        test    reg, 0xF
-        jnz     .set2
+.#name#_handler:	; generic modifier
+	test	reg, 0xF
+	jnz	.set2
 if shift
-        or      reg, 1 shl shift
+	or	reg, 1 shl shift
 else
-        inc     reg
+	inc	reg
 end if
-        retn
+	retn
 .set2:
-        and     reg, not (0xF shl shift)
-        or      reg, 2 shl shift
-        retn
+	and	reg, not (0xF shl shift)
+	or	reg, 2 shl shift
+	retn
 .l#name#_handler:
-        mov     al, reg
-        and     al, 0xF shl shift
-        jz      .set3
-        cmp     al, 3 shl shift
-        jnz     .set2
-        retn
+	mov	al, reg
+	and	al, 0xF shl shift
+	jz	.set3
+	cmp	al, 3 shl shift
+	jnz	.set2
+	retn
 .set3:
-        add     reg, 3 shl shift
-        retn
+	add	reg, 3 shl shift
+	retn
 .r#name#_handler:
-        mov     al, reg
-        and     al, 0xF shl shift
-        jz      .set4
-        cmp     al, 4 shl shift
-        jnz     .set2
-        retn
+	mov	al, reg
+	and	al, 0xF shl shift
+	jz	.set4
+	cmp	al, 4 shl shift
+	jnz	.set2
+	retn
 .set4:
-        add     reg, 4 shl shift
-        retn
+	add	reg, 4 shl shift
+	retn
 }
 shortcut_handle_modifiers shift,bl,0
 shortcut_handle_modifiers ctrl,bl,4
 shortcut_handle_modifiers alt,bh,0
 ; names of keys
 .name_handler:
-        movzx   eax, byte [.names_scancodes+edx-.num_modifiers]
-        retn
+	movzx	eax, byte [.names_scancodes+edx-.num_modifiers]
+	retn
 endp
 
 ; note: comparison ignores case, so this table keeps lowercase names
@@ -966,47 +979,47 @@ endp
 macro shortcut_name_with_handler name,handler
 {
 local .start, .end
-        db      .end - .start
+	db	.end - .start
 .start:
-        db      name
+	db	name
 .end:
 repeat .end - .start
-        load .a byte from .start + % - 1
-        store byte .a or 0x20 at .start + % - 1
+	load .a byte from .start + % - 1
+	store byte .a or 0x20 at .start + % - 1
 end repeat
-        dd      handler
+	dd	handler
 }
 macro shortcut_name [name]
 {
-        shortcut_name_with_handler name, .name_handler
+	shortcut_name_with_handler name, .name_handler
 }
 
 ; all names here must be in english
 ; ... or modify lowercasing in macro and in comparison
 .names_table:
 ; generic modifiers
-        shortcut_name_with_handler 'Ctrl', .ctrl_handler
-        shortcut_name_with_handler 'Alt', .alt_handler
-        shortcut_name_with_handler 'Shift', .shift_handler
+	shortcut_name_with_handler 'Ctrl', .ctrl_handler
+	shortcut_name_with_handler 'Alt', .alt_handler
+	shortcut_name_with_handler 'Shift', .shift_handler
 ; concrete modifiers
-        shortcut_name_with_handler 'LCtrl', .lctrl_handler
-        shortcut_name_with_handler 'RCtrl', .rctrl_handler
-        shortcut_name_with_handler 'LAlt', .lalt_handler
-        shortcut_name_with_handler 'RAlt', .ralt_handler
-        shortcut_name_with_handler 'LShift', .lshift_handler
-        shortcut_name_with_handler 'RShift', .rshift_handler
+	shortcut_name_with_handler 'LCtrl', .lctrl_handler
+	shortcut_name_with_handler 'RCtrl', .rctrl_handler
+	shortcut_name_with_handler 'LAlt', .lalt_handler
+	shortcut_name_with_handler 'RAlt', .ralt_handler
+	shortcut_name_with_handler 'LShift', .lshift_handler
+	shortcut_name_with_handler 'RShift', .rshift_handler
 .num_modifiers = 9
 ; symbolic names of keys
-        shortcut_name 'Home', 'End', 'PgUp', 'PgDn', 'Ins', 'Insert', 'Del', 'Delete'
-        shortcut_name 'Tab', 'Plus', 'Esc', 'Enter', 'Backspace', 'Space', 'Left', 'Right'
-        shortcut_name 'Up', 'Down'
+	shortcut_name 'Home', 'End', 'PgUp', 'PgDn', 'Ins', 'Insert', 'Del', 'Delete'
+	shortcut_name 'Tab', 'Plus', 'Esc', 'Enter', 'Backspace', 'Space', 'Left', 'Right'
+	shortcut_name 'Up', 'Down'
 ; end of table
-        db      0
+	db	0
 ini.get_shortcut.names_scancodes:
 ; scancodes for 'Home' ... 'Down'
-        db      47h, 4Fh, 49h, 51h, 52h, 52h, 53h, 53h
-        db      0Fh, 4Eh, 01h, 1Ch, 0Eh, 39h, 4Bh, 4Dh
-        db      48h, 50h
+	db	47h, 4Fh, 49h, 51h, 52h, 52h, 53h, 53h
+	db	0Fh, 4Eh, 01h, 1Ch, 0Eh, 39h, 4Bh, 4Dh
+	db	48h, 50h
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
@@ -1021,18 +1034,18 @@ align 16
 @IMPORT:
 
 library \
-        libio , 'libio.obj'
+	libio , 'libio.obj'
 
-import  libio                       , \
-        file.size   , 'file_size'   , \
-        file.open   , 'file_open'   , \
-        file.read   , 'file_read'   , \
-        file.write  , 'file_write'  , \
-        file.seek   , 'file_seek'   , \
-        file.eof?   , 'file_iseof'  , \
-        file.seteof , 'file_seteof' , \
-        file.tell   , 'file_tell'   , \
-        file.close  , 'file_close'
+import	libio			    , \
+	file.size   , 'file_size'   , \
+	file.open   , 'file_open'   , \
+	file.read   , 'file_read'   , \
+	file.write  , 'file_write'  , \
+	file.seek   , 'file_seek'   , \
+	file.eof?   , 'file_iseof'  , \
+	file.seteof , 'file_seteof' , \
+	file.tell   , 'file_tell'   , \
+	file.close  , 'file_close'
 
 
 ;;================================================================================================;;
@@ -1047,16 +1060,16 @@ import  libio                       , \
 align 16
 @EXPORT:
 
-export                                            \
-        libini._.init     , 'lib_init'          , \
-        0x00080009        , 'version'           , \
-        ini.enum_sections , 'ini_enum_sections' , \
-        ini.enum_keys     , 'ini_enum_keys'     , \
-        ini.get_str       , 'ini_get_str'       , \
-        ini.get_int       , 'ini_get_int'       , \
-        ini.get_color     , 'ini_get_color'     , \
-        ini.set_str       , 'ini_set_str'       , \
-        ini.set_int       , 'ini_set_int'       , \
-        ini.set_color     , 'ini_set_color'     , \
-        ini.get_shortcut  , 'ini_get_shortcut'  , \
-        ini.del_section   , 'ini_del_section'
+export						  \
+	libini._.init	  , 'lib_init'		, \
+	0x00080009	  , 'version'		, \
+	ini.enum_sections , 'ini_enum_sections' , \
+	ini.enum_keys	  , 'ini_enum_keys'	, \
+	ini.get_str	  , 'ini_get_str'	, \
+	ini.get_int	  , 'ini_get_int'	, \
+	ini.get_color	  , 'ini_get_color'	, \
+	ini.set_str	  , 'ini_set_str'	, \
+	ini.set_int	  , 'ini_set_int'	, \
+	ini.set_color	  , 'ini_set_color'	, \
+	ini.get_shortcut  , 'ini_get_shortcut'	, \
+	ini.del_section   , 'ini_del_section'	
