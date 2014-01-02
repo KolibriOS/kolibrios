@@ -517,6 +517,7 @@ end if
         add     edi, page_tabs
 .remap:
         lodsd
+        and     eax, 0xFFFFF000
         or      eax, ebx; force user level r/w access
         stosd
         add     edx, 0x1000

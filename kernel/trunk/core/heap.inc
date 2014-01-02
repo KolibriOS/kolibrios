@@ -129,15 +129,11 @@ proc init_kernel_heap
         loop    @B
 
         stdcall alloc_pages, dword 32
+
+        or      eax, PG_SW
+        mov     ebx, HEAP_BASE
         mov     ecx, 32
-        mov     edx, eax
-        mov     edi, HEAP_BASE
-.l1:
-        stdcall map_page, edi, edx, PG_SW
-        add     edi, 0x1000
-        add     edx, 0x1000
-        dec     ecx
-        jnz     .l1
+        call    commit_pages
 
         mov     edi, HEAP_BASE                     ;descriptors
         mov     ebx, HEAP_BASE+sizeof.MEM_BLOCK      ;free space
@@ -480,46 +476,39 @@ proc kernel_alloc stdcall, size:dword
         mov     [pages_count], ebx
 
         stdcall alloc_kernel_space, eax
+        mov     [lin_addr], eax
+        mov     ebx, [pages_count]
         test    eax, eax
         jz      .err
-        mov     [lin_addr], eax
 
-        mov     ecx, [pages_count]
         mov     edx, eax
-        mov     ebx, ecx
 
-        shr     ecx, 3
-        jz      .next
+        shr     ebx, 3
+        jz      .tail
 
-        and     ebx, not 7
-        push    ebx
+        shl     ebx, 3
         stdcall alloc_pages, ebx
-        pop     ecx                  ; yes ecx!!!
-        and     eax, eax
+        test    eax, eax
         jz      .err
 
-        mov     edi, eax
-        mov     edx, [lin_addr]
-@@:
-        stdcall map_page, edx, edi, dword PG_SW
-        add     edx, 0x1000
-        add     edi, 0x1000
-        dec     ecx
-        jnz     @B
-.next:
-        mov     ecx, [pages_count]
-        and     ecx, 7
+        mov     ecx, ebx
+        or      eax, PG_SW
+        mov     ebx, [lin_addr]
+        call    commit_pages
+
+        mov     edx, ebx                    ; this dirty hack
+.tail:
+        mov     ebx, [pages_count]
+        and     ebx, 7
         jz      .end
 @@:
-        push    ecx
         call    alloc_page
-        pop     ecx
         test    eax, eax
         jz      .err
 
         stdcall map_page, edx, eax, dword PG_SW
         add     edx, 0x1000
-        dec     ecx
+        dec     ebx
         jnz     @B
 .end:
         mov     eax, [lin_addr]

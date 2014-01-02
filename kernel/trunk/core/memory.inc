@@ -123,19 +123,19 @@ proc alloc_pages stdcall, count:dword
 endp
 
 align 4
-proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
+;proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
+map_page:
         push    ebx
-        mov     eax, [phis_addr]
+        mov     eax, [esp+12]               ; phis_addr
         and     eax, not 0xFFF
-        or      eax, [flags]
-        mov     ebx, [lin_addr]
+        or      eax, [esp+16]              ; flags
+        mov     ebx, [esp+8]               ; lin_addr
         shr     ebx, 12
         mov     [page_tabs+ebx*4], eax
-        mov     eax, [lin_addr]
-        invlpg  [eax]
+        mov     eax, [esp+8]               ; lin_addr
         pop     ebx
-        ret
-endp
+        invlpg  [eax]
+        ret     12
 
 align 4
 map_space:    ;not implemented
