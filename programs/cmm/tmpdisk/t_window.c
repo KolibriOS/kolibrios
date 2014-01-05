@@ -71,7 +71,7 @@ void Main_Window()
 		switch(WaitEvent()) 
 		{
 		case evMouse:
-			if (GetProcessSlot(Form.ID)-GetActiveProcess()!=0) break;
+			if (!CheckActiveProcess(Form.ID)) break;
 			edit_box_mouse stdcall (#edit_disk_size);
 			break;
 			
