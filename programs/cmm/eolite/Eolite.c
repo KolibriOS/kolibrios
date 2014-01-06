@@ -8,6 +8,7 @@
 //libraries
 #define MEMSIZE 0xD0000
 #include "..\lib\kolibri.h"
+#include "..\lib\clipboard.h"
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
@@ -79,8 +80,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.15.3"
-#define ABOUT_TITLE "Eolite v2.15.3"
+#define TITLE "Eolite File Manager v2.16"
+#define ABOUT_TITLE "Eolite v2.16"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
