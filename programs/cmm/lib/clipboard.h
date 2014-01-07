@@ -1,4 +1,14 @@
+struct buffer_data
+{
+	dword	size;
+	dword	type;
+	dword	encoding;
+	byte	buffer_data[4096];
+};
+
+
 struct Clipboard {
+	buffer_data data;
 	dword GetSlotCount();
 	dword GetSlotData( ECX);
 	dword SetSlotData( EDX, ESI);
