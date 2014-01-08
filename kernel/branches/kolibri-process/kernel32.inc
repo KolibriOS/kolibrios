@@ -123,8 +123,8 @@ struct  APPDATA
         exc_handler     dd ?            ;+24
         except_mask     dd ?            ;+28
         pl0_stack       dd ?            ;+32
-        heap_base       dd ?            ;+36
-        heap_top        dd ?            ;+40
+                        dd ?            ;+36
+                        dd ?            ;+40
         cursor          dd ?            ;+44
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52
@@ -149,7 +149,7 @@ struct  APPDATA
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
                         dd ?            ;+136
-        mem_size        dd ?            ;+140
+                        dd ?            ;+140
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164

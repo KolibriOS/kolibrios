@@ -257,10 +257,11 @@ proc fs_execute
         test    eax, eax
         jz      .failed
 
+        mov     ebx, [hdr_mem]
+        mov     [eax+PROC.mem_used], ebx
+
         mov     ebx, [slot_base]
         mov     [ebx+APPDATA.process], eax
-        mov     eax, [hdr_mem]
-        mov     [ebx+APPDATA.mem_size], eax
 
         xor     edx, edx
         cmp     word [6], '02'
@@ -976,17 +977,8 @@ proc new_sys_threads
         mov     ecx, 11
         rep movsb             ;copy process name
 
-        mov     eax, [ebx+APPDATA.heap_base]
-        mov     [edx+APPDATA.heap_base], eax
-
-        mov     ecx, [ebx+APPDATA.heap_top]
-        mov     [edx+APPDATA.heap_top], ecx
-
-        mov     eax, [ebx+APPDATA.mem_size]
-        mov     [edx+APPDATA.mem_size], eax
-
-        mov     ecx, [ebx+APPDATA.process]
-        mov     [edx+APPDATA.process], ecx;copy page directory
+        mov     eax, [ebx+APPDATA.process]
+        mov     [edx+APPDATA.process], eax
 
         mov     eax, [ebx+APPDATA.dlls_list_ptr]
         mov     [edx+APPDATA.dlls_list_ptr], eax
@@ -1118,8 +1110,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         add     eax, 256
         jc      @f
 
-        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
-        ja      @f
+;        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
+;        ja      @f
 
         mov     eax, [cmd_line]
 
@@ -1158,8 +1150,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     eax, edx
         add     eax, 1024
         jc      @f
-        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
-        ja      @f
+;        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
+;        ja      @f
         stdcall strncpy, edx, [app_path], 1024
 @@:
         mov     ebx, [slot]

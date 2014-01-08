@@ -273,6 +273,8 @@ REG_EDI             equ (RING0_STACK_SIZE-52)
 REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 
 
+PAGE_SIZE           equ 4096
+
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001
 PG_WRITE            equ 0x002

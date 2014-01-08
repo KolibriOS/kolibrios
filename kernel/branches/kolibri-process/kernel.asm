@@ -3264,7 +3264,8 @@ sys_cpuusage:
         mov     edx, 0x100000*16
         cmp     ecx, 1 shl 5
         je      .os_mem
-        mov     edx, [SLOT_BASE+ecx*8+APPDATA.mem_size]
+        mov     edx, [SLOT_BASE+ecx*8+APPDATA.process]
+        mov     edx, [edx+PROC.mem_used]
         mov     eax, std_application_base_address
 .os_mem:
         stosd
