@@ -1,0 +1,284 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  ETHERNET.INC                                                   ;;
+;;                                                                 ;;
+;;  Ethernet network layer for KolibriOS                           ;;
+;;                                                                 ;;
+;;    Written by hidnplayr@kolibrios.org                           ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 3346 $
+
+ETH_FRAME_MINIMUM       = 60
+ETH_QUEUE_SIZE          = 255
+
+struct  ETH_header
+
+        DstMAC          dp  ?  ; destination MAC-address
+        SrcMAC          dp  ?  ; source MAC-address
+        Type            dw  ?  ; type of the upper-layer protocol
+
+ends
+
+struct  ETH_DEVICE      NET_DEVICE
+
+        mac             dp ?
+
+ends
+
+struct  ETH_queue_entry
+
+        device          dd ?
+        packet          dd ?
+        size            dd ?
+
+ends
+
+iglobal
+align 4
+
+        ETH_BROADCAST   dp  0xffffffffffff
+endg
+
+uglobal
+align 4
+        ETH_input_event dd ?
+        ETH_queue       rd (ETH_QUEUE_SIZE*sizeof.ETH_queue_entry + sizeof.queue)/4
+endg
+
+macro   ETH_init {
+
+        init_queue ETH_queue
+
+        movi    ebx, 1
+        mov     ecx, ETH_process_input
+        call    new_sys_threads
+        test    eax, eax
+        jns     @f
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for ethernet, error %d\n', eax
+  @@:
+
+}
+
+;-----------------------------------------------------------------
+;
+; ETH_input
+;
+;  This function is called by ethernet drivers,
+;  It pushes the received ethernet packets onto the eth_in_queue
+;
+;  IN:   [esp]  = Pointer to buffer
+;       [esp+4] = size of buffer
+;         ebx   = pointer to eth_device
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+ETH_input:
+
+        push    ebx
+        mov     esi, esp
+
+        pushf
+        cli
+        add_to_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .fail
+        popf
+
+        add     esp, sizeof.ETH_queue_entry
+
+        xor     edx, edx
+        mov     eax, [ETH_input_event]
+        mov     ebx, [eax + EVENT.id]
+        xor     esi, esi
+        call    raise_event
+
+        ret
+
+  .fail:
+        popf
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH incoming queue is full, discarding packet!\n"
+
+        add     esp, sizeof.ETH_queue_entry - 8
+        call    NET_packet_free
+        add     esp, 4
+
+        ret
+
+
+
+
+align 4
+ETH_process_input:
+
+        xor     esi, esi
+        mov     ecx, MANUAL_DESTROY
+        call    create_event
+        mov     [ETH_input_event], eax
+
+  .wait:
+        mov     eax, [ETH_input_event]
+        mov     ebx, [eax + EVENT.id]
+        call    wait_event
+
+  .loop:
+        get_from_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .wait
+
+        mov     eax, [esi + ETH_queue_entry.packet]
+        mov     ecx, [esi + ETH_queue_entry.size]
+        mov     ebx, [esi + ETH_queue_entry.device]
+
+        pushd   .loop   ; return address
+        push    ecx eax
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: size=%u\n", ecx
+        sub     ecx, sizeof.ETH_header
+        jb      .dump
+
+        lea     edx, [eax + sizeof.ETH_header]
+        mov     ax, [eax + ETH_header.Type]
+
+        cmp     ax, ETHER_PROTO_IPv4
+        je      IPv4_input
+
+        cmp     ax, ETHER_PROTO_ARP
+        je      ARP_input
+
+        cmp     ax, ETHER_PROTO_IPv6
+        je      IPv6_input
+
+        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
+        je      PPPoE_discovery_input
+
+        cmp     ax, ETHER_PROTO_PPP_SESSION
+        je      PPPoE_session_input
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: Unknown packet type=%x\n", ax
+
+  .dump:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: dumping\n"
+        call    NET_packet_free
+        add     esp, 4
+        ret
+
+;-----------------------------------------------------------------
+;
+; ETH_output
+;
+; IN: eax = pointer to source mac
+;     ebx = device ptr
+;     ecx = packet size
+;     edx = pointer to destination mac
+;      di = protocol
+;
+; OUT: edi = 0 on error, pointer to buffer otherwise
+;      eax = buffer start
+;      ebx = to device structure
+;      ecx = unchanged (packet size of embedded data)
+;      edx = size of complete buffer
+;
+;-----------------------------------------------------------------
+align 4
+ETH_output:
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: size=%u device=%x\n", ecx, ebx
+
+        cmp     ecx, [ebx + NET_DEVICE.mtu]
+        ja      .exit
+
+        push    ecx
+        push    di eax edx
+
+        add     ecx, sizeof.ETH_header
+        stdcall kernel_alloc, ecx
+        test    eax, eax
+        jz      .out_of_ram
+        mov     edi, eax
+
+        pop     esi
+        movsd
+        movsw
+        pop     esi
+        movsd
+        movsw
+        pop     ax
+        stosw
+
+        lea     eax, [edi - sizeof.ETH_header]  ; Set eax to buffer start
+        pop     ecx
+        lea     edx, [ecx + sizeof.ETH_header]  ; Set edx to complete buffer size
+
+        cmp     edx, ETH_FRAME_MINIMUM
+        jbe     .adjust_size
+  .done:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: ptr=%x size=%u\n", eax, edx
+        ret
+
+  .adjust_size:
+        mov     edx, ETH_FRAME_MINIMUM
+        test    edx, edx        ; clear zero flag
+        jmp     .done
+
+  .out_of_ram:
+        DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: Out of ram!\n"
+        add     esp, 4+4+2+4
+        sub     edi, edi
+        ret
+
+  .exit:
+        DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: Packet too large!\n"
+        sub     edi, edi
+        ret
+
+
+
+;-----------------------------------------------------------------
+;
+; ETH_API
+;
+; This function is called by system function 76
+;
+; IN:  subfunction number in bl
+;      device number in bh
+;      ecx, edx, .. depends on subfunction
+;
+; OUT:
+;
+;-----------------------------------------------------------------
+align 4
+ETH_api:
+
+        cmp     bh, NET_DEVICES_MAX
+        ja      .error
+        movzx   eax, bh
+        mov     eax, dword [NET_DRV_LIST + 4*eax]
+        cmp     [eax + NET_DEVICE.device_type], NET_DEVICE_ETH
+        jne     .error
+
+        and     ebx, 0xff
+        cmp     ebx, .number
+        ja      .error
+        jmp     dword [.table + 4*ebx]
+
+  .table:
+        dd      .read_mac       ; 0
+  .number = ($ - .table) / 4 - 1
+
+  .error:
+        or      eax, -1
+        ret
+
+
+  .read_mac:
+        movzx   ebx, word [eax + ETH_DEVICE.mac]
+        mov     eax, dword [eax + ETH_DEVICE.mac + 2]
+        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
+        ret
+
+
