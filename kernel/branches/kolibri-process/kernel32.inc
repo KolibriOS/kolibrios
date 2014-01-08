@@ -105,6 +105,7 @@ struct  PROC
         heap_base       rd 1           ;
         heap_top        rd 1           ;
         mem_used        rd 1
+        dlls_list_ptr   rd 1
         pdt_0_phys      rd 1
         pdt_1_phys      rd 1
         io_map_0        rd 1
@@ -140,7 +141,7 @@ struct  APPDATA
         wait_test       dd ?            ;+96   +++
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
-        dlls_list_ptr   dd ?            ;+108
+                        dd ?            ;+108
         event_filter    dd ?            ;+112
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120

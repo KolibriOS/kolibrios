@@ -1095,10 +1095,9 @@ proc load_library stdcall, file_name:dword
 ; ignore timestamp
         cli
 
-        mov     esi, [CURRENT_TASK]
-        shl     esi, 8
+        mov     esi, [current_process]
         lea     edi, [fullname]
-        mov     ebx, [esi+SLOT_BASE+APPDATA.dlls_list_ptr]
+        mov     ebx, [esi+PROC.dlls_list_ptr]
         test    ebx, ebx
         jz      .not_in_process
         mov     esi, [ebx+HDLL.fd]
@@ -1458,28 +1457,21 @@ endp
 ; out: eax = APPDATA.dlls_list_ptr if all is OK,
 ; NULL if memory allocation failed
 init_dlls_in_thread:
-        mov     ebx, [current_slot]
-        mov     eax, [ebx+APPDATA.dlls_list_ptr]
+        mov     ebx, [current_process]
+        mov     eax, [ebx+PROC.dlls_list_ptr]
         test    eax, eax
         jnz     .ret
-        push    [ebx+APPDATA.process]
+
         mov     eax, 8
-        call    malloc
-        pop     edx
+        call    malloc                               ; FIXME
         test    eax, eax
         jz      .ret
+
         mov     [eax], eax
         mov     [eax+4], eax
-        mov     ecx, [TASK_COUNT]
-        mov     ebx, SLOT_BASE+256
-.set:
-        cmp     [ebx+APPDATA.process], edx
-        jnz     @f
-        mov     [ebx+APPDATA.dlls_list_ptr], eax
-@@:
-        add     ebx, 256
-        dec     ecx
-        jnz     .set
+
+        mov     ebx, [current_process]
+        mov     [ebx+PROC.dlls_list_ptr], eax
 .ret:
         ret
 

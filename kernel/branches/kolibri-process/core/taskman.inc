@@ -980,9 +980,6 @@ proc new_sys_threads
         mov     eax, [ebx+APPDATA.process]
         mov     [edx+APPDATA.process], eax
 
-        mov     eax, [ebx+APPDATA.dlls_list_ptr]
-        mov     [edx+APPDATA.dlls_list_ptr], eax
-
         mov     eax, [ebx+APPDATA.tls_base]
         test    eax, eax
         jz      @F

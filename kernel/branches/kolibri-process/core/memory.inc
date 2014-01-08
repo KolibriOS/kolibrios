@@ -625,11 +625,6 @@ end if
         pop     ebx               ;restore exception number (#PF)
         ret
 
-;        xchg bx, bx
-;        add     esp,12 ;clear in stack: locals(.err_addr) + #PF + ret_to_caller
-;        restore_ring3_context
-;        iretd
-
 .user_space:
         test    eax, PG_MAP
         jnz     .err_access       ;Страница присутствует
@@ -669,9 +664,8 @@ end if
 ; access denied? this may be a result of copy-on-write protection for DLL
 ; check list of HDLLs
         and     ebx, not 0xFFF
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [current_process]
+        mov     eax, [eax+PROC.dlls_list_ptr]
         test    eax, eax
         jz      .fail
         mov     esi, [eax+HDLL.fd]
@@ -904,7 +898,8 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         push    ebx ecx
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
+        mov     eax, [eax+PROC.dlls_list_ptr]
         test    eax, eax
         jz      .no_hdll
         mov     ecx, [eax+HDLL.fd]
