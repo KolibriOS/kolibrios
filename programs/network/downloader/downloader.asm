@@ -822,9 +822,8 @@ pu_010:
         push    webAddr
         call    [getaddrinfo]
         pop     esi
-; TODO: handle error
-;        test    eax, eax
-;        jnz     .fail_dns
+        test    eax, eax
+        jnz     .fail_dns
 
 ; fill in ip
         mov     eax, [esi + addrinfo.ai_addr]
@@ -836,6 +835,12 @@ pu_010:
         call    [freeaddrinfo]
 
         DEBUGF  1, "Resolved to %u.%u.%u.%u\n", [server_ip]:1, [server_ip + 1]:1, [server_ip + 2]:1, [server_ip + 3]:1
+
+        ret
+
+  .fail_dns:
+        DEBUGF  1, "DNS resolution failed\n"
+        mov     [server_ip], 0
 
         ret
 
