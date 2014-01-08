@@ -446,7 +446,9 @@ default_io_map      rd 1
 
 LFBSize             rd 1
 
-current_slot        rd 1
+current_process     rd 1
+current_slot        rd 1    ; i.e. cureent thread
+
 
 ; status
 hd1_status                      rd 1  ; 0 - free : other - pid

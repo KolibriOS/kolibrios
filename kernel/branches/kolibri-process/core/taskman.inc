@@ -248,8 +248,7 @@ proc fs_execute
         loop    .copy_process_name_loop
 .copy_process_name_done:
 
-        mov     ebx, [current_slot]
-        mov     ebx, [ebx+APPDATA.process]
+        mov     ebx, [current_process]
         mov     [save_proc], ebx
 
         stdcall create_process, [hdr_mem], [file_base], [file_size]
@@ -431,8 +430,6 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         mov     ecx, pg_data.mutex
         call    mutex_lock
 
-        xchg bx, bx
-
         xor     eax, eax
         mov     [process], eax
 
@@ -565,11 +562,14 @@ endp
 
 align 4
 set_cr3:
-
+        pushfd
+        cli
         mov     ebx, [current_slot]
+        mov     [current_process], eax
         mov     [ebx+APPDATA.process], eax
         mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
+        popfd
         ret
 
 align 4

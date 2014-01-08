@@ -730,6 +730,8 @@ no_mode_0x12:
         stosd
         stosd
 
+        mov     [current_process], sys_proc
+
         mov     edx, SLOT_BASE+256*1
         mov     ebx, [os_stack_seg]
         add     ebx, 0x2000

@@ -121,10 +121,10 @@ do_change_task:
         Mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)],eax,[ebx+APPDATA.io_map]
         Mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)],eax,[ebx+APPDATA.io_map+4]
 ; set new thread memory-map
-        mov     ecx, APPDATA.process
-        mov     eax, [ebx+ecx]      ;offset>0x7F
-        cmp     eax, [esi+ecx]      ;offset>0x7F
+        mov     eax, [ebx+APPDATA.process]
+        cmp     eax, [current_process]
         je      @f
+        mov     [current_process], eax
         mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
 @@:

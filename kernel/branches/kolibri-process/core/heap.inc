@@ -565,8 +565,7 @@ HEAP_TOP  equ 0x80000000
 align 4
 proc init_heap
 
-        mov     ebx, [current_slot]
-        mov     ebx, [ebx+APPDATA.process]
+        mov     ebx, [current_process]
         mov     eax, [ebx+PROC.heap_top]
         test    eax, eax
         jz      @F
@@ -602,8 +601,7 @@ proc user_alloc stdcall, alloc_size:dword
         add     ecx, (4095+PAGE_SIZE)
         and     ecx, not 4095
 
-        mov     ebx, [current_slot]
-        mov     ebx, [ebx+APPDATA.process]
+        mov     ebx, [current_process]
         mov     esi, dword [ebx+PROC.heap_base] ; heap_base
         mov     edi, dword [ebx+PROC.heap_top]  ; heap_top
 .scan:
@@ -639,9 +637,7 @@ proc user_alloc stdcall, alloc_size:dword
         jnz     @B
 .no:
 
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.process]
-
+        mov     edx, [current_process]
         mov     ebx, [alloc_size]
         add     ebx, 0xFFF
         and     ebx, not 0xFFF
@@ -676,8 +672,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         push    esi
         push    edi
 
-        mov     ebx, [current_slot]
-        mov     ebx, [ebx+APPDATA.process]
+        mov     ebx, [current_process]
 
         mov     edx, [address]
         and     edx, not 0xFFF
@@ -753,9 +748,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         mov     [page_tabs+ebx*4], ecx
 
 .nothird:
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.process]
-
+        mov     edx, [current_process]
         mov     ebx, [alloc_size]
         add     ebx, 0xFFF
         and     ebx, not 0xFFF
@@ -815,8 +808,7 @@ proc user_free stdcall, base:dword
 .released:
         push    edi
 
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.process]
+        mov     edx, [current_process]
         mov     esi, dword [edx+PROC.heap_base]
         mov     edi, dword [edx+PROC.heap_top]
         sub     ebx, [edx+PROC.mem_used]
@@ -1004,8 +996,7 @@ user_realloc:
         jnz     .nofreeall
         mov     eax, [page_tabs+ecx*4]
         and     eax, not 0xFFF
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.process]
+        mov     edx, [current_process]
         mov     ebx, [edx+PROC.mem_used]
         sub     ebx, eax
         add     ebx, 0x1000
@@ -1026,8 +1017,7 @@ user_realloc:
         shr     ebx, 12
         sub     ebx, edx
         push    ebx ecx edx
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.process]
+        mov     edx, [current_process]
         shl     ebx, 12
         sub     ebx, [edx+PROC.mem_used]
         neg     ebx
@@ -1041,8 +1031,7 @@ user_realloc:
         shl     ebx, 12
         jz      .ret
         push    esi
-        mov     esi, [current_slot]
-        mov     esi, [esi+APPDATA.process]
+        mov     esi, [current_process]
         mov     esi, [esi+PROC.heap_top]
         shr     esi, 12
 @@:
@@ -1066,8 +1055,7 @@ user_realloc:
         ret
 .realloc_add:
 ; get some additional memory
-        mov     eax, [current_slot]
-        mov     eax, [eax+APPDATA.process]
+        mov     eax, [current_process]
         mov     eax, [eax+PROC.heap_top]
         shr     eax, 12
         cmp     edx, eax
@@ -1100,16 +1088,14 @@ user_realloc:
         cld
         rep stosd
         pop     edi
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.process]
+        mov     edx, [current_process]
         shl     ebx, 12
         add     [edx+PROC.mem_used], ebx
         pop     eax edx ecx
         ret
 .cant_inplace:
         push    esi edi
-        mov     eax, [current_slot]
-        mov     eax, [eax+APPDATA.process]
+        mov     eax, [current_process]
         mov     esi, [eax+PROC.heap_base]
         mov     edi, [eax+PROC.heap_top]
         shr     esi, 12
@@ -1174,8 +1160,7 @@ user_realloc:
         jnz     @b
 .no:
         push    ebx
-        mov     edx, [current_slot]
-        mov     edx, [eax+APPDATA.process]
+        mov     edx, [current_process]
         shl     ebx, 12
         add     [edx+PROC.mem_used], ebx
         pop     ebx
