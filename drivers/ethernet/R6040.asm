@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  R6040 driver for KolibriOS                                     ;;
@@ -58,94 +58,106 @@ public version
 
 ; Operational parameters that usually are not changed.
 
-PHY1_ADDR       = 1         ;For MAC1
-PHY2_ADDR       = 3         ;For MAC2
-PHY_MODE        = 0x3100    ;PHY CHIP Register 0
-PHY_CAP         = 0x01E1    ;PHY CHIP Register 4
+PHY1_ADDR       = 1                     ; For MAC1
+PHY2_ADDR       = 3                     ; For MAC2
+PHY_MODE        = 0x3100                ; PHY CHIP Register 0
+PHY_CAP         = 0x01E1                ; PHY CHIP Register 4
 
 ;**************************************************************************
 ; RDC R6040 Register Definitions
 ;**************************************************************************
-MCR0            = 0x00      ;Control register 0
-MCR1            = 0x01      ;Control register 1
-MAC_RST         = 0x0001    ;Reset the MAC
-MBCR            = 0x08      ;Bus control
-MT_ICR          = 0x0C      ;TX interrupt control
-MR_ICR          = 0x10      ;RX interrupt control
-MTPR            = 0x14      ;TX poll command register
-MR_BSR          = 0x18      ;RX buffer size
-MR_DCR          = 0x1A      ;RX descriptor control
-MLSR            = 0x1C      ;Last status
-MMDIO           = 0x20      ;MDIO control register
-MDIO_WRITE      = 0x4000    ;MDIO write
-MDIO_READ       = 0x2000    ;MDIO read
-MMRD            = 0x24      ;MDIO read data register
-MMWD            = 0x28      ;MDIO write data register
-MTD_SA0         = 0x2C      ;TX descriptor start address 0
-MTD_SA1         = 0x30      ;TX descriptor start address 1
-MRD_SA0         = 0x34      ;RX descriptor start address 0
-MRD_SA1         = 0x38      ;RX descriptor start address 1
-MISR            = 0x3C      ;Status register
-MIER            = 0x40      ;INT enable register
-MSK_INT         = 0x0000    ;Mask off interrupts
-RX_FINISH       = 0x0001    ;RX finished
-RX_NO_DESC      = 0x0002    ;No RX descriptor available
-RX_FIFO_FULL    = 0x0004    ;RX FIFO full
-RX_EARLY        = 0x0008    ;RX early
-TX_FINISH       = 0x0010    ;TX finished
-TX_EARLY        = 0x0080    ;TX early
-EVENT_OVRFL     = 0x0100    ;Event counter overflow
-LINK_CHANGED    = 0x0200    ;PHY link changed
-ME_CISR         = 0x44      ;Event counter INT status
-ME_CIER         = 0x48      ;Event counter INT enable
-MR_CNT          = 0x50      ;Successfully received packet counter
-ME_CNT0         = 0x52      ;Event counter 0
-ME_CNT1         = 0x54      ;Event counter 1
-ME_CNT2         = 0x56      ;Event counter 2
-ME_CNT3         = 0x58      ;Event counter 3
-MT_CNT          = 0x5A      ;Successfully transmit packet counter
-ME_CNT4         = 0x5C      ;Event counter 4
-MP_CNT          = 0x5E      ;Pause frame counter register
-MAR0            = 0x60      ;Hash table 0
-MAR1            = 0x62      ;Hash table 1
-MAR2            = 0x64      ;Hash table 2
-MAR3            = 0x66      ;Hash table 3
-MID_0L          = 0x68      ;Multicast address MID0 Low
-MID_0M          = 0x6A      ;Multicast address MID0 Medium
-MID_0H          = 0x6C      ;Multicast address MID0 High
-MID_1L          = 0x70      ;MID1 Low
-MID_1M          = 0x72      ;MID1 Medium
-MID_1H          = 0x74      ;MID1 High
-MID_2L          = 0x78      ;MID2 Low
-MID_2M          = 0x7A      ;MID2 Medium
-MID_2H          = 0x7C      ;MID2 High
-MID_3L          = 0x80      ;MID3 Low
-MID_3M          = 0x82      ;MID3 Medium
-MID_3H          = 0x84      ;MID3 High
-PHY_CC          = 0x88      ;PHY status change configuration register
-PHY_ST          = 0x8A      ;PHY status register
-MAC_SM          = 0xAC      ;MAC status machine
-MAC_ID          = 0xBE      ;Identifier register
 
-MAX_BUF_SIZE    = 0x600     ;1536
+MCR0            = 0x00                  ; Control register 0
+MCR0_RCVEN      = 0x0002                ; Receive enable
+MCR0_PROMISC    = 0x0020                ; Promiscuous mode
+MCR0_HASH_EN    = 0x0100                ; Enable multicast hash table function
+MCR0_XMTEN      = 0x1000                ; Transmission enable
+MCR0_FD         = 0x8000                ; Full/Half Duplex mode
 
-MBCR_DEFAULT    = 0x012A    ;MAC Bus Control Register
-MCAST_MAX       = 3         ;Max number multicast addresses to filter
+MCR1            = 0x01                  ; Control register 1
+MAC_RST         = 0x0001                ; Reset the MAC
+
+MBCR            = 0x08                  ; Bus control
+MT_ICR          = 0x0C                  ; TX interrupt control
+MR_ICR          = 0x10                  ; RX interrupt control
+MTPR            = 0x14                  ; TX poll command register
+MR_BSR          = 0x18                  ; RX buffer size
+MR_DCR          = 0x1A                  ; RX descriptor control
+MLSR            = 0x1C                  ; Last status
+
+MMDIO           = 0x20                  ; MDIO control register
+MDIO_WRITE      = 0x4000                ; MDIO write
+MDIO_READ       = 0x2000                ; MDIO read
+MMRD            = 0x24                  ; MDIO read data register
+MMWD            = 0x28                  ; MDIO write data register
+
+MTD_SA0         = 0x2C                  ; TX descriptor start address 0
+MTD_SA1         = 0x30                  ; TX descriptor start address 1
+MRD_SA0         = 0x34                  ; RX descriptor start address 0
+MRD_SA1         = 0x38                  ; RX descriptor start address 1
+
+MISR            = 0x3C                  ; Status register
+MIER            = 0x40                  ; INT enable register
+MSK_INT         = 0x0000                ; Mask off interrupts
+RX_FINISH       = 0x0001                ; RX finished
+RX_NO_DESC      = 0x0002                ; No RX descriptor available
+RX_FIFO_FULL    = 0x0004                ; RX FIFO full
+RX_EARLY        = 0x0008                ; RX early
+TX_FINISH       = 0x0010                ; TX finished
+TX_EARLY        = 0x0080                ; TX early
+EVENT_OVRFL     = 0x0100                ; Event counter overflow
+LINK_CHANGED    = 0x0200                ; PHY link changed
+
+ME_CISR         = 0x44                  ; Event counter INT status
+ME_CIER         = 0x48                  ; Event counter INT enable
+MR_CNT          = 0x50                  ; Successfully received packet counter
+ME_CNT0         = 0x52                  ; Event counter 0
+ME_CNT1         = 0x54                  ; Event counter 1
+ME_CNT2         = 0x56                  ; Event counter 2
+ME_CNT3         = 0x58                  ; Event counter 3
+MT_CNT          = 0x5A                  ; Successfully transmit packet counter
+ME_CNT4         = 0x5C                  ; Event counter 4
+MP_CNT          = 0x5E                  ; Pause frame counter register
+MAR0            = 0x60                  ; Hash table 0
+MAR1            = 0x62                  ; Hash table 1
+MAR2            = 0x64                  ; Hash table 2
+MAR3            = 0x66                  ; Hash table 3
+MID_0L          = 0x68                  ; Multicast address MID0 Low
+MID_0M          = 0x6A                  ; Multicast address MID0 Medium
+MID_0H          = 0x6C                  ; Multicast address MID0 High
+MID_1L          = 0x70                  ; MID1 Low
+MID_1M          = 0x72                  ; MID1 Medium
+MID_1H          = 0x74                  ; MID1 High
+MID_2L          = 0x78                  ; MID2 Low
+MID_2M          = 0x7A                  ; MID2 Medium
+MID_2H          = 0x7C                  ; MID2 High
+MID_3L          = 0x80                  ; MID3 Low
+MID_3M          = 0x82                  ; MID3 Medium
+MID_3H          = 0x84                  ; MID3 High
+PHY_CC          = 0x88                  ; PHY status change configuration register
+PHY_ST          = 0x8A                  ; PHY status register
+MAC_SM          = 0xAC                  ; MAC status machine
+MAC_ID          = 0xBE                  ; Identifier register
+
+MAX_BUF_SIZE    = 0x600                 ; 1536
+
+MBCR_DEFAULT    = 0x012A                ; MAC Bus Control Register
+MCAST_MAX       = 3                     ; Max number multicast addresses to filter
 
 ;Descriptor status
-DSC_OWNER_MAC   = 0x8000    ;MAC is the owner of this descriptor
-DSC_RX_OK       = 0x4000    ;RX was successfull
-DSC_RX_ERR      = 0x0800    ;RX PHY error
-DSC_RX_ERR_DRI  = 0x0400    ;RX dribble packet
-DSC_RX_ERR_BUF  = 0x0200    ;RX length exceeds buffer size
-DSC_RX_ERR_LONG = 0x0100    ;RX length > maximum packet length
-DSC_RX_ERR_RUNT = 0x0080    ;RX packet length < 64 byte
-DSC_RX_ERR_CRC  = 0x0040    ;RX CRC error
-DSC_RX_BCAST    = 0x0020    ;RX broadcast (no error)
-DSC_RX_MCAST    = 0x0010    ;RX multicast (no error)
-DSC_RX_MCH_HIT  = 0x0008    ;RX multicast hit in hash table (no error)
-DSC_RX_MIDH_HIT = 0x0004    ;RX MID table hit (no error)
-DSC_RX_IDX_MID_MASK  = 3    ;RX mask for the index of matched MIDx
+DSC_OWNER_MAC   = 0x8000                ; MAC is the owner of this descriptor
+DSC_RX_OK       = 0x4000                ; RX was successfull
+DSC_RX_ERR      = 0x0800                ; RX PHY error
+DSC_RX_ERR_DRI  = 0x0400                ; RX dribble packet
+DSC_RX_ERR_BUF  = 0x0200                ; RX length exceeds buffer size
+DSC_RX_ERR_LONG = 0x0100                ; RX length > maximum packet length
+DSC_RX_ERR_RUNT = 0x0080                ; RX packet length < 64 byte
+DSC_RX_ERR_CRC  = 0x0040                ; RX CRC error
+DSC_RX_BCAST    = 0x0020                ; RX broadcast (no error)
+DSC_RX_MCAST    = 0x0010                ; RX multicast (no error)
+DSC_RX_MCH_HIT  = 0x0008                ; RX multicast hit in hash table (no error)
+DSC_RX_MIDH_HIT = 0x0004                ; RX MID table hit (no error)
+DSC_RX_IDX_MID_MASK  = 3                ; RX mask for the index of matched MIDx
 
 ;PHY settings
 ICPLUS_PHY_ID   = 0x0243
@@ -224,7 +236,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2,"Loading %s driver\n", my_service
+        DEBUGF  2,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -415,7 +427,7 @@ ret
 
 align 4
 probe:
-        DEBUGF  2,"Probing R6040 device\n"
+        DEBUGF  1,"Probing R6040 device\n"
 
         PCI_make_bus_master
 
@@ -438,11 +450,11 @@ probe:
         or      eax, dword [device.mac]
         test    eax, eax
         jnz     @f
-        DEBUGF  2, "ERROR: MAC address not initialized!\n"
+        DEBUGF  2, "MAC address not initialized!\n"
 
      @@:
         ; Init RDC private data
-        mov     [device.mcr0], 0x1002
+        mov     [device.mcr0], MCR0_XMTEN or MCR0_RCVEN
         ;mov     [private.phy_addr], 1 ; Asper: Only one network card is supported now.
         mov     [device.switch_sig], 0
 
@@ -463,7 +475,7 @@ probe:
         call    init_rxbufs
 
         ; Read the PHY ID
-        mov     [device.phy_mode], 0x8000
+        mov     [device.phy_mode], MCR0_FD
         stdcall phy_read, 0, 2
         mov     [device.switch_sig], ax
         cmp     ax, ICPLUS_PHY_ID
@@ -513,7 +525,7 @@ probe:
 align 4
 reset:
 
-        DEBUGF  2,"Resetting R6040\n"
+        DEBUGF  1,"Resetting R6040\n"
 
         ; Mask off Interrupt
         xor     ax, ax
@@ -525,11 +537,11 @@ reset:
 ; attach int handler
 
         movzx   eax, [device.irq_line]
-        DEBUGF  2,"Attaching int handler to irq %x\n", eax:1
+        DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  2,"\nCould not attach int handler!\n"
+        DEBUGF  2,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
        @@:
@@ -600,9 +612,9 @@ reset:
         set_io  MIER
         out     dx, ax
 
-        ;Enable TX and RX
+        ;Enable RX
         mov     ax, [device.mcr0]
-        or      ax, 0x0002
+        or      ax, MCR0_RCVEN
         set_io  0
         out     dx, ax
 
@@ -668,11 +680,11 @@ init_rxbufs:
         mov     ecx, RX_RING_SIZE
 
     .next_desc:
-         mov     [esi + x_head.ndesc], edx
+        mov     [esi + x_head.ndesc], edx
 
-        push    esi ecx
+        push    esi ecx edx
         stdcall KernelAlloc, MAX_BUF_SIZE
-        pop     ecx esi
+        pop     edx ecx esi
 
         mov     [esi + x_head.skb_ptr], eax
         GetRealAddr
@@ -685,8 +697,7 @@ init_rxbufs:
         dec     ecx
         jnz     .next_desc
 
-        ; complete the ring by linking the last to the first
-
+; complete the ring by linking the last to the first
         lea     eax, [device.rx_ring]
         GetRealAddr
         mov     [device.rx_ring + x_head.sizeof*(RX_RING_SIZE - 1) + x_head.ndesc], eax
@@ -751,9 +762,9 @@ phy_mode_chk:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-        DEBUGF  2,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
-        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+        DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
@@ -768,14 +779,13 @@ transmit:
         add     edi, ebx
         add     edi, device.tx_ring - ebx
 
-        DEBUGF  2,"TX buffer status: 0x%x\n", [edi + x_head.status]:4
+        DEBUGF  1,"TX buffer status: 0x%x\n", [edi + x_head.status]:4
 
         test    [edi + x_head.status], DSC_OWNER_MAC    ; check if buffer is available
         jnz     .wait_to_send
 
   .do_send:
-
-        DEBUGF  2,"Sending now\n"
+        DEBUGF  1,"Sending now\n"
 
         mov     eax, [esp+4]
         mov     [edi + x_head.skb_ptr], eax
@@ -805,7 +815,7 @@ transmit:
 
   .wait_to_send:
 
-        DEBUGF  2,"Waiting for TX buffer\n"
+        DEBUGF  1,"Waiting for TX buffer\n"
 
         call    GetTimerTicks           ; returns in eax
         lea     edx, [eax + 100]
@@ -818,11 +828,11 @@ transmit:
         cmp     edx, eax
         jb      .l2
 
-        DEBUGF  1,"Send timeout\n"
+        DEBUGF  2,"Send timeout\n"
         xor     eax, eax
         dec     eax
   .fail:
-        DEBUGF  1,"Send failed\n"
+        DEBUGF  2,"Send failed\n"
         stdcall KernelFree, [esp+4]
         or      eax, -1
         ret     8
@@ -842,7 +852,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"int\n"
 
 ; Find pointer of device wich made IRQ occur
 
@@ -874,11 +884,11 @@ int_handler:
 
   .got_it:
 
-        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
+        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
 
         push ax
 
-        test    word [esp], RX_FINISH
+        test    word[esp], RX_FINISH
         jz      .no_RX
 
         push    ebx
@@ -886,45 +896,40 @@ int_handler:
         pop     ebx
 
         ; Find the current RX descriptor
-
         movzx   edx, [device.cur_rx]
         shl     edx, 5
         lea     edx, [device.rx_ring + edx]
 
         ; Check the descriptor status
-
         mov     cx, [edx + x_head.status]
         test    cx, DSC_OWNER_MAC
         jnz     .no_RX
 
-        DEBUGF  2,"packet status=0x%x\n", cx
+        DEBUGF  1,"packet status=0x%x\n", cx
 
         test    cx, DSC_RX_ERR          ; Global error status set
         jnz     .no_RX
 
         ; Packet successfully received
-
         movzx   ecx, [edx + x_head.len]
         and     ecx, 0xFFF
         sub     ecx, 4                  ; Do not count the CRC
 
-; Update stats
-        add     dword [device.bytes_rx], ecx
-        adc     dword [device.bytes_rx + 4], 0
-        inc     dword [device.packets_rx]
+        ; Update stats
+        add     dword[device.bytes_rx], ecx
+        adc     dword[device.bytes_rx + 4], 0
+        inc     dword[device.packets_rx]
 
         ; Push packet size and pointer, kernel will need it..
-
         push    ebx
         push    .more_RX
 
         push    ecx
         push    [edx + x_head.skb_ptr]
 
-        DEBUGF  2,"packet ptr=0x%x\n", [edx + x_head.skb_ptr]
+        DEBUGF  1,"packet ptr=0x%x\n", [edx + x_head.skb_ptr]
 
         ; reset the RX descriptor
-
         push    edx
         stdcall KernelAlloc, MAX_BUF_SIZE
         pop     edx
@@ -934,18 +939,16 @@ int_handler:
         mov     [edx + x_head.status], DSC_OWNER_MAC
 
         ; Use next descriptor next time
-
         inc     [device.cur_rx]
         and     [device.cur_rx], RX_RING_SIZE - 1
 
         ; At last, send packet to kernel
-
         jmp     Eth_input
 
 
   .no_RX:
 
-        test    word [esp], TX_FINISH
+        test    word[esp], TX_FINISH
         jz      .no_TX
 
       .loop_tx:
@@ -959,7 +962,7 @@ int_handler:
         cmp     [edi + x_head.skb_ptr], 0
         je      .no_TX
 
-        DEBUGF  2,"Freeing buffer 0x%x\n", [edi + x_head.skb_ptr]
+        DEBUGF  1,"Freeing buffer 0x%x\n", [edi + x_head.skb_ptr]
 
         push    [edi + x_head.skb_ptr]
         mov     [edi + x_head.skb_ptr], 0
@@ -971,6 +974,42 @@ int_handler:
         jmp     .loop_tx
 
   .no_TX:
+        test    word[esp], RX_NO_DESC
+        jz      .no_rxdesc
+
+        DEBUGF  2, "No more RX descriptors!\n"
+
+  .no_rxdesc:
+        test    word[esp], RX_FIFO_FULL
+        jz      .no_rxfifo
+
+        DEBUGF  2, "RX FIFO full!\n"
+
+  .no_rxfifo:
+        test    word[esp], RX_EARLY
+        jz      .no_rxearly
+
+        DEBUGF  1, "RX early\n"
+
+  .no_rxearly:
+        test    word[esp], TX_EARLY
+        jz      .no_txearly
+
+        DEBUGF  1, "TX early\n"
+
+  .no_txearly:
+        test    word[esp], EVENT_OVRFL
+        jz      .no_ovrfl
+
+        DEBUGF  2, "Event counter overflow!\n"
+
+  .no_ovrfl:
+        test    word[esp], LINK_CHANGED
+        jz      .no_link
+
+        DEBUGF  1, "Link changed\n"
+
+  .no_link:
         pop     ax
 
         pop     edi esi ebx
@@ -983,7 +1022,7 @@ int_handler:
 align 4
 init_mac_regs:
 
-        DEBUGF  2,"initializing MAC regs\n"
+        DEBUGF  1,"initializing MAC regs\n"
 
         ; MAC operation register
         mov     ax, 1
@@ -1012,7 +1051,7 @@ init_mac_regs:
 align 4
 proc  phy_read stdcall, phy_addr:dword, reg:dword
 
-        DEBUGF  2,"PHY read, addr=0x%x reg=0x%x\n", [phy_addr]:8, [reg]:8
+        DEBUGF  1,"PHY read, addr=0x%x reg=0x%x\n", [phy_addr]:8, [reg]:8
 
         mov     eax, [phy_addr]
         shl     eax, 8
@@ -1036,7 +1075,7 @@ proc  phy_read stdcall, phy_addr:dword, reg:dword
         in      ax, dx
         and     eax, 0xFFFF
 
-        DEBUGF  2,"PHY read, val=0x%x\n", eax:4
+        DEBUGF  1,"PHY read, val=0x%x\n", eax:4
 
         ret
 
@@ -1050,7 +1089,7 @@ endp
 align 4
 proc  phy_write stdcall, phy_addr:dword, reg:dword, val:dword
 
-        DEBUGF  2,"PHY write, addr=0x%x reg=0x%x val=0x%x\n", [phy_addr]:8, [reg]:8, [val]:8
+        DEBUGF  1,"PHY write, addr=0x%x reg=0x%x val=0x%x\n", [phy_addr]:8, [reg]:8, [val]:8
 
         mov     eax, [val]
         set_io  0
@@ -1076,7 +1115,7 @@ proc  phy_write stdcall, phy_addr:dword, reg:dword, val:dword
         jnz     .write
   @@:
 
-        DEBUGF  2,"PHY write ok\n"
+        DEBUGF  1,"PHY write ok\n"
 
         ret
 endp
@@ -1086,7 +1125,7 @@ endp
 align 4
 read_mac:
 
-        DEBUGF  2,"Reading MAC: "
+        DEBUGF  1,"Reading MAC: "
 
         mov     cx, 3
         lea     edi, [device.mac]
@@ -1100,7 +1139,7 @@ read_mac:
         dec     cx
         jnz     .mac
 
-        DEBUGF  2,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2, [edi-5]:2, [edi-4]:2, [edi-3]:2, [edi-2]:2, [edi-1]:2
+        DEBUGF  1,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2, [edi-5]:2, [edi-4]:2, [edi-3]:2, [edi-2]:2, [edi-1]:2
 
         ret
 
