@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2011-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2011-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -16,6 +16,7 @@ DISK_STATUS_GENERAL_ERROR   = -1; if no other code is suitable
 DISK_STATUS_INVALID_CALL    = 1 ; invalid input parameters
 DISK_STATUS_NO_MEDIA        = 2 ; no media present
 DISK_STATUS_END_OF_MEDIA    = 3 ; end of media while reading/writing data
+DISK_STATUS_NO_MEMORY       = 4 ; insufficient memory for driver operation
 ; Driver flags. Represent bits in DISK.DriverFlags.
 DISK_NO_INSERT_NOTIFICATION = 1
 ; Media flags. Represent bits in DISKMEDIAINFO.Flags.
@@ -101,8 +102,6 @@ ends
 ; there are two distinct caches for a disk, one for "system" data,and the other
 ; for "application" data.
 struct  DISKCACHE
-        mutex           MUTEX
-; Lock to protect the cache.
 ; The following fields are inherited from data32.inc:cache_ideX.
         pointer         dd ?
         data_size       dd ?    ; unused
@@ -169,6 +168,8 @@ struct  DISK
 ; Pointer to array of .NumPartitions pointers to PARTITION structures.
         cache_size      dd ?
 ; inherited from cache_ideX_size
+        CacheLock       MUTEX
+; Lock to protect both caches.
         SysCache        DISKCACHE
         AppCache        DISKCACHE
 ; Two caches for the disk.
