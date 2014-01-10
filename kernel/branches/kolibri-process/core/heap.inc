@@ -558,7 +558,7 @@ restore block_base
 restore block_size
 restore block_flags
 
-;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;      USER HEAP     ;;;;;;;;;;;;;;;;;
 
 HEAP_TOP  equ 0x80000000
 
@@ -573,6 +573,9 @@ proc init_heap
         sub     eax, PAGE_SIZE
         ret
 @@:
+        lea     ecx, [ebx+PROC.heap_lock]
+        call    mutex_init
+
         mov     esi, [ebx+PROC.mem_used]
         add     esi, 4095
         and     esi, not 4095
@@ -597,11 +600,14 @@ proc user_alloc stdcall, alloc_size:dword
         push    esi
         push    edi
 
+        mov     ebx, [current_process]
+        lea     ecx, [ebx+PROC.heap_lock]
+        call    mutex_lock
+
         mov     ecx, [alloc_size]
         add     ecx, (4095+PAGE_SIZE)
         and     ecx, not 4095
 
-        mov     ebx, [current_process]
         mov     esi, dword [ebx+PROC.heap_base] ; heap_base
         mov     edi, dword [ebx+PROC.heap_top]  ; heap_top
 .scan:
@@ -643,6 +649,9 @@ proc user_alloc stdcall, alloc_size:dword
         and     ebx, not 0xFFF
         add     [edx+PROC.mem_used], ebx
 
+        lea     ecx, [edx+PROC.heap_lock]
+        call    mutex_unlock
+
         lea     eax, [esi+4096]
 
         pop     edi
@@ -658,6 +667,10 @@ proc user_alloc stdcall, alloc_size:dword
         add     esi, eax
         jmp     .scan
 .m_exit:
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_unlock
+
         xor     eax, eax
         pop     edi
         pop     esi
@@ -673,6 +686,8 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         push    edi
 
         mov     ebx, [current_process]
+        lea     ecx, [ebx+PROC.heap_lock]
+        call    mutex_lock
 
         mov     edx, [address]
         and     edx, not 0xFFF
@@ -697,6 +712,10 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         mov     esi, ecx
         jmp     .scan
 .error:
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_unlock
+
         xor     eax, eax
         pop     edi
         pop     esi
@@ -754,6 +773,9 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         and     ebx, not 0xFFF
         add     [edx+PROC.mem_used], ebx
 
+        lea     ecx, [edx+PROC.heap_lock]
+        call    mutex_unlock
+
         mov     eax, [address]
 
         pop     edi
@@ -769,9 +791,13 @@ proc user_free stdcall, base:dword
 
         mov     esi, [base]
         test    esi, esi
-        jz      .exit
+        jz      .fail
 
         push    ebx
+
+        mov     ebx, [current_process]
+        lea     ecx, [ebx+PROC.heap_lock]
+        call    mutex_lock
 
         xor     ebx, ebx
         shr     esi, 12
@@ -809,6 +835,7 @@ proc user_free stdcall, base:dword
         push    edi
 
         mov     edx, [current_process]
+        lea     ecx, [edx+PROC.heap_lock]
         mov     esi, dword [edx+PROC.heap_base]
         mov     edi, dword [edx+PROC.heap_top]
         sub     ebx, [edx+PROC.mem_used]
@@ -816,17 +843,21 @@ proc user_free stdcall, base:dword
         mov     [edx+PROC.mem_used], ebx
         call    user_normalize
         pop     edi
+.exit:
+        call    mutex_unlock
+
+        xor     eax, eax
         pop     ebx
         pop     esi
         ret
-.exit:
+
+.cantfree:
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        jmp     .exit
+.fail:
         xor     eax, eax
         inc     eax
-        pop     esi
-        ret
-.cantfree:
-        xor     eax, eax
-        pop     ebx
         pop     esi
         ret
 endp
@@ -955,6 +986,13 @@ user_realloc:
         ret
 @@:
         push    ecx edx
+
+        push    eax
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_lock
+        pop     eax
+
         lea     ecx, [eax - 0x1000]
         shr     ecx, 12
         mov     edx, [page_tabs+ecx*4]
@@ -962,6 +1000,10 @@ user_realloc:
         jnz     @f
 ; attempt to realloc invalid pointer
 .ret0:
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_unlock
+
         pop     edx ecx
         xor     eax, eax
         ret
@@ -1051,8 +1093,12 @@ user_realloc:
         or      ebx, FREE_BLOCK
         mov     [page_tabs+ecx*4], ebx
 .ret:
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_unlock
         pop     eax edx ecx
         ret
+
 .realloc_add:
 ; get some additional memory
         mov     eax, [current_process]
@@ -1091,8 +1137,13 @@ user_realloc:
         mov     edx, [current_process]
         shl     ebx, 12
         add     [edx+PROC.mem_used], ebx
+
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_unlock
         pop     eax edx ecx
         ret
+
 .cant_inplace:
         push    esi edi
         mov     eax, [current_process]
@@ -1169,6 +1220,10 @@ user_realloc:
         inc     esi
         dec     ebx
         jnz     @b
+
+        mov     ecx, [current_process]
+        lea     ecx, [ecx+PROC.heap_lock]
+        call    mutex_unlock
         pop     eax edi esi edx ecx
         ret
 

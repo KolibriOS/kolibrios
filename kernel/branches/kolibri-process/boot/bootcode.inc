@@ -159,7 +159,7 @@ FirstDataSector dw      0                       ; begin of data
 ;
 ;=========================================================================
 
-include 'bootvesa.inc'                 ;Include source for boot vesa 
+include 'bootvesa.inc'                 ;Include source for boot vesa
 if defined extended_primary_loader
 include 'parsers.inc'
 end if
@@ -649,7 +649,7 @@ end if
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_launcher-preboot_device], 1        ; Start LAUNCHER by default
-        adc     byte [di+preboot_launcher-preboot_device], 0        
+        adc     byte [di+preboot_launcher-preboot_device], 0
 ;        cmp     byte [di+preboot_biosdisk-preboot_device], 1
 ;        adc     byte [di+preboot_biosdisk-preboot_device], 0
 ;; default value for VRR is OFF
@@ -793,7 +793,7 @@ if defined extended_primary_loader
         _ask_question bdev,'12',preboot_device              ; range accepted for answer: 1-2
 else
         _ask_question bdev,'14',preboot_device              ; range accepted for answer: 1-4
-end if        
+end if
         _setcursor 14,0
 
 .d:
@@ -891,7 +891,7 @@ end if
         push    word [es:bp+6]
         pop     word [number_vm]
         mov     word [preboot_graph], bp          ;save choose
-        
+
         jmp     .d
 
 .change_b:                      ; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
@@ -1101,7 +1101,7 @@ end if
 
 ; Start the first app (right now it's LAUNCHER) after kernel is loaded?
         mov     al, [preboot_launcher]
-        mov     [es:BOOT_LAUNCHER_START], al    ;// 0x901D        
+        mov     [es:BOOT_LAUNCHER_START], al    ;// 0x901D
 
 ; BOOT DEVICE
 
@@ -1148,7 +1148,7 @@ include '../detect/biosmem.inc'
 ; TODO: !!!! read only first sector and set variables !!!!!
 ; ...
 ; TODO: !!! then read flippy image track by track
-        
+
         mov     cx, 0x0001      ; startcyl,startsector
 .a1:
         push    cx dx
@@ -1240,7 +1240,7 @@ include '../detect/biosmem.inc'
 ; and copy them to extended memory
         mov     si, movedesc
         mov     [si+8*2+3], bh          ; from
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_RsvdSecCnt]
@@ -1248,7 +1248,7 @@ include '../detect/biosmem.inc'
         mul     cx
         push    ax                      ; save to stack count of words in boot+FAT
         xchg    ax, cx
-        
+
         push    es
         push    ds
         pop     es
@@ -1274,7 +1274,7 @@ sayerr_memmove:
 ; TODO: BPB_NumFATs !!!!!
         add     bx, word [BPB_BytsPerSec]       ; !!! TODO: may be need multiply by BPB_RsvdSecCnt !!!
         mov     byte [si+8*2+3], bh     ; bx - begin of FAT
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_FATSz16]
@@ -1289,12 +1289,12 @@ sayerr_memmove:
         pop     es
         test    ah, ah
         jnz     sayerr_floppy
-        
+
         mov     ax, cx
         shl     ax, 1
         and     eax, 0ffffh             ; ax - count of bytes in FAT
         add     dword [si+8*3+2], eax
-        
+
 ; reading RootDir
 ; TODO: BPB_NumFATs
         add     bx, ax
@@ -1319,7 +1319,7 @@ sayerr_memmove:
         pop     bx
         push    bx
         add     word [FirstDataSector], bx      ; Begin of data region of floppy
-        
+
 ; read RootDir
         call    conv_abs_to_THS
         pop     ax
@@ -1518,3 +1518,29 @@ setgr:
 gmok2:
         push    ds
         pop     es
+
+        sidt    [cs:old_ints_h]
+
+        cli                             ; disable all irqs
+        mov     al, 255                 ; mask all irqs
+        out     0xa1, al
+        out     0x21, al
+   l.5:
+        in      al, 0x64                ; Enable A20
+        test    al, 2
+        jnz     l.5
+        mov     al, 0xD1
+        out     0x64, al
+   l.6:
+        in      al, 0x64
+        test    al, 2
+        jnz     l.6
+        mov     al, 0xDF
+        out     0x60, al
+   l.7:
+        in      al, 0x64
+        test    al, 2
+        jnz     l.7
+        mov     al, 0xFF
+        out     0x64, al
+

@@ -177,39 +177,11 @@ include "detect/biosdisk.inc"
 ;;                                                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-; CR0 Flags - Protected mode and Paging
-
-        mov     ecx, CR0_PE
+        cld
 
 ; Enabling 32 bit protected mode
 
-        sidt    [cs:old_ints_h]
-
-        cli                             ; disable all irqs
-        cld
-        mov     al, 255                 ; mask all irqs
-        out     0xa1, al
-        out     0x21, al
-   l.5:
-        in      al, 0x64                ; Enable A20
-        test    al, 2
-        jnz     l.5
-        mov     al, 0xD1
-        out     0x64, al
-   l.6:
-        in      al, 0x64
-        test    al, 2
-        jnz     l.6
-        mov     al, 0xDF
-        out     0x60, al
-   l.7:
-        in      al, 0x64
-        test    al, 2
-        jnz     l.7
-        mov     al, 0xFF
-        out     0x64, al
-
+        mov     ecx, CR0_PE             ; CR0 Flags - Protected mode and Paging
         lgdt    [cs:tmp_gdt]            ; Load GDT
         mov     eax, cr0                ; protected mode
         or      eax, ecx
