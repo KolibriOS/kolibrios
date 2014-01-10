@@ -209,12 +209,13 @@ mainloop:
 
 ; Send more ICMP packets ?
    continue:
+        inc     [icmp_packet.seq]
+
         dec     [count]
         jz      done
 
         mcall   5, 100  ; wait a second
 
-        inc     [icmp_packet.seq]
         jmp     mainloop
 
 ; Done..
