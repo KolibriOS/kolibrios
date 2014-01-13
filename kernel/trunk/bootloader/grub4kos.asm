@@ -56,7 +56,7 @@ end virtual
         cld
         mov     esi, mboot
         mov     edi, 0x80000
-        mov     ecx, 600/4                      ;magic value
+        mov     ecx, 624/4                      ;magic value
         rep movsd
         jmp     .check_mbi
 
@@ -64,24 +64,26 @@ org $-0x80000
 align 4
 .check_mbi:
         cmp     eax, 0x2BADB002
-        mov     ecx, sz_invboot
-        jne     .fault
+        mov     esi, sz_invboot
+        jne     .panic
 
         bt      dword [ebx], 3
-        mov     ecx, sz_nomods
-        jnc     .fault
+        mov     esi, sz_nomods
+        jnc     .panic
 
-        mov     edx, [ebx+20]                       ;mods_count
-        mov     esi, [ebx+24]                       ;mods_addr
+        mov     edx, [ebx+20]                   ;mods_count
+        mov     edi, [ebx+24]                   ;mods_addr
         cmp     edx, 1
-        jne     .fault
+        mov     esi, sz_nomods
+        jne     .panic
 
 .scan_mod:
-        mov     ebp, [esi]                          ;image start
-        mov     ecx, [esi+4]                        ;image end
-        sub     ecx, ebp                            ;image size
-        cmp     ecx, 512*18*80*2                    ;1.44 floppy
-        jne     .fault
+        mov     ebp, [edi]                      ;image start
+        mov     ecx, [edi+4]                    ;image end
+        sub     ecx, ebp                        ;image size
+        cmp     ecx, 512*18*80*2                ;1.44 floppy
+        mov     esi, sz_image
+        jne     .panic
 
         mov     [_image_start], ebp
         mov     [_image_size], ecx
@@ -133,8 +135,8 @@ align 4
         cmp     esi, eax                        ; end of directory
         jb      .loop_find_dir_entry
 
-        mov     ecx, sz_kernel
-        jmp     .fault
+        mov     esi, sz_kernel
+        jmp     .panic
 
         ; === KERNEL FOUND. LOADING... ===
 
@@ -218,10 +220,28 @@ align 4
         lgdt    [.tmp_gdt]
         jmp     far 0x08:.mode_16 and 0xFFFF
 
-.fault:
-;           push ecx
-;           call _lcls
-;           call __bprintf
+.panic:
+        mov     ebx, sz_halt
+        mov     edx, 0xb8000+160*10+2
+        mov     ah, 0x07
+.line:
+        mov     edi, edx
+.print:
+        lodsb
+        test    al, al
+        jz      .print_next
+        stosw
+        jmp     .print
+
+.print_next:
+        test    ebx, ebx
+        jz      ._hlt
+
+        mov     esi, ebx
+        xor     ebx, ebx
+        add     edx, 160
+        jmp     .line
+
 ._hlt:
         hlt
         jmp     ._hlt
@@ -253,14 +273,14 @@ use16
         mov     fs, ax
         jmp     far 0x1000:0000
 
-sz_invboot   db 'Invalid multiboot loader magic value',cr,lf
-             db 'Halted',0
 
-sz_nomods    db 'No modules loaded',cr,lf
-             db 'Halted',0
+sz_invboot   db 'Invalid multiboot loader magic value',0
+sz_nomods    db 'No image loaded',0
+sz_image     db 'Image size invalid',0
+sz_halt      db 'Halted',0
 
-sz_kernel    db cr,lf
-kernel_name  db 'KERNEL  MNT ?',cr,lf,0
+sz_kernel    db cr
+kernel_name  db 'KERNEL  MNT ?',0
 
 org $+0x80000
 __edata:
