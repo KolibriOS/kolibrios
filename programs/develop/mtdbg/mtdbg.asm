@@ -882,24 +882,30 @@ CtrlF8:
 ;                       Step execution event
 
 ;Here we get [<number>] argument at do step <number> times
-OnStep:
+OnStepMultiple:
         cmp     [bSuspended], 0
-        jz      .running
-        cmp     [step_num], 0
-        jg      .stepone
+        jz      OnStep.running
+        mov     [step_num], 1
         mov     esi, [curarg]
-        cmp     esi, 0
-        jz	    .stepone
+        test    esi, esi
+        jz      .do
         cmp     byte [esi], 0
-        jz      .stepone
+        jz      .do
         call    get_hex_number
         jc      .ret
         cmp     eax, 0 ; check if lesser or equal than 0
         jle     .ret
         mov     [step_num], eax
-        mov     [curarg], 0
+.do:
+        call    OnStep
+        dec     [step_num]
+        jnz     .do
+.ret:
+        ret
 
-    .stepone:
+OnStep:
+        cmp     [bSuspended], 0
+        jz      .running
         call    get_context
         or      byte [_eflags+1], 1             ; set TF
         call    set_context
@@ -941,15 +947,6 @@ OnStep:
         mov     [bAfterGo], 2
 
     @@:
-        mov     eax, [step_num]
-        dec     eax
-        cmp     eax, 0
-        jle     .ret
-        mov     [step_num], eax
-        jmp     .stepone
-
-    .ret:
-        mov     [step_num], 0
         ret
 
     ; return address is [ebp-4]
@@ -1018,7 +1015,7 @@ OnProceed:
 
     @@:
         call    get_byte_nobreak
-        jc      OnStep.stepone
+        jc      OnStep
         inc     esi
     ; skip prefixes
         call    is_prefix
@@ -1054,14 +1051,14 @@ OnProceed:
     ; FF /2 = call
     .noloop:
         cmp     al, 0xFF
-        jnz     OnStep.stepone
+        jnz     OnStep
         call    get_byte_nobreak
-        jc      OnStep.stepone
+        jc      OnStep
         inc     esi
         mov     cl, al
         and     al, 00111000b
         cmp     al, 00010000b
-        jnz     OnStep.stepone
+        jnz     OnStep
     ; skip instruction
         mov     al, cl
         and     eax, 7
@@ -1085,7 +1082,7 @@ OnProceed:
         cmp     al, 4
         jnz     @f
         call    get_byte_nobreak
-        jc      OnStep.stepone
+        jc      OnStep
         inc     esi
         and     al, 7
 
@@ -1097,7 +1094,7 @@ OnProceed:
     .doit:
     ; insert one-shot breakpoint at esi and resume
         call    get_byte_nobreak
-        jc      OnStep.stepone
+        jc      OnStep
         mov     eax, esi
         call    find_enabled_breakpoint
         jz      @f
@@ -2401,7 +2398,7 @@ commands:
         db      9
         dd      aResume, OnResume, ResumeSyntax, ResumeHelp
         db      0Bh
-        dd      aStep, OnStep, StepSyntax, StepHelp
+        dd      aStep, OnStepMultiple, StepSyntax, StepHelp
         db      0Bh
         dd      aProceed, OnProceed, ProceedSyntax, ProceedHelp
         db      0Bh
