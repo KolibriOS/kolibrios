@@ -231,7 +231,7 @@ end virtual
 ; If failed, save error code.
         test    eax, eax
         jz      @f
-        mov     [.error_code], eax
+        mov     [.error_code+.local_vars2_size], eax
 @@:
 ; 11. Copy data for the caller.
 ; Note that buffer in edi is advanced automatically.
@@ -250,7 +250,7 @@ end virtual
 ; 12b. Prepare for the loop: save edi and create a local variable that
 ; stores number of sectors to be copied.
         push    edi
-        push    [.current_num_sectors]
+        push    [.current_num_sectors+4]
 .store_to_cache:
 ; 12c. For each sector, call the lookup function with adding to the cache, if not yet.
         mov     eax, [.sector_lo+.local_vars2_size+8]
