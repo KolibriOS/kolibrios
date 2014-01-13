@@ -18,12 +18,13 @@ uint32_t cursor_nesw;
 
 int win_font;
 
+static window_t Window;
 
 static pos_t    old_pos;
 
 ctrl_t  *mouse_capture = NULL;
 
-static link_t   timers;
+static link_t    timers;
 static uint32_t  realtime;
 static uint32_t  wait_time;
 static uint32_t  exp_time;
@@ -35,16 +36,31 @@ static int need_update;
 
 void adjust_frame(window_t *win);
 
+//#include "timer.h"
+ctrl_t *win_get_child(window_t *win, int x, int y)
+{
+    ctrl_t *child = NULL;
 
-#include "control.inc"
-//#include "io.inc"
-#include "timer.inc"
+    if( win )
+    {
+        if(pt_in_rect(&win->client, x, y))
+        {
+            ctrl_t *tmp = (ctrl_t*)win->child.next;
 
-//#include "button.inc"
-//#include "scroller.inc"
-
-static window_t Window;
-
+            while( &tmp->link != &win->child )
+            {
+                if(pt_in_rect(&tmp->rc, x, y))
+                {
+                    child = get_child(tmp, x, y);
+                    return child == NULL ? tmp : child;
+                };
+                tmp = (ctrl_t*)tmp->link.next;
+            };
+        }
+        else child = (ctrl_t*)(&win->frame);
+    };
+    return child;
+};
 
 
 void init_frame(window_t *win);
