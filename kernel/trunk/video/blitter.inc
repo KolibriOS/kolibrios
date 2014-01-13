@@ -206,7 +206,13 @@ blit_32:
         push    edi
         push    esi
         push    ebx
-        sub     esp, 72
+virtual at sizeof.BLITTER
+.position       dd      ? ; (x shl 16) + y
+; ???
+.extra_var1     dd      ?
+.local_vars_size = $
+end virtual
+        sub     esp, .local_vars_size
 
         mov     eax, [TASK_BASE]
         mov     ebx, [eax-twdw + WDATA.box.width]
@@ -246,9 +252,9 @@ blit_32:
 
 
         mov     eax, [ecx+32]
-        mov     [esp+56], eax
+        mov     [esp+BLITTER.bitmap], eax
         mov     eax, [ecx+36]
-        mov     [esp+60], eax
+        mov     [esp+BLITTER.stride], eax
 
         mov     ecx, esp
         call    blit_clip
@@ -267,6 +273,11 @@ blit_32:
         shl     ecx, 16
         mov     cx, bp
         add     ecx, [esp+BLITTER.h]
+
+        mov     eax, ebx
+        shl     eax, 16
+        mov     ax, bp
+        mov     [esp+.position], eax
 
         mov     edi, ebp
 
@@ -300,47 +311,37 @@ blit_32:
         lea     edi, [edi+ebx*4]
 
         mov     ebx, [CURRENT_TASK]
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      .core_32.software_cursor
+        cmp     [_display.select_cursor], 0
+        jne     .core_32.hardware_cursor
+;--------------------------------------
+.core_32.software_cursor:
 align 4
 .outer32:
-        xor     ecx, ecx
 
 align 4
 .inner32:
-        cmp     [ebp+ecx], bl
+        cmp     [ebp], bl
         jne     .skip
 ;--------------------------------------
-        push    eax
-        mov     eax, [esi+ecx*4]
+        mov     eax, [esi]
 
-; check for hardware cursor
-        cmp     [_display.select_cursor], select_cursor
-        je      @f
-        cmp     [_display.select_cursor], 0
-        jne     .no_mouseunder
-;--------------------------------------
-align 4
-@@:
-        push    ecx
-
-        mov     ecx, [esp+4]
-        ror     ecx, 16
-        sub     ecx, edx
-        rol     ecx, 16
-        sub     ecx, [esp+BLITTER.h + 8]
+        mov     ecx, [esp+.position]
 
 ; check mouse area for putpixel
         call    [_display.check_mouse]
-        pop     ecx
 ;--------------------------------------
-align 4
-.no_mouseunder:
 ; store to real LFB
-        mov     [LFB_BASE+edi+ecx*4], eax
-        pop     eax
+        mov     [LFB_BASE+edi], eax
 ;--------------------------------------
 align 4
 .skip:
-        inc     ecx
+        add     esi, 4
+        add     edi, 4
+        inc     ebp
+        add     [esp+.position], 1 shl 16
         dec     edx
         jnz     .inner32
 
@@ -349,14 +350,48 @@ align 4
         add     ebp, [_display.width]
 
         mov     edx, [esp+BLITTER.w]
+        mov     eax, edx
+        inc     [esp+.position]
+        sub     ebp, edx
+        shl     eax, 2
+        sub     esi, eax
+        sub     edi, eax
+        shl     eax, 16-2
+        sub     [esp+.position], eax
         dec     [esp+BLITTER.h]
         jnz     .outer32
+        jmp     .done
+.core_32.hardware_cursor:
+align 4
+.hw.outer32:
+        xor     ecx, ecx
+
+align 4
+.hw.inner32:
+        cmp     [ebp+ecx], bl
+        jne     .hw.skip
+        mov     eax, [esi+ecx*4]
+        mov     [LFB_BASE+edi+ecx*4], eax
+
+align 4
+.hw.skip:
+        inc     ecx
+        dec     edx
+        jnz     .hw.inner32
+
+        add     esi, [esp+BLITTER.stride]
+        add     edi, [_display.pitch]
+        add     ebp, [_display.width]
+
+        mov     edx, [esp+BLITTER.w]
+        dec     [esp+BLITTER.h]
+        jnz     .hw.outer32
 
 .done:
 ;        call    [draw_pointer]
 ;        call    __sys_draw_pointer
 .L57:
-        add     esp, 72
+        add     esp, .local_vars_size
         pop     ebx
         pop     esi
         pop     edi
@@ -370,7 +405,7 @@ align 4
 
 align 4
 .outer24:
-        mov     [esp+64], edi
+        mov     [esp+.extra_var1], edi
         xor     ecx, ecx
 
 align 4
@@ -413,7 +448,7 @@ align 4
 ;--------------------------------------
 align 4
 .skip_1:
-        mov     edi, [esp+64]
+        mov     edi, [esp+.extra_var1]
         inc     ecx
         dec     edx
         jnz     .inner24
