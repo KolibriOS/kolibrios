@@ -124,13 +124,29 @@
                 keyboard shortcuts
     box_lib  - IgorA, update component tree_list, new component
                 text_editor, documentation on the library
-               Marat Zakiyanov (Mario79) refinement of ŽpenDialog component, rewriting 
+               Marat Zakiyanov (Mario79) refinement of OpenDialog component, rewriting 
                 of some applications to use it, new component PathShow
-				
 	console	 - numpad support and some escape code support from hidnplayr
 			   bugfixes by Serge, SoUrcerer and Leency
-			   
 	http	 - HTTP library from hidnplayr
+	
+	
+	
+	* New versions of drivers and new drivers:
+	sound.obj	- service to detect the soundcard and load correct driver
+				   by hidnplayr
+	3c59x.obj	- 3Com network driver, converted to new stack by hidnplayr
+	dec21x4x.obj- New DEC network driver (for VirtualPC), written by hidnplayr
+	i8254x.obj  - New intel eepro/1000 network driver written by hidnplayr
+	i8255x.obj  - intel eepro/100 network driver, converted to new stack by hidnplayr
+	mdt80x.obj  - Myson mtd80x network driver, written by hidnplayr
+	pcnet32.obj - AMD pcnet driver, converted to new stack by hidnplayr
+	r6040.obj   - New RDC R6040 network driver, written by hidnplayr and asper
+	rhine.obj   - New VIA Rhine network driver, written by hidnplayr and asper
+	rtl8029.obj - Realtek 8029 network driver, converted to new stack by hidnplayr
+	rtl8139.obj - Realtek 8139 network driver, converted to new stack by hidnplayr
+	rtl8169.obj - Realtek 8169 network driver, converted to new stack by hidnplayr
+	sis900.obj  - SIS 900 network driver, converted to new stack by hidnplayr
  
 
 
