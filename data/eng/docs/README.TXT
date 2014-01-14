@@ -115,7 +115,9 @@
 	SYNERGYC - Synergy software keyboard/mouse sharing client from hidnplayr
 	TELNET	 - New telnet client from hidnplayr
 	TFTPC	 - New TFTP client from hidnplayr
-	ZEROCONF - Updated to work on new stack, bugfixes by hidnplayr
+	ZEROCONF - Updated to work on new stack, bugfixes by 
+	LOADDRV  - New program, loads the driver of which the name was given as a parameter,
+				from hidnplayr
 	
  
  
