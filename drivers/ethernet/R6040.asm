@@ -198,7 +198,7 @@ virtual at ebx
         .cur_rx         dw ?
         .cur_tx         dw ?
         .last_tx        dw ?
-        .phy_addr       dw ?
+        .phy_addr       dd ?
         .phy_mode       dw ?
         .mcr0           dw ?
         .mcr1           dw ?
@@ -208,7 +208,7 @@ virtual at ebx
         .pci_dev        dd ?
         .irq_line       db ?
 
-        rb 3            ; dword alignment
+        rb 1            ; dword alignment
 
         .tx_ring:       rb (((x_head.sizeof*TX_RING_SIZE)+32) and 0xfffffff0)
         .rx_ring:       rb (((x_head.sizeof*RX_RING_SIZE)+32) and 0xfffffff0)
@@ -395,13 +395,15 @@ endp
 ;;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;;
 
 
-macro mdio_write reg, val {
-        stdcall phy_read, [device.io_addr], [device.phy_addr], reg
-}
+;mdio_read:
+;        stdcall phy_read, [device.io_addr], [device.phy_addr], ecx
 
-macro mdio_write reg, val {
-        stdcall phy_write, [device.io_addr], [devce.phy_addr], reg, val
-}
+;        ret
+
+;mdio_write:
+;        stdcall phy_write, [device.io_addr], [device.phy_addr], ecx, eax
+
+;        ret
 
 
 align 4
@@ -421,7 +423,7 @@ ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  probe: enables the device (if it really is RTL8139)
+;;  probe: enables the device (if it really is R6040)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -455,14 +457,14 @@ probe:
      @@:
         ; Init RDC private data
         mov     [device.mcr0], MCR0_XMTEN or MCR0_RCVEN
-        ;mov     [private.phy_addr], 1 ; Asper: Only one network card is supported now.
+        mov     [device.phy_addr], PHY1_ADDR
         mov     [device.switch_sig], 0
 
         ; Check the vendor ID on the PHY, if 0xFFFF assume none attached
-        stdcall phy_read, 1, 2
+        stdcall phy_read, [device.phy_addr], 2
         cmp     ax, 0xFFFF
         jne     @f
-        DEBUGF  2, "Failed to detect an attached PHY\n" ;, generating random"
+        DEBUGF  2, "Failed to detect an attached PHY!\n"
         mov     eax, -1
         ret
      @@:
@@ -485,9 +487,8 @@ probe:
       @@:
 
         ; PHY Mode Check
-        movzx   eax, [device.phy_addr]
-        stdcall phy_write, eax, 4, PHY_CAP
-        stdcall phy_write, eax, 0, PHY_MODE
+        stdcall phy_write, [device.phy_addr], 4, PHY_CAP
+        stdcall phy_write, [device.phy_addr], 0, PHY_MODE
 
       if PHY_MODE = 0x3100
         call    phy_mode_chk
@@ -712,32 +713,26 @@ phy_mode_chk:
         DEBUGF  1,"Checking PHY mode\n"
 
         ; PHY Link Status Check
-        movzx   eax, [device.phy_addr]
-        stdcall phy_read, eax, 1
-        test    eax, 0x4
+        stdcall phy_read, [device.phy_addr], MII_BMSR
+        test    ax, BMSR_LSTATUS
         jz      .ret_0x8000
 
         ; PHY Chip Auto-Negotiation Status
-        movzx   eax, [device.phy_addr]
-        stdcall phy_read, eax, 1
-        test    eax, 0x0020
+        test    ax, BMSR_ANEGCOMPLETE
         jnz     .auto_nego
 
         ; Force Mode
-        movzx   eax, [device.phy_addr]
-        stdcall phy_read, eax, 0
-        test    eax, 0x100
+        stdcall phy_read, [device.phy_addr], MII_BMCR
+        test    ax, BMCR_FULLDPLX
         jnz     .ret_0x8000
 
   .auto_nego:
         ; Auto Negotiation Mode
-        movzx   eax, [device.phy_addr]
-        stdcall phy_read, eax, 5
-        mov     ecx, eax
-        movzx   eax, [device.phy_addr]
-        stdcall phy_read, eax, 4
-        and     eax, ecx
-        test    eax, 0x140
+        stdcall phy_read, [device.phy_addr], MII_LPA
+        mov     cx, ax
+        stdcall phy_read, [device.phy_addr], MII_ADVERTISE
+        and     ax, cx
+        test    ax, ADVERTISE_10FULL + ADVERTISE_100FULL
         jnz     .ret_0x8000
 
         xor     eax, eax
@@ -803,7 +798,6 @@ transmit:
 
         inc     [device.cur_tx]
         and     [device.cur_tx], TX_RING_SIZE - 1
-        xor     eax, eax
 
 ; Update stats
         inc     [device.packets_tx]
@@ -811,6 +805,7 @@ transmit:
         add     dword [device.bytes_tx], eax
         adc     dword [device.bytes_tx + 4], 0
 
+        xor     eax, eax
         ret     8
 
   .wait_to_send:
@@ -989,13 +984,13 @@ int_handler:
         test    word[esp], RX_EARLY
         jz      .no_rxearly
 
-        DEBUGF  1, "RX early\n"
+        DEBUGF  2, "RX early\n"
 
   .no_rxearly:
         test    word[esp], TX_EARLY
         jz      .no_txearly
 
-        DEBUGF  1, "TX early\n"
+        DEBUGF  2, "TX early\n"
 
   .no_txearly:
         test    word[esp], EVENT_OVRFL
@@ -1007,7 +1002,7 @@ int_handler:
         test    word[esp], LINK_CHANGED
         jz      .no_link
 
-        DEBUGF  1, "Link changed\n"
+        DEBUGF  2, "Link changed\n"
 
   .no_link:
         pop     ax
@@ -1097,7 +1092,6 @@ proc  phy_write stdcall, phy_addr:dword, reg:dword, val:dword
         out     dx, ax
 
         ;Write the command to the MDIO bus
-
         mov     eax, [phy_addr]
         shl     eax, 8
         add     eax, [reg]
@@ -1125,7 +1119,7 @@ endp
 align 4
 read_mac:
 
-        DEBUGF  1,"Reading MAC: "
+        DEBUGF  1,"Reading MAC:\n"
 
         mov     cx, 3
         lea     edi, [device.mac]
