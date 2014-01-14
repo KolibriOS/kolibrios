@@ -148,5 +148,7 @@ import core,\
               DiskDel,\
 \
               TimerHS,\
-              CancelTimerHS
+              CancelTimerHS,\
+\
+              GetPCIList
 end data

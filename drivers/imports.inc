@@ -99,4 +99,6 @@ kernel_export \
               NetPtrToNum,\
               NetLinkChanged,\
               Eth_input,\
-              IPv4_input
+              IPv4_input,\
+\
+              GetPCIList

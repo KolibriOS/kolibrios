@@ -34,6 +34,15 @@ struct  PCIDEV
         owner           dd ? ; pointer to SRV or 0
 ends
 
+struct IOCTL
+        handle          dd ?
+        io_code         dd ?
+        input           dd ?
+        inp_size        dd ?
+        output          dd ?
+        out_size        dd ?
+ends
+
 ; The following macro assume that we are on uniprocessor machine.
 ; Serious work is needed for multiprocessor machines.
 macro spin_lock_irqsave spinlock

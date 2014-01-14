@@ -122,6 +122,8 @@ __exports:
           NET_link_changed,      'NetLinkChanged',     \
           ETH_input,             'Eth_input',          \
 \
+          get_pcidev_list,       'GetPCIList',         \
+\
           0,                     'LFBAddress' ; must be the last one
 load kernel_exports_count dword from __exports + 24
 load kernel_exports_addresses dword from __exports + 28
