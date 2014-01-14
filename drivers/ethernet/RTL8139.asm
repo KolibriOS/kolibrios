@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Realtek 8139 driver for KolibriOS                              ;;
@@ -242,7 +242,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  1, "Loading driver\n"
+        DEBUGF  2, "Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -957,7 +957,9 @@ int_handler:
         test    ax, ISR_PUN
         jz      @f
 
-        DEBUGF  2, "RX:Packet underrun!\n"
+        DEBUGF  1, "Packet underrun or link changed!\n"
+
+        call    cable
 
 ;----------------------------------------------------
 ; Receive FIFO overflow ?
@@ -966,7 +968,7 @@ int_handler:
         jz      @f
 
         push    ax
-        DEBUGF  2, "RX:fifo overflow!\n"
+        DEBUGF  2, "RX fifo overflow!\n"
 
         set_io  0
         set_io  REG_ISR
@@ -975,10 +977,12 @@ int_handler:
         pop     ax
 
 ;----------------------------------------------------
-; Something about Cable changed ?
+; cable length changed ?
   @@:
         test    ax, ISR_LENCHG
         jz      .fail
+
+        DEBUGF  2, "Cable length changed!\n"
 
         call    cable
 
@@ -1015,21 +1019,21 @@ cable:
   .100mbps:
         mov     [device.state], ETH_LINK_100M
         call    NetLinkChanged
-        DEBUGF  1, "100 mbit\n"
+        DEBUGF  2, "link changed to 100 mbit\n"
 
         ret
 
   .10mbps:
         mov     [device.state], ETH_LINK_10M
         call    NetLinkChanged
-        DEBUGF  1, "10 mbit\n"
+        DEBUGF  2, "link changed to 10 mbit\n"
 
         ret
 
   .notconnected:
         mov     [device.state], ETH_LINK_DOWN
         call    NetLinkChanged
-        DEBUGF  1, "no link\n"
+        DEBUGF  2, "no link\n"
 
         ret
 

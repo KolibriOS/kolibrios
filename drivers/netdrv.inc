@@ -1,15 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-include 'pci.inc'
-include 'mii.inc'
 
 ; This macro will prepend driver name to all debug output through DEBUGF macro
 ; The driver name is taken from my_service label
@@ -21,6 +18,9 @@ if defined my_service
         }
 
 end if
+
+include 'pci.inc'
+include 'mii.inc'
 
 ; Kernel variables
 
