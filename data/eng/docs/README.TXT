@@ -60,7 +60,6 @@
  
    * New versions of applications and new applications:
  
-    FTPS     - tsdima, some improvements
     VIEW3DS  - macgub, version 0.054
     FASM     - Pavel Rymovski (Heavyiron), updated to version 1.69.11
                IgorA, use the library box_lib, russification,
@@ -105,9 +104,20 @@
     ASCIIVJU - Konstantin Dutkevich (Nazarus), program shows ASCII table 
     PIPETKA  - Rock_maniak_forever, program to get color of a pixel on the screen
     SNAKE    - dunkaist, yet another implementation of classic game
+	DOWNLOADER	- Updated to work with new stack by hidnplayr, bugfixes by mario
+	FTPC	 - Command-line FTP client from hidnplayr
+	FTPD	 - New FTP daemon with ini-based config from hidnplayr
+	PING	 - ICMP echo (ping) program from hidnplayr
+	IRCC     - New IRC client from hidnplayr
+	NETCFG   - Network configuration utility from hidnplayr
+	NETSTAT  - Network status program from hidnplayr
+	NSLOOKUP - Name service lookup utility from CleverMouse
+	SYNERGYC - Synergy software keyboard/mouse sharing client from hidnplayr
+	TELNET	 - New telnet client from hidnplayr
+	TFTPC	 - New TFTP client from hidnplayr
+	ZEROCONF - Updated to work on new stack, bugfixes by hidnplayr
+	
  
- 
-
  
    * New versions of dynamic libraries and new dynamic libraries:
     libini   - Evgeny Grechnikov (Diamond), added function to read
@@ -116,6 +126,11 @@
                 text_editor, documentation on the library
                Marat Zakiyanov (Mario79) refinement of ŽpenDialog component, rewriting 
                 of some applications to use it, new component PathShow
+				
+	console	 - numpad support and some escape code support from hidnplayr
+			   bugfixes by Serge, SoUrcerer and Leency
+			   
+	http	 - HTTP library from hidnplayr
  
 
 
