@@ -150,6 +150,7 @@ FASM_PROGRAMS:=\
  drivers/uhci.sys:DRIVERS/UHCI.SYS:$(REPOSITORY)/drivers/usb/uhci.asm \
  drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
  drivers/ehci.sys:DRIVERS/EHCI.SYS:$(REPOSITORY)/drivers/usb/ehci.asm \
+ drivers/rdc.sys:DRIVERS/RDC.SYS:$(REPOSITORY)/drivers/video/rdc.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \

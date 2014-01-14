@@ -7,6 +7,7 @@
 #/SYS/LOADDRV  "COMMOUSE"	   1	# COM mice detector
 #/SYS/DEVELOP/BOARD   ""	   1	# Load DEBUG board
 #/SYS/refrscrn	      ""	   1	# Refresh screen
+/SYS/LOADDRV         "RDC"        1    # videodriver for RDC M2010/M2012
 /SYS/NETWORK/NETCFG  A		  1    #
 /SYS/NETWORK/ZEROCONF ""	  1    # Network configuration
 /SYS/MEDIA/PALITRA   "H"	  1    # SET BG
