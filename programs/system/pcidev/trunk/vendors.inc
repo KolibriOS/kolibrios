@@ -20,6 +20,8 @@
 ; only few best-known vendors left in this file to reduce the file size
 ; the other list is in vendors.add (changes by Artem Jerdev)
 
+; changed 15/01/2014: 
+; typo fixes and new subclasses (changes by Sergey Kuzmin)
 
 macro VendorID a,b {	; by mike.dld
 	dw a
@@ -214,8 +216,10 @@ ClassID    1,    4,     , 'Storage - RAID'
 ClassID    1,    5,     , 'Storage - ATA with DMA'
 ClassID    1,    5, 0x20, 'Storage - ATA c. w/ single DMA'
 ClassID    1,    5, 0x30, 'Storage - ATA c. w/ chained DMA'
-ClassID    1,    6,     , 'Storage - Serial ATA'
+ClassID    1,    6,    0, 'Storage - Serial ATA - vendor sp.'
+ClassID    1,    6,    1, 'Storage - Serial ATA - AHCI 1.0'
 ClassID    1,    7,     , 'Storage - SAS'
+ClassID    1,    8,     , 'Storage - Non-Volatile MC'
 ClassID    1, 0x80,     , 'Storage - misc'
 
 ClassID    2,    0,     , 'Network - Ethernet'
@@ -225,6 +229,7 @@ ClassID    2,    3,     , 'Network - ATM'
 ClassID    2,    4,     , 'Network - ISDN'
 ClassID    2,    5,     , 'Network - WorldFip'
 ClassID    2,    6,     , 'Network - PICMG 2.14'
+ClassID    2,    7,     , 'Network - InfiniBand c.'
 ClassID    2, 0x80,     , 'Network - misc'
 
 ClassID    3,    0,     , 'Display - VGA controller'
@@ -252,7 +257,7 @@ ClassID    6,    4,     , 'Bridge - PCI/PCI'
 ClassID    6,    4,    1, 'Bridge - Subtract.Decode PCI/PCI'
 ClassID    6,    5,     , 'Bridge - PCMCIA'
 ClassID    6,    6,     , 'Bridge - NuBus'
-ClassID    6,    7,     , 'Bridge - CarClassIDus'
+ClassID    6,    7,     , 'Bridge - CardBus'
 ClassID    6,    8,     , 'Bridge - RACEway'
 ClassID    6,    9,     , 'Bridge - Semi-transpar. PCI/PCI'
 ClassID    6,    9, 0x40, 'Bridge - Semi-transp. PCI/PCI 1'
@@ -303,6 +308,7 @@ ClassID    8,    3,    0, 'System - Generic RTC c.'
 ClassID    8,    3,    1, 'System - ISA RTC c.'
 ClassID    8,    4,     , 'System - PCI Hot-Plug'
 ClassID    8,    5,     , 'System - SDHCI'
+ClassID    8,    6,     , 'System - IOMMU'
 ClassID    8, 0x80,     , 'System - misc'
 
 ClassID    9,    0,     , 'Input - Keyboard'
@@ -350,7 +356,7 @@ ClassID 0x0d,    0,     , 'Wireless - iRDA'
 ClassID 0x0d,    1,     , 'Wireless - Consumer IR'
 ClassID 0x0d, 0x10,     , 'Wireless - RF'
 ClassID 0x0d, 0x11,     , 'Wireless - Bluetooth'
-ClassID 0x0d, 0x12,     , 'Wireless - BroaClassIDand'
+ClassID 0x0d, 0x12,     , 'Wireless - Broadband'
 ClassID 0x0d, 0x20,     , 'Wireless - Ethernet (802.11a)'
 ClassID 0x0d, 0x21,     , 'Wireless - Ethernet (802.11b)'
 ClassID 0x0d, 0x80,     , 'Wireless - misc'
