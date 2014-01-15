@@ -262,6 +262,10 @@ proc fs_execute
         mov     ebx, [slot_base]
         mov     [ebx+APPDATA.process], eax
 
+        lea     edx, [ebx+APPDATA.list]
+        lea     ecx, [eax+PROC.thr_list]
+        list_add_tail edx, ecx
+
         xor     edx, edx
         cmp     word [6], '02'
         jne     @f
@@ -979,6 +983,10 @@ proc new_sys_threads
 
         mov     eax, [ebx+APPDATA.process]
         mov     [edx+APPDATA.process], eax
+
+        lea     ebx, [edx+APPDATA.list]
+        lea     ecx, [eax+PROC.thr_list]
+        list_add_tail edx, ecx               ;add thread to process child's list
 
         mov     eax, [ebx+APPDATA.tls_base]
         test    eax, eax

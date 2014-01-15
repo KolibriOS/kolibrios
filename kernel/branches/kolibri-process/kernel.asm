@@ -74,6 +74,8 @@ include 'struct.inc'
 $Revision: 4381 $
 
 
+USE_FIX_FOR_INVALID_MS_VIRTUAL_PC_2007 equ 0
+
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 VESA_1_2_VIDEO  equ 0      ; enable vesa 1.2 bank switch functions
 

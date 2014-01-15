@@ -415,18 +415,21 @@ align 4
 terminate: ; terminate application
 destroy_thread:
 
-           .slot equ esp   ;locals
+        .slot     equ esp+4             ;locals
+        .process  equ esp               ;ptr to parent process
 
-        push    esi        ;save .slot
+        push    esi                     ;save .slot
 
         shl     esi, 8
-        cmp     [SLOT_BASE+esi+APPDATA.process], 0
-        jne     @F
+        mov     edx, [SLOT_BASE+esi+APPDATA.process]
+        test    edx, edx
+        jnz     @F
         pop     esi
         shl     esi, 5
         mov     [CURRENT_TASK+esi+TASKDATA.state], 9
         ret
 @@:
+        push    edx                     ;save .process
         lea     edx, [SLOT_BASE+esi]
         call    scheduler_remove_thread
         call    lock_application_table
@@ -624,6 +627,9 @@ destroy_thread:
         je      @F
         call    free_page
 @@:
+        lea     ebx, [edi+APPDATA.list]
+        list_del ebx                    ;destroys edx, ecx
+
         mov     eax, 0x20202020
         stosd
         stosd
@@ -740,8 +746,19 @@ destroy_thread:
         jmp     .xd0
 .xd1:
 ;release slot
+
+        xchg bx, bx
+
         bts     [thr_slot_map], esi
 
+        mov     ebx, [.process]
+        add     ebx, PROC.thr_list
+        cmp     ebx, [ebx+LHEAD.next]
+        jne     @F
+
+        DEBUGF 1,"%s",msg_process_destroy
+
+@@:
         sti     ; .. and life goes on
 
         mov     eax, [draw_limits.left]
@@ -756,9 +773,12 @@ destroy_thread:
         call    unlock_application_table
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
-        add     esp, 4
+        add     esp, 8
         ret
 restore .slot
+restore .process
+
+msg_process_destroy: db 'K: destroy process', 0x0d, 0x0a,0
 
 
 ; Three following procedures are used to guarantee that

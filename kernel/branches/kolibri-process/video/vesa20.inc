@@ -23,13 +23,6 @@ $Revision: 3606 $
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
-;Screen_Max_X             equ     0xfe00
-;Screen_Max_Y            equ     0xfe04
-;BytesPerScanLine        equ     0xfe08
-;LFBAddress              equ     0xfe80
-;ScreenBPP               equ     0xfbf1
-
-
 
 ;-----------------------------------------------------------------------------
 ; getpixel

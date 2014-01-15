@@ -119,13 +119,12 @@ struct  APPDATA
         app_name        rb 11
                         rb 5
 
-        process         dd ?            ;+16
-        fpu_state       dd ?            ;+20
-        exc_handler     dd ?            ;+24
-        except_mask     dd ?            ;+28
-        pl0_stack       dd ?            ;+32
-                        dd ?            ;+36
-                        dd ?            ;+40
+        list            LHEAD           ;+16
+        process         dd ?            ;+24
+        fpu_state       dd ?            ;+28
+        exc_handler     dd ?            ;+32
+        except_mask     dd ?            ;+36
+        pl0_stack       dd ?            ;+40
         cursor          dd ?            ;+44
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52

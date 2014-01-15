@@ -2210,6 +2210,8 @@ SOCKET_check_owner:
 align 4
 SOCKET_process_end:
 
+        ret     ; FIXME
+
         cmp     [net_sockets + SOCKET.NextPtr], 0       ; Are there any active sockets at all?
         je      .quickret                               ; nope, exit immediately
 

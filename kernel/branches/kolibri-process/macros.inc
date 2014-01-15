@@ -117,10 +117,10 @@ macro list_add_tail new, head
 
 macro list_del entry
 {
-        mov     edx, [entry+list_fd]
-        mov     ecx, [entry+list_bk]
-        mov     [edx+list_bk], ecx
-        mov     [ecx+list_fd], edx
+        mov     edx, [entry+LHEAD.next]
+        mov     ecx, [entry+LHEAD.prev]
+        mov     [edx+LHEAD.prev], ecx
+        mov     [ecx+LHEAD.next], edx
 }
 
 ; MOV Immediate.
