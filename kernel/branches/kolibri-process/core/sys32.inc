@@ -413,6 +413,7 @@ endg
 
 align 4
 terminate: ; terminate application
+destroy_thread:
 
            .slot equ esp   ;locals
 
@@ -428,8 +429,6 @@ terminate: ; terminate application
 @@:
         lea     edx, [SLOT_BASE+esi]
         call    scheduler_remove_thread
-           ;mov    esi,process_terminating
-           ;call   sys_msg_board_str
         call    lock_application_table
 
 ; if the process is in V86 mode...
@@ -449,7 +448,7 @@ terminate: ; terminate application
         mov     ecx, [esi+8]
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 .nov86:
-
+;destroy per-thread kerlen objects
         mov     esi, [.slot]
         shl     esi, 8
         add     esi, SLOT_BASE+APP_OBJ_OFFSET
@@ -467,11 +466,6 @@ terminate: ; terminate application
         pop     esi
         jmp     @B
 @@:
-
-        mov     eax, [.slot]
-        shl     eax, 8
- ;       stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.process], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
-
         mov     esi, [.slot]
         cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 2
         jne     @F
@@ -745,7 +739,9 @@ terminate: ; terminate application
         add     ecx, 0x100
         jmp     .xd0
 .xd1:
-;    call  systest
+;release slot
+        bts     [thr_slot_map], esi
+
         sti     ; .. and life goes on
 
         mov     eax, [draw_limits.left]
@@ -764,14 +760,6 @@ terminate: ; terminate application
         ret
 restore .slot
 
-;build_scheduler:
-;        mov     esi, boot_sched_1
-;        call    boot_log
-;        call   build_process_gdt_tss_pointer
-
-;        mov    esi,boot_sched_2
-;        call   boot_log
-;        ret
 
 ; Three following procedures are used to guarantee that
 ; some part of kernel code will not be terminated from outside
