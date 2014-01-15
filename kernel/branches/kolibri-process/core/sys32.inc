@@ -418,6 +418,8 @@ destroy_thread:
         .slot     equ esp+4             ;locals
         .process  equ esp               ;ptr to parent process
 
+        xchg bx, bx
+
         push    esi                     ;save .slot
 
         shl     esi, 8
@@ -751,13 +753,12 @@ destroy_thread:
 
         bts     [thr_slot_map], esi
 
-        mov     ebx, [.process]
-        add     ebx, PROC.thr_list
-        cmp     ebx, [ebx+LHEAD.next]
+        mov     ecx, [.process]
+        lea     eax, [ecx+PROC.thr_list]
+        cmp     eax, [eax+LHEAD.next]
         jne     @F
 
-        DEBUGF 1,"%s",msg_process_destroy
-
+        call    destroy_process.internal
 @@:
         sti     ; .. and life goes on
 
@@ -777,9 +778,6 @@ destroy_thread:
         ret
 restore .slot
 restore .process
-
-msg_process_destroy: db 'K: destroy process', 0x0d, 0x0a,0
-
 
 ; Three following procedures are used to guarantee that
 ; some part of kernel code will not be terminated from outside

@@ -587,6 +587,8 @@ proc destroy_page_table stdcall, pg_tab:dword
         mov     eax, [esi]
         test    eax, 1
         jz      .next
+        test    eax, 2
+        jz      .next
         test    eax, 1 shl 9
         jnz     .next                     ;skip shared pages
         call    free_page
@@ -599,46 +601,25 @@ proc destroy_page_table stdcall, pg_tab:dword
 endp
 
 align 4
-proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
+destroy_process: ;fastcall ecx= ptr to process
 
-        xor     edx, edx
-        push    edx
-        mov     eax, 0x1
-        mov     ebx, [pg_dir]
-.loop:
-;eax = current slot of process
-        mov     ecx, eax
-        shl     ecx, 5
-        cmp     byte [CURRENT_TASK+ecx+0xa], 9;if process running?
-        jz      @f           ;skip empty slots
-        shl     ecx, 3
-        add     ecx, SLOT_BASE
-        cmp     [ecx+APPDATA.process], ebx;compare page directory addresses
-        jnz     @f
-        mov     [ebp-4], ecx
-        inc     edx             ;thread found
-@@:
-        inc     eax
-        cmp     eax, [TASK_COUNT]   ;exit loop if we look through all processes
-        jle     .loop
+        lea     eax, [ecx+PROC.thr_list]
+        cmp     eax, [eax+LHEAD.next]
+        jne     .exit
 
-;edx = number of threads
-;our process is zombi so it isn't counted
-        pop     ecx
-        cmp     edx, 1
-        jg      .ret
-;if there isn't threads then clear memory.
-        mov     esi, [dlls_list]
-        call    destroy_all_hdlls;ecx=APPDATA
+align 4
+.internal:
+        push    ecx
 
-        mov     ecx, pg_data.mutex
-        call    mutex_lock
+        mov     esi, [ecx+PROC.dlls_list_ptr]
+        call    destroy_all_hdlls
 
-        mov     eax, [pg_dir]
-        and     eax, not 0xFFF
-;        stdcall map_page, [tmp_task_pdir], eax, PG_SW
-;        mov     esi, [tmp_task_pdir]
-        mov     edi, (OS_BASE shr 20)/4
+;        mov     ecx, pg_data.mutex
+;        call    mutex_lock
+
+        mov     esi, [esp]
+        add     esi, PROC.pdt_0
+        mov     edi, (0x80000000 shr 20)/4
 .destroy:
         mov     eax, [esi]
         test    eax, 1
@@ -653,16 +634,13 @@ proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
         dec     edi
         jnz     .destroy
 
-        mov     eax, [pg_dir]
-        call    free_page
-.exit:
+        call kernel_free  ;ecx still in stack
         stdcall map_page, [tmp_task_ptab], 0, PG_UNMAP
-;        stdcall map_page, [tmp_task_pdir], 0, PG_UNMAP
-        mov     ecx, pg_data.mutex
-        call    mutex_unlock
-.ret:
+ ;       mov     ecx, pg_data.mutex
+ ;       call    mutex_unlock
+
+.exit:
         ret
-endp
 
 align 4
 get_pid:
@@ -986,7 +964,7 @@ proc new_sys_threads
 
         lea     ebx, [edx+APPDATA.list]
         lea     ecx, [eax+PROC.thr_list]
-        list_add_tail edx, ecx               ;add thread to process child's list
+        list_add_tail ebx, ecx               ;add thread to process child's list
 
         mov     eax, [ebx+APPDATA.tls_base]
         test    eax, eax
