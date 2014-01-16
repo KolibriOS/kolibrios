@@ -291,7 +291,7 @@ int user_free(void *mem)
     __asm__ __volatile__(
     "int $0x40"
     :"=a"(val)
-    :"a"(68),"b"(12),"c"(mem));
+    :"a"(68),"b"(13),"c"(mem));
     return val;
 }
 
