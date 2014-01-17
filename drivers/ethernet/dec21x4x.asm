@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  DEC 21x4x driver for KolibriOS                                 ;;
@@ -34,6 +34,8 @@ format MS COFF
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2
 
+include '../struct.inc'
+include '../macros.inc'
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'

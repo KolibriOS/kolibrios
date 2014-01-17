@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  MTD80x driver for KolibriOS                                    ;;
@@ -28,6 +28,8 @@ format MS COFF
         NUM_TX_DESC             = 4
         NUM_RX_DESC             = 4
 
+include '../struct.inc'
+include '../macros.inc'
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'

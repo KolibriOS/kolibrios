@@ -46,7 +46,8 @@ format MS COFF
         TX_DMA_BURST            = 4
 
 
-
+include '../struct.inc'
+include '../macros.inc'
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'

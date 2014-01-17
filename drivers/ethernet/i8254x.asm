@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  i8254x driver for KolibriOS                                    ;;
@@ -29,11 +29,11 @@ format MS COFF
 
         MAX_PKT_SIZE            = 16384         ; Maximum packet size
 
-
+include '../struct.inc'
+include '../macros.inc'
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'
-include '../struct.inc'
 include '../netdrv.inc'
 
 public START

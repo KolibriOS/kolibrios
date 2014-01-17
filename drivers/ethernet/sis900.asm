@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                    ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.       ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.       ;;
 ;; Distributed under terms of the GNU General Public License          ;;
 ;;                                                                    ;;
 ;;  Ethernet driver for KolibriOS                                     ;;
@@ -197,7 +197,8 @@ format MS COFF
         EEDONE          = 0x00000200
         EEGNT           = 0x00000100
 
-
+include '../struct.inc'
+include '../macros.inc'
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'

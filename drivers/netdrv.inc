@@ -25,9 +25,6 @@ include 'mii.inc'
 ; Kernel variables
 
         PAGESIZE        = 4096
-        PG_SW           = 0x003
-        PG_NOCACHE      = 0x018
-
 
 ; network driver types
 
@@ -93,19 +90,6 @@ macro   allocate_and_clear dest, size, err {
      end if
 
 }
-
-struc   IOCTL {
-        .handle         dd ?
-        .io_code        dd ?
-        .input          dd ?
-        .inp_size       dd ?
-        .output         dd ?
-        .out_size       dd ?
-}
-
-virtual at edx
-  IOCTL IOCTL
-end virtual
 
 
 if used null_op

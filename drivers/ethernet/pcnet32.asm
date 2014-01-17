@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.     ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.     ;;
 ;; Distributed under terms of the GNU General Public License        ;;
 ;;                                                                  ;;
 ;;  AMD PCnet driver for KolibriOS                                  ;;
@@ -28,6 +28,8 @@ format MS COFF
         TX_RING_SIZE            = 4
         RX_RING_SIZE            = 4
 
+include '../struct.inc'
+include '../macros.inc'
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'
