@@ -98,6 +98,7 @@ Work with files    >      /@13
 Testing            >      /@19
 Accessibility opt. >      /@20
 Debug board               /sys/develop/board
+Terminal                  /sys/terminal
 #11    **** SETTINGS ****
 Devices                   /sys/setup
 Background generator      /sys/media/palitra

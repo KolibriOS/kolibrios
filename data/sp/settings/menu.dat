@@ -98,6 +98,7 @@ Archivos           >      /@13
 Pruebas            >      /@19
 Accesibilidad      >      /@20
 Debug board               /sys/develop/board
+Terminal                  /sys/terminal
 #11    **** CONFIGURACI‡N ****
 Dispositivos              /sys/setup
 Generador de fondo        /sys/media/palitra

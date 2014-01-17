@@ -97,6 +97,7 @@ Work with files    >      /@13
 Testing            >      /@19
 Opzioni Accessibilità >      /@20
 Debug board               /sys/develop/board
+Terminal                  /sys/terminal
 #11    **** SETTINGS ****
 Device                    /sys/setup
 Generatore di sfondi      /sys/media/palitra

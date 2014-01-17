@@ -81,6 +81,7 @@ FASM_PROGRAMS:=\
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
+ terminal:TERMINAL:$(PROGS)/system/terminal/terminal.asm \
  3d/3dsheart:3D/3DSHEART:$(PROGS)/demos/3dsheart/trunk/3dsheart.asm \
  3d/3dwav:3D/3DWAV:$(PROGS)/demos/3dwav/trunk/3dwav.asm \
  3d/crownscr:3D/CROWNSCR:$(PROGS)/demos/crownscr/trunk/crownscr.asm  \

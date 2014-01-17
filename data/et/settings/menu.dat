@@ -98,6 +98,7 @@ Töö failidega      >      /@13
 Testimine          >      /@19
 Hõlbustus seaded   >      /@20
 Silumisaken               /sys/develop/board
+Terminal                  /sys/terminal
 #11    **** SETTINGS ****
 Seadmed                   /sys/setup
 Tausta genereerija        /sys/media/palitra

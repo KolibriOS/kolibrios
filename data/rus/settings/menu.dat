@@ -103,6 +103,7 @@ Color Slider              /sys/demos/cslide
 Тестирование       >      /@14
 Спец. возможности  >      /@15
 Доска отладки             /sys/develop/board
+Terminal                  /sys/terminal
 #11    **** Система -> Настройки ****
 Устройства                /sys/setup
 Установить фон            /sys/media/palitra
