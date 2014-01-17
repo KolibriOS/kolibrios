@@ -31,11 +31,10 @@
 #include "gbm.h"
 #include <sys/stat.h>
 
-/* GCC visibility */
-#if defined(__GNUC__) && __GNUC__ >= 4
-#define GBM_EXPORT __attribute__ ((visibility("default")))
+#if defined(BUILD_GL32)
+#   define GBM_EXPORT __declspec(dllexport)
 #else
-#define GBM_EXPORT
+#   define GBM_EXPORT __declspec(dllimport)
 #endif
 
 /**
