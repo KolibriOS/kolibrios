@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ping.asm - ICMP echo client for KolibriOS                      ;;
@@ -162,11 +162,11 @@ mainloop:
         je      .no_response
 
         sub     eax, ICMP_Packet.Data
-        jb      .no_response            ; FIXME: use other error message?
+        jb      .invalid
         mov     [recvd], eax
 
         cmp     word[buffer_ptr + ICMP_Packet.Identifier], IDENTIFIER
-        jne     .no_response            ; FIXME: use other error message?
+        jne     .invalid
 
 ; OK, we have a response, update stats and let the user know
         inc     [stats.rx]
@@ -192,7 +192,7 @@ mainloop:
         push    str7
         call    [con_printf]
 
-        jmp     continue
+        jmp     .continue
 
 ; Error in packet, print it to user
   .miscomp:
@@ -200,7 +200,13 @@ mainloop:
         push    edi
         push    str9
         call    [con_printf]
-        jmp     continue
+        jmp     .continue
+
+; Invalid reply
+  .invalid:
+        push    str10
+        call    [con_write_asciiz]
+        jmp     .continue
 
 ; Timeout!
   .no_response:
@@ -208,7 +214,7 @@ mainloop:
         call    [con_write_asciiz]
 
 ; Send more ICMP packets ?
-   continue:
+  .continue:
         inc     [icmp_packet.seq]
 
         dec     [count]
@@ -272,6 +278,7 @@ str11   db      'Answer: ',0
 str7    db      'bytes=%u seq=%u time=%u ms',10,0
 str8    db      'timeout!',10,0
 str9    db      'miscompare at offset %u',10,0
+str10   db      'reply invalid',10,0
 
 str12   db      10,'Ping stats:',10,'%u packets sent, %u packets received',10,'average response time=%u ms',10,0
 
