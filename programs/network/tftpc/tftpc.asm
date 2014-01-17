@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  tftpc.asm - TFTP client for KolibriOS                          ;;
@@ -82,10 +82,10 @@ START:
         jnz     exit
 
 stop_transfer:
-        mcall   40, 0x80000027 ; 00100111b
+        mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_REDRAW + EVM_BUTTON + EVM_KEY + EVM_STACK
 
 red_win:
-        call draw_window
+        call    draw_window
 
 align 4
 still:
@@ -100,115 +100,97 @@ still:
         dec     eax
         jz      button
 
-        push    dword edit1
-        call    [edit_box_mouse]
+        invoke  edit_box_mouse, edit1
+        invoke  edit_box_mouse, edit2
+        invoke  edit_box_mouse, edit3
+        invoke  edit_box_mouse, edit4
 
-        push    dword edit2
-        call    [edit_box_mouse]
-
-        push    dword edit3
-        call    [edit_box_mouse]
-
-        push    dword edit4
-        call    [edit_box_mouse]
-
-        push    dword Option_boxs1
-        call    [option_box_mouse]
-
-        push    dword Option_boxs2
-        call    [option_box_mouse]
+        invoke  option_box_mouse, Option_boxs1
+        invoke  option_box_mouse, Option_boxs2
 
         jmp     still
 
 button:
         mcall   17
 
-        cmp     ah,0x10
+        cmp     ah, 0x10        ; connect button
         je      start_transfer
-
 
         test    ah , ah
         jz      still
 
-exit:   mcall   -1
+exit:
+        mcall   -1
 key:
         mcall   2
 
-        push    dword edit1
-        call    [edit_box_key]
-
-        push    dword edit2
-        call    [edit_box_key]
-
-        push    dword edit3
-        call    [edit_box_key]
-
-        push    dword edit4
-        call    [edit_box_key]
+        invoke  edit_box_key, edit1
+        invoke  edit_box_key, edit2
+        invoke  edit_box_key, edit3
+        invoke  edit_box_key, edit4
 
         jmp still
 
 
-align 4
 draw_window:
-        mcall   12,1
-        mcall   0, (50*65536+400), (30*65536+180), 0x34AABBCC, 0x085080DD, str_title
+; get system colors
+        mcall   48, 3, sc, 40
 
-        mcall   4, 35*65536+10, 0x80000000, str_server
+        mcall   12, 1
 
-        mov     ebx, 5*65536+30
+        mov     edx, [sc.work]
+        or      edx, 0x34000000
+        xor     esi, esi
+        mov     edi, str_title
+        mcall   0, 50 shl 16 + 400, 30 shl 16 + 180
+
+        mov     ebx, 35 shl 16 + 10
+        mov     ecx, 0x80000000
+        or      ecx, [sc.work_text]
+        mov     edx, str_server
+        mcall   4
+        mov     ebx, 5 shl 16 + 30
         mov     edx, str_source
         mcall
-
-        mov     ebx, 11*65536+50
+        mov     ebx, 11 shl 16 + 50
         mov     edx, str_destination
         mcall
-
-        mov     ebx, 47*65536+72
+        mov     ebx, 47 shl 16 + 72
         mov     edx, str_mode
         mcall
-
-        mov     ebx, 160*65536+72
+        mov     ebx, 160 shl 16 + 72
         mov     edx, str_method
         mcall
-
-        mov     ebx, 270*65536+72
+        mov     ebx, 270 shl 16 + 72
         mov     edx, str_blocksize
         mcall
 
-        push    dword edit1
-        call    [edit_box_draw]
+        invoke  edit_box_draw, edit1
+        invoke  edit_box_draw, edit2
+        invoke  edit_box_draw, edit3
+        invoke  edit_box_draw, edit4
 
-        push    dword edit2
-        call    [edit_box_draw]
+        invoke  option_box_draw, Option_boxs1
+        invoke  option_box_draw, Option_boxs2
 
-        push    dword edit3
-        call    [edit_box_draw]
+        mov     esi, [sc.work_button]
+        mcall   8, 210 shl 16 + 170, 105 shl 16 + 16, 0x10
 
-        push    dword edit4
-        call    [edit_box_draw]
+        mov     ecx, 0x80000000
+        or      ecx, [sc.work_button_text]
+        mcall   4, 260 shl 16 + 110, , str_transfer
 
-        push    dword Option_boxs1
-        call    [option_box_draw]
+        mov     ecx, 0x80000000
+        or      ecx, [sc.work_text]
+        mcall   4, 350 shl 16 + 137, , str_kb_s
+        mcall   4, 50 shl 16 + 137, , str_complete
 
-        push    dword Option_boxs2
-        call    [option_box_draw]
+        mcall   38, 10 shl 16 + 380, 130 shl 16 + 130, [sc.work_graph]
 
-        mcall   8,210*65536+170, 105*65536+16,0x00000010,0x085080DD
+        mcall   47, 1 shl 31 + 7 shl 16 + 1, kbps, 305 shl 16 + 137, [sc.work_text]
+        mcall   47, 1 shl 31 + 3 shl 16 + 1, done, 25 shl 16 + 137, ;[sc.work_text]
 
-        mcall   4,260*65536+110, 0x80000000, str_transfer
-
-        mcall   38,10*65536+380, 130*65536+130,0x00000000
-
-        mcall   4,350*65536+137, 0x80000000, str_kb_s
-
-        mcall   47,1 shl 31 + 7 shl 16 + 1,kbps,305*65536+137,0x00000000
-
-        mcall   4,50*65536+137, 0x80000000, str_complete
-
-        mcall   47,1 shl 31 + 3 shl 16 + 1,done,25*65536+137,0x00000000
-
-        mcall   12,2
+        mcall   12, 2
 
         ret
 
@@ -288,11 +270,9 @@ start_transfer:
         mov     esi, edi
         mcall   send, [socketnum], I_END
 
-        mcall   40, 0x80000085 ; 10000101b
+        mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK
 
         mov     [last_ack], 0
-
-
 
 
 
@@ -456,14 +436,15 @@ send_:
 ;-------------------------
 ; DATA
 
-socketnum      dd 0
-kbps           dd 0
-done           dd 0
+socketnum       dd 0
+kbps            dd 0
+done            dd 0
 
 sockaddr:
-        dw AF_INET4
-        dw 0x4500       ; 69
-IP      db 192,168,1,115
+                dw AF_INET4
+                dw 0x4500       ; 69
+IP              db 192, 168, 1, 115
+
 sockaddr_len = $ - sockaddr
 
 align 16
@@ -501,48 +482,48 @@ import  io_lib                                  ,\
         file_truncate   , 'file_truncate'       ,\
         file_close      , 'file_close'
 
-import  network                                         ,\
-        inet_ntoa               , 'inet_ntoa'           ,\
-        getaddrinfo             , 'getaddrinfo'         ,\
-        freeaddrinfo            , 'freeaddrinfo'
+import  network                                 ,\
+        inet_ntoa       , 'inet_ntoa'           ,\
+        getaddrinfo     , 'getaddrinfo'         ,\
+        freeaddrinfo    , 'freeaddrinfo'
 
 
-edit1 edit_box 300,80,5 ,0xffffff,0x6f9480,0,0,0,99 ,SRV,mouse_dd,ed_focus,  11,11
-edit2 edit_box 300,80,25,0xffffff,0x6a9480,0,0,0,99 ,remote_addr,mouse_dd,ed_figure_only, 5,5
-edit3 edit_box 300,80,45,0xffffff,0x6a9480,0,0,0,99 ,local_addr,mouse_dd,ed_figure_only, 27,27
-edit4 edit_box 40,340,68,0xffffff,0x6a9480,0,0,0,5 ,BLK,mouse_dd,ed_figure_only, 3,3
+edit1 edit_box 300, 80, 5, 0xffffff, 0x6f9480, 0, 0, 0, 99, SRV, mouse_dd, ed_focus, 13, 13
+edit2 edit_box 300, 80, 25, 0xffffff, 0x6a9480, 0, 0, 0, 99, remote_addr, mouse_dd, ed_figure_only, 5, 5
+edit3 edit_box 300, 80, 45, 0xffffff, 0x6a9480, 0, 0, 0, 99, local_addr, mouse_dd, ed_figure_only, 27, 27
+edit4 edit_box 40, 340, 68, 0xffffff, 0x6a9480, 0, 0, 0, 5, BLK, mouse_dd, ed_figure_only, 3, 3
 
-op1 option_box option_group1,80,68,6,12,0xffffff,0,0,netascii,octet-netascii
-op2 option_box option_group1,80,85,6,12,0xFFFFFF,0,0,octet,get-octet
+op1 option_box option_group1, 80, 68, 6, 12, 0xffffff, 0, 0, netascii, octet-netascii
+op2 option_box option_group1, 80, 85, 6, 12, 0xFFFFFF, 0, 0, octet, get-octet
 
-op3 option_box option_group2,210,68,6,12,0xffffff,0,0,get,put-get
-op4 option_box option_group2,210,85,6,12,0xFFFFFF,0,0,put,BLK-put
+op3 option_box option_group2, 210, 68, 6, 12, 0xffffff, 0, 0, get, put-get
+op4 option_box option_group2, 210, 85, 6, 12, 0xFFFFFF, 0, 0, put, BLK-put
 
 option_group1   dd op1
 option_group2   dd op3
-Option_boxs1    dd op1,op2,0
-Option_boxs2    dd op3,op4,0
+Option_boxs1    dd op1, op2, 0
+Option_boxs2    dd op3, op4, 0
 
-str_title       db 'TFTP client for KolibriOS',0
-str_server      db 'Server:',0
-str_source      db 'Remote file:',0
-str_destination db 'Local file:',0
-str_mode        db 'Mode:',0
-str_method      db 'Method:',0
-str_blocksize   db 'Blocksize:',0
-str_kb_s        db 'kb/s',0
-str_complete    db '% complete',0
-str_transfer    db 'Transfer',0
+str_title       db 'TFTP client', 0
+str_server      db 'Server:', 0
+str_source      db 'Remote file:', 0
+str_destination db 'Local file:', 0
+str_mode        db 'Mode:', 0
+str_method      db 'Method:', 0
+str_blocksize   db 'Blocksize:', 0
+str_kb_s        db 'kB/s', 0
+str_complete    db '% complete', 0
+str_transfer    db 'Transfer', 0
 
 str_error:
-._0 db 'Not defined, see error message (if any).',0
-._1 db 'File not found.',0
-._2 db 'Access violation.',0
-._3 db 'Disk full or allocation exceeded.',0
-._4 db 'Illegal TFTP operation.',0
-._5 db 'Unknown transfer ID.',0
-._6 db 'File already exists.',0
-._7 db 'No such user.',0
+._0 db 'Not defined, see error message (if any).', 0
+._1 db 'File not found.', 0
+._2 db 'Access violation.', 0
+._3 db 'Disk full or allocation exceeded.', 0
+._4 db 'Illegal TFTP operation.', 0
+._5 db 'Unknown transfer ID.', 0
+._6 db 'File already exists.', 0
+._7 db 'No such user.', 0
 
 
 netascii db 'NetASCII'
@@ -550,7 +531,7 @@ octet    db 'Octet'
 get      db 'GET'
 put      db 'PUT'
 
-BLK      db "512",0,0,0
+BLK      db "512", 0, 0, 0
 
 last_ack dw ?
 
@@ -558,18 +539,20 @@ fh       dd ?   ; file handle
 fo       dd ?   ; file offset
 fb       dd ?   ; file buffer
 
-SRV db "192.168.1.115",0
-rb (SRV + 256 - $)
+SRV             db "192.168.1.115", 0
+                rb (SRV + 256 - $)
 
-remote_addr db "IMG00",0
-rb (remote_addr + 256 - $)
+remote_addr     db "IMG00", 0
+                rb (remote_addr + 256 - $)
 
-local_addr  db "/hd0/1/KolibriOS/kernel.mnt",0
-rb (local_addr + 256 - $)
+local_addr      db "/hd0/1/KolibriOS/kernel.mnt", 0
+                rb (local_addr + 256 - $)
 
 I_END:
+
+sc              system_colors
+
 mouse_dd        dd ?
-buffer:
-rb buffer_len
+buffer          rb buffer_len
 
 IM_END:
