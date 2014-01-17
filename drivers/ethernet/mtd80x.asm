@@ -327,7 +327,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2,"Loading %s driver\n", my_service
+        DEBUGF  2,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -350,16 +350,16 @@ align 4
 proc service_proc stdcall, ioctl:dword
 
         mov     edx, [ioctl]
-        mov     eax, [IOCTL.io_code]
+        mov     eax, [edx + IOCTL.io_code]
 
 ;------------------------------------------------------
 
         cmp     eax, 0 ;SRV_GETVERSION
         jne     @F
 
-        cmp     [IOCTL.out_size], 4
+        cmp     [edx + IOCTL.out_size], 4
         jb      .fail
-        mov     eax, [IOCTL.output]
+        mov     eax, [edx + IOCTL.output]
         mov     [eax], dword API_VERSION
 
         xor     eax, eax
@@ -370,10 +370,10 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     .fail
 
-        cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
+        cmp     [edx + IOCTL.inp_size], 3               ; Data input must be at least 3 bytes
         jb      .fail
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
         jne     .fail                                   ; other types arent supported for this card yet
 
@@ -384,8 +384,8 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [IOCTL.input]                     ; get the pci bus and device numbers
-        mov     ax , [eax+1]                            ;
+;        mov     eax, [edx + IOCTL.input]                ; get the pci bus and device numbers
+        mov     ax, [eax+1]                             ;
   .nextdevice:
         mov     ebx, [esi]
         cmp     al, byte[device.pci_bus]
@@ -413,7 +413,7 @@ proc service_proc stdcall, ioctl:dword
 
 ; save the pci bus and device numbers
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte[eax+1]
         mov     [device.pci_bus], ecx
         movzx   ecx, byte[eax+2]
@@ -514,7 +514,7 @@ ret
 align 4
 probe:
 
-        DEBUGF  2,"Probing mtd80x device\n"
+        DEBUGF  2,"Probing device\n"
 
         PCI_make_bus_master
 
@@ -635,7 +635,7 @@ probe:
 align 4
 reset:
 
-        DEBUGF  1,"Resetting mtd80x\n"
+        DEBUGF  1,"Resetting\n"
 
 ;--------------------------------
 ; insert irq handler on given irq
@@ -645,7 +645,7 @@ reset:
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
-        DEBUGF  1,"\nCould not attach int handler!\n"
+        DEBUGF  1,"Could not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
   @@:
@@ -1105,7 +1105,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"int\n"
 
 ; find pointer of device wich made IRQ occur
 
@@ -1134,7 +1134,7 @@ int_handler:
 
   .got_it:
 
-        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
+        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
 
         test    ax, RI  ; receive interrupt
         jz      .no_rx

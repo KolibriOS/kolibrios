@@ -192,16 +192,16 @@ align 4
 proc service_proc stdcall, ioctl:dword
 
         mov     edx, [ioctl]
-        mov     eax, [IOCTL.io_code]
+        mov     eax, [edx + IOCTL.io_code]
 
 ;------------------------------------------------------
                        ;---------------
         cmp     eax, 0 ;SRV_GETVERSION
         jne     @F     ;---------------
 
-        cmp     [IOCTL.out_size], 4
+        cmp     [edx + IOCTL.out_size], 4
         jb      .fail
-        mov     eax, [IOCTL.output]
+        mov     eax, [edx + IOCTL.output]
         mov     [eax], dword API_VERSION
 
         xor     eax, eax
@@ -214,14 +214,14 @@ proc service_proc stdcall, ioctl:dword
 
         DEBUGF  1, "Checking if device is already listed..\n"
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
 
-        cmp     [IOCTL.inp_size], 3
+        cmp     [edx + IOCTL.inp_size], 3
         jb      .fail
         cmp     byte [eax], 1
         je      .pci
 
-        cmp     [IOCTL.inp_size], 4
+        cmp     [edx + IOCTL.inp_size], 4
         jb      .fail
         cmp     byte [eax], 0
         je      .isa
@@ -251,7 +251,7 @@ proc service_proc stdcall, ioctl:dword
   .firstdevice_pci:
         call    create_new_struct
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte[eax+1]
         mov     [device.pci_bus], ecx
         movzx   ecx, byte[eax+2]
@@ -290,7 +290,7 @@ proc service_proc stdcall, ioctl:dword
   .firstdevice_isa:
         call    create_new_struct
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         movzx   ecx, word [eax+1]
         mov     [device.io_addr], ecx
         mov     cl, [eax+3]

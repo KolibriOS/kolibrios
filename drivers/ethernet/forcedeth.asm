@@ -456,7 +456,7 @@ proc START stdcall, state:dword
         cmp [state], 1
         jne .exit
 
-        DEBUGF  2,"Loading %s driver\n", my_service
+        DEBUGF  2,"Loading driver\n"
         stdcall RegService, my_service, service_proc
         ret
 
@@ -478,16 +478,16 @@ align 4
 proc service_proc stdcall, ioctl:dword
 
         mov     edx, [ioctl]
-        mov     eax, [IOCTL.io_code]
+        mov     eax, [edx + IOCTL.io_code]
 
 ;------------------------------------------------------
 
         cmp     eax, 0 ;SRV_GETVERSION
         jne     @F
 
-        cmp     [IOCTL.out_size], 4
+        cmp     [edx + IOCTL.out_size], 4
         jb      .fail
-        mov     eax, [IOCTL.output]
+        mov     eax, [edx + IOCTL.output]
         mov     [eax], dword API_VERSION
 
         xor     eax, eax
@@ -498,10 +498,10 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     .fail
 
-        cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
+        cmp     [edx + IOCTL.inp_size], 3               ; Data input must be at least 3 bytes
         jb      .fail
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
         jne     .fail                                   ; other types arent supported for this card yet
 
@@ -512,7 +512,7 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [IOCTL.input]                      ; get the pci bus and device numbers
+;        mov     eax, [edx + IOCTL.input]                ; get the pci bus and device numbers
         mov     ax, [eax+1]
   .nextdevice:
         mov     ebx, [esi]
@@ -541,7 +541,7 @@ proc service_proc stdcall, ioctl:dword
 
 ; save the pci bus and device numbers
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte [eax+1]
         mov     [device.pci_bus], ecx
         movzx   ecx, byte [eax+2]
@@ -1780,7 +1780,7 @@ read_mac:
         mov     word [device.mac], cx
        @@:
 
-        DEBUGF 1,"MAC = %x-%x-%x-%x-%x-%x\n", \
+        DEBUGF  1,"MAC = %x-%x-%x-%x-%x-%x\n", \
         [device.mac+0]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
 
         ret
@@ -1798,7 +1798,7 @@ read_mac:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-        DEBUGF  2,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
+        DEBUGF  2,"Transmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
         DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
@@ -1859,7 +1859,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  2,"\n%s INT\n", my_service
+        DEBUGF  2,"INT\n"
 
 ;-------------------------------------------
 ; Find pointer of device wich made IRQ occur

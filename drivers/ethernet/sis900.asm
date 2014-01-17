@@ -267,15 +267,15 @@ service_proc:
 ;       pointer to IOCTL structure.
         mov     edx, [esp+4]    ; edx -> IOCTL
 ; 2. Get request code and select a handler for the code.
-        mov     eax, [IOCTL.io_code]
+        mov     eax, [edx + IOCTL.io_code]
         test    eax, eax        ; check for SRV_GETVERSION
         jnz     @f
 ; 3. This is SRV_GETVERSION request, no input, 4 bytes output, API_VERSION.
 ; 3a. Output size must be at least 4 bytes.
-        cmp     [IOCTL.out_size], 4
+        cmp     [edx + IOCTL.out_size], 4
         jb      .fail
 ; 3b. Write result to the output buffer.
-        mov     eax, [IOCTL.output]
+        mov     eax, [edx + IOCTL.output]
         mov     [eax], dword API_VERSION
 ; 3c. Return success.
         xor     eax, eax
@@ -286,10 +286,10 @@ service_proc:
 ; 4. This is SRV_HOOK request, input defines the device to hook, no output.
 ; 4a. The driver works only with PCI devices,
 ;       so input must be at least 3 bytes long.
-        cmp     [IOCTL.inp_size], 3
+        cmp     [edx + IOCTL.inp_size], 3
         jb      .fail
 ; 4b. First byte of input is bus type, 1 stands for PCI.
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1
         jne     .fail
 ; 4c. Second and third bytes of the input define the device: bus and dev.
@@ -303,7 +303,7 @@ service_proc:
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [IOCTL.input]                      ; get the pci bus and device numbers
+;        mov     eax, [edx + IOCTL.input]               ; get the pci bus and device numbers
         mov     ax, [eax+1]                            ;
   .nextdevice:
         mov     ebx, [esi]
@@ -323,7 +323,7 @@ service_proc:
 ; 4h. Zero the structure.
         allocate_and_clear ebx, device.size, .fail
 ; 4i. Save PCI coordinates
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte[eax+1]
         mov     [device.pci_bus], ecx
         movzx   ecx, byte[eax+2]

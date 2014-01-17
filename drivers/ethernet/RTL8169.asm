@@ -406,16 +406,16 @@ align 4
 proc service_proc stdcall, ioctl:dword
 
         mov     edx, [ioctl]
-        mov     eax, [IOCTL.io_code]
+        mov     eax, [edx + IOCTL.io_code]
 
 ;------------------------------------------------------
 
         cmp     eax, 0 ;SRV_GETVERSION
         jne     @F
 
-        cmp     [IOCTL.out_size], 4
+        cmp     [edx + IOCTL.out_size], 4
         jb      .fail
-        mov     eax, [IOCTL.output]
+        mov     eax, [edx + IOCTL.output]
         mov     [eax], dword API_VERSION
 
         xor     eax, eax
@@ -426,10 +426,10 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     .fail
 
-        cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
+        cmp     [edx + IOCTL.inp_size], 3               ; Data input must be at least 3 bytes
         jb      .fail
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
         jne     .fail                                   ; other types arent supported for this card yet
 
@@ -440,8 +440,8 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [IOCTL.input]                     ; get the pci bus and device numbers
-        mov     ax , [eax+1]                            ;
+;        mov     eax, [edx + IOCTL.input]                ; get the pci bus and device numbers
+        mov     ax, [eax+1]                             ;
   .nextdevice:
         mov     ebx, [esi]
         cmp     al, byte[device.pci_bus]
@@ -469,7 +469,7 @@ proc service_proc stdcall, ioctl:dword
 
 ; save the pci bus and device numbers
 
-        mov     eax, [IOCTL.input]
+        mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte[eax+1]
         mov     [device.pci_bus], ecx
         movzx   ecx, byte[eax+2]
