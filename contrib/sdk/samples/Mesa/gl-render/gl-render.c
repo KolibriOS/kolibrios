@@ -3,12 +3,14 @@
 #include <string.h>
 #include <math.h>
 
-#define EGL_EGLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glu.h>
+
+#ifndef GLAPIENTRY
+#define GLAPIENTRY
+#endif
+
 #include "EGL/egl.h"
-#include "EGL/eglext.h"
-#include "GL/gl.h"
-#include "gbm.h"
-#include <kos32sys.h>
 
 #include "eglut.h"
 
@@ -48,7 +50,7 @@ idle(void)
 
 static void reshape(int width, int height)
 {
-  asm volatile ("int3");
+
 /*
     glViewport(0, 0, (GLint)width, (GLint)height);
 
@@ -58,9 +60,10 @@ static void reshape(int width, int height)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 */
-    glViewport(0, 0, (GLint) width, (GLint) height);
 
     GLfloat h = (GLfloat) height / (GLfloat) width;
+
+    glViewport(0, 0, (GLint) width, (GLint) height);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -102,12 +105,13 @@ main(int argc, char *argv[])
    eglutReshapeFunc(reshape);
    eglutDisplayFunc(draw);
 
-   glClearColor( 0, 0, 0, 1.0);
+   glClearColor( 0, 0, 0, 1);
 
-   init();
+ //  init();
    glDrawBuffer(GL_BACK);
 
    eglutMainLoop();
 
    return 0;
 }
+
