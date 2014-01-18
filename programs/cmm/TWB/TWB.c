@@ -1,3 +1,4 @@
+#include "..\lib\draw_buf.h"
 
 int	downloader_id;
 
@@ -19,22 +20,24 @@ char header[2048];
 
 char download_path[]="/rd/1/.download";
 
-
 struct TWebBrowser {
 	llist list; //need #include "..\lib\list_box.h"
+	DrawBufer DrawBuf;
 	void GetNewUrl();
-	void ReadHtml(byte);
+	void ReadHtml();
 	void ShowPage();
-	void ParseHTML(dword);
-	void WhatTextStyle(int left1, top1, width1);
+	void ParseHTML();
+	void WhatTextStyle();
 	void DrawPage();
 	void DrawScroller();
+	void TextGoDown();
 };	
 TWebBrowser WB1;
 
 byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
 	link, ignor_text, cur_encoding, text_align;
 byte condition_text_active, condition_text_val, condition_href, condition_max;
+
 
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
@@ -61,7 +64,8 @@ char anchor[256];
 #include "..\TWB\img_cache.h"
 #include "..\TWB\some_code.h"
 #include "..\TWB\parce_tag.h"
-#include "..\TWB\draw_buf.h"
+
+
 
 //=======================================================================
 
@@ -85,14 +89,14 @@ void TWebBrowser::DrawPage()
 		start_y = stroka * 10 + list.y + magrin_left;
 		line_length = strlen(#line) * 6;
 
-		WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
-		IF (b_text)	WriteBufText(start_x+1, 0, 0x88, text_colors[text_color_index], #line, drawbuf);
-		IF (i_text) DrawBufSkew(start_x, 0, line_length, list.line_h);
-		IF (s_text) DrawBufBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
-		IF (u_text) DrawBufBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
+		WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, buf_data);
+		IF (b_text)	WriteBufText(start_x+1, 0, 0x88, text_colors[text_color_index], #line, buf_data);
+		IF (i_text) { stolbec++; DrawBuf.Skew(start_x, 0, line_length, list.line_h); }
+		IF (s_text) DrawBuf.DrawBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
+		IF (u_text) DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
 		IF (link) {
 			UnsafeDefineButton(start_x-2, start_y, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9);
-			DrawBufBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
+			DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
 		}
 		stolbec += strlen(#line);
 	}
@@ -204,11 +208,11 @@ void TWebBrowser::ParseHTML(dword bword){
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
 	condition_text_val = condition_text_active = 0; //обнуляем теги
-	condition_max = 10;
+	condition_max = 255;
 	text_align = ALIGN_LEFT;
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
-	DrawBufFill();
+	DrawBuf.Fill(bg_color);
 	strcpy(#page_links,"|");
 	strcpy(#header, #version);
 	stroka = -list.first;
@@ -416,13 +420,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (!chTag("body"))
 	{
 		do{
-			if (!strcmp(#parametr, "condition_max=")) { condition_max = options[0]-'0'; debugi(condition_max); }
+			if (!strcmp(#parametr, "condition_max=")) { condition_max = atoi(#options); debugi(condition_max); }
 			if (!strcmp(#parametr, "link=")) link_color = GetColor(#options);
 			if (!strcmp(#parametr, "text=")) text_colors[0]=GetColor(#options);
 			if (!strcmp(#parametr, "bgcolor="))
 			{
 				bg_color=GetColor(#options);
-				DrawBufFill();
+				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
 		return;
@@ -496,6 +500,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
 		return;
 	}
+	/*
 	if (!chTag("center"))
 	{
 		if (rez) text_align = ALIGN_CENTER;
@@ -516,6 +521,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		return;
 	}
+	*/
 	if (!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
 		TextGoDown(left1, top1, width1);
 		if (rez) && (stroka>1) TextGoDown(left1, top1 + 10, width1);
@@ -563,7 +569,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		if (rez)
 		{
 			TextGoDown(left1, top1, width1);
-			if (stroka > -1) && (stroka - 2 < list.visible) DrawBufBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
+			if (stroka > -1) && (stroka - 2 < list.visible) DrawBuf.DrawBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
 		}
 		return;
 	}
@@ -587,7 +593,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		if (strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options); else hr_color = 0x999999;
 		TextGoDown(left1, top1, width1);
-		DrawBufBar(5, WB1.list.line_h/2, WB1.list.w-10, 1, hr_color);
+		DrawBuf.DrawBar(5, WB1.list.line_h/2, WB1.list.w-10, 1, hr_color);
 		TextGoDown(left1, top1+WB1.list.line_h, width1);
 	}
 	if (!chTag("img"))
@@ -601,7 +607,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
 			{
 				strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
-				if (!strcmp(#options,"utf-8"))   || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
+				if (!strcmp(#options, "utf-8"))  || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
 				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))   ReadHtml(_KOI);
 				if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   ReadHtml(_DOS);
 			}
@@ -609,7 +615,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 }
-
 
 
 void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
@@ -625,3 +630,18 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 	scrollbar_v_draw(#scroll_wv);
 }
 
+
+void TWebBrowser::TextGoDown(int left1, top1, width1)
+{
+	if (!stroka) DrawBar(WB1.list.x, WB1.list.y, WB1.list.w, 5, bg_color); //закрашиваем фон над первой строкой
+	if (top1>=WB1.list.y) && ( top1 < WB1.list.h+WB1.list.y-10)  && (!anchor)
+	{
+		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(left1,top1,WB1.list.w,WB1.list.line_h,stolbec * 6);
+		if (text_align == ALIGN_RIGHT) DrawBuf.AlignRight(left1,top1,WB1.list.w,WB1.list.line_h,stolbec * 6);
+		PutPaletteImage(buf_data+8, WB1.list.w, WB1.list.line_h, left1-5, top1, 32,0);
+		DrawBuf.Fill(bg_color);
+	}
+	stroka++;
+	if (blq_text) stolbec = 8; else stolbec = 0;
+	if (li_text) stolbec = li_tab * 5;
+}
