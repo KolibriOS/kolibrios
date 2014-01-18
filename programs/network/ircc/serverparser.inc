@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -60,6 +60,7 @@ server_commands:
         dd      '375 ', cmd_375         ; start of motd
         dd      '376 ', cmd_376         ; end of motd
         dd      '421 ', cmd_421         ; unknown command
+        dd      '433 ', cmd_433         ; nickname already in use
         dd      'join', cmd_join
         dd      'kick', cmd_kick
         dd      'mode', cmd_mode
@@ -83,6 +84,8 @@ compare_to_nick:
         lodsb
         cmp     al, ' '
         jbe     .done
+        test    al, al
+        jz      .done
         cmp     al, 'a'
         jb      .ok
         cmp     al, 'z'
@@ -116,24 +119,23 @@ compare_to_nick:
 
 
 align 4
-skip_nick:
+skip_parameter:
 
-; First: skip the NICK (maybe we should verify it?)
-  .nick:
+; First: skip the parameter
+  .part1:
         lodsb
         cmp     al, ' '
-        je      .skip
+        je      .part2
         cmp     al, ':'
-        je      .skip
-        jmp     .nick
+        jne     .part1
 
-; skip all leading spaces and semicolons
-  .skip:
+; Now, skip all trailing spaces and semicolons
+  .part2:
         lodsb
         cmp     al, ' '
-        je      .skip
+        je      .part2
         cmp     al, ':'
-        je      .skip
+        je      .part2
         dec     esi
 
         ret
@@ -147,6 +149,7 @@ cmd_421:
 cmd_372:
 cmd_375:
 cmd_376:
+cmd_433:
         add     esi, 4
         jmp     cmd_notice.loop
 
@@ -228,11 +231,27 @@ cmd_privmsg:
         cmp     eax, 'msg '
         jne     .fail
         add     esi, 8          ; skip 'PRIVMSG '
-        call    window_open     ; esi now points to end of destination name
+
+        mov     edi, esi
+        call    compare_to_nick
+        jne     .channel
+
+; private chat message
+        push    esi
+        mov     esi, servercommand+1
+        call    window_open
+        pop     esi
+        call    skip_parameter  ; our own nickname
 
         cmp     byte[esi], 1    ; Client to Client protocol?
         je      cmd_ctcp
 
+        jmp     .print
+
+  .channel:
+        call    window_open
+
+  .print:
 ; nope, just plain old privmsg, print it using '<nick> message' format
         if TIMESTAMP
         call    print_timestamp
@@ -266,8 +285,6 @@ cmd_privmsg:
 
 cmd_ctcp:
 
-        cmp     byte [esi+4], ' '
-        jne     .fail
         inc     esi
         mov     eax, dword[esi]
         or      eax, 0x20202020
@@ -280,8 +297,8 @@ cmd_ctcp:
         je      .ping
         cmp     eax, 'acti'
         je      .action
-;        cmp     eax, 'dcc '    ; TODO
-;        je      cmd_dcc
+        cmp     eax, 'dcc '    ; TODO
+        je      cmd_dcc
 
 ; Unknown CTCP command: TODO: just print to window??
 
@@ -413,6 +430,9 @@ cmd_dcc:
 
   .send:
 
+        call    window_open
+        mov     [ebx + window.type], WINDOWTYPE_DCC
+
         ret
 
 
@@ -472,7 +492,7 @@ cmd_part:
 ; Is it me who parted?
         mov     edi, servercommand+1
         call    compare_to_nick
-        jne     .dont_close
+        jne     .not_me
 
 ; yes, close the window (if its open)
         call    window_find
@@ -486,10 +506,13 @@ cmd_part:
 
 
 ; somebody else parted, just print message
-  .dont_close:
+  .not_me:
         push    esi
-        call    skip_nick
         call    window_open
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
 
         mov     esi, part_header
         call    print_text2
@@ -518,44 +541,26 @@ cmd_part:
 
 cmd_join:
 
-        cmp     byte [esi+4], ' '
+        cmp     byte[esi+4], ' '
         jne     .fail
         add     esi, 5  ; skip 'JOIN '
 
 ; compare nick: did we join a channel?
         mov     edi, servercommand+1
         call    compare_to_nick
-        jne     .no_new_window
+        jne     .not_me
 
-; create channel window - search for empty slot
-        mov     ebx, windows
-        mov     ecx, MAX_WINDOWS
-  .loop:
-        cmp     [ebx + window.data_ptr], 0
-        je      .free_found
-        add     ebx, sizeof.window
-        dec     ecx
-        jnz     .loop
-; Error: no more available windows!! ;;;;; TODO
-
-        ret
-
-  .free_found:
-        call    window_create
+        push    esi
+        call    window_open
         test    eax, eax
         jz      .fail
         mov     [ebx + window.type], WINDOWTYPE_CHANNEL
-
-        call    window_set_name
-
         mov     [window_active], ebx
-        mov     [window_print], ebx
 
         if TIMESTAMP
         call    print_timestamp
         end if
 
-        push    esi
         mov     esi, join_header
         call    print_text2
 
@@ -573,7 +578,7 @@ cmd_join:
 
         ret
 
-  .no_new_window:
+  .not_me:
         push    esi
         call    window_open
 
@@ -601,8 +606,10 @@ cmd_join:
         mov     esi, servercommand+1
         call    user_add
 
-  .fail:
+        ret
 
+  .fail:
+        add     esp, 4
         ret
 
 
@@ -711,7 +718,7 @@ cmd_kick:
   .not_me:
 ; find the channel user has been kicked from
         push    esi
-        call    skip_nick
+        call    skip_parameter
         call    window_open
 
         if TIMESTAMP
@@ -802,18 +809,7 @@ cmd_mode:
         call    window_find
         test    ebx, ebx
         jz      .fail
-
-; skip channel name
-  @@:
-        lodsb
-        test    al, al
-        jz      .fail
-        cmp     al, 10
-        je      .fail
-        cmp     al, 13
-        je      .fail
-        cmp     al, ' '
-        jne     @r
+        mov     [window_print], ebx
         push    esi
 
         if TIMESTAMP
@@ -846,7 +842,7 @@ cmd_mode:
 cmd_353:                ; channel usernames reply
 
         add     esi, 4  ; skip '353 '
-        call    skip_nick
+        call    skip_parameter
         inc     esi     ; channel type '*', '=' or '@'
         inc     esi     ; ' '
         call    window_open
@@ -885,7 +881,7 @@ cmd_353:                ; channel usernames reply
 cmd_366:        ; channel usernames end
 
         add     esi, 4          ; skip '366 '
-        call    skip_nick
+        call    skip_parameter
         call    window_open
 
         mov     ebx, [window_print]
@@ -899,7 +895,7 @@ cmd_366:        ; channel usernames end
 cmd_topic:
 
         add     esi, 4          ; skip '332 '
-        call    skip_nick
+        call    skip_parameter
         call    window_open
 
         if TIMESTAMP
@@ -916,7 +912,7 @@ cmd_topic:
         pop     esi
         call    print_text2
 
-        mov     esi, str_newline
+        mov     esi, str_topic_end
         call    print_text2
 
         ret
@@ -925,18 +921,8 @@ cmd_topic:
 cmd_333:
 
         add     esi, 4          ; skip '333 '
-        call    skip_nick               ;;;;
+        call    skip_parameter               ;;;;
         call    window_open
-
-;        mov     ecx, 2  ; number of spaces to find    ;;; CHECKME
-;  .loop:
-;        lodsb
-;        test    al, al
-;        je      .fail
-;        cmp     al, ' '
-;        jne     .loop
-;        dec     ecx
-;        jnz     .loop   ; find some more spaces
 
         if TIMESTAMP
         call    print_timestamp
@@ -967,7 +953,7 @@ cmd_322:        ; LIST
         add     esi, 4
 
         mov     [window_print], windows         ; FIXME
-        call    skip_nick
+        call    skip_parameter
         mov     eax, esi
         mov     dl, 13
         call    print_text

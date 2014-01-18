@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -100,7 +100,6 @@ socket_connect:
         ret
 
   .reconnect:
-
         if TIMESTAMP
         call    print_timestamp
         end if
@@ -213,10 +212,10 @@ socket_receive:
 
   .nextpacket:
         mcall   recv, [socketnum], packetbuf, 1024, MSG_DONTWAIT        ; read a packet
-        inc     eax                                                     ; check if we got one
-        jz      .done
+        inc     eax                                                     ; check if we got any data
+        jz      .done                                                   ; TODO: handle errors!
         dec     eax
-        jz      .done                                                   ; TODO: check for errors!
+        jz      .disconnected
 
 ; ok we have data, now feed it to the recoder
 
@@ -226,7 +225,7 @@ socket_receive:
         mov     edi, servercommand
   .byteloop:
         call    get_next_byte                           ; reads byte from [esi] to al
-        jnc     .nextpacket                             ; if CF is set, we need more data
+        jnc     .nextpacket                             ; if CF is set, we need more data (TODO: dont throw away old data!!!)
         cmp     al, 10
         je      .got_command
         cmp     al, 13
@@ -245,5 +244,15 @@ socket_receive:
 
   .done:
         popa
+        ret
 
+
+  .disconnected:
+        mov     esi, str_disconnected
+        call    print_text2
+
+        mov     [status], STATUS_DISCONNECTED
+        mcall   close, [socketnum]
+
+        popa
         ret

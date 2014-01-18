@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -18,7 +18,7 @@ user_parser:
 
         mov     eax, [edit1.size]
         test    eax, eax
-        jz      sdts_ret                                ; ignore empty commands
+        jz      .ret                                    ; ignore empty commands
         mov     word [usercommand + eax], 0x0a0d        ; terminate the line
 
         cmp     byte[usercommand], '/'                  ; is it a server command ?
@@ -26,7 +26,7 @@ user_parser:
 
 ; Ignore data commands when not connected.
         cmp     [status], STATUS_CONNECTED
-        jne     sdts_ret
+        jne     .notconnected
 
 ; Ok, we said something, print it to our textbox
 ; TODO: dont send if it's a server window?
@@ -86,8 +86,13 @@ user_parser:
 
         lea     esi, [edi - packetbuf]
         mcall   send, [socketnum], packetbuf, , 0
+  .ret:
 
-sdts_ret:
+        ret
+
+  .notconnected:
+        mov     esi, str_notconnected
+        call    print_text2
 
         ret
 
@@ -100,7 +105,9 @@ user_commands:
         dd      'help', cmd_usr_help
         dd      'code', cmd_usr_code
 
-; All following commands require a connection to the server. TODO: verify connection
+        .number2 = ($ - user_commands) / 8
+
+; All following commands require a connection to the server.
         dd      'quer', cmd_usr_quer
         dd      'quit', cmd_usr_quit
         dd      'part', cmd_usr_part
@@ -113,23 +120,34 @@ user_commands:
 
 server_command:
 
-        mov     eax, dword[usercommand+1]
-        or      eax, 0x20202020
+        mov     eax, dword[usercommand+1]       ; skip '/'
+        or      eax, 0x20202020                 ; convert to lowercase
 
         mov     edi, user_commands
         mov     ecx, user_commands.number
+        cmp     [status], STATUS_CONNECTED
+        jne     .loop
+        mov     ecx, user_commands.number2
   .loop:
         scasd
         je      .got_cmd
         add     edi, 4
         dec     ecx
         jnz     .loop
-        jmp     cmd_usr_send            ; If none of the previous commands, just send to server
+
+        cmp     [status], STATUS_CONNECTED
+        jne     .notconnected
+
+        jmp     cmd_usr_send                    ; If none of the previous commands, just send to server
 
   .got_cmd:
         jmp     dword[edi]
 
+  .notconnected:
+        mov     esi, str_notconnected
+        call    print_text2
 
+        ret
 
 
 
@@ -341,15 +359,23 @@ cmd_usr_server:
         cmp     eax, 'er '
         jne     cmd_usr_send
 
-        mov     ecx, [edit1.size]         ; ok now set the address
+        mov     ecx, [edit1.size]               ; ok now set the address
         sub     ecx, 8
 
         mov     esi, usercommand+8
+  .now:
         push    esi
         mov     edi, irc_server_name
-        rep     movsb
+  .loop:                                        ; copy until zero byte, or ecx reaches zero.
+        lodsb
+        stosb
+        test    al, al
+        jz      .done
+        dec     ecx
+        jnz     .loop
         xor     al, al
         stosb
+  .done:
         pop     esi
 
 ; set it also in window name
@@ -364,31 +390,8 @@ cmd_usr_server:
 
 cmd_usr_quer:
 
-        mov     ecx, MAX_WINDOWS
-        mov     ebx, windows
-  .loop:
-        cmp     [ebx + window.data_ptr], 0
-        je      .found
-        add     ebx, sizeof.window
-        dec     ecx
-        jnz     .loop
-
-; error: no available channels ! FIXME
-
-        ret
-
-
-  .found:
-        call    window_create
-        test    eax, eax
-        jz      .error
-        mov     [ebx + window.type], WINDOWTYPE_CHAT
-
         mov     esi, usercommand+7
-        call    window_set_name
-
-
-  .error:
+        call    window_open
 
         ret
 
@@ -470,6 +473,7 @@ cmd_usr_part_channel:
         ret
 
 
+
 cmd_usr_ctcp:
 
         cmp     byte[usercommand+5], ' '
@@ -525,6 +529,7 @@ cmd_usr_ctcp:
   .fail:
 
         ret
+
 
 
 ; The user typed some undefined command, just recode it and send to the server

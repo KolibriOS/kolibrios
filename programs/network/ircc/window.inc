@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -10,10 +10,14 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; window_create_textbox
+; Initialises the data structure for our multiline textbox
+;
+; in:   window ptr in ebx
+; out:  eax = 0 on error
+;       ecx, edi = destroyed
 
-; in:  window ptr in ebx
-; out: eax = 0 on error
-window_create:
+window_create_textbox:
 
         push    ebx
 ; allocate the window data block
@@ -47,24 +51,22 @@ window_create:
         ret
 
 
-window_set_name:    ; esi = ptr to name, ebx = window ptr
+; window_set_name
+; Fills in the window name in window structure
+;
+; IN:   esi = ptr to name
+;       ebx = window ptr
+; OUT:  esi = ptr to next parameter
+;       ebx = window ptr
+;       eax, ecx, edx, edi = destroyed
 
-        pusha
+window_set_name:
 
-; Skip heading spaces
-  .spaceloop:
-        cmp     byte[esi], ' '
-        jne     .done
-        inc     esi
-        jmp     .spaceloop
-  .done:
-
-; Now copy it
         lea     edi, [ebx + window.name]
         mov     ecx, MAX_WINDOWNAME_LEN
   .loop:
         lodsb
-        cmp     al, 0x21
+        cmp     al, 0x21        ; name ends with 0, space or !
         jbe     .addzero
         stosb
         dec     ecx
@@ -73,9 +75,9 @@ window_set_name:    ; esi = ptr to name, ebx = window ptr
         xor     al, al
         stosb
 
-        call    draw_windowtabs         ; redraw it
-
-        popa
+        push    esi ebx
+        call    draw_windowtabs
+        pop     ebx esi
 
         ret
 
@@ -133,11 +135,16 @@ window_close:   ; closes the 'print' window
         ret
 
 
+; window_find:
+; search for a window with given name in the window list
+;
+; IN:   esi = ptr to start of window name
+; OUT:  ebx = window ptr, or 0 if none found
+;       esi = ptr to end of window name, if window was found
 
-window_find:    ; esi = window name
-; search for window in list
+window_find:
+
         mov     ebx, windows
-        mov     [window_print], ebx     ; set first window (server window) as default output window
         mov     eax, MAX_WINDOWS
   .scanloop:
         push    esi
@@ -146,16 +153,12 @@ window_find:    ; esi = window name
         lea     edi, [ebx + window.name]
         mov     ecx, MAX_WINDOWNAME_LEN
         repe    cmpsb
-        cmp     byte[edi-1], 0
+        cmp     byte[edi-1], 0          ; last equall character was null? yes, the strings match!
+        je      .got_it
+        cmp     byte[edi], 0            ; we're at the end of string1.. ?
         jne     .try_next
-        cmp     byte[esi-1], 0
-        je      .got_it
-        cmp     byte[esi-1], 10
-        je      .got_it
-        cmp     byte[esi-1], 13
-        je      .got_it
-        cmp     byte[esi-1], ' '
-        je      .got_it
+        cmp     byte[esi], 0x21         ; and the end of string2? yes!
+        jbe     .got_it
   .try_next:
         pop     esi
         add     ebx, sizeof.window
@@ -166,78 +169,62 @@ window_find:    ; esi = window name
         ret
 
   .got_it:
-        pop     esi                 ;;; TODO: dont reset ESI  ?
-        mov     [window_print], ebx
+        add     esp, 4
         ret
 
 
 
-
-
-
+; window_open:
 ; open a window with a given name, if it does not exist, create it
 ; This procedure only affects window_print ptr, not window_active!
 ;
-; esi = ptr to ASCIIZ windowname
+; IN:   esi = ptr to ASCIIZ windowname
+; OUT:  esi = ptr to next parameter
+
 window_open:
 
-        push    esi
-
-        mov     edi, esi
-        call    compare_to_nick
-        jne     .nochat
-
-        mov     esi, servercommand+1
-  .nochat:
+; Skip heading spaces
+        lodsb
+        cmp     al, ' '
+        je      window_open
+        cmp     al, ':'
+        je      window_open
+        dec     esi
 
         call    window_find
         test    ebx, ebx
-        jne     .got_it
+        jnz     .got_it
 
 ; create channel window - search for empty slot
   .create_it:
         mov     ebx, windows
         mov     ecx, MAX_WINDOWS
   .scanloop2:
-        cmp     [ebx + window.data_ptr], 0
+        cmp     [ebx + window.type], WINDOWTYPE_NONE
         je      .free_found
         add     ebx, sizeof.window
         dec     ecx
         jnz     .scanloop2
-; Error: no more available windows!
-        jmp     .got_it ; TODO: return error
+        jmp     .error
 
   .free_found:
-        call    window_create
+        call    window_create_textbox
         test    eax, eax
-        jz      .got_it ; TODO: return error
+        jz      .error
         mov     [ebx + window.type], WINDOWTYPE_CHAT    ; FIXME: let caller handle this ?
 
         call    window_set_name
-        mov     [window_print], ebx
-
-        call    draw_windowtabs
 
   .got_it:
-        pop     esi
-  .skip1:
-; skip text
         lodsb
-        test    al, al
-        jz      .quit
         cmp     al, ' '
-        jne     .skip1
-        dec     esi
-; now skip trailing spaces and semicolons
-  .skip2:
-        lodsb
-        test    al, al
-        jz      .quit
-        cmp     al, ' '
-        je      .skip2
+        je      .got_it
         cmp     al, ':'
-        je      .skip2
+        je      .got_it
         dec     esi
 
-  .quit:
+        mov     [window_print], ebx
+        ret
+
+  .error:                                               ; TODO: return error?
         ret

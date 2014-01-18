@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IRC client for KolibriOS                                       ;;
@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.15'
+version equ '0.16'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -52,7 +52,7 @@ BOTTOM_Y                = 15
 
 MAX_WINDOWS             = 20
 MAX_USERS               = 4096
-TEXT_BUFFERSIZE         = 4096;*1024
+TEXT_BUFFERSIZE         = 1024*1024
 
 MAX_NICK_LEN            = 32
 MAX_REAL_LEN            = 32    ; realname
@@ -97,7 +97,7 @@ include "../../proc32.inc"
 include "../../dll.inc"
 include "../../network.inc"
 include "../../struct.inc"
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include "../../develop/libraries/box_lib/trunk/box_lib.mac"
 
 struct  window
         data_ptr        dd ?
@@ -169,7 +169,7 @@ START:
 
 ; allocate window data block
         mov     ebx, windows
-        call    window_create
+        call    window_create_textbox
         test    eax, eax
         jz      error
         mov     [ebx + window.type], WINDOWTYPE_SERVER
@@ -202,14 +202,22 @@ START:
         mov     esi, str_welcome
         call    print_text2
 
-        call    draw_window     ; Draw window a first time, so we can figure out skin size
+; Check if parameter contains an URL
+        cmp     byte[param], 0
+        je      @f
+        mov     esi, param
+        mov     ecx, 1024
+        call    cmd_usr_server.now
+  @@:
+
+; Draw window a first time, so we can figure out skin size
+        call    draw_window
 
 redraw:
         call    draw_window
 
-still:
-; wait here for event
-        mcall   10
+mainloop:
+        mcall   10              ; wait for event
 
         dec     eax
         jz      redraw
@@ -235,7 +243,7 @@ still:
         call    draw_channel_list
   .no_update:
 
-        jmp     still
+        jmp     mainloop
 
 button:
 
@@ -248,7 +256,7 @@ button:
         cmp     ax, WINDOW_BTN_CLOSE
         jne     @f
         call    cmd_usr_close_window
-        jmp     still
+        jmp     mainloop
 
   @@:
         cmp     ax, WINDOW_BTN_LIST
@@ -270,7 +278,9 @@ button:
 
         pop     eax
         test    eax, 1 shl 25   ; Right mouse button pressed?
-        jz      still
+        jz      mainloop
+
+; TODO: check if selected nick is my nick!
 
 ; Right mouse BTN was pressed, open chat window
         mov     ebx, [window_active]
@@ -284,7 +294,7 @@ button:
         pop     [window_active]
         call    redraw
 
-        jmp     still
+        jmp     mainloop
 
   @@:
         sub     ax, WINDOW_BTN_START
@@ -306,7 +316,7 @@ button:
         mov     [scroll2.position], 1           ;;; FIXME
         call    draw_window
 
-        jmp     still
+        jmp     mainloop
 
 exit:
 
@@ -332,14 +342,14 @@ main_window_key:
 ;        cmp     ah, 178
 ;        jne     .no_up
 ;
-;        jmp     still
+;        jmp     mainloop
 ;
 ;
 ;  .no_up:
 ;        cmp     ah, 177
 ;        jne     .no_down
 ;
-;        jmp     still
+;        jmp     mainloop
 ;
 ;  .no_down:
         cmp     ah, 13          ; enter
@@ -357,14 +367,18 @@ main_window_key:
 
         call    draw_channel_text
 
-        jmp     still
+        jmp     mainloop
   no_send2:
 
-        jmp     still
+        jmp     mainloop
 
 mouse:
         push    dword edit1
         call    [edit_box_mouse]
+
+;        mcall   37, 7
+;        movsx   eax, ax
+;        add     [scroll2.position], eax
 
 ; TODO: check if scrollbar is active?
         mov     edi, [window_active]
@@ -386,14 +400,14 @@ mouse:
         jbe     @f
         push    dword scroll2
         call    [scrollbar_mouse]
-;        mov     edi, [window_active]
+        mov     edi, [window_active]
         mov     edx, [scroll2.position]
         sub     edx, [edi + window.text_line_print]
         je      @f
         call    draw_channel_text.scroll_to_pos
   @@:
 
-        jmp     still
+        jmp     mainloop
 
 
 ; DATA AREA
@@ -404,32 +418,67 @@ db      'CP1251'
 db      'UTF-8 '
 encoding_text_len = 6
 
-join_header             db 3,'3* ', 0
-quit_header             db 3,'5* ', 0
-nick_header             db 3,'2* ', 0
-kick_header             db 3,'5* ', 0
-mode_header             db 3,'2* ', 0
-part_header             db 3,'5* ', 0
-topic_header            db 3,'3* ', 0
-action_header           db 3,'6* ', 0
-ctcp_header             db 3,'13-> [',0
-msg_header              db 3,'7-> *',0
-ctcp_version            db '] VERSION',10,0
-ctcp_ping               db '] PING',10,0
-ctcp_time               db '] TIME',10,0
+join_header             db 3, '3* ', 0
+quit_header             db 3, '5* ', 0
+nick_header             db 3, '2* ', 0
+kick_header             db 3, '5* ', 0
+mode_header             db 3, '2* ', 0
+part_header             db 3, '5* ', 0
+topic_header            db 3, '3* ', 0
+action_header           db 3, '6* ', 0
+ctcp_header             db 3, '13-> [', 0
+msg_header              db 3, '7-> *', 0
+ctcp_version            db '] VERSION', 10, 0
+ctcp_ping               db '] PING', 10, 0
+ctcp_time               db '] TIME', 10, 0
+
 has_left_channel        db ' has left ', 0
 joins_channel           db ' has joined ', 0
 is_now_known_as         db ' is now known as ', 0
 has_quit_irc            db ' has quit IRC', 10, 0
+
 sets_mode               db ' sets mode ', 0
 kicked                  db ' is kicked from ', 0
-str_talking             db 'Now talking in ',0
-str_topic               db 'Topic is ',0
-str_setby               db 'Set by ',0
-str_reconnect           db 'Connection reset by user.',10,0
+str_nickchange          db 'Nickname is now ', 0
+str_realchange          db 'Real name is now ', 0
+str_talking             db 'Now talking in ', 0
+str_topic               db 'Topic is "', 0
+str_topic_end           db '".', 10, 0
+str_setby               db 'Set by ', 0
+
+str_connecting          db 3, '3* Connecting to ', 0
+str_sockerr             db 3, '5* Socket error', 10, 0
+str_dnserr              db 3, '5* Unable to resolve hostname', 10, 0
+str_refused             db 3, '5* Connection refused', 10, 0
+str_disconnected        db 3, '5* Server disconnected', 10, 0
+str_reconnect           db 3, '5* Connection reset by user', 10, 0
+str_notconnected        db 3, '5* Not connected to server', 10, 0
+
+str_dotnewline          db '.',10, 0
+str_newline             db 10, 0
+str_1                   db 3, '13 -', 0
+str_2                   db '- ', 0
+
+str_help                db 10, 'following commands are available:', 10
+                        db 10
+                        db '/nick <nick>        : change nickname to <nick>', 10
+                        db '/real <real name>   : change real name to <real name>', 10
+                        db '/server <address>   : connect to server <address>', 10
+                        db '/code <code>        : change codepage to cp866, cp1251, or utf8', 10, 0
+
+str_welcome             db 3, '3 ___', 3, '7__________', 3, '6_________  ', 3, '4         __   __               __', 10
+                        db 3, '3|   \', 3, '7______   \', 3, '6_   ___ \ ', 3, '4   ____ |  | |__| ____   _____/  |_', 10
+                        db 3, '3|   |', 3, '7|       _/', 3, '6    \  \/ ', 3, '4 _/ ___\|  | |  |/ __ \ /    \   __\', 10
+                        db 3, '3|   |', 3, '7|    |   \', 3, '6     \____', 3, '4 \  \___|  |_|  \  ___/|   |  \  |', 10
+                        db 3, '3|___|', 3, '7|____|_  /', 3, '6\______  /', 3, '4  \___  >____/__|\___  >___|  /__|', 10
+                        db 3, '3     ', 3, '7       \/ ', 3, '6       \/ ', 3, '4      \/             \/     \/', 10
+                        db 10
+                        db 'Welcome to the KolibriOS IRC client v', version, 10
+                        db 10
+                        db 'Type /help for help', 10, 10, 0
 
 str_version             db 'VERSION '
-str_programname         db 'KolibriOS IRC client ', version, 0
+str_programname         db 'KolibriOS IRC client v', version, 0
 
 str_user                db 'user', 0
 str_nick                db 'nick', 0
@@ -440,36 +489,6 @@ str_quitmsg             db 'quitmsg', 0
 default_nick            db 'kolibri_user', 0
 default_real            db 'Kolibri User', 0
 default_quit            db 'KolibriOS forever', 0
-
-str_welcome             db 3,'3 ___',3,'7__________',3,'6_________  ',3,'4         __   __               __',10
-                        db 3,'3|   \',3,'7______   \',3,'6_   ___ \ ',3,'4   ____ |  | |__| ____   _____/  |_',10
-                        db 3,'3|   |',3,'7|       _/',3,'6    \  \/ ',3,'4 _/ ___\|  | |  |/ __ \ /    \   __\',10
-                        db 3,'3|   |',3,'7|    |   \',3,'6     \____',3,'4 \  \___|  |_|  \  ___/|   |  \  |',10
-                        db 3,'3|___|',3,'7|____|_  /\',3,'6______  /',3,'4  \___  >____/__|\___  >___|  /__|',10
-                        db 3,'3     ',3,'7      \/   ',3,'6     \/  ',3,'4     \/             \/     \/',10
-                        db 10
-                        db 'Welcome to the KolibriOS IRC client v',version,10
-                        db 10
-                        db 'Type /help for help',10,10,0
-
-str_nickchange          db 'Nickname is now ',0
-str_realchange          db 'Real name is now ',0
-str_dotnewline          db '.',10, 0
-str_newline             db 10, 0
-str_connecting          db 3,'3* Connecting to ',0
-str_help                db 10,'following commands are available:',10
-                        db 10
-                        db '/nick <nick>        : change nickname to <nick>',10
-                        db '/real <real name>   : change real name to <real name>',10
-                        db '/server <address>   : connect to server <address>',10
-                        db '/code <code>        : change codepage to cp866, cp1251, or utf8',10,0
-
-str_1                   db 3,'13 -',0
-str_2                   db '- ',0
-
-str_sockerr             db 'Socket Error',10,0
-str_dnserr              db 'Unable to resolve hostname.',10,0
-str_refused             db 'Connection refused',10,0
 
 irc_colors              dd 0xffffff     ;  0 white
                         dd 0x000000     ;  1 black
@@ -490,7 +509,7 @@ irc_colors              dd 0xffffff     ;  0 white
 
 sockaddr1:
         dw AF_INET4
-.port   dw 0x0b1a       ; 6667
+.port   dw 0x0b1a       ; 6667          FIXMEEEEEE
 .ip     dd 0
         rb 10
 
@@ -527,8 +546,6 @@ import  boxlib,\
         scrollbar_draw, 'scrollbar_v_draw',\
         scrollbar_mouse,'scrollbar_v_mouse'
 
-I_END:
-
         ;         width, left, top
 edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, btn_height, max, cur, pos, bgcol, frcol, linecol
@@ -538,33 +555,33 @@ scroll2 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 
 usercommand     db '/server chat.freenode.net', 0
                 rb MAX_COMMAND_LEN
 
+I_END:
+
 utf8_bytes_rest dd ?            ; bytes rest in current UTF8 sequence
 utf8_char       dd ?            ; first bits of current UTF8 character
-gai_reqdata     rb 32           ; buffer for getaddrinfo_start/process
-ip_list         dd ?            ; will be filled as pointer to addrinfo list
+
 packetbuf       rb 1024         ; buffer for packets to server
 path            rb 1024
 param           rb 1024
-
-socketnum       dd ?
 
 servercommand   rb 600
 
 thread_info     rb 1024
 xsize           dd ?
 ysize           dd ?
+mouse_dd        dd ?
 
 colors          system_colors
 
-irc_server_name rb MAX_SERVER_NAME
+irc_server_name rb MAX_SERVER_NAME      ; TODO: move this server URL into window struct
+socketnum       dd ?                    ; TODO: same for socket
 
 user_nick       rb MAX_NICK_LEN
 user_real_name  rb MAX_REAL_LEN
 quit_msg        rb 250
 
+diff16 "windows", 0, $ + 1*sizeof.window ;+ 6
 windows         rb MAX_WINDOWS*sizeof.window
-
-mouse_dd        dd ?
 
 IM_END:
 
