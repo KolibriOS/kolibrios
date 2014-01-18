@@ -56,16 +56,19 @@ param:
 	add	eax,399
 	mov	[xstart],eax
 	mcall	48,3,sc,sizeof.system_colors
-if WRITE_LOG
+
 	mov	esi,filename
 	call	CreateFile
-end if
 ;------------------------------------------------------------------------------
 red:
 	call draw_window
 ;------------------------------------------------------------------------------
 still:
-	mcall	23,1		; wait here for event
+	cmp	[buffer_length],0
+	je	@f
+	call	write_buffer
+@@:
+	mcall	23,50		; wait here for event
 	cmp	eax,1			; redraw request ?
 	je	red
 
@@ -80,11 +83,25 @@ still:
 	jne	still
 
 new_data:
-if WRITE_LOG
+	cmp	[buffer_length],255
+	jne	@f
+	call	write_buffer
+@@:
+	movzx	ebx,byte[buffer_length]
+	mov	[ebx+tmp],al
+	inc	[buffer_length]
+
+	mov	ebp,[targ]
+.no4:
+	cmp	al,13
+	jne	no13
+	and	[ebp-8],dword 0
+	jmp	new_check
+;------------------------------------------
+write_buffer:
 	pusha
-	mov	[tmp],al
 	mov	edx,tmp
-	mov	ecx,1
+	movzx	ecx,byte[buffer_length]	;1
 	mov	esi,filename
 .write_to_logfile:
 	call	WriteToFile
@@ -95,15 +112,12 @@ if WRITE_LOG
 	call	CreateFile
 	jnc	.write_to_logfile
 @@:
-	inc	[filepos]
+	movzx	eax,byte[buffer_length]
+	add	[filepos],eax
+	xor	eax,eax
+	mov	[buffer_length],al
 	popa
-end if
-	mov	ebp,[targ]
-.no4:
-	cmp	al,13
-	jne	no13
-	and	[ebp-8],dword 0
-	jmp	new_check
+	ret
 ;------------------------------------------
 no13:
 	cmp	al,10
@@ -252,7 +266,6 @@ newline:
 	jne	newline
 	ret
 ;------------------------------------------------------------------------------
-if WRITE_LOG
 ;********************************************
 ;*  input:  esi = pointer to the file name  *
 ;********************************************
@@ -310,8 +323,6 @@ InfoStructure:
 
 filepos	dd 0
 default_filename db '/sys/boardlog.txt',0
-tmp	db 0
-end if
 ;------------------------------------------------------------------------------
 krnl_msg db 'K : '
 duk db 'KernUser'
@@ -352,7 +363,10 @@ xstart	dd ?
 sc system_colors
 
 i_end:
-
+buffer_length	rb 1
+;------------------------------------------------------------------------------
+tmp	rb	256
+;------------------------------------------------------------------------------
 filename	rb 256
 ;------------------------------------------------------------------------------
 align 4
