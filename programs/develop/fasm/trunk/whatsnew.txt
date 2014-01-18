@@ -2,6 +2,128 @@
 Visit http://flatassembler.net/ for more information.
 
 
+version 1.71.16 (Oct 30, 2013)
+
+[-] Fixed some bugs in the ELF executable formatter.
+
+
+version 1.71.15 (Oct 26, 2013)
+
+[-] Fixed some bugs inadvertently introduced in the previous release.
+
+
+version 1.71.14 (Oct 25, 2013)
+
+[+] Added "postpone" directive to preprocessor.
+
+
+version 1.71.13 (Sep 09, 2013)
+
+[-] Fixed a bug that caused the expressions containing external symbols
+    to overflow from time to time.
+
+
+version 1.71.12 (Aug 04, 2013)
+
+[-] Expressions in square brackets were incorrectly treated as valid numerical
+    values when used in some logical expressions.
+
+[-] A previous fix to "store" directive did not apply to all the cases when it
+    was incorrectly leaving the data marked as uninitialized. The new fix
+    addresses this issue.
+
+
+version 1.71.11 (Jul 09, 2013)
+
+[-] Modifying a value in uninitialized data block with "store" directive will
+    now correctly mark this data as initialized when it is in a different
+    addressing space.
+
+[-] Missing quote will no longer cause the symbols generator to hang or crash.
+
+[-] Address range restrictions for addressing modes no longer apply to addresses
+    provided to assembler directives like "label", "virtual" or "load".
+
+
+version 1.71.10 (Apr 03, 2013)
+
+[-] Fixed a crashing "heap" directive in 64-bit PE format.
+
+
+version 1.71.09 (Mar 30, 2013)
+
+[-] "use16","use32" and "use64" no longer allow to put another instruction in
+    the same line.
+
+[-] Fixed a bug in parser that caused it to hang while processing some
+    specific ill-structured preprocessed lines.
+
+[-] Modified memory allocation algorithm on Windows machines with large RAM.
+
+
+version 1.71.08 (Mar 08, 2013)
+
+[-] Fixed a bug that caused "irp" to skip processing a list with one empty
+    element when default value for iterating variable was specified.
+
+
+version 1.71.07 (Dec 23, 2012)
+
+[-] Fixed a bug that was causing "used" operator to give incorrect results
+    in some very specific cases.
+
+
+version 1.71.06 (Nov 22, 2012)
+
+[-] Fixed a few bugs caused by unnecesarily strong restrictions on allowed
+    types of relocatable values in some places (like "label" directive).
+
+
+version 1.71.05 (Oct 15, 2012)
+
+[-] Fixed a bug which caused "load" and "store" directives to sometimes
+    fail when assembler had preallocated very large amount of memory.
+
+
+version 1.71.04 (Oct 10, 2012)
+
+[-] Fixed another bug in "org" directive, which was causing it to deal
+    incorrectly with negative addresses.
+
+
+version 1.71.03 (Sep 27, 2012)
+
+[-] Fixed a bug in "org" directive introduced by recent changes, which
+    was manifesting with bases larger than 31-bit.
+
+
+version 1.71.02 (Sep 26, 2012)
+
+[-] Expression calculator now allows to calculate the difference of
+    relocatable addresses in a reverse order (first substracting/negating
+    and then adding the other one).
+
+
+version 1.71.01 (Sep 23, 2012)
+
+[+] Added support for ADX, RDSEED and SMAP instruction sets.
+
+[-] Fixed the bugs related to creating a new addressing space inside the
+    virtual block with "org" directive.
+
+
+version 1.71.00 (Sep 21, 2012)
+
+[+] Added ability to define a special kind of label identifying the
+    addressing space. This label can the be used with "load" or "store"
+    directives to allow operations on bytes in any addressing space,
+    not just the current one. This special label is defined by following
+    its name with double colon, and can only be used with "load" and
+    "store" directive, where address can now be specified in two parts,
+    first the adressing space label, then the colon and then the
+    address inside that addressing space.
+
+
 version 1.70.03 (Jun 29, 2012)
 
 [-] Allowed to freely upgrade or downgrade the relocatable addresses in
