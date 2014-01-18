@@ -60,15 +60,10 @@ inline fastcall int GetClientTop()
     $shr eax, 16
 }
 
-void from24to32(dword src, dst, Width, Height)
+void from24to32(ESI, EDI, EAX, EBX) //src,dst,w,h
 {
 conv24to32:
-	$mov esi, src
-	$mov edi, dst
-		
-	$mov eax, Width
-	//$mul ESDWORD[Height]
-	$mul Height
+	$mul ebx
 	$mov ecx, eax
 	$xor al, al 
 _next:	
