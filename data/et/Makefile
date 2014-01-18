@@ -552,10 +552,12 @@ include Makefile.nasm
 # Similar for copying files.
 include Makefile.copy
 
-# Special rules for copying sysfuncs.txt - it isn't directly included in the image.
-docpack: $(DOCDIR)SYSFUNCS.TXT
+# Special rules for copying sysfuncs.txt and fasm.txt - they aren't directly included in the image.
+docpack: $(DOCDIR)SYSFUNCS.TXT $(DOCDIR)FASM.TXT
 $(DOCDIR)SYSFUNCS.TXT: $(KERNEL)/docs/sysfuncs.txt
 	cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
+$(DOCDIR)FASM.TXT: $(PROGS)/develop/fasm/trunk/fasm.txt
+	cp $(PROGS)/develop/fasm/trunk/fasm.txt $(DOCDIR)FASM.TXT
 
 # Similar for C--.
 include Makefile.cmm
