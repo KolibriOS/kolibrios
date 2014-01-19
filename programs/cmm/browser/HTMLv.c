@@ -91,7 +91,7 @@ void main()
 				edit_box_mouse stdcall (#address_box);
 
 				m.get();
-				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active);
+				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
 				
 				if (m.y>WB1.list.y) && (m.y<Form.height) && (filesize)
 				{
