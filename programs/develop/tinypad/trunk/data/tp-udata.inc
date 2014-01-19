@@ -96,6 +96,8 @@ just_from_popup db ?
 bot_mode  db ?
 bot_mode2 db ?
 
+popup_valid_text db ?
+
 align 4
 
 bot_dlg_height dd ?

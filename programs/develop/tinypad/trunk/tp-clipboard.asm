@@ -123,6 +123,55 @@ get_from_clipboard:
 	popad
 	ret
 ;-----------------------------------------------------------------------------
+check_clipboard_for_popup:
+	pushad
+	mov	[popup_valid_text],0
+	mcall	54,0
+; no slots of clipboard ?
+	test	eax,eax
+	jz	.exit
+; main list area not found ?	
+	inc	eax
+	test	eax,eax
+	jz	.exit
+
+	sub	eax,2
+	mov	ecx,eax
+	mcall	54,1
+; main list area not found ?
+	inc	eax
+	test	eax,eax
+	jz	.exit
+; error ?
+	sub	eax,2
+	test	eax,eax
+	jz	.exit
+	
+	inc	eax
+	mov	[clipboard_buf],eax
+; check contents of container
+	mov	ebx,[eax+4]
+; check for text
+	test	ebx,ebx
+	jnz	.remove_area
+	
+	mov	ebx,[eax+8]
+; check for cp866
+	cmp	bl,1
+	jnz	.remove_area
+
+.yes_valid_text:
+	mov	[popup_valid_text],1
+; remove unnecessary memory area
+.remove_area:
+	xor	eax,eax
+        stdcall mem.ReAlloc,[clipboard_buf],eax
+        mov     [clipboard_buf],eax
+;--------------------------------------
+.exit:
+	popad
+	ret
+;-----------------------------------------------------------------------------
 convert_clipboard_buf_to_copy_buf:
 	mov	edi,[copy_buf]
 	mov	ebx,edi

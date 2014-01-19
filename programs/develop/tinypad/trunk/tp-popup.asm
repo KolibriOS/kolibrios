@@ -240,7 +240,8 @@ onshow:
 
   .edit:
 	or	byte[mm.Edit+2],0x01
-	cmp	[copy_size],0
+	call	check_clipboard_for_popup
+	cmp	[popup_valid_text],0
 	jne	@f
 	and	byte[mm.Edit+2],0xFE
     @@: or	dword[mm.Edit+0],0x01000101
