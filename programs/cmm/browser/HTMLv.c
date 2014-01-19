@@ -45,8 +45,6 @@ char stak[4096];
 mouse m;
 int action_buf;
 
-
-
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
 
@@ -239,7 +237,7 @@ void Scan(int id)
 			return;
 
 		case 002: //free img cache
-			FreeImgCache();
+			ImgCache1.Free();
 			notify(IMAGES_CACHE_CLEARED);
 			WB1.ParseHTML(buf);
 			return;

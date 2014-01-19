@@ -17,7 +17,6 @@ char page_links[12000];
 char header[2048];
 
 
-
 char download_path[]="/rd/1/.download";
 
 struct TWebBrowser {
@@ -31,7 +30,8 @@ struct TWebBrowser {
 	void DrawPage();
 	void DrawScroller();
 	void TextGoDown();
-};	
+};
+
 TWebBrowser WB1;
 
 byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
@@ -593,12 +593,12 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		if (strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options); else hr_color = 0x999999;
 		TextGoDown(left1, top1, width1);
-		DrawBuf.DrawBar(5, WB1.list.line_h/2, WB1.list.w-10, 1, hr_color);
-		TextGoDown(left1, top1+WB1.list.line_h, width1);
+		DrawBuf.DrawBar(5, list.line_h/2, list.w-10, 1, hr_color);
+		TextGoDown(left1, top1+list.line_h, width1);
 	}
 	if (!chTag("img"))
 	{
-		Images( left1, top1, width1);
+		ImgCache1.Images( left1, top1, width1);
 		return;
 	}
 	if (!chTag("meta")) || (!chTag("?xml"))
@@ -624,8 +624,8 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 	scroll_wv.position = list.first;
 
 	scroll_wv.all_redraw=1;
-	scroll_wv.start_x = WB1.list.x + WB1.list.w;
-	scroll_wv.size_y=WB1.list.h;
+	scroll_wv.start_x = list.x + list.w;
+	scroll_wv.size_y=list.h;
 
 	scrollbar_v_draw(#scroll_wv);
 }
@@ -633,12 +633,12 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 
 void TWebBrowser::TextGoDown(int left1, top1, width1)
 {
-	if (!stroka) DrawBar(WB1.list.x, WB1.list.y, WB1.list.w, 5, bg_color); //закрашиваем фон над первой строкой
-	if (top1>=WB1.list.y) && ( top1 < WB1.list.h+WB1.list.y-10)  && (!anchor)
+	if (!stroka) DrawBar(list.x, list.y, list.w, 5, bg_color); //закрашиваем фон над первой строкой
+	if (top1>=list.y) && ( top1 < list.h+list.y-10)  && (!anchor)
 	{
-		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(left1,top1,WB1.list.w,WB1.list.line_h,stolbec * 6);
-		if (text_align == ALIGN_RIGHT) DrawBuf.AlignRight(left1,top1,WB1.list.w,WB1.list.line_h,stolbec * 6);
-		PutPaletteImage(buf_data+8, WB1.list.w, WB1.list.line_h, left1-5, top1, 32,0);
+		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(left1,top1,list.w,list.line_h,stolbec * 6);
+		if (text_align == ALIGN_RIGHT) DrawBuf.AlignRight(left1,top1,list.w,list.line_h,stolbec * 6);
+		PutPaletteImage(buf_data+8, list.w, list.line_h, left1-5, top1, 32,0);
 		DrawBuf.Fill(bg_color);
 	}
 	stroka++;

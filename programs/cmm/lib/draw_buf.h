@@ -1,3 +1,4 @@
+
 dword buf_data;
 
 struct DrawBufer {
@@ -27,8 +28,8 @@ void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh, i_buf_line_h)
 void DrawBufer::Fill(dword fill_color)
 {
 	int i;
-	int max_i = bufw * buf_line_h + 4 * 4 + buf_data;
-	for (i=buf_data; i<max_i; i+=4) ESDWORD[i+8] = fill_color;
+	int max_i = bufw * buf_line_h + 4 * 4 + buf_data +8;
+	for (i=buf_data+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
 }
 
 void DrawBufer::DrawBar(dword x, y, w, h, color)
@@ -36,7 +37,7 @@ void DrawBufer::DrawBar(dword x, y, w, h, color)
 	int i, j;
 	for (j=0; j<h; j++)
 	{
-		for (i = y+j*bufw+x*4; i<y+j*bufw+x+w*4 ; i+=4) ESDWORD[buf_data+i+8] = color;
+		for (i = y+j*bufw+x*4+8+buf_data; i<y+j*bufw+x+w*4+8+buf_data; i+=4) ESDWORD[i] = color;
 	}
 }
 

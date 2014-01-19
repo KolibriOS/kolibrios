@@ -3,31 +3,38 @@ struct s_image
 	dword *image;
 	char path[4096];
 };
-s_image pics[100]; //pics = mem_Alloc( 100*sizeof(s_image) );
-int num_of_pics;
 
-int GetOrSetPicNum(dword i_path)
+s_image pics[100]; //pics = mem_Alloc( 100*sizeof(s_image) );
+
+struct ImgCache {
+	int pics_count;
+	void Free();
+	int GetImage();
+	void Images();
+} ImgCache1;
+
+void ImgCache::Free()
+{
+	for ( ; pics_count>0; pics_count--)
+	{
+		if (pics[pics_count].image) img_destroy stdcall (pics[pics_count].image);
+		pics[pics_count].path = NULL;
+	}
+}
+
+int ImgCache::GetImage(dword i_path)
 {
 	int i;
-	for (i=0; i<num_of_pics; i++)
-	{
-		if (!strcmp(#pics[i].path, i_path)) return i;
-	}
-	num_of_pics++;
-	return num_of_pics;
-}
-
-void FreeImgCache()
-{
-	for ( ; num_of_pics>0; num_of_pics--)
-	{
-		if (pics[num_of_pics].image) img_destroy stdcall (pics[num_of_pics].image);
-		pics[num_of_pics].path = NULL;
-	}
+	for (i=0; i<pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
+	// Load image and add it to Cache
+	pics_count++;
+	pics[pics_count].image = load_image(i_path);
+	strcpy(#pics[pics_count].path, i_path);
+	return pics_count;
 }
 
 
-void Images(int left1, top1, width1)
+void ImgCache::Images(int left1, top1, width1)
 {
 	dword image;
     char img_path[4096], alt[4096];
@@ -49,12 +56,7 @@ void Images(int left1, top1, width1)
 					img_path[strrchr(#img_path, '/')] = '\0';
 					strcat(#img_path, #options);
 				}
-				cur_pic=GetOrSetPicNum(#img_path);
-				if (!pics[cur_pic].path)
-				{
-					pics[cur_pic].image=load_image(#img_path);
-					strcpy(#pics[cur_pic].path, #img_path);
-				}
+				cur_pic = GetImage(#img_path); 
 			}
 		}
 		if (!strcmp(#parametr,"alt="))
@@ -77,7 +79,7 @@ void Images(int left1, top1, width1)
 	if (w > width1) w = width1;
 	
 	if (stroka==0) DrawBar(WB1.list.x, WB1.list.y, WB1.list.w-15, 5, bg_color); //закрашиваем первую строку
-	stroka+=h/10;
+	stroka += h/10;
 	if (top1+h<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
 	if (top1<WB1.list.y) //если часть изображения сверху
 	{
