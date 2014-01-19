@@ -675,7 +675,9 @@ botdlg.button:
 	push	[cur_editor.SelStart.X]
 	mov	ebp,cur_editor
 	call	init_sel_vars
+	mov	[replace_mode],1
 	call	key.ctrl_v
+	mov	[replace_mode],0
 	pop	[cur_editor.SelStart.X]
 
 	stdcall mem.Free,[copy_buf]

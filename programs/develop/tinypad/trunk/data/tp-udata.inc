@@ -97,6 +97,7 @@ bot_mode  db ?
 bot_mode2 db ?
 
 popup_valid_text db ?
+replace_mode db ?
 
 align 4
 

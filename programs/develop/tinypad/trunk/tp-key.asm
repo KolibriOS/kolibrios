@@ -584,8 +584,10 @@ endp
 
 ;-----------------------------------------------------------------------------
 proc key.ctrl_v
+	cmp	[replace_mode],0
+	jne	@f
 	call	get_from_clipboard
-
+@@:
 	cmp	[copy_size],0
 	je	.exit
 
@@ -691,6 +693,9 @@ proc key.ctrl_v
 	mov	[cur_editor.Modified],1
 
   .exit:
+	cmp	[replace_mode],0
+	jne	.exit_1
+
 	cmp	[copy_size],0
 	je	.exit_1
 ; remove unnecessary memory area
