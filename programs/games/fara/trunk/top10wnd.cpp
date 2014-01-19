@@ -153,11 +153,11 @@ hiScoreFile *top10Heroes = NULL;
 
 //
 #if LANG == RUS
-char Top10WndTitle[] = "Top 10";
+char Top10WndTitle[] = "Top 10\0";
 char top10str1[] = "ENTER - имя Ok.";
 char top10str2[] = "ESC - выход в меню";
 #else
-char Top10WndTitle[] = "Top 10";
+char Top10WndTitle[] = "Top 10\0";
 char top10str1[] = "Enter - name Ok.";
 char top10str2[] = "Esc - leave to menu";
 #endif
@@ -243,18 +243,13 @@ void DrawTop10Window()
 	kos_DefineAndDrawWindow(
 		100, 100,
 		TOP10_WND_SIZE_X, TOP10_WND_SIZE_Y,
-		0, 0,
+		0x14, 0,
 		0, 0x2040A0,
-		0x2040A0
+		Top10WndTitle
 		);
-	//
-	kos_WriteTextToWindow(
-		4, 4,
-		0x0, 0x42D2E2,
-		Top10WndTitle,
-		sizeof( Top10WndTitle ) - 1
-		);
-	//
+
+	kos_ChangeWindowCaption(Top10WndTitle);
+
 	for ( i = 0; i < TOP_TBL_SIZE; i++ )
 	{
 		//

@@ -365,7 +365,7 @@ void kos_DefineAndDrawWindow(
 	Dword mainAreaColour,
 	Byte headerType,
 	Dword headerColour,
-	Dword borderColour
+	char *textPtr
 	)
 {
 	Dword arg1, arg2, arg3, arg4;
@@ -382,7 +382,7 @@ void kos_DefineAndDrawWindow(
 		mov ecx, arg2
 		mov edx, arg3
 		mov esi, arg4
-		mov edi, borderColour
+		mov edi, textPtr
 		int 0x40
 	}
 }
@@ -867,4 +867,16 @@ void crtStartUp()
 	kos_ExitApp();
 }
 
+// sysfn 71.1
+void kos_ChangeWindowCaption(
+	char *textPtr
+	)
+{
+	__asm{
+		mov eax, 71
+		mov ebx, 1
+		mov ecx, textPtr
+		int 0x40
+	}
+}
 

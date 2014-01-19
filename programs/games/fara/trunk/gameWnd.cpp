@@ -38,12 +38,12 @@ CFishka *fishki[blocksNum];
 //
 char *gameWndTitle;
 #if LANG == RUS
-char gameWndTitle1[] = "Фараон ждёт тебя :)";
-char gameWndTitle2[] = "Ну вот...";
+char gameWndTitle1[] = "Фараон ждёт тебя :)\0";
+char gameWndTitle2[] = "Ну вот...\0";
 char gameOverText[] = "Дальше дороги нет!";
 #else
-char gameWndTitle1[] = "Pharaoh waits for you :)";
-char gameWndTitle2[] = "Well...";
+char gameWndTitle1[] = "Pharaoh waits for you :)\0";
+char gameWndTitle2[] = "Well...\0";
 char gameOverText[] = "No further way!";
 #endif
 //
@@ -1427,17 +1427,12 @@ void DrawGameWindow()
 	kos_DefineAndDrawWindow(
 		WNDLEFT, WNDTOP,
 		gcx + 1, gcy + 21,
-		0, 0x0,
+		0x14, 0x0,
 		0, WNDHEADCOLOUR,
-		WNDHEADCOLOUR
+		gameWndTitle
 		);
 	// чруюыютюъ юъэр
-	kos_WriteTextToWindow(
-		4, 7,
-		0x10, WNDTITLECOLOUR,
-		gameWndTitle, strlen(gameWndTitle)
-		);
-	//
+	  kos_ChangeWindowCaption(gameWndTitle);
 	gameFace.Draw( 1, 21 );
 	drawGameMap();
 	drawGameMeters();

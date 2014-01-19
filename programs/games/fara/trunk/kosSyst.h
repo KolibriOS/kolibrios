@@ -121,7 +121,7 @@ void kos_DefineAndDrawWindow(
 	Word sizeX, Word sizeY,
 	Byte mainAreaType, Dword mainAreaColour,
 	Byte headerType, Dword headerColour,
-	Dword borderColour
+	char *textPtr
 	);
 // функция 1 поставить точку
 void kos_PutPixel( Dword x, Dword y, Dword colour );
@@ -192,6 +192,8 @@ void __stdcall kos_free(void* mptr);
 void* __stdcall kos_realloc(void* mptr, Dword size);
 // функция 66 режим получения данных от клавиатуры
 void kos_SetKeyboardDataMode( Dword mode );
+
+void kos_ChangeWindowCaption(char *textPtr);
 
 //
 void kos_Main();

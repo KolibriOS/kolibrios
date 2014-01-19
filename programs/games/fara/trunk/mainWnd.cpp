@@ -18,13 +18,13 @@ RGB bmPMButton[] = {
 
 //
 #if LANG == RUS
-char mainWndTitle[] = "PHARAON's CRYPT";
+char mainWndTitle[] = "PHARAON's CRYPT\0";
 char mainWndCopyright[] = "(C) MMVI by Rabid Rabbit";
 char mainWndMenuStart[] = "1. Начать игру";
 char mainWndMenuExit[] = "2. Выход";
 char mainWndMenuLevel[] = "Начальный уровень - %U";
 #else
-char mainWndTitle[] = "PHARAON's CRYPT";
+char mainWndTitle[] = "PHARAON's CRYPT\0";
 char mainWndCopyright[] = "(C) MMVI by Rabid Rabbit";
 char mainWndMenuStart[] = "1. Start game";
 char mainWndMenuExit[] = "2. Exit";
@@ -151,17 +151,12 @@ void DrawMainWindow()
 	kos_DefineAndDrawWindow(
 		WNDLEFT, WNDTOP,
 		mcx + 1, mcy + 21,
-		0, 0x0,
+		0x14, 0x0,
 		0, WNDHEADCOLOUR,
-		WNDHEADCOLOUR
+		mainWndTitle
 		);
 	// чруюыютюъ юъэр
-	kos_WriteTextToWindow(
-		4, 7,
-		0x10, WNDTITLECOLOUR,
-		mainWndTitle, sizeof(mainWndTitle)-1
-		);
-	//
+	  kos_ChangeWindowCaption(mainWndTitle);
 	mainWndFace.Draw( 1, 21 );
 	// яхЁтр  ёЄЁюър
 	kos_WriteTextToWindow(
