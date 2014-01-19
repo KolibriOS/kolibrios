@@ -482,72 +482,77 @@ endp
 
 ;-----------------------------------------------------------------------------
 proc key.ctrl_c
-	mov	[copy_size],0
-	cmp	[sel.selected],0
-	je	.exit
+        mov     [copy_size],0
+        cmp     [sel.selected],0
+        je      .exit
 
-	call	get_selection_size
-	stdcall mem.ReAlloc,[copy_buf],eax
-	mov	[copy_buf],eax
+        call    get_selection_size
+	push	eax
+        stdcall mem.ReAlloc,[copy_buf],eax
+        mov     [copy_buf],eax
+	pop	eax
+        stdcall mem.ReAlloc,[clipboard_buf],eax
+        mov     [clipboard_buf],eax
 
-	cld
-	mov	eax,[sel.begin.y]
-	cmp	eax,[sel.end.y]
-	je	.single_line
-	mov	ecx,[sel.begin.y]
-	call	get_line_offset
-	inc	ecx
-	push	ecx
-	mov	edi,[copy_buf]
-	call	get_real_length
-	sub	eax,[sel.begin.x]
-	jge	@f
-	xor	eax,eax
-    @@: add	esi,[sel.begin.x]
-	add	esi,sizeof.EDITOR_LINE_DATA
-	mov	[edi+EDITOR_LINE_DATA.Size],eax
-	add	edi,sizeof.EDITOR_LINE_DATA
-	mov	ecx,eax
-	jecxz	@f
-	rep	movsb
-    @@: mov	ecx,[sel.end.y]
-	call	get_line_offset
-	pop	ecx
-	cmp	ecx,[sel.end.y]
-	je	@f
-	mov	eax,esi
-	call	get_line_offset
-	sub	eax,esi
-	mov	ecx,eax
-	rep	movsb
-	mov	ecx,[sel.end.y]
-    @@: call	get_line_offset
-	mov	eax,[esi+EDITOR_LINE_DATA.Size]
-	add	esi,sizeof.EDITOR_LINE_DATA
-	cmp	eax,[sel.end.x]
-	jle	@f
-	mov	eax,[sel.end.x]
-    @@: mov	ebx,edi
-	mov	[edi+EDITOR_LINE_DATA.Size],eax
-	add	edi,sizeof.EDITOR_LINE_DATA
-	mov	ecx,eax
-	jecxz	@f
-	rep	movsb
-	sub	eax,[sel.end.x]
-	jz	@f
-	neg	eax
-	mov	ecx,eax
-	add	[ebx],eax
-	mov	al,' '
-	rep	stosb
-    @@: sub	edi,[copy_buf]
-	mov	[copy_size],edi
-	mov	eax,[sel.end.y]
-	sub	eax,[sel.begin.y]
-	inc	eax
-	mov	[copy_count],eax
+        cld
+        mov     eax,[sel.begin.y]
+        cmp     eax,[sel.end.y]
+        je      .single_line
+        mov     ecx,[sel.begin.y]
+        call    get_line_offset
+        inc     ecx
+        push    ecx
+        mov     edi,[copy_buf]
+        call    get_real_length
+        sub     eax,[sel.begin.x]
+        jge     @f
+        xor     eax,eax
+    @@: add     esi,[sel.begin.x]
+        add     esi,sizeof.EDITOR_LINE_DATA
+        mov     [edi+EDITOR_LINE_DATA.Size],eax
+        add     edi,sizeof.EDITOR_LINE_DATA
+        mov     ecx,eax
+        jecxz   @f
+        rep     movsb
+    @@: mov     ecx,[sel.end.y]
+        call    get_line_offset
+        pop     ecx
+        cmp     ecx,[sel.end.y]
+        je      @f
+        mov     eax,esi
+        call    get_line_offset
+        sub     eax,esi
+        mov     ecx,eax
+        rep     movsb
+        mov     ecx,[sel.end.y]
+    @@: call    get_line_offset
+        mov     eax,[esi+EDITOR_LINE_DATA.Size]
+        add     esi,sizeof.EDITOR_LINE_DATA
+        cmp     eax,[sel.end.x]
+        jle     @f
+        mov     eax,[sel.end.x]
+    @@: mov     ebx,edi
+        mov     [edi+EDITOR_LINE_DATA.Size],eax
+        add     edi,sizeof.EDITOR_LINE_DATA
+        mov     ecx,eax
+        jecxz   @f
+        rep     movsb
+        sub     eax,[sel.end.x]
+        jz      @f
+        neg     eax
+        mov     ecx,eax
+        add     [ebx],eax
+        mov     al,' '
+        rep     stosb
+    @@: sub     edi,[copy_buf]
+        mov     [copy_size],edi
+        mov     eax,[sel.end.y]
+        sub     eax,[sel.begin.y]
+        inc     eax
+        mov     [copy_count],eax
+	call	put_to_clipboard
   .exit:
-	ret
+        ret
 
   .single_line:
 	mov	eax,[sel.end.x]
@@ -579,6 +584,8 @@ endp
 
 ;-----------------------------------------------------------------------------
 proc key.ctrl_v
+	call	get_from_clipboard
+
 	cmp	[copy_size],0
 	je	.exit
 
@@ -684,6 +691,15 @@ proc key.ctrl_v
 	mov	[cur_editor.Modified],1
 
   .exit:
+	cmp	[copy_size],0
+	je	.exit_1
+; remove unnecessary memory area
+	xor	eax,eax
+	mov	[copy_size],eax
+        mov     [copy_count],eax
+        stdcall mem.ReAlloc,[copy_buf],eax
+        mov     [copy_buf],eax
+.exit_1:
 	ret
 
   .check_columns:

@@ -104,6 +104,7 @@ exit_tab_num   dd ?
 
 temp_buf dd ?
 copy_buf dd ?
+clipboard_buf dd ?
 
 label color_tbl dword
   .text       dd ?
