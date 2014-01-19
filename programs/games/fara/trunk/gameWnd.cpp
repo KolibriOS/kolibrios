@@ -1000,6 +1000,9 @@ int GameLoop()
 			{
 				switch ( buttonID )
 				{
+				case 1:
+					kos_ExitApp();
+
 				case 0xA:
 					result = GM_ABORT;
 					break;
@@ -1427,7 +1430,7 @@ void DrawGameWindow()
 	kos_DefineAndDrawWindow(
 		WNDLEFT, WNDTOP,
 		gcx + 1, gcy + 21,
-		0x14, 0x0,
+		0x54, 0x0,				// Skinned fixed size window, dont fill working area, window has caption
 		0, WNDHEADCOLOUR,
 		gameWndTitle
 		);

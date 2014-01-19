@@ -243,7 +243,7 @@ void DrawTop10Window()
 	kos_DefineAndDrawWindow(
 		100, 100,
 		TOP10_WND_SIZE_X, TOP10_WND_SIZE_Y,
-		0x14, 0,
+		0x34, 0,							// Relative coordinates, Skinned fixed size window, window has caption
 		0, 0x2040A0,
 		Top10WndTitle
 		);
@@ -254,7 +254,7 @@ void DrawTop10Window()
 	{
 		//
 		kos_WriteTextToWindow(
-			6, 21 + 2 + (i * 10),
+			6, 0 + 2 + (i * 10),
 			0x0, enterName != i ? 0xFFFFFF : 0x00FF00,
 			heroTbl[i].name,
 			sizeof( heroTbl[0].name )
@@ -263,7 +263,7 @@ void DrawTop10Window()
 		kos_DisplayNumberToWindow(
 			heroTbl[i].score,
 			8,
-			112, 21 + 2 + (i * 10),
+			112, 0 + 2 + (i * 10),
 			0xFFFF55,
 			nbDecimal,
 			false
@@ -271,7 +271,7 @@ void DrawTop10Window()
 	}
 	//
 	kos_WriteTextToWindow(
-		6, 21 + 6 + (i * 10),
+		6, 0 + 6 + (i * 10),
 		0x10, 0x1060D0,
 		enterName >= 0 ? top10str1 : top10str2,
 		enterName >= 0 ? sizeof(top10str1) - 1 : sizeof(top10str2) - 1
@@ -283,6 +283,7 @@ void DrawTop10Window()
 void Top10Loop()
 {
 	Byte keyCode;
+	Dword buttonID;
 
 	//
 	SetUpTop10();
@@ -348,7 +349,21 @@ void Top10Loop()
 			}
 			//
 			break;
-		//
+
+		case 3:
+			if ( kos_GetButtonID( buttonID ) )
+			{
+				//
+				switch ( buttonID )
+				{
+				//
+				case 1:
+					kos_ExitApp();
+				default:
+				break;
+				}
+			}
+
 		default:
 			break;
 		}

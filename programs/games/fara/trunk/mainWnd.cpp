@@ -20,14 +20,12 @@ RGB bmPMButton[] = {
 #if LANG == RUS
 char mainWndTitle[] = "PHARAON's CRYPT\0";
 char mainWndCopyright[] = "(C) MMVI by Rabid Rabbit";
-char mainWndMenuStart[] = "1. Начать игру";
-char mainWndMenuExit[] = "2. Выход";
+char mainWndMenuStart[] = "Enter -Начать игру";
 char mainWndMenuLevel[] = "Начальный уровень - %U";
 #else
-char mainWndTitle[] = "PHARAON's CRYPT\0";
+char mainWndTitle[] = "PHARAOH's CRYPT\0";
 char mainWndCopyright[] = "(C) MMVI by Rabid Rabbit";
-char mainWndMenuStart[] = "1. Start game";
-char mainWndMenuExit[] = "2. Exit";
+char mainWndMenuStart[] = "Enter - Start game";
 char mainWndMenuLevel[] = "Starting level - %U";
 #endif
 //
@@ -75,11 +73,11 @@ int MainWndLoop()
 				//
 				switch ( keyCode )
 				{
-				case '1':
+				case 13:					// enter
 					result = MW_START_GAME;
 					break;
 
-				case '2':
+				case 27:					// escape
 					result = MW_EXIT_APP;
 					break;
 
@@ -96,6 +94,9 @@ int MainWndLoop()
 				switch ( buttonID )
 				{
 				//
+				case 1:
+					result = MW_EXIT_APP;
+					break;
 				case BT_SIZE_X_MINUS:
 					if ( --startGameLevel < 1 )
 						startGameLevel = 1;
@@ -151,7 +152,7 @@ void DrawMainWindow()
 	kos_DefineAndDrawWindow(
 		WNDLEFT, WNDTOP,
 		mcx + 1, mcy + 21,
-		0x14, 0x0,
+		0x54, 0x0,				// Skinned fixed size window, dont fill working area, window has caption
 		0, WNDHEADCOLOUR,
 		mainWndTitle
 		);
@@ -163,12 +164,6 @@ void DrawMainWindow()
 		8, 32,
 		0, 0x0,
 		mainWndMenuStart, sizeof(mainWndMenuStart)-1
-		);
-	// тЄюЁр  ёЄЁюър
-	kos_WriteTextToWindow(
-		8, 48,
-		0, 0x0,
-		mainWndMenuExit, sizeof(mainWndMenuExit)-1
 		);
 	// ЄЁхЄ№  ёЄЁюър
 	sprintf( line, mainWndMenuLevel, startGameLevel);
