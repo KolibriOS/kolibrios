@@ -96,7 +96,7 @@ void ImageCache::Images(int left1, top1, width1)
 	
 	img_draw stdcall (pics[cur_pic].image, left1-5, top1, w, h,0,img_lines_first);
 	DrawBar(left1+w - 5, top1, WB1.list.w-w, h, bg_color);
-	IF (link) UnsafeDefineButton(left1 - 5, top1, w, h-1, blink + BT_HIDE, 0xB5BFC9);
+	IF (link) UnsafeDefineButton(left1 - 5, top1, w, h-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 }
 
 ImageCache ImgCache;

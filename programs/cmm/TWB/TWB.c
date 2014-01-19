@@ -6,7 +6,6 @@ int	downloader_id;
 
 dword buf;
 dword filesize;
-dword blink;
 
 #define URL param
 
@@ -97,8 +96,9 @@ void TWebBrowser::DrawPage()
 		IF (s_text) DrawBuf.DrawBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
 		IF (u_text) DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
 		IF (link) {
-			UnsafeDefineButton(start_x-2, start_y, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9);
+			UnsafeDefineButton(start_x-2, start_y, line_length + 3, 9, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 			DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
+			PageLinks.AddText(#line, line_length, list.line_h);
 		}
 		stolbec += strlen(#line);
 	}
@@ -179,6 +179,7 @@ void TWebBrowser::ShowPage()
 	address_box.size = address_box.pos = strlen(#editURL);
 	address_box.offset=0;
 	edit_box_draw stdcall(#address_box);
+	PageLinks.Clear();
 
 	if (!filesize)
 	{
@@ -206,7 +207,6 @@ void TWebBrowser::ParseHTML(dword bword){
 	byte ignor_param;
 	char temp[768];
 	
-	if (blink<400) blink=400; else for ( ; blink>400; blink--;) DeleteButton(blink);
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
 	condition_text_val = condition_text_active = 0; //обнуляем теги
@@ -216,7 +216,6 @@ void TWebBrowser::ParseHTML(dword bword){
 	link_color_active = 0xFF0000;
 	bg_color = 0xFFFFFF;
 	DrawBuf.Fill(bg_color);
-	PageLinks.Clear();
 	strcpy(#header, #version);
 	stroka = -list.first;
 	stolbec = 0;
@@ -462,7 +461,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 					text_colors[text_color_index] = text_colors[text_color_index-1];
 					
 					link = 1;
-					blink++;
 					text_colors[text_color_index] = link_color_inactive;
 					PageLinks.AddLink(#options, stolbec*6+left1, top1);
 				}
@@ -477,7 +475,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		else {
 			link = 0;
-			PageLinks.AddText(#line, strlen(#line)*6, list.line_h);
 			IF(text_color_index > 0) text_color_index--;
 		}
 		return;
