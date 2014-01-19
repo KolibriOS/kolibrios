@@ -1,4 +1,6 @@
 #include "..\lib\draw_buf.h"
+#include "..\lib\list_box.h"
+
 
 int	downloader_id;
 
@@ -13,7 +15,6 @@ edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(U
 scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 char editURL[sizeof(URL)];
-char page_links[12000];
 char header[2048];
 
 
@@ -38,6 +39,7 @@ byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab,
 	link, ignor_text, cur_encoding, text_align;
 byte condition_text_active, condition_text_val, condition_href, condition_max;
 
+enum { _WIN, _DOS, _KOI, _UTF };
 
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
@@ -62,8 +64,8 @@ char anchor[256];
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
-#include "..\TWB\some_code.h"
 #include "..\TWB\parce_tag.h"
+#include "..\TWB\links.h"
 
 
 
@@ -133,7 +135,7 @@ void TWebBrowser::GetNewUrl(){
 			editURL[strrchr(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
 		}
 		
-		IF (!strcmp(get_URL_part(3),"../")) //на уровень вверх
+		IF (!strncmp(#URL,"../",3)) //на уровень вверх
 		{
 			strcpy(#URL,#URL+3);
 			editURL[strrchr(#editURL, '/')-1] = 0x00; //обрезаем её урл до последнего /
@@ -150,7 +152,7 @@ void TWebBrowser::GetNewUrl(){
 	
 void TWebBrowser::ReadHtml(byte encoding)
 {
-	if (!strcmp(get_URL_part(5),"http:"))) 
+	if (!strncmp(#URL,"http:",5)) 
 		file_size stdcall (#download_path);
 	else
 		file_size stdcall (#URL);
@@ -160,7 +162,7 @@ void TWebBrowser::ReadHtml(byte encoding)
 	
 	mem_Free(buf);
 	buf = mem_Alloc(filesize);
-	if (!strcmp(get_URL_part(5),"http:"))) 
+	if (!strncmp(#URL,"http:",5)) 
 		ReadFile(0, filesize, buf, #download_path);
 	else
 		ReadFile(0, filesize, buf, #URL);
@@ -185,7 +187,7 @@ void TWebBrowser::ShowPage()
 		else
 		{
 			WriteText(list.x + 10, list.y + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
-			if (!strcmp(get_URL_part(5),"http:"))) WriteText(list.x + 10, list.y + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
+			if (!strncmp(#URL,"http:",5)) WriteText(list.x + 10, list.y + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
 		}
 		//return;
 	}
@@ -213,7 +215,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
 	DrawBuf.Fill(bg_color);
-	strcpy(#page_links,"|");
+	PageLinks.Clear();
 	strcpy(#header, #version);
 	stroka = -list.first;
 	stolbec = 0;
@@ -391,15 +393,15 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	}
 	else rez = 1;
 		
-	if (!chTag("html"))
+	if (isTag("html"))
 	{
 		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
 		return;
 	}
 
-	if (!chTag("script")) || (!chTag("style")) || (!chTag("binary")) ignor_text = rez;
+	if (isTag("script")) || (isTag("style")) || (isTag("binary")) ignor_text = rez;
 
-	if(!chTag("title"))
+	if(isTag("title"))
 	{
 		if (rez) header=NULL;
 		else if (!stroka) DrawTitle(#header); //тег закрылся - вывели строку
@@ -410,14 +412,14 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 
 	
-	IF(!chTag("q")) chrcat(#line, '\"');
+	IF(isTag("q")) chrcat(#line, '\"');
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
 		if (!strcmp(#anchor, #options))	anchor_line_num=list.first+stroka;
 	}
 	
-	if (!chTag("body"))
+	if (isTag("body"))
 	{
 		do{
 			if (!strcmp(#parametr, "condition_max=")) { condition_max = atoi(#options); debugi(condition_max); }
@@ -432,7 +434,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 
-	if (!chTag("a"))
+	if (isTag("a"))
 	{
 		if (rez)
 		{
@@ -449,8 +451,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 					link = 1;
 					blink++;
 					text_colors[text_color_index] = link_color;
-					strcat(#page_links, #options);
-					strcat(#page_links, "|");
+					PageLinks.Add(#options);
 				}
 				if (anchor) && (!strcmp(#parametr, "name="))
 				{
@@ -468,7 +469,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 
-	if (!chTag("font"))
+	if (isTag("font"))
 	{
 		if (rez)
 		{
@@ -486,22 +487,22 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (text_color_index > 0) text_color_index--;
 		return;
 	}
-	if(!chTag("tr")) || (!chTag("br")) {
+	if(isTag("tr")) || (isTag("br")) {
 		TextGoDown(left1, top1, width1);
 		return;
 	}
-	if (!chTag("div")) {
+	if (isTag("div")) {
 		IF(oldtag[0] <>'h') TextGoDown(left1, top1, width1);
 		return;
 	}
-	if (!chTag("p")) {
+	if (isTag("p")) {
 		IF(oldtag[0] == 'h') return;
 		TextGoDown(left1, top1, width1);
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
 		return;
 	}
 	/*
-	if (!chTag("center"))
+	if (isTag("center"))
 	{
 		if (rez) text_align = ALIGN_CENTER;
 		if (!rez)
@@ -511,7 +512,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		return;
 	}
-	if (!chTag("right"))
+	if (isTag("right"))
 	{
 		if (rez) text_align = ALIGN_RIGHT;
 		if (!rez)
@@ -522,7 +523,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	*/
-	if (!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
+	if (isTag("h1")) || (isTag("h2")) || (isTag("h3")) || (isTag("h4")) {
 		TextGoDown(left1, top1, width1);
 		if (rez) && (stroka>1) TextGoDown(left1, top1 + 10, width1);
 		strcpy(#oldtag, #tag);
@@ -542,28 +543,28 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	else
 		oldtag=NULL;
 		
-	if (!chTag("b")) || (!chTag("strong")) || (!chTag("big")) {
+	if (isTag("b")) || (isTag("strong")) || (isTag("big")) {
 		b_text = rez;
 		return;
 	}
-	if(!chTag("i")) || (!chTag("em")) || (!chTag("subtitle")) {
+	if(isTag("i")) || (isTag("em")) || (isTag("subtitle")) {
 		i_text = rez;
 		return;
 	}	
-	if (!chTag("dt"))
+	if (isTag("dt"))
 	{
 		li_text = rez;
 		IF(rez == 0) return;
 		TextGoDown(left1, top1, width1);
 		return;
 	}
-	if (!chTag("condition"))
+	if (isTag("condition"))
 	{
 		condition_text_active = rez;
 		if (rez) && (!strcmp(#parametr, "show_if=")) condition_text_val = atoi(#options);
 		return;
 	}
-	if(!chTag("li")) || (!chTag("dt")) //надо сделать вложенные списки
+	if (isTag("li")) || (isTag("dt")) //надо сделать вложенные списки
 	{
 		li_text = rez;
 		if (rez)
@@ -573,18 +574,18 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		return;
 	}
-	if (!chTag("u")) || (!chTag("ins")) u_text = rez;
-	if (!chTag("s")) || (!chTag("strike")) || (!chTag("del")) s_text = rez;
-	if (!chTag("ul")) || (!chTag("ol")) IF(!rez)
+	if (isTag("u")) || (isTag("ins")) u_text = rez;
+	if (isTag("s")) || (isTag("strike")) || (isTag("del")) s_text = rez;
+	if (isTag("ul")) || (isTag("ol")) IF(!rez)
 	{
 		li_text = rez;
 		li_tab--;
 		TextGoDown(left1, top1, width1);
 	} ELSE li_tab++;
-	if (!chTag("dd")) stolbec += 5;
-	if (!chTag("blockquote")) blq_text = rez;
-	if (!chTag("pre")) pre_text = rez; 
-	if (!chTag("hr"))
+	if (isTag("dd")) stolbec += 5;
+	if (isTag("blockquote")) blq_text = rez;
+	if (isTag("pre")) pre_text = rez; 
+	if (isTag("hr"))
 	{
 		if (anchor) || (stroka < -1)
 		{
@@ -596,12 +597,12 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		DrawBuf.DrawBar(5, list.line_h/2, list.w-10, 1, hr_color);
 		TextGoDown(left1, top1+list.line_h, width1);
 	}
-	if (!chTag("img"))
+	if (isTag("img"))
 	{
 		ImgCache1.Images( left1, top1, width1);
 		return;
 	}
-	if (!chTag("meta")) || (!chTag("?xml"))
+	if (isTag("meta")) || (isTag("?xml"))
 	{
 		do{
 			if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
@@ -644,4 +645,11 @@ void TWebBrowser::TextGoDown(int left1, top1, width1)
 	stroka++;
 	if (blq_text) stolbec = 8; else stolbec = 0;
 	if (li_text) stolbec = li_tab * 5;
+}
+
+
+
+int isTag(dword text) 
+{ 
+	if (!strcmp(#tag,text)) return 1; else return 0;
 }

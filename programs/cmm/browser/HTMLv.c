@@ -16,7 +16,6 @@
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
-#include "..\lib\list_box.h"
 //*.obj libraries
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\libio_lib.h"
@@ -26,11 +25,11 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.6";
+	char version[]=" Текстовый браузер 0.99.61";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 #else
-	char version[]=" Text-based Browser 0.99.6";
+	char version[]=" Text-based Browser 0.99.61";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 #endif
@@ -47,6 +46,8 @@ int action_buf;
 
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
+
+enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 
 
 void main()
@@ -251,7 +252,7 @@ void Scan(int id)
 			OpenPage();
 			return;
 		case 052:  //F3
-			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL);
+			if (strncmp(#URL,"http:",5)<>0) RunProgram("/rd/1/tinypad", #URL);
 			else RunProgram("/rd/1/tinypad", #download_path);
 			return;
 		case 054: //F5
@@ -336,7 +337,7 @@ void Scan(int id)
 
 void ProcessLinks(int id)
 {
-	GetURLfromPageLinks(id);
+	strcpy(#URL, PageLinks.GetURL(id));
 	
 	//$1 - Condition Script
 	if (URL[0] == '$')
@@ -397,7 +398,7 @@ void OpenPage()
 	BrowserHistory.AddUrl();
 	strcpy(#header, #version);
 	pre_text =0;
-	if (!strcmp(get_URL_part(5),"http:")))
+	if (!strncmp(#URL,"http:",5))
 	{
 		KillProcess(downloader_id);
 		DeleteFile(#download_path);
