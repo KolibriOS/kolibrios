@@ -16,6 +16,8 @@
 
 EGLImageKHR px_create_image(EGLDisplay display, EGLContext context,
 			 int width, int height, int stride, int name);
+GLuint create_framebuffer(int width, int height, GLuint *tex);
+GLint create_shader(GLenum type, const char *source);
 
 int main()
 {
@@ -32,9 +34,8 @@ int main()
 
     EGLint config_attribs[32];
     EGLint num_configs, i;
-    GLint list;
-    GLuint texture, buffer;
-
+    GLuint texture, buffer, front;
+    GLuint f_tex;
 
     int fd;
 
@@ -82,7 +83,7 @@ int main()
     if (!context)
         printf("failed to create context");
 
-    gs = gbm_surface_create(gbm, 1024, 768, GBM_BO_FORMAT_ARGB8888, GBM_BO_USE_RENDERING);
+//    gs = gbm_surface_create(gbm, 1024, 768, GBM_BO_FORMAT_ARGB8888, GBM_BO_USE_RENDERING);
 
 
     BeginDraw();
@@ -91,13 +92,42 @@ int main()
 
     sna_create_mask();
 
-    surface = eglCreateWindowSurface(dpy,config, (EGLNativeWindowType)gs, NULL);
-    if (surface == EGL_NO_SURFACE)
-        printf("failed to create surface");
+  //  surface = eglCreateWindowSurface(dpy,config, (EGLNativeWindowType)gs, NULL);
+  //  if (surface == EGL_NO_SURFACE)
+  //      printf("failed to create surface");
 
-    if (!eglMakeCurrent(dpy, surface, surface, context))
+    if (!eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, context))
         printf("failed to make window current");
 
+
+    front = create_framebuffer(400,300,&f_tex);
+    glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+    glOrtho(-1.0, 1.0, -1.0, 1.0, -0.5, 1000.0);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glViewport(0, 0, 400, 300);
+
+    glClearColor( 0, 0, 0, 1);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glBegin(GL_QUADS);
+    glColor3f(1,0,0);
+    glVertex3f( 0.9, -0.9, -30.0);
+    glColor3f(1,1,0);
+    glVertex3f( 0.9,  0.9, -30.0);
+
+    glColor3f(1,1,1);
+    glVertex3f( 0.1,  0.9, -30.0);
+    glColor3f(1,0,1);
+    glVertex3f( 0.1, -0.9, -30.0);
+    glEnd();
+
+    glFlush();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if(fd)
     {
@@ -114,8 +144,6 @@ int main()
                                    fb.pitch,fb.name);
 
         printf("fb_image %p\n", fb_image);
-
-  asm volatile ("int3");
 
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -162,66 +190,128 @@ int main()
             printf("destination is framebuffer incomplete: %s [%#x]\n",
 			   str, status);
         }
-
-        glViewport(0, 0,fb.width, fb.height);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(-1.0, 1.0, -1.0, 1.0, -0.5, 100.0);
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
     }
 
-    glClearColor( 0, 0, 0, 1);
+	glViewport(0, 0, 1024, 768);
+    glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
-    list = glGenLists(1);
-    glNewList(list, GL_COMPILE);
 
-   /* XXX: this state-change will only be executed if list is called
-    * from outside a begin/end pair:
-    */
-    glShadeModel( GL_FLAT );
-    glBegin(GL_TRIANGLES);
-    glColor3f(0,0,.7);
-    glVertex3f( -0.9,  0.9, -30.0);
-    glColor3f(0,.9,0);
-    glVertex3f( -0.9, -0.9, -30.0);
-    glColor3f(.8,0,0);
-    glVertex3f(  0.9,  0.0, -30.0);
-    glEnd();
+    const char *vs_src =
+	    "attribute vec4 v_position;\n"
+	    "attribute vec4 v_texcoord0;\n"
+	    "varying vec2 source_texture;\n"
+	    "void main()\n"
+	    "{\n"
+	    "	gl_Position = v_position;\n"
+	    "	source_texture = v_texcoord0.xy;\n"
+	    "}\n";
 
-   /* This statechange is potentially NOT redundant:
-    */
-    glShadeModel( GL_FLAT );
-    glBegin(GL_TRIANGLES);
-    glColor3f(0,1,0);
-    glVertex3f( -0.5,  0.5, -30.0);
-    glColor3f(0,0,1);
-    glVertex3f( -0.5, -0.5, -30.0);
-    glColor3f(1,0,0);
-    glVertex3f(  0.5,  0.0, -30.0);
-    glEnd();
+	const char *fs_src =
+//	    "precision mediump float;\n"
+	    "varying vec2 source_texture;\n"
+	    "uniform sampler2D sampler;\n"
+	    "void main()\n"
+	    "{\n"
+	    "   vec3 cg = texture2D(sampler, source_texture).rgb;\n"
+	    "   gl_FragColor = vec4(cg.r,cg.g,cg.b,1.0);\n"
+	    "}\n";
 
-    glEndList();
+	GLuint blit_prog;
+	GLint  vs_shader, fs_shader;
 
   asm volatile ("int3");
 
-    glDrawBuffer(GL_BACK);
+	blit_prog = glCreateProgram();
+    vs_shader = create_shader(GL_VERTEX_SHADER,vs_src);
+    fs_shader = create_shader(GL_FRAGMENT_SHADER, fs_src);
+ 	glAttachShader(blit_prog, vs_shader);
+ 	glAttachShader(blit_prog, fs_shader);
+ 	glBindAttribLocation(blit_prog, 0, "v_position");
+	glBindAttribLocation(blit_prog, 1, "v_texcoord0");
 
-    glClear(GL_COLOR_BUFFER_BIT);
+	GLint ok;
 
-    glShadeModel( GL_SMOOTH );
+	glLinkProgram(blit_prog);
+	glGetProgramiv(blit_prog, GL_LINK_STATUS, &ok);
+	if (!ok) {
+		GLchar *info;
+		GLint size;
 
-    glBegin(GL_TRIANGLES);
+		glGetProgramiv(blit_prog, GL_INFO_LOG_LENGTH, &size);
+		info = malloc(size);
 
-   /* Note: call the list from inside a begin/end pair.  The end is
-    * provided by the display list...
-    */
-    glCallList(list);
-    glFlush();
+		glGetProgramInfoLog(blit_prog, size, NULL, info);
+		printf("Failed to link: %s\n", info);
+		printf("GLSL link failure\n");
+	}
 
+    GLint sampler;
+	float vertices[8], texcoords[8];
+    GLfloat dst_xscale, dst_yscale; //, src_xscale, src_yscale;
+    int l, t, r, b, stride;
 
-//    eglSwapBuffers(dpy, surface);
+	sampler = glGetUniformLocation(blit_prog,"sampler");
+	glUseProgram(blit_prog);
+	glUniform1i(sampler, 0);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, 2 * sizeof(float),vertices);
+	glEnableVertexAttribArray(0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, f_tex);
+	glTexParameteri(GL_TEXTURE_2D,
+				  GL_TEXTURE_MIN_FILTER,
+				  GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,
+				  GL_TEXTURE_MAG_FILTER,
+				  GL_NEAREST);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),texcoords);
+	glEnableVertexAttribArray(1);
+
+	dst_xscale = 1.0/1024;
+	dst_yscale = 1.0/768;
+//	src_xscale = 1.0/400;
+//	src_yscale = 1.0/300;
+
+    stride = 2;
+
+	l = 20;
+	t = 20;
+	r = l+400;
+	b = t+300;
+
+    float t0, t1, t2, t5;
+
+    vertices[0]     = t0 = 2*l*dst_xscale - 1.0;
+    vertices[1 * 2] = t2 = 2*r*dst_xscale - 1.0;
+
+    vertices[2 * 2] = t2;
+    vertices[3 * 2] = t0;
+
+    vertices[1]     = t1 = 2*t*dst_yscale - 1.0;
+    vertices[2*2+1] = t5 = 2*b*dst_yscale - 1.0;
+    vertices[1*2+1] = t1;
+    vertices[3*2+1] = t5;
+
+    texcoords[0]    = 0.0;
+    texcoords[1]    = 0.0;
+    texcoords[1*2]  = 1.0;
+    texcoords[1*2+1]= 0.0;
+    texcoords[2*2]  = 1.0;
+    texcoords[2*2+1]= 1.0;
+    texcoords[3*2]  = 0.0;
+    texcoords[3*2+1]= 1.0;
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisable(GL_TEXTURE_2D);
+	glUseProgram(0);
 
     glFinish();
     eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -269,7 +359,7 @@ EGLImageKHR px_create_image(EGLDisplay display, EGLContext context,
 	};
 	attribs[1] = width;
 	attribs[3] = height;
-	attribs[5] = stride;
+	attribs[5] = stride/4;
 
     printf("%s w:%d :%d pitch:%d handle %d\n", __FUNCTION__,
            width, height, stride, name);
@@ -278,4 +368,51 @@ EGLImageKHR px_create_image(EGLDisplay display, EGLContext context,
 						 (void *) (uintptr_t)name, attribs);
 
 	return image;
+}
+
+GLint create_shader(GLenum type, const char *source)
+{
+	GLint ok;
+	GLint prog;
+
+	prog = glCreateShader(type);
+	glShaderSource(prog, 1, (const GLchar **) &source, NULL);
+	glCompileShader(prog);
+	glGetShaderiv(prog, GL_COMPILE_STATUS, &ok);
+	if (!ok) {
+		GLchar *info;
+		GLint size;
+
+		glGetShaderiv(prog, GL_INFO_LOG_LENGTH, &size);
+		info = malloc(size);
+
+		glGetShaderInfoLog(prog, size, NULL, info);
+		printf("Failed to compile %s: %s\n",
+                type == GL_FRAGMENT_SHADER ? "FS" : "VS",info);
+		printf("Program source:\n%s", source);
+		printf("GLSL compile failure\n");
+	}
+
+	return prog;
+}
+
+GLuint create_framebuffer(int width, int height, GLuint *tex)
+{
+    GLuint buffer;
+
+    glGenTextures(1, tex);
+    glBindTexture(GL_TEXTURE_2D, *tex);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+			       GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glGenFramebuffers(1, &buffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, buffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+					 GL_COLOR_ATTACHMENT0,
+					 GL_TEXTURE_2D, *tex,0);
+   return buffer;
 }
