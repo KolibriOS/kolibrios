@@ -1,6 +1,6 @@
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
-
+#include "..\TWB\links.h"
 
 int	downloader_id;
 
@@ -35,7 +35,7 @@ struct TWebBrowser {
 
 TWebBrowser WB1;
 
-byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
+byte b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
 	link, ignor_text, cur_encoding, text_align;
 byte condition_text_active, condition_text_val, condition_href, condition_max;
 
@@ -45,7 +45,8 @@ enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
 dword text_colors[300];
 dword text_color_index;
-dword link_color;
+dword link_color_inactive;
+dword link_color_active;
 dword bg_color;
 
 int stroka;
@@ -65,7 +66,6 @@ char anchor[256];
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
 #include "..\TWB\parce_tag.h"
-#include "..\TWB\links.h"
 
 
 
@@ -212,7 +212,8 @@ void TWebBrowser::ParseHTML(dword bword){
 	condition_text_val = condition_text_active = 0; //обнуляем теги
 	condition_max = 255;
 	text_align = ALIGN_LEFT;
-	link_color = 0x0000FF;
+	link_color_inactive = 0x0000FF;
+	link_color_active = 0xFF0000;
 	bg_color = 0xFFFFFF;
 	DrawBuf.Fill(bg_color);
 	PageLinks.Clear();
@@ -331,9 +332,9 @@ void TWebBrowser::ParseHTML(dword bword){
 				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
 			}
 			DrawPage();
-			line=NULL;
 
 			if (tag) WhatTextStyle(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //обработка тегов
+			line=NULL;
 
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
@@ -384,35 +385,46 @@ void TWebBrowser::ParseHTML(dword bword){
 char oldtag[100];
 void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
+	byte opened;
 
 	//проверяем тег открывается или закрывается
 	if (tag[0] == '/') 
 	{
-		 rez = 0;
+		 opened = 0;
 		 strcpy(#tag, #tag+1);
 	}
-	else rez = 1;
+	else opened = 1;
 		
 	if (isTag("html"))
 	{
-		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
+		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (opened==0) ignor_text = 1; ELSE ignor_text = 0;
 		return;
 	}
 
-	if (isTag("script")) || (isTag("style")) || (isTag("binary")) ignor_text = rez;
+	if (isTag("script")) || (isTag("style")) || (isTag("binary")) ignor_text = opened;
 
 	if(isTag("title"))
 	{
-		if (rez) header=NULL;
+		if (opened) header=NULL;
 		else if (!stroka) DrawTitle(#header); //тег закрылся - вывели строку
 		return;
 	}
 
 	if (ignor_text) return;
-
-
 	
-	IF(isTag("q")) chrcat(#line, '\"');
+	IF(isTag("q"))
+	{
+		if (opened)
+		{
+			TextGoDown(left1, top1, width1);
+			strcat(#line, ' \"');
+		}
+		if (!opened)
+		{
+			chrcat(#line, '\"');
+			TextGoDown(left1, top1, width1);
+		} 
+	}
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
@@ -422,8 +434,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (isTag("body"))
 	{
 		do{
-			if (!strcmp(#parametr, "condition_max=")) { condition_max = atoi(#options); debugi(condition_max); }
-			if (!strcmp(#parametr, "link=")) link_color = GetColor(#options);
+			if (!strcmp(#parametr, "condition_max=")) condition_max = atoi(#options);
+			if (!strcmp(#parametr, "link=")) link_color_inactive = GetColor(#options);
+			if (!strcmp(#parametr, "alink=")) link_color_active = GetColor(#options);
 			if (!strcmp(#parametr, "text=")) text_colors[0]=GetColor(#options);
 			if (!strcmp(#parametr, "bgcolor="))
 			{
@@ -436,7 +449,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if (isTag("a"))
 	{
-		if (rez)
+		if (opened)
 		{
 			if (link) IF(text_color_index > 0) text_color_index--; //если предыдущий тег а не был закрыт
 
@@ -450,8 +463,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 					
 					link = 1;
 					blink++;
-					text_colors[text_color_index] = link_color;
-					PageLinks.Add(#options);
+					text_colors[text_color_index] = link_color_inactive;
+					PageLinks.AddLink(#options, stolbec*6+left1, top1);
 				}
 				if (anchor) && (!strcmp(#parametr, "name="))
 				{
@@ -464,6 +477,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		else {
 			link = 0;
+			PageLinks.AddText(#line, strlen(#line)*6, list.line_h);
 			IF(text_color_index > 0) text_color_index--;
 		}
 		return;
@@ -471,7 +485,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if (isTag("font"))
 	{
-		if (rez)
+		if (opened)
 		{
 			text_color_index++;
 			text_colors[text_color_index] = text_colors[text_color_index-1];
@@ -498,14 +512,14 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (isTag("p")) {
 		IF(oldtag[0] == 'h') return;
 		TextGoDown(left1, top1, width1);
-		IF(rez) TextGoDown(left1, top1 + 10, width1);
+		IF(opened) TextGoDown(left1, top1 + 10, width1);
 		return;
 	}
 	/*
 	if (isTag("center"))
 	{
-		if (rez) text_align = ALIGN_CENTER;
-		if (!rez)
+		if (opened) text_align = ALIGN_CENTER;
+		if (!opened)
 		{
 			TextGoDown(left1, top1, width1);
 			text_align = ALIGN_LEFT;
@@ -514,8 +528,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	}
 	if (isTag("right"))
 	{
-		if (rez) text_align = ALIGN_RIGHT;
-		if (!rez)
+		if (opened) text_align = ALIGN_RIGHT;
+		if (!opened)
 		{
 			TextGoDown(left1, top1, width1);
 			text_align = ALIGN_LEFT;
@@ -525,15 +539,15 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	*/
 	if (isTag("h1")) || (isTag("h2")) || (isTag("h3")) || (isTag("h4")) {
 		TextGoDown(left1, top1, width1);
-		if (rez) && (stroka>1) TextGoDown(left1, top1 + 10, width1);
+		if (opened) && (stroka>1) TextGoDown(left1, top1 + 10, width1);
 		strcpy(#oldtag, #tag);
-		if (rez)
+		if (opened)
 		{
 			if (!strcmp(#parametr, "align=")) && (!strcmp(#options,"center")) text_align = ALIGN_CENTER;
 			if (!strcmp(#parametr, "align=")) && (!strcmp(#options,"right")) text_align = ALIGN_RIGHT;
 			b_text = 1;
 		}
-		if (!rez)
+		if (!opened)
 		{
 			text_align = ALIGN_LEFT;
 			b_text = 0;
@@ -544,47 +558,47 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		oldtag=NULL;
 		
 	if (isTag("b")) || (isTag("strong")) || (isTag("big")) {
-		b_text = rez;
+		b_text = opened;
 		return;
 	}
 	if(isTag("i")) || (isTag("em")) || (isTag("subtitle")) {
-		i_text = rez;
+		i_text = opened;
 		return;
 	}	
 	if (isTag("dt"))
 	{
-		li_text = rez;
-		IF(rez == 0) return;
+		li_text = opened;
+		IF(opened == 0) return;
 		TextGoDown(left1, top1, width1);
 		return;
 	}
 	if (isTag("condition"))
 	{
-		condition_text_active = rez;
-		if (rez) && (!strcmp(#parametr, "show_if=")) condition_text_val = atoi(#options);
+		condition_text_active = opened;
+		if (opened) && (!strcmp(#parametr, "show_if=")) condition_text_val = atoi(#options);
 		return;
 	}
 	if (isTag("li")) || (isTag("dt")) //надо сделать вложенные списки
 	{
-		li_text = rez;
-		if (rez)
+		li_text = opened;
+		if (opened)
 		{
 			TextGoDown(left1, top1, width1);
 			if (stroka > -1) && (stroka - 2 < list.visible) DrawBuf.DrawBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
 		}
 		return;
 	}
-	if (isTag("u")) || (isTag("ins")) u_text = rez;
-	if (isTag("s")) || (isTag("strike")) || (isTag("del")) s_text = rez;
-	if (isTag("ul")) || (isTag("ol")) IF(!rez)
+	if (isTag("u")) || (isTag("ins")) u_text = opened;
+	if (isTag("s")) || (isTag("strike")) || (isTag("del")) s_text = opened;
+	if (isTag("ul")) || (isTag("ol")) IF(!opened)
 	{
-		li_text = rez;
+		li_text = opened;
 		li_tab--;
 		TextGoDown(left1, top1, width1);
 	} ELSE li_tab++;
 	if (isTag("dd")) stolbec += 5;
-	if (isTag("blockquote")) blq_text = rez;
-	if (isTag("pre")) pre_text = rez; 
+	if (isTag("blockquote")) blq_text = opened;
+	if (isTag("pre")) pre_text = opened; 
 	if (isTag("hr"))
 	{
 		if (anchor) || (stroka < -1)
@@ -599,7 +613,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	}
 	if (isTag("img"))
 	{
-		ImgCache1.Images( left1, top1, width1);
+		ImgCache.Images( left1, top1, width1);
 		return;
 	}
 	if (isTag("meta")) || (isTag("?xml"))
@@ -617,6 +631,16 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	}
 }
 
+/*
+char *encodings = {
+	"utf-8",  _UTF,
+	"utf8",   _UTF,
+	"koi8-r", _KOI,
+	"koi8-u", _KOI,
+	"dos",    _DOS,
+	"cp-866", _DOS
+};
+*/
 
 void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
 {

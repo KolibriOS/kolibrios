@@ -6,14 +6,14 @@ struct s_image
 
 s_image pics[100]; //pics = mem_Alloc( 100*sizeof(s_image) );
 
-struct ImgCache {
+struct ImageCache {
 	int pics_count;
 	void Free();
 	int GetImage();
 	void Images();
-} ImgCache1;
+};
 
-void ImgCache::Free()
+void ImageCache::Free()
 {
 	for ( ; pics_count>0; pics_count--)
 	{
@@ -22,7 +22,7 @@ void ImgCache::Free()
 	}
 }
 
-int ImgCache::GetImage(dword i_path)
+int ImageCache::GetImage(dword i_path)
 {
 	int i;
 	for (i=0; i<pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
@@ -34,7 +34,7 @@ int ImgCache::GetImage(dword i_path)
 }
 
 
-void ImgCache::Images(int left1, top1, width1)
+void ImageCache::Images(int left1, top1, width1)
 {
 	dword image;
     char img_path[4096], alt[4096];
@@ -98,3 +98,5 @@ void ImgCache::Images(int left1, top1, width1)
 	DrawBar(left1+w - 5, top1, WB1.list.w-w, h, bg_color);
 	IF (link) UnsafeDefineButton(left1 - 5, top1, w, h-1, blink + BT_HIDE, 0xB5BFC9);
 }
+
+ImageCache ImgCache;

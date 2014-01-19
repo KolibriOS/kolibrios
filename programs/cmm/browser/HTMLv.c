@@ -25,11 +25,11 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.61";
+	char version[]=" Текстовый браузер 0.99.63";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 #else
-	char version[]=" Text-based Browser 0.99.61";
+	char version[]=" Text-based Browser 0.99.63";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 #endif
@@ -91,6 +91,7 @@ void main()
 				edit_box_mouse stdcall (#address_box);
 
 				m.get();
+				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active);
 				
 				if (m.y>WB1.list.y) && (m.y<Form.height) && (filesize)
 				{
@@ -238,7 +239,7 @@ void Scan(int id)
 			return;
 
 		case 002: //free img cache
-			ImgCache1.Free();
+			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
 			WB1.ParseHTML(buf);
 			return;
@@ -337,7 +338,7 @@ void Scan(int id)
 
 void ProcessLinks(int id)
 {
-	strcpy(#URL, PageLinks.GetURL(id));
+	strcpy(#URL, PageLinks.GetURL(id-401));
 	
 	//$1 - Condition Script
 	if (URL[0] == '$')
