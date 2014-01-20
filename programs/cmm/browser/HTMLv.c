@@ -25,11 +25,11 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.63";
+	char version[]=" Текстовый браузер 0.99.64";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 #else
-	char version[]=" Text-based Browser 0.99.63";
+	char version[]=" Text-based Browser 0.99.64";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 #endif
@@ -64,6 +64,7 @@ void main()
 	if (!URL) strcpy(#URL, "/sys/index.htm");
 	strcpy(#editURL, #URL);
 	
+	CursorPointer.Load(#CursorFile);
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();

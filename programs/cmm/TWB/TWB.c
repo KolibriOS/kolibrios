@@ -1,5 +1,6 @@
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
+#include "..\lib\cursor.h"
 #include "..\TWB\links.h"
 
 int	downloader_id;
@@ -595,7 +596,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	} ELSE li_tab++;
 	if (isTag("dd")) stolbec += 5;
 	if (isTag("blockquote")) blq_text = opened;
-	if (isTag("pre")) pre_text = opened; 
+	if (isTag("pre")) || (isTag("code")) pre_text = opened; 
 	if (isTag("hr"))
 	{
 		if (anchor) || (stroka < -1)
