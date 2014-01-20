@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -19,7 +19,7 @@ IRQ_REMAP       equ 0
 IRQ_LINE        equ 0
 
 
-;irq 0,1,2,8,12,13 недоступны
+;irq 0,1,2,8,12,13 unavailable
 ;                   FEDCBA9876543210
 VALID_IRQ       equ 1100111011111000b
 ATTCH_IRQ       equ 0000111010100000b
@@ -175,6 +175,7 @@ DEV_NOTIFY            equ  5
 DEV_SET_MASTERVOL     equ  6
 DEV_GET_MASTERVOL     equ  7
 DEV_GET_INFO          equ  8
+DEV_GET_POS           equ  9
 
 struc AC_CNTRL              ;AC controller base class
 { .bus                dd ?
@@ -294,7 +295,7 @@ struc CODEC                ;Audio Chip base class
   .reg_vendor_id_2    dw ?     ;0x7E
 
 
-  .reset              dd ?    ;virual
+  .reset              dd ?    ;virtual
   .set_master_vol     dd ?
 }
 
@@ -492,6 +493,20 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
         mov     ebx, [edi+output]
         stdcall get_dev_info, ebx
+        ret
+@@:
+        cmp     eax, DEV_GET_POS
+        jne     @F
+        push    ebx  edx
+        mov     edx, VIADEV_PLAYBACK + VIA_REG_OFFSET_CURR_COUNT
+        call    [ctrl.ctrl_read32]
+        and     eax, 0x00FFFFFF
+        mov     ebx, 4096
+        sub     ebx, eax
+        shr     ebx, 2
+        mov     edx, [edi+output]
+        mov     [edx], ebx
+        pop     edx ebx
         ret
 @@:
 .fail:
@@ -814,7 +829,7 @@ proc init_codec
         pop     eax
 
         test    eax, VIA_ACLINK_C00_READY
-        jz      .ready
+        jnz     .ready
 
         call    reset_codec
         test    eax, eax
