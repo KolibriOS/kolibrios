@@ -107,6 +107,9 @@ dri2_create_surface(_EGLDriver *drv, _EGLDisplay *disp, EGLint type,
    struct dri2_egl_config *dri2_conf = dri2_egl_config(conf);
    struct dri2_egl_surface *dri2_surf;
    struct gbm_dri_surface *surf;
+   struct gbm_bo       *bo;
+   _EGLImage           *img;
+   EGLint attr[10];
 
    (void) drv;
 
@@ -133,6 +136,41 @@ dri2_create_surface(_EGLDriver *drv, _EGLDisplay *disp, EGLint type,
       goto cleanup_surf;
    }
 
+   attr[0] = EGL_WIDTH;
+   attr[1] = surf->base.width;
+   attr[2] = EGL_HEIGHT;
+   attr[3] = surf->base.height;
+   attr[4] = EGL_DRM_BUFFER_FORMAT_MESA;
+   attr[5] = EGL_DRM_BUFFER_FORMAT_ARGB32_MESA;
+   attr[6] = EGL_DRM_BUFFER_USE_MESA;
+   attr[7] = EGL_DRM_BUFFER_USE_SHARE_MESA;
+   attr[8] = EGL_NONE;
+
+   img = drv->API.CreateDRMImageMESA(drv, disp, attr);
+   dri2_surf->egl_front = img;
+   dri2_surf->khr_front = (img) ? _eglLinkImage(img) : EGL_NO_IMAGE_KHR;
+
+   bo = gbm_bo_import(&dri2_dpy->gbm_dri->base.base,
+                      GBM_BO_IMPORT_EGL_IMAGE, dri2_surf->khr_front, 0);
+   if( bo == NULL){
+      _eglError(EGL_BAD_ALLOC, "gbm_bo_create front buffer");
+      goto cleanup_surf;
+   }
+   dri2_surf->color_buffers[1].bo = bo;
+
+   img = drv->API.CreateDRMImageMESA(drv, disp, attr);
+   dri2_surf->egl_back = img;
+   dri2_surf->khr_back = (img) ? _eglLinkImage(img) : EGL_NO_IMAGE_KHR;
+
+   bo = gbm_bo_import(&dri2_dpy->gbm_dri->base.base,
+                      GBM_BO_IMPORT_EGL_IMAGE, dri2_surf->khr_back, 0);
+   if( bo == NULL){
+      _eglError(EGL_BAD_ALLOC, "gbm_bo_create back buffer");
+      goto cleanup_surf;
+   }
+   dri2_surf->color_buffers[2].bo = bo;
+
+
    dri2_surf->dri_drawable =
       (*dri2_dpy->dri2->createNewDrawable) (dri2_dpy->dri_screen,
 					    dri2_conf->dri_double_config,
@@ -150,6 +188,15 @@ dri2_create_surface(_EGLDriver *drv, _EGLDisplay *disp, EGLint type,
 
    return NULL;
 }
+
+static EGLImageKHR
+dri2_get_fb_image(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw, EGLint type)
+{
+   struct dri2_egl_surface *dri2_surf = dri2_egl_surface(draw);
+
+   return (type == EGL_DRM_BUFFER_FRONT) ? dri2_surf->khr_front:dri2_surf->khr_back;
+}
+
 
 static _EGLSurface *
 dri2_create_window_surface(_EGLDriver *drv, _EGLDisplay *disp,
@@ -565,6 +612,7 @@ dri2_initialize_drm(_EGLDriver *drv, _EGLDisplay *disp)
    drv->API.SwapBuffers = dri2_swap_buffers;
    drv->API.CreateImageKHR = dri2_drm_create_image_khr;
    drv->API.QueryBufferAge = dri2_query_buffer_age;
+   drv->API.GetImageFB = dri2_get_fb_image;
 
    disp->Extensions.EXT_buffer_age = EGL_TRUE;
 

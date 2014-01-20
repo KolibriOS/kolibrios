@@ -206,6 +206,8 @@ struct dri2_egl_surface
    /* EGL-owned buffers */
    __DRIbuffer           *local_buffers[__DRI_BUFFER_COUNT];
 #endif
+    _EGLImage *egl_front, *egl_back;
+    EGLImageKHR khr_front, khr_back;
 };
 
 

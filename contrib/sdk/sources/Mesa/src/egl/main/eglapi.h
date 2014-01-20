@@ -117,6 +117,7 @@ typedef EGLBoolean (*SwapBuffersRegionNOK_t)(_EGLDriver *drv, _EGLDisplay *disp,
 #ifdef EGL_MESA_drm_image
 typedef _EGLImage *(*CreateDRMImageMESA_t)(_EGLDriver *drv, _EGLDisplay *disp, const EGLint *attr_list);
 typedef EGLBoolean (*ExportDRMImageMESA_t)(_EGLDriver *drv, _EGLDisplay *disp, _EGLImage *img, EGLint *name, EGLint *handle, EGLint *stride);
+typedef EGLImageKHR (*GetImageFB_t)(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw, EGLint type);
 #endif
 
 #ifdef EGL_WL_bind_wayland_display
@@ -188,6 +189,7 @@ struct _egl_api
 
    CreateImageKHR_t CreateImageKHR;
    DestroyImageKHR_t DestroyImageKHR;
+   GetImageFB_t GetImageFB;
 
    CreateSyncKHR_t CreateSyncKHR;
    DestroySyncKHR_t DestroySyncKHR;

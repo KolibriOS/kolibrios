@@ -1529,6 +1529,22 @@ eglExportDRMImageMESA(EGLDisplay dpy, EGLImageKHR image,
    RETURN_EGL_EVAL(disp, ret);
 }
 
+EGLImageKHR EGLAPIENTRY
+eglGetBufferImage(EGLDisplay dpy, EGLSurface surface, EGLint type)
+{
+   _EGLDisplay *disp = _eglLockDisplay(dpy);
+   _EGLDriver *drv;
+   EGLImageKHR ret;
+
+   _EGL_CHECK_DISPLAY(disp, EGL_NO_IMAGE_KHR, drv);
+   if (!disp->Extensions.MESA_drm_image)
+      RETURN_EGL_EVAL(disp, EGL_NO_IMAGE_KHR);
+
+   ret = drv->API.GetImageFB(drv, disp, surface, type);
+
+   RETURN_EGL_EVAL(disp, ret);
+}
+
 #endif
 
 #ifdef EGL_WL_bind_wayland_display
