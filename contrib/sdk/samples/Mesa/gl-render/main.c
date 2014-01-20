@@ -29,12 +29,12 @@ int main()
 
     EGLContext context;
     EGLSurface surface;
-    EGLImageKHR fb_image;
+    EGLImageKHR front,fb_image;
     EGLConfig config;
 
     EGLint config_attribs[32];
     EGLint num_configs, i;
-    GLuint texture, buffer, front;
+    GLuint texture, buffer;
     GLuint f_tex;
 
     int fd;
@@ -83,7 +83,7 @@ int main()
     if (!context)
         printf("failed to create context");
 
-//    gs = gbm_surface_create(gbm, 1024, 768, GBM_BO_FORMAT_ARGB8888, GBM_BO_USE_RENDERING);
+    gs = gbm_surface_create(gbm, 400, 300, GBM_BO_FORMAT_ARGB8888, GBM_BO_USE_RENDERING);
 
 
     BeginDraw();
@@ -92,15 +92,22 @@ int main()
 
     sna_create_mask();
 
-  //  surface = eglCreateWindowSurface(dpy,config, (EGLNativeWindowType)gs, NULL);
-  //  if (surface == EGL_NO_SURFACE)
-  //      printf("failed to create surface");
+    surface = eglCreateWindowSurface(dpy,config, (EGLNativeWindowType)gs, NULL);
+    if (surface == EGL_NO_SURFACE)
+        printf("failed to create surface");
 
-    if (!eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, context))
+    if (!eglMakeCurrent(dpy, surface, surface, context))
         printf("failed to make window current");
 
 
-    front = create_framebuffer(400,300,&f_tex);
+    front = eglGetBufferImage(dpy, surface, EGL_DRM_BUFFER_BACK);
+    glGenTextures(1, &f_tex);
+    glBindTexture(GL_TEXTURE_2D, f_tex);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D,front);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
     glOrtho(-1.0, 1.0, -1.0, 1.0, -0.5, 1000.0);
