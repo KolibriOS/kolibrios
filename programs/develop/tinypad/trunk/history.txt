@@ -1,6 +1,10 @@
 
 HISTORY:
 
+4.0.8 (22/01/2014, Marat Zakiyanov aka Mario79, aka Mario)
+  new features:
+    - Support for kernel clipboard (f.54)
+
 4.0.7 (21/11/2013, Sergey Tyrnov aka tserj)
   new feature:
     - Run in debugger by F10

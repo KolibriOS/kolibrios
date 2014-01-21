@@ -219,16 +219,8 @@ convert_clipboard_buf_to_copy_buf:
 	mov	eax,edi
 	sub	eax,ebx
 	sub	eax,6
-.@@111:
-	mov	[ebx],eax
-	test	edx,edx
-	jz	@f
+	mov	[ebx],eax ; size of current string
 
-	test	eax,eax
-	jz	@f
-
-	mov	[ebx+4],word EDITOR_LINE_FLAG_MOFIFIED
-@@:
 	mov	ebx,edi
 	add	edi,6
 	inc	edx
