@@ -403,7 +403,7 @@ dri2_swap_buffers(_EGLDriver *drv, _EGLDisplay *disp, _EGLSurface *draw)
          if (dri2_surf->color_buffers[i].age > 0)
             dri2_surf->color_buffers[i].age++;
 
-#if 1
+#if 0
 
       if ( (dri2_surf->back != NULL) &&
            (dri2_surf->back->bo != NULL))
@@ -559,7 +559,7 @@ dri2_initialize_drm(_EGLDriver *drv, _EGLDisplay *disp)
       return EGL_FALSE;
    }
 
-
+#if 0
    lib = load_library("intel-sna.drv");
    if(lib)
    {
@@ -578,6 +578,7 @@ dri2_initialize_drm(_EGLDriver *drv, _EGLDisplay *disp)
        }
        else return EGL_FALSE;
    }
+#endif
 
    dri2_dpy->fd = fd;
    dri2_dpy->device_name = strdup("drm device"); //dri2_get_device_name_for_fd(dri2_dpy->fd);
