@@ -13,6 +13,7 @@ STRIP = $(PREFIX)strip
 LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 
 PXFLAGS:= --version-script pixlib.ver --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
 SNAFLAGS:= --version-script sna.ver --output-def sna.def
+UXAFLAGS:= --version-script uxa.ver --output-def uxa.def
  
 INCLUDES= -I. -I../libdrm/intel -I../libdrm/include/drm -I./render_program -I../pixman -I../newlib/include
 
@@ -25,7 +26,10 @@ DEFINES:= -DHAS_DEBUG_FULL=0 -DSHOW_BATCH=0 -DDEBUG_DUMP=0
 
 SRC_PIXLIB = 	pixlib.c
 
-SRC_SNA = 	sna/gen3_render.c	\
+SRC_SNA = 				\
+		sna/gen4_common.c	\
+		sna/gen6_common.c	\
+		sna/gen3_render.c	\
 		sna/gen4_render.c	\
 		sna/gen4_vertex.c	\
 		sna/gen5_render.c	\
@@ -70,7 +74,7 @@ endif
 # targets 
 
 all:$(LIBRARY).dll intel-sna.drv
-uxa:$(LIBRARY).dll
+uxa:$(LIBRARY).dll intel-uxa.drv
 ebox:$(LIBRARY).dll
 
 
@@ -86,7 +90,7 @@ intel-sna.drv: $(OBJ_SNA) Makefile
 	mv -f $@ ../../bin
 
 intel-uxa.drv: $(OBJ_UXA) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OBJ_UXA) $(LIBS)
+	$(LD) $(LDFLAGS) $(UXAFLAGS) $(LIBPATH) -o $@ $(OBJ_UXA) $(LIBS)
 	$(STRIP) $@
 	mv -f $@ ../../bin
  

@@ -41,6 +41,7 @@
 //#include "sna_video.h"
 
 #include "brw/brw.h"
+#include "gen4_common.h"
 #include "gen4_render.h"
 #include "gen4_source.h"
 #include "gen4_vertex.h"
@@ -549,9 +550,6 @@ static int gen4_get_rectangles__flush(struct sna *sna,
 	if (!kgem_check_reloc_and_exec(&sna->kgem, 2))
 		return 0;
 
-	if (op->need_magic_ca_pass && sna->render.vbo)
-		return 0;
-
 	if (sna->render.vertex_offset) {
 		gen4_vertex_flush(sna);
 		if (gen4_magic_ca_pass(sna, op))
@@ -747,16 +745,10 @@ gen4_align_vertex(struct sna *sna, const struct sna_composite_op *op)
 {
 	assert(op->floats_per_rect == 3*op->floats_per_vertex);
 	if (op->floats_per_vertex != sna->render_state.gen4.floats_per_vertex) {
-		if (sna->render.vertex_size - sna->render.vertex_used < 2*op->floats_per_rect)
-			gen4_vertex_finish(sna);
-
-		DBG(("aligning vertex: was %d, now %d floats per vertex, %d->%d\n",
+		DBG(("aligning vertex: was %d, now %d floats per vertex\n",
 		     sna->render_state.gen4.floats_per_vertex,
-		     op->floats_per_vertex,
-		     sna->render.vertex_index,
-		     (sna->render.vertex_used + op->floats_per_vertex - 1) / op->floats_per_vertex));
-		sna->render.vertex_index = (sna->render.vertex_used + op->floats_per_vertex - 1) / op->floats_per_vertex;
-		sna->render.vertex_used = sna->render.vertex_index * op->floats_per_vertex;
+		     op->floats_per_vertex));
+		gen4_vertex_align(sna, op);
 		sna->render_state.gen4.floats_per_vertex = op->floats_per_vertex;
 	}
 }
@@ -1314,11 +1306,12 @@ gen4_render_video(struct sna *sna,
 
 	if (!kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL)) {
 		kgem_submit(&sna->kgem);
-		assert(kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL));
+		if (!kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL))
+			return false;
 	}
 
-	gen4_video_bind_surfaces(sna, &tmp);
 	gen4_align_vertex(sna, &tmp);
+	gen4_video_bind_surfaces(sna, &tmp);
 
 	/* Set up the offset for translating from the given region (in screen
 	 * coordinates) to the backing pixmap.
@@ -1549,33 +1542,6 @@ gen4_composite_set_target(struct sna *sna,
 }
 
 static bool
-try_blt(struct sna *sna,
-	PicturePtr dst, PicturePtr src,
-	int width, int height)
-{
-	if (sna->kgem.mode != KGEM_RENDER) {
-		DBG(("%s: already performing BLT\n", __FUNCTION__));
-		return true;
-	}
-
-	if (too_large(width, height)) {
-		DBG(("%s: operation too large for 3D pipe (%d, %d)\n",
-		     __FUNCTION__, width, height));
-		return true;
-	}
-
-	if (too_large(dst->pDrawable->width, dst->pDrawable->height))
-		return true;
-
-	/* The blitter is much faster for solids */
-	if (sna_picture_is_solid(src, NULL))
-		return true;
-
-	/* is the source picture only in cpu memory e.g. a shm pixmap? */
-	return picture_is_cpu(sna, src);
-}
-
-static bool
 check_gradient(PicturePtr picture, bool precise)
 {
 	switch (picture->pSourcePict->type) {
@@ -1803,7 +1769,6 @@ gen4_render_composite(struct sna *sna,
 		return false;
 
 	if (mask == NULL &&
-	    try_blt(sna, dst, src, width, height) &&
 	    sna_blt_composite(sna, op,
 			      src, dst,
 			      src_x, src_y,
@@ -1932,8 +1897,8 @@ gen4_render_composite(struct sna *sna,
 			goto cleanup_mask;
 	}
 
-	gen4_bind_surfaces(sna, tmp);
 	gen4_align_vertex(sna, tmp);
+	gen4_bind_surfaces(sna, tmp);
 	return true;
 
 cleanup_mask:
@@ -1990,51 +1955,6 @@ cleanup_dst:
 
 
 
-static void
-gen4_render_flush(struct sna *sna)
-{
-	gen4_vertex_close(sna);
-
-	assert(sna->render.vb_id == 0);
-	assert(sna->render.vertex_offset == 0);
-}
-
-static void
-discard_vbo(struct sna *sna)
-{
-	kgem_bo_destroy(&sna->kgem, sna->render.vbo);
-	sna->render.vbo = NULL;
-	sna->render.vertices = sna->render.vertex_data;
-	sna->render.vertex_size = ARRAY_SIZE(sna->render.vertex_data);
-	sna->render.vertex_used = 0;
-	sna->render.vertex_index = 0;
-}
-
-static void
-gen4_render_retire(struct kgem *kgem)
-{
-	struct sna *sna;
-
-	sna = container_of(kgem, struct sna, kgem);
-	if (kgem->nbatch == 0 && sna->render.vbo && !kgem_bo_is_busy(sna->render.vbo)) {
-		DBG(("%s: resetting idle vbo\n", __FUNCTION__));
-		sna->render.vertex_used = 0;
-		sna->render.vertex_index = 0;
-	}
-}
-
-static void
-gen4_render_expire(struct kgem *kgem)
-{
-	struct sna *sna;
-
-	sna = container_of(kgem, struct sna, kgem);
-	if (sna->render.vbo && !sna->render.vertex_used) {
-		DBG(("%s: discarding vbo\n", __FUNCTION__));
-		discard_vbo(sna);
-	}
-}
-
 static void gen4_render_reset(struct sna *sna)
 {
 	sna->render_state.gen4.needs_invariant = true;
@@ -2047,8 +1967,7 @@ static void gen4_render_reset(struct sna *sna)
 	sna->render_state.gen4.drawrect_limit = -1;
 	sna->render_state.gen4.surface_table = -1;
 
-	if (sna->render.vbo &&
-	    !kgem_bo_is_mappable(&sna->kgem, sna->render.vbo)) {
+	if (sna->render.vbo && !kgem_bo_can_map(&sna->kgem, sna->render.vbo)) {
 		DBG(("%s: discarding unmappable vbo\n", __FUNCTION__));
 		discard_vbo(sna);
 	}
@@ -2407,8 +2326,8 @@ gen4_blit_tex(struct sna *sna,
 		kgem_submit(&sna->kgem);
 	}
 
-	gen4_bind_surfaces(sna, tmp);
 	gen4_align_vertex(sna, tmp);
+	gen4_bind_surfaces(sna, tmp);
 	return true;
 }
 

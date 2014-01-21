@@ -6,6 +6,7 @@
 #include "sna.h"
 #include "sna_render.h"
 
+void gen4_vertex_align(struct sna *sna, const struct sna_composite_op *op);
 void gen4_vertex_flush(struct sna *sna);
 int gen4_vertex_finish(struct sna *sna);
 void gen4_vertex_close(struct sna *sna);

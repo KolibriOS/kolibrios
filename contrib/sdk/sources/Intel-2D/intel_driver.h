@@ -118,5 +118,6 @@ struct intel_device_info {
 
 const struct intel_device_info *intel_detect_chipset(struct pci_device *pci);
 
+#define hosted() (0)
 
 #endif /* INTEL_DRIVER_H */

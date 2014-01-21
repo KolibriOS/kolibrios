@@ -104,6 +104,7 @@ struct sna_composite_op {
             uint32_t inplace :1;
             uint32_t overwrites:1;
             uint32_t bpp : 6;
+			uint32_t alu : 4;
 
             uint32_t cmd;
             uint32_t br13;
@@ -245,7 +246,7 @@ struct sna_render {
     struct sna_solid_cache {
          struct kgem_bo *cache_bo;
          struct kgem_bo *bo[1024];
-		uint32_t color[1025];
+		uint32_t color[1024];
          int last;
          int size;
          int dirty;
@@ -381,6 +382,7 @@ enum {
 };
 
 struct gen6_render_state {
+	unsigned gt;
 	const struct gt_info *info;
     struct kgem_bo *general_bo;
 
@@ -430,6 +432,7 @@ enum {
 };
 
 struct gen7_render_state {
+	unsigned gt;
 	const struct gt_info *info;
 	struct kgem_bo *general_bo;
 

@@ -448,7 +448,8 @@ struct sna {
     unsigned flags;
 #define SNA_NO_WAIT		0x1
 #define SNA_NO_FLIP		0x2
-#define SNA_TRIPLE_BUFFER	0x4
+#define SNA_NO_VSYNC		0x4
+#define SNA_TRIPLE_BUFFER	0x8
 #define SNA_TEAR_FREE		0x10
 #define SNA_FORCE_SHADOW	0x20
 #define SNA_FLUSH_GTT		0x40
@@ -490,6 +491,7 @@ struct sna {
         uint32_t fill_alu;
     } blt_state;
     union {
+		unsigned gt;
         struct gen3_render_state gen3;
         struct gen4_render_state gen4;
         struct gen5_render_state gen5;
@@ -497,6 +499,8 @@ struct sna {
 		struct gen7_render_state gen7;
     } render_state;
 
+	bool dri_available;
+	bool dri_open;
 
     /* Broken-out options. */
 //    OptionInfoPtr Options;
@@ -611,4 +615,7 @@ sna_transform_equal(const PictTransform *a, const PictTransform *b)
 
 	return memcmp(a, b, sizeof(*a)) == 0;
 }
+
+int intel_get_device_id(struct sna *sna);
+
 #endif /* _SNA_H */

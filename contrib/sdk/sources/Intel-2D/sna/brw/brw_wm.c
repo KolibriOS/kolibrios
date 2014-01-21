@@ -521,7 +521,7 @@ static void brw_wm_projective_st(struct brw_compile *p, int dw,
 	if (p->gen >= 060) {
 		/* First compute 1/z */
 		brw_PLN(p,
-			brw_message_reg(msg),
+			brw_vec8_grf(30, 0),
 			brw_vec1_grf(uv+1, 0),
 			brw_vec8_grf(2, 0));
 
@@ -532,22 +532,22 @@ static void brw_wm_projective_st(struct brw_compile *p, int dw,
 			brw_set_compression_control(p, BRW_COMPRESSION_COMPRESSED);
 		} else
 			brw_math_invert(p, brw_vec8_grf(30, 0), brw_vec8_grf(30, 0));
+
 		brw_PLN(p,
-			brw_vec8_grf(28, 0),
+			brw_vec8_grf(26, 0),
 			brw_vec1_grf(uv, 0),
 			brw_vec8_grf(2, 0));
-		brw_MUL(p,
-			brw_message_reg(msg),
-			brw_vec8_grf(28, 0),
-			brw_vec8_grf(30, 0));
-		msg += dw/8;
-
 		brw_PLN(p,
 			brw_vec8_grf(28, 0),
 			brw_vec1_grf(uv, 0),
 			brw_vec8_grf(4, 0));
+
 		brw_MUL(p,
 			brw_message_reg(msg),
+			brw_vec8_grf(26, 0),
+			brw_vec8_grf(30, 0));
+		brw_MUL(p,
+			brw_message_reg(msg + dw/8),
 			brw_vec8_grf(28, 0),
 			brw_vec8_grf(30, 0));
 	} else {

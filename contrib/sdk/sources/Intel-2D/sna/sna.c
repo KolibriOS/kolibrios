@@ -706,6 +706,19 @@ sna_wait_for_scanline(struct sna *sna,
 
 
 
+int intel_get_device_id(struct sna *sna)
+{
+    struct drm_i915_getparam gp;
+    int devid = 0;
+
+    memset(&gp, 0, sizeof(gp));
+    gp.param = I915_PARAM_CHIPSET_ID;
+    gp.value = &devid;
+
+    if (drmIoctl(sna->scrn, DRM_IOCTL_I915_GETPARAM, &gp))
+        return 0;
+    return devid;
+}
 
 static const struct intel_device_info intel_generic_info = {
 	.gen = -1,
@@ -812,21 +825,6 @@ intel_detect_chipset(struct pci_device *pci)
         return (const struct intel_device_info*)ent->match_data;
     else
         return &intel_generic_info;
-}
-
-int intel_get_device_id(int fd)
-{
-	struct drm_i915_getparam gp;
-	int devid = 0;
-
-	memset(&gp, 0, sizeof(gp));
-	gp.param = I915_PARAM_CHIPSET_ID;
-	gp.value = &devid;
-
-	if (drmIoctl(fd, DRM_IOCTL_I915_GETPARAM, &gp))
-		return 0;
-
-	return devid;
 }
 
 int drmIoctl(int fd, unsigned long request, void *arg)

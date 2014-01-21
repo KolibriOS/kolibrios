@@ -42,6 +42,7 @@
 
 #include "brw/brw.h"
 #include "gen5_render.h"
+#include "gen4_common.h"
 #include "gen4_source.h"
 #include "gen4_vertex.h"
 
@@ -719,16 +720,10 @@ gen5_align_vertex(struct sna *sna, const struct sna_composite_op *op)
 {
 	assert(op->floats_per_rect == 3*op->floats_per_vertex);
 	if (op->floats_per_vertex != sna->render_state.gen5.floats_per_vertex) {
-		if (sna->render.vertex_size - sna->render.vertex_used < 2*op->floats_per_rect)
-			gen4_vertex_finish(sna);
-
-		DBG(("aligning vertex: was %d, now %d floats per vertex, %d->%d\n",
+		DBG(("aligning vertex: was %d, now %d floats per vertex\n",
 		     sna->render_state.gen5.floats_per_vertex,
-		     op->floats_per_vertex,
-		     sna->render.vertex_index,
-		     (sna->render.vertex_used + op->floats_per_vertex - 1) / op->floats_per_vertex));
-		sna->render.vertex_index = (sna->render.vertex_used + op->floats_per_vertex - 1) / op->floats_per_vertex;
-		sna->render.vertex_used = sna->render.vertex_index * op->floats_per_vertex;
+		     op->floats_per_vertex));
+		gen4_vertex_align(sna, op);
 		sna->render_state.gen5.floats_per_vertex = op->floats_per_vertex;
 	}
 }
@@ -942,10 +937,14 @@ gen5_emit_vertex_elements(struct sna *sna,
 inline static void
 gen5_emit_pipe_flush(struct sna *sna)
 {
+#if 0
 	OUT_BATCH(GEN5_PIPE_CONTROL | (4 - 2));
 	OUT_BATCH(GEN5_PIPE_CONTROL_WC_FLUSH);
 	OUT_BATCH(0);
 	OUT_BATCH(0);
+#else
+	OUT_BATCH(MI_FLUSH | MI_INHIBIT_RENDER_CACHE_FLUSH);
+#endif
 }
 
 static void
@@ -1311,11 +1310,12 @@ gen5_render_video(struct sna *sna,
 
 	if (!kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL)) {
 		kgem_submit(&sna->kgem);
-		assert(kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL));
+		if (!kgem_check_bo(&sna->kgem, tmp.dst.bo, frame->bo, NULL))
+			return false;
 	}
 
-	gen5_video_bind_surfaces(sna, &tmp);
 	gen5_align_vertex(sna, &tmp);
+	gen5_video_bind_surfaces(sna, &tmp);
 
 	/* Set up the offset for translating from the given region (in screen
 	 * coordinates) to the backing pixmap.
@@ -1452,7 +1452,6 @@ gen5_render_composite(struct sna *sna,
 	}
 
 	if (mask == NULL &&
-	    try_blt(sna, dst, src, width, height) &&
 	    sna_blt_composite(sna, op,
 			      src, dst,
 			      src_x, src_y,
@@ -1577,8 +1576,8 @@ gen5_render_composite(struct sna *sna,
 			goto cleanup_mask;
 	}
 
-	gen5_bind_surfaces(sna, tmp);
 	gen5_align_vertex(sna, tmp);
+	gen5_bind_surfaces(sna, tmp);
 	return true;
 
 cleanup_mask:
@@ -1806,8 +1805,8 @@ gen5_render_composite_spans(struct sna *sna,
 			goto cleanup_src;
 	}
 
-	gen5_bind_surfaces(sna, &tmp->base);
 	gen5_align_vertex(sna, &tmp->base);
+	gen5_bind_surfaces(sna, &tmp->base);
 	return true;
 
 cleanup_src:
@@ -1952,7 +1951,10 @@ fallback_blt:
 		kgem_submit(&sna->kgem);
 		if (!kgem_check_bo(&sna->kgem, dst_bo, src_bo, NULL)) {
 			DBG(("%s: aperture check failed\n", __FUNCTION__));
-			goto fallback_tiled_src;
+			kgem_bo_destroy(&sna->kgem, tmp.src.bo);
+			if (tmp.redirect.real_bo)
+				kgem_bo_destroy(&sna->kgem, tmp.dst.bo);
+			goto fallback_blt;
 		}
 	}
 
@@ -1963,8 +1965,8 @@ fallback_blt:
 	src_dx += tmp.src.offset[0];
 	src_dy += tmp.src.offset[1];
 
-	gen5_copy_bind_surfaces(sna, &tmp);
 	gen5_align_vertex(sna, &tmp);
+	gen5_copy_bind_surfaces(sna, &tmp);
 
 	do {
 		int n_this_time;
@@ -1999,8 +2001,6 @@ fallback_blt:
 	kgem_bo_destroy(&sna->kgem, tmp.src.bo);
 	return true;
 
-fallback_tiled_src:
-	kgem_bo_destroy(&sna->kgem, tmp.src.bo);
 fallback_tiled_dst:
 	if (tmp.redirect.real_bo)
 		kgem_bo_destroy(&sna->kgem, tmp.dst.bo);
@@ -2021,16 +2021,6 @@ fallback_tiled:
 }
 
 #endif
-
-static void
-gen5_render_flush(struct sna *sna)
-{
-	gen4_vertex_close(sna);
-
-	assert(sna->render.vb_id == 0);
-	assert(sna->render.vertex_offset == 0);
-}
-
 static void
 gen5_render_context_switch(struct kgem *kgem,
 			   int new_mode)
@@ -2060,42 +2050,6 @@ gen5_render_context_switch(struct kgem *kgem,
 	}
 }
 
-static void
-discard_vbo(struct sna *sna)
-{
-	kgem_bo_destroy(&sna->kgem, sna->render.vbo);
-	sna->render.vbo = NULL;
-	sna->render.vertices = sna->render.vertex_data;
-	sna->render.vertex_size = ARRAY_SIZE(sna->render.vertex_data);
-	sna->render.vertex_used = 0;
-	sna->render.vertex_index = 0;
-}
-
-static void
-gen5_render_retire(struct kgem *kgem)
-{
-	struct sna *sna;
-
-	sna = container_of(kgem, struct sna, kgem);
-	if (kgem->nbatch == 0 && sna->render.vbo && !kgem_bo_is_busy(sna->render.vbo)) {
-		DBG(("%s: resetting idle vbo\n", __FUNCTION__));
-		sna->render.vertex_used = 0;
-		sna->render.vertex_index = 0;
-	}
-}
-
-static void
-gen5_render_expire(struct kgem *kgem)
-{
-	struct sna *sna;
-
-	sna = container_of(kgem, struct sna, kgem);
-	if (sna->render.vbo && !sna->render.vertex_used) {
-		DBG(("%s: discarding vbo\n", __FUNCTION__));
-		discard_vbo(sna);
-	}
-}
-
 static void gen5_render_reset(struct sna *sna)
 {
 	sna->render_state.gen5.needs_invariant = true;
@@ -2107,8 +2061,7 @@ static void gen5_render_reset(struct sna *sna)
 	sna->render_state.gen5.drawrect_limit = -1;
 	sna->render_state.gen5.surface_table = -1;
 
-	if (sna->render.vbo &&
-	    !kgem_bo_is_mappable(&sna->kgem, sna->render.vbo)) {
+	if (sna->render.vbo && !kgem_bo_can_map(&sna->kgem, sna->render.vbo)) {
 		DBG(("%s: discarding unmappable vbo\n", __FUNCTION__));
 		discard_vbo(sna);
 	}
@@ -2351,8 +2304,8 @@ const char *gen5_render_init(struct sna *sna, const char *backend)
 		return backend;
 
 	sna->kgem.context_switch = gen5_render_context_switch;
-	sna->kgem.retire = gen5_render_retire;
-	sna->kgem.expire = gen5_render_expire;
+	sna->kgem.retire = gen4_render_retire;
+	sna->kgem.expire = gen4_render_expire;
 
 #if 0
 #if !NO_COMPOSITE
@@ -2362,7 +2315,7 @@ const char *gen5_render_init(struct sna *sna, const char *backend)
 #if !NO_COMPOSITE_SPANS
 	sna->render.check_composite_spans = gen5_check_composite_spans;
 	sna->render.composite_spans = gen5_render_composite_spans;
-	if (sna->PciInfo->device_id == 0x0044)
+	if (intel_get_device_id(sna->scrn) == 0x0044)
 		sna->render.prefer_gpu |= PREFER_GPU_SPANS;
 #endif
 	sna->render.video = gen5_render_video;
@@ -2378,7 +2331,7 @@ const char *gen5_render_init(struct sna *sna, const char *backend)
     sna->render.blit_tex = gen5_blit_tex;
     sna->render.caps = HW_BIT_BLIT | HW_TEX_BLIT;
 
-	sna->render.flush = gen5_render_flush;
+	sna->render.flush = gen4_render_flush;
 	sna->render.reset = gen5_render_reset;
 	sna->render.fini = gen5_render_fini;
 
@@ -2466,8 +2419,8 @@ gen5_blit_tex(struct sna *sna,
 		kgem_submit(&sna->kgem);
 	}
 
-	gen5_bind_surfaces(sna, tmp);
 	gen5_align_vertex(sna, tmp);
-	return true;
+	gen5_bind_surfaces(sna, tmp);
 
+	return true;
 }

@@ -70,10 +70,10 @@ static void i830_done_composite(PixmapPtr dest)
 //	intel_debug_flush(scrn);
 }
 
-int sna_bitmap_from_handle(bitmap_t *bitmap, uint32_t handle)
+int uxa_bitmap_from_handle(bitmap_t *bitmap, uint32_t handle)
 {
-	struct intel_screen_private *intel = intel_get_screen_private();
-	drm_intel_bo *bo;
+    struct intel_screen_private *intel = intel_get_screen_private();
+    drm_intel_bo *bo;
     surface_t    *sf;
     unsigned int size;
 
@@ -118,14 +118,14 @@ err_1:
     return -1;
 };
 
-void sna_set_bo_handle(bitmap_t *bitmap, int handle)
+void uxa_set_bo_handle(bitmap_t *bitmap, int handle)
 {
-    sna_bitmap_from_handle(bitmap, handle);
+    uxa_bitmap_from_handle(bitmap, handle);
 };
 
 
-int sna_blit_tex(bitmap_t *bitmap, bool scale, int dst_x, int dst_y,
-                  int w, int h, int src_x, int src_y)
+int uxa_blit_tex(bitmap_t *bitmap, int scale, int vsync,
+                 int dst_x, int dst_y,int w, int h, int src_x, int src_y)
 {
 //    DBG("%s\n", __FUNCTION__);
 

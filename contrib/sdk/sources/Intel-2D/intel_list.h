@@ -261,7 +261,7 @@ static inline void list_move_tail(struct list *list, struct list *head)
  * @return True if the list contains one or more elements or False otherwise.
  */
 static inline bool
-list_is_empty(struct list *head)
+list_is_empty(const struct list *head)
 {
     return head->next == head;
 }
