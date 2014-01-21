@@ -1,7 +1,6 @@
 #ifndef __KOS_32_SYS_H__
 #define __KOS_32_SYS_H__
 
-
 #include <newlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -11,6 +10,8 @@
 //#else
 //  #define DBG(format,...)
 //#endif
+
+#define TYPE_3_BORDER_WIDTH 5
 
 typedef  unsigned int color_t;
 
@@ -61,6 +62,18 @@ void DefineButton(uint32_t x_w, uint32_t y_h, uint32_t id, uint32_t color)
 };
 
 static inline
+uint32_t get_skin_height(void)
+{
+    uint32_t height;
+
+    __asm__ __volatile__(
+    "int $0x40 \n\t"
+    :"=a"(height)
+    :"a"(48),"b"(4));
+    return height;
+}
+
+static inline
 void BeginDraw(void)
 {
     __asm__ __volatile__(
@@ -74,15 +87,15 @@ void EndDraw(void)
     "int $0x40" ::"a"(12),"b"(2));
 };
 
-static inline void DrawWindow(int x, int y, int w, int h, char *name,
+static inline void DrawWindow(int x, int y, int w, int h, const char *name,
                        color_t workcolor, uint32_t style)
 {
 
     __asm__ __volatile__(
     "int $0x40"
     ::"a"(0),
-      "b"((x << 16) | (w & 0xFFFF)),
-      "c"((y << 16) | (h & 0xFFFF)),
+      "b"((x << 16) | ((w-1) & 0xFFFF)),
+      "c"((y << 16) | ((h-1) & 0xFFFF)),
       "d"((style << 24) | (workcolor & 0xFFFFFF)),
       "D"(name));
 };
@@ -156,6 +169,16 @@ static inline uint32_t check_os_event()
     "int $0x40"
     :"=a"(val)
     :"a"(11));
+    return val;
+};
+
+static inline uint32_t get_os_event()
+{
+    uint32_t val;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(val)
+    :"a"(10));
     return val;
 };
 
