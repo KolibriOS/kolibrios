@@ -94,10 +94,11 @@ static inline void DrawWindow(int x, int y, int w, int h, const char *name,
     __asm__ __volatile__(
     "int $0x40"
     ::"a"(0),
-      "b"((x << 16) | ((w-1) & 0xFFFF)),
-      "c"((y << 16) | ((h-1) & 0xFFFF)),
-      "d"((style << 24) | (workcolor & 0xFFFFFF)),
-      "D"(name));
+     "b"((x << 16) | ((w-1) & 0xFFFF)),
+     "c"((y << 16) | ((h-1) & 0xFFFF)),
+     "d"((style << 24) | (workcolor & 0xFFFFFF)),
+     "D"(name),
+     "S"(0));
 };
 
 static inline
