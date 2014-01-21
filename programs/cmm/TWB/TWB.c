@@ -217,6 +217,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	link_color_active = 0xFF0000;
 	bg_color = 0xFFFFFF;
 	DrawBuf.Fill(bg_color);
+	PageLinks.Clear();
 	strcpy(#header, #version);
 	stroka = -list.first;
 	stolbec = 0;
