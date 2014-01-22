@@ -1,6 +1,3 @@
-#include "..\lib\draw_buf.h"
-#include "..\lib\list_box.h"
-#include "..\lib\cursor.h"
 #include "..\TWB\links.h"
 
 int	downloader_id;
@@ -25,7 +22,6 @@ struct TWebBrowser {
 	DrawBufer DrawBuf;
 	void GetNewUrl();
 	void ReadHtml();
-	void ShowPage();
 	void ParseHTML();
 	void WhatTextStyle();
 	void DrawPage();
@@ -175,38 +171,12 @@ void TWebBrowser::ReadHtml(byte encoding)
 }
 
 
-void TWebBrowser::ShowPage()
-{
-	address_box.size = address_box.pos = strlen(#editURL);
-	address_box.offset=0;
-	edit_box_draw stdcall(#address_box);
-	PageLinks.Clear();
-
-	if (!filesize)
-	{
-		DrawBar(list.x, list.y, list.w+scroll_wv.size_x+1, list.h, 0xFFFFFF); //fill all
-		if (GetProcessSlot(downloader_id)<>0) WriteText(list.x + 10, list.y + 18, 0x80, 0, "Loading...");
-		else
-		{
-			WriteText(list.x + 10, list.y + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
-			if (!strncmp(#URL,"http:",5)) WriteText(list.x + 10, list.y + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
-		}
-		//return;
-	}
-	else
-		ParseHTML(buf);
-
-	if (!header) strcpy(#header, #version);
-	if (!strcmp(#version, #header)) DrawTitle(#header);
-}
-
-
-
-void TWebBrowser::ParseHTML(dword bword){
+void TWebBrowser::ParseHTML(dword bufpos){
 	word bukva[2];
 	int j, perenos_num;
 	byte ignor_param;
 	char temp[768];
+	dword bufstart = bufpos;
 	
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
@@ -230,9 +200,9 @@ void TWebBrowser::ParseHTML(dword bword){
 		if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	}
 	
-	for ( ; buf+filesize > bword; bword++;)
+	for ( ; bufstart+filesize > bufpos; bufpos++;)
 	{
-		bukva = ESBYTE[bword];
+		bukva = ESBYTE[bufpos];
 		if (ignor_text) && (bukva!='<') continue;
 		if (condition_text_active) && (condition_text_val != condition_href) && (bukva!='<') continue;
 		switch (bukva)
@@ -256,49 +226,49 @@ void TWebBrowser::ParseHTML(dword bword){
 		case '=': //quoted printable
 			if (strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
 
-			temp[0] = ESBYTE[bword+1];
-			temp[1] = ESBYTE[bword+2];
+			temp[0] = ESBYTE[bufpos+1];
+			temp[1] = ESBYTE[bufpos+2];
 			temp[2] = '\0';
 			if (bukva = Hex2Symb(#temp))
 			{
-				bword+=2;
+				bufpos+=2;
 				goto DEFAULT_MARK;
 			}
 			break;
 			
 		case '&': //&nbsp; and so on
-			bword++;
+			bufpos++;
 			tag=0;
-			for (j=0; (ESBYTE[bword]<>';') && (j<7);   j++, bword++;)
+			for (j=0; (ESBYTE[bufpos]<>';') && (j<7);   j++, bufpos++;)
 			{
-				bukva = ESBYTE[bword];
+				bukva = ESBYTE[bufpos];
 				chrcat(#tag, bukva);
 			}
 			if (bukva = GetUnicodeSymbol()) goto DEFAULT_MARK;
 			break;
 		case '<':
-			bword++; //промотаем символ <
+			bufpos++; //промотаем символ <
 			tag = parametr = tagparam = ignor_param = NULL;
-			if (ESBYTE[bword] == '!') //фильтрация внутри <!-- -->, дерзко
+			if (ESBYTE[bufpos] == '!') //фильтрация внутри <!-- -->, дерзко
 			{
-				bword++;
-				if (ESBYTE[bword] == '-')
+				bufpos++;
+				if (ESBYTE[bufpos] == '-')
 				{
 				HH_:
 					do
 					{
-						bword++;
-						if (buf + filesize <= bword) break 2;
+						bufpos++;
+						if (bufstart + filesize <= bufpos) break 2;
 					}
-					while (ESBYTE[bword] <>'-');
+					while (ESBYTE[bufpos] <>'-');
 					
-					bword++;
-					if (ESBYTE[bword] <>'-') goto HH_;
+					bufpos++;
+					if (ESBYTE[bufpos] <>'-') goto HH_;
 				}
 			}
-			while (ESBYTE[bword] !='>') && (bword < buf + filesize) //получаем тег и его параметры
+			while (ESBYTE[bufpos] !='>') && (bufpos < bufstart + filesize) //получаем тег и его параметры
 			{
-				bukva = ESBYTE[bword];
+				bukva = ESBYTE[bufpos];
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
 				if (!ignor_param) && (bukva <>' ')
 				{
@@ -309,7 +279,7 @@ void TWebBrowser::ParseHTML(dword bword){
 					ignor_param = true;
 					if (!ignor_text) && (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
 				}
-				bword++;
+				bufpos++;
 			}
 			strlwr(#tag);
 			strlwr(#tagparam);
@@ -376,7 +346,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	{
 		anchor=NULL;
 		list.first=anchor_line_num;
-		ParseHTML(buf);
+		ParseHTML(bufstart);
 	}
 	DrawScroller();
 }
@@ -649,6 +619,7 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 
 	scroll_wv.all_redraw=1;
 	scroll_wv.start_x = list.x + list.w;
+	scroll_wv.start_y = list.y;
 	scroll_wv.size_y=list.h;
 
 	scrollbar_v_draw(#scroll_wv);

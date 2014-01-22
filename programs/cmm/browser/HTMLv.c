@@ -16,6 +16,10 @@
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
+#include "..\lib\draw_buf.h"
+#include "..\lib\list_box.h"
+#include "..\lib\cursor.h"
+
 //*.obj libraries
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\libio_lib.h"
@@ -61,9 +65,7 @@ void main()
 	if (load_dll2(libio, #libio_init,1)!=0) debug("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Error: library doesn't exists - libimg");
 	
-	if (!URL) strcpy(#URL, "/sys/index.htm");
-	strcpy(#editURL, #URL);
-	
+	if (!URL) strcpy(#URL, "/sys/index.htm");	
 	CursorPointer.Load(#CursorFile);
 	Form.width=WIN_W;
 	Form.height=WIN_H;
@@ -211,7 +213,7 @@ void Draw_Window()
 	DrawRectangle(206,15,Form.cwidth-205-50,16,0xE4ECF3);
 
 	SetElementSizes();
-	WB1.ShowPage();
+	ShowPage();
 
 	DefineButton(scroll_wv.start_x+1, scroll_wv.start_y+1, 16, 16, BTN_UP+BT_HIDE, 0xE4DFE1);
 	DefineButton(scroll_wv.start_x+1, scroll_wv.start_y+scroll_wv.size_y-18, 16, 16, BTN_DOWN+BT_HIDE, 0xE4DFE1);
@@ -351,7 +353,7 @@ void ProcessLinks(int id)
 		}
 		if (URL[1]!='-') && (URL[1]!='+') condition_href = atoi(#URL+1);
 		strcpy(#URL, BrowserHistory.CurrentUrl());
-		WB1.ShowPage();
+		ShowPage();
 		return;
 	}
 	//#1
@@ -360,7 +362,7 @@ void ProcessLinks(int id)
 		strcpy(#anchor, #URL+strrchr(#URL, '#'));		
 		strcpy(#URL, BrowserHistory.CurrentUrl());
 		WB1.list.first=WB1.list.count-WB1.list.visible;
-		WB1.ShowPage();
+		ShowPage();
 		return;
 	}
 	//liner.ru#1
@@ -412,9 +414,33 @@ void OpenPage()
 	}
 	WB1.list.first = WB1.list.count =0;
 	WB1.ReadHtml(_WIN);
-	WB1.ShowPage();
+	ShowPage();
 }
 
+void ShowPage()
+{
+	address_box.size = address_box.pos = strlen(#editURL);
+	address_box.offset=0;
+	edit_box_draw stdcall(#address_box);
+
+	if (!filesize)
+	{
+		PageLinks.Clear();
+		DrawBar(WB1.list.x, WB1.list.y, WB1.list.w+scroll_wv.size_x+1, WB1.list.h, 0xFFFFFF); //fill all
+		if (GetProcessSlot(downloader_id)<>0) WriteText(WB1.list.x + 10, WB1.list.y + 18, 0x80, 0, "Loading...");
+		else
+		{
+			WriteText(WB1.list.x + 10, WB1.list.y + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
+			if (!strncmp(#URL,"http:",5)) WriteText(WB1.list.x + 10, WB1.list.y + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
+		}
+		//return;
+	}
+	else
+		WB1.ParseHTML(buf);
+
+	if (!header) strcpy(#header, #version);
+	if (!strcmp(#version, #header)) DrawTitle(#header);
+}
 
 
 stop:
