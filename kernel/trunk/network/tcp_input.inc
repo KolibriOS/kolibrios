@@ -43,11 +43,7 @@ TCP_input:
         push    ebx ecx esi edi         ; mind the order
         mov     esi, esp
 
-        pushf
-        cli
         add_to_queue TCP_queue, TCP_QUEUE_SIZE, sizeof.TCP_queue_entry, .fail
-        popf
-
         add     esp, sizeof.TCP_queue_entry
 
         call    NET_ptr_to_num4

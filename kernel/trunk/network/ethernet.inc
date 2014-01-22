@@ -86,11 +86,7 @@ ETH_input:
         push    ebx
         mov     esi, esp
 
-        pushf
-        cli
         add_to_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .fail
-        popf
-
         add     esp, sizeof.ETH_queue_entry
 
         xor     edx, edx
