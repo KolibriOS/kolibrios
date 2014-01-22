@@ -98,10 +98,9 @@ ETH_input:
         ret
 
   .fail:
-        popf
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH incoming queue is full, discarding packet!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "ETH incoming queue is full, discarding packet!\n"
 
-        add     esp, sizeof.ETH_queue_entry - 8
+        pop     ebx
         call    NET_packet_free
         add     esp, 4
 
