@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netcfg.asm - Network driver control center for KolibriOS       ;;
@@ -249,12 +249,14 @@ Start_Enum:
 @@:     mcall   62                      ; Read it
         mov     [PCI_IRQ], al           ; Save it
 
-        cmp     byte [PCI_Class], 2     ; network controller
+        cmp     [PCI_Class], 2          ; network controller
         je      @f
 
-        cmp     byte [PCI_Class], 6     ; bridge type device
+        cmp     [PCI_Class], 6          ; bridge type device
         jne     nextDev
-        cmp     byte [PCI_SubClass], 0x80 ; PCI-other bridge (for nvidia chipset)
+        cmp     [PCI_SubClass], 0x80    ; PCI-other bridge (for nvidia chipset)
+        jne     nextDev
+        cmp     [PCI_Vendor], 0x10DE    ; nvidia
         jne     nextDev
        @@:
 
