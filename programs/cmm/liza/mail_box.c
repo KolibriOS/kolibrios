@@ -5,9 +5,6 @@
 int status_bar_h = 15;
 
 scroll_bar scroll1 = { 17,200,210, LIST_INFO_H-3,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-scroll_bar scroll2 = { 17,200,210, LIST_INFO_H,18,0,115,15,0,0xCCCccc,0xD2CED0,0x555555,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
-
-
 
 char *listbuffer;
 char *listpointer;
@@ -28,8 +25,7 @@ enum {
 	CLOSE_CHANGE_CHARSET
 };
 
-void MailBoxNetworkProcess()
-{
+void MailBoxNetworkProcess() {
 	int load_persent;
 	if (aim) switch(aim)
 	{
@@ -93,7 +89,7 @@ void MailBoxNetworkProcess()
 
 		case SEND_RETR:
 				from = to = date = subj = cur_charset = NULL;
-				letter_view.ClearList();
+				WB1.list.ClearList();
 				DrawMailBox();
 				request_len = GetRequest("RETR", itoa(mail_list.current+1));
 				if (Send(socketnum, #request, request_len, 0) == 0xffffffff)
@@ -137,8 +133,7 @@ void MailBoxNetworkProcess()
 }
 
 
-void MailBoxLoop()
-{
+void MailBoxLoop() {
 	int key, id;
 	mouse m;
 	int panels_drag=0, clicked_list=0;
@@ -163,17 +158,19 @@ void MailBoxLoop()
 				
 				if (!m.lkm) panels_drag=0;
 				if (m.lkm) && (m.y>mail_list.y+mail_list.h-1) && (m.y<mail_list.y+mail_list.h+6)
-				&& (!scroll1.delta2) && (!scroll2.delta2) panels_drag = 1;
+				&& (!scroll1.delta2) && (!scroll_wv.delta2) panels_drag = 1;
 				if (panels_drag)
 				{
-					if (m.y<mail_list.y+mail_list.min_h) || (m.y>Form.cheight-letter_view.min_h-status_bar_h-LIST_INFO_H) break;
+					if (m.y<mail_list.y+mail_list.min_h) || (m.y>Form.cheight-WB1.list.min_h-status_bar_h-LIST_INFO_H) break;
 					mail_list.h = m.y - mail_list.y-2;
 					DrawMailBox();
 					break;
 				}
 
+				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
+
 				if (!mail_list.count) break;
-				if (!panels_drag) { scrollbar_v_mouse (#scroll1); scrollbar_v_mouse (#scroll2); }
+				if (!panels_drag) { scrollbar_v_mouse (#scroll1); scrollbar_v_mouse (#scroll_wv); }
 				
 				if (mail_list.first <> scroll1.position)
 				{
@@ -181,9 +178,9 @@ void MailBoxLoop()
 					DrawMailList();
 					break;
 				};
-				if (letter_view.first <> scroll2.position)
+				if (WB1.list.first <> scroll_wv.position)
 				{
-					letter_view.first = scroll2.position;
+					WB1.list.first = scroll_wv.position;
 					DrawLetter();
 					break;
 				};
@@ -194,7 +191,7 @@ void MailBoxLoop()
 				}
 				else
 				{
-					if (letter_view.MouseScroll(m.vert)) DrawLetter();
+					if (WB1.list.MouseScroll(m.vert)) DrawLetter();
 				}
 				if (m.lkm) && (mail_list.MouseOver(m.x, m.y)) && (!clicked_list) clicked_list=1;
 				if (!m.lkm) && (clicked_list) if (mail_list.ProcessMouse(m.x, m.y)) 
@@ -258,9 +255,9 @@ void MailBoxLoop()
 				break;
 			case evReDraw: _MB_DRAW:
 				if !(DefineWindow(MAILBOX_HEADER)) break;
-				scroll1.bckg_col = scroll2.bckg_col = 0xBBBbbb;
-				scroll1.frnt_col = scroll2.frnt_col = sc.work;
-				scroll1.line_col = scroll2.line_col = sc.work_graph;
+				scroll1.bckg_col = scroll_wv.bckg_col = 0xBBBbbb;
+				scroll1.frnt_col = scroll_wv.frnt_col = sc.work;
+				scroll1.line_col = scroll_wv.line_col = sc.work_graph;
 				DrawToolbar();
 				DrawMailBox();
 
@@ -276,13 +273,13 @@ void DrawMailBox()
 {
 	DrawMailList();
 	DrawLetterInfo();
+	InitTWB();
 	DrawLetter();
 	DrawStatusBar();
 }
 
 
-void DrawToolbar()
-{
+void DrawToolbar() {
 	#define BUT_Y 7
 	#define BUT_H 22
 	#define BUT_W 74
@@ -299,8 +296,7 @@ void DrawToolbar()
 	DrawBar(0, mail_list.y-1, mail_list.w,1, 0xf0f0f0);
 }
 
-void DrawMailList()
-{
+void DrawMailList() {
 	int i, on_y, on_x, direction;
 	dword sel_col;
 	mail_list.visible = mail_list.h / mail_list.line_h;
@@ -325,8 +321,7 @@ void DrawMailList()
 	DrawScroller1();
 }
 
-void DrawLetterInfo()
-{
+void DrawLetterInfo() {
 	int lt_y = mail_list.y+mail_list.h;
 	DrawBar(0, lt_y, mail_list.w, 1, sc.work_graph);
 	DrawBar(0, lt_y+1, Form.cwidth, 1, LBUMP);
@@ -346,40 +341,30 @@ void DrawLetterInfo()
 	WriteText (45, lt_y+44, 0x80, sc.work_text, #subj);
 }
 
-void DrawLetter()
-{
-	int i=0;
-	dword cur_line, next_line, line_text;
-	cur_line = mdata;
 
-	letter_view.SetSizes(0, mail_list.y+mail_list.h+LIST_INFO_H+1, Form.cwidth - scroll2.size_x - 1, 
+void InitTWB() {
+	WB1.list.SetSizes(0, mail_list.y+mail_list.h+LIST_INFO_H+1, Form.cwidth - scroll_wv.size_x - 1, 
 		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 60, 12);
+	WB1.list.column_max = WB1.list.w - 30 / 6;
+	WB1.list.visible = WB1.list.h / WB1.list.line_h;
+	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h, WB1.list.line_h);
 
-	if (mailstart) && (!aim)
-	{
-		for ( ; i < letter_view.first; i++) cur_line = GetNextLine(cur_line);
-
-		for (i=0; i < letter_view.visible; i++)
-		{
-			next_line = GetNextLine(cur_line);
-			line_text = CopyBetweenOffsets(cur_line, next_line);
-			cur_line = next_line;
-			if (cur_line >= mailend) || (cur_line==1) break;
-			DrawBar(letter_view.x, i*letter_view.line_h + letter_view.y, letter_view.w, letter_view.line_h, 0xFFFfff);
-			if (line_text) { WriteText(letter_view.x+5, i*letter_view.line_h+letter_view.y+3, 0x80, 0, line_text); free(line_text);}
-		}
-	}
-	DrawBar(letter_view.x, i*letter_view.line_h + letter_view.y, letter_view.w, -i*letter_view.line_h + letter_view.h-1, 0xFFFfff);
-	DrawBar(letter_view.x, letter_view.y + letter_view.h-1, letter_view.w, 1, sc.work_graph);
-	DrawScroller2();
+	strcpy(#URL, "/sys/yavu.htm");
+	strcpy(#header, #version);
+	pre_text = 0;
+	WB1.list.first = WB1.list.count = 0;
+	WB1.ReadHtml(_WIN);
 }
 
-void DrawScroller1()
-{
+void DrawLetter() {
+	WB1.ParseHTML(buf);
+}
+
+
+void DrawScroller1() {
 	scroll1.max_area = mail_list.count;
 	scroll1.cur_area = mail_list.visible;
 	scroll1.position = mail_list.first;
-
 	scroll1.all_redraw=1;
 	scroll1.start_x = mail_list.x + mail_list.w;
 	scroll1.start_y = mail_list.y - 3;
@@ -387,23 +372,9 @@ void DrawScroller1()
 	scrollbar_v_draw(#scroll1);
 }
 
-void DrawScroller2()
-{
-	scroll2.max_area = letter_view.count;
-	scroll2.cur_area = letter_view.visible;
-	scroll2.position = letter_view.first;
-
-	scroll2.all_redraw=1;
-	scroll2.start_x = letter_view.x + letter_view.w;
-	scroll2.start_y = letter_view.y - 3;
-	scroll2.size_y = letter_view.h + 3;
-	scrollbar_v_draw(#scroll2);
-}
 
 
-
-void DrawStatusBar()
-{
+void DrawStatusBar() {
 	int st_y = Form.cheight -status_bar_h;
 	DrawBar(0, st_y, Form.cwidth, status_bar_h, sc.work);
 	if (aim) {
@@ -415,23 +386,20 @@ void DrawStatusBar()
 
 
 
-void SetMailBoxStatus(dword percent1, text1)
-{
+void SetMailBoxStatus(dword percent1, text1) {
 	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, sc.work, 0xC3C3C3, 0x54B1D6, sc.work_text, percent1, text1);
 	cur_st_percent = percent1;
 	cur_st_text = text1;
 }
 
 
-void StopLoading()
-{
+void StopLoading() {
 	aim = NULL;
 	mailstart = free(mailstart);
 	to = from = date = subj = cur_charset = NULL;
 }
 
-int GetLetterSize_(int number)
-{
+int GetLetterSize_(int number) {
    char search_num[24];
    char mailsize1[24];
    strcpy(#search_num, "\x0a");       // 0x0d, 0x0a

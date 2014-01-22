@@ -1,7 +1,7 @@
 //Leency & SoUrcerer, LGPL
 
 //libraries
-#define MEMSIZE 0xA0000
+#define MEMSIZE 0x100000
 #include "../lib/kolibri.h"
 #include "../lib/strings.h"
 #include "../lib/mem.h"
@@ -11,6 +11,8 @@
 #include "../lib/file_system.h"
 #include "../lib/list_box.h"
 #include "../lib/socket_new.h"
+#include "../lib/draw_buf.h"
+#include "../lib/cursor.h"
 //*.obj libraries
 #include "../lib/lib.obj/box_lib.h"
 #include "../lib/lib.obj/network.h"
@@ -77,34 +79,31 @@ char immbuffer[BUFFERSIZE];
 llist mail_list;
 llist letter_view;
 
+char version[]=" WebView 0.1";
+#include "..\TWB\TWB.c"
+
 #include "settings.c"
 #include "login.c"
 #include "letter_attr.c"
 #include "mail_box.c"
 #include "parselist.c"
 
-
-
-/* TWB integration */
-char version[]=" WebView 0.1";
-#include "../TWB/TWB.c"
-
-void main()
-{
+void main() {
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify("Error while loading library /rd/1/lib/box_lib.obj");
-	if (load_dll2(network_lib, #network_lib_init,0)!=0)	notify("Error while loading library /rd/1/lib/network.obj");
-	if (load_dll2(netcode_lib, #base64_encode,0)!=0)	notify("Error while loading library /rd/1/lib/netcode.obj");
-	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	      { notify("Error while loading library /rd/1/lib/iconv.obj"); use_iconv=2; }
-
+	CursorPointer.Load(#CursorFile);
+	if (load_dll2(boxlib, #box_lib_init,0)!=0)	        notify("Error while loading library - box_lib.obj");
+	if (load_dll2(network_lib, #network_lib_init,0)!=0)	notify("Error while loading library - network.obj");
+	if (load_dll2(netcode_lib, #base64_encode,0)!=0)	notify("Error while loading library - netcode.obj");
+	if (load_dll2(iconv_lib, #iconv_open,0)!=0)	      { notify("Error while loading library - iconv.obj"); use_iconv=2; }
+	if (load_dll2(libio, #libio_init,1)!=0)             notify("Error while loading library - libio.obj");
+	if (load_dll2(libimg, #libimg_init,1)!=0)           notify("Error while loading library - libimg.obj");
 	OpenMailDat();
 	SetEventMask(0x27);
 	LoginBoxLoop();
 }
 
 
-int DefineWindow(dword wtitle)
-{
+int DefineWindow(dword wtitle) {
 	sc.get();
 	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2, WIN_W, WIN_H, 0x73,sc.work); 
 	DrawTitle(wtitle);
@@ -116,8 +115,7 @@ int DefineWindow(dword wtitle)
 }
 
 
-void OpenMailDat()
-{
+void OpenMailDat() {
 	char read_data[512], pass_b64[256];
 	ReadFile(0, 512, #read_data, "/sys/network/mail.dat");
 	if (!read_data)
@@ -136,8 +134,7 @@ void OpenMailDat()
 	login_box.size = login_box.pos = strlen(#email_text);
 }
 
-void SaveAndExit()
-{
+void SaveAndExit() {
 	char write_data[512], pass_b64[256];
 	Close(socketnum);
 	strcpy(#write_data, #email_text);
@@ -149,8 +146,7 @@ void SaveAndExit()
 }
 
 
-int GetRequest(dword command, text)
-{
+int GetRequest(dword command, text) {
 	strcpy(#request, command);
 	if (text)
 	{
@@ -161,8 +157,7 @@ int GetRequest(dword command, text)
 	return strlen(#request);
 }
 
-void StopConnect(dword message)
-{
+void StopConnect(dword message) {
 	if (message) notify(message);
 	aim = STOP;
 	Close(socketnum);
