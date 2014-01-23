@@ -138,7 +138,7 @@ FASM_PROGRAMS:=\
  drivers/3c59x.obj:DRIVERS/3C59X.obj:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
  drivers/dec21x4x.obj:DRIVERS/DEC21X4X.obj:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
  drivers/forcedeth.obj:DRIVERS/FORCEDETH.obj:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
- drivers/i8254x.obj:DRIVERS/I8254X.obj:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
+ drivers/i8254x.sys:DRIVERS/I8254X.SYS:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
  drivers/i8255x.obj:DRIVERS/I8255X.obj:$(REPOSITORY)/drivers/ethernet/i8255x.asm \
  drivers/mtd80x.obj:DRIVERS/MTD80X.obj:$(REPOSITORY)/drivers/ethernet/mtd80x.asm \
  drivers/pcnet32.obj:DRIVERS/PCNET32.obj:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \

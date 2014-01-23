@@ -44,7 +44,7 @@ macro import name,[label]
    forward
      if used label
      _label dw 0
-	    db `label
+            db `label
      end if
    common
      db 0
@@ -149,6 +149,13 @@ import core,\
 \
               TimerHS,\
               CancelTimerHS,\
+\
+              NetRegDev,\
+              NetUnRegDev,\
+              NetPtrToNum,\
+              NetLinkChanged,\
+              Eth_input,\
+              IPv4_input,\
 \
               GetPCIList
 end data
