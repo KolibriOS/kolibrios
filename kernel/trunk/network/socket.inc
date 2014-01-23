@@ -1707,8 +1707,9 @@ SOCKET_block:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: %x\n", eax
 
-        pushf
         push    eax
+
+        pushf
         cli
 
         ; Set the 'socket is blocked' flag
@@ -1724,12 +1725,12 @@ SOCKET_block:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: suspending thread: %u\n", edx
         mov     [eax + SOCKET.TID], edx
         pop     edx
+        popf
 
         call    change_task
         pop     eax
-        popf
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continueing\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continuing\n"
 
         ret
 
