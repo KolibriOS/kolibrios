@@ -111,3 +111,6 @@ void kol_get_kernel_ver(char buff16b[]);
 int kol_kill_process(unsigned process);
 int kol_buffer_open(char name[], int mode, int size, char **buf);
 void  kol_buffer_close(char name[]);
+int kol_clip_num();
+char* kol_clip_get(int n);
+int kol_clip_set(int n, char buffer[]);

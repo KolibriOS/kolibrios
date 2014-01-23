@@ -421,3 +421,18 @@ void kol_buffer_close(char name[])
 {
 asm volatile ("int $0x40"::"a"(68), "b"(23), "c"(name));
 }
+
+int kol_clip_num()
+{
+asm volatile ("int $0x40"::"a"(54), "b"(0));
+}
+
+char* kol_clip_get(int n)
+{
+asm volatile ("int $0x40"::"a"(54), "b"(1), "c"(n));
+}
+
+int kol_clip_set(int n, char buffer[])
+{
+asm volatile ("int $0x40"::"a"(54), "b"(2), "c"(n), "d"(buffer));
+}

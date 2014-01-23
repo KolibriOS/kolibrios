@@ -35,6 +35,10 @@ unsigned cmdLen = 0;
 unsigned cmdPos = 0;
 CMD[0] = '\0';
 
+int clipNum; // number of clipboard slots
+char* clipBuf; // clipboard buffer
+char clipCopy[255+12];
+
 for (;;)
 	{
 	key = getch();
@@ -85,8 +89,67 @@ for (;;)
 
 			case 9: // TAB
 				break;
+				
+				
+			case 22: // Ctrl+V
+				clipNum = kol_clip_num();
+				if (clipNum > 0)
+					{
+					clipBuf = kol_clip_get(clipNum-1);
+//					printf("Length: %d, Type: %d, Encoding: %d\n", (int) *clipBuf, (int)*(clipBuf+4), (int)*(clipBuf+8));
+					if ( (int) *clipBuf > 0 ) // is clipboard empty?
+						{
+						if ((int)*(clipBuf+4)==0) // text?
+							{
+							if ((int)*(clipBuf+8)==1) // 866 encoding?
 
+                                for (i = cmdPos; i < cmdLen; i++)
+                                    printf(" ");
+                                for (i = cmdLen; i > 0; i--)
+                                    printf("%c %c", 8, 8);
+                                cmdLen = 0;
+                                cmdPos = 0;
+                                CMD[0] = '\0';
 
+								// strcpy_n
+								for (i = 0; i < 255; i++)
+									{
+									CMD[i]=*(clipBuf+12+i);
+									if (CMD[i]=='\0')
+										break;
+									}
+								
+								cmdPos = cmdLen = strlen(CMD);
+/*								
+								printf("Length: %d\n", cmdLen);
+								for (i = 0; i < cmdLen; i++)
+									printf("%d ", CMD[i]);
+*/
+								printf("%s", CMD);
+
+								}
+						}
+					}
+				break;
+
+				
+			case 3: // Ctrl+C
+				if ( cmdLen > 0 )
+					{
+					
+					*clipCopy = 12 + cmdLen;
+					*(clipCopy+4)=0;
+					*(clipCopy+8)=1;
+					
+					for (i = 0; i <= cmdLen; i++)
+						*(clipCopy+12+i) = CMD[i];
+						
+					kol_clip_set(12+cmdLen, clipCopy);
+					
+					}
+				break;				
+				
+				
 			default:
 				if (cmdLen < 255)
 					{
@@ -96,31 +159,31 @@ for (;;)
 						else
 							key = toupper(key);
 
-                                        for (i = cmdLen+1; i > cmdPos; i--)
-                                            CMD[i] = CMD[i-1];
+					for (i = cmdLen+1; i > cmdPos; i--)
+						CMD[i] = CMD[i-1];
 
 					CMD[cmdPos] = key;
 
-                                        for (i = cmdPos; i > 0; i--)
-                                            printf("%c %c", 8, 8);
+					for (i = cmdPos; i > 0; i--)
+						printf("%c %c", 8, 8);
 
 					printf("%s", CMD);
 
-                                        for (i = 0; i < cmdLen-cmdPos; i++)
-                                            printf("%c", 8);
+					for (i = 0; i < cmdLen-cmdPos; i++)
+						printf("%c", 8);
 
 					cmdPos++;
-                                        cmdLen++;
+					cmdLen++;
 					}
 					break;
 
-                        }
-                }
-                else
-                {
-       		key = (key>>8)&0xff;
-		switch (key)
+			}
+		}
+        else
 			{
+       		key = (key>>8)&0xff;
+			switch (key)
+				{
                         case 83: // Del
                              if (cmdPos < cmdLen)
                                 {

@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.7.3"
+#define SHELL_VERSION "0.7.4"
 
 extern char	PATH[256];
 extern char	PARAM[256];
