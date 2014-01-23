@@ -14,8 +14,6 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        ; TODO: make better use of the available descriptors
-
 format MS COFF
 
         API_VERSION             = 0x01000100
@@ -29,7 +27,8 @@ format MS COFF
 
         MAX_PKT_SIZE            = 4096          ; Maximum packet size
 
-        RX_RING_SIZE            = 8             ; Must be a multiple of 8
+        RX_RING_SIZE            = 8             ; Must be a power of 2, and minimum 8
+        TX_RING_SIZE            = 8             ; Must be a power of 2, and minimum 8
 
 include '../struct.inc'
 include '../macros.inc'
@@ -217,7 +216,17 @@ PBA_TXA_SHIFT           = 16
 ; Flow Control Type
 FCT_TYPE_DEFAULT        = 0x8808
 
-; === TX Descriptor fields ===
+
+
+; === TX Descriptor ===
+
+struct TDESC
+        addr_l          dd ?
+        addr_h          dd ?
+
+        length_cso_cmd  dd ?    ; 16 bits length + 8 bits cso + 8 bits cmd
+        status          dd ?    ; status, checksum start field, special
+ends
 
 ; TX Packet Length (word 2)
 TXDESC_LEN_MASK         = 0x0000ffff
@@ -238,7 +247,16 @@ TXDESC_LC               = 0x00000004 ; Late Collision
 TXDESC_EC               = 0x00000002 ; Excess Collisions
 TXDESC_DD               = 0x00000001 ; Descriptor Done
 
-; === RX Descriptor fields ===
+
+
+; === RX Descriptor ===
+
+struct RDESC
+        addr_l          dd ?
+        addr_h          dd ?
+        status_l        dd ?
+        status_h        dd ?
+ends
 
 ; RX Packet Length (word 2)
 RXDESC_LEN_MASK         = 0x0000ffff
@@ -251,7 +269,6 @@ RXDESC_VP               = 0x00000008 ; Packet is 802.1Q
 RXDESC_IXSM             = 0x00000004 ; Ignore cksum indication
 RXDESC_EOP              = 0x00000002 ; End Of Packet
 RXDESC_DD               = 0x00000001 ; Descriptor Done
-
 
 virtual at ebx
         device:
@@ -266,11 +283,11 @@ virtual at ebx
         .cur_tx         dd ?
         .last_tx        dd ?
 
-                        rb 0x100 - (($ - device) and 0xff)
-        .rx_desc        rd RX_RING_SIZE*8
+                        rb 0x100 - (($ - device) and 0xff)      ; align 256
+        .rx_desc        rb RX_RING_SIZE*sizeof.RDESC*2
 
-                        rb 0x100 - (($ - device) and 0xff)
-        .tx_desc        rd 256/8
+                        rb 0x100 - (($ - device) and 0xff)      ; align 256
+        .tx_desc        rb TX_RING_SIZE*sizeof.TDESC*2
 
         sizeof.device_struct = $ - device
 
@@ -498,8 +515,8 @@ probe:
         test    eax, eax
         jnz     @f
         DEBUGF  2,"Could not attach int handler!\n"
-;        or      eax, -1
-;        ret
+        or      eax, -1
+        ret
   @@:
 
 
@@ -518,14 +535,14 @@ reset_dontstart:
         test    dword[esi + REG_CTRL], CTRL_RST
         jnz     .loop
 
-        mov     dword [esi + REG_IMC], 0xffffffff       ; Disable all interrupt causes
+        mov     dword[esi + REG_IMC], 0xffffffff        ; Disable all interrupt causes
         mov     eax, dword [esi + REG_ICR]              ; Clear any pending interrupts
-        mov     dword [esi + REG_ITR], 0                ; Disable interrupt throttling logic
+        mov     dword[esi + REG_ITR], 0                 ; Disable interrupt throttling logic
 
-        mov     dword [esi + REG_PBA], 0x00000004       ; PBA: set the RX buffer size to 4KB (TX buffer is calculated as 64-RX buffer)
-        mov     dword [esi + REG_RDTR], 0               ; RDTR: set no delay
+        mov     dword[esi + REG_PBA], 0x00000004        ; PBA: set the RX buffer size to 4KB (TX buffer is calculated as 64-RX buffer)
+        mov     dword[esi + REG_RDTR], 0                ; RDTR: set no delay
 
-        mov     dword [esi + REG_TXCW], 0x08008060      ; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Reqest)
+        mov     dword[esi + REG_TXCW], 0x08008060       ; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Reqest)
 
         mov     eax, [esi + REG_CTRL]
         or      eax, 1 shl 6 + 1 shl 5
@@ -558,15 +575,15 @@ init_rx:
         stdcall KernelAlloc, MAX_PKT_SIZE
         DEBUGF  1,"RX buffer: 0x%x\n", eax
         pop     edi
-        mov     dword[edi + 16*RX_RING_SIZE], eax
+        mov     dword[edi + RX_RING_SIZE*sizeof.RDESC], eax
         push    edi
         GetRealAddr
         pop     edi
-        mov     dword[edi], eax         ; addres low
-        mov     dword[edi + 4], 0       ; addres high
-        mov     dword[edi + 8], 0
-        mov     dword[edi + 12], 0
-        add     edi, 16
+        mov     [edi + RDESC.addr_l], eax
+        mov     [edi + RDESC.addr_h], 0
+        mov     [edi + RDESC.status_l], 0
+        mov     [edi + RDESC.status_h], 0
+        add     edi, sizeof.RDESC
         pop     ecx
         dec     ecx
         jnz     .loop
@@ -575,11 +592,11 @@ init_rx:
 
         lea     eax, [device.rx_desc]
         GetRealAddr
-        mov     dword[esi + REG_RDBAL], eax             ; Receive Descriptor Base Address Low
-        mov     dword[esi + REG_RDBAH], 0               ; Receive Descriptor Base Address High
-        mov     dword[esi + REG_RDLEN], 16*RX_RING_SIZE ; Receive Descriptor Length
-        mov     dword[esi + REG_RDH], 0                 ; Receive Descriptor Head
-        mov     dword[esi + REG_RDT], RX_RING_SIZE-1    ; Receive Descriptor Tail
+        mov     dword[esi + REG_RDBAL], eax                             ; Receive Descriptor Base Address Low
+        mov     dword[esi + REG_RDBAH], 0                               ; Receive Descriptor Base Address High
+        mov     dword[esi + REG_RDLEN], RX_RING_SIZE*sizeof.RDESC       ; Receive Descriptor Length
+        mov     dword[esi + REG_RDH], 0                                 ; Receive Descriptor Head
+        mov     dword[esi + REG_RDT], RX_RING_SIZE-1                    ; Receive Descriptor Tail
         mov     dword[esi + REG_RCTL], RCTL_SBP or RCTL_BAM or RCTL_SECRC or RCTL_UPE or RCTL_MPE
         ; Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet, Promiscuous mode
 
@@ -590,19 +607,29 @@ init_rx:
 align 4
 init_tx:
 
-        mov     dword[device.tx_desc], 0
-        mov     dword[device.tx_desc + 4], 0
-        mov     dword[device.tx_desc + 16], 0
+        lea     edi, [device.tx_desc]
+        mov     ecx, TX_RING_SIZE
+  .loop:
+        mov     [edi + TDESC.addr_l], eax
+        mov     [edi + TDESC.addr_h], 0
+        mov     [edi + TDESC.length_cso_cmd], 0
+        mov     [edi + TDESC.status], 0
+        add     edi, sizeof.TDESC
+        dec     ecx
+        jnz     .loop
+
+        mov     [device.cur_tx], 0
+        mov     [device.last_tx], 0
 
         lea     eax, [device.tx_desc]
         GetRealAddr
-        mov     dword[esi + REG_TDBAL], eax             ; Transmit Descriptor Base Address Low
-        mov     dword[esi + REG_TDBAH], 0               ; Transmit Descriptor Base Address High
-        mov     dword[esi + REG_TDLEN], (1 * 128)       ; Transmit Descriptor Length
-        mov     dword[esi + REG_TDH], 0                 ; Transmit Descriptor Head
-        mov     dword[esi + REG_TDT], 0                 ; Transmit Descriptor Tail
-        mov     dword[esi + REG_TCTL], 0x010400fa       ; Enabled, Pad Short Packets, 15 retrys, 64-byte COLD, Re-transmit on Late Collision
-        mov     dword[esi + REG_TIPG], 0x0060200A       ; IPGT 10, IPGR1 8, IPGR2 6
+        mov     dword[esi + REG_TDBAL], eax                             ; Transmit Descriptor Base Address Low
+        mov     dword[esi + REG_TDBAH], 0                               ; Transmit Descriptor Base Address High
+        mov     dword[esi + REG_TDLEN], RX_RING_SIZE*sizeof.TDESC       ; Transmit Descriptor Length
+        mov     dword[esi + REG_TDH], 0                                 ; Transmit Descriptor Head
+        mov     dword[esi + REG_TDT], 0                                 ; Transmit Descriptor Tail
+        mov     dword[esi + REG_TCTL], 0x010400fa                       ; Enabled, Pad Short Packets, 15 retrys, 64-byte COLD, Re-transmit on Late Collision
+        mov     dword[esi + REG_TIPG], 0x0060200A                       ; IPGT 10, IPGR1 8, IPGR2 6
 
         ret
 
@@ -614,7 +641,7 @@ reset:
 start_i8254x:
 
         mov     esi, [device.mmio_addr]
-        or      dword[esi + REG_RCTL], RCTL_EN
+        or      dword[esi + REG_RCTL], RCTL_EN          ; Enable the receiver
 
         xor     eax, eax
         mov     [esi + REG_RDTR], eax                   ; Clear the Receive Delay Timer Register
@@ -625,9 +652,7 @@ start_i8254x:
         mov     eax, [esi + REG_ICR]                    ; Clear pending interrupts
 
         mov     [device.mtu], 1514
-
-; Set link state to unknown
-        mov     [device.state], ETH_LINK_UNKOWN
+        mov     [device.state], ETH_LINK_UNKOWN         ; Set link state to unknown
 
         xor     eax, eax
         ret
@@ -646,27 +671,27 @@ read_mac:
         test    eax, eax
         jz      .try_eeprom
 
-        mov     dword [device.mac], eax
+        mov     dword[device.mac], eax
         mov     eax, [esi+0x5404]                       ; RAH
-        mov     word [device.mac+4], ax
+        mov     word[device.mac+4], ax
 
         jmp     .mac_ok
 
   .try_eeprom:
-        mov     dword [esi+0x14], 0x00000001
+        mov     dword[esi+0x14], 0x00000001
         mov     eax, [esi+0x14]
         shr     eax, 16
-        mov     word [device.mac], ax
+        mov     word[device.mac], ax
 
-        mov     dword [esi+0x14], 0x00000101
+        mov     dword[esi+0x14], 0x00000101
         mov     eax, [esi+0x14]
         shr     eax, 16
-        mov     word [device.mac+2], ax
+        mov     word[device.mac+2], ax
 
-        mov     dword [esi+0x14], 0x00000201
+        mov     dword[esi+0x14], 0x00000201
         mov     eax, [esi+0x14]
         shr     eax, 16
-        mov     word [device.mac+4], ax
+        mov     word[device.mac+4], ax
 
   .mac_ok:
         DEBUGF  1,"MAC = %x-%x-%x-%x-%x-%x\n",\
@@ -685,6 +710,9 @@ read_mac:
 
 proc transmit stdcall bufferptr, buffersize
 
+        pushf
+        cli
+
         DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
         mov     eax, [bufferptr]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
@@ -698,21 +726,27 @@ proc transmit stdcall bufferptr, buffersize
         jb      .fail
 
 ; Program the descriptor (use legacy mode)
-        lea     edi, [device.tx_desc]                   ; Transmit Descriptor Base Address
-        mov     dword[edi + 16], eax                    ; Store the data location (for driver)
-        GetRealAddr                                     ;
-        mov     dword[edi], eax                         ; Real addr (for i8254x)
-        mov     dword[edi + 4], 0x00000000              ;
+        mov     edi, [device.cur_tx]
+        DEBUGF  1, "Using TX desc: %u\n", edi
+        shl     edi, 4                                          ; edi = edi * sizeof.TDESC
+        lea     edi, [device.tx_desc + edi]
+        mov     dword[edi + TX_RING_SIZE*sizeof.TDESC], eax     ; Store the data location (for driver)
+        GetRealAddr
+        mov     [edi + TDESC.addr_l], eax                       ; Data location (for hardware)
+        mov     [edi + TDESC.addr_h], 0
 
         mov     ecx, [buffersize]
-        or      ecx, 1 shl 24 + 1 shl 25 + 1 shl 27     ; EOP + IFCS + RS
-        mov     dword[edi + 8], ecx                     ; Packet size
-        mov     dword[edi + 12], 0x00000000
+        or      ecx, TXDESC_EOP + TXDESC_IFCS + TXDESC_RS
+        mov     [edi + TDESC.length_cso_cmd], ecx
+        mov     [edi + TDESC.status], 0
 
 ; Tell i8254x wich descriptor(s) we programmed
         mov     edi, [device.mmio_addr]
-        mov     dword[edi + REG_TDH], 0                 ; TDH - Transmit Descriptor Head
-        mov     dword[edi + REG_TDT], 1                 ; TDT - Transmit Descriptor Tail
+        mov     eax, [device.cur_tx]
+        inc     eax
+        and     eax, TX_RING_SIZE-1
+        mov     [device.cur_tx], eax
+        mov     dword[edi + REG_TDT], eax                        ; TDT - Transmit Descriptor Tail
 
 ; Update stats
         inc     [device.packets_tx]
@@ -721,12 +755,14 @@ proc transmit stdcall bufferptr, buffersize
         adc     dword[device.bytes_tx + 4], 0
 
         xor     eax, eax
+        popf
         ret
 
   .fail:
         DEBUGF  2,"Send failed\n"
         stdcall KernelFree, [bufferptr]
         or      eax, -1
+        popf
         ret
 
 endp
@@ -783,9 +819,9 @@ int_handler:
         pop     ebx eax
 ; Get last descriptor addr
         mov     esi, [device.cur_rx]
-        shl     esi, 4
+        shl     esi, 4                                  ; esi = esi * sizeof.RDESC
         lea     esi, [device.rx_desc + esi]
-        cmp     byte[esi + 12], 0                       ; Check status field
+        cmp     byte[esi + RDESC.status_h], 0           ; Check status field
         je      .no_rx
 
         push    eax ebx
@@ -793,22 +829,22 @@ int_handler:
         movzx   ecx, word[esi + 8]                      ; Get the packet length
         DEBUGF  1,"got %u bytes\n", ecx
         push    ecx
-        push    dword[esi + 16*RX_RING_SIZE]            ; Get packet pointer
+        push    dword[esi + RX_RING_SIZE*sizeof.RDESC]  ; Get packet pointer
 
 ; Update stats
         add     dword[device.bytes_rx], ecx
         adc     dword[device.bytes_rx + 4], 0
-        inc     dword[device.packets_rx]
+        inc     [device.packets_rx]
 
 ; Allocate new descriptor
         push    esi
         stdcall KernelAlloc, MAX_PKT_SIZE
         pop     esi
-        mov     dword[esi + 16*RX_RING_SIZE], eax
+        mov     dword[esi + RX_RING_SIZE*sizeof.RDESC], eax
         GetRealAddr
-        mov     dword[esi], eax
-        mov     dword[esi + 8], 0
-        mov     dword[esi + 12], 0
+        mov     [esi + RDESC.addr_l], eax
+        mov     [esi + RDESC.status_l], 0
+        mov     [esi + RDESC.status_h], 0
 
 ; Move the receive descriptor tail
         mov     esi, [device.mmio_addr]
@@ -840,12 +876,28 @@ int_handler:
 
         DEBUGF  1,"Transmit done\n"
 
-        lea     edi, [device.tx_desc]                   ; Transmit Descriptor Base Address
-        push    dword[edi + 16]
+  .txdesc_loop:
+        mov     edi, [device.last_tx]
+        shl     edi, 4                                  ; edi = edi * sizeof.TDESC
+        lea     edi, [device.tx_desc + edi]
+        test    [edi + TDESC.status], TXDESC_DD         ; Descriptor done?
+        jz      .no_tx
+        cmp     dword[edi + TX_RING_SIZE*sizeof.TDESC], 0
+        je      .no_tx
+
+        DEBUGF  1,"Cleaning up TX desc: 0x%x\n", edi
+
+        push    ebx
+        push    dword[edi + TX_RING_SIZE*sizeof.TDESC]
+        mov     dword[edi + TX_RING_SIZE*sizeof.TDESC], 0
         call    KernelFree
+        pop     ebx
+
+        inc     [device.last_tx]
+        and     [device.last_tx], TX_RING_SIZE-1
+        jmp     .txdesc_loop
 
   .no_tx:
-  .fail:
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
