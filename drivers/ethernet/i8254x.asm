@@ -754,15 +754,15 @@ proc transmit stdcall bufferptr, buffersize
         add     dword[device.bytes_tx], eax
         adc     dword[device.bytes_tx + 4], 0
 
-        xor     eax, eax
         popf
+        xor     eax, eax
         ret
 
   .fail:
         DEBUGF  2,"Send failed\n"
         stdcall KernelFree, [bufferptr]
-        or      eax, -1
         popf
+        or      eax, -1
         ret
 
 endp
