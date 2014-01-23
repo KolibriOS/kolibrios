@@ -104,10 +104,10 @@ load_text_file(void *ctx, const char *file_name)
 }
 
 int glsl_es = 0;
-int dump_ast = 0;
-int dump_hir = 0;
-int dump_lir = 0;
-int do_link = 0;
+int dump_ast = 1;
+int dump_hir = 1;
+int dump_lir = 1;
+int do_link = 1;
 
 const struct option compiler_opts[] = {
    { "glsl-es",  0, &glsl_es,  1 },
@@ -162,12 +162,13 @@ main(int argc, char **argv)
 
    int c;
    int idx = 0;
-   while ((c = getopt_long(argc, argv, "", compiler_opts, &idx)) != -1)
-      /* empty */ ;
+   int optind =1;
+//   while ((c = getopt_long(argc, argv, "", compiler_opts, &idx)) != -1)
+//      /* empty */ ;
 
 
-   if (argc <= optind)
-      usage_fail(argv[0]);
+//   if (argc <= optind)
+ //     usage_fail(argv[0]);
 
    initialize_context(ctx, (glsl_es) ? API_OPENGLES2 : API_OPENGL_COMPAT);
 
