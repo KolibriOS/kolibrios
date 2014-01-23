@@ -38,11 +38,17 @@ void render_swap_and_blit(struct render *render)
         goto err1;
     };
 
+#if 0
     glUseProgram(render->blit_prog);
     glUniform1i(render->sampler, 0);
 
     glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, 2 * sizeof(float),render->vertices);
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->texcoords);
+    glEnableVertexAttribArray(1);
+
+#endif
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, render->tx_buffers[render->back_buffer]);
@@ -52,9 +58,6 @@ void render_swap_and_blit(struct render *render)
     glTexParameteri(GL_TEXTURE_2D,
                   GL_TEXTURE_MAG_FILTER,
                   GL_NEAREST);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->texcoords);
-    glEnableVertexAttribArray(1);
 
     dst_xscale = 1.0/render->scr_width;
     dst_yscale = 1.0/render->scr_height;
@@ -86,10 +89,10 @@ void render_swap_and_blit(struct render *render)
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisable(GL_TEXTURE_2D);
-    glUseProgram(0);
+//    glDisableVertexAttribArray(0);
+//    glDisableVertexAttribArray(1);
+//    glDisable(GL_TEXTURE_2D);
+//    glUseProgram(0);
 
     render->back_buffer++;
     render->back_buffer&=1;

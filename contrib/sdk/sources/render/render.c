@@ -7,6 +7,7 @@
 #include <i915_drm.h>
 #include <kos32sys.h>
 
+void create_mask(struct render *render);
 
 static int drm_ioctl(int fd, unsigned long request, void *arg)
 {
@@ -242,6 +243,8 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    create_mask(render);
+
     glGenFramebuffers(1, &render->framebuffer);
     if(glGetError() != GL_NO_ERROR)
        goto err8;
@@ -326,6 +329,15 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
 
     render->sampler = glGetUniformLocation(render->blit_prog,"sampler");
 
+    glUseProgram(render->blit_prog);
+    glUniform1i(render->sampler, 0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, 2 * sizeof(float),render->vertices);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->texcoords);
+    glEnableVertexAttribArray(1);
+
     eglMakeCurrent(dpy, surface, surface, context);
 
     return render;
@@ -358,3 +370,74 @@ err:
 
 
 
+
+void create_mask(struct render *render)
+{
+    static EGLint attrib[] =
+    {
+        EGL_GL_TEXTURE_LEVEL_KHR, 0,
+        EGL_NONE
+    };
+    struct drm_i915_gem_mmap mmap_arg;
+    EGLint handle, stride;
+    int pitch;
+    void *data;
+
+    glGenTextures(1, &render->tx_mask);
+    if(glGetError() != GL_NO_ERROR)
+       goto err1;
+
+    glBindTexture(GL_TEXTURE_2D, render->tx_mask);
+    if(glGetError() != GL_NO_ERROR)
+       goto err2;
+
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+
+    pitch = (render->width+3) & -4;
+
+    data = user_alloc(pitch*render->height);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, render->width, render->height, 0,
+                 GL_RED,GL_UNSIGNED_BYTE, data);
+
+    user_free(data);
+
+    if(glGetError() != GL_NO_ERROR)
+       goto err2;
+
+    render->mask = eglCreateImageKHR(render->dpy, render->context,
+                                     EGL_GL_TEXTURE_2D_KHR,(EGLClientBuffer)render->tx_mask,attrib);
+
+    if(render->mask == EGL_NO_IMAGE_KHR)
+        goto err2;
+
+    if(!eglExportDRMImageMESA(render->dpy, render->mask, NULL, &handle, &stride))
+        goto err3;
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    mmap_arg.handle = handle;
+    mmap_arg.offset = 0;
+    mmap_arg.size = stride * render->height;
+    if (drm_ioctl(render->fd, DRM_IOCTL_I915_GEM_MMAP, &mmap_arg))
+    {
+        printf("%s: failed to mmap image %p handle=%d, %d bytes, into CPU domain\n",
+               __FUNCTION__, render->mask, handle, stride*render->height);
+        goto err3;
+    }
+
+    render->mask_buffer = (void *)(uintptr_t)mmap_arg.addr_ptr;
+
+    printf("%s: mmap image %p handle=%d, %d bytes to %p\n",
+           __FUNCTION__, render->mask, handle, stride*render->height, render->mask_buffer);
+
+    return;
+
+err3:
+    eglDestroyImageKHR(render->dpy, render->mask);
+err2:
+    glBindTexture(GL_TEXTURE_2D, 0);
+err1:
+    glDeleteTextures(1, &render->tx_mask);
+};

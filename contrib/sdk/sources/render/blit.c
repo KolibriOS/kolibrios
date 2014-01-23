@@ -57,7 +57,7 @@ void render_blit(struct render *render, enum px_buffer buffer)
     dst_xscale = 1.0/render->scr_width;
     dst_yscale = 1.0/render->scr_height;
 
-    r = winx + render->dx + render->width ;
+    r = winx + render->dx + render->width;
     b = winy + render->dy + render->height;
 
     float t0, t1, t2, t5;
