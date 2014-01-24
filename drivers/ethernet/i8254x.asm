@@ -219,7 +219,6 @@ FCT_TYPE_DEFAULT        = 0x8808
 struct TDESC
         addr_l          dd ?
         addr_h          dd ?
-
         length_cso_cmd  dd ?    ; 16 bits length + 8 bits cso + 8 bits cmd
         status          dd ?    ; status, checksum start field, special
 ends
@@ -294,7 +293,7 @@ ends
 ;; (standard driver proc) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-proc START stdcall, reason:dword, cmdline:dword
+proc START c, reason:dword, cmdline:dword
 
         cmp     [reason], DRV_ENTRY
         jne     .fail
@@ -345,7 +344,7 @@ proc service_proc stdcall, ioctl:dword
         jb      .fail
 
         mov     eax, [edx + IOCTL.input]
-        cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
+        cmp     byte[eax], 1                            ; 1 means device number and bus number (pci) are given
         jne     .fail                                   ; other types arent supported for this card yet
 
 ; check if the device is already listed
@@ -385,9 +384,9 @@ proc service_proc stdcall, ioctl:dword
 ; save the pci bus and device numbers
 
         mov     eax, [edx + IOCTL.input]
-        movzx   ecx, byte [eax+1]
+        movzx   ecx, byte[eax+1]
         mov     [ebx + device.pci_bus], ecx
-        movzx   ecx, byte [eax+2]
+        movzx   ecx, byte[eax+2]
         mov     [ebx + device.pci_dev], ecx
 
 ; Now, it's time to find the base mmio addres of the PCI device
@@ -891,7 +890,10 @@ int_handler:
 
 ; End of code
 
-section '.data' readable writable
+data fixups
+end data
+
+;section '.data' readable writable
 include '../peimport.inc'
 
 include_debug_strings
