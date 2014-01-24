@@ -27,11 +27,12 @@ struct render
     GLuint tx_buffers[2];
     GLuint tx_screen;
     GLuint tx_mask;
+    GLuint mask_handle;
     void *mask_buffer;
     int back_buffer;
     GLuint blit_prog;
-    GLint sampler;
-    float vertices[8], texcoords[8];
+    GLint sampler, sm_mask;
+    float vertices[8],tc_src[8],tc_mask[8];
 };
 
 struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy);

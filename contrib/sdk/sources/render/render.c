@@ -89,22 +89,27 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
     const char *vs_src =
 	    "attribute vec4 v_position;\n"
 	    "attribute vec4 v_texcoord0;\n"
+        "attribute vec4 v_texcoord1;\n"
 	    "varying vec2 source_texture;\n"
-	    "void main()\n"
+        "varying vec2 mask_texture;\n"
+        "void main()\n"
 	    "{\n"
 	    "	gl_Position = v_position;\n"
 	    "	source_texture = v_texcoord0.xy;\n"
+        "   mask_texture   = v_texcoord1.xy;\n"
 	    "}\n";
 
 	const char *fs_src =
-//	    "precision mediump float;\n"
 	    "varying vec2 source_texture;\n"
-	    "uniform sampler2D sampler;\n"
+        "varying vec2 mask_texture;\n"
+        "uniform sampler2D sampler_src;\n"
+        "uniform sampler2D sampler_mask;\n"
 	    "void main()\n"
 	    "{\n"
-	    "   vec3 cg = texture2D(sampler, source_texture).rgb;\n"
-	    "   gl_FragColor = vec4(cg.r,cg.g,cg.b,1.0);\n"
+        "   float ca = texture2D(sampler_mask, mask_texture).r;\n"
+        "   gl_FragColor = vec4(texture2D(sampler_src, source_texture).rgb, ca);\n"
 	    "}\n";
+
     EGLint config_attribs[14];
     EGLConfig config;
     EGLint num_configs;
@@ -310,6 +315,7 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
     glAttachShader(render->blit_prog, fs_shader);
     glBindAttribLocation(render->blit_prog, 0, "v_position");
     glBindAttribLocation(render->blit_prog, 1, "v_texcoord0");
+    glBindAttribLocation(render->blit_prog, 2, "v_texcoord1");
 
     glLinkProgram(render->blit_prog);
     glGetProgramiv(render->blit_prog, GL_LINK_STATUS, &ret);
@@ -327,16 +333,33 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
         free(info);
     }
 
-    render->sampler = glGetUniformLocation(render->blit_prog,"sampler");
+    render->sampler = glGetUniformLocation(render->blit_prog,"sampler_src");
+    render->sm_mask = glGetUniformLocation(render->blit_prog,"sampler_mask");
 
     glUseProgram(render->blit_prog);
     glUniform1i(render->sampler, 0);
+    glUniform1i(render->sm_mask, 1);
 
     glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, 2 * sizeof(float),render->vertices);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->texcoords);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->tc_src);
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->tc_mask);
+    glEnableVertexAttribArray(2);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, render->tx_mask);
+    glTexParameteri(GL_TEXTURE_2D,
+                  GL_TEXTURE_MIN_FILTER,
+                  GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D,
+                  GL_TEXTURE_MAG_FILTER,
+                  GL_NEAREST);
 
     eglMakeCurrent(dpy, surface, surface, context);
 
@@ -378,9 +401,9 @@ void create_mask(struct render *render)
         EGL_GL_TEXTURE_LEVEL_KHR, 0,
         EGL_NONE
     };
-    struct drm_i915_gem_mmap mmap_arg;
+    struct drm_i915_gem_mmap_gtt mmap_arg;
     EGLint handle, stride;
-    int pitch;
+    int winw, winh, pitch;
     void *data;
 
     glGenTextures(1, &render->tx_mask);
@@ -394,11 +417,16 @@ void create_mask(struct render *render)
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 
-    pitch = (render->width+3) & -4;
+    winw = render->width+10;
+    winh = render->height+20+5;
 
-    data = user_alloc(pitch*render->height);
+    pitch = (winw+3) & -4;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, render->width, render->height, 0,
+    data = user_alloc(pitch * winh);
+
+    memset(data, 0x20, pitch * winh);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, winw, winh, 0,
                  GL_RED,GL_UNSIGNED_BYTE, data);
 
     user_free(data);
@@ -419,18 +447,19 @@ void create_mask(struct render *render)
 
     mmap_arg.handle = handle;
     mmap_arg.offset = 0;
-    mmap_arg.size = stride * render->height;
-    if (drm_ioctl(render->fd, DRM_IOCTL_I915_GEM_MMAP, &mmap_arg))
+//    mmap_arg.size = stride * winh;
+    if (drm_ioctl(render->fd, DRM_IOCTL_I915_GEM_MMAP_GTT, &mmap_arg))
     {
         printf("%s: failed to mmap image %p handle=%d, %d bytes, into CPU domain\n",
-               __FUNCTION__, render->mask, handle, stride*render->height);
+               __FUNCTION__, render->mask, handle, stride*winh);
         goto err3;
     }
 
-    render->mask_buffer = (void *)(uintptr_t)mmap_arg.addr_ptr;
+    render->mask_buffer = (void *)(uintptr_t)mmap_arg.offset;
+    render->mask_handle = handle;
 
-    printf("%s: mmap image %p handle=%d, %d bytes to %p\n",
-           __FUNCTION__, render->mask, handle, stride*render->height, render->mask_buffer);
+    printf("%s: mmap image %p handle=%d, stride %d %d bytes to %p\n",
+           __FUNCTION__, render->mask, handle, stride, stride*winh, render->mask_buffer);
 
     return;
 

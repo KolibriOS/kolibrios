@@ -3,19 +3,35 @@
 #include <string.h>
 
 #include "render.h"
+#include <i915_drm.h>
 #include <kos32sys.h>
+
+static int drm_ioctl(int fd, unsigned long request, void *arg)
+{
+    ioctl_t  io;
+
+    io.handle   = fd;
+    io.io_code  = request;
+    io.input    = arg;
+    io.inp_size = 64;
+    io.output   = NULL;
+    io.out_size = 0;
+
+    return call_service(&io);
+}
 
 void render_swap_and_blit(struct render *render)
 {
     char proc_info[1024];
+    struct drm_i915_mask_update update;
 
     EGLContext context;
     EGLSurface draw, read;
-    int winx, winy;
+    int winx, winy, winw, winh;
 
-    float dst_xscale, dst_yscale;
+    float xscale, yscale;
     float *vertices  = render->vertices;
-    float *texcoords = render->texcoords;
+    float *texcoords = render->tc_src;
     int r, b;
 
     if(render == NULL)
@@ -25,6 +41,8 @@ void render_swap_and_blit(struct render *render)
 
     winx = *(uint32_t*)(proc_info+34);
     winy = *(uint32_t*)(proc_info+38);
+    winw = *(uint32_t*)(proc_info+42)+1;
+    winh = *(uint32_t*)(proc_info+46)+1;
 
     context = eglGetCurrentContext();
     draw = eglGetCurrentSurface(EGL_DRAW);
@@ -50,6 +68,10 @@ void render_swap_and_blit(struct render *render)
 
 #endif
 
+    update.handle = render->mask_handle;
+    update.bo_map = (int)render->mask_buffer;
+    drm_ioctl(render->fd, SRV_MASK_UPDATE, &update);
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, render->tx_buffers[render->back_buffer]);
     glTexParameteri(GL_TEXTURE_2D,
@@ -59,22 +81,23 @@ void render_swap_and_blit(struct render *render)
                   GL_TEXTURE_MAG_FILTER,
                   GL_NEAREST);
 
-    dst_xscale = 1.0/render->scr_width;
-    dst_yscale = 1.0/render->scr_height;
+
+    xscale = 1.0/render->scr_width;
+    yscale = 1.0/render->scr_height;
 
     r = winx + render->dx + render->width;
     b = winy + render->dy + render->height;
 
     float t0, t1, t2, t5;
 
-    vertices[0]     = t0 = 2*(winx+render->dx)*dst_xscale - 1.0;
-    vertices[1 * 2] = t2 = 2*r*dst_xscale - 1.0;
+    vertices[0]     = t0 = 2*(winx+render->dx)*xscale - 1.0;
+    vertices[1 * 2] = t2 = 2*r*xscale - 1.0;
 
     vertices[2 * 2] = t2;
     vertices[3 * 2] = t0;
 
-    vertices[1]     = t1 = 2*(winy+render->dy)*dst_yscale - 1.0;
-    vertices[2*2+1] = t5 = 2*b*dst_yscale - 1.0;
+    vertices[1]     = t1 = 2*(winy+render->dy)*yscale - 1.0;
+    vertices[2*2+1] = t5 = 2*b*yscale - 1.0;
     vertices[1*2+1] = t1;
     vertices[3*2+1] = t5;
 
@@ -87,7 +110,23 @@ void render_swap_and_blit(struct render *render)
     texcoords[3*2]  = 0.0;
     texcoords[3*2+1]= 1.0;
 
+    texcoords = render->tc_mask;
+
+    xscale = 1.0/winw;
+    yscale = 1.0/winh;
+
+    texcoords[0]    = render->dx * xscale;
+    texcoords[1]    = render->dy * yscale;
+    texcoords[1*2]  = (render->dx+render->width)*xscale;
+    texcoords[1*2+1]= render->dy * yscale;
+    texcoords[2*2]  = (render->dx+render->width)*xscale;
+    texcoords[2*2+1]= (render->dy+render->height)*yscale;
+    texcoords[3*2]  = render->dx * xscale;
+    texcoords[3*2+1]= (render->dy+render->height)*yscale;
+
+
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glFlush();
 
 //    glDisableVertexAttribArray(0);
 //    glDisableVertexAttribArray(1);

@@ -15,7 +15,7 @@ void render_blit(struct render *render, enum px_buffer buffer)
 
     float dst_xscale, dst_yscale;
     float *vertices  = render->vertices;
-    float *texcoords = render->texcoords;
+    float *texcoords = render->tc_src;
     int r, b;
 
     if(render == NULL)
@@ -51,7 +51,7 @@ void render_blit(struct render *render, enum px_buffer buffer)
                   GL_TEXTURE_MAG_FILTER,
                   GL_NEAREST);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->texcoords);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->tc_src);
     glEnableVertexAttribArray(1);
 
     dst_xscale = 1.0/render->scr_width;
