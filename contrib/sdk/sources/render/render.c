@@ -89,24 +89,20 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
     const char *vs_src =
 	    "attribute vec4 v_position;\n"
 	    "attribute vec4 v_texcoord0;\n"
-        "attribute vec4 v_texcoord1;\n"
 	    "varying vec2 source_texture;\n"
-        "varying vec2 mask_texture;\n"
         "void main()\n"
 	    "{\n"
 	    "	gl_Position = v_position;\n"
 	    "	source_texture = v_texcoord0.xy;\n"
-        "   mask_texture   = v_texcoord1.xy;\n"
 	    "}\n";
 
 	const char *fs_src =
 	    "varying vec2 source_texture;\n"
-        "varying vec2 mask_texture;\n"
         "uniform sampler2D sampler_src;\n"
         "uniform sampler2D sampler_mask;\n"
 	    "void main()\n"
 	    "{\n"
-        "   float ca = texture2D(sampler_mask, mask_texture).r;\n"
+        "   float ca = texture2D(sampler_mask, source_texture).r;\n"
         "   gl_FragColor = vec4(texture2D(sampler_src, source_texture).rgb, ca);\n"
 	    "}\n";
 
@@ -224,8 +220,7 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    render->back_buffer = EGL_DRM_BUFFER_BACK;
-
+    render->back_buffer = EGL_DRM_BUFFER_FRONT;
 
     render->screen = px_create_image(dpy,context,fb.width,fb.height,
                                      fb.pitch,fb.name);
@@ -315,7 +310,6 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
     glAttachShader(render->blit_prog, fs_shader);
     glBindAttribLocation(render->blit_prog, 0, "v_position");
     glBindAttribLocation(render->blit_prog, 1, "v_texcoord0");
-    glBindAttribLocation(render->blit_prog, 2, "v_texcoord1");
 
     glLinkProgram(render->blit_prog);
     glGetProgramiv(render->blit_prog, GL_LINK_STATUS, &ret);
@@ -345,9 +339,6 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
 
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->tc_src);
     glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->tc_mask);
-    glEnableVertexAttribArray(2);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -396,75 +387,94 @@ err:
 
 void create_mask(struct render *render)
 {
-    static EGLint attrib[] =
-    {
-        EGL_GL_TEXTURE_LEVEL_KHR, 0,
-        EGL_NONE
-    };
-    struct drm_i915_gem_mmap_gtt mmap_arg;
+    struct drm_i915_gem_create create;
+    struct drm_gem_flink flink;
+
+    struct drm_i915_gem_mmap mmap_arg;
     EGLint handle, stride;
     int winw, winh, pitch;
     void *data;
+    int ret;
+    GLuint mask_handle, mask_name;
+    EGLImageKHR mask_image;
+
 
     glGenTextures(1, &render->tx_mask);
     if(glGetError() != GL_NO_ERROR)
-       goto err1;
+       return;
 
     glBindTexture(GL_TEXTURE_2D, render->tx_mask);
     if(glGetError() != GL_NO_ERROR)
-       goto err2;
+       goto err1;
+
+
+    pitch = (render->width+15) & ~15;
+
+    create.size = pitch *render->height;
+    create.handle = 0;
+    ret = drm_ioctl(render->fd, DRM_IOCTL_I915_GEM_CREATE, &create);
+    if(ret != 0)
+        goto err1;
+
+    flink.handle = create.handle;
+    ret = drm_ioctl(render->fd, DRM_IOCTL_GEM_FLINK, &flink);
+    if (ret != 0)
+        goto err2;
+
+    mask_handle = create.handle;
+    mask_name = flink.name;
+
+    printf("create mask bo handle %d name %d\n", create.handle, flink.name);
+
+    EGLint attribs[] = {
+        EGL_WIDTH, 0,
+        EGL_HEIGHT, 0,
+        EGL_DRM_BUFFER_STRIDE_MESA, 0,
+        EGL_DRM_BUFFER_FORMAT_MESA,
+        EGL_DRM_BUFFER_FORMAT_R8_MESA,
+        EGL_DRM_BUFFER_USE_MESA,
+        EGL_DRM_BUFFER_USE_SHARE_MESA,
+        EGL_NONE
+    };
+    attribs[1] = pitch;
+    attribs[3] = render->height;
+    attribs[5] = pitch;
+
+    mask_image = eglCreateImageKHR(render->dpy, render->context, EGL_DRM_BUFFER_MESA,
+                         (void *) (uintptr_t)mask_name, attribs);
+
+    printf("create mask image %p\n", mask_image);
+
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 
-    winw = render->width+10;
-    winh = render->height+20+5;
-
-    pitch = (winw+3) & -4;
-
-    data = user_alloc(pitch * winh);
-
-    memset(data, 0x20, pitch * winh);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, winw, winh, 0,
-                 GL_RED,GL_UNSIGNED_BYTE, data);
-
-    user_free(data);
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, mask_image);
 
     if(glGetError() != GL_NO_ERROR)
        goto err2;
 
-    render->mask = eglCreateImageKHR(render->dpy, render->context,
-                                     EGL_GL_TEXTURE_2D_KHR,(EGLClientBuffer)render->tx_mask,attrib);
-
-    if(render->mask == EGL_NO_IMAGE_KHR)
-        goto err2;
-
-    if(!eglExportDRMImageMESA(render->dpy, render->mask, NULL, &handle, &stride))
-        goto err3;
-
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    mmap_arg.handle = handle;
+    mmap_arg.handle = mask_handle;
     mmap_arg.offset = 0;
-//    mmap_arg.size = stride * winh;
-    if (drm_ioctl(render->fd, DRM_IOCTL_I915_GEM_MMAP_GTT, &mmap_arg))
+    mmap_arg.size = pitch * render->height;
+    if (drm_ioctl(render->fd, DRM_IOCTL_I915_GEM_MMAP, &mmap_arg))
     {
         printf("%s: failed to mmap image %p handle=%d, %d bytes, into CPU domain\n",
-               __FUNCTION__, render->mask, handle, stride*winh);
+               __FUNCTION__, mask_image, mask_handle, pitch * render->height);
         goto err3;
     }
 
-    render->mask_buffer = (void *)(uintptr_t)mmap_arg.offset;
-    render->mask_handle = handle;
-
-    printf("%s: mmap image %p handle=%d, stride %d %d bytes to %p\n",
-           __FUNCTION__, render->mask, handle, stride, stride*winh, render->mask_buffer);
+    render->mask_handle = mask_handle;
+    render->mask_name   = mask_name;
+    render->mask_buffer = (void *)(uintptr_t)mmap_arg.addr_ptr;
+    render->mask_image = mask_image;
 
     return;
 
 err3:
-    eglDestroyImageKHR(render->dpy, render->mask);
+//    eglDestroyImageKHR(render->dpy, render->mask);
 err2:
     glBindTexture(GL_TEXTURE_2D, 0);
 err1:

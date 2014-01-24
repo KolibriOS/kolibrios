@@ -140,6 +140,8 @@ static void
 set_verbose_flags(const char *str)
 {
 #ifdef DEBUG
+   MESA_VERBOSE = VERBOSE_TEXTURE;
+
    struct option {
       const char *name;
       GLbitfield flag;
@@ -168,6 +170,7 @@ set_verbose_flags(const char *str)
       if (strstr(str, opts[i].name) || strcmp(str, "all") == 0)
          MESA_VERBOSE |= opts[i].flag;
    }
+   MESA_VERBOSE|= VERBOSE_TEXTURE;
 #endif
 }
 
@@ -181,6 +184,8 @@ static void
 set_debug_flags(const char *str)
 {
 #ifdef DEBUG
+   MESA_DEBUG_FLAGS = DEBUG_INCOMPLETE_TEXTURE|DEBUG_INCOMPLETE_FBO;
+
    struct option {
       const char *name;
       GLbitfield flag;
@@ -201,6 +206,7 @@ set_debug_flags(const char *str)
       if (strstr(str, opts[i].name))
          MESA_DEBUG_FLAGS |= opts[i].flag;
    }
+   MESA_DEBUG_FLAGS = DEBUG_INCOMPLETE_TEXTURE|DEBUG_INCOMPLETE_FBO;
 #endif
 }
 

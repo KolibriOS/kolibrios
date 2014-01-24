@@ -50,27 +50,27 @@ void render_swap_and_blit(struct render *render)
 
     eglSwapBuffers(render->dpy,draw);
 
+    render->back_buffer++;
+    render->back_buffer&=1;
+
+    update.handle = render->mask_handle;
+    update.dx     = render->dx;
+    update.dy     = render->dy;
+    update.width  = render->width;
+    update.height = render->height;
+    update.bo_pitch = (render->width+15) & ~15;
+    update.bo_map = (int)render->mask_buffer;
+
+    if(drm_ioctl(render->fd, 45, &update))
+        return;
+
+
     if (!eglMakeCurrent(render->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, render->context))
     {
         printf("failed to make window current");
         goto err1;
     };
 
-#if 0
-    glUseProgram(render->blit_prog);
-    glUniform1i(render->sampler, 0);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT,GL_FALSE, 2 * sizeof(float),render->vertices);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->texcoords);
-    glEnableVertexAttribArray(1);
-
-#endif
-
-    update.handle = render->mask_handle;
-    update.bo_map = (int)render->mask_buffer;
-    drm_ioctl(render->fd, SRV_MASK_UPDATE, &update);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, render->tx_buffers[render->back_buffer]);
@@ -110,21 +110,6 @@ void render_swap_and_blit(struct render *render)
     texcoords[3*2]  = 0.0;
     texcoords[3*2+1]= 1.0;
 
-    texcoords = render->tc_mask;
-
-    xscale = 1.0/winw;
-    yscale = 1.0/winh;
-
-    texcoords[0]    = render->dx * xscale;
-    texcoords[1]    = render->dy * yscale;
-    texcoords[1*2]  = (render->dx+render->width)*xscale;
-    texcoords[1*2+1]= render->dy * yscale;
-    texcoords[2*2]  = (render->dx+render->width)*xscale;
-    texcoords[2*2+1]= (render->dy+render->height)*yscale;
-    texcoords[3*2]  = render->dx * xscale;
-    texcoords[3*2+1]= (render->dy+render->height)*yscale;
-
-
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glFlush();
 
@@ -133,8 +118,6 @@ void render_swap_and_blit(struct render *render)
 //    glDisable(GL_TEXTURE_2D);
 //    glUseProgram(0);
 
-    render->back_buffer++;
-    render->back_buffer&=1;
 
 err1:
     eglMakeCurrent(render->dpy, draw, read, context);

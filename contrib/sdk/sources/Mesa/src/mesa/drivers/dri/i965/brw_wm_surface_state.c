@@ -691,15 +691,6 @@ brw_update_renderbuffer_surface(struct brw_context *brw,
 	 surf[0] |= 1 << BRW_SURFACE_WRITEDISABLE_A_SHIFT;
       }
    }
-#if 0
-   printf("brw_update_renderbuffer_surface\n"
-          "bind bo(handle=%d format=%d width=%d height=%d\n"
-          "pitch=%d, tiling=%d\n"
-          "ss[0] %x ss[1] %x ss[2] %x ss[3] %x ss[4] %x ss[5] %x\n",
-	      region->bo->handle, format, rb->Width, rb->Height,
-          region->pitch, region->tiling,
-          surf[0],surf[1],surf[2],surf[3], surf[4],surf[5]);
-#endif
 
    drm_intel_bo_emit_reloc(brw->batch.bo,
 			   brw->wm.surf_offset[unit] + 4,

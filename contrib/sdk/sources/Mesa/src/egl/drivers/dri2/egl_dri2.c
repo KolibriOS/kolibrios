@@ -1204,6 +1204,11 @@ dri2_create_image_mesa_drm_buffer(_EGLDisplay *disp, _EGLContext *ctx,
       format = __DRI_IMAGE_FORMAT_ARGB8888;
       pitch = attrs.DRMBufferStrideMESA;
       break;
+   case EGL_DRM_BUFFER_FORMAT_R8_MESA:
+      format = __DRI_IMAGE_FORMAT_R8;
+      pitch = attrs.DRMBufferStrideMESA;
+      break;
+
    default:
       _eglError(EGL_BAD_PARAMETER,
 		"dri2_create_image_khr: unsupported pixmap depth");

@@ -23,12 +23,16 @@ struct render
     EGLint width, height;
     EGLint scr_width, scr_height;
     GLuint framebuffer;
-    EGLImageKHR screen, front, back, mask;
+    EGLImageKHR screen, front, back;
     GLuint tx_buffers[2];
     GLuint tx_screen;
     GLuint tx_mask;
+
     GLuint mask_handle;
-    void *mask_buffer;
+    GLuint mask_name;
+    void  *mask_buffer;
+    EGLImageKHR mask_image;
+
     int back_buffer;
     GLuint blit_prog;
     GLint sampler, sm_mask;
