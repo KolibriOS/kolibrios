@@ -340,6 +340,15 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float),render->tc_src);
     glEnableVertexAttribArray(1);
 
+    render->tc_src[0]    = 0.0;
+    render->tc_src[1]    = 0.0;
+    render->tc_src[1*2]  = 1.0;
+    render->tc_src[1*2+1]= 0.0;
+    render->tc_src[2*2]  = 1.0;
+    render->tc_src[2*2+1]= 1.0;
+    render->tc_src[3*2]  = 0.0;
+    render->tc_src[3*2+1]= 1.0;
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 

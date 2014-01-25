@@ -6,6 +6,9 @@
 #include <i915_drm.h>
 #include <kos32sys.h>
 
+#define WIN_STATE_MINIMIZED  0x02
+#define WIN_STATE_ROLLED     0x04
+
 static int drm_ioctl(int fd, unsigned long request, void *arg)
 {
     ioctl_t  io;
@@ -27,8 +30,8 @@ void render_swap_and_blit(struct render *render)
 
     EGLContext context;
     EGLSurface draw, read;
-    int winx, winy, winw, winh;
-
+    uint32_t winx, winy, winw, winh;
+    uint8_t  state;
     float xscale, yscale;
     float *vertices  = render->vertices;
     float *texcoords = render->tc_src;
@@ -43,6 +46,10 @@ void render_swap_and_blit(struct render *render)
     winy = *(uint32_t*)(proc_info+38);
     winw = *(uint32_t*)(proc_info+42)+1;
     winh = *(uint32_t*)(proc_info+46)+1;
+    state  = *(uint8_t*)(proc_info+70);
+
+    if(state & (WIN_STATE_MINIMIZED|WIN_STATE_ROLLED))
+        return;
 
     context = eglGetCurrentContext();
     draw = eglGetCurrentSurface(EGL_DRAW);
@@ -64,23 +71,14 @@ void render_swap_and_blit(struct render *render)
     if(drm_ioctl(render->fd, 45, &update))
         return;
 
-
     if (!eglMakeCurrent(render->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, render->context))
     {
         printf("failed to make window current");
         goto err1;
     };
 
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, render->tx_buffers[render->back_buffer]);
-    glTexParameteri(GL_TEXTURE_2D,
-                  GL_TEXTURE_MIN_FILTER,
-                  GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D,
-                  GL_TEXTURE_MAG_FILTER,
-                  GL_NEAREST);
-
 
     xscale = 1.0/render->scr_width;
     yscale = 1.0/render->scr_height;
@@ -101,23 +99,8 @@ void render_swap_and_blit(struct render *render)
     vertices[1*2+1] = t1;
     vertices[3*2+1] = t5;
 
-    texcoords[0]    = 0.0;
-    texcoords[1]    = 0.0;
-    texcoords[1*2]  = 1.0;
-    texcoords[1*2+1]= 0.0;
-    texcoords[2*2]  = 1.0;
-    texcoords[2*2+1]= 1.0;
-    texcoords[3*2]  = 0.0;
-    texcoords[3*2+1]= 1.0;
-
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glFlush();
-
-//    glDisableVertexAttribArray(0);
-//    glDisableVertexAttribArray(1);
-//    glDisable(GL_TEXTURE_2D);
-//    glUseProgram(0);
-
+//    glFlush();
 
 err1:
     eglMakeCurrent(render->dpy, draw, read, context);
