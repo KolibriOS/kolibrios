@@ -697,7 +697,7 @@ SOCKET_close:
 
         test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
         jz      @f
-        call    SOCKET_notify.unblock                           ; Unblock it.
+        call    SOCKET_notify                                   ; Unblock it.
   @@:
 
         cmp     [eax + SOCKET.Domain], AF_INET4
@@ -1776,12 +1776,12 @@ SOCKET_notify:
         ret
 
   .error:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: invalid socket ptr: 0x%x !\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_notify: invalid socket ptr: 0x%x !\n", eax
         ret
 
   .found:
         test    [eax + SOCKET.state], SS_BLOCKED
-        jnz     .unblock
+        jnz     .un_block
 
 ; socket and thread exists and socket is of non blocking type.
 ; We'll try to flag an event to the thread.
@@ -1793,7 +1793,7 @@ SOCKET_notify:
         ret
 
 
-  .unblock:
+  .un_block:
 ; socket and thread exists and socket is of blocking type
 ; We'll try to unblock it.
         and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag

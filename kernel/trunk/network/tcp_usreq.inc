@@ -186,7 +186,7 @@ TCP_connect:
         mov     eax, [esp+4]
         mov     [eax + SOCKET.errorcode], ETIMEDOUT
         and     [eax + SOCKET.state], not SS_ISCONNECTING
-        call    SOCKET_notify.unblock
+        call    SOCKET_notify
         ret     4
 
   .fail:
