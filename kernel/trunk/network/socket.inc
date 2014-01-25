@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -1753,70 +1753,54 @@ SOCKET_notify:
         call    SOCKET_check
         jz      .error
 
-        test    [eax + SOCKET.state], SS_BLOCKED
-        jnz     .unblock
-
-;        test    [eax + SOCKET.options], SO_NONBLOCK
-;        jz      .error
-
-        push    eax ecx esi
-
-; socket exists and is of non blocking type.
-; We'll try to flag an event to the thread
-
-        mov     eax, [eax + SOCKET.TID]
-        test    eax, eax
-        jz      .done
-        mov     ecx, 1
-        mov     esi, TASK_DATA + TASKDATA.pid
-
-  .next_pid:
-        cmp     [esi], eax
-        je      .found_pid
-        inc     ecx
-        add     esi, 0x20
-        cmp     ecx, [TASK_COUNT]
-        jbe     .next_pid
-; PID not found, TODO: close socket!
-        jmp     .done
-
-  .found_pid:
-        shl     ecx, 8
-        or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
-        jmp     .done
-
-  .unblock:
-        push    eax ecx esi
-        ; Clear the 'socket is blocked' flag
-        and     [eax + SOCKET.state], not SS_BLOCKED
-
-        ; Find the thread's TASK_DATA
-        mov     eax, [eax + SOCKET.TID]
-        test    eax, eax
-        jz      .error
+; Find the associated thread's TASK_DATA
+        push    ebx ecx esi
+        mov     ebx, [eax + SOCKET.TID]
+        test    ebx, ebx
+        jz      .error2
         xor     ecx, ecx
         inc     ecx
         mov     esi, TASK_DATA
   .next:
-        cmp     [esi + TASKDATA.pid], eax
+        cmp     [esi + TASKDATA.pid], ebx
         je      .found
         inc     ecx
         add     esi, 0x20
         cmp     ecx, [TASK_COUNT]
         jbe     .next
-        jmp     .error
-  .found:
 
-        ; Run the thread
-        mov     [esi + TASKDATA.state], 0       ; Running
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
-
-  .done:
-        pop     esi ecx eax
+  .error2:
+; PID not found, TODO: close socket!
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_notify: error finding thread 0x%x !\n", ebx
+        pop     esi ecx ebx
+        ret
 
   .error:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: invalid socket ptr: 0x%x !\n", eax
+        ret
+
+  .found:
+        test    [eax + SOCKET.state], SS_BLOCKED
+        jnz     .unblock
+
+; socket and thread exists and socket is of non blocking type.
+; We'll try to flag an event to the thread.
+        shl     ecx, 8
+        or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
+        pop     esi ecx ebx
+        ret
+
+
+  .unblock:
+; socket and thread exists and socket is of blocking type
+; We'll try to unblock it.
+        and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
+        mov     [esi + TASKDATA.state], 0               ; Run the thread
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
+        pop     esi ecx ebx
         ret
 
 
