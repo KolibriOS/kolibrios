@@ -534,6 +534,9 @@ disconnectmsg   db      'K : USB HID device disconnected',13,10,0
 invalid_report_msg db   'K : report descriptor is invalid',13,10,0
 delimiter_note  db      'K : note: alternate usage ignored',13,10,0
 
+screen_x        dd ?
+screen_y        dd ?
+
 ; Exported variable: kernel API version.
 align 4
 version dd      50005h

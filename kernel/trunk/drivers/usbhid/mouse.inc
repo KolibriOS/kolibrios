@@ -32,6 +32,13 @@ ends
 ; in: ebx -> device_data from USB layer, edi -> collection
 ; out: eax = device-specific data or NULL on error
 proc mouse_driver_add_device
+; Get screen resolution so we can calculate absolute coordinates.
+        mov     eax, 14
+        int     0x40
+        mov     [screen_y], eax
+        and     [screen_y], 0xffff
+        shr     eax, 16
+        mov     [screen_x], eax
 ; Just allocate memory; no initialization needed.
         movi    eax, sizeof.mouse_device_data
         call    Kmalloc
@@ -111,7 +118,7 @@ end if
 ; 3. This is x moving. For relative fields, store the value in the state.
 ; Pass absolute field to the default handler.
         test    byte [esi+report_field_group.flags], HID_FIELD_RELATIVE
-        jz      .unclaimed
+        jz      .relative_x
         mov     [edi+mouse_device_data.dx], edx
         ret
 .y:
@@ -121,7 +128,7 @@ end if
 ; increasing from top to bottom.
 ; Pass absolute fields to the default handler.
         test    byte [esi+report_field_group.flags], HID_FIELD_RELATIVE
-        jz      .unclaimed
+        jz      .relative_y
         neg     edx
         mov     [edi+mouse_device_data.dy], edx
         ret
@@ -137,6 +144,26 @@ end if
         test    byte [esi+report_field_group.flags], HID_FIELD_RELATIVE
         jz      .unclaimed
         mov     [edi+mouse_device_data.hwheel], edx
+        ret
+.relative_x:
+        push    ebx
+        mov     eax, [screen_x]
+        mul     edx
+        mov     ebx, 0x8000
+        div     ebx
+        mov     [edi+mouse_device_data.dx], eax
+        or      [edi+mouse_device_data.buttons], 0x80000000
+        pop     ebx
+        ret
+.relative_y:
+        push    ebx
+        mov     eax, [screen_y]
+        mul     edx
+        mov     ebx, 0x8000
+        div     ebx
+        mov     [edi+mouse_device_data.dy], eax
+        or      [edi+mouse_device_data.buttons], 0x40000000
+        pop     ebx
         ret
 endp
 
