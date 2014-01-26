@@ -118,7 +118,7 @@ end if
 ; 3. This is x moving. For relative fields, store the value in the state.
 ; Pass absolute field to the default handler.
         test    byte [esi+report_field_group.flags], HID_FIELD_RELATIVE
-        jz      .relative_x
+        jz      .absolute_x
         mov     [edi+mouse_device_data.dx], edx
         ret
 .y:
@@ -128,7 +128,7 @@ end if
 ; increasing from top to bottom.
 ; Pass absolute fields to the default handler.
         test    byte [esi+report_field_group.flags], HID_FIELD_RELATIVE
-        jz      .relative_y
+        jz      .absolute_y
         neg     edx
         mov     [edi+mouse_device_data.dy], edx
         ret
@@ -145,7 +145,7 @@ end if
         jz      .unclaimed
         mov     [edi+mouse_device_data.hwheel], edx
         ret
-.relative_x:
+.absolute_x:
         push    ebx
         mov     eax, [screen_x]
         mul     edx
@@ -155,7 +155,7 @@ end if
         or      [edi+mouse_device_data.buttons], 0x80000000
         pop     ebx
         ret
-.relative_y:
+.absolute_y:
         push    ebx
         mov     eax, [screen_y]
         mul     edx
