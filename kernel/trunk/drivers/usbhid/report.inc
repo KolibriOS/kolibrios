@@ -1001,6 +1001,8 @@ end if
 ; If [collection.usage] is unknown, use default driver if HID_DUMP_UNCLAIMED
 ; and do not assign a driver otherwise.
         mov     esi, mouse_driver
+        cmp     [edi+collection.usage], USAGE_GD_POINTER
+        jz      .has_driver
         cmp     [edi+collection.usage], USAGE_GD_MOUSE
         jz      .has_driver
         mov     esi, keyboard_driver
