@@ -62,23 +62,20 @@ proc PCI_find_io stdcall bus, dev
 
         push    esi
         xor     eax, eax
-        mov     esi, PCI_BASE_ADDRESS_0
+        mov     esi, PCI_header00.base_addr_0
   .check:
         invoke  PciRead32, [bus], [dev], esi
-
         test    eax, PCI_BASE_ADDRESS_IO_MASK
         jz      .inc
-
         test    eax, PCI_BASE_ADDRESS_SPACE_IO
         jz      .inc
-
         and     eax, PCI_BASE_ADDRESS_IO_MASK
         pop     esi
         ret
 
   .inc:
         add     esi, 4
-        cmp     esi, PCI_BASE_ADDRESS_5
+        cmp     esi, PCI_header00.base_addr_5
         jbe     .check
         pop     esi
         xor     eax, eax
@@ -95,10 +92,8 @@ proc PCI_find_mmio32 stdcall bus, dev
         mov     esi, PCI_header00.base_addr_0
   .check:
         invoke  PciRead32, [bus], [dev], esi
-
         test    eax, PCI_BASE_ADDRESS_SPACE_IO  ; mmio address?
         jnz     .inc
-
         test    eax, 100b       ; 64 bit?
         jnz     .inc
         and     eax, not 1111b

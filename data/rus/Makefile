@@ -142,7 +142,7 @@ FASM_PROGRAMS:=\
  drivers/i8254x.sys:DRIVERS/I8254X.SYS:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
  drivers/i8255x.obj:DRIVERS/I8255X.obj:$(REPOSITORY)/drivers/ethernet/i8255x.asm \
  drivers/mtd80x.obj:DRIVERS/MTD80X.obj:$(REPOSITORY)/drivers/ethernet/mtd80x.asm \
- drivers/pcnet32.obj:DRIVERS/PCNET32.obj:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \
+ drivers/pcnet32.sys:DRIVERS/PCNET32.SYS:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \
  drivers/r6040.obj:DRIVERS/R6040.obj:$(REPOSITORY)/drivers/ethernet/R6040.asm \
  drivers/rhine.obj:DRIVERS/RHINE.obj:$(REPOSITORY)/drivers/ethernet/rhine.asm \
  drivers/rtl8029.obj:DRIVERS/RTL8029.obj:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \

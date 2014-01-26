@@ -893,7 +893,6 @@ int_handler:
 data fixups
 end data
 
-;section '.data' readable writable
 include '../peimport.inc'
 
 include_debug_strings
