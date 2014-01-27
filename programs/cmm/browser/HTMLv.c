@@ -55,6 +55,8 @@ char stak[4096];
 mouse m;
 int action_buf;
 
+dword http_transfer = 0;
+dword http_buffer;
 
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
