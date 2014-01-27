@@ -35,10 +35,13 @@ struc http_msg {
         .buffer_length          dd ?    ; internal use only (number of available bytes in buffer)
         .chunk_ptr              dd ?    ; internal use only (where the next chunk begins)
         .timestamp              dd ?    ; internal use only (when last data was received)
+
         .status                 dd ?    ; HTTP status
         .header_length          dd ?    ; length of HTTP header
-        .content_length         dd ?    ; length of HTTP content
+        .content_ptr            dd ?    ; ptr to content
+        .content_length         dd ?    ; total length of HTTP content
         .content_received       dd ?    ; number of currently received content bytes
-        .data:
+
+        .http_header:
 
 }

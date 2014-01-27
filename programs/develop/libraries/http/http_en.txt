@@ -30,13 +30,14 @@ This procedure will handle all incoming data for a connection and place it in th
 As long as the procedure expects more data, -1 is returned and the procedure must be called again.
  - When transfer is done, the procedure will return 0. 
 
-All data is placed together with some flags and other attributes in the http_msg structure.
+The HTTP header is placed together with some flags and other attributes in the http_msg structure.
 This structure is defined in http.inc (and not copied here because it might still change.)
 The identifier used by the functions is actually a pointer to this structure.
 In the dword named .flags, the library will set various bit-flags indicating the status of the process.
 (When a transfer is done, one should check these bit-flags to find out if the transfer was error-free.)
-All received data is placed at the end of this structure, including HTTP headers.
+The HTTP header is placed at the end of this structure. The content is placed in another buffer.
 The dword .status contains the status code received from the server (e.g. 200 for OK).
 In header_length you'll find the length of the header as soon as it has been received.
-In content_length you'll find the length of the content (not counting headers). 
-In content_received, you'll find the number of bytes already received (not counting headers).
+In content_ptr you'll find a pointer to the actual content.
+In content_length you'll find the length of the content. 
+In content_received, you'll find the number of content bytes already received.
