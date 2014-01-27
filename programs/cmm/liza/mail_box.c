@@ -349,15 +349,14 @@ void InitTWB() {
 	WB1.list.visible = WB1.list.h / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h, WB1.list.line_h);
 
-	strcpy(#URL, "/sys/yavu.htm");
 	strcpy(#header, #version);
 	pre_text = 0;
 	WB1.list.first = WB1.list.count = 0;
-	WB1.ReadHtml(_WIN);
 }
 
 void DrawLetter() {
-	WB1.ParseHTML(buf);
+	filesize = strlen(mdata);
+	if (filesize) WB1.ParseHTML(mdata);
 }
 
 

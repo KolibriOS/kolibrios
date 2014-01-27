@@ -43,16 +43,6 @@ void ParseMail()
 		mdata = strstr(mailstart, "\x0a\x0d") + 3;
 		debug("ConvertToDOS");
 		ConvertToDOS(mdata, mailstart);
-		debug("FromHTMLtoTXT");
-		FromHTMLtoTXT();
-		letter_view.first = letter_view.count = 0;
-		
-		line_off = mdata;
-		while (line_off>1)
-		{
-			line_off = GetNextLine(line_off);
-			letter_view.count++;	
-		}
 		debug("SetAtrFromCurr");
 		atr.SetAtrFromCurr(mail_list.current+1);
 		DrawMailBox();
@@ -84,50 +74,6 @@ void ConvertToDOS(dword inbuf, searchin)
 	}
 }
 
-
-void FromHTMLtoTXT()
-{
-	dword cur_chr, txt_buf_srt, txt_buf_end, is_tag=0;
-	int i;
-	if (strstri(mdata, "<html>")==0) && (strstri(mailstart, "text/html")==0) {debug("no html tags found"); return;}
-	debug ("Mail got <html> code");
-	cur_chr = mdata;
-	txt_buf_srt = malloc(mailend - mailstart);
-	txt_buf_end = txt_buf_srt;
-
-	while (cur_chr < mailend)
-	{
-		if (DSBYTE[cur_chr]=='<') is_tag = 1;
-		if (!is_tag)
-		{
-		 	DSBYTE[txt_buf_end] = DSBYTE[cur_chr];
-		 	txt_buf_end++;
-		 	_END:
-		}
-		if (DSBYTE[cur_chr]=='>') is_tag = NULL;
-		cur_chr++;
-	}
-	DSBYTE[txt_buf_end] = '\0';
-	strcpy(mdata, txt_buf_srt);
-	mailend = strlen(mailstart) + mailstart;
-	free(txt_buf_srt);
-}
-
-
-dword GetNextLine(dword start_offset)
-{
-	dword off_n = strstr(start_offset, "\n") + 1,  //разрыв строки
-	      off_w = letter_view.w / 6 - 2 + start_offset, //max длинна скроки
-	      off_m;
-	off_m = off_w;
-	if (off_n < off_w) return off_n;
-	while (off_m > start_offset) //перенос по словам
-	{
-		if (DSBYTE[off_m]==' ') || (DSBYTE[off_m]=='\9') || (DSBYTE[off_m]=='-') return off_m;
-		off_m--;
-	}
-	return off_w;
-}
 
 dword CopyBetweenOffsets(dword start, end) //do not forget to free(line) after use
 {

@@ -29,13 +29,19 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.64";
+	char version[]=" Текстовый браузер 0.99.65";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
+	char loading[] = "Loading...";
+	char page_not_found[] = "Страница не найдена. Воможно, URL содержит ошибку.";
+	char page_not_found_no_internet[] = "Страница не найдена. Воможно, URL содержит ошибку.<br>Или нет доступа в Интернеты.";
 #else
-	char version[]=" Text-based Browser 0.99.64";
+	char version[]=" Text-based Browser 0.99.65";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
+	char loading[] = "Loading...";
+	char page_not_found[] = "Page not found. Maybe, URL contains some errors.";
+	char page_not_found_no_internet[] = "Page not found. Maybe, URL contains some errors.<br>Or Internet unavailable for your configuration.";
 #endif
 
 proc_info Form;
@@ -48,8 +54,14 @@ char stak[4096];
 mouse m;
 int action_buf;
 
+
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
+
+char editURL[sizeof(URL)];
+int	mouse_twb;
+edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
+
 
 enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 
@@ -421,12 +433,23 @@ void ShowPage()
 	if (!filesize)
 	{
 		PageLinks.Clear();
-		DrawBar(WB1.list.x, WB1.list.y, WB1.list.w+scroll_wv.size_x+1, WB1.list.h, 0xFFFFFF); //fill all
-		if (GetProcessSlot(downloader_id)<>0) WriteText(WB1.list.x + 10, WB1.list.y + 18, 0x80, 0, "Loading...");
+		if (GetProcessSlot(downloader_id)<>0) 
+		{
+				filesize = sizeof(loading);
+				WB1.ParseHTML(#loading);
+		}
 		else
 		{
-			WriteText(WB1.list.x + 10, WB1.list.y + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
-			if (!strncmp(#URL,"http:",5)) WriteText(WB1.list.x + 10, WB1.list.y + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
+			if (strncmp(#URL,"http:",5)==0)
+			{
+				filesize = sizeof(page_not_found_no_internet);
+				WB1.ParseHTML(#page_not_found_no_internet);
+			}
+			else
+			{
+				filesize = sizeof(page_not_found);
+				WB1.ParseHTML(#page_not_found);
+			}
 		}
 		//return;
 	}

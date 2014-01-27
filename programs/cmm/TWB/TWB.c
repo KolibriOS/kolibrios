@@ -1,19 +1,16 @@
 #include "..\TWB\links.h"
 
-int	downloader_id;
 
 dword buf;
 dword filesize;
 
 #define URL param
 
-int	mouse_twb;
-edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
-char editURL[sizeof(URL)];
 char header[2048];
 
+int	downloader_id;
 
 char download_path[]="/rd/1/.download";
 
@@ -105,9 +102,9 @@ void TWebBrowser::DrawPage()
 
 
 char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/kolibrios/", "/rd/", "/bd", "/hd", "/cd", "/tmp", "/usbhd", 0};
-//dword TWebBrowser::GetNewUrl(dword CUR_URL, NEW_URL){
 void TWebBrowser::GetNewUrl(){
 	int i, len;
+	char newurl[4096];
 	
 	for (i=0; ABSOLUTE_LINKS[i]; i++)
 	{
@@ -115,34 +112,34 @@ void TWebBrowser::GetNewUrl(){
 		if (!strcmpn(#URL, ABSOLUTE_LINKS[i], len)) return;
 	}
 		
-	IF (!strcmpn(#URL,"./", 2)) strcpy(#URL, #URL+2); //игнорим :)
-	strcpy(#editURL, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+	IF (!strcmpn(#URL,"./", 2)) strcpy(#URL, #URL+2);
+	strcpy(#newurl, BrowserHistory.CurrentUrl());
 
 	if (URL[0] == '/')
 	{
-		i = strchr(#editURL+8, '/');
-		editURL[i+7]=0;
+		i = strchr(#newurl+8, '/');
+		newurl[i+7]=0;
 		strcpy(#URL, #URL+1);
 	}
 		
 	_CUT_ST_LEVEL_MARK:
 		
-		if (editURL[strrchr(#editURL, '/')-2]<>'/')  // если не http://
+		if (newurl[strrchr(#newurl, '/')-2]<>'/')
 		{
-			editURL[strrchr(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
+			newurl[strrchr(#newurl, '/')] = 0x00;
 		}
 		
-		IF (!strncmp(#URL,"../",3)) //на уровень вверх
+		IF (!strncmp(#URL,"../",3))
 		{
 			strcpy(#URL,#URL+3);
-			editURL[strrchr(#editURL, '/')-1] = 0x00; //обрезаем её урл до последнего /
+			newurl[strrchr(#newurl, '/')-1] = 0x00;
 			goto _CUT_ST_LEVEL_MARK;
 		}
 		
-		if (editURL[strlen(#editURL)-1]<>'/') strcat(#editURL, "/"); 
+		if (newurl[strlen(#newurl)-1]<>'/') strcat(#newurl, "/"); 
 		
-		strcat(#editURL, #URL); //клеим новый адрес
-		strcpy(#URL, #editURL);
+		strcat(#newurl, #URL);
+		strcpy(#URL, #newurl);
 }
 
 
