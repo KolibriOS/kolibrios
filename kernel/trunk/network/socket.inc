@@ -293,6 +293,7 @@ SOCKET_open:
         push    ecx edx esi
         call    SOCKET_alloc
         pop     esi edx ecx
+        test    eax, eax
         jz      .nobuffs
 
         mov     [esp+32], edi                   ; return socketnumber
@@ -1192,6 +1193,7 @@ SOCKET_pair:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_pair\n"
 
         call    SOCKET_alloc
+        test    eax, eax
         jz      .nomem1
         mov     [esp+32], edi   ; application's eax
 
@@ -1204,6 +1206,7 @@ SOCKET_pair:
         mov     ebx, eax
 
         call    SOCKET_alloc
+        test    eax, eax
         jz      .nomem2
         mov     [esp+20], edi   ; application's ebx
 
@@ -1815,7 +1818,6 @@ SOCKET_notify:
 ; IN:  /
 ; OUT: eax = 0 on error, socket ptr otherwise
 ;      edi = socket number
-;       ZF = cleared on error
 ;
 ;--------------------------------------------------------------------
 align 4
@@ -1902,7 +1904,6 @@ SOCKET_alloc:
        @@:
 
         mov     [net_sockets + SOCKET.NextPtr], eax
-        or      eax, eax                ; used to clear zero flag
 
         pusha
         mov     ecx, socket_mutex
@@ -2007,6 +2008,7 @@ SOCKET_fork:
         push    ebx
         call    SOCKET_alloc
         pop     ebx
+        test    eax, eax
         jz      .fail
 
         push    eax
