@@ -79,16 +79,6 @@ void main()
 		switch(EAX & 0xFF)
 		{
 			CASE evMouse:
-				/*
-				//not work well, so we are use custom way of processing scroll
-				scrollbar_v_mouse (#scroll_wv);
-				if (WB1.list.first <> scroll_wv.position)
-				{
-					WB1.list.first = scroll_wv.position;
-					WB1.ParseHTML(buf, filesize);
-				};
-				*/
-				
 				if (!CheckActiveProcess(Form.ID)) break;
 
 				edit_box_mouse stdcall (#address_box);
@@ -241,7 +231,12 @@ void Scan(int id)
 			WB1.ParseHTML(buf);
 			return;
 
-		case 002: //free img cache
+		case 005: //Win encoding
+			WB1.ReadHtml(_WIN);
+			WB1.ParseHTML(buf);
+			return;
+
+		case 009: //free img cache
 			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
 			WB1.ParseHTML(buf);

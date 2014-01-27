@@ -1,7 +1,7 @@
 //Leency - 2012-2013
 
 char *ITEMS_LIST[]={
-"WIN                  F5",54,
+"WIN              Ctrl+E",05,
 "DOS              Ctrl+D",04,
 "KOI              Ctrl+K",11,
 "UTF              Ctrl+U",21,
@@ -10,7 +10,7 @@ char *ITEMS_LIST[]={
 "Очистить кэш картинок"  ,02,
 #else
 "View source          F3",52,
-"Free image cache"       ,02,
+"Free image cache"       ,09,
 #endif
 0}; 
 

@@ -41,6 +41,7 @@ void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
 
 int llist::MouseScroll(dword scroll_state)
 {
+	if (count<=visible) return 0;
 	if (scroll_state == 65535)
 	{
 		if (first == 0) return 0;

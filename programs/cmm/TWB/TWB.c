@@ -474,7 +474,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		TextGoDown(left1, top1, width1);
 		return;
 	}
-	if (isTag("div")) {
+	if (isTag("div")) || (isTag("header")) || (isTag("footer")) {
 		IF(oldtag[0] <>'h') TextGoDown(left1, top1, width1);
 		return;
 	}
