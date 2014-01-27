@@ -20,10 +20,12 @@ char program_path[4096];
 #define false     0
 
 //Events
-#define evMouse   6
-#define evButton  3
-#define evKey     2
 #define evReDraw  1
+#define evKey     2
+#define evButton  3
+#define evMouse   6
+#define evNetwork 8
+
 
 //Button options
 #define BT_DEL      0x80000000

@@ -28,7 +28,7 @@ char aURIunescape[9]           = "unescape\0";
 
 #define FLAG_HTTP11             1 << 0
 #define FLAG_GOT_HEADER         1 << 1
-#define FLAG_GOT_DATA           1 << 2
+#define FLAG_GOT_ALL_DATA       1 << 2
 #define FLAG_CONTENT_LENGTH     1 << 3
 #define FLAG_CHUNKED            1 << 4
 #define FLAG_CONNECTED          1 << 5
@@ -38,6 +38,7 @@ char aURIunescape[9]           = "unescape\0";
 #define FLAG_NO_RAM             1 << 17
 #define FLAG_SOCKET_ERROR       1 << 18
 #define FLAG_TIMEOUT_ERROR      1 << 19
+#define FLAG_TRANSFER_FAILED    1 << 20
 
 struct  http_msg{
         dword   socket;
@@ -48,7 +49,8 @@ struct  http_msg{
         dword   timestamp;
         dword   status;
         dword   header_length;
+		dword	content_ptr;
         dword   content_length;
         dword   content_received;
-        char    data;
+        char    http_header;
 };

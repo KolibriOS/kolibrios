@@ -24,6 +24,7 @@
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\libimg_lib.h"
+#include "..\lib\lib.obj\http.h"
 //images
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
@@ -73,18 +74,18 @@ void main()
 	int scroll_used=0, show_menu;
 	
 	mem_Init();
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
-	if (load_dll2(libio, #libio_init,1)!=0) debug("Error: library doesn't exists - libio");
-	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Error: library doesn't exists - libimg");
-	
-	if (!URL) strcpy(#URL, "/sys/index.htm");	
 	CursorPointer.Load(#CursorFile);
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
+	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
+	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
+	
+	if (!URL) strcpy(#URL, "/sys/index.htm");
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
 	OpenPage();
 
-	SetEventMask(0x27);
+	SetEventMask(0xa7);
 	loop()
 	{
 		WaitEventTimeout(2);
@@ -164,6 +165,29 @@ void main()
 				if (action_buf) { Scan(action_buf); action_buf=0;}
 				Draw_Window();
 				break;
+			case evNetwork:
+				return;
+				//open page
+				http_get stdcall (#URL, 0);	
+				http_transfer = EAX;
+				IF (http_transfer<0) notify("Error from HTTP lib");
+				//
+				if (http_transfer != 0) {
+					http_process stdcall (http_transfer);
+					$push EAX
+					ESI = http_transfer;
+					if (!ESI.http_msg.content_received) break;
+					buf = ESI.http_msg.content_ptr;
+					debug(buf);	
+					filesize = ESI.http_msg.content_received;
+					debugi(filesize);
+					WB1.ParseHTML(buf);							
+					$pop EAX	
+					if (EAX == 0) {			
+						http_free stdcall (http_transfer);
+						http_transfer=0;				
+					}
+				}
 			default:
 				if (downloader_id<>0)
 				{
