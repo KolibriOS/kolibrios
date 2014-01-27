@@ -355,8 +355,9 @@ void InitTWB() {
 }
 
 void DrawLetter() {
-	filesize = strlen(mdata);
-	if (filesize) WB1.ParseHTML(mdata);
+	pre_text = 2;
+	bufsize = strlen(mdata);
+	if (bufsize) WB1.ParseHTML(mdata);
 }
 
 

@@ -1,8 +1,8 @@
 #include "..\TWB\links.h"
 
 
-dword buf;
-dword filesize;
+dword bufpointer;
+dword bufsize;
 
 #define URL param
 
@@ -10,12 +10,10 @@ scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555
 
 char header[2048];
 
-int	downloader_id;
-
 char download_path[]="/rd/1/.download";
 
 struct TWebBrowser {
-	llist list; //need #include "..\lib\list_box.h"
+	llist list;
 	DrawBufer DrawBuf;
 	void GetNewUrl();
 	void ReadHtml();
@@ -151,20 +149,20 @@ void TWebBrowser::ReadHtml(byte encoding)
 	else
 		file_size stdcall (#URL);
 	
-	filesize = EBX;
-	if (!filesize) return;
+	bufsize = EBX;
+	if (!bufsize) return;
 	
-	mem_Free(buf);
-	buf = mem_Alloc(filesize);
+	mem_Free(bufpointer);
+	bufpointer = mem_Alloc(bufsize);
 	if (!strncmp(#URL,"http:",5)) 
-		ReadFile(0, filesize, buf, #download_path);
+		ReadFile(0, bufsize, bufpointer, #download_path);
 	else
-		ReadFile(0, filesize, buf, #URL);
+		ReadFile(0, bufsize, bufpointer, #URL);
 		
 	cur_encoding = encoding;
-	if (encoding==_WIN) wintodos(buf);
-	if (encoding==_UTF) utf8rutodos(buf);
-	if (encoding==_KOI) koitodos(buf);
+	if (encoding==_WIN) wintodos(bufpointer);
+	if (encoding==_UTF) utf8rutodos(bufpointer);
+	if (encoding==_KOI) koitodos(bufpointer);
 }
 
 
@@ -197,7 +195,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 		if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	}
 	
-	for ( ; bufstart+filesize > bufpos; bufpos++;)
+	for ( ; bufstart+bufsize > bufpos; bufpos++;)
 	{
 		bukva = ESBYTE[bufpos];
 		if (ignor_text) && (bukva!='<') continue;
@@ -255,7 +253,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 					do
 					{
 						bufpos++;
-						if (bufstart + filesize <= bufpos) break 2;
+						if (bufstart + bufsize <= bufpos) break 2;
 					}
 					while (ESBYTE[bufpos] <>'-');
 					
@@ -263,7 +261,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 					if (ESBYTE[bufpos] <>'-') goto HH_;
 				}
 			}
-			while (ESBYTE[bufpos] !='>') && (bufpos < bufstart + filesize) //получаем тег и его параметры
+			while (ESBYTE[bufpos] !='>') && (bufpos < bufstart + bufsize) //получаем тег и его параметры
 			{
 				bukva = ESBYTE[bufpos];
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';

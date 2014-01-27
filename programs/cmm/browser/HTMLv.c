@@ -58,6 +58,8 @@ int action_buf;
 dword http_transfer = 0;
 dword http_buffer;
 
+int	downloader_id;
+
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
 
@@ -80,6 +82,7 @@ void main()
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
+	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
 	
 	if (!URL) strcpy(#URL, "/sys/index.htm");
 	Form.width=WIN_W;
@@ -101,7 +104,7 @@ void main()
 				m.get();
 				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
 				
-				if (m.y>WB1.list.y) && (m.y<Form.height) && (filesize)
+				if (m.y>WB1.list.y) && (m.y<Form.height) && (bufsize)
 				{
 					if (m.pkm)
 					{
@@ -118,7 +121,7 @@ void main()
 
 				if (m.vert)
 				{
-					if (WB1.list.MouseScroll(m.vert)) WB1.ParseHTML(buf);
+					if (WB1.list.MouseScroll(m.vert)) WB1.ParseHTML(bufpointer);
 				}
 				
 				if (!m.lkm) scroll_used=0;
@@ -136,7 +139,7 @@ void main()
 					btn=WB1.list.first;
 					WB1.list.first = m.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn<>WB1.list.first) WB1.ParseHTML(buf);
+					if (btn<>WB1.list.first) WB1.ParseHTML(bufpointer);
 				}
 
 				break;
@@ -167,28 +170,29 @@ void main()
 				if (action_buf) { Scan(action_buf); action_buf=0;}
 				Draw_Window();
 				break;
+				
 			case evNetwork:
 				return;
-				//open page
-				http_get stdcall (#URL, 0);	
+				http_get stdcall (#search_path, 0);	
 				http_transfer = EAX;
-				IF (http_transfer<0) notify("Error from HTTP lib");
-				//
-				if (http_transfer != 0) {
+				IF (http_transfer < 0) notify("Error from HTTP lib");
+
+				if (http_transfer > 0) {
 					http_process stdcall (http_transfer);
 					$push EAX
 					ESI = http_transfer;
-					if (!ESI.http_msg.content_received) break;
-					buf = ESI.http_msg.content_ptr;
-					debug(buf);	
-					filesize = ESI.http_msg.content_received;
-					debugi(filesize);
-					WB1.ParseHTML(buf);							
+					bufpointer = ESI.http_msg.content_ptr;
+					debug(bufpointer);	
+					//bufsize = ESI.http_msg.content_received;
+					bufsize = strlen(bufpointer)-2;
+					debugi(bufsize);
+					WB1.ParseHTML(bufpointer);					
 					$pop EAX	
 					if (EAX == 0) {			
 						http_free stdcall (http_transfer);
 						http_transfer=0;				
 					}
+					pause(10);
 				}
 			default:
 				if (downloader_id<>0)
@@ -256,28 +260,28 @@ void Scan(int id)
 	{
 		case 011: //Ctrk+K 
 			WB1.ReadHtml(_KOI);
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 021: //Ctrl+U
 			WB1.ReadHtml(_UTF);
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 004: //Ctrl+D
 			WB1.ReadHtml(_DOS);
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 005: //Win encoding
 			WB1.ReadHtml(_WIN);
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 009: //free img cache
 			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case BACK:
@@ -293,7 +297,7 @@ void Scan(int id)
 			else RunProgram("/rd/1/tinypad", #download_path);
 			return;
 		case 054: //F5
-			IF(address_box.flags & 0b10) WB1.ParseHTML(buf);
+			IF(address_box.flags & 0b10) WB1.ParseHTML(bufpointer);
 			return;
 
 		case REFRESH:
@@ -334,7 +338,7 @@ void Scan(int id)
 			IF(WB1.list.first == WB1.list.count - WB1.list.visible) return;
 			WB1.list.first += WB1.list.visible + 2;
 			IF(WB1.list.visible + WB1.list.first > WB1.list.count) WB1.list.first = WB1.list.count - WB1.list.visible;
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 184: //PgUp
@@ -342,30 +346,30 @@ void Scan(int id)
 			IF(WB1.list.first == 0) return;
 			WB1.list.first -= WB1.list.visible - 2;
 			IF(WB1.list.first < 0) WB1.list.first = 0;
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 178:
 		case BTN_UP: //мотаем вверх
 			if (WB1.list.first <= 0) return;
 			WB1.list.first--;
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 177: 
 		case BTN_DOWN: //мотаем вниз
 			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
 			WB1.list.first++;
-			WB1.ParseHTML(buf);
+			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 180: //home
-			if (WB1.list.KeyHome()) WB1.ParseHTML(buf);
+			if (WB1.list.KeyHome()) WB1.ParseHTML(bufpointer);
 			return; 
 
 		case 181: //end
 			if (WB1.list.count < WB1.list.visible) return;
-			if (WB1.list.KeyEnd()) WB1.ParseHTML(buf);
+			if (WB1.list.KeyEnd()) WB1.ParseHTML(bufpointer);
 			return;
 	}
 }
@@ -456,31 +460,31 @@ void ShowPage()
 	address_box.offset=0;
 	edit_box_draw stdcall(#address_box);
 
-	if (!filesize)
+	if (!bufsize)
 	{
 		PageLinks.Clear();
 		if (GetProcessSlot(downloader_id)<>0) 
 		{
-				filesize = sizeof(loading);
+				bufsize = sizeof(loading);
 				WB1.ParseHTML(#loading);
 		}
 		else
 		{
 			if (strncmp(#URL,"http:",5)==0)
 			{
-				filesize = sizeof(page_not_found_no_internet);
+				bufsize = sizeof(page_not_found_no_internet);
 				WB1.ParseHTML(#page_not_found_no_internet);
 			}
 			else
 			{
-				filesize = sizeof(page_not_found);
+				bufsize = sizeof(page_not_found);
 				WB1.ParseHTML(#page_not_found);
 			}
 		}
 		//return;
 	}
 	else
-		WB1.ParseHTML(buf);
+		WB1.ParseHTML(bufpointer);
 
 	if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
