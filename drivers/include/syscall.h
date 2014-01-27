@@ -501,12 +501,12 @@ int drm_order(unsigned long size);
 
 static inline void __iomem *ioremap(uint32_t offset, size_t size)
 {
-    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE);
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
 }
 
 static inline void __iomem *ioremap_wc(uint32_t offset, size_t size)
 {
-    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE);
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|0x100);
 }
 
 
