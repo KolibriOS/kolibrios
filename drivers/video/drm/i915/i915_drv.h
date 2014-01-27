@@ -534,7 +534,7 @@ struct i915_gtt {
 	size_t stolen_size;		/* Total size of stolen memory */
 
 	unsigned long mappable_end;	/* End offset that we can CPU map */
-	struct io_mapping *mappable;	/* Mapping to our CPU mappable region */
+	void *mappable;	/* Mapping to our CPU mappable region */
 	phys_addr_t mappable_base;	/* PA of our GMADR */
 
 	/** "Graphics Stolen Memory" holds the global PTEs */
@@ -620,7 +620,7 @@ struct i915_fbc {
 		int interval;
 	} *fbc_work;
 
-enum no_fbc_reason {
+	enum no_fbc_reason {
 		FBC_OK, /* FBC is enabled */
 		FBC_UNSUPPORTED, /* FBC is not supported by this chipset */
 	FBC_NO_OUTPUT, /* no outputs enabled to compress */

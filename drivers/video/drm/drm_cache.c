@@ -103,7 +103,7 @@ EXPORT_SYMBOL(drm_clflush_pages);
 void
 drm_clflush_sg(struct sg_table *st)
 {
-		struct sg_page_iter sg_iter;
+    struct sg_page_iter sg_iter;
     struct page *page;
 
     uint8_t *pva;
@@ -112,8 +112,8 @@ drm_clflush_sg(struct sg_table *st)
     pva = AllocKernelSpace(4096);
     if( pva != NULL)
     {
-		mb();
-		for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
+        mb();
+        for_each_sg_page(st->sgl, &sg_iter, st->nents, 0)
         {
             page = sg_page_iter_page(&sg_iter);
 

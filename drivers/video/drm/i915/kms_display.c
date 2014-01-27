@@ -913,10 +913,6 @@ int i915_mask_update(struct drm_device *dev, void *data,
         safe_sti(ifl);
 
         ret = i915_gem_object_set_to_gtt_domain(to_intel_bo(obj), false);
-        if(ret != 0 )
-        {
-            dbgprintf("%s: i915_gem_object_set_to_gtt_domain failed\n", __FUNCTION__);
-        };
     }
 
 err2:
@@ -927,6 +923,212 @@ err1:
     return ret;
 }
 
+int i915_mask_update_ex(struct drm_device *dev, void *data,
+            struct drm_file *file)
+{
+    struct drm_i915_mask_update *mask = data;
+    struct drm_gem_object *obj;
+    static unsigned int mask_seqno[256];
+    static warn_count;
+
+    rect_t win;
+    u32    winw,winh;
+    u32    ml,mt,mr,mb;
+    u32    slot;
+    int    ret = 0;
+    slot = *((u8*)CURRENT_TASK);
+
+    if( mask_seqno[slot] == os_display->mask_seqno)
+        return 0;
+
+    GetWindowRect(&win);
+    win.right+= 1;
+    win.bottom+=  1;
+
+    winw = win.right - win.left;
+    winh = win.bottom - win.top;
+
+    if(mask->dx >= winw ||
+       mask->dy >= winh)
+       return 1;
+
+    ml = win.left + mask->dx;
+    mt = win.top  + mask->dy;
+    mr = ml + mask->width;
+    mb = mt + mask->height;
+
+    if( ml >= win.right || mt >= win.bottom ||
+        mr < win.left   || mb < win.top )
+        return 1;
+
+    if( mr > win.right )
+        mr = win.right;
+
+    if( mb > win.bottom )
+        mb = win.bottom;
+
+    mask->width  = mr - ml;
+    mask->height = mb - mt;
+
+    if( mask->width == 0 ||
+        mask->height== 0 )
+        return 1;
+
+    obj = drm_gem_object_lookup(dev, file, mask->handle);
+    if (obj == NULL)
+        return -ENOENT;
+
+    if (!obj->filp) {
+        drm_gem_object_unreference_unlocked(obj);
+        return -EINVAL;
+    }
+
+#if 1
+    if(warn_count < 1000)
+    {
+        printf("left %d top %d right %d bottom %d\n",
+                ml, mt, mr, mb);
+        warn_count++;
+    };
+#endif
+
+
+#if 1
+
+    {
+        u8* src_offset;
+        u8* dst_offset;
+        u32 ifl;
+
+        ret = i915_mutex_lock_interruptible(dev);
+        if (ret)
+            goto err1;
+
+        i915_gem_object_set_to_cpu_domain(to_intel_bo(obj), true);
+
+        src_offset = (u8*)( mt*os_display->width + ml);
+        src_offset+= get_display_map();
+        dst_offset = (u8*)mask->bo_map;
+
+        u32_t tmp_h = mask->height;
+
+        ifl = safe_cli();
+        {
+            mask_seqno[slot] = os_display->mask_seqno;
+
+            slot|= (slot<<8)|(slot<<16)|(slot<<24);
+
+            __asm__ __volatile__ (
+            "movd       %[slot],   %%xmm6         \n"
+            "punpckldq  %%xmm6, %%xmm6            \n"
+            "punpcklqdq %%xmm6, %%xmm6            \n"
+            :: [slot]  "m" (slot)
+            :"xmm6");
+
+            while( tmp_h--)
+            {
+                int tmp_w = mask->width;
+
+                u8* tmp_src = src_offset;
+                u8* tmp_dst = dst_offset;
+
+                src_offset+= os_display->width;
+                dst_offset+= mask->bo_pitch;
+
+                while(tmp_w >= 64)
+                {
+                    __asm__ __volatile__ (
+                    "movdqu     (%0),   %%xmm0            \n"
+                    "movdqu   16(%0),   %%xmm1            \n"
+                    "movdqu   32(%0),   %%xmm2            \n"
+                    "movdqu   48(%0),   %%xmm3            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm1            \n"
+                    "pcmpeqb    %%xmm6, %%xmm2            \n"
+                    "pcmpeqb    %%xmm6, %%xmm3            \n"
+                    "movdqa     %%xmm0,   (%%edi)         \n"
+                    "movdqa     %%xmm1, 16(%%edi)         \n"
+                    "movdqa     %%xmm2, 32(%%edi)         \n"
+                    "movdqa     %%xmm3, 48(%%edi)         \n"
+
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0","xmm1","xmm2","xmm3");
+                    tmp_w -= 64;
+                    tmp_src += 64;
+                    tmp_dst += 64;
+                }
+
+                if( tmp_w >= 32 )
+                {
+                    __asm__ __volatile__ (
+                    "movdqu     (%0),   %%xmm0            \n"
+                    "movdqu   16(%0),   %%xmm1            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm1            \n"
+                    "movdqa     %%xmm0,   (%%edi)         \n"
+                    "movdqa     %%xmm1, 16(%%edi)         \n"
+
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0","xmm1");
+                    tmp_w -= 32;
+                    tmp_src += 32;
+                    tmp_dst += 32;
+                }
+
+                if( tmp_w >= 16 )
+                {
+                    __asm__ __volatile__ (
+                    "movdqu     (%0),   %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "movdqa     %%xmm0,   (%%edi)         \n"
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0");
+                    tmp_w -= 16;
+                    tmp_src += 16;
+                    tmp_dst += 16;
+                }
+
+                if( tmp_w >= 8 )
+                {
+                    __asm__ __volatile__ (
+                    "movq       (%0),   %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "movq       %%xmm0,   (%%edi)         \n"
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0");
+                    tmp_w -= 8;
+                    tmp_src += 8;
+                    tmp_dst += 8;
+                }
+                if( tmp_w >= 4 )
+        {
+                    __asm__ __volatile__ (
+                    "movd       (%0),   %%xmm0            \n"
+                    "pcmpeqb    %%xmm6, %%xmm0            \n"
+                    "movd       %%xmm0,   (%%edi)         \n"
+                    :: "r" (tmp_src), "D" (tmp_dst)
+                    :"xmm0");
+                    tmp_w -= 4;
+                    tmp_src += 4;
+                    tmp_dst += 4;
+                }
+                while(tmp_w--)
+                    *tmp_dst++ = (*tmp_src++ == (u8)slot) ? 0xFF:0x00;
+            };
+        };
+        safe_sti(ifl);
+
+        i915_gem_object_set_to_gtt_domain(to_intel_bo(obj), false);
+    }
+#endif
+
+err2:
+    mutex_unlock(&dev->struct_mutex);
+err1:
+    drm_gem_object_unreference(obj);
+
+    return ret;
+}
 
 
 

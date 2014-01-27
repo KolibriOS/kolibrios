@@ -689,7 +689,7 @@ static int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
 			if (desired_mode->vdisplay > sizes.surface_height)
 				sizes.surface_height = desired_mode->vdisplay;
 			crtc_count++;
-		}
+       }
 	}
 
 	if (crtc_count == 0 || sizes.fb_width == -1 || sizes.fb_height == -1) {

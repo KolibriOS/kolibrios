@@ -2355,7 +2355,7 @@ static unsigned int ilk_cursor_wm_max(const struct drm_device *dev,
 		return level == 0 ? 63 : 255;
 	else
 		return level == 0 ? 31 : 63;
-	}
+}
 
 /* Calculate the maximum FBC watermark */
 static unsigned int ilk_fbc_wm_max(void)
@@ -2374,7 +2374,7 @@ static void ilk_wm_max(struct drm_device *dev,
 	max->spr = ilk_plane_wm_max(dev, level, config, ddb_partitioning, true);
 	max->cur = ilk_cursor_wm_max(dev, level, config);
 	max->fbc = ilk_fbc_wm_max();
-	}
+}
 
 static bool ilk_check_wm(int level,
 			 const struct hsw_wm_maximums *max,
@@ -4629,8 +4629,6 @@ static void intel_gen6_powersave_work(struct work_struct *work)
 			     rps.delayed_resume_work.work);
 	struct drm_device *dev = dev_priv->dev;
 
-    ENTER();
-
 	mutex_lock(&dev_priv->rps.hw_lock);
 
 	if (IS_VALLEYVIEW(dev)) {
@@ -4640,8 +4638,6 @@ static void intel_gen6_powersave_work(struct work_struct *work)
 	gen6_update_ring_freq(dev);
 	}
 	mutex_unlock(&dev_priv->rps.hw_lock);
-
-    LEAVE();
 }
 
 void intel_enable_gt_powersave(struct drm_device *dev)

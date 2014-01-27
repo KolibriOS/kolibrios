@@ -1767,7 +1767,7 @@ static void vlv_pre_enable_dp(struct intel_encoder *encoder)
 	intel_enable_dp(encoder);
 
 	vlv_wait_port_ready(dev_priv, port);
-	}
+}
 
 static void intel_dp_pre_pll_enable(struct intel_encoder *encoder)
 {

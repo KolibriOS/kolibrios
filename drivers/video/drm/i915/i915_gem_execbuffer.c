@@ -190,6 +190,8 @@ static int
 relocate_entry_cpu(struct drm_i915_gem_object *obj,
 		   struct drm_i915_gem_relocation_entry *reloc)
 {
+    struct drm_device *dev = obj->base.dev;
+    struct drm_i915_private *dev_priv = dev->dev_private;
 	uint32_t page_offset = offset_in_page(reloc->offset);
 	char *vaddr;
 	int ret = -EINVAL;
@@ -198,10 +200,9 @@ relocate_entry_cpu(struct drm_i915_gem_object *obj,
 	if (ret)
 		return ret;
 
-    vaddr = (char *)MapIoMem((addr_t)i915_gem_object_get_page(obj,
-                                 reloc->offset >> PAGE_SHIFT), 4096, 3);
+    vaddr = dev_priv->gtt.mappable+4096;
+    MapPage(vaddr,(addr_t)i915_gem_object_get_page(obj,reloc->offset >> PAGE_SHIFT), PG_SW);
 	*(uint32_t *)(vaddr + page_offset) = reloc->delta;
-    FreeKernelSpace(vaddr);
 
 	return 0;
 }
@@ -226,12 +227,12 @@ relocate_entry_gtt(struct drm_i915_gem_object *obj,
 
 	/* Map the page containing the relocation we're going to perform.  */
 	reloc->offset += i915_gem_obj_ggtt_offset(obj);
-    reloc_page = (void*)MapIoMem(dev_priv->gtt.mappable_base +
-                                 (reloc->offset & PAGE_MASK), 4096, 0x18|3);
+    MapPage(dev_priv->gtt.mappable,dev_priv->gtt.mappable_base +
+                                 (reloc->offset & PAGE_MASK), PG_SW);
+	reloc_page = dev_priv->gtt.mappable;
 	reloc_entry = (uint32_t __iomem *)
 		(reloc_page + offset_in_page(reloc->offset));
 	iowrite32(reloc->delta, reloc_entry);
-    FreeKernelSpace(reloc_page);
 
 	return 0;
 }
@@ -343,7 +344,7 @@ i915_gem_execbuffer_relocate_object(struct drm_i915_gem_object *obj,
 	struct drm_i915_gem_exec_object2 *entry = obj->exec_entry;
 	int remain, ret;
 
-	user_relocs = (void __user *)(uintptr_t)entry->relocs_ptr;
+	user_relocs = to_user_ptr(entry->relocs_ptr);
 
 	remain = entry->relocation_count;
 	while (remain) {
@@ -667,7 +668,7 @@ i915_gem_execbuffer_relocate_slow(struct drm_device *dev,
 		u64 invalid_offset = (u64)-1;
 		int j;
 
-		user_relocs = (void __user *)(uintptr_t)exec[i].relocs_ptr;
+		user_relocs = to_user_ptr(exec[i].relocs_ptr);
 
 		if (copy_from_user(reloc+total, user_relocs,
 				   exec[i].relocation_count * sizeof(*reloc))) {
@@ -1260,8 +1261,7 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 		return -ENOMEM;
 	}
 	ret = copy_from_user(exec2_list,
-			     (struct drm_i915_relocation_entry __user *)
-			     (uintptr_t) args->buffers_ptr,
+			     to_user_ptr(args->buffers_ptr),
 			     sizeof(*exec2_list) * args->buffer_count);
 	if (ret != 0) {
 		DRM_DEBUG("copy %d exec entries failed %d\n",
@@ -1275,7 +1275,7 @@ i915_gem_execbuffer2(struct drm_device *dev, void *data,
 				     &dev_priv->gtt.base);
 	if (!ret) {
 		/* Copy the new buffer offsets back to the user's exec list. */
-		ret = copy_to_user((void __user *)(uintptr_t)args->buffers_ptr,
+		ret = copy_to_user(to_user_ptr(args->buffers_ptr),
 				   exec2_list,
 				   sizeof(*exec2_list) * args->buffer_count);
 		if (ret) {

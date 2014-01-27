@@ -633,7 +633,6 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
 	loff_t offset, page_base;
 	char __user *user_data;
 	int page_offset, page_length, ret;
-    char *vaddr;
 
 	ret = i915_gem_obj_ggtt_pin(obj, 0, true, true);
 	if (ret)
@@ -647,14 +646,7 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
 	if (ret)
 		goto out_unpin;
 
-    vaddr = AllocKernelSpace(4096);
-    if(vaddr == NULL)
-    {
-        ret = -ENOSPC;
-        goto out_unpin;
-    };
-
-	user_data = (char __user *) (uintptr_t) args->data_ptr;
+	user_data = to_user_ptr(args->data_ptr);
 	remain = args->size;
 
 	offset = i915_gem_obj_ggtt_offset(obj) + args->offset;
@@ -672,16 +664,14 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
 		if ((page_offset + remain) > PAGE_SIZE)
 			page_length = PAGE_SIZE - page_offset;
 
-        MapPage(vaddr, dev_priv->gtt.mappable_base+page_base, PG_SW|PG_NOCACHE);
+        MapPage(dev_priv->gtt.mappable, dev_priv->gtt.mappable_base+page_base, PG_SW);
 
-        memcpy(vaddr+page_offset, user_data, page_length);
+        memcpy(dev_priv->gtt.mappable+page_offset, user_data, page_length);
 
 		remain -= page_length;
 		user_data += page_length;
 		offset += page_length;
 	}
-
-    FreeKernelSpace(vaddr);
 
 out_unpin:
 	i915_gem_object_unpin(obj);
@@ -706,7 +696,7 @@ shmem_pwrite_fast(struct page *page, int shmem_page_offset, int page_length,
 	if (unlikely(page_do_bit17_swizzling))
 		return -EINVAL;
 
-	vaddr = (char *)MapIoMem((addr_t)page, 4096, PG_SW|PG_NOCACHE);
+    vaddr = (char *)MapIoMem((addr_t)page, 4096, PG_SW);
 	if (needs_clflush_before)
 		drm_clflush_virt_range(vaddr + shmem_page_offset,
 				       page_length);
@@ -2082,24 +2072,30 @@ static void i915_gem_free_request(struct drm_i915_gem_request *request)
 	kfree(request);
 }
 
-static void i915_gem_reset_ring_lists(struct drm_i915_private *dev_priv,
+static void i915_gem_reset_ring_status(struct drm_i915_private *dev_priv,
 				      struct intel_ring_buffer *ring)
 {
-	u32 completed_seqno;
-	u32 acthd;
+	u32 completed_seqno = ring->get_seqno(ring, false);
+	u32 acthd = intel_ring_get_active_head(ring);
+	struct drm_i915_gem_request *request;
 
-	acthd = intel_ring_get_active_head(ring);
-	completed_seqno = ring->get_seqno(ring, false);
+	list_for_each_entry(request, &ring->request_list, list) {
+		if (i915_seqno_passed(completed_seqno, request->seqno))
+			continue;
 
+		i915_set_reset_status(ring, request, acthd);
+	}
+}
+
+static void i915_gem_reset_ring_cleanup(struct drm_i915_private *dev_priv,
+					struct intel_ring_buffer *ring)
+{
 	while (!list_empty(&ring->request_list)) {
 		struct drm_i915_gem_request *request;
 
 		request = list_first_entry(&ring->request_list,
 					   struct drm_i915_gem_request,
 					   list);
-
-		if (request->seqno > completed_seqno)
-			i915_set_reset_status(ring, request, acthd);
 
 		i915_gem_free_request(request);
 	}
@@ -2142,8 +2138,16 @@ void i915_gem_reset(struct drm_device *dev)
 	struct intel_ring_buffer *ring;
 	int i;
 
+	/*
+	 * Before we free the objects from the requests, we need to inspect
+	 * them for finding the guilty party. As the requests only borrow
+	 * their reference to the objects, the inspection must be done first.
+	 */
 	for_each_ring(ring, dev_priv, i)
-		i915_gem_reset_ring_lists(dev_priv, ring);
+		i915_gem_reset_ring_status(dev_priv, ring);
+
+	for_each_ring(ring, dev_priv, i)
+		i915_gem_reset_ring_cleanup(dev_priv, ring);
 
 	i915_gem_restore_fences(dev);
 }

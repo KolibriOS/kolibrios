@@ -254,9 +254,6 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 	 * we may want to use ida for number allocation and a hash table
 	 * for the pointers, anyway.
 	 */
-    if(handle == -2)
-        printf("%s handle %d\n", __FUNCTION__, handle);
-
 	spin_lock(&filp->table_lock);
 
 	/* Check if we currently have a reference on the object */
@@ -266,8 +263,6 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 		return -EINVAL;
 	}
 	dev = obj->dev;
-
- //   printf("%s handle %d obj %p\n", __FUNCTION__, handle, obj);
 
 	/* Release reference and decrement refcount. */
 	idr_remove(&filp->object_idr, handle);
@@ -286,6 +281,12 @@ EXPORT_SYMBOL(drm_gem_handle_delete);
  * Create a handle for this object. This adds a handle reference
  * to the object, which includes a regular reference count. Callers
  * will likely want to dereference the object afterwards.
+/**
+ * drm_gem_handle_create_tail - internal functions to create a handle
+ * 
+ * This expects the dev->object_name_lock to be held already and will drop it
+ * before returning. Used to avoid races in establishing new handles when
+ * importing an object from either an flink name or a dma-buf.
  */
 int
 drm_gem_handle_create_tail(struct drm_file *file_priv,
@@ -436,9 +437,6 @@ drm_gem_object_lookup(struct drm_device *dev, struct drm_file *filp,
 {
 	struct drm_gem_object *obj;
 
-     if(handle == -2)
-        printf("%s handle %d\n", __FUNCTION__, handle);
-
 	spin_lock(&filp->table_lock);
 
 	/* Check if we currently have a reference on the object */
@@ -538,9 +536,6 @@ drm_gem_open_ioctl(struct drm_device *dev, void *data,
 
 	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return -ENODEV;
-
-    if(handle == -2)
-        printf("%s handle %d\n", __FUNCTION__, handle);
 
 	mutex_lock(&dev->object_name_lock);
 	obj = idr_find(&dev->object_name_idr, (int) args->name);

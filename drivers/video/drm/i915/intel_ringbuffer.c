@@ -483,7 +483,7 @@ init_pipe_control(struct intel_ring_buffer *ring)
 		goto err_unref;
 
 	ring->scratch.gtt_offset = i915_gem_obj_ggtt_offset(ring->scratch.obj);
-	ring->scratch.cpu_page = (void*)MapIoMem((addr_t)sg_page(ring->scratch.obj->pages->sgl),4096, PG_SW);
+    ring->scratch.cpu_page = (void*)MapIoMem((addr_t)sg_page(ring->scratch.obj->pages->sgl),4096, PG_SW|0x100);
 	if (ring->scratch.cpu_page == NULL) {
 		ret = -ENOMEM;
 		goto err_unpin;
@@ -1182,7 +1182,7 @@ static int init_status_page(struct intel_ring_buffer *ring)
 	}
 
 	ring->status_page.gfx_addr = i915_gem_obj_ggtt_offset(obj);
-    ring->status_page.page_addr = (void*)MapIoMem((addr_t)sg_page(obj->pages->sgl),4096,PG_SW);
+    ring->status_page.page_addr = (void*)MapIoMem((addr_t)sg_page(obj->pages->sgl),4096,PG_SW|0x100);
 	if (ring->status_page.page_addr == NULL) {
 		ret = -ENOMEM;
 		goto err_unpin;

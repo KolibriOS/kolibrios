@@ -1432,6 +1432,20 @@ static void i9xx_disable_pll(struct drm_i915_private *dev_priv, enum pipe pipe)
 	POSTING_READ(DPLL(pipe));
 }
 
+static void vlv_disable_pll(struct drm_i915_private *dev_priv, enum pipe pipe)
+{
+	u32 val = 0;
+
+	/* Make sure the pipe isn't still relying on us */
+	assert_pipe_disabled(dev_priv, pipe);
+
+	/* Leave integrated clock source enabled */
+	if (pipe == PIPE_B)
+		val = DPLL_INTEGRATED_CRI_CLK_VLV;
+	I915_WRITE(DPLL(pipe), val);
+	POSTING_READ(DPLL(pipe));
+}
+
 void vlv_wait_port_ready(struct drm_i915_private *dev_priv, int port)
 {
 	u32 port_mask;
@@ -5281,7 +5295,7 @@ static void lpt_reset_fdi_mphy(struct drm_i915_private *dev_priv)
 		if (wait_for_atomic_us((I915_READ(SOUTH_CHICKEN2) &
 				FDI_MPHY_IOSFSB_RESET_STATUS) == 0, 100))
 			DRM_ERROR("FDI mPHY reset de-assert timeout\n");
-	}
+}
 
 /* WaMPhyProgramming:hsw */
 static void lpt_program_fdi_mphy(struct drm_i915_private *dev_priv)
@@ -5356,7 +5370,7 @@ static void lpt_program_fdi_mphy(struct drm_i915_private *dev_priv)
 		tmp &= ~(0xF << 28);
 		tmp |= (4 << 28);
 		intel_sbi_write(dev_priv, 0x21EC, tmp, SBI_MPHY);
-	}
+}
 
 /* Implements 3 different sequences from BSpec chapter "Display iCLK
  * Programming" based on the parameters passed:
@@ -5999,7 +6013,7 @@ static void assert_can_disable_lcpll(struct drm_i915_private *dev_priv)
 	uint32_t val;
 
 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, base.head)
-		WARN(crtc->base.enabled, "CRTC for pipe %c enabled\n",
+		WARN(crtc->active, "CRTC for pipe %c enabled\n",
 		     pipe_name(crtc->pipe));
 
 	WARN(I915_READ(HSW_PWR_WELL_DRIVER), "Power well on\n");
@@ -10515,7 +10529,9 @@ void intel_modeset_gem_init(struct drm_device *dev)
 
 //   intel_setup_overlay(dev);
 
+	mutex_lock(&dev->mode_config.mutex);
 	intel_modeset_setup_hw_state(dev, false);
+	mutex_unlock(&dev->mode_config.mutex);
 }
 
 void intel_modeset_cleanup(struct drm_device *dev)
@@ -10589,14 +10605,15 @@ void intel_connector_attach_encoder(struct intel_connector *connector,
 int intel_modeset_vga_set_state(struct drm_device *dev, bool state)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
+	unsigned reg = INTEL_INFO(dev)->gen >= 6 ? SNB_GMCH_CTRL : INTEL_GMCH_CTRL;
 	u16 gmch_ctrl;
 
-	pci_read_config_word(dev_priv->bridge_dev, INTEL_GMCH_CTRL, &gmch_ctrl);
+	pci_read_config_word(dev_priv->bridge_dev, reg, &gmch_ctrl);
 	if (state)
 		gmch_ctrl &= ~INTEL_GMCH_VGA_DISABLE;
 	else
 		gmch_ctrl |= INTEL_GMCH_VGA_DISABLE;
-	pci_write_config_word(dev_priv->bridge_dev, INTEL_GMCH_CTRL, gmch_ctrl);
+	pci_write_config_word(dev_priv->bridge_dev, reg, gmch_ctrl);
 	return 0;
 }
 

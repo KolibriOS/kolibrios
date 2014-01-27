@@ -119,7 +119,7 @@ int drm_irq_install(struct drm_device *dev)
 
     if (ret < 0) {
 		dev->irq_enabled = 0;
-            DRM_ERROR(__FUNCTION__);
+        DRM_ERROR(__FUNCTION__);
     }
 
     u16_t cmd = PciRead16(dev->pdev->busnr, dev->pdev->devfn, 4);

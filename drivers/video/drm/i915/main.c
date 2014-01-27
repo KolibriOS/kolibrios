@@ -266,7 +266,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 
 #define SRV_FBINFO                      43
 #define SRV_MASK_UPDATE                 44
-
+#define SRV_MASK_UPDATE_EX              45
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -442,6 +442,10 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_MASK_UPDATE:
             retval = i915_mask_update(main_device, inp, file);
+            break;
+
+        case SRV_MASK_UPDATE_EX:
+            retval = i915_mask_update_ex(main_device, inp, file);
             break;
     };
 

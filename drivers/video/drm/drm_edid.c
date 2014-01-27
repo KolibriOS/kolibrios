@@ -68,6 +68,8 @@
 #define EDID_QUIRK_DETAILED_SYNC_PP		(1 << 6)
 /* Force reduced-blanking timings for detailed modes */
 #define EDID_QUIRK_FORCE_REDUCED_BLANKING	(1 << 7)
+/* Force 8bpc */
+#define EDID_QUIRK_FORCE_8BPC			(1 << 8)
 
 struct detailed_mode_closure {
 	struct drm_connector *connector;
@@ -128,6 +130,9 @@ static struct edid_quirk {
 
 	/* Medion MD 30217 PG */
 	{ "MED", 0x7b8, EDID_QUIRK_PREFER_LARGE_75 },
+
+	/* Panel in Samsung NP700G7A-S01PL notebook reports 6bpc */
+	{ "SEC", 0xd033, EDID_QUIRK_FORCE_8BPC },
 };
 
 /*
@@ -1009,12 +1014,12 @@ bool drm_edid_block_valid(u8 *raw_edid, int block, bool print_bad_edid)
 
 	if (block == 0) {
 		int score = drm_edid_header_is_valid(raw_edid);
-	if (score == 8) ;
-		else if (score >= edid_fixup) {
-		DRM_DEBUG("Fixing EDID header, your hardware may be failing\n");
-		memcpy(raw_edid, edid_header, sizeof(edid_header));
+        if (score == 8) ;
+        else if (score >= edid_fixup) {
+            DRM_DEBUG("Fixing EDID header, your hardware may be failing\n");
+            memcpy(raw_edid, edid_header, sizeof(edid_header));
 		} else {
-		goto bad;
+            goto bad;
 		}
 	}
 
@@ -1163,7 +1168,7 @@ drm_do_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
 	/* base block fetch */
 	for (i = 0; i < 4; i++) {
 		if (drm_do_probe_ddc_edid(adapter, block, 0, EDID_LENGTH))
-			goto out;
+            goto out;
 		if (drm_edid_block_valid(block, 0, print_bad_edid))
 			break;
 		if (i == 0 && drm_edid_is_zero(block, EDID_LENGTH)) {
@@ -2258,7 +2263,7 @@ do_cvt_mode(struct detailed_timing *timing, void *c)
 
 static int
 add_cvt_modes(struct drm_connector *connector, struct edid *edid)
-{	
+{
 	struct detailed_mode_closure closure = {
 		connector, edid, 0, 0, 0
 	};
@@ -2683,7 +2688,7 @@ add_cea_modes(struct drm_connector *connector, struct edid *edid)
 			dbl = cea_db_payload_len(db);
 
 			if (cea_db_tag(db) == VIDEO_BLOCK)
-				modes += do_cea_modes (connector, db+1, dbl);
+				modes += do_cea_modes(connector, db + 1, dbl);
 			else if (cea_db_is_hdmi_vsdb(db))
 				modes += do_hdmi_vsdb_modes(connector, db, dbl);
 		}
@@ -2795,7 +2800,7 @@ void drm_edid_to_eld(struct drm_connector *connector, struct edid *edid)
 		for_each_cea_db(cea, i, start, end) {
 			db = &cea[i];
 			dbl = cea_db_payload_len(db);
-			
+
 			switch (cea_db_tag(db)) {
 			case AUDIO_BLOCK:
 				/* Audio Data Block, contains SADs */
@@ -3235,6 +3240,9 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 		edid_fixup_preferred(connector, quirks);
 
 	drm_add_display_info(edid, &connector->display_info);
+
+	if (quirks & EDID_QUIRK_FORCE_8BPC)
+		connector->display_info.bpc = 8;
 
 	return num_modes;
 }

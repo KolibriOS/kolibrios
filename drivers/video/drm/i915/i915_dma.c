@@ -1360,6 +1360,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
 	aperture_size = dev_priv->gtt.mappable_end;
 
+	dev_priv->gtt.mappable = AllocKernelSpace(8192);
+	if (dev_priv->gtt.mappable == NULL) {
+		ret = -EIO;
+		goto out_rmmap;
+	}
 
     /* The i915 workqueue is primarily used for batched retirement of
      * requests (and thus managing bo) once the task has been completed

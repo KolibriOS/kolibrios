@@ -279,7 +279,7 @@ static void ivybridge_set_fifo_underrun_reporting(struct drm_device *dev,
 			DRM_DEBUG_KMS("uncleared fifo underrun on pipe %c\n",
 				      pipe_name(pipe));
 	}
-}
+	}
 }
 
 /**
@@ -1294,7 +1294,7 @@ static void cpt_irq_handler(struct drm_device *dev, u32 pch_iir)
 
 	if (pch_iir & SDE_ERROR_CPT)
 		cpt_serr_int_handler(dev);
-	}
+}
 
 static void ilk_display_irq_handler(struct drm_device *dev, u32 de_iir)
 {
@@ -1385,7 +1385,7 @@ static void ivb_display_irq_handler(struct drm_device *dev, u32 de_iir)
 
 		/* clear PCH hotplug event before clear CPU irq */
 		I915_WRITE(SDEIIR, pch_iir);
-}
+	}
 }
 
 static irqreturn_t ironlake_irq_handler(int irq, void *arg)
@@ -1427,7 +1427,7 @@ static irqreturn_t ironlake_irq_handler(int irq, void *arg)
 		if (err_int_reenable)
 			ironlake_disable_display_irq(dev_priv, DE_ERR_INT_IVB);
 		spin_unlock(&dev_priv->irq_lock);
-}
+	}
 
 	gt_iir = I915_READ(GTIIR);
 	if (gt_iir) {
@@ -1437,7 +1437,7 @@ static irqreturn_t ironlake_irq_handler(int irq, void *arg)
 			ilk_gt_irq_handler(dev, dev_priv, gt_iir);
 		I915_WRITE(GTIIR, gt_iir);
 		ret = IRQ_HANDLED;
-}
+	}
 
 	de_iir = I915_READ(DEIIR);
 	if (de_iir) {
@@ -1456,7 +1456,7 @@ static irqreturn_t ironlake_irq_handler(int irq, void *arg)
 			I915_WRITE(GEN6_PMIIR, pm_iir);
 			ret = IRQ_HANDLED;
 	}
-}
+	}
 
 	if (err_int_reenable) {
 		spin_lock(&dev_priv->irq_lock);
@@ -2122,7 +2122,7 @@ static void gen5_gt_irq_preinstall(struct drm_device *dev)
 		I915_WRITE(GEN6_PMIMR, 0xffffffff);
 		I915_WRITE(GEN6_PMIER, 0x0);
 		POSTING_READ(GEN6_PMIER);
-}
+	}
 }
 
 /* drm_dma.h hooks
