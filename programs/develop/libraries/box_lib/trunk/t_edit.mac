@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 27.11.2013 IgorA
+; файл последний раз изменялся 28.01.2014 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -2586,15 +2586,14 @@ proc ted_but_copy, edit:dword
 		call ted_iterat_next
 		jmp @b
 	@@:
-	add ecx,ted_buffer
 	mov byte[ebx],0
 
-	cmp ecx,0
+	cmp ecx,12
 	je .end_f
+		inc ecx ;размер данных в буфере + символ завершения строки
 		mov ebx,ted_buffer
-		mov eax,ted_buffer_size
-		mov dword[ebx],eax
-		mcall 54,2,ted_buffer_size,ted_buffer
+		mov dword[ebx],ecx
+		mcall 54,2,ecx,ted_buffer
 		call ted_draw_buffer
 		cmp ted_fun_draw_panel_buttons,0
 		je .end_f
