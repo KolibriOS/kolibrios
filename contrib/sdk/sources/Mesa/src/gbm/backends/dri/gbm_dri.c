@@ -174,49 +174,15 @@ static int
 dri_load_driver(struct gbm_dri_device *dri)
 {
    const __DRIextension **extensions;
-//   char path[PATH_MAX], *search_paths, *p, *next, *end;
-   char *search_paths;
+   char path[64];
 
-   search_paths = NULL;
+   snprintf(path, sizeof path,"/kolibrios/lib/%s_dri.drv", dri->base.driver_name);
 
-#if 0
-
-   if (geteuid() == getuid()) {
-      /* don't allow setuid apps to use GBM_DRIVERS_PATH */
-      search_paths = getenv("GBM_DRIVERS_PATH");
-   }
-   if (search_paths == NULL)
-      search_paths = DEFAULT_DRIVER_DIR;
-
-   dri->driver = NULL;
-   end = search_paths + strlen(search_paths);
-   for (p = search_paths; p < end && dri->driver == NULL; p = next + 1) {
-      int len;
-      next = strchr(p, ':');
-      if (next == NULL)
-         next = end;
-
-      len = next - p;
-#if GLX_USE_TLS
-      snprintf(path, sizeof path,
-               "%.*s/tls/%s_dri.so", len, p, dri->base.driver_name);
-      dri->driver = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
-#endif
-      if (dri->driver == NULL) {
-         snprintf(path, sizeof path,
-                  "%.*s/%s_dri.so", len, p, dri->base.driver_name);
-         dri->driver = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
-         if (dri->driver == NULL)
-            fprintf(stderr, "failed to open %s: %s\n", path, dlerror());
-      }
-   }
-#endif
-
-   dri->driver = load_library("libGL.dll");
+   dri->driver = load_library(path);
 
    if (dri->driver == NULL) {
       fprintf(stderr, "gbm: failed to open any driver (search paths %s)",
-              search_paths);
+              path);
       return -1;
    }
 
@@ -243,7 +209,7 @@ dri_screen_create(struct gbm_dri_device *dri)
    const __DRIextension **extensions;
    int ret = 0;
 
-   dri->base.driver_name = strdup("drm"); //dri_fd_get_driver_name(dri->base.base.fd);
+   dri->base.driver_name = dri_fd_get_driver_name(dri->base.base.fd);
    if (dri->base.driver_name == NULL)
       return -1;
 
@@ -587,9 +553,6 @@ gbm_dri_bo_create(struct gbm_device *gbm,
                           &bo->base.base.handle.s32);
    dri->image->queryImage(bo->image, __DRI_IMAGE_ATTRIB_STRIDE,
                           (int *) &bo->base.base.stride);
-
-   printf("%s handle %d w %d h%d\n",__FUNCTION__, bo->base.base.handle.s32,
-            width, height);
 
    return &bo->base.base;
 }

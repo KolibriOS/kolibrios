@@ -51,22 +51,11 @@
 extern "C" {
 #endif
 
-
-#ifdef _GLAPI_NO_EXPORTS
-#  define _GLAPI_EXPORT
-#else /* _GLAPI_NO_EXPORTS */
-#  ifdef _WIN32
-#    ifdef _GLAPI_DLL_EXPORTS
-#      define _GLAPI_EXPORT __declspec(dllexport)
-#    else
-#      define _GLAPI_EXPORT __declspec(dllimport)
-#    endif
-#  elif defined(__GNUC__) || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590))
-#    define _GLAPI_EXPORT __attribute__((visibility("default")))
-#  else
-#    define _GLAPI_EXPORT
-#  endif
-#endif /* _GLAPI_NO_EXPORTS */
+#ifdef _GLAPI_DLL_EXPORTS
+#   define _GLAPI_EXPORT __declspec(dllexport)
+#else
+#   define _GLAPI_EXPORT __declspec(dllimport)
+#endif
 
 
 /* Is this needed?  It is incomplete anyway. */

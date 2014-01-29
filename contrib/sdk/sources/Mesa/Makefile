@@ -13,7 +13,7 @@ LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds --out-implib 
 STRIP = $(PREFIX)strip
 
 INC_MESA=  -I../newlib/include -I./include -I./src -I./src/glsl -I./src/mesa -I./src/mapi
-INC_EGL=   -I../newlib/include -I./include -I../libdrm -I../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
+INC_EGL=   -I../newlib/include -I../../includes -I./include -I../libdrm -I../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
 
 LIBPATH:= -L../../lib
 
@@ -46,6 +46,7 @@ EGL_SRC = 					\
 	src/egl/main/eglstring.c		\
 	src/egl/main/eglsurface.c		\
 	src/egl/main/eglsync.c			\
+	src/gbm/backends/dri/driver_name.c	\
 	src/gbm/backends/dri/gbm_dri.c		\
 	src/gbm/main/backend.c			\
 	src/gbm/main/gbm.c			\

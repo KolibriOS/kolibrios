@@ -28,8 +28,8 @@
 
 #include <stdio.h>
 #include <string.h>
-
-#include <libudev.h>
+#include <pciaccess.h>
+#include <kos32sys.h>
 
 #include "gbm_driint.h"
 #define DRIVER_MAP_DRI2_ONLY
@@ -38,52 +38,44 @@
 char *
 dri_fd_get_driver_name(int fd)
 {
-   struct udev *udev;
-   struct udev_device *device, *parent;
-   const char *pci_id;
+    ioctl_t   io;
+    struct pci_device device;
    char *driver = NULL;
-   int vendor_id, chip_id, i, j;
+    int i, j;
 
-   udev = udev_new();
-   device = _gbm_udev_device_new_from_fd(udev, fd);
-   if (device == NULL)
+    io.handle   = fd;
+    io.io_code  = SRV_GET_PCI_INFO;
+    io.input    = &device;
+    io.inp_size = sizeof(device);
+    io.output   = NULL;
+    io.out_size = 0;
+
+    if (call_service(&io)!=0)
       return NULL;
 
-   parent = udev_device_get_parent(device);
-   if (parent == NULL) {
-      fprintf(stderr, "gbm: could not get parent device");
-      goto out;
-   }
-
-   pci_id = udev_device_get_property_value(parent, "PCI_ID");
-   if (pci_id == NULL ||
-       sscanf(pci_id, "%x:%x", &vendor_id, &chip_id) != 2) {
-      fprintf(stderr, "gbm: malformed or no PCI ID");
-      goto out;
-   }
-
-   for (i = 0; driver_map[i].driver; i++) {
-      if (vendor_id != driver_map[i].vendor_id)
+    for (i = 0; driver_map[i].driver; i++)
+    {
+        if (device.vendor_id != driver_map[i].vendor_id)
          continue;
-      if (driver_map[i].num_chips_ids == -1) {
+        if (driver_map[i].num_chips_ids == -1)
+        {
          driver = strdup(driver_map[i].driver);
-         _gbm_log("pci id for %d: %04x:%04x, driver %s",
-                  fd, vendor_id, chip_id, driver);
+            printf("pci id for %d: %04x:%04x, driver %s\n",
+                  fd, device.vendor_id, device.device_id, driver);
          goto out;
       }
 
       for (j = 0; j < driver_map[i].num_chips_ids; j++)
-         if (driver_map[i].chip_ids[j] == chip_id) {
+            if (driver_map[i].chip_ids[j] == device.device_id)
+            {
             driver = strdup(driver_map[i].driver);
-            _gbm_log("pci id for %d: %04x:%04x, driver %s",
-                     fd, vendor_id, chip_id, driver);
+                printf("pci id for %d: %04x:%04x, driver %s\n",
+                     fd, device.vendor_id, device.device_id, driver);
             goto out;
          }
    }
 
 out:
-   udev_device_unref(device);
-   udev_unref(udev);
 
    return driver;
 }

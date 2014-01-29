@@ -39,7 +39,7 @@
  * last moment.
  */
 
-#include <sys/ioctl.h>
+//#include <sys/ioctl.h>
 #include <errno.h>
 
 #include "main/hash.h"
@@ -205,6 +205,7 @@ intel_region_alloc_for_handle(struct intel_screen *screen,
    return region;
 }
 
+#if 0
 struct intel_region *
 intel_region_alloc_for_fd(struct intel_screen *screen,
                           GLuint cpp,
@@ -237,6 +238,7 @@ intel_region_alloc_for_fd(struct intel_screen *screen,
 
    return region;
 }
+#endif
 
 void
 intel_region_reference(struct intel_region **dst, struct intel_region *src)

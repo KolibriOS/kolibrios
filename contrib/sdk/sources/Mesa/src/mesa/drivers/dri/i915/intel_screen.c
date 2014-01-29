@@ -103,7 +103,7 @@ get_time(void)
 {
    struct timespec tp;
 
-   clock_gettime(CLOCK_MONOTONIC, &tp);
+//   clock_gettime(CLOCK_MONOTONIC, &tp);
 
    return tp.tv_sec + tp.tv_nsec / 1000000000.0;
 }
@@ -528,8 +528,8 @@ intel_query_image(__DRIimage *image, int attrib, int *value)
       *value = image->planar_format->components;
       return true;
    case __DRI_IMAGE_ATTRIB_FD:
-      if (drm_intel_bo_gem_export_to_prime(image->region->bo, value) == 0)
-         return true;
+//      if (drm_intel_bo_gem_export_to_prime(image->region->bo, value) == 0)
+//         return true;
       return false;
   default:
       return false;
@@ -620,6 +620,7 @@ intel_create_image_from_names(__DRIscreen *screen,
     return image;
 }
 
+#if 0
 static __DRIimage *
 intel_create_image_from_fds(__DRIscreen *screen,
                             int width, int height, int fourcc,
@@ -664,7 +665,7 @@ intel_create_image_from_fds(__DRIscreen *screen,
 
    return image;
 }
-
+#endif
 
 static __DRIimage *
 intel_from_planar(__DRIimage *parent, int plane, void *loaderPrivate)
@@ -737,7 +738,7 @@ static struct __DRIimageExtensionRec intelImageExtension = {
     .createImageFromNames               = intel_create_image_from_names,
     .fromPlanar                         = intel_from_planar,
     .createImageFromTexture             = intel_create_image_from_texture,
-    .createImageFromFds                 = intel_create_image_from_fds
+//    .createImageFromFds                 = intel_create_image_from_fds
 };
 
 static const __DRIextension *intelScreenExtensions[] = {
@@ -758,7 +759,7 @@ intel_get_param(__DRIscreen *psp, int param, int *value)
    gp.param = param;
    gp.value = value;
 
-   ret = drmCommandWriteRead(psp->fd, DRM_I915_GETPARAM, &gp, sizeof(gp));
+   ret = drmIoctl(psp->fd, DRM_IOCTL_I915_GETPARAM, &gp);
    if (ret) {
       if (ret != -EINVAL)
 	 _mesa_warning(NULL, "drm_i915_getparam: %d", ret);
@@ -767,6 +768,7 @@ intel_get_param(__DRIscreen *psp, int param, int *value)
 
    return true;
 }
+
 
 static bool
 intel_get_boolean(__DRIscreen *psp, int param)
@@ -1226,7 +1228,7 @@ const struct __DriverAPIRec driDriverAPI = {
 };
 
 /* This is the table of extensions that the loader will dlsym() for. */
-PUBLIC const __DRIextension *__driDriverExtensions[] = {
+__declspec(dllexport) const __DRIextension *__driDriverExtensions[] = {
     &driCoreExtension.base,
     &driDRI2Extension.base,
     NULL

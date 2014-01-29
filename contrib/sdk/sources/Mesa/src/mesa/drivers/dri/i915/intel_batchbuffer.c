@@ -68,6 +68,7 @@ intel_batchbuffer_free(struct intel_context *intel)
    drm_intel_bo_unreference(intel->batch.bo);
 }
 
+#if 0
 static void
 do_batch_dump(struct intel_context *intel)
 {
@@ -107,6 +108,7 @@ do_batch_dump(struct intel_context *intel)
 	 intel->vtbl.debug_batch(intel);
    }
 }
+#endif
 
 /* TODO: Push this whole function into bufmgr.
  */
@@ -127,8 +129,8 @@ do_flush_locked(struct intel_context *intel)
       }
    }
 
-   if (unlikely(INTEL_DEBUG & DEBUG_BATCH))
-      do_batch_dump(intel);
+//   if (unlikely(INTEL_DEBUG & DEBUG_BATCH))
+//      do_batch_dump(intel);
 
    if (ret != 0) {
       fprintf(stderr, "intel_do_flush_locked failed: %s\n", strerror(-ret));
