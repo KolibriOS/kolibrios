@@ -9,7 +9,7 @@ s_image pics[100]; //pics = mem_Alloc( 100*sizeof(s_image) );
 struct ImageCache {
 	int pics_count;
 	void Free();
-	int GetImage();
+	int GetImageNumber();
 	void Images();
 };
 
@@ -22,7 +22,7 @@ void ImageCache::Free()
 	}
 }
 
-int ImageCache::GetImage(dword i_path)
+int ImageCache::GetImageNumber(dword i_path)
 {
 	int i;
 	for (i=0; i<pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
@@ -55,7 +55,7 @@ void ImageCache::Images(int left1, top1, width1)
 					img_path[strrchr(#img_path, '/')] = '\0';
 					strcat(#img_path, #options);
 				}
-				cur_pic = GetImage(#img_path); 
+				cur_pic = GetImageNumber(#img_path); 
 			}
 		}
 		if (!strcmp(#parametr,"alt="))

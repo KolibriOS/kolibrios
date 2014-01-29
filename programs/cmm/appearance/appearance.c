@@ -24,7 +24,7 @@
 	?define T_WALLPAPERS  "   Wallpappers"
 #endif
 
-unsigned char icons[sizeof(file "icons.raw")]= FROM "icons.raw";
+unsigned char icons[]= FROM "icons.raw";
 
 
 #define PANEL_H 30

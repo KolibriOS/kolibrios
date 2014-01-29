@@ -632,7 +632,7 @@ void TWebBrowser::TextGoDown(int left1, top1, width1)
 		DrawBuf.Fill(bg_color);
 	}
 	stroka++;
-	if (blq_text) stolbec = 8; else stolbec = 0;
+	if (blq_text) stolbec = 6; else stolbec = 0;
 	if (li_text) stolbec = li_tab * 5;
 }
 

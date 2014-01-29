@@ -8,9 +8,11 @@ char *ITEMS_LIST[]={
 #ifdef LANG_RUS
 "Исходник страницы    F3",52,
 "Очистить кэш картинок"  ,02,
+"История"                ,08,
 #else
 "View source          F3",52,
 "Free image cache"       ,09,
+"History"                ,08,
 #endif
 0}; 
 

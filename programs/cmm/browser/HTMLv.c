@@ -30,19 +30,17 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.65";
+	char version[]=" Текстовый браузер 0.99.66";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
-	char loading[] = "Loading...";
-	char page_not_found[] = "Страница не найдена. Воможно, URL содержит ошибку.";
-	char page_not_found_no_internet[] = "Страница не найдена. Воможно, URL содержит ошибку.<br>Или нет доступа в Интернеты.";
+	char loading[] = "Загрузка страницы...";
+	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 #else
-	char version[]=" Text-based Browser 0.99.65";
+	char version[]=" Text-based Browser 0.99.66";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...";
-	char page_not_found[] = "Page not found. Maybe, URL contains some errors.";
-	char page_not_found_no_internet[] = "Page not found. Maybe, URL contains some errors.<br>Or Internet unavailable for your configuration.";
+	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
 #endif
 
 proc_info Form;
@@ -67,6 +65,7 @@ char editURL[sizeof(URL)];
 int	mouse_twb;
 edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 
+#define URL_HISTORY "WebView://history"
 
 enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 
@@ -284,6 +283,11 @@ void Scan(int id)
 			WB1.ParseHTML(bufpointer);
 			return;
 
+		case 008: //history
+			strcpy(#URL, URL_HISTORY);
+			OpenPage();
+			return;
+
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
 			OpenPage();
@@ -350,14 +354,14 @@ void Scan(int id)
 			return;
 
 		case 178:
-		case BTN_UP: //ьюЄрхь ттхЁї
+		case BTN_UP:
 			if (WB1.list.first <= 0) return;
 			WB1.list.first--;
 			WB1.ParseHTML(bufpointer);
 			return;
 
 		case 177: 
-		case BTN_DOWN: //ьюЄрхь тэшч
+		case BTN_DOWN:
 			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
 			WB1.list.first++;
 			WB1.ParseHTML(bufpointer);
@@ -378,8 +382,7 @@ void Scan(int id)
 
 void ProcessLinks(int id)
 {
-	strcpy(#URL, PageLinks.GetURL(id-401));
-	
+	strcpy(#URL, PageLinks.GetURL(id-401));	
 	//$1 - Condition Script
 	if (URL[0] == '$')
 	{
@@ -460,34 +463,56 @@ void ShowPage()
 	address_box.offset=0;
 	edit_box_draw stdcall(#address_box);
 
+	if (strcmp(#URL, URL_HISTORY)==0) ShowHistory(); else
 	if (!bufsize)
 	{
 		PageLinks.Clear();
 		if (GetProcessSlot(downloader_id)<>0) 
 		{
-				bufsize = sizeof(loading);
-				WB1.ParseHTML(#loading);
+			bufsize = sizeof(loading);
+			WB1.ParseHTML(#loading);
 		}
 		else
 		{
-			if (strncmp(#URL,"http:",5)==0)
-			{
-				bufsize = sizeof(page_not_found_no_internet);
-				WB1.ParseHTML(#page_not_found_no_internet);
-			}
-			else
-			{
-				bufsize = sizeof(page_not_found);
-				WB1.ParseHTML(#page_not_found);
-			}
+			bufsize = sizeof(page_not_found);
+			WB1.ParseHTML(#page_not_found);
 		}
-		//return;
+		bufsize = 0;
 	}
 	else
 		WB1.ParseHTML(bufpointer);
 
 	if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
+}
+
+ShowHistory()
+{
+		int i;
+		static int history_pointer;
+		
+		free(history_pointer);
+		history_pointer = malloc(64000);
+		strcat(history_pointer, "<h1>History</h1>");
+		strcat(history_pointer, "<h2>Visited pages</h2><blockquote><br>");
+		for (i=1; i<BrowserHistory.links_count; i++)
+		{
+			strcat(history_pointer, "<a href='");
+			strcat(history_pointer, BrowserHistory.GetUrl(i));
+			strcat(history_pointer, "'>");
+			strcat(history_pointer, BrowserHistory.GetUrl(i));
+			strcat(history_pointer, "</a><br>");
+		}
+		strcat(history_pointer, "</blockquote><h2>Cached images</h2><br>");
+		for (i=1; i<ImgCache.pics_count; i++)
+		{
+			strcat(history_pointer, "<img src='");
+			strcat(history_pointer, #pics[i].path);
+			strcat(history_pointer, "' /><br>");
+		}
+		bufsize = strlen(history_pointer);
+		bufpointer = history_pointer;
+		WB1.ParseHTML(history_pointer);
 }
 
 
