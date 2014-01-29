@@ -283,7 +283,7 @@ void Scan(int id)
 			WB1.ParseHTML(bufpointer);
 			return;
 
-		case 008: //history
+		case 003: //history
 			strcpy(#URL, URL_HISTORY);
 			OpenPage();
 			return;
