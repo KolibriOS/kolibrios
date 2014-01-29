@@ -156,8 +156,6 @@ Overlay                 ehci_hardware_td        ?
 ; Working area for the current TD, if there is any.
 ; When TD is retired, it is written to that TD and Overlay is loaded
 ; from the new TD, if any.
-BaseList                dd      ?
-; Pointer to head of the corresponding pipe list.
 ends
 
 ; This structure describes the static head of every list of pipes.
@@ -293,6 +291,8 @@ ehci_hardware_func:
         dd      ehci_alloc_transfer
         dd      ehci_insert_transfer
         dd      ehci_new_device
+        dd      ehci_disable_pipe
+        dd      ehci_enable_pipe
 ehci_name db    'EHCI',0
 endg
 
@@ -998,7 +998,7 @@ end virtual
         jz      .return0
         mov     word [edi+ehci_pipe.Flags-sizeof.ehci_pipe], ax
 .insert:
-        mov     [edi+ehci_pipe.BaseList-sizeof.ehci_pipe], edx
+        mov     [edi+usb_pipe.BaseList], edx
 ; Insert to the head of the corresponding list.
 ; Note: inserting to the head guarantees that the list traverse in
 ; ehci_process_updated_schedule, once started, will not interact with new pipes.
@@ -1912,19 +1912,58 @@ proc ehci_unlink_pipe
         call    ehci_fs_interrupt_list_unlink
 .interrupt_common:
 @@:
-        mov     edx, [ebx+usb_pipe.NextVirt]
-        mov     eax, [ebx+usb_pipe.PrevVirt]
-        mov     [edx+usb_pipe.PrevVirt], eax
-        mov     [eax+usb_pipe.NextVirt], edx
+        ret
+endp
+
+; This procedure temporarily removes the given pipe from hardware queue.
+; esi -> usb_controller, ebx -> usb_pipe
+proc ehci_disable_pipe
+        mov     eax, [ebx+ehci_pipe.NextQH-sizeof.ehci_pipe]
+        mov     ecx, [ebx+usb_pipe.PrevVirt]
         mov     edx, esi
-        sub     edx, eax
+        sub     edx, ecx
         cmp     edx, sizeof.ehci_controller
-        mov     edx, [ebx+ehci_pipe.NextQH-sizeof.ehci_pipe]
         jb      .prev_is_static
-        mov     [eax+ehci_pipe.NextQH-sizeof.ehci_pipe], edx
+        mov     [ecx+ehci_pipe.NextQH-sizeof.ehci_pipe], eax
         ret
 .prev_is_static:
-        mov     [eax+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart], edx
+        mov     [ecx+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart], eax
+        ret
+endp
+
+; This procedure reinserts the given pipe to hardware queue
+; after ehci_disable_pipe, with clearing transfer queue.
+; esi -> usb_controller, ebx -> usb_pipe
+; edx -> current descriptor, eax -> new last descriptor
+proc ehci_enable_pipe
+; 1. Clear transfer queue.
+; 1a. Clear status bits so that the controller will try to advance the queue
+; without doing anything, keep DataToggle and PID bits.
+        and     [ebx+ehci_pipe.Overlay.Token-sizeof.ehci_pipe], 80000000h
+; 1b. Set [Alternate]NextTD to physical address of the new last descriptor.
+        sub     eax, sizeof.ehci_gtd
+        invoke  GetPhysAddr
+        mov     [ebx+ehci_pipe.HeadTD-sizeof.ehci_pipe], eax
+        mov     [ebx+ehci_pipe.Overlay.NextTD-sizeof.ehci_pipe], eax
+        mov     [ebx+ehci_pipe.Overlay.AlternateNextTD-sizeof.ehci_pipe], eax
+; 2. Reinsert the pipe to hardware queue.
+        lea     eax, [ebx-sizeof.ehci_pipe]
+        invoke  GetPhysAddr
+        inc     eax
+        inc     eax
+        mov     ecx, [ebx+usb_pipe.PrevVirt]
+        mov     edx, esi
+        sub     edx, ecx
+        cmp     edx, sizeof.ehci_controller
+        jb      .prev_is_static
+        mov     edx, [ecx+ehci_pipe.NextQH-sizeof.ehci_pipe]
+        mov     [ebx+ehci_pipe.NextQH-sizeof.ehci_pipe], edx
+        mov     [ecx+ehci_pipe.NextQH-sizeof.ehci_pipe], eax
+        ret
+.prev_is_static:
+        mov     edx, [ecx+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart]
+        mov     [ebx+ehci_pipe.NextQH-sizeof.ehci_pipe], edx
+        mov     [ecx+ehci_static_ep.NextQH-ehci_static_ep.SoftwarePart], eax
         ret
 endp
 

@@ -64,7 +64,7 @@ Flags           dd      ?
 ; 2. Next 4 bits (bits 7-10) are EndpointNumber. This is the USB address of
 ;    the endpoint within the function.
 ; 3. Next 2 bits (bits 11-12) are Direction. This 2-bit field indicates the
-;    direction of data flow: 1 = IN, 2 = OUT. If neither IN nor OUT is
+;    direction of data flow: 1 = OUT, 2 = IN. If neither IN nor OUT is
 ;    specified, then the direction is determined from the PID field of the TD.
 ;    For CONTROL endpoints, the transfer direction is different
 ;    for different transfers, so the value of this field is 0
@@ -322,6 +322,8 @@ ohci_hardware_func:
         dd      ohci_alloc_transfer
         dd      ohci_insert_transfer
         dd      ohci_new_device
+        dd      ohci_disable_pipe
+        dd      ohci_enable_pipe
 ohci_name db    'OHCI',0
 endg
 
@@ -1014,6 +1016,7 @@ end virtual
 ; Inserting to tail would work as well,
 ; but let's be consistent with other controllers.
 .insert:
+        mov     [edi+usb_pipe.BaseList], edx
         mov     ecx, [edx+usb_pipe.NextVirt]
         mov     [edi+usb_pipe.NextVirt], ecx
         mov     [edi+usb_pipe.PrevVirt], edx
@@ -1614,17 +1617,41 @@ proc ohci_unlink_pipe
         mov     eax, [ebx+ohci_pipe.Flags-sizeof.ohci_pipe]
         bt      eax, 13
         setc    cl
-        bt      eax, 11
+        bt      eax, 12
         setc    ch
         shr     eax, 16
         stdcall usb1_interrupt_list_unlink, eax, ecx
 @@:
-        mov     edx, [ebx+usb_pipe.NextVirt]
-        mov     eax, [ebx+usb_pipe.PrevVirt]
-        mov     [edx+usb_pipe.PrevVirt], eax
-        mov     [eax+usb_pipe.NextVirt], edx
-        mov     edx, [ebx+ohci_pipe.NextED-sizeof.ohci_pipe]
-        mov     [eax+ohci_pipe.NextED-sizeof.ohci_pipe], edx
+        ret
+endp
+
+; This procedure temporarily removes the given pipe from hardware queue,
+; keeping it in software lists.
+; esi -> usb_controller, ebx -> usb_pipe
+proc ohci_disable_pipe
+        mov     eax, [ebx+ohci_pipe.NextED-sizeof.ohci_pipe]
+        mov     edx, [ebx+usb_pipe.PrevVirt]
+        mov     [edx+ohci_pipe.NextED-sizeof.ohci_pipe], eax
+        ret
+endp
+
+; This procedure reinserts the given pipe from hardware queue
+; after ehci_disable_pipe, with clearing transfer queue.
+; esi -> usb_controller, ebx -> usb_pipe
+; edx -> current descriptor, eax -> new last descriptor
+proc ohci_enable_pipe
+        sub     eax, sizeof.ohci_gtd
+        invoke  GetPhysAddr
+        mov     edx, [ebx+ohci_pipe.HeadP-sizeof.ohci_pipe]
+        and     edx, 2
+        or      eax, edx
+        mov     [ebx+ohci_pipe.HeadP-sizeof.ohci_pipe], eax
+        lea     eax, [ebx-sizeof.ohci_pipe]
+        invoke  GetPhysAddr
+        mov     edx, [ebx+usb_pipe.PrevVirt]
+        mov     ecx, [edx+ohci_pipe.NextED-sizeof.ohci_pipe]
+        mov     [ebx+ohci_pipe.NextED-sizeof.ohci_pipe], ecx
+        mov     [edx+ohci_pipe.NextED-sizeof.ohci_pipe], eax
         ret
 endp
 

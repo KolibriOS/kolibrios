@@ -186,6 +186,7 @@ USB_STATUS_BUFOVERRUN   = 12    ; overflow of internal controller buffer
 USB_STATUS_BUFUNDERRUN  = 13    ; underflow of internal controller buffer
 USB_STATUS_CLOSED       = 16    ; pipe closed, either explicitly with USBClosePipe
                                 ; or due to device disconnect
+USB_STATUS_CANCELLED    = 17    ; transfer cancelled with USBAbortPipe
 
 If several transfers are queued for the same pipe, their callback functions
 are called in the same order as they were queued.
@@ -193,6 +194,11 @@ When a pipe is closed, either explicitly with USBClosePipe, or
 implicitly due to device disconnect, all callback functions are called
 with USB_STATUS_CLOSED. The call to DeviceDisconnected() occurs after
 all callbacks.
+
+void __stdcall USBAbortPipe(void* pipe);
+Initiates cancellation of all active transfers for the given pipe. Asynchronous.
+When a transfer will be cancelled, the associated callback function
+will be called with USB_STATUS_CANCELLED.
 
 void* __stdcall USBGetParam(void* pipe0, int param);
 Returns miscellaneous parameters of the device.

@@ -114,7 +114,7 @@ proc get_phys_addr
         ret
 endp
 
-; Put the given control pipe in the wait list;
+; Put the given control/bulk pipe in the wait list;
 ; called when the pipe structure is changed and a possible hardware cache
 ; needs to be synchronized. When it will be known that the cache is updated,
 ; usb_subscription_done procedure will be called.
@@ -124,6 +124,17 @@ proc usb_subscribe_control
         mov     eax, [esi+usb_controller.WaitPipeListAsync]
         mov     [ebx+usb_pipe.NextWait], eax
         mov     [esi+usb_controller.WaitPipeListAsync], ebx
+@@:
+        ret
+endp
+
+; Same as usb_subscribe_control, but for interrupt/isochronous pipe.
+proc usb_subscribe_periodic
+        cmp     [ebx+usb_pipe.NextWait], -1
+        jnz     @f
+        mov     eax, [esi+usb_controller.WaitPipeListPeriodic]
+        mov     [ebx+usb_pipe.NextWait], eax
+        mov     [esi+usb_controller.WaitPipeListPeriodic], ebx
 @@:
         ret
 endp
@@ -254,13 +265,18 @@ proc usb_process_one_wait_list
         mov     [esi+usb_controller.WaitPipeListAsync+edx], ebx
         jmp     .continue
 .process:
-; 7. Call the handler depending on USB_FLAG_CLOSED.
+; 7. Call the handler depending on USB_FLAG_CLOSED and USB_FLAG_DISABLED.
         or      [ebx+usb_pipe.NextWait], -1
         test    [ebx+usb_pipe.Flags], USB_FLAG_CLOSED
         jz      .nodisconnect
         call    usb_pipe_closed
         jmp     .continue
 .nodisconnect:
+        test    [ebx+usb_pipe.Flags], USB_FLAG_DISABLED
+        jz      .nodisabled
+        call    usb_pipe_disabled
+        jmp     .continue
+.nodisabled:
         call    usb_subscription_done
 .continue:
 ; 8. Restore edx and next pipe saved in step 5 and continue the loop.

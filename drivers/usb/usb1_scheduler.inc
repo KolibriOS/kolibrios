@@ -167,12 +167,7 @@ end virtual
         mov     eax, [.maxpacket]
         mov     ecx, dword [.lowspeed]
         call    calc_usb1_bandwidth
-; find list header
-        mov     edx, ebx
-@@:
-        mov     edx, [edx+usb_pipe.NextVirt]
-        cmp     [edx+usb_pipe.Controller], esi
-        jz      @b
+        mov     edx, [ebx+usb_pipe.BaseList]
 ; subtract pipe bandwidth
         sub     [edx+usb_static_ep.Bandwidth], eax
         ret     8

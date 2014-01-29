@@ -274,6 +274,8 @@ uhci_hardware_func:
         dd      uhci_alloc_transfer
         dd      uhci_insert_transfer
         dd      uhci_new_device
+        dd      uhci_disable_pipe
+        dd      uhci_enable_pipe
 uhci_name db    'UHCI',0
 endg
 
@@ -1133,7 +1135,6 @@ proc uhci_fix_toggle
         jnz     .loop
 ; 5. Flip the toggle bit in uhci_pipe structure.
         xor     byte [ecx+uhci_pipe.Token-sizeof.uhci_pipe-usb_pipe.Lock+2], 1 shl (19-16)
-        or      dword [ecx+uhci_pipe.Token-sizeof.uhci_pipe-usb_pipe.Lock], eax
 ; 6. Unlock the transfer queue.
         invoke  MutexUnlock
 .nothing:
@@ -1461,6 +1462,7 @@ end virtual
         test    edx, edx
         jz      .return0
 .insert:
+        mov     [edi+usb_pipe.BaseList], edx
 ; Insert to the head of the corresponding list.
 ; Note: inserting to the head guarantees that the list traverse in
 ; uhci_process_updated_schedule, once started, will not interact with new pipes.
@@ -1505,17 +1507,44 @@ proc uhci_unlink_pipe
         shr     eax, 21
         stdcall usb1_interrupt_list_unlink, eax, ecx
 @@:
-; Note: we need to ensure that NextVirt field of the pipe is not modified;
-; this procedure can be called while uhci_process_updated_schedule processes
-; the same pipe, and it needs a correct NextVirt field to continue.
-        mov     edx, [ebx+usb_pipe.NextVirt]
-        mov     eax, [ebx+usb_pipe.PrevVirt]
-        mov     [edx+usb_pipe.PrevVirt], eax
-        mov     [eax+usb_pipe.NextVirt], edx
-; Note: eax could be either usb_pipe or usb_static_ep;
+        ret
+endp
+
+; This procedure temporarily removes the given pipe from hardware queue,
+; keeping it in software lists.
+; esi -> usb_controller, ebx -> usb_pipe
+proc uhci_disable_pipe
+        mov     eax, [ebx+uhci_pipe.NextQH-sizeof.uhci_pipe]
+        mov     edx, [ebx+usb_pipe.PrevVirt]
+; Note: edx could be either usb_pipe or usb_static_ep;
 ; fortunately, NextQH and SoftwarePart have same offsets in both.
-        mov     edx, [ebx+uhci_pipe.NextQH-sizeof.uhci_pipe]
-        mov     [eax+uhci_pipe.NextQH-sizeof.uhci_pipe], edx
+        mov     [edx+uhci_pipe.NextQH-sizeof.uhci_pipe], eax
+        ret
+endp
+
+; This procedure reinserts the given pipe from hardware queue
+; after ehci_disable_pipe, with clearing transfer queue.
+; esi -> usb_controller, ebx -> usb_pipe
+; edx -> current descriptor, eax -> new last descriptor
+proc uhci_enable_pipe
+; 1. Copy DataToggle bit from edx to pipe.
+        mov     ecx, [edx+uhci_gtd.Token-sizeof.uhci_gtd]
+        xor     ecx, [ebx+uhci_pipe.Token-sizeof.uhci_pipe]
+        and     ecx, 1 shl 19
+        xor     [ebx+uhci_pipe.Token-sizeof.uhci_pipe], ecx
+; 2. Store new last descriptor as the current HeadTD.
+        sub     eax, sizeof.uhci_gtd
+        invoke  GetPhysAddr
+        mov     [ebx+uhci_pipe.HeadTD-sizeof.uhci_pipe], eax
+; 3. Reinsert the pipe to hardware queue.
+        lea     eax, [ebx-sizeof.uhci_pipe]
+        invoke  GetPhysAddr
+        inc     eax
+        inc     eax
+        mov     edx, [ebx+usb_pipe.PrevVirt]
+        mov     ecx, [edx+uhci_pipe.NextQH-sizeof.uhci_pipe]
+        mov     [ebx+uhci_pipe.NextQH-sizeof.uhci_pipe], ecx
+        mov     [edx+uhci_pipe.NextQH-sizeof.uhci_pipe], eax
         ret
 endp
 

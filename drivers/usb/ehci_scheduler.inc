@@ -298,7 +298,7 @@ proc ehci_hs_interrupt_list_unlink
         imul    eax, ecx
         movzx   ecx, byte [ebx+ehci_pipe.Flags-sizeof.ehci_pipe]
 ; get target list
-        mov     edx, [ebx+ehci_pipe.BaseList-sizeof.ehci_pipe]
+        mov     edx, [ebx+usb_pipe.BaseList]
 ; update bandwidth
 .dec_bandwidth:
         shr     ecx, 1
@@ -732,7 +732,7 @@ proc ehci_fs_interrupt_list_unlink
         mov     edi, esp
         call    tt_fill_split_info
 ; get target list
-        mov     edx, [ebx+ehci_pipe.BaseList-sizeof.ehci_pipe]
+        mov     edx, [ebx+usb_pipe.BaseList]
 ; update bandwidth for Start-Split
         mov     eax, [edi+usb_split_info.ssplit_bandwidth]
         xor     ecx, ecx
