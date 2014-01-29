@@ -518,7 +518,7 @@ end virtual
         jz      .error
         ret     20
 .error:
-        DEBUGF 1, 'K : error %d while resetting', [.status]
+        DEBUGF 1, 'K : error %d while resetting', [.status+24h]
         jmp     request_callback1.common_error
 endp
 
@@ -562,7 +562,16 @@ end virtual
 .error:
 ; Error.
 ; 7. Print debug message and complete the request as failed.
-        DEBUGF 1,'K : error %d after %d bytes in request stage\n',eax,[.length]
+        DEBUGF 1,'K : error %d after %d bytes in request stage\n',eax,[.length+24h]
+; If device is disconnected and data stage is enqueued, do nothing;
+; data stage callback will do everything.
+        cmp     eax, 16
+        jnz     .common_error
+        cmp     [ecx+usb_device_data.Command.Flags], 0
+        js      .common_error
+        cmp     [ecx+usb_device_data.Command.Length], 0
+        jz      .common_error
+        ret     20
 .common_error:
 ; TODO: add recovery after STALL
         mov     ecx, [.calldata]
@@ -623,8 +632,12 @@ end if
         ret     20
 .error:
 ; Error.
-; 7. Print debug message and complete the request as failed.
-        DEBUGF 1,'K : error %d after %d bytes in data stage\n',eax,[.length]
+; 5. Print debug message and complete the request as failed.
+        DEBUGF 1,'K : error %d after %d bytes in data stage\n',eax,[.length+24h]
+; If device is disconnected and data stage is enqueued, do nothing;
+; status stage callback will do everything.
+        cmp     [ecx+usb_device_data.Command.Flags], 0
+        js      .nothing
         jmp     request_callback1.common_error
 endp
 
@@ -707,7 +720,7 @@ end if
         jmp     .complete
 .transfer_error:
 ; TODO: add recovery after STALL
-        DEBUGF 1,'K : error %d after %d bytes in status stage\n',eax,[.length]
+        DEBUGF 1,'K : error %d after %d bytes in status stage\n',eax,[.length+24h]
         jmp     request_callback1.common_error
 endp
 
