@@ -421,7 +421,6 @@ void debugi(dword d_int)
 }
 
 
-
 #define strncpy strcpyn
 #define strnmov strmovn
 #define stricmp strcmpi

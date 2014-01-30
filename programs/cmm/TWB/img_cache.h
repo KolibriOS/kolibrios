@@ -25,7 +25,7 @@ void ImageCache::Free()
 int ImageCache::GetImageNumber(dword i_path)
 {
 	int i;
-	for (i=0; i<pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
+	for (i=0; i<=pics_count; i++) if (!strcmp(#pics[i].path, i_path)) return i; //image exists
 	// Load image and add it to Cache
 	pics_count++;
 	pics[pics_count].image = load_image(i_path);
@@ -95,7 +95,12 @@ void ImageCache::Images(int left1, top1, width1)
 	
 	img_draw stdcall (pics[cur_pic].image, left1-5, top1, w, h,0,img_lines_first);
 	DrawBar(left1+w - 5, top1, WB1.list.w-w, h, bg_color);
-	IF (link) UnsafeDefineButton(left1 - 5, top1, w, h-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
+	IF (link)
+	{
+		UnsafeDefineButton(left1 - 5, top1, w, h-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
+		PageLinks.AddText(0, w, h-1, NOLINE);	
+		// WB1.DrawPage();
+	} 
 }
 
 ImageCache ImgCache;

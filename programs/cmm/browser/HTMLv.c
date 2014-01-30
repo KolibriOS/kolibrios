@@ -30,16 +30,16 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.66";
+	char version[]=" Текстовый браузер 0.99.67";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
-	char loading[] = "Загрузка страницы...";
+	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 #else
-	char version[]=" Text-based Browser 0.99.66";
+	char version[]=" Text-based Browser 0.99.67";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
-	char loading[] = "Loading...";
+	char loading[] = "Loading...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
 #endif
 
@@ -101,7 +101,7 @@ void main()
 				edit_box_mouse stdcall (#address_box);
 
 				m.get();
-				PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
+				if (m.y>WB1.list.y) PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
 				
 				if (m.y>WB1.list.y) && (m.y<Form.height) && (bufsize)
 				{
@@ -120,7 +120,7 @@ void main()
 
 				if (m.vert)
 				{
-					if (WB1.list.MouseScroll(m.vert)) WB1.ParseHTML(bufpointer);
+					if (WB1.list.MouseScroll(m.vert)) WB1.Parse(bufpointer, bufsize);
 				}
 				
 				if (!m.lkm) scroll_used=0;
@@ -138,7 +138,7 @@ void main()
 					btn=WB1.list.first;
 					WB1.list.first = m.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn<>WB1.list.first) WB1.ParseHTML(bufpointer);
+					if (btn<>WB1.list.first) WB1.Parse(bufpointer, bufsize);
 				}
 
 				break;
@@ -185,7 +185,7 @@ void main()
 					//bufsize = ESI.http_msg.content_received;
 					bufsize = strlen(bufpointer)-2;
 					debugi(bufsize);
-					WB1.ParseHTML(bufpointer);					
+					WB1.Parse(bufpointer, bufsize);
 					$pop EAX	
 					if (EAX == 0) {			
 						http_free stdcall (http_transfer);
@@ -259,28 +259,28 @@ void Scan(int id)
 	{
 		case 011: //Ctrk+K 
 			WB1.ReadHtml(_KOI);
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 021: //Ctrl+U
 			WB1.ReadHtml(_UTF);
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 004: //Ctrl+D
 			WB1.ReadHtml(_DOS);
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 005: //Win encoding
 			WB1.ReadHtml(_WIN);
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 009: //free img cache
 			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 003: //history
@@ -301,7 +301,7 @@ void Scan(int id)
 			else RunProgram("/rd/1/tinypad", #download_path);
 			return;
 		case 054: //F5
-			IF(address_box.flags & 0b10) WB1.ParseHTML(bufpointer);
+			IF(address_box.flags & 0b10) WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case REFRESH:
@@ -342,7 +342,7 @@ void Scan(int id)
 			IF(WB1.list.first == WB1.list.count - WB1.list.visible) return;
 			WB1.list.first += WB1.list.visible + 2;
 			IF(WB1.list.visible + WB1.list.first > WB1.list.count) WB1.list.first = WB1.list.count - WB1.list.visible;
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 184: //PgUp
@@ -350,30 +350,30 @@ void Scan(int id)
 			IF(WB1.list.first == 0) return;
 			WB1.list.first -= WB1.list.visible - 2;
 			IF(WB1.list.first < 0) WB1.list.first = 0;
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 178:
 		case BTN_UP:
 			if (WB1.list.first <= 0) return;
 			WB1.list.first--;
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 177: 
 		case BTN_DOWN:
 			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
 			WB1.list.first++;
-			WB1.ParseHTML(bufpointer);
+			WB1.Parse(bufpointer, bufsize);
 			return;
 
 		case 180: //home
-			if (WB1.list.KeyHome()) WB1.ParseHTML(bufpointer);
+			if (WB1.list.KeyHome()) WB1.Parse(bufpointer, bufsize);
 			return; 
 
 		case 181: //end
 			if (WB1.list.count < WB1.list.visible) return;
-			if (WB1.list.KeyEnd()) WB1.ParseHTML(bufpointer);
+			if (WB1.list.KeyEnd()) WB1.Parse(bufpointer, bufsize);
 			return;
 	}
 }
@@ -467,20 +467,13 @@ void ShowPage()
 	if (!bufsize)
 	{
 		PageLinks.Clear();
-		if (GetProcessSlot(downloader_id)<>0) 
-		{
-			bufsize = sizeof(loading);
-			WB1.ParseHTML(#loading);
-		}
+		if (GetProcessSlot(downloader_id)<>0)
+			WB1.Parse(#loading, sizeof(loading));
 		else
-		{
-			bufsize = sizeof(page_not_found);
-			WB1.ParseHTML(#page_not_found);
-		}
-		bufsize = 0;
+			WB1.Parse(#page_not_found, sizeof(page_not_found));
 	}
 	else
-		WB1.ParseHTML(bufpointer);
+		WB1.Parse(bufpointer, bufsize);
 
 	if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
@@ -493,7 +486,7 @@ ShowHistory()
 		
 		free(history_pointer);
 		history_pointer = malloc(64000);
-		strcat(history_pointer, "<h1>History</h1>");
+		strcat(history_pointer, " <title>History</title><h1>History</h1>");
 		strcat(history_pointer, "<h2>Visited pages</h2><blockquote><br>");
 		for (i=1; i<BrowserHistory.links_count; i++)
 		{
@@ -509,10 +502,10 @@ ShowHistory()
 			strcat(history_pointer, "<img src='");
 			strcat(history_pointer, #pics[i].path);
 			strcat(history_pointer, "' /><br>");
+			strcat(history_pointer, #pics[i].path);
 		}
-		bufsize = strlen(history_pointer);
 		bufpointer = history_pointer;
-		WB1.ParseHTML(history_pointer);
+		WB1.Parse(history_pointer, strlen(history_pointer));
 }
 
 

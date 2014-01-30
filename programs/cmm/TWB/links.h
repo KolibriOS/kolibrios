@@ -1,9 +1,14 @@
 CustomCursor CursorPointer;
 dword CursorFile = FROM "../TWB/pointer.cur";
 
+#define NOLINE    0
+#define UNDERLINE 1
+
+
 struct array_link {
 	dword link, text;
 	int x,y,w,h;
+	int underline;
 };
 
 struct LinksArray
@@ -31,11 +36,12 @@ void LinksArray::AddLink(dword new_link, int link_x, link_y)
 	count++;
 }
 
-void LinksArray::AddText(dword new_text, int link_w, link_h)
+void LinksArray::AddText(dword new_text, int link_w, link_h, link_underline)
 {
 	if (count<1) return;
 	links[count-1].w = link_w;
 	links[count-1].h = link_h;
+	links[count-1].underline = link_underline;
 
 	links[count-1].text = buflen;
 	strcpy(buflen, new_text);
@@ -67,8 +73,8 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 		{
 			if (active==i) return;
 			CursorPointer.Set();
-			DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
-			DrawBar(links[i].x,links[i].y+8,links[i].w,1, bg_col);
+			if (links[active].underline) DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
+			if (links[i].underline) DrawBar(links[i].x,links[i].y+8,links[i].w,1, bg_col);
 			active = i;
 			return;
 		}
@@ -76,7 +82,7 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	if (active!=-1)
 	{
 		CursorPointer.Restore();
-		DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
+		if (links[active].underline) DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
 		active = -1;
 	}
 }

@@ -17,7 +17,7 @@ struct TWebBrowser {
 	DrawBufer DrawBuf;
 	void GetNewUrl();
 	void ReadHtml();
-	void ParseHTML();
+	void Parse();
 	void WhatTextStyle();
 	void DrawPage();
 	void DrawScroller();
@@ -90,7 +90,7 @@ void TWebBrowser::DrawPage()
 		IF (link) {
 			UnsafeDefineButton(start_x-2, start_y, line_length + 3, 9, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 			DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
-			PageLinks.AddText(#line, line_length, list.line_h);
+			PageLinks.AddText(#line, line_length, list.line_h, UNDERLINE);
 		}
 		stolbec += strlen(#line);
 	}
@@ -166,12 +166,13 @@ void TWebBrowser::ReadHtml(byte encoding)
 }
 
 
-void TWebBrowser::ParseHTML(dword bufpos){
+void TWebBrowser::Parse(dword bufpos, in_filesize){
 	word bukva[2];
 	int j, perenos_num;
 	byte ignor_param;
 	char temp[768];
-	dword bufstart = bufpos;
+	bufsize = in_filesize;
+	bufpointer = bufpos;
 	
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
@@ -195,7 +196,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 		if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	}
 	
-	for ( ; bufstart+bufsize > bufpos; bufpos++;)
+	for ( ; bufpointer+bufsize > bufpos; bufpos++;)
 	{
 		bukva = ESBYTE[bufpos];
 		if (ignor_text) && (bukva!='<') continue;
@@ -253,7 +254,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 					do
 					{
 						bufpos++;
-						if (bufstart + bufsize <= bufpos) break 2;
+						if (bufpointer + bufsize <= bufpos) break 2;
 					}
 					while (ESBYTE[bufpos] <>'-');
 					
@@ -261,7 +262,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 					if (ESBYTE[bufpos] <>'-') goto HH_;
 				}
 			}
-			while (ESBYTE[bufpos] !='>') && (bufpos < bufstart + bufsize) //получаем тег и его параметры
+			while (ESBYTE[bufpos] !='>') && (bufpos < bufpointer + bufsize) //получаем тег и его параметры
 			{
 				bukva = ESBYTE[bufpos];
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
@@ -299,8 +300,8 @@ void TWebBrowser::ParseHTML(dword bufpos){
 			}
 			DrawPage();
 
-			if (tag) WhatTextStyle(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //обработка тегов
 			line=NULL;
+			if (tag) WhatTextStyle(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //обработка тегов
 
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
@@ -341,7 +342,7 @@ void TWebBrowser::ParseHTML(dword bufpos){
 	{
 		anchor=NULL;
 		list.first=anchor_line_num;
-		ParseHTML(bufstart);
+		Parse(bufpointer, bufsize);
 	}
 	DrawScroller();
 }
