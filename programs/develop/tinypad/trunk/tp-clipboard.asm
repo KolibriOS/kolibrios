@@ -16,7 +16,7 @@ put_to_clipboard:
 	mov	ecx,eax
 	lodsw
 	rep	movsb
-	mov	ax,0x0a0d
+	mov	ax,0x0a0d ; EOS (end of string)
 	stosw
 ;	mov	ax,0x0d
 ;	stosb
@@ -24,6 +24,7 @@ put_to_clipboard:
 	dec	ecx
 	jnz	@b
 
+	sub	edi,2 ; delete last EOS (0x0a0d)
 	xor	eax,eax
 	stosb
 ; building the clipboard slot header
@@ -180,22 +181,22 @@ convert_clipboard_buf_to_copy_buf:
 	mov	esi,eax
 	add	esi,4*3
 	mov	ecx,[eax]
-	sub	ecx,4*3
+	sub	ecx,4*3-1
 	xor	edx,edx
 	cld
 ;--------------------------------------
 .loop:
 	lodsb
-	
+
 	test	al,al
-	jz	.inc_counter	;.end_of_data
+	jz	.end_of_data
 	
 	cmp	al,0x0d
 	je	.check_0x0a
 	
 	cmp	al,0x0a
 	je	.inc_counter
-	
+
 	dec	ecx
 	jz	.end_of_data
 	
@@ -220,15 +221,17 @@ convert_clipboard_buf_to_copy_buf:
 	sub	eax,ebx
 	sub	eax,6
 	mov	[ebx],eax ; size of current string
-
 	mov	ebx,edi
 	add	edi,6
 	inc	edx
 	jmp	.loop
 ;--------------------------------------	
 .end_of_data:
+	mov	eax,edi
+	sub	eax,ebx
+	sub	eax,6
+	mov	[ebx],eax ; size of current string
 	sub	edi,[copy_buf]
-	sub	edi,6
         mov     [copy_size],edi	
 	ret
 ;-----------------------------------------------------------------------------
@@ -289,5 +292,6 @@ know_number_line_breaks:
 	inc	esi
 ;--------------------------------------	
 .end_of_data:
+	inc	ebx
 	ret
 ;-----------------------------------------------------------------------------
