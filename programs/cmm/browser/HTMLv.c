@@ -446,7 +446,6 @@ void OpenPage()
 	{
 		KillProcess(downloader_id);
 		DeleteFile(#download_path);
-		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
 		downloader_id = RunProgram("/sys/network/downloader", #URL);
 		IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
 		Draw_Window();
