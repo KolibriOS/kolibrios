@@ -1079,27 +1079,29 @@ endg
         DEBUGF  1, "K : IRQ1 error code %x\n", eax
 .no_keyboard:
 
-; SET MOUSE
+; Load PS/2 mouse driver
 
         stdcall load_driver, szPS2MDriver
-;        stdcall load_driver, szCOM_MDriver
 
         mov     esi, boot_setmouse
         call    boot_log
         call    setmouse
 
 ; Setup serial output console (if enabled)
-
 if defined debug_com_base
 
-        ; enable Divisor latch
+        ; reserve port so nobody else will use it
+        xor     ebx, ebx
+        mov     ecx, debug_com_base
+        mov     edx, debug_com_base+7
+        call    r_f_port_area
 
+        ; enable Divisor latch
         mov     dx, debug_com_base+3
         mov     al, 1 shl 7
         out     dx, al
 
         ; Set speed to 115200 baud (max speed)
-
         mov     dx, debug_com_base
         mov     al, 0x01
         out     dx, al
@@ -1109,25 +1111,22 @@ if defined debug_com_base
         out     dx, al
 
         ; No parity, 8bits words, one stop bit, dlab bit back to 0
-
         mov     dx, debug_com_base+3
         mov     al, 3
         out     dx, al
 
         ; disable interrupts
-
         mov     dx, debug_com_base+1
         mov     al, 0
         out     dx, al
 
         ; clear +  enable fifo (64 bits)
-
         mov     dx, debug_com_base+2
         mov     al, 0x7 + 1 shl 5
         out     dx, al
 
-
 end if
+
         mov     eax, [version_inf.rev]
         DEBUGF  1, "K : kernel SVN r%d\n", eax
 
