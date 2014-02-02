@@ -141,29 +141,60 @@ void TWebBrowser::GetNewUrl(){
 }
 
 
-	
 void TWebBrowser::ReadHtml(byte encoding)
 {
-	if (!strncmp(#URL,"http:",5)) 
-		file_size stdcall (#download_path);
+	if (native_http)
+	{
+			if (strncmp(#URL,"http:",5)) {
+				file_size stdcall (#URL);
+				bufsize = EBX;
+			}
+			
+			if (!bufsize) return;
+
+			if (strncmp(#URL,"http:",5)) {
+				mem_Free(bufpointer);
+				bufpointer = mem_Alloc(bufsize);
+			}
+			
+			if (strncmp(#URL,"http:",5)) ReadFile(0, bufsize, bufpointer, #URL);
+				
+			cur_encoding = encoding;
+			if (encoding==_WIN) wintodos(bufpointer);
+			if (encoding==_UTF) utf8rutodos(bufpointer);
+			if (encoding==_KOI) koitodos(bufpointer);
+	}
 	else
-		file_size stdcall (#URL);
-	
-	bufsize = EBX;
-	if (!bufsize) return;
-	
-	mem_Free(bufpointer);
-	bufpointer = mem_Alloc(bufsize);
-	if (!strncmp(#URL,"http:",5)) 
-		ReadFile(0, bufsize, bufpointer, #download_path);
-	else
-		ReadFile(0, bufsize, bufpointer, #URL);
-		
-	cur_encoding = encoding;
-	if (encoding==_WIN) wintodos(bufpointer);
-	if (encoding==_UTF) utf8rutodos(bufpointer);
-	if (encoding==_KOI) koitodos(bufpointer);
+	{
+			if (!strncmp(#URL,"http:",5)) 
+				file_size stdcall (#download_path);
+			else
+				file_size stdcall (#URL);
+			
+			bufsize = EBX;
+			if (!bufsize) return;
+			
+			mem_Free(bufpointer);
+			bufpointer = mem_Alloc(bufsize);
+			if (!strncmp(#URL,"http:",5)) 
+				ReadFile(0, bufsize, bufpointer, #download_path);
+			else
+				ReadFile(0, bufsize, bufpointer, #URL);
+				
+			cur_encoding = encoding;
+			if (encoding==_WIN) wintodos(bufpointer);
+			if (encoding==_UTF) utf8rutodos(bufpointer);
+			if (encoding==_KOI) koitodos(bufpointer);
+	}
 }
+
+/*
+void TWebBrowser::ReadHtml(byte encoding)
+{
+
+
+}
+*/
 
 
 void TWebBrowser::Parse(dword bufpos, in_filesize){

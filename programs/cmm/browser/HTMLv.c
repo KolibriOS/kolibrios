@@ -43,6 +43,8 @@
 	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
 #endif
 
+byte native_http=0;
+
 proc_info Form;
 #define WIN_W 640
 #define WIN_H 480
@@ -171,27 +173,26 @@ void main()
 				break;
 				
 			case evNetwork:
-				return;
-				http_get stdcall (#search_path, 0);	
-				http_transfer = EAX;
-				IF (http_transfer < 0) notify("Error from HTTP lib");
-
 				if (http_transfer > 0) {
 					http_process stdcall (http_transfer);
 					$push EAX
 					ESI = http_transfer;
 					bufpointer = ESI.http_msg.content_ptr;
-					debug(bufpointer);	
-					//bufsize = ESI.http_msg.content_received;
-					bufsize = strlen(bufpointer)-2;
-					debugi(bufsize);
+					bufsize = ESI.http_msg.content_received;
 					WB1.Parse(bufpointer, bufsize);
+					
 					$pop EAX	
-					if (EAX == 0) {			
+					if (EAX == 0) {	
+						// Loading the page is complete, free resources
 						http_free stdcall (http_transfer);
-						http_transfer=0;				
+						http_transfer=0;	
+						Draw_Window();		// stop button => refresh button
+					} else {
+						// We are still loading the page, this means that because of crappy memory manager,
+						// the address of the HTTP data may change. 
+						// Because this would result in pagefault when redrawing window while loading, we disable this possibility.
+						bufsize = 0;
 					}
-					pause(10);
 				}
 			default:
 				if (downloader_id<>0)
@@ -231,7 +232,7 @@ void Draw_Window()
 	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	if (GetProcessSlot(downloader_id)<>0) _PutImage(88,10, 24,24, #stop_btn);
+	if (GetProcessSlot(downloader_id)<>0) || (http_transfer > 0) _PutImage(88,10, 24,24, #stop_btn);
 	
 	DrawBar(200,0,Form.cwidth-200,43,0xE4DFE1);
 	DrawBar(0,42,Form.cwidth,1,0xE2DBDC);
@@ -305,6 +306,17 @@ void Scan(int id)
 			return;
 
 		case REFRESH:
+			if (http_transfer<>0)
+			{
+				EAX = http_transfer;
+				EAX = EAX.http_msg.content_ptr;		// get pointer to data
+				$push	EAX							// save it on the stack
+				http_free stdcall (http_transfer);	// abort connection
+				$pop	EAX							
+				mem_Free(EAX);						// free data
+				http_transfer=0;
+				bufsize = 0;
+			}
 			if (GetProcessSlot(downloader_id)<>0)
 			{
 				KillProcess(downloader_id);
@@ -444,10 +456,19 @@ void OpenPage()
 	pre_text =0;
 	if (!strncmp(#URL,"http:",5))
 	{
-		KillProcess(downloader_id);
-		DeleteFile(#download_path);
-		downloader_id = RunProgram("/sys/network/downloader", #URL);
-		IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
+		if (native_http)
+		{
+			http_get stdcall (#URL, 0);	
+			http_transfer = EAX;
+			IF (http_transfer < 0) notify("Error from HTTP lib");
+		}
+		else
+		{
+			KillProcess(downloader_id);
+			DeleteFile(#download_path);
+			downloader_id = RunProgram("/sys/network/downloader", #URL);
+			IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
+		}
 		Draw_Window();
 		return;
 	}
