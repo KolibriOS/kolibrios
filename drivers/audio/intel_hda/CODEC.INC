@@ -833,6 +833,7 @@ proc  read_pin_defaults
      test    eax, eax
      jz      .err_out
      mov     [codec.init_pins], eax
+     mov     [codec.num_pins], 0
      mov     edi, eax
      ;Asper ]
 
@@ -855,18 +856,13 @@ end if
      mov     [edi + HDA_PINCFG.nid], bx
      stdcall snd_hda_codec_read, ebx, 0, AC_VERB_GET_CONFIG_DEFAULT, 0
      mov     [edi + HDA_PINCFG.cfg], eax
+     add     edi, HDA_PINCFG.sizeof
+     inc     [codec.num_pins]
 
   .continue:
-     add     edi, HDA_PINCFG.sizeof
      inc     ebx
      dec     ecx
      jnz     .next_node
-
-;Asper [
-     and     ebx, 0xFFFF
-     sub     bx, [codec.start_nid]
-     mov     [codec.num_pins], ebx
-;Asper ]
 
      pop     edi edx ecx ebx
      xor     eax, eax
