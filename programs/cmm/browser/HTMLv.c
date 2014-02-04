@@ -50,6 +50,8 @@ proc_info Form;
 #define WIN_H 480
 
 char search_path[]="http://nigma.ru/index.php?s=";
+char str_location[]="location\0";
+int redirected = 0;
 
 char stak[4096];
 mouse m;
@@ -183,15 +185,37 @@ void main()
 					
 					$pop EAX	
 					if (EAX == 0) {	
+						ESI = http_transfer;
+						// Handle redirects
+						if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)  {
+							redirected++;
+							if (redirected<=5) {
+								http_find_header_field stdcall (http_transfer, #str_location);
+								if (EAX!=0) {
+									ESI = EAX;
+									EDI = #URL;
+									do {
+										$lodsb;
+										$stosb;
+									} while (AL != 0) && (AL != 13) && (AL != 10));
+									DSBYTE[EDI-1]='\0';
+								}
+							} else {
+							//TODO: display error (too many redirects)
+							}
+						} else {
+							redirected = 0;
+						}
 						// Loading the page is complete, free resources
 						http_free stdcall (http_transfer);
 						http_transfer=0;	
-						Draw_Window();		// stop button => refresh button
-					} else {
-						// We are still loading the page, this means that because of crappy memory manager,
-						// the address of the HTTP data may change. 
-						// Because this would result in pagefault when redrawing window while loading, we disable this possibility.
-						bufsize = 0;
+						if (redirected>0) {
+							WB1.GetNewUrl();
+							strcpy(#editURL, #URL);
+							OpenPage();
+						} else {
+							Draw_Window();		// stop button => refresh button
+						}
 					}
 				}
 			default:
