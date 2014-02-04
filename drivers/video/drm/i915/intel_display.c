@@ -3352,7 +3352,7 @@ static void ironlake_crtc_enable(struct drm_crtc *crtc)
 			  intel_crtc->config.has_pch_encoder);
     intel_enable_plane(dev_priv, plane, pipe);
 	intel_enable_planes(crtc);
-//	intel_crtc_update_cursor(crtc, true);
+	intel_crtc_update_cursor(crtc, true);
 
 	if (intel_crtc->config.has_pch_encoder)
         ironlake_pch_enable(crtc);
@@ -3460,7 +3460,7 @@ static void haswell_crtc_enable(struct drm_crtc *crtc)
 			  intel_crtc->config.has_pch_encoder);
 	intel_enable_plane(dev_priv, plane, pipe);
 	intel_enable_planes(crtc);
-//	intel_crtc_update_cursor(crtc, true);
+	intel_crtc_update_cursor(crtc, true);
 
 	hsw_enable_ips(intel_crtc);
 
@@ -3523,7 +3523,7 @@ static void ironlake_crtc_disable(struct drm_crtc *crtc)
 	if (dev_priv->fbc.plane == plane)
 		intel_disable_fbc(dev);
 
-//	intel_crtc_update_cursor(crtc, false);
+	intel_crtc_update_cursor(crtc, false);
 	intel_disable_planes(crtc);
     intel_disable_plane(dev_priv, plane, pipe);
 
@@ -3596,7 +3596,7 @@ static void haswell_crtc_disable(struct drm_crtc *crtc)
 
 	hsw_disable_ips(intel_crtc);
 
-//	intel_crtc_update_cursor(crtc, false);
+	intel_crtc_update_cursor(crtc, false);
 	intel_disable_planes(crtc);
 	intel_disable_plane(dev_priv, plane, pipe);
 
@@ -3739,7 +3739,7 @@ static void valleyview_crtc_enable(struct drm_crtc *crtc)
 	intel_enable_pipe(dev_priv, pipe, false);
 	intel_enable_plane(dev_priv, plane, pipe);
 	intel_enable_planes(crtc);
-//	intel_crtc_update_cursor(crtc, true);
+	intel_crtc_update_cursor(crtc, true);
 
 	intel_update_fbc(dev);
 
@@ -3780,7 +3780,7 @@ static void i9xx_crtc_enable(struct drm_crtc *crtc)
 	/* The fixup needs to happen before cursor is enabled */
 	if (IS_G4X(dev))
 		g4x_fixup_plane(dev_priv, pipe);
-//	intel_crtc_update_cursor(crtc, true);
+	intel_crtc_update_cursor(crtc, true);
 
     /* Give the overlay scaler a chance to enable if it's on this pipe */
     intel_crtc_dpms_overlay(intel_crtc, true);
@@ -3829,7 +3829,7 @@ static void i9xx_crtc_disable(struct drm_crtc *crtc)
         intel_disable_fbc(dev);
 
 	intel_crtc_dpms_overlay(intel_crtc, false);
-//	intel_crtc_update_cursor(crtc, false);
+	intel_crtc_update_cursor(crtc, false);
 	intel_disable_planes(crtc);
     intel_disable_plane(dev_priv, plane, pipe);
 
@@ -3841,6 +3841,9 @@ static void i9xx_crtc_disable(struct drm_crtc *crtc)
 		if (encoder->post_disable)
 			encoder->post_disable(encoder);
 
+	if (IS_VALLEYVIEW(dev))
+		vlv_disable_pll(dev_priv, pipe);
+	else
 	i9xx_disable_pll(dev_priv, pipe);
 
     intel_crtc->active = false;
@@ -6794,6 +6797,7 @@ static void i845_update_cursor(struct drm_crtc *crtc, u32 base)
 
 	intel_crtc->cursor_visible = visible;
 }
+#endif
 
 static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
 {
@@ -6906,13 +6910,11 @@ static void intel_crtc_update_cursor(struct drm_crtc *crtc,
 		ivb_update_cursor(crtc, base);
 	} else {
 		I915_WRITE(CURPOS(pipe), pos);
-		if (IS_845G(dev) || IS_I865G(dev))
-			i845_update_cursor(crtc, base);
-		else
 			i9xx_update_cursor(crtc, base);
 	}
 }
 
+#if 0
 static int intel_crtc_cursor_set(struct drm_crtc *crtc,
 				 struct drm_file *file,
 				 uint32_t handle,
@@ -7027,6 +7029,7 @@ fail:
 	drm_gem_object_unreference_unlocked(&obj->base);
 	return ret;
 }
+#endif
 
 static int intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 {
@@ -7040,7 +7043,6 @@ static int intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 
 	return 0;
 }
-#endif
 
 /** Sets the color ramps on behalf of RandR */
 void intel_crtc_fb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
@@ -9348,7 +9350,7 @@ out_config:
 
 static const struct drm_crtc_funcs intel_crtc_funcs = {
 //	.cursor_set = intel_crtc_cursor_set,
-//	.cursor_move = intel_crtc_cursor_move,
+	.cursor_move = intel_crtc_cursor_move,
 	.gamma_set = intel_crtc_gamma_set,
 	.set_config = intel_crtc_set_config,
 	.destroy = intel_crtc_destroy,

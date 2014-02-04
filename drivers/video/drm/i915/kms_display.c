@@ -111,6 +111,7 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
     const char *con_name;
     const char *enc_name;
     unsigned hdisplay, vdisplay;
+    int stride;
     int ret;
 
     mutex_lock(&dev->mode_config.mutex);
@@ -169,10 +170,27 @@ do_set:
     fb->width  = reqmode->width;
     fb->height = reqmode->height;
 
-    fb->pitches[0]  = fb->pitches[1]  = fb->pitches[2]  =
-                      fb->pitches[3]  = ALIGN(reqmode->width * 4, 512);
+    if(dev_priv->mm.bit_6_swizzle_x != I915_BIT_6_SWIZZLE_NONE)
+    {
+        fb_obj->tiling_mode = I915_TILING_X;
 
-    fb_obj->stride = fb->pitches[0];
+        if(IS_GEN3(dev))
+            for (stride = 512; stride < reqmode->width * 4; stride <<= 1);
+        else
+            stride = ALIGN(reqmode->width * 4, 512);
+    }
+    else
+    {
+        fb_obj->tiling_mode = I915_TILING_NONE;
+        stride = ALIGN(reqmode->width * 4, 64);
+    }
+
+    fb->pitches[0]  =
+    fb->pitches[1]  =
+    fb->pitches[2]  =
+    fb->pitches[3]  = stride;
+
+    fb_obj->stride  = stride;
 
     fb->bits_per_pixel = 32;
     fb->depth = 24;
@@ -590,86 +608,14 @@ int init_cursor(cursor_t *cursor)
 }
 
 
-static void i9xx_update_cursor(struct drm_crtc *crtc, u32 base)
-{
-    struct drm_device *dev = crtc->dev;
-    struct drm_i915_private *dev_priv = dev->dev_private;
-    struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-    int pipe = intel_crtc->pipe;
-    bool visible = base != 0;
-
-    if (intel_crtc->cursor_visible != visible) {
-        uint32_t cntl = I915_READ(CURCNTR(pipe));
-        if (base) {
-            cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
-            cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
-            cntl |= pipe << 28; /* Connect to correct pipe */
-        } else {
-            cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
-            cntl |= CURSOR_MODE_DISABLE;
-        }
-        I915_WRITE(CURCNTR(pipe), cntl);
-
-        intel_crtc->cursor_visible = visible;
-    }
-    /* and commit changes on next vblank */
-    I915_WRITE(CURBASE(pipe), base);
-}
-
 void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
 {
-    struct drm_i915_private *dev_priv = os_display->ddev->dev_private;
-    struct intel_crtc *intel_crtc = to_intel_crtc(os_display->crtc);
-    u32 base, pos;
-    bool visible;
+    struct drm_crtc *crtc = os_display->crtc;
+    x-= cursor->hot_x;
+    y-= cursor->hot_y;
 
-    int pipe = intel_crtc->pipe;
-
-    intel_crtc->cursor_x = x;
-    intel_crtc->cursor_y = y;
-
-    x = x - cursor->hot_x;
-    y = y - cursor->hot_y;
-
-
-    pos = 0;
-
-    base = intel_crtc->cursor_addr;
-    if (x >= os_display->width)
-        base = 0;
-
-    if (y >= os_display->height)
-        base = 0;
-
-    if (x < 0)
-    {
-        if (x + intel_crtc->cursor_width < 0)
-            base = 0;
-
-        pos |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
-        x = -x;
-    }
-    pos |= x << CURSOR_X_SHIFT;
-
-    if (y < 0)
-    {
-        if (y + intel_crtc->cursor_height < 0)
-            base = 0;
-
-        pos |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
-        y = -y;
-    }
-    pos |= y << CURSOR_Y_SHIFT;
-
-    visible = base != 0;
-    if (!visible && !intel_crtc->cursor_visible)
-        return;
-
-    I915_WRITE(CURPOS(pipe), pos);
-//    if (IS_845G(dev) || IS_I865G(dev))
-//        i845_update_cursor(crtc, base);
-//    else
-        i9xx_update_cursor(os_display->crtc, base);
+    if (crtc->funcs->cursor_move)
+        crtc->funcs->cursor_move(crtc, x, y);
 
 };
 
@@ -682,6 +628,8 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 
     old = os_display->cursor;
     os_display->cursor = cursor;
+
+    intel_crtc->cursor_bo = cursor->cobj;
 
     if (!dev_priv->info->cursor_needs_physical)
        intel_crtc->cursor_addr = i915_gem_obj_ggtt_offset(cursor->cobj);
