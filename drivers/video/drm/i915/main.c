@@ -167,8 +167,8 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("\ni915 v3.12.5 build %s %s\nusage: i915 [options]\n"
-           "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 0 - false)\n",
+    printf("\ni915 v3.14-rc1 build %s %s\nusage: i915 [options]\n"
+           "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 1 - true)\n",
            __DATE__, __TIME__);
     printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"
            "              Different stages can be selected via bitmask values\n"
@@ -176,8 +176,8 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
            "              For example, 3 would enable rc6 and deep rc6, and 7 would enable everything.\n"
            "              default: -1 (use per-chip default)\n");
     printf("-fbc=<-1,0,1> Enable frame buffer compression for power savings\n"
-           "              (default: 0 - false)\n");
-    printf("-ppgt=<0,1>   Enable PPGTT (default: 0 - false)\n");
+           "              (default: -1 (use per-chip default))\n");
+    printf("-ppgt=<0,1>   Enable PPGTT (default: true)\n");
     printf("-pc8=<0,1>    Enable support for low power package C states (PC8+) (default: 0 - false)\n");
     printf("-l<path>      path to log file\n");
     printf("-m<WxHxHz>    set videomode\n");

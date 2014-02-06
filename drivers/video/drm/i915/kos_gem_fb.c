@@ -161,7 +161,7 @@ kos_gem_fb_object_create(struct drm_device *dev,
         return NULL;
     }
 
-    vma = i915_gem_vma_create(obj, ggtt);
+    vma = i915_gem_obj_lookup_or_create_vma(obj, ggtt);
     if (IS_ERR(vma)) {
         ret = PTR_ERR(vma);
         goto err_out;

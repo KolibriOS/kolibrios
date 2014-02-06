@@ -102,7 +102,7 @@ void __drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
 		/* Unreserve */
 		for (addr = (unsigned long)dmah->vaddr, sz = dmah->size;
 		     sz > 0; addr += PAGE_SIZE, sz -= PAGE_SIZE) {
-			ClearPageReserved(virt_to_page(addr));
+			ClearPageReserved(virt_to_page((void *)addr));
 		}
 		dma_free_coherent(&dev->pdev->dev, dmah->size, dmah->vaddr,
 				  dmah->busaddr);
@@ -260,16 +260,11 @@ static int drm_pci_irq_by_busid(struct drm_device *dev, struct drm_irq_busid *p)
 	return 0;
 }
 
-static int drm_pci_agp_init(struct drm_device *dev)
+static void drm_pci_agp_init(struct drm_device *dev)
 {
-	if (drm_core_has_AGP(dev)) {
+	if (drm_core_check_feature(dev, DRIVER_USE_AGP)) {
 		if (drm_pci_device_is_agp(dev))
 			dev->agp = drm_agp_init(dev);
-		if (drm_core_check_feature(dev, DRIVER_REQUIRE_AGP)
-		    && (dev->agp == NULL)) {
-			DRM_ERROR("Cannot initialize the agpgart module.\n");
-			return -EINVAL;
-		}
 		if (dev->agp) {
 			dev->agp->agp_mtrr = arch_phys_wc_add(
 				dev->agp->agp_info.aper_base,
@@ -277,15 +272,14 @@ static int drm_pci_agp_init(struct drm_device *dev)
 				1024 * 1024);
 		}
 	}
-	return 0;
 }
 
-static void drm_pci_agp_destroy(struct drm_device *dev)
+void drm_pci_agp_destroy(struct drm_device *dev)
 {
-	if (drm_core_has_AGP(dev) && dev->agp) {
+	if (dev->agp) {
 		arch_phys_wc_del(dev->agp->agp_mtrr);
 		drm_agp_clear(dev);
-		drm_agp_destroy(dev->agp);
+		kfree(dev->agp);
 		dev->agp = NULL;
 	}
 }
@@ -297,8 +291,6 @@ static struct drm_bus drm_pci_bus = {
 	.set_busid = drm_pci_set_busid,
 	.set_unique = drm_pci_set_unique,
 	.irq_by_busid = drm_pci_irq_by_busid,
-	.agp_init = drm_pci_agp_init,
-	.agp_destroy = drm_pci_agp_destroy,
 };
 #endif
 

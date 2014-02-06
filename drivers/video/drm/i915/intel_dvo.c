@@ -153,6 +153,8 @@ static void intel_dvo_get_config(struct intel_encoder *encoder,
 		flags |= DRM_MODE_FLAG_NVSYNC;
 
 	pipe_config->adjusted_mode.flags |= flags;
+
+	pipe_config->adjusted_mode.crtc_clock = pipe_config->port_clock;
 }
 
 static void intel_disable_dvo(struct intel_encoder *encoder)
@@ -232,7 +234,8 @@ static void intel_dvo_dpms(struct drm_connector *connector, int mode)
 	intel_modeset_check_state(connector->dev);
 }
 
-static int intel_dvo_mode_valid(struct drm_connector *connector,
+static enum drm_mode_status
+intel_dvo_mode_valid(struct drm_connector *connector,
 				struct drm_display_mode *mode)
 {
 	struct intel_dvo *intel_dvo = intel_attached_dvo(connector);
@@ -278,11 +281,6 @@ static bool intel_dvo_compute_config(struct intel_encoder *encoder,
 
 		drm_mode_set_crtcinfo(adjusted_mode, 0);
 	}
-
-	if (intel_dvo->dev.dev_ops->mode_fixup)
-		return intel_dvo->dev.dev_ops->mode_fixup(&intel_dvo->dev,
-							  &pipe_config->requested_mode,
-							  adjusted_mode);
 
 	return true;
 }
@@ -378,7 +376,6 @@ static int intel_dvo_get_modes(struct drm_connector *connector)
 
 static void intel_dvo_destroy(struct drm_connector *connector)
 {
-	drm_sysfs_connector_remove(connector);
 	drm_connector_cleanup(connector);
 	kfree(connector);
 }
@@ -459,11 +456,11 @@ void intel_dvo_init(struct drm_device *dev)
 	int i;
 	int encoder_type = DRM_MODE_ENCODER_NONE;
 
-	intel_dvo = kzalloc(sizeof(struct intel_dvo), GFP_KERNEL);
+	intel_dvo = kzalloc(sizeof(*intel_dvo), GFP_KERNEL);
 	if (!intel_dvo)
 		return;
 
-	intel_connector = kzalloc(sizeof(struct intel_connector), GFP_KERNEL);
+	intel_connector = kzalloc(sizeof(*intel_connector), GFP_KERNEL);
 	if (!intel_connector) {
 		kfree(intel_dvo);
 		return;

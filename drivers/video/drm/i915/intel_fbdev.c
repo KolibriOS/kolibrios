@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright © 2007 David Airlie
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,7 +43,6 @@
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
 
-struct drm_i915_gem_object *fb_obj;
 
 struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
 {
@@ -86,18 +85,14 @@ static struct fb_ops intelfb_ops = {
 //   .fb_debug_leave = drm_fb_helper_debug_leave,
 };
 
-static int intelfb_create(struct drm_fb_helper *helper,
+static int intelfb_alloc(struct drm_fb_helper *helper,
 			  struct drm_fb_helper_surface_size *sizes)
 {
 	struct intel_fbdev *ifbdev =
 		container_of(helper, struct intel_fbdev, helper);
 	struct drm_device *dev = helper->dev;
-	struct drm_i915_private *dev_priv = dev->dev_private;
-	struct fb_info *info;
-	struct drm_framebuffer *fb;
 	struct drm_mode_fb_cmd2 mode_cmd = {};
 	struct drm_i915_gem_object *obj;
-	struct device *device = &dev->pdev->dev;
 	int size, ret;
 
 	/* we don't do packed 24bpp */
@@ -114,7 +109,7 @@ static int intelfb_create(struct drm_fb_helper *helper,
 
 	size = mode_cmd.pitches[0] * mode_cmd.height;
 	size = ALIGN(size, PAGE_SIZE);
-	obj = fb_obj;
+	obj = main_fb_obj;
 	if (!obj) {
 		DRM_ERROR("failed to allocate framebuffer\n");
 		ret = -ENOMEM;
@@ -123,8 +118,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
     obj->has_global_gtt_mapping = 0;
     obj->stride = mode_cmd.pitches[0];
 
-	mutex_lock(&dev->struct_mutex);
-
 	/* Flush everything out, we'll be doing GTT only from now on */
 	ret = intel_pin_and_fence_fb_obj(dev, obj, NULL);
 	if (ret) {
@@ -132,17 +125,56 @@ static int intelfb_create(struct drm_fb_helper *helper,
 		goto out_unref;
 	}
 
-	info = framebuffer_alloc(0, device);
+	ret = intel_framebuffer_init(dev, &ifbdev->ifb, &mode_cmd, obj);
+	if (ret)
+		goto out_unpin;
+
+	return 0;
+
+out_unpin:
+	i915_gem_object_unpin(obj);
+out_unref:
+	drm_gem_object_unreference(&obj->base);
+out:
+	return ret;
+}
+
+static int intelfb_create(struct drm_fb_helper *helper,
+			  struct drm_fb_helper_surface_size *sizes)
+{
+	struct intel_fbdev *ifbdev =
+		container_of(helper, struct intel_fbdev, helper);
+	struct intel_framebuffer *intel_fb = &ifbdev->ifb;
+	struct drm_device *dev = helper->dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct fb_info *info;
+	struct drm_framebuffer *fb;
+	struct drm_i915_gem_object *obj;
+	int size, ret;
+
+	mutex_lock(&dev->struct_mutex);
+
+	if (!intel_fb->obj) {
+		DRM_DEBUG_KMS("no BIOS fb, allocating a new one\n");
+		ret = intelfb_alloc(helper, sizes);
+		if (ret)
+			goto out_unlock;
+	} else {
+		DRM_DEBUG_KMS("re-using BIOS fb\n");
+		sizes->fb_width = intel_fb->base.width;
+		sizes->fb_height = intel_fb->base.height;
+	}
+
+	obj = intel_fb->obj;
+	size = obj->base.size;
+
+	info = framebuffer_alloc(0, &dev->pdev->dev);
 	if (!info) {
 		ret = -ENOMEM;
 		goto out_unpin;
 	}
 
 	info->par = helper;
-
-	ret = intel_framebuffer_init(dev, &ifbdev->ifb, &mode_cmd, obj);
-	if (ret)
-		goto out_unpin;
 
 	fb = &ifbdev->ifb.base;
 
@@ -163,8 +195,6 @@ static int intelfb_create(struct drm_fb_helper *helper,
 	info->apertures->ranges[0].base = dev->mode_config.fb_base;
 	info->apertures->ranges[0].size = dev_priv->gtt.mappable_end;
 
-	info->fix.smem_start = dev->mode_config.fb_base + i915_gem_obj_ggtt_offset(obj);
-	info->fix.smem_len = size;
 
 	info->screen_base = (void*) 0xFE000000;
 	info->screen_size = size;
@@ -181,17 +211,36 @@ static int intelfb_create(struct drm_fb_helper *helper,
 		      fb->width, fb->height,
 		      i915_gem_obj_ggtt_offset(obj), obj);
 
-
 	mutex_unlock(&dev->struct_mutex);
 	return 0;
 
 out_unpin:
 	i915_gem_object_unpin(obj);
-out_unref:
 	drm_gem_object_unreference(&obj->base);
+out_unlock:
 	mutex_unlock(&dev->struct_mutex);
-out:
 	return ret;
+}
+
+/** Sets the color ramps on behalf of RandR */
+static void intel_crtc_fb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
+				    u16 blue, int regno)
+{
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+
+	intel_crtc->lut_r[regno] = red >> 8;
+	intel_crtc->lut_g[regno] = green >> 8;
+	intel_crtc->lut_b[regno] = blue >> 8;
+}
+
+static void intel_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green,
+				    u16 *blue, int regno)
+{
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+
+	*red = intel_crtc->lut_r[regno] << 8;
+	*green = intel_crtc->lut_g[regno] << 8;
+	*blue = intel_crtc->lut_b[regno] << 8;
 }
 
 static struct drm_fb_helper_funcs intel_fb_helper_funcs = {
@@ -207,7 +256,7 @@ int intel_fbdev_init(struct drm_device *dev)
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int ret;
 
-	ifbdev = kzalloc(sizeof(struct intel_fbdev), GFP_KERNEL);
+	ifbdev = kzalloc(sizeof(*ifbdev), GFP_KERNEL);
 	if (!ifbdev)
 		return -ENOMEM;
 
@@ -216,7 +265,7 @@ int intel_fbdev_init(struct drm_device *dev)
 
 	ret = drm_fb_helper_init(dev, &ifbdev->helper,
 				 INTEL_INFO(dev)->num_pipes,
-				 INTELFB_CONN_LIMIT);
+				 4);
 	if (ret) {
 		kfree(ifbdev);
 		return ret;
@@ -235,7 +284,8 @@ void intel_fbdev_initial_config(struct drm_device *dev)
 	drm_fb_helper_initial_config(&dev_priv->fbdev->helper, 32);
 }
 
-void intel_fb_output_poll_changed(struct drm_device *dev)
+
+void intel_fbdev_output_poll_changed(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	drm_fb_helper_hotplug_event(&dev_priv->fbdev->helper);

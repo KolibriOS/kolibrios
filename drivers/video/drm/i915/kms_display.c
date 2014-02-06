@@ -61,11 +61,11 @@ struct tag_display
     u32  mask_seqno;
     u32  check_mouse;
     u32  check_m_pixel;
-
 };
 
 
 static display_t *os_display;
+struct drm_i915_gem_object *main_fb_obj;
 
 u32_t cmd_buffer;
 u32_t cmd_offset;
@@ -82,6 +82,7 @@ void __stdcall restore_cursor(int x, int y)
 
 void disable_mouse(void)
 {};
+
 
 static char *manufacturer_name(unsigned char *x)
 {
@@ -106,7 +107,6 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
     struct drm_framebuffer  *fb         = NULL;
     struct drm_crtc         *crtc;
     struct drm_encoder      *encoder;
-    struct drm_i915_gem_object *fb_obj;
     struct drm_mode_set     set;
     const char *con_name;
     const char *enc_name;
@@ -164,7 +164,6 @@ do_set:
     if (crtc->invert_dimensions)
         swap(hdisplay, vdisplay);
 
-    fb_obj = get_fb_obj();
     fb = fb_helper->fb;
 
     fb->width  = reqmode->width;
@@ -172,7 +171,7 @@ do_set:
 
     if(dev_priv->mm.bit_6_swizzle_x != I915_BIT_6_SWIZZLE_NONE)
     {
-        fb_obj->tiling_mode = I915_TILING_X;
+        main_fb_obj->tiling_mode = I915_TILING_X;
 
         if(IS_GEN3(dev))
             for (stride = 512; stride < reqmode->width * 4; stride <<= 1);
@@ -181,7 +180,7 @@ do_set:
     }
     else
     {
-        fb_obj->tiling_mode = I915_TILING_NONE;
+        main_fb_obj->tiling_mode = I915_TILING_NONE;
         stride = ALIGN(reqmode->width * 4, 64);
     }
 
@@ -190,7 +189,7 @@ do_set:
     fb->pitches[2]  =
     fb->pitches[3]  = stride;
 
-    fb_obj->stride  = stride;
+    main_fb_obj->stride  = stride;
 
     fb->bits_per_pixel = 32;
     fb->depth = 24;
@@ -199,7 +198,7 @@ do_set:
     crtc->enabled = true;
     os_display->crtc = crtc;
 
-    i915_gem_object_put_fence(fb_obj);
+    i915_gem_object_put_fence(main_fb_obj);
 
     set.crtc = crtc;
     set.x = 0;
@@ -285,7 +284,7 @@ struct drm_connector *get_active_connector(struct drm_device *dev)
 {
     struct drm_connector *tmp = NULL;
     struct drm_connector_helper_funcs *connector_funcs;
-    struct drm_encoder      *encoder;
+    struct drm_encoder   *encoder;
 
     list_for_each_entry(tmp, &dev->mode_config.connector_list, head)
     {
@@ -315,19 +314,19 @@ struct drm_connector *get_active_connector(struct drm_device *dev)
 
 struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_encoder *encoder)
 {
-        struct drm_crtc *tmp_crtc;
-        int crtc_mask = 1;
+    struct drm_crtc *tmp_crtc;
+    int crtc_mask = 1;
 
-        list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
+    list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
+    {
+        if (encoder->possible_crtcs & crtc_mask)
         {
-            if (encoder->possible_crtcs & crtc_mask)
-            {
             encoder->crtc = tmp_crtc;
             dbgprintf("CRTC %p\n", tmp_crtc);
             return tmp_crtc;
-            };
-            crtc_mask <<= 1;
         };
+        crtc_mask <<= 1;
+    };
     return NULL;
 };
 
@@ -428,7 +427,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     {
         if( !get_boot_mode(connector, usermode))
         {
-        struct drm_display_mode *mode;
+            struct drm_display_mode *mode;
 
             mode = list_entry(connector->modes.next, typeof(*mode), head);
             usermode->width  = drm_mode_width(mode);
@@ -761,7 +760,7 @@ int i915_mask_update(struct drm_device *dev, void *data,
             slot|= (slot<<8)|(slot<<16)|(slot<<24);
 
             __asm__ __volatile__ (
-                "movd       %[slot],   %%xmm6    \n"
+            "movd       %[slot],   %%xmm6         \n"
             "punpckldq  %%xmm6, %%xmm6            \n"
             "punpcklqdq %%xmm6, %%xmm6            \n"
             :: [slot]  "m" (slot)
@@ -931,7 +930,7 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
         return -EINVAL;
     }
 
-#if 1
+#if 0
     if(warn_count < 1000)
     {
         printf("left %d top %d right %d bottom %d\n",
@@ -1049,7 +1048,7 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
                     tmp_dst += 8;
                 }
                 if( tmp_w >= 4 )
-        {
+                {
                     __asm__ __volatile__ (
                     "movd       (%0),   %%xmm0            \n"
                     "pcmpeqb    %%xmm6, %%xmm0            \n"

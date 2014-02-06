@@ -2,7 +2,7 @@
 CC = gcc
 FASM = e:/fasm/fasm.exe
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DRM_I915_FBDEV
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
 DRV_INCLUDES    = /d/kos/kolibri/drivers/include
@@ -49,8 +49,8 @@ NAME_SRC=		main.c					\
 			i915_drv.c				\
 			i915_gem.c				\
 			i915_gem_context.c			\
-			i915_gem_gtt.c				\
 			i915_gem_execbuffer.c			\
+			i915_gem_gtt.c				\
 			i915_gem_stolen.c			\
 			i915_gem_tiling.c			\
 			i915_gpu_error.c			\
@@ -60,13 +60,15 @@ NAME_SRC=		main.c					\
 			intel_ddi.c				\
 			intel_display.c				\
 			intel_dp.c				\
+			intel_dsi.c				\
+			intel_dsi_cmd.c				\
+			intel_dsi_pll.c				\
 			intel_dvo.c				\
-			intel_fb.c				\
+			intel_fbdev.c				\
 			intel_hdmi.c				\
 			intel_i2c.c				\
 			intel_lvds.c				\
 			intel_modes.c				\
-			intel_opregion.c			\
 			intel_panel.c				\
 			intel_pm.c				\
 			intel_ringbuffer.c			\

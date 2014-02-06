@@ -28,6 +28,8 @@
 #include <linux/types.h>
 #include <linux/slab.h>
 #include <linux/mm.h>
+#include <linux/fs.h>
+#include <linux/file.h>
 #include <linux/module.h>
 #include <linux/shmem_fs.h>
 #include <linux/err.h>
@@ -86,19 +88,19 @@
 int
 drm_gem_init(struct drm_device *dev)
 {
-	struct drm_gem_mm *mm;
+	struct drm_vma_offset_manager *vma_offset_manager;
 
 	mutex_init(&dev->object_name_lock);
 	idr_init(&dev->object_name_idr);
 
-	mm = kzalloc(sizeof(struct drm_gem_mm), GFP_KERNEL);
-	if (!mm) {
+	vma_offset_manager = kzalloc(sizeof(*vma_offset_manager), GFP_KERNEL);
+	if (!vma_offset_manager) {
 		DRM_ERROR("out of memory\n");
 		return -ENOMEM;
 	}
 
-	dev->mm_private = mm;
-	drm_vma_offset_manager_init(&mm->vma_manager,
+	dev->vma_offset_manager = vma_offset_manager;
+	drm_vma_offset_manager_init(vma_offset_manager,
 				    DRM_FILE_PAGE_OFFSET_START,
 		    DRM_FILE_PAGE_OFFSET_SIZE);
 
@@ -108,11 +110,10 @@ drm_gem_init(struct drm_device *dev)
 void
 drm_gem_destroy(struct drm_device *dev)
 {
-	struct drm_gem_mm *mm = dev->mm_private;
 
-	drm_vma_offset_manager_destroy(&mm->vma_manager);
-	kfree(mm);
-	dev->mm_private = NULL;
+	drm_vma_offset_manager_destroy(dev->vma_offset_manager);
+	kfree(dev->vma_offset_manager);
+	dev->vma_offset_manager = NULL;
 }
 
 /**
@@ -124,11 +125,12 @@ int drm_gem_object_init(struct drm_device *dev,
 {
 	struct file *filp;
 
+	drm_gem_private_object_init(dev, obj, size);
+
 	filp = shmem_file_setup("drm mm object", size, VM_NORESERVE);
 	if (IS_ERR(filp))
 		return PTR_ERR(filp);
 
-	drm_gem_private_object_init(dev, obj, size);
 	obj->filp = filp;
 
 	return 0;
@@ -156,40 +158,6 @@ void drm_gem_private_object_init(struct drm_device *dev,
 EXPORT_SYMBOL(drm_gem_private_object_init);
 
 /**
- * Allocate a GEM object of the specified size with shmfs backing store
- */
-struct drm_gem_object *
-drm_gem_object_alloc(struct drm_device *dev, size_t size)
-{
-	struct drm_gem_object *obj;
-
-	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-	if (!obj)
-		goto free;
-
-	if (drm_gem_object_init(dev, obj, size) != 0)
-		goto free;
-
-	if (dev->driver->gem_init_object != NULL &&
-	    dev->driver->gem_init_object(obj) != 0) {
-		goto fput;
-	}
-	return obj;
-fput:
-	/* Object_init mangles the global counters - readjust them. */
-	free(obj->filp);
-free:
-	kfree(obj);
-	return NULL;
-}
-EXPORT_SYMBOL(drm_gem_object_alloc);
-
-static void drm_gem_object_ref_bug(struct kref *list_kref)
-{
-	BUG();
-}
-
-/**
  * Called after the last handle to the object has been closed
  *
  * Removes any name for the object. Note that this must be
@@ -204,13 +172,6 @@ static void drm_gem_object_handle_free(struct drm_gem_object *obj)
 	if (obj->name) {
 		idr_remove(&dev->object_name_idr, obj->name);
 		obj->name = 0;
-		/*
-		 * The object name held a reference to this object, drop
-		 * that now.
-		*
-		* This cannot be the last reference, since the handle holds one too.
-		 */
-		kref_put(&obj->refcount, drm_gem_object_ref_bug);
 	}
 }
 
@@ -268,6 +229,7 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 	idr_remove(&filp->object_idr, handle);
 	spin_unlock(&filp->table_lock);
 
+//	drm_vma_node_revoke(&obj->vma_node, filp->filp);
 
 	if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, filp);
@@ -278,9 +240,19 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 EXPORT_SYMBOL(drm_gem_handle_delete);
 
 /**
- * Create a handle for this object. This adds a handle reference
- * to the object, which includes a regular reference count. Callers
- * will likely want to dereference the object afterwards.
+ * drm_gem_dumb_destroy - dumb fb callback helper for gem based drivers
+ * 
+ * This implements the ->dumb_destroy kms driver callback for drivers which use
+ * gem to manage their backing storage.
+ */
+int drm_gem_dumb_destroy(struct drm_file *file,
+			 struct drm_device *dev,
+			 uint32_t handle)
+{
+	return drm_gem_handle_delete(file, handle);
+}
+EXPORT_SYMBOL(drm_gem_dumb_destroy);
+
 /**
  * drm_gem_handle_create_tail - internal functions to create a handle
  * 
@@ -317,6 +289,12 @@ drm_gem_handle_create_tail(struct drm_file *file_priv,
 	}
 	*handlep = ret;
 
+//	ret = drm_vma_node_allow(&obj->vma_node, file_priv->filp);
+//	if (ret) {
+//		drm_gem_handle_delete(file_priv, *handlep);
+//		return ret;
+//	}
+
 	if (dev->driver->gem_open_object) {
 		ret = dev->driver->gem_open_object(obj, file_priv);
 		if (ret) {
@@ -344,21 +322,19 @@ drm_gem_handle_create(struct drm_file *file_priv,
 }
 EXPORT_SYMBOL(drm_gem_handle_create);
 
-
+#if 0
 /**
  * drm_gem_free_mmap_offset - release a fake mmap offset for an object
  * @obj: obj in question
  *
  * This routine frees fake offsets allocated by drm_gem_create_mmap_offset().
  */
-#if 0
 void
 drm_gem_free_mmap_offset(struct drm_gem_object *obj)
 {
 	struct drm_device *dev = obj->dev;
-	struct drm_gem_mm *mm = dev->mm_private;
 
-	drm_vma_offset_remove(&mm->vma_manager, &obj->vma_node);
+	drm_vma_offset_remove(dev->vma_offset_manager, &obj->vma_node);
 }
 EXPORT_SYMBOL(drm_gem_free_mmap_offset);
 
@@ -380,54 +356,131 @@ int
 drm_gem_create_mmap_offset_size(struct drm_gem_object *obj, size_t size)
 {
 	struct drm_device *dev = obj->dev;
-	struct drm_gem_mm *mm = dev->mm_private;
 
-	/* Set the object up for mmap'ing */
-	list = &obj->map_list;
-	list->map = kzalloc(sizeof(struct drm_map_list), GFP_KERNEL);
-	if (!list->map)
-		return -ENOMEM;
+	return drm_vma_offset_add(dev->vma_offset_manager, &obj->vma_node,
+				  size / PAGE_SIZE);
+}
+EXPORT_SYMBOL(drm_gem_create_mmap_offset_size);
 
-	map = list->map;
-	map->type = _DRM_GEM;
-	map->size = obj->size;
-	map->handle = obj;
-
-	/* Get a DRM GEM mmap offset allocated... */
-	list->file_offset_node = drm_mm_search_free(&mm->offset_manager,
-			obj->size / PAGE_SIZE, 0, false);
-
-	if (!list->file_offset_node) {
-		DRM_ERROR("failed to allocate offset for bo %d\n", obj->name);
-		ret = -ENOSPC;
-		goto out_free_list;
-	}
-
-	list->file_offset_node = drm_mm_get_block(list->file_offset_node,
-			obj->size / PAGE_SIZE, 0);
-	if (!list->file_offset_node) {
-		ret = -ENOMEM;
-		goto out_free_list;
-	}
-
-	list->hash.key = list->file_offset_node->start;
-	ret = drm_ht_insert_item(&mm->offset_hash, &list->hash);
-	if (ret) {
-		DRM_ERROR("failed to add to map hash\n");
-		goto out_free_mm;
-	}
-
-	return 0;
-
-out_free_mm:
-	drm_mm_put_block(list->file_offset_node);
-out_free_list:
-	kfree(list->map);
-	list->map = NULL;
-
-	return ret;
+/**
+ * drm_gem_create_mmap_offset - create a fake mmap offset for an object
+ * @obj: obj in question
+ *
+ * GEM memory mapping works by handing back to userspace a fake mmap offset
+ * it can use in a subsequent mmap(2) call.  The DRM core code then looks
+ * up the object based on the offset and sets up the various memory mapping
+ * structures.
+ *
+ * This routine allocates and attaches a fake offset for @obj.
+ */
+int drm_gem_create_mmap_offset(struct drm_gem_object *obj)
+{
+	return drm_gem_create_mmap_offset_size(obj, obj->size);
 }
 EXPORT_SYMBOL(drm_gem_create_mmap_offset);
+
+/**
+ * drm_gem_get_pages - helper to allocate backing pages for a GEM object
+ * from shmem
+ * @obj: obj in question
+ * @gfpmask: gfp mask of requested pages
+ */
+struct page **drm_gem_get_pages(struct drm_gem_object *obj, gfp_t gfpmask)
+{
+	struct inode *inode;
+	struct address_space *mapping;
+	struct page *p, **pages;
+	int i, npages;
+
+	/* This is the shared memory object that backs the GEM resource */
+	inode = file_inode(obj->filp);
+	mapping = inode->i_mapping;
+
+	/* We already BUG_ON() for non-page-aligned sizes in
+	 * drm_gem_object_init(), so we should never hit this unless
+	 * driver author is doing something really wrong:
+	 */
+	WARN_ON((obj->size & (PAGE_SIZE - 1)) != 0);
+
+	npages = obj->size >> PAGE_SHIFT;
+
+	pages = drm_malloc_ab(npages, sizeof(struct page *));
+	if (pages == NULL)
+		return ERR_PTR(-ENOMEM);
+
+	gfpmask |= mapping_gfp_mask(mapping);
+
+	for (i = 0; i < npages; i++) {
+		p = shmem_read_mapping_page_gfp(mapping, i, gfpmask);
+		if (IS_ERR(p))
+			goto fail;
+		pages[i] = p;
+
+		/* There is a hypothetical issue w/ drivers that require
+		 * buffer memory in the low 4GB.. if the pages are un-
+		 * pinned, and swapped out, they can end up swapped back
+		 * in above 4GB.  If pages are already in memory, then
+		 * shmem_read_mapping_page_gfp will ignore the gfpmask,
+		 * even if the already in-memory page disobeys the mask.
+		 *
+		 * It is only a theoretical issue today, because none of
+		 * the devices with this limitation can be populated with
+		 * enough memory to trigger the issue.  But this BUG_ON()
+		 * is here as a reminder in case the problem with
+		 * shmem_read_mapping_page_gfp() isn't solved by the time
+		 * it does become a real issue.
+		 *
+		 * See this thread: http://lkml.org/lkml/2011/7/11/238
+		 */
+		BUG_ON((gfpmask & __GFP_DMA32) &&
+				(page_to_pfn(p) >= 0x00100000UL));
+	}
+
+	return pages;
+
+fail:
+	while (i--)
+		page_cache_release(pages[i]);
+
+	drm_free_large(pages);
+	return ERR_CAST(p);
+}
+EXPORT_SYMBOL(drm_gem_get_pages);
+
+/**
+ * drm_gem_put_pages - helper to free backing pages for a GEM object
+ * @obj: obj in question
+ * @pages: pages to free
+ * @dirty: if true, pages will be marked as dirty
+ * @accessed: if true, the pages will be marked as accessed
+ */
+void drm_gem_put_pages(struct drm_gem_object *obj, struct page **pages,
+		bool dirty, bool accessed)
+{
+	int i, npages;
+
+	/* We already BUG_ON() for non-page-aligned sizes in
+	 * drm_gem_object_init(), so we should never hit this unless
+	 * driver author is doing something really wrong:
+	 */
+	WARN_ON((obj->size & (PAGE_SIZE - 1)) != 0);
+
+	npages = obj->size >> PAGE_SHIFT;
+
+	for (i = 0; i < npages; i++) {
+		if (dirty)
+			set_page_dirty(pages[i]);
+
+		if (accessed)
+			mark_page_accessed(pages[i]);
+
+		/* Undo the reference we took when populating the table */
+		page_cache_release(pages[i]);
+	}
+
+	drm_free_large(pages);
+}
+EXPORT_SYMBOL(drm_gem_put_pages);
 #endif
 
 /** Returns a reference to the object named by the handle. */
@@ -504,9 +557,6 @@ drm_gem_flink_ioctl(struct drm_device *dev, void *data,
 			goto err;
 
 		obj->name = ret;
-
-		/* Allocate a reference for the name table.  */
-		drm_gem_object_reference(obj);
 	}
 
 		args->name = (uint64_t) obj->name;
@@ -581,7 +631,6 @@ drm_gem_object_release_handle(int id, void *ptr, void *data)
 	struct drm_gem_object *obj = ptr;
 	struct drm_device *dev = obj->dev;
 
-	drm_gem_remove_prime_handles(obj, file_priv);
 	drm_vma_node_revoke(&obj->vma_node, file_priv->filp);
 
 	if (dev->driver->gem_close_object)

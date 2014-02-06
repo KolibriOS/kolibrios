@@ -32,7 +32,7 @@
  */
 
 #include <linux/module.h>
-
+#include <linux/moduleparam.h>
 #include <linux/slab.h>
 #include <drm/drmP.h>
 #include <drm/drm_core.h>
@@ -79,6 +79,7 @@ void drm_ut_debug_printk(unsigned int request_level,
 			 const char *function_name,
 			 const char *format, ...)
 {
+	struct va_format vaf;
 	va_list args;
 
 //   if (drm_debug & request_level) {
