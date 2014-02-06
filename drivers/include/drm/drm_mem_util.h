@@ -27,6 +27,8 @@
 #ifndef _DRM_MEM_UTIL_H_
 #define _DRM_MEM_UTIL_H_
 
+#include <linux/vmalloc.h>
+
 static __inline__ void *drm_calloc_large(size_t nmemb, size_t size)
 {
     void *p;
@@ -35,7 +37,7 @@ static __inline__ void *drm_calloc_large(size_t nmemb, size_t size)
 		return NULL;
 
 	if (size * nmemb <= PAGE_SIZE)
-        return calloc(nmemb, size);
+	    return kcalloc(nmemb, size, GFP_KERNEL);
 
     p = (void*)KernelAlloc(size * nmemb);
     if ( p != NULL )

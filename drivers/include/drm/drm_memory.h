@@ -33,6 +33,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <linux/vmalloc.h>
 #include <drm/drmP.h>
 
 /**

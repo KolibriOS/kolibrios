@@ -6,4 +6,7 @@
  *
  * Delay routines, using a pre-computed "loops_per_jiffy" value.
  */
+
+#define usleep_range(min, max)  udelay(max)
+
 #endif /* defined(_LINUX_DELAY_H) */

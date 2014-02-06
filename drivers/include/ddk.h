@@ -17,6 +17,11 @@
 #define PG_NOCACHE          0x018
 #define PG_SHARED           0x200
 
+#define _PAGE_PRESENT       (1<<0)
+#define _PAGE_RW            (1<<1)
+#define _PAGE_PWT           (1<<3)
+#define _PAGE_PCD           (1<<4)
+#define _PAGE_PAT           (1<<7)
 
 #define MANUAL_DESTROY      0x80000000
 

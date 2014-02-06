@@ -24,7 +24,7 @@
  */
 
 #include <drm/drm_mm.h>
-//#include <linux/fs.h>
+#include <linux/fs.h>
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/rbtree.h>
