@@ -521,7 +521,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     edi, [ebp + http_msg.write_ptr]
         add     [ebp + http_msg.write_ptr], eax
         sub     [ebp + http_msg.buffer_length], eax
-        jz      .got_all_data
+;        jz      .got_all_data
 
 ; If data is chunked, combine chunks into contiguous data.
         test    [ebp + http_msg.flags], FLAG_CHUNKED
