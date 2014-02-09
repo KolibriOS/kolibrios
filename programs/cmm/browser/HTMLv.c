@@ -43,7 +43,7 @@
 	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
 #endif
 
-byte native_http=0;
+byte native_http=1;
 
 proc_info Form;
 #define WIN_W 640
@@ -187,9 +187,11 @@ void main()
 					if (EAX == 0) {	
 						ESI = http_transfer;
 						// Handle redirects
-						if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)  {
+						if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)
+						{
 							redirected++;
-							if (redirected<=5) {
+							if (redirected<=5)
+							{
 								http_find_header_field stdcall (http_transfer, #str_location);
 								if (EAX!=0) {
 									ESI = EAX;
@@ -200,20 +202,28 @@ void main()
 									} while (AL != 0) && (AL != 13) && (AL != 10));
 									DSBYTE[EDI-1]='\0';
 								}
-							} else {
+							}
+							else
+							{
 							//TODO: display error (too many redirects)
 							}
-						} else {
+						} 
+						else
+						{
 							redirected = 0;
 						}
 						// Loading the page is complete, free resources
 						http_free stdcall (http_transfer);
 						http_transfer=0;	
-						if (redirected>0) {
+						if (redirected>0)
+						{
 							WB1.GetNewUrl();
 							strcpy(#editURL, #URL);
+							BrowserHistory.current--;
 							OpenPage();
-						} else {
+						}
+						else
+						{
 							Draw_Window();		// stop button => refresh button
 						}
 					}
