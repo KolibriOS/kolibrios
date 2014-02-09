@@ -1,124 +1,167 @@
-//Asper
 char a_libdir[43]  = "/sys/lib/\0";
 
+// stdcall with 1 parameter
+void dll_Load() {
+asm {
+        push    ebp
+        mov     ebp, esp
+        mov     esi, SSDWORD[EBP+8]
+@next_lib:    
+        mov     edx, DSDWORD[ESI]
+        or      edx, edx
+        jz      exit
+        push    esi
+        mov     esi, DSDWORD[ESI+4]
+        mov     edi, #a_libdir+9
 
-//proc dll.Load, import_table:dword
-int dll_Load(dword import_table)
-{
-                $mov     esi, import_table                                
-  @next_lib:    $mov     edx, DSDWORD[esi]
-                $or      edx,edx
-                $jz      exit_
-                $push    esi                
-                $mov     esi,DSDWORD[esi+4] 
-                $mov     edi,#a_libdir
-                
-                $push    edi
-                $push    esi
-                EAX=strlen(#a_libdir);
-                $pop     esi
-                $pop     edi
-                $add     edi, eax //9
-                
-            @loc01: $lodsb
-                $stosb
-                $or      al,al
-                $jnz     loc01
+@loc01: 
+        lodsb
+        stosb
+        or      al, al
+        jnz     loc01
 
-                                //IntToStr(EBX);
-                                //$push edx    
-                                //WriteDebug(#a_libdir);
-                                //$pop edx
-                //mcall   68,19,a_libdir
-                $mov     eax, 68
-                $mov     ebx, 19
-                $mov     ecx,#a_libdir
-                $int     0x40
-                
-                $or      eax,eax
-                $jz      fail
-                //stdcall dll.Link,eax,edx
-                dll_Link(EAX, EDX);
-                $push    eax
-                $mov     eax, DSDWORD [eax]
-                $cmp     DSDWORD [eax], 'lib_'
-                $pop     eax
-                //$jnz     loc02
-                                //IntToStr(EBX);
-                                //$push    eax
-                                //WriteDebug(DSDWORD[EAX]);
-                                //$pop     eax
-                //stdcall dll.Init,[eax+4]
-                //dll_Init(DSDWORD[EAX]); //dll_Init(DSDWORD[EAX+4]);
-            @loc02:
-                $pop     esi
-                $add     esi,8
-                $jmp     next_lib
-  @exit_:        $xor     eax,eax
-                return 0;
-  @fail:        $add     esp,4
-                $xor     eax,eax
-                $inc     eax
-                return -1;
+        mov     eax, 68
+        mov     ebx, 19
+        mov     ecx, #a_libdir
+        int     0x40
+        or      eax, eax
+        jz      fail
+
+        push    edx
+        push    eax
+        call    dll_Link
+
+        push    eax
+        mov     eax, DSDWORD[eax]
+        cmp     DSDWORD[EAX], '_bil'    // somehow this needs to be reversed..
+        pop     eax
+        jnz     loc02
+
+        push    DSDWORD[EAX+4]
+        call    dll_Init
+@loc02:
+
+        pop     esi
+        add     esi, 8
+        jmp     next_lib
+@exit:
+        xor     eax, eax
+        leave
+        ret     4
+        
+@fail:        
+        add     esp, 4
+        xor     eax, eax
+        inc     eax
+        leave
+        ret     4
+    }
 }
 
-//proc dll.Link, exp:dword,imp:dword
-void dll_Link(dword exp, imp)
-{
-                $push    eax
-                $mov     esi, imp
-                $test    esi, esi
-                $jz      done
-  @next:        $lodsd
-                $test    eax,eax
-                $jz      done
-
-                //stdcall dll.GetProcAddress,[exp],eax
-                dll_GetProcAddress(exp,EAX);
-                $or      eax,eax
-                $jz      loc03
-
-                $mov     DSDWORD[esi-4],eax
-                $jmp     next
-  @loc03: 
-                $mov     DSDWORD[esp],0
-  @done:        $pop     eax
+//stdcall with 2 parameters
+void dll_Link() {
+asm {
+        push    ebp
+        mov     ebp, esp
+        push    eax
+        mov     esi, SSDWORD[EBP+12]
+        test    esi, esi
+        jz      done
+@next:        
+        lodsd
+        test    eax, eax
+        jz      done
+        push    eax
+        push    SSDWORD[EBP+8]
+        call    dll_GetProcAddress
+        or      eax, eax
+        jz      loc03
+        mov     DSDWORD[esi-4], eax
+        jmp     next
+@loc03: 
+        mov     SSDWORD[esp], 0
+@done:
+        pop     eax
+        leave
+        ret     8
+    }
 }
 
-//proc dll.Init, dllentry:dword
-void dll_Init(dword dllentry)
-{
-                $pushad
-                EAX=#mem_Alloc;
-                EBX=#mem_Free;
-                ECX=#mem_ReAlloc;
-                EDX=#dll_Load;
-                DSDWORD [dllentry+4] stdcall ();                
-                $popad
+
+//stdcall with 1 parameter
+void dll_Init() {
+asm {
+        push    ebp
+        mov     ebp, esp
+        pushad
+        mov     eax, #mem_Alloc
+        mov     ebx, #mem_Free;
+        mov     ecx, #mem_ReAlloc;
+        mov     edx, #dll_Load;
+        call    SSDWORD[EBP+8]
+        popad
+        leave
+        ret     4
+    }
 }
 
-//proc dll.GetProcAddress, exp:dword,sz_name:dword
-dword dll_GetProcAddress(dword exp, sz_name)
-{
-                $push esi
-                $mov     edx, exp
-                $xor     eax,eax
-  @next:        $or      edx,edx
-                $jz      end_
-                $cmp     edx,0
-                $jz      end_
-                strcmp(DSDWORD[EDX],sz_name);
-                $test    eax,eax
-                $jz      ok
-                $add     edx,8
-                $jmp     next
-  @ok:
-                $mov     eax, DSDWORD[edx+4]
-  @end_:         
-                $pop  esi
-    return EAX;
+
+// stdcall with 2 parameters
+void dll_GetProcAddress(){
+asm {
+        push    ebp
+        mov     ebp, esp
+        mov     edx, CSDWORD[EBP+8]
+        xor     eax, eax
+
+@next:        
+        or      edx, edx
+        jz      end
+        cmp     CSDWORD[edx], 0
+        jz      end
+
+        push    CSDWORD[EBP+12]
+        push    CSDWORD[EDX]
+        call    dll_StrCmp
+        test    eax, eax
+        jz      ok
+        add     edx, 8
+        jmp     next
+@ok:
+        mov     eax, DSDWORD[EDX+4]
+@end:
+        leave
+        ret     8
+    }
 }
 
+
+// stdcall with 2 parameters
+void dll_StrCmp() {
+asm {
+        push    ebp
+        mov     ebp, esp
+        push    esi
+        push    edi
+        mov     esi, CSDWORD[EBP+8]
+        mov     edi, CSDWORD[EBP+12]
+        xor     eax, eax
+@label1:
+        lodsb
+        scasb
+        jne     fail
+        or      al, al
+        jnz     label1
+        jmp     label_ok
+@fail:
+        or      eax, -1
+@label_ok:
+        pop     edi
+        pop     esi
+        leave
+        ret     8
+    }
+}
 
 int load_dll2(dword dllname, import_table, byte need_init)
 {
@@ -166,7 +209,7 @@ int load_dll2(dword dllname, import_table, byte need_init)
        
         $jmp     import_loop01
 @import_done01:
-        IF (need_init) dll_Init(EDX);
+        IF (need_init) dll_Init (DSDWORD[EDX+4]);
         return 0;
 @exit01:
         return -1;
