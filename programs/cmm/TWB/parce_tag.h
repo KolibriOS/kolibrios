@@ -34,5 +34,6 @@ unsigned int GetNextParam()
 	}
 	strlcpy(#parametr, #tagparam + i + 1, sizeof(parametr));
 	tagparam[i] = 0x00;
+	strlwr(#parametr);
 	return 1;
 }

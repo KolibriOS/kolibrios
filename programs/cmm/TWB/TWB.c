@@ -309,7 +309,6 @@ void TWebBrowser::Parse(dword bufpos, in_filesize){
 				bufpos++;
 			}
 			strlwr(#tag);
-			strlwr(#tagparam);
 
 			if (condition_text_active) && (condition_text_val != condition_href) 
 			{

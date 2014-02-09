@@ -43,7 +43,7 @@ void ImageCache::Images(int left1, top1, width1)
 	do{
 		if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 		{
-			//if (downloader_id) strcpy(#img_path, #history_list[history_current-1].Item); else
+			if (downloader_id) strcpy(#img_path, #history_list[BrowserHistory.current-1].Item); else
 			strcpy(#img_path, BrowserHistory.CurrentUrl());
 			if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
 			{
