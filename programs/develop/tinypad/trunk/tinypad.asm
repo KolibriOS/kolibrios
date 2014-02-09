@@ -41,7 +41,6 @@ APP_VERSION equ 'SVN (4.0.8)'
 TRUE = 1
 FALSE = 0
 
-;include 'debug.inc'
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
 ;include '../../../debug-fdo.inc'

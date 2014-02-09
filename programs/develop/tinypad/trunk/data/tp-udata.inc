@@ -108,6 +108,7 @@ exit_tab_num   dd ?
 temp_buf dd ?
 copy_buf dd ?
 clipboard_buf dd ?
+size_of_moving_area dd ?
 
 label color_tbl dword
   .text       dd ?

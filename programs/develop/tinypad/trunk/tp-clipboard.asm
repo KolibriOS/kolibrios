@@ -96,14 +96,14 @@ get_from_clipboard:
 .yes_valid_text:
 	call	know_number_line_breaks
         mov     [copy_count],ebx
-	
+; correction of erroneous buffer size
 	mov	eax,[clipboard_buf]
 	sub	esi,eax
 	mov	[eax],esi
-
+; multiple by 6
 	shl	ebx,1
 	lea	ebx,[ebx*3]
-
+; calculating a desired size
 	mov	eax,[clipboard_buf]
 	mov	eax,[eax]
 	sub	eax,4*3
@@ -249,7 +249,7 @@ know_number_line_breaks:
 	lodsb
 	
 	test	al,al
-	jz	.end_of_data_1
+	jz	.end_of_data
 	
 	cmp	al,0x0d
 	je	.check_0x0a
@@ -281,17 +281,8 @@ know_number_line_breaks:
 	dec	ecx
 	jnz	@b
 ;--------------------------------------	
-.end_of_data_1:
-	cmp	[esi-2],byte 0x0d
-	je	.end_of_data
-
-	cmp	[esi-2],byte 0x0a
-	je	.end_of_data
-
-	inc	ebx
-	inc	esi
-;--------------------------------------	
 .end_of_data:
-	inc	ebx
+	add	ebx,2
+	inc	esi
 	ret
 ;-----------------------------------------------------------------------------

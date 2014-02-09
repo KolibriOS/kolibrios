@@ -610,7 +610,12 @@ proc key.ctrl_v
 	add	[esp],eax
 	add	esi,eax
 	mov	ecx,[copy_size]
+	mov	edi,[copy_count]
+	test	edi,edi
+	dec	edi
+	jnz	@f
 	sub	ecx,sizeof.EDITOR_LINE_DATA
+@@:
 	mov	edi,[cur_editor.Lines]
 	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
@@ -621,6 +626,7 @@ proc key.ctrl_v
 	add	ecx,[cur_editor.Caret.X]
 	neg	ecx
 	lea	ecx,[esi+ecx+1]
+	mov	[size_of_moving_area],ecx
 	std
 	rep	movsb
 
@@ -655,11 +661,22 @@ proc key.ctrl_v
 
 	pop	ecx
 	sub	ecx,ebx
+	ja	@f
+
+	pusha
+	mov	esi,edi
+	sub	edi,sizeof.EDITOR_LINE_DATA
+	mov	ecx,[size_of_moving_area]
+	cld
+	rep	movsb
+	popa
+	jmp	.save_cur_editor_values
+@@:
 	add	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],ecx
 	call	.check_columns
 	mov	ecx,eax
 	rep	movsb
-
+.save_cur_editor_values:
 	mov	[cur_editor.Caret.X],eax
 	mov	[cur_editor.SelStart.X],eax
 	mov	eax,[copy_count]
@@ -716,7 +733,6 @@ proc key.ctrl_v
     @@: pop	eax
 	ret
 endp
-
 ;-----------------------------------------------------------------------------
 proc key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 ;-----------------------------------------------------------------------------
