@@ -35,12 +35,14 @@
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
+	char accept_language[]= "Accept-Language: ru\n\0";
 #else
 	char version[]=" Text-based Browser 0.99.67";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
+	char accept_language[]= "Accept-Language: en\n\0";	
 #endif
 
 byte native_http=1;
@@ -370,7 +372,7 @@ void Scan(int id)
 			return;
 			
 		case HOME:
-			strcpy(#editURL, "http://kolibrios.org/en/index.htm");
+			strcpy(#editURL, "http://kolibrios.org/");
 		case GOTOURL:
 		case 0x0D: //enter
 			if ((strstr(#editURL,"ttp://")==0) && (editURL[0]!='/')) strcpy(#URL,"http://"); else URL[0] = 0;
@@ -492,7 +494,7 @@ void OpenPage()
 	{
 		if (native_http)
 		{
-			http_get stdcall (#URL, 0);	
+			http_get stdcall (#URL, #accept_language);	
 			http_transfer = EAX;
 			IF (http_transfer < 0) notify("Error from HTTP lib");
 		}
