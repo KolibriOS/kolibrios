@@ -38,7 +38,7 @@
 #include <drm/drm_global.h>
 #include <drm/drm_vma_manager.h>
 //#include <linux/workqueue.h>
-//#include <linux/fs.h>
+#include <linux/fs.h>
 #include <linux/spinlock.h>
 
 struct ww_acquire_ctx;
@@ -681,6 +681,15 @@ extern void ttm_tt_cache_flush(struct page *pages[], unsigned long num_pages);
 extern int ttm_tt_set_placement_caching(struct ttm_tt *ttm, uint32_t placement);
 extern int ttm_tt_swapout(struct ttm_tt *ttm,
 			  struct file *persistent_swap_storage);
+
+/**
+ * ttm_tt_unpopulate - free pages from a ttm
+ *
+ * @ttm: Pointer to the ttm_tt structure
+ *
+ * Calls the driver method to free all pages from a ttm
+ */
+extern void ttm_tt_unpopulate(struct ttm_tt *ttm);
 
 /*
  * ttm_bo.c
