@@ -390,8 +390,6 @@ int vmw_3d_resource_inc(struct vmw_private *dev_priv,
 {
 	int ret = 0;
 
-    ENTER();
-
 	mutex_lock(&dev_priv->release_mutex);
 	if (unlikely(dev_priv->num_3d_resources++ == 0)) {
         ret = vmw_request_device(dev_priv);
@@ -406,7 +404,6 @@ int vmw_3d_resource_inc(struct vmw_private *dev_priv,
 	}
 
 	mutex_unlock(&dev_priv->release_mutex);
-    LEAVE();
 	return ret;
 }
 
@@ -476,6 +473,33 @@ static void vmw_get_initial_size(struct vmw_private *dev_priv)
 }
 
 /**
+ * vmw_dma_select_mode - Determine how DMA mappings should be set up for this
+ * system.
+ *
+ * @dev_priv: Pointer to a struct vmw_private
+ *
+ * This functions tries to determine the IOMMU setup and what actions
+ * need to be taken by the driver to make system pages visible to the
+ * device.
+ * If this function decides that DMA is not possible, it returns -EINVAL.
+ * The driver may then try to disable features of the device that require
+ * DMA.
+ */
+static int vmw_dma_select_mode(struct vmw_private *dev_priv)
+{
+	static const char *names[vmw_dma_map_max] = {
+		[vmw_dma_phys] = "Using physical TTM page addresses.",
+		[vmw_dma_alloc_coherent] = "Using coherent TTM pages.",
+		[vmw_dma_map_populate] = "Keeping DMA mappings.",
+		[vmw_dma_map_bind] = "Giving up DMA mappings early."};
+
+    dev_priv->map_mode = vmw_dma_phys;
+    DRM_INFO("DMA map mode: %s\n", names[dev_priv->map_mode]);
+
+	return 0;
+}
+
+/**
  * vmw_dma_masks - set required page- and dma masks
  *
  * @dev: Pointer to struct drm-device
@@ -509,7 +533,6 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
 	uint32_t svga_id;
 	enum vmw_res_type i;
 	bool refuse_dma = false;
-
 
     ENTER();
 
@@ -564,11 +587,11 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
 	}
 
 	dev_priv->capabilities = vmw_read(dev_priv, SVGA_REG_CAPABILITIES);
-//   ret = vmw_dma_select_mode(dev_priv);
-//   if (unlikely(ret != 0)) {
-//       DRM_INFO("Restricting capabilities due to IOMMU setup.\n");
-//       refuse_dma = true;
-//   }
+	ret = vmw_dma_select_mode(dev_priv);
+	if (unlikely(ret != 0)) {
+		DRM_INFO("Restricting capabilities due to IOMMU setup.\n");
+		refuse_dma = true;
+	}
 
 	dev_priv->vram_size = vmw_read(dev_priv, SVGA_REG_VRAM_SIZE);
 	dev_priv->mmio_size = vmw_read(dev_priv, SVGA_REG_MEM_SIZE);
@@ -927,7 +950,7 @@ static void vmw_lastclose(struct drm_device *dev)
 
 static void vmw_master_init(struct vmw_master *vmaster)
 {
-//	ttm_lock_init(&vmaster->lock);
+	ttm_lock_init(&vmaster->lock);
 	INIT_LIST_HEAD(&vmaster->fb_surf);
 	mutex_init(&vmaster->fb_surf_mutex);
 }
@@ -1176,14 +1199,12 @@ static int vmw_pm_prepare(struct device *kdev)
 
 #endif
 
-
 static struct drm_driver driver = {
 	.driver_features = DRIVER_HAVE_IRQ | DRIVER_IRQ_SHARED |
 	DRIVER_MODESET,
    .load = vmw_driver_load,
-//   .unload = vmw_driver_unload,
-//   .firstopen = vmw_firstopen,
-//   .lastclose = vmw_lastclose,
+//	.unload = vmw_driver_unload,
+//	.lastclose = vmw_lastclose,
    .irq_preinstall = vmw_irq_preinstall,
    .irq_postinstall = vmw_irq_postinstall,
 //   .irq_uninstall = vmw_irq_uninstall,
@@ -1193,11 +1214,6 @@ static struct drm_driver driver = {
 //   .disable_vblank = vmw_disable_vblank,
 //   .ioctls = vmw_ioctls,
 //   .num_ioctls = DRM_ARRAY_SIZE(vmw_ioctls),
-//   .dma_quiescent = NULL,  /*vmw_dma_quiescent, */
-//   .master_create = vmw_master_create,
-//   .master_destroy = vmw_master_destroy,
-//   .master_set = vmw_master_set,
-//   .master_drop = vmw_master_drop,
      .open = vmw_driver_open,
 //   .preclose = vmw_preclose,
 //   .postclose = vmw_postclose,
@@ -1206,13 +1222,7 @@ static struct drm_driver driver = {
 //   .dumb_map_offset = vmw_dumb_map_offset,
 //   .dumb_destroy = vmw_dumb_destroy,
 
-//   .fops = &vmwgfx_driver_fops,
-//   .name = VMWGFX_DRIVER_NAME,
-//   .desc = VMWGFX_DRIVER_DESC,
-//   .date = VMWGFX_DRIVER_DATE,
-//   .major = VMWGFX_DRIVER_MAJOR,
-//   .minor = VMWGFX_DRIVER_MINOR,
-//   .patchlevel = VMWGFX_DRIVER_PATCHLEVEL
+
 };
 
 #if 0

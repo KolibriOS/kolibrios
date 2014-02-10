@@ -234,7 +234,7 @@ static int vmw_fifo_wait_noirq(struct vmw_private *dev_priv,
 {
 	int ret = 0;
     unsigned long end_jiffies = GetTimerTicks() + timeout;
-	DEFINE_WAIT(__wait);
+//	DEFINE_WAIT(__wait);
 
 	DRM_INFO("Fifo wait noirq.\n");
 
@@ -411,6 +411,8 @@ static void vmw_fifo_res_copy(struct vmw_fifo_state *fifo_state,
 	uint32_t *buffer = (fifo_state->dynamic_buffer != NULL) ?
 	    fifo_state->dynamic_buffer : fifo_state->static_buffer;
 
+ENTER();
+
 	if (bytes < chunk_size)
 		chunk_size = bytes;
 
@@ -421,6 +423,8 @@ static void vmw_fifo_res_copy(struct vmw_fifo_state *fifo_state,
 	if (rest)
         memcpy(fifo_mem + (min >> 2), buffer + (chunk_size >> 2),
 			    rest);
+LEAVE();
+
 }
 
 static void vmw_fifo_slow_copy(struct vmw_fifo_state *fifo_state,
@@ -430,6 +434,7 @@ static void vmw_fifo_slow_copy(struct vmw_fifo_state *fifo_state,
 {
 	uint32_t *buffer = (fifo_state->dynamic_buffer != NULL) ?
 	    fifo_state->dynamic_buffer : fifo_state->static_buffer;
+ENTER();
 
 	while (bytes > 0) {
 		iowrite32(*buffer++, fifo_mem + (next_cmd >> 2));
@@ -441,6 +446,7 @@ static void vmw_fifo_slow_copy(struct vmw_fifo_state *fifo_state,
 		mb();
 		bytes -= sizeof(uint32_t);
 	}
+LEAVE();
 }
 
 void vmw_fifo_commit(struct vmw_private *dev_priv, uint32_t bytes)
@@ -451,6 +457,8 @@ void vmw_fifo_commit(struct vmw_private *dev_priv, uint32_t bytes)
 	uint32_t max = ioread32(fifo_mem + SVGA_FIFO_MAX);
 	uint32_t min = ioread32(fifo_mem + SVGA_FIFO_MIN);
 	bool reserveable = fifo_state->capabilities & SVGA_FIFO_CAP_RESERVE;
+
+//    ENTER();
 
 	BUG_ON((bytes & 3) != 0);
 	BUG_ON(bytes > fifo_state->reserved_size);
@@ -487,6 +495,8 @@ void vmw_fifo_commit(struct vmw_private *dev_priv, uint32_t bytes)
 //   up_write(&fifo_state->rwsem);
 	vmw_fifo_ping_host(dev_priv, SVGA_SYNC_GENERIC);
 	mutex_unlock(&fifo_state->fifo_mutex);
+
+//    LEAVE();
 }
 
 int vmw_fifo_send_fence(struct vmw_private *dev_priv, uint32_t *seqno)

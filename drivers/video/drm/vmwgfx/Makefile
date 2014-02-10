@@ -62,6 +62,7 @@ NAME_SRC=							\
 			../ttm/ttm_bo.c				\
 			../ttm/ttm_bo_manager.c			\
 			../ttm/ttm_execbuf_util.c		\
+			../ttm/ttm_lock.c			\
 			../ttm/ttm_memory.c			\
 			../ttm/ttm_object.c			\
 			../ttm/ttm_page_alloc.c			\

@@ -40,7 +40,7 @@ struct vmw_clip_rect {
  * Clip @num_rects number of @rects against @clip storing the
  * results in @out_rects and the number of passed rects in @out_num.
  */
-void vmw_clip_cliprects(struct drm_clip_rect *rects,
+static void vmw_clip_cliprects(struct drm_clip_rect *rects,
 			int num_rects,
 			struct vmw_clip_rect clip,
 			SVGASignedRect *out_rects,
@@ -80,7 +80,6 @@ void vmw_display_unit_cleanup(struct vmw_display_unit *du)
 	drm_connector_cleanup(&du->connector);
 }
 
-#if 0
 /*
  * Display Unit Cursor functions
  */
@@ -95,6 +94,8 @@ int vmw_cursor_update_image(struct vmw_private *dev_priv,
 	} *cmd;
 	u32 image_size = width * height * 4;
 	u32 cmd_size = sizeof(*cmd) + image_size;
+    u32 *dst;
+    int i, j;
 
 	if (!image)
 		return -EINVAL;
@@ -107,7 +108,17 @@ int vmw_cursor_update_image(struct vmw_private *dev_priv,
 
 	memset(cmd, 0, sizeof(*cmd));
 
-	memcpy(&cmd[1], image, image_size);
+    dst = (u32*)&cmd[1];
+
+    for(i = 0; i < 32; i++)
+    {
+        for(j = 0; j < 32; j++)
+            *dst++ = *image++;
+        for( ; j < 64; j++)
+            *dst++ = 0;
+    }
+    for(i = 0; i < 64*(64-32); i++)
+        *image++ = 0;
 
 	cmd->cmd = cpu_to_le32(SVGA_CMD_DEFINE_ALPHA_CURSOR);
 	cmd->cursor.id = cpu_to_le32(0);
@@ -121,6 +132,7 @@ int vmw_cursor_update_image(struct vmw_private *dev_priv,
 	return 0;
 }
 
+#if 0
 int vmw_cursor_update_dmabuf(struct vmw_private *dev_priv,
 			     struct vmw_dma_buffer *dmabuf,
 			     u32 width, u32 height,
@@ -156,7 +168,7 @@ err_unreserve:
 
 	return ret;
 }
-
+#endif
 
 void vmw_cursor_update_position(struct vmw_private *dev_priv,
 				bool show, int x, int y)
@@ -171,6 +183,7 @@ void vmw_cursor_update_position(struct vmw_private *dev_priv,
 	iowrite32(++count, fifo_mem + SVGA_FIFO_CURSOR_COUNT);
 }
 
+#if 0
 int vmw_du_crtc_cursor_set(struct drm_crtc *crtc, struct drm_file *file_priv,
 			   uint32_t handle, uint32_t width, uint32_t height)
 {
@@ -424,21 +437,17 @@ struct vmw_framebuffer_surface {
 	struct drm_master *master;
 };
 
-void vmw_framebuffer_surface_destroy(struct drm_framebuffer *framebuffer)
+static void vmw_framebuffer_surface_destroy(struct drm_framebuffer *framebuffer)
 {
 	struct vmw_framebuffer_surface *vfbs =
 		vmw_framebuffer_to_vfbs(framebuffer);
-//   struct vmw_master *vmaster = vmw_master(vfbs->master);
+	struct vmw_master *vmaster = vmw_master(vfbs->master);
 
 
-//   mutex_lock(&vmaster->fb_surf_mutex);
-//   list_del(&vfbs->head);
-//   mutex_unlock(&vmaster->fb_surf_mutex);
+	mutex_lock(&vmaster->fb_surf_mutex);
+	list_del(&vfbs->head);
+	mutex_unlock(&vmaster->fb_surf_mutex);
 
-//   drm_master_put(&vfbs->master);
-//   drm_framebuffer_cleanup(framebuffer);
-//   vmw_surface_unreference(&vfbs->surface);
-//   ttm_base_object_unref(&vfbs->base.user_obj);
 
 	kfree(vfbs);
 }
@@ -590,29 +599,33 @@ out_free_tmp:
 	return ret;
 }
 
-int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
+static int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
 				  struct drm_file *file_priv,
 				  unsigned flags, unsigned color,
 				  struct drm_clip_rect *clips,
 				  unsigned num_clips)
 {
 	struct vmw_private *dev_priv = vmw_priv(framebuffer->dev);
-//   struct vmw_master *vmaster = vmw_master(file_priv->master);
+	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	struct vmw_framebuffer_surface *vfbs =
 		vmw_framebuffer_to_vfbs(framebuffer);
 	struct drm_clip_rect norect;
 	int ret, inc = 1;
 
-//   if (unlikely(vfbs->master != file_priv->master))
-//       return -EINVAL;
+	if (unlikely(vfbs->master != file_priv->master))
+		return -EINVAL;
 
 	/* Require ScreenObject support for 3D */
 	if (!dev_priv->sou_priv)
 		return -EINVAL;
 
-//   ret = ttm_read_lock(&vmaster->lock, true);
-//   if (unlikely(ret != 0))
-//       return ret;
+	drm_modeset_lock_all(dev_priv->dev);
+
+	ret = ttm_read_lock(&vmaster->lock, true);
+	if (unlikely(ret != 0)) {
+		drm_modeset_unlock_all(dev_priv->dev);
+		return ret;
+	}
 
 	if (!num_clips) {
 		num_clips = 1;
@@ -629,7 +642,10 @@ int vmw_framebuffer_surface_dirty(struct drm_framebuffer *framebuffer,
 				   flags, color,
 				   clips, num_clips, inc, NULL);
 
-//   ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&vmaster->lock);
+
+	drm_modeset_unlock_all(dev_priv->dev);
+
 	return 0;
 }
 
@@ -649,7 +665,7 @@ static int vmw_kms_new_framebuffer_surface(struct vmw_private *dev_priv,
 	struct drm_device *dev = dev_priv->dev;
 	struct vmw_framebuffer_surface *vfbs;
 	enum SVGA3dSurfaceFormat format;
-//   struct vmw_master *vmaster = vmw_master(file_priv->master);
+	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	int ret;
 
 	/* 3D is only supported on HWv8 hosts which supports screen objects */
@@ -722,9 +738,9 @@ static int vmw_kms_new_framebuffer_surface(struct vmw_private *dev_priv,
 	vfbs->base.user_handle = mode_cmd->handle;
 //   vfbs->master = drm_master_get(file_priv->master);
 
-//   mutex_lock(&vmaster->fb_surf_mutex);
-//   list_add_tail(&vfbs->head, &vmaster->fb_surf);
-//   mutex_unlock(&vmaster->fb_surf_mutex);
+	mutex_lock(&vmaster->fb_surf_mutex);
+	list_add_tail(&vfbs->head, &vmaster->fb_surf);
+	mutex_unlock(&vmaster->fb_surf_mutex);
 
 	*out = &vfbs->base;
 
@@ -755,7 +771,7 @@ struct vmw_framebuffer_dmabuf {
 	struct vmw_dma_buffer *buffer;
 };
 
-void vmw_framebuffer_dmabuf_destroy(struct drm_framebuffer *framebuffer)
+static void vmw_framebuffer_dmabuf_destroy(struct drm_framebuffer *framebuffer)
 {
 	struct vmw_framebuffer_dmabuf *vfbd =
 		vmw_framebuffer_to_vfbd(framebuffer);
@@ -941,22 +957,26 @@ static int do_dmabuf_dirty_sou(struct drm_file *file_priv,
 	return ret;
 }
 
-int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
+static int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
 				 struct drm_file *file_priv,
 				 unsigned flags, unsigned color,
 				 struct drm_clip_rect *clips,
 				 unsigned num_clips)
 {
 	struct vmw_private *dev_priv = vmw_priv(framebuffer->dev);
-//   struct vmw_master *vmaster = vmw_master(file_priv->master);
+	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	struct vmw_framebuffer_dmabuf *vfbd =
 		vmw_framebuffer_to_vfbd(framebuffer);
 	struct drm_clip_rect norect;
 	int ret, increment = 1;
 
-//   ret = ttm_read_lock(&vmaster->lock, true);
-//   if (unlikely(ret != 0))
-//       return ret;
+	drm_modeset_lock_all(dev_priv->dev);
+
+	ret = ttm_read_lock(&vmaster->lock, true);
+	if (unlikely(ret != 0)) {
+		drm_modeset_unlock_all(dev_priv->dev);
+		return ret;
+	}
 
 	if (!num_clips) {
 		num_clips = 1;
@@ -979,7 +999,10 @@ int vmw_framebuffer_dmabuf_dirty(struct drm_framebuffer *framebuffer,
 					  clips, num_clips, increment, NULL);
 	}
 
-//   ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&vmaster->lock);
+
+	drm_modeset_unlock_all(dev_priv->dev);
+
 	return ret;
 }
 
@@ -1672,7 +1695,7 @@ void vmw_disable_vblank(struct drm_device *dev, int crtc)
  * Small shared kms functions.
  */
 
-int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
+static int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
 			 struct drm_vmw_rect *rects)
 {
 	struct drm_device *dev = dev_priv->dev;
@@ -1717,7 +1740,8 @@ int vmw_du_update_layout(struct vmw_private *dev_priv, unsigned num,
 #if 0
 int vmw_du_page_flip(struct drm_crtc *crtc,
 		     struct drm_framebuffer *fb,
-		     struct drm_pending_vblank_event *event)
+		     struct drm_pending_vblank_event *event,
+		     uint32_t page_flip_flags)
 {
 	struct vmw_private *dev_priv = vmw_priv(crtc->dev);
 	struct drm_framebuffer *old_fb = crtc->fb;

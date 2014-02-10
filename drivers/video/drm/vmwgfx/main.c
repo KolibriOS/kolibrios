@@ -98,19 +98,13 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, log);
 
-    if(!dbg_open(log))
+    if( *log && !dbg_open(log))
     {
-       strcpy(log, "/tmp1/1/vmw.log");
-//        strcpy(log, "/RD/1/DRIVERS/VMW.log");
-//        strcpy(log, "/HD0/1/vmw.log");
-
-        if(!dbg_open(log))
-        {
             printf("Can't open %s\nExit\n", log);
             return 0;
-        };
     }
-    dbgprintf(" vmw v3.12-rc6\n cmdline: %s\n", cmdline);
+
+    dbgprintf(" vmw v3.14-rc1\n cmdline: %s\n", cmdline);
 
     cpu_detect();
     dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -820,16 +814,10 @@ void print_hex_dump_bytes(const char *prefix_str, int prefix_type,
 
 
 
-
-
-
 #include "vmwgfx_kms.h"
 
 void kms_update();
 
-//#define iowrite32(v, addr)      writel((v), (addr))
-
-//#include "bitmap.h"
 
 extern struct drm_device *main_device;
 
@@ -842,7 +830,6 @@ typedef struct
     uint32_t   hot_y;
 
     struct list_head   list;
-//    struct drm_i915_gem_object  *cobj;
 }cursor_t;
 
 #define CURSOR_WIDTH 64
@@ -892,6 +879,37 @@ static int count_connector_modes(struct drm_connector* connector)
     };
     return count;
 };
+
+static void __stdcall restore_cursor(int x, int y){};
+static void disable_mouse(void) {};
+
+static void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
+{
+    struct drm_crtc *crtc = os_display->crtc;
+    struct vmw_private *dev_priv = vmw_priv(crtc->dev);
+    struct vmw_display_unit *du = vmw_crtc_to_du(crtc);
+
+    vmw_cursor_update_position(dev_priv, true, x,y);
+};
+
+static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
+{
+    struct vmw_private *dev_priv = vmw_priv(os_display->ddev);
+    cursor_t *old;
+
+    old = os_display->cursor;
+    os_display->cursor = cursor;
+
+    vmw_cursor_update_image(dev_priv, cursor->data,
+                    64, 64, cursor->hot_x, cursor->hot_y);
+
+//    vmw_cursor_update_position(dev_priv, true,
+//                   du->cursor_x + du->hotspot_x,
+//                   du->cursor_y + du->hotspot_y);
+
+    return old;
+};
+
 
 int kms_init(struct drm_device *dev)
 {
@@ -943,27 +961,14 @@ int kms_init(struct drm_device *dev)
         os_display->connector = connector;
         os_display->crtc = crtc;
         os_display->supported_modes = mode_count;
-//        os_display->update = kms_update;
 
-//        struct intel_crtc *intel_crtc = to_intel_crtc(os_display->crtc);
-
-//        list_for_each_entry(cursor, &os_display->cursors, list)
-//        {
-//            init_cursor(cursor);
-//        };
-
-//        os_display->restore_cursor(0,0);
-//        os_display->init_cursor    = init_cursor;
-//        os_display->select_cursor  = select_cursor_kms;
-//        os_display->show_cursor    = NULL;
-//        os_display->move_cursor    = move_cursor_kms;
-//        os_display->restore_cursor = restore_cursor;
-//        os_display->disable_mouse  = disable_mouse;
-
-//        intel_crtc->cursor_x = os_display->width/2;
-//        intel_crtc->cursor_y = os_display->height/2;
-
-//        select_cursor_kms(os_display->cursor);
+        os_display->restore_cursor(0,0);
+        os_display->select_cursor  = select_cursor_kms;
+        os_display->show_cursor    = NULL;
+        os_display->move_cursor    = move_cursor_kms;
+        os_display->restore_cursor = restore_cursor;
+        os_display->disable_mouse  = disable_mouse;
+        select_cursor_kms(os_display->cursor);
     };
     safe_sti(ifl);
 
