@@ -666,9 +666,9 @@ static int vmw_kms_new_framebuffer_surface(struct vmw_private *dev_priv,
 
 	if (unlikely(surface->mip_levels[0] != 1 ||
 		     surface->num_sizes != 1 ||
-		     surface->sizes[0].width < mode_cmd->width ||
-		     surface->sizes[0].height < mode_cmd->height ||
-		     surface->sizes[0].depth != 1)) {
+		     surface->base_size.width < mode_cmd->width ||
+		     surface->base_size.height < mode_cmd->height ||
+		     surface->base_size.depth != 1)) {
 		DRM_ERROR("Incompatible surface dimensions "
 			  "for requested mode.\n");
 		return -EINVAL;
@@ -1517,7 +1517,7 @@ int vmw_kms_cursor_bypass_ioctl(struct drm_device *dev, void *data,
 
 	obj = drm_mode_object_find(dev, arg->crtc_id, DRM_MODE_OBJECT_CRTC);
 	if (!obj) {
-		ret = -EINVAL;
+		ret = -ENOENT;
 		goto out;
 	}
 
@@ -1640,7 +1640,7 @@ bool vmw_kms_validate_mode_vram(struct vmw_private *dev_priv,
 				uint32_t pitch,
 				uint32_t height)
 {
-	return ((u64) pitch * (u64) height) < (u64) dev_priv->vram_size;
+	return ((u64) pitch * (u64) height) < (u64) dev_priv->prim_bb_mem;
 }
 
 

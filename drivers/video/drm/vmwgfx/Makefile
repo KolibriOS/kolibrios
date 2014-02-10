@@ -7,20 +7,20 @@ FASM = fasm.exe
 DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
 
 DRV_TOPDIR   = $(CURDIR)/../../..
+DRV_INCLUDES = $(DRV_TOPDIR)/include
 DRM_TOPDIR   = $(CURDIR)/..
 
-DRV_INCLUDES = $(DRV_TOPDIR)/include
-
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
-		-I$(DRV_INCLUDES)/linux
+		-I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/uapi
 
 CFLAGS   = -c -O2 $(INCLUDES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS+= -mno-ms-bitfields
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
 LIBS:=    -lddk -lcore -lgcc
 
-LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0\
+LDFLAGS = -nostdlib -shared -s --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
 
 
@@ -51,8 +51,10 @@ NAME_SRC=							\
 			vmwgfx_irq.c				\
 			vmwgfx_kms.c				\
 			vmwgfx_marker.c				\
+			vmwgfx_mob.c				\
 			vmwgfx_resource.c			\
 			vmwgfx_scrn.c				\
+			vmwgfx_shader.c				\
 			vmwgfx_surface.c			\
 			vmwgfx_ttm_glue.c			\
 			../hdmi.c				\

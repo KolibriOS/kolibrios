@@ -317,6 +317,7 @@ static int vmw_sou_crtc_set_config(struct drm_mode_set *set)
 		crtc->fb = NULL;
 		crtc->x = 0;
 		crtc->y = 0;
+		crtc->enabled = false;
 
 		vmw_sou_del_active(dev_priv, sou);
 
@@ -377,6 +378,7 @@ static int vmw_sou_crtc_set_config(struct drm_mode_set *set)
 		crtc->fb = NULL;
 		crtc->x = 0;
 		crtc->y = 0;
+		crtc->enabled = false;
 
 		return ret;
 	}
@@ -389,6 +391,7 @@ static int vmw_sou_crtc_set_config(struct drm_mode_set *set)
 	crtc->fb = fb;
 	crtc->x = set->x;
 	crtc->y = set->y;
+	crtc->enabled = true;
 
 	return 0;
 }
@@ -510,9 +513,6 @@ int vmw_kms_init_screen_object_display(struct vmw_private *dev_priv)
 	dev_priv->sou_priv->num_implicit = 0;
 	dev_priv->sou_priv->implicit_fb = NULL;
 
-//   ret = drm_vblank_init(dev, VMWGFX_NUM_DISPLAY_UNITS);
-//   if (unlikely(ret != 0))
-//       goto err_free;
 
 	ret = drm_mode_create_dirty_info_property(dev);
 	if (unlikely(ret != 0))

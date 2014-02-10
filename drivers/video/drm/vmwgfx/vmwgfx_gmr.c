@@ -35,9 +35,11 @@
 #define VMW_PPN_SIZE (sizeof(unsigned long))
 /* A future safe maximum remap size. */
 #define VMW_PPN_PER_REMAP ((31 * 1024) / VMW_PPN_SIZE)
+#define DMA_ADDR_INVALID ((dma_addr_t) 0)
+#define DMA_PAGE_INVALID 0UL
 
 static int vmw_gmr2_bind(struct vmw_private *dev_priv,
-			 struct page *pages[],
+			 struct vmw_piter *iter,
 			 unsigned long num_pages,
 			 int gmr_id)
 {
@@ -83,13 +85,15 @@ static int vmw_gmr2_bind(struct vmw_private *dev_priv,
 		cmd += sizeof(remap_cmd) / sizeof(*cmd);
 
 		for (i = 0; i < nr; ++i) {
-		if (VMW_PPN_SIZE <= 4)
-			*cmd = page_to_pfn(*pages++);
-		else
-			*((uint64_t *)cmd) = page_to_pfn(*pages++);
+			if (VMW_PPN_SIZE <= 4)
+				*cmd = vmw_piter_dma_addr(iter) >> PAGE_SHIFT;
+			else
+				*((uint64_t *)cmd) = vmw_piter_dma_addr(iter) >>
+					PAGE_SHIFT;
 
-		cmd += VMW_PPN_SIZE / sizeof(*cmd);
-	}
+			cmd += VMW_PPN_SIZE / sizeof(*cmd);
+			vmw_piter_next(iter);
+		}
 
 		num_pages -= nr;
 		remap_pos += nr;
@@ -125,32 +129,26 @@ static void vmw_gmr2_unbind(struct vmw_private *dev_priv,
 
 
 int vmw_gmr_bind(struct vmw_private *dev_priv,
-		 struct page *pages[],
+		 const struct vmw_sg_table *vsgt,
 		 unsigned long num_pages,
 		 int gmr_id)
 {
-	struct list_head desc_pages;
-	int ret;
+	struct vmw_piter data_iter;
 
-	if (likely(dev_priv->capabilities & SVGA_CAP_GMR2))
-		return vmw_gmr2_bind(dev_priv, pages, num_pages, gmr_id);
+	vmw_piter_start(&data_iter, vsgt, 0);
 
-    printf("%s epic fail\n",__FUNCTION__);
+	if (unlikely(!vmw_piter_next(&data_iter)))
+		return 0;
+
+	if (unlikely(!(dev_priv->capabilities & SVGA_CAP_GMR2)))
     return -EINVAL;
+
+	return vmw_gmr2_bind(dev_priv, &data_iter, num_pages, gmr_id);
 }
 
 
 void vmw_gmr_unbind(struct vmw_private *dev_priv, int gmr_id)
 {
-	if (likely(dev_priv->capabilities & SVGA_CAP_GMR2)) {
+	if (likely(dev_priv->capabilities & SVGA_CAP_GMR2))
 		vmw_gmr2_unbind(dev_priv, gmr_id);
-		return;
-	}
-
-	mutex_lock(&dev_priv->hw_mutex);
-	vmw_write(dev_priv, SVGA_REG_GMR_ID, gmr_id);
-	wmb();
-	vmw_write(dev_priv, SVGA_REG_GMR_DESCRIPTOR, 0);
-	mb();
-	mutex_unlock(&dev_priv->hw_mutex);
 }

@@ -172,9 +172,8 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
 		ttm_tt_unbind(ttm);
 	}
 
-	if (likely(ttm->pages != NULL)) {
-		ttm->bdev->driver->ttm_tt_unpopulate(ttm);
-	}
+//   if (ttm->state == tt_unbound)
+//       ttm_tt_unpopulate(ttm);
 
 //   if (!(ttm->page_flags & TTM_PAGE_FLAG_PERSISTENT_SWAP) &&
 //       ttm->swap_storage)
@@ -368,7 +367,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
 		page_cache_release(to_page);
 	}
 
-	ttm->bdev->driver->ttm_tt_unpopulate(ttm);
+	ttm_tt_unpopulate(ttm);
 	ttm->swap_storage = swap_storage;
 	ttm->page_flags |= TTM_PAGE_FLAG_SWAPPED;
 	if (persistent_swap_storage)
