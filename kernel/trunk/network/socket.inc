@@ -2088,7 +2088,8 @@ SOCKET_num_to_ptr:
         call    mutex_unlock
         popa
 
-        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: not found\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: socket %u not found!\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: caller = 0x%x\n", [esp]
         ret
 
 
