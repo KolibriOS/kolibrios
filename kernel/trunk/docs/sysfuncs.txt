@@ -82,9 +82,9 @@ Remarks:
   * The window of type I looks as follows:
     * draw external frame of color indicated in edi, 1 pixel in width
     * draw header - rectangle with the left upper corner (1,1) and
-      right lower (xsize-1,min(25,ysize)) color indicated in esi
+      right lower (xsize-1,min(20,ysize-1)) color indicated in esi
       (taking a gradient into account)
-    * if ysize>=26, fill the working area of the window -
+    * if ysize>21, fill the working area of the window -
       rectangle with the left upper corner (1,21) and right lower
       (xsize-1,ysize-1) (sizes (xsize-1)*(ysize-21)) with color
       indicated in edx (taking a gradient into account)
