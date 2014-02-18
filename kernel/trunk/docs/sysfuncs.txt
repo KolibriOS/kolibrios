@@ -815,9 +815,9 @@ Remarks:
     changed in future versions of the kernel.
 
 ======================================================================
-===== Function 18, subfunction 10 - minimize application window. =====
+======= Function 18, subfunction 10 - minimize topmost window. =======
 ======================================================================
-Minimizes the own window.
+Minimizes the topmost (active) window.
 Parameters:
   * eax = 18 - function number
   * ebx = 10 - subfunction number
@@ -828,8 +828,8 @@ Remarks:
     keeps position and sizes.
   * Restoring of an application window occurs at its activation by
     subfunction 3.
-  * Usually there is no necessity to minimize/restire a window
-    obviously: minimization of a window is carried out by the system
+  * Usually there is no necessity to minimize/restore a window
+    explicitly: minimization of a window is carried out by the system
     at pressing the minimization button (for skinned windows
     it is defined automatically by function 0,
     for other windows it can be defined manually by function 8),
@@ -1239,49 +1239,6 @@ Remarks:
   * To get system language use subfunction 5 of function 26.
 
 ======================================================================
-============== Function 21, subfunction 7 - set HD base. =============
-======================================================================
-The HD base defines hard disk to write with usage of obsolete
-syntax /HD in obsolete function 58; at usage of modern syntax
-/HD0,/HD1,/HD2,/HD3 base is set automatically.
-Parameters:
-  * eax = 21 - function number
-  * ebx = 7 - subfunction number
-  * ecx = HD base: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
-Returned value:
-  * eax = 0
-Remarks:
-  * Any application at any time can change the base.
-  * Do not change base, when any application works with hard disk.
-    If you do not want system bugs.
-  * To get HD base use subfunction 7 of function 26.
-  * It is also necessary to define used partition of hard disk by
-    subfunction 8.
-
-======================================================================
-========= Function 21, subfunction 8 - set used HD partition. ========
-======================================================================
-The HD partition defines partition of the hard disk to write with
-usage of obsolete syntax /HD and obsolete function 58;
-at usage of functions 58 and 70 and modern syntax /HD0,/HD1,/HD2,/HD3
-base and partition are set automatically.
-Parameters:
-  * eax = 21 - function number
-  * ebx = 8 - subfunction number
-  * ecx = HD partition (beginning from 1)
-Return value:
-  * eax = 0
-Remarks:
-  * Any application at any time can change partition.
-  * Do not change partition when any application works with hard disk.
-    If you do not want system bugs.
-  * To get used partition use subfunction 8 of function 26.
-  * There is no correctness checks.
-  * To get the number of partitions of a hard disk use
-    subfunction 11 of function 18.
-  * It is also necessary to define used HD base by subfunction 7.
-
-======================================================================
  Function 21, subfunction 11 - enable/disable low-level access to HD.
 ======================================================================
 Parameters:
@@ -1660,41 +1617,6 @@ Remarks:
     by the kernel itself, however application @panel draws the
     appropriate icon (using this function).
   * To set system language use subfunction 5 of function 21.
-
-======================================================================
-============== Function 26, subfunction 7 - get HD base. =============
-======================================================================
-The HD base defines hard disk to write with usage of obsolete
-syntax /HD in obsolete function 58; at usage of modern syntax
-/HD0,/HD1,/HD2,/HD3 base is set automatically.
-Parameters:
-  * eax = 26 - function number
-  * ebx = 7 - subfunction number
-Returned value:
-  * eax = HD base: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
-Remarks:
-  * Any application in any time can change HD base.
-  * To set base use subfunction 7 of function 21.
-  * To get used partition of hard disk use subfunction 8.
-
-======================================================================
-========= Function 26, subfunction 8 - get used HD partition. ========
-======================================================================
-The HD partition defines partition of the hard disk to write with
-usage of obsolete syntax /HD in obsolete function 58;
-at usage of functions 58 and 70 and modern syntax /HD0,/HD1,/HD2,/HD3
-base and partition are set automatically.
-Parameters:
-  * eax = 26 - function number
-  * ebx = 8 - subfunction number
-Returned value:
-  * eax = HD partition (beginning from 1)
-Remarks:
-  * Any application in any time can change partition.
-  * To set partition use subfunction 8 of function 21.
-  * To get number of partitions on a hard disk use
-    subfunction 11 of function 18.
-  * To get base of used hard disk, use subfunction 7.
 
 ======================================================================
 === Function 26, subfunction 9 - get the value of the time counter. ==
@@ -2315,8 +2237,7 @@ Remarks:
 Parameters:
   * eax = 48 - function number
   * ebx = 8 - subfunction number
-  * ecx = pointer to a block for function 58, in
-    which the fields of intermediate buffer and file name are filled
+  * ecx = pointer to filename of the skin
 Returned value:
   * eax = 0 - success
   * otherwise eax = file system error code; if file does not
@@ -2525,219 +2446,6 @@ Remarks:
     http://alpha1.dyns.net/files/PCI/bios21.pdf.
   * If BIOS does not support this extension, its behavior is emulated
     (through kernel-mode analogues of subfunctions of function 62).
-
-======================================================================
-================ Function 58 - work with file system. ================
-======================================================================
-Parameters:
-  * eax = 58
-  * ebx = pointer to the information structure
-Returned value:
-  * eax = 0 - success; otherwise file system error code
-  * some subfunctions return value in other registers too
-General format of the information structure:
-  * +0: dword: subfunction number
-  * +4: dword: number of block
-  * +8: dword: size
-  * +12 = +0xC: dword: pointer to data
-  * +16 = +0x10: dword: pointer to a memory for system operations
-    (4096 bytes)
-  * +20 = +0x14: n db: ASCIIZ-string with the file name
-Specifications - in documentation on the appropriate subfunction.
-Filename is case-insensitive for latin letters, russian letters
-must be capital.
-Format of filename:
-/base/number/dir1/dir2/.../dirn/file,
-where /base/number identifies device, on which file is located:
-one of
-  * /RD/1 = /RAMDISK/1 to access ramdisk
-  * /FD/1 = /FLOPPYDISK/1 to access first floppy drive,
-    /FD/2 = /FLOPPYDISK/2 to access second one
-  * /HD/x = /HARDDISK/x - obsolete variant of access to hard disk
-    (in this case base is defined by subfunction 7 of function 21),
-    x - partition number (beginning from 1)
-  * /HD0/x, /HD1/x, /HD2/x, /HD3/x to access accordingly to devices
-    IDE0 (Primary Master), IDE1 (Primary Slave),
-    IDE2 (Secondary Master), IDE3 (Secondary Slave);
-    x - partition number on the selected hard drive, varies from 1
-    to 255 (on each hard drive the indexing starts from 1)
-Remarks:
-  * In the first two cases it is also possible to use FIRST
-    instead of 1, SECOND instead of 2, but it is not recommended
-    for convenience of transition to the future extensions.
-  * Limitation n<=39 is imposed.
-  * Names of folders and file dir1,...,dirn,file must have the
-    format 8.3: name no more than 8 characters, dot, extension no
-    more than 3 characters. Trailing spaces are ignored, no other
-    spaces is allowed. If name occupies equally 8 characters,
-    dot may be omitted (though it is not recommended to use this
-    feature for convenience of transition to the future extensions).
-  * This function does not support folders on ramdisk.
-Examples:
-  * '/RAMDISK/FIRST/KERNEL.ASM',0
-    '/rd/1/kernel.asm',0
-  * '/HD0/1/kernel.asm',0
-  * '/hd0/1/menuet/pics/tanzania.bmp',0
-Existing subfunctions:
-  * subfunction 0 - read file/folder
-  * subfunction 8 - LBA-read from device
-  * subfunction 15 - get file system information
-
-======================================================================
-=========== Function 58, subfunction 0 - read file/folder. ===========
-======================================================================
-Parameters:
-  * eax = 58
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 0 = subfunction number
-  * +4: dword: first block to read (beginning from 0)
-  * +8: dword: amount of blocks to read
-  * +12 = +0xC: dword: pointer to buffer for data
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-  * ebx = file size (in bytes) or -1=0xffffffff, if file was not found
-Remarks:
-  * Block size is 512 bytes.
-  * This function is obsolete, for reading files use subfunction 0
-    of function 70, for reading folders - subfunction 1 of
-    function 70.
-  * Function can read contents of a folder. Only FAT file system is
-    supported. The format of FAT-folder is described
-    in any FAT documentation.
-  * Size of a folder is determined by size of FAT clusters chain.
-  * If file was ended before last requested block was read,
-    the function will read as many as it can, and after that return
-    eax=6 (EOF).
-  * Function can read root folders /rd/1,/fd/x,/hd[n]/x, but
-    in the first two cases the current implementation does not follow
-    to the declared rules:
-    for /rd/1:
-    * if one want to read 0 blocks, function considers,
-      that he requested 1;
-    * if one requests more than 14 blocks or starting block is
-      not less than 14, function returns eax=5 (not found) and ebx=-1;
-    * size of ramdisk root folder is 14 blocks,
-      0x1C00=7168 bytes; but function returns ebx=0
-      (except of the case of previous item);
-    * strangely enough, it is possible to read 14th block (which
-      generally contains a garbage - I remind, the indexing begins
-      from 0);
-    * if some block with the number not less than 14 was requested,
-      function returns eax=6(EOF); otherwise eax=0.
-    For /fd/x:
-    * if the start block is not less than 14, function returns
-      eax=5 (not found) and ebx=0;
-    * note that format of FAT12 allows floppies with the root size
-      more or less than 14 blocks;
-    * check for length is not performed;
-    * if data was successful read, function returns
-      eax=0,ebx=0; otherwise eax=10 (access denied), ebx=-1.
-  * The function handles reading of special folders /,/rd,/fd,/hd[n];
-    but the result does not correspond to expected (on operations with
-    normal files/folders), does not follow the declared rules,
-    may be changed in future versions of the kernel and consequently
-    is not described. To obtain the information about the equipment
-    use subfunction 11 of function 18 or
-    read corresponding folder with subfunction 1 of function 70.
-
-======================================================================
-========= Function 58, subfunction 8 - LBA-read from device. =========
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 8 = subfunction number
-  * +4: dword: number of block to read (beginning from 0)
-  * +8: dword: ignored (set to 1)
-  * +12 = +0xC: dword: pointer to buffer for data (512 bytes)
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of device: case-insensitive, one of
-    /rd/1 = /RamDisk/1, /hd/n = /HardDisk/n,
-    1<=n<=4 - number of device: 1=IDE0, ..., 4=IDE3.
-    Instead of digits it is allowed, though not recommended for
-    convenience of transition to future extensions, to use
-    'first','second','third','fourth'.
-Returned value:
-  * for device name /hd/xxx, where xxx is not in the list above:
-    * eax = ebx = 1
-  * for invalid device name (except for the previous case):
-    * eax = 5
-    * ebx does not change
-  * if LBA-access is disabled by subfunction 11 of function 21:
-    * eax = 2
-    * ebx destroyed
-  * for ramdisk: attempt to read block outside ramdisk
-    (18*2*80 blocks) results in
-    * eax = 3
-    * ebx = 0
-  * for successful read:
-    * eax = ebx = 0
-Remarks:
-  * Block size is 512 bytes; function reads one block.
-  * Do not depend on returned value, it can be changed
-    in future versions.
-  * Function requires that LBA-access to devices is enabled by
-    subfunction 11 of function 21. To check this one can use
-    subfunction 11 of function 26.
-  * LBA-read of floppy is not supported.
-  * Function reads data on physical hard drive; if for any reason
-    data of the concrete partition are required, application must
-    define starting sector of this partition (either directly
-    through MBR, or from the full structure returned by
-    subfunction 11 of function 18).
-  * Function does not check error code of hard disk, so request of
-    nonexisting sector reads something (most probably it will be
-    zeroes, but this is defined by device) and this is considered
-    as success (eax=0).
-
-======================================================================
-==== Function 58, subfunction 15 - get information on file system. ===
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 15 = subfunction number
-  * +4: dword: ignored
-  * +8: dword: ignored
-  * +12 = +0xC: dword: ignored
-  * +16 = +0x10: dword: ignored
-  * +20 = +0x14: (only second character is checked)
-    /rd=/RAMDISK or /hd=/HARDDISK
-Returned value:
-  * if the second character does not belong to set {'r','R','h','H'}:
-    * eax = 3
-    * ebx = ecx = dword [fileinfo] = 0
-  * for ramdisk:
-    * eax = 0 (success)
-    * ebx = total number of clusters = 2847
-    * ecx = number of free clusters
-    * dword [fileinfo] = cluster size = 512
-  * for hard disk: base and partition are defined by subfunctions
-    7 and 8 of function 21:
-    * eax = 0 (success)
-    * ebx = total number of clusters
-    * ecx = number of free clusters
-    * dword [fileinfo] = cluster size (in bytes)
-Remarks:
-  * Be not surprised to strange layout of 4th returned parameter
-    - when this code was writing, at system calls application got
-    only registers eax,ebx,ecx (from pushad-structure transmitted
-    as argument to the system function). Now it is corrected, so,
-    probably, it is meaningful to return cluster size in edx, while
-    this function is not used yet.
-  * There exists also subfunction 11 of function 18,
-    which returns information on file system. From the full table
-    of disk subsystem it is possible to deduce cluster size (there
-    it is stored in sectors) and total number of clusters
-    for hard disks.
 
 ======================================================================
 ========== Function 60 - Inter Process Communication (IPC). ==========

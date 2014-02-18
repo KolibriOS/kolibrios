@@ -1955,22 +1955,8 @@ ngsyse3:
         mov     [esp+32], eax
         ret
 ngsyse5:
-;     cmp  eax,7
-        sub     ebx, 2
-        jnz     ngsyse7
-        xor     eax, eax
-        mov     [esp+32], eax
-        ret
-ngsyse7:
-;     cmp  eax,8
-        dec     ebx
-        jnz     ngsyse8
-        mov     eax, [fat32part]
-        mov     [esp+32], eax
-        ret
-ngsyse8:
 ;     cmp  eax,9
-        dec     ebx
+        sub     ebx, 4
         jnz     ngsyse9
         mov     eax, [timer_ticks];[0xfdf0]
         mov     [esp+32], eax
