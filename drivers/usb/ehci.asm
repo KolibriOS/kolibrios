@@ -1569,13 +1569,13 @@ proc ehci_process_deferred
         and     dword [esi+ehci_controller.DeferredActions-sizeof.ehci_controller], not 20h
         dbgstr 'warning: async advance int missed'
         mov     [esi+usb_controller.ReadyPipeHeadAsync], eax
-        jmp     .async_unlock
-@@:
-        cmp     dword [esp], 100
-        jb      .async_unlock
-        mov     dword [esp], 100
-.async_unlock:
         spin_unlock_irq [esi+usb_controller.WaitSpinlock]
+        jmp     .noasync
+@@:
+        spin_unlock_irq [esi+usb_controller.WaitSpinlock]
+        cmp     dword [esp], 100
+        jb      .noasync
+        mov     dword [esp], 100
 .noasync:
 ; 7. Finalize transfers processed by hardware.
 ; It is better to perform this step after step 4 (disconnect events),
