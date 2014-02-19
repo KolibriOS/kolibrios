@@ -25,8 +25,8 @@ format MS COFF
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2
 
-        NUM_TX_DESC             = 4
-        NUM_RX_DESC             = 4
+        NUM_TX_DESC             = 6
+        NUM_RX_DESC             = 12
 
 include '../struct.inc'
 include '../macros.inc'
@@ -646,8 +646,8 @@ reset:
         test    eax, eax
         jnz     @f
         DEBUGF  1,"Could not attach int handler!\n"
-;        or      eax, -1
-;        ret
+        or      eax, -1
+        ret
   @@:
 
 ; Reset the chip to erase previous misconfiguration.
@@ -663,8 +663,8 @@ reset:
 ; Initialize other registers.
 ; Configure the PCI bus bursts and FIFO thresholds.
 
-        mov     [device.bcrvalue], 0x10 ; little-endian, 8 burst length
-        mov     [device.crvalue], 0xa00 ; 128 burst length
+        mov     [device.bcrvalue], 0x10         ; little-endian, 8 burst length
+        mov     [device.crvalue], 0xa00         ; 128 burst length
 
         cmp     [device.dev_id], 0x891
         jne     @f
@@ -699,11 +699,9 @@ reset:
 
         set_io  0
         set_io  ISR
-        mov     eax, (FBE or TUNF or CNTOVF or RBU or TI or RI)
+        mov     eax, FBE or TUNF or CNTOVF or RBU or TI or RI
         out     dx, eax
-
         set_io  IMR
-;        mov     eax, (FBE or TUNF or CNTOVF or RBU or TI or RI)
         out     dx, eax
 
 ; clear packet/byte counters
@@ -782,7 +780,7 @@ init_ring:
         GetRealAddr
         pop     esi ecx
         mov     [esi + mtd_desc.next_desc], eax
-
+        mov     [esi + mtd_desc.skbuff], 0
         add     esi, mtd_desc.size
         loop    .tx_desc_loop
 
@@ -1015,10 +1013,12 @@ transmit:
         ja      .fail
 
         mov     esi, [device.cur_tx]
+
+        test    [esi + mtd_desc.status], TXOWN
+        jnz     .fail
+
         push    [esi + mtd_desc.next_desc_logical]
         pop     [device.cur_tx]
-
-        ; todo: check if descriptor is not owned by the device!
 
         mov     eax, [esp + 4]
         mov     [esi + mtd_desc.skbuff], eax
@@ -1026,35 +1026,23 @@ transmit:
         mov     [esi + mtd_desc.buffer], eax
 
         mov     eax, [esp + 8]
+        mov     ecx, eax
         shl     eax, PKTSShift               ; packet size
-        or      eax, TXLD + TXFD + CRCEnable + PADEnable + TXIC + 1536 shl TBSShift ; buffer size
+        shl     ecx, TBSShift
+        or      eax, ecx
+        or      eax, TXIC + TXLD + TXFD + CRCEnable + PADEnable
         mov     [esi + mtd_desc.control], eax
-
         mov     [esi + mtd_desc.status], TXOWN
 
-;-------------
 ; Update stats
-
         inc     [device.packets_tx]
         mov     eax, [esp+8]
         add     dword [device.bytes_tx], eax
         adc     dword [device.bytes_tx + 4], 0
 
-; Point to transmit descriptor
-
+; TX Poll
         set_io  0
-        set_io  TXLBA
-        mov     eax, esi
-        GetRealAddr
-        out     dx, eax
-
-;        set_io  TCRRCR
-;        mov     eax, [device.crvalue]
-;        out     dx, eax
-
-; Wake the potentially-idle transmit channel.
-
-        set_io  TXPDR           ; TX Poll
+        set_io  TXPDR
         xor     eax, eax
         out     dx, eax
 
@@ -1077,11 +1065,8 @@ read_mac:
         set_io  PAR0
         lea     edi, [device.mac]
         insd
-        stosd
         set_io  PAR1
         insw
-        stosw
-
         DEBUGF  1,"MAC = %x-%x-%x-%x-%x-%x\n",\
         [device.mac+0]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
 
@@ -1105,7 +1090,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"int\n"
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 
@@ -1138,50 +1123,43 @@ int_handler:
 
         test    ax, RI  ; receive interrupt
         jz      .no_rx
-
-        DEBUGF  1,"Receive interrupt\n"
-  .rx:
         push    ax
-
   .rx_loop:
         mov     esi, [device.cur_rx]
-
         test    [esi + mtd_desc.status], RXOWN
         jnz     .fail_rx
 
+        push    ebx
         push    .rx_complete
 
         mov     ecx, [esi + mtd_desc.status]
         shr     ecx, FLNGShift
         sub     ecx, 4                  ; we dont need CRC
         push    ecx
+        DEBUGF  1,"Received %u bytes\n", ecx
 
-;-------------
 ; Update stats
-
-        add     dword [device.bytes_rx], ecx
-        adc     dword [device.bytes_rx + 4], 0
-        inc     dword [device.packets_rx]
-
+        add     dword[device.bytes_rx], ecx
+        adc     dword[device.bytes_rx + 4], 0
+        inc     [device.packets_rx]
 
         push    [esi + mtd_desc.skbuff]
-
         jmp     Eth_input
 
   .rx_complete:
+        pop     ebx
         mov     esi, [device.cur_rx]
-
         mov     [esi + mtd_desc.control], 1536 shl RBSShift
-
+        push    esi
         stdcall KernelAlloc, 1536
+        pop     esi
         mov     [esi + mtd_desc.skbuff], eax
         call    GetPgAddr
         mov     [esi + mtd_desc.buffer], eax
-
         mov     [esi + mtd_desc.status], RXOWN
 
-        mov     eax, [esi + mtd_desc.next_desc_logical]
-        mov     [device.cur_rx], eax
+        push    [esi + mtd_desc.next_desc_logical]
+        pop     [device.cur_rx]
 
         jmp     .rx_loop
 ;
@@ -1195,47 +1173,35 @@ int_handler:
 ;    outl(0, mtdx.ioaddr + RXPDR);
 
   .fail_rx:
-        DEBUGF  1,"RX failed\n"
-
+        DEBUGF  1,"RX done\n"
         pop     ax
-  .no_rx:
 
+  .no_rx:
         test    ax, TI ; transmit interrupt
         jz      .no_tx
-
-        DEBUGF  1,"Transmit interrupt\n"
+        DEBUGF  1,"TX\n"
         push    ax
-
         lea     esi, [device.tx_desc]
         mov     ecx, NUM_TX_DESC
   .tx_loop:
-
         test    [esi + mtd_desc.status], TXOWN
         jnz     .skip_this_one
-
         mov     eax, [esi + mtd_desc.skbuff]
         test    eax, eax
         je      .skip_this_one
-
         mov     [esi + mtd_desc.skbuff], 0
-
-        DEBUGF  1,"freeing buffer:%x\n", eax
+        DEBUGF  1,"freeing buffer: 0x%x\n", eax
         stdcall KernelFree, eax
-
   .skip_this_one:
         mov     esi, [esi + mtd_desc.next_desc_logical]
         loop    .tx_loop
-
         pop     ax
 
   .no_tx:
-
-        test    ax, TBU
-        jz      .no_tbu
-
-        DEBUGF  1,"Transmit buffer unavailable!\n"
-
-  .no_tbu:
+;        test    ax, TBU
+;        jz      .no_tbu
+;        DEBUGF  2,"Transmit buffer unavailable!\n"
+;  .no_tbu:
 
   .fail:
         pop     edi esi ebx
