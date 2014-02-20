@@ -916,7 +916,7 @@ reset:
         mov     [ebx + device.mtu], 1514
 
 ; get link status
-        mov     [ebx + device.state], ETH_LINK_UNKOWN
+        mov     [ebx + device.state], ETH_LINK_UNKNOWN
 
         call    check_media
 

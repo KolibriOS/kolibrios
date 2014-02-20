@@ -635,7 +635,7 @@ start_i8254x:
         mov     eax, [esi + REG_ICR]                    ; Clear pending interrupts
 
         mov     [ebx + device.mtu], 1514
-        mov     [ebx + device.state], ETH_LINK_UNKOWN   ; Set link state to unknown
+        mov     [ebx + device.state], ETH_LINK_UNKNOWN  ; Set link state to unknown
 
         xor     eax, eax
         ret

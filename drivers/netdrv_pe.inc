@@ -34,11 +34,11 @@ include 'mii.inc'
 ; Link state
 
         ETH_LINK_DOWN   = 0             ; Link is down
-        ETH_LINK_UNKOWN = 1b            ; There could be an active link
+        ETH_LINK_UNKNOWN= 1b            ; There could be an active link
         ETH_LINK_FD     = 10b           ; full duplex flag
         ETH_LINK_10M    = 100b          ; 10 mbit
         ETH_LINK_100M   = 1000b         ; 100 mbit
-        ETH_LINK_1G     = 10000b        ; gigabit
+        ETH_LINK_1G     = 1100b         ; gigabit
 
 ; Macro to easily set i/o addresses to access device.
 ; In the beginning of a procedure (or ofter edx may have been destroyed),
