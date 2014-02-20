@@ -1027,6 +1027,7 @@ end if
 
         mov     [pci_access_enabled], 1
         call    pci_enum
+        call    clear_pci_ide_interrupts
 
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
