@@ -24,7 +24,7 @@ entry START
         MAX_DEVICES             = 16
 
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 1             ; 1 = verbose, 2 = errors only
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
         TX_RING_SIZE            = 4
         RX_RING_SIZE            = 4

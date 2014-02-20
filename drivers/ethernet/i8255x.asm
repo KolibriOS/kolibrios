@@ -32,7 +32,7 @@ entry START
 
         DEBUG                   = 1
         __DEBUG__               = 1
-        __DEBUG_LEVEL__         = 1             ; 1 = verbose, 2 = errors only
+        __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
 section '.flat' readable writable executable
 
