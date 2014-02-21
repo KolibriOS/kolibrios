@@ -105,6 +105,7 @@ void (*snd_play)();
 #define PLI_BUTTON_HEIGHT    13
 #define PL_MAX_SHOWN_ITEMS   (pl_wh-PLI_BUTTON_HEIGHT-40)/PLI_BUTTON_HEIGHT
 #define MAX_TEXT_WIDTH       46
+#define MAX_PATH_LEN         1024
 
 int currSelected, currActive, currFirstShowed;
 unsigned char *pl_buff;
@@ -377,7 +378,7 @@ int GetFileNameFromPL(const char *plbuff, int index, char *name)
 			count++;
 		if (count-1==index)
 		{
-			if (j>MAX_TEXT_WIDTH || ch=='\r' || ch=='\n')
+			if (j>MAX_PATH_LEN || ch=='\r' || ch=='\n')
 			{
 				name[j]='\0';
 				break;
@@ -397,7 +398,7 @@ int CountFileNamesInPL(const char *plbuff)
 	int count=0,i=0;
 	char ch;
 
-	do{		
+	do{
 		ch=plbuff[i];
 		if (ch!='#' && i && plbuff[i-1]=='\n')
 			count++;
@@ -409,7 +410,7 @@ int CountFileNamesInPL(const char *plbuff)
 
 int ShowPLContent(char *filebuffer)
 {
-	char st[MAX_TEXT_WIDTH+10]="", tmp[MAX_TEXT_WIDTH+1]="";
+	char st[MAX_PATH_LEN+10]="", tmp[MAX_PATH_LEN+1]="";
 	unsigned int len=8,i;
 	DWORD text_color;
 
@@ -437,7 +438,7 @@ void redraw_R_button() //Asper +
 	write_text(14,74,rc|FONT0,button_R,sizeof(button_R)-1);
 }
 
-void update_dinamic_content() //Asper +
+void update_dynamic_content() //Asper +
 {
 	int len = strlen(filename);
 	if (len > 47) len = 47;
@@ -465,7 +466,7 @@ void draw_window()
 
       make_button(7,41,286,11, 0x30|BT_HIDE|BT_NOFRAME,main_wc);
 
-      update_dinamic_content();
+      update_dynamic_content();
       write_text(8,8,FONT0, header, sizeof(header)-1);                     /* uFMOD integration */
       write_text(12,28,main_wc|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
       write_text(11,27,0xA0FFA0|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
@@ -639,7 +640,7 @@ int LoadFile(char *fname)
 		 {                                   
 		   snd_play = &play_wave;            
 		   set_reader(&rd, 44);              
-		   outbuf = UserAlloc(32*1024);      
+		   outbuf = UserAlloc(32*1024);
 		   touch(outbuf, 32768);
 		   goto play;
 		 }
@@ -1097,7 +1098,7 @@ void _stdcall thread_proc(void *param)
 
 	  case EV_IPC:
 		  *ipc_buff='\0';
-		  update_dinamic_content();
+		  update_dynamic_content();
 		  break;
 
     };
@@ -1278,7 +1279,7 @@ void uint2str(unsigned int value, char *string)
 
 
 ///*********
-void *__cdecl memmove ( void * dst, const void * src, unsigned int count)  /* uFMOD integration */
+void * __cdecl memmove ( void * dst, const void * src, unsigned int count)  /* uFMOD integration */
 { void *ret;
   ret = dst;
 
