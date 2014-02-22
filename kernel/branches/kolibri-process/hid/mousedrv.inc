@@ -482,9 +482,12 @@ align 4
 proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
 
         mov     eax, [BtnState]
+        and     eax, 0x3FFFFFFF ; Top 2 bits are used to flag absolute movements
         mov     [BTN_DOWN], eax
 
         mov     eax, [XMoving]
+        test    [BtnState], 0x80000000
+        jnz     @@M1
         call    mouse_acceleration
         add     ax, [MOUSE_X];[XCoordinate]
         cmp     ax, 0
@@ -503,6 +506,8 @@ align 4
         mov     [MOUSE_X], ax;[XCoordinate]
 
         mov     eax, [YMoving]
+        test    [BtnState], 0x40000000
+        jnz     @@M3
         neg     eax
         call    mouse_acceleration
 

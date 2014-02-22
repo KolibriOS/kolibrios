@@ -817,12 +817,8 @@ drawwindow_I: ;////////////////////////////////////////////////////////////////
         jnz     .exit
 
         ; does client area have a positive size on screen?
-        mov     edx, [esi + WDATA.box.top]
-        add     edx, 21 + 5
-        mov     ebx, [esi + WDATA.box.top]
-        add     ebx, [esi + WDATA.box.height]
-        cmp     edx, ebx
-        jg      .exit
+        cmp     [esi + WDATA.box.height], 21
+        jle     .exit
 
         ; okay, let's draw it
         mov     eax, 1

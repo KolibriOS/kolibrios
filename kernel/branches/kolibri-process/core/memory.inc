@@ -232,12 +232,24 @@ commit_pages:
         mov     edi, ebx
         shr     edi, 12
         lea     edi, [page_tabs+edi*4]
+
+if USE_FIX_FOR_INVALID_MS_VIRTUAL_PC_2007
+        mov     edx, eax
+@@:
+        mov     eax, edx
+        stosd
+        invlpg  [ebx]
+        add     edx, 0x1000
+        add     ebx, 0x1000
+        loop    @B
+else
 @@:
         stosd
         invlpg  [ebx]
         add     eax, 0x1000
         add     ebx, 0x1000
         loop    @B
+end if
 
         pop     edi
 

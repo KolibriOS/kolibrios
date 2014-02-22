@@ -28,7 +28,6 @@ struct  queue
         size            dd ?    ; number of queued packets in this queue
         w_ptr           dd ?    ; current writing pointer in queue
         r_ptr           dd ?    ; current reading pointer
-        mutex           MUTEX
 
 ends
 
@@ -47,18 +46,12 @@ macro add_to_queue ptr, size, entry_size, failaddr {
 
 local .ok, .no_wrap
 
-        pusha
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_lock
-        popa
+        spin_lock_irqsave
 
         cmp     [ptr + queue.size], size        ; Check if queue isnt full
         jb      .ok
 
-        pusha
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_unlock
-        popa
+        spin_unlock_irqrestore
         jmp     failaddr
 
   .ok:
@@ -76,10 +69,7 @@ local .ok, .no_wrap
   .no_wrap:
         mov     [ptr + queue.w_ptr], edi
 
-        pusha
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_unlock
-        popa
+        spin_unlock_irqrestore
 
 }
 
@@ -89,18 +79,12 @@ macro get_from_queue ptr, size, entry_size,  failaddr {
 
 local .ok, .no_wrap
 
-        pusha
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_lock
-        popa
+        spin_lock_irqsave
 
         cmp     [ptr + queue.size], 0           ; any packets queued?
         ja      .ok
 
-        pusha
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_unlock
-        popa
+        spin_unlock_irqrestore
         jmp     failaddr
 
   .ok:
@@ -122,10 +106,7 @@ local .ok, .no_wrap
 
         pop     esi
 
-        pusha
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_unlock
-        popa
+        spin_unlock_irqrestore
 
 }
 
@@ -136,6 +117,4 @@ macro init_queue ptr {
         mov     [ptr + queue.w_ptr], edi
         mov     [ptr + queue.r_ptr], edi
 
-        lea     ecx, [ptr + queue.mutex]
-        call    mutex_init
 }

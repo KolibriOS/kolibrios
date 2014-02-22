@@ -13,6 +13,11 @@ else
         stdcall arg
 end if
 }
+if USB_STDCALL_VERIFY
+STDCALL_VERIFY_EXTRA = 20h
+else
+STDCALL_VERIFY_EXTRA = 0
+end if
 
 ; Initialization of usb_static_ep structure,
 ; called from controller-specific initialization; edi -> usb_static_ep
@@ -238,8 +243,17 @@ proc usb_close_pipe_nolock
         call    mutex_lock
         push    ecx
 ; 3b. Let the controller-specific code do its job.
+        test    [ebx+usb_pipe.Flags], USB_FLAG_DISABLED
+        jnz     @f
+        mov     eax, [esi+usb_controller.HardwareFunc]
+        call    [eax+usb_hardware_func.DisablePipe]
+@@:
         mov     eax, [esi+usb_controller.HardwareFunc]
         call    [eax+usb_hardware_func.UnlinkPipe]
+        mov     edx, [ebx+usb_pipe.NextVirt]
+        mov     eax, [ebx+usb_pipe.PrevVirt]
+        mov     [edx+usb_pipe.PrevVirt], eax
+        mov     [eax+usb_pipe.NextVirt], edx
 ; 3c. Release the corresponding lock.
         pop     ecx
         call    mutex_unlock
@@ -262,36 +276,66 @@ proc usb_close_pipe_nolock
         ret
 endp
 
+; This procedure is called when all transfers are aborted
+; either due to call to usb_abort_pipe or due to pipe closing.
+; It notifies all callbacks and frees all transfer descriptors.
+; ebx -> usb_pipe, esi -> usb_controller, edi -> usb_hardware_func
+; three stack parameters: status code for callback functions
+; and descriptors where to start and stop.
+proc usb_pipe_aborted
+virtual at esp
+                dd      ?       ; return address
+.status         dd      ?       ; USB_STATUS_CLOSED or USB_STATUS_CANCELLED
+.first_td       dd      ?
+.last_td        dd      ?
+end virtual
+; Loop over all transfers, calling the driver with the given status
+; and freeing all descriptors except the last one.
+.loop:
+        mov     edx, [.first_td]
+        cmp     edx, [.last_td]
+        jz      .done
+        mov     ecx, [edx+usb_gtd.Callback]
+        test    ecx, ecx
+        jz      .no_callback
+        stdcall_verify ecx, ebx, [.status+12+STDCALL_VERIFY_EXTRA], \
+                [edx+usb_gtd.Buffer], 0, [edx+usb_gtd.UserData]
+        mov     edx, [.first_td]
+.no_callback:
+        mov     eax, [edx+usb_gtd.NextVirt]
+        mov     [.first_td], eax
+        stdcall [edi+usb_hardware_func.FreeTD], edx
+        jmp     .loop
+.done:
+        ret     12
+endp
+
 ; This procedure is called when a pipe with USB_FLAG_CLOSED is removed from the
 ; corresponding wait list. It means that the hardware has fully forgot about it.
 ; ebx -> usb_pipe, esi -> usb_controller
 proc usb_pipe_closed
         push    edi
         mov     edi, [esi+usb_controller.HardwareFunc]
-; 1. Loop over all transfers, calling the driver with USB_STATUS_CLOSED
-; and freeing all descriptors.
+; 1. Notify all registered callbacks with status USB_STATUS_CLOSED, if any,
+; and free all transfer descriptors, including the last one.
+        lea     ecx, [ebx+usb_pipe.Lock]
+        call    mutex_lock
         mov     edx, [ebx+usb_pipe.LastTD]
         test    edx, edx
         jz      .no_transfer
-        mov     edx, [edx+usb_gtd.NextVirt]
-.transfer_loop:
-        cmp     edx, [ebx+usb_pipe.LastTD]
-        jz      .transfer_done
-        mov     ecx, [edx+usb_gtd.Callback]
-        test    ecx, ecx
-        jz      .no_callback
+        mov     eax, [edx+usb_gtd.NextVirt]
         push    edx
-        stdcall_verify ecx, ebx, USB_STATUS_CLOSED, \
-                [edx+usb_gtd.Buffer], 0, [edx+usb_gtd.UserData]
-        pop     edx
-.no_callback:
-        push    [edx+usb_gtd.NextVirt]
-        stdcall [edi+usb_hardware_func.FreeTD], edx
-        pop     edx
-        jmp     .transfer_loop
-.transfer_done:
-        stdcall [edi+usb_hardware_func.FreeTD], edx
+        push    eax
+        call    mutex_unlock
+        push    USB_STATUS_CLOSED
+        call    usb_pipe_aborted
+; It is safe to free LastTD here:
+; usb_*_transfer_async do not enqueue new transfers if USB_FLAG_CLOSED is set.
+        stdcall [edi+usb_hardware_func.FreeTD], [ebx+usb_pipe.LastTD]
+        jmp     @f
 .no_transfer:
+        call    mutex_unlock
+@@:
 ; 2. Decrement number of pipes for the device.
 ; If this pipe is the last pipe, go to 5.
         mov     ecx, [ebx+usb_pipe.DeviceData]
@@ -342,14 +386,23 @@ proc usb_pipe_closed
         dec     eax
         jnz     .notify_loop
 .notify_done:
-; 6. Bus address, if assigned, can now be reused.
+; 6. Kill the timer, if active.
+; (Usually not; possible if device is disconnected
+; while processing SET_ADDRESS request).
+        mov     eax, [ebx+usb_pipe.DeviceData]
+        cmp     [eax+usb_device_data.Timer], 0
+        jz      @f
+        stdcall cancel_timer_hs, [eax+usb_device_data.Timer]
+        mov     [eax+usb_device_data.Timer], 0
+@@:
+; 7. Bus address, if assigned, can now be reused.
         call    [edi+usb_hardware_func.GetDeviceAddress]
         test    eax, eax
         jz      @f
         bts     [esi+usb_controller.ExistingAddresses], eax
 @@:
         dbgstr 'USB device disconnected'
-; 7. All drivers have returned from disconnect callback,
+; 8. All drivers have returned from disconnect callback,
 ; so all drivers should not use any device-related pipes.
 ; Free the remaining pipes.
         mov     eax, [ebx+usb_pipe.DeviceData]
@@ -366,11 +419,70 @@ proc usb_pipe_closed
 .free_done:
         stdcall [edi+usb_hardware_func.FreePipe], ebx
         pop     eax
-; 8. Free the usb_device_data structure.
+; 9. Free the usb_device_data structure.
         sub     eax, usb_device_data.ClosedPipeList - usb_pipe.NextSibling
         call    free
-; 9. Return.
+; 10. Return.
 .nothing:
+        pop     edi
+        ret
+endp
+
+; This procedure is called when a pipe with USB_FLAG_DISABLED is removed from the
+; corresponding wait list. It means that the hardware has fully forgot about it.
+; ebx -> usb_pipe, esi -> usb_controller
+proc usb_pipe_disabled
+        push    edi
+        mov     edi, [esi+usb_controller.HardwareFunc]
+; 1. Acquire pipe lock.
+        lea     ecx, [ebx+usb_pipe.Lock]
+        call    mutex_lock
+; 2. Clear USB_FLAG_DISABLED in pipe state.
+        and     [ebx+usb_pipe.Flags], not USB_FLAG_DISABLED
+; 3. Sanity check: ignore uninitialized pipes.
+        cmp     [ebx+usb_pipe.LastTD], 0
+        jz      .no_transfer
+; 4. Acquire the first and last to-be-cancelled transfer descriptor,
+; save them in stack for the step 6,
+; ask the controller driver to enable the pipe for hardware,
+; removing transfers between first and last to-be-cancelled descriptors.
+        lea     ecx, [esi+usb_controller.ControlLock]
+        cmp     [ebx+usb_pipe.Type], BULK_PIPE
+        jb      @f      ; control pipe
+        lea     ecx, [esi+usb_controller.BulkLock]
+        jz      @f      ; bulk pipe
+        lea     ecx, [esi+usb_controller.PeriodicLock]
+@@:
+        call    mutex_lock
+        mov     eax, [ebx+usb_pipe.BaseList]
+        mov     edx, [eax+usb_pipe.NextVirt]
+        mov     [ebx+usb_pipe.NextVirt], edx
+        mov     [ebx+usb_pipe.PrevVirt], eax
+        mov     [edx+usb_pipe.PrevVirt], ebx
+        mov     [eax+usb_pipe.NextVirt], ebx
+        mov     eax, [ebx+usb_pipe.LastTD]
+        mov     edx, [eax+usb_gtd.NextVirt]
+        mov     [eax+usb_gtd.NextVirt], eax
+        mov     [eax+usb_gtd.PrevVirt], eax
+        push    eax
+        push    edx
+        push    ecx
+        call    [edi+usb_hardware_func.EnablePipe]
+        pop     ecx
+        call    mutex_unlock
+; 5. Release pipe lock acquired at step 1.
+; Callbacks called at step 6 can insert new transfers,
+; so we cannot call usb_pipe_aborted while holding pipe lock.
+        lea     ecx, [ebx+usb_pipe.Lock]
+        call    mutex_unlock
+; 6. Notify all registered callbacks with status USB_STATUS_CANCELLED, if any.
+; Two arguments describing transfers range were pushed at step 4.
+        push    USB_STATUS_CANCELLED
+        call    usb_pipe_aborted
+        pop     edi
+        ret
+.no_transfer:
+        call    mutex_unlock
         pop     edi
         ret
 endp
@@ -506,6 +618,69 @@ endl
 .return0:
         xor     eax, eax
         ret
+endp
+
+; Part of API for drivers, see documentation for USBAbortPipe.
+proc usb_abort_pipe
+        push    ebx esi ; save used registers to be stdcall
+virtual at esp
+                rd      2 ; saved registers
+                dd      ? ; return address
+.pipe           dd      ?
+end virtual
+        mov     ebx, [.pipe]
+; 1. Acquire pipe lock.
+        lea     ecx, [ebx+usb_pipe.Lock]
+        call    mutex_lock
+; 2. If the pipe is already closed or abort is in progress,
+; just release pipe lock and return.
+        test    [ebx+usb_pipe.Flags], USB_FLAG_CLOSED + USB_FLAG_DISABLED
+        jnz     .nothing
+; 3. Mark the pipe as aborting.
+        or      [ebx+usb_pipe.Flags], USB_FLAG_DISABLED
+; 4. We cannot do anything except adding new transfers concurrently with hardware.
+; Ask the controller driver to (temporarily) remove the pipe from hardware queue.
+        mov     esi, [ebx+usb_pipe.Controller]
+; 4a. Acquire queue lock.
+        lea     ecx, [esi+usb_controller.ControlLock]
+        cmp     [ebx+usb_pipe.Type], BULK_PIPE
+        jb      @f      ; control pipe
+        lea     ecx, [esi+usb_controller.BulkLock]
+        jz      @f      ; bulk pipe
+        lea     ecx, [esi+usb_controller.PeriodicLock]
+@@:
+        call    mutex_lock
+        push    ecx
+; 4b. Call the driver.
+        mov     eax, [esi+usb_controller.HardwareFunc]
+        call    [eax+usb_hardware_func.DisablePipe]
+; 4c. Remove the pipe from software list.
+        mov     eax, [ebx+usb_pipe.NextVirt]
+        mov     edx, [ebx+usb_pipe.PrevVirt]
+        mov     [eax+usb_pipe.PrevVirt], edx
+        mov     [edx+usb_pipe.NextVirt], eax
+; 4c. Register the pipe in corresponding wait list.
+        test    [ebx+usb_pipe.Type], 1
+        jz      .control_bulk
+        call    usb_subscribe_periodic
+        jmp     @f
+.control_bulk:
+        call    usb_subscribe_control
+@@:
+; 4d. Release queue lock.
+        pop     ecx
+        call    mutex_unlock
+; 4e. Notify the USB thread about new work.
+        push    ebx esi edi
+        call    usb_wakeup
+        pop     edi esi ebx
+; That's all for now. To be continued in usb_pipe_disabled.
+; 5. Release pipe lock acquired at step 1 and return.
+.nothing:
+        lea     ecx, [ebx+usb_pipe.Lock]
+        call    mutex_unlock
+        pop     esi ebx
+        ret     4
 endp
 
 ; Part of API for drivers, see documentation for USBGetParam.

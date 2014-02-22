@@ -722,3 +722,9 @@ end virtual
         leave
         ret
 endp
+
+; Export for drivers. Just returns the pointer to the pci-devices list.
+proc get_pcidev_list
+        mov     eax, pcidev_list
+        ret
+endp

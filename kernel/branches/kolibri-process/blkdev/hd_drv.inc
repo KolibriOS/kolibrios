@@ -1183,3 +1183,35 @@ IDE_BAR2_val    dw ?
 IDE_BAR3_val    dw ?
 endg
 ;-----------------------------------------------------------------------------
+
+proc clear_pci_ide_interrupts
+        mov     esi, pcidev_list
+.loop:
+        mov     esi, [esi+PCIDEV.fd]
+        cmp     esi, pcidev_list
+        jz      .done
+        cmp     [esi+PCIDEV.class], 0x01018F
+        jnz     .loop
+        mov     ah, [esi+PCIDEV.bus]
+        mov     al, 2
+        mov     bh, [esi+PCIDEV.devfn]
+        mov     bl, 0x20
+        call    pci_read_reg
+        and     eax, 0FFFCh
+        mov     edx, eax
+        add     edx, 2
+        in      al, dx
+        DEBUGF 1,'K : clear_pci_ide_interrupts: port[%x] = %x ',dx,al
+        out     dx, al
+        in      al, dx
+        DEBUGF 1,'-> %x; ',al
+        add     edx, 8
+        in      al, dx
+        DEBUGF 1,'port[%x] = %x ',dx,al
+        out     dx, al
+        in      al, dx
+        DEBUGF 1,'-> %x\n',al
+        jmp     .loop
+.done:
+        ret
+endp

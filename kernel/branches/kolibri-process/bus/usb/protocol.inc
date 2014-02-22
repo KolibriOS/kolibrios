@@ -33,6 +33,19 @@ USB_INTERFACE_POWER_DESCR    = 8
 ; read to the debug board.
 USB_DUMP_DESCRIPTORS = 1
 
+; According to the USB specification (9.2.6.3),
+; any device must response to SET_ADDRESS in 50 ms, or 5 timer ticks.
+; Of course, our world is far from ideal.
+; I have seen devices that just NAK everything when being reset from working
+; state, but start to work after second reset.
+; Our strategy is as follows: give 2 seconds for the first attempt,
+; this should be enough for normal devices and not too long to detect buggy ones.
+; If the device continues NAKing, reset it and retry several times,
+; doubling the interval: 2s -> 4s -> 8s -> 16s. Give up after that.
+; Numbers are quite arbitrary.
+TIMEOUT_SET_ADDRESS_INITIAL = 200
+TIMEOUT_SET_ADDRESS_LAST    = 1600
+
 ; =============================================================================
 ; ================================ Structures =================================
 ; =============================================================================
@@ -179,21 +192,36 @@ ends
 ; out: eax = 0 <=> failed, the caller should disable the port.
 proc usb_new_device
         push    ebx edi         ; save used registers to be stdcall
-; 1. Allocate resources. Any device uses the following resources:
+; 1. Check whether we're here because we were trying to reset
+; already-registered device in hope to fix something serious.
+; If so, skip allocation and go to 6.
+        movzx   eax, [esi+usb_controller.ResettingPort]
+        mov     edx, [esi+usb_controller.ResettingHub]
+        test    edx, edx
+        jz      .test_roothub
+        mov     edx, [edx+usb_hub.ConnectedDevicesPtr]
+        mov     ebx, [edx+eax*4]
+        jmp     @f
+.test_roothub:
+        mov     ebx, [esi+usb_controller.DevicesByPort+eax*4]
+@@:
+        test    ebx, ebx
+        jnz     .try_set_address
+; 2. Allocate resources. Any device uses the following resources:
 ; - device address in the bus
 ; - memory for device data
 ; - pipe for zero endpoint
 ; If some allocation fails, we must undo our actions. Closing the pipe
 ; is a hard task, so we avoid it and open the pipe as the last resource.
 ; The order for other two allocations is quite arbitrary.
-; 1a. Allocate a bus address.
+; 2a. Allocate a bus address.
         push    ecx
         call    usb_set_address_request
         pop     ecx
-; 1b. If failed, just return zero.
+; 2b. If failed, just return zero.
         test    eax, eax
         jz      .nothing
-; 1c. Allocate memory for device data.
+; 2c. Allocate memory for device data.
 ; For now, we need sizeof.usb_device_data and extra 8 bytes for GET_DESCRIPTOR
 ; input and output, see usb_after_set_address. Later we will reallocate it
 ; to actual size needed for descriptors.
@@ -201,10 +229,10 @@ proc usb_new_device
         push    ecx
         call    malloc
         pop     ecx
-; 1d. If failed, free the bus address and return zero.
+; 2d. If failed, free the bus address and return zero.
         test    eax, eax
         jz      .nomemory
-; 1e. Open pipe for endpoint zero.
+; 2e. Open pipe for endpoint zero.
 ; For now, we do not know the actual maximum packet size;
 ; for full-speed devices it can be any of 8, 16, 32, 64 bytes,
 ; low-speed devices must have 8 bytes, high-speed devices must have 64 bytes.
@@ -227,12 +255,14 @@ proc usb_new_device
 ; Put pointer to pipe into ebx. "xchg eax,reg" is one byte, mov is two bytes.
         xchg    eax, ebx
         pop     eax
-; 1f. If failed, free the memory, the bus address and return zero.
+; 2f. If failed, free the memory, the bus address and return zero.
         test    ebx, ebx
         jz      .freememory
-; 2. Store pointer to device data in the pipe structure.
+; 3. Store pointer to device data in the pipe structure.
         mov     [ebx+usb_pipe.DeviceData], eax
-; 3. Init device data, using usb_controller.Resetting* variables.
+; 4. Init device data, using usb_controller.Resetting* variables.
+        mov     [eax+usb_device_data.Timer], edi
+        mov     dword [eax+usb_device_data.DeviceDescriptor], TIMEOUT_SET_ADDRESS_INITIAL
         mov     [eax+usb_device_data.TTHub], edi
         mov     [eax+usb_device_data.TTPort], 0
         mov     [eax+usb_device_data.NumInterfaces], edi
@@ -268,7 +298,7 @@ proc usb_new_device
         mov     [eax+usb_device_data.Port], cl
         mov     edx, [esi+usb_controller.ResettingHub]
         mov     [eax+usb_device_data.Hub], edx
-; 4. Store pointer to the config pipe in the hub data.
+; 5. Store pointer to the config pipe in the hub data.
 ; Config pipe serves as device identifier.
 ; Root hubs use the array inside usb_controller structure,
 ; non-root hubs use the array immediately after usb_hub structure.
@@ -281,16 +311,29 @@ proc usb_new_device
         mov     [esi+usb_controller.DevicesByPort+ecx*4], ebx
 @@:
         call    usb_reinit_pipe_list
-; 5. Issue SET_ADDRESS control request, using buffer filled in step 1a.
-; Use the return value from usb_control_async as our return value;
-; if it is zero, then something has failed.
+; 6. Issue SET_ADDRESS control request, using buffer filled in step 2a.
+; 6a. Configure timer to force reset after timeout.
+; Note: we can't use self-destructing timer, because we need to be able to cancel it,
+; and for self-destructing timer we could have race condition in cancelling/destructing.
+;        DEBUGF 1,'K : pipe %x\n',ebx
+.try_set_address:
+        xor     edi, edi
+        mov     edx, [ebx+usb_pipe.DeviceData]
+        stdcall timer_hs, [edx+usb_device_data.DeviceDescriptor], 7FFFFFFFh, usb_abort_pipe, ebx
+        test    eax, eax
+        jz      .nothing
+        mov     edx, [ebx+usb_pipe.DeviceData]
+        mov     [edx+usb_device_data.Timer], eax
+; 6b. If it succeeded, setup timer to configure wait timeout.
         lea     eax, [esi+usb_controller.SetAddressBuffer]
         stdcall usb_control_async, ebx, eax, edi, edi, usb_set_address_callback, edi, edi
+; Use the return value from usb_control_async as our return value;
+; if it is zero, then something has failed.
 .nothing:
-; 6. Return.
+; 7. Return.
         pop     edi ebx         ; restore used registers to be stdcall
         ret
-; Handlers of failures in steps 1b, 1d, 1f.
+; Handlers of failures in steps 2b, 2d, 2f.
 .freememory:
         call    free
         jmp     .freeaddr
@@ -349,16 +392,23 @@ endp
 ; Note that USB stack uses esi = pointer to usb_controller.
 proc usb_set_address_callback stdcall, pipe:dword, status:dword, buffer:dword, length:dword, calldata:dword
         push    ebx     ; save ebx to be stdcall
-; Load data to registers for further references.
         mov     ebx, [pipe]
+; 1. In any case, cancel the timer.
+        mov     eax, [ebx+usb_pipe.DeviceData]
+        stdcall cancel_timer_hs, [eax+usb_device_data.Timer]
+        mov     eax, [ebx+usb_pipe.DeviceData]
+        mov     [eax+usb_device_data.Timer], 0
+; Load data to registers for further references.
         mov     ecx, dword [esi+usb_controller.SetAddressBuffer+2]
         mov     eax, [esi+usb_controller.HardwareFunc]
-; 1. Check whether the device has accepted new address. If so, proceed to 2.
-; Otherwise, go to 3.
+; 2. Check whether the device has accepted new address. If so, proceed to 3.
+; Otherwise, go to 4 if killed by usb_set_address_timeout or to 5 otherwise.
+        cmp     [status], USB_STATUS_CANCELLED
+        jz      .timeout
         cmp     [status], 0
         jnz     .error
-; 2. Address accepted.
-; 2a. The controller-specific structure for the control pipe still uses
+; 3. Address accepted.
+; 3a. The controller-specific structure for the control pipe still uses
 ; zero address. Call the controller-specific function to change it to
 ; the actual address.
 ; Note that the hardware could cache the controller-specific structure,
@@ -367,25 +417,49 @@ proc usb_set_address_callback stdcall, pipe:dword, status:dword, buffer:dword, l
 ; be safe to continue.
 ;        dbgstr 'address set in device'
         call    [eax+usb_hardware_func.SetDeviceAddress]
-; 2b. If the port is in non-root hub, clear 'reset in progress' flag.
-; In any case, proceed to 4.
+; 3b. If the port is in non-root hub, clear 'reset in progress' flag.
+; In any case, proceed to 6.
         mov     eax, [esi+usb_controller.ResettingHub]
         test    eax, eax
         jz      .return
         and     [eax+usb_hub.Actions], not HUB_RESET_IN_PROGRESS
 .return:
-; 4. Address configuration done, we can proceed with other ports.
+; 6. Address configuration done, we can proceed with other ports.
 ; Call the worker function for that.
         call    usb_test_pending_port
+.wakeup:
+        push    esi edi
+        call    usb_wakeup
+        pop     edi esi
 .nothing:
         pop     ebx     ; restore ebx to be stdcall
         ret
+.timeout:
+; 4. Device continues to NAK the request. Reset it and retry.
+        mov     edx, [ebx+usb_pipe.DeviceData]
+        mov     ecx, [edx+usb_device_data.DeviceDescriptor]
+        add     ecx, ecx
+        cmp     ecx, TIMEOUT_SET_ADDRESS_LAST
+        ja      .error
+        mov     [edx+usb_device_data.DeviceDescriptor], ecx
+        dbgstr 'Timeout in USB device initialization, trying to reset...'
+        cmp     [esi+usb_controller.ResettingHub], 0
+        jz      .reset_roothub
+        push    esi
+        mov     esi, [esi+usb_controller.ResettingHub]
+        call    usb_hub_initiate_reset
+        pop     esi
+        jmp     .nothing
+.reset_roothub:
+        movzx   ecx, [esi+usb_controller.ResettingPort]
+        call    [eax+usb_hardware_func.InitiateReset]
+        jmp     .wakeup
 .error:
-; 3. Device error: device not responding, disconnect etc.
+; 5. Device error: device not responding, disconnect etc.
         DEBUGF 1,'K : error %d in SET_ADDRESS, USB device disabled\n',[status]
-; 3a. The address has not been accepted. Mark it as free.
+; 5a. The address has not been accepted. Mark it as free.
         bts     dword [esi+usb_controller.ExistingAddresses], ecx
-; 3b. Disable the port with bad device.
+; 5b. Disable the port with bad device.
 ; For the root hub, call the controller-specific function and go to 6.
 ; For non-root hubs, let the hub code do its work and return (the request
 ; could take some time, the hub code is responsible for proceeding).

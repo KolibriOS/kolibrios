@@ -465,8 +465,6 @@ cdid                            rd 1
 hdbase                          rd 1    ; for boot 0x1f0
 hdid                            rd 1
 hdpos                           rd 1    ; for boot 0x1
-label   known_part dword
-fat32part                       rd 1    ; for boot 0x1
 cdpos                           rd 1
 
 ;CPUID information

@@ -258,7 +258,25 @@ end virtual
         call    cache_lookup_write
         test    eax, eax
         jnz     .cache_error
-; 12d. For each sector, copy data, mark the item as not-modified copy of the disk,
+; 12d. If the sector was already present in the cache as modified,
+; data that were read at step 10 for this sector are obsolete,
+; so rewrite data for the caller from the cache.
+        cmp     [esi+CACHE_ITEM.Status], CACHE_ITEM_MODIFIED
+        jnz     .not_modified
+        mov     esi, ecx
+        shl     esi, 9
+        add     esi, [ebx+DISKCACHE.data]
+        mov     edi, [esp+4]
+        mov     ecx, [esp]
+        shl     ecx, 9-2
+        sub     edi, ecx
+        mov     ecx, 512/4
+        rep movsd
+        add     [.current_buffer+8], 512
+        jmp     .sector_done
+.not_modified:
+; 12e. For each not-modified sector,
+; copy data, mark the item as not-modified copy of the disk,
 ; advance .current_buffer and .sector_hi:.sector_lo to the next sector.
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
         mov     esi, [.current_buffer+8]
@@ -268,16 +286,17 @@ end virtual
         mov     ecx, 512/4
         rep movsd
         mov     [.current_buffer+8], esi
+.sector_done:
         add     [.sector_lo+.local_vars2_size+8], 1
         adc     [.sector_hi+.local_vars2_size+8], 0
-; 12e. Continue the loop 12c-12d until all sectors are read.
+; 12f. Continue the loop 12c-12e until all sectors are read.
         dec     dword [esp]
         jnz     .store_to_cache
 .cache_error:
-; 12f. Restore after the loop: pop the local variable and restore edi.
+; 12g. Restore after the loop: pop the local variable and restore edi.
         pop     ecx
         pop     edi
-; 12g. Release the lock.
+; 12h. Release the lock.
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.CacheLock
         call    mutex_unlock
@@ -651,7 +670,13 @@ end virtual
         call    cache_lookup_write
         test    eax, eax
         jnz     .cache_error
-; 11c. For each sector, copy data, mark the item as not-modified copy of the disk,
+; 11c. Ignore sectors marked as modified: for them the cache is more recent that disk data.
+        cmp     [esi+CACHE_ITEM.Status], CACHE_ITEM_MODIFIED
+        jnz     .not_modified
+        add     [.current_buffer], 512
+        jmp     .sector_done
+.not_modified:
+; 11d. For each sector, copy data, mark the item as not-modified copy of the disk,
 ; advance .current_buffer and .sector_hi:.sector_lo to the next sector.
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
         mov     esi, [.current_buffer]
@@ -661,13 +686,14 @@ end virtual
         mov     ecx, 512/4
         rep movsd
         mov     [.current_buffer], esi
+.sector_done:
         add     [.sector_lo+.local_vars2_size], 1
         adc     [.sector_hi+.local_vars2_size], 0
-; 11d. Continue the loop at 11b-11c until all sectors are processed.
+; 11e. Continue the loop at 11b-11d until all sectors are processed.
         dec     [.num_sectors]
         jnz     .store_to_cache
 .cache_error:
-; 11e. Release the lock.
+; 11f. Release the lock.
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.CacheLock
         call    mutex_unlock
@@ -695,11 +721,9 @@ end virtual
         call    cache_lookup_write
         test    eax, eax
         jnz     .floppy_cache_error
-; 14. Mark the item as empty for the case of read error.
-        mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_EMPTY
         push    ecx
 
-; 15. Call the driver to read one sector.
+; 14. Call the driver to read one sector.
         push    1
         push    esp
         push    edx
@@ -713,7 +737,7 @@ end virtual
         pop     ecx
         dec     ecx
         jnz     .floppy_read_error
-; 16. Get the slot and pointer to the cache item,
+; 15. Get the slot and pointer to the cache item,
 ; change the status to not-modified copy of the disk
 ; and go to 4c.
         pop     ecx
@@ -723,7 +747,7 @@ end virtual
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
         jmp     .found_in_cache
 
-; On error at steps 13-15, release the lock
+; On error at steps 13-14, release the lock
 ; and pass the error to the caller.
 .floppy_read_error:
         pop     ecx
@@ -849,6 +873,7 @@ proc cache_lookup_write
         mov     [ebx+DISKCACHE.search_start], ecx
         popd    [esi+CACHE_ITEM.SectorLo]
         popd    [esi+CACHE_ITEM.SectorHi]
+        mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_EMPTY
 .return0:
         xor     eax, eax        ; success
         ret

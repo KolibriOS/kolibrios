@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -293,6 +293,7 @@ SOCKET_open:
         push    ecx edx esi
         call    SOCKET_alloc
         pop     esi edx ecx
+        test    eax, eax
         jz      .nobuffs
 
         mov     [esp+32], edi                   ; return socketnumber
@@ -697,7 +698,7 @@ SOCKET_close:
 
         test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
         jz      @f
-        call    SOCKET_notify.unblock                           ; Unblock it.
+        call    SOCKET_notify                                   ; Unblock it.
   @@:
 
         cmp     [eax + SOCKET.Domain], AF_INET4
@@ -1192,6 +1193,7 @@ SOCKET_pair:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_pair\n"
 
         call    SOCKET_alloc
+        test    eax, eax
         jz      .nomem1
         mov     [esp+32], edi   ; application's eax
 
@@ -1204,6 +1206,7 @@ SOCKET_pair:
         mov     ebx, eax
 
         call    SOCKET_alloc
+        test    eax, eax
         jz      .nomem2
         mov     [esp+20], edi   ; application's ebx
 
@@ -1707,8 +1710,9 @@ SOCKET_block:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: %x\n", eax
 
-        pushf
         push    eax
+
+        pushf
         cli
 
         ; Set the 'socket is blocked' flag
@@ -1724,12 +1728,12 @@ SOCKET_block:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: suspending thread: %u\n", edx
         mov     [eax + SOCKET.TID], edx
         pop     edx
+        popf
 
         call    change_task
         pop     eax
-        popf
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continueing\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: continuing\n"
 
         ret
 
@@ -1752,70 +1756,54 @@ SOCKET_notify:
         call    SOCKET_check
         jz      .error
 
-        test    [eax + SOCKET.state], SS_BLOCKED
-        jnz     .unblock
-
-;        test    [eax + SOCKET.options], SO_NONBLOCK
-;        jz      .error
-
-        push    eax ecx esi
-
-; socket exists and is of non blocking type.
-; We'll try to flag an event to the thread
-
-        mov     eax, [eax + SOCKET.TID]
-        test    eax, eax
-        jz      .done
-        mov     ecx, 1
-        mov     esi, TASK_DATA + TASKDATA.pid
-
-  .next_pid:
-        cmp     [esi], eax
-        je      .found_pid
-        inc     ecx
-        add     esi, 0x20
-        cmp     ecx, [TASK_COUNT]
-        jbe     .next_pid
-; PID not found, TODO: close socket!
-        jmp     .done
-
-  .found_pid:
-        shl     ecx, 8
-        or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
-        jmp     .done
-
-  .unblock:
-        push    eax ecx esi
-        ; Clear the 'socket is blocked' flag
-        and     [eax + SOCKET.state], not SS_BLOCKED
-
-        ; Find the thread's TASK_DATA
-        mov     eax, [eax + SOCKET.TID]
-        test    eax, eax
-        jz      .error
+; Find the associated thread's TASK_DATA
+        push    ebx ecx esi
+        mov     ebx, [eax + SOCKET.TID]
+        test    ebx, ebx
+        jz      .error2
         xor     ecx, ecx
         inc     ecx
         mov     esi, TASK_DATA
   .next:
-        cmp     [esi + TASKDATA.pid], eax
+        cmp     [esi + TASKDATA.pid], ebx
         je      .found
         inc     ecx
         add     esi, 0x20
         cmp     ecx, [TASK_COUNT]
         jbe     .next
-        jmp     .error
-  .found:
 
-        ; Run the thread
-        mov     [esi + TASKDATA.state], 0       ; Running
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
-
-  .done:
-        pop     esi ecx eax
+  .error2:
+; PID not found, TODO: close socket!
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_notify: error finding thread 0x%x !\n", ebx
+        pop     esi ecx ebx
+        ret
 
   .error:
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_notify: invalid socket ptr: 0x%x !\n", eax
+        ret
+
+  .found:
+        test    [eax + SOCKET.state], SS_BLOCKED
+        jnz     .un_block
+
+; socket and thread exists and socket is of non blocking type.
+; We'll try to flag an event to the thread.
+        shl     ecx, 8
+        or      [ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", eax
+        pop     esi ecx ebx
+        ret
+
+
+  .un_block:
+; socket and thread exists and socket is of blocking type
+; We'll try to unblock it.
+        and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
+        mov     [esi + TASKDATA.state], 0               ; Run the thread
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
+        pop     esi ecx ebx
         ret
 
 
@@ -1830,7 +1818,6 @@ SOCKET_notify:
 ; IN:  /
 ; OUT: eax = 0 on error, socket ptr otherwise
 ;      edi = socket number
-;       ZF = cleared on error
 ;
 ;--------------------------------------------------------------------
 align 4
@@ -1917,7 +1904,6 @@ SOCKET_alloc:
        @@:
 
         mov     [net_sockets + SOCKET.NextPtr], eax
-        or      eax, eax                ; used to clear zero flag
 
         pusha
         mov     ecx, socket_mutex
@@ -2022,6 +2008,7 @@ SOCKET_fork:
         push    ebx
         call    SOCKET_alloc
         pop     ebx
+        test    eax, eax
         jz      .fail
 
         push    eax
@@ -2101,7 +2088,8 @@ SOCKET_num_to_ptr:
         call    mutex_unlock
         popa
 
-        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: not found\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: socket %u not found!\n", eax
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_num_to_ptr: caller = 0x%x\n", [esp]
         ret
 
 

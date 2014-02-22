@@ -242,8 +242,6 @@ align 4
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [putimg.abs_cy]
-;        imul    eax, [Screen_Max_X]
-;        add     eax, [putimg.abs_cy]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [putimg.abs_cx]
@@ -688,7 +686,6 @@ __sys_putpixel:
                        ;            for example drawwindow_III and drawwindow_IV
 ; edi = 0x00000001 force
 
-;;;        mov  [novesachecksum], dword 0
         pushad
         cmp     [Screen_Max_X], eax
         jb      .exit
@@ -882,9 +879,6 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 calculate_edi:
-;        mov     edi, ebx
-;        imul    edi, [Screen_Max_X]
-;        add     edi, ebx
         mov     edi, [d_width_calc_area + ebx*4]
         add     edi, eax
         ret
