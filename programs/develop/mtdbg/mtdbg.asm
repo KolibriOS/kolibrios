@@ -863,7 +863,7 @@ dbgmsgend:
         jmp     waitevent
 
 ; TODO: make it local
-CtrlF7:
+F7:
         cmp     [debuggee_pid], 0
         jz      .no
         call    OnStep
@@ -872,11 +872,11 @@ CtrlF7:
         jmp     waitevent
 
 ; TODO: make it local
-CtrlF8:
+F8:
         cmp     [debuggee_pid], 0
-        jz      CtrlF7.no
+        jz      F7.no
         call    OnProceed
-        jmp     CtrlF7.no
+        jmp     F7.no
 
 ;-----------------------------------------------------------------------------
 ;                       Step execution event
@@ -2460,8 +2460,8 @@ help_control_msg db     'List of control commands:',10
         db      'detach               - detach from debugging program',10
         db      'stop                 - suspend execution of debugging program',10
         db      'g [<expression>]     - go on (resume execution of debugging program)',10
-        db      's [<num>]            - program step, also <Ctrl+F7>',10
-        db      'p [<num>]            - program wide step, also <Ctrl+F8>',10
+        db      's [<num>]            - program step, also <F7>',10
+        db      'p [<num>]            - program wide step, also <F8>',10
         db      'unpack               - try to bypass unpacker code (heuristic)',10,0
 
 ;               Data commands group

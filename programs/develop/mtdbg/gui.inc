@@ -141,14 +141,10 @@ keypressed:
         jz      .down
         cmp     al, 0xB2
         jz      .up
-        cmp     al, 0xD8
-        jz      CtrlF7
-        cmp     al, 0x38    ; F7
-        jz      CtrlF7
-        cmp     al, 0x39    ; F8
-        jz      CtrlF8
-        cmp     al, 0xD9
-        jz      CtrlF8
+        cmp     ah, 0x41
+        jz      F7
+        cmp     ah, 0x42
+        jz      F8
         cmp     [cmdline_len], cmdline_width
         jae     waitevent
         push    eax
