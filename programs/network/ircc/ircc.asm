@@ -438,7 +438,8 @@ is_now_known_as         db ' is now known as ', 0
 has_quit_irc            db ' has quit IRC', 10, 0
 
 sets_mode               db ' sets mode ', 0
-kicked                  db ' is kicked from ', 0
+str_kicked              db ' is kicked from ', 0
+str_by                  db ' by ', 0
 str_nickchange          db 'Nickname is now ', 0
 str_realchange          db 'Real name is now ', 0
 str_talking             db 'Now talking in ', 0
