@@ -147,9 +147,6 @@ msg_www        db 'please visit www.kolibrios.org',13,10,0
 end if
 msg_CR         db  13,10,0
 
-intel_str      db "GenuineIntel",0
-AMD_str        db "AuthenticAMD",0
-
 szHwMouse       db 'ATI2D',0
 szPS2MDriver    db 'PS2MOUSE',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
@@ -551,6 +548,7 @@ debug_step_pointer              rd 1
 lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled              rd 1  ; 0 = disabled , 1 = enabled
 
+cpu_phys_addr_width             rb 1  ; also known as MAXPHYADDR in Intel manuals
 hdd_appl_data                   rb 1  ; 0 = system cache, 1 - application cache
 cd_appl_data                    rb 1  ; 0 = system cache, 1 - application cache
 
