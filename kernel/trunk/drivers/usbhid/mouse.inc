@@ -32,13 +32,6 @@ ends
 ; in: ebx -> device_data from USB layer, edi -> collection
 ; out: eax = device-specific data or NULL on error
 proc mouse_driver_add_device
-; Get screen resolution so we can calculate absolute coordinates.
-        mov     eax, 14
-        int     0x40
-        mov     [screen_y], eax
-        and     [screen_y], 0xffff
-        shr     eax, 16
-        mov     [screen_x], eax
 ; Just allocate memory; no initialization needed.
         movi    eax, sizeof.mouse_device_data
         call    Kmalloc
@@ -146,24 +139,12 @@ end if
         mov     [edi+mouse_device_data.hwheel], edx
         ret
 .absolute_x:
-        push    ebx
-        mov     eax, [screen_x]
-        mul     edx
-        mov     ebx, 0x8000
-        div     ebx
-        mov     [edi+mouse_device_data.dx], eax
+        mov     [edi+mouse_device_data.dx], edx
         or      [edi+mouse_device_data.buttons], 0x80000000
-        pop     ebx
         ret
 .absolute_y:
-        push    ebx
-        mov     eax, [screen_y]
-        mul     edx
-        mov     ebx, 0x8000
-        div     ebx
-        mov     [edi+mouse_device_data.dy], eax
+        mov     [edi+mouse_device_data.dy], edx
         or      [edi+mouse_device_data.buttons], 0x40000000
-        pop     ebx
         ret
 endp
 
