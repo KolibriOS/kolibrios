@@ -121,7 +121,7 @@ compare_to_nick:
 align 4
 skip_parameter:
 
-; First: skip the parameter
+; First: skip the parameter (scan untill space or colon)
   .part1:
         lodsb
         cmp     al, ' '
@@ -129,16 +129,25 @@ skip_parameter:
         cmp     al, ':'
         jne     .part1
 
-; Now, skip all trailing spaces and semicolons
+; Skip all trailing spaces
+  .part3:
+        lodsb
+        cmp     al, ' '
+        je      .part3
+        dec     esi
+        ret
+
+; Now, skip all trailing spaces and first semicolon
   .part2:
         lodsb
         cmp     al, ' '
         je      .part2
         cmp     al, ':'
-        je      .part2
+        je      .part3
         dec     esi
-
         ret
+
+
 
 
 
@@ -708,18 +717,15 @@ cmd_kick:
         cmp     byte [esi+4], ' '
         jne     .fail
         add     esi, 5  ; skip 'KICK '
-; Is it me who got kicked?
-        mov     edi, servercommand+1
-        call    compare_to_nick
-        jne     .not_me
 
-; TODO: mark channel as disconnected
+; TODO: Is it me who got kicked?
+; if so, mark channel as disconnected
 
   .not_me:
 ; find the channel user has been kicked from
         push    esi
-        call    skip_parameter
         call    window_open
+        push    esi
 
         if TIMESTAMP
         call    print_timestamp
@@ -728,17 +734,25 @@ cmd_kick:
         mov     esi, kick_header
         call    print_text2
 
+        pop     eax
+        mov     dl, ' '
+        call    print_text
+
+        mov     esi, str_kicked
+        call    print_text2
+
+        pop     eax
+        mov     dl, ' '
+        call    print_text2
+
+        mov     esi, str_by
+        call    print_text2
+
         mov     eax, servercommand+1
         mov     dl, '!'
         call    print_text
 
-        mov     esi, kicked
-        call    print_text2
-
-        pop     esi
-        call    print_text2
-
-        mov     esi, str_newline
+        mov     esi, str_dotnewline
         call    print_text2
 
         mov     ebx, [window_print]

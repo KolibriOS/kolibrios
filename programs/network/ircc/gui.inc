@@ -128,7 +128,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
 
 ; draw editbox
         mov     eax, [ysize]
-        sub     eax, 12 ;;;;;;
+        sub     eax, 13 ;;;;;;
         mov     [edit1.top], eax
 
         mov     eax, [xsize]
