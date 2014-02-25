@@ -3129,7 +3129,9 @@ sys_getkey:
         jne     .finish
         cmp     [KEY_COUNT], byte 0
         je      .finish
-        movzx   eax, byte [KEY_BUFF]
+        movzx   ax, byte [KEY_BUFF + 120 + 2]
+        shl     eax, 8
+        mov     al, byte [KEY_BUFF]
         shl     eax, 8
         push    eax
         dec     byte [KEY_COUNT]
@@ -3138,6 +3140,9 @@ sys_getkey:
         add     ecx, 2
         mov     eax, KEY_BUFF + 1
         mov     ebx, KEY_BUFF
+        call    memmove
+        add     eax, 120 + 2
+        add     ebx, 120 + 2
         call    memmove
         pop     eax
 ;--------------------------------------

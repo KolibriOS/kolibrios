@@ -205,7 +205,7 @@ FDD_BUFF            equ (OS_BASE+0x000D000)     ;512
 
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)
 KEY_COUNT           equ (OS_BASE+0x000F400)
-KEY_BUFF            equ (OS_BASE+0x000F401)
+KEY_BUFF            equ (OS_BASE+0x000F401) ; 120*2 + 2*2 = 244 bytes, actually 255 bytes
 
 BTN_COUNT           equ (OS_BASE+0x000F500)
 BTN_BUFF            equ (OS_BASE+0x000F501)
