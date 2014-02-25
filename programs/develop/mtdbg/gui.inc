@@ -1527,7 +1527,7 @@ draw_window:
         mcall   12, 1
 
     ; define window
-        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x54000000), caption_str
+        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x54000000), , caption_str
 
     ; clear unused areas
         ; get window skin height
