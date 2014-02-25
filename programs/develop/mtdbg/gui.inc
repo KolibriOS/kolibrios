@@ -5,55 +5,85 @@
 ;-----------------------------------------------------------------------------
 ;                             Color scheme
 
+BLACK_ON_WHITE  equ 0
+MOVIEOS         equ 1
+WHITE_ON_BLACK  equ 2
+
 ;                         format - 0xRRGGBB
-COLOR_BG_NORMAL           equ 0x101010 ; was 0xFFFFFF white
-COLOR_BG_BREAKPOINT       equ 0xFF0000 ; red
-COLOR_BG_SELECTED         equ 0x0000FF ; blue
-COLOR_LINE                equ 0xFFFFFF ; was 0x000000 black
-COLOR_TXT_NORMAL          equ 0xFFFFFF ; was 0x000000 black
-COLOR_TXT_INACTIVE        equ 0x808080 ; grey
-COLOR_TXT_CHANGED         equ 0x00AA00 ; green
-COLOR_TXT_SELECTED        equ 0xFFFFFF ; white
+if COLOR_THEME eq MOVIEOS
+
+        COLOR_BG_NORMAL           = 0x1d272f
+        COLOR_BG_BREAKPOINT       = 0x0000aa
+        COLOR_BG_SELECTED         = 0xec9300
+        COLOR_LINE                = 0x00b9a0
+        COLOR_TXT_NORMAL          = 0xffffff
+        COLOR_TXT_INACTIVE        = 0x8f7948
+        COLOR_TXT_CHANGED         = 0xec9300
+        COLOR_TXT_SELECTED        = 0x1d272f
+
+else if COLOR_THEME eq WHITE_ON_BLACK
+
+        COLOR_BG_NORMAL           = 0x101010 ; dark grey
+        COLOR_BG_BREAKPOINT       = 0xFF0000 ; red
+        COLOR_BG_SELECTED         = 0x0000FF ; blue
+        COLOR_LINE                = 0xFFFFFF ; white
+        COLOR_TXT_NORMAL          = 0xFFFFFF ; white
+        COLOR_TXT_INACTIVE        = 0x808080 ; grey
+        COLOR_TXT_CHANGED         = 0x00AA00 ; green
+        COLOR_TXT_SELECTED        = 0xFFFFFF ; white
+
+else  ; BLACK ON WHITE
+
+        COLOR_BG_NORMAL           = 0xffffff ; white
+        COLOR_BG_BREAKPOINT       = 0xFF0000 ; red
+        COLOR_BG_SELECTED         = 0x0000FF ; blue
+        COLOR_LINE                = 0x000000 ; black
+        COLOR_TXT_NORMAL          = 0x000000 ; black
+        COLOR_TXT_INACTIVE        = 0x808080 ; grey
+        COLOR_TXT_CHANGED         = 0x00AA00 ; green
+        COLOR_TXT_SELECTED        = 0xFFFFFF ; white
+
+end if
 
 ;-----------------------------------------------------------------------------
 
-data_width equ 80
-data_x_pos equ 12
-data_x_size equ data_width*6
+data_width      equ 80
+data_x_pos      equ 12
+data_x_size     equ data_width*6
 
-title_x_pos equ 30
-title_y_pos equ 32
-title_y_size equ 10
+title_x_pos     equ 30
+title_y_pos     equ 32
+title_y_size    equ 10
 
-;dump_y_pos equ (registers_y_pos + registers_y_size + 5)
-dump_y_pos equ (title_y_pos + title_y_size)
-dump_height equ 6
-dump_y_size equ (dump_height*10)
+;dump_y_pos      equ (registers_y_pos + registers_y_size + 5)
+dump_y_pos      equ (title_y_pos + title_y_size)
+dump_height     equ 6
+dump_y_size     equ (dump_height*10)
 
-disasm_y_pos equ (dump_y_pos + dump_y_size + 4)
-disasm_height equ 18
-disasm_y_size equ (disasm_height*10)
+disasm_y_pos    equ (dump_y_pos + dump_y_size + 4)
+disasm_height   equ 18
+disasm_y_size   equ (disasm_height*10)
 
-messages_width equ data_width
+messages_width  equ data_width
 messages_height equ 8
-messages_x_pos equ data_x_pos
-messages_y_pos equ (disasm_y_pos + disasm_y_size + 4)
+messages_x_pos  equ data_x_pos
+messages_y_pos  equ (disasm_y_pos + disasm_y_size + 4)
 messages_x_size equ messages_width*6
 messages_y_size equ messages_height*10
 
-cmdline_width equ data_width
-cmdline_x_pos equ data_x_pos
-cmdline_y_pos equ (messages_y_pos + messages_y_size + 4)
-cmdline_x_size equ messages_x_size
-cmdline_y_size equ 10
+cmdline_width   equ data_width
+cmdline_x_pos   equ data_x_pos
+cmdline_y_pos   equ (messages_y_pos + messages_y_size + 4)
+cmdline_x_size  equ messages_x_size
+cmdline_y_size  equ 10
 
 registers_x_pos equ (data_x_pos + messages_x_size + 4)
 registers_y_pos equ (title_y_pos + title_y_size - 3)
 registers_x_size equ 134
 registers_y_size equ (cmdline_y_pos + cmdline_y_size - registers_y_pos+1)
 
-wnd_x_size equ (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3)
-wnd_y_size equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
+wnd_x_size      equ (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3)
+wnd_y_size      equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
 
 ;-----------------------------------------------------------------------------
 ;                          Entry point
@@ -577,7 +607,6 @@ draw_title:
         ;mov    ebx, (data_x_pos-2)*10000h + title_x_pos-5
         ;mov    ecx, (title_y_pos+5)*10001h
         ; draw line with COLOR_LINE (in edx)
-        ; was 'xor     edx, edx'
         mcall   38, (data_x_pos-2)*10000h+title_x_pos-5, (title_y_pos+5)*10001h, COLOR_LINE
         push    NoPrgLoaded_len
         pop     esi
@@ -603,7 +632,6 @@ draw_title:
         mov     al, 4
         mov     ebx, title_x_pos*10000h+title_y_pos
         ; setting up text color scheme and attributes
-        ; was 'xor     ecx, ecx'
         mov     ecx, COLOR_TXT_NORMAL
         mov     edx, NoPrgLoaded_str
         cmp     [debuggee_pid], 0
@@ -635,8 +663,6 @@ draw_title:
         mov     al, 38
         mov     ebx, (data_x_pos+data_x_size-10-6*7-5)*0x10000 + data_x_pos+data_x_size+2
         mov     ecx, (title_y_pos+5)*10001h
-        ; setting up line color scheme 
-        ; was 'xor     edx, edx'
         mov     edx, COLOR_LINE
         jmp     @b
 
@@ -1014,6 +1040,7 @@ draw_main_registers:
         mov     edx, aColon
         xor     esi, esi
         inc     esi
+        mov     ecx, COLOR_TXT_INACTIVE
         ;mov    ebx, (registers_x_pos+10)*10000h + registers_y_pos+122
         ; draw a text string in the window, color in ecx
         mcall   4, (registers_x_pos+10)*10000h+registers_y_pos+122
@@ -1497,26 +1524,12 @@ update_disasm:
 
 draw_window:
     ; start window redraw
-        ;push   12
-        ;pop    eax
-        ;push   1
-        ;pop    ebx
         mcall   12, 1
 
     ; define window
-        ;xor    eax, eax
-        ;mov    ebx, wnd_x_size
-        ;mov    ecx, wnd_y_size
-        ;mov    edx, 54FFFFFFh
-        mov     edi, caption_str
-        ; draw window with color in edx
-        ; was 0x54FFFFFF - white background
-        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x54000000)
+        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x54000000), caption_str
 
     ; clear unused areas
-        ;mov    al, 48
-        ;push   4
-        ;pop    ebx
         ; get window skin height
         mcall   48, 4
         cmp     eax, title_y_pos
@@ -1532,9 +1545,7 @@ draw_window:
         shl     eax, 16
         add     ecx, eax
         mov     ebx, 5*10000h + (wnd_x_size-9)
-        ;push   13
-        ;pop    eax
-        ; color in edx for all rectangles (COLOR_BG_NORMAL)
+        mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box for registers information region
         mcall   13
         mov     ecx, (dump_y_pos+dump_y_size)*10000h + (disasm_y_pos-dump_y_pos-dump_y_size)
@@ -1556,53 +1567,43 @@ draw_window:
         mov     ebx, (data_x_pos+data_x_size)*10000h + (wnd_x_size-data_x_pos-data_x_size-4)
         ; draw container rectangle/box
         mcall
+        mov     ebx, 5*10000h + title_x_pos - 5
+        mov     ecx, (title_y_pos)*10000h + (title_y_size)
+        ; draw container rectangle/box for dump memory region title
+        mcall
 
     ; messages frame
-        ;mov    al, 38
         mov     ebx, (messages_x_pos-2)*10000h + (messages_x_pos+messages_x_size+2)
         push    ebx
         mov     ecx, (messages_y_pos-2)*10001h
-        ; setting up lines color
-        ; was 'xor     edx, edx' - black
         mov     edx, COLOR_LINE
-        ; draw line, color in edx
         mcall   38
         mov     ecx, (messages_y_pos+messages_y_size+2)*10001h
-        ; draw line, color in edx
         mcall
         mov     ebx, (messages_x_pos-2)*10001h
         push    ebx
         mov     ecx, (messages_y_pos-2)*10000h + (messages_y_pos+messages_y_size+2)
-        ; draw line, color in edx
         mcall
         mov     ebx, (messages_x_pos+messages_x_size+2)*10001h
         push    ebx
-        ; draw line, color in edx
         mcall
 
     ; command line frame
         mov     ecx, (cmdline_y_pos-2)*10000h + (cmdline_y_pos+cmdline_y_size+2)
         pop     ebx
-        ; draw line, color in edx
         mcall
         pop     ebx
-        ; draw line, color in edx
         mcall
         pop     ebx
         mov     ecx, (cmdline_y_pos+cmdline_y_size+2)*10001h
-        ; draw line, color in edx
         mcall
         mov     ecx, (cmdline_y_pos-2)*10001h
-        ; draw line, color in edx
         mcall
 
     ; registers frame
-        ;push   13
-        ;pop    eax
         mov     ebx, (registers_x_pos-2)*10000h + (registers_x_size+4)
         mov     ecx, (registers_y_pos-2)*10000h + (registers_y_size+4)
         ; draw container rectangle/box for registers information window region
-        ; color in edx
         mcall   13
 
     ; messages
@@ -1613,20 +1614,14 @@ draw_window:
         call    draw_cursor
 
     ; title & registers & dump & disasm
-        ;mov    al, 38
         mov     ebx, (data_x_pos-2)*10001h
         mov     ecx, (title_y_pos+5)*10000h + (messages_y_pos-2)
-        ; draw line, color in edx
+        mov     edx, COLOR_LINE
         mcall   38
         mov     ebx, (data_x_pos+data_x_size+2)*10001h
-        ; draw line, color in edx
         mcall
         mov     ebx, (data_x_pos-2)*10000h + (data_x_pos+data_x_size+2)
-        mov     ecx, (dump_y_pos-3)*10001h
-        ; draw line, color in edx
-        mcall
         mov     ecx, (disasm_y_pos-4)*10001h
-        ; draw line, color in edx
         mcall
 
     ; redraw whole window again
@@ -1636,10 +1631,6 @@ draw_window:
         call    draw_disasm.redraw
 
     ; end of window redraw
-        ;push   12
-        ;pop    eax
-        ;push   2
-        ;pop    ebx
         mcall   12, 2
         ret
 

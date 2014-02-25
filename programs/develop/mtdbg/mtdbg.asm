@@ -1,4 +1,7 @@
-format binary
+COLOR_THEME equ BLACK_ON_WHITE
+
+
+format binary as ""
 include '../../macros.inc'
 use32
         db      'MENUET01'
@@ -2357,7 +2360,7 @@ caption_str db 'Kolibri Debugger',0
 caption_len = $ - caption_str
 
 begin_str db    'Kolibri Debugger, version 0.33',10
-        db      'Hint: type "help" for help, "quit" for quit'
+        db      'Hint: type "help" for help, "quit" to quit'
 newline db      10,0
 prompt  db      '> ',0
 
@@ -2645,10 +2648,10 @@ NoPrgLoaded_str db      'No program loaded'
 NoPrgLoaded_len = $ - NoPrgLoaded_str
 aRunning        db      'Running'
 aPaused         db      'Paused'
-aMain            db        '[ CPU ]'
-aSSE            db        '[ SSE ]'
-aAVX            db        '[ AVX ]'
-aMSR            db        '[ MSR ]'
+aMain           db      '[ CPU ]'
+aSSE            db      '[ SSE ]'
+aAVX            db      '[ AVX ]'
+aMSR            db      '[ MSR ]'
 aPoint          db      0x1C
 aMinus          db      '-'
 aColon          db      ':'
@@ -2708,7 +2711,7 @@ mmx_strs:
         db        'MM6='
         db        'MM7='
 sse_strs:
-        db        '-XMM0-'
+        db      '-XMM0-'
         db      '-XMM1-'
         db      '-XMM2-'
         db      '-XMM3-'
