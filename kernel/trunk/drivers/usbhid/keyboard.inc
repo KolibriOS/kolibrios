@@ -32,7 +32,7 @@ label control_keys byte
 label normal_keys byte
         db      1Eh, 30h, 2Eh, 20h, 12h, 21h, 22h, 23h, 17h, 24h, 25h, 26h, 32h, 31h, 18h, 19h
         db      10h, 13h, 1Fh, 14h, 16h, 2Fh, 11h, 2Dh, 15h, 2Ch, 02h, 03h, 04h, 05h, 06h, 07h
-        db      08h, 09h, 0Ah, 0Bh, 1Ch, 01h, 0Eh, 0Fh, 39h, 0Ch, 0Dh, 1Ah, 1Bh, 2Bh,   0, 27h
+        db      08h, 09h, 0Ah, 0Bh, 1Ch, 01h, 0Eh, 0Fh, 39h, 0Ch, 0Dh, 1Ah, 1Bh, 2Bh, 2Bh, 27h
         db      28h, 29h, 33h, 34h, 35h, 3Ah, 3Bh, 3Ch, 3Dh, 3Eh, 3Fh, 40h, 41h, 42h, 43h, 44h
         db      57h, 58h,37h+EX,46h,0,52h+EX,47h+EX,49h+EX,53h+EX,4Fh+EX,51h+EX,4Dh+EX,4Bh+EX,50h+EX,48h+EX,45h
         db      35h+EX,37h,4Ah,4Eh,1Ch+EX,4Fh,50h, 51h, 4Bh, 4Ch, 4Dh, 47h, 48h, 49h, 52h, 53h
