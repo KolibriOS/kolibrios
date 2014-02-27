@@ -1842,6 +1842,7 @@ con.thread_exit:
 con.key:
         mov     al, 2
         int     0x40
+		and     eax, 0xffff ; supress scancodes
 ; ah = scancode
         cmp     ah, 0xE0
         jnz     @f
