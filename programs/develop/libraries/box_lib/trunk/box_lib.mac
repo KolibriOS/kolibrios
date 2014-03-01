@@ -49,6 +49,10 @@ ed_insert_cl=   1111111101111111b
 ed_mouse_on =          100000000b
 ed_mous_adn_b=         100011000b
 ed_mouse_on_off=1111111011111111b
+ed_ctrl_on =          1000000000b
+ed_ctrl_off =   1111110111111111b
+ed_alt_on =          10000000000b
+ed_alt_off =    1111101111111111b
 ed_height=14 ; высота
 
 struc  edit_box width,left,top,color,shift_color,focus_border_color,\

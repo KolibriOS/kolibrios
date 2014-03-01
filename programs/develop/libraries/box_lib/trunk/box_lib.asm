@@ -20,6 +20,7 @@ include '../../../../macros.inc'
 include '../../../../proc32.inc'
 include 'bl_sys.mac'
 include 'box_lib.mac' ;macro which should make life easier :)
+;include '../../../../debug.inc'
 
 ;-----------------------------------------------------------------------------
 mem.alloc   dd ? ;функция для выделения памяти

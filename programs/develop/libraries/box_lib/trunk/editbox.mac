@@ -8,6 +8,7 @@ macro use_editbox_draw
 edit_box:
 .draw:
         pushad
+.draw_1:	
 ;--- рисуем рамку ---
         mov     edi,dword [esp+36]
         call    .draw_border            ; Функция стабильна
@@ -68,7 +69,7 @@ pushad
 	pop	eax
 ;--------------------------------------
 ;Проверка нажат shift ?
-        call    edit_box_key.check_shift
+        call    edit_box_key.check_shift_ctrl_alt
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
 ;----------------------------------------------------------
@@ -86,6 +87,17 @@ pushad
         jz      edit_box_key.end
         cmp     ah,185  ;insert
         jz      edit_box_key.insert
+; комбинации Ctrl + клавиша
+        test    word ed_flags,ed_ctrl_on
+        jz     	@f
+; проверка сканкода
+        ror     eax,8
+        cmp     ah,46 ; Ctrl + C
+        je      edit_box_key.ctrl_c
+        cmp     ah,47 ; Ctrl + V
+        je      edit_box_key.ctrl_v
+	rol     eax,8
+@@:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -779,12 +791,22 @@ edit_box_key.draw_rectangle:
 ;;;;;;;;;;;;;;;;;;
 ;;Проверка нажат ли shift
 ;;;;;;;;;;;;;;;;;;
-edit_box_key.check_shift:
+edit_box_key.check_shift_ctrl_alt:
 pusha   ;сохраним все регистры
         mcall   66,3
-        test    al,0x03
+        test    al,11b
         je      @f
-        or      word ed_flags,ed_shift   ;установим флаг
+        or      word ed_flags,ed_shift   ;установим флаг Shift
+@@:
+        and     word ed_flags,ed_ctrl_off ; очистим флаг Ctrl
+	test    al,1100b
+        je      @f
+        or      word ed_flags,ed_ctrl_on   ;установим флаг Ctrl
+@@:
+        and     word ed_flags,ed_alt_off ; очистим флаг Alt
+	test    al,110000b
+        je      @f
+        or      word ed_flags,ed_alt_on   ;установим флаг Alt
 @@:edit_ex
 }
 
@@ -1052,6 +1074,112 @@ edit_box_key.end:
         mov     ed_pos,eax
         call    edit_box_key.sh_home_end
         jmp     edit_box.draw_cursor_text
+;-----------------------------------------------------------------------------
+edit_box_key.ctrl_c:
+; add memory area
+	mov	ecx,ed_size
+	add	ecx,3*4
+	mcall	68,12
+; building the clipboard slot header
+	xor	ecx,ecx
+	mov	[eax+4],ecx ; type 'text'
+	inc	ecx
+	mov	[eax+8],ecx ; cp866 text encoding
+	mov	ecx,ed_size
+	add	ecx,3*4
+	mov	[eax],ecx
+	sub	ecx,3*4
+; copy data
+	mov	esi,ed_text
+	push	edi
+	mov	edi,eax
+	add	edi,3*4
+	cld
+	rep	movsb
+	pop	edi
+; put slot to the kernel clipboard
+	mov	edx,eax
+	mov	ecx,[edx]
+	push	eax
+	mcall	54,2
+	pop	ecx
+; remove unnecessary memory area
+	mcall	68,13
+;--------------------------------------
+.exit:
+        jmp     edit_box.editbox_exit
+;-----------------------------------------------------------------------------
+edit_box_key.ctrl_v:
+	mcall	54,0
+; no slots of clipboard ?
+	test	eax,eax
+	jz	.exit
+; main list area not found ?	
+	inc	eax
+	test	eax,eax
+	jz	.exit
+
+	sub	eax,2
+	mov	ecx,eax
+	mcall	54,1
+; main list area not found ?
+	inc	eax
+	test	eax,eax
+	jz	.exit
+; error ?
+	sub	eax,2
+	test	eax,eax
+	jz	.exit
+
+	inc	eax
+; check contents of container
+	mov	ebx,[eax+4]
+; check for text
+	test	ebx,ebx
+	jnz	.no_valid_text
+	
+	mov	ebx,[eax+8]
+; check for cp866
+	cmp	bl,1
+	jnz	.no_valid_text
+	
+	mov	ecx,[eax]
+	sub	ecx,3*4
+	cmp	ecx,ed_max
+	jb	@f
+	
+	mov	ecx,ed_max
+@@:
+	mov	esi,eax
+	add	esi,3*4
+	mov	ed_size,ecx
+	mov	ed_pos,ecx
+	push	eax edi
+	mov	edi,ed_text
+	cld
+@@:
+	lodsb
+	cmp	al,0x0d	; EOS (end of string)
+	je	.replace	
+
+	cmp	al,0x0a ; EOS (end of string)
+	jne	.continue
+.replace:
+	mov	al,0x20 ; space
+.continue:	
+	stosb
+	dec	ecx
+	jnz	@b
+;	rep	movsb
+	pop	edi eax
+;--------------------------------------	
+.no_valid_text:
+; remove unnecessary memory area
+	mov	ecx,eax
+	mcall	68,13
+;--------------------------------------
+.exit:
+        jmp     edit_box.draw_1
 }
 
 macro use_mouse_func
