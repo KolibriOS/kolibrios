@@ -180,6 +180,8 @@ getkeyi:		mov dh,ah ; Gluk
 
 adr32:          cmp ah,LEFT_KEY
                 jne adr_30
+                cmp dword[pauses], 1 ; fixes pause bug
+                je adr4000
                 dec dword [current_block_x]
                 call check_crash
                 jz adr4000
@@ -188,6 +190,8 @@ adr4000:        jmp scendi
 
 adr_30:         cmp ah,RIGHT_KEY
                 jne adr_31
+                cmp dword[pauses], 1 ; fixes pause bug
+                je adr3000
                 inc dword [current_block_x]
                 call check_crash
                 jz adr3000
@@ -196,6 +200,8 @@ adr3000:        jmp scendi
 
 adr_31:         cmp ah,UP_KEY
                 jne adr51
+                cmp dword[pauses], 1 ; fixes pause bug
+                je adr50
                 mov edx,[current_block_pointer]
                 mov edx,[edx+16]
                 mov esi,[current_block_pointer]
