@@ -143,7 +143,7 @@ FASM_PROGRAMS:=\
  drivers/mtd80x.sys:DRIVERS/MTD80X.SYS:$(REPOSITORY)/drivers/ethernet/mtd80x.asm \
  drivers/pcnet32.sys:DRIVERS/PCNET32.SYS:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \
  drivers/r6040.sys:DRIVERS/R6040.SYS:$(REPOSITORY)/drivers/ethernet/R6040.asm \
- drivers/rhine.obj:DRIVERS/RHINE.obj:$(REPOSITORY)/drivers/ethernet/rhine.asm \
+ drivers/rhine.sys:DRIVERS/RHINE.SYS:$(REPOSITORY)/drivers/ethernet/rhine.asm \
  drivers/rtl8029.obj:DRIVERS/RTL8029.obj:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
  drivers/rtl8139.obj:DRIVERS/RTL8139.obj:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.obj:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
