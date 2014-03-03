@@ -213,6 +213,8 @@ adr50:          jmp scendi
 
 adr51:          cmp ah,DOWN_KEY
                 jne adr61
+                cmp dword[pauses], 1 ; fixes bug on resume
+                je adr52
                 cmp [force_down], 1
                  jne scendi
                 mov byte [delay],5  ;!!! 2
@@ -220,6 +222,8 @@ adr52:          jmp scendi
 
 adr61:          cmp ah,' '
                 jne adr62
+                cmp dword[pauses], 1 ; fixes bug on resume
+                je adr62
                 cmp [force_down], 1
                  jne scendi
                 mov byte [delay],5  ;!!! 2
