@@ -1261,6 +1261,8 @@ end if
         mov     [timer_ticks_enable], 1         ; for cd driver
 
         sti
+        call    mtrr_validate
+
 ;        call    change_task
 
         jmp     osloop
