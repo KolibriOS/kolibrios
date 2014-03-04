@@ -178,10 +178,10 @@ key:            mov  eax,2 ; Gluk
 getkeyi:		mov dh,ah ; Gluk
 				jmp key
 
-adr32:          cmp ah,LEFT_KEY
+adr32:          cmp [pauses], 1 ; If game is paused, disable all actions
+                je scendi
+                cmp ah,LEFT_KEY
                 jne adr_30
-                cmp dword[pauses], 1 ; If game is paused, dont allow movement
-                je adr4000
                 dec dword [current_block_x]
                 call check_crash
                 jz adr4000
@@ -190,8 +190,6 @@ adr4000:        jmp scendi
 
 adr_30:         cmp ah,RIGHT_KEY
                 jne adr_31
-                cmp dword[pauses], 1 ; If game is paused, dont allow movement
-                je adr3000
                 inc dword [current_block_x]
                 call check_crash
                 jz adr3000
@@ -200,8 +198,6 @@ adr3000:        jmp scendi
 
 adr_31:         cmp ah,UP_KEY
                 jne adr51
-                cmp dword[pauses], 1 ; If game is paused, dont allow movement
-                je adr50
                 mov edx,[current_block_pointer]
                 mov edx,[edx+16]
                 mov esi,[current_block_pointer]
@@ -213,8 +209,6 @@ adr50:          jmp scendi
 
 adr51:          cmp ah,DOWN_KEY
                 jne adr61
-                cmp dword[pauses], 1 ; If game is paused, disable force_down
-                je adr52
                 cmp [force_down], 1
                  jne scendi
                 mov byte [delay],5  ;!!! 2
@@ -222,8 +216,6 @@ adr52:          jmp scendi
 
 adr61:          cmp ah,' '
                 jne adr62
-                cmp dword[pauses], 1 ; If game is paused, disable force_down
-                je adr62
                 cmp [force_down], 1
                  jne scendi
                 mov byte [delay],5  ;!!! 2
