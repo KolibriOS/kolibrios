@@ -800,7 +800,7 @@ include 'detect/dev_fd.inc'
 ; START of initialisation IDE ATA code
 ;-----------------------------------------------------------------------------
         cmp     [IDEContrProgrammingInterface], 0
-        je      @f
+        je      set_interrupts_for_IDE_controllers.continue
 
         mov     esi, boot_disabling_ide
         call    boot_log
@@ -878,9 +878,6 @@ include 'detect/sear_par.inc'
 
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
-
-        cmp     [IDEContrProgrammingInterface], 0
-        je      set_interrupts_for_IDE_controllers.continue
 ;-----------------------------------------------------------------------------
 ; set interrupts for IDE Controller
 ;-----------------------------------------------------------------------------
