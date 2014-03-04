@@ -1,6 +1,6 @@
 ; Search Additional Partition for KolibriOS applications
 ;
-; Copyright (c) 2013, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2013-2014, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -76,13 +76,11 @@ additional_dir_name:
 real_additional_dir:
 	db '/kolibrios',0
 ;-------------------------------------------------------------------------------
-debug equ no	;yes
-
 include	'../../macros.inc'
 
-if debug eq yes
-include	'../../debug.inc'
-end if
+define __DEBUG__ 1
+define __DEBUG_LEVEL__ 2	; 1 = verbose, 2 = main only
+include "../../debug-fdo.inc"
 ;-------------------------------------------------------------------------------
 START:
 	mcall	5,500
@@ -94,11 +92,8 @@ START:
 	mov	[ebx],ax
 	call	device_detect_f70
 ;--------------------------------------
-if debug eq yes
 	call	print_retrieved_devices_table
-dps 'get basic file'
-newline
-end if
+	DEBUGF	1, "Searchap: get basic file\n"
 ;--------------------------------------
 	call	load_file	; download the master file
 	xor	eax,eax
@@ -111,27 +106,13 @@ end if
 ;---------------------------------------------------------------------
 exit:
 ;--------------------------------------
-if debug eq yes
-dps 'just exit'
-;newline
-;	mov	edx,read_folder_name
-;	call	debug_outstr
-;newline
-;	mov	edx,read_folder_1_name
-;	call	debug_outstr
-;newline
-end if
+	DEBUGF	1, "Searchap: just exit\n"
 ;--------------------------------------
 	mcall	-1
 ;---------------------------------------------------------------------
 device_detect_f70:
 ;--------------------------------------
-if debug eq yes
-dps	'read_folder_name: '
-	mov	edx,read_folder_name
-	call	debug_outstr
-newline
-end if
+	DEBUGF	1, "Searchap: read_folder_name: %s\n",read_folder_name
 ;--------------------------------------
 	mcall	70,read_folder
 	test	eax,eax
@@ -139,20 +120,12 @@ end if
 	cmp	eax,6
 	je	@f
 ;--------------------------------------
-if debug eq yes
-dps 'read_folder_error'
-newline
-;	mov	edx,read_folder_name
-;	call	debug_outstr
-;newline
-end if
+	DEBUGF	1, "Searchap: read_folder_error\n"
 ;--------------------------------------
 	jmp	exit
 @@:
 ;--------------------------------------
-if debug eq yes
 	call	print_root_dir
-end if
 ;--------------------------------------
 	mov	[left_folder_block],ebx
 	xor	eax,eax
@@ -164,12 +137,7 @@ end if
 	add	esi,32+40
 	call	copy_folder_name_1
 ;--------------------------------------
-if debug eq yes
-;dps	'read_folder_1_name: '
-;	mov	edx,read_folder_1_name
-;	call	debug_outstr
-;newline
-end if
+	DEBUGF	1, "Searchap: read_folder_1_name: %s\n",read_folder_1_name
 ;--------------------------------------
 	mcall	70,read_folder_1
 	test	eax,eax
@@ -177,13 +145,7 @@ end if
 	cmp	eax,6
 	je	@f
 ;--------------------------------------
-if debug eq yes
-dps 'read_folder_error_1'
-newline
-;	mov	edx,read_folder_1_name
-;	call	debug_outstr
-;newline
-end if
+	DEBUGF	1, "Searchap: read_folder_error_1\n"
 ;--------------------------------------
 	jmp	exit
 @@:
@@ -242,10 +204,7 @@ load_file:
 	mov	[fileinfo.size],eax
 	mov	[fs_error],eax
 ;--------------------------------------
-if debug eq yes
-dps 'get file info'
-newline
-end if
+	DEBUGF	1, "Searchap: get file info\n"
 ;--------------------------------------
 	mcall	68,1
 	mcall	70,fileinfo
@@ -253,21 +212,14 @@ end if
 	test	eax,eax
 	jnz	.file_error
 ;--------------------------------------
-if debug eq yes
-dps 'file info ok'
-newline
-end if
+	DEBUGF	1, "Searchap: file info ok\n"
 ;--------------------------------------
 	xor	eax,eax
 	mov	[fileinfo.subfunction],eax	;dword 0
 	mov	eax,[fileinfo.return]
 	mov	ecx,[eax+32]
 ;--------------------------------------
-if debug eq yes
-dps 'real file size: '
-dpd ecx
-newline
-end if
+	DEBUGF	1, "Searchap: real file size: %d\n",ecx
 ;--------------------------------------
 	test	ecx,ecx
 	jz	.file_error
@@ -279,10 +231,7 @@ end if
 @@:	
 	mov	[fileinfo.size],ecx
 ;--------------------------------------
-if debug eq yes
-dps 'get file'
-newline	
-end if
+	DEBUGF	1, "Searchap: get file\n"
 ;--------------------------------------
 	mcall	68,1
 	mcall	70,fileinfo
@@ -297,20 +246,13 @@ end if
 ;-----------------------------------
 .file_error:
 ;--------------------------------------
-if debug eq yes
-dps 'read file - error!'
-newline
-end if
+	DEBUGF	1, "Searchap: read file - error!\n"
 ;--------------------------------------
 	ret
 ;-----------------------------------	
 @@:
 ;--------------------------------------
-if debug eq yes
-dps 'read file corrected size: '
-dpd dword[fileinfo.size]
-newline
-end if
+	DEBUGF	1, "Searchap: read file corrected size: %d\n",[fileinfo.size]
 ;--------------------------------------
 	ret
 ;---------------------------------------------------------------------
@@ -323,11 +265,7 @@ search_and_load_pointer_file_label:
 ;	sub	esi,10	; deleted because /rd/1/ no need to check
 .next_entry:
 ;--------------------------------------
-if debug eq yes
-newline
-dps 'copy next entry'
-newline
-end if
+	DEBUGF	1, "\nSearchap: copy next entry\n"
 ;--------------------------------------
 	add	esi,10
 	push	esi
@@ -338,13 +276,7 @@ end if
 	call	copy_folder_name.1
 	pop	esi
 ;--------------------------------------
-if debug eq yes
-	mov	edx,[fileinfo.name]
-	push	ecx
-	call	debug_outstr
-	pop	ecx
-newline	
-end if
+	DEBUGF	1, "Searchap: %s\n",dword[fileinfo.name]
 ;--------------------------------------
 ;	mcall	5,10
 	push	ecx
@@ -361,16 +293,17 @@ end if
 	dec	ecx
 	jnz	.next_entry
 ;--------------------------------------
-if debug eq yes
-dps 'additional parttition is not found!'
-newline	
-end if
+	DEBUGF	2, "Searchap: additional parttition is not found!\n"
 ;--------------------------------------
 	ret
 .sucess:
 	call	compare_files_and_mount
 	cmp	[compare_flag],byte 0
 	jne	@b
+	cmp	[mount_dir],1
+	je	@f
+	DEBUGF	2, "Searchap: sorry, but the additional partition is not found!\n"
+@@:
 	ret
 ;---------------------------------------------------------------------
 compare_files_and_mount:
@@ -390,17 +323,9 @@ compare_files_and_mount:
 	mov	[compare_flag],byte 0
 	pop	esi ecx
 ;--------------------------------------
-if debug eq yes
-dps 'compare files sucess!'
-newline	
-dps 'mount directory:'
-newline
-	mov	edx,esi
-	push	esi
-	call	debug_outstr
-	pop	esi
-newline
-end if
+	DEBUGF	2, "Searchap: compare files sucess!\n"
+	DEBUGF	2, "Searchap: mount directory: %s\n",esi
+	mov	[mount_dir],1
 ;--------------------------------------
 ; prepare real directory path for mounting
 	inc	esi
@@ -422,10 +347,7 @@ end if
 	mov	[compare_flag],byte 1
 	pop	esi ecx
 ;--------------------------------------
-if debug eq yes
-dps 'compare files is not match!'
-newline	
-end if
+	DEBUGF	1, "Searchap: compare files is not match!\n"
 ;--------------------------------------
 	ret
 ;---------------------------------------------------------------------
@@ -445,49 +367,36 @@ copy_folder_name_1:
 	mov	edi,read_folder_1_name+1
 	jmp	proc_copy_patch
 ;---------------------------------------------------------------------
-if debug eq yes
 print_retrieved_devices_table:
 	mov	ecx,[retrieved_devices_table_counter]
 	mov	edx,retrieved_devices_table
-dps 'retrieved_devices_table:'
-newline
-dps '----------'
-newline
+	DEBUGF	1, "Searchap: retrieved_devices_table:\n"
+	DEBUGF	1, "Searchap: ----------\n"
 @@:
-	push	ecx edx
-	call	debug_outstr
-newline
-	pop	edx ecx
+	DEBUGF	1, "Searchap: %s\n",edx
 	add	edx,10
 	dec	ecx
 	jnz	@b
-newline
-dps '----------'
-newline
+	DEBUGF	1, "\nSearchap: ----------\n"
 	ret
 ;---------------------------------------------------------------------
 print_root_dir:
-dps '----------'
-dps 'root dir:'
-dps '----------'
-newline
+	DEBUGF	1, "Searchap: ----------\n"
+	DEBUGF	1, "Searchap: root dir:\n"
+	DEBUGF	1, "Searchap: ----------\n"
 	pusha
 	mov	ecx,ebx
 	mov	edx,folder_data+32+40
 @@:
-	push	ecx edx
-	call	debug_outstr
-newline
-	pop	edx ecx
+	DEBUGF	1, "Searchap: %s\n",edx
 	add	edx,304
 	dec	ecx
 	jnz	@b
 	popa
-newline
-dps '----------'
-newline
+	DEBUGF	1, "\nSearchap: ----------\n"
 	ret
-end if
+;-------------------------------------------------------------------------------
+include_debug_strings
 ;-------------------------------------------------------------------------------
 IM_END:
 ;-------------------------------------------------------------------------------
@@ -499,6 +408,7 @@ retrieved_devices_table_counter	rd 1
 basic_file_size		rd 1
 fs_error		rd 1
 compare_flag		rb 1
+mount_dir		rb 1
 ;-------------------------------------------------------------------------------
 align 4
 f30_3_work_area:
