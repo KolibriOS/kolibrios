@@ -5,6 +5,11 @@
 ;   Compile with FASM 1.52 or newer
 ;
 ;-----------------------------------------------------------------------------
+; last update:  06/03/2014
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Dynamic memory allocation for AUTORUN.DAT.
+;               Added additional diagnostic messages for BOARD.
+;-----------------------------------------------------------------------------
 ; last update:  02/03/2014
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Reducing the consumption of RAM, 4 KB instead of 32 KB.
@@ -30,8 +35,32 @@ define __DEBUG_LEVEL__ 1
 include "../../../debug-fdo.inc"
 ;-----------------------------------------------------------------------------
 START:                           ; start of execution
-	mcall	70,autorun_dat_info	; load AUTORUN.DAT
-	add	ebx,file_data
+	mcall	68,11
+	mcall	70,autorun_dat_info	;get information AUTORUN.DAT
+	test	eax,eax
+	jnz	.read_error
+
+	mov	ecx,[processinfo+32]
+	test	ecx,ecx
+	jnz	@f
+	
+	inc	ecx	; if file size zero
+;--------------------------------------
+@@:
+	mov	[autorun_dat_info.size],ecx
+	mcall	68,12
+	mov	[autorun_dat_info.address],eax
+	mov	ebp,eax
+	mov	[autorun_dat_info.mode],dword 0
+	mcall	70,autorun_dat_info	;load AUTORUN.DAT
+	test	eax,eax
+	jz	@f
+.read_error:
+	DEBUGF	1, "L: AUTORUN.DAT read error\n"
+	jmp	exit
+;--------------------------------------
+@@:
+	add	ebx,ebp
 	mov	[fileend],ebx
 ;-----------------------------------------------------------------------------
 ; this cycle does not contain an obvious exit condition,
@@ -53,12 +82,14 @@ skip_this_string:
 	call	next_line
 	jmp	start_program
 ;-----------------------------------------------------------------------------
+exit_1:
+	DEBUGF	1, "L: AUTORUN.DAT processed\n"
 exit:
 	or	eax,-1
 	mcall
 ;-----------------------------------------------------------------------------
 run_program:     ; time to delay in eax
-	DEBUGF 1, "Launch: %s Parameter: %s\n",program,parameters
+	DEBUGF	1, "L: %s Param: %s\n",program,parameters
 	push	eax
 	mcall	70,start_info
 	pop	ebx
@@ -110,7 +141,7 @@ get_string: ; pointer to destination buffer in edi
 	pushad
 	call	skip_spaces
 	mov	esi,[position]
-	add	esi,file_data
+	add	esi,ebp
 	cmp	[esi],byte '"'
 	jz	.quoted
 ;--------------------------------------
@@ -150,7 +181,7 @@ get_number:
 	push	ebx esi
 	call	skip_spaces
 	mov	esi,[position]
-	add	esi,file_data
+	add	esi,ebp
 	xor	eax,eax
 	cmp	[esi],byte '-'
 	jnz	@f
@@ -194,7 +225,7 @@ skip_spaces:
 	push	esi
 	xor	eax,eax
 	mov	esi,[position]
-	add	esi,file_data
+	add	esi,ebp
 ;--------------------------------------
 .start:
 	cmp	esi,[fileend]
@@ -213,11 +244,11 @@ skip_spaces:
 ;-----------------------------------------------------------------------------
 next_line:
 	mov	esi,[position]
-	add	esi,file_data
+	add	esi,ebp
 ;--------------------------------------
 .start:
 	cmp	esi,[fileend]
-	jae	exit
+	jae	exit_1
 
 	lodsb
 	cmp	al,13
@@ -232,7 +263,7 @@ next_line:
 .finish:
 	inc	dword [position]
 	cmp	esi,[fileend]
-	jae	exit
+	jae	exit_1
 
 	lodsb
 	cmp	al,13
@@ -248,20 +279,21 @@ next_line:
 include_debug_strings
 ;-----------------------------------------------------------------------------
 autorun_dat_info:	; AUTORUN.DAT
-	.mode		dd 0            ; read file
-	.start_block	dd 0            ; block to read
-			dd 0
-	.blocks		dd 4*512       ; 2 Kb max for AUTORUN.DAT
-	.address	dd file_data
+	.mode		dd 5            ; get information or read file
+	.start		dd 0
+	.params		dd 0
+	.size		dd 0
+	.address	dd processinfo
 	db "/SYS/SETTINGS/AUTORUN.DAT",0
 ;-----------------------------------------------------------------------------
 start_info:
 	.mode	dd 7
-		dd 0
+	.flags	dd 0
 	.params	dd parameters
 		dd 0
 		dd 0
-	.path:
+		db 0
+	.path	dd program
 ;-----------------------------------------------------------------------------
 IM_END:
 ;-----------------------------------------------------------------------------
@@ -281,10 +313,6 @@ position:
 ;-----------------------------------------------------------------------------
 fileend:
 	rd 1
-;-----------------------------------------------------------------------------
-align 4
-file_data:
-	rb 4*512 ; 2 Kb for AUTORUN.DAT
 ;-----------------------------------------------------------------------------
 align 4
 	rb 256
