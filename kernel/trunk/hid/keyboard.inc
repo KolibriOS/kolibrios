@@ -492,7 +492,14 @@ send_scancode:
         mov     [KEY_COUNT+eax], bl ; actually KEY_BUFF + EAX - 1
 ; store original scancode
         add     eax, 120+2
-        mov     [KEY_COUNT+eax], ch ; actually KEY_BUFF + EAX - 1 
+        push    ecx
+        cmp     [keyboard_mode], 0; return from keymap
+        je      @f
+
+        xor     ch, ch
+@@:
+        mov     [KEY_COUNT+eax], ch ; actually KEY_BUFF + EAX - 1
+        pop     ecx
         sub     eax, 120+2
 .exit.irq1:
         ret

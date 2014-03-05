@@ -149,7 +149,8 @@ Returned value:
   * if the buffer is empty, function returns eax=1
   * if the buffer is not empty, function returns al=0,
     ah=code of the pressed key,
-    bits 16-23 = contain scancode for pressed key,
+    bits 16-23 = contain scancode for pressed key in ASCII mode,
+                 in the scancodes mode this bits cleared.
     bits 23-31 = zero
   * if there is "hotkey", function returns al=2,
     ah=scancode of the pressed key (0 for control keys),
