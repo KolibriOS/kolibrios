@@ -42,7 +42,6 @@ export DOCDIR
 # Spaces separate items, so spaces in names should be
 # represented as '|'.
 FASM_PROGRAMS:=\
- @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @docky:@DOCKY:$(PROGS)/system/docky/trunk/docky.asm \
