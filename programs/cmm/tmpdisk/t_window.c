@@ -153,7 +153,7 @@ void Main_Window()
 			break;
          case evReDraw:			
 			sc.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.5",0);
+			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.5.1",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 

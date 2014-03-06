@@ -36,6 +36,7 @@ char Console_Work()
 {
 	unsigned int disk_size, driver_rezult;
 	char size_t[256];
+	dword size_tt;
 
 	strlwr(#param);
 //	debug(#param);
@@ -70,7 +71,8 @@ char Console_Work()
 			else
 				add_disk.DiskSize = atoi(#param+disk_size)*2048;
 			strcpy(#size_t, NEW_DISK_TEXT);
-			strcat(#size_t, itoa(add_disk.DiskSize/2048));
+			size_tt = itoa(add_disk.DiskSize/2048);
+			strcat(#size_t, size_tt);
 			strcat(#size_t, " MB");
 			debug(#size_t);
 			add_disk.DiskId = param[1]-'0';
