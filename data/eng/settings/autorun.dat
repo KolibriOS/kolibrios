@@ -17,6 +17,6 @@
 /SYS/@ICON	      ""	  1    # Multithread icon
 #/SYS/@RB	      ""	   1	# Desktop right-click menu
 /SYS/@SS	     ASSM	  1    # Screensaver
-/SYS/TMPDISK	      A1	 -1    # Add virtual RAM disk /tmp1/1
+/SYS/TMPDISK	      A0	 -1    # Add virtual RAM disk /tmp0/1
 /SYS/SEARCHAP	      ""	 -1    # Search and mount additional system directory
 ### Hello, ASM World! ###
