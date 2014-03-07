@@ -821,8 +821,11 @@ endp
 ; Let's hope he would report it to developers...
 proc mtrr_validate
 ; 1. If MTRRs are not supported, they cannot be configured improperly.
-        bt      [cpu_caps], CAPS_MTRR
-        jnc     .exit
+; Note: VirtualBox claims MTRR support in cpuid, but emulates MTRRCAP=0,
+; which is efficiently equivalent to absent MTRRs.
+; So check [num_variable_mtrrs] instead of CAPS_MTRR in [cpu_caps].
+        cmp     [num_variable_mtrrs], 0
+        jz      .exit
 ; 2. If variable-range MTRRs are not configured, this is a problem.
         mov     ecx, 0x2FF
         rdmsr
