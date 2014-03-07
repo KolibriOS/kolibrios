@@ -640,8 +640,10 @@ cmd_nick:
         call    compare_to_nick
         jne     .not_me
 
+; Yup, update user_nick
         mov     ecx, MAX_NICK_LEN-1
         mov     esi, [esp]
+        mov     edi, user_nick
   @@:
         lodsb
         test    al, al
@@ -652,6 +654,8 @@ cmd_nick:
         je      @f
         cmp     al, 13
         je      @f
+        cmp     al, ':'
+        je      @r
         stosb
         dec     ecx
         jnz     @r
@@ -660,6 +664,7 @@ cmd_nick:
         stosb
   .not_me:
 
+; Update in userlist
         mov     ebx, windows
         mov     ecx, MAX_WINDOWS
   .window_loop:
@@ -675,6 +680,7 @@ cmd_nick:
         mov     esi, [esp + 8]
         call    user_add
 
+; And print a notification in the channel
         mov     [window_print], ebx
 
         if TIMESTAMP
@@ -697,6 +703,7 @@ cmd_nick:
         mov     esi, str_newline
         call    print_text2
 
+; Now do this for all open windows
   .next_window:
         pop     ebx ecx
         add     ebx, sizeof.window
@@ -743,7 +750,7 @@ cmd_kick:
 
         pop     eax
         mov     dl, ' '
-        call    print_text2
+        call    print_text
 
         mov     esi, str_by
         call    print_text2

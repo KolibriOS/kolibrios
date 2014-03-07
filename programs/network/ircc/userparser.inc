@@ -19,7 +19,7 @@ user_parser:
         mov     eax, [edit1.size]
         test    eax, eax
         jz      .ret                                    ; ignore empty commands
-        mov     word [usercommand + eax], 0x0a0d        ; terminate the line
+        mov     word[usercommand + eax], 0x0a0d         ; terminate the line
 
         cmp     byte[usercommand], '/'                  ; is it a server command ?
         je      server_command
@@ -285,6 +285,7 @@ cmd_usr_nick:
         cmp     [socketnum], 0
         je      .dontsend
 
+; Request nickname change to server
         mov     dword[usercommand+1], 'NICK'
         mov     esi, [edit1.size]
         mov     word[usercommand + esi], 0x0a0d
@@ -295,6 +296,7 @@ cmd_usr_nick:
 
         ret
 
+; We arent logged in yet, directly change user_nick field and print notification to user.
   .dontsend:
         mov     ecx, MAX_NICK_LEN
         mov     esi, usercommand+6
