@@ -173,6 +173,8 @@ PL_get1stsel:
 PL_getnextsel:
    push eax ecx
    movzx ecx,[list_count]
+   test ecx, ecx
+   jz   .ex2
  .lp:
    movzx eax,word[esi]
    btr  eax,15
