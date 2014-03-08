@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.17'
+version equ '0.18'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -313,9 +313,10 @@ button:
         je      exit
         mov     [window_active], edx
 
-        mov     [scroll2.position], 1           ;;; FIXME
-        call    draw_window
+        push    [edx + window.text_line_print]
+        pop     [scroll2.position]
 
+        call    draw_window
         jmp     mainloop
 
 exit:
@@ -517,10 +518,6 @@ sockaddr1:
 
 status                  dd STATUS_DISCONNECTED
 
-
-textbox_height          dd 12                   ; in characters
-textbox_width           dd 78                   ; in characters, not pixels ;)
-
 window_active           dd windows
 window_print            dd windows
 
@@ -572,6 +569,9 @@ xsize           dd ?
 ysize           dd ?
 mouse_dd        dd ?
 
+textbox_height  dd ?            ; in characters
+textbox_width   dd ?            ; in characters, not pixels ;)
+
 colors          system_colors
 
 irc_server_name rb MAX_SERVER_NAME      ; TODO: move this server URL into window struct
@@ -581,7 +581,6 @@ user_nick       rb MAX_NICK_LEN
 user_real_name  rb MAX_REAL_LEN
 quit_msg        rb 250
 
-diff16 "windows", 0, $ + 1*sizeof.window ;+ 6
 windows         rb MAX_WINDOWS*sizeof.window
 
 IM_END:

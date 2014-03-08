@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -35,10 +35,7 @@ text_insert_newlines:                   ; esi = ASCIIZ string
         inc     edx
         jmp     .next_line
   .soft_nl:
-        inc     edx
         mov     byte[esi-1], ' '
-        mov     ebx, esi
-        jmp     .more
   .space:
         mov     ebx, esi                ; last detected space
         jmp     .more
@@ -62,9 +59,9 @@ text_nextline:
 
         mov     ecx, [textbox_width]
   .loop:
-        cmp     byte[esi], 0
-        je      .done
         lodsb
+        test    al, al
+        jz      .done
         cmp     al, 10
         je      .done
         cmp     al, 13
@@ -132,7 +129,6 @@ print_character:
         ret
 
   .uh_ow:
-
         pusha
         mov     edi, [esi + window.text_start]
         mov     [esi + window.text_print], edi
@@ -165,13 +161,20 @@ draw_channel_text:
         add     [edi + window.text_lines], edx
         mov     [edi + window.text_scanned], esi
 
-; should we scroll up/down some lines ?                 ; TODO: only scroll down automatically when scrollbar is at lowest position  ?
+; Is scrollbar at lowest position?
+        mov     edx, [scroll2.position]
+        test    edx, edx
+        jz      .yesscroll
+        add     edx, [scroll2.cur_area]
+        sub     edx, [scroll2.max_area]
+        jne     .noscroll
+  .yesscroll:
+; Scrollbar was at lowest position, scroll down automatically when new text arrived.
         mov     edx, [edi + window.text_lines]
         sub     edx, [textbox_height]
         jle     .noscroll                               ; There are less lines of text than fit into the window, dont scroll..
         sub     edx, [edi + window.text_line_print]
         je      .noscroll                               ; We are already at the bottom pos, dont scroll..
-
   .scroll_to_pos:               ; edx = number of lines to go up/down (flags must indicate direction)
         pushf
         add     [edi + window.text_line_print], edx
@@ -179,12 +182,13 @@ draw_channel_text:
         popf
         ja      .loop_forward
         std                     ; set direction flag so we can scan backwards
+        dec     esi
         dec     esi             ; move our cursor just in front of newline, for scanning backwards
-        dec     edx ;;;;; FIXME: this seems to be needed, but why ???
   .loop_backward:
         call    text_nextline
         inc     edx
         jnz     .loop_backward
+        inc     esi
         inc     esi             ; move the cursor just after last newline
         cld
         jmp     .ok
@@ -197,22 +201,25 @@ draw_channel_text:
         mov     [edi + window.text_print], esi
   .noscroll:
 
-        mov     edx, [edi + window.text_print]
-; Calculate start coordinates (align text to bottom)
+; Calculate start offset coordinates (align text to bottom)
         mov     ebx, [textbox_height]
         sub     ebx, [edi + window.text_lines]
-        jae     @f
-        xor     ebx, ebx
-  @@:
+        jb      .no_offset
         imul    ebx, FONT_HEIGHT
-        add     ebx, TEXT_X shl 16 + TEXT_Y
-
+        push    [edi + window.text_start]
+        pop     [edi + window.text_print]
+        jmp     .draw_text
+  .no_offset:
+        xor     ebx, ebx
+  .draw_text:
 ; Prepare to actually draw some text
         mov     eax, [textbox_height]   ; max number of lines to draw
+        add     ebx, TEXT_X shl 16 + TEXT_Y
         mov     ecx, [colors.work_text] ; default text color
+        mov     edx, [edi + window.text_print]
   .drawloop:
         cmp     byte[edx], 0
-        je      .end
+        je      .end_of_text
 
 ; Clear one row of characters
         pusha
@@ -230,7 +237,7 @@ draw_channel_text:
         add     esi, [textbox_width]
   .line:
         cmp     byte[edx], 0
-        je      .end
+        je      .end_of_text
 
         cmp     byte[edx], 13
         je      .newline_soft
@@ -274,27 +281,23 @@ draw_channel_text:
         add     ebx, TEXT_X shl 16 + FONT_HEIGHT
         dec     eax
         jnz     .drawloop
+  .end_of_text:
 
-; take care of the scrollbar
-  .scrollbar:
+; Update and draw scrollbar when nescessary
         mov     edi, [window_active]
         mov     edx, [edi + window.text_lines]
         cmp     edx, [textbox_height]
-        ja      .draw_scroll
-        mov     [scroll2.position], 0           ; disable scrollbar
-        jmp     .scroll_done
+        jbe     .scroll_done
 
-  .draw_scroll:
         mov     [scroll2.max_area], edx
         mov     eax, [edi + window.text_line_print]
         mov     [scroll2.position], eax
 
         push    dword scroll2                   ; redraw scrollbar
         call    [scrollbar_draw]
-
         mov     [scroll2.all_redraw], 0         ; next time, dont redraw it completely
   .scroll_done:
-  .end:
+
         ret
 
 
@@ -310,9 +313,8 @@ dec_to_esi:
         cmp     al, 9
         ja      .done
         inc     edx
-        shl     esi, 1                  ; esi * 2
-        lea     esi, [esi + 4*esi]      ; esi * 5
-        add     esi, eax
+        lea     esi, [esi*4 + esi]      ; esi * 5
+        lea     esi, [esi*2 + eax]      ; esi * 2 + eax
         jmp     .loop
   .done:
         cmp     esi, 16

@@ -37,7 +37,7 @@ window_create_textbox:
         mov     [ebx + window.data_ptr], eax
         mov     [ebx + window.flags], 0
 
-        add     eax, window_data.text+1         ; let text begin at offset 1, this way the text will be prepended with a 0
+        add     eax, window_data.text+2         ; let text begin at offset 2, this way the text will be prepended with two null bytes
         mov     [ebx + window.text_start], eax
         mov     [ebx + window.text_print], eax
         mov     [ebx + window.text_write], eax
