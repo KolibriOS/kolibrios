@@ -47,20 +47,37 @@ server_parser:
 
 server_commands:
 
+        dd      '001 ', cmd_justprint
+        dd      '002 ', cmd_justprint
+        dd      '003 ', cmd_justprint
+        dd      '004 ', cmd_justprint
+        dd      '005 ', cmd_justprint
+
+        dd      '250 ', cmd_justprint
+        dd      '251 ', cmd_justprint
+        dd      '252 ', cmd_justprint
+        dd      '253 ', cmd_justprint
+        dd      '254 ', cmd_justprint
+        dd      '255 ', cmd_justprint
+
+        dd      '265 ', cmd_justprint
+        dd      '266 ', cmd_justprint
+
         dd      '322 ', cmd_322         ; RPL_LIST
         dd      '323 ', cmd_323         ; RPL_LISTEND
-        dd      '324 ', cmd_324 ;;;;
-        dd      '328 ', cmd_328         ; RPL_CHANNEL_URL
-        dd      '329 ', cmd_329
+        dd      '324 ', cmd_justprint
+        dd      '328 ', cmd_justprint   ; RPL_CHANNEL_URL
+        dd      '329 ', cmd_justprint
         dd      '332 ', cmd_topic
         dd      '333 ', cmd_333         ; nickname and time of topic
         dd      '353 ', cmd_353         ; name reply
         dd      '366 ', cmd_366         ; end of names list
-        dd      '372 ', cmd_372         ; motd
-        dd      '375 ', cmd_375         ; start of motd
-        dd      '376 ', cmd_376         ; end of motd
-        dd      '421 ', cmd_421         ; unknown command
-        dd      '433 ', cmd_433         ; nickname already in use
+        dd      '372 ', cmd_justprint   ; motd
+        dd      '375 ', cmd_justprint   ; start of motd
+        dd      '376 ', cmd_justprint   ; end of motd
+        dd      '421 ', cmd_justprint   ; unknown command
+        dd      '433 ', cmd_justprint   ; nickname already in use
+
         dd      'join', cmd_join
         dd      'kick', cmd_kick
         dd      'mode', cmd_mode
@@ -151,27 +168,27 @@ skip_parameter:
 
 
 
-cmd_324:
-cmd_329:
-cmd_328:
-cmd_421:
-cmd_372:
-cmd_375:
-cmd_376:
-cmd_433:
+cmd_justprint:
+
         add     esi, 4
-        jmp     cmd_notice.loop
+        call    skip_parameter
+        call    print_text2
+        mov     esi, str_newline
+        call    print_text2
+
+        ret
+
 
 cmd_notice:
+
+        if TIMESTAMP
+        call    print_timestamp
+        end if
 
         cmp     byte[servercommand], ':'
         jne     .gogogo
 
         mov     byte [esi-1], 0
-        if TIMESTAMP
-        call    print_timestamp
-        end if
-
         push    esi
         mov     esi, str_1
         call    print_text2
@@ -184,25 +201,10 @@ cmd_notice:
 
   .gogogo:
         add     esi, 6
-
-  .loop:
-        inc     esi
-        cmp     byte [esi], 0
-        je      .fail
-        cmp     byte [esi], ' '
-        jne     .loop
-
-  .loop2:
-        inc     esi
-        cmp     byte [esi], 0
-        je      .fail
-        cmp     byte [esi], ' '
-        je      .loop2
-        cmp     byte [esi], ':'
-        je      .loop2
-
-  .fail:
+        call    skip_parameter
+        call    skip_parameter
         call    print_text2
+
         mov     esi, str_newline
         call    print_text2
 
@@ -827,11 +829,12 @@ cmd_mode:
         cmp     byte [esi+4], ' '
         jne     .fail
         add     esi, 5  ; skip 'MODE '
+        push    esi
         call    window_find
         test    ebx, ebx
-        jz      .fail
+        jz      .user
+        mov     [esp], esi
         mov     [window_print], ebx
-        push    esi
 
         if TIMESTAMP
         call    print_timestamp
@@ -853,9 +856,33 @@ cmd_mode:
         mov     esi, str_newline
         call    print_text2
 
-;;; TODO: change username if needed
+; TODO: keep track of user modes in username list
 
   .fail:
+        ret
+
+
+  .user:
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, mode_header
+        call    print_text2
+
+        mov     eax, [esp]
+        mov     dl, ' '
+        call    print_text
+
+        mov     esi, sets_mode
+        call    print_text2
+
+        pop     esi
+        call    skip_parameter
+        call    print_text2
+
+        mov     esi, str_newline
+        call    print_text2
 
         ret
 
@@ -942,7 +969,7 @@ cmd_topic:
 cmd_333:
 
         add     esi, 4          ; skip '333 '
-        call    skip_parameter               ;;;;
+        call    skip_parameter
         call    window_open
 
         if TIMESTAMP
@@ -955,9 +982,6 @@ cmd_333:
 
         mov     esi, str_setby
         call    print_text2
-
-;        pop     esi
-;        call    print_text2
 
         pop     eax
         mov     dl, '!'

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -95,11 +95,22 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         mov     [textbox_width], eax
 
 ; recalculate text line breaks (because height/width might have changed..)
-        mov     edi, [window_active]
+; meanwhile, recalculate line number of current line
+        mov     esi, [edi + window.text_print]
+        mov     al, byte[esi]
+        push    eax
+        mov     byte[esi], 0
+        push    esi
+
         mov     esi, [edi + window.text_start]
         call    text_insert_newlines
         mov     [edi + window.text_lines], edx
         mov     [edi + window.text_scanned], esi
+        mov     [edi + window.text_line_print], edx
+
+        pop     esi
+        pop     eax
+        mov     byte[esi], al
 
 ; and redraw the textbox (and scrollbar if needed)
         mov     [scroll2.all_redraw], 1

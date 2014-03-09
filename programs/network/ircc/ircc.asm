@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.18'
+version equ '0.19'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -436,7 +436,7 @@ ctcp_time               db '] TIME', 10, 0
 has_left_channel        db ' has left ', 0
 joins_channel           db ' has joined ', 0
 is_now_known_as         db ' is now known as ', 0
-has_quit_irc            db ' has quit IRC', 10, 0
+has_quit_irc            db ' has quit IRC.', 10, 0
 
 sets_mode               db ' sets mode ', 0
 str_kicked              db ' is kicked from ', 0

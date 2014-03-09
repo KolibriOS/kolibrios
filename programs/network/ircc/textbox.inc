@@ -201,6 +201,20 @@ draw_channel_text:
         mov     [edi + window.text_print], esi
   .noscroll:
 
+; Update and draw scrollbar when nescessary
+        mov     edx, [edi + window.text_lines]
+        cmp     edx, [textbox_height]
+        jbe     .scroll_done
+
+        mov     [scroll2.max_area], edx
+        mov     eax, [edi + window.text_line_print]
+        mov     [scroll2.position], eax
+
+        push    dword scroll2                   ; redraw scrollbar
+        call    [scrollbar_draw]
+        mov     [scroll2.all_redraw], 0         ; next time, dont redraw it completely
+  .scroll_done:
+
 ; Calculate start offset coordinates (align text to bottom)
         mov     ebx, [textbox_height]
         sub     ebx, [edi + window.text_lines]
@@ -262,7 +276,6 @@ draw_channel_text:
         or      ecx, 0x40000000
   .no_colors:
 
-  .draw:
         mov     esi, 1
         mcall   4                       ; draw text
         add     ebx, FONT_WIDTH shl 16
@@ -282,21 +295,6 @@ draw_channel_text:
         dec     eax
         jnz     .drawloop
   .end_of_text:
-
-; Update and draw scrollbar when nescessary
-        mov     edi, [window_active]
-        mov     edx, [edi + window.text_lines]
-        cmp     edx, [textbox_height]
-        jbe     .scroll_done
-
-        mov     [scroll2.max_area], edx
-        mov     eax, [edi + window.text_line_print]
-        mov     [scroll2.position], eax
-
-        push    dword scroll2                   ; redraw scrollbar
-        call    [scrollbar_draw]
-        mov     [scroll2.all_redraw], 0         ; next time, dont redraw it completely
-  .scroll_done:
 
         ret
 
