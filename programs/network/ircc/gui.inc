@@ -282,6 +282,23 @@ draw_windowtabs:
         cmp     [edi + window.data_ptr], 0
         jne     .more_btn
 
+; Draw the close window button
+
+        mov     edi, [window_active]
+        cmp     [edi + window.type], WINDOWTYPE_SERVER  ; dont let the user close server window
+        je      @f
+
+;        mov     eax, 8
+        mov     ebx, [xsize]
+        sub     ebx, 12
+        shl     ebx, 16
+        mov     bx, 12
+        mov     ecx, 6 shl 16 + 12
+        mov     edx, WINDOW_BTN_CLOSE
+        mov     esi, 0x00aa0000         ; red !
+        mcall
+  @@:
+
 ; Draw the windownames onto the buttons
 
         mov     eax, 4
@@ -305,25 +322,28 @@ draw_windowtabs:
         jnz     .more
   .enough:
 
-; Draw the close window button
-
-        mov     edi, [window_active]
-        cmp     [edi + window.type], WINDOWTYPE_SERVER  ; dont let the user close server window
-        je      @f
-
-        mov     eax, 8
-        mov     ebx, [xsize]
-        sub     ebx, 12
-        shl     ebx, 16
-        mov     bx, 12
-        mov     ecx, 6 shl 16 + 12
-        mov     edx, WINDOW_BTN_CLOSE
-;        mov     esi, [colors.work_button]
-        mov     esi, 0x00aa0000         ; red !
-        mcall
-
-  @@:
-
         ret
 
 
+
+highlight_updated_tabs:
+        mov     eax, 4
+        mov     ebx, 10 shl 16 + 15
+        mov     ecx, 0x80aa0000
+        mov     esi, MAX_WINDOWS
+        mov     edi, windows
+  .more_:
+        test    [edi + window.flags], FLAG_UPDATED
+        jz      .next
+        lea     edx, [edi + window.name]
+        mcall
+  .next:
+        add     edi, sizeof.window      ; get ptr to next window
+        cmp     [edi + window.data_ptr], 0
+        je      .enough_
+        add     ebx, 125 shl 16
+        dec     esi
+        jnz     .more_
+  .enough_:
+
+        ret

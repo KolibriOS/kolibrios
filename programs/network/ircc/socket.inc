@@ -21,11 +21,13 @@ socket_connect:
         call    print_timestamp
         end if
         mov     esi, str_connecting
-        call    print_text2
+        call    print_asciiz
+
         mov     esi, irc_server_name
-        call    print_text2
-        mov     esi, str_dotnewline
-        call    print_text2
+        call    print_asciiz
+
+        mov     al, 10
+        call    print_char
 
 ; update status
         inc     [status]        ; was STATUS_DISCONNECTED, now STATUS_RESOLVING
@@ -73,7 +75,7 @@ socket_connect:
         call    print_timestamp
         end if
         mov     esi, str_sockerr
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -84,7 +86,7 @@ socket_connect:
         call    print_timestamp
         end if
         mov     esi, str_dnserr
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -95,7 +97,7 @@ socket_connect:
         call    print_timestamp
         end if
         mov     esi, str_refused
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -104,7 +106,7 @@ socket_connect:
         call    print_timestamp
         end if
         mov     esi, str_reconnect
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, quit_msg
         call    cmd_usr_quit.with_message
@@ -249,7 +251,7 @@ socket_receive:
 
   .disconnected:
         mov     esi, str_disconnected
-        call    print_text2
+        call    print_asciiz
 
         mov     [status], STATUS_DISCONNECTED
         mcall   close, [socketnum]

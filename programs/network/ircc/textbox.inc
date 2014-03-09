@@ -52,9 +52,13 @@ text_insert_newlines:                   ; esi = ASCIIZ string
 
         ret
 
+;----------------------------------
+; scan untill next line is reached
+;
 ; When you set the direction flag before calling, you can also scan for previous line!
-; in: esi
-; out:esi
+; IN:   esi
+; OUT:  esi
+;----------------------------------
 text_nextline:
 
         mov     ecx, [textbox_width]
@@ -73,52 +77,65 @@ text_nextline:
         ret
 
 
-print_text:                             ; eax = start ptr
-                                        ; dl = end char
-        pusha
-  ptr2:
-        mov     bl, [eax]
+;----------------------------------
+; print string
+;
+; IN:   esi = ptr to string
+;       bl = char which marks end of string
+; OUT:  esi = ptr to end of str
+;----------------------------------
+print_string:
 
-        cmp     bl, dl
+        push    eax
+  .loop:
+        lodsb
+        cmp     al, bl
         je      .done
-        test    bl, bl
+        cmp     al, 13
+        je      .loop
+        test    al, al
         jz      .done
-        call    print_character
-
-        inc     eax
-        jmp     ptr2
-
+        call    print_char
+        jmp     .loop
   .done:
-        popa
+        pop     eax
 
         ret
 
 
+;----------------------------------
+; print ASCIIZ string
+;
+; IN:   esi = ptr to ASCIIZ string
+; OUT:  esi = ptr to end of str
+;----------------------------------
+print_asciiz:
 
-print_text2:                            ; esi = ptr to ASCIIZ string
-
-        pusha
+        push    eax
   .loop:
         lodsb
         test    al, al
         jz      .done
-        mov     bl, al
-        call    print_character
+        call    print_char
         jmp     .loop
-
   .done:
-        popa
+        pop     eax
 
         ret
 
 
-print_character:
+;----------------------------------
+; print character
+;
+; IN:   al = char to print
+; OUT:  /
+;----------------------------------
+print_char:
 
         push    esi edi
         mov     esi, [window_print]
         mov     edi, [esi + window.text_write]
-        mov     byte[edi], bl
-        inc     edi
+        stosb
         cmp     edi, [esi + window.text_end]
         jae     .uh_ow
         mov     [esi + window.text_write], edi
@@ -330,33 +347,34 @@ print_timestamp:
 
         pusha
         mcall   3                       ; get system time
+        mov     ebx, eax
 
-        mov     bl, '['
-        call    print_character
+        mov     al, '['
+        call    print_char
         mov     ecx, TIMESTAMP
   .loop:
-        mov     bl, al
-        shr     bl, 4
-        add     bl, '0'
-        call    print_character
+        mov     al, bl
+        shr     al, 4
+        add     al, '0'
+        call    print_char
 
-        mov     bl, al
-        and     bl, 0x0f
-        add     bl, '0'
-        call    print_character
+        mov     al, bl
+        and     al, 0x0f
+        add     al, '0'
+        call    print_char
 
         dec     ecx
         jz      .done
 
-        mov     bl, ':'
-        call    print_character
-        shr     eax, 8
+        mov     al, ':'
+        call    print_char
+        shr     ebx, 8
         jmp     .loop
   .done:
-        mov     bl, ']'
-        call    print_character
-        mov     bl, ' '
-        call    print_character
+        mov     al, ']'
+        call    print_char
+        mov     al, ' '
+        call    print_char
 
         popa
         ret

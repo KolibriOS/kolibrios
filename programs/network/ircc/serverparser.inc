@@ -171,10 +171,12 @@ skip_parameter:
 cmd_justprint:
 
         add     esi, 4
-        call    skip_parameter
-        call    print_text2
-        mov     esi, str_newline
-        call    print_text2
+        call    skip_parameter          ; our nickname
+
+        call    print_asciiz
+
+        mov     al, 10
+        call    print_char
 
         ret
 
@@ -191,22 +193,22 @@ cmd_notice:
         mov     byte [esi-1], 0
         push    esi
         mov     esi, str_1
-        call    print_text2
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        call    print_asciiz
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
         mov     esi, str_2
-        call    print_text2
+        call    print_asciiz
         pop     esi
 
   .gogogo:
         add     esi, 6
         call    skip_parameter
         call    skip_parameter
-        call    print_text2
+        call    print_asciiz
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
         ret
 
@@ -251,6 +253,8 @@ cmd_privmsg:
         push    esi
         mov     esi, servercommand+1
         call    window_open
+        test    ebx, ebx
+        jz      .fail2
         pop     esi
         call    skip_parameter  ; our own nickname
 
@@ -261,6 +265,8 @@ cmd_privmsg:
 
   .channel:
         call    window_open
+        test    ebx, ebx
+        jz      .fail
 
   .print:
 ; nope, just plain old privmsg, print it using '<nick> message' format
@@ -269,25 +275,29 @@ cmd_privmsg:
         end if
 
         push    esi
-        mov     bl, '<'
-        call    print_character
+        mov     al, '<'
+        call    print_char
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
-        mov     bl, '>'
-        call    print_character
+        mov     al, '>'
+        call    print_char
 
-        mov     bl, ' '
-        call    print_character
+        mov     al, ' '
+        call    print_char
 
         pop     esi
-        call    print_text2
+        call    print_asciiz
 
-        mov     bl, 10
-        call    print_character
+        mov     al, 10
+        call    print_char
 
+        ret
+
+  .fail2:
+        pop     esi
   .fail:
         ret
 
@@ -355,13 +365,13 @@ cmd_ctcp:
         end if
 
         mov     esi, ctcp_header
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, servercommand+1
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, ctcp_time
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -374,13 +384,13 @@ cmd_ctcp:
         end if
 
         mov     esi, ctcp_header
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, servercommand+1
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, ctcp_version
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -392,13 +402,13 @@ cmd_ctcp:
         end if
 
         mov     esi, ctcp_header
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, servercommand+1
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, ctcp_ping
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -411,20 +421,20 @@ cmd_ctcp:
         end if
 
         mov     esi, action_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1    ; print nickname
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1    ; print nickname
+        mov     bl, '!'
+        call    print_string
 
-        mov     bl, ' '
-        call    print_character
+        mov     al, ' '
+        call    print_char
 
         pop     esi
-        call    print_text2             ; print message
+        call    print_asciiz
 
-        mov     bl, 10
-        call    print_character
+        mov     al, 10
+        call    print_char
 
         ret
 
@@ -440,9 +450,12 @@ cmd_dcc:
         ret
 
   .send:
-
         call    window_open
+        test    ebx, ebx
+        jz      .fail
         mov     [ebx + window.type], WINDOWTYPE_DCC
+
+  .fail:
 
         ret
 
@@ -520,31 +533,37 @@ cmd_part:
   .not_me:
         push    esi
         call    window_open
+        test    ebx, ebx
+        jz      .fail2
 
         if TIMESTAMP
         call    print_timestamp
         end if
 
         mov     esi, part_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        mov     cl, ' '
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
         mov     esi, has_left_channel
-        call    print_text2
+        call    print_asciiz
 
         pop     esi
-        call    print_text2
+        call    print_asciiz
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
         mov     ebx, [window_print]
         mov     esi, servercommand+1
         call    user_remove
+
+        ret
+
+  .fail2:
+        pop     esi
 
         ret
 
@@ -556,14 +575,14 @@ cmd_join:
         jne     .fail
         add     esi, 5  ; skip 'JOIN '
 
-; compare nick: did we join a channel?
+; did we join a channel?
         mov     edi, servercommand+1
         call    compare_to_nick
         jne     .not_me
 
         push    esi
         call    window_open
-        test    eax, eax
+        test    ebx, ebx
         jz      .fail
         mov     [ebx + window.type], WINDOWTYPE_CHANNEL
         mov     [window_active], ebx
@@ -573,17 +592,17 @@ cmd_join:
         end if
 
         mov     esi, join_header
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, str_talking
-        call    print_text2
+        call    print_asciiz
 
-        pop     eax
-        mov     dl, ' '
-        call    print_text
+        pop     esi
+        mov     bl, ' '
+        call    print_string
 
-        mov     esi, str_dotnewline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
         call    draw_window
 
@@ -592,26 +611,28 @@ cmd_join:
   .not_me:
         push    esi
         call    window_open
+        test    ebx, ebx
+        jz      .fail
 
         if TIMESTAMP
         call    print_timestamp
         end if
 
         mov     esi, join_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
         mov     esi, joins_channel
-        call    print_text2
+        call    print_asciiz
 
         pop     esi
-        call    print_text2
+        call    print_asciiz
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
         mov     ebx, [window_print]
         mov     esi, servercommand+1
@@ -620,7 +641,7 @@ cmd_join:
         ret
 
   .fail:
-        add     esp, 4
+        pop     esi
         ret
 
 
@@ -690,20 +711,20 @@ cmd_nick:
         end if
 
         mov     esi, nick_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
         mov     esi, is_now_known_as
-        call    print_text2
+        call    print_asciiz
 
-        mov     esi, [esp + 8]  ; FIXME: dont print the 0x0a0d!!!
-        call    print_text2
+        mov     esi, [esp + 8]
+        call    print_asciiz
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
 ; Now do this for all open windows
   .next_window:
@@ -734,6 +755,8 @@ cmd_kick:
 ; find the channel user has been kicked from
         push    esi
         call    window_open
+        test    ebx, ebx
+        jz      .fail
         push    esi
 
         if TIMESTAMP
@@ -741,34 +764,37 @@ cmd_kick:
         end if
 
         mov     esi, kick_header
-        call    print_text2
+        call    print_asciiz
 
-        pop     eax
-        mov     dl, ' '
-        call    print_text
+        pop     esi
+        mov     bl, ' '
+        call    print_string
 
         mov     esi, str_kicked
-        call    print_text2
+        call    print_asciiz
 
-        pop     eax
-        mov     dl, ' '
-        call    print_text
+        pop     esi
+        mov     bl, ' '
+        call    print_string
 
         mov     esi, str_by
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
-        mov     esi, str_dotnewline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
         mov     ebx, [window_print]
         mov     esi, servercommand+1
         call    user_remove
 
+        ret
+
   .fail:
+        pop     esi
 
         ret
 
@@ -800,14 +826,14 @@ cmd_quit:
         end if
 
         mov     esi, quit_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
         mov     esi, has_quit_irc
-        call    print_text2
+        call    print_asciiz
 
 ; TODO: check if quit message was given, and print it to the window
         pop     ebx
@@ -841,20 +867,20 @@ cmd_mode:
         end if
 
         mov     esi, mode_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, servercommand+1
-        mov     dl, '!'
-        call    print_text
+        mov     esi, servercommand+1
+        mov     bl, '!'
+        call    print_string
 
         mov     esi, sets_mode
-        call    print_text2
+        call    print_asciiz
 
         pop     esi
-        call    print_text2
+        call    print_asciiz
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
 ; TODO: keep track of user modes in username list
 
@@ -868,21 +894,21 @@ cmd_mode:
         end if
 
         mov     esi, mode_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, [esp]
-        mov     dl, ' '
-        call    print_text
+        mov     esi, [esp]
+        mov     bl, ' '
+        call    print_string
 
         mov     esi, sets_mode
-        call    print_text2
+        call    print_asciiz
 
         pop     esi
         call    skip_parameter
-        call    print_text2
+        call    print_asciiz
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
         ret
 
@@ -894,6 +920,8 @@ cmd_353:                ; channel usernames reply
         inc     esi     ; channel type '*', '=' or '@'
         inc     esi     ; ' '
         call    window_open
+        test    ebx, ebx
+        jz      .fail
 
 ; now find window ptr and check if this is the first 353 message
         mov     ebx, [window_print]
@@ -919,6 +947,7 @@ cmd_353:                ; channel usernames reply
 
   .done:
         call    draw_channel_list
+  .fail:
 
         ret
 
@@ -931,9 +960,10 @@ cmd_366:        ; channel usernames end
         add     esi, 4          ; skip '366 '
         call    skip_parameter
         call    window_open
-
-        mov     ebx, [window_print]
+        test    ebx, ebx
+        jz      .fail
         and     [ebx + window.flags], not FLAG_RECEIVING_NAMES
+  .fail:
 
         ret
 
@@ -945,6 +975,8 @@ cmd_topic:
         add     esi, 4          ; skip '332 '
         call    skip_parameter
         call    window_open
+        test    ebx, ebx
+        jz      .fail
 
         if TIMESTAMP
         call    print_timestamp
@@ -952,16 +984,18 @@ cmd_topic:
 
         push    esi
         mov     esi, topic_header
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, str_topic
-        call    print_text2
+        call    print_asciiz
 
         pop     esi
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, str_topic_end
-        call    print_text2
+        call    print_asciiz
+
+  .fail:
 
         ret
 
@@ -971,6 +1005,8 @@ cmd_333:
         add     esi, 4          ; skip '333 '
         call    skip_parameter
         call    window_open
+        test    ebx, ebx
+        jz      .fail
 
         if TIMESTAMP
         call    print_timestamp
@@ -978,32 +1014,46 @@ cmd_333:
 
         push    esi
         mov     esi, topic_header
-        call    print_text2
+        call    print_asciiz
 
         mov     esi, str_setby
-        call    print_text2
+        call    print_asciiz
 
-        pop     eax
-        mov     dl, '!'
-        call    print_text
+        pop     esi
+        mov     bl, '!'
+        call    print_string
 
-        mov     esi, str_newline
-        call    print_text2
+        mov     al, 10
+        call    print_char
 
   .fail:
+
         ret
+
+
 
 cmd_322:        ; LIST
 
         add     esi, 4
-
-        mov     [window_print], windows         ; FIXME
         call    skip_parameter
-        mov     eax, esi
-        mov     dl, 13
-        call    print_text
-        mov     esi, str_newline
-        call    print_text2
+
+        push    esi
+        mov     esi, str_list
+        call    window_open
+        test    ebx, ebx
+        jz      .fail
+
+        mov     [window_active], ebx
+        call    draw_windowtabs
+        pop     esi
+        call    print_asciiz
+        mov     al, 10
+        call    print_char
+
+        ret
+
+  .fail:
+        pop     esi
 
         ret
 

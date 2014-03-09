@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.19'
+version equ '0.20'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -200,7 +200,7 @@ START:
 
 ; Welcome user
         mov     esi, str_welcome
-        call    print_text2
+        call    print_asciiz
 
 ; Check if parameter contains an URL
         cmp     byte[param], 0
@@ -242,6 +242,7 @@ mainloop:
         jne     .no_update
         call    draw_channel_list
   .no_update:
+        call    highlight_updated_tabs
 
         jmp     mainloop
 
@@ -290,8 +291,9 @@ button:
         mov     ebx, [ebx + window.data_ptr]
         lea     esi, [ebx + window_data.names + eax]
         call    window_open
-        push    [window_print]
-        pop     [window_active]
+        test    ebx, ebx
+        jz      mainloop
+        mov     [window_active], ebx
         call    redraw
 
         jmp     mainloop
@@ -302,6 +304,11 @@ button:
 
         cmp     ax, MAX_WINDOWS
         ja      exit
+
+; Save users scrollbar position
+        push    [scroll1.position]
+        mov     edx, [window_active]
+        pop     [edx + window.users_scroll]
 
 ; OK, time to switch to another window.
         mov     dx, sizeof.window
@@ -315,6 +322,9 @@ button:
 
         push    [edx + window.text_line_print]
         pop     [scroll2.position]
+
+        push    [edx + window.users_scroll]
+        pop     [scroll1.position]
 
         call    draw_window
         jmp     mainloop
@@ -436,7 +446,7 @@ ctcp_time               db '] TIME', 10, 0
 has_left_channel        db ' has left ', 0
 joins_channel           db ' has joined ', 0
 is_now_known_as         db ' is now known as ', 0
-has_quit_irc            db ' has quit IRC.', 10, 0
+has_quit_irc            db ' has quit IRC', 10, 0
 
 sets_mode               db ' sets mode ', 0
 str_kicked              db ' is kicked from ', 0
@@ -445,7 +455,7 @@ str_nickchange          db 'Nickname is now ', 0
 str_realchange          db 'Real name is now ', 0
 str_talking             db 'Now talking in ', 0
 str_topic               db 'Topic is "', 0
-str_topic_end           db '".', 10, 0
+str_topic_end           db '"', 10, 0
 str_setby               db 'Set by ', 0
 
 str_connecting          db 3, '3* Connecting to ', 0
@@ -456,17 +466,25 @@ str_disconnected        db 3, '5* Server disconnected', 10, 0
 str_reconnect           db 3, '5* Connection reset by user', 10, 0
 str_notconnected        db 3, '5* Not connected to server', 10, 0
 
-str_dotnewline          db '.',10, 0
-str_newline             db 10, 0
 str_1                   db 3, '13 -', 0
 str_2                   db '- ', 0
 
-str_help                db 10, 'following commands are available:', 10
+str_list                db 'list', 0
+
+str_help                db 'The following commands are available:', 10
                         db 10
-                        db '/nick <nick>        : change nickname to <nick>', 10
-                        db '/real <real name>   : change real name to <real name>', 10
-                        db '/server <address>   : connect to server <address>', 10
-                        db '/code <code>        : change codepage to cp866, cp1251, or utf8', 10, 0
+                        db '/nick <nick>        : change nickname', 10
+                        db '/real <real name>   : change real name', 10
+                        db '/server <address>   : connect to server', 10
+                        db '/code <code>        : change codepage (cp866, cp1251, or utf8)', 10
+                        db '/join <channel>     : join a channel', 10
+                        db '/part <channel>     : part from a channel', 10
+                        db '/quit               : quit server', 10
+                        db '/msg <user>         : send a private message', 10
+                        db '/ctcp <user>        : send a message using client to client protocol', 10
+                        db 10
+                        db 'Other commands are send straight to server.', 10
+                        db 10, 0
 
 str_welcome             db 3, '3 ___', 3, '7__________', 3, '6_________  ', 3, '4         __   __               __', 10
                         db 3, '3|   \', 3, '7______   \', 3, '6_   ___ \ ', 3, '4   ____ |  | |__| ____   _____/  |_', 10
@@ -584,10 +602,3 @@ quit_msg        rb 250
 windows         rb MAX_WINDOWS*sizeof.window
 
 IM_END:
-
-
-
-
-
-
-

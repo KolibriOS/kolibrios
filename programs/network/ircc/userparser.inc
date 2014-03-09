@@ -35,25 +35,25 @@ user_parser:
         call    print_timestamp
         end if
 
-        mov     bl, '<'
-        call    print_character
+        mov     al, '<'
+        call    print_char
 
         mov     esi, user_nick
-        call    print_text2
+        call    print_asciiz
 
-        mov     bl, '>'
-        call    print_character
-        mov     bl, ' '
-        call    print_character
+        mov     al, '>'
+        call    print_char
+        mov     al, ' '
+        call    print_char
 
         mov     eax, [edit1.size]
         mov     byte[usercommand + eax],0
 
         mov     esi, usercommand
-        call    print_text2
+        call    print_asciiz
 
-        mov     bl, 10
-        call    print_character
+        mov     al, 10
+        call    print_char
 
 ; and now send it to the server
         mov     dword[packetbuf], 'PRIV'
@@ -92,7 +92,7 @@ user_parser:
 
   .notconnected:
         mov     esi, str_notconnected
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -145,7 +145,7 @@ server_command:
 
   .notconnected:
         mov     esi, str_notconnected
-        call    print_text2
+        call    print_asciiz
 
         ret
 
@@ -200,20 +200,20 @@ cmd_usr_msg:
         end if
 
         mov     esi, msg_header
-        call    print_text2
+        call    print_asciiz
 
-        mov     eax, packetbuf+8
-        mov     dl, ' '
-        call    print_text
-
-        mov     bl, '*'
-        call    print_character
-
+        mov     esi, packetbuf+8
         mov     bl, ' '
-        call    print_character
+        call    print_string
+
+        mov     al, '*'
+        call    print_char
+
+        mov     al, ' '
+        call    print_char
 
         pop     esi
-        call    print_text2
+        call    print_asciiz
 
   .fail:
         ret
@@ -313,11 +313,13 @@ cmd_usr_nick:
         stosb
 
         mov     esi, str_nickchange
-        call    print_text2
+        call    print_asciiz
+
         mov     esi, user_nick
-        call    print_text2
-        mov     esi, str_dotnewline
-        call    print_text2
+        call    print_asciiz
+
+        mov     al, 10
+        call    print_char
 
         ret
 
@@ -343,11 +345,13 @@ cmd_usr_real:
         stosb
 
         mov     esi, str_realchange
-        call    print_text2
+        call    print_asciiz
+
         mov     esi, user_real_name
-        call    print_text2
-        mov     esi, str_dotnewline
-        call    print_text2
+        call    print_asciiz
+
+        mov     al, 10
+        call    print_char
 
         ret
 
@@ -394,6 +398,8 @@ cmd_usr_quer:
 
         mov     esi, usercommand+7
         call    window_open
+;        test    ebx, ebx
+;        jz      .fail
 
         ret
 
@@ -402,7 +408,7 @@ cmd_usr_quer:
 cmd_usr_help:
 
         mov     esi, str_help
-        call    print_text2
+        call    print_asciiz
 
         ret
 

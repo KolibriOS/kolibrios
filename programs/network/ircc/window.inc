@@ -82,25 +82,6 @@ window_set_name:
         ret
 
 
-
-window_is_updated:
-
-        mov     edi, [window_print]
-        cmp     edi, [window_active]
-        je      .skip
-        test    [edi + window.flags], FLAG_UPDATED
-        jnz     .skip
-        or      [edi + window.flags], FLAG_UPDATED
-
-; TODO: make some noise
-
-        call    draw_windowtabs         ; highlight updated tabs
-  .skip:
-
-        ret
-
-
-
 window_close:   ; closes the 'print' window
 
 ; Remove the window (overwrite current structure with trailing ones)
@@ -180,6 +161,7 @@ window_find:
 ;
 ; IN:   esi = ptr to ASCIIZ windowname
 ; OUT:  esi = ptr to next parameter
+;       ebx = window ptr/0 on error
 
 window_open:
 
@@ -226,5 +208,6 @@ window_open:
         mov     [window_print], ebx
         ret
 
-  .error:                                               ; TODO: return error?
+  .error:
+        xor     ebx, ebx
         ret
