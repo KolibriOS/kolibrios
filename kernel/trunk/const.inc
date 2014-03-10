@@ -302,7 +302,7 @@ BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to
 BOOT_DMA            equ 0x901F    ;
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
 BOOT_VRR            equ 0x9030    ;byte   VRR start enabled 1, 2-no
-BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr
+;BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr ; now free and is not used
 BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
 
 BOOT_APM_ENTRY      equ 0x9040
@@ -311,12 +311,12 @@ BOOT_APM_FLAGS      equ 0x9046    ;unused
 BOOT_APM_CODE_32    equ 0x9050
 BOOT_APM_CODE_16    equ 0x9052
 BOOT_APM_DATA_16    equ 0x9054
-BOOT_IDE_BAR0_16    equ 0x9056
-BOOT_IDE_BAR1_16    equ 0x9058
-BOOT_IDE_BAR2_16    equ 0x905A
-BOOT_IDE_BAR3_16    equ 0x905C
-BOOT_IDE_PI_16      equ 0x905E
-BOOT_IDE_INTERR_16  equ 0x9060
+;BOOT_IDE_BAR0_16    equ 0x9056 ; now free and is not used
+;BOOT_IDE_BAR1_16    equ 0x9058 ; now free and is not used
+;BOOT_IDE_BAR2_16    equ 0x905A ; now free and is not used
+;BOOT_IDE_BAR3_16    equ 0x905C ; now free and is not used
+;BOOT_IDE_PI_16      equ 0x905E ; now free and is not used
+;BOOT_IDE_INTERR_16  equ 0x9060 ; now free and is not used
 
 TMP_FILE_NAME       equ     0
 TMP_CMD_LINE        equ  1024

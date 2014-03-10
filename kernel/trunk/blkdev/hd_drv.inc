@@ -1174,9 +1174,9 @@ cache_write_dma:
 ;-----------------------------------------------------------------------------
 uglobal
 align 4
+IDEContrProgrammingInterface dd ?
 IDE_Interrupt   dw ?
 IDEContrRegsBaseAddr         dw ?
-IDEContrProgrammingInterface dw ?
 IDE_BAR0_val    dw ?
 IDE_BAR1_val    dw ?
 IDE_BAR2_val    dw ?

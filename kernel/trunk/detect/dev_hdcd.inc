@@ -85,19 +85,44 @@ Print_Device_Name:
 
         xor     eax, eax
         mov     ax, [Sector512+64*2]
-        DEBUGF  1, "K : PIO mode %x\n", eax
+        DEBUGF  1, "K : PIO mode possible modes %x\n", al
+        mov     ax, [Sector512+51*2]
+        mov     al, ah
+        call    convert_Sector512_value
+        DEBUGF  1, "K : PIO mode set mode %x\n", ah
         mov     ax, [Sector512+63*2]
-        DEBUGF  1, "K : Multiword DMA mode %x\n", eax
+        DEBUGF  1, "K : Multiword DMA possible modes %x\n", al
+        mov     al, ah
+        call    convert_Sector512_value
+        DEBUGF  1, "K : Multiword DMA set mode %x\n", ah
         mov     ax, [Sector512+88*2]
-        DEBUGF  1, "K : Ultra DMA mode %x\n", eax
+        DEBUGF  1, "K : Ultra DMA possible modes %x\n", al
+        mov     al, ah
+        call    convert_Sector512_value
+        DEBUGF  1, "K : Ultra DMA set mode %x\n", ah
    FindHDD_2_2:
         ret
-
+;-----------------------------------------------------------------------------
 FindHDD_3:
         call    FindHDD_1
         shl     byte [DRIVE_DATA+1], 2
         ret
+;-----------------------------------------------------------------------------
+convert_Sector512_value:
+        mov     ecx, 8
+        xor     ah, ah
+@@:
+        test    al, 1b
+        jnz     .end
 
+        shr     al, 1
+        inc     ah
+        loop    @b
+
+        xor     ah, ah
+.end:
+        ret
+;-----------------------------------------------------------------------------
 ; Адрес считываемого сектора в режиме LBA
 uglobal
 SectorAddress   DD ?
