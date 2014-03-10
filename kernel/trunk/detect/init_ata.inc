@@ -135,13 +135,13 @@
 ;-----------------------------------------------------------------------------
         mov     esi, boot_detecthdcd
         call    boot_log
-include 'detect/dev_hdcd.inc'
+include 'dev_hdcd.inc'
         mov     esi, boot_getcache
         call    boot_log
-include 'detect/getcache.inc'
+include 'getcache.inc'
         mov     esi, boot_detectpart
         call    boot_log
-include 'detect/sear_par.inc'
+include 'sear_par.inc'
 ;-----------------------------------------------------------------------------
         mov     dx, [IDEContrRegsBaseAddr]
 ; test whether it is our interrupt?
