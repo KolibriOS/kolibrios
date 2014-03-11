@@ -1183,12 +1183,12 @@ PIO_write:
 
 
 
-;all initialized data place here
+; place all initialized data here
 align 4
 
 devices         dd 0
 version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
-my_service      db 'RTL8029',0  ;max 16 chars include zero
+my_service      db 'RTL8029',0          ; max 16 chars include zero
 
 ;device_1        db 'Realtek 8029',0
 ;device_2        db 'Realtek 8019',0
@@ -1198,7 +1198,8 @@ my_service      db 'RTL8029',0  ;max 16 chars include zero
 
 include_debug_strings
 
-section '.data' data readable writable align 16  ;place all uninitialized data place here
+section '.data' data readable writable align 16
+; place all uninitialized data here
 
 device_list     rd MAX_DEVICES
 

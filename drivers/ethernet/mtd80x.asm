@@ -494,7 +494,7 @@ probe:
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
 ; Check vendor/device id's
-        invoke PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], 0
+        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], 0
         cmp     ax, 0x1516
         jne     .notfound
         shr     eax, 16

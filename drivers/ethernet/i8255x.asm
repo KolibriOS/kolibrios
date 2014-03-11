@@ -1181,7 +1181,7 @@ end data
 
 include '../peimport.inc'
 
-my_service      db 'i8255x', 0                    ; max 16 chars include zero
+my_service      db 'I8255X', 0                    ; max 16 chars include zero
 devicename      db 'Intel Etherexpress pro/100', 0
 
 confcmd_data    db 22, 0x08, 0, 0, 0, 0x80, 0x32, 0x03, 1

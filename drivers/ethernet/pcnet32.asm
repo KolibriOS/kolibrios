@@ -1527,7 +1527,7 @@ end data
 
 include '../peimport.inc'
 
-my_service    db 'PCnet',0              ; max 16 chars include zero
+my_service    db 'PCNET32',0            ; max 16 chars include zero
 
 device_l2     db "PCnet/PCI 79C970",0
 device_l4     db "PCnet/PCI II 79C970A",0
