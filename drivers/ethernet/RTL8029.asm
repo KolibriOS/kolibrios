@@ -1188,7 +1188,7 @@ align 4
 
 devices         dd 0
 version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
-my_service      db 'RTL8029/ne2000',0  ;max 16 chars include zero
+my_service      db 'RTL8029',0  ;max 16 chars include zero
 
 ;device_1        db 'Realtek 8029',0
 ;device_2        db 'Realtek 8019',0
