@@ -142,13 +142,25 @@ GLSL_SRC = \
 	src/glsl/s_expression.cpp		\
 	src/glsl/strtod.c			\
 	$(NULL)
+
+LIBGL_SRC = \
+	src/mapi/glapi/glapi.c			\
+	src/mapi/glapi/glapi_dispatch.c		\
+	src/mapi/glapi/glapi_entrypoint.c	\
+	src/mapi/glapi/glapi_getproc.c		\
+	src/mapi/glapi/glapi_nop.c		\
+	src/mapi/glapi/glapi_x86.S		\
+	src/mapi/u_current.c			\
+	src/mapi/u_execmem.c			\
+	$(NULL)
  
-EGL_OBJS  =  $(patsubst %.c, %.o, $(EGL_SRC))
-GLSL_OBJS =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(GLSL_SRC)))
+EGL_OBJS   =  $(patsubst %.c, %.o, $(EGL_SRC))
+GLSL_OBJS  =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(GLSL_SRC)))
+LIBGL_OBJS =  $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(LIBGL_SRC)))
 
 # targets 
 
-all:$(EGL).dll libglsl.a
+all: libGL.dll $(EGL).dll libglsl.a 
 
 $(EGL).dll: $(EGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ egl.def $(EGL_OBJS) $(LIBS)
@@ -161,10 +173,20 @@ libglsl.a : $(GLSL_OBJS) Makefile
 	ar cvrs libglsl.a $(GLSL_OBJS) 
 	mv -f libglsl.a ../../lib
 
+libGL.dll: $(LIBGL_OBJS) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBGL_OBJS) $(LIBS)
+	$(STRIP) $@
+#	sed -e "s/ @[^ ]*//" egl1.def > egl.def
+	mv -f $@ ../../bin
+	mv -f libGL.dll.a ../../lib   
+
 src/glsl/glcpp/%.o : src/glsl/glcpp/%.c Makefile
 	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) -o $@ $<
 
 src/glsl/%.o : src/glsl/%.c Makefile
+	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) -o $@ $<
+
+src/mapi/glapi/%.o : src/mapi/glapi/%.c Makefile
 	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) -o $@ $<
 	
 %.o : %.c Makefile
