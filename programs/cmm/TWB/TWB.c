@@ -1,7 +1,7 @@
 #include "..\TWB\links.h"
 
-
 dword bufpointer;
+dword o_bufpointer;
 dword bufsize;
 
 #define URL param
@@ -16,7 +16,7 @@ struct TWebBrowser {
 	llist list;
 	DrawBufer DrawBuf;
 	void GetNewUrl();
-	void ReadHtml();
+	void Prepare();
 	void Parse();
 	void WhatTextStyle();
 	void DrawPage();
@@ -30,7 +30,7 @@ byte b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab,
 	link, ignor_text, cur_encoding, text_align;
 byte condition_text_active, condition_text_val, condition_href, condition_max;
 
-enum { _WIN, _DOS, _KOI, _UTF };
+enum { _WIN, _DOS, _KOI, _UTF, _DEFAULT };
 
 enum { ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT};
 
@@ -44,7 +44,7 @@ int stroka;
 int stolbec;
 int tab_len;
 int anchor_line_num;
-	
+
 char line[500];
 char tag[100];
 char tagparam[10000];
@@ -57,6 +57,7 @@ char anchor[256];
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
 #include "..\TWB\parce_tag.h"
+#include "..\TWB\table.h"
 
 
 
@@ -140,70 +141,39 @@ void TWebBrowser::GetNewUrl(){
 		strcpy(#URL, #newurl);
 }
 
-
-void TWebBrowser::ReadHtml(byte encoding)
+void BufEncode(int set_new_encoding)
 {
-	if (native_http)
+	cur_encoding = set_new_encoding;
+	if (o_bufpointer==0)
 	{
-			if (strncmp(#URL,"http:",5)) {
-				file_size stdcall (#URL);
-				bufsize = EBX;
-			}
-			
-			if (!bufsize) return;
-
-			if (strncmp(#URL,"http:",5)) {
-				mem_Free(bufpointer);
-				bufpointer = mem_Alloc(bufsize);
-			}
-			
-			if (strncmp(#URL,"http:",5)) ReadFile(0, bufsize, bufpointer, #URL);
-				
-			cur_encoding = encoding;
-			if (encoding==_WIN) wintodos(bufpointer);
-			if (encoding==_UTF) utf8rutodos(bufpointer);
-			if (encoding==_KOI) koitodos(bufpointer);
+		debugi(bufsize);
+		bufsize = strlen(bufpointer);
+		debugi(bufsize);
+		o_bufpointer = malloc(bufsize);
+		strcpy(o_bufpointer, bufpointer);
 	}
 	else
 	{
-			if (!strncmp(#URL,"http:",5)) 
-				file_size stdcall (#download_path);
-			else
-				file_size stdcall (#URL);
-			
-			bufsize = EBX;
-			if (!bufsize) return;
-			
-			mem_Free(bufpointer);
-			bufpointer = mem_Alloc(bufsize);
-			if (!strncmp(#URL,"http:",5)) 
-				ReadFile(0, bufsize, bufpointer, #download_path);
-			else
-				ReadFile(0, bufsize, bufpointer, #URL);
-				
-			cur_encoding = encoding;
-			if (encoding==_WIN) wintodos(bufpointer);
-			if (encoding==_UTF) utf8rutodos(bufpointer);
-			if (encoding==_KOI) koitodos(bufpointer);
+		strcpy(bufpointer, o_bufpointer);
 	}
+	if (set_new_encoding==_WIN) wintodos(bufpointer);
+	if (set_new_encoding==_UTF) utf8rutodos(bufpointer);
+	if (set_new_encoding==_KOI) koitodos(bufpointer);
 }
 
-/*
-void TWebBrowser::ReadHtml(byte encoding)
-{
-
-
+void TWebBrowser::Prepare(dword bufpos, in_filesize){
+	bufsize = in_filesize;
+	bufpointer = bufpos;
+	Parse();
 }
-*/
 
 
-void TWebBrowser::Parse(dword bufpos, in_filesize){
+void TWebBrowser::Parse(){
 	word bukva[2];
 	int j, perenos_num;
 	byte ignor_param;
 	char temp[768];
-	bufsize = in_filesize;
-	bufpointer = bufpos;
+	dword bufpos = bufpointer;
 	
 	b_text = i_text = u_text = s_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
@@ -372,7 +342,7 @@ void TWebBrowser::Parse(dword bufpos, in_filesize){
 	{
 		anchor=NULL;
 		list.first=anchor_line_num;
-		Parse(bufpointer, bufsize);
+		Parse();
 	}
 	DrawScroller();
 }
@@ -383,7 +353,7 @@ char oldtag[100];
 void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
 	byte opened;
-
+	byte meta_encoding;
 	//проверяем тег открывается или закрывается
 	if (tag[0] == '/') 
 	{
@@ -496,7 +466,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (text_color_index > 0) text_color_index--;
 		return;
 	}
-	if(isTag("tr")) || (isTag("br")) {
+	if (isTag("br")) {
 		TextGoDown(left1, top1, width1);
 		return;
 	}
@@ -509,6 +479,43 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		TextGoDown(left1, top1, width1);
 		IF(opened) TextGoDown(left1, top1 + 10, width1);
 		return;
+	}
+
+
+	if(isTag("table")) {
+		if (opened)
+		{
+			table.active = true;
+			TextGoDown(left1, top1, width1);
+			table.NewTable();
+		}
+		else
+		{
+			table.active = false;
+			TextGoDown(left1, top1, width1);
+		}
+	}
+	if(isTag("td")) {
+		if (opened)
+		{
+			//
+		}
+		else
+		{
+			//
+		}
+	}
+	if(isTag("tr")) {
+		if (opened)
+		{
+			//
+		}
+		else
+		{
+			TextGoDown(left1, top1, width1);
+			if (table.cur_row == 0) table.max_cols = table.cur_col;
+			table.cur_row++;
+		}
 	}
 	/*
 	if (isTag("center"))
@@ -617,25 +624,18 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
 			{
 				strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
-				if (!strcmp(#options, "utf-8"))  || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
-				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))   ReadHtml(_KOI);
-				if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   ReadHtml(_DOS);
+				strlwr(#options);
+				if (!strcmp(#options, "utf-8"))  || (!strcmp(#options,"utf8")) meta_encoding = _UTF;
+				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u")) meta_encoding = _KOI;
+				if (!strcmp(#options, "windows-1251")) || (!strcmp(#options, "windows1251")) meta_encoding = _WIN;
+				//if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   meta_encoding = _DOS;
+				if ((cur_encoding==_DEFAULT) && (http_transfer==0)) BufEncode(meta_encoding);
+				return;
 			}
 		} while(GetNextParam());
 		return;
 	}
 }
-
-/*
-char *encodings = {
-	"utf-8",  _UTF,
-	"utf8",   _UTF,
-	"koi8-r", _KOI,
-	"koi8-u", _KOI,
-	"dos",    _DOS,
-	"cp-866", _DOS
-};
-*/
 
 void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
 {
@@ -673,3 +673,5 @@ int isTag(dword text)
 { 
 	if (!strcmp(#tag,text)) return 1; else return 0;
 }
+
+

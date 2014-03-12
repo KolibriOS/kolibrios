@@ -30,22 +30,20 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.67";
+	char version[]=" Текстовый браузер 0.99.69";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n\0";
 #else
-	char version[]=" Text-based Browser 0.99.67";
+	char version[]=" Text-based Browser 0.99.69";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
 	char accept_language[]= "Accept-Language: en\n\0";	
 #endif
-
-byte native_http=1;
 
 proc_info Form;
 #define WIN_W 640
@@ -62,10 +60,9 @@ int action_buf;
 dword http_transfer = 0;
 dword http_buffer;
 
-int	downloader_id;
-
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
+#include "history.h"
 
 char editURL[sizeof(URL)];
 int	mouse_twb;
@@ -103,12 +100,12 @@ void main()
 		{
 			CASE evMouse:
 				if (!CheckActiveProcess(Form.ID)) break;
-
+				//Edit URL
 				edit_box_mouse stdcall (#address_box);
-
 				m.get();
+				//Links hover
 				if (m.y>WB1.list.y) PageLinks.Hover(m.x, m.y, link_color_inactive, link_color_active, bg_color);
-				
+				//Menu
 				if (m.y>WB1.list.y) && (m.y<Form.height) && (bufsize)
 				{
 					if (m.pkm)
@@ -123,20 +120,19 @@ void main()
 						break; 
 					}
 				}
-
+				//Mouse scroll
 				if (m.vert)
 				{
-					if (WB1.list.MouseScroll(m.vert)) WB1.Parse(bufpointer, bufsize);
+					if (WB1.list.MouseScroll(m.vert)) WB1.Parse();
 				}
-				
+				//Drag scroller
 				if (!m.lkm) scroll_used=0;
 				if (m.x>=scroll_wv.start_x) && (m.x<=scroll_wv.start_x+scroll_wv.size_x) 
 				&& (m.y>=scroll_wv.start_y+scroll_wv.btn_height) && (-scroll_wv.btn_height+scroll_wv.start_y+scroll_wv.size_y>m.y)
 				&& (WB1.list.count>WB1.list.visible) && (m.lkm)
 				{
 					scroll_used=1;
-				}
-				
+				}				
 				if (scroll_used)
 				{
 					half_scroll_size = WB1.list.h - 16 * WB1.list.visible / WB1.list.count - 3 /2;
@@ -144,21 +140,13 @@ void main()
 					btn=WB1.list.first;
 					WB1.list.first = m.y -half_scroll_size -WB1.list.y * WB1.list.count / WB1.list.h;
 					if (WB1.list.visible+WB1.list.first>WB1.list.count) WB1.list.first=WB1.list.count-WB1.list.visible;
-					if (btn<>WB1.list.first) WB1.Parse(bufpointer, bufsize);
+					if (btn<>WB1.list.first) WB1.Parse();
 				}
-
 				break;
 			case evButton:
 				btn=GetButtonID();
-				if (btn==1)
-				{
-					KillProcess(downloader_id);
-					ExitProcess();
-				}
-				ELSE
-				{
-					Scan(btn);
-				}
+				if (btn==1)	ExitProcess();
+				Scan(btn);
 				break;
 			case evKey:
 				key = GetKey();
@@ -172,7 +160,7 @@ void main()
 				if (key<>0x0d) && (key<>183) && (key<>184) {EAX=key<<8; edit_box_key stdcall(#address_box);}
 				break;
 			case evReDraw:
-				if (action_buf) { Scan(action_buf); action_buf=0;}
+				if (action_buf) Scan(action_buf);
 				Draw_Window();
 				break;
 				
@@ -181,9 +169,10 @@ void main()
 					http_process stdcall (http_transfer);
 					$push EAX
 					ESI = http_transfer;
+					if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 					bufpointer = ESI.http_msg.content_ptr;
 					bufsize = ESI.http_msg.content_received;
-					WB1.Parse(bufpointer, bufsize);
+					WB1.Parse();
 					
 					$pop EAX	
 					if (EAX == 0) {	
@@ -216,7 +205,7 @@ void main()
 						}
 						// Loading the page is complete, free resources
 						http_free stdcall (http_transfer);
-						http_transfer=0;	
+						http_transfer=0;
 						if (redirected>0)
 						{
 							WB1.GetNewUrl();
@@ -229,15 +218,6 @@ void main()
 							Draw_Window();		// stop button => refresh button
 						}
 					}
-				}
-			default:
-				if (downloader_id<>0)
-				{
-					if (GetProcessSlot(downloader_id)<>0) break;
-					downloader_id=0;
-					WB1.list.first = WB1.list.count = 0;
-					WB1.ReadHtml(_WIN);
-					Draw_Window();
 				}
 		}
 	}
@@ -268,7 +248,7 @@ void Draw_Window()
 	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	if (GetProcessSlot(downloader_id)<>0) || (http_transfer > 0) _PutImage(88,10, 24,24, #stop_btn);
+	if (http_transfer > 0) _PutImage(88,10, 24,24, #stop_btn);
 	
 	DrawBar(200,0,Form.cwidth-200,43,0xE4DFE1);
 	DrawBar(0,42,Form.cwidth,1,0xE2DBDC);
@@ -288,36 +268,42 @@ void Draw_Window()
 }
 
 
+void ChangeCharset(byte new_charset)
+{
+	BufEncode(new_charset);
+	WB1.Parse();	
+}
+
 void Scan(int id)
 {
-	if (id >= 400) ProcessLinks(id);
-	
+	action_buf=0;
+	if (id >= 400) 
+	{
+		ProcessLinks(id);
+		return;
+	}
 	switch (id)
 	{
 		case 011: //Ctrk+K 
-			WB1.ReadHtml(_KOI);
-			WB1.Parse(bufpointer, bufsize);
+			ChangeCharset(_KOI);
 			return;
 
 		case 021: //Ctrl+U
-			WB1.ReadHtml(_UTF);
-			WB1.Parse(bufpointer, bufsize);
+			ChangeCharset(_UTF);
 			return;
 
 		case 004: //Ctrl+D
-			WB1.ReadHtml(_DOS);
-			WB1.Parse(bufpointer, bufsize);
+			ChangeCharset(_DOS);
 			return;
 
 		case 005: //Win encoding
-			WB1.ReadHtml(_WIN);
-			WB1.Parse(bufpointer, bufsize);
+			ChangeCharset(_WIN);
 			return;
 
 		case 009: //free img cache
 			ImgCache.Free();
 			notify(IMAGES_CACHE_CLEARED);
-			WB1.Parse(bufpointer, bufsize);
+			WB1.Parse();
 			return;
 
 		case 003: //history
@@ -334,35 +320,23 @@ void Scan(int id)
 			OpenPage();
 			return;
 		case 052:  //F3
-			if (strncmp(#URL,"http:",5)<>0) RunProgram("/rd/1/tinypad", #URL);
-			else RunProgram("/rd/1/tinypad", #download_path);
+			if (strncmp(#URL,"http:",5)==0) 
+			{
+				WriteFile(bufsize, bufpointer, "/tmp0/1/webview.tmp");
+				if (EAX==0) RunProgram("/rd/1/tinypad", "/tmp0/1/webview.tmp");
+			}
+			else
+			{
+				RunProgram("/rd/1/tinypad", #URL);
+			}
 			return;
 		case 054: //F5
-			IF(address_box.flags & 0b10) WB1.Parse(bufpointer, bufsize);
+			IF(address_box.flags & 0b10) WB1.Parse();
 			return;
 
 		case REFRESH:
-			if (http_transfer<>0)
-			{
-				EAX = http_transfer;
-				EAX = EAX.http_msg.content_ptr;		// get pointer to data
-				$push	EAX							// save it on the stack
-				http_free stdcall (http_transfer);	// abort connection
-				$pop	EAX							
-				mem_Free(EAX);						// free data
-				http_transfer=0;
-				bufsize = 0;
-			}
-			if (GetProcessSlot(downloader_id)<>0)
-			{
-				KillProcess(downloader_id);
-				pause(20);
-				Draw_Window();
-				return;
-			}
-			anchor_line_num=WB1.list.first;
-			anchor[0]='|';
-			OpenPage();
+			if (http_transfer > 0) StopLoading();
+			else OpenPage();
 			return;
 		case 014:
 		case 020:
@@ -390,7 +364,7 @@ void Scan(int id)
 			IF(WB1.list.first == WB1.list.count - WB1.list.visible) return;
 			WB1.list.first += WB1.list.visible + 2;
 			IF(WB1.list.visible + WB1.list.first > WB1.list.count) WB1.list.first = WB1.list.count - WB1.list.visible;
-			WB1.Parse(bufpointer, bufsize);
+			WB1.Parse();
 			return;
 
 		case 184: //PgUp
@@ -398,30 +372,30 @@ void Scan(int id)
 			IF(WB1.list.first == 0) return;
 			WB1.list.first -= WB1.list.visible - 2;
 			IF(WB1.list.first < 0) WB1.list.first = 0;
-			WB1.Parse(bufpointer, bufsize);
+			WB1.Parse();
 			return;
 
 		case 178:
 		case BTN_UP:
 			if (WB1.list.first <= 0) return;
 			WB1.list.first--;
-			WB1.Parse(bufpointer, bufsize);
+			WB1.Parse();
 			return;
 
 		case 177: 
 		case BTN_DOWN:
 			if (WB1.list.visible + WB1.list.first >= WB1.list.count) return;
 			WB1.list.first++;
-			WB1.Parse(bufpointer, bufsize);
+			WB1.Parse();
 			return;
 
 		case 180: //home
-			if (WB1.list.KeyHome()) WB1.Parse(bufpointer, bufsize);
+			if (WB1.list.KeyHome()) WB1.Parse();
 			return; 
 
 		case 181: //end
 			if (WB1.list.count < WB1.list.visible) return;
-			if (WB1.list.KeyEnd()) WB1.Parse(bufpointer, bufsize);
+			if (WB1.list.KeyEnd()) WB1.Parse();
 			return;
 	}
 }
@@ -477,39 +451,56 @@ void ProcessLinks(int id)
 		strcpy(#URL, BrowserHistory.CurrentUrl());
 		return;
 	}
-
 	OpenPage();
 	return;
 }
 
+void StopLoading()
+{
+	if (http_transfer<>0)
+	{
+		EAX = http_transfer;
+		EAX = EAX.http_msg.content_ptr;		// get pointer to data
+		$push	EAX							// save it on the stack
+		http_free stdcall (http_transfer);	// abort connection
+		$pop	EAX							
+		mem_Free(EAX);						// free data
+		http_transfer=0;
+		bufsize = 0;
+	}
+	anchor_line_num=WB1.list.first;
+	anchor[0]='|';
+}
+
 void OpenPage()
 {
-	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	KillProcess(downloader_id);
+	if (http_transfer<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	StopLoading();
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
 	strcpy(#header, #version);
 	pre_text =0;
-	if (!strncmp(#URL,"http:",5))
+	WB1.list.ClearList();
+	if (strncmp(#URL,"http:",5)==0)
 	{
-		if (native_http)
-		{
-			http_get stdcall (#URL, #accept_language);	
-			http_transfer = EAX;
-			IF (http_transfer < 0) notify("Error from HTTP lib");
-		}
-		else
-		{
-			KillProcess(downloader_id);
-			DeleteFile(#download_path);
-			downloader_id = RunProgram("/sys/network/downloader", #URL);
-			IF (downloader_id<0) notify("Error running Downloader. Internet unavilable.");
-		}
+		http_get stdcall (#URL, #accept_language);
+		http_transfer = EAX;
+		cur_encoding = _DEFAULT;
+		IF (http_transfer < 0) notify("Error from HTTP lib");
 		Draw_Window();
 		return;
 	}
-	WB1.list.first = WB1.list.count =0;
-	WB1.ReadHtml(_WIN);
+	else
+	{
+		file_size stdcall (#URL);
+		bufsize = EBX;
+		if (!bufsize) return;
+		mem_Free(bufpointer);
+		cur_encoding = _DEFAULT;
+		if (o_bufpointer) o_bufpointer = free(o_bufpointer);
+		bufpointer = mem_Alloc(bufsize);
+		ReadFile(0, bufsize, bufpointer, #URL);	
+	}
 	ShowPage();
 }
 
@@ -523,46 +514,21 @@ void ShowPage()
 	if (!bufsize)
 	{
 		PageLinks.Clear();
-		if (GetProcessSlot(downloader_id)<>0)
-			WB1.Parse(#loading, sizeof(loading));
+		if (http_transfer<>0)
+		{
+			WB1.Prepare(#loading, sizeof(loading));
+		}
 		else
-			WB1.Parse(#page_not_found, sizeof(page_not_found));
+			WB1.Prepare(#page_not_found, sizeof(page_not_found));
 	}
 	else
-		WB1.Parse(bufpointer, bufsize);
+		WB1.Parse();
 
 	if (!header) strcpy(#header, #version);
 	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
-ShowHistory()
-{
-		int i;
-		static int history_pointer;
-		
-		free(history_pointer);
-		history_pointer = malloc(64000);
-		strcat(history_pointer, " <title>History</title><h1>History</h1>");
-		strcat(history_pointer, "<h2>Visited pages</h2><blockquote><br>");
-		for (i=1; i<BrowserHistory.links_count; i++)
-		{
-			strcat(history_pointer, "<a href='");
-			strcat(history_pointer, BrowserHistory.GetUrl(i));
-			strcat(history_pointer, "'>");
-			strcat(history_pointer, BrowserHistory.GetUrl(i));
-			strcat(history_pointer, "</a><br>");
-		}
-		strcat(history_pointer, "</blockquote><h2>Cached images</h2><br>");
-		for (i=1; i<ImgCache.pics_count; i++)
-		{
-			strcat(history_pointer, "<img src='");
-			strcat(history_pointer, #pics[i].path);
-			strcat(history_pointer, "' /><br>");
-			strcat(history_pointer, #pics[i].path);
-		}
-		bufpointer = history_pointer;
-		WB1.Parse(history_pointer, strlen(history_pointer));
-}
+
 
 
 stop:
