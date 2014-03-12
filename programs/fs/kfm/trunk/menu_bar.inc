@@ -31,7 +31,11 @@ draw_menu_bar:
     mov   bx,[right_panel_x.start_x]
     sub   bx,2
     rol   ebx,16
-    mcall
+    push  ecx
+    sub   ecx,13
+    add   ecx,13 shl 16
+    mcall	; middle vertical line
+    pop   ecx
     pop   ebx
     mov   ax,cx
     dec   ax

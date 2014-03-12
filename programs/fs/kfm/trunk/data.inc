@@ -84,28 +84,6 @@ scroll_pointer rb 1
 scroll_pointer_1 rb 1
 ;---------------------------------------------------------------------
 align 4
-device_present:
-    .rd     rb 1
-    .fd     rb 1
-    .hd0	rb 1
-    .hd1	rb 1
-    .hd2	rb 1
-    .hd3	rb 1
-    .cd0	rb 1
-    .cd1	rb 1
-    .cd2	rb 1
-    .cd3	rb 1
-;device_present_text_counter rd 1
-device_present_buffer:
-    .fd       rb 1
-    .hd_cd	  rb 1
-    .hd0_part rb 1
-    .hd1_part rb 1
-    .hd2_part rb 1
-    .hd3_part rb 1
-    rb 4
-;---------------------------------------------------------------------
-align 4
 max_progress_value rd 1
 current_progress_value rd 1
 current_progress_value_1 rd 1

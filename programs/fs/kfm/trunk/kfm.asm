@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; KFM - Kolibri File Manager
-; Copyright (c) 2006 - 2013, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2006 - 2014, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47i 24/12/2013
+; KFM v0.47j 12/03/2014
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -83,7 +83,6 @@ START:
     call  load_buttons_and_convert_to_img
     call  load_initiation_file
     call  add_memory_for_folders
-    call  device_detect
     call  device_detect_f70
     call  select_starting_directories
     mcall 66, 1, 1
@@ -243,7 +242,7 @@ draw_window:
     call  draw_right_sort_button
     call  draw_menu_bar
     call  draw_buttons_panel
-    call  draw_ATAPI_tray_control
+;    call  draw_ATAPI_tray_control
     
 ;    mcall 47,0x80000,[left_scroll_compens],<300, 5>,0xffffff
 ;    call  mouse.draw_data
@@ -459,6 +458,8 @@ include   'mouse.inc'
 include   'openfile.inc'
 ;---------------------------------------------------------------------
 include   'draw.inc'
+;---------------------------------------------------------------------
+include   'drw_dbut.inc'
 ;---------------------------------------------------------------------
 include   'menu_bar.inc'
 ;---------------------------------------------------------------------

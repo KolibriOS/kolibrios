@@ -1,4 +1,4 @@
-header_text	  db 'Kolibri File Manager v0.47i 24/12/2013',0
+header_text	  db 'Kolibri File Manager v0.47j 12/03/2014',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -55,30 +55,6 @@ fbutton_name_alt:
     .f10  db '10',0
     .f11  db '11',0
     .f12  db '12',0
-;---------------------------------------------------------------------
-;device_present_name:
-;    .rd        db 'rd ',0
-;    .fd        db 'fd ',0
-;    .hd0       db 'hd0',0
-;    .hd1       db 'hd1',0
-;    .hd2       db 'hd2',0
-;    .hd3       db 'hd3',0
-;    .cd0       db 'cd0',0
-;    .cd1       db 'cd1',0
-;    .cd2       db 'cd2',0
-;    .cd3       db 'cd3',0
-;---------------------------------------------------------------------
-read_folder_device_name:
-    .rd    db 'rd',0
-    .fd    db 'fd',0
-    .hd0   db 'hd0',0
-    .hd1   db 'hd1',0
-    .hd2   db 'hd2',0
-    .hd3   db 'hd3',0
-    .cd0   db 'cd0',0
-    .cd1   db 'cd1',0
-    .cd2   db 'cd2',0
-    .cd3   db 'cd3',0
 ;---------------------------------------------------------------------
 select_disk_char:
      db '/',0
