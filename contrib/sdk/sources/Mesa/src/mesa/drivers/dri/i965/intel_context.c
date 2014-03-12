@@ -66,6 +66,7 @@ intelGetString(struct gl_context * ctx, GLenum name)
    const struct brw_context *const brw = brw_context(ctx);
    const char *chipset;
    static char buffer[128];
+   static char driver_name[] = "i965_dri.drv";
 
    switch (name) {
    case GL_VENDOR:
@@ -84,6 +85,9 @@ intelGetString(struct gl_context * ctx, GLenum name)
 
       (void) driGetRendererString(buffer, chipset, 0);
       return (GLubyte *) buffer;
+
+   case 0x1F04:  /* GL_DRIVER_NAME */
+      return (GLubyte*)driver_name;
 
    default:
       return NULL;

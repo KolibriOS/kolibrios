@@ -43,9 +43,9 @@
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_general)
-HIDDEN(__mesa_sse_transform_points3_general)
-GLNAME( __mesa_sse_transform_points3_general ):
+GLOBL GLNAME(_mesa_sse_transform_points3_general)
+HIDDEN(_mesa_sse_transform_points3_general)
+GLNAME( _mesa_sse_transform_points3_general ):
 
 #define FRAME_OFFSET 8
     PUSH_L    ( ESI )
@@ -113,9 +113,9 @@ LLBL(K_GTPGR_finish):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_identity)
-HIDDEN(__mesa_sse_transform_points3_identity)
-GLNAME( __mesa_sse_transform_points3_identity ):
+GLOBL GLNAME(_mesa_sse_transform_points3_identity)
+HIDDEN(_mesa_sse_transform_points3_identity)
+GLNAME( _mesa_sse_transform_points3_identity ):
 
 #define FRAME_OFFSET 8
     PUSH_L    ( ESI )
@@ -168,9 +168,9 @@ LLBL(K_GTPIR_finish):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_3d_no_rot)
-HIDDEN(__mesa_sse_transform_points3_3d_no_rot)
-GLNAME(__mesa_sse_transform_points3_3d_no_rot):
+GLOBL GLNAME(_mesa_sse_transform_points3_3d_no_rot)
+HIDDEN(_mesa_sse_transform_points3_3d_no_rot)
+GLNAME(_mesa_sse_transform_points3_3d_no_rot):
 
 #define FRAME_OFFSET 8
     PUSH_L( ESI )
@@ -236,9 +236,9 @@ LLBL(K_GTP3DNRR_finish):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_perspective)
-HIDDEN(__mesa_sse_transform_points3_perspective)
-GLNAME(__mesa_sse_transform_points3_perspective):
+GLOBL GLNAME(_mesa_sse_transform_points3_perspective)
+HIDDEN(_mesa_sse_transform_points3_perspective)
+GLNAME(_mesa_sse_transform_points3_perspective):
 
 #define FRAME_OFFSET 8
     PUSH_L   ( ESI )
@@ -309,9 +309,9 @@ LLBL(K_GTP3PR_finish):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_2d)
-HIDDEN(__mesa_sse_transform_points3_2d)
-GLNAME(__mesa_sse_transform_points3_2d):
+GLOBL GLNAME(_mesa_sse_transform_points3_2d)
+HIDDEN(_mesa_sse_transform_points3_2d)
+GLNAME(_mesa_sse_transform_points3_2d):
 
 #define FRAME_OFFSET 8
     PUSH_L( ESI )
@@ -374,9 +374,9 @@ LLBL(K_GTP3P2DR_finish):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_2d_no_rot)
-HIDDEN(__mesa_sse_transform_points3_2d_no_rot)
-GLNAME(__mesa_sse_transform_points3_2d_no_rot):
+GLOBL GLNAME(_mesa_sse_transform_points3_2d_no_rot)
+HIDDEN(_mesa_sse_transform_points3_2d_no_rot)
+GLNAME(_mesa_sse_transform_points3_2d_no_rot):
 
 #define FRAME_OFFSET 8
 	PUSH_L( ESI )
@@ -435,9 +435,9 @@ LLBL(K_GTP3P2DNRR_finish):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_sse_transform_points3_3d)
-HIDDEN(__mesa_sse_transform_points3_3d)
-GLNAME(__mesa_sse_transform_points3_3d):
+GLOBL GLNAME(_mesa_sse_transform_points3_3d)
+HIDDEN(_mesa_sse_transform_points3_3d)
+GLNAME(_mesa_sse_transform_points3_3d):
 
 #define FRAME_OFFSET 8
 	PUSH_L( ESI )

@@ -46,9 +46,9 @@
 	SEG_TEXT
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_x86_has_cpuid)
-HIDDEN(__mesa_x86_has_cpuid)
-GLNAME(__mesa_x86_has_cpuid):
+GLOBL GLNAME(_mesa_x86_has_cpuid)
+HIDDEN(_mesa_x86_has_cpuid)
+GLNAME(_mesa_x86_has_cpuid):
 
 	/* Test for the CPUID command.  If the ID Flag bit in EFLAGS
 	 * (bit 21) is writable, the CPUID command is present */
@@ -70,9 +70,9 @@ GLNAME(__mesa_x86_has_cpuid):
 
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_x86_cpuid)
-HIDDEN(__mesa_x86_cpuid)
-GLNAME(__mesa_x86_cpuid):
+GLOBL GLNAME(_mesa_x86_cpuid)
+HIDDEN(_mesa_x86_cpuid)
+GLNAME(_mesa_x86_cpuid):
 
 	MOV_L	(REGOFF(4, ESP), EAX)		/* cpuid op */
 	PUSH_L	(EDI)
@@ -94,9 +94,9 @@ GLNAME(__mesa_x86_cpuid):
 	RET
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_x86_cpuid_eax)
-HIDDEN(__mesa_x86_cpuid_eax)
-GLNAME(__mesa_x86_cpuid_eax):
+GLOBL GLNAME(_mesa_x86_cpuid_eax)
+HIDDEN(_mesa_x86_cpuid_eax)
+GLNAME(_mesa_x86_cpuid_eax):
 
 	MOV_L	(REGOFF(4, ESP), EAX)		/* cpuid op */
 	PUSH_L	(EBX)
@@ -107,9 +107,9 @@ GLNAME(__mesa_x86_cpuid_eax):
 	RET
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_x86_cpuid_ebx)
-HIDDEN(__mesa_x86_cpuid_ebx)
-GLNAME(__mesa_x86_cpuid_ebx):
+GLOBL GLNAME(_mesa_x86_cpuid_ebx)
+HIDDEN(_mesa_x86_cpuid_ebx)
+GLNAME(_mesa_x86_cpuid_ebx):
 
 	MOV_L	(REGOFF(4, ESP), EAX)		/* cpuid op */
 	PUSH_L	(EBX)
@@ -121,9 +121,9 @@ GLNAME(__mesa_x86_cpuid_ebx):
 	RET
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_x86_cpuid_ecx)
-HIDDEN(__mesa_x86_cpuid_ecx)
-GLNAME(__mesa_x86_cpuid_ecx):
+GLOBL GLNAME(_mesa_x86_cpuid_ecx)
+HIDDEN(_mesa_x86_cpuid_ecx)
+GLNAME(_mesa_x86_cpuid_ecx):
 
 	MOV_L	(REGOFF(4, ESP), EAX)		/* cpuid op */
 	PUSH_L	(EBX)
@@ -135,9 +135,9 @@ GLNAME(__mesa_x86_cpuid_ecx):
 	RET
 
 ALIGNTEXT4
-GLOBL GLNAME(__mesa_x86_cpuid_edx)
-HIDDEN(__mesa_x86_cpuid_edx)
-GLNAME(__mesa_x86_cpuid_edx):
+GLOBL GLNAME(_mesa_x86_cpuid_edx)
+HIDDEN(_mesa_x86_cpuid_edx)
+GLNAME(_mesa_x86_cpuid_edx):
 
 	MOV_L	(REGOFF(4, ESP), EAX)		/* cpuid op */
 	PUSH_L	(EBX)
@@ -161,9 +161,9 @@ GLNAME(__mesa_x86_cpuid_edx):
  * See freedesktop.org bug #1709 for more info.
  */
 ALIGNTEXT4
-GLOBL GLNAME( __mesa_test_os_sse_support )
-HIDDEN(__mesa_test_os_sse_support)
-GLNAME( __mesa_test_os_sse_support ):
+GLOBL GLNAME( _mesa_test_os_sse_support )
+HIDDEN(_mesa_test_os_sse_support)
+GLNAME( _mesa_test_os_sse_support ):
 
 	XORPS	( XMM0, XMM0 )
 
@@ -176,9 +176,9 @@ GLNAME( __mesa_test_os_sse_support ):
  * otherwise this could kill the client application.
  */
 ALIGNTEXT4
-GLOBL GLNAME( __mesa_test_os_sse_exception_support )
-HIDDEN(__mesa_test_os_sse_exception_support)
-GLNAME( __mesa_test_os_sse_exception_support ):
+GLOBL GLNAME( _mesa_test_os_sse_exception_support )
+HIDDEN(_mesa_test_os_sse_exception_support)
+GLNAME( _mesa_test_os_sse_exception_support ):
 
 	PUSH_L	( EBP )
 	MOV_L	( ESP, EBP )

@@ -44,9 +44,9 @@
 
 
 ALIGNTEXT16
-GLOBL GLNAME(__mesa_sse_transform_rescale_normals_no_rot)
-HIDDEN(__mesa_sse_transform_rescale_normals_no_rot)
-GLNAME(__mesa_sse_transform_rescale_normals_no_rot):
+GLOBL GLNAME(_mesa_sse_transform_rescale_normals_no_rot)
+HIDDEN(_mesa_sse_transform_rescale_normals_no_rot)
+GLNAME(_mesa_sse_transform_rescale_normals_no_rot):
 
 #define FRAME_OFFSET 8
 	PUSH_L  ( ESI )
@@ -106,9 +106,9 @@ LLBL(K_G3TRNNRR_finish):
 
 
 ALIGNTEXT16
-GLOBL GLNAME(__mesa_sse_transform_rescale_normals)
-HIDDEN(__mesa_sse_transform_rescale_normals)
-GLNAME(__mesa_sse_transform_rescale_normals):
+GLOBL GLNAME(_mesa_sse_transform_rescale_normals)
+HIDDEN(_mesa_sse_transform_rescale_normals)
+GLNAME(_mesa_sse_transform_rescale_normals):
 
 #define FRAME_OFFSET 8
 	PUSH_L  ( ESI )
@@ -199,9 +199,9 @@ LLBL(K_G3TRNR_finish):
 
 
 ALIGNTEXT16
-GLOBL GLNAME(__mesa_sse_transform_normals_no_rot)
-HIDDEN(__mesa_sse_transform_normals_no_rot)
-GLNAME(__mesa_sse_transform_normals_no_rot):
+GLOBL GLNAME(_mesa_sse_transform_normals_no_rot)
+HIDDEN(_mesa_sse_transform_normals_no_rot)
+GLNAME(_mesa_sse_transform_normals_no_rot):
 
 #define FRAME_OFFSET 8
 	PUSH_L  ( ESI )

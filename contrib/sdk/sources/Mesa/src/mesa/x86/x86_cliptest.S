@@ -100,9 +100,9 @@ clip_table:
 #endif
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_cliptest_points4 )
-HIDDEN(__mesa_x86_cliptest_points4)
-GLNAME( __mesa_x86_cliptest_points4 ):
+GLOBL GLNAME( _mesa_x86_cliptest_points4 )
+HIDDEN(_mesa_x86_cliptest_points4)
+GLNAME( _mesa_x86_cliptest_points4 ):
 
 #ifdef ELFPIC
 #define FRAME_OFFSET 20
@@ -275,9 +275,9 @@ LLBL(ctp4_finish):
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_cliptest_points4_np )
-HIDDEN(__mesa_x86_cliptest_points4_np)
-GLNAME( __mesa_x86_cliptest_points4_np ):
+GLOBL GLNAME( _mesa_x86_cliptest_points4_np )
+HIDDEN(_mesa_x86_cliptest_points4_np)
+GLNAME( _mesa_x86_cliptest_points4_np ):
 
 #ifdef ELFPIC
 #define FRAME_OFFSET 20
@@ -401,7 +401,7 @@ LLBL(ctp4_np_finish):
 	POP_L( ESI )
 
 	RET
-
+	
 #if defined (__ELF__) && defined (__linux__)
 	.section .note.GNU-stack,"",%progbits
 #endif

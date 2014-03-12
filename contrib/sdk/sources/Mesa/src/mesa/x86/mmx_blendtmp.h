@@ -12,9 +12,9 @@
  *
  */
 ALIGNTEXT16
-GLOBL GLNAME( TAG(__mesa_mmx_blend) )
-HIDDEN( TAG(__mesa_mmx_blend) )
-GLNAME( TAG(__mesa_mmx_blend) ):
+GLOBL GLNAME( TAG(_mesa_mmx_blend) )
+HIDDEN( TAG(_mesa_mmx_blend) )
+GLNAME( TAG(_mesa_mmx_blend) ):
 
     PUSH_L     ( EBP )
     MOV_L      ( ESP, EBP )

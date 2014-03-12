@@ -1189,6 +1189,8 @@ __DRIconfig **intelInitScreen2(__DRIscreen *psp)
 {
    struct intel_screen *intelScreen;
 
+   printf("mesa-9.2.5-i965_dri build %s %s\n", __DATE__, __TIME__);
+
    if (psp->dri2.loader->base.version <= 2 ||
        psp->dri2.loader->getBuffersWithFormat == NULL) {
       fprintf(stderr,

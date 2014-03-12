@@ -28,7 +28,7 @@ MESA_DEFS+= -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDI
 
 EGL_DEFS = -DHAVE_DRM_PLATFORM -D__unix__ -DMESA_EGL_NO_X11_HEADERS -D_EGL_BUILT_IN_DRIVER_DRI2
 
-SUBDIRS = src/egl src/glsl
+SUBDIRS = src/egl src/glsl src/mapi src/mesa
 
 # targets 
 

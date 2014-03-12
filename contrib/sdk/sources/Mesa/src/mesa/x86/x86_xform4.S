@@ -65,9 +65,9 @@
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_transform_points4_general )
-HIDDEN(__mesa_x86_transform_points4_general)
-GLNAME( __mesa_x86_transform_points4_general ):
+GLOBL GLNAME( _mesa_x86_transform_points4_general )
+HIDDEN(_mesa_x86_transform_points4_general)
+GLNAME( _mesa_x86_transform_points4_general ):
 
 #define FRAME_OFFSET 8
 	PUSH_L( ESI )
@@ -179,9 +179,9 @@ LLBL(x86_p4_gr_done):
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_transform_points4_perspective )
-HIDDEN(__mesa_x86_transform_points4_perspective)
-GLNAME( __mesa_x86_transform_points4_perspective ):
+GLOBL GLNAME( _mesa_x86_transform_points4_perspective )
+HIDDEN(_mesa_x86_transform_points4_perspective)
+GLNAME( _mesa_x86_transform_points4_perspective ):
 
 #define FRAME_OFFSET 12
 	PUSH_L( ESI )
@@ -262,9 +262,9 @@ LLBL(x86_p4_pr_done):
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_transform_points4_3d )
-HIDDEN(__mesa_x86_transform_points4_3d)
-GLNAME( __mesa_x86_transform_points4_3d ):
+GLOBL GLNAME( _mesa_x86_transform_points4_3d )
+HIDDEN(_mesa_x86_transform_points4_3d)
+GLNAME( _mesa_x86_transform_points4_3d ):
 
 #define FRAME_OFFSET 12
 	PUSH_L( ESI )
@@ -365,9 +365,9 @@ LLBL(x86_p4_3dr_done):
 
 
 ALIGNTEXT16
-GLOBL GLNAME(__mesa_x86_transform_points4_3d_no_rot)
-HIDDEN(__mesa_x86_transform_points4_3d_no_rot)
-GLNAME(__mesa_x86_transform_points4_3d_no_rot):
+GLOBL GLNAME(_mesa_x86_transform_points4_3d_no_rot)
+HIDDEN(_mesa_x86_transform_points4_3d_no_rot)
+GLNAME(_mesa_x86_transform_points4_3d_no_rot):
 
 #define FRAME_OFFSET 12
 	PUSH_L( ESI )
@@ -446,9 +446,9 @@ LLBL(x86_p4_3dnrr_done):
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_transform_points4_2d )
-HIDDEN(__mesa_x86_transform_points4_2d)
-GLNAME( __mesa_x86_transform_points4_2d ):
+GLOBL GLNAME( _mesa_x86_transform_points4_2d )
+HIDDEN(_mesa_x86_transform_points4_2d)
+GLNAME( _mesa_x86_transform_points4_2d ):
 
 #define FRAME_OFFSET 16
 	PUSH_L( ESI )
@@ -532,9 +532,9 @@ LLBL(x86_p4_2dr_done):
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_transform_points4_2d_no_rot )
-HIDDEN(__mesa_x86_transform_points4_2d_no_rot)
-GLNAME( __mesa_x86_transform_points4_2d_no_rot ):
+GLOBL GLNAME( _mesa_x86_transform_points4_2d_no_rot )
+HIDDEN(_mesa_x86_transform_points4_2d_no_rot)
+GLNAME( _mesa_x86_transform_points4_2d_no_rot ):
 
 #define FRAME_OFFSET 16
 	PUSH_L( ESI )
@@ -610,9 +610,9 @@ LLBL(x86_p4_2dnrr_done):
 
 
 ALIGNTEXT16
-GLOBL GLNAME( __mesa_x86_transform_points4_identity )
-HIDDEN(__mesa_x86_transform_points4_identity)
-GLNAME( __mesa_x86_transform_points4_identity ):
+GLOBL GLNAME( _mesa_x86_transform_points4_identity )
+HIDDEN(_mesa_x86_transform_points4_identity)
+GLNAME( _mesa_x86_transform_points4_identity ):
 
 #define FRAME_OFFSET 12
 	PUSH_L( ESI )
