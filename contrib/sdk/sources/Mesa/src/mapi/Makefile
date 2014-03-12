@@ -53,6 +53,6 @@ libGL.dll: $(LIBGL_OBJS) Makefile
 	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) -o $@ $<
 
 %.o : %.S Makefile
-	$(CC) -c -save-temps -U_WIN32 -I $(MESA_SRC)/mesa -o $@ $<
+	$(CC) -c -U_WIN32 -I $(MESA_SRC)/mesa -o $@ $<
 
  

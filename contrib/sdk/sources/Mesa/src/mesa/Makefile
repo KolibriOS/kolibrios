@@ -4,7 +4,7 @@ SRC_DIR:=$(SDK_DIR)/sources
 MESA_SRC:= $(SRC_DIR)/Mesa/src
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
-CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields -save-temps
+CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
 LD = ld
@@ -388,7 +388,7 @@ i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
 	$(CC) $(CFLAGS) -std=c99 $(MESA_DEFS) $(INC_MESA) $(INC_I965) -o $@ $<
 
 %.o : %.S Makefile
-	$(CC) -c -save-temps -U_WIN32 -DUSE_X86_ASM -DUSE_MMX_ASM -DUSE_SSE_ASM -I $(MESA_SRC)/mesa -o $@ $<
+	$(CC) -c -U_WIN32 -DUSE_X86_ASM -DUSE_MMX_ASM -DUSE_SSE_ASM -I $(MESA_SRC)/mesa -o $@ $<
 
 %.o : %.cpp Makefile
 	$(CC) $(CFLAGS) $(MESA_DEFS) $(INC_MESA) $(INC_I965) -o $@ $<
