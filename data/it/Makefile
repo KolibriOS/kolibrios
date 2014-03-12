@@ -110,7 +110,7 @@ FASM_PROGRAMS:=\
  develop/scancode:DEVELOP/SCANCODE:$(PROGS)/develop/scancode/trunk/scancode.asm \
  develop/t_edit:DEVELOP/T_EDIT:$(PROGS)/other/t_edit/t_edit.asm \
  develop/test_gets:DEVELOP/test_gets:$(PROGS)/develop/libraries/console/examples/test_gets.asm \
- develop/testcon2:DEVELOP/TESTCON2:$(PROGS)/develop/libraries/console/examples/testcon2.asm \
+ develop/testcon2:DEVELOP/TESTCON2:$(PROGS)/develop/libraries/console/examples/testcon2_eng.asm \
  develop/thread:DEVELOP/THREAD:$(PROGS)/develop/examples/thread/trunk/thread.asm \
  develop/info/asm.syn:DEVELOP/INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
  develop/info/cpp_kol_cla.syn:DEVELOP/INFO/CPP_KOL_CLA.SYN:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
