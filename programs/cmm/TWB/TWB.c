@@ -10,8 +10,6 @@ scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555
 
 char header[2048];
 
-char download_path[]="/rd/1/.download";
-
 struct TWebBrowser {
 	llist list;
 	DrawBufer DrawBuf;
@@ -27,7 +25,7 @@ struct TWebBrowser {
 TWebBrowser WB1;
 
 byte b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
-	link, ignor_text, cur_encoding, text_align;
+	link, ignor_text, cur_encoding, text_align, t_html, t_body;
 byte condition_text_active, condition_text_val, condition_href, condition_max;
 
 enum { _WIN, _DOS, _KOI, _UTF, _DEFAULT };
@@ -76,6 +74,7 @@ void TWebBrowser::DrawPage()
 		line = 0;
 		return;
 	}
+	if (t_html) && (!t_body) return;
 	
 	if (stroka >= 0) && (stroka - 2 < list.visible) && (line) && (!anchor)
 	{
@@ -175,7 +174,7 @@ void TWebBrowser::Parse(){
 	char temp[768];
 	dword bufpos = bufpointer;
 	
-	b_text = i_text = u_text = s_text = blq_text = 
+	b_text = i_text = u_text = s_text = blq_text = t_html = t_body =
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
 	condition_text_val = condition_text_active = 0; //обнуляем теги
 	condition_max = 255;
@@ -365,6 +364,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (isTag("html"))
 	{
 		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (opened==0) ignor_text = 1; ELSE ignor_text = 0;
+		t_html = opened;
 		return;
 	}
 
@@ -400,6 +400,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	
 	if (isTag("body"))
 	{
+		t_body = opened;
 		do{
 			if (!strcmp(#parametr, "condition_max=")) condition_max = atoi(#options);
 			if (!strcmp(#parametr, "link=")) link_color_inactive = GetColor(#options);
@@ -655,6 +656,7 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 void TWebBrowser::TextGoDown(int left1, top1, width1)
 {
 	if (!stroka) DrawBar(list.x, list.y, list.w, 5, bg_color); //закрашиваем фон над первой строкой
+	if (t_html) && (!t_body) return;
 	if (top1>=list.y) && ( top1 < list.h+list.y-10)  && (!anchor)
 	{
 		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(left1,top1,list.w,list.line_h,stolbec * 6);
