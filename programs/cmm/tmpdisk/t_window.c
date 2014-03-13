@@ -153,7 +153,7 @@ void Main_Window()
 			break;
          case evReDraw:			
 			sc.get();
-			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.5.2",0);
+			DefineAndDrawWindow(170,150,314,270,0x74,sc.work,"Virtual Disk Manager 0.5",0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
 
@@ -225,14 +225,12 @@ unsigned int disk_pos_y[]={60,85,110,60,85,110,60,85,110,60,85,110};
 void DrawTmpDisks()
 {
 	char free_ram_text[60];
-	dword free_ram;
 	int i,FreeRAM=GetFreeRAM()/1024;
 	DrawBar(0,51, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
 	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.work_graph);
 	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
 	strcpy(#free_ram_text, FREE_RAM_TEXT);
-	free_ram = itoa(FreeRAM);
-	strcat(#free_ram_text, free_ram);
+	strcat(#free_ram_text, itoa(FreeRAM));
 	strcat(#free_ram_text, " MB");
 	WriteText(10, Form.cheight-13, 0x80, sc.work_text, #free_ram_text);
 	if (disk_num==0)
