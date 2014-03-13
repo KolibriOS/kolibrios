@@ -346,9 +346,10 @@ inline fastcall strttl( EDX)
 	}while(AL!=0);
 }
 
-unsigned char buffer[11];
+
 dword itoa( ESI)
 {
+    unsigned char buffer[11];
 	$pusha
 	EDI = #buffer;
 	ECX = 10;
