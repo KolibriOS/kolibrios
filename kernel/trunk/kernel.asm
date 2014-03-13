@@ -2248,27 +2248,15 @@ sysfn_minimize:         ; 18.10 = minimize window
 ;------------------------------------------------------------------------------
 align 4
 sysfn_getdiskinfo:      ; 18.11 = get disk info table
-;     cmp  ecx,1
         dec     ecx
-        jnz     full_table
-  small_table:
-        call    for_all_tables
-        mov     ecx, 10
-        cld
-        rep movsb
-        ret
-   for_all_tables:
+        jnz     .exit
+.small_table:
         mov     edi, edx
         mov     esi, DRIVE_DATA
-        ret
-  full_table:
-;     cmp  ecx,2
-        dec     ecx
-        jnz     exit_for_anyone
-        call    for_all_tables
-        mov     ecx, DRIVE_DATA_SIZE/4
+        mov     ecx, DRIVE_DATA_SIZE ;10
         cld
-        rep movsd
+        rep movsb
+.exit:
         ret
 ;------------------------------------------------------------------------------
 sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)

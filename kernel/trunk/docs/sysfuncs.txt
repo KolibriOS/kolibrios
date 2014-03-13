@@ -846,7 +846,6 @@ Parameters:
   * ebx = 11 - subfunction number
   * ecx = type of the table:
     * 1 = short version, 10 bytes
-    * 2 = full version, 65536 bytes
   * edx = pointer to the buffer (in the application) for the table
 Returned value:
   * function does not return value
@@ -878,24 +877,7 @@ Format of the table: short version:
     the file system is not supported). Current version of the kernel
     supports only FAT16, FAT32 and NTFS for hard disks.
   * +6: 4 db: reserved
-Format of the table: full version:
-  * +0: 10 db: same as for the short version
-  * +10: 100 db: data for the first partition
-  * +110: 100 db: data for the second partition
-  * ...
-  * +10+100*(n-1): 100 db: data for the last partition
-The partitions are located as follows: at first sequentially all
-recoginzed partitions on HD on IDE0 (if present),
-then on HD on IDE1 (if present) and so on up to IDE3.
-Format of the information about partition
-(at moment only FAT is supported):
-  * +0: dword: first physical sector of the partition
-  * +4: dword: last physical sector of the partition
-    (belongs to the partition)
-  * +8: byte: file system type:
-    16=FAT16, 32=FAT32, 1=NTFS
-  * other data are dependent on file system, are modified with
-    kernel modifications and therefore are not described
+
 Remarks:
   * The short table can be used for obtaining the information about
     available devices.

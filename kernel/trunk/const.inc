@@ -179,8 +179,7 @@ struct  TSS
         _io_map_1   rb 4096
 ends
 
-PARTITION_COUNT     equ 64
-DRIVE_DATA_SIZE     equ (16+PARTITION_COUNT*100)
+DRIVE_DATA_SIZE     equ 10
 
 OS_BASE             equ 0x80000000
 

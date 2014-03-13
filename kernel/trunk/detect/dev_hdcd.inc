@@ -24,26 +24,13 @@ FindHDD:
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 0
         call    FindHDD_3
-;        mov     ax,[Sector512+176]
-;        mov     [DRIVE_DATA+6],ax
-;        mov     ax,[Sector512+126]
-;        mov     [DRIVE_DATA+8],ax
-;        mov     ax,[Sector512+128]
-;        mov     [DRIVE_DATA+8],ax
         mov     [DiskNumber], 1
         call    FindHDD_3
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+7],al
         inc     [ChannelNumber]
         mov     [DiskNumber], 0
         call    FindHDD_3
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+8],al
         mov     [DiskNumber], 1
         call    FindHDD_1
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+9],al
-
         jmp     EndFindHDD
 
 FindHDD_1:
