@@ -33,7 +33,7 @@ void MailBoxNetworkProcess() {
 				SetMailBoxStatus(NULL, "Counting mail, awaiting answer...");			
 				request_len = GetRequest("STAT", NULL);
 				Send(socketnum, #request, request_len, 0);
-				if (EAX == 0xffffffff) { debug("Error sending STAT. Retry..."w); break;}
+				if (EAX == 0xffffffff) { debugln("Error sending STAT. Retry..."w); break;}
 				aim = GET_ANSWER_NSTAT;
 				break;
 
@@ -43,7 +43,7 @@ void MailBoxNetworkProcess() {
 									
 				if (immbuffer[ticks-2]=='\n')
 				{
-					debug(#immbuffer);
+					debugln(#immbuffer);
 					if (strstr(#immbuffer,"+OK"))
 					{
 						strcpyb(#immbuffer, #param, "+OK ", " ");
@@ -52,7 +52,7 @@ void MailBoxNetworkProcess() {
 						listbuffer = mem_Alloc(30*mail_list.count); //24* original
 						listpointer = listbuffer;	
 						aim = SEND_NLIST;
-						debug("Receiving mail list...");
+						debugln("Receiving mail list...");
 					}
 					else
 					{
@@ -65,7 +65,7 @@ void MailBoxNetworkProcess() {
 				WriteText(5, Form.cheight-11, 0x80, sc.work_text, "Send LIST, awaiting answer...");
 				request_len = GetRequest("LIST", NULL);
 				Send(socketnum, #request, request_len, 0);
-				if (EAX == 0xffffffff) {debug("Error while sending LIST. Retry..."); break;}
+				if (EAX == 0xffffffff) {debugln("Error while sending LIST. Retry..."); break;}
 				else aim = GET_ANSWER_NLIST;
 				break;
 
@@ -78,7 +78,7 @@ void MailBoxNetworkProcess() {
 				if (strncmp(listpointer-5,"\n.\n",5)==0)  // note that c-- assembles "\n.\n" to 0x0d, 0x0a, 0x2e, 0x0d, 0x0a	
 				{
 					aim = SEND_RETR;
-					debug("goto SEND_RETR");
+					debugln("goto SEND_RETR");
 					DrawMailBox();
 					
 					*listpointer='\0';
@@ -102,13 +102,13 @@ void MailBoxNetworkProcess() {
 				mailstart = malloc(mailsize);
 				if (!mailstart)
 				{
-					debug("alloc error!");
+					debugln("alloc error!");
 					aim=NULL;
 					break;
 				}
 				mailend = mailstart;
 				aim = GET_ANSWER_RETR;
-				debug("goto GET_ANSWER_RETR");
+				debugln("goto GET_ANSWER_RETR");
 				break;
 			
 		case GET_ANSWER_RETR:
@@ -117,7 +117,7 @@ void MailBoxNetworkProcess() {
 				mailend += ticks;
 				if (mailsize + mailstart - mailend - 2 < 0)
 				{
-					debug("Resizing buffer");
+					debugln("Resizing buffer");
 					mailsize += 4096;
 					mailstart = realloc(mailstart, mailsize);
 					if (!mailstart) { StopConnect("Realloc error!"); break;}
@@ -357,7 +357,8 @@ void InitTWB() {
 void DrawLetter() {
 	pre_text = 2;
 	bufsize = strlen(mdata);
-	if (bufsize) WB1.ParseHTML(mdata);
+	WB1.Prepare(bufsize, mdata);
+	if (bufsize) WB1.Parse();
 }
 
 

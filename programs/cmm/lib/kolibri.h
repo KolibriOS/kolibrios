@@ -338,7 +338,7 @@ inline fastcall int PlaySpeaker( ESI)
 	$int 0x40
 }
 
-inline fastcall void debug( EDX)
+inline fastcall void debugln( EDX)
 {
 	$push eax
 	$push ebx

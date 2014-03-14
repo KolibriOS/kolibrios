@@ -30,14 +30,14 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.7";
+	char version[]=" Текстовый браузер 0.99.71";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n\0";
 #else
-	char version[]=" Text-based Browser 0.99.7";
+	char version[]=" Text-based Browser 0.99.71";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -207,12 +207,12 @@ void main()
 						}
 						else
 						{
-							if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 							ESI = http_transfer;
 							bufpointer = ESI.http_msg.content_ptr;
 							bufsize = ESI.http_msg.content_received;
 							http_free stdcall (http_transfer);
 							http_transfer=0;
+							SetPageDefaults();
 							Draw_Window();		// stop button => refresh button
 						}
 					}
@@ -469,28 +469,33 @@ void StopLoading()
 		mem_Free(EAX);						// free data
 		http_transfer=0;
 		bufsize = 0;
+		PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 	}
+}
+
+void SetPageDefaults()
+{
+	strcpy(#header, #version);
+	pre_text = 0;
+	WB1.list.count = WB1.list.first = 0;
+	stroka = 0;
+	cur_encoding = _DEFAULT;
+	if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 	anchor_line_num=WB1.list.first;
 	anchor[0]='|';
 }
 
 void OpenPage()
 {
-	if (http_transfer<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 	StopLoading();
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
-	strcpy(#header, #version);
-	pre_text =0;
-	WB1.list.ClearList();
 	if (strncmp(#URL,"http:",5)==0)
 	{
+		_PutImage(88,10, 24,24, #stop_btn);
 		http_get stdcall (#URL, #accept_language);
 		http_transfer = EAX;
-		cur_encoding = _DEFAULT;
 		IF (http_transfer < 0) notify("Error from HTTP lib");
-		Draw_Window();
-		return;
 	}
 	else
 	{
@@ -498,12 +503,11 @@ void OpenPage()
 		bufsize = EBX;
 		if (!bufsize) return;
 		mem_Free(bufpointer);
-		cur_encoding = _DEFAULT;
-		if (o_bufpointer) o_bufpointer = free(o_bufpointer);
 		bufpointer = mem_Alloc(bufsize);
+		SetPageDefaults();
 		ReadFile(0, bufsize, bufpointer, #URL);	
+		ShowPage();
 	}
-	ShowPage();
 }
 
 void ShowPage()

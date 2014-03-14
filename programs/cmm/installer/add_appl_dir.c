@@ -11,8 +11,8 @@ struct sysdir
 	int i;
 	strcpy(#sysdir.name, tName);
 	strcpy(#sysdir.path, tPath);
-	debug(#sysdir.name);
-	debug(#sysdir.path);
+	debugln(#sysdir.name);
+	debugln(#sysdir.path);
 	$mov eax, 30
 	$mov ebx, 3
 	ECX = #sysdir;

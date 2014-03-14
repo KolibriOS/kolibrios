@@ -44,13 +44,13 @@ char Console_Work()
 	{
 		case '?': //помощь по коммандам
 		case 'h':
-			debug("tmpdisk command line parameters:");
-			debug("a[number]s[size in MB] - add RAM disk");
-			debug("d[number] - delete RAM disk");
+			debugln("tmpdisk command line parameters:");
+			debugln("a[number]s[size in MB] - add RAM disk");
+			debugln("d[number] - delete RAM disk");
 			ExitProcess();
 			break;
 		case 'd': //удалить диск
-			debug(DELETE_DISK_TEXT);
+			debugln(DELETE_DISK_TEXT);
 			del_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
 			ioctl.io_code  = DEV_DEL_DISK;
@@ -60,19 +60,19 @@ char Console_Work()
 			ioctl.out_size = 0;
 			break;
 		case 'a': //добавить диск
-			debug(ADD_DISK_TEXT);
+			debugln(ADD_DISK_TEXT);
 			disk_size= strchr(#param, 's');
 			if (!disk_size)
 			{
 				add_disk.DiskSize = GetFreeRAM() / 5;
-				debug(DONT_KNOW_DISK_SIZE_TEXT);
+				debugln(DONT_KNOW_DISK_SIZE_TEXT);
 			}				
 			else
 				add_disk.DiskSize = atoi(#param+disk_size)*2048;
 			strcpy(#size_t, NEW_DISK_TEXT);
 			strcat(#size_t, itoa(add_disk.DiskSize/2048));
 			strcat(#size_t, " MB");
-			debug(#size_t);
+			debugln(#size_t);
 			add_disk.DiskId = param[1]-'0';
 			ioctl.handle   = driver_handle;
 			ioctl.io_code  = DEV_ADD_DISK;
@@ -82,13 +82,13 @@ char Console_Work()
 			ioctl.out_size = 0;
 			break;
 		default:
-			debug("unknown command line parameters");
-			debug("use 'h' or '?' for help");
+			debugln("unknown command line parameters");
+			debugln("use 'h' or '?' for help");
 			ExitProcess();			
 	}
 	
 	driver_rezult = RuleDriver(#ioctl);
-	if (driver_rezult<7) debug(rezult_text[driver_rezult]);
+	if (driver_rezult<7) debugln(rezult_text[driver_rezult]);
 	return driver_rezult;
 }
 

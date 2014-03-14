@@ -12,7 +12,7 @@
 	}
 	if (error = GetFileInfo(from1, #CopyFile_atr1))
 	{
-		debug("Error: copyf->GetFileInfo");
+		debugln("Error: copyf->GetFileInfo");
 		return error;
 	}
 	if (isdir(from1))
@@ -30,18 +30,18 @@
 	dword error, cbuf;
 	if (error = GetFileInfo(copy_from3, #CopyFile_atr))
 	{
-		debug("Error: CopyFile->GetFileInfo");
+		debugln("Error: CopyFile->GetFileInfo");
 	}
 	else
 	{
 		cbuf = malloc(CopyFile_atr.sizelo);	
 		if (error = ReadFile(0, CopyFile_atr.sizelo, cbuf, copy_from3))
 		{
-			debug("Error: CopyFile->ReadFile");
+			debugln("Error: CopyFile->ReadFile");
 		}
 		else
 		{
-			if (error = WriteFile(CopyFile_atr.sizelo, cbuf, copy_in3)) debug("Error: CopyFile->WriteFile");
+			if (error = WriteFile(CopyFile_atr.sizelo, cbuf, copy_in3)) debugln("Error: CopyFile->WriteFile");
 		}
 	}
 	free(cbuf);
@@ -56,7 +56,7 @@
 
 	if (error = GetDir(#dirbuf, #fcount, from2, DIRS_ONLYREAL))
 	{
-		debug("Error: CopyFolder->GetDir");
+		debugln("Error: CopyFolder->GetDir");
 		debug_error(from2, error);
 		free(dirbuf);
 		return error;
@@ -64,7 +64,7 @@
 
 	if (chrnum(in2, '/')>2) && (error = CreateDir(in2))
 	{
-		debug("Error: CopyFolder->CreateDir");
+		debugln("Error: CopyFolder->CreateDir");
 		debug_error(in2, error);
 		free(dirbuf);
 		return error;
@@ -90,7 +90,7 @@
 			copyf_Draw_Progress(filename);
 			if (error=CopyFile(#copy_from2, #copy_in2)) 
 			{
-				if (fabs(error)==8) { debug("Stop copying."); break;} //TODO: may be need grobal var like stop_all
+				if (fabs(error)==8) { debugln("Stop copying."); break;} //TODO: may be need grobal var like stop_all
 				error=CopyFile(#copy_from2, #copy_in2); // #2 :)
 			}
 		}
@@ -157,6 +157,6 @@
 
 :void debug_error(dword path, error_number)
 {
-	if (path) debug(path);
-	debug(get_error(error_number));
+	if (path) debugln(path);
+	debugln(get_error(error_number));
 }

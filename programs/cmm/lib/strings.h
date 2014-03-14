@@ -418,7 +418,7 @@ void debugi(dword d_int)
 {
 	char tmpch[12];
 	itoa_(#tmpch, d_int);
-	debug(#tmpch);
+	debugln(#tmpch);
 }
 
 
