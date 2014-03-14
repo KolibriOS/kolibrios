@@ -30,14 +30,14 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.69";
+	char version[]=" Текстовый браузер 0.99.7";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n\0";
 #else
-	char version[]=" Text-based Browser 0.99.69";
+	char version[]=" Text-based Browser 0.99.7";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -78,6 +78,7 @@ void main()
 	int key, btn;
 	int half_scroll_size;
 	int scroll_used=0, show_menu;
+	int bufpointer_len;
 	
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
@@ -167,14 +168,6 @@ void main()
 			case evNetwork:
 				if (http_transfer > 0) {
 					http_process stdcall (http_transfer);
-					$push EAX
-					ESI = http_transfer;
-					if (o_bufpointer) o_bufpointer = free(o_bufpointer);
-					bufpointer = ESI.http_msg.content_ptr;
-					bufsize = ESI.http_msg.content_received;
-					WB1.Parse();
-					
-					$pop EAX	
 					if (EAX == 0) {	
 						ESI = http_transfer;
 						// Handle redirects
@@ -204,10 +197,10 @@ void main()
 							redirected = 0;
 						}
 						// Loading the page is complete, free resources
-						http_free stdcall (http_transfer);
-						http_transfer=0;
 						if (redirected>0)
 						{
+							http_free stdcall (http_transfer);
+							http_transfer=0;
 							WB1.GetNewUrl();
 							strcpy(#editURL, #URL);
 							BrowserHistory.current--;
@@ -215,6 +208,13 @@ void main()
 						}
 						else
 						{
+							if (o_bufpointer) o_bufpointer = free(o_bufpointer);
+							ESI = http_transfer;
+							bufpointer = ESI.http_msg.content_ptr;
+							bufsize = ESI.http_msg.content_received;
+							bufpointer_len = strlen(bufpointer);
+							http_free stdcall (http_transfer);
+							http_transfer=0;
 							Draw_Window();		// stop button => refresh button
 						}
 					}
@@ -335,7 +335,11 @@ void Scan(int id)
 			return;
 
 		case REFRESH:
-			if (http_transfer > 0) StopLoading();
+			if (http_transfer > 0) 
+			{
+				StopLoading();
+				Draw_Window();
+			}
 			else OpenPage();
 			return;
 		case 014:
