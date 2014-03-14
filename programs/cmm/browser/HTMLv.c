@@ -78,7 +78,6 @@ void main()
 	int key, btn;
 	int half_scroll_size;
 	int scroll_used=0, show_menu;
-	int bufpointer_len;
 	
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
@@ -212,7 +211,6 @@ void main()
 							ESI = http_transfer;
 							bufpointer = ESI.http_msg.content_ptr;
 							bufsize = ESI.http_msg.content_received;
-							bufpointer_len = strlen(bufpointer);
 							http_free stdcall (http_transfer);
 							http_transfer=0;
 							Draw_Window();		// stop button => refresh button

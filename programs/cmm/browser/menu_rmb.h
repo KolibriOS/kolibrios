@@ -75,5 +75,9 @@ void DrawMenuList()
 		}
 		WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N*2]);
 	}
-	DrawBar(7, cur_encoding*menu.line_h+9, 4, 4, 0x444444); //show current encoding
+	if (cur_encoding!=_DEFAULT)
+	{
+		DrawBar(7, cur_encoding*menu.line_h+9, 4, 4, 0x444444); //show current encoding
+	}
+	else DrawBar(7, _DOS*menu.line_h+9, 4, 4, 0x444444); //show current encoding
 }
