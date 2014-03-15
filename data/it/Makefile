@@ -626,10 +626,10 @@ e80: .obj.e80/start.o .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o .ob
 
 # Rules for Checkers
 CHECKERSDIR=$(PROGS)/games/checkers/trunk
-checkers : $(CHECKERSDIR)/checkers.o
+games/checkers : checkers.o
 		g++ -L/usr/X11R6/lib -lX11 -o checkers checkers.o
 
-$(CHECKERSDIR)/checkers.o : $(CHECKERSDIR)/checkers.cpp \
+checkers.o : $(CHECKERSDIR)/checkers.cpp \
 	$(CHECKERSDIR)/position.h \
 	$(CHECKERSDIR)/board.h \
 	$(CHECKERSDIR)/player.h \
