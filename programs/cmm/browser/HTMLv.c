@@ -30,14 +30,14 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.73";
+	char version[]=" Текстовый браузер 0.99.74";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 0.99.73";
+	char version[]=" Text-based Browser 0.99.74";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -469,6 +469,7 @@ void StopLoading()
 		mem_Free(EAX);						// free data
 		http_transfer=0;
 		bufsize = 0;
+		bufpointer = mem_Free(bufpointer);
 	}
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 }
@@ -499,6 +500,7 @@ void OpenPage()
 		{
 			StopLoading();
 			bufsize = 0;
+			bufpointer = mem_Free(bufpointer);
 			ShowPage();
 			return;
 		}
@@ -507,11 +509,13 @@ void OpenPage()
 	{
 		file_size stdcall (#URL);
 		bufsize = EBX;
-		if (!bufsize) return;
-		mem_Free(bufpointer);
-		bufpointer = mem_Alloc(bufsize);
-		SetPageDefaults();
-		ReadFile(0, bufsize, bufpointer, #URL);	
+		if (bufsize)
+		{
+			bufpointer = mem_Free(bufpointer);
+			bufpointer = mem_Alloc(bufsize);
+			SetPageDefaults();
+			ReadFile(0, bufsize, bufpointer, #URL);				
+		}
 		ShowPage();
 	}
 }

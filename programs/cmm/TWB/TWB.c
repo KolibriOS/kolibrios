@@ -16,10 +16,10 @@ struct TWebBrowser {
 	void GetNewUrl();
 	void Prepare();
 	void Parse();
-	void WhatTextStyle();
+	void SetTextStyle();
 	void DrawPage();
 	void DrawScroller();
-	void TextGoDown();
+	void NewLine();
 };
 
 TWebBrowser WB1;
@@ -302,11 +302,11 @@ void TWebBrowser::Parse(){
 				if (stroka-1 > list.visible) && (list.first <>0) break 1; //уходим...
 				DrawPage();
 				strcpy(#line, #temp);				
-				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
+				NewLine(list.x + 5, stroka * 10 + list.y + 5); //закрашиваем следущую строку
 			}
 			DrawPage();
 			line=NULL;	
-			if (tag) WhatTextStyle(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //обработка тегов
+			if (tag) SetTextStyle(list.x + 5, stroka * 10 + list.y + 5); //обработка тегов
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
 		default:
@@ -329,13 +329,13 @@ void TWebBrowser::Parse(){
 				if (stroka-1 > list.visible) && (list.first <>0) break 1; //уходим...
 				DrawPage();
 				strcpy(#line, #temp);			
-				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
+				NewLine(list.x + 5, stroka * 10 + list.y + 5); //закрашиваем следущую строку
 			}
 		}
 	}
 
 	DrawPage(); //рисует последнюю строку, потом это надо убрать, оптимизировав код
-	TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
+	NewLine(list.x + 5, stroka * 10 + list.y + 5); //закрашиваем следущую строку
 
 	if (list.visible * 10 + 25 <= list.h)
 		DrawBar(list.x, list.visible * 10 + list.y + 25, list.w, -list.visible * 10 + list.h - 25, bg_color);
@@ -354,7 +354,7 @@ void TWebBrowser::Parse(){
 
 
 char oldtag[100];
-void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
+void TWebBrowser::SetTextStyle(int left1, top1) {
 	dword hr_color;
 	byte opened;
 	byte meta_encoding;
@@ -388,13 +388,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		if (opened)
 		{
-			TextGoDown(left1, top1, width1);
+			NewLine(left1, top1);
 			strcat(#line, ' \"');
 		}
 		if (!opened)
 		{
 			chrcat(#line, '\"');
-			TextGoDown(left1, top1, width1);
+			NewLine(left1, top1);
 		} 
 	}
 
@@ -478,63 +478,70 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	if (isTag("br")) {
-		TextGoDown(left1, top1, width1);
+		NewLine(left1, top1);
 		return;
 	}
 	if (isTag("div")) || (isTag("header")) || (isTag("footer")) {
-		IF(oldtag[0] <>'h') TextGoDown(left1, top1, width1);
+		IF(oldtag[0] <>'h') NewLine(left1, top1);
 		return;
 	}
 	if (isTag("p")) {
 		IF(oldtag[0] == 'h') return;
-		TextGoDown(left1, top1, width1);
-		IF(opened) TextGoDown(left1, top1 + 10, width1);
+		NewLine(left1, top1);
+		IF(opened) NewLine(left1, top1 + 10);
 		return;
 	}
 
-
 	if(isTag("table")) {
-		if (opened)
-		{
-			table.active = true;
-			TextGoDown(left1, top1, width1);
-			table.NewTable();
-		}
-		else
-		{
-			table.active = false;
-			TextGoDown(left1, top1, width1);
-		}
+		table.active = opened;
+		NewLine(left1, top1);
+		if (opened)	table.NewTable();
 	}
+
 	if(isTag("td")) {
 		if (opened)
 		{
-			//
+			table.cur_col++;
+			table.row_h = 0;
+			do {
+				if (!strcmp(#parametr, "width="))
+				{
+					table.col_w[table.cur_col] = atoi(#options);
+					// NewLine(left1, top1);
+					// strcpy(#line, #options);
+					// NewLine(left1, top1);
+				}
+			} while(GetNextParam());
 		}
 		else
 		{
-			//
+			if (table.row_h > table.row_max_h) table.row_max_h = table.row_h;
 		}
 	}
+
 	if(isTag("tr")) {
 		if (opened)
 		{
-			//
+			table.cur_col = 0;
+			table.row_max_h = 0;
+			table.row_start = stroka;
 		}
 		else
 		{
-			TextGoDown(left1, top1, width1);
+			NewLine(left1, top1);
 			if (table.cur_row == 0) table.max_cols = table.cur_col;
 			table.cur_row++;
+			table.max_cols = table.cur_col;
 		}
 	}
+
 	/*
 	if (isTag("center"))
 	{
 		if (opened) text_align = ALIGN_CENTER;
 		if (!opened)
 		{
-			TextGoDown(left1, top1, width1);
+			NewLine(left1, top1);
 			text_align = ALIGN_LEFT;
 		}
 		return;
@@ -544,15 +551,15 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		if (opened) text_align = ALIGN_RIGHT;
 		if (!opened)
 		{
-			TextGoDown(left1, top1, width1);
+			NewLine(left1, top1);
 			text_align = ALIGN_LEFT;
 		}
 		return;
 	}
 	*/
 	if (isTag("h1")) || (isTag("h2")) || (isTag("h3")) || (isTag("h4")) {
-		TextGoDown(left1, top1, width1);
-		if (opened) && (stroka>1) TextGoDown(left1, top1 + 10, width1);
+		NewLine(left1, top1);
+		if (opened) && (stroka>1) NewLine(left1, top1 + 10);
 		strcpy(#oldtag, #tag);
 		if (opened)
 		{
@@ -582,7 +589,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		li_text = opened;
 		IF(opened == 0) return;
-		TextGoDown(left1, top1, width1);
+		NewLine(left1, top1);
 		return;
 	}
 	if (isTag("condition"))
@@ -596,7 +603,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		li_text = opened;
 		if (opened)
 		{
-			TextGoDown(left1, top1, width1);
+			NewLine(left1, top1);
 			if (stroka > -1) && (stroka - 2 < list.visible) DrawBuf.DrawBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
 		}
 		return;
@@ -607,7 +614,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		li_text = opened;
 		li_tab--;
-		TextGoDown(left1, top1, width1);
+		NewLine(left1, top1);
 	} ELSE li_tab++;
 	if (isTag("dd")) stolbec += 5;
 	if (isTag("blockquote")) blq_text = opened;
@@ -620,13 +627,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			return;
 		}
 		if (strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options); else hr_color = 0x999999;
-		TextGoDown(left1, top1, width1);
+		NewLine(left1, top1);
 		DrawBuf.DrawBar(5, list.line_h/2, list.w-10, 1, hr_color);
-		TextGoDown(left1, top1+list.line_h, width1);
+		NewLine(left1, top1+list.line_h);
 	}
 	if (isTag("img"))
 	{
-		ImgCache.Images( left1, top1, width1);
+		ImgCache.Images( left1, top1);
 		return;
 	}
 	if (isTag("meta")) || (isTag("?xml"))
@@ -664,7 +671,7 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 }
 
 
-void TWebBrowser::TextGoDown(int left1, top1, width1)
+void TWebBrowser::NewLine(int left1, top1)
 {
 	if (!stroka) DrawBar(list.x, list.y, list.w, 5, bg_color); //закрашиваем фон над первой строкой
 	if (t_html) && (!t_body) return;
