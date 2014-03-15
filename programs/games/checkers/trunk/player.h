@@ -50,7 +50,7 @@ public:
   tvalue FindBMove(Z &z, int num, PMvv *pmv, int zn = -1,
                 tvalue a = -2 * win_val, tvalue b = 2 * win_val);
 public:
-  void (*draw)(void*, int = 0);
+  void (*draw)(void*, int ); //draw() wants int = 0 as a default argument
   void *data;
 };
 
@@ -786,7 +786,7 @@ tvalue TBaseCompPlayer<tvalue>::FindBMove(Z &z, int num,
 {
   assert(b > a);
   assert(num >= 0);
-  if (num >= 3 && draw) draw(data);
+  if (num >= 3 && draw) draw(data, 0);
   int nlast = z.narr;
   if (zn < 0) {z.AddPos(); z.array[zn = z.narr++] = *pmv;}
   if (pmv) pmv->mv[0] = 0;

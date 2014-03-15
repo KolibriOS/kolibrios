@@ -1,4 +1,8 @@
-#define BUILD_RUS
+
+#ifndef AUTOBUILD
+#include "lang.h"
+#endif
+//#define BUILD_RUS
 #ifndef __MENUET__
 #include <string.h>
 #include <stdio.h>
@@ -291,10 +295,73 @@ protected:
 };
 
 #ifndef __MENUET__
+#if LANG_RUS //Pending Russian Translations
+    #define CHECKERS_CANT_OPEN_STR "\nШашки: Не могу открыть файл \"%s\".\n"
+    #define CHECKERS_FILE_EMPTY_STR "\nШашки: Файл \"%s\" пуст.\n"
+    #define CHECKERS_INVALID_FILE_STR "\nШашки: Файл \"%s\" ошибочный.\n"
+    #define FILE_WRONG_TYPE_STR "\nШашки: Файл \"%s\" имеет неверный тип.\n"
+    #define ERROR_OPENING_FILE_STR "\nШашки: Ошибка открытия файла \"%s\".\n"
+    #define FILE_HAS_NO_GAMES_STR "\nШашки: Файл \"%s\" не содержит игр.\n"
+    #define CANT_OPEN_FILE_STR "\nШашки: Не могу открыть файл \"%s\" на запись.\n"
+    #define CHECKERS_STR "Шашки"
+    #define FILE_SAVED_STR "\nШашки: Файл \"%s\" сохранён.\n"
+    #define ERROR_SAVING_FILE_STR "\nШашки: Ошибка сохранения файла \"%s\".\n"
+    #define NOT_ENOUGH_MEM_STR "\nШашки: Не достаточно памяти для сохранения файла \"%s\".\n"
+    #define KIND_EQ2 "kind = 2\n"
+    #define END_STR "[end]"
+    #define PLAYV11_STR "[play_v1.1]"
+    #define CHECKERS_PLAY_STR "checkers-play:text\n"
+    #define CHECKERS_BIN_STR "checkers-play:bin_1.0\n"
+    #define BLUE_STR "blue: "
+    #define RED_STR "red: "
+    #define INPUT_STR "input"
+    #define COMPUTER_STR "computer"
+    #define NEW_GAME_STR "new game"
+    #define LIST_STR "list"
+    #define DELETE_STR "delete"
+    #define CLEAR_STR "clear"
+    #define SAVE_STR "save"
+    #define ROTATE_BOARD_STR "rotate board"
+    #define EXIT_STR "exit"
+    #define CHECKERS_INVALID_STR "Checkers: Invalid key %s\n"
+
+const char *const TPlayArray::search[] =
+  {"checkers-", "play:", "text", "bin_1.0\n", "history_", "1.0", "1.1"};
+
+#else /*For all other languages except RUS*/
+    #define CHECKERS_CANT_OPEN_STR "\nCheckers: Can't open the file \"%s\".\n"
+    #define CHECKERS_FILE_EMPTY_STR "\nCheckers: The file \"%s\" is empty.\n"
+    #define CHECKERS_INVALID_FILE_STR "\nCheckers: Invalid file \"%s\".\n"
+    #define FILE_WRONG_TYPE_STR "\nCheckers: The file \"%s\" has the wrong type.\n"
+    #define ERROR_OPENING_FILE_STR "\nCheckers: Error opening the file \"%s\".\n"
+    #define FILE_HAS_NO_GAMES_STR "\nCheckers: File \"%s\" doesn't contain games.\n"
+    #define CANT_OPEN_FILE_STR "\nCheckers: Can't open the file \"%s\" to write.\n"
+    #define NOT_ENOUGH_MEM_STR "\nCheckers: Not enough memory to save the file \"%s\".\n"
+    #define ERROR_SAVING_FILE_STR "\nCheckers: Error saving the file \"%s\".\n"
+    #define FILE_SAVED_STR "\nCheckers: File \"%s\" saved.\n"
+    #define CHECKERS_STR "Checkers"
+    #define KIND_EQ2 "kind = 2\n"
+    #define END_STR "[end]"
+    #define PLAYV11_STR "[Play_v1.1]"
+    #define CHECKERS_PLAY_STR "checkers-play:text\n"
+    #define CHECKERS_BIN_STR "checkers-play:bin_1.0\n"
+    #define BLUE_STR "blue: "
+    #define RED_STR "red: "
+    #define INPUT_STR "input"
+    #define COMPUTER_STR "computer"
+    #define NEW_GAME_STR "new game"
+    #define LIST_STR "list"
+    #define DELETE_STR "delete"
+    #define CLEAR_STR "clear"
+    #define SAVE_STR "save"
+    #define ROTATE_BOARD_STR "rotate board"
+    #define EXIT_STR "exit"
+    #define CHECKERS_INVALID_STR "Checkers: Invalid key %s\n"
 const char *const TPlayArray::search[] =
      {"checkers-", "play:", "text", "bin_1.0\n", "history_", "1.0", "1.1"};
-#endif
 
+#endif
+#endif
 void TPlayArray::Clear()
 {
   if (play) delete[] play;
@@ -455,7 +522,7 @@ int TPlayArray::OpenFile(const char *name, int kind)
   }
   if (kind == 2)
   {
-    printf("kind = 2\n");
+    printf(KIND_EQ2);
     unsigned char ch;
     do
     {
@@ -472,7 +539,7 @@ int TPlayArray::OpenFile(const char *name, int kind)
         if (fread(&ch, 1, 1, f) != 1) break;
       }
       while(ch == 0 || isspace(ch));
-      if (feof(f)) strcpy(word, "[end]");
+      if (feof(f)) strcpy(word, END_STR);
       else
       {
         i = 0;
@@ -516,6 +583,9 @@ int TPlayArray::OpenFile(const char *name, int kind)
       }
       else
       {
+	char end_literal[] = END_STR;
+	char playv11_literal[] = PLAYV11_STR;
+
         if (kind == 2 || kind == 3)
         {
           if (pl.GetN() > 0) Add(pl);
@@ -526,8 +596,8 @@ int TPlayArray::OpenFile(const char *name, int kind)
         {
           word[i] = (char)tolower((unsigned char)word[i]);
         }
-        if (strskipref(word, "[end]")) break;
-        else if (strskipref(word, "[play_v1.1]")) kind = 1;
+        if (strskipref(word, end_literal)) break;
+        else if (strskipref(word, playv11_literal)) kind = 1;
       }
     }
     fclose(f);
@@ -588,59 +658,35 @@ int TPlayArray::MsgOpenFile(const char *name, int kind)
   {
     if (r == -1)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Не могу открыть файл \"%s\".\n", name);
-#else
-      printf("\nCheckers: Can't open the file \"%s\".\n", name);
-#endif
+      printf(CHECKERS_CANT_OPEN_STR, name);
       return 0;
     }
     else if (r == -2)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Файл \"%s\" пуст.\n", name);
-#else
-      printf("\nCheckers: The file \"%s\" is empty.\n", name);
-#endif
+      printf(CHECKERS_FILE_EMPTY_STR, name);
       return 0;
     }
     else if (r == -3)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Файл \"%s\" ошибочный.\n", name);
-#else
-      printf("\nCheckers: Invalid file \"%s\".\n", name);
-#endif
+      printf(CHECKERS_INVALID_FILE_STR, name);
       return 0;
     }
     else if (r == -4) no_games = 1;
     else if (r == -10)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Файл \"%s\" имеет неверный тип.\n", name);
-#else
-      printf("\nCheckers: The file \"%s\" has wrong type.\n", name);
-#endif
+      printf(FILE_WRONG_TYPE_STR, name);
       return 0;
     }
     else
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Ошибка открытия файла \"%s\".\n", name);
-#else
-      printf("\nCheckers: Error openning the file \"%s\".\n", name);
-#endif
+      printf(ERROR_OPENING_FILE_STR, name);
       return 0;
     }
   }
   if (!no_games && nplay > n0) return 1;
   else
   {
-#ifdef BUILD_RUS
-    printf("\nШашки: Файл \"%s\" не содержит игр.\n", name);
-#else
-    printf("\nCheckers: File \"%s\" don't contains games.\n", name);
-#endif
+    printf(FILE_HAS_NO_GAMES_STR, name);
     return 0;
   }
 }
@@ -652,7 +698,8 @@ int TPlayArray::SaveFile(const char *name, int num, int kind)
   {
     f = fopen(name, "wt");
     if (!f) return -1;
-    fprintf(f, "checkers-play:text\n");
+
+    fprintf(f, CHECKERS_PLAY_STR);
     int i0 = num, i;
     if (num < 0) {i0 = 0; num = nplay-1;}
     for (i = i0; i <= num; i++) if (play[i].GetN() > 0)
@@ -662,7 +709,7 @@ int TPlayArray::SaveFile(const char *name, int num, int kind)
       char *str = new char[10 + NUM_CELL];
       if (!str) return -5;
       pmv.pos.Write(str, 1);
-      fprintf(f, "\n[Play_v1.1]#%d  %s\n", i - i0 + 1, str);
+      fprintf(f, "\n"PLAYV11_STR"#%d  %s\n", i - i0 + 1, str);
       delete[] str;
       int j;
       for (j = 1; j < play[i].GetN(); j++)
@@ -690,7 +737,8 @@ int TPlayArray::SaveFile(const char *name, int num, int kind)
   {
     f = fopen(name, "wb");
     if (!f) return -1;
-    if (kind == 3) fprintf(f, "checkers-play:bin_1.0\n");
+    if (kind == 3) fprintf(f, CHECKERS_BIN_STR);
+
     int i = num;
     if (num < 0) {i = 0; num = nplay-1;}
     for (; i <= num; i++)
@@ -728,45 +776,25 @@ int TPlayArray::MsgSaveFile(const char *name, int num, int kind)
   {
     if (r == -1)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Не могу открыть файл \"%s\" на запись.\n", name);
-#else
-      printf("\nCheckers: Can't open the file \"%s\" to write.\n", name);
-#endif
+      printf(CANT_OPEN_FILE_STR, name);
     }
     else if (r == -5)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Не достаточно памяти для сохранения файла \"%s\".\n", name);
-#else
-      printf("\nCheckers: Not enough memory to save the file \"%s\".\n", name);
-#endif
+      printf(NOT_ENOUGH_MEM_STR, name);
     }
     else if (r == -10)
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Файл \"%s\" имеет неверный тип.\n", name);
-#else
-      printf("\nCheckers: The file \"%s\" has wrong type.\n", name);
-#endif
+      printf(FILE_WRONG_TYPE_STR, name);
     }
     else
     {
-#ifdef BUILD_RUS
-      printf("\nШашки: Ошибка сохранения файла \"%s\".\n", name);
-#else
-      printf("\nCheckers: Error saving the file \"%s\".\n", name);
-#endif
+      printf(ERROR_SAVING_FILE_STR, name);
     }
     return 0;
   }
   else
   {
-#ifdef BUILD_RUS
-    printf("\nШашки: Файл \"%s\" сохранён.\n", name);
-#else
-    printf("\nCheckers: File \"%s\" saved.\n", name);
-#endif
+    printf(FILE_SAVED_STR, name);
     return 1;
   }
 }
@@ -785,17 +813,18 @@ void TPlayArray::Del(int n)
 
 void SetPlayerString(char *str, int c, TChPlayer *p)
 {
-  strcpy(str, c ? "blue: " : "red: ");
-  if (!p) strcat(str, "input");
-  else strcat(str, "computer");
+  strcpy(str, c ? BLUE_STR : RED_STR);
+  if (!p) strcat(str, INPUT_STR);
+  else strcat(str, COMPUTER_STR);
 }
 
 class TMainDraw : public TSomeDraw
 {
 public:
+  
   TMainDraw() : undo_redo(0), ur_type(-1), cur_play(0),
                 def_savefile("save.che"), def_savekind(2) {InitButton();}
-
+  
   virtual void Draw(TGraphDraw *drw, int w, int h)
   {
     int d = button.GetDelt();
@@ -851,33 +880,50 @@ protected:
 
 void TMainDraw::InitButton()
 {
-  button.Add(1, 80, 22, "new game");
-  button.Add(6, 60, 22, "list");
-  button.Add(7, 60, 22, "delete");
+  char newgame_literal[] = NEW_GAME_STR;
+  char list_literal[] = LIST_STR;
+  char delete_literal[] = DELETE_STR;
+  char clear_literal[] = CLEAR_STR;
+  char save_literal[] = SAVE_STR;
+  char rotateboard_literal[] = ROTATE_BOARD_STR;
+  char exit_literal[] = EXIT_STR;
+
+  char one_literal[] = "1";
+  char dash_literal[] = "-";
+  char plus_literal[] = "+";
+  char leftshift_literal[] = "<<";
+  char rightshift_literal[] = ">>";
+  char lessthan_literal[] = "<";
+  char greaterthan_literal[] = ">";
+  char xor_literal[] = "^";
+
+  button.Add(1, 80, 22, newgame_literal);
+  button.Add(6, 60, 22, list_literal);
+  button.Add(7, 60, 22, delete_literal);
   play_list = new TMultiButton(20);
-  play_list->a.Add(26, 20, 22, "1");
-  play_list->a.Add(21, 20, 22, "-");
+  play_list->a.Add(26, 20, 22, one_literal);
+  play_list->a.Add(21, 20, 22, dash_literal);
   play_list->a.Add(23, 37, 22, play_num[0], -2);
-  play_list->a.Add(22, 20, 22, "+");
+  play_list->a.Add(22, 20, 22, plus_literal);
   play_list->a.Add(27, 37, 22, play_num[1]);
   play_list->SetDefW();
   button.Add(play_list);
-  button.Add(24, 50, 22, "clear");
+  button.Add(24, 50, 22, clear_literal);
 #ifndef __MENUET__
-  button.Add(25, 50, 22, "save");
+  button.Add(25, 50, 22, save_literal);
 #endif
   button.Add(2, 120, 22, player_str[0]);
   button.Add(3, 120, 22, player_str[1]);
-  button.Add(4, 110, 22, "rotate board");
+  button.Add(4, 110, 22, rotateboard_literal);
   undo_redo = new TMultiButton(10);
-  undo_redo->a.Add(11, 27, 22, "<<");
-  undo_redo->a.Add(12, 20, 22, "<");
-  undo_redo->a.Add(15, 20, 22, "^");
-  undo_redo->a.Add(13, 20, 22, ">");
-  undo_redo->a.Add(14, 27, 22, ">>");
+  undo_redo->a.Add(11, 27, 22, leftshift_literal);
+  undo_redo->a.Add(12, 20, 22, lessthan_literal);
+  undo_redo->a.Add(15, 20, 22, xor_literal);
+  undo_redo->a.Add(13, 20, 22, greaterthan_literal);
+  undo_redo->a.Add(14, 27, 22, rightshift_literal);
   undo_redo->SetDefW();
   button.Add(undo_redo);
-  button.Add(5, 60, 22, "exit");
+  button.Add(5, 60, 22, exit_literal);
 }
 
 void TMainDraw::SetButtonKind(const TChBoard &board)
@@ -1325,7 +1371,8 @@ int main(int argc, char **argv)
             data.main_draw.def_savefile = argv[i] + j + 1;
           }
         }
-        else printf("Checkers: Invalid key %s\n", argv[i]);
+
+        else printf(CHECKERS_INVALID_STR, argv[i]);
       }
       else if (kx == 0 || kx == 1)
       {
@@ -1334,13 +1381,7 @@ int main(int argc, char **argv)
     }
   }
   data.InitDef();
-  TMainGraphDraw graph(
-#ifdef BUILD_RUS
-  "Шашки"
-#else
-  "Checkers"
-#endif
-  );
+  TMainGraphDraw graph(CHECKERS_STR);
   TTimerDraw timer_draw(&data.board, &graph);
   data.player.draw = TTimerDraw::draw; data.player.data = &timer_draw;
   graph.evfunc = TMainData::EventFunction; graph.data = &data;
@@ -1364,13 +1405,7 @@ bool MenuetOnStart(TStartData &me_start, TThreadData)
 	static TTimerDraw timer_draw(&mdata->board, graph);
 	mdata->player.draw = TTimerDraw::draw; mdata->player.data = &timer_draw;
 	graph->data = mdata;
-	me_start.WinData.Title =
-#ifdef BUILD_RUS
-	"Шашки"
-#else
-	"Checkers"
-#endif
-	;
+	me_start.WinData.Title = CHECKERS_STR;
 	me_start.Width = 450 + 100*ssf;
 	me_start.Height = 528;
 	return true;
