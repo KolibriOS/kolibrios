@@ -14,6 +14,9 @@
 
 format binary as ""
 
+__DEBUG__       = 0
+__DEBUG_LEVEL__ = 1
+
 use32
         org     0x0
 
@@ -32,17 +35,16 @@ include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 include '../../network.inc'
+include '../../debug-fdo.inc'
 
-
-filebuffer_size = 4*4096        ; 16kb   (dont try to change it yet..)
 TIMEOUT         = 100
-buffer_len      = 1500
+buffer_len      = 4096
 
-opcode_rrq      = 1
-opcode_wrq      = 2
-opcode_data     = 3
-opcode_ack      = 4
-opcode_error    = 5
+opcode_rrq      = 1 shl 8
+opcode_wrq      = 2 shl 8
+opcode_data     = 3 shl 8
+opcode_ack      = 4 shl 8
+opcode_error    = 5 shl 8
 
 ; read/write request packet
 ;
@@ -81,22 +83,18 @@ START:
         or      eax, eax
         jnz     exit
 
-stop_transfer:
+home:
         mcall   40, EVM_MOUSE + EVM_MOUSE_FILTER + EVM_REDRAW + EVM_BUTTON + EVM_KEY + EVM_STACK
 
-red_win:
+redraw:
         call    draw_window
 
-align 4
-still:
+mainloop:
         mcall   10
-
         dec     eax
-        jz      red_win
-
+        jz      redraw
         dec     eax
         jz      key
-
         dec     eax
         jz      button
 
@@ -108,7 +106,7 @@ still:
         invoke  option_box_mouse, Option_boxs1
         invoke  option_box_mouse, Option_boxs2
 
-        jmp     still
+        jmp     mainloop
 
 button:
         mcall   17
@@ -117,7 +115,7 @@ button:
         je      start_transfer
 
         test    ah , ah
-        jz      still
+        jz      mainloop
 
 exit:
         mcall   -1
@@ -129,7 +127,7 @@ key:
         invoke  edit_box_key, edit3
         invoke  edit_box_key, edit4
 
-        jmp still
+        jmp     mainloop
 
 
 draw_window:
@@ -176,31 +174,50 @@ draw_window:
         mov     esi, [sc.work_button]
         mcall   8, 210 shl 16 + 170, 105 shl 16 + 16, 0x10
 
-        mov     ecx, 0x80000000
-        or      ecx, [sc.work_button_text]
-        mcall   4, 260 shl 16 + 110, , str_transfer
+        mcall   38, 10 shl 16 + 380, 130 shl 16 + 130, [sc.work_graph]
 
+        cmp     [errormsg], 0
+        je      .no_error
+
+        mov     ecx, 0x80000000
+        or      ecx, [sc.work_text]
+        mcall   4, 20 shl 16 + 137, , [errormsg]
+        mcall   12, 2
+        jmp     .draw_btn
+
+  .no_error:
         mov     ecx, 0x80000000
         or      ecx, [sc.work_text]
         mcall   4, 350 shl 16 + 137, , str_kb_s
         mcall   4, 50 shl 16 + 137, , str_complete
-
-        mcall   38, 10 shl 16 + 380, 130 shl 16 + 130, [sc.work_graph]
-
         mcall   47, 1 shl 31 + 7 shl 16 + 1, kbps, 305 shl 16 + 137, [sc.work_text]
-        mcall   47, 1 shl 31 + 3 shl 16 + 1, done, 25 shl 16 + 137, ;[sc.work_text]
+        mcall   47, 1 shl 31 + 3 shl 16 + 1, done, 25 shl 16 + 137
+
+  .draw_btn:
+        cmp     [socketnum], 0
+        je      .no_transfer
+
+        mov     ecx, 0x80000000
+        or      ecx, [sc.work_button_text]
+        mcall   4, 270 shl 16 + 110, , str_stop
 
         mcall   12, 2
-
         ret
 
+  .no_transfer:
+        mov     ecx, 0x80000000
+        or      ecx, [sc.work_button_text]
+        mcall   4, 260 shl 16 + 110, , str_transfer
 
+        mcall   12, 2
+        ret
 
 
 
 start_transfer:
 
-        ; first, resolve the hostname
+; resolve the hostname
+        mov     [errormsg], str_err_resolve
 
         push    esp     ; reserve stack place
 
@@ -212,226 +229,321 @@ start_transfer:
 
         pop     esi
 
-; test for error
+        ; test for error
         test    eax, eax
-        jnz     still
+        jnz     home
 
-        mov     esi, [esi]
-        mov     esi, [esi + sockaddr_in.sin_addr]
-        mov     dword [IP], esi
+        mov     eax, [esi + addrinfo.ai_addr]
+        mov     eax, [eax + sockaddr_in.sin_addr]
+        mov     [sockaddr.ip], eax
 
-        mcall   socket, AF_INET4, SOCK_DGRAM, 0                ; socket_open
+        ; free allocated memory
+        push    esi
+        call    [freeaddrinfo]
+
+; Open a socket & connect to server
+        mov     [errormsg], str_err_socket
+
+        mcall   socket, AF_INET4, SOCK_DGRAM, 0
         cmp     eax, -1
-        je      still
-
+        je      home
         mov     [socketnum], eax
 
-        mcall   connect, [socketnum], sockaddr, sockaddr_len         ; socket_connect
+        mcall   connect, [socketnum], sockaddr, sockaddr_len
         cmp     eax, -1
-        je      still
+        je      home
 
-        mov     word [I_END], opcode_rrq
-        cmp     [option_group2],op3
+; Create the read/write request packet
+        mov     word[buffer], opcode_rrq
+        cmp     [option_group2], op3
         je      @f
-        mov     word [I_END], opcode_wrq
+        mov     word[buffer], opcode_wrq
       @@:
 
-        xor     al , al
+; Copy in the remote filename (asciiz)
+        xor     al, al
         mov     edi, remote_addr
-        mov     ecx, 250
+        mov     ecx, 255
         repnz   scasb
-        sub     edi, remote_addr-1
-        mov     ecx, edi
-        mov     edi, I_END+2
+        lea     ecx, [edi - remote_addr - 1]
         mov     esi, remote_addr
+        mov     edi, buffer+2
         rep     movsb
+        stosb
 
+; Append the data type (asciiz)
         cmp     [option_group1], op1
         je      .ascii
-
         mov     esi, octet
         movsd
         movsb
-
         jmp     .send_request
 
       .ascii:
-
         mov     esi, netascii
         movsd
         movsd
 
+; Send the request to the server
       .send_request:
-
         xor     al, al
         stosb
+        lea     esi, [edi - buffer]
+        xor     edi, edi
+        mcall   send, [socketnum], buffer
+        cmp     eax, -1
+        je      home
 
-        sub     edi, I_END
-        mov     esi, edi
-        mcall   send, [socketnum], I_END
+; Jump to send/receive code
+        cmp     word[buffer], opcode_wrq
+        je      tftp_send
+
+
+tftp_receive:
 
         mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK
-
         mov     [last_ack], 0
-
-
-
-
-receive_data_loop:
-
-        mcall   23, TIMEOUT
-
-        dec     eax
-        jz      .red
-
-        dec     eax
-        jz      .key
-
-
-        mcall   recv, [socketnum], buffer, buffer_len, MSG_DONTWAIT     ; receive data
-
-        cmp     word[buffer], opcode_data
-        jne     .error
-
-        mov     bx, [last_ack]
-        cmp     word [buffer + 2], bx
-        jne     .packet_got_lost
-        inc     [last_ack]
-
-        cmp     eax, 4+512
-        je      .continue
-
-; last packet, or something else
-.error:
-
-.packet_got_lost:
-
-
-
-.continue:
-
-        mov     word[buffer], opcode_ack                ; send ack
-        mcall   send, [socketnum], buffer, 4, 0
-
-        jmp     receive_data_loop
-
-.red:
+        mov     [errormsg], 0
 
         call    draw_window
 
-        jmp     receive_data_loop
+; Open/create local file
+        mov     [file_struct.subfn], 2
+        mov     [file_struct.offset], 0
+        mov     [file_struct.size], 0
+        mcall   70, file_struct
+
+; Truncate it to 0 bytes
+        mov     [file_struct.subfn], 4
+        mcall   70, file_struct
+
+; Set parameters for writing to file
+        mov     [file_struct.subfn], 3
+        mov     [file_struct.data], buffer + 4
+
+  .loop:
+        mcall   23, TIMEOUT
+        dec     eax
+        jz      .red
+        dec     eax
+        dec     eax
+        jz      .button
+
+        mcall   recv, [socketnum], buffer, buffer_len, MSG_DONTWAIT     ; receive data
+        cmp     eax, -1
+        je      .loop
+
+        DEBUGF  1, "Got %u bytes\n", eax
+        cmp     word[buffer], opcode_error
+        je      tftp_error
+        cmp     word[buffer], opcode_data
+        jne     .error
+
+; Verify ACK number
+        mov     bx, word[buffer + 2]
+        rol     bx, 8
+        cmp     [last_ack], 0
+        je      @f
+        cmp     [last_ack], bx
+        jne     .packet_got_lost
+        inc     bx
+      @@:
+        mov     [last_ack], bx
+
+; Write to the file
+        lea     ecx, [eax - 4]
+        mov     [file_struct.size], ecx
+        mcall   70, file_struct
+        add     [file_struct.offset], ecx
+
+; Send ACK
+        mov     word[buffer], opcode_ack
+        mcall   send, [socketnum], buffer, 4, 0
+        jmp     .loop
+
+  .packet_got_lost:
+        ;TODO
+        jmp     .loop
+
+  .red:
+        call    draw_window
+        jmp     .loop
+
+  .button:
+        mcall   17
+        cmp     ah, 1
+        jne     .abort
+
+        mcall   close, [socketnum]
+        mcall   -1
+
+  .abort:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
+        mov     [errormsg], str_abort
+        jmp     home
+
+  .error:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
+        mov     [errormsg], str_err_unexp
+        jmp     home
+
+  .done:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
+        mov     [errormsg], str_success
+        jmp     home
 
 
-.key:
-        mcall   2
-        cmp     ah, 2
-        jz      exit
 
-        ; close socket ?
+tftp_send:
 
-        jmp     receive_data_loop
-
-
-
-
-
-
-;--------------------------------
-
-
-send_:
-
-        invoke  file_open, local_addr, O_READ
-        or      eax, eax
-        jz      .exit
-        mov     [fh], eax
-
-        stdcall mem.Alloc, filebuffer_size
-        or      eax, eax
-        jz      .exit
-        mov     [fb], eax
-
+        mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK
         mov     [last_ack], 0
-        mov     [fo], 0
+        mov     [errormsg], 0
 
-.read_chunk:
+        call    draw_window
 
-        invoke  file_seek, [fh], [fo], SEEK_END
-        cmp     eax, -1
-        je      .exit
-        invoke  file_read, [fh], [fb], filebuffer_size
-        cmp     eax, -1
-        je      .exit
-        add     [fo], filebuffer_size
-        cmp     eax, filebuffer_size
-        je      .packet
+        mov     [file_struct.subfn], 0
+        mov     [file_struct.offset], 0
+        mov     [file_struct.size], buffer_len
+        mov     [file_struct.data], buffer + 4
 
-        ; ijhidfhfdsndsfqk
-
-.packet:
-
-        movzx   esi, [last_ack]
-        and     esi, 0x000000001f   ; last five bits    BUFFER SIZE MUST BE 16 kb for this to work !!!
-        shl     esi, 9              ; = * 512
-        add     esi, [fb]
+  .next:
         mov     edi, buffer
         mov     ax, opcode_data
         stosw
         mov     ax, [last_ack]
         stosw
-        mov     ecx, 512/4
-        rep     movsd
 
-        mcall   send, [socketnum], buffer, 4+512, 0       ; send data
+        mcall   70, file_struct
+        test    eax, eax
+;        jnz     .done
+        mov     [size], ebx
 
+  .resend:
+        mov     ebx, [size]
+        lea     esi, [ebx + 4]
+        xor     edi, edi
+        mcall   send, [socketnum], buffer
 
-.loop:
-
+  .loop:
         mcall   23, TIMEOUT
-
         dec     eax
         jz      .red
-
         dec     eax
-        jz      .key
+        dec     eax
+        jz      .button
 
-        mcall   recv, [socketnum], buffer, buffer_len, MSG_DONTWAIT  ; receive ack
+        mcall   recv, [socketnum], buffer, buffer_len, MSG_DONTWAIT
+        cmp     eax, -1
+        je      .loop
 
+        cmp     word[buffer], opcode_error
+        je      tftp_error
         cmp     word[buffer], opcode_ack
-        jne     .exit
+        jne     .error
 
         mov     ax, [last_ack]
         cmp     word[buffer+2], ax
-        jne     .packet
+        jne     .resend
+
+        mov     eax, [size]
+        cmp     eax, buffer_len
+        jb      .done
+        add     [file_struct.offset], eax
+
         inc     [last_ack]
-        test    [last_ack],0x001f
-        jz      .read_chunk
-        jmp     .packet
+        jmp     .next
 
-
-.red:
-
+  .red:
         call    draw_window
-
         jmp     .loop
 
+  .button:
+        mcall   17
+        cmp     ah, 1
+        jne     .abort
 
-.key:
-        mcall   2
-        cmp     ah, 2
-        jz      exit
+        mcall   close, [socketnum]
+        mcall   -1
 
-        ; close socket ?
+  .abort:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
+        mov     [errormsg], str_abort
+        jmp     home
 
-        jmp     .loop
+  .error:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
+        mov     [errormsg], str_err_unexp
+        jmp     home
 
-.exit:
-        invoke  file_close, [fh]
-        jmp     still
+  .done:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
+        mov     [errormsg], str_success
+        jmp     home
 
 
 
+tftp_error:
+        mcall   close, [socketnum]
+        xor     eax, eax
+        mov     [socketnum], eax
 
+        mov     ax, word[buffer+2]
+        xchg    al, ah
+
+        test    ax, ax
+        jz      .0
+        dec     ax
+        jz      .1
+        dec     ax
+        jz      .2
+        dec     ax
+        jz      .3
+        dec     ax
+        jz      .4
+        dec     ax
+        jz      .5
+        dec     ax
+        jz      .6
+        dec     ax
+        jz      .7
+
+  .0:
+        mov     [errormsg], str_error.0
+        jmp     home
+  .1:
+        mov     [errormsg], str_error.1
+        jmp     redraw
+  .2:
+        mov     [errormsg], str_error.2
+        jmp     home
+  .3:
+        mov     [errormsg], str_error.3
+        jmp     home
+  .4:
+        mov     [errormsg], str_error.4
+        jmp     home
+  .5:
+        mov     [errormsg], str_error.5
+        jmp     home
+  .6:
+        mov     [errormsg], str_error.6
+        jmp     home
+  .7:
+        mov     [errormsg], str_error.7
+        jmp     home
 
 ;-------------------------
 ; DATA
@@ -439,48 +551,41 @@ send_:
 socketnum       dd 0
 kbps            dd 0
 done            dd 0
+errormsg        dd str_welcome
 
 sockaddr:
                 dw AF_INET4
                 dw 0x4500       ; 69
-IP              db 192, 168, 1, 115
-
+  .ip           dd ?
 sockaddr_len = $ - sockaddr
+
+file_struct:
+  .subfn        dd ?
+  .offset       dd ?
+                dd 0
+  .size         dd ?
+  .data         dd ?
+                db 0
+  .filename     dd local_addr
 
 align 16
 @IMPORT:
 
-library box_lib , 'box_lib.obj', \
-        io_lib  , 'libio.obj', \
-        network , 'network.obj'
+library box_lib         , 'box_lib.obj'         ,\
+        network         , 'network.obj'
 
 import  box_lib                                 ,\
-        edit_box_draw    ,'edit_box'            ,\
-        edit_box_key     ,'edit_box_key'        ,\
-        edit_box_mouse   ,'edit_box_mouse'      ,\
-        version_ed       ,'version_ed'          ,\
-        init_checkbox    ,'init_checkbox2'      ,\
-        check_box_draw   ,'check_box_draw2'     ,\
-        check_box_mouse  ,'check_box_mouse2'    ,\
-        version_ch       ,'version_ch2'         ,\
-        option_box_draw  ,'option_box_draw'     ,\
-        option_box_mouse ,'option_box_mouse'    ,\
-        version_op       ,'version_op'
-
-import  io_lib                                  ,\
-        file_find_first , 'file_find_first'     ,\
-        file_find_next  , 'file_find_next'      ,\
-        file_find_close , 'file_find_close'     ,\
-        file_size       , 'file_size'           ,\
-        file_open       , 'file_open'           ,\
-        file_read       , 'file_read'           ,\
-        file_write      , 'file_write'          ,\
-        file_seek       , 'file_seek'           ,\
-        file_tell       , 'file_tell'           ,\
-        file_eof?       , 'file_iseof'          ,\
-        file_seteof     , 'file_seteof'         ,\
-        file_truncate   , 'file_truncate'       ,\
-        file_close      , 'file_close'
+        edit_box_draw   , 'edit_box'            ,\
+        edit_box_key    , 'edit_box_key'        ,\
+        edit_box_mouse  , 'edit_box_mouse'      ,\
+        version_ed      , 'version_ed'          ,\
+        init_checkbox   , 'init_checkbox2'      ,\
+        check_box_draw  , 'check_box_draw2'     ,\
+        check_box_mouse , 'check_box_mouse2'    ,\
+        version_ch      , 'version_ch2'         ,\
+        option_box_draw , 'option_box_draw'     ,\
+        option_box_mouse, 'option_box_mouse'    ,\
+        version_op      , 'version_op'
 
 import  network                                 ,\
         inet_ntoa       , 'inet_ntoa'           ,\
@@ -488,10 +593,10 @@ import  network                                 ,\
         freeaddrinfo    , 'freeaddrinfo'
 
 
-edit1 edit_box 300, 80, 5, 0xffffff, 0x6f9480, 0, 0, 0, 99, SRV, mouse_dd, ed_focus, 13, 13
-edit2 edit_box 300, 80, 25, 0xffffff, 0x6a9480, 0, 0, 0, 99, remote_addr, mouse_dd, ed_figure_only, 5, 5
-edit3 edit_box 300, 80, 45, 0xffffff, 0x6a9480, 0, 0, 0, 99, local_addr, mouse_dd, ed_figure_only, 27, 27
-edit4 edit_box 40, 340, 68, 0xffffff, 0x6a9480, 0, 0, 0, 5, BLK, mouse_dd, ed_figure_only, 3, 3
+edit1 edit_box 300, 80, 5, 0xffffff, 0x6f9480, 0, 0, 0, 255, SRV, mouse_dd, ed_focus, 13, 13
+edit2 edit_box 300, 80, 25, 0xffffff, 0x6f9480, 0, 0, 0, 255, remote_addr, mouse_dd, 0, 4, 4
+edit3 edit_box 300, 80, 45, 0xffffff, 0x6f9480, 0, 0, 0, 255, local_addr, mouse_dd, 0, 12, 12
+edit4 edit_box 40, 340, 68, 0xffffff, 0x6f9480, 0, 0, 0, 5, BLK, mouse_dd, ed_figure_only, 3, 3
 
 op1 option_box option_group1, 80, 68, 6, 12, 0xffffff, 0, 0, netascii, octet-netascii
 op2 option_box option_group1, 80, 85, 6, 12, 0xFFFFFF, 0, 0, octet, get-octet
@@ -514,45 +619,51 @@ str_blocksize   db 'Blocksize:', 0
 str_kb_s        db 'kB/s', 0
 str_complete    db '% complete', 0
 str_transfer    db 'Transfer', 0
+str_stop        db 'Stop', 0
 
 str_error:
-._0 db 'Not defined, see error message (if any).', 0
-._1 db 'File not found.', 0
-._2 db 'Access violation.', 0
-._3 db 'Disk full or allocation exceeded.', 0
-._4 db 'Illegal TFTP operation.', 0
-._5 db 'Unknown transfer ID.', 0
-._6 db 'File already exists.', 0
-._7 db 'No such user.', 0
+.0              db 'Error.', 0                      ; not further defined error
+.1              db 'File not found.', 0
+.2              db 'Access violation.', 0
+.3              db 'Disk full or allocation exceeded.', 0
+.4              db 'Illegal TFTP operation.', 0
+.5              db 'Unknown transfer ID.', 0
+.6              db 'File already exists.', 0
+.7              db 'No such user.', 0
 
+str_welcome     db 'Welcome.', 0
+str_err_resolve db 'Unable to resolve server address.', 0
+str_err_socket  db 'Socket error.', 0
+str_err_unexp   db 'Unexpected command from server.', 0
+str_success     db 'Operation completed successfully.', 0
+str_abort       db 'Operation aborted by user.', 0
 
-netascii db 'NetASCII'
-octet    db 'Octet'
-get      db 'GET'
-put      db 'PUT'
+netascii        db 'NetASCII'
+octet           db 'Octet'
+get             db 'GET'
+put             db 'PUT'
 
-BLK      db "512", 0, 0, 0
-
-last_ack dw ?
-
-fh       dd ?   ; file handle
-fo       dd ?   ; file offset
-fb       dd ?   ; file buffer
+BLK             db "512", 0, 0, 0
 
 SRV             db "192.168.1.115", 0
                 rb (SRV + 256 - $)
 
-remote_addr     db "IMG00", 0
+remote_addr     db "file", 0
                 rb (remote_addr + 256 - $)
 
-local_addr      db "/hd0/1/KolibriOS/kernel.mnt", 0
+local_addr      db "/tmp0/1/file", 0
                 rb (local_addr + 256 - $)
+
+include_debug_strings
 
 I_END:
 
+last_ack        dw ?
+size            dd ?
+mouse_dd        dd ?
+
 sc              system_colors
 
-mouse_dd        dd ?
 buffer          rb buffer_len
 
 IM_END:
