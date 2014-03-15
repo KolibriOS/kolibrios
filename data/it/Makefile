@@ -640,7 +640,8 @@ checkers.o : $(CHECKERSDIR)/checkers.cpp \
 	$(CHECKERSDIR)/gr-draw.h \
 	$(CHECKERSDIR)/gnu-draw.h \
 	$(CHECKERSDIR)/sysproc.h
-	g++ -c $(CHECKERSDIR)/checkers.cpp
+	g++ -c -Os -DAUTOBUILD -DLANG_ENG=1 $(CHECKERSDIR)/checkers.cpp
+#	g++ -c $(CHECKERSDIR)/checkers.cpp
 
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
