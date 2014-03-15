@@ -284,7 +284,7 @@ CMM_PROGRAMS:=\
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
- HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
+ WebView:WebView:$(PROGS)/cmm/browser/WebView.c \
  tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
  @notify:@notify:$(PROGS)/cmm/notify/notify.c \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
