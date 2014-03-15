@@ -30,14 +30,14 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.74";
+	char version[]=" Текстовый браузер 0.99.75";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 0.99.74";
+	char version[]=" Text-based Browser 0.99.75";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -225,7 +225,7 @@ void SetElementSizes()
 {
 	address_box.width = Form.width - 266;
 	WB1.list.SetSizes(0, 44, Form.width - 10 - scroll_wv.size_x, Form.cheight - 44, 0, 10);
-	WB1.list.column_max = WB1.list.w - 30 / 6;
+	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
 	WB1.list.visible = WB1.list.h - 3 / WB1.list.line_h - 2;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h, WB1.list.line_h);
 }

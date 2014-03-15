@@ -6,7 +6,7 @@ dword bufsize;
 
 #define URL param
 
-scroll_bar scroll_wv = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_wv = { 17,200,398, 44,17,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 char header[2048];
 
