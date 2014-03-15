@@ -305,10 +305,8 @@ void TWebBrowser::Parse(){
 				TextGoDown(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //закрашиваем следущую строку
 			}
 			DrawPage();
-
-			line=NULL;
+			line=NULL;	
 			if (tag) WhatTextStyle(list.x + 5, stroka * 10 + list.y + 5, list.w - 20); //обработка тегов
-
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
 		default:
@@ -419,9 +417,10 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
-		if (opened)
+		if (opened) && (cur_encoding==_DEFAULT)
 		{
-			if (cur_encoding==_DEFAULT) BufEncode(_UTF); //if no encoding specified it would be UTF
+			debugln("Document has no information about encoding, UTF will be used");
+			BufEncode(_UTF);
 		}
 		return;
 	}
@@ -637,6 +636,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			{
 				strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
 				strlwr(#options);
+				meta_encoding = _DEFAULT;
 				if (!strcmp(#options, "utf-8"))  || (!strcmp(#options,"utf8")) meta_encoding = _UTF;
 				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u")) meta_encoding = _KOI;
 				if (!strcmp(#options, "windows-1251")) || (!strcmp(#options, "windows1251")) meta_encoding = _WIN;

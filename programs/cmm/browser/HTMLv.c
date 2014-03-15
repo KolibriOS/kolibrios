@@ -30,14 +30,14 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.72";
+	char version[]=" Текстовый браузер 0.99.73";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n\0";
 #else
-	char version[]=" Text-based Browser 0.99.72";
+	char version[]=" Text-based Browser 0.99.73";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
