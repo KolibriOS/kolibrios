@@ -459,14 +459,17 @@ void ProcessLinks(int id)
 
 void StopLoading()
 {
-	EAX = http_transfer;
-	EAX = EAX.http_msg.content_ptr;		// get pointer to data
-	$push	EAX							// save it on the stack
-	http_free stdcall (http_transfer);	// abort connection
-	$pop	EAX							
-	mem_Free(EAX);						// free data
-	http_transfer=0;
-	bufsize = 0;
+	if (http_transfer<>0)
+	{
+		EAX = http_transfer;
+		EAX = EAX.http_msg.content_ptr;		// get pointer to data
+		$push	EAX							// save it on the stack
+		http_free stdcall (http_transfer);	// abort connection
+		$pop	EAX							
+		mem_Free(EAX);						// free data
+		http_transfer=0;
+		bufsize = 0;
+	}
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 }
 
@@ -499,7 +502,6 @@ void OpenPage()
 			ShowPage();
 			return;
 		}
-		IF (http_transfer < 0) notify("Error from HTTP lib");
 	}
 	else
 	{
