@@ -30,14 +30,14 @@
 #include "img\URLgoto.txt";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.71";
+	char version[]=" Текстовый браузер 0.99.72";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n\0";
 #else
-	char version[]=" Text-based Browser 0.99.71";
+	char version[]=" Text-based Browser 0.99.72";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -459,18 +459,15 @@ void ProcessLinks(int id)
 
 void StopLoading()
 {
-	if (http_transfer<>0)
-	{
-		EAX = http_transfer;
-		EAX = EAX.http_msg.content_ptr;		// get pointer to data
-		$push	EAX							// save it on the stack
-		http_free stdcall (http_transfer);	// abort connection
-		$pop	EAX							
-		mem_Free(EAX);						// free data
-		http_transfer=0;
-		bufsize = 0;
-		PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	}
+	EAX = http_transfer;
+	EAX = EAX.http_msg.content_ptr;		// get pointer to data
+	$push	EAX							// save it on the stack
+	http_free stdcall (http_transfer);	// abort connection
+	$pop	EAX							
+	mem_Free(EAX);						// free data
+	http_transfer=0;
+	bufsize = 0;
+	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 }
 
 void SetPageDefaults()
@@ -495,6 +492,13 @@ void OpenPage()
 		_PutImage(88,10, 24,24, #stop_btn);
 		http_get stdcall (#URL, #accept_language);
 		http_transfer = EAX;
+		if (http_transfer == 0)
+		{
+			StopLoading();
+			bufsize = 0;
+			ShowPage();
+			return;
+		}
 		IF (http_transfer < 0) notify("Error from HTTP lib");
 	}
 	else

@@ -139,6 +139,12 @@ GETKEYII:
 		$shr eax,8
 }
 
+inline fastcall int GetFullKey()
+{
+	$mov  eax,2
+	$int  0x40
+}
+
 
 inline fastcall pause( EBX)
 {
@@ -357,6 +363,26 @@ DONE:
 	$int 0x40
 	$mov cl, 10
 	$int 0x40
+	$pop ecx
+	$pop ebx
+	$pop eax
+}
+
+inline fastcall void debug( EDX)
+{
+	$push eax
+	$push ebx
+	$push ecx
+	$mov eax, 63
+	$mov ebx, 1
+NEXT_CHAR:
+	$mov ecx, DSDWORD[edx]
+	$or	 cl, cl
+	$jz  DONE
+	$int 0x40
+	$inc edx
+	$jmp NEXT_CHAR
+DONE:
 	$pop ecx
 	$pop ebx
 	$pop eax

@@ -116,7 +116,7 @@ void TWebBrowser::GetNewUrl(){
 	if (URL[0] == '/')
 	{
 		i = strchr(#newurl+8, '/');
-		newurl[i+7]=0;
+		if (i>0) newurl[i+7]=0;
 		strcpy(#URL, #URL+1);
 	}
 		
@@ -142,12 +142,19 @@ void TWebBrowser::GetNewUrl(){
 
 void BufEncode(int set_new_encoding)
 {
+	int bufpointer_realsize;
 	cur_encoding = set_new_encoding;
 	if (o_bufpointer==0)
 	{
-		debugi(bufsize);
-		bufsize = strlen(bufpointer);
-		debugi(bufsize);
+		bufpointer_realsize = strlen(bufpointer);
+		if (bufpointer_realsize > bufsize)
+		{
+			debug("bufsize: ");
+			debugi(bufsize);
+			debug("bufpointer_realsize: ");
+			debugi(bufpointer_realsize);
+			bufsize = bufpointer_realsize;
+		}
 		o_bufpointer = malloc(bufsize);
 		strcpy(o_bufpointer, bufpointer);
 	}
@@ -412,6 +419,10 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				DrawBuf.Fill(bg_color);
 			}
 		} while(GetNextParam());
+		if (opened)
+		{
+			if (cur_encoding==_DEFAULT) BufEncode(_UTF); //if no encoding specified it would be UTF
+		}
 		return;
 	}
 
@@ -630,7 +641,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u")) meta_encoding = _KOI;
 				if (!strcmp(#options, "windows-1251")) || (!strcmp(#options, "windows1251")) meta_encoding = _WIN;
 				//if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   meta_encoding = _DOS;
-				if ((cur_encoding==_DEFAULT) && (http_transfer==0)) BufEncode(meta_encoding);
+				if (cur_encoding==_DEFAULT) BufEncode(meta_encoding);
 				return;
 			}
 		} while(GetNextParam());
