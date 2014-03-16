@@ -257,10 +257,6 @@ cmd_privmsg:
         jz      .fail2
         pop     esi
         call    skip_parameter  ; our own nickname
-
-        cmp     byte[esi], 1    ; Client to Client protocol?
-        je      cmd_ctcp
-
         jmp     .print
 
   .channel:
@@ -269,7 +265,9 @@ cmd_privmsg:
         jz      .fail
 
   .print:
-; nope, just plain old privmsg, print it using '<nick> message' format
+        cmp     byte[esi], 1    ; Client to Client protocol?
+        je      cmd_ctcp
+
         if TIMESTAMP
         call    print_timestamp
         end if

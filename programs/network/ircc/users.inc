@@ -15,6 +15,7 @@
 
 user_prefixes db '~&@%+ ', 0    ; in descending order
 
+; TODO: update selected user if needed
 ; esi is ptr to nick
 ; ebx is ptr to window
 align 4
@@ -120,7 +121,7 @@ user_add:
 
 
 
-
+; TODO: update selected user if needed
 ; esi is ptr to nick
 ; ebx is ptr to window
 align 4

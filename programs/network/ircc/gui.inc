@@ -121,20 +121,22 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         cmp     [edi + window.type], WINDOWTYPE_CHANNEL
         jne     .not_channel
 
-        ; draw a vertical separator line
-        ; TODO: dont draw this if we draw textbox scrollbar ??
+        mov     [scroll1.all_redraw], 1
+        call    draw_channel_list
+
+; draw a vertical separator line when there is no scrollbar
+        cmp     [scroll2.all_redraw], 1
+        jne     .not_channel
+
         mov     ebx, [xsize]
         sub     ebx, USERLIST_WIDTH + SCROLLBAR_WIDTH + 3
         push    bx
         shl     ebx, 16
         pop     bx
         mov     ecx, [ysize]
-        add     ecx, TOP_Y SHL 16 -(BOTTOM_Y) ;;;;
+        add     ecx, TOP_Y shl 16 - (BOTTOM_Y)
         mov     edx, [colors.work_graph]
         mcall   38
-
-        mov     [scroll1.all_redraw], 1
-        call    draw_channel_list
   .not_channel:
 
 ; draw editbox

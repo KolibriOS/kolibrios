@@ -117,7 +117,6 @@ user_commands:
         .number = ($ - user_commands) / 8
 
 
-
 server_command:
 
         mov     eax, dword[usercommand+1]       ; skip '/'
@@ -126,7 +125,7 @@ server_command:
         mov     edi, user_commands
         mov     ecx, user_commands.number
         cmp     [status], STATUS_CONNECTED
-        jne     .loop
+        je      .loop
         mov     ecx, user_commands.number2
   .loop:
         scasd
@@ -137,6 +136,10 @@ server_command:
 
         cmp     [status], STATUS_CONNECTED
         jne     .notconnected
+; Commands shorter then 3 chars are placed here
+        and     eax, 0x00ffffff
+        cmp     eax, 'me '
+        je      cmd_usr_me
 
         jmp     cmd_usr_send                    ; If none of the previous commands, just send to server
 
@@ -432,7 +435,6 @@ cmd_usr_part:
 cmd_usr_close_window:
 
         mov     esi, [window_active]
-        mov     [window_print], esi
         cmp     [esi + window.type], WINDOWTYPE_SERVER
         je      .not_channel
 
@@ -535,6 +537,74 @@ cmd_usr_ctcp:
 ;; TODO: print to window
 
   .fail:
+
+        ret
+
+
+
+cmd_usr_me:
+
+; prepare a 'PRIVMSG '
+        mov     dword[packetbuf], 'PRIV'
+        mov     dword[packetbuf+4], 'MSG '
+        lea     edi, [packetbuf+8]
+
+; append the destination (nickname/channel)
+        mov     esi, [window_active]
+        lea     esi, [esi + window.name]
+  @@:
+        lodsb
+        test    al, al
+        je      @f
+        stosb
+        jmp     @r
+  @@:
+
+; Make the CTCP action header
+        mov     eax, ' :' + 0x01 shl 16 + 'A' shl 24
+        stosd
+        mov     eax, 'CTIO'
+        stosd
+        mov     al, 'N'
+        stosb
+
+; copy the message itself (including first space)
+        mov     esi, usercommand+3
+  @@:
+        lodsb
+        cmp     al, 13
+        je      @f
+        stosb
+        jmp     @r
+  @@:
+
+; end of CTCP message
+        mov     al, 0x01
+        stosb
+        mov     ax, 0x0a0d
+        stosw
+
+; now send it to the server
+        lea     esi, [edi - packetbuf]                  ; calculate length
+        mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
+
+; print to local window
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+
+        mov     esi, action_header
+        call    print_asciiz
+
+        mov     esi, user_nick
+        call    print_asciiz
+
+        mov     esi, usercommand+3
+        mov     bl, 13
+        call    print_string
+
+        mov     al, 10
+        call    print_char
 
         ret
 

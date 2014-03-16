@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.20'
+version equ '0.21'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -563,7 +563,7 @@ import  boxlib,\
         scrollbar_mouse,'scrollbar_v_mouse'
 
         ;         width, left, top
-edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_focus, 25, 25
+edit1   edit_box  0, 0, 0, 0xffffff, 0x6f9480, 0, 0, 0, USERCMD_MAX_SIZE, usercommand, mouse_dd, ed_always_focus, 25, 25
         ;         xsize, xpos, ysize, ypos, btn_height, max, cur, pos, bgcol, frcol, linecol
 scroll1 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
 scroll2 scrollbar SCROLLBAR_WIDTH, 0, 0, TOP_Y, SCROLLBAR_WIDTH, 0, 0, 0, 0, 0, 0, 1
