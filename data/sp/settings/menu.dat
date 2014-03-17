@@ -144,7 +144,7 @@ Cliente Telnet            /sys/network/telnet
 Cliente Synergy           /sys/network/synergyc
 Resoluci¢n de nombres     /sys/network/nslookup
 Cliente de descarga       /sys/network/downloader
-Navegador (modo texto)    /sys/htmlv
+Navegador (modo texto)    /sys/network/webview
 #18    **** OTROS ****
 Reloj anal¢gico           /sys/demos/aclock
 Reloj binario             /sys/demos/bcdclk

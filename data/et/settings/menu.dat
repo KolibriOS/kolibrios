@@ -144,7 +144,7 @@ Telnet klient             /sys/network/telnet
 Synergy klient            /sys/network/synergyc
 DNS otsing                /sys/network/nslookup
 Interneti allalaadija     /sys/network/downloader
-Tekstipõhine brauser      /sys/htmlv
+Tekstipõhine brauser      /sys/network/webview
 #18    **** OTHER ****
 Analoogkell               /sys/demos/aclock
 Digitaalne kell           /sys/demos/bcdclk

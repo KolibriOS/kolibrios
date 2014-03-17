@@ -277,7 +277,7 @@ CMM_PROGRAMS:=\
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
- WebView:WebView:$(PROGS)/cmm/browser/WebView.c \
+ network/WebView:network/WebView:$(PROGS)/cmm/browser/WebView.c \
  tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
  @notify:@notify:$(PROGS)/cmm/notify/notify.c \
 # end of list

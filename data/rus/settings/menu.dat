@@ -156,7 +156,7 @@ Telnet                    /sys/network/telnet
 Synergy клиент            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
 Интернет загрузчик        /sys/network/downloader
-Текстовый браузер         /sys/htmlv
+Текстовый браузер         /sys/network/webview
 #20   **** Разное ****
 Создание скриншотов       /sys/scrshoot
 Календарь                 /sys/calendar

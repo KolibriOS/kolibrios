@@ -144,7 +144,7 @@ Telnet client             /sys/network/telnet
 Synergy client            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
 Internet downloader       /sys/network/downloader
-Text-based browser        /sys/htmlv
+Text-based browser        /sys/network/webview
 #18    **** OTHER ****
 Analogue clock            /sys/demos/aclock
 Binary clock              /sys/demos/bcdclk
