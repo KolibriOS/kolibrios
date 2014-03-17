@@ -16,7 +16,22 @@ struct llist
 	int KeyEnd();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);
+	//void debug_values();
 }; 
+
+/*
+void llist::debug_values()
+{
+	debug("current: ");
+	debugi(current);
+	debug("first: ");
+	debugi(first);
+	debug("visible: ");
+	debugi(visible);
+	debug("count: ");
+	debugi(count);
+}
+*/
 
 
 void llist::ClearList()
