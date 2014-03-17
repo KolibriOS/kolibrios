@@ -80,8 +80,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.16.1"
-#define ABOUT_TITLE "Eolite v2.16.1"
+#define TITLE "Eolite File Manager v2.16.2"
+#define ABOUT_TITLE "Eolite v2.16.2"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -594,6 +594,7 @@ void Line_ReDraw(dword color, filenum){
 	      name_len=0,
 	      attr,
 	      y=filenum*files.line_h+files.y;
+	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
 	DrawBar(files.x+3,y+17,16,1,color);
