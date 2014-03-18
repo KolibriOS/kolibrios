@@ -23,7 +23,6 @@ entry START
 
         MAX_DEVICES             = 16
 
-        DEBUG                   = 1
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2
 

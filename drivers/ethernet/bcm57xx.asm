@@ -14,54 +14,43 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        ; TODO: make better use of the available descriptors
+format PE DLL native
+entry START
 
-format MS COFF
-
-        API_VERSION             = 0x01000100
-        DRIVER_VERSION          = 5
+        CURRENT_API             = 0x0200
+        COMPATIBLE_API          = 0x0100
+        API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
         MAX_DEVICES             = 16
 
-        DEBUG                   = 1
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2
 
+section '.flat' readable writable executable
+
+include '../proc32.inc'
 include '../struct.inc'
 include '../macros.inc'
-include '../proc32.inc'
-include '../imports.inc'
 include '../fdo.inc'
-include '../netdrv.inc'
+include '../netdrv_pe.inc'
 
-public START
-public service_proc
-public version
+struct  device          ETH_DEVICE
 
+        mmio_addr       dd ?
+        pci_bus         dd ?
+        pci_dev         dd ?
+        irq_line        db ?
 
-virtual at ebx
-        device:
-        ETH_DEVICE
+        cur_tx          dd ?
+        last_tx         dd ?
 
-        .mmio_addr      dd ?
-        .pci_bus        dd ?
-        .pci_dev        dd ?
-        .irq_line       db ?
+        rb 0x100 - ($ and 0xff) ; align 256
+        rx_desc         rd 256/8
 
-        .cur_tx         dd ?
-        .last_tx        dd ?
+        rb 0x100 - ($ and 0xff) ; align 256
+        tx_desc         rd 256/8
 
-                        rb 0x100 - (($ - device) and 0xff)
-        .rx_desc        rd 256/8
-
-                        rb 0x100 - (($ - device) and 0xff)
-        .tx_desc        rd 256/8
-
-        sizeof.device_struct = $ - device
-
-end virtual
-
-section '.flat' code readable align 16
+ends
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,25 +60,20 @@ section '.flat' code readable align 16
 ;; (standard driver proc) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 4
-proc START stdcall, state:dword
+proc START c, reason:dword, cmdline:dword
 
-        cmp [state], 1
-        jne .exit
+        cmp     [reason], DRV_ENTRY
+        jne     .fail
 
-  .entry:
-
-        DEBUGF  2,"Loading driver\n"
-        stdcall RegService, my_service, service_proc
+        DEBUGF  1,"Loading driver\n"
+        invoke  RegService, my_service, service_proc
         ret
 
   .fail:
-  .exit:
-        xor eax, eax
+        xor     eax, eax
         ret
 
 endp
-
 
 
 
@@ -100,7 +84,6 @@ endp
 ;; (standard driver proc) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 4
 proc service_proc stdcall, ioctl:dword
 
         mov     edx, [ioctl]
@@ -142,9 +125,9 @@ proc service_proc stdcall, ioctl:dword
         mov     ax, [eax+1]                             ;
   .nextdevice:
         mov     ebx, [esi]
-        cmp     al, byte [device.pci_bus]
+        cmp     al, byte [ebx + device.pci_bus]
         jne     .next
-        cmp     ah, byte [device.pci_dev]
+        cmp     ah, byte [ebx + device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
   .next:
         add     esi, 4
@@ -156,41 +139,42 @@ proc service_proc stdcall, ioctl:dword
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
 
-        allocate_and_clear ebx, sizeof.device_struct, .fail      ; Allocate the buffer for device structure
+        allocate_and_clear ebx, sizeof.device, .fail      ; Allocate the buffer for device structure
 
 ; Fill in the direct call addresses into the struct
 
-        mov     [device.reset], reset
-        mov     [device.transmit], transmit
-        mov     [device.unload], unload
-        mov     [device.name], my_service
+        mov     [ebx + device.reset], reset
+        mov     [ebx + device.transmit], transmit
+        mov     [ebx + device.unload], unload
+        mov     [ebx + device.name], my_service
 
 ; save the pci bus and device numbers
 
         mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte [eax+1]
-        mov     [device.pci_bus], ecx
+        mov     [ebx + device.pci_bus], ecx
         movzx   ecx, byte [eax+2]
-        mov     [device.pci_dev], ecx
+        mov     [ebx + device.pci_dev], ecx
 
 ; Now, it's time to find the base mmio addres of the PCI device
 
-        PCI_find_mmio32
+        stdcall PCI_find_mmio32, [ebx + device.pci_bus], [ebx + device.pci_dev]
 
 ; Create virtual mapping of the physical memory
 
         push    1Bh             ; PG_SW+PG_NOCACHE
         push    10000h          ; size of the map
         push    eax
-        call    MapIoMem
-        mov     [device.mmio_addr], eax
+        invoke  MapIoMem
+        mov     [ebx + device.mmio_addr], eax
 
 ; We've found the mmio address, find IRQ now
 
-        PCI_find_irq
+        invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.interrupt_line
+        mov     [ebx + device.irq_line], al
 
         DEBUGF  1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
-        [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.mmio_addr]:8
+        [ebx + device.pci_dev]:1,[ebx + device.pci_bus]:1,[ebx + device.irq_line]:1,[ebx + device.mmio_addr]:8
 
 ; Ok, the eth_device structure is ready, let's probe the device
         call    probe                                                   ; this function will output in eax
@@ -201,8 +185,8 @@ proc service_proc stdcall, ioctl:dword
         mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
         inc     [devices]                                               ;
 
-        mov     [device.type], NET_TYPE_ETH
-        call    NetRegDev
+        mov     [ebx + device.type], NET_TYPE_ETH
+        invoke  NetRegDev
 
         cmp     eax, -1
         je      .destroy
@@ -213,7 +197,7 @@ proc service_proc stdcall, ioctl:dword
 
   .find_devicenum:
         DEBUGF  1,"Trying to find device number of already registered device\n"
-        call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
+        invoke  NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
         DEBUGF  1,"Kernel says: %u\n", eax
@@ -225,7 +209,7 @@ proc service_proc stdcall, ioctl:dword
         ; todo: reset device into virgin state
 
   .err:
-        stdcall KernelFree, ebx
+        invoke  KernelFree, ebx
 
   .fail:
         or      eax, -1
@@ -241,8 +225,6 @@ endp
 ;;                                                                        ;;
 ;;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;;
 
-
-align 4
 unload:
         ; TODO: (in this particular order)
         ;
@@ -260,30 +242,32 @@ ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  probe: enables the device (if it really is I8254X)
+;;  probe: enables the device (if it really is BCM57XX)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-align 4
+
 probe:
 
         DEBUGF  1,"Probe\n"
 
-        PCI_make_bus_master
+; Make the device a bus master
+        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
+        or      al, PCI_CMD_MASTER
+        invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
+
 
         ; TODO: validate the device
 
 
 
 
-
-align 4
 reset:
 
         DEBUGF  1,"Reset\n"
 
-        movzx   eax, [device.irq_line]
+        movzx   eax, [ebx + device.irq_line]
         DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
-        stdcall AttachIntHandler, eax, int_handler, dword 0
+        invoke  AttachIntHandler, eax, int_handler, ebx
         test    eax, eax
         jnz     @f
         DEBUGF  1,"\nCould not attach int handler!\n"
@@ -294,10 +278,10 @@ reset:
         call    read_mac
 
 ; Set the mtu, kernel will be able to send now
-        mov     [device.mtu], 1514
+        mov     [ebx + device.mtu], 1514
 
 ; Set link state to unknown
-        mov     [device.state], ETH_LINK_UNKOWN
+        mov     [ebx + device.state], ETH_LINK_UNKNOWN
 
         ret
 
@@ -309,14 +293,14 @@ read_mac:
 
         DEBUGF  1,"Read MAC\n"
 
-        mov     esi, [device.mmio_addr]
-        lea     edi, [device.mac]
+        mov     esi, [ebx + device.mmio_addr]
+        lea     edi, [ebx + device.mac]
         movsd
         movsw
 
   .mac_ok:
         DEBUGF  1,"MAC = %x-%x-%x-%x-%x-%x\n",\
-        [device.mac+0]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
+        [ebx + device.mac+0]:2,[ebx + device.mac+1]:2,[ebx + device.mac+2]:2,[ebx + device.mac+3]:2,[ebx + device.mac+4]:2,[ebx + device.mac+5]:2
 
         ret
 
@@ -330,37 +314,47 @@ read_mac:
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-align 4
-transmit:
-        DEBUGF  2,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
-        mov     eax, [esp+4]
-        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+
+proc transmit stdcall bufferptr, buffersize
+
+        pushf
+        cli
+
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [bufferptr], [buffersize]
+        mov     eax, [bufferptr]
+        DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     dword [esp + 8], 1514
+        cmp     [buffersize], 1514
         ja      .fail
-        cmp     dword [esp + 8], 60
+        cmp     [buffersize], 60
         jb      .fail
 
 
 
 
-; Update stats
-        inc     [device.packets_tx]
-        mov     eax, [esp + 8]
-        add     dword [device.bytes_tx], eax
-        adc     dword [device.bytes_tx + 4], 0
 
+; Update stats
+        inc     [ebx + device.packets_tx]
+        mov     eax, [buffersize]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
+
+        DEBUGF  1,"Transmit OK\n"
+        popf
         xor     eax, eax
-        ret     8
+        ret
 
   .fail:
-        DEBUGF  1,"Send failed\n"
-        stdcall KernelFree, [esp+4]
+        DEBUGF  2,"Transmit failed\n"
+        invoke  KernelFree, [bufferptr]
+        popf
         or      eax, -1
-        ret     8
+        ret
+
+endp
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -374,7 +368,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 ;-------------------------------------------
 ; Find pointer of device wich made IRQ occur
 
@@ -385,7 +379,7 @@ int_handler:
   .nextdevice:
         mov     ebx, [esi]
 
-;        mov     edi, [device.mmio_addr]
+;        mov     edi, [ebx + device.mmio_addr]
 ;        mov     eax, [edi + REG_ICR]
         test    eax, eax
         jnz     .got_it
@@ -414,15 +408,17 @@ int_handler:
 
 ; End of code
 
-section '.data' data readable writable align 16
-align 4
+data fixups
+end data
 
-devices         dd 0
-version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
+include '../peimport.inc'
+
 my_service      db 'BCM57XX',0                   ; max 16 chars include zero
 
 include_debug_strings                           ; All data wich FDO uses will be included here
 
+align 4
+devices         dd 0
 device_list     rd MAX_DEVICES                  ; This list contains all pointers to device structures the driver is handling
 
 
