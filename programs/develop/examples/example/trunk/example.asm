@@ -6,12 +6,14 @@
 ;                                                  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
  
-; The header
- 
+format binary as ""                     ; Binary file format without extension
+
 use32                                   ; Tell compiler to use 32 bit instructions
  
 org 0x0                                 ; the base address of code, always 0x0
- 
+
+; The header
+
 db 'MENUET01'
 dd 0x01
 dd START
