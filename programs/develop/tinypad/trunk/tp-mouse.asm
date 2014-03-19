@@ -139,6 +139,8 @@ mouse:
 	call	dword[main_menu.onshow+ecx*4-4]
 	call	setup_main_menu_popup
 	mcall	60,2,[h_popup],POPUP_STACK,4
+	
+	call draw_main_menu
 
 	jmp	still.skip_write
 
