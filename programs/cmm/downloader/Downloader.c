@@ -14,7 +14,7 @@
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\http.h"
 
-char header[]="New Downloader v0.5";
+char header[]="New Downloader v0.6";
 
 #ifdef LANG_RUS
 	char accept_language[]= "Accept-Language: ru\n";
@@ -136,7 +136,7 @@ void DrawSpeed()
 	diagram.Fill(0xFCF8F7);
 	max_speed = speed[speed_position];
 	if (speed_position < diagram.bufw) start_from = 0; else start_from = speed_position - diagram.bufw + 1;
-	for (i = 0; i <= speed_position-start_from; i++)
+	if (speed_position>0) for (i = 0; i <= speed_position-start_from; i++)
 	{
 		if (max_speed>0)
 		{
@@ -190,7 +190,7 @@ void Draw_Window()
 
 void Scan(int id)
 {
-	if (id==301) StartDownloading();
+	if (id==301) && (http_transfer <= 0) StartDownloading();
 	if (id==302) StopDownloading();
 	if (id==305) RunProgram("/sys/File managers/Eolite", "/tmp0/1/");
 }
@@ -211,6 +211,7 @@ void StopDownloading()
 		bufpointer = mem_Free(bufpointer);
 	}
 	address_box.color = address_box.blur_border_color = address_box.focus_border_color = 0xFFFfff;
+	speed_position = 0;
 	Draw_Window();
 }
 
@@ -221,9 +222,9 @@ void StartDownloading()
 	if (strncmp(#URL,"http:",5)==0)
 	{
 		address_box.color = address_box.blur_border_color = address_box.focus_border_color = 0xededed;
-		Draw_Window();
 		http_get stdcall (#URL, #accept_language);
 		http_transfer = EAX;
+		Draw_Window();
 		if (http_transfer == 0)
 		{
 			StopDownloading();
