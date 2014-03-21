@@ -2,33 +2,39 @@
 dword buf_data;
 
 struct DrawBufer {
-	int bufx, bufy, bufw, bufh, buf_line_h;
+	int bufx, bufy, bufw, bufh;
 
 	void Init();
+	void Show();
 	void Fill();
 	void Skew();
 	void DrawBar();
+	void PutPixel();
 	void AlignCenter();
 	void AlignRight();
 };
 
-void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh, i_buf_line_h)
+void DrawBufer::Init(int i_bufx, i_bufy, i_bufw, i_bufh)
 {
 	bufx = i_bufx;
 	bufy = i_bufy;
 	bufw = i_bufw; 
 	bufh = i_bufh;
-	buf_line_h = i_buf_line_h;
 	free(buf_data);
-	buf_data = malloc(bufw * buf_line_h +4 * 4 + 8); //+1 for good luck
+	buf_data = malloc(bufw * bufh * 4 + 8); //+1 for good luck
 	ESDWORD[buf_data] = bufw;
-	ESDWORD[buf_data+4] = buf_line_h;
+	ESDWORD[buf_data+4] = bufh;
+}
+
+void DrawBufer::Show()
+{
+	PutPaletteImage(buf_data+8, bufw, bufh, bufx, bufy, 32,0);
 }
 
 void DrawBufer::Fill(dword fill_color)
 {
 	int i;
-	int max_i = bufw * buf_line_h + 4 * 4 + buf_data +8;
+	int max_i = bufw * bufh * 4 + buf_data + 8;
 	for (i=buf_data+8; i<max_i; i+=4) ESDWORD[i] = fill_color;
 }
 
@@ -39,6 +45,12 @@ void DrawBufer::DrawBar(dword x, y, w, h, color)
 	{
 		for (i = y+j*bufw+x*4+8+buf_data; i<y+j*bufw+x+w*4+8+buf_data; i+=4) ESDWORD[i] = color;
 	}
+}
+
+void DrawBufer::PutPixel(dword x, y, color)
+{
+	int pos = y*bufw+x*4+8+buf_data;
+	ESDWORD[pos] = color;
 }
 
 char shift[]={8,8,4,4};

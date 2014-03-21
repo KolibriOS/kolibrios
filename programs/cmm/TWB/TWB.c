@@ -679,7 +679,7 @@ void TWebBrowser::NewLine(int left1, top1)
 	{
 		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(left1,top1,list.w,list.line_h,stolbec * 6);
 		if (text_align == ALIGN_RIGHT) DrawBuf.AlignRight(left1,top1,list.w,list.line_h,stolbec * 6);
-		PutPaletteImage(buf_data+8, list.w, list.line_h, left1-5, top1, 32,0);
+		DrawBuf.Show();
 		DrawBuf.Fill(bg_color);
 	}
 	stroka++;

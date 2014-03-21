@@ -227,7 +227,7 @@ void SetElementSizes()
 	WB1.list.SetSizes(0, 44, Form.width - 10 - scroll_wv.size_x, Form.cheight - 44, 0, 10);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
 	WB1.list.visible = WB1.list.h - 3 / WB1.list.line_h - 2;
-	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h, WB1.list.line_h);
+	WB1.DrawBuf.Init(WB1.list.x, WB1.list.line_h, WB1.list.w, WB1.list.h);
 }
 
 

@@ -165,7 +165,7 @@ inline fastcall void utf8rutodos( ESI)
 }
 
 
-:dword ConvertMemSize(unsigned int bytes)
+:dword ConvertSize(unsigned int bytes)
 {
   unsigned char size_prefix[8], size_nm[4];
   if (bytes>=1073741824) strcpy(#size_nm, " Gb");
