@@ -53,10 +53,9 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         add     edx, 0x33000000
         mov     edi, str_programname
         mcall
-        mcall   12, 2
-		
-		movsx	eax, [thread_info+70]			; skip if window rolled up
-		test	eax, 100b
+        mcall   12, 2		
+			
+		test	[thread_info.wnd_state], 100b ; skip if window rolled up
 		jne		.exit
 
         mov     ebx, [xsize]
