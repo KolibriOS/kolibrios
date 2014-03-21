@@ -633,7 +633,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 	}
 	if (isTag("img"))
 	{
-		ImgCache.Images( left1, top1);
+		ImgCache.Images( left1, top1, WB1.list.w);
 		return;
 	}
 	if (isTag("meta")) || (isTag("?xml"))
@@ -656,7 +656,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 	}
 }
 
-void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
+void TWebBrowser::DrawScroller()
 {
 	scroll_wv.max_area = list.count;
 	scroll_wv.cur_area = list.visible;
@@ -673,12 +673,13 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 
 void TWebBrowser::NewLine(int left1, top1)
 {
-	if (!stroka) DrawBar(list.x, list.y, list.w, 5, bg_color); //закрашиваем фон над первой строкой
+	if (!stroka) DrawBar(list.x, list.y, list.w, 5, bg_color);
 	if (t_html) && (!t_body) return;
 	if (top1>=list.y) && ( top1 < list.h+list.y-10)  && (!anchor)
 	{
 		if (text_align == ALIGN_CENTER) DrawBuf.AlignCenter(left1,top1,list.w,list.line_h,stolbec * 6);
 		if (text_align == ALIGN_RIGHT) DrawBuf.AlignRight(left1,top1,list.w,list.line_h,stolbec * 6);
+		DrawBuf.bufy = top1;
 		DrawBuf.Show();
 		DrawBuf.Fill(bg_color);
 	}

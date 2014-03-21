@@ -38,7 +38,7 @@ void ImageCache::Images(int left1, top1, width1)
 {
 	dword image;
     char img_path[4096], alt[4096];
-    int w=0, h=0, img_lines_first=0, cur_pic=0;
+    int imgw=0, imgh=0, img_lines_first=0, cur_pic=0;
 	
 	do{
 		if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
@@ -73,32 +73,32 @@ void ImageCache::Images(int left1, top1, width1)
 		return;
 	}
 	
-	w = DSWORD[pics[cur_pic].image+4];
-	h = DSWORD[pics[cur_pic].image+8];
-	if (w > width1) w = width1;
+	imgw = DSWORD[pics[cur_pic].image+4];
+	imgh = DSWORD[pics[cur_pic].image+8];
+	if (imgw > width1) imgw = width1;
 	
 	if (stroka==0) DrawBar(WB1.list.x, WB1.list.y, WB1.list.w-15, 5, bg_color); //закрашиваем первую строку
-	stroka += h/10;
-	if (top1+h<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
+	stroka += imgh/10;
+	if (top1+imgh<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
 	if (top1<WB1.list.y) //если часть изображения сверху
 	{
 		img_lines_first=WB1.list.y-top1;
-		h=h-img_lines_first;
+		imgh=imgh-img_lines_first;
 		top1=WB1.list.y;
 	}
-	if (top1>WB1.list.y+WB1.list.h-h-5) //если часть изображения снизу
+	if (top1>WB1.list.y+WB1.list.h-imgh-5) //если часть изображения снизу
 	{
-		h=WB1.list.y+WB1.list.h-top1-5;
+		imgh=WB1.list.y+WB1.list.h-top1-5;
 	}	
-	if (h<=0) return;
+	if (imgh<=0) return;
 	if (anchor) return;
 	
-	img_draw stdcall (pics[cur_pic].image, left1-5, top1, w, h,0,img_lines_first);
-	DrawBar(left1+w - 5, top1, WB1.list.w-w, h, bg_color);
+	img_draw stdcall (pics[cur_pic].image, left1-5, top1, imgw, imgh,0,img_lines_first);
+	DrawBar(left1+imgw - 5, top1, WB1.list.w-imgw, imgh, bg_color);
 	IF (link)
 	{
-		UnsafeDefineButton(left1 - 5, top1, w, h-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
-		PageLinks.AddText(0, w, h-1, NOLINE);	
+		UnsafeDefineButton(left1 - 5, top1, imgw, imgh-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
+		PageLinks.AddText(0, imgw, imgh-1, NOLINE);	
 		// WB1.DrawPage();
 	} 
 }

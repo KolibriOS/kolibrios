@@ -17,6 +17,10 @@ dword version_scrollbar = #aVersion_scrollbar;
 
 dword PathShow_prepare = #aPathShow_prepare;
 dword PathShow_draw    = #aPathShow_draw;
+
+dword progressbar_draw = #aProgressbar_draw;
+dword progressbar_progress = #aProgressbar_progress;
+
 $DD 2 dup 0
 
 char aEdit_box_draw [9]     = "edit_box\0";
@@ -41,6 +45,9 @@ char aVersion_op       [11] = "version_op\0" ;
 
 char aPathShow_prepare [17] = "PathShow_prepare\0";
 char aPathShow_draw    [14] = "PathShow_draw\0";
+
+char aProgressbar_draw  [17] = "progressbar_draw\0";
+char aProgressbar_progress[21] = "progressbar_progress\0";
 
 
 struct PathShow_data
@@ -100,4 +107,19 @@ position2,//	equ [edi+72]
 work_size,//	equ [edi+76]
 all_redraw,//	equ [edi+80]
 ar_offset;//	equ [edi+84]
+};
+
+struct pb //progressbar
+{
+dword value,
+left,
+top,
+width,
+height,
+style,
+min,
+max,
+back_color,
+progress_color,
+frame_color;
 };
