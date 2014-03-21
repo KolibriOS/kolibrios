@@ -582,7 +582,7 @@ param           rb 1024
 
 servercommand   rb 600
 
-thread_info     rb 1024
+thread_info     process_information
 xsize           dd ?
 ysize           dd ?
 mouse_dd        dd ?

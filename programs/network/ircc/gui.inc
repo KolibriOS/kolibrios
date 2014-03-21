@@ -16,11 +16,11 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
 
         pusha
 
-        mcall   9, thread_info, -1              ; get current window size
-        mov     eax, dword[thread_info+42]      ; window xsize
-        mov     ebx, dword[thread_info+46]      ; ysize
-        mov     edx, dword[thread_info+62]      ; work area xsize
-        mov     esi, dword[thread_info+66]      ; ysize
+        mcall   9, thread_info, -1                      ; get information about this thread
+        mov     eax, [thread_info.box.width]            ; window xsize
+        mov     ebx, [thread_info.box.height]           ; ysize
+        mov     edx, [thread_info.client_box.width]     ; work area xsize
+        mov     esi, [thread_info.client_box.height]    ; ysize
         sub     eax, edx
         sub     ebx, esi
 
@@ -37,7 +37,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
   .y_ok:
         mov     [ysize], esi
         add     esi, ebx
-        mcall   67, -1, -1                      ; set the new sizes
+        mcall   67, -1, -1                              ; set the new sizes
 
         popa
 
@@ -53,7 +53,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         add     edx, 0x33000000
         mov     edi, str_programname
         mcall
-        mcall   12, 2 ;; when do we actually need this??
+        mcall   12, 2
 		
 		movsx	eax, [thread_info+70]			; skip if window rolled up
 		test	eax, 100b
@@ -156,7 +156,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
 
 ; draw tabs
         call    draw_windowtabs
-		
+                
   .exit:
         popa
         ret
