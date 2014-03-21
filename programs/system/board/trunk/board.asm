@@ -406,6 +406,7 @@ CheckUnique:
 	jmp .check_threads
 
 .close_program:
+	mcall 18,3 ; restore and active window of previous thread
 	mov eax, -1
 	mcall
 
