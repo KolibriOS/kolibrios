@@ -54,6 +54,10 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         mov     edi, str_programname
         mcall
         mcall   12, 2 ;; when do we actually need this??
+		
+		movsx	eax, [thread_info+70]			; skip if window rolled up
+		test	eax, 100b
+		jne		.exit
 
         mov     ebx, [xsize]
         mov     ecx, [ysize]
@@ -152,7 +156,8 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
 
 ; draw tabs
         call    draw_windowtabs
-
+		
+  .exit:
         popa
         ret
 
