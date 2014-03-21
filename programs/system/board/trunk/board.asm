@@ -5,8 +5,8 @@
 ;
 ;   Compile with FASM for Menuet
 ;
-WRITE_LOG  equ 1
-
+WRITE_LOG    equ 1
+P_LEN		 equ 11
 include 'lang.inc'
 
    use32
@@ -25,6 +25,9 @@ MAXSTRINGS = 16
 TMP = 80*(MAXSTRINGS+1)
 ;------------------------------------------------------------------------------
 START:				; start of execution
+
+	call CheckUnique
+
 	mov	edi,filename
 	cmp	[edi],byte 0
 	jnz	param
@@ -311,6 +314,106 @@ WriteToFile:
 .out:
 	pop      ebx
 	ret
+
+;-------------------------------------------------
+;********************************************
+;*  input:  esi = pointer to string         *
+;*          edi = pointer to string         *
+;*          ecx = data length               *
+;********************************************
+StrCmp:
+	repe cmpsb
+	ja .a_greater_b
+	jb .a_less_b
+.equal:
+	mov eax, 0
+	jmp .end
+.a_less_b:
+	mov eax, 1
+	jmp .end
+.a_greater_b:
+	mov eax, -1
+.end:
+	ret
+
+;-------------------------------------------------
+;********************************************
+;*  input:  edi = pointer to string         *
+;*          ecx = data length			    *
+;********************************************
+; 'a' - 'A' = 32 -> 'A'|32 = 'a'
+ToLower:
+	xor eax, eax
+.cycle:
+	or byte[edi+eax], 32
+	inc eax
+	loop .cycle
+.end:
+	ret
+
+
+;-------------------------------------------------
+CheckUnique:
+;get info on current thread, save pid/tid
+;look for another process with same name and different pid/tid
+;if found, close self
+;else continue normally
+
+.get_thread_info:
+	mov ebx, procinfo
+	mov ecx, -1
+	mcall 9
+.get_pid:
+; check_buffer
+	mov [process_count], eax
+	mov eax, [ebx+process_information.PID]
+	mov [pid_tid], eax
+	mov ecx, 2
+
+.check_threads:
+	cmp ecx, [process_count]
+	ja .leave_check
+	mov eax, 9
+	mcall
+
+.check_slot_free:
+	cmp dword [ebx+process_information.slot_state], 9
+	je .next_thread
+
+.check_pid:
+	mov eax, [pid_tid]
+	cmp [ebx+process_information.PID], eax
+	je .next_thread
+
+.get_proc_name:
+	lea edi, [ebx+process_information.process_name]
+	push ecx
+	mov ecx, my_name_size-1
+.lower_case:
+	call ToLower
+	lea esi, [my_name]
+
+	mov ecx, my_name_size
+	call StrCmp
+
+	pop ecx
+
+	cmp eax, 0
+	je .close_program
+
+.next_thread:
+	inc ecx
+	jmp .check_threads
+
+.close_program:
+	mov eax, -1
+	mcall
+
+.leave_check:
+	ret
+
+
+
 ;--------------------------------------------------
 InfoStructure:
 	dd 0x0	; subfunction number
@@ -343,6 +446,11 @@ end if
 krnl_cnt	dd 0
 vmode		dd 1
 targ		dd text2
+
+my_name 	   db 'board',0
+my_name_size   = $-my_name
+process_count  dd 0x0
+pid_tid		   dd 0x0
 ;------------------------------------------------------------------------------
 I_END:
 ;------------------------------------------------------------------------------
