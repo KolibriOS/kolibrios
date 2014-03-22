@@ -17,8 +17,6 @@ char *ITEMS_LIST[]={
 0}; 
 
 llist menu;
-dword col_work    = 0xE4DFE1;
-dword col_border  = 0x9098B0;
 
 void menu_rmb()
 {
@@ -55,7 +53,7 @@ void menu_rmb()
 				
 		case evReDraw:
 				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
-				DrawPopup(0,0,menu.w,menu.h+3,0, col_work,col_border);
+				DrawPopup(0,0,menu.w,menu.h+3,0, col_bg,border_color);
 				DrawMenuList();				
 	}
 }
@@ -70,7 +68,7 @@ void DrawMenuList()
 			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, 0x94AECE);
 		else
 		{
-			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, col_work);
+			DrawBar(menu.x, N*menu.line_h+menu.y, menu.w-3, menu.line_h, col_bg);
 			WriteText(19,N*menu.line_h+9,0x80,0xf2f2f2,ITEMS_LIST[N*2]);
 		}
 		WriteText(18,N*menu.line_h+8,0x80,0x000000,ITEMS_LIST[N*2]);

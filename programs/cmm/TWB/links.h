@@ -63,6 +63,8 @@ void LinksArray::Clear()
 	CursorPointer.Restore();
 }
 
+char temp[4096];
+PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0};
 
 void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 {
@@ -76,6 +78,13 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 			if (links[active].underline) DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
 			if (links[i].underline) DrawBar(links[i].x,links[i].y+8,links[i].w,1, bg_col);
 			active = i;
+			DrawBar(progress_bar.left+progress_bar.width+10, progress_bar.top+2, Form.cwidth-progress_bar.left-progress_bar.width-10, 9, col_bg);
+			status_text.start_x = progress_bar.left+progress_bar.width+10;
+			status_text.start_y = progress_bar.top+2;
+			status_text.area_size_x = Form.cwidth-progress_bar.left-progress_bar.width-10;
+			status_text.text_pointer = links[active].link;
+			PathShow_prepare stdcall(#status_text);
+			PathShow_draw stdcall(#status_text);
 			return;
 		}
 	}
@@ -83,6 +92,7 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	{
 		CursorPointer.Restore();
 		if (links[active].underline) DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
+		DrawBar(progress_bar.left+progress_bar.width+10, progress_bar.top+2, Form.cwidth-progress_bar.left-progress_bar.width-10, 9, col_bg);
 		active = -1;
 	}
 }

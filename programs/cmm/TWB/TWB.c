@@ -6,7 +6,7 @@ dword bufsize;
 
 #define URL param
 
-scroll_bar scroll_wv = { 17,200,398, 44,17,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
+scroll_bar scroll_wv = { 15,200,398,44,0,2,115,15,0,0xeeeeee,0xBBBbbb,0xeeeeee,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1};
 
 char header[2048];
 
@@ -305,7 +305,7 @@ void TWebBrowser::Parse(){
 				NewLine(list.x + 5, stroka * 10 + list.y + 5); //закрашиваем следущую строку
 			}
 			DrawPage();
-			line=NULL;	
+			line = NULL;
 			if (tag) SetTextStyle(list.x + 5, stroka * 10 + list.y + 5); //обработка тегов
 			tag = parametr = tagparam = ignor_param = NULL;
 			break;
@@ -647,7 +647,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 				if (!strcmp(#options, "utf-8"))  || (!strcmp(#options,"utf8")) meta_encoding = _UTF;
 				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u")) meta_encoding = _KOI;
 				if (!strcmp(#options, "windows-1251")) || (!strcmp(#options, "windows1251")) meta_encoding = _WIN;
-				//if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   meta_encoding = _DOS;
+				if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   meta_encoding = _DOS;
 				if (cur_encoding==_DEFAULT) BufEncode(meta_encoding);
 				return;
 			}
@@ -662,7 +662,7 @@ void TWebBrowser::DrawScroller()
 	scroll_wv.cur_area = list.visible;
 	scroll_wv.position = list.first;
 
-	scroll_wv.all_redraw=1;
+	scroll_wv.all_redraw=0;
 	scroll_wv.start_x = list.x + list.w;
 	scroll_wv.start_y = list.y;
 	scroll_wv.size_y=list.h;

@@ -25,23 +25,22 @@
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\libimg_lib.h"
 #include "..\lib\lib.obj\http.h"
-//images
-#include "img\toolbar_icons.c"
-#include "img\URLgoto.txt";
+
+char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 0.99.76";
+	char version[]=" Текстовый браузер 1.0 Beta 1";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
-	unsigned char page_not_found[] = FROM "html\page_not_found_ru.htm";
+	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 0.99.76";
+	char version[]=" Text-based Browser 1.0 Beta 1";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
-	unsigned char page_not_found[] = FROM "html\page_not_found_en.htm";
+	char page_not_found[] = FROM "html\page_not_found_en.htm";
 	char accept_language[]= "Accept-Language: en\n";	
 #endif
 
@@ -60,18 +59,39 @@ int action_buf;
 dword http_transfer = 0;
 dword http_buffer;
 
+dword TAB_H = 19;
+dword TAB_W = 150;
+dword TOOLBAR_H = 50;
+dword STATUSBAR_H =18;
+dword col_bg = 0xE4DFE1;
+dword panel_color = 0xF1F1F1;
+dword border_color = 0x9F9F9F;
+
+pb progress_bar = {0, 10, 83, 150, 13, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
 #include "history.h"
 
 char editURL[sizeof(URL)];
 int	mouse_twb;
-edit_box address_box= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
+edit_box address_box = {250,55,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(URL),#editURL,#mouse_twb,2,19,19};
 
-#define URL_HISTORY "WebView://history"
+#define URL_SERVICE_HISTORY "WebView://history"
+#define URL_SERVICE_HOME "WebView://home"
 
 enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 
+struct skin {
+	dword image, w, h;
+} skin;
+
+int LoadSkin()
+{
+	skin.image = load_image(abspath("wv_skin.png"));
+	skin.w = DSWORD[skin.image+4];
+	skin.h = DSWORD[skin.image+8];
+}
 
 void main()
 {
@@ -85,11 +105,12 @@ void main()
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
+	LoadSkin();
 	
-	if (!URL) strcpy(#URL, "/sys/index.htm");
 	Form.width=WIN_W;
 	Form.height=WIN_H;
 	SetElementSizes();
+	if (!URL) strcpy(#URL, URL_SERVICE_HOME);
 	OpenPage();
 
 	SetEventMask(0xa7);
@@ -126,6 +147,7 @@ void main()
 					if (WB1.list.MouseScroll(m.vert)) WB1.Parse();
 				}
 				//Drag scroller
+				scroll_wv.all_redraw = 0;
 				if (!m.lkm) scroll_used=0;
 				if (m.x>=scroll_wv.start_x) && (m.x<=scroll_wv.start_x+scroll_wv.size_x) 
 				&& (m.y>=scroll_wv.start_y+scroll_wv.btn_height) && (-scroll_wv.btn_height+scroll_wv.start_y+scroll_wv.size_y>m.y)
@@ -167,7 +189,13 @@ void main()
 			case evNetwork:
 				if (http_transfer > 0) {
 					http_process stdcall (http_transfer);
-					if (EAX == 0) {	
+					$push EAX
+					ESI = http_transfer;
+					progress_bar.max = ESI.http_msg.content_length;
+					progress_bar.value = ESI.http_msg.content_received;
+					progressbar_draw stdcall(#progress_bar);
+					$pop EAX
+					if (EAX == 0) {
 						ESI = http_transfer;
 						// Handle redirects
 						if (ESI.http_msg.status >= 300) && (ESI.http_msg.status < 400)
@@ -223,46 +251,55 @@ void main()
 
 void SetElementSizes()
 {
-	address_box.width = Form.width - 266;
-	WB1.list.SetSizes(0, 44, Form.width - 10 - scroll_wv.size_x, Form.cheight - 44, 0, 10);
+	address_box.top = TOOLBAR_H-TAB_H/2-7+TAB_H;
+	address_box.width = Form.cwidth - address_box.left - 25 - 22;
+	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, Form.cheight - TOOLBAR_H - STATUSBAR_H, 0, 10);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
 	WB1.list.visible = WB1.list.h - 3 / WB1.list.line_h - 2;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
 }
 
-
 void Draw_Window()
 {
-	int j;
-	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0xE4DFE1,0,0);
-
+	int img_off;
+	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,col_bg,0,0);
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2)
-	{
-		DrawTitle(#header);
-		return;
-	}
+	if (Form.status_window>2) { DrawTitle(#header); return; }
 	if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
 	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
-	
-	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	if (http_transfer > 0) _PutImage(88,10, 24,24, #stop_btn);
-	
-	DrawBar(200,0,Form.cwidth-200,43,0xE4DFE1);
-	DrawBar(0,42,Form.cwidth,1,0xE2DBDC);
-	DrawBar(0,43,Form.cwidth,1,0xD2CED0);
-	for (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0xE4DFE1);
-	_PutImage(Form.cwidth-48,14, 40,19, #URLgoto);
-	DefineButton(Form.cwidth-28,15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
-	DefineButton(Form.cwidth-47,15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
-	DrawRectangle(205,14,Form.cwidth-205-49,18,0x94AECE); //around adress bar
-	DrawRectangle(206,15,Form.cwidth-205-50,16,0xE4ECF3);
+	// tab {
+	DrawBar(0, 0, TAB_W, TAB_H+1, panel_color);
+	WriteText(5, 7, 0x80, 0xfdfdFd, "Index.htm");
+	WriteText(4, 6, 0x80, 0, "Index.htm");
+	// }
+	DrawBar(TAB_W,0, Form.cwidth-TAB_W,TAB_H, col_bg);
+	DrawBar(TAB_W-1,TAB_H, Form.cwidth-TAB_W+1,1, border_color);
+	DrawBar(0,TAB_H+1, Form.cwidth,TOOLBAR_H-TAB_H-2, panel_color);
+	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
+	img_draw stdcall(skin.image, TAB_W-13, 0, 30, skin.h, 101, 0);
 
 	SetElementSizes();
-	ShowPage();
+	DrawRectangle(address_box.left-1, address_box.top-1, address_box.width+2, 16,address_box.color);
+	DrawRectangle(address_box.left-2, address_box.top-2, address_box.width+4, 18,border_color);
+	// < / >
+	DefineButton(address_box.left-49, address_box.top-1, 23, skin.h-2, 300+BT_HIDE, 0);
+	DefineButton(address_box.left-25, address_box.top-1, 23, skin.h-2, 301+BT_HIDE, 0);
+	img_draw stdcall(skin.image, address_box.left-50, address_box.top-2, 48, skin.h, 3, 0);
+	// refrash
+	DefineButton(address_box.left+address_box.width+1, address_box.top-2, 16, skin.h-1, REFRESH+BT_HIDE+BT_NOFRAME, 0);
+	if (http_transfer > 0) img_off = 131; else img_off = 52;
+	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, img_off, 0);
+	// config
+	DefineButton(Form.cwidth-23, address_box.top-2, 17, skin.h-1, 312+BT_HIDE, 0);
+	img_draw stdcall(skin.image, Form.cwidth-22, address_box.top-2, 16, skin.h, 85, 0);	
 
-	DefineButton(scroll_wv.start_x+1, scroll_wv.start_y+1, 16, 16, BTN_UP+BT_HIDE, 0xE4DFE1);
-	DefineButton(scroll_wv.start_x+1, scroll_wv.start_y+scroll_wv.size_y-18, 16, 16, BTN_DOWN+BT_HIDE, 0xE4DFE1);
+	ShowPage();
+	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
+	//status bar
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
+	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
+	progress_bar.top = Form.cheight - STATUSBAR_H + 4;
+	progressbar_draw stdcall(#progress_bar);
 }
 
 
@@ -305,7 +342,7 @@ void Scan(int id)
 			return;
 
 		case 003: //history
-			strcpy(#URL, URL_HISTORY);
+			strcpy(#URL, URL_SERVICE_HISTORY);
 			OpenPage();
 			return;
 
@@ -399,6 +436,11 @@ void Scan(int id)
 			if (WB1.list.count < WB1.list.visible) return;
 			if (WB1.list.KeyEnd()) WB1.Parse();
 			return;
+		case 312:
+			SwitchToAnotherThread();
+			m.y = TOOLBAR_H-6;
+			m.x = Form.cwidth - 167;
+			CreateThread(#menu_rmb,#stak+4092);
 	}
 }
 
@@ -471,7 +513,8 @@ void StopLoading()
 		bufsize = 0;
 		bufpointer = mem_Free(bufpointer);
 	}
-	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	progress_bar.value = 0;
+	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 52, 0);
 }
 
 void SetPageDefaults()
@@ -491,9 +534,10 @@ void OpenPage()
 	StopLoading();
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
+	if (strncmp(#URL,"WebView:",8)==0) return;
 	if (strncmp(#URL,"http:",5)==0)
 	{
-		_PutImage(88,10, 24,24, #stop_btn);
+		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 131, 0);
 		http_get stdcall (#URL, #accept_language);
 		http_transfer = EAX;
 		if (http_transfer == 0)
@@ -526,7 +570,8 @@ void ShowPage()
 	address_box.offset=0;
 	edit_box_draw stdcall(#address_box);
 
-	if (strcmp(#URL, URL_HISTORY)==0) ShowHistory(); else
+	if (strcmp(#URL, URL_SERVICE_HOME)==0) WB1.Prepare(#homepage, sizeof(homepage)); else
+	if (strcmp(#URL, URL_SERVICE_HISTORY)==0) ShowHistory(); else
 	if (!bufsize)
 	{
 		PageLinks.Clear();
