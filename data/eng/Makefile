@@ -273,6 +273,7 @@ COPY_FILES:=\
  settings/.shell:SETTINGS/.shell:$(PROGS)/system/shell/bin/eng/.shell \
  settings/mykey.ini:SETTINGS/MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
  example.asm:EXAMPLE.ASM:$(PROGS)/develop/examples/example/trunk/example.asm \
+ network/wv_skin.png:NETWORK/WV_SKIN.PNG:$(PROGS)/cmm/browser/wv_skin.png \
 # end of list
 
 # The list of all C-- programs with one main C-- file.
