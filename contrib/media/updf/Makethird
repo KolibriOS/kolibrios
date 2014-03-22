@@ -1,0 +1,203 @@
+# GNU Makefile for third party libraries used by MuPDF
+#
+# If thirdparty libraries are supplied, they will be built as
+# static libraries. Download and unzip the the mupdf-thirdparty.zip
+# archive in the source directory.
+
+FREETYPE_DIR := $(wildcard thirdparty/freetype*)
+JBIG2DEC_DIR := $(wildcard thirdparty/jbig2dec*)
+JPEG_DIR := $(wildcard thirdparty/jpeg*)
+OPENJPEG_DIR := $(wildcard thirdparty/openjpeg*/libopenjpeg)
+ZLIB_DIR := $(wildcard thirdparty/zlib*)
+
+# --- FreeType 2 ---
+
+ifneq "$(FREETYPE_DIR)" ""
+CFLAGS += -I$(FREETYPE_DIR)/include
+LIBS := $(filter-out -lfreetype, $(LIBS))
+FREETYPE_LIB := $(OUT)/libfreetype.a
+
+FREETYPE_SRC := \
+	ftbase.c \
+	ftbbox.c \
+	ftbitmap.c \
+	ftgasp.c \
+	ftglyph.c \
+	ftinit.c \
+	ftstroke.c \
+	ftsynth.c \
+	ftsystem.c \
+	fttype1.c \
+	ftxf86.c \
+	cff.c \
+	psaux.c \
+	pshinter.c \
+	psnames.c \
+	raster.c \
+	sfnt.c \
+	smooth.c \
+	truetype.c \
+	type1.c \
+	type1cid.c \
+
+$(FREETYPE_LIB): $(addprefix $(OUT)/ft_, $(FREETYPE_SRC:%.c=%.o))
+
+FT_CFLAGS := -DFT2_BUILD_LIBRARY -DDARWIN_NO_CARBON \
+	'-DFT_CONFIG_MODULES_H="slimftmodules.h"' \
+	'-DFT_CONFIG_OPTIONS_H="slimftoptions.h"'
+
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/base/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/cff/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/cid/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/psaux/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/pshinter/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/psnames/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/raster/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/smooth/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/sfnt/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/truetype/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+$(OUT)/ft_%.o: $(FREETYPE_DIR)/src/type1/%.c	| $(OUT)
+	$(CC_CMD) $(FT_CFLAGS)
+
+else
+CFLAGS += $(SYS_FREETYPE_INC)
+endif
+
+# --- JBIG2DEC ---
+
+ifneq "$(JBIG2DEC_DIR)" ""
+CFLAGS += -I$(JBIG2DEC_DIR)
+LIBS := $(filter-out -ljbig2dec, $(LIBS))
+JBIG2DEC_LIB := $(OUT)/libjbig2dec.a
+
+JBIG2DEC_SRC := \
+	jbig2.c \
+	jbig2_arith.c \
+	jbig2_arith_iaid.c \
+	jbig2_arith_int.c \
+	jbig2_generic.c \
+	jbig2_huffman.c \
+	jbig2_image.c \
+	jbig2_metadata.c \
+	jbig2_mmr.c \
+	jbig2_page.c \
+	jbig2_refinement.c \
+	jbig2_segment.c \
+	jbig2_symbol_dict.c \
+	jbig2_text.c \
+
+$(JBIG2DEC_LIB): $(addprefix $(OUT)/, $(JBIG2DEC_SRC:%.c=%.o))
+$(OUT)/%.o: $(JBIG2DEC_DIR)/%.c | $(OUT)
+	$(CC_CMD) -DHAVE_STDINT_H
+endif
+
+# --- JPEG library from IJG ---
+
+ifneq "$(JPEG_DIR)" ""
+CFLAGS += -I$(JPEG_DIR)
+LIBS := $(filter-out -ljpeg, $(LIBS))
+JPEG_LIB := $(OUT)/libjpeg.a
+
+JPEG_SRC := \
+	jaricom.c \
+	jcomapi.c \
+	jdapimin.c \
+	jdapistd.c \
+	jdarith.c \
+	jdatadst.c \
+	jdatasrc.c \
+	jdcoefct.c \
+	jdcolor.c \
+	jddctmgr.c \
+	jdhuff.c \
+	jdinput.c \
+	jdmainct.c \
+	jdmarker.c \
+	jdmaster.c \
+	jdmerge.c \
+	jdpostct.c \
+	jdsample.c \
+	jdtrans.c \
+	jerror.c \
+	jfdctflt.c \
+	jfdctfst.c \
+	jfdctint.c \
+	jidctflt.c \
+	jidctfst.c \
+	jidctint.c \
+	jmemansi.c \
+	jmemmgr.c \
+	jquant1.c \
+	jquant2.c \
+	jutils.c \
+
+$(JPEG_LIB): $(addprefix $(OUT)/jpeg_, $(JPEG_SRC:%.c=%.o))
+$(OUT)/jpeg_%.o: $(JPEG_DIR)/%.c | $(OUT)
+	$(CC_CMD) -Dmain=xxxmain
+endif
+
+# --- OpenJPEG ---
+
+ifneq "$(OPENJPEG_DIR)" ""
+CFLAGS += -I$(OPENJPEG_DIR)
+LIBS := $(filter-out -lopenjpeg, $(LIBS))
+OPENJPEG_LIB := $(OUT)/libopenjpeg.a
+
+OPENJPEG_SRC := \
+	bio.c \
+	cio.c \
+	dwt.c \
+	event.c \
+	image.c \
+	j2k.c \
+	j2k_lib.c \
+	jp2.c \
+	jpt.c \
+	mct.c \
+	mqc.c \
+	openjpeg.c \
+	pi.c \
+	raw.c \
+	t1.c \
+	t2.c \
+	tcd.c \
+	tgt.c \
+
+$(OPENJPEG_LIB): $(addprefix $(OUT)/opj_, $(OPENJPEG_SRC:%.c=%.o))
+$(OUT)/opj_%.o: $(OPENJPEG_DIR)/%.c | $(OUT)
+	$(CC_CMD) -DOPJ_STATIC
+endif
+
+# --- ZLIB ---
+
+ifneq "$(ZLIB_DIR)" ""
+CFLAGS += -I$(ZLIB_DIR)
+LIBS := $(filter-out -lz, $(LIBS))
+ZLIB_LIB := $(OUT)/libz.a
+
+ZLIB_SRC := \
+	adler32.c \
+	compress.c \
+	crc32.c \
+	deflate.c \
+	inffast.c \
+	inflate.c \
+	inftrees.c \
+	trees.c \
+	uncompr.c \
+	zutil.c \
+
+$(ZLIB_LIB): $(addprefix $(OUT)/zlib_, $(ZLIB_SRC:%.c=%.o))
+$(OUT)/zlib_%.o: $(ZLIB_DIR)/%.c | $(OUT)
+	$(CC_CMD)
+endif

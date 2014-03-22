@@ -1,0 +1,86 @@
+.TH MUPDF 1 "March 15, 2010"
+.\" Please adjust this date whenever revising the manpage.
+.SH NAME
+mupdf \- MuPDF is a lightweight PDF viewer written in portable C
+.SH SYNOPSIS
+.B mupdf
+.RI [ options ] " PDFfile"
+.SH DESCRIPTION
+This manual page briefly describes the
+.B mupdf
+command.
+.PP
+.SH OPTIONS
+A description of each of the supported options is included below.
+.TP
+.B \-p password
+Uses the given password to open an encrypted PDF file.
+The password is tried both as user and owner password.
+.TP
+.B \-r resolution
+Changes the initial zoom level, specified as the resolution in dpi.
+The default value is 72.
+.SH MOUSE AND KEY BINDINGS
+In addition to the key bindings described below, the mouse can also be
+used. Clicking the left mouse button follows links within the PDF while
+dragging with the left mouse button pans the page. Dragging with the right
+mouse button selects an area and copies the enclosed text to the clipboard
+buffer. Using the scroll-wheel while pressing Control zooms in/out, if
+Shift is pressed on the other hand then the page is panned.
+.TP
+.B L, R
+Rotate page left (clockwise) or right (counter-clockwise).
+.TP
+.B h, j, k, l
+Scroll page left, down, up, or right.
+.TP
+.B \+, \-
+Zoom in or out.
+.TP
+.B w
+Shrinkwrap window to fit the page.
+.TP
+.B r
+Reload file.
+.TP
+.B . pgdn right space
+Go to the next page
+.TP
+.B , pgup left b
+Go to the previous page
+.TP
+.B <, >
+Skip back/forth 10 pages at a time.
+.TP
+.B m
+Mark page for snap back.
+.TP
+.B t
+Pop back to the latest mark.
+.TP
+.B [0-9]m
+Save the current page number in the numbered register.
+.TP
+.B [0-9]t
+Go to the page saved in the numbered register.
+.TP
+.B 123g
+Go to page 123.
+.TP
+.B /
+Search for text.
+.TP
+.B n, N
+Find the next/previous search result.
+.TP
+.B c
+Toggle between color and grayscale rendering.
+.SH SEE ALSO
+.BR pdfclean (1),
+.BR pdfdraw (1),
+.BR pdfshow (1).
+.SH AUTHOR
+MuPDF was written by Tor Andersson <tor@ghostscript.com>.
+MuPDF is Copyright 2006-2010 Artifex Software, Inc.
+.PP
+This manual page was written by Sebastian Rasmussen <sebras@hotmail.com>.
