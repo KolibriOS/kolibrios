@@ -315,9 +315,9 @@ void Draw_Window()
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	progress_bar.top = Form.cheight - STATUSBAR_H + 4;
-	DrawProgress();
 	ShowPage();
 	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
+	DrawProgress();
 }
 
 
