@@ -243,6 +243,7 @@ void main()
 							http_free stdcall (http_transfer);
 							http_transfer=0;
 							PageLinks.GetAbsoluteURL(#URL);
+							BrowserHistory.current--;
 							strcpy(#editURL, #URL);
 							OpenPage();
 						}
@@ -463,6 +464,12 @@ void Scan(int id)
 
 void ProcessLinks(int id)
 {
+	if (http_transfer > 0) 
+	{
+		StopLoading();
+		BrowserHistory.current--;
+	}
+
 	strcpy(#URL, PageLinks.GetURL(id-401));	
 	//$1 - Condition Script
 	if (URL[0] == '$')
@@ -548,6 +555,7 @@ void OpenPage()
 {
 	StopLoading();
 	strcpy(#editURL, #URL);
+	BrowserHistory.AddUrl();
 	if (strncmp(#URL,"WebView:",8)==0) return;
 	if (strncmp(#URL,"http:",5)==0)
 	{
@@ -565,7 +573,6 @@ void OpenPage()
 	}
 	else
 	{
-		BrowserHistory.AddUrl();
 		file_size stdcall (#URL);
 		bufsize = EBX;
 		if (bufsize)
