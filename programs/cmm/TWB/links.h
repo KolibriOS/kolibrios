@@ -23,6 +23,7 @@ struct LinksArray
 	void AddText();
 	dword GetURL();
 	void Clear();
+	void GetAbsoluteURL();
 };
 
 void LinksArray::AddLink(dword new_link, int link_x, link_y)
@@ -63,7 +64,7 @@ void LinksArray::Clear()
 	CursorPointer.Restore();
 }
 
-char temp[4096];
+char temp[sizeof(URL)];
 PathShow_data status_text = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, 0, #temp, 0};
 
 void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
@@ -96,6 +97,49 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 		active = -1;
 	}
 }
+
+char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", 
+"/kolibrios/", "/rd/", "/bd", "/hd", "/cd", "/tmp", "/usbhd", "WebView:", 0};
+void LinksArray::GetAbsoluteURL(dword in_URL){
+	int i, len;
+	dword orig_URL = in_URL;
+	char newurl[sizeof(URL)];
+	
+	for (i=0; ABSOLUTE_LINKS[i]; i++)
+	{
+		len=strlen(ABSOLUTE_LINKS[i]);
+		if (!strcmpn(in_URL, ABSOLUTE_LINKS[i], len)) return;
+	}
+	IF (!strcmpn(in_URL,"./", 2)) in_URL+=2;
+	strcpy(#newurl, BrowserHistory.CurrentUrl());
+
+	if (ESBYTE[in_URL] == '/')
+	{
+		i = strchr(#newurl+8, '/');
+		if (i>0) newurl[i+7]=0;
+		in_URL+=1;
+	}
+		
+	_CUT_ST_LEVEL_MARK:
+		
+	if (newurl[strrchr(#newurl, '/')-2]<>'/')
+	{
+		newurl[strrchr(#newurl, '/')] = 0x00;
+	}
+	
+	IF (!strncmp(in_URL,"../",3))
+	{
+		in_URL+=3;
+		newurl[strrchr(#newurl, '/')-1] = 0x00;
+		goto _CUT_ST_LEVEL_MARK;
+	}
+	
+	if (newurl[strlen(#newurl)-1]<>'/') strcat(#newurl, "/"); 
+	
+	strcat(#newurl, in_URL);
+	strcpy(orig_URL, #newurl);
+}
+
 
 
 LinksArray PageLinks;

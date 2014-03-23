@@ -1,5 +1,3 @@
-#include "..\TWB\links.h"
-
 dword bufpointer;
 dword o_bufpointer;
 dword bufsize;
@@ -13,16 +11,13 @@ char header[2048];
 struct TWebBrowser {
 	llist list;
 	DrawBufer DrawBuf;
-	void GetNewUrl();
 	void Prepare();
 	void Parse();
 	void SetTextStyle();
 	void DrawPage();
 	void DrawScroller();
 	void NewLine();
-};
-
-TWebBrowser WB1;
+} WB1;
 
 byte b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
 	link, ignor_text, cur_encoding, text_align, t_html, t_body;
@@ -51,6 +46,7 @@ char options[4096];
 char anchor[256];
 
 #include "..\TWB\history.h"
+#include "..\TWB\links.h"
 #include "..\TWB\colors.h"
 #include "..\TWB\unicode_tags.h"
 #include "..\TWB\img_cache.h"
@@ -97,48 +93,6 @@ void TWebBrowser::DrawPage()
 }
 //=======================================================================
 
-
-
-char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/kolibrios/", "/rd/", "/bd", "/hd", "/cd", "/tmp", "/usbhd", 0};
-void TWebBrowser::GetNewUrl(){
-	int i, len;
-	char newurl[4096];
-	
-	for (i=0; ABSOLUTE_LINKS[i]; i++)
-	{
-		len=strlen(ABSOLUTE_LINKS[i]);
-		if (!strcmpn(#URL, ABSOLUTE_LINKS[i], len)) return;
-	}
-		
-	IF (!strcmpn(#URL,"./", 2)) strcpy(#URL, #URL+2);
-	strcpy(#newurl, BrowserHistory.CurrentUrl());
-
-	if (URL[0] == '/')
-	{
-		i = strchr(#newurl+8, '/');
-		if (i>0) newurl[i+7]=0;
-		strcpy(#URL, #URL+1);
-	}
-		
-	_CUT_ST_LEVEL_MARK:
-		
-		if (newurl[strrchr(#newurl, '/')-2]<>'/')
-		{
-			newurl[strrchr(#newurl, '/')] = 0x00;
-		}
-		
-		IF (!strncmp(#URL,"../",3))
-		{
-			strcpy(#URL,#URL+3);
-			newurl[strrchr(#newurl, '/')-1] = 0x00;
-			goto _CUT_ST_LEVEL_MARK;
-		}
-		
-		if (newurl[strlen(#newurl)-1]<>'/') strcat(#newurl, "/"); 
-		
-		strcat(#newurl, #URL);
-		strcpy(#URL, #newurl);
-}
 
 void BufEncode(int set_new_encoding)
 {
@@ -213,6 +167,7 @@ void TWebBrowser::Parse(){
 		case 0x0a:
 			if (pre_text)
 			{
+				chrcat(#line, ' ');
 				bukva = temp = NULL;
 				goto NEXT_MARK;
 			}
@@ -324,12 +279,12 @@ void TWebBrowser::Parse(){
 			NEXT_MARK:
 				perenos_num = strrchr(#line, ' ');
 				if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
-				strcpy(#temp, #line + perenos_num); //перенос по словам
+				strcpy(#temp, #line + perenos_num);
 				line[perenos_num] = 0x00;
-				if (stroka-1 > list.visible) && (list.first <>0) break 1; //уходим...
+				if (stroka-1 > list.visible) && (list.first <>0) break 1;
 				DrawPage();
-				strcpy(#line, #temp);			
-				NewLine(list.x + 5, stroka * 10 + list.y + 5); //закрашиваем следущую строку
+				strcpy(#line, #temp);
+				NewLine(list.x + 5, stroka * 10 + list.y + 5);
 			}
 		}
 	}
@@ -373,7 +328,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		return;
 	}
 
-	if (isTag("script")) || (isTag("style")) || (isTag("binary")) ignor_text = opened;
+	if (isTag("script")) || (isTag("style")) || (isTag("binary")) || (isTag("select")) ignor_text = opened;
 
 	if(isTag("title"))
 	{
@@ -481,7 +436,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		NewLine(left1, top1);
 		return;
 	}
-	if (isTag("div")) || (isTag("header")) || (isTag("footer")) {
+	if (isTag("div")) || (isTag("header")) || (isTag("article")) || (isTag("footer")) {
 		IF(oldtag[0] <>'h') NewLine(left1, top1);
 		return;
 	}

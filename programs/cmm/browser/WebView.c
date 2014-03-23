@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 1";
+	char version[]=" Текстовый браузер 1.0 Beta 2";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 1";
+	char version[]=" Text-based Browser 1.0 Beta 2";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -67,7 +67,7 @@ dword col_bg = 0xE4DFE1;
 dword panel_color = 0xF1F1F1;
 dword border_color = 0x9F9F9F;
 
-pb progress_bar = {0, 10, 83, 150, 13, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+pb progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
 
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
@@ -89,19 +89,30 @@ struct skin {
 int LoadSkin()
 {
 	skin.image = load_image(abspath("wv_skin.png"));
+	if (!skin.image) notify("WebView skin file 'wv_skin.png' not found, program will terminate");
 	skin.w = DSWORD[skin.image+4];
 	skin.h = DSWORD[skin.image+8];
 }
 
+void DrawProgress()
+{
+	unsigned long btn;
+	//progressbar_draw stdcall(#progress_bar);
+	progress_bar.width = progress_bar.left = 0;
+	if (http_transfer == 0) return;
+	if (progress_bar.max) btn = address_box.width*progress_bar.value/progress_bar.max; else btn = 30;
+	DrawBar(address_box.left-1, address_box.top+14, btn, 2, progress_bar.progress_color);
+}
+
 void main()
 {
-	int key, btn;
+	unsigned long key, btn;
 	int half_scroll_size;
 	int scroll_used=0, show_menu;
 	
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj");
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
@@ -192,8 +203,11 @@ void main()
 					$push EAX
 					ESI = http_transfer;
 					progress_bar.max = ESI.http_msg.content_length;
-					progress_bar.value = ESI.http_msg.content_received;
-					progressbar_draw stdcall(#progress_bar);
+					if (progress_bar.value != ESI.http_msg.content_received)
+					{
+						progress_bar.value = ESI.http_msg.content_received;	
+						DrawProgress();
+					}
 					$pop EAX
 					if (EAX == 0) {
 						ESI = http_transfer;
@@ -228,13 +242,13 @@ void main()
 						{
 							http_free stdcall (http_transfer);
 							http_transfer=0;
-							WB1.GetNewUrl();
+							PageLinks.GetAbsoluteURL(#URL);
 							strcpy(#editURL, #URL);
-							BrowserHistory.current--;
 							OpenPage();
 						}
 						else
 						{
+							BrowserHistory.AddUrl();
 							ESI = http_transfer;
 							bufpointer = ESI.http_msg.content_ptr;
 							bufsize = ESI.http_msg.content_received;
@@ -274,7 +288,8 @@ void Draw_Window()
 	// }
 	DrawBar(TAB_W,0, Form.cwidth-TAB_W,TAB_H, col_bg);
 	DrawBar(TAB_W-1,TAB_H, Form.cwidth-TAB_W+1,1, border_color);
-	DrawBar(0,TAB_H+1, Form.cwidth,TOOLBAR_H-TAB_H-2, panel_color);
+	DrawBar(0,TAB_H+1, Form.cwidth,TOOLBAR_H-TAB_H-3, panel_color);
+	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xe9e9e9);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
 	img_draw stdcall(skin.image, TAB_W-13, 0, 30, skin.h, 101, 0);
 
@@ -299,7 +314,7 @@ void Draw_Window()
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	progress_bar.top = Form.cheight - STATUSBAR_H + 4;
-	progressbar_draw stdcall(#progress_bar);
+	DrawProgress();
 }
 
 
@@ -478,7 +493,7 @@ void ProcessLinks(int id)
 		URL[strrchr(#URL, '#')-1] = 0x00;
 	}
 	
-	WB1.GetNewUrl();
+	PageLinks.GetAbsoluteURL(#URL);
 	
 	if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 	{
@@ -533,7 +548,6 @@ void OpenPage()
 {
 	StopLoading();
 	strcpy(#editURL, #URL);
-	BrowserHistory.AddUrl();
 	if (strncmp(#URL,"WebView:",8)==0) return;
 	if (strncmp(#URL,"http:",5)==0)
 	{
@@ -551,6 +565,7 @@ void OpenPage()
 	}
 	else
 	{
+		BrowserHistory.AddUrl();
 		file_size stdcall (#URL);
 		bufsize = EBX;
 		if (bufsize)

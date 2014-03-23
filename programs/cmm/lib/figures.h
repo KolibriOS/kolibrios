@@ -60,7 +60,7 @@
 	} 
 }
 
-:void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent, status_text)
+:void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
 {
 	int progress_w;
 	static int fill_old;
@@ -76,13 +76,6 @@
 		progress_w = st_w - 3 * progress_percent / 100;
 		DrawBar(st_x+2, st_y+2, progress_w, st_h-3, col_fill);
 		DrawBar(st_x+2+progress_w, st_y+2, st_w-progress_w-3, st_h-3, 0xFFFfff);
-	}
-	
-	if (status_text)
-	{
-		DrawBar(st_x+st_w+15, st_h/2-4+st_y, fill_old, 9, col_fon);
-		WriteText(st_x+st_w+15, st_h/2-4+st_y, 0x80, col_text, status_text);
-		fill_old = strlen(status_text) * 6;
 	}
 }
 
