@@ -20,7 +20,7 @@
 
         URLMAXLEN       = 65535
         BUFFERSIZE      = 8192
-        TIMEOUT         = 1000  ; in 1/100 s
+        TIMEOUT         = 500  ; in 1/100 s
 
         __DEBUG__       = 1
         __DEBUG_LEVEL__ = 1
@@ -73,7 +73,7 @@ macro HTTP_init_buffer buffer, socketnum {
 
         push    eax ebp
         mov     ebp, eax
-        mcall   29, 9
+        mcall   26, 9
         mov     [ebp + http_msg.timestamp], eax
         pop     ebp eax
 }
@@ -494,6 +494,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = -1 (not finished) / 0 finished                                                           ;;
 ;;================================================================================================;;
+
         pusha
         mov     ebp, [identifier]
 
@@ -513,7 +514,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
 ; Update timestamp
         push    eax
-        mcall   29, 9
+        mcall   26, 9
         mov     [ebp + http_msg.timestamp], eax
         pop     eax
 
@@ -521,7 +522,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     edi, [ebp + http_msg.write_ptr]
         add     [ebp + http_msg.write_ptr], eax
         sub     [ebp + http_msg.buffer_length], eax
-;        jz      .got_all_data
 
 ; If data is chunked, combine chunks into contiguous data.
         test    [ebp + http_msg.flags], FLAG_CHUNKED
@@ -530,6 +530,11 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 ; Did we detect the (final) header yet?
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
         jnz     .header_parsed
+
+;--------------------------------------------------------------
+;
+; Header parsing code begins here
+;
 
 ; We havent found the (final) header yet, search for it..
   .scan_again:
@@ -544,7 +549,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         ; put it in esi for next proc too
         mov     esi, edi
         sub     eax, 3
-        jle     .need_more_data
+        jle     .need_more_data_for_header
   .scan_loop:
         ; scan for end of header (empty line)
         cmp     dword[edi], 0x0a0d0a0d                  ; end of header
@@ -554,7 +559,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         inc     edi
         dec     eax
         jnz     .scan_loop
-        jmp     .need_more_data
+        jmp     .need_more_data_for_header
 
   .end_of_header:
         add     edi, 4 - http_msg.http_header
@@ -562,17 +567,17 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     [ebp + http_msg.header_length], edi     ; If this isnt the final header, we'll use this as an offset to find real header.
         DEBUGF  1, "Header length: %u\n", edi
 
-; Ok, we have found header:
+; Ok, we have found the header
         cmp     dword[esi], 'HTTP'
-        jne     .invalid_header
+        jne     .err_header
         cmp     dword[esi+4], '/1.0'
         je      .http_1.0
         cmp     dword[esi+4], '/1.1'
-        jne     .invalid_header
+        jne     .err_header
         or      [ebp + http_msg.flags], FLAG_HTTP11
   .http_1.0:
         cmp     byte[esi+8], ' '
-        jne     .invalid_header
+        jne     .err_header
 
         add     esi, 9
         xor     eax, eax
@@ -581,16 +586,16 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
   .statusloop:
         lodsb
         sub     al, '0'
-        jb      .invalid_header
+        jb      .err_header
         cmp     al, 9
-        ja      .invalid_header
+        ja      .err_header
         lea     ebx, [ebx + 4*ebx]
         shl     ebx, 1
         add     ebx, eax
         dec     ecx
         jnz     .statusloop
 
-; Ignore "100 - Continue" headers
+; Ignore "100 - Continue" lines
         cmp     ebx, 100
         je      .scan_again
 
@@ -600,7 +605,6 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
 ; Now, convert all header names to lowercase.
 ; This way, it will be much easier to find certain header fields, later on.
-
         lea     esi, [ebp + http_msg.http_header]
         mov     ecx, [ebp + http_msg.header_length]
   .need_newline:
@@ -609,8 +613,8 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         jz      .convert_done
         cmp     byte[esi], 10
         jne     .need_newline
-; Ok, we have a newline, a line beginning with space or tabs has no header fields.
-
+; We have found a newline
+; A line beginning with space or tabs has no header fields.
         inc     esi
         dec     ecx
         jz      .convert_done
@@ -654,9 +658,9 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         cmp     bl, ' '
         je      .cl_ok
         sub     bl, '0'
-        jb      .invalid_header
+        jb      .err_header
         cmp     bl, 9
-        ja      .invalid_header
+        ja      .err_header
         lea     edx, [edx + edx*4]      ; edx = edx*10
         shl     edx, 1                  ;
         add     edx, ebx
@@ -671,7 +675,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
 
         call    alloc_contentbuff
         test    eax, eax
-        jz      .no_ram
+        jz      .err_no_ram
         xor     eax, eax
         jmp     .header_parsed
 
@@ -688,7 +692,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     edx, BUFFERSIZE
         call    alloc_contentbuff
         test    eax, eax
-        jz      .no_ram
+        jz      .err_no_ram
         xor     eax, eax
         jmp     .header_parsed
 
@@ -709,117 +713,153 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         mov     edx, BUFFERSIZE
         call    alloc_contentbuff
         test    eax, eax
-        jz      .no_ram
+        jz      .err_no_ram
 
 ; Set chunk pointer where first chunk should begin.
         mov     eax, [ebp + http_msg.content_ptr]
         mov     [ebp + http_msg.chunk_ptr], eax
 
+;--------------------------------------------------------------
+;
+; Chunk parsing code begins here
+;
+
   .chunk_loop:
         mov     ecx, [ebp + http_msg.write_ptr]
         sub     ecx, [ebp + http_msg.chunk_ptr]
-        jb      .need_more_data_chunked
+        jbe     .need_more_data_chunked
+
 ; Chunkline starts here, convert the ASCII hex number into ebx
         mov     esi, [ebp + http_msg.chunk_ptr]
+        DEBUGF  1, "Chunkline begins at 0x%x\n", esi
+
         xor     ebx, ebx
-  .chunk_hexloop:
+        cmp     byte[esi], 0x0d
+        jne     .chunk_hex_loop
+        dec     ecx
+        jz      .need_more_data_chunked
+        inc     esi
+        cmp     byte[esi], 0x0a
+        jne     .chunk_hex_loop
+        dec     ecx
+        jz      .need_more_data_chunked
+        inc     esi
+  .chunk_hex_loop:
         lodsb
         sub     al, '0'
-        jb      .chunk_
+        jb      .chunk_hex_end
         cmp     al, 9
         jbe     .chunk_hex
         sub     al, 'A' - '0' - 10
-        jb      .chunk_
+        jb      .chunk_hex_end
         cmp     al, 15
         jbe     .chunk_hex
         sub     al, 'a' - 'A'
         cmp     al, 15
-        ja      .chunk_
+        ja      .chunk_hex_end
   .chunk_hex:
         shl     ebx, 4
         add     bl, al
-        jmp     .chunk_hexloop
-  .chunk_:
-; Chunkline ends with a CR, LF or simply LF
+        dec     ecx
+        jnz     .chunk_hex_loop
+        jmp     .need_more_data_chunked
+  .chunk_hex_end:
+; Chunkline ends with a CR LF or simply LF
         dec     esi
   .end_of_chunkline?:
         lodsb
-        cmp     al, 10
+        cmp     al, 10                                  ; chunkline must always end with LF
         je      .end_of_chunkline
-        cmp     esi, [ebp + http_msg.write_ptr]
-        jb      .end_of_chunkline?
-        jmp     .need_more_data
+        dec     ecx
+        jnz     .end_of_chunkline?
+        xor     eax, eax
+        jmp     .need_more_data_chunked                 ; chunkline is incomplete, request more data
   .end_of_chunkline:
-        DEBUGF  1, "Chunk of %u bytes\n", ebx
+        DEBUGF  1, "Chunk of 0x%x bytes\n", ebx
 ; If chunk size is 0, all chunks have been received.
         test    ebx, ebx
         jz      .got_all_data_chunked
-; Calculate how many data bytes we'll need to shift
+; Calculate how many data bytes we have received already
         mov     ecx, [ebp + http_msg.write_ptr]
-        sub     ecx, [ebp + http_msg.chunk_ptr]
-; Calculate how many bytes we'll need to shift them
-        sub     esi, [ebp + http_msg.chunk_ptr]
-; Update write ptr
-        sub     [ebp + http_msg.write_ptr], esi
+        sub     ecx, [ebp + http_msg.chunk_ptr]         ; ecx is now number of received data bytes
+; Update content_received counter
+        add     [ebp + http_msg.content_received], ecx
+; Calculate new write ptr
+        mov     edx, esi
+        sub     edx, [ebp + http_msg.chunk_ptr]         ; edx is now length of chunkline
+        sub     [ebp + http_msg.write_ptr], edx
 ; Realloc buffer, make it 'chunksize' bigger.
-        add     ebx, [ebp + http_msg.chunk_ptr]
-        sub     ebx, [ebp + http_msg.content_ptr]
-        add     ebx, BUFFERSIZE                 ; add some space for new chunkline header
-        DEBUGF  1, "Resizing buffer 0x%x, it will now be %u bytes\n", [ebp + http_msg.content_ptr], ebx
-        invoke  mem.realloc, [ebp + http_msg.content_ptr], ebx
+        lea     edx, [ebx + BUFFERSIZE]
+        mov     [ebp + http_msg.buffer_length], edx     ; remaining space in new buffer
+        add     edx, [ebp + http_msg.write_ptr]
+        sub     edx, [ebp + http_msg.content_ptr]
+        DEBUGF  1, "Resizing buffer 0x%x, it will now be %u bytes\n", [ebp + http_msg.content_ptr], edx
+        invoke  mem.realloc, [ebp + http_msg.content_ptr], edx
         DEBUGF  1, "New buffer = 0x%x\n", eax
         or      eax, eax
-        jz      .no_ram
-        call    recalculate_pointers
-; Calculate remaining available buffer size
-        mov     eax, [ebp + http_msg.content_ptr]
-        add     eax, ebx
-        sub     eax, [ebp + http_msg.write_ptr]
-        mov     [ebp + http_msg.buffer_length], eax
-; Move all received data to the left (remove chunk header).
+        jz      .err_no_ram
+        call    recalculate_pointers                    ; Because it's possible that buffer begins on another address now
+        add     esi, eax                                ; recalculate esi too!
+; Remove chunk header (aka chunkline) from the buffer by shifting all received data after chunkt_ptr to the left
         mov     edi, [ebp + http_msg.chunk_ptr]
-        add     esi, edi
-        ; Update chunk ptr so it points to next chunk
-        sub     ebx, BUFFERSIZE
-        add     [ebp + http_msg.chunk_ptr], ebx
-        ; Update number of received content bytes
-        add     [ebp + http_msg.content_received], ecx
-        DEBUGF  1, "Moving %u bytes from 0x%x to 0x%x\n", ecx, esi, edi
         rep movsb
-
+; Update chunk ptr to point to next chunk
+        add     [ebp + http_msg.chunk_ptr], ebx
+; Set number of received bytes to 0, we already updated content_received
         xor     eax, eax
         jmp     .chunk_loop
 
-;---------------------------------------------------------
-; Check if we got all the data.
+;--------------------------------------------------------------
+;
+; end of proc code begins here
+;
+
   .header_parsed:
+        ; Header was already parsed and connection isnt chunked.
+        ; Update content_received
         add     [ebp + http_msg.content_received], eax
+        ; If we received content-length parameter, check if we received all the data
         test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
-        jz      .need_more_data_and_space
+        jz      @f
         mov     eax, [ebp + http_msg.content_received]
         cmp     eax, [ebp + http_msg.content_length]
         jae     .got_all_data
-        jmp     .need_more_data
+  @@:
+        cmp     [ebp + http_msg.buffer_length], 0
+        je      .buffer_full
+        ; Need more data
+        popa
+        xor     eax, eax
+        dec     eax
+        ret
 
-  .need_more_data_and_space:
-        test    [ebp + http_msg.flags], FLAG_GOT_HEADER
-        jz      .invalid_header                 ; It's just too damn long!
+  .buffer_full:
+        ; Lets make it bigger..
         mov     eax, [ebp + http_msg.write_ptr]
         add     eax, BUFFERSIZE
         sub     eax, [ebp + http_msg.content_ptr]
         invoke  mem.realloc, [ebp + http_msg.content_ptr], eax
         or      eax, eax
-        jz      .no_ram
+        jz      .err_no_ram
         call    recalculate_pointers
         mov     [ebp + http_msg.buffer_length], BUFFERSIZE
+        ; Need more data
+        popa
+        xor     eax, eax
+        dec     eax
+        ret
 
-  .need_more_data:
+  .need_more_data_for_header:
+        cmp     [ebp + http_msg.buffer_length], 0
+        je      .err_header                     ; It's just too damn long!
+        ; Need more data
         popa
         xor     eax, eax
         dec     eax
         ret
 
   .need_more_data_chunked:
+        ; We only got a partial chunk, or need more chunks, update content_received and request more data
         add     [ebp + http_msg.content_received], eax
         popa
         xor     eax, eax
@@ -827,6 +867,7 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         ret
 
   .got_all_data_chunked:
+        ; Woohoo, we got all the chunked data, calculate total number of bytes received.
         mov     eax, [ebp + http_msg.chunk_ptr]
         sub     eax, [ebp + http_msg.content_ptr]
         mov     [ebp + http_msg.content_length], eax
@@ -840,46 +881,56 @@ proc HTTP_process identifier ;//////////////////////////////////////////////////
         xor     eax, eax
         ret
 
+;--------------------------------------------------------------
+;
+; error handeling code begins here
+;
+
   .check_socket:
         cmp     ebx, EWOULDBLOCK
-        jne     .socket_error
-
-        mcall   29, 9
-        sub     eax, TIMEOUT
-        cmp     eax, [ebp + http_msg.timestamp]
-        jl      .need_more_data
-        DEBUGF  1, "ERROR: timeout\n"
-        or      [ebp + http_msg.flags], FLAG_TIMEOUT_ERROR
-        jmp     .disconnect
+        jne     .err_socket
+        mcall   26, 9
+        sub     eax, [ebp + http_msg.timestamp]
+        cmp     eax, TIMEOUT
+        ja      .err_timeout
+        ; Need more data
+        popa
+        xor     eax, eax
+        dec     eax
+        ret
 
   .server_closed:
         DEBUGF  1, "server closed connection, transfer complete?\n"
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
-        jz      .server_error
+        jz      .err_server_closed
         test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
         jz      .got_all_data
-
-  .server_error:
+  .err_server_closed:
         pop     eax
         DEBUGF  1, "ERROR: server closed connection unexpectedly\n"
         or      [ebp + http_msg.flags], FLAG_TRANSFER_FAILED
-        jmp     .disconnect
+        jmp     .abort
 
-  .invalid_header:
+  .err_header:
         pop     eax
         DEBUGF  1, "ERROR: invalid header\n"
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
-        jmp     .disconnect
+        jmp     .abort
 
-  .no_ram:
+  .err_no_ram:
         DEBUGF  1, "ERROR: out of RAM\n"
         or      [ebp + http_msg.flags], FLAG_NO_RAM
-        jmp     .disconnect
+        jmp     .abort
 
-  .socket_error:
+  .err_timeout:
+        DEBUGF  1, "ERROR: timeout\n"
+        or      [ebp + http_msg.flags], FLAG_TIMEOUT_ERROR
+        jmp     .abort
+
+  .err_socket:
         DEBUGF  1, "ERROR: socket error %u\n", ebx
         or      [ebp + http_msg.flags], FLAG_SOCKET_ERROR
-  .disconnect:
+  .abort:
         and     [ebp + http_msg.flags], not FLAG_CONNECTED
         mcall   close, [ebp + http_msg.socket]
   .connection_closed:
