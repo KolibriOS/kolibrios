@@ -625,25 +625,6 @@ e80: .obj.e80/start.o .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o .ob
 .obj.e80:
 	mkdir -p .obj.e80
 
-# Rules for Checkers
-CHECKERSDIR=$(PROGS)/games/checkers/trunk
-games/checkers : checkers.o
-		g++ -L/usr/X11R6/lib -lX11 -o games/checkers checkers.o
-
-checkers.o : $(CHECKERSDIR)/checkers.cpp \
-	$(CHECKERSDIR)/position.h \
-	$(CHECKERSDIR)/board.h \
-	$(CHECKERSDIR)/player.h \
-	$(CHECKERSDIR)/tmplayer.h \
-	$(CHECKERSDIR)/buttons.h \
-	$(CHECKERSDIR)/history.h \
-	$(CHECKERSDIR)/hash.h \
-	$(CHECKERSDIR)/gr-draw.h \
-	$(CHECKERSDIR)/gnu-draw.h \
-	$(CHECKERSDIR)/sysproc.h
-	g++ -c -Os -DAUTOBUILD -DLANG_ENG=1 $(CHECKERSDIR)/checkers.cpp
-#	g++ -c $(CHECKERSDIR)/checkers.cpp
-
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
 SOUND_OBJECTS:=$(patsubst $(SOUNDDIR)/%.asm,.sdk/%.obj,$(wildcard $(SOUNDDIR)/*.asm))
