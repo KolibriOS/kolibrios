@@ -1,6 +1,6 @@
 unsigned int GetNextParam()
 {
-	byte	kavichki = false;
+	byte	kavichki=0;
 	int		i = strlen(#tagparam) - 1;
 	
 	if (!tagparam) return 0;

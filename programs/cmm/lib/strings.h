@@ -272,7 +272,7 @@ unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
 }
 
 
-/*void strcat(char *to, char *from) //���� ��������
+/*void strcat(char *to, char *from) //òîæå ðàáîòàåò
 {
 	while(*to) to++;
 	while(*from)
@@ -313,8 +313,8 @@ inline fastcall strupr( ESI)
 	do{
 		AL=DSBYTE[ESI];
 		IF(AL>='a')IF(AL<='z')DSBYTE[ESI]=AL&0x5f;
-		IF (AL>=160) && (AL<=175) DSBYTE[ESI] = AL - 32;	//�-�
-		IF (AL>=224) && (AL<=239) DSBYTE[ESI] = AL - 80;	//�-�
+		IF (AL>=160) && (AL<=175) DSBYTE[ESI] = AL - 32;	//à-ï
+		IF (AL>=224) && (AL<=239) DSBYTE[ESI] = AL - 80;	//à-ï
  		ESI++;
 	}while(AL!=0);
 }
@@ -335,17 +335,45 @@ inline fastcall strttl( EDX)
 {
 	AL=DSBYTE[EDX];
 	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
-	IF (AL>=160) && (AL<=175) DSBYTE[EDX] = AL - 32;	//�-�
-	IF (AL>=224) && (AL<=239) DSBYTE[EDX] = AL - 80;	//�-�
+	IF (AL>=160) && (AL<=175) DSBYTE[EDX] = AL - 32;	//à-ï
+	IF (AL>=224) && (AL<=239) DSBYTE[EDX] = AL - 80;	//à-ï
 	do{
 		EDX++;
 		AL=DSBYTE[EDX];
 		IF(AL>='A')&&(AL<='Z'){DSBYTE[EDX]=AL|0x20; CONTINUE;}
-		IF(AL>='�')&&(AL<='�')DSBYTE[EDX]=AL|0x20; //�-�
-		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//�-�
+		IF(AL>='€')&&(AL<='')DSBYTE[EDX]=AL|0x20; // -¯
+		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//à-ï
 	}while(AL!=0);
 }
 
+void trim(char *s)
+{
+     // удаляем пробелы и табы с начала строки:
+     int i=0,j;
+     while((s[i]==' ')||(s[i]=='\t')||(s[i]=='\r')||(s[i]=='\n')) 
+     {
+ 	        i++;
+     }
+     if(i>0) 
+     {
+ 	        for(j=0;j<strlen(s);j++) 
+ 	        {
+ 	             s[j]=s[j+i];
+ 	        }
+          s[j]='\0';
+     }
+
+     // удаляем пробелы и табы с конца строки:
+     i=strlen(s)-1;
+     while((s[i]==' ')||(s[i]=='\t')||(s[i]=='\r')||(s[i]=='\n')) 
+     {
+ 	        i--;
+     }
+     if(i<strlen(s)-1) 
+     {
+ 	        s[i+1]='\0';
+     }
+}
 
 dword itoa( ESI)
 {

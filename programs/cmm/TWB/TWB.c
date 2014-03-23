@@ -100,15 +100,6 @@ void BufEncode(int set_new_encoding)
 	cur_encoding = set_new_encoding;
 	if (o_bufpointer==0)
 	{
-		bufpointer_realsize = strlen(bufpointer);
-		if (bufpointer_realsize > bufsize)
-		{
-			debug("bufsize: ");
-			debugi(bufsize);
-			debug("bufpointer_realsize: ");
-			debugi(bufpointer_realsize);
-			bufsize = bufpointer_realsize;
-		}
 		o_bufpointer = malloc(bufsize);
 		strcpy(o_bufpointer, bufpointer);
 	}

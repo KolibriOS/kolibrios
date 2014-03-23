@@ -382,9 +382,7 @@ void Scan(int id)
 			}
 			return;
 		case 054: //F5
-			IF(address_box.flags & 0b10) WB1.Parse();
-			return;
-
+			IF(address_box.flags & 0b10) return;
 		case REFRESH:
 			if (http_transfer > 0) 
 			{
