@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 2";
+	char version[]=" Текстовый браузер 1.0 Beta 3";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 2";
+	char version[]=" Text-based Browser 1.0 Beta 3";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -59,10 +59,10 @@ int action_buf;
 dword http_transfer = 0;
 dword http_buffer;
 
-dword TAB_H = 19;
+dword TAB_H = false; //19;
 dword TAB_W = 150;
-dword TOOLBAR_H = 50;
-dword STATUSBAR_H =18;
+dword TOOLBAR_H = 31; //50;
+dword STATUSBAR_H =16;
 dword col_bg = 0xE4DFE1;
 dword panel_color = 0xF1F1F1;
 dword border_color = 0x9F9F9F;
@@ -270,7 +270,7 @@ void SetElementSizes()
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
 	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, Form.cheight - TOOLBAR_H - STATUSBAR_H, 0, 10);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
-	WB1.list.visible = WB1.list.h - 3 / WB1.list.line_h - 2;
+	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
 }
 
@@ -283,17 +283,20 @@ void Draw_Window()
 	if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
 	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	// tab {
-	DrawBar(0, 0, TAB_W, TAB_H+1, panel_color);
-	WriteText(5, 7, 0x80, 0xfdfdFd, "Index.htm");
-	WriteText(4, 6, 0x80, 0, "Index.htm");
+	if (TAB_H)
+	{
+		DrawBar(0, 0, TAB_W, TAB_H+1, panel_color);
+		WriteText(5, 7, 0x80, 0xfdfdFd, "Index.htm");
+		WriteText(4, 6, 0x80, 0, "Index.htm");		
+		DrawBar(TAB_W,0, Form.cwidth-TAB_W,TAB_H, col_bg);
+		DrawBar(TAB_W-1,TAB_H, Form.cwidth-TAB_W+1,1, border_color);
+		img_draw stdcall(skin.image, TAB_W-13, 0, 30, skin.h, 101, 0);
+	} 
+	else DrawBar(0,0, Form.cwidth,1, col_bg);
 	// }
-	DrawBar(TAB_W,0, Form.cwidth-TAB_W,TAB_H, col_bg);
-	DrawBar(TAB_W-1,TAB_H, Form.cwidth-TAB_W+1,1, border_color);
 	DrawBar(0,TAB_H+1, Form.cwidth,TOOLBAR_H-TAB_H-3, panel_color);
 	DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, 0xe9e9e9);
 	DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, border_color);
-	img_draw stdcall(skin.image, TAB_W-13, 0, 30, skin.h, 101, 0);
-
 	SetElementSizes();
 	DrawRectangle(address_box.left-1, address_box.top-1, address_box.width+2, 16,address_box.color);
 	DrawRectangle(address_box.left-2, address_box.top-2, address_box.width+4, 18,border_color);
@@ -307,15 +310,14 @@ void Draw_Window()
 	img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, img_off, 0);
 	// config
 	DefineButton(Form.cwidth-23, address_box.top-2, 17, skin.h-1, 312+BT_HIDE, 0);
-	img_draw stdcall(skin.image, Form.cwidth-22, address_box.top-2, 16, skin.h, 85, 0);	
-
-	ShowPage();
-	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
+	img_draw stdcall(skin.image, Form.cwidth-22, address_box.top-2, 16, skin.h, 85, 0);
 	//status bar
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,STATUSBAR_H, col_bg);
 	DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, border_color);
 	progress_bar.top = Form.cheight - STATUSBAR_H + 4;
 	DrawProgress();
+	ShowPage();
+	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, scroll_wv.bckg_col);
 }
 
 
@@ -402,7 +404,12 @@ void Scan(int id)
 			strcpy(#editURL, "http://kolibrios.org/");
 		case GOTOURL:
 		case 0x0D: //enter
-			if ((strstr(#editURL,"ttp://")==0) && (editURL[0]!='/')) strcpy(#URL,"http://"); else URL[0] = 0;
+			if ((strncmp(#editURL,"http:",5)!=0) && (editURL[0]!='/') && ((strncmp(#editURL,"WebView:",8)!=0))
+			{
+				strcpy(#URL,"http://");
+			} 
+			else
+				URL[0] = 0;
 			strcat(#URL, #editURL);
 			OpenPage();
 			return;
@@ -554,7 +561,19 @@ void OpenPage()
 	StopLoading();
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
-	if (strncmp(#URL,"WebView:",8)==0) return;
+	if (strncmp(#URL,"WebView:",8)==0)
+	{
+		SetPageDefaults();
+		if (strcmp(#URL, URL_SERVICE_HOME)==0) 
+		{
+			WB1.Prepare(#homepage, sizeof(homepage));
+		}
+		if (strcmp(#URL, URL_SERVICE_HISTORY)==0)
+		{
+			ShowHistory();
+		}
+		return;
+	}
 	if (strncmp(#URL,"http:",5)==0)
 	{
 		img_draw stdcall(skin.image, address_box.left+address_box.width+1, address_box.top-2, 17, skin.h, 131, 0);
@@ -590,8 +609,6 @@ void ShowPage()
 	address_box.offset=0;
 	edit_box_draw stdcall(#address_box);
 
-	if (strcmp(#URL, URL_SERVICE_HOME)==0) WB1.Prepare(#homepage, sizeof(homepage)); else
-	if (strcmp(#URL, URL_SERVICE_HISTORY)==0) ShowHistory(); else
 	if (!bufsize)
 	{
 		PageLinks.Clear();

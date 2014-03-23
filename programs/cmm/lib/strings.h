@@ -346,35 +346,6 @@ inline fastcall strttl( EDX)
 	}while(AL!=0);
 }
 
-void trim(char *s)
-{
-     // удаляем пробелы и табы с начала строки:
-     int i=0,j;
-     while((s[i]==' ')||(s[i]=='\t')||(s[i]=='\r')||(s[i]=='\n')) 
-     {
- 	        i++;
-     }
-     if(i>0) 
-     {
- 	        for(j=0;j<strlen(s);j++) 
- 	        {
- 	             s[j]=s[j+i];
- 	        }
-          s[j]='\0';
-     }
-
-     // удаляем пробелы и табы с конца строки:
-     i=strlen(s)-1;
-     while((s[i]==' ')||(s[i]=='\t')||(s[i]=='\r')||(s[i]=='\n')) 
-     {
- 	        i--;
-     }
-     if(i<strlen(s)-1) 
-     {
- 	        s[i+1]='\0';
-     }
-}
-
 dword itoa( ESI)
 {
     unsigned char buffer[11];

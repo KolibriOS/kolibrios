@@ -5,7 +5,7 @@ ShowHistory()
 		
 		free(history_pointer);
 		history_pointer = malloc(64000);
-		strcat(history_pointer, " <title>History</title><h1>History</h1>");
+		strcat(history_pointer, "<html><head><title>History</title></head><body><h1>History</h1>");
 		strcat(history_pointer, "<h2>Visited pages</h2><blockquote><br>");
 		for (i=1; i<BrowserHistory.links_count; i++)
 		{
@@ -20,8 +20,9 @@ ShowHistory()
 		{
 			strcat(history_pointer, "<img src='");
 			strcat(history_pointer, #pics[i].path);
-			strcat(history_pointer, "' /><br>");
+			strcat(history_pointer, "'><br>");
 			strcat(history_pointer, #pics[i].path);
 		}
+		strcat(history_pointer, "</body></html>");
 		WB1.Prepare(history_pointer, strlen(history_pointer));
 }
