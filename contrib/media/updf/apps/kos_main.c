@@ -4,6 +4,7 @@
 #include "mupdf.h"
 #include "muxps.h"
 #include "pdfapp.h"
+#include "icons/allbtns.h"
 
 
 
@@ -146,6 +147,7 @@ static void winblit(pdfapp_t *app)
 	int x1 = gapp.panx + gapp.image->w;
 	int y1 = gapp.pany + gapp.image->h;
 __menuet__debug_out(" Window blit\n");
+__menuet__bar(0,0,598,370,0xababab); //background of pics
 /*
 	XSetForeground(xdpy, xgc, xbgcolor.pixel);
 	fillrect(0, 0, x0, gapp.winh);
@@ -208,36 +210,39 @@ __menuet__debug_out(yoba);
 	}
  
  
- __menuet__bar(0,0,600,20,0xFFFFFF);
- __menuet__make_button(0,0,40,20,7,0x404040FF); //(posirion x, position y, width, height, id, color) 
- __menuet__write_text(5,4,0xFFFFFF,"Open",4);
+ __menuet__bar(0,0,598,34,0xe1e1e1); // bar on the top (buttons holder)
+ __menuet__bar(590,0,5,400,0xe1e1e1); // sidebar for scrolling 
  
- __menuet__make_button(550,0,20,20,2,0x404040FF); //prev page
- __menuet__write_text(555,3,0xFFFFFF,"<",1);
+ __menuet__make_button(8,5,26,24,7,0xe1e1e1); //(posirion x, position y, width, height, id, color) 
+ __menuet__putimage(8,5,26,24,folder.pixel_data); 
+   
+ __menuet__make_button(42,5,26,24,6,0xe1e1e1); //magnify -
+ __menuet__putimage(42,5,26,24,minus.pixel_data); 
  
- __menuet__make_button(570,0,20,20,3,0x404040FF); //nex page 
- __menuet__write_text(575,3,0xFFFFFF,">",1);
+ __menuet__make_button(68,5,26,24,5,0xe1e1e1); //magnify + 
+ __menuet__putimage(68,5,26,24,plus.pixel_data); 
+
  
- __menuet__make_button(40,0,20,20,4,0x404040FF); //show help
- __menuet__write_text(45,3,0xFFFFFF,"?",1);
+/* __menuet__make_button(100,0,20,20,10,0xe1e1e1); // rotate + 15 deg
+ __menuet__write_text(105,3,0xFFFFFF,"p",1);
  
- __menuet__make_button(60,0,20,20,5,0x404040FF); //magnify + 
- __menuet__write_text(65,3,0xFFFFFF,"+",1);
+ __menuet__make_button(120,0,20,20,11,0xe1e1e1); // rotate - 15 deg
+ __menuet__write_text(125,3,0xFFFFFF,"q",1); */
  
- __menuet__make_button(80,0,20,20,6,0x404040FF); //magnify -
- __menuet__write_text(85,3,0xFFFFFF,"-",1);
+ __menuet__make_button(500,5,26,24,4,0xe1e1e1); //show help
+ __menuet__putimage(500,5,26,24,help.pixel_data); 
  
- __menuet__make_button(570,20,20,20,8,0x404040FF); // move up
- __menuet__write_text(575,3,0xFFFFFF,"^",1);
+ __menuet__make_button(534,5,24,24,2,0xe1e1e1); //prev page
+ __menuet__putimage(534,5,24,24,prev.pixel_data); 
  
- __menuet__make_button(570,360,20,20,9,0x404040FF); // move down
- __menuet__write_text(575,363,0xFFFFFF,"v",1);
+ __menuet__make_button(558,5,24,24,3,0xe1e1e1); //nex page 
+ __menuet__putimage(558,5,24,24,next.pixel_data); 
  
- __menuet__make_button(100,0,20,20,10,0x404040FF); // rotate + 15 deg
- __menuet__write_text(105,3,0xFFFFFF,"cw",1);
+  __menuet__make_button(573,34,17,17,8,0xe1e1e1); // move up
+ __menuet__putimage(573,34,17,17,scrup.pixel_data); 
  
- __menuet__make_button(120,0,20,20,11,0x404040FF); // rotate - 15 deg
- __menuet__write_text(125,3,0xFFFFFF,"ccw",1); 
+ __menuet__make_button(573,363,17,17,9,0xe1e1e1); // move down
+ __menuet__putimage(573,363,17,17,scrdn.pixel_data); 
  
  
 }
@@ -266,6 +271,7 @@ void winrepaintsearch(pdfapp_t *app)
 
 int main (void)
 {
+	
 	char* original_command_line = *(char**)0x1C;
 	__menuet__debug_out(original_command_line);
 	
