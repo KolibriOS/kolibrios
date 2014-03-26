@@ -7,6 +7,8 @@
 ;
 ;   Compile with FASM
 ;
+format binary as ""
+
 bgcolor  equ  0x0074744A      ;thx
 fgcolor  equ  0x00E7C750      ;to
 fg2color equ  0x00E0B0A0      ;colorref
@@ -103,39 +105,39 @@ macro latin1 [arg]
 }
 use32
 
-	       org    0x0
+               org    0x0
 
-	       db     'MENUET01'	      ; 8 byte id
-	       dd     0x01		      ; header version
-	       dd     START		      ; start of code
-	       dd     I_END		      ; size of image
-	       dd     0x100000		      ; memory for app
-	       dd     0x7fff0		      ; esp
-	       dd     0x0 , 0x0 	      ; I_Param , I_Icon
+               db     'MENUET01'              ; 8 byte id
+               dd     0x01                    ; header version
+               dd     START                   ; start of code
+               dd     I_END                   ; size of image
+               dd     0x100000                ; memory for app
+               dd     0x7fff0                 ; esp
+               dd     0x0 , 0x0               ; I_Param , I_Icon
 
-START:				; start of execution
+START:                          ; start of execution
      jmp red
 
 still:
     mcall 10            ; wait here for event
-    cmp  eax,1			; redraw request ?
+    cmp  eax,1                  ; redraw request ?
      je  red
-    cmp  eax,2			; key in buffer ?
+    cmp  eax,2                  ; key in buffer ?
      je  key
-    cmp  eax,3			; button in buffer ?
+    cmp  eax,3                  ; button in buffer ?
      je  button
     jmp  still
 
-  red:				; redraw
+  red:                          ; redraw
     call draw_window
     call draw_board
     call draw_message
     jmp  still
 
-  key:				; key
-    mcall 2			; just read it and ignore
+  key:                          ; key
+    mcall 2                     ; just read it and ignore
     jmp  still
-  button:			; button
+  button:                       ; button
     call get_input
     jmp  still
 
@@ -143,11 +145,11 @@ still:
 
 get_input:
 pusha
-    mcall 17			; get id
+    mcall 17                    ; get id
 
-    cmp  ah,1			; button id=1 ?
+    cmp  ah,1                   ; button id=1 ?
     jne  .noclose
-    mcall -1			; close this program
+    mcall -1                    ; close this program
   .noclose:
     cmp  ah,4
     jne  .moderate
@@ -177,16 +179,16 @@ pusha
   .board:
     cmp  [stat],2
     jge  .getno
-    shr  eax,8			; -> 24bit id
+    shr  eax,8                  ; -> 24bit id
     cmp  eax,10
     jle  .getno
     cmp  eax,150
-    jg	 .getno
+    jg   .getno
     sub  eax,10
     mov  edi,eax
     add   edi,map
     cmp   [edi], byte 1
-    jg	  .nogerade
+    jg    .nogerade
     xor   byte [edi], 1
     call  draw_board
     jmp   .getno
@@ -203,12 +205,12 @@ pusha
 popa
 ret
 ;//// end of event detection
-get_direction:		    ;Setzt Richtungs-Konstanten
-pusha			    ;IN:
-mov eax,[esp+28]	    ;eax  -  Richtung IN
-mov ebx,[esp+16]	    ;ebx  -  Teilchen (Map-Wert)
-cmp ebx,0		    ;OUT:
-jne .no0		    ;eax  -  Richtung OUT
+get_direction:              ;Setzt Richtungs-Konstanten
+pusha                       ;IN:
+mov eax,[esp+28]            ;eax  -  Richtung IN
+mov ebx,[esp+16]            ;ebx  -  Teilchen (Map-Wert)
+cmp ebx,0                   ;OUT:
+jne .no0                    ;eax  -  Richtung OUT
   cmp eax,14
   jne .o0
   jmp .setout
@@ -291,7 +293,7 @@ jne .no8
   mov [stat],1
   jmp .setout
 .no8:
-cmp ebx,16	  ; cross 2x
+cmp ebx,16        ; cross 2x
 jne .col
   add [score],10  ; + 10 bonus points
   jmp .setout
@@ -329,21 +331,21 @@ cmp  eax,3
 jne  .nothing
 call get_input
 .nothing:
-cmp  [stat],0	      ;bugfix 210806
-jnz  .exitsub	      ;bugfix 210806
+cmp  [stat],0         ;bugfix 210806
+jnz  .exitsub         ;bugfix 210806
 dec  ecx
 jnz  .down
 dec  [time]
 jnz   .udown
-.exitsub:	      ;bugfix 210806
+.exitsub:             ;bugfix 210806
 popa
 ret
 
 wassermarsch:
 pusha
    .restart:
-     mov  esi,map+16	      ;start position
-     mov  eax, 14	      ;start-richtung
+     mov  esi,map+16          ;start position
+     mov  eax, 14             ;start-richtung
    .findway:
      movzx ebx, byte [esi]
      call  get_direction
@@ -353,7 +355,7 @@ pusha
       xor   eax,eax
       mov   al,6
       sub   al,[diffic]
-      add   [score],eax 	 ;points/item = 6 - difficulty
+      add   [score],eax          ;points/item = 6 - difficulty
       mov   ecx,dword [speed]
       add   byte [esi],10
       .down:
@@ -387,7 +389,7 @@ pusha
     mcall
     mov [stat],0
     inc [level]
-    cmp [speed],6		 ;waterflowdelay < 6 ?
+    cmp [speed],6                ;waterflowdelay < 6 ?
     jle .skipsub
     sub [speed],2
    .skipsub:
@@ -404,7 +406,7 @@ ret
 
 show_score:
 pusha
-mov  eax,13			 ;clear time and score area
+mov  eax,13                      ;clear time and score area
 mov  ebx,50 shl 16 +15
 mov  ecx,395 shl 16 +15
 mov  edx,bgcolor
@@ -445,7 +447,7 @@ scramble_board:
 pusha
 mov edi,map+16 ;startpunkt
 mov eax,7      ;wieder-
-stosb	       ;herstellen
+stosb          ;herstellen
 
 mov ebx, 0x00000007  ;modul         m max-wert
 .loop_through:
@@ -455,7 +457,7 @@ cmp   eax, 9
  je   .skip
 inc   eax
 xor   edx, edx
-div   ebx	    ;modulo -> edx
+div   ebx           ;modulo -> edx
 mov   eax, edx
 cmp   eax,6
 jne   .skip
@@ -477,29 +479,29 @@ ret
 
 gen_image:
 pusha
-    xor   ebx,ebx	   ;default: kein wasser
+    xor   ebx,ebx          ;default: kein wasser
     movzx eax,byte [map]   ;erstes byte der map lesen (position)
-    inc   byte [map]	   ;position inkrementieren
-    add   eax,map	   ;zur position die map-adresse addieren
+    inc   byte [map]       ;position inkrementieren
+    add   eax,map          ;zur position die map-adresse addieren
     movzx  esi,byte [eax]
     cmp   esi,10
-    jl	  .nowater
-    sub   esi,10	  ;map-werte+10 sind mit wasser gefuellt
+    jl    .nowater
+    sub   esi,10          ;map-werte+10 sind mit wasser gefuellt
     mov   ebx,1
     cmp   esi,16
     jne   .nowater
     sub   esi,10
  .nowater:
-   imul  esi,3072	  ;mapwert * 32*32*3 = image-adresse
+   imul  esi,3072         ;mapwert * 32*32*3 = image-adresse
     add  esi,images
     mov  edi,0x10000
     mov  ecx,32*32*3
- .gendd:		  ;RGB-Image im Speicher generieren
+ .gendd:                  ;RGB-Image im Speicher generieren
     mov   eax,dword [esi] ;byte aus imagemap lesen
     shl   eax,8
     shr   eax,8
     cmp   ebx,0
-    jz	  .nowcolor
+    jz    .nowcolor
     mov   ebx,eax
     cmp   ebx,0x00B0B5B0
     jne   .nog1
@@ -538,7 +540,7 @@ ret
 draw_message:
 pusha
     cmp  [stat],0
-	je .nomessage
+        je .nomessage
     mov  eax,13
     mov  ebx,146 shl 16 + 200
     mov  ecx,190 shl 16 + 40
@@ -549,8 +551,8 @@ pusha
     mov  edx,fgcolor
     mcall
 
-	cmp  [stat],3
-	jne .stat1
+        cmp  [stat],3
+        jne .stat1
     mov   eax,4
     mov   ebx,174 shl 16 +206
     mov   edx,lbl_start_a_new_game+1
@@ -558,9 +560,9 @@ pusha
     mov   ecx,btcolor
     add   ecx,0x10000000
     mcall
-    jmp	.nomessage
+    jmp .nomessage
 
-  .stat1:	
+  .stat1:       
     cmp   [stat],1
      je   .winmessage
     mov   eax,4
@@ -575,11 +577,11 @@ pusha
     movzx esi,byte [lbl_yscore]
     mov   ecx,btcolor
     mcall
-    mov   esi,ecx	;color
-    mov   edx,ebx	;pos
+    mov   esi,ecx       ;color
+    mov   edx,ebx       ;pos
     add   edx,80 shl 16
-    mov   ebx,0x50000	 ;type
-    mov   ecx,[score]	 ;inp
+    mov   ebx,0x50000    ;type
+    mov   ecx,[score]    ;inp
     mov   eax,47
     mcall
     jmp   .nomessage
@@ -603,18 +605,18 @@ draw_board:
 pusha
  mov  ebx,15*65536+32
  mov  ecx,50*65536+32
- mov  edx,15*65536+50		 ;Spielfeldposition
- mov  esi,10			  ;Spielfeldgroesse Y
+ mov  edx,15*65536+50            ;Spielfeldposition
+ mov  esi,10                      ;Spielfeldgroesse Y
  .vloop:
-  mov  edi,14			 ;Spielfeldgroesse X
+  mov  edi,14                    ;Spielfeldgroesse X
   .hloop:
     call gen_image
     push edx
     mov  eax,8
     movsx edx, byte [map]
-    add  edx,9		    ;button-id = map-pos + 10;gen_image inkrements
+    add  edx,9              ;button-id = map-pos + 10;gen_image inkrements
     add  edx,0x80000000     ;first delete previous button
-	mcall
+        mcall
     sub  edx,0x30000000     ;first delete previous button
     mcall
     pop  edx
@@ -630,13 +632,13 @@ pusha
     add  ebx,33 shl 16
     dec  edi
     jnz  .hloop
-  sub  edx,14*(33 shl 16)	 ;Spielfeldgroesse X
+  sub  edx,14*(33 shl 16)        ;Spielfeldgroesse X
   sub  ebx,14*(33 shl 16)
   add  edx,33
   add  ecx,33 shl 16
   dec  esi
   jnz  .vloop
-  mov  [map], byte 1		 ;Map-Position zuruecksetzen
+  mov  [map], byte 1             ;Map-Position zuruecksetzen
 popa
 ret
 
@@ -645,11 +647,11 @@ draw_window:
 pusha
 
     mcall 12,1
-	
-    mov  eax,0			   ; function 0 : define and draw window
-    mov  ebx,100*65536+492	   ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+420	   ; [y start] *65536 + [y size]
-    mov  edx,bgcolor		   ; color of work area RRGGBB,8->color gl
+        
+    mov  eax,0                     ; function 0 : define and draw window
+    mov  ebx,100*65536+492         ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+420         ; [y start] *65536 + [y size]
+    mov  edx,bgcolor               ; color of work area RRGGBB,8->color gl
     or   edx,0x14000000
     mov  edi,title
     mcall
@@ -725,7 +727,7 @@ lbl_start_a_new_game:
 lbl_win:
      db 32
      db '          G r e a t !           '
-     db "        Let's goin'on!          "
+     db "       Let's keep going!        "
 lbl_yscore:
      db 11
      db 'Your Score:'
@@ -739,15 +741,15 @@ lbl_score:
      db 28
      db   'Time:    Score:       Level:'
 end if
-stat	db 3  ;0=gameplay 1=won 2-lost 3=stopped
-speed	db 0
-time	dd 0
-diffic	db 0  ;1=hard 3=moderate 5=easy 8=dedicated to Wildwest - try it out!
-score	dd 0
-level	dd 1
-half	db 1  ;reduces the random-crosses
+stat    db 3  ;0=gameplay 1=won 2-lost 3=stopped
+speed   db 0
+time    dd 0
+diffic  db 0  ;1=hard 3=moderate 5=easy 8=dedicated to Wildwest - try it out!
+score   dd 0
+level   dd 1
+half    db 1  ;reduces the random-crosses
 
-map:	   ;14*10 blocks + position
+map:       ;14*10 blocks + position
      db 1  ;<- act. position
      db 9,9,9,9,9,9,9,9,9,9,9,9,9,9
      db 9,7,1,3,2,0,1,1,0,3,4,4,3,9
