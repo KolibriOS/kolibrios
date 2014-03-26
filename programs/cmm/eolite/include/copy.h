@@ -2,18 +2,39 @@
 
 byte copy_to[4096];
 byte cut_active=0;
+byte id_add_to_copy=0;
+byte add_to_copy_active=0;
 enum {NOCUT, CUT, COPY_PASTE_END};
 
+struct path_str {
+	char Item[4096];
+};
+ 
+#define MAX_HISTORY_NUM 10
+
 Clipboard clipboard;
+
+struct Copy_Path {
+	dword	size;
+	dword	type;
+	path_str copy_list[MAX_HISTORY_NUM];
+};	
+
+Copy_Path copy_path;
+
+void add_to_copy(dword pcth)
+{
+	add_to_copy_active=1;
+	strlcpy(#copy_path.copy_list[id_add_to_copy].Item, pcth);
+	id_add_to_copy++;
+}
 
 
 void Copy(dword pcth, char cut)
 {
-	clipboard.data.size = sizeof(buffer_data);
-	clipboard.data.type = 0;
-	clipboard.data.encoding = 1;
-	strcpy(#clipboard.data.buffer_data, pcth);
-	clipboard.SetSlotData(sizeof(buffer_data), #clipboard.data);
+	copy_path.type = 3;
+	copy_path.size = sizeof(copy_path);
+	clipboard.SetSlotData(sizeof(copy_path), #copy_path);
 	cut_active = cut;
 }
 
@@ -36,22 +57,30 @@ void Paste()
 {
 	char copy_rezult;
 	byte copy_from[4096];
+	int tst;
 	
-	strcpy(#copy_from, clipboard.GetSlotData(clipboard.GetSlotCount()-1)+12);
-	
-	if (!copy_from) ExitProcess();
-	strcpy(#copy_to, #path);
-	strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
-	if (!strcmp(#copy_from,#copy_to))
-	{
+	for (j = 0; j < MAX_HISTORY_NUM; j++) {
+		tst = j*4096;
+		strlcpy(#copy_from, clipboard.GetSlotData(clipboard.GetSlotCount()-1)+8+tst, 4096);
+		debug(#copy_from);
+		if (!copy_from) ExitProcess();
 		strcpy(#copy_to, #path);
-		strcat(#copy_to, "new_");
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
-	}
-	if (strstr(#copy_to, #copy_from))
-	{
-		notify("Copy directory into itself is a bad idea...");
-		ExitProcess();
+		if (!strcmp(#copy_from,#copy_to))
+		{
+			strcpy(#copy_to, #path);
+			strcat(#copy_to, "new_");
+			strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
+		}
+		if (strstr(#copy_to, #copy_from))
+		{
+			notify("Copy directory into itself is a bad idea...");
+			ExitProcess();
+		}
+		if (copy_rezult = copyf(#copy_from,#copy_to))
+		{
+			Write_Error(copy_rezult);
+		}
 	}
 	if (copy_rezult = copyf(#copy_from,#copy_to))
 	{
@@ -63,7 +92,10 @@ void Paste()
 		Del_File(true);
 		cut_active=false;
 	}
+	for (j = 0; j < MAX_HISTORY_NUM; j++) strcpy(#copy_path.copy_list[j].Item, 0);
 	action_buf = COPY_PASTE_END;
+	add_to_copy_active=0;
+	id_add_to_copy=0;
 	ActivateWindow(GetProcessSlot(Form.ID));
 	ExitProcess();
 }

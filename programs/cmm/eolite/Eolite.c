@@ -80,8 +80,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.16.2"
-#define ABOUT_TITLE "Eolite v2.16.2"
+#define TITLE "Eolite File Manager v2.17"
+#define ABOUT_TITLE "Eolite v2.17"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -305,9 +305,11 @@ void main()
 						Dir_Up();
 						break;
 				case 24: //cut
+						add_to_copy(#file_path);
 						Copy(#file_path, CUT);
 						break;
 				case 25: //copy
+						add_to_copy(#file_path);
 						Copy(#file_path, NOCUT);
 						break;
 				case 26: //paste
@@ -385,9 +387,11 @@ void main()
 							RunProgram("/sys/File Managers/Eolite", #path);
 							break; 
 					case 024: //Ctrl+X
+							add_to_copy(#file_path);
 							Copy(#file_path, CUT);
 							break;
 					case 003: //Ctrl+C
+							add_to_copy(#file_path);
 							Copy(#file_path, NOCUT);
 							break;
 					case 022: //Ctrl+V
@@ -428,6 +432,9 @@ void main()
 							break;
 					case 182: //del
 							Del_Form();
+							break;
+					case 185: //ins
+							add_to_copy(#file_path);
 							break;
 					case 050...059: //F1-F10
 							FnProcess(key-49);
@@ -594,7 +601,6 @@ void Line_ReDraw(dword color, filenum){
 	      name_len=0,
 	      attr,
 	      y=filenum*files.line_h+files.y;
-	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
 	DrawBar(files.x+3,y+17,16,1,color);
@@ -607,7 +613,7 @@ void Line_ReDraw(dword color, filenum){
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		Put_icon(off+_strrchr(off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8])); //size
+		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
 	}
 	else
 		if (!strcmp("..",off))
