@@ -613,7 +613,7 @@ void Line_ReDraw(dword color, filenum){
 	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		Put_icon(off+_strrchr(off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertMemSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertMemSize(ESDWORD[off-8])); //size
+		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8])); //size
 	}
 	else
 		if (!strcmp("..",off))
