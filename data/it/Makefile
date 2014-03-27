@@ -190,7 +190,6 @@ FASM_PROGRAMS:=\
  lib/proc_lib.obj:LIB/PROC_LIB.OBJ:$(PROGS)/develop/libraries/proc_lib/trunk/proc_lib.asm \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ:$(PROGS)/media/zsea/plugins/png/cnv_png.asm \
  media/animage:MEDIA/ANIMAGE:$(PROGS)/media/animage/trunk/animage.asm \
- media/cdp:MEDIA/CDP:$(PROGS)/media/cdp/trunk/cdp.asm \
  media/kiv:MEDIA/KIV:$(PROGS)/media/kiv/trunk/kiv.asm \
  media/listplay:MEDIA/LISTPLAY:$(PROGS)/media/listplay/trunk/listplay.asm \
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \

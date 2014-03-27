@@ -78,7 +78,6 @@ FlatWave                  /sys/3d/flatwav
 #7    **** Мультимедиа ****
 Видеоплеер Fplay          /KolibriOS/media/fplay-full
 Midi-плеер                /sys/media/midamp
-CD-плейер                 /sys/media/cdp
 #8    **** Разработка ****
 Примеры            >      /@9
 Упаковщик KPack           /sys/kpack

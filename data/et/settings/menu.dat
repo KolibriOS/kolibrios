@@ -74,7 +74,6 @@ Palitra                   /sys/media/palitra
 #7   **** MULTIMEDIA ****
 Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
-CD player                 /sys/media/cdp
 #8    **** PROGRAMMING ****
 Examples           >      /@9
 Arhivaator KPack          /sys/kpack
