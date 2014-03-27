@@ -637,7 +637,7 @@ GEN := $(UPDFDIR)/generated
 # --- Variables, Commands, etc... ---
 
 LDFLAGS = -T$(UPDFDIR)/include/scripts/menuetos_app_v01.ld -nostdlib -L $(UPDFDIR)/include/lib -melf_i386
-CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I include -fno-pic
+CFLAGS += -I$(UPDFDIR)/fitz -I$(UPDFDIR)/pdf -I$(UPDFDIR)/xps -I$(UPDFDIR)/scripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I$(UPDFDIR)/include -fno-pic
 LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
 
 THIRD_LIBS := $(FREETYPE_LIB)
@@ -656,7 +656,7 @@ endif
 
 CC_CMD = $(QUIET_CC) $(CC) $(CFLAGS) -o $@ -c $<
 AR_CMD = $(QUIET_AR) $(AR) cru $@ $^
-LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ include/crt0.o $^ build/debug/snprintf.o $(LIBS)
+LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ $(UPDFDIR)/include/crt0.o $^ $(UPDFDIR)/build/debug/snprintf.o $(LIBS)
 MKDIR_CMD = $(QUIET_MKDIR) mkdir -p $@
 
 # --- Rules ---
