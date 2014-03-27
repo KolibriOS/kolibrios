@@ -179,7 +179,7 @@ struct  TSS
         _io_map_1   rb 4096
 ends
 
-DRIVE_DATA_SIZE     equ 10
+DRIVE_DATA_SIZE     equ 16
 
 OS_BASE             equ 0x80000000
 

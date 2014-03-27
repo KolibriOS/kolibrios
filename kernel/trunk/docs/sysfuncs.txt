@@ -845,7 +845,7 @@ Parameters:
   * eax = 18 - function number
   * ebx = 11 - subfunction number
   * ecx = type of the table:
-    * 1 = short version, 10 bytes
+    * 1 = short version, 16 bytes
   * edx = pointer to the buffer (in the application) for the table
 Returned value:
   * function does not return value
@@ -862,24 +862,48 @@ Format of the table: short version:
     For example, for the standard configuration from one 1.44-drive
     here will be 40h, and for the case 1.2Mb on A: and 1.44Mb on B:
     the value is 24h.
+    
+  First IDE controller:
   * +1: byte: information about hard disks and CD-drives, AABBCCDD,
     where AA corresponds to the controller IDE0, ..., DD - IDE3:
-    * 0 = device is absent
+    * 0 = device not found
     * 1 = hard drive
     * 2 = CD-drive
     For example, in the case HD on IDE0 and CD on IDE2
     this field contains 48h.
   * +2: 4 db: number of the retrieved partitions on hard disks
     at accordingly IDE0,...,IDE3.
+    
+  Second IDE controller:
+  * +6: byte: information about hard disks and CD-drives, AABBCCDD,
+    where AA corresponds to the controller IDE4, ..., DD - IDE7:
+    * 0 = device not found
+    * 1 = hard drive
+    * 2 = CD-drive
+    For example, in the case HD on IDE4 and CD on IDE6
+    this field contains 48h.
+  * +7: 4 db: number of the retrieved partitions on hard disks
+    at accordingly IDE4,...,IDE7.
+
+  Third IDE controller:
+  * +11: byte: information about hard disks and CD-drives, AABBCCDD,
+    where AA corresponds to the controller IDE8, ..., DD - IDE11:
+    * 0 = device not found
+    * 1 = hard drive
+    * 2 = CD-drive
+    For example, in the case HD on IDE8 and CD on IDE10
+    this field contains 48h.
+  * +12: 4 db: number of the retrieved partitions on hard disks
+    at accordingly IDE8,...,IDE11.   
+    
     If the hard disk on IDEx is absent, appropriate byte is zero,
     otherwise it shows number of the recognized partitions, which
     can be not presented (if the drive is not formatted or if
     the file system is not supported). Current version of the kernel
-    supports only FAT16, FAT32 and NTFS for hard disks.
-  * +6: 4 db: reserved
+    supports only FAT12/16/32, NTFS, ext2/3/4 and XFS for hard disks.
 
 Remarks:
-  * The short table can be used for obtaining the information about
+  * The table can be used for obtaining the information about
     available devices.
 
 ======================================================================
@@ -1194,19 +1218,6 @@ Remarks:
   * The application @panel switches layouts on user request.
 
 ======================================================================
-============== Function 21, subfunction 3 - set CD base. =============
-======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 3 - subfunction number
-  * ecx = CD base: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
-Returned value:
-  * eax = 0
-Remarks:
-  * CD base is used by function 24.
-  * To get CD base use subfunction 3 of function 26.
-
-======================================================================
 ========== Function 21, subfunction 5 - set system language. =========
 ======================================================================
 Parameters:
@@ -1250,120 +1261,6 @@ Remarks:
   * Is used in operations with PCI bus (function 62).
   * The current implementation uses only low bit of ecx.
   * To get current status use subfunction 12 of function 26.
-
-======================================================================
-============ Function 21, subfunction 13, subsubfunction 1 ===========
-======== Initialize + get information on the driver vmode.mdr. =======
-======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 13 - subfunction number
-  * ecx = 1 - number of the driver function
-  * edx = pointer to 512-bytes buffer
-Returned value:
-  * if driver is not loaded
-    (never happens in the current implementation):
-    * eax = -1
-    * ebx, ecx destroyed
-  * if driver is loaded:
-    * eax = 'MDAZ' (in fasm style, that is 'M' - low byte, 'Z' - high)
-      - signature
-    * ebx = current frequency of the scanning (in Hz)
-    * ecx destroyed
-    * buffer pointed to by edx is filled
-Format of the buffer:
-  * +0: 32*byte: driver name, "Trans VideoDriver"
-    (without quotes, supplemented by spaces)
-  * +32 = +0x20: dword: driver version (version x.y is encoded as
-    y*65536+x), for the current implementation is 1 (1.0)
-  * +36 = +0x24: 7*dword: reserved (0 in the current implementation)
-  * +64 = +0x40: 32*word: list of supported videomodes (each word
-    is number of a videomode, after list itself there are zeroes)
-  * +128 = +0x80: 32*(5*word): list of supported frequences of the
-    scannings for videomodes: for each videomode listed in the
-    previous field up to 5 supported frequences are given
-    (unused positions contain zeroes)
-Remarks:
-  * Function initializes the driver (if it is not initialized yet)
-    and must be called first, before others (otherwise they will do
-    nothing and return -1).
-  * The current implementation supports only one frequency
-    of the scanning on videomode.
-
-======================================================================
-============ Function 21, subfunction 13, subsubfunction 2 ===========
-================ Get information on current videomode. ===============
-======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 13 - subfunction number
-  * ecx = 2 - number of the driver function
-Returned value:
-  * eax = -1 - driver is not loaded or not initialized;
-    ebx,ecx are destroyed
-  * eax = [width]*65536 + [height]
-  * ebx = frequency of the vertical scanning (in Hz)
-  * ecx = number of current videomode
-Remarks:
-  * Driver must be initialized by call to
-    driver function 1.
-  * If only screen sizes are required, it is more expedient to use
-    function 14 taking into account that it
-    returns sizes on 1 less.
-
-======================================================================
-=== Function 21, subfunction 13, subsubfunction 3 - set videomode. ===
-======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 13 - subfunction number
-  * ecx = 3 - number of the driver function
-  * edx = [scanning frequency]*65536 + [videomode number]
-Returned value:
-  * eax = -1 - driver is not loaded, not initialized or
-    an error has occured
-  * eax = 0 - success
-  * ebx, ecx destroyed
-Remarks:
-  * Driver must be initialized by driver function 1.
-  * The videomode number and frequency must be in the table
-    returned by driver function 1.
-
-======================================================================
-============ Function 21, subfunction 13, subsubfunction 4 ===========
-================== Return to the initial videomode. ==================
-======================================================================
-Returns the screen to the videomode set at system boot.
-Parameters:
-  * eax = 21 - function number
-  * ebx = 13 - subfunction number
-  * ecx = 4 - number of the driver function
-Returned value:
-  * eax = -1 - driver is not loaded or not initialized
-  * eax = 0 - success
-  * ebx, ecx destroyed
-Remarks:
-  * Driver must be initialized by call to driver function 1.
-
-======================================================================
-============ Function 21, subfunction 13, subsubfunction 5 ===========
-===== Increase/decrease the size of the visible area of monitor. =====
-======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 13 - subfunction number
-  * ecx = 5 - number of the driver function
-  * edx = 0/1 - decrease/increase horizontal size on 1 position
-  * edx = 2/3 - is not supported in the current implementation;
-    is planned as decrease/increase vertical size on 1 position
-Returned value:
-  * eax = -1 - driver is not loaded or not initialized
-  * eax = 0 - success
-  * ebx, ecx destroyed
-Remarks:
-  * Driver must be initialized by call to driver function 1.
-  * Function influences only the physical size of the screen image;
-    the logical size (number of pixels) does not change.
 
 ======================================================================
 ================= Function 22 - set system date/time. ================
@@ -1425,58 +1322,6 @@ Remarks:
   * Current implementation returns immediately with eax=0,
     if the addition of ebx with the current value of time counter
     makes 32-bit overflow.
-
-======================================================================
-======== Function 24, subfunction 1 - begin to play CD-audio. ========
-======================================================================
-Parameters:
-  * eax = 24 - function number
-  * ebx = 1 - subfunction number
-  * ecx = 0x00FRSSMM, where
-    * MM = starting minute
-    * SS = starting second
-    * FR = starting frame
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - CD base is not defined
-Remarks:
-  * Previously CD base must be defined by the call to
-    subfunction 3 of function 21.
-  * One second includes 75 frames, one minute includes 60 seconds.
-  * The function is asynchronous (returns control, when play begins).
-
-======================================================================
-======= Function 24, subfunction 2 - get information on tracks. ======
-======================================================================
-Parameters:
-  * eax = 24 - function number
-  * ebx = 2 - subfunction number
-  * ecx = pointer to the buffer for the table
-    (maximum 8*64h+4 bytes=100 tracks)
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - CD base is not defined
-Remarks:
-  * The format of the table with tracks information is the same as
-    for ATAPI-CD command 43h (READ TOC), usual table (subcommand 00h).
-    Function returns addresses in MSF.
-  * Previously CD base port must be set by call to
-    subfunction 3 of function 21.
-  * Function returns information only about no more than 100
-    first tracks. In most cases it is enough.
-
-======================================================================
-========== Function 24, subfunction 3 - stop play CD-audio. ==========
-======================================================================
-Parameters:
-  * eax = 24 - function number
-  * ebx = 1 - subfunction number
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - CD base is not defined
-Remarks:
-  * Previously CD base port must be defined by call to
-    subfunction 3 of function 21.
 
 ======================================================================
 ======= Function 24, subfunction 4 - eject tray of disk drive. =======
@@ -1576,18 +1421,6 @@ Remarks:
     by the kernel itself; however the application '@panel' displays
     the corresponding icon (using this function).
   * The application @panel switches layouts on user request.
-
-======================================================================
-============== Function 26, subfunction 3 - get CD base. =============
-======================================================================
-Parameters:
-  * eax = 26 - function number
-  * ebx = 3 - subfunction number
-Returned value:
-  * eax = CD base: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
-Remarks:
-  * CD base is used by function 24.
-  * To set CD base use subfunction 3 of function 21.
 
 ======================================================================
 ========== Function 26, subfunction 5 - get system language. =========

@@ -369,6 +369,14 @@ high_code:
         call    mutex_init
         mov     ecx, ide_channel2_mutex
         call    mutex_init
+        mov     ecx, ide_channel3_mutex
+        call    mutex_init
+        mov     ecx, ide_channel4_mutex
+        call    mutex_init
+        mov     ecx, ide_channel5_mutex
+        call    mutex_init
+        mov     ecx, ide_channel6_mutex
+        call    mutex_init
 ;-----------------------------------------------------------------------------
 ; SAVE REAL MODE VARIABLES
 ;-----------------------------------------------------------------------------
@@ -1504,266 +1512,231 @@ draw_num_text:
         mov     eax, [esp+64+8]         ; background color (if given)
         mov     edi, [esp+64+4]
         jmp     dtext
-
-align 4
-
-sys_setup:
-
-; 1=roland mpu midi base , base io address
-; 2=keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
-; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 5=system language, 1eng 2fi 3ger 4rus
-; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 8=fat32 partition in hd
-; 9
-; 10 = sound dma channel
-; 11 = enable lba read
-; 12 = enable pci access
-
-
-        and     [esp+32], dword 0
-        dec     ebx                             ; MIDI
-        jnz     nsyse1
-        cmp     ecx, 0x100
-
-        jb      nsyse1
-        mov     esi, 65535
-        cmp     esi, ecx
-
-        jb      nsyse1
-        mov     [midi_base], cx ;bx
-        mov     word [mididp], cx;bx
-        inc     cx              ;bx
-        mov     word [midisp], cx;bx
-        ret
-
+;-----------------------------------------------------------------------------
 iglobal
 midi_base dw 0
 endg
+;-----------------------------------------------------------------------------
+align 4
+sys_setup:
+;  1 = roland mpu midi base , base io address
+;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
+;  3 = not used
+;  4 = not used
+;  5 = system language, 1eng 2fi 3ger 4rus
+;  6 = not used
+;  7 = not used
+;  8 = not used
+;  9 = not used
+; 10 = not used
+; 11 = enable lba read
+; 12 = enable pci access
+;-----------------------------------------------------------------------------
+        and     [esp+32], dword 0
+; F.21.1 - set MPU MIDI base port
+        dec     ebx
+        jnz     @f
 
-   nsyse1:
-        dec     ebx                              ; KEYBOARD
-        jnz     nsyse2
+        cmp     ecx, 0x100
+        jb      @f
+
+        mov     esi, 65535
+        cmp     esi, ecx
+        jb      @f
+
+        mov     [midi_base], cx
+        mov     word [mididp], cx
+        inc     cx
+        mov     word [midisp], cx
+        ret
+;--------------------------------------
+@@:
+; F.21.2 - set keyboard layout
+        dec     ebx
+        jnz     @f
+
         mov     edi, [TASK_BASE]
         mov     eax, [edi+TASKDATA.mem_start]
         add     eax, edx
-
+; 1 = normal layout
         dec     ecx
-        jnz     kbnobase
+        jnz     .shift
+
         mov     ebx, keymap
         mov     ecx, 128
         call    memmove
         ret
-   kbnobase:
+;--------------------------------------
+.shift:
+; 2 = layout at pressed Shift
         dec     ecx
-        jnz     kbnoshift
+        jnz     .alt
 
         mov     ebx, keymap_shift
         mov     ecx, 128
         call    memmove
         ret
-   kbnoshift:
+;--------------------------------------
+.alt:
+; 3 = layout at pressed Alt
         dec     ecx
-        jnz     kbnoalt
+        jnz     .country
+
         mov     ebx, keymap_alt
         mov     ecx, 128
         call    memmove
         ret
-   kbnoalt:
+;--------------------------------------
+.country:
+; country identifier
         sub     ecx, 6
-        jnz     kbnocountry
+        jnz     .error
+
         mov     word [keyboard], dx
         ret
-   kbnocountry:
-        mov     [esp+32], dword 1
-        ret
-   nsyse2:
-        dec     ebx                         ; CD
-        jnz     nsyse4
+;--------------------------------------
+@@:
+; F.21.5 - set system language
+        sub     ebx, 3
+        jnz     @f
 
-        test    ecx, ecx
-        jz      nosesl
-
-        cmp     ecx, 4
-        ja      nosesl
-        mov     [cd_base], cl
-
-        dec     ecx
-        jnz     noprma
-        mov     eax, [hd_address_table]
-        mov     [cdbase], eax   ;0x1f0
-        mov     [cdid], 0xa0
-   noprma:
-
-        dec     ecx
-        jnz     noprsl
-        mov     eax, [hd_address_table]
-        mov     [cdbase], eax   ;0x1f0
-        mov     [cdid], 0xb0
-   noprsl:
-        dec     ecx
-        jnz     nosema
-        mov     eax, [hd_address_table+16]
-        mov     [cdbase], eax   ;0x170
-        mov     [cdid], 0xa0
-   nosema:
-        dec     ecx
-        jnz     nosesl
-        mov     eax, [hd_address_table+16]
-        mov     [cdbase], eax   ;0x170
-        mov     [cdid], 0xb0
-   nosesl:
-        ret
-
-iglobal
-cd_base db 0
-
-endg
-   nsyse4:
-
-        sub     ebx, 2           ; SYSTEM LANGUAGE
-        jnz     nsyse5
         mov     [syslang], ecx
         ret
-   nsyse5:
-
-        sub     ebx, 2          ; HD BASE - obsolete
-        jnz     nsyse7
-
-   nosethd:
-        ret
-
-nsyse7:
-
-;     cmp  eax,8                      ; HD PARTITION - obsolete
-        dec     ebx
-        jnz     nsyse8
-        ret
-
-nsyse8:
-;     cmp  eax,11                     ; ENABLE LBA READ
+;--------------------------------------
+@@:
+; F.21.11 - enable/disable low-level access to HD
         and     ecx, 1
-        sub     ebx, 3
-        jnz     no_set_lba_read
+        sub     ebx, 6
+        jnz     @f
+
         mov     [lba_read_enabled], ecx
         ret
-
-no_set_lba_read:
-;     cmp  eax,12                     ; ENABLE PCI ACCESS
+;--------------------------------------
+@@:
+; F.21.12 - enable/disable low-level access to PCI
         dec     ebx
-        jnz     sys_setup_err
+        jnz     .error
+
         mov     [pci_access_enabled], ecx
         ret
-
-sys_setup_err:
+;--------------------------------------
+.error:
         or      [esp+32], dword -1
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
 sys_getsetup:
-
-; 1=roland mpu midi base , base io address
-; 2=keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
-; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 5=system language, 1eng 2fi 3ger 4rus
-; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 8=fat32 partition in hd
-; 9=get hs timer tic
-
-;     cmp  eax,1
+;  1 = roland mpu midi base , base io address
+;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
+;  3 = not used
+;  4 = not used
+;  5 = system language, 1eng 2fi 3ger 4rus
+;  6 = not used
+;  7 = not used
+;  8 = not used
+;  9 = get hs timer tic
+; 10 = not used
+; 11 = get the state "lba read"
+; 12 = get the state "pci access"
+;-----------------------------------------------------------------------------
+; F.26.1 - get MPU MIDI base port
         dec     ebx
-        jnz     ngsyse1
+        jnz     @f
+
         movzx   eax, [midi_base]
         mov     [esp+32], eax
         ret
-ngsyse1:
-;     cmp  eax,2
+;--------------------------------------
+@@:
+; F.26.2 - get keyboard layout
         dec     ebx
-        jnz     ngsyse2
+        jnz     @f
 
         mov     edi, [TASK_BASE]
         mov     ebx, [edi+TASKDATA.mem_start]
         add     ebx, edx
-
-;     cmp  ebx,1
+; 1 = normal layout
         dec     ecx
-        jnz     kbnobaseret
+        jnz     .shift
+
         mov     eax, keymap
         mov     ecx, 128
         call    memmove
         ret
-kbnobaseret:
-;     cmp  ebx,2
+;--------------------------------------
+.shift:
+; 2 = layout with pressed Shift
         dec     ecx
-        jnz     kbnoshiftret
+        jnz     .alt
 
         mov     eax, keymap_shift
         mov     ecx, 128
         call    memmove
         ret
-kbnoshiftret:
-;     cmp  ebx,3
+;--------------------------------------
+.alt:
+; 3 = layout with pressed Alt
         dec     ecx
-        jne     kbnoaltret
+        jne     .country
 
         mov     eax, keymap_alt
         mov     ecx, 128
         call    memmove
         ret
-kbnoaltret:
-;     cmp  ebx,9
+;--------------------------------------
+.country:
+; 9 = country identifier
         sub     ecx, 6
-        jnz     ngsyse2
+        jnz     .error
+
         movzx   eax, word [keyboard]
         mov     [esp+32], eax
         ret
+;--------------------------------------
+@@:
+; F.26.5 - get system language
+        sub     ebx, 3
+        jnz     @f
 
-
-ngsyse2:
-;         cmp  eax,3
-        dec     ebx
-        jnz     ngsyse3
-        movzx   eax, [cd_base]
-        mov     [esp+32], eax
-        ret
-ngsyse3:
-;         cmp  eax,5
-        sub     ebx, 2
-        jnz     ngsyse5
         mov     eax, [syslang]
         mov     [esp+32], eax
         ret
-ngsyse5:
-;     cmp  eax,9
+;--------------------------------------
+@@:
+; F.26.9 - get the value of the time counter
         sub     ebx, 4
-        jnz     ngsyse9
-        mov     eax, [timer_ticks];[0xfdf0]
+        jnz     @f
+
+        mov     eax, [timer_ticks]
         mov     [esp+32], eax
         ret
-ngsyse9:
-;     cmp  eax,11
+;--------------------------------------
+@@:
+; F.26.11 - Find out whether low-level HD access is enabled
         sub     ebx, 2
-        jnz     ngsyse11
+        jnz     @f
+
         mov     eax, [lba_read_enabled]
         mov     [esp+32], eax
         ret
-ngsyse11:
-;     cmp  eax,12
+;--------------------------------------
+@@:
+; F.26.12 - Find out whether low-level PCI access is enabled
         dec     ebx
-        jnz     ngsyse12
+        jnz     .error
+
         mov     eax, [pci_access_enabled]
         mov     [esp+32], eax
         ret
-ngsyse12:
-        mov     [esp+32], dword 1
+;--------------------------------------
+.error:
+        or      [esp+32], dword -1
         ret
-
-
+;-----------------------------------------------------------------------------
 get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
-
+;-----------------------------------------------------------------------------
 iglobal
 align 4
 mousefn dd msscreen, mswin, msbutton, msset
@@ -1772,7 +1745,7 @@ mousefn dd msscreen, mswin, msbutton, msset
         dd app_delete_cursor
         dd msz
 endg
-
+;-----------------------------------------------------------------------------
 readmousepos:
 
 ; eax=0 screen relative
@@ -5080,38 +5053,52 @@ syscall_getscreensize:                  ; GetScreenSize
         mov     ax, word [Screen_Max_Y]
         mov     [esp + 32], eax
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
 syscall_cdaudio:                        ; CD
-
         cmp     ebx, 4
-        jb      .audio
-        jz      .eject
+        je      .eject
+
         cmp     ebx, 5
-        jnz     .ret
+        je      .load
+
+        ret
+;--------------------------------------
 .load:
         call    .reserve
         call    LoadMedium
-        ;call    .free
         jmp     .free
-;        ret
+;--------------------------------------
 .eject:
         call    .reserve
         call    clear_CD_cache
         call    allow_medium_removal
         call    EjectMedium
-;        call    .free
         jmp     .free
-;        ret
-.audio:
-        call    sys_cd_audio
-        mov     [esp+36-4], eax
-.ret:
-        ret
-
+;--------------------------------------
 .reserve:
         call    reserve_cd
+
+        mov     ebx, ecx
+        inc     ebx
+        mov     [cdpos], ebx
+        mov     eax, ebx
+
+        mov     ebx, ecx
+        and     ebx, 11b
+        shl     ebx, 1
+        mov     cl, 8
+        sub     cl, bl
+
+        dec     eax
+        shr     eax, 2
+        lea     eax, [eax*5]
+        mov     al, [eax+DRIVE_DATA+1]
+
+        shr     al, cl
+        test    al, 2 ; it's not an ATAPI device
+        jz      .ret
+
         mov     eax, ecx
         shr     eax, 1
         and     eax, 1
@@ -5121,24 +5108,13 @@ syscall_cdaudio:                        ; CD
         and     eax, 1
         mov     [DiskNumber], al
         call    reserve_cd_channel
-        and     ebx, 3
-        inc     ebx
-        mov     [cdpos], ebx
-        add     ebx, ebx
-        mov     cl, 8
-        sub     cl, bl
-        mov     al, [DRIVE_DATA+1]
-        shr     al, cl
-        test    al, 2
-        jz      .free;.err
+;--------------------------------------
+.ret:
         ret
+;--------------------------------------
 .free:
         call    free_cd_channel
         and     [cd_status], 0
-        ret
-.err:
-        call    .free
-;        pop     eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -5537,8 +5513,6 @@ system_shutdown:          ; shut down the system
         ret
 @@:
         call    stop_all_services
-        movi    eax, 3
-        call    sys_cd_audio
 
 yes_shutdown_param:
         cli

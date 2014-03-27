@@ -152,6 +152,30 @@ struct  APPDATA
 
 ends
 
+struct  IDE_DATA
+        ProgrammingInterface dd ?
+        Interrupt            dw ?
+        RegsBaseAddres       dw ?
+        BAR0_val             dw ?
+        BAR1_val             dw ?
+        BAR2_val             dw ?
+        BAR3_val             dw ?
+        dma_hdd              db ?
+ends
+
+struct  IDE_CACHE
+        pointer              dd ?
+        size                 dd ?   ; not use
+        data_pointer         dd ?
+        system_data_size     dd ?   ; not use
+        appl_data_size       dd ?   ; not use
+        system_data          dd ?
+        appl_data            dd ?
+        system_sad_size      dd ?
+        appl_sad_size        dd ?
+        search_start         dd ?
+        appl_search_start    dd ?
+ends
 
 ; Core functions
 include "core/sync.inc"     ; macros for synhronization objects
@@ -243,7 +267,6 @@ include "blkdev/bd_drv.inc"
 
 ; CD drive controller
 
-include "blkdev/cdrom.inc"
 include "blkdev/cd_drv.inc"
 
 ; Character devices

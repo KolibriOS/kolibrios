@@ -43,6 +43,30 @@ rootdirs:
         db      3,'cd3'
         dd      fs_OnCd3
         dd      fs_NextCd
+        db      3,'cd4'
+        dd      fs_OnCd4
+        dd      fs_NextCd
+        db      3,'cd5'
+        dd      fs_OnCd5
+        dd      fs_NextCd
+        db      3,'cd6'
+        dd      fs_OnCd6
+        dd      fs_NextCd
+        db      3,'cd7'
+        dd      fs_OnCd7
+        dd      fs_NextCd
+        db      3,'cd8'
+        dd      fs_OnCd8
+        dd      fs_NextCd
+        db      3,'cd9'
+        dd      fs_OnCd9
+        dd      fs_NextCd
+        db      4,'cd10'
+        dd      fs_OnCd10
+        dd      fs_NextCd
+        db      4,'cd11'
+        dd      fs_OnCd11
+        dd      fs_NextCd
 ;***********************************************
         db      0
 
@@ -57,6 +81,22 @@ virtual_root_query:
         db      'cd2',0
         dd      fs_HasCd3
         db      'cd3',0
+        dd      fs_HasCd4
+        db      'cd4',0
+        dd      fs_HasCd5
+        db      'cd5',0
+        dd      fs_HasCd6
+        db      'cd6',0
+        dd      fs_HasCd7
+        db      'cd7',0
+        dd      fs_HasCd8
+        db      'cd8',0
+        dd      fs_HasCd9
+        db      'cd9',0
+        dd      fs_HasCd10
+        db      'cd10',0
+        dd      fs_HasCd11
+        db      'cd11',0
 ;**********************************************
         dd      0
 endg
@@ -149,8 +189,8 @@ file_system_lfn:
         cmp     dword [ebx], 1
         jnz     .access_denied
         xor     eax, eax
-        mov     ebp, [ebx+12]                   ;количество блоков для считывания
-        mov     edx, [ebx+16]                   ;куда записывать рузельтат
+        mov     ebp, [ebx+12] ;the number of blocks to read
+        mov     edx, [ebx+16] ;where to write the result
     ;    add     edx, std_application_base_address
         push    dword [ebx+4]   ; first block
         mov     ebx, [ebx+8]    ; flags
@@ -404,8 +444,7 @@ file_system_lfn:
 fs_NotImplemented:
         mov     eax, 2
         ret
-
-;*******************************************************
+;-----------------------------------------------------------------------------
 fs_OnCd0:
         call    reserve_cd
         mov     [ChannelNumber], 1
@@ -413,6 +452,7 @@ fs_OnCd0:
         push    6
         push    1
         jmp     fs_OnCd
+;-----------------------------------------------------------------------------
 fs_OnCd1:
         call    reserve_cd
         mov     [ChannelNumber], 1
@@ -420,6 +460,7 @@ fs_OnCd1:
         push    4
         push    2
         jmp     fs_OnCd
+;-----------------------------------------------------------------------------
 fs_OnCd2:
         call    reserve_cd
         mov     [ChannelNumber], 2
@@ -427,22 +468,96 @@ fs_OnCd2:
         push    2
         push    3
         jmp     fs_OnCd
+;-----------------------------------------------------------------------------
 fs_OnCd3:
         call    reserve_cd
         mov     [ChannelNumber], 2
         mov     [DiskNumber], 1
         push    0
         push    4
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd4:
+        call    reserve_cd
+        mov     [ChannelNumber], 1
+        mov     [DiskNumber], 0
+        push    6
+        push    5
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd5:
+        call    reserve_cd
+        mov     [ChannelNumber], 1
+        mov     [DiskNumber], 1
+        push    4
+        push    6
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd6:
+        call    reserve_cd
+        mov     [ChannelNumber], 2
+        mov     [DiskNumber], 0
+        push    2
+        push    7
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd7:
+        call    reserve_cd
+        mov     [ChannelNumber], 2
+        mov     [DiskNumber], 1
+        push    0
+        push    8
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd8:
+        call    reserve_cd
+        mov     [ChannelNumber], 1
+        mov     [DiskNumber], 0
+        push    6
+        push    9
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd9:
+        call    reserve_cd
+        mov     [ChannelNumber], 1
+        mov     [DiskNumber], 1
+        push    4
+        push    10
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd10:
+        call    reserve_cd
+        mov     [ChannelNumber], 2
+        mov     [DiskNumber], 0
+        push    2
+        push    11
+        jmp     fs_OnCd
+;-----------------------------------------------------------------------------
+fs_OnCd11:
+        call    reserve_cd
+        mov     [ChannelNumber], 2
+        mov     [DiskNumber], 1
+        push    0
+        push    12
+;-----------------------------------------------------------------------------
 fs_OnCd:
-        call    reserve_cd_channel
         pop     eax
         mov     [cdpos], eax
+        call    reserve_cd_channel
         pop     eax
         cmp     ecx, 0x100
         jae     .nf
         push    ecx ebx
         mov     cl, al
-        mov     bl, [DRIVE_DATA+1]
+
+        push    eax
+        mov     eax, [cdpos]
+        dec     eax
+        shr     eax, 2
+        lea     eax, [eax*5]
+        mov     bl, [eax+DRIVE_DATA+1]
+        pop     eax
+
         shr     bl, cl
         test    bl, 2
         pop     ebx ecx
@@ -472,7 +587,7 @@ fs_OnCd:
         and     [cd_status], 0
         mov     dword [image_of_eax], 2       ; not implemented
         ret
-
+;-----------------------------------------------------------------------------
 fs_CdServices:
         dd      fs_CdRead
         dd      fs_CdReadFolder
@@ -485,32 +600,74 @@ fs_CdServices:
         dd      fs_NotImplemented
         dd      fs_NotImplemented
 fs_NumCdServices = ($ - fs_CdServices)/4
-
-;*******************************************************
+;-----------------------------------------------------------------------------
 fs_HasCd0:
         test    byte [DRIVE_DATA+1], 10000000b
         setnz   al
         ret
+;--------------------------------------
 fs_HasCd1:
         test    byte [DRIVE_DATA+1], 00100000b
         setnz   al
         ret
+;--------------------------------------
 fs_HasCd2:
         test    byte [DRIVE_DATA+1], 00001000b
         setnz   al
         ret
+;--------------------------------------
 fs_HasCd3:
         test    byte [DRIVE_DATA+1], 00000010b
         setnz   al
         ret
-;*******************************************************
-
+;--------------------------------------
+fs_HasCd4:
+        test    byte [DRIVE_DATA+6], 10000000b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd5:
+        test    byte [DRIVE_DATA+6], 00100000b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd6:
+        test    byte [DRIVE_DATA+6], 00001000b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd7:
+        test    byte [DRIVE_DATA+6], 00000010b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd8:
+        test    byte [DRIVE_DATA+11], 10000000b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd9:
+        test    byte [DRIVE_DATA+11], 00100000b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd10:
+        test    byte [DRIVE_DATA+11], 00001000b
+        setnz   al
+        ret
+;--------------------------------------
+fs_HasCd11:
+        test    byte [DRIVE_DATA+11], 00000010b
+        setnz   al
+        ret
+;-----------------------------------------------------------------------------
+;
 ; fs_NextXXX functions:
 ; in: eax = partition number, from which start to scan
 ; out: CF=1 => no more partitions
 ;      CF=0 => eax=next partition number
-
-;*******************************************************
+;
+;-----------------------------------------------------------------------------
 fs_NextCd:
 ; we always have /cdX/1
         test    eax, eax
@@ -520,8 +677,6 @@ fs_NextCd:
         clc
 @@:
         ret
-;*******************************************************
-
 ;-----------------------------------------------------------------------------
 process_replace_file_name:
 ; in

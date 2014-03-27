@@ -493,58 +493,6 @@ BgrDataHeight                   rd 1
 
 skin_data                       rd 1
 
-cache_ide0:
-cache_ide0_pointer              rd 1
-cache_ide0_size                 rd 1   ; not use
-cache_ide0_data_pointer         rd 1
-cache_ide0_system_data_size     rd 1   ; not use
-cache_ide0_appl_data_size       rd 1   ; not use
-cache_ide0_system_data          rd 1
-cache_ide0_appl_data            rd 1
-cache_ide0_system_sad_size      rd 1
-cache_ide0_appl_sad_size        rd 1
-cache_ide0_search_start         rd 1
-cache_ide0_appl_search_start    rd 1
-
-cache_ide1:
-cache_ide1_pointer              rd 1
-cache_ide1_size                 rd 1   ; not use
-cache_ide1_data_pointer         rd 1
-cache_ide1_system_data_size     rd 1   ; not use
-cache_ide1_appl_data_size       rd 1   ; not use
-cache_ide1_system_data          rd 1
-cache_ide1_appl_data            rd 1
-cache_ide1_system_sad_size      rd 1
-cache_ide1_appl_sad_size        rd 1
-cache_ide1_search_start         rd 1
-cache_ide1_appl_search_start    rd 1
-
-cache_ide2:
-cache_ide2_pointer              rd 1
-cache_ide2_size                 rd 1   ; not use
-cache_ide2_data_pointer         rd 1
-cache_ide2_system_data_size     rd 1   ; not use
-cache_ide2_appl_data_size       rd 1   ; not use
-cache_ide2_system_data          rd 1
-cache_ide2_appl_data            rd 1
-cache_ide2_system_sad_size      rd 1
-cache_ide2_appl_sad_size        rd 1
-cache_ide2_search_start         rd 1
-cache_ide2_appl_search_start    rd 1
-
-cache_ide3:
-cache_ide3_pointer              rd 1
-cache_ide3_size                 rd 1   ; not use
-cache_ide3_data_pointer         rd 1
-cache_ide3_system_data_size     rd 1   ; not use
-cache_ide3_appl_data_size       rd 1   ; not use
-cache_ide3_system_data          rd 1
-cache_ide3_appl_data            rd 1
-cache_ide3_system_sad_size      rd 1
-cache_ide3_appl_sad_size        rd 1
-cache_ide3_search_start         rd 1
-cache_ide3_appl_search_start    rd 1
-
 debug_step_pointer              rd 1
 
 lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
