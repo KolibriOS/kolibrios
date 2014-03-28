@@ -138,7 +138,7 @@ get_cache_ide:
         and     [esi+IDE_CACHE.appl_search_start], 0
 
         push    ecx
-        DEBUGF  1, "K : IDE_CACHE.size %x\n", [esi+IDE_CACHE.size]
+;        DEBUGF  1, "K : IDE_CACHE.size %x\n", [esi+IDE_CACHE.size]
         stdcall kernel_alloc, [esi+IDE_CACHE.size]
         mov     [esi+IDE_CACHE.pointer], eax
         pop     ecx
@@ -146,11 +146,11 @@ get_cache_ide:
         mov     edx, eax
         mov     eax, [esi+IDE_CACHE.size]
         shr     eax, 3
-        DEBUGF  1, "K : IDE_CACHE.system_data_size %x\n", eax
+;        DEBUGF  1, "K : IDE_CACHE.system_data_size %x\n", eax
         mov     [esi+IDE_CACHE.system_data_size], eax
         mov     ebx, eax
         imul    eax, 7
-        DEBUGF  1, "K : IDE_CACHE.appl_data_size %x\n", eax
+;        DEBUGF  1, "K : IDE_CACHE.appl_data_size %x\n", eax
         mov     [esi+IDE_CACHE.appl_data_size], eax
         add     ebx, edx
         mov     [esi+IDE_CACHE.data_pointer], ebx

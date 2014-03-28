@@ -209,11 +209,11 @@ include 'dev_hdcd.inc'
         xor     eax, eax
         add     dx, 2
         in      al, dx
-        DEBUGF  1, "K : Primary Bus Master IDE Status Register %x\n", eax
+;        DEBUGF  1, "K : Primary Bus Master IDE Status Register %x\n", eax
 
         add     dx, 8
         in      al, dx
-        DEBUGF  1, "K : Secondary Bus Master IDE Status Register %x\n", eax
+;        DEBUGF  1, "K : Secondary Bus Master IDE Status Register %x\n", eax
         pop     edx eax
 
         cmp     [ecx+IDE_DATA.RegsBaseAddres], 0

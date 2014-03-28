@@ -1330,7 +1330,9 @@ Parameters:
   * eax = 24 - function number
   * ebx = 4 - subfunction number
   * ecx = position of CD/DVD-drive
-      (from 0=Primary Master to 3=Secondary Slave)
+    from 0=Primary Master to 3=Secondary Slave for first IDE contr.
+    from 4=Primary Master to 7=Secondary Slave for second IDE contr.
+    from 8=Primary Master to 11=Secondary Slave for third IDE contr.
 Returned value:
   * function does not return value
 Remarks:
@@ -1348,7 +1350,9 @@ Parameters:
   * eax = 24 - function number
   * ebx = 5 - subfunction number
   * ecx = position of CD/DVD-drive
-      (from 0=Primary Master to 3=Secondary Slave)
+    from 0=Primary Master to 3=Secondary Slave for first IDE contr.
+    from 4=Primary Master to 7=Secondary Slave for second IDE contr.
+    from 8=Primary Master to 11=Secondary Slave for third IDE contr.
 Returned value:
   * function does not return value
 Remarks:

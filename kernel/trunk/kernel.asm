@@ -5056,12 +5056,37 @@ syscall_getscreensize:                  ; GetScreenSize
 ;-----------------------------------------------------------------------------
 align 4
 syscall_cdaudio:                        ; CD
+; ECX - position of CD/DVD-drive
+; from 0=Primary Master to 3=Secondary Slave for first IDE contr.
+; from 4=Primary Master to 7=Secondary Slave for second IDE contr.
+; from 8=Primary Master to 11=Secondary Slave for third IDE contr.
+        cmp     ecx, 11
+        ja      .exit
+
+        mov     eax, ecx
+        shr     eax, 2
+        lea     eax, [eax*5]
+        mov     al, [eax+DRIVE_DATA+1]
+
+        push    ecx ebx
+        mov     ebx, ecx
+        and     ebx, 11b
+        shl     ebx, 1
+        mov     cl, 6
+        sub     cl, bl
+        shr     al, cl
+        test    al, 2 ; it's not an ATAPI device
+        pop     ebx ecx
+
+        jz      .exit
+
         cmp     ebx, 4
         je      .eject
 
         cmp     ebx, 5
         je      .load
-
+;--------------------------------------
+.exit:
         ret
 ;--------------------------------------
 .load:
@@ -5082,22 +5107,6 @@ syscall_cdaudio:                        ; CD
         mov     ebx, ecx
         inc     ebx
         mov     [cdpos], ebx
-        mov     eax, ebx
-
-        mov     ebx, ecx
-        and     ebx, 11b
-        shl     ebx, 1
-        mov     cl, 8
-        sub     cl, bl
-
-        dec     eax
-        shr     eax, 2
-        lea     eax, [eax*5]
-        mov     al, [eax+DRIVE_DATA+1]
-
-        shr     al, cl
-        test    al, 2 ; it's not an ATAPI device
-        jz      .ret
 
         mov     eax, ecx
         shr     eax, 1
@@ -5108,8 +5117,6 @@ syscall_cdaudio:                        ; CD
         and     eax, 1
         mov     [DiskNumber], al
         call    reserve_cd_channel
-;--------------------------------------
-.ret:
         ret
 ;--------------------------------------
 .free:

@@ -1332,7 +1332,9 @@ dd 1675
   * eax = 24 - номер функции
   * ebx = 4 - номер подфункции
   * ecx = номер CD/DVD-диска
-      (от 0=Primary Master до 3=Secondary Slave)
+    от 0=Primary Master до 3=Secondary Slave для первого IDE контр.
+    от 4=Primary Master до 7=Secondary Slave для второго IDE контр.
+    от 8=Primary Master до 11=Secondary Slave для третьего IDE контр.
 Возвращаемое значение:
   * функция не возвращает значения
 Замечания:
@@ -1350,7 +1352,9 @@ dd 1675
   * eax = 24 - номер функции
   * ebx = 5 - номер подфункции
   * ecx = номер CD/DVD-диска
-      (от 0=Primary Master до 3=Secondary Slave)
+    от 0=Primary Master до 3=Secondary Slave для первого IDE контр.
+    от 4=Primary Master до 7=Secondary Slave для второго IDE контр.
+    от 8=Primary Master до 11=Secondary Slave для третьего IDE контр.
 Возвращаемое значение:
   * функция не возвращает значения
 Замечания:

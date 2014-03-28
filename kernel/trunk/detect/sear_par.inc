@@ -43,7 +43,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+2]
         test    [DRIVE_DATA+1], byte 0x40
         jz      @f
-        DEBUGF  1, "K : HD0\n"
+
         push    'hd0'
         mov     eax, esp        ; name
         mov     edx, hd0_data
@@ -57,7 +57,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+3]
         test    [DRIVE_DATA+1], byte 0x10
         jz      @f
-        DEBUGF  1, "K : HD1\n"
+
         push    'hd1'
         mov     eax, esp
         mov     edx, hd1_data
@@ -71,7 +71,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+4]
         test    [DRIVE_DATA+1], byte 4
         jz      @f
-        DEBUGF  1, "K : HD2\n"
+
         push    'hd2'
         mov     eax, esp
         mov     edx, hd2_data
@@ -85,7 +85,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+5]
         test    [DRIVE_DATA+1], byte 1
         jz      @f
-        DEBUGF  1, "K : HD3\n"
+
         push    'hd3'
         mov     eax, esp
         mov     edx, hd3_data
@@ -99,7 +99,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+7]
         test    [DRIVE_DATA+6], byte 0x40
         jz      @f
-        DEBUGF  1, "K : HD4\n"
+
         push    'hd4'
         mov     eax, esp        ; name
         mov     edx, hd4_data
@@ -113,7 +113,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+8]
         test    [DRIVE_DATA+6], byte 0x10
         jz      @f
-        DEBUGF  1, "K : HD5\n"
+
         push    'hd5'
         mov     eax, esp
         mov     edx, hd5_data
@@ -127,7 +127,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+9]
         test    [DRIVE_DATA+6], byte 4
         jz      @f
-        DEBUGF  1, "K : HD6\n"
+
         push    'hd6'
         mov     eax, esp
         mov     edx, hd6_data
@@ -141,7 +141,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+10]
         test    [DRIVE_DATA+6], byte 1
         jz      @f
-        DEBUGF  1, "K : HD7\n"
+
         push    'hd7'
         mov     eax, esp
         mov     edx, hd7_data
@@ -155,7 +155,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+12]
         test    [DRIVE_DATA+11], byte 0x40
         jz      @f
-        DEBUGF  1, "K : HD8\n"
+
         push    'hd8'
         mov     eax, esp        ; name
         mov     edx, hd8_data
@@ -169,7 +169,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+13]
         test    [DRIVE_DATA+11], byte 0x10
         jz      @f
-        DEBUGF  1, "K : HD9\n"
+
         push    'hd9'
         mov     eax, esp
         mov     edx, hd9_data
@@ -183,7 +183,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+14]
         test    [DRIVE_DATA+14], byte 4
         jz      @f
-        DEBUGF  1, "K : HD10\n"
+
         push    'hd10'
         mov     eax, esp
         mov     edx, hd10_data
@@ -197,7 +197,7 @@ search_partitions:
 ;     number of partitions: [DRIVE_DATA+15]
         test    [DRIVE_DATA+11], byte 1
         jz      @f
-        DEBUGF  1, "K : HD11\n"
+
         push    'hd11'
         mov     eax, esp
         mov     edx, hd11_data
@@ -254,7 +254,6 @@ endg
         jnz     .bdloop
         pop     ecx ecx ; restore stack after name
 .nobd:
-        DEBUGF  1, "K : jmp end_search_partitions\n"
         jmp     end_search_partitions
 ;-----------------------------------------------------------------------------
 ; Helper procedure for search_partitions, adds one IDE disk.
