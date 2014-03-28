@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.21'
+version equ '0.22'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -334,7 +334,7 @@ exit:
         cmp     [socketnum], 0
         je      @f
         mov     esi, quit_msg
-        call    cmd_usr_quit_server
+        call    quit_server
   @@:
 
 error:
@@ -462,9 +462,11 @@ str_connecting          db 3, '3* Connecting to ', 0
 str_sockerr             db 3, '5* Socket error', 10, 0
 str_dnserr              db 3, '5* Unable to resolve hostname', 10, 0
 str_refused             db 3, '5* Connection refused', 10, 0
-str_disconnected        db 3, '5* Server disconnected', 10, 0
+str_srv_disconnected    db 3, '5* Server disconnected', 10, 0
+str_disconnected        db 3, '5* Disconnected', 10, 0
 str_reconnect           db 3, '5* Connection reset by user', 10, 0
 str_notconnected        db 3, '5* Not connected to server', 10, 0
+str_notchannel          db 3, '5* You are not on a channel', 10, 0
 
 str_1                   db 3, '13 -', 0
 str_2                   db '- ', 0

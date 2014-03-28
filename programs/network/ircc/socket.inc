@@ -109,7 +109,7 @@ socket_connect:
         call    print_asciiz
 
         mov     esi, quit_msg
-        call    cmd_usr_quit.with_message
+        call    quit_server
 
         jmp     socket_connect
 
@@ -250,7 +250,10 @@ socket_receive:
 
 
   .disconnected:
-        mov     esi, str_disconnected
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+        mov     esi, str_srv_disconnected
         call    print_asciiz
 
         mov     [status], STATUS_DISCONNECTED

@@ -13,8 +13,8 @@
 
 user_parser:
 
-        push    [window_active]   ; print to the current window
-        pop     [window_print]
+        mov     ebp, [window_active]   ; print to the current window
+        mov     [window_print], ebp
 
         mov     eax, [edit1.size]
         test    eax, eax
@@ -22,15 +22,17 @@ user_parser:
         mov     word[usercommand + eax], 0x0a0d         ; terminate the line
 
         cmp     byte[usercommand], '/'                  ; is it a server command ?
-        je      server_command
+        je      .command
 
-; Ignore data commands when not connected.
         cmp     [status], STATUS_CONNECTED
-        jne     .notconnected
+        jne     .not_connected
 
-; Ok, we said something, print it to our textbox
-; TODO: dont send if it's a server window?
+        cmp     [ebp + window.type], WINDOWTYPE_CHANNEL
+        je      .send_privmsg
+        cmp     [ebp + window.type], WINDOWTYPE_CHAT
+        jne     .not_channel
 
+  .send_privmsg:
         if TIMESTAMP
         call    print_timestamp
         end if
@@ -59,8 +61,7 @@ user_parser:
         mov     dword[packetbuf], 'PRIV'
         mov     dword[packetbuf+4], 'MSG '
 
-        mov     esi, [window_active]
-        add     esi, window.name
+        lea     esi, [ebp + window.name]
         mov     edi, packetbuf+8
         mov     ecx, MAX_WINDOWNAME_LEN
   .loop:
@@ -86,18 +87,53 @@ user_parser:
 
         lea     esi, [edi - packetbuf]
         mcall   send, [socketnum], packetbuf, , 0
-  .ret:
 
+  .ret:
         ret
 
-  .notconnected:
+; Text begins with a '/' lets try to find the command in the lookup table.
+  .command:
+        mov     eax, dword[usercommand+1]       ; skip '/'
+        or      eax, 0x20202020                 ; convert to lowercase
+
+        mov     edi, user_commands
+        mov     ecx, user_commands.number
+        cmp     [status], STATUS_CONNECTED
+        je      .cmd_loop
+        mov     ecx, user_commands.number2
+  .cmd_loop:
+        scasd
+        je      .got_cmd
+        add     edi, 4
+        dec     ecx
+        jnz     .cmd_loop
+
+        cmp     [status], STATUS_CONNECTED
+        jne     .not_connected
+
+; Commands shorter then 3 chars are placed here
+        and     eax, 0x00ffffff
+        cmp     eax, 'me '
+        je      cmd_usr_me
+
+; If none of the listed commands, send text straight to server
+        jmp     cmd_usr_send
+
+  .got_cmd:
+        jmp     dword[edi]
+
+  .not_connected:
         mov     esi, str_notconnected
         call    print_asciiz
+        ret
 
+  .not_channel:
+        mov     esi, str_notchannel
+        call    print_asciiz
         ret
 
 
-
+; user commands lookup table
 user_commands:
         dd      'nick', cmd_usr_nick
         dd      'real', cmd_usr_real
@@ -115,42 +151,6 @@ user_commands:
         dd      'msg ', cmd_usr_msg
 
         .number = ($ - user_commands) / 8
-
-
-server_command:
-
-        mov     eax, dword[usercommand+1]       ; skip '/'
-        or      eax, 0x20202020                 ; convert to lowercase
-
-        mov     edi, user_commands
-        mov     ecx, user_commands.number
-        cmp     [status], STATUS_CONNECTED
-        je      .loop
-        mov     ecx, user_commands.number2
-  .loop:
-        scasd
-        je      .got_cmd
-        add     edi, 4
-        dec     ecx
-        jnz     .loop
-
-        cmp     [status], STATUS_CONNECTED
-        jne     .notconnected
-; Commands shorter then 3 chars are placed here
-        and     eax, 0x00ffffff
-        cmp     eax, 'me '
-        je      cmd_usr_me
-
-        jmp     cmd_usr_send                    ; If none of the previous commands, just send to server
-
-  .got_cmd:
-        jmp     dword[edi]
-
-  .notconnected:
-        mov     esi, str_notconnected
-        call    print_asciiz
-
-        ret
 
 
 
@@ -224,34 +224,14 @@ cmd_usr_msg:
 
 
 cmd_usr_quit:
+
         mov     esi, quit_msg
-
         cmp     byte[usercommand+5], ' '
-        jne     .with_message
+        jne     quit_server
         lea     esi, [usercommand+6]
-  .with_message:
-        call    cmd_usr_quit_server
-
-        mcall   close, [socketnum]
-        mov     [status], STATUS_DISCONNECTED
-
-        mov     ecx, MAX_WINDOWS
-        mov     edi, windows
-  .loop:
-        mov     [window_print], edi
-        push    edi ecx
-        call    window_close
-        pop     ecx edi
-        add     edi, sizeof.window
-        dec     ecx
-        jnz     .loop
-
-        ret
-
-
 
 ; esi = quit message
-cmd_usr_quit_server:
+quit_server:
 
 ; User wants to close a channel, send PART command to server
         mov     dword[packetbuf], 'QUIT'
@@ -273,6 +253,27 @@ cmd_usr_quit_server:
 
         lea     esi, [edi - packetbuf]                  ; calculate length
         mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
+
+        mov     ebp, windows
+  .window_loop:
+        cmp     [ebp + window.type], WINDOWTYPE_NONE
+        je      .next_window
+        mov     [window_print], ebp
+        if TIMESTAMP
+        call    print_timestamp
+        end if
+        mov     esi, str_disconnected
+        call    print_asciiz
+        cmp     [ebp + window.type], WINDOWTYPE_CHANNEL
+        jne     .next_window
+        call    user_remove_all
+  .next_window:
+        add     ebp, sizeof.window
+        cmp     ebp, windows + (MAX_WINDOWS * sizeof.window)
+        jb      .window_loop
+
+        mov     [status], STATUS_DISCONNECTED
+        mcall   close, [socketnum]
 
         ret
 
@@ -367,6 +368,10 @@ cmd_usr_server:
         and     eax, 0x00ffffff
         cmp     eax, 'er '
         jne     cmd_usr_send
+
+; Server window is always first window in the list, switch to it.
+        mov     [window_print], windows
+        mov     [window_active], windows
 
         mov     ecx, [edit1.size]               ; ok now set the address
         sub     ecx, 8

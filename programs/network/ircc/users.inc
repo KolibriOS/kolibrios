@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -22,7 +22,7 @@ align 4
 user_add:
 
         cmp     [ebx + window.users], MAX_USERS
-        jae     fail
+        jae     .fail
 
         mov     edi, [ebx + window.data_ptr]
         add     edi, window_data.names
@@ -115,7 +115,7 @@ user_add:
 
         inc     [ebx + window.users]
         or      [ebx + window.flags], FLAG_UPDATED
-
+  .fail:
         ret
 
 
@@ -128,7 +128,7 @@ align 4
 user_remove:
 
         call    user_find
-        jz      fail
+        jz      .fail
 
         lea     esi, [edi + MAX_NICK_LEN]
         mov     ecx, [ebx + window.data_ptr]
@@ -139,7 +139,7 @@ user_remove:
 
         dec     [ebx + window.users]
         or      [ebx + window.flags], FLAG_UPDATED
-
+  .fail:
         ret
 
 
@@ -154,7 +154,7 @@ user_find:
 
         mov     eax, [ebx + window.users]
         test    eax, eax
-        jz      fail
+        jz      .fail
         mov     edi, [ebx + window.data_ptr]
         add     edi, window_data.names
 
@@ -169,16 +169,28 @@ user_find:
         add     edi, MAX_NICK_LEN
         dec     eax
         jnz     .loop
-        jmp     fail
+        jmp     .fail
 
   .got_it:
         pop     edi esi
         test    edi, edi        ; to clear zero flag
+        ret
 
+  .fail:
+        xor     edi, edi
         ret
 
 
-fail:
 
-        xor     edi, edi
+user_remove_all:
+
+        xor     eax, eax
+        mov     edi, [window_print]
+        mov     [edi + window.users], eax
+        mov     [edi + window.selected], eax
+        mov     edi, [edi + window.data_ptr]
+        add     edi, window_data.names
+        mov     ecx, MAX_NICK_LEN * MAX_USERS / 4
+        rep stosd
+
         ret
