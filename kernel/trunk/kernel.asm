@@ -5055,7 +5055,7 @@ syscall_getscreensize:                  ; GetScreenSize
         ret
 ;-----------------------------------------------------------------------------
 align 4
-syscall_cdaudio:                        ; CD
+syscall_cdaudio:
 ; ECX - position of CD/DVD-drive
 ; from 0=Primary Master to 3=Secondary Slave for first IDE contr.
 ; from 4=Primary Master to 7=Secondary Slave for second IDE contr.
