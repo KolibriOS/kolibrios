@@ -400,7 +400,7 @@ MKISOFS_EXTRA:=\
  kolibrios/lib/swscale-2.dll=../common/lib/swscale-2.dll \
  kolibrios/lib/zlib.dll=../common/lib/zlib.dll \
  kolibrios/media/fplay-full=../common/media/fplay-full \
- kolibrios/media/updf=updf \
+# kolibrios/media/updf=updf \
  kolibrios/media/zsea/zsea=distr_data/zsea \
  kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
  kolibrios/media/zsea/plugins/cnv_gif.obj=distr_data/cnv_gif.obj \
@@ -631,7 +631,7 @@ updf: .obj.updf/mupdf.obj
 	 win32-objcopy -O binary mupdf
 .obj.updf/mupdf.obj: $(UPDFDIR)/Makefile 
 	flock $(UPDFDIR)/.lock \
-	$(MAKE)  CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar
+	$(MAKE)  CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar -C $(UPDFDIR)
 .obj.updf:
 	mkdir -p .obj.updf
 
