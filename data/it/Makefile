@@ -636,7 +636,7 @@ GEN := $(UPDFDIR)/generated
 
 # --- Variables, Commands, etc... ---
 
-LDFLAGS = -T$(UPDFDIR)/include/scripts/menuetos_app_v01.ld -nostdlib -L $(UPDFDIR)/include/lib -melf_i386
+LDFLAGS = -T$(UPDFDIR)/include/scripts/menuetos_app_v01.ld -nostdlib -L $(UPDFDIR)/include/lib -melf_i386 -L $(UPDFDIR)/build/debug
 CFLAGS += -I$(UPDFDIR)/fitz -I$(UPDFDIR)/pdf -I$(UPDFDIR)/xps -I$(UPDFDIR)/scripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I$(UPDFDIR)/include -fno-pic
 LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
 
