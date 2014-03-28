@@ -627,8 +627,13 @@ e80: .obj.e80/start.o .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o .ob
 
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
-updf:
-	cd $(UPDFDIR) && make 
+updf: .obj.updf/mupdf.obj
+	 win32-objcopy -O binary mupdf
+.obj.updf/mupdf.obj: $(UPDFDIR)/Makefile 
+	flock $(UPDFDIR)/.lock \
+	$(MAKE)  CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar
+.obj.updf:
+	mkdir -p .obj.updf
 
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
