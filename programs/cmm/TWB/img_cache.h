@@ -44,19 +44,9 @@ void ImageCache::Images(int left1, top1, width1)
 		if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 		{
 			if (http_transfer<>0) strcpy(#img_path, #history_list[BrowserHistory.current-1].Item); else
-			strcpy(#img_path, BrowserHistory.CurrentUrl());
-			if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
-			{
-				//get path: absolute or relative
-				if (options[0]=='/')
-					strcpy(#img_path, #options);
-				else
-				{
-					img_path[strrchr(#img_path, '/')] = '\0';
-					strcat(#img_path, #options);
-				}
-				cur_pic = GetImageNumber(#img_path); 
-			}
+			strcpy(#img_path, #options);
+			PageLinks.GetAbsoluteURL(#img_path);
+			cur_pic = GetImageNumber(#img_path);
 		}
 		if (!strcmp(#parametr,"alt="))
 		{
@@ -78,7 +68,8 @@ void ImageCache::Images(int left1, top1, width1)
 	if (imgw > width1) imgw = width1;
 	
 	if (stroka==0) DrawBar(WB1.list.x, WB1.list.y, WB1.list.w-15, 5, bg_color); //закрашиваем первую строку
-	stroka += imgh/10;
+	stroka += imgh / WB1.list.line_h;
+	if (imgh % WB1.list.line_h) stroka++;
 	if (top1+imgh<WB1.list.y) || (top1>WB1.list.y+WB1.list.h-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
 	if (top1<WB1.list.y) //если часть изображения сверху
 	{
@@ -95,11 +86,12 @@ void ImageCache::Images(int left1, top1, width1)
 	
 	img_draw stdcall (pics[cur_pic].image, left1-5, top1, imgw, imgh,0,img_lines_first);
 	DrawBar(left1+imgw - 5, top1, WB1.list.w-imgw, imgh, bg_color);
+	DrawBar(WB1.list.x, top1+imgh, WB1.list.w, -imgh % WB1.list.line_h + WB1.list.line_h, bg_color);
 	IF (link)
 	{
 		UnsafeDefineButton(left1 - 5, top1, imgw, imgh-1, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 		PageLinks.AddText(0, imgw, imgh-1, NOLINE);	
-		// WB1.DrawPage();
+		//WB1.DrawPage();
 	} 
 }
 

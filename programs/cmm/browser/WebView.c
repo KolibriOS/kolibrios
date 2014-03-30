@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 3";
+	char version[]=" Текстовый браузер 1.0 Beta 4";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 3";
+	char version[]=" Text-based Browser 1.0 Beta 4";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -62,16 +62,18 @@ dword http_buffer;
 dword TAB_H = false; //19;
 dword TAB_W = 150;
 dword TOOLBAR_H = 31; //50;
-dword STATUSBAR_H =16;
-dword col_bg = 0xE4DFE1;
-dword panel_color = 0xF1F1F1;
-dword border_color = 0x9F9F9F;
+dword STATUSBAR_H =15;
+dword col_bg;
+dword panel_color;
+dword border_color;
 
 pb progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+byte souce_mode = false;
 
 #include "..\TWB\TWB.c"
 #include "menu_rmb.h"
 #include "history.h"
+#include "show_src.h"
 
 char editURL[sizeof(URL)];
 int	mouse_twb;
@@ -79,19 +81,32 @@ edit_box address_box = {250,55,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(U
 
 #define URL_SERVICE_HISTORY "WebView://history"
 #define URL_SERVICE_HOME "WebView://home"
+#define URL_SERVICE_SOURCE "WebView://source:"
 
 enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 
-struct skin {
+struct struct_skin {
 	dword image, w, h;
+	int Load();
 } skin;
 
-int LoadSkin()
+int struct_skin::Load()
 {
+	dword image_data;
 	skin.image = load_image(abspath("wv_skin.png"));
 	if (!skin.image) notify("WebView skin file 'wv_skin.png' not found, program will terminate");
 	skin.w = DSWORD[skin.image+4];
 	skin.h = DSWORD[skin.image+8];
+	image_data = DSDWORD[skin.image+24];
+
+	col_bg = DSDWORD[DSDWORD[skin.image+24]];
+	panel_color  = DSDWORD[skin.w*4*4 + image_data];
+	border_color = DSDWORD[skin.w*4*7 + image_data];
+	progress_bar.progress_color = DSDWORD[skin.w*4*10 + image_data];
+	$and col_bg, 0x00ffffff
+	$and panel_color, 0x00ffffff
+	$and border_color, 0x00ffffff
+	$and progress_bar.progress_color, 0x00ffffff
 }
 
 void DrawProgress()
@@ -103,6 +118,7 @@ void DrawProgress()
 	if (progress_bar.max) btn = address_box.width*progress_bar.value/progress_bar.max; else btn = 30;
 	DrawBar(address_box.left-1, address_box.top+14, btn, 2, progress_bar.progress_color);
 }
+
 
 void main()
 {
@@ -116,7 +132,7 @@ void main()
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
-	LoadSkin();
+	skin.Load();
 	
 	Form.width=WIN_W;
 	Form.height=WIN_H;
@@ -185,7 +201,7 @@ void main()
 				key = GetKey();
 				
 				if (address_box.flags & 0b10) SWITCH(key)
-					{ CASE 52: CASE 53: CASE 54: goto _EDIT_MARK; } 
+					{ CASE 52: CASE 53: CASE 54: CASE 180: CASE 181: goto _EDIT_MARK; } 
 
 				Scan(key);
 				
@@ -268,7 +284,7 @@ void SetElementSizes()
 {
 	address_box.top = TOOLBAR_H-TAB_H/2-7+TAB_H;
 	address_box.width = Form.cwidth - address_box.left - 25 - 22;
-	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, Form.cheight - TOOLBAR_H - STATUSBAR_H, 0, 10);
+	WB1.list.SetSizes(0, TOOLBAR_H, Form.width - 10 - scroll_wv.size_x, Form.cheight - TOOLBAR_H - STATUSBAR_H, 0, 11);
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / 6;
 	WB1.list.visible = WB1.list.h - 5 / WB1.list.line_h;
 	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.line_h);
@@ -372,11 +388,14 @@ void Scan(int id)
 			if (!BrowserHistory.GoForward()) return;
 			OpenPage();
 			return;
-		case 052:  //F3
+		case 052: //F3
+			ShowSource();
+			break;
+		case 053: //F4
 			if (strncmp(#URL,"http:",5)==0) 
 			{
-				WriteFile(bufsize, bufpointer, "/tmp0/1/webview.tmp");
-				if (EAX==0) RunProgram("/rd/1/tinypad", "/tmp0/1/webview.tmp");
+				WriteFile(bufsize, bufpointer, "/tmp0/1/WebView_tmp.htm");
+				if (EAX==0) RunProgram("/rd/1/tinypad", "/tmp0/1/WebView_tmp.htm");
 			}
 			else
 			{
@@ -404,6 +423,7 @@ void Scan(int id)
 			strcpy(#editURL, "http://kolibrios.org/");
 		case GOTOURL:
 		case 0x0D: //enter
+			if (!editURL[0]) return;
 			if ((strncmp(#editURL,"http:",5)!=0) && (editURL[0]!='/') && ((strncmp(#editURL,"WebView:",8)!=0))
 			{
 				strcpy(#URL,"http://");
@@ -559,6 +579,7 @@ void SetPageDefaults()
 void OpenPage()
 {
 	StopLoading();
+	souce_mode = false;
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
 	if (strncmp(#URL,"WebView:",8)==0)
@@ -594,21 +615,27 @@ void OpenPage()
 		bufsize = EBX;
 		if (bufsize)
 		{
-			bufpointer = mem_Free(bufpointer);
+			mem_Free(bufpointer);
 			bufpointer = mem_Alloc(bufsize);
 			SetPageDefaults();
-			ReadFile(0, bufsize, bufpointer, #URL);				
+			ReadFile(0, bufsize, bufpointer, #URL);
+			//ShowSource();
 		}
 		ShowPage();
 	}
 }
 
+DrawEditBox()
+{
+	address_box.size = address_box.pos = address_box.shift = address_box.shift_old = strlen(#editURL);
+	address_box.offset = 0;
+	edit_box_draw stdcall(#address_box);
+}
+
+
 void ShowPage()
 {
-	address_box.size = address_box.pos = strlen(#editURL);
-	address_box.offset=0;
-	edit_box_draw stdcall(#address_box);
-
+	DrawEditBox();
 	if (!bufsize)
 	{
 		PageLinks.Clear();

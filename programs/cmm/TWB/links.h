@@ -76,13 +76,13 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 		{
 			if (active==i) return;
 			CursorPointer.Set();
-			if (links[active].underline) DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
-			if (links[i].underline) DrawBar(links[i].x,links[i].y+8,links[i].w,1, bg_col);
+			if (links[active].underline) DrawBar(links[active].x,links[active].y+10,links[active].w,1, link_col_in);
+			if (links[i].underline) DrawBar(links[i].x,links[i].y+10,links[i].w,1, bg_col);
 			active = i;
-			DrawBar(progress_bar.left+progress_bar.width+10, progress_bar.top+2, Form.cwidth-progress_bar.left-progress_bar.width-10, 9, col_bg);
 			status_text.start_x = progress_bar.left+progress_bar.width+10;
-			status_text.start_y = progress_bar.top+2;
-			status_text.area_size_x = Form.cwidth-progress_bar.left-progress_bar.width-10;
+			status_text.start_y = Form.cheight-STATUSBAR_H+3;
+			status_text.area_size_x = Form.cwidth - status_text.start_x -3;
+			DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
 			status_text.text_pointer = links[active].link;
 			PathShow_prepare stdcall(#status_text);
 			PathShow_draw stdcall(#status_text);
@@ -92,8 +92,8 @@ void LinksArray::Hover(dword mx, my, link_col_in, link_col_a, bg_col)
 	if (active!=-1)
 	{
 		CursorPointer.Restore();
-		if (links[active].underline) DrawBar(links[active].x,links[active].y+8,links[active].w,1, link_col_in);
-		DrawBar(progress_bar.left+progress_bar.width+10, progress_bar.top+2, Form.cwidth-progress_bar.left-progress_bar.width-10, 9, col_bg);
+		if (links[active].underline) DrawBar(links[active].x,links[active].y+10,links[active].w,1, link_col_in);
+		DrawBar(status_text.start_x, status_text.start_y, status_text.area_size_x, 9, col_bg);
 		active = -1;
 	}
 }

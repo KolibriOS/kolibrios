@@ -1,18 +1,20 @@
 //Leency - 2012-2013
 
 char *ITEMS_LIST[]={
-"WIN              Ctrl+E",05,
-"DOS              Ctrl+D",04,
-"KOI              Ctrl+K",11,
-"UTF              Ctrl+U",21,
+"WIN                Ctrl+E",05,
+"DOS                Ctrl+D",04,
+"KOI                Ctrl+K",11,
+"UTF                Ctrl+U",21,
 #ifdef LANG_RUS
-"Исходник страницы    F3",52,
-"Очистить кэш картинок"  ,02,
-"История"                ,03,
+"Посмотреть исходник    F3",52,
+"Редактировать исходник F4",53,
+"Очистить кэш картинок"    ,02,
+"История"                  ,03,
 #else
-"View source          F3",52,
-"Free image cache"       ,09,
-"History"                ,03,
+"View source            F3",52,
+"Edit source            F4",53,
+"Free image cache"         ,09,
+"History"                  ,03,
 #endif
 0}; 
 
@@ -26,7 +28,7 @@ void menu_rmb()
 
 	menu.first = menu.current = 0;
 	while (ITEMS_LIST[menu.count*2]) menu.count++;
-	menu.SetSizes(2,2,165,menu.count*19,0,19);
+	menu.SetSizes(2,2,177,menu.count*19,0,19);
 	SetEventMask(100111b); 
 
 	loop() switch(WaitEvent())

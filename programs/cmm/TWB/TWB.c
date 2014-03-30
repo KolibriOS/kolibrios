@@ -17,6 +17,8 @@ struct TWebBrowser {
 	void DrawPage();
 	void DrawScroller();
 	void NewLine();
+	void Perenos();
+	byte end_parsing;
 } WB1;
 
 byte b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, li_tab, 
@@ -54,13 +56,12 @@ char anchor[256];
 #include "..\TWB\table.h"
 
 
-
 //=======================================================================
 
 
 void TWebBrowser::DrawPage()
 {
-	int start_x, start_y, line_length, magrin_left=5;
+	int start_x, start_y, line_length, stolbec_len, magrin_left=5;
 	
 	if (!header)
 	{
@@ -75,8 +76,9 @@ void TWebBrowser::DrawPage()
 	if (stroka >= 0) && (stroka - 2 < list.visible) && (line) && (!anchor)
 	{
 		start_x = stolbec * 6 + list.x + magrin_left;
-		start_y = stroka * 10 + list.y + magrin_left;
-		line_length = strlen(#line) * 6;
+		start_y = stroka * list.line_h + list.y + magrin_left;
+		stolbec_len = strlen(#line);
+		line_length = stolbec_len * 6;
 
 		WriteBufText(start_x, 0, 0x88, text_colors[text_color_index], #line, buf_data);
 		IF (b_text)	WriteBufText(start_x+1, 0, 0x88, text_colors[text_color_index], #line, buf_data);
@@ -84,11 +86,11 @@ void TWebBrowser::DrawPage()
 		IF (s_text) DrawBuf.DrawBar(start_x, 4, line_length, 1, text_colors[text_color_index]);
 		IF (u_text) DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
 		IF (link) {
-			UnsafeDefineButton(start_x-2, start_y, line_length + 3, 9, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
+			UnsafeDefineButton(start_x-2, start_y-1, line_length + 3, 10, PageLinks.count + 400 + BT_HIDE, 0xB5BFC9);
 			DrawBuf.DrawBar(start_x, 8, line_length, 1, text_colors[text_color_index]);
 			PageLinks.AddText(#line, line_length, list.line_h, UNDERLINE);
 		}
-		stolbec += strlen(#line);
+		stolbec += stolbec_len;
 	}
 }
 //=======================================================================
@@ -121,7 +123,7 @@ void TWebBrowser::Prepare(dword bufpos, in_filesize){
 
 void TWebBrowser::Parse(){
 	word bukva[2];
-	int j, perenos_num;
+	int j;
 	byte ignor_param;
 	char temp[768];
 	dword bufpos = bufpointer;
@@ -129,6 +131,7 @@ void TWebBrowser::Parse(){
 	b_text = i_text = u_text = s_text = blq_text = t_html = t_body =
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
 	condition_text_val = condition_text_active = 0; //обнуляем теги
+	end_parsing = false;
 	condition_max = 255;
 	text_align = ALIGN_LEFT;
 	link_color_inactive = 0x0000FF;
@@ -148,8 +151,9 @@ void TWebBrowser::Parse(){
 		if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	}
 	
-	for ( ; bufpointer+bufsize > bufpos; bufpos++;)
+	for ( ; (bufpointer+bufsize > bufpos) && (ESBYTE[bufpos]!=0); bufpos++;)
 	{
+		if (end_parsing) break;
 		bukva = ESBYTE[bufpos];
 		if (ignor_text) && (bukva!='<') continue;
 		if (condition_text_active) && (condition_text_val != condition_href) && (bukva!='<') continue;
@@ -160,7 +164,7 @@ void TWebBrowser::Parse(){
 			{
 				chrcat(#line, ' ');
 				bukva = temp = NULL;
-				goto NEXT_MARK;
+				Perenos();
 			}
 		case '\9':
 			if (pre_text) //иначе идём на 0x0d	
@@ -239,17 +243,7 @@ void TWebBrowser::Parse(){
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
 
-			if (stolbec + strlen(#line) > list.column_max) //============the same as NEXT_MARK
-			{
-				perenos_num = strrchr(#line, ' ');
-				if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
-				strcpy(#temp, #line + perenos_num); //перенос по словам
-				line[perenos_num] = 0x00;
-				if (stroka-1 > list.visible) && (list.first <>0) break 1; //уходим...
-				DrawPage();
-				strcpy(#line, #temp);
-				NewLine(); //закрашиваем следущую строку
-			}
+			if (stolbec + strlen(#line) > list.column_max) Perenos();
 			DrawPage();
 			line = NULL;
 			if (tag) SetTextStyle(list.x + 5, stroka * list.line_h + list.y + 5); //обработка тегов
@@ -264,22 +258,9 @@ void TWebBrowser::Parse(){
 				if (!stolbec) && (!line) break; //строка не может начинаться с пробела
 			}
 			if (strlen(#line)<sizeof(line)) chrcat(#line, bukva);
-
-			if (stolbec + strlen(#line) > list.column_max)
-			{
-			NEXT_MARK:
-				perenos_num = strrchr(#line, ' ');
-				if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
-				strcpy(#temp, #line + perenos_num);
-				line[perenos_num] = 0x00;
-				if (stroka-1 > list.visible) && (list.first <>0) break 1;
-				DrawPage();
-				strcpy(#line, #temp);
-				NewLine();
-			}
+			if (stolbec + strlen(#line) > list.column_max) Perenos();
 		}
 	}
-
 	DrawPage();
 	NewLine();
 	DrawBar(list.x, stroka * list.line_h + list.y + 5, list.w, -stroka * list.line_h + list.h - 5, bg_color);
@@ -294,6 +275,19 @@ void TWebBrowser::Parse(){
 	DrawScroller();
 }
 
+void TWebBrowser::Perenos()
+{
+	int perenos_num;
+	char new_line_text[4096];
+	perenos_num = strrchr(#line, ' ');
+	if (!perenos_num) && (strlen(#line)>list.column_max) perenos_num=list.column_max;
+	strcpy(#new_line_text, #line + perenos_num);
+	line[perenos_num] = 0x00;
+	if (stroka-1 > list.visible) && (list.first <>0) end_parsing=true;
+	DrawPage();
+	strcpy(#line, #new_line_text);
+	NewLine();
+}
 
 
 char oldtag[100];
@@ -384,7 +378,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 					
 					link = 1;
 					text_colors[text_color_index] = link_color_inactive;
-					PageLinks.AddLink(#options, stolbec*6+left1, top1);
+					PageLinks.AddLink(#options, stolbec*6+left1, top1-2);
 				}
 				if (anchor) && (!strcmp(#parametr, "name="))
 				{
@@ -547,7 +541,7 @@ void TWebBrowser::SetTextStyle(int left1, top1) {
 		if (opened)
 		{
 			NewLine();
-			if (stroka > -1) && (stroka - 2 < list.visible) DrawBuf.DrawBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-3, 2, 2, 0x555555);
+			if (stroka > -1) && (stroka - 2 < list.visible) DrawBuf.DrawBar(li_tab * 5 * 6 + left1 - 5, list.line_h/2-2, 2, 2, 0x555555);
 		}
 		return;
 	}

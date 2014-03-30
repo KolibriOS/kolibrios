@@ -1,5 +1,6 @@
 struct path_string {
-char Item[4096];
+	char Item[sizeof(URL)];
+	int was_first;
 };
 
 #define MAX_HISTORY_NUM 40
@@ -10,6 +11,7 @@ struct UrlsHistory {
 	int current;
 	dword CurrentUrl();
 	dword GetUrl();
+	dword GetFirstLine();
 	void AddUrl();
 	byte GoBack();
 	byte GoForward();
@@ -23,6 +25,10 @@ dword UrlsHistory::GetUrl(int id) {
 	return #history_list[id].Item;
 }
 
+dword UrlsHistory::GetFirstLine(int id) {
+	return history_list[id].was_first;
+}
+
 void UrlsHistory::AddUrl() {
 	int i;
 	if (links_count>0) && (!strcmp(#URL,#history_list[current].Item)) return;
@@ -32,11 +38,12 @@ void UrlsHistory::AddUrl() {
 		current/=2;
 		for (i=0; i<current; i++;)
 		{
-			strlcpy(#history_list[i].Item, #history_list[MAX_HISTORY_NUM-i].Item, sizeof(history_list[0].Item));
+			strlcpy(#history_list[i].Item, #history_list[MAX_HISTORY_NUM-i].Item, sizeof(URL));
 		}	
 	}
 	current++;
-	strlcpy(#history_list[current].Item, #URL, sizeof(history_list[0].Item));
+	// history_list[i].was_first = WB1.list.first;
+	strlcpy(#history_list[current].Item, #URL, sizeof(URL));
 	links_count=current;
 }
 
@@ -45,6 +52,7 @@ byte UrlsHistory::GoBack() {
 	if (current<=1) return 0;
 	current--;
 	strlcpy(#URL, #history_list[current].Item, sizeof(URL));
+	// stroka = history_list[current].was_first;
 	return 1;
 }
 
