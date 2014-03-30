@@ -114,7 +114,21 @@ endl
         cmp     [allow_dma_access], 2
         ja      .nodma
 
-        cmp     [ecx+IDE_DATA.dma_hdd], 1
+        push    eax ecx
+        mov     ecx, [hdpos]
+        dec     ecx
+        shr     ecx, 2
+        imul    ecx, sizeof.IDE_DATA
+        add     ecx, IDE_controller_1
+        mov     [IDE_controller_pointer], ecx
+
+        mov     eax, [hdpos]
+        dec     eax
+        and     eax, 11b
+        shr     eax, 1
+        add     eax, ecx
+        cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
+        pop     ecx eax
         jnz     .nodma
 
         call    hd_read_dma
@@ -219,7 +233,21 @@ endl
         cmp     [allow_dma_access], 2
         jae     .nodma
 
-        cmp     [ecx+IDE_DATA.dma_hdd], 1
+        push    eax ecx
+        mov     ecx, [hdpos]
+        dec     ecx
+        shr     ecx, 2
+        imul    ecx, sizeof.IDE_DATA
+        add     ecx, IDE_controller_1
+        mov     [IDE_controller_pointer], ecx
+
+        mov     eax, [hdpos]
+        dec     eax
+        and     eax, 11b
+        shr     eax, 1
+        add     eax, ecx
+        cmp     [eax+IDE_DATA.dma_hdd_channel_1], 1
+        pop     ecx eax
         jnz     .nodma
 
         call    cache_write_dma
@@ -846,13 +874,7 @@ hd_read_dma:
         mov     word [eax+4], 0x2000
         sub     eax, OS_BASE
 ; select controller Primary or Secondary
-;       mov     ecx,[IDE_controller_pointer]
-        mov     ecx, [hdpos]
-        dec     ecx
-        shr     ecx, 2
-        imul    ecx, sizeof.IDE_DATA
-        add     ecx, IDE_controller_1
-        mov     [IDE_controller_pointer], ecx
+        mov     ecx, [IDE_controller_pointer]
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
 
         push    eax
@@ -1039,13 +1061,7 @@ cache_write_dma:
 
         sub     eax, OS_BASE
 ; select controller Primary or Secondary
-;       mov     ecx,[IDE_controller_pointer]
-        mov     ecx, [hdpos]
-        dec     ecx
-        shr     ecx, 2
-        imul    ecx, sizeof.IDE_DATA
-        add     ecx, IDE_controller_1
-        mov     [IDE_controller_pointer], ecx
+        mov     ecx, [IDE_controller_pointer]
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
 
         push    eax
@@ -1219,7 +1235,10 @@ align 4
         cmp     esi, pcidev_list
         jz      .done
 
-        cmp     [esi+PCIDEV.class], 0x01018F
+;        cmp     [esi+PCIDEV.class], 0x01018F
+        mov     eax, [esi+PCIDEV.class]
+        shr     eax, 4
+        cmp     eax, 0x01018
         jnz     .loop
 
         mov     ah, [esi+PCIDEV.bus]

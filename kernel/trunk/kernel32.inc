@@ -160,7 +160,8 @@ struct  IDE_DATA
         BAR1_val             dw ?
         BAR2_val             dw ?
         BAR3_val             dw ?
-        dma_hdd              db ?
+        dma_hdd_channel_1    db ?
+        dma_hdd_channel_2    db ?
 ends
 
 struct  IDE_CACHE

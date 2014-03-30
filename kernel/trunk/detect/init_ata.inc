@@ -146,8 +146,11 @@ endg
 ;-----------------------------------------------------------------------------
 Init_IDE_ATA_controller:
         cmp     [ecx+IDE_DATA.ProgrammingInterface], 0
-        je      set_interrupts_for_IDE_controllers.continue
+        jne     @f
 
+        ret
+;--------------------------------------
+@@:
         mov     esi, boot_disabling_ide
         call    boot_log
 ;--------------------------------------
@@ -173,8 +176,18 @@ Init_IDE_ATA_controller:
 
         mov     esi, boot_detecthdcd
         call    boot_log
+;--------------------------------------
 include 'dev_hdcd.inc'
+;--------------------------------------
+        ret
 ;-----------------------------------------------------------------------------
+Init_IDE_ATA_controller_2:
+        cmp     [ecx+IDE_DATA.ProgrammingInterface], 0
+        jne     @f
+
+        ret
+;--------------------------------------
+@@:
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
 ; test whether it is our interrupt?
         add     dx, 2
@@ -204,26 +217,26 @@ include 'dev_hdcd.inc'
         add     dx, 0x7 ;0x177
         in      al, dx
 ;-----------------------------------------------------------------------------
-        push    eax edx
-        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
-        xor     eax, eax
-        add     dx, 2
-        in      al, dx
+;        push    eax edx
+;        mov     dx, [ecx+IDE_DATA.RegsBaseAddres]
+;        xor     eax, eax
+;        add     dx, 2
+;        in      al, dx
 ;        DEBUGF  1, "K : Primary Bus Master IDE Status Register %x\n", eax
 
-        add     dx, 8
-        in      al, dx
+;        add     dx, 8
+;        in      al, dx
 ;        DEBUGF  1, "K : Secondary Bus Master IDE Status Register %x\n", eax
-        pop     edx eax
+;        pop     edx eax
 
-        cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
-        setnz   [ecx+IDE_DATA.dma_hdd]
+;        cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
+;        setnz   [ecx+IDE_DATA.dma_hdd]
 ;-----------------------------------------------------------------------------
 ; set interrupts for IDE Controller
 ;-----------------------------------------------------------------------------
         mov     esi, boot_set_int_IDE
         call    boot_log
-set_interrupts_for_IDE_controllers:
+.set_interrupts_for_IDE_controllers:
         mov     eax, [ecx+IDE_DATA.ProgrammingInterface]
         cmp     ax, 0x0180
         je      .pata_ide
@@ -286,6 +299,8 @@ set_interrupts_for_IDE_controllers:
         jz      @f
 
         DEBUGF  1, "K : IDE CH1 PIO, because ATAPI drive present\n"
+        mov     [ecx+IDE_DATA.dma_hdd_channel_1], byte 0
+
         jmp     .ch2_check
 ;--------------------------------------
 @@:
@@ -293,12 +308,15 @@ set_interrupts_for_IDE_controllers:
         add     dx, 2 ;0x3F6
         out     dx, al
         DEBUGF  1, "K : IDE CH1 DMA enabled\n"
+        mov     [ecx+IDE_DATA.dma_hdd_channel_1], byte 1
 ;--------------------------------------
 .ch2_check:
         test    ah, 1010b
         jz      @f
 
         DEBUGF  1, "K : IDE CH2 PIO, because ATAPI drive present\n"
+        mov     [ecx+IDE_DATA.dma_hdd_channel_2], byte 0
+
         jmp     .end_set_interrupts
 ;--------------------------------------
 @@:
@@ -306,19 +324,9 @@ set_interrupts_for_IDE_controllers:
         add     dx, 2 ;0x376
         out     dx, al
         DEBUGF  1, "K : IDE CH2 DMA enabled\n"
+        mov     [ecx+IDE_DATA.dma_hdd_channel_2], byte 1
 ;--------------------------------------
 .end_set_interrupts:
-;-----------------------------------------------------------------------------
-        cmp     [ecx+IDE_DATA.dma_hdd], 0
-        je      .print_pio
-;--------------------------------------
-.print_dma:
-        DEBUGF  1, "K : IDE DMA mode\n"
-        jmp     .continue
-;--------------------------------------
-.print_pio:
-        DEBUGF  1, "K : IDE PIO mode\n"
-.continue:
         ret
 ;-----------------------------------------------------------------------------
 ; END of initialisation IDE ATA code
@@ -341,4 +349,14 @@ include 'getcache.inc'
         mov     esi, boot_detectpart
         call    boot_log
 include 'sear_par.inc'
+;-----------------------------------------------------------------------------
+        mov     ecx, IDE_controller_1
+        mov     [IDE_controller_pointer], ecx
+        call    Init_IDE_ATA_controller_2
+        mov     ecx, IDE_controller_2
+        mov     [IDE_controller_pointer], ecx
+        call    Init_IDE_ATA_controller_2
+        mov     ecx, IDE_controller_3
+        mov     [IDE_controller_pointer], ecx
+        call    Init_IDE_ATA_controller_2
 ;-----------------------------------------------------------------------------
