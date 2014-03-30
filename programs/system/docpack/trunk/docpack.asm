@@ -41,7 +41,7 @@ start:
   jb    .par_a
   cmp   [my_param],'z'
   jbe   .ok2
- .par_a: 
+ .par_a:
   mov   [my_param],DEF_FILE
  .ok2:
   movzx ecx,[my_param]
@@ -50,7 +50,7 @@ start:
   sub   ecx,'a'-1
   mov   edx,embedded
   xor   esi,esi
- .list: 
+ .list:
   lea   edx,[edx+esi+8]
   mov   esi,[edx-8]
   add   edx,[edx-4]
@@ -81,16 +81,16 @@ start:
   mcall 60,2
   cmp   [my_param],'*'
   jne   still
- .close: 
+ .close:
   mcall -1
 
 red:
   mov   [my_param],'a'
-  
+
   mcall 48, 3, sc, sizeof.system_colors
 
   mcall 12,1
-  
+
   mov  edx,[sc.work]
   or   edx,0x34000000
   mcall 0, <220,120>, <30,FILECOUNT*16+35>, , ,title
@@ -113,7 +113,7 @@ red:
   xor   edi,edi
   mov   ebx,25 shl 16+8
   mov   eax,4
- .list: 
+ .list:
   lea   edx,[edx+edi+8]
   mov   edi,[edx-8]
   pusha
@@ -122,7 +122,9 @@ red:
   inc   [my_param]
   popa
   push  ecx
-  mcall ,,[sc.work_button_text],,[edx-4]
+  mov esi, [edx-4]
+  sub esi, 4 ;remove .txt extension
+  mcall ,,[sc.work_button_text]
   pop   ecx
   add   edx,esi
   add   ebx,16
@@ -164,7 +166,7 @@ fsize:
        times 10 db '0'
        db 0
 
-embedded: 
+embedded:
 
 ; Please use only filenames w/o path!
 
