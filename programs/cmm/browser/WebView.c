@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 4";
+	char version[]=" Текстовый браузер 1.0 Beta 5";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 4";
+	char version[]=" Text-based Browser 1.0 Beta 5";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -390,6 +390,7 @@ void Scan(int id)
 			return;
 		case 052: //F3
 			ShowSource();
+			WB1.Parse();
 			break;
 		case 053: //F4
 			if (strncmp(#URL,"http:",5)==0) 
