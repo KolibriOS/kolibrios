@@ -126,7 +126,8 @@ red:
   sub esi, 4 ;remove .txt extension
   mcall ,,[sc.work_button_text]
   pop   ecx
-  add   edx,esi
+  add   esi, 4
+  add   edx, esi
   add   ebx,16
   loop  .list
   mcall 12,2
