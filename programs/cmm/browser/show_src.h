@@ -23,11 +23,11 @@ dword ShowSource()
 			case '<':
 				if (ESBYTE[i+1]=='!') && (ESBYTE[i+2]=='-') && (ESBYTE[i+3]=='-')
 				{
-					strcpy(new_buf, "<font color=#ccc>&lt;");
+					strcpy(new_buf, "<font color=#bbb>&lt;");
 					new_buf+=21;
 					mode = COMMENT;
 				}
-				else
+				if (mode != COMMENT)
 				{
 					strcpy(new_buf, "<font color=#00f>&lt;");
 					new_buf+=21;
