@@ -1,7 +1,7 @@
 OBJS = about.o base64.o bitmap_fbtk.o bitmap.o bmp.o box_construct.o \
  box_normalise.o box.o browser.o caret_image.o challenge.o clipboard.o \
  content-disposition.o content_factory.o content.o content-type.o \
-  cookies.o corestrings.o css.o curl.o data.o dirlist.o download.o \
+  cookies.o corestrings.o css.o curl.o data.o dirlist.o dll.o download.o \
   dump.o event.o fbtk.o fetch.o filename.o file.o filepath.o filetype.o \
    fill.o findfile.o font_freetype.o font.o form.o framebuffer.o frames.o \
    generics.o gif.o gui.o hand_image.o hashtable.o history_core.o \
