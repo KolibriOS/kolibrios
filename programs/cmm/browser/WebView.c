@@ -29,7 +29,7 @@
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 5";
+	char version[]=" Текстовый браузер 1.0 Beta 5.5";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
@@ -210,6 +210,11 @@ void main()
 				break;
 			case evReDraw:
 				if (action_buf) Scan(action_buf);
+				DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,col_bg,0,0);
+				GetProcessInfo(#Form, SelfInfo);
+				if (Form.status_window>2) { DrawTitle(#header); return; }
+				if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
+				if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 				Draw_Window();
 				break;
 				
@@ -293,11 +298,6 @@ void SetElementSizes()
 void Draw_Window()
 {
 	int img_off;
-	DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,col_bg,0,0);
-	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) { DrawTitle(#header); return; }
-	if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
-	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	// tab {
 	if (TAB_H)
 	{
@@ -389,6 +389,7 @@ void Scan(int id)
 			OpenPage();
 			return;
 		case 052: //F3
+			WB1.list.first = 0;
 			ShowSource();
 			WB1.Parse();
 			break;

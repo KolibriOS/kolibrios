@@ -169,9 +169,8 @@ void TWebBrowser::Parse(){
 		case '\9':
 			if (pre_text) //иначе идём на 0x0d	
 			{
-				tab_len=strlen(#line)/8;
-				tab_len=tab_len*8;
-				tab_len=8+tab_len-strlen(#line);
+				tab_len = strlen(#line) % 4;
+				if (!tab_len) tab_len = 4;
 				for (j=0; j<tab_len; j++;) chrcat(#line,' ');
 				break;
 			}

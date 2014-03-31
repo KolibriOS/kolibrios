@@ -8,45 +8,49 @@ dword ShowSource()
 
 	if (souce_mode) return;
 	souce_mode = true;
-	new_buf_start = new_buf = malloc(bufsize*5);
-	strcat(new_buf, "<pre>");
+	new_buf = malloc(bufsize*5);
+	new_buf_start = new_buf;
+	strcpy(new_buf, "<html><head><title>");
+	if (strlen(#header)-strlen(#version)>0) header[strlen(#header)-strlen(#version)-2] = 0; else strcpy(#header, "Source");
+	strcat(new_buf, #header);
+	strcat(new_buf, "</title><body><pre>");
+	new_buf += strlen(new_buf);
 	for (i=bufpointer; i<bufpointer+bufsize; i++) 
 	{
 		ww = ESBYTE[i];
-		new_buf++;
 		switch (ww)
 		{
 			case '<':
 				if (ESBYTE[i+1]=='!') && (ESBYTE[i+2]=='-') && (ESBYTE[i+3]=='-')
 				{
-					strcat(new_buf, "<font color=#ccc>&lt;");
-					new_buf+=20;
+					strcpy(new_buf, "<font color=#ccc>&lt;");
+					new_buf+=21;
 					mode = COMMENT;
 				}
 				else
 				{
-					strcat(new_buf, "<font color=#00f>&lt;");
-					new_buf+=20;
+					strcpy(new_buf, "<font color=#00f>&lt;");
+					new_buf+=21;
 					mode = TAG;
 				}
 				break;
 			case '>':
 				if (mode == OPTION_VALUE) //fix non-closed quote in TAG
 				{
-					strcat(new_buf, "&quot;</font>");
-					new_buf+=12;					
+					strcpy(new_buf, "&quot;</font>");
+					new_buf+=13;					
 					mode = TAG;
 				}
 				if (mode == COMMENT) && (ESBYTE[i-1]=='-') && (ESBYTE[i-2]=='-')
 				{
-					strcat(new_buf, "&gt;</font>");
-					new_buf+=10;
+					strcpy(new_buf, "&gt;</font>");
+					new_buf+=11;
 					mode = TEXT;
 				}
 				if (mode == TAG)
 				{
-					strcat(new_buf, "&gt;</font>");
-					new_buf+=10;
+					strcpy(new_buf, "&gt;</font>");
+					new_buf+=11;
 					mode = TEXT;
 				}
 				break;
@@ -54,23 +58,25 @@ dword ShowSource()
 			case '\'':
 				if (mode == TAG)
 				{
-					strcat(new_buf, "<font color=#f0f>&quot;");
+					strcpy(new_buf, "<font color=#f0f>&#39;");
 					new_buf+=22;
 					mode = OPTION_VALUE;
 					break;
 				}
 				if (mode == OPTION_VALUE)
 				{
-					strcat(new_buf, "&quot;</font>");
+					strcpy(new_buf, "&#39;</font>");
 					new_buf+=12;
 					mode = TAG;
 					break;
 				}
 			default:
-				chrcat(new_buf, ww);
+				ESBYTE[new_buf] = ww;
+				new_buf++;
 		}
 	}
-	bufsize = new_buf;
+	ESBYTE[new_buf] = 0;
+	bufsize = new_buf - new_buf_start;
 	free(bufpointer);
 	bufpointer = new_buf_start;
 }
