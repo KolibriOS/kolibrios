@@ -29,14 +29,14 @@
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 5.5";
+	char version[]=" Текстовый браузер 1.0 Beta 6";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 5";
+	char version[]=" Text-based Browser 1.0 Beta 6";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";

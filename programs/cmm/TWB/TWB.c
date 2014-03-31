@@ -127,6 +127,7 @@ void TWebBrowser::Parse(){
 	byte ignor_param;
 	char temp[768];
 	dword bufpos = bufpointer;
+	int line_len;
 	
 	b_text = i_text = u_text = s_text = blq_text = t_html = t_body =
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 
@@ -165,6 +166,7 @@ void TWebBrowser::Parse(){
 				chrcat(#line, ' ');
 				bukva = temp = NULL;
 				Perenos();
+				break;
 			}
 		case '\9':
 			if (pre_text) //иначе идём на 0x0d	
@@ -224,7 +226,7 @@ void TWebBrowser::Parse(){
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
 				if (!ignor_param) && (bukva <>' ')
 				{
-					if (strlen(#tag)<sizeof(tag)) strcat(#tag, #bukva);
+					if (strlen(#tag)<sizeof(tag)) chrcat(#tag, bukva);
 				}
 				else
 				{
@@ -240,7 +242,7 @@ void TWebBrowser::Parse(){
 				if (strcmp(#tag, "/condition")!=0) break;
 			}
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
-			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
+			if (tagparam) GetNextParam();
 
 			if (stolbec + strlen(#line) > list.column_max) Perenos();
 			DrawPage();
@@ -251,13 +253,14 @@ void TWebBrowser::Parse(){
 		default:
 			DEFAULT_MARK:
 			if (bukva<=15) bukva=' ';
+			line_len = strlen(#line);
 			if (!pre_text) && (bukva == ' ')
 			{
-				if (line[strlen(#line)-1]==' ') break; //убрать 2 пробела подряд
-				if (!stolbec) && (!line) break; //строка не может начинаться с пробела
+				if (line[line_len-1]==' ') break; //no double spaces
+				if (!stolbec) && (!line) break; //no paces at the beginning of the line
 			}
-			if (strlen(#line)<sizeof(line)) chrcat(#line, bukva);
-			if (stolbec + strlen(#line) > list.column_max) Perenos();
+			if (line_len < sizeof(line)) chrcat(#line, bukva);
+			if (stolbec + line_len > list.column_max) Perenos();
 		}
 	}
 	DrawPage();
