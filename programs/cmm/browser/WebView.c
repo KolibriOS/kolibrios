@@ -212,7 +212,7 @@ void main()
 				if (action_buf) Scan(action_buf);
 				DefineAndDrawWindow(GetScreenWidth()-WIN_W/2,GetScreenHeight()-WIN_H/2,WIN_W,WIN_H,0x73,col_bg,0,0);
 				GetProcessInfo(#Form, SelfInfo);
-				if (Form.status_window>2) { DrawTitle(#header); return; }
+				if (Form.status_window>2) { DrawTitle(#header); break; }
 				if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
 				if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 				Draw_Window();
