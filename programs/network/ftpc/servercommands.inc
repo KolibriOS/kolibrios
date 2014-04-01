@@ -38,6 +38,8 @@ server_parser:
         cmp     dword[s], "550 "
         je      close_datacon
 
+        cmp     byte[s+3], "-"
+        je      wait_for_servercommand
         jmp     wait_for_usercommand
 
 

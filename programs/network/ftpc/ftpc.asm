@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2013. All rights reserved.         ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ftpc.asm - FTP client for KolibriOS                            ;;
@@ -328,7 +328,7 @@ exit:
 
 ; data
 str_title       db 'FTP client',0
-str_welcome     db 'FTP client for KolibriOS v0.10',10
+str_welcome     db 'FTP client for KolibriOS v0.11',10
                 db 10
                 db 'Please enter ftp server address.',10,0
 
