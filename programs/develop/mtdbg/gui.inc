@@ -1609,11 +1609,8 @@ draw_window:
         mcall
 
     ; registers frame
-        ; mov     ebx, (registers_x_pos-2)*10000h + (registers_x_size+4)
-        ; mov     ecx, (registers_y_pos-2)*10000h + (registers_y_size+4)
 		DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
         ; draw container rectangle/box for registers information window region
-        mcall   13
 
     ; messages
         call    draw_messages
