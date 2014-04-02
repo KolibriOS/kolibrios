@@ -29,17 +29,13 @@ use32
 include '../../macros.inc'
 include '../../network.inc'
 
-macro DrawRect x, y, w, h, color
-{
-	; DrawBar(x,y,w,1,color1);
-	; DrawBar(x,y+h,w,1,color1);
-	; DrawBar(x,y,1,h,color1);
-	; DrawBar(x+w,y,1,h+1,color1);
 
-	mcall 13, x shl 16 + w,     y shl 16 + 1,   color  ; top
-	mcall   , x shl 16 + 1,     y shl 16 + h,   color  ; left
-	mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color  ; right
-	mcall   , x shl 16 + w,   (y+h) shl 16 + 1, color  ; bottom
+macro DrawRectangle x, y, w, h, color
+{
+	mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
+	mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
+	mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
+	mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
 }
 
 
@@ -50,7 +46,7 @@ window_redraw:
         mcall   12, 1
         mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34E1E1E1, , name       ; draw window
 		mcall   12, 2
-		DrawRect 0, 25, 400, 180, 0x777777
+		DrawRectangle 0, 25, 400, 180, 0x777777
 
 redraw:
 		mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
