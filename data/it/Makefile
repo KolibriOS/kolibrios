@@ -10,7 +10,7 @@ KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
 # The main goal: build kolibri.img and kolibri.iso
-all: updf $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
 
 # Docpak requires some documents; we place them
 # into 'docs' subdir and communicate with FASM
@@ -295,7 +295,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
- #graph:GRAPH \
+ graph:GRAPH \
  settings/icon.ini:SETTINGS/ICON.INI \
  ../common/iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT \
@@ -400,7 +400,7 @@ MKISOFS_EXTRA:=\
  kolibrios/lib/swscale-2.dll=../common/lib/swscale-2.dll \
  kolibrios/lib/zlib.dll=../common/lib/zlib.dll \
  kolibrios/media/fplay-full=../common/media/fplay-full \
- kolibrios/media/updf=../../contrib/media/updf/build/debug/mupdf \
+ kolibrios/media/updf=updf \
  kolibrios/media/zsea/zsea=distr_data/zsea \
  kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
  kolibrios/media/zsea/plugins/cnv_gif.obj=distr_data/cnv_gif.obj \
@@ -713,5 +713,6 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf: 
+	$(UPDFDIR)/scripts/
 	$(MAKE) -C $(UPDFDIR)
 	cd $(UPDFDIR)/build/debug && objcopy -O binary mupdf && kpack --nologo mupdf
