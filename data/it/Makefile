@@ -10,7 +10,7 @@ KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
 # The main goal: build kolibri.img and kolibri.iso
-all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+all: updf $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
 
 # Docpak requires some documents; we place them
 # into 'docs' subdir and communicate with FASM
@@ -346,7 +346,7 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- #emu/e80/e80=e80 \
+ emu/e80/e80=e80 \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
@@ -538,7 +538,7 @@ include Makefile.cmm
 include Makefile.msvc
 
 # Rules for table
-table: .obj.table/table.exe updf
+table: .obj.table/table.exe
 	$(msvc_final)
 TABLE_OBJECTS:=.obj.table/calc.obj .obj.table/func.obj .obj.table/hello.obj \
  .obj.table/KosFile.obj .obj.table/kosSyst.obj .obj.table/math2.obj \
