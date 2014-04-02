@@ -713,5 +713,5 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf: 
-	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar -C $(UPDFDIR)
+	$(MAKE) -C $(UPDFDIR)
 	cd $(UPDFDIR)/build/debug && objcopy -O binary mupdf && kpack --nologo mupdf
