@@ -977,7 +977,7 @@ endg
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
-        DEBUGF  1, "K : IRQ1 error code %x\n", eax
+        DEBUGF  1, "K : IRQ1 return code %x\n", eax
 .no_keyboard:
 
 ; Load PS/2 mouse driver
@@ -1042,9 +1042,8 @@ end if
         mov     [timer_ticks_enable], 1         ; for cd driver
 
         sti
-        call    mtrr_validate
 
-;        call    change_task
+        call    mtrr_validate
 
         jmp     osloop
 
@@ -1133,18 +1132,20 @@ osloop:
         xchg    eax, [osloop_nonperiodic_work]
         test    eax, eax
         jz      .no_periodic
-;        call    [draw_pointer]
+
         call    __sys_draw_pointer
         call    window_check_events
         call    mouse_check_events
         call    checkmisc
         call    checkVga_N13
+;--------------------------------------
 .no_periodic:
         call    stack_handler
         call    check_fdd_motor_status
         call    check_ATAPI_device_event
         call    check_lights_state
         call    check_timers
+
         jmp     osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;

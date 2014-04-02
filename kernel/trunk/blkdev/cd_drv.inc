@@ -755,6 +755,7 @@ check_ATAPI_device_event:
         cmp     eax, 100
         jb      .end_1
 
+        pushfd
         mov     al, [DRIVE_DATA+1]
         and     al, 11b
         cmp     al, 10b
@@ -827,7 +828,7 @@ check_ATAPI_device_event:
         jz      .ide8
 ;--------------------------------------
 .end:
-        sti
+        popfd
         mov     eax, [timer_ticks]
         mov     [timer_ATAPI_check], eax
 ;--------------------------------------
@@ -910,7 +911,7 @@ check_ATAPI_device_event:
 .ide0:
         cli
         cmp     [ATAPI_IDE0_lock], 1
-        jne     .end
+        jne     .ide7_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -929,12 +930,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .end
+        jmp     .ide7_1
 ;-----------------------------------------------------------------------------
 .ide7:
         cli
         cmp     [ATAPI_IDE7_lock], 1
-        jne     .ide2_1
+        jne     .ide6_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -953,12 +954,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .ide2_1
+        jmp     .ide6_1
 ;-----------------------------------------------------------------------------
 .ide6:
         cli
         cmp     [ATAPI_IDE6_lock], 1
-        jne     .ide1_1
+        jne     .ide5_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -977,12 +978,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .ide1_1
+        jmp     .ide5_1
 ;-----------------------------------------------------------------------------
 .ide5:
         cli
         cmp     [ATAPI_IDE5_lock], 1
-        jne     .ide0_1
+        jne     .ide4_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -1001,12 +1002,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .ide0_1
+        jmp     .ide4_1
 ;-----------------------------------------------------------------------------
 .ide4:
         cli
         cmp     [ATAPI_IDE4_lock], 1
-        jne     .end
+        jne     .ide11_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -1025,12 +1026,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .end
+        jmp     .ide11_1
 ;-----------------------------------------------------------------------------
 .ide11:
         cli
         cmp     [ATAPI_IDE11_lock], 1
-        jne     .ide2_1
+        jne     .ide10_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -1049,12 +1050,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .ide2_1
+        jmp     .ide10_1
 ;-----------------------------------------------------------------------------
 .ide10:
         cli
         cmp     [ATAPI_IDE10_lock], 1
-        jne     .ide1_1
+        jne     .ide9_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -1073,12 +1074,12 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .ide1_1
+        jmp     .ide9_1
 ;-----------------------------------------------------------------------------
 .ide9:
         cli
         cmp     [ATAPI_IDE9_lock], 1
-        jne     .ide0_1
+        jne     .ide8_1
 
         cmp     [cd_status], 0
         jne     .end
@@ -1097,7 +1098,7 @@ check_ATAPI_device_event:
 ;--------------------------------------
 @@:
         call    syscall_cdaudio.free
-        jmp     .ide0_1
+        jmp     .ide8_1
 ;-----------------------------------------------------------------------------
 .ide8:
         cli
