@@ -278,7 +278,7 @@ COPY_FILES:=\
 # Format of an item is exactly the same as in the previous list,
 # except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
- File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/cmm/eolite/Eolite.c \
+ #File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/cmm/eolite/Eolite.c \
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c \
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
@@ -295,7 +295,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
- graph:GRAPH \
+ #graph:GRAPH \
  settings/icon.ini:SETTINGS/ICON.INI \
  ../common/iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT \
@@ -346,7 +346,7 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- emu/e80/e80=e80 \
+ #emu/e80/e80=e80 \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
@@ -400,7 +400,7 @@ MKISOFS_EXTRA:=\
  kolibrios/lib/swscale-2.dll=../common/lib/swscale-2.dll \
  kolibrios/lib/zlib.dll=../common/lib/zlib.dll \
  kolibrios/media/fplay-full=../common/media/fplay-full \
- #kolibrios/media/updf=updf \
+ kolibrios/media/updf=../../contrib/media/updf/build/debug/mupdf \
  kolibrios/media/zsea/zsea=distr_data/zsea \
  kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
  kolibrios/media/zsea/plugins/cnv_gif.obj=distr_data/cnv_gif.obj \
@@ -538,7 +538,7 @@ include Makefile.cmm
 include Makefile.msvc
 
 # Rules for table
-table: .obj.table/table.exe
+table: .obj.table/table.exe updf
 	$(msvc_final)
 TABLE_OBJECTS:=.obj.table/calc.obj .obj.table/func.obj .obj.table/hello.obj \
  .obj.table/KosFile.obj .obj.table/kosSyst.obj .obj.table/math2.obj \
@@ -625,15 +625,6 @@ e80: .obj.e80/start.o .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o .ob
 .obj.e80:
 	mkdir -p .obj.e80
 
-#Rules for updf
-UPDFDIR=$(REPOSITORY)/contrib/media/updf
-updf: .obj.updf/mupdf.obj
-	 win32-objcopy -O binary mupdf
-.obj.updf/mupdf.obj: $(UPDFDIR)/Makefile 
-	flock $(UPDFDIR)/.lock \
-	$(MAKE)  CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar -C $(UPDFDIR)
-.obj.updf:
-	mkdir -p .obj.updf
 
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
@@ -685,7 +676,7 @@ $(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_F
 # Note that we are going to write in the directory shared
 # between all Makefiles, so we need locked operations.
 drivers/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll drivers/.dir
-	kpack --nologo $< $@
+	kpack.o --nologo $< $@
 $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/Makefile.lto
 	flock $(REPOSITORY)/drivers/video/drm/radeon/.lock \
 	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon -f Makefile.lto
@@ -716,3 +707,11 @@ $(REPOSITORY)/drivers/ddk/libddk.a: \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
 $(REPOSITORY)/drivers/ddk/libcore.a: \
  $(REPOSITORY)/drivers/ddk/core.S
+
+
+
+#Rules for updf
+UPDFDIR=$(REPOSITORY)/contrib/media/updf
+updf: 
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar -C $(UPDFDIR)
+	cd $(UPDFDIR)/build/debug && objcopy -O binary mupdf && kpack --nologo mupdf
