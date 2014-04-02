@@ -2,6 +2,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GUI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+macro DrawRectangle x, y, w, h, color
+{
+	mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
+	mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
+	mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
+	mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
+}
+
 ;-----------------------------------------------------------------------------
 ;                             Color scheme
 
@@ -1601,8 +1609,9 @@ draw_window:
         mcall
 
     ; registers frame
-        mov     ebx, (registers_x_pos-2)*10000h + (registers_x_size+4)
-        mov     ecx, (registers_y_pos-2)*10000h + (registers_y_size+4)
+        ; mov     ebx, (registers_x_pos-2)*10000h + (registers_x_size+4)
+        ; mov     ecx, (registers_y_pos-2)*10000h + (registers_y_size+4)
+		DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
         ; draw container rectangle/box for registers information window region
         mcall   13
 
