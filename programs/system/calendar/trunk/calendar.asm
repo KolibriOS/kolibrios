@@ -152,7 +152,7 @@ START:
     jmp  upd
 red:
 
-    call draw_window
+    call define_window
 
 still:
 
@@ -482,7 +482,7 @@ draw_clock:
     mcall
     ret
 
-draw_window:
+define_window:
 
     mcall 12,1
 	mcall 48,5 ;get screen size
@@ -495,12 +495,16 @@ draw_window:
 	shl ebx, 16
 	add ebx, WIN_W	
     mcall 0,,,COL_WINDOW_BG, ,title ; define window
+	mcall 12,2
 	GetSkinHeight
 	mov ecx, eax
 	shl ecx, 16
 	add ecx, 43
 	mcall 13,B_WBAR_X, ,COL_TOOLBAR_BG ; draw toolbar background
 	mcall 13,B_WBAR_X,BT_WBAR_Y,COL_TOOLBAR_BG ; draw toolbar background
+	mcall 13,0*65536+B_WBAR_X,84*65536+199,0xE7E7E7
+	
+draw_window:
 
     call draw_week
     mcall 8,193*65536+8,287*65536+10,72,COL_TOOLBAR_BG
@@ -606,7 +610,6 @@ draw_window:
     call draw_year
     call draw_clock
     mov  [dropped],0
-    mcall 12,2
     ret
 
 draw_year:

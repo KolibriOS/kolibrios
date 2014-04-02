@@ -17,7 +17,7 @@ leap_year dd ?
 number	  dd ?
 
 ; colors
-COL_WINDOW_BG    equ 0x14E7E7E7
+COL_WINDOW_BG    equ 0x54E7E7E7
 COL_TOOLBAR_BG   equ 0x555555
 COL_ACTIVE_TEXT  equ 0x10e7c750
 COL_WEEKDAY_BG   equ 0xCCCDDD
