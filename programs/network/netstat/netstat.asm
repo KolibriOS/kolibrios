@@ -29,13 +29,31 @@ use32
 include '../../macros.inc'
 include '../../network.inc'
 
+macro DrawRect x, y, w, h, color
+{
+	; DrawBar(x,y,w,1,color1);
+	; DrawBar(x,y+h,w,1,color1);
+	; DrawBar(x,y,1,h,color1);
+	; DrawBar(x+w,y,1,h+1,color1);
+
+	mcall 13, x shl 16 + w,     y shl 16 + 1,   color  ; top
+	mcall   , x shl 16 + 1,     y shl 16 + h,   color  ; left
+	mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color  ; right
+	mcall   , x shl 16 + w,   (y+h) shl 16 + 1, color  ; bottom
+}
+
+
 START:
         mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2
 
-redraw:
+window_redraw:
         mcall   12, 1
-        mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34bcbcbc, , name       ; draw window
+        mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34E1E1E1, , name       ; draw window
+		mcall   12, 2
+		DrawRect 0, 25, 400, 180, 0x777777
 
+redraw:
+		mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
         call    draw_interfaces
 
         xor     ebx, ebx
@@ -44,8 +62,8 @@ redraw:
         mov     [device_type], eax
 
         mov     edx, 101
-        mov     esi, 0x00aaaaff
-        mov     edi, 0x00aaffff
+        mov     esi, 0x00BBBbbb
+        mov     edi, 0x0081BBFF
 
         cmp     dl, [mode]
         cmove   esi, edi
@@ -53,7 +71,7 @@ redraw:
   .morebuttons:
         inc     edx
         add     ebx, 60 shl 16
-        mov     esi, 0x00aaaaff
+        mov     esi, 0x00BBBbbb
 
         cmp     dl, [mode]
         cmove   esi, edi
@@ -62,7 +80,7 @@ redraw:
         cmp     edx, 105
         jle     .morebuttons
 
-        mcall   4, 8 shl 16 + 11, 0x80000000, modes
+        mcall   4, 9 shl 16 + 12, 0x80000000, modes
 
         cmp     [mode], 101
         jne     .no_eth
@@ -197,7 +215,6 @@ redraw:
 
 
 end_of_draw:
-        mcall   12, 2
 
 draw_stats:
 
@@ -220,7 +237,7 @@ draw_stats:
         pop     ecx
         mov     edx, 135 shl 16 + 35 + 4*18
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         mcall   47
 
         sub     edx, 18
@@ -265,7 +282,7 @@ not_101:
         pop     ecx
         mov     edx, 135 shl 16 + 35 + 18
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         mcall   47
 
         sub     edx, 18
@@ -309,7 +326,7 @@ not_102:
         pop     ecx
         mov     edx, 135 shl 16 + 35 + 3*18
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         mcall   47
 
         sub     edx, 18
@@ -343,7 +360,7 @@ not_102:
         mov     eax, 47
         mov     ebx, 0x00030000
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         xor     ecx, ecx
 
         mov     cl, byte[arp_buf.IP+0]
@@ -426,7 +443,7 @@ not_103:
         pop     ecx
         mov     edx, 135 shl 16 + 35 + 18
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         mcall   47
 
         sub     edx, 18
@@ -457,7 +474,7 @@ not_104:
         pop     ecx
         mov     edx, 135 shl 16 + 35 + 18
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         mcall   47
 
         sub     edx, 18
@@ -500,7 +517,7 @@ not_105:
         pop     ecx
         mov     edx, 135 shl 16 + 35 + 18*3
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
         mcall   47
 
         sub     edx, 18
@@ -524,7 +541,7 @@ mainloop:
         mcall   23, 50          ; wait for event with timeout    (0,5 s)
 
         cmp     eax, 1
-        je      redraw
+        je      window_redraw
         cmp     eax, 3
         je      button
         cmp     eax, 11
@@ -556,7 +573,7 @@ draw_mac:
         mov     eax, 47
         mov     ebx, 0x00020100
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
 
         mov     cl, [esp+4]
         mcall
@@ -591,7 +608,7 @@ draw_ip:
         mov     eax, 47
         mov     ebx, 0x00030000
         mov     esi, 0x40000000
-        mov     edi, 0x00bcbcbc
+        mov     edi, 0x00F3F3F3
 
         xor     ecx, ecx
 
@@ -636,9 +653,9 @@ draw_interfaces:
         push    ecx ebx
         movzx   edx, bh
         shl     edx, 8
-        mov     esi, 0x00aaaaff
+        mov     esi, 0x00BBBbbb
         cmp     bh, [device]
-        cmove   esi, 0x00aaffff
+        cmove   esi, 0x0081BBFF
         mcall   8, 450 shl 16 + 135, [.btnpos]
         mov     ebx, [esp]
         inc     bl
@@ -666,8 +683,6 @@ draw_interfaces:
   .txtpos       dd ?
 
 
-
-
 ; DATA AREA
 
 name            db 'Netstat', 0
@@ -675,7 +690,7 @@ mode            db 101
 device          db 0
 device_type     dd 0
 last            dd 0
-modes           db 'Physical    IPv4      ARP       ICMP      UDP       TCP', 0
+modes           db 'Physical    IPv4       ARP      ICMP      UDP       TCP', 0
 
 str_packets_tx  db 'Packets sent:', 0
 str_packets_rx  db 'Packets received:', 0
