@@ -715,6 +715,48 @@ no_mode_0x12:
         call    unmask_timer
         stdcall enable_irq, 2               ; @#$%! PIC
         stdcall enable_irq, 13              ; co-processor
+
+; Setup serial output console (if enabled)
+if defined debug_com_base
+
+        ; reserve port so nobody else will use it
+        xor     ebx, ebx
+        mov     ecx, debug_com_base
+        mov     edx, debug_com_base+7
+        call    r_f_port_area
+
+        ; enable Divisor latch
+        mov     dx, debug_com_base+3
+        mov     al, 1 shl 7
+        out     dx, al
+
+        ; Set speed to 115200 baud (max speed)
+        mov     dx, debug_com_base
+        mov     al, 0x01
+        out     dx, al
+
+        mov     dx, debug_com_base+1
+        mov     al, 0x00
+        out     dx, al
+
+        ; No parity, 8bits words, one stop bit, dlab bit back to 0
+        mov     dx, debug_com_base+3
+        mov     al, 3
+        out     dx, al
+
+        ; disable interrupts
+        mov     dx, debug_com_base+1
+        mov     al, 0
+        out     dx, al
+
+        ; clear +  enable fifo (64 bits)
+        mov     dx, debug_com_base+2
+        mov     al, 0x7 + 1 shl 5
+        out     dx, al
+
+end if
+
+
 ;-----------------------------------------------------------------------------
 ; show SVN version of kernel on the message board
 ;-----------------------------------------------------------------------------
@@ -988,45 +1030,6 @@ endg
         call    boot_log
         call    setmouse
 
-; Setup serial output console (if enabled)
-if defined debug_com_base
-
-        ; reserve port so nobody else will use it
-        xor     ebx, ebx
-        mov     ecx, debug_com_base
-        mov     edx, debug_com_base+7
-        call    r_f_port_area
-
-        ; enable Divisor latch
-        mov     dx, debug_com_base+3
-        mov     al, 1 shl 7
-        out     dx, al
-
-        ; Set speed to 115200 baud (max speed)
-        mov     dx, debug_com_base
-        mov     al, 0x01
-        out     dx, al
-
-        mov     dx, debug_com_base+1
-        mov     al, 0x00
-        out     dx, al
-
-        ; No parity, 8bits words, one stop bit, dlab bit back to 0
-        mov     dx, debug_com_base+3
-        mov     al, 3
-        out     dx, al
-
-        ; disable interrupts
-        mov     dx, debug_com_base+1
-        mov     al, 0
-        out     dx, al
-
-        ; clear +  enable fifo (64 bits)
-        mov     dx, debug_com_base+2
-        mov     al, 0x7 + 1 shl 5
-        out     dx, al
-
-end if
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
