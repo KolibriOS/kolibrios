@@ -280,7 +280,7 @@ str1    db      'Telnet for KolibriOS',10,10,\
                 'fun stuff:',10,\
                 'telehack.com            - arpanet simulator',10,\
                 'towel.blinkenlights.nl  - ASCII Star Wars',10,\
-                'miku.acm.uiuc.edu       - Nyan cat',10,10,0
+                'nyancat.dakko.us        - Nyan cat',10,10,0
 str2    db      '> ',0
 str3    db      'Connecting to ',0
 str4    db      10,0
