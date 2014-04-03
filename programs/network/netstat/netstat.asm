@@ -40,13 +40,12 @@ macro DrawRectangle x, y, w, h, color
 
 
 START:
-        mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2
+        mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2 + EVM_KEY
 
 window_redraw:
         mcall   12, 1
         mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34E1E1E1, , name       ; draw window
         DrawRectangle 0, 25, 400, 180, 0x777777
-        mcall   12, 2
 
 redraw:
         mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
@@ -208,9 +207,9 @@ redraw:
         mov     edx, str_dumped
         mcall
 
-
-
 end_of_draw:
+
+        mcall   12, 2
 
 draw_stats:
 
@@ -536,10 +535,12 @@ mainloop:
 
         mcall   23, 50          ; wait for event with timeout    (0,5 s)
 
-        cmp     eax, 1
+        cmp     eax, EV_REDRAW
         je      window_redraw
-        cmp     eax, 3
+        cmp     eax, EV_BUTTON
         je      button
+        cmp     eax, EV_KEY
+        je      key
         cmp     eax, 11
         je      redraw
 
@@ -556,6 +557,39 @@ button:                         ; button
 
   .interface:
         shr     eax, 16
+        mov     [device], al
+        jmp     redraw
+
+key:
+        mcall   2
+        cmp     ah, 9
+        je      .tab
+        cmp     ah, 183
+        je      .pgdown
+        cmp     ah, 184
+        je      .pgup
+        jmp     mainloop
+
+  .tab:
+        inc     [mode]
+        cmp     [mode], 106
+        jbe     redraw
+        mov     [mode], 101
+        jmp     redraw
+
+  .pgdown:
+        inc     [device]
+        mov     al, [device]
+        cmp     al, [last_device]
+        jbe     redraw
+        mov     [device], 0
+        jmp     redraw
+
+  .pgup:
+        dec     [device]
+        cmp     [device], 0
+        jge     redraw
+        mov     al, [last_device]
         mov     [device], al
         jmp     redraw
 
@@ -634,6 +668,8 @@ draw_interfaces:
 
         mcall   74, -1          ; get number of active network devices
         mov     ecx, eax
+        dec     al
+        mov     [last_device], al
 
         xor     ebx, ebx        ; get device type
   .loop:
@@ -681,9 +717,10 @@ draw_interfaces:
 
 ; DATA AREA
 
-name            db 'Netstat', 0
+name            db 'Network status', 0
 mode            db 101
 device          db 0
+last_device     db 0
 device_type     dd 0
 last            dd 0
 modes           db 'Physical    IPv4       ARP      ICMP      UDP       TCP', 0
@@ -711,5 +748,3 @@ namebuf         rb 64
 arp_buf         ARP_entry
 
 I_END:
-
-
