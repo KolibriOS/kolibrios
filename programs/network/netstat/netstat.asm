@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netstat.asm - Network Status Tool for KolibriOS                ;;
@@ -32,10 +32,10 @@ include '../../network.inc'
 
 macro DrawRectangle x, y, w, h, color
 {
-	mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
-	mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
-	mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
-	mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
+        mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
+        mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
+        mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
+        mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
 }
 
 
@@ -45,11 +45,11 @@ START:
 window_redraw:
         mcall   12, 1
         mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34E1E1E1, , name       ; draw window
-		mcall   12, 2
-		DrawRectangle 0, 25, 400, 180, 0x777777
+        DrawRectangle 0, 25, 400, 180, 0x777777
+        mcall   12, 2
 
 redraw:
-		mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
+        mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
         call    draw_interfaces
 
         xor     ebx, ebx
@@ -108,7 +108,7 @@ redraw:
         push    eax
         push    bx
 
-        mov     edx, 135 shl 16 + 35 + 5*18
+        mov     edx, 134 shl 16 + 35 + 5*18
         call    draw_mac
         jmp     end_of_draw
 
@@ -155,7 +155,7 @@ redraw:
         mcall   76
         push    eax
 
-        mov     edx, 135 shl 16 + 35 + 2*18
+        mov     edx, 134 shl 16 + 35 + 2*18
         call    draw_ip
 
         add     edx, 18
@@ -231,7 +231,7 @@ draw_stats:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 35 + 4*18
+        mov     edx, 134 shl 16 + 35 + 4*18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -276,7 +276,7 @@ not_101:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 35 + 18
+        mov     edx, 134 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -320,7 +320,7 @@ not_102:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 35 + 3*18
+        mov     edx, 134 shl 16 + 35 + 3*18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -437,7 +437,7 @@ not_103:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 35 + 18
+        mov     edx, 134 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -468,7 +468,7 @@ not_104:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 35 + 18
+        mov     edx, 134 shl 16 + 35 + 18
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -511,7 +511,7 @@ not_105:
 
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 135 shl 16 + 35 + 18*3
+        mov     edx, 134 shl 16 + 35 + 18*3
         mov     esi, 0x40000000
         mov     edi, 0x00F3F3F3
         mcall   47
@@ -575,26 +575,26 @@ draw_mac:
         mcall
 
         mov     cl, [esp+4+1]
-        add     edx, 15 shl 16
+        add     edx, 18 shl 16
         mcall
 
         mov     cl, [esp+4+2]
-        add     edx, 15 shl 16
+        add     edx, 18 shl 16
         mcall
 
         mov     cl, [esp+4+3]
-        add     edx, 15 shl 16
+        add     edx, 18 shl 16
         mcall
 
         mov     cl, [esp+4+4]
-        add     edx, 15 shl 16
+        add     edx, 18 shl 16
         mcall
 
         mov     cl, [esp+4+5]
-        add     edx, 15 shl 16
+        add     edx, 18 shl 16
         mcall
 
-        sub     edx, 5*15 shl 16
+        sub     edx, 5*18 shl 16
 
         ret     6
 
@@ -612,18 +612,18 @@ draw_ip:
         mcall
 
         mov     cl, [esp+4+1]
-        add     edx, 30 shl 16
+        add     edx, 24 shl 16
         mcall
 
         mov     cl, [esp+4+2]
-        add     edx, 30 shl 16
+        add     edx, 24 shl 16
         mcall
 
         mov     cl, [esp+4+3]
-        add     edx, 30 shl 16
+        add     edx, 24 shl 16
         mcall
 
-        sub     edx, 3*30 shl 16
+        sub     edx, 3*24 shl 16
         ret     4
 
 
@@ -692,11 +692,11 @@ str_packets_tx  db 'Packets sent:', 0
 str_packets_rx  db 'Packets received:', 0
 str_bytes_tx    db 'Bytes sent:', 0
 str_bytes_rx    db 'Bytes received:', 0
-str_MAC         db 'MAC address:', 0
-str_ip          db 'IP address:', 0
-str_dns         db 'DNS address:', 0
-str_subnet      db 'Subnet mask:', 0
-str_gateway     db 'Standard gateway:', 0
+str_MAC         db 'MAC address:           -  -  -  -  -', 0
+str_ip          db 'IP address:             .   .   .', 0
+str_dns         db 'DNS address:            .   .   .', 0
+str_subnet      db 'Subnet mask:            .   .   .', 0
+str_gateway     db 'Standard gateway:       .   .   .', 0
 str_arp         db 'ARP entrys:', 0
 str_conflicts   db 'ARP conflicts:', 0
 str_unknown     db 'unknown', 0
@@ -705,7 +705,7 @@ str_dumped      db 'Packets dumped:',0
 str_link        db 'Link state:',0
 
 str_ARP_legend  db 'IP-address        MAC-address         Status    TTL', 0
-str_ARP_entry   db '   .   .   .        -  -  -  -  -                    s', 0
+str_ARP_entry   db '   .   .   .        -  -  -  -  -', 0
 
 namebuf         rb 64
 arp_buf         ARP_entry
