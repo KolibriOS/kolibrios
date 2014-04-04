@@ -7,9 +7,6 @@ export MENUET_LIBC_OBJS
 export MENUET_LIBC_TOPDIR
 
 all: m_echo$(EXESUFFIX) mks$(EXESUFFIX)
-	@echo $(CC) $(LD) $(CFLAGS) $(LDFLAGS)
-	cc -v
-	ld -v
 	make -C libc
 	make -C libcon2 mk_lib
 	make -C libcpp mk_lib

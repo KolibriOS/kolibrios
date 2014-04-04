@@ -295,7 +295,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
- graph:GRAPH \
+ #graph:GRAPH \
  settings/icon.ini:SETTINGS/ICON.INI \
  ../common/iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT \
@@ -346,7 +346,7 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- emu/e80/e80=e80 \
+ #emu/e80/e80=e80 \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
@@ -484,7 +484,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA/ImgF
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
 	mmd -i $(BUILD_DIR)/kolibri.img ::SETTINGS
-	@echo $(CC) $(LD) $(CFLAGS) $(LDFLAGS) && $(mcopy_all_items)
+	$(mcopy_all_items)
 
 # The second goal: LiveCD image.
 $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
@@ -713,4 +713,4 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf:  
-	$(MAKE) -C $(REPOSITORY)/programs/develop/libraries/menuetlibc
+	$(MAKE) -C $(REPOSITORY)/contrib/menuetlibc

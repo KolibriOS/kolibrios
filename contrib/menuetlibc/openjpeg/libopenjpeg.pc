@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: openjpeg
+Description: JPEG2000 files library
+URL: http://code.google.com/p/openjpeg/
+Version: 1.4.0
+Libs: -L${libdir} -lopenjpeg
+Cflags: -I${includedir}

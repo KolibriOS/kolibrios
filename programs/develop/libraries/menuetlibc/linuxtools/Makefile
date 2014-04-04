@@ -9,7 +9,8 @@ TOOLS = mgcc$(EXESUFFIX) mld$(EXESUFFIX) mgpp$(EXESUFFIX) mmkdep$(EXESUFFIX) \
 	mchmem$(EXESUFFIX)
 
 all: $(TOOLS)
-
+	@echo $(MENUETDEV)
+	
 mgcc$(EXESUFFIX): mgcc.c
 	gcc mgcc.c -o mgcc$(EXESUFFIX) -DHAS_DEVENV=$(HAS_DEVENV) -s $(WAIT)
 
