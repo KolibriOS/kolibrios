@@ -1,3 +1,4 @@
+MENUETDEV=../menuetlibc
 include osrules.mak
 all: genconfig
 	@echo Building library for $(VERSION_OS)
