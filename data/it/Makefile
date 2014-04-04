@@ -466,7 +466,6 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
  Makefile \
  $(BUILD_DIR)/boot_fat12.bin \
  $(targets)
- 	echo $(LD) $(CC) $(NASM)
 	str=`date -u +"[auto-build %d %b %Y %R, r$(REV)]"`; \
 	echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
 	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
@@ -485,7 +484,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA/ImgF
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
 	mmd -i $(BUILD_DIR)/kolibri.img ::SETTINGS
-	$(mcopy_all_items)
+	@echo $(CC) $(LD) $(CFLAGS) $(LDFLAGS) && $(mcopy_all_items)
 
 # The second goal: LiveCD image.
 $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
@@ -713,5 +712,5 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
-updf: 
+updf:  
 	$(MAKE) -C $(REPOSITORY)/programs/develop/libraries/menuetlibc
