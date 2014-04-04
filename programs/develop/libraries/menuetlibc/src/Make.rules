@@ -19,7 +19,6 @@ DEBUG = 0
 .s.o:
 	$(CPP) -nostdinc -I$(MENUETDEV)/include $*.s -o $*.sx $(CSFLAGS) -DMENUETDEV=$(MENUETDEV) -D__DEV_CONFIG_H=\"$(MENUETDEV)/config.h\"
 	$(AS) $*.sx $(AS32OPT) -o $*.o
-	$(RM) $*.sx
 
 ATHIS_LIBC_OBJS += $(subst .c,.o,$(filter %.c,$(THIS_SRCS))) \
 	$(subst .s,.o,$(filter %.s,$(THIS_SRCS))) \
