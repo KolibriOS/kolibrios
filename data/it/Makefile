@@ -713,6 +713,4 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf: 
-	$(UPDFDIR)/scripts/
-	$(MAKE) -C $(UPDFDIR)
-	cd $(UPDFDIR)/build/debug && objcopy -O binary mupdf && kpack --nologo mupdf
+	$(MAKE) -C $(REPOSITORY)/programs/develop/libraries/menuetlibc

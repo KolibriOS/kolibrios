@@ -8,8 +8,8 @@ GEN := generated
 # --- Variables, Commands, etc... ---
 
 default: all
-LDFLAGS = -Tinclude/scripts/menuetos_app_v01.ld -nostdlib -L include/lib -melf_i386
-CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I include -fno-pic
+LDFLAGS = -T/home/a/svn/kolios/programs/develop/libraries/menuetlibc/include/scripts/menuetos_app_v01.ld -nostdlib -L /home/a/svn/kolios/programs/develop/libraries/menuetlibc/include/lib -melf_i386
+CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I/home/a/svn/kolios/programs/develop/libraries/menuetlibc/include -fno-pic
 LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
 
 #include Makerules
@@ -31,7 +31,7 @@ endif
 
 CC_CMD = $(QUIET_CC) $(CC) $(CFLAGS) -o $@ -c $<
 AR_CMD = $(QUIET_AR) $(AR) cru $@ $^
-LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ include/crt0.o $^ build/debug/snprintf.o $(LIBS)
+LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ /home/a/svn/kolios/programs/develop/libraries/menuetlibc/stub/crt0.o $^ build/debug/snprintf.o $(LIBS)
 MKDIR_CMD = $(QUIET_MKDIR) mkdir -p $@
 
 # --- Rules ---
