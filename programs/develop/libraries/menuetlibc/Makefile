@@ -1,8 +1,10 @@
-MENUETDEV=../menuetlibc
+MENUETDEV=/programs/develop/libraries/menuetlibc
 include osrules.mak
 all: genconfig
 	@echo Building library for $(VERSION_OS)
 	gcc mkversion.c -o mkversion$(EXESUFFIX)
+
+	@echo $(MENUETDEV)
 ifdef ON_MINGW
 	mkversion$(EXESUFFIX) < version > include/libc/version.h
 else
