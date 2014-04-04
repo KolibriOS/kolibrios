@@ -962,15 +962,6 @@ struct drm_i915_reset_stats {
 	__u32 pad;
 };
 
-struct drm_i915_mask_update {
-    __u32 handle;
-    __u32 width;
-    __u32 height;
-    __u32 bo_size;
-    __u32 bo_pitch;
-    __u32 bo_map;
-};
-
 struct drm_i915_fb_info {
     __u32 name;
     __u32 width;
@@ -979,6 +970,16 @@ struct drm_i915_fb_info {
     __u32 tiling;
     __u32 crtc;
     __u32 pipe;
+};
+
+struct drm_i915_mask_update {
+    __u32 handle;
+    __u32 dx;
+    __u32 dy;
+    __u32 width;
+    __u32 height;
+    __u32 bo_pitch;
+    __u32 bo_map;
 };
 
 #endif				/* _I915_DRM_H_ */

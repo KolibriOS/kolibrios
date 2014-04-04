@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "render.h"
-#include <i915_drm.h>
+#include <drm/i915_drm.h>
 #include <kos32sys.h>
 
 #define WIN_STATE_MINIMIZED  0x02

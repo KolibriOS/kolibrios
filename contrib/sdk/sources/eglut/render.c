@@ -4,7 +4,7 @@
 #include <sys/time.h>
 
 #include "render.h"
-#include <i915_drm.h>
+#include <drm/i915_drm.h>
 #include <kos32sys.h>
 
 void create_mask(struct render *render);
@@ -96,7 +96,7 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
 	    "	source_texture = v_texcoord0.xy;\n"
 	    "}\n";
 
-	const char *fs_src =
+    const char *fs_i965 =
 	    "varying vec2 source_texture;\n"
         "uniform sampler2D sampler_src;\n"
         "uniform sampler2D sampler_mask;\n"
@@ -105,6 +105,16 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
         "   float ca = texture2D(sampler_mask, source_texture).r;\n"
         "   gl_FragColor = vec4(texture2D(sampler_src, source_texture).rgb, ca);\n"
 	    "}\n";
+
+    const char *fs_i915 =
+        "varying vec2 source_texture;\n"
+        "uniform sampler2D sampler_src;\n"
+        "uniform sampler2D sampler_mask;\n"
+        "void main()\n"
+        "{\n"
+        "   float ca = texture2D(sampler_mask, source_texture).a;\n"
+        "   gl_FragColor = vec4(texture2D(sampler_src, source_texture).rgb, ca);\n"
+        "}\n";
 
     EGLint config_attribs[14];
     EGLConfig config;
@@ -118,6 +128,8 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
     GLint ret;
     int fd;
     struct render *render;
+    char *drv_name;
+    const char *fs_src;
 
 
     fd = get_service("DISPLAY");
@@ -294,6 +306,15 @@ struct render* create_render(EGLDisplay dpy, EGLSurface surface, int dx, int dy)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+    drv_name = (char*)glGetString(0x1F04);
+    printf("Render: %s\n", drv_name);
+
+    if(strstr(drv_name, "i965"))
+        fs_src = fs_i965;
+    else if(strstr(drv_name, "i915"))
+        fs_src = fs_i915;
+    else fs_src = NULL;
+
     render->blit_prog = glCreateProgram();
     if(render->blit_prog == 0)
         goto err9;
@@ -453,7 +474,7 @@ void create_mask(struct render *render)
                          (void *) (uintptr_t)mask_name, attribs);
     printf("create mask image %p\n", mask_image);
     if(mask_image == NULL)
-        goto err2
+        goto err2;
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -486,7 +507,7 @@ err3:
     eglDestroyImageKHR(render->dpy, mask_image);
 err2:
     close.handle = mask_handle;
-    (void)drm_ioctl(fd, DRM_IOCTL_GEM_CLOSE, &close);
+    (void)drm_ioctl(render->fd, DRM_IOCTL_GEM_CLOSE, &close);
     glBindTexture(GL_TEXTURE_2D, 0);
 err1:
     glDeleteTextures(1, &render->tx_mask);

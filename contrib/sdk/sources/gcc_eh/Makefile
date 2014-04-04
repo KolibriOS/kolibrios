@@ -1,5 +1,5 @@
 
-LIBRARY= gcc_eh
+LIBRARY= libgcc_eh
 
 CC=gcc
 CPP=g++

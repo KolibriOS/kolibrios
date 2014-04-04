@@ -66,12 +66,8 @@ int
 _eglutNow(void)
 {
    struct timeval tv;
-#ifdef __VMS
-   (void) gettimeofday(&tv, NULL );
-#else
    struct timezone tz;
    (void) gettimeofday(&tv, &tz);
-#endif
    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 

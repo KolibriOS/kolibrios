@@ -44,7 +44,7 @@ LIBGL_OBJS =  $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(LIBGL_SRC)))
 all: libGL.dll 
 
 libGL.dll: $(LIBGL_OBJS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBGL_OBJS) $(LIBS)
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ mesa.def $(LIBGL_OBJS) $(LIBS)
 	$(STRIP) $@
 	mv -f $@ $(SDK_DIR)/bin
 	mv -f libGL.dll.a $(SDK_DIR)/lib

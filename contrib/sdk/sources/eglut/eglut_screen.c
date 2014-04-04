@@ -156,12 +156,11 @@ _eglutNativeEventLoop(void)
         int ev;
 
         ev = check_os_event();
-//        ev = get_os_event();
         switch(ev)
         {
             case 1:
                 BeginDraw();
-                DrawWindow(10,10,10,10,NULL,0,0x74);
+                DrawWindow(0,0,0,0,NULL,0,0x74);
                 EndDraw();
                 break;
 

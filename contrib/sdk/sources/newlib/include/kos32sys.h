@@ -322,7 +322,7 @@ int user_free(void *mem)
 static inline
 int *user_unmap(void *base, size_t offset, size_t size)
 {
-    void  *val;
+    int  *val;
     __asm__ __volatile__(
     "int $0x40"
     :"=a"(val)
