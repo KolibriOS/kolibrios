@@ -10,7 +10,7 @@ KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
 # The main goal: build kolibri.img and kolibri.iso
-all: updf $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
 
 # Docpak requires some documents; we place them
 # into 'docs' subdir and communicate with FASM
@@ -712,5 +712,6 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
-updf:  
+updf: 
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/programs/develop/libraries/menuetlibc
 	$(MAKE) -C $(REPOSITORY)/contrib/menuetlibc
