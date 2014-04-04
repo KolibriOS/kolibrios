@@ -102,13 +102,13 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/missing --run tar
+ACLOCAL = ${SHELL} ./missing --run aclocal-1.11
+AMTAR = ${SHELL} ./missing --run tar
 AR = ar
 AS = as
-AUTOCONF = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/missing --run automake-1.11
+AUTOCONF = ${SHELL} ./missing --run autoconf
+AUTOHEADER = ${SHELL} ./missing --run autoheader
+AUTOMAKE = ${SHELL} ./missing --run automake-1.11
 AWK = mawk
 BUILD_NR = 0
 CC = gcc
@@ -151,7 +151,7 @@ LIPO =
 LN_S = ln -s
 LTLIBOBJS = 
 MAJOR_NR = 1
-MAKEINFO = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/missing --run makeinfo
+MAKEINFO = ${SHELL} ./missing --run makeinfo
 MINOR_NR = 4
 MKDIR_P = /bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -175,10 +175,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = strip
 VERSION = 1.4.0
-abs_builddir = /home/a/svn/kolios/contrib/menuetlibc/openjpeg
-abs_srcdir = /home/a/svn/kolios/contrib/menuetlibc/openjpeg
-abs_top_builddir = /home/a/svn/kolios/contrib/menuetlibc/openjpeg
-abs_top_srcdir = /home/a/svn/kolios/contrib/menuetlibc/openjpeg
+abs_builddir = $(REPOSITORY)/contrib/menuetlibc/openjpeg
+abs_srcdir = $(REPOSITORY)/contrib/menuetlibc/openjpeg
+abs_top_builddir = $(REPOSITORY)/contrib/menuetlibc/openjpeg
+abs_top_srcdir = $(REPOSITORY)/contrib/menuetlibc/openjpeg
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 ac_ct_DUMPBIN = 
@@ -207,7 +207,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/a/svn/kolios/contrib/menuetlibc/openjpeg/install-sh
+install_sh = ${SHELL} ./install-sh
 jp3d_dir = 
 jpwl_dir = 
 lcms1includes = -I/usr/include
@@ -774,3 +774,4 @@ uninstall-hook:
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
+
