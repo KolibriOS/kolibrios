@@ -713,4 +713,5 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf: 
+	@echo $(CC) $(LD) $(NASM) 
 	$(MAKE) -C $(REPOSITORY)/programs/develop/libraries/menuetlibc
