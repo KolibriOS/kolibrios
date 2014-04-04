@@ -10,7 +10,7 @@ KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
 # The main goal: build kolibri.img and kolibri.iso
-all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+all: updf $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
 
 # Docpak requires some documents; we place them
 # into 'docs' subdir and communicate with FASM
@@ -295,7 +295,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
- #graph:GRAPH \
+ graph:GRAPH \
  settings/icon.ini:SETTINGS/ICON.INI \
  ../common/iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT \
@@ -346,7 +346,7 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- #emu/e80/e80=e80 \
+ emu/e80/e80=e80 \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
