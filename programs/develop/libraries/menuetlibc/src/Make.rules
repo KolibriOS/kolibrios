@@ -2,9 +2,8 @@ include $(MENUETDEV)/osrules.mak
 
 .SUFFIXES: .asm;
 
-AS = as
+
 NASM = nasm
-CPP = cpp
 
 DEBUG = 0
 
