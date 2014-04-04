@@ -466,6 +466,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
  Makefile \
  $(BUILD_DIR)/boot_fat12.bin \
  $(targets)
+ 	echo $(LD) $(CC) $(NASM)
 	str=`date -u +"[auto-build %d %b %Y %R, r$(REV)]"`; \
 	echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
 	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
@@ -713,5 +714,4 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf: 
-	@echo $(CC) $(LD) $(NASM) 
 	$(MAKE) -C $(REPOSITORY)/programs/develop/libraries/menuetlibc
