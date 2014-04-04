@@ -10,6 +10,7 @@ else
 endif
 
 process_subdirs:
+	@echo $(CC) $(LD) $(CFLAGS) $(LDFLAGS)
 	@$(D_ECHO) > ../tmp_make
 	make -C ansi
 	make -C ansif
