@@ -1,4 +1,4 @@
-include $(MENUETDEV)/osrules.mak
+include osrules.mak
 
 .SUFFIXES: .asm;
 

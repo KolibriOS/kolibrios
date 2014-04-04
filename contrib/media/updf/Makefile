@@ -10,7 +10,7 @@ GEN := generated
 default: all
 LDFLAGS = -T./include/scripts/menuetos_app_v01.ld -nostdlib -L ./include/lib -melf_i386
 CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I./include -fno-pic
-LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
+LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc -m32
 
 #include Makerules
 #include Makethird
@@ -152,7 +152,10 @@ install: $(MUXPS_LIB) $(MUPDF_LIB) $(FITZ_LIB) $(PDF_APPS) $(XPS_APPS) $(MUPDF)
 
 # --- Clean and Default ---
 
-all: $(THIRD_LIBS) $(FITZ_LIB) $(PDF_APPS) $(XPS_APPS) $(MUPDF)
+all: crt0 scripts $(THIRD_LIBS) $(FITZ_LIB) $(PDF_APPS) $(XPS_APPS) $(MUPDF) 
+
+crt0: 
+	$(MAKE) -C ./stub
 
 clean:
 	rm -rf $(OUT)
