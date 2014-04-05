@@ -65,9 +65,9 @@ FindHDD_2:
 FindHDD_1:
         DEBUGF  1, "K : Channel %d ",[ChannelNumber]:2
         DEBUGF  1, "Disk %d\n",[DiskNumber]:1
-        push    ebx
+        push    ebx ecx
         call    ReadHDD_ID
-        pop     ebx
+        pop     ecx ebx
         cmp     [DevErrorCode], 0
         jne     .FindCD
 
@@ -81,15 +81,15 @@ FindHDD_1:
         jmp     .Print_Device_Name
 ;--------------------------------------
 .FindCD:
-        push    ebx
+        push    ebx ecx
         call    DeviceReset
-        pop     ebx
+        pop     ecx ebx
         cmp     [DevErrorCode], 0
         jne     .end
 
-        push    ebx
+        push    ebx ecx
         call    ReadCD_ID
-        pop     ebx
+        pop     ecx ebx
         cmp     [DevErrorCode], 0
         jne     .end
 
@@ -98,10 +98,22 @@ FindHDD_1:
 .Print_Device_Name: 
         pushad
         pushfd
+
+        xor     ebx, ebx
+        mov     bx, [ChannelNumber]
+        dec     ebx
+        shl     ebx, 1
+        add     bl, [DiskNumber]
+        shl     ebx, 1
+
+        call    calculate_IDE_device_values_storage
+;--------------------------------------
+.copy_dev_name:
         mov     esi, Sector512+27*2
         mov     edi, dev_name
         mov     ecx, 20
         cld
+;--------------------------------------
 @@:
         lodsw
         xchg    ah, al
@@ -112,12 +124,12 @@ FindHDD_1:
 
         xor     eax, eax
         mov     ax, [Sector512+64*2]
-        DEBUGF  1, "K : PIO mode possible modes %x\n", al
+        DEBUGF  1, "K : PIO possible modes %x\n", al
 
         mov     ax, [Sector512+51*2]
         mov     al, ah
         call    convert_Sector512_value
-        DEBUGF  1, "K : PIO mode set mode %x\n", ah
+        DEBUGF  1, "K : PIO set mode %x\n", ah
 
         mov     ax, [Sector512+63*2]
         DEBUGF  1, "K : Multiword DMA possible modes %x\n", al
@@ -129,9 +141,13 @@ FindHDD_1:
         mov     ax, [Sector512+88*2]
         DEBUGF  1, "K : Ultra DMA possible modes %x\n", al
 
+        mov     [ebx+IDE_DEVICE.UDMA_possible_modes], al
+
         mov     al, ah
         call    convert_Sector512_value
         DEBUGF  1, "K : Ultra DMA set mode %x\n", ah
+
+        mov     [ebx+IDE_DEVICE.UDMA_set_mode], ah
 
         popfd
         popad
@@ -141,9 +157,30 @@ FindHDD_1:
         DEBUGF  1, "K : Device not found\n"
         ret
 ;-----------------------------------------------------------------------------
+calculate_IDE_device_values_storage:
+        cmp     ecx, IDE_controller_1
+        jne     @f
+
+        add     ebx, IDE_device_1
+        jmp     .exit
+;--------------------------------------
+@@:
+        cmp     ecx, IDE_controller_2
+        jne     @f
+
+        add     ebx, IDE_device_2
+        jmp     .exit
+;--------------------------------------
+@@:
+        add     ebx, IDE_device_3
+;--------------------------------------
+.exit:
+        ret
+;-----------------------------------------------------------------------------
 convert_Sector512_value:
         mov     ecx, 8
         xor     ah, ah
+;--------------------------------------
 @@:
         test    al, 1b
         jnz     .end
@@ -153,6 +190,7 @@ convert_Sector512_value:
         loop    @b
 
         xor     ah, ah
+;--------------------------------------
 .end:
         ret
 ;-----------------------------------------------------------------------------

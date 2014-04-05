@@ -699,10 +699,12 @@ no_mode_0x12:
         call    PIT_init
 
 ; Register ramdisk file system
-        mov     esi, boot_initramdisk
-        call    boot_log
-        call    ramdisk_init
+        cmp     [boot_dev+OS_BASE+0x10000], 1
+        je      @f
 
+        call    register_ramdisk
+;--------------------------------------
+@@:
         mov     esi, boot_initapic
         call    boot_log
 ; Try to Initialize APIC
@@ -787,19 +789,6 @@ include 'detect/dev_fd.inc'
 ;-----------------------------------------------------------------------------
 include 'detect/init_ata.inc'
 ;-----------------------------------------------------------------------------
-        mov     esi, boot_init_sys
-        call    boot_log
-        call    Parser_params
-
-if ~ defined extended_primary_loader
-; ramdisk image should be loaded by extended primary loader if it exists
-; READ RAMDISK IMAGE FROM HD
-
-;!!!!!!!!!!!!!!!!!!!!!!!
-include 'boot/rdload.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!
-end if
-
 if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}

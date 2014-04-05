@@ -140,6 +140,10 @@ cache_ide9  IDE_CACHE
 cache_ide10 IDE_CACHE
 cache_ide11 IDE_CACHE
 ;--------------------------------------
+IDE_device_1 rd 2
+IDE_device_2 rd 2
+IDE_device_3 rd 2
+;--------------------------------------
 endg
 ;-----------------------------------------------------------------------------
 ; START of initialisation IDE ATA code
@@ -295,13 +299,51 @@ Init_IDE_ATA_controller_2:
 .check_DRIVE_DATA:
         mov     al, 0
         mov     ah, [ebx+DRIVE_DATA+1]
-        test    ah, 10100000b
+        test    ah, 10100000b ; check for ATAPI devices
+        jz      @f
+;--------------------------------------
+.ch1_pio_set_ATAPI:
+        DEBUGF  1, "K : IDE CH1 PIO, because ATAPI drive present\n"
+        jmp     .ch1_pio_set_for_all
+;--------------------------------------
+.ch1_pio_set_no_devices:
+        DEBUGF  1, "K : IDE CH1 PIO because no devices\n"
+        jmp     .ch1_pio_set_for_all
+;-------------------------------------
+.ch1_pio_set:
+        DEBUGF  1, "K : IDE CH1 PIO because device not support UDMA\n"
+;-------------------------------------
+.ch1_pio_set_for_all:
+        mov     [ecx+IDE_DATA.dma_hdd_channel_1], al
+        jmp     .ch2_check
+;--------------------------------------
+@@:
+        xor     ebx, ebx
+        call    calculate_IDE_device_values_storage
+
+        test    ah, 1010000b
+        jz      .ch1_pio_set_no_devices
+
+        test    ah, 1000000b
         jz      @f
 
-        DEBUGF  1, "K : IDE CH1 PIO, because ATAPI drive present\n"
-        mov     [ecx+IDE_DATA.dma_hdd_channel_1], byte 0
+        cmp     [ebx+IDE_DEVICE.UDMA_possible_modes], al
+        je      .ch1_pio_set
 
-        jmp     .ch2_check
+        cmp     [ebx+IDE_DEVICE.UDMA_set_mode], al
+        je      .ch1_pio_set
+;--------------------------------------
+@@:
+        test    ah, 10000b
+        jz      @f
+
+        add     ebx, 2
+
+        cmp     [ebx+IDE_DEVICE.UDMA_possible_modes], al
+        je      .ch1_pio_set
+
+        cmp     [ebx+IDE_DEVICE.UDMA_set_mode], al
+        je      .ch1_pio_set
 ;--------------------------------------
 @@:
         mov     dx, [ecx+IDE_DATA.BAR1_val] ;0x3F4
@@ -311,13 +353,51 @@ Init_IDE_ATA_controller_2:
         mov     [ecx+IDE_DATA.dma_hdd_channel_1], byte 1
 ;--------------------------------------
 .ch2_check:
-        test    ah, 1010b
+        test    ah, 1010b ; check for ATAPI devices
+        jz      @f
+;--------------------------------------
+.ch2_pio_set_ATAPI:
+        DEBUGF  1, "K : IDE CH2 PIO, because ATAPI drive present\n"
+        jmp     .ch2_pio_set_for_all
+;--------------------------------------
+.ch2_pio_set_no_devices:
+        DEBUGF  1, "K : IDE CH2 PIO because no devices\n"
+        jmp     .ch2_pio_set_for_all
+;--------------------------------------
+.ch2_pio_set:
+        DEBUGF  1, "K : IDE CH2 PIO because device not support UDMA\n"
+;--------------------------------------
+.ch2_pio_set_for_all:
+        mov     [ecx+IDE_DATA.dma_hdd_channel_2], al
+        jmp     .end_set_interrupts
+;--------------------------------------
+@@:
+        mov     ebx, 4
+        call    calculate_IDE_device_values_storage
+
+        test    ah, 101b
+        jz      .ch2_pio_set_no_devices
+
+        test    ah, 100b
         jz      @f
 
-        DEBUGF  1, "K : IDE CH2 PIO, because ATAPI drive present\n"
-        mov     [ecx+IDE_DATA.dma_hdd_channel_2], byte 0
+        cmp     [ebx+IDE_DEVICE.UDMA_possible_modes], al
+        je      .ch2_pio_set
 
-        jmp     .end_set_interrupts
+        cmp     [ebx+IDE_DEVICE.UDMA_set_mode], al
+        je      .ch2_pio_set
+;--------------------------------------
+@@:
+        test    ah, 1b
+        jz      @f
+
+        add     ebx, 2
+
+        cmp     [ebx+IDE_DEVICE.UDMA_possible_modes], al
+        je      .ch2_pio_set
+
+        cmp     [ebx+IDE_DEVICE.UDMA_set_mode], al
+        je      .ch2_pio_set
 ;--------------------------------------
 @@:
         mov     dx, [ecx+IDE_DATA.BAR3_val] ;0x374
@@ -349,6 +429,16 @@ include 'getcache.inc'
         mov     esi, boot_detectpart
         call    boot_log
 include 'sear_par.inc'
+;-----------------------------------------------------------------------------
+        mov     esi, boot_init_sys
+        call    boot_log
+        call    Parser_params
+
+if ~ defined extended_primary_loader
+; ramdisk image should be loaded by extended primary loader if it exists
+; READ RAMDISK IMAGE FROM HD
+include '../boot/rdload.inc'
+end if
 ;-----------------------------------------------------------------------------
         mov     ecx, IDE_controller_1
         mov     [IDE_controller_pointer], ecx

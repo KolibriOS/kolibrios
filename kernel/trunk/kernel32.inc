@@ -178,6 +178,11 @@ struct  IDE_CACHE
         appl_search_start    dd ?
 ends
 
+struct  IDE_DEVICE
+        UDMA_possible_modes  db ?
+        UDMA_set_mode        db ?
+ends
+
 ; Core functions
 include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
