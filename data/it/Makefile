@@ -713,7 +713,7 @@ $(REPOSITORY)/drivers/ddk/libcore.a: \
 #Rules for updf
 UPDFDIR=$(REPOSITORY)/contrib/media/updf
 updf: 
-	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/contrib/media/updf
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/contrib/sdk/sources/newlib
 
 clean:
 	rm -rf 3d build develop 'File Managers' media demos drivers lib network asciivju calendar calc cpu desktop colrdial config.inc cpuid cropflat disptest @docky docky docpack end gmon hdd_info @icon kbd kernel.mnt kpack launcher loaddrv macros.inc madmouse magnify Makefile.skins @menu mgb mousemul mykey @panel pcidev rdsave refrscrn rtfread run scrshoot searchap setup @ss struct.inc terminal test tinypad zkey
