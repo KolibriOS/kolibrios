@@ -8,9 +8,9 @@ GEN := generated
 # --- Variables, Commands, etc... ---
 
 default: all
-LDFLAGS = -T./include/scripts/menuetos_app_v01.ld -nostdlib -L ./include/lib -melf_i386
-CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I./include -fno-pic
-LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc -m32
+LDFLAGS = -Tinclude/scripts/menuetos_app_v01.ld -nostdlib -L include/lib -melf_i386
+CFLAGS += -Ifitz -Ipdf -Ixps -Iscripts  -fno-stack-protector -nostdinc -fno-builtin -m32 -I include -fno-pic
+LIBS += -lfreetype2 -lpng -ljbig2dec -ljpeg -lopenjpeg -lz -lm -lc
 
 #include Makerules
 #include Makethird
@@ -31,7 +31,7 @@ endif
 
 CC_CMD = $(QUIET_CC) $(CC) $(CFLAGS) -o $@ -c $<
 AR_CMD = $(QUIET_AR) $(AR) cru $@ $^
-LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ ./stub/crt0.o $^ build/debug/snprintf.o $(LIBS)
+LINK_CMD = $(QUIET_LINK) ld $(LDFLAGS) -o $@ include/crt0.o $^ build/debug/snprintf.o $(LIBS)
 MKDIR_CMD = $(QUIET_MKDIR) mkdir -p $@
 
 # --- Rules ---
@@ -152,10 +152,7 @@ install: $(MUXPS_LIB) $(MUPDF_LIB) $(FITZ_LIB) $(PDF_APPS) $(XPS_APPS) $(MUPDF)
 
 # --- Clean and Default ---
 
-all: crt0 $(THIRD_LIBS) $(FITZ_LIB) $(PDF_APPS) $(XPS_APPS) $(MUPDF) 
-
-crt0: 
-	$(MAKE) -C ./stub
+all: $(THIRD_LIBS) $(FITZ_LIB) $(PDF_APPS) $(XPS_APPS) $(MUPDF)
 
 clean:
 	rm -rf $(OUT)
