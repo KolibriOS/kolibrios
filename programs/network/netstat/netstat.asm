@@ -24,58 +24,98 @@ use32
         dd     I_END            ; size of image
         dd     (I_END+0x1000)   ; memory for app
         dd     (I_END+0x1000)   ; esp
-        dd     0, 0             ; I_Param , I_Path
+        dd     0, 0             ; I_Param, I_Path
 
 include '../../macros.inc'
 include '../../network.inc'
-
-
-macro DrawRectangle x, y, w, h, color
-{
-        mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
-        mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
-        mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
-        mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
-}
-
 
 START:
         mcall   40, EVM_REDRAW + EVM_BUTTON + EVM_STACK2 + EVM_KEY
 
 window_redraw:
+; Notify kernel of start of window draw
         mcall   12, 1
-        mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34E1E1E1, , name       ; draw window
-        DrawRectangle 0, 25, 400, 180, 0x777777
+
+; Draw the window
+        mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34E1E1E1, , name
+
+; Define the buttons (for tabs)
+        mov     ebx, 5 shl 16 + 54
+        mov     ecx, 4 shl 16 + 21
+        mov     edx, 0x60000000 + 101
+  .buttonloop:
+        mcall   8
+        add     ebx, 60 shl 16
+        inc     edx
+        cmp     dl, 106
+        jle     .buttonloop
+
+; draw sides and upper lines of the tab buttons
+        mov     eax, 13
+        mov     ebx, 5 shl 16 + 1
+        mov     ecx, 4 shl 16 + 21
+        mov     edx, 0x00777777
+  .loop:
+        mcall
+        mov     bx, 54
+        mov     cx, 1
+        mcall
+        mov     bx, 1
+        mov     cx, 21
+        add     ebx, 54 shl 16
+        mcall
+        add     ebx, 6 shl 16
+        cmp     ebx, 360 shl 16
+        jb      .loop
+
+; Draw sides and bottom lines of the rectangle
+        mcall  , 0 shl 16 + 1, 25 shl 16 + 180;, 0x00777777
+        mcall  , (0+400) shl 16 +1, 25 shl 16 + (180+1)
+        mcall  , 0 shl 16 + 400, (25+180) shl 16 + 1
 
 redraw:
-        mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
+
+; Draw interface buttons (on the right hand side)
         call    draw_interfaces
 
+; Draw upper line of rectangle
+        mcall   13, 0 shl 16 + 400, 25 shl 16 + 1, 0x00777777
+
+; Fill rectangle
+        mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
+
+; Fill tab buttons
+        mov     eax, 13
+        mov     ebx, 6 shl 16 + 53
+        mov     si, 101
+  .buttonloop:
+        mov     ecx, 6 shl 16 + 19
+        mov     edx, 0x00BBBBBB
+        cmp     si, [mode]
+        jne     @f
+        mov     edx, 0x00F3F3F3         ; Activated button has other colors
+        inc     ecx
+  @@:
+        mcall
+        mov     edx, 0x00E1E1E1
+        cmp     si, [mode]
+        jne     @f
+        mov     edx, 0x00FFFFFF         ; Activated button has other colors
+  @@:
+        mov     ecx, 5 shl 16 + 1
+        mcall
+        add     ebx, 60 shl 16
+        inc     si
+        cmp     si, 106
+        jle     .buttonloop
+; Print button names on top of the buttons
+        mcall   4, 9 shl 16 + 12, 0x80000000, modes
+
+; Get information about the selected device
         xor     ebx, ebx
         mov     bh, [device]
         mcall   74
         mov     [device_type], eax
-
-        mov     edx, 101
-        mov     esi, 0x00BBBbbb
-        mov     edi, 0x0081BBFF
-
-        cmp     dl, [mode]
-        cmove   esi, edi
-        mcall   8, 5 shl 16 + 55, 5 shl 16 + 20
-  .morebuttons:
-        inc     edx
-        add     ebx, 60 shl 16
-        mov     esi, 0x00BBBbbb
-
-        cmp     dl, [mode]
-        cmove   esi, edi
-        mcall
-
-        cmp     edx, 105
-        jle     .morebuttons
-
-        mcall   4, 9 shl 16 + 12, 0x80000000, modes
 
         cmp     [mode], 101
         jne     .no_eth
@@ -552,7 +592,8 @@ button:                         ; button
         je      exit
         cmp     ah, 0
         je      .interface
-        mov     [mode], ah
+        shr     ax, 8
+        mov     [mode], ax
         jmp     redraw
 
   .interface:
@@ -718,7 +759,7 @@ draw_interfaces:
 ; DATA AREA
 
 name            db 'Network status', 0
-mode            db 101
+mode            dw 101
 device          db 0
 last_device     db 0
 device_type     dd 0
