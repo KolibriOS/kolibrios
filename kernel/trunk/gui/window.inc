@@ -26,7 +26,7 @@ macro FuncTable name, table_name, [label]
 }
 
 uglobal
-  common_colours rd 32
+  common_colours rd 48
   draw_limits    RECT
 endg
 
@@ -173,7 +173,7 @@ align 4
 syscall_display_settings.02:
         dec     ebx
         mov     esi, ecx
-        and     edx, 127
+        and     edx, 255
         mov     edi, common_colours
         mov     ecx, edx
         rep movsb
@@ -183,7 +183,7 @@ syscall_display_settings.02:
 align 4
 syscall_display_settings.03:
         mov     edi, ecx
-        and     edx, 127
+        and     edx, 255
         mov     esi, common_colours
         mov     ecx, edx
         rep movsb

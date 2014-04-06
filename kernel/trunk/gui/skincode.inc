@@ -121,7 +121,7 @@ parse_skin_data:
         lea     esi, [ebx+SKIN_PARAMS.dtp.data]
         mov     edi, common_colours
         mov     ecx, [ebx+SKIN_PARAMS.dtp.size]
-        and     ecx, 127
+        and     ecx, 255
         rep movsb
         mov     eax, dword[ebx+SKIN_PARAMS.margin.right]
         mov     dword[_skinmargins+0], eax
