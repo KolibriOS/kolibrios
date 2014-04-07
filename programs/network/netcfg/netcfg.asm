@@ -17,12 +17,12 @@ format binary as ""
 use32
                org    0x0
 
-               db     'MENUET01'            ; 8 byte id
-               dd     0x01                  ; header version
-               dd     START                 ; start of code
-               dd     IM_END                ; size of image
-               dd     (I_END+0x100)         ; memory for app
-               dd     (I_END+0x100)         ; esp
+               db     'MENUET01'           ; 8 byte id
+               dd     0x01                 ; header version
+               dd     START                ; start of code
+               dd     IM_END               ; size of image
+               dd     (I_END+0x100)        ; memory for app
+               dd     (I_END+0x100)        ; esp
                dd     param, 0x0           ; I_Param , I_Icon
 
 type_ethernet equ 1
@@ -50,7 +50,7 @@ START:
         mcall   -1
 
   .noparams:
-        call draw_window
+        call    draw_window
 
 still:
         mcall   10                      ; wait here for event
@@ -83,9 +83,10 @@ button:                                 ; button
 
         cmp     ah, 1                   ; button id = 1 ?
         jne     @f
-exit:   mcall   -1                      ; close this program
+exit:
+        mcall   -1                      ; close this program
        @@:
-        cmp     eax,0x0000ff00
+        cmp     eax, 0x0000ff00
         jg      load_drv
 
         cmp     ah, 4
@@ -102,17 +103,17 @@ exit:   mcall   -1                      ; close this program
 
 load_drv:
         shr     eax, 16
-        mov     word [selected], ax
+        mov     [selected], ax
 
-        mov     bl , 6                  ; get a dword
-        mov     bh , ah                 ; bus
-        mov     ch , al                 ; dev
-        mov     cl , 0                  ; offset to device/vendor id
+        mov     bl, 6                   ; get a dword
+        mov     bh, ah                  ; bus
+        mov     ch, al                  ; dev
+        mov     cl, 0                   ; offset to device/vendor id
         mcall   62                      ; get ID's
 
-        mov     word [PCI_Vendor], ax
+        mov     [PCI_Vendor], ax
         shr     eax, 16
-        mov     word [PCI_Device], ax
+        mov     [PCI_Device], ax
         call    get_drv_ptr
 
         mov     ecx, eax
@@ -131,8 +132,8 @@ load_drv:
 
 
 hook:
-        mov     ax , [selected]
-        test    ax , ax
+        mov     ax, [selected]
+        test    ax, ax
         jz      still
 
         mov     [hardwareinfo.pci_dev], al
@@ -145,33 +146,32 @@ hook:
         mov     [IOCTL.output], 0
 
         mcall   68, 17, IOCTL
-
-        mov     byte[drivernumber], al
+        mov     [drivernumber], al
 
         jmp     still
 
 reset:
-        movzx   ebx, byte[drivernumber]
+        movzx   ebx, [drivernumber]
         mcall   74,,2
 
         jmp     still
 
 unload:
-        movzx   ebx, byte[drivernumber]
+        movzx   ebx, [drivernumber]
         mcall   74,,3
 
         jmp     still
 
 draw_window:
         mcall   12, 1                   ; start of draw
-        mcall   0, dword [Form], dword [Form + 4], 0x13ffffff, 0x805080d0, title
+        mcall   0, dword[Form], dword[Form + 4], 0x13ffffff, 0x805080d0, title
 
         call    Get_PCI_Info            ; get pci version and last bus, scan for and draw each pci device
 
         cmp     edx, 20 shl 16 + 110
         je      .nonefound
 
-        mcall   4, 20 shl 16 + 100, 1 shl 31 + 0x00000000 , caption
+        mcall   4, 20 shl 16 + 100, 1 shl 31 + 0x00000000, caption
 
         cmp     [selected], 0
         jz      .done
@@ -182,14 +182,14 @@ draw_window:
         mcall   ,, 55 shl 16 + 18, 5, 0x0000007f
         mcall   ,, 75 shl 16 + 18, 6, 0x007f0000
 
-        mcall   4, 33 shl 16 + 42, 1 shl 31 + 0x00ffffff , btn_start
+        mcall   4, 33 shl 16 + 42, 1 shl 31 + 0x00ffffff, btn_start
         mcall   , 33 shl 16 + 62, , btn_reset
         mcall   , 36 shl 16 + 82, , btn_stop
 
         jmp     .done
 
   .nonefound:
-        mcall   4, 20 shl 16 + 30, 1 shl 31 + 0x00ff0000 , nonefound
+        mcall   4, 20 shl 16 + 30, 1 shl 31 + 0x00ff0000, nonefound
   .done:
         mcall   12, 2                   ; end of draw
         ret
@@ -202,50 +202,53 @@ draw_window:
 ;* Gets the PCI Version and Last Bus
 Get_PCI_Info:
         mcall   62, 0
-        mov     word [PCI_Version], ax
+        mov     [PCI_Version], ax
         mcall   62, 1
-        mov     byte [PCI_LastBus], al
+        mov     [PCI_LastBus], al
         ;----------------------------------------------------------
         ;* Get all devices on PCI Bus
-        mov     edx, 20 shl 16 + 110  ; set start write position
-        cmp     al , 0xff                ; 0xFF means no pci bus found
+        cmp     al, 0xff                ; 0xFF means no pci bus found
         jne     Pci_Exists              ;
         ret                             ; if no bus then leave
+
 Pci_Exists:
-        mov     byte [V_Bus], 0         ; reset varibles
-        mov     byte [V_Dev], 0         ;
+        mov     [V_Bus], 0
+        mov     [V_Dev], 0
+        mov     edx, 20 shl 16 + 110    ; set start write position
+
 Start_Enum:
-        mov     bl , 6                   ; get a dword
-        mov     bh , byte [V_Bus]        ; bus of pci device
-        mov     ch , byte [V_Dev]        ; device number/function
-        mov     cl , 0                   ; offset to device/vendor id
+        mov     bl, 6                   ; read dword
+        mov     bh, [V_Bus]
+        mov     ch, [V_Dev]
+        mov     cl, 0                   ; offset to device/vendor id
         mcall   62                      ; get ID's
 
         cmp     ax, 0                   ; Vendor ID should not be 0 or 0xFFFF
         je      nextDev                 ; check next device if nothing exists here
+
         cmp     ax, 0xffff              ;
         je      nextDev                 ;
 
-        mov     word [PCI_Vendor], ax   ; There is a device here, save the ID's
+        mov     [PCI_Vendor], ax        ; There is a device here, save the ID's
         shr     eax, 16                 ;
-        mov     word [PCI_Device], ax   ;
-        mov     bl , 4                   ; Read config byte
-        mov     bh , byte [V_Bus]        ; Bus #
-        mov     ch , byte [V_Dev]        ; Device # on bus
-        mov     cl , 0x08                ; Register to read (Get Revision)
+        mov     [PCI_Device], ax        ;
+        mov     bl, 4                   ; Read config byte
+        mov     bh, [V_Bus]             ; Bus #
+        mov     ch, [V_Dev]             ; Device # on bus
+        mov     cl, 0x08                ; Register to read (Get Revision)
         mcall   62                      ; Read it
-        mov     byte [PCI_Rev], al      ; Save it
-        mov     cl , 0x0b                ; Register to read (Get class)
+        mov     [PCI_Rev], al           ; Save it
+        mov     cl, 0x0b                ; Register to read (Get class)
         mcall   62                      ; Read it
         
-        mov     byte [PCI_Class], al    ; Save it
-        mov     cl , 0x0a                ; Register to read (Get Subclass)
+        mov     [PCI_Class], al         ; Save it
+        mov     cl, 0x0a                ; Register to read (Get Subclass)
         mcall   62                      ; Read it
-        mov     byte [PCI_SubClass], al ; Save it
-        mov     cl , 0x09                ; Register to read (Get Interface)
+        mov     [PCI_SubClass], al      ; Save it
+        mov     cl, 0x09                ; Register to read (Get Interface)
         mcall   62                      ; Read it
         mov     [PCI_Interface], al     ; Save it
-        mov     cl , 0x3c                ; Register to read (Get IRQ)
+        mov     cl, 0x3c                ; Register to read (Get IRQ)
 @@:     mcall   62                      ; Read it
         mov     [PCI_IRQ], al           ; Save it
 
@@ -273,19 +276,19 @@ Start_Enum:
         js      nextDev
 
 nextdev2:
-        test    byte [V_Dev], 7
+        test    [V_Dev], 7
         jnz     nextDev
         
-        or      byte [V_Dev], 7
+        or      [V_Dev], 7
 
 nextDev:
         inc     [V_Dev]                 ; lower 3 bits are the function number
-
         jnz     Start_Enum              ; jump until we reach zero
-        mov     byte [V_Dev], 0         ; reset device number
-        inc     byte [V_Bus]            ; next bus
-        mov     al , byte [PCI_LastBus]  ; get last bus
-        cmp     byte [V_Bus], al        ; was it last bus
+
+        mov     [V_Dev], 0              ; reset device number
+        inc     [V_Bus]                 ; next bus
+        mov     al, [PCI_LastBus]       ; get last bus
+        cmp     [V_Bus], al             ; was it last bus
         jbe     Start_Enum              ; if not jump to keep searching
         ret
 
@@ -330,54 +333,54 @@ Print_New_Device:
         push    edx                     ; Magic ! (to print a button...)
 
         mov     ebx, 18 shl 16
-        mov     bx , [Form]
-        sub     bx , 36
+        mov     bx, [Form]
+        sub     bx, 36
 
-        mov     cx , dx
+        mov     cx, dx
         dec     cx
         shl     ecx, 16
         add     ecx, 9
 
-        movzx   edx, byte [V_Bus]
-        shl     dx , 8
-        mov     dl , byte [V_Dev]
+        xor     edx, edx
+        mov     dh, [V_Bus]
+        mov     dl, [V_Dev]
 
         mov     esi, 0x0000c0ff        ; color: yellow if selected, blue otherwise
-        cmp     word [selected], dx
+        cmp     [selected], dx
         jne     @f
         mov     esi, 0x00c0c000
        @@:
 
         shl     edx, 8
-        or      dl , 0xff
+        or      dl, 0xff
 
         mcall   8
         pop     edx
 
         xor     esi, esi                ; Color of text
-        movzx   ecx, word [PCI_Vendor]  ; number to be written
+        movzx   ecx, [PCI_Vendor]       ; number to be written
         mcall   47, 0x00040100          ; Write Vendor ID
 
         add     edx, (4*6+18) shl 16
-        movzx   ecx, word [PCI_Device]  ; get Vendor ID
+        movzx   ecx, [PCI_Device]       ; get Vendor ID
         mcall                           ; Draw Vendor ID to Window
 
         add     edx, (4*6+18) shl 16
-        movzx   ecx, byte [V_Bus]       ; get bus number
+        movzx   ecx, [V_Bus]
         mcall   ,0x00020100             ; draw bus number to screen
 
         add     edx, (2*6+18) shl 16
-        movzx   ecx, byte [V_Dev]       ; get device number
+        movzx   ecx, [V_Dev]
         shr     ecx, 3                  ; device number is bits 3-7
         mcall                           ; Draw device Number To Window
 
         add     edx, (2*6+18) shl 16
-        movzx   ecx, byte [PCI_Rev]     ; get revision number
+        movzx   ecx, [PCI_Rev]
         mcall                           ; Draw Revision to screen
 
         add     edx, (2*6+18) shl 16
         movzx   ecx, [PCI_IRQ]
-        cmp     cl , 0x0f               ; IRQ must be between 0 and 15
+        cmp     cl, 0x0f                ; IRQ must be between 0 and 15
         ja      @f
         mcall
 @@:
@@ -390,13 +393,13 @@ Print_New_Device:
 ; Prints the Vendor's Name based on Vendor ID
 ;------------------------------------------------------------------
         mov     edx, VendorsTab
-        mov     cx , word[PCI_Vendor]
+        mov     cx, [PCI_Vendor]
         
-.fn:    mov     ax , [edx]
+.fn:    mov     ax, [edx]
         add     edx, 6
-        test    ax , ax
+        test    ax, ax
         jz      .find
-        cmp     ax , cx
+        cmp     ax, cx
         jne     .fn
 .find:  mov     edx, [edx - 4]
         mcall   4,, 0x80000000          ; lets print the vendor Name
@@ -404,7 +407,7 @@ Print_New_Device:
 ;------------------------------------------------------------------
 ; Get description based on Class/Subclass
 ;------------------------------------------------------------------
-        mov     eax, dword [PCI_Class]
+        mov     eax, dword[PCI_Class]
         and     eax, 0xffffff
         xor     edx, edx
         xor     esi, esi
@@ -464,11 +467,11 @@ get_drv_ptr:
         cmp     dword[ebx],ecx
         je      driverfound
 
-        add     ebx,4
+        add     ebx, 4
         jmp     deviceloop
 
        nextdriver:
-        add     ebx,4
+        add     ebx, 4
 
         cmp     dword[ebx],0
         je      nodriver
@@ -539,12 +542,14 @@ V_Bus           db ?
 V_Dev           db ?
 PCI_Version     dw ?
 PCI_LastBus     db ?
+; Dont change order
 PCI_Vendor      dw ?
 PCI_Device      dw ?
+
 PCI_Bus         db ?
 PCI_Dev         db ?
 PCI_Rev         db ?
-; don`t change order!!!
+; Dont change order
 PCI_Class       db ?
 PCI_SubClass    db ?
 PCI_Interface   db ?
