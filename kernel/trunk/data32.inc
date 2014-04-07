@@ -165,10 +165,10 @@ firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
-mtrr_user_message cp866 'Обнаружена проблема с конфигурацией MTRR.',13,10,'Производительность может быть пониженной~a',0
+mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0
 else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
-mtrr_user_message db 'There is a problem with MTRR configuration.',13,10,'Performance can be low~a',0
+mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
 
 vmode          db  '/sys/drivers/VMODE.MDR',0
