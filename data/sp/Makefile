@@ -45,6 +45,7 @@ FASM_PROGRAMS:=\
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @docky:@DOCKY:$(PROGS)/system/docky/trunk/docky.asm \
+ @notify:@NOTIFY:$(PROGS)/system/notify3/NOTIFY.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -285,8 +286,6 @@ CMM_PROGRAMS:=\
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
  network/WebView:network/WebView:$(PROGS)/cmm/browser/WebView.c \
  tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
- @notify:@notify:$(PROGS)/cmm/notify/notify.c \
-#develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
 # end of list
 
 # List of other files to be included in the image file.
@@ -307,6 +306,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI \
  ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
+ ../common/NOTIFY3.PNG:NOTIFY3.PNG \
  ../common/settings/wallpaper.dat:SETTINGS/WALLPAPER.dat \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE \
