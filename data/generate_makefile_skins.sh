@@ -2,7 +2,7 @@
 echo SKIN_SOURCES:=\\
 while read skinname
 do
-	skinpath=../../skins/olds/"$skinname"
+	skinpath=../../skins/_old/"$skinname"
 	for f in $skinpath/*.{asm,ASM}
 	do
 		if [ ! -f "$f" ]; then continue; fi
@@ -12,7 +12,7 @@ do
 		echo -n $f | sed 's/ /|/g'
 		echo " \\"
 	done
-	for f in ../../skins/olds/"$skinname"/*/*.{asm,ASM}
+	for f in ../../skins/_old/"$skinname"/*/*.{asm,ASM}
 	do
 		if [ ! -f "$f" ]; then continue; fi
 		if expr "$f" : '.*\.dtp' > /dev/null; then continue; fi
