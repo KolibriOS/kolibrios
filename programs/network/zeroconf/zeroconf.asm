@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  zeroconfig.asm - Zeroconfig service for KolibriOS              ;;
@@ -139,7 +139,7 @@ no_IP:
 START:
         mcall   40, EVM_STACK2
 
-        DEBUGF  1,">Zero-config service loaded\n"
+        DEBUGF  2,"Zero-config service loaded\n"
 
   .wait:
         mov     ebx, API_ETH + 0
@@ -154,7 +154,7 @@ START:
   .start:
         mov     word[MAC], bx
         mov     dword[MAC+2], eax
-        DEBUGF  1,"->MAC: %x-%x-%x-%x-%x-%x\n", [MAC+0]:2, [MAC+1]:2, [MAC+2]:2, [MAC+3]:2, [MAC+4]:2, [MAC+5]:2
+        DEBUGF  1,"MAC: %x-%x-%x-%x-%x-%x\n", [MAC+0]:2, [MAC+1]:2, [MAC+2]:2, [MAC+3]:2, [MAC+4]:2, [MAC+5]:2
 
         mcall   40, EVM_STACK
 
@@ -207,26 +207,26 @@ START:
 
 try_dhcp:
 
-        DEBUGF  1,"->Trying DHCP\n"
+        DEBUGF  2,"Trying to contact DHCP server\n"
 
         mcall   75, 0, AF_INET4, SOCK_DGRAM, 0          ; open socket (parameters: domain, type, reserved)
         cmp     eax, -1
         je      error
         mov     [socketNum], eax
 
-        DEBUGF  1,"->Socket %x opened\n", eax
+        DEBUGF  1,"Socket %x opened\n", eax
 
         mcall   75, 2, [socketNum], sockaddr1, 18       ; bind socket to local port 68
         cmp     eax, -1
         je      error
 
-        DEBUGF  1,"->Socket Bound to local port 68\n"
+        DEBUGF  1,"Socket Bound to local port 68\n"
 
         mcall   75, 4, [socketNum], sockaddr2, 18       ; connect to 255.255.255.255 on port 67
         cmp     eax, -1
         je      error
 
-        DEBUGF  1,"->Connected to 255.255.255.255 on port 67\n"
+        DEBUGF  1,"Connected to 255.255.255.255 on port 67\n"
 
         mov     [dhcpMsgType], 0x01                     ; DHCP discover
         mov     [dhcpLease], esi                        ; esi is still -1 (-1 = forever)
@@ -239,7 +239,7 @@ build_request:                                          ; Creates a DHCP request
 
         mov     [tries], DHCP_TRIES
 
-        DEBUGF  1,"->Building request\n"
+        DEBUGF  1,"Building request\n"
 
         stdcall mem.Alloc, BUFFER
         mov     [dhcpMsg], eax
@@ -313,13 +313,13 @@ read_data:                                                      ; we have data -
         jne     @f
         cmp     ebx, 6  ; EWOULDBLOCK
         je      send_dhcpmsg.wait
-        DEBUGF  1,"No answer from DHCP server\n"
+        DEBUGF  2,"No answer from DHCP server\n"
         dec     [tries]
         jnz     send_dhcpmsg                    ; try again
         jmp     dhcp_error                      ; fail
 
   @@:
-        DEBUGF  1,"->%d bytes received\n", eax
+        DEBUGF  1,"%d bytes received\n", eax
         mov     [dhcpMsgLen], eax
 
 ; depending on which msg we sent, handle the response
