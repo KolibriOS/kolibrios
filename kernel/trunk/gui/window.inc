@@ -173,6 +173,10 @@ align 4
 syscall_display_settings.02:
         dec     ebx
         mov     esi, ecx
+        cmp     edx, 192
+        jnae    @f
+        mov     edx, 192 ; max size
+      @@:
         and     edx, 255
         mov     edi, common_colours
         mov     ecx, edx
@@ -183,6 +187,10 @@ syscall_display_settings.02:
 align 4
 syscall_display_settings.03:
         mov     edi, ecx
+        cmp     edx, 192
+        jnae    @f
+        mov     edx, 192 ; max size
+      @@:
         and     edx, 255
         mov     esi, common_colours
         mov     ecx, edx
