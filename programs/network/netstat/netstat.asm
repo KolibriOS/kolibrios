@@ -14,6 +14,9 @@
 
 format binary as ""
 
+BOX_WIDTH       = 390
+BOX_HEIGHT      = 185
+
 use32
 
         org    0x0
@@ -69,9 +72,9 @@ window_redraw:
         jb      .loop
 
 ; Draw sides and bottom lines of the rectangle
-        mcall  , 0 shl 16 + 1, 25 shl 16 + 180;, 0x00777777
-        mcall  , (0+400) shl 16 +1, 25 shl 16 + (180+1)
-        mcall  , 0 shl 16 + 400, (25+180) shl 16 + 1
+        mcall  , 0 shl 16 + 1, 25 shl 16 + BOX_HEIGHT;, 0x00777777
+        mcall  , (0+BOX_WIDTH) shl 16 +1, 25 shl 16 + (BOX_HEIGHT+1)
+        mcall  , 0 shl 16 + BOX_WIDTH, (25+BOX_HEIGHT) shl 16 + 1
 
 redraw:
 
@@ -79,10 +82,10 @@ redraw:
         call    draw_interfaces
 
 ; Draw upper line of rectangle
-        mcall   13, 0 shl 16 + 400, 25 shl 16 + 1, 0x00777777
+        mcall   13, 0 shl 16 + BOX_WIDTH, 25 shl 16 + 1, 0x00777777
 
 ; Fill rectangle
-        mcall   13, 1 shl 16 + 399, 26 shl 16 + 179, 0x00F3F3F3
+        mcall   13, 1 shl 16 + BOX_WIDTH-1, 26 shl 16 + BOX_HEIGHT-1, 0x00F3F3F3
 
 ; Fill tab buttons
         mov     eax, 13
@@ -705,7 +708,7 @@ draw_ip:
 draw_interfaces:
 
         mov     [.btnpos], 5 shl 16 + 20
-        mov     [.txtpos], 455 shl 16 + 12
+        mov     [.txtpos], 405 shl 16 + 12
 
         mcall   74, -1          ; get number of active network devices
         mov     ecx, eax
@@ -729,7 +732,7 @@ draw_interfaces:
         mov     esi, 0x00BBBbbb
         cmp     bh, [device]
         cmove   esi, 0x0081BBFF
-        mcall   8, 450 shl 16 + 135, [.btnpos]
+        mcall   8, 400 shl 16 + 185, [.btnpos]
         mov     ebx, [esp]
         inc     bl
         mov     ecx, namebuf
@@ -764,7 +767,7 @@ device          db 0
 last_device     db 0
 device_type     dd 0
 last            dd 0
-modes           db 'Physical    IPv4       ARP      ICMP      UDP       TCP', 0
+modes           db 'Physical    IPv4      ARP       ICMP      UDP       TCP', 0
 
 str_packets_tx  db 'Packets sent:', 0
 str_packets_rx  db 'Packets received:', 0
