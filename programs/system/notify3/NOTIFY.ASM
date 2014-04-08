@@ -75,6 +75,13 @@
     mov     cl, [eax]
 
     cmpe    cl, "\", .char
+    cmpne   cl, 10, .copy
+    cmple   esi, dword [text.max_len], @f
+    mov     [text.max_len], esi
+  @@:
+    mov     esi, 0
+    mov     cl, 0
+    inc     dword [text.lines]
     jmp     .copy
 
   .char:
@@ -353,11 +360,11 @@
     cmpe    [first_draw], byte 1, .draw_full
     mov     [first_draw], byte 1
     mov     esi, [window.height]
-    mov     ecx, LINEH / 2
+    mov     ecx, LINEH
   @@:
     mcall
-    add     ecx, (LINEH / 2) shl 16
-    sub     esi, LINEH / 2
+    add     ecx, LINEH shl 16
+    sub     esi, LINEH
     push    eax ebx
     mcall   5, 1
     pop     ebx eax
@@ -532,9 +539,9 @@
 
  ;----------------------------
 
- sz_ifile   db "notify3.png", 0
+ sz_ifile   db "/sys/notify3.png", 0
  sz_shname  db "notify-mem-v01", 0
- sz_std     db "'Notify 3. Keys list\n \n",   \
+ sz_std     db "'Notify 3. Keys list\n ", 10,   \
 		"d - disable auto-closing\n", \
 		"t - first line is title\n",  \
 		"A - application icon\n",     \

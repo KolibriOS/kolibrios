@@ -9,7 +9,7 @@
 
  2.2 <TEXT>
   All charactes. If you won`t to write character of quote (" or '), you must
-  enter \ before it (\" or \'). New-line character is "\n".
+  enter \ before it (\" or \'). New-line character is "\n" or char 10.
 
  2.3 <KEYS>
   d - disable auto-closing
