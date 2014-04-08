@@ -287,10 +287,10 @@ end virtual
 
 macro   udelay msec {
 
-        push    esi
+        push    esi ecx
         mov     esi, msec
         call    Sleep
-        pop     esi
+        pop     ecx esi
 
 }
 
@@ -648,6 +648,7 @@ probe:
         cmp     [tpc.mcfg], MCFG_METHOD_02
         jne     @f
         DEBUGF  1,"Set MAC Reg C+CR Offset 0x82h = 0x01h\n"
+        set_io  0
         set_io  0x82
         mov     al, 0x01
         out     dx, al
@@ -673,23 +674,24 @@ probe:
         ; Enable auto-negotiation and restart auto-nigotiation
         WRITE_GMII_REG PHY_CTRL_REG, PHY_Enable_Auto_Nego or PHY_Restart_Auto_Nego
 
-        udelay  100
-        mov     ecx, 10000
+        udelay  1                       ; 100
+        mov     ecx, 200                ; 10000
+        DEBUGF  1, "Waiting for auto-negotiation to complete\n"
         ; wait for auto-negotiation process
     @@: dec     ecx
         jz      @f
         set_io  0
         READ_GMII_REG PHY_STAT_REG
-        udelay  100
+        udelay  1                       ; 100
         test    eax, PHY_Auto_Neco_Comp
         jz      @b
         set_io  REG_PHYstatus
         in      al, dx
         jmp     @f
   .tbi_dis:
-        udelay  100
+        udelay  1                       ; 100
     @@:
-
+        DEBUGF  1, "auto-negotiation complete\n"
 
 ;***************************************************************************
 ;   Function
@@ -703,7 +705,7 @@ probe:
 align 4
 reset:
 
-        DEBUGF  1,"reset\n"
+        DEBUGF  1,"resetting\n"
 
         lea     eax, [device.tx_ring]
         mov     [tpc.TxDescArrays], eax
@@ -728,6 +730,7 @@ reset:
 ; Set link state to unknown
         mov     [device.state], ETH_LINK_UNKOWN
 
+        DEBUGF  2,"init OK!\n"
         xor     eax, eax
         ret
 
