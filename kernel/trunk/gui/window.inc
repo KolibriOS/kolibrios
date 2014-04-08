@@ -177,7 +177,6 @@ syscall_display_settings.02:
         jnae    @f
         mov     edx, 192 ; max size
       @@:
-        and     edx, 255
         mov     edi, common_colours
         mov     ecx, edx
         rep movsb
@@ -191,7 +190,6 @@ syscall_display_settings.03:
         jnae    @f
         mov     edx, 192 ; max size
       @@:
-        and     edx, 255
         mov     esi, common_colours
         mov     ecx, edx
         rep movsb
