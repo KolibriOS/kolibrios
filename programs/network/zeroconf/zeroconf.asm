@@ -304,15 +304,21 @@ request_options:
 send_dhcpmsg:
         DEBUGF  1,"Sending DHCP discover/request\n"
         mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]     ; write to socket ( send broadcast request )
+        mcall   26, 9
+        add     eax, TIMEOUT*100
+        mov     [timeout], eax
   .wait:
-        mcall   23, TIMEOUT*100                                 ; wait for data
+        mcall   23, TIMEOUT                                             ; wait for data
 
-read_data:                                                      ; we have data - this will be the response
+read_data:                                                              ; we have data - this will be the response
         mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, MSG_DONTWAIT     ; read data from socket
         cmp     eax, -1
         jne     @f
-        cmp     ebx, 6  ; EWOULDBLOCK
-        je      send_dhcpmsg.wait
+
+        mcall   26, 9
+        cmp     eax, [timeout]
+        jb      send_dhcpmsg.wait
+
         DEBUGF  2,"No answer from DHCP server\n"
         dec     [tries]
         jnz     send_dhcpmsg                    ; try again
@@ -571,6 +577,7 @@ link_local:
         mcall   5, ANNOUNCE_INTERVAL*100
         jmp     announce_loop
    @@:
+        jmp     exit
 
 
 error:
@@ -669,5 +676,7 @@ currTime        dd ?
 generator       dd ?
 
 dhcpMsg         dd ?
+
+timeout         dd ?
 
 I_END:
