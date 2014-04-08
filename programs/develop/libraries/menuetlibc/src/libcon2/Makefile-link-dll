@@ -1,2 +1,0 @@
-all:
-	ld -r -d -Bdynamic -o $(OUTFILE) @../tmp_make
