@@ -45,7 +45,7 @@ FASM_PROGRAMS:=\
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @docky:@DOCKY:$(PROGS)/system/docky/trunk/docky.asm \
- @notify:@NOTIFY:$(PROGS)/system/notify3/NOTIFY.ASM \
+ @notify:@NOTIFY:$(PROGS)/system/notify3/notify.asm \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm \
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -301,7 +301,7 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/kolibri.lbl:SETTINGS/KOLIBRI.LBL \
  settings/panel.ini:SETTINGS/PANEL.INI pipetka:PIPETKA \
  ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
- ../common/NOTIFY3.PNG:NOTIFY3.PNG \
+ ../common/notify3.png:NOTIFY3.PNG \
  ../common/settings/wallpaper.dat:SETTINGS/WALLPAPER.dat \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE \
