@@ -28,6 +28,7 @@
     jge     c	     }
 
  LINEH	    equ 12
+ ICONS	    equ 12
 
 ;=====================================================================
 
@@ -129,20 +130,28 @@
     cmpe    [eax], byte "t", .set_title
     mov     ebx, 1
     cmpe    [eax], byte "A", .set_icon
-    mov     ebx, 2
+    inc     ebx
     cmpe    [eax], byte "E", .set_icon
-    mov     ebx, 3
+    inc     ebx
     cmpe    [eax], byte "W", .set_icon
-    mov     ebx, 4
+    inc     ebx
     cmpe    [eax], byte "O", .set_icon
-    mov     ebx, 5
+    inc     ebx
     cmpe    [eax], byte "N", .set_icon
-    mov     ebx, 6
+    inc     ebx
     cmpe    [eax], byte "I", .set_icon
-    mov     ebx, 7
+    inc     ebx
     cmpe    [eax], byte "F", .set_icon
-    mov     ebx, 8
+    inc     ebx
     cmpe    [eax], byte "C", .set_icon
+    inc     ebx
+    cmpe    [eax], byte "M", .set_icon
+    inc     ebx
+    cmpe    [eax], byte "D", .set_icon
+    inc     ebx
+    cmpe    [eax], byte "H", .set_icon
+    inc     ebx
+    cmpe    [eax], byte "P", .set_icon
 
     jmp     .next_char
 
@@ -174,7 +183,7 @@
     mcall   70, fi
 
     mov     edx, dword [buffer + 32]
-    shl     edx, 1
+    shl     edx, 2
     stdcall mem.Alloc, edx
     mov     [img_data.rgb_obj], eax
 
@@ -191,7 +200,7 @@
     add     eax, 24
     mov     eax, [eax] ;; eax - data [argb]
 
-    mov     ecx, 24 * 24 * 8
+    mov     ecx, 24 * 24 * ICONS
  alpha:
     mov     ebx, [eax]
     shr     ebx, 24
@@ -237,7 +246,8 @@
 
  ;; CALC WINDOW.Y
 
-    mcall   68, 22, sz_shname, 256, 4 + 1 ;OPEN_ALWAYS and WRITE
+    mcall   68, 22, sz_shname, 256 + 512, 4 + 1 ;OPEN_ALWAYS and WRITE
+    add     eax, 512
     mov     [shm], eax
 
  s_search:
@@ -541,17 +551,21 @@
 
  sz_ifile   db "/sys/notify3.png", 0
  sz_shname  db "notify-mem-v01", 0
- sz_std     db "'Notify 3. Keys list\n ", 10,   \
+ sz_std     db "'NOTIFY 3\n",                 \
 		"d - disable auto-closing\n", \
-		"t - first line is title\n",  \
-		"A - application icon\n",     \
-		"E - error icon\n",	      \
-		"W - warning icon\n",	      \
-		"O - ok icon\n",	      \
-		"N - network icon\n",	      \
-		"I - info icon\n",	      \
-		"F - folder icon\n",	      \
-		"C - component icon",	      \
+		"t - title\n",		      \
+		"A - application\n",	      \
+		"E - error\n",		      \
+		"W - warning\n",	      \
+		"O - ok\n",		      \
+		"N - network\n",	      \
+		"I - info\n",		      \
+		"F - folder\n", 	      \
+		"C - component\n",	      \
+		"M - mail\n",		      \
+		"D - download\n",	      \
+		"H - hard disk\n",	      \
+		"P - audio player",	      \
 		"' -td", 0
 
  ;----------------------------

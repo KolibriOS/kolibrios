@@ -13,12 +13,18 @@
 
  2.3 <KEYS>
   d - disable auto-closing
-  t - first line is title
-  A - application icon
-  E - error icon
-  W - warning icon
-  O - ok icon
-  N - network icon
-  I - info icon
-  F - folder icon
-  C - component icon
+  t - title
+
+  2.3.1 ICONS:
+   A - application
+   E - error
+   W - warning
+   O - ok
+   N - network
+   I - info
+   F - folder
+   C - component
+   M - mail
+   D - download
+   H - hard disk
+   P - audio player
