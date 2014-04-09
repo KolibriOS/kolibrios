@@ -285,7 +285,7 @@ print_ok:
 	stdcall _lstrcpy, ntf_msg, ntf_start
 	stdcall _lstrcat, ntf_msg, msg
 	stdcall _lstrcat, ntf_msg, ntf_end_o
-	mov	 edx,ntf_smsg
+	mov	 edx,ntf_msg
 	mov	 dword [is_notify + 8], edx
 	mcall	 70, is_notify
 	mcall	 5,100
