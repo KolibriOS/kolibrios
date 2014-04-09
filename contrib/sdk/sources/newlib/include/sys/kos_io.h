@@ -66,7 +66,7 @@ int write_file(const char *path,const void *buff,
                size_t offset, size_t count, size_t *writes);
 int set_file_size(const char *path, unsigned size);
 void *load_file(const char *path, size_t *len);
-void __stdcall unpack(void* packed_data, void* unpacked_data);
+void unpack(void* packed_data, void* unpacked_data) __attribute__((stdcall)) ;
 
 static inline int user_free(void *mem)
 {
