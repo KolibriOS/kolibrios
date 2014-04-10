@@ -2,17 +2,17 @@
 ; compiler:     FASM 1.67.23
 ; name:         Mouse Emulation For KolibriOS
 ;-----------------------------------------------------------------------------
-; version:	1.2
+; version:      1.2
 ; last update:  01/06/2012
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      using new functions 66.6 and 66.7
 ;-----------------------------------------------------------------------------
-; version:	1.1
+; version:      1.1
 ; last update:  26/05/2012
 ; written by:   Lipatov Kirill aka Leency
 ; changes:      shows notify with instructions, while opening program
 ;-----------------------------------------------------------------------------
-; version:	1.0
+; version:      1.0
 ; last update:  04/09/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      total optimization of code,
@@ -160,8 +160,8 @@ real:
 	mov	ebx,edx
 	mov	edi,ebx
 	shr	ebx,16 ; get x1
-;	shl	edi,16 ; get y1
-;	shr	edi,16
+;       shl     edi,16 ; get y1
+;       shr     edi,16
 	and	edi,0xffff
 
 nullli:
@@ -180,8 +180,8 @@ razr:
 
 	mov	ecx,eax
 	shr	eax,16 ; get x2
-;	shl	ecx,16 ; get y2
-;	shr	ecx,16
+;       shl     ecx,16 ; get y2
+;       shr     ecx,16
 	and	ecx,0xffff
 
 rightdownli:
@@ -286,11 +286,11 @@ UDATA
 mouse_timer_ticks	dd 0
 ;-----------------------------------------------------------------------------
 if lang eq ru
-	ud_user_message db 'NumLock включает и выключает эмулятор мыши. Управление через Numpad',0
+	ud_user_message db '"NumLock включает и выключает эмулятор мыши.\nУправление через Numpad." -I',0
 else if lang eq it
-	ud_user_message db 'NumLock - on/off - usa Numpad per muovere il cursore',0
+	ud_user_message db '"NumLock - on/off - usa Numpad per muovere il cursore." -I',0
 else
-	ud_user_message db 'NumLock - on/off mouse emul. Numpad - move cursor',0
+	ud_user_message db '"NumLock - on/off mouse emul. Numpad - move cursor." -I',0
 end if
 
 notifyapp:

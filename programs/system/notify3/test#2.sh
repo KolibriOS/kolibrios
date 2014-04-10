@@ -1,13 +1,12 @@
 #SHS
-@notify "Application"  -dtA
-@notify "Error"        -dtE
-@notify "Warning"      -dtW
-@notify "Ok"	       -dtO
-@notify "Network"      -dtN
-@notify "Info"	       -dtI
-@notify "Folder"       -dtF
-@notify "Component"    -dtC
-@notify "Mail"	       -dtM
-@notify "Download"     -dtD
-@notify "Hard disk"    -dtH
-@notify "Audio Player" -dtP
+@notify "Application"  -tA
+@notify "Error"        -tE
+@notify "Warning"      -tW
+@notify "Ok"	       -tO
+@notify "Network"      -tN
+@notify "Info"	       -tI
+@notify "Folder"       -tF
+@notify "Component"    -tC
+@notify "Mail"	       -tM
+@notify "Download"     -tD
+@notify "Audio Player" -tP

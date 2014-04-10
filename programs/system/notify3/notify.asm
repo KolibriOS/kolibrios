@@ -28,7 +28,7 @@
     jge     c	     }
 
  LINEH	    equ 12
- ICONS	    equ 12
+ ICONS	    equ 11
 
 ;=====================================================================
 
@@ -148,8 +148,6 @@
     cmpe    [eax], byte "M", .set_icon
     inc     ebx
     cmpe    [eax], byte "D", .set_icon
-    inc     ebx
-    cmpe    [eax], byte "H", .set_icon
     inc     ebx
     cmpe    [eax], byte "P", .set_icon
 
@@ -564,7 +562,6 @@
 		"C - component\n",	      \
 		"M - mail\n",		      \
 		"D - download\n",	      \
-		"H - hard disk\n",	      \
 		"P - audio player",	      \
 		"' -td", 0
 

@@ -26,5 +26,4 @@
    C - component
    M - mail
    D - download
-   H - hard disk
    P - audio player
