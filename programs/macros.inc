@@ -507,7 +507,7 @@ struct system_colors
   work_graph       dd ?
 ends
 
-struct sys_colors
+struct sys_colors_new
   menu_body      dd ?
   3d_face        dd ?
   3d_dark        dd ?
