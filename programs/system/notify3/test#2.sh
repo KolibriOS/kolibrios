@@ -9,4 +9,4 @@
 @notify "Component"    -tC
 @notify "Mail"	       -tM
 @notify "Download"     -tD
-@notify "Audio Player" -tP
+@notify "Sound"        -tS

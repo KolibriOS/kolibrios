@@ -149,7 +149,7 @@
     inc     ebx
     cmpe    [eax], byte "D", .set_icon
     inc     ebx
-    cmpe    [eax], byte "P", .set_icon
+    cmpe    [eax], byte "S", .set_icon
 
     jmp     .next_char
 

@@ -26,4 +26,4 @@
    C - component
    M - mail
    D - download
-   P - audio player
+   S - sound
