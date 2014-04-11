@@ -18,7 +18,7 @@
 typedef struct dom_string dom_string;
 extern struct dom_string {
 	uint32_t refcnt;
-} _ALIGNED;
+}; //_ALIGNED;
 
 
 /* Claim a reference on a DOM string */

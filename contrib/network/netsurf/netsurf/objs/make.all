@@ -25,7 +25,7 @@ OBJS = about.o base64.o bitmap_fbtk.o bitmap.o bmp.o box_construct.o \
     urldb.o url.o useragent.o user.o utf8.o utils.o utils_utils.o \
     version.o window.o www-authenticate.o snprintf.o stubs.o divdi3.o
 
-LIBS += -lm -lcurl -liconv  -lnsbmp -lnsgif -lpng -ljpeg -lz -lnsfb  -lSDL -lwapcaplet -lcss  -ldom -lhubbub -lparserutils -lfreetype2
+LIBS += -lm -lcurl -liconv  -lnsbmp -lnsgif -lpng -ljpeg -lz -lnsfb -lwapcaplet -lcss  -ldom -lhubbub -lparserutils -lfreetype2
 
 OUTFILE = _netsurf
 

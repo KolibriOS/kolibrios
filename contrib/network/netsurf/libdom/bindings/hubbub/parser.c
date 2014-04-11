@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "/home/sourcerer/kos_src/newenginek/kolibri/include/hubbub/errors.h"
-#include "/home/sourcerer/kos_src/newenginek/kolibri/include/hubbub/hubbub.h"
-#include "/home/sourcerer/kos_src/newenginek/kolibri/include/hubbub/parser.h"
+#include "hubbub/errors.h"
+#include "hubbub/hubbub.h"
+#include "hubbub/parser.h"
 
 #include <dom/dom.h>
 

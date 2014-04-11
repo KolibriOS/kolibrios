@@ -1623,6 +1623,7 @@ static void llcache_fetch_callback(const fetch_msg *msg, void *p)
 	nserror error = NSERROR_OK;
 	llcache_object *object = p;
 	llcache_event event;
+	__menuet__debug_out("Inside llcache_fetch_callback\n");
 
 #ifdef LLCACHE_TRACE
 	LOG(("Fetch event %d for %p", msg->type, object));
@@ -1798,8 +1799,10 @@ static void llcache_fetch_callback(const fetch_msg *msg, void *p)
 
 			object->fetch.state = LLCACHE_FETCH_COMPLETE;
 		}
+		__menuet__debug_out("Returning from llcache_fetch_callback. (err != NS_OK)\n");
 		return;
 	}
+	__menuet__debug_out("Returning from llcache_fetch_callback.(err = NS_OK)\n");
 }
 
 /**

@@ -5,7 +5,8 @@ COMPONENT_VERSION := 0.0.1
 COMPONENT_TYPE ?= lib-static
 
 # Setup the tooling
-PREFIX ?= /opt/netsurf
+#PREFIX ?= /opt/netsurf
+PREFIX ?= /usr
 NSSHARED ?= $(PREFIX)/share/netsurf-buildsystem
 include $(NSSHARED)/makefiles/Makefile.tools
 
@@ -23,7 +24,10 @@ endif
 ifeq ($(TARGET),amiga)
   CFLAGS := -U__STRICT_ANSI__ $(CFLAGS)
 endif
-CFLAGS := -D_BSD_SOURCE -I$(CURDIR)/include/ \
+
+
+
+CFLAGS := -D_BSD_SOURCE -I$(CURDIR)/include/ -I$(CURDIR)/../libwapcaplet/include/ \
 	-I$(CURDIR)/src -I$(CURDIR)/binding $(WARNFLAGS) $(CFLAGS)
 # Some gcc2 versions choke on -std=c99, and it doesn't know about it anyway
 ifneq ($(GCCVER),2)

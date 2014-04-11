@@ -457,6 +457,7 @@ struct keyval ident_inherit = {
 	.key = str_INHERIT,
 };
 
+#if 0
 int main(int argc, char **argv)
 {
 	char *descriptor;
@@ -612,3 +613,4 @@ output_header(outputf, descriptor, base.item[0], is_generic);
 
 	return 0;
 }
+#endif

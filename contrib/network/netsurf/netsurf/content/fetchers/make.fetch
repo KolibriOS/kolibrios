@@ -15,7 +15,8 @@ NETSURF_FRAMEBUFFER_BIN := $(PREFIX)/bin/
   
 OBJS := curl.o data.o file.o about.o resource.o
 
-
 OUTFILE = TEST.o
-CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include
+CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include -I ../../../libwapcaplet/include/ -I ../../../libcss/include/
+
+
 include $(MENUETDEV)/makefiles/Makefile_for_o_lib

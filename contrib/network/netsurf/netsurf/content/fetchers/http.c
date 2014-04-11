@@ -16,22 +16,27 @@ int kol_exit(){
 
 
 struct http_msg {
+// internal used by library, dont mess with these.
 unsigned int socket;
 unsigned int flags;
 unsigned int write_ptr;
 unsigned int buffer_length;
 unsigned int chunk_ptr;
 unsigned int timestamp;
+
+// available for use.
 unsigned int status;
 unsigned int header_length;
+char *content_ptr;
 unsigned int content_length;
 unsigned int content_received;
-char data; //unknown size
+char header; //unknown size (actually, it's size is defined in header_length)
 };
 
 
 int (* __stdcall http_init)();
-unsigned int (* __stdcall http_get) (char * url); //yay, it's NOT uint, but hey, C is stubborn, and I'm dumb
+// On the next line, we should tell the C compiler that this procedure actually returns a pointer. (to the http_msg struct)
+unsigned int (* __stdcall http_get) (char * url, char * add_head); //yay, it's NOT uint, but hey, C is stubborn, and I'm dumb
 int (* __stdcall http_process) (unsigned int identifier);
 void (* __stdcall http_free) (unsigned int identifier);
 

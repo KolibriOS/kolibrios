@@ -18,8 +18,8 @@
 typedef struct dom_string dom_string;
 struct dom_string {
 	uint32_t refcnt;
-} _ALIGNED;
-
+};
+//dom_string _ALIGNED;
 
 /* Claim a reference on a DOM string */
 static inline dom_string *dom_string_ref(dom_string *str)

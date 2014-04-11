@@ -1,8 +1,7 @@
 
 OUTFILE = libo.o
 
-CFLAGS += -I ../../../include/ -I ../../../../ -I ../../ -I /home/sourcerer/kos_src/newenginek/kolibri/include
-
+CFLAGS += -I ../../../include/ -I ../../../../ -I ../../ -I /home/sourcerer/kos_src/newenginek/kolibri/include -I ../../../../libwapcaplet/include/ -I ../../../../libparserutils/include/
 
 OBJS = helpers.o \
 azimuth.o \

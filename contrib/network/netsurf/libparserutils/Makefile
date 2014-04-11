@@ -5,7 +5,9 @@ COMPONENT_VERSION := 0.1.1
 COMPONENT_TYPE ?= lib-static
 
 # Setup the tooling
-PREFIX ?= /opt/netsurf
+#PREFIX ?= /opt/netsurf
+PREFIX ?= /usr/
+
 NSSHARED ?= $(PREFIX)/share/netsurf-buildsystem
 include $(NSSHARED)/makefiles/Makefile.tools
 
@@ -50,3 +52,7 @@ INSTALL_ITEMS := $(INSTALL_ITEMS) $(I):$(Is)/buffer.h;$(Is)/stack.h;$(Is)/vector
 
 INSTALL_ITEMS := $(INSTALL_ITEMS) /lib/pkgconfig:lib$(COMPONENT).pc.in
 INSTALL_ITEMS := $(INSTALL_ITEMS) /lib:$(OUTPUT)
+
+OUTFILE := $(CURDIR)/finallib.a
+
+include $(MENUETDEV)/makefiles/Makefile_for_lib

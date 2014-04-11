@@ -5,7 +5,8 @@ COMPONENT_VERSION := 0.0.2
 COMPONENT_TYPE ?= lib-static
 
 # Setup the tooling
-PREFIX ?= /opt/netsurf
+#PREFIX ?= /opt/netsurf
+PREFIX ?= /usr
 NSSHARED ?= $(PREFIX)/share/netsurf-buildsystem
 include $(NSSHARED)/makefiles/Makefile.tools
 
