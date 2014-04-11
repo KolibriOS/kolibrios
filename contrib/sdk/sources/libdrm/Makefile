@@ -1,12 +1,10 @@
+CC=gcc
+LD = ld
+AR= ar
 
 LIBRARY= libdrm
 
-CC=gcc
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
-
-LD = ld
-
-AR= ar
 
 STRIP = $(PREFIX)strip
 

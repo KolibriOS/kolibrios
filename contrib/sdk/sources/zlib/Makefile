@@ -8,7 +8,7 @@
 # For conditions of distribution and use, see copyright notice in zlib.h
 
 STATICLIB = libz.a
-SHAREDLIB = zlib.dll
+SHAREDLIB = libz.dll
 IMPLIB    = libz.dll.a
 
 PREFIX =
@@ -25,8 +25,6 @@ AR = $(PREFIX)ar
 ARFLAGS = rcs
 
 STRIP = $(PREFIX)strip
-
-LDIMPORT:= -nostdlib --out-implib libzimp.a 
 
 LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB) 
 
@@ -65,7 +63,7 @@ $(SHAREDLIB): zlib.def $(OBJS) $(OBJA) Makefile
 	$(STRIP) $@
 	sed -f ../newlib/cmd1.sed zlib.def > mem
 	sed -f ../newlib/cmd2.sed mem >zlib.inc 
-	mv -f zlib.dll ../../bin
+	mv -f libz.dll ../../bin
 	mv -f libz.dll.a ../../lib   
 
 

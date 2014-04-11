@@ -5,7 +5,7 @@ CC = gcc
 CFLAGS = -c -O2 -ffast-math -Wall -Winline -Wno-attributes -fomit-frame-pointer
 
 LD = ld
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
+LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def --out-implib lib$(LIBRARY).dll.a
 
 STRIP = $(PREFIX)strip
 
@@ -149,13 +149,13 @@ endif
 # targets 
 
 
-all: $(LIBRARY).a $(LIBRARY).dll
+all: lib$(LIBRARY).a $(LIBRARY).dll
 
-ebox: $(LIBRARY).a $(LIBRARY).dll
+ebox: lib$(LIBRARY).a $(LIBRARY).dll
 
-$(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJECTS)
-	mv -f $(LIBRARY).a ../../lib
+lib$(LIBRARY).a: $(OBJECTS) Makefile
+	ar cvrs lib$(LIBRARY).a $(OBJECTS)
+	mv -f lib$(LIBRARY).a ../../lib
 
 
 $(LIBRARY).dll: $(OBJECTS) Makefile
@@ -165,7 +165,7 @@ $(LIBRARY).dll: $(OBJECTS) Makefile
 	sed -f ../newlib/cmd1.sed $(LIBRARY).def > mem
 	sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
 	mv -f $@ ../../bin
-	mv -f $(LIBRARY).dll.a ../../lib   
+	mv -f lib$(LIBRARY).dll.a ../../lib   
 
 %.o : %.c 
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

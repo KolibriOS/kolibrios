@@ -59,14 +59,13 @@ endif
 
 # targets 
 
-all:$(LIBRARY).a $(LIBRARY).dll
+all:lib$(LIBRARY).a $(LIBRARY).dll
 
-ebox:$(LIBRARY).a $(LIBRARY).dll
+ebox:$lib(LIBRARY).a $(LIBRARY).dll
 
-
-$(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJECTS)
-	mv -f $(LIBRARY).a ../../lib
+lib$(LIBRARY).a: $(OBJECTS) Makefile
+	ar cvrs lib$(LIBRARY).a $(OBJECTS)
+	mv -f lib$(LIBRARY).a ../../lib
 
 $(LIBRARY).dll: $(LIBRARY).def $(OBJECTS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBRARY).def $(OBJECTS) $(LIBS)
