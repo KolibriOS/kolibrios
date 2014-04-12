@@ -11,46 +11,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-text_insert_newlines:                   ; esi = ASCIIZ string
+text_insert_newlines:			; esi = ASCIIZ string
 
-        xor     edx, edx                ; number of lines of text
-        cmp     byte[esi], 0
-        je      .done
+	xor	edx, edx		; number of lines of text
+	cmp	byte[esi], 0
+	je	.done
   .next_line:
-        xor     ebx, ebx
-        mov     ecx, [textbox_width]
-        inc     ecx
+	xor	ebx, ebx
+	mov	ecx, [textbox_width]
+	inc	ecx
   .more:
-        dec     ecx
-        jz      .end_of_line
-        lodsb                           ; get one character of the string
-        test    al, al                  ; end of string?
-        jz      .almost_done
-        cmp     al, ' '                 ; it's a space! remember its position
-        je      .space
-        cmp     al, 13                  ; we already inserted a newline once, make it a space again
-        je      .soft_nl
-        cmp     al, 10                  ; it's a newline, continue onto the next line
-        jne     .more
-        inc     edx
-        jmp     .next_line
+	dec	ecx
+	jz	.end_of_line
+	lodsb				; get one character of the string
+	test	al, al			; end of string?
+	jz	.almost_done
+	cmp	al, ' ' 		; it's a space! remember its position
+	je	.space
+	cmp	al, 13			; we already inserted a newline once, make it a space again
+	je	.soft_nl
+	cmp	al, 10			; it's a newline, continue onto the next line
+	jne	.more
+	inc	edx
+	jmp	.next_line
   .soft_nl:
-        mov     byte[esi-1], ' '
+	mov	byte[esi-1], ' '
   .space:
-        mov     ebx, esi                ; last detected space
-        jmp     .more
+	mov	ebx, esi		; last detected space
+	jmp	.more
   .end_of_line:
-        inc     edx
-        test    ebx, ebx                ; did we detect any spaces on this line?
-        jz      .next_line              ; no:   just continue onto the next line
-        mov     byte[ebx-1], 13         ; yes:  replace last space on line with a soft newline
-        mov     esi, ebx                ;       and continue parsing just after last space
-        jmp     .next_line              ;
+	inc	edx
+	test	ebx, ebx		; did we detect any spaces on this line?
+	jz	.next_line		; no:   just continue onto the next line
+	mov	byte[ebx-1], 13 	; yes:  replace last space on line with a soft newline
+	mov	esi, ebx		;       and continue parsing just after last space
+	jmp	.next_line		;
   .almost_done:
-        dec     esi
+	dec	esi
   .done:
 
-        ret
+	ret
 
 ;----------------------------------
 ; scan untill next line is reached
@@ -61,20 +61,20 @@ text_insert_newlines:                   ; esi = ASCIIZ string
 ;----------------------------------
 text_nextline:
 
-        mov     ecx, [textbox_width]
+	mov	ecx, [textbox_width]
   .loop:
-        lodsb
-        test    al, al
-        jz      .done
-        cmp     al, 10
-        je      .done
-        cmp     al, 13
-        je      .done
-        dec     ecx
-        jnz     .loop
+	lodsb
+	test	al, al
+	jz	.done
+	cmp	al, 10
+	je	.done
+	cmp	al, 13
+	je	.done
+	dec	ecx
+	jnz	.loop
   .done:
 
-        ret
+	ret
 
 
 ;----------------------------------
@@ -86,21 +86,21 @@ text_nextline:
 ;----------------------------------
 print_string:
 
-        push    eax
+	push	eax
   .loop:
-        lodsb
-        cmp     al, bl
-        je      .done
-        cmp     al, 13
-        je      .loop
-        test    al, al
-        jz      .done
-        call    print_char
-        jmp     .loop
+	lodsb
+	cmp	al, bl
+	je	.done
+	cmp	al, 13
+	je	.loop
+	test	al, al
+	jz	.done
+	call	print_char
+	jmp	.loop
   .done:
-        pop     eax
+	pop	eax
 
-        ret
+	ret
 
 
 ;----------------------------------
@@ -111,17 +111,17 @@ print_string:
 ;----------------------------------
 print_asciiz:
 
-        push    eax
+	push	eax
   .loop:
-        lodsb
-        test    al, al
-        jz      .done
-        call    print_char
-        jmp     .loop
+	lodsb
+	test	al, al
+	jz	.done
+	call	print_char
+	jmp	.loop
   .done:
-        pop     eax
+	pop	eax
 
-        ret
+	ret
 
 
 ;----------------------------------
@@ -132,250 +132,251 @@ print_asciiz:
 ;----------------------------------
 print_char:
 
-        push    esi edi
-        mov     esi, [window_print]
-        mov     edi, [esi + window.text_write]
-        stosb
-        cmp     edi, [esi + window.text_end]
-        jae     .uh_ow
-        mov     [esi + window.text_write], edi
+	push	esi edi
+	mov	esi, [window_print]
+	mov	edi, [esi + window.text_write]
+	stosb
+	cmp	edi, [esi + window.text_end]
+	jae	.uh_ow
+	mov	[esi + window.text_write], edi
   .continue:
-        or      [esi + window.flags], FLAG_UPDATED
-        pop     edi esi
+	or	[esi + window.flags], FLAG_UPDATED
+	pop	edi esi
 
-        ret
+	ret
 
   .uh_ow:
-        pusha
-        mov     edi, [esi + window.text_start]
-        mov     [esi + window.text_print], edi
-        lea     esi, [edi + TEXT_BUFFERSIZE/2]
-        call    text_nextline
-        mov     ecx, TEXT_BUFFERSIZE/8
-        rep     movsd
-        mov     esi, edi
-        call    text_insert_newlines
+	pusha
+	mov	edi, [esi + window.text_start]
+	mov	[esi + window.text_print], edi
+	lea	esi, [edi + TEXT_BUFFERSIZE/2]
+	call	text_nextline
+	mov	ecx, TEXT_BUFFERSIZE/8
+	rep	movsd
+	mov	esi, edi
+	call	text_insert_newlines
 
-        mov     ebx, [window_print]
-        mov     [ebx + window.text_lines], edx
-        mov     [ebx + window.text_scanned], esi
-        mov     [ebx + window.text_write], esi
-        mov     [ebx + window.text_line_print], 0
-        popa
+	mov	ebx, [window_print]
+	mov	[ebx + window.text_lines], edx
+	mov	[ebx + window.text_scanned], esi
+	mov	[ebx + window.text_write], esi
+	mov	[ebx + window.text_line_print], 0
+	popa
 
-        jmp     .continue
+	jmp	.continue
 
 
 
 draw_channel_text:
 
-        mov     edi, [window_active]
-        and     [edi + window.flags], not FLAG_UPDATED  ; clear the 'window is updated' flag
+	mov	edi, [window_active]
+	and	[edi + window.flags], not FLAG_UPDATED	; clear the 'window is updated' flag
 
 ; Scan new text for newlines
-        mov     esi, [edi + window.text_scanned]
-        call    text_insert_newlines
-        add     [edi + window.text_lines], edx
-        mov     [edi + window.text_scanned], esi
+	mov	esi, [edi + window.text_scanned]
+	call	text_insert_newlines
+	add	[edi + window.text_lines], edx
+	mov	[edi + window.text_scanned], esi
 
 ; Is scrollbar at lowest position?
-        mov     edx, [scroll2.position]
-        test    edx, edx
-        jz      .yesscroll
-        add     edx, [scroll2.cur_area]
-        sub     edx, [scroll2.max_area]
-        jne     .noscroll
+	test	[edi + window.flags], FLAG_SCROLL_LOW
+	jnz	.yesscroll				;Yes
+	cmp	[scroll2.all_redraw], 1 		;No
+	jnz	 .noscroll
+	mov	edx, [textbox_height]
+	sub	edx, [edi + window.text_line_print]
+	jg	.noscroll
   .yesscroll:
 ; Scrollbar was at lowest position, scroll down automatically when new text arrived.
-        mov     edx, [edi + window.text_lines]
-        sub     edx, [textbox_height]
-        jle     .noscroll                               ; There are less lines of text than fit into the window, dont scroll..
-        sub     edx, [edi + window.text_line_print]
-        je      .noscroll                               ; We are already at the bottom pos, dont scroll..
-  .scroll_to_pos:               ; edx = number of lines to go up/down (flags must indicate direction)
-        pushf
-        add     [edi + window.text_line_print], edx
-        mov     esi, [edi + window.text_print]
-        popf
-        ja      .loop_forward
-        std                     ; set direction flag so we can scan backwards
-        dec     esi
-        dec     esi             ; move our cursor just in front of newline, for scanning backwards
+	mov	edx, [edi + window.text_lines]
+	sub	edx, [textbox_height]
+	jle	.noscroll				; There are less lines of text than fit into the window, dont scroll..
+	sub	edx, [edi + window.text_line_print]
+	je	.noscroll				; We are already at the bottom pos, dont scroll..
+  .scroll_to_pos:		; edx = number of lines to go up/down (flags must indicate direction)
+	pushf
+	add	[edi + window.text_line_print], edx
+	mov	esi, [edi + window.text_print]
+	popf
+	ja	.loop_forward
+	std			; set direction flag so we can scan backwards
+	dec	esi
+	dec	esi		; move our cursor just in front of newline, for scanning backwards
   .loop_backward:
-        call    text_nextline
-        inc     edx
-        jnz     .loop_backward
-        inc     esi
-        inc     esi             ; move the cursor just after last newline
-        cld
-        jmp     .ok
+	call	text_nextline
+	inc	edx
+	jnz	.loop_backward
+	inc	esi
+	inc	esi		; move the cursor just after last newline
+	cld
+	jmp	.ok
 
   .loop_forward:
-        call    text_nextline
-        dec     edx
-        jnz     .loop_forward
+	call	text_nextline
+	dec	edx
+	jnz	.loop_forward
   .ok:
-        mov     [edi + window.text_print], esi
+	mov	[edi + window.text_print], esi
   .noscroll:
 
 ; Update and draw scrollbar when nescessary
-        mov     edx, [edi + window.text_lines]
-        cmp     edx, [textbox_height]
-        jbe     .scroll_done
+	mov	edx, [edi + window.text_lines]
+	cmp	edx, [textbox_height]
+	jbe	.scroll_done
 
-        mov     [scroll2.max_area], edx
-        mov     eax, [edi + window.text_line_print]
-        mov     [scroll2.position], eax
+	mov	[scroll2.max_area], edx
+	mov	eax, [edi + window.text_line_print]
+	mov	[scroll2.position], eax
 
-        push    dword scroll2                   ; redraw scrollbar
-        call    [scrollbar_draw]
-        mov     [scroll2.all_redraw], 0         ; next time, dont redraw it completely
+	push	dword scroll2			; redraw scrollbar
+	call	[scrollbar_draw]
+	mov	[scroll2.all_redraw], 0 	; next time, dont redraw it completely
   .scroll_done:
 
 ; Calculate start offset coordinates (align text to bottom)
-        mov     ebx, [textbox_height]
-        sub     ebx, [edi + window.text_lines]
-        jb      .no_offset
-        imul    ebx, FONT_HEIGHT
-        push    [edi + window.text_start]
-        pop     [edi + window.text_print]
-        jmp     .draw_text
+	mov	ebx, [textbox_height]
+	sub	ebx, [edi + window.text_lines]
+	jb	.no_offset
+	imul	ebx, FONT_HEIGHT
+	push	[edi + window.text_start]
+	pop	[edi + window.text_print]
+	jmp	.draw_text
   .no_offset:
-        xor     ebx, ebx
+	xor	ebx, ebx
   .draw_text:
 ; Prepare to actually draw some text
-        mov     eax, [textbox_height]   ; max number of lines to draw
-        add     ebx, TEXT_X shl 16 + TEXT_Y
-        mov     ecx, [colors.work_text] ; default text color
-        mov     edx, [edi + window.text_print]
+	mov	eax, [textbox_height]	; max number of lines to draw
+	add	ebx, TEXT_X shl 16 + TEXT_Y
+	mov	ecx, [colors.work_text] ; default text color
+	mov	edx, [edi + window.text_print]
   .drawloop:
-        cmp     byte[edx], 0
-        je      .end_of_text
+	cmp	byte[edx], 0
+	je	.end_of_text
 
 ; Clear one row of characters
-        pusha
-        mov     cx, bx
-        shl     ecx, 16
-        mov     cx, FONT_HEIGHT
-        mov     ebx, TEXT_X shl 16
-        mov     bx, word[textbox_width]
-        imul    bx, FONT_WIDTH
-        mov     edx, [colors.work]
-        mcall   13                      ; draw rectangle
-        popa
+	pusha
+	mov	cx, bx
+	shl	ecx, 16
+	mov	cx, FONT_HEIGHT
+	mov	ebx, TEXT_X shl 16
+	mov	bx, word[textbox_width]
+	imul	bx, FONT_WIDTH
+	mov	edx, [colors.work]
+	mcall	13			; draw rectangle
+	popa
 
-        mov     esi, edx
-        add     esi, [textbox_width]
+	mov	esi, edx
+	add	esi, [textbox_width]
   .line:
-        cmp     byte[edx], 0
-        je      .end_of_text
+	cmp	byte[edx], 0
+	je	.end_of_text
 
-        cmp     byte[edx], 13
-        je      .newline_soft
+	cmp	byte[edx], 13
+	je	.newline_soft
 
-        cmp     byte[edx], 10
-        je      .newline_hard
+	cmp	byte[edx], 10
+	je	.newline_hard
 
-        push    esi eax
-        cmp     byte[edx], 3            ; escape code for mIRC colors
-        jne     .no_colors
-        inc     edx
-        call    dec_to_esi
-        jz      .no_colors
-        mov     ecx, [irc_colors + 4*esi]
+	push	esi eax
+	cmp	byte[edx], 3		; escape code for mIRC colors
+	jne	.no_colors
+	inc	edx
+	call	dec_to_esi
+	jz	.no_colors
+	mov	ecx, [irc_colors + 4*esi]
 
-        cmp     byte[edx], ','          ; background color?
-        jne     .no_colors
-        inc     edx
-        call    dec_to_esi
-        jz      .no_colors
-        mov     edi, [irc_colors + 4*esi]
-        or      ecx, 0x40000000
+	cmp	byte[edx], ','		; background color?
+	jne	.no_colors
+	inc	edx
+	call	dec_to_esi
+	jz	.no_colors
+	mov	edi, [irc_colors + 4*esi]
+	or	ecx, 0x40000000
   .no_colors:
 
-        mov     esi, 1
-        mcall   4                       ; draw text
-        add     ebx, FONT_WIDTH shl 16
-        inc     edx
-        pop     eax esi
-        cmp     edx, esi
-        jb      .line
-        jmp     .line_full
+	mov	esi, 1
+	mcall	4			; draw text
+	add	ebx, FONT_WIDTH shl 16
+	inc	edx
+	pop	eax esi
+	cmp	edx, esi
+	jb	.line
+	jmp	.line_full
 
   .newline_hard:
-        mov     ecx, [colors.work_text]
+	mov	ecx, [colors.work_text]
   .newline_soft:
-        inc     edx
+	inc	edx
   .line_full:
-        and     ebx, 0x0000ffff
-        add     ebx, TEXT_X shl 16 + FONT_HEIGHT
-        dec     eax
-        jnz     .drawloop
+	and	ebx, 0x0000ffff
+	add	ebx, TEXT_X shl 16 + FONT_HEIGHT
+	dec	eax
+	jnz	.drawloop
   .end_of_text:
 
-        ret
+	ret
 
 
 
 
 dec_to_esi:
 
-        xor     esi, esi
+	xor	esi, esi
   .loop:
-        movzx   eax, byte[edx]
-        sub     al, '0'
-        jb      .done
-        cmp     al, 9
-        ja      .done
-        inc     edx
-        lea     esi, [esi*4 + esi]      ; esi * 5
-        lea     esi, [esi*2 + eax]      ; esi * 2 + eax
-        jmp     .loop
+	movzx	eax, byte[edx]
+	sub	al, '0'
+	jb	.done
+	cmp	al, 9
+	ja	.done
+	inc	edx
+	lea	esi, [esi*4 + esi]	; esi * 5
+	lea	esi, [esi*2 + eax]	; esi * 2 + eax
+	jmp	.loop
   .done:
-        cmp     esi, 16
-        jae     .fail
-        ret
+	cmp	esi, 16
+	jae	.fail
+	ret
 
   .fail:
-        xor     esi, esi
-        ret
+	xor	esi, esi
+	ret
 
 
 
 if TIMESTAMP
 print_timestamp:
 
-        pusha
-        mcall   3                       ; get system time
-        mov     ebx, eax
+	pusha
+	mcall	3			; get system time
+	mov	ebx, eax
 
-        mov     al, '['
-        call    print_char
-        mov     ecx, TIMESTAMP
+	mov	al, '['
+	call	print_char
+	mov	ecx, TIMESTAMP
   .loop:
-        mov     al, bl
-        shr     al, 4
-        add     al, '0'
-        call    print_char
+	mov	al, bl
+	shr	al, 4
+	add	al, '0'
+	call	print_char
 
-        mov     al, bl
-        and     al, 0x0f
-        add     al, '0'
-        call    print_char
+	mov	al, bl
+	and	al, 0x0f
+	add	al, '0'
+	call	print_char
 
-        dec     ecx
-        jz      .done
+	dec	ecx
+	jz	.done
 
-        mov     al, ':'
-        call    print_char
-        shr     ebx, 8
-        jmp     .loop
+	mov	al, ':'
+	call	print_char
+	shr	ebx, 8
+	jmp	.loop
   .done:
-        mov     al, ']'
-        call    print_char
-        mov     al, ' '
-        call    print_char
+	mov	al, ']'
+	call	print_char
+	mov	al, ' '
+	call	print_char
 
-        popa
-        ret
+	popa
+	ret
 end if
