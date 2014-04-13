@@ -1108,6 +1108,7 @@ proc HTTP_find_header_field identifier, headername ;////////////////////////////
         ret
 
   .fail:
+        DEBUGF  1, "Header field not found\n"
         pop     edi esi edx ecx ebx
         xor     eax, eax
         ret
