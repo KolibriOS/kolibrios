@@ -5,8 +5,9 @@ LIB_DIR:= $(abspath ../lib)
 
 # targets 
 
-all: 	newlib zlib libpng freetype pixman cairo \
-	libdrm pixlib		
+all: 	newlib zlib libpng freetype pixman cairo	\
+	libdrm pixlib ffmpeg libsupc++ gcc_eh expat 	\
+	Mesa eglut		
 
 newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a
 
@@ -64,4 +65,57 @@ pixlib: $(DLL_DIR)/pixlib.dll
 $(DLL_DIR)/pixlib.dll: newlib libdrm
 	$(MAKE) -C Intel-2D
 
+#####################################
+
+ffmpeg: $(DLL_DIR)/avcodec-55.dll $(DLL_DIR)/avdevice-55.dll \
+	$(DLL_DIR)/avformat-55.dll $(DLL_DIR)/avutil-52.dll \
+	$(DLL_DIR)/swresample-0.dll $(DLL_DIR)/swscale-2.dll \
+	$(LIB_DIR)/libavcodec.dll.a $(LIB_DIR)/libavdevice.dll.a \
+	$(LIB_DIR)/libavformat.dll.a $(LIB_DIR)/libavutil.dll.a \
+	$(LIB_DIR)/libswresample.dll.a $(LIB_DIR)/libswscale.dll.a
+
+$(DLL_DIR)/avcodec-55.dll $(DLL_DIR)/avdevice-55.dll \
+	$(DLL_DIR)/avformat-55.dll $(DLL_DIR)/avutil-52.dll \
+	$(DLL_DIR)/swresample-0.dll $(DLL_DIR)/swscale-2.dll \
+	$(LIB_DIR)/libavcodec.dll.a $(LIB_DIR)/libavdevice.dll.a \
+	$(LIB_DIR)/libavformat.dll.a $(LIB_DIR)/libavutil.dll.a \
+	$(LIB_DIR)/libswresample.dll.a $(LIB_DIR)/libswscale.dll.a : newlib
+	$(MAKE) -C ffmpeg
+
+#####################################
+
+libsupc++: $(LIB_DIR)/libsupc++.a
+
+$(LIB_DIR)/libsupc++.a: newlib
+	$(MAKE) -C libsupc++
+
+#####################################
+
+expat: $(LIB_DIR)/libexpat.a
+
+$(LIB_DIR)/libexpat.a: newlib
+	$(MAKE) -C expat
+
+#####################################
+
+gcc_eh: $(LIB_DIR)/libgcc_eh.a
+
+$(LIB_DIR)/libgcc_eh.a: newlib
+	$(MAKE) -C gcc_eh
+
+#####################################
+
+Mesa: $(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv
+
+$(DLL_DIR)/libGL.dll $(DLL_DIR)/libegl.dll $(DLL_DIR)/i965_dri.drv \
+	$(LIB_DIR)/libGL.dll.a $(LIB_DIR)/libegl.dll.a \
+	$(LIB_DIR)/libglsl.a: newlib libdrm libsupc++ gcc_eh expat
+	$(MAKE) -C Mesa
+
+#####################################
+
+eglut: $(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a
+
+$(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a : newlib Mesa
+	$(MAKE) -C eglut
  
