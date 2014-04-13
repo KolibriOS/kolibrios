@@ -35,7 +35,7 @@ window_create_textbox:
 	pop	eax
 
 	mov	[ebx + window.data_ptr], eax
-	mov	[ebx + window.flags], 0x04
+	mov	[ebx + window.flags], FLAG_SCROLL_LOW
 
 	add	eax, window_data.text+2 	; let text begin at offset 2, this way the text will be prepended with two null bytes
 	mov	[ebx + window.text_start], eax

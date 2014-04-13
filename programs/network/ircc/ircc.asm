@@ -417,9 +417,10 @@ mouse:
 	mov	edx, [scroll2.position]
 	add	edx, [scroll2.cur_area]
 	sub	edx, [scroll2.max_area]
-	jne	@f
+	jne	.not_low
 	or	[edi+window.flags], FLAG_SCROLL_LOW
-  @@:	mov	edx, [scroll2.position]
+  .not_low:
+	mov	edx, [scroll2.position]
 	sub	edx, [edi + window.text_line_print]
 	je	@f
 	call	draw_channel_text.scroll_to_pos
