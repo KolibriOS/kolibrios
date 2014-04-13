@@ -184,8 +184,9 @@ draw_channel_text:
 	cmp	[scroll2.all_redraw], 1 		;No
 	jnz	 .noscroll
 	mov	edx, [textbox_height]
-	sub	edx, [edi + window.text_line_print]
-	jg	.noscroll
+	add	edx, [edi + window.text_line_print]
+    cmp edx, [edi + window.text_lines]
+	jl	.noscroll
   .yesscroll:
 ; Scrollbar was at lowest position, scroll down automatically when new text arrived.
 	mov	edx, [edi + window.text_lines]
