@@ -200,6 +200,7 @@ FASM_PROGRAMS:=\
  network/netcfg:NETWORK/NETCFG:$(PROGS)/network/netcfg/netcfg.asm \
  network/netstat:NETWORK/NETSTAT:$(PROGS)/network/netstat/netstat.asm \
  network/nslookup:NETWORK/NSLOOKUP:$(PROGS)/network/nslookup/nslookup.asm \
+ network/pasta:NETWORK/PASTA:$(PROGS)/network/pasta/pasta.asm \
  network/synergyc:NETWORK/SYNERGYC:$(PROGS)/network/synergyc/synergyc.asm \
  network/tcpserv:NETWORK/TCPSERV:$(PROGS)/network/tcpserv/tcpserv.asm \
  network/telnet:NETWORK/TELNET:$(PROGS)/network/telnet/telnet.asm \

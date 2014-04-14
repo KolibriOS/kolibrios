@@ -55,7 +55,7 @@ START:
         mov     [clipboard_data], eax
         mcall   70, file_struct
         cmp     eax, 6
-        jne     error
+        jne     error_free_clip
         mov     [clipboard_data_length], ebx
         mov     eax, [clipboard_data]
 
@@ -77,21 +77,23 @@ clipboard:
         je      error
 
 ; Verify if we can work with it
-        cmp     dword[eax + 4], 0               ; text ?
-        jne     error
         mov     [clipboard_data], eax
+        cmp     dword[eax + 4], 0               ; text ?
+        jne     error_free_clip
+
+; Save length in [clipboard_data_length]
         mov     ecx, dword[eax]
         sub     ecx, 8
         mov     [clipboard_data_length], ecx
 
-        mov     eax, [clipboard_data]
+; Skip clipboard containter params for escape proc
         add     eax, 12
 
 escape:
 ; Escape all characters that need escaping
         invoke  HTTP_escape, eax
         test    eax, eax
-        jz      error
+        jz      error_free_clip
         mov     [clipboard_data_length], ebx
 
         push    eax
@@ -101,7 +103,7 @@ escape:
 ; Connect to the server
         invoke  HTTP_get, sz_url, 0
         test    eax, eax
-        jz      error
+        jz      error_free_clip
         mov     [identifier], eax
 
   .again:
@@ -139,13 +141,17 @@ escape:
         add     ecx, sz_paste_head.length + sz_paste_tail.length
         invoke  HTTP_post, sz_url, sz_cookie, sz_ctype, ecx
         test    eax, eax
-        jz      error
+        jz      error_free_clip
         mov     [identifier], eax
 
+; Send the data to the server
         mov     ecx, [eax + http_msg.socket]
         mcall   75, 6, , sz_paste_head, sz_paste_head.length, 0
         mcall   75, 6, , [clipboard_data], [clipboard_data_length], 0
         mcall   75, 6, , sz_paste_tail, sz_paste_tail.length, 0
+
+; Free the data
+        mcall   68, 13, [clipboard_data]
 
   .again2:
         invoke  HTTP_process, [identifier]
@@ -154,11 +160,11 @@ escape:
 
         mov     ebp, [identifier]
         cmp     [ebp + http_msg.status], 302    ; found
-        jne     error
+        jne     error_free_http
 
         invoke  HTTP_find_header_field, [identifier], sz_location
         test    eax, eax
-        jz      error
+        jz      error_free_http
 
         push    eax
         mov     esi, sz_failed
@@ -196,6 +202,11 @@ escape:
         invoke  HTTP_free, [identifier]
         mcall   -1
 
+error_free_http:
+        invoke  HTTP_free, [identifier]
+        jmp     error
+error_free_clip:
+        mcall   68, 13, [clipboard_data]
 error:
         mov     [notify_struct.msg], sz_failed
         mcall   70, notify_struct
