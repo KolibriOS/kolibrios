@@ -83,7 +83,7 @@ clipboard:
 
 ; Save length in [clipboard_data_length]
         mov     ecx, dword[eax]
-        sub     ecx, 8
+        sub     ecx, 12
         mov     [clipboard_data_length], ecx
 
 ; Skip clipboard containter params for escape proc
@@ -254,7 +254,7 @@ sz_url                  db 'http://paste.kolibrios.org/', 0
 sz_set_cookie           db 'set-cookie', 0
 sz_location             db 'location', 0
 sz_ctype                db 'application/x-www-form-urlencoded', 0
-sz_failed               db '"Pasta',13,10,'Paste failed!" -E', 0
+sz_failed               db '"Pasta!',10,'Paste failed!" -E', 0
 
 sz_paste_head           db 'code='
 .length = $ - sz_paste_head
