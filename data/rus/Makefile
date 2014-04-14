@@ -59,6 +59,7 @@ FASM_PROGRAMS:=\
  disptest:DISPTEST:$(PROGS)/system/disptest/trunk/disptest.ASM \
  docpack:DOCPACK:$(PROGS)/system/docpack/trunk/docpack.asm \
  end:END:$(PROGS)/system/end/light/end.asm \
+ fspeed:FSPEED:$(PROGS)/fs/fspeed/fspeed.asm \
  gmon:GMON:$(PROGS)/system/gmon/gmon.asm \
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
  @icon:@ICON:$(PROGS)/system/icon_new/@icon.asm \

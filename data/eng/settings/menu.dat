@@ -112,6 +112,7 @@ CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD informer              /sys/hdd_info
+FSPEED speed of FS        /sys/fspeed
 #13  **** WORK WITH FILES ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
