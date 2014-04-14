@@ -1595,7 +1595,6 @@ proc eax_ascii_dec ;////////////////////////////////////////////////////////////
   .loop:
         xor     edx, edx
         div     ecx
-        add     dl, '0'
         push    edx
         test    eax, eax
         jnz     .loop
