@@ -228,8 +228,11 @@ read_chunk:
 ;--------------------------------------
 .end:	
 	mov	eax,[ebp+8]
+	xor	edx,edx
 	imul	eax,ecx
-	shr	eax,10+4
+	shr	eax,10+4 ;div 1024 ; div 16
+	shl	edx,18
+	add	eax,edx
 	mov	[ebp+4],eax ; speed KB/s	
         DEBUGF 1,'FSPEED: chunk size: %s iterations: %d speed: %d KB/s\n',[ebp],ecx,eax
 	mcall	68,13,[fileread.return]
