@@ -792,11 +792,11 @@ IDE_irq_15_handler:
 align 4
 IDE_common_irq_handler:
 ;        DEBUGF  1, 'K : IDE_common_irq_handler %x\n', [IDE_common_irq_param]:2
+        pushfd
+        cli
         cmp     [IDE_common_irq_param], 0
         je      .exit
 
-        pushfd
-        cli
         pushad
         xor     ebx, ebx
         mov     ecx, [IDE_controller_pointer]
@@ -832,9 +832,9 @@ IDE_common_irq_handler:
 ;--------------------------------------
 @@:
         popad
-        popfd
 ;--------------------------------------
 .exit:
+        popfd
         mov     al, 0
         ret
 ;-----------------------------------------------------------------------------
