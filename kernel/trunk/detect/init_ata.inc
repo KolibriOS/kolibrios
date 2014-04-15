@@ -24,79 +24,59 @@ align 4
         mov     al, 2
         mov     bh, [esi+PCIDEV.devfn]
 ;--------------------------------------
+        mov     dx, 0x1F0
+        test    byte [esi+PCIDEV.class], 1
+        jz      @f
         mov     bl, 0x10
         push    eax
         call    pci_read_reg
         and     eax, 0xFFFC
-        cmp     ax, 0
-        je      @f
-
-        cmp     ax, 1
-        jne     .show_BAR0
-;--------------------------------------
-@@:
-        mov     ax, 0x1F0
-;--------------------------------------
-.show_BAR0:
-        DEBUGF  1, 'K : BAR0 IDE base addr %x\n', ax
-        mov     [StandardATABases], ax
-        mov     [ecx+IDE_DATA.BAR0_val], ax
+        mov     edx, eax
         pop     eax
+@@:
+        DEBUGF  1, 'K : BAR0 IDE base addr %x\n', dx
+        mov     [StandardATABases], dx
+        mov     [ecx+IDE_DATA.BAR0_val], dx
 ;--------------------------------------
+        mov     dx, 0x3F4
+        test    byte [esi+PCIDEV.class], 1
+        jz      @f
         mov     bl, 0x14
         push    eax
         call    pci_read_reg
         and     eax, 0xFFFC
-        cmp     ax, 0
-        je      @f
-
-        cmp     ax, 1
-        jne     .show_BAR1
-;--------------------------------------
-@@:
-        mov     ax, 0x3F4
-;--------------------------------------
-.show_BAR1:
-        DEBUGF  1, 'K : BAR1 IDE base addr %x\n', ax
-        mov     [ecx+IDE_DATA.BAR1_val], ax
+        mov     edx, eax
         pop     eax
+@@:
+        DEBUGF  1, 'K : BAR1 IDE base addr %x\n', dx
+        mov     [ecx+IDE_DATA.BAR1_val], dx
 ;--------------------------------------
+        mov     dx, 0x170
+        test    byte [esi+PCIDEV.class], 4
+        jz      @f
         mov     bl, 0x18
         push    eax
         call    pci_read_reg
         and     eax, 0xFFFC
-        cmp     ax, 0
-        je      @f
-
-        cmp     ax, 1
-        jne     .show_BAR2
-;--------------------------------------
-@@:
-        mov     ax, 0x170
-;--------------------------------------
-.show_BAR2:
-        DEBUGF  1, 'K : BAR2 IDE base addr %x\n', ax
-        mov     [StandardATABases+2], ax
-        mov     [ecx+IDE_DATA.BAR2_val], ax
+        mov     edx, eax
         pop     eax
+@@:
+        DEBUGF  1, 'K : BAR2 IDE base addr %x\n', dx
+        mov     [StandardATABases+2], dx
+        mov     [ecx+IDE_DATA.BAR2_val], dx
 ;--------------------------------------
+        mov     dx, 0x374
+        test    byte [esi+PCIDEV.class], 4
+        jz      @f
         mov     bl, 0x1C
         push    eax
         call    pci_read_reg
         and     eax, 0xFFFC
-        cmp     ax, 0
-        je      @f
-
-        cmp     ax, 1
-        jne     .show_BAR3
-;--------------------------------------
-@@:
-        mov     ax, 0x374
-;--------------------------------------
-.show_BAR3:
-        DEBUGF  1, 'K : BAR3 IDE base addr %x\n', ax
-        mov     [ecx+IDE_DATA.BAR3_val], ax
+        mov     edx, eax
         pop     eax
+@@:
+        DEBUGF  1, 'K : BAR3 IDE base addr %x\n', dx
+        mov     [ecx+IDE_DATA.BAR3_val], dx
 ;--------------------------------------
         mov     bl, 0x20
         push    eax
