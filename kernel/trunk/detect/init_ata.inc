@@ -238,47 +238,8 @@ Init_IDE_ATA_controller_2:
 ;-----------------------------------------------------------------------------
 ; set interrupts for IDE Controller
 ;-----------------------------------------------------------------------------
-        mov     esi, boot_set_int_IDE
-        call    boot_log
-.set_interrupts_for_IDE_controllers:
-        mov     eax, [ecx+IDE_DATA.ProgrammingInterface]
-        cmp     ax, 0x0180
-        je      .pata_ide
-
-        cmp     ax, 0x018a
-        jne     .sata_ide
-;--------------------------------------
-.pata_ide:
-        cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
-        je      .end_set_interrupts
-
-        push    ecx
-        stdcall attach_int_handler, 14, IDE_irq_14_handler, 0
-        DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
-        stdcall attach_int_handler, 15, IDE_irq_15_handler, 0
-        DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
-        pop     ecx
-
-        jmp     .enable_IDE_interrupt
-;--------------------------------------
-.sata_ide:
-        cmp     ax, 0x0185
-        je      .sata_ide_1
-
-        cmp     ax, 0x018f
-        jne     .end_set_interrupts
-;--------------------------------------
-.sata_ide_1:
-        cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
-        je      .end_set_interrupts
-
-        mov     ax, [ecx+IDE_DATA.Interrupt]
-        movzx   eax, al
-        push    ecx
-        stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
-        pop     ecx
-        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [ecx+IDE_DATA.Interrupt]:1, eax
-;--------------------------------------
+        pushfd
+        cli
 .enable_IDE_interrupt:
         mov     esi, boot_enabling_ide
         call    boot_log
@@ -369,7 +330,7 @@ Init_IDE_ATA_controller_2:
 ;--------------------------------------
 .ch2_pio_set_for_all:
         mov     [ecx+IDE_DATA.dma_hdd_channel_2], al
-        jmp     .end_set_interrupts
+        jmp     .set_interrupts_for_IDE_controllers
 ;--------------------------------------
 @@:
         mov     ebx, 4
@@ -406,7 +367,63 @@ Init_IDE_ATA_controller_2:
         DEBUGF  1, "K : IDE CH2 DMA enabled\n"
         mov     [ecx+IDE_DATA.dma_hdd_channel_2], byte 1
 ;--------------------------------------
+.set_interrupts_for_IDE_controllers:
+        mov     esi, boot_set_int_IDE
+        call    boot_log
+;--------------------------------------
+        mov     eax, [ecx+IDE_DATA.ProgrammingInterface]
+        cmp     ax, 0x0180
+        je      .pata_ide
+
+        cmp     ax, 0x018a
+        jne     .sata_ide
+;--------------------------------------
+.pata_ide:
+        cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
+        je      .end_set_interrupts
+
+        push    ecx
+        stdcall attach_int_handler, 14, IDE_irq_14_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
+        stdcall attach_int_handler, 15, IDE_irq_15_handler, 0
+        DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
+        pop     ecx
+
+        jmp     .end_set_interrupts
+;--------------------------------------
+.sata_ide:
+        cmp     ax, 0x0185
+        je      .sata_ide_1
+
+        cmp     ax, 0x018f
+        jne     .end_set_interrupts
+;--------------------------------------
+.sata_ide_1:
+; Some weird controllers generate an interrupt even if IDE interrupts
+; are disabled and no IDE devices. For example, notebook ASUS K72F -
+; IDE controller 010185 generates false interrupt when we work with
+; the IDE controller 01018f. For this reason, the interrupt handler
+; does not need to be installed if both channel IDE controller
+; running in PIO mode.
+        cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
+        je      .end_set_interrupts
+
+        cmp     [ecx+IDE_DATA.dma_hdd_channel_1], 0
+        jne     @f
+
+        cmp     [ecx+IDE_DATA.dma_hdd_channel_2], 0
+        je      .end_set_interrupts
+;--------------------------------------
+@@:
+        mov     ax, [ecx+IDE_DATA.Interrupt]
+        movzx   eax, al
+        push    ecx
+        stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
+        pop     ecx
+        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [ecx+IDE_DATA.Interrupt]:1, eax
+;--------------------------------------
 .end_set_interrupts:
+        popfd
         ret
 ;-----------------------------------------------------------------------------
 ; END of initialisation IDE ATA code

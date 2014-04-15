@@ -708,6 +708,7 @@ endg
 ;-----------------------------------------------------------------------------
 align 4
 IDE_irq_14_handler:
+;        DEBUGF  1, 'K : IDE_irq_14_handler %x\n', [IDE_common_irq_param]:2
         cmp     [IDE_common_irq_param], irq14_num
         jne     .exit
 
@@ -748,6 +749,7 @@ IDE_irq_14_handler:
 ;-----------------------------------------------------------------------------
 align 4
 IDE_irq_15_handler:
+;        DEBUGF  1, 'K : IDE_irq_15_handler %x\n', [IDE_common_irq_param]:2
         cmp     [IDE_common_irq_param], irq15_num
         jne     .exit
 
@@ -789,6 +791,7 @@ IDE_irq_15_handler:
 ;-----------------------------------------------------------------------------
 align 4
 IDE_common_irq_handler:
+;        DEBUGF  1, 'K : IDE_common_irq_handler %x\n', [IDE_common_irq_param]:2
         cmp     [IDE_common_irq_param], 0
         je      .exit
 
