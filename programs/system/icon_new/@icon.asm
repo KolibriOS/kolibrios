@@ -2,7 +2,7 @@ ICON_STRIP	equ '/rd/1/iconstrp.png'
 ICON_INI	equ '/rd/1/settings/icon.ini'
 ICON_SIZE	equ 68	  ;размер области для иконки с надписью
 IMG_SIZE	equ 32	  ;размер иконок
-TEXT_BOTTOM_Y	equ 14	  ;отступ по Y текста от низа иконки
+TEXT_BOTTOM_Y	equ 15	  ;отступ по Y текста от низа иконки
 IMAGE_TOP_Y	equ 10	  ;>=1 Координата Y иконки в области для данной иконки
 ALIGN_SIZE	equ 68	  ;размер сетки выравнивания
 NAME_LENGTH	equ 11	 ;длина имени иконки
