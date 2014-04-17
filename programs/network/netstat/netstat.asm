@@ -271,16 +271,55 @@ draw_stats:
         cmp     bl, 10
         jbe     @r
 
+        pop     eax
+        test    al, al
+        jnz     @f
+        mov     edx, str_down
+        jmp     .print_link
+  @@:
+        cmp     al, 100b
+        jnz     @f
+        mov     edx, str_10m
+        jmp     .print_link
+  @@:
+        cmp     al, 110b
+        jnz     @f
+        mov     edx, str_10mfd
+        jmp     .print_link
+  @@:
+        cmp     al, 1000b
+        jnz     @f
+        mov     edx, str_100m
+        jmp     .print_link
+  @@:
+        cmp     al, 1010b
+        jnz     @f
+        mov     edx, str_100mfd
+        jmp     .print_link
+  @@:
+        cmp     al, 10000b
+        jnz     @f
+        mov     edx, str_1g
+        jmp     .print_link
+  @@:
+        cmp     al, 10010b
+        jnz     @f
+        mov     edx, str_1gfd
+        jmp     .print_link
+  @@:
+        mov     edx, str_unknown
+
+  .print_link:
+        mov     ebx, 134 shl 16 + 35 + 4*18
+        mov     ecx, 0xc0000000
+        mov     edi, 0x00f3f3f3
+        mcall   4
+
         mov     ebx, 0x000a0000
         pop     ecx
-        mov     edx, 134 shl 16 + 35 + 4*18
+        mov     edx, 134 shl 16 + 35 + 3*18
         mov     esi, 0x40000000
-        mov     edi, 0x00F3F3F3
         mcall   47
-
-        sub     edx, 18
-        pop     ecx
-        mcall
 
         sub     edx, 18
         pop     ecx
@@ -780,10 +819,18 @@ str_subnet      db 'Subnet mask:            .   .   .', 0
 str_gateway     db 'Standard gateway:       .   .   .', 0
 str_arp         db 'ARP entrys:', 0
 str_conflicts   db 'ARP conflicts:', 0
-str_unknown     db 'unknown', 0
 str_missed      db 'Packets missed:',0
 str_dumped      db 'Packets dumped:',0
 str_link        db 'Link state:',0
+
+str_down        db 'down', 0
+str_unknown     db 'unknown', 0
+str_10m         db '10 Mbit Half duplex', 0
+str_10mfd       db '10 Mbit Full duplex', 0
+str_100m        db '100 Mbit Half duplex', 0
+str_100mfd      db '100 Mbit Full duplex', 0
+str_1g          db '1 Gbit Half duplex', 0
+str_1gfd        db '1 Gbit Full duplex', 0
 
 str_ARP_legend  db 'IP-address        MAC-address         Status    TTL', 0
 str_ARP_entry   db '   .   .   .        -  -  -  -  -', 0
