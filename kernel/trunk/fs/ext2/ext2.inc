@@ -2,10 +2,13 @@
 ;;                                                              ;;
 ;; Contains ext2 structures, and macros.                        ;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
 ;; Distributed under the terms of the new BSD license.          ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 ; Future jobs for driver, in order of preference:
 ;     * clean up existing extents support.

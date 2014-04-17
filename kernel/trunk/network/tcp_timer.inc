@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3143 $
+$Revision$
 
 timer_flag_retransmission       = 1 shl 0
 timer_flag_keepalive            = 1 shl 1

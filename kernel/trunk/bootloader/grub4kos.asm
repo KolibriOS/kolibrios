@@ -5,6 +5,9 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+$Revision$
+
+
 ; Kolibri OS support loader for GRUB
 ;
 ; Copyright (C) Alex Nogueira Teixeira
