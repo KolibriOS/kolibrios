@@ -1131,6 +1131,8 @@ proc HTTP_escape URI ;//////////////////////////////////////////////////////////
 
 ; TODO: instead of static buffer allocation, make it 4096 bytes and larger only if needed
 
+        DEBUGF  1, "HTTP_escape: %s\n", [URI]
+
         pusha
 
         invoke  mem.alloc, URLMAXLEN
@@ -1178,9 +1180,11 @@ proc HTTP_escape URI ;//////////////////////////////////////////////////////////
         mov     [esp + 4 * 4], edi
 
         popa
+        DEBUGF  1, "escaped URL: %s\n", eax
         ret
 
   .error:
+        DEBUGF  1, "ERROR: out of RAM!\n"
         popa
         xor     eax, eax
         ret
@@ -1199,6 +1203,7 @@ proc HTTP_unescape URI ;////////////////////////////////////////////////////////
 ;< eax = 0 (error) / ptr to ASCIIZ URI                                                            ;;
 ;;================================================================================================;;
 
+        DEBUGF  1, "HTTP_unescape: %s\n", [URI]
         pusha
 
         invoke  mem.alloc, URLMAXLEN
@@ -1211,10 +1216,8 @@ proc HTTP_unescape URI ;////////////////////////////////////////////////////////
         lodsb
         test    al, al
         jz      .done
-
         cmp     al, '%'
         je      .unescape
-
         stosb
         jmp     .loop
 
@@ -1249,11 +1252,12 @@ proc HTTP_unescape URI ;////////////////////////////////////////////////////////
 
   .done:
         stosb
-
         popa
+        DEBUGF  1, "unescaped URL: %s\n", eax
         ret
 
   .error:
+        DEBUGF  1, "ERROR: out of RAM!\n"
         popa
         xor     eax, eax
         ret
