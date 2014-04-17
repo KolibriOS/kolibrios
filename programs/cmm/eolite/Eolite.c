@@ -21,6 +21,7 @@
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
+#include "imgs\icons.txt"
 
 #ifdef LANG_RUS
 	?define T_FILE "” ©«"
@@ -80,8 +81,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.17"
-#define ABOUT_TITLE "Eolite v2.17"
+#define TITLE "Eolite File Manager v2.18"
+#define ABOUT_TITLE "Eolite v2.18"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -314,13 +315,6 @@ void main()
 						break;
 				case 26: //paste
 						CreateThread(#Paste,#copy_stak+4092);
-						break;
-				case 27:
-						strcpy(#temp, "Ram Disk free space: ");
-						i = GetFreeRamDiskClusters() / 2;
-						itoa_(#temp+21, i);
-						strcat(#temp, "Kb");
-						notify(#temp);
 						break;
 				case 31...33: //sort
 						IF(sort_num==1) DrawFilledBar(sorting_arrow_x,42,6,10);
@@ -600,6 +594,7 @@ void Line_ReDraw(dword color, filenum){
 	dword text_col=0,
 	      name_len=0,
 	      attr,
+	      ext1,
 	      y=filenum*files.line_h+files.y;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
@@ -616,10 +611,11 @@ void Line_ReDraw(dword color, filenum){
 		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8])); //size
 	}
 	else
-		if (!strcmp("..",off))
-			Put_icon("..", files.x+3, files.line_h/2-7+y, color, 0);
-		else
-			Put_icon("<DIR>", files.x+3, files.line_h/2-7+y, color, 0);
+	{
+		if (strcmp("..",off)==0) ext1=".."; else ext1="<DIR>";
+		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);		
+	}
+
 	if ( TestBit(attr, 1) ) || ( TestBit(attr, 2) ) text_col=0xA6A6B7; //system or hiden?
 	if (color!=0xFFFfff)
 	{

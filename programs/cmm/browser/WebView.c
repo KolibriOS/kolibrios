@@ -99,7 +99,7 @@ int struct_skin::Load()
 	skin.h = DSWORD[skin.image+8];
 	image_data = DSDWORD[skin.image+24];
 
-	col_bg = DSDWORD[DSDWORD[skin.image+24]];
+	col_bg = DSDWORD[image_data];
 	panel_color  = DSDWORD[skin.w*4*4 + image_data];
 	border_color = DSDWORD[skin.w*4*7 + image_data];
 	progress_bar.progress_color = DSDWORD[skin.w*4*10 + image_data];

@@ -20,8 +20,13 @@
 
 :void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 {
-	DefineButton(x,y,w,h,id,color_b);
+	if (id>0) DefineButton(x,y,w,h,id,color_b);
 	WriteText(-strlen(text)*6+w/2+x+1,h/2-3+y,0x80,color_t,text);
+}
+
+:void WriteTextCenter(dword x,y,w,color_t,text)
+{
+	WriteText(-strlen(text)*6+w/2+x+1,y,0x80,color_t,text);
 }
 
 :void DrawCircle(int x, y, r)

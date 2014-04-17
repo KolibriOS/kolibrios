@@ -9,11 +9,11 @@
 
 #ifdef LANG_RUS
 	?define T_WTITILE "Установка Kolibri N9"
-	?define T_END "Установка KolibriN успешно завершена."
+	?define T_END "\'Установка KolibriN успешно завершена.\' -O"
 	?define T_LESS_RAM "Мало свободной оперативной памяти. Могут возникнуть проблемы"
 #else
 	?define T_WTITILE "Kolibri N9 Setup"
-	?define T_END "KolibriN install complete."
+	?define T_END "\'KolibriN install complete.\' -O"
 	?define T_LESS_RAM "Too less free ram. May cause problems"
 #endif
 
@@ -34,7 +34,7 @@ void main()
 	RunProgram("/sys/REFRSCRN", NULL);
 	copyf(abspath("sys"), "/rd/1");
 	RunProgram("/sys/launcher", NULL);
-	SetSystemSkin("/kolibrios/res/skins/OpusN.skn");
+	SetSystemSkin("/kolibrios/res/skins/Yeah.skn");
 	notify(T_END);
 	DeleteFile("/sys/3d/free3d04");
 	DeleteFile("/sys/games/invaders");

@@ -50,7 +50,7 @@ void llist::SetSizes(int xx, yy, ww, hh, min_hh, line_hh)
 	line_h = line_hh;
 	text_y = line_hh / 2 - 4;
 	visible = h / line_h;
-	if (visible > count) visible=count;
+	//if (visible > count) visible=count;
 }
 
 

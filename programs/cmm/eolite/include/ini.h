@@ -64,9 +64,15 @@ void GetIni(byte onload)
 
 void Write_Error(int error_number)
 {
+	char error_message[500];
+	dword ii;
 	if (files.current>=0) Line_ReDraw(0xFF0000, files.current);
 	pause(5);
-	notify(get_error(error_number));
+	strcpy(#error_message, "\"Eolite\n");
+	ii = get_error(error_number);
+	strcat(#error_message, ii);
+	strcat(#error_message, "\" -tE");
+	notify(#error_message);
 }
 
 

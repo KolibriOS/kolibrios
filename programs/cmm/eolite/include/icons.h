@@ -27,9 +27,6 @@ char *ext[]={
 "grf", 25,
 0,0};
 
-
-#include "imgs\icons.txt"
-
 void Put_icon(dword extension, xx, yy, fairing_color, icon_n)
 {
 	int i;
