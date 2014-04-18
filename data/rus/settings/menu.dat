@@ -46,6 +46,7 @@ Xonix                     /sys/games/xonix
 PheniX                    /sys/games/phenix
 Новый Понг                /sys/games/pong3
 Понг                      /sys/games/pong
+Танчики                   /sys/games/tanks
 #4    **** Демки ****
 Трёхмерные         >      /@5
 Кружок                    /sys/demos/circle

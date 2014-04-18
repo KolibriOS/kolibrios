@@ -43,6 +43,7 @@ Xonix                     /sys/games/xonix
 ArcanII                   /sys/games/arcanii
 Phenix                    /sys/games/phenix
 Snake                     /sys/games/snake
+Tanks                     /sys/games/tanks
 #4    **** DEMOS ****
 3D                 >      /@5
 Circle                    /sys/demos/circle
