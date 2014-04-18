@@ -1,19 +1,26 @@
 ;-----------------------------------------------------------------------------
-lsz	s_text,\
-	ru,'Выбор файла',\
-	en,'Select file',\
-	et,'Select file',\
-	it,'Select file',\
-	sp,'Select file'
+s_text:
+if lang eq ru
+	db 'Выбор файла',0
+else
+	db 'Select file',0
+end if
 ;-----------------------------------------------------------------------------
-lsz	r_text,\
-	ru,'Пуск',\
-	en,'Start',\
-	et,'Start',\
-	it,'Start',\
-	sp,'Start'
+r_text:
+if lang eq ru
+	db 'Пуск',0
+else
+	db 'Start',0
+end if
 ;-----------------------------------------------------------------------------
-title	db 'File Speed  v0.1',0
+result_table_text:
+if lang eq ru
+	db 'Размер   Чтение (КБ/с)   Запись (КБ/с)',0
+else
+	db 'Size     Read (KB/s)     Write (KB/s)',0
+end if
+;-----------------------------------------------------------------------------
+title	db 'File Speed  v0.3',0
 ;-----------------------------------------------------------------------------
 include_debug_strings
 ;-----------------------------------------------------------------------------
@@ -72,8 +79,9 @@ Box_lib_import:
 ;edit_box_mouse		dd aEdit_box_mouse
 ;version_ed		dd aVersion_ed
 
-;check_box_draw		dd aCheck_box_draw
-;check_box_mouse	dd aCheck_box_mouse
+init_checkbox		dd aInit_checkbox
+check_box_draw		dd aCheck_box_draw
+check_box_mouse		dd aCheck_box_mouse
 ;version_ch		dd aVersion_ch
 
 ;option_box_draw	dd aOption_box_draw
@@ -118,9 +126,10 @@ PathShow_draw		dd sz_PathShow_draw
 ;aEdit_box_mouse	db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0
 
-;aCheck_box_draw	db 'check_box_draw',0
-;aCheck_box_mouse	db 'check_box_mouse',0
-;aVersion_ch		db 'version_ch',0
+aInit_checkbox		db 'init_checkbox2',0
+aCheck_box_draw		db 'check_box_draw2',0
+aCheck_box_mouse	db 'check_box_mouse2',0
+;aVersion_ch		db 'version_ch2',0
 
 ;aOption_box_draw	db 'option_box_draw',0
 ;aOption_box_mouse	db 'option_box_mouse',0
@@ -166,6 +175,23 @@ PathShow_data:
 .text_pointer		dd fname	;+28
 .work_area_pointer	dd text_work_area	;+32
 .temp_text_length	dd 0	;+36
+;-----------------------------------------------------------------------------
+check1 check_box2 (100 shl 16)+12,(27 shl 16)+12,6,0xFFFFFF,0,0xffffff,\
+		check_text1,ch_flag_middle
+
+check_text1:
+if lang eq ru
+	db 'Тестировать запись',0
+else
+	db 'Use testing of write',0
+end if
+
+check_box_warning_text:
+if lang eq ru
+	db 'ВНИМАНИЕ! Проверка скорости записи уничтожает содержимое файла!',0
+else
+	db 'WARNING! Testing of write speed is destroy contents of file!',0
+end if
 ;-----------------------------------------------------------------------------
 OpenDialog_data:
 .type			dd 0
@@ -217,24 +243,24 @@ default_dtp:
 sector equ 512
 ;--------------------------------------
 result_table:
-	dd a512b, 0, sector*1
-	dd a1K, 1, sector*2
-	dd a2K, 2, sector*4
-	dd a4K, 3, sector*8
-	dd a8K, 4, sector*16
-	dd a16K, 5, sector*32
-	dd a32K, 6, sector*64
-	dd a64K, 7, sector*128
-	dd a128K, 8, sector*256
-	dd a256K, 9, sector*512
-	dd a512K, 10, sector*1024
-	dd a1M, 11, sector*2*1024
-	dd a2M, 12, sector*4*1024
-	dd a4M, 13, sector*8*1024
-	dd a8M, 14, sector*16*1024
-	dd a16M, 15, sector*32*1024
-	dd a32M, 16, sector*64*1024
-	dd a64M, -1, sector*128*1024
+	dd	a512b,	0,	0,	sector*1
+	dd	a1K,	1,	1,	sector*2
+	dd	a2K,	2,	2,	sector*4
+	dd	a4K,	3,	3,	sector*8
+	dd	a8K,	4,	4,	sector*16
+	dd	a16K,	5,	5,	sector*32
+	dd	a32K,	6,	6,	sector*64
+	dd	a64K,	7,	7,	sector*128
+	dd	a128K,	8,	8,	sector*256
+	dd	a256K,	9,	9,	sector*512
+	dd	a512K,	10,	10,	sector*1024
+	dd	a1M,	11,	11,	sector*2*1024
+	dd	a2M,	12,	12,	sector*4*1024
+	dd	a4M,	13,	13,	sector*8*1024
+	dd	a8M,	14,	14,	sector*16*1024
+	dd	a16M,	15,	15,	sector*32*1024
+	dd	a32M,	16,	16,	sector*64*1024
+	dd	a64M,	17,	17,	sector*128*1024
 ;-----------------------------------------------------------------------------
 a512b	db ' 512',0
 a1K	db '  1K',0
@@ -272,6 +298,16 @@ fileread:
 .offset_1	dd 0
 .size		dd 0
 .return		dd process_info
+		db 0
+.name:		dd fname
+;-----------------------------------------------------------------------------
+align 4
+filewrite:
+.subfunction	dd 3
+.offset		dd 0
+.offset_1	dd 0
+.size		dd 0
+.data		dd process_info
 		db 0
 .name:		dd fname
 ;-----------------------------------------------------------------------------
