@@ -81,8 +81,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.18"
-#define ABOUT_TITLE "Eolite v2.18"
+#define TITLE "Eolite File Manager v2.19"
+#define ABOUT_TITLE "Eolite v2.19"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -596,6 +596,7 @@ void Line_ReDraw(dword color, filenum){
 	      attr,
 	      ext1,
 	      y=filenum*files.line_h+files.y;
+	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
 	DrawBar(files.x+3,y+17,16,1,color);
@@ -658,6 +659,7 @@ void Open_Dir(dword dir_path, redraw){
 		}
 		maxcount = sizeof(file_mas)/sizeof(dword)-1;
 		if (files.count>maxcount) files.count = maxcount;
+		if (files.count>0) && (files.current==-1) files.current=0;
 		if (drw_ram_disk_space) DrawRamDiskSpace();
 	}
 	if (files.count!=-1)
