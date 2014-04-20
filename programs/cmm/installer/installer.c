@@ -28,7 +28,9 @@ void main()
 	for (i=0; i<1000; i++;)
 	{
 		GetProcessInfo(#Process, i);
-		if (strcmp(#Process.name, "@ICON")==0) KillProcess(Process.ID);
+		if (strcmpi(#Process.name, "@icon")==0) KillProcess(Process.ID);
+		if (strcmpi(#Process.name, "@panel")==0) KillProcess(Process.ID);
+		if (strcmpi(#Process.name, "@docky")==0) KillProcess(Process.ID);
 	}
 	SetAddApplDir("kolibrios", abspath("kolibrios")+1);
 	RunProgram("/sys/REFRSCRN", NULL);

@@ -18,6 +18,7 @@
 #include "..\lib\encoding.h"
 #include "..\lib\list_box.h"
 #include "..\lib\copyf.h"
+#include "..\lib\random.h"
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
@@ -81,8 +82,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.21"
-#define ABOUT_TITLE "Eolite v2.21"
+#define TITLE "Eolite File Manager v2.22"
+#define ABOUT_TITLE "Eolite v2.22"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -118,6 +119,7 @@ dword buf, off;
 dword file_mas[6898];
 int j, i;
 int action_buf;
+int rand_n;
 
 edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
@@ -155,6 +157,8 @@ void SetAppColors()
 void main() 
 {
 	word key, id, can_show, can_select, m_selected;
+	randomize();
+	rand_n = random(40);
 
 	files.line_h=18;
 	mem_Init();
@@ -472,7 +476,7 @@ void menu_action(dword id)
 
 void draw_window()
 {
-	DefineAndDrawWindow(40,20,550,500,0x73,sc.work,TITLE,0);
+	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,sc.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	files.SetSizes(192, 57, onLeft(192,27), onTop(57,6), disc_num*16+195,files.line_h);
