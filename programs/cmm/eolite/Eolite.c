@@ -81,8 +81,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.19"
-#define ABOUT_TITLE "Eolite v2.19"
+#define TITLE "Eolite File Manager v2.2"
+#define ABOUT_TITLE "Eolite v2.2"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -306,11 +306,9 @@ void main()
 						Dir_Up();
 						break;
 				case 24: //cut
-						add_to_copy(#file_path);
 						Copy(#file_path, CUT);
 						break;
 				case 25: //copy
-						add_to_copy(#file_path);
 						Copy(#file_path, NOCUT);
 						break;
 				case 26: //paste
@@ -381,11 +379,9 @@ void main()
 							RunProgram("/sys/File Managers/Eolite", #path);
 							break; 
 					case 024: //Ctrl+X
-							add_to_copy(#file_path);
 							Copy(#file_path, CUT);
 							break;
 					case 003: //Ctrl+C
-							add_to_copy(#file_path);
 							Copy(#file_path, NOCUT);
 							break;
 					case 022: //Ctrl+V
@@ -429,6 +425,7 @@ void main()
 							break;
 					case 185: //ins
 							add_to_copy(#file_path);
+							notify("'Eolite\nFile was added to copy queue' -tI");
 							break;
 					case 050...059: //F1-F10
 							FnProcess(key-49);

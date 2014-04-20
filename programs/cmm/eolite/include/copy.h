@@ -32,6 +32,7 @@ void add_to_copy(dword pcth)
 
 void Copy(dword pcth, char cut)
 {
+	add_to_copy(pcth);
 	copy_path.type = 3;
 	copy_path.size = sizeof(copy_path);
 	clipboard.SetSlotData(sizeof(copy_path), #copy_path);
