@@ -49,7 +49,7 @@ void copyf_Draw_Progress(dword filename) {
 	if (CheckEvent()==evButton) 
 	{
 		notify(T_CANCEL_PASTE);
-		ExitProcess();
+		CopyExit();
 	} 
 }
 
@@ -64,7 +64,7 @@ void Paste()
 		tst = j*4096;
 		strlcpy(#copy_from, clipboard.GetSlotData(clipboard.GetSlotCount()-1)+8+tst, 4096);
 		debug(#copy_from);
-		if (!copy_from) ExitProcess();
+		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
 		if (!strcmp(#copy_from,#copy_to))
@@ -76,7 +76,7 @@ void Paste()
 		if (strstr(#copy_to, #copy_from))
 		{
 			notify("Copy directory into itself is a bad idea...");
-			ExitProcess();
+			CopyExit();
 		}
 		if (copy_rezult = copyf(#copy_from,#copy_to))
 		{
@@ -94,9 +94,14 @@ void Paste()
 		cut_active=false;
 	}
 	for (j = 0; j < MAX_HISTORY_NUM; j++) strcpy(#copy_path.copy_list[j].Item, 0);
-	action_buf = COPY_PASTE_END;
 	add_to_copy_active=0;
 	id_add_to_copy=0;
+	CopyExit();
+}
+
+void CopyExit()
+{
+	action_buf = COPY_PASTE_END;
 	ActivateWindow(GetProcessSlot(Form.ID));
 	ExitProcess();
 }
