@@ -1662,7 +1662,7 @@ draw_window:
   Window 150,150,350,385, 0x34FFFFFF, 0x805080d0, title
 	  ; place size
 
-  Button 15,330,92,23,2,0x03FFFFFF   ;  button "press for more"
+  Button 15,330,92,23,2+0x40000000,0x03FFFFFF   ;  button "press for more"
 
 	mov	esi, knopka
 	mov	edi, img_area2
