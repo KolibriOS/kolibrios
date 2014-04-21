@@ -82,8 +82,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.22"
-#define ABOUT_TITLE "Eolite v2.22"
+#define TITLE "Eolite File Manager v2.25"
+#define ABOUT_TITLE "Eolite v2.25"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -428,8 +428,9 @@ void main()
 							Del_Form();
 							break;
 					case 185: //ins
+							add_to_copy_active=1;
 							add_to_copy(#file_path);
-							notify("'Eolite\nFile was added to copy queue' -tI");
+							//notify("'Eolite\nFile was added to copy queue' -tI");
 							break;
 					case 050...059: //F1-F10
 							FnProcess(key-49);

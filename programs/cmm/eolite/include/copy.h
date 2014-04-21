@@ -17,6 +17,7 @@ Clipboard clipboard;
 struct Copy_Path {
 	dword	size;
 	dword	type;
+	int     count;
 	path_str copy_list[MAX_HISTORY_NUM];
 };	
 
@@ -24,15 +25,19 @@ Copy_Path copy_path;
 
 void add_to_copy(dword pcth)
 {
-	add_to_copy_active=1;
 	strlcpy(#copy_path.copy_list[id_add_to_copy].Item, pcth);
-	id_add_to_copy++;
+	if (add_to_copy_active == 1)
+	{
+		id_add_to_copy++;
+		copy_path.count = id_add_to_copy;
+	}
+	else copy_path.count = 1;
 }
 
 
 void Copy(dword pcth, char cut)
 {
-	add_to_copy(pcth);
+	if (add_to_copy_active == 0) add_to_copy(pcth);
 	copy_path.type = 3;
 	copy_path.size = sizeof(copy_path);
 	clipboard.SetSlotData(sizeof(copy_path), #copy_path);
@@ -58,11 +63,19 @@ void Paste()
 {
 	char copy_rezult;
 	byte copy_from[4096];
-	int tst;
+	int tst, count;
+	dword buf;
 	
-	for (j = 0; j < MAX_HISTORY_NUM; j++) {
+	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
+	count = DSINT[buf+8];
+	debugi(count);
+	
+	add_to_copy_active=0;
+	id_add_to_copy=0;
+	
+	for (j = 0; j < count; j++) {
 		tst = j*4096;
-		strlcpy(#copy_from, clipboard.GetSlotData(clipboard.GetSlotCount()-1)+8+tst, 4096);
+		strlcpy(#copy_from, buf+12+tst, 4096);
 		debug(#copy_from);
 		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
@@ -93,9 +106,7 @@ void Paste()
 		Del_File(true);
 		cut_active=false;
 	}
-	for (j = 0; j < MAX_HISTORY_NUM; j++) strcpy(#copy_path.copy_list[j].Item, 0);
-	add_to_copy_active=0;
-	id_add_to_copy=0;
+	for (j = 0; j < MAX_HISTORY_NUM; j++) strcpy(#copy_path.copy_list[j].Item[0], 0);
 	CopyExit();
 }
 
