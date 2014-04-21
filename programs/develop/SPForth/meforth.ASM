@@ -1,7 +1,5 @@
 ; KolSPForth v12
 
-SYSTEM equ EMUL
-
 ;Memory Map
 ;
 ;0
@@ -99,12 +97,8 @@ cfa_#F_CFA:
  	dd     I_END        ; size of image
 MEMS: 	dd     EM       ; memory for app
  	dd     SPP          ; esp
-if SYSTEM eq MEOS
- 	dd     FINFO.path
-else
-	dd     0
-end if
- 	dd     0x0	; I_Param , I_Icon
+	dd     params
+	dd     cur_dir_path
 
  lang fix ru
  include 'MACROS.INC'
@@ -113,30 +107,30 @@ end if
 align 4
 proc strncmp stdcall, s1:dword, s2:dword, n:dword
 
-           push esi
-           push edi
-           mov ecx, [n]
-           test ecx, ecx         ; Max length is zero?
-           je .done
+	   push esi
+	   push edi
+	   mov ecx, [n]
+	   test ecx, ecx         ; Max length is zero?
+	   je .done
 
-           mov esi, [s1]         ; esi = string s1
-           mov edi, [s2]         ; edi = string s2
-           cld
+	   mov esi, [s1]         ; esi = string s1
+	   mov edi, [s2]         ; edi = string s2
+	   cld
 .compare:
-           cmpsb                 ; Compare two bytes
-           jne .done
-           cmp byte [esi-1], 0   ; End of string?
-           je .done
-           dec ecx               ; Length limit reached?
-           jne .compare
+	   cmpsb                 ; Compare two bytes
+	   jne .done
+	   cmp byte [esi-1], 0   ; End of string?
+	   je .done
+	   dec ecx               ; Length limit reached?
+	   jne .compare
 .done:
-           seta al               ; al = (s1 > s2)
-           setb ah               ; ah = (s1 < s2)
-           sub al, ah
-           movsx eax, al         ; eax = (s1 > s2) - (s1 < s2), i.e. -1, 0, 1
-           pop edi
-           pop esi
-           ret
+	   seta al               ; al = (s1 > s2)
+	   setb ah               ; ah = (s1 < s2)
+	   sub al, ah
+	   movsx eax, al         ; eax = (s1 > s2) - (s1 < s2), i.e. -1, 0, 1
+	   pop edi
+	   pop esi
+	   ret
 endp
 
 align 4
@@ -472,22 +466,16 @@ cfa_AHEADER 0,'READ_GIF',READ_GIF ;( gif_ptr, out_ptr -- result )
  include 'amain.asm'
  
  header db   'Kolibri Forth v12.1',0
+ params: rb 256
+ cur_dir_path: rb 4096
+
 
  FINFO:
  	.mode dd 0
- 			  dd 0
+		  dd 0
  	.blk  dd 1
  	.buf  dd 0
  	.work dd os_work
- 	.path:
- 	 db '/RD/1/AUTOLOAD.F'
-; 	 db '/RD/1/EXAMPLE.F'
-;	 db '/RD/1/PICTURE.F'
- 	db 0
- 	.end_path:
-
-
-	rb 256-($-.path)
 
 
 lastcur dd 0,0
