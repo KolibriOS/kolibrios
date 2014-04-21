@@ -37,7 +37,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #endif
 
-#include <memory.h>
+//#include <memory.h>
 #include <malloc.h>
 #include "i915_pciids.h"
 

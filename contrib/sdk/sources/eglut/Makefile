@@ -2,17 +2,19 @@
 LIBRARY= libeglut
 IMPLIB=  libeglut.dll.a
 
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
 
-CC=gcc
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
-
-AR= ar
 
 INCLUDES= -I. -I../newlib/include -I../Mesa/include -I../Mesa/src/gbm/main -I../libdrm/include
 
-LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB)
+LDFLAGS:= -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS+= --out-implib $(IMPLIB)
+
 LIBPATH:= -L../../lib
-LIBS:=  -ldll -legl.dll -lgl.dll -lc.dll
+LIBS:=  -ldll -legl.dll -lGL.dll -lc.dll
 
 DEFINES= -D__unix__ -DMESA_EGL_NO_X11_HEADERS
 
@@ -32,7 +34,7 @@ OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 all:$(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJECTS)
+	$(AR) crs $(LIBRARY).a $(OBJECTS)
 	mv -f $(LIBRARY).a ../../lib
 
 $(LIBRARY).dll: $(OBJECTS) Makefile

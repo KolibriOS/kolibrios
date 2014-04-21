@@ -11,22 +11,21 @@ STATICLIB = libz.a
 SHAREDLIB = libz.dll
 IMPLIB    = libz.dll.a
 
-PREFIX =
-CC = $(PREFIX)gcc
+CC = kos32-gcc
+LD = kos32-ld
+AR = kos32-ar
+STRIP = kos32-strip
+
 CFLAGS = $(LOC) -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fomit-frame-pointer 
 
 AS = $(CC)
 ASFLAGS = $(LOC) -Wall
 
-LD = ld
 LDFLAGS = $(LOC)
 
-AR = $(PREFIX)ar
 ARFLAGS = rcs
 
-STRIP = $(PREFIX)strip
-
-LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB) 
+LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB)
 
 INCLUDES= -I../newlib/include
 
@@ -61,8 +60,8 @@ $(IMPLIB): $(SHAREDLIB)
 $(SHAREDLIB): zlib.def $(OBJS) $(OBJA) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ zlib.def $(OBJS) $(OBJA) $(LIBS) 
 	$(STRIP) $@
-	sed -f ../newlib/cmd1.sed zlib.def > mem
-	sed -f ../newlib/cmd2.sed mem >zlib.inc 
+	#sed -f ../newlib/cmd1.sed zlib.def > mem
+	#sed -f ../newlib/cmd2.sed mem >zlib.inc 
 	mv -f libz.dll ../../bin
 	mv -f libz.dll.a ../../lib   
 

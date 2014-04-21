@@ -1,4 +1,3 @@
-CC = gcc
 
 SRC_DIR:=$(SDK_DIR)/sources
 MESA_SRC:= $(SRC_DIR)/Mesa/src
@@ -7,16 +6,13 @@ CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LD = ld
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds --out-implib libGL.dll.a -e _DllStartup
-
-STRIP = $(PREFIX)strip
 
 INC_MESA:= -I$(SRC_DIR)/newlib/include -I$(SRC_DIR)/Mesa/include
 INC_MESA+= -I./src -I$(MESA_SRC)/glsl -I$(MESA_SRC)/mesa -I$(MESA_SRC)/mapi
 
 
-LIBPATH:= -L$(SDK_DIR)/lib
+LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -ldrm.dll -lc.dll -lgcc
 
@@ -45,7 +41,7 @@ all: libGL.dll
 
 libGL.dll: $(LIBGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ mesa.def $(LIBGL_OBJS) $(LIBS)
-	$(STRIP) $@
+#	$(STRIP) $@
 	mv -f $@ $(SDK_DIR)/bin
 	mv -f libGL.dll.a $(SDK_DIR)/lib
 

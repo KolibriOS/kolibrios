@@ -1,23 +1,20 @@
-
 LIBRARY= libsupc++
 
-CC=gcc
-CPP=g++
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+CPP= kos32-g++
+STRIP = kos32-strip
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
 
-LD = ld
-
-AR= ar
-
-STRIP = $(PREFIX)strip
+ARFLAGS= crs
 
 INCLUDES= -I. -I../newlib/include
 
-
 LIBS:=  -ldll -lc.dll
 
-
-DEFINES= -DIN_GCC -DUSE_EMUTLS=1
+DEFINES= -DIN_GCC -DUSE_EMUTLS=1 -D_GLIBCXX_HAVE_TLS
 
 
 SOURCES = 	gthr_mutex.c			\
@@ -53,18 +50,13 @@ SOURCES = 	gthr_mutex.c			\
 
 OBJECTS =  $(patsubst %.cc, %.o, $(patsubst %.c, %.o, $(SOURCES)))
 
-
-
 # targets 
-
 
 all:$(LIBRARY).a
 
-
 $(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJECTS)		
+	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJECTS)		
 	mv -f $(LIBRARY).a ../../lib
-
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
@@ -75,7 +67,4 @@ $(LIBRARY).a: $(OBJECTS) Makefile
 
 clean: 
 	-rm -f *.o 
-
-
-
 

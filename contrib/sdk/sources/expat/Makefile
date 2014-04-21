@@ -1,10 +1,12 @@
-CC=gcc
-LD= ld
-AR= ar
-
 LIBRARY= libexpat
 
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
+
+ARFLAGS = crs
 
 INCLUDES= -I. -I../newlib/include
 
@@ -26,7 +28,7 @@ OBJS =  $(patsubst %.c, %.o, $(SRCS))
 all:$(LIBRARY).a 
 
 $(LIBRARY).a: $(OBJS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJS)
+	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJS)
 	mv -f $(LIBRARY).a ../../lib
 
 %.o : %.c Makefile

@@ -1,16 +1,16 @@
-
 LIBRARY= libpng16
 
-CC=gcc
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+STRIP = kos32-strip
 
-LD = ld
+CFLAGS = -UWIN32 -UWindows -U_WINDOWS -U_WIN32 -U__WIN32__ -c -O2 -fomit-frame-pointer
 
-AR= ar
-
-STRIP = $(PREFIX)strip
-
-LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(LIBRARY).dll.a
+LDFLAGS= -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS+=  --out-implib $(LIBRARY).dll.a
+ 
+ARFLAGS:= crs
 
 INCLUDES= -I. -I../newlib/include -I../zlib
 
@@ -46,14 +46,14 @@ all:$(LIBRARY).a $(LIBRARY).dll
 ebox:$(LIBRARY).a $(LIBRARY).dll
 
 $(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJECTS)
+	$(AR) $(ARFLAGS) $(LIBRARY).a $(OBJECTS)
 	mv -f $(LIBRARY).a ../../lib
 
 $(LIBRARY).dll: libpng16.def $(OBJECTS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@  libpng16.def $(OBJECTS) $(LIBS)
 	$(STRIP) $@
-	sed -f ../newlib/cmd1.sed libpng16.def > mem
-	sed -f ../newlib/cmd2.sed mem >libpng.inc
+	#sed -f ../newlib/cmd1.sed libpng16.def > mem
+	#sed -f ../newlib/cmd2.sed mem >libpng.inc
 	mv -f $@ ../../bin
 	mv -f $(LIBRARY).dll.a ../../lib   
 

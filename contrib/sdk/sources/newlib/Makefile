@@ -1,10 +1,13 @@
 
-CC = gcc
-AR = ar rc
-LD = ld
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
 
 CFLAGS = -c -O2 -fomit-frame-pointer -DBUILD_DLL
-LDFLAGS = -nostdlib -shared -s -T libcdll.lds --output-def libc.orig.def --out-implib libc.dll.a --image-base 0
+LDFLAGS = -shared -s -T libcdll.lds --out-implib libc.dll.a --image-base 0
+#LDFLAGS+= --output-def libc.orig.def
+ARFLAGS = crs
+
 
 LIBC_TOPDIR   = .
 LIBC_INCLUDES = $(LIBC_TOPDIR)/include
@@ -15,7 +18,7 @@ DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
-LIBPATH:= -L ../../lib
+LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 
 STATIC_SRCS:=					\
          		crt/start.S		\
@@ -54,7 +57,6 @@ CORE_SRCS:=                   			\
          		crt/thread.S         	\
          		crt/tls.S            	\
 			crt/setjmp.S		\
-         		crt/assert.c         	\
 			crt/cpu_features.c	\
 			ctype/ctype_.c 		\
 			ctype/isascii.c		\
@@ -139,6 +141,8 @@ STDLIB_SRCS=                 			\
          		__call_atexit.c     	\
          		abort.c              	\
          		abs.c               	\
+			assert.c		\
+			atexit.c		\
          		atof.c              	\
          		atoi.c              	\
 			atol.c			\
@@ -375,9 +379,9 @@ shared: $(NAME).dll libapp.a libdll.a
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
-	sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
-	sed -f cmd2.sed libc.def > mem
-	sed -f newlib.sed mem > libc.inc
+	#sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
+	#sed -f cmd2.sed libc.def > mem
+	#sed -f newlib.sed mem > libc.inc
 
 install: libc.dll libc.dll.a libapp.a libdll.a
 	mv -f libc.dll ../../bin
@@ -386,16 +390,16 @@ install: libc.dll libc.dll.a libapp.a libdll.a
 	mv -f libdll.a ../../lib
 
 libapp.a: $(LIBCRT_OBJS) Makefile
-	$(AR) libapp.a $(LIBCRT_OBJS)
+	$(AR) $(ARFLAGS) libapp.a $(LIBCRT_OBJS)
 
 libdll.a: $(LIBDLL_OBJS) Makefile
-	$(AR) libdll.a $(LIBDLL_OBJS)
+	$(AR) $(ARFLAGS) libdll.a $(LIBDLL_OBJS)
 
 
 static: $(NAME).a
 
 $(NAME).a: $(LIB_OBJS) $(SRC_DEP) Makefile
-	$(AR) $(NAME).a $(LIB_OBJS)
+	$(AR) $(ARFLAGS) $(NAME).a $(LIB_OBJS)
 
 
 

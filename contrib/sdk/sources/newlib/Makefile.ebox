@@ -374,7 +374,7 @@ shared: $(NAME).dll libapp.a libdll.a
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) --version-script libc.ver
 	sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
 	sed -f cmd2.sed libc.def > mem
 	sed -f newlib.sed mem > libc.inc

@@ -1,18 +1,17 @@
 
 LIBRARY= libgcc_eh
 
-CC=gcc
-CPP=g++
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+CPP= kos32-g++
+STRIP = kos32-strip
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
 
-LD = ld
-
-AR= ar
-
-STRIP = $(PREFIX)strip
+ARFLAG = crs
 
 INCLUDES= -I. -I../newlib/include
-
 
 LIBS:=  -ldll -lc.dll
 
@@ -24,21 +23,16 @@ SOURCES = 	unwind-c.c			\
 		unwind-dw2.c			\
 		unwind-dw2-fde.c
  
-
 OBJECTS =  $(patsubst %.cc, %.o, $(patsubst %.c, %.o, $(SOURCES)))
-
 
 
 # targets 
 
-
 all:$(LIBRARY).a
 
-
 $(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs $(LIBRARY).a $(OBJECTS)		
+	$(AR) cvrs $(LIBRARY).a $(OBJECTS)		
 	mv -f $(LIBRARY).a ../../lib
-
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

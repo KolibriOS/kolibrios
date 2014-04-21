@@ -1,4 +1,3 @@
-CC = gcc
 
 SRC_DIR:=$(SDK_DIR)/sources
 MESA_SRC:= $(SRC_DIR)/Mesa/src
@@ -7,17 +6,14 @@ CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LD = ld
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds -e _DllStartup
-
-STRIP = $(PREFIX)strip
 
 INC_MESA:= -I$(SRC_DIR)/newlib/include -I$(SRC_DIR)/Mesa/include 
 INC_MESA+= -I./ -I$(MESA_SRC)/glsl -I$(MESA_SRC)/mesa -I$(MESA_SRC)/mapi
 INC_MESA+= -I$(SRC_DIR)/libdrm -I$(MESA_SRC) -I$(SRC_DIR)/expat/lib
 INC_I965:= -I$(SRC_DIR)/libdrm/intel -I$(SRC_DIR)/libdrm/include/drm -I$(MESA_SRC)/mesa/drivers/dri/common 
 
-LIBPATH:= -L$(SDK_DIR)/lib
+LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -lglsl -lGL.dll -lsupc++ -lgcc_eh -ldrm.dll -lexpat -lc.dll -lgcc
 
@@ -348,7 +344,7 @@ I965_SRC = 					\
 	drivers/dri/i965/gen6_clip_state.c 	\
 	drivers/dri/i965/gen6_depthstencil.c 	\
 	drivers/dri/i965/gen6_gs_state.c 	\
-        drivers/dri/i965/gen6_multisample_state.c 	\
+	drivers/dri/i965/gen6_multisample_state.c 	\
 	drivers/dri/i965/gen6_queryobj.c 	\
 	drivers/dri/i965/gen6_sampler_state.c 	\
 	drivers/dri/i965/gen6_scissor_state.c 	\
@@ -381,7 +377,7 @@ all: i965_dri.drv
 
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
-	$(STRIP) $@
+#	$(STRIP) $@
 	mv -f $@ $(SDK_DIR)/bin
 
 %.o : %.c Makefile

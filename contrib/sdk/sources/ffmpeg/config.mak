@@ -16,25 +16,25 @@ SRC_PATH:=$(SRC_PATH:.%=..%)
 endif
 CC_IDENT=gcc 4.8.1 (GCC)
 ARCH=x86
-CC=gcc
-CXX=g++
-AS=gcc
-LD=ld
+CC = kos32-gcc
+CXX= kos32-g++
+AS = kos32-gcc
+LD = kos32-ld
 DEPCC=gcc
 DEPCCFLAGS= $(CPPFLAGS)
 DEPAS=gcc
 DEPASFLAGS= $(CPPFLAGS)
 YASM=nasm
 DEPYASM=nasm
-AR=ar
+AR=kos32-ar
 ARFLAGS=rc
 AR_O=$@
 RANLIB=:
-STRIP=strip
+STRIP=kos32-strip
 CP=cp -p
 LN_S=ln -s -f
 CPPFLAGS= -D_ISOC99_SOURCE -D_FILE_OFFSET_BITS=32 -D_LARGEFILE_SOURCE -U__STRICT_ANSI__
-CFLAGS=  -I../newlib/include -U_Win32 -U_WIN32 -U__MINGW32__ -std=c99 -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-parentheses -Wno-switch -Wno-format-zero-length -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes -Wno-pointer-to-int-cast -Wstrict-prototypes -O2 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -Werror=implicit-function-declaration -Werror=missing-prototypes -Werror=return-type -Werror=vla
+CFLAGS=  -I../newlib/include -I../zlib -U_Win32 -U_WIN32 -U__MINGW32__ -std=c99 -fomit-frame-pointer -Wdeclaration-after-statement -Wall -Wno-parentheses -Wno-switch -Wno-format-zero-length -Wdisabled-optimization -Wpointer-arith -Wredundant-decls -Wno-pointer-sign -Wwrite-strings -Wtype-limits -Wundef -Wmissing-prototypes -Wno-pointer-to-int-cast -Wstrict-prototypes -O2 -fno-math-errno -fno-signed-zeros -fno-tree-vectorize -Werror=implicit-function-declaration -Werror=missing-prototypes -Werror=return-type -Werror=vla
 CXXFLAGS=  -D__STDC_CONSTANT_MACROS
 ASFLAGS=  -I../newlib/include -U_Win32 -U_WIN32 -U__MINGW32__
 AS_C=-c
@@ -48,9 +48,9 @@ LD_O=-o $@
 LD_LIB=-l%
 LD_PATH=-L
 DLLTOOL=dlltool
-LDFLAGS=-L../../lib --output-def $$(@:$(SLIBSUF)=.orig.def) -nostdlib --enable-runtime-pseudo-reloc
+LDFLAGS=-L../../lib -L/home/autobuild/tools/win32/mingw32/lib --output-def $$(@:$(SLIBSUF)=.orig.def) -nostdlib --enable-runtime-pseudo-reloc
 LDFLAGS-ffserver=-Wl,-E
-SHFLAGS=-shared -s -T../newlib/dll.lds -Map map -Bsymbolic --entry _DllStartup --image-base 0 --out-implib $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) --version-script $(SUBDIR)lib$(NAME).ver -ldll
+SHFLAGS=-shared -s -T../newlib/dll.lds -Bsymbolic --entry _DllStartup --image-base 0 --out-implib $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) --version-script $(SUBDIR)lib$(NAME).ver -ldll
 YASMFLAGS=-f win32  -DPREFIX
 BUILDSUF=
 PROGSSUF=

@@ -1,20 +1,22 @@
-
 LIBRARY = cairo2
 
-CC = gcc
+CC = kos32-gcc
+AR = kos32-ar 
+LD = kos32-ld
+STRIP = kos32-strip
+
 CFLAGS = -c -O2 -ffast-math -Wall -Winline -Wno-attributes -fomit-frame-pointer
 
-LD = ld
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def --out-implib lib$(LIBRARY).dll.a
+LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def
+LDFLAGS+= --out-implib lib$(LIBRARY).dll.a
 
-STRIP = $(PREFIX)strip
+ARFLAGS = crs
 
 DEFINES = -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER -DHAVE_CONFIG_H=1 -DCAIRO_NO_MUTEX=1  
 
 INCLUDES = -I. -I../newlib/include -I../pixman -I../zlib -I../libpng -I../freetype/include
 
-
-LIBPATH:= -L../../lib
+LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -lgcc -lfreetype.dll -lz.dll -lpixman-1.dll -lpng16.dll -lc.dll
 
@@ -154,16 +156,15 @@ all: lib$(LIBRARY).a $(LIBRARY).dll
 ebox: lib$(LIBRARY).a $(LIBRARY).dll
 
 lib$(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs lib$(LIBRARY).a $(OBJECTS)
+	$(AR) $(ARFLAGS) lib$(LIBRARY).a $(OBJECTS)
 	mv -f lib$(LIBRARY).a ../../lib
 
 
 $(LIBRARY).dll: $(OBJECTS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS)
-	$(STRIP) $@
-	sed -e "s/ @[^ ]*//" $(LIBRARY).orig.def > $(LIBRARY).def
-	sed -f ../newlib/cmd1.sed $(LIBRARY).def > mem
-	sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
+	#sed -e "s/ @[^ ]*//" $(LIBRARY).orig.def > $(LIBRARY).def
+	#sed -f ../newlib/cmd1.sed $(LIBRARY).def > mem
+	#sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
 	mv -f $@ ../../bin
 	mv -f lib$(LIBRARY).dll.a ../../lib   
 

@@ -2,6 +2,7 @@ EXPORTS
     _Balloc
     _Bfree
     _Exit DATA
+    __assert
     __assert_func
     __ctype_ptr__ DATA
     __emutls_get_address
@@ -13,7 +14,6 @@ EXPORTS
     __signbitf
     __srget_r
     __swbuf_r
-    _assert
     _atoi_r
     _atol_r
     _buf_findstr
@@ -171,6 +171,7 @@ EXPORTS
     atanf
     atanh
     atanhf
+    atexit
     atof
     atoi
     atol

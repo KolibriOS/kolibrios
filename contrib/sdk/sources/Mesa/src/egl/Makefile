@@ -1,4 +1,3 @@
-CC = gcc
 
 SRC_DIR:=$(SDK_DIR)/sources
 MESA_SRC:= $(SRC_DIR)/Mesa/src
@@ -7,17 +6,13 @@ CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os
 CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LD = ld
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds --out-implib libegl.dll.a -e _DllStartup
-
-STRIP = $(PREFIX)strip
-
 
 INC_EGL:= -I$(SRC_DIR)/newlib/include -I$(SDK_DIR)/includes -I$(SRC_DIR)/Mesa/include
 INC_EGL+= -I$(SRC_DIR)/libdrm -I$(SRC_DIR)/libdrm/include/drm -I./main
 INC_EGL+= -I$(MESA_SRC)/gbm/backends/dri -I$(MESA_SRC)/gbm/main
 
-LIBPATH:= -L$(SDK_DIR)/lib
+LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -ldrm.dll -lc.dll -lgcc
 
@@ -63,7 +58,7 @@ all: libegl.dll
 
 libegl.dll: $(EGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(MESA_SRC)/../egl.def $(EGL_OBJS) $(LIBS)
-	$(STRIP) $@
+#	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
 	mv -f $@ $(SDK_DIR)/bin
 	mv -f libegl.dll.a $(SDK_DIR)/lib   

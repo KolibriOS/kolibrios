@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <memory.h>
 
 extern char __RUNTIME_PSEUDO_RELOC_LIST__;
 extern char __RUNTIME_PSEUDO_RELOC_LIST_END__;

@@ -1,15 +1,14 @@
-CC=gcc
-LD = ld
-AR= ar
-
 LIBRARY= pixlib
+
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+STRIP = kos32-strip
 
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
 
-STRIP = $(PREFIX)strip
-
 LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 
-PXFLAGS:= --version-script pixlib.ver --output-def $(LIBRARY).orig.def --out-implib $(LIBRARY).dll.a
+PXFLAGS:= --version-script pixlib.ver --out-implib $(LIBRARY).dll.a
 SNAFLAGS:= --version-script sna.ver --output-def sna.def
 UXAFLAGS:= --version-script uxa.ver --output-def uxa.def
  
@@ -20,7 +19,6 @@ LIBPATH:= -L../../lib
 LIBS:=  -ldll -lc.dll
 
 DEFINES:= -DHAS_DEBUG_FULL=0 -DSHOW_BATCH=0 -DDEBUG_DUMP=0
-
 
 SRC_PIXLIB = 	pixlib.c
 
@@ -66,6 +64,7 @@ else
 OBJECTS= $(OBJ_SNA)
 DEFINES+= -DBUILD_SNA
 LIBS+= -lgcc
+LIBPATH+= -L/home/autobuild/tools/win32/mingw32/lib
 endif
 endif
 
@@ -78,13 +77,11 @@ ebox:$(LIBRARY).dll
 
 $(LIBRARY).dll: $(OBJ_PIXLIB) Makefile
 	$(LD) $(LDFLAGS) $(PXFLAGS) $(LIBPATH) -o $@ $(OBJ_PIXLIB) $(LIBS)
-	$(STRIP) $@
 	mv -f $@ ../../bin
 	mv -f $(LIBRARY).dll.a ../../lib   
 
 intel-sna.drv: $(OBJ_SNA) Makefile
 	$(LD) $(LDFLAGS) $(SNAFLAGS) $(LIBPATH) -o $@ $(OBJ_SNA) $(LIBS)
-	$(STRIP) $@
 	mv -f $@ ../../bin
 
 intel-uxa.drv: $(OBJ_UXA) Makefile

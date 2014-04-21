@@ -1,4 +1,4 @@
-/* Definitions for Dwarf2 EH unwind support for Windows32 targets 
+/* Definitions for Dwarf2 EH unwind support for Windows32 targets
    Copyright (C) 2007, 2009
    Free Software Foundation, Inc.
    Contributed by Pascal Obry  <obry@adacore.com>
@@ -46,7 +46,7 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
       some foreign code for which no unwind frame can be found. If this is
       a call from the Windows signal handler, then:
 
-   2) We must get the signal context information. 
+   2) We must get the signal context information.
 
       * With the standard exception filter:
 
@@ -82,8 +82,8 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
    Note that this implementation follows closely the same principles as the
    GNU/Linux and OSF ones.  */
 
-#define WIN32_MEAN_AND_LEAN
-#include <windows.h>
+//#define WIN32_MEAN_AND_LEAN
+//#include <windows.h>
 /* Patterns found experimentally to be on a Windows signal handler  */
 
 /* In a standard exception filter  */
@@ -119,10 +119,11 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 #define MD_FALLBACK_FRAME_STATE_FOR i386_w32_fallback_frame_state
 
 static _Unwind_Reason_Code
-i386_w32_fallback_frame_state (struct _Unwind_Context *context, 
+i386_w32_fallback_frame_state (struct _Unwind_Context *context,
 			       _Unwind_FrameState *fs)
 
 {
+#if 0
   void * ctx_ra_  = (void *)(context->ra);  /* return address */
   void * ctx_cfa_ = (void *)(context->cfa); /* context frame address */
   unsigned char * pc_ = (unsigned char *) ctx_ra_;
@@ -136,7 +137,7 @@ i386_w32_fallback_frame_state (struct _Unwind_Context *context,
       PCONTEXT proc_ctx_;
       long new_cfa_;
 
-      if (SIG_SEH1) 
+      if (SIG_SEH1)
 	proc_ctx_ = (PCONTEXT) (*(int*)(ctx_cfa_ + 56));
       else if (SIG_SEH2)
 	proc_ctx_ = (PCONTEXT) (*(int*)(ctx_cfa_ + 8));
@@ -174,7 +175,7 @@ i386_w32_fallback_frame_state (struct _Unwind_Context *context,
 
       /* Set the return address to Eip + 1. As we can be called multiple
 	 times we use another register for this.  */
-      
+
       proc_ctx_->Dr0 = proc_ctx_->Eip + 1;
       fs->regs.reg[8].how = REG_SAVED_OFFSET;
       fs->regs.reg[8].loc.offset = (long)&proc_ctx_->Dr0 - new_cfa_;
@@ -187,9 +188,9 @@ i386_w32_fallback_frame_state (struct _Unwind_Context *context,
      operations of interest performed is "pushl %ecx", followed by
      ecx clobbering.  */
 
-  else if (SIG_ALLOCA) 
+  else if (SIG_ALLOCA)
     {
-      /* Only one push between entry in _alloca and the probe trap.  */ 
+      /* Only one push between entry in _alloca and the probe trap.  */
       long new_cfa_ = (long) ctx_cfa_ + 4;
 
       fs->regs.cfa_how = CFA_REG_OFFSET;
@@ -204,9 +205,12 @@ i386_w32_fallback_frame_state (struct _Unwind_Context *context,
       fs->retaddr_column = 8;
       fs->regs.reg[8].how = REG_SAVED_OFFSET;
       fs->regs.reg[8].loc.offset = 0;
- 
+
       return _URC_NO_REASON;
     }
   else
     return _URC_END_OF_STACK;
+#endif
+
+    return _URC_NO_REASON;
 }

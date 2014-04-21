@@ -1,23 +1,24 @@
 
-EGL = egl
+export CC = kos32-gcc
+export AR = kos32-ar
+export LD = kos32-ld
+export STRIP = kos32-strip
 
-CC = gcc
+export SDK_DIR:= $(abspath ../..)
+
+EGL = egl
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os 
 CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
-LD = ld
-LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds --out-implib lib$(EGL).dll.a -e _DllStartup
-
-STRIP = $(PREFIX)strip
-
-export SDK_DIR:= $(abspath ../..)
+LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds -e _DllStartup
+LDFLAGS+= --out-implib lib$(EGL).dll.a 
 
 INC_MESA=  -I../newlib/include -I./include -I./src -I./src/glsl -I./src/mesa -I./src/mapi
 INC_EGL=   -I../newlib/include -I../../includes -I./include -I../libdrm -I../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
 
-LIBPATH:= -L../../lib
+LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -ldrm.dll -lc.dll -lgcc
 
@@ -40,18 +41,18 @@ all:
  
 $(EGL).dll: $(EGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ egl.def $(EGL_OBJS) $(LIBS)
-	$(STRIP) $@
+#	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
 	mv -f $@ ../../bin
 	mv -f lib$(EGL).dll.a ../../lib   
 
 libglsl.a : $(GLSL_OBJS) Makefile
-	ar cvrs libglsl.a $(GLSL_OBJS) 
+	$(AR) libglsl.a $(GLSL_OBJS) 
 	mv -f libglsl.a ../../lib
 
 libGL.dll: $(LIBGL_OBJS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIBGL_OBJS) $(LIBS)
-	$(STRIP) $@
+#	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
 	mv -f $@ ../../bin
 	mv -f libGL.dll.a ../../lib   

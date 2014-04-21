@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 
-
+/*
 typedef void (*ctp)();
 static void __do_global_ctors ()
 {
@@ -32,9 +32,10 @@ static void __do_global_ctors ()
       c++;
     }
 }
+*/
 
 void *load_libc();
-void __main (){};
+//void __main (){};
 
 void* get_entry_point(void *raw);
 

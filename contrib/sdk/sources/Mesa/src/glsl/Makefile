@@ -1,4 +1,3 @@
-CC = gcc
 
 SRC_DIR:=$(SDK_DIR)/sources
 MESA_SRC:= $(SRC_DIR)/Mesa/src
@@ -114,7 +113,7 @@ GLSL_OBJS  =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(GLSL_SRC)))
 all: libglsl.a
 
 libglsl.a : $(GLSL_OBJS) Makefile
-	ar cvrs libglsl.a $(GLSL_OBJS)
+	$(AR) crs libglsl.a $(GLSL_OBJS)
 	mv -f libglsl.a $(SDK_DIR)/lib
 
 %.o : %.c Makefile

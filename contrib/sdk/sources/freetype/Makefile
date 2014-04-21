@@ -1,17 +1,20 @@
-
 LIBRARY = freetype
 
-CC = gcc
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
+STRIP = kos32-strip
+
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -Wall -Winline -fomit-frame-pointer
 
-LD = ld
-LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib lib$(LIBRARY).dll.a
+LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0
+LDFLAGS+= --out-implib lib$(LIBRARY).dll.a
 
-STRIP = $(PREFIX)strip
+ARFLAGS = crs
 
 INCLUDES= -I../newlib/include -I./include -I./include/freetype/config 
 
-LIBPATH:= -L../../lib
+LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 
 LIBS:=  -ldll -lc.dll -lgcc
 
@@ -73,21 +76,20 @@ all:lib$(LIBRARY).a $(LIBRARY).dll
 ebox:lib$(LIBRARY).a $(LIBRARY).dll
 
 lib$(LIBRARY).a: $(OBJECTS) Makefile
-	ar cvrs lib$(LIBRARY).a $(OBJECTS)
+	$(AR) cvrs lib$(LIBRARY).a $(OBJECTS)
 	mv -f lib$(LIBRARY).a ../../lib
 
 $(LIBRARY).dll: lib$(LIBRARY).def $(OBJECTS) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ lib$(LIBRARY).def $(OBJECTS) $(LIBS)
 	$(STRIP) $@
-	sed -f ../newlib/cmd1.sed lib$(LIBRARY).def > mem
-	sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
+	#sed -f ../newlib/cmd1.sed lib$(LIBRARY).def > mem
+	#sed -f ../newlib/cmd2.sed mem >$(LIBRARY).inc
 	mv -f $@ ../../bin
 	mv -f lib$(LIBRARY).dll.a ../../lib  
 	
 
 %.o : %.c Makefile
 	$(CC) $(INCLUDES) $(CFLAGS) $(DEFINES)  -o $@ $<
-
 
 
 clean: 
