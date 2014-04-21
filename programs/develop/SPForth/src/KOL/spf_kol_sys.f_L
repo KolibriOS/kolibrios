@@ -1,0 +1,752 @@
+ZZ=D4 (
+
+)
+
+Code	SYS1 ;( n -- n1 )
+
+59E2C9  E0 E2 59 00  00 04 53 59  53 31 AE E2  59 00 00 00 ‡‚Y...SYS1Æ‚Y...
+59E2D9  00 00 00 00  00 00 00 .......
+
+	INT 40H
+
+59E2E0  CD 40 Õ@
+
+	RET
+
+59E2E2  C3 √
+
+EndCode
+
+Code	SYS2 ;( n n1 -- n2 )
+
+59E2E3  00 E3 59 00  00 04 53 59  53 32 CE E2  59 00 00 00 .„Y...SYS2Œ‚Y...
+59E2F3  00 00 00 00  00 00 00 00  00 00 00 00  00 .............
+
+	MOV EBX, [EBP]
+
+59E300  8B 5D 00 ã].
+
+	INT 40H
+
+59E303  CD 40 Õ@
+
+	LEA EBP, [EBP+4]
+
+59E305  8D 6D 04 çm.
+
+	RET
+
+59E308  C3 √
+
+EndCode
+
+Code	SYS3 ;( n n1 n2 -- n3 )
+
+59E309  20 E3 59 00  00 04 53 59  53 33 E8 E2  59 00 00 00  „Y...SYS3Ë‚Y...
+59E319  00 00 00 00  00 00 00 .......
+
+	MOV ECX, [EBP+4]
+
+59E320  8B 4D 04 ãM.
+
+	MOV EBX, [EBP]
+
+59E323  8B 5D 00 ã].
+
+	INT 40H
+
+59E326  CD 40 Õ@
+
+	LEA EBP, [EBP+8]
+
+59E328  8D 6D 08 çm.
+
+	RET
+
+59E32B  C3 √
+
+EndCode
+
+Code	SYS4 ;( n n1 n2 n3 -- n4 )
+
+59E32C  40 E3 59 00  00 04 53 59  53 34 0E E3  59 00 00 00 @„Y...SYS4.„Y...
+59E33C  00 00 00 00 ....
+
+	MOV EDX, [EBP+8]
+
+59E340  8B 55 08 ãU.
+
+	MOV ECX, [EBP+4]
+
+59E343  8B 4D 04 ãM.
+
+	MOV EBX, [EBP]
+
+59E346  8B 5D 00 ã].
+
+	INT 40H
+
+59E349  CD 40 Õ@
+
+	LEA EBP, [EBP+0CH]
+
+59E34B  8D 6D 0C çm.
+
+	RET
+
+59E34E  C3 √
+
+EndCode
+
+Code	SYS5 ;( n n1 n2 n3 n4 -- n5 )
+
+59E34F  60 E3 59 00  00 04 53 59  53 35 31 E3  59 00 00 00 `„Y...SYS51„Y...
+59E35F  00 .
+
+	MOV ESI, [EBP+0CH]
+
+59E360  8B 75 0C ãu.
+
+	MOV EDX, [EBP+8]
+
+59E363  8B 55 08 ãU.
+
+	MOV ECX, [EBP+4]
+
+59E366  8B 4D 04 ãM.
+
+	MOV EBX, [EBP]
+
+59E369  8B 5D 00 ã].
+
+	INT 40H
+
+59E36C  CD 40 Õ@
+
+	LEA EBP, [EBP+10H]
+
+59E36E  8D 6D 10 çm.
+
+	RET
+
+59E371  C3 √
+
+EndCode
+
+Code	SYS6 ;( n n1 n2 n3 n4 n5 -- n6 )
+
+59E372  80 E3 59 00  00 04 53 59  53 36 54 E3  59 00 Ä„Y...SYS6T„Y.
+
+	PUSH EDI
+
+59E380  57 W
+
+	MOV EDI, [EBP+10H]
+
+59E381  8B 7D 10 ã}.
+
+	MOV ESI, [EBP+0CH]
+
+59E384  8B 75 0C ãu.
+
+	MOV EDX, [EBP+8]
+
+59E387  8B 55 08 ãU.
+
+	MOV ECX, [EBP+4]
+
+59E38A  8B 4D 04 ãM.
+
+	MOV EBX, [EBP]
+
+59E38D  8B 5D 00 ã].
+
+	INT 40H
+
+59E390  CD 40 Õ@
+
+	LEA EBP, [EBP+14H]
+
+59E392  8D 6D 14 çm.
+
+	POP EDI
+
+59E395  5F _
+
+	RET
+
+59E396  C3 √
+
+EndCode
+
+VARIABLE reg_struc
+
+59E397  AB E3 59 00  00 09 72 65  67 5F 73 74  72 75 63 77 ´„Y...reg_strucw
+59E3A7  E3 59 00 00  E8 6C 3C FA  FF 00 00 00  00 „Y..Ël<˙ˇ....
+
+
+Code	SYSV ;(  -- n )
+
+59E3B4  D0 E3 59 00  00 04 53 59  53 56 9C E3  59 00 00 00 –„Y...SYSVú„Y...
+59E3C4  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+	LEA EBP,  [EBP-4]
+
+59E3D0  8D 6D FC çm¸
+
+	MOV [EBP], EAX
+
+59E3D3  89 45 00 âE.
+
+	MOV EAX, { ' reg_struc }
+
+59E3D6  B8 AB E3 59  00 ∏´„Y.
+
+	PUSH EDI
+
+59E3DB  57 W
+
+	MOV EDI, [EAX+14H]
+
+59E3DC  8B 78 14 ãx.
+
+	MOV ESI, [EAX+10H]
+
+59E3DF  8B 70 10 ãp.
+
+	MOV EDX, [EAX+0CH]
+
+59E3E2  8B 50 0C ãP.
+
+	MOV ECX, [EAX+8]
+
+59E3E5  8B 48 08 ãH.
+
+	MOV EBX, [EAX+4]
+
+59E3E8  8B 58 04 ãX.
+
+	MOV EAX, [EAX]
+
+59E3EB  8B 00 ã.
+
+	INT 40H
+
+59E3ED  CD 40 Õ@
+
+	POP EDI
+
+59E3EF  5F _
+
+	RET
+
+59E3F0  C3 √
+
+EndCode
+
+
+
+80 VALUE SCR_WIDTH
+
+59E3F1  10 E4 59 00  00 09 53 43  52 5F 57 49  44 54 48 B9 .‰Y...SCR_WIDTHπ
+59E401  E3 59 00 00  00 00 00 00  00 00 00 00  00 00 00 E8 „Y.............Ë
+59E411  27 3C FA FF  50 00 00 00  E8 E6 3C FA  FF '<˙ˇP...ËÊ<˙ˇ
+
+60 VALUE SCR_WIDTH-S
+
+59E41E  40 E4 59 00  00 0B 53 43  52 5F 57 49  44 54 48 2D @‰Y...SCR_WIDTH-
+59E42E  53 F6 E3 59  00 00 00 00  00 00 00 00  00 00 00 00 Sˆ„Y............
+59E43E  00 00 E8 F7  3B FA FF 3C  00 00 00 E8  B6 3C FA FF ..Ë˜;˙ˇ<...Ë∂<˙ˇ
+
+25 VALUE SCR_HEIGHT
+
+59E44E  70 E4 59 00  00 0A 53 43  52 5F 48 45  49 47 48 54 p‰Y...SCR_HEIGHT
+59E45E  23 E4 59 00  00 00 00 00  00 00 00 00  00 00 00 00 #‰Y.............
+59E46E  00 00 E8 C7  3B FA FF 19  00 00 00 E8  86 3C FA FF ..Ë«;˙ˇ....ËÜ<˙ˇ
+
+
+
+CREATE &AT-XY 0 , 0 ,
+
+59E47E  8F E4 59 00  00 06 26 41  54 2D 58 59  53 E4 59 00 è‰Y...&AT-XYS‰Y.
+59E48E  00 E8 88 3B  FA FF 00 00  00 00 00 00  00 00 .Ëà;˙ˇ........
+
+CREATE &KEY 0 ,
+
+59E49C  AB E4 59 00  00 04 26 4B  45 59 83 E4  59 00 00 E8 ´‰Y...&KEYÉ‰Y..Ë
+59E4AC  6C 3B FA FF  00 00 00 00 l;˙ˇ....
+
+CREATE &ATRIB 0x0000FFFF ,
+
+59E4B4  C7 E4 59 00  00 06 26 41  54 52 49 42  A1 E4 59 00 «‰Y...&ATRIB°‰Y.
+59E4C4  00 00 00 E8  50 3B FA FF  FF FF 00 00 ...ËP;˙ˇˇˇ..
+
+
+0x0011000D VALUE >PIC
+
+59E4D0  E0 E4 59 00  00 04 3E 50  49 43 B9 E4  59 00 00 00 ‡‰Y...>PICπ‰Y...
+59E4E0  E8 57 3B FA  FF 0D 00 11  00 E8 16 3C  FA FF ËW;˙ˇ....Ë.<˙ˇ
+
+
+CREATE SCR_BUF SCR_WIDTH SCR_HEIGHT 1+ * ALLOT
+
+59E4EE   FF E4 59 00  00 07 53 43  52 5F 42 55  46 D5 E4 59 ˇ‰Y...SCR_BUF’‰Y
+59E4FE   00 E8 18 3B  FA FF 00 00  00 00 00 00  00 00 00 00 .Ë.;˙ˇ..........
+59E50E   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ................
+59E51E   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ................
+59E52E   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ................
+59ED24 7E6 bytes
+
+: AT-XY ( X Y -- )
+
+59ED24  40 ED 59 00  00 05 41 54  2D 58 59 F3  E4 59 00 00 @ÌY...AT-XYÛ‰Y..
+59ED34  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+ SWAP 16 LSHIFT + &AT-XY ! ;
+		MOV     EDX , [EBP ]
+		MOV     [EBP ], EAX 
+		MOV     [EBP -4], EDX 
+		MOV     EAX , $10
+		MOV     ECX , EAX 
+		MOV     EAX , [EBP -4]
+		SHL     EAX , CL 
+		ADD     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@&AT-XY
+		MOV     EDX , [EBP ]
+		MOV     [EAX ], EDX 
+		MOV     EAX , [EBP +4]
+		LEA     EBP , [EBP +8]
+		RET
+
+: AT-XY? ( -- X Y )
+
+59ED6C  80 ED 59 00  00 06 41 54  2D 58 59 3F  29 ED 59 00 ÄÌY...AT-XY?)ÌY.
+59ED7C  00 00 00 00 ....
+
+ &AT-XY 2+ W@ &AT-XY W@ ;
+		CALL    @@&AT-XY
+		LEA     EAX , [EAX +2]
+		MOVZX   EAX , WORD PTR [EAX ]
+		CALL    @@&AT-XY
+		MOVZX   EAX , WORD PTR [EAX ]
+		RET
+
+: __PAGE-UP
+
+59ED94  B0 ED 59 00  00 09 5F 5F  50 41 47 45  2D 55 50 71 ∞ÌY...__PAGE-UPq
+59EDA4  ED 59 00 00  00 00 00 00  00 00 00 00 ÌY..........
+
+  SCR_BUF SCR_WIDTH + SCR_BUF SCR_WIDTH SCR_HEIGHT * CMOVE
+		CALL    @@SCR_BUF
+		CALL    @@SCR_WIDTH
+		ADD     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@SCR_BUF
+		CALL    @@SCR_WIDTH
+		CALL    @@SCR_HEIGHT
+		IMUL    [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@CMOVE
+  SCR_BUF SCR_WIDTH SCR_HEIGHT 1- * + SCR_WIDTH  BLANK
+		CALL    @@SCR_BUF
+		CALL    @@SCR_WIDTH
+		CALL    @@SCR_HEIGHT
+		LEA     EAX , [EAX -1]
+		IMUL    [EBP ]
+		ADD     EAX , [EBP +4]
+		LEA     EBP , [EBP +8]
+		CALL    @@SCR_WIDTH
+		CALL    @@BLANK
+  AT-XY? 1- 0 MAX AT-XY ;
+		CALL    @@AT-XY?
+		LEA     EAX , [EAX -1]
+		MOV     [EBP -4], EAX 
+		XOR     EAX , EAX 
+		LEA     EBP , [EBP -4]
+		CALL    @@MAX
+		CALL    @@AT-XY
+		RET
+
+VECT PAGE-UP
+
+59EE1A  30 EE 59 00  00 07 50 41  47 45 2D 55  50 99 ED 59 0ÓY...PAGE-UPôÌY
+59EE2A  00 00 00 00  00 00 E8 B3  32 FA FF 60  F0 59 00 E8 ......Ë≥2˙ˇ`Y.Ë
+59EE3A  C6 32 FA FF ∆2˙ˇ
+
+
+: ?PAGE-UP ( n -- )
+
+59EE3E  50 EE 59 00  00 08 3F 50  41 47 45 2D  55 50 1F EE PÓY...?PAGE-UP.Ó
+59EE4E  59 00 Y.
+
+
+ &AT-XY	2+	W@ + SCR_WIDTH	/MOD SWAP &AT-XY 2+	W!
+		CALL    @@&AT-XY
+		LEA     EAX , [EAX +2]
+		MOVZX   EAX , WORD PTR [EAX ]
+		ADD     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@SCR_WIDTH
+		MOV     ECX , EAX 
+		MOV     EAX , [EBP ]
+		CDQ 
+		IDIV    ECX 
+		MOV     [EBP ], EDX 
+		MOV     EDX , [EBP ]
+		MOV     [EBP ], EAX 
+		MOV     EAX , EDX 
+		CALL    @@&AT-XY
+		LEA     EAX , [EAX +2]
+		CALL    @@W!
+ &AT-XY		W@ + SCR_HEIGHT	/MOD 
+		CALL    @@&AT-XY
+		MOVZX   EAX , WORD PTR [EAX ]
+		ADD     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@SCR_HEIGHT
+		MOV     ECX , EAX 
+		MOV     EAX , [EBP ]
+		CDQ 
+		IDIV    ECX 
+		MOV     [EBP ], EDX 
+ IF PAGE-UP DROP SCR_HEIGHT 1- THEN  &AT-XY 	W! ;
+		OR      EAX , EAX 
+		MOV     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		JE      [OFFSET ?PAGE-UP]
+		CALL    @@PAGE-UP
+		MOV     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@SCR_HEIGHT
+		LEA     EAX , [EAX -1]
+@59EEC1:		CALL    @@&AT-XY 
+		CALL    @@W!
+		RET
+
+: SCR_CR
+
+59EECC  E0 EE 59 00  00 06 53 43  52 5F 43 52  43 EE 59 00 ‡ÓY...SCR_CRCÓY.
+59EEDC  00 00 00 00 ....
+
+ &AT-XY @ 0xFFFF AND 1+ &AT-XY ! 0 ?PAGE-UP ;
+		CALL    @@&AT-XY
+		MOV     EAX , [EAX ]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $FFFF
+		AND     EAX , [EBP -4]
+		LEA     EAX , [EAX +1]
+		CALL    @@&AT-XY
+		MOV     EDX , [EBP ]
+		MOV     [EAX ], EDX 
+		XOR     EAX , EAX 
+		LEA     EBP , [EBP +4]
+		CALL    @@?PAGE-UP
+		RET
+
+: SCR_TYPE ( addr len -- )
+
+59EF0A  20 EF 59 00  00 08 53 43  52 5F 54 59  50 45 D1 EE  ÔY...SCR_TYPE—Ó
+59EF1A  59 00 00 00  00 00 Y.....
+
+	TUCK SWAP
+		MOV     EDX , [EBP ]
+		MOV     [EBP -4], EDX 
+		MOV     [EBP ], EAX 
+		MOV     EDX , [EBP -4]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , EDX 
+		LEA     EBP , [EBP -4]
+  &ATRIB @
+		CALL    @@&ATRIB
+		MOV     EAX , [EAX ]
+  &AT-XY 2+	W@  0x60000 *
+		CALL    @@&AT-XY
+		MOVZX   EAX , WORD PTR [EAX +2]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $60000
+		IMUL    [EBP -4]
+  &AT-XY	W@  0xD * +
+		CALL    @@&AT-XY
+		MOVZX   EAX , WORD PTR [EAX ]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $D
+		IMUL    [EBP -4]
+		ADD     EAX , [EBP ]
+		LEA     EAX , [$60018][EAX ]
+ 0x00060018 + 
+		MOV     [EBP ], EAX 
+		MOV     EAX , $4
+ 4 SYS5 DROP
+		CALL    @@SYS5
+		MOV     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+\  &AT-XY 2+ +!
+  ?PAGE-UP
+		CALL    @@?PAGE-UP
+;
+		RET
+
+: DRAW_LINS
+
+59EF84  A0 EF 59 00  00 09 44 52  41 57 5F 4C  49 4E 53 0F †ÔY...DRAW_LINS.
+59EF94  EF 59 00 00  00 00 00 00  00 00 00 00 ÔY..........
+
+	['] PAGE-UP >BODY @
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $59EE30
+		MOV     EAX , [EAX +5]
+		MOV     [EBP -8], EAX 
+		MOV     EAX , $59D240
+	['] NOOP TO PAGE-UP
+		LEA     EBP , [EBP -8]
+		CALL    [OFFSET PAGE-UP]
+	AT-XY?
+		CALL    @@AT-XY?
+	0 0 AT-XY
+		MOV     [EBP -4], EAX 
+		MOV     [EBP -8], $0
+		XOR     EAX , EAX 
+		LEA     EBP , [EBP -8]
+		CALL    @@AT-XY
+	SCR_BUF SCR_WIDTH SCR_HEIGHT * BOUNDS
+		CALL    @@SCR_BUF
+		CALL    @@SCR_WIDTH
+		CALL    @@SCR_HEIGHT
+		IMUL    [EBP ]
+		ADD     EAX , [EBP +4]
+		MOV     EDX , [EBP +4]
+		MOV     [EBP +4], EAX 
+		MOV     EAX , EDX 
+		MOV     EDX , $80000000
+	DO I SCR_WIDTH SCR_TYPE \ SCR_CR
+		SUB     EDX , [EBP +4]
+		LEA     EBX , [EDX ][EAX ]
+		MOV     EAX , [EBP +8]
+		LEA     EBP , [EBP +12]
+		PUSH    , $59F037
+		PUSH    EDX 
+		PUSH    EBX 
+		XCHG     EAX, EAX 
+		XCHG     EAX, EAX 
+		XCHG     EAX, EAX 
+		MOV     [EBP -4]EAX 
+		MOV     EAX , [ESP ]
+		SUB     EAX , [ESP +4]
+		LEA     EBP , [EBP -4]
+		CALL    @@SCR_WIDTH
+		CALL    @@SCR_TYPE
+ SCR_WIDTH
+		CALL    @@SCR_WIDTH
+	+LOOP
+		ADD     [ESP ], EAX 
+		MOV     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		JNO     [OFFSET DRAW_LINS]
+		LEA     ESP , [ESP +12]
+	AT-XY
+		CALL    @@AT-XY
+	TO PAGE-UP ;
+		CALL    [OFFSET PAGE-UP]
+		RET
+
+: _PAGE-UP
+
+59F042  60 F0 59 00  00 08 5F 50  41 47 45 2D  55 50 89 EF `Y..._PAGE-UPâÔ
+59F052  59 00 00 00  00 00 00 00  00 00 00 00  00 00 Y.............
+
+draw_window __PAGE-UP
+		CALL    @@draw_window
+		CALL    @@__PAGE-UP
+DRAW_LINS
+		CALL    @@DRAW_LINS
+;
+		RET
+
+' _PAGE-UP TO PAGE-UP
+
+CREATE LAST_CUR 0 , 0 ,
+
+59F070  83 F0 59 00  00 08 4C 41  53 54 5F 43  55 52 47 F0 ÉY...LAST_CURG
+59F080  59 00 00 E8  94 2F FA FF  00 00 00 00  00 00 00 00 Y..Ëî/˙ˇ........
+
+
+: CORSOR_DROW
+
+59F090  B0 F0 59 00  00 0B 43 4F  52 53 4F 52  5F 44 52 4F ∞Y...CORSOR_DRO
+59F0A0  57 75 F0 59  00 00 00 00  00 00 00 00  00 00 00 00 WuY............
+
+  0  LAST_CUR 2@ 38 SYS4 DROP
+		MOV     [EBP -4], EAX 
+		XOR     EAX , EAX 
+		LEA     EBP , [EBP -4]
+		CALL    @@LAST_CUR
+		MOV     EDX , [EAX +4]
+		MOV     [EBP -4], EDX 
+		MOV     EAX , [EAX ]
+		MOV     [EBP -8], EAX 
+		MOV     EAX , $26
+		MOV     EDX , [EBP ]
+		MOV     ECX , [EBP -4]
+		MOV     EBX , [EBP -8]
+		INT     $40
+		MOV     EAX , $FF00FF
+		LEA     EBP , [EBP +4]
+  0x00FF00FF
+  &AT-XY	W@ 0xD * 0x21	+ DUP	  16 LSHIFT + 
+		CALL    @@&AT-XY
+		MOVZX   EAX , WORD PTR [EAX ]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $D
+		IMUL    [EBP -4]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $21
+		ADD     EAX , [EBP -4]
+		MOV     [EBP -4], EAX 
+		MOV     [EBP -8], EAX 
+		MOV     EAX , $10
+		MOV     ECX , EAX 
+		MOV     EAX , [EBP -8]
+		SHL     EAX , CL 
+		ADD     EAX , [EBP -4]
+  &AT-XY 2+	W@ 0x6 * 6	+ DUP 6 + 16 LSHIFT +
+		CALL    @@&AT-XY
+		MOVZX   EAX , WORD PTR [EAX +2]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $6
+		IMUL    [EBP -4]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $6
+		ADD     EAX , [EBP -4]
+		MOV     [EBP -4], EAX 
+		LEA     EAX , [EAX +6]
+		MOV     [EBP -8], EAX 
+		MOV     EAX , $10
+		MOV     ECX , EAX 
+		MOV     EAX , [EBP -8]
+		SHL     EAX , CL 
+		ADD     EAX , [EBP -4]
+ 2DUP LAST_CUR 2!
+		MOV     EDX , [EBP ]
+		MOV     [EBP -4], EAX 
+		MOV     [EBP -8], EDX 
+		LEA     EBP , [EBP -8]
+		CALL    @@LAST_CUR
+		CALL    @@2!
+  38 SYS4 DROP
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $26
+		MOV     EDX , [EBP +4]
+		MOV     ECX , [EBP ]
+		MOV     EBX , [EBP -4]
+		INT     $40
+		MOV     EAX , [EBP +8]
+		LEA     EBP , [EBP +12]
+;
+		RET
+: REDRAW
+
+59F17A  90 F1 59 00  00 06 52 45  44 52 41 57  95 F0 59 00 êÒY...REDRAWïY.
+59F18A  00 00 00 00  00 00 ......
+
+	draw_window
+		CALL    @@draw_window
+	DRAW_LINS CORSOR_DROW ;
+		CALL    @@DRAW_LINS
+		CALL    @@CORSOR_DROW
+		RET
+
+: EVENT-CASE
+
+59F1A0  C0 F1 59 00  00 0A 45 56  45 4E 54 2D  43 41 53 45 ¿ÒY...EVENT-CASE
+59F1B0  7F F1 59 00  00 00 00 00  00 00 00 00  00 00 00 00 ÒY.............
+
+     11 SYS1
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $B
+		INT     $40
+		MOV     [EBP -8], EAX 
+	DUP	1 = IF DROP REDRAW	EXIT	THEN
+		CMP     EAX , $1
+		MOV     EAX , [EBP -8]
+		LEA     EBP , [EBP -4]
+		JNE     [OFFSET EVENT-CASE]
+		MOV     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		CALL    @@REDRAW
+		RET
+	DUP	2 = IF DROP 2 SYS1 8 RSHIFT &KEY C! EXIT	THEN
+@59F1E6:		MOV     [EBP -4], EAX  
+		CMP     EAX , $2
+		MOV     EAX , [EBP -4]
+		JNE     [OFFSET EVENT-CASE]
+		MOV     EAX , $2
+		INT     $40
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $8
+		MOV     ECX , EAX 
+		MOV     EAX , [EBP -4]
+		SHR     EAX , CL 
+		CALL    @@&KEY
+		MOV     EDX , [EBP ]
+		MOV     [EAX ], DL 
+		MOV     EAX , [EBP +4]
+		LEA     EBP , [EBP +8]
+		RET
+		3 = IF -1 SYS1	EXIT	THEN ;
+@59F21A:		CMP     EAX , $3 
+		MOV     EAX , [EBP ]
+		LEA     EBP , [EBP +4]
+		JNE     [OFFSET EVENT-CASE]
+		MOV     [EBP -4], EAX 
+		MOV     EAX , $FFFFFFFF
+		INT     $40
+		LEA     EBP , [EBP -4]
+		RET
+@59F235:		RET 
+
+
+0 
+  CELL	FIELD .CODE
+
+59F236  50 F2 59 00  00 05 2E 43  4F 44 45 A5  F1 59 00 00 PÚY....CODE•ÒY..
+59F246  00 00 00 00  00 00 00 00  00 00 C3 ..........√
+
+2 CELLS	FIELD .FIRST \ ØÆß®Ê®Ô ¢ ‰†©´• (¢ °†©‚†Â)
+
+59F251  70 F2 59 00  00 06 2E 46  49 52 53 54  3B F2 59 00 pÚY....FIRST;ÚY.
+59F261  00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 89 ...............â
+59F271  45 FC B8 04  00 00 00 03  45 FC C3 E¸∏.....E¸√
+
+  CELL	FIELD .SIZE  \ ·™Æ´Ï™Æ °†©‚ R/W
+
+59F27C  90 F2 59 00  00 05 2E 53  49 5A 45 56  F2 59 00 00 êÚY....SIZEVÚY..
+59F28C  00 00 00 00  89 45 FC B8  0C 00 00 00  03 45 FC C3 ....âE¸∏.....E¸√
+
+  CELL	FIELD .DATA  \ „™†ß†‚•´Ï ≠† §†≠≠Î•
+
+59F29C  B0 F2 59 00  00 05 2E 44  41 54 41 81  F2 59 00 00 ∞ÚY....DATAÅÚY..
+59F2AC  00 00 00 00  89 45 FC B8  10 00 00 00  03 45 FC C3 ....âE¸∏.....E¸√
+
+  222	FIELD .NAME  \ ASCIIZ-®¨Ô ‰†©´†
+
+59F2BC  D0 F2 59 00  00 05 2E 4E  41 4D 45 A1  F2 59 00 00 –ÚY....NAME°ÚY..
+59F2CC  00 00 00 00  89 45 FC B8  14 00 00 00  03 45 FC C3 ....âE¸∏.....E¸√
+
+CONSTANT FILE_STR
+
+59F2DC  F0 F2 59 00  00 08 46 49  4C 45 5F 53  54 52 C1 F2 ÚY...FILE_STR¡Ú
+59F2EC  59 00 00 00  E8 47 2D FA  FF F2 00 00  00 Y...ËG-˙ˇÚ...
+
+
+: WINDOW
+
+59F2F9  10 F3 59 00  00 06 57 49  4E 44 4F 57  E1 F2 59 00 .ÛY...WINDOW·ÚY.
+59F309  00 00 00 00  00 00 00 .......
+
+ draw_window CC_LINES ;
+		CALL    @@draw_window
+		CALL    @@CC_LINES
+		RET
+
+ZZ=D4 

@@ -1,0 +1,4076 @@
+ZZ=D0 ( Основные низкоуровневые слова "форт-процессора"
+  Copyright [C] 1992-1999 A.Cherezov ac@forth.org
+  Преобразование из 16-разрядного в 32-разрядный код - 1995-96гг
+  Ревизия - сентябрь 1999
+)
+
+( Реализация для подпрограммного шитого кода.
+  ESP - указатель стека возвратов
+  EBP - указатель стека данных
+  EDI - сохраняемый регистр [указатель данных потока в SPF]
+)
+
+HEX
+
+\ ================================================================
+\ Стековые манипуляции
+
+?HS
+
+Code DUP ;( x -- x x ) \ 94
+
+59CB58  70 CB 59 00  00 03 44 55  50 E1 32 58  00 00 00 00 p╦Y...DUPс2X....
+59CB68  00 00 00 00  00 00 00 00 ........
+
+; Продублировать x.
+     LEA EBP, [EBP-4]
+
+59CB70  8D 6D FC Нm№
+
+     mov [ebp],eax
+
+59CB73  89 45 00 ЙE.
+
+     RET
+
+59CB76  C3 ├
+
+EndCode
+
+
+\ ' DUP TO 'DUP_V
+
+Code ?DUP ;( x -- 0 | x x ) \ 94
+
+59CB77  90 CB 59 00  00 04 3F 44  55 50 5D CB  59 00 00 00 Р╦Y...?DUP]╦Y...
+59CB87  00 00 00 00  00 00 00 00  00 .........
+
+; Продублировать x, если не ноль.
+     OR  EAX, EAX
+
+59CB90  0B C0 .└
+
+     JNZ { ' DUP }
+
+59CB92  75 DC u▄
+
+     RET
+
+59CB94  C3 ├
+
+EndCode
+
+Code 2DUP ;( x1 x2 -- x1 x2 x1 x2 ) \ 94
+
+59CB95  B0 CB 59 00  00 04 32 44  55 50 7C CB  59 00 00 00 ░╦Y...2DUP|╦Y...
+59CBA5  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; Продублировать пару ячеек x1 x2.
+     MOV EDX, [EBP]
+
+59CBB0  8B 55 00 ЛU.
+
+     MOV [EBP-4], EAX
+
+59CBB3  89 45 FC ЙE№
+
+     MOV [EBP-8], EDX
+
+59CBB6  89 55 F8 ЙU°
+
+     LEA EBP, [EBP-8]
+
+59CBB9  8D 6D F8 Нm°
+
+     RET
+
+59CBBC  C3 ├
+
+EndCode
+
+Code DROP ;( x -- ) \ 94
+
+59CBBD  D0 CB 59 00  00 04 44 52  4F 50 9A CB  59 00 00 00 ╨╦Y...DROPЪ╦Y...
+59CBCD  00 00 00 ...
+
+; Убрать x со стека.
+     mov eax,[ebp]
+
+59CBD0  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59CBD3  8D 6D 04 Нm.
+
+     RET
+
+59CBD6  C3 ├
+
+EndCode
+
+\ ' DROP TO 'DROP_V
+
+Code MAX ;( n1 n2 -- n3 ) \ 94
+
+59CBD7  F0 CB 59 00  00 03 4D 41  58 C2 CB 59  00 00 00 00 Ё╦Y...MAX┬╦Y....
+59CBE7  00 00 00 00  00 00 00 00  00 .........
+
+; n3 - большее из n1 и n2.
+     CMP EAX, [EBP]
+
+59CBF0  3B 45 00 ;E.
+
+     JL  { ' DROP }
+
+59CBF3  7C DB |█
+
+     LEA EBP, [EBP+4]
+
+59CBF5  8D 6D 04 Нm.
+
+     RET
+
+59CBF8  C3 ├
+
+EndCode
+
+Code MIN ;( n1 n2 -- n3 ) \ 94
+
+59CBF9  10 CC 59 00  00 03 4D 49  4E DC CB 59  00 00 00 00 .╠Y...MIN▄╦Y....
+59CC09  00 00 00 00  00 00 00 .......
+
+ ; n3 - меньшее из n1 и n2.
+     CMP EAX, [EBP]
+
+59CC10  3B 45 00 ;E.
+
+     JG  { ' DROP }
+
+59CC13  7F BB ╗
+
+     LEA EBP, [EBP+4]
+
+59CC15  8D 6D 04 Нm.
+
+     RET
+
+59CC18  C3 ├
+
+EndCode
+
+Code UMAX       ;( u1 u2 -- n3 ) \ RETurn the lesser of unsigned u1 and
+
+59CC19  30 CC 59 00  00 04 55 4D  41 58 FE CB  59 00 00 00 0╠Y...UMAX■╦Y...
+59CC29  00 00 00 00  00 00 00 .......
+
+                                ; unsigned u2
+     CMP  EAX, [EBP]
+
+59CC30  3B 45 00 ;E.
+
+     JB { ' DROP }
+
+59CC33  72 9B rЫ
+
+     LEA EBP, [EBP+4]
+
+59CC35  8D 6D 04 Нm.
+
+     RET
+
+59CC38  C3 ├
+
+EndCode
+
+Code UMIN       ;( u1 u2 -- n3 ) \ RETurn the lesser of unsigned u1 and
+
+59CC39  50 CC 59 00  00 04 55 4D  49 4E 1E CC  59 00 00 00 P╠Y...UMIN.╠Y...
+59CC49  00 00 00 00  00 00 00 .......
+
+                                ; unsigned u2
+     CMP EAX, [EBP]
+
+59CC50  3B 45 00 ;E.
+
+     JA { ' DROP }
+
+59CC53  0F 87 77 FF  FF FF .Зw   
+
+     LEA EBP, [EBP+4]
+
+59CC59  8D 6D 04 Нm.
+
+     RET
+
+59CC5C  C3 ├
+
+EndCode
+
+Code 2DROP ;( x1 x2 -- ) \ 94
+
+59CC5D  70 CC 59 00  00 05 32 44  52 4F 50 3E  CC 59 00 00 p╠Y...2DROP>╠Y..
+59CC6D  00 00 00 ...
+
+; Убрать со стека пару ячеек x1 x2.
+     MOV     EAX , [EBP+4]
+
+59CC70  8B 45 04 ЛE.
+
+     ADD     EBP , 8
+
+59CC73  83 C5 08 Г┼.
+
+     RET
+
+59CC76  C3 ├
+
+EndCode
+
+Code SWAP ;( x1 x2 -- x2 x1 ) \ 94
+
+59CC77  90 CC 59 00  00 04 53 57  41 50 62 CC  59 00 00 00 Р╠Y...SWAPb╠Y...
+59CC87  00 00 00 00  00 00 00 00  00 .........
+
+; поменять местами два верхних элемента стека
+;     XCHG EAX  { EBP }
+     MOV   EDX, [EBP]
+
+59CC90  8B 55 00 ЛU.
+
+     MOV   [EBP],  EAX
+
+59CC93  89 45 00 ЙE.
+
+     MOV   EAX, EDX
+
+59CC96  8B C2 Л┬
+
+     RET
+
+59CC98  C3 ├
+
+EndCode
+
+Code 2SWAP ;( x1 x2 x3 x4 -- x3 x4 x1 x2 ) \ 94
+
+59CC99  B0 CC 59 00  00 05 32 53  57 41 50 7C  CC 59 00 00 ░╠Y...2SWAP|╠Y..
+59CCA9  00 00 00 00  00 00 00 .......
+
+; Поменять местами две верхние пары ячеек.
+     MOV ECX, [EBP]
+
+59CCB0  8B 4D 00 ЛM.
+
+     MOV EBX, [EBP+4]
+
+59CCB3  8B 5D 04 Л].
+
+     MOV EDX, [EBP+8]
+
+59CCB6  8B 55 08 ЛU.
+
+     MOV [EBP+8], ECX
+
+59CCB9  89 4D 08 ЙM.
+
+     MOV [EBP+4], EAX
+
+59CCBC  89 45 04 ЙE.
+
+     MOV [EBP], EDX
+
+59CCBF  89 55 00 ЙU.
+
+     MOV EAX, EBX
+
+59CCC2  8B C3 Л├
+
+     RET
+
+59CCC4  C3 ├
+
+EndCode
+
+Code OVER ;( x1 x2 -- x1 x2 x1 ) \ 94
+
+59CCC5  E0 CC 59 00  00 04 4F 56  45 52 9E CC  59 00 00 00 р╠Y...OVERЮ╠Y...
+59CCD5  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; Положить копию x1 на вершину стека.
+     LEA EBP, [EBP-4]
+
+59CCE0  8D 6D FC Нm№
+
+     MOV  [EBP],  EAX
+
+59CCE3  89 45 00 ЙE.
+
+     MOV  EAX, [EBP+4]
+
+59CCE6  8B 45 04 ЛE.
+
+     RET
+
+59CCE9  C3 ├
+
+EndCode
+
+Code 2OVER ;( x1 x2 x3 x4 -- x1 x2 x3 x4 x1 x2 ) \ 94
+
+59CCEA  00 CD 59 00  00 05 32 4F  56 45 52 CA  CC 59 00 00 .═Y...2OVER╩╠Y..
+59CCFA  00 00 00 00  00 00 ......
+
+; Копировать пару ячеек x1 x2 на вершину стека.
+     MOV EDX, [EBP+8]
+
+59CD00  8B 55 08 ЛU.
+
+     MOV [EBP-4], EAX
+
+59CD03  89 45 FC ЙE№
+
+     MOV [EBP-8], EDX
+
+59CD06  89 55 F8 ЙU°
+
+     MOV EAX, [EBP+4]
+
+59CD09  8B 45 04 ЛE.
+
+     LEA EBP, [EBP-8]
+
+59CD0C  8D 6D F8 Нm°
+
+     RET
+
+59CD0F  C3 ├
+
+EndCode
+
+Code NIP ;( x1 x2 -- x2 ) \ 94 CORE EXT
+
+59CD10  20 CD 59 00  00 03 4E 49  50 EF CC 59  00 00 00 00  ═Y...NIPя╠Y....
+
+; Убрать первый элемент под вершиной стека.
+     ADD EBP,  4
+
+59CD20  83 C5 04 Г┼.
+
+     RET
+
+59CD23  C3 ├
+
+EndCode
+
+Code ROT ;( x1 x2 x3 -- x2 x3 x1 ) \ 94
+
+59CD24  40 CD 59 00  00 03 52 4F  54 15 CD 59  00 00 00 00 @═Y...ROT.═Y....
+59CD34  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+; Прокрутить три верхних элемента стека.
+;     XCHG EAX     [EBP]
+;     XCHG EAX   4  [EBP]
+     MOV  EDX, [EBP]
+
+59CD40  8B 55 00 ЛU.
+
+     MOV  [EBP], EAX
+
+59CD43  89 45 00 ЙE.
+
+     MOV  EAX, [EBP+4]
+
+59CD46  8B 45 04 ЛE.
+
+     MOV  [EBP+4], EDX
+
+59CD49  89 55 04 ЙU.
+
+     RET
+
+59CD4C  C3 ├
+
+EndCode
+
+
+Code -ROT ;( x1 x2 x3 -- x3 x1 x2 ) ; !!!!!
+
+59CD4D  60 CD 59 00  00 04 2D 52  4F 54 29 CD  59 00 00 00 `═Y...-ROT)═Y...
+59CD5D  00 00 00 ...
+
+; Обратное ROT
+     MOV  EDX, [EBP+4]
+
+59CD60  8B 55 04 ЛU.
+
+     MOV  [EBP+4], EAX
+
+59CD63  89 45 04 ЙE.
+
+     MOV  EAX, [EBP]
+
+59CD66  8B 45 00 ЛE.
+
+     MOV  [EBP], EDX
+
+59CD69  89 55 00 ЙU.
+
+     RET
+
+59CD6C  C3 ├
+
+EndCode
+
+Code PICK      ;( ... +n -- ... w ) \ Copy the nth stack item to tos.
+
+59CD6D  80 CD 59 00  00 04 50 49  43 4B 52 CD  59 00 00 00 А═Y...PICKR═Y...
+59CD7D  00 00 00 ...
+
+      MOV    EAX, [EBP + EAX*4 ]
+
+59CD80  8B 44 85 00 ЛDЕ.
+
+      RET
+
+59CD84  C3 ├
+
+EndCode
+
+Code ROLL ;( xu xu-1 ... x0 u -- xu-1 ... x0 xu ) \ 94 CORE EXT
+
+59CD85  A0 CD 59 00  00 04 52 4F  4C 4C 72 CD  59 00 00 00 а═Y...ROLLr═Y...
+59CD95  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; Убрать u. Повернуть u+1 элемент на вершине стека.
+; Неопределенная ситуация возникает, если перед выполнением ROLL
+; на стеке меньше чем u+2 элементов.
+     OR EAX, EAX
+
+59CDA0  0B C0 .└
+
+     JZ SHORT LL1
+
+59CDA2  74 1E t.
+
+     MOV ECX, EAX
+
+59CDA4  8B C8 Л╚
+
+     LEA EAX, [EAX*4]
+
+59CDA6  8D 04 85 00  00 00 00 Н.Е....
+
+     MOV EDX, EBP
+
+59CDAD  8B D5 Л╒
+
+     ADD EDX, EAX
+
+59CDAF  03 D0 .╨
+
+     MOV EBX, [EDX]
+
+59CDB1  8B 1A Л.
+
+LL2: LEA EDX, [EDX-4]
+
+59CDB3  8D 52 FC НR№
+
+     MOV EAX, [EDX]
+
+59CDB6  8B 02 Л.
+
+     MOV [EDX+4], EAX
+
+59CDB8  89 42 04 ЙB.
+
+     DEC ECX
+
+59CDBB  49 I
+
+     JNZ SHORT LL2
+
+59CDBC  75 F5 uї
+
+     MOV EAX, EBX
+
+59CDBE  8B C3 Л├
+
+     JMP SHORT LL3
+
+59CDC0  EB 03 ы.
+
+LL1: MOV EAX, [EBP]
+
+59CDC2  8B 45 00 ЛE.
+
+LL3: LEA EBP, [EBP+4]
+
+59CDC5  8D 6D 04 Нm.
+
+     RET
+
+59CDC8  C3 ├
+
+EndCode
+
+Code TUCK ;( x1 x2 -- x2 x1 x2 ) \ 94
+
+59CDC9  E0 CD 59 00  00 04 54 55  43 4B 8A CD  59 00 00 00 р═Y...TUCKК═Y...
+59CDD9  00 00 00 00  00 00 00 .......
+
+     LEA EBP, [EBP-4]
+
+59CDE0  8D 6D FC Нm№
+
+     MOV  EDX, [EBP+4]
+
+59CDE3  8B 55 04 ЛU.
+
+     MOV  [EBP],  EDX
+
+59CDE6  89 55 00 ЙU.
+
+     MOV  [EBP+4],  EAX
+
+59CDE9  89 45 04 ЙE.
+
+     RET
+
+59CDEC  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Стек возвратов
+
+Code 2>R   ; 94 CORE EXT
+
+59CDED  00 CE 59 00  00 03 32 3E  52 CE CD 59  00 00 00 00 .╬Y...2>R╬═Y....
+59CDFD  00 00 00 ...
+
+; Интерпретация: семантика неопределена.
+; Выполнение: ;( x1 x2 -- ) ;( R: -- x1 x2 )
+; Перенести пару ячеек x1 x2 на стек возвратов. Семантически
+; эквивалентно SWAP >R >R.
+     POP   EBX
+
+59CE00  5B [
+
+     PUSH  DWORD PTR [EBP]
+
+59CE01  FF 75 00  u.
+
+     PUSH  EAX
+
+59CE04  50 P
+
+     LEA   EBP, [EBP+8]
+
+59CE05  8D 6D 08 Нm.
+
+     MOV   EAX, [EBP-4]
+
+59CE08  8B 45 FC ЛE№
+
+     JMP   EBX
+
+59CE0B  FF E3  у
+
+EndCode
+
+Code 2R>  ; 94 CORE EXT
+
+59CE0D  20 CE 59 00  00 03 32 52  3E F2 CD 59  00 00 00 00  ╬Y...2R>Є═Y....
+59CE1D  00 00 00 ...
+
+; Интерпретация: семантика неопределена.
+; Выполнение: ;( -- x1 x2 ) ;( R: x1 x2 -- )
+; Перенести пару ячеек x1 x2 со стека возвратов. Семантически
+; эквивалентно R> R> SWAP.  \ !!!!
+     LEA EBP, [EBP-8]
+
+59CE20  8D 6D F8 Нm°
+
+     POP EBX
+
+59CE23  5B [
+
+     MOV [EBP+4], EAX
+
+59CE24  89 45 04 ЙE.
+
+     POP EAX
+
+59CE27  58 X
+
+     POP DWORD PTR [EBP]
+
+59CE28  8F 45 00 ПE.
+
+     PUSH EBX
+
+59CE2B  53 S
+
+     RET
+
+59CE2C  C3 ├
+
+EndCode
+
+Code R@    ; 94
+
+59CE2D  40 CE 59 00  00 02 52 40  12 CE 59 00  00 00 00 00 @╬Y...R@.╬Y.....
+59CE3D  00 00 00 ...
+
+; Исполнение: ;( -- x ) ;( R: x -- x )
+; Интерпретация: семантика в режиме интерпретации неопределена.
+     LEA EBP, [EBP-4]
+
+59CE40  8D 6D FC Нm№
+
+     MOV [EBP], EAX
+
+59CE43  89 45 00 ЙE.
+
+     MOV EAX, [ESP + 4 ]
+
+59CE46  8B 44 24 04 ЛD$.
+
+     RET
+
+59CE4A  C3 ├
+
+EndCode
+
+Code 2R@  ; 94 CORE EXT
+
+59CE4B  60 CE 59 00  00 03 32 52  40 32 CE 59  00 00 00 00 `╬Y...2R@2╬Y....
+59CE5B  00 00 00 00  00 .....
+
+; Интерпретация: семантика неопределена.
+; Выполнение: ;( -- x1 x2 ) ;( R: x1 x2 -- x1 x2 )
+; Копировать пару ячеек x1 x2 со стека возвратов. Семантически
+; эквивалентно R> R> 2DUP >R >R SWAP.
+     LEA EBP, [EBP-8]
+
+59CE60  8D 6D F8 Нm°
+
+     MOV [EBP+4], EAX
+
+59CE63  89 45 04 ЙE.
+
+     MOV EAX, [ESP + { 2 CELLS } ]
+
+59CE66  8B 44 24 08 ЛD$.
+
+     MOV DWORD PTR [EBP],  EAX
+
+59CE6A  89 45 00 ЙE.
+
+     MOV  EAX, [ESP + 4 ]
+
+59CE6D  8B 44 24 04 ЛD$.
+
+     RET
+
+59CE71  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Операции с памятью
+
+Code @ ;( a-addr -- x ) \ 94
+
+59CE72  80 CE 59 00  00 01 40 50  CE 59 00 00  00 00 А╬Y...@P╬Y....
+
+; x - значение по адресу a-addr.
+     MOV EAX, [EAX ]
+
+59CE80  8B 00 Л.
+
+     RET
+
+59CE82  C3 ├
+
+EndCode
+
+Code ! ;( x a-addr -- ) \ 94
+
+59CE83  90 CE 59 00  00 01 21 77  CE 59 00 00  00 Р╬Y...!w╬Y...
+
+; Записать x по адресу a-addr.
+     MOV EDX, [EBP]
+
+59CE90  8B 55 00 ЛU.
+
+     MOV DWORD PTR [EAX ],  EDX
+
+59CE93  89 10 Й.
+
+     MOV EAX , [EBP+4]
+
+59CE95  8B 45 04 ЛE.
+
+     ADD EBP , 8
+
+59CE98  83 C5 08 Г┼.
+
+     RET
+
+59CE9B  C3 ├
+
+EndCode
+
+Code C@ ;( c-addr -- char ) \ 94
+
+59CE9C  B0 CE 59 00  00 02 43 40  88 CE 59 00  00 00 00 00 ░╬Y...C@И╬Y.....
+59CEAC  00 00 00 00 ....
+
+; Получить символ по адресу c-addr. Незначащие старшие биты ячейки нулевые.
+     MOVZX EAX, BYTE PTR [EAX ]
+
+59CEB0  0F B6 00 .╢.
+
+     RET
+
+59CEB3  C3 ├
+
+EndCode
+
+Code C! ;( char c-addr -- ) \ 94
+
+59CEB4  C0 CE 59 00  00 02 43 21  A1 CE 59 00 └╬Y...C!б╬Y.
+
+; Записать char по адресу a-addr.
+     MOV EDX, [EBP]
+
+59CEC0  8B 55 00 ЛU.
+
+     MOV BYTE PTR [EAX ],  DL
+
+59CEC3  88 10 И.
+
+     MOV EAX , [EBP+4]
+
+59CEC5  8B 45 04 ЛE.
+
+     ADD EBP , 8
+
+59CEC8  83 C5 08 Г┼.
+
+     RET
+
+59CECB  C3 ├
+
+EndCode
+
+Code W@ ;( c-addr -- word )
+
+59CECC  E0 CE 59 00  00 02 57 40  B9 CE 59 00  00 00 00 00 р╬Y...W@╣╬Y.....
+59CEDC  00 00 00 00 ....
+
+; Получить word по адресу c-addr. Незначащие старшие биты ячейки нулевые.
+     MOVZX   EAX, WORD PTR [EAX ]
+
+59CEE0  0F B7 00 .╖.
+
+     RET
+
+59CEE3  C3 ├
+
+EndCode
+
+Code W! ;( word c-addr -- )
+
+59CEE4  F0 CE 59 00  00 02 57 21  D1 CE 59 00 Ё╬Y...W!╤╬Y.
+
+; Записать word по адресу a-addr.
+     MOV EDX, [EBP]
+
+59CEF0  8B 55 00 ЛU.
+
+     MOV WORD PTR [EAX ],  DX
+
+59CEF3  66 89 10 fЙ.
+
+     MOV   EAX , [EBP+4]
+
+59CEF6  8B 45 04 ЛE.
+
+     ADD   EBP , 8
+
+59CEF9  83 C5 08 Г┼.
+
+     RET
+
+59CEFC  C3 ├
+
+EndCode
+
+Code 2@ ;( a-addr -- x1 x2 ) \ 94
+
+59CEFD  10 CF 59 00  00 02 32 40  E9 CE 59 00  00 00 00 00 .╧Y...2@щ╬Y.....
+59CF0D  00 00 00 ...
+
+; Получить пару ячеек x1 x2, записанную по адресу a-addr.
+; x2 по адресу a-addr, x1 в следующей ячейке.
+; Равносильно DUP CELL+ @ SWAP @
+     MOV EDX, [EAX + 4 ]
+
+59CF10  8B 50 04 ЛP.
+
+     LEA EBP, [EBP-4]
+
+59CF13  8D 6D FC Нm№
+
+     MOV DWORD PTR [EBP],  EDX
+
+59CF16  89 55 00 ЙU.
+
+     MOV EAX,    DWORD PTR [EAX ]
+
+59CF19  8B 00 Л.
+
+     RET
+
+59CF1B  C3 ├
+
+EndCode
+
+Code 2! ;( x1 x2 a-addr -- ) \ 94
+
+59CF1C  30 CF 59 00  00 02 32 21  02 CF 59 00  00 00 00 00 0╧Y...2!.╧Y.....
+59CF2C  00 00 00 00 ....
+
+; Записать пару ячеек x1 x2 по адресу a-addr,
+; x2 по адресу a-addr, x1 в следующую ячейку.
+; Равносильно SWAP OVER ! CELL+ !
+     MOV EDX, [EBP]
+
+59CF30  8B 55 00 ЛU.
+
+     MOV [EAX], EDX
+
+59CF33  89 10 Й.
+
+     MOV EDX, [EBP+4]
+
+59CF35  8B 55 04 ЛU.
+
+     MOV [EAX+4], EDX
+
+59CF38  89 50 04 ЙP.
+
+     LEA EBP, [EBP+0CH]
+
+59CF3B  8D 6D 0C Нm.
+
+     MOV EAX, [EBP-4]
+
+59CF3E  8B 45 FC ЛE№
+
+     RET
+
+59CF41  C3 ├
+
+EndCode
+
+Code D@ ;( a-addr -- x1 x2 )
+
+59CF42  50 CF 59 00  00 02 44 40  21 CF 59 00  00 00 P╧Y...D@!╧Y...
+
+; 2@ SWAP
+     MOV EDX, [EAX]
+
+59CF50  8B 10 Л.
+
+     LEA EBP, [EBP-4]
+
+59CF52  8D 6D FC Нm№
+
+     MOV DWORD PTR [EBP],  EDX
+
+59CF55  89 55 00 ЙU.
+
+     MOV EAX,    DWORD PTR [EAX+4]
+
+59CF58  8B 40 04 Л@.
+
+     RET
+
+59CF5B  C3 ├
+
+EndCode
+
+Code D! ;( x1 x2 a-addr -- )
+
+59CF5C  70 CF 59 00  00 02 44 21  47 CF 59 00  00 00 00 00 p╧Y...D!G╧Y.....
+59CF6C  00 00 00 00 ....
+
+; >R SWAP R> 2!
+	MOV EDX, [EBP]
+
+59CF70  8B 55 00 ЛU.
+
+	MOV [EAX+4], EDX
+
+59CF73  89 50 04 ЙP.
+
+	MOV EDX, [EBP+4]
+
+59CF76  8B 55 04 ЛU.
+
+	MOV [EAX], EDX
+
+59CF79  89 10 Й.
+
+	LEA EBP, [EBP+0CH]
+
+59CF7B  8D 6D 0C Нm.
+
+	MOV EAX, [EBP-4]
+
+59CF7E  8B 45 FC ЛE№
+
+	RET
+
+59CF81  C3 ├
+
+EndCode
+
+
+Code EBX@ ;( -- EBX )
+
+59CF82  90 CF 59 00  00 04 45 42  58 40 61 CF  59 00 Р╧Y...EBX@a╧Y.
+
+	LEA EBP, [EBP-4]
+
+59CF90  8D 6D FC Нm№
+
+	mov [ebp],eax
+
+59CF93  89 45 00 ЙE.
+
+	MOV EAX,EBX
+
+59CF96  8B C3 Л├
+
+	RET
+
+59CF98  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Вычисления
+
+Code 1+ ;( n1|u1 -- n2|u2 ) \ 94
+
+59CF99  B0 CF 59 00  00 02 31 2B  87 CF 59 00  00 00 00 00 ░╧Y...1+З╧Y.....
+59CFA9  00 00 00 00  00 00 00 .......
+
+; Прибавить 1 к n1|u1 и получить сумму u2|n2.
+     LEA EAX, [EAX+1]
+
+59CFB0  8D 40 01 Н@.
+
+     RET
+
+59CFB3  C3 ├
+
+EndCode
+
+Code 1- ;( n1|u1 -- n2|u2 ) \ 94
+
+59CFB4  C0 CF 59 00  00 02 31 2D  9E CF 59 00 └╧Y...1-Ю╧Y.
+
+; Вычесть 1 из n1|u1 и получить разность n2|u2.
+     LEA EAX, [EAX-1]
+
+59CFC0  8D 40 FF Н@ 
+
+     RET
+
+59CFC3  C3 ├
+
+EndCode
+
+Code 2+ ;( W -> W+2 )
+
+59CFC4  D0 CF 59 00  00 02 32 2B  B9 CF 59 00 ╨╧Y...2+╣╧Y.
+
+     LEA EAX, [EAX+2]
+
+59CFD0  8D 40 02 Н@.
+
+     RET
+
+59CFD3  C3 ├
+
+EndCode
+
+Code 2- ;( W -> W-2 )
+
+59CFD4  E0 CF 59 00  00 02 32 2D  C9 CF 59 00 р╧Y...2-╔╧Y.
+
+     LEA EAX, [EAX-2]
+
+59CFE0  8D 40 FE Н@■
+
+     RET
+
+59CFE3  C3 ├
+
+EndCode
+
+Code 2* ;( x1 -- x2 ) \ 94
+
+59CFE4  F0 CF 59 00  00 02 32 2A  D9 CF 59 00 Ё╧Y...2*┘╧Y.
+
+; x2 - результат сдвига x1 на один бит влево, с заполнением
+; наименее значимого бита нулем.
+;  SHL EAX
+;  LEA EAX, [EAX+EAX]
+  LEA EAX, [EAX*2]
+
+59CFF0  8D 04 45 00  00 00 00 Н.E....
+
+  RET 
+
+59CFF7  C3 ├
+
+EndCode
+
+Code CELL+ ;( a-addr1 -- a-addr2 ) \ 94
+
+59CFF8  10 D0 59 00  00 05 43 45  4C 4C 2B E9  CF 59 00 00 .╨Y...CELL+щ╧Y..
+59D008  00 00 00 00  00 00 00 00 ........
+
+; Вычесть размер ячейки к a-addr1 и получить a-addr2.
+     LEA EAX, [EAX+4]
+
+59D010  8D 40 04 Н@.
+
+     RET
+
+59D013  C3 ├
+
+EndCode
+
+Code CELL- ;( a-addr1 -- a-addr2 ) \ 94
+
+59D014  30 D0 59 00  00 05 43 45  4C 4C 2D FD  CF 59 00 00 0╨Y...CELL-¤╧Y..
+59D024  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+; Вычесть размер ячейки к a-addr1 и получить a-addr2.
+     LEA EAX, [EAX-4]
+
+59D030  8D 40 FC Н@№
+
+     RET
+
+59D033  C3 ├
+
+EndCode
+
+Code CELLS ;( n1 -- n2 ) \ 94
+
+59D034  50 D0 59 00  00 05 43 45  4C 4C 53 19  D0 59 00 00 P╨Y...CELLS.╨Y..
+59D044  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+; n2 - размер n1 ячеек.
+  LEA     EAX,  DWORD PTR [EAX *4 ]
+
+59D050  8D 04 85 00  00 00 00 Н.Е....
+
+  RET 
+
+59D057  C3 ├
+
+EndCode
+
+
+Code + ;( n1|u1 n2|u2 -- n3|u3 ) \ 94
+
+59D058  70 D0 59 00  00 01 2B 39  D0 59 00 00  00 00 00 00 p╨Y...+9╨Y......
+59D068  00 00 00 00  00 00 00 00 ........
+
+; Сложить n1|u1 и n2|u2 и получить сумму n3|u3.
+     ADD EAX,  DWORD PTR [EBP]
+
+59D070  03 45 00 .E.
+
+     LEA EBP, [EBP+4]
+
+59D073  8D 6D 04 Нm.
+
+     RET
+
+59D076  C3 ├
+
+EndCode
+
+Code D+ ;( d1|ud1 d2|ud2 -- d3|ud3 ) \ 94 DOUBLE
+
+59D077  90 D0 59 00  00 02 44 2B  5D D0 59 00  00 00 00 00 Р╨Y...D+]╨Y.....
+59D087  00 00 00 00  00 00 00 00  00 .........
+
+; Сложить d1|ud1 и d2|ud2 и дать сумму d3|ud3.
+       MOV EDX,    DWORD PTR [EBP]
+
+59D090  8B 55 00 ЛU.
+
+       ADD DWORD PTR [EBP + { 2 CELLS } ],  EDX
+
+59D093  01 55 08 .U.
+
+       ADC EAX, DWORD PTR [EBP +4 ]
+
+59D096  13 45 04 .E.
+
+       LEA EBP, [EBP+8]
+
+59D099  8D 6D 08 Нm.
+
+       RET
+
+59D09C  C3 ├
+
+EndCode
+
+Code D- ;( d1 d2 -- d3 ) \ 94 DOUBLE
+
+59D09D  B0 D0 59 00  00 02 44 2D  7C D0 59 00  00 00 00 00 ░╨Y...D-|╨Y.....
+59D0AD  00 00 00 ...
+
+; perform a double subtract (64bit)
+       MOV EDX,   DWORD PTR [EBP]
+
+59D0B0  8B 55 00 ЛU.
+
+       SUB DWORD PTR [EBP + { 2 CELLS } ],  EDX
+
+59D0B3  29 55 08 )U.
+
+       SBB [EBP+4], EAX
+
+59D0B6  19 45 04 .E.
+
+       MOV EAX, DWORD PTR [EBP +4 ]
+
+59D0B9  8B 45 04 ЛE.
+
+       LEA EBP, [EBP+8]
+
+59D0BC  8D 6D 08 Нm.
+
+       RET
+
+59D0BF  C3 ├
+
+EndCode
+               
+Code - ;( n1|u1 n2|u2 -- n3|u3 ) \ 94
+
+59D0C0  D0 D0 59 00  00 01 2D A2  D0 59 00 00  00 00 00 00 ╨╨Y...-в╨Y......
+
+; Вычесть n2|u2 из n1|u1 и получить разность n3|u3.
+     NEG EAX
+
+59D0D0  F7 D8 ў╪
+
+     ADD EAX, [EBP]
+
+59D0D2  03 45 00 .E.
+
+     LEA EBP, [EBP+4]
+
+59D0D5  8D 6D 04 Нm.
+
+     RET
+
+59D0D8  C3 ├
+
+EndCode
+
+Code 1+! ;( A -> )
+
+59D0D9  F0 D0 59 00  00 03 31 2B  21 C5 D0 59  00 00 00 00 Ё╨Y...1+!┼╨Y....
+59D0E9  00 00 00 00  00 00 00 .......
+
+     INC   DWORD PTR [EAX ]
+
+59D0F0  FF 00  .
+
+     MOV   EAX, [EBP]
+
+59D0F2  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59D0F5  8D 6D 04 Нm.
+
+     RET
+
+59D0F8  C3 ├
+
+EndCode
+
+Code 0! ;( A -> )
+
+59D0F9  10 D1 59 00  00 02 30 21  DE D0 59 00  00 00 00 00 .╤Y...0!▐╨Y.....
+59D109  00 00 00 00  00 00 00 .......
+
+     MOV   DWORD PTR [EAX ], 0 
+
+59D110  C7 00 00 00  00 00 ╟.....
+
+     MOV   EAX, [EBP]
+
+59D116  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59D119  8D 6D 04 Нm.
+
+     RET
+
+59D11C  C3 ├
+
+EndCode
+
+Code COUNT ;( c-addr1 -- c-addr2 u ) \ 94
+
+59D11D  30 D1 59 00  00 05 43 4F  55 4E 54 FE  D0 59 00 00 0╤Y...COUNT■╨Y..
+59D12D  00 00 00 ...
+
+; Получить строку символов из строки со счетчиком c-addr1.
+; c-addr2 - адрес первого символа за c-addr1.
+; u - содержимое байта c-addr1, являющееся длиной строки символов,
+; начинающейся с адреса c-addr2.
+     LEA EBP, [EBP-4]
+
+59D130  8D 6D FC Нm№
+
+     LEA  EDX,   DWORD PTR [EAX +1 ]
+
+59D133  8D 50 01 НP.
+
+     MOV  DWORD PTR [EBP],    EDX
+
+59D136  89 55 00 ЙU.
+
+     MOVZX EAX,  BYTE PTR [EAX ]
+
+59D139  0F B6 00 .╢.
+
+     RET
+
+59D13C  C3 ├
+
+EndCode
+
+Code * ;( n1|u1 n2|u2 -- n3|u3 ) \ 94
+
+59D13D  50 D1 59 00  00 01 2A 22  D1 59 00 00  00 00 00 00 P╤Y...*"╤Y......
+59D14D  00 00 00 ...
+
+; Перемножить n1|u1 и n2|u2 и получить произведение n3|u3.
+     IMUL DWORD PTR [EBP]
+
+59D150  F7 6D 00 ўm.
+
+     LEA EBP, [EBP+4]
+
+59D153  8D 6D 04 Нm.
+
+     RET
+
+59D156  C3 ├
+
+EndCode
+
+Code AND ;( x1 x2 -- x3 ) \ 94
+
+59D157  70 D1 59 00  00 03 41 4E  44 42 D1 59  00 00 00 00 p╤Y...ANDB╤Y....
+59D167  00 00 00 00  00 00 00 00  00 .........
+
+; x3 - побитовое "И" x1 и x2.
+     AND EAX, [EBP]
+
+59D170  23 45 00 #E.
+
+     LEA EBP, [EBP+4]
+
+59D173  8D 6D 04 Нm.
+
+     RET
+
+59D176  C3 ├
+
+EndCode
+
+Code OR ;( x1 x2 -- x3 ) \ 94
+
+59D177  90 D1 59 00  00 02 4F 52  5C D1 59 00  00 00 00 00 Р╤Y...OR\╤Y.....
+59D187  00 00 00 00  00 00 00 00  00 .........
+
+; x3 - побитовое "ИЛИ" x1 и x2.
+     OR EAX, [EBP]
+
+59D190  0B 45 00 .E.
+
+     LEA EBP, [EBP+4]
+
+59D193  8D 6D 04 Нm.
+
+     RET
+
+59D196  C3 ├
+
+EndCode
+
+Code XOR ;( x1 x2 -- x3 ) \ 94
+
+59D197  B0 D1 59 00  00 03 58 4F  52 7C D1 59  00 00 00 00 ░╤Y...XOR|╤Y....
+59D1A7  00 00 00 00  00 00 00 00  00 .........
+
+; x3 - побитовое "исключающее ИЛИ" x1 и x2.
+     XOR EAX, [EBP]
+
+59D1B0  33 45 00 3E.
+
+     LEA EBP, [EBP+4]
+
+59D1B3  8D 6D 04 Нm.
+
+     RET
+
+59D1B6  C3 ├
+
+EndCode
+
+Code INVERT ;( x1 -- x2 ) \ 94
+
+59D1B7  D0 D1 59 00  00 06 49 4E  56 45 52 54  9C D1 59 00 ╨╤Y...INVERTЬ╤Y.
+59D1C7  00 00 00 00  00 00 00 00  00 .........
+
+; Инвертировать все биты x1 и получить логическую инверсию x2.
+     NOT EAX
+
+59D1D0  F7 D0 ў╨
+
+     RET
+
+59D1D2  C3 ├
+
+EndCode
+
+Code NEGATE ;( n1 -- n2 ) \ 94
+
+59D1D3  F0 D1 59 00  00 06 4E 45  47 41 54 45  BC D1 59 00 Ё╤Y...NEGATE╝╤Y.
+59D1E3  00 00 00 00  00 00 00 00  00 00 00 00  00 .............
+
+; n2 - арифметическая инверсия n1.
+     NEG EAX
+
+59D1F0  F7 D8 ў╪
+
+     RET
+
+59D1F2  C3 ├
+
+EndCode
+
+Code ABS ;( n -- u ) \ 94
+
+59D1F3  00 D2 59 00  00 03 41 42  53 D8 D1 59  00 .╥Y...ABS╪╤Y.
+
+; u - абсолютная величина n.
+     TEST  EAX, EAX
+
+59D200  85 C0 Е└
+
+     JS  { ' NEGATE }
+
+59D202  78 EC xь
+
+     RET
+
+59D204  C3 ├
+
+EndCode
+
+Code DNEGATE ;( d1 -- d2 ) \ 94 DOUBLE
+
+59D205  20 D2 59 00  00 07 44 4E  45 47 41 54  45 F8 D1 59  ╥Y...DNEGATE°╤Y
+59D215  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; d2 результат вычитания d1 из нуля.
+     MOV  EDX, [EBP]
+
+59D220  8B 55 00 ЛU.
+
+     NEG  EAX
+
+59D223  F7 D8 ў╪
+
+     NEG  EDX
+
+59D225  F7 DA ў┌
+
+     SBB  EAX,   0
+
+59D227  83 D8 00 Г╪.
+
+     MOV  DWORD PTR [EBP],  EDX
+
+59D22A  89 55 00 ЙU.
+
+     RET
+
+59D22D  C3 ├
+
+EndCode
+
+Code NOOP ;( -> )
+
+59D22E  40 D2 59 00  00 04 4E 4F  4F 50 0A D2  59 00 00 00 @╥Y...NOOP.╥Y...
+59D23E  00 00 ..
+
+     RET
+
+59D240  C3 ├
+
+EndCode
+
+Code S>D ;( n -- d ) \ 94
+
+59D241  50 D2 59 00  00 03 53 3E  44 33 D2 59  00 00 00 P╥Y...S>D3╥Y...
+
+; Преобразовать число n в двойное число d с тем же числовым значением.
+     LEA EBP, [EBP-4]
+
+59D250  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59D253  89 45 00 ЙE.
+
+     CDQ
+
+59D256  99 Щ
+
+     MOV  EAX, EDX
+
+59D257  8B C2 Л┬
+
+     RET
+
+59D259  C3 ├
+
+EndCode
+
+Code D>S ;( d -- n ) \ 94 DOUBLE
+
+59D25A  70 D2 59 00  00 03 44 3E  53 46 D2 59  00 00 00 00 p╥Y...D>SF╥Y....
+59D26A  00 00 00 00  00 00 ......
+
+; n - эквивалент d.
+; Исключительная ситуация возникает, если d находится вне диапазона
+; знаковых одинарных чисел.
+     MOV     EAX, [EBP]
+
+59D270  8B 45 00 ЛE.
+
+     ADD     EBP, 4
+
+59D273  83 C5 04 Г┼.
+
+     RET
+
+59D276  C3 ├
+
+EndCode
+
+Code U>D ;( U -> D ) \ расширить число до двойной точности нулем
+
+59D277  90 D2 59 00  00 03 55 3E  44 5F D2 59  00 00 00 00 Р╥Y...U>D_╥Y....
+59D287  00 00 00 00  00 00 00 00  00 .........
+
+     LEA EBP, [EBP-4]
+
+59D290  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59D293  89 45 00 ЙE.
+
+     XOR  EAX, EAX
+
+59D296  33 C0 3└
+
+     RET
+
+59D298  C3 ├
+
+EndCode
+
+Code C>S ;( c -- n )  \ расширить CHAR
+
+59D299  B0 D2 59 00  00 03 43 3E  53 7C D2 59  00 00 00 00 ░╥Y...C>S|╥Y....
+59D2A9  00 00 00 00  00 00 00 .......
+
+     MOVSX  EAX, AL
+
+59D2B0  0F BE C0 .╛└
+
+     RET
+
+59D2B3  C3 ├
+
+EndCode
+
+Code UM* ;( u1 u2 -- ud ) \ 94
+
+59D2B4  D0 D2 59 00  00 03 55 4D  2A 9E D2 59  00 00 00 00 ╨╥Y...UM*Ю╥Y....
+59D2C4  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+; ud - произведение u1 и u2. Все значения и арифметика беззнаковые.
+       MUL  DWORD PTR [EBP] 
+
+59D2D0  F7 65 00 ўe.
+
+       MOV  [EBP], EAX
+
+59D2D3  89 45 00 ЙE.
+
+       MOV  EAX, EDX
+
+59D2D6  8B C2 Л┬
+
+       RET
+
+59D2D8  C3 ├
+
+EndCode
+
+Code / ;( n1 n2 -- n3 ) \ 94
+
+59D2D9  F0 D2 59 00  00 01 2F B9  D2 59 00 00  00 00 00 00 Ё╥Y.../╣╥Y......
+59D2E9  00 00 00 00  00 00 00 .......
+
+; Делить n1 на n2, получить частное n3.
+; Исключительная ситуация возникает, если n2 равен нулю.
+; Если n1 и n2 различаются по знаку - возвращаемый результат зависит от
+; реализации.
+     MOV  ECX,  EAX
+
+59D2F0  8B C8 Л╚
+
+     MOV  EAX, [EBP]
+
+59D2F2  8B 45 00 ЛE.
+
+     CDQ
+
+59D2F5  99 Щ
+
+     IDIV ECX
+
+59D2F6  F7 F9 ў∙
+
+     LEA EBP, [EBP+4]
+
+59D2F8  8D 6D 04 Нm.
+
+     RET
+
+59D2FB  C3 ├
+
+EndCode
+
+Code U/ ;( W1, W2 -> W3 ) \ беззнаковое деление W1 на W2
+
+59D2FC  10 D3 59 00  00 02 55 2F  DE D2 59 00  00 00 00 00 .╙Y...U/▐╥Y.....
+59D30C  00 00 00 00 ....
+
+     MOV ECX, EAX
+
+59D310  8B C8 Л╚
+
+     MOV EAX, [EBP]
+
+59D312  8B 45 00 ЛE.
+
+     XOR EDX, EDX
+
+59D315  33 D2 3╥
+
+     LEA EBP, [EBP+4]
+
+59D317  8D 6D 04 Нm.
+
+     DIV ECX
+
+59D31A  F7 F1 ўё
+
+     RET
+
+59D31C  C3 ├
+
+EndCode
+
+Code +! ;( n|u a-addr -- ) \ 94     \ !!!!!
+
+59D31D  30 D3 59 00  00 02 2B 21  01 D3 59 00  00 00 00 00 0╙Y...+!.╙Y.....
+59D32D  00 00 00 ...
+
+; Прибавить n|u к одинарному числу по адресу a-addr.
+     MOV EDX, [EBP]
+
+59D330  8B 55 00 ЛU.
+
+     ADD DWORD PTR [EAX ],  EDX
+
+59D333  01 10 ..
+
+     MOV EAX, [EBP+4]
+
+59D335  8B 45 04 ЛE.
+
+     LEA EBP, [EBP+8]
+
+59D338  8D 6D 08 Нm.
+
+     RET
+
+59D33B  C3 ├
+
+EndCode
+
+Code MOD ;( n1 n2 -- n3 ) \ 94
+
+59D33C  50 D3 59 00  00 03 4D 4F  44 22 D3 59  00 00 00 00 P╙Y...MOD"╙Y....
+59D34C  00 00 00 00 ....
+
+; Делить n1 на n2, получить остаток n3.
+; Исключительная ситуация возникает, если n2 равен нулю.
+; Если n1 и n2 различаются по знаку - возвращаемый результат зависит от
+; реализации.
+     MOV  ECX,  EAX
+
+59D350  8B C8 Л╚
+
+     MOV  EAX, [EBP]
+
+59D352  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59D355  8D 6D 04 Нm.
+
+     CDQ
+
+59D358  99 Щ
+
+     IDIV ECX
+
+59D359  F7 F9 ў∙
+
+     MOV  EAX, EDX
+
+59D35B  8B C2 Л┬
+
+     RET
+
+59D35D  C3 ├
+
+EndCode
+
+Code /MOD ;( n1 n2 -- n3 n4 ) \ 94
+
+59D35E  70 D3 59 00  00 04 2F 4D  4F 44 41 D3  59 00 00 00 p╙Y.../MODA╙Y...
+59D36E  00 00 ..
+
+; Делить n1 на n2, дать остаток n3 и частное n4.
+; Неоднозначная ситуация возникает, если n2 нуль.
+       MOV ECX, EAX
+
+59D370  8B C8 Л╚
+
+       MOV EAX, [EBP]
+
+59D372  8B 45 00 ЛE.
+
+       CDQ
+
+59D375  99 Щ
+
+       IDIV ECX
+
+59D376  F7 F9 ў∙
+
+       MOV [EBP], EDX
+
+59D378  89 55 00 ЙU.
+
+       RET
+
+59D37B  C3 ├
+
+EndCode
+
+Code UMOD ;( W1, W2 -> W3 ) \ остаток от деления W1 на W2
+
+59D37C  90 D3 59 00  00 04 55 4D  4F 44 63 D3  59 00 00 00 Р╙Y...UMODc╙Y...
+59D38C  00 00 00 00 ....
+
+     MOV ECX,  EAX
+
+59D390  8B C8 Л╚
+
+     XOR EDX, EDX
+
+59D392  33 D2 3╥
+
+     MOV EAX, [EBP]
+
+59D394  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59D397  8D 6D 04 Нm.
+
+     DIV ECX
+
+59D39A  F7 F1 ўё
+
+     MOV EAX, EDX
+
+59D39C  8B C2 Л┬
+
+     RET
+
+59D39E  C3 ├
+
+EndCode
+
+Code UM/MOD ;( ud u1 -- u2 u3 ) \ 94
+
+59D39F  B0 D3 59 00  00 06 55 4D  2F 4D 4F 44  81 D3 59 00 ░╙Y...UM/MODБ╙Y.
+59D3AF  00 .
+
+; Делить ud на u1, получить частное u3 и остаток u2.
+; Все значения и арифметика беззнаковые.
+; Исключительная ситуация возникает, если u1 ноль или частное
+; находится вне диапазона одинарных беззнаковых чисел.
+       MOV ECX, EAX
+
+59D3B0  8B C8 Л╚
+
+       MOV EDX, [EBP]
+
+59D3B2  8B 55 00 ЛU.
+
+       MOV EAX, [EBP+4]
+
+59D3B5  8B 45 04 ЛE.
+
+       DIV ECX
+
+59D3B8  F7 F1 ўё
+
+       LEA EBP, [EBP+4]
+
+59D3BA  8D 6D 04 Нm.
+
+       MOV [EBP], EDX
+
+59D3BD  89 55 00 ЙU.
+
+
+       RET
+
+59D3C0  C3 ├
+
+EndCode
+
+Code 2/ ;( x1 -- x2 ) \ 94
+
+59D3C1  D0 D3 59 00  00 02 32 2F  A4 D3 59 00  00 00 00 ╨╙Y...2/д╙Y....
+
+; x2 - результат сдвига x1 на один бит вправо без изменения старшего бита.
+     SAR   EAX,1
+
+59D3D0  D1 F8 ╤°
+
+     RET
+
+59D3D2  C3 ├
+
+EndCode
+
+Code */MOD ;( n1 n2 n3 -- n4 n5 ) \ 94
+
+59D3D3  F0 D3 59 00  00 05 2A 2F  4D 4F 44 C6  D3 59 00 00 Ё╙Y...*/MOD╞╙Y..
+59D3E3  00 00 00 00  00 00 00 00  00 00 00 00  00 .............
+
+; Умножить n1 на n2, получить промежуточный двойной результат d.
+; Разделить d на n3, получить остаток n4 и частное n5.
+     MOV     EBX, EAX
+
+59D3F0  8B D8 Л╪
+
+     MOV     EAX, [EBP]
+
+59D3F2  8B 45 00 ЛE.
+
+     MOV     ECX, [EBP+4]
+
+59D3F5  8B 4D 04 ЛM.
+
+     IMUL    ECX
+
+59D3F8  F7 E9 ўщ
+
+     IDIV    EBX
+
+59D3FA  F7 FB ў√
+
+     MOV  [EBP+4], EDX
+
+59D3FC  89 55 04 ЙU.
+
+     LEA EBP, [EBP+4]
+
+59D3FF  8D 6D 04 Нm.
+
+     RET
+
+59D402  C3 ├
+
+EndCode
+
+Code M* ;( n1 n2 -- d ) \ 94
+
+59D403  10 D4 59 00  00 02 4D 2A  D8 D3 59 00  00 .╘Y...M*╪╙Y..
+
+; d - знаковый результат умножения n1 на n2.
+     IMUL DWORD PTR [EBP]
+
+59D410  F7 6D 00 ўm.
+
+     MOV  [EBP], EAX
+
+59D413  89 45 00 ЙE.
+
+     MOV  EAX,  EDX
+
+59D416  8B C2 Л┬
+
+     RET
+
+59D418  C3 ├
+
+EndCode
+
+Code LSHIFT ;( x1 u -- x2 ) ; 94
+
+59D419  30 D4 59 00  00 06 4C 53  48 49 46 54  08 D4 59 00 0╘Y...LSHIFT.╘Y.
+59D429  00 00 00 00  00 00 00 .......
+
+; Сдвинуть x1 на u бит влево. Поместить нули в наименее значимые биты,
+; освобождаемые при сдвиге.
+; Неоднозначная ситуация возникает, если u больше или равно
+; числу бит в ячейке.
+     MOV ECX, EAX
+
+59D430  8B C8 Л╚
+
+     MOV EAX, [EBP]
+
+59D432  8B 45 00 ЛE.
+
+     SHL EAX, CL
+
+59D435  D3 E0 ╙р
+
+     LEA EBP, [EBP+4]
+
+59D437  8D 6D 04 Нm.
+
+     RET
+
+59D43A  C3 ├
+
+EndCode
+
+Code RSHIFT ;( x1 u -- x2 ) \ 94
+
+59D43B  50 D4 59 00  00 06 52 53  48 49 46 54  1E D4 59 00 P╘Y...RSHIFT.╘Y.
+59D44B  00 00 00 00  00 .....
+
+; Сдвинуть x1 на u бит вправо. Поместить нули в наиболее значимые биты,
+; освобождаемые при сдвиге.
+; Неоднозначная ситуация возникает, если u больше или равно
+; числу бит в ячейке.
+     MOV ECX, EAX
+
+59D450  8B C8 Л╚
+
+     MOV EAX, [EBP]
+
+59D452  8B 45 00 ЛE.
+
+     SHR EAX, CL
+
+59D455  D3 E8 ╙ш
+
+     LEA EBP, [EBP+4]
+
+59D457  8D 6D 04 Нm.
+
+     RET
+
+59D45A  C3 ├
+
+EndCode
+
+Code SM/REM ;( d1 n1 -- n2 n3 ) \ 94
+
+59D45B  70 D4 59 00  00 06 53 4D  2F 52 45 4D  40 D4 59 00 p╘Y...SM/REM@╘Y.
+59D46B  00 00 00 00  00 .....
+
+; Разделить d1 на n1, получить симметричное частное n3 и остаток n2.
+; Входные и выходные аргументы знаковые.
+; Неоднозначная ситуация возникает, если n1 ноль, или частное вне
+; диапазона одинарных знаковых чисел.
+     MOV EBX, EAX
+
+59D470  8B D8 Л╪
+
+     MOV EDX, [EBP]
+
+59D472  8B 55 00 ЛU.
+
+     MOV EAX, [EBP+4]
+
+59D475  8B 45 04 ЛE.
+
+     IDIV EBX
+
+59D478  F7 FB ў√
+
+     LEA EBP, [EBP+4]
+
+59D47A  8D 6D 04 Нm.
+
+     MOV [EBP], EDX
+
+59D47D  89 55 00 ЙU.
+
+     RET
+
+59D480  C3 ├
+
+EndCode
+
+Code FM/MOD ;( d1 n1 -- n2 n3 ) \ 94
+
+59D481  A0 D4 59 00  00 06 46 4D  2F 4D 4F 44  60 D4 59 00 а╘Y...FM/MOD`╘Y.
+59D491  00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 ...............
+
+; ╨рчфхышЄ№ d1 эр n1, яюыєўшЄ№ ўрёЄэюх n3 ш юёЄрЄюъ n2.
+; ┬їюфэ√х ш т√їюфэ√х рЁуєьхэЄ√ чэръют√х.
+; ═хюфэючэрўэр  ёшЄєрЎш  тючэшърхЄ, хёыш n1 эюы№, шыш ўрёЄэюх тэх
+; фшрярчюэр юфшэрЁэ√ї чэръют√ї ўшёхы.
+        MOV ECX, EAX
+
+59D4A0  8B C8 Л╚
+
+        MOV EDX, [EBP]
+
+59D4A2  8B 55 00 ЛU.
+
+        MOV EBX, EDX
+
+59D4A5  8B DA Л┌
+
+        MOV EAX, [EBP+4]
+
+59D4A7  8B 45 04 ЛE.
+
+        IDIV ECX
+
+59D4AA  F7 F9 ў∙
+
+        TEST EDX, EDX            ; ╬ёЄрЄюъ-Єю хёЄ№?
+
+59D4AC  85 D2 Е╥
+
+        JZ  SHORT @@1
+
+59D4AE  74 07 t.
+
+        XOR EBX, ECX             ; └ рЁуєьхэЄ√ Ёрчэюую чэрър?
+
+59D4B0  33 D9 3┘
+
+        JNS SHORT @@1
+
+59D4B2  79 03 y.
+
+        DEC EAX
+
+59D4B4  48 H
+
+        ADD EDX, ECX
+
+59D4B5  03 D1 .╤
+
+@@1:    LEA EBP, [EBP+4]
+
+59D4B7  8D 6D 04 Нm.
+
+        MOV [EBP], EDX
+
+59D4BA  89 55 00 ЙU.
+
+        RET
+
+59D4BD  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Сравнения
+
+Code = ;( x1 x2 -- flag ) \ 94
+
+59D4BE  D0 D4 59 00  00 01 3D 86  D4 59 00 00  00 00 00 00 ╨╘Y...=Ж╘Y......
+59D4CE  00 00 ..
+
+; flag "истина" тогда и только тогда, когда x1 побитно равен x2.
+     XOR  EAX, [EBP]
+
+59D4D0  33 45 00 3E.
+
+     SUB  EAX, 1
+
+59D4D3  83 E8 01 Гш.
+
+     SBB  EAX, EAX
+
+59D4D6  1B C0 .└
+
+     LEA EBP, [EBP+4]
+
+59D4D8  8D 6D 04 Нm.
+
+     RET
+
+59D4DB  C3 ├
+
+EndCode
+
+Code <> ;( x1 x2 -- flag ) \ 94 CORE EXT
+
+59D4DC  F0 D4 59 00  00 02 3C 3E  C3 D4 59 00  00 00 00 00 Ё╘Y...<>├╘Y.....
+59D4EC  00 00 00 00 ....
+
+; flag "истина" тогда и только тогда, когда x1 не равен x2.
+     XOR  EAX, [EBP]
+
+59D4F0  33 45 00 3E.
+
+     NEG  EAX
+
+59D4F3  F7 D8 ў╪
+
+     SBB  EAX,  EAX
+
+59D4F5  1B C0 .└
+
+     LEA EBP, [EBP+4]
+
+59D4F7  8D 6D 04 Нm.
+
+     RET
+
+59D4FA  C3 ├
+
+EndCode
+
+Code < ;( n1 n2 -- flag ) \ 94
+
+59D4FB  10 D5 59 00  00 01 3C E1  D4 59 00 00  00 00 00 00 .╒Y...<с╘Y......
+59D50B  00 00 00 00  00 .....
+
+; flag "истина" тогда и только тогда, когда n1 меньше n2.
+       CMP  [EBP], EAX
+
+59D510  39 45 00 9E.
+
+       SETGE AL
+
+59D513  0F 9D C0 .Э└
+
+       AND  EAX, 01
+
+59D516  83 E0 01 Гр.
+
+       DEC  EAX
+
+59D519  48 H
+
+       LEA EBP, [EBP+4]
+
+59D51A  8D 6D 04 Нm.
+
+       RET
+
+59D51D  C3 ├
+
+EndCode
+
+Code > ;( n1 n2 -- flag ) \ 94
+
+59D51E  30 D5 59 00  00 01 3E 00  D5 59 00 00  00 00 00 00 0╒Y...>.╒Y......
+59D52E  00 00 ..
+
+; flag "истина" тогда и только тогда, когда n1 больше n2.
+       CMP  EAX, [EBP]
+
+59D530  3B 45 00 ;E.
+
+       SETGE AL
+
+59D533  0F 9D C0 .Э└
+
+       AND  EAX, 01
+
+59D536  83 E0 01 Гр.
+
+       DEC  EAX
+
+59D539  48 H
+
+       LEA EBP, [EBP+4]
+
+59D53A  8D 6D 04 Нm.
+
+       RET
+
+59D53D  C3 ├
+
+EndCode
+
+Code WITHIN     ;( n1 low high -- f1 ) \ f1=true if ((n1 >= low) & (n1 < high))
+
+59D53E  50 D5 59 00  00 06 57 49  54 48 49 4E  23 D5 59 00 P╒Y...WITHIN#╒Y.
+59D54E  00 00 ..
+
+      MOV  EBX, [EBP+4]
+
+59D550  8B 5D 04 Л].
+
+      SUB  EAX, [EBP]
+
+59D553  2B 45 00 +E.
+
+      SUB  EBX, [EBP]
+
+59D556  2B 5D 00 +].
+
+      SUB  EBX, EAX
+
+59D559  2B D8 +╪
+
+      SBB  EAX, EAX
+
+59D55B  1B C0 .└
+
+      ADD  EBP, 8
+
+59D55D  83 C5 08 Г┼.
+
+      RET
+
+59D560  C3 ├
+
+EndCode
+
+Code D< ;( d1 d2 -- flag ) \ DOUBLE
+
+59D561  70 D5 59 00  00 02 44 3C  43 D5 59 00  00 00 00 p╒Y...D<C╒Y....
+
+; flag "истина" тогда и только тогда, когда d1 меньше d2.
+     MOV EBX, [EBP]
+
+59D570  8B 5D 00 Л].
+
+     CMP DWORD PTR [EBP +8 ], EBX
+
+59D573  39 5D 08 9].
+
+     SBB DWORD PTR [EBP +4 ], EAX
+
+59D576  19 45 04 .E.
+
+     MOV EAX,  0
+
+59D579  B8 00 00 00  00 ╕....
+
+     SIF <
+
+59D57E  7D 01 }.
+
+       DEC EAX
+
+59D580  48 H
+
+     STHEN
+     ADD EBP,   0CH
+
+59D581  83 C5 0C Г┼.
+
+     RET
+
+59D584  C3 ├
+
+EndCode
+
+Code D> ;( d1 d2 -- flag ) \ DOUBLE
+
+59D585  A0 D5 59 00  00 02 44 3E  66 D5 59 00  00 00 00 00 а╒Y...D>f╒Y.....
+59D595  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; flag "истина" тогда и только тогда, когда d1 больше d2.
+    MOV EBX, [EBP]
+
+59D5A0  8B 5D 00 Л].
+
+    CMP EBX, [EBP+8]
+
+59D5A3  3B 5D 08 ;].
+
+    SBB EAX, [EBP+4]
+
+59D5A6  1B 45 04 .E.
+
+    SAR EAX,   1FH
+
+59D5A9  C1 F8 1F ┴°.
+
+    ADD EBP,   0CH
+
+59D5AC  83 C5 0C Г┼.
+
+    RET
+
+59D5AF  C3 ├
+
+EndCode
+
+Code U< ;( u1 u2 -- flag ) \ 94
+
+59D5B0  C0 D5 59 00  00 02 55 3C  8A D5 59 00  00 00 00 00 └╒Y...U<К╒Y.....
+
+; flag "истина" тогда и только тогда, когда u1 меньше u2.
+    CMP  [EBP], EAX
+
+59D5C0  39 45 00 9E.
+
+    SBB  EAX, EAX
+
+59D5C3  1B C0 .└
+
+    ADD  EBP,  04
+
+59D5C5  83 C5 04 Г┼.
+
+    RET
+
+59D5C8  C3 ├
+
+EndCode
+
+Code U> ;( u1 u2 -- flag ) \ 94
+
+59D5C9  E0 D5 59 00  00 02 55 3E  B5 D5 59 00  00 00 00 00 р╒Y...U>╡╒Y.....
+59D5D9  00 00 00 00  00 00 00 .......
+
+; flag "истина" тогда и только тогда, когда u1 больше u2.
+    CMP  EAX, [EBP]
+
+59D5E0  3B 45 00 ;E.
+
+    SBB  EAX, EAX
+
+59D5E3  1B C0 .└
+
+    ADD  EBP,   04
+
+59D5E5  83 C5 04 Г┼.
+
+    RET
+
+59D5E8  C3 ├
+
+EndCode
+
+Code 0< ;( n -- flag ) \ 94
+
+59D5E9  00 D6 59 00  00 02 30 3C  CE D5 59 00  00 00 00 00 .╓Y...0<╬╒Y.....
+59D5F9  00 00 00 00  00 00 00 .......
+
+; flag "истина" тогда и только тогда, когда n меньше нуля.
+    SAR EAX,   1F
+
+59D600  C1 F8 1F ┴°.
+
+    RET
+
+59D603  C3 ├
+
+EndCode
+
+Code 0= ;( x -- flag ) \ 94
+
+59D604  10 D6 59 00  00 02 30 3D  EE D5 59 00 .╓Y...0=ю╒Y.
+
+; flag "истина" тогда и только тогда, когда x равно нулю.
+     SUB  EAX, 1
+
+59D610  83 E8 01 Гш.
+
+     SBB  EAX, EAX 
+
+59D613  1B C0 .└
+
+     RET
+
+59D615  C3 ├
+
+EndCode
+
+Code 0<> ;( x -- flag ) \ 94 CORE EXT
+
+59D616  30 D6 59 00  00 03 30 3C  3E 09 D6 59  00 00 00 00 0╓Y...0<>.╓Y....
+59D626  00 00 00 00  00 00 00 00  00 00 ..........
+
+; flag "истина" тогда и только тогда, когда x не равно нулю.
+     NEG  EAX
+
+59D630  F7 D8 ў╪
+
+     SBB  EAX, EAX
+
+59D632  1B C0 .└
+
+     RET
+
+59D634  C3 ├
+
+EndCode
+
+Code D0= ;( xd -- flag ) \ 94 DOUBLE
+
+59D635  50 D6 59 00  00 03 44 30  3D 1B D6 59  00 00 00 00 P╓Y...D0=.╓Y....
+59D645  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; flag "истина" тогда и только тогда, когда xd равен нулю.
+     OR   EAX, [EBP]
+
+59D650  0B 45 00 .E.
+
+     SUB  EAX, 1
+
+59D653  83 E8 01 Гш.
+
+     SBB  EAX, EAX 
+
+59D656  1B C0 .└
+
+     LEA EBP, [EBP+4]
+
+59D658  8D 6D 04 Нm.
+
+     RET
+
+59D65B  C3 ├
+
+EndCode
+
+Code D= ;( xd1 xd2 -- flag ) \ 94 DOUBLE
+
+59D65C  70 D6 59 00  00 02 44 3D  3A D6 59 00  00 00 00 00 p╓Y...D=:╓Y.....
+59D66C  00 00 00 00 ....
+
+; flag is true if and only if xd1 is bit-for-bit the same as xd2
+     MOV  EDX,[EBP]
+
+59D670  8B 55 00 ЛU.
+
+     XOR  EAX,[EBP+4]
+
+59D673  33 45 04 3E.
+
+     XOR  EDX,[EBP+8]
+
+59D676  33 55 08 3U.
+
+      OR  EAX,EDX
+
+59D679  0B C2 .┬
+
+     SUB  EAX,1
+
+59D67B  83 E8 01 Гш.
+
+     SBB  EAX,EAX
+
+59D67E  1B C0 .└
+
+     LEA  EBP,[EBP+0CH]
+
+59D680  8D 6D 0C Нm.
+
+     RET
+
+59D683  C3 ├
+
+EndCode
+
+Code D2* ;( xd1 -- xd2 ) \ 94 DOUBLE
+
+59D684  A0 D6 59 00  00 03 44 32  2A 61 D6 59  00 00 00 00 а╓Y...D2*a╓Y....
+59D694  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+; xd2 is the result of shifting xd1 one bit toward the most-significant
+; bit, filling the vacated least-significant bit with zero     
+     SHL DWORD PTR [EBP],  1
+
+59D6A0  D1 65 00 ╤e.
+
+     RCL  EAX,   1
+
+59D6A3  D1 D0 ╤╨
+
+     RET
+
+59D6A5  C3 ├
+
+EndCode
+
+Code D2/ ;( xd1 -- xd2 ) \ 94 DOUBLE
+
+59D6A6  C0 D6 59 00  00 03 44 32  2F 89 D6 59  00 00 00 00 └╓Y...D2/Й╓Y....
+59D6B6  00 00 00 00  00 00 00 00  00 00 ..........
+
+; xd2 is the result of shifting xd1 one bit toward the least-significant bit,
+; leaving the most-significant bit unchanged
+     SAR  EAX,  1
+
+59D6C0  D1 F8 ╤°
+
+     RCR DWORD PTR [EBP], 1
+
+59D6C2  D1 5D 00 ╤].
+
+     RET
+
+59D6C5  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Строки
+
+Code -TRAILING ;( c-addr u1 -- c-addr u2 ) \ 94 STRING
+
+59D6C6  E0 D6 59 00  00 09 2D 54  52 41 49 4C  49 4E 47 AB р╓Y...-TRAILINGл
+59D6D6  D6 59 00 00  00 00 00 00  00 00 ╓Y........
+
+; Если u1 больше нуля, u2 равно u1, уменьшенному на количество пробелов в конце
+; символьной строки, заданной c-addr и u1. Если u1 ноль или вся строка состоит
+; из пробелов, u2 ноль.
+     PUSH EDI
+
+59D6E0  57 W
+
+     MOV  ECX, EAX
+
+59D6E1  8B C8 Л╚
+
+     SIF C0<>
+
+59D6E3  E3 11 у.
+
+       MOV EDI, DWORD PTR [EBP]
+
+59D6E5  8B 7D 00 Л}.
+
+       ADD EDI, ECX
+
+59D6E8  03 F9 .∙
+
+       DEC EDI 
+
+59D6EA  4F O
+
+       MOV AL,  20H
+
+59D6EB  B0 20 ░ 
+
+       STD
+
+59D6ED  FD ¤
+
+       REPZ SCASB
+
+59D6EE  F3 AE єо
+
+       SIF 0<>
+
+59D6F0  74 01 t.
+
+          INC ECX 
+
+59D6F2  41 A
+
+       STHEN
+       CLD
+
+59D6F3  FC №
+
+       MOV  EAX, ECX 
+
+59D6F4  8B C1 Л┴
+
+     STHEN
+     POP EDI
+
+59D6F6  5F _
+
+     RET
+
+59D6F7  C3 ├
+
+EndCode
+
+Code COMPARE ;( c-addr1 u1 c-addr2 u2 -- n ) \ 94 STRING !!!!!
+
+59D6F8  10 D7 59 00  00 07 43 4F  4D 50 41 52  45 CB D6 59 .╫Y...COMPARE╦╓Y
+59D708  00 00 00 00  00 00 00 00 ........
+
+; Сравнить строку, заданную c-addr1 u1, со строкой, заданной c-addr2 u2.
+; Строки сравниваются, начиная с заданных адресов, символ за символом, до длины
+; наиболее короткой из строк или до нахождения различий. Если две строки
+; идентичны, n ноль. Если две строки идентичны до длины наиболее короткой из
+; строк, то n минус единица (-1), если u1 меньше u2, иначе единица (1).
+; Если две строки не идентичны до длины наиболее короткой из строк, то n минус
+; единица (-1), если первый несовпадающий символ строки, заданной c-addr1 u1
+; имеет меньшее числовое значение, чем соответствующий символ в строке,
+; заданной c-addr2 u2, и единица в противном случае.
+   PUSH EDI
+
+59D710  57 W
+
+   MOV  ECX, EAX
+
+59D711  8B C8 Л╚
+
+   SUB  EAX, EAX
+
+59D713  2B C0 +└
+
+   CMP  ECX, [EBP +4 ]
+
+59D715  3B 4D 04 ;M.
+
+   SIF 0<>
+
+59D718  74 09 t.
+
+      SIF U<
+
+59D71A  73 03 s.
+
+         INC   EAX
+
+59D71C  40 @
+
+      SELSE
+
+59D71D  EB 04 ы.
+
+         DEC EAX
+
+59D71F  48 H
+
+         MOV ECX, [EBP +4 ]
+
+59D720  8B 4D 04 ЛM.
+
+      STHEN
+   STHEN
+   MOV ESI, [EBP + { 2 CELLS } ]
+
+59D723  8B 75 08 Лu.
+
+   MOV EDI, [EBP]
+
+59D726  8B 7D 00 Л}.
+
+   REPE CMPSB
+
+59D729  F3 A6 єж
+
+   SIF 0<>
+
+59D72B  74 0E t.
+
+      SIF U>=
+
+59D72D  72 07 r.
+
+         MOV EAX,  1
+
+59D72F  B8 01 00 00  00 ╕....
+
+      SELSE
+
+59D734  EB 05 ы.
+
+         MOV EAX, -1
+
+59D736  B8 FF FF FF  FF ╕    
+
+      STHEN
+   STHEN
+   LEA  EBP, [EBP + { 3 CELLS } ]
+
+59D73B  8D 6D 0C Нm.
+
+   POP EDI          
+
+59D73E  5F _
+
+   RET
+
+59D73F  C3 ├
+
+EndCode
+
+Code SEARCH ;( c-addr1 u1 c-addr2 u2 -- c-addr3 u3 flag ) \ 94 STRING
+
+59D740  50 D7 59 00  00 06 53 45  41 52 43 48  FD D6 59 00 P╫Y...SEARCH¤╓Y.
+
+; Произвести поиск в строке, заданной c-addr1 u1, строки, заданной c-addr2 u2.
+; Если флаг "истина", совпадение найдено по адресу c-addr3 с оставшимися u3
+; символами. Если флаг "ложь", совпадения не найдено, и c-addr3 есть c-addr1,
+; и u3 есть u1.        \ !!!!!
+      LEA EBP, [EBP-4]
+
+59D750  8D 6D FC Нm№
+
+      MOV  [EBP], EAX
+
+59D753  89 45 00 ЙE.
+
+      PUSH EDI
+
+59D756  57 W
+
+      CLD
+
+59D757  FC №
+
+      MOV EBX, DWORD PTR [EBP]
+
+59D758  8B 5D 00 Л].
+
+      OR  EBX, EBX
+
+59D75B  0B DB .█
+
+      SIF 0<> 
+
+59D75D  74 35 t5
+
+        MOV EDX, DWORD PTR [EBP + { 2 CELLS } ]
+
+59D75F  8B 55 08 ЛU.
+
+        MOV EDI, DWORD PTR [EBP + { 3 CELLS } ]
+
+59D762  8B 7D 0C Л}.
+
+        ADD EDX, EDI
+
+59D765  03 D7 .╫
+
+        SBEGIN
+           MOV ESI, DWORD PTR [EBP +4 ]
+
+59D767  8B 75 04 Лu.
+
+           LODSB
+
+59D76A  AC м
+
+           MOV ECX, EDX
+
+59D76B  8B CA Л╩
+
+           SUB ECX, EDI
+
+59D76D  2B CF +╧
+
+           JECXZ LLD
+
+59D76F  E3 2A у*
+
+           REPNZ
+
+59D771  F2 Є
+
+           SCASB
+
+59D772  AE о
+
+           JNE SHORT LLD   ; во всей строке нет первого символа искомой строки
+
+59D773  75 26 u&
+
+           CMP EBX,   1
+
+59D775  83 FB 01 Г√.
+
+           JZ SHORT LLC   ; искомая строка имела длину 1 и найдена
+
+59D778  74 11 t.
+
+           MOV ECX, EBX
+
+59D77A  8B CB Л╦
+
+           DEC ECX
+
+59D77C  49 I
+
+           MOV EAX, EDX
+
+59D77D  8B C2 Л┬
+
+           SUB EAX, EDI
+
+59D77F  2B C7 +╟
+
+           CMP EAX, ECX
+
+59D781  3B C1 ;┴
+
+           JC SHORT LLD   ; остаток строки короче искомой строки
+
+59D783  72 16 r.
+
+           PUSH EDI
+
+59D785  57 W
+
+           REPZ CMPSB
+
+59D786  F3 A6 єж
+
+           POP EDI
+
+59D788  5F _
+
+        SUNTIL 0=
+
+59D789  75 DC u▄
+
+LLC:    DEC EDI       ; нашли полное совпадение
+
+59D78B  4F O
+
+        SUB EDX, EDI
+
+59D78C  2B D7 +╫
+
+        MOV  DWORD PTR [EBP + { 3 CELLS } ], EDI
+
+59D78E  89 7D 0C Й}.
+
+        MOV  DWORD PTR [EBP + { 2 CELLS } ], EDX
+
+59D791  89 55 08 ЙU.
+
+      STHEN
+      MOV EAX,   -1 
+
+59D794  B8 FF FF FF  FF ╕    
+
+      JMP SHORT LLA
+
+59D799  EB 02 ы.
+
+LLD:  XOR EAX, EAX
+
+59D79B  33 C0 3└
+
+LLA:  LEA EBP, [EBP+4]
+
+59D79D  8D 6D 04 Нm.
+
+      MOV [EBP], EAX
+
+59D7A0  89 45 00 ЙE.
+
+      POP EDI
+
+59D7A3  5F _
+
+      MOV EAX, [EBP]
+
+59D7A4  8B 45 00 ЛE.
+
+      LEA EBP, [EBP+4]
+
+59D7A7  8D 6D 04 Нm.
+
+      RET
+
+59D7AA  C3 ├
+
+EndCode
+
+Code CMOVE ;( c-addr1 c-addr2 u -- ) \ 94 STRING
+
+59D7AB  C0 D7 59 00  00 05 43 4D  4F 56 45 45  D7 59 00 00 └╫Y...CMOVEE╫Y..
+59D7BB  00 00 00 00  00 .....
+
+; Если u больше нуля, копировать u последовательных символов из пространства
+; данных начиная с адреса c-addr1 в c-addr2, символ за символом, начиная с
+; младших адресов к старшим.
+     MOV  EDX, EDI
+
+59D7C0  8B D7 Л╫
+
+     MOV  ECX, EAX
+
+59D7C2  8B C8 Л╚
+
+     MOV  EDI, DWORD PTR [EBP]
+
+59D7C4  8B 7D 00 Л}.
+
+     MOV  ESI, DWORD PTR [EBP +4 ]
+
+59D7C7  8B 75 04 Лu.
+
+     CLD
+
+59D7CA  FC №
+
+     REPZ   MOVSB
+
+59D7CB  F3 A4 єд
+
+     LEA EBP, [EBP+0CH]
+
+59D7CD  8D 6D 0C Нm.
+
+     MOV EAX, [EBP-4]
+
+59D7D0  8B 45 FC ЛE№
+
+     MOV EDI, EDX
+
+59D7D3  8B FA Л·
+
+     RET
+
+59D7D5  C3 ├
+
+EndCode
+
+: QCMOVE CMOVE ;
+
+59D7D6  F0 D7 59 00  00 06 51 43  4D 4F 56 45  B0 D7 59 00 Ё╫Y...QCMOVE░╫Y.
+59D7E6  00 00 00 00  00 00 00 00  00 00 ..........
+
+		CALL    @@CMOVE
+		RET
+
+Code CMOVE> ;( c-addr1 c-addr2 u -- ) \ 94 STRING
+
+59D7F6  10 D8 59 00  00 06 43 4D  4F 56 45 3E  DB D7 59 00 .╪Y...CMOVE>█╫Y.
+59D806  00 00 00 00  00 00 00 00  00 00 ..........
+
+; Если u больше нуля, копировать u последовательных символов из пространства
+; данных начиная с адреса c-addr1 в c-addr2, символ за символом, начиная со
+; старших адресов к младшим.
+
+       MOV EDX, EDI
+
+59D810  8B D7 Л╫
+
+       MOV ECX, EAX
+
+59D812  8B C8 Л╚
+
+       MOV EDI, [EBP]
+
+59D814  8B 7D 00 Л}.
+
+       MOV ESI, [EBP+4]
+
+59D817  8B 75 04 Лu.
+
+       STD
+
+59D81A  FD ¤
+
+       ADD EDI, ECX
+
+59D81B  03 F9 .∙
+
+       DEC EDI
+
+59D81D  4F O
+
+       ADD ESI, ECX
+
+59D81E  03 F1 .ё
+
+       DEC ESI
+
+59D820  4E N
+
+       REP MOVSB
+
+59D821  F3 A4 єд
+
+       MOV EDI, EDX
+
+59D823  8B FA Л·
+
+       LEA EBP, [EBP+0CH]
+
+59D825  8D 6D 0C Нm.
+
+       MOV EAX, [EBP-4]
+
+59D828  8B 45 FC ЛE№
+
+     RET
+
+59D82B  C3 ├
+
+EndCode
+
+Code FILL ;( c-addr u char -- ) \ 94  \ !!!!!
+
+59D82C  40 D8 59 00  00 04 46 49  4C 4C FB D7  59 00 00 00 @╪Y...FILL√╫Y...
+59D83C  00 00 00 00 ....
+
+; Если u больше нуля, заслать char в u байтов по адресу c-addr.
+   MOV EDX, EDI
+
+59D840  8B D7 Л╫
+
+   MOV ECX, [EBP]
+
+59D842  8B 4D 00 ЛM.
+
+   MOV EDI, [EBP+4]
+
+59D845  8B 7D 04 Л}.
+
+   CLD
+
+59D848  FC №
+
+   REP STOSB
+
+59D849  F3 AA єк
+
+   MOV EDI, EDX
+
+59D84B  8B FA Л·
+
+   LEA EBP, [EBP+0CH]
+
+59D84D  8D 6D 0C Нm.
+
+   MOV EAX, [EBP-4]
+
+59D850  8B 45 FC ЛE№
+
+   RET
+
+59D853  C3 ├
+
+EndCode
+
+Code ZCOUNT ;( c-addr -- c-addr u )
+
+59D854  70 D8 59 00  00 06 5A 43  4F 55 4E 54  31 D8 59 00 p╪Y...ZCOUNT1╪Y.
+59D864  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+     LEA EBP, [EBP-4]
+
+59D870  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59D873  89 45 00 ЙE.
+
+     XOR  EBX, EBX
+
+59D876  33 DB 3█
+
+     SBEGIN
+       MOV  BL, BYTE PTR [EAX ]
+
+59D878  8A 18 К.
+
+       INC  EAX 
+
+59D87A  40 @
+
+       OR   BL,  BL
+
+59D87B  0A DB .█
+
+     SUNTIL 0=
+
+59D87D  75 F9 u∙
+
+     DEC  EAX
+
+59D87F  48 H
+
+     SUB  EAX, [EBP]
+
+59D880  2B 45 00 +E.
+
+     RET
+
+59D883  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Указатели стеков
+
+Code SP! ;( A -> )
+
+59D884  A0 D8 59 00  00 03 53 50  21 59 D8 59  00 00 00 00 а╪Y...SP!Y╪Y....
+59D894  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+     LEA EBP, [EAX+4]
+
+59D8A0  8D 68 04 Нh.
+
+     MOV EAX, [EBP-4]
+
+59D8A3  8B 45 FC ЛE№
+
+     RET
+
+59D8A6  C3 ├
+
+EndCode
+
+Code RP! ;( A -> )
+
+59D8A7  C0 D8 59 00  00 03 52 50  21 89 D8 59  00 00 00 00 └╪Y...RP!Й╪Y....
+59D8B7  00 00 00 00  00 00 00 00  00 .........
+
+     POP EBX
+
+59D8C0  5B [
+
+     MOV ESP, EAX
+
+59D8C1  8B E0 Лр
+
+     MOV EAX, [EBP]
+
+59D8C3  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59D8C6  8D 6D 04 Нm.
+
+     JMP EBX
+
+59D8C9  FF E3  у
+
+EndCode
+
+Code SP@ ;( -> A )
+
+59D8CB  E0 D8 59 00  00 03 53 50  40 AC D8 59  00 00 00 00 р╪Y...SP@м╪Y....
+59D8DB  00 00 00 00  00 .....
+
+     LEA EBP, [EBP-4]
+
+59D8E0  8D 6D FC Нm№
+
+     MOV [EBP], EAX
+
+59D8E3  89 45 00 ЙE.
+
+     MOV EAX, EBP
+
+59D8E6  8B C5 Л┼
+
+     RET
+
+59D8E8  C3 ├
+
+EndCode
+
+Code RP@ ;( -- RP )
+
+59D8E9  00 D9 59 00  00 03 52 50  40 D0 D8 59  00 00 00 00 .┘Y...RP@╨╪Y....
+59D8F9  00 00 00 00  00 00 00 .......
+
+     LEA EBP, [EBP-4]
+
+59D900  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59D903  89 45 00 ЙE.
+
+     LEA  EAX, [ESP + 4 ]
+
+59D906  8D 44 24 04 НD$.
+
+     RET
+
+59D90A  C3 ├
+
+EndCode
+
+
+\ ================================================================
+\ Регистр потока (задачи внутри форта)
+
+Code TlsIndex! ;( x -- ) \ указатель локального пула потока
+
+59D90B  20 D9 59 00  00 09 54 6C  73 49 6E 64  65 78 21 EE  ┘Y...TlsIndex!ю
+59D91B  D8 59 00 00  00 ╪Y...
+
+     MOV  EDI, EAX
+
+59D920  8B F8 Л°
+
+     MOV  EAX, [EBP]
+
+59D922  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59D925  8D 6D 04 Нm.
+
+     RET
+
+59D928  C3 ├
+
+EndCode
+
+Code TlsIndex@ ;( -- x )
+
+59D929  40 D9 59 00  00 09 54 6C  73 49 6E 64  65 78 40 10 @┘Y...TlsIndex@.
+59D939  D9 59 00 00  00 00 00 ┘Y.....
+
+     LEA EBP, [EBP-4]
+
+59D940  8D 6D FC Нm№
+
+     MOV [EBP], EAX
+
+59D943  89 45 00 ЙE.
+
+     MOV  EAX, EDI
+
+59D946  8B C7 Л╟
+
+     RET
+
+59D948  C3 ├
+
+EndCode
+
+\ ================================================================
+\ Циклы
+
+Code C-J
+
+59D949  60 D9 59 00  00 03 43 2D  4A 2E D9 59  00 00 00 00 `┘Y...C-J.┘Y....
+59D959  00 00 00 00  00 00 00 .......
+
+	LEA EBP, [EBP-4]
+
+59D960  8D 6D FC Нm№
+
+	MOV  [EBP], EAX
+
+59D963  89 45 00 ЙE.
+
+	MOV EAX, DWORD PTR [ESP + { 3 CELLS } ]
+
+59D966  8B 44 24 0C ЛD$.
+
+	SUB EAX, DWORD PTR [ESP + { 4 CELLS } ]
+
+59D96A  2B 44 24 10 +D$.
+
+	RET
+
+59D96E  C3 ├
+
+EndCode
+
+( inline'ы для компиляции циклов )
+
+Code C-DO
+
+59D96F  80 D9 59 00  00 04 43 2D  44 4F 4E D9  59 00 00 00 А┘Y...C-DON┘Y...
+59D97F  00 .
+
+      LEA  EBP, [EBP+8]
+
+59D980  8D 6D 08 Нm.
+
+      MOV  EDX, 80000000H
+
+59D983  BA 00 00 00  80 ║...А
+
+      SUB  EDX, [EBP-8]
+
+59D988  2B 55 F8 +U°
+
+      LEA  EBX, [EAX+EDX]
+
+59D98B  8D 1C 02 Н..
+
+      MOV  EAX, [EBP-4]
+
+59D98E  8B 45 FC ЛE№
+
+      MOV  EDX, EDX  ; FOR OPT
+
+59D991  8B D2 Л╥
+
+;      PUSH EDX
+;      PUSH EBX
+      RET
+
+59D993  C3 ├
+
+EndCode
+
+Code C-?DO
+
+59D994  B0 D9 59 00  00 05 43 2D  3F 44 4F 74  D9 59 00 00 ░┘Y...C-?DOt┘Y..
+59D9A4  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+      CMP  EAX, [EBP-8]
+
+59D9B0  3B 45 F8 ;E°
+
+      SIF  0=
+
+59D9B3  75 05 u.
+
+        MOV  EAX, [EBP-4]
+
+59D9B5  8B 45 FC ЛE№
+
+        JMP  EBX
+
+59D9B8  FF E3  у
+
+      STHEN
+      PUSH EBX
+
+59D9BA  53 S
+
+      MOV     EBX , 80000000
+
+59D9BB  BB 00 00 00  80 ╗...А
+
+      SUB  EBX, [EBP-8]
+
+59D9C0  2B 5D F8 +]°
+
+      PUSH EBX  ; 80000000h-to
+
+59D9C3  53 S
+
+      ADD  EBX, EAX
+
+59D9C4  03 D8 .╪
+
+      PUSH EBX  ; 80000000H-to+from
+
+59D9C6  53 S
+
+      MOV  EAX, [EBP-4]
+
+59D9C7  8B 45 FC ЛE№
+
+      RET
+
+59D9CA  C3 ├
+
+EndCode
+
+Code ADD[ESP],EAX 
+
+59D9CB  F0 D9 59 00  00 0C 41 44  44 5B 45 53  50 5D 2C 45 Ё┘Y...ADD[ESP],E
+59D9DB  41 58 99 D9  59 00 00 00  00 00 00 00  00 00 00 00 AXЩ┘Y...........
+59D9EB  00 00 00 00  00 .....
+
+  ADD [ESP] , EAX 
+
+59D9F0  01 04 24 ..$
+
+ RET
+
+59D9F3  C3 ├
+
+EndCode
+
+Code C-I
+
+59D9F4  10 DA 59 00  00 03 43 2D  49 D0 D9 59  00 00 00 00 .┌Y...C-I╨┘Y....
+59DA04  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+   LEA EBP, [EBP-4]
+
+59DA10  8D 6D FC Нm№
+
+   MOV  [EBP], EAX
+
+59DA13  89 45 00 ЙE.
+
+   MOV  EAX, DWORD PTR [ESP]
+
+59DA16  8B 04 24 Л.$
+
+   SUB  EAX, [ESP+4]
+
+59DA19  2B 44 24 04 +D$.
+
+   RET
+
+59DA1D  C3 ├
+
+EndCode
+
+Code C->R
+
+59DA1E  30 DA 59 00  00 04 43 2D  3E 52 F9 D9  59 00 00 00 0┌Y...C->R∙┘Y...
+59DA2E  00 00 ..
+
+     PUSH EAX
+
+59DA30  50 P
+
+     MOV  EAX, [EBP]
+
+59DA31  8B 45 00 ЛE.
+
+     LEA  EBP, [EBP+4]
+
+59DA34  8D 6D 04 Нm.
+
+     RET
+
+59DA37  C3 ├
+
+EndCode
+
+Code C-R>
+
+59DA38  50 DA 59 00  00 04 43 2D  52 3E 23 DA  59 00 00 00 P┌Y...C-R>#┌Y...
+59DA48  00 00 00 00  00 00 00 00 ........
+
+     LEA  EBP, [EBP-4]
+
+59DA50  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59DA53  89 45 00 ЙE.
+
+     POP EAX
+
+59DA56  58 X
+
+     RET
+
+59DA57  C3 ├
+
+EndCode
+
+Code C-RDROP
+
+59DA58  70 DA 59 00  00 07 43 2D  52 44 52 4F  50 3D DA 59 p┌Y...C-RDROP=┌Y
+59DA68  00 00 00 00  00 00 00 00 ........
+
+     ADD  ESP, 4 
+
+59DA70  83 C4 04 Г─.
+
+     RET
+
+59DA73  C3 ├
+
+EndCode
+
+Code C-2RDROP
+
+59DA74  90 DA 59 00  00 08 43 2D  32 52 44 52  4F 50 5D DA Р┌Y...C-2RDROP]┌
+59DA84  59 00 00 00  00 00 00 00  00 00 00 00 Y...........
+
+     ADD  ESP, 8
+
+59DA90  83 C4 08 Г─.
+
+     RET
+
+59DA93  C3 ├
+
+EndCode
+
+Code C-3RDROP
+
+59DA94  B0 DA 59 00  00 08 43 2D  33 52 44 52  4F 50 79 DA ░┌Y...C-3RDROPy┌
+59DAA4  59 00 00 00  00 00 00 00  00 00 00 00 Y...........
+
+     ADD  ESP, 0CH
+
+59DAB0  83 C4 0C Г─.
+
+     RET
+
+59DAB3  C3 ├
+
+EndCode
+
+TRUE [IF]
+Code C-EXECUTE ;( i*x xt -- j*x ) \ 94
+
+59DAB4  D0 DA 59 00  00 09 43 2D  45 58 45 43  55 54 45 99 ╨┌Y...C-EXECUTEЩ
+59DAC4  DA 59 00 00  00 00 00 00  00 00 00 00 ┌Y..........
+
+; Убрать xt со стека и выполнить заданную им семантику.
+; Другие изменения на стеке определяются словом, которое выполняется.
+     MOV  EDX, EAX
+
+59DAD0  8B D0 Л╨
+
+     MOV  EAX, [EBP]
+
+59DAD2  8B 45 00 ЛE.
+
+     LEA  EBP, [EBP+4]
+
+59DAD5  8D 6D 04 Нm.
+
+     CALL EDX
+
+59DAD8  FF D2  ╥
+
+     RET
+
+59DADA  C3 ├
+
+EndCode
+[THEN]
+
+Code EXECUTE ;( i*x xt -- j*x ) \ 94
+
+59DADB  F0 DA 59 00  00 07 45 58  45 43 55 54  45 B9 DA 59 Ё┌Y...EXECUTE╣┌Y
+59DAEB  00 00 00 00  00 .....
+
+; Убрать xt со стека и выполнить заданную им семантику.
+; Другие изменения на стеке определяются словом, которое выполняется.
+     MOV EBX, EAX
+
+59DAF0  8B D8 Л╪
+
+     MOV EAX, [EBP]
+
+59DAF2  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59DAF5  8D 6D 04 Нm.
+
+     JMP EBX
+
+59DAF8  FF E3  у
+
+EndCode
+
+Code @EXECUTE ;( i*x xt -- j*x )
+
+59DAFA  10 DB 59 00  00 08 40 45  58 45 43 55  54 45 E0 DA .█Y...@EXECUTEр┌
+59DB0A  59 00 00 00  00 00 Y.....
+
+     MOV EBX, EAX
+
+59DB10  8B D8 Л╪
+
+     MOV EAX, [EBP]
+
+59DB12  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59DB15  8D 6D 04 Нm.
+
+     JMP [EBX]
+
+59DB18  FF 23  #
+
+EndCode
+
+\ ================================================================
+\ Поддержка LOCALS
+
+Code DRMOVE ;( x1 ... xn n*4 -- )
+
+59DB1A  30 DB 59 00  00 06 44 52  4D 4F 56 45  FF DA 59 00 0█Y...DRMOVE ┌Y.
+59DB2A  00 00 00 00  00 00 ......
+
+; перенести n чисел со стека данных на стек возвратов
+     POP  EDX ; адрес возврата
+
+59DB30  5A Z
+
+     MOV  ESI, EAX
+
+59DB31  8B F0 ЛЁ
+
+@@1: 
+     PUSH DWORD PTR [EBP+ESI-4]
+
+59DB33  FF 74 2E FC  t.№
+
+     SUB  ESI, 4
+
+59DB37  83 EE 04 Гю.
+
+     JNZ  SHORT @@1
+
+59DB3A  75 F7 uў
+
+     ADD  EBP, EAX
+
+59DB3C  03 E8 .ш
+
+     MOV  EAX, [EBP]
+
+59DB3E  8B 45 00 ЛE.
+
+     LEA  EBP, [EBP+4]
+
+59DB41  8D 6D 04 Нm.
+
+     JMP  EDX
+
+59DB44  FF E2  т
+
+EndCode
+
+Code NR> ;( R: x1 ... xn n -- D: x1 ... xn n )
+
+59DB46  60 DB 59 00  00 03 4E 52  3E 1F DB 59  00 00 00 00 `█Y...NR>.█Y....
+59DB56  00 00 00 00  00 00 00 00  00 00 ..........
+
+; Перенести n чисел со стека возвратов на стек данных
+; Если n=0 возвратить 0
+     POP  EDX ; адрес возврата
+
+59DB60  5A Z
+
+     LEA  EBP, [EBP-4]
+
+59DB61  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59DB64  89 45 00 ЙE.
+
+     POP  EAX
+
+59DB67  58 X
+
+     OR   EAX, EAX
+
+59DB68  0B C0 .└
+
+     JNZ  @@2
+
+59DB6A  0F 85 02 00  00 00 .Е....
+
+     JMP  EDX
+
+59DB70  FF E2  т
+
+
+@@2: LEA  EAX, [EAX*4]
+
+59DB72  8D 04 85 00  00 00 00 Н.Е....
+
+     MOV  ESI, EAX
+
+59DB79  8B F0 ЛЁ
+
+@@1: 
+     MOV  EBX, EBP
+
+59DB7B  8B DD Л▌
+
+     SUB  EBX, ESI
+
+59DB7D  2B DE +▐
+
+     POP  DWORD PTR [EBX]
+
+59DB7F  8F 03 П.
+
+     SUB  ESI,  4
+
+59DB81  83 EE 04 Гю.
+
+     JNZ  SHORT @@1
+
+59DB84  75 F5 uї
+
+     SUB  EBP, EAX
+
+59DB86  2B E8 +ш
+
+     SAR  EAX,  2
+
+59DB88  C1 F8 02 ┴°.
+
+     JMP  EDX
+
+59DB8B  FF E2  т
+
+EndCode
+
+Code N>R ;( D: x1 ... xn n -- R: x1 ... xn n )
+
+59DB8D  A0 DB 59 00  00 03 4E 3E  52 4B DB 59  00 00 00 00 а█Y...N>RK█Y....
+59DB9D  00 00 00 ...
+
+; перенести n чисел со стека данных на стек возвратов
+     LEA  EBP, [EBP-4]
+
+59DBA0  8D 6D FC Нm№
+
+     MOV  [EBP], EAX
+
+59DBA3  89 45 00 ЙE.
+
+     LEA EAX, [EAX*4+4]
+
+59DBA6  8D 04 85 04  00 00 00 Н.Е....
+
+
+     POP  EDX ; адрес возврата
+
+59DBAD  5A Z
+
+     MOV  ESI, EAX
+
+59DBAE  8B F0 ЛЁ
+
+@@1: 
+     PUSH DWORD PTR [EBP+ESI-4]
+
+59DBB0  FF 74 2E FC  t.№
+
+     SUB  ESI,  4
+
+59DBB4  83 EE 04 Гю.
+
+     JNZ  SHORT @@1
+
+59DBB7  75 F7 uў
+
+     ADD  EBP, EAX
+
+59DBB9  03 E8 .ш
+
+     MOV  EAX, [EBP]
+
+59DBBB  8B 45 00 ЛE.
+
+     LEA  EBP, [EBP+4]
+
+59DBBE  8D 6D 04 Нm.
+
+     JMP  EDX
+
+59DBC1  FF E2  т
+
+EndCode
+
+Code NRCOPY ;( D: i*x i -- D: i*x i R: i*x i )
+
+59DBC3  E0 DB 59 00  00 06 4E 52  43 4F 50 59  92 DB 59 00 р█Y...NRCOPYТ█Y.
+59DBD3  00 00 00 00  00 00 00 00  00 00 00 00  00 .............
+
+; скопировать n чисел со стека данных на стек возвратов
+     MOV  ECX, EAX
+
+59DBE0  8B C8 Л╚
+
+     LEA  ECX, [ECX*4]
+
+59DBE2  8D 0C 8D 00  00 00 00 Н.Н....
+
+
+     POP  EDX ; адрес возврата
+
+59DBE9  5A Z
+
+     JECXZ @@2
+
+59DBEA  E3 0B у.
+
+     MOV  ESI, ECX
+
+59DBEC  8B F1 Лё
+
+@@1: 
+     PUSH DWORD PTR [ESI+EBP-4]
+
+59DBEE  FF 74 35 FC  t5№
+
+     SUB  ESI,  4
+
+59DBF2  83 EE 04 Гю.
+
+     JNZ  SHORT @@1
+
+59DBF5  75 F7 uў
+
+@@2:
+     PUSH EAX
+
+59DBF7  50 P
+
+     JMP  EDX
+
+59DBF8  FF E2  т
+
+EndCode
+
+Code RP+@ ;( offs -- x )
+
+59DBFA  10 DC 59 00  00 04 52 50  2B 40 C8 DB  59 00 00 00 .▄Y...RP+@╚█Y...
+59DC0A  00 00 00 00  00 00 ......
+
+; взять число со смещением offs байт от вершины стека возвратов (0 RP+@ == RP@)
+     MOV EAX, [EAX+ESP+4]
+
+59DC10  8B 44 04 04 ЛD..
+
+     RET
+
+59DC14  C3 ├
+
+EndCode
+     
+Code RP+ ;( offs -- addr )
+
+59DC15  30 DC 59 00  00 03 52 50  2B FF DB 59  00 00 00 00 0▄Y...RP+ █Y....
+59DC25  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; взять адрес со смещением offs байт от вершины стека возвратов
+	LEA EAX, [EAX+ESP+4]
+
+59DC30  8D 44 04 04 НD..
+
+	RET
+
+59DC34  C3 ├
+
+EndCode
+
+Code RP+! ;( x offs -- )
+
+59DC35  50 DC 59 00  00 04 52 50  2B 21 1A DC  59 00 00 00 P▄Y...RP+!.▄Y...
+59DC45  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+; записать число x по смещению offs байт от вершины стека возвратов
+	MOV  EBX, [EBP]
+
+59DC50  8B 5D 00 Л].
+
+	MOV  [EAX+ESP+4], EBX
+
+59DC53  89 5C 04 04 Й\..
+
+	LEA  EBP, [EBP+8]
+
+59DC57  8D 6D 08 Нm.
+
+	MOV  EAX, [EBP-4]
+
+59DC5A  8B 45 FC ЛE№
+
+	RET
+
+59DC5D  C3 ├
+
+EndCode
+
+Code RALLOT ;( n -- addr )
+
+59DC5E  70 DC 59 00  00 06 52 41  4C 4C 4F 54  3A DC 59 00 p▄Y...RALLOT:▄Y.
+59DC6E  00 00 ..
+
+; зарезервировать n ячеек на стеке возвратов,
+; сделаем с инициализацией (а то если больше 8К выделим, exception может)
+     POP  EDX
+
+59DC70  5A Z
+
+     MOV  ECX, EAX
+
+59DC71  8B C8 Л╚
+
+     XOR  EAX, EAX
+
+59DC73  33 C0 3└
+
+@@1: PUSH EAX
+
+59DC75  50 P
+
+     DEC  ECX
+
+59DC76  49 I
+
+     JNZ  SHORT @@1
+
+59DC77  75 FC u№
+
+     MOV  EAX, ESP
+
+59DC79  8B C4 Л─
+
+     JMP  EDX
+
+59DC7B  FF E2  т
+
+EndCode
+
+Code (RALLOT) ;( n -- )
+
+59DC7D  90 DC 59 00  00 08 28 52  41 4C 4C 4F  54 29 63 DC Р▄Y...(RALLOT)c▄
+59DC8D  59 00 00 Y..
+
+; зарезервировать n ячеек на стеке возвратов
+     POP  EDX
+
+59DC90  5A Z
+
+     MOV  ECX, EAX
+
+59DC91  8B C8 Л╚
+
+     XOR  EAX, EAX
+
+59DC93  33 C0 3└
+
+@@1: PUSH EAX
+
+59DC95  50 P
+
+     DEC  ECX
+
+59DC96  49 I
+
+     JNZ  SHORT @@1
+
+59DC97  75 FC u№
+
+     MOV  EAX, [EBP]
+
+59DC99  8B 45 00 ЛE.
+
+     LEA  EBP, [EBP+4]
+
+59DC9C  8D 6D 04 Нm.
+
+     JMP  EDX
+
+59DC9F  FF E2  т
+
+EndCode
+
+Code RFREE ;( n -- )
+
+59DCA1  B0 DC 59 00  00 05 52 46  52 45 45 82  DC 59 00 ░▄Y...RFREEВ▄Y.
+
+; вернуть n ячеек стека возвратов
+     POP  EDX
+
+59DCB0  5A Z
+
+     LEA  ESP, [ESP+EAX*4]
+
+59DCB1  8D 24 84 Н$Д
+
+     MOV EAX, [EBP]
+
+59DCB4  8B 45 00 ЛE.
+
+     LEA EBP, [EBP+4]
+
+59DCB7  8D 6D 04 Нm.
+
+     JMP  EDX
+
+59DCBA  FF E2  т
+
+EndCode
+
+Code (LocalsExit) ;( -- )
+
+59DCBC  E0 DC 59 00  00 0C 28 4C  6F 63 61 6C  73 45 78 69 р▄Y...(LocalsExi
+59DCCC  74 29 A6 DC  59 00 00 00  00 00 00 00  00 00 00 00 t)ж▄Y...........
+59DCDC  00 00 00 00 ....
+
+; вернуть память в стек вовратов, число байт лежит на стеке
+     POP  EBX
+
+59DCE0  5B [
+
+     ADD  ESP, EBX
+
+59DCE1  03 E3 .у
+
+     RET
+
+59DCE3  C3 ├
+
+EndCode
+
+Code TIMER@ ;( -- tlo thi ) \ Только для Intel Pentium и выше!!!
+
+59DCE4  00 DD 59 00  00 06 54 49  4D 45 52 40  C1 DC 59 00 .▌Y...TIMER@┴▄Y.
+59DCF4  00 00 00 00  00 00 00 00  00 00 00 00 ............
+
+; Возвратить значение таймера процессора как ud
+   MOV [EBP-4], EAX
+
+59DD00  89 45 FC ЙE№
+
+   RDTSC
+
+59DD03  0F 31 .1
+
+   MOV [EBP-8], EDX
+
+59DD05  89 55 F8 ЙU°
+
+   LEA EBP,  [EBP-8]
+
+59DD08  8D 6D F8 Нm°
+
+   XCHG EAX, [EBP]
+
+59DD0B  87 45 00 ЗE.
+
+   RET
+
+59DD0E  C3 ├
+
+EndCode
+
+\ Для остальных процессоров раскомментируйте:
+\ : TIMER@ 0 GetTickCount ;
+
+Code TRAP-CODE ;( D: j*x u R: i*x i -- i*x u )
+
+59DD0F  30 DD 59 00  00 09 54 52  41 50 2D 43  4F 44 45 E9 0▌Y...TRAP-CODEщ
+59DD1F  DC 59 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ▄Y..............
+59DD2F  00 .
+
+; Вспомогательное слово для восстановления значений, сохраненных
+; перед CATCH на стеке возвратов
+     POP  EDX
+
+59DD30  5A Z
+
+     POP  ESI
+
+59DD31  5E ^
+
+     OR   ESI, ESI
+
+59DD32  0B F6 .Ў
+
+     JZ   @@2
+
+59DD34  0F 84 18 00  00 00 .Д....
+
+     LEA  ESI, [ESI*4]
+
+59DD3A  8D 34 B5 00  00 00 00 Н4╡....
+
+     MOV  ECX, ESI
+
+59DD41  8B CE Л╬
+
+@@1: MOV  EBX, [ESI+ESP-4]
+
+59DD43  8B 5C 34 FC Л\4№
+
+     MOV  [ESI+EBP-4], EBX
+
+59DD47  89 5C 35 FC Й\5№
+
+     SUB  ESI, 4
+
+59DD4B  83 EE 04 Гю.
+
+     JNZ  SHORT @@1
+
+59DD4E  75 F3 uє
+
+     ADD  ESP, ECX
+
+59DD50  03 E1 .с
+
+@@2: JMP  EDX
+
+59DD52  FF E2  т
+
+EndCode
+
+DECIMAL
+ZZ=D0 

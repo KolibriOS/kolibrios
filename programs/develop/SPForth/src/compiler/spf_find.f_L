@@ -1,0 +1,428 @@
+ZZ=D0 ( Поиск слов в словарях и управление порядком поиска.
+  ОС-независимые определения.
+  Copyright [C] 1992-1999 A.Cherezov ac@forth.org
+  Преобразование из 16-разрядного в 32-разрядный код - 1995-96гг
+  Ревизия - сентябрь 1999
+  Модифицированно Максимовым М.О.
+  email:mak@mail.rtc.neva.ru
+  http://informer.rtc.neva.ru/
+  т д {812}105-92-03
+  т р {812}552-47-64
+)
+
+VECT FIND
+
+5A1F35  50 1F 5A 00  00 04 46 49  4E 44 A3 1E  5A 00 00 00 P.Z...FINDг.Z...
+5A1F45  00 00 00 00  00 00 00 00  00 00 00 E8  93 01 FA FF ...........шУ.· 
+5A1F55  40 D2 59 00  E8 A6 01 FA  FF @╥Y.шж.· 
+
+
+0x10 CELLS CONSTANT CONTEXT_SIZE
+
+5A1F5E  80 1F 5A 00  00 0C 43 4F  4E 54 45 58  54 5F 53 49 А.Z...CONTEXT_SI
+5A1F6E  5A 45 3A 1F  5A 00 00 00  00 00 00 00  00 00 00 00 ZE:.Z...........
+5A1F7E  00 00 E8 B7  00 FA FF 40  00 00 00 ..ш╖.· @...
+
+
+CREATE SEARCH-BUFF 0x81 ALLOT
+
+5A1F89   A0 1F 5A 00  00 0B 53 45  41 52 43 48  2D 42 55 46 а.Z...SEARCH-BUF
+5A1F99   46 63 1F 5A  00 00 00 E8  77 00 FA FF  00 00 00 00 Fc.Z...шw.· ....
+5A1FA9   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ................
+5A1FB9   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ................
+5A1FC9   00 00 00 00  00 00 00 00  00 00 00 00  00 00 00 00 ................
+5A2026 4D bytes
+
+Code ZSEARCH-WORDLIST ;( z-addr wid -- 0 | xt 1 | xt -1 ) \ 94 SEARCH
+
+5A2026  40 20 5A 00  00 10 5A 53  45 41 52 43  48 2D 57 4F @ Z...ZSEARCH-WO
+5A2036  52 44 4C 49  53 54 8E 1F  5A 00 RDLISTО.Z.
+
+; Найти определение, заданное строкой c-addr u в списке слов, идентифицируемом 
+; wid. Если определение не найдено, вернуть ноль.
+; Если определение найдено, вернуть выполнимый токен xt и единицу (1), если 
+; определение немедленного исполнения, иначе минус единицу (-1).
+ ;	PUSH	WORD PTR [EBP]
+	MOV	EDX, [EBP]
+
+5A2040  8B 55 00 ЛU.
+
+	PUSH	EDX
+
+5A2043  52 R
+
+	MOV	EAX, [EAX]
+
+5A2044  8B 00 Л.
+
+	PUSH	EAX
+
+5A2046  50 P
+
+    LEA EBP, [EBP+4]
+
+5A2047  8D 6D 04 Нm.
+
+	CALL	{' GETPR}
+
+5A204A  E8 31 9E FC  FF ш1Ю№ 
+
+	TEST	EAX, EAX
+
+5A204F  85 C0 Е└
+
+	JZ	m1
+
+5A2051  0F 84 0E 00  00 00 .Д....
+
+	LEA	EBP, [EBP-4]
+
+5A2057  8D 6D FC Нm№
+
+	MOV	[EBP], EAX
+
+5A205A  89 45 00 ЙE.
+
+	MOVZX	EAX, BYTE PTR [EDX-9]
+
+5A205D  0F B6 42 F7 .╢Bў
+
+	DEC	EAX
+
+5A2061  48 H
+
+	OR	EAX, 1
+
+5A2062  83 C8 01 Г╚.
+
+m1:       RET
+
+5A2065  C3 ├
+
+EndCode
+
+: SEARCH-WORDLIST ( c-addr u wid -- 0 | xt 1 | xt -1 )
+
+5A2066  80 20 5A 00  00 0F 53 45  41 52 43 48  2D 57 4F 52 А Z...SEARCH-WOR
+5A2076  44 4C 49 53  54 2B 20 5A  00 00 DLIST+ Z..
+
+  >R 0x7F AND SEARCH-BUFF  ASCII-Z
+
+5A2080  50 B8 7F 00  00 00 23 45  00 8D 6D 04  E8 0F FF FF P╕...#E.Нm.ш.  
+5A2090  FF E8 2A C0  FF FF  ш*└  
+
+  R>  ZSEARCH-WORDLIST
+
+5A2096  89 45 FC 58  8D 6D FC E8  9E FF FF FF ЙE№XНm№шЮ   
+
+
+;
+
+5A20A2  C3 ├
+
+
+: SFIND ( addr len --- addr len 0| xt 1|xt -1 )
+
+5A20A3  C0 20 5A 00  00 05 53 46  49 4E 44 6B  20 5A 00 00 └ Z...SFINDk Z..
+5A20B3  00 00 00 00  00 00 00 00  00 00 00 00  00 .............
+
+\ Search all word lists in the search order for the name in the
+\ counted string at c-addr. If not found return the name address and 0.
+\ If found return the execution token xt and -1 if the word is non-immediate
+\ and 1 if the word is immediate.
+  CONTEXT
+
+5A20C0  E8 23 07 FB  FF ш#.√ 
+
+  BEGIN	DUP @
+
+5A20C5  90 90 90 89  45 FC 8B 00  0B C0 8B РРРЙE№Л..└Л
+
+  WHILE	>R
+
+5A20D0  45 FC 0F 84  41 00 00 00  50 8B 45 00  8B 55 04 E№.ДA...PЛE.ЛU.
+
+	2DUP  R@ @ SEARCH-WORDLIST ?DUP
+
+5A20DF  89 45 00 89  55 FC 89 45  F8 8B 04 24  8B 00 8D 6D ЙE.ЙU№ЙE°Л.$Л.Нm
+5A20EF  F8 E8 8B FF  FF FF E8 96  AA FF FF °шЛ   шЦк  
+
+	IF    RDROP 2NIP  EXIT \ Exit if found.
+
+5A20FA  0B C0 8B 45  00 8D 6D 04  74 09 83 C4  04 E8 04 C1 .└ЛE.Нm.t.Г─.ш.┴
+5A210A  FF FF C3   ├
+
+	THEN
+	R> CELL+
+
+5A210D  89 45 FC 58  8D 40 04 8D  6D FC ЙE№XН@.Нm№
+
+  REPEAT @
+
+5A2117  EB AF 8B 00 ыпЛ.
+
+;
+
+5A211B  C3 ├
+
+
+: FIND1 ( c-addr -- c-addr 0 | xt 1 | xt -1 ) \ 94 SEARCH
+
+5A211C  30 21 5A 00  00 05 46 49  4E 44 31 A8  20 5A 00 00 0!Z...FIND1и Z..
+5A212C  00 00 00 00 ....
+
+\ Расширить семантику CORE FIND следующим:
+\ Искать определение с именем, заданным строкой со счетчиком c-addr.
+\ Если определение не найдено после просмотра всех списков в порядке поиска,
+\ возвратить c-addr и ноль. Если определение найдено, возвратить xt.
+\ Если определение немедленного исполнения, вернуть также единицу (1);
+\ иначе также вернуть минус единицу (-1). Для данной строки, значения,
+\ возвращаемые FIND во время компиляции, могут отличаться от значений,
+\ возвращаемых не в режиме компиляции.
+  COUNT SFIND
+
+5A2130  8D 50 01 89  55 FC 0F B6  00 8D 6D FC  E8 7F FF FF НP.ЙU№.╢.Нm№ш  
+5A2140  FF  
+
+  DUP 0= IF 2DROP 1- 0 THEN ;
+
+5A2141  0B C0 75 0E  8B 45 04 8D  40 FF 89 45  04 33 C0 8D .└u.ЛE.Н@ ЙE.3└Н
+5A2151  6D 04 C3 m.├
+
+
+: DEFINITIONS ( -- ) \ 94 SEARCH
+
+5A2154  70 21 5A 00  00 0B 44 45  46 49 4E 49  54 49 4F 4E p!Z...DEFINITION
+5A2164  53 21 21 5A  00 00 00 00  00 00 00 00 S!!Z........
+
+\ Сделать списком компиляции тот же список слов, что и первый список в порядке 
+\ поиска. Имена последующих определений будут помещаться в список компиляции.
+\ Последующие изменения порядка поиска не влияют на список компиляции.
+  CONTEXT @ SET-CURRENT
+
+5A2170  E8 73 06 FB  FF 8B 00 E8  C0 4E FA FF шs.√ Л.ш└N· 
+
+;
+
+5A217C  C3 ├
+
+
+: GET-ORDER_DROP ( CONTEXT -- widn .. wid1 )
+
+5A217D  A0 21 5A 00  00 0E 47 45  54 2D 4F 52  44 45 52 5F а!Z...GET-ORDER_
+5A218D  44 52 4F 50  59 21 5A 00  00 00 00 00  00 00 00 00 DROPY!Z.........
+5A219D  00 00 00 ...
+
+  DUP @ DUP IF >R CELL+ RECURSE R> EXIT THEN 2DROP ;
+
+5A21A0  89 45 FC 8B  00 8D 6D FC  0B C0 74 17  50 8B 45 00 ЙE№Л.Нm№.└t.PЛE.
+5A21B0  8D 40 04 8D  6D 04 E8 E5  FF FF FF 89  45 FC 58 8D Н@.Нm.шх   ЙE№XН
+5A21C0  6D FC C3 8B  45 04 8D 6D  08 C3 m№├ЛE.Нm.├
+
+
+: GET-ORDER     ( -- widn .. wid1 n )
+
+5A21CA  E0 21 5A 00  00 09 47 45  54 2D 4F 52  44 45 52 82 р!Z...GET-ORDERВ
+5A21DA  21 5A 00 00  00 00 !Z....
+
+	DEPTH >R
+
+5A21E0  E8 EB E4 FF  FF 50 8B 45  00 8D 6D 04 шыф  PЛE.Нm.
+
+	CONTEXT GET-ORDER_DROP
+
+5A21EC  E8 F7 05 FB  FF E8 AA FF  FF FF шў.√ шк   
+
+	DEPTH R> - ;
+
+5A21F6  E8 D5 E4 FF  FF 89 45 FC  58 F7 D8 03  45 FC C3 ш╒ф  ЙE№Xў╪.E№├
+
+
+: SET-ORDER     ( widn .. wid1 n -- )
+
+5A2205  20 22 5A 00  00 09 53 45  54 2D 4F 52  44 45 52 CF  "Z...SET-ORDER╧
+5A2215  21 5A 00 00  00 00 00 00  00 00 00 !Z.........
+
+                DUP 0<
+
+5A2220  0B C0 7D 10  8B 45 00 8D  6D .└}.ЛE.Нm
+
+                IF      DROP ONLY
+
+5A2229  04 E8 A9 07  FB FF E9 63  00 00 .шй.√ щc..
+
+                ELSE    CONTEXT CONTEXT_SIZE ERASE
+
+5A2233  00 E8 AF 05  FB FF E8 42  FD FF FF E8  5D BC FF FF .шп.√ шB¤  ш]╝  
+
+                        0
+
+5A2243  89 45 FC 33  C0 8D 6D 04 ЙE№3└Нm.
+
+                        ?DO     CONTEXT I CELLS+ !
+
+5A224B  BB 97 22 5A  00 3B 45 F8  75 05 8B 45  FC FF E3 53 ╗Ч"Z.;E°u.ЛE№ уS
+5A225B  BB 00 00 00  80 2B 5D F8  53 03 D8 53  8B 45 FC E8 ╗...А+]°S.╪SЛE№ш
+5A226B  79 05 FB FF  89 45 FC 8B  04 24 2B 44  24 04 8D 04 y.√ ЙE№Л.$+D$.Н.
+5A227B  85 00 00 00  00 03 45 FC  8B 55 00 89  10 8B 45 04 Е.....E№ЛU.Й.ЛE.
+5A228B  8D 6D 08 Нm.
+
+                        LOOP
+
+5A228E  FF 04 24 71  D7 8D 64 24  0C  .$q╫Нd$.
+
+                THEN    ;
+
+5A2297  C3 ├
+
+
+
+: FORTH ( -- ) \ 94 SEARCH EXT
+
+5A2298  B0 22 5A 00  00 05 46 4F  52 54 48 0A  22 5A 00 00 ░"Z...FORTH."Z..
+5A22A8  00 00 00 00  00 00 00 00 ........
+
+\ Преобразовать порядок поиска, состоящий из widn, ...wid2, wid1 (где wid1 
+\ просматривается первым) в widn,... wid2, widFORTH-WORDLIST.
+  FORTH-WORDLIST CONTEXT !
+
+5A22B0  E8 3F FF FA  FF E8 2E 05  FB FF 8B 55  00 89 10 8B ш? · ш..√ ЛU.Й.Л
+5A22C0  45 04 8D 6D  08 E.Нm.
+
+;
+
+5A22C5  C3 ├
+
+
+: ONLY ( -- ) \ 94 SEARCH EXT
+
+5A22C6  E0 22 5A 00  00 04 4F 4E  4C 59 9D 22  5A 00 00 00 р"Z...ONLYЭ"Z...
+5A22D6  00 00 00 00  00 00 00 00  00 00 ..........
+
+\ Установить список поиска на зависящий от реализации минимальный список поиска.
+\ Минимальный список поиска должен включать слова FORTH-WORDLIST и SET-ORDER.
+  CONTEXT CELL+ 0!
+
+5A22E0  E8 03 05 FB  FF 8D 40 04  C7 00 00 00  00 00 8B 45 ш..√ Н@.╟.....ЛE
+5A22F0  00 8D 6D 04 .Нm.
+
+  FORTH
+
+5A22F4  E8 B7 FF FF  FF ш╖   
+
+;
+
+5A22F9  C3 ├
+
+
+: ALSO ( -- ) \ 94 SEARCH EXT
+
+5A22FA  10 23 5A 00  00 04 41 4C  53 4F CB 22  5A 00 00 00 .#Z...ALSO╦"Z...
+5A230A  00 00 00 00  00 00 ......
+
+\ Преобразовать порядок поиска, состоящий из widn, ...wid2, wid1 (где wid1 
+\ просматривается первым) в widn,... wid2, wid1, wid1. Неопределенная ситуация 
+\ возникает, если в порядке поиска слишком много списков.
+ CONTEXT CONTEXT CELL+ CONTEXT_SIZE CMOVE> ;
+
+5A2310  E8 D3 04 FB  FF E8 CE 04  FB FF 8D 40  04 E8 5E FC ш╙.√ ш╬.√ Н@.ш^№
+5A2320  FF FF E8 E9  B4 FF FF C3   шщ┤  ├
+
+
+
+: PREVIOUS ( -- ) \ 94 SEARCH EXT
+
+5A2328  40 23 5A 00  00 08 50 52  45 56 49 4F  55 53 FF 22 @#Z...PREVIOUS "
+5A2338  5A 00 00 00  00 00 00 00 Z.......
+
+\ Преобразовать порядок поиска, состоящий из widn, ...wid2, wid1 (где wid1 
+\ просматривается первым) в widn,... wid2. Неопределенная ситуация возникает,
+\ если порядок поиска был пуст перед выполнением PREVIOUS.
+  _PREVIOUS ;
+
+5A2340  E8 9B 9D FC  FF C3 шЫЭ№ ├
+
+
+: _PREVIOUS ( -- ) \ 94 SEARCH EXT
+
+5A2346  60 23 5A 00  00 09 5F 50  52 45 56 49  4F 55 53 2D `#Z..._PREVIOUS-
+5A2356  23 5A 00 00  00 00 00 00  00 00 #Z........
+
+ CONTEXT CELL+ CONTEXT CONTEXT_SIZE CMOVE  ;
+
+5A2360  E8 83 04 FB  FF 8D 40 04  E8 7B 04 FB  FF E8 0E FC шГ.√ Н@.ш{.√ ш.№
+5A2370  FF FF E8 49  B4 FF FF C3   шI┤  ├
+
+
+: VOC-NAME. ( wid -- ) \ напечатать имя списка слов, если он именован
+
+5A2378  90 23 5A 00  00 09 56 4F  43 2D 4E 41  4D 45 2E 4B Р#Z...VOC-NAME.K
+5A2388  23 5A 00 00  00 00 00 00 #Z......
+
+  DUP FORTH-WORDLIST = IF DROP ." FORTH"  EXIT THEN
+
+5A2390  89 45 FC 8D  6D FC E8 59  FE FA FF 33  45 00 8B 45 ЙE№Нm№шY■· 3E.ЛE
+5A23A0  04 8D 6D 08  0F 85 18 00  00 00 8B 45  00 8D 6D 04 .Нm..Е....ЛE.Нm.
+5A23B0  E8 A7 FD F9  FF 05 46 4F  52 54 48 00  E8 2F 9A FC шз¤∙ .FORTH.ш/Ъ№
+5A23C0  FF C3  ├
+
+\  DUP KERNEL-WORDLIST = IF DROP ." KERNEL"  EXIT THEN
+  DUP CELL+ @ DUP IF ID. DROP ELSE DROP ." <NONAME>:" U. THEN
+
+5A23C2  89 45 FC 8B  40 04 8D 6D  FC 0B C0 74  10 E8 CC F7 ЙE№Л@.Нm№.└t.ш╠ў
+5A23D2  FF FF 8B 45  00 8D 6D 04  E9 20 00 00  00 8B 45 00   ЛE.Нm.щ ...ЛE.
+5A23E2  8D 6D 04 E8  72 FD F9 FF  09 3C 4E 4F  4E 41 4D 45 Нm.шr¤∙ .<NONAME
+5A23F2  3E 3A 00 E8  F6 99 FC FF  E8 09 3D FA  FF >:.шЎЩ№ ш.=· 
+
+;
+
+5A23FF  C3 ├
+
+
+: ORDER ( -- ) \ 94 SEARCH EXT
+
+5A2400  10 24 5A 00  00 05 4F 52  44 45 52 7D  23 5A 00 00 .$Z...ORDER}#Z..
+
+\ Показать списки в порядке поиска, от первого просматриваемого списка до 
+\ последнего. Также показать список слов, куда помещаются новые определения.
+\ Формат изображения зависит от реализации.
+\ ORDER может быть реализован с использованием слов форматного преобразования
+\ чисел. Следовательно он может разрушить перемещаемую область, 
+\ идентифицируемую #>.
+  GET-ORDER ." Context: "
+
+5A2410  E8 CB FD FF  FF E8 42 FD  F9 FF 09 43  6F 6E 74 65 ш╦¤  шB¤∙ .Conte
+5A2420  78 74 3A 20  00 E8 C6 99  FC FF xt: .ш╞Щ№ 
+
+  0 ?DO ( DUP .) VOC-NAME. SPACE LOOP CR
+
+5A242A  89 45 FC 33  C0 8D 6D 04  BB 64 24 5A  00 3B 45 F8 ЙE№3└Нm.╗d$Z.;E°
+5A243A  75 05 8B 45  FC FF E3 53  BB 00 00 00  80 2B 5D F8 u.ЛE№ уS╗...А+]°
+5A244A  53 03 D8 53  8B 45 FC E8  3A FF FF FF  E8 9D 38 FA S.╪SЛE№ш:   шЭ8·
+5A245A  FF FF 04 24  71 F1 8D 64  24 0C E8 7F  36 FA FF   .$qёНd$.ш6· 
+
+  ." Current: " GET-CURRENT VOC-NAME. CR
+
+5A2469  E8 EE FC F9  FF 09 43 75  72 72 65 6E  74 3A 20 00 шю№∙ .Current: .
+5A2479  E8 72 99 FC  FF 89 45 FC  8B 87 58 18  00 00 8D 6D шrЩ№ ЙE№ЛЗX...Нm
+5A2489  FC E8 01 FF  FF FF E8 54  36 FA FF №ш.   шT6· 
+
+;
+
+5A2494  C3 ├
+
+
+: LATEST ( -> NFA )
+
+5A2495  B0 24 5A 00  00 06 4C 41  54 45 53 54  05 24 5A 00 ░$Z...LATEST.$Z.
+5A24A5  00 00 00 00  00 00 00 00  00 00 00 ...........
+
+  CURRENT @ @
+
+5A24B0  E8 1B 4B FA  FF 8B 00 8B  00 ш.K· Л.Л.
+
+;
+
+5A24B9  C3 ├
+
+ZZ=D0 

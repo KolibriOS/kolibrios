@@ -1,0 +1,13 @@
+
+WANT_BUFF COUNT  SFIND  [IF] DROP \EOF [THEN]
+
+[WANT] WDS ~mak\wds.f 
+[WANT]  SKIP : SKIP PSKIP ;
+[WANT] PSKIP : PSKIP SKIP ;
+[WANT] CASE  ~mak\case.f 
+[WANT] [IF] ~mak/CompIF.f
+[WANT] MS    : MS 0 DO 100099 0 DO LOOP LOOP ;
+[WANT] #define : #define  HEADER ['] _CONSTANT-CODE COMPILE, 0 PARSE EVALUATE , ; 
+
+
+-321 THROW

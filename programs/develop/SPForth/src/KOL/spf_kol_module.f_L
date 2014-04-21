@@ -1,0 +1,159 @@
+ZZ=D4 
+: is_path_delimiter ( c -- flag )
+
+5A380F  30 38 5A 00  00 11 69 73  5F 70 61 74  68 5F 64 65 08Z...is_path_de
+5A381F  6C 69 6D 69  74 65 72 75  37 5A 00 00  00 00 00 00 limiteru7Z......
+5A382F  00 .
+
+  DUP [CHAR] \ = SWAP [CHAR] / = OR
+
+5A3830  89 45 FC 89  45 F8 B8 5C  00 00 00 33  45 F8 83 E8 ЙEьЙEшЄ\...3EшГи
+5A3840  01 1B C0 8B  55 FC 89 45  FC 89 55 F8  B8 2F 00 00 ..јЛUьЙEьЙUшЄ/..
+5A3850  00 33 45 F8  83 E8 01 1B  C0 0B 45 FC .3EшГи..ј.Eь
+
+;
+
+5A385C  C3 √
+
+
+: CUT-PATH ( a u -- a u1 )
+
+5A385D  70 38 5A 00  00 08 43 55  54 2D 50 41  54 48 14 38 p8Z...CUT-PATH.8
+5A386D  5A 00 00 Z..
+
+\ из строки "path\name" выделить строку "path\"
+  OVER +
+
+5A3870  89 45 FC 8B  45 00 03 45  FC ЙEьЛE..Eь
+
+  BEGIN 2DUP <> WHILE DUP C@ is_path_delimiter 0= WHILE 1- REPEAT 1+ THEN
+
+5A3879  90 90 90 8B  55 00 89 45  FC 89 55 F8  33 45 F8 8B РРРЛU.ЙEьЙUш3EшЛ
+5A3889  45 FC 0F 84  24 00 00 00  89 45 FC 0F  B6 00 8D 6D Eь.Д$...ЙEь.ґ.Нm
+5A3899  FC E8 91 FF  FF FF 0B C0  8B 45 00 8D  6D 04 0F 85 ьиС€€€.јЛE.Нm..Е
+5A38A9  05 00 00 00  8D 40 FF EB  CA 8D 40 01 ....Н@€л Н@.
+
+  \ DUP 0!  \ ~ruv (to anfilat): не дќлжно тут затирать поданный буфер!
+  OVER -
+
+5A38B5  89 45 FC 8B  45 00 F7 D8  03 45 FC ЙEьЛE.чЎ.Eь
+
+;
+
+5A38C0  C3 √
+
+
+: ModuleName ( -- addr u )
+
+5A38C1  E0 38 5A 00  00 0A 4D 6F  64 75 6C 65  4E 61 6D 65 а8Z...ModuleName
+5A38D1  62 38 5A 00  00 00 00 00  00 00 00 00  00 00 00 b8Z............
+
+ ABORT
+
+5A38E0  E8 7B F6 FF  FF и{ц€€
+
+;
+
+5A38E5  C3 √
+
+
+: ModuleDirName ( -- addr u )
+
+5A38E6  00 39 5A 00  00 0D 4D 6F  64 75 6C 65  44 69 72 4E .9Z...ModuleDirN
+5A38F6  61 6D 65 C6  38 5A 00 00  00 00 ame∆8Z....
+
+  ModuleName CUT-PATH
+
+5A3900  E8 DB FF FF  FF E8 66 FF  FF FF иџ€€€иf€€€
+
+;
+
+5A390A  C3 √
+
+
+: +ModuleDirName ( addr u -- addr2 u2 )
+
+5A390B  30 39 5A 00  00 0E 2B 4D  6F 64 75 6C  65 44 69 72 09Z...+ModuleDir
+5A391B  4E 61 6D 65  EB 38 5A 00  00 00 00 00  00 00 00 00 Nameл8Z.........
+5A392B  00 00 00 00  00 .....
+
+  2>R
+
+5A3930  E8 CB 94 FF  FF иЋФ€€
+
+  ModuleDirName 2DUP +
+
+5A3935  E8 C6 FF FF  FF 8B 55 00  89 45 FC 89  55 F8 03 45 и∆€€€ЛU.ЙEьЙUш.E
+5A3945  F8 8D 6D FC шНmь
+
+  2R> DUP >R ROT SWAP 1+ MOVE 
+
+5A3949  E8 D2 94 FF  FF 89 45 FC  50 8B 45 FC  8B 55 00 89 и“Ф€€ЙEьPЛEьЛU.Й
+5A3959  45 00 8B 45  04 89 55 04  8B 55 00 89  45 00 8B C2 E.ЛE.ЙU.ЛU.ЙE.Л¬
+5A3969  8D 40 01 E8  AF A4 FF FF Н@.иѓ§€€
+
+  R> +
+
+5A3971  89 45 FC 58  03 45 FC ЙEьX.Eь
+
+;
+
+5A3978  C3 √
+
+
+: +LibraryDirName ( addr u -- addr2 u2 )
+
+5A3979  A0 39 5A 00  00 0F 2B 4C  69 62 72 61  72 79 44 69 †9Z...+LibraryDi
+5A3989  72 4E 61 6D  65 10 39 5A  00 00 00 00  00 00 00 00 rName.9Z........
+5A3999  00 00 00 00  00 00 00 .......
+
+\ ƒобавить addr u к полный_путь_приложени€+devel\
+  2>R
+
+5A39A0  E8 5B 94 FF  FF и[Ф€€
+
+  ModuleDirName 2DUP +
+
+5A39A5  E8 56 FF FF  FF 8B 55 00  89 45 FC 89  55 F8 03 45 иV€€€ЛU.ЙEьЙUш.E
+5A39B5  F8 8D 6D FC шНmь
+
+  S" devel\" ROT SWAP MOVE
+
+5A39B9  E8 9E E7 F9  FF 06 64 65  76 65 6C 5C  00 8B 55 00 иЮзщ€.devel\.ЛU.
+5A39C9  89 45 00 8B  45 04 89 55  04 8B 55 00  89 45 00 8B ЙE.ЛE.ЙU.ЛU.ЙE.Л
+5A39D9  C2 E8 41 A4  FF FF ¬иA§€€
+
+  6 + 2DUP +
+
+5A39DF  89 45 FC B8  06 00 00 00  03 45 FC 8B  55 00 89 45 ЙEьЄ.....EьЛU.ЙE
+5A39EF  FC 89 55 F8  03 45 F8 8D  6D FC ьЙUш.EшНmь
+
+  2R> DUP >R ROT SWAP 1+ MOVE 
+
+5A39F9  E8 22 94 FF  FF 89 45 FC  50 8B 45 FC  8B 55 00 89 и"Ф€€ЙEьPЛEьЛU.Й
+5A3A09  45 00 8B 45  04 89 55 04  8B 55 00 89  45 00 8B C2 E.ЛE.ЙU.ЛU.ЙE.Л¬
+5A3A19  8D 40 01 E8  FF A3 FF FF Н@.и€£€€
+
+  R> +
+
+5A3A21  89 45 FC 58  03 45 FC ЙEьX.Eь
+
+;
+
+5A3A28  C3 √
+
+: SOURCE-NAME ( -- a u )
+
+5A3A29  40 3A 5A 00  00 0B 53 4F  55 52 43 45  2D 4E 41 4D @:Z...SOURCE-NAM
+5A3A39  45 7E 39 5A  00 00 00 E~9Z...
+
+  CURFILE @ DUP IF ASCIIZ> ELSE 0 THEN
+
+5A3A40  E8 4F 2B FA  FF 8B 00 0B  C0 74 07 E8  D0 A6 FF FF иO+ъ€Л..јt.и–¶€€
+5A3A50  EB 08 89 45  FC 33 C0 8D  6D FC л.ЙEь3јНmь
+
+;
+
+5A3A5A  C3 √
+
+ZZ=D4 
