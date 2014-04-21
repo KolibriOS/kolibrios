@@ -79,6 +79,17 @@ char immbuffer[BUFFERSIZE];
 llist mail_list;
 llist letter_view;
 
+dword TAB_H = false; //19;
+dword TAB_W = 150;
+dword TOOLBAR_H = 31; //50;
+dword STATUSBAR_H =15;
+dword col_bg;
+dword panel_color;
+dword border_color;
+
+pb progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+
+int http_transfer;
 char version[]=" WebView 0.1";
 #include "..\TWB\TWB.c"
 

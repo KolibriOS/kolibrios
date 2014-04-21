@@ -100,21 +100,25 @@ void MailBoxNetworkProcess() {
 				mailsize = atr.GetSize(mail_list.current+1) + 1024;
 				free(mailstart);
 				mailstart = malloc(mailsize);
+				mailend = mailstart;
 				if (!mailstart)
 				{
 					debugln("alloc error!");
 					aim=NULL;
 					break;
 				}
-				mailend = mailstart;
+				debug("mailsize: "); debugi(mailsize);
 				aim = GET_ANSWER_RETR;
 				debugln("goto GET_ANSWER_RETR");
 				break;
 			
 		case GET_ANSWER_RETR:
+				debug("mailsize: "); debugi(mailsize);
+				debug("mailstart: "); debugi(mailstart);
+				debug("mailend: "); debugi(mailend);
 				ticks = Receive(socketnum, mailend, mailsize + mailstart - mailend, MSG_DONTWAIT);
 				if (ticks == 0xffffffff) break;
-				mailend += ticks;
+				mailend = mailend + ticks;
 				if (mailsize + mailstart - mailend - 2 < 0)
 				{
 					debugln("Resizing buffer");
@@ -122,13 +126,15 @@ void MailBoxNetworkProcess() {
 					mailstart = realloc(mailstart, mailsize);
 					if (!mailstart) { StopConnect("Realloc error!"); break;}
 				}
+				/*
 				if (mailsize>9000)
 				{
 					load_persent = mailend - mailstart * 100 ;
 					load_persent /= mailsize - 1024;
 					if (load_persent != cur_st_percent) SetMailBoxStatus( load_persent , NULL);
 				}
-				ParseMail();
+				*/
+				//ParseMail();
 	}
 }
 
@@ -315,7 +321,7 @@ void DrawMailList() {
 		WriteText(on_x + 42, on_y+5, 0x80, 0, atr.GetSubject(i+mail_list.first+1));
 		DrawBar(0, on_y + mail_list.line_h-1, mail_list.w, 1, 0xCCCccc);
 		WriteText(10, on_y+5, 0x80, 0, itoa(i+mail_list.first+1));
-		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertMemSize(atr.GetSize(i+mail_list.first+1)));
+		WriteText(mail_list.w - 40, on_y+5, 0x80, 0, ConvertSize(atr.GetSize(i+mail_list.first+1)));
 	}
 	DrawBar(0, i*mail_list.line_h + mail_list.y, mail_list.w, -i*mail_list.line_h+mail_list.h, 0xFFFfff);
 	DrawScroller1();
@@ -328,9 +334,9 @@ void DrawLetterInfo() {
 	DrawBar(0, lt_y+2, Form.cwidth, LIST_INFO_H-4, sc.work);
 	WriteText(mail_list.w-30/2, lt_y, 0x80, 0x888888, "= = =");
 	WriteText(mail_list.w-30/2, lt_y+1, 0x80, 0xEeeeee, "= = =");
-	DrawBar(0, lt_y+LIST_INFO_H-2, mail_list.w, 1, sc.work_graph); //bottom
-	DrawBar(0, lt_y+LIST_INFO_H-1, mail_list.w, 1, 0xdfdfdf);
-	DrawBar(0, lt_y+LIST_INFO_H  , mail_list.w, 1, 0xf0f0f0);
+	DrawBar(0, lt_y+LIST_INFO_H-2, Form.cwidth, 1, sc.work_graph); //bottom
+	DrawBar(0, lt_y+LIST_INFO_H-1, Form.cwidth, 1, 0xdfdfdf);
+	DrawBar(0, lt_y+LIST_INFO_H  , Form.cwidth, 1, 0xf0f0f0);
 	WriteTextB(10, lt_y+8 , 0x80, sc.work_text, "From:");
 	WriteText (45, lt_y+8 , 0x80, sc.work_text, #from);
 	WriteTextB(10, lt_y+20, 0x80, sc.work_text, "To:");
@@ -347,7 +353,7 @@ void InitTWB() {
 		Form.cheight - mail_list.y - mail_list.h - LIST_INFO_H - 1 - status_bar_h, 60, 12);
 	WB1.list.column_max = WB1.list.w - 30 / 6;
 	WB1.list.visible = WB1.list.h / WB1.list.line_h;
-	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h, WB1.list.line_h);
+	WB1.DrawBuf.Init(WB1.list.x, WB1.list.y, WB1.list.w, WB1.list.h);
 
 	strcpy(#header, #version);
 	pre_text = 0;
@@ -359,6 +365,7 @@ void DrawLetter() {
 	bufsize = strlen(mdata);
 	WB1.Prepare(bufsize, mdata);
 	if (bufsize) WB1.Parse();
+	DrawRectangle(scroll_wv.start_x, scroll_wv.start_y, scroll_wv.size_x, scroll_wv.size_y-1, 0xFFFfff);
 }
 
 
@@ -388,7 +395,8 @@ void DrawStatusBar() {
 
 
 void SetMailBoxStatus(dword percent1, text1) {
-	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, sc.work, 0xC3C3C3, 0x54B1D6, sc.work_text, percent1, text1);
+	DrawProgressBar(3, Form.cheight -status_bar_h + 1, 220, 12, sc.work, 0xC3C3C3, 0x54B1D6, sc.work_text, percent1);
+	WriteText(3, Form.cheight -status_bar_h + 1, 0x80, sc.work_text, text1);
 	cur_st_percent = percent1;
 	cur_st_text = text1;
 }

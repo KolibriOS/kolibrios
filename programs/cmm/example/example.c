@@ -4,29 +4,9 @@
 #include "..\lib\mem.h" 
 #include "..\lib\file_system.h"
 
-void str_replace(dword buf_in, what_replace, to_what_replace) {
-	dword start_pos=0;
-	dword buf_from;
-
-	buf_from = malloc(strlen(buf_in));
-	loop() {
-		strcpy(buf_from, buf_in);
-		start_pos = strstr(buf_from, what_replace);
-		if (start_pos == 0) break;
-		strlcpy(buf_in, buf_from, start_pos-buf_from);
-		strcat(buf_in, to_what_replace);
-		start_pos += strlen(what_replace);
-		strcat(buf_in, start_pos);
-	}
-	free(buf_from);
-}
-
 void main()
 {   
 	int id, key;
-	strcpy(#param, " <html>lorem</html>");
-	str_replace(#param, "<", "&lt");
-	str_replace(#param, ">", "&gt");
 	
 	loop()
    {

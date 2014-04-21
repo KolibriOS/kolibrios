@@ -38,8 +38,7 @@ void main()
 			}
 		}
 	}
-	if (GetSystemLanguage()==4) notify("Не могу найти installer.kex ни в одном корне диска! Попробуйте найти и запустить его вручную.");
-	else notify("Can't find installer.kex at the root of all disks! Try to find and run it manually."w);
+	notify("'Не могу найти installer.kex ни в одном корне диска!\nПопробуйте найти и запустить его вручную.' -dE");
 	ExitProcess();
 }
 
