@@ -1,6 +1,6 @@
 ; KolSPForth v12
 
- SYSTEM equ EMUL
+SYSTEM equ EMUL
 
 ;Memory Map
 ;
@@ -86,18 +86,19 @@ cfa_#F_CFA:
 }
 
 
-   ;; Main entry points and COLD start data
+;; Main entry points and COLD start data
 
  use32
+ format binary as ""
 
  	org    0x0
 
- 	db     'MENUET01'	; 8 byte id
- 	dd     0x01	   ; header version
- 	dd     ORIG	    ; start of code
- 	dd     I_END	    ; size of image
-MEMS: 	dd     EM	    ; memory for app
- 	dd     SPP	    ; esp
+ 	db     'MENUET01'
+ 	dd     0x01
+ 	dd     ORIG         ; start of code
+ 	dd     I_END        ; size of image
+MEMS: 	dd     EM       ; memory for app
+ 	dd     SPP          ; esp
 if SYSTEM eq MEOS
  	dd     FINFO.path
 else
@@ -107,7 +108,7 @@ end if
 
  lang fix ru
  include 'MACROS.INC'
- include "proc32.inc"
+ include '..\..\proc32.inc'
 
 align 4
 proc strncmp stdcall, s1:dword, s2:dword, n:dword
@@ -179,47 +180,53 @@ BYE:	mcall -1
  draw_cursor:
 
  draw_window:
- 		pusha
- 		mcall 12,1
-   	mov   [fRed],ebx
-    mcall 0, <0,FW_WIDTH>, <0,FW_HEIGHT>, 0x03000000, 0x805080D0, 0x005080D0
-    mcall 4, <8,8>, 0x10DDEEFF, header, header.size
+	pusha
+	mcall 12,1
+	mov   [fRed],ebx
+	mcall 0, <0,FW_WIDTH>, <0,FW_HEIGHT>, 0x54000000
+	; mcall 0,,,COL_WINDOW_BG, ,title ; define window
+	mcall 71, 1, header
 
- 		mcall 9,pinfo,-1
- 		mov   eax,[pinfo.x_size]
- 		cdq
- 		sub   eax,20
- 		mov   ebx,6
- 		div   ebx
- 		mov   [pinfo.x_start],eax
+	mcall 9,pinfo,-1
+	mov   eax,[pinfo.x_size]
+	cdq
+	sub   eax,20
+	mov   ebx,6
+	div   ebx
+	mov   [pinfo.x_start],eax
 
- 		mov   eax,[pinfo.y_size]
- 		cdq
- 		sub   eax,40
- 		mov   ebx,ROWH
- 		div   ebx
+	mov   eax,[pinfo.y_size]
+	cdq
+	sub   eax,40
+	mov   ebx,ROWH
+	div   ebx
 
- 		mov   [pinfo.y_start],eax
-    call  erase_screen
-     mcall 12, 2
-if ~ SYSTEM eq EMUL
-    mcall 67,-1,-1,FW_WIDTH,FW_HEIGHT
-end if
- 		popa
- 		ret
+	mov   [pinfo.y_start],eax
+	call  erase_screen
+	mcall 12, 2
+	mcall 67,-1,-1,FW_WIDTH,FW_HEIGHT
+	popa
+	ret
 
- lsz header,\
-   ru,'Форт для MenuetOS (SPF)',\
-   en,'EXAMPLE APPLICATION',\
-   fr,"L'exemplaire programme"
 
- erase_screen:
- 		mov   ebx,[pinfo.x_size]
- 		add   ebx,10 shl 16-20
- 		mov   ecx,[pinfo.y_size]
- 		add   ecx,30 shl 16-35
- 		mcall 13,,,0;xff
-   ret
+macro GetSkinHeight
+{
+	mov  eax,48
+	mov  ebx,4
+	int 0x40
+}
+
+erase_screen:
+	GetSkinHeight
+	mov ecx,eax
+	shl ecx,16
+	add ecx,[pinfo.y_size]
+	sub ecx,eax
+	sub ecx,4		
+	mov   ebx,[pinfo.x_size]
+	add   ebx,5 shl 16 - 9
+	mcall 13,,,0;xff
+	ret
 
 
 AHEADER 0,"CC_LINES",cfa_CC_LINES
@@ -463,6 +470,8 @@ cfa_AHEADER 0,'READ_GIF',READ_GIF ;( gif_ptr, out_ptr -- result )
  last_ebp dd 0
 
  include 'amain.asm'
+ 
+ header db   'Kolibri Forth v12.1',0
 
  FINFO:
  	.mode dd 0
@@ -471,17 +480,9 @@ cfa_AHEADER 0,'READ_GIF',READ_GIF ;( gif_ptr, out_ptr -- result )
  	.buf  dd 0
  	.work dd os_work
  	.path:
- if SYSTEM eq MEOS
-; 	.path db 0
-; 	.path db '/HD/1/FORTH/AUTORUN.DAT',0
-; 	   db '/RD/1/AUTOLOAD.F'
- else
  	 db '/RD/1/AUTOLOAD.F'
 ; 	 db '/RD/1/EXAMPLE.F'
-;	   db '/RD/1/PICTURE.F'
-; 	 db '/RD/1/AUTORUN.DAT'
-; 	 db '/HD/1/FORTH/AUTORUN.DAT'
- end if
+;	 db '/RD/1/PICTURE.F'
  	db 0
  	.end_path:
 
