@@ -485,11 +485,19 @@ draw_clock:
 define_window:
 
     mcall 12,1
+	mcall 48, 5     ; GetClientTop, fix for case when @patel in the top
+	shr ebx, 16
+	mov ecx,ebx
+	shl ecx,16
+	cmp ecx,0
+	jne  panel_top
+	; panel bottom
 	mcall 48,5 ;get screen size
 	mov ecx, ebx
 	sub ecx, WIN_H
 	shl ecx, 16
-	add ecx, WIN_H
+panel_top:
+	add ecx, WIN_H   ; [y start] *65536 + [y size]
 	mov ebx, eax
 	sub eax, WIN_W
 	shl ebx, 16
