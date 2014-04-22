@@ -1,77 +1,103 @@
-lsz text,\
-    ru,  ' €ŒŠ€ ŽŠ€                     ',\
-    ru,  ' Ž‹Ž‘€ ‡€ƒŽ‹Ž‚Š€               ',\
-    ru,  ' ŠŽŠ€ € Ž‹Ž‘… ‡€ƒŽ‹Ž‚Š€     ',\
-    ru,  ' ’…Š‘’ € ŠŽŠ… € ‡€ƒŽ‹Ž‚Š…   ',\
-    ru,  ' ’…Š‘’ ‡€ƒŽ‹Ž‚Š€                ',\
-    ru,  ' €Ž—€Ÿ Ž‹€‘’œ                ',\
-    ru,  ' ŠŽŠ€ ‚ €Ž—…‰ Ž‹€‘’ˆ       ',\
-    ru,  ' ’…Š‘’ € ŠŽŠ…                ',\
-    ru,  ' ’…Š‘’ ‚ €Ž—…‰ Ž‹€‘’ˆ        ',\
-    ru,  ' ƒ€”ˆŠ€ ‚ €Ž—…‰ Ž‹€‘’ˆ      ',\
-    ru,  'x',\
-    en,  ' WINDOW FRAME                   ',\
-    en,  ' WINDOW GRAB BAR                ',\
-    en,  ' WINDOW GRAB BUTTON             ',\
-    en,  ' WINDOW GRAB BUTTON TEXT        ',\
-    en,  ' WINDOW GRAB TITLE              ',\
-    en,  ' WINDOW WORK AREA               ',\
-    en,  ' WINDOW WORK AREA BUTTON        ',\
-    en,  ' WINDOW WORK AREA BUTTON TEXT   ',\
-    en,  ' WINDOW WORK AREA TEXT          ',\
-    en,  ' WINDOW WORK AREA GRAPH         ',\
-    en,  'x',\
-    et,  ' AKNA RAAM                      ',\
-    et,  ' AKNA HAARAMISE RIBA            ',\
-    et,  ' AKNA HAARAMISE NUPP            ',\
-    et,  ' AKNA HAARAMISE NUPU TEKST      ',\
-    et,  ' AKNA HAARAMISE PEALKIRI        ',\
-    et,  ' AKNA TÖÖPIIRKOND               ',\
-    et,  ' AKNA TÖÖPIIRKONNA NUPP         ',\
-    et,  ' AKNA TÖÖPIIRKONNA NUPPU TEKST  ',\
-    et,  ' AKNA TÖÖPIIRKONNA TEKST        ',\
-    et,  ' AKNA TÖÖPIIRKONNA GRAAFIKA     ',\
-    et,  'x'
-
-lsz t1,\
-    ru,  '‡€ƒ“‡ˆ’œ  ‘Ž•€ˆ’œ                                   ˆŒ…ˆ’œ',\
-    en,  '  LOAD        SAVE                                       APPLY',\
-    et,  '  LAADI     SALVESTA                                    KINNITA',\
-
-lsz t2,\
-    ru,  '‡€ƒ“‡ˆ’œ                3D   ‹Ž‘Šˆ…                  ˆŒ…ˆ’œ',\
-    en,  '  LOAD                   3D    FLAT                      APPLY',\
-    et,  '  LAADI                  3D    LAME                     KINNITA '
-
-lsz select_dtp_text,\
-    ru, ' ‚›Ž –‚…’Ž‚ŽƒŽ Ž”ŽŒ‹…ˆŸ: ',\
-    en, ' CHOICE OF COLOR SCHEMES: ',\
-    et, ' VALIK VARVISKEEME: '
-	db 0
-
-lsz select_skin_text,\
-    ru, ' ‚›Ž ˜Š“Šˆ: ',\
-    en, ' CHOICE OF SKINS: ',\
-    et, ' VALIK NAHAD: '
-	db 0
-
-lsz caption_text,\
-    ru, '‡ £®«®¢®ª',\
-    en, 'Caption',\
-    et, 'Pealkiri'
-
+;-----------------------------------------------------------------------------
+text:
+if lang eq ru
+	db ' €ŒŠ€ ŽŠ€                     '
+	db ' Ž‹Ž‘€ ‡€ƒŽ‹Ž‚Š€               '
+	db ' ŠŽŠ€ € Ž‹Ž‘… ‡€ƒŽ‹Ž‚Š€     '
+	db ' ’…Š‘’ € ŠŽŠ… € ‡€ƒŽ‹Ž‚Š…   '
+	db ' ’…Š‘’ ‡€ƒŽ‹Ž‚Š€                '
+	db ' €Ž—€Ÿ Ž‹€‘’œ                '
+	db ' ŠŽŠ€ ‚ €Ž—…‰ Ž‹€‘’ˆ       '
+	db ' ’…Š‘’ € ŠŽŠ…                '
+	db ' ’…Š‘’ ‚ €Ž—…‰ Ž‹€‘’ˆ        '
+	db ' ƒ€”ˆŠ€ ‚ €Ž—…‰ Ž‹€‘’ˆ      '
+	db 'x'
+else if lang eq et
+	db ' AKNA RAAM                      '
+	db ' AKNA HAARAMISE RIBA            '
+	db ' AKNA HAARAMISE NUPP            '
+	db ' AKNA HAARAMISE NUPU TEKST      '
+	db ' AKNA HAARAMISE PEALKIRI        '
+	db ' AKNA TÖÖPIIRKOND               '
+	db ' AKNA TÖÖPIIRKONNA NUPP         '
+	db ' AKNA TÖÖPIIRKONNA NUPPU TEKST  '
+	db ' AKNA TÖÖPIIRKONNA TEKST        '
+	db ' AKNA TÖÖPIIRKONNA GRAAFIKA     '
+	db 'x'
+else
+	db ' WINDOW FRAME                   '
+	db ' WINDOW GRAB BAR                '
+	db ' WINDOW GRAB BUTTON             '
+	db ' WINDOW GRAB BUTTON TEXT        '
+	db ' WINDOW GRAB TITLE              '
+	db ' WINDOW WORK AREA               '
+	db ' WINDOW WORK AREA BUTTON        '
+	db ' WINDOW WORK AREA BUTTON TEXT   '
+	db ' WINDOW WORK AREA TEXT          '
+	db ' WINDOW WORK AREA GRAPH         '
+	db 'x'
+end if
+;-----------------------------------------------------------------------------
+if lang eq ru
+	sz t1,'‡€ƒ“‡ˆ’œ  ‘Ž•€ˆ’œ                                   ˆŒ…ˆ’œ'
+else if lang eq et
+	sz t1,'  LAADI     SALVESTA                                    KINNITA'
+else
+	sz t1,'  LOAD        SAVE                                       APPLY'
+end if
+;-----------------------------------------------------------------------------
+if lang eq ru
+	sz t2,'‡€ƒ“‡ˆ’œ                3D   ‹Ž‘Šˆ…                  ˆŒ…ˆ’œ'
+else if lang eq et
+	sz t2,'  LAADI                  3D    LAME                     KINNITA'
+else
+	sz t2,'  LOAD                   3D    FLAT                      APPLY'
+end if
+;-----------------------------------------------------------------------------
+select_dtp_text:
+if lang eq ru
+	db ' ‚›Ž –‚…’Ž‚ŽƒŽ Ž”ŽŒ‹…ˆŸ: ',0
+else if lang eq et
+	db ' VALIK VARVISKEEME: ',0
+else
+	db ' CHOICE OF COLOR SCHEMES: ',0
+end if
+;-----------------------------------------------------------------------------
+select_skin_text:
+if lang eq ru
+	db ' ‚›Ž ˜Š“Šˆ: ',0
+else if lang eq et
+	db ' VALIK NAHAD: ',0
+else
+	db ' CHOICE OF SKINS: ',0
+end if
+;-----------------------------------------------------------------------------
+if lang eq ru
+	sz caption_text,'‡ £®«®¢®ª'
+else if lang eq et
+	sz caption_text,'Pealkiri'
+else
+	sz caption_text,'Caption'
+end if
+;-----------------------------------------------------------------------------
 sz  close_text,'x'
-
-lsz window_text,\
-    ru, '’¥ªáâ ¢ ®ª­¥',\
-    en, 'Window text',\
-    et, 'Akna tekst'
-
-lsz button_text,\
-    ru, '’¥ªáâ ­  ª­®¯ª¥',\
-    en, 'Button text',\
-    et, 'Nupu tekst'
-
+;-----------------------------------------------------------------------------
+if lang eq ru
+	sz window_text,'’¥ªáâ ¢ ®ª­¥'
+else if lang eq et
+	sz window_text,'Akna tekst'
+else
+	sz window_text,'Window text'
+end if
+;-----------------------------------------------------------------------------
+if lang eq ru
+	sz button_text,'’¥ªáâ ­  ª­®¯ª¥'
+else if lang eq et
+	sz button_text,'Nupu tekst'
+else
+	sz button_text,'Button text'
+end if
+;-----------------------------------------------------------------------------
 if lang eq ru
   title db '€‘’Ž‰Š€ ŽŠŽ',0
 else if lang eq et
