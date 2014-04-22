@@ -297,6 +297,12 @@
     imul    edx, LINEH
     mov     [window.y], edx
 
+    push    eax ebx
+    mcall   48, 5
+    shr     ebx, 16
+    add     [window.y], ebx
+    pop     ebx eax
+
   @@:
     mov     [eax], byte 1
     inc     eax
