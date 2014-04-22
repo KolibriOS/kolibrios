@@ -1,6 +1,7 @@
 ;*****************************************************************************
+;*****************************************************************************
 ; zSea - advanced image viewer for KolibriOS
-; Copyright (c) 2008-2013, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2008-2014, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -25,7 +26,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-;	v.1.0 rñ5 26.03.2013
+;	v.1.0 rñ5 22.04.2014
 ;******************************************************************************
 	use32
 	org 0x0
@@ -211,9 +212,14 @@ START:				; start of execution
 	jae	@f
 	mov	[wnd_width],635
 @@:
-	cmp	[wnd_height],150
+	mcall 48, 5     ; GetClientTop, fix for case when @patel in the top
+    shr ebx, 16
+	mov	ecx,ebx
+	shl ecx,16
+	add ecx,150	   ; [y start] *65536 + [y size]
+	cmp	[wnd_height],ecx
 	jae	@f
-	mov	[wnd_height],150
+	mov	[wnd_height],ecx
 @@:
 ;	call draw_window
 red:

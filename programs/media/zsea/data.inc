@@ -38,7 +38,7 @@ lsz fitext,\
         db 0
 ;---------------------------------------------------------------------
 Authors_text:
-.1:	db 'zSea version: 1.00 RC5 Date: 26/03/2013',0
+.1:	db 'zSea version: 1.00 RC5 Date: 22/04/2014',0
 .2:	db 'Authors:',0
 .3:	db 'Marat Zakiyanov aka Mario(Mario79)',0
 .4:	db 'zSea program, modules: cnv_bmp.obj,',0
