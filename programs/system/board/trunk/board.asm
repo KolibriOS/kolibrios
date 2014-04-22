@@ -3,7 +3,7 @@
 ;
 ;   See f63
 ;
-;   Compile with FASM for Menuet
+;   Compile with FASM for KolibriOS
 ;
 WRITE_LOG    equ 1
 P_LEN		 equ 11
@@ -209,14 +209,23 @@ add_char:
 .ok:
 	pop	esi
 	ret
+	
+macro GetClientTop
+{
+	
+}
 ;------------------------------------------------------------------------------
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
 draw_window:
 	mcall	12,1	; 1, start of draw
+	mcall 48, 5     ; GetClientTop
+    shr ebx, 16
+	mov	ecx,ebx
+	shl ecx,16
+	add ecx,MAXSTRINGS*10+45	   ; [y start] *65536 + [y size]
 	xor	eax,eax		     ; function 0 : define and draw window
-	mov	ecx,MAXSTRINGS*10+45	   ; [y start] *65536 + [y size]
 ;	mov	edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
 	mov	edx,0xffffff
 	or	edx,0x14000000
