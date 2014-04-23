@@ -28,8 +28,8 @@ unsigned char icons[]= FROM "icons.raw";
 
 
 #define PANEL_H 30
-#define SKINS_STANDART_PATH "/kolibrios/res/skins/"
-#define WALP_STANDART_PATH "/kolibrios/res/wallpapers/"
+#define SKINS_STANDART_PATH "/kolibrios/res/skins"
+#define WALP_STANDART_PATH "/kolibrios/res/wallpapers"
 
 llist list[2];
 int active;
@@ -65,11 +65,11 @@ void Open_Dir()
 	{
 		strcpy(#temp_filename, j*304 + buf+72);
 		strlwr(#temp_filename);
-		if (active==SKINS) if (strcmp(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
-		if (active==WALLPAPERS) if (strcmp(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
+		if (active==SKINS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".skn")!=0) continue;
+		if (active==WALLPAPERS) if (strcmpi(#temp_filename+strlen(#temp_filename)-4,".txt")==0) continue;
 		cur = list[active].count;
 		files_mas[cur]=j;
-		if (!strcmp("default.skn",#temp_filename)) files_mas[0]><files_mas[list[active].count];
+		if (!strcmpi("default.skn",#temp_filename)) files_mas[0]><files_mas[list[active].count];
 		list[active].count++;
 	}
 	Sort_by_Name(0, list[active].count-1); 
@@ -118,13 +118,13 @@ void GetFiles()
 	{
 		strcpy(#folder_path, SKINS_STANDART_PATH);
 		Open_Dir();
-		if (!list[active].count) notify("No skins were found");
+		if (!list[active].count) notify("'No skins were found' -E");
 	}
 	if (list[WALLPAPERS].active)
 	{
 		strcpy(#folder_path, WALP_STANDART_PATH);
 		Open_Dir();
-		if (!list[active].count) notify("No wallpapers were found");
+		if (!list[active].count) notify("'No wallpapers were found' -E");
 	}
 }
 
@@ -134,6 +134,7 @@ void Apply()
 	{
 		strcpy(#cur_file_path, #folder_path);
 		cur = list[SKINS].current;
+		chrcat(#cur_file_path, '/');
 		strcat(#cur_file_path, files_mas[cur]*304 + buf+72);
 		SetSystemSkin(#cur_file_path);
 		//Draw_List();
@@ -143,6 +144,7 @@ void Apply()
 		strcpy(#cur_file_path, "\\S__");
 		strcat(#cur_file_path, #folder_path);
 		cur = list[WALLPAPERS].current;
+		chrcat(#cur_file_path, '/');
 		strcat(#cur_file_path, files_mas[cur]*304 + buf+72);
 		RunProgram("/sys/media/kiv", #cur_file_path);
 		Draw_List();
@@ -163,7 +165,7 @@ void main()
 
 	mem_Init();
 	SetEventMask(0x27);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("Fatal Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("'Fatal Error: library doesn't exists /rd/1/lib/box_lib.obj' -E");
 	list[SKINS].current = list[WALLPAPERS].current = -1;
 	list[SKINS].first = list[WALLPAPERS].first = 0;
 	TabClick(WALLPAPERS);

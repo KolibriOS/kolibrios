@@ -29,7 +29,6 @@ void main()
 	{
 		GetProcessInfo(#Process, i);
 		if (strcmpi(#Process.name, "@icon")==0) KillProcess(Process.ID);
-		if (strcmpi(#Process.name, "@panel")==0) KillProcess(Process.ID);
 		if (strcmpi(#Process.name, "@docky")==0) KillProcess(Process.ID);
 	}
 	SetAddApplDir("kolibrios", abspath("kolibrios")+1);

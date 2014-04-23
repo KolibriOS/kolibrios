@@ -10,14 +10,14 @@
 	char *BUTTONS_CAPTIONS[]={
 	"Перезагрузка    [Enter]"w, 13,
 	"Выключение        [End]"w, 181,
-	"Ядро             [Home]"w, 180,
+	//"Ядро             [Home]"w, 180,
 	"Отмена            [Esc]"w, 27,
 	0};
 #else
 	char *BUTTONS_CAPTIONS[]={
 	" Reboot        [Enter]",13,
 	" Power off       [End]",181,
-	" Kernel         [Home]",180,
+	//" Kernel         [Home]",180,
 	" Close           [Esc]",27,
 	0};
 #endif
@@ -29,15 +29,11 @@ unsigned char moon[6*6] = FROM "moon.raw";
 int WIN_SIZE_X, WIN_SIZE_Y;
 int PANEL_X, PANEL_Y;
 
-#define NIGHT_PALEL_HEIGHT	45
-#define STARS_COUNT			30
+#define NIGHT_PALEL_HEIGHT	50
+#define STARS_COUNT			25
 
 #define PANEL_SIZE_X		260
-#define PANEL_SIZE_Y		165
-
-dword stars_col[4]={0xD2CF19, 0x716900, 0x002041}; //0x005BFF - голубой, редко
-
-
+#define PANEL_SIZE_Y		148
 
 :void ShadowScreen(dword img, w, h)
 {
@@ -84,7 +80,7 @@ void main()
 	goto _DRAW;
 	loop()
    {
-		WaitEventTimeout(130);
+		WaitEventTimeout(330);
 		switch(EAX & 0xFF)
 		{
 		case evButton:
@@ -130,7 +126,7 @@ void draw_main_area()
 	DrawRectangle(PANEL_X, PANEL_Y, PANEL_SIZE_X, PANEL_SIZE_Y, 0);
 	DrawBar(PANEL_X+1, PANEL_Y+NIGHT_PALEL_HEIGHT+1, PANEL_SIZE_X-1, PANEL_SIZE_Y-NIGHT_PALEL_HEIGHT-1, sc.work);
 	
-	for (i=0; i<4; i++)
+	for (i=0; i<3; i++)
 	{
 		DefineButton(PANEL_X+33, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+16, 190,19, BUTTONS_CAPTIONS[i*2+1],sc.work_button);
 		WriteText(PANEL_X+59, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+22, 0x80,sc.work_button_text, BUTTONS_CAPTIONS[i*2]);
@@ -138,6 +134,8 @@ void draw_main_area()
 		
 	draw_stars();
 }
+
+dword stars_col[4]={0xD2CF19, 0x716900, 0x002041, 0xEAE0DE}; //0x005BFF - голубой, редко
 
 void draw_stars()
 {
@@ -148,24 +146,20 @@ void draw_stars()
 	
 	for (i=0; i<STARS_COUNT; i++)
 	{
-		x_pic = random(PANEL_SIZE_X-1);
-		y_pic = random(NIGHT_PALEL_HEIGHT-1);
-		col = random(3);
-		PutPixel(PANEL_X+1 +x_pic, PANEL_Y+1 +y_pic, stars_col[col]);
+		x_pic = random(PANEL_SIZE_X-2);
+		y_pic = random(NIGHT_PALEL_HEIGHT-2);
+		col = random(4);
+		PutPixel(PANEL_X+2 +x_pic, PANEL_Y+2 +y_pic, stars_col[col]);
+		if (stars_col[col]==0xD2CF19)
+		{
+			PutPixel(PANEL_X+2 +x_pic+1, PANEL_Y+2 +y_pic, stars_col[col+1]);
+			PutPixel(PANEL_X+2 +x_pic-1, PANEL_Y+2 +y_pic, stars_col[col+1]);
+			PutPixel(PANEL_X+2 +x_pic, PANEL_Y+2 +y_pic-1, stars_col[col+1]);
+			PutPixel(PANEL_X+2 +x_pic, PANEL_Y+2 +y_pic+1, stars_col[col+1]);
+		}
+
 	}
-	/*for (i=0; i<3; i++)
-	{
-		x_pic = random(PANEL_SIZE_X-8)+4;
-		y_pic = random(NIGHT_PALEL_HEIGHT-8)+4;
-		
-		PutPixel(PANEL_X +x_pic, PANEL_Y +y_pic, stars_col[0]);
-		PutPixel(PANEL_X+1 +x_pic, PANEL_Y +y_pic, stars_col[1]);
-		PutPixel(PANEL_X-1 +x_pic, PANEL_Y +y_pic, stars_col[1]);
-		PutPixel(PANEL_X +x_pic, PANEL_Y +y_pic+1, stars_col[1]);
-		PutPixel(PANEL_X +x_pic, PANEL_Y +y_pic-1, stars_col[1]);
-	}*/
-	
-	_PutImage(PANEL_X+PANEL_SIZE_X-60,PANEL_Y+10, 6,6, #moon);
+	_PutImage(PANEL_X+PANEL_SIZE_X-60+random(3),PANEL_Y+10+random(3), 6,6, #moon);
 }
 
 
