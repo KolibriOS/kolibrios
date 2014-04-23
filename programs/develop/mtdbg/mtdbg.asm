@@ -1,4 +1,4 @@
-COLOR_THEME equ BLACK_ON_WHITE
+COLOR_THEME fix BLACK_ON_WHITE
 
 
 format binary as ""
@@ -301,12 +301,20 @@ do_reload:
         mov     ecx, edi
 
     @@:
-        mov     dword [ecx], '.dbg'
-        mov     byte [ecx+4], 0
+        mov     dword[ecx], '.dbg'
+        mov     byte[ecx+4], 0
         pop     esi
         mov     ebp, esi
+        push    ecx esi
+        call    OnLoadSymbols.silent            ; Try to load .dbg file
+        pop     esi ecx
+        xor     eax, eax
+        cmp     [num_symbols], eax
+        jne     @f
+        mov     dword[ecx], '.map'              ; If failed, try .map file too
         call    OnLoadSymbols.silent
-    
+    @@:
+
     ; now test for packed progs
         cmp     [disasm_buf_size], 100h
         jz      @f
@@ -1941,411 +1949,9 @@ OnUnpack:
         jmp     .x1
 
 ;-----------------------------------------------------------------------------
-;                  Working with program symbols
-;
-;  TODO: split to symbols.inc
+;                            Include Symbol parser
 
-include 'sort.inc'
-
-; compare what? Add context-relative comment and name
-compare:
-        cmpsd
-        jnz     @f
-        cmp     esi, edi
-
-    @@:
-        ret
-
-; purpose of this function?
-compare2:
-        cmpsd
-
-    @@:
-        cmpsb
-        jnz     @f
-        cmp     byte [esi-1], 0
-        jnz     @b
-        cmp     esi, edi
-
-    @@:
-        ret
-
-free_symbols:
-        mov     ecx, [symbols]
-        jecxz   @f
-        mcall   68, 13
-        and     [symbols], 0
-        and     [num_symbols], 0
-
-    @@:
-        ret
-;-----------------------------------------------------------------------------
-;                        Load symbols event
-
-OnLoadSymbols.fileerr:
-        test    ebp, ebp
-        jz      @f
-        mcall   68, 13, edi
-        ret
-
-    @@:
-        push    eax
-        mcall   68, 13, edi
-        mov     esi, aCannotLoadFile
-        call    put_message_nodraw
-        pop     eax
-        cmp     eax, 0x20
-        jae     .unk
-        mov     esi, [load_err_msgs + eax*4]
-        test    esi, esi
-        jnz     put_message
-
-    .unk:
-        mov     esi, unk_err_msg2
-        jmp     put_message
-
-OnLoadSymbols:
-        xor     ebp, ebp
-   ; load input file
-        mov     esi, [curarg]
-        call    free_symbols
-
-    .silent:
-        xor     edi, edi
-        cmp     [num_symbols], edi
-        jz      @f
-                                             
-        call    free_symbols
-        ;ret                                        
-  
-    @@:
-        mov     ebx, fn70_attr_block
-        mov     [ebx+21], esi
-        mcall   70
-        test    eax, eax
-        jnz     .fileerr
-        cmp     dword [fileattr+36], edi
-        jnz     .memerr
-        mov     ecx, dword [fileattr+32]
-        mcall   68, 12
-        test    eax, eax
-        jz      .memerr
-        mov     edi, eax
-        mov     ebx, fn70_read_block
-        mov     [ebx+12], ecx
-        mov     [ebx+16], edi
-        mov     [ebx+21], esi
-        mcall   70
-        test    eax, eax
-        jnz     .fileerr
-    ; calculate memory requirements
-        lea     edx, [ecx+edi-1]        ; edx = EOF-1
-        mov     esi, edi
-        xor     ecx, ecx
-
-    .calcloop:
-        cmp     esi, edx
-        jae     .calcdone
-        cmp     word [esi], '0x'
-        jnz     .skipline
-        inc     esi
-        inc     esi
-
-    @@:
-        cmp     esi, edx
-        jae     .calcdone
-        lodsb
-        or      al, 20h
-        sub     al, '0'
-        cmp     al, 9
-        jbe     @b
-        sub     al, 'a'-'0'-10
-        cmp     al, 15
-        jbe     @b
-        dec     esi
-
-    @@:
-        cmp     esi, edx
-        ja      .calcdone
-        lodsb
-        cmp     al, 20h
-        jz      @b
-        jb      .calcloop
-        cmp     al, 9
-        jz      @b
-        add     ecx, 12+1
-        inc     [num_symbols]
-
-    @@:
-        inc     ecx
-        cmp     esi, edx
-        ja      .calcdone
-        lodsb
-        cmp     al, 0xD
-        jz      .calcloop
-        cmp     al, 0xA
-        jz      .calcloop
-        jmp     @b
-
-    .skipline:
-        cmp     esi, edx
-        jae     .calcdone
-        lodsb
-        cmp     al, 0xD
-        jz      .calcloop
-        cmp     al, 0xA
-        jz      .calcloop
-        jmp     .skipline
-
-    .calcdone:
-        mcall   68, 12
-        test    eax, eax
-        jnz     .memok
-        inc     ebx
-        mov     ecx, edi
-        mov     al, 68
-        mcall
-
-    .memerr:
-        mov     esi, aNoMemory
-        jmp     put_message
-
-    .memok:
-        mov     [symbols], eax
-        mov     ebx, eax
-        push    edi
-        mov     esi, edi
-        mov     edi, [num_symbols]
-        lea     ebp, [eax+edi*4]
-        lea     edi, [eax+edi*8]
-
-    ; parse input data, 
-    ; esi->input, edx->EOF, ebx->ptrs, edi->names
-    .readloop:
-        cmp     esi, edx
-        jae     .readdone
-        cmp     word [esi], '0x'
-        jnz     .readline
-        inc     esi
-        inc     esi
-        xor     eax, eax
-        xor     ecx, ecx
-
-    @@:
-        shl     ecx, 4
-        add     ecx, eax
-        cmp     esi, edx
-        jae     .readdone
-        lodsb
-        or      al, 20h
-        sub     al, '0'
-        cmp     al, 9
-        jbe     @b
-        sub     al, 'a'-'0'-10
-        cmp     al, 15
-        jbe     @b
-        dec     esi
-
-    @@:
-        cmp     esi, edx
-        ja      .readdone
-        lodsb
-        cmp     al, 20h
-        jz      @b
-        jb      .readloop
-        cmp     al, 9
-        jz      @b
-        mov     dword [ebx], edi
-        add     ebx, 4
-        mov     dword [ebp], edi
-        add     ebp, 4
-        mov     dword [edi], ecx
-        add     edi, 4
-        stosb
-
-    @@:
-        xor     eax, eax
-        stosb
-        cmp     esi, edx
-        ja      .readdone
-        lodsb
-        cmp     al, 0xD
-        jz      .readloop
-        cmp     al, 0xA
-        jz      .readloop
-        mov     byte [edi-1], al
-        jmp     @b
-
-    .readline:
-        cmp     esi, edx
-        jae     .readdone
-        lodsb
-        cmp     al, 0xD
-        jz      .readloop
-        cmp     al, 0xA
-        jz      .readloop
-        jmp     .readline
-
-    .readdone:
-        pop     ecx
-        mcall   68, 13
-        mov     ecx, [num_symbols]
-        mov     edx, [symbols]
-        mov     ebx, compare
-        call    sort
-        mov     ecx, [num_symbols]
-        lea     edx, [edx+ecx*4]
-        mov     ebx, compare2
-        call    sort
-        mov     esi, aSymbolsLoaded
-        call    put_message
-        jmp     draw_disasm.redraw
-
-;-----------------------------------------------------------------------------
-;
-; in: EAX = address
-; out: ESI, CF
-
-find_symbol:
-        cmp     [num_symbols], 0
-        jnz     @f
-
-    .ret0:
-        xor     esi, esi
-        stc
-        ret
-
-    @@:
-        push    ebx ecx edx
-        xor     edx, edx
-        mov     esi, [symbols]
-        mov     ecx, [num_symbols]
-        mov     ebx, [esi]
-        cmp     [ebx], eax
-        jz      .donez
-        jb      @f
-        pop     edx ecx ebx
-        jmp     .ret0
-
-    @@:
-    ; invariant: symbols_addr[edx] < eax < symbols_addr[ecx]
-    ; TODO: add meaningful label names
-    .0:
-        push    edx
-
-    .1:
-        add     edx, ecx
-        sar     edx, 1
-        cmp     edx, [esp]
-        jz      .done2
-        mov     ebx, [esi+edx*4]
-        cmp     [ebx], eax
-        jz      .done
-        ja      .2
-        mov     [esp], edx
-        jmp     .1
-
-    .2:
-        mov     ecx, edx
-        pop     edx
-        jmp     .0
-
-    .donecont:
-        dec     edx
-
-    .done:
-        test    edx, edx
-        jz      @f
-        mov     ebx, [esi+edx*4-4]
-        cmp     [ebx], eax
-        jz      .donecont
-
-    @@:
-        pop     ecx
-
-    .donez:
-        mov     esi, [esi+edx*4]
-        add     esi, 4
-        pop     edx ecx ebx
-        clc
-        ret
-
-    .done2:
-        lea     esi, [esi+edx*4]
-        pop     ecx edx ecx ebx
-        stc
-        ret
-
-;-----------------------------------------------------------------------------
-;
-; in: esi->name
-; out: if found: CF = 0, EAX = value
-;      otherwise CF = 1
-find_symbol_name:
-        cmp     [num_symbols], 0
-        jnz     @f
-
-    .stc_ret:
-        stc
-        ret
-
-    @@:
-        push    ebx ecx edx edi
-        push    -1
-        pop     edx
-        mov     ebx, [symbols]
-        mov     ecx, [num_symbols]
-        lea     ebx, [ebx+ecx*4]
-    
-    ; invariant: symbols_name[edx] < name < symbols_name[ecx]
-    .0:
-        push    edx
-
-    .1:
-        add     edx, ecx
-        sar     edx, 1
-        cmp     edx, [esp]
-        jz      .done2
-        call    .cmp
-        jz      .done
-        jb      .2
-        mov     [esp], edx
-        jmp     .1
-
-    .2:
-        mov     ecx, edx
-        pop     edx
-        jmp     .0
-
-    .done:
-        pop     ecx
-
-    .donez:
-        mov     eax, [ebx+edx*4]
-        mov     eax, [eax]
-        pop     edi edx ecx ebx
-        clc
-        ret
-
-    .done2:
-        pop     edx edi edx ecx ebx
-        stc
-        ret
-
-    .cmp:
-        mov     edi, [ebx+edx*4]
-        push    esi
-        add     edi, 4
-
-    @@:
-        cmpsb
-        jnz     @f
-        cmp     byte [esi-1], 0
-        jnz     @b
-
-    @@:
-        pop     esi
-        ret
+include 'symbols.inc'
 
 ;-----------------------------------------------------------------------------
 ;                        Include disassembler engine
@@ -2356,10 +1962,9 @@ include 'disasm.inc'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DATA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-caption_str db 'Kolibri Debugger',0
-caption_len = $ - caption_str
+caption_str db  'Kolibri Debugger',0
 
-begin_str db    'Kolibri Debugger, version 0.33',10
+begin_str db    'Kolibri Debugger, version 0.34',10
         db      'Hint: type "help" for help, "quit" to quit'
 newline db      10,0
 prompt  db      '> ',0
@@ -2682,209 +2287,212 @@ flags_bits      db      0,2,4,6,7,10,11
 ;                         Registers strings
 
 regs_strs:
-        db      'EAX='
-        db      'EBX='
-        db      'ECX='
-        db      'EDX='
-        db      'ESI='
-        db      'EDI='
-        db      'EBP='
-        db      'ESP='
-        db      'EIP='
-        db      'EFLAGS='
-fpu_strs:
-        db        'ST0='
-        db        'ST1='
-        db        'ST2='
-        db        'ST3='
-        db        'ST4='
-        db        'ST5='
-        db        'ST6='
-        db        'ST7='
-mmx_strs:
-        db        'MM0='
-        db        'MM1='
-        db        'MM2='
-        db        'MM3='
-        db        'MM4='
-        db        'MM5='
-        db        'MM6='
-        db        'MM7='
-sse_strs:
-        db      '-XMM0-'
-        db      '-XMM1-'
-        db      '-XMM2-'
-        db      '-XMM3-'
-        db      '-XMM4-'
-        db      '-XMM5-'
-        db      '-XMM6-'
-        db      '-XMM7-'
-avx_strs:
-        db      '-YMM0-'
-        db      '-YMM1-'
-        db      '-YMM2-'
-        db      '-YMM3-'
-        db      '-YMM4-'
-        db      '-YMM5-'
-        db      '-YMM6-'
-        db      '-YMM7-'
+        db 'EAX='
+        db 'EBX='
+        db 'ECX='
+        db 'EDX='
+        db 'ESI='
+        db 'EDI='
+        db 'EBP='
+        db 'ESP='
+        db 'EIP='
+        db 'EFLAGS='
 
-debuggee_pid    dd      0
-bSuspended      db      0
-bAfterGo        db      0
-temp_break      dd      0
-reg_mode        db        1
+fpu_strs:
+        db 'ST0='
+        db 'ST1='
+        db 'ST2='
+        db 'ST3='
+        db 'ST4='
+        db 'ST5='
+        db 'ST6='
+        db 'ST7='
+
+mmx_strs:
+        db 'MM0='
+        db 'MM1='
+        db 'MM2='
+        db 'MM3='
+        db 'MM4='
+        db 'MM5='
+        db 'MM6='
+        db 'MM7='
+sse_strs:
+        db '-XMM0-'
+        db '-XMM1-'
+        db '-XMM2-'
+        db '-XMM3-'
+        db '-XMM4-'
+        db '-XMM5-'
+        db '-XMM6-'
+        db '-XMM7-'
+avx_strs:
+        db '-YMM0-'
+        db '-YMM1-'
+        db '-YMM2-'
+        db '-YMM3-'
+        db '-YMM4-'
+        db '-YMM5-'
+        db '-YMM6-'
+        db '-YMM7-'
+
+debuggee_pid    dd 0
+bSuspended      db 0
+bAfterGo        db 0
+temp_break      dd 0
+reg_mode        db 1
 
 include 'disasm_tbl.inc'
 
 reg_table:
-        db      2,'al',0
-        db      2,'cl',1
-        db      2,'dl',2
-        db      2,'bl',3
-        db      2,'ah',4
-        db      2,'ch',5
-        db      2,'dh',6
-        db      2,'bh',7
-        db      2,'ax',8
-        db      2,'cx',9
-        db      2,'dx',10
-        db      2,'bx',11
-        db      2,'sp',12
-        db      2,'bp',13
-        db      2,'si',14
-        db      2,'di',15
-        db      3,'eax',16
-        db      3,'ecx',17
-        db      3,'edx',18
-        db      3,'ebx',19
-        db      3,'esp',20
-        db      3,'ebp',21
-        db      3,'esi',22
-        db      3,'edi',23
-        db      3,'eip',24
-        db      0
+        db 2,'al',0
+        db 2,'cl',1
+        db 2,'dl',2
+        db 2,'bl',3
+        db 2,'ah',4
+        db 2,'ch',5
+        db 2,'dh',6
+        db 2,'bh',7
+        db 2,'ax',8
+        db 2,'cx',9
+        db 2,'dx',10
+        db 2,'bx',11
+        db 2,'sp',12
+        db 2,'bp',13
+        db 2,'si',14
+        db 2,'di',15
+        db 3,'eax',16
+        db 3,'ecx',17
+        db 3,'edx',18
+        db 3,'ebx',19
+        db 3,'esp',20
+        db 3,'ebp',21
+        db 3,'esi',22
+        db 3,'edi',23
+        db 3,'eip',24
+        db 0
 
 IncludeIGlobals
 
 fn70_read_block:
-        dd      0
-        dq      0
-        dd      ?
-        dd      ?
-        db      0
-        dd      ?
+        dd 0
+        dq 0
+        dd ?
+        dd ?
+        db 0
+        dd ?
 
 fn70_attr_block:
-        dd      5
-        dd      0,0,0
-        dd      fileattr
-        db      0
-        dd      ?
+        dd 5
+        dd 0,0,0
+        dd fileattr
+        db 0
+        dd ?
 
 fn70_load_block:
-        dd      7
-        dd      1
-load_params dd  0
-        dd      0
-        dd      0
+        dd 7
+        dd 1
+load_params dd 0
+        dd 0
+        dd 0
 i_end:
 loadname:
-        db      0
-        rb      255
+        db 0
+        rb 255
 
-symbolsfile     rb      260
+symbolsfile     rb 260
 
 prgname_ptr dd ?
 prgname_len dd ?
 
 IncludeUGlobals
 
-dbgwnd          dd      ?
+dbgwnd          dd ?
 
-messages        rb      messages_height*messages_width
-messages_pos    dd      ?
+messages        rb messages_height*messages_width
+messages_pos    dd ?
 
-cmdline         rb      cmdline_width+1
-cmdline_len     dd      ?
-cmdline_pos     dd      ?
-curarg          dd      ?
+cmdline         rb cmdline_width+1
+cmdline_len     dd ?
+cmdline_pos     dd ?
+curarg          dd ?
 
-cmdline_prev    rb      cmdline_width+1
+cmdline_prev    rb cmdline_width+1
 
-was_temp_break  db      ?
+was_temp_break  db ?
+symbol_section  db ?
 
-dbgbufsize      dd      ?
-dbgbuflen       dd      ?
-dbgbuf          rb      256
+dbgbufsize      dd ?
+dbgbuflen       dd ?
+dbgbuf          rb 256
 
-fileattr        rb      40
+fileattr        rb 40
 
 needzerostart:
 
 context:
 
-_eip    dd      ?
-_eflags dd      ?
-_eax    dd      ?
-_ecx    dd      ?
-_edx    dd      ?
-_ebx    dd      ?
-_esp    dd      ?
-_ebp    dd      ?
-_esi    dd      ?
-_edi    dd      ?
+_eip    dd ?
+_eflags dd ?
+_eax    dd ?
+_ecx    dd ?
+_edx    dd ?
+_ebx    dd ?
+_esp    dd ?
+_ebp    dd ?
+_esi    dd ?
+_edi    dd ?
 oldcontext rb $-context
 
 mmx_context:
-_mm0    dq        ?
-_mm1    dq        ?
-_mm2    dq        ?
-_mm3    dq        ?
-_mm4    dq        ?
-_mm5    dq        ?
-_mm6    dq        ?
-_mm7    dq        ?
+_mm0    dq ?
+_mm1    dq ?
+_mm2    dq ?
+_mm3    dq ?
+_mm4    dq ?
+_mm5    dq ?
+_mm6    dq ?
+_mm7    dq ?
 oldmmxcontext rb $-mmx_context
 
 fpu_context:
-_st0    dq      ?
-_st1    dq      ?
-_st2    dq      ?
-_st3    dq      ?
-_st4    dq      ?
-_st5    dq      ?
-_st6    dq      ?
-_st7    dq      ?
+_st0    dq ?
+_st1    dq ?
+_st2    dq ?
+_st3    dq ?
+_st4    dq ?
+_st5    dq ?
+_st6    dq ?
+_st7    dq ?
 oldfpucontext rb $-fpu_context
 
 sse_context:
-_xmm0    dq        2 dup ?
-_xmm1   dq        2 dup ?
-_xmm2   dq      2 dup ?
-_xmm3   dq      2 dup ?
-_xmm4   dq      2 dup ?
-_xmm5   dq      2 dup ?
-_xmm6   dq      2 dup ?
-_xmm7   dq      2 dup ?
+_xmm0   dq 2 dup ?
+_xmm1   dq 2 dup ?
+_xmm2   dq 2 dup ?
+_xmm3   dq 2 dup ?
+_xmm4   dq 2 dup ?
+_xmm5   dq 2 dup ?
+_xmm6   dq 2 dup ?
+_xmm7   dq 2 dup ?
 oldssecontext rb $-sse_context
 
 avx_context:
-_ymm0   dq      4 dup ?
-_ymm1   dq      4 dup ?
-_ymm2   dq      4 dup ?
-_ymm3   dq      4 dup ?
-_ymm4   dq      4 dup ?
-_ymm5   dq      4 dup ?
-_ymm6   dq      4 dup ?
-_ymm7   dq      4 dup ?
+_ymm0   dq 4 dup ?
+_ymm1   dq 4 dup ?
+_ymm2   dq 4 dup ?
+_ymm3   dq 4 dup ?
+_ymm4   dq 4 dup ?
+_ymm5   dq 4 dup ?
+_ymm6   dq 4 dup ?
+_ymm7   dq 4 dup ?
 oldavxcontext rb $-avx_context
 
 step_num dd 0
 proc_num dd 0
-dumpread dd     ?
-dumppos dd      ?
-dumpdata rb     dump_height*10h
+dumpread dd ?
+dumppos  dd ?
+dumpdata rb dump_height*10h
 
 ; breakpoint structure:
 ; dword +0: address
@@ -2896,25 +2504,25 @@ dumpdata rb     dump_height*10h
 ; byte +5: overwritten byte
 ;          for DRx breaks: flags + (index shl 6)
 breakpoints_n = 256
-breakpoints     rb      breakpoints_n*6
-drx_break       rd      4
+breakpoints     rb breakpoints_n*6
+drx_break       rd 4
 
-disasm_buf_size         dd      ?
+disasm_buf_size dd ?
 
-symbols         dd      ?
-num_symbols     dd      ?
+symbols         dd ?
+num_symbols     dd ?
 
-bReload                 db      ?
+bReload         db ?
 
 needzeroend:
 
-disasm_buffer           rb      256
-disasm_start_pos        dd      ?
-disasm_cur_pos          dd      ?
-disasm_cur_str          dd      ?
-disasm_string           rb      256
+disasm_buffer           rb 256
+disasm_start_pos        dd ?
+disasm_cur_pos          dd ?
+disasm_cur_str          dd ?
+disasm_string           rb 256
 
-i_param         rb      256
+i_param         rb 256
 
 ; stack
         align   400h

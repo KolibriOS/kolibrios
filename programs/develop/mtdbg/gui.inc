@@ -4,10 +4,10 @@
 
 macro DrawRectangle x, y, w, h, color
 {
-	mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
-	mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
-	mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
-	mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
+        mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
+        mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
+        mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
+        mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
 }
 
 ;-----------------------------------------------------------------------------
@@ -27,7 +27,10 @@ if COLOR_THEME eq MOVIEOS
         COLOR_TXT_NORMAL          = 0xffffff
         COLOR_TXT_INACTIVE        = 0x8f7948
         COLOR_TXT_CHANGED         = 0xec9300
+        COLOR_TXT_LABEL           = 0x22b14c
         COLOR_TXT_SELECTED        = 0x1d272f
+        COLOR_TXT_ADDR            = 0xec9300
+        COLOR_TXT_BREAKPOINT      = 0xec9300
 
 else if COLOR_THEME eq WHITE_ON_BLACK
 
@@ -38,7 +41,10 @@ else if COLOR_THEME eq WHITE_ON_BLACK
         COLOR_TXT_NORMAL          = 0xFFFFFF ; white
         COLOR_TXT_INACTIVE        = 0x808080 ; grey
         COLOR_TXT_CHANGED         = 0x00AA00 ; green
+        COLOR_TXT_LABEL           = COLOR_TXT_NORMAL
         COLOR_TXT_SELECTED        = 0xFFFFFF ; white
+        COLOR_TXT_ADDR            = COLOR_TXT_NORMAL
+        COLOR_TXT_BREAKPOINT      = COLOR_TXT_NORMAL
 
 else  ; BLACK ON WHITE
 
@@ -49,7 +55,10 @@ else  ; BLACK ON WHITE
         COLOR_TXT_NORMAL          = 0x000000 ; black
         COLOR_TXT_INACTIVE        = 0x808080 ; grey
         COLOR_TXT_CHANGED         = 0x00AA00 ; green
+        COLOR_TXT_LABEL           = COLOR_TXT_NORMAL
         COLOR_TXT_SELECTED        = 0xFFFFFF ; white
+        COLOR_TXT_ADDR            = COLOR_TXT_NORMAL
+        COLOR_TXT_BREAKPOINT      = COLOR_TXT_NORMAL
 
 end if
 
@@ -1309,7 +1318,7 @@ draw_disasm:
         sub     esi, edx
         ; normal color
         ; was 0x40000000
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     ecx, (COLOR_TXT_LABEL or 0x40000000)
         mov     al, 4
         ; draw a text string in the window with color COLOR_TXT_NORMAL in ecx
         mcall
@@ -1337,11 +1346,8 @@ draw_disasm:
         call    disasm_instr
         pop     ebp
         jc      .loopend
-        ; setting up colors
-        ; was 'xor     esi, esi' - default color: black
-        mov     esi, COLOR_TXT_NORMAL
-        ; was 0xFFFFFF - default background: white
         mov     edx, COLOR_BG_NORMAL
+        mov     esi, COLOR_TXT_NORMAL
         mov     ebx, data_x_pos*10000h + data_x_size
         mov     ecx, [disasm_cur_str]
         imul    ecx, 10*10000h
@@ -1350,27 +1356,19 @@ draw_disasm:
         pushad
         call    find_enabled_breakpoint
         popad
-        jnz     .nored
-        ; setting up background color for breakpoint
-        ; was 0xFF0000 - red
+        jnz     .nobp
         mov     edx, COLOR_BG_BREAKPOINT
+        mov     esi, COLOR_TXT_BREAKPOINT
+    .nobp:
 
-    .nored:
         mov     eax, [_eip]
         cmp     eax, ebp
-        jnz     .noblue
-        ; setting up background color for selected text
-        ; (current running instruction)
-        ; was 0x0000FF - blue
+        jnz     .notcurrent
         mov     edx, COLOR_BG_SELECTED
-        ; setting up selected text color
-        ; (current running  instruction)
-        ; was 0xFFFFFF - white
         mov     esi, COLOR_TXT_SELECTED
+    .notcurrent:
+        push    esi     ; Save color value for disassembled text
 
-    .noblue:
-        ;push   13
-        ;pop    eax
         ; draw container rectangle/box for disassembled text
         ; color in edx
         mcall   13
@@ -1384,24 +1382,26 @@ draw_disasm:
         mcall   47, 80100h, ebp
         ;mov    al, 4
         lea     ebx, [edx+8*6*10000h]
-        ; copy color value from esi
-        mov     ecx, esi
+        mov     ecx, esi    ; text color
         push    2
         pop     esi
         mov     edx, aColon
-        ; draw a text string in the window, color in ecx
+        ; draw the colon
         mcall   4
         push    9
         pop     edi
         lea     edx, [ebx+2*6*10000h]
-        mov     esi, ecx
         mov     ecx, ebp
         sub     ecx, [disasm_start_pos]
         add     ecx, disasm_buffer
 
+        mov     esi, COLOR_TXT_ADDR
+        mov     eax, [_eip]
+        cmp     eax, ebp
+        jnz     @f
+        mov     esi, COLOR_TXT_SELECTED
+  @@:
     .drawhex:
-        ;mov    al, 47
-        ;mov    ebx, 20101h
         ; draw a number in the window, color in esi
         mcall   47, 20101h
         add     edx, 6*3*10000h
@@ -1426,10 +1426,9 @@ draw_disasm:
         mov     edx, aDots
         ; draw a text string in the window, color in ecx
         mcall   4
-        ; copy color value from ecx
-        mov     esi, ecx
 
     .hexdone:
+        pop     esi
         xor     eax, eax
         mov     edi, disasm_string
         mov     edx, edi
@@ -1609,7 +1608,7 @@ draw_window:
         mcall
 
     ; registers frame
-		DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
+                DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
         ; draw container rectangle/box for registers information window region
 
     ; messages
