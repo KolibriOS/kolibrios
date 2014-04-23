@@ -1,4 +1,4 @@
-    VERSION equ "0.2Å"
+    VERSION equ "0.3Å"
     use32
     org     0
     db	    'MENUET01'
@@ -8,8 +8,8 @@
     include "../../macros.inc"
     include "../../dll.inc"
     include "../../develop/libraries/box_lib/trunk/box_lib.mac"
+  ;  include "../../debug.inc"
     include "parser.inc"
-    ;include "../../debug.inc"
 
  ;===============================
 

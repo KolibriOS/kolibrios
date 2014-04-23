@@ -148,7 +148,7 @@
 
  ; ---------------------------
 
- proc parse_lvl3 uses ebx
+ proc parse_lvl3 uses ebx ecx edx
     test_err
     stdcall skip_spaces
     mov     ebx, exp
@@ -159,6 +159,12 @@
     jg	    @f
     stdcall parse_lvl4
     jmp     .end
+  @@:
+    cmp     [ebx], byte 97
+    jl	    @f
+    cmp     [ebx], byte 122
+    jg	    @f
+    jmp     .parse_func
   @@:
     inc     [exp_pos]
     cmp     [ebx], byte "("
@@ -191,12 +197,86 @@
     ret
  .unexp_char:
     set_err 4
+ .parse_func:
+    mov     ecx, 0
+    mov     dl, 0
+  @@:
+    cmp     [ebx], byte 97
+    jl	    @f
+    cmp     [ebx], byte 122
+    jg	    @f
+    cmp     dl, 4
+    je	    .unexp_char
+    shl     ecx, 8
+    mov     cl, [ebx]
+    inc     dl
+    inc     ebx
+    inc     [exp_pos]
+    jmp     @b
+  @@:
+    cmp     ecx, "cni"
+    je	    @f
+    cmp     ecx, "ced"
+    je	    @f
+    cmp     ecx, "sba"
+    je	    @f
+    cmp     ecx, "rqs"
+    je	    @f
+    jmp     .unexp_char
+  @@:
+    stdcall skip_spaces
+    mov     ebx, exp
+    add     ebx, [exp_pos]
+    cmp     [ebx], byte "("
+    jne     .unexp_char
+    inc     [exp_lvl]
+    inc     [exp_pos]
+    stdcall parse_lvl0
+    test_err
+    mov     ebx, exp
+    add     ebx, [exp_pos]
+    cmp     [ebx], byte ")"
+    je	    @f
+    set_err 2
+  @@:
+    inc     [exp_pos]
+    stdcall skip_spaces
+    cmp     ecx, "cni"
+    jne     @f
+    inc     eax
+    jmp     .f_end
+  @@:
+    cmp     ecx, "ced"
+    jne     @f
+    dec     eax
+    jmp     .f_end
+  @@:
+    cmp     ecx, "sba"
+    jne     @f
+    mov     ecx, eax
+    shr     ecx, 31
+    cmp     cl, 1
+    jne     .f_end
+    not     eax
+    inc     eax
+    jmp     .f_end
+  @@:
+    cmp     ecx, "rqs"
+    jne     @f
+    imul    eax, eax
+    jmp     .f_end
+  @@:
+    jmp     .unexp_char
+ .f_end:
+    ret
  endp
 
  ; ---------------------------
 
  proc parse_lvl4 uses ebx ecx
+    stdcall skip_spaces
     stdcall parse_lvl5
+    stdcall skip_spaces
   @@:
     mov     ebx, exp
     add     ebx, [exp_pos]
@@ -205,6 +285,7 @@
     cmp     [ebx], byte "^"
     jne     .end
     inc     [exp_pos]
+    stdcall skip_spaces
     mov     ecx, eax
     mov     ebx, exp
     add     ebx, [exp_pos]
