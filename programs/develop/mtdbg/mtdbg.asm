@@ -105,19 +105,11 @@ OnQuit:
 get_new_context:
         mov     esi, context
         mov     edi, oldcontext
-        mov     ecx, 10
+        mov     ecx, (ctx_end-context)/4
         rep movsd
 
 get_context:
-        ;push    1
-        ;pop     ebx
-        ;push    69
-        ;pop     eax
-        ;mov     ecx, [debuggee_pid]
-        ;mov     esi, context
-        ;push    28h
-        ;pop     edx
-        mcall    69, 1, [debuggee_pid], 28h, context
+        mcall   69, 1, [debuggee_pid], ctx_end-context, context
         ret
 
 set_context:
@@ -259,7 +251,7 @@ do_reload:
         push    ecx
         call    get_context
         mov     edi, oldcontext
-        mov     ecx, 10
+        mov     ecx, (ctx_end-context)/4
         rep movsd
 
     ; activate debugger window
@@ -1136,7 +1128,7 @@ get_byte_nobreak:
         mov     al, [edi+5]
         clc
         ret
-    
+
     .nobreak:
         ;push    69
         ;pop     eax
@@ -1152,7 +1144,7 @@ get_byte_nobreak:
         clc
         jz      @f
         stc
-    
+
     @@:
         pop     eax
         ret
@@ -1170,7 +1162,7 @@ OnCalc:
         mov     esi, calc_string
         call    put_message_nodraw
         jmp     draw_messages
-    
+
     .ret:
         ret
 
@@ -1183,7 +1175,7 @@ OnDump:
         jnz     .param
         add     [dumppos], dump_height*10h
         jmp     .doit
-    
+
     .param:
         call    calc_expression
         jc      .ret
@@ -1527,7 +1519,7 @@ OnBl:
         ret
 
 ;-----------------------------------------------------------------------------
-                              
+
 show_break_info:
         push    edi
         test    byte [edi+4], 8
@@ -2081,7 +2073,7 @@ help_data_msg db        'List of data commands:',10
         db      'u [<expression>]     - unassemble instructions at given address',10
         db      'r <register> <expression> or',10
         db      'r <register>=<expression> - set register value',10,0
-    
+
 ;               Breakpoints commands group
 
 aBreakpoints db 12,'breakpoints',0
@@ -2428,10 +2420,12 @@ dbgbuf          rb 256
 
 fileattr        rb 40
 
+;keep aligned !!!
+;do not change layout !!!
+
+align 16
 needzerostart:
-
 context:
-
 _eip    dd ?
 _eflags dd ?
 _eax    dd ?
@@ -2442,41 +2436,57 @@ _esp    dd ?
 _ebp    dd ?
 _esi    dd ?
 _edi    dd ?
-oldcontext rb $-context
 
-mmx_context:
-_mm0    dq ?
-_mm1    dq ?
-_mm2    dq ?
-_mm3    dq ?
-_mm4    dq ?
-_mm5    dq ?
-_mm6    dq ?
-_mm7    dq ?
-oldmmxcontext rb $-mmx_context
+_ctx_flags:
+	dd ?
+	dd ?
+
+_sse_flags:
+	dq ?
+	dq ?
+	dq ?
+	dq ?
 
 fpu_context:
-_st0    dq ?
-_st1    dq ?
-_st2    dq ?
-_st3    dq ?
-_st4    dq ?
-_st5    dq ?
-_st6    dq ?
-_st7    dq ?
-oldfpucontext rb $-fpu_context
+mmx_context:
+_st0:
+_mm0:   rq 2
+_st1:
+_mm1:   rq 2
+_st2:
+_mm2:   rq 2
+_st3:
+_mm3:   rq 2
+_st4:
+_mm4:   rq 2
+_st5:
+_mm5:   rq 2
+_st6:
+_mm6:   rq 2
+_st7:
+_mm7:   rq 2
 
 sse_context:
-_xmm0   dq 2 dup ?
-_xmm1   dq 2 dup ?
-_xmm2   dq 2 dup ?
-_xmm3   dq 2 dup ?
-_xmm4   dq 2 dup ?
-_xmm5   dq 2 dup ?
-_xmm6   dq 2 dup ?
-_xmm7   dq 2 dup ?
-oldssecontext rb $-sse_context
+_xmm0   rq 2
+_xmm1   rq 2
+_xmm2   rq 2
+_xmm3   rq 2
+_xmm4   rq 2
+_xmm5   rq 2
+_xmm6   rq 2
+_xmm7   rq 2
+ctx_end:
 
+
+oldcontext rb _ctx_flags-context
+        rd 2
+        rq 4
+
+oldfpucontext:
+oldmmxcontext: rb sse_context-fpu_context
+oldssecontext: rb ctx_end-sse_context
+
+if 0
 avx_context:
 _ymm0   dq 4 dup ?
 _ymm1   dq 4 dup ?
@@ -2487,6 +2497,8 @@ _ymm5   dq 4 dup ?
 _ymm6   dq 4 dup ?
 _ymm7   dq 4 dup ?
 oldavxcontext rb $-avx_context
+end if
+
 
 step_num dd 0
 proc_num dd 0
