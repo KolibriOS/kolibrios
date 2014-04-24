@@ -29,7 +29,7 @@ if COLOR_THEME eq MOVIEOS
         COLOR_TXT_CHANGED         = 0xec9300
         COLOR_TXT_LABEL           = 0x22b14c
         COLOR_TXT_SELECTED        = 0x1d272f
-        COLOR_TXT_ADDR            = 0xec9300
+        COLOR_TXT_HEX             = 0xec9300
         COLOR_TXT_BREAKPOINT      = 0xec9300
 
 else if COLOR_THEME eq WHITE_ON_BLACK
@@ -43,7 +43,7 @@ else if COLOR_THEME eq WHITE_ON_BLACK
         COLOR_TXT_CHANGED         = 0x00AA00 ; green
         COLOR_TXT_LABEL           = COLOR_TXT_NORMAL
         COLOR_TXT_SELECTED        = 0xFFFFFF ; white
-        COLOR_TXT_ADDR            = COLOR_TXT_NORMAL
+        COLOR_TXT_HEX             = COLOR_TXT_NORMAL
         COLOR_TXT_BREAKPOINT      = COLOR_TXT_NORMAL
 
 else  ; BLACK ON WHITE
@@ -57,7 +57,7 @@ else  ; BLACK ON WHITE
         COLOR_TXT_CHANGED         = 0x00AA00 ; green
         COLOR_TXT_LABEL           = COLOR_TXT_NORMAL
         COLOR_TXT_SELECTED        = 0xFFFFFF ; white
-        COLOR_TXT_ADDR            = COLOR_TXT_NORMAL
+        COLOR_TXT_HEX             = COLOR_TXT_NORMAL
         COLOR_TXT_BREAKPOINT      = COLOR_TXT_NORMAL
 
 end if
@@ -555,8 +555,6 @@ draw_messages:
 
 ; TODO: make it cursor.draw and cursor.hide ???
 draw_cursor:
-        ;push   38
-        ;pop    eax
         mov     ecx, cmdline_y_pos*10001h+cmdline_y_size-1
         mov     ebx, [cmdline_pos]
         imul    ebx, 6
@@ -564,33 +562,25 @@ draw_cursor:
         mov     edx, ebx
         shl     ebx, 16
         or      ebx, edx
-        ; setting line color
-        ; was 'xor     edx, edx' - black
-        mov     edx, COLOR_LINE
-        ; draw line, color in edx
+        mov     edx, COLOR_TXT_NORMAL
+        ; draw line
         mcall   38
         ret
 
 hide_cursor:
         mov     ebx, [cmdline_pos]
-        ;push   13
-        ;pop    eax
         imul    ebx, 6
         add     ebx, cmdline_x_pos
         shl     ebx, 16
         inc     ebx
         mov     ecx, cmdline_y_pos*10000h + cmdline_y_size
-        ; setting up rectangle color
-        ; was 0xFFFFFF
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box
         mcall   13
         mov     ebx, [cmdline_pos]
         cmp     ebx, [cmdline_len]
         jae     .ret
-        ;mov    al, 4
         ; setting up text color scheme and attributes
-        ;was 'xor     ecx, ecx'
         mov     ecx, COLOR_TXT_NORMAL
         lea     edx, [cmdline+ebx]
         imul    ebx, 6
@@ -915,48 +905,30 @@ draw_flag:
 
 ; Also show current register set (common + MMX, SSE or AVX)
 draw_reg_title:
-        ;push   4
-        ;pop    eax
-    ; setting up text backround color
-        ; was 0xFFFFFF - white
         mov     edi, COLOR_BG_NORMAL
-    ; setting up text color
-    ; can be usual and inactive
-        ; normal color
-        ; was 0x40000000 - black
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
         mov     esi, 7
         cmp     [reg_mode], REG_MODE_CPU
         jz      @f
-        ; inactive color
-        ; was 0x40808080 - grey
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
-
     @@:
         mov     edx, aMain
-        ;mov    ebx, (registers_x_pos+4)*10000h + registers_y_pos+2
         ; draw a text string in the window
         mcall   4, (registers_x_pos+4)*10000h+registers_y_pos+2
+
         cmp     [reg_mode], REG_MODE_SSE
         jz      @f
-        ; inactive color
-        ; was 0x40808080 - grey
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
-
     @@:
         mov     edx, aSSE
-        ;mov        ebx, (registers_x_pos+46)*10000h + registers_y_pos+2
         ; draw a text string in the window
         mcall   4, (registers_x_pos+46)*10000h+registers_y_pos+2
+
         cmp     [reg_mode], REG_MODE_AVX
         jz      @f
-        ; inactive color
-        ; was 0x40808080 - grey
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
-
     @@:
         mov     edx, aAVX
-        ;mov    ebx, (registers_x_pos+88)*10000h + registers_y_pos+2
         ; draw a text string in the window
         mcall   4, (registers_x_pos+88)*10000h+registers_y_pos+2
         ret
@@ -965,19 +937,7 @@ draw_reg_title:
 ;                Display common registers set + MMX + FPU
 
 draw_main_registers:
-        ;push    13
-        ;pop     eax
-        ;mov     edx, 0xFFFFFF
-        ;mov     ebx, (registers_x_pos-1)*10000h + (registers_x_size+2)
-        ;mov     ecx, (registers_y_pos-1)*10000h + (registers_y_size+2)
-        ; draw container rectangle/box with COLOR_BG_NORMAL
-        ; color in edx, was 0xFFFFFF - white
-        mcall   13, (registers_x_pos-1)*10000h+(registers_x_size+2), (registers_y_pos-1)*10000h+(registers_y_size+2), COLOR_BG_NORMAL
-
-    ; TODO: add support for FPU ST0-ST7 registers
-    .redraw:
-        ; setting up background color for text and numbers output
-        ; was 0xFFFFFF - white
+; TODO: add support for FPU ST0-ST7 registers
         mov     edi, COLOR_BG_NORMAL
         mov     esi, _eax
         push    4
@@ -1075,20 +1035,25 @@ draw_main_registers:
 ;                  Draw SSE registers set
 
 draw_sse_registers:
-    .redraw:
+
         ret
 
 ;-----------------------------------------------------------------------------
 ;                  Draw AVX registers set
 
 draw_avx_registers:
-    .redraw:
+
         ret
 
 ;-----------------------------------------------------------------------------
 ;                 Draw all registers sets
 draw_registers:
+
+        ; draw container rectangle/box with COLOR_BG_NORMAL
+        mcall   13, (registers_x_pos-1)*10000h+(registers_x_size+2), (registers_y_pos-1)*10000h+(registers_y_size+2), COLOR_BG_NORMAL
         call    draw_reg_title
+
+    .redraw:
         cmp     [reg_mode], REG_MODE_CPU
         jnz     @f
         call    draw_main_registers
@@ -1104,64 +1069,33 @@ draw_registers:
         call    draw_avx_registers
         ret
 
-    .redraw:
-        call    draw_reg_title
-        cmp     [reg_mode], REG_MODE_CPU
-        jnz     @f
-        call    draw_main_registers.redraw
-        ret
-
-    @@:
-        cmp     [reg_mode], REG_MODE_SSE
-        jnz     @f
-        call    draw_sse_registers.redraw
-        ret
-
-    @@:
-        call    draw_avx_registers.redraw
-        ret
-
 ;-----------------------------------------------------------------------------
 ;                     Display memory dump
 
 draw_dump:
-        ;push    13
-        ;pop     eax
-        ;mov     edx, 0xFFFFFF
-        ;mov     ebx, data_x_pos*10000h + data_x_size
-        ;mov     ecx, dump_y_pos*10000h + dump_y_size
         ; draw container rectangle/box in the window
-        ; with color in COLOR_BG_NORMAL (was 0xFFFFFF - white)
         mcall   13, data_x_pos*10000h+data_x_size, dump_y_pos*10000h+dump_y_size, COLOR_BG_NORMAL
 
     .redraw:
-    ; addresses
-        ;mov    al, 47
+        ; addresses
         mov     ebx, 80100h
         mov     edx, data_x_pos*10000h + dump_y_pos
         mov     ecx, [dumppos]
-        ; background color for text string
-        ; was 0xFFFFFF - white
         mov     edi, COLOR_BG_NORMAL
-        ; inactive color
-        ; was 0x40808080 - grey
         mov     esi, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      @f
         cmp     [bSuspended], 0
         jz      @f
-        ; normal color
-        ; was 0x40000000 - black
         mov     esi, (COLOR_TXT_NORMAL or 0x40000000)
-
     @@:
-        ; draw a number in the window, color in esi
+        ; draw a number in the window
         mcall   47
         add     ecx, 10h
         add     edx, 10
         cmp     dl, dump_y_pos + dump_y_size
         jb      @b
-    ; hex dump of data
+        ; hex dump of data
         mov     ecx, dumpdata
         push    ecx
         xor     ebx, ebx
@@ -1172,7 +1106,7 @@ draw_dump:
     .hexdumploop1:
         push    ebx
         mov     ebx, 20101h
-        ; draw a number in the window, color in esi
+        ; draw a number in the window
         mcall
         pop     ebx
         add     edx, 3*6*10000h
@@ -1395,7 +1329,7 @@ draw_disasm:
         sub     ecx, [disasm_start_pos]
         add     ecx, disasm_buffer
 
-        mov     esi, COLOR_TXT_ADDR
+        mov     esi, COLOR_TXT_HEX
         mov     eax, [_eip]
         cmp     eax, ebp
         jnz     @f
@@ -1608,8 +1542,8 @@ draw_window:
         mcall
 
     ; registers frame
-                DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
-        ; draw container rectangle/box for registers information window region
+        DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
+    ; draw container rectangle/box for registers information window region
 
     ; messages
         call    draw_messages

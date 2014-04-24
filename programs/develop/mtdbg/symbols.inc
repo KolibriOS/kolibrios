@@ -120,7 +120,12 @@ OnLoadSymbols:
         inc     esi
         mov     [symbol_section], 0
         cmp     dword[esi], 'text'
+        je      .section_ok
+        cmp     dword[esi], 'data'
+        je      .section_ok
+        cmp     dword[esi], 'bss '
         jne     .skipline
+  .section_ok:
         inc     [symbol_section]
         jmp     .skipline
   .not_section:
@@ -221,7 +226,12 @@ OnLoadSymbols:
         inc     esi
         mov     [symbol_section], 0
         cmp     dword[esi], 'text'
+        je      .section_ok2
+        cmp     dword[esi], 'data'
+        je      .section_ok2
+        cmp     dword[esi], 'bss '
         jne     .readline
+  .section_ok2:
         inc     [symbol_section]
         jmp     .readline
   .not_section2:
