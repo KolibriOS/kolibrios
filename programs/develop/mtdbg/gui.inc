@@ -1011,15 +1011,11 @@ draw_main_registers:
         jz      @f
         cmp     [bSuspended], 0
         jz      @f
-        xor     ecx, ecx
-
+        mov     ecx, COLOR_TXT_NORMAL
     @@:
         mov     edx, aColon
         xor     esi, esi
         inc     esi
-        mov     ecx, COLOR_TXT_INACTIVE
-        ;mov    ebx, (registers_x_pos+10)*10000h + registers_y_pos+122
-        ; draw a text string in the window, color in ecx
         mcall   4, (registers_x_pos+10)*10000h+registers_y_pos+122
         mov     edx, flags
 
