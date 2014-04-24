@@ -108,7 +108,7 @@ wnd_y_size      equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
 ; TODO: split all gui part in independent function, move entry point into mtdbg.asm
 
 start:
-    ; initialize process heap
+        ; initialize process heap
         mcall   68, 11
         mov     edi, messages
         mov     ecx, messages_width*messages_height
@@ -123,12 +123,9 @@ start:
         rep stosd
         mov     esi, begin_str
         call    put_message_nodraw
-    ; set event mask - default events and debugging events
-        ;push   40
-        ;pop    eax
-        ;mov    ebx, 0x107
+        ; set event mask - default events and debugging events
         mcall   40, 0x107
-    ; set debug messages buffer
+        ; set debug messages buffer
         mov     ecx, dbgbufsize
         mov     dword [ecx], 256
         xor     ebx, ebx
@@ -149,8 +146,6 @@ dodraw:
         call    draw_window
 
 waitevent:
-        ;push   10
-        ;pop    eax
         mcall   10
         cmp     al, 9
         jz      debugmsg
@@ -160,9 +155,7 @@ waitevent:
         jz      keypressed
         dec     eax
         jnz     waitevent
-    ; button pressed - we have only one button (close)
-        ;push   -1
-        ;pop    eax
+        ; button pressed - we have only one button (close)
         mcall   -1
 
 ; TODO: split in more independent function
@@ -269,7 +262,7 @@ keypressed:
     .down:
         jmp     waitevent
 
-    ; We also trying to execute previous command, if empty command_line
+        ; We also trying to execute previous command, if empty command_line
     .enter:
         mov     ecx, [cmdline_len]
         test    ecx, ecx
@@ -293,11 +286,11 @@ keypressed:
         call    draw_cursor
         pop     esi
         and     [cmdline_len], 0
-    ; skip leading spaces
+        ; skip leading spaces
         call    get_arg.skip_spaces
         cmp     al, 0
         jz      waitevent
-    ; now esi points to command
+        ; now esi points to command
         push    esi
         mov     esi, prompt
         call    put_message_nodraw
@@ -319,12 +312,12 @@ z1:
         mov     eax, aUnknownCommand
         jc      .x11
 
-    ; check command requirements
-    ; flags field:
-    ; &1: command may be called without parameters
-    ; &2: command may be called with parameters
-    ; &4: command may be called without loaded program
-    ; &8: command may be called with loaded program
+        ; check command requirements
+        ; flags field:
+        ; &1: command may be called without parameters
+        ; &2: command may be called with parameters
+        ; &4: command may be called without loaded program
+        ; &8: command may be called with loaded program
         mov     eax, [esi+8]
         mov     ecx, [curarg]
         cmp     byte [ecx], 0
@@ -354,7 +347,7 @@ z1:
         xchg    esi, eax
         call    put_message
 
-    ; store cmdline for repeating
+        ; store cmdline for repeating
     .x10:
         mov     esi, cmdline
         mov     ecx, [cmdline_len]
@@ -382,8 +375,6 @@ clear_cmdline_end:
         mov     ebx, [cmdline_pos]
         mov     ecx, [cmdline_len]
         sub     ecx, ebx
-        ;push   13
-        ;pop    eax
         imul    ebx, 6
         imul    ecx, 6
         inc     ecx
@@ -391,8 +382,6 @@ clear_cmdline_end:
         shl     ebx, 16
         or      ebx, ecx
         mov     ecx, cmdline_y_pos*10000h + cmdline_y_size
-        ; setting up container color scheme
-        ; COLOR_BG_NORMAL was 0xFFFFFF
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box for cmdline
         mcall   13
@@ -409,17 +398,14 @@ draw_cmdline_end:
     @@:
         mov     esi, [cmdline_len]
         sub     esi, ebx
-        ;push   4
-        ;pop    eax
-        ; setting up text color scheme and attributes
-        ; was 'xor     ecx, ecx'
+
         mov     ecx, COLOR_TXT_NORMAL
         lea     edx, [cmdline+ebx]
         imul    ebx, 6
         add     ebx, cmdline_x_pos
         shl     ebx, 16
         or      ebx, cmdline_y_pos+1
-        ; draw a text string in the window, color in ecx
+        ; draw a text string in the window
         mcall   4
         ret
 
@@ -467,7 +453,7 @@ put_message_nodraw:
         mov     [messages_pos], edx
         ret
 
-    ; at this moment all format specs must be %<digit>X
+        ; at this moment all format specs must be %<digit>X
     .format:
         lodsb   ; get <digit>
         sub     al, '0'
@@ -476,7 +462,7 @@ put_message_nodraw:
         pop     eax
         pop     ebp
         push    eax
-    ; write number in ebp with ecx digits
+        ; write number in ebp with ecx digits
         dec     ecx
         shl     ecx, 2
 
@@ -524,21 +510,12 @@ put_message:
         call    put_message_nodraw
 
 draw_messages:
-        ;push   13
-        ;pop    eax
-        ;mov    edx, 0xFFFFFF
-        ;mov    ebx, messages_x_pos*10000h+messages_x_size
-        ;mov    ecx, messages_y_pos*10000h+messages_y_size
-        ; draw container rectanle/box
-        ; COLOR_BG_NORMAL was 0xFFFFFF
+        ; draw container rectangle/box
         mcall   13, messages_x_pos*10000h+messages_x_size, messages_y_pos*10000h+messages_y_size, COLOR_BG_NORMAL
         mov     edx, messages
         push    messages_width
         pop     esi
-        ; setting up text color scheme/attributes
-        ; was 'xor     ecx, ecx'
         mov     ecx, COLOR_TXT_NORMAL
-        ;mov    al, 4
         mov     ebx, messages_x_pos*10000h+messages_y_pos
 
     @@:
@@ -600,20 +577,10 @@ hide_cursor:
 
 ; FIXME: something wrong here
 redraw_title:
-        ;push   13
-        ;pop    eax
-        ;mov    edx, 0xFFFFFF
-        ;mov    ebx, title_x_pos*10000h + data_x_pos+data_x_size-title_x_pos
-        ;mov    ecx, title_y_pos*10000h + title_y_size
         ; draw container rectangle/box
-        ; color was 0xFFFFFF
         mcall   13, title_x_pos*10000h+data_x_pos+data_x_size-title_x_pos, title_y_pos*10000h+title_y_size, COLOR_BG_NORMAL
 
 draw_title:
-        ;mov    al, 38
-        ;mov    ebx, (data_x_pos-2)*10000h + title_x_pos-5
-        ;mov    ecx, (title_y_pos+5)*10001h
-        ; draw line with COLOR_LINE (in edx)
         mcall   38, (data_x_pos-2)*10000h+title_x_pos-5, (title_y_pos+5)*10001h, COLOR_LINE
         push    NoPrgLoaded_len
         pop     esi
@@ -689,40 +656,30 @@ draw_register:
         push    esi
         mov     eax, esi
         mov     esi, ecx
-    ; setting up registers colors
-    ; can be usual, inactive and changed
-        ; inactive color
-        ; was 0x40808080 - grey
+
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
-        ; normal color
-        ; was 0x40000000 - black
+
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
         push    edi
         mov     edi, [eax]
         cmp     dword [eax+oldcontext-context], edi
         pop     edi
         jz      .cd
-        ; changed register color
-        ; was 0x4000AA00 - green
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
 
     .cd:
-        ;push   4
-        ;pop    eax
         ; draw a text string in the window
         mcall   4
         imul    esi, 60000h
         lea     edx, [ebx+esi]
-        ;mov    al, 47
-        ;mov    ebx, 80101h
         mov     esi, ecx
         pop     ecx
+
         ; draw a number in the window
-        ; color in the esi (same value as for usual text)
         mcall   47, 80101h
         lea     ebx, [edx+60000h*18]
         mov     esi, ecx
@@ -741,17 +698,13 @@ draw_fpu_register:
         push    esi
         mov     eax, esi
         mov     esi, ecx
-    ; setting up registers color
-    ; can be usual, inactive and changed
-        ; inactive color
-        ; was 0x40808080 - grey
+
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
-        ; normal color
-        ; was 0x40000000 - black
+
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
         push    edi
         mov     edi, [eax]
@@ -765,19 +718,13 @@ draw_fpu_register:
         jz      .cd
 
     .scol:
-        ; changed register color
-        ; was 0x4000AA00 - green
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
 
     .cd:
-        ;push   4
-        ;pop    eax
         ; draw a text string in the window
         mcall   4
         imul    esi, 60000h
         lea     edx, [ebx+esi]
-        ;mov    al, 47
-        ;mov    ebx, 40100101h ; [20] show 16 chars set [30] bit - qword
         mov     esi, ecx
         pop     ecx
         ; draw a number in the window
@@ -801,17 +748,13 @@ draw_mmx_register:
         push    esi
         mov     eax, esi
         mov     esi, ecx
-    ; setting up registers color
-    ; can be usual, inactive and changed
-        ; inactive color
-        ; was 0x40808080 - grey
+
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
         cmp     [bSuspended], 0
         jz      .cd
-        ; normal color
-        ; was 0x40000000 - black
+
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
         push    edi
         mov     edi, [eax]
@@ -825,19 +768,14 @@ draw_mmx_register:
         jz      .cd
 
     .scol:
-        ; changed color
-        ; was 0x4000AA00 - green
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
 
     .cd:
-        ;push   4
-        ;pop    eax
         ; draw a text string in the window
         mcall   4
+
         imul    esi, 60000h
         lea     edx, [ebx+esi]
-        ;mov    al, 47
-        ;mov    ebx, 40100101h ; [20] show 16 chars set [30] bit - qword
         mov     esi, ecx
         pop     ecx
         ; draw a number in the window
@@ -867,17 +805,12 @@ draw_flag:
         and     byte [edx], not 20h
 
     .onoff:
-    ; setting up registers colors
-    ; can be usual, inactive and changed
-        ; inactive color
-        ; was 0x40808080 - grey
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .doit
         cmp     [bSuspended], 0
         jz      .doit
-        ; normal color
-        ; was 0x40000000 - black
+
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
         bt      [_eflags], edi
         lahf
@@ -885,14 +818,10 @@ draw_flag:
         rcl     ah, 1
         test    ah, 3
         jp      .doit
-        ; changed color
-        ; was 0x4000AA00 - green
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
 
     .doit:
         mov     ah, 0
-        ; background color for text string or number
-        ; was 0xFFFFFF - white
         mov     edi, COLOR_BG_NORMAL
         ; draw a text string in the window in one case
         ; and a number in another
@@ -1002,10 +931,7 @@ draw_main_registers:
         mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+212
         add     esi, _mm7-_mm6
         call    draw_mmx_register
-        ;mov    al, 4
-        ; setting up text color
-        ; inactive color
-        ; was 0x808080 - grey
+
         mov     ecx, COLOR_TXT_INACTIVE
         cmp     [debuggee_pid], 0
         jz      @f
@@ -1152,7 +1078,7 @@ draw_dump:
 
     .hexdumpdone2:
         dec     esi
-    ; colon, minus signs
+        ; colon, minus signs
         mov     ebx, (data_x_pos+8*6)*10000h + dump_y_pos
         mov     edx, aColon
 
@@ -1169,7 +1095,7 @@ draw_dump:
         add     ebx, 10
         cmp     bl, dump_y_pos+dump_height*10
         jb      @b
-    ; ASCII data
+        ; ASCII data
         mov     ebx, (data_x_pos+(12+3*10h+2+2)*6)*10000h + dump_y_pos
         pop     edx
         push    dump_height*10h
@@ -1200,19 +1126,8 @@ draw_dump:
 ;-----------------------------------------------------------------------------
 ;                   Display disassembled code
 
-; @@@@@ WAS:
-; redraw_disasm:
-;       push    13
-;       pop     eax
-;       mov     edx, 0xFFFFFF
-;       mov     ebx, data_x_pos*10000h + data_x_size
-;       mov     ecx, (disasm_y_pos-1)*10000h + (disasm_y_size+1)
-;       mcall
-;
-; @@@@@ NOW:
 draw_disasm:
 
-    .redraw:
         mov     eax, [disasm_start_pos]
         mov     [disasm_cur_pos], eax
         and     [disasm_cur_str], 0
@@ -1229,9 +1144,6 @@ draw_disasm:
         mov     cl, 11
         ; setting up background color for disassembled text
         mov     edx, COLOR_BG_NORMAL
-        ;mov    ebx, data_x_pos*10000h + data_x_size
-        ;push   13
-        ;pop    eax
         ; draw container rectangle/box with color COLOR_BG_NORMAL (was 0xFFFFFF - white)
         mcall   13, data_x_pos*10000h+data_x_size
         pop     ebx
@@ -1302,15 +1214,13 @@ draw_disasm:
         ; draw container rectangle/box for disassembled text
         ; color in edx
         mcall   13
-        ;mov    al, 47
-        ;mov    ebx, 80100h
+
         mov     edx, [disasm_cur_str]
         imul    edx, 10
         add     edx, data_x_pos*10000h + disasm_y_pos
-        ;mov    ecx, ebp
         ; draw a number in the window, color in esi
         mcall   47, 80100h, ebp
-        ;mov    al, 4
+
         lea     ebx, [edx+8*6*10000h]
         mov     ecx, esi    ; text color
         push    2
@@ -1347,7 +1257,7 @@ draw_disasm:
         cmp     esi, ebp
         pop     esi
         jbe     .drawhex
-        ;mov    al, 4
+
         lea     ebx, [edx-6*10000h]
         ; copy color value from esi
         mov     ecx, esi
@@ -1370,7 +1280,7 @@ draw_disasm:
         mov     ebx, [disasm_cur_str]
         imul    ebx, 10
         add     ebx, (data_x_pos+6*40)*10000h+disasm_y_pos
-        ;mov    al, 4
+
         ; draw a text string in the window, color in ecx
         mcall   4
         inc     [disasm_cur_str]
@@ -1387,14 +1297,8 @@ draw_disasm:
         sub     eax, ecx
         shl     eax, 16
         add     ecx, eax
-        ;push   13
-        ;pop    eax
-        ;mov    ebx, data_x_pos*65536 + data_x_size
-        ; set backroung color for disassembly container
-        ; was 0xFFFFFF - white
-        mov     edx, COLOR_BG_NORMAL
-        ; draw container rectangle/box with color COLOR_BG_NORMAL (in edx)
-        mcall   13, data_x_pos*65536+data_x_size
+        ; Draw filled rectangle
+        mcall   13, data_x_pos*10000h+data_x_size, , COLOR_BG_NORMAL
 
     @@:
         ret
@@ -1417,7 +1321,7 @@ update_disasm_eip:
 
     @@:
         cmp     [_eip], eax
-        jz      draw_disasm.redraw
+        jz      draw_disasm
         push    ecx
         call    disasm_instr
         pop     ecx
@@ -1433,14 +1337,7 @@ update_disasm_eip_force:
 update_disasm:
         cmp     [debuggee_pid], 0
         jz      .no
-        ;push   69
-        ;pop    eax
-        ;push   6
-        ;pop    ebx
-        ;mov    ecx, [debuggee_pid]
-        ;mov    edi, disasm_buffer
-        ;mov    edx, 256
-        ;mov    esi, [disasm_start_pos]
+
         mcall   69, 6, [debuggee_pid], 256, [disasm_start_pos], disasm_buffer
         cmp     eax, -1
         jnz     @f
@@ -1453,20 +1350,20 @@ update_disasm:
     @@:
         mov     [disasm_buf_size], eax
         call    restore_from_breaks
-        jmp     draw_disasm.redraw
+        jmp     draw_disasm
 
 
 ;-----------------------------------------------------------------------------
 ;                               Draw main window
 
 draw_window:
-    ; start window redraw
+        ; start window redraw
         mcall   12, 1
 
-    ; define window
+        ; define window
         mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x54000000), , caption_str
 
-    ; clear unused areas
+        ; clear unused areas
         ; get window skin height
         mcall   48, 4
         cmp     eax, title_y_pos
@@ -1509,7 +1406,7 @@ draw_window:
         ; draw container rectangle/box for dump memory region title
         mcall
 
-    ; messages frame
+        ; messages frame
         mov     ebx, (messages_x_pos-2)*10000h + (messages_x_pos+messages_x_size+2)
         push    ebx
         mov     ecx, (messages_y_pos-2)*10001h
@@ -1525,7 +1422,7 @@ draw_window:
         push    ebx
         mcall
 
-    ; command line frame
+        ; command line frame
         mov     ecx, (cmdline_y_pos-2)*10000h + (cmdline_y_pos+cmdline_y_size+2)
         pop     ebx
         mcall
@@ -1537,18 +1434,18 @@ draw_window:
         mov     ecx, (cmdline_y_pos-2)*10001h
         mcall
 
-    ; registers frame
+        ; registers frame
         DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
-    ; draw container rectangle/box for registers information window region
+        ; draw container rectangle/box for registers information window region
 
-    ; messages
+        ; messages
         call    draw_messages
 
-    ; command line & cursor
+        ; command line & cursor
         call    draw_cmdline
         call    draw_cursor
 
-    ; title & registers & dump & disasm
+        ; title & registers & dump & disasm
         mov     ebx, (data_x_pos-2)*10001h
         mov     ecx, (title_y_pos+5)*10000h + (messages_y_pos-2)
         mov     edx, COLOR_LINE
@@ -1559,13 +1456,13 @@ draw_window:
         mov     ecx, (disasm_y_pos-4)*10001h
         mcall
 
-    ; redraw whole window again
+        ; redraw whole window again
         call    redraw_title
         call    draw_registers
         call    draw_dump
-        call    draw_disasm.redraw
+        call    draw_disasm
 
-    ; end of window redraw
+        ; end of window redraw
         mcall   12, 2
         ret
 

@@ -313,7 +313,7 @@ OnLoadSymbols:
         call    sort
         mov     esi, aSymbolsLoaded
         call    put_message
-        jmp     draw_disasm.redraw
+        jmp     draw_disasm
 
 ;-----------------------------------------------------------------------------
 ;

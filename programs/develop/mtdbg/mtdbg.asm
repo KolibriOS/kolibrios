@@ -1341,7 +1341,7 @@ OnBp:
         call    put_message
 
     .ret:
-        jmp     draw_disasm.redraw
+        jmp     draw_disasm
 
 OnBpmb:
         mov     dh, 0011b
