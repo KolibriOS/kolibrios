@@ -3,7 +3,7 @@
 ;; Contains common resource allocation + freeing code.          ;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
-;; Distributed under the terms of the new BSD license.          ;;
+;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
