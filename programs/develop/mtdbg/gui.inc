@@ -693,6 +693,7 @@ draw_register:
 ;
 ; in: esi->value, edx->string, ecx = string length, ebx = coord
 draw_fpu_register:
+        push    ebx
         push    edx
         push    ecx
         push    esi
@@ -735,6 +736,7 @@ draw_fpu_register:
         mov     esi, ecx
         pop     ecx
         pop     edx
+        pop     ebx
         add     edx, ecx
         ret
 
@@ -743,6 +745,7 @@ draw_fpu_register:
 ;
 ; in: esi->value, edx->string, ecx = string length, ebx = coord
 draw_mmx_register:
+        push    ebx
         push    edx
         push    ecx
         push    esi
@@ -786,6 +789,7 @@ draw_mmx_register:
         mov     esi, ecx
         pop     ecx
         pop     edx
+        pop     ebx
         add     edx, ecx
         ret
 
@@ -899,38 +903,44 @@ draw_main_registers:
         add     esi, _eip-_esp
         call    draw_register
         mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+112
-        push    cx
+
         mov     cl, 7
         add     esi, _eflags-_eip
         call    draw_register
-        pop     cx
+        mov     cl, 4
 
     ; MMX registers
+
+        push    8
         mov     edx, mmx_strs
         mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+142
         mov     esi, _mm0
+
+align 4
+.draw_mmx_regs:
+
         call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+152
-        add     esi, _mm1-_mm0
-        call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+162
-        add     esi, _mm2-_mm1
-        call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+172
-        add     esi, _mm3-_mm2
-        call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+182
-        add     esi, _mm4-_mm3
-        call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+192
-        add     esi, _mm5-_mm4
-        call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+202
-        add     esi, _mm6-_mm5
-        call    draw_mmx_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+212
-        add     esi, _mm7-_mm6
-        call    draw_mmx_register
+        add     ebx, 10
+        add     esi, 16
+        dec     dword [esp]
+        jnz     .draw_mmx_regs
+
+;FPU registers
+
+        mov     [esp], byte 8
+        mov     edx, fpu_strs
+        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+232
+        mov     esi, _st0
+
+align 4
+.draw_fpu_regs:
+
+        call    draw_fpu_register
+        add     ebx, 10
+        add     esi, 16
+        dec     dword [esp]
+        jnz     .draw_fpu_regs
+        pop     eax                         ;restore stack
 
         mov     ecx, COLOR_TXT_INACTIVE
         cmp     [debuggee_pid], 0
