@@ -82,8 +82,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.3"
-#define ABOUT_TITLE "Eolite v2.3"
+#define TITLE "Eolite File Manager v2.31"
+#define ABOUT_TITLE "Eolite v2.31"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -125,6 +125,7 @@ edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_nam
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
+#include "include\mark.h"
 #include "include\copy.h"
 #include "include\other.h"
 #include "include\sorting.h"
@@ -164,6 +165,7 @@ void main()
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
 	SystemDiscsGet();
+	mark_default();
 	GetIni(1);
 	SetAppColors();
 	if (param)
@@ -428,9 +430,8 @@ void main()
 							Del_Form();
 							break;
 					case 185: //ins
-							add_to_copy_active=1;
-							add_to_copy(#file_path);
-							notify("'Eolite\nFile was added to copy queue' -tI");
+							add_to_mark(#file_path);
+							//notify("'Eolite\nFile was added to copy queue' -tI");
 							break;
 					case 050...059: //F1-F10
 							FnProcess(key-49);
@@ -775,6 +776,10 @@ int Del_File2(dword way)
 
 void Del_File(byte dodel)
 {   
+	byte del_from[4096];
+	int tst, count, j;
+	dword buf;
+	
 	if (dodel==true)
 	{
 		del_active=2;
@@ -857,6 +862,7 @@ void Dir_Up()
 
 void Open()
 {
+	mark_default();
 	if (!files.count) return;
 	if (!itdir)
 	{

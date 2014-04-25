@@ -2,45 +2,19 @@
 
 byte copy_to[4096];
 byte cut_active=0;
-byte id_add_to_copy=0;
-byte add_to_copy_active=0;
-enum {NOCUT, CUT, COPY_PASTE_END};
 
-struct path_str {
-	char Item[4096];
-};
- 
-#define MAX_HISTORY_NUM 10
+enum {NOCUT, CUT, COPY_PASTE_END};
 
 Clipboard clipboard;
 
-struct Copy_Path {
-	dword	size;
-	dword	type;
-	int     count;
-	path_str copy_list[MAX_HISTORY_NUM];
-};	
-
-Copy_Path copy_path;
-
-void add_to_copy(dword pcth)
-{
-	strlcpy(#copy_path.copy_list[id_add_to_copy].Item, pcth);
-	if (add_to_copy_active == 1)
-	{
-		id_add_to_copy++;
-		copy_path.count = id_add_to_copy;
-	}
-	else copy_path.count = 1;
-}
-
-
 void Copy(dword pcth, char cut)
 {
-	if (add_to_copy_active == 0) add_to_copy(pcth);
-	copy_path.type = 3;
-	copy_path.size = sizeof(copy_path);
-	clipboard.SetSlotData(sizeof(copy_path), #copy_path);
+	if (mark_active == 0) {
+		strlcpy(#elements_path.element_list[elements_path.count].Item, pcth);
+		elements_path.count++;
+	}
+	elements_path.size = sizeof(elements_path);
+	clipboard.SetSlotData(sizeof(elements_path), #elements_path);
 	cut_active = cut;
 }
 
@@ -58,7 +32,6 @@ void copyf_Draw_Progress(dword filename) {
 	} 
 }
 
-
 void Paste()
 {
 	char copy_rezult;
@@ -70,9 +43,6 @@ void Paste()
 	count = DSINT[buf+8];
 	if (DSDWORD[buf+4] != 3) return;
 	debugi(count);
-	
-	add_to_copy_active=0;
-	id_add_to_copy=0;
 	
 	for (j = 0; j < count; j++) {
 		tst = j*4096;
@@ -107,7 +77,7 @@ void Paste()
 	{
 		cut_active=false;
 	}
-	for (j = 0; j < count; j++) strcpy(#copy_path.copy_list[j].Item[0], 0);
+	mark_default();
 	CopyExit();
 }
 
