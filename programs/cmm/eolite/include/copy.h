@@ -63,11 +63,12 @@ void Paste()
 {
 	char copy_rezult;
 	byte copy_from[4096];
-	int tst, count;
+	int tst, count, j;
 	dword buf;
 	
 	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
 	count = DSINT[buf+8];
+	if (DSDWORD[buf+4] != 3) return;
 	debugi(count);
 	
 	add_to_copy_active=0;
@@ -76,7 +77,6 @@ void Paste()
 	for (j = 0; j < count; j++) {
 		tst = j*4096;
 		strlcpy(#copy_from, buf+12+tst, 4096);
-		debug(#copy_from);
 		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
@@ -95,18 +95,19 @@ void Paste()
 		{
 			Write_Error(copy_rezult);
 		}
+	
+		else if (cut_active)
+		{
+			strcpy(#file_path, #copy_from);
+			Del_File(true);
+			
+		}
 	}
-	if (copy_rezult = copyf(#copy_from,#copy_to))
+	if (cut_active)
 	{
-		Write_Error(copy_rezult);
-	}
-	else if (cut_active)
-	{
-		strcpy(#file_path, #copy_from);
-		Del_File(true);
 		cut_active=false;
 	}
-	for (j = 0; j < MAX_HISTORY_NUM; j++) strcpy(#copy_path.copy_list[j].Item[0], 0);
+	for (j = 0; j < count; j++) strcpy(#copy_path.copy_list[j].Item[0], 0);
 	CopyExit();
 }
 
