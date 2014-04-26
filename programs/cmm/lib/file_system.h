@@ -11,7 +11,7 @@ struct f70{
 struct BDVK{
 	dword	attr;
 	byte	type_name;
-	byte	rez1, rez2, rez3;
+	byte	rez1, rez2, selected;
 	dword	timecreate;
 	dword	datecreate;
 	dword	timelastaccess;

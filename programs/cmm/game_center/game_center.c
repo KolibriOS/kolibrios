@@ -27,7 +27,7 @@ struct link games[] = {
 	"DOOM1", "/kolibrios/games/doom1/doom", 43,
 	"DOOM2", "/kolibrios/games/doom2/doom", 43,
 	"Fara", "/kolibrios/games/fara/fara", 42,
-	"JumpBump", "/kolibrios/games/jumpbump/jumpbump", 35,
+	"JumpBump", "/kolibrios/games/jumpbump/jumpbump.kex", 35,
 	"Loderunner", "/kolibrios/games/LRL/LRL", 41,
 	"BabyPainter", "/kolibrios/games/baby painter", 35,
 	"Knight", "/kolibrios/games/knight", 35,
