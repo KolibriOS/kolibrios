@@ -697,6 +697,12 @@ draw_fpu_register:
         push    edx
         push    ecx
         push    esi
+
+        sub     esp, 8
+
+        fld     tword [esi]
+        fistp   qword [esp]
+
         mov     eax, esi
         mov     esi, ecx
 
@@ -727,11 +733,15 @@ draw_fpu_register:
         imul    esi, 60000h
         lea     edx, [ebx+esi]
         mov     esi, ecx
-        pop     ecx
+
+        mov     ecx, esp
+
         ; draw a number in the window
         ; color is the same as for previous text draw function
         ; ebx : [20] show 16 chars set [30] bit - qword
         mcall   47, 40100101h
+        add     esp, 8
+        pop     ecx
         lea     ebx, [edx+60000h*18]
         mov     esi, ecx
         pop     ecx
@@ -739,6 +749,196 @@ draw_fpu_register:
         pop     ebx
         add     edx, ecx
         ret
+
+;-----------------------------------------------------------------------------
+;                  Display FPU register (ST0 - ST7) content
+;
+; in: esi->value, ebx = coord
+draw_fpu_register_2:
+
+.str_buf  equ esp
+.bcd_man  equ esp+32
+.bcd_exp  equ esp+32+12
+
+        sub     esp, 32+12+12
+
+        mov     edx, ebp
+        shl     edx, 4
+
+        fld     tword [_st0+edx]
+        fldlg2
+        fld     tword [_st0+edx]
+        bt      dword [_st0+edx+8], 15
+        jnc @f
+        fabs
+@@:
+        fyl2x
+        frndint
+        fld     st0
+        fbstp   tword [.bcd_exp]
+        fldl2t
+        fmulp
+        fld     st0
+        frndint
+        fxch
+        fsub    st,st1
+
+        f2xm1
+        fld1
+        faddp
+        fscale
+        fstp    st1
+        fdivp
+        fimul   dword [_10000000]
+        fbstp   tword [.bcd_man]
+
+        mov     eax, 0x20202020
+        mov     edi, .str_buf
+        stosd
+        stosd
+        stosd
+        stosd
+
+        lea     esi, [.bcd_man-1]
+        mov     edi, .str_buf
+
+        mov     ecx, 9
+        mov     eax, 0x10000
+
+        mov     al, [esi+ecx+1]
+        cmp     al, 0x80            ; check for sign
+        jne     .mantis_2_str
+        mov     al, '-'
+        stosb
+
+.mantis_2_str:
+
+        mov     al, [esi+ecx]
+        test    al, al
+        jnz     @f
+
+        bt      eax, 16
+        jc      .skip_lb
+@@:
+        mov     ah, al
+        shr     al, 4
+        jnz     .write_h
+
+        bt      eax, 16
+        jc      .skip_hb
+
+.write_h:
+        add     al, 0x30
+        stosb
+        btr     eax, 16
+        jnc     .skip_hb
+        mov     al, '.'
+        stosb
+.skip_hb:
+        mov     al, ah
+        and     al, 0x0F
+        jnz     .write_lb
+
+        bt      eax, 16
+        jc      .skip_lb
+.write_lb:
+        add     al,0x30
+        stosb
+        btr     eax, 16
+        jnc     .skip_lb
+        mov     al, '.'
+        stosb
+.skip_lb:
+        dec     ecx
+        jnz     .mantis_2_str
+
+        mov     ax, ' e'
+        stosw
+
+        lea     esi, [.bcd_exp-1]
+        mov     ecx, 9
+        mov     eax,0x10000
+        mov     al, [esi+ecx+1]
+        cmp     al, 0x80
+        jne     .exp_2_str
+        mov     al, '-'
+        stosb
+.exp_2_str:
+        mov     al, [esi+ecx]
+        test    al, al
+        jnz     @f
+
+        bt      eax, 16
+        jc      .skip_lb2
+@@:
+        mov     ah, al
+        shr     al, 4
+        jnz     .write_h2
+
+        bt      eax, 16
+        jc      .skip_hb2
+.write_h2:
+        add     al, 0x30
+        stosb
+        btr     eax, 16
+        stosb
+.skip_hb2:
+        mov     al, ah
+        and     al, 0x0F
+        jnz     .write_lb2
+
+        bt      eax, 16
+        jc      .skip_lb2
+.write_lb2:
+        add     al, 0x30
+        stosb
+        btr     eax, 16
+.skip_lb2:
+        dec ecx
+        jnz .exp_2_str
+
+        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
+        cmp     [debuggee_pid], 0
+        jz      .do_label
+        cmp     [bSuspended], 0
+        jz      .do_label
+
+        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+
+        mov     eax, dword [_st0+edx]
+        cmp     eax, dword [_st0+(oldcontext-context)+edx]
+        jne     .scol
+
+        mov     eax, dword [_st0+edx+4]
+        cmp     eax, dword [_st0+(oldcontext-context)+4]
+        jne     .scol
+
+        mov     ax, word [_st0+edx+8]
+        cmp     ax, word [_st0+(oldcontext-context)+8]
+        je      .do_label
+
+.scol:
+        mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+
+.do_label:
+        ; draw a text string in the window
+
+        mov     eax, 4
+        mov     esi, eax
+        lea     edx, [fpu_strs+ebp*4]
+        mov     edi, COLOR_BG_NORMAL
+        int     0x40
+
+        mov     esi, 16
+        mov     edx, .str_buf
+        add     ebx, 0x180000
+        int     0x40
+
+        sub     ebx, 0x180000
+        add     esp, 32+12+12
+
+        ret
+
 
 ;-----------------------------------------------------------------------------
 ;                      Show FPU MMX register content
@@ -911,6 +1111,8 @@ draw_main_registers:
 
     ; MMX registers
 
+        push    ebp
+
         push    8
         mov     edx, mmx_strs
         mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+142
@@ -927,20 +1129,23 @@ align 4
 
 ;FPU registers
 
+        ;int3
+        nop
+
         mov     [esp], byte 8
-        mov     edx, fpu_strs
+        xor     ebp, ebp
         mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+232
-        mov     esi, _st0
 
 align 4
 .draw_fpu_regs:
 
-        call    draw_fpu_register
+        call    draw_fpu_register_2
         add     ebx, 10
-        add     esi, 16
+        inc     ebp
         dec     dword [esp]
         jnz     .draw_fpu_regs
         pop     eax                         ;restore stack
+        pop     ebp
 
         mov     ecx, COLOR_TXT_INACTIVE
         cmp     [debuggee_pid], 0

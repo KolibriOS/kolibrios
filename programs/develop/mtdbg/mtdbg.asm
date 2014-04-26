@@ -2328,11 +2328,13 @@ avx_strs:
         db '-YMM6-'
         db '-YMM7-'
 
+align 4
 debuggee_pid    dd 0
 bSuspended      db 0
 bAfterGo        db 0
 temp_break      dd 0
 reg_mode        db 1
+_10000000       dd 10000000
 
 include 'disasm_tbl.inc'
 
@@ -2442,8 +2444,17 @@ _ctx_flags:
 	dd ?
 
 _sse_flags:
-	dq ?
-	dq ?
+
+
+_fcw    dw ?
+_fsw    dw ?
+_ftw    db ?
+        db ?
+_fop    dw ?
+_fpu_ip dd ?
+        dw ?
+        dw ?
+
 	dq ?
 	dq ?
 
