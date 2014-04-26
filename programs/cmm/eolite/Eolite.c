@@ -82,8 +82,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.31"
-#define ABOUT_TITLE "Eolite v2.31"
+#define TITLE "Eolite File Manager v2.35"
+#define ABOUT_TITLE "Eolite v2.35"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -115,7 +115,7 @@ proc_info Form;
 system_colors sc;
 mouse m;
 int mouse_dd, scroll_used, scroll_size, sorting_arrow_x, kolibrios_drive;
-dword buf, off;
+dword buf;
 dword file_mas[6898];
 int j, i;
 int action_buf;
@@ -158,6 +158,7 @@ void SetAppColors()
 void main() 
 {
 	word key, id, can_show, can_select, m_selected;
+	dword selected_offset;
 	randomize();
 	rand_n = random(40);
 
@@ -430,8 +431,10 @@ void main()
 							Del_Form();
 							break;
 					case 185: //ins
-							add_to_mark(#file_path);
-							//notify("'Eolite\nFile was added to copy queue' -tI");
+							//add_to_mark(#file_path);
+							selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
+							if (ESBYTE[selected_offset]) ESBYTE[selected_offset]=0; else ESBYTE[selected_offset] = 1;
+							List_Current(1);
 							break;
 					case 050...059: //F1-F10
 							FnProcess(key-49);
@@ -595,10 +598,11 @@ void List_ReDraw()
 
 void Line_ReDraw(dword color, filenum){
 	dword text_col=0,
-	      name_len=0,
-	      attr,
 	      ext1,
+	      file_offet,
+	      file_name_off,
 	      y=filenum*files.line_h+files.y;
+	      BDVK file;
 	if (filenum==-1) return;
 	DrawBar(files.x,y,3,files.line_h,color); 
 	DrawBar(files.x+19,y,files.w-19,files.line_h,color);
@@ -606,36 +610,40 @@ void Line_ReDraw(dword color, filenum){
 	if (files.line_h>18) DrawBar(files.x+3,y+18,16,files.line_h-18,color);
 	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,color); 
 
-	off=file_mas[filenum+files.first]*304 + buf+72;
-	attr = ESDWORD[off - 40];
+	file_offet = file_mas[filenum+files.first]*304 + buf+32;
+	file.attr     = ESDWORD[file_offet];
+	file.selected = ESBYTE[file_offet+7];
+	file.sizelo   = ESDWORD[file_offet+32];
+	file_name_off = file_offet+40;
 
-	if (! TestBit(attr, 4) ) //file or folder?
+	if (! TestBit(file.attr, 4) ) //file or folder?
 	{	
-		Put_icon(off+_strrchr(off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8])); //size
+		Put_icon(file_name_off+_strrchr(file_name_off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
-		if (strcmp("..",off)==0) ext1=".."; else ext1="<DIR>";
+		if (strcmp("..",file_name_off)==0) ext1=".."; else ext1="<DIR>";
 		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);		
 	}
 
-	if ( TestBit(attr, 1) ) || ( TestBit(attr, 2) ) text_col=0xA6A6B7; //system or hiden?
+	if (TestBit(file.attr, 1)) || (TestBit(file.attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (color!=0xFFFfff)
 	{
-		itdir = TestBit(attr, 4);
-		strcpy(#file_name, off);
+		itdir = TestBit(file.attr, 4);
+		strcpy(#file_name, file_name_off);
 		strcpy(#file_path, #path);
 		strcat(#file_path, #file_name);
 		if (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
+	if (file.selected) text_col=0xFF0000;
 	if (Form.width>=480)
 	{
 		FileShow.start_x = files.x + 23;
 		FileShow.font_color = text_col;
 		FileShow.area_size_x = Form.width - 380;
-		FileShow.text_pointer = off;
-		FileShow.start_y = files.line_h/2-3+y;
+		FileShow.text_pointer = file_name_off;
+		FileShow.start_y = files.text_y+y;
 		PathShow_prepare stdcall(#FileShow);
 		PathShow_draw stdcall(#FileShow);
 	}
@@ -685,16 +693,17 @@ void Open_Dir(dword dir_path, redraw){
 inline Sorting()
 {
 	dword k=0, l=1;
+	dword file_off;
 	int i;
 	if (!strcmp(#path,"/")) //do not sort
 	{
 		FOR(k=1;k<files.count;k++;) file_mas[k]=k;
 		return;
 	}
-	FOR (j=files.count-1, off=files.count-1*304+buf+32; j>=0; j--, off-=304;)  //files | folders
+	FOR (j=files.count-1, file_off=files.count-1*304+buf+32; j>=0; j--, file_off-=304;)  //files | folders
 	{
-		if (!real_files_names_case) strttl(off+40);
-		if (TestBit(ESDWORD[off],4)) //directory?
+		if (!real_files_names_case) strttl(file_off+40);
+		if (TestBit(ESDWORD[file_off],4)) //directory?
 		{
 			file_mas[k]=j;
 			k++;
