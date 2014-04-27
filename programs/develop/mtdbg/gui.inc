@@ -96,7 +96,7 @@ cmdline_y_size  equ 10
 
 registers_x_pos equ (data_x_pos + messages_x_size + 4)
 registers_y_pos equ (title_y_pos + title_y_size - 3)
-registers_x_size equ 134
+registers_x_size equ 134+2*6
 registers_y_size equ (cmdline_y_pos + cmdline_y_size - registers_y_pos+1)
 
 wnd_x_size      equ (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3)
@@ -658,11 +658,12 @@ draw_title:
 
 ; in: esi->value, edx->string, ecx = string length, ebx = coord
 draw_register:
+        push    esi
         push    edx
         push    ecx
-        push    esi
-        mov     eax, esi
-        mov     esi, ecx
+        push    ebp
+
+        mov     ebp, ecx
 
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
@@ -671,96 +672,43 @@ draw_register:
         jz      .cd
 
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
-        push    edi
-        mov     edi, [eax]
-        cmp     dword [eax+oldcontext-context], edi
-        pop     edi
-        jz      .cd
+        mov     eax, [esi]
+        cmp     eax, dword [esi+oldcontext-context]
+        je      .cd
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+.cd:
+        push    eax                       ;store reg value
 
-    .cd:
+        mov     esi, ebp
         ; draw a text string in the window
         mcall   4
+
         imul    esi, 60000h
         lea     edx, [ebx+esi]
         mov     esi, ecx
         pop     ecx
 
         ; draw a number in the window
-        mcall   47, 80101h
-        lea     ebx, [edx+60000h*18]
-        mov     esi, ecx
+        rol     ecx, 16
+        mcall   47, 0x00040100
+
+        shr     ecx, 16
+        add     edx, (4*6+3) shl 16
+        mcall   47
+
+        pop     ebp
         pop     ecx
         pop     edx
+        pop     esi
         add     edx, ecx
         ret
+
 
 ;-----------------------------------------------------------------------------
 ;                  Display FPU register (ST0 - ST7) content
 ;
-; in: esi->value, edx->string, ecx = string length, ebx = coord
-draw_fpu_register:
-        push    ebx
-        push    edx
-        push    ecx
-        push    esi
+; in: ebp->index, ebx = coord
 
-        sub     esp, 8
-
-        fld     tword [esi]
-        fistp   qword [esp]
-
-        mov     eax, esi
-        mov     esi, ecx
-
-        mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
-        cmp     [debuggee_pid], 0
-        jz      .cd
-        cmp     [bSuspended], 0
-        jz      .cd
-
-        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
-        push    edi
-        mov     edi, [eax]
-        cmp     dword [eax+oldcontext-context], edi
-        pop     edi
-        jnz     .scol
-        push    edi
-        mov     edi, [eax+4]
-        cmp     dword [eax+oldcontext-context+4], edi
-        pop     edi
-        jz      .cd
-
-    .scol:
-        mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
-
-    .cd:
-        ; draw a text string in the window
-        mcall   4
-        imul    esi, 60000h
-        lea     edx, [ebx+esi]
-        mov     esi, ecx
-
-        mov     ecx, esp
-
-        ; draw a number in the window
-        ; color is the same as for previous text draw function
-        ; ebx : [20] show 16 chars set [30] bit - qword
-        mcall   47, 40100101h
-        add     esp, 8
-        pop     ecx
-        lea     ebx, [edx+60000h*18]
-        mov     esi, ecx
-        pop     ecx
-        pop     edx
-        pop     ebx
-        add     edx, ecx
-        ret
-
-;-----------------------------------------------------------------------------
-;                  Display FPU register (ST0 - ST7) content
-;
-; in: esi->value, ebx = coord
 draw_fpu_register_2:
 
 .str_buf  equ esp
@@ -1000,14 +948,11 @@ draw_fpu_register_2:
 ;-----------------------------------------------------------------------------
 ;                      Show FPU MMX register content
 ;
-; in: esi->value, edx->string, ecx = string length, ebx = coord
-draw_mmx_register:
-        push    ebx
-        push    edx
-        push    ecx
-        push    esi
-        mov     eax, esi
-        mov     esi, ecx
+; in: ebp index, ebx = coord
+
+draw_mmx_register_2:
+
+        shl     ebp, 4
 
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
@@ -1016,38 +961,56 @@ draw_mmx_register:
         jz      .cd
 
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
-        push    edi
-        mov     edi, [eax]
-        cmp     dword [eax+oldcontext-context], edi
-        pop     edi
-        jnz     .scol
-        push    edi
-        mov     edi, [eax+4]
-        cmp     dword [eax+oldcontext-context+4], edi
-        pop     edi
-        jz      .cd
 
-    .scol:
+        mov     eax, dword [_mm0+ebp]
+        cmp     eax, dword [_mm0+(oldcontext-context)+ebp]
+        jne     .scol
+
+        mov     eax, dword [_mm0+ebp+4]
+        cmp     eax, dword [_mm0+(oldcontext-context)+ebp+4]
+        je     .cd
+
+.scol:
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
+.cd:
+        mov     eax, ebp
+        shl     eax, 16-4
+        add     eax, 'MM0='
+        push    eax                           ;write label into stack
 
-    .cd:
         ; draw a text string in the window
-        mcall   4
 
-        imul    esi, 60000h
-        lea     edx, [ebx+esi]
+        mov     eax, 4
+        mov     esi, eax
+        mov     edx, esp
+        mov     edi, COLOR_BG_NORMAL
+        int     0x40
+
         mov     esi, ecx
-        pop     ecx
-        ; draw a number in the window
-        ; color is the same as for previous draw text function
-        ; ebx : [20] show 16 chars set [30] bit - qword
-        mcall   47, 40100101h
-        lea     ebx, [edx+60000h*18]
-        mov     esi, ecx
-        pop     ecx
-        pop     edx
+        mov     [esp], ebx
+
+        mov     ecx, dword [_mm0+ebp+4]
+        rol     ecx, 16
+        lea     edx, [ebx+0x180000]
+        mov     ebx, 0x00040100
+        mcall   47                        ;word #3
+
+        shr     ecx, 16
+        add     edx, (4*6+3) shl 16
+        mcall   47                        ;word #2
+
+        mov     ecx, dword [_mm0+ebp]
+        rol     ecx, 16
+        add     edx, (4*6+3) shl 16
+        mcall   47                        ;word #1
+
+        shr     ecx, 16
+        add     edx, (4*6+3) shl 16
+        mcall   47                        ;word #0
+
         pop     ebx
-        add     edx, ecx
+
+        shr     ebp, 4
         ret
 
 ; TODO add SSE registers
@@ -1171,23 +1134,22 @@ draw_main_registers:
         push    ebp
 
         push    8
-        mov     edx, mmx_strs
+        xor     ebp, ebp
         mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+142
-        mov     esi, _mm0
 
 align 4
 .draw_mmx_regs:
 
-        call    draw_mmx_register
+        call    draw_mmx_register_2
         add     ebx, 10
-        add     esi, 16
+        inc     ebp
         dec     dword [esp]
         jnz     .draw_mmx_regs
 
 ;FPU registers
 
         ;int3
-        nop
+        ;nop
 
         mov     [esp], byte 8
         xor     ebp, ebp

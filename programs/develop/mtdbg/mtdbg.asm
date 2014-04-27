@@ -2300,15 +2300,6 @@ fpu_strs:
         db 'ST6='
         db 'ST7='
 
-mmx_strs:
-        db 'MM0='
-        db 'MM1='
-        db 'MM2='
-        db 'MM3='
-        db 'MM4='
-        db 'MM5='
-        db 'MM6='
-        db 'MM7='
 sse_strs:
         db '-XMM0-'
         db '-XMM1-'
@@ -2334,7 +2325,7 @@ bSuspended      db 0
 bAfterGo        db 0
 temp_break      dd 0
 reg_mode        db 1
-_10000000       dd 100000000
+_10000000       dd 1000000000
 
 include 'disasm_tbl.inc'
 
@@ -2509,8 +2500,8 @@ oldavxcontext rb $-avx_context
 end if
 
 
-step_num dd 0
-proc_num dd 0
+step_num dd ?
+proc_num dd ?
 dumpread dd ?
 dumppos  dd ?
 dumpdata rb dump_height*10h
