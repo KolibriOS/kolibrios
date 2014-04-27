@@ -1,5 +1,5 @@
-COLOR_THEME fix BLACK_ON_WHITE
-
+;COLOR_THEME fix BLACK_ON_WHITE
+COLOR_THEME fix MOVIEOS
 
 format binary as ""
 include '../../macros.inc'
@@ -2334,7 +2334,7 @@ bSuspended      db 0
 bAfterGo        db 0
 temp_break      dd 0
 reg_mode        db 1
-_10000000       dd 10000000
+_10000000       dd 100000000
 
 include 'disasm_tbl.inc'
 
@@ -2488,10 +2488,8 @@ _xmm6   rq 2
 _xmm7   rq 2
 ctx_end:
 
-
 oldcontext rb _ctx_flags-context
-        rd 2
-        rq 4
+        rb 32
 
 oldfpucontext:
 oldmmxcontext: rb sse_context-fpu_context

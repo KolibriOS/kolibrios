@@ -762,13 +762,55 @@ draw_fpu_register_2:
 
         sub     esp, 32+12+12
 
+
+        mov     eax, 0x20202020
+        mov     edi, .str_buf
+        stosd
+        stosd
+        stosd
+        stosd
+
         mov     edx, ebp
         shl     edx, 4
+
+        movzx   eax, word [_fsw]
+        shr     eax, 11
+        add     eax, ebp
+        and     eax, 7
+
+        bt      dword [_ftw], eax
+        jc     .A6M
+
+        mov     dword [.str_buf],' epm'
+        mov     word [.str_buf+4],'ty'
+        jmp     .display
+
+        mov     cx, [_st0+edx+8]
+        and     cx, 0x7FFF              ;clear sign flag
+        jz      .A6M
+
+        cmp     cx, 0x7FFF
+        jne     .decode
+
+        mov     dword [.str_buf], ' inv'
+        mov     dword [.str_buf+4], 'alid'
+        jmp     .display
+
+.A6M:
+
+        mov     eax, dword [_st0+edx]
+        or      eax, dword [_st0+edx+4]
+        jnz     .decode
+
+        mov     dword [.str_buf], ' 0.0'
+        jmp     .display
+
+.decode:
 
         fld     tword [_st0+edx]
         fldlg2
         fld     tword [_st0+edx]
-        bt      dword [_st0+edx+8], 15
+        bt      dword [_st0+edx+8], 15  ;check sign flag
         jnc @f
         fabs
 @@:
@@ -791,13 +833,6 @@ draw_fpu_register_2:
         fdivp
         fimul   dword [_10000000]
         fbstp   tword [.bcd_man]
-
-        mov     eax, 0x20202020
-        mov     edi, .str_buf
-        stosd
-        stosd
-        stosd
-        stosd
 
         lea     esi, [.bcd_man-1]
         mov     edi, .str_buf
@@ -834,6 +869,7 @@ draw_fpu_register_2:
         jnc     .skip_hb
         mov     al, '.'
         stosb
+
 .skip_hb:
         mov     al, ah
         and     al, 0x0F
@@ -841,6 +877,7 @@ draw_fpu_register_2:
 
         bt      eax, 16
         jc      .skip_lb
+
 .write_lb:
         add     al,0x30
         stosb
@@ -848,9 +885,9 @@ draw_fpu_register_2:
         jnc     .skip_lb
         mov     al, '.'
         stosb
+
 .skip_lb:
-        dec     ecx
-        jnz     .mantis_2_str
+        loop    .mantis_2_str
 
         mov     ax, ' e'
         stosw
@@ -863,6 +900,7 @@ draw_fpu_register_2:
         jne     .exp_2_str
         mov     al, '-'
         stosb
+
 .exp_2_str:
         mov     al, [esi+ecx]
         test    al, al
@@ -877,25 +915,32 @@ draw_fpu_register_2:
 
         bt      eax, 16
         jc      .skip_hb2
+
 .write_h2:
         add     al, 0x30
         stosb
         btr     eax, 16
         stosb
+
 .skip_hb2:
+
         mov     al, ah
         and     al, 0x0F
         jnz     .write_lb2
 
         bt      eax, 16
         jc      .skip_lb2
+
 .write_lb2:
+
         add     al, 0x30
         stosb
         btr     eax, 16
+
 .skip_lb2:
-        dec ecx
-        jnz .exp_2_str
+        loop    .exp_2_str
+
+.display:
 
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
