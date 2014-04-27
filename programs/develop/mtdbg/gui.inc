@@ -665,6 +665,8 @@ draw_register:
 
         mov     ebp, ecx
 
+        mov     eax, [esi]
+
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
         jz      .cd
@@ -672,7 +674,6 @@ draw_register:
         jz      .cd
 
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
-        mov     eax, [esi]
         cmp     eax, dword [esi+oldcontext-context]
         je      .cd
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
