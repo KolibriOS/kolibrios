@@ -971,7 +971,7 @@ draw_fpu_register_2:
         jne     .scol
 
         mov     ax, word [_st0+edx+8]
-        cmp     ax, word [_st0+(oldcontext-context)+8]
+        cmp     ax, word [_st0+(oldcontext-context)+edx+8]
         je      .do_label
 
 .scol:
