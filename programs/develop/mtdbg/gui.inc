@@ -788,7 +788,7 @@ draw_fpu_register_2:
         bt      dword [_ftw], eax
         jc     .A6M
 
-        mov     dword [.str_buf],' epm'
+        mov     dword [.str_buf],' emp'
         mov     word [.str_buf+4],'ty'
         jmp     .display
 
