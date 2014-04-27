@@ -2,14 +2,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GUI ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-macro DrawRectangle x, y, w, h, color
-{
-        mcall 13, x shl 16 + w,     y shl 16 + 1,     color   ; top
-        mcall   , x shl 16 + 1,     y shl 16 + h,     color   ; left
-        mcall   , (x+w) shl 16 +1,  y shl 16 + (h+1), color   ; right
-        mcall   , x shl 16 + w,   (y+h) shl 16 + 1,   color   ; bottom
-}
-
 ;-----------------------------------------------------------------------------
 ;                             Color scheme
 
@@ -69,7 +61,7 @@ data_x_pos      equ 12
 data_x_size     equ data_width*6
 
 title_x_pos     equ 30
-title_y_pos     equ 32
+title_y_pos     equ 8
 title_y_size    equ 10
 
 ;dump_y_pos      equ (registers_y_pos + registers_y_size + 5)
@@ -99,7 +91,7 @@ registers_y_pos equ (title_y_pos + title_y_size - 3)
 registers_x_size equ 134+2*6
 registers_y_size equ (cmdline_y_pos + cmdline_y_size - registers_y_pos+1)
 
-wnd_x_size      equ (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3)
+wnd_x_size      equ (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3) + 10
 wnd_y_size      equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
 
 ;-----------------------------------------------------------------------------
@@ -388,7 +380,8 @@ clear_cmdline_end:
         add     ebx, cmdline_x_pos
         shl     ebx, 16
         or      ebx, ecx
-        mov     ecx, cmdline_y_pos*10000h + cmdline_y_size
+        mov     ecx, [cmdline_y_pos_dd]
+        mov     cx, cmdline_y_size
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box for cmdline
         mcall   13
@@ -411,7 +404,8 @@ draw_cmdline_end:
         imul    ebx, 6
         add     ebx, cmdline_x_pos
         shl     ebx, 16
-        or      ebx, cmdline_y_pos+1
+        mov     bx, word[cmdline_y_pos_dd+4]
+        inc     bx
         ; draw a text string in the window
         mcall   4
         ret
@@ -518,12 +512,17 @@ put_message:
 
 draw_messages:
         ; draw container rectangle/box
-        mcall   13, messages_x_pos*10000h+messages_x_size, messages_y_pos*10000h+messages_y_size, COLOR_BG_NORMAL
+        mov     ebx, messages_x_pos shl 16
+        add     ebx, [messages_x_size_dd+4]
+        mov     ecx, [messages_y_pos_dd]
+        mov     cx, messages_y_size
+        mcall   13, , , COLOR_BG_NORMAL
         mov     edx, messages
         push    messages_width
         pop     esi
         mov     ecx, COLOR_TXT_NORMAL
-        mov     ebx, messages_x_pos*10000h+messages_y_pos
+        mov     ebx, messages_x_pos*10000h
+        mov     bx, word[messages_y_pos_dd+4]
 
     @@:
         ; display text string in the window
@@ -539,7 +538,8 @@ draw_messages:
 
 ; TODO: make it cursor.draw and cursor.hide ???
 draw_cursor:
-        mov     ecx, cmdline_y_pos*10001h+cmdline_y_size-1
+        mov     ecx, [cmdline_y_pos_dd+2]
+        add     cx, cmdline_y_size-1
         mov     ebx, [cmdline_pos]
         imul    ebx, 6
         add     ebx, cmdline_x_pos
@@ -557,7 +557,8 @@ hide_cursor:
         add     ebx, cmdline_x_pos
         shl     ebx, 16
         inc     ebx
-        mov     ecx, cmdline_y_pos*10000h + cmdline_y_size
+        mov     ecx, [cmdline_y_pos_dd]
+        mov     cx, cmdline_y_size
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box
         mcall   13
@@ -570,7 +571,8 @@ hide_cursor:
         imul    ebx, 6
         add     ebx, cmdline_x_pos
         shl     ebx, 16
-        or      ebx, cmdline_y_pos+1
+        mov     bx, word[cmdline_y_pos_dd+4]
+        inc     bx
         push    1
         pop     esi
         ; draw text string in the window
@@ -585,7 +587,9 @@ hide_cursor:
 ; FIXME: something wrong here
 redraw_title:
         ; draw container rectangle/box
-        mcall   13, title_x_pos*10000h+data_x_pos+data_x_size-title_x_pos, title_y_pos*10000h+title_y_size, COLOR_BG_NORMAL
+        mov     ebx, [data_x_size_dd+4]
+        add     ebx, title_x_pos*10000h+data_x_pos-title_x_pos
+        mcall   13, , title_y_pos*10000h+title_y_size, COLOR_BG_NORMAL
 
 draw_title:
         mcall   38, (data_x_pos-2)*10000h+title_x_pos-5, (title_y_pos+5)*10001h, COLOR_LINE
@@ -599,7 +603,8 @@ draw_title:
         imul    ebx, esi, 6
         add     ebx, title_x_pos+4
         shl     ebx, 16
-        mov     bx, data_x_pos+data_x_size-10-5-6*7
+        mov     bx, data_x_pos-10-5-6*7
+        add     bx, word[data_x_size_dd+4]
         cmp     [bSuspended], 0
         jz      @f
         add     ebx, 6
@@ -607,7 +612,8 @@ draw_title:
     @@:
         ; draw line with COLOR_LINE (in edx)
         mcall
-        mov     ebx, (data_x_pos+data_x_size-10+4)*0x10000 + data_x_pos+data_x_size+2
+        mov     ebx, [data_x_size_dd+2]
+        add     ebx, (data_x_pos-10+4)*0x10000 + data_x_pos+2
         ; draw line with COLOR_LINE (in edx)
         mcall
         mov     al, 4
@@ -624,7 +630,8 @@ draw_title:
         mcall
         cmp     [debuggee_pid], 0
         jz      .nodebuggee
-        mov     ebx, (data_x_pos+data_x_size-10-6*7)*10000h + title_y_pos
+        mov     ebx, [data_x_size_dd]
+        add     ebx, (data_x_pos-10-6*7)*10000h + title_y_pos
         mov     edx, aRunning
         push    7
         pop     esi
@@ -642,7 +649,8 @@ draw_title:
 
     .nodebuggee:
         mov     al, 38
-        mov     ebx, (data_x_pos+data_x_size-10-6*7-5)*0x10000 + data_x_pos+data_x_size+2
+        mov     ebx, [data_x_size_dd+2]
+        add     ebx, (data_x_pos-10-6*7-5)*0x10000 + data_x_pos+2
         mov     ecx, (title_y_pos+5)*10001h
         mov     edx, COLOR_LINE
         jmp     @b
@@ -1068,7 +1076,9 @@ draw_reg_title:
     @@:
         mov     edx, aMain
         ; draw a text string in the window
-        mcall   4, (registers_x_pos+4)*10000h+registers_y_pos+2
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 4*10000h+registers_y_pos+2
+        mcall   4
 
         cmp     [reg_mode], REG_MODE_SSE
         jz      @f
@@ -1076,7 +1086,9 @@ draw_reg_title:
     @@:
         mov     edx, aSSE
         ; draw a text string in the window
-        mcall   4, (registers_x_pos+46)*10000h+registers_y_pos+2
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 46*10000h+registers_y_pos+2
+        mcall   4
 
         cmp     [reg_mode], REG_MODE_AVX
         jz      @f
@@ -1084,7 +1096,9 @@ draw_reg_title:
     @@:
         mov     edx, aAVX
         ; draw a text string in the window
-        mcall   4, (registers_x_pos+88)*10000h+registers_y_pos+2
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 88*10000h+registers_y_pos+2
+        mcall   4
         ret
 
 ;-----------------------------------------------------------------------------
@@ -1097,33 +1111,43 @@ draw_main_registers:
         push    4
         pop     ecx
         mov     edx, regs_strs
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+22
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+22
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+32
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+32
         add     esi, _ebx-_eax
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+42
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+42
         add     esi, _ecx-_ebx
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+52
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+52
         add     esi, _edx-_ecx
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+62
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+62
         add     esi, _esi-_edx
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+72
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+72
         add     esi, _edi-_esi
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+82
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+82
         add     esi, _ebp-_edi
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+92
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+92
         add     esi, _esp-_ebp
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+102
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+102
         add     esi, _eip-_esp
         call    draw_register
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+112
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+112
 
         mov     cl, 7
         add     esi, _eflags-_eip
@@ -1136,7 +1160,8 @@ draw_main_registers:
 
         push    8
         xor     ebp, ebp
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+142
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+142
 
 align 4
 .draw_mmx_regs:
@@ -1154,7 +1179,8 @@ align 4
 
         mov     [esp], byte 8
         xor     ebp, ebp
-        mov     ebx, (registers_x_pos+2)*10000h+registers_y_pos+232
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+232
 
 align 4
 .draw_fpu_regs:
@@ -1177,7 +1203,9 @@ align 4
         mov     edx, aColon
         xor     esi, esi
         inc     esi
-        mcall   4, (registers_x_pos+10)*10000h+registers_y_pos+122
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 10*10000h+registers_y_pos+122
+        mcall   4
         mov     edx, flags
 
     @@:
@@ -1207,7 +1235,11 @@ draw_avx_registers:
 draw_registers:
 
         ; draw container rectangle/box with COLOR_BG_NORMAL
-        mcall   13, (registers_x_pos-1)*10000h+(registers_x_size+2), (registers_y_pos-1)*10000h+(registers_y_size+2), COLOR_BG_NORMAL
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, (-1)*10000h+(registers_x_size+2)
+        mov     ecx, [registers_y_size_dd+4]
+        add     ecx, (registers_y_pos-1)*10000h+2
+        mcall   13, , , COLOR_BG_NORMAL
         call    draw_reg_title
 
     .redraw:
@@ -1231,7 +1263,9 @@ draw_registers:
 
 draw_dump:
         ; draw container rectangle/box in the window
-        mcall   13, data_x_pos*10000h+data_x_size, dump_y_pos*10000h+dump_y_size, COLOR_BG_NORMAL
+        mov     ebx, [data_x_size_dd+4]
+        add     ebx, data_x_pos*10000h
+        mcall   13, , dump_y_pos*10000h+dump_y_size, COLOR_BG_NORMAL
 
     .redraw:
         ; addresses
@@ -1380,7 +1414,9 @@ draw_disasm:
         ; setting up background color for disassembled text
         mov     edx, COLOR_BG_NORMAL
         ; draw container rectangle/box with color COLOR_BG_NORMAL (was 0xFFFFFF - white)
-        mcall   13, data_x_pos*10000h+data_x_size
+        mov     ebx, [data_x_size_dd+4]
+        add     ebx, data_x_pos*10000h
+        mcall   13
         pop     ebx
         ; copy color value from edx (COLOR_BG_NORMAL)
         mov     edi, edx
@@ -1407,7 +1443,8 @@ draw_disasm:
         shl     ecx, 16
         mov     cl, 10
         imul    ebx, 10001h
-        sub     bx, data_x_pos+data_x_size
+        sub     bx, data_x_pos
+        sub     bx, word[data_x_size_dd+4]
         neg     bx
         mov     al, 13
         ; copy color value from edi
@@ -1415,7 +1452,8 @@ draw_disasm:
         ; draw container rectangle/box for disassembled text, color in edx
         mcall
         inc     [disasm_cur_str]
-        cmp     [disasm_cur_str], disasm_height
+        mov     eax, [disasm_height_dd]
+        cmp     [disasm_cur_str], eax
         jae     .loopend
 
     .nosymb:
@@ -1425,7 +1463,8 @@ draw_disasm:
         jc      .loopend
         mov     edx, COLOR_BG_NORMAL
         mov     esi, COLOR_TXT_NORMAL
-        mov     ebx, data_x_pos*10000h + data_x_size
+        mov     ebx, data_x_pos*10000h
+        add     ebx, [data_x_size_dd+4]
         mov     ecx, [disasm_cur_str]
         imul    ecx, 10*10000h
         add     ecx, (disasm_y_pos-1)*10000h + 10
@@ -1519,21 +1558,25 @@ draw_disasm:
         ; draw a text string in the window, color in ecx
         mcall   4
         inc     [disasm_cur_str]
-        cmp     [disasm_cur_str], disasm_height
+        mov     eax, [disasm_height_dd]
+        cmp     [disasm_cur_str], eax
         jb      .loop
 
     .loopend:
-        mov     ecx, disasm_height
+        mov     ecx, [disasm_height_dd]
         sub     ecx, [disasm_cur_str]
         jz      @f
         imul    ecx, 10
         inc     ecx
-        mov     eax, disasm_y_pos + disasm_y_size
+        mov     eax, disasm_y_pos
+        add     eax, [disasm_y_size_dd+4]
         sub     eax, ecx
         shl     eax, 16
         add     ecx, eax
         ; Draw filled rectangle
-        mcall   13, data_x_pos*10000h+data_x_size, , COLOR_BG_NORMAL
+        mov     ebx, [data_x_size_dd+4]
+        add     ebx, data_x_pos*10000h
+        mcall   13, , , COLOR_BG_NORMAL
 
     @@:
         ret
@@ -1543,7 +1586,7 @@ draw_disasm:
 ; TODO: cleanup of this function, make some global labels local
 update_disasm_eip:
 ; test if instruction at eip is showed
-        mov     ecx, disasm_height
+        mov     ecx, [disasm_height_dd+4]
         mov     eax, [disasm_start_pos]
         mov     [disasm_cur_pos], eax
 
@@ -1596,82 +1639,129 @@ draw_window:
         mcall   12, 1
 
         ; define window
-        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x54000000), , caption_str
+        mcall   0, wnd_x_size, wnd_y_size, (COLOR_BG_NORMAL or 0x33000000), ,caption_str
 
-        ; clear unused areas
-        ; get window skin height
-        mcall   48, 4
-        cmp     eax, title_y_pos
-        jb      @f
-        push    registers_y_pos
-        pop     eax
+        ; Get actual window size
+        mcall   9, thread_info, -1
 
-    @@:
-        push    registers_y_pos
-        pop     ecx
-        push    eax
-        sub     ecx, eax
+        ; Check if window is rolled up
+        test    [thread_info.wnd_state], 100b
+        jnz     .done
+
+        ; Check if window isnt smaller then permisseable
+        mov     eax, [thread_info.box.width]            ; window xsize
+        mov     ebx, [thread_info.box.height]           ; ysize
+        mov     edx, [thread_info.client_box.width]     ; work area xsize
+        mov     esi, [thread_info.client_box.height]    ; ysize
+        sub     eax, edx
+        sub     ebx, esi
+
+        cmp     edx, wnd_x_size
+        jae     .x_ok
+        mov     edx, wnd_x_size
+  .x_ok:
+        add     edx, eax
+
+        cmp     esi, wnd_y_size
+        jae     .y_ok
+        mov     esi, wnd_y_size
+  .y_ok:
+        add     esi, ebx
+        mcall   67, -1, -1      ; set the new sizes
+
+        ; (re)calculate coordinates of GUI elements
+        mov     eax, [thread_info.client_box.width]
+        sub     eax, data_x_pos + data_x_pos + registers_x_size+3
+        mov     [data_x_size_dd+4], eax
+        mov     [messages_x_size_dd+4], eax
         shl     eax, 16
-        add     ecx, eax
-        mov     ebx, 5*10000h + (wnd_x_size-9)
-        mov     edx, COLOR_BG_NORMAL
-        ; draw container rectangle/box for registers information region
-        mcall   13
-        mov     ecx, (dump_y_pos+dump_y_size)*10000h + (disasm_y_pos-dump_y_pos-dump_y_size)
-        ; draw container rectangle/box for dump memory region
-        mcall
-        mov     ecx, (disasm_y_pos-1+disasm_y_size)*10000h + (messages_y_pos-disasm_y_pos+1-disasm_y_size)
-        ; draw container rectangle/box for disassembled code region
-        mcall
-        mov     ecx, (messages_y_pos+messages_y_size)*10000h + (wnd_y_size-messages_y_pos-messages_y_size-4)
-        ; draw container rectangle/box for messages window region
-        mcall
-        mov     ebx, 5*10000h + (data_x_pos-5)
-        pop     ecx
-        imul    ecx, 10001h
-        sub     cx, wnd_y_size-4
-        neg     cx
-        ; draw container rectangle/box
-        mcall
-        mov     ebx, (data_x_pos+data_x_size)*10000h + (wnd_x_size-data_x_pos-data_x_size-4)
-        ; draw container rectangle/box
-        mcall
-        mov     ebx, 5*10000h + title_x_pos - 5
-        mov     ecx, (title_y_pos)*10000h + (title_y_size)
-        ; draw container rectangle/box for dump memory region title
-        mcall
+        mov     [data_x_size_dd], eax
+        mov     [messages_x_size_dd], eax
+        shr     eax, 16
+        add     eax, data_x_pos + 4
+        mov     [registers_x_pos_dd+4], eax
+        shl     eax, 16
+        mov     [registers_x_pos_dd], eax
+
+        mov     eax, [thread_info.client_box.height]
+        sub     eax, cmdline_y_size + data_x_pos
+        mov     [cmdline_y_pos_dd+4], eax
+        shl     eax, 16
+        mov     [cmdline_y_pos_dd], eax
+        shr     eax, 16
+        sub     eax, messages_y_size + 4
+        mov     [messages_y_pos_dd+4], eax
+        shl     eax, 16
+        mov     [messages_y_pos_dd], eax
+        shr     eax, 16
+        sub     eax, disasm_y_pos + 4
+        mov     [disasm_y_size_dd+4], eax
+        shl     eax, 16
+        mov     [disasm_y_size_dd], eax
+        shr     eax, 16
+        mov     ecx, 10
+        xor     edx, edx
+        div     ecx
+        mov     [disasm_height_dd], eax
+
+        mov     eax, [thread_info.client_box.height]
+        sub     eax, data_x_pos + registers_y_pos-1
+        mov     [registers_y_size_dd+4], eax
+        shl     eax, 16
+        mov     [registers_y_size_dd], eax
 
         ; messages frame
-        mov     ebx, (messages_x_pos-2)*10000h + (messages_x_pos+messages_x_size+2)
+        mov     ebx, [messages_x_size_dd+4]
+        add     ebx, (messages_x_pos-2)*10000h + (messages_x_pos+2)
         push    ebx
-        mov     ecx, (messages_y_pos-2)*10001h
+        mov     ecx, [messages_y_pos_dd+2]
+        add     ecx, -2*10001h
         mov     edx, COLOR_LINE
         mcall   38
-        mov     ecx, (messages_y_pos+messages_y_size+2)*10001h
+        add     ecx, (messages_y_size+2+2)*10001h
         mcall
         mov     ebx, (messages_x_pos-2)*10001h
         push    ebx
-        mov     ecx, (messages_y_pos-2)*10000h + (messages_y_pos+messages_y_size+2)
+        mov     ecx, [messages_y_pos_dd+2]
+        add     ecx, (-2*10000h) + (messages_y_size+2)
         mcall
-        mov     ebx, (messages_x_pos+messages_x_size+2)*10001h
+        mov     ebx, [messages_x_size_dd+2]
+        add     ebx, (messages_x_pos+2)*10001h
         push    ebx
         mcall
 
         ; command line frame
-        mov     ecx, (cmdline_y_pos-2)*10000h + (cmdline_y_pos+cmdline_y_size+2)
+        mov     ecx, [cmdline_y_pos_dd+2]
+        add     ecx, (-2*10000h) + (cmdline_y_size+2)
         pop     ebx
         mcall
         pop     ebx
         mcall
         pop     ebx
-        mov     ecx, (cmdline_y_pos+cmdline_y_size+2)*10001h
+        mov     ecx, [cmdline_y_pos_dd+2]
+        add     ecx, (cmdline_y_size+2)*10001h
+
         mcall
-        mov     ecx, (cmdline_y_pos-2)*10001h
+        mov     ecx, [cmdline_y_pos_dd+2]
+        add     ecx, (-2*10001h)
         mcall
 
         ; registers frame
-        DrawRectangle (registers_x_pos-2), (registers_y_pos-2), (registers_x_size+3), (registers_y_size+3), COLOR_LINE
-        ; draw container rectangle/box for registers information window region
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, (-2) shl 16 + (registers_x_size+3)
+        mov     ecx, (registers_y_pos-2) shl 16 + 1
+        mov     edx, COLOR_LINE
+        mcall   13                      ; top
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, ((-2)+(registers_x_size+3)) shl 16 +1
+        mov     ecx, [registers_y_size_dd+4]
+        add     ecx, (registers_y_pos-2) shl 16 + (+3+1)
+        mcall                           ; right
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, (-2) shl 16 + (registers_x_size+3)
+        mov     ecx, [registers_y_size_dd]
+        add     ecx, ((registers_y_pos-2)+(+3)) shl 16 + 1
+        mcall                           ; bottom
 
         ; messages
         call    draw_messages
@@ -1682,12 +1772,15 @@ draw_window:
 
         ; title & registers & dump & disasm
         mov     ebx, (data_x_pos-2)*10001h
-        mov     ecx, (title_y_pos+5)*10000h + (messages_y_pos-2)
+        mov     ecx, (title_y_pos+5)*10000h + (-2)
+        add     ecx, [messages_y_pos_dd+4]
         mov     edx, COLOR_LINE
         mcall   38
-        mov     ebx, (data_x_pos+data_x_size+2)*10001h
+        mov     ebx, [data_x_size_dd+2]
+        add     ebx, (data_x_pos+2)*10001h
         mcall
-        mov     ebx, (data_x_pos-2)*10000h + (data_x_pos+data_x_size+2)
+        mov     ebx, [data_x_size_dd+4]
+        add     ebx, (data_x_pos-2)*10000h + (data_x_pos+2)
         mov     ecx, (disasm_y_pos-4)*10001h
         mcall
 
@@ -1697,6 +1790,8 @@ draw_window:
         call    draw_dump
         call    draw_disasm
 
+
+  .done:
         ; end of window redraw
         mcall   12, 2
         ret

@@ -1196,7 +1196,7 @@ OnUnassemble:
         cmp     byte [esi], 0
         jnz     .param
         mov     eax, [disasm_start_pos]
-        mov     ecx, disasm_height
+        mov     ecx, [disasm_height_dd]
         mov     [disasm_cur_pos], eax
 
     .l:
@@ -1969,6 +1969,20 @@ help_groups:
         dd      aBreakpoints, 0, 0, help_breaks_msg
         db      0
 
+
+;-----------------------------------------------------------------------------
+;                  Coordinates and sizes for GUI
+
+data_x_size_dd          dd data_x_size shl 16, data_x_size
+messages_x_size_dd      dd messages_x_size shl 16, messages_x_size
+registers_x_pos_dd      dd registers_x_pos shl 16, registers_x_pos
+
+disasm_height_dd        dd 18
+disasm_y_size_dd        dd disasm_y_size shl 16, disasm_y_size
+messages_y_pos_dd       dd messages_y_pos shl 16, messages_y_pos
+cmdline_y_pos_dd        dd cmdline_y_pos shl 16, cmdline_y_pos
+registers_y_size_dd     dd registers_y_size shl 16, registers_y_size
+
 ;-----------------------------------------------------------------------------
 ;                   Commands format definitions
 
@@ -2431,8 +2445,8 @@ _esi    dd ?
 _edi    dd ?
 
 _ctx_flags:
-	dd ?
-	dd ?
+        dd ?
+        dd ?
 
 _sse_flags:
 
@@ -2446,8 +2460,8 @@ _fpu_ip dd ?
         dw ?
         dw ?
 
-	dq ?
-	dq ?
+        dq ?
+        dq ?
 
 fpu_context:
 mmx_context:
@@ -2533,6 +2547,8 @@ disasm_start_pos        dd ?
 disasm_cur_pos          dd ?
 disasm_cur_str          dd ?
 disasm_string           rb 256
+
+thread_info     process_information
 
 i_param         rb 256
 
