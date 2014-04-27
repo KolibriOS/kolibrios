@@ -967,7 +967,7 @@ draw_fpu_register_2:
         jne     .scol
 
         mov     eax, dword [_st0+edx+4]
-        cmp     eax, dword [_st0+(oldcontext-context)+4]
+        cmp     eax, dword [_st0+(oldcontext-context)+edx+4]
         jne     .scol
 
         mov     ax, word [_st0+edx+8]
