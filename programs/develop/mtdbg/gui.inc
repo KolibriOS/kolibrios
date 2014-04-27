@@ -110,6 +110,13 @@ wnd_y_size      equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
 start:
         ; initialize process heap
         mcall   68, 11
+
+        push    eax
+        fstcw   word [esp]
+        or      word [esp], 3 shl 10    ; set round-to-zero mode
+        fldcw   word [esp]
+        pop     eax
+
         mov     edi, messages
         mov     ecx, messages_width*messages_height
         mov     al, ' '
@@ -759,9 +766,9 @@ draw_fpu_register_2:
 .str_buf  equ esp
 .bcd_man  equ esp+32
 .bcd_exp  equ esp+32+12
+.exp_v    equ esp+32+12+12
 
-        sub     esp, 32+12+12
-
+        sub     esp, 32+12+12+4
 
         mov     eax, 0x20202020
         mov     edi, .str_buf
@@ -816,6 +823,7 @@ draw_fpu_register_2:
 @@:
         fyl2x
         frndint
+        fist    dword [.exp_v]
         fld     st0
         fbstp   tword [.bcd_exp]
         fldl2t
@@ -888,6 +896,10 @@ draw_fpu_register_2:
 
 .skip_lb:
         loop    .mantis_2_str
+
+        mov     eax, [.exp_v]
+        test    eax, eax
+        jz      .display
 
         mov     ax, ' e'
         stosw
@@ -980,7 +992,7 @@ draw_fpu_register_2:
         int     0x40
 
         sub     ebx, 0x180000
-        add     esp, 32+12+12
+        add     esp, 32+12+12+4
 
         ret
 
