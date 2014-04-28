@@ -105,7 +105,10 @@ start:
 
         push    eax
         fstcw   word [esp]
-        or      word [esp], 3 shl 10    ; set round-to-zero mode
+        pop     eax
+        and     ax, not (3 shl 10)
+        or      ax, 1 shl 10    ; set round-to-minus infinity mode
+        push    eax
         fldcw   word [esp]
         pop     eax
 
@@ -734,6 +737,9 @@ draw_fpu_register_2:
         stosd
         stosd
 
+        ;int3
+        ;nop
+
         mov     edx, ebp
         shl     edx, 4
 
@@ -770,7 +776,6 @@ draw_fpu_register_2:
         jmp     .display
 
 .decode:
-
         fld     tword [_st0+edx]
         fldlg2
         fld     tword [_st0+edx]
@@ -783,6 +788,9 @@ draw_fpu_register_2:
         fist    dword [.exp_v]
         fld     st0
         fbstp   tword [.bcd_exp]
+        push    8
+        fisub   dword [esp]
+        pop     eax
         fldl2t
         fmulp
         fld     st0
@@ -796,7 +804,6 @@ draw_fpu_register_2:
         fscale
         fstp    st1
         fdivp
-        fimul   dword [_10000000]
         fbstp   tword [.bcd_man]
 
         lea     esi, [.bcd_man-1]
