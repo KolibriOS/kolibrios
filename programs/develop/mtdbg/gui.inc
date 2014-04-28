@@ -923,7 +923,6 @@ draw_fpu_register_2:
         add     al, 0x30
         stosb
         btr     eax, 16
-        stosb
 
 .skip_hb2:
 
