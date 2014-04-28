@@ -715,7 +715,6 @@ draw_register:
         add     edx, ecx
         ret
 
-
 ;-----------------------------------------------------------------------------
 ;                  Display FPU register (ST0 - ST7) content
 ;
@@ -724,11 +723,12 @@ draw_register:
 draw_fpu_register_2:
 
 .str_buf  equ esp
-.bcd_man  equ esp+32
-.bcd_exp  equ esp+32+12
-.exp_v    equ esp+32+12+12
+.bcd_man  equ .str_buf+32
+.bcd_exp  equ .bcd_man+12
+.exp      equ .bcd_exp+12
+.tmp      equ .exp+4
 
-        sub     esp, 32+12+12+4
+        sub     esp, 32+12+12+4+4
 
         mov     eax, 0x20202020
         mov     edi, .str_buf
@@ -777,20 +777,16 @@ draw_fpu_register_2:
 
 .decode:
         fld     tword [_st0+edx]
-        fldlg2
-        fld     tword [_st0+edx]
-        bt      dword [_st0+edx+8], 15  ;check sign flag
-        jnc @f
         fabs
-@@:
+        fld     st0
+        fldlg2
+        fld     st1
         fyl2x
         frndint
-        fist    dword [.exp_v]
+        fist    dword [.exp]
         fld     st0
         fbstp   tword [.bcd_exp]
-        push    8
-        fisub   dword [esp]
-        pop     eax
+
         fldl2t
         fmulp
         fld     st0
@@ -804,6 +800,37 @@ draw_fpu_register_2:
         fscale
         fstp    st1
         fdivp
+
+        fist    dword [.tmp]
+        cmp     dword [.tmp], 10
+        jae     .fixup
+
+        fstp    st1
+        jmp     .done
+
+.fixup:
+        fstp st0
+
+        inc     dword [.exp]
+        fild    dword [.exp]
+        fld     st0
+        fbstp tword [.bcd_exp]
+
+        fldl2t
+        fmulp
+        fld st0
+        frndint
+        fxch
+        fsub st,st1
+
+        f2xm1
+        fld1
+        faddp
+        fscale
+        fstp st1
+        fdivp
+.done:
+        fimul dword [n_digits]
         fbstp   tword [.bcd_man]
 
         lea     esi, [.bcd_man-1]
@@ -861,7 +888,7 @@ draw_fpu_register_2:
 .skip_lb:
         loop    .mantis_2_str
 
-        mov     eax, [.exp_v]
+        mov     eax, [.exp]
         test    eax, eax
         jz      .display
 
@@ -956,7 +983,7 @@ draw_fpu_register_2:
         int     0x40
 
         sub     ebx, 0x180000
-        add     esp, 32+12+12+4
+        add     esp, 32+12+12+4+4
 
         ret
 

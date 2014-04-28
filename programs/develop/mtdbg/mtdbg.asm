@@ -2333,7 +2333,8 @@ avx_strs:
         db '-YMM6-'
         db '-YMM7-'
 
-
+align 4
+n_digits        dd 100000000
 debuggee_pid    dd 0
 bSuspended      db 0
 bAfterGo        db 0
