@@ -2304,16 +2304,6 @@ regs_strs:
         db 'EIP='
         db 'EFLAGS='
 
-fpu_strs:
-        db 'ST0='
-        db 'ST1='
-        db 'ST2='
-        db 'ST3='
-        db 'ST4='
-        db 'ST5='
-        db 'ST6='
-        db 'ST7='
-
 sse_strs:
         db '-XMM0-'
         db '-XMM1-'
@@ -2334,7 +2324,7 @@ avx_strs:
         db '-YMM7-'
 
 align 4
-n_digits        dd 100000000
+n_digits        dd 10000000
 debuggee_pid    dd 0
 bSuspended      db 0
 bAfterGo        db 0

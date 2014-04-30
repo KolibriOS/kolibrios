@@ -723,15 +723,21 @@ draw_register:
 draw_fpu_register_2:
 
 .str_buf  equ esp
-.bcd_man  equ .str_buf+32
-.bcd_exp  equ .bcd_man+12
-.exp      equ .bcd_exp+12
+.cvt_buf  equ .str_buf+32
+.bcd_man  equ .cvt_buf+16
+.bcd_exp  equ .bcd_man+10
+.exp      equ .bcd_exp+10
 .tmp      equ .exp+4
+.lcl_end  equ .tmp+4
 
-        sub     esp, 32+12+12+4+4
+        sub     esp, 32+16+10+10+4+4
 
-        mov     eax, 0x20202020
         mov     edi, .str_buf
+        shl     ebp, 16
+        lea     eax, ['ST0:'+ebp]
+        stosd
+        mov     eax, 0x20202020
+        stosd
         stosd
         stosd
         stosd
@@ -740,43 +746,40 @@ draw_fpu_register_2:
         ;int3
         ;nop
 
-        mov     edx, ebp
-        shl     edx, 4
-
         movzx   eax, word [_fsw]
         shr     eax, 11
         add     eax, ebp
+        shr     ebp, 12
         and     eax, 7
-
         bt      dword [_ftw], eax
         jc     .A6M
 
-        mov     dword [.str_buf],' emp'
-        mov     word [.str_buf+4],'ty'
+        mov     dword [.str_buf+8],' emp'
+        mov     word [.str_buf+8+4],'ty'
         jmp     .display
 
-        mov     cx, [_st0+edx+8]
+        mov     cx, [_st0+ebp+8]
         and     cx, 0x7FFF              ;clear sign flag
         jz      .A6M
 
         cmp     cx, 0x7FFF
         jne     .decode
 
-        mov     dword [.str_buf], ' inv'
-        mov     dword [.str_buf+4], 'alid'
+        mov     dword [.str_buf+6], ' inv'
+        mov     dword [.str_buf+6+4], 'alid'
         jmp     .display
 
 .A6M:
 
-        mov     eax, dword [_st0+edx]
-        or      eax, dword [_st0+edx+4]
+        mov     eax, dword [_st0+ebp]
+        or      eax, dword [_st0+ebp+4]
         jnz     .decode
 
-        mov     dword [.str_buf], ' 0.0'
+        mov     dword [.str_buf+10], ' 0.0'
         jmp     .display
 
 .decode:
-        fld     tword [_st0+edx]
+        fld     tword [_st0+ebp]
         fabs
         fld     st0
         fldlg2
@@ -814,133 +817,93 @@ draw_fpu_register_2:
         inc     dword [.exp]
         fild    dword [.exp]
         fld     st0
-        fbstp tword [.bcd_exp]
+        fbstp   tword [.bcd_exp]
 
         fldl2t
         fmulp
         fld st0
         frndint
         fxch
-        fsub st,st1
+        fsub    st,st1
 
         f2xm1
         fld1
         faddp
         fscale
-        fstp st1
+        fstp    st1
         fdivp
 .done:
-        fimul dword [n_digits]
+        fimul   dword [n_digits]
         fbstp   tword [.bcd_man]
 
-        lea     esi, [.bcd_man-1]
-        mov     edi, .str_buf
-
-        mov     ecx, 9
-        mov     eax, 0x10000
-
-        mov     al, [esi+ecx+1]
-        cmp     al, 0x80            ; check for sign
-        jne     .mantis_2_str
-        mov     al, '-'
-        stosb
-
-.mantis_2_str:
-
-        mov     al, [esi+ecx]
-        test    al, al
-        jnz     @f
-
-        bt      eax, 16
-        jc      .skip_lb
+        lea     edi, [.cvt_buf]
+        mov     edx, dword [.bcd_man]
+        mov     ecx, 8
 @@:
-        mov     ah, al
-        shr     al, 4
-        jnz     .write_h
-
-        bt      eax, 16
-        jc      .skip_hb
-
-.write_h:
-        add     al, 0x30
+        xor     eax, eax
+        shld    eax, edx, 4
         stosb
-        btr     eax, 16
-        jnc     .skip_hb
-        mov     al, '.'
+        shl     edx, 4
+        loop    @B
+
+        lea     esi, [.cvt_buf+7]
+        lea     edi, [.str_buf+13]
+        mov     ecx, 7
+        mov     ah, 0x30
+        std
+.skip_z:
+        lodsb
+        test    al, al
+        jnz     .body
+        loop    .skip_z
+.body:
+        add     al, ah
         stosb
-
-.skip_hb:
-        mov     al, ah
-        and     al, 0x0F
-        jnz     .write_lb
-
-        bt      eax, 16
-        jc      .skip_lb
-
-.write_lb:
-        add     al,0x30
-        stosb
-        btr     eax, 16
-        jnc     .skip_lb
-        mov     al, '.'
-        stosb
-
-.skip_lb:
-        loop    .mantis_2_str
-
-        mov     eax, [.exp]
-        test    eax, eax
-        jz      .display
-
-        mov     ax, ' e'
+        lodsb
+        jcxz    .point
+        loop    .body
+.point:
+        dec     edi
+        add     al, ah
+        mov     ah, '.'
         stosw
 
-        lea     esi, [.bcd_exp-1]
-        mov     ecx, 9
-        mov     eax,0x10000
-        mov     al, [esi+ecx+1]
-        cmp     al, 0x80
-        jne     .exp_2_str
+        bt      word [_st0+ebp+8], 15
+        jnc     .m_sign
         mov     al, '-'
+        mov     [edi+1], al
+
+.m_sign:
+        cld
+
+        mov     dx, word [.bcd_exp]
+        test    dx, dx
+        jz      .display
+
+        lea     edi, [.str_buf+15]
+        mov     ax, 'E '
+        cmp     byte [.bcd_exp+9], 0x80
+        jne     .w_e_sign
+        mov     ax, 'E-'
+
+.w_e_sign:
+        stosw
+
+        mov     ecx, 4
+.skip_lz:
+        xor     eax, eax
+        shld    ax,dx,4
+        shl     dx, 4
+        test al, al
+        jnz     .w_exp
+        loop    .skip_lz
+.w_exp:
+        add al, 0x30
         stosb
-
-.exp_2_str:
-        mov     al, [esi+ecx]
-        test    al, al
-        jnz     @f
-
-        bt      eax, 16
-        jc      .skip_lb2
-@@:
-        mov     ah, al
-        shr     al, 4
-        jnz     .write_h2
-
-        bt      eax, 16
-        jc      .skip_hb2
-
-.write_h2:
-        add     al, 0x30
-        stosb
-        btr     eax, 16
-
-.skip_hb2:
-
-        mov     al, ah
-        and     al, 0x0F
-        jnz     .write_lb2
-
-        bt      eax, 16
-        jc      .skip_lb2
-
-.write_lb2:
-
-        add     al, 0x30
-        stosb
-        btr     eax, 16
-
-.skip_lb2:
-        loop    .exp_2_str
+        xor     eax, eax
+        shld     ax, dx, 4
+        shl     dx,4
+        loop    .w_exp
 
 .display:
 
@@ -952,16 +915,16 @@ draw_fpu_register_2:
 
         mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
 
-        mov     eax, dword [_st0+edx]
-        cmp     eax, dword [_st0+(oldcontext-context)+edx]
+        mov     eax, dword [_st0+ebp]
+        cmp     eax, dword [_st0+(oldcontext-context)+ebp]
         jne     .scol
 
-        mov     eax, dword [_st0+edx+4]
-        cmp     eax, dword [_st0+(oldcontext-context)+edx+4]
+        mov     eax, dword [_st0+ebp+4]
+        cmp     eax, dword [_st0+(oldcontext-context)+ebp+4]
         jne     .scol
 
-        mov     ax, word [_st0+edx+8]
-        cmp     ax, word [_st0+(oldcontext-context)+edx+8]
+        mov     ax, word [_st0+ebp+8]
+        cmp     ax, word [_st0+(oldcontext-context)+ebp+8]
         je      .do_label
 
 .scol:
@@ -971,18 +934,13 @@ draw_fpu_register_2:
         ; draw a text string in the window
 
         mov     eax, 4
-        mov     esi, eax
-        lea     edx, [fpu_strs+ebp*4]
+        mov     esi, 21
+        mov     edx, .str_buf
         mov     edi, COLOR_BG_NORMAL
         int     0x40
 
-        mov     esi, 16
-        mov     edx, .str_buf
-        add     ebx, 0x180000
-        int     0x40
-
-        sub     ebx, 0x180000
-        add     esp, 32+12+12+4+4
+        shr     ebp, 4
+        add     esp, 32+16+10+10+4+4
 
         ret
 
