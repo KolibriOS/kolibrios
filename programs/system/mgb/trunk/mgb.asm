@@ -1,10 +1,16 @@
 ;=============================================================================
-; Kolibri Graphics Benchmark 0.7
+; Kolibri Graphics Benchmark 0.81
 ;--------------------------------------
 ; MGB - Menuet Graphics Benchmark 0.3
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.81
+; last update:  01/05/2014
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      fix "benchmark GS selector" for some display sizes
+;               (for example, 1366 by horizontal) and code optimization
+;---------------------------------------------------------------------
 ; version:	0.8
 ; last update:  08/07/2013
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -338,13 +344,14 @@ testGetScreen_f36:
 	mcall	36,[area_for_f36],<90,123>,<15,33>
 	ret
 ;---------------------------------------------------------------------
+GS_start_x = 15
+GS_start_y = 33
+GS_size_x = 90
+GS_size_y = 123
+;-----------------------------------------------------------------------------
 align 4
 testGetScreen_GS:
 	push	edi
-	mov	[start_x],15
-	mov	[start_y],33
-	mov	[size_x],90
-	mov	[size_y],123
 	mov	edi,[area_for_f36]
 
 	mcall	61,2
@@ -353,26 +360,23 @@ testGetScreen_GS:
 ;-----------------------------------------------------------------------------
 align 4
 get_area_with_GS_32:
-	mcall	61,1
-	shr	eax,16
-	shl	eax,2
-	mov	[offset_x],eax
+	mcall	61,3
+	mov	ebx,eax
 
-	mov	esi,[start_y]
+	mov	esi,GS_start_y
 	imul	esi,eax
 
-	mov	eax,[start_x]
+	mov	eax,GS_start_x
 	shl	eax,2
 	add	esi,eax
 
-	mov	eax,[size_x]
+	mov	ebp,GS_size_x
+	mov	eax,ebp
 	shl	eax,2
-	sub	[offset_x],eax
+	sub	ebx,eax
 
-	mov	edx,[size_y]
-	mov	ebx,[offset_x]
+	mov	edx,GS_size_y
 	sub	esi,ebx
-	mov	ebp,[size_x]
 ;--------------------------------------
 align 4
 .start_y:
@@ -397,26 +401,23 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 get_area_with_GS_24:
-	mcall	61,1
-	shr	eax,16
-	lea	eax,[eax*3]
-	mov	[offset_x],eax
+	mcall	61,3
+	mov	ebx,eax
 
-	mov	esi,[start_y]
+	mov	esi,GS_start_y
 	imul	esi,eax
 
-	mov	eax,[start_x]
+	mov	eax,GS_start_x
 	lea	eax,[eax*3]
 	add	esi,eax
 
-	mov	eax,[size_x]
+	mov	ebp,GS_size_x
+	mov	eax,ebp
 	lea	eax,[eax*3]
-	sub	[offset_x],eax
+	sub	ebx,eax
 
-	mov	edx,[size_y]
-	mov	ebx,[offset_x]
+	mov	edx,GS_size_y
 	sub	esi,ebx
-	mov	ebp,[size_x]
 ;--------------------------------------
 align 4
 .start_y:
@@ -742,7 +743,7 @@ if lang eq it
 
 	aTestText	db 'This is a 34-charachters test text'
 	aButtonsText	db 'Test      Commenti    Pattern+     Apri        Salva',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.8',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.81',0
 
 	aLeft	db 'Sinistra:',0
 	aRight	db 'Destra  :',0
@@ -769,7 +770,7 @@ else
 
 	aTestText	db 'This is a 34-charachters test text'
 	aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.8',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.81',0
 
 	aLeft	db 'Left    :',0
 	aRight	db 'Right   :',0
@@ -975,12 +976,6 @@ area_for_f36	rd 1
 dwTestEndTime	rd 1
 dwMainPID	rd 1
 ;-----------------------------------------------------------------------------
-start_x		rd 1
-start_y		rd 1
-size_x		rd 1
-size_y		rd 1
-offset_x	rd 1
-;---------------------------------------------------------------------
 text_scren_buffer	rd 1
 text_scren_buffer2	rd 1
 ;---------------------------------------------------------------------
