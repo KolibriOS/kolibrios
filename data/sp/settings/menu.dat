@@ -108,12 +108,10 @@ Modo de video ATI         /sys/vmode
 #12    **** SENSORES ****
 Procesos                  /sys/cpu
 Dispositivos PCI          /sys/pcidev
-Velocidad de gr ficos     /sys/mgb
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus desconectado       /sys/kbd
 Informaci¢n de HDD        /sys/hdd_info
-FSPEED speed of FS        /sys/fspeed
 #13  **** ARCHIVOS ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
@@ -156,6 +154,8 @@ Lector de RTF             /sys/rtfread
 #19    **** PRUEBAS ****
 Protecci¢n                /sys/test
 Monitor                   /sys/disptest
+Velocidad de gr ficos     /sys/mgb
+FSPEED speed of FS        /sys/fspeed
 #20    **** ACCESIBILIDAD ****
 Ampliaci¢n de pantalla    /sys/magnify
 Teclado en pantalla       /sys/zkey

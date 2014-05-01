@@ -107,12 +107,10 @@ Video mode for ATI        /sys/vmode
 #12    **** SYSTEM SENSORS ****
 Gestore processi          /sys/cpu
 PCI devices               /sys/pcidev
-Test graphics speed       /sys/mgb
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD informer              /sys/hdd_info
-FSPEED speed of FS        /sys/fspeed
 #13  **** WORK WITH FILES ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
@@ -155,6 +153,8 @@ Lettore RTF               /sys/rtfread
 #19    **** SYSTEM TESTS ****
 Protection test           /sys/test
 Test Monitor              /sys/disptest
+Test graphics speed       /sys/mgb
+FSPEED speed of FS        /sys/fspeed
 #20    **** SYSTEM SPECIAL ****
 Lente di ingrandimento    /sys/magnify
 Tastiera da schermo       /sys/zkey

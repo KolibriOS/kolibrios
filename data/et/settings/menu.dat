@@ -108,12 +108,10 @@ ATI video reziim          /sys/vmode
 #12    **** SYSTEM SENSORS ****
 Protsesside haldur        /sys/cpu
 PCI seadmed               /sys/pcidev
-Testi graafika kiirust    /sys/mgb
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD info                  /sys/hdd_info
-FSPEED speed of FS        /sys/fspeed
 #13  **** WORK WITH FILES ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
@@ -156,6 +154,8 @@ RTF faili lugeja          /sys/rtfread
 #19    **** SYSTEM TESTS ****
 Protection test           /sys/test
 Monitor test              /sys/disptest
+Testi graafika kiirust    /sys/mgb
+FSPEED speed of FS        /sys/fspeed
 #20    **** SYSTEM SPECIAL ****
 Ekraani suurendusklaas    /sys/magnify
 Ekraani klaviatuur        /sys/zkey

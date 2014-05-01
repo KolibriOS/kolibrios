@@ -117,7 +117,6 @@ CPUID                     /sys/cpuid
 GHOST Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD информер              /sys/hdd_info
-FSPEED скорость ФС        /sys/fspeed
 #13    **** Система -> Работа с файлами ****
 KFM                       /sys/File Managers/kfm
 KFAR                      /sys/File Managers/kfar
@@ -126,9 +125,10 @@ Eolite                    /sys/File Managers/Eolite
 Консоль SHELL             /sys/shell
 Сохранение образа         /sys/rdsave
 #14   **** Система -> Тестирование ****
+Тест защиты               /sys/test
 Тест монитора             /sys/disptest
 Графический бенчмарк      /sys/mgb
-Тест защиты               /sys/test
+FSPEED скорость ФС        /sys/fspeed
 #15   **** Система -> Спец.возможности ****
 Экранная лупа             /sys/magnify
 Экранная клавиатура       /sys/zkey
