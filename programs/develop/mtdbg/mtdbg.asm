@@ -2245,8 +2245,13 @@ NoPrgLoaded_str db      'No program loaded'
 NoPrgLoaded_len = $ - NoPrgLoaded_str
 aRunning        db      'Running'
 aPaused         db      'Paused'
-aMain           db      '[ CPU ]'
-aSSE            db      '[ SSE ]'
+
+aFPU            db      '[ FPU ]'
+aMMX            db      '[ MMX ]'
+aSSE            db      '[ SSE-32 ]'
+aSSE2           db      '[ SSE-64 ]'
+aMMX128         db      '[ MMX128 ]'
+
 aAVX            db      '[ AVX ]'
 aMSR            db      '[ MSR ]'
 aPoint          db      0x1C
@@ -2311,10 +2316,13 @@ avx_strs:
 
 align 4
 n_digits        dd 10000000
-debuggee_pid    dd 0
-bSuspended      db 0
-bAfterGo        db 0
-temp_break      dd 0
+
+btn2_tab        dd aFPU
+                dd aMMX
+btn3_tab        dd aSSE2
+                dd aMMX128
+                dd aSSE
+
 reg_mode        db 1
 
 
@@ -2383,10 +2391,20 @@ prgname_len dd ?
 
 IncludeUGlobals
 
+align 4
+debuggee_pid    dd ?
 dbgwnd          dd ?
+temp_break      dd ?
 
-messages        rb messages_height*messages_width
+
+fpu_mode        db ?
+sse_mode        db ?
+bSuspended      db ?
+bAfterGo        db ?
+
+
 messages_pos    dd ?
+messages        rb messages_height*messages_width
 
 cmdline         rb cmdline_width+1
 cmdline_len     dd ?

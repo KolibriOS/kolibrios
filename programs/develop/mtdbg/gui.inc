@@ -156,8 +156,42 @@ waitevent:
         jz      keypressed
         dec     eax
         jnz     waitevent
-        ; button pressed - we have only one button (close)
-        mcall   -1
+;button pressed
+        mcall   17
+        test    al, al
+        jnz     waitevent
+        movzx   eax, ah
+        jmp     dword [.jmp_table+eax*4]
+
+.close:
+        mcall -1
+.mmx:
+        movzx   edx, [fpu_mode]
+        xor     dl, 1
+        mov     [fpu_mode], dl
+        push    edx
+        jnz     .fpu
+        call    draw_mmx_regs
+        jmp     .draw_label
+.fpu:
+        call    draw_fpu_regs
+.draw_label:
+        pop     edx
+        mov     edx, [btn2_tab+edx*4]
+        mov     edi, COLOR_BG_NORMAL
+        mov     ecx, (COLOR_TXT_NORMAL or 0x40000000)
+        mov     esi, 7
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 4*10000h+registers_y_pos+2
+        mcall   4
+        jmp     waitevent
+
+align 4
+.jmp_table:
+        dd waitevent
+        dd .close
+        dd .mmx
+
 
 ; TODO: split in more independent function
 keypressed:
@@ -933,7 +967,7 @@ draw_fpu_register_2:
         ; draw a text string in the window
 
         mov     eax, 4
-        mov     esi, 21
+        mov     esi, 23
         mov     edx, .str_buf
         mov     edi, COLOR_BG_NORMAL
         int     0x40
@@ -951,7 +985,28 @@ draw_fpu_register_2:
 
 draw_mmx_register_2:
 
+        sub     esp, 24
+        lea     edi, [esp+4]
+
         shl     ebp, 4
+        mov     eax, ebp
+        shl     eax, 16-4
+        add     eax, 'MM0:'
+        mov     [esp], eax
+
+        mov     edx, dword [_mm0+ebp+4]
+        call    .hex_2_str
+        mov     al, ' '
+        stosb
+        call    .hex_2_str
+        mov     al, ' '
+        stosb
+
+        mov     edx, dword [_mm0+ebp]
+        call    .hex_2_str
+        mov     al, ' '
+        stosb
+        call    .hex_2_str
 
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
         cmp     [debuggee_pid], 0
@@ -972,44 +1027,65 @@ draw_mmx_register_2:
 .scol:
         mov     ecx, (COLOR_TXT_CHANGED or 0x40000000)
 .cd:
-        mov     eax, ebp
-        shl     eax, 16-4
-        add     eax, 'MM0='
-        push    eax                           ;write label into stack
-
         ; draw a text string in the window
 
         mov     eax, 4
-        mov     esi, eax
+        mov     esi, 23
         mov     edx, esp
         mov     edi, COLOR_BG_NORMAL
         int     0x40
-
-        mov     esi, ecx
-        mov     [esp], ebx
-
-        mov     ecx, dword [_mm0+ebp+4]
-        rol     ecx, 16
-        lea     edx, [ebx+0x180000]
-        mov     ebx, 0x00040100
-        mcall   47                        ;word #3
-
-        shr     ecx, 16
-        add     edx, (4*6+3) shl 16
-        mcall   47                        ;word #2
-
-        mov     ecx, dword [_mm0+ebp]
-        rol     ecx, 16
-        add     edx, (4*6+3) shl 16
-        mcall   47                        ;word #1
-
-        shr     ecx, 16
-        add     edx, (4*6+3) shl 16
-        mcall   47                        ;word #0
-
-        pop     ebx
-
         shr     ebp, 4
+        add     esp, 24
+        ret
+
+align 4
+.hex_2_str:
+        mov     ecx, 4
+@@:
+        xor     eax, eax
+        shld    eax, edx, 4
+        aaa
+        adc     al, 0x30
+        aad     16
+        shl     edx, 4
+        stosb
+        loop @B
+        ret
+
+align 4
+draw_fpu_regs:
+        push    ebp
+        push    8
+        xor     ebp, ebp
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+142
+        mov     edi, COLOR_BG_NORMAL
+.draw_regs:
+        call    draw_fpu_register_2
+        add     ebx, 10
+        inc     ebp
+        dec     dword [esp]
+        jnz     .draw_regs
+        pop     eax                         ;restore stack
+        pop     ebp
+        ret
+
+align 4
+draw_mmx_regs:
+        push    ebp
+        push    8
+        xor     ebp, ebp
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+142
+;        mov     edi, COLOR_BG_NORMAL
+.draw_regs:
+        call    draw_mmx_register_2
+        add     ebx, 10
+        inc     ebp
+        dec     dword [esp]
+        jnz     .draw_regs
+        pop     eax
+        pop     ebp
         ret
 
 ; TODO add SSE registers
@@ -1064,7 +1140,9 @@ draw_reg_title:
         jz      @f
         mov     ecx, (COLOR_TXT_INACTIVE or 0x40000000)
     @@:
-        mov     edx, aMain
+        movzx   edx, [fpu_mode]
+        mov     edx, [btn2_tab+edx*4]
+
         ; draw a text string in the window
         mov     ebx, [registers_x_pos_dd]
         add     ebx, 4*10000h+registers_y_pos+2
@@ -1142,47 +1220,14 @@ draw_main_registers:
         mov     cl, 7
         add     esi, _eflags-_eip
         call    draw_register
-        mov     cl, 4
 
-    ; MMX registers
-
-        push    ebp
-
-        push    8
-        xor     ebp, ebp
-        mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+142
-
-align 4
-.draw_mmx_regs:
-
-        call    draw_mmx_register_2
-        add     ebx, 10
-        inc     ebp
-        dec     dword [esp]
-        jnz     .draw_mmx_regs
-
-;FPU registers
-
-        ;int3
-        ;nop
-
-        mov     [esp], byte 8
-        xor     ebp, ebp
-        mov     ebx, [registers_x_pos_dd]
-        add     ebx, 2*10000h+registers_y_pos+232
-
-align 4
-.draw_fpu_regs:
-
-        call    draw_fpu_register_2
-        add     ebx, 10
-        inc     ebp
-        dec     dword [esp]
-        jnz     .draw_fpu_regs
-        pop     eax                         ;restore stack
-        pop     ebp
-
+        cmp     [fpu_mode], 1
+        je      .fpu
+        call    draw_mmx_regs
+        jmp     @f
+.fpu:
+        call    draw_fpu_regs
+@@:
         mov     ecx, COLOR_TXT_INACTIVE
         cmp     [debuggee_pid], 0
         jz      @f
@@ -1773,6 +1818,14 @@ draw_window:
         add     ebx, (data_x_pos-2)*10000h + (data_x_pos+2)
         mov     ecx, (disasm_y_pos-4)*10001h
         mcall
+
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, (4 shl 16) + 42
+        mov     ecx, (registers_y_pos shl 16) + 11
+        mov     edx, (1 shl 30)+2
+        mov     esi, 0x00808080
+        mcall   8
+
 
         ; redraw whole window again
         call    redraw_title
