@@ -56,43 +56,42 @@ end if
 
 ;-----------------------------------------------------------------------------
 
-data_width      equ 80
-data_x_pos      equ 12
-data_x_size     equ data_width*6
+data_width              = 80
+data_x_pos              = 12
+data_x_size             = data_width*6
 
-title_x_pos     equ 30
-title_y_pos     equ 8
-title_y_size    equ 10
+title_x_pos             = 30
+title_y_pos             = 8
+title_y_size            = 10
 
-;dump_y_pos      equ (registers_y_pos + registers_y_size + 5)
-dump_y_pos      equ (title_y_pos + title_y_size)
-dump_height     equ 6
-dump_y_size     equ (dump_height*10)
+dump_y_pos              = (title_y_pos + title_y_size)
+dump_height             = 6
+dump_y_size             = (dump_height*10)
 
-disasm_y_pos    equ (dump_y_pos + dump_y_size + 4)
-disasm_height   equ 18
-disasm_y_size   equ (disasm_height*10)
+disasm_y_pos            = (dump_y_pos + dump_y_size + 4)
+min_disasm_height       = 18
+min_disasm_y_size       = (min_disasm_height*10)
 
-messages_width  equ data_width
-messages_height equ 8
-messages_x_pos  equ data_x_pos
-messages_y_pos  equ (disasm_y_pos + disasm_y_size + 4)
-messages_x_size equ messages_width*6
-messages_y_size equ messages_height*10
+messages_width          = data_width
+messages_height         = 8
+messages_x_pos          = data_x_pos
+min_messages_y_pos      = (disasm_y_pos + min_disasm_y_size + 4)
+messages_x_size         = messages_width*6
+messages_y_size         = messages_height*10
 
-cmdline_width   equ data_width
-cmdline_x_pos   equ data_x_pos
-cmdline_y_pos   equ (messages_y_pos + messages_y_size + 4)
-cmdline_x_size  equ messages_x_size
-cmdline_y_size  equ 10
+cmdline_width           = data_width
+cmdline_x_pos           = data_x_pos
+min_cmdline_y_pos       = (min_messages_y_pos + messages_y_size + 4)
+cmdline_x_size          = messages_x_size
+cmdline_y_size          = 10
 
-registers_x_pos equ (data_x_pos + messages_x_size + 4)
-registers_y_pos equ (title_y_pos + title_y_size - 3)
-registers_x_size equ 134+2*6
-registers_y_size equ (cmdline_y_pos + cmdline_y_size - registers_y_pos+1)
+registers_x_pos         = (data_x_pos + messages_x_size + 4)
+registers_y_pos         = (title_y_pos + title_y_size - 3)
+registers_x_size        = 134+2*6
+registers_y_size        = (min_cmdline_y_pos + cmdline_y_size - registers_y_pos+1)
 
-wnd_x_size      equ (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3) + 10
-wnd_y_size      equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
+wnd_x_size              = (data_x_pos + messages_x_size + data_x_pos + registers_x_size+3) + 10
+wnd_y_size              = (min_cmdline_y_pos + cmdline_y_size + data_x_pos)
 
 ;-----------------------------------------------------------------------------
 ;                          Entry point

@@ -1956,7 +1956,7 @@ include 'disasm.inc'
 
 caption_str db  'Kolibri Debugger',0
 
-begin_str db    'Kolibri Debugger, version 0.34',10
+begin_str db    'Kolibri Debugger, version 0.35',10
         db      'Hint: type "help" for help, "quit" to quit'
 newline db      10,0
 prompt  db      '> ',0
@@ -1968,20 +1968,6 @@ help_groups:
         db      0
         dd      aBreakpoints, 0, 0, help_breaks_msg
         db      0
-
-
-;-----------------------------------------------------------------------------
-;                  Coordinates and sizes for GUI
-
-data_x_size_dd          dd data_x_size shl 16, data_x_size
-messages_x_size_dd      dd messages_x_size shl 16, messages_x_size
-registers_x_pos_dd      dd registers_x_pos shl 16, registers_x_pos
-
-disasm_height_dd        dd 18
-disasm_y_size_dd        dd disasm_y_size shl 16, disasm_y_size
-messages_y_pos_dd       dd messages_y_pos shl 16, messages_y_pos
-cmdline_y_pos_dd        dd cmdline_y_pos shl 16, cmdline_y_pos
-registers_y_size_dd     dd registers_y_size shl 16, registers_y_size
 
 ;-----------------------------------------------------------------------------
 ;                   Commands format definitions
@@ -2539,7 +2525,20 @@ disasm_cur_pos          dd ?
 disasm_cur_str          dd ?
 disasm_string           rb 256
 
-thread_info     process_information
+thread_info             process_information
+
+;-----------------------------------------------------------------------------
+;                  Coordinates and sizes for GUI
+
+data_x_size_dd          dd ?, ?
+messages_x_size_dd      dd ?, ?
+registers_x_pos_dd      dd ?, ?
+
+disasm_height_dd        dd ?
+disasm_y_size_dd        dd ?, ?
+messages_y_pos_dd       dd ?, ?
+cmdline_y_pos_dd        dd ?, ?
+registers_y_size_dd     dd ?, ?
 
 i_param         rb 256
 
