@@ -120,6 +120,7 @@ still:
 key:
 ;    mov  [event],al
     mcall 2
+	and  eax, 0xffff
     cmp  ah,13
     je   button.mode
     cmp  ah,27
