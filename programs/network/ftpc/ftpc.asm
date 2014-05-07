@@ -14,6 +14,8 @@
 
 format binary as ""
 
+TIMEOUT                 = 3     ; seconds
+
 BUFFERSIZE              = 4096
 
 STATUS_CONNECTING       = 0
@@ -47,8 +49,8 @@ include 'usercommands.inc'
 include 'servercommands.inc'
 
 start:
-; disable all events
-        mcall   40, 0
+; disable all events except network event
+        mcall   40, EV_STACK
 ; load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
@@ -114,6 +116,8 @@ resolve:
 ; connect to the server
         invoke  con_write_asciiz, str_connect
         mcall   connect, [socketnum], sockaddr1, 18
+        cmp     eax, -1
+        je      error_connect
         mov     [status], STATUS_CONNECTING
 ; Tell the user we're waiting for the server now.
         invoke  con_write_asciiz, str_waiting
@@ -133,12 +137,22 @@ wait_for_servercommand:
 
 ; receive socket data
   .receive:
-        mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, 0
-        inc     eax
-        jz      error_socket
-        dec     eax
-        jz      wait_for_servercommand
+        mcall   26, 9
+        add     eax, TIMEOUT*100
+        mov     [timeout], eax
+  .receive_loop:
+        mcall   23, 50          ; Wait for event with timeout
+        mcall   26, 9
+        cmp     eax, [timeout]
+        jge     error_timeout
+        mcall   recv, [socketnum], buffer_ptr, BUFFERSIZE, MSG_DONTWAIT
+        test    eax, eax
+        jnz     .got_data
+        cmp     ebx, EWOULDBLOCK
+        jne     error_socket
+        jmp     .receive_loop
 
+  .got_data:
         mov     [offset], 0
 
 ; extract commands, copy them to "s" buffer
@@ -299,7 +313,15 @@ open_dataconnection:                    ; only passive for now..
         invoke  con_set_flags                           ; reset color
         ret
 
+error_connect:
+        invoke  con_set_flags, 0x0c                     ; print errors in red
+        invoke  con_write_asciiz, str_err_connect
+        jmp     wait_for_keypress
 
+error_timeout:
+        invoke  con_set_flags, 0x0c                     ; print errors in red
+        invoke  con_write_asciiz, str_err_timeout
+        jmp     wait_for_keypress
 
 error_socket:
         invoke  con_set_flags, 0x0c                     ; print errors in red
@@ -328,7 +350,7 @@ exit:
 
 ; data
 str_title       db 'FTP client',0
-str_welcome     db 'FTP client for KolibriOS v0.11',10
+str_welcome     db 'FTP client for KolibriOS v0.12',10
                 db 10
                 db 'Please enter ftp server address.',10,0
 
@@ -337,6 +359,8 @@ str_resolve     db 'Resolving ',0
 str_newline     db 10,0
 str_err_resolve db 10,'Name resolution failed.',10,0
 str_err_socket  db 10,'Socket error.',10,0
+str_err_timeout db 10,'Timeout - no response from server.',10,0
+str_err_connect db 10,'Cannot connect to the server.',10,0
 str8            db ' (',0
 str9            db ')',10,0
 str_push        db 'Push any key to continue.',0
@@ -421,6 +445,8 @@ datasocket      dd ?
 offset          dd ?
 size            dd ?
 operation       dd ?
+
+timeout         dd ?
 
 filestruct:
 .subfn  dd ?
