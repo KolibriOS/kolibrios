@@ -1,4 +1,4 @@
-    VERSION equ "0.3Å"
+    VERSION equ "0.3Ä¹"
     use32
     org     0
     db	    'MENUET01'
@@ -14,7 +14,7 @@
  ;===============================
 
     sz_head db "Calc+ [v", VERSION, "]", 0
-    buttons db "123456789()%^-+/*0"
+    buttons db "789456123()%^-+/*0"
     edb1    edit_box 184, 8, 12, 0, 0, 0, 0, 0, 500, \
 		     exp, group, ed_always_focus + ed_focus, 0, 0
 
@@ -418,4 +418,4 @@
  txt_id     rd 1
  txt_x	    rd 1
 
- memory:
+ memory:
