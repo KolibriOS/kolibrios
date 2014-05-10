@@ -6,7 +6,7 @@ server_parser:
 ; thus they are simply ignored in this simple command parser.
 
         cmp     dword[s], "150 "
-        je      data_ok
+        je      data_loop
 
         cmp     dword[s], "220 "
         je      welcome
@@ -100,7 +100,7 @@ pasv_ok:
         jmp     wait_for_servercommand
 
 
-data_ok:
+data_loop:
 
         invoke  con_write_asciiz, str2b
 
@@ -118,7 +118,7 @@ data_ok:
 
 ; not retreiving, just print to console
         invoke  con_write_asciiz, buffer_ptr2
-        jmp     data_ok
+        jmp     data_loop
 
 ; retreiving, save to file
   .retr:
@@ -128,7 +128,7 @@ data_ok:
         mcall   70, filestruct
         pop     eax
         add     [filestruct.offset], eax
-        jmp     data_ok
+        jmp     data_loop
 
 ; storing, send all data
   .stor:
@@ -149,11 +149,13 @@ data_ok:
   .done:
         invoke  con_write_asciiz, str_close
         mcall   close, [datasocket]
+        mov     [operation], OPERATION_NONE
         jmp     wait_for_servercommand
 
 
-
 close_datacon:
+        cmp     [operation], OPERATION_NONE
+        je      wait_for_usercommand
         invoke  con_write_asciiz, str_close
         mcall   close, [datasocket]
         jmp     wait_for_usercommand

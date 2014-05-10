@@ -5,12 +5,18 @@ cmd_help:
 
         jmp     wait_for_usercommand
 
+
 cmd_bye:
 
-        mcall   close, [socketnum]
-        mcall   close, [datasocket]
+; Send BYE message to the server
+        mov     dword[s], "BYE" + 13 shl 24
+        mov     byte[s+4], 10
+        mcall   send, [socketnum], s, 5, 0
 
+; Close the control connection
+        mcall   close, [socketnum]
         jmp     main
+
 
 cmd_pwd:
 
@@ -19,6 +25,7 @@ cmd_pwd:
         mcall   send, [socketnum], s, 5, 0
 
         jmp     wait_for_servercommand
+
 
 cmd_cwd:
 
@@ -34,6 +41,7 @@ cmd_cwd:
         mcall   send, [socketnum], s, , 0
 
         jmp     wait_for_servercommand
+
 
 cmd_dele:
 
@@ -51,24 +59,27 @@ cmd_dele:
 
         jmp     wait_for_servercommand
 
-cmd_list:
 
+cmd_list:
         call    open_dataconnection
 
         mov     [operation], OPERATION_LIST
 
         mov     dword[s], "LIST"
         mov     word[s+4], 0x0a0d
-        mcall   send, [socketnum], s, 6, 0
+        mcall   send, [socketnum], s, 6, 0 
 
         jmp     wait_for_servercommand
 
 
 cmd_retr:
-
         call    open_dataconnection
+        
+; Create/open the file
 
-        mov     [operation], OPERATION_RETR
+        mov     esi, s+5
+        mov     ecx, 256-5
+        call    set_filename
 
         mov     [filestruct.subfn], 2   ; create/rewrite file
         mov     [filestruct.offset], 0
@@ -76,16 +87,16 @@ cmd_retr:
         mov     [filestruct.size], 0
         mov     [filestruct.ptr], 0
 
-        lea     esi, [s+5]
-        mov     edi, filestruct.name
-        mov     ecx, 256-5
-        call    set_filename
-
         mcall   70, filestruct
         cmp     eax, -1
 ;        je      fileerror
 
+; Prepare to write to the file
+
         mov     [filestruct.subfn], 3   ; write to file
+        mov     [operation], OPERATION_RETR
+
+; Request the file from server
 
         mov     dword[s], "RETR"
         mov     byte[s+4], " "
@@ -95,9 +106,10 @@ cmd_retr:
         mov     edi, s
         repne scasb
         lea     esi, [edi - s]
-        mov     word [edi - 2], 0x0a0d
+        mov     dword[edi - 2], 0x0a0d
         mcall   send, [socketnum], s, , 0
 
+        invoke  con_write_asciiz, s     ; print command
         jmp     wait_for_servercommand
 
 
@@ -113,8 +125,7 @@ cmd_stor:
         mov     [filestruct.size], BUFFERSIZE
         mov     [filestruct.ptr], buffer_ptr2
 
-        lea     esi, [s+5]
-        mov     edi, filestruct.name
+        mov     esi, s+5
         mov     ecx, 256-5
         call    set_filename
 
@@ -154,6 +165,7 @@ cmd_lcwd:
 
         jmp     wait_for_usercommand
 
+
 cmd_cdup:
 
         mov     dword[s], "CDUP"
@@ -161,6 +173,7 @@ cmd_cdup:
         mcall   send, [socketnum], s, 6, 0
 
         jmp     wait_for_servercommand
+
 
 cmd_rmd:
 
@@ -176,6 +189,7 @@ cmd_rmd:
         mcall   send, [socketnum], s, , 0
 
         jmp     wait_for_servercommand
+
 
 cmd_mkd:
 
@@ -193,18 +207,15 @@ cmd_mkd:
         jmp     wait_for_servercommand
 
 
-
 ; esi   = source ptr
-; edi   = dest ptr
 ; ecx   = max length of source buffer
 set_filename:
 
+        mov     edi, filestruct.name
   .loop:
         lodsb
         test    al, al
         jz      .done
-        cmp     al, ' '
-        je      .done
         cmp     al, 10
         je      .done
         stosb
@@ -214,4 +225,3 @@ set_filename:
         stosb
 
         ret
-
