@@ -57,16 +57,6 @@ Supporting OS subroutines required: <<link>>, <<unlink>>, or <<rename>>.
 #include <stdio.h>
 #include <sys/unistd.h>
 
-int
-_DEFUN (_rename_r, (ptr, old, new),
-     struct _reent *ptr _AND
-     _CONST char *old _AND
-     _CONST char *new)
-{
-    return -1;
-}
-
-
 #ifndef _REENT_ONLY
 
 int
@@ -74,7 +64,7 @@ _DEFUN(rename, (old, new),
        _CONST char *old _AND
        _CONST char *new)
 {
-    return -1;
+  return _rename_r (_REENT, old, new);
 }
 
 #endif

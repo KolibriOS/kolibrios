@@ -34,10 +34,7 @@ union __ldmath
 /* Natural log of 2 */
 #define _M_LN2        0.693147180559945309417
 
-#if defined(__GNUC__) && \
-  ( (__GNUC__ >= 4) || \
-    ( (__GNUC__ >= 3) && defined(__GNUC_MINOR__) && (__GNUC_MINOR__ >= 3) ) )
-
+#if __GNUC_PREREQ (3, 3)
  /* gcc >= 3.3 implicitly defines builtins for HUGE_VALx values.  */
 
 # ifndef HUGE_VAL
@@ -143,11 +140,37 @@ extern double fmod _PARAMS((double, double));
 
 /* ISO C99 types and macros. */
 
-#ifndef FLT_EVAL_METHOD
-#define FLT_EVAL_METHOD 0
-typedef float float_t;
-typedef double double_t;
+/* FIXME:  FLT_EVAL_METHOD should somehow be gotten from float.h (which is hard,
+ * considering that the standard says the includes it defines should not
+ * include other includes that it defines) and that value used.  (This can be
+ * solved, but autoconf has a bug which makes the solution more difficult, so
+ * it has been skipped for now.)  */
+#if !defined(FLT_EVAL_METHOD) && defined(__FLT_EVAL_METHOD__)
+  #define FLT_EVAL_METHOD __FLT_EVAL_METHOD__
+  #define __TMP_FLT_EVAL_METHOD
 #endif /* FLT_EVAL_METHOD */
+#if defined FLT_EVAL_METHOD
+  #if FLT_EVAL_METHOD == 0
+    typedef float  float_t;
+    typedef double double_t;
+   #elif FLT_EVAL_METHOD == 1
+    typedef double float_t;
+    typedef double double_t;
+   #elif FLT_EVAL_METHOD == 2
+    typedef long double float_t;
+    typedef long double double_t;
+   #else
+    /* Implementation-defined.  Assume float_t and double_t have been
+     * defined previously for this configuration (e.g. config.h). */
+  #endif
+#else
+    /* Assume basic definitions.  */
+    typedef float  float_t;
+    typedef double double_t;
+#endif
+#if defined(__TMP_FLT_EVAL_METHOD)
+  #undef FLT_EVAL_METHOD
+#endif
 
 #define FP_NAN         0
 #define FP_INFINITE    1
@@ -355,9 +378,6 @@ extern float lgammaf _PARAMS((float));
 extern float erff _PARAMS((float));
 extern float erfcf _PARAMS((float));
 extern float log2f _PARAMS((float));
-#if !defined(__cplusplus)
-#define log2f(x) (logf (x) / (float_t) _M_LN2)
-#endif
 extern float hypotf _PARAMS((float, float));
 #endif /* ! defined (_REENT_ONLY) */
 

@@ -26,10 +26,10 @@ INDEX
 
 ANSI_SYNOPSIS
         #include <stdio.h>
-	char *fgets(char *<[buf]>, int <[n]>, FILE *<[fp]>);
+	char *fgets(char *restrict <[buf]>, int <[n]>, FILE *restrict <[fp]>);
 
         #include <stdio.h>
-	char *_fgets_r(struct _reent *<[ptr]>, char *<[buf]>, int <[n]>, FILE *<[fp]>);
+	char *_fgets_r(struct _reent *<[ptr]>, char *restrict <[buf]>, int <[n]>, FILE *restrict <[fp]>);
 
 TRAD_SYNOPSIS
 	#include <stdio.h>
@@ -83,9 +83,9 @@ Supporting OS subroutines required: <<close>>, <<fstat>>, <<isatty>>,
 char *
 _DEFUN(_fgets_r, (ptr, buf, n, fp),
        struct _reent * ptr _AND
-       char *buf _AND
+       char *__restrict buf _AND
        int n     _AND
-       FILE * fp)
+       FILE *__restrict fp)
 {
   size_t len;
   char *s;
@@ -98,11 +98,11 @@ _DEFUN(_fgets_r, (ptr, buf, n, fp),
 
   CHECK_INIT(ptr, fp);
 
-  _flockfile (fp);
+  _newlib_flockfile_start (fp);
 #ifdef __SCLE
   if (fp->_flags & __SCLE)
     {
-      int c;
+      int c = 0;
       /* Sorry, have to do it the slow way */
       while (--n > 0 && (c = __sgetc_r (ptr, fp)) != EOF)
 	{
@@ -112,11 +112,11 @@ _DEFUN(_fgets_r, (ptr, buf, n, fp),
 	}
       if (c == EOF && s == buf)
         {
-          _funlockfile (fp);
+          _newlib_flockfile_exit (fp);
           return NULL;
         }
       *s = 0;
-      _funlockfile (fp);
+      _newlib_flockfile_exit (fp);
       return buf;
     }
 #endif
@@ -134,7 +134,7 @@ _DEFUN(_fgets_r, (ptr, buf, n, fp),
 	      /* EOF: stop with partial or no line */
 	      if (s == buf)
                 {
-                  _funlockfile (fp);
+                  _newlib_flockfile_exit (fp);
                   return 0;
                 }
 	      break;
@@ -159,7 +159,7 @@ _DEFUN(_fgets_r, (ptr, buf, n, fp),
 	  fp->_p = t;
 	  _CAST_VOID memcpy ((_PTR) s, (_PTR) p, len);
 	  s[len] = 0;
-          _funlockfile (fp);
+          _newlib_flockfile_exit (fp);
 	  return (buf);
 	}
       fp->_r -= len;
@@ -169,7 +169,7 @@ _DEFUN(_fgets_r, (ptr, buf, n, fp),
     }
   while ((n -= len) != 0);
   *s = 0;
-  _funlockfile (fp);
+  _newlib_flockfile_end (fp);
   return buf;
 }
 
@@ -177,9 +177,9 @@ _DEFUN(_fgets_r, (ptr, buf, n, fp),
 
 char *
 _DEFUN(fgets, (buf, n, fp),
-       char *buf _AND
+       char *__restrict buf _AND
        int n     _AND
-       FILE * fp)
+       FILE *__restrict fp)
 {
   return _fgets_r (_REENT, buf, n, fp);
 }

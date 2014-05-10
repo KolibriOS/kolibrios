@@ -103,10 +103,11 @@ _DEFUN(setvbuf, (fp, buf, mode, size),
        register size_t size)
 {
   int ret = 0;
+  struct _reent *reent = _REENT;
 
-  CHECK_INIT (_REENT, fp);
+  CHECK_INIT (reent, fp);
 
-  _flockfile (fp);
+  _newlib_flockfile_start (fp);
 
   /*
    * Verify arguments.  The `int' limit on `size' is due to this
@@ -115,7 +116,7 @@ _DEFUN(setvbuf, (fp, buf, mode, size),
 
   if ((mode != _IOFBF && mode != _IOLBF && mode != _IONBF) || (int)(_POINTER_INT) size < 0)
     {
-      _funlockfile (fp);
+      _newlib_flockfile_exit (fp);
       return (EOF);
     }
 
@@ -126,11 +127,11 @@ _DEFUN(setvbuf, (fp, buf, mode, size),
    * non buffer flags, and clear malloc flag.
    */
 
-  _fflush_r (_REENT, fp);
+  _fflush_r (reent, fp);
   fp->_r = 0;
   fp->_lbfsize = 0;
   if (fp->_flags & __SMBF)
-    _free_r (_REENT, (_PTR) fp->_bf._base);
+    _free_r (reent, (_PTR) fp->_bf._base);
   fp->_flags &= ~(__SLBF | __SNBF | __SMBF);
 
   if (mode == _IONBF)
@@ -158,7 +159,7 @@ nbf:
           fp->_w = 0;
           fp->_bf._base = fp->_p = fp->_nbuf;
           fp->_bf._size = 1;
-          _funlockfile (fp);
+          _newlib_flockfile_exit (fp);
           return (ret);
         }
       fp->_flags |= __SMBF;
@@ -180,7 +181,7 @@ nbf:
 
     case _IOFBF:
       /* no flag */
-      _REENT->__cleanup = _cleanup_r;
+      reent->__cleanup = _cleanup_r;
       fp->_bf._base = fp->_p = (unsigned char *) buf;
       fp->_bf._size = size;
       break;
@@ -193,6 +194,6 @@ nbf:
   if (fp->_flags & __SWR)
     fp->_w = fp->_flags & (__SLBF | __SNBF) ? 0 : size;
 
-  _funlockfile (fp);
+  _newlib_flockfile_end (fp);
   return 0;
 }

@@ -2,7 +2,7 @@
  *
  *  Written by Joel Sherrill <joel@OARcorp.com>.
  *
- *  COPYRIGHT (c) 1989-2010.
+ *  COPYRIGHT (c) 1989-2013.
  *  On-Line Applications Research Corporation (OAR).
  *
  *  Permission to use, copy, modify, and distribute this software for any
@@ -15,7 +15,7 @@
  *  OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
  *  SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
- *  $Id: pthread.h,v 1.9 2010/12/08 14:44:06 corinna Exp $
+ *  $Id: pthread.h,v 1.12 2013/11/29 23:35:34 joel Exp $
  */
 
 #ifndef __PTHREAD_h
@@ -32,6 +32,14 @@ extern "C" {
 #include <sys/types.h>
 #include <time.h>
 #include <sys/sched.h>
+#include <sys/cdefs.h>
+
+struct _pthread_cleanup_context {
+  void (*_routine)(void *);
+  void *_arg;
+  int _canceltype;
+  struct _pthread_cleanup_context *_previous;
+};
 
 /* Register Fork Handlers */
 int	_EXFUN(pthread_atfork,(void (*prepare)(void), void (*parent)(void),
@@ -104,7 +112,7 @@ int	_EXFUN(pthread_cond_destroy, (pthread_cond_t *__mutex));
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
  */
  
-#define PTHREAD_COND_INITIALIZER  ((pthread_mutex_t) 0xFFFFFFFF)
+#define PTHREAD_COND_INITIALIZER  ((pthread_cond_t) 0xFFFFFFFF)
  
 /* Broadcasting and Signaling a Condition, P1003.1c/Draft 10, p. 101 */
  
@@ -206,6 +214,29 @@ int	_EXFUN(pthread_attr_getguardsize,
 int	_EXFUN(pthread_attr_setguardsize,
 	(pthread_attr_t *__attr, size_t __guardsize));
 
+/* POSIX thread APIs beyond the POSIX standard but provided 
+ * in GNU/Linux. They may be provided by other OSes for
+ * compatibility.
+ */
+#if defined(__GNU_VISIBLE)
+#if defined(__rtems__) 
+int	_EXFUN(pthread_attr_setaffinity_np,
+	(pthread_attr_t *__attr, size_t __cpusetsize, 
+	const cpu_set_t *__cpuset));
+int 	_EXFUN(pthread_attr_getaffinity_np,
+	(const pthread_attr_t *__attr, size_t __cpusetsize,
+	cpu_set_t *__cpuset));
+
+int	_EXFUN(pthread_setaffinity_np,
+	(pthread_t __id, size_t __cpusetsize, const cpu_set_t *__cpuset));
+int	_EXFUN(pthread_getaffinity_np,
+	(const pthread_t __id, size_t __cpusetsize, cpu_set_t *__cpuset));
+
+int	_EXFUN(pthread_getattr_np,
+	(pthread_t __id, pthread_attr_t *__attr));
+#endif /* defined(__rtems__) */
+#endif /* defined(__GNU_VISIBLE) */
+
 /* Thread Creation, P1003.1c/Draft 10, p. 144 */
 
 int	_EXFUN(pthread_create,
@@ -280,9 +311,43 @@ void 	_EXFUN(pthread_testcancel, (void));
 
 /* Establishing Cancellation Handlers, P1003.1c/Draft 10, p. 184 */
 
-void 	_EXFUN(pthread_cleanup_push,
-	(void (*__routine)( void * ), void *__arg));
-void 	_EXFUN(pthread_cleanup_pop, (int __execute));
+void	_EXFUN(_pthread_cleanup_push,
+	(struct _pthread_cleanup_context *_context,
+	void (*_routine)(void *), void *_arg));
+
+void	_EXFUN(_pthread_cleanup_pop,
+	(struct _pthread_cleanup_context *_context,
+	int _execute));
+
+/* It is intentional to open and close the scope in two different macros */
+#define pthread_cleanup_push(_routine, _arg) \
+  do { \
+    struct _pthread_cleanup_context _pthread_clup_ctx; \
+    _pthread_cleanup_push(&_pthread_clup_ctx, (_routine), (_arg))
+
+#define pthread_cleanup_pop(_execute) \
+    _pthread_cleanup_pop(&_pthread_clup_ctx, (_execute)); \
+  } while (0)
+
+#if defined(_GNU_SOURCE)
+void	_EXFUN(_pthread_cleanup_push_defer,
+	(struct _pthread_cleanup_context *_context,
+	void (*_routine)(void *), void *_arg));
+
+void	_EXFUN(_pthread_cleanup_pop_restore,
+	(struct _pthread_cleanup_context *_context,
+	int _execute));
+
+/* It is intentional to open and close the scope in two different macros */
+#define pthread_cleanup_push_defer_np(_routine, _arg) \
+  do { \
+    struct _pthread_cleanup_context _pthread_clup_ctx; \
+    _pthread_cleanup_push_defer(&_pthread_clup_ctx, (_routine), (_arg))
+
+#define pthread_cleanup_pop_restore_np(_execute) \
+    _pthread_cleanup_pop_restore(&_pthread_clup_ctx, (_execute)); \
+  } while (0)
+#endif /* defined(_GNU_SOURCE) */
 
 #if defined(_POSIX_THREAD_CPUTIME)
  
@@ -327,6 +392,13 @@ int	_EXFUN(pthread_spin_unlock, (pthread_spinlock_t *__spinlock));
 #endif /* defined(_POSIX_SPIN_LOCKS) */
 
 #if defined(_POSIX_READER_WRITER_LOCKS)
+
+/* This is used to statically initialize a pthread_rwlock_t. Example:
+  
+    pthread_mutex_t mutex = PTHREAD_RWLOCK_INITIALIZER;
+ */
+
+#define PTHREAD_RWLOCK_INITIALIZER  ((pthread_rwlock_t) 0xFFFFFFFF)
 
 int	_EXFUN(pthread_rwlockattr_init, (pthread_rwlockattr_t *__attr));
 int	_EXFUN(pthread_rwlockattr_destroy, (pthread_rwlockattr_t *__attr));

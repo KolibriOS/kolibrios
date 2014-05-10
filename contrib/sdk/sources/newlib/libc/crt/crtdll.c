@@ -92,7 +92,7 @@ libc_crt_startup (void *libc_base)
     memset(_tls_map, 0xFF, 32*4);
     _tls_map[0] = 0xE0;
     init_reent();
-    __initPOSIXHandles();
+    init_stdio();
 
  //   __appenv = load_file("/sys/system.env", &__appenv_size);
 

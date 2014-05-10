@@ -26,10 +26,10 @@ INDEX
 
 ANSI_SYNOPSIS
 	#include <stdio.h>
-	int fputs(const char *<[s]>, FILE *<[fp]>);
+	int fputs(const char *restrict <[s]>, FILE *restrict <[fp]>);
 
 	#include <stdio.h>
-	int _fputs_r(struct _reent *<[ptr]>, const char *<[s]>, FILE *<[fp]>);
+	int _fputs_r(struct _reent *<[ptr]>, const char *restrict <[s]>, FILE *restrict <[fp]>);
 
 TRAD_SYNOPSIS
 	#include <stdio.h>
@@ -74,9 +74,10 @@ Supporting OS subroutines required: <<close>>, <<fstat>>, <<isatty>>,
 int
 _DEFUN(_fputs_r, (ptr, s, fp),
        struct _reent * ptr _AND
-       char _CONST * s _AND
-       FILE * fp)
+       char _CONST *__restrict s _AND
+       FILE *__restrict fp)
 {
+#ifdef _FVWRITE_IN_STREAMIO
   int result;
   struct __suio uio;
   struct __siov iov;
@@ -88,18 +89,41 @@ _DEFUN(_fputs_r, (ptr, s, fp),
 
   CHECK_INIT(ptr, fp);
 
-  _flockfile (fp);
+  _newlib_flockfile_start (fp);
   ORIENT (fp, -1);
   result = __sfvwrite_r (ptr, fp, &uio);
-  _funlockfile (fp);
+  _newlib_flockfile_end (fp);
   return result;
+#else
+  _CONST char *p = s;
+
+  CHECK_INIT(ptr, fp);
+
+  _newlib_flockfile_start (fp);
+  ORIENT (fp, -1);
+  /* Make sure we can write.  */
+  if (cantwrite (ptr, fp))
+    goto error;
+
+  while (*p)
+    {
+      if (__sputc_r (ptr, *p++, fp) == EOF)
+	goto error;
+    }
+  _newlib_flockfile_exit (fp);
+  return 0;
+
+error:
+  _newlib_flockfile_end (fp);
+  return EOF;
+#endif
 }
 
 #ifndef _REENT_ONLY
 int
 _DEFUN(fputs, (s, fp),
-       char _CONST * s _AND
-       FILE * fp)
+       char _CONST *__restrict s _AND
+       FILE *__restrict fp)
 {
   return _fputs_r (_REENT, s, fp);
 }

@@ -3,7 +3,6 @@
 #include <reent.h>
 #include <unistd.h>
 #include <_syslist.h>
-#include <errno.h>
 
 /* Some targets provides their own versions of this functions.  Those
    targets should define REENTRANT_SYSCALLS_PROVIDED in TARGET_CFLAGS.  */
@@ -16,6 +15,9 @@
 
 #ifndef REENTRANT_SYSCALLS_PROVIDED
 
+/* We use the errno variable used by the system dependent layer.  */
+#undef errno
+extern int errno;
 
 /*
 FUNCTION
@@ -39,49 +41,18 @@ DESCRIPTION
 	takes a pointer to the global data block, which holds
 	<<errno>>.
 */
-extern unsigned  __NFiles;
-
-
-#define __handle_check( __h, __r )                \
-        if( (__h) < 0  ||  (__h) > __NFiles ) {   \
-           ptr->_errno =  EBADF ;                 \
-           return( __r );                         \
-        }
-
-
-
 
 int
-_DEFUN(_close_r, (ptr, fd),
-     struct _reent *ptr _AND
-     int fd)
+_close_r (ptr, fd)
+     struct _reent *ptr;
+     int fd;
 {
-    int ret;
-    int h;
+  int ret;
 
-    __file_handle *fh;
-
-    __handle_check( fd, -1 );
-
-    fh = (__file_handle*) __getOSHandle( fd );
-
-    if( fd > STDERR_FILENO )
-    {
-        _free_r(ptr, fh->name);
-        _free_r(ptr, fh);
-        __freePOSIXHandle( fd );
-        __SetIOMode_nogrow( fd, 0 );
-    }
-
-    return 0;
-}
-
-
-int
-_DEFUN( close,(fd),
-     int fd)
-{
-    return _close_r(_REENT, fd);
+  errno = 0;
+  if ((ret = _close (fd)) == -1 && errno != 0)
+    ptr->_errno = errno;
+  return ret;
 }
 
 #endif /* ! defined (REENTRANT_SYSCALLS_PROVIDED) */

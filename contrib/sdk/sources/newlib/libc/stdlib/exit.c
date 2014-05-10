@@ -58,6 +58,11 @@ void
 _DEFUN (exit, (code),
 	int code)
 {
+#ifdef _LITE_EXIT
+  /* Refer to comments in __atexit.c for more details of lite exit.  */
+  void __call_exitprocs _PARAMS ((int, _PTR)) __attribute__((weak));
+  if (__call_exitprocs)
+#endif
   __call_exitprocs (code, NULL);
 
   if (_GLOBAL_REENT->__cleanup)

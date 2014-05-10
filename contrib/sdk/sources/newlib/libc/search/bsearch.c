@@ -61,8 +61,6 @@ PORTABILITY
 No supporting OS subroutines are required.
 */
 
-#include <_ansi.h>
-#include <reent.h>
 #include <stdlib.h>
 
 _PTR

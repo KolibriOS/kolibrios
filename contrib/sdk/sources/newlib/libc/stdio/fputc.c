@@ -83,9 +83,9 @@ _DEFUN(_fputc_r, (ptr, ch, file),
 {
   int result;
   CHECK_INIT(ptr, file);
-   _flockfile (file);
+   _newlib_flockfile_start (file);
   result = _putc_r (ptr, ch, file);
-  _funlockfile (file);
+  _newlib_flockfile_end (file);
   return result;
 }
 
@@ -97,10 +97,12 @@ _DEFUN(fputc, (ch, file),
 {
 #if !defined(__OPTIMIZE_SIZE__) && !defined(PREFER_SIZE_OVER_SPEED)
   int result;
-  CHECK_INIT(_REENT, file);
-   _flockfile (file);
-  result = _putc_r (_REENT, ch, file);
-  _funlockfile (file);
+  struct _reent *reent = _REENT;
+
+  CHECK_INIT(reent, file);
+   _newlib_flockfile_start (file);
+  result = _putc_r (reent, ch, file);
+  _newlib_flockfile_end (file);
   return result;
 #else
   return _fputc_r (_REENT, ch, file);

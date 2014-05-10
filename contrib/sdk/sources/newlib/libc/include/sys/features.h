@@ -15,7 +15,7 @@
  *  OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
  *  SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
- *  $Id: features.h,v 1.27 2011/07/20 19:41:15 yselkowitz Exp $
+ *  $Id: features.h,v 1.30 2013/04/23 09:42:25 corinna Exp $
  */
 
 #ifndef _SYS_FEATURES_H
@@ -24,6 +24,18 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Macro to test version of GCC.  Returns 0 for non-GCC or too old GCC. */
+#ifndef __GNUC_PREREQ
+# if defined __GNUC__ && defined __GNUC_MINOR__
+#  define __GNUC_PREREQ(maj, min) \
+	((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+# else
+#  define __GNUC_PREREQ(maj, min) 0
+# endif
+#endif /* __GNUC_PREREQ */
+/* Version with trailing underscores for BSD compatibility. */
+#define	__GNUC_PREREQ__(ma, mi)	__GNUC_PREREQ(ma, mi)
 
 /* RTEMS adheres to POSIX -- 1003.1b with some features from annexes.  */
 
@@ -161,12 +173,18 @@ extern "C" {
 #define _POSIX2_SW_DEV				200112L
 #define _POSIX2_UPE				200112L
 #define _POSIX_V6_ILP32_OFF32			    -1
-#define _XBS5_ILP32_OFF32			_POSIX_V6_ILP32_OFF32
+#ifdef __LP64__
+#define _POSIX_V6_ILP32_OFFBIG			    -1
+#define _POSIX_V6_LP64_OFF64			     1
+#define _POSIX_V6_LPBIG_OFFBIG			     1
+#else
 #define _POSIX_V6_ILP32_OFFBIG			     1
-#define _XBS5_ILP32_OFFBIG			_POSIX_V6_ILP32_OFFBIG
 #define _POSIX_V6_LP64_OFF64			    -1
-#define _XBS5_LP64_OFF64			_POSIX_V6_LP64_OFF64
 #define _POSIX_V6_LPBIG_OFFBIG			    -1
+#endif
+#define _XBS5_ILP32_OFF32			_POSIX_V6_ILP32_OFF32
+#define _XBS5_ILP32_OFFBIG			_POSIX_V6_ILP32_OFFBIG
+#define _XBS5_LP64_OFF64			_POSIX_V6_LP64_OFF64
 #define _XBS5_LPBIG_OFFBIG			_POSIX_V6_LPBIG_OFFBIG
 #define _XOPEN_CRYPT				     1
 #define _XOPEN_ENH_I18N				     1

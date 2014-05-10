@@ -12,7 +12,10 @@ extern "C" {
 
 /* #ifndef __STRICT_ANSI__*/
 
+/* Cygwin defines it's own sigset_t in include/cygwin/signal.h */
+#ifndef __CYGWIN__
 typedef unsigned long sigset_t;
+#endif
 
 #if defined(__rtems__)
 
@@ -143,6 +146,9 @@ int _EXFUN(pthread_sigmask, (int how, const sigset_t *set, sigset_t *oset));
 #undef sigfillset
 #undef sigismember
 
+#ifdef _COMPILING_NEWLIB
+int _EXFUN(_kill, (pid_t, int));
+#endif
 int _EXFUN(kill, (pid_t, int));
 int _EXFUN(killpg, (pid_t, int));
 int _EXFUN(sigaction, (int, const struct sigaction *, struct sigaction *));

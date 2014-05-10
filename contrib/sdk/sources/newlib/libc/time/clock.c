@@ -53,15 +53,6 @@ Supporting OS subroutine required: <<times>>.
 #include <sys/times.h>
 #include <reent.h>
 
-
-clock_t
-_DEFUN (_times_r, (ptr, ptms),
-     struct _reent *ptr _AND
-     struct tms *ptms)
-{
-  return -1;
-}
-
 clock_t 
 clock ()
 {

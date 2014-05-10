@@ -66,15 +66,16 @@ Supporting OS subroutine required: <<unlink>>.
 #include <_ansi.h>
 #include <reent.h>
 #include <stdio.h>
-#include <sys/kos_io.h>
-
 
 int
 _DEFUN(_remove_r, (ptr, filename),
        struct _reent *ptr _AND
        _CONST char *filename)
 {
-    return delete_file(filename)==0 ? 0: -1;
+  if (_unlink_r (ptr, filename) == -1)
+    return -1;
+
+  return 0;
 }
 
 #ifndef _REENT_ONLY
@@ -83,9 +84,7 @@ int
 _DEFUN(remove, (filename),
        _CONST char *filename)
 {
-
-    return delete_file(filename)==0 ? 0: -1;
-
+  return _remove_r (_REENT, filename);
 }
 
 #endif

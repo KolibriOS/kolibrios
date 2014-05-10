@@ -1,9 +1,10 @@
 
+
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
 
-CFLAGS = -c -O2 -fomit-frame-pointer -DBUILD_DLL
+CFLAGS = -c -O2 -fomit-frame-pointer -DBUILD_DLL -DMISSING_SYSCALL_NAMES
 LDFLAGS = -shared -s -T libcdll.lds --out-implib libc.dll.a --image-base 0
 #LDFLAGS+= --output-def libc.orig.def
 ARFLAGS = crs
@@ -53,28 +54,28 @@ LIBCRT_SRCS:=					\
 CORE_SRCS:=                   			\
 			argz/buf_findstr.c	\
 			argz/envz_get.c		\
-         		crt/emutls.c         	\
-         		crt/thread.S         	\
-         		crt/tls.S            	\
+			crt/emutls.c         	\
+			crt/thread.S         	\
+			crt/tls.S            	\
 			crt/setjmp.S		\
 			crt/cpu_features.c	\
 			ctype/ctype_.c 		\
 			ctype/isascii.c		\
 			ctype/isblank.c		\
-         		ctype/isalnum.c      	\
-         		ctype/isalpha.c      	\
-         		ctype/iscntrl.c      	\
-         		ctype/isdigit.c      	\
-         		ctype/islower.c      	\
+			ctype/isalnum.c      	\
+			ctype/isalpha.c      	\
+			ctype/iscntrl.c      	\
+			ctype/isdigit.c      	\
+			ctype/islower.c      	\
 			ctype/isupper.c      	\
-         		ctype/isprint.c      	\
-         		ctype/ispunct.c      	\
-         		ctype/isspace.c      	\
-         		ctype/iswctype.c     	\
-         		ctype/iswalnum.c     	\
-         		ctype/iswalpha.c     	\
-         		ctype/iswblank.c     	\
-         		ctype/iswcntrl.c     	\
+			ctype/isprint.c      	\
+			ctype/ispunct.c      	\
+			ctype/isspace.c      	\
+			ctype/iswctype.c     	\
+			ctype/iswalnum.c     	\
+			ctype/iswalpha.c     	\
+			ctype/iswblank.c     	\
+				ctype/iswcntrl.c     	\
          		ctype/iswdigit.c     	\
          		ctype/iswgraph.c     	\
          		ctype/iswlower.c     	\
@@ -85,55 +86,71 @@ CORE_SRCS:=                   			\
          		ctype/iswxdigit.c    	\
          		ctype/isxdigit.c     	\
 			ctype/toascii.c		\
-         		ctype/tolower.c      	\
+			ctype/tolower.c      	\
 			ctype/toupper.c		\
-         		ctype/towctrans.c    	\
-         		ctype/towlower.c     	\
-         		ctype/towupper.c     	\
+			ctype/towctrans.c    	\
+			ctype/towlower.c     	\
+			ctype/towupper.c     	\
 			ctype/wctrans.c		\
-         		ctype/wctype.c       	\
-         		errno/errno.c        	\
+			ctype/wctype.c       	\
+			errno/errno.c        	\
 			locale/locale.c		\
 			locale/lctype.c		\
-         		reent/impure.c       	\
+			locale/ldpart.c		\
+			reent/impure.c       	\
 			reent/init_reent.c	\
-	         	reent/getreent.c     	\
+			reent/getreent.c     	\
 			reent/mutex.c		\
 			reent/gettimeofdayr.c	\
-         		reent/hdlman.c       	\
 			reent/isattyr.c		\
-         		reent/openr.c        	\
-         		reent/closer.c       	\
-         		reent/readr.c        	\
-         		reent/lseekr.c       	\
-         		reent/fstatr.c       	\
-         		reent/writer.c       	\
-         		search/qsort.c       	\
-         		search/bsearch.c     	\
+			reent/openr.c        	\
+			reent/closer.c       	\
+			reent/linkr.c		\
+			reent/readr.c        	\
+			reent/lseekr.c       	\
+			reent/fstatr.c       	\
+			reent/writer.c       	\
+			reent/timesr.c		\
+			reent/unlinkr.c		\
+			search/qsort.c       	\
+			search/bsearch.c     	\
 			signal/signal.c		\
-         		sys/create.c         	\
-         		sys/delete.c         	\
-         		sys/finfo.c          	\
-         		sys/read.c           	\
-         		sys/write.c          	\
-         		sys/fsize.c          	\
-         		time/asctime.c       	\
-         		time/asctime_r.c     	\
-         		time/clock.c         	\
-         		time/ctime.c         	\
-         		time/ctime_r.c       	\
+			sys/close.c		\
+			sys/create.c         	\
+			sys/delete.c         	\
+			sys/errno.c		\
+			sys/finfo.c          	\
+			sys/fsize.c          	\
+			sys/fstat.c		\
+			sys/gettod.c		\
+			sys/io.c		\
+			sys/ioread.c		\
+			sys/iowrite.c		\
+			sys/isatty.c		\
+			sys/lseek.c		\
+			sys/open.c		\
+			sys/read.c           	\
+			sys/unlink.c		\
+			sys/write.c          	\
+			sys/io_alloc.S		\
+			time/asctime.c       	\
+			time/asctime_r.c     	\
+			time/clock.c         	\
+			time/ctime.c         	\
+			time/ctime_r.c       	\
 			time/difftime.c		\
-         		time/gettzinfo.c     	\
-         		time/gmtime.c        	\
+			time/gettzinfo.c     	\
+			time/gmtime.c        	\
 			time/gmtime_r.c		\
-         		time/mktime.c        	\
-         		time/mktm_r.c        	\
-         		time/lcltime.c       	\
-         		time/lcltime_r.c     	\
+			time/mktime.c        	\
+			time/mktm_r.c        	\
+			time/lcltime.c       	\
+			time/lcltime_r.c     	\
 			time/strftime.c		\
-         		time/time.c          	\
-         		time/tzlock.c        	\
-         		time/tzvars.c
+			time/time.c          	\
+			time/timelocal.c	\
+			time/tzlock.c        	\
+			time/tzvars.c
 
 
 STDLIB_SRCS=                 			\
@@ -252,7 +269,6 @@ STDIO_SRCS=					\
 			refill.c		\
 			rget.c			\
 			remove.c		\
-			rename.c		\
 			setvbuf.c		\
 			stdio.c			\
 			tmpfile.c		\
@@ -369,7 +385,7 @@ LIB_OBJS+=				\
 		$(STRING_OBJS) 		\
 		$(STDLIB_OBJS)		\
 		$(STDIO_OBJS) 		\
-		$(PRINTF_OBJS) 		\
+		$(PRINTF_OBJS)		\
 		$(MATH_OBJS)
 
 

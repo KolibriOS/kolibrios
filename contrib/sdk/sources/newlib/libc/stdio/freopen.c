@@ -26,10 +26,10 @@ INDEX
 
 ANSI_SYNOPSIS
 	#include <stdio.h>
-	FILE *freopen(const char *<[file]>, const char *<[mode]>,
-		      FILE *<[fp]>);
-	FILE *_freopen_r(struct _reent *<[ptr]>, const char *<[file]>,
-		      const char *<[mode]>, FILE *<[fp]>);
+	FILE *freopen(const char *restrict <[file]>, const char *restrict <[mode]>,
+		      FILE *restrict <[fp]>);
+	FILE *_freopen_r(struct _reent *<[ptr]>, const char *restrict <[file]>,
+		      const char *restrict <[mode]>, FILE *restrict <[fp]>);
 
 TRAD_SYNOPSIS
 	#include <stdio.h>
@@ -90,9 +90,9 @@ Supporting OS subroutines required: <<close>>, <<fstat>>, <<isatty>>,
 FILE *
 _DEFUN(_freopen_r, (ptr, file, mode, fp),
        struct _reent *ptr _AND
-       const char *file _AND
-       const char *mode _AND
-       register FILE *fp)
+       const char *__restrict file _AND
+       const char *__restrict mode _AND
+       register FILE *__restrict fp)
 {
   register int f;
   int flags, oflags;
@@ -100,11 +100,20 @@ _DEFUN(_freopen_r, (ptr, file, mode, fp),
 
   CHECK_INIT (ptr, fp);
 
+  /* We can't use the _newlib_flockfile_XXX macros here due to the
+     interlocked locking with the sfp_lock. */
+#ifdef _STDIO_WITH_THREAD_CANCELLATION_SUPPORT
+  int __oldcancel;
+  pthread_setcancelstate (PTHREAD_CANCEL_DISABLE, &__oldcancel);
+#endif
   _flockfile (fp);
 
   if ((flags = __sflags (ptr, mode, &oflags)) == 0)
     {
       _funlockfile (fp);
+#ifdef _STDIO_WITH_THREAD_CANCELLATION_SUPPORT
+      pthread_setcancelstate (__oldcancel, &__oldcancel);
+#endif
       _fclose_r (ptr, fp);
       return NULL;
     }
@@ -199,7 +208,7 @@ _DEFUN(_freopen_r, (ptr, file, mode, fp),
   if (HASLB (fp))
     FREELB (ptr, fp);
   fp->_lb._size = 0;
-  fp->_flags & ~__SORD;
+  fp->_flags &= ~__SORD;
   fp->_flags2 = 0;
   memset (&fp->_mbstate, 0, sizeof (_mbstate_t));
 
@@ -213,6 +222,9 @@ _DEFUN(_freopen_r, (ptr, file, mode, fp),
       __lock_close_recursive (fp->_lock);
 #endif
       __sfp_lock_release ();
+#ifdef _STDIO_WITH_THREAD_CANCELLATION_SUPPORT
+      pthread_setcancelstate (__oldcancel, &__oldcancel);
+#endif
       return NULL;
     }
 
@@ -230,6 +242,9 @@ _DEFUN(_freopen_r, (ptr, file, mode, fp),
 #endif
 
   _funlockfile (fp);
+#ifdef _STDIO_WITH_THREAD_CANCELLATION_SUPPORT
+  pthread_setcancelstate (__oldcancel, &__oldcancel);
+#endif
   return fp;
 }
 
@@ -237,9 +252,9 @@ _DEFUN(_freopen_r, (ptr, file, mode, fp),
 
 FILE *
 _DEFUN(freopen, (file, mode, fp),
-       _CONST char *file _AND
-       _CONST char *mode _AND
-       register FILE *fp)
+       _CONST char *__restrict file _AND
+       _CONST char *__restrict mode _AND
+       register FILE *__restrict fp)
 {
   return _freopen_r (_REENT, file, mode, fp);
 }

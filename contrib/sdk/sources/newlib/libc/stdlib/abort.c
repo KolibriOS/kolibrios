@@ -59,7 +59,7 @@ _DEFUN_VOID (abort)
 
   while (1)
     {
-//      raise (SIGABRT);
+      raise (SIGABRT);
       _exit (1);
     }
 }

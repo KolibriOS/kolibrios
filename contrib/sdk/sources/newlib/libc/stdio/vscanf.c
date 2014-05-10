@@ -34,8 +34,10 @@ _DEFUN(vscanf, (fmt, ap),
        _CONST char *fmt _AND 
        va_list ap)
 {
-  _REENT_SMALL_CHECK_INIT (_REENT);
-  return __svfscanf_r (_REENT, _stdin_r (_REENT), fmt, ap);
+  struct _reent *reent = _REENT;
+
+  _REENT_SMALL_CHECK_INIT (reent);
+  return __svfscanf_r (reent, _stdin_r (reent), fmt, ap);
 }
 
 #endif /* !_REENT_ONLY */
@@ -43,7 +45,7 @@ _DEFUN(vscanf, (fmt, ap),
 int
 _DEFUN(_vscanf_r, (ptr, fmt, ap),
        struct _reent *ptr _AND 
-       _CONST char *fmt   _AND 
+       _CONST char *__restrict fmt   _AND 
        va_list ap)
 {
   _REENT_SMALL_CHECK_INIT (ptr);

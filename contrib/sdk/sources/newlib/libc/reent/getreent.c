@@ -19,7 +19,3 @@ void init_reent()
     ::"r"(ent));
     __sinit(ent);
 }
-
-
-
-

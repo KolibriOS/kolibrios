@@ -16,13 +16,8 @@
 typedef long _off_t;
 #endif
 
-#if defined(__rtems__)
-/* device numbers are 32-bit major and and 32-bit minor */
-typedef unsigned long long __dev_t;
-#else
 #ifndef __dev_t_defined
 typedef short __dev_t;
-#endif
 #endif
 
 #ifndef __uid_t_defined
@@ -52,10 +47,19 @@ typedef _off64_t _fpos64_t;
 #endif
 
 #ifndef __ssize_t_defined
+#ifdef __SIZE_TYPE__
+/* If __SIZE_TYPE__ is defined (gcc) we define ssize_t based on size_t.
+   We simply change "unsigned" to "signed" for this single definition
+   to make sure ssize_t and size_t only differ by their signedness. */
+#define unsigned signed
+typedef __SIZE_TYPE__ _ssize_t;
+#undef unsigned
+#else
 #if defined(__INT_MAX__) && __INT_MAX__ == 2147483647
 typedef int _ssize_t;
 #else
 typedef long _ssize_t;
+#endif
 #endif
 #endif
 

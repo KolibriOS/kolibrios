@@ -3,7 +3,6 @@
 #include <reent.h>
 #include <unistd.h>
 #include <_syslist.h>
-#include <errno.h>
 
 /* Some targets provides their own versions of these functions.  Those
    targets should define REENTRANT_SYSCALLS_PROVIDED in TARGET_CFLAGS.  */
@@ -55,8 +54,10 @@ _isatty_r (ptr, fd)
 {
   int ret;
 
-  ptr->_errno = ENOTTY ;
-  return 0;
+  errno = 0;
+  if ((ret = _isatty (fd)) == -1 && errno != 0)
+    ptr->_errno = errno;
+  return ret;
 }
 
 #endif /* ! defined (REENTRANT_SYSCALLS_PROVIDED) */

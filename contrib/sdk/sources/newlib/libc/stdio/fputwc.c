@@ -160,10 +160,10 @@ _DEFUN(_fputwc_r, (ptr, wc, fp),
 {
   wint_t r;
 
-  _flockfile (fp);
+  _newlib_flockfile_start (fp);
   ORIENT(fp, 1);
   r = __fputwc(ptr, wc, fp);
-  _funlockfile (fp);
+  _newlib_flockfile_end (fp);
   return r;
 }
 
@@ -172,6 +172,8 @@ _DEFUN(fputwc, (wc, fp),
 	wchar_t wc _AND
 	FILE *fp)
 {
-  CHECK_INIT(_REENT, fp);
-  return _fputwc_r (_REENT, wc, fp);
+  struct _reent *reent = _REENT;
+
+  CHECK_INIT(reent, fp);
+  return _fputwc_r (reent, wc, fp);
 }

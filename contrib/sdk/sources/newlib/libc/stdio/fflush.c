@@ -75,15 +75,19 @@ _DEFUN(__sflush_r, (ptr, fp),
        register FILE * fp)
 {
   register unsigned char *p;
-  register int n, t;
+  register _READ_WRITE_BUFSIZE_TYPE n;
+  register _READ_WRITE_RETURN_TYPE t;
+  short flags;
 
-  t = fp->_flags;
-  if ((t & __SWR) == 0)
+  flags = fp->_flags;
+  if ((flags & __SWR) == 0)
     {
+#ifdef _FSEEK_OPTIMIZATION
       /* For a read stream, an fflush causes the next seek to be
          unoptimized (i.e. forces a system-level seek).  This conforms
          to the POSIX and SUSv3 standards.  */
       fp->_flags |= __SNPT;
+#endif
 
       /* For a seekable stream with buffered read characters, we will attempt
          a seek to the current position now.  A subsequent read will then get
@@ -152,7 +156,9 @@ _DEFUN(__sflush_r, (ptr, fp),
 	    {
 	      /* Seek successful or ignorable error condition.
 		 We can clear read buffer now.  */
+#ifdef _FSEEK_OPTIMIZATION
 	      fp->_flags &= ~__SNPT;
+#endif
 	      fp->_r = 0;
 	      fp->_p = fp->_bf._base;
 	      if ((fp->_flags & __SOFF) && (curoff != -1 || ptr->_errno == 0))
@@ -182,7 +188,7 @@ _DEFUN(__sflush_r, (ptr, fp),
    * write function.
    */
   fp->_p = p;
-  fp->_w = t & (__SLBF | __SNBF) ? 0 : fp->_bf._size;
+  fp->_w = flags & (__SLBF | __SNBF) ? 0 : fp->_bf._size;
 
   while (n > 0)
     {
@@ -226,9 +232,9 @@ _DEFUN(_fflush_r, (ptr, fp),
   if (!fp->_flags)
     return 0;
 
-  _flockfile (fp);
+  _newlib_flockfile_start (fp);
   ret = __sflush_r (ptr, fp);
-  _funlockfile (fp);
+  _newlib_flockfile_end (fp);
   return ret;
 }
 
