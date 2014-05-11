@@ -9,9 +9,9 @@ cmd_help:
 cmd_bye:
 
 ; Send BYE message to the server
-        mov     dword[s], "BYE" + 13 shl 24
-        mov     byte[s+4], 10
-        mcall   send, [socketnum], s, 5, 0
+        mov     dword[buf_cmd], "BYE" + 13 shl 24
+        mov     byte[buf_cmd+4], 10
+        mcall   send, [socketnum], buf_cmd, 5, 0
 
 ; Close the control connection
         mcall   close, [socketnum]
@@ -20,42 +20,42 @@ cmd_bye:
 
 cmd_pwd:
 
-        mov     dword[s], "PWD" + 13 shl 24
-        mov     byte[s+4], 10
-        mcall   send, [socketnum], s, 5, 0
+        mov     dword[buf_cmd], "PWD" + 13 shl 24
+        mov     byte[buf_cmd+4], 10
+        mcall   send, [socketnum], buf_cmd, 5, 0
 
         jmp     wait_for_servercommand
 
 
 cmd_cwd:
 
-        mov     dword[s], "CWD "
+        mov     dword[buf_cmd], "CWD "
 
         mov     ecx, 256
         xor     al, al
-        mov     edi, s
+        mov     edi, buf_cmd
         repne scasb
-        lea     esi, [edi - s]
+        lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], s, , 0
+        mcall   send, [socketnum], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
 
 cmd_dele:
 
-        mov     dword[s], "DELE"
-        mov     byte[s], " "
+        mov     dword[buf_cmd], "DELE"
+        mov     byte[buf_cmd], " "
 
         mov     ecx, 256
         xor     al, al
-        mov     edi, s
+        mov     edi, buf_cmd
         repne scasb
-        lea     esi, [edi - s]
+        lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], s, , 0
+        mcall   send, [socketnum], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
@@ -65,9 +65,9 @@ cmd_list:
 
         mov     [operation], OPERATION_LIST
 
-        mov     dword[s], "LIST"
-        mov     word[s+4], 0x0a0d
-        mcall   send, [socketnum], s, 6, 0 
+        mov     dword[buf_cmd], "LIST"
+        mov     word[buf_cmd+4], 0x0a0d
+        mcall   send, [socketnum], buf_cmd, 6, 0 
 
         jmp     wait_for_servercommand
 
@@ -77,7 +77,9 @@ cmd_retr:
         
 ; Create/open the file
 
-        mov     esi, s+5
+; Create/open the file
+
+        mov     esi, buf_cmd+5
         mov     ecx, 256-5
         call    set_filename
 
@@ -97,22 +99,36 @@ cmd_retr:
         mov     [operation], OPERATION_RETR
 
 ; Request the file from server
-
-        mov     dword[s], "RETR"
-        mov     byte[s+4], " "
+    
+        mov     dword[buf_cmd], "RETR"
+        mov     byte[buf_cmd+4], " "
 
         mov     ecx, 256
         xor     al, al
-        mov     edi, s
+        mov     edi, buf_cmd
         repne scasb
-        lea     esi, [edi - s]
+        lea     esi, [edi - buf_cmd]
         mov     dword[edi - 2], 0x0a0d
-        mcall   send, [socketnum], s, , 0
+        mcall   send, [socketnum], buf_cmd, , 0
 
-        invoke  con_write_asciiz, s     ; print command
+        invoke  con_write_asciiz, buf_cmd     ; print command
         jmp     wait_for_servercommand
 
+cmd_rdir:        
 
+        mov     [operation], OPERATION_RDIR
+
+; Request filename list from the server
+
+	call    open_dataconnection
+	
+	mov	[size_fname], 0
+        mov     dword[buf_cmd], "NLST"
+        mov     word[buf_cmd+4], 0x0a0d
+        mcall   send, [socketnum], buf_cmd, 6, 0 
+
+        jmp     wait_for_servercommand	
+	
 cmd_stor:
 
         call    open_dataconnection
@@ -123,29 +139,29 @@ cmd_stor:
         mov     [filestruct.offset], 0
         mov     [filestruct.offset+4], 0
         mov     [filestruct.size], BUFFERSIZE
-        mov     [filestruct.ptr], buffer_ptr2
+        mov     [filestruct.ptr], buf_buffer2
 
-        mov     esi, s+5
+        mov     esi, buf_cmd+5
         mov     ecx, 256-5
         call    set_filename
 
-        mov     dword[s], "STOR"
-        mov     byte[s+4], " "
+        mov     dword[buf_cmd], "STOR"
+        mov     byte[buf_cmd+4], " "
 
         mov     ecx, 256
         xor     al, al
-        mov     edi, s
+        mov     edi, buf_cmd
         repne scasb
-        lea     esi, [edi - s]
+        lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
-        mcall   send, [socketnum], s, , 0
+        mcall   send, [socketnum], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
 
 cmd_lcwd:
 
-        mov     esi, s+5
+        mov     esi, buf_cmd+5
         mov     ecx, 256-5
   .loop:
         lodsb
@@ -156,11 +172,11 @@ cmd_lcwd:
         loop    .loop
   .done:
         mov     byte[esi-1], 0
-        mcall   30, 1, s+5              ; set working directory
-        mcall   30, 2, s, 256           ; and read it again
+        mcall   30, 1, buf_cmd+5              ; set working directory
+        mcall   30, 2, buf_cmd, 256           ; and read it again
 
         invoke  con_write_asciiz, str_lcwd
-        invoke  con_write_asciiz, s
+        invoke  con_write_asciiz, buf_cmd
         invoke  con_write_asciiz, str_newline
 
         jmp     wait_for_usercommand
@@ -168,41 +184,41 @@ cmd_lcwd:
 
 cmd_cdup:
 
-        mov     dword[s], "CDUP"
-        mov     word[s+4], 0x0d0a
-        mcall   send, [socketnum], s, 6, 0
+        mov     dword[buf_cmd], "CDUP"
+        mov     word[buf_cmd+4], 0x0d0a
+        mcall   send, [socketnum], buf_cmd, 6, 0
 
         jmp     wait_for_servercommand
 
 
 cmd_rmd:
 
-        mov     dword[s], "RMD "
+        mov     dword[buf_cmd], "RMD "
 
         mov     ecx, 256
         xor     al, al
-        mov     edi, s
+        mov     edi, buf_cmd
         repne scasb
-        lea     esi, [edi - s]
+        lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], s, , 0
+        mcall   send, [socketnum], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
 
 cmd_mkd:
 
-        mov     dword[s], "MKD "
+        mov     dword[buf_cmd], "MKD "
 
         mov     ecx, 256
         xor     al, al
-        mov     edi, s
+        mov     edi, buf_cmd
         repne scasb
-        lea     esi, [edi - s]
+        lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], s, , 0
+        mcall   send, [socketnum], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
