@@ -165,10 +165,7 @@ pci_read_reg:
 
         call    pci_make_config_cmd
         mov     ebx, eax
-                ; get current state
         mov     dx, 0xcf8
-        in      eax, dx
-        push    eax
                 ; set up addressing to config data
         mov     eax, ebx
         and     al, 0xfc; make address dword-aligned
@@ -194,14 +191,7 @@ pci_read_word1:
         jmp     pci_fin_read1
 pci_read_dword1:
         in      eax, dx
-        jmp     pci_fin_read1
 pci_fin_read1:
-                ; restore configuration control
-        xchg    eax, [esp]
-        mov     dx, 0xcf8
-        out     dx, eax
-
-        pop     eax
         pop     esi ebx
         ret
 pci_read_reg_2:
@@ -212,15 +202,8 @@ pci_read_reg_2:
         mov     esi, eax ; save register size into ESI
         and     esi, 3
 
-        push    eax
-                ;store current state of config space
-        mov     dx, 0xcf8
-        in      al, dx
-        mov     ah, al
-        mov     dl, 0xfa
-        in      al, dx
+        mov     dx, 0xcfa
 
-        xchg    eax, [esp]
                 ; out 0xcfa,bus
         mov     al, ah
         out     dx, al
@@ -249,18 +232,8 @@ pci_read_word2:
         jmp     pci_fin_read2
 pci_read_dword2:
         in      eax, dx
-;       jmp pci_fin_read2
 pci_fin_read2:
 
-                ; restore configuration space
-        xchg    eax, [esp]
-        mov     dx, 0xcfa
-        out     dx, al
-        mov     dl, 0xf8
-        mov     al, ah
-        out     dx, al
-
-        pop     eax
         pop     esi ebx
         ret
 
@@ -296,10 +269,7 @@ pci_write_reg:
 
         call    pci_make_config_cmd
         mov     ebx, eax
-                ; get current state into ecx
         mov     dx, 0xcf8
-        in      eax, dx
-        push    eax
                 ; set up addressing to config data
         mov     eax, ebx
         and     al, 0xfc; make address dword-aligned
@@ -326,13 +296,7 @@ pci_write_word1:
         jmp     pci_fin_write1
 pci_write_dword1:
         out     dx, eax
-        jmp     pci_fin_write1
 pci_fin_write1:
-
-                ; restore configuration control
-        pop     eax
-        mov     dl, 0xf8
-        out     dx, eax
 
         xor     eax, eax
         pop     ebx esi
@@ -347,14 +311,7 @@ pci_write_reg_2:
         mov     esi, eax ; save register size into ESI
         and     esi, 3
 
-        push    eax
-                ;store current state of config space
-        mov     dx, 0xcf8
-        in      al, dx
-        mov     ah, al
-        mov     dl, 0xfa
-        in      al, dx
-        xchg    eax, [esp]
+        mov     dx, 0xcfa
                 ; out 0xcfa,bus
         mov     al, ah
         out     dx, al
@@ -385,15 +342,7 @@ pci_write_word2:
         jmp     pci_fin_write2
 pci_write_dword2:
         out     dx, eax
-        jmp     pci_fin_write2
 pci_fin_write2:
-                ; restore configuration space
-        pop     eax
-        mov     dx, 0xcfa
-        out     dx, al
-        mov     dl, 0xf8
-        mov     al, ah
-        out     dx, al
 
         xor     eax, eax
         pop     ebx esi

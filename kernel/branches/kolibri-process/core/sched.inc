@@ -29,8 +29,7 @@ irq0:
   .nocounter:
         xor     ecx, ecx        ; send End Of Interrupt signal
         call    irq_eoi
-;        btr     dword[DONT_SWITCH], 0
-;        jc      .return
+
         mov     bl, SCHEDULE_ANY_PRIORITY
         call    find_next_task
         jz      .return  ; if there is only one running process
@@ -44,26 +43,10 @@ change_task:
         pushfd
         cli
         pushad
-if 0
-; \begin{Mario79} ; <- must be refractoried, if used...
-        cmp     [dma_task_switched], 1
-        jne     .find_next_task
-        mov     [dma_task_switched], 0
-        mov     ebx, [dma_process]
-        cmp     [CURRENT_TASK], ebx
-        je      .return
-        mov     edi, [dma_slot_ptr]
-        mov     [CURRENT_TASK], ebx
-        mov     [TASK_BASE], edi
-        jmp     @f
-.find_next_task:
-; \end{Mario79}
-end if
         mov     bl, SCHEDULE_ANY_PRIORITY
         call    find_next_task
         jz      .return  ; the same task -> skip switch
-  @@:
-;        mov     byte[DONT_SWITCH], 1
+
         call    do_change_task
   .return:
         popad

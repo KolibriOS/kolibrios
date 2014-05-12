@@ -55,7 +55,7 @@ boot_dev  db      0  ; 0=floppy, 1=hd
 start_msg db      "Press [abcde] to change settings, press [Enter] to continue booting",13,10,0
 time_msg  db      " or wait "
 time_str  db      " 5 seconds"
-          db      " before automatical continuation",13,10,0
+          db      " to continue automatically",13,10,0
 current_cfg_msg db "Current settings:",13,10,0
 curvideo_msg db   " [a] Videomode: ",0
 

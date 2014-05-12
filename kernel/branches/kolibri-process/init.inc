@@ -354,6 +354,7 @@ proc test_cpu
         mov     [cpu_type], eax
         mov     [cpu_caps-OS_BASE], eax
         mov     [cpu_caps+4-OS_BASE], eax
+        mov     [cpu_phys_addr_width-OS_BASE], 32
 
         pushfd
         pop     eax
@@ -378,7 +379,6 @@ proc test_cpu
         pop     eax
         xor     eax, ecx
         je      .end_cpuid
-        mov     [cpu_id], 1
 
         xor     eax, eax
         cpuid
@@ -402,6 +402,20 @@ proc test_cpu
         mov     [cpu_caps-OS_BASE], edx
         mov     [cpu_caps+4-OS_BASE], ecx
 
+        bt      edx, CAPS_PAE
+        jnc     @f
+        mov     [cpu_phys_addr_width-OS_BASE], 36
+@@:
+        mov     eax, 0x80000000
+        cpuid
+        cmp     eax, 0x80000008
+        jb      @f
+        mov     eax, 0x80000008
+        cpuid
+        mov     [cpu_phys_addr_width-OS_BASE], al
+@@:
+
+        mov     eax, [cpu_sign-OS_BASE]
         shr     eax, 8
         and     eax, 0x0f
         ret

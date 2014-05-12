@@ -168,8 +168,10 @@ firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
+mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0
 else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
+mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
 
 vmode          db  '/sys/drivers/VMODE.MDR',0
@@ -497,63 +499,12 @@ BgrDataHeight                   rd 1
 
 skin_data                       rd 1
 
-cache_ide0:
-cache_ide0_pointer              rd 1
-cache_ide0_size                 rd 1   ; not use
-cache_ide0_data_pointer         rd 1
-cache_ide0_system_data_size     rd 1   ; not use
-cache_ide0_appl_data_size       rd 1   ; not use
-cache_ide0_system_data          rd 1
-cache_ide0_appl_data            rd 1
-cache_ide0_system_sad_size      rd 1
-cache_ide0_appl_sad_size        rd 1
-cache_ide0_search_start         rd 1
-cache_ide0_appl_search_start    rd 1
-
-cache_ide1:
-cache_ide1_pointer              rd 1
-cache_ide1_size                 rd 1   ; not use
-cache_ide1_data_pointer         rd 1
-cache_ide1_system_data_size     rd 1   ; not use
-cache_ide1_appl_data_size       rd 1   ; not use
-cache_ide1_system_data          rd 1
-cache_ide1_appl_data            rd 1
-cache_ide1_system_sad_size      rd 1
-cache_ide1_appl_sad_size        rd 1
-cache_ide1_search_start         rd 1
-cache_ide1_appl_search_start    rd 1
-
-cache_ide2:
-cache_ide2_pointer              rd 1
-cache_ide2_size                 rd 1   ; not use
-cache_ide2_data_pointer         rd 1
-cache_ide2_system_data_size     rd 1   ; not use
-cache_ide2_appl_data_size       rd 1   ; not use
-cache_ide2_system_data          rd 1
-cache_ide2_appl_data            rd 1
-cache_ide2_system_sad_size      rd 1
-cache_ide2_appl_sad_size        rd 1
-cache_ide2_search_start         rd 1
-cache_ide2_appl_search_start    rd 1
-
-cache_ide3:
-cache_ide3_pointer              rd 1
-cache_ide3_size                 rd 1   ; not use
-cache_ide3_data_pointer         rd 1
-cache_ide3_system_data_size     rd 1   ; not use
-cache_ide3_appl_data_size       rd 1   ; not use
-cache_ide3_system_data          rd 1
-cache_ide3_appl_data            rd 1
-cache_ide3_system_sad_size      rd 1
-cache_ide3_appl_sad_size        rd 1
-cache_ide3_search_start         rd 1
-cache_ide3_appl_search_start    rd 1
-
 debug_step_pointer              rd 1
 
 lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled              rd 1  ; 0 = disabled , 1 = enabled
 
+cpu_phys_addr_width             rb 1  ; also known as MAXPHYADDR in Intel manuals
 hdd_appl_data                   rb 1  ; 0 = system cache, 1 - application cache
 cd_appl_data                    rb 1  ; 0 = system cache, 1 - application cache
 

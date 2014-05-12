@@ -9,7 +9,7 @@ $Revision: 2455 $
 
 
 ;
-;   WINDOW SKIN DATA
+;   WINDOW SKIN DATA.
 ;
 
 iglobal

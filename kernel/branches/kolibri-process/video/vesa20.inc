@@ -218,8 +218,7 @@ align 4
         add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 ; winmap new line increment
-        mov     eax, [Screen_Max_X]
-        inc     eax
+        mov     eax, [_display.width]
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
@@ -687,10 +686,10 @@ __sys_putpixel:
 ; edi = 0x00000001 force
 
         pushad
-        cmp     [Screen_Max_X], eax
-        jb      .exit
-        cmp     [Screen_Max_Y], ebx
-        jb      .exit
+        cmp     eax, [_display.width]
+        jae     .exit
+        cmp     ebx, [_display.height]
+        jae     .exit
         test    edi, 1           ; force ?
         jnz     .forced
 
@@ -1210,9 +1209,8 @@ align 4
 .end_y:
         mov     [drbar.real_sy], ebx
 ; line_inc_map
-        mov     eax, [Screen_Max_X]
+        mov     eax, [_display.width]
         sub     eax, [drbar.real_sx]
-        inc     eax
         mov     [drbar.line_inc_map], eax
 ; line_inc_scr
         mov     eax, [drbar.real_sx]
@@ -1926,8 +1924,7 @@ sdp4:
 ; advance edi, ebp to next scan line
         sub     eax, [draw_data+32+RECT.left]
         sub     ebp, eax
-        add     ebp, [Screen_Max_X]
-        add     ebp, 1
+        add     ebp, [_display.width]
         sub     edi, eax
         sub     edi, eax
         sub     edi, eax
@@ -1958,8 +1955,7 @@ align 4
         push    edi
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
+        mov     ecx, [_display.width]
         rep movsd
         jmp     bgr_resmooth1
 ;--------------------------------------

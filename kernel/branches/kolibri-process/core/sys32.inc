@@ -418,7 +418,6 @@ destroy_thread:
         .slot     equ esp+4             ;locals
         .process  equ esp               ;ptr to parent process
 
-        xchg bx, bx
 
         push    esi                     ;save .slot
 
@@ -453,7 +452,7 @@ destroy_thread:
         mov     ecx, [esi+8]
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 .nov86:
-;destroy per-thread kerlen objects
+;destroy per-thread kernel objects
         mov     esi, [.slot]
         shl     esi, 8
         add     esi, SLOT_BASE+APP_OBJ_OFFSET
@@ -749,7 +748,6 @@ destroy_thread:
 .xd1:
 ;release slot
 
-        xchg bx, bx
 
         bts     [thr_slot_map], esi
 

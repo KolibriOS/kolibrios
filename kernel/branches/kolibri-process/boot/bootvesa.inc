@@ -194,7 +194,7 @@ calc_vmodes_table:
         mov     word [es:bx], 640
         mov     word [es:bx+2], 480
         mov     word [es:bx+6], 0x13
-        
+
         mov     word [es:bx+10], 640
         mov     word [es:bx+12], 480
         mov     word [es:bx+16], 0x12
@@ -476,8 +476,8 @@ end if
         jne     .next
         cmp     word [es:si+8], 32
         je      .ok
-        cmp     word [es:si+8], 24
-        je      .ok
+;        cmp     word [es:si+8], 24
+;        je      .ok
 .next:
         add     si, size_of_step
         cmp     word [es:si], -1
@@ -721,7 +721,7 @@ set_vmode:
 
         mov     si, word [preboot_graph]           ;[preboot_graph]
         mov     cx, word [es:si+6]           ; number of mode
-        
+
 
         mov     ax, word [es:si+0]           ; resolution X
         mov     bx, word [es:si+2]           ; resolution Y

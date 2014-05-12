@@ -14,6 +14,9 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+$Revision: 4850 $
+
+
 struct  PPPoE_frame
         VersionAndType  db ?
         Code            db ?

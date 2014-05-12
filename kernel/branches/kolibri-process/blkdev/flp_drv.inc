@@ -379,10 +379,16 @@ RecalibrateFDD:
         mov     al, 8
         call    FDCDataOutput
         call    FDCDataInput
+        push    eax
 ;       DEBUGF 1,' %x',al
         call    FDCDataInput
 ;       DEBUGF 1,' %x',al
 ;       DEBUGF 1,'\n'
+        pop     eax
+        test    al, 0xC0
+        jz      @f
+        mov     [FDC_Status], FDC_DiskNotFound
+@@:
 .fail:
         call    save_timer_fdd_motor
         popa

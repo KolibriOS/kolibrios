@@ -9,10 +9,10 @@ $Revision: 3744 $
 
 
 read_ramdisk:
-; READ RAMDISK IMAGE FROM HD
+; READ RAMDISK IMAGE FROM HD (only for IDE0, IDE1, IDE2, IDE3)
 
         cmp     [boot_dev+OS_BASE+0x10000], 1
-        jne     no_sys_on_hd
+        jne     no_sys_on_hd.1
 
         xor     ebp, ebp
 .hd_loop:
@@ -69,9 +69,19 @@ read_ramdisk:
         jb      .hd_loop
         jmp     no_sys_on_hd
 .yes:
+        DEBUGF 1, "K : RD found: %s\n", read_image_fsinfo.name
         pop     edi esi eax
-        jmp     yes_sys_on_hd
 
+        call    register_ramdisk
+        jmp     yes_sys_on_hd
+;-----------------------------------------------------------------------------
+; Register ramdisk file system
+register_ramdisk:
+        mov     esi, boot_initramdisk
+        call    boot_log
+        call    ramdisk_init
+        ret
+;-----------------------------------------------------------------------------
 iglobal
 align 4
 read_image_fsinfo:
@@ -79,7 +89,7 @@ read_image_fsinfo:
         dq      0               ; offset: zero
         dd      1474560         ; size
         dd      RAMDISK         ; buffer
-        db      '/hd'
+.name   db      '/hd'
 .name_digit db  '0'
         db      '/'
 .partition:
@@ -99,6 +109,8 @@ read_image:
         ret
 
 no_sys_on_hd:
+        DEBUGF 1, "K : RD not found\n"
+.1:
         ; test_to_format_ram_disk (need if not using ram disk)
         cmp     [boot_dev+OS_BASE+0x10000], 3
         jne     not_format_ram_disk

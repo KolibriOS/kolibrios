@@ -17,93 +17,190 @@ $Revision: 3881 $
 ;****************************************************
 ;*                 ПОИСК HDD и CD                   *
 ;****************************************************
-        cmp     [IDEContrProgrammingInterface], 0
+        cmp     [ecx+IDE_DATA.ProgrammingInterface], 0
         je      EndFindHDD
 
 FindHDD:
+        push    ecx
+
+        xor     ebx, ebx
+        inc     ebx
+
+        cmp     ecx, IDE_controller_2
+        jne     @f
+
+        add     bl, 5
+        jmp     .find
+@@:
+        cmp     ecx, IDE_controller_3
+        jne     .find
+
+        add     bl, 10
+;--------------------------------------
+.find:
+
         mov     [ChannelNumber], 1
         mov     [DiskNumber], 0
-        call    FindHDD_3
-;        mov     ax,[Sector512+176]
-;        mov     [DRIVE_DATA+6],ax
-;        mov     ax,[Sector512+126]
-;        mov     [DRIVE_DATA+8],ax
-;        mov     ax,[Sector512+128]
-;        mov     [DRIVE_DATA+8],ax
+        call    FindHDD_2
+
         mov     [DiskNumber], 1
-        call    FindHDD_3
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+7],al
+        call    FindHDD_2
+
         inc     [ChannelNumber]
+
         mov     [DiskNumber], 0
-        call    FindHDD_3
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+8],al
+        call    FindHDD_2
+
         mov     [DiskNumber], 1
         call    FindHDD_1
-;        mov     al,[Sector512+176]
-;        mov     [DRIVE_DATA+9],al
 
+        pop     ecx
         jmp     EndFindHDD
-
+;-----------------------------------------------------------------------------
+FindHDD_2:
+        call    FindHDD_1
+        shl     byte [ebx+DRIVE_DATA], 2
+        ret
+;-----------------------------------------------------------------------------
 FindHDD_1:
         DEBUGF  1, "K : Channel %d ",[ChannelNumber]:2
         DEBUGF  1, "Disk %d\n",[DiskNumber]:1
+        push    ebx ecx
         call    ReadHDD_ID
+        pop     ecx ebx
         cmp     [DevErrorCode], 0
-        jne     FindHDD_2
+        jne     .FindCD
+
         cmp     [Sector512+6], word 16
-        ja      FindHDD_2
+        ja      .FindCD
+
         cmp     [Sector512+12], word 255
-        ja      FindHDD_2
-        inc     byte [DRIVE_DATA+1]
-        jmp     Print_Device_Name
-   FindHDD_2:
+        ja      .FindCD
+
+        inc     byte [ebx+DRIVE_DATA]
+        jmp     .Print_Device_Name
+;--------------------------------------
+.FindCD:
+        push    ebx ecx
         call    DeviceReset
+        pop     ecx ebx
         cmp     [DevErrorCode], 0
-        jne     FindHDD_2_2
+        jne     .end
+
+        push    ebx ecx
         call    ReadCD_ID
+        pop     ecx ebx
         cmp     [DevErrorCode], 0
-        jne     FindHDD_2_2
-        inc     byte [DRIVE_DATA+1]
-        inc     byte [DRIVE_DATA+1]
-Print_Device_Name:      
+        jne     .end
+
+        add     [ebx+DRIVE_DATA], byte 2
+;--------------------------------------
+.Print_Device_Name: 
         pushad
         pushfd
+
+        xor     ebx, ebx
+        mov     bx, [ChannelNumber]
+        dec     ebx
+        shl     ebx, 1
+        add     bl, [DiskNumber]
+        shl     ebx, 1
+
+        call    calculate_IDE_device_values_storage
+;--------------------------------------
+.copy_dev_name:
         mov     esi, Sector512+27*2
         mov     edi, dev_name
         mov     ecx, 20
         cld
+;--------------------------------------
 @@:
         lodsw
         xchg    ah, al
         stosw
         loop    @b
-        popfd
-        popad
+
         DEBUGF 1, "K : Dev: %s \n", dev_name
 
         xor     eax, eax
         mov     ax, [Sector512+64*2]
-        DEBUGF  1, "K : PIO mode %x\n", eax
+        DEBUGF  1, "K : PIO possible modes %x\n", al
+
+        mov     ax, [Sector512+51*2]
+        mov     al, ah
+        call    convert_Sector512_value
+        DEBUGF  1, "K : PIO set mode %x\n", ah
+
         mov     ax, [Sector512+63*2]
-        DEBUGF  1, "K : Multiword DMA mode %x\n", eax
+        DEBUGF  1, "K : Multiword DMA possible modes %x\n", al
+
+        mov     al, ah
+        call    convert_Sector512_value
+        DEBUGF  1, "K : Multiword DMA set mode %x\n", ah
+
         mov     ax, [Sector512+88*2]
-        DEBUGF  1, "K : Ultra DMA mode %x\n", eax
-   FindHDD_2_2:
-        ret
+        DEBUGF  1, "K : Ultra DMA possible modes %x\n", al
 
-FindHDD_3:
-        call    FindHDD_1
-        shl     byte [DRIVE_DATA+1], 2
-        ret
+        mov     [ebx+IDE_DEVICE.UDMA_possible_modes], al
 
+        mov     al, ah
+        call    convert_Sector512_value
+        DEBUGF  1, "K : Ultra DMA set mode %x\n", ah
+
+        mov     [ebx+IDE_DEVICE.UDMA_set_mode], ah
+
+        popfd
+        popad
+        ret
+;--------------------------------------
+.end:
+        DEBUGF  1, "K : Device not found\n"
+        ret
+;-----------------------------------------------------------------------------
+calculate_IDE_device_values_storage:
+        cmp     ecx, IDE_controller_1
+        jne     @f
+
+        add     ebx, IDE_device_1
+        jmp     .exit
+;--------------------------------------
+@@:
+        cmp     ecx, IDE_controller_2
+        jne     @f
+
+        add     ebx, IDE_device_2
+        jmp     .exit
+;--------------------------------------
+@@:
+        add     ebx, IDE_device_3
+;--------------------------------------
+.exit:
+        ret
+;-----------------------------------------------------------------------------
+convert_Sector512_value:
+        mov     ecx, 8
+        xor     ah, ah
+;--------------------------------------
+@@:
+        test    al, 1b
+        jnz     .end
+
+        shr     al, 1
+        inc     ah
+        loop    @b
+
+        xor     ah, ah
+;--------------------------------------
+.end:
+        ret
+;-----------------------------------------------------------------------------
 ; Адрес считываемого сектора в режиме LBA
 uglobal
-SectorAddress   DD ?
+SectorAddress   dd ?
 dev_name:
         rb 41
 endg
+;-----------------------------------------------------------------------------
 ;*************************************************
 ;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА ЖЕСТКОГО ДИСКА      *
 ;* Входные параметры передаются через глобальные *
@@ -119,32 +216,32 @@ ReadHDD_ID:
 ; Послать команду идентификации устройства
         mov     [ATAFeatures], 0
         mov     [ATAHead], 0
-        mov     [ATACommand], 0ECh
+        mov     [ATACommand], 0xEC
         call    SendCommandToHDD
-        cmp     [DevErrorCode], 0;проверить код ошибки
+        cmp     [DevErrorCode], 0 ;проверить код ошибки
         jne     @@End  ;закончить, сохранив код ошибки
-        mov     DX, [ATABasePortAddr]
-        add     DX, 7    ;адрес регистра состояни
+
+        mov     dx, [ATABasePortAddr]
+        add     dx, 7    ;адрес регистра состояни
         mov     ecx, 0xffff
 @@WaitCompleet:
         ; Проверить время выполнения команды
         dec     ecx
-;        cmp  ecx,0
         jz      @@Error1  ;ошибка тайм-аута
         ; Проверить готовность
-        in      AL, DX
-        test    AL, 80h  ;состояние сигнала BSY
+        in      al, dx
+        test    al, 80h  ;состояние сигнала BSY
         jnz     @@WaitCompleet
-        test    AL, 1    ;состояние сигнала ERR
+
+        test    al, 1    ;состояние сигнала ERR
         jnz     @@Error6
-        test    AL, 08h  ;состояние сигнала DRQ
+
+        test    al, 08h  ;состояние сигнала DRQ
         jz      @@WaitCompleet
 ; Принять блок данных от контроллера
-;        mov     AX,DS
-;        mov     ES,AX
-        mov     EDI, Sector512 ;offset Sector512
-        mov     DX, [ATABasePortAddr];регистр данных
-        mov     CX, 256  ;число считываемых слов
+        mov     edi, Sector512
+        mov     dx, [ATABasePortAddr];регистр данных
+        mov     cx, 256  ;число считываемых слов
         rep insw         ;принять блок данных
         ret
 ; Записать код ошибки
@@ -155,27 +252,24 @@ ReadHDD_ID:
         mov     [DevErrorCode], 6
 @@End:
         ret
-
-
-iglobal
-; Стандартные базовые адреса каналов 1 и 2
-StandardATABases DW 1F0h, 170h
-endg
+;-----------------------------------------------------------------------------
 uglobal
+; Стандартные базовые адреса каналов 1 и 2
+StandardATABases dw ?, ? ; 1F0h, 170h
 ; Номер канала
-ChannelNumber   DW ?
+ChannelNumber   dw ?
 ; Номер диска
-DiskNumber      DB ?
+DiskNumber      db ?
 ; Базовый адрес группы портов контроллера ATA
-ATABasePortAddr DW ?
+ATABasePortAddr dw ?
 ; Параметры ATA-команды
-ATAFeatures     DB ? ;особенности
-ATASectorCount  DB ? ;количество обрабатываемых секторов
-ATASectorNumber DB ? ;номер начального сектора
-ATACylinder     DW ? ;номер начального цилиндра
-ATAHead         DB ? ;номер начальной головки
-ATAAddressMode  DB ? ;режим адресации (0 - CHS, 1 - LBA)
-ATACommand      DB ? ;код команды, подлежащей выполнению
+ATAFeatures     db ? ;особенности
+ATASectorCount  db ? ;количество обрабатываемых секторов
+ATASectorNumber db ? ;номер начального сектора
+ATACylinder     dw ? ;номер начального цилиндра
+ATAHead         db ? ;номер начальной головки
+ATAAddressMode  db ? ;режим адресации (0 - CHS, 1 - LBA)
+ATACommand      db ? ;код команды, подлежащей выполнению
 ; Код ошибки (0 - нет ошибок, 1 - превышен допустимый
 ; интервал ожидания, 2 - неверный код режима адресации,
 ; 3 - неверный номер канала, 4 - неверный номер диска,
@@ -183,6 +277,7 @@ ATACommand      DB ? ;код команды, подлежащей выполне
 ; команды)
 DevErrorCode dd ?
 endg
+;-----------------------------------------------------------------------------
 ;****************************************************
 ;*          ПОСЛАТЬ КОМАНДУ ЗАДАННОМУ ДИСКУ         *
 ;* Входные параметры передаются через глобальные    *
@@ -207,82 +302,78 @@ SendCommandToHDD:
         cmp     [ATAAddressMode], 1
         ja      @@Err2
 ; Проверить корректность номера канала
-        mov     BX, [ChannelNumber]
-        cmp     BX, 1
+        mov     bx, [ChannelNumber]
+        cmp     bx, 1
         jb      @@Err3
-        cmp     BX, 2
+
+        cmp     bx, 2
         ja      @@Err3
 ; Установить базовый адрес
-        dec     BX
-        shl     BX, 1
+        dec     bx
+        shl     bx, 1
         movzx   ebx, bx
-        mov     AX, [ebx+StandardATABases]
-        mov     [ATABasePortAddr], AX
+        mov     ax, [ebx+StandardATABases]
+        mov     [ATABasePortAddr], ax
 ; Ожидание готовности HDD к приему команды
         ; Выбрать нужный диск
-        mov     DX, [ATABasePortAddr]
-        add     DX, 6   ;адрес регистра головок
-        mov     AL, [DiskNumber]
-        cmp     AL, 1   ;проверить номера диска
+        mov     dx, [ATABasePortAddr]
+        add     dx, 6   ;адрес регистра головок
+        mov     al, [DiskNumber]
+        cmp     al, 1   ;проверить номера диска
         ja      @@Err4
-        shl     AL, 4
-        or      AL, 10100000b
-        out     DX, AL
+
+        shl     al, 4
+        or      al, 10100000b
+        out     dx, al
         ; Ожидать, пока диск не будет готов
-        inc     DX
+        inc     dx
         mov     ecx, 0xfff
-;        mov     eax,[timer_ticks]
-;        mov     [TickCounter_1],eax
 @@WaitHDReady:
         ; Проверить время ожидани
         dec     ecx
-;        cmp  ecx,0
         jz      @@Err1
-;        mov     eax,[timer_ticks]
-;        sub     eax,[TickCounter_1]
-;        cmp     eax,300    ;ожидать 300 тиков
-;        ja      @@Err1   ;ошибка тайм-аута
         ; Прочитать регистр состояни
-        in      AL, DX
+        in      al, dx
         ; Проверить состояние сигнала BSY
-        test    AL, 80h
+        test    al, 80h
         jnz     @@WaitHDReady
         ; Проверить состояние сигнала DRQ
-        test    AL, 08h
+        test    al, 08h
         jnz     @@WaitHDReady
 ; Загрузить команду в регистры контроллера
         cli
-        mov     DX, [ATABasePortAddr]
-        inc     DX      ;регистр "особенностей"
-        mov     AL, [ATAFeatures]
-        out     DX, AL
-        inc     DX      ;счетчик секторов
-        mov     AL, [ATASectorCount]
-        out     DX, AL
-        inc     DX      ;регистр номера сектора
-        mov     AL, [ATASectorNumber]
-        out     DX, AL
-        inc     DX      ;номер цилиндра (младший байт)
-        mov     AX, [ATACylinder]
-        out     DX, AL
-        inc     DX      ;номер цилиндра (старший байт)
-        mov     AL, AH
-        out     DX, AL
-        inc     DX      ;номер головки/номер диска
-        mov     AL, [DiskNumber]
-        shl     AL, 4
-        cmp     [ATAHead], 0Fh;проверить номер головки
+        mov     dx, [ATABasePortAddr]
+        inc     dx      ;регистр "особенностей"
+        mov     al, [ATAFeatures]
+        out     dx, AL
+        inc     dx      ;счетчик секторов
+        mov     al, [ATASectorCount]
+        out     dx, AL
+        inc     dx      ;регистр номера сектора
+        mov     al, [ATASectorNumber]
+        out     dx, AL
+        inc     dx      ;номер цилиндра (младший байт)
+        mov     ax, [ATACylinder]
+        out     dx, AL
+        inc     dx      ;номер цилиндра (старший байт)
+        mov     al, AH
+        out     dx, AL
+        inc     dx      ;номер головки/номер диска
+        mov     al, [DiskNumber]
+        shl     al, 4
+        cmp     [ATAHead], 0xF ;проверить номер головки
         ja      @@Err5
-        or      AL, [ATAHead]
-        or      AL, 10100000b
-        mov     AH, [ATAAddressMode]
-        shl     AH, 6
-        or      AL, AH
-        out     DX, AL
+
+        or      al, [ATAHead]
+        or      al, 10100000b
+        mov     ah, [ATAAddressMode]
+        shl     ah, 6
+        or      al, ah
+        out     dx, al
 ; Послать команду
-        mov     AL, [ATACommand]
-        inc     DX      ;регистр команд
-        out     DX, AL
+        mov     al, [ATACommand]
+        inc     dx      ;регистр команд
+        out     dx, al
         sti
 ; Сбросить признак ошибки
         mov     [DevErrorCode], 0
@@ -304,7 +395,7 @@ SendCommandToHDD:
         mov     [DevErrorCode], 5
 ; Завершение работы программы
         ret
-
+;-----------------------------------------------------------------------------
 ;*************************************************
 ;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА УСТРОЙСТВА ATAPI    *
 ;* Входные параметры передаются через глобальные *
@@ -323,33 +414,32 @@ ReadCD_ID:
         mov     [ATASectorNumber], 0
         mov     [ATACylinder], 0
         mov     [ATAHead], 0
-        mov     [ATACommand], 0A1h
+        mov     [ATACommand], 0xA1
         call    SendCommandToHDD
         cmp     [DevErrorCode], 0;проверить код ошибки
         jne     @@End_1  ;закончить, сохранив код ошибки
 ; Ожидать готовность данных HDD
-        mov     DX, [ATABasePortAddr]
-        add     DX, 7  ;порт 1х7h
+        mov     dx, [ATABasePortAddr]
+        add     dx, 7  ;порт 1х7h
         mov     ecx, 0xffff
 @@WaitCompleet_1:
         ; Проверить врем
         dec     ecx
-;        cmp    ecx,0
         jz      @@Error1_1 ;ошибка тайм-аута
         ; Проверить готовность
-        in      AL, DX
-        test    AL, 80h  ;состояние сигнала BSY
+        in      al, dx
+        test    al, 80h  ;состояние сигнала BSY
         jnz     @@WaitCompleet_1
-        test    AL, 1    ;состояние сигнала ERR
+
+        test    al, 1    ;состояние сигнала ERR
         jnz     @@Error6_1
-        test    AL, 08h  ;состояние сигнала DRQ
+
+        test    al, 08h  ;состояние сигнала DRQ
         jz      @@WaitCompleet_1
 ; Принять блок данных от контроллера
-;        mov     AX,DS
-;        mov     ES,AX
-        mov     EDI, Sector512 ;offset Sector512
-        mov     DX, [ATABasePortAddr];порт 1x0h
-        mov     CX, 256;число считываемых слов
+        mov     edi, Sector512 ;offset Sector512
+        mov     dx, [ATABasePortAddr];порт 1x0h
+        mov     cx, 256;число считываемых слов
         rep insw
         ret
 ; Записать код ошибки
@@ -360,7 +450,7 @@ ReadCD_ID:
         mov     [DevErrorCode], 6
 @@End_1:
         ret
-
+;-----------------------------------------------------------------------------
 ;*************************************************
 ;*                СБРОС УСТРОЙСТВА               *
 ;* Входные параметры передаются через глобальные *
@@ -370,39 +460,40 @@ ReadCD_ID:
 ;*************************************************
 DeviceReset:
 ; Проверить корректность номера канала
-        mov     BX, [ChannelNumber]
-        cmp     BX, 1
+        mov     bx, [ChannelNumber]
+        cmp     bx, 1
         jb      @@Err3_2
-        cmp     BX, 2
+
+        cmp     bx, 2
         ja      @@Err3_2
 ; Установить базовый адрес
-        dec     BX
-        shl     BX, 1
+        dec     bx
+        shl     bx, 1
         movzx   ebx, bx
-        mov     DX, [ebx+StandardATABases]
-        mov     [ATABasePortAddr], DX
+        mov     dx, [ebx+StandardATABases]
+        mov     [ATABasePortAddr], dx
 ; Выбрать нужный диск
-        add     DX, 6   ;адрес регистра головок
-        mov     AL, [DiskNumber]
-        cmp     AL, 1   ;проверить номера диска
+        add     dx, 6   ;адрес регистра головок
+        mov     al, [DiskNumber]
+        cmp     al, 1   ;проверить номера диска
         ja      @@Err4_2
-        shl     AL, 4
-        or      AL, 10100000b
-        out     DX, AL
+
+        shl     al, 4
+        or      al, 10100000b
+        out     dx, al
 ; Послать команду "Сброс"
-        mov     AL, 08h
-        inc     DX      ;регистр команд
-        out     DX, AL
+        mov     al, 0x8
+        inc     dx      ;регистр команд
+        out     dx, al
         mov     ecx, 0x80000
 @@WaitHDReady_1:
         ; Проверить время ожидани
         dec     ecx
-;        cmp     ecx,0
         je      @@Err1_2 ;ошибка тайм-аута
         ; Прочитать регистр состояни
-        in      AL, DX
+        in      al, dx
         ; Проверить состояние сигнала BSY
-        test    AL, 80h
+        test    al, 80h
         jnz     @@WaitHDReady_1
 ; Сбросить признак ошибки
         mov     [DevErrorCode], 0
@@ -418,6 +509,5 @@ DeviceReset:
         mov     [DevErrorCode], 4
 ; Записать код ошибки
         ret
-
+;-----------------------------------------------------------------------------
 EndFindHDD:
-

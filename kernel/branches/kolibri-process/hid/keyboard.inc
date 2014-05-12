@@ -488,7 +488,19 @@ send_scancode:
         jae     .exit.irq1
         inc     eax
         mov     [KEY_COUNT], al
-        mov     [KEY_COUNT+eax], bl
+; store ascii or scancode
+        mov     [KEY_COUNT+eax], bl ; actually KEY_BUFF + EAX - 1
+; store original scancode
+        add     eax, 120+2
+        push    ecx
+        cmp     [keyboard_mode], 0; return from keymap
+        je      @f
+
+        xor     ch, ch
+@@:
+        mov     [KEY_COUNT+eax], ch ; actually KEY_BUFF + EAX - 1
+        pop     ecx
+        sub     eax, 120+2
 .exit.irq1:
         ret
 ;---------------------------------------------------------------------

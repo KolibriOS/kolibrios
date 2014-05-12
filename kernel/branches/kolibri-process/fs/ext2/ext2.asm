@@ -2,10 +2,13 @@
 ;;                                                              ;;
 ;; Contains ext2 initialization, plus syscall handling code.    ;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
-;; Distributed under the terms of the new BSD license.          ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 4891 $
+
 
 include 'ext2.inc'
 include 'blocks.inc'

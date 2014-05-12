@@ -1,3 +1,13 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 4850 $
+
+
   boot_initirq:     cp850   'Inicializar IRQ',0
   boot_picinit:     cp850   'Inicializar PIC',0
   boot_v86machine:  cp850   'Inicializar sistema V86',0
@@ -41,3 +51,4 @@ msg_version:   cp850 'versión incompatible del controlador',13,10,0
 msg_www:       cp850 'por favor, visita www.kolibrios.org',13,10,0
 
 ud_user_message:cp850 'Error: instrucción no soportada por el procesador',0
+mtrr_user_message cp850 '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0

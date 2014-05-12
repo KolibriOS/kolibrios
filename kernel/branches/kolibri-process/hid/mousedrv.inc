@@ -479,54 +479,53 @@ nodmp:
         ret
 ;-----------------------------------------------------------------------------
 align 4
-proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
+proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
 
         mov     eax, [BtnState]
         and     eax, 0x3FFFFFFF ; Top 2 bits are used to flag absolute movements
         mov     [BTN_DOWN], eax
-
+;--------------------------------------
         mov     eax, [XMoving]
         test    [BtnState], 0x80000000
-        jnz     @@M1
+        jnz     .absolute_x
         call    mouse_acceleration
-        add     ax, [MOUSE_X];[XCoordinate]
+        add     ax, [MOUSE_X]
         cmp     ax, 0
-        jge     @@M1
+        jge     .check_x
         mov     eax, 0
-        jmp     @@M2
+        jmp     .set_x
+ .absolute_x:
+        mov     edx, [_display.width]
+        mul     edx
+        shr     eax, 15
+ .check_x:
+        cmp     ax, word[Screen_Max_X]
+        jl      .set_x
+        mov     ax, word[Screen_Max_X]
+ .set_x:
+        mov     [MOUSE_X], ax
 ;--------------------------------------
-align 4
-@@M1:
-        cmp     ax, word [Screen_Max_X];ScreenLength
-        jl      @@M2
-        mov     ax, word [Screen_Max_X];ScreenLength-1
-;--------------------------------------
-align 4
-@@M2:
-        mov     [MOUSE_X], ax;[XCoordinate]
-
         mov     eax, [YMoving]
         test    [BtnState], 0x40000000
-        jnz     @@M3
+        jnz     .absolute_y
         neg     eax
         call    mouse_acceleration
-
-        add     ax, [MOUSE_Y];[YCoordinate]
+        add     ax, [MOUSE_Y]
         cmp     ax, 0
-        jge     @@M3
+        jge     .check_y
         mov     ax, 0
-        jmp     @@M4
+        jmp     .set_y
+ .absolute_y:
+        mov     edx, [_display.height]
+        mul     edx
+        shr     eax, 15
+ .check_y:
+        cmp     ax, word[Screen_Max_Y]
+        jl      .set_y
+        mov     ax, word[Screen_Max_Y]
+ .set_y:
+        mov     [MOUSE_Y], ax
 ;--------------------------------------
-align 4
-@@M3:
-        cmp     ax, word [Screen_Max_Y];ScreenHeigth
-        jl      @@M4
-        mov     ax, word [Screen_Max_Y];ScreenHeigth-1
-;--------------------------------------
-align 4
-@@M4:
-        mov     [MOUSE_Y], ax;[YCoordinate]
-
         mov     eax, [VScroll]
         add     [MOUSE_SCROLL_V], ax
 

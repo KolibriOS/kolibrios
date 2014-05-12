@@ -922,3 +922,74 @@ v86_irq2:
         call    do_change_task
         popad
         iretd
+
+align 4
+
+v86_entry:
+        xchg bx, bx
+        mov     ebx, 100000
+        call    delay_hs
+        jmp     v86_entry
+
+align 4
+proc v86_init
+       locals
+         v86_slot      dd ?
+         v86_cmdline   dd ? ;0x00
+         v86_path      dd ? ;0x04
+         v86_eip       dd ? ;0x08
+         v86_esp       dd ? ;0x0C
+         v86_mem       dd ? ;0x10
+       endl
+
+
+        xor     eax, eax
+        mov     [v86_eip], v86_entry
+        mov     [v86_cmdline], eax
+        mov     [v86_esp], eax
+        mov     [v86_path], eax
+
+        call    lock_application_table
+
+        call    alloc_thread_slot
+        test    eax, eax
+        jz      .failed
+
+        mov     [v86_slot], eax
+
+        mov     edi, eax
+        shl     edi, 8
+        add     edi, SLOT_BASE
+        mov     esi, edi      ;edx=edi - pointer to extended infomation about new thread
+        mov     ecx, 256/4
+        xor     eax, eax
+        cld
+        rep stosd             ;clean extended information about new thread
+        mov     [esi], dword 'V86 '
+
+        stdcall create_process, 4096, OS_BASE, 4096
+        test    eax, eax
+        jz      .failed
+
+        mov     [eax+PROC.mem_used], 4096
+        mov     [esi+APPDATA.process], eax
+
+        lea     ebx, [esi+APPDATA.list]
+        lea     ecx, [eax+PROC.thr_list]
+        list_add_tail ebx, ecx               ;add thread to process child's list
+
+
+        lea     eax, [v86_cmdline]
+        stdcall set_app_params , [v86_slot], eax, 0, 0, 2
+
+        mov     eax, [process_number]           ;set result
+        call    unlock_application_table
+        ret
+.failed:
+        xor     eax, eax
+.failed1:
+        call    unlock_application_table
+        dec     eax     ;-1
+        ret
+endp
+

@@ -26,7 +26,7 @@ macro FuncTable name, table_name, [label]
 }
 
 uglobal
-  common_colours rd 32
+  common_colours rd 48
   draw_limits    RECT
 endg
 
@@ -34,7 +34,7 @@ align 4
 ;------------------------------------------------------------------------------
 syscall_draw_window: ;///// system function 0 /////////////////////////////////
 ;------------------------------------------------------------------------------
-;? <description>
+;? <description>.
 ;------------------------------------------------------------------------------
         mov     eax, edx
         shr     eax, 24
@@ -173,7 +173,10 @@ align 4
 syscall_display_settings.02:
         dec     ebx
         mov     esi, ecx
-        and     edx, 127
+        cmp     edx, 192
+        jnae    @f
+        mov     edx, 192 ; max size
+      @@:
         mov     edi, common_colours
         mov     ecx, edx
         rep movsb
@@ -183,7 +186,10 @@ syscall_display_settings.02:
 align 4
 syscall_display_settings.03:
         mov     edi, ecx
-        and     edx, 127
+        cmp     edx, 192
+        jnae    @f
+        mov     edx, 192 ; max size
+      @@:
         mov     esi, common_colours
         mov     ecx, edx
         rep movsb

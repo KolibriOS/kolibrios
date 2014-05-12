@@ -7,6 +7,7 @@
 
 $Revision: 3742 $
 
+;-----------------------------------------------------------------------------
         pusha
 
         mov     eax, [pg_data.pages_free]
@@ -20,89 +21,167 @@ $Revision: 3742 $
 ;       check a upper size of the cache, no more than 1 Mb on the physical device
         cmp     eax, 1024*1024
         jbe     @f
+
         mov     eax, 1024*1024
         jmp     .continue
+;--------------------------------------
 @@:
 ;       check a lower size of the cache, not less than 128 Kb on the physical device
         cmp     eax, 128*1024
-        jae     @f
-        mov     eax, 128*1024
-@@:
-.continue:
-        mov     [cache_ide0_size], eax
-        mov     [cache_ide1_size], eax
-        mov     [cache_ide2_size], eax
-        mov     [cache_ide3_size], eax
-        xor     eax, eax
-        mov     [hdd_appl_data], 1;al
-        mov     [cd_appl_data], 1
+        jae     .continue
 
-        test    byte [DRIVE_DATA+1], 2
-        je      .ide2 
-        mov     esi, cache_ide3
-        call    get_cache_ide
-.ide2:
-        test    byte [DRIVE_DATA+1], 8
-        je      .ide1
-        mov     esi, cache_ide2
-        call    get_cache_ide
-.ide1:
-        test    byte [DRIVE_DATA+1], 0x20
-        je      .ide0
-        mov     esi, cache_ide1
-        call    get_cache_ide
-.ide0:
+        mov     eax, 128*1024
+;--------------------------------------
+.continue:
+        push    ecx
+        mov     ecx, 12
+        mov     esi, cache_ide0+IDE_CACHE.size
+        cld
+@@:
+        mov     [esi], eax
+        add     esi, sizeof.IDE_CACHE
+        loop    @b
+
+        pop     ecx
+
+        xor     eax, eax
+        mov     [hdd_appl_data], 1 ;al
+        mov     [cd_appl_data], 1
+;--------------------------------------
         test    byte [DRIVE_DATA+1], 0x80
         je      @f
+
         mov     esi, cache_ide0
         call    get_cache_ide
+;--------------------------------------
 @@:
-        jmp     end_get_cache
+        test    byte [DRIVE_DATA+1], 0x20
+        je      @f
 
+        mov     esi, cache_ide1
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+1], 8
+        je      @f
+
+        mov     esi, cache_ide2
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+1], 2
+        je      @f
+
+        mov     esi, cache_ide3
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+6], 0x80
+        je      @f
+
+        mov     esi, cache_ide4
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+6], 0x20
+        je      @f
+
+        mov     esi, cache_ide5
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+6], 8
+        je      @f
+
+        mov     esi, cache_ide6
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+6], 2
+        je      @f
+
+        mov     esi, cache_ide7
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+11], 0x80
+        je      @f
+
+        mov     esi, cache_ide8
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+11], 0x20
+        je      @f
+
+        mov     esi, cache_ide9
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+11], 8
+        je      @f
+
+        mov     esi, cache_ide10
+        call    get_cache_ide
+;--------------------------------------
+@@:
+        test    byte [DRIVE_DATA+11], 2
+        je      end_get_cache
+
+        mov     esi, cache_ide11
+        call    get_cache_ide
+
+        jmp     end_get_cache
+;-----------------------------------------------------------------------------
 get_cache_ide:
-        and     [esi+cache_ide0_search_start-cache_ide0], 0
-        and     [esi+cache_ide0_appl_search_start-cache_ide0], 0
+        and     [esi+IDE_CACHE.search_start], 0
+        and     [esi+IDE_CACHE.appl_search_start], 0
+
         push    ecx
-        stdcall kernel_alloc, [esi+cache_ide0_size-cache_ide0]
-        mov     [esi+cache_ide0_pointer-cache_ide0], eax
+;        DEBUGF  1, "K : IDE_CACHE.size %x\n", [esi+IDE_CACHE.size]
+        stdcall kernel_alloc, [esi+IDE_CACHE.size]
+        mov     [esi+IDE_CACHE.pointer], eax
         pop     ecx
+
         mov     edx, eax
-        mov     eax, [esi+cache_ide0_size-cache_ide0]
+        mov     eax, [esi+IDE_CACHE.size]
         shr     eax, 3
-        mov     [esi+cache_ide0_system_data_size-cache_ide0], eax
+;        DEBUGF  1, "K : IDE_CACHE.system_data_size %x\n", eax
+        mov     [esi+IDE_CACHE.system_data_size], eax
         mov     ebx, eax
         imul    eax, 7
-        mov     [esi+cache_ide0_appl_data_size-cache_ide0], eax
+;        DEBUGF  1, "K : IDE_CACHE.appl_data_size %x\n", eax
+        mov     [esi+IDE_CACHE.appl_data_size], eax
         add     ebx, edx
-        mov     [esi+cache_ide0_data_pointer-cache_ide0], ebx
+        mov     [esi+IDE_CACHE.data_pointer], ebx
 
 .cd:
         push    ecx
-        mov     eax, [esi+cache_ide0_system_data_size-cache_ide0]
+        mov     eax, [esi+IDE_CACHE.system_data_size]
         call    calculate_for_cd
-        add     eax, [esi+cache_ide0_pointer-cache_ide0]
-        mov     [esi+cache_ide0_system_data-cache_ide0], eax
-        mov     [esi+cache_ide0_system_sad_size-cache_ide0], ecx
+        add     eax, [esi+IDE_CACHE.pointer]
+        mov     [esi+IDE_CACHE.system_data], eax
+        mov     [esi+IDE_CACHE.system_sad_size], ecx
 
         push    edi
-        mov     edi, [esi+cache_ide0_pointer-cache_ide0]
+        mov     edi, [esi+IDE_CACHE.pointer]
         call    clear_ide_cache
         pop     edi
 
-        mov     eax, [esi+cache_ide0_appl_data_size-cache_ide0]
+        mov     eax, [esi+IDE_CACHE.appl_data_size]
         call    calculate_for_cd
-        add     eax, [esi+cache_ide0_data_pointer-cache_ide0]
-        mov     [esi+cache_ide0_appl_data-cache_ide0], eax
-        mov     [esi+cache_ide0_appl_sad_size-cache_ide0], ecx
+        add     eax, [esi+IDE_CACHE.data_pointer]
+        mov     [esi+IDE_CACHE.appl_data], eax
+        mov     [esi+IDE_CACHE.appl_sad_size], ecx
 
         push    edi
-        mov     edi, [esi+cache_ide0_data_pointer-cache_ide0]
+        mov     edi, [esi+IDE_CACHE.data_pointer]
         call    clear_ide_cache
         pop     edi
 
         pop     ecx
         ret
-
+;-----------------------------------------------------------------------------
 calculate_for_cd:
         push    eax
         mov     ebx, eax
@@ -116,7 +195,7 @@ calculate_for_cd:
         sub     eax, ebx
         dec     ecx
         ret
-
+;-----------------------------------------------------------------------------
 clear_ide_cache:
         push    eax
         shl     ecx, 1
@@ -125,6 +204,6 @@ clear_ide_cache:
         rep stosd
         pop     eax
         ret
-
+;-----------------------------------------------------------------------------
 end_get_cache:
         popa

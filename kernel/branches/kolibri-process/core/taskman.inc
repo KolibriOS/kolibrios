@@ -389,7 +389,6 @@ test_app_header:
         xor     eax, eax
         ret
 
-
 align 4
 alloc_thread_slot:
 ;input:
@@ -430,6 +429,10 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
          process     dd ?
          app_tabs    dd ?
        endl
+
+        push    ebx
+        push    esi
+        push    edi
 
         mov     ecx, pg_data.mutex
         call    mutex_lock
@@ -552,6 +555,10 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         mov     ecx, pg_data.mutex
         call    mutex_unlock
         mov     eax, [process]
+
+        pop     edi
+        pop     esi
+        pop     ebx
         ret
 .fail:
         mov     ecx, pg_data.mutex
@@ -561,6 +568,9 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
 ;;        stdcall destroy_app_space, [dir_addr], 0
 @@:
         xor     eax, eax
+        pop     edi
+        pop     esi
+        pop     ebx
         ret
 endp
 
