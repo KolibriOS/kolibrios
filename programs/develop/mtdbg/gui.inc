@@ -54,6 +54,19 @@ else  ; BLACK ON WHITE
 
 end if
 
+struc fpcvt
+{
+  .str_buf  rb 32
+  .cvt_buf  rb 16
+  .bcd_man  rb 10
+  .bcd_exp  rb 10
+  .exp      rd 1
+  .digits   rq 1
+  .sizeof:
+}
+
+
+
 ;-----------------------------------------------------------------------------
 
 data_width              = 80
@@ -748,6 +761,14 @@ draw_register:
         add     edx, ecx
         ret
 
+
+; in: edi=cvt buffer, st0 = value
+
+;align 4
+;fp2str:
+
+
+
 ;-----------------------------------------------------------------------------
 ;                  Display FPU register (ST0 - ST7) content
 ;
@@ -776,39 +797,85 @@ draw_fpu_register_2:
         stosd
         stosd
 
-        ;int3
-        ;nop
-
         movzx   eax, word [_fsw]
         shr     eax, 11
         add     eax, ebp
         shr     ebp, 12
         and     eax, 7
         bt      dword [_ftw], eax
-        jc     .A6M
+        jc     .exam
 
         mov     dword [.str_buf+8],' emp'
         mov     word [.str_buf+8+4],'ty'
         jmp     .display
 
-        mov     cx, [_st0+ebp+8]
-        and     cx, 0x7FFF              ;clear sign flag
-        jz      .A6M
+.exam:
+        fld     tword [_st0+ebp]
+        fxam
+        fstsw   ax
+        fstp    st1
+        sahf
 
-        cmp     cx, 0x7FFF
-        jne     .decode
+        jz      .c3
+        jp      .c2
 
+;C0 leaf
+        jc      .nan
+
+; C3 = 0 C2 = 0 C0 = 0 - invalid
         mov     dword [.str_buf+6], ' inv'
         mov     dword [.str_buf+6+4], 'alid'
         jmp     .display
 
-.A6M:
+; C3 = 0 C2 = 0 C0 = 1 - Not a Number
+.nan:
+        mov     dword [.str_buf+10], ' NaN'
+        jmp     .display
 
-        mov     eax, dword [_st0+ebp]
-        or      eax, dword [_st0+ebp+4]
-        jnz     .decode
+;C2 leaf - valid or infinity
+
+.c2:
+; C3 = 0 C2 = 1 C0 = 0 - valid number
+
+        jnc     .decode
+
+; C3 = 0 C2 = 1 C0 = 1 - Infinty
+
+;check sign flag
+        test    ah, 0x02
+        jnz     @F
+        mov     dword [.str_buf+10], '+Inf'
+        jmp     .display
+@@:
+        mov     dword [.str_buf+10], '-Inf'
+        jmp     .display
+
+.c3:
+        jp      .denormal
+        jc      .empty
+
+; C3 = 1 C2 = 1 C0 = 0 - Zero
 
         mov     dword [.str_buf+10], ' 0.0'
+        jmp     .display
+
+.empty:
+        mov     dword [.str_buf+8],' emp'
+        mov     word [.str_buf+8+4],'ty'
+        jmp     .display
+
+; C3 = 1 C2 = 1 C0 = 0 - Denormal number
+
+.denormal:
+        test    ah, 0x02
+        jnz     @F
+
+        mov     dword [.str_buf+6], '+den'
+        mov     dword [.str_buf+6+4], 'orm '
+        jmp     .display
+@@:
+        mov     dword [.str_buf+6], '-den'
+        mov     dword [.str_buf+6+4], 'orm '
         jmp     .display
 
 .decode:
@@ -1059,7 +1126,6 @@ draw_fpu_regs:
         xor     ebp, ebp
         mov     ebx, [registers_x_pos_dd]
         add     ebx, 2*10000h+registers_y_pos+142
-        mov     edi, COLOR_BG_NORMAL
 .draw_regs:
         call    draw_fpu_register_2
         add     ebx, 10
@@ -1077,7 +1143,6 @@ draw_mmx_regs:
         xor     ebp, ebp
         mov     ebx, [registers_x_pos_dd]
         add     ebx, 2*10000h+registers_y_pos+142
-;        mov     edi, COLOR_BG_NORMAL
 .draw_regs:
         call    draw_mmx_register_2
         add     ebx, 10
@@ -1088,7 +1153,23 @@ draw_mmx_regs:
         pop     ebp
         ret
 
-; TODO add SSE registers
+align 4
+draw_sse_regs:
+        push    ebp
+        push    8
+        xor     ebp, ebp
+        mov     ebx, [registers_x_pos_dd]
+        add     ebx, 2*10000h+registers_y_pos+232
+.draw_regs:
+     ;   call    draw_sse_register
+        add     ebx, 10
+        inc     ebp
+        dec     dword [esp]
+        jnz     .draw_regs
+        pop     eax
+        pop     ebp
+        ret
+
 ; TODO add AVX registers
 
 ;-----------------------------------------------------------------------------
