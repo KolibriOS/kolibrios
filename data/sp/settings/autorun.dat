@@ -4,7 +4,7 @@
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
 #/SYS/CROPFLAT "XS800 YS480"	   1	# set limits of screen
-#/SYS/LOADDRV	  "COMMOUSE"	   1	# COM mice detector
+#/SYS/LOADDRV	  "COM_MOUSE"	   1	# serial mouse driver
 #/SYS/DEVELOP/BOARD   ""	   1	# Load DEBUG board
 #/SYS/refrscrn	      ""	   1	# Refresh screen
 /SYS/LOADDRV         "RDC"        1    # videodriver for RDC M2010/M2012
