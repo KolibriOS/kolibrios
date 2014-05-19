@@ -11,6 +11,7 @@
     .global _AttachIntHandler
 
     .global _CancelTimerHS
+    .global _ChangeTask
     .global _CreateEvent
     .global _CreateObject
     .global _CreateRingBuffer
@@ -81,6 +82,7 @@
     .def  _AttachIntHandler;  .scl  2;  .type 32; .endef
 
     .def  _CancelTimerHS;     .scl  2;  .type 32; .endef
+    .def  _ChangeTask;        .scl  2;  .type 32; .endef
     .def  _CreateEvent;       .scl  2;  .type 32; .endef
     .def  _CreateObject;      .scl  2;  .type 32; .endef
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
@@ -151,6 +153,7 @@ _AllocPages:
 _AttachIntHandler:
 
 _CancelTimerHS:
+_ChangeTask:
 _CreateEvent:
 _CreateObject:
 _CreateRingBuffer:
@@ -224,6 +227,7 @@ _WaitEventTimeout:
         .ascii " -export:AttachIntHandler"     # stdcall
 
         .ascii " -export:CancelTimerHS"        # stfcall
+        .ascii " -export:ChangeTask"           #
         .ascii " -export:CreateEvent"          #
         .ascii " -export:CreateObject"         #
         .ascii " -export:CreateRingBuffer"     # stdcall
