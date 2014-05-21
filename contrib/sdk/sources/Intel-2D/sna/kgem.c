@@ -2744,7 +2744,7 @@ void _kgem_submit(struct kgem *kgem)
 
    		    if (DEBUG_DUMP)
             {
-                int fd = open("/tmp1/1/batchbuffer.bin", O_CREAT|O_WRONLY|O_BINARY);
+                int fd = open("/tmp1/1/batchbuffer.bin", O_CREAT|O_WRONLY);
 				if (fd != -1) {
 					ret = write(fd, kgem->batch, batch_end*sizeof(uint32_t));
 					fd = close(fd);

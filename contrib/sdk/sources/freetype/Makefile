@@ -12,7 +12,7 @@ LDFLAGS+= --out-implib lib$(LIBRARY).dll.a
 
 ARFLAGS = crs
 
-INCLUDES= -I../newlib/include -I./include -I./include/freetype/config 
+INCLUDES= -I../newlib/libc/include -I./include -I./include/freetype/config 
 
 LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 

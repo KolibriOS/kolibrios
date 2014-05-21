@@ -8,7 +8,7 @@ CFLAGS   = -c $(CFLAGS_OPT)
 
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds --out-implib libGL.dll.a -e _DllStartup
 
-INC_MESA:= -I$(SRC_DIR)/newlib/include -I$(SRC_DIR)/Mesa/include
+INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/include
 INC_MESA+= -I./src -I$(MESA_SRC)/glsl -I$(MESA_SRC)/mesa -I$(MESA_SRC)/mapi
 
 

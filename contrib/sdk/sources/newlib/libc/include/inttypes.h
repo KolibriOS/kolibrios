@@ -177,8 +177,8 @@
 #define __PRI64(x) __STRINGIFY(l##x)
 #define __SCN64(x) __STRINGIFY(l##x)
 #elif __have_longlong64
-#define __PRI64(x) __STRINGIFY(ll##x)
-#define __SCN64(x) __STRINGIFY(ll##x)
+#define __PRI64(x) __STRINGIFY(I64##x)
+#define __SCN64(x) __STRINGIFY(I64##x)
 #else
 #define __PRI64(x) __STRINGIFY(x)
 #define __SCN64(x) __STRINGIFY(x)

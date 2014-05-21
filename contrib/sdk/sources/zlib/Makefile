@@ -16,7 +16,7 @@ LD = kos32-ld
 AR = kos32-ar
 STRIP = kos32-strip
 
-CFLAGS = $(LOC) -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fomit-frame-pointer 
+CFLAGS = $(LOC) -DHAVE_UNISTD_H -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fomit-frame-pointer 
 
 AS = $(CC)
 ASFLAGS = $(LOC) -Wall
@@ -27,7 +27,7 @@ ARFLAGS = rcs
 
 LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB)
 
-INCLUDES= -I../newlib/include
+INCLUDES= -I../newlib/libc/include
 
 LIBPATH:= -L../../lib
 

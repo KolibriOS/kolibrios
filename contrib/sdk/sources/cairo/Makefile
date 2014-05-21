@@ -14,7 +14,7 @@ ARFLAGS = crs
 
 DEFINES = -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -U_MSC_VER -DHAVE_CONFIG_H=1 -DCAIRO_NO_MUTEX=1  
 
-INCLUDES = -I. -I../newlib/include -I../pixman -I../zlib -I../libpng -I../freetype/include
+INCLUDES = -I. -I../newlib/libc/include -I../pixman -I../zlib -I../libpng -I../freetype/include
 
 LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 

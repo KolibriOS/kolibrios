@@ -15,8 +15,8 @@ CFLAGS   = -c $(CFLAGS_OPT)
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds -e _DllStartup
 LDFLAGS+= --out-implib lib$(EGL).dll.a 
 
-INC_MESA=  -I../newlib/include -I./include -I./src -I./src/glsl -I./src/mesa -I./src/mapi
-INC_EGL=   -I../newlib/include -I../../includes -I./include -I../libdrm -I../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
+INC_MESA=  -I../newlib/libc/include -I./include -I./src -I./src/glsl -I./src/mesa -I./src/mapi
+INC_EGL=   -I../newlib/libc/include -I../../includes -I./include -I../libdrm -I../libdrm/include/drm -I./src/egl/main -I./src/gbm/backends/dri -I./src/gbm/main
 
 LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 

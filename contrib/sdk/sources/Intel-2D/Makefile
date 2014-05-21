@@ -12,7 +12,7 @@ PXFLAGS:= --version-script pixlib.ver --out-implib $(LIBRARY).dll.a
 SNAFLAGS:= --version-script sna.ver --output-def sna.def
 UXAFLAGS:= --version-script uxa.ver --output-def uxa.def
  
-INCLUDES= -I. -I../libdrm/intel -I../libdrm/include/drm -I./render_program -I../pixman -I../newlib/include
+INCLUDES= -I. -I../libdrm/intel -I../libdrm/include/drm -I./render_program -I../pixman -I../newlib/libc/include
 
 LIBPATH:= -L../../lib
 

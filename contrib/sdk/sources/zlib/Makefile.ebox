@@ -30,7 +30,7 @@ LDIMPORT:= -nostdlib --out-implib libzimp.a
 
 LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --out-implib $(IMPLIB) 
 
-INCLUDES= -I../newlib/include
+INCLUDES= -I../newlib/libc/include
 
 LIBPATH:= -L../../lib
 

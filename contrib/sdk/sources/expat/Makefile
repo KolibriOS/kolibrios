@@ -8,7 +8,7 @@ CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
 
 ARFLAGS = crs
 
-INCLUDES= -I. -I../newlib/include
+INCLUDES= -I. -I../newlib/libc/include
 
 DEFS = -DHAVE_EXPAT_CONFIG_H
 

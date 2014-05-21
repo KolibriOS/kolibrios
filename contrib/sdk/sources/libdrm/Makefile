@@ -12,7 +12,7 @@ LDFLAGS+= --out-implib $(LIBRARY).dll.a
 
 ARFLAGS = crs
 
-INCLUDES= -I. -I./include/drm -I../newlib/include
+INCLUDES= -I. -I./include/drm -I../newlib/libc/include
 
 LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 

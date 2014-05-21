@@ -35,6 +35,7 @@ extern "C" {
 #define __have_long64 1
 #elif __STDINT_EXP(LONG_MAX) == 0x7fffffff && !defined(__SPU__)
 #define __have_long32 1
+#define __have_long64 0
 #endif
 
 #ifdef ___int8_t_defined

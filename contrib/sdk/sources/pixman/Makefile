@@ -12,7 +12,7 @@ LDFLAGS+= --out-implib lib$(LIBRARY).dll.a
 
 ARFLAGS = cvrs
 
-INCLUDES= -I. -I../newlib/include
+INCLUDES= -I. -I../newlib/libc/include
 
 LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
 

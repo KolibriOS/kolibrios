@@ -6,7 +6,7 @@ CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
 
 AR= ar
 
-INCLUDES= -I. -I../newlib/include -I../Mesa/include -I../libdrm/include/drm
+INCLUDES= -I. -I../newlib/libc/include -I../Mesa/include -I../libdrm/include/drm
 
 LIBPATH:= -L../../lib
 

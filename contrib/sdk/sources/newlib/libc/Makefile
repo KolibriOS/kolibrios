@@ -1,5 +1,4 @@
 
-
 CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
@@ -9,6 +8,7 @@ LDFLAGS = -shared -s -T libcdll.lds --out-implib libc.dll.a --image-base 0
 #LDFLAGS+= --output-def libc.orig.def
 ARFLAGS = crs
 
+SDK_DIR:= $(abspath ../../..)
 
 LIBC_TOPDIR   = .
 LIBC_INCLUDES = $(LIBC_TOPDIR)/include
@@ -19,7 +19,7 @@ DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
-LIBPATH:= -L../../lib -L/home/autobuild/tools/win32/mingw32/lib
+LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
 STATIC_SRCS:=					\
          		crt/start.S		\
@@ -400,10 +400,10 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 	#sed -f newlib.sed mem > libc.inc
 
 install: libc.dll libc.dll.a libapp.a libdll.a
-	mv -f libc.dll ../../bin
-	mv -f libc.dll.a ../../lib   
-	mv -f libapp.a ../../lib
-	mv -f libdll.a ../../lib
+	mv -f libc.dll $(SDK_DIR)/bin
+	mv -f libc.dll.a $(SDK_DIR)/lib   
+	mv -f libapp.a $(SDK_DIR)/lib
+	mv -f libdll.a $(SDK_DIR)/lib
 
 libapp.a: $(LIBCRT_OBJS) Makefile
 	$(AR) $(ARFLAGS) libapp.a $(LIBCRT_OBJS)

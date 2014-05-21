@@ -12,8 +12,8 @@ all: 	newlib zlib libpng freetype pixman cairo	\
 newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a
 
 $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a:
-	$(MAKE) -C newlib shared 
-	$(MAKE) -C newlib install
+	$(MAKE) -C newlib/libc shared 
+	$(MAKE) -C newlib/libc install
 
 #####################################
 

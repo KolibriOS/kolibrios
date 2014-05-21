@@ -2,6 +2,9 @@
 	assert.h
 */
 
+#ifndef __ASSERT_H__
+#define __ASSERT_H__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,3 +51,5 @@ void _EXFUN(__assert_func, (const char *, int, const char *, const char *)
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* __ASSERT_H__ */

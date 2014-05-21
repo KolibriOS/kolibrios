@@ -1,10 +1,13 @@
 
-CC = gcc
-AR = ar rc
-LD = ld
+CC = kos32-gcc
+AR = kos32-ar
+LD = kos32-ld
 
-CFLAGS = -c -O2 -march=pentium-mmx -fomit-frame-pointer -DBUILD_DLL
+CFLAGS = -c -O2 -march=pentium-mmx -fomit-frame-pointer -DBUILD_DLL -DMISSING_SYSCALL_NAMES
 LDFLAGS = -nostdlib -shared -s -T libcdll.lds --output-def libc.orig.def --out-implib libc.dll.a --image-base 0
+ARFLAGS = crs
+
+SDK_DIR:= $(abspath ../../..)
 
 LIBC_TOPDIR   = .
 LIBC_INCLUDES = $(LIBC_TOPDIR)/include
@@ -15,7 +18,7 @@ DEFINES:= -D_IEEE_LIBM
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
-LIBPATH:= -L ../../lib
+LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
 STATIC_SRCS:=					\
          		crt/start.S		\
@@ -54,7 +57,6 @@ CORE_SRCS:=                   			\
          		crt/thread.S         	\
          		crt/tls.S            	\
 			crt/setjmp.S		\
-         		crt/assert.c         	\
 			crt/cpu_features.c	\
 			ctype/ctype_.c 		\
 			ctype/isascii.c		\
@@ -93,28 +95,43 @@ CORE_SRCS:=                   			\
          		errno/errno.c        	\
 			locale/locale.c		\
 			locale/lctype.c		\
+			locale/ldpart.c		\
          		reent/impure.c       	\
 			reent/init_reent.c	\
 	         	reent/getreent.c     	\
 			reent/mutex.c		\
 			reent/gettimeofdayr.c	\
-         		reent/hdlman.c       	\
 			reent/isattyr.c		\
          		reent/openr.c        	\
          		reent/closer.c       	\
+			reent/linkr.c		\
          		reent/readr.c        	\
          		reent/lseekr.c       	\
          		reent/fstatr.c       	\
          		reent/writer.c       	\
+			reent/timesr.c		\
+			reent/unlinkr.c		\
          		search/qsort.c       	\
          		search/bsearch.c     	\
 			signal/signal.c		\
+			sys/close.c		\
          		sys/create.c         	\
          		sys/delete.c         	\
+			sys/errno.c		\
          		sys/finfo.c          	\
+			sys/fsize.c          	\
+			sys/fstat.c		\
+			sys/gettod.c		\
+			sys/io.c		\
+			sys/ioread.c		\
+			sys/iowrite.c		\
+			sys/isatty.c		\
+			sys/lseek.c		\
+			sys/open.c		\
          		sys/read.c           	\
+			sys/unlink.c		\
          		sys/write.c          	\
-         		sys/fsize.c          	\
+			sys/io_alloc.S		\
          		time/asctime.c       	\
          		time/asctime_r.c     	\
          		time/clock.c         	\
@@ -130,6 +147,7 @@ CORE_SRCS:=                   			\
          		time/lcltime_r.c     	\
 			time/strftime.c		\
          		time/time.c          	\
+			time/timelocal.c	\
          		time/tzlock.c        	\
          		time/tzvars.c
 
@@ -139,6 +157,8 @@ STDLIB_SRCS=                 			\
          		__call_atexit.c     	\
          		abort.c              	\
          		abs.c               	\
+			assert.c		\
+			atexit.c		\
          		atof.c              	\
          		atoi.c              	\
 			atol.c			\
@@ -248,7 +268,6 @@ STDIO_SRCS=					\
 			refill.c		\
 			rget.c			\
 			remove.c		\
-			rename.c		\
 			setvbuf.c		\
 			stdio.c			\
 			tmpfile.c		\
@@ -374,28 +393,28 @@ shared: $(NAME).dll libapp.a libdll.a
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) --version-script libc.ver
-	sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
-	sed -f cmd2.sed libc.def > mem
-	sed -f newlib.sed mem > libc.inc
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(LIB_OBJS) -lgcc --version-script libc.ver
+	#sed -e "s/ @[^ ]*//" libc.orig.def > libc.def
+	#sed -f cmd2.sed libc.def > mem
+	#sed -f newlib.sed mem > libc.inc
 
 install: libc.dll libc.dll.a libapp.a libdll.a
-	mv -f libc.dll ../../bin
-	mv -f libc.dll.a ../../lib   
-	mv -f libapp.a ../../lib
-	mv -f libdll.a ../../lib
+	mv -f libc.dll $(SDK_DIR)/bin
+	mv -f libc.dll.a $(SDK_DIR)/lib   
+	mv -f libapp.a $(SDK_DIR)/lib
+	mv -f libdll.a $(SDK_DIR)/lib
 
 libapp.a: $(LIBCRT_OBJS) Makefile
-	$(AR) libapp.a $(LIBCRT_OBJS)
+	$(AR) $(ARFLAGS) libapp.a $(LIBCRT_OBJS)
 
 libdll.a: $(LIBDLL_OBJS) Makefile
-	$(AR) libdll.a $(LIBDLL_OBJS)
+	$(AR) $(ARFLAGS) libdll.a $(LIBDLL_OBJS)
 
 
 static: $(NAME).a
 
 $(NAME).a: $(LIB_OBJS) $(SRC_DEP) Makefile
-	$(AR) $(NAME).a $(LIB_OBJS)
+	$(AR) $(ARFLAGS) $(NAME).a $(LIB_OBJS)
 
 
 

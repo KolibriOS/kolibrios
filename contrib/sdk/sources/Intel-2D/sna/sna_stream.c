@@ -86,7 +86,7 @@ struct kgem_bo *sna_static_stream_fini(struct sna *sna,
 
     if (DEBUG_DUMP)
     {
-        int fd = open("/tmp1/1/static.bin", O_CREAT|O_WRONLY|O_BINARY);
+        int fd = open("/tmp1/1/static.bin", O_CREAT|O_WRONLY);
 		if (fd != -1) {
             write(fd, stream->data, stream->used);
 			close(fd);

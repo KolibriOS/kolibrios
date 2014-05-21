@@ -9,7 +9,7 @@ LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-
 
 STRIP = $(PREFIX)strip
 
-INCLUDES= -I. -I../newlib/include
+INCLUDES= -I. -I../newlib/libc/include
 
 LIBPATH:= -L../../lib
 

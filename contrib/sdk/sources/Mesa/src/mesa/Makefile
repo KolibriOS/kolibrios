@@ -8,7 +8,7 @@ CFLAGS   = -c $(CFLAGS_OPT)
 
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T $(SRC_DIR)/newlib/dll.lds -e _DllStartup
 
-INC_MESA:= -I$(SRC_DIR)/newlib/include -I$(SRC_DIR)/Mesa/include 
+INC_MESA:= -I$(SRC_DIR)/newlib/libc/include -I$(SRC_DIR)/Mesa/include 
 INC_MESA+= -I./ -I$(MESA_SRC)/glsl -I$(MESA_SRC)/mesa -I$(MESA_SRC)/mapi
 INC_MESA+= -I$(SRC_DIR)/libdrm -I$(MESA_SRC) -I$(SRC_DIR)/expat/lib
 INC_I965:= -I$(SRC_DIR)/libdrm/intel -I$(SRC_DIR)/libdrm/include/drm -I$(MESA_SRC)/mesa/drivers/dri/common 

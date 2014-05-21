@@ -12,7 +12,7 @@ LDFLAGS+=  --out-implib $(LIBRARY).dll.a
  
 ARFLAGS:= crs
 
-INCLUDES= -I. -I../newlib/include -I../zlib
+INCLUDES= -I. -I../newlib/libc/include -I../zlib
 
 LIBPATH:= -L../../lib
 

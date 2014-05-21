@@ -46,7 +46,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "compiler.h"
 
 
-//#include <memory.h>
+#include <string.h>
 #include <malloc.h>
 #include <errno.h>
 #include <kos32sys.h>
