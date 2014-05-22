@@ -36,7 +36,7 @@ label normal_keys byte
         db      28h, 29h, 33h, 34h, 35h, 3Ah, 3Bh, 3Ch, 3Dh, 3Eh, 3Fh, 40h, 41h, 42h, 43h, 44h
         db      57h, 58h,37h+EX,46h,0,52h+EX,47h+EX,49h+EX,53h+EX,4Fh+EX,51h+EX,4Dh+EX,4Bh+EX,50h+EX,48h+EX,45h
         db      35h+EX,37h,4Ah,4Eh,1Ch+EX,4Fh,50h, 51h, 4Bh, 4Ch, 4Dh, 47h, 48h, 49h, 52h, 53h
-        db        0,5Dh+EX,5Eh+EX
+        db      56h,5Dh+EX,5Eh+EX
 normal_keys_number = $ - normal_keys
 }
 
