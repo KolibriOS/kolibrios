@@ -6636,7 +6636,7 @@ if lang eq ru
         db      'Левая '
         db      'Правая'
         db      'Смотр.'
-        db      'Редак.'
+        db      '      '
         db      'Печать'
         db      'Связь '
         db      'Искать'
@@ -6719,7 +6719,7 @@ else
         db      'Left  '
         db      'Right '
         db      'View..'
-        db      'Edit..'
+        db      '      '
         db      'Print '
         db      'MkLink'
         db      'Find  '
@@ -7477,14 +7477,14 @@ editor_ctrlkeys:
         dd      editor_OnKey.del
         dw      0x58, 0
         dd      F12
-        dw      0xF, 0x100	; Alt+Tab
+        dw      0xF, 0x100      ; Alt+Tab
         dd      dummy_key
-        dw      0xF, 0x101	; Shift+Alt+Tab
+        dw      0xF, 0x101      ; Shift+Alt+Tab
         dd      dummy_key
         db      0
 
 dummy_key:
-	ret
+        ret
 
 dirinfo:
                 dd      1
