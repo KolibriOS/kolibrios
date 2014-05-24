@@ -636,7 +636,7 @@ atof_convertFractionalPart:
 draw_window:
         mcall   12, 1
 
-        mcall   48, 3, sc, sizeof.system_colors
+        mcall   48, 3, sc, sizeof.new_system_colors
 
         mcall   48, 4
 
@@ -644,7 +644,7 @@ draw_window:
         xor     eax, eax                     
         mov     ebx, 200 shl 16 + 256
         add     ecx, 200 shl 16 + 158
-        mov     edx, [sc.work]
+        mov     edx, [sc.win_body]
         or      edx, 0x34000000
         mov     edi, title
         mcall
@@ -653,7 +653,7 @@ draw_window:
         mov     ebx, 19 shl 16 + 28
         mov     ecx, 49 shl 16 + 18
         mov     edx, 6
-        mov     esi, [sc.work_button]
+        mov     esi, [sc.btn_face]
         mov     edi, 7
 newbutton:
         dec     edi
@@ -672,7 +672,7 @@ no_new_row:
         mcall   , <220,  8>, < 7,  8>, 3        ; 'dec-bin-hex'
 
 
-        mov     ecx, [sc.work_button_text]
+        mov     ecx, [sc.btn_text]
         mov     edx, text
         mov     edi, 55 - 20
 next_line:
@@ -704,15 +704,19 @@ next_button:
 
 print_display:
         pusha
-        mcall   13, <19, 209>, <19, 13>, 0xffffff
+        mcall   13, < 20, 207>, <21, 17>, [sc.gui_face]
+        mcall   38, < 19, 227>, <20, 20>, [sc.gui_frame]
+        mcall   38, < 19, 227>, <38, 38>, [sc.gui_frame]
+        mcall   38, < 19,  19>, <21, 37>, [sc.gui_frame]
+        mcall   38, <227, 227>, <21, 37>, [sc.gui_frame]
 
         mov     eax, 4
         mov     ebx, 135 shl 16 + 7
-        mov     ecx, [sc.work_text]
+        mov     ecx, [sc.gui_text]
         or      ecx, 0x40000000
         mov     edx, calc
         mov     esi, 1
-        mov     edi, [sc.work]
+        mov     edi, [sc.win_body]
         mcall
 
         mov     ebx, 198 shl 16 + 8
@@ -720,12 +724,12 @@ print_display:
         shl     edx, 2
         add     edx, display_type_text
         mov     esi, 3
-        mov     edi, [sc.work]
+        mov     edi, [sc.win_body]
         mcall
 
         cmp     [dsign], byte '+'
         je      positive
-        mcall   , <23, 22>, 0, dsign, 1
+        mcall   , <23, 26>, 0, dsign, 1
 
 positive:  
         cmp     [display_type], 0
@@ -733,7 +737,7 @@ positive:
         cmp     [decimal], 0
         je      whole
 
-        mcall   , <180, 22>, 0, dot, 1
+        mcall   , <180, 26>, 0, dot, 1
         mcall   47, <10, 0>, [integer], <120, 22>, 0
         mcall   , <6, 0>, [decimal], <187, 22>, 0
 
@@ -741,11 +745,11 @@ positive:
         ret
 
 whole:
-        mcall   , <220, 22>, 0, dot, 1
+        mcall   , <220, 26>, 0, dot, 1
 
         cmp     [integer], 0
         je      null
-        mcall   47, <10, 0>, [integer], <160, 22>, 0
+        mcall   47, <10, 0>, [integer], <160, 26>, 0
         popa
         ret
 
@@ -754,19 +758,19 @@ no_display_decimal:
         jne     no_display_hexadecimal
         cmp     [integer], 0
         je      null
-        mcall   47, <8, 256>, [integer], <173, 22>, 0
+        mcall   47, <8, 256>, [integer], <173, 26>, 0
         popa
         ret
 
 no_display_hexadecimal:
         cmp     [integer], 0
         je      null
-        mcall   47, <32, 2*256>, [integer], <32, 22>, 0
+        mcall   47, <32, 2*256>, [integer], <32, 26>, 0
         popa
         ret
 
 null:
-        mcall   47, <1, 0>, 0, <214, 22>, 0
+        mcall   47, <1, 0>, 0, <214, 26>, 0
         popa
         ret
 
@@ -837,6 +841,6 @@ butid:  db 12, 13, 14, 19, 20, 21, 26, 27, 28, 34, 15, 39, 22, 36, 29, 35, 35, 1
 
 I_END:
 
-sc      system_colors
-rb	0x200	; stack
+sc      new_system_colors
+rb      0x200	; stack
 E_END:
