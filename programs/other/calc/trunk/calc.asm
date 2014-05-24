@@ -636,7 +636,7 @@ atof_convertFractionalPart:
 draw_window:
         mcall   12, 1
 
-        mcall   48, 3, sc, sizeof.new_system_colors
+        mcall   48, 3, sc, 192
 
         mcall   48, 4
 
@@ -841,6 +841,6 @@ butid:  db 12, 13, 14, 19, 20, 21, 26, 27, 28, 34, 15, 39, 22, 36, 29, 35, 35, 1
 
 I_END:
 
-sc      new_system_colors
+sc      sys_colors_new
 rb      0x200	; stack
 E_END:
