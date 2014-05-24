@@ -208,7 +208,7 @@ be_keymap:
      db   '6',27
      db   '&é"',39,'(§è!çà)-',8,9
      db   'azertyuiop^$',13
-     db   '~qsdfghjklmù',0','<µwxcvbn,;:=',0,'45 '
+     db   '~qsdfghjklmù²<µwxcvbn,;:=',0,'45 '
      db   '@2345-7+90123',180,178,184,'6',176,'7'
      db   179,'8',181,177,183,185,182
      db   'AB<D',255,'FGHIJKLMNOPQRSTUVWXYZ'
@@ -221,7 +221,7 @@ be_keymap_shift:
      db   '6',27
      db   '1234567890°_',8,9
      db   'AZERTYUIOP¨*',13
-     db   '~QSDFGHJKLM%',0,'>£WXCVBN?./+',0,'45 '
+     db   '~QSDFGHJKLM%³>£WXCVBN?./+',0,'45 '
      db   '@234567890123',180,178,184,'6',176,'7'
      db   179,'8',181,177,183,185,182
      db   'AB>D',255,'FGHIJKLMNOPQRSTUVWXYZ'
