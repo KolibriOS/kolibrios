@@ -1,19 +1,19 @@
 ICON_STRIP	equ '/rd/1/iconstrp.png'
 ICON_INI	equ '/rd/1/settings/icon.ini'
-ICON_SIZE	equ 68	  ;размер области для иконки с надписью
-IMG_SIZE	equ 32	  ;размер иконок
-TEXT_BOTTOM_Y	equ 15	  ;отступ по Y текста от низа иконки
-IMAGE_TOP_Y	equ 10	  ;>=1 Координата Y иконки в области для данной иконки
-ALIGN_SIZE	equ 68	  ;размер сетки выравнивания
-NAME_LENGTH	equ 11	 ;длина имени иконки
-MIN_NO_MOVING	equ 8	 ;через столько пикселей сдвига мыши начинается таскание иконки
+ICON_SIZE	equ 68	  ;╤А╨░╨╖╨╝╨╡╤А ╨╛╨▒╨╗╨░╤Б╤В╨╕ ╨┤╨╗╤П ╨╕╨║╨╛╨╜╨║╨╕ ╤Б ╨╜╨░╨┤╨┐╨╕╤Б╤М╤О
+IMG_SIZE	equ 32	  ;╤А╨░╨╖╨╝╨╡╤А ╨╕╨║╨╛╨╜╨╛╨║
+TEXT_BOTTOM_Y	equ 15	  ;╨╛╤В╤Б╤В╤Г╨┐ ╨┐╨╛ Y ╤В╨╡╨║╤Б╤В╨░ ╨╛╤В ╨╜╨╕╨╖╨░ ╨╕╨║╨╛╨╜╨║╨╕
+IMAGE_TOP_Y	equ 10	  ;>=1 ╨Ъ╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╨░ Y ╨╕╨║╨╛╨╜╨║╨╕ ╨▓ ╨╛╨▒╨╗╨░╤Б╤В╨╕ ╨┤╨╗╤П ╨┤╨░╨╜╨╜╨╛╨╣ ╨╕╨║╨╛╨╜╨║╨╕
+ALIGN_SIZE	equ 68	  ;╤А╨░╨╖╨╝╨╡╤А ╤Б╨╡╤В╨║╨╕ ╨▓╤Л╤А╨░╨▓╨╜╨╕╨▓╨░╨╜╨╕╤П
+NAME_LENGTH	equ 11	 ;╨┤╨╗╨╕╨╜╨░ ╨╕╨╝╨╡╨╜╨╕ ╨╕╨║╨╛╨╜╨║╨╕
+MIN_NO_MOVING	equ 8	 ;╤З╨╡╤А╨╡╨╖ ╤Б╤В╨╛╨╗╤М╨║╨╛ ╨┐╨╕╨║╤Б╨╡╨╗╨╡╨╣ ╤Б╨┤╨▓╨╕╨│╨░ ╨╝╤Л╤И╨╕ ╨╜╨░╤З╨╕╨╜╨░╨╡╤В╤Б╤П ╤В╨░╤Б╨║╨░╨╜╨╕╨╡ ╨╕╨║╨╛╨╜╨║╨╕
 
-		     ;--------для диалога создания/редактирования
+		     ;--------╨┤╨╗╤П ╨┤╨╕╨░╨╗╨╛╨│╨░ ╤Б╨╛╨╖╨┤╨░╨╜╨╕╤П/╤А╨╡╨┤╨░╨║╤В╨╕╤А╨╛╨▓╨░╨╜╨╕╤П
 ICONSX		equ 20
 ICONSY		equ 80
-ICONS_DRAW_COUNTW equ 10  ;количество иконок в ширину
-ICONS_DRAW_COUNTH equ 2   ;количество иконок в высоту
-SPCW		equ 3	  ;пробел между иконками по горизонтали
+ICONS_DRAW_COUNTW equ 10  ;╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨╕╨║╨╛╨╜╨╛╨║ ╨▓ ╤И╨╕╤А╨╕╨╜╤Г
+ICONS_DRAW_COUNTH equ 2   ;╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨╕╨║╨╛╨╜╨╛╨║ ╨▓ ╨▓╤Л╤Б╨╛╤В╤Г
+SPCW		equ 3	  ;╨┐╤А╨╛╨▒╨╡╨╗ ╨╝╨╡╨╢╨┤╤Г ╨╕╨║╨╛╨╜╨║╨░╨╝╨╕ ╨┐╨╛ ╨│╨╛╤А╨╕╨╖╨╛╨╜╤В╨░╨╗╨╕
 SPCH		equ 3
 END_ICONS_AREAW equ ICONSX+(IMG_SIZE+SPCW)*ICONS_DRAW_COUNTW-SPCW
 END_ICONS_AREAH equ ICONSY+(IMG_SIZE+SPCH)*ICONS_DRAW_COUNTH-SPCH
@@ -92,10 +92,10 @@ START:		; start of execution
 	and	eax,0x7
 	mov	[cur_band_compensation],eax
 
-;########## загружаем данные иконок в память ##########################
+;########## ╨╖╨░╨│╤А╤Г╨╢╨░╨╡╨╝ ╨┤╨░╨╜╨╜╤Л╨╡ ╨╕╨║╨╛╨╜╨╛╨║ ╨▓ ╨┐╨░╨╝╤П╤В╤М ##########################
 
-	mcall	70,fiIni		     ;выделяем память, достаточной для хранения ini файла.
-	test	eax,eax 		;Её точно хватит для хранения данных об иконках
+	mcall	70,fiIni		     ;╨▓╤Л╨┤╨╡╨╗╤П╨╡╨╝ ╨┐╨░╨╝╤П╤В╤М, ╨┤╨╛╤Б╤В╨░╤В╨╛╤З╨╜╨╛╨╣ ╨┤╨╗╤П ╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ini ╤Д╨░╨╣╨╗╨░.
+	test	eax,eax 		;╨Х╤С ╤В╨╛╤З╨╜╨╛ ╤Е╨▓╨░╤В╨╕╤В ╨┤╨╗╤П ╤Е╤А╨░╨╜╨╡╨╜╨╕╤П ╨┤╨░╨╜╨╜╤Л╤Е ╨╛╨▒ ╨╕╨║╨╛╨╜╨║╨░╤Е
 	jnz	ErrorIni
 
 	cmp	dword[bufIni+32],0
@@ -130,9 +130,9 @@ START:		; start of execution
 	mov	dword[SizeData],0
    @@:
 ;######################################################################
-	call	FillIconsOffs		       ;заполняет MaxNumIcon,IconsOffs
+	call	FillIconsOffs		       ;╨╖╨░╨┐╨╛╨╗╨╜╤П╨╡╤В MaxNumIcon,IconsOffs
 
-	mcall	40,0100000b		       ;нужны только события мыши, перерисовка иконок будет в другом потоке
+	mcall	40,0100000b		       ;╨╜╤Г╨╢╨╜╤Л ╤В╨╛╨╗╤М╨║╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П ╨╝╤Л╤И╨╕, ╨┐╨╡╤А╨╡╤А╨╕╤Б╨╛╨▓╨║╨░ ╨╕╨║╨╛╨╜╨╛╨║ ╨▒╤Г╨┤╨╡╤В ╨▓ ╨┤╤А╤Г╨│╨╛╨╝ ╨┐╨╛╤В╨╛╨║╨╡
 
 	mov	eax,[icon_count]
 	mov	bl,ICONS_DRAW_COUNTH
@@ -144,7 +144,7 @@ START:		; start of execution
 	and	eax,0FFh
 	mov	[sbIcons.max_area],eax
 
-	mcall	51,1,BGRedrawThread,stack_bredraw	;запускаем поток перерисовки иконок
+	mcall	51,1,BGRedrawThread,stack_bredraw	;╨╖╨░╨┐╤Г╤Б╨║╨░╨╡╨╝ ╨┐╨╛╤В╨╛╨║ ╨┐╨╡╤А╨╡╤А╨╕╤Б╨╛╨▓╨║╨╕ ╨╕╨║╨╛╨╜╨╛╨║
 	stdcall [OpenDialog_Init],OpenDialog_data
 
 ;dph [MaxNumIcon]
@@ -184,11 +184,11 @@ MSGMouse:
 	jmp	messages
 
 ErrLoadLibs:
-	;dps     'Не удалось загрузить необходимые библиотеки'
+	;dps     '╨Э╨╡ ╤Г╨┤╨░╨╗╨╛╤Б╤М ╨╖╨░╨│╤А╤Г╨╖╨╕╤В╤М ╨╜╨╡╨╛╨▒╤Е╨╛╨┤╨╕╨╝╤Л╨╡ ╨▒╨╕╨▒╨╗╨╕╨╛╤В╨╡╨║╨╕'
 	;debug_newline
 	jmp	close
 ErrorStrp:
-	;dps     'Ошибка открытия iconstrp.png'
+	;dps     '╨Ю╤И╨╕╨▒╨║╨░ ╨╛╤В╨║╤А╤Л╤В╨╕╤П iconstrp.png'
 	;debug_newline
 close:
 	mcall	-1
@@ -252,7 +252,7 @@ LButtonPress:
 	mov	[MouseY],ecx
 
 	stdcall GetNumIcon,[MouseX],[MouseY],-1
-	cmp	eax,[esp]	;[esp] = номер иконки
+	cmp	eax,[esp]	;[esp] = ╨╜╨╛╨╝╨╡╤А ╨╕╨║╨╛╨╜╨║╨╕
 	jne	@f
 
 	mov	edi,[IconsOffs+eax*4]
@@ -383,7 +383,7 @@ MovingIcon:
 	cmp	bx,[wsY]
 	jae	@f
 	mov	bx,[wsY]
-      @@:			    ;eax,ebx - реальная координата. Все координаты в проге относительно левого верхнего угла рабочей области
+      @@:			    ;eax,ebx - ╤А╨╡╨░╨╗╤М╨╜╨░╤П ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╨░. ╨Т╤Б╨╡ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨▓ ╨┐╤А╨╛╨│╨╡ ╨╛╤В╨╜╨╛╤Б╨╕╤В╨╡╨╗╤М╨╜╨╛ ╨╗╨╡╨▓╨╛╨│╨╛ ╨▓╨╡╤А╤Е╨╜╨╡╨│╨╛ ╤Г╨│╨╗╨░ ╤А╨░╨▒╨╛╤З╨╡╨╣ ╨╛╨▒╨╗╨░╤Б╤В╨╕
 
 	xor	edx,edx
 	mov	dx,[wsXe]
@@ -400,7 +400,7 @@ MovingIcon:
 	mov	ebx,edx
       @@:
 
-	xor	edx,edx 	     ;преобразовываем в относительные
+	xor	edx,edx 	     ;╨┐╤А╨╡╨╛╨▒╤А╨░╨╖╨╛╨▓╤Л╨▓╨░╨╡╨╝ ╨▓ ╨╛╤В╨╜╨╛╤Б╨╕╤В╨╡╨╗╤М╨╜╤Л╨╡
 	mov	dx,[wsW]
 	shr	edx,1
 	add	dx,[wsX]
@@ -434,7 +434,7 @@ MovingIcon:
 	mov	[bNotSave],1
 	mov	[IconNoDraw],-1
 
-	mov    [MovingActiv],0		;только теперь отключаем окно с мышью
+	mov    [MovingActiv],0		;╤В╨╛╨╗╤М╨║╨╛ ╤В╨╡╨┐╨╡╤А╤М ╨╛╤В╨║╨╗╤О╤З╨░╨╡╨╝ ╨╛╨║╨╜╨╛ ╤Б ╨╝╤Л╤И╤М╤О
 
 	jmp	messages
 
@@ -457,7 +457,7 @@ RButtonPress:
 
 
 ;###############################################################################
-;ret eax = 1/0 = удача/ошибка
+;ret eax = 1/0 = ╤Г╨┤╨░╤З╨░/╨╛╤И╨╕╨▒╨║╨░
 proc DrawIcon NumIcon:DWORD,Activ:DWORD ;NumIcon = 0..n
 local	IconData:DWORD
 	push	ebx edi esi
@@ -478,7 +478,7 @@ local	IconData:DWORD
 	mov	esi,[IconsOffs+eax*4]
 	mov	[IconData],esi
 
-			      ;рисуем текст
+			      ;╤А╨╕╤Б╤Г╨╡╨╝ ╤В╨╡╨║╤Б╤В
 	mov	edi,esi
 	xor	al,al
 	or	ecx,-1
@@ -491,7 +491,7 @@ local	IconData:DWORD
 	lea	eax,[eax*2+eax]
 	mov	ebx,ICON_SIZE
 	sub	ebx,eax
-	shr	ebx,1	     ;ebx = x текста
+	shr	ebx,1	     ;ebx = x ╤В╨╡╨║╤Б╤В╨░
 	shl	ebx,16
 	mov	bx,ICON_SIZE
 	sub	bx,TEXT_BOTTOM_Y
@@ -514,7 +514,7 @@ local	IconData:DWORD
 	add	ebx,0*10000h-2
 	mov	ecx,88FFFFFFh
 	mcall	;4
-				    ;рисуем картинку
+				    ;╤А╨╕╤Б╤Г╨╡╨╝ ╨║╨░╤А╤В╨╕╨╜╨║╤Г
 
 	mov	edi,esi
 	xor	al,al
@@ -529,7 +529,7 @@ local	IconData:DWORD
 	jne	GetIconInd
 
    PathToIcon:
-	mov	al,30h		 ;заглушка!!!!!!!!!!!!!
+	mov	al,30h		 ;╨╖╨░╨│╨╗╤Г╤И╨║╨░!!!!!!!!!!!!!
 	mov	byte[edi+1],0
 
 	jmp	CopyToMem
@@ -574,7 +574,7 @@ local	IconData:DWORD
 	jnz	@b
 
 ;-----------------
-				;если надо, то рисуем обводку
+				;╨╡╤Б╨╗╨╕ ╨╜╨░╨┤╨╛, ╤В╨╛ ╤А╨╕╤Б╤Г╨╡╨╝ ╨╛╨▒╨▓╨╛╨┤╨║╤Г
 	cmp	[Activ],0
 	je	.NoSelect
 
@@ -712,7 +712,7 @@ proc RestoreBackgrnd,NumIcon:DWORD
 	ret
 endp
 
-				 ;заполняет MaxNumIcon,IconsOffs
+				 ;╨╖╨░╨┐╨╛╨╗╨╜╤П╨╡╤В MaxNumIcon,IconsOffs
 proc FillIconsOffs
 	push	ebx edi
 	mov	edi,[BegData]
@@ -769,7 +769,7 @@ proc LoadIconsData stdcall,f_name,sec_name
      .lid1:
 
 
-	mov	ebx,[sec_name]		;копируем ID
+	mov	ebx,[sec_name]		;╨║╨╛╨┐╨╕╤А╤Г╨╡╨╝ ID
 	mov	ax,[ebx]
 	mov	edi,[nLoadIcon]
 	mov	word[edi*4+IconsID],ax
@@ -932,7 +932,7 @@ fiStdIco:
 
 
 align 4
-fiRunProg:	      ;для запуска программ
+fiRunProg:	      ;╨┤╨╗╤П ╨╖╨░╨┐╤Г╤Б╨║╨░ ╨┐╤А╨╛╨│╤А╨░╨╝╨╝
 	dd 7
 	dd 0
 	dd 0
@@ -941,7 +941,7 @@ fiRunProg:	      ;для запуска программ
 	db 0
 	dd pthNotify
 
-fiIni	dd 5	       ;для ini файла
+fiIni	dd 5	       ;╨┤╨╗╤П ini ╤Д╨░╨╣╨╗╨░
 	dd 0
 	dd 0
 	dd 0
@@ -953,8 +953,8 @@ fiIni	dd 5	       ;для ini файла
 IconsFile	db ICON_STRIP,0
 
 align 4
-MaxNumIcon	dd 0		;количество иконок
-IconNoDraw	dd -1		;-1 либо номер иконки, которую не надо рисовать( когда её таскают )
+MaxNumIcon	dd 0		;╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛ ╨╕╨║╨╛╨╜╨╛╨║
+IconNoDraw	dd -1		;-1 ╨╗╨╕╨▒╨╛ ╨╜╨╛╨╝╨╡╤А ╨╕╨║╨╛╨╜╨║╨╕, ╨║╨╛╤В╨╛╤А╤Г╤О ╨╜╨╡ ╨╜╨░╨┤╨╛ ╤А╨╕╤Б╨╛╨▓╨░╤В╤М( ╨║╨╛╨│╨┤╨░ ╨╡╤С ╤В╨░╤Б╨║╨░╤О╤В )
 
 bFixIcons	dd 1
 bNotSave	dd 0
@@ -1034,13 +1034,13 @@ secRButt	db 'rbmenu',0
 PredItem	dd -1
 
 if lang eq ru
- RMenuRedrawFon db 'Перерисовать',0
- RMenuAlign	db 'Выровнять по сетке',0
- RMenuOffMoving db 'Закрепить иконки',0
- RMenuOnMoving	db 'Открепить иконки',0
- RMenuAdd	db 'Добавить',0
- RMenuDel	db 'Удалить',0
- RMenuProp	db 'Свойства',0
+ RMenuRedrawFon db '╨Я╨╡╤А╨╡╤А╨╕╤Б╨╛╨▓╨░╤В╤М',0
+ RMenuAlign	db '╨Т╤Л╤А╨╛╨▓╨╜╤П╤В╤М ╨┐╨╛ ╤Б╨╡╤В╨║╨╡',0
+ RMenuOffMoving db '╨Ч╨░╨║╤А╨╡╨┐╨╕╤В╤М ╨╕╨║╨╛╨╜╨║╨╕',0
+ RMenuOnMoving	db '╨Ю╤В╨║╤А╨╡╨┐╨╕╤В╤М ╨╕╨║╨╛╨╜╨║╨╕',0
+ RMenuAdd	db '╨Ф╨╛╨▒╨░╨▓╨╕╤В╤М',0
+ RMenuDel	db '╨г╨┤╨░╨╗╨╕╤В╤М',0
+ RMenuProp	db '╨б╨▓╨╛╨╣╤Б╤В╨▓╨░',0
 else
  RMenuRedrawFon db 'Redraw',0
  RMenuAlign	db 'Snap to Grid',0
@@ -1052,32 +1052,32 @@ else
 end if
 
 if lang eq ru
- ErrRunProg	db '"Icon\nОшибка запуска программы" -tE"',0
- WarningSave	db '"Icon\nНе забудьте сохранить изменения, запустить RDSave" -tI',0
- ErrNotFoundIni db '"Icon\nНе найден icon.ini" -tE',0
- ErrName	db '"Icon\nИмя "rbmenu" зарезервировано" -tE',0
+ ErrRunProg	db '"╨Ю╤И╨╕╨▒╨║╨░ ╨╖╨░╨┐╤Г╤Б╨║╨░ ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л" -E"',0
+ WarningSave	db '"╨Э╨╡ ╨╖╨░╨▒╤Г╨┤╤М╤В╨╡ ╤Б╨╛╤Е╤А╨░╨╜╨╕╤В╤М ╨╕╨╖╨╝╨╡╨╜╨╡╨╜╨╕╤П, ╨╖╨░╨┐╤Г╤Б╤В╨╕╤В╤М RDSave" -I',0
+ ErrNotFoundIni db '"╨Э╨╡ ╨╜╨░╨╣╨┤╨╡╨╜ icon.ini" -E',0
+ ErrName	db '"╨Ш╨╝╤П "rbmenu" ╨╖╨░╤А╨╡╨╖╨╡╤А╨▓╨╕╤А╨╛╨▓╨░╨╜╨╛" -E',0
 else
- ErrRunProg	db '"Icon\nError runing program" -tE',0
- WarningSave	db '"Icon\nDo not forget to save the changes, run the RDSave" -tI',0
- ErrNotFoundIni db '"Icon\nicon.ini not found" -tE',0
- ErrName	db '"Icon\nThe name "rbmenu" reserved" -tE',0
+ ErrRunProg	db '"Error runing program" -E',0
+ WarningSave	db '"Do not forget to save the changes, run the RDSave" -I',0
+ ErrNotFoundIni db '"Icon.ini not found" -E',0
+ ErrName	db '"The name "rbmenu" reserved" -E',0
 end if
 
 ;-------------------------------------------------------------------------------
 ;------- AddDlg.inc ---------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 if lang eq ru
-DTitleAdd	db 'Добавить иконку',0
-DTitleProp	db 'Изменить иконку',0
+DTitleAdd	db '╨Ф╨╛╨▒╨░╨▓╨╕╤В╤М ╨╕╨║╨╛╨╜╨║╤Г',0
+DTitleProp	db '╨Ш╨╖╨╝╨╡╨╜╨╕╤В╤М ╨╕╨║╨╛╨╜╨║╤Г',0
 
-DCaptName	db 'Имя',0
-DCaptPath	db 'Путь',0
-DCaptParams	db 'Параметры',0
-DCaptIcon	db 'Иконка',0
+DCaptName	db '╨Ш╨╝╤П',0
+DCaptPath	db '╨Я╤Г╤В╤М',0
+DCaptParams	db '╨Я╨░╤А╨░╨╝╨╡╤В╤А╤Л',0
+DCaptIcon	db '╨Ш╨║╨╛╨╜╨║╨░',0
 ;DCaptChange     db '.',0
-DCaptCreate	db 'Создать',0
-DCaptProperties db 'Изменить',0
-DCaptCancel	db 'Отменить',0
+DCaptCreate	db '╨б╨╛╨╖╨┤╨░╤В╤М',0
+DCaptProperties db '╨Ш╨╖╨╝╨╡╨╜╨╕╤В╤М',0
+DCaptCancel	db '╨Ю╤В╨╝╨╡╨╜╨╕╤В╤М',0
 
 else
 DTitleAdd	db 'Add icon',0
@@ -1092,7 +1092,7 @@ DCaptProperties db 'Change',0
 DCaptCancel	db 'Cancel',0
 end if
 
-;/не менять положение
+;/╨╜╨╡ ╨╝╨╡╨╜╤П╤В╤М ╨┐╨╛╨╗╨╛╨╢╨╡╨╜╨╕╨╡
 edtName    edit_box NAME_LENGTH*6+4,70+20+IMG_SIZE,6,0FFFFFFh,06F9480h,0FFh,0h,0,NAME_LENGTH,\
 		DAreaName,mouse_dd,0,0,0
 edtExePath edit_box 281-3-20-IMG_SIZE,70+20+IMG_SIZE,26,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
@@ -1168,7 +1168,7 @@ Filter	dd 0
 ;open_dialog     db 0
 ;-------------------------------------------------------------------------------
 
-;/не разделять
+;/╨╜╨╡ ╤А╨░╨╖╨┤╨╡╨╗╤П╤В╤М
 align 4
 IconAreaH	dd ICON_SIZE,ICON_SIZE
 I_END:
@@ -1206,10 +1206,10 @@ DlgBufImg	rb IMG_SIZE*IMG_SIZE*3
 
 align 4
 bufStdIco	rb 40
-IconsOffs	rd 100		;таблица с указателями на конкретные иконки(для ускорения)
+IconsOffs	rd 100		;╤В╨░╨▒╨╗╨╕╤Ж╨░ ╤Б ╤Г╨║╨░╨╖╨░╤В╨╡╨╗╤П╨╝╨╕ ╨╜╨░ ╨║╨╛╨╜╨║╤А╨╡╤В╨╜╤Л╨╡ ╨╕╨║╨╛╨╜╨║╨╕(╨┤╨╗╤П ╤Г╤Б╨║╨╛╤А╨╡╨╜╨╕╤П)
 PIcoDB		rd 1
-nLoadIcon	rd 1		;номер читаемой из ini иконки
-IconsID 	rd 100		;ID иконок - 2 байтa + байт 0 + выравнивающий байт - строка с 2мя шеснадцетиричными цифрами
+nLoadIcon	rd 1		;╨╜╨╛╨╝╨╡╤А ╤З╨╕╤В╨░╨╡╨╝╨╛╨╣ ╨╕╨╖ ini ╨╕╨║╨╛╨╜╨║╨╕
+IconsID 	rd 100		;ID ╨╕╨║╨╛╨╜╨╛╨║ - 2 ╨▒╨░╨╣╤Вa + ╨▒╨░╨╣╤В 0 + ╨▓╤Л╤А╨░╨▓╨╜╨╕╨▓╨░╤О╤Й╨╕╨╣ ╨▒╨░╨╣╤В - ╤Б╤В╤А╨╛╨║╨░ ╤Б 2╨╝╤П ╤И╨╡╤Б╨╜╨░╨┤╤Ж╨╡╤В╨╕╤А╨╕╤З╨╜╤Л╨╝╨╕ ╤Ж╨╕╤Д╤А╨░╨╝╨╕
 
 nameSection	rb 4
 
@@ -1224,7 +1224,7 @@ cur_band_compensation rd 1
 
 bufIni		rb 40
 NumMenuButt	rd 1
-RBMenuCP	rd MAX_USER_BUTTONS*2	      ;указатели на подпись и путь с прогой (Caption(dd), Path(dd)) и запасной (dd) для завершающего нуля
+RBMenuCP	rd MAX_USER_BUTTONS*2	      ;╤Г╨║╨░╨╖╨░╤В╨╡╨╗╨╕ ╨╜╨░ ╨┐╨╛╨┤╨┐╨╕╤Б╤М ╨╕ ╨┐╤Г╤В╤М ╤Б ╨┐╤А╨╛╨│╨╛╨╣ (Caption(dd), Path(dd)) ╨╕ ╨╖╨░╨┐╨░╤Б╨╜╨╛╨╣ (dd) ╨┤╨╗╤П ╨╖╨░╨▓╨╡╤А╤И╨░╤О╤Й╨╡╨│╨╛ ╨╜╤Г╨╗╤П
 RMenuW		rw 1
 RMenuH		rw 1
 
@@ -1247,7 +1247,7 @@ fname_Info	rb 1024
 
 ;-------------------------------------------------------------------------------
 		rb 512
-stack_mov:			;одновременно таскать и держать открытым менюшку невозможно
+stack_mov:			;╨╛╨┤╨╜╨╛╨▓╤А╨╡╨╝╨╡╨╜╨╜╨╛ ╤В╨░╤Б╨║╨░╤В╤М ╨╕ ╨┤╨╡╤А╨╢╨░╤В╤М ╨╛╤В╨║╤А╤Л╤В╤Л╨╝ ╨╝╨╡╨╜╤О╤И╨║╤Г ╨╜╨╡╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛
 stack_rmenu:
 		rb 512
 stack_dlg:
