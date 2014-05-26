@@ -46,6 +46,8 @@
     je	    .end
     cmp     [ebx], byte ")"
     je	    .brk_end
+    cmp     [ebx], byte "|"
+    je	    .abs_end
     inc     [exp_pos]
     cmp     [ebx], byte "+"
     jne     .not_add
@@ -69,6 +71,13 @@
     set_err 3
   @@:
     dec     [exp_lvl]
+    jmp     .end
+ .abs_end:
+    cmp     [abs_lvl], 0
+    jne     @f
+    set_err 5
+  @@:
+    dec     [abs_lvl]
  .end:
     ret
  .unexp_char:
@@ -179,6 +188,24 @@
     set_err 2
  .brk_ok:
     inc     [exp_pos]
+    jmp     .end
+  @@:
+    cmp     [ebx], byte "|"
+    jne     @f
+    inc     [abs_lvl]
+    stdcall parse_lvl0
+    test_err
+    mov     ebx, exp
+    add     ebx, [exp_pos]
+    cmp     [ebx], byte "|"
+    je	    .abs_ok
+    set_err 5
+ .abs_ok:
+    inc     [exp_pos]
+    cmp     eax, 0
+    jge     .end
+    not     eax
+    inc     eax
     jmp     .end
   @@:
     cmp     [ebx], byte "+"
