@@ -110,7 +110,7 @@ SS_MORETOCOME           = 0x4000
 SS_BLOCKED              = 0x8000
 
 
-SOCKET_MAXDATA          = 4096*8        ; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA          = 4096*64       ; must be 4096*(power of 2) where 'power of 2' is at least 8
 MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
