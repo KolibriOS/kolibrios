@@ -3,6 +3,7 @@
 Демки              >      /@4
 Графика            >      /@6
 Мультимедиа        >      /@7
+Эмуляторы          >      /@21
 Разработка         >      /@8
 Система            >      /@10
 Обработка данных   >      /@16
@@ -37,6 +38,8 @@ Flood-it!                 /sys/games/flood-it
 Лабиринт                  /sys/games/megamaze
 #3    **** Игры -> Аркады ****
 ArcanII                   /sys/games/arcanii
+Pharaoh's crypt           /KolibriOS/games/fara/fara
+Sokoban                   /KolibriOS/games/soko/soko
 Red Square                /sys/games/rsquare
 Падение                   /sys/games/padenie
 Косилка                   /sys/games/kosilka
@@ -47,6 +50,10 @@ PheniX                    /sys/games/phenix
 Новый Понг                /sys/games/pong3
 Понг                      /sys/games/pong
 Танчики                   /sys/games/tanks
+Loderunner                /KolibriOS/games/lrl/lrl
+Doom                      /KolibriOS/games/doom/doom
+Quake                     /KolibriOS/games/quake/sdlquake
+Jump&Bump                 /KolibriOS/games/jumpbump/JUMPBUMP.KEX
 #4    **** Демки ****
 Трёхмерные         >      /@5
 Кружок                    /sys/demos/circle
@@ -167,4 +174,11 @@ DNS lookup                /sys/network/nslookup
 Тренажёр KJ|ABuIIIA       /sys/games/klavisha
 Бинарные часы             /sys/demos/bcdclk
 Таймер                    /sys/demos/timer
+#21    **** Эмуляторы ****
+DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
+e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
+FCE Ultra - NES           /KolibriOS/emul/fceu/fce
+Gameboy Color             /KolibriOS/emul/gameboy
+ScummVM (adventure)       /KolibriOS/emul/scummvm
+ZSNES Super Nintendo      /KolibriOS/emul/zsnes
 ##

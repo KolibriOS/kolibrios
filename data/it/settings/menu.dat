@@ -3,6 +3,7 @@ Giochi             >      /@1
 Demo               >      /@4
 Grafica            >      /@6
 Multimedia         >      /@7
+Emulators          >      /@21
 Sviluppo           >      /@8
 Sistema            >      /@10
 Data processing    >      /@14
@@ -34,6 +35,8 @@ Battaglia navale          /sys/games/sw
 Sudoku                    /sys/games/sudoku
 Go-moku                   /sys/games/gomoku
 Reversi                   /sys/games/reversi
+Pharaoh's crypt           /KolibriOS/games/fara/fara
+Sokoban                   /KolibriOS/games/soko/soko
 #3 **** ARCADES ****
 Tetris                    /sys/games/tetris
 Pong                      /sys/games/pong
@@ -44,6 +47,10 @@ ArcanII                   /sys/games/arcanii
 Phenix                    /sys/games/phenix
 Snake                     /sys/games/snake
 Tanks                     /sys/games/tanks
+Loderunner                /KolibriOS/games/lrl/lrl
+Doom                      /KolibriOS/games/doom/doom
+Quake                     /KolibriOS/games/quake/sdlquake
+Jump&Bump                 /KolibriOS/games/jumpbump/JUMPBUMP.KEX
 #4    **** DEMOS ****
 3D                 >      /@5
 Cerchio                   /sys/demos/circle
@@ -159,4 +166,11 @@ FSPEED speed of FS        /sys/fspeed
 Lente di ingrandimento    /sys/magnify
 Tastiera da schermo       /sys/zkey
 Tavola caratteri          /sys/ASCIIVju
+#21    **** EMULATORS ****
+DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
+e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
+FCE Ultra - NES           /KolibriOS/emul/fceu/fce
+Gameboy Color             /KolibriOS/emul/gameboy
+ScummVM (adventure)       /KolibriOS/emul/scummvm
+ZSNES Super Nintendo      /KolibriOS/emul/zsnes
 ##
