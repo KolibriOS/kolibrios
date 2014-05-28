@@ -1055,12 +1055,12 @@ if lang eq ru
  ErrRunProg	db '"Icon\nОшибка запуска программы" -tE"',0
  WarningSave	db '"Icon\nНе забудьте сохранить изменения, запустить RDSave" -tI',0
  ErrNotFoundIni db '"Icon\nНе найден icon.ini" -tE',0
- ErrName	db '"Icon\nИмя "rbmenu" зарезервировано" -tE',0
+ ErrName	db '"Icon\nИмя \"rbmenu\" зарезервировано" -tE',0
 else
- ErrRunProg	db '"Icon\nError runing program" -tE',0
- WarningSave	db '"Icon\nDo not forget to save the changes, run the RDSave" -tI',0
+ ErrRunProg	db '"Icon\nError running program" -tE',0
+ WarningSave	db '"Icon\nDo not forget to save the changes, run RDSave" -tI',0
  ErrNotFoundIni db '"Icon\nicon.ini not found" -tE',0
- ErrName	db '"Icon\nThe name "rbmenu" reserved" -tE',0
+ ErrName	db '"Icon\nThe name \"rbmenu\" is reserved" -tE',0
 end if
 
 ;-------------------------------------------------------------------------------
