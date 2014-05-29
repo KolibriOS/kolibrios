@@ -66,21 +66,22 @@ if DEBUG
         mov     esi, msgDSPFound
         call    SysMsgBoardStr
 end if
-;          xor  eax,eax
-;          mov  ebx,[sb_base_port]
-;          lea  ecx,[ebx+0xF]
+
         xor     ebx, ebx
         mov     ecx, [sb_base_port]
-        lea     edx, [ebx+0xF]
+        lea     edx, [ecx+0xF]
+        call    ReservePortArea  ;these ports must be mine !
 
-        call    ReservePortArea  ;these ports must be my!
-if DEBUG
         dec     eax
         jnz     @f
+
+if DEBUG
         mov     esi, msgErrRsrvPorts
         call    SysMsgBoardStr
-@@:
 end if
+        jmp     .exit
+
+@@:
 
         call    sb_setup         ;clock it, etc
 
@@ -368,8 +369,7 @@ msgErrAtchIRQ db 'failed to attach IRQ',(sb_irq_num+'0'),13,10
               db 'owner',39,'s handler: ',0
 msgSucAtchIRQ db 'succesfully attached IRQ',(sb_irq_num+'0')
               db ' as hardcoded',13,10,0
-msgErrRsrvPorts db 'failed to reserve needed ports.',13,10
-              db 'Driver may work unstable',13,10,0
+msgErrRsrvPorts db 'failed to reserve needed ports.',13,10,0
 msgSetVol     db 'DEV_SET_MASTERVOL call came',13,10,0
 msgGetVol     db 'DEV_GET_MASTERVOL call came',13,10,0
 msgErrDMAsetup db 'failed to setup DMA - bad channel',13,10,0
