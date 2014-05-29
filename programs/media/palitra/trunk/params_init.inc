@@ -1,25 +1,31 @@
-    mov  edi,params         ; єърчрЄхы№ эр ёЄЁюъє
-    call str_len            ; яюыєўрхь фышэє ёЄЁюъш
-    cmp  eax,0              ; ёЄЁртэштрхь фышэє ё эєы╕ь
-    je   red                ; хёыш ярЁрьхЄЁют эхЄ Єю єїюфшь
-    call    _read_params    ; шэрўх ўшЄрхь ярЁрьхЄЁ√ ЎтхЄр (юўхэ№ ъЁштю)
-    xor  eax,eax            ; чрэєы хь ЁхушёЄЁ
-    mov  al,byte [params]   ; ўшЄрхь ярЁрьхЄЁ ьюфр
-    cmp  al,'N'             ; ёЁртэштрхь ё normal mode
-    jne _no_normalmode      ; хёыш эхЄ Єю єїюфшь эр яЁютхЁъє фры№°х
-    mov  [runmode],1        ; хёыш фр Єю єёЄрэртыштрхь хую
-    jmp  red                ; шф╕ь эр юЄЁшёютъє
-  _no_normalmode:           ; хёыш эх normal mode Єю
-    cmp  al,'H'             ; тючьюцэю hidden mode
-    jne _no_hiddenmode      ; хёыш эх юэ Єю єїюфшь фры№°х
-    mov  [runmode],2        ; хёыш юэ Єю єёЄрэртыштрхь ўЄю ¤Єю юэ (эрї?)
-    call set_background     ; ьхэ хь Їюэ
-    jmp  bexit              ; ш чръЁ√трхь яЁюує
-  _no_hiddenmode:           ; хёыш эх hidden mode
-    cmp  al,'D'             ; тючьюцэю ¤Єю color dialog mode
-    jne _no_dialogmode      ; хёыш тё╕ Єръш эх юэ Єю єїюфшь
-    mov  [runmode],3        ; шэрўх єърч√трхь ўЄю ¤Єю Єръш юэ
-    jmp  red                ; ш єїюфшь эр т√яюыэхэшх
-  _no_dialogmode:           ; хёыш ¤Єю эш юфшэ шч чр тыхэ√ї ьюфют
-    mov  [runmode],1        ; Єю ёсЁрё√трхь эр фхЇюыЄ
-    jmp  red                ; ш Ёшёєхь
+    mov  edi,params	    ; указатель на строку
+    call str_len	    ; получаем длину строки
+    cmp  eax,0		    ; стравниваем длину с нулём
+    je	 red		    ; если параметров нет то уходим
+    call    _read_params    ; иначе читаем параметры цвета (очень криво)
+    xor  eax,eax	    ; зануляем регистр
+    mov  al,byte [params]   ; читаем параметр мода
+    cmp  al,'N' 	    ; сравниваем с normal mode
+    jne _no_normalmode	    ; если нет то уходим на проверку дальше
+    mov  [runmode],1	    ; если да то устанавливаем его
+    jmp  red		    ; идём на отрисовку
+  _no_normalmode:	    ; если не normal mode то
+    cmp  al,'H' 	    ; возможно hidden mode
+    jne _no_hiddenmode	    ; если не он то уходим дальше
+    mov  [runmode],2	    ; если он то устанавливаем что это он (нах?)
+    call set_background     ; меняем фон
+    jmp  bexit		    ; и закрываем прогу
+  _no_hiddenmode:	    ; если не hidden mode
+    cmp  al,'B' 	    ; возможно noise mode
+    jne _no_noisemode	    ; если не он то уходим дальше
+    mov  [runmode],2	    ; если он то устанавливаем что это он (нах?)
+    call set_background2    ; меняем фон
+    jmp  bexit		    ; и закрываем прогу
+  _no_noisemode:	    ; если не noise mode
+    cmp  al,'D' 	    ; возможно это color dialog mode
+    jne _no_dialogmode	    ; если всё таки не он то уходим
+    mov  [runmode],3	    ; иначе указываем что это таки он
+    jmp  red		    ; и уходим на выполнение
+  _no_dialogmode:	    ; если это ни один из заявленых модов
+    mov  [runmode],1	    ; то сбрасываем на дефолт
+    jmp  red		    ; и рисуем

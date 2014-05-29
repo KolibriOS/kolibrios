@@ -6,7 +6,7 @@
 ;.....................................................................................................
 ;; compiler:     FASM 1.69.31                                                                        |
 ;; version:      0.3.0                                                                               |
-;; last update:  07/11/2013                                                                          |
+;; last update:  08/11/2012                                                                          |
 ;; e-mail:       dr.steshin@gmail.com                                                                |
 ;.....................................................................................................
 ;; History:                                                                                          |
@@ -34,8 +34,7 @@
 ;; 0.7.0 - Добавлена пипетка - выбор на среднюю кнопку мыши                                          |
 ;; 0.7.5 - Нажатие правой клавишей мыши на ячейку с цветом устанавливает не основой, а дополн. цвет  |
 ;;       - Уменьшено мерцание при работе пипетки                                                     |
-;; 0.7.6 - Переработан режим H (hidden): теперь цвета загружаются из wallpaper.dat       (eAndrew)   |
-;;       - При установки фона кнопкой, цвет фона сохраняется в wallpaper.dat             (eAndrew)   |
+;; 0.7.6 - Добавлен режим B, который производит замену фона рабочего стола шумной заливкой (e-andrew)|
 ;.....................................................................................................
 ;; All rights reserved.                                                                              |
 ;;                                                                                                   |
@@ -71,12 +70,13 @@
   dd	 0x01
   dd	 START
   dd	 I_END
-  dd	 I_RDATA+4096
-  dd	 I_RDATA+4096
+  dd	 I_MEM
+  dd	 I_MEM
   dd	 params
   dd	 0x0
 
   include '../../../macros.inc'
+  include '../../../proc32.inc'
 
   WIN_W  equ 295	    ; ширина окна
   WIN_H  equ 195	    ; высота окна
@@ -160,8 +160,13 @@ button:
     jmp     still			  ; Уходим на ожидание другого события
   next_bg:
     cmp     ah, 14			  ; Кнопка BACKGROUND
-    jne     circle_bg			  ; если не нажата то выходим
+    jne     next_bg2			  ; если не нажата то выходим
     call    set_background		  ; иначе устанавливаем фон
+    jmp     still			  ; и на ожидание события
+  next_bg2:
+    cmp     ah, 16			  ; Кнопка BACKGROUND
+    jne     circle_bg			  ; если не нажата то выходим
+    call    set_background2		  ; иначе устанавливаем фон
     jmp     still			  ; и на ожидание события
   circle_bg:
     cmp     ah, 15			  ; Кнопка Круговая палитра
@@ -369,17 +374,34 @@ draw_main:
     draw_bottom_panel:			  ; Отрисовка нижней панели
     ;.................................................................................................
     mov     eax,8			  ; draw button
-    mov     ebx,92 shl 16+100		  ; [x] + [size]
+    mov     ebx,(92) shl 16+90	      ; [x] + [size]
     mov     ecx,169 shl 16+16		  ; [y] + [size]
     mov     edx,14			  ; ID = 14
     mov     esi,[sc.work_button]	  ; RGB
     int     0x40			  ; call
+
+    add     ebx, 100 shl 16
+    add     edx, 2
+    int     0x40
+
     mov     eax,4			  ; Write string
-    mov     ebx,113 shl 16+174		  ; [x] + [y]
-    mov     ecx,[sc.work_button_text]	  ; RGB
+    mov     ebx,(113 - 104) shl 16+174	  ; [x] + [y]
+    mov     ecx,[sc.work_text]		  ; RGB
+    or	    ecx, 1 shl 31
     mov     edx,bground 		  ; string pointer
-    mov     esi,10			  ; count symbol
     int     0x40			  ; call
+
+    mov     ecx, [sc.work_button_text]
+    or	    ecx, 1 shl 31
+
+    add     ebx, 106 shl 16
+    mov     edx, bground1
+    int     0x40
+
+    add     ebx, 107 shl 16
+    mov     edx, bground2
+    int     0x40
+
     mov     eax,38			  ; draw line
     mov     ebx,4 shl 16+282		  ; [start x] + [end x]
     mov     ecx,163 shl 16+163		  ; [start y] + [end y]
@@ -467,29 +489,6 @@ set_background:
     mov     eax,15			  ; Функция 15 - работа с фоновой графикой
     mov     ebx,3			  ; Подфункция 3 - перерисовать фон.
     int     0x40			  ; Вызываем
-
-    mov     eax, [color]
-    mov     [fi.file+0], al
-    shr     eax, 8
-    mov     [fi.file+1], al
-    shr     eax, 8
-    mov     [fi.file+2], al
-
-    mov     eax, [color2]
-    mov     [fi.file+3], al
-    shr     eax, 8
-    mov     [fi.file+4], al
-    shr     eax, 8
-    mov     [fi.file+5], al
-
-    mov     [fi.p00], dword 2
-    mov     [fi.p04], dword 0
-    mov     [fi.p08], dword 0
-    mov     [fi.p12], dword 6
-    mov     [fi.p16], dword fi.file
-    mov     [fi.p20], dword 0
-    mov     [fi.p21], dword dat_file
-    mcall   70, fi
 
     ret
 ;end_set_background
@@ -938,12 +937,12 @@ draw_result:
     mov     ecx,0x0			  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
     mov     edx,cname			  ; указатель на начало строки
     mov     esi,1			  ; выводить esi символов
-    newline_s:				  ; цикл
+    newline:				  ; цикл
       int     0x40			  ; Прерывание
       add     ebx,23 shl 16		  ; Добавляем
       add     edx,1			  ; Добавляем
       cmp     [edx],byte 'x'		  ; Сравнение с байтом х
-    jne    newline_s			  ; Если не нуль или не равно
+    jne    newline			  ; Если не нуль или не равно
 
     ;.................................................................................................
     ; Отрисовка слайдеров
@@ -1041,88 +1040,64 @@ draw_value:
 ;end_draw_value
 
   _read_params:
-      mov   [fi.p00], dword 0
-      mov   [fi.p04], dword 0
-      mov   [fi.p08], dword 0
-      mov   [fi.p12], dword 6
-      mov   [fi.p16], dword fi.file
-      mov   [fi.p20], dword 0
-      mov   [fi.p21], dword dat_file
-      mcall 70, fi
 
-      xor   eax, eax
-      mov   al, [fi.file+2]
-      shl   eax, 8
-      mov   al, [fi.file+1]
-      shl   eax, 8
-      mov   al, [fi.file+0]
-      mov   [color], eax
+      mov al,[params+2]
+      mov [params_c+0],al
 
-      xor   eax, eax
-      mov   al, [fi.file+5]
-      shl   eax, 8
-      mov   al, [fi.file+4]
-      shl   eax, 8
-      mov   al, [fi.file+3]
-      mov   [color2], eax
+      mov al,[params+3]
+      mov [params_c+1],al
 
-   ;   mov al,[params+2]
-   ;   mov [params_c+0],al
-   ;
-   ;   mov al,[params+3]
-   ;   mov [params_c+1],al
-   ;
-   ;   mov al,[params+4]
-   ;   mov [params_c+2],al
-   ;
-   ;   mov al,[params+5]
-   ;   mov [params_c+3],al
-   ;
-   ;   mov al,[params+6]
-   ;   mov [params_c+4],al
-   ;
-   ;   mov al,[params+7]
-   ;   mov [params_c+5],al
-   ;
-   ;   mov al,[params+8]
-   ;   mov [params_c+6],al
-   ;
-   ;   mov al,[params+9]
-   ;   mov [params_c+7],al
-   ;
-   ;   mov   esi,params_c
-   ;   mov   ecx,16
-   ;   call  ascii2int
-   ;   mov   [color],eax
-   ;
-   ;   mov al,[params+11]
-   ;   mov [params_c+0],al
-   ;
-   ;   mov al,[params+12]
-   ;   mov [params_c+1],al
-   ;
-   ;   mov al,[params+13]
-   ;   mov [params_c+2],al
-   ;
-   ;   mov al,[params+14]
-   ;   mov [params_c+3],al
-   ;
-   ;   mov al,[params+15]
-   ;   mov [params_c+4],al
-   ;
-   ;   mov al,[params+16]
-   ;   mov [params_c+5],al
-   ;
-   ;   mov al,[params+17]
-   ;   mov [params_c+6],al
-   ;
-   ;   mov al,[params+18]
-   ;   mov [params_c+7],al
-   ;
-   ;   mov   esi,params_c
-   ;   mov   ecx,16
-   ;   call  ascii2int
-   ;   mov   [color2],eax
+      mov al,[params+4]
+      mov [params_c+2],al
+
+      mov al,[params+5]
+      mov [params_c+3],al
+
+      mov al,[params+6]
+      mov [params_c+4],al
+
+      mov al,[params+7]
+      mov [params_c+5],al
+
+      mov al,[params+8]
+      mov [params_c+6],al
+
+      mov al,[params+9]
+      mov [params_c+7],al
+
+      mov   esi,params_c
+      mov   ecx,16
+      call  ascii2int
+      mov   [color],eax
+
+      mov al,[params+11]
+      mov [params_c+0],al
+
+      mov al,[params+12]
+      mov [params_c+1],al
+
+      mov al,[params+13]
+      mov [params_c+2],al
+
+      mov al,[params+14]
+      mov [params_c+3],al
+
+      mov al,[params+15]
+      mov [params_c+4],al
+
+      mov al,[params+16]
+      mov [params_c+5],al
+
+      mov al,[params+17]
+      mov [params_c+6],al
+
+      mov al,[params+18]
+      mov [params_c+7],al
+
+      mov   esi,params_c
+      mov   ecx,16
+      call  ascii2int
+      mov   [color2],eax
 
       ret
 
@@ -1273,58 +1248,114 @@ str_len:
 ;end_str_len
 
 
+ ;-------------------------------
+
+ proc random uses ebx ecx edx, max_value
+    mov     ebx, 0
+    mov     eax, ebx
+    or	    eax, eax
+    jnz     @f
+    rdtsc
+    xor     eax, edx
+    mov     ebx, eax
+
+ @@:
+    xor     edx, edx
+    mov     ecx, 127773
+    div     ecx
+    mov     ecx, eax
+    mov     eax, 16807
+    mul     edx
+    mov     edx, ecx
+    mov     ecx, eax
+    mov     eax, 2836
+    mul     edx
+    sub     ecx, eax
+    xor     edx, edx
+    mov     eax, ecx
+    mov     ebx, ecx
+    mov     ecx, 100000
+    div     ecx
+    mov     eax, edx
+
+    xor     edx, edx
+    mov     ebx, [max_value]
+    div     ebx
+    mov     eax, edx
+
+    ret
+ endp
+
+set_background2:
+    mcall   68, 11
+    mcall   68, 12, 256 * 256 * 3
+    mov     [image], eax
+
+    mov     edx, eax
+    mov     ecx, 256 * 256
+  @@:
+    stdcall random, 15 + 1
+    sub     al, 15 / 2
+
+    mov     bh, byte [color + 0]
+    add     bh, al
+    mov     [edx + 0], bh
+    mov     bh, byte [color + 1]
+    add     bh, al
+    mov     [edx + 1], bh
+    mov     bh, byte [color + 2]
+    add     bh, al
+    mov     [edx + 2], bh
+    add     edx, 3
+    loop    @b
+
+    mcall   15, 1, 256, 256
+    mcall   15, 4, 1
+    mcall   15, 5, [image], 0, 256 * 256 * 3
+    mcall   15, 3
+
+    mcall   68, 13, [image]
+ret
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
 ; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
 ;----------------------------------------------------------------------------------------------------/
 circle:
-    dat_file	db '/sys/settings/wallpaper.dat', 0
-
-    cm		db 12 dup(0)
-    color	dd 00000000h		  ; хранит значение выбранного цвета
-    color2	dd 00FFFFFFh		  ; хранит значение второго выбранного цвета
-    mouse_x	dd 0			  ; хранит глобальную х координату мыши
-    mouse_y	dd 0			  ; хранит глобальную у координату мыши
-    mouse_f	dd 0			  ; хранит данные о том какая кнопка мыши была нажата
-    desctop_w	dd 0			  ; хранит ширину экрана
-    desctop_h	dd 0			  ; хранит высоту экрана
-    sc		system_colors		  ; хранит структуру системных цветов скина
-    title	db 'Palitra v0.75',0	  ; хранит имя программы
+    title	db 'Palitra v0.76',0	   ; хранит имя программы
     hidden	db 'Hidden',0
     hex 	db '#',0		  ; для вывода решётки как текста
     cname	db 'RGBAx'		  ; хранит разряды цветов (red,green,blue) x-метка конца
-    cred	db 0			  ; храним красный спекрт
-    cgreen	db 0			  ; храним зеленый спектр
-    cblue	db 0			  ; храним синий спектр
-    calpha	db 0			  ; храним прозрачность
     larrow	db 0x1A,0
     buff	db '000',0
     bground	db 'BACKGROUND',0	  ; имя кнопки - 14
-    pnext	dd 0			  ; счетчик переключения палитры
-    renmode	dd 0			  ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
+    bground1	db 'Gradient',0 	  ; имя кнопки - 14
+    bground2	db 'Noisy',0	     ; имя кнопки - 14
     runmode	dd 1			  ; режим запуска (1-normal, 2-hidden, 3-colordialog)
-    params	db 20 dup(0)		  ; приём параметров
- ;   params_c    db 9  dup(0)              ; приёмник для цвета
+    color2	dd 00FFFFFFh		  ; хранит значение второго выбранного цвета
+
+
+
 I_END:
+    cm		rb 12
+    color	rd 1			  ; хранит значение выбранного цвета
+    mouse_x	rd 1			  ; хранит глобальную х координату мыши
+    mouse_y	rd 1			  ; хранит глобальную у координату мыши
+    mouse_f	rd 1			  ; хранит данные о том какая кнопка мыши была нажата
+    desctop_w	rd 1			  ; хранит ширину экрана
+    desctop_h	rd 1			  ; хранит высоту экрана
+    sc		system_colors		  ; хранит структуру системных цветов скина
+    cred	rb 1			  ; храним красный спекрт
+    cgreen	rb 1			  ; храним зеленый спектр
+    cblue	rb 1			  ; храним синий спектр
+    calpha	rb 1			  ; храним прозрачность
+    pnext	rd 1			  ; счетчик переключения палитры
+    renmode	rd 1			  ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
+    params	rb 20			  ; приём параметров
+    params_c	rb 9			  ; приёмник для цвета
+
+ image	    rd 1
 
 
-fi:
- .p00:
-    rd	    1
- .p04:
-    rd	    1
- .p08:
-    rd	    1
- .p12:
-    rd	    1
- .p16:
-    rd	    1
- .p20:
-    rb	    1
- .p21:
-    rd	    1
- .file:
-    rb	    32
-
-I_RDATA:
+		rd 1024
+I_MEM:
