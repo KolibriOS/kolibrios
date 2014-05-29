@@ -10,7 +10,7 @@
 /SYS/LOADDRV         "RDC"        1    # videodriver for RDC M2010/M2012
 /SYS/NETWORK/NETCFG  A		  1    #
 /SYS/NETWORK/ZEROCONF ""	  1    # Network configuration
-/SYS/MEDIA/PALITRA   "H"	  1    # SET BG
+/SYS/MEDIA/PALITRA "H 007DCEDF 003C427F" 1 # SET BG
 /SYS/@PANEL	      ""	  1    # Start panel
 /SYS/@DOCKY	      ""	  1    # Start docky
 /SYS/SETUP	     BOOT	  1    # Load device settings
@@ -19,4 +19,4 @@
 /SYS/@SS	     ASSM	  1    # Screensaver
 /SYS/TMPDISK	      A0	 -1    # Add virtual RAM disk /tmp0/1
 /SYS/SEARCHAP	      ""	 -1    # Search and mount additional system directory
-### Hello, ASM World! ###
+### Hello, ASM World! ###
