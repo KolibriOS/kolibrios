@@ -310,7 +310,6 @@ OTHER_FILES:=settings/autorun.dat:SETTINGS/AUTORUN.DAT \
  settings/panel.ini:SETTINGS/PANEL.INI \
  ../common/settings/docky.ini:SETTINGS/DOCKY.INI \
  ../common/notify3.png:NOTIFY3.PNG \
- ../common/settings/wallpaper.dat:SETTINGS/WALLPAPER.dat \
  settings/setup.dat:SETTINGS/SETUP.DAT \
  shell:SHELL table:TABLE \
  ../common/vmode:VMODE 3d/3dsheart:3D/3DSHEART \
@@ -749,4 +748,4 @@ $(REPOSITORY)/drivers/ddk/libddk.a: \
  $(REPOSITORY)/drivers/include/*/*/*.h \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
 $(REPOSITORY)/drivers/ddk/libcore.a: \
- $(REPOSITORY)/drivers/ddk/core.S
+ $(REPOSITORY)/drivers/ddk/core.S
