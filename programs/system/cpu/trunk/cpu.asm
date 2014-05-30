@@ -174,6 +174,7 @@ align 4
 button:
 ; get button id
         mcall   17
+        mov     bl, al ; save mouse button to bl
         shr     eax,8
 ;id in [10,50] corresponds to terminate buttons.
         cmp     eax,10
@@ -188,6 +189,33 @@ button:
 ;ignore empty buttons
         test    ecx,ecx
         jle     still_end
+        test    bl, bl ; check mouse button
+        jz     .terminate
+        mov    eax, ecx
+        mov    edi, tinfo.params_buf
+;; number in eax
+;; buffer in edi
+; int2str:
+        push   0
+        mov    ecx, 10
+.push:     
+        xor    edx, edx
+        div    ecx
+        add    edx, 48
+        push   edx
+        test   eax, eax 
+        jnz     .push
+.pop:     
+        pop    eax
+        stosb
+        test   eax, eax
+        jnz    .pop
+; launch tinfo app        
+        mov     ebx, tinfo
+        mov     eax, 70
+        int     64
+        jmp     show_process_info_1
+.terminate:        
 ;terminate application
         mcall   18,2
         jmp     show_process_info_1
@@ -735,7 +763,22 @@ check_text      db '@ on/off',0
 title   db 'Process manager - Ctrl/Alt/Del',0
 
 end if
-;------------------------------------------------------------------------------
+; ---------------------------------------------------------------------------- ;
+align 4
+tinfo:
+                    dd 7
+                    dd 0
+.params             dd .params_buf
+                    dd 0
+                    dd 0
+                    db 0
+.file_path          dd sz_tinfo_file_path
+align 4
+.params_buf:
+times 11 db 0 ; at now 4 bytes will be enough, but may be in the future not
+align 4
+sz_tinfo_file_path  db "/sys/tinfo",0
+; ---------------------------------------------------------------------------- ;
 align 4
 file_start:
         dd 7
