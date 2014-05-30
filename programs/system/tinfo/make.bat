@@ -1,0 +1,1 @@
+nasm -f bin tinfo.asm -o tinfo
