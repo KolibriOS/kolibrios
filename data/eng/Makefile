@@ -247,6 +247,7 @@ NASM_PROGRAMS:=\
  demos/timer:DEMOS/TIMER:$(PROGS)/other/Timer/Timer.asm \
  games/c4:GAMES/C4:$(PROGS)/games/c4/trunk/c4.asm \
  tinfo:TINFO:$(PROGS)/system/tinfo/tinfo.asm \
+ develop/mstate:DEVELOP/MSTATE:$(PROGS)/develop/mstate/mstate.asm \
 # end of list
 
 # The list of files which should be copied from somewhere.
