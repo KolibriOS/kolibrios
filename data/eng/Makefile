@@ -246,6 +246,7 @@ NASM_PROGRAMS:=\
  demos/aclock:DEMOS/ACLOCK:$(PROGS)/demos/aclock/trunk/aclock.asm \
  demos/timer:DEMOS/TIMER:$(PROGS)/other/Timer/Timer.asm \
  games/c4:GAMES/C4:$(PROGS)/games/c4/trunk/c4.asm \
+ tinfo:TINFO:$(PROGS)/system/tinfo/tinfo.asm \
 # end of list
 
 # The list of files which should be copied from somewhere.
@@ -748,4 +749,4 @@ $(REPOSITORY)/drivers/ddk/libddk.a: \
  $(REPOSITORY)/drivers/include/*/*/*.h \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
 $(REPOSITORY)/drivers/ddk/libcore.a: \
- $(REPOSITORY)/drivers/ddk/core.S
+ $(REPOSITORY)/drivers/ddk/core.S
