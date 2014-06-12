@@ -1,0 +1,571 @@
+
+
+
+
+
+
+
+
+
+                              /dev/env/MENUETDEV/lib/libc.a(_close.o) (___FSEXT_set_function)
+                              /dev/env/MENUETDEV/lib/libc.a(_open.o) (___FSEXT_call_open_handlers)
+                              /dev/env/MENUETDEV/lib/libc.a(allocfil.o) (___file_rec_list)
+                              /dev/env/MENUETDEV/lib/libc.a(atexit.o) (___atexit_ptr)
+                              /dev/env/MENUETDEV/lib/libc.a(c1pglob.o) (_glob)
+                              /dev/env/MENUETDEV/lib/libc.a(crt0.o) (___crt0_glob_function)
+                              /dev/env/MENUETDEV/lib/libc.a(crt0.o) (___dj_ctype_flags)
+                              /dev/env/MENUETDEV/lib/libc.a(crt0.o) (__close)
+                              /dev/env/MENUETDEV/lib/libc.a(crt0.o) (__open)
+                              /dev/env/MENUETDEV/lib/libc.a(crt0.o) (__read)
+                              /dev/env/MENUETDEV/lib/libc.a(crt0.o) (_lseek)
+                              /dev/env/MENUETDEV/lib/libc.a(crt1.o) (___main)
+                              /dev/env/MENUETDEV/lib/libc.a(crt1.o) (_dosemu_inithandles)
+                              /dev/env/MENUETDEV/lib/libc.a(crt1.o) (_init_brk)
+                              /dev/env/MENUETDEV/lib/libc.a(crt1.o) (_init_dir_stack)
+                              /dev/env/MENUETDEV/lib/libc.a(curdir.o) (_strcmp)
+                              /dev/env/MENUETDEV/lib/libc.a(curdir.o) (_strlwr)
+                              /dev/env/MENUETDEV/lib/libc.a(doprnt.o) (___modfl)
+                              /dev/env/MENUETDEV/lib/libc.a(doprnt.o) (___stdio_cleanup_proc)
+                              /dev/env/MENUETDEV/lib/libc.a(doprnt.o) (__flsbuf)
+                              /dev/env/MENUETDEV/lib/libc.a(doprnt.o) (_localeconv)
+                              /dev/env/MENUETDEV/lib/libc.a(doprnt.o) (_memchr)
+                              /dev/env/MENUETDEV/lib/libc.a(doprnt.o) (_putc)
+                              /dev/env/MENUETDEV/lib/libc.a(dosemu.o) (__fixpath)
+                              /dev/env/MENUETDEV/lib/libc.a(dosemu.o) (_strcpy)
+                              /dev/env/MENUETDEV/lib/libc.a(dosemu.o) (_strupr)
+                              /dev/env/MENUETDEV/lib/libc.a(fclose.o) (_close)
+                              /dev/env/MENUETDEV/lib/libc.a(fclose.o) (_remove)
+                              /dev/env/MENUETDEV/lib/libc.a(fflush.o) (_write)
+                              /dev/env/MENUETDEV/lib/libc.a(fgetc.o) (___libc_read_termios_hook)
+                              /dev/env/MENUETDEV/lib/libc.a(filbuf.o) (_read)
+                              /dev/env/MENUETDEV/lib/libc.a(fopen.o) (___alloc_file)
+                              /dev/env/MENUETDEV/lib/libc.a(fopen.o) (__fmode)
+                              /dev/env/MENUETDEV/lib/libc.a(fopen.o) (_open)
+                              /dev/env/MENUETDEV/lib/libc.a(fread.o) (___dj_stderr)
+                              /dev/env/MENUETDEV/lib/libc.a(fread.o) (___dj_stdin)
+                              /dev/env/MENUETDEV/lib/libc.a(fread.o) (___dj_stdout)
+                              /dev/env/MENUETDEV/lib/libc.a(fread.o) (__filbuf)
+                              /dev/env/MENUETDEV/lib/libc.a(fread.o) (_fgetc)
+                              /dev/env/MENUETDEV/lib/libc.a(fseek.o) (_fflush)
+                              /dev/env/MENUETDEV/lib/libc.a(ftell.o) (___file_handle_modes)
+                              /dev/env/MENUETDEV/lib/libc.a(getenv.o) (___libc_getenv)
+                              /dev/env/MENUETDEV/lib/libc.a(glob.o) (___file_exists)
+                              /dev/env/MENUETDEV/lib/libc.a(glob.o) (___findfirst)
+                              /dev/env/MENUETDEV/lib/libc.a(glob.o) (___findnext)
+                              /dev/env/MENUETDEV/lib/libc.a(glob.o) (_fnmatch)
+                              /dev/env/MENUETDEV/lib/libc.a(glob.o) (_qsort)
+                              /dev/env/MENUETDEV/lib/libc.a(glob.o) (_strncpy)
+                              /dev/env/MENUETDEV/lib/libc.a(open.o) (__creat)
+                              /dev/env/MENUETDEV/lib/libc.a(open.o) (__write)
+                              /dev/env/MENUETDEV/lib/libc.a(putc.o) (_fputc)
+                              /dev/env/MENUETDEV/lib/libc.a(sprintf.o) (__doprnt)
+                              /dev/env/MENUETDEV/lib/libc.a(stdiohk.o) (__fwalk)
+                              /dev/env/MENUETDEV/lib/libc.a(strlwr.o) (___dj_ctype_tolower)
+                              /dev/env/MENUETDEV/lib/libc.a(strupr.o) (___dj_ctype_toupper)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(debug.o) (_vsprintf)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o) (_fclose)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o) (_fopen)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o) (_fread)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o) (_fseek)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o) (_ftell)
+                              /dev/env/MENUETDEV/lib/libmcoff.a(relocate.o) (_printf)
+                              /dev/env/MENUETDEV/stub/crt0.o (___crt1_startup)
+                              /dev/env/MENUETDEV/stub/crt0.o (___menuet__app_param_area)
+                              dll_list.o (_dprintf)
+                              dll_list.o (_find_coff_symbol)
+                              dll_list.o (_mcoff_load_file)
+                              dll_list.o (_memcpy)
+                              dll_list.o (_memset)
+                              dll_list.o (_relocate_coff_file)
+                              kernel.o (__exit)
+                              kernel.o (_atexit)
+                              kernel.o (_errno)
+                              kernel.o (_getenv)
+                              kernel.o (_malloc)
+                              kernel.o (_strlen)
+                              kernel.o (_strncmp)
+                              main.o (___libclog_printf)
+                              main.o (_sprintf)
+                              main.o (_strchr)
+                0x00000000                ___menuet__app_header
+                0x00000000                _code = .
+                0x00000000                code = .
+                0x00000000                start
+                0x00000033                ___menuet__getmemsize
+                0x00000040                _kexport_lookup
+                0x000000b0                _dl_find_dll_symbol
+                0x00000100                _dl_get_ref
+                0x00000150                _init_dll
+                0x00000170                _load_dll
+                0x000001d0                _dll_symlookupfn
+                0x00000270                _relocate_dlls
+                0x00000330                _try_load_dll
+                0x000003e0                _app_main
+                0x00000510                _find_coff_symbol
+                0x000005c0                _mcoff_get_ref
+                0x00000670                _dprintf
+                0x000007f0                _mcoff_load_file
+                0x00000a50                _unload_coff_file
+                0x00000bd0                _relocate_coff_file
+                0x00000c60                _mcoff_std_symlookupfn
+                0x00000d20                ___crt1_startup
+                0x00000d80                _init_brk
+                0x00000df0                _brk
+                0x00000e50                _sbrk
+                0x00000eb0                ___isatty
+                0x00000ec0                _malloc
+                0x000010c0                _free
+                0x00001250                _realloc
+                0x000012b0                _atexit
+                0x000012f0                _exit
+                0x00001320                _getenv
+                0x00001340                __exit
+                0x00001a60                ___crt0_setup_arguments
+                0x00001b10                _strlen
+                0x00001b30                _strncmp
+                0x00001b60                _memset
+                0x00001ba0                _memcpy
+                0x00001bd0                _strchr
+                0x00001c50                ___libclog_vprintf
+                0x00001c80                ___libclog_printf
+                0x00001ca0                _sprintf
+                0x00001ce0                _vsprintf
+                0x00001d20                _fopen
+                0x00001e90                _fseek
+                0x00001f70                _ftell
+                0x00002060                _fread
+                0x00002150                _fclose
+                0x00002210                _printf
+                0x00002260                _dosemu_file_exists
+                0x000022e0                _dosemu_createtrunc
+                0x00002350                _dosemu_getiostruct
+                0x00002380                _dosemu_fillbuf
+                0x000023f0                _dosemu_loadall
+                0x000024a0                _dosemu_inithandles
+                0x000024f0                _dosemu_allochandle
+                0x00002510                _dosemu_freehandle
+                0x00002540                _dosemu_flush
+                0x000025d0                _dosemu_loadcurrsector
+                0x000025f0                _dosemu_fileread
+                0x000026f0                _dosemu_filewrite
+                0x00002770                _dosemu_iosize
+                0x00002790                _dosemu_filesize
+                0x000027b0                _dosemu_open
+                0x000029f0                _dosemu_tell
+                0x00002a10                _dosemu_lseek
+                0x00002a80                _dosemu_read
+                0x00002ac0                _dosemu_write
+                0x00002b00                _dosemu_close
+                0x00002b40                __dosemu_flush
+                0x00002b70                _dosemu_atexit
+                0x00002c90                _add_to_dir
+                0x00002cc0                _get_from_dir
+                0x00002d00                _init_dir_stack
+                0x00002dc0                ___get_curdir
+                0x00002ea0                ___chdir
+                0x00002ed0                ___libc_combine_path
+                0x00002f40                ___main
+                0x00002f80                ___libc_putenv
+                0x00002f90                ___libc_getenv
+                0x00002fa0                __open
+                0x00002fe0                _lseek
+                0x00003000                __read
+                0x00003050                __close
+                0x000030c0                ___crt0_glob_function
+                0x00003100                __doprnt
+                0x00004870                ___alloc_file
+                0x00004910                _open
+                0x000049c0                _fflush
+                0x00004a80                ___file_handle_set
+                0x00004ae0                __filbuf
+                0x00004c70                _fgetc
+                0x00004d60                _remove
+                0x00004d70                _close
+                0x00004d90                _strcpy
+                0x00004db0                _fix_slashes
+                0x00004e10                __fixpath
+                0x00004e30                _strupr
+                0x00004e60                _strlwr
+                0x00004e90                _strcmp
+                0x00004eb0                ___FSEXT_add_open_handler
+                0x00004ef0                ___FSEXT_call_open_handlers
+                0x00004f70                ___FSEXT_alloc_fd
+                0x00004fa0                ___FSEXT_set_function
+                0x00005020                ___FSEXT_get_function
+                0x00005730                _glob
+                0x00005920                ___stdio_cleanup_proc
+                0x00005940                _localeconv
+                0x00005950                _putc
+                0x00005970                _memchr
+                0x000059a0                __flsbuf
+                0x00005b20                ___modfl
+                0x00005b50                __write
+                0x00005ba0                __creat
+                0x00005bc0                _write
+                0x00005be0                _read
+                0x00005c00                ___file_exists
+                0x00005c40                ___findfirst
+                0x00005c50                ___findnext
+                0x00005c60                _strncpy
+                0x00005d90                _fnmatch
+                0x000061a0                _qsort
+                0x00006300                __fwalk
+                0x00006350                _fputc
+                0x00006440                __EH_FRAME_BEGIN__ = .
+                0x00006440                __EH_FRAME_END__ = .
+                0x00006440                _ecode = .
+                0x00006440                djgpp_first_ctor = .
+                0x00006440                djgpp_first_dtor = .
+                0x00006440                djgpp_last_ctor = .
+                0x00006440                djgpp_last_dtor = .
+                0x00006440                ecode = .
+                0x00006440        0x4 LONG 0x0
+                0x00006660                ___bss_count
+                0x000066e0                ___dj_ctype_flags
+                0x00006ac0                __fmode
+                0x00006aec                ___file_handle_modes
+                0x00006af0                ___dj_stdin
+                0x00006b30                ___dj_stdout
+                0x00006b70                ___dj_stderr
+                0x00006be0                ___stdio_cleanup_hook
+                0x00006ca8                ___file_rec_list
+                0x00006cc0                ___dj_ctype_toupper
+                0x00006de0                ___dj_ctype_tolower
+                0x00006f20                _edata = .
+                0x00006f20                bss = .
+                0x00006f20                edata = .
+                0x00008020                _main_program
+                0x00008024                _dll
+                0x00008028                _dll_load_table
+                0x0000802c                _xmain
+                0x00008c40                ___menuet__app_param_area
+                0x00009040                ___crt0_argc
+                0x00009044                ___dos_argv0
+                0x00009048                ___crt0_argv
+                0x0000904c                __crt0_startup_flags
+                0x00009050                _environ
+                0x00009094                _errno
+                0x00009138                ___atexit_ptr
+                0x0000913c                _keypress_at_exit
+                0x0001ace0                ___libc_read_termios_hook
+                0x0001ace4                ___libc_write_termios_hook
+                0x0001ad28                _end = .
+                0x0001ad28                end = .
+ *(.bss)
+ *(.const)
+ *(.ctor)
+ *(.data)
+ *(.dtor)
+ *(.eh_fram*)
+ *(.fixup)
+ *(.gcc_exc*)
+ *(.gnu.linkonce.d*)
+ *(.gnu.linkonce.r*)
+ *(.gnu.linkonce.t*)
+ *(.gnu.warning)
+ *(.ro*)
+ *(.rodata)
+ *(.rodata.*)
+ *(.text)
+ *fill*         0x00000039        0x7 00
+ *fill*         0x00006444        0xc 00
+ .bss           0x00006f20     0x1000 /dev/env/MENUETDEV/stub/crt0.o
+ .bss           0x00007f20      0x100 dll_list.o
+ .bss           0x00008020      0x820 main.o
+ .bss           0x00008840      0x400 /dev/env/MENUETDEV/lib/libmcoff.a(debug.o)
+ .bss           0x00008c40      0x400 /dev/env/MENUETDEV/lib/libc.a(param.o)
+ .bss           0x00009040       0x14 /dev/env/MENUETDEV/lib/libc.a(crt1.o)
+ .bss           0x00009054       0x40 /dev/env/MENUETDEV/lib/libc.a(brk.o)
+ .bss           0x00009094        0x4 /dev/env/MENUETDEV/lib/libc.a(errno.o)
+ .bss           0x00009098       0xa0 /dev/env/MENUETDEV/lib/libc.a(malloc.o)
+ .bss           0x00009138        0x8 /dev/env/MENUETDEV/lib/libc.a(exit.o)
+ .bss           0x00009140      0x400 /dev/env/MENUETDEV/lib/libc.a(debug.o)
+ .bss           0x00009540    0x10b10 /dev/env/MENUETDEV/lib/libc.a(dosemu.o)
+ .bss           0x0001a050      0xba0 /dev/env/MENUETDEV/lib/libc.a(curdir.o)
+ .bss           0x0001abf0       0x10 /dev/env/MENUETDEV/lib/libc.a(env.o)
+ .bss           0x0001ac00       0x10 /dev/env/MENUETDEV/lib/libc.a(doprnt.o)
+ .bss           0x0001ac10       0x10 /dev/env/MENUETDEV/lib/libc.a(fse_open.o)
+ .bss           0x0001ac20       0x20 /dev/env/MENUETDEV/lib/libc.a(fsext.o)
+ .bss           0x0001ac40       0x80 /dev/env/MENUETDEV/lib/libc.a(glob.o)
+ .bss           0x0001acc0       0x20 /dev/env/MENUETDEV/lib/libc.a(write.o)
+ .bss           0x0001ace0        0x8 /dev/env/MENUETDEV/lib/libc.a(hooks.o)
+ .bss           0x0001ace8       0x40 /dev/env/MENUETDEV/lib/libc.a(qsort.o)
+ .comment       0x0001ad28       0x10 kernel.o
+ .comment       0x0001ad38       0x10 dll_list.o
+ .comment       0x0001ad48       0x10 main.o
+ .comment       0x0001ad58       0x10 /dev/env/MENUETDEV/lib/libmcoff.a(symtab.o)
+ .comment       0x0001ad68       0x10 /dev/env/MENUETDEV/lib/libmcoff.a(debug.o)
+ .comment       0x0001ad78       0x10 /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o)
+ .comment       0x0001ad88       0x10 /dev/env/MENUETDEV/lib/libmcoff.a(relocate.o)
+ .comment       0x0001ad98       0x10 /dev/env/MENUETDEV/lib/libc.a(param.o)
+ .comment       0x0001ada8       0x10 /dev/env/MENUETDEV/lib/libc.a(crt1.o)
+ .comment       0x0001adb8       0x10 /dev/env/MENUETDEV/lib/libc.a(brk.o)
+ .comment       0x0001adc8       0x10 /dev/env/MENUETDEV/lib/libc.a(errno.o)
+ .comment       0x0001add8       0x10 /dev/env/MENUETDEV/lib/libc.a(malloc.o)
+ .comment       0x0001ade8       0x10 /dev/env/MENUETDEV/lib/libc.a(atexit.o)
+ .comment       0x0001adf8       0x10 /dev/env/MENUETDEV/lib/libc.a(exit.o)
+ .comment       0x0001ae08       0x10 /dev/env/MENUETDEV/lib/libc.a(getenv.o)
+ .comment       0x0001ae18       0x10 /dev/env/MENUETDEV/lib/libc.a(crt0.o)
+ .comment       0x0001ae28       0x10 /dev/env/MENUETDEV/lib/libc.a(strlen.o)
+ .comment       0x0001ae38       0x10 /dev/env/MENUETDEV/lib/libc.a(strncmp.o)
+ .comment       0x0001ae48       0x10 /dev/env/MENUETDEV/lib/libc.a(memcpy.o)
+ .comment       0x0001ae58       0x10 /dev/env/MENUETDEV/lib/libc.a(strchr.o)
+ .comment       0x0001ae68       0x10 /dev/env/MENUETDEV/lib/libc.a(debug.o)
+ .comment       0x0001ae78       0x10 /dev/env/MENUETDEV/lib/libc.a(sprintf.o)
+ .comment       0x0001ae88       0x10 /dev/env/MENUETDEV/lib/libc.a(vsprintf.o)
+ .comment       0x0001ae98       0x10 /dev/env/MENUETDEV/lib/libc.a(fopen.o)
+ .comment       0x0001aea8       0x10 /dev/env/MENUETDEV/lib/libc.a(fseek.o)
+ .comment       0x0001aeb8       0x10 /dev/env/MENUETDEV/lib/libc.a(ftell.o)
+ .comment       0x0001aec8       0x10 /dev/env/MENUETDEV/lib/libc.a(fread.o)
+ .comment       0x0001aed8       0x10 /dev/env/MENUETDEV/lib/libc.a(fclose.o)
+ .comment       0x0001aee8       0x10 /dev/env/MENUETDEV/lib/libc.a(printf.o)
+ .comment       0x0001aef8       0x10 /dev/env/MENUETDEV/lib/libc.a(dosemu.o)
+ .comment       0x0001af08       0x10 /dev/env/MENUETDEV/lib/libc.a(curdir.o)
+ .comment       0x0001af18       0x10 /dev/env/MENUETDEV/lib/libc.a(_main.o)
+ .comment       0x0001af28       0x10 /dev/env/MENUETDEV/lib/libc.a(env.o)
+ .comment       0x0001af38       0x10 /dev/env/MENUETDEV/lib/libc.a(ct_flags.o)
+ .comment       0x0001af48       0x10 /dev/env/MENUETDEV/lib/libc.a(_open.o)
+ .comment       0x0001af58       0x10 /dev/env/MENUETDEV/lib/libc.a(lseek.o)
+ .comment       0x0001af68       0x10 /dev/env/MENUETDEV/lib/libc.a(_read.o)
+ .comment       0x0001af78       0x10 /dev/env/MENUETDEV/lib/libc.a(_close.o)
+ .comment       0x0001af88       0x10 /dev/env/MENUETDEV/lib/libc.a(c1pglob.o)
+ .comment       0x0001af98       0x10 /dev/env/MENUETDEV/lib/libc.a(doprnt.o)
+ .comment       0x0001afa8       0x10 /dev/env/MENUETDEV/lib/libc.a(allocfil.o)
+ .comment       0x0001afb8       0x10 /dev/env/MENUETDEV/lib/libc.a(fmode.o)
+ .comment       0x0001afc8       0x10 /dev/env/MENUETDEV/lib/libc.a(open.o)
+ .comment       0x0001afd8       0x10 /dev/env/MENUETDEV/lib/libc.a(fflush.o)
+ .comment       0x0001afe8       0x10 /dev/env/MENUETDEV/lib/libc.a(dosio.o)
+ .comment       0x0001aff8       0x10 /dev/env/MENUETDEV/lib/libc.a(stdin.o)
+ .comment       0x0001b008       0x10 /dev/env/MENUETDEV/lib/libc.a(stdout.o)
+ .comment       0x0001b018       0x10 /dev/env/MENUETDEV/lib/libc.a(stderr.o)
+ .comment       0x0001b028       0x10 /dev/env/MENUETDEV/lib/libc.a(filbuf.o)
+ .comment       0x0001b038       0x10 /dev/env/MENUETDEV/lib/libc.a(fgetc.o)
+ .comment       0x0001b048       0x10 /dev/env/MENUETDEV/lib/libc.a(remove.o)
+ .comment       0x0001b058       0x10 /dev/env/MENUETDEV/lib/libc.a(close.o)
+ .comment       0x0001b068       0x10 /dev/env/MENUETDEV/lib/libc.a(strcpy.o)
+ .comment       0x0001b078       0x10 /dev/env/MENUETDEV/lib/libc.a(fixpath.o)
+ .comment       0x0001b088       0x10 /dev/env/MENUETDEV/lib/libc.a(strupr.o)
+ .comment       0x0001b098       0x10 /dev/env/MENUETDEV/lib/libc.a(strlwr.o)
+ .comment       0x0001b0a8       0x10 /dev/env/MENUETDEV/lib/libc.a(strcmp.o)
+ .comment       0x0001b0b8       0x10 /dev/env/MENUETDEV/lib/libc.a(fse_open.o)
+ .comment       0x0001b0c8       0x10 /dev/env/MENUETDEV/lib/libc.a(fsext.o)
+ .comment       0x0001b0d8       0x10 /dev/env/MENUETDEV/lib/libc.a(glob.o)
+ .comment       0x0001b0e8       0x10 /dev/env/MENUETDEV/lib/libc.a(stdiohk.o)
+ .comment       0x0001b0f8       0x10 /dev/env/MENUETDEV/lib/libc.a(lconv.o)
+ .comment       0x0001b108       0x10 /dev/env/MENUETDEV/lib/libc.a(putc.o)
+ .comment       0x0001b118       0x10 /dev/env/MENUETDEV/lib/libc.a(memchr.o)
+ .comment       0x0001b128       0x10 /dev/env/MENUETDEV/lib/libc.a(flsbuf.o)
+ .comment       0x0001b138       0x10 /dev/env/MENUETDEV/lib/libc.a(frlist.o)
+ .comment       0x0001b148       0x10 /dev/env/MENUETDEV/lib/libc.a(_write.o)
+ .comment       0x0001b158       0x10 /dev/env/MENUETDEV/lib/libc.a(_creat.o)
+ .comment       0x0001b168       0x10 /dev/env/MENUETDEV/lib/libc.a(write.o)
+ .comment       0x0001b178       0x10 /dev/env/MENUETDEV/lib/libc.a(read.o)
+ .comment       0x0001b188       0x10 /dev/env/MENUETDEV/lib/libc.a(hooks.o)
+ .comment       0x0001b198       0x10 /dev/env/MENUETDEV/lib/libc.a(ct_upper.o)
+ .comment       0x0001b1a8       0x10 /dev/env/MENUETDEV/lib/libc.a(ct_lower.o)
+ .comment       0x0001b1b8       0x10 /dev/env/MENUETDEV/lib/libc.a(fexistp.o)
+ .comment       0x0001b1c8       0x10 /dev/env/MENUETDEV/lib/libc.a(findfirs.o)
+ .comment       0x0001b1d8       0x10 /dev/env/MENUETDEV/lib/libc.a(findnext.o)
+ .comment       0x0001b1e8       0x10 /dev/env/MENUETDEV/lib/libc.a(strncpy.o)
+ .comment       0x0001b1f8       0x10 /dev/env/MENUETDEV/lib/libc.a(fnmatch.o)
+ .comment       0x0001b208       0x10 /dev/env/MENUETDEV/lib/libc.a(qsort.o)
+ .comment       0x0001b218       0x10 /dev/env/MENUETDEV/lib/libc.a(fwalk.o)
+ .comment       0x0001b228       0x10 /dev/env/MENUETDEV/lib/libc.a(fputc.o)
+ .data          0x00006450       0xc0 kernel.o
+ .data          0x00006510       0x10 dll_list.o
+ .data          0x00006520      0x140 main.o
+ .data          0x00006660       0x10 /dev/env/MENUETDEV/lib/libc.a(crt1.o)
+ .data          0x00006670       0x20 /dev/env/MENUETDEV/lib/libc.a(malloc.o)
+ .data          0x00006690       0x20 /dev/env/MENUETDEV/lib/libc.a(crt0.o)
+ .data          0x000066b0       0x20 /dev/env/MENUETDEV/lib/libc.a(curdir.o)
+ .data          0x000066d0       0x10 /dev/env/MENUETDEV/lib/libc.a(_main.o)
+ .data          0x000066e0      0x220 /dev/env/MENUETDEV/lib/libc.a(ct_flags.o)
+ .data          0x00006900      0x1c0 /dev/env/MENUETDEV/lib/libc.a(doprnt.o)
+ .data          0x00006ac0       0x10 /dev/env/MENUETDEV/lib/libc.a(fmode.o)
+ .data          0x00006ad0       0x20 /dev/env/MENUETDEV/lib/libc.a(dosio.o)
+ .data          0x00006af0       0x40 /dev/env/MENUETDEV/lib/libc.a(stdin.o)
+ .data          0x00006b30       0x40 /dev/env/MENUETDEV/lib/libc.a(stdout.o)
+ .data          0x00006b70       0x40 /dev/env/MENUETDEV/lib/libc.a(stderr.o)
+ .data          0x00006bb0       0x10 /dev/env/MENUETDEV/lib/libc.a(fsext.o)
+ .data          0x00006bc0       0x20 /dev/env/MENUETDEV/lib/libc.a(glob.o)
+ .data          0x00006be0       0x10 /dev/env/MENUETDEV/lib/libc.a(stdiohk.o)
+ .data          0x00006bf0       0x60 /dev/env/MENUETDEV/lib/libc.a(lconv.o)
+ .data          0x00006c50       0x60 /dev/env/MENUETDEV/lib/libc.a(frlist.o)
+ .data          0x00006cb0       0x10 /dev/env/MENUETDEV/lib/libc.a(write.o)
+ .data          0x00006cc0      0x120 /dev/env/MENUETDEV/lib/libc.a(ct_upper.o)
+ .data          0x00006de0      0x120 /dev/env/MENUETDEV/lib/libc.a(ct_lower.o)
+ .data          0x00006f00       0x10 /dev/env/MENUETDEV/lib/libc.a(fexistp.o)
+ .data          0x00006f10       0x10 /dev/env/MENUETDEV/lib/libc.a(fnmatch.o)
+ .text          0x00000000       0x39 /dev/env/MENUETDEV/stub/crt0.o
+ .text          0x00000040       0x70 kernel.o
+ .text          0x000000b0      0x200 dll_list.o
+ .text          0x000002b0      0x260 main.o
+ .text          0x00000510       0xf0 /dev/env/MENUETDEV/lib/libmcoff.a(symtab.o)
+ .text          0x00000600       0xa0 /dev/env/MENUETDEV/lib/libmcoff.a(debug.o)
+ .text          0x000006a0      0x3e0 /dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o)
+ .text          0x00000a80      0x2a0 /dev/env/MENUETDEV/lib/libmcoff.a(relocate.o)
+ .text          0x00000d20       0x60 /dev/env/MENUETDEV/lib/libc.a(crt1.o)
+ .text          0x00000d80      0x130 /dev/env/MENUETDEV/lib/libc.a(brk.o)
+ .text          0x00000eb0       0x10 /dev/env/MENUETDEV/lib/libc.a(errno.o)
+ .text          0x00000ec0      0x3f0 /dev/env/MENUETDEV/lib/libc.a(malloc.o)
+ .text          0x000012b0       0x40 /dev/env/MENUETDEV/lib/libc.a(atexit.o)
+ .text          0x000012f0       0x30 /dev/env/MENUETDEV/lib/libc.a(exit.o)
+ .text          0x00001320       0x20 /dev/env/MENUETDEV/lib/libc.a(getenv.o)
+ .text          0x00001340      0x7d0 /dev/env/MENUETDEV/lib/libc.a(crt0.o)
+ .text          0x00001b10       0x20 /dev/env/MENUETDEV/lib/libc.a(strlen.o)
+ .text          0x00001b30       0x30 /dev/env/MENUETDEV/lib/libc.a(strncmp.o)
+ .text          0x00001b60       0x40 /dev/env/MENUETDEV/lib/libc.a(memset.o)
+ .text          0x00001ba0       0x30 /dev/env/MENUETDEV/lib/libc.a(memcpy.o)
+ .text          0x00001bd0       0x20 /dev/env/MENUETDEV/lib/libc.a(strchr.o)
+ .text          0x00001bf0       0xb0 /dev/env/MENUETDEV/lib/libc.a(debug.o)
+ .text          0x00001ca0       0x40 /dev/env/MENUETDEV/lib/libc.a(sprintf.o)
+ .text          0x00001ce0       0x40 /dev/env/MENUETDEV/lib/libc.a(vsprintf.o)
+ .text          0x00001d20      0x170 /dev/env/MENUETDEV/lib/libc.a(fopen.o)
+ .text          0x00001e90       0xe0 /dev/env/MENUETDEV/lib/libc.a(fseek.o)
+ .text          0x00001f70       0xf0 /dev/env/MENUETDEV/lib/libc.a(ftell.o)
+ .text          0x00002060       0xf0 /dev/env/MENUETDEV/lib/libc.a(fread.o)
+ .text          0x00002150       0xc0 /dev/env/MENUETDEV/lib/libc.a(fclose.o)
+ .text          0x00002210       0x30 /dev/env/MENUETDEV/lib/libc.a(printf.o)
+ .text          0x00002240      0x970 /dev/env/MENUETDEV/lib/libc.a(dosemu.o)
+ .text          0x00002bb0      0x390 /dev/env/MENUETDEV/lib/libc.a(curdir.o)
+ .text          0x00002f40       0x40 /dev/env/MENUETDEV/lib/libc.a(_main.o)
+ .text          0x00002f80       0x20 /dev/env/MENUETDEV/lib/libc.a(env.o)
+ .text          0x00002fa0       0x40 /dev/env/MENUETDEV/lib/libc.a(_open.o)
+ .text          0x00002fe0       0x20 /dev/env/MENUETDEV/lib/libc.a(lseek.o)
+ .text          0x00003000       0x50 /dev/env/MENUETDEV/lib/libc.a(_read.o)
+ .text          0x00003050       0x70 /dev/env/MENUETDEV/lib/libc.a(_close.o)
+ .text          0x000030c0       0x30 /dev/env/MENUETDEV/lib/libc.a(c1pglob.o)
+ .text          0x000030f0     0x1770 /dev/env/MENUETDEV/lib/libc.a(doprnt.o)
+ .text          0x00004860       0xb0 /dev/env/MENUETDEV/lib/libc.a(allocfil.o)
+ .text          0x00004910       0xb0 /dev/env/MENUETDEV/lib/libc.a(open.o)
+ .text          0x000049c0       0xc0 /dev/env/MENUETDEV/lib/libc.a(fflush.o)
+ .text          0x00004a80       0x20 /dev/env/MENUETDEV/lib/libc.a(dosio.o)
+ .text          0x00004aa0       0x10 /dev/env/MENUETDEV/lib/libc.a(stdin.o)
+ .text          0x00004ab0       0x10 /dev/env/MENUETDEV/lib/libc.a(stdout.o)
+ .text          0x00004ac0       0x10 /dev/env/MENUETDEV/lib/libc.a(stderr.o)
+ .text          0x00004ad0      0x1a0 /dev/env/MENUETDEV/lib/libc.a(filbuf.o)
+ .text          0x00004c70       0xf0 /dev/env/MENUETDEV/lib/libc.a(fgetc.o)
+ .text          0x00004d60       0x10 /dev/env/MENUETDEV/lib/libc.a(remove.o)
+ .text          0x00004d70       0x20 /dev/env/MENUETDEV/lib/libc.a(close.o)
+ .text          0x00004d90       0x20 /dev/env/MENUETDEV/lib/libc.a(strcpy.o)
+ .text          0x00004db0       0x80 /dev/env/MENUETDEV/lib/libc.a(fixpath.o)
+ .text          0x00004e30       0x30 /dev/env/MENUETDEV/lib/libc.a(strupr.o)
+ .text          0x00004e60       0x30 /dev/env/MENUETDEV/lib/libc.a(strlwr.o)
+ .text          0x00004e90       0x20 /dev/env/MENUETDEV/lib/libc.a(strcmp.o)
+ .text          0x00004eb0       0x90 /dev/env/MENUETDEV/lib/libc.a(fse_open.o)
+ .text          0x00004f40      0x110 /dev/env/MENUETDEV/lib/libc.a(fsext.o)
+ .text          0x00005050      0x8a0 /dev/env/MENUETDEV/lib/libc.a(glob.o)
+ .text          0x000058f0       0x50 /dev/env/MENUETDEV/lib/libc.a(stdiohk.o)
+ .text          0x00005940       0x10 /dev/env/MENUETDEV/lib/libc.a(lconv.o)
+ .text          0x00005950       0x20 /dev/env/MENUETDEV/lib/libc.a(putc.o)
+ .text          0x00005970       0x30 /dev/env/MENUETDEV/lib/libc.a(memchr.o)
+ .text          0x000059a0      0x180 /dev/env/MENUETDEV/lib/libc.a(flsbuf.o)
+ .text          0x00005b20       0x30 /dev/env/MENUETDEV/lib/libc.a(modfl.o)
+ .text          0x00005b50       0x50 /dev/env/MENUETDEV/lib/libc.a(_write.o)
+ .text          0x00005ba0       0x20 /dev/env/MENUETDEV/lib/libc.a(_creat.o)
+ .text          0x00005bc0       0x20 /dev/env/MENUETDEV/lib/libc.a(write.o)
+ .text          0x00005be0       0x20 /dev/env/MENUETDEV/lib/libc.a(read.o)
+ .text          0x00005c00       0x40 /dev/env/MENUETDEV/lib/libc.a(fexistp.o)
+ .text          0x00005c40       0x10 /dev/env/MENUETDEV/lib/libc.a(findfirs.o)
+ .text          0x00005c50       0x10 /dev/env/MENUETDEV/lib/libc.a(findnext.o)
+ .text          0x00005c60       0x20 /dev/env/MENUETDEV/lib/libc.a(strncpy.o)
+ .text          0x00005c80      0x340 /dev/env/MENUETDEV/lib/libc.a(fnmatch.o)
+ .text          0x00005fc0      0x340 /dev/env/MENUETDEV/lib/libc.a(qsort.o)
+ .text          0x00006300       0x50 /dev/env/MENUETDEV/lib/libc.a(fwalk.o)
+ .text          0x00006350       0xf0 /dev/env/MENUETDEV/lib/libc.a(fputc.o)
+*default*        0x00000000         0xffffffff
+.bss            0x00006f20    0x13e08
+.comment        0x0001ad28      0x510
+.data           0x00006440      0xae0
+.text           0x00000000     0x6440
+/dev/env/MENUETDEV/lib/libc.a(_close.o)
+/dev/env/MENUETDEV/lib/libc.a(_creat.o)
+/dev/env/MENUETDEV/lib/libc.a(_main.o)
+/dev/env/MENUETDEV/lib/libc.a(_open.o)
+/dev/env/MENUETDEV/lib/libc.a(_read.o)
+/dev/env/MENUETDEV/lib/libc.a(_write.o)
+/dev/env/MENUETDEV/lib/libc.a(allocfil.o)
+/dev/env/MENUETDEV/lib/libc.a(atexit.o)
+/dev/env/MENUETDEV/lib/libc.a(brk.o)
+/dev/env/MENUETDEV/lib/libc.a(c1pglob.o)
+/dev/env/MENUETDEV/lib/libc.a(close.o)
+/dev/env/MENUETDEV/lib/libc.a(crt0.o)
+/dev/env/MENUETDEV/lib/libc.a(crt1.o)
+/dev/env/MENUETDEV/lib/libc.a(ct_flags.o)
+/dev/env/MENUETDEV/lib/libc.a(ct_lower.o)
+/dev/env/MENUETDEV/lib/libc.a(ct_upper.o)
+/dev/env/MENUETDEV/lib/libc.a(curdir.o)
+/dev/env/MENUETDEV/lib/libc.a(debug.o)
+/dev/env/MENUETDEV/lib/libc.a(doprnt.o)
+/dev/env/MENUETDEV/lib/libc.a(dosemu.o)
+/dev/env/MENUETDEV/lib/libc.a(dosio.o)
+/dev/env/MENUETDEV/lib/libc.a(env.o)
+/dev/env/MENUETDEV/lib/libc.a(errno.o)
+/dev/env/MENUETDEV/lib/libc.a(exit.o)
+/dev/env/MENUETDEV/lib/libc.a(fclose.o)
+/dev/env/MENUETDEV/lib/libc.a(fexistp.o)
+/dev/env/MENUETDEV/lib/libc.a(fflush.o)
+/dev/env/MENUETDEV/lib/libc.a(fgetc.o)
+/dev/env/MENUETDEV/lib/libc.a(filbuf.o)
+/dev/env/MENUETDEV/lib/libc.a(findfirs.o)
+/dev/env/MENUETDEV/lib/libc.a(findnext.o)
+/dev/env/MENUETDEV/lib/libc.a(fixpath.o)
+/dev/env/MENUETDEV/lib/libc.a(flsbuf.o)
+/dev/env/MENUETDEV/lib/libc.a(fmode.o)
+/dev/env/MENUETDEV/lib/libc.a(fnmatch.o)
+/dev/env/MENUETDEV/lib/libc.a(fopen.o)
+/dev/env/MENUETDEV/lib/libc.a(fputc.o)
+/dev/env/MENUETDEV/lib/libc.a(fread.o)
+/dev/env/MENUETDEV/lib/libc.a(frlist.o)
+/dev/env/MENUETDEV/lib/libc.a(fse_open.o)
+/dev/env/MENUETDEV/lib/libc.a(fseek.o)
+/dev/env/MENUETDEV/lib/libc.a(fsext.o)
+/dev/env/MENUETDEV/lib/libc.a(ftell.o)
+/dev/env/MENUETDEV/lib/libc.a(fwalk.o)
+/dev/env/MENUETDEV/lib/libc.a(getenv.o)
+/dev/env/MENUETDEV/lib/libc.a(glob.o)
+/dev/env/MENUETDEV/lib/libc.a(hooks.o)
+/dev/env/MENUETDEV/lib/libc.a(lconv.o)
+/dev/env/MENUETDEV/lib/libc.a(lseek.o)
+/dev/env/MENUETDEV/lib/libc.a(malloc.o)
+/dev/env/MENUETDEV/lib/libc.a(memchr.o)
+/dev/env/MENUETDEV/lib/libc.a(memcpy.o)
+/dev/env/MENUETDEV/lib/libc.a(memset.o)
+/dev/env/MENUETDEV/lib/libc.a(modfl.o)
+/dev/env/MENUETDEV/lib/libc.a(open.o)
+/dev/env/MENUETDEV/lib/libc.a(param.o)
+/dev/env/MENUETDEV/lib/libc.a(printf.o)
+/dev/env/MENUETDEV/lib/libc.a(putc.o)
+/dev/env/MENUETDEV/lib/libc.a(qsort.o)
+/dev/env/MENUETDEV/lib/libc.a(read.o)
+/dev/env/MENUETDEV/lib/libc.a(remove.o)
+/dev/env/MENUETDEV/lib/libc.a(sprintf.o)
+/dev/env/MENUETDEV/lib/libc.a(stderr.o)
+/dev/env/MENUETDEV/lib/libc.a(stdin.o)
+/dev/env/MENUETDEV/lib/libc.a(stdiohk.o)
+/dev/env/MENUETDEV/lib/libc.a(stdout.o)
+/dev/env/MENUETDEV/lib/libc.a(strchr.o)
+/dev/env/MENUETDEV/lib/libc.a(strcmp.o)
+/dev/env/MENUETDEV/lib/libc.a(strcpy.o)
+/dev/env/MENUETDEV/lib/libc.a(strlen.o)
+/dev/env/MENUETDEV/lib/libc.a(strlwr.o)
+/dev/env/MENUETDEV/lib/libc.a(strncmp.o)
+/dev/env/MENUETDEV/lib/libc.a(strncpy.o)
+/dev/env/MENUETDEV/lib/libc.a(strupr.o)
+/dev/env/MENUETDEV/lib/libc.a(vsprintf.o)
+/dev/env/MENUETDEV/lib/libc.a(write.o)
+/dev/env/MENUETDEV/lib/libmcoff.a(debug.o)
+/dev/env/MENUETDEV/lib/libmcoff.a(loadcoff.o)
+/dev/env/MENUETDEV/lib/libmcoff.a(relocate.o)
+/dev/env/MENUETDEV/lib/libmcoff.a(symtab.o)
+Archive member included because of file (symbol)
+Linker script and memory map
+LOAD /dev/env/MENUETDEV/lib/libc.a
+LOAD /dev/env/MENUETDEV/lib/libmcoff.a
+LOAD /dev/env/MENUETDEV/stub/crt0.o
+LOAD dll_list.o
+LOAD kernel.o
+LOAD main.o
+Memory Configuration
+Name             Origin             Length             Attributes
+OUTPUT(ld-dll binary)
