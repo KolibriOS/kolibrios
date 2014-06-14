@@ -268,13 +268,12 @@ proc service_proc stdcall, ioctl:dword
         jmp     .hook
 
   .isa:
-
         mov     esi, device_list
         mov     ecx, [devices]
         test    ecx, ecx
         jz      .firstdevice_isa
-        mov     al, [eax+3]
         movzx   edi, word [eax+1]
+        mov     al, [eax+3]
   .nextdevice_isa:
         mov     ebx, [esi]
         cmp     edi, [device.io_addr]
@@ -291,7 +290,7 @@ proc service_proc stdcall, ioctl:dword
         call    create_new_struct
 
         mov     eax, [edx + IOCTL.input]
-        movzx   ecx, word [eax+1]
+        movzx   ecx, word[eax+1]
         mov     [device.io_addr], ecx
         mov     cl, [eax+3]
         mov     [device.irq_line], cl
