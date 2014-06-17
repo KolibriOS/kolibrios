@@ -1,3 +1,10 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; standard driver stuff
 format MS COFF
 
@@ -7,10 +14,10 @@ DEBUG = 1
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 1
 
-include '../proc32.inc'
-include '../imports.inc'
-include '../fdo.inc'
-include '../struct.inc'
+include '../../proc32.inc'
+include '../../imports.inc'
+include '../../fdo.inc'
+include '../../struct.inc'
 
 public START
 public version
@@ -171,7 +178,7 @@ proc AddDevice stdcall uses ebx, .config_pipe:DWORD, .config_descr:DWORD, .inter
         cmp     word[eax+usb_descr.idVendor], 0x0403
         jnz     .notftdi
         DEBUGF 1,'K : FTDI USB device detected\n'
-        movi    eax, sizeof.ftdi_context
+        mov    eax, sizeof.ftdi_context
         call    Kmalloc
         test    eax, eax
         jnz     @f
@@ -237,9 +244,8 @@ endl
         xor     esi, esi
         call    CreateEvent
         mov     edi, [ioctl]
-        DEBUGF 1,'K : Event created %x %x\n' , eax, edx
         mov     [EventData], eax
-        mov     [EventData+4], edx               
+        mov     [EventData+4], edx      
         mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8) + (0x0000 shl 16)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
@@ -282,11 +288,11 @@ restore   out_size
 
 
 align 4
-proc control_callback stdcall uses ebx, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD   
+proc control_callback stdcall uses ebx, edi, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD   
    
-        mov     eax, [.calldata]
-        mov     ebx, [.calldata+4]
-        DEBUGF 1,'K : EventData %x %x', [.calldata], [.calldata+4]
+        mov     ecx, [.calldata]
+        mov     eax, [ecx]
+        mov     ebx, [ecx+4]
         xor     edx, edx
         call    RaiseEvent
         DEBUGF 1, 'K : status is %d\n', [.status+24h]       

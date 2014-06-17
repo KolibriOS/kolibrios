@@ -94,6 +94,12 @@ kernel_export \
               GetDisplay,\
               SetScreen,\
 \
+              RegUSBDriver,\
+              USBOpenPipe,\
+              USBNormalTransferAsync,\
+              USBControlTransferAsync,\
+              USBGetParam,\
+\
               NetRegDev,\
               NetUnRegDev,\
               NetPtrToNum,\
