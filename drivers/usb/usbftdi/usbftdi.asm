@@ -10,7 +10,7 @@ __DEBUG_LEVEL__ = 1
 include '../proc32.inc'
 include '../imports.inc'
 include '../fdo.inc'
-include '../../struct.inc'
+include '../struct.inc'
 
 public START
 public version
@@ -126,6 +126,8 @@ out_size                dd      ?
 ends
 
 struct usb_descr
+bLength                 db      ?
+bDescriptorType         db      ?
 bcdUSB                  dw      ?
 bDeviceClass            db      ?
 bDeviceSubClass         db      ?
@@ -140,6 +142,14 @@ iSerialNumber           db      ?
 bNumConfigurations      db      ?
 ends
 
+struct conf_packet
+bmRequestType           db      ?
+bRequest                db      ?
+wValue                  dw      ?
+wIndex                  dw      ?
+wLength                 dw      ?
+ends
+
 section '.flat' code readable align 16
 ; The start procedure.
 proc START stdcall, .reason:DWORD
@@ -147,18 +157,18 @@ proc START stdcall, .reason:DWORD
         xor     eax, eax        ; initialize return value
         cmp     [.reason], 1    ; compare the argument
         jnz     .nothing                
-        call    linkedlist.init
         stdcall RegUSBDriver, my_driver, service_proc, usb_functions
 
 .nothing:
-        ret     4
+        ret
 endp
 
 
 proc AddDevice stdcall uses ebx, .config_pipe:DWORD, .config_descr:DWORD, .interface:DWORD
         
         stdcall USBGetParam, [.config_pipe], 0
-        cmp     [eax+usb_descr.idVendor], 0x0403
+        DEBUGF 1,'K : Device detected Vendor: %x\n', [eax+usb_descr.idVendor]
+        cmp     word[eax+usb_descr.idVendor], 0x0403
         jnz     .notftdi
         DEBUGF 1,'K : FTDI USB device detected\n'
         movi    eax, sizeof.ftdi_context
@@ -206,55 +216,60 @@ locals
 ConfPacket  rb  8
 EventData   rd  2
 endl
-        mov edi, [ioctl]
-        mov eax, [edi + io_code]
+        mov     edi, [ioctl]
+        mov     eax, [edi + io_code]
         DEBUGF 1,'K : FTDI got the request: %d\n', eax
-        test eax, eax           ;0
-        jz  .version
-        dec eax                 ;1
-        jz  .ftdi_get_list
-        dec eax                 ;2
-        jz  .ftdi_set_bitmode
+        test    eax, eax           ;0
+        jz      .version
+        dec     eax                 ;1
+        jz      .ftdi_get_list
+        dec     eax                 ;2
+        jz      .ftdi_set_bitmode
         
   .version:     
   .endswitch:
-        xor eax, eax
+        xor     eax, eax
 	    ret 
 
   .ftdi_set_bitmode:
         DEBUGF 1,'K : FTDI Seting bitmode\n'        
+        xor     ecx, ecx
+        xor     esi, esi
         call    CreateEvent
+        mov     edi, [ioctl]
         DEBUGF 1,'K : Event created %x %x\n' , eax, edx
         mov     [EventData], eax
-        mov     [EventData+1], edx         
-        mov     si, (FTDI_DEVICE_IN_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)                
-        mov     word[ConfPacket], si
+        mov     [EventData+4], edx               
+        mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8) + (0x0000 shl 16)
         mov     edi, [edi+input]        
-        mov     si, word[edi+1]
-        DEBUGF 1,'K : Pin value is %x\n', si        
-        mov     word[ConfPacket+4], si                 
-        mov     ebx, [edi]
+        mov     dx, word[edi+4]                
+        mov     word[ConfPacket+4], dx
+        DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]                                 
+        mov     ebx, [edi] 
         lea     esi, [ConfPacket]
-        lea     edi, [EventData]
+        lea     edi, [EventData]        
         stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0, 0, control_callback, edi, 0
         DEBUGF 1, 'K : Returned value is %d\n', eax
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
         call    WaitEvent     
         jmp     .endswitch
+
   .ftdi_read_pins:
         DEBUGF 1,'K : FTDI Reading pins\n' 
         call    CreateEvent
         mov     [EventData], eax
-        mov     [EventData+1], edx
+        mov     [EventData+4], edx
         mov     eax, FTDI_DEVICE_IN_REQTYPE + (SIO_READ_PINS_REQUEST shl 8)
         mov     dword[ConfPacket], eax
         jmp     .endswitch
+
    .ftdi_get_list:
-        call    linkedlist.gethead
-        DEBUGF 1, 'K : FTDI Device pointer %x\n' , eax
+        call    linkedlist.gethead                        
         mov     edi, [edi+output]
-        mov     edi, eax
-        mov     eax, 4
-        mov     edi, [ioctl]
+        mov     [edi], eax
+        DEBUGF 1, 'K : FTDI Device pointer %x\n', [edi]
+        mov     eax, 4        
         mov     [edi+out_size], eax
         jmp     .endswitch	   
 endp 
@@ -270,7 +285,9 @@ align 4
 proc control_callback stdcall uses ebx, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD   
    
         mov     eax, [.calldata]
-        mov     ebx, [.calldata+1]
+        mov     ebx, [.calldata+4]
+        DEBUGF 1,'K : EventData %x %x', [.calldata], [.calldata+4]
+        xor     edx, edx
         call    RaiseEvent
         DEBUGF 1, 'K : status is %d\n', [.status+24h]       
         ret
@@ -281,7 +298,8 @@ proc DeviceDisconnected stdcall uses  ebx esi edi, .device_data:DWORD
 
         DEBUGF 1, 'K : FTDI deleting device data\n'
         mov     eax, [.device_data] 
-        ;call    linkedlist.delete           
+        call    linkedlist.delete
+        ret           
 endp
 
 include 'linkedlist.inc'
