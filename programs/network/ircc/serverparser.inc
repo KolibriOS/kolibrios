@@ -683,6 +683,19 @@ cmd_nick:
   @@:
         xor     al, al
         stosb
+
+; Print a message on the server window
+        mov     [window_print], windows
+
+        mov     esi, str_nickchange
+        call    print_asciiz
+
+        mov     esi, user_nick
+        call    print_asciiz
+
+        mov     al, 10
+        call    print_char
+
   .not_me:
 
 ; Update in userlist
