@@ -283,7 +283,7 @@ quit_server:
 cmd_usr_nick:
 
         cmp     [edit1.size], 5
-        je      .dontsend
+        je      .justprint
         cmp     byte[usercommand+5], ' '
         jne     .fail
         cmp     [socketnum], 0
@@ -297,7 +297,6 @@ cmd_usr_nick:
         mcall   send, [socketnum], usercommand+1, , 0
 
   .fail:
-
         ret
 
 ; We arent logged in yet, directly change user_nick field and print notification to user.
@@ -316,6 +315,7 @@ cmd_usr_nick:
         xor     al, al
         stosb
 
+  .justprint:
         mov     esi, str_nickchange
         call    print_asciiz
 
