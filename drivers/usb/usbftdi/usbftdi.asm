@@ -1,10 +1,3 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; standard driver stuff
 format MS COFF
 
@@ -178,7 +171,7 @@ proc AddDevice stdcall uses ebx, .config_pipe:DWORD, .config_descr:DWORD, .inter
         cmp     word[eax+usb_descr.idVendor], 0x0403
         jnz     .notftdi
         DEBUGF 1,'K : FTDI USB device detected\n'
-        mov    eax, sizeof.ftdi_context
+        movi    eax, sizeof.ftdi_context
         call    Kmalloc
         test    eax, eax
         jnz     @f
@@ -232,6 +225,10 @@ endl
         jz      .ftdi_get_list
         dec     eax                 ;2
         jz      .ftdi_set_bitmode
+        dec     eax                 ;3
+        jz      .ftdi_setrtshigh   
+        dec     eax                 ;4
+        jz      .ftdi_setrtslow     
         
   .version:     
   .endswitch:
@@ -246,11 +243,56 @@ endl
         mov     edi, [ioctl]
         mov     [EventData], eax
         mov     [EventData+4], edx      
-        mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8) + (0x0000 shl 16)
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
-        mov     word[ConfPacket+4], dx
+        mov     word[ConfPacket+2], dx
+        mov     dword[ConfPacket+4], 0  
         DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]                                 
+        mov     ebx, [edi] 
+        lea     esi, [ConfPacket]
+        lea     edi, [EventData]        
+        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0, 0, control_callback, edi, 0
+        DEBUGF 1, 'K : Returned value is %d\n', eax
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    WaitEvent     
+        jmp     .endswitch
+
+  .ftdi_setrtshigh:
+        DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'        
+        xor     ecx, ecx
+        xor     esi, esi
+        call    CreateEvent
+        mov     edi, [ioctl]
+        mov     [EventData], eax
+        mov     [EventData+4], edx      
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_HIGH shl 16)
+        mov     dword[ConfPacket+4], 0
+        DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]
+        mov     edi, [edi+input]                                
+        mov     ebx, [edi] 
+        lea     esi, [ConfPacket]
+        lea     edi, [EventData]        
+        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0, 0, control_callback, edi, 0
+        DEBUGF 1, 'K : Returned value is %d\n', eax
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    WaitEvent     
+        jmp     .endswitch
+
+  .ftdi_setrtslow:
+        DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'        
+        xor     ecx, ecx
+        xor     esi, esi
+        call    CreateEvent
+        mov     edi, [ioctl]
+        mov     [EventData], eax
+        mov     [EventData+4], edx      
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_LOW shl 16)
+        mov     dword[ConfPacket+4], 0
+        DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]
+        mov     edi, [edi+input]                                  
         mov     ebx, [edi] 
         lea     esi, [ConfPacket]
         lea     edi, [EventData]        
@@ -288,14 +330,15 @@ restore   out_size
 
 
 align 4
-proc control_callback stdcall uses ebx, edi, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD   
+proc control_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD   
    
+        DEBUGF 1, 'K : status is %d\n', [.status+24h] 
         mov     ecx, [.calldata]
         mov     eax, [ecx]
         mov     ebx, [ecx+4]
         xor     edx, edx
         call    RaiseEvent
-        DEBUGF 1, 'K : status is %d\n', [.status+24h]       
+              
         ret
 endp
 
