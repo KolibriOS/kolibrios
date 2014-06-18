@@ -1388,32 +1388,35 @@ endl
         DEBUGF  1, "parsing URL: %s\n", [URL]
 
 ; remove any leading protocol text
-        mov     esi, [URL]
+        mov     edi, [URL]
         mov     ecx, URLMAXLEN
         mov     ax, '//'
   .loop1:
-        cmp     byte[esi], 0            ; end of URL?
+        cmp     byte[edi], 0            ; end of URL?
         je      .url_ok                 ; yep, so not found
-        cmp     [esi], ax
+        cmp     [edi], ax
         je      .skip_proto
-        inc     esi
+        inc     edi
         dec     ecx
         jnz     .loop1
         jmp     .invalid
 
   .skip_proto:
-        inc     esi                     ; skip the two '/'
-        inc     esi
-        mov     [URL], esi              ; update pointer so it skips protocol
-        jmp     .loop1                  ; we still need to find the length of the URL
+        inc     edi                     ; skip the two '/'
+        inc     edi
+        mov     [URL], edi              ; update pointer so it skips protocol
+
+; Find the trailing 0 byte
+        xor     al, al
+        repne   scasb
+        jne     .invalid                ; ecx reached 0 before we reached end of string
 
   .url_ok:
-        sub     esi, [URL]              ; calculate total length of URL
-        mov     [urlsize], esi
-
+        sub     edi, [URL]              ; calculate total length of URL
+        mov     [urlsize], edi
 
 ; now look for page delimiter - it's a '/' character
-        mov     ecx, esi                ; URL length
+        mov     ecx, edi                ; URL length
         mov     edi, [URL]
         mov     al, '/'
         repne   scasb
