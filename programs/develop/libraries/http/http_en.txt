@@ -41,3 +41,5 @@ In header_length you'll find the length of the header as soon as it has been rec
 In content_ptr you'll find a pointer to the actual content.
 In content_length you'll find the length of the content. 
 In content_received, you'll find the number of content bytes already received.
+
+All procedures are non blocking!
