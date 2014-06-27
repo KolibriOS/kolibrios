@@ -113,9 +113,10 @@
 ;---------------------------------------------------------------------
 macro @use_library
 {
-
-local lp
 local lp1
+local lp2
+local lp3
+local lp4
 local file_name
 
 library_fun_memory_alloc equ 0 ;не использовать в макросах проверку на функции 'lib_init'

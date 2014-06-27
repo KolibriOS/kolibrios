@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 28.01.2014 IgorA
+; файл последний раз изменялся 27.06.2014 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -1103,6 +1103,9 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 
 			call ted_get_num_lines
 			sub dword[new_lin],eax
+			;увеличиваем линии в скроллинге на число добавленных дополнительных строк
+			mov ecx,ted_scr_w
+			add dword[ecx+sb_offs_max_area],eax ;увеличиваем размер вертикального скроллинга
 		pop eax
 	@@:
 
@@ -1128,8 +1131,12 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 				jne .no_cur_mov
 					mov ted_cur_x,0
 					inc ted_cur_y
+					;увеличиваем линии в скроллинге на число добавленных в тексте строк
+					mov ecx,ted_scr_w
+					inc dword[ecx+sb_offs_max_area] ;увеличиваем размер вертикального скроллинга
 			.no_cur_mov:
 
+			; *** вставка текущего символа из строки ***
 			mov ecx,ted_opt_ed_change_time
 			not ecx
 			and dword[add_opt],ecx ;n_tim=false;
@@ -1152,6 +1159,8 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 			add ecx,ted_tex ; *** ecx = tex[tex[i].next] ***
 			mov [ecx+2],eax ;tex[tex[i].next].perv=i;
 
+			; *** вставка дополнительных строк и пробелов
+			; если курсор во время вставки находился за текстом ***
 			cmp dword[new_lin],0 ;add lines or text
 			jle .spc_add
 				dec dword[new_lin]
@@ -1164,7 +1173,7 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 				mov byte [edx],' '
 				jmp .u1f
 			.tex_add:
-			inc esi
+			inc esi ; переход к следующему вставляемому символу
 			dec ebx
 		.u1f:
 		add edx,sizeof.symbol
