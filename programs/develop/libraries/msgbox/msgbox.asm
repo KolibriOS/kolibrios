@@ -132,8 +132,12 @@ key:
     call MsgBoxDrawAllBut
   .no_left:
 
+  cmp ah,9 ;Tab
+  je @f
   cmp ah,179 ;Right
-  jne .no_right
+  je @f
+	jmp .no_right
+  @@:
   mov al,[mb_key_max]
   add al,MB_FIRST_BUT_ID
   cmp [mb_key_foc],al

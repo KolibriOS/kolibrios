@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 27.06.2014 IgorA
+; файл последний раз изменялся 28.06.2014 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -9,8 +9,8 @@
 ;output:
 ; reg = pointer to 'tex' struct
 macro ConvertIndexToPointer reg {
-  imul reg,sizeof.symbol
-  add reg,ted_tex
+	imul reg,sizeof.symbol
+	add reg,ted_tex
 }
 
 ;--- out_reg = ted_key_words_data[ind_reg].Text[0] ---
@@ -27,13 +27,14 @@ TED_PANEL_FIND	 equ 1 ;панель поиска
 TED_PANEL_SYNTAX equ 2 ;панель выбора файлов подсветки
 TED_PANEL_WIDTH  equ 150 ;ширина панели
 
+TED_LINES_IN_NEW_FILE equ 30 ;число строк в новом файле
 MAX_COLOR_WORD_LEN equ 40
 ;------------------------------------------------------------------------------
 struct TexSelect
-  x0 dd ?
-  y0 dd ?
-  x1 dd ?
-  y1 dd ?
+	x0 dd ?
+	y0 dd ?
+	x1 dd ?
+	y1 dd ?
 ends
 
 struct TexColViv
@@ -46,12 +47,12 @@ struct TexColViv
 ends
 
 struct symbol
-  c db ?    ;  +0 символ
-  col db ?  ;  +1 цвет
-  perv dd ? ;  +2
-  next dd ? ;  +6 указатели
-  tc dd ?   ; +10 врем. создания
-  td dd ?   ; +14 врем. удаления
+	c db ?    ;  +0 символ
+	col db ?  ;  +1 цвет
+	perv dd ? ;  +2
+	next dd ? ;  +6 указатели
+	tc dd ?   ; +10 врем. создания
+	td dd ?   ; +14 врем. удаления
 ends
 ;------------------------------------------------------------------------------
 
@@ -159,9 +160,9 @@ proc ted_init_scroll_bars, edit:dword, opt:dword
 	bt dword[opt],2 ; изменились размеры документа ?
 	jae .doc_resize
 		call ted_get_num_lines
-		cmp eax,100
+		cmp eax,TED_LINES_IN_NEW_FILE
 		jge @f
-			mov eax,100
+			mov eax,TED_LINES_IN_NEW_FILE
 		@@:
 		mov dword[esi+sb_offs_max_area],eax
 	.doc_resize:
@@ -243,6 +244,7 @@ proc ted_key, edit:dword, table:dword, control:dword
 
 	test esi,KM_CTRL ;Ctrl+...
 	jz .key_Ctrl
+		; *** вызов внешних функций которые требуют окна открытия/сохранения/поиска/...
 		cmp ah,24 ;Ctrl+O
 		jne @f
 			cmp ted_fun_on_key_ctrl_o,0
@@ -263,6 +265,17 @@ proc ted_key, edit:dword, table:dword, control:dword
 			je @f
 				call ted_fun_on_key_ctrl_f
 		@@:
+		cmp ah,49 ;Ctrl+N
+		jne @f
+			cmp ted_fun_on_key_ctrl_n,0
+			je @f
+				call ted_fun_on_key_ctrl_n
+		@@:
+		; *** вызов внутренних функций
+		cmp ah,30 ;Ctrl+A
+		jne @f
+			call ted_sel_all
+		@@:
 		cmp ah,44 ;Ctrl+Z
 		jne @f
 			stdcall ted_but_undo,edi
@@ -275,15 +288,13 @@ proc ted_key, edit:dword, table:dword, control:dword
 		jne @f
 			stdcall ted_but_paste,edi
 		@@:
-		cmp ah,49 ;Ctrl+N
-		jne @f
-			cmp ted_fun_on_key_ctrl_n,0
-			je @f
-				call ted_fun_on_key_ctrl_n
-		@@:
 		cmp ah,199 ;Ctrl+Home
 		jne @f
 			call ted_key_ctrl_home
+		@@:
+		cmp ah,207 ;Ctrl+End
+		jne @f
+			call ted_key_ctrl_end
 		@@:
 		jmp .end_key_fun
 	.key_Ctrl:
@@ -539,21 +550,21 @@ endp
 ; al = 1 - selected
 align 4
 proc ted_is_select
-  push ebx
-  xor al,al
-  cmp ted_drag_m,1
-  je @f
-    mov al,1
-    mov ebx,ted_sel_x0
-    cmp ebx,ted_sel_x1
-    jne @f
-    mov ebx,ted_sel_y0
-    cmp ebx,ted_sel_y1
-    jne @f
-    xor al,al
-  @@:
-  pop ebx
-  ret
+	push ebx
+	xor al,al
+	cmp ted_drag_m,1
+	je @f
+		mov al,1
+		mov ebx,ted_sel_x0
+		cmp ebx,ted_sel_x1
+		jne @f
+		mov ebx,ted_sel_y0
+		cmp ebx,ted_sel_y1
+		jne @f
+		xor al,al
+	@@:
+	pop ebx
+	ret
 endp
 
 ;input:
@@ -638,6 +649,29 @@ proc ted_sel_move
 		add ecx,dword[eax+sb_offs_position]
 		mov ted_sel_y1,ecx
 	pop ecx eax
+	cmp ted_fun_draw_panel_buttons,0 ;redraw toolbar (need to button Copy)
+	je @f
+		call ted_fun_draw_panel_buttons
+	@@:
+	ret
+endp
+
+;input:
+; edi = pointer to tedit struct
+;description:
+; Функция вызываемая при выделении всего документа
+align 4
+proc ted_sel_all
+	push eax
+		xor eax,eax
+		mov ted_sel_x0,eax
+		mov ted_sel_y0,eax
+
+		mov ted_sel_x1,eax ;???
+		call ted_get_num_lines
+		mov ted_sel_y1,eax
+	pop eax
+	stdcall ted_draw,edi
 	cmp ted_fun_draw_panel_buttons,0 ;redraw toolbar (need to button Copy)
 	je @f
 		call ted_fun_draw_panel_buttons
@@ -851,9 +885,9 @@ proc ted_on_open_file
 	@@:
 
 	call ted_get_num_lines
-	cmp eax,100
+	cmp eax,TED_LINES_IN_NEW_FILE
 	jge @f
-		mov eax,100
+		mov eax,TED_LINES_IN_NEW_FILE
 	@@:
 	mov esi,ted_scr_w
 	mov dword[esi+sb_offs_max_area],eax
@@ -988,31 +1022,30 @@ ted_iterat_next_pos_char:
 ; edi = pointer to tedit struct
 align 4
 ted_iterat_perv_color_tag:
-  @@:
-    cmp byte[edx+1],0
-    jne @f
-    call ted_iterat_perv
-    cmp edx,ted_tex_1
-    jle @f
-    jmp @b
-  @@:
-  ret
+	@@:
+		cmp byte[edx+1],0
+		jne @f
+		call ted_iterat_perv
+		cmp edx,ted_tex_1
+		jle @f
+		jmp @b
+	@@:
+	ret
 
 ;input:
 ; edx = pointer to symbol struct
 ; edi = pointer to tedit struct
 align 4
 ted_iterat_next_color_tag:
-  @@:
-    call ted_iterat_next
-    cmp byte[edx+1],0
-    jne @f
-    cmp edx,ted_tex_1
-    jle @f
-    jmp @b
-  @@:
-  ;call ted_iterat_next
-  ret
+	@@:
+		call ted_iterat_next
+		cmp byte[edx+1],0
+		jne @f
+		cmp edx,ted_tex_1
+		jle @f
+		jmp @b
+	@@:
+	ret
 
 ;input:
 ; edx = pointer to symbol struct
@@ -2851,6 +2884,30 @@ ted_key_ctrl_home:
 ;input:
 ; edi = pointer to tedit struct
 align 4
+ted_key_ctrl_end:
+	push eax ebx
+		call ted_get_num_lines
+		mov ebx,ted_scr_w
+		mov dword[ebx+sb_offs_position],eax ;ставим ползунок на последнюю строку документа
+		cmp eax,dword[ebx+sb_offs_cur_area]
+		jle @f
+			mov eax,dword[ebx+sb_offs_cur_area] ;получаем число строк влазящих в окно
+		@@:
+		sub dword[ebx+sb_offs_position],eax ;отнимаем от ползунка число строк влазящих в окно (но не больше тех, что есть в документе)
+		dec eax
+		mov ted_cur_y,eax ;ставим курсор на последнюю строку документа
+	pop ebx eax
+	call ted_cur_move_x_last_char
+	stdcall ted_draw,edi
+	cmp ted_fun_draw_panel_buttons,0
+	je @f
+		call ted_fun_draw_panel_buttons
+	@@:
+	ret
+
+;input:
+; edi = pointer to tedit struct
+align 4
 proc ted_sel_key_up
   cmp ted_drag_k,1
   je @f
@@ -3181,6 +3238,7 @@ proc ted_draw, edit:dword
 		jmp @b
 	.no_draw_text:
 
+	inc dword[line_num]
 	stdcall ted_clear_line_before_draw,edi,ebx,0,dword[line_num]
 	call ted_draw_line_numbers
 	call ted_draw_main_cursor
@@ -3676,7 +3734,6 @@ proc ted_clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_l
 	cmp dword[clear_o],0
 	jne @f
 		add ebx,ted_rec_h
-		inc esi
 		ror ebx,16
 		xor bx,bx
 		add ebx,ted_wnd_l
@@ -3706,20 +3763,21 @@ proc ted_clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_l
 	jge @f
 	.pusto:
 		mov cx,ax
+		jmp .no_select ;если очистка окна до низу, то всегда фоновым цветом
 	@@:
 
 	call ted_is_select
 	cmp al,0
-	je @f
+	je .no_select
 	cmp ted_seln_y0,esi
-	jg @f
+	jg .no_select
 	cmp ted_seln_y1,esi
-	jl @f
+	jl .no_select
 		mov edx,ted_color_select ;draw selected line
-	@@:
+	.no_select:
 
 	mov eax,13 ;rect
-	int 0x40
+	int 0x40 ;закраска полной строки цветом фона или цветом выделения
 
 	call ted_is_select
 	cmp al,0
@@ -3748,7 +3806,8 @@ proc ted_clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_l
 	@@:
 	cmp ted_seln_y1,esi
 	jne @f
-		push esi
+		;push esi
+		;если выделен весь файл тут можно сделать выход, но тогда нужно выше убрать jmp .no_select
 		mov edx,ted_seln_x1 ; нижняя полоса (затирает справа)
 		mov esi,ted_scr_h
 		cmp edx,dword[esi+sb_offs_position]
@@ -3759,10 +3818,9 @@ proc ted_clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_l
 			shl edx,16
 			add ebx,edx
 		.in_wnd2:
-
 		mov edx,ted_color_wnd_work
 		int 0x40
-		pop esi
+		;pop esi
 	@@:
 
 	.no_clear:
