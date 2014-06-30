@@ -281,7 +281,7 @@ COPY_FILES:=\
 # Format of an item is exactly the same as in the previous list,
 # except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
- #File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/cmm/eolite/Eolite.c \
+ File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/cmm/eolite/Eolite.c \
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c \
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
@@ -349,10 +349,6 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- emu/e80/e80=e80 \
- emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
- emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
- emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \
@@ -392,6 +388,18 @@ MKISOFS_EXTRA:=\
  games/=../common/games \
  games/fara=games/fara \
  games/soko/soko=games/soko \
+ kolibrios/emul/dosbox=../common/emul/DosBox \
+ kolibrios/emul/fceu=../common/emul/fceu \
+ kolibrios/emul/e80/e80=e80 \
+ kolibrios/emul/gameboy=../common/emul/gameboy \
+ kolibrios/emul/scummvm=../common/emul/scummvm \
+ kolibrios/emul/zsnes=../common/emul/zsnes \
+ kolibrios/games/doom=../common/games/doom \
+ kolibrios/games/fara/fara=games/fara \
+ kolibrios/games/fara/fara.gfx=../common/games/fara.gfx \
+ kolibrios/games/jumpbump=../common/games/jumpbump \
+ kolibrios/games/quake=../common/games/quake \
+ kolibrios/games/lrl=../common/games/lrl \
  kolibrios/lib/avcodec-55.dll=../common/lib/avcodec-55.dll \
  kolibrios/lib/avdevice-55.dll=../common/lib/avdevice-55.dll \
  kolibrios/lib/avformat-55.dll=../common/lib/avformat-55.dll \
@@ -403,7 +411,6 @@ MKISOFS_EXTRA:=\
  kolibrios/lib/swscale-2.dll=../common/lib/swscale-2.dll \
  kolibrios/lib/zlib.dll=../common/lib/zlib.dll \
  kolibrios/media/fplay-full=../common/media/fplay-full \
- #kolibrios/media/updf=updf \
  kolibrios/media/zsea/zsea=distr_data/zsea \
  kolibrios/media/zsea/plugins/cnv_bmp.obj=distr_data/cnv_bmp.obj \
  kolibrios/media/zsea/plugins/cnv_gif.obj=distr_data/cnv_gif.obj \
@@ -679,7 +686,7 @@ $(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_F
 # Note that we are going to write in the directory shared
 # between all Makefiles, so we need locked operations.
 drivers/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll drivers/.dir
-	kpack.o --nologo $< $@
+	kpack --nologo $< $@
 $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/Makefile.lto
 	flock $(REPOSITORY)/drivers/video/drm/radeon/.lock \
 	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon -f Makefile.lto
