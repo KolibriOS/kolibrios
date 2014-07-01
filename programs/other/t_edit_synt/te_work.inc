@@ -50,18 +50,18 @@ InitColText:
 	copy_path ebx,fn_syntax_dir,file_name_rez,0
 	copy_path file_name_rez,sys_path,file_name,0
 
-  mov eax,70
-  mov [run_file_70.Function], 0
-  mov [run_file_70.Position], 0
-  mov [run_file_70.Flags], 0
-  mov ebx,[options_file_end]
-  sub ebx,[options_file]
-  mov [run_file_70.Count], ebx
-  m2m [run_file_70.Buffer], [options_file]
-  mov byte[run_file_70+20], 0
-  mov [run_file_70.FileName], file_name
-  mov ebx,run_file_70
-  int 0x40
+	mov eax,70
+	mov [run_file_70.Function], 0
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov ebx,[options_file_end]
+	sub ebx,[options_file]
+	mov [run_file_70.Count], ebx
+	m2m [run_file_70.Buffer], [options_file]
+	mov byte[run_file_70+20], 0
+	mov [run_file_70.FileName], file_name
+	mov ebx,run_file_70
+	int 0x40
 
 
 	;init: count_colors_text, ColWords, ...
@@ -83,6 +83,11 @@ InitColText:
 	@@:
 
 	mov esi,[options_file]
+	cmp dword[esi],'KPCK'
+	jne @f
+		notify_window_run txt_no_kpack ; создаем окно @notify
+		jmp .no_colors
+	@@:
 	mov edi,count_colors_text
 	mov ecx,9*4
 	rep movsb

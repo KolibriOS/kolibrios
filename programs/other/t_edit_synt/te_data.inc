@@ -2,27 +2,25 @@ fn_col_option dd def_col_file
 fn_syntax_dir db 'info/',0
 def_col_file db 'default.syn',0
 
-system_dir0 db '/sys/lib/'
-boxlib_name db 'box_lib.obj',0
+system_dir_0 db '/sys/lib/'
+lib_name_0 db 'box_lib.obj',0
 
-fn_icon_tl_sys db 'tl_sys_16.bmp',0
-fn_icon_tl_nod db 'tl_nod_16.bmp',0
+system_dir_1 db '/sys/lib/'
+lib_name_1 db 'libimg.obj',0
 ;---------------------------------------------------------------------
 
 align 4
-boxlib_import:
+import_box_lib:
 dd alib_init2 ;функция запускается макросом 1 раз при подключении бибилиотеки, потому в программе метка на нее не нужна
 
 edit_box_draw  dd aEdit_box_draw
 edit_box_key   dd aEdit_box_key
 edit_box_mouse dd aEdit_box_mouse
-version_ed     dd aVersion_ed
 
 scrollbar_ver_draw  dd aScrollbar_ver_draw
 scrollbar_ver_mouse dd aScrollbar_ver_mouse
 scrollbar_hor_draw  dd aScrollbar_hor_draw
 scrollbar_hor_mouse dd aScrollbar_hor_mouse
-version_scrollbar   dd aVersion_scrollbar
 
 tl_data_init dd sz_tl_data_init
 tl_data_clear dd sz_tl_data_clear
@@ -46,7 +44,6 @@ tl_node_move_down dd sz_tl_node_move_down
 tl_save_mem dd sz_tl_save_mem
 tl_load_mem dd sz_tl_load_mem
 
-ted_but_save_file dd sz_ted_but_save_file
 ted_but_sumb_upper dd sz_ted_but_sumb_upper
 ted_but_sumb_lover dd sz_ted_but_sumb_lover
 ted_can_save dd sz_ted_can_save
@@ -60,6 +57,7 @@ ted_is_select dd sz_ted_is_select
 ted_key dd sz_ted_key
 ted_mouse dd sz_ted_mouse
 ted_open_file dd sz_ted_open_file
+ted_save_file dd sz_ted_save_file
 ted_text_add dd sz_ted_text_add
 ted_but_select_word dd sz_ted_but_select_word
 ted_but_cut dd sz_ted_but_cut
@@ -70,11 +68,9 @@ ted_but_redo dd sz_ted_but_redo
 ted_but_reverse dd sz_ted_but_reverse
 ted_but_find_next dd sz_ted_but_find_next
 ted_text_colored dd sz_ted_text_colored
-;version_text_edit dd sz_ted_version
 
 PathShow_prepare dd sz_PathShow_prepare
 PathShow_draw    dd sz_PathShow_draw
-;Version_path_show dd szVersion_path_show
 
 dd 0,0
 alib_init2 db 'lib_init',0
@@ -82,13 +78,11 @@ alib_init2 db 'lib_init',0
 aEdit_box_draw	db 'edit_box',0
 aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
-aVersion_ed	db 'version_ed',0
 
 aScrollbar_ver_draw  db 'scrollbar_v_draw',0
 aScrollbar_ver_mouse db 'scrollbar_v_mouse',0
 aScrollbar_hor_draw  db 'scrollbar_h_draw',0
 aScrollbar_hor_mouse db 'scrollbar_h_mouse',0
-aVersion_scrollbar   db 'version_scrollbar',0
 
 sz_tl_data_init db 'tl_data_init',0
 sz_tl_data_clear db 'tl_data_clear',0
@@ -112,7 +106,6 @@ sz_tl_node_move_down db 'tl_node_move_down',0
 sz_tl_save_mem db 'tl_save_mem',0
 sz_tl_load_mem db 'tl_load_mem',0
 
-sz_ted_but_save_file	db 'ted_but_save_file',0
 sz_ted_but_sumb_upper	db 'ted_but_sumb_upper',0
 sz_ted_but_sumb_lover	db 'ted_but_sumb_lover',0
 sz_ted_can_save 		db 'ted_can_save',0
@@ -126,6 +119,7 @@ sz_ted_is_select		db 'ted_is_select',0
 sz_ted_key				db 'ted_key',0
 sz_ted_mouse			db 'ted_mouse',0
 sz_ted_open_file		db 'ted_open_file',0
+sz_ted_save_file		db 'ted_save_file',0
 sz_ted_text_add 		db 'ted_text_add',0
 sz_ted_but_select_word	db 'ted_but_select_word',0
 sz_ted_but_cut			db 'ted_but_cut',0
@@ -136,12 +130,22 @@ sz_ted_but_redo 		db 'ted_but_redo',0
 sz_ted_but_reverse		db 'ted_but_reverse',0
 sz_ted_but_find_next	db 'ted_but_find_next',0
 sz_ted_text_colored		db 'ted_text_colored',0
-;sz_ted_version db 'version_text_edit',0
 
 sz_PathShow_prepare db 'PathShow_prepare',0
 sz_PathShow_draw db 'PathShow_draw',0
-;szVersion_path_show db 'version_PathShow',0
-;---------------------------------------------------------------------
+
+align 4
+import_libimg:
+        dd alib_init1
+        img_to_rgb2 dd aimg_to_rgb2
+        img_decode  dd aimg_decode
+        img_destroy dd aimg_destroy
+dd 0,0
+        alib_init1   db 'lib_init',0
+        aimg_to_rgb2 db 'img_to_rgb2',0
+        aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
+        aimg_destroy db 'img_destroy',0
+ ;---------------------------------------------------------------------
 align 4
 ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .x:
