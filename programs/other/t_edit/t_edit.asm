@@ -229,6 +229,8 @@ red_win:
 align 4
 still:
 	mcall 10
+	cmp dword[exit_code],1
+	je button.exit
 
 	cmp al,1 ;изменилось положение окна
 	jz red_win
@@ -482,10 +484,13 @@ button:
   cmp ah,1
   jne still
 .exit:
+	cmp dword[exit_code],1
+	je @f
 	stdcall [ted_can_save], tedit0
 	cmp al,1
 	jne @f
-		stdcall [mb_create],msgbox_8,thread ;message: save changes in file?
+		stdcall [mb_create],msgbox_2,thread ;message: save changes in file?
+		stdcall [mb_setfunctions],msgbox_2E_funct
 		jmp still
 	@@:
 	stdcall mem.Free,[bmp_icon]
@@ -502,9 +507,9 @@ PathShow_data_1:
 .type			dd 0	;+0
 .start_y		dw 9	;+4
 .start_x		dw 222	;+6
-.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.font_size_x		dw 6	;+8     ; 6 - for font 0, 8 - for font 1
 .area_size_x		dw 200	;+10
-.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
+.font_number		dd 0	;+12    ; 0 - monospace, 1 - variable
 .background_flag	dd 1	;+16
 .font_color		dd 0x0	;+20
 .background_color	dd 0xffffff	;+24

@@ -35,41 +35,69 @@ ted_on_init_synt_err:
 
 align 4
 ted_but_new_file:
-  push eax ebx
-  stdcall [ted_can_save], tedit0
-  cmp al,1
-  jne @f
-    stdcall [mb_create],msgbox_2,thread ;message: save changes in file?
-    ;mov eax,5
-    ;mov ebx,50
-    ;int 0x40
-    stdcall [mb_setfunctions],msgbox_2_funct
-    jmp .ret_f
-  @@:
-  call On_NewFile
-  .ret_f:
-  pop ebx eax
-  ret
+	push eax ebx
+	stdcall [ted_can_save], tedit0
+	cmp al,1
+	jne @f
+		stdcall [mb_create],msgbox_2,thread ;message: save changes in file?
+		stdcall [mb_setfunctions],msgbox_2N_funct
+		jmp .ret_f
+	@@:
+	call On_NewFile
+	.ret_f:
+	pop ebx eax
+	ret
 
 align 4
 On_NewFile:
-  stdcall [ted_clear], tedit0,1
-  call draw_but_toolbar
-  stdcall [ted_draw], tedit0
-  ret
+	stdcall [ted_clear], tedit0,1
+	call draw_but_toolbar
+	stdcall [ted_draw], tedit0
+	ret
 
 align 4
 On_SaveAndNewFile:
-  push edi
-  mov edi, tedit0
+	push edi
+	mov edi, tedit0
 
-  call ted_but_save_file
-  cmp ted_err_save,0
-  jne @f
-    call On_NewFile
-  @@:
-  pop edi
-  ret
+	call ted_but_save_file
+	cmp ted_err_save,0
+	jne @f
+		call On_NewFile
+	@@:
+	pop edi
+	ret
+
+align 4
+On_SaveAndOpenFile:
+	push edi
+	mov edi, tedit0
+
+	call ted_but_save_file
+	cmp ted_err_save,0
+	jne @f
+		call ted_but_open_file.no_msg
+	@@:
+	pop edi
+	ret
+
+align 4
+On_SaveAndExit:
+	push edi
+	mov edi, tedit0
+
+	call ted_but_save_file
+	cmp ted_err_save,0
+	jne @f
+		mov dword[exit_code],1
+	@@:
+	pop edi
+	ret
+
+align 4
+On_Exit:
+	mov dword[exit_code],1
+	ret
 
 ;description:
 ; функция открытия файла без окна сообщения
@@ -90,8 +118,8 @@ ted_but_open_file:
 	stdcall [ted_can_save], tedit0
 	cmp al,1
 	jne @f
-		stdcall [mb_create],msgbox_5,thread ;message: save changes in file?
-		stdcall [mb_setfunctions],msgbox_5_funct
+		stdcall [mb_create],msgbox_2,thread ;message: save changes in file?
+		stdcall [mb_setfunctions],msgbox_2O_funct
 		jmp .ret_f
 	.no_msg: ;метка для вызова функции через кнопку в сообщении msgbox_5
 		pushad

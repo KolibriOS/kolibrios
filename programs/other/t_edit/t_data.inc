@@ -2,6 +2,8 @@ fn_col_option dd def_col_file
 fn_syntax_dir db 'info/',0
 def_col_file db 'default.syn',0
 
+exit_code dd 0 ;переменная используемая для выхода из программы
+
 ;значения задаваемые по умолчанию, без ini файла
 ini_def_window_t equ 10
 ini_def_window_l equ 10
@@ -67,10 +69,6 @@ import_box_lib:
 	scrollbar_hor_draw  dd aScrollbar_hor_draw
 	scrollbar_hor_mouse dd aScrollbar_hor_mouse
 	;version_scrollbar   dd aVersion_scrollbar
-
-	;dinamic_button_draw  dd aDbutton_draw
-	;dinamic_button_mouse dd aDbutton_mouse
-	;version_dbutton      dd aVersion_dbutton
 
 	menu_bar_draw	 dd aMenu_bar_draw
 	menu_bar_mouse	 dd aMenu_bar_mouse
@@ -139,10 +137,6 @@ dd 0,0
 	aScrollbar_hor_draw  db 'scrollbar_h_draw',0
 	aScrollbar_hor_mouse db 'scrollbar_h_mouse',0
 	;aVersion_scrollbar   db 'version_scrollbar',0
-
-	;aDbutton_draw    db 'dbutton_draw',0
-	;aDbutton_mouse   db 'dbutton_mouse',0
-	;aVersion_dbutton  db 'version_dbutton',0
 
 	aMenu_bar_draw	  db 'menu_bar_draw',0
 	aMenu_bar_mouse   db 'menu_bar_mouse',0
@@ -494,7 +488,7 @@ tree_file_struct:
 
 if lang eq ru
 
-hed db 'Текстовый редактор 28.11.13',0 ;подпись окна
+hed db 'Текстовый редактор 02.07.14',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -522,7 +516,6 @@ msgbox_2:
   db 'Не сохранять',0
   db 'Отмена',0
   db 0
-
 msgbox_3:
   db 1,0
   db 'Внимание',0
@@ -533,7 +526,6 @@ msgbox_3:
   db ')',0
   db 'Закрыть',0
   db 0
-
 msgbox_4:
   db 1,0
   db 'Внимание',0
@@ -544,15 +536,6 @@ msgbox_4:
   db ')',0
   db 'Закрыть',0
   db 0
-
-msgbox_5:
-  db 3,0
-  db 'Внимание',0
-  db 'Сохранить изменения в файле?',0
-  db 'Не сохранять',0
-  db 'Отмена',0
-  db 0
-
 msgbox_6:
   db 1,0
   db 'Внимание',0
@@ -570,14 +553,6 @@ msgbox_7:
      'Попробуйте перейти в начало документа',13,\
      'или изменить запрос и повторить поиск.',0
   db 'Закрыть',0
-  db 0
-msgbox_8:
-  db 3,0
-  db 'Внимание',0
-  db 'Для выхода завершите работу с файлом.',13,\
-     'Попробуйте сохранить изменения в файле',13,\
-     'или начать новый пустой.',0
-  db 'Отмена',0
   db 0
 msgbox_9:
   db 3,0
@@ -597,7 +572,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 28.11.13',0
+hed db 'Text editor 02.07.14',0
 
 menu_text_area:
 db 'File',0
@@ -625,7 +600,6 @@ msgbox_2:
   db 'Discard',0
   db 'Cancel',0
   db 0
-
 msgbox_3:
   db 1,0
   db 'Warning',0
@@ -636,7 +610,6 @@ msgbox_3:
   db ')',0
   db 'Close',0
   db 0
-
 msgbox_4:
   db 1,0
   db 'Warning',0
@@ -647,15 +620,6 @@ msgbox_4:
   db ')',0
   db 'Close',0
   db 0
-
-msgbox_5:
-  db 3,0
-  db 'Warning',0
-  db 'Save changes to the file?',0
-  db 'Discard',0
-  db 'Cancel',0
-  db 0
-
 msgbox_6:
   db 1,0
   db 'Warning',0
@@ -673,14 +637,6 @@ msgbox_7:
      'Try to go to the beginning of the document',13,\
      'or change the query and search again.',0
   db 'Close',0
-  db 0
-msgbox_8:
-  db 3,0
-  db 'Warning',0
-  db 'To quit, quit the file.',13,\
-     'Try to keep changes to a file',13,\
-     'or start a new blank file.',0
-  db 'Cancel',0
   db 0
 msgbox_9:
   db 3,0
@@ -701,13 +657,18 @@ txtFormatApply db 'Apply',0
 end if
 
 ;функции для кнопок в сообщениях
-msgbox_2_funct:
-  dd On_SaveAndNewFile
-  dd On_NewFile
-  dd 0
-msgbox_5_funct:
-  dd ted_but_open_file.no_msg
-  dd 0
+msgbox_2N_funct:
+	dd On_SaveAndNewFile
+	dd On_NewFile
+	dd 0
+msgbox_2O_funct:
+	dd On_SaveAndOpenFile
+	dd ted_but_open_file.no_msg
+	dd 0
+msgbox_2E_funct:
+	dd On_SaveAndExit
+	dd On_Exit
+	dd 0
 
 KM_SHIFT equ 0x00010000
 KM_CTRL equ 0x00020000
