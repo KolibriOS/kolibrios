@@ -102,6 +102,16 @@ SIO_SET_RTS_LOW =( 0 or ( SIO_SET_RTS_MASK shl 8 ))
 
 SIO_RTS_CTS_HS =(0x1 shl 8)
 
+;FTDI chip type
+TYPE_AM=0
+TYPE_BM=1
+TYPE_2232C=2
+TYPE_R=3
+TYPE_2232H=4
+TYPE_4232H=5
+TYPE_232H=6
+TYPE_230X=7
+
 ;strings
 my_driver       db      'usbother',0
 nomemory_msg    db      'K : no memory',13,10,0
@@ -192,6 +202,7 @@ proc AddDevice stdcall uses ebx, .config_pipe:DWORD, .config_descr:DWORD, .inter
         
         mov     ebx, [.config_pipe]
         mov     [eax + ftdi_context.nullP], ebx
+        mov     [eax + ftdi_context.index], 0
         
         DEBUGF 1,'K : Open first pipe\n'
         mov     ebx, eax
@@ -252,9 +263,14 @@ endl
 	    ret 
         
   .ftdi_out_control_transfer:
-        DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]  
-        mov     ecx, [edi+input]
-        mov     ebx, [ecx] 
+        mov     ebx, [edi]
+        mov     cx, word[ebx + ftdi_context.index]
+        mov     word[ConfPacket+4], cx
+        xor     cx, cx
+        mov     word[ConfPacket+6], cx
+  .own_index:
+        mov    ebx, [edi]
+        DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]          
         lea     esi, [ConfPacket]
         lea     edi, [EventData]        
         stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0, 0, control_callback, edi, 0
@@ -269,99 +285,214 @@ endl
         mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
-        mov     word[ConfPacket+2], dx
-        mov     dword[ConfPacket+4], 0                                         
+        mov     word[ConfPacket+2], dx                                        
         jmp     .ftdi_out_control_transfer     
-        jmp     .endswitch
 
   .ftdi_setrtshigh:
         DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'                     
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_HIGH shl 16)
-        mov     dword[ConfPacket+4], 0
         jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
 
   .ftdi_setrtslow:
         DEBUGF 1,'K : FTDI Setting RTS pin LOW\n'             
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_LOW shl 16)
-        mov     dword[ConfPacket+4], 0
         jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
         
   .ftdi_setdtrhigh:
         DEBUGF 1,'K : FTDI Setting DTR pin HIGH\n'                     
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_HIGH shl 16)
-        mov     dword[ConfPacket+4], 0
         jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
 
   .ftdi_setdtrlow:
         DEBUGF 1,'K : FTDI Setting DTR pin LOW\n'             
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_LOW shl 16)
-        mov     dword[ConfPacket+4], 0
         jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
         
   .ftdi_usb_reset:
         DEBUGF 1,'K : FTDI Reseting\n'
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_SIO shl 16)
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
+        jmp     .ftdi_out_control_transfer
         
   .ftdi_purge_rx_buf:
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_PURGE_RX shl 16)
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
+        jmp     .ftdi_out_control_transfer
         
   .ftdi_purge_tx_buf:
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_PURGE_TX shl 16)
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
-        
+        jmp     .ftdi_out_control_transfer
+
+H_CLK = 120000000
+C_CLK = 48000000        
   .ftdi_set_baudrate:
-        ;!!!!!!!!!!!!!!!!!!!!
-        ;jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
+        mov     edi, [edi+input]
+        mov     ebx, [edi]
+        cmp     [ebx + ftdi_context.chipType], TYPE_2232H
+        jl      .c_clk        
+        imul    eax, [edi+4], 10
+        cmp     eax, H_CLK / 0x3FFF        
+        jle     .c_clk
+  .h_clk:       
+        cmp     dword[edi+4], H_CLK/10
+        jl      .h_nextbaud1
+        xor     edx, edx
+        mov     ecx, H_CLK/10
+        jmp     .calcend
         
+  .c_clk:
+        cmp     dword[edi+4], C_CLK/10
+        jl      .c_nextbaud1
+        xor     edx, edx
+        mov     ecx, C_CLK/10
+        jmp     .calcend  
+  
+  .h_nextbaud1:
+        cmp     dword[edi+4], H_CLK/(10 + 10/2)
+        jl      .h_nextbaud2
+        mov     edx, 1
+        mov     ecx, H_CLK/(10 + 10/2)
+        jmp     .calcend
+        
+  .c_nextbaud1:
+        cmp     dword[edi+4], C_CLK/(10 + 10/2)
+        jl      .c_nextbaud2
+        mov     edx, 1
+        mov     ecx, C_CLK/(10 + 10/2)
+        jmp     .calcend        
+        
+  .h_nextbaud2:      
+        cmp     dword[edi+4], H_CLK/(2*10)
+        jl      .h_nextbaud3
+        mov     edx, 2
+        mov     ecx, H_CLK/(2*10)
+        jmp     .calcend
+        
+  .c_nextbaud2:      
+        cmp     dword[edi+4], C_CLK/(2*10)
+        jl      .c_nextbaud3
+        mov     edx, 2
+        mov     ecx, C_CLK/(2*10)
+        jmp     .calcend        
+        
+  .h_nextbaud3:
+        mov     eax, H_CLK*16/10  ; eax - best_divisor
+        div     dword[edi+4]      ; [edi+4] - baudrate
+        push    eax
+        and     eax, 1
+        pop     eax
+        shr     eax, 1
+        jz      .h_rounddowndiv     ; jump by result of and eax, 1
+        inc     eax
+  .h_rounddowndiv:
+        cmp     eax, 0x20000
+        jle     .h_best_divok
+        mov     eax, 0x1FFFF
+  .h_best_divok:
+        mov     ecx, eax        
+        mov     eax, H_CLK*16/10
+        div     ecx
+        xchg    ecx, eax            ; ecx - best_baud
+        push    ecx
+        and     ecx, 1
+        pop     ecx
+        shr     ecx, 1
+        jz      .rounddownbaud
+        inc     ecx
+        jmp     .rounddownbaud
+        
+  .c_nextbaud3:
+        mov     eax, C_CLK*16/10  ; eax - best_divisor
+        div     dword[edi+4]      ; [edi+4] - baudrate
+        push    eax
+        and     eax, 1
+        pop     eax
+        shr     eax, 1
+        jz      .c_rounddowndiv     ; jump by result of and eax, 1
+        inc     eax
+  .c_rounddowndiv:
+        cmp     eax, 0x20000
+        jle     .c_best_divok
+        mov     eax, 0x1FFFF
+  .c_best_divok:
+        mov     ecx, eax        
+        mov     eax, C_CLK*16/10
+        div     ecx
+        xchg    ecx, eax            ; ecx - best_baud
+        push    ecx
+        and     ecx, 1
+        pop     ecx
+        shr     ecx, 1
+        jz      .rounddownbaud
+        inc     ecx
+        
+  .rounddownbaud:
+        mov     edx, eax            ; edx - encoded_divisor
+        shr     edx, 3
+        and     eax, 0x7
+        push    esp
+        push    7 6 5 1 4 2 3 0
+        mov     eax, [esp+eax*4]
+        shl     eax, 14
+        or      edx, eax
+        mov     esp, [esp+36]
+        
+  .calcend:
+        mov     eax, edx        ; eax - *value
+        mov     ecx, edx        ; ecx - *index
+        and     eax, 0xFFFF
+        cmp     [ebx + ftdi_context.chipType], TYPE_2232H
+        jge     .foxyindex        
+        shr     ecx, 16
+        jmp     .preparepacket
+  .foxyindex:
+        shr     ecx, 8
+        and     ecx, 0xFF00
+        or      ecx, [ebx + ftdi_context.index]
+        
+  .preparepacket:
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BAUDRATE_REQUEST shl 8)
+        mov     word[ConfPacket+2], ax
+        mov     word[ConfPacket+4], cx
+        mov     word[ConfPacket+6], 0
+        jmp     .own_index
+     
   .ftdi_set_line_property:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_DATA_REQUEST shl 8)
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_DATA_REQUEST shl 8)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
         mov     word[ConfPacket+2], dx
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch  
+        jmp     .ftdi_out_control_transfer
         
   .ftdi_set_latency_timer:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_LATENCY_TIMER_REQUEST shl 8)
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_LATENCY_TIMER_REQUEST shl 8)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
-        mov     word[ConfPacket+2], dx
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
+        mov     word[ConfPacket+2], dx        
+        jmp     .ftdi_out_control_transfer
         
   .ftdi_set_event_char:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_EVENT_CHAR_REQUEST shl 8)
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_EVENT_CHAR_REQUEST shl 8)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
         mov     word[ConfPacket+2], dx
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch
+        jmp     .ftdi_out_control_transfer
 
   .ftdi_set_error_char:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_ERROR_CHAR_REQUEST shl 8)
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_ERROR_CHAR_REQUEST shl 8)
         mov     edi, [edi+input]        
         mov     dx, word[edi+4]                
         mov     word[ConfPacket+2], dx
-        mov     dword[ConfPacket+4], 0
-        jmp     .ftdi_out_control_transfer         
-        jmp     .endswitch           
+        jmp     .ftdi_out_control_transfer 
         
+  .ftdi_setflowctrl:
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_FLOW_CTRL_REQUEST shl 8) + (0 shl 16)      
+        mov     edi, [edi+input]
+        mov     ebx, [edi]
+        mov     cx, word[edi+4]   
+        or      ecx, [ebx + ftdi_context.index]
+        mov     word[ConfPacket+4], cx
+        xor     cx, cx
+        mov     word[ConfPacket+6], cx
+        jmp     .own_index
 
   .ftdi_read_pins:
         DEBUGF 1,'K : FTDI Reading pins\n'
