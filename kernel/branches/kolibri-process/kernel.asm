@@ -685,7 +685,8 @@ no_mode_0x12:
 
         xchg    bx, bx
 
-        call    v86_init
+;        call    v86_init
+        call    init_sys_v86
 
         mov     esi, boot_inittimer
         call    boot_log
@@ -1008,7 +1009,6 @@ endg
 ; Load PS/2 mouse driver
 
         stdcall load_driver, szPS2MDriver
-;        stdcall load_driver, szCOM_MDriver
 
         mov     esi, boot_setmouse
         call    boot_log

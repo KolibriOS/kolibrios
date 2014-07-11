@@ -39,6 +39,7 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
 ;>          7 (31) = 0
 ;>          6 (30) = don't draw button
 ;>          5 (29) = don't draw button frame when pressed
+;>          4 (28) = don't draw button 3d frame
 ;> esi = button color
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; Undefine button:
@@ -86,9 +87,11 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         mov     ax, dx
         stosw               ; button id number: bits 0-15
         mov     eax, ebx
+        dec     eax
         rol     eax, 16
         stosd               ; x start | x size
         mov     eax, ecx
+        dec     eax
         rol     eax, 16
         stosd               ; y start | y size
         mov     eax, edx
@@ -100,114 +103,116 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         test    edx, 0x40000000
         jnz     .exit
 
-        ; draw button body
-
+        ; DRAW BODY -----------------------------
         pushad
-
-        ; calculate window-relative coordinates
-        movzx   edi, cx
-        shr     ebx, 16
-        shr     ecx, 16
-        mov     eax, [TASK_BASE]
-        add     ebx, [eax - twdw + WDATA.box.left]
-        add     ecx, [eax - twdw + WDATA.box.top]
-        mov     eax, ebx
-        shl     eax, 16
-        mov     ax, bx
-        add     ax, word[esp + 16]
-        mov     ebx, ecx
-        shl     ebx, 16
-        mov     bx, cx
-
-        ; calculate initial color
+        call    button._.button_calc_relativ
+        xor     edi, edi ; for __sys_draw_line
+        ; set color
         mov     ecx, esi
+        ; set coordinate
+        inc     edx
+        ; if gradient
         cmp     [buttontype], 0
-        je      @f
-        call    button._.incecx2
-
-        ; set button height counter
-    @@:
-        mov     edx, edi
-
-  .next_line:
+        je      .next_line
+        call    button._.incecx
+align 4
+.next_line:
         call    button._.button_dececx
-        push    edi
-        xor     edi, edi
-;        call    [draw_line]
         call    __sys_draw_line
-        pop     edi
         add     ebx, 0x00010001
         dec     edx
         jnz     .next_line
-
         popad
 
-        ; draw button frame
+        ; DRAW FRAME ----------------------------
+        pushad
+        call    button._.button_calc_relativ
+        mov     esi, common_colours
 
-        push    ebx ecx
+        mov     edi, dword [esi+104]
+        call    .top_border
+        mov     edi, dword [esi+104]
+        call    .bottom_border
+        mov     edi, dword [esi+104]
+        call    .right_border
+        mov     edi, dword [esi+104]
+        call    .left_border
+        popad
 
-        ; calculate window-relative coordinates
-        shr     ebx, 16
-        shr     ecx, 16
-        mov     eax, [TASK_BASE]
-        add     ebx, [eax - twdw + WDATA.box.left]
-        add     ecx, [eax - twdw + WDATA.box.top]
+        ; DRAW 3D SHADOW ------------------------
+        test    edx, 0x10000000
+        jnz     .exit
 
-        ; top border
-        mov     eax, ebx
-        shl     eax, 16
-        mov     ax, bx
-        add     ax, [esp + 4]
+        pushad
+        mov     edi, edx
+        call    button._.button_calc_relativ
+        ; get color address
+        mov     esi, common_colours
+        test    edi, 0x10000000
+        jnz     @f
+        add     eax, 0x10000
+        dec     eax
+        inc     ecx
+        dec     edx
+        dec     edx
+align 4
+@@:
+        mov     edi, dword [esi+12]
+        call    .top_border
+        mov     edi, dword [esi+8]
+        call    .bottom_border
+        mov     edi, dword [esi+8]
+        call    .right_border
+        mov     edi, dword [esi+12]
+        call    .left_border
+        popad
+        ret
+
+align 4
+.top_border:
         mov     ebx, ecx
         shl     ebx, 16
-        mov     bx, cx
-        push    ebx
+        mov     bx , cx
+        mov     ecx, edi
         xor     edi, edi
-        mov     ecx, esi
-        call    button._.incecx
-;        call    [draw_line]
         call    __sys_draw_line
+        ret
 
-        ; bottom border
-        movzx   edx, word[esp + 4 + 0]
-        add     ebx, edx
-        shl     edx, 16
-        add     ebx, edx
-        mov     ecx, esi
-        call    button._.dececx
-;        call    [draw_line]
+align 4
+.bottom_border:
+        add     bx , dx
+        rol     ebx, 16
+        add     bx , dx
+        mov     ecx, edi
+        xor     edi, edi
         call    __sys_draw_line
+        ret
 
-        ; left border
-        pop     ebx
-        push    edx
-        mov     edx, eax
-        shr     edx, 16
-        mov     ax, dx
-        mov     edx, ebx
-        shr     edx, 16
-        mov     bx, dx
-        add     bx, [esp + 4 + 0]
-        pop     edx
-        mov     ecx, esi
-        call    button._.incecx
-;        call    [draw_line]
+align 4
+.right_border:
+        push    eax
+        sub     bx, dx
+        mov     cx, ax
+        shl     eax, 16
+        mov     ax, cx
+        mov     ecx, edi
+        xor     edi, edi
         call    __sys_draw_line
+        pop     eax
+        ret
 
-        ; right border
-        mov     dx, [esp + 4]
-        add     ax, dx
-        shl     edx, 16
-        add     eax, edx
-        add     ebx, 0x00010000
-        mov     ecx, esi
-        call    button._.dececx
-;        call    [draw_line]
+align 4
+.left_border:
+        shr     eax, 16
+        mov     cx, ax
+        shl     eax, 16
+        mov     ax, cx
+        mov     ecx, edi
+        xor     edi, edi
         call    __sys_draw_line
-
-        pop     ecx ebx
-
-  .exit:
+        ret
+align 4
+.exit:
         ret
 
 ; FIXME: mutex needed
@@ -269,8 +274,10 @@ sys_button_activate_handler: ;/////////////////////////////////////////////////
         jz      .exit
 
         mov     ebx, dword[eax + SYS_BUTTON.id_hi - 2]
+        push    edi ; spam
+        xor     edi, edi
         call    button._.negative_button
-
+        pop     edi
   .exit:
         ret
 
@@ -289,8 +296,11 @@ sys_button_deactivate_handler: ;///////////////////////////////////////////////
         jz      .exit
 
         mov     ebx, dword[eax + SYS_BUTTON.id_hi - 2]
+        push    edi ; spam
+        xor     edi, edi
+        inc     edi
         call    button._.negative_button
-
+        pop     edi
   .exit:
         ret
 
@@ -374,69 +384,6 @@ button._.find_button: ;////////////////////////////////////////////////////////
         ret
 
 ;------------------------------------------------------------------------------
-button._.dececx: ;/////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        sub     cl, 0x20
-        jnc     @f
-        xor     cl, cl
-    @@:
-        sub     ch, 0x20
-        jnc     @f
-        xor     ch, ch
-    @@:
-        rol     ecx, 16
-        sub     cl, 0x20
-        jnc     @f
-        xor     cl, cl
-    @@:
-        rol     ecx, 16
-        ret
-
-;------------------------------------------------------------------------------
-button._.incecx: ;/////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        add     cl, 0x20
-        jnc     @f
-        or      cl, -1
-    @@:
-        add     ch, 0x20
-        jnc     @f
-        or      ch, -1
-    @@:
-        rol     ecx, 16
-        add     cl, 0x20
-        jnc     @f
-        or      cl, -1
-    @@:
-        rol     ecx, 16
-        ret
-
-;------------------------------------------------------------------------------
-button._.incecx2: ;////////////////////////////////////////////////////////////
-;------------------------------------------------------------------------------
-;? <description>
-;------------------------------------------------------------------------------
-        add     cl, 0x14
-        jnc     @f
-        or      cl, -1
-    @@:
-        add     ch, 0x14
-        jnc     @f
-        or      ch, -1
-    @@:
-        rol     ecx, 16
-        add     cl, 0x14
-        jnc     @f
-        or      cl, -1
-    @@:
-        rol     ecx, 16
-        ret
-
-;------------------------------------------------------------------------------
 button._.button_dececx: ;//////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
@@ -446,9 +393,9 @@ button._.button_dececx: ;//////////////////////////////////////////////////////
 
         push    eax
         mov     al, 1
-        cmp     edi, 20
-        jg      @f
-        mov     al, 2
+        ;cmp     edi, 20
+        ;jg      @f
+        ;mov     al, 2
 
     @@:
         sub     cl, al
@@ -470,18 +417,60 @@ button._.button_dececx: ;//////////////////////////////////////////////////////
 
   .finish:
         ret
+;------------------------------------------------------------------------------
+button._.incecx: ;////////////////////////////////////////////////////////////
+;------------------------------------------------------------------------------
+;? <description>
+;------------------------------------------------------------------------------
+        add     cl, 0x14
+        jnc     @f
+        or      cl, -1
+    @@:
+        add     ch, 0x14
+        jnc     @f
+        or      ch, -1
+    @@:
+        rol     ecx, 16
+        add     cl, 0x14
+        jnc     @f
+        or      cl, -1
+    @@:
+        rol     ecx, 16
+        ret
+;------------------------------------------------------------------------------
+button._.button_calc_relativ: ;
+;------------------------------------------------------------------------------
+;? <description>
+;------------------------------------------------------------------------------
+        movzx   edx, cx
+        dec     edx        ; get height
+        shr     ebx, 16
+        shr     ecx, 16
+        mov     eax, [TASK_BASE]
+        add     ebx, [eax - twdw + WDATA.box.left]
+        add     ecx, [eax - twdw + WDATA.box.top]
+        mov     eax, ebx
+        shl     eax, 16
+        mov     ax, bx
+        add     ax, word[esp + 20]
+        dec     eax
+        mov     bx, cx
+        shl     ebx, 16
+        mov     bx, cx
+        ret
 
 ;------------------------------------------------------------------------------
 button._.negative_button: ;////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? Invert system button border
+; edi - 0 activate, 1 - deactivate
 ;------------------------------------------------------------------------------
         ; if requested, do not display button border on press.
         test    ebx, 0x20000000
         jnz     .exit
 
         pushad
-
+        push    ebx
         xchg    esi, eax
 
         movzx   ecx, [esi + SYS_BUTTON.pslot]
@@ -499,10 +488,58 @@ button._.negative_button: ;////////////////////////////////////////////////////
         add     ax, cx
         add     bx, dx
 
+        xor     edx, edx
+        mov     dx, [esi + SYS_BUTTON.id_lo]
+
+        cmp     dx, 1
+        jne     .no_close
+        sub     eax, 0x00010001
+        dec     ebx
         mov     esi, 0x01000000
         call    draw_rectangle.forced
-
+        jmp     .fade
+align 4
+.no_close:
+        cmp     dx, 65535
+        jne     .no_mini
+        sub     eax, 0x00010001
+        dec     ebx
+        mov     esi, 0x01000000
+        call    draw_rectangle.forced
+        jmp     .fade
+align 4
+.no_mini:
+        add     eax, 0x00010000
+        add     ebx, 0x00010000
+        pop     edx
+        test    edx, 0x10000000
+        jnz     .only_frame
+        mov     edx, common_colours
+        mov     esi, dword [edx+12]
+        cmp     edi, 0
+        jne     .shadow
+        mov     esi, dword [edx+8]
+align 4
+.shadow:
+        call    draw_rectangle.forced
+align 4
+.only_frame:
+        mov     edx, common_colours
+        sub     eax, 0x00010000
+        sub     ebx, 0x00010000
+        mov     esi, dword [edx+104]
+        cmp     edi, 0
+        jne     .draw
+        mov     esi, dword [edx+112]
+align 4
+.draw:
+        call    draw_rectangle.forced
         popad
-
-  .exit:
+        ret
+align 4
+.fade:
+        pop     ebx
+        popad
+align 4
+.exit:
         ret

@@ -14,9 +14,7 @@ DEBUG_SHOW_IO = 0
 
 struct  V86_machine
 ; page directory
-        pagedir         dd ?
-; translation table: V86 address -> flat linear address
-        pages           dd ?
+        process         dd ?
 ; mutex to protect all data from writing by multiple threads at one time
         mutex           dd ?
 ; i/o permission map
@@ -38,91 +36,87 @@ v86_create:
         and     dword [eax+V86_machine.mutex], 0
 ; allocate tables
         mov     ebx, eax
-; We allocate 4 pages.
-; First is main page directory for V86 mode.
-; Second page:
-; first half (0x800 bytes) is page table for addresses 0 - 0x100000,
-; second half is for V86-to-linear translation.
-; Third and fourth are for I/O permission map.
-        push    8000h           ; blocks less than 8 pages are discontinuous
+
+        stdcall create_process, 4096, OS_BASE, 4096
+        test    eax, eax
+        jz      .fail2
+
+        mov     [eax+PROC.mem_used], 4096
+        mov     [ebx+V86_machine.process], eax
+
+        push    2000h
         call    kernel_alloc
         test    eax, eax
         jz      .fail2
-        mov     [ebx+V86_machine.pagedir], eax
-        push    edi eax
-        mov     edi, eax
-        add     eax, 1800h
-        mov     [ebx+V86_machine.pages], eax
+
+        mov     [ebx+V86_machine.iopm], eax
+
+
 ; initialize tables
-        mov     ecx, 2000h/4
-        xor     eax, eax
-        rep stosd
-        mov     [ebx+V86_machine.iopm], edi
-        dec     eax
-        mov     ecx, 2000h/4
-        rep stosd
-        pop     eax
-; page directory: first entry is page table...
+        push    edi
         mov     edi, eax
-        add     eax, 1000h
-        push    eax
-        call    get_pg_addr
-        or      al, PG_UW
-        stosd
-; ...and also copy system page tables
-; thx to Serge, system is located at high addresses
-        add     edi, (OS_BASE shr 20) - 4
-        push    esi
-        mov     esi, sys_proc+PROC.pdt_0+(OS_BASE shr 20)
-        mov     ecx, 0x80000000 shr 22
-        rep movsd
+        mov     eax, -1
+        mov     ecx, 2000h/4
+        rep stosd
 
-        mov     eax, [ebx+V86_machine.pagedir]   ;root dir also is
-        call    get_pg_addr                      ;used as page table
-        or      al, PG_SW
-        mov     [edi-4096+(page_tabs shr 20)], eax
+        mov     eax, [ebx+V86_machine.process]
+        mov     eax, [eax+PROC.pdt_0_phys]
 
-        pop     esi
+        pushfd
+        cli
+        mov     cr3, eax
+
+
 ; now V86 specific: initialize known addresses in first Mb
-        pop     eax
+
 ; first page - BIOS data (shared between all machines!)
 ; physical address = 0
 ; linear address = OS_BASE
-        mov     dword [eax], 111b
-        mov     dword [eax+800h], OS_BASE
 ; page before 0xA0000 - Extended BIOS Data Area (shared between all machines!)
 ; physical address = 0x9C000
 ; linear address = 0x8009C000
 ; (I have seen one computer with EBDA segment = 0x9D80,
 ; all other computers use less memory)
-        mov     ecx, 4
-        mov     edx, 0x9C000
-        push    eax
-        lea     edi, [eax+0x9C*4]
+
+        mov     eax, PG_UW
+        mov     [page_tabs], eax
+        invlpg  [eax]
+
+        mov     byte [0x500], 0xCD
+        mov     byte [0x501], 0x13
+        mov     byte [0x502], 0xF4
+        mov     byte [0x503], 0xCD
+        mov     byte [0x504], 0x10
+        mov     byte [0x505], 0xF4
+
+        mov     eax, 0x99000+PG_UW
+        mov     edi, page_tabs+0x99*4
+        mov     edx, 0x1000
+        mov     ecx, 7
 @@:
-        lea     eax, [edx + OS_BASE]
-        mov     [edi+800h], eax
-        lea     eax, [edx + 111b]
         stosd
-        add     edx, 0x1000
-        loop    @b
-        pop     eax
-        pop     edi
+        add     eax, edx
+        loop @b
+
 ; addresses 0xC0000 - 0xFFFFF - BIOS code (shared between all machines!)
 ; physical address = 0xC0000
-; linear address = 0x800C0000
-        mov     ecx, 0xC0
+
+        mov     eax, 0xC0000+PG_UW
+        mov     edi, page_tabs+0xC0*4
+        mov     edx, 0x1000
+        mov     ecx, 64
 @@:
-        mov     edx, ecx
-        shl     edx, 12
-        push    edx
-        or      edx, 111b
-        mov     [eax+ecx*4], edx
-        pop     edx
-        add     edx, OS_BASE
-        mov     [eax+ecx*4+0x800], edx
-        inc     cl
-        jnz     @b
+        stosd
+        add     eax, edx
+        loop @b
+
+        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
+
+        mov     cr3, eax
+        popfd
+
+        pop     edi
+
         mov     eax, ebx
         ret
 .fail2:
@@ -132,15 +126,16 @@ v86_create:
         xor     eax, eax
         ret
 
+;not used
 ; Destroy V86 machine
 ; in: eax = handle
 ; out: nothing
 ; destroys: eax, ebx, ecx, edx (due to free)
-v86_destroy:
-        push    eax
-        stdcall kernel_free, [eax+V86_machine.pagedir]
-        pop     eax
-        jmp     free
+;v86_destroy:
+;        push    eax
+;        stdcall kernel_free, [eax+V86_machine.pagedir]
+;        pop     eax
+;        jmp     free
 
 ; Translate V86-address to linear address
 ; in: eax=V86 address
@@ -150,28 +145,29 @@ v86_destroy:
 v86_get_lin_addr:
         push    ecx edx
         mov     ecx, eax
-        mov     edx, [esi+V86_machine.pages]
+        mov     edx, page_tabs
         shr     ecx, 12
         and     eax, 0xFFF
         add     eax, [edx+ecx*4]        ; atomic operation, no mutex needed
         pop     edx ecx
         ret
 
+;not used
 ; Sets linear address for V86-page
 ; in: eax=linear address (must be page-aligned)
 ;     ecx=V86 page (NOT address!)
 ;     esi=handle
 ; out: nothing
 ; destroys: nothing
-v86_set_page:
-        push    eax ebx
-        mov     ebx, [esi+V86_machine.pagedir]
-        mov     [ebx+ecx*4+0x1800], eax
-        call    get_pg_addr
-        or      al, 111b
-        mov     [ebx+ecx*4+0x1000], eax
-        pop     ebx eax
-        ret
+;v86_set_page:
+;        push    eax ebx
+;        mov     ebx, [esi+V86_machine.pagedir]
+;        mov     [ebx+ecx*4+0x1800], eax
+;        call    get_pg_addr
+;        or      al, 111b
+;        mov     [ebx+ecx*4+0x1000], eax
+;        pop     ebx eax
+;        ret
 
 ; Allocate memory in V86 machine
 ; in: eax=size (in bytes)
@@ -214,21 +210,7 @@ init_sys_v86:
         mov     [sys_v86_machine], eax
         test    eax, eax
         jz      .ret
-        mov     byte [OS_BASE + 0x500], 0xCD
-        mov     byte [OS_BASE + 0x501], 0x13
-        mov     byte [OS_BASE + 0x502], 0xF4
-        mov     byte [OS_BASE + 0x503], 0xCD
-        mov     byte [OS_BASE + 0x504], 0x10
-        mov     byte [OS_BASE + 0x505], 0xF4
         mov     esi, eax
-        mov     ebx, [eax+V86_machine.pagedir]
-; one page for stack, two pages for results (0x2000 bytes = 16 sectors)
-        mov     dword [ebx+0x99*4+0x1000], 0x99000 or 111b
-        mov     dword [ebx+0x99*4+0x1800], OS_BASE + 0x99000
-        mov     dword [ebx+0x9A*4+0x1000], 0x9A000 or 111b
-        mov     dword [ebx+0x9A*4+0x1800], OS_BASE + 0x9A000
-        mov     dword [ebx+0x9B*4+0x1000], 0x9B000 or 111b
-        mov     dword [ebx+0x9B*4+0x1800], OS_BASE + 0x9B000
 if ~DEBUG_SHOW_IO
 ; allow access to all ports
         mov     ecx, [esi+V86_machine.iopm]
@@ -272,6 +254,9 @@ ends
 ;     eax = 3 - IRQ is already hooked by another VM
 ; destroys: nothing
 v86_start:
+
+        xchg bx, bx
+
         pushad
 
         cli
@@ -296,12 +281,10 @@ v86_start:
         mov     [ecx+APPDATA.saved_esp0], esp
         mov     [tss._esp0], esp
 
-        mov     eax, [esi+V86_machine.pagedir]
-        call    get_pg_addr
+        mov     eax, [esi+V86_machine.process]
         mov     [ecx+APPDATA.process], eax
-;        mov     cr3, eax
-
-;        mov     [irq_tab+5*4], my05
+        mov     eax, [eax+PROC.pdt_0_phys]
+        mov     cr3, eax
 
 ; We do not enable interrupts, because V86 IRQ redirector assumes that
 ; machine is running
@@ -795,6 +778,7 @@ end if
         pop     ebx
         mov     dword [SLOT_BASE+ecx+APPDATA.io_map], ebx
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
+        mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
         sti
 
@@ -843,8 +827,7 @@ v86_irq:
         pop     eax
 v86_irq2:
         mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
-        mov     eax, [esi+V86_machine.pagedir]
-        call    get_pg_addr
+        mov     eax, [esi+V86_machine.process]
         mov     ecx, [CURRENT_TASK]
         shl     ecx, 8
         cmp     [SLOT_BASE+ecx+APPDATA.process], eax
@@ -895,6 +878,7 @@ v86_irq2:
         popad
         iretd
 .found:
+        mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
         mov     esi, [ebx+APPDATA.saved_esp0]
         sub     word [esi-sizeof.v86_regs+v86_regs.esp], 6

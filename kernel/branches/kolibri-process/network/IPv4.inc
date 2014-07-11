@@ -267,10 +267,9 @@ IPv4_input:                                                     ; TODO: add IPv4
         cmp     eax, 224
         je      .ip_ok
 
-        ; or a loopback address (127.0.0.0/8)
+        ; maybe we just dont have an IP yet and should accept everything on the IP level
 
-        and     eax, 0x00ffffff
-        cmp     eax, 127
+        cmp     [IP_LIST + edi], 0
         je      .ip_ok
 
         ; or it's just not meant for us.. :(

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -457,19 +457,40 @@ send_scancode:
         test    bl, bl
         jz      .exit.irq1
 
-        test    [kb_state], VKEY_NUMLOCK
-        jz      .dowrite
+        cmp     cl, 0xE0        ; extended keycode
+        jne     @f
+
+        cmp     ch, 53
+        jne     .dowrite
         
-        cmp     cl, 0xE0
-        jz      .dowrite
+        mov     bl, '/'
+        jmp     .dowrite
+@@:
         
         cmp     ch, 55
-        jnz     @f
+        jne     @f
         
-        mov     bl, 0x2A        ;*
+        mov     bl, '*'
         jmp     .dowrite
-;--------------------------------------
 @@:
+
+        cmp     ch, 74
+        jne     @f
+        
+        mov     bl, '-'
+        jmp     .dowrite
+@@:
+
+        cmp     ch, 78
+        jne     @f
+        
+        mov     bl, '+'
+        jmp     .dowrite
+@@:
+
+        test    [kb_state], VKEY_NUMLOCK
+        jz      .dowrite
+
         cmp     ch, 71
         jb      .dowrite
         
