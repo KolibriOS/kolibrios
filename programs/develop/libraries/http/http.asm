@@ -121,7 +121,60 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         ret
 
 
+;;================================================================================================;;
+proc HTTP_disconnect identifier ;/////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Stops the open connection                                                                      ;;
+;;------------------------------------------------------------------------------------------------;;
+;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
+;;------------------------------------------------------------------------------------------------;;
+;< none                                                                                           ;;
+;;================================================================================================;;
 
+        pusha
+        mov     ebp, [identifier]
+
+        test    [ebp + http_msg.flags], FLAG_CONNECTED
+        jz      .error
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
+
+        popa
+        ret
+
+  .error:
+        DEBUGF  1, "Cant close already closed connection!\n"
+        popa
+        ret
+
+endp
+
+
+;;================================================================================================;;
+proc HTTP_free identifier ;///////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Free the http_msg structure                                                                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
+;;------------------------------------------------------------------------------------------------;;
+;< none                                                                                           ;;
+;;================================================================================================;;
+        DEBUGF  1, "HTTP_free: 0x%x\n", [identifier]
+        pusha
+        mov     ebp, [identifier]
+
+        test    [ebp + http_msg.flags], FLAG_CONNECTED
+        jz      .not_connected
+        and     [ebp + http_msg.flags], not FLAG_CONNECTED
+        mcall   close, [ebp + http_msg.socket]
+
+  .not_connected:
+        invoke  mem.free, ebp
+
+        popa
+        ret
+
+endp
 
 ;;================================================================================================;;
 proc HTTP_get URL, add_header ;///////////////////////////////////////////////////////////////////;;
@@ -485,9 +538,9 @@ endp
 
 
 ;;================================================================================================;;
-proc HTTP_process identifier ;////////////////////////////////////////////////////////////////////;;
+proc HTTP_receive identifier ;////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Receive data from the server, parse headers and put data in receive buffer.                    ;;
+;? Receive data from the server, parse headers and put data in receive buffer(s).                 ;;
 ;? To complete a transfer, this procedure must be called over and over again untill it returns 0. ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
@@ -991,66 +1044,46 @@ recalculate_pointers:
 
 
 
-
 ;;================================================================================================;;
-proc HTTP_free identifier ;///////////////////////////////////////////////////////////////////////;;
+proc HTTP_send identifier, dataptr, datalength ;//////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? Free the http_msg structure                                                                    ;;
+;? Send data to the server                                                                        ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
+;> dataptr      = pointer to data to be sent.                                                     ;;
+;> datalength   = length of data (in bytes) to be sent                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< none                                                                                           ;;
+;< eax = number of bytes sent, -1 on error                                                        ;;
 ;;================================================================================================;;
-        DEBUGF  1, "HTTP_free: 0x%x\n", [identifier]
-        pusha
-        mov     ebp, [identifier]
 
-        test    [ebp + http_msg.flags], FLAG_CONNECTED
-        jz      .not_connected
+        push    ebx ecx edx esi edi
+        mov     edx, [identifier]
+        test    [edx + http_msg.flags], FLAG_CONNECTED
+        jz      .fail
+        mcall   send, [edx + http_msg.socket], [dataptr], [datalength], 0
+        pop     edi esi edx ecx ebx
+        ret
 
-        and     [ebp + http_msg.flags], not FLAG_CONNECTED
-        mcall   close, [ebp + http_msg.socket]
-
-  .not_connected:
-        invoke  mem.free, ebp
-
-        popa
+  .fail:
+        pop     edi esi edx ecx ebx
+        xor     eax, eax
+        dec     eax
         ret
 
 endp
-
-
-
-;;================================================================================================;;
-proc HTTP_stop identifier ;///////////////////////////////////////////////////////////////////////;;
-;;------------------------------------------------------------------------------------------------;;
-;? Stops the open connection                                                                      ;;
-;;------------------------------------------------------------------------------------------------;;
-;> identifier   = pointer to buffer containing http_msg struct.                                   ;;
-;;------------------------------------------------------------------------------------------------;;
-;< none                                                                                           ;;
-;;================================================================================================;;
-
-        pusha
-        mov     ebp, [identifier]
-
-        and     [ebp + http_msg.flags], not FLAG_CONNECTED
-        mcall   close, [ebp + http_msg.socket]
-
-        popa
-        ret
-
-endp
-
 
 
 ;;================================================================================================;;
 proc HTTP_find_header_field identifier, headername ;//////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Find a header field in the received HTTP header                                                ;;
+;?                                                                                                ;;
+;? NOTE: this function returns a pointer which points into the original header data.              ;;
+;? The header field is terminated by a CR, LF, space or maybe even tab.                           ;;
+;? A free operation should not be operated on this pointer!                                       ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;> identifier   = ptr to http_msg struct                                                          ;;
-;> headername   = ptr to ASCIIZ string containg field you want to find (must be in lowercase)     ;;
+;> headername   = ptr to ASCIIZ string containing field you want to find (must be in lowercase)   ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / ptr to content of the HTTP header field                                      ;;
 ;;================================================================================================;;
@@ -1690,6 +1723,9 @@ import  network,\
 ;;===========================================================================;;
 
 
+HTTP_stop = HTTP_disconnect
+HTTP_process = HTTP_receive
+
 align 4
 @EXPORT:
 export  \
@@ -1699,12 +1735,14 @@ export  \
         HTTP_head               , 'head'                , \
         HTTP_post               , 'post'                , \
         HTTP_find_header_field  , 'find_header_field'   , \
-        HTTP_process            , 'process'             , \
+        HTTP_process            , 'process'             , \    ; To be removed
+        HTTP_send               , 'send'                , \
+        HTTP_receive            , 'receive'             , \
+        HTTP_disconnect         , 'disconnect'          , \
         HTTP_free               , 'free'                , \
-        HTTP_stop               , 'stop'                , \
+        HTTP_stop               , 'stop'                , \    ; To be removed
         HTTP_escape             , 'escape'              , \
         HTTP_unescape           , 'unescape'
-
 ;        HTTP_put                , 'put'                 , \
 ;        HTTP_delete             , 'delete'              , \
 ;        HTTP_trace              , 'trace'               , \
