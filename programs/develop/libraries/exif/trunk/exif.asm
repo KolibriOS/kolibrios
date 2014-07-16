@@ -17,17 +17,18 @@ tag_format_ui1b  equ  1 ;unsigned integer 1 byte
 tag_format_text  equ  2 ;ascii string
 tag_format_ui2b  equ  3 ;unsigned integer 2 byte
 tag_format_ui4b  equ  4 ;unsigned integer 4 byte
-tag_format_ui8b  equ  5 ;unsigned integer 8 byte
+tag_format_urb   equ  5 ;unsigned integer 4/4 byte
 tag_format_si1b  equ  6 ;signed integer 1 byte
 tag_format_undef equ  7 ;undefined
 tag_format_si2b  equ  8 ;signed integer 2 byte
 tag_format_si4b  equ  9 ;signed integer 4 byte
-tag_format_si8b  equ 10 ;signed integer 8 byte
+tag_format_srb   equ 10 ;signed integer 4/4 byte
 tag_format_f4b	 equ 11 ;float 4 byte
 tag_format_f8b	 equ 12 ;float 8 byte
 
 align 4
 txt_dp db ': ',0
+txt_div db '/',0
 
 ;
 align 4
@@ -52,6 +53,36 @@ db 0x87,0x69,'Exif offset',0
 
 db 0x88,0x25,'GPS Info',0
 
+db 0xa4,0x01,'Custom rendered',0
+db 0xa4,0x02,'Exposure mode',0
+db 0xa4,0x03,'White balance',0
+db 0xa4,0x04,'Digital zoom ratio',0
+db 0xa4,0x05,'Focal length in 35mm format',0
+db 0xa4,0x06,'Scene capture type',0
+db 0xa4,0x07,'Gain control',0
+db 0xa4,0x08,'Contrast',0
+db 0xa4,0x09,'Saturation',0
+db 0xa4,0x0a,'Sharpness',0
+db 0xa4,0x0b,'Device setting description',0
+db 0xa4,0x0c,'Subject distance range',0
+db 0xa4,0x20,'Image unique ID',0
+db 0xa4,0x30,'Owner name',0
+db 0xa4,0x31,'Serial number',0
+db 0xa4,0x32,'Lens info',0
+db 0xa4,0x33,'Lens make',0
+db 0xa4,0x34,'Lens model',0
+db 0xa4,0x35,'Lens serial number',0
+db 0xa4,0x80,'GDAL metadata',0
+db 0xa4,0x81,'GDAL no data',0
+db 0xa5,0x00,'Gamma',0
+db 0xaf,0xc0,'Expand software',0
+db 0xaf,0xc1,'Expand lens',0
+db 0xaf,0xc2,'Expand film',0
+db 0xaf,0xc3,'Expand filterLens',0
+db 0xaf,0xc4,'Expand scanner',0
+db 0xaf,0xc5,'Expand flash lamp',0
+
+db 0xea,0x1c,'Padding',0
 dw 0
 
 
@@ -158,6 +189,12 @@ pushad
 	add esi,2
 	stdcall str_n_cat,edi,esi,[t_max]
 
+	jmp @f
+	.tag_unknown:
+		mov dword[edi],'???'
+		mov byte[edi+3],0
+	@@:
+
 	;читаем информацию в теге
 	mov bx,tag_format_text
 	bt edx,0
@@ -167,14 +204,7 @@ pushad
 	cmp word[eax+2],bx
 	jne .tag_02
 		stdcall str_n_cat,edi,txt_dp,[t_max]
-		;проверяем длинну строки
-		mov ebx,dword[eax+4]
-		bt edx,0
-		jnc @f
-			ror bx,8
-			ror ebx,16
-			ror bx,8
-		@@:
+		call get_tag_data_size ;проверяем длинну строки
 		cmp ebx,4
 		jg @f
 			;если строка помещается в 4 символа
@@ -194,24 +224,129 @@ pushad
 		add esi,offs_m_or_i
 		add esi,[app1]
 		stdcall str_n_cat,edi,esi,[t_max]
-		;;;jmp .end_f
+		jmp .end_f
 	.tag_02:
 
-	jmp .end_f
-	.tag_unknown:
-		mov dword[edi],'???'
-		mov byte[edi+3],0
+	mov bx,tag_format_ui2b
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+	cmp word[eax+2],bx
+	jne .tag_03
+		stdcall str_n_cat,edi,txt_dp,[t_max]
+		call get_tag_data_size
+		cmp ebx,1
+		jg .over4b_03
+			;если одно 2 байтовое число
+			movzx ebx,word[eax+8]
+			bt edx,0
+			jnc @f
+				ror bx,8
+			@@:
+			stdcall str_len,edi
+			add edi,eax
+			mov eax,ebx
+			call convert_int_to_str ;[t_max]
+		.over4b_03:
+			;...
+		jmp .end_f
+	.tag_03:
+
+	mov bx,tag_format_ui4b
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+	cmp word[eax+2],bx
+	jne .tag_04
+		stdcall str_n_cat,edi,txt_dp,[t_max]
+		call get_tag_data_size
+		cmp ebx,1
+		jg .over4b_04
+			;если одно 4 байтовое число
+			mov ebx,dword[eax+8]
+			bt edx,0
+			jnc @f
+				ror bx,8
+				ror ebx,16
+				ror bx,8
+			@@:
+			stdcall str_len,edi
+			add edi,eax
+			mov eax,ebx
+			call convert_int_to_str ;[t_max]
+		.over4b_04:
+			;...
+		jmp .end_f
+	.tag_04:
+
+	mov bx,tag_format_urb
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+	cmp word[eax+2],bx
+	jne .tag_05
+		stdcall str_n_cat,edi,txt_dp,[t_max]
+		;call get_tag_data_size
+		;cmp ebx,1
+		;jg .over4b_05
+			mov ebx,dword[eax+8]
+			bt edx,0
+			jnc @f
+				ror bx,8
+				ror ebx,16
+				ror bx,8
+			@@:
+			stdcall str_len,edi
+			add edi,eax
+			add ebx,offs_m_or_i
+			add ebx,[app1]
+			mov eax,[ebx]
+			bt edx,0
+			jnc @f
+				ror ax,8
+				ror eax,16
+				ror ax,8
+			@@:
+			call convert_int_to_str ;ставим 1-е число
+			stdcall str_n_cat,edi,txt_div,[t_max] ;ставим знак деления
+			stdcall str_len,edi
+			add edi,eax
+			mov eax,[ebx+4]
+			bt edx,0
+			jnc @f
+				ror ax,8
+				ror eax,16
+				ror ax,8
+			@@:
+			call convert_int_to_str ;ставим 2-е число
+		;.over4b_05:
+			;...
+		;jmp .end_f
+	.tag_05:
+
 	.end_f:
 popad
 	ret
 endp
 
+;input:
+; eax - tag pointer
+; edx - 1 if 'MM', 0 if 'II'
+;output:
+; ebx - data size
 align 4
-proc exif_get_image_160_120 uses edi, app1:dword
-	mov edi,[app1]
-
+get_tag_data_size:
+	mov ebx,dword[eax+4]
+	bt edx,0
+	jnc @f
+		ror bx,8
+		ror ebx,16
+		ror bx,8
+	@@:
 	ret
-endp
 
 align 4
 proc str_n_cat uses eax ecx edi esi, str1:dword, str2:dword, n:dword
@@ -241,13 +376,42 @@ proc str_len, str1:dword
 	ret
 endp
 
+;input:
+; eax = value
+; edi = string buffer
+;output:
+align 4
+convert_int_to_str:
+	pushad
+		mov dword[edi+1],0
+		mov dword[edi+5],0
+		call .str
+	popad
+	ret
+
+align 4
+.str:
+	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	jb @f
+		xor edx,edx  ;очистить edx
+		div ecx      ;разделить - остаток в edx
+		push edx     ;положить в стек
+		;dec edi             ;смещение необходимое для записи с конца строки
+		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+		pop eax
+	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	or al,0x30  ;данная команда короче  чем две выше
+	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
+	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+
+
+
 align 16
 EXPORTS:
 	dd sz_exif_get_app1, exif_get_app1
 	dd sz_exif_get_app1_tag, exif_get_app1_tag
-	;dd sz_exif_get_image_160_120, exif_get_image_160_120
 	dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
 	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
-	;sz_exif_get_image_160_120 db 'exif_get_image_160_120',0
-	
