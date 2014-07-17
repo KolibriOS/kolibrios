@@ -137,19 +137,19 @@ FASM_PROGRAMS:=\
  drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/vidintel.obj:DRIVERS/VIDINTEL.OBJ:$(KERNEL)/drivers/vidintel.asm \
- drivers/3c59x.obj:DRIVERS/3C59X.obj:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
- drivers/dec21x4x.obj:DRIVERS/DEC21X4X.obj:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
- drivers/forcedeth.obj:DRIVERS/FORCEDETH.obj:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
+ drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
+ drivers/dec21x4x.obj:DRIVERS/DEC21X4X.OBJ:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
+ drivers/forcedeth.sys:DRIVERS/FORCEDETH.SYS:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
  drivers/i8254x.sys:DRIVERS/I8254X.SYS:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
  drivers/i8255x.sys:DRIVERS/I8255X.SYS:$(REPOSITORY)/drivers/ethernet/i8255x.asm \
  drivers/mtd80x.sys:DRIVERS/MTD80X.SYS:$(REPOSITORY)/drivers/ethernet/mtd80x.asm \
  drivers/pcnet32.sys:DRIVERS/PCNET32.SYS:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \
  drivers/r6040.sys:DRIVERS/R6040.SYS:$(REPOSITORY)/drivers/ethernet/R6040.asm \
  drivers/rhine.sys:DRIVERS/RHINE.SYS:$(REPOSITORY)/drivers/ethernet/rhine.asm \
- drivers/rtl8029.obj:DRIVERS/RTL8029.obj:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
- drivers/rtl8139.obj:DRIVERS/RTL8139.obj:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
- drivers/rtl8169.obj:DRIVERS/RTL8169.obj:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
- drivers/sis900.obj:DRIVERS/SIS900.obj:$(REPOSITORY)/drivers/ethernet/sis900.asm \
+ drivers/rtl8029.obj:DRIVERS/RTL8029.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
+ drivers/rtl8139.obj:DRIVERS/RTL8139.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
+ drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
+ drivers/sis900.obj:DRIVERS/SIS900.OBJ:$(REPOSITORY)/drivers/ethernet/sis900.asm \
  drivers/uhci.sys:DRIVERS/UHCI.SYS:$(REPOSITORY)/drivers/usb/uhci.asm \
  drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
  drivers/ehci.sys:DRIVERS/EHCI.SYS:$(REPOSITORY)/drivers/usb/ehci.asm \
