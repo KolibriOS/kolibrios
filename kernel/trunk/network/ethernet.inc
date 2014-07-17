@@ -145,14 +145,14 @@ ETH_process_input:
         cmp     ax, ETHER_PROTO_ARP
         je      ARP_input
 
-        cmp     ax, ETHER_PROTO_IPv6
-        je      IPv6_input
+;        cmp     ax, ETHER_PROTO_IPv6
+;        je      IPv6_input
 
-        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
-        je      PPPoE_discovery_input
+;        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
+;        je      PPPoE_discovery_input
 
-        cmp     ax, ETHER_PROTO_PPP_SESSION
-        je      PPPoE_session_input
+;        cmp     ax, ETHER_PROTO_PPP_SESSION
+;        je      PPPoE_session_input
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: Unknown packet type=%x\n", ax
 
