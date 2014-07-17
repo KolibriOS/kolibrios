@@ -16,7 +16,7 @@ include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Просмотр информации Exif 15.07.14',0 ;подпись окна
+caption db 'Просмотр информации Exif 17.07.14',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -314,14 +314,29 @@ pushad
 	je .open_file
 
 	mov eax,1
-	mov ebx,2
+	mov ebx,1
 	.cycle_0:
 		stdcall [exif_get_app1_tag], [h_app1],eax,txt_buf,80
-		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,4,ebx,0xb0
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
 		inc eax
 		add ebx,10
 		cmp byte[txt_buf],0
 		jne .cycle_0
+
+	;считываем дочерние теги для 0x8769
+	stdcall [exif_get_app1_child], [h_app1],h_child,0x8769 ;0x8825
+	cmp dword[h_child],0
+	je @f
+
+	mov eax,1
+	sub ebx,5
+	.cycle_1:
+		stdcall [exif_get_app1_child_tag], [h_app1],[h_child],eax,txt_buf,80
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
+		inc eax
+		add ebx,10
+		cmp byte[txt_buf],0
+		jne .cycle_1
 
 	jmp @f
 	.open_file:
@@ -527,11 +542,15 @@ import_buf2d:
 
 align 4
 import_exif: ;описание экспортируемых функций
-	exif_get_app1 dd sz_des_encryption
-	exif_get_app1_tag dd sz_des_decryption
+	exif_get_app1 dd sz_exif_get_app1
+	exif_get_app1_tag dd sz_exif_get_app1_tag
+	exif_get_app1_child dd sz_exif_get_app1_child
+	exif_get_app1_child_tag dd sz_exif_get_app1_child_tag
 dd 0,0
-	sz_des_encryption db 'exif_get_app1',0
-	sz_des_decryption db 'exif_get_app1_tag',0
+	sz_exif_get_app1 db 'exif_get_app1',0
+	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
+	sz_exif_get_app1_child db 'exif_get_app1_child',0
+	sz_exif_get_app1_child_tag db 'exif_get_app1_child_tag',0
 	;exif_get_image_160_120
 
 sc system_colors 
@@ -558,7 +577,8 @@ buf_1:
 	dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
 
-h_app1 dd 0
+h_app1  dd 0 ;указатель на заголовок главных тегов
+h_child dd 0 ;указатель на заголовок дочерних тегов
 txt_openfile db 'Откройте файл изображения в формате *.jpg.',0
 txt_buf rb 80
 
