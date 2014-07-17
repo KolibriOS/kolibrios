@@ -58,7 +58,6 @@ TCP_input:
         ret
 
   .fail:
-        popf
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP incoming queue is full, discarding packet!\n"
 
         call    NET_ptr_to_num4
