@@ -146,7 +146,7 @@ FASM_PROGRAMS:=\
  drivers/pcnet32.sys:DRIVERS/PCNET32.SYS:$(REPOSITORY)/drivers/ethernet/pcnet32.asm \
  drivers/r6040.sys:DRIVERS/R6040.SYS:$(REPOSITORY)/drivers/ethernet/R6040.asm \
  drivers/rhine.sys:DRIVERS/RHINE.SYS:$(REPOSITORY)/drivers/ethernet/rhine.asm \
- drivers/rtl8029.obj:DRIVERS/RTL8029.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
+ drivers/rtl8029.sys:DRIVERS/RTL8029.SYS:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
  drivers/rtl8139.obj:DRIVERS/RTL8139.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
  drivers/sis900.obj:DRIVERS/SIS900.OBJ:$(REPOSITORY)/drivers/ethernet/sis900.asm \

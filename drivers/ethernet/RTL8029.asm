@@ -16,10 +16,12 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-format MS COFF
+format PE DLL native
+entry START
 
-        API_VERSION             = 0x01000100
-        DRIVER_VERSION          = 5
+        CURRENT_API             = 0x0200
+        COMPATIBLE_API          = 0x0100
+        API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
         MAX_DEVICES             = 16
 
@@ -27,41 +29,31 @@ format MS COFF
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2             ; 1 = verbose, 2 = errors only
 
+section '.flat' readable writable executable
+
 include '../struct.inc'
 include '../macros.inc'
 include '../proc32.inc'
-include '../imports.inc'
 include '../fdo.inc'
-include '../netdrv.inc'
+include '../netdrv_pe.inc'
 
-virtual at ebx
+struct  device          ETH_DEVICE
 
-        device:
+        io_addr         dd ?
+        irq_line        db ?
+        pci_bus         dd ?
+        pci_dev         dd ?
 
-        ETH_DEVICE
+        flags           db ?
+        vendor          db ?
 
-        .io_addr        dd ?
-        .irq_line       db ?
-        .pci_bus        dd ?
-        .pci_dev        dd ?
+        memsize         db ?
+        rx_start        db ?
+        tx_start        db ?
+        bmem            dd ?
+        rmem            dd ?
 
-        .flags          db ?
-        .vendor         db ?
-
-        .memsize        db ?
-        .rx_start       db ?
-        .tx_start       db ?
-        .bmem           dd ?
-        .rmem           dd ?
-
-        .size = $ - device
-
-end virtual
-
-
-public START
-public service_proc
-public version
+ends
 
         P0_COMMAND              = 0x00
         P0_PSTART               = 0x01
@@ -157,36 +149,35 @@ public version
 
 
 
-section '.flat' code readable align 16
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                        ;;
+;; proc START             ;;
+;;                        ;;
+;; (standard driver proc) ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; proc START
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+proc START c, reason:dword, cmdline:dword
 
-align 4
-proc START stdcall, state:dword
+        cmp     [reason], DRV_ENTRY
+        jne     .fail
 
-        cmp     [state], 1
-        jne     .exit
-  .entry:
-        DEBUGF  1, "Loading driver\n"
-        stdcall RegService, my_service, service_proc
+        DEBUGF  2,"Loading driver\n"
+        invoke  RegService, my_service, service_proc
         ret
+
   .fail:
-  .exit:
         xor     eax, eax
         ret
 
 endp
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; proc SERVICE_PROC
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                        ;;
+;; proc SERVICE_PROC      ;;
+;;                        ;;
+;; (standard driver proc) ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
 proc service_proc stdcall, ioctl:dword
@@ -240,9 +231,9 @@ proc service_proc stdcall, ioctl:dword
         mov     ax, [eax+1]                             ; get the pci bus and device numbers
   .nextdevice:
         mov     ebx, [esi]
-        cmp     al, byte[device.pci_bus]
+        cmp     al, byte[ebx + device.pci_bus]
         jne     @f
-        cmp     ah, byte[device.pci_dev]
+        cmp     ah, byte[ebx + device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
        @@:
         add     esi, 4
@@ -253,18 +244,19 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte[eax+1]
-        mov     [device.pci_bus], ecx
+        mov     [ebx + device.pci_bus], ecx
         movzx   ecx, byte[eax+2]
-        mov     [device.pci_dev], ecx
+        mov     [ebx + device.pci_dev], ecx
 
 ; Now, it's time to find the base io addres of the PCI device
 
-        PCI_find_io
+        stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
+        mov     [ebx + device.io_addr], eax
 
 ; We've found the io address, find IRQ now
 
-        PCI_find_irq
-
+        invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.interrupt_line
+        mov     [ebx + device.irq_line], al
         jmp     .hook
 
   .isa:
@@ -276,9 +268,9 @@ proc service_proc stdcall, ioctl:dword
         mov     al, [eax+3]
   .nextdevice_isa:
         mov     ebx, [esi]
-        cmp     edi, [device.io_addr]
+        cmp     edi, [ebx + device.io_addr]
         jne     .maybenext
-        cmp     al, [device.irq_line]
+        cmp     al, [ebx + device.irq_line]
         je      find_device_num
   .maybenext:
         add     esi, 4
@@ -291,25 +283,26 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         movzx   ecx, word[eax+1]
-        mov     [device.io_addr], ecx
+        mov     [ebx + device.io_addr], ecx
         mov     cl, [eax+3]
-        mov     [device.irq_line], cl
+        mov     [ebx + device.irq_line], cl
 
   .hook:
-
-        DEBUGF  1, "Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
-        [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
+        DEBUGF  1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
+        [ebx + device.pci_dev]:1,[ebx + device.pci_bus]:1,[ebx + device.irq_line]:1,[ebx + device.io_addr]:8
 
         call    probe                                                   ; this function will output in eax
         test    eax, eax
         jnz     .err                                                    ; If an error occured, exit
 
+        DEBUGF  2,"Initialised OK\n"
+
         mov     eax, [devices]
         mov     [device_list+4*eax], ebx
         inc     [devices]
 
-        mov     [device.type], NET_TYPE_ETH
-        call    NetRegDev
+        mov     [ebx + device.type], NET_TYPE_ETH
+        invoke  NetRegDev
 
         cmp     eax, -1
         jz      .err
@@ -320,7 +313,7 @@ proc service_proc stdcall, ioctl:dword
 
   .find_devicenum:
         DEBUGF  1, "Trying to find device number of already registered device\n"
-        call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
+        invoke  NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
         DEBUGF  1, "Kernel says: %u\n", eax
@@ -328,7 +321,7 @@ proc service_proc stdcall, ioctl:dword
 
   .err:
         DEBUGF  2, "Failed, removing device structure\n"
-        stdcall KernelFree, ebx
+        invoke  KernelFree, ebx
 
         jmp     .fail
 
@@ -347,12 +340,12 @@ create_new_struct:
         cmp     [devices], MAX_DEVICES
         jae     .fail
 
-        allocate_and_clear ebx, device.size, .fail      ; Allocate the buffer for device structure
+        allocate_and_clear ebx, sizeof.device, .fail    ; Allocate the buffer for device structure
 
-        mov     [device.reset], reset
-        mov     [device.transmit], transmit
-        mov     [device.unload], unload
-        mov     [device.name], my_service
+        mov     [ebx + device.reset], reset
+        mov     [ebx + device.transmit], transmit
+        mov     [ebx + device.unload], unload
+        mov     [ebx + device.name], my_service
 
         ret
 
@@ -365,9 +358,9 @@ find_device_num:
 
         DEBUGF  1, "Trying to find device number of already registered device\n"
         mov     ebx, eax
-        call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
-                                                                        ; into a device number in edi
-        mov     eax, edi                                                ; Application wants it in eax instead
+        invoke  NetPtrToNum                             ; This kernel procedure converts a pointer to device struct in ebx
+                                                        ; into a device number in edi
+        mov     eax, edi                                ; Application wants it in eax instead
         DEBUGF  1, "Kernel says: %u\n", eax
         ret
 
@@ -392,26 +385,26 @@ unload:   ; TODO
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 probe:
-        mov     [device.vendor], VENDOR_NONE
-        mov     [device.bmem], 0
+        mov     [ebx + device.vendor], VENDOR_NONE
+        mov     [ebx + device.bmem], 0
 
         DEBUGF  1, "Trying 16-bit mode\n"
 
-        mov     [device.flags], FLAG_16BIT + FLAG_PIO
-        mov     [device.memsize], MEM_32k
-        mov     [device.tx_start], 64
-        mov     [device.rx_start], TXBUF_SIZE + 64
+        mov     [ebx + device.flags], FLAG_16BIT + FLAG_PIO
+        mov     [ebx + device.memsize], MEM_32k
+        mov     [ebx + device.tx_start], 64
+        mov     [ebx + device.rx_start], TXBUF_SIZE + 64
 
-        set_io  0
-        set_io  P0_DCR
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], P0_DCR
         mov     al, DCR_WTS + DCR_FT1 + DCR_LS  ; word transfer select +
         out     dx, al
 
-        set_io  P0_PSTART
+        set_io  [ebx + device.io_addr], P0_PSTART
         mov     al, MEM_16k
         out     dx, al
 
-        set_io  P0_PSTOP
+        set_io  [ebx + device.io_addr], P0_PSTOP
         mov     al, MEM_32k
         out     dx, al
 
@@ -436,34 +429,34 @@ probe:
         DEBUGF  1, "16-bit mode failed\n"
         DEBUGF  1, "Trying 8-bit mode\n"
 
-        mov     [device.flags], FLAG_PIO
-        mov     [device.memsize], MEM_16k
-        mov     [device.tx_start], 32
-        mov     [device.rx_start], TXBUF_SIZE + 32
+        mov     [ebx + device.flags], FLAG_PIO
+        mov     [ebx + device.memsize], MEM_16k
+        mov     [ebx + device.tx_start], 32
+        mov     [ebx + device.rx_start], TXBUF_SIZE + 32
 
-        set_io  NE_ASIC + NE_RESET
+        set_io  [ebx + device.io_addr], NE_ASIC + NE_RESET
         in      al, dx
         out     dx, al
 
         in      al, 0x84
 
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_RD2 + CMD_STP
         out     dx, al
 
-        set_io  P0_RCR
+        set_io  [ebx + device.io_addr], P0_RCR
         mov     al, RCR_MON
         out     dx, al
 
-        set_io  P0_DCR
+        set_io  [ebx + device.io_addr], P0_DCR
         mov     al, DCR_FT1 + DCR_LS
         out     dx, al
 
-        set_io  P0_PSTART
+        set_io  [ebx + device.io_addr], P0_PSTART
         mov     al, MEM_8k
         out     dx, al
 
-        set_io  P0_PSTOP
+        set_io  [ebx + device.io_addr], P0_PSTOP
         mov     al, MEM_16k
         out     dx, al
 
@@ -494,31 +487,31 @@ ep_set_vendor:
 
         DEBUGF  1, "Mode ok\n"
 
-        cmp     [device.io_addr], ISA_MAX_ADDR
+        cmp     [ebx + device.io_addr], ISA_MAX_ADDR
         jbe     .isa
 
         DEBUGF  1, "Card is using PCI bus\n"
 
-        mov     [device.vendor], VENDOR_NOVELL  ;;; FIXME
+        mov     [ebx + device.vendor], VENDOR_NOVELL  ;;; FIXME
         jmp     ep_check_have_vendor
 
   .isa:
         DEBUGF  1, "Card is using ISA bus\n"
 
-        mov     [device.vendor], VENDOR_NOVELL
+        mov     [ebx + device.vendor], VENDOR_NOVELL
 
 ep_check_have_vendor:
 
 
-        mov     al, [device.vendor]
+        mov     al, [ebx + device.vendor]
         cmp     al, VENDOR_NONE
 ;        je      exit
 
         cmp     al, VENDOR_3COM
         je      reset
 
-        mov     eax, [device.bmem]
-        mov     [device.rmem], eax
+        mov     eax, [ebx + device.bmem]
+        mov     [ebx + device.rmem], eax
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -530,90 +523,90 @@ reset:
         DEBUGF  1, "Resetting device\n"
 
 ; attach int handler
-        movzx   eax, [device.irq_line]
+        movzx   eax, [ebx + device.irq_line]
         DEBUGF  1, "Attaching int handler to irq %x\n", eax:1
-        stdcall AttachIntHandler, eax, int_handler, dword 0
+        invoke  AttachIntHandler, eax, int_handler, ebx
         test    eax, eax
         jnz     @f
         DEBUGF  2, "Could not attach int handler!\n"
-;        or      eax, -1
-;        ret
+        or      eax, -1
+        ret
        @@:
 
 ; Stop card + DMA
-        set_io  0
-;        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], 0
+;        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS0 + CMD_RDMA_ABORT + CMD_STP
         out     dx, al
 
 ; initialize DCR
-        set_io  P0_DCR
+        set_io  [ebx + device.io_addr], P0_DCR
         mov     al, DCR_FT1 + DCR_LS
-        test    [device.flags], FLAG_16BIT
+        test    [ebx + device.flags], FLAG_16BIT
         jz      @f
         or      al, DCR_WTS                     ; word transfer select
       @@:
         out     dx, al
 
 ; clear remote bytes count
-        set_io  P0_RBCR0
+        set_io  [ebx + device.io_addr], P0_RBCR0
         xor     al, al
         out     dx, al
 
-        set_io  P0_RBCR1
+        set_io  [ebx + device.io_addr], P0_RBCR1
         out     dx, al
 
 ; initialize Receive configuration register (until all init is done)
-        set_io  P0_RCR
+        set_io  [ebx + device.io_addr], P0_RCR
         mov     al, 0x20        ; monitor mode
         out     dx, al
 
 ; transmit configuration register to monitor mode (until all ini is done)
-        set_io  P0_TCR
+        set_io  [ebx + device.io_addr], P0_TCR
         mov     al, 2           ; internal loopback
         out     dx, al
 
 ; clear interupt status
-        set_io  P0_ISR
+        set_io  [ebx + device.io_addr], P0_ISR
         mov     al, 0xff
         out     dx, al
 
 ; clear IRQ mask                        ;;;;; CHECKME ;;;;;
-        set_io  P0_IMR
+        set_io  [ebx + device.io_addr], P0_IMR
         xor     al, al
         out     dx, al
 
 ; set transmit pointer
-        set_io  P0_TPSR
-        mov     al, [device.tx_start]
+        set_io  [ebx + device.io_addr], P0_TPSR
+        mov     al, [ebx + device.tx_start]
         out     dx, al
 
 ; set pagestart pointer
-        set_io  P0_PSTART
-        mov     al, [device.rx_start]
+        set_io  [ebx + device.io_addr], P0_PSTART
+        mov     al, [ebx + device.rx_start]
         out     dx, al
 
 ; set pagestop pointer
-        set_io  P0_PSTOP
-        mov     al, [device.memsize]
+        set_io  [ebx + device.io_addr], P0_PSTOP
+        mov     al, [ebx + device.memsize]
         out     dx, al
 
 ; set boundary pointer
-        set_io  P0_BOUND
-        mov     al, [device.memsize]
+        set_io  [ebx + device.io_addr], P0_BOUND
+        mov     al, [ebx + device.memsize]
         dec     al
         out     dx, al
 
 ; set curr pointer
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS1 ;+ CMD_RD2 + CMD_STP ; page 1, stop mode
         out     dx, al
 
-        set_io  P1_CURR
-        mov     al, [device.rx_start]
+        set_io  [ebx + device.io_addr], P1_CURR
+        mov     al, [ebx + device.rx_start]
         out     dx, al
 
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS0 ;+ CMD_RD2 + CMD_STA ; go to page 0, start mode
         out     dx, al
 
@@ -621,7 +614,7 @@ reset:
         call    read_mac
         push    .macret
         sub     esp, 6
-        lea     esi, [device.mac]
+        lea     esi, [ebx + device.mac]
         mov     edi, esp
         movsd
         movsw
@@ -629,37 +622,37 @@ reset:
   .macret:
 
 ; set IRQ mask
-        set_io  0
-        set_io  P0_IMR
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], P0_IMR
         mov     al, IRQ_MASK
         out     dx, al
 
 ; start mode
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_STA
         out     dx, al
 
 ; clear transmit control register
-        set_io  P0_TCR
+        set_io  [ebx + device.io_addr], P0_TCR
         xor     al, al                  ; no loopback
         out     dx, al
 
 ; set receive control register ;;;;
-        set_io  P0_RCR
+        set_io  [ebx + device.io_addr], P0_RCR
         mov     al, 4                   ; accept broadcast
         out     dx, al
 
 ; clear packet/byte counters
         xor     eax, eax
-        lea     edi, [device.bytes_tx]
+        lea     edi, [ebx + device.bytes_tx]
         mov     ecx, 6
         rep     stosd
 
 ; Set the mtu, kernel will be able to send now
-        mov     [device.mtu], ETH_FRAME_LEN
+        mov     [ebx + device.mtu], ETH_FRAME_LEN
 
 ; Set link state to unknown
-        mov     [device.state], ETH_LINK_UNKOWN
+        mov     [ebx + device.state], ETH_LINK_UNKNOWN
 
 ; Indicate that we have successfully reset the card
         xor     eax, eax
@@ -675,64 +668,69 @@ reset:
 ; buffer in [esp+4], size in [esp+8], pointer to device struct in ebx
 ;***************************************************************************
 
-align 4
-transmit:
+proc transmit stdcall buffer_ptr, buffer_size
 
-        mov     esi, [esp + 4]
-        mov     ecx, [esp + 8]
-        DEBUGF  1, "Transmitting packet, buffer:%x, size:%u\n",esi, ecx
+        pushf
+        cli
+
+        mov     esi, [buffer_ptr]
+        mov     ecx, [buffer_size]
+        DEBUGF  1, "Transmitting packet, buffer:%x, size:%u\n", esi, ecx
         DEBUGF  1, "To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
         cmp     ecx, ETH_FRAME_LEN
-        ja      .err ; packet is too long
+        ja      .err            ; packet is too long
         cmp     ecx, ETH_ZLEN
-        jb      .err ; packet is too short
+        jb      .err            ; packet is too short
 
-        movzx   edi, [device.tx_start]
+        movzx   edi, [ebx + device.tx_start]
         shl     edi, 8
         push    cx
         call    PIO_write
         pop     cx
 
-        set_io  0
-;        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], 0
+;        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS0 + CMD_RD2 + CMD_STA
         out     dx, al
 
-        set_io  P0_TPSR
-        mov     al, [device.tx_start]
+        set_io  [ebx + device.io_addr], P0_TPSR
+        mov     al, [ebx + device.tx_start]
         out     dx, al
 
-        set_io  P0_TBCR0
+        set_io  [ebx + device.io_addr], P0_TBCR0
         mov     al, cl
         out     dx, al
 
-        set_io  P0_TBCR1
+        set_io  [ebx + device.io_addr], P0_TBCR1
         mov     al, ch
         out     dx, al
 
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS0 + CMD_TXP + CMD_RD2 + CMD_STA
         out     dx, al
 
         DEBUGF  1, "Packet Sent!\n"
 
-        inc     [device.packets_tx]
-        mov     eax, [esp + 8]                   ; Get packet size in eax
+        inc     [ebx + device.packets_tx]
+        mov     eax, [buffer_size]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
 
-        add     dword [device.bytes_tx], eax
-        adc     dword [device.bytes_tx + 4], 0
-
-        stdcall KernelFree, [esp+4]
+        invoke  KernelFree, [buffer_ptr]
+        popf
         xor     eax, eax
-        ret     8
+        ret
 
   .err:
         DEBUGF  2, "Transmit error!\n"
-        stdcall KernelFree, [esp+4]
+        invoke  KernelFree, [buffer_ptr]
+        popf
         or      eax, -1
-        ret     8
+        ret
+
+endp
 
 
 
@@ -746,7 +744,6 @@ align 4
 int_handler:
 
         push    ebx esi edi
-
         DEBUGF  1, "INT\n"
 
 ; find pointer of device wich made INT occur
@@ -758,12 +755,12 @@ int_handler:
   .nextdevice:
         mov     ebx, [esi]
 
-        set_io  0
-;        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], 0
+;        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS0
         out     dx, al
 
-        set_io  P0_ISR
+        set_io  [ebx + device.io_addr], P0_ISR
         in      al, dx
         test    al, al
         jnz     .got_it
@@ -778,174 +775,145 @@ int_handler:
         ret
 
   .got_it:
-
         DEBUGF  1, "Device=%x status=%x\n", ebx, eax:2
 
         push    ebx
-
+  .rx_loop:
         test    al, ISR_PRX     ; packet received ok ?
         jz      .no_rx
-
-        test    [device.flags], FLAG_PIO
+        test    [ebx + device.flags], FLAG_PIO
         jz      .no_rx          ; FIXME: Only PIO mode supported for now
 
-;
-
-        pushd   .no_rx
-
 ; allocate a buffer
-
-        stdcall KernelAlloc, ETH_FRAME_LEN
+        invoke  KernelAlloc, ETH_FRAME_LEN
         test    eax, eax
-        jz      .fail_2
-        pushd   0
+        jz      .rx_fail_2
+
+; Push return address and packet ptr to stack
+        pushd   .no_rx
+        pushd   0               ; Reserve some space for the packet size
         push    eax
 
 ; read offset for current packet from device
-
-        set_io  0
-        set_io  P0_BOUND        ; boundary ptr is offset to next packet we need to read.
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], P0_BOUND        ; boundary ptr is offset to next packet we need to read.
         in      al, dx
         inc     al
-
-        cmp     al, [device.memsize]
+        cmp     al, [ebx + device.memsize]
         jb      @f
-        mov     al, [device.rx_start]
+        mov     al, [ebx + device.rx_start]
        @@:
         mov     ch, al
 
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_PS1
         out     dx, al
-
-        set_io  P1_CURR
-        in      al, dx          ; get current page in cl
+        set_io  [ebx + device.io_addr], P1_CURR
+        in      al, dx                          ; get current page in cl
         mov     cl, al
 
-        set_io  P1_COMMAND
+        set_io  [ebx + device.io_addr], P1_COMMAND
         mov     al, CMD_PS0
         out     dx, al
 
-        cmp     cl, [device.memsize]
+        cmp     cl, [ebx + device.memsize]
         jb      @f
-        mov     cl, [device.rx_start]
+        mov     cl, [ebx + device.rx_start]
        @@:
 
         cmp     cl, ch
-        je      .fail
-
+        je      .rx_fail
         movzx   esi, ch                         ; we are using 256 byte pages
         shl     esi, 8                          ; esi now holds the offset for current packet
 
-; Get packet header in eax
-
-        sub     esp, 4                          ; reserve 4 bytes on stack to put packet header in
+; Get packet header in ecx
+        push    ecx                             ; reserve 4 bytes on stack to put packet header in
         mov     edi, esp
         mov     cx, 4
         call    PIO_read
-
-        mov     ecx, [esp]                      ; ecx now contains packet header
+        mov     ecx, [esp]
 
 ; check if packet is ok
-
         test    ecx, RSTAT_PRX
-        jz      .fail_3
+        jz      .rx_fail_3
 
 ; calculate packet length in ecx
-
         shr     ecx, 16
         sub     ecx, 4                          ; CRC doesnt count as data byte
-        mov     [esp + 4 + 4], ecx
+        mov     [esp + 8], ecx
 
 ; check if packet size is ok
-
         cmp     ecx, ETH_ZLEN
-        jb      .fail_3
+        jb      .rx_fail_3
         cmp     ecx, ETH_FRAME_LEN
-        ja      .fail_3
+        ja      .rx_fail_3
 
 ; update stats
-
         DEBUGF  1, "Received %u bytes\n", ecx
-
-        add     dword[device.bytes_rx], ecx
-        adc     dword[device.bytes_rx + 4], 0
-        inc     [device.packets_rx]
+        add     dword[ebx + device.bytes_rx], ecx
+        adc     dword[ebx + device.bytes_rx + 4], 0
+        inc     [ebx + device.packets_rx]
 
 ; update read and write pointers
-
         add     esi, 4
         mov     edi, [esp + 4]
 
 ; now check if we can read all data at once (if we cross the end boundary, we need to wrap back to the beginning)
-
         xor     eax, eax
-        mov     ah, [device.memsize]
+        mov     ah, [ebx + device.memsize]
         sub     eax, esi
         cmp     ecx, eax                ; eax = number of bytes till end of buffer, ecx = bytes we need to read
         jbe     .no_wrap
 
 ; Read first part
-
         sub     ecx, eax
         push    ecx
         mov     ecx, eax
-
         call    PIO_read                ; Read the data
 
-; update pointers
-
+; update pointers for second read
         add     edi, ecx
         pop     ecx
-
-        movzx   esi, [device.rx_start]
+        movzx   esi, [ebx + device.rx_start]
         shl     esi, 8
 
 ; now read second part (or only part)
-
   .no_wrap:
         call    PIO_read                ; Read the data
 
 ; update boundary pointer
-
         pop     eax
         mov     al, ah
-        cmp     al, [device.rx_start]
+        cmp     al, [ebx + device.rx_start]
         jne     @f
-        mov     al, [device.memsize]
+        mov     al, [ebx + device.memsize]
        @@:
-
-        set_io  0
-        set_io  P0_BOUND
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], P0_BOUND
         dec     al
         out     dx, al
 
 ; now send the data to the kernel
+        jmp     [Eth_input]
 
-        jmp     Eth_input
-
-  .fail_3:
+  .rx_fail_3:
         add     esp, 4
-  .fail:
-        add     esp, 8
-  .fail_2:
-
-
+  .rx_fail:
+        add     esp, 12
+  .rx_fail_2:
+        DEBUGF  2, "Error on receive\n"
   .no_rx:
         pop     ebx
         DEBUGF  1, "done\n"
 
-        set_io  0
-        set_io  P0_ISR
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], P0_ISR
         mov     al, 0xff
         out     dx, al
 
         pop     edi esi ebx
 
         ret
-
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -959,11 +927,11 @@ write_mac:      ; in: mac on stack (6 bytes)
 
         DEBUGF  1, "Writing MAC\n"
 
-        set_io  0
+        set_io  [ebx + device.io_addr], 0
         mov     al, CMD_PS1; + CMD_RD2 + CMD_STP
         out     dx, al
 
-        set_io  P1_PAR0
+        set_io  [ebx + device.io_addr], P1_PAR0
         mov     esi, esp
         mov     cx, 6
  @@:
@@ -994,18 +962,17 @@ read_mac:
 
         mov     esi, esp
         add     esp, 16
-        lea     edi, [device.mac]
+        lea     edi, [ebx + device.mac]
         mov     ecx, 6
   .loop:
         movsb
-        test    [device.flags], FLAG_16BIT
+        test    [ebx + device.flags], FLAG_16BIT
         jz      .8bit
         inc     esi
   .8bit:
         loop    .loop
-
         DEBUGF  1, "MAC=%x-%x-%x-%x-%x-%x\n",\
-        [device.mac]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
+        [ebx + device.mac]:2,[ebx + device.mac+1]:2,[ebx + device.mac+2]:2,[ebx + device.mac+3]:2,[ebx + device.mac+4]:2,[ebx + device.mac+5]:2
 
         ret
 
@@ -1024,76 +991,61 @@ PIO_read:
 
         DEBUGF  1, "PIO Read from %x to %x, %u bytes ", si, edi, cx
 
-; start DMA
-        set_io  0
-;        set_io  P0_COMMAND
+; stop DMA + start
+        set_io  [ebx + device.io_addr], 0
+;        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_RD2 + CMD_STA
         out     dx, al
 
-; set length of data we're interested in
-        set_io  P0_RBCR0
-        mov     al, cl
+; Request confirmation of end of DMA transfer
+        set_io  [ebx + device.io_addr], P0_ISR
+        mov     al, ISR_RDC
         out     dx, al
 
-        set_io  P0_RBCR1
+; set length of data we're interested in
+        set_io  [ebx + device.io_addr], P0_RBCR0
+        mov     al, cl
+        out     dx, al
+        set_io  [ebx + device.io_addr], P0_RBCR1
         mov     al, ch
         out     dx, al
 
 ; set offset of what we want to read
-        set_io  P0_RSAR0
+        set_io  [ebx + device.io_addr], P0_RSAR0
         mov     ax, si
         out     dx, al
-
-        set_io  P0_RSAR1
+        set_io  [ebx + device.io_addr], P0_RSAR1
         shr     ax, 8
         out     dx, al
 
 ; start DMA read
-        set_io  P0_COMMAND
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_RD0 + CMD_STA
         out     dx, al
 
-        set_io  NE_ASIC
-
-        test    [device.flags], FLAG_16BIT
+        set_io  [ebx + device.io_addr], NE_ASIC
+        test    [ebx + device.flags], FLAG_16BIT
         jz      .8bits
-
         DEBUGF  1, "(16-bit mode)\n"
-
         shr     cx, 1   ; note that if the number was odd, carry flag will be set
         pushf
-
   .16bits:
         in      ax, dx
         stosw
         loopw   .16bits
-
-        inc     cx
         popf
-        jnc     .done
-        jmp     .8bits_
+        jnc     wait_dma_done
+        in      al, dx
+        stosb
+        jmp     wait_dma_done
 
   .8bits:
         DEBUGF  1, "(8-bit mode)\n"
-
   .8bits_:
         in      al, dx
         stosb
         loopw   .8bits_
-
-
-  .done:
-;        set_io  0
-;        set_io  P0_ISR
-;
-;  .dmawait:                             ; Wait for Remote DMA Complete
-;        in      al, dx
-;        test    al, ISR_RDC
-;        jz      .dmawait
-;        and     al, not ISR_RDC
-;        out     dx, al                  ; clear the bit
-
-        ret
+        jmp     wait_dma_done
 
 
 
@@ -1112,69 +1064,72 @@ PIO_write:
 
         DEBUGF  1, "Eth PIO Write from %x to %x, %u bytes ", esi, di, cx
 
-        set_io  0
-;        set_io  P0_COMMAND
+; Stop DMA + start
+        set_io  [ebx + device.io_addr], 0
+;        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_RD2 + CMD_STA
         out     dx, al
 
-        set_io  P0_ISR
+; Request confirmation of end of DMA transfer
+        set_io  [ebx + device.io_addr], P0_ISR
         mov     al, ISR_RDC
         out     dx, al
 
-        set_io  P0_RBCR0
+; Program number of bytes we want to write
+        set_io  [ebx + device.io_addr], P0_RBCR0
         mov     al, cl
         out     dx, al
-
-        set_io  P0_RBCR1
+        set_io  [ebx + device.io_addr], P0_RBCR1
         mov     al, ch
         out     dx, al
 
+; Program where we want to write
         mov     ax, di
-        set_io  P0_RSAR0
+        set_io  [ebx + device.io_addr], P0_RSAR0
         out     dx, al
         shr     ax, 8
-        set_io  P0_RSAR1
+        set_io  [ebx + device.io_addr], P0_RSAR1
         out     dx, al
 
-        set_io  P0_COMMAND
+; Set the DMA to write
+        set_io  [ebx + device.io_addr], P0_COMMAND
         mov     al, CMD_RD1 + CMD_STA
         out     dx, al
 
-        set_io  NE_ASIC
-        test    [device.flags], FLAG_16BIT
+        set_io  [ebx + device.io_addr], NE_ASIC
+        test    [ebx + device.flags], FLAG_16BIT
         jz      .8_bit
-
         DEBUGF  1, "(16-bit mode)\n"
-
         shr     cx, 1   ; note that if the number was odd, carry flag will be set
         pushf           ; save the flags for later
-
   .16bit:
         lodsw
         out     dx, ax
         loopw   .16bit
-
         popf
-        jnc     .done
-        inc     cx
-        jmp     .8_bit_
+        jnc     wait_dma_done
+        lodsb
+        out     dx, al
+        jmp     wait_dma_done
 
   .8_bit:
-
         DEBUGF  1, "(8-bit mode)\n"
-
   .8_bit_:
         lodsb
         out     dx, al
         loopw   .8_bit_
+        jmp     wait_dma_done
 
-  .done:
-;        set_io  0
-;        set_io  P0_ISR
-;  .dmawait:                             ; Wait for Remote DMA Complete
-;        in      al, dx
-;        test    al, ISR_RDC
-;        jz      .dmawait
+
+
+wait_dma_done:
+
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], P0_ISR
+  .dmawait:
+        in      al, dx
+        test    al, ISR_RDC             ; Remote DMA Complete
+        jz      .dmawait
 ;        and     al, not ISR_RDC
 ;        out     dx, al                  ; clear the bit
 
@@ -1182,25 +1137,27 @@ PIO_write:
 
 
 
-; place all initialized data here
+; End of code
+
+
+data fixups
+end data
+
+include '../peimport.inc'
+
+my_service      db 'RTL8029', 0                 ; max 16 chars include zero
+
+;sz_8029         db 'Realtek 8029', 0
+;sz_8019         db 'Realtek 8019', 0
+;sz_8019as       db 'Realtek 8019AS', 0
+;sz_ne2k         db 'ne2000', 0
+;sz_dp8390       db 'DP8390', 0
+
+include_debug_strings                           ; All data wich FDO uses will be included here
+
 align 4
-
-devices         dd 0
-version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
-my_service      db 'RTL8029',0          ; max 16 chars include zero
-
-;device_1        db 'Realtek 8029',0
-;device_2        db 'Realtek 8019',0
-;device_3        db 'Realtek 8019AS',0
-;device_4        db 'ne2000',0
-;device_5        db 'DP8390',0
-
-include_debug_strings
-
-section '.data' data readable writable align 16
-; place all uninitialized data here
-
-device_list     rd MAX_DEVICES
+devices       dd 0
+device_list   rd MAX_DEVICES                    ; This list contains all pointers to device structures the driver is handling
 
 
 
