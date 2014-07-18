@@ -107,20 +107,20 @@ include '../netdrv_pe.inc'
 
 ; Control and Status Register (CSR0)
 
-        CSR_INIT                = 1 shl 0
-        CSR_START               = 1 shl 1
-        CSR_STOP                = 1 shl 2
-        CSR_TX                  = 1 shl 3
-        CSR_TXON                = 1 shl 4
-        CSR_RXON                = 1 shl 5
-        CSR_INTEN               = 1 shl 6
-        CSR_INTR                = 1 shl 7
-        CSR_IDONE               = 1 shl 8
-        CSR_TINT                = 1 shl 9
-        CSR_RINT                = 1 shl 10
-        CSR_MERR                = 1 shl 11
-        CSR_MISS                = 1 shl 12
-        CSR_CERR                = 1 shl 13
+        CSR_INIT                = 0x0001 ;1 shl 0
+        CSR_START               = 0x0002 ;1 shl 1
+        CSR_STOP                = 0x0004 ;1 shl 2
+        CSR_TX                  = 0x0008 ;1 shl 3
+        CSR_TXON                = 0x0010 ;1 shl 4
+        CSR_RXON                = 0x0020 ;1 shl 5
+        CSR_INTEN               = 0x0040 ;1 shl 6
+        CSR_INTR                = 0x0080 ;1 shl 7
+        CSR_IDONE               = 0x0100 ;1 shl 8
+        CSR_TINT                = 0x0200 ;1 shl 9
+        CSR_RINT                = 0x0400 ;1 shl 10
+        CSR_MERR                = 0x0800 ;1 shl 11
+        CSR_MISS                = 0x1000 ;1 shl 12
+        CSR_CERR                = 0x2000 ;1 shl 13
 
 ; Interrupt masks and deferral control (CSR3)
 
@@ -135,7 +135,8 @@ include '../netdrv_pe.inc'
         IMR_MERR                = 0x0800
         IMR_MISS                = 0x1000
 
-        IMR                     = IMR_IDONE ; IMR_TINT + IMR_RINT + IMR_MERR + IMR_MISS ;+ IMR_IDONE
+        ; Masked interrupts will be disabled.
+        IMR                     = 0 ;IMR_IDONE ;or IMR_TINT or IMR_RINT or IMR_MERR or IMR_MISS
 
 ; Test and features control (CSR4)
 
@@ -1075,7 +1076,8 @@ int_handler:
         call    [ebx + device.read_csr]         ; get IRQ reason
         call    [ebx + device.write_csr]        ; write it back to ACK
         pop     ecx
-        and     ax, CSR_RINT or CSR_TINT
+;;;        and     ax, CSR_RINT or CSR_TINT
+        test    ax, ax
         jnz     .got_it
   .continue:
         add     esi, 4
@@ -1088,7 +1090,7 @@ int_handler:
         ret
 
   .got_it:
-        DEBUGF  1,"Device: %x status: %x\n", ebx, eax:4
+        DEBUGF  2,"Device: %x status: %x\n", ebx, eax:4
 
         push    ax
         test    ax, CSR_RINT
@@ -1513,7 +1515,7 @@ check_media:
         call    [ebx + device.read_bcr]
         cmp     eax, 0xc0
 
-        DEBUGF  1, "link status=0x%x\n", ax
+        DEBUGF  2, "link status=0x%x\n", ax
 
         ret
 
