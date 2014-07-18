@@ -149,7 +149,7 @@ FASM_PROGRAMS:=\
  drivers/rtl8029.sys:DRIVERS/RTL8029.SYS:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
  drivers/rtl8139.obj:DRIVERS/RTL8139.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
- drivers/sis900.obj:DRIVERS/SIS900.OBJ:$(REPOSITORY)/drivers/ethernet/sis900.asm \
+ drivers/sis900.sys:DRIVERS/SIS900.SYS:$(REPOSITORY)/drivers/ethernet/sis900.asm \
  drivers/uhci.sys:DRIVERS/UHCI.SYS:$(REPOSITORY)/drivers/usb/uhci.asm \
  drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
  drivers/ehci.sys:DRIVERS/EHCI.SYS:$(REPOSITORY)/drivers/usb/ehci.asm \
