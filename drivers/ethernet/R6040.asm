@@ -221,7 +221,7 @@ proc START c, reason:dword, cmdline:dword
         cmp     [reason], DRV_ENTRY
         jne     .fail
 
-        DEBUGF  1,"Loading driver\n"
+        DEBUGF  2,"Loading driver\n"
         invoke  RegService, my_service, service_proc
         ret
 
@@ -333,6 +333,8 @@ proc service_proc stdcall, ioctl:dword
         call    probe                                                   ; this function will output in eax
         test    eax, eax
         jnz     .err2
+
+        DEBUGF  2,"Initialised OK\n"
 
         mov     [ebx + device.type], NET_TYPE_ETH
         invoke  NetRegDev
