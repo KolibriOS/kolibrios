@@ -1,0 +1,132 @@
+<html>
+<head>
+<title>библиотека для получения информации из формата Exif</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<style>
+body
+{
+  font-size: 15px;
+  font-family: "Bookman Old Style";
+  color: black;
+  text-align: justify;
+}
+h1 { color: green; font-size: 23px; }
+h2 { color: green; font-size: 21px; }
+h3 { color: green; font-size: 19px; }
+h4 { color: #803f00; font-size: 17px; }
+i { color: #0099cc; }
+b { color: #0099cc; }
+p {
+  text-indent: 1em;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+ol, ul, dl{
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+pre
+{
+  padding: 2px;
+  padding-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  margin-right: 0px;
+  font-family: "Courier New";
+  font-size: 15px;
+  color: #004000;
+  background-color: #ffd0ff;
+}
+table { font-size: 15px; }
+</style>
+</head>
+
+<body>
+
+<h1>Оглавление</h1>
+<ul>
+<li>Вступление</li>
+<li><a href="#fun">Функции</a></li>
+<ul>
+<li><a href="#f_1">exif_get_app1</a></li>
+<li><a href="#f_2">exif_get_app1_tag</a></li>
+<li><a href="#f_3">exif_get_app1_child</a></li>
+
+</ul>
+</li>
+<li><a href="#const">Константы для функции exif_get_app1_child</a></li>
+<li><a href="#tabl_e">Таблица экспорта</a></li>
+<li><a href="#hist">История</a></li>
+</ul>
+
+<h1>Вступление</h1>
+<p>Документация к свободной библиотеке <b>exif.obj</b>, для <b>ОС Колибри</b>.
+ Эта библиотека создана для просмотра информации находящейся в изображениях в формате Exif. Информация эта создается цифровыми фотокамерами и содержит разные параметры например такие как: название фирмы производителя, модель камеры, и т.д.</p>
+
+<p>Последнее обновление библиотеки 18.07.14.</p>
+
+<h1><a name="fun">Функции</a></h1>
+
+<p>Функции работают с указателями на структуры app1 или на app1_child. Пример структуры:</p>
+<pre>align 4
+h_app1:
+	dd 0 ;+0 указатель на количество тегов и на сами теги
+	dd 0 ;+4 смещение добавляемое к указателям в тегах
+	dd 0 ;+8 параметр, отвечающий за порядок следования байтов</pre>
+
+<h4><a name="f_1">exif_get_app1</a></h4>
+<p>Эта функция ищет начало Exif данных. Если они найдены то заполняется структура app1. Если не найдены, то первый параметр в структуре делается равным 0. Пример:</p>
+<pre>stdcall [exif_get_app1], [open_file],h_app1
+...
+h_app1 dd 0,0,0</pre>
+<p>где open_file - указатель на данные файла изображения (пока поддерживаются только *.jpg и *.jpeg).</p>
+<p>h_app1 - структура для запоминания начала Exif данных.</p>
+
+<h4><a name="f_2">exif_get_app1_tag</a></h4>
+<p>Заполняет текстовую строку именем параметра из Exif и его значением. Пример:</p>
+<pre>stdcall [exif_get_app1_tag], h_app1,3,txt_buf,80
+...
+h_app1 dd 0,0,0
+txt_buf rb 80</pre>
+<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_app1_child.</p>
+<p>3 - порядковый номер параметра.</p>
+<p>txt_buf - текстовый буфер для заполнения.</p>
+<p>80 - максимальная длина текста.</p>
+
+<h4><a name="f_3">exif_get_app1_child</a></h4>
+<p>Есть простые теги с информацией а есть теги указывающие на списки других тегов. Эта функция берет указатель на начало списка дочерних тегов. Пример:</p>
+<pre>stdcall [exif_get_app1_child], h_app1,h_child,0x8769
+...
+h_app1  dd 0,0,0
+h_child dd 0,0,0</pre>
+<p>где h_app1 - структура заполенная в exif_get_app1 или в exif_get_app1_child.</p>
+<p>h_child - структура для заполения данных списка дочерних тегов.</p>
+<p>0x8769 - код тега (находящегося в списке тегов h_app1), который является указателем на список других дочерних тегов.</p>
+<p>В даном примере функция берет тег 0x8769 и пытается найти его в списке h_app1, если находит то заполняет по нему значения в структуре h_child. Далее к списку h_child можно применять функцию exif_get_app1_tag для взятия значения этих тегов. С помощью этой функции мы как бы переходим внутрь некой &quot;папки&quot; с тегами, которые сразу достать не можем.</p>
+
+<h1><a name="const">Константы для функции exif_get_app1_child</a></h1>
+<p>Здесь приведены некоторые константы, которые могут использоватся как 3-й параметр для функции exif_get_app1_child. Эти константы обозначают специальные теги, которые содержат смещение на дочерние параметры, которые находятся в Exif.</p>
+<h4>0x8769</h4>
+<p>Обозначает дополнительные параметры Exif.</p>
+<h4>0x8825</h4>
+<p>Обозначает параметры GPS.</p>
+
+<h1><a name="tabl_e">Таблица экспорта</a></h1>
+<p>Пример таблицы экспорта, расчитанной на использование макроса <b>@use_library_mem</b>:</p>
+<pre>align 4
+import_exif:
+	exif_get_app1 dd sz_exif_get_app1
+	exif_get_app1_tag dd sz_exif_get_app1_tag
+	exif_get_app1_child dd sz_exif_get_app1_child
+dd 0,0
+	sz_exif_get_app1 db 'exif_get_app1',0
+	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
+	sz_exif_get_app1_child db 'exif_get_app1_child',0</pre>
+
+<h1><a name="hist">История</a></h1>
+<p>15.07.14 - первая версия библиотеки, пример использования.</p>
+</body>
+</html>

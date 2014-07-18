@@ -9,10 +9,8 @@ include '../../../../proc32.inc'
 
 ;---------
 offs_m_or_i    equ 8 ;смещение параметра 'MM' или 'II' (Motorola, Intel)
-offs_tag_count equ 16 ;смещение количества тегов
-offs_tag_0     equ 18 ;смещение 0-го тега
+offs_tag_0     equ 2 ;смещение 0-го тега
 tag_size       equ 12 ;размер структуры тега
-offs_tag_child_0 equ 2 ;смещение 0-го дочернего тега
 ;форматы данных
 tag_format_ui1b  equ  1 ;unsigned integer 1 byte
 tag_format_text  equ  2 ;ascii string
@@ -466,7 +464,9 @@ db 0xfe,0x56,'Sharpness',0
 db 0xfe,0x57,'Smoothness',0
 db 0xfe,0x58,'Moire filter',0
 
-dw 0
+db 0x00,0x00,'GPS version ID',0
+
+dd 0
 
 ;input:
 ; bof - указатель на начало файла
@@ -496,8 +496,16 @@ proc exif_get_app1 uses eax ebx edi, bof:dword, app1:dword
 	cmp word[eax],0xe1ff
 	jne .no_exif
 
-	add eax,2
+	xor ebx,ebx
+	cmp word[eax+10],'II'
+	je @f
+		inc ebx ;if 'MM' edx=1
+	@@:
+	mov [edi+offs_m_or_i],ebx
+	add eax,18
 	mov [edi],eax
+	sub eax,8
+	mov [edi+4],eax
 
 	jmp @f
 	.no_exif:
@@ -520,130 +528,15 @@ pushad
 
 	xor edx,edx
 	mov byte[edi],dl
-	cmp eax,edx
+	cmp [eax],edx
 	je .end_f ;если не найден указатель на начало exif.app1
 	cmp ecx,edx
 	jle .end_f ;если порядковый номер тега <= 0
 
-	cmp word[eax+offs_m_or_i],'II'
-	je @f
-		inc edx ;if 'MM' edx=1
-	@@:
+	movzx edx,word[eax+offs_m_or_i] ;if 'MM' edx=1
 
 	;проверяем число тегов
-	movzx ebx,word[eax+offs_tag_count]
-	bt edx,0
-	jnc @f
-		ror bx,8
-	@@:
-	cmp ecx,ebx
-	jg .end_f ;если номер тега больше чем их есть в файле
-
-	;переходим на заданный тег
-	dec ecx
-	imul ecx,tag_size
-	add eax,offs_tag_0
-	add eax,ecx
-
-	stdcall read_tag_value,[app1],[t_max]
-
-	.end_f:
-popad
-	ret
-endp
-
-;input:
-; app1 - указатель на exif.app1
-; child - указатель для заполнения начала дочерних тегов exif.app1.child
-; c_tag - тег для которого делается поиск дочерних
-;output:
-; child - указатель на начало дочерних тегов
-align 4
-proc exif_get_app1_child, app1:dword, child:dword , c_tag:dword
-pushad
-	mov eax,[app1]
-	mov edi,[child]
-
-	xor edx,edx
-	mov dword[edi],edx
-	cmp eax,edx
-	je .end_f ;если не найден указатель на начало exif.app1
-
-	cmp word[eax+offs_m_or_i],'II'
-	je @f
-		inc edx ;if 'MM' edx=1
-	@@:
-
-	;начало поиска
-	mov ebx,[c_tag]
-	bt edx,0
-	jnc @f
-		ror bx,8
-	@@:
-
-	;проверяем число тегов
-	movzx ecx,word[eax+offs_tag_count]
-	bt edx,0
-	jnc @f
-		ror cx,8
-	@@:
-	cmp ecx,1
-	jl .end_f ;если число тегов <1
-
-	;переходим на 1-й тег
-	add eax,offs_tag_0
-	@@:
-		cmp word[eax],bx
-		je @f
-		add eax,tag_size
-		loop @b
-	jmp .end_f ;если не найдено
-	@@: ;если найдено
-		mov ebx,dword[eax+8]
-		bt edx,0
-		jnc @f
-			ror bx,8
-			ror ebx,16
-			ror bx,8
-		@@:
-		add ebx,[app1]
-		add ebx,offs_m_or_i
-		mov dword[edi],ebx
-	.end_f:
-popad
-	ret
-endp
-
-;input:
-; app1 - указатель на начало exif.app1
-; child - указатель на начало дочерних тегов exif.app1.child
-; num - порядковый номер тега (начинается с 1)
-; txt - указатель на текст, куда будет записано значение
-; t_max - максимальный размер текста
-align 4
-proc exif_get_app1_child_tag, app1:dword, child:dword, num:dword, txt:dword, t_max:dword
-pushad
-	mov eax,[app1]
-	mov edi,[txt]
-	mov ecx,[num]
-
-	xor edx,edx
-	mov byte[edi],dl
-	cmp eax,edx
-	je .end_f ;если не найден указатель на начало exif.app1
-	cmp ecx,edx
-	jle .end_f ;если порядковый номер тега <= 0
-
-	cmp word[eax+offs_m_or_i],'II'
-	je @f
-		inc edx ;if 'MM' edx=1
-	@@:
-
-	mov eax,[child]
-	cmp eax,0
-	je .end_f ;если не найден указатель на начало exif.app1.child
-	
-	;проверяем число тегов
+	mov eax,[eax]
 	movzx ebx,word[eax]
 	bt edx,0
 	jnc @f
@@ -655,11 +548,76 @@ pushad
 	;переходим на заданный тег
 	dec ecx
 	imul ecx,tag_size
-	add eax,offs_tag_child_0
+	add eax,offs_tag_0
 	add eax,ecx
 
 	stdcall read_tag_value,[app1],[t_max]
 
+	.end_f:
+popad
+	ret
+endp
+
+;input:
+; app1 - указатель на exif.app1 или на exif.app1.child
+; child - указатель для заполнения начала дочерних тегов exif.app1.child
+; c_tag - тег для которого делается поиск дочерних
+;output:
+; child - указатель на начало дочерних тегов
+align 4
+proc exif_get_app1_child, app1:dword, child:dword , c_tag:dword
+pushad
+	mov eax,[app1]
+	mov edi,[child]
+
+	xor edx,edx
+	cmp [eax],edx
+	je .no_found ;если не найден указатель на начало exif.app1
+
+	movzx edx,word[eax+offs_m_or_i] ;if 'MM' edx=1
+
+	;начало поиска
+	mov ebx,[c_tag]
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+
+	;проверяем число тегов
+	mov eax,[eax]
+	movzx ecx,word[eax]
+	bt edx,0
+	jnc @f
+		ror cx,8
+	@@:
+	cmp ecx,1
+	jl .no_found ;если число тегов <1
+
+	;переходим на 1-й тег
+	add eax,offs_tag_0
+	@@:
+		cmp word[eax],bx
+		je @f
+		add eax,tag_size
+		loop @b
+	jmp .no_found ;если не найдено
+	@@: ;если найдено
+		mov ebx,dword[eax+8]
+		bt edx,0
+		jnc @f
+			ror bx,8
+			ror ebx,16
+			ror bx,8
+		@@:
+		mov eax,[app1]
+		add ebx,[eax+4]
+		mov dword[edi],ebx
+		m2m dword[edi+4],dword[eax+4]
+		mov dword[edi+offs_m_or_i],edx
+
+	jmp .end_f
+	.no_found:
+		mov dword[edi],0
 	.end_f:
 popad
 	ret
@@ -677,7 +635,11 @@ proc read_tag_value, app1:dword, t_max:dword
 	.next_tag:
 	mov bx,word[esi]
 	cmp bx,0
-	je .tag_unknown ;тег не опознан
+	jne @f
+		cmp dword[esi],0
+		jne @f
+		jmp .tag_unknown ;тег не опознан
+	@@:
 	bt edx,0
 	jc @f
 		ror bx,8
@@ -729,8 +691,9 @@ proc read_tag_value, app1:dword, t_max:dword
 			ror esi,16
 			ror si,8
 		@@:
-		add esi,offs_m_or_i
-		add esi,[app1]
+		mov eax,[app1]
+		mov eax,[eax+4]
+		add esi,eax
 		stdcall str_n_cat,edi,esi,[t_max]
 		jmp .end_f
 	.tag_02:
@@ -809,8 +772,9 @@ proc read_tag_value, app1:dword, t_max:dword
 			@@:
 			stdcall str_len,edi
 			add edi,eax
-			add ebx,offs_m_or_i
-			add ebx,[app1]
+			mov eax,[app1]
+			mov eax,[eax+4]
+			add ebx,eax
 			mov eax,[ebx]
 			bt edx,0
 			jnc @f
@@ -832,8 +796,76 @@ proc read_tag_value, app1:dword, t_max:dword
 			call convert_int_to_str ;ставим 2-е число
 		;.over4b_05:
 			;...
-		;jmp .end_f
+		jmp .end_f
 	.tag_05:
+
+	mov bx,tag_format_si2b
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+	cmp word[eax+2],bx
+	jne .tag_08
+		stdcall str_n_cat,edi,txt_dp,[t_max]
+		call get_tag_data_size
+		cmp ebx,1
+		jg .over4b_08
+			;если одно 2 байтовое число
+			movzx ebx,word[eax+8]
+			bt edx,0
+			jnc @f
+				ror bx,8
+			@@:
+			stdcall str_len,edi
+			add edi,eax
+			bt bx,15
+			jnc @f
+				mov byte[edi],'-'
+				inc edi
+				neg bx
+				inc bx
+			@@:
+			mov eax,ebx
+			call convert_int_to_str ;[t_max]
+		.over4b_08:
+			;...
+		jmp .end_f
+	.tag_08:
+
+	mov bx,tag_format_si4b
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+	cmp word[eax+2],bx
+	jne .tag_09
+		stdcall str_n_cat,edi,txt_dp,[t_max]
+		call get_tag_data_size
+		cmp ebx,1
+		jg .over4b_09
+			;если одно 4 байтовое число
+			mov ebx,dword[eax+8]
+			bt edx,0
+			jnc @f
+				ror bx,8
+				ror ebx,16
+				ror bx,8
+			@@:
+			stdcall str_len,edi
+			add edi,eax
+			bt ebx,31
+			jnc @f
+				mov byte[edi],'-'
+				inc edi
+				neg ebx
+				inc ebx
+			@@:
+			mov eax,ebx
+			call convert_int_to_str ;[t_max]
+		.over4b_09:
+			;...
+		jmp .end_f
+	.tag_09:
 
 	.end_f:
 	ret
@@ -920,9 +952,7 @@ EXPORTS:
 	dd sz_exif_get_app1, exif_get_app1
 	dd sz_exif_get_app1_tag, exif_get_app1_tag
 	dd sz_exif_get_app1_child, exif_get_app1_child
-	dd sz_exif_get_app1_child_tag, exif_get_app1_child_tag
 	dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
 	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
 	sz_exif_get_app1_child db 'exif_get_app1_child',0
-	sz_exif_get_app1_child_tag db 'exif_get_app1_child_tag',0

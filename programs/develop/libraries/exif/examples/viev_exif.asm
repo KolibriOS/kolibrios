@@ -16,7 +16,7 @@ include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Просмотр информации Exif 17.07.14',0 ;подпись окна
+caption db 'Просмотр информации Exif 18.07.14',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -33,7 +33,7 @@ image_data dd 0 ;указатель на временную память. для нужен преобразования изображ
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*5
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*6
 image_data_toolbar dd 0
 
 IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
@@ -137,9 +137,9 @@ pushad
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	xor eax,eax
 	mov ebx,(20 shl 16)+480
-	mov ecx,(20 shl 16)+410
+	mov ecx,(20 shl 16)+540
 	mov edx,[sc.work]
-	or  edx,(3 shl 24)+0x10000000+0x20000000
+	or  edx,(3 shl 24)+0x30000000
 	mov edi,caption
 	int 0x40
 
@@ -167,6 +167,10 @@ pushad
 	mov edx,7
 	int 0x40
 
+	mov ebx,(135 shl 16)+20
+	mov edx,8
+	int 0x40
+
 	; *** рисование иконок на кнопках ***
 	mov eax,7
 	mov ebx,[image_data_toolbar]
@@ -187,6 +191,9 @@ pushad
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;
 	int 0x40
+	;add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	;add edx,(25 shl 16) ;
+	;int 0x40
 
 	; *** рисование буфера ***
 	stdcall [buf2d_draw], buf_0
@@ -228,6 +235,10 @@ button:
 	jne @f
 		call but_2
 	@@:
+	cmp ah,8
+	jne @f
+		call but_3
+	@@:
 	cmp ah,1
 	jne still
 .exit:
@@ -241,7 +252,7 @@ button:
 align 4
 but_new_file:
 	mov dword[open_file_size],0
-	call draw_file
+	call draw_file_1
 	ret
 
 align 4
@@ -301,13 +312,13 @@ but_open_file:
 	stdcall [exif_get_app1], [open_file],h_app1
 	mcall 71,1,openfile_path
 
-	call draw_file
+	call draw_file_1
 	.end_open_file:
 	popad
 	ret
 
 align 4
-draw_file:
+draw_file_1:
 pushad
 	stdcall [buf2d_clear], buf_0, [buf_0.color]
 	cmp dword[open_file_size],0
@@ -316,7 +327,7 @@ pushad
 	mov eax,1
 	mov ebx,1
 	.cycle_0:
-		stdcall [exif_get_app1_tag], [h_app1],eax,txt_buf,80
+		stdcall [exif_get_app1_tag], h_app1,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
 		inc eax
 		add ebx,10
@@ -324,14 +335,14 @@ pushad
 		jne .cycle_0
 
 	;считываем дочерние теги для 0x8769
-	stdcall [exif_get_app1_child], [h_app1],h_child,0x8769 ;0x8825
+	stdcall [exif_get_app1_child], h_app1,h_child,0x8769
 	cmp dword[h_child],0
-	je @f
+	je .no_found_child
 
 	mov eax,1
 	sub ebx,5
 	.cycle_1:
-		stdcall [exif_get_app1_child_tag], [h_app1],[h_child],eax,txt_buf,80
+		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
 		inc eax
 		add ebx,10
@@ -339,6 +350,99 @@ pushad
 		jne .cycle_1
 
 	jmp @f
+	.no_found_child:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_nochild,3,ebx,0xb000
+		jmp @f
+	.open_file:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_openfile,3,3,0xb000
+	@@:
+	stdcall [buf2d_draw], buf_0
+popad
+	ret
+
+align 4
+draw_file_2:
+pushad
+	stdcall [buf2d_clear], buf_0, [buf_0.color]
+	cmp dword[open_file_size],0
+	je .open_file
+
+	mov eax,1
+	mov ebx,1
+	.cycle_0:
+		stdcall [exif_get_app1_tag], h_app1,eax,txt_buf,80
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
+		inc eax
+		add ebx,10
+		cmp byte[txt_buf],0
+		jne .cycle_0
+
+	;считываем дочерние теги для 0x8825
+	stdcall [exif_get_app1_child], h_app1,h_child,0x8825
+	cmp dword[h_child],0
+	je .no_found_child
+
+	mov eax,1
+	sub ebx,5
+	.cycle_1:
+		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
+		inc eax
+		add ebx,10
+		cmp byte[txt_buf],0
+		jne .cycle_1
+
+	jmp @f
+	.no_found_child:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_nochild,3,ebx,0xb000
+		jmp @f
+	.open_file:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_openfile,3,3,0xb000
+	@@:
+	stdcall [buf2d_draw], buf_0
+popad
+	ret
+
+align 4
+draw_file_3:
+pushad
+	stdcall [buf2d_clear], buf_0, [buf_0.color]
+	cmp dword[open_file_size],0
+	je .open_file
+
+	mov eax,1
+	mov ebx,1
+	.cycle_0:
+		stdcall [exif_get_app1_tag], h_app1,eax,txt_buf,80
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb0
+		inc eax
+		add ebx,10
+		cmp byte[txt_buf],0
+		jne .cycle_0
+
+	;считываем дочерние теги для 0x8769
+	stdcall [exif_get_app1_child], h_app1,h_child,0x8769
+	cmp dword[h_child],0
+	je .no_found_child
+	;считываем дочерние теги для 0xa005
+	stdcall [exif_get_app1_child], h_child,h_child,0xa005
+	cmp dword[h_child],0
+	je .no_found_child
+
+	mov eax,1
+	sub ebx,5
+	.cycle_1:
+		stdcall [exif_get_app1_tag], h_child,eax,txt_buf,80
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_buf,3,ebx,0xb00000
+		inc eax
+		add ebx,10
+		cmp byte[txt_buf],0
+		jne .cycle_1
+
+	jmp @f
+	.no_found_child:
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_nochild,3,ebx,0xb000
+		jmp @f
 	.open_file:
 		stdcall [buf2d_draw_text], buf_0, buf_1,txt_openfile,3,3,0xb000
 	@@:
@@ -378,14 +482,17 @@ but_save_file:
 
 align 4
 but_1:
-	stdcall [exif_get_app1_tag], [h_app1],1,txt_buf,80
-	notify_window_run txt_buf	
+	call draw_file_1 ;основная информация
 	ret
 
 align 4
 but_2:
-	stdcall [exif_get_app1_tag], [h_app1],2,txt_buf,80
-	notify_window_run txt_buf
+	call draw_file_2 ;информация по GPS
+	ret
+
+align 4
+but_3:
+	call draw_file_3 ;еще какая-то информация ...
 	ret
 
 ;данные для диалога открытия файлов
@@ -545,12 +652,10 @@ import_exif: ;описание экспортируемых функций
 	exif_get_app1 dd sz_exif_get_app1
 	exif_get_app1_tag dd sz_exif_get_app1_tag
 	exif_get_app1_child dd sz_exif_get_app1_child
-	exif_get_app1_child_tag dd sz_exif_get_app1_child_tag
 dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
 	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
 	sz_exif_get_app1_child db 'exif_get_app1_child',0
-	sz_exif_get_app1_child_tag db 'exif_get_app1_child_tag',0
 	;exif_get_image_160_120
 
 sc system_colors 
@@ -563,7 +668,7 @@ buf_0: dd 0 ;указатель на буфер изображения
 	dw 5 ;+4 left
 	dw 31 ;+6 top
 .w: dd 456 ;+8 w
-.h: dd 350 ;+12 h
+.h: dd 480 ;+12 h
 .color: dd 0xffffd0 ;+16 color
 	db 24 ;+20 bit in pixel
 
@@ -577,9 +682,10 @@ buf_1:
 	dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
 
-h_app1  dd 0 ;указатель на заголовок главных тегов
-h_child dd 0 ;указатель на заголовок дочерних тегов
+h_app1  dd 0,0,0 ;структура для заголовка главных тегов
+h_child dd 0,0,0 ;структура для заголовка дочерних тегов
 txt_openfile db 'Откройте файл изображения в формате *.jpg.',0
+txt_nochild  db 'Информация по этой кнопке не найдена.',0
 txt_buf rb 80
 
 i_end:
