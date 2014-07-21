@@ -8,8 +8,9 @@ include '../../../../proc32.inc'
 
 
 ;---------
-offs_m_or_i    equ 8 ;смещение параметра 'MM' или 'II' (Motorola, Intel)
-offs_tag_0     equ 2 ;смещение 0-го тега
+offs_m_or_i    equ  8 ;смещение параметра 'MM' или 'II' (Motorola, Intel)
+offs_id_gr     equ 10 ;смещение id group
+offs_tag_0     equ  2 ;смещение 0-го тега
 tag_size       equ 12 ;размер структуры тега
 ;форматы данных
 tag_format_ui1b  equ  1 ;unsigned integer 1 byte
@@ -32,9 +33,14 @@ txt_div db '/',0
 ;
 align 4
 exif_tag_numbers:
+dd 0,      gr_0
+dd 0x8769, gr_8769 ;Exif offset
+dd 0xa005, gr_a005 ;Interop offset
+dd 0x8825, gr_8825 ;GPS info
+.end:
 
-db 0x00,0x01,'Interop index',0
-db 0x00,0x02,'Interop version',0
+align 4
+gr_0:
 db 0x00,0x0b,'Processing software',0
 db 0x00,0xfe,'Subfile type',0
 db 0x00,0xff,'OldSubfile type',0
@@ -131,11 +137,7 @@ db 0x02,0x12,'YCbCrSubSampling',0
 db 0x02,0x13,'YCbCrPositioning',0
 db 0x02,0x14,'Reference black white',0
 db 0x02,0x2f,'Strip row counts',0
-db 0x02,0xbc,'Application notes',0
 db 0x03,0xe7,'USPTO Miscellaneous',0
-db 0x10,0x00,'Related image file format',0
-db 0x10,0x01,'Related image width',0
-db 0x10,0x02,'Related image height',0
 db 0x47,0x46,'Rating',0
 db 0x47,0x47,'XP_DIP_XML',0
 db 0x47,0x48,'Stitch info',0
@@ -155,8 +157,6 @@ db 0x82,0x8e,'CFA pattern 2',0
 db 0x82,0x8f,'Battery level',0
 db 0x82,0x90,'Kodak IFD',0
 db 0x82,0x98,'Copyright',0
-db 0x82,0x9a,'Exposure time',0
-db 0x82,0x9d,'F number',0
 db 0x82,0xa5,'MD file tag',0
 db 0x82,0xa6,'MD scale pixel',0
 db 0x82,0xa7,'MD color table',0
@@ -212,49 +212,18 @@ db 0x87,0xac,'Image layer',0
 db 0x87,0xaf,'Geo tiff directory',0
 db 0x87,0xb0,'Geo tiff double params',0
 db 0x87,0xb1,'Geo tiff ascii params',0
-db 0x88,0x22,'Exposure program',0
-db 0x88,0x24,'Spectral sensitivity',0
-db 0x88,0x25,'GPS Info',0
-db 0x88,0x27,'ISO',0
 db 0x88,0x28,'Opto-Electric conv factor',0
 db 0x88,0x29,'Interlace',0
-db 0x88,0x2a,'Time zone offset',0
-db 0x88,0x2b,'Self timer mode',0
-db 0x88,0x30,'Sensitivity type',0
-db 0x88,0x31,'Standard output sensitivity',0
-db 0x88,0x32,'Recommended exposure index',0
-db 0x88,0x33,'ISO speed',0
-db 0x88,0x34,'ISO speed latitude yyy',0
-db 0x88,0x35,'ISO speed latitude zzz',0
 db 0x88,0x5c,'Fax recv params',0
 db 0x88,0x5d,'Fax sub address',0
 db 0x88,0x5e,'Fax recv time',0
 db 0x88,0x8a,'Leaf sub IFD',0
-db 0x90,0x00,'Exif version',0
-db 0x90,0x03,'Date time original',0
-db 0x90,0x04,'Create date',0
-db 0x91,0x01,'Components configuration',0
-db 0x91,0x02,'Compressed bits per pixel',0
-db 0x92,0x01,'Shutter speed value',0
-db 0x92,0x02,'Aperture value',0
-db 0x92,0x03,'Brightness value',0
-db 0x92,0x04,'Exposure compensation',0
-db 0x92,0x05,'Max aperture value',0
-db 0x92,0x06,'Subject distance',0
-db 0x92,0x07,'Metering mode',0
-db 0x92,0x08,'Light source',0
-db 0x92,0x09,'Flash',0
-db 0x92,0x0a,'Focal length',0
 db 0x92,0x0b,'Flash energy',0
 db 0x92,0x0c,'Spatial frequency response',0
 db 0x92,0x0d,'Noise',0
 db 0x92,0x0e,'Focal plane X resolution',0
 db 0x92,0x0f,'Focal plane Y resolution',0
 db 0x92,0x10,'Focal plane resolution unit',0
-db 0x92,0x11,'Image number',0
-db 0x92,0x12,'Security classification',0
-db 0x92,0x13,'Image history',0
-db 0x92,0x14,'Subject area',0
 db 0x92,0x15,'Exposure index',0
 db 0x92,0x16,'TIFF-EP standard ID',0
 db 0x92,0x17,'Sensing method',0
@@ -262,11 +231,6 @@ db 0x92,0x3a,'CIP3 data file',0
 db 0x92,0x3b,'CIP3 sheet',0
 db 0x92,0x3c,'CIP3 side',0
 db 0x92,0x3f,'Sto nits',0
-db 0x92,0x7c,'Maker note',0
-db 0x92,0x86,'User comment',0
-db 0x92,0x90,'Sub sec time',0
-db 0x92,0x91,'Sub sec time original',0
-db 0x92,0x92,'Sub sec time digitized',0
 db 0x93,0x2f,'MS document text',0
 db 0x93,0x30,'MS property set storage',0
 db 0x93,0x31,'MS document text position',0
@@ -276,50 +240,14 @@ db 0x9c,0x9c,'XP comment',0
 db 0x9c,0x9d,'XP author',0
 db 0x9c,0x9e,'XP keywords',0
 db 0x9c,0x9f,'XP subject',0
-db 0xa0,0x00,'Flashpix version',0
-db 0xa0,0x01,'Color space',0
-db 0xa0,0x02,'Exif image width',0
-db 0xa0,0x03,'Exif image height',0
-db 0xa0,0x04,'Related sound file',0
-db 0xa0,0x05,'Interop offset',0
-db 0xa2,0x0b,'Flash energy',0
 db 0xa2,0x0c,'Spatial frequency fesponse',0
 db 0xa2,0x0d,'Noise',0
-db 0xa2,0x0e,'Focal plane X resolution',0
-db 0xa2,0x0f,'Focal plane Y resolution',0
-db 0xa2,0x10,'Focal plane resolution unit',0
 db 0xa2,0x11,'Image number',0
 db 0xa2,0x12,'Security classification',0
 db 0xa2,0x13,'Image history',0
-db 0xa2,0x14,'Subject location',0
-db 0xa2,0x15,'Exposure index',0
 db 0xa2,0x16,'TIFF-EP standard ID',0
-db 0xa2,0x17,'Sensing method',0
-db 0xa3,0x00,'File source',0
-db 0xa3,0x01,'Scene type',0
-db 0xa3,0x02,'CFA pattern',0
-db 0xa4,0x01,'Custom rendered',0
-db 0xa4,0x02,'Exposure mode',0
-db 0xa4,0x03,'White balance',0
-db 0xa4,0x04,'Digital zoom ratio',0
-db 0xa4,0x05,'Focal length in 35mm format',0
-db 0xa4,0x06,'Scene capture type',0
-db 0xa4,0x07,'Gain control',0
-db 0xa4,0x08,'Contrast',0
-db 0xa4,0x09,'Saturation',0
-db 0xa4,0x0a,'Sharpness',0
-db 0xa4,0x0b,'Device setting description',0
-db 0xa4,0x0c,'Subject distance range',0
-db 0xa4,0x20,'Image unique ID',0
-db 0xa4,0x30,'Owner name',0
-db 0xa4,0x31,'Serial number',0
-db 0xa4,0x32,'Lens info',0
-db 0xa4,0x33,'Lens make',0
-db 0xa4,0x34,'Lens model',0
-db 0xa4,0x35,'Lens serial number',0
 db 0xa4,0x80,'GDAL metadata',0
 db 0xa4,0x81,'GDAL no data',0
-db 0xa5,0x00,'Gamma',0
 db 0xaf,0xc0,'Expand software',0
 db 0xaf,0xc1,'Expand lens',0
 db 0xaf,0xc2,'Expand film',0
@@ -446,12 +374,92 @@ db 0xc7,0xa6,'Default black render',0
 db 0xc7,0xa7,'New raw image digest',0
 db 0xc7,0xa8,'Raw to preview gain',0
 db 0xc7,0xb5,'Default user crop',0
+db 0xfe,0x00,'KDC_IFD',0
+
+dd 0
+
+align 4
+gr_8769:
+db 0x02,0xbc,'Application notes',0
+db 0x82,0x9a,'Exposure time',0
+db 0x82,0x9d,'F number',0
+db 0x88,0x22,'Exposure program',0
+db 0x88,0x24,'Spectral sensitivity',0
+db 0x88,0x25,'GPS info',0
+db 0x88,0x27,'ISO',0
+db 0x88,0x2a,'Time zone offset',0
+db 0x88,0x2b,'Self timer mode',0
+db 0x88,0x30,'Sensitivity type',0
+db 0x88,0x31,'Standard output sensitivity',0
+db 0x88,0x32,'Recommended exposure index',0
+db 0x88,0x33,'ISO speed',0
+db 0x88,0x34,'ISO speed latitude yyy',0
+db 0x88,0x35,'ISO speed latitude zzz',0
+db 0x90,0x00,'Exif version',0
+db 0x90,0x03,'Date time original',0
+db 0x90,0x04,'Create date',0
+db 0x91,0x01,'Components configuration',0
+db 0x91,0x02,'Compressed bits per pixel',0
+db 0x92,0x01,'Shutter speed value',0
+db 0x92,0x02,'Aperture value',0
+db 0x92,0x03,'Brightness value',0
+db 0x92,0x04,'Exposure compensation',0
+db 0x92,0x05,'Max aperture value',0
+db 0x92,0x06,'Subject distance',0
+db 0x92,0x07,'Metering mode',0
+db 0x92,0x08,'Light source',0
+db 0x92,0x09,'Flash',0
+db 0x92,0x0a,'Focal length',0
+db 0x92,0x11,'Image number',0
+db 0x92,0x12,'Security classification',0
+db 0x92,0x13,'Image history',0
+db 0x92,0x14,'Subject area',0
+db 0x92,0x7c,'Maker note',0
+db 0x92,0x86,'User comment',0
+db 0x92,0x90,'Sub sec time',0
+db 0x92,0x91,'Sub sec time original',0
+db 0x92,0x92,'Sub sec time digitized',0
+db 0xa0,0x00,'Flashpix version',0
+db 0xa0,0x01,'Color space',0
+db 0xa0,0x02,'Exif image width',0
+db 0xa0,0x03,'Exif image height',0
+db 0xa0,0x04,'Related sound file',0
+db 0xa0,0x05,'Interop offset',0
+db 0xa2,0x0b,'Flash energy',0
+db 0xa2,0x0e,'Focal plane X resolution',0
+db 0xa2,0x0f,'Focal plane Y resolution',0
+db 0xa2,0x10,'Focal plane resolution unit',0
+db 0xa2,0x14,'Subject location',0
+db 0xa2,0x15,'Exposure index',0
+db 0xa2,0x17,'Sensing method',0
+db 0xa3,0x00,'File source',0
+db 0xa3,0x01,'Scene type',0
+db 0xa3,0x02,'CFA pattern',0
+db 0xa4,0x01,'Custom rendered',0
+db 0xa4,0x02,'Exposure mode',0
+db 0xa4,0x03,'White balance',0
+db 0xa4,0x04,'Digital zoom ratio',0
+db 0xa4,0x05,'Focal length in 35mm format',0
+db 0xa4,0x06,'Scene capture type',0
+db 0xa4,0x07,'Gain control',0
+db 0xa4,0x08,'Contrast',0
+db 0xa4,0x09,'Saturation',0
+db 0xa4,0x0a,'Sharpness',0
+db 0xa4,0x0b,'Device setting description',0
+db 0xa4,0x0c,'Subject distance range',0
+db 0xa4,0x20,'Image unique ID',0
+db 0xa4,0x30,'Owner name',0
+db 0xa4,0x31,'Serial number',0
+db 0xa4,0x32,'Lens info',0
+db 0xa4,0x33,'Lens make',0
+db 0xa4,0x34,'Lens model',0
+db 0xa4,0x35,'Lens serial number',0
+db 0xa5,0x00,'Gamma',0
 db 0xea,0x1c,'Padding',0
 db 0xea,0x1d,'Offset schema',0
 db 0xfd,0xe8,'Owner name',0
 db 0xfd,0xe9,'Serial number',0
 db 0xfd,0xea,'Lens',0
-db 0xfe,0x00,'KDC_IFD',0
 db 0xfe,0x4c,'Raw file',0
 db 0xfe,0x4d,'Converter',0
 db 0xfe,0x4e,'White balance',0
@@ -464,7 +472,51 @@ db 0xfe,0x56,'Sharpness',0
 db 0xfe,0x57,'Smoothness',0
 db 0xfe,0x58,'Moire filter',0
 
+dd 0
+
+align 4
+gr_a005:
+db 0x00,0x01,'Interop index',0
+db 0x00,0x02,'Interop version',0
+db 0x10,0x00,'Related image file format',0
+db 0x10,0x01,'Related image width',0
+db 0x10,0x02,'Related image height',0
+dd 0
+
+align 4
+gr_8825:
 db 0x00,0x00,'GPS version ID',0
+db 0x00,0x01,'GPS latitude ref',0
+db 0x00,0x02,'GPS latitude',0
+db 0x00,0x03,'GPS longitude ref',0
+db 0x00,0x04,'GPS longitude',0
+db 0x00,0x05,'GPS altitude ref',0
+db 0x00,0x06,'GPS altitude',0
+db 0x00,0x07,'GPS time stamp',0
+db 0x00,0x08,'GPS satellites',0
+db 0x00,0x09,'GPS status',0
+db 0x00,0x0a,'GPS measuremode',0
+db 0x00,0x0b,'GPS dop',0
+db 0x00,0x0c,'GPS speed ref',0
+db 0x00,0x0d,'GPS speed',0
+db 0x00,0x0e,'GPS track ref',0
+db 0x00,0x0f,'GPS track',0
+db 0x00,0x10,'GPS img direction ref',0
+db 0x00,0x11,'GPS img direction',0
+db 0x00,0x12,'GPS map datum',0
+db 0x00,0x13,'GPS dest latitude ref',0
+db 0x00,0x14,'GPS dest latitude',0
+db 0x00,0x15,'GPS dest longitude ref',0
+db 0x00,0x16,'GPS dest longitude',0
+db 0x00,0x17,'GPS dest bearing ref',0
+db 0x00,0x18,'GPS dest bearing',0
+db 0x00,0x19,'GPS dest distance ref',0
+db 0x00,0x1a,'GPS dest distance',0
+db 0x00,0x1b,'GPS processing method',0
+db 0x00,0x1c,'GPS area information',0
+db 0x00,0x1d,'GPS date stamp',0
+db 0x00,0x1e,'GPS differential',0
+db 0x00,0x1f,'GPS h positioning error',0
 
 dd 0
 
@@ -502,6 +554,9 @@ proc exif_get_app1 uses eax ebx edi, bof:dword, app1:dword
 		inc ebx ;if 'MM' edx=1
 	@@:
 	mov [edi+offs_m_or_i],ebx
+	;пишем одной командой в dword[edi+offs_m_or_i]
+	;в младшие 2 байта способ выравнивания чисел
+	;в старшие 2 байта id групы, который всегда 0 для app1
 	add eax,18
 	mov [edi],eax
 	sub eax,8
@@ -613,6 +668,9 @@ pushad
 		add ebx,[eax+4]
 		mov dword[edi],ebx
 		m2m dword[edi+4],dword[eax+4]
+		ror edx,16
+		mov dx,word[c_tag]
+		ror edx,16
 		mov dword[edi+offs_m_or_i],edx
 
 	jmp .end_f
@@ -632,13 +690,28 @@ align 4
 proc read_tag_value, app1:dword, t_max:dword
 	push exif_tag_numbers
 	pop esi
+
+	;поиск таблицы для группы тегов
+	mov ebx,[app1]
+	mov bx,word[ebx+offs_id_gr] ;берем идентификатор группы тегов
+	@@:
+		cmp word[esi],bx
+		je .set_table
+		add esi,8
+		cmp esi,exif_tag_numbers.end
+		jge .tag_unknown ;тег не опознан (не найдена таблица группы тегов)
+		jmp @b
+	.set_table:
+		mov esi,dword[esi+4] ;установка адреса таблицы в esi
+
+	;поиск названия тега в таблице
 	.next_tag:
 	mov bx,word[esi]
 	cmp bx,0
 	jne @f
 		cmp dword[esi],0
 		jne @f
-		jmp .tag_unknown ;тег не опознан
+		jmp .tag_unknown ;тег не опознан (в группе не найден тег)
 	@@:
 	bt edx,0
 	jc @f
@@ -655,17 +728,45 @@ proc read_tag_value, app1:dword, t_max:dword
 	jmp .next_tag
 	.found:
 
-	;копируем строку
+	;копируем строку с названием тега
 	add esi,2
 	stdcall str_n_cat,edi,esi,[t_max]
 
 	jmp @f
 	.tag_unknown:
-		mov dword[edi],'???'
-		mov byte[edi+3],0
+		;если тег не найден ставим его код вместо названия
+		movzx ebx,word[eax]
+		stdcall hex_in_str, edi, ebx,4
+		mov byte[edi+4],0
 	@@:
 
 	;читаем информацию в теге
+	mov bx,tag_format_ui1b
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+	cmp word[eax+2],bx
+	jne .tag_01
+		stdcall str_n_cat,edi,txt_dp,[t_max]
+		call get_tag_data_size
+		cmp ebx,1
+		jg .over4b_01
+			;если одно 1 байтовое число
+			movzx ebx,byte[eax+8]
+			;bt edx,0
+			;jnc @f
+			;	ror bx,8
+			;@@:
+			stdcall str_len,edi
+			add edi,eax
+			mov eax,ebx
+			call convert_int_to_str ;[t_max]
+		.over4b_01:
+			;...
+		jmp .end_f
+	.tag_01:
+
 	mov bx,tag_format_text
 	bt edx,0
 	jnc @f
@@ -912,6 +1013,32 @@ proc str_len, str1:dword
 		jmp @b
 	@@:
 	sub eax,[str1]
+	ret
+endp
+
+align 4
+proc hex_in_str, buf:dword,val:dword,zif:dword
+	pushad
+		mov edi,dword[buf]
+		mov ecx,dword[zif]
+		add edi,ecx
+		dec edi
+		mov ebx,dword[val]
+
+		.cycle:
+			mov al,bl
+			and al,0xf
+			cmp al,10
+			jl @f
+				add al,'a'-'0'-10
+			@@:
+			add al,'0'
+			mov byte[edi],al
+			dec edi
+			shr ebx,4
+		loop .cycle
+
+	popad
 	ret
 endp
 
