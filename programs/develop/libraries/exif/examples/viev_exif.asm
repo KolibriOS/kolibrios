@@ -16,7 +16,7 @@ include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Просмотр информации Exif 18.07.14',0 ;подпись окна
+caption db 'Просмотр информации Exif 23.07.14',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -421,14 +421,10 @@ pushad
 		jne .cycle_0
 
 	;считываем дочерние теги для 0x8769
-	stdcall [exif_get_app1_child], h_app1,h_child,0x8769
+	stdcall [exif_get_app2], h_app1,h_child
 	cmp dword[h_child],0
 	je .no_found_child
-	;считываем дочерние теги для 0xa005
-	stdcall [exif_get_app1_child], h_child,h_child,0xa005
-	cmp dword[h_child],0
-	je .no_found_child
-
+	
 	mov eax,1
 	sub ebx,5
 	.cycle_1:
@@ -652,10 +648,12 @@ import_exif: ;описание экспортируемых функций
 	exif_get_app1 dd sz_exif_get_app1
 	exif_get_app1_tag dd sz_exif_get_app1_tag
 	exif_get_app1_child dd sz_exif_get_app1_child
+	exif_get_app2 dd sz_exif_get_app2
 dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
 	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
 	sz_exif_get_app1_child db 'exif_get_app1_child',0
+	sz_exif_get_app2 db 'exif_get_app2',0
 	;exif_get_image_160_120
 
 sc system_colors 

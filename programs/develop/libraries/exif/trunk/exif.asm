@@ -28,6 +28,7 @@ tag_format_f8b	 equ 12 ;float 8 byte
 
 align 4
 txt_dp db ': ',0
+txt_zap db ', ',0
 txt_div db '/',0
 
 ;
@@ -212,6 +213,7 @@ db 0x87,0xac,'Image layer',0
 db 0x87,0xaf,'Geo tiff directory',0
 db 0x87,0xb0,'Geo tiff double params',0
 db 0x87,0xb1,'Geo tiff ascii params',0
+db 0x88,0x25,'GPS info',0
 db 0x88,0x28,'Opto-Electric conv factor',0
 db 0x88,0x29,'Interlace',0
 db 0x88,0x5c,'Fax recv params',0
@@ -385,7 +387,6 @@ db 0x82,0x9a,'Exposure time',0
 db 0x82,0x9d,'F number',0
 db 0x88,0x22,'Exposure program',0
 db 0x88,0x24,'Spectral sensitivity',0
-db 0x88,0x25,'GPS info',0
 db 0x88,0x27,'ISO',0
 db 0x88,0x2a,'Time zone offset',0
 db 0x88,0x2b,'Self timer mode',0
@@ -681,6 +682,102 @@ popad
 	ret
 endp
 
+;output:
+; app2 - указатель на начало exif.app2 (или 0 если не найдено или формат файла не поддерживается)
+align 4
+proc exif_get_app2, app1:dword, app2:dword
+pushad
+	mov eax,[app1]
+	cmp [eax],edx
+	je .no_suport ;если не найден указатель на начало exif.app1
+
+	mov edi,[app2]
+	movzx edx,word[eax+offs_m_or_i] ;if 'MM' edx=1
+
+	;начало поиска производителя камеры
+	mov ebx,0x010f
+	bt edx,0
+	jnc @f
+		ror bx,8
+	@@:
+
+	;проверяем число тегов
+	mov eax,[eax]
+	movzx ecx,word[eax]
+	bt edx,0
+	jnc @f
+		ror cx,8
+	@@:
+	cmp ecx,1
+	jl .no_suport ;если число тегов <1
+
+	;переходим на 1-й тег
+	add eax,offs_tag_0
+	@@:
+		cmp word[eax],bx
+		je @f
+		add eax,tag_size
+		loop @b
+	jmp .no_suport ;если не найдено
+	@@: ;если найдено	
+		mov ebx,dword[eax+4]
+		bt edx,0
+		jnc @f
+			ror bx,8
+			ror ebx,16
+			ror bx,8
+		@@:
+		cmp ebx,4
+		jle .no_suport ;название производителя меньше 4 символов, не поддержиавается
+
+		mov ebx,dword[eax+8]
+		bt edx,0
+		jnc @f
+			ror bx,8
+			ror ebx,16
+			ror bx,8
+		@@:
+	
+	;проверка поддерживаемых производителей
+	mov eax,[app1]
+	add ebx,[eax+4]
+	cmp dword[ebx],'Cano'
+	je .suport
+	cmp dword[ebx],'NIKO'
+	je .suport
+	cmp dword[ebx],'Pana'
+	je .suport
+
+	;все остальные не поддерживаются
+	jmp .no_suport
+
+	.suport:
+	;находим тег 0x8769 (расширенные данные по Exif)
+	stdcall exif_get_app1_child, eax,edi,0x8769
+	cmp dword[edi],0
+	je .no_suport
+	;находим тег 0xa005 (данные Maker по камере)
+	stdcall exif_get_app1_child, edi,edi, 0x927c
+	cmp dword[edi],0
+	je .no_suport
+
+	cmp dword[ebx],'NIKO'
+	jne @f
+		add dword[edi],18 ;for Nikon
+	@@:
+	cmp dword[ebx],'Pana'
+	jne @f
+		add dword[edi],12 ;for Panasonic
+	@@:
+
+	jmp @f
+	.no_suport:
+		mov dword[edi],0
+	@@:
+popad
+	ret
+endp
+
 ;description:
 ; вспомогательная функция для чтения назначений тегов
 ;input:
@@ -732,13 +829,17 @@ proc read_tag_value, app1:dword, t_max:dword
 	add esi,2
 	stdcall str_n_cat,edi,esi,[t_max]
 
-	jmp @f
+	jmp .start_read
 	.tag_unknown:
 		;если тег не найден ставим его код вместо названия
 		movzx ebx,word[eax]
+		bt edx,0
+		jnc @f
+			ror bx,8
+		@@:
 		stdcall hex_in_str, edi, ebx,4
 		mov byte[edi+4],0
-	@@:
+	.start_read:
 
 	;читаем информацию в теге
 	mov bx,tag_format_ui1b
@@ -750,18 +851,34 @@ proc read_tag_value, app1:dword, t_max:dword
 	jne .tag_01
 		stdcall str_n_cat,edi,txt_dp,[t_max]
 		call get_tag_data_size
-		cmp ebx,1
+		cmp ebx,4
 		jg .over4b_01
-			;если одно 1 байтовое число
+		cmp ebx,1
+		je @f
+			or edx,2 ;array data
+			mov ecx,dword[eax+8]
+			mov dh,bl
+		@@:
+			;если 1 одно байтовое число
 			movzx ebx,byte[eax+8]
-			;bt edx,0
-			;jnc @f
-			;	ror bx,8
-			;@@:
 			stdcall str_len,edi
 			add edi,eax
 			mov eax,ebx
 			call convert_int_to_str ;[t_max]
+			bt edx,1
+			jnc .end_f
+			@@:
+				;если от 2 до 4 одно байтовых чисел
+				dec dh
+				cmp dh,0
+				je .end_f
+				shr ecx,8
+				stdcall str_n_cat,edi,txt_zap,[t_max]
+				stdcall str_len,edi
+				add edi,eax
+				movzx eax,cl
+				call convert_int_to_str ;[t_max]
+				jmp @b
 		.over4b_01:
 			;...
 		jmp .end_f
@@ -808,8 +925,16 @@ proc read_tag_value, app1:dword, t_max:dword
 	jne .tag_03
 		stdcall str_n_cat,edi,txt_dp,[t_max]
 		call get_tag_data_size
-		cmp ebx,1
+		cmp ebx,2
 		jg .over4b_03
+		jne @f
+			;если два 2 байтовых числа
+			or edx,2 ;array data
+			movzx ecx,word[eax+10]
+			bt edx,0
+			jnc @f
+				ror cx,8
+			@@:
 			;если одно 2 байтовое число
 			movzx ebx,word[eax+8]
 			bt edx,0
@@ -819,6 +944,14 @@ proc read_tag_value, app1:dword, t_max:dword
 			stdcall str_len,edi
 			add edi,eax
 			mov eax,ebx
+			call convert_int_to_str ;[t_max]
+			bt edx,1 ;array ?
+			jnc .end_f
+			;добавляем 2-е число
+			stdcall str_n_cat,edi,txt_zap,[t_max]
+			stdcall str_len,edi
+			add edi,eax
+			mov eax,ecx
 			call convert_int_to_str ;[t_max]
 		.over4b_03:
 			;...
@@ -1079,7 +1212,9 @@ EXPORTS:
 	dd sz_exif_get_app1, exif_get_app1
 	dd sz_exif_get_app1_tag, exif_get_app1_tag
 	dd sz_exif_get_app1_child, exif_get_app1_child
+	dd sz_exif_get_app2, exif_get_app2
 	dd 0,0
 	sz_exif_get_app1 db 'exif_get_app1',0
 	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
 	sz_exif_get_app1_child db 'exif_get_app1_child',0
+	sz_exif_get_app2 db 'exif_get_app2',0
