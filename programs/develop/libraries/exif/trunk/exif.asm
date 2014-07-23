@@ -10,6 +10,7 @@ include '../../../../proc32.inc'
 ;---------
 offs_m_or_i    equ  8 ;смещение параметра 'MM' или 'II' (Motorola, Intel)
 offs_id_gr     equ 10 ;смещение id group
+offs_id_gr_mak equ 12 ;смещение id group производителя
 offs_tag_0     equ  2 ;смещение 0-го тега
 tag_size       equ 12 ;размер структуры тега
 ;форматы данных
@@ -31,13 +32,26 @@ txt_dp db ': ',0
 txt_zap db ', ',0
 txt_div db '/',0
 
-;
+;заголовок таблиц с группами тегов
 align 4
 exif_tag_numbers:
-dd 0,      gr_0
+dd 0,      gr_0    ;группа app1
 dd 0x8769, gr_8769 ;Exif offset
 dd 0xa005, gr_a005 ;Interop offset
 dd 0x8825, gr_8825 ;GPS info
+
+;групы app2 (здесь у каждого производителя камер свой формат тегов)
+dw 0x927c ;app2 для Nikon
+db 'Ni'
+dd gr_927c_Ni
+
+dw 0x927c ;app2 для Panasonic
+db 'Pa'
+dd gr_927c_Pa
+
+dw 0x927c ;app2 для Canon
+db 'Ca'
+dd gr_927c_Ca
 .end:
 
 align 4
@@ -521,6 +535,290 @@ db 0x00,0x1f,'GPS h positioning error',0
 
 dd 0
 
+;данные app2 для Nikon
+align 4
+gr_927c_Ni:
+db 0x00,0x01,'MakerNoteVersion',0
+db 0x00,0x02,'ISO',0
+db 0x00,0x03,'ColorMode',0
+db 0x00,0x04,'Quality',0
+db 0x00,0x05,'WhiteBalance',0
+db 0x00,0x06,'Sharpness',0
+db 0x00,0x07,'FocusMode',0
+db 0x00,0x08,'FlashSetting',0
+db 0x00,0x09,'FlashType',0
+db 0x00,0x0b,'WhiteBalanceFineTune',0
+db 0x00,0x0c,'WB_RBLevels',0
+db 0x00,0x0d,'ProgramShift',0
+db 0x00,0x0e,'ExposureDifference',0
+db 0x00,0x0f,'ISOSelection',0
+db 0x00,0x10,'DataDump',0
+db 0x00,0x11,'PreviewIFD',0
+db 0x00,0x12,'FlashExposureComp',0
+db 0x00,0x13,'ISOSetting',0
+db 0x00,0x14,'ColorBalanceA ',0
+db 0x00,0x16,'ImageBoundary',0
+db 0x00,0x17,'ExternalFlashExposureComp',0
+db 0x00,0x18,'FlashExposureBracketValue',0
+db 0x00,0x19,'ExposureBracketValue',0
+db 0x00,0x1a,'ImageProcessing',0
+db 0x00,0x1b,'CropHiSpeed',0
+db 0x00,0x1c,'ExposureTuning',0
+db 0x00,0x1d,'SerialNumber',0
+db 0x00,0x1e,'ColorSpace',0
+db 0x00,0x1f,'VRInfo',0
+db 0x00,0x20,'ImageAuthentication',0
+db 0x00,0x21,'FaceDetect',0
+db 0x00,0x22,'ActiveD-Lighting',0
+db 0x00,0x23,'PictureControlData',0
+db 0x00,0x24,'WorldTime',0
+db 0x00,0x25,'ISOInfo',0
+db 0x00,0x2a,'VignetteControl',0
+db 0x00,0x2b,'DistortInfo',0
+db 0x00,0x2c,'UnknownInfo',0
+db 0x00,0x32,'UnknownInfo2',0
+db 0x00,0x35,'HDRInfo',0
+db 0x00,0x39,'LocationInfo',0
+db 0x00,0x3d,'BlackLevel',0
+db 0x00,0x80,'ImageAdjustment',0
+db 0x00,0x81,'ToneComp',0
+db 0x00,0x82,'AuxiliaryLens',0
+db 0x00,0x83,'LensType',0
+db 0x00,0x84,'Lens',0
+db 0x00,0x85,'ManualFocusDistance',0
+db 0x00,0x86,'DigitalZoom',0
+db 0x00,0x87,'FlashMode',0
+db 0x00,0x88,'AFInfo',0
+db 0x00,0x89,'ShootingMode',0
+db 0x00,0x8b,'LensFStops',0
+db 0x00,0x8c,'ContrastCurve',0
+db 0x00,0x8d,'ColorHue',0
+db 0x00,0x8f,'SceneMode',0
+db 0x00,0x90,'LightSource',0
+db 0x00,0x91,'ShotInfo',0
+db 0x00,0x92,'HueAdjustment',0
+db 0x00,0x93,'NEFCompression',0
+db 0x00,0x94,'Saturation',0
+db 0x00,0x95,'NoiseReduction',0
+db 0x00,0x96,'NEFLinearizationTable',0
+db 0x00,0x97,'ColorBalance',0
+db 0x00,0x98,'LensData',0
+db 0x00,0x99,'RawImageCenter',0
+db 0x00,0x9a,'SensorPixelSize',0
+db 0x00,0x9c,'SceneAssist',0
+db 0x00,0x9e,'RetouchHistory',0
+db 0x00,0xa0,'SerialNumber',0
+db 0x00,0xa2,'ImageDataSize',0
+db 0x00,0xa5,'ImageCount',0
+db 0x00,0xa6,'DeletedImageCount',0
+db 0x00,0xa7,'ShutterCount',0
+db 0x00,0xa8,'FlashInfo',0
+db 0x00,0xa9,'ImageOptimization',0
+db 0x00,0xaa,'Saturation',0
+db 0x00,0xab,'VariProgram',0
+db 0x00,0xac,'ImageStabilization',0
+db 0x00,0xad,'AFResponse',0
+db 0x00,0xb0,'MultiExposure',0
+db 0x00,0xb1,'HighISONoiseReduction',0
+db 0x00,0xb3,'ToningEffect',0
+db 0x00,0xb6,'PowerUpTime',0
+db 0x00,0xb7,'AFInfo2',0
+db 0x00,0xb8,'FileInfo',0
+db 0x00,0xb9,'AFTune',0
+db 0x00,0xbd,'PictureControlData',0
+db 0x00,0xc3,'BarometerInfo',0
+db 0x0e,0x00,'PrintIM',0
+db 0x0e,0x01,'NikonCaptureData',0
+db 0x0e,0x09,'NikonCaptureVersion',0
+db 0x0e,0x0e,'NikonCaptureOffsets',0
+db 0x0e,0x10,'NikonScanIFD',0
+db 0x0e,0x13,'NikonCaptureEditVersions ',0
+db 0x0e,0x1d,'NikonICCProfile',0
+db 0x0e,0x1e,'NikonCaptureOutput',0
+db 0x0e,0x22,'NEFBitDepth',0
+
+dd 0
+
+;данные app2 для Panasonic
+align 4
+gr_927c_Pa:
+db 0x00,0x01,'ImageQuality',0
+db 0x00,0x02,'FirmwareVersion',0
+db 0x00,0x03,'WhiteBalance',0
+db 0x00,0x07,'FocusMode',0
+db 0x00,0x0f,'AFAreaMode',0
+db 0x00,0x1a,'ImageStabilization',0
+db 0x00,0x1c,'MacroMode',0
+db 0x00,0x1f,'ShootingMode',0
+db 0x00,0x20,'Audio',0
+db 0x00,0x21,'DataDump',0
+db 0x00,0x23,'WhiteBalanceBias',0
+db 0x00,0x24,'FlashBias',0
+db 0x00,0x25,'InternalSerialNumber',0
+db 0x00,0x26,'PanasonicExifVersion',0
+db 0x00,0x28,'ColorEffect',0
+db 0x00,0x29,'TimeSincePowerOn',0
+db 0x00,0x2a,'BurstMode',0
+db 0x00,0x2b,'SequenceNumber',0
+db 0x00,0x2c,'ContrastMode',0
+db 0x00,0x2d,'NoiseReduction',0
+db 0x00,0x2e,'SelfTimer',0
+db 0x00,0x30,'Rotation',0
+db 0x00,0x31,'AFAssistLamp',0
+db 0x00,0x32,'ColorMode',0
+db 0x00,0x33,'BabyAge',0
+db 0x00,0x34,'OpticalZoomMode',0
+db 0x00,0x35,'ConversionLens',0
+db 0x00,0x36,'TravelDay',0
+db 0x00,0x39,'Contrast',0
+db 0x00,0x3a,'WorldTimeLocation',0
+db 0x00,0x3b,'TextStamp',0
+db 0x00,0x3c,'ProgramISO',0
+db 0x00,0x3d,'AdvancedSceneType',0
+db 0x00,0x3f,'FacesDetected',0
+db 0x00,0x40,'Saturation',0
+db 0x00,0x41,'Sharpness',0
+db 0x00,0x42,'FilmMode',0
+db 0x00,0x44,'ColorTempKelvin',0
+db 0x00,0x45,'BracketSettings',0
+db 0x00,0x46,'WBShiftAB',0
+db 0x00,0x47,'WBShiftGM',0
+db 0x00,0x48,'FlashCurtain',0
+db 0x00,0x49,'LongExposureNoiseReduction',0
+db 0x00,0x4b,'PanasonicImageWidth',0
+db 0x00,0x4c,'PanasonicImageHeight',0
+db 0x00,0x4d,'AFPointPosition',0
+db 0x00,0x51,'LensType',0
+db 0x00,0x52,'LensSerialNumber',0
+db 0x00,0x53,'AccessoryType',0
+db 0x00,0x54,'AccessorySerialNumber',0
+db 0x00,0x59,'Transform',0
+db 0x00,0x5d,'IntelligentExposure',0
+db 0x00,0x60,'LensFirmwareVersion',0
+db 0x00,0x61,'FaceRecInfo',0
+db 0x00,0x62,'FlashWarning',0
+db 0x00,0x63,'RecognizedFaceFlags',0
+db 0x00,0x65,'Title',0
+db 0x00,0x66,'BabyName',0
+db 0x00,0x67,'Location',0
+db 0x00,0x69,'Country',0
+db 0x00,0x6b,'State',0
+db 0x00,0x6d,'City',0
+db 0x00,0x6f,'Landmark',0
+db 0x00,0x70,'IntelligentResolution',0
+db 0x00,0x77,'BurstSpeed',0
+db 0x00,0x79,'IntelligentD-Range',0
+db 0x00,0x7c,'ClearRetouch',0
+db 0x00,0x86,'ManometerPressure',0
+db 0x00,0x89,'PhotoStyle',0
+db 0x00,0x8a,'ShadingCompensation',0
+db 0x00,0x8c,'AccelerometerZ',0
+db 0x00,0x8d,'AccelerometerX',0
+db 0x00,0x8e,'AccelerometerY',0
+db 0x00,0x8f,'CameraOrientation',0
+db 0x00,0x90,'RollAngle',0
+db 0x00,0x91,'PitchAngle',0
+db 0x00,0x93,'SweepPanoramaDirection',0
+db 0x00,0x94,'SweepPanoramaFieldOfView',0
+db 0x00,0x96,'TimerRecording',0
+db 0x00,0x9d,'InternalNDFilter',0
+db 0x00,0x9e,'HDR',0
+db 0x00,0x9f,'ShutterType',0
+db 0x00,0xa3,'ClearRetouchValue',0
+db 0x00,0xab,'TouchAE',0
+db 0x0e,0x00,'PrintIM',0
+db 0x80,0x00,'MakerNoteVersion',0
+db 0x80,0x01,'SceneMode',0
+db 0x80,0x04,'WBRedLevel',0
+db 0x80,0x05,'WBGreenLevel',0
+db 0x80,0x06,'WBBlueLevel',0
+db 0x80,0x07,'FlashFired',0
+db 0x80,0x08,'TextStamp',0
+db 0x80,0x09,'TextStamp',0
+db 0x80,0x10,'BabyAge',0
+db 0x80,0x12,'Transform',0
+
+dd 0
+
+;данные app2 для Canon
+align 4
+gr_927c_Ca:
+db 0x00,0x01,'CanonCameraSettings',0
+db 0x00,0x02,'CanonFocalLength',0
+db 0x00,0x03,'CanonFlashInfo?',0
+db 0x00,0x04,'CanonShotInfo',0
+db 0x00,0x05,'CanonPanorama',0
+db 0x00,0x06,'CanonImageType',0
+db 0x00,0x07,'CanonFirmwareVersion',0
+db 0x00,0x08,'FileNumber',0
+db 0x00,0x09,'OwnerName',0
+db 0x00,0x0a,'UnknownD30',0
+db 0x00,0x0c,'SerialNumber',0
+db 0x00,0x0d,'CanonCameraInfo',0
+db 0x00,0x0e,'CanonFileLength',0
+db 0x00,0x0f,'CustomFunctions',0
+db 0x00,0x10,'CanonModelID',0
+db 0x00,0x11,'MovieInfo',0
+db 0x00,0x12,'CanonAFInfo',0
+db 0x00,0x13,'ThumbnailImageValidArea',0
+db 0x00,0x15,'SerialNumberFormat',0
+db 0x00,0x1a,'SuperMacro',0
+db 0x00,0x1c,'DateStampMode',0
+db 0x00,0x1d,'MyColors',0
+db 0x00,0x1e,'FirmwareRevision',0
+db 0x00,0x23,'Categories',0
+db 0x00,0x24,'FaceDetect1',0
+db 0x00,0x25,'FaceDetect2',0
+db 0x00,0x26,'CanonAFInfo2',0
+db 0x00,0x27,'ContrastInfo',0
+db 0x00,0x28,'ImageUniqueID',0
+db 0x00,0x2f,'FaceDetect3',0
+db 0x00,0x35,'TimeInfo',0
+db 0x00,0x81,'RawDataOffset',0
+db 0x00,0x83,'OriginalDecisionDataOffset',0
+db 0x00,0x90,'CustomFunctions1D',0
+db 0x00,0x91,'PersonalFunctions',0
+db 0x00,0x92,'PersonalFunctionValues',0
+db 0x00,0x93,'CanonFileInfo',0
+db 0x00,0x94,'AFPointsInFocus1D',0
+db 0x00,0x95,'LensModel',0
+db 0x00,0x96,'SerialInfo ',0
+db 0x00,0x97,'DustRemovalData',0
+db 0x00,0x98,'CropInfo',0
+db 0x00,0x99,'CustomFunctions2',0
+db 0x00,0x9a,'AspectInfo',0
+db 0x00,0xa0,'ProcessingInfo',0
+db 0x00,0xa1,'ToneCurveTable',0
+db 0x00,0xa2,'SharpnessTable',0
+db 0x00,0xa3,'SharpnessFreqTable',0
+db 0x00,0xa4,'WhiteBalanceTable',0
+db 0x00,0xa9,'ColorBalance',0
+db 0x00,0xaa,'MeasuredColor',0
+db 0x00,0xae,'ColorTemperature',0
+db 0x00,0xb0,'CanonFlags',0
+db 0x00,0xb1,'ModifiedInfo',0
+db 0x00,0xb2,'ToneCurveMatching',0
+db 0x00,0xb3,'WhiteBalanceMatching',0
+db 0x00,0xb4,'ColorSpace',0
+db 0x00,0xb6,'PreviewImageInfo',0
+db 0x00,0xd0,'VRDOffset',0
+db 0x00,0xe0,'SensorInfo',0
+db 0x40,0x01,'ColorData',0
+db 0x40,0x02,'CRWParam?',0
+db 0x40,0x03,'ColorInfo',0
+db 0x40,0x05,'Flavor?',0
+db 0x40,0x08,'BlackLevel?',0
+db 0x40,0x10,'CustomPictureStyleFileName',0
+db 0x40,0x13,'AFMicroAdj',0
+db 0x40,0x15,'VignettingCorr ',0
+db 0x40,0x16,'VignettingCorr2',0
+db 0x40,0x18,'LightingOpt',0
+db 0x40,0x19,'LensInfo',0
+db 0x40,0x20,'AmbienceInfo',0
+db 0x40,0x24,'FilterInfo',0
+
+dd 0
+
 ;input:
 ; bof - указатель на начало файла
 ; app1 - указатель для заполнения exif.app1
@@ -554,10 +852,8 @@ proc exif_get_app1 uses eax ebx edi, bof:dword, app1:dword
 	je @f
 		inc ebx ;if 'MM' edx=1
 	@@:
-	mov [edi+offs_m_or_i],ebx
-	;пишем одной командой в dword[edi+offs_m_or_i]
-	;в младшие 2 байта способ выравнивания чисел
-	;в старшие 2 байта id групы, который всегда 0 для app1
+	mov word[edi+offs_m_or_i],bx ;способ выравнивания чисел
+	mov dword[edi+offs_id_gr],0 ;id групы и производителя, который всегда 0 для app1
 	add eax,18
 	mov [edi],eax
 	sub eax,8
@@ -673,6 +969,7 @@ pushad
 		mov dx,word[c_tag]
 		ror edx,16
 		mov dword[edi+offs_m_or_i],edx
+		m2m word[edi+offs_id_gr_mak],word[eax+offs_id_gr_mak]
 
 	jmp .end_f
 	.no_found:
@@ -756,18 +1053,30 @@ pushad
 	stdcall exif_get_app1_child, eax,edi,0x8769
 	cmp dword[edi],0
 	je .no_suport
-	;находим тег 0xa005 (данные Maker по камере)
+	;находим тег 0x927c (данные Maker по камере)
 	stdcall exif_get_app1_child, edi,edi, 0x927c
 	cmp dword[edi],0
 	je .no_suport
 
 	cmp dword[ebx],'NIKO'
 	jne @f
-		add dword[edi],18 ;for Nikon
+		;for Nikon
+		add dword[edi],18
+		mov eax,dword[edi]
+		sub eax,8
+		mov dword[edi+4],eax
+		mov word[edi+offs_id_gr_mak],'Ni'
 	@@:
 	cmp dword[ebx],'Pana'
 	jne @f
-		add dword[edi],12 ;for Panasonic
+		;for Panasonic
+		add dword[edi],12
+		mov word[edi+offs_id_gr_mak],'Pa'
+	@@:
+	cmp dword[ebx],'Cano'
+	jne @f
+		;for Canon
+		mov word[edi+offs_id_gr_mak],'Ca'
 	@@:
 
 	jmp @f
@@ -790,9 +1099,9 @@ proc read_tag_value, app1:dword, t_max:dword
 
 	;поиск таблицы для группы тегов
 	mov ebx,[app1]
-	mov bx,word[ebx+offs_id_gr] ;берем идентификатор группы тегов
+	mov ebx,dword[ebx+offs_id_gr] ;берем идентификатор группы тегов
 	@@:
-		cmp word[esi],bx
+		cmp dword[esi],ebx
 		je .set_table
 		add esi,8
 		cmp esi,exif_tag_numbers.end
@@ -864,7 +1173,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			stdcall str_len,edi
 			add edi,eax
 			mov eax,ebx
-			call convert_int_to_str ;[t_max]
+			stdcall convert_int_to_str, [t_max]
 			bt edx,1
 			jnc .end_f
 			@@:
@@ -877,7 +1186,7 @@ proc read_tag_value, app1:dword, t_max:dword
 				stdcall str_len,edi
 				add edi,eax
 				movzx eax,cl
-				call convert_int_to_str ;[t_max]
+				stdcall convert_int_to_str, [t_max]
 				jmp @b
 		.over4b_01:
 			;...
@@ -944,7 +1253,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			stdcall str_len,edi
 			add edi,eax
 			mov eax,ebx
-			call convert_int_to_str ;[t_max]
+			stdcall convert_int_to_str, [t_max]
 			bt edx,1 ;array ?
 			jnc .end_f
 			;добавляем 2-е число
@@ -952,10 +1261,43 @@ proc read_tag_value, app1:dword, t_max:dword
 			stdcall str_len,edi
 			add edi,eax
 			mov eax,ecx
-			call convert_int_to_str ;[t_max]
+			stdcall convert_int_to_str, [t_max]
+			jmp .end_f
 		.over4b_03:
-			;...
-		jmp .end_f
+			mov ecx,[t_max]
+			mov esi,dword[eax+8]
+			bt edx,0
+			jnc @f
+				ror si,8
+				ror esi,16
+				ror si,8
+			@@:
+			mov eax,[app1]
+			mov eax,[eax+4]
+			add esi,eax
+			
+			;берем число
+			.array_03:
+			stdcall str_len,edi
+			cmp ecx,eax
+			jle .end_f ;если не хватило строки
+			add edi,eax
+			sub ecx,eax
+			movzx eax,word[esi]
+			bt edx,0
+			jnc @f
+				ror ax,8
+			@@:
+			stdcall convert_int_to_str,ecx
+
+			dec ebx
+			cmp ebx,0
+			je .end_f
+
+			;добавляем запятую
+			stdcall str_n_cat,edi,txt_zap,ecx
+			add esi,2
+			jmp .array_03
 	.tag_03:
 
 	mov bx,tag_format_ui4b
@@ -980,7 +1322,7 @@ proc read_tag_value, app1:dword, t_max:dword
 			stdcall str_len,edi
 			add edi,eax
 			mov eax,ebx
-			call convert_int_to_str ;[t_max]
+			stdcall convert_int_to_str, [t_max]
 		.over4b_04:
 			;...
 		jmp .end_f
@@ -1016,7 +1358,7 @@ proc read_tag_value, app1:dword, t_max:dword
 				ror eax,16
 				ror ax,8
 			@@:
-			call convert_int_to_str ;ставим 1-е число
+			stdcall convert_int_to_str, [t_max] ;ставим 1-е число
 			stdcall str_n_cat,edi,txt_div,[t_max] ;ставим знак деления
 			stdcall str_len,edi
 			add edi,eax
@@ -1027,7 +1369,7 @@ proc read_tag_value, app1:dword, t_max:dword
 				ror eax,16
 				ror ax,8
 			@@:
-			call convert_int_to_str ;ставим 2-е число
+			stdcall convert_int_to_str, [t_max] ;ставим 2-е число
 		;.over4b_05:
 			;...
 		jmp .end_f
@@ -1042,8 +1384,16 @@ proc read_tag_value, app1:dword, t_max:dword
 	jne .tag_08
 		stdcall str_n_cat,edi,txt_dp,[t_max]
 		call get_tag_data_size
-		cmp ebx,1
+		cmp ebx,2
 		jg .over4b_08
+		jne @f
+			;если два 2 байтовых числа
+			or edx,2 ;array data
+			movzx ecx,word[eax+10]
+			bt edx,0
+			jnc @f
+				ror cx,8
+			@@:		
 			;если одно 2 байтовое число
 			movzx ebx,word[eax+8]
 			bt edx,0
@@ -1060,10 +1410,66 @@ proc read_tag_value, app1:dword, t_max:dword
 				inc bx
 			@@:
 			mov eax,ebx
-			call convert_int_to_str ;[t_max]
+			stdcall convert_int_to_str, [t_max]
+			bt edx,1 ;array ?
+			jnc .end_f
+			;добавляем 2-е число
+			stdcall str_n_cat,edi,txt_zap,[t_max]
+			stdcall str_len,edi
+			add edi,eax
+			bt bx,15
+			jnc @f
+				mov byte[edi],'-'
+				inc edi
+				neg bx
+				inc bx
+			@@:
+			mov eax,ecx
+			stdcall convert_int_to_str, [t_max]
+			jmp .end_f
 		.over4b_08:
-			;...
-		jmp .end_f
+			mov ecx,[t_max]
+			mov esi,dword[eax+8]
+			bt edx,0
+			jnc @f
+				ror si,8
+				ror esi,16
+				ror si,8
+			@@:
+			mov eax,[app1]
+			mov eax,[eax+4]
+			add esi,eax
+			
+			;берем число
+			.array_08:
+			stdcall str_len,edi
+			cmp ecx,eax
+			jle .end_f ;если не хватило строки
+			add edi,eax
+			sub ecx,eax
+			movzx eax,word[esi]
+			bt edx,0
+			jnc @f
+				ror ax,8
+			@@:
+			;смотрим на знак +|-
+			bt ax,15
+			jnc @f
+				mov byte[edi],'-'
+				inc edi
+				neg ax
+				inc ax
+			@@:
+			stdcall convert_int_to_str,ecx
+
+			dec ebx
+			cmp ebx,0
+			je .end_f
+
+			;добавляем запятую
+			stdcall str_n_cat,edi,txt_zap,ecx
+			add esi,2
+			jmp .array_08
 	.tag_08:
 
 	mov bx,tag_format_si4b
@@ -1095,7 +1501,7 @@ proc read_tag_value, app1:dword, t_max:dword
 				inc ebx
 			@@:
 			mov eax,ebx
-			call convert_int_to_str ;[t_max]
+			stdcall convert_int_to_str, [t_max]
 		.over4b_09:
 			;...
 		jmp .end_f
@@ -1176,34 +1582,41 @@ proc hex_in_str, buf:dword,val:dword,zif:dword
 endp
 
 ;input:
-; eax = value
-; edi = string buffer
+; eax - число
+; edi - буфер для строки
+; len - длинна буфера
 ;output:
 align 4
-convert_int_to_str:
-	pushad
-		mov dword[edi+1],0
-		mov dword[edi+5],0
-		call .str
-	popad
+proc convert_int_to_str, len:dword
+pushad
+	mov esi,[len]
+	add esi,edi
+	dec esi
+	call .str
+popad
 	ret
+endp
 
 align 4
 .str:
 	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	cmp eax,ecx ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
 	jb @f
-		xor edx,edx  ;очистить edx
-		div ecx      ;разделить - остаток в edx
-		push edx     ;положить в стек
-		;dec edi             ;смещение необходимое для записи с конца строки
+		xor edx,edx ;очистить edx
+		div ecx   ;разделить - остаток в edx
+		push edx  ;положить в стек
+		;dec edi  ;смещение необходимое для записи с конца строки
 		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
 		pop eax
 	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+	cmp edi,esi
+	jge @f
+		or al,0x30 ;данная команда короче  чем две выше
+		stosb      ;записать элемент из регистра al в ячеку памяти es:edi
+		mov byte[edi],0 ;в конец строки ставим 0, что-бы не вылазил мусор
+	@@:
+	ret        ;пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
 

@@ -420,11 +420,11 @@ pushad
 		cmp byte[txt_buf],0
 		jne .cycle_0
 
-	;считываем дочерние теги для 0x8769
+	;находим app2
 	stdcall [exif_get_app2], h_app1,h_child
 	cmp dword[h_child],0
 	je .no_found_child
-	
+
 	mov eax,1
 	sub ebx,5
 	.cycle_1:
@@ -488,7 +488,7 @@ but_2:
 
 align 4
 but_3:
-	call draw_file_3 ;еще какая-то информация ...
+	call draw_file_3 ;информация app2
 	ret
 
 ;данные для диалога открытия файлов
@@ -654,7 +654,6 @@ dd 0,0
 	sz_exif_get_app1_tag db 'exif_get_app1_tag',0
 	sz_exif_get_app1_child db 'exif_get_app1_child',0
 	sz_exif_get_app2 db 'exif_get_app2',0
-	;exif_get_image_160_120
 
 sc system_colors 
 
@@ -681,7 +680,9 @@ buf_1:
 	db 24 ;+20 bit in pixel
 
 h_app1  dd 0,0,0 ;структура для заголовка главных тегов
+	dw 0
 h_child dd 0,0,0 ;структура для заголовка дочерних тегов
+	dw 0
 txt_openfile db 'Откройте файл изображения в формате *.jpg.',0
 txt_nochild  db 'Информация по этой кнопке не найдена.',0
 txt_buf rb 80
