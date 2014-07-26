@@ -11,10 +11,10 @@ cmd_bye:
 ; Send BYE message to the server
         mov     dword[buf_cmd], "BYE" + 13 shl 24
         mov     byte[buf_cmd+4], 10
-        mcall   send, [socketnum], buf_cmd, 5, 0
+        mcall   send, [controlsocket], buf_cmd, 5, 0
 
 ; Close the control connection
-        mcall   close, [socketnum]
+        mcall   close, [controlsocket]
         jmp     main
 
 
@@ -22,7 +22,7 @@ cmd_pwd:
 
         mov     dword[buf_cmd], "PWD" + 13 shl 24
         mov     byte[buf_cmd+4], 10
-        mcall   send, [socketnum], buf_cmd, 5, 0
+        mcall   send, [controlsocket], buf_cmd, 5, 0
 
         jmp     wait_for_servercommand
 
@@ -38,7 +38,7 @@ cmd_cwd:
         lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
@@ -55,7 +55,7 @@ cmd_dele:
         lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
@@ -67,7 +67,7 @@ cmd_list:
 
         mov     dword[buf_cmd], "LIST"
         mov     word[buf_cmd+4], 0x0a0d
-        mcall   send, [socketnum], buf_cmd, 6, 0 
+        mcall   send, [controlsocket], buf_cmd, 6, 0
 
         jmp     wait_for_servercommand
 
@@ -109,7 +109,7 @@ cmd_retr:
         repne scasb
         lea     esi, [edi - buf_cmd]
         mov     dword[edi - 2], 0x0a0d
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         invoke  con_write_asciiz, buf_cmd     ; print command
         jmp     wait_for_servercommand
@@ -120,15 +120,16 @@ cmd_rdir:
 
 ; Request filename list from the server
 
-	call    open_dataconnection
-	
-	mov	[size_fname], 0
+        call    open_dataconnection
+
+        mov     [ptr_fname], 0
+        mov     [size_fname], 0
         mov     dword[buf_cmd], "NLST"
         mov     word[buf_cmd+4], 0x0a0d
-        mcall   send, [socketnum], buf_cmd, 6, 0 
+        mcall   send, [controlsocket], buf_cmd, 6, 0
 
-        jmp     wait_for_servercommand	
-	
+        jmp     wait_for_servercommand  
+        
 cmd_stor:
 
         call    open_dataconnection
@@ -154,7 +155,7 @@ cmd_stor:
         repne scasb
         lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
@@ -162,6 +163,8 @@ cmd_stor:
 cmd_lcwd:
 
         mov     esi, buf_cmd+5
+        cmp     byte[esi], 10
+        je      .print
         mov     ecx, 256-5
   .loop:
         lodsb
@@ -173,6 +176,7 @@ cmd_lcwd:
   .done:
         mov     byte[esi-1], 0
         mcall   30, 1, buf_cmd+5              ; set working directory
+  .print:
         mcall   30, 2, buf_cmd, 256           ; and read it again
 
         invoke  con_write_asciiz, str_lcwd
@@ -186,7 +190,7 @@ cmd_cdup:
 
         mov     dword[buf_cmd], "CDUP"
         mov     word[buf_cmd+4], 0x0d0a
-        mcall   send, [socketnum], buf_cmd, 6, 0
+        mcall   send, [controlsocket], buf_cmd, 6, 0
 
         jmp     wait_for_servercommand
 
@@ -202,7 +206,7 @@ cmd_rmd:
         lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 
@@ -218,7 +222,7 @@ cmd_mkd:
         lea     esi, [edi - buf_cmd]
         mov     word [edi - 2], 0x0a0d
 
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         jmp     wait_for_servercommand
 

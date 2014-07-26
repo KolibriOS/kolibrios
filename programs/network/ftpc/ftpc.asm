@@ -27,8 +27,8 @@ OPERATION_NONE          = 0
 OPERATION_LIST          = 1
 OPERATION_RETR          = 2
 OPERATION_STOR          = 3
-OPERATION_RDIR		    = 4
-	
+OPERATION_RDIR          = 4
+        
 use32
 ; standard header
         db      'MENUET01'      ; signature
@@ -38,7 +38,7 @@ use32
         dd      mem+0x1000      ; required memory
         dd      mem+0x1000      ; stack pointer
         dd      buf_cmd         ; parameters
-        dd      0               ; path
+        dd      path            ; path
 
 include '../../macros.inc'
 purge mov,add,sub
@@ -51,10 +51,10 @@ include 'servercommands.inc'
 
 start:
 ; initialize heap for using dynamic blocks
-	mcall	68,11
-	test 	eax,eax
-	je 	exit2
-	
+        mcall   68,11
+        test    eax,eax
+        je      exit2
+        
 ; disable all events except network event
         mcall   40, EV_STACK
 ; load libraries
@@ -64,7 +64,42 @@ start:
 ; initialize console
         invoke  con_start, 1
         invoke  con_init, 80, 25, 80, 250, str_title
+; find path to main settings file (ftpc.ini)
+        mov     edi, path               ; Calculate the length of zero-terminated string
+        xor     al, al
+        mov     ecx, 1024
+        repne   scasb
+        dec     edi
+        mov     esi, str_ini            ; append it with '.ini', 0
+        movsd
+        movsb
+; get settings from ini
+        invoke  ini.get_str, path, str_active, str_ip, str_active_ip, 16, 0
+        mov     esi, str_active_ip
+  .ip_loop:
+        lodsb
+        test    al, al
+        jz      .ip_ok
+        cmp     al, ' '
+        je      .ip_ok
+        cmp     al, '.'
+        jne     .ip_loop
+        mov     byte[esi-1], ','
+        jmp     .ip_loop
+  .ip_ok:
+        mov     byte[esi-1], 0
+
+        invoke  ini.get_int, path, str_active, str_port_start, 64000
+        mov     [acti_port_start], ax
+
+        invoke  ini.get_int, path, str_active, str_port_stop, 65000
+        mov     [acti_port_stop], ax
+
+        invoke  ini.get_str, path, str_general, str_dir, buf_buffer1, BUFFERSIZE, 0
+        mcall   30, 1, buf_buffer1                      ; set working directory
+
 ; Check for parameters, if there are some, resolve the address right away
+; TODO: parse ftp://user:password@server.com:port/folder/subfolder type urls.
         cmp     byte [buf_cmd], 0
         jne     resolve
 
@@ -88,13 +123,41 @@ main:
         invoke  con_write_asciiz, str_newline
 
 resolve:
+        mov     [sockaddr1.port], 21 shl 8
+
 ; delete terminating '\n'
         mov     esi, buf_cmd
   @@:
         lodsb
+        cmp     al, ':'
+        je      .do_port
         cmp     al, 0x20
         ja      @r
         mov     byte [esi-1], 0
+        jmp     .done
+
+  .do_port:
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     byte [esi-1], 0
+  .portloop:
+        lodsb
+        cmp     al, 0x20
+        jbe     .port_done
+        sub     al, '0'
+        jb      error_hostname
+        cmp     al, 9
+        ja      error_hostname
+        lea     ebx, [ebx*4 + ebx]
+        shl     ebx, 1
+        add     ebx, eax
+        jmp     .portloop
+
+  .port_done:
+        xchg    bl, bh
+        mov     [sockaddr1.port], bx
+
+  .done:
 ; Say to the user that we're resolving
         invoke  con_write_asciiz, str_resolve
         invoke  con_write_asciiz, buf_cmd
@@ -118,10 +181,10 @@ resolve:
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      error_socket
-        mov     [socketnum], eax
+        mov     [controlsocket], eax
 ; connect to the server
         invoke  con_write_asciiz, str_connect
-        mcall   connect, [socketnum], sockaddr1, 18
+        mcall   connect, [controlsocket], sockaddr1, 18
         cmp     eax, -1
         je      error_connect
         mov     [status], STATUS_CONNECTING
@@ -151,7 +214,7 @@ wait_for_servercommand:
         mcall   26, 9
         cmp     eax, [timeout]
         jge     error_timeout
-        mcall   recv, [socketnum], buf_buffer1, BUFFERSIZE, MSG_DONTWAIT
+        mcall   recv, [controlsocket], buf_buffer1, BUFFERSIZE, MSG_DONTWAIT
         test    eax, eax
         jnz     .got_data
         cmp     ebx, EWOULDBLOCK
@@ -202,9 +265,9 @@ wait_for_usercommand:
 
 ; Are there any files in the transfer queue?
 
-	    cmp 	[queued], 0
+        cmp     [queued], 0
         ja      transfer_queued                 ; Yes, transfer those first.
-	
+        
 ; change color to green for user input
         invoke  con_set_flags, 0x0a
 
@@ -240,8 +303,8 @@ wait_for_usercommand:
         je      cmd_bye
 
         cmp     dword[buf_cmd], "rdir"
-	je      cmd_rdir
-	
+        je      cmd_rdir
+        
         cmp     byte[buf_cmd+4], " "
         jne     @f
 
@@ -289,7 +352,7 @@ wait_for_usercommand:
         invoke  con_write_asciiz, str_pass
         mov     dword[buf_cmd], "PASS"
         mov     byte[buf_cmd+4], " "
-        invoke  con_set_flags, 0x00     ; black text on black background for password
+        invoke  con_set_flags, 0x00             ; black text on black background for password
 
   .send:
 ; read string
@@ -304,28 +367,138 @@ wait_for_usercommand:
         lea     esi, [edi-buf_cmd]
         mov     word[edi-2], 0x0a0d
 ; and send it to the server
-        mcall   send, [socketnum], buf_cmd, , 0
+        mcall   send, [controlsocket], buf_cmd, , 0
 
         invoke  con_write_asciiz, str_newline
-        invoke  con_set_flags, 0x07     ; reset color
+        invoke  con_set_flags, 0x07             ; reset color
         jmp     wait_for_servercommand
 
 
 
-open_dataconnection:                    ; only passive for now..
-        cmp     [status], STATUS_LOGGED_IN
-        jne     .fail
+; files for rdir operation are queued
+transfer_queued:
 
-        mcall   send, [socketnum], str_PASV, str_PASV.length, 0
+        mov     esi, [ptr_queue]                ; always pointing to current part of ptr_fname_start
+        mov     edi, buf_cmd+5                  ; always point to filename for retr command
+  .build_filename:
+        lodsb   
+        stosb
+        cmp     al, 10
+        je      .get_file                       ; filename ends with character 10
+        test    al, al
+        jnz     .build_filename
+
+        ; Error occured, we reached the end of the buffer before [queued] reached 0
+        mov     [queued], 0
+        mcall   68, 13, [ptr_fname]             ; free buffer
+        test    eax, eax
+        jz      error_heap
+        jmp     wait_for_usercommand
+
+  .get_file:
+        mov     byte[edi], 0                    ; end filename with 0 byte
+        mov     [ptr_queue], esi
+        dec     [queued]
+        jnz     cmd_retr
+
+        mcall   68, 13, [ptr_fname]             ; free buffer
+        test    eax, eax
+        jz      error_heap
+        jmp     cmd_retr
+
+
+
+open_dataconnection:
+
+        test    [mode], 1
+        jnz     .active
+
+        mcall   send, [controlsocket], str_PASV, str_PASV.length, 0
         ret
 
-  .fail:
-        invoke  con_get_flags
+  .active:
+        mcall   socket, AF_INET4, SOCK_STREAM, 0
+        cmp     eax, -1
+        je      error_socket
+        mov     [datasocket], eax
+
+        mov     ax, [acti_port_start]
+        xchg    al, ah
+        mov     [sockaddr2.port], ax
+
+        mcall   bind, [datasocket], sockaddr2, 18
+        cmp     eax, -1
+        je      error_socket
+
+        mcall   listen, [datasocket], 1
+        cmp     eax, -1
+        je      error_socket
+
+        mov     dword[buf_buffer1], 'PORT'
+        mov     byte[buf_buffer1+4], ' '
+        mov     edi, buf_buffer1+5
+        mov     esi, str_active_ip
+  .loop:
+        lodsb
+        test    al, al
+        jz      .ip_ok
+        stosb
+        jmp     .loop
+  .ip_ok:
+        mov     al, ','
+        stosb
+        movzx   eax, byte[sockaddr2.port+0]
+        call    dword_ascii
+        mov     al, ','
+        stosb
+        movzx   eax, byte[sockaddr2.port+1]
+        call    dword_ascii
+        mov     ax, 0x0a0d
+        stosw
+        lea     esi, [edi - buf_buffer1]
+        mcall   send, [controlsocket], buf_buffer1, , 0
+
+        mcall   accept, [datasocket], sockaddr2, 18        ; time to accept the awaiting connection..
+        cmp     eax, -1
+        je      error_socket
         push    eax
-        invoke  con_set_flags, 0x0c                     ; print errors in red
-        invoke  con_write_asciiz, str_err_socket
-        invoke  con_set_flags                           ; reset color
+        mcall   close, [datasocket]
+        pop     [datasocket]
+
+        mcall   recv, [controlsocket], buf_buffer1, BUFFERSIZE, 0
+
         ret
+
+; eax = input
+; edi = ptr where to write
+dword_ascii:
+
+        push    edx ebx ecx
+        mov     ebx, 10
+        xor     ecx, ecx
+
+       @@:
+        xor     edx, edx
+        div     ebx
+        add     edx, '0'
+        push    dx
+        inc     ecx
+        test    eax, eax
+        jnz     @r
+
+       @@:
+        pop     ax
+        stosb
+        dec     ecx
+        jnz     @r
+
+        pop     ecx ebx edx
+        ret
+
+error_hostname:
+        invoke  con_set_flags, 0x0c                     ; print errors in red
+        invoke  con_write_asciiz, str_err_host
+        jmp     wait_for_keypress
 
 error_connect:
         invoke  con_set_flags, 0x0c                     ; print errors in red
@@ -345,24 +518,25 @@ error_socket:
 error_resolve:
         invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str_err_resolve
+        jmp     wait_for_keypress
 
 error_heap:
-	invoke  con_set_flags, 0x0c                     ; print errors in red
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str_err_heap
-	
+        
 wait_for_keypress:
         invoke  con_set_flags, 0x07                     ; reset color to grey
         invoke  con_write_asciiz, str_push
         invoke  con_getch2
-        mcall   close, [socketnum]
+        mcall   close, [controlsocket]
         jmp     main
 
 done:
         invoke  con_exit, 1
 
 exit:
-        mcall   close, [socketnum]
-exit2:	
+        mcall   close, [controlsocket]
+exit2:  
         mcall   -1
 
 
@@ -378,9 +552,10 @@ str_resolve     db 'Resolving ',0
 str_newline     db 10,0
 str_err_resolve db 10,'Name resolution failed.',10,0
 str_err_socket  db 10,'Socket error.',10,0
-str_err_heap	db 10,'Cannot allocate memory from heap.',10,0
+str_err_heap    db 10,'Cannot allocate memory from heap.',10,0
 str_err_timeout db 10,'Timeout - no response from server.',10,0
 str_err_connect db 10,'Cannot connect to the server.',10,0
+str_err_host    db 10,'Invalid hostname.',10,0
 str8            db ' (',0
 str9            db ')',10,0
 str_push        db 'Push any key to continue.',0
@@ -408,10 +583,19 @@ str_help        db "available commands:",10
                 db "retr <file>     - retreive file from the server",10
                 db "rmd <directory> - remove directory from the server",10
                 db "stor <file>     - store file on the server",10
-	            db "rdir            - retreive all files from current server dir",10
+                    db "rdir            - retreive all files from current server dir",10
                 db 10,0
 
-queued		dd 0
+str_ini         db '.ini', 0
+str_active      db 'active', 0
+str_port_start  db 'port_start', 0
+str_port_stop   db 'port_stop', 0
+str_ip          db 'ip', 0
+str_dir         db 'dir', 0
+str_general     db 'general', 0
+
+queued          dd 0
+mode            db 0    ; passive = 0, active = 1
 
 ; FTP strings
 
@@ -420,21 +604,21 @@ str_PASV        db 'PASV',13,10
 
 sockaddr1:
         dw AF_INET4
-.port   dw 0x1500       ; 21
-.ip     dd 0
+.port   dw ?
+.ip     dd ?
         rb 10
 
 sockaddr2:
         dw AF_INET4
-.port   dw 0
-.ip     dd 0
+.port   dw ?
+.ip     dd ?
         rb 10
 
 ; import
 align 4
 @IMPORT:
 
-library network, 'network.obj', console, 'console.obj'
+library network, 'network.obj', console, 'console.obj', libini, 'libini.obj'
 
 import  network,        \
         getaddrinfo,    'getaddrinfo',  \
@@ -454,35 +638,46 @@ import  console,        \
         con_get_flags,  'con_get_flags', \
         con_set_flags,  'con_set_flags'
 
+import  libini,         \
+        ini.get_str,    'ini_get_str',\
+        ini.get_int,    'ini_get_int'
+
 
 i_end:
 
 ; uninitialised data
 
 status          db ?
-active_passive  db ?
 
-socketnum       dd ?
+controlsocket   dd ?
 datasocket      dd ?
 offset          dd ?
 size            dd ?
 operation       dd ?
-
-size_fname	dd ?
-ptr_queue	dd ?
 timeout         dd ?
-ptr_fname_start	dd ?
+
+ptr_fname       dd ?
+size_fname      dd ?
+ptr_queue       dd ?
+
+acti_port_start dw ?
+acti_port_stop  dw ?
+acti_port       dw ?
+
+str_active_ip   rb 16
 
 filestruct:
-.subfn  dd ?
-.offset dd ?
-        dd ?
-.size   dd ?
-.ptr    dd ?
-.name   rb 1024
+  .subfn        dd ?
+  .offset       dd ?
+                dd ?
+  .size         dd ?
+  .ptr          dd ?
+  .name         rb 1024
 
 buf_buffer1     rb BUFFERSIZE+1
 buf_buffer2     rb BUFFERSIZE+1
-buf_cmd         rb 1024			; buffer for holding command string
+buf_cmd         rb 1024                 ; buffer for holding command string
+
+path            rb 1024
 
 mem:

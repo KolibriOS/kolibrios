@@ -91,8 +91,8 @@ pasv_ok:
 
         invoke  con_write_asciiz, str_open
         mcall   connect, [datasocket], sockaddr2, 18
-;        cmp     eax, -1
-;        je      error_socket
+        cmp     eax, -1
+        je      error_socket
         jmp     wait_for_servercommand
 
   .fail:
@@ -116,9 +116,9 @@ data_loop:
         cmp     [operation], OPERATION_RETR
         je      .retr
 
-	    cmp 	[operation], OPERATION_RDIR
-	    je 	    .rdir
-	
+        cmp     [operation], OPERATION_RDIR
+        je      .rdir
+        
 ; not retreiving, just print to console
         invoke  con_write_asciiz, buf_buffer2
         jmp     data_loop
@@ -155,116 +155,46 @@ data_loop:
         mov     [operation], OPERATION_NONE
         jmp     wait_for_servercommand
 
-
   .rdir:
-	cmp	[size_fname], 0
-	jne	.realloc
+        ; alloc/realloc memory block to store filenames
+        mov     ecx, eax                        ; eax is size of buffer received
+        inc     ecx
+        add     ecx, [size_fname]               ; added old size to form new required size
+        mcall   68, 20, , [ptr_fname]           ; realloc
+        test    eax, eax
+        je      error_heap
+        mov     [ptr_fname], eax                ; eax contains the new block now
+        mov     [ptr_queue], eax
 
-  .malloc:					; create a new dynamic block
-  	mov 	ecx, eax
-	inc 	ecx	
-
-	mcall	68,12	      			; eax now points to new buffer	
-	
-	test 	eax,eax
-	je 	error_heap
-
-	mov 	[ptr_fname_start], eax
-
-	jmp 	.rdir_init
-
-  .realloc:					; expand block created with .malloc
-
-  	mov 	ecx, eax			; eax is size of buffer received
-	inc	ecx
-
-	add	ecx, [size_fname]		; added old size to form new required size
-
-	mcall 	68,20,,[ptr_fname_start]
-
-    	test	eax, eax
-	je	error_heap
-
-	mov	[ptr_fname_start], eax		; eax contains the new block now
-	add	eax, [size_fname]
-
-  .rdir_init:					; copies filenames into our buffer
-
-	mov	esi, buf_buffer2
-	mov	edi, eax
-	
+        ; copy filenames into fname buffer
+        mov     esi, buf_buffer2
+        mov     edi, eax
+        add     edi, [size_fname]
   .copy_buf:
-  	lodsb
-	cmp	al,13				; ignore any \r character
-	je 	.copy_buf
-	stosb
+        lodsb
+        cmp     al, 13                          ; ignore any carriage return character
+        je      .copy_buf
+        stosb
+        cmp     al, 10                          ; linefeed marks end of filename
+        je      @f
+        inc     [queued]
+  @@:
+        test    al, al                          ; 0 marks end of buffer
+        jne     .copy_buf
 
-	cmp	al, 10
-	jne 	.not_end
-	inc 	[queued]
+        ; All received filenames have been copied, calculate new size of fname buffer
+        dec     edi                             ; dont count the trailing 0 byte
+        sub     edi, [ptr_fname]
+        mov     [size_fname], edi       
+        jmp     data_loop
 
-  .not_end:
-	test	al,al
-	jne 	.copy_buf
-	
-	dec 	edi
-	dec 	edi
 
-	mov	eax, [ptr_fname_start]
-	mov 	[ptr_queue], eax
-
-	sub 	edi, eax		; edi contains the current size now
-	mov	[size_fname], edi	
-
-	jmp	data_loop
-	
-
-; files for rdir operation are queued
-transfer_queued:
-
-	mov	esi, [ptr_queue]		; always pointing to current part of ptr_fname_start
-	mov 	edi, buf_cmd+5	   		; always point to filename for retr command
-
-  .build_filename:
-	lodsb	
-	stosb
-
-	cmp 	al,10
-	je 	.get_file			; filename ends with character 10
-	test	al,al
-	jz	.null_found			; this should be end of buffer
-	jmp	.build_filename
-
-  .null_found:					
-
-	mov	[queued],0
-	jmp 	.free
-
-  .get_file:
-	dec	[queued]
-	jnz	.after_free	
-	
-  .free:
-	mcall	68,13,[ptr_fname_start]		; freeing the buffer
-	test	eax,eax
-	jz 	error_heap
-	jmp	wait_for_usercommand
-
-  .after_free:
-	xor	al,al				; appending 0 after retr command
-	stosb
-	mov	eax, esi
-	mov	[ptr_queue], eax
-	
-	jmp	cmd_retr
-		
 close_datacon:
         cmp     [operation], OPERATION_NONE
         je      wait_for_usercommand
         invoke  con_write_asciiz, str_close
         mcall   close, [datasocket]
         jmp     wait_for_usercommand
-
 
 
 ascii_dec:
