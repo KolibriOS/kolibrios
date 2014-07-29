@@ -394,7 +394,6 @@ sayerr:
 
         push    0
         popf
-        sti
 
 ; set up esp
         movzx   esp, sp
@@ -402,15 +401,20 @@ sayerr:
         push    0
         pop     es
 
+        xor     cx, cx
+@@:
+        in      al, 64h
+        test    al, 2
+        loopnz  @b
+
         mov     al, 0xf6        ; Сброс клавиатуры, разрешить сканирование
         out     0x60, al
         xor     cx, cx
-wait_loop:       ; variant 2
-; reading state of port of 8042 controller
+@@:
         in      al, 64h
-        and     al, 00000010b  ; ready flag
-; wait until 8042 controller is ready
-        loopnz  wait_loop
+        test    al, 1
+        loopnz  @b
+        in      al, 0x60
 
 ;;;/diamond today   5.02.2008
 ; set keyboard typematic rate & delay
@@ -419,16 +423,19 @@ wait_loop:       ; variant 2
         xor     cx, cx
 @@:
         in      al, 64h
-        test    al, 2
+        test    al, 1
         loopnz  @b
+        in      al, 0x60
         mov     al, 0
         out     0x60, al
         xor     cx, cx
 @@:
         in      al, 64h
-        test    al, 2
+        test    al, 1
         loopnz  @b
+        in      al, 0x60
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        sti
 ; --------------- APM ---------------------
         and     word [es:BOOT_APM_VERSION], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300

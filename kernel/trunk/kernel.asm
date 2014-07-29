@@ -971,16 +971,9 @@ first_app_found:
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
-        call    kb_write
+        call    kb_write_wait_ack
         test    ah, ah
         jnz     .no_keyboard
-
-        ; wait until 8042 is ready
-        xor     ecx, ecx
-      @@:
-        in      al, 64h
-        and     al, 00000010b
-        loopnz  @b
 
 iglobal
 align 4
@@ -992,18 +985,14 @@ ps2_keyboard_functions:
 endg
         stdcall register_keyboard, ps2_keyboard_functions, 0
        ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
-       ; call  kb_write
-       ; call  kb_read
+       ; call  kb_write_wait_ack
        ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
+       ; call  kb_write_wait_ack
 
         mov     al, 0xF3     ; set repeat rate & delay
-        call    kb_write
-;        call  kb_read
+        call    kb_write_wait_ack
         mov     al, 0; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
-        call    kb_write
-;        call  kb_read
+        call    kb_write_wait_ack
      ;// mike.dld [
         call    set_lights
      ;// mike.dld ]
@@ -4490,113 +4479,39 @@ putimage_get16bpp:
 ;        ret
 ;-----------------------------------------------------------------------------
 align 4
-kb_read:
-
-        push    ecx edx
-
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kr_loop:
-        in      al, 0x64
-        test    al, 1
-        jnz     kr_ready
-        loop    kr_loop
-        mov     ah, 1
-        jmp     kr_exit
-      kr_ready:
-        push    ecx
-        mov     ecx, 32
-      kr_delay:
-        loop    kr_delay
-        pop     ecx
-        in      al, 0x60
-        xor     ah, ah
-      kr_exit:
-
-        pop     edx ecx
-
-        ret
-;-----------------------------------------------------------------------------
-align 4
-kb_write:
+kb_write_wait_ack:
 
         push    ecx edx
 
         mov     dl, al
-;        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-;      kw_loop1:
-;        in      al,0x64
-;        test    al,0x20
-;        jz      kw_ok1
-;        loop    kw_loop1
-;        mov     ah,1
-;        jmp     kw_exit
-;      kw_ok1:
-        in      al, 0x60
         mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop:
+.wait_output_ready:
         in      al, 0x64
         test    al, 2
-        jz      kw_ok
-        loop    kw_loop
+        jz      @f
+        loop    .wait_output_ready
         mov     ah, 1
-        jmp     kw_exit
-      kw_ok:
+        jmp     .nothing
+@@:
         mov     al, dl
         out     0x60, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop3:
-        in      al, 0x64
-        test    al, 2
-        jz      kw_ok3
-        loop    kw_loop3
-        mov     ah, 1
-        jmp     kw_exit
-      kw_ok3:
-        mov     ah, 8
-      kw_loop4:
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop5:
+        mov     ecx, 0xfffff; last 0xffff, new value in view of fast CPU's
+.wait_ack:
         in      al, 0x64
         test    al, 1
-        jnz     kw_ok4
-        loop    kw_loop5
-        dec     ah
-        jnz     kw_loop4
-      kw_ok4:
+        jnz     @f
+        loop    .wait_ack
+        mov     ah, 1
+        jmp     .nothing
+@@:
+        in      al, 0x60
         xor     ah, ah
-      kw_exit:
 
+.nothing:
         pop     edx ecx
 
         ret
 ;-----------------------------------------------------------------------------
-align 4
-kb_cmd:
-
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      c_wait:
-        in      al, 0x64
-        test    al, 2
-        jz      c_send
-        loop    c_wait
-        jmp     c_error
-      c_send:
-        mov     al, bl
-        out     0x64, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      c_accept:
-        in      al, 0x64
-        test    al, 2
-        jz      c_ok
-        loop    c_accept
-      c_error:
-        mov     ah, 1
-        jmp     c_exit
-      c_ok:
-        xor     ah, ah
-      c_exit:
-        ret
-
 
 setmouse:  ; set mousepicture -pointer
            ; ps2 mouse enable

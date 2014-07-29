@@ -551,9 +551,9 @@ set_lights:
 ps2_set_lights:
         stdcall disable_irq, 1
         mov     al, 0xED
-        call    kb_write
+        call    kb_write_wait_ack
         mov     al, [esp+8]
-        call    kb_write
+        call    kb_write_wait_ack
         stdcall enable_irq, 1
         ret     8
 
