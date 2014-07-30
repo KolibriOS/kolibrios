@@ -141,6 +141,7 @@ align 4
         TCP_sequence_num        dd ?
         TCP_queue               rd (TCP_QUEUE_SIZE*sizeof.TCP_queue_entry + sizeof.queue)/4
         TCP_input_event         dd ?
+        TCP_timer1_event        dd ?
 endg
 
 uglobal
@@ -224,7 +225,15 @@ macro   TCP_init {
         call    new_sys_threads
         test    eax, eax
         jns     @f
-        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP, error %d\n', eax
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP input, error %d\n', eax
+  @@:
+
+        movi    ebx, 1
+        mov     ecx, TCP_timer_640ms
+        call    new_sys_threads
+        test    eax, eax
+        jns     @f
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP timer, error %d\n', eax
   @@:
 
 }
