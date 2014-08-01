@@ -122,8 +122,6 @@ struct ftdi_context
 chipType                db      ?
 baudrate                dd      ?
 bitbangEnabled          db      ?
-readBufPtr              dd      ?
-readBufOffs             dd      ?
 readBufChunkSize        dd      ?
 writeBufChunkSize       dd      ?
 interface               dd      ?
@@ -206,6 +204,8 @@ proc AddDevice stdcall uses ebx esi, .config_pipe:DWORD, .config_descr:DWORD, .i
         mov     [eax + ftdi_context.nullP], ebx
         mov     [eax + ftdi_context.index], 0
         mov     [eax + ftdi_context.lockPID], 0
+        mov     [eax + ftdi_context.readBufChunkSize], 64
+        mov     [eax + ftdi_context.writeBufChunkSize], 64
         
         cmp     [edx+usb_descr.bcdDevice], 0x400
         jnz     @f
@@ -242,7 +242,9 @@ proc AddDevice stdcall uses ebx esi, .config_pipe:DWORD, .config_descr:DWORD, .i
         mov     [ebx + ftdi_context.inEP], eax
         DEBUGF 1,'K : Open second pipe\n'
         stdcall USBOpenPipe, [.config_pipe],  0x02,  0x40,  BULK_PIPE, 0
-        mov     [ebx + ftdi_context.outEP], eax        
+        mov     [ebx + ftdi_context.outEP], eax
+        mov     eax, ebx
+        ret        
            
   .notftdi:
         DEBUGF 1,'K : Skipping not FTDI device\n'
@@ -263,7 +265,7 @@ align 4
 proc service_proc stdcall uses ebx esi edi, ioctl:DWORD
 locals
 ConfPacket  rb  8
-EventData   rd  2
+EventData   rd  3
 endl
         mov     edi, [ioctl]
         mov     eax, [edi+io_code]
@@ -296,7 +298,13 @@ endl
         
   .pid_ok:  
         push    eax edi
+        mov     ecx, 0x80000000
+        cmp     eax, 17
+        je     .bulkevent
+        cmp     eax, 18
+        je      .bulkevent
         xor     ecx, ecx
+  .bulkevent:                
         xor     esi, esi
         call    CreateEvent        
         mov     [EventData], eax
@@ -309,37 +317,39 @@ endl
         jz      .ftdi_setrtshigh   
         dec     eax                 ;6
         jz      .ftdi_setrtslow  
-        dec     eax
+        dec     eax                 ;7
         jz      .ftdi_setdtrhigh
-        dec     eax
+        dec     eax                 ;8
         jz      .ftdi_setdtrlow
-        dec     eax
+        dec     eax                 ;9
         jz      .ftdi_usb_reset
-        dec     eax
+        dec     eax                 ;10
         jz      .ftdi_setflowctrl
-        dec     eax
+        dec     eax                 ;11
         jz      .ftdi_set_event_char
-        dec     eax
+        dec     eax                 ;12
         jz      .ftdi_set_error_char
-        dec     eax
+        dec     eax                 ;13
         jz      .ftdi_set_latency_timer
-        dec     eax
+        dec     eax                 ;14
         jz      .ftdi_get_latency_timer
-        dec     eax
+        dec     eax                 ;15
         jz      .ftdi_read_pins
-        dec     eax
+        dec     eax                 ;16
         jz      .ftdi_poll_modem_status
-        dec     eax
+        dec     eax                 ;17
         jz      .ftdi_write_data
-        dec     eax
+        dec     eax                 ;18
+        jz      .ftdi_read_data
+        dec     eax                 ;19
         jz      .ftdi_set_baudrate
-        dec     eax
+        dec     eax                 ;20
         jz      .ftdi_set_line_property
-        dec     eax
+        dec     eax                 ;21
         jz      .ftdi_purge_rx_buf
-        dec     eax
+        dec     eax                 ;22
         jz      .ftdi_purge_tx_buf
-        
+                
   .version:     
   .endswitch:
         xor     eax, eax
@@ -597,28 +607,58 @@ C_CLK = 48000000
         jmp     .endswitch
 
   .ftdi_write_data:
-        mov     edi, [edi+input]
+        mov     edi, [edi+input]        
         mov     ebx, [edi+4]
-        mov     eax, [edi+8]
         xor     ecx, ecx        ; ecx - offset     
-  .dataleft:
+  .dataleft:        
         mov     edx, [ebx + ftdi_context.writeBufChunkSize] ; edx - write_size
         push    ecx
         add     ecx, edx
-        cmp     ecx, [edi+8]
+        cmp     ecx, [edi+8]    ; [edi+8] - size
         pop     ecx
-        jle     .morethanchunk
+        jle     .morethanchunk_write
         mov     edx, [edi+8]           
         sub     edx, ecx
-  .morethanchunk:
-        stdcall USBNormalTransferAsync, [ebx + ftdi_context.inEP], [edi+12+ecx], edx, bulk_callback, edx, 1
+  .morethanchunk_write:
+        lea     eax, [EventData]
+        stdcall USBNormalTransferAsync, [ebx + ftdi_context.inEP], [edi+12+ecx], edx, bulk_callback, eax, 1
+        push    ebx edi edx ecx
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent        
-        add     ecx, [EventData]
+        call    WaitEvent
+        pop     ecx edx edi ebx
+        cmp     [EventData+8], -1
+        jz      .endswitch;jz      .error
+        add     ecx, [EventData+8]
         cmp     ecx, [edi+8]
         jl      .dataleft
         jmp     .endswitch
+        
+  .ftdi_read_data:
+        mov     esi, [edi+input]
+        mov     edi, [edi+output]
+        mov     ebx, [esi+4]        
+        xor     ecx, ecx
+  .read_loop:
+        mov     edx, [esi+8]
+        sub     edx, ecx
+        test    edx, edx
+        jz      .endswitch
+        cmp     edx, [ebx + ftdi_context.readBufChunkSize]
+        jl      .lessthanchunk_read
+        mov     edx, [ebx + ftdi_context.readBufChunkSize]     
+  .lessthanchunk_read:
+        lea     eax, [EventData]
+        stdcall USBNormalTransferAsync, [ebx + ftdi_context.outEP], [edi+ecx], edx, bulk_callback, eax, 1        
+        push    esi edi ecx ebx
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]        
+        call    WaitEvent
+        pop     ebx ecx edi esi
+        cmp     [EventData+8], -1
+        jz      .endswitch;jz      .error
+        add     ecx, [EventData+8]
+        jmp     .read_loop 
         
   .ftdi_poll_modem_status:
         mov     edi, [edi+input]                                  
@@ -663,7 +703,11 @@ C_CLK = 48000000
   .ftdi_get_list:
         call    linkedlist_gethead                        
         mov     edi, [edi+output]
+        push    edi
+        add     edi, 4
+        xor     ecx, ecx
   .nextdev:
+        inc     ecx
         cmp     [eax + ftdi_context.lockPID], 0
         jnz      .dev_is_locked        
         mov     dword[edi], 'NLKD'
@@ -678,14 +722,18 @@ C_CLK = 48000000
         mov     eax, [eax + ftdi_context.next_context]
         test    eax, eax
         jnz     .nextdev
+        pop     edi
+        mov     [edi], ecx
         jmp     .endswitch
         	   
   .ftdi_lock:
+        DEBUGF 1, 'K : FTDI lock attempt\n'
         mov     esi, [edi+input]
         mov     ebx, [esi+4]
         mov     eax, [ebx + ftdi_context.lockPID]
         test    eax, eax
         jnz     .lockedby
+        DEBUGF 1, 'K : Lock success\n'
         mov     eax, [esi]
         mov     [ebx + ftdi_context.lockPID], eax
   .lockedby:
@@ -723,33 +771,41 @@ proc control_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buf
         mov     ecx, [.calldata]
         mov     eax, [ecx]
         mov     ebx, [ecx+4]
+        mov     edx, [.status]
+        mov     [ecx+8], edx
         xor     esi, esi
         xor     edx, edx
-        call    RaiseEvent
-              
+        call    RaiseEvent              
         ret
 endp
 
 proc bulk_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD
 
-        DEBUGF 1, 'K : status is %d\n', [.status] 
+        DEBUGF 1, 'K : status is %d\n', [.status]        
         mov     ecx, [.calldata]
         mov     eax, [ecx]
         mov     ebx, [ecx+4]
+        cmp     [.status], 0
+        jg      .error?
+  .error?:
+        cmp     [.status], 9
+        jne     .error
         mov     edx, [.length]
-        mov     edx, [edx]
-        mov     [ecx], edx
+        mov     [ecx+8], edx
+        jmp     .ok
+  .error:
+        mov     [ecx+8], dword -1
+  .ok:
         xor     esi, esi
-        xor     edx, edx          
-        call    RaiseEvent
-              
+        xor     edx, edx
+        ;mov     edx, 0x80000000
+        call    RaiseEvent            
         ret
-
 endp
 
 proc DeviceDisconnected stdcall uses  ebx esi edi, .device_data:DWORD
 
-        DEBUGF 1, 'K : FTDI deleting device data\n'
+        DEBUGF 1, 'K : FTDI deleting device data %x\n', [.device_data]
         mov     eax, [.device_data] 
         call    linkedlist_delete
         ret           
