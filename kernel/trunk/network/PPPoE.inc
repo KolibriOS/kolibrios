@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2012-2013. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2012-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  PPPoE.INC                                                   ;;
@@ -243,17 +243,15 @@ PPPoE_session_input:
 ;
 ; PPPoE_output
 ;
-; IN:
+; IN:  ax = protocol
 ;     ebx = device ptr
 ;     ecx = packet size
 ;
-;      di = protocol
-;
-; OUT: edi = 0 on error, pointer to buffer otherwise
-;      eax = buffer start
-;      ebx = to device structure
-;      ecx = unchanged (packet size of embedded data)
+; OUT: eax = buffer start / 0 on error
+;      ebx = device ptr
+;      ecx = packet size
 ;      edx = size of complete buffer
+;      edi = start of PPP payload
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -261,13 +259,12 @@ PPPoE_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "PPPoE_output: size=%u device=%x\n", ecx, ebx
 
-        pushw   di
+        pushw   ax
         pushw   [PPPoE_SID]
 
-        lea     eax, [ebx + ETH_DEVICE.mac]
-        lea     edx, [PPPoE_MAC]
+        mov     ax, ETHER_PROTO_PPP_SESSION
         add     ecx, PPPoE_frame.Payload + 2
-        mov     di, ETHER_PROTO_PPP_SESSION
+        lea     edx, [PPPoE_MAC]
         call    ETH_output
         jz      .eth_error
 
@@ -290,8 +287,7 @@ PPPoE_output:
 
   .eth_error:
         add     esp, 4
-        xor     edi, edi
-
+        xor     eax, eax
         ret
 
 

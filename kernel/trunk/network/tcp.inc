@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -273,6 +273,8 @@ TCP_api:
         jz      .packets_missed ; 2
         dec     bl
         jz      .packets_dumped ; 3
+        dec     bl
+        jz      .packets_queued ; 4
 
   .error:
         mov     eax, -1
@@ -292,4 +294,8 @@ TCP_api:
 
   .packets_dumped:
         mov     eax, [TCP_segments_dumped + eax]
+        ret
+
+  .packets_queued:
+        mov     eax, [TCP_queue + queue.size]
         ret

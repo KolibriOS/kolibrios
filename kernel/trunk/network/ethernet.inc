@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
@@ -166,17 +166,16 @@ ETH_process_input:
 ;
 ; ETH_output
 ;
-; IN: eax = pointer to source mac
+; IN:  ax = protocol
 ;     ebx = device ptr
-;     ecx = packet size
+;     ecx = payload size
 ;     edx = pointer to destination mac
-;      di = protocol
 ;
-; OUT: edi = 0 on error, pointer to buffer otherwise
-;      eax = buffer start
-;      ebx = to device structure
-;      ecx = unchanged (packet size of embedded data)
-;      edx = size of complete buffer
+; OUT: eax = start of ethernet frame / 0 on error
+;      ebx = device ptr
+;      ecx = payload size
+;      edx = ethernet frame size
+;      edi = start of ethernet payload
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -184,11 +183,11 @@ ETH_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: size=%u device=%x\n", ecx, ebx
 
-        cmp     ecx, [ebx + NET_DEVICE.mtu]
+        cmp     ecx, [ebx + ETH_DEVICE.mtu]
         ja      .exit
 
         push    ecx
-        push    di eax edx
+        push    ax edx
 
         add     ecx, sizeof.ETH_header
         stdcall kernel_alloc, ecx
@@ -199,7 +198,7 @@ ETH_output:
         pop     esi
         movsd
         movsw
-        pop     esi
+        lea     esi, [ebx + ETH_DEVICE.mac]
         movsd
         movsw
         pop     ax
@@ -217,18 +216,18 @@ ETH_output:
 
   .adjust_size:
         mov     edx, ETH_FRAME_MINIMUM
-        test    edx, edx        ; clear zero flag
+        test    edx, edx                        ; clear zero flag
         jmp     .done
 
   .out_of_ram:
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: Out of ram!\n"
-        add     esp, 4+4+2+4
-        sub     edi, edi
+        add     esp, 4+2+4
+        xor     eax, eax
         ret
 
   .exit:
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: Packet too large!\n"
-        sub     edi, edi
+        xor     eax, eax
         ret
 
 
