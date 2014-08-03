@@ -24,7 +24,7 @@ DlgProp:
 	cmp	bx,[wsY]
 	jae	@f
 	mov	bx,[wsY]
-      @@:			    ;eax,ebx - Ёхры№эр  ъююЁфшэрЄр. ┬ёх ъююЁфшэрЄ√ т яЁюух юЄэюёшЄхы№эю ыхтюую тхЁїэхую єуыр Ёрсюўхщ юсырёЄш
+      @@:			    ;eax,ebx - реальная координата. Все координаты в проге относительно левого верхнего угла рабочей области
 
 	xor	edx,edx
 	mov	dx,[wsXe]
@@ -41,7 +41,7 @@ DlgProp:
 	mov	ebx,edx
       @@:
 
-	xor	edx,edx 	     ;яЁхюсЁрчют√трхь т юЄэюёшЄхы№э√х
+	xor	edx,edx 	     ;преобразовываем в относительные
 	mov	dx,[wsW]
 	shr	edx,1
 	add	dx,[wsX]
@@ -193,10 +193,8 @@ DReDraw:
 	m2m	[sbIcons.frnt_col],[sc.work]
 	m2m	[sbIcons.line_col],[sc.work_graph]
 
-	edit_boxes_set_sys_color edtName,edtExePath,sc
-	edit_boxes_set_sys_color edtExePath,edtParams,sc
-	edit_boxes_set_sys_color edtParams,edtIcon,sc
 	;edit_boxes_set_sys_color edtIcon,endEdits,sc
+	edit_boxes_set_sys_color edtName,endEdits,sc
 
 	call	DRedrawWin
 
@@ -408,7 +406,7 @@ DSaveIcon:
 
 	cmp	[DlgSelIcon],-1
 	je	@f
-		       
+
 	stdcall EditIcon,[DlgSelIcon],DAreaIcon,DAreaName,DAreaPath,DAreaParams
 	mov	ebx,[DlgSelIcon]
 	mov	eax,[IconsID+ebx*4]
@@ -624,7 +622,7 @@ local IcoX:DWORD,\
 	add	edi,3
 	loop	@b
 
-				     ;чрЄшЁрэшх эх шёяюы№чютрэ√ї ьхёЄ
+				     ;затирание не использованых мест
 	jmp	.Dalee
 
   .DrawIcons2:
@@ -667,7 +665,7 @@ proc DrawSelIcon
 	cmp	al,'/'
 	jne	.GetIconInd
    .PathToIcon:
-	mov	al,30h		 ;чруыє°ър!!!!!!!!!!!!!
+	mov	al,30h		 ;заглушка!!!!!!!!!!!!!
 	mov	byte[edi+1],0
    .GetIconInd:
 ;int3

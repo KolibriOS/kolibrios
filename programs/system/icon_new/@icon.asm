@@ -2,7 +2,7 @@ ICON_STRIP	equ '/rd/1/iconstrp.png'
 ICON_INI	equ '/rd/1/settings/icon.ini'
 ICON_SIZE	equ 68	  ;размер области для иконки с надписью
 IMG_SIZE	equ 32	  ;размер иконок
-TEXT_BOTTOM_Y	equ 15	  ;отступ по Y текста от низа иконки
+TEXT_BOTTOM_Y	equ 14	  ;отступ по Y текста от низа иконки
 IMAGE_TOP_Y	equ 10	  ;>=1 Координата Y иконки в области для данной иконки
 ALIGN_SIZE	equ 68	  ;размер сетки выравнивания
 NAME_LENGTH	equ 11	 ;длина имени иконки
@@ -132,8 +132,13 @@ START:		; start of execution
 ;######################################################################
 	call	FillIconsOffs		       ;заполняет MaxNumIcon,IconsOffs
 
-	mcall	40,0100000b		       ;нужны только события мыши, перерисовка иконок будет в другом потоке
+;инициализация IPC буфера
+	mov	dword[IPCbuffer],0
+	mov	dword[IPCbuffer+4],8
+	mcall	60,1,IPCbuffer,1024
 
+	mcall	40,01100000b		 ;нужны только события мыши и IPC,
+					 ;перерисовка иконок будет в другом потоке
 	mov	eax,[icon_count]
 	mov	bl,ICONS_DRAW_COUNTH
 	div	bl
@@ -153,9 +158,13 @@ messages:
 	mcall	10
 	sub	eax,6
 	jz	MSGMouse
-
+	dec	eax
+	jz	MSGIPC
 	jmp	messages
 
+MSGIPC:
+	call	IPCCreateIcon
+	jmp	messages
 
 MSGMouse:
 	mcall	37,0	;GetMousePos
@@ -896,6 +905,71 @@ proc GenerateID ;ax = ID
 	ret
 endp
 
+;-------------------------------------------------------------------------------
+
+
+;формат IPC-сообщения
+;dd X
+;dd Y
+;asciiz Icon
+;asciiz Name
+;asciiz Path
+;asciiz Params
+;-------------------------------------------------------------------------------
+proc IPCCreateIcon
+locals
+	ix rd 1
+	iy rd 1
+endl
+
+	mov	eax,IPCbuffer+8
+	mov	dword[IPCbuffer],1
+	;mov     edx,dword[IPCbuffer+4]
+	lea	edx,[eax+8]
+
+	m2m	dword[ix],dword[edx]
+	m2m	dword[iy],dword[edx+4]
+
+	lea	esi,[edx+8]
+
+	mov	ecx,256
+	mov	edi,DAreaIcon
+    @@: lodsb
+	stosb
+	test	al,al
+	jnz	@b
+
+	mov	ecx,NAME_LENGTH+1
+	mov	edi,DAreaName
+    @@: lodsb
+	stosb
+	test	al,al
+	jz	@f
+	loop	@b
+    @@:
+
+	mov	edi,DAreaPath
+    @@: lodsb
+	stosb
+	test	al,al
+	jnz	@b
+
+	mov	edi,DAreaParams
+    @@: lodsb
+	stosb
+	test	al,al
+	jnz	@b
+
+	mov	dword[IPCbuffer+4],8
+	mov	dword[IPCbuffer],0
+
+	stdcall AddIcon,[ix],[iy],DAreaIcon,DAreaName,DAreaPath,DAreaParams
+
+	mcall	15,3
+	ret
+endp
+
+
 include 'iconman.inc'
 include 'bgredraw.inc'
 include 'RButton.inc'
@@ -1052,15 +1126,15 @@ else
 end if
 
 if lang eq ru
- ErrRunProg	db '"Icon\nОшибка запуска программы" -tE"',0
- WarningSave	db '"Icon\nНе забудьте сохранить изменения, запустить RDSave" -tI',0
- ErrNotFoundIni db '"Icon\nНе найден icon.ini" -tE',0
- ErrName	db '"Icon\nИмя \"rbmenu\" зарезервировано" -tE',0
+ ErrRunProg	db 'Ошибка запуска программы',0
+ WarningSave	db 'Не забудьте сохранить изменения, запустить RDSave',0
+ ErrNotFoundIni db 'Не найден icon.ini',0
+ ErrName	db 'Имя "rbmenu" зарезервировано',0
 else
- ErrRunProg	db '"Icon\nError running program" -tE',0
- WarningSave	db '"Icon\nDo not forget to save the changes, run RDSave" -tI',0
- ErrNotFoundIni db '"Icon\nicon.ini not found" -tE',0
- ErrName	db '"Icon\nThe name \"rbmenu\" is reserved" -tE',0
+ ErrRunProg	db 'Error runing program',0
+ WarningSave	db 'Do not forget to save the changes, run the RDSave',0
+ ErrNotFoundIni db 'icon.ini not found',0
+ ErrName	db 'The name "rbmenu" reserved',0
 end if
 
 ;-------------------------------------------------------------------------------
@@ -1179,6 +1253,10 @@ IconArea	rb 4*ICON_SIZE*ICON_SIZE
 sc		system_colors
 sc.workL	rd 1
 sc.workH	rd 1
+
+
+align 4
+IPCbuffer	rb 1024
 
 align 4
 
