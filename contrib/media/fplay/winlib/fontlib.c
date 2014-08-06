@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <memory.h>
+//#include <memory.h>
 //#include "font_droid.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -135,7 +135,7 @@ int init_fontlib()
 //    err = FT_New_Face( library, "/hd0/1/IstokWeb.ttf", 0, &face );
 
     err = FT_New_Memory_Face( library, res_def_font, 277996, 0, &face );
-    printf("err %d\n", err); 
+    printf("err %d\n", err);
     if ( err == FT_Err_Unknown_File_Format )
     {
         printf("font format is unsupported\n");
@@ -156,8 +156,6 @@ done:
 
     return (int)face;
 };
-
-//    draw_text(face,"/hd0/1/demo", 10, 80, 0x00000000);
 
 
 unsigned int ansi2utf32(unsigned char ch)

@@ -11,7 +11,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <kos32sys.h>
-#include "../winlib/winlib.h"
+#include "winlib/winlib.h"
 
 #include "sound.h"
 #include "fplay.h"
@@ -142,12 +142,8 @@ int main( int argc, char *argv[])
     }
     else movie_file = file_name;
 
-
 //    __asm__ __volatile__("int3");
 
-//  dump_format(pFormatCtx, 0, argv[1], 0);
-
-//    stream_duration = 1000.0 * pFormatCtx->duration * av_q2d(AV_TIME_BASE_Q);
     stream_duration = pFormatCtx->duration;
 
     printf("duration %f\n", (double)stream_duration);
@@ -156,17 +152,12 @@ int main( int argc, char *argv[])
     audioStream=-1;
     for(i=0; i < pFormatCtx->nb_streams; i++)
     {
-//        pFormatCtx->streams[i]->discard = AVDISCARD_ALL;
-
         if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO
             && videoStream < 0)
         {
             videoStream=i;
             video_time_base = pFormatCtx->streams[i]->time_base;
             if(stream_duration == 0)
-//                stream_duration = 1000.0 *
-//                              pFormatCtx->streams[i]->duration *
-//                              av_q2d(pFormatCtx->streams[i]->time_base);
                stream_duration = pFormatCtx->streams[i]->duration;
 
         }
@@ -175,11 +166,7 @@ int main( int argc, char *argv[])
         {
             audioStream=i;
             if(stream_duration == 0)
-//                stream_duration = 1000.0 *
-//                              pFormatCtx->streams[i]->duration *
-//                              av_q2d(pFormatCtx->streams[i]->time_base);
                stream_duration = pFormatCtx->streams[i]->duration;
-
         }
     }
 
@@ -359,8 +346,6 @@ static int fill_queue()
     int err = 0;
     AVPacket  packet;
 
-//        __asm__ __volatile__("int3");
-
     while( (q_video.size < 4*1024*1024) &&
             !err )
         err = load_frame();
@@ -398,8 +383,6 @@ void decoder()
     while( player_state != CLOSED )
     {
         int err;
-
-//        __asm__ __volatile__("int3");
 
         switch(decoder_state)
         {
@@ -497,10 +480,6 @@ void decoder()
 
                 ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
                                          rewind_pos, INT64_MAX, 0);
-
-//                ret = avformat_seek_file(pFormatCtx, -1, min_pos,
-//                                         rewind_pos, max_pos, opts);
-//            __asm__ __volatile__("int3");
 
                 if (ret < 0)
                 {

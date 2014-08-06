@@ -5,7 +5,7 @@
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 #include <kos32sys.h>
-#include "../winlib/winlib.h"
+#include "winlib/winlib.h"
 #include <sound.h>
 #include "fplay.h"
 #include <math.h>
@@ -1015,8 +1015,5 @@ void render_draw_client(render_t *render)
         draw_bar(0, render->rcbottom.t+y,
                  render->win_width, render->rcbottom.b, 0);
 }
-
-
-
 
 

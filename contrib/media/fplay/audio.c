@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "../winlib/winlib.h"
+#include "winlib/winlib.h"
 #include "sound.h"
 #include "fplay.h"
 
