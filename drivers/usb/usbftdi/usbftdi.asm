@@ -251,11 +251,11 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         stdcall USBOpenPipe, [.config_pipe],  0x81,  [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
         test    eax, eax
         jz      .nothing
-        mov     [ebx + ftdi_context.inEP], eax
+        mov     [ebx + ftdi_context.outEP], eax
         stdcall USBOpenPipe, [.config_pipe],  0x02,  [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
         test    eax, eax
         jz      .nothing
-        mov     [ebx + ftdi_context.outEP], eax
+        mov     [ebx + ftdi_context.inEP], eax
         mov     eax, ebx
         ret        
            
