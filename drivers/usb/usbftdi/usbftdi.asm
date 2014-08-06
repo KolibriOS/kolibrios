@@ -124,6 +124,7 @@ baudrate                dd      ?
 bitbangEnabled          db      ?
 readBufChunkSize        dd      ?
 writeBufChunkSize       dd      ?
+maxPacketSize           dd      ?
 interface               dd      ?
 index                   dd      ?
 inEP                    dd      ?
@@ -181,14 +182,13 @@ proc START stdcall, .reason:DWORD
 endp
 
 
-proc AddDevice stdcall uses ebx esi, .config_pipe:DWORD, .config_descr:DWORD, .interface:DWORD
+proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD, .interface:DWORD
         
         stdcall USBGetParam, [.config_pipe], 0
         mov     edx, eax
-        DEBUGF 1,'K : Device detected Vendor: %x\n', [eax+usb_descr.idVendor]
+        DEBUGF 1,'K : Detected device vendor: %x\n', [eax+usb_descr.idVendor]
         cmp     word[eax+usb_descr.idVendor], 0x0403
         jnz     .notftdi
-        DEBUGF 1,'K : FTDI USB device detected\n'
         movi    eax, sizeof.ftdi_context
         call    Kmalloc
         test    eax, eax
@@ -204,44 +204,57 @@ proc AddDevice stdcall uses ebx esi, .config_pipe:DWORD, .config_descr:DWORD, .i
         mov     [eax + ftdi_context.nullP], ebx
         mov     [eax + ftdi_context.index], 0
         mov     [eax + ftdi_context.lockPID], 0
+        mov     [eax + ftdi_context.maxPacketSize], 64       
         mov     [eax + ftdi_context.readBufChunkSize], 64
         mov     [eax + ftdi_context.writeBufChunkSize], 64
         
-        cmp     [edx+usb_descr.bcdDevice], 0x400
+        mov     cx, [edx+usb_descr.bcdDevice]
+        cmp     cx, 0x400
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_BM
+        jmp     .slow
   @@:      
-        cmp     [edx+usb_descr.bcdDevice], 0x200
+        cmp     cx, 0x200
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_AM
+        jmp     .slow
   @@:     
-        cmp     [edx+usb_descr.bcdDevice], 0x500
+        cmp     cx, 0x500
         jnz     @f
-        mov     [eax + ftdi_context.chipType], TYPE_2232C        
+        mov     [eax + ftdi_context.chipType], TYPE_2232C 
+        jmp     .slow
   @@:      
-        cmp     [edx+usb_descr.bcdDevice], 0x600
+        cmp     cx, 0x600
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_R
+        jmp     .slow
   @@:      
-        cmp     [edx+usb_descr.bcdDevice], 0x700
+        cmp     cx, 0x700
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_2232H
+        jmp     .fast
   @@:      
-        cmp     [edx+usb_descr.bcdDevice], 0x900
+        cmp     cx, 0x900
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_232H
+        jmp     .fast
   @@:      
-        cmp     [edx+usb_descr.bcdDevice], 0x1000
-        jnz     @f
-        mov     [eax + ftdi_context.chipType], TYPE_BM
-  @@:
-  
-        DEBUGF 1,'K : Open first pipe\n'
+        cmp     cx, 0x1000
+        jnz     .slow
+        mov     [eax + ftdi_context.chipType], TYPE_230X
+        jmp     .fast
+        
+  .fast:
+        add     [eax + ftdi_context.maxPacketSize], 512-64
+  .slow:    
         mov     ebx, eax
-        stdcall USBOpenPipe, [.config_pipe],  0x81,  0x40,  BULK_PIPE, 0
+        stdcall USBOpenPipe, [.config_pipe],  0x81,  [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
+        test    eax, eax
+        jz      .nothing
         mov     [ebx + ftdi_context.inEP], eax
-        DEBUGF 1,'K : Open second pipe\n'
-        stdcall USBOpenPipe, [.config_pipe],  0x02,  0x40,  BULK_PIPE, 0
+        stdcall USBOpenPipe, [.config_pipe],  0x02,  [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
+        test    eax, eax
+        jz      .nothing
         mov     [ebx + ftdi_context.outEP], eax
         mov     eax, ebx
         ret        
@@ -296,11 +309,23 @@ endl
         mov     dword[esi], 'LCKD'
         jmp     .endswitch
         
-  .pid_ok:  
+  .pid_ok:
+        dec     eax
+        jz      .ftdi_get_wchunksize    ;5
+        dec     eax
+        jz      .ftdi_get_rchunksize    ;7        
+        
+        mov     edi, [edi+input]
+        
+        dec     eax
+        jz      .ftdi_set_rchunksize    ;6
+        dec     eax
+        jz      .ftdi_set_wchunksize    ;4
+  
         push    eax edi
         mov     ecx, 0x80000000
         cmp     eax, 17
-        je     .bulkevent
+        je      .bulkevent
         cmp     eax, 18
         je      .bulkevent
         xor     ecx, ecx
@@ -309,116 +334,356 @@ endl
         call    CreateEvent        
         mov     [EventData], eax
         mov     [EventData+4], edx
-        pop     edi eax 
+        pop     edi eax
         
-        dec     eax                 ;4
-        jz      .ftdi_set_bitmode
-        dec     eax                 ;5
-        jz      .ftdi_setrtshigh   
-        dec     eax                 ;6
-        jz      .ftdi_setrtslow  
-        dec     eax                 ;7
-        jz      .ftdi_setdtrhigh
         dec     eax                 ;8
-        jz      .ftdi_setdtrlow
+        jz      .ftdi_set_bitmode
         dec     eax                 ;9
-        jz      .ftdi_usb_reset
+        jz      .ftdi_setrtshigh   
         dec     eax                 ;10
-        jz      .ftdi_setflowctrl
+        jz      .ftdi_setrtslow  
         dec     eax                 ;11
-        jz      .ftdi_set_event_char
+        jz      .ftdi_setdtrhigh
         dec     eax                 ;12
-        jz      .ftdi_set_error_char
+        jz      .ftdi_setdtrlow
         dec     eax                 ;13
-        jz      .ftdi_set_latency_timer
+        jz      .ftdi_usb_reset
         dec     eax                 ;14
-        jz      .ftdi_get_latency_timer
+        jz      .ftdi_setflowctrl
         dec     eax                 ;15
-        jz      .ftdi_read_pins
+        jz      .ftdi_set_event_char
         dec     eax                 ;16
-        jz      .ftdi_poll_modem_status
+        jz      .ftdi_set_error_char
         dec     eax                 ;17
-        jz      .ftdi_write_data
+        jz      .ftdi_set_latency_timer
         dec     eax                 ;18
-        jz      .ftdi_read_data
+        jz      .ftdi_get_latency_timer
         dec     eax                 ;19
-        jz      .ftdi_set_baudrate
+        jz      .ftdi_read_pins
         dec     eax                 ;20
-        jz      .ftdi_set_line_property
+        jz      .ftdi_poll_modem_status
         dec     eax                 ;21
-        jz      .ftdi_purge_rx_buf
+        jz      .ftdi_write_data
         dec     eax                 ;22
+        jz      .ftdi_read_data
+        dec     eax                 ;23
+        jz      .ftdi_set_baudrate
+        dec     eax                 ;24
+        jz      .ftdi_set_line_property
+        dec     eax                 ;25
+        jz      .ftdi_purge_rx_buf
+        dec     eax                 ;26
         jz      .ftdi_purge_tx_buf
-                
+        jmp     .error
+                  
   .version:     
+        jmp     .endswitch
+  .error:
+        mov     esi, [edi+output]
+        mov     [esi], dword 'ERR0'
+        or      [esi], eax
   .endswitch:
         xor     eax, eax
-	    ret 
+	    ret
         
-  .ftdi_out_control_transfer:
-        mov     ebx, [edi]
+  .eventdestroy:
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    DestroyEvent
+        jmp     .endswitch
+        
+  .ftdi_out_control_transfer_withinp:               
+        mov     dx, word[edi+8]                
+        mov     word[ConfPacket+2], dx 
+  .ftdi_out_control_transfer_noinp:
+        mov     ebx, [edi+4]
         mov     cx, word[ebx + ftdi_context.index]
         mov     word[ConfPacket+4], cx
         xor     cx, cx
         mov     word[ConfPacket+6], cx
   .own_index:
-        mov    ebx, [edi+4]
+        mov     ebx, [edi+4]
         DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]          
         lea     esi, [ConfPacket]
         lea     edi, [EventData]        
         stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0, 0, control_callback, edi, 0
-        DEBUGF 1, 'K : Returned value is %d\n', eax
+        test    eax, eax        
+        jz      .error
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
         call    WaitEvent     
         jmp     .endswitch
         
-  .ftdi_set_bitmode:
-        DEBUGF 1,'K : FTDI Seting bitmode\n'                   
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)
-        mov     edi, [edi+input]        
-        mov     dx, word[edi+8]                
-        mov     word[ConfPacket+2], dx                                        
-        jmp     .ftdi_out_control_transfer     
-
   .ftdi_setrtshigh:
         DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'                     
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_HIGH shl 16)
-        jmp     .ftdi_out_control_transfer         
+        jmp     .ftdi_out_control_transfer_noinp         
 
   .ftdi_setrtslow:
         DEBUGF 1,'K : FTDI Setting RTS pin LOW\n'             
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_LOW shl 16)
-        jmp     .ftdi_out_control_transfer         
+        jmp     .ftdi_out_control_transfer_noinp           
         
   .ftdi_setdtrhigh:
         DEBUGF 1,'K : FTDI Setting DTR pin HIGH\n'                     
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_HIGH shl 16)
-        jmp     .ftdi_out_control_transfer         
+        jmp     .ftdi_out_control_transfer_noinp           
 
   .ftdi_setdtrlow:
         DEBUGF 1,'K : FTDI Setting DTR pin LOW\n'             
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_LOW shl 16)
-        jmp     .ftdi_out_control_transfer         
+        jmp     .ftdi_out_control_transfer_noinp           
         
   .ftdi_usb_reset:
         DEBUGF 1,'K : FTDI Reseting\n'
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_SIO shl 16)
-        jmp     .ftdi_out_control_transfer
+        jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_purge_rx_buf:
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_PURGE_RX shl 16)
-        jmp     .ftdi_out_control_transfer
+        jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_purge_tx_buf:
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_PURGE_TX shl 16)
-        jmp     .ftdi_out_control_transfer
+        jmp     .ftdi_out_control_transfer_noinp  
+        
+  .ftdi_set_bitmode:
+        DEBUGF 1,'K : FTDI Seting bitmode\n'                   
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)                                       
+        jmp     .ftdi_out_control_transfer_withinp        
+     
+  .ftdi_set_line_property:
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_DATA_REQUEST shl 8)
+        jmp     .ftdi_out_control_transfer_withinp
+        
+  .ftdi_set_latency_timer:
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_LATENCY_TIMER_REQUEST shl 8)        
+        jmp     .ftdi_out_control_transfer_withinp
+        
+  .ftdi_set_event_char:
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_EVENT_CHAR_REQUEST shl 8)
+        jmp     .ftdi_out_control_transfer_withinp
+
+  .ftdi_set_error_char:
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_ERROR_CHAR_REQUEST shl 8)
+        jmp     .ftdi_out_control_transfer_withinp 
+        
+  .ftdi_setflowctrl:
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_FLOW_CTRL_REQUEST shl 8) + (0 shl 16)
+        mov     ebx, [edi+4]
+        mov     cx, word[edi+8]   
+        or      ecx, [ebx + ftdi_context.index]
+        mov     word[ConfPacket+4], cx
+        xor     cx, cx
+        mov     word[ConfPacket+6], cx
+        jmp     .own_index
+
+  .ftdi_read_pins:                            
+        mov     ebx, [edi] 
+        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_READ_PINS_REQUEST shl 8) + (0 shl 16)
+        mov     ecx, [ebx + ftdi_context.index]
+        mov     word[ConfPacket+4], cx
+        mov     word[ConfPacket+6], 1
+        lea     esi, [ConfPacket]
+        lea     edi, [EventData]
+        mov     ecx, [ioctl]
+        mov     ecx, [ecx+output]
+        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 1, control_callback, edi, 0
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    WaitEvent     
+        jmp     .endswitch
+        
+  .ftdi_set_wchunksize:
+        mov     ebx, [edi+4]
+        mov     ecx, [edi+8]
+        cmp     [ebx + ftdi_context.maxPacketSize], ecx
+        jg      .error
+        mov     [ebx + ftdi_context.writeBufChunkSize], ecx
+        jmp     .endswitch
+   
+  .ftdi_get_wchunksize:
+        mov     esi, [edi+output]
+        mov     edi, [edi+input]
+        mov     ebx, [edi+4]
+        mov     ecx, [ebx + ftdi_context.writeBufChunkSize]
+        mov     [esi], ecx
+        jmp     .endswitch
+
+  .ftdi_set_rchunksize:
+        mov     ebx, [edi+4]
+        mov     ecx, [edi+8]
+        cmp     [ebx + ftdi_context.maxPacketSize], ecx
+        jg      .error
+        mov     [ebx + ftdi_context.readBufChunkSize], ecx
+        jmp     .endswitch
+
+  .ftdi_get_rchunksize:
+        mov     esi, [edi+output]
+        mov     edi, [edi+input]
+        mov     ebx, [edi+4]
+        mov     ecx, [ebx + ftdi_context.readBufChunkSize]
+        mov     [esi], ecx
+        jmp     .endswitch        
+
+  .ftdi_write_data:
+        mov     esi, edi
+        add     esi, 12        
+        mov     ebx, [edi+4]
+        xor     ecx, ecx        ; ecx - offset      
+  .write_loop:
+        mov     edx, [edi+8]    ; edx - write_size
+        sub     edx, ecx
+        cmp     edx, [ebx + ftdi_context.writeBufChunkSize]
+        jle     .lessthanchunk_write
+        mov     edx, [ebx + ftdi_context.writeBufChunkSize]
+  .lessthanchunk_write:
+        add     esi, ecx
+        lea     eax, [EventData]
+        push    ecx ebx esi edi
+        stdcall USBNormalTransferAsync, [ebx + ftdi_context.inEP], esi, edx, bulk_callback, eax, 1        
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    WaitEvent
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]        
+        call    ClearEvent
+        pop     edi esi ebx ecx
+        cmp     [EventData+8], -1
+        jz .error
+        add     ecx, [EventData+8]
+        cmp     ecx, [edi+8]
+        jge     .eventdestroy
+        jmp     .write_loop
+        
+  .ftdi_read_data:
+        mov     edi, [ioctl]
+        mov     esi, [edi+input]
+        mov     edi, [edi+output]
+        mov     ebx, [esi+4]        
+        xor     ecx, ecx
+  .read_loop:  
+        mov     edx, [esi+8]
+        cmp     ecx, edx
+        jge     .eventdestroy ;!!!
+        sub     edx, ecx
+        cmp     edx, [ebx + ftdi_context.readBufChunkSize]
+        jl      .lessthanchunk_read
+        mov     edx, [ebx + ftdi_context.readBufChunkSize]     
+  .lessthanchunk_read:
+        lea     eax, [EventData]
+        add     edi, ecx
+        push    esi edi ecx ebx
+        stdcall USBNormalTransferAsync, [ebx + ftdi_context.outEP], edi, edx, bulk_callback, eax, 1        
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]        
+        call    WaitEvent
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]        
+        call    ClearEvent
+        pop     ebx ecx edi esi
+        cmp     [EventData+8], -1
+        jz      .error
+        add     ecx, [EventData+8]
+        jmp     .read_loop 
+        
+  .ftdi_poll_modem_status:                                 
+        mov     ebx, [edi+4] 
+        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_POLL_MODEM_STATUS_REQUEST shl 8) + (0 shl 16)
+        mov     ecx, [ebx + ftdi_context.index]
+        mov     word[ConfPacket+4], cx
+        mov     word[ConfPacket+6], 1
+        lea     esi, [ConfPacket]
+        lea     edi, [EventData]
+        mov     ecx, [ioctl]
+        mov     ecx, [ecx+output]
+        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 2, control_callback, edi, 0
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    WaitEvent
+        mov     ax, word[ecx]
+        xchg    ah, al
+        and     ah, 0xFF
+        mov     word[ecx], ax
+        jmp     .endswitch
+        
+  .ftdi_get_latency_timer:                                 
+        mov     ebx, [edi+4] 
+        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_GET_LATENCY_TIMER_REQUEST shl 8) + (0 shl 16)
+        mov     ecx, [ebx + ftdi_context.index]
+        mov     word[ConfPacket+4], cx
+        mov     word[ConfPacket+6], 1
+        lea     esi, [ConfPacket]
+        lea     edi, [EventData]
+        mov     ecx, [ioctl]
+        mov     ecx, [ecx+output]
+        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 2, control_callback, edi, 0
+        mov     eax, [EventData]
+        mov     ebx, [EventData+4]
+        call    WaitEvent
+        jmp     .endswitch
+                
+  .ftdi_get_list:
+        call    linkedlist_gethead
+        test    eax, eax
+        jz      .endswitch                        
+        mov     edi, [edi+output]
+        push    edi
+        add     edi, 4
+        xor     ecx, ecx
+  .nextdev:
+        inc     ecx
+        cmp     [eax + ftdi_context.lockPID], 0
+        jnz      .dev_is_locked        
+        mov     dword[edi], 'NLKD'
+        jmp     .nextfields
+  .dev_is_locked:
+        mov     dword[edi], 'LCKD'
+  .nextfields:
+        mov     bl, [eax + ftdi_context.chipType]
+        mov     [edi+4], ebx
+        mov     [edi+8], eax
+        add     edi, 12
+        mov     eax, [eax + ftdi_context.next_context]
+        test    eax, eax
+        jnz     .nextdev
+        pop     edi
+        mov     [edi], ecx
+        jmp     .endswitch
+        	   
+  .ftdi_lock:
+        DEBUGF 1, 'K : FTDI lock attempt\n'
+        mov     esi, [edi+input]
+        mov     ebx, [esi+4]
+        mov     eax, [ebx + ftdi_context.lockPID]
+        test    eax, eax
+        jnz     .lockedby
+        DEBUGF 1, 'K : Lock success\n'
+        mov     eax, [esi]
+        mov     [ebx + ftdi_context.lockPID], eax
+  .lockedby:
+        mov     edi, [edi+output]
+        mov     [edi], eax
+        jmp     .endswitch
+        
+  .ftdi_unlock:
+        mov     esi, [edi+input]
+        mov     edi, [edi+output]
+        mov     ebx, [esi+4]
+        mov     eax, [ebx + ftdi_context.lockPID]
+        cmp     eax, [esi]
+        jnz     .unlockimp
+        mov     [ebx + ftdi_context.lockPID], 0
+        mov     dword[edi], 0
+        jmp     .endswitch   
+  .unlockimp:     
+        mov     [edi], eax
+        jmp     .endswitch 
 
 H_CLK = 120000000
 C_CLK = 48000000        
   .ftdi_set_baudrate:
-        mov     edi, [edi+input]
-        mov     ebx, [edi]
+        mov     ebx, [edi+4]
         cmp     [ebx + ftdi_context.chipType], TYPE_2232H
         jl      .c_clk        
         imul    eax, [edi+8], 10
@@ -546,214 +811,7 @@ C_CLK = 48000000
         mov     word[ConfPacket+2], ax
         mov     word[ConfPacket+4], cx
         mov     word[ConfPacket+6], 0
-        jmp     .own_index
-     
-  .ftdi_set_line_property:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_DATA_REQUEST shl 8)
-        mov     edi, [edi+input]        
-        mov     dx, word[edi+8]                
-        mov     word[ConfPacket+2], dx
-        jmp     .ftdi_out_control_transfer
-        
-  .ftdi_set_latency_timer:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_LATENCY_TIMER_REQUEST shl 8)
-        mov     edi, [edi+input]        
-        mov     dx, word[edi+8]                
-        mov     word[ConfPacket+2], dx        
-        jmp     .ftdi_out_control_transfer
-        
-  .ftdi_set_event_char:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_EVENT_CHAR_REQUEST shl 8)
-        mov     edi, [edi+input]        
-        mov     dx, word[edi+8]                
-        mov     word[ConfPacket+2], dx
-        jmp     .ftdi_out_control_transfer
-
-  .ftdi_set_error_char:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_ERROR_CHAR_REQUEST shl 8)
-        mov     edi, [edi+input]        
-        mov     dx, word[edi+8]                
-        mov     word[ConfPacket+2], dx
-        jmp     .ftdi_out_control_transfer 
-        
-  .ftdi_setflowctrl:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_FLOW_CTRL_REQUEST shl 8) + (0 shl 16)      
-        mov     edi, [edi+input]
-        mov     ebx, [edi]
-        mov     cx, word[edi+8]   
-        or      ecx, [ebx + ftdi_context.index]
-        mov     word[ConfPacket+4], cx
-        xor     cx, cx
-        mov     word[ConfPacket+6], cx
-        jmp     .own_index
-
-  .ftdi_read_pins:
-        DEBUGF 1,'K : FTDI Reading pins\n'
-        mov     edi, [edi+input]                                  
-        mov     ebx, [edi] 
-        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_READ_PINS_REQUEST shl 8) + (0 shl 16)
-        mov     ecx, [ebx + ftdi_context.index]
-        mov     word[ConfPacket+4], cx
-        mov     word[ConfPacket+6], 1
-        lea     esi, [ConfPacket]
-        lea     edi, [EventData]
-        mov     ecx, [ioctl]
-        mov     ecx, [ecx+output]
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 1, control_callback, edi, 0
-        DEBUGF 1, 'K : Returned value is %d\n', eax
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]
-        call    WaitEvent     
-        jmp     .endswitch
-
-  .ftdi_write_data:
-        mov     edi, [edi+input]        
-        mov     ebx, [edi+4]
-        xor     ecx, ecx        ; ecx - offset     
-  .dataleft:        
-        mov     edx, [ebx + ftdi_context.writeBufChunkSize] ; edx - write_size
-        push    ecx
-        add     ecx, edx
-        cmp     ecx, [edi+8]    ; [edi+8] - size
-        pop     ecx
-        jle     .morethanchunk_write
-        mov     edx, [edi+8]           
-        sub     edx, ecx
-  .morethanchunk_write:
-        lea     eax, [EventData]
-        stdcall USBNormalTransferAsync, [ebx + ftdi_context.inEP], [edi+12+ecx], edx, bulk_callback, eax, 1
-        push    ebx edi edx ecx
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]
-        call    WaitEvent
-        pop     ecx edx edi ebx
-        cmp     [EventData+8], -1
-        jz      .endswitch;jz      .error
-        add     ecx, [EventData+8]
-        cmp     ecx, [edi+8]
-        jl      .dataleft
-        jmp     .endswitch
-        
-  .ftdi_read_data:
-        mov     esi, [edi+input]
-        mov     edi, [edi+output]
-        mov     ebx, [esi+4]        
-        xor     ecx, ecx
-  .read_loop:
-        mov     edx, [esi+8]
-        sub     edx, ecx
-        test    edx, edx
-        jz      .endswitch
-        cmp     edx, [ebx + ftdi_context.readBufChunkSize]
-        jl      .lessthanchunk_read
-        mov     edx, [ebx + ftdi_context.readBufChunkSize]     
-  .lessthanchunk_read:
-        lea     eax, [EventData]
-        stdcall USBNormalTransferAsync, [ebx + ftdi_context.outEP], [edi+ecx], edx, bulk_callback, eax, 1        
-        push    esi edi ecx ebx
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]        
-        call    WaitEvent
-        pop     ebx ecx edi esi
-        cmp     [EventData+8], -1
-        jz      .endswitch;jz      .error
-        add     ecx, [EventData+8]
-        jmp     .read_loop 
-        
-  .ftdi_poll_modem_status:
-        mov     edi, [edi+input]                                  
-        mov     ebx, [edi+4] 
-        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_POLL_MODEM_STATUS_REQUEST shl 8) + (0 shl 16)
-        mov     ecx, [ebx + ftdi_context.index]
-        mov     word[ConfPacket+4], cx
-        mov     word[ConfPacket+6], 1
-        lea     esi, [ConfPacket]
-        lea     edi, [EventData]
-        mov     ecx, [ioctl]
-        mov     ecx, [ecx+output]
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 2, control_callback, edi, 0
-        DEBUGF 1, 'K : Returned value is %d\n', eax
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]
-        call    WaitEvent
-        mov     ax, word[ecx]
-        xchg    ah, al
-        and     ah, 0xFF
-        mov     word[ecx], ax
-        jmp     .endswitch
-        
-  .ftdi_get_latency_timer:
-        mov     edi, [edi+input]                                  
-        mov     ebx, [edi+4] 
-        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_GET_LATENCY_TIMER_REQUEST shl 8) + (0 shl 16)
-        mov     ecx, [ebx + ftdi_context.index]
-        mov     word[ConfPacket+4], cx
-        mov     word[ConfPacket+6], 1
-        lea     esi, [ConfPacket]
-        lea     edi, [EventData]
-        mov     ecx, [ioctl]
-        mov     ecx, [ecx+output]
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 2, control_callback, edi, 0
-        DEBUGF 1, 'K : Returned value is %d\n', eax
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]
-        call    WaitEvent
-        jmp     .endswitch
-                
-  .ftdi_get_list:
-        call    linkedlist_gethead                        
-        mov     edi, [edi+output]
-        push    edi
-        add     edi, 4
-        xor     ecx, ecx
-  .nextdev:
-        inc     ecx
-        cmp     [eax + ftdi_context.lockPID], 0
-        jnz      .dev_is_locked        
-        mov     dword[edi], 'NLKD'
-        jmp     .nextfields
-  .dev_is_locked:
-        mov     dword[edi], 'LCKD'
-  .nextfields:
-        mov     bl, [eax + ftdi_context.chipType]
-        mov     [edi+4], ebx
-        mov     [edi+8], eax
-        add     edi, 12
-        mov     eax, [eax + ftdi_context.next_context]
-        test    eax, eax
-        jnz     .nextdev
-        pop     edi
-        mov     [edi], ecx
-        jmp     .endswitch
-        	   
-  .ftdi_lock:
-        DEBUGF 1, 'K : FTDI lock attempt\n'
-        mov     esi, [edi+input]
-        mov     ebx, [esi+4]
-        mov     eax, [ebx + ftdi_context.lockPID]
-        test    eax, eax
-        jnz     .lockedby
-        DEBUGF 1, 'K : Lock success\n'
-        mov     eax, [esi]
-        mov     [ebx + ftdi_context.lockPID], eax
-  .lockedby:
-        mov     edi, [edi+output]
-        mov     [edi], eax
-        jmp     .endswitch
-        
-  .ftdi_unlock:
-        mov     esi, [edi+input]
-        mov     edi, [edi+output]
-        mov     ebx, [esi+4]
-        mov     eax, [ebx + ftdi_context.lockPID]
-        cmp     eax, [esi]
-        jnz     .unlockimp
-        mov     [ebx + ftdi_context.lockPID], 0
-        mov     dword[edi], 0
-        jmp     .endswitch   
-  .unlockimp:     
-        mov     [edi], eax
-        jmp     .endswitch  
+        jmp     .own_index        
         
 endp 
 restore   handle
@@ -786,19 +844,18 @@ proc bulk_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buffer
         mov     eax, [ecx]
         mov     ebx, [ecx+4]
         cmp     [.status], 0
-        jg      .error?
-  .error?:
+        jz      .normal
         cmp     [.status], 9
         jne     .error
+  .normal:
         mov     edx, [.length]
         mov     [ecx+8], edx
         jmp     .ok
   .error:
         mov     [ecx+8], dword -1
-  .ok:
+  .ok:    
         xor     esi, esi
         xor     edx, edx
-        ;mov     edx, 0x80000000
         call    RaiseEvent            
         ret
 endp
