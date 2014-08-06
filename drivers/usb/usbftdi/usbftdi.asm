@@ -324,9 +324,9 @@ endl
   
         push    eax edi
         mov     ecx, 0x80000000
-        cmp     eax, 17
+        cmp     eax, 21
         je      .bulkevent
-        cmp     eax, 18
+        cmp     eax, 22
         je      .bulkevent
         xor     ecx, ecx
   .bulkevent:                
