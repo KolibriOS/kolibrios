@@ -5,7 +5,7 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
  
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -march=i686 -O2 -fomit-frame-pointer
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -march=i686 -O2 -fno-ident -fomit-frame-pointer
 
 LDFLAGS:= -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --version-script libdrm.ver --image-base=0
 LDFLAGS+= --out-implib $(LIBRARY).dll.a

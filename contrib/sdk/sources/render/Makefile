@@ -2,7 +2,7 @@
 LIBRARY= librender
 
 CC=gcc
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
 
 AR= ar
 

@@ -5,7 +5,7 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
 
-CFLAGS = -c -O2 -ffast-math -Wall -Winline -Wno-attributes -fomit-frame-pointer
+CFLAGS = -c -O2 -ffast-math -Wall -Winline -Wno-attributes -fno-ident -fomit-frame-pointer
 
 LDFLAGS = -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 --version-script cairo.ver --output-def $(LIBRARY).orig.def
 LDFLAGS+= --out-implib lib$(LIBRARY).dll.a

@@ -16,7 +16,7 @@ LD = kos32-ld
 AR = kos32-ar
 STRIP = kos32-strip
 
-CFLAGS = $(LOC) -DHAVE_UNISTD_H -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fomit-frame-pointer 
+CFLAGS = $(LOC) -DHAVE_UNISTD_H -U_Win32 -U_WIN32 -U__MINGW32__ -O2 -Wall -fno-ident -fomit-frame-pointer 
 
 AS = $(CC)
 ASFLAGS = $(LOC) -Wall

@@ -6,7 +6,7 @@ CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
 
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
 
 INCLUDES= -I. -I../newlib/libc/include -I../Mesa/include -I../Mesa/src/gbm/main -I../libdrm/include
 

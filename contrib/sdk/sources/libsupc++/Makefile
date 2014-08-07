@@ -6,7 +6,7 @@ LD = kos32-ld
 CPP= kos32-g++
 STRIP = kos32-strip
 
-CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fomit-frame-pointer
+CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
 
 ARFLAGS= crs
 

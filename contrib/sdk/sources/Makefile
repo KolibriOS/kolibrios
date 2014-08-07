@@ -7,7 +7,7 @@ LIB_DIR:= $(abspath ../lib)
 
 all: 	newlib zlib libpng freetype pixman cairo	\
 	libdrm pixlib ffmpeg libsupc++ gcc_eh expat 	\
-	Mesa eglut		
+	Mesa eglut sound		
 
 newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a
 
@@ -118,4 +118,11 @@ eglut: $(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a
 
 $(DLL_DIR)/libeglut.dll $(LIB_DIR)/libeglut.dll.a $(LIB_DIR)/libeglut.a : newlib Mesa
 	$(MAKE) -C eglut
+
+#####################################
+
+sound: $(LIB_DIR)/libsound.a 
+
+$(LIB_DIR)/libsound.a : 
+	$(MAKE) -C sound
  

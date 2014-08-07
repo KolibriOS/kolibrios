@@ -1,4 +1,4 @@
-LIBRARY zlib.dll
+LIBRARY libz.dll
 ; zlib data compression library
 
 EXPORTS

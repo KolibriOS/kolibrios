@@ -517,6 +517,16 @@ int link_image(void *img_base, PIMAGE_IMPORT_DESCRIPTOR imp)
         return 0;
 }
 
+static void send_dbg_msg(void *msg)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(69),
+      "b"(10),
+      "S"(msg));
+};
+
+
 int link_app()
 {
     struct app_hdr *header = NULL;
@@ -524,8 +534,38 @@ int link_app()
 
     imp = (PIMAGE_IMPORT_DESCRIPTOR)header->__idata_start;
 
-    return link_image(NULL, imp);
+    if(link_image(NULL, imp))
+    {
 
+#ifdef DEBUG_INFO
+        struct
+        {
+            void     *start;
+            uint32_t  end;
+            char      name[24];
+        } dbg_msg;
+
+        module_t *mod = &libc_dll;
+
+        do
+        {
+            printf("%s %x - %x\n",
+                   mod->img_name, mod->start, mod->end);
+
+//            asm volatile("int3");
+
+            dbg_msg.start = mod->start;
+            dbg_msg.end   = mod->end;
+            strcpy(dbg_msg.name, mod->img_name);
+            send_dbg_msg(&dbg_msg);
+            mod = (module_t*)mod->list.next;
+        }while(mod != &libc_dll);
+#endif
+
+        return 1;
+    };
+
+    return 0;
 }
 
 

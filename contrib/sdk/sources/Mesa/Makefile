@@ -9,7 +9,7 @@ export SDK_DIR:= $(abspath ../..)
 EGL = egl
 
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -Os 
-CFLAGS_OPT+= -fomit-frame-pointer -mno-ms-bitfields
+CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS   = -c $(CFLAGS_OPT)
 
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds -e _DllStartup
