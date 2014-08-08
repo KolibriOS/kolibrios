@@ -124,6 +124,10 @@ baudrate                dd      ?
 bitbangEnabled          db      ?
 readBufChunkSize        dd      ?
 writeBufChunkSize       dd      ?
+readBufPtr              dd      ?
+writeBufPtr             dd      ?
+readBufSize             dd      ?
+writeBufSize            dd      ?
 maxPacketSize           dd      ?
 interface               dd      ?
 index                   dd      ?
@@ -189,7 +193,7 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         DEBUGF 1,'K : Detected device vendor: %x\n', [eax+usb_descr.idVendor]
         cmp     word[eax+usb_descr.idVendor], 0x0403
         jnz     .notftdi
-        movi    eax, sizeof.ftdi_context
+        mov     eax, sizeof.ftdi_context
         call    Kmalloc
         test    eax, eax
         jnz     @f
@@ -207,8 +211,12 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         mov     [eax + ftdi_context.maxPacketSize], 64       
         mov     [eax + ftdi_context.readBufChunkSize], 64
         mov     [eax + ftdi_context.writeBufChunkSize], 64
+
+        mov     [eax + ftdi_context.chipType], TYPE_R
+        jmp     .slow
         
         mov     cx, [edx+usb_descr.bcdDevice]
+        DEBUGF 1, 'K : Chip type %x\n', ecx
         cmp     cx, 0x400
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_BM
@@ -311,22 +319,22 @@ endl
         
   .pid_ok:
         dec     eax
-        jz      .ftdi_get_wchunksize    ;5
+        jz      .ftdi_get_wchunksize    ;4
         dec     eax
-        jz      .ftdi_get_rchunksize    ;7        
+        jz      .ftdi_get_rchunksize    ;5        
         
         mov     edi, [edi+input]
         
         dec     eax
         jz      .ftdi_set_rchunksize    ;6
         dec     eax
-        jz      .ftdi_set_wchunksize    ;4
+        jz      .ftdi_set_wchunksize    ;7
   
         push    eax edi
         mov     ecx, 0x80000000
-        cmp     eax, 21
+        cmp     eax, 8-7
         je      .bulkevent
-        cmp     eax, 22
+        cmp     eax, 9-7
         je      .bulkevent
         xor     ecx, ecx
   .bulkevent:                
@@ -337,37 +345,37 @@ endl
         pop     edi eax
         
         dec     eax                 ;8
-        jz      .ftdi_set_bitmode
-        dec     eax                 ;9
-        jz      .ftdi_setrtshigh   
-        dec     eax                 ;10
-        jz      .ftdi_setrtslow  
-        dec     eax                 ;11
-        jz      .ftdi_setdtrhigh
-        dec     eax                 ;12
-        jz      .ftdi_setdtrlow
-        dec     eax                 ;13
-        jz      .ftdi_usb_reset
-        dec     eax                 ;14
-        jz      .ftdi_setflowctrl
-        dec     eax                 ;15
-        jz      .ftdi_set_event_char
-        dec     eax                 ;16
-        jz      .ftdi_set_error_char
-        dec     eax                 ;17
-        jz      .ftdi_set_latency_timer
-        dec     eax                 ;18
-        jz      .ftdi_get_latency_timer
-        dec     eax                 ;19
-        jz      .ftdi_read_pins
-        dec     eax                 ;20
-        jz      .ftdi_poll_modem_status
-        dec     eax                 ;21
         jz      .ftdi_write_data
-        dec     eax                 ;22
+        dec     eax                 ;9
         jz      .ftdi_read_data
-        dec     eax                 ;23
+        dec     eax                 ;10
         jz      .ftdi_set_baudrate
+        dec     eax                 ;11
+        jz      .ftdi_set_bitmode
+        dec     eax                 ;12
+        jz      .ftdi_setrtshigh   
+        dec     eax                 ;13
+        jz      .ftdi_setrtslow  
+        dec     eax                 ;14
+        jz      .ftdi_setdtrhigh
+        dec     eax                 ;15
+        jz      .ftdi_setdtrlow
+        dec     eax                 ;16
+        jz      .ftdi_usb_reset
+        dec     eax                 ;17
+        jz      .ftdi_setflowctrl
+        dec     eax                 ;18
+        jz      .ftdi_set_event_char
+        dec     eax                 ;19
+        jz      .ftdi_set_error_char
+        dec     eax                 ;20
+        jz      .ftdi_set_latency_timer
+        dec     eax                 ;21
+        jz      .ftdi_get_latency_timer
+        dec     eax                 ;22
+        jz      .ftdi_read_pins
+        dec     eax                 ;23
+        jz      .ftdi_poll_modem_status        
         dec     eax                 ;24
         jz      .ftdi_set_line_property
         dec     eax                 ;25
@@ -387,6 +395,13 @@ endl
 	    ret
         
   .eventdestroy:
+        ;---Dirty hack begin
+        test    eax, eax
+        jz      @f
+        mov     eax, dword[ConfPacket]
+        call    Kfree
+  @@:
+        ;---Dirty hack end
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
         call    DestroyEvent
@@ -496,7 +511,7 @@ endl
         
   .ftdi_set_wchunksize:
         mov     ebx, [edi+4]
-        mov     ecx, [edi+8]
+        mov     ecx, [edi+8] 
         cmp     [ebx + ftdi_context.maxPacketSize], ecx
         jg      .error
         mov     [ebx + ftdi_context.writeBufChunkSize], ecx
@@ -530,6 +545,22 @@ endl
         mov     esi, edi
         add     esi, 12        
         mov     ebx, [edi+4]
+        ;---Dirty hack begin
+        mov     eax, [edi+8]
+        call    Kmalloc
+        test    eax, eax
+        jnz     @f
+        mov     esi, nomemory_msg
+        call    SysMsgBoardStr
+        jmp     .eventdestroy
+  @@:
+        mov     dword[ConfPacket], eax
+        mov     ecx, [edi+8]
+        push    edi esi
+        mov     edi, eax
+        rep movsb
+        pop     esi edi 
+        ;---Dirty hack end
         xor     ecx, ecx        ; ecx - offset      
   .write_loop:
         mov     edx, [edi+8]    ; edx - write_size
@@ -550,7 +581,7 @@ endl
         call    ClearEvent
         pop     edi esi ebx ecx
         cmp     [EventData+8], -1
-        jz .error
+        jz      .error
         add     ecx, [EventData+8]
         cmp     ecx, [edi+8]
         jge     .eventdestroy
@@ -560,12 +591,24 @@ endl
         mov     edi, [ioctl]
         mov     esi, [edi+input]
         mov     edi, [edi+output]
-        mov     ebx, [esi+4]        
+        mov     ebx, [esi+4]                
+        ;---Dirty hack begin
+        mov     eax, [esi+8]
+        call    Kmalloc
+        test    eax, eax
+        jnz     @f
+        mov     esi, nomemory_msg
+        call    SysMsgBoardStr
+        jmp     .eventdestroy
+  @@:
+        mov     edi, eax
+        mov     dword[ConfPacket], eax
+        ;---Dirty hack end        
         xor     ecx, ecx
-  .read_loop:  
+  .read_loop:
         mov     edx, [esi+8]
         cmp     ecx, edx
-        jge     .eventdestroy ;!!!
+        jge     .read_end;jge     .eventdestroy ;part of Dirty hack
         sub     edx, ecx
         cmp     edx, [ebx + ftdi_context.readBufChunkSize]
         jl      .lessthanchunk_read
@@ -582,10 +625,20 @@ endl
         mov     ebx, [EventData+4]        
         call    ClearEvent
         pop     ebx ecx edi esi
-        cmp     [EventData+8], -1
+        cmp     [EventData+8], -1        
         jz      .error
         add     ecx, [EventData+8]
         jmp     .read_loop 
+        ;---Dirty hack begin        
+  .read_end:
+        mov     esi, dword[ConfPacket]
+        mov     edi, [ioctl]
+        mov     ecx, [edi+input]
+        mov     ecx, [ecx+8]
+        mov     edi, [edi+output]
+        rep     movsb
+        jmp     .eventdestroy
+        ;---Dirty hack end
         
   .ftdi_poll_modem_status:                                 
         mov     ebx, [edi+4] 
@@ -689,7 +742,7 @@ C_CLK = 48000000
         imul    eax, [edi+8], 10
         cmp     eax, H_CLK / 0x3FFF        
         jle     .c_clk
-  .h_clk:       
+  .h_clk:
         cmp     dword[edi+8], H_CLK/10
         jl      .h_nextbaud1
         xor     edx, edx
@@ -697,10 +750,10 @@ C_CLK = 48000000
         jmp     .calcend
         
   .c_clk:
-        cmp     dword[edi+8], C_CLK/10
+        cmp     dword[edi+8], C_CLK/16
         jl      .c_nextbaud1
         xor     edx, edx
-        mov     ecx, C_CLK/10
+        mov     ecx, C_CLK/16
         jmp     .calcend  
   
   .h_nextbaud1:
@@ -711,28 +764,29 @@ C_CLK = 48000000
         jmp     .calcend
         
   .c_nextbaud1:
-        cmp     dword[edi+8], C_CLK/(10 + 10/2)
+        cmp     dword[edi+8], C_CLK/(16 + 16/2)
         jl      .c_nextbaud2
         mov     edx, 1
-        mov     ecx, C_CLK/(10 + 10/2)
+        mov     ecx, C_CLK/(16 + 16/2)
         jmp     .calcend        
         
-  .h_nextbaud2:      
+  .h_nextbaud2:
         cmp     dword[edi+8], H_CLK/(2*10)
         jl      .h_nextbaud3
         mov     edx, 2
         mov     ecx, H_CLK/(2*10)
         jmp     .calcend
         
-  .c_nextbaud2:      
-        cmp     dword[edi+8], C_CLK/(2*10)
+  .c_nextbaud2:  
+        cmp     dword[edi+8], C_CLK/(2*16)
         jl      .c_nextbaud3
         mov     edx, 2
-        mov     ecx, C_CLK/(2*10)
+        mov     ecx, C_CLK/(2*16)
         jmp     .calcend        
         
   .h_nextbaud3:
         mov     eax, H_CLK*16/10  ; eax - best_divisor
+        xor     edx, edx
         div     dword[edi+8]      ; [edi+8] - baudrate
         push    eax
         and     eax, 1
@@ -747,6 +801,7 @@ C_CLK = 48000000
   .h_best_divok:
         mov     ecx, eax        
         mov     eax, H_CLK*16/10
+        xor     edx, edx
         div     ecx
         xchg    ecx, eax            ; ecx - best_baud
         push    ecx
@@ -758,13 +813,14 @@ C_CLK = 48000000
         jmp     .rounddownbaud
         
   .c_nextbaud3:
-        mov     eax, C_CLK*16/10  ; eax - best_divisor
+        mov     eax, C_CLK        ; eax - best_divisor
+        xor     edx, edx
         div     dword[edi+8]      ; [edi+8] - baudrate
         push    eax
         and     eax, 1
         pop     eax
         shr     eax, 1
-        jz      .c_rounddowndiv     ; jump by result of and eax, 1
+        jnz     .c_rounddowndiv     ; jump by result of and eax, 1
         inc     eax
   .c_rounddowndiv:
         cmp     eax, 0x20000
@@ -772,14 +828,15 @@ C_CLK = 48000000
         mov     eax, 0x1FFFF
   .c_best_divok:
         mov     ecx, eax        
-        mov     eax, C_CLK*16/10
+        mov     eax, C_CLK
+        xor     edx, edx
         div     ecx
         xchg    ecx, eax            ; ecx - best_baud
         push    ecx
         and     ecx, 1
         pop     ecx
         shr     ecx, 1
-        jz      .rounddownbaud
+        jnz     .rounddownbaud
         inc     ecx
         
   .rounddownbaud:

@@ -42,10 +42,13 @@ linkedlist_delete:
 	mov   ecx, eax
 	call  Kfree
   .invalid_pointer:
-    pop   ecx ebx
+  pop   ecx ebx
 	ret
     
-linkedlist_isvalid:
+linkedlist_isvalid:       ;eax - pointer to check; returns zero if valid
+    inc   ecx
+    test  eax, eax
+    jz    .valid_pointer  ;actually, poiner is not valid
     push  ebx ecx
     xor   ecx, ecx
     mov   ebx, [head]
