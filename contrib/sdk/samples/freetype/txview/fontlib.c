@@ -176,8 +176,11 @@ int init_fontlib()
         goto done;
     }
 
-    err = FT_New_Face( library, "/kolibrios/Fonts/IstokWeb.ttf", 0, &face );
+//    err = FT_New_Face( library, "/kolibrios/Fonts/IstokWeb.ttf", 0, &face );
 //    err = FT_New_Face( library, "/kolibrios/Fonts/lucon.ttf", 0, &face );
+
+    err = FT_New_Face( library, "/kolibrios/Fonts/DroidSansMono.ttf", 0, &face );
+
     if ( err == FT_Err_Unknown_File_Format )
     {
         printf("font format is unsupported\n");
@@ -233,7 +236,7 @@ font_t *create_font(FT_Face xface, int size)
     memset(font, 0, sizeof(*font));
 
     font->face = (xface == NULL) ? def_face : xface;
-    font->height = size;
+    font->height = size+1;
 
     err = FT_Set_Pixel_Sizes( font->face, 0, size );
 
