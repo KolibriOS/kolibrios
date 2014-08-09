@@ -146,7 +146,6 @@ uint32_t get_mouse_wheels(void)
 
     __asm__ __volatile__(
     "int $0x40 \n\t"
-    "rol $16, %%eax"
     :"=a"(val)
     :"a"(37),"b"(7));
     return val;

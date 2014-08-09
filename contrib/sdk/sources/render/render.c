@@ -453,7 +453,7 @@ void create_mask(struct render *render)
                          (void *) (uintptr_t)mask_name, attribs);
     printf("create mask image %p\n", mask_image);
     if(mask_image == NULL)
-        goto err2
+        goto err2;
 
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -486,7 +486,7 @@ err3:
     eglDestroyImageKHR(render->dpy, mask_image);
 err2:
     close.handle = mask_handle;
-    (void)drm_ioctl(fd, DRM_IOCTL_GEM_CLOSE, &close);
+    (void)drm_ioctl(render->fd, DRM_IOCTL_GEM_CLOSE, &close);
     glBindTexture(GL_TEXTURE_2D, 0);
 err1:
     glDeleteTextures(1, &render->tx_mask);

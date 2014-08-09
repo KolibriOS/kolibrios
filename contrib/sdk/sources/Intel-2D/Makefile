@@ -8,7 +8,7 @@ STRIP = kos32-strip
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -fno-ident -fomit-frame-pointer
 
 LDFLAGS:=  -shared -s -nostdlib -T ../newlib/dll.lds --entry _DllStartup --image-base=0 
-PXFLAGS:= --version-script pixlib.ver --out-implib $(LIBRARY).dll.a
+PXFLAGS:= --version-script pixlib.ver --out-implib lib$(LIBRARY).dll.a
 SNAFLAGS:= --version-script sna.ver --output-def sna.def
 UXAFLAGS:= --version-script uxa.ver --output-def uxa.def
  
@@ -78,7 +78,7 @@ ebox:$(LIBRARY).dll
 $(LIBRARY).dll: $(OBJ_PIXLIB) Makefile
 	$(LD) $(LDFLAGS) $(PXFLAGS) $(LIBPATH) -o $@ $(OBJ_PIXLIB) $(LIBS)
 	mv -f $@ ../../bin
-	mv -f $(LIBRARY).dll.a ../../lib   
+	mv -f lib$(LIBRARY).dll.a ../../lib   
 
 intel-sna.drv: $(OBJ_SNA) Makefile
 	$(LD) $(LDFLAGS) $(SNAFLAGS) $(LIBPATH) -o $@ $(OBJ_SNA) $(LIBS)
