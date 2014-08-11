@@ -14,7 +14,7 @@ int __menuet__check_for_event(void)
  return __ret;
 }
 
-void __menuet__set_bitfield_for_wanted_events(__u16 ev)
+void __menuet__set_bitfield_for_wanted_events(__u32 ev)
 {
  __asm__ __volatile__("int $0x40"::"a"(40),"b"(ev));
 }

@@ -75,7 +75,7 @@ __u32 __menuet__get_date(void);
 
 void __menuet__line(__u16 x1,__u16 y1,__u16 x2,__u16 y2,__u32 color);
 
-void __menuet__set_bitfield_for_wanted_events(__u16 ev);
+void __menuet__set_bitfield_for_wanted_events(__u32 ev);
 
 #define EVENT_REDRAW              0x00000001
 #define EVENT_KEY                 0x00000002
@@ -83,9 +83,9 @@ void __menuet__set_bitfield_for_wanted_events(__u16 ev);
 #define EVENT_END_REQUEST         0x00000008
 #define EVENT_DESKTOP_BACK_DRAW   0x00000010
 #define EVENT_MOUSE_CHANGE        0x00000020
-#define EVENT_IPC		  0x00000040
-#define EVENT_GET_IRQS_MASK       0xFFFF0000
-#define EVENT_GET_IRQ(e)          (((e)>>16)&0xFFFF)
+#define EVENT_IPC		          0x00000040
+#define EVENT_MOUSE_CURSOR_MASK   0x40000000	// the window does not receive mouse events if cursor outside window
+#define EVENT_MOUSE_WINDOW_MASK   0x80000000	// inactive window does not receive mouse events
 
 __u32 __menuet__get_irq_owner(__u32 irq);
 int __menuet__get_data_read_by_irq(__u32 irq,__u32 * num_bytes_in_buf,__u8 * data);
