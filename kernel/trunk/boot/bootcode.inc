@@ -413,7 +413,7 @@ sayerr:
 @@:
         in      al, 64h
         test    al, 1
-        loopnz  @b
+        loopz   @b
         in      al, 0x60
 
 ;;;/diamond today   5.02.2008
@@ -424,7 +424,7 @@ sayerr:
 @@:
         in      al, 64h
         test    al, 1
-        loopnz  @b
+        loopz   @b
         in      al, 0x60
         mov     al, 0
         out     0x60, al
@@ -432,7 +432,7 @@ sayerr:
 @@:
         in      al, 64h
         test    al, 1
-        loopnz  @b
+        loopz   @b
         in      al, 0x60
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         sti
