@@ -36,8 +36,27 @@ section '.flat' code readable align 16
 proc START stdcall, state:dword
 
           cmp [state], DRV_ENTRY
-          jne .fin
+          jne .nothing
   .init:
+; disable keyboard and mouse interrupts
+; keyboard IRQ handler can interfere badly otherwise
+          pushf
+          cli
+          mov  bl, 0x20        ; read command byte
+          call kbd_cmd
+          test ah,ah
+          jnz  .fin
+          call kbd_read
+          test ah,ah
+          jnz  .fin
+          popf
+          and  al, 0xFC        ; disable interrupts
+          or   al, 0x10        ; disable keyboard
+          push eax
+          mov  bl, 0x60        ; write command byte
+          call kbd_cmd
+          pop  eax
+          call kbd_write
 
           call detect_mouse
           test eax,eax
@@ -57,49 +76,50 @@ proc START stdcall, state:dword
           
   .stop_try:
 
-          mov  bl, 0x20        ; read command byte
-          call kbd_cmd
-          cmp  ah,1
-          je   .exit
-
-          call kbd_read
-          cmp  ah,1
-          je   .exit
-
-          or   al, 10b
-          push eax
-          mov  bl, 0x60        ; write command byte
-          call kbd_cmd
-          cmp  ah,1
-          je   .exit
-
-          pop  eax
-          call kbd_write
-          cmp  ah,1
-          je   .exit
-
           mov  al, 0xF4        ; enable data reporting
           call mouse_cmd
 
-          mov  bl, 0xAE        ; enable keyboard interface
+; enable keyboard and mouse interrupts
+          mov  bl, 0x20        ; read command byte
           call kbd_cmd
-          
-          stdcall AttachIntHandler, 12, irq_handler, dword 0
+          call kbd_read
+          or   al, 3           ; enable interrupts
+          and  al, not 0x10    ; enable keyboard
+          push eax
+          mov  bl, 0x60        ; write command byte
+          call kbd_cmd
+          pop  eax
+          call kbd_write
+
+          stdcall AttachIntHandler, 12, irq_handler, 0
           stdcall RegService, my_service, service_proc
                 ret
 
   .fin:
+          popf
           ;stdcall DetachIntHandler, 12, irq_handler
           mov  bl, 0xA7        ; disable mouse interface
           call kbd_cmd
+  .nothing:
           xor  eax, eax
           ret
 
   .exit:
           mov  bl, 0xA7        ; disable mouse interface
           call kbd_cmd
-          mov  bl, 0xAE        ; enable keyboard interface
+
+; enable keyboard interrupt, leave mouse interrupt disabled
+          mov  bl, 0x20        ; read command byte
           call kbd_cmd
+          call kbd_read
+          or   al, 1           ; enable keyboard interrupt
+          and  al, not 0x10    ; enable keyboard
+          push eax
+          mov  bl, 0x60        ; write command byte
+          call kbd_cmd
+          pop  eax
+          call kbd_write
+
           xor  eax, eax
           ret
 endp
@@ -137,11 +157,6 @@ endp
 
 detect_mouse:
 
-    mov  bl, 0xAD            ; disable keyboard interface
-    call kbd_cmd
-    cmp  ah,1
-    je   .fail
-
     mov  bl, 0xA8            ; enable mouse interface
     call kbd_cmd
     cmp  ah,1
@@ -161,6 +176,7 @@ detect_mouse:
     jc   .fail
     cmp  al, 0x00
     jne  .fail        ; unknown device
+
     xor  eax,eax
     ret
 

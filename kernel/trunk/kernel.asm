@@ -882,6 +882,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     esi, 250            ; wait 1/4 a second
         call    delay_ms
         rdtsc
+        sti
 
         sub     eax, ecx
         xor     edx, edx
@@ -949,26 +950,6 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         stdcall map_page, tss._io_map_1, \
                 [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
-; LOAD FIRST APPLICATION
-        cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
-        jnz     first_app_found
-
-        cli
-        mov     ebp, firstapp
-        call    fs_execute_from_sysdir
-        test    eax, eax
-        jns     first_app_found
-
-        mov     esi, boot_failed
-        call    boot_log
-
-        mov     eax, 0xDEADBEEF      ; otherwise halt
-        hlt
-
-first_app_found:
-
-        cli
-
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
         call    kb_write_wait_ack
@@ -1007,6 +988,24 @@ endg
         mov     esi, boot_setmouse
         call    boot_log
         call    setmouse
+
+; LOAD FIRST APPLICATION
+        cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
+        jnz     first_app_found
+
+        cli
+        mov     ebp, firstapp
+        call    fs_execute_from_sysdir
+        test    eax, eax
+        jns     first_app_found
+
+        mov     esi, boot_failed
+        call    boot_log
+
+        mov     eax, 0xDEADBEEF      ; otherwise halt
+        hlt
+
+first_app_found:
 
 ; START MULTITASKING
 

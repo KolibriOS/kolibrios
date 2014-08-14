@@ -1,7 +1,7 @@
 kbd_read:
     push    ecx edx
 
-    mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
+    mov     ecx,0xfffff ; last 0xffff, new value in view of fast CPU's
   kr_loop:
     in      al,0x64
     test    al,1
@@ -10,11 +10,6 @@ kbd_read:
     mov     ah,1
     jmp     kr_exit
   kr_ready:
-    push    ecx
-    mov     ecx,32
-  kr_delay:
-    loop    kr_delay
-    pop     ecx
     in      al,0x60
     xor     ah,ah
   kr_exit:
@@ -27,40 +22,19 @@ kbd_write:
     push    ecx edx
 
     mov     dl,al
-    in      al,0x60
-    mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-  kw_loop:
+    mov     ecx,0x1ffff
+@@:
     in      al,0x64
     test    al,2
-    jz      kw_ok
-    loop    kw_loop
+    jz      @f
+    loop    @b
     mov     ah,1
-    jmp     kw_exit
-  kw_ok:
+    jmp     .nothing
+@@:
     mov     al,dl
     out     0x60,al
-    mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-  kw_loop3:
-    in      al,0x64
-    test    al,2
-    jz      kw_ok3
-    loop    kw_loop3
-    mov     ah,1
-    jmp     kw_exit
-  kw_ok3:
-    mov     ah,8
-  kw_loop4:
-    mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-  kw_loop5:
-    in      al,0x64
-    test    al,1
-    jnz     kw_ok4
-    loop    kw_loop5
-    dec     ah
-    jnz     kw_loop4
-  kw_ok4:
-    xor     ah,ah
-  kw_exit:
+    mov     ah,0
+.nothing:
     pop     edx ecx
     ret
 
@@ -73,20 +47,11 @@ kbd_cmd:
     test    al,2
     jz      c_send
     loop    c_wait
-    jmp     c_error
+    mov     ah,1
+    jmp     c_exit
   c_send:
     mov     al,bl
     out     0x64,al
-    mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-  c_accept:
-    in      al,0x64
-    test    al,2
-    jz      c_ok
-    loop    c_accept
-  c_error:
-    mov     ah,1
-    jmp     c_exit
-  c_ok:
     xor     ah,ah
   c_exit:
     ret
