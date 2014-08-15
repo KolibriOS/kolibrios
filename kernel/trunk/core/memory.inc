@@ -350,6 +350,34 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         ret
 endp
 
+; Allocates a physical page for master page table
+; that duplicates first Mb of OS_BASE at address 0;
+; used for starting APs and for shutting down,
+; where it is important to execute code in trivial-mapped pages.
+; Returns eax = allocated physical page.
+proc create_trampoline_pgmap
+; The only non-trivial moment:
+; we need a linear address to fill information,
+; but we don't need it outside of this function,
+; so we're returning physical address.
+; Therefore, allocate memory with kernel_alloc,
+; this will allocate physical page and a linear address somewhere,
+; and deallocate only linear address with free_kernel_space.
+        stdcall kernel_alloc, 0x1000
+        mov     edi, eax
+        mov     esi, master_tab
+        mov     ecx, 1024
+        rep movsd
+        mov     ecx, [master_tab+(OS_BASE shr 20)]
+        mov     [eax], ecx
+        mov     edi, eax
+        call    get_pg_addr
+        push    eax
+        stdcall free_kernel_space, edi
+        pop     eax
+        ret
+endp
+
 align 4
 proc init_LFB
            locals

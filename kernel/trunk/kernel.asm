@@ -5452,22 +5452,6 @@ end if
 
         call    IRQ_mask_all
 
-if 0
-        mov     word [OS_BASE+0x467+0], pr_mode_exit
-        mov     word [OS_BASE+0x467+2], 0x1000
-
-        mov     al, 0x0F
-        out     0x70, al
-        mov     al, 0x05
-        out     0x71, al
-
-        mov     al, 0xFE
-        out     0x64, al
-
-        hlt
-        jmp     $-1
-
-else
         cmp     byte [OS_BASE + 0x9030], 2
         jnz     no_acpi_power_off
 
@@ -5613,21 +5597,6 @@ do_acpi_power_off:
         jmp     $
 
 
-no_acpi_power_off:
-        mov     word [OS_BASE+0x467+0], pr_mode_exit
-        mov     word [OS_BASE+0x467+2], 0x1000
-
-        mov     al, 0x0F
-        out     0x70, al
-        mov     al, 0x05
-        out     0x71, al
-
-        mov     al, 0xFE
-        out     0x64, al
-
-        hlt
-        jmp     $-1
-
 scan_rsdp:
         add     eax, OS_BASE
 .s:
@@ -5650,7 +5619,33 @@ scan_rsdp:
         stc
 .ok:
         ret
-end if
+
+no_acpi_power_off:
+        call    create_trampoline_pgmap
+        mov     cr3, eax
+        jmp     become_real+0x10000
+iglobal
+align 4
+realmode_gdt:
+; selector 0 - not used
+        dw      23
+        dd      realmode_gdt-OS_BASE
+        dw      0
+; selector 8 - code from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10011011b
+        db      00000000b
+        db      0
+; selector 10h - data from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10010011b
+        db      00000000b
+        db      0
+endg
 
 if ~ lang eq sp
 diff16 "end of .text segment",0,$
