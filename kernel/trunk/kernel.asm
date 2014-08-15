@@ -309,6 +309,25 @@ use16
 org $-0x10000
 include "boot/shutdown.inc" ; shutdown or restart
 org $+0x10000
+
+ap_init16:
+        cli
+        lgdt    [cs:gdts_ap-ap_init16]
+        mov     eax, [cs:cr3_ap-ap_init16]
+        mov     cr3, eax
+        mov     eax, [cs:cr4_ap-ap_init16]
+        mov     cr4, eax
+        mov     eax, CR0_PE+CR0_PG+CR0_WP
+        mov     cr0, eax
+        jmp     pword os_code:ap_init_high
+align 16
+gdts_ap:
+        dw     gdte-gdts-1
+        dd     gdts
+        dw     0
+cr3_ap  dd     ?
+cr4_ap  dd     ?
+ap_init16_size = $ - ap_init16
 use32
 
 __DEBUG__ fix 1
@@ -678,6 +697,62 @@ no_mode_0x12:
         mov     dword [current_slot], SLOT_BASE + 256*2
         mov     dword [TASK_BASE], CURRENT_TASK + 32*2
 
+; Move other CPUs to deep sleep, if it is useful
+uglobal
+use_mwait_for_idle db 0
+endg
+        cmp     [cpu_vendor+8], 'ntel'
+        jnz     .no_wake_cpus
+        bt      [cpu_caps+4], CAPS_MONITOR-32
+        jnc     .no_wake_cpus
+        dbgstr 'using mwait for idle loop'
+        inc     [use_mwait_for_idle]
+        mov     ebx, [cpu_count]
+        cmp     ebx, 1
+        jbe     .no_wake_cpus
+        call    create_trampoline_pgmap
+        mov     [cr3_ap+OS_BASE], eax
+        mov     eax, cr4
+        mov     [cr4_ap+OS_BASE], eax
+        mov     esi, OS_BASE + ap_init16
+        mov     edi, OS_BASE + 8000h
+        mov     ecx, (ap_init16_size + 3) / 4
+        rep movsd
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
+        mov     [LAPIC_BASE], eax
+        lea     edi, [eax+300h]
+        mov     esi, smpt+4
+        dec     ebx
+.wake_cpus_loop:
+        lodsd
+        shl     eax, 24
+        mov     [edi+10h], eax
+; assert INIT IPI
+        mov     dword [edi], 0C500h
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; deassert INIT IPI
+        mov     dword [edi], 8500h
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; send STARTUP IPI
+        mov     dword [edi], 600h + (8000h shr 12)
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+        dec     ebx
+        jnz     .wake_cpus_loop
+        mov     eax, [cpu_count]
+        dec     eax
+@@:
+        cmp     [ap_initialized], eax
+        jnz     @b
+        mov     eax, [cr3_ap+OS_BASE]
+        call    free_page
+.no_wake_cpus:
+
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
         mov     esi, boot_initirq
@@ -1030,6 +1105,27 @@ end if
 
         ; Fly :)
 
+uglobal
+align 4
+ap_initialized  dd      0
+endg
+
+ap_init_high:
+        mov     ax, os_stack
+        mov     bx, app_data
+        mov     cx, app_tls
+        mov     ss, ax
+        mov     ds, bx
+        mov     es, bx
+        mov     fs, cx
+        mov     gs, bx
+        xor     esp, esp
+        mov     eax, sys_pgdir-OS_BASE
+        mov     cr3, eax
+        lock inc [ap_initialized]
+        jmp     idle_loop
+
+
 include 'unpacker.inc'
 
 align 4
@@ -1164,13 +1260,35 @@ align 4
 osloop_nonperiodic_work dd      ?
 endg
 
-align 4
+uglobal
+align 64
+idle_addr       rb      64
+endg
+
 idle_thread:
         sti
-idle_loop:
-        hlt
-        jmp     idle_loop
 
+; The following code can be executed by all CPUs in the system.
+; All other parts of the kernel do not expect multi-CPU.
+; Also, APs don't even have a stack here.
+; Beware. Don't do anything here. Anything at all.
+idle_loop:
+        cmp     [use_mwait_for_idle], 0
+        jnz     idle_loop_mwait
+
+idle_loop_hlt:
+        hlt
+        jmp     idle_loop_hlt
+
+idle_loop_mwait:
+        mov     eax, idle_addr
+        xor     ecx, ecx
+        xor     edx, edx
+        monitor
+        xor     ecx, ecx
+        mov     eax, 20h        ; or 10h
+        mwait
+        jmp     idle_loop_mwait
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5429,6 +5547,33 @@ system_shutdown:          ; shut down the system
         call    stop_all_services
 
 yes_shutdown_param:
+; Shutdown other CPUs, if initialized
+        cmp     [ap_initialized], 0
+        jz      .no_shutdown_cpus
+        mov     edi, [LAPIC_BASE]
+        add     edi, 300h
+        mov     esi, smpt+4
+        mov     ebx, [cpu_count]
+        dec     ebx
+.shutdown_cpus_loop:
+        lodsd
+        shl     eax, 24
+        mov     [edi+10h], eax
+; assert INIT IPI
+        mov     dword [edi], 0C500h
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; deassert INIT IPI
+        mov     dword [edi], 8500h
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; don't send STARTUP IPI: let other CPUs be in wait-for-startup state
+        dec     ebx
+        jnz     .shutdown_cpus_loop
+.no_shutdown_cpus:
+
         cli
 
 if ~ defined extended_primary_loader
