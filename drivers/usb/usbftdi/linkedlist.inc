@@ -46,11 +46,10 @@ linkedlist_delete:
 	ret
     
 linkedlist_isvalid:       ;eax - pointer to check; returns zero if valid
-    inc   ecx
-    test  eax, eax
-    jz    .valid_pointer  ;actually, poiner is not valid
     push  ebx ecx
     xor   ecx, ecx
+    test  eax, eax
+    jz    .invalid_pointer 
     mov   ebx, [head]
   .next_check:
     cmp   eax, ebx

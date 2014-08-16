@@ -22,10 +22,10 @@ __DEBUG_LEVEL__ = 1
 node equ ftdi_context
 node.next equ ftdi_context.next_context
 
-include '../proc32.inc'
-include '../imports.inc'
-include '../fdo.inc'
-include '../struct.inc'
+include '../../proc32.inc'
+include '../../imports.inc'
+include '../../fdo.inc'
+include '../../struct.inc'
 
 public START
 public version
