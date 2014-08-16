@@ -3,6 +3,13 @@
 ;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
+;;  FTDI chips driver for KolibriOS                             ;;
+;;                                                              ;;
+;;   Written by gtament@gmail.com                               ;;
+;;                                                              ;;
+;;         GNU GENERAL PUBLIC LICENSE                           ;;
+;;          Version 2, June 1991                                ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 format MS COFF
@@ -15,10 +22,10 @@ __DEBUG_LEVEL__ = 1
 node equ ftdi_context
 node.next equ ftdi_context.next_context
 
-include '../../proc32.inc'
-include '../../imports.inc'
-include '../../fdo.inc'
-include '../../struct.inc'
+include '../proc32.inc'
+include '../imports.inc'
+include '../fdo.inc'
+include '../struct.inc'
 
 public START
 public version
@@ -310,7 +317,9 @@ endl
         jz      .ftdi_unlock    ;3
         
         mov     ebx, [esi+4]
-        mov     ecx, [ebx + ftdi_context.lockPID]     
+        mov     ecx, [ebx + ftdi_context.lockPID]
+        cmp     dword[esi], 0
+        jz      .error
         cmp     ecx, [esi]
         jz      .pid_ok
         mov     esi, [edi+output]
@@ -390,6 +399,7 @@ endl
         mov     esi, [edi+output]
         mov     [esi], dword 'ERR0'
         or      [esi], eax
+        ret
   .endswitch:
         xor     eax, eax
 	    ret
@@ -408,7 +418,7 @@ endl
         jmp     .endswitch
         
   .ftdi_out_control_transfer_withinp:               
-        mov     dx, word[edi+8]                
+        mov     dx, word[edi+8]
         mov     word[ConfPacket+2], dx 
   .ftdi_out_control_transfer_noinp:
         mov     ebx, [edi+4]
@@ -430,27 +440,27 @@ endl
         jmp     .endswitch
         
   .ftdi_setrtshigh:
-        DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'                     
+        ;DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'                     
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_HIGH shl 16)
         jmp     .ftdi_out_control_transfer_noinp         
 
   .ftdi_setrtslow:
-        DEBUGF 1,'K : FTDI Setting RTS pin LOW\n'             
+        ;DEBUGF 1,'K : FTDI Setting RTS pin LOW\n'             
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_LOW shl 16)
         jmp     .ftdi_out_control_transfer_noinp           
         
   .ftdi_setdtrhigh:
-        DEBUGF 1,'K : FTDI Setting DTR pin HIGH\n'                     
+        ;DEBUGF 1,'K : FTDI Setting DTR pin HIGH\n'                     
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_HIGH shl 16)
         jmp     .ftdi_out_control_transfer_noinp           
 
   .ftdi_setdtrlow:
-        DEBUGF 1,'K : FTDI Setting DTR pin LOW\n'             
+        ;DEBUGF 1,'K : FTDI Setting DTR pin LOW\n'             
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_LOW shl 16)
         jmp     .ftdi_out_control_transfer_noinp           
         
   .ftdi_usb_reset:
-        DEBUGF 1,'K : FTDI Reseting\n'
+        ;DEBUGF 1,'K : FTDI Reseting\n'
         mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_SIO shl 16)
         jmp     .ftdi_out_control_transfer_noinp  
         
@@ -463,7 +473,6 @@ endl
         jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_set_bitmode:
-        DEBUGF 1,'K : FTDI Seting bitmode\n'                   
         mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)                                       
         jmp     .ftdi_out_control_transfer_withinp        
      
@@ -591,7 +600,7 @@ endl
         mov     edi, [ioctl]
         mov     esi, [edi+input]
         mov     edi, [edi+output]
-        mov     ebx, [esi+4]                
+        mov     ebx, [esi+4]     
         ;---Dirty hack begin
         mov     eax, [esi+8]
         call    Kmalloc
@@ -602,7 +611,7 @@ endl
         jmp     .eventdestroy
   @@:
         mov     edi, eax
-        mov     dword[ConfPacket], eax
+        mov     dword[ConfPacket], eax ; Store in ConfPAcket ptr to allocated memory
         ;---Dirty hack end        
         xor     ecx, ecx
   .read_loop:
@@ -628,6 +637,7 @@ endl
         cmp     [EventData+8], -1        
         jz      .error
         add     ecx, [EventData+8]
+        DEBUGF 1, 'K : In buffer %x\n', [edi]
         jmp     .read_loop 
         ;---Dirty hack begin        
   .read_end:
@@ -705,13 +715,12 @@ endl
         jmp     .endswitch
         	   
   .ftdi_lock:
-        DEBUGF 1, 'K : FTDI lock attempt\n'
         mov     esi, [edi+input]
         mov     ebx, [esi+4]
         mov     eax, [ebx + ftdi_context.lockPID]
+        DEBUGF 1, 'K : to PID %x from PID %x\n', [esi], eax
         test    eax, eax
         jnz     .lockedby
-        DEBUGF 1, 'K : Lock success\n'
         mov     eax, [esi]
         mov     [ebx + ftdi_context.lockPID], eax
   .lockedby:
@@ -724,6 +733,7 @@ endl
         mov     edi, [edi+output]
         mov     ebx, [esi+4]
         mov     eax, [ebx + ftdi_context.lockPID]
+        DEBUGF 1, 'K : to PID %x from PID %x\n', [esi], eax
         cmp     eax, [esi]
         jnz     .unlockimp
         mov     [ebx + ftdi_context.lockPID], 0
@@ -842,13 +852,12 @@ C_CLK = 48000000
   .rounddownbaud:
         mov     edx, eax            ; edx - encoded_divisor
         shr     edx, 3
-        and     eax, 0x7
-        push    esp
-        push    7 6 5 1 4 2 3 0
+        and     eax, 0x7      
+        push    7 6 5 1 4 2 3 0               
         mov     eax, [esp+eax*4]
         shl     eax, 14
-        or      edx, eax
-        mov     esp, [esp+36]
+        or      edx, eax        
+        add     esp, 32
         
   .calcend:
         mov     eax, edx        ; eax - *value
