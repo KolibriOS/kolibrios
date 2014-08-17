@@ -22,10 +22,10 @@ __DEBUG_LEVEL__ = 1
 node equ ftdi_context
 node.next equ ftdi_context.next_context
 
-include '../../proc32.inc'
-include '../../imports.inc'
-include '../../fdo.inc'
-include '../../struct.inc'
+include '../proc32.inc'
+include '../imports.inc'
+include '../fdo.inc'
+include '../struct.inc'
 
 public START
 public version
@@ -611,6 +611,11 @@ endl
         jmp     .eventdestroy
   @@:
         mov     edi, eax
+        push    edi eax
+        mov     ecx, [esi+8]
+        xor     eax, eax
+        rep     stosb
+        pop     eax edi
         mov     dword[ConfPacket], eax ; Store in ConfPAcket ptr to allocated memory
         ;---Dirty hack end        
         xor     ecx, ecx
@@ -637,7 +642,6 @@ endl
         cmp     [EventData+8], -1        
         jz      .error
         add     ecx, [EventData+8]
-        DEBUGF 1, 'K : In buffer %x\n', [edi]
         jmp     .read_loop 
         ;---Dirty hack begin        
   .read_end:
@@ -686,14 +690,14 @@ endl
         call    WaitEvent
         jmp     .endswitch
                 
-  .ftdi_get_list:
+  .ftdi_get_list:                               
+        mov     edi, [edi+output]
+        xor     ecx, ecx
         call    linkedlist_gethead
         test    eax, eax
-        jz      .endswitch                        
-        mov     edi, [edi+output]
+        jz      .emptylist
         push    edi
-        add     edi, 4
-        xor     ecx, ecx
+        add     edi, 4         
   .nextdev:
         inc     ecx
         cmp     [eax + ftdi_context.lockPID], 0
@@ -711,6 +715,7 @@ endl
         test    eax, eax
         jnz     .nextdev
         pop     edi
+  .emptylist:
         mov     [edi], ecx
         jmp     .endswitch
         	   
@@ -718,7 +723,6 @@ endl
         mov     esi, [edi+input]
         mov     ebx, [esi+4]
         mov     eax, [ebx + ftdi_context.lockPID]
-        DEBUGF 1, 'K : to PID %x from PID %x\n', [esi], eax
         test    eax, eax
         jnz     .lockedby
         mov     eax, [esi]
@@ -733,7 +737,6 @@ endl
         mov     edi, [edi+output]
         mov     ebx, [esi+4]
         mov     eax, [ebx + ftdi_context.lockPID]
-        DEBUGF 1, 'K : to PID %x from PID %x\n', [esi], eax
         cmp     eax, [esi]
         jnz     .unlockimp
         mov     [ebx + ftdi_context.lockPID], 0
