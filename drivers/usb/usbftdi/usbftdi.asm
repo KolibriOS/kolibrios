@@ -48,7 +48,6 @@ HID_DESCR_TYPE      = 21h
 REPORT_DESCR_TYPE   = 22h
 PHYSICAL_DESCR_TYPE = 23h
 
-
 ; LibUSB constatnts
 LIBUSB_REQUEST_TYPE_STANDARD = (0x00 shl 5)
 LIBUSB_REQUEST_TYPE_CLASS = (0x01 shl 5)
@@ -292,7 +291,7 @@ out_size   equ  IOCTL.out_size
 align 4
 proc service_proc stdcall uses ebx esi edi, ioctl:DWORD
 locals
-ConfPacket  rb  8
+ConfPacket  rb  10
 EventData   rd  3
 endl
         mov     edi, [ioctl]
@@ -396,9 +395,10 @@ endl
   .version:     
         jmp     .endswitch
   .error:
-        mov     esi, [edi+output]
-        mov     [esi], dword 'ERR0'
-        or      [esi], eax
+        DEBUGF 1, 'K : FTDI error occured! %d\n', eax
+        ;mov     esi, [edi+output]
+        ;mov     [esi], dword 'ERR0'
+        ;or      [esi], eax
         ret
   .endswitch:
         xor     eax, eax
@@ -436,8 +436,11 @@ endl
         jz      .error
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent     
-        jmp     .endswitch
+        call    WaitEvent
+        mov     eax, [EventData+8]
+        test    eax, eax
+        jz      .endswitch
+        jmp     .error
         
   .ftdi_setrtshigh:
         ;DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'                     
@@ -503,20 +506,29 @@ endl
         jmp     .own_index
 
   .ftdi_read_pins:                            
-        mov     ebx, [edi] 
+        mov     ebx, [edi+4] 
         mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_READ_PINS_REQUEST shl 8) + (0 shl 16)
         mov     ecx, [ebx + ftdi_context.index]
         mov     word[ConfPacket+4], cx
         mov     word[ConfPacket+6], 1
         lea     esi, [ConfPacket]
         lea     edi, [EventData]
-        mov     ecx, [ioctl]
-        mov     ecx, [ecx+output]
+        mov     ecx, esi
+        add     ecx, 8
+        mov     word[ConfPacket+8], 0
         stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 1, control_callback, edi, 0
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent     
-        jmp     .endswitch
+        call    WaitEvent
+        xor     ebx, ebx
+        mov     bx, word[ConfPacket+8]
+        mov     ecx, [ioctl]
+        mov     ecx, [ecx+output]
+        mov     [ecx], ebx
+        mov     eax, [EventData+8]
+        test    eax, eax
+        jz      .endswitch
+        jmp     .error
         
   .ftdi_set_wchunksize:
         mov     ebx, [edi+4]
@@ -565,10 +577,11 @@ endl
   @@:
         mov     dword[ConfPacket], eax
         mov     ecx, [edi+8]
-        push    edi esi
+        push    edi
         mov     edi, eax
         rep movsb
-        pop     esi edi 
+        pop     edi
+        mov     esi, dword[ConfPacket]
         ;---Dirty hack end
         xor     ecx, ecx        ; ecx - offset      
   .write_loop:
@@ -585,9 +598,6 @@ endl
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
         call    WaitEvent
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]        
-        call    ClearEvent
         pop     edi esi ebx ecx
         cmp     [EventData+8], -1
         jz      .error
@@ -635,9 +645,6 @@ endl
         mov     eax, [EventData]
         mov     ebx, [EventData+4]        
         call    WaitEvent
-        mov     eax, [EventData]
-        mov     ebx, [EventData+4]        
-        call    ClearEvent
         pop     ebx ecx edi esi
         cmp     [EventData+8], -1        
         jz      .error
