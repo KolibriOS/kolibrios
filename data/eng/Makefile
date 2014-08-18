@@ -200,7 +200,7 @@ FASM_PROGRAMS:=\
 # end of list
 # Same as above with PE stripping as extra step.
 FASM_PROGRAMS_PESTRIP:=\
- drivers/vidintel.sys:DRIVERS/VIDINTEL.SYS:$(REPOSITORY)/drivers/vidintel.asm \
+ drivers/vidintel.sys:DRIVERS/VIDINTEL.SYS:$(REPOSITORY)/drivers/video/vidintel.asm \
  drivers/forcedeth.sys:DRIVERS/FORCEDETH.SYS:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
  drivers/i8254x.sys:DRIVERS/I8254X.SYS:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
  drivers/i8255x.sys:DRIVERS/I8255X.SYS:$(REPOSITORY)/drivers/ethernet/i8255x.asm \
