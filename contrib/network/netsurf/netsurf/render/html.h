@@ -28,8 +28,7 @@
 #include <stdbool.h>
 
 #include <dom/dom.h>
-#include <bindings/hubbub/parser.h>
-
+#include <libdom/bindings/hubbub/parser.h>
 #include "content/content_type.h"
 #include "css/css.h"
 #include "desktop/mouse.h"

@@ -2,26 +2,31 @@
 #include <math.h>
 #include <time.h>
 
+#ifdef DBG
+#undef DBG
+#endif
+#define DBG(s) __menuet__debug_out(s) /* For the debug messages in BOARD */
+//#define DBG(s) LOG((s))            /* So that we see debug in Netsurf's LOG files */
 
 /*	
 long int  __divdi3(long int  a, long int  b) {
-	//__menuet__debug_out("divdi3\n");
+	//DBG("divdi3\n");
 	return 0;}
 */
 
 /*
 long long int __divdi3(long long int a, long long int b) {
-	__menuet__debug_out("divdi3\n");
+	DBG("divdi3\n");
 	return a/b;}
 */
 
 
 char * locale_charset(){
-	__menuet__debug_out("Charset is US\n");
+	DBG("Charset is US\n");
 	return "US-ASCII";}
 
 float strtof(const char* str, char** endptr){
-	__menuet__debug_out("STRTOOOF\n");
+	DBG("STRTOOOF\n");
 	return 0.0f;}
 	
 	
@@ -33,7 +38,7 @@ char *realpath(const char *path, char *resolved_path){
 	char n, s;
 	
 	if (resolved_path==0) {
-		__menuet__debug_out("ResPath is null");
+		DBG("ResPath is null");
 		resolved_path=malloc(strlen(path)+1);
 	}
 	
@@ -58,11 +63,11 @@ char *realpath(const char *path, char *resolved_path){
 	
 	
 	
-	__menuet__debug_out("Real path is... \n");
+	DBG("Real path is... \n");
 	sprintf (zuup, "A:%s\n", boo);
-	__menuet__debug_out(zuup);
+	DBG(zuup);
 	sprintf (zuup, "B:%s\n", zoo);
-	__menuet__debug_out(zuup);
+	DBG(zuup);
 	
 	//memcpy(resolved_path, path, strlen(path));
 	
@@ -77,7 +82,7 @@ char *realpath(const char *path, char *resolved_path){
 #include <netinet/in.h>
 
 int inet_aton(const char *cp, struct in_addr *inp){
-	__menuet__debug_out("No IP\n");
+	DBG("No IP\n");
 	return 0;
 }
 
@@ -85,7 +90,7 @@ int inet_aton(const char *cp, struct in_addr *inp){
 
 void va_copy(va_list dest, va_list src){ //WHAA
 dest=src;
-__menuet__debug_out("Some shit...\n");
+DBG("Some shit...\n");
 }
 
 
@@ -99,7 +104,7 @@ void timeradd(struct timeval *a, struct timeval *b,
              (res)->tv_sec++;                    
              (res)->tv_usec -= 1000000;          
          }      
-						 //__menuet__debug_out("Timeradd\n");
+						 //DBG("Timeradd\n");
  }
 
 void timersub(struct timeval *a, struct timeval *b,
@@ -111,14 +116,14 @@ void timersub(struct timeval *a, struct timeval *b,
              (res)->tv_sec--;                    
              (res)->tv_usec += 1000000;          
          }     
-						// __menuet__debug_out("Timersub\n");
+						// DBG("Timersub\n");
 	 }
 
       
 
        int timerisset(struct timeval *tvp){
 		   
-		   //__menuet__debug_out("Timer is set?\n");
+		   //DBG("Timer is set?\n");
 		   
 		   return  ((tvp)->tv_sec || (tvp)->tv_usec);
 		   
@@ -126,26 +131,26 @@ void timersub(struct timeval *a, struct timeval *b,
 
        int timercmp(struct timeval *a, struct timeval *b, int z){
 		   
-		   //__menuet__debug_out("Timercmp is a MACRO \n");
+		   //DBG("Timercmp is a MACRO \n");
 		   
 		   if (a->tv_sec > b->tv_sec) return 1; //was 1
 		   return 0;}
 
 int wctomb(char *s, int wchar){
 	
-	__menuet__debug_out("wctomb\n");
+	DBG("wctomb\n");
 	return 0;}
 	
 int wcrtomb(char * s, int wc, int * ps){
-	__menuet__debug_out("wcrtomb\n");
+	DBG("wcrtomb\n");
 	return 0;
 }
 
 int mbrtowc(int * pwc, const char * s,
        int n, int * ps){
-		   __menuet__debug_out("mbrtowc\n");
+		   DBG("mbrtowc\n");
 		   return 0;}
 
 int johab_hangul_decompose( const char * s){
-		   __menuet__debug_out("hanguul?\n");
+		   DBG("hanguul?\n");
 		   return 0;}

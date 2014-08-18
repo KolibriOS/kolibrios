@@ -35,6 +35,9 @@
 #include "utils/log.h"
 #include "utils/url.h"
 #include "utils/utils.h"
+#include "content/fetchers/http_msg.h"
+#include "content/fetchers/http.h"
+
 
 struct url_components_internal {
 	char *buffer;	/* buffer used for all the following data */
@@ -787,21 +790,37 @@ url_func_result url_unescape(const char *str, char **result)
 {
 	char *curlstr;
 	char *retstr;
+	/* curlstr = curl_unescape(str, 0); */
+	LOG(("Address of str is : %x\n", str));
+	LOG(("url is %s\n", str));
+	
+	LOG(("Calling http_unescape_url in url.c\n"));
+	curlstr =  http_unescape_url(str);
+	LOG(("http_unescape_url returned.\n"));
+	__menuet__debug_out("http_unescape_url returned\n");
 
-	curlstr = curl_unescape(str, 0);
 	if (curlstr == NULL) {
 		return URL_FUNC_NOMEM;
 	}
+	__menuet__debug_out("Calling strdup in url.c with : ");	
+	__menuet__debug_out(curlstr);
+	__menuet__debug_out("\n");
 
 	retstr = strdup(curlstr);
-	curl_free(curlstr);
+	/* free(curlstr); */ /* Doesn't work because mem not allocated with malloc/calloc/realloc*/
+	/* TODO: Use mem_free here*/
+
+	__menuet__debug_out("After strdup in url.c\n");	
 
 	if (retstr == NULL) {
+	  __menuet__debug_out("retstr is NULL in url.c\n");	
 		return URL_FUNC_NOMEM;
 	}
 
 	*result = retstr;
+	__menuet__debug_out("returning from url_unescape in url.c\n");
 	return URL_FUNC_OK;
+
 }
 
 /**

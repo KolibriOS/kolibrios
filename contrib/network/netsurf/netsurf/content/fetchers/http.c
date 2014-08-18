@@ -1,5 +1,9 @@
 #include <menuet/os.h>
+#include "http_msg.h"
+//#include "http.h"
+
 #define NULL 0
+
 #define __stdcall __attribute__((stdcall))
 
 extern int dll_load();
@@ -7,39 +11,16 @@ extern int mem_Free();
 extern int mem_Alloc();
 extern int mem_ReAlloc();
 
-
-
-int kol_exit(){
-	__menuet__sys_exit();
-}
-
-
-
-struct http_msg {
-// internal used by library, dont mess with these.
-unsigned int socket;
-unsigned int flags;
-unsigned int write_ptr;
-unsigned int buffer_length;
-unsigned int chunk_ptr;
-unsigned int timestamp;
-
-// available for use.
-unsigned int status;
-unsigned int header_length;
-char *content_ptr;
-unsigned int content_length;
-unsigned int content_received;
-char header; //unknown size (actually, it's size is defined in header_length)
-};
-
-
-int (* __stdcall http_init)();
+int (* __stdcall http_init)(void);
 // On the next line, we should tell the C compiler that this procedure actually returns a pointer. (to the http_msg struct)
 unsigned int (* __stdcall http_get) (char * url, char * add_head); //yay, it's NOT uint, but hey, C is stubborn, and I'm dumb
-int (* __stdcall http_process) (unsigned int identifier);
+int (* __stdcall http_receive) (unsigned int identifier);
 void (* __stdcall http_free) (unsigned int identifier);
-
+char * (* __stdcall http_find_header_field) (struct http_msg *http_ahoy, char *field_name); //This is crazzzzzzyyyyyy
+char * (* __stdcall http_unescape_url) (char * url_asciiz);
+char * (* __stdcall http_post) (char *url, char *headers, char *content_type, int content_length);
+int (* __stdcall http_send) (struct http_msg *handle, char *data, unsigned int length);
+void (* __stdcall http_disconnect) (struct http_msg *handle);
 
 int HTTP_YAY(){
 	asm volatile ("pusha\n\
@@ -52,11 +33,14 @@ int HTTP_YAY(){
 			   popa");
 }
 
-///===========================
+int kol_exit(){
+  __menuet__debug_out("kol_exit()..Exiting..\n");
+  __menuet__sys_exit();
+}
 
 void HTTP_INIT()
 {
-IMP_ENTRY *imp;
+const IMP_ENTRY *imp;
 
 imp = __kolibri__cofflib_load("/sys/lib/http.obj");
 if (imp == NULL)
@@ -65,27 +49,87 @@ if (imp == NULL)
 http_init = ( __stdcall  int(*)()) 
 		__kolibri__cofflib_getproc (imp, "lib_init");
 if (http_init == NULL)
-	kol_exit();
+  {
+  __menuet__debug_out("http_init() is NULL. Exiting.\n");
+  kol_exit();
+  }
+ else
+   __menuet__debug_out("\nhttp_init() initialised properly.\n");
 
-http_get = ( __stdcall  unsigned int (*)(char*)) 
+
+http_get = ( __stdcall  unsigned int (*)(char*, char*)) 
 		__kolibri__cofflib_getproc  (imp, "get");
 if (http_get == NULL)
-	kol_exit();
-
+  {
+    __menuet__debug_out("http_get() is NULL. Exiting.\n");
+    kol_exit();
+  }
 http_free = ( __stdcall  void (*)(unsigned int)) 
 		__kolibri__cofflib_getproc  (imp, "free");
 if (http_free == NULL)
-	kol_exit();
+  {
+    __menuet__debug_out("http_free() is NULL. Exiting.\n");
+    kol_exit();
+  }	
+http_receive = ( __stdcall  int (*)(unsigned int))
+		__kolibri__cofflib_getproc  (imp, "receive");
 
-	
-http_process = ( __stdcall  int (*)(unsigned int)) 
-		__kolibri__cofflib_getproc  (imp, "process");
-if (http_process == NULL)
-	kol_exit();
+if (http_receive == NULL)
+  {
+    __menuet__debug_out("http_receive() is NULL. Exiting.\n");
+    kol_exit();
+  }
+
+http_find_header_field = ( __stdcall  char *(*)(struct http_msg*, char *)) 
+		__kolibri__cofflib_getproc  (imp, "find_header_field");
+if (http_find_header_field == NULL)
+  {
+    __menuet__debug_out("http_find_header_field() is NULL. Exiting.\n");
+    kol_exit();
+  }
+
+http_unescape_url = ( __stdcall  char *(*)(char *))
+  __kolibri__cofflib_getproc  (imp, "unescape");
+
+if(http_unescape_url == NULL)
+  {
+    __menuet__debug_out("http_unescape_url() is NULL. Exiting.\n");
+    kol_exit();
+  }
+
+ http_post = ( __stdcall  char *(*)(char *, char *, char *, int))
+  __kolibri__cofflib_getproc  (imp, "post");
+
+ if(http_post == NULL)
+   {
+     __menuet__debug_out("http_post() is NULL. Exiting.\n");
+     kol_exit();
+  }
+
+
+ http_send = ( __stdcall  int (*)(struct http_msg *, char *, unsigned int))
+  __kolibri__cofflib_getproc  (imp, "send");
+
+ if(http_send == NULL)
+   {
+     __menuet__debug_out("http_send() is NULL. Exiting.\n");
+     kol_exit();
+  }
+
+ 
+ http_disconnect = ( __stdcall  void (*)(struct http_msg *))
+  __kolibri__cofflib_getproc  (imp, "disconnect");
+
+ if(http_disconnect == NULL)
+   {
+     __menuet__debug_out("http_disconnect() is NULL. Exiting.\n");
+     kol_exit();
+  }
+
+ 
 
 __menuet__debug_out("HTTP init...\n");
 HTTP_YAY();
 
 __menuet__debug_out("ok...\n");
-
 }

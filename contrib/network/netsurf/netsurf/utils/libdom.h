@@ -28,8 +28,8 @@
 
 #include <dom/dom.h>
 
-#include <dom/bindings/hubbub/parser.h>
-#include <dom/bindings/hubbub/errors.h>
+#include <libdom/bindings/hubbub/parser.h>
+#include <libdom/bindings/hubbub/errors.h>
 
 /**
  * depth-first walk the dom calling callback for each element

@@ -41,6 +41,12 @@
 
 #define BOLD_WEIGHT 700
 
+#ifdef DBG
+#undef DBG
+#endif
+//#define DBG(s) __menuet__debug_out(s) /* For the debug messages in BOARD */
+#define DBG(s) LOG((s))            /* So that we see debug in Netsurf's LOG files */
+
 static FT_Library library; 
 static FTC_Manager ft_cmanager;
 static FTC_CMapCache ft_cmap_cache ;
@@ -197,7 +203,7 @@ LOG(("Freetype init..."));
 	}
 
 LOG(("Freetype cache..."));
-__menuet__debug_out("Ft cache\n");
+DBG("Ft cache\n");
         /* cache manager initialise */
         error = FTC_Manager_New(library, 
                                 max_faces, 
@@ -214,7 +220,7 @@ __menuet__debug_out("Ft cache\n");
 
 
 LOG(("Freetype map cache..."));
-__menuet__debug_out("Ft map cache\n");
+DBG("Ft map cache\n");
         error = FTC_CMapCache_New(ft_cmanager, &ft_cmap_cache);
 
         error = FTC_ImageCache_New(ft_cmanager, &ft_image_cache);
@@ -223,7 +229,7 @@ __menuet__debug_out("Ft map cache\n");
 
 
 LOG(("Freetype load fonts..."));
-__menuet__debug_out("Ft load fonts\n");
+DBG("Ft load fonts\n");
 
 	/* Start with the sans serif font */
 	fb_face = fb_new_face(nsoption_charp(fb_face_sans_serif),
@@ -232,7 +238,7 @@ __menuet__debug_out("Ft load fonts\n");
 	if (fb_face == NULL) {
 		
 LOG(("Freetype load fonts failed due SANS unavailable :(..."));
-__menuet__debug_out("Ft Z:(((\n");
+DBG("Ft Z:(((\n");
 		/* The sans serif font is the default and must be found. */
                 LOG(("Could not find the default font\n"));
                 FTC_Manager_Done(ft_cmanager);
@@ -243,7 +249,7 @@ __menuet__debug_out("Ft Z:(((\n");
 	}
 
 LOG(("Freetype loaded sans.."));
-__menuet__debug_out("Ft sans loaded:)\n");
+DBG("Ft sans loaded:)\n");
 
 	/* Bold sans serif face */
 	fb_face = fb_new_face(nsoption_charp(fb_face_sans_serif_bold),
@@ -346,7 +352,7 @@ __menuet__debug_out("Ft sans loaded:)\n");
 	}
 
 LOG(("Freetype fonts ready..."));
-__menuet__debug_out("Ft ready :)\n");
+DBG("Ft ready :)\n");
         
         /* set the default render mode */
         if (nsoption_bool(fb_font_monochrome) == true)

@@ -276,12 +276,12 @@ unsigned int wallclock(void)
 {
 	struct timeval tv;
 
-	LOG(("WALLCLOCK IS HERE"));
+	/* LOG(("WALLCLOCK IS HERE")); */
 	
 	if (gettimeofday(&tv, NULL) == -1)
 		{LOG(("And -1"));return 0;}
 
-    LOG(("And time"));
+    /* LOG(("And time")); */
 	return ((tv.tv_sec * 100) + (tv.tv_usec / 10000));
 }
 

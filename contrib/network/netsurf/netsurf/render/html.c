@@ -287,18 +287,24 @@ void html_finish_conversion(html_content *c)
 	/* convert dom tree to box tree */
 	LOG(("DOM to box (%p)", c));
 	content_set_status(&c->base, messages_get("Processing"));
+	/* LOG(("After content_set_status")); */
 	msg_data.explicit_status_text = NULL;
 	content_broadcast(&c->base, CONTENT_MSG_STATUS, msg_data);
+	/* LOG(("After content_broadcast")); */
 
 	exc = dom_document_get_document_element(c->document, (void *) &html);
+	/* LOG(("After get_document_element")); */
+
 	if ((exc != DOM_NO_ERR) || (html == NULL)) {
 		LOG(("error retrieving html element from dom"));
 		content_broadcast_errorcode(&c->base, NSERROR_DOM);
 		content_set_error(&c->base);
 		return;
 	}
-
+	
 	error = dom_to_box(html, c, html_box_convert_done);
+	/* LOG(("After dom_to_box")); */
+
 	if (error != NSERROR_OK) {
 		dom_node_unref(html);
 		html_destroy_objects(c);
@@ -1460,6 +1466,7 @@ html_convert_css_callback(hlcache_handle *css,
 	case CONTENT_MSG_DONE:
 		LOG(("done stylesheet slot %d '%s'", i,
 				nsurl_access(hlcache_handle_get_url(css))));
+		LOG(("Decrementing parent"));
 		parent->base.active--;
 		LOG(("%d fetches active", parent->base.active));
 		break;
@@ -1494,7 +1501,12 @@ html_convert_css_callback(hlcache_handle *css,
 	}
 
 	if (parent->base.active == 0)
-		html_finish_conversion(parent);
+	  {
+	    /* LOG(("parent->base.active == 0")); */
+	    html_finish_conversion(parent);
+	  }
+	
+	/* LOG(("Returning NSERROR_OK from html_redraw")); */
 
 	return NSERROR_OK;
 }

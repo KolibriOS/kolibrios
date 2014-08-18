@@ -17,5 +17,5 @@ OBJS := css.o dump.o internal.o select.o utils.o
 
 
 OUTFILE = TEST.o
-CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include
+CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include -I ../../libwapcaplet/include/ -I ../../libdom/include/ -I ../../libcss/include/ -I ../../libhubbub/include/
 include $(MENUETDEV)/makefiles/Makefile_for_o_lib

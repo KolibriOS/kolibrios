@@ -220,7 +220,6 @@ void hlcache_finalise(void)
 /* See hlcache.h for documentation */
 nserror hlcache_poll(void)
 {
-
 	llcache_poll();
 
 	return NSERROR_OK;
@@ -515,11 +514,13 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 	hlcache_retrieval_ctx *ctx = pw;
 	lwc_string *effective_type = NULL;
 	nserror error;
-
+	/* LOG(("Asserting ctx->llcache == handle")); */
 	assert(ctx->llcache == handle);
+	/* LOG(("After Asserting ctx->llcache == handle")); */
 
 	switch (event->type) {
 	case LLCACHE_EVENT_HAD_HEADERS:
+	  /* LOG(("LLCACHE_EVENT_HAD_HEADERS")); */
 		error = mimesniff_compute_effective_type(handle, NULL, 0,
 				ctx->flags & HLCACHE_RETRIEVE_SNIFF_TYPE,
 				ctx->accepted_types == CONTENT_IMAGE,
@@ -528,6 +529,7 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 			/* If the sniffer was successful or failed to find
 			 * a Content-Type header when sniffing was
 			 * prohibited, we must migrate the retrieval context. */
+		  /* LOG(("hlcache_migraet_ctx from LLCACHE_HAD_HEADERS")); */
 			error = hlcache_migrate_ctx(ctx, effective_type);
 
 			if (effective_type != NULL)
@@ -543,6 +545,7 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 
 		break;
 	case LLCACHE_EVENT_HAD_DATA:
+	  	  /* LOG(("LLCACHE_EVENT_HAD_DATA")); */
 		error = mimesniff_compute_effective_type(handle,
 				event->data.data.buf, event->data.data.len,
 				ctx->flags & HLCACHE_RETRIEVE_SNIFF_TYPE,
@@ -551,7 +554,7 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 		if (error != NSERROR_OK) {
 			assert(0 && "MIME sniff failed with data");
 		}
-
+		/* LOG(("hlcache_migraet_ctx from LLCACHE_HAD_DATA")); */
 		error = hlcache_migrate_ctx(ctx, effective_type);
 
 		lwc_string_unref(effective_type);
@@ -560,11 +563,13 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 
 		break;
 	case LLCACHE_EVENT_DONE:
+	  	  /* LOG(("LLCACHE_EVENT_DONE")); */
 		/* DONE event before we could determine the effective MIME type.
 		 */
 		error = mimesniff_compute_effective_type(handle,
 				NULL, 0, false, false, &effective_type);
 		if (error == NSERROR_OK) {
+		  /* LOG(("hlcache_migrate_ctx in LLCACHE_EVENT_DONE")); */
 			error = hlcache_migrate_ctx(ctx, effective_type);
 
 			lwc_string_unref(effective_type);
@@ -574,14 +579,14 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 
 		if (ctx->handle->cb != NULL) {
 			hlcache_event hlevent;
-
+			
 			hlevent.type = CONTENT_MSG_ERROR;
 			hlevent.data.error = messages_get("BadType");
-
 			ctx->handle->cb(ctx->handle, &hlevent, ctx->handle->pw);
 		}
 		break;
 	case LLCACHE_EVENT_ERROR:
+	  /* LOG(("LLCACHE_EVENT_ERROR")); */
 		if (ctx->handle->cb != NULL) {
 			hlcache_event hlevent;
 
@@ -590,11 +595,12 @@ nserror hlcache_llcache_callback(llcache_handle *handle,
 
 			ctx->handle->cb(ctx->handle, &hlevent, ctx->handle->pw);
 		}
-		break;
+		break;		
 	case LLCACHE_EVENT_PROGRESS:
+	  	  /* LOG(("LLCACHE_EVENT_PROGRESS")); */
 		break;
 	}
-
+	/* LOG(("Returning OK from hlcache_llcache_callback")); */
 	return NSERROR_OK;
 }
 
@@ -613,7 +619,7 @@ nserror hlcache_migrate_ctx(hlcache_retrieval_ctx *ctx,
 	content_type type = CONTENT_NONE;
 	nserror error = NSERROR_OK;
 
-	ctx->migrate_target = true;
+	ctx->migrate_target = true; 
 
 	if (effective_type != NULL &&
 			hlcache_type_is_acceptable(effective_type,
@@ -654,7 +660,7 @@ nserror hlcache_migrate_ctx(hlcache_retrieval_ctx *ctx,
 		/* Unacceptable type: report error */
 		if (ctx->handle->cb != NULL) {
 			hlcache_event hlevent;
-
+			/* LOG(("Unacceptable Type! CONTENT_MSG_ERROR set")); */
 			hlevent.type = CONTENT_MSG_ERROR;
 			hlevent.data.error = messages_get("UnacceptableType");
 
@@ -814,13 +820,14 @@ nserror hlcache_find_content(hlcache_retrieval_ctx *ctx,
 			}
 
 			if (ctx->handle->cb != NULL) {
+			  /* LOG(("Calling with CONTENT_MSG_DONE")); */
 				event.type = CONTENT_MSG_DONE;
 				ctx->handle->cb(ctx->handle, &event,
 						ctx->handle->pw);
 			}
 		}
 	}
-
+	/* LOG(("Returning from "));  */
 	return error;
 }
 

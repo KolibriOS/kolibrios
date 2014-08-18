@@ -341,7 +341,7 @@ css_error nscss_compute_font_size(void *pw, const css_hint *parent,
 		parent_size = parent->data.length;
 	}
 
-	assert(size->status != CSS_FONT_SIZE_INHERIT);
+	/* assert(size->status != CSS_FONT_SIZE_INHERIT); */
 
 	if (size->status < CSS_FONT_SIZE_LARGER) {
 		/* Keyword -- simple */

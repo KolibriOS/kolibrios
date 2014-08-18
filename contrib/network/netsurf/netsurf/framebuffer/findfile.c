@@ -91,7 +91,7 @@ char *url_to_path(const char *url)
 	if (res != URL_FUNC_OK) {
 		return NULL;
 	}
-
+	__menuet__debug_out("Calling url_unescape from findfile.c");
 	res = url_unescape(path, &respath);
 	free(path);
 	if (res != URL_FUNC_OK) {
@@ -99,6 +99,7 @@ char *url_to_path(const char *url)
 	}
 
 LOG(("Findfile url2path: %s", respath));
+ __menuet__debug_out("returning from url_to_path in findfile.c\n");
 	return respath;
 }
 
@@ -113,7 +114,7 @@ nsurl *gui_get_resource_url(const char *path)
 
 	raw = path_to_url(filepath_sfind(respaths, buf, path));
 	
-	LOG(("Findfile gui: %s", raw));
+	LOG(("Findfile gui: path is %s, raw is %s", path, raw));
 	if (raw != NULL) {
 		nsurl_create(raw, &url);
 		free(raw);

@@ -13,7 +13,7 @@ NETSURF_FRAMEBUFFER_BIN := $(PREFIX)/bin/
   # freetype compiled in font serch path
   NETSURF_FB_FONTPATH := /usr/share/fonts/truetype/ttf-dejavu:/usr/share/fonts/truetype/msttcorefonts
   
-OBJS := curl.o data.o file.o about.o resource.o
+OBJS := curl.o data.o file.o about.o resource.o http.o
 
 OUTFILE = TEST.o
 CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include -I ../../../libwapcaplet/include/ -I ../../../libcss/include/

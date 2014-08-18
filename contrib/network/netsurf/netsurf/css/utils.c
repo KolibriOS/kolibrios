@@ -73,7 +73,7 @@ css_fixed nscss_len2pt(css_fixed length, css_unit unit)
 css_fixed nscss_len2px(css_fixed length, css_unit unit, 
 		const css_computed_style *style)
 {
-	/* We assume the screen and any other output has the same dpi */
+	/* We assume the screen and ay other output has the same dpi */
 	css_fixed px_per_unit;
 
 	assert(style != NULL || (unit != CSS_UNIT_EM && unit != CSS_UNIT_EX));

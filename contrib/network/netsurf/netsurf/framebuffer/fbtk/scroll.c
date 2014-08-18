@@ -40,13 +40,19 @@
 
 #include "widget.h"
 
+#ifdef DBG
+#undef DBG
+#endif
+//#define DBG(s) __menuet__debug_out(s) /* For the debug messages in BOARD */
+#define DBG(s) LOG((s))            /* So that we see debug in Netsurf's LOG files */
+
 /* Vertical scroll widget */
 
 static int
 vscroll_redraw(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 		LOG(("REDRAW SCROLL"));
-	//__menuet__debug_out("REDRAW SCROLL");
+	//DBG("REDRAW SCROLL");
 	int vscroll;
 	int vpos;
 
@@ -54,16 +60,16 @@ vscroll_redraw(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 	nsfb_bbox_t rect;
 	
 			LOG(("REDRAW SCROLL get rooot"));
-	//__menuet__debug_out("REDRAW SCROLL get root");
+	//DBG("REDRAW SCROLL get root");
 	fbtk_widget_t *root = fbtk_get_root_widget(widget);
 
 
 		LOG(("REDRAW SCROLL get bbox"));
-	//__menuet__debug_out("REDRAW SCROLL get bbox");
+	//DBG("REDRAW SCROLL get bbox");
 	fbtk_get_bbox(widget, &bbox);
 
 		LOG(("REDRAW SCROLL claim"));
-	//__menuet__debug_out("REDRAW SCROLL claim");
+	//DBG("REDRAW SCROLL claim");
 	nsfb_claim(root->u.root.fb, &bbox);
 
 	rect = bbox;
@@ -85,7 +91,7 @@ vscroll_redraw(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 	nsfb_plot_rectangle(root->u.root.fb, &rect, 1, 0xFF999999, false, false);
 
 		LOG(("REDRAW SCROLL widg"));
-	//__menuet__debug_out("REDRAW SCROLL widg");
+	//DBG("REDRAW SCROLL widg");
 
 	/* scroll bar */
 	if ((widget->u.scroll.maximum - widget->u.scroll.minimum) > 0) {
@@ -107,7 +113,7 @@ vscroll_redraw(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 	nsfb_plot_rectangle_fill(root->u.root.fb, &rect, widget->bg);
 
 		LOG(("REDRAW SCROLL upd"));
-	//__menuet__debug_out("RED upd");
+	//DBG("RED upd");
 
 //STUB
 	nsfb_update(root->u.root.fb, &bbox); //&bbox 
@@ -120,7 +126,7 @@ vscroll_drag(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAG SCROLL"));
-	//__menuet__debug_out("REDRAG SCROLL");
+	//DBG("REDRAG SCROLL");
 	int newpos;
 	fbtk_widget_t *scrollw = cbi->context;
 
@@ -146,7 +152,7 @@ vscrollu_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW Ck SCROLL"));
-	//__menuet__debug_out("REDRAW Ck SCROLL");
+	//DBG("REDRAW Ck SCROLL");
 	int newpos;
 	fbtk_widget_t *scrollw = cbi->context;
 
@@ -168,7 +174,7 @@ vscrolld_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW SCROLL 2"));
-	//__menuet__debug_out("REDRAW SCROLL 2");
+	//DBG("REDRAW SCROLL 2");
 	int newpos;
 	fbtk_widget_t *scrollw = cbi->context;
 
@@ -189,7 +195,7 @@ static int
 vscrollarea_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 		LOG(("REDRAW SCROLL 3"));
-	//__menuet__debug_out("REDRAW SCROLL 3");
+	//DBG("REDRAW SCROLL 3");
 	int vscroll;
 	int vpos;
 	int newpos;
@@ -270,7 +276,7 @@ fbtk_create_vscroll(fbtk_widget_t *parent,
 {
 	
 		LOG(("REDRAW SCROLL 4"));
-	//__menuet__debug_out("REDRAW SCROLL 4");
+	//DBG("REDRAW SCROLL 4");
 	fbtk_widget_t *neww;
 
 	neww = fbtk_widget_new(parent,
@@ -321,7 +327,7 @@ hscroll_redraw(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW SCROLL 5"));
-	//__menuet__debug_out("REDRAW SCROLL 5");
+	//DBG("REDRAW SCROLL 5");
 	int hscroll;
 	int hpos;
 	nsfb_bbox_t bbox;
@@ -383,7 +389,7 @@ hscrolll_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW SCROLL 6"));
-	//__menuet__debug_out("REDRAW SCROLL 6");
+	//DBG("REDRAW SCROLL 6");
 	int newpos;
 	fbtk_widget_t *scrollw = cbi->context;
 
@@ -407,7 +413,7 @@ hscrollr_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW SCROLL 7"));
-	//__menuet__debug_out("REDRAW SCROLL 7");
+	//DBG("REDRAW SCROLL 7");
 	int newpos;
 	fbtk_widget_t *scrollw = cbi->context;
 
@@ -429,7 +435,7 @@ hscroll_drag(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW SCROLL 8"));
-	//__menuet__debug_out("REDRAW SCROLL 8");
+	//DBG("REDRAW SCROLL 8");
 	int newpos;
 	fbtk_widget_t *scrollw = cbi->context;
 
@@ -455,7 +461,7 @@ hscrollarea_click(fbtk_widget_t *widget, fbtk_callback_info *cbi)
 {
 	
 		LOG(("REDRAW SCROLL 9"));
-	//__menuet__debug_out("REDRAW SCROLL 9");
+	//DBG("REDRAW SCROLL 9");
 	int hscroll;
 	int hpos;
 	int newpos;
@@ -514,7 +520,7 @@ fbtk_create_hscroll(fbtk_widget_t *parent,
 {
 	
 		LOG(("REDRAW SCROLL 10"));
-	//__menuet__debug_out("REDRAW SCROLL 10");
+	//DBG("REDRAW SCROLL 10");
 	fbtk_widget_t *neww;
 
 	neww = fbtk_widget_new(parent,
@@ -565,7 +571,7 @@ fbtk_set_scroll_parameters(fbtk_widget_t *widget,
 			   int page)
 {
 		LOG(("REDRAW SCROLL 11"));
-	//__menuet__debug_out("REDRAW SCROLL 11");
+	//DBG("REDRAW SCROLL 11");
 	if (widget == NULL)
 		return false;
 
@@ -593,7 +599,7 @@ bool
 fbtk_set_scroll_position(fbtk_widget_t *widget, int position)
 {
 		LOG(("REDRAW SCROLL 12"));
-	//__menuet__debug_out("REDRAW SCROLL 12");
+	//DBG("REDRAW SCROLL 12");
 	if (widget == NULL)
 		return false;
 

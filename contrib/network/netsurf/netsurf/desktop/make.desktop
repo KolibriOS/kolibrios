@@ -20,5 +20,6 @@ OBJS :=  cookies.o history_global_core.o hotlist.o knockout.o	\
 
 
 OUTFILE = TEST.o
-CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include
+CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include -I ../../libwapcaplet/include/ -I../../libcss/include -I ../../libdom/include/ -I ../../libhubbub/include/ -I ../../include/
 include $(MENUETDEV)/makefiles/Makefile_for_o_lib
+

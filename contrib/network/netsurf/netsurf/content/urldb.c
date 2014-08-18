@@ -3268,7 +3268,9 @@ bool urldb_parse_avpair(struct cookie_internal_data *c, char *n, char *v,
 				datenoday++)
 			; /* do nothing */
 
-		expires = curl_getdate(datenoday, NULL);
+		/* TODO: expires = curl_getdate(datenoday, NULL); */
+		expires = (time_t) 100123123;
+
 		if (expires == -1) {
 			/* assume we have an unrepresentable
 			 * date => force it to the maximum

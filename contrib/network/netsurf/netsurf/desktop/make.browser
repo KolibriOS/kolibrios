@@ -18,5 +18,6 @@ OBJS :=  browser.o download.o frames.o history_core.o netsurf.o \
 
 
 OUTFILE = TEST.o
-CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include
+CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include -I ../../libwapcaplet/include/ -I ../../libcss/include/ -I ../../libdom/include/ -I ../../libhubbub/include/
+
 include $(MENUETDEV)/makefiles/Makefile_for_o_lib

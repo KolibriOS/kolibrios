@@ -43,6 +43,13 @@
 
 #include "widget.h"
 
+#ifdef DBG
+#undef DBG
+#endif
+//#define DBG(s) __menuet__debug_out(s) /* For the debug messages in BOARD */
+#define DBG(s) LOG((s))            /* So that we see debug in Netsurf's LOG files */
+
+
 #ifdef FBTK_LOGGING
 
 /* tree dump debug, also example of depth first tree walk */
@@ -53,7 +60,7 @@ dump_tk_tree(fbtk_widget_t *widget)
 	int indent = 0;
 
 	while (widget != NULL) {
-		LOG(("%*s%p", indent, "", widget));
+		/* LOG(("%*s%p", indent, "", widget)); */
 		if (widget->first_child != NULL) {
 			widget = widget->first_child;
 			indent += 6;
@@ -100,12 +107,12 @@ fbtk_request_redraw(fbtk_widget_t *widget)
 	widget->redraw.width = widget->width;
 	widget->redraw.height = widget->height;
 
-	LOG(("redrawing %p %d,%d %d,%d",
-	     widget,
-	     widget->redraw.x,
-	     widget->redraw.y,
-	     widget->redraw.width,
-	     widget->redraw.height));
+	/* LOG(("redrawing %p %d,%d %d,%d", */
+	/*      widget, */
+	/*      widget->redraw.x, */
+	/*      widget->redraw.y, */
+	/*      widget->redraw.width, */
+	/*      widget->redraw.height)); */
 
 	cwidget = widget->last_child;
 	while (cwidget != NULL) {
@@ -125,7 +132,7 @@ fbtk_request_redraw(fbtk_widget_t *widget)
 int
 fbtk_set_mapping(fbtk_widget_t *widget, bool map)
 {
-	LOG(("setting mapping on %p to %d", widget, map));
+	/* LOG(("setting mapping on %p to %d", widget, map)); */
 	widget->mapped = map;
 	if (map) {
 		fbtk_request_redraw(widget);
@@ -147,7 +154,7 @@ swap_siblings(fbtk_widget_t *lw)
 	fbtk_widget_t *after;
 
 	rw = lw->next;
-	LOG(("Swapping %p with %p", lw, rw));
+	/* LOG(("Swapping %p with %p", lw, rw)); */
 	before = lw->prev;
 	after = rw->next;
 
@@ -394,7 +401,7 @@ fbtk_get_root_widget(fbtk_widget_t *widget)
 
 	/* check root widget was found */
 	if (widget->type != FB_WIDGET_TYPE_ROOT) {
-		LOG(("Widget with null parent that is not the root widget!"));
+		/* LOG(("Widget with null parent that is not the root widget!")); */
 		return NULL;
 	}
 
@@ -525,21 +532,21 @@ fbtk_widget_new(fbtk_widget_t *parent,
 		int width,
 		int height)
 {
-	LOG(("New widget..."));
+	/* LOG(("New widget...")); */
 
 	fbtk_widget_t *neww; /* new widget */
 
 	if (parent == NULL)
-	{LOG(("parent null..."));
+	{/* LOG(("parent null...")); */
 		return NULL;}
 
-	LOG(("calloc..."));
+	/* LOG(("calloc...")); */
 	neww = calloc(1, sizeof(fbtk_widget_t));
 	if (neww == NULL)
 		return NULL;
 
-	LOG(("super!..."));
-	LOG(("creating %p %d,%d %d,%d", neww, x, y, width, height));
+	/* LOG(("super!...")); */
+	/* LOG(("creating %p %d,%d %d,%d", neww, x, y, width, height)); */
 
 	/* make new window fit inside parent */
 	if (width == 0) {
@@ -561,7 +568,7 @@ fbtk_widget_new(fbtk_widget_t *parent,
 	}
 
 
-	LOG(("using %p %d,%d %d,%d", neww, x, y, width, height));
+	/* LOG(("using %p %d,%d %d,%d", neww, x, y, width, height)); */
 	/* set values */
 	neww->type = type;
 	neww->x = x;
@@ -571,23 +578,23 @@ fbtk_widget_new(fbtk_widget_t *parent,
 
 	/* insert into widget heiarchy */
 
-	LOG(("into hierarchy..."));
+	/* LOG(("into hierarchy...")); */
 	neww->parent = parent;
 
 	if (parent->first_child == NULL) {
 		/* no child widgets yet */
-		LOG(("no childs yet..."));
+		/* LOG(("no childs yet...")); */
 		parent->last_child = neww;
 	} else {
 		/* add new widget to front of sibling chain */
 		neww->next = parent->first_child;
 		neww->next->prev = neww;
-		LOG(("n front of sibling..."));
+		/* LOG(("n front of sibling...")); */
 	}
 	parent->first_child = neww;
 
 
-	LOG(("Widget OK..."));
+	/* LOG(("Widget OK...")); */
 	return neww;
 }
 
@@ -620,8 +627,8 @@ do_redraw(nsfb_t *nsfb, fbtk_widget_t *widget)
 	fbtk_widget_t *cwidget; /* child widget */
 
 
-	LOG(("DO REDRAW"));
-	//__menuet__debug_out("\n***********\nDO REDRAW\n********\n");
+	/* LOG(("DO REDRAW")); */
+	//DBG("\n***********\nDO REDRAW\n********\n");
 	/* check if the widget requires redrawing */
 	if (widget->redraw.needed == true) {
 		plot_ctx.x0 = fbtk_get_absx(widget) + widget->redraw.x;
@@ -629,13 +636,13 @@ do_redraw(nsfb_t *nsfb, fbtk_widget_t *widget)
 		plot_ctx.x1 = plot_ctx.x0 + widget->redraw.width;
 		plot_ctx.y1 = plot_ctx.y0 + widget->redraw.height;
 
-		LOG(("clipping %p %d,%d %d,%d",
-		     widget, plot_ctx.x0, plot_ctx.y0,
-		     plot_ctx.x1, plot_ctx.y1));
+		/* LOG(("clipping %p %d,%d %d,%d", */
+		/*      widget, plot_ctx.x0, plot_ctx.y0, */
+		/*      plot_ctx.x1, plot_ctx.y1)); */
 		if (nsfb_plot_set_clip(nsfb, &plot_ctx) == true) {
 			
-	LOG(("POST CALLBACK"));
-	//__menuet__debug_out("\n***********\nPOST CALLBACK\n********\n");
+	/* LOG(("POST CALLBACK")); */
+	//DBG("\n***********\nPOST CALLBACK\n********\n");
 			
 			fbtk_post_callback(widget, FBTK_CBT_REDRAW);
 		}
@@ -643,28 +650,28 @@ do_redraw(nsfb_t *nsfb, fbtk_widget_t *widget)
 	}
 
 	
-	LOG(("DO CHILD"));
-	//__menuet__debug_out("\n***********\nDO CHILD\n********\n");
+	/* LOG(("DO CHILD")); */
+	//DBG("\n***********\nDO CHILD\n********\n");
 
 	/* walk the widgets children if child flag is set */
 	if (widget->redraw.child) {
-		LOG(("DO CHILD 2"));
-	//__menuet__debug_out("\n***********\nDO CHILD 2\n********\n");
+		/* LOG(("DO CHILD 2")); */
+	//DBG("\n***********\nDO CHILD 2\n********\n");
 		cwidget = widget->last_child;
 		while (cwidget != NULL) {
-				LOG(("DO CHILD 3 ZZZ"));
-	//__menuet__debug_out("\n***********\nDO CHILD 3 ZZZ\n********\n");
+				/* LOG(("DO CHILD 3 ZZZ")); */
+	//DBG("\n***********\nDO CHILD 3 ZZZ\n********\n");
 			do_redraw(nsfb, cwidget);
 			cwidget = cwidget->prev;
 		}
-			LOG(("DO CHILD 4"));
-	//__menuet__debug_out("\n***********\nDO CHILD 4\n********\n");
+			/* LOG(("DO CHILD 4")); */
+	//DBG("\n***********\nDO CHILD 4\n********\n");
 		widget->redraw.child = false;
 	}
 
 
-	LOG(("SUP"));
-	//__menuet__debug_out("\n***********\nFIN REDRAW\n********\n");
+	/* LOG(("SUP")); */
+	//DBG("\n***********\nFIN REDRAW\n********\n");
 
 	return 1;
 }
@@ -720,8 +727,8 @@ int
 fbtk_post_callback(fbtk_widget_t *widget, fbtk_callback_type cbt, ...)
 {
 	
-	LOG(("DO POST CALLBACK"));
-	//__menuet__debug_out("\n***********\nDO POST CALLBACK\n********\n");
+	/* LOG(("DO POST CALLBACK")); */
+	//DBG("\n***********\nDO POST CALLBACK\n********\n");
 	
 	fbtk_callback_info cbi;
 	int ret = 0;
@@ -735,84 +742,84 @@ fbtk_post_callback(fbtk_widget_t *widget, fbtk_callback_type cbt, ...)
 	if (widget->mapped == false)
 		return ret;
 
-	LOG(("DO POST CALLBACK 2"));
-	//__menuet__debug_out("\n***********\nDO POST CALLBACK 2\n********\n");
+	/* LOG(("DO POST CALLBACK 2")); */
+	//DBG("\n***********\nDO POST CALLBACK 2\n********\n");
 
 	if (widget->callback[cbt] != NULL) {
 		cbi.type = cbt;
 		cbi.context = widget->callback_context[cbt];
 
-	LOG(("DO POST CALLBACK 3 - VA"));
-	//__menuet__debug_out("\n***********\nDO POST CALLBACK 3 - VA\n********\n");
+	/* LOG(("DO POST CALLBACK 3 - VA")); */
+	//DBG("\n***********\nDO POST CALLBACK 3 - VA\n********\n");
 	
 		va_start(ap, cbt);
 
 		switch (cbt) {
 		case FBTK_CBT_SCROLLX:
-			//__menuet__debug_out("\n***********\n scroll x - VA\n********\n");
+			//DBG("\n***********\n scroll x - VA\n********\n");
 			cbi.x = va_arg(ap,int);
 			break;
 
 		case FBTK_CBT_SCROLLY:
-			//__menuet__debug_out("\n***********\n scroll y - VA\n********\n");
+			//DBG("\n***********\n scroll y - VA\n********\n");
 			cbi.y = va_arg(ap,int);
 			break;
 
 		case FBTK_CBT_CLICK:
-			//__menuet__debug_out("\n***********\n click - VA\n********\n");
+			//DBG("\n***********\n click - VA\n********\n");
 			cbi.event = va_arg(ap, void *);
 			cbi.x = va_arg(ap, int);
 			cbi.y = va_arg(ap, int);
 			break;
 
 		case FBTK_CBT_INPUT:
-			//__menuet__debug_out("\n***********\n input - VA\n********\n");
+			//DBG("\n***********\n input - VA\n********\n");
 			cbi.event = va_arg(ap, void *);
 			break;
 
 		case FBTK_CBT_POINTERMOVE:
-			//__menuet__debug_out("\n***********\n mouse move - VA\n********\n");
+			//DBG("\n***********\n mouse move - VA\n********\n");
 			cbi.x = va_arg(ap, int);
 			cbi.y = va_arg(ap, int);
 			break;
 
 		case FBTK_CBT_REDRAW:
-		//__menuet__debug_out("\n***********\n red - VA\n********\n");
+		//DBG("\n***********\n red - VA\n********\n");
 			break;
 
 		case FBTK_CBT_USER:
-		//__menuet__debug_out("\n***********\n user - VA\n********\n");
+		//DBG("\n***********\n user - VA\n********\n");
 			break;
 
 		case FBTK_CBT_STRIP_FOCUS:
-		//__menuet__debug_out("\n***********\n focus - VA\n********\n");
+		//DBG("\n***********\n focus - VA\n********\n");
 			break;
 
 		default:
-		//__menuet__debug_out("\n***********\n wtf - VA\n********\n");
+		//DBG("\n***********\n wtf - VA\n********\n");
 			break;
 		}
 		
-		LOG(("DO POST CALLBACK free"));
-	//__menuet__debug_out("\n***********\nDO POST CALLBACK free\n********\n");
+		/* LOG(("DO POST CALLBACK free")); */
+	//DBG("\n***********\nDO POST CALLBACK free\n********\n");
 		va_end(ap);
 
 		
-		LOG(("DO CALLBACK YEAH"));
-	//__menuet__debug_out("\n***********\nWTF IS THIS\n********\n");
+		/* LOG(("DO CALLBACK YEAH")); */
+	//DBG("\n***********\nWTF IS THIS\n********\n");
 	char zupa[64];
 	
 	sprintf (zupa, "ADDRESS of callback is %x \n",(widget->callback[cbt]));
-	//__menuet__debug_out(zupa);
-	LOG(("ADDRESS of callback is %x \n",(widget->callback[cbt])));
+	//DBG(zupa);
+	/* LOG(("ADDRESS of callback is %x \n",(widget->callback[cbt]))); */
 	
 		ret = (widget->callback[cbt])(widget, &cbi);
-			LOG(("DO CALLBACK YEAH 2"));
-	//__menuet__debug_out("\n***********\nWTF IS THIS!!!12121\n********\n");
+			/* LOG(("DO CALLBACK YEAH 2")); */
+	//DBG("\n***********\nWTF IS THIS!!!12121\n********\n");
 	}
 
-LOG(("DO POST CALLBACK OK"));
-	//__menuet__debug_out("\n***********\nDO POST CALLBACK OK\n********\n");
+/* LOG(("DO POST CALLBACK OK")); */
+	//DBG("\n***********\nDO POST CALLBACK OK\n********\n");
 	return ret;
 }
 

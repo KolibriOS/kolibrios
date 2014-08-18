@@ -28,6 +28,6 @@
 void fetch_curl_register(void);
 
 /** Global cURL multi handle. */
-extern CURLM *fetch_curl_multi;
+/* extern CURLM *fetch_curl_multi; */
 
 #endif

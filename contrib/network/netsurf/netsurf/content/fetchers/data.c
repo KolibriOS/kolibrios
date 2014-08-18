@@ -27,6 +27,8 @@
 
 #include <curl/curl.h>		/* for URL unescaping functions */
 
+#include "http.h"
+
 #include <libwapcaplet/libwapcaplet.h>
 
 #include "utils/config.h"
@@ -202,8 +204,14 @@ static bool fetch_data_process(struct fetch_data_context *c)
 	 * decides to nest URL and base64 encoding.  Like, say, Acid2.
 	 */
         templen = c->datalen;
-        unescaped = curl_easy_unescape(curl, comma + 1, 0, &templen);
-        c->datalen = templen;
+	/* TODO: Replace unescaped = line with http.obj */
+        /* unescaped = curl_easy_unescape(curl, comma + 1, 0, &templen); */
+	LOG(("Calling http_unescape_url in data.c\n"));
+	unescaped = http_unescape_url(comma + 1);
+	c->datalen = strlen(unescaped);
+
+        /* c->datalen = templen; */
+
         if (unescaped == NULL) {
 		msg.type = FETCH_ERROR;
 		msg.data.error = "Unable to URL decode data: URL";
@@ -218,7 +226,8 @@ static bool fetch_data_process(struct fetch_data_context *c)
 			msg.type = FETCH_ERROR;
 			msg.data.error = "Unable to Base64 decode data: URL";
 			fetch_data_send_callback(&msg, c);
-			curl_free(unescaped);
+			/* curl_free(unescaped); */
+			free(unescaped);
 			return false;
 		}
 	} else {
@@ -228,14 +237,16 @@ static bool fetch_data_process(struct fetch_data_context *c)
 			msg.data.error =
 				"Unable to allocate memory for data: URL";
 			fetch_data_send_callback(&msg, c);
-			curl_free(unescaped);
+			/* curl_free(unescaped); */
+			free(unescaped);
 			return false;
 		}
 		memcpy(c->data, unescaped, c->datalen);
 	}
 	
-	curl_free(unescaped);
-	
+	/* curl_free(unescaped); */
+	free(unescaped);
+
 	return true;
 }
 

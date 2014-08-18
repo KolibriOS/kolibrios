@@ -21,5 +21,5 @@ OBJS := box.o box_construct.o box_normalise.o			\
 
 
 OUTFILE = TEST.o
-CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include
+CFLAGS += -I ../include/ -I ../ -I../../ -I./ -I/home/sourcerer/kos_src/newenginek/kolibri/include -I ../../libdom/include/ -I ../../libwapcaplet/include/ -I ../../libcss/include/ -I ../../libhubbub/include/ -I ../../libparserutils/include/
 include $(MENUETDEV)/makefiles/Makefile_for_o_lib
