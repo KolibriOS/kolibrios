@@ -150,7 +150,7 @@ msg_CR         db  13,10,0
 szHwMouse       db 'ATI2D',0
 szPS2MDriver    db 'PS2MOUSE',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
-szVidintel      db 'vidintel',0
+szVidintel      db '/rd/1/drivers/vidintel.sys',0
 szUSB           db 'USB',0
 szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 

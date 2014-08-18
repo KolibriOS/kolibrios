@@ -917,6 +917,8 @@ proc load_driver stdcall, driver_name:dword
         test    eax, eax
         jz      .exit
 
+        lea     edx, [file_name]
+        DEBUGF 1,'K : driver %s is COFF, deprecated\n',edx
         mov     [coff], eax
 
         movzx   ecx, [eax+COFF_HEADER.nSections]

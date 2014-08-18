@@ -918,7 +918,7 @@ end if
 
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
-        stdcall load_driver, szVidintel
+        stdcall load_pe_driver, szVidintel, 0
 
         call    usb_init
 

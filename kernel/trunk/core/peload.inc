@@ -24,15 +24,30 @@ proc load_PE stdcall, file_name:dword
 
         mov     [image], eax
 
-        mov     edx, [eax+60]
+        mov     edx, [eax+STRIPPED_PE_HEADER.SizeOfImage]
+;        mov     cl, [eax+STRIPPED_PE_HEADER.Subsystem]
+        cmp     word [eax], STRIPPED_PE_SIGNATURE
+        jz      @f
 
-        stdcall kernel_alloc, [eax+80+edx]
+        mov     edx, [eax+60]
+;        mov     cl, [eax+5Ch+edx]
+        mov     edx, [eax+80+edx]
+
+@@:
+        mov     [entry], 0
+;        cmp     cl, 1
+;        jnz     .cleanup
+        stdcall kernel_alloc, edx
         test    eax, eax
         jz      .cleanup
 
         mov     [base], eax
 
-        stdcall map_PE, eax, [image]
+        push    ebx ebp
+        mov     ebx, [image]
+        mov     ebp, eax
+        call    map_PE
+        pop     ebp ebx
 
         mov     [entry], eax
         test    eax, eax
@@ -48,199 +63,200 @@ proc load_PE stdcall, file_name:dword
         ret
 endp
 
-DWORD equ dword
-PTR   equ
-
-align 4
-map_PE:                    ;stdcall base:dword, image:dword
-        cld
-        push    ebp
+map_PE:                    ;ebp=base:dword, ebx=image:dword
         push    edi
         push    esi
-        push    ebx
-        sub     esp, 60
-        mov     ebx, DWORD PTR [esp+84]
-        mov     ebp, DWORD PTR [esp+80]
-        mov     edx, ebx
-        mov     esi, ebx
-        add     edx, DWORD PTR [ebx+60]
-        mov     edi, ebp
-        mov     DWORD PTR [esp+32], edx
-        mov     ecx, DWORD PTR [edx+84]
+        sub     esp, .locals_size
+virtual at esp
+.numsections    dd      ?
+.import_names   dd      ?
+.import_targets dd      ?
+.peheader       dd      ?
+.bad_import     dd      ?
+.import_idx     dd      ?
+.import_descr   dd      ?
+.relocs_rva     dd      ?
+.relocs_size    dd      ?
+.section_header_size dd ?
+.AddressOfEntryPoint    dd ?
+.ImageBase      dd      ?
+.locals_size = $ - esp
+end virtual
+        cmp     word [ebx], STRIPPED_PE_SIGNATURE
+        jz      .stripped
 
+        mov     edx, ebx
+        add     edx, [ebx+60]
+        movzx   eax, word [edx+6]
+        mov     [.numsections], eax
+        mov     eax, [edx+40]
+        mov     [.AddressOfEntryPoint], eax
+        mov     eax, [edx+52]
+        mov     [.ImageBase], eax
+        mov     ecx, [edx+84]
+        mov     [.section_header_size], 40
+        mov     eax, [edx+128]
+        mov     [.import_descr], eax
+        mov     eax, [edx+160]
+        mov     [.relocs_rva], eax
+        mov     eax, [edx+164]
+        mov     [.relocs_size], eax
+        add     edx, 256
+
+        jmp     .common
+.stripped:
+        mov     eax, [ebx+STRIPPED_PE_HEADER.AddressOfEntryPoint]
+        mov     [.AddressOfEntryPoint], eax
+        mov     eax, [ebx+STRIPPED_PE_HEADER.ImageBase]
+        mov     [.ImageBase], eax
+        movzx   eax, [ebx+STRIPPED_PE_HEADER.NumberOfSections]
+        mov     [.numsections], eax
+        movzx   ecx, [ebx+STRIPPED_PE_HEADER.NumberOfRvaAndSizes]
+        xor     eax, eax
+        mov     [.relocs_rva], eax
+        mov     [.relocs_size], eax
+        test    ecx, ecx
+        jz      @f
+        mov     eax, [ebx+sizeof.STRIPPED_PE_HEADER+SPE_DIRECTORY_IMPORT*8]
+@@:
+        mov     [.import_descr], eax
+        cmp     ecx, SPE_DIRECTORY_BASERELOC
+        jbe     @f
+        mov     eax, [ebx+sizeof.STRIPPED_PE_HEADER+SPE_DIRECTORY_BASERELOC*8]
+        mov     [.relocs_rva], eax
+        mov     eax, [ebx+sizeof.STRIPPED_PE_HEADER+SPE_DIRECTORY_BASERELOC*8+4]
+        mov     [.relocs_size], eax
+@@:
+        mov     [.section_header_size], 28
+        lea     edx, [ebx+ecx*8+sizeof.STRIPPED_PE_HEADER+8]
+        mov     ecx, [ebx+STRIPPED_PE_HEADER.SizeOfHeaders]
+
+.common:
+        mov     esi, ebx
+        mov     edi, ebp
         shr     ecx, 2
         rep movsd
 
-        movzx   eax, WORD PTR [edx+6]
-        mov     DWORD PTR [esp+36], 0
-        mov     DWORD PTR [esp+16], eax
-        jmp     L2
-L3:
-        mov     eax, DWORD PTR [edx+264]
+        cmp     [.numsections], 0
+        jz      .nosections
+.copy_sections:
+        mov     eax, [edx+8]
         test    eax, eax
-        je      L4
+        je      .no_section_data
         mov     esi, ebx
         mov     edi, ebp
-        add     esi, DWORD PTR [edx+268]
+        add     esi, [edx+12]
         mov     ecx, eax
-        add     edi, DWORD PTR [edx+260]
+        add     edi, [edx+4]
 
         add     ecx, 3
         shr     ecx, 2
         rep movsd
 
-L4:
-        mov     ecx, DWORD PTR [edx+256]
+.no_section_data:
+        mov     ecx, [edx]
         cmp     ecx, eax
-        jbe     L6
+        jbe     .no_section_fill
         sub     ecx, eax
-        add     eax, DWORD PTR [edx+260]
+        add     eax, [edx+4]
         lea     edi, [eax+ebp]
 
         xor     eax, eax
         rep stosb
 
-L6:
-        inc     DWORD PTR [esp+36]
-        add     edx, 40
-L2:
-        mov     esi, DWORD PTR [esp+16]
-        cmp     DWORD PTR [esp+36], esi
-        jne     L3
-        mov     edi, DWORD PTR [esp+32]
-        cmp     DWORD PTR [edi+164], 0
-        je      L9
-        pushd   [edi+164]
+.no_section_fill:
+        add     edx, [.section_header_size]
+        dec     [.numsections]
+        jnz     .copy_sections
+.nosections:
+        cmp     [.relocs_size], 0
+        je      .no_relocations
         mov     esi, ebp
         mov     ecx, ebp
-        sub     esi, DWORD PTR [edi+52]
-        add     ecx, DWORD PTR [edi+160]
-        mov     eax, esi
-        shr     eax, 16
-        mov     DWORD PTR [esp+16], eax
-L12:
-        mov     eax, [ecx+4]
-        sub     [esp], eax
-        lea     ebx, [eax-8]
-        xor     edi, edi
+        sub     esi, [.ImageBase]
+        add     ecx, [.relocs_rva]
+.relocs_block:
+        mov     edi, [ecx]
+        add     edi, ebp
+        mov     ebx, [ecx+4]
+        add     ecx, 8
+        sub     [.relocs_size], ebx
+        sub     ebx, 8
         shr     ebx, 1
-        jmp     L13
-L14:
-        movzx   eax, WORD PTR [ecx+8+edi*2]
+        jz      .relocs_next_block
+.one_reloc:
+        movzx   eax, word [ecx]
+        add     ecx, 2
         mov     edx, eax
         shr     eax, 12
         and     edx, 4095
-        add     edx, DWORD PTR [ecx]
-        cmp     ax, 2
-        je      L17
-        cmp     ax, 3
-        je      L18
-        dec     ax
-        jne     L15
-        mov     eax, DWORD PTR [esp+16]
-        add     WORD PTR [edx+ebp], ax
-L17:
-        add     WORD PTR [edx+ebp], si
-L18:
-        add     DWORD PTR [edx+ebp], esi
-L15:
-        inc     edi
-L13:
-        cmp     edi, ebx
-        jne     L14
-        add     ecx, DWORD PTR [ecx+4]
-L11:
-        cmp     dword [esp], 0
-        jg      L12
-        pop     eax
-L9:
-        mov     edx, DWORD PTR [esp+32]
-        cmp     DWORD PTR [edx+132], 0
-        je      L20
-        mov     eax, ebp
-        add     eax, DWORD PTR [edx+128]
-        mov     DWORD PTR [esp+40], 0
-        add     eax, 20
-        mov     DWORD PTR [esp+56], eax
-L22:
-        mov     ecx, DWORD PTR [esp+56]
-        cmp     DWORD PTR [ecx-16], 0
-        jne     L23
-        cmp     DWORD PTR [ecx-8], 0
-        je      L25
-L23:
-        mov     edi, DWORD PTR [__exports+32]
-        mov     esi, DWORD PTR [__exports+28]
-        mov     eax, DWORD PTR [esp+56]
-        mov     DWORD PTR [esp+20], edi
-        add     edi, OS_BASE
-        add     esi, OS_BASE
-        mov     DWORD PTR [esp+44], esi
-        mov     ecx, DWORD PTR [eax-4]
-        mov     DWORD PTR [esp+48], edi
-        mov     edx, DWORD PTR [eax-20]
+        cmp     eax, 3
+        jne     @f
+        add     [edx+edi], esi
+@@:
+        dec     ebx
+        jnz     .one_reloc
+.relocs_next_block:
+        cmp     [.relocs_size], 0
+        jg      .relocs_block
+.no_relocations:
+        cmp     [.import_descr], 0
+        je      .no_imports
+        add     [.import_descr], ebp
+        mov     [.bad_import], 0
+.import_block:
+        mov     ecx, [.import_descr]
+        cmp     dword [ecx+4], 0
+        jne     @f
+        cmp     dword [ecx+12], 0
+        je      .done_imports
+@@:
+        mov     edx, dword [ecx]
+        mov     ecx, dword [ecx+16]
         test    edx, edx
         jnz     @f
         mov     edx, ecx
 @@:
-        mov     DWORD PTR [esp+52], 0
+        mov     [.import_idx], 0
         add     ecx, ebp
         add     edx, ebp
-        mov     DWORD PTR [esp+24], edx
-        mov     DWORD PTR [esp+28], ecx
-L26:
-        mov     esi, DWORD PTR [esp+52]
-        mov     edi, DWORD PTR [esp+24]
-        mov     eax, DWORD PTR [edi+esi*4]
+        mov     [.import_names], edx
+        mov     [.import_targets], ecx
+.import_func:
+        mov     esi, [.import_idx]
+        mov     edi, [.import_names]
+        mov     eax, [edi+esi*4]
         test    eax, eax
-        je      L27
-        test    eax, eax
-        js      L27
+        je      .next_import_block
+        js      .next_import_block
         lea     edi, [ebp+eax]
-        mov     eax, DWORD PTR [esp+28]
-        mov     DWORD PTR [eax+esi*4], 0
+        mov     eax, [.import_targets]
+        mov     dword [eax+esi*4], 0
         lea     esi, [edi+2]
-        push    eax
+        movzx   ebx, word [edi]
         push    32
-        movzx   eax, WORD PTR [edi]
-        mov     edx, DWORD PTR [esp+56]
-        mov     eax, DWORD PTR [edx+eax*4]
+        mov     ecx, [__exports+32]
+        mov     eax, [ecx+OS_BASE+ebx*4]
         add     eax, OS_BASE
         push    eax
         push    esi
         call    strncmp
-        pop     ebx
+        test    eax, eax
+        jz      .import_func_found
         xor     ebx, ebx
-        test    eax, eax
-        jne     L32
-        jmp     L30
-L33:
-        push    ecx
+.import_func_candidate:
         push    32
-        mov     ecx, DWORD PTR [esp+28]
-        mov     eax, DWORD PTR [ecx+OS_BASE+ebx*4]
+        mov     ecx, [__exports+32]
+        mov     eax, [ecx+OS_BASE+ebx*4]
         add     eax, OS_BASE
         push    eax
         push    esi
         call    strncmp
-        pop     edx
         test    eax, eax
-        jne     L34
-        mov     esi, DWORD PTR [esp+44]
-        mov     edx, DWORD PTR [esp+52]
-        mov     ecx, DWORD PTR [esp+28]
-        mov     eax, DWORD PTR [esi+ebx*4]
-        add     eax, OS_BASE
-        mov     DWORD PTR [ecx+edx*4], eax
-        jmp     L36
-L34:
+        je      .import_func_found
         inc     ebx
-L32:
-        cmp     ebx, DWORD PTR [__exports+24]
-        jb      L33
-L36:
-        cmp     ebx, DWORD PTR [__exports+24]
-        jne     L37
+        cmp     ebx, [__exports+24]
+        jb      .import_func_candidate
 
         mov     esi, msg_unresolved
         call    sys_msg_board_str
@@ -249,34 +265,30 @@ L36:
         mov     esi, msg_CR
         call    sys_msg_board_str
 
-        mov     DWORD PTR [esp+40], 1
-        jmp     L37
-L30:
-        movzx   eax, WORD PTR [edi]
-        mov     esi, DWORD PTR [esp+44]
-        mov     edi, DWORD PTR [esp+52]
-        mov     edx, DWORD PTR [esp+28]
-        mov     eax, DWORD PTR [esi+eax*4]
+        mov     [.bad_import], 1
+        jmp     .next_import_func
+.import_func_found:
+        mov     esi, [__exports+28]
+        mov     edx, [.import_idx]
+        mov     ecx, [.import_targets]
+        mov     eax, [esi+OS_BASE+ebx*4]
         add     eax, OS_BASE
-        mov     DWORD PTR [edx+edi*4], eax
-L37:
-        inc     DWORD PTR [esp+52]
-        jmp     L26
-L27:
-        add     DWORD PTR [esp+56], 20
-        jmp     L22
-L25:
+        mov     [ecx+edx*4], eax
+.next_import_func:
+        inc     [.import_idx]
+        jmp     .import_func
+.next_import_block:
+        add     [.import_descr], 20
+        jmp     .import_block
+.done_imports:
         xor     eax, eax
-        cmp     DWORD PTR [esp+40], 0
-        jne     L40
-L20:
-        mov     ecx, DWORD PTR [esp+32]
+        cmp     [.bad_import], 0
+        jne     @f
+.no_imports:
         mov     eax, ebp
-        add     eax, DWORD PTR [ecx+40]
-L40:
-        add     esp, 60
-        pop     ebx
+        add     eax, [.AddressOfEntryPoint]
+@@:
+        add     esp, .locals_size
         pop     esi
         pop     edi
-        pop     ebp
-        ret     8
+        ret

@@ -619,6 +619,28 @@ struct  COFF_SYM
         NumAuxSymbols   db ?
 ends
 
+struct  STRIPPED_PE_HEADER
+        Signature           dw ?
+        Characteristics     dw ?
+        AddressOfEntryPoint dd ?
+        ImageBase           dd ?
+        SectionAlignmentLog db ?
+        FileAlignmentLog    db ?
+        MajorOSVersion      db ?
+        MinorOSVersion      db ?
+        SizeOfImage         dd ?
+        SizeOfStackReserve  dd ?
+        SizeOfHeapReserve   dd ?
+        SizeOfHeaders       dd ?
+        Subsystem           db ?
+        NumberOfRvaAndSizes db ?
+        NumberOfSections    dw ?
+ends
+STRIPPED_PE_SIGNATURE = 0x4503 ; 'PE' xor 'S'
+SPE_DIRECTORY_IMPORT    = 0
+SPE_DIRECTORY_EXPORT    = 1
+SPE_DIRECTORY_BASERELOC = 2
+
 struct  IOCTL
         handle          dd ?
         io_code         dd ?
