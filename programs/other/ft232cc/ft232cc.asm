@@ -43,11 +43,14 @@ ends
 BUTTONXSIZE = 60
 BUTTONYSIZE = 60
 BUTTONXSTART= 20
-BUTTONYSTART= 50
+BUTTONYSTART= 55
 BUTTONXSPACE= 10
 BUTTONCOUNT = 8
 ONCOLOR     = 0x0018c015
 OFFCOLOR    = 0x00db2521
+
+;Flags
+PIN_CONF_FLAG = 0
 
 INIT:
 	mov	    [btn_state], 0xFF
@@ -71,9 +74,24 @@ INIT:
     mov 	[IOCTLs+IOCTL.input], eax
 
     call    drivercomm.getlist
+    test    eax, eax
+    jnz     @f
+    mcall   4, 5 shl 16 + 25, 1 shl 31 + 0xFF shl 16, noftdi_msg
+  @@:
     call    drivercomm.getlock
-    call    drivercomm.bitmode
-    call    drivercomm.baud
+    mov     eax, [pid]
+    cmp     eax, [out_buf]
+    jz	    @f
+    mcall   4, 5 shl 16 + 25, 1 shl 31 + 0xFF shl 16, devlkd_msg
+    jmp     event_wait
+  @@:
+    mcall   4, 5 shl 16 + 25, 1 shl 31, welcio_msg
+    mov     [flags], 1 shl PIN_CONF_FLAG
+    call    draw_window.no_redraw
+    jmp     event_wait
+  .init_cont:
+    call    draw_window
+    mcall   4, 5 shl 16 + 25, 1 shl 31 + ONCOLOR, devrdy_msg
 
 event_wait:
 	mov	    eax, 10
@@ -108,7 +126,7 @@ button:
 	mcall
 
 	cmp	    ah, 1
-	jle	    .noclose
+	jg	    .noclose
     call    drivercomm.unlock
 	mov	    eax, -1
 	mcall
@@ -116,23 +134,29 @@ button:
  .noclose:
 	cmp	    ah, 10
 	jge	    .toggleb
+	mov	    ebx, [flags]
+	and 	ebx, 1 shl PIN_CONF_FLAG
+	jnz	    event_wait
 	movzx	edx, ah
 	dec	    ah
 	dec	    ah
 	mov	    cl, ah
 	mov	    ah ,1
 	shl	    ah, cl
+	mov	    al, [btn_io]
+	and	    al, ah
+	jz	    .input
 	xor	    byte[btn_state], ah
-    push    edx
+  .input:
+    call    draw_window.oloop_entry
     call    drivercomm.write
     call    drivercomm.read
-    pop     edx
-	call	redraw_obutton
+    ;call    drivercomm.pins
 	jmp	    event_wait
 
   .toggleb:
-    cmp     ah, 18
-    jg	    event_wait
+    cmp     ah, 19
+    jg	    .pinconf
     movzx	edx, ah
 	mov	    cl, ah
 	sub	    cl, 10
@@ -141,6 +165,17 @@ button:
 	xor	    byte[btn_io], ah
 	call	draw_tbutton
 	jmp	    event_wait
+
+  .pinconf:
+    cmp     ah, 20
+    mov     eax, [flags]
+    and     eax, 1 shl PIN_CONF_FLAG
+    jz	    .no_conf
+    call    drivercomm.bitmode
+    call    drivercomm.baud
+  .no_conf:
+    xor     [flags], 1 shl PIN_CONF_FLAG
+    jmp     INIT.init_cont
 
 drivercomm:				;Driver communication procs
   .baud:
@@ -163,7 +198,9 @@ drivercomm:				;Driver communication procs
     mov     [edi+4], eax
     mov     [edi+8], dword 1
     mov     al, [btn_state]
-    mov     byte[edi+12], al
+    mov     ecx, 4
+    add     edi, 12
+    rep     stosb
     mcall   68, 17, IOCTLs
     ret
 
@@ -174,11 +211,15 @@ drivercomm:				;Driver communication procs
     mov     [edi], eax
     mov     eax, [dev]
     mov     [edi+4], eax
-    mov     [edi+8], dword 1
+    mov     [edi+8], dword 3
     mcall   68, 17, IOCTLs
-    mov     al, byte[out_buf]
-    mov     [btn_state], al
+    test    eax, eax
+    jz	    .read_ok
+    debug_print 'Error'
     newline
+ .read_ok:
+    mov     al, byte[out_buf+2]
+    mov     [btn_state], al
     ret
 
   .getlock:
@@ -203,6 +244,7 @@ drivercomm:				;Driver communication procs
     mov     edi, out_buf
     mov     eax, [edi+12]
     mov     [dev], eax
+    mov     eax, [edi]
     ret
 
   .bitmode:
@@ -213,10 +255,22 @@ drivercomm:				;Driver communication procs
 	mov	    eax, [dev]
 	mov	    [edi+4], eax
 	xor	    eax, eax
-	mov	    al, [btn_io]
-	mov	    ah, 0x04
+	mov	    ah, [btn_io]
+	mov	    al, 0x01
 	mov	    [edi+8], eax
     mcall   68, 17, IOCTLs
+    ret
+
+  .pins:
+    mov [IOCTLs+IOCTL.io_code], 22
+    mov edi, in_buf
+    mov eax, [pid]
+    mov [edi], eax
+    mov eax, [dev]
+    mov [edi+4], eax
+    mcall 68, 17, IOCTLs
+    mov al, byte[out_buf]
+    mov [btn_state], al
     ret
 
   .unlock:
@@ -249,6 +303,25 @@ draw_window:
 	mov	    edi, title
 	mcall
 
+  .no_redraw:
+	mcall	    8, ((BUTTONXSIZE+BUTTONXSPACE)*BUTTONCOUNT-30) shl 16 + 60, 25 shl 16 + 12, 20, 0x00E1E1E1
+	mov	    eax, [flags]
+	and	    eax, 1 shl PIN_CONF_FLAG
+	jz	    .no_toggles
+	mcall	    4, ((BUTTONXSIZE+BUTTONXSPACE)*BUTTONCOUNT-27) shl 16 + 28, 1 shl 31, fnsh_btn
+	mov	    edx, BUTTONCOUNT+9
+  .tloop:
+    push    edx
+    call    draw_tbutton
+    pop     edx
+    dec     edx
+    cmp     edx, 9
+    jnz     .tloop
+    jmp     @f
+  .no_toggles:
+	mcall 4, ((BUTTONXSIZE+BUTTONXSPACE)*BUTTONCOUNT-27) shl 16 + 28, 1 shl 31, conf_btn
+  @@:
+  .oloop_entry:
 	mov	edx, BUTTONCOUNT+1
   .oloop:
     push    edx
@@ -257,15 +330,6 @@ draw_window:
     dec     edx
     cmp     edx, 1
     jnz     .oloop
-
-	mov	edx, BUTTONCOUNT+9
-  .tloop:
-    push    edx
-    call    draw_tbutton
-    pop     edx
-    dec     edx
-    cmp     edx, 9
-    jnz     .tloop
 
 	mov	    eax, 12
 	mov	    ebx, 2
@@ -369,10 +433,16 @@ draw_tbutton:
 
 btn_state   db ?
 btn_io	    db ?
-dev		    dd ?
-pid			dd ?
-counter     dd ?
+dev		dd ?
+pid		dd ?
+flags	    dd ?
 drv_name    db 'usbother', 0
+noftdi_msg  db 'No FTDI connected', 0
+devrdy_msg  db 'First FTDI is ready', 0
+devlkd_msg  db 'First FTDI is locked', 0
+welcio_msg  db 'Please, choose pin state', 0
+conf_btn    db 'Configure', 0
+fnsh_btn    db 'Finish', 0
 off_text    db 'OFF', 0
 on_text     db 'ON', 0
 i_text	    db 'I', 0
