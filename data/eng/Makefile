@@ -135,7 +135,6 @@ FASM_PROGRAMS:=\
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
  drivers/dec21x4x.obj:DRIVERS/DEC21X4X.OBJ:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
- drivers/rtl8139.obj:DRIVERS/RTL8139.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
@@ -207,6 +206,7 @@ FASM_PROGRAMS_PESTRIP:=\
  drivers/r6040.sys:DRIVERS/R6040.SYS:$(REPOSITORY)/drivers/ethernet/R6040.asm \
  drivers/rhine.sys:DRIVERS/RHINE.SYS:$(REPOSITORY)/drivers/ethernet/rhine.asm \
  drivers/rtl8029.sys:DRIVERS/RTL8029.SYS:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
+ drivers/rtl8139.sys:DRIVERS/RTL8139.SYS:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
  drivers/sis900.sys:DRIVERS/SIS900.SYS:$(REPOSITORY)/drivers/ethernet/sis900.asm \
  drivers/uhci.sys:DRIVERS/UHCI.SYS:$(REPOSITORY)/drivers/usb/uhci.asm \
  drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
