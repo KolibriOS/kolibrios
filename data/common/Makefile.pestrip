@@ -5,7 +5,7 @@
 # $(1) = name of stripped file,
 # $(2) = name of input file
 define pestrip_meta_rule
-$(1): $(2) Makefile.pestrip ../common/pestrip.asm
+$(1): $(2) ../common/Makefile.pestrip ../common/pestrip.asm
 	EXENAME="$$<" fasm ../common/pestrip.asm "$$@"
 	kpack --nologo "$$@"
 endef

@@ -27,7 +27,7 @@
 # $(3) = folder of binary file - without spaces.
 # $(4) = name of program - without path and extension,
 define fasm_meta_rule
-$(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
+$(1): $(2) ../common/Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
 	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
 	(fasm -m 65536 "$$<" "$$@" -s $$$$tmpfile && \
 	fasmdep -e $$$$tmpfile > .deps/$(4).Po && \
@@ -37,7 +37,7 @@ $(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
 endef
 
 define fasm_nokpack_meta_rule
-$(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
+$(1): $(2) ../common/Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
 	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
 	(fasm -m 65536 "$$<" "$$@" -s $$$$tmpfile && \
 	fasmdep -e $$$$tmpfile > .deps/$(4).Po && \
@@ -51,7 +51,7 @@ $(foreach f,$(FASM_PROGRAMS) $(FASM_PROGRAMS_CD) $(SKIN_SOURCES),$(eval $(call f
 $(foreach f,$(FASM_NOKPACK_PROGRAMS),$(eval $(call fasm_nokpack_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
 
 # Rule for the kernel differs: it uses kerpack instead of kpack.
-kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
+kernel.mnt: $(KERNEL)/kernel.asm ../common/Makefile.fasm .deps/.dir
 	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
 	(fasm -m 131072 "$<" "$@" -s $$tmpfile && \
 	fasmdep -e $$tmpfile > .deps/kernel.Po && \
