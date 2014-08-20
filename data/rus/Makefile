@@ -135,7 +135,6 @@ FASM_PROGRAMS:=\
  drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
- drivers/dec21x4x.obj:DRIVERS/DEC21X4X.OBJ:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
@@ -198,6 +197,7 @@ FASM_PROGRAMS:=\
 # Same as above with PE stripping as extra step.
 FASM_PROGRAMS_PESTRIP:=\
  drivers/vidintel.sys:DRIVERS/VIDINTEL.SYS:$(REPOSITORY)/drivers/video/vidintel.asm \
+ drivers/dec21x4x.sys:DRIVERS/DEC21X4X.SYS:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
  drivers/forcedeth.sys:DRIVERS/FORCEDETH.SYS:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
  drivers/i8254x.sys:DRIVERS/I8254X.SYS:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
  drivers/i8255x.sys:DRIVERS/I8255X.SYS:$(REPOSITORY)/drivers/ethernet/i8255x.asm \
