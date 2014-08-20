@@ -1058,7 +1058,7 @@ endg
 
 ; Load PS/2 mouse driver
 
-        stdcall load_driver, szPS2MDriver
+        stdcall load_pe_driver, szPS2MDriver, 0
 
         mov     esi, boot_setmouse
         call    boot_log

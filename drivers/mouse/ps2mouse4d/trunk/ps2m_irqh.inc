@@ -105,7 +105,7 @@ proc irq_handler
         
     @@:
 
-        stdcall SetMouseData, [ButtonState], [XMoving], [YMoving]
+        invoke  SetMouseData, [ButtonState], [XMoving], [YMoving]
         
         jmp   .exit
 

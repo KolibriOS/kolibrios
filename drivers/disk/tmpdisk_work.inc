@@ -21,7 +21,7 @@ proc tmpdisk_close
         mov     [disk_sizes+edx*4], 0
         xor     eax, eax
         xchg    eax, [disk_pointers+edx*4]
-        stdcall KernelFree, eax
+        invoke  KernelFree, eax
         retn    4
 endp
 

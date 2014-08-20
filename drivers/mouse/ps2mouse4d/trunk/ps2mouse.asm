@@ -1,28 +1,7 @@
-format MS COFF
+; standard driver stuff; version of driver model = 5
+format PE DLL native 0.05
 
 DEBUG   equ 1
-
-include '../../../proc32.inc'
-include '../../../imports.inc'
-
-struc IOCTL
-{  .handle      dd ?
-   .io_code     dd ?
-   .input       dd ?
-   .inp_size    dd ?
-   .output      dd ?
-   .out_size    dd ?
-}
-
-virtual at 0
-  IOCTL IOCTL
-end virtual
-
-public START
-public version
-
-DRV_ENTRY  equ 1
-DRV_EXIT   equ -1
 
 MT_3B       equ 0
 MT_3BScroll equ 3
@@ -30,10 +9,17 @@ MT_5BScroll equ 4
 
 PS2_DRV_VER equ 1
 
-section '.flat' code readable align 16
+section '.flat' code readable writable executable
+data fixups
+end data
+include '../../../struct.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../peimport.inc'
 
 
-proc START stdcall, state:dword
+entry START
+proc START c, state:dword, cmdline:dword
 
           cmp [state], DRV_ENTRY
           jne .nothing
@@ -91,13 +77,13 @@ proc START stdcall, state:dword
           pop  eax
           call kbd_write
 
-          stdcall AttachIntHandler, 12, irq_handler, 0
-          stdcall RegService, my_service, service_proc
+          invoke AttachIntHandler, 12, irq_handler, 0
+          invoke RegService, my_service, service_proc
                 ret
 
   .fin:
           popf
-          ;stdcall DetachIntHandler, 12, irq_handler
+          ;invoke DetachIntHandler, 12, irq_handler
           mov  bl, 0xA7        ; disable mouse interface
           call kbd_cmd
   .nothing:
@@ -258,9 +244,6 @@ try_mode_ID4:
 include 'ps2m_iofuncs.inc'
 include 'ps2m_irqh.inc'
 
-section '.data' data readable writable align 16
-
-version           dd  0x00050005
 my_service      db  'ps2mouse',0
 
 ;iofuncs data

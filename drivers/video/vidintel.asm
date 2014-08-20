@@ -13,8 +13,8 @@ use_predefined_mode = 0;1
 predefined_width = 0;1366
 predefined_height = 0;768
 
-; standard driver stuff; target OS version = 0.80
-format PE DLL native 0.80
+; standard driver stuff; version of driver model = 5
+format PE DLL native 0.05
 entry START
 __DEBUG__ equ 1
 __DEBUG_LEVEL__ equ 1

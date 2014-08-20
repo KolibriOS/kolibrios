@@ -94,7 +94,7 @@ mouse_read:
 	  cmp  ah, 1
 	  jne  .fin
 	  mov  esi, 10
-    call Sleep
+    invoke Sleep
     dec  [mouse_nr_tries]
     jnz  .repeat
 

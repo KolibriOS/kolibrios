@@ -127,11 +127,9 @@ FASM_PROGRAMS:=\
  drivers/fm801.obj:DRIVERS/FM801.OBJ:$(KERNEL)/drivers/fm801.asm \
  drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
  drivers/intel_hda.obj:DRIVERS/intel_hda.obj:$(REPOSITORY)/drivers/audio/intel_hda/intel_hda.asm \
- drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(KERNEL)/drivers/intelac97.asm \
- drivers/tmpdisk.obj:DRIVERS/TMPDISK.OBJ:$(KERNEL)/drivers/tmpdisk.asm \
  drivers/usbhid.obj:DRIVERS/USBHID.OBJ:$(KERNEL)/drivers/usbhid/usbhid.asm \
  drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
@@ -214,6 +212,8 @@ FASM_PROGRAMS_PESTRIP:=\
  drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
  drivers/ehci.sys:DRIVERS/EHCI.SYS:$(REPOSITORY)/drivers/usb/ehci.asm \
  drivers/rdc.sys:DRIVERS/RDC.SYS:$(REPOSITORY)/drivers/video/rdc.asm \
+ drivers/ps2mouse.sys:DRIVERS/PS2MOUSE.SYS:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
+ drivers/tmpdisk.sys:DRIVERS/TMPDISK.SYS:$(REPOSITORY)/drivers/disk/tmpdisk.asm \
 # end of list
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.

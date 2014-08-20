@@ -25,56 +25,34 @@ ERROR_SIZE_TOO_LARGE    equ 3 ; .DiskSize is too large
 ERROR_SIZE_TOO_SMALL    equ 4 ; .DiskSize is too small
 ERROR_NO_MEMORY         equ 5 ; memory allocation failed
 
+include '../struct.inc'
 
 API_VERSION             equ 1
 ; Input structures:
-struc add_disk_struc
-{
-.DiskSize       dd      ? ; disk size in sectors, 1 sector = 512 bytes
-; Note: .DiskSize is the full size, including FAT service data.
+struct add_disk_struc
+DiskSize        dd      ? ; disk size in sectors, 1 sector = 512 bytes
+; Note: DiskSize is the full size, including FAT service data.
 ; Size for useful data is slightly less than this number.
-.DiskId         db      ? ; from 0 to 9
-.sizeof:
-}
-virtual at 0
-add_disk_struc  add_disk_struc
-end virtual
-struc del_disk_struc
-{
-.DiskId         db      ? ; from 0 to 9
-.sizeof:
-}
-virtual at 0
-del_disk_struc del_disk_struc
-end virtual
+DiskId          db      ? ; from 0 to 9
+ends
+struct del_disk_struc
+DiskId          db      ? ; from 0 to 9
+ends
 
 max_num_disks   equ     10
 
-; standard driver stuff
-format MS COFF
+; standard driver stuff; version of driver model = 5
+format PE DLL native 0.05
 
 DEBUG equ 0
-include 'proc32.inc'
-include 'imports.inc'
 
-public START
-public version
-
-struc IOCTL
-{
-        .handle         dd ?
-        .io_code        dd ?
-        .input          dd ?
-        .inp_size       dd ?
-        .output         dd ?
-        .out_size       dd ?
-}
-
-virtual at 0
-IOCTL IOCTL
-end virtual
-
-section '.flat' code readable align 16
+section '.flat' code readable writable executable
+data fixups
+end data
+entry START
+include '../proc32.inc'
+include '../peimport.inc'
+include '../macros.inc'
 ; the start procedure (see the description above)
 proc START
 ; This procedure is called in two situations:
@@ -84,10 +62,10 @@ proc START
         cmp     dword [esp+4], 1
         jne     .nothing
 ; 2. Register the driver in the system.
-        stdcall RegService, my_service, service_proc
+        invoke  RegService, my_service, service_proc
 ; 3. Return the value returned by RegService back to the system.
 .nothing:
-        retn    4
+        retn
 endp
 
 ; Service procedure for the driver - handle all IOCTL requests for the driver.
@@ -122,8 +100,8 @@ proc service_proc
         dec     ecx     ; check for DEV_ADD_DISK
         jnz     .no.dev_add_disk
 ; 5. This is DEV_ADD_DISK request, input is add_disk_struc, output is 1 byte
-; 5a. Input size must be exactly add_disk_struc.sizeof bytes.
-        cmp     [edx+IOCTL.inp_size], add_disk_struc.sizeof
+; 5a. Input size must be exactly sizeof.add_disk_struc bytes.
+        cmp     [edx+IOCTL.inp_size], sizeof.add_disk_struc
         jnz     .return
 ; 5b. Load input parameters and call the worker procedure.
         mov     eax, [edx+IOCTL.input]
@@ -136,8 +114,8 @@ proc service_proc
         dec     ecx     ; check for DEV_DEL_DISK
         jnz     .return
 ; 6. This is DEV_DEL_DISK request, input is del_disk_struc
-; 6a. Input size must be exactly del_disk_struc.sizeof bytes.
-        cmp     [edx+IOCTL.inp_size], del_disk_struc.sizeof
+; 6a. Input size must be exactly sizeof.del_disk_struc bytes.
+        cmp     [edx+IOCTL.inp_size], sizeof.del_disk_struc
         jnz     .return
 ; 6b. Load input parameters and call the worker procedure.
         mov     eax, [edx+IOCTL.input]
@@ -179,7 +157,7 @@ proc add_disk
 ; If failed, return the corresponding error code.
         mov     eax, esi
         shl     eax, 9
-        stdcall KernelAlloc, eax
+        invoke  KernelAlloc, eax
         mov     edi, eax
         test    eax, eax
         mov     al, ERROR_NO_MEMORY
@@ -193,7 +171,7 @@ proc add_disk
         lock cmpxchg [disk_pointers+ebx*4], edi
         jz      @f
 ; Otherwise, free the allocated memory and return the corresponding error code.
-        stdcall KernelFree, edi
+        invoke  KernelFree, edi
         mov     al, ERROR_INVALID_ID
         jmp     .return
 @@:
@@ -209,7 +187,7 @@ proc add_disk
         lea     ecx, [ebx+'0'] ; ecx = digit
         mov     [eax+3], cl ; eax points to 'tmp#' + zero dword
 ; 6b. Call the kernel API. Use disk id as 'userdata' parameter for callbacks.
-        stdcall DiskAdd, disk_functions, eax, ebx, 0
+        invoke  DiskAdd, disk_functions, eax, ebx, 0
 ; 6c. Restore the stack after 6a.
         pop     ecx ecx
 ; 6c. Check the result. If DiskAdd has failed, cleanup and return
@@ -218,13 +196,13 @@ proc add_disk
         jnz     @f
         mov     [disk_sizes+ebx*4], 0
         mov     [disk_pointers+ebx*4], 0
-        stdcall KernelFree, edi
+        invoke  KernelFree, edi
         mov     al, ERROR_NO_MEMORY
         jmp     .return
 @@:
         push    eax
 ; 6d. Notify the kernel that media is inserted.
-        stdcall DiskMediaChanged, eax, 1
+        invoke  DiskMediaChanged, eax, 1
 ; 6e. Disk is fully configured; store its handle in the global variable
 ; and return success.
         pop     [disk_handles+ebx*4]
@@ -252,7 +230,7 @@ proc del_disk
         test    edx, edx
         jz      .return
 ; 4. Delete the disk from the system.
-        stdcall DiskDel, edx
+        invoke  DiskDel, edx
 ; 5. Return success.
 ; Note that we can't free memory yet; it will be done in tmpdisk_close.
         xor     eax, eax
@@ -287,9 +265,4 @@ times max_num_disks dd 0
 label disk_sizes dword
 times max_num_disks dd 0
 
-version         dd      0x00060006
 my_service      db      'tmpdisk',0
-
-; uninitialized data
-; actually, not used here
-;section '.data' data readable writable align 16 ; standard driver stuff

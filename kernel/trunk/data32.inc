@@ -148,7 +148,7 @@ end if
 msg_CR         db  13,10,0
 
 szHwMouse       db 'ATI2D',0
-szPS2MDriver    db 'PS2MOUSE',0
+szPS2MDriver    db '/rd/1/drivers/PS2MOUSE.SYS',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
 szVidintel      db '/rd/1/drivers/vidintel.sys',0
 szUSB           db 'USB',0
