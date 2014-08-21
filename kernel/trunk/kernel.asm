@@ -725,23 +725,30 @@ endg
         dec     ebx
 .wake_cpus_loop:
         lodsd
+        push    esi
+        xor     esi, esi
+        inc     esi
         shl     eax, 24
         mov     [edi+10h], eax
 ; assert INIT IPI
         mov     dword [edi], 0C500h
+        call    delay_ms
 @@:
         test    dword [edi], 1000h
         jnz     @b
 ; deassert INIT IPI
         mov     dword [edi], 8500h
+        call    delay_ms
 @@:
         test    dword [edi], 1000h
         jnz     @b
 ; send STARTUP IPI
         mov     dword [edi], 600h + (8000h shr 12)
+        call    delay_ms
 @@:
         test    dword [edi], 1000h
         jnz     @b
+        pop     esi
         dec     ebx
         jnz     .wake_cpus_loop
         mov     eax, [cpu_count]
@@ -5557,19 +5564,25 @@ yes_shutdown_param:
         dec     ebx
 .shutdown_cpus_loop:
         lodsd
+        push    esi
+        xor     esi, esi
+        inc     esi
         shl     eax, 24
         mov     [edi+10h], eax
 ; assert INIT IPI
         mov     dword [edi], 0C500h
+        call    delay_ms
 @@:
         test    dword [edi], 1000h
         jnz     @b
 ; deassert INIT IPI
         mov     dword [edi], 8500h
+        call    delay_ms
 @@:
         test    dword [edi], 1000h
         jnz     @b
 ; don't send STARTUP IPI: let other CPUs be in wait-for-startup state
+        pop     esi
         dec     ebx
         jnz     .shutdown_cpus_loop
 .no_shutdown_cpus:
