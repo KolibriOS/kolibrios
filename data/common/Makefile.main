@@ -138,7 +138,6 @@ FASM_PROGRAMS:=\
  drivers/usbstor.obj:DRIVERS/USBSTOR.OBJ:$(KERNEL)/drivers/usbstor.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
- drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
@@ -222,6 +221,7 @@ FASM_PROGRAMS_PESTRIP:=\
  drivers/rhine.sys:DRIVERS/RHINE.SYS:$(REPOSITORY)/drivers/ethernet/rhine.asm \
  drivers/rtl8029.sys:DRIVERS/RTL8029.SYS:$(REPOSITORY)/drivers/ethernet/RTL8029.asm \
  drivers/rtl8139.sys:DRIVERS/RTL8139.SYS:$(REPOSITORY)/drivers/ethernet/RTL8139.asm \
+ drivers/rtl8169.sys:DRIVERS/RTL8169.SYS:$(REPOSITORY)/drivers/ethernet/RTL8169.asm \ 
  drivers/sis900.sys:DRIVERS/SIS900.SYS:$(REPOSITORY)/drivers/ethernet/sis900.asm \
  drivers/uhci.sys:DRIVERS/UHCI.SYS:$(REPOSITORY)/drivers/usb/uhci.asm \
  drivers/ohci.sys:DRIVERS/OHCI.SYS:$(REPOSITORY)/drivers/usb/ohci.asm \
