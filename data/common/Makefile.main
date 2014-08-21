@@ -131,7 +131,6 @@ FASM_PROGRAMS:=\
  drivers/emu10k1x.obj:DRIVERS/EMU10K1X.OBJ:$(KERNEL)/drivers/emu10k1x.asm \
  drivers/fm801.obj:DRIVERS/FM801.OBJ:$(KERNEL)/drivers/fm801.asm \
  drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
- drivers/intel_hda.obj:DRIVERS/intel_hda.obj:$(REPOSITORY)/drivers/audio/intel_hda/intel_hda.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(KERNEL)/drivers/intelac97.asm \
@@ -230,6 +229,7 @@ FASM_PROGRAMS_PESTRIP:=\
  drivers/rdc.sys:DRIVERS/RDC.SYS:$(REPOSITORY)/drivers/video/rdc.asm \
  drivers/ps2mouse.sys:DRIVERS/PS2MOUSE.SYS:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/tmpdisk.sys:DRIVERS/TMPDISK.SYS:$(REPOSITORY)/drivers/disk/tmpdisk.asm \
+ drivers/intel_hda.sys:DRIVERS/intel_hda.sys:$(REPOSITORY)/drivers/audio/intel_hda/intel_hda.asm \
 # end of list
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
@@ -876,4 +876,4 @@ $(REPOSITORY)/drivers/ddk/libddk.a: \
  $(REPOSITORY)/drivers/include/*/*/*.h \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
 $(REPOSITORY)/drivers/ddk/libcore.a: \
- $(REPOSITORY)/drivers/ddk/core.S
+ $(REPOSITORY)/drivers/ddk/core.S

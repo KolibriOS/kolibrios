@@ -475,15 +475,15 @@ HDA_MAX_PCMS		equ 10
 ; Structures
 
 ; direction
-HDA_INPUT	  equ 0x0
-HDA_OUTPUT	  equ 0x1
+HDA_INPUT	   equ 0x0
+HDA_OUTPUT	   equ 0x1
 
 
 struc HDA_VERB
 {
-	.nid	  dw ?
-	.verb	  dd ?
-	.param	  dd ?
+	.nid	   dw ?
+	.verb	   dd ?
+	.param	   dd ?
 }
 
 virtual at 0
@@ -508,9 +508,9 @@ end virtual
 
 ;(...)
 ; amp value bits
-HDA_AMP_MUTE	  equ 0x80
-HDA_AMP_UNMUTE	  equ 0x00
-HDA_AMP_VOLMASK   equ 0x7F
+HDA_AMP_MUTE	   equ 0x80
+HDA_AMP_UNMUTE	   equ 0x00
+HDA_AMP_VOLMASK    equ 0x7F
 ;(...)
 
 
@@ -598,51 +598,46 @@ PIN_HP_AMP		equ (AC_PINCTL_HP_EN)
 
 
 ; get widget capabilities
-;static inline u32 get_wcaps(struct hda_codec *codec, hda_nid_t nid)
 proc  get_wcaps stdcall, nid:dword
-     push    ebx ecx edx
-     xor     eax, eax
-     movzx   ebx, [codec.start_nid]
-     movzx   ecx, [codec.num_nodes]
-     mov     edx, [nid]
+	push	ebx ecx edx
+	xor	eax, eax
+	movzx	ebx, [codec.start_nid]
+	movzx	ecx, [codec.num_nodes]
+	mov	edx, [nid]
 
-     cmp     edx, ebx
-     jl      .out
+	cmp	edx, ebx
+	jl	.out
 
-     add     ecx, ebx
-     cmp     edx, ecx
-     jge     .out
+	add	ecx, ebx
+	cmp	edx, ecx
+	jge	.out
 
-     sub     edx, ebx
-     shl     edx, 2
-     add     edx, [codec.wcaps]
-     mov     eax, [edx]
-  .out:
-     pop     edx ecx ebx
-     ret
+	sub	edx, ebx
+	shl	edx, 2
+	add	edx, [codec.wcaps]
+	mov	eax, [edx]
+.out:
+	pop	edx ecx ebx
+	ret
 endp
 
 ; get the widget type from widget capability bits
-;#define get_wcaps_type(wcaps) (((wcaps) & AC_WCAP_TYPE) >> AC_WCAP_TYPE_SHIFT)
 proc  get_wcaps_type stdcall, wcaps:dword
-     mov     eax, [wcaps]
-     and     eax, AC_WCAP_TYPE
-     shr     eax, AC_WCAP_TYPE_SHIFT
-     ret
+	mov	eax, [wcaps]
+	and	eax, AC_WCAP_TYPE
+	shr	eax, AC_WCAP_TYPE_SHIFT
+	ret
 endp
 
 ;static inline unsigned int get_wcaps_channels(u32 wcaps)
 proc  get_wcaps_channels stdcall, wcaps:dword
-;        chans = (wcaps & AC_WCAP_CHAN_CNT_EXT) >> 13;
-;        chans = ((chans << 1) | 1) + 1;
-     mov     eax, [wcaps]
-     and     eax, AC_WCAP_CHAN_CNT_EXT
-     shr     eax, 13
-     shl     eax, 1
-     or      eax, 1
-     inc     eax
-     ret
+	mov	eax, [wcaps]
+	and	eax, AC_WCAP_CHAN_CNT_EXT
+	shr	eax, 13
+	shl	eax, 1
+	or	eax, 1
+	inc	eax
+	ret
 endp
-
 
 ;Asper ]
