@@ -1,5 +1,6 @@
-; standard driver stuff
-format MS COFF
+; standard driver stuff; version of driver model = 5
+format PE DLL native 0.05
+entry START
 
 DEBUG = 1
 DUMP_PACKETS = 0
@@ -8,12 +9,7 @@ DUMP_PACKETS = 0
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 1
 
-include 'proc32.inc'
-include 'imports.inc'
-include 'fdo.inc'
-
-public START
-public version
+include '../struct.inc'
 
 ; USB constants
 DEVICE_DESCR_TYPE = 1
@@ -29,43 +25,37 @@ BULK_PIPE = 2
 INTERRUPT_PIPE = 3
 
 ; USB structures
-virtual at 0
-config_descr:
-.bLength                db      ?
-.bDescriptorType        db      ?
-.wTotalLength           dw      ?
-.bNumInterfaces         db      ?
-.bConfigurationValue    db      ?
-.iConfiguration         db      ?
-.bmAttributes           db      ?
-.bMaxPower              db      ?
-.sizeof:
-end virtual
+struct config_descr
+bLength                 db      ?
+bDescriptorType         db      ?
+wTotalLength            dw      ?
+bNumInterfaces          db      ?
+bConfigurationValue     db      ?
+iConfiguration          db      ?
+bmAttributes            db      ?
+bMaxPower               db      ?
+ends
 
-virtual at 0
-interface_descr:
-.bLength                db      ?
-.bDescriptorType        db      ?
-.bInterfaceNumber       db      ?
-.bAlternateSetting      db      ?
-.bNumEndpoints          db      ?
-.bInterfaceClass        db      ?
-.bInterfaceSubClass     db      ?
-.bInterfaceProtocol     db      ?
-.iInterface             db      ?
-.sizeof:
-end virtual
+struct interface_descr
+bLength                 db      ?
+bDescriptorType         db      ?
+bInterfaceNumber        db      ?
+bAlternateSetting       db      ?
+bNumEndpoints           db      ?
+bInterfaceClass         db      ?
+bInterfaceSubClass      db      ?
+bInterfaceProtocol      db      ?
+iInterface              db      ?
+ends
 
-virtual at 0
-endpoint_descr:
-.bLength                db      ?
-.bDescriptorType        db      ?
-.bEndpointAddress       db      ?
-.bmAttributes           db      ?
-.wMaxPacketSize         dw      ?
-.bInterval              db      ?
-.sizeof:
-end virtual
+struct endpoint_descr
+bLength                 db      ?
+bDescriptorType         db      ?
+bEndpointAddress        db      ?
+bmAttributes            db      ?
+wMaxPacketSize          dw      ?
+bInterval               db      ?
+ends
 
 ; Mass storage protocol constants, USB layer
 REQUEST_GETMAXLUN = 0xFE        ; get max lun
@@ -73,38 +63,28 @@ REQUEST_BORESET = 0xFF          ; bulk-only reset
 
 ; Mass storage protocol structures, USB layer
 ; Sent from host to device in the first stage of an operation.
-struc command_block_wrapper
-{
-.Signature      dd      ?       ; the constant 'USBC'
-.Tag            dd      ?       ; identifies response with request
-.Length         dd      ?       ; length of data-transport phase
-.Flags          db      ?       ; one of CBW_FLAG_*
+struct command_block_wrapper
+Signature       dd      ?       ; the constant 'USBC'
+Tag             dd      ?       ; identifies response with request
+Length          dd      ?       ; length of data-transport phase
+Flags           db      ?       ; one of CBW_FLAG_*
 CBW_FLAG_OUT = 0
 CBW_FLAG_IN = 80h
-.LUN            db      ?       ; addressed unit
-.CommandLength  db      ?       ; the length of the following field
-.Command        rb      16
-.sizeof:
-}
-virtual at 0
-command_block_wrapper   command_block_wrapper
-end virtual
+LUN             db      ?       ; addressed unit
+CommandLength   db      ?       ; the length of the following field
+Command         rb      16
+ends
 
 ; Sent from device to host in the last stage of an operation.
-struc command_status_wrapper
-{
-.Signature      dd      ?       ; the constant 'USBS'
-.Tag            dd      ?       ; identifies response with request
-.LengthRest     dd      ?       ; .Length - (size of data which were transferred)
-.Status         db      ?       ; one of CSW_STATUS_*
+struct command_status_wrapper
+Signature       dd      ?       ; the constant 'USBS'
+Tag             dd      ?       ; identifies response with request
+LengthRest      dd      ?       ; .Length - (size of data which were transferred)
+Status          db      ?       ; one of CSW_STATUS_*
 CSW_STATUS_OK = 0
 CSW_STATUS_FAIL = 1
 CSW_STATUS_FATAL = 2
-.sizeof:
-}
-virtual at 0
-command_status_wrapper  command_status_wrapper
-end virtual
+ends
 
 ; Constants of SCSI layer
 SCSI_REQUEST_SENSE = 3
@@ -133,73 +113,62 @@ SENSE_MISCOMPARE = 14
 
 ; Structures of SCSI layer
 ; Result of SCSI INQUIRY request.
-struc inquiry_data
-{
-.PeripheralDevice       db      ?       ; lower 5 bits are PeripheralDeviceType
+struct inquiry_data
+PeripheralDevice        db      ?       ; lower 5 bits are PeripheralDeviceType
                                         ; upper 3 bits are PeripheralQualifier
-.RemovableMedium        db      ?       ; upper bit is RemovableMedium
+RemovableMedium         db      ?       ; upper bit is RemovableMedium
                                         ; other bits are for compatibility
-.Version                db      ?       ; lower 3 bits are ANSI-Approved version
+Version                 db      ?       ; lower 3 bits are ANSI-Approved version
                                         ; next 3 bits are ECMA version
                                         ; upper 2 bits are ISO version
-.ResponseDataFormat     db      ?       ; lower 4 bits are ResponseDataFormat
+ResponseDataFormat      db      ?       ; lower 4 bits are ResponseDataFormat
                                         ; bit 6 is TrmIOP
                                         ; bit 7 is AENC
-.AdditionalLength       db      ?
+AdditionalLength        db      ?
                         dw      ?       ; reserved
-.Flags                  db      ?
-.VendorID               rb      8       ; vendor ID, big-endian
-.ProductID              rb      16      ; product ID, big-endian
-.ProductRevBE           dd      ?       ; product revision, big-endian
-.sizeof:
-}
-virtual at 0
-inquiry_data inquiry_data
-end virtual
+Flags                   db      ?
+VendorID                rb      8       ; vendor ID, big-endian
+ProductID               rb      16      ; product ID, big-endian
+ProductRevBE            dd      ?       ; product revision, big-endian
+ends
 
-struc sense_data
-{
-.ErrorCode              db      ?       ; lower 7 bits are error code:
+struct sense_data
+ErrorCode               db      ?       ; lower 7 bits are error code:
                                         ; 70h = current error,
                                         ; 71h = deferred error
                                         ; upper bit is InformationValid
-.SegmentNumber          db      ?       ; number of segment descriptor
+SegmentNumber           db      ?       ; number of segment descriptor
                                         ; for commands COPY [+VERIFY], COMPARE
-.SenseKey               db      ?       ; bits 0-3 are one of SENSE_*
+SenseKey                db      ?       ; bits 0-3 are one of SENSE_*
                                         ; bit 4 is reserved
                                         ; bit 5 is IncorrectLengthIndicator
                                         ; bits 6 and 7 are used by
                                         ; sequential-access devices
-.Information            dd      ?       ; command-specific
-.AdditionalLength       db      ?       ; length of data starting here
-.CommandInformation     dd      ?       ; command-specific
-.AdditionalSenseCode    db      ?       ; \ more detailed error code
-.AdditionalSenseQual    db      ?       ; / standard has a large table of them
-.FRUCode                db      ?       ; which part of device has failed
+Information             dd      ?       ; command-specific
+AdditionalLength        db      ?       ; length of data starting here
+CommandInformation      dd      ?       ; command-specific
+AdditionalSenseCode     db      ?       ; \ more detailed error code
+AdditionalSenseQual     db      ?       ; / standard has a large table of them
+FRUCode                 db      ?       ; which part of device has failed
                                         ; (device-specific, not regulated)
-.SenseKeySpecific       rb      3       ; depends on SenseKey
-.sizeof:
-}
-virtual at 0
-sense_data sense_data
-end virtual
+SenseKeySpecific        rb      3       ; depends on SenseKey
+ends
 
 ; Device data
 ; USB Mass storage device has one or more logical units, identified by LUN,
 ; logical unit number. The highest value of LUN, that is, number of units
 ; minus 1, can be obtained via control request Get Max LUN.
-virtual at 0
-usb_device_data:
-.ConfigPipe             dd      ?       ; configuration pipe
-.OutPipe                dd      ?       ; pipe for OUT bulk endpoint
-.InPipe                 dd      ?       ; pipe for IN bulk endpoint
-.MaxLUN                 dd      ?       ; maximum Logical Unit Number
-.LogicalDevices         dd      ?       ; pointer to array of usb_unit_data
+struct usb_device_data
+ConfigPipe              dd      ?       ; configuration pipe
+OutPipe                 dd      ?       ; pipe for OUT bulk endpoint
+InPipe                  dd      ?       ; pipe for IN bulk endpoint
+MaxLUN                  dd      ?       ; maximum Logical Unit Number
+LogicalDevices          dd      ?       ; pointer to array of usb_unit_data
 ; 1 for a connected USB device, 1 for each disk device
 ; the structure can be freed when .NumReferences decreases to zero
-.NumReferences          dd      ?       ; number of references
-.ConfigRequest          rb      8       ; buffer for configuration requests
-.LengthRest             dd      ?       ; Length - (size of data which were transferred)
+NumReferences           dd      ?       ; number of references
+ConfigRequest           rb      8       ; buffer for configuration requests
+LengthRest              dd      ?       ; Length - (size of data which were transferred)
 ; All requests to a given device are serialized,
 ; only one request to a given device can be processed at a time.
 ; The current request and all pending requests are organized in the following
@@ -208,46 +177,42 @@ usb_device_data:
 ; data stage is not tagged (unlike command_*_wrapper), so the only way to know
 ; what request the data are associated with is to guarantee that only one
 ; request is processing at the time.
-.RequestsQueue          rd      2
-.QueueLock              rd      3       ; protects .RequestsQueue
-.InquiryData            inquiry_data    ; information about device
+RequestsQueue           rd      2
+QueueLock               rd      3       ; protects .RequestsQueue
+InquiryData             inquiry_data    ; information about device
 ; data for the current request
-.Command                command_block_wrapper
-.DeviceDisconnected     db      ?
-.Status                 command_status_wrapper
-.Sense                  sense_data
-.sizeof:
-end virtual
+Command                 command_block_wrapper
+DeviceDisconnected      db      ?
+Status                  command_status_wrapper
+Sense                   sense_data
+ends
 
 ; Information about one logical device.
-virtual at 0
-usb_unit_data:
-.Parent         dd      ?       ; pointer to parent usb_device_data
-.LUN            db      ?       ; index in usb_device_data.LogicalDevices array
-.DiskIndex      db      ?       ; for name "usbhd<index>"
-.MediaPresent   db      ?
+struct usb_unit_data
+Parent          dd      ?       ; pointer to parent usb_device_data
+LUN             db      ?       ; index in usb_device_data.LogicalDevices array
+DiskIndex       db      ?       ; for name "usbhd<index>"
+MediaPresent    db      ?
                 db      ?       ; alignment
-.DiskDevice     dd      ?       ; handle of disk device or NULL
-.SectorSize     dd      ?       ; sector size
+DiskDevice      dd      ?       ; handle of disk device or NULL
+SectorSize      dd      ?       ; sector size
 ; For some devices, the first request to the medium fails with 'unit not ready'.
 ; When the code sees this status, it retries the command several times.
 ; Two following variables track the retry count and total time for those;
 ; total time is currently used only for debug output.
-.UnitReadyAttempts      dd      ?
-.TimerTicks             dd      ?
-.sizeof:
-end virtual
+UnitReadyAttempts       dd      ?
+TimerTicks              dd      ?
+ends
 
 ; This is the structure for items in the queue usb_device_data.RequestsQueue.
-virtual at 0
-request_queue_item:
-.Next           dd      ?       ; next item in the queue
-.Prev           dd      ?       ; prev item in the queue
-.ReqBuilder     dd      ?       ; procedure to fill command_block_wrapper
-.Buffer         dd      ?       ; input or output data
+struct request_queue_item
+Next            dd      ?       ; next item in the queue
+Prev            dd      ?       ; prev item in the queue
+ReqBuilder      dd      ?       ; procedure to fill command_block_wrapper
+Buffer          dd      ?       ; input or output data
                                 ; (length is command_block_wrapper.Length)
-.Callback       dd      ?       ; procedure to call in the end of transfer
-.UserData       dd      ?       ; passed as-is to .Callback
+Callback        dd      ?       ; procedure to call in the end of transfer
+UserData        dd      ?       ; passed as-is to .Callback
 ; There are 3 possible stages of any request, one of them optional:
 ; command stage (host sends command_block_wrapper to device),
 ; optional data stage,
@@ -255,16 +220,21 @@ request_queue_item:
 ; Also, if a request fails, the code queues additional request
 ; SCSI_REQUEST_SENSE; sense_data from SCSI_REQUEST_SENSE
 ; contains some information about the error.
-.Stage          db      ?
-.sizeof:
-end virtual
+Stage           db      ?
+ends
 
-section '.flat' code readable align 16
+section '.flat' code readable writable executable
+include '../proc32.inc'
+include '../peimport.inc'
+include '../fdo.inc'
+include '../macros.inc'
+
 ; The start procedure.
 proc START
 virtual at esp
         dd      ?       ; return address
 .reason dd      ?       ; DRV_ENTRY or DRV_EXIT
+.cmdline dd     ?
 end virtual
 ; 1. Test whether the procedure is called with the argument DRV_ENTRY.
 ; If not, return 0.
@@ -273,14 +243,14 @@ end virtual
         jnz     .nothing
 ; 2. Initialize: we have one global mutex.
         mov     ecx, free_numbers_lock
-        call    MutexInit
+        invoke  MutexInit
 ; 3. Register self as a USB driver.
 ; The name is my_driver = 'usbstor'; IOCTL interface is not supported;
 ; usb_functions is an offset of a structure with callback functions.
-        stdcall RegUSBDriver, my_driver, 0, usb_functions
+        invoke  RegUSBDriver, my_driver, 0, usb_functions
 ; 4. Return the returned value of RegUSBDriver.
 .nothing:
-        ret     4
+        ret
 endp
 
 ; Helper procedures to work with requests queue.
@@ -298,12 +268,12 @@ virtual at esp
 .UserData       dd      ?       ; request_queue_item.UserData
 end virtual
 ; 1. Allocate the memory for the request description.
-        movi    eax, request_queue_item.sizeof
-        call    Kmalloc
+        movi    eax, sizeof.request_queue_item
+        invoke  Kmalloc
         test    eax, eax
         jnz     @f
         mov     esi, nomemory
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi ebx
         ret     20
 @@:
@@ -322,7 +292,7 @@ end virtual
 ; 4. Lock the queue.
         mov     esi, [.device]
         lea     ecx, [esi+usb_device_data.QueueLock]
-        call    MutexLock
+        invoke  MutexLock
 ; 5. Insert the request to the tail of the queue.
         add     esi, usb_device_data.RequestsQueue
         mov     edx, [esi+request_queue_item.Prev]
@@ -340,7 +310,7 @@ end virtual
         call    setup_request
         jmp     .nothing
 .unlock:
-        call    MutexUnlock
+        invoke  MutexUnlock
 ; 9. Return.
 .nothing:
         pop     esi ebx
@@ -369,7 +339,7 @@ end if
         stdcall [ebx+request_queue_item.Callback], esi, [ebx+request_queue_item.UserData]
 ; 4. Lock the queue.
         lea     ecx, [esi+usb_device_data.QueueLock]
-        call    MutexLock
+        invoke  MutexLock
 ; 5. Remove the request.
         lea     edx, [esi+usb_device_data.RequestsQueue]
         mov     eax, [ebx+request_queue_item.Next]
@@ -378,14 +348,14 @@ end if
 ; 6. Free the request memory.
         push    eax edx
         xchg    eax, ebx
-        call    Kfree
+        invoke  Kfree
         pop     edx ebx
 ; 7. If there is a next request, start processing.
         cmp     ebx, edx
         jnz     setup_request
 ; 8. Unlock the queue and return.
         lea     ecx, [esi+usb_device_data.QueueLock]
-        call    MutexUnlock
+        invoke  MutexUnlock
         ret
 endp
 
@@ -410,14 +380,14 @@ proc setup_request
         lea     edx, [esi+usb_device_data.ConfigRequest]
         mov     word [edx], (REQUEST_BORESET shl 8) + 21h       ; class request
         mov     word [edx+6], ax        ; length = 0
-        stdcall USBControlTransferAsync, [esi+usb_device_data.ConfigPipe], edx, eax, eax, recovery_callback1, esi, eax
+        invoke  USBControlTransferAsync, [esi+usb_device_data.ConfigPipe], edx, eax, eax, recovery_callback1, esi, eax
 ; 2b. Fail here = fatal error.
         test    eax, eax
         jz      .fatal
 ; 2c. Otherwise, unlock the queue and return. recovery_callback1 will continue processing.
 .unlock_return:
         lea     ecx, [esi+usb_device_data.QueueLock]
-        call    MutexUnlock
+        invoke  MutexUnlock
         ret
 .norecovery:
 ; 3. Send the command. Fail (no memory or device disconnected) = fatal error.
@@ -429,7 +399,7 @@ proc setup_request
 ; 4. Fatal error. Set status = FATAL, unlock the queue, complete the request.
         mov     [esi+usb_device_data.Status.Status], CSW_STATUS_FATAL
         lea     ecx, [esi+usb_device_data.QueueLock]
-        call    MutexUnlock
+        invoke  MutexUnlock
         jmp     complete_request
 endp
 
@@ -453,11 +423,11 @@ proc request_stage1
 if DUMP_PACKETS
         DEBUGF 1,'K : USBSTOR out:'
         mov     eax, edx
-        mov     ecx, command_block_wrapper.sizeof
+        mov     ecx, sizeof.command_block_wrapper
         call    debug_dump
         DEBUGF 1,'\n'
 end if
-        stdcall USBNormalTransferAsync, [esi+usb_device_data.OutPipe], edx, command_block_wrapper.sizeof, request_callback1, esi, 0
+        invoke  USBNormalTransferAsync, [esi+usb_device_data.OutPipe], edx, sizeof.command_block_wrapper, request_callback1, esi, 0
         test    eax, eax
         jz      .nothing
 ; 5. If the next stage is data stage in the same direction, enqueue it here.
@@ -473,7 +443,7 @@ if DUMP_PACKETS
         call    debug_dump
         DEBUGF 1,'\n'
 end if
-        stdcall USBNormalTransferAsync, [esi+usb_device_data.OutPipe], [edx+request_queue_item.Buffer], [esi+usb_device_data.Command.Length], request_callback2, esi, 0
+        invoke  USBNormalTransferAsync, [esi+usb_device_data.OutPipe], [edx+request_queue_item.Buffer], [esi+usb_device_data.Command.Length], request_callback2, esi, 0
 .nothing:
         ret
 endp
@@ -551,7 +521,7 @@ end virtual
         cmp     [ecx+usb_device_data.Command.Flags], 0
         jns     .nothing
 ; 5. Initiate USB transfer. If this fails, go to the error handler.
-        stdcall USBNormalTransferAsync, [ecx+usb_device_data.InPipe], [edx+request_queue_item.Buffer], [ecx+usb_device_data.Command.Length], request_callback2, ecx, 0
+        invoke  USBNormalTransferAsync, [ecx+usb_device_data.InPipe], [edx+request_queue_item.Buffer], [ecx+usb_device_data.Command.Length], request_callback2, ecx, 0
         test    eax, eax
         jz      .error
 ; 6. The status stage goes to the same direction, enqueue it now.
@@ -625,7 +595,7 @@ end if
 ; 4. Initiate USB transfer. If this fails, go to the error handler.
 ..enqueue_status:
         lea     edx, [ecx+usb_device_data.Status]
-        stdcall USBNormalTransferAsync, [ecx+usb_device_data.InPipe], edx, command_status_wrapper.sizeof, request_callback3, ecx, 0
+        invoke  USBNormalTransferAsync, [ecx+usb_device_data.InPipe], edx, sizeof.command_status_wrapper, request_callback3, ecx, 0
         test    eax, eax
         jz      .error
 .nothing:
@@ -698,7 +668,7 @@ end if
 ; 6. Invalid status block. Say error, set status to fatal and complete request.
         push    esi
         mov     esi, invresponse
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi
         mov     [esi+usb_device_data.Status.Status], CSW_STATUS_FATAL
         jmp     .complete
@@ -728,10 +698,10 @@ endp
 ; edx = first argument = pointer to usb_device_data.Command,
 ; second argument = custom data given to queue_request (ignored).
 proc request_sense_req
-        mov     [edx+command_block_wrapper.Length], sense_data.sizeof
+        mov     [edx+command_block_wrapper.Length], sizeof.sense_data
         mov     [edx+command_block_wrapper.Flags], CBW_FLAG_IN
         mov     byte [edx+command_block_wrapper.Command+0], SCSI_REQUEST_SENSE
-        mov     byte [edx+command_block_wrapper.Command+4], sense_data.sizeof
+        mov     byte [edx+command_block_wrapper.Command+4], sizeof.sense_data
         ret     8
 endp
 
@@ -780,25 +750,25 @@ end virtual
         jz      .known
 ; 1c. If the device is unknown, print a message and go to 11c.
         mov     esi, unkdevice
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .nothing
 ; 1d. If the device uses known command set, print a message and continue
 ; configuring.
 .known:
         push    esi
         mov     esi, okdevice
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi
 ; 2. Allocate memory for internal device data.
 ; 2a. Call the kernel.
-        mov     eax, usb_device_data.sizeof
-        call    Kmalloc
+        mov     eax, sizeof.usb_device_data
+        invoke  Kmalloc
 ; 2b. Check return value.
         test    eax, eax
         jnz     @f
 ; 2c. If failed, say a message and go to 11c.
         mov     esi, nomemory
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .nothing
 @@:
 ; 2d. If succeeded, zero the contents and continue configuring.
@@ -829,7 +799,7 @@ end virtual
         mov     [eax+request_queue_item.Next], eax
         mov     [eax+request_queue_item.Prev], eax
         lea     ecx, [ebx+usb_device_data.QueueLock]
-        call    MutexInit
+        invoke  MutexInit
 ; Bulk-only mass storage devices use one OUT bulk endpoint for sending
 ; command/data and one IN bulk endpoint for receiving data/status.
 ; Look for those endpoints.
@@ -862,9 +832,9 @@ end virtual
         jnz     .lookep
 ; 5. Check that the descriptor contains all required data and all data are
 ; readable. The opposite is an error.
-        cmp     byte [esi+endpoint_descr.bLength], endpoint_descr.sizeof
+        cmp     byte [esi+endpoint_descr.bLength], sizeof.endpoint_descr
         jb      .errorep
-        lea     ecx, [esi+endpoint_descr.sizeof]
+        lea     ecx, [esi+sizeof.endpoint_descr]
         cmp     ecx, edx
         ja      .errorep
 ; 6. Check that the endpoint is bulk endpoint. The opposite is an error.
@@ -887,7 +857,7 @@ end virtual
         movzx   edx, [esi+endpoint_descr.wMaxPacketSize]
         movzx   eax, [esi+endpoint_descr.bInterval]     ; not used for USB1, may be important for USB2
 ; 9c. Call the kernel.
-        stdcall USBOpenPipe, [ebx+usb_device_data.ConfigPipe], ecx, edx, BULK_PIPE, eax
+        invoke  USBOpenPipe, [ebx+usb_device_data.ConfigPipe], ecx, edx, BULK_PIPE, eax
 ; 9d. Restore registers.
         pop     edx ecx
 ; 9e. Check result. If failed, go to 11b.
@@ -907,7 +877,7 @@ end virtual
 .free:
 ; 11b. Free the allocated usb_device_data.
         xchg    eax, ebx
-        call    Kfree
+        invoke  Kfree
 .nothing:
 ; 11c. Return an error.
         xor     eax, eax
@@ -922,7 +892,7 @@ end virtual
 if DUMP_PACKETS
         DEBUGF 1,'K : GETMAXLUN: %x %x %x %x %x %x %x %x\n',[eax]:2,[eax+1]:2,[eax+2]:2,[eax+3]:2,[eax+4]:2,[eax+5]:2,[eax+6]:2,[eax+7]:2
 end if
-        stdcall USBControlTransferAsync, [ebx+usb_device_data.ConfigPipe], eax, ecx, 1, known_lun_callback, ebx, 0
+        invoke  USBControlTransferAsync, [ebx+usb_device_data.ConfigPipe], eax, ecx, 1, known_lun_callback, ebx, 0
 ; 13. Return with pointer to device data as returned value.
         xchg    eax, ebx
 .return:
@@ -955,15 +925,15 @@ end virtual
         mov     eax, [ebx+usb_device_data.MaxLUN]
         inc     eax
         DEBUGF 1,'K : %d logical unit(s)\n',eax
-        imul    eax, usb_unit_data.sizeof
+        imul    eax, sizeof.usb_unit_data
         push    ebx
-        call    Kmalloc
+        invoke  Kmalloc
         pop     ebx
 ; If failed, print a message and do nothing.
         test    eax, eax
         jnz     @f
         mov     esi, nomemory
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi ebx
         ret     20
 @@:
@@ -980,12 +950,12 @@ end virtual
         mov     [esi+usb_unit_data.SectorSize], eax
         mov     [esi+usb_unit_data.UnitReadyAttempts], eax
         push    ecx
-        call    GetTimerTicks
+        invoke  GetTimerTicks
         mov     [esi+usb_unit_data.TimerTicks], eax
         stdcall queue_request, ebx, test_unit_ready_req, 0, test_unit_ready_callback, esi
         pop     ecx
         inc     ecx
-        add     esi, usb_unit_data.sizeof
+        add     esi, sizeof.usb_unit_data
         cmp     ecx, [ebx+usb_device_data.MaxLUN]
         jbe     .looplun
 ; 4. Return.
@@ -999,11 +969,11 @@ endp
 proc inquiry_req
         mov     eax, [esp+8]
         mov     al, [eax+usb_unit_data.LUN]
-        mov     [edx+command_block_wrapper.Length], inquiry_data.sizeof
+        mov     [edx+command_block_wrapper.Length], sizeof.inquiry_data
         mov     [edx+command_block_wrapper.Flags], CBW_FLAG_IN
         mov     [edx+command_block_wrapper.LUN], al
         mov     byte [edx+command_block_wrapper.Command+0], SCSI_INQUIRY
-        mov     byte [edx+command_block_wrapper.Command+4], inquiry_data.sizeof
+        mov     byte [edx+command_block_wrapper.Command+4], sizeof.inquiry_data
         ret     8
 endp
 
@@ -1034,7 +1004,7 @@ proc inquiry_callback
         movi    ebx, 1
         mov     ecx, new_disk_thread
         ; edx = parameter
-        call    CreateThread
+        invoke  CreateThread
         pop     edi esi ecx ebx
         cmp     eax, -1
         jnz     .nothing
@@ -1046,7 +1016,7 @@ proc inquiry_callback
 ; 4. The command has failed. Print a message and do nothing.
         push    esi
         mov     esi, inquiry_fail
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi
         ret     8
 endp
@@ -1079,7 +1049,7 @@ end virtual
 ; possibly after some repetitions. Print a debug message showing
 ; number and time of those. Remember that media is ready and go to 4.
         DEBUGF 1,'K : media is ready\n'
-        call    GetTimerTicks
+        invoke  GetTimerTicks
         sub     eax, [edx+usb_unit_data.TimerTicks]
         DEBUGF 1,'K : %d attempts, %d ticks\n',[edx+usb_unit_data.UnitReadyAttempts],eax
         inc     [edx+usb_unit_data.MediaPresent]
@@ -1094,7 +1064,7 @@ end virtual
         jz      @f
         push    ecx edx esi
         movi    esi, 10
-        call    Sleep
+        invoke  Sleep
         pop     esi edx ecx
         stdcall queue_request, ecx, test_unit_ready_req, 0, test_unit_ready_callback, edx
         ret     8
@@ -1120,7 +1090,7 @@ end virtual
 ; 1. Generate name.
 ; 1a. Find a free index.
         mov     ecx, free_numbers_lock
-        call    MutexLock
+        invoke  MutexLock
         xor     eax, eax
 @@:
         bsf     edx, [free_numbers+eax]
@@ -1128,10 +1098,10 @@ end virtual
         add     eax, 4
         cmp     eax, 4*4
         jnz     @b
-        call    MutexUnlock
+        invoke  MutexUnlock
         push    esi
         mov     esi, noindex
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi
         jmp     .drop_reference
 @@:
@@ -1139,7 +1109,7 @@ end virtual
         btr     [free_numbers+eax], edx
         lea     eax, [eax*8+edx]
         push    eax
-        call    MutexUnlock
+        invoke  MutexUnlock
         pop     eax
 ; 1c. Generate a name of the form "usbhd<index>" in the stack.
         mov     dword [esp], 'usbh'
@@ -1166,41 +1136,41 @@ end virtual
 ; 4. Notify the kernel about a new disk.
 ; 4a. Add a disk.
 ;       stdcall queue_request, ecx, read_capacity_req, eax, read_capacity_callback, eax
-        stdcall DiskAdd, disk_functions, edx, esi, 0
+        invoke  DiskAdd, disk_functions, edx, esi, 0
         mov     ebx, eax
 ; 4b. If it failed, release the index and do nothing.
         test    eax, eax
         jz      .free_index
 ; 4c. Notify the kernel that a media is present.
-        stdcall DiskMediaChanged, eax, 1
+        invoke  DiskMediaChanged, eax, 1
 ; 5. Lock the requests queue, check that device is not disconnected,
 ; store the disk handle, unlock the requests queue.
         mov     ecx, [esi+usb_unit_data.Parent]
         add     ecx, usb_device_data.QueueLock
-        call    MutexLock
+        invoke  MutexLock
         cmp     byte [ecx+usb_device_data.DeviceDisconnected-usb_device_data.QueueLock], 0
         jnz     .disconnected
         mov     [esi+usb_unit_data.DiskDevice], ebx
-        call    MutexUnlock
+        invoke  MutexUnlock
         jmp     .exit
 .disconnected:
-        call    MutexUnlock
+        invoke  MutexUnlock
         stdcall disk_close, ebx
         jmp     .exit
 .free_index:
         mov     ecx, free_numbers_lock
-        call    MutexLock
+        invoke  MutexLock
         movzx   eax, [esi+usb_unit_data.DiskIndex]
         bts     [free_numbers], eax
-        call    MutexUnlock
+        invoke  MutexUnlock
 .drop_reference:
         mov     esi, [esi+usb_unit_data.Parent]
         lock dec [esi+usb_device_data.NumReferences]
         jnz     .exit
         mov     eax, [esi+usb_device_data.LogicalDevices]
-        call    Kfree
+        invoke  Kfree
         xchg    eax, esi
-        call    Kfree
+        invoke  Kfree
 .exit:
         or      eax, -1
         int     0x40
@@ -1216,7 +1186,7 @@ virtual at esp
 end virtual
 ; 1. Say a message.
         mov     esi, disconnectmsg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 ; 2. Lock the requests queue, set .DeviceDisconnected to 1,
 ; unlock the requests queue.
 ; Locking is required for synchronization with queue_request:
@@ -1229,9 +1199,9 @@ end virtual
 ; then queue_request tries to use them.
         mov     esi, [.device]
         lea     ecx, [esi+usb_device_data.QueueLock]
-        call    MutexLock
+        invoke  MutexLock
         mov     [esi+usb_device_data.DeviceDisconnected], 1
-        call    MutexUnlock
+        invoke  MutexUnlock
 ; 3. Drop one reference to the structure and check whether
 ; that was the last reference.
         lock dec [esi+usb_device_data.NumReferences]
@@ -1247,9 +1217,9 @@ end virtual
         mov     eax, [esi+usb_unit_data.DiskDevice]
         test    eax, eax
         jz      @f
-        stdcall DiskDel, eax
+        invoke  DiskDel, eax
 @@:
-        add     esi, usb_unit_data.sizeof
+        add     esi, sizeof.usb_unit_data
         dec     ebx
         jnz     .diskdel
 ; In this case, some operations with those disks are still possible,
@@ -1262,10 +1232,10 @@ end virtual
         mov     eax, [esi+usb_device_data.LogicalDevices]
         test    eax, eax
         jz      @f
-        call    Kfree
+        invoke  Kfree
 @@:
         xchg    eax, esi
-        call    Kfree
+        invoke  Kfree
         jmp     .return
 endp
 
@@ -1286,17 +1256,17 @@ virtual at esp
 end virtual
         mov     esi, [.userdata]
         mov     ecx, free_numbers_lock
-        call    MutexLock
+        invoke  MutexLock
         movzx   eax, [esi+usb_unit_data.DiskIndex]
         bts     [free_numbers], eax
-        call    MutexUnlock
+        invoke  MutexUnlock
         mov     esi, [esi+usb_unit_data.Parent]
         lock dec [esi+usb_device_data.NumReferences]
         jnz     .nothing
         mov     eax, [esi+usb_device_data.LogicalDevices]
-        call    Kfree
+        invoke  Kfree
         xchg    eax, esi
-        call    Kfree
+        invoke  Kfree
 .nothing:
         pop     esi ebx
         ret     4
@@ -1308,7 +1278,7 @@ proc disk_querymedia stdcall uses ebx esi edi, \
 ; 1. Create event for waiting.
         xor     esi, esi
         xor     ecx, ecx
-        call    CreateEvent
+        invoke  CreateEvent
         test    eax, eax
         jz      .generic_fail
         push    eax
@@ -1340,7 +1310,7 @@ end virtual
 ; 3. Wait for event. This destroys it.
         mov     eax, [.event]
         mov     ebx, [.event_code]
-        call    WaitEvent
+        invoke  WaitEvent
 ; 4. Get the status and results.
         pop     ecx
         bswap   ecx     ; .LastLBA
@@ -1403,7 +1373,7 @@ proc read_capacity_callback
         mov     ebx, [ecx+disk_querymedia.event_code-disk_querymedia.locals]
         xor     edx, edx
         xor     esi, esi
-        call    RaiseEvent
+        invoke  RaiseEvent
         pop     edi esi ebx
         ret     8
 endp
@@ -1443,7 +1413,7 @@ max_sectors_at_time = 0xFFFF
 ; 4. Create event for waiting.
         xor     esi, esi
         xor     ecx, ecx
-        call    CreateEvent
+        invoke  CreateEvent
         test    eax, eax
         jz      .generic_fail
         push    eax     ; .event
@@ -1476,7 +1446,7 @@ end virtual
 ; 6. Wait for event. This destroys it.
         mov     eax, [.event]
         mov     ebx, [.event_code]
-        call    WaitEvent
+        invoke  WaitEvent
 ; 7. Get the status. If the operation has failed, abort.
         pop     eax     ; .status
         pop     ecx ecx ; cleanup .event_code, .event
@@ -1579,7 +1549,7 @@ end virtual
         mov     ebx, [esi+disk_read_write.event_code-disk_read_write.locals]
         xor     edx, edx
         xor     esi, esi
-        call    RaiseEvent
+        invoke  RaiseEvent
 ; 6. Return.
         pop     edi esi ebx
         ret     8
@@ -1599,9 +1569,7 @@ inquiry_fail    db      'K : INQUIRY command failed',13,10,0
 ;read_fail      db      'K : READ command failed',13,10,0
 noindex         db      'K : failed to generate disk name',13,10,0
 
-; Exported variable: kernel API version.
 align 4
-version dd      50005h
 ; Structure with callback functions.
 usb_functions:
         dd      usb_functions_end - usb_functions
@@ -1620,12 +1588,12 @@ disk_functions:
         dd      0       ; adjust_cache_size: use default cache
 disk_functions_end:
 
+data fixups
+end data
+
 free_numbers_lock       rd      3
 ; 128 devices should be enough for everybody
 free_numbers    dd      -1, -1, -1, -1
 
 ; for DEBUGF macro
 include_debug_strings
-
-; for uninitialized data
-section '.data' data readable writable align 16

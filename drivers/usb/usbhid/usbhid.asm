@@ -1,5 +1,6 @@
-; standard driver stuff
-format MS COFF
+; standard driver stuff; version of driver model = 5
+format PE DLL native 0.05
+entry START
 
 DEBUG = 1
 
@@ -7,13 +8,7 @@ DEBUG = 1
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 1
 
-include '../proc32.inc'
-include '../imports.inc'
-include '../fdo.inc'
 include '../../struct.inc'
-
-public START
-public version
 
 ; Compile-time settings.
 ; If set, the code will dump all descriptors as they are read to the debug board.
@@ -103,12 +98,17 @@ input_buffer            dd      ?       ; buffer for input transfers
 control                 rb      8       ; control packet to device
 ends
 
-section '.flat' code readable align 16
+section '.flat' code readable writable executable
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../peimport.inc'
+include '../../fdo.inc'
 ; The start procedure.
 proc START
 virtual at esp
         dd      ?       ; return address
 .reason dd      ?
+.cmdline dd     ?
 end virtual
 ; 1. Test whether the procedure is called with the argument DRV_ENTRY.
 ; If not, return 0.
@@ -118,10 +118,10 @@ end virtual
 ; 2. Register self as a USB driver.
 ; The name is my_driver = 'usbhid'; IOCTL interface is not supported;
 ; usb_functions is an offset of a structure with callback functions.
-        stdcall RegUSBDriver, my_driver, eax, usb_functions
+        invoke  RegUSBDriver, my_driver, eax, usb_functions
 ; 3. Return the returned value of RegUSBDriver.
 .nothing:
-        ret     4
+        ret
 endp
 
 ; This procedure is called when new HID device is detected.
@@ -138,11 +138,11 @@ end virtual
         DEBUGF 1,'K : USB HID device detected\n'
 ; 1. Allocate memory for device data.
         movi    eax, sizeof.usb_device_data
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jnz     @f
         mov     esi, nomemory_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .return0
 @@:
 ; zero-initialize it
@@ -215,11 +215,11 @@ end virtual
 .cfgerror:
 ; 6a. Print a message.
         mov     esi, invalid_config_descr_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 ; 6b. Free memory allocated for device data.
 .free:
         xchg    eax, ebx
-        call    Kfree
+        invoke  Kfree
 .return0:
 ; 6c. Return an error.
         xor     eax, eax
@@ -255,7 +255,7 @@ end virtual
         mov     eax, [.config_pipe]
         mov     [ebx+usb_device_data.configpipe], eax
         xor     ecx, ecx
-        stdcall USBControlTransferAsync, eax, edx, ecx, ecx, idle_set, ebx, ecx
+        invoke  USBControlTransferAsync, eax, edx, ecx, ecx, idle_set, ebx, ecx
 ; 7. Return pointer to usb_device_data.
         xchg    eax, ebx
         jmp     .nothing
@@ -295,7 +295,7 @@ end virtual
 .cfgerror:
         mov     esi, invalid_config_descr_msg
 .abort_with_msg:
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .nothing
 .found_report:
 ; 2. Send request for the Report descriptor.
@@ -304,7 +304,7 @@ end virtual
         test    eax, eax
         jz      .cfgerror
         push    eax
-        call    Kmalloc
+        invoke  Kmalloc
         pop     ecx
 ; If failed, say a message and stop initialization.
         mov     esi, nomemory_msg
@@ -320,13 +320,13 @@ end virtual
                 (REPORT_DESCR_TYPE shl 24); descriptor type
         mov     [edx+4], ax             ; Interface number
         mov     [edx+6], cx             ; descriptor length
-        stdcall USBControlTransferAsync, [ebx+usb_device_data.configpipe], \
+        invoke  USBControlTransferAsync, [ebx+usb_device_data.configpipe], \
                 edx, esi, ecx, got_report, ebx, 0
 ; 2c. If failed, free the buffer and stop initialization.
         test    eax, eax
         jnz     .nothing
         xchg    eax, esi
-        call    Kfree
+        invoke  Kfree
 .nothing:
         pop     esi ebx         ; restore used registers to be stdcall
         ret     20
@@ -353,7 +353,7 @@ endl
 .generic_fail:
         push    esi
         mov     esi, reportfail
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi
         jmp     .exit
 .has_something:
@@ -386,7 +386,7 @@ end if
         movzx   ecx, [edx+endpoint_descr.bEndpointAddress]
         movzx   eax, [edx+endpoint_descr.bInterval]
         movzx   edx, [edx+endpoint_descr.wMaxPacketSize]
-        stdcall USBOpenPipe, [ebx+usb_device_data.configpipe], ecx, edx, INTERRUPT_PIPE, eax
+        invoke  USBOpenPipe, [ebx+usb_device_data.configpipe], ecx, edx, INTERRUPT_PIPE, eax
         test    eax, eax
         jz      got_report.exit
         mov     [ebx+usb_device_data.intpipe], eax
@@ -418,11 +418,11 @@ end if
 ; for extract_field_value.
         add     eax, 4+3
         and     eax, not 3
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jnz     @f
         mov     esi, nomemory_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     got_report.exit
 @@:
         mov     [ebx+usb_device_data.input_buffer], eax
@@ -430,7 +430,7 @@ end if
         call    ask_for_input
 got_report.exit:
         mov     eax, [buffer]
-        call    Kfree
+        invoke  Kfree
         ret
 endp
 
@@ -439,7 +439,7 @@ endp
 proc ask_for_input
 ; just call USBNormalTransferAsync with correct parameters,
 ; allow short packets
-        stdcall USBNormalTransferAsync, \
+        invoke  USBNormalTransferAsync, \
                 [ebx+usb_device_data.intpipe], \
                 [ebx+usb_device_data.input_buffer], \
                 [ebx+usb_device_data.input_transfer_size], \
@@ -492,7 +492,7 @@ endl
         ret
 .fail:
         mov     esi, transfer_error_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .nothing
 endp
 
@@ -507,12 +507,12 @@ end virtual
 ; 1. Say a message.
         mov     ebx, [.device_data]
         mov     esi, disconnectmsg
-        stdcall SysMsgBoardStr
+        invoke  SysMsgBoardStr
 ; 2. Ask HID layer to release all HID-related resources.
         hid_cleanup
 ; 3. Free the device data.
         xchg    eax, ebx
-        call    Kfree
+        invoke  Kfree
 ; 4. Return.
 .nothing:
         pop     edi esi ebx     ; restore used registers to be stdcall
@@ -534,9 +534,7 @@ disconnectmsg   db      'K : USB HID device disconnected',13,10,0
 invalid_report_msg db   'K : report descriptor is invalid',13,10,0
 delimiter_note  db      'K : note: alternate usage ignored',13,10,0
 
-; Exported variable: kernel API version.
 align 4
-version dd      50005h
 ; Structure with callback functions.
 usb_functions:
         dd      12
@@ -549,5 +547,6 @@ include_debug_strings
 ; Workers data
 workers_globals
 
-; for uninitialized data
-;section '.data' data readable writable align 16
+align 4
+data fixups
+end data

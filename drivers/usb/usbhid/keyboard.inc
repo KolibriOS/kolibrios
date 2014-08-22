@@ -60,7 +60,7 @@ ends
 proc keyboard_driver_add_device
 ; 1. Allocate memory for keyboard_device_data. If failed, return NULL.
         movi    eax, sizeof.keyboard_device_data
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jz      .nothing
 ; 2. Initialize keyboard_device_data: store pointer to USB layer data,
@@ -154,7 +154,7 @@ proc keyboard_driver_add_device
 ; store pointer to keyboard_device_data in the stack
         push    eax
 ; call kernel API
-        stdcall RegKeyboard, kbd_functions, eax
+        invoke  RegKeyboard, kbd_functions, eax
 ; restore pointer to keyboard_device_data from the stack,
 ; putting keyboard handle from API to the stack
         xchg    eax, [esp]
@@ -167,7 +167,7 @@ proc keyboard_driver_add_device
 .nothing:
         ret
 .fail_free:
-        call    Kfree
+        invoke  Kfree
         xor     eax, eax
         ret
 endp
@@ -179,10 +179,10 @@ proc keyboard_driver_disconnect
 ; 1. If an autorepeat timer is active, stop it.
         cmp     [edi+keyboard_device_data.timer], 0
         jz      @f
-        stdcall CancelTimerHS, [edi+keyboard_device_data.timer]
+        invoke  CancelTimerHS, [edi+keyboard_device_data.timer]
 @@:
 ; 2. Unregister keyboard in the kernel.
-        stdcall DelKeyboard, [edi+keyboard_device_data.handle]
+        invoke  DelKeyboard, [edi+keyboard_device_data.handle]
 ; We should free data in CloseKeyboard, not here.
         ret
 endp
@@ -245,11 +245,11 @@ end if
         mov     eax, [edi+keyboard_device_data.timer]
         test    eax, eax
         jz      @f
-        stdcall CancelTimerHS, eax
+        invoke  CancelTimerHS, eax
 @@:
 ; 1h. Start the new autorepeat timer with 250 ms initial delay
 ; and 50 ms subsequent delays.
-        stdcall TimerHS, 25, 5, autorepeat_timer, edi
+        invoke  TimerHS, 25, 5, autorepeat_timer, edi
         mov     [edi+keyboard_device_data.timer], eax
 if ~HID_DUMP_UNCLAIMED
 .unclaimed:
@@ -265,7 +265,7 @@ end if
         mov     eax, [edi+keyboard_device_data.timer]
         test    eax, eax
         jz      @f
-        stdcall CancelTimerHS, eax
+        invoke  CancelTimerHS, eax
         mov     [edi+keyboard_device_data.timer], 0
 @@:
         pop     ecx
@@ -321,10 +321,10 @@ end if
         jnc     @f
         push    ecx
         mov     ecx, 0xE0
-        call    SetKeyboardData
+        invoke  SetKeyboardData
         pop     ecx
 @@:
-        call    SetKeyboardData
+        invoke  SetKeyboardData
         ret
 endp
 
@@ -359,7 +359,7 @@ virtual at esp
 .device_data    dd      ?
 end virtual
         mov     eax, [.device_data]
-        call    Kfree
+        invoke  Kfree
         ret     4
 endp
 
@@ -392,7 +392,7 @@ endl
         add     eax, 8 + 3
         and     eax, not 3
         push    eax
-        call    Kmalloc
+        invoke  Kmalloc
         pop     ecx
         test    eax, eax
         jz      .nothing
@@ -444,14 +444,14 @@ endl
         or      edx, [ebx+usb_device_data.interface_number]
         mov     [eax+4], edx
 ; 8. Submit output control request.
-        stdcall USBControlTransferAsync, [ebx+usb_device_data.configpipe], \
+        invoke  USBControlTransferAsync, [ebx+usb_device_data.configpipe], \
                 eax, edi, [size], after_set_keyboard_lights, ebx, 0
 ; If failed, free the buffer now.
 ; If succeeded, the callback will free the buffer.
         test    eax, eax
         jnz     .nothing
         lea     eax, [edi-8]
-        call    Kfree
+        invoke  Kfree
 .nothing:
         ret
 endp
@@ -470,6 +470,6 @@ end virtual
 ; Ignore status, just free the buffer allocated by SetKeyboardLights.
         mov     eax, [.buffer]
         sub     eax, 8
-        call    Kfree
+        invoke  Kfree
         ret     20
 endp

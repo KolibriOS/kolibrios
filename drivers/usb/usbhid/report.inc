@@ -353,7 +353,7 @@ parse_descr_label:
         mov     [last_collection], eax
 ; 1b. Allocate state of global items.
         movi    eax, sizeof.global_items
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jz      .memory_error
 ; 1c. Zero-initialize it and move pointer to edi.
@@ -373,7 +373,7 @@ parse_descr_label:
         test    eax, eax
         jz      @f
         push    [eax+usage_list_item.next]
-        call    Kfree
+        invoke  Kfree
         pop     eax
         jmp     @b
 @@:
@@ -496,7 +496,7 @@ end if
         cmp     [ebx+report_set.data], 0
         jnz     .invalid_report
         mov     eax, 256*4
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jz      .memory_error
         mov     [ebx+report_set.data], eax
@@ -521,7 +521,7 @@ end if
         jnz     .report_allocated
 ; 7b. Allocate.
         movi    eax, sizeof.report
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jz      .memory_error
 ; 7c. Initialize.
@@ -568,7 +568,7 @@ end if
         mov     edx, [num_usage_ranges]
         lea     eax, [eax+edx*sizeof.usage_range+4]
 @@:
-        call    Kmalloc
+        invoke  Kmalloc
         pop     edx
         test    eax, eax
         jz      .memory_error
@@ -688,7 +688,7 @@ end if
 ; allocate, zero-initialize, update parent, if there is one,
 ; make it current.
         movi    eax, sizeof.collection
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jz      .memory_error
         push    eax edi
@@ -817,7 +817,7 @@ end if
 ; For Push, allocate new global_items structure,
 ; initialize from the current one and make it current.
         movi    eax, sizeof.global_items
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jz      .memory_error
         push    esi eax
@@ -835,7 +835,7 @@ end if
         jz      .invalid_report
         push    eax
         xchg    eax, edi
-        call    Kfree
+        invoke  Kfree
         pop     edi
         jmp     .item_parsed
 ; -------------------------------- Local items --------------------------------
@@ -862,7 +862,7 @@ end if
         push    1
 .new_usage:
         movi    eax, sizeof.usage_list_item
-        call    Kmalloc
+        invoke  Kmalloc
         pop     edx
         test    eax, eax
         jz      .memory_error
@@ -912,7 +912,7 @@ end if
         inc     [delimiter_depth]
         push    esi
         mov     esi, delimiter_note
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         pop     esi
         jmp     .item_parsed
 .delimiter.close:
@@ -954,14 +954,14 @@ end if
 .memory_error:
         mov     esi, nomemory_msg
 .end_str:
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 .end:
 ; Free all global_items structures.
         test    edi, edi
         jz      @f
         push    [edi+global_items.next]
         xchg    eax, edi
-        call    Kfree
+        invoke  Kfree
         pop     edi
         jmp     .end
 @@:
@@ -971,7 +971,7 @@ end if
         test    eax, eax
         jz      @f
         push    [eax+usage_list_item.next]
-        call    Kfree
+        invoke  Kfree
         pop     eax
         jmp     @b
 @@:
@@ -1116,7 +1116,7 @@ macro hid_cleanup
         mov     eax, [esi+collection.parent]
 @@:
         xchg    eax, esi
-        call    Kfree
+        invoke  Kfree
         jmp     .free_collections
 .collections_done:
 ; 3. Free all three report sets.
@@ -1136,19 +1136,19 @@ macro hid_cleanup
         test    eax, eax
         jz      .field_done
         push    [eax+report_field_group.next]
-        call    Kfree
+        invoke  Kfree
         pop     eax
         jmp     .field_loop
 .field_done:
         mov     eax, [edi+report.next]
         xchg    eax, edi
-        call    Kfree
+        invoke  Kfree
         jmp     .report_loop
 .report_done:
         cmp     [esi+report_set.numbered], 0
         jz      @f
         mov     eax, [esi+report_set.data]
-        call    Kfree
+        invoke  Kfree
 @@:
         add     esi, sizeof.report_set
         dec     dword [esp]

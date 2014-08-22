@@ -34,7 +34,7 @@ ends
 proc mouse_driver_add_device
 ; Just allocate memory; no initialization needed.
         movi    eax, sizeof.mouse_device_data
-        call    Kmalloc
+        invoke  Kmalloc
         ret
 endp
 
@@ -44,7 +44,7 @@ endp
 proc mouse_driver_disconnect
 ; Free the allocated memory.
         mov     eax, edi
-        call    Kfree
+        invoke  Kfree
         ret
 endp
 
@@ -153,7 +153,7 @@ endp
 ; in: edi -> mouse_device_data (pointer returned from mouse_driver_add_device)
 proc mouse_driver_end_packet
 ; Call the kernel, passing collected state.
-        stdcall SetMouseData, \
+        invoke  SetMouseData, \
                 [edi+mouse_device_data.buttons], \
                 [edi+mouse_device_data.dx], \
                 [edi+mouse_device_data.dy], \
