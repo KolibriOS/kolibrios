@@ -43,9 +43,11 @@ struct builtin_fw {
 int request_firmware(const struct firmware **fw, const char *name,
 		     struct device *device);
 int request_firmware_nowait(
-	struct module *module, int uevent,
-	const char *name, struct device *device, void *context,
+	struct module *module, bool uevent,
+	const char *name, struct device *device, gfp_t gfp, void *context,
 	void (*cont)(const struct firmware *fw, void *context));
+int request_firmware_direct(const struct firmware **fw, const char *name,
+			    struct device *device);
 
 void release_firmware(const struct firmware *fw);
 

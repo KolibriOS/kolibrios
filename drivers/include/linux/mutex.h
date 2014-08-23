@@ -92,4 +92,16 @@ static inline int mutex_is_locked(struct mutex *lock)
 	return atomic_read(&lock->count) != 1;
 }
 
+static inline int mutex_trylock(struct mutex *lock)
+{
+    if (likely(atomic_cmpxchg(&lock->count, 1, 0) == 1))
+        return 1;
+    return 0;
+}
+
+static inline void mutex_destroy(struct mutex *lock)
+{
+
+};
+
 #endif

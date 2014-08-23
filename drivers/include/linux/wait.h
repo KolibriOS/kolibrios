@@ -84,7 +84,7 @@ do{                                                         \
 
 
 #define wait_event(wq, condition)                           \
-do{                                                         \
+    do{                                                     \
     wait_queue_t __wait = {                                 \
         .task_list = LIST_HEAD_INIT(__wait.task_list),      \
         .evnt      = CreateEvent(NULL, MANUAL_DESTROY),     \
@@ -109,7 +109,13 @@ do{                                                         \
     DestroyEvent(__wait.evnt);                              \
 } while (0)
 
-
+#define wait_event_interruptible(wq, condition)             \
+({                                                          \
+    int __ret = 0;                                          \
+    if (!(condition))                                       \
+        wait_event(wq, condition);                          \
+    __ret;                                                  \
+})
 
 
 static inline

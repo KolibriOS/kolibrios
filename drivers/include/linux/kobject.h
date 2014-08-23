@@ -31,8 +31,10 @@
 #define UEVENT_NUM_ENVP			32	/* number of env pointers */
 #define UEVENT_BUFFER_SIZE		2048	/* buffer for the variables */
 
+#ifdef CONFIG_UEVENT_HELPER
 /* path to the userspace helper executed on an event */
 extern char uevent_helper[];
+#endif
 
 /* counter to tag the uevent, read only except for the kobject core */
 extern u64 uevent_seqnum;
@@ -65,6 +67,9 @@ struct kobject {
 	struct kobj_type	*ktype;
 //   struct sysfs_dirent *sd;
 	struct kref		kref;
+#ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+	struct delayed_work	release;
+#endif
 	unsigned int state_initialized:1;
 	unsigned int state_in_sysfs:1;
 	unsigned int state_add_uevent_sent:1;
@@ -103,6 +108,7 @@ extern int __must_check kobject_move(struct kobject *, struct kobject *);
 extern struct kobject *kobject_get(struct kobject *kobj);
 extern void kobject_put(struct kobject *kobj);
 
+extern const void *kobject_namespace(struct kobject *kobj);
 extern char *kobject_get_path(struct kobject *kobj, gfp_t flag);
 
 struct kobj_type {

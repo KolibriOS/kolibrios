@@ -76,10 +76,18 @@ extern int register_refined_jiffies(long clock_tick_rate);
  * The 64-bit value is not atomic - you MUST NOT read it
  * without sampling the sequence number in jiffies_lock.
  * get_jiffies_64() will do this for you as appropriate.
+ */
+extern u64 jiffies_64;
+extern unsigned long volatile jiffies;
+
+#if (BITS_PER_LONG < 64)
+u64 get_jiffies_64(void);
+#else
 static inline u64 get_jiffies_64(void)
 {
-    return (u64)GetTimerTicks();
+	return (u64)jiffies;
 }
+#endif
 
 /*
  *	These inlines deal with timer wrapping correctly. You are
@@ -290,6 +298,12 @@ extern unsigned long preset_lpj;
  */
 extern unsigned int jiffies_to_msecs(const unsigned long j);
 extern unsigned int jiffies_to_usecs(const unsigned long j);
+
+static inline u64 jiffies_to_nsecs(const unsigned long j)
+{
+	return (u64)jiffies_to_usecs(j) * NSEC_PER_USEC;
+}
+
 extern unsigned long msecs_to_jiffies(const unsigned int m);
 extern unsigned long usecs_to_jiffies(const unsigned int u);
 extern unsigned long timespec_to_jiffies(const struct timespec *value);

@@ -25,12 +25,17 @@ NAME_SRCS:=  				\
            	io/write.c		\
 		linux/bitmap.c		\
 		linux/idr.c		\
+		linux/interval_tree.c	\
 		linux/firmware.c	\
+		linux/hdmi.c		\
+		linux/kasprintf.c	\
 		linux/kref.c		\
 		linux/list_sort.c	\
+		linux/mutex.c		\
 		linux/rbtree.c		\
 		linux/dmapool.c		\
 		linux/ctype.c		\
+		linux/scatterlist.c	\
 		linux/string.c		\
 		linux/time.c		\
 		linux/workqueue.c	\

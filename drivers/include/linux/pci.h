@@ -456,6 +456,7 @@ struct pci_dev {
          (pci_resource_end((dev), (bar)) -              \
           pci_resource_start((dev), (bar)) + 1))
 
+#define PCI_REGION_FLAG_MASK	0x0fU	/* These bits of resource flags tell us the PCI region flags */
 
 struct pci_bus {
     struct list_head node;      /* node in list of buses */
@@ -480,7 +481,7 @@ struct pci_bus {
     char        name[48];
 
     unsigned short  bridge_ctl; /* manage NO_ISA/FBB/et al behaviors */
-    pci_bus_flags_t bus_flags;  /* Inherited by child busses */
+	pci_bus_flags_t bus_flags;	/* inherited by child buses */
     struct device       *bridge;
     struct device       dev;
     struct bin_attribute    *legacy_io; /* legacy I/O for this bus */
@@ -508,8 +509,12 @@ struct pci_sysdata {
 #define to_pci_bus(n)   container_of(n, struct pci_bus, dev)
 
 /*
- * Returns true if the pci bus is root (behind host-pci bridge),
+ * Returns true if the PCI bus is root (behind host-PCI bridge),
  * false otherwise
+ *
+ * Some code assumes that "bus->self == NULL" means that bus is a root bus.
+ * This is incorrect because "virtual" buses added for SR-IOV (via
+ * virtfn_add_bus()) have "bus->self == NULL" but are not root buses.
  */
 static inline bool pci_is_root_bus(struct pci_bus *pbus)
 {
@@ -530,6 +535,32 @@ pci_find_next_bus(const struct pci_bus *from);
 #define PCIBIOS_BAD_REGISTER_NUMBER 0x87
 #define PCIBIOS_SET_FAILED      0x88
 #define PCIBIOS_BUFFER_TOO_SMALL    0x89
+
+/*
+ * Translate above to generic errno for passing back through non-PCI code.
+ */
+static inline int pcibios_err_to_errno(int err)
+{
+	if (err <= PCIBIOS_SUCCESSFUL)
+		return err; /* Assume already errno */
+
+	switch (err) {
+	case PCIBIOS_FUNC_NOT_SUPPORTED:
+		return -ENOENT;
+	case PCIBIOS_BAD_VENDOR_ID:
+		return -EINVAL;
+	case PCIBIOS_DEVICE_NOT_FOUND:
+		return -ENODEV;
+	case PCIBIOS_BAD_REGISTER_NUMBER:
+		return -EFAULT;
+	case PCIBIOS_SET_FAILED:
+		return -EIO;
+	case PCIBIOS_BUFFER_TOO_SMALL:
+		return -ENOSPC;
+	}
+
+	return -ENOTTY;
+}
 
 /* Low-level architecture-dependent routines */
 
@@ -586,7 +617,7 @@ static inline int pci_pcie_cap(struct pci_dev *dev)
  * pci_is_pcie - check if the PCI device is PCI Express capable
  * @dev: PCI device
  *
- * Retrun true if the PCI device is PCI Express capable, false otherwise.
+ * Returns: true if the PCI device is PCI Express capable, false otherwise.
  */
 static inline bool pci_is_pcie(struct pci_dev *dev)
 {
@@ -671,6 +702,11 @@ struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from);
 void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size);
 
 #define pci_name(x) "radeon"
+
+static inline dma_addr_t pci_bus_address(struct pci_dev *pdev, int bar)
+{
+    return pdev->resource[bar].start;
+}
 
 #endif //__PCI__H__
 

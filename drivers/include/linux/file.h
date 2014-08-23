@@ -4,4 +4,5 @@
 
 #ifndef __LINUX_FILE_H
 #define __LINUX_FILE_H
+struct file;
 #endif /* __LINUX_FILE_H */

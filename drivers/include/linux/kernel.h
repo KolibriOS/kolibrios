@@ -31,6 +31,19 @@
 #define ULLONG_MAX  (~0ULL)
 #define SIZE_MAX	(~(size_t)0)
 
+#define U8_MAX		((u8)~0U)
+#define S8_MAX		((s8)(U8_MAX>>1))
+#define S8_MIN		((s8)(-S8_MAX - 1))
+#define U16_MAX		((u16)~0U)
+#define S16_MAX		((s16)(U16_MAX>>1))
+#define S16_MIN		((s16)(-S16_MAX - 1))
+#define U32_MAX		((u32)~0U)
+#define S32_MAX		((s32)(U32_MAX>>1))
+#define S32_MIN		((s32)(-S32_MAX - 1))
+#define U64_MAX		((u64)~0ULL)
+#define S64_MAX		((s64)(U64_MAX>>1))
+#define S64_MIN		((s64)(-S64_MAX - 1))
+
 #define ALIGN(x,a)      __ALIGN_MASK(x,(typeof(x))(a)-1)
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 #define PTR_ALIGN(p, a)     ((typeof(p))ALIGN((unsigned long)(p), (a)))
@@ -126,6 +139,13 @@
  */
 #define lower_32_bits(n) ((u32)(n))
 
+
+
+#define abs64(x) ({                             \
+                s64 __x = (x);                  \
+                (__x < 0) ? -__x : __x;         \
+        })
+
 #define KERN_EMERG      "<0>"   /* system is unusable                   */
 #define KERN_ALERT      "<1>"   /* action must be taken immediately     */
 #define KERN_CRIT       "<2>"   /* critical conditions                  */
@@ -159,6 +179,9 @@ int hex2bin(u8 *dst, const char *src, size_t count);
 
 #define printk(fmt, arg...)    dbgprintf(fmt , ##arg)
 
+extern __printf(2, 3) int sprintf(char *buf, const char * fmt, ...);
+extern __printf(2, 3)
+char *kasprintf(gfp_t gfp, const char *fmt, ...);
 
 /*
  * min()/max()/clamp() macros that also do
@@ -492,6 +515,36 @@ extern unsigned int tsc_khz;
                 0;                              \
         })
 
+
+static inline __must_check long __copy_to_user(void __user *to,
+        const void *from, unsigned long n)
+{
+    if (__builtin_constant_p(n)) {
+        switch(n) {
+        case 1:
+            *(u8 __force *)to = *(u8 *)from;
+            return 0;
+        case 2:
+            *(u16 __force *)to = *(u16 *)from;
+            return 0;
+        case 4:
+            *(u32 __force *)to = *(u32 *)from;
+            return 0;
+#ifdef CONFIG_64BIT
+        case 8:
+            *(u64 __force *)to = *(u64 *)from;
+            return 0;
+#endif
+        default:
+            break;
+        }
+    }
+
+    memcpy((void __force *)to, from, n);
+    return 0;
+}
+
+struct seq_file;
 
 #endif
 

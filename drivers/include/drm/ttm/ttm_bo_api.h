@@ -39,14 +39,11 @@
 #include <linux/mutex.h>
 #include <linux/mm.h>
 #include <linux/bitmap.h>
+#include <linux/reservation.h>
 
 struct ttm_bo_device;
 
 struct drm_mm_node;
-
-struct reservation_object {
-	struct mutex lock;
-}; 
 
 
 /**
@@ -488,13 +485,12 @@ extern int ttm_bo_init(struct ttm_bo_device *bdev,
 			void (*destroy) (struct ttm_buffer_object *));
 
 /**
- * ttm_bo_synccpu_object_init
+ * ttm_bo_create
  *
  * @bdev: Pointer to a ttm_bo_device struct.
- * @bo: Pointer to a ttm_buffer_object to be initialized.
  * @size: Requested size of buffer object.
  * @type: Requested type of buffer object.
- * @flags: Initial placement flags.
+ * @placement: Initial placement.
  * @page_alignment: Data alignment in pages.
  * @interruptible: If needing to sleep while waiting for GPU resources,
  * sleep interruptible.
