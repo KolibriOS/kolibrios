@@ -53,6 +53,7 @@ struct link games[] = {
 	"Square", "/sys/games/msquare", 35,
 	"Padenie", "/sys/games/padenie", 35,
 	"Phenix", "/sys/games/phenix", 35,
+	"Pig", "/tmp0/1/games/pig/pig", 35,
 	"Pipes", "/sys/games/pipes", 26,
 	"Pong", "/sys/games/pong", 12,
 	"Pong3", "/sys/games/pong3", 12,

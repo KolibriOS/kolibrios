@@ -7,15 +7,8 @@
 
 #include "add_appl_dir.c";
 
-#ifdef LANG_RUS
-	?define T_WTITILE "–£—Å—Ç–∞–Ω–æ–≤–∫–∞ Kolibri N9"
-	?define T_END "\'–£—Å—Ç–∞–Ω–æ–≤–∫–∞ KolibriN —É—Å–ø–µ—à–Ω–æ –∑–∞–≤–µ—Ä—à–µ–Ω–∞.\' -O"
-	?define T_LESS_RAM "–ú–∞–ª–æ —Å–≤–æ–±–æ–¥–Ω–æ–π –æ–ø–µ—Ä–∞—Ç–∏–≤–Ω–æ–π –ø–∞–º—è—Ç–∏. –ú–æ–≥—É—Ç –≤–æ–∑–Ω–∏–∫–Ω—É—Ç—å –ø—Ä–æ–±–ª–µ–º—ã"
-#else
-	?define T_WTITILE "Kolibri N9 Setup"
-	?define T_END "\'KolibriN install complete.\' -O"
-	?define T_LESS_RAM "Too less free ram. May cause problems"
-#endif
+?define T_END "\'ì·‚†≠Æ¢™† KolibriN „·Ø•Ë≠Æ ß†¢•‡Ë•≠†.\' -O"
+?define T_LESS_RAM "å†´Æ ·¢Æ°Æ§≠Æ© ÆØ•‡†‚®¢≠Æ© Ø†¨Ô‚®. åÆ£„‚ ¢Æß≠®™≠„‚Ï Ø‡Æ°´•¨Î"
 
 void main()
 {
@@ -39,7 +32,10 @@ void main()
 	notify(T_END);
 	DeleteFile("/sys/3d/free3d04");
 	DeleteFile("/sys/games/invaders");
-	ExitProcess();	
+	RunProgram("/sys/tmpdisk", "a0s10");
+	pause(10);
+	copyf(abspath("tmp"), "/tmp0/1");
+	ExitProcess();
 }
 
 
