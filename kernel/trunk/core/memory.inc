@@ -350,6 +350,31 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         ret
 endp
 
+uglobal
+sb16_buffer_allocated db 0
+endg
+
+; Allocates [.size] bytes so that the target memory block
+; is inside one 64K page for 24-bit DMA controller,
+; that is, somewhere between 00xx0000h and 00xxFFFFh.
+proc alloc_dma24
+; Implementation note.
+; The only user of that function is SB16 driver,
+; so just return a statically allocated buffer.
+virtual at esp
+                dd      ? ; return address
+.size           dd      ?
+end virtual
+        cmp     [sb16_buffer_allocated], 0
+        jnz     .fail
+        inc     [sb16_buffer_allocated]
+        mov     eax, SB16Buffer
+        ret     4
+.fail:
+        xor     eax, eax
+        ret     4
+endp
+
 ; Allocates a physical page for master page table
 ; that duplicates first Mb of OS_BASE at address 0;
 ; used for starting APs and for shutting down,

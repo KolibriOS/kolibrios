@@ -1,49 +1,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-format MS COFF
+format PE DLL native 0.05
+entry START
 
 include 'CONFIG.INC'
 
-;structs----------------------------------------------------------
-struc IOCTL
-{  .handle      dd ?
-   .io_code     dd ?
-   .input       dd ?
-   .inp_size    dd ?
-   .output      dd ?
-   .out_size    dd ?
-}
-
-virtual at 0
-  IOCTL IOCTL
-end virtual
-
-;something--------------------------------------------------------
-public START
-public service_proc
-public version
-
-include '..\proc32.inc'
-include '..\imports.inc'
-
-section '.flat' code readable align 16
+section '.flat' code readable writable executable
+include '..\..\struct.inc'
+include '..\..\macros.inc'
+include '..\..\proc32.inc'
+include '..\..\peimport.inc'
 
 include 'SB16.INC'
 
 ;-------------------------------------------------------------------------------
-proc START stdcall, state:dword
+proc START c uses ebx esi edi, state:dword, cmdline:dword
         cmp     [state], 1
         jne     .stop
 .entry:
 
 if DEBUG
         mov     esi, msgInit
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
 
         call    detect           ;returns DSP version or zero if
@@ -64,35 +47,39 @@ if DEBUG
         mov     dword[esi], '16  '
 .sb_say_about_found_dsp:
         mov     esi, msgDSPFound
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
 
         xor     ebx, ebx
         mov     ecx, [sb_base_port]
         lea     edx, [ecx+0xF]
-        call    ReservePortArea  ;these ports must be mine !
+        invoke  ReservePortArea  ;these ports must be mine !
 
         dec     eax
         jnz     @f
 
 if DEBUG
         mov     esi, msgErrRsrvPorts
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
         jmp     .exit
 
 @@:
+        invoke  AllocDMA24, sb_buffer_size
+        test    eax, eax
+        jz      .exit
+        mov     [SB16Buffer], eax
 
         call    sb_setup         ;clock it, etc
 
-        stdcall AttachIntHandler, sb_irq_num, sb_irq, 0
+        invoke  AttachIntHandler, sb_irq_num, sb_irq, 0
 
 if DEBUG
         test    eax, eax
         jnz     @f
 
         mov     esi, msgErrAtchIRQ
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
 ;        stdcall GetIntHandler, sb_irq_num
 ;        call    SysMsgBoardNum
@@ -100,9 +87,9 @@ if DEBUG
         jmp     .stop
 @@:
         mov     esi, msgSucAtchIRQ
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
-        stdcall RegService, my_service, service_proc
+        invoke  RegService, my_service, service_proc
         ret
 .stop:
         call    sb_reset
@@ -110,7 +97,7 @@ end if
 
 if DEBUG
         mov     esi, msgExit
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
 
         xor     eax, eax
@@ -118,22 +105,14 @@ end if
 endp
 ;-------------------------------------------------------------------------------
 
-handle     equ  IOCTL.handle
-io_code    equ  IOCTL.io_code
-input      equ  IOCTL.input
-inp_size   equ  IOCTL.inp_size
-output     equ  IOCTL.output
-out_size   equ  IOCTL.out_size
-
-align 4
-proc service_proc stdcall, ioctl:dword
+proc service_proc stdcall uses ebx esi edi, ioctl:dword
         mov     edi, [ioctl]
-        mov     eax, [edi+io_code]
+        mov     eax, [edi+IOCTL.io_code]
         cmp     eax, SRV_GETVERSION
         jne     @F
 
-        mov     eax, [edi+output]
-        cmp     [edi+out_size], 4
+        mov     eax, [edi+IOCTL.output]
+        cmp     [edi+IOCTL.out_size], 4
         jne     .fail
         mov     [eax], dword API_VERSION
         xor     eax, eax
@@ -143,7 +122,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @f
 if DEBUG
         mov     esi, msgPlay
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
         call    sb_stop          ;to play smth new we must stop smth old
 
@@ -171,9 +150,9 @@ end if
         jne     @f
 if DEBUG
         mov     esi, msgCallback
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
-        mov     edi, [edi+input]
+        mov     edi, [edi+IOCTL.input]
         mov     eax, [edi]
         mov     [callback], eax
 if DEBUG
@@ -188,9 +167,9 @@ end if
 
 if DEBUG
         mov     esi, msgSetVol
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
-        mov     eax, [edi+input]
+        mov     eax, [edi+IOCTL.input]
         mov     eax, [eax]
         call    sb_set_master_vol
         xor     eax, eax
@@ -200,9 +179,9 @@ end if
         jne     @F
 if DEBUG
         mov     esi, msgGetVol
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
-        mov     eax, [edi+output]
+        mov     eax, [edi+IOCTL.output]
         mov     edx, [sb_master_vol]
         mov     [eax], edx
         xor     eax, eax
@@ -213,15 +192,7 @@ end if
         ret
 endp
 
-restore   handle
-restore   io_code
-restore   input
-restore   inp_size
-restore   output
-restore   out_size
-
 ;-------------------------------------------------------------------------------
-align 4
 proc sb_irq
         mov     edx, [sb_base_port];tell the DSP that we have processed IRQ
         add     dl, 0xF            ;0xF for 16 bit sound, 0xE for 8 bit sound
@@ -235,10 +206,15 @@ pre_fill_data:
         jns     .fill_second_half
 
 if sb_buffer_size eq small_buffer
-        stdcall [callback], SB16Buffer0   ;for 32k buffer
+        mov     eax, [SB16Buffer]
+        stdcall [callback], eax           ;for 32k buffer
 else if sb_buffer_size eq full_buffer
-        stdcall [callback], SB16Buffer0   ;for 64k buffer
-        stdcall [callback], SB16Buffer1   ;for 64k buffer
+        mov     eax, [SB16Buffer]
+        push    eax
+        stdcall [callback], eax           ;for 64k buffer
+        pop     eax
+        add     eax, 16384
+        stdcall [callback], eax           ;for 64k buffer
 end if
         xor     eax, eax
         not     eax
@@ -246,10 +222,17 @@ end if
 
 .fill_second_half:
 if sb_buffer_size eq small_buffer
-        stdcall [callback], SB16Buffer1   ;for 32k buffer
+        mov     eax, [SB16Buffer]
+        add     eax, 16384
+        stdcall [callback], eax           ;for 32k buffer
 else if sb_buffer_size eq full_buffer
-        stdcall [callback], SB16Buffer2   ;for 64k buffer
-        stdcall [callback], SB16Buffer3   ;for 64k buffer
+        mov     eax, [SB16Buffer]
+        add     eax, 32768
+        push    eax
+        stdcall [callback], eax           ;for 64k buffer
+        pop     eax
+        add     eax, 16384
+        stdcall [callback], eax           ;for 64k buffer
 end if
         xor     eax, eax
         not     eax
@@ -288,7 +271,7 @@ end if
 .sb_card_found:
         and     dl, 0xF0
         add     dl, 0xC
-           sb_out 0xE1           ;get DSP version
+        sb_out 0xE1              ;get DSP version
         add     dl, 2
 @@:
         in      al, dx
@@ -337,13 +320,12 @@ proc SysMsgBoardNum ;warning: destroys eax,ebx,ecx,esi
         shr     ebx, 4
         loop    .1
         dec     esi
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         ret
 endp
 end if
 ;all initialized data place here
 align 4
-version       dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 sb_base_port:
               dd 200h ;don't ask me why - see the code&docs
@@ -384,10 +366,12 @@ sb_DSP_description:
 ;-------------------------------------------------------------------------------
 end if
 
-section '.data' data readable writable align 16
-;all uninitialized data place here
+align 4
+data fixups
+end data
 
-;pTempBuf          rd 1
+align 4
+SB16Buffer         rd 1
 
 callback           rd 1
 

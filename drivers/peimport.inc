@@ -96,6 +96,7 @@ import core,\
               Kmalloc,\
               Kfree,\
               CreateRingBuffer,\
+              AllocDMA24,\
 \
               GetPid,\
               CreateThread,\

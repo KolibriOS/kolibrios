@@ -22,11 +22,6 @@ ramdisk_functions:
 .size = $ - ramdisk_functions
 endg
 
-; See memmap.inc.
-; Currently size of memory allocated for the ramdisk is fixed.
-; This should be revisited when/if memory map would become more dynamic.
-RAMDISK_CAPACITY = 2880 ; in sectors
-
 iglobal
 align 4
 ramdisk_actual_size     dd      RAMDISK_CAPACITY

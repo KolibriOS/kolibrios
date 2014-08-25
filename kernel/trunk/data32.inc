@@ -523,16 +523,21 @@ end if
 
 org (OS_BASE+0x0100000)
 
-RAMDISK:                        rb 2880*512
-                                rb 2856*4               ; not used
+; Currently size of memory allocated for the ramdisk is fixed.
+; This should be revisited when/if memory map would become more dynamic.
+RAMDISK_CAPACITY = 2880 ; in sectors
+
+RAMDISK:                        rb RAMDISK_CAPACITY*512
 
 _CLEAN_ZONE:
 
+BgrAuxTable                     rb 32768
+align 65536
+SB16Buffer                      rb 65536
+
 align 4096
 _IDE_DMA                        rb 16*512
-BgrAuxTable                     rb 32768
 BUTTON_INFO                     rb 64*1024
 RESERVED_PORTS:                 rb 64*1024
-FLOPPY_BUFF:                    rb 18*512           ;one track
 
 sys_pgmap:                      rb 1024*1024/8

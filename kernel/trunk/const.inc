@@ -228,10 +228,6 @@ VGABasePtr          equ (OS_BASE+0x00A0000)
 CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
 IDE_DMA             equ (_IDE_DMA-OS_BASE)
 
-; unused?
-SB16Buffer          equ (OS_BASE+0x02A0000)
-SB16_Status         equ (OS_BASE+0x02B0000)
-
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 
 virtual at              (OS_BASE+0x05FFF80)

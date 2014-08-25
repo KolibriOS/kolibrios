@@ -17,7 +17,7 @@ sb_set_dma:
 .dma_setup_error:
 if DEBUG
         mov     esi, msgErrDMAsetup
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 end if
         mov     dword[esp], START.stop
         ret
@@ -33,16 +33,20 @@ end if
         lea     eax, [ebx+0x58];auto-init mode for channel (ebx)
         out     0xB, al;DMA channel 0-3 mode register
 
+        mov     eax, [SB16Buffer]
+        invoke  GetPhysAddr
+        mov     ecx, eax
+        shr     eax, 16
+
         movzx   edx, byte[ebx+dma_table];page register
-        mov     al, DMAPage
         out     dx, al
 
         lea     edx, [ebx*2];DMA channel 0-3 base address
 
-        mov     al, 0;LSB is 0
+        mov     al, cl;LSB
         out     dx, al
 
-;        mov al,0   ;MSB is 0 too
+        mov     al, ch;MSB
         out     dx, al
 
         inc     edx ;DMA channel 0-3 byte count
@@ -78,16 +82,21 @@ end if
         lea     eax, [ebx+0x58];auto-init mode for channel (ebx+4)
         out     0xD6, al;DMA channel 4-7 mode register
 
+        mov     eax, [SB16Buffer]
+        invoke  GetPhysAddr
+        mov     ecx, eax
+        shr     eax, 16
+        shr     ecx, 1 ; 16-bit DMA takes offset in words
+
         movzx   edx, byte[ebx+dma_table+4];page register
-        mov     al, DMAPage
         out     dx, al
 
         lea     edx, [ebx*4+0xC0];DMA channel 4-7 base address
 
-        mov     al, 0;LSB is 0 ;for 16bit DMA this contains
+        mov     al, cl;LSB;for 16bit DMA this contains
         out     dx, al;A1-A8 lines of address bus, A0 is zero
 
-;        mov al,0   ;MSB is 0 too ;for 16bit DMA this contains
+        mov     al, ch;MSB;for 16bit DMA this contains
         out     dx, al;A9-A16 lines of address bus
 
         inc     edx
