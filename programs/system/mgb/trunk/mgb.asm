@@ -262,10 +262,15 @@ align 4
 	mov	[esi-8],edi
 
 	add	esi,TEST_REC_SIZE
+	cmp	dword [esi], testDrawPicture_f73
+	jnz	@f
+	call	prepare_f73
+@@:
 	cmp	dword [esi],0
 	jnz	.next_test
 	xor	dword [wFlags],1
 	mcall	68,13,[area_for_f36]
+	mcall	68,13,[params_f73.pointer]
 	mcall	-1
 ;---------------------------------------------------------------------
 draw_window:
@@ -332,6 +337,20 @@ testDrawPicture:
 	mcall	7,[area_for_f36],<90,123>,<15,33>
 	ret
 ;---------------------------------------------------------------------
+prepare_f73:
+	mcall	68,12,90*123*4
+	mov	[params_f73.pointer], eax
+	shr	ecx, 2
+	mov	ebx, [area_for_f36]
+@@:
+	mov	edx, [ebx]
+	and	edx, 0xFFFFFF
+	mov	[eax], edx
+	add	ebx, 3
+	add	eax, 4
+	dec	ecx
+	jnz	@b
+	ret
 align 4
 testDrawPicture_f73:
 	xor	ebx,ebx
