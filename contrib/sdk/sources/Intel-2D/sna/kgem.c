@@ -5667,9 +5667,10 @@ int kgem_init_fb(struct kgem *kgem, struct sna_fb *fb)
 	if (ret != 0) {
 		printf("Couldn't reference %s handle 0x%08x\n",
 		    fb->name, fb->name);
-		return NULL;
+        return 0;
 	}
-	size = open_arg.size / PAGE_SIZE;
+
+    size = fb->pitch * fb->height / PAGE_SIZE;
 
   	bo = __kgem_bo_alloc(open_arg.handle, size);
 	if (!bo) {

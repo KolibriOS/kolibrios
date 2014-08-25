@@ -1084,7 +1084,7 @@ int sna_blit_tex(bitmap_t *bitmap, int scale, int vsync,
 {
     surface_t *sf = to_surface(bitmap);
 
-    struct drm_i915_mask_update update;
+    struct drm_i915_mask update;
 
     struct sna_composite_op composite;
     struct _Pixmap src, dst, mask;
