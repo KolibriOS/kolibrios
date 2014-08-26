@@ -71,7 +71,8 @@ uint32_t get_skin_height(void)
     :"=a"(height)
     :"a"(48),"b"(4));
     return height;
-}
+};
+static inline uint32_t GetSkinHeight(void) __attribute__ ((alias ("get_skin_height")));
 
 static inline
 void BeginDraw(void)
@@ -101,8 +102,11 @@ static inline void DrawWindow(int x, int y, int w, int h, const char *name,
      "S"(0));
 };
 
+#define POS_SCREEN 0
+#define POS_WINDOW 1
+
 static inline
-pos_t get_mouse_pos(void)
+pos_t get_mouse_pos(int origin)
 {
     pos_t val;
 
@@ -110,22 +114,10 @@ pos_t get_mouse_pos(void)
     "int $0x40 \n\t"
     "rol $16, %%eax"
     :"=a"(val)
-    :"a"(37),"b"(1));
+    :"a"(37),"b"(origin));
     return val;
 }
-
-static inline
-pos_t get_cursor_pos(void)
-{
-    pos_t val;
-
-    __asm__ __volatile__(
-    "int $0x40 \n\t"
-    "rol $16, %%eax"
-    :"=a"(val)
-    :"a"(37),"b"(0));
-    return val;
-}
+static inline pos_t GetMousePos(int origin) __attribute__ ((alias ("get_mouse_pos")));
 
 static inline
 uint32_t get_mouse_buttons(void)
@@ -138,6 +130,7 @@ uint32_t get_mouse_buttons(void)
     :"a"(37),"b"(2));
     return val;
 };
+static inline uint32_t GetMouseButtons(void) __attribute__ ((alias ("get_mouse_buttons")));
 
 static inline
 uint32_t get_mouse_wheels(void)
@@ -150,6 +143,7 @@ uint32_t get_mouse_wheels(void)
     :"a"(37),"b"(7));
     return val;
 };
+static inline uint32_t GetMouseWheels(void) __attribute__ ((alias ("get_mouse_wheels")));
 
 static inline
 uint32_t wait_for_event(uint32_t time)
@@ -181,6 +175,7 @@ static inline uint32_t get_os_event()
     :"a"(10));
     return val;
 };
+static inline uint32_t GetOsEvent(void) __attribute__ ((alias ("get_os_event")));
 
 static inline
 uint32_t get_tick_count(void)
@@ -306,6 +301,7 @@ void *user_alloc(size_t size)
     :"a"(68),"b"(12),"c"(size));
     return val;
 }
+static inline void *UserAlloc(size_t size) __attribute__ ((alias ("user_alloc")));
 
 static inline
 int user_free(void *mem)
@@ -317,6 +313,7 @@ int user_free(void *mem)
     :"a"(68),"b"(13),"c"(mem));
     return val;
 }
+static inline int UserFree(void *mem) __attribute__ ((alias ("user_free")));
 
 static inline
 int *user_unmap(void *base, size_t offset, size_t size)
@@ -327,7 +324,8 @@ int *user_unmap(void *base, size_t offset, size_t size)
     :"=a"(val)
     :"a"(68),"b"(26),"c"(base),"d"(offset),"S"(size));
     return val;
-}
+};
+static inline int *UserUnmap(void *base, size_t offset, size_t size) __attribute__ ((alias ("user_unmap")));
 
 typedef union
 {
@@ -351,7 +349,7 @@ static inline ufile_t load_file(const char *path)
 
      return uf;
 };
-
+static inline ufile_t LoadFile(const char *path) __attribute__ ((alias ("load_file")));
 
 static inline int GetScreenSize()
 {
@@ -374,6 +372,8 @@ uint32_t  load_cursor(void *path, uint32_t flags)
     :"a"(37), "b"(4), "c"(path), "d"(flags));
     return val;
 }
+static inline
+uint32_t  LoadCursor(void *path, uint32_t flags) __attribute__ ((alias ("load_cursor")));
 
 static inline
 uint32_t  set_cursor(uint32_t  cursor)
@@ -384,7 +384,8 @@ uint32_t  set_cursor(uint32_t  cursor)
     :"=a"(old)
     :"a"(37), "b"(5), "c"(cursor));
     return old;
-}
+};
+static inline uint32_t SetCursor(uint32_t  cursor) __attribute__ ((alias ("set_cursor")));
 
 static inline
 int destroy_cursor(uint32_t cursor)
@@ -397,6 +398,7 @@ int destroy_cursor(uint32_t cursor)
     :"memory");
     return ret;
 };
+static inline int DestroyCursor(uint32_t cursor) __attribute__ ((alias ("destroy_cursor")));
 
 static inline void get_proc_info(char *info)
 {
@@ -404,7 +406,8 @@ static inline void get_proc_info(char *info)
     "int $0x40"
     :
     :"a"(9), "b"(info), "c"(-1));
-}
+};
+static inline void GetProcInfo(char *info) __attribute__ ((alias ("get_proc_info")));
 
 static inline
 void* user_realloc(void *mem, size_t size)
@@ -417,8 +420,8 @@ void* user_realloc(void *mem, size_t size)
     :"memory");
 
     return val;
-}
-
+};
+static inline void* UserRrealloc(void *mem, size_t size) __attribute__ ((alias ("user_realloc")));
 
 void *get_resource(void *data, uint32_t id);
 

@@ -140,7 +140,7 @@ int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 
     if(win->win_state == FULLSCREEN)
         return 0;
-    
+
     x = ((pos_t)arg2).x;
     y = ((pos_t)arg2).y;
 
@@ -201,7 +201,7 @@ int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                 int relx, rely;
 
                 capture_mouse(ctrl);
-                spos = get_cursor_pos();
+                spos = GetMousePos(POS_SCREEN);
                 fr->track = rc;
 
                 relx = spos.x - win->rc.l;
@@ -235,7 +235,7 @@ int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
             if(mouse_capture == ctrl)
             {
                 pos_t npos;
-                npos = get_cursor_pos();
+                npos = GetMousePos(POS_SCREEN);
 //                printf("cursor pos %dx%d\n", npos.x, npos.y);
 
                 if( npos.val != spos.val)

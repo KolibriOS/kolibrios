@@ -397,7 +397,7 @@ static void do_sys_mouse(window_t *win)
     pos_t       pos;
 
     mouse_action = 0;
-    pos = get_mouse_pos();
+    pos = GetMousePos(POS_WINDOW);
 
     if(pos.val != old_pos.val)
     {
@@ -406,7 +406,7 @@ static void do_sys_mouse(window_t *win)
     };
 //    printf("pos x%d y%d\n", pos.x, pos.y);
 
-    buttons = get_mouse_buttons();
+    buttons = GetMouseButtons();
     wheels = get_mouse_wheels();
 
     if( wheels & 0xFFFF){
