@@ -191,33 +191,6 @@ int dma_map_sg(struct device *dev, struct scatterlist *sglist,
 }
 
 
-int vscnprintf(char *buf, size_t size, const char *fmt, va_list args)
-{
-    int i;
-
-    i = vsnprintf(buf, size, fmt, args);
-
-    if (likely(i < size))
-            return i;
-    if (size != 0)
-            return size - 1;
-    return 0;
-}
-
-
-int scnprintf(char *buf, size_t size, const char *fmt, ...)
-{
-        va_list args;
-        int i;
-
-        va_start(args, fmt);
-        i = vscnprintf(buf, size, fmt, args);
-        va_end(args);
-
-        return i;
-}
-
-
 
 #define _U  0x01    /* upper */
 #define _L  0x02    /* lower */
@@ -504,4 +477,36 @@ void *kmemdup(const void *src, size_t len, gfp_t gfp)
     return p;
 }
 
+
+
+void *kmap(struct page *page)
+{
+    void *vaddr;
+
+    vaddr = (void*)MapIoMem(page_to_phys(page), 4096, PG_SW);
+
+    return vaddr;
+}
+
+unsigned long find_first_zero_bit(const unsigned long *addr, unsigned long size)
+{
+        const unsigned long *p = addr;
+        unsigned long result = 0;
+        unsigned long tmp;
+
+        while (size & ~(BITS_PER_LONG-1)) {
+                if (~(tmp = *(p++)))
+                        goto found;
+                result += BITS_PER_LONG;
+                size -= BITS_PER_LONG;
+        }
+        if (!size)
+                return result;
+
+        tmp = (*p) | (~0UL << size);
+        if (tmp == ~0UL)        /* Are any bits zero? */
+                return result + size;   /* Nope. */
+found:
+        return result + ffz(tmp);
+}
 

@@ -27,5 +27,8 @@
 #define trace_i915_vma_bind(a, b)
 #define trace_i915_vma_unbind(a)
 #define trace_i915_gem_object_clflush(a)
+#define trace_i915_gem_evict(dev, min_size, alignment, flags)
+#define trace_i915_gem_evict_vm(vm)
+#define trace_i915_gem_evict_everything(dev)
 
 #endif

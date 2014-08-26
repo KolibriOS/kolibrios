@@ -9,18 +9,20 @@ DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
 DRV_INCLUDES    = /d/kos/kolibri/drivers/include
 DRM_TOPDIR   	= $(CURDIR)/..
 
-INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
-		-I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/asm \
-		-I./ -I./render
+INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux \
+                -I$(DRV_INCLUDES)/linux/asm -I$(DRV_INCLUDES)/linux/uapi -I./
 
-CFLAGS= -c -O2 $(INCLUDES) -march=i686 -msse2 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -msse2 -fomit-frame-pointer -fno-ident -fno-builtin-printf
 CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields
 
-LIBPATH:= $(DDK_TOPDIR)/
+LIBPATH:= $(DDK_TOPDIR)
 
 LIBS:=    -lddk -lcore -lgcc
 
-LDFLAGS = -nostdlib -shared -s -Map i915.map --image-base 0\
+PE_FLAGS = --major-os-version 0 --minor-os-version 7 --major-subsystem-version 0 \
+          --minor-subsystem-version 5 --subsystem native
+
+LDFLAGS = -nostdlib -shared -s $(PE_FLAGS) --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
 
 
@@ -46,23 +48,29 @@ NAME_SRC=		main.c					\
 			dvo_ns2501.c				\
 			dvo_sil164.c				\
 			dvo_tfp410.c				\
+			i915_cmd_parser.c			\
 			i915_dma.c				\
 			i915_drv.c				\
 			i915_gem.c				\
 			i915_gem_context.c			\
 			i915_gem_execbuffer.c			\
+			i915_gem_evict.c			\
 			i915_gem_gtt.c				\
+			i915_gem_render_state.c			\
 			i915_gem_stolen.c			\
 			i915_gem_tiling.c			\
 			i915_gpu_error.c			\
 			i915_irq.c				\
+			i915_params.c				\
 			intel_bios.c				\
 			intel_crt.c				\
 			intel_ddi.c				\
 			intel_display.c				\
 			intel_dp.c				\
+			intel_dp_mst.c				\
 			intel_dsi.c				\
 			intel_dsi_cmd.c				\
+			intel_dsi_panel_vbt.c			\
 			intel_dsi_pll.c				\
 			intel_dvo.c				\
 			intel_fbdev.c				\
@@ -72,6 +80,9 @@ NAME_SRC=		main.c					\
 			intel_modes.c				\
 			intel_panel.c				\
 			intel_pm.c				\
+			intel_renderstate_gen6.c		\
+			intel_renderstate_gen7.c		\
+			intel_renderstate_gen8.c		\
 			intel_ringbuffer.c			\
 			intel_sdvo.c				\
 			intel_sideband.c			\
@@ -92,13 +103,17 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
+			../drm_dp_mst_topology.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_gem.c			\
 			$(DRM_TOPDIR)/drm_irq.c			\
 			$(DRM_TOPDIR)/drm_mm.c			\
 			$(DRM_TOPDIR)/drm_modes.c		\
+			$(DRM_TOPDIR)/drm_modeset_lock.c	\
 			$(DRM_TOPDIR)/drm_pci.c			\
+			$(DRM_TOPDIR)/drm_plane_helper.c	\
+			$(DRM_TOPDIR)/drm_probe_helper.c	\
 			$(DRM_TOPDIR)/drm_rect.c		\
 			$(DRM_TOPDIR)/drm_stub.c
 
@@ -112,12 +127,12 @@ NAME_OBJS = $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
 
 all: $(NAME).dll 
 
-$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) i915.lds Makefile
+$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) i915.lds Makefile
 	ld -L$(LIBPATH) $(LDFLAGS) -T i915.lds -o $@ $(NAME_OBJS) $(LIBS)  
 
 
 %.o : %.c $(HFILES) Makefile
-	$(CC) $(CFLAGS) $(DEFINES) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.o : %.S $(HFILES) Makefile
 	as -o $@ $<

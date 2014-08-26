@@ -1,8 +1,6 @@
 #include <drm/drmP.h>
-#include <drm.h>
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
-//#include "intel_drv.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -12,6 +10,11 @@
 #include <syscall.h>
 
 #include "bitmap.h"
+
+#define I915_DEV_CLOSE 0
+#define I915_DEV_INIT  1
+#define I915_DEV_READY 2
+
 
 struct pci_device {
     uint16_t    domain;
@@ -52,16 +55,18 @@ int i915_mask_update(struct drm_device *dev, void *data,
             struct drm_file *file);
 
 struct cmdtable cmdtable[]= {
-    CMDENTRY("-pm=", i915_powersave),
-    CMDENTRY("-rc6=", i915_enable_rc6),
-    CMDENTRY("-fbc=", i915_enable_fbc),
-    CMDENTRY("-ppgt=", i915_enable_ppgtt),
-    CMDENTRY("-pc8=", i915_enable_pc8),
+//    CMDENTRY("-pm=", i915_powersave),
+//    CMDENTRY("-rc6=", i915_enable_rc6),
+//    CMDENTRY("-fbc=", i915_enable_fbc),
+//    CMDENTRY("-ppgt=", i915_enable_ppgtt),
+//    CMDENTRY("-pc8=", i915_enable_pc8),
     {NULL, 0}
 };
 
 
 static char  log[256];
+
+unsigned long volatile jiffies;
 
 struct workqueue_struct *system_wq;
 int driver_wq_state;
@@ -93,8 +98,8 @@ void i915_dpms(struct drm_device *dev, int mode);
 
 void i915_driver_thread()
 {
-    struct drm_i915_private *dev_priv = main_device->dev_private;
-    struct workqueue_struct *cwq = dev_priv->wq;
+    struct drm_i915_private *dev_priv = NULL;
+    struct workqueue_struct *cwq = NULL;
     static int dpms = 1;
     static int dpms_lock = 0;
     oskey_t   key;
@@ -103,12 +108,23 @@ void i915_driver_thread()
 
     printf("%s\n",__FUNCTION__);
 
+    while(driver_wq_state == I915_DEV_INIT)
+    {
+        jiffies = GetTimerTicks();
+        delay(1);
+    };
+
+    dev_priv = main_device->dev_private;
+    cwq = dev_priv->wq;
+
     asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(1),"c"(1));
     asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(4),"c"(0x46),"d"(0x330));
     asm volatile("int $0x40":"=a"(tmp):"a"(66),"b"(4),"c"(0xC6),"d"(0x330));
 
-    while(driver_wq_state != 0)
+    while(driver_wq_state != I915_DEV_CLOSE)
     {
+        jiffies = GetTimerTicks();
+
         key = get_key();
 
         if( (key.val != 1) && (key.state == 0x02))
@@ -156,18 +172,21 @@ void i915_driver_thread()
 
 u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
+    static pci_dev_t device;
+    const struct pci_device_id  *ent;
+
     int err = 0;
 
     if(action != 1)
     {
-        driver_wq_state = 0;
+        driver_wq_state = I915_DEV_CLOSE;
         return 0;
     };
 
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("\ni915 v3.14-rc1 build %s %s\nusage: i915 [options]\n"
+    printf("\ni915 v3.17-rc2 build %s %s\nusage: i915 [options]\n"
            "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 1 - true)\n",
            __DATE__, __TIME__);
     printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"
@@ -194,14 +213,25 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     cpu_detect();
 //    dbgprintf("\ncache line size %d\n", x86_clflush_size);
 
-    enum_pci_devices();
+    err = enum_pci_devices();
+    if( unlikely(err != 0) )
+    {
+        dbgprintf("Device enumeration failed\n");
+        return 0;
+    }
+
+    driver_wq_state = I915_DEV_INIT;
+    CreateKernelThread(i915_driver_thread);
 
     err = i915_init();
-    if(err)
+    if(unlikely(err!= 0))
     {
+        driver_wq_state = I915_DEV_CLOSE;
         dbgprintf("Epic Fail :(\n");
         return 0;
     };
+
+    driver_wq_state = I915_DEV_READY;
 
     init_display_kms(main_device, &usermode);
 
@@ -210,9 +240,6 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( err != 0)
         dbgprintf("Set DISPLAY handler\n");
 
-    driver_wq_state = 1;
-
-    CreateKernelThread(i915_driver_thread);
 
     return err;
 };
@@ -316,28 +343,6 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_GET_CAPS:
             retval = get_driver_caps((hwcaps_t*)inp);
-            break;
-
-        case SRV_CREATE_SURFACE:
-//            check_input(8);
-//            retval = create_surface(main_device, (struct io_call_10*)inp);
-            break;
-
-        case SRV_LOCK_SURFACE:
-//            retval = lock_surface((struct io_call_12*)inp);
-            break;
-
-        case SRV_RESIZE_SURFACE:
-//            retval = resize_surface((struct io_call_14*)inp);
-            break;
-
-        case SRV_BLIT_BITMAP:
-//            srv_blit_bitmap( inp[0], inp[1], inp[2],
-//                        inp[3], inp[4], inp[5], inp[6]);
-
-//            blit_tex( inp[0], inp[1], inp[2],
-//                    inp[3], inp[4], inp[5], inp[6]);
-
             break;
 
         case SRV_GET_PCI_INFO:
@@ -507,16 +512,266 @@ static inline void cpuid(unsigned int op,
         __cpuid(eax, ebx, ecx, edx);
 }
 
+struct mtrr
+{
+    u64_t  base;
+    u64_t  mask;
+};
+
+struct cpuinfo
+{
+    u64_t  caps;
+    u64_t  def_mtrr;
+    u64_t  mtrr_cap;
+    int    var_mtrr_count;
+    int    fix_mtrr_count;
+    struct mtrr var_mtrr[9];
+    char   model_name[64];
+};
+
+#define MTRRphysBase_MSR(reg) (0x200 + 2 * (reg))
+#define MTRRphysMask_MSR(reg) (0x200 + 2 * (reg) + 1)
+
+#define MSR_MTRRdefType                 0x000002ff
+
+#define IA32_MTRRCAP            0xFE
+#define IA32_CR_PAT_MSR         0x277
+
+#define PAT_TYPE_UC             0
+#define PAT_TYPE_WC             1
+#define PAT_TYPE_WB             6
+#define PAT_TYPE_UCM            7
+
+
+#define MTRR_UC                 0
+#define MTRR_WC                 1
+#define MTRR_WB                 6
+
+static inline u64_t read_msr(u32_t msr)
+{
+    union {
+        u64_t  val;
+        struct {
+            u32_t low;
+            u32_t high;
+        };
+    }tmp;
+
+    asm volatile (
+    "rdmsr"
+    : "=a" (tmp.low), "=d" (tmp.high)
+    : "c" (msr));
+    return tmp.val;
+}
+
+static inline void write_msr(u32_t msr, u64_t val)
+{
+    union {
+        u64_t  val;
+        struct {
+            u32_t low;
+            u32_t high;
+        };
+    }tmp;
+
+    tmp.val = val;
+
+    asm volatile (
+    "wrmsr"
+    :: "a" (tmp.low), "d" (tmp.high), "c" (msr));
+}
+
+#define rdmsr(msr, low, high)                                   \
+do {                                                            \
+       u64 __val = read_msr((msr));                     \
+       (void)((low) = (u32)__val);                             \
+       (void)((high) = (u32)(__val >> 32));                    \
+} while (0)
+
+static inline void native_write_msr(unsigned int msr,
+                                    unsigned low, unsigned high)
+{
+    asm volatile("wrmsr" : : "c" (msr), "a"(low), "d" (high) : "memory");
+}
+
+static inline void wbinvd(void)
+{
+    asm volatile("wbinvd": : :"memory");
+}
+
+#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
+
+static void set_mtrr(unsigned int reg, unsigned long base,
+                 unsigned long size, int type)
+{
+    unsigned int base_lo, base_hi, mask_lo, mask_hi;
+    u64 size_or_mask, size_and_mask;
+
+    size_or_mask = SIZE_OR_MASK_BITS(36);
+    size_and_mask = 0x00f00000;
+
+    if (size == 0) {
+        /*
+         * The invalid bit is kept in the mask, so we simply
+         * clear the relevant mask register to disable a range.
+         */
+        native_write_msr(MTRRphysMask_MSR(reg), 0, 0);
+    }
+    else {
+        base_lo = base << PAGE_SHIFT | type;
+        base_hi = (base & size_and_mask) >> (32 - PAGE_SHIFT);
+        mask_lo = -size << PAGE_SHIFT | 0x800;
+        mask_hi = (-size & size_and_mask) >> (32 - PAGE_SHIFT);
+
+        native_write_msr(MTRRphysBase_MSR(reg), base_lo, base_hi);
+        native_write_msr(MTRRphysMask_MSR(reg), mask_lo, mask_hi);
+    };
+}
+
+static unsigned long __force_order;
+
+static inline unsigned long read_cr0(void)
+{
+    unsigned long val;
+    asm volatile("mov %%cr0,%0\n\t" : "=r" (val), "=m" (__force_order));
+    return val;
+}
+
+static inline void write_cr0(unsigned long val)
+{
+    asm volatile("mov %0,%%cr0": : "r" (val), "m" (__force_order));
+}
+
+static inline unsigned long read_cr4(void)
+{
+    unsigned long val;
+    asm volatile("mov %%cr4,%0\n\t" : "=r" (val), "=m" (__force_order));
+    return val;
+}
+
+static inline void write_cr4(unsigned long val)
+{
+    asm volatile("mov %0,%%cr4": : "r" (val), "m" (__force_order));
+}
+
+static inline unsigned long read_cr3(void)
+{
+    unsigned long val;
+    asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
+    return val;
+}
+
+static inline void write_cr3(unsigned long val)
+{
+    asm volatile("mov %0,%%cr3": : "r" (val), "m" (__force_order));
+}
+
+static u32 deftype_lo, deftype_hi;
+
 void cpu_detect()
 {
-    u32 junk, tfms, cap0, misc;
+    struct cpuinfo cpuinfo;
 
+    u32 junk, tfms, cap0, misc;
+    int i;
+#if 0
     cpuid(0x00000001, &tfms, &misc, &junk, &cap0);
 
     if (cap0 & (1<<19))
     {
         x86_clflush_size = ((misc >> 8) & 0xff) * 8;
     }
+
+    cpuid(0x80000002, (unsigned int*)&cpuinfo.model_name[0], (unsigned int*)&cpuinfo.model_name[4],
+          (unsigned int*)&cpuinfo.model_name[8], (unsigned int*)&cpuinfo.model_name[12]);
+    cpuid(0x80000003, (unsigned int*)&cpuinfo.model_name[16], (unsigned int*)&cpuinfo.model_name[20],
+          (unsigned int*)&cpuinfo.model_name[24], (unsigned int*)&cpuinfo.model_name[28]);
+    cpuid(0x80000004, (unsigned int*)&cpuinfo.model_name[32], (unsigned int*)&cpuinfo.model_name[36],
+          (unsigned int*)&cpuinfo.model_name[40], (unsigned int*)&cpuinfo.model_name[44]);
+
+    printf("\n%s\n\n",cpuinfo.model_name);
+
+    cpuinfo.def_mtrr = read_msr(MSR_MTRRdefType);
+    cpuinfo.mtrr_cap = read_msr(IA32_MTRRCAP);
+
+    printf("MSR_MTRRdefType %016llx\n\n", cpuinfo.def_mtrr);
+
+    cpuinfo.var_mtrr_count = (u8_t)cpuinfo.mtrr_cap;
+
+    for(i = 0; i < cpuinfo.var_mtrr_count; i++)
+    {
+        u64_t mtrr_base;
+        u64_t mtrr_mask;
+
+        cpuinfo.var_mtrr[i].base = read_msr(MTRRphysBase_MSR(i));
+        cpuinfo.var_mtrr[i].mask = read_msr(MTRRphysMask_MSR(i));
+
+        printf("MTRR_%d base: %016llx mask: %016llx\n", i,
+               cpuinfo.var_mtrr[i].base,
+               cpuinfo.var_mtrr[i].mask);
+    };
+
+    unsigned int cr0, cr3, cr4, eflags;
+
+    eflags = safe_cli();
+
+    /* Enter the no-fill (CD=1, NW=0) cache mode and flush caches. */
+    cr0 = read_cr0() | (1<<30);
+    write_cr0(cr0);
+    wbinvd();
+
+    cr4 = read_cr4();
+    write_cr4(cr4 & ~(1<<7));
+
+    cr3 = read_cr3();
+    write_cr3(cr3);
+
+    /* Save MTRR state */
+    rdmsr(MSR_MTRRdefType, deftype_lo, deftype_hi);
+
+    /* Disable MTRRs, and set the default type to uncached */
+    native_write_msr(MSR_MTRRdefType, deftype_lo & ~0xcff, deftype_hi);
+    wbinvd();
+
+    i = 0;
+    set_mtrr(i++,0,0x80000000>>12,MTRR_WB);
+    set_mtrr(i++,0x80000000>>12,0x40000000>>12,MTRR_WB);
+    set_mtrr(i++,0xC0000000>>12,0x20000000>>12,MTRR_WB);
+    set_mtrr(i++,0xdb800000>>12,0x00800000>>12,MTRR_UC);
+    set_mtrr(i++,0xdc000000>>12,0x04000000>>12,MTRR_UC);
+    set_mtrr(i++,0xE0000000>>12,0x10000000>>12,MTRR_WC);
+
+    for(; i < cpuinfo.var_mtrr_count; i++)
+        set_mtrr(i,0,0,0);
+
+    write_cr3(cr3);
+
+    /* Intel (P6) standard MTRRs */
+    native_write_msr(MSR_MTRRdefType, deftype_lo, deftype_hi);
+
+    /* Enable caches */
+    write_cr0(read_cr0() & ~(1<<30));
+
+    /* Restore value of CR4 */
+    write_cr4(cr4);
+
+    safe_sti(eflags);
+
+    printf("\nnew MTRR map\n\n");
+
+    for(i = 0; i < cpuinfo.var_mtrr_count; i++)
+    {
+        u64_t mtrr_base;
+        u64_t mtrr_mask;
+
+        cpuinfo.var_mtrr[i].base = read_msr(MTRRphysBase_MSR(i));
+        cpuinfo.var_mtrr[i].mask = read_msr(MTRRphysMask_MSR(i));
+
+        printf("MTRR_%d base: %016llx mask: %016llx\n", i,
+               cpuinfo.var_mtrr[i].base,
+               cpuinfo.var_mtrr[i].mask);
+    };
+#endif
 
     tsc_khz = (unsigned int)(GetCpuFreq()/1000);
 }

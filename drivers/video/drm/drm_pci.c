@@ -1,17 +1,3 @@
-/* drm_pci.h -- PCI DMA memory management wrappers for DRM -*- linux-c -*- */
-/**
- * \file drm_pci.c
- * \brief Functions and ioctls to manage PCI memory
- *
- * \warning These interfaces aren't stable yet.
- *
- * \todo Implement the remaining ioctl's for the PCI pools.
- * \todo The wrappers here are so thin that they would be better off inlined..
- *
- * \author José Fonseca <jrfonseca@tungstengraphics.com>
- * \author Leif Delgass <ldelgass@retinalburn.net>
- */
-
 /*
  * Copyright 2003 José Fonseca.
  * Copyright 2003 Leif Delgass.
@@ -38,26 +24,25 @@
 
 //#include <linux/pci.h>
 //#include <linux/slab.h>
-//#include <linux/dma-mapping.h>
+#include <linux/dma-mapping.h>
 #include <linux/export.h>
 #include <drm/drmP.h>
 
 #include <syscall.h>
-
-/**********************************************************************/
-/** \name PCI memory */
-/*@{*/
-
 /**
- * \brief Allocate a PCI consistent memory block, for DMA.
+ * drm_pci_alloc - Allocate a PCI consistent memory block, for DMA.
+ * @dev: DRM device
+ * @size: size of block to allocate
+ * @align: alignment of block
+ *
+ * Return: A handle to the allocated memory block on success or NULL on
+ * failure.
  */
 drm_dma_handle_t *drm_pci_alloc(struct drm_device * dev, size_t size, size_t align)
 {
 	drm_dma_handle_t *dmah;
-#if 1
 	unsigned long addr;
 	size_t sz;
-#endif
 
 	/* pci_alloc_consistent only guarantees alignment to the smallest
 	 * PAGE_SIZE order which is greater than or equal to the requested size.
@@ -110,7 +95,9 @@ void __drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
 }
 
 /**
- * \brief Free a PCI consistent memory block
+ * drm_pci_free - Free a PCI consistent memory block
+ * @dev: DRM device
+ * @dmah: handle to memory block
  */
 void drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah)
 {
@@ -245,7 +232,6 @@ err:
 	return ret;
 }
 
-
 static int drm_pci_irq_by_busid(struct drm_device *dev, struct drm_irq_busid *p)
 {
 	if ((p->busnum >> 8) != drm_get_pci_domain(dev) ||
@@ -336,14 +322,10 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
 
 
 	dev->pdev = pdev;
-	dev->pci_device = pdev->device;
-	dev->pci_vendor = pdev->vendor;
-
 #ifdef __alpha__
 	dev->hose = pdev->sysdata;
 #endif
 
-//   mutex_lock(&drm_global_mutex);
 
 	if ((ret = drm_fill_in_dev(dev, ent, driver))) {
 		printk(KERN_ERR "DRM: Fill_in_dev failed.\n");

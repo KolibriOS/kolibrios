@@ -1,30 +1,10 @@
-/**
- * \file drm_drv.c
- * Generic driver template
- *
- * \author Rickard E. (Rik) Faith <faith@valinux.com>
- * \author Gareth Hughes <gareth@valinux.com>
- *
- * To use this template, you must at least define the following (samples
- * given for the MGA driver):
- *
- * \code
- * #define DRIVER_AUTHOR	"VA Linux Systems, Inc."
- *
- * #define DRIVER_NAME		"mga"
- * #define DRIVER_DESC		"Matrox G200/G400"
- * #define DRIVER_DATE		"20001127"
- *
- * #define drm_x		mga_##x
- * \endcode
- */
-
 /*
- * Created: Thu Nov 23 03:10:50 2000 by gareth@valinux.com
+ * Created: Fri Jan 19 10:48:35 2001 by faith@acm.org
  *
- * Copyright 1999, 2000 Precision Insight, Inc., Cedar Park, Texas.
- * Copyright 2000 VA Linux Systems, Inc., Sunnyvale, California.
+ * Copyright 2001 VA Linux Systems, Inc., Sunnyvale, California.
  * All Rights Reserved.
+ *
+ * Author Rickard E. (Rik) Faith <faith@valinux.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -40,10 +20,10 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * VA LINUX SYSTEMS AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * PRECISION INSIGHT AND/OR ITS SUPPLIERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
  * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
  */
 
 #include <linux/slab.h>
