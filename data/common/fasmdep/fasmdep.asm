@@ -186,15 +186,23 @@ end repeat
 ; 8b. Loop over assembled lines in the range.
         cmp     esi, [esp]
         ja      .file_done
-; 8c. For every assembled line, look at first token;
+; 8c. For every assembled line, skip "word" and one-byte tokens
+; scanning for three predefined word tokens.
+; Note that lines like "a:b:c:d file 'something'" are possible and valid.
 ; go to 8d for token 'file',
 ; go to 8e for token 'format',
 ; go to 8f for token 'section',
 ; continue the loop otherwise.
         mov     eax, [esi+ebx+asm_row.preproc_offs]
         add     eax, [ebx+fas_header.preproc_offs]
-        cmp     byte [eax+ebx+preproc_line_header.contents], 1Ah
-        jnz     .file_next
+; We save/restore esi since it is used for another thing in the internal loop;
+; we push eax, which currently contains ebx-relative pointer to
+; preproc_line_header, to be able to access it from resolve_name.
+        push    esi eax
+.file_tokens_loop:
+        mov     cl, byte [eax+ebx+preproc_line_header.contents]
+        cmp     cl, 1Ah
+        jnz     .file_noword_token
         movzx   ecx, byte [eax+ebx+preproc_line_header.contents+1]
         cmp     cl, 4
         jnz     .file_no_file
@@ -205,18 +213,14 @@ end repeat
 ; Parsing of tokens is similar to step 5 with the difference that
 ; preprocessor token stops processing: 'file' directives are processed
 ; in assembler stage.
-; We save/restore esi since it is used for another thing in the internal loop;
-; we push eax, which currently contains ebx-relative pointer to
-; preproc_line_header, to be able to access it from resolve_name.
-        push    esi eax
         lea     esi, [eax+preproc_line_header.contents+6]
 .file_loop_int:
         mov     al, [esi+ebx]
         inc     esi
         test    al, al
-        jz      .file_loop_int_done
+        jz      .file_next
         cmp     al, ';'
-        jz      .file_loop_int_done
+        jz      .file_next
         cmp     al, 1Ah
         jz      .fileword
         cmp     al, '"'
@@ -228,12 +232,9 @@ end repeat
         movzx   eax, byte [esi+ebx]
         lea     esi, [esi+eax+1]
         jmp     .file_loop_int
-.file_loop_int_done:
-        pop     eax esi
-        jmp     .file_next
 .file_no_file4:
         cmp     dword [eax+ebx+preproc_line_header.contents+2], 'data'
-        jnz     .file_next
+        jnz     .file_word_token
         jmp     .file_scan_from
 .file_no_file:
         cmp     cl, 6
@@ -260,8 +261,21 @@ end repeat
 .file_scan_from:
         mov     edx, TokenFrom
         call    scan_after_word
+        jmp     .file_next
 .file_no_section:
+.file_word_token:
+        lea     eax, [eax+ecx+2]
+        jmp     .file_tokens_loop
+.file_noword_token:
+        inc     eax
+        test    cl, cl
+        jz      .file_next
+        cmp     cl, 3Bh
+        jz      .file_next
+        cmp     cl, 22h
+        jnz     .file_tokens_loop
 .file_next:
+        pop     eax esi
         add     esi, asm_row.sizeof
         jmp     .file_loop
 .file_done:

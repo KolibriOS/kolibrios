@@ -58,4 +58,3 @@ kernel.mnt: $(KERNEL)/kernel.asm ../common/Makefile.fasm .deps/.dir
 	rm $$tmpfile) || (rm $$tmpfile; false)
 	kerpack "$@"
 -include .deps/kernel.Po
-
