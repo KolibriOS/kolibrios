@@ -547,7 +547,7 @@ st_context_teximage(struct st_context_iface *stctxi,
 
    _mesa_dirty_texobj(ctx, texObj, GL_TRUE);
    _mesa_unlock_texture(ctx, texObj);
-   
+
    return TRUE;
 }
 
@@ -631,6 +631,7 @@ st_api_create_context(struct st_api *stapi, struct st_manager *smapi,
    if (attribs->flags & ST_CONTEXT_FLAG_FORWARD_COMPATIBLE)
       st->ctx->Const.ContextFlags |= GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT;
 
+#if 0
    /* need to perform version check */
    if (attribs->major > 1 || attribs->minor > 0) {
       /* Is the actual version less than the requested version?
@@ -641,6 +642,7 @@ st_api_create_context(struct st_api *stapi, struct st_manager *smapi,
          return NULL;
       }
    }
+#endif
 
    st->invalidate_on_gl_viewport =
       smapi->get_param(smapi, ST_MANAGER_BROKEN_INVALIDATE);

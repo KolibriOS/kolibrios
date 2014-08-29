@@ -64,7 +64,8 @@ get_param(struct intel_winsys *winsys, int param, int *value)
    gp.param = param;
    gp.value = value;
 
-   err = drmCommandWriteRead(winsys->fd, DRM_I915_GETPARAM, &gp, sizeof(gp));
+   err = drmIoctl(winsys->fd, DRM_I915_GETPARAM, &gp);
+
    if (err) {
       *value = 0;
       return false;
@@ -151,8 +152,8 @@ intel_winsys_create_for_fd(int fd)
 void
 intel_winsys_destroy(struct intel_winsys *winsys)
 {
-   if (winsys->decode)
-      drm_intel_decode_context_free(winsys->decode);
+//   if (winsys->decode)
+//      drm_intel_decode_context_free(winsys->decode);
 
    drm_intel_bufmgr_destroy(winsys->bufmgr);
    FREE(winsys);
@@ -341,6 +342,7 @@ intel_winsys_check_aperture_space(struct intel_winsys *winsys,
                                                 count);
 }
 
+#if 0
 void
 intel_winsys_decode_commands(struct intel_winsys *winsys,
                              struct intel_bo *bo, int used)
@@ -372,6 +374,7 @@ intel_winsys_decode_commands(struct intel_winsys *winsys,
 
    intel_bo_unmap(bo);
 }
+#endif
 
 void
 intel_bo_reference(struct intel_bo *bo)

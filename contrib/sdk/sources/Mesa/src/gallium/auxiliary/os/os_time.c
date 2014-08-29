@@ -28,21 +28,15 @@
 /**
  * @file
  * OS independent time-manipulation functions.
- * 
+ *
  * @author Jose Fonseca <jfonseca@vmware.com>
  */
 
 
 #include "pipe/p_config.h"
 
-#if defined(PIPE_OS_UNIX)
 #  include <time.h> /* timeval */
 #  include <sys/time.h> /* timeval */
-#elif defined(PIPE_SUBSYSTEM_WINDOWS_USER)
-#  include <windows.h>
-#else
-#  error Unsupported OS
-#endif
 
 #include "os_time.h"
 
@@ -50,32 +44,8 @@
 int64_t
 os_time_get_nano(void)
 {
-#if defined(PIPE_OS_LINUX)
-
-   struct timespec tv;
-   clock_gettime(CLOCK_MONOTONIC, &tv);
-   return tv.tv_nsec + tv.tv_sec*INT64_C(1000000000);
-
-#elif defined(PIPE_OS_UNIX)
-
    struct timeval tv;
    gettimeofday(&tv, NULL);
-   return tv.tv_usec*INT64_C(1000) + tv.tv_sec*INT64_C(1000000000);
-
-#elif defined(PIPE_SUBSYSTEM_WINDOWS_USER)
-
-   static LARGE_INTEGER frequency;
-   LARGE_INTEGER counter;
-   if(!frequency.QuadPart)
-      QueryPerformanceFrequency(&frequency);
-   QueryPerformanceCounter(&counter);
-   return counter.QuadPart*INT64_C(1000000000)/frequency.QuadPart;
-
-#else
-
-#error Unsupported OS
-
-#endif
 }
 
 

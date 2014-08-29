@@ -254,13 +254,7 @@
 #endif /* GNU_ASSEMBLER */
 #endif /* ACK_ASSEMBLER */
 
-
-#if defined(__QNX__) || defined(Lynx) || (defined(SYSV) || defined(SVR4)) && !defined(ACK_ASSEMBLER) || defined(__ELF__) || defined(__GNU__) || defined(__GNUC__) && !defined(__DJGPP__) && !defined(__MINGW32__)
-#define GLNAME(a)	a
-#else
-#define GLNAME(a)	CONCAT(_,a)
-#endif
-
+#define GLNAME(a)   CONCAT(_,a)
 
 	/****************************************/
 	/*					*/
@@ -983,14 +977,7 @@ SECTION _DATA public align=16 class=DATA use32 flat
 
 #endif
 
-#if defined(Lynx) || (defined(SYSV) || defined(SVR4)) \
- || (defined(__linux__) || defined(__OS2ELF__)) && defined(__ELF__) \
- || (defined(__FreeBSD__) && __FreeBSD__ >= 3) \
- || (defined(__NetBSD__) && defined(__ELF__))
-#define GLNAME(a)	a
-#else
 #define GLNAME(a)	CONCAT(_, a)
-#endif
 
 /*
  *	Addressing Modes
@@ -1734,16 +1721,8 @@ SECTION _DATA public align=16 class=DATA use32 flat
 /* Hidden symbol visibility support.
  * If we build with gcc's -fvisibility=hidden flag, we'll need to change
  * the symbol visibility mode to 'default'.
-#if defined(GNU_ASSEMBLER) && !defined(__DJGPP__) && !defined(__MINGW32__) && !defined(__APPLE__)
-#  define HIDDEN(x) .hidden x
-#elif defined(__GNUC__) && !defined(__DJGPP__) && !defined(__MINGW32__) && !defined(__APPLE__)
-#  pragma GCC visibility push(default)
-#  define HIDDEN(x) .hidden x
-#else
-#  define HIDDEN(x)
-#endif
  */
 
-#  define HIDDEN(x)
+#define HIDDEN(x)
 
 #endif /* __ASSYNTAX_H__ */

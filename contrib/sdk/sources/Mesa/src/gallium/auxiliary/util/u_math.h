@@ -1,8 +1,8 @@
 /**************************************************************************
- * 
+ *
  * Copyright 2008 Tungsten Graphics, Inc., Cedar Park, Texas.
  * All Rights Reserved.
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the
  * "Software"), to deal in the Software without restriction, including
@@ -10,11 +10,11 @@
  * distribute, sub license, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice (including the
  * next paragraph) shall be included in all copies or substantial portions
  * of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
@@ -22,7 +22,7 @@
  * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * 
+ *
  **************************************************************************/
 
 
@@ -60,46 +60,46 @@ extern "C" {
 #endif
 
 
-#if defined(_MSC_VER) 
+#if defined(_MSC_VER)
 
 #if _MSC_VER < 1400 && !defined(__cplusplus)
- 
-static INLINE float cosf( float f ) 
+
+static INLINE float cosf( float f )
 {
    return (float) cos( (double) f );
 }
 
-static INLINE float sinf( float f ) 
+static INLINE float sinf( float f )
 {
    return (float) sin( (double) f );
 }
 
-static INLINE float ceilf( float f ) 
+static INLINE float ceilf( float f )
 {
    return (float) ceil( (double) f );
 }
 
-static INLINE float floorf( float f ) 
+static INLINE float floorf( float f )
 {
    return (float) floor( (double) f );
 }
 
-static INLINE float powf( float f, float g ) 
+static INLINE float powf( float f, float g )
 {
    return (float) pow( (double) f, (double) g );
 }
 
-static INLINE float sqrtf( float f ) 
+static INLINE float sqrtf( float f )
 {
    return (float) sqrt( (double) f );
 }
 
-static INLINE float fabsf( float f ) 
+static INLINE float fabsf( float f )
 {
    return (float) fabs( (double) f );
 }
 
-static INLINE float logf( float f ) 
+static INLINE float logf( float f )
 {
    return (float) log( (double) f );
 }
@@ -300,7 +300,7 @@ util_ifloor(float f)
 static INLINE int
 util_iround(float f)
 {
-#if defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86) 
+#if defined(PIPE_CC_GCC) && defined(PIPE_ARCH_X86)
    int r;
    __asm__ ("fistpl %0" : "=m" (r) : "t" (f) : "st");
    return r;
@@ -442,37 +442,7 @@ util_half_inf_sign(int16_t x)
 #ifndef FFS_DEFINED
 #define FFS_DEFINED 1
 
-#if defined(_MSC_VER) && _MSC_VER >= 1300 && (_M_IX86 || _M_AMD64 || _M_IA64)
-unsigned char _BitScanForward(unsigned long* Index, unsigned long Mask);
-#pragma intrinsic(_BitScanForward)
-static INLINE
-unsigned long ffs( unsigned long u )
-{
-   unsigned long i;
-   if (_BitScanForward(&i, u))
-      return i + 1;
-   else
-      return 0;
-}
-#elif defined(PIPE_CC_MSVC) && defined(PIPE_ARCH_X86)
-static INLINE
-unsigned ffs( unsigned u )
-{
-   unsigned i;
-
-   if (u == 0) {
-      return 0;
-   }
-
-   __asm bsf eax, [u]
-   __asm inc eax
-   __asm mov [i], eax
-
-   return i;
-}
-#elif defined(__MINGW32__) || defined(PIPE_OS_ANDROID)
 #define ffs __builtin_ffs
-#endif
 
 #endif /* FFS_DEFINED */
 
@@ -501,7 +471,7 @@ static INLINE unsigned util_last_bit(unsigned u)
  *   int i = u_bit_scan(&mymask);
  *   ... process element i
  * }
- * 
+ *
  */
 static INLINE int u_bit_scan(unsigned *mask)
 {

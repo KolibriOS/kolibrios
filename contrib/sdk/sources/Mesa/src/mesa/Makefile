@@ -26,9 +26,6 @@ MESA_DEFS+= -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDI
 MAIN_SRC = 				\
 	drivers/common/driverfuncs.c	\
 	drivers/common/meta.c		\
-	drivers/dri/common/dri_util.c	\
-	drivers/dri/common/utils.c	\
-	drivers/dri/common/xmlconfig.c	\
 	main/accum.c			\
 	main/api_arrayelt.c		\
 	main/api_exec.c			\
@@ -244,7 +241,13 @@ MAIN_SRC = 				\
 	x86/x86_xform4.S		\
 	$(NULL)
 
+OSMESA_SRC = 					\
+	drivers/osmesa/osmesa.c
+
 I965_SRC = 					\
+	drivers/dri/common/dri_util.c		\
+	drivers/dri/common/utils.c		\
+	drivers/dri/common/xmlconfig.c		\
 	drivers/dri/i965/intel_batchbuffer.c 	\
 	drivers/dri/i965/intel_blit.c 		\
 	drivers/dri/i965/intel_buffer_objects.c \
@@ -369,15 +372,21 @@ I965_SRC = 					\
 	$(NULL)
 
 MESA_OBJS =  $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(patsubst %.cpp, %.o, $(MAIN_SRC))))
+OSMESA_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(OSMESA_SRC)))
 I965_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(I965_SRC)))
 
 # targets
 
-all: i965_dri.drv
+all: osmesa.dll i965_dri.drv
 
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
 #	$(STRIP) $@
+	mv -f $@ $(SDK_DIR)/bin
+
+osmesa.dll: $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
+	mv -f libosmesa.dll.a $(SDK_DIR)/lib
 	mv -f $@ $(SDK_DIR)/bin
 
 %.o : %.c Makefile

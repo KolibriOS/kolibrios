@@ -41,8 +41,8 @@ void
 ilo_cp_dump(struct ilo_cp *cp)
 {
    ilo_printf("dumping %d bytes\n", cp->used * 4);
-   if (cp->used)
-      intel_winsys_decode_commands(cp->winsys, cp->bo, cp->used * 4);
+//   if (cp->used)
+//      intel_winsys_decode_commands(cp->winsys, cp->bo, cp->used * 4);
 }
 
 /**

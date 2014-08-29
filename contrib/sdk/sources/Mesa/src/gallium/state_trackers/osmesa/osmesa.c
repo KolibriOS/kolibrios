@@ -151,7 +151,7 @@ get_st_manager(void)
          stmgr->screen = osmesa_create_screen();
          stmgr->get_param = osmesa_st_get_param;
          stmgr->get_egl_image = NULL;
-      }         
+      }
    }
    return stmgr;
 }
