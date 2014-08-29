@@ -1,19 +1,53 @@
+/*
+ * Copyright (C) 1999-2001  Brian Paul   All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * BRIAN PAUL BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+ * AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/*
+ * This is a port of the infamous "glxgears" demo to straight EGL
+ * Port by Dane Rushton 10 July 2005
+ *
+ * No command line options.
+ * Program runs for 5 seconds then exits, outputing framerate to console
+ */
+
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "GL/osmesa.h"
-#include "GL/glu.h"
+#include <sys/time.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include "eglut.h"
 
-#define XK_Left      176
-#define XK_Right    179
-#define XK_Up        178
-#define XK_Down    177
+static GLfloat view_rotx = 20.0, view_roty = 30.0, view_rotz = 0.0;
+static GLint gear1, gear2, gear3;
+GLfloat angle = 0.0;
 
-extern GLfloat view_rotx, view_roty, view_rotz;
-GLint gear1, gear2, gear3;
-extern GLfloat angle;
-
+/*
+ *
+ *  Draw a gear wheel.  You'll probably want to call this function when
+ *  building a display list since we do a lot of trig here.
+ *
+ *  Input:  inner_radius - radius of hole at center
+ *          outer_radius - radius at center of teeth
+ *          width - width of gear
+ *          teeth - number of teeth
+ *          tooth_depth - depth of tooth
+ */
 static void gear(GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
      GLint teeth, GLfloat tooth_depth)
 {
@@ -140,7 +174,8 @@ static void gear(GLfloat inner_radius, GLfloat outer_radius, GLfloat width,
    glEnd();
 }
 
-void Draw(void)
+
+void draw(void)
 {
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -172,24 +207,22 @@ void Draw(void)
 
 
 /* new window size or exposure */
-void Reshape(int width, int height)
+void reshape(int width, int height)
 {
+   GLfloat h = (GLfloat) height / (GLfloat) width;
+
    glViewport(0, 0, (GLint) width, (GLint) height);
 
-      GLfloat h = (GLfloat) height / (GLfloat) width;
-
-      glMatrixMode(GL_PROJECTION);
-      glLoadIdentity();
-      glFrustum(-1.0, 1.0, -h, h, 5.0, 60.0);
-
+   glMatrixMode(GL_PROJECTION);
+   glLoadIdentity();
+   glFrustum(-1.0, 1.0, -h, h, 5.0, 60.0);
 
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
    glTranslatef(0.0, 0.0, -40.0);
 }
 
-
-void Init(void)
+void init(void)
 {
    static GLfloat pos[4] = { 5.0, 5.0, 10.0, 0.0 };
    static GLfloat red[4] = { 0.8, 0.1, 0.0, 1.0 };
@@ -224,30 +257,19 @@ void Init(void)
    glEnable(GL_NORMALIZE);
 }
 
-void Key(unsigned char code, int x, int y)
+void keyboard(unsigned char key)
 {
-    int i;
-    (void) x; (void) y;
-
-    if (code == XK_Left) {
+    if (key == EGLUT_KEY_LEFT) {
         view_roty += 5.0;
     }
-    else if (code == XK_Right) {
+    else if (key == EGLUT_KEY_RIGHT) {
         view_roty -= 5.0;
     }
-    else if (code == XK_Up) {
+    else if (key == EGLUT_KEY_UP) {
         view_rotx += 5.0;
     }
-    else if (code == XK_Down) {
+    else if (key == EGLUT_KEY_DOWN) {
         view_rotx -= 5.0;
     }
-};
-
-void Idle(void)
-{
-    angle += 70.0 * 0.05;  /* 70 degrees per second */
-    if (angle > 3600.0)
-        angle -= 3600.0;
 }
-
 
