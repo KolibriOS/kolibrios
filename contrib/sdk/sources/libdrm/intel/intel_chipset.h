@@ -160,6 +160,11 @@
 #define PCI_CHIP_VALLEYVIEW_2		0x0f32
 #define PCI_CHIP_VALLEYVIEW_3		0x0f33
 
+#define PCI_CHIP_CHERRYVIEW_0		0x22b0
+#define PCI_CHIP_CHERRYVIEW_1		0x22b1
+#define PCI_CHIP_CHERRYVIEW_2		0x22b2
+#define PCI_CHIP_CHERRYVIEW_3		0x22b3
+
 #define IS_MOBILE(devid)	((devid) == PCI_CHIP_I855_GM || \
 				 (devid) == PCI_CHIP_I915_GM || \
 				 (devid) == PCI_CHIP_I945_GM || \
@@ -311,8 +316,13 @@
 				((devid & 0x000f) == BDW_WORKSTATION) ? 1 : \
 				((devid & 0x000f) == BDW_ULX) ? 1 : 0)
 
+#define IS_CHERRYVIEW(devid)	((devid) == PCI_CHIP_CHERRYVIEW_0 || \
+				 (devid) == PCI_CHIP_CHERRYVIEW_1 || \
+				 (devid) == PCI_CHIP_CHERRYVIEW_2 || \
+				 (devid) == PCI_CHIP_CHERRYVIEW_3)
 
-#define IS_GEN8(devid)		IS_BROADWELL(devid)
+#define IS_GEN8(devid)		(IS_BROADWELL(devid) || \
+				 IS_CHERRYVIEW(devid))
 
 #define IS_9XX(dev)		(IS_GEN3(dev) || \
 				 IS_GEN4(dev) || \

@@ -79,8 +79,14 @@ extern "C" {
 typedef unsigned int  drmSize,     *drmSizePtr;	    /**< For mapped regions */
 typedef void          *drmAddress, **drmAddressPtr; /**< For mapped regions */
 
+#if (__GNUC__ >= 3)
+#define DRM_PRINTFLIKE(f, a) __attribute__ ((format(__printf__, f, a)))
+#else
+#define DRM_PRINTFLIKE(f, a)
+#endif
+
 typedef struct _drmServerInfo {
-  int (*debug_print)(const char *format, va_list ap);
+  int (*debug_print)(const char *format, va_list ap) DRM_PRINTFLIKE(1,0);
   int (*load_module)(const char *name);
 } drmServerInfo, *drmServerInfoPtr;
 
@@ -684,7 +690,7 @@ extern int  drmSLLookupNeighbors(void *l, unsigned long key,
 
 extern int drmOpenOnce(void *unused, const char *BusID, int *newlyopened);
 extern void drmCloseOnce(int fd);
-extern void drmMsg(const char *format, ...);
+extern void drmMsg(const char *format, ...) DRM_PRINTFLIKE(1, 2);
 
 extern int drmSetMaster(int fd);
 extern int drmDropMaster(int fd);

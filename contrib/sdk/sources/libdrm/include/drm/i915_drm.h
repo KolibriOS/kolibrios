@@ -223,6 +223,7 @@ typedef struct _drm_i915_sarea {
 #define DRM_I915_GEM_GET_CACHING	0x30
 #define DRM_I915_REG_READ		0x31
 #define DRM_I915_GET_RESET_STATS	0x32
+#define DRM_I915_GEM_USERPTR		0x33
 
 #define DRM_IOCTL_I915_INIT
 #define DRM_IOCTL_I915_FLUSH
@@ -1048,6 +1049,20 @@ struct drm_i915_reset_stats {
 	__u32 batch_pending;
 
 	__u32 pad;
+};
+
+struct drm_i915_gem_userptr {
+	__u64 user_ptr;
+	__u64 user_size;
+	__u32 flags;
+#define I915_USERPTR_READ_ONLY 0x1
+#define I915_USERPTR_UNSYNCHRONIZED 0x80000000
+	/**
+	* Returned handle for the object.
+	*
+	* Object handles are nonzero.
+	*/
+	__u32 handle;
 };
 
 struct drm_i915_mask {

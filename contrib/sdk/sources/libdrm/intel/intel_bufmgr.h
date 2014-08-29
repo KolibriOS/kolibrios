@@ -61,9 +61,8 @@ struct _drm_intel_bo {
 	unsigned long align;
 
 	/**
-	 * Last seen card virtual address (offset from the beginning of the
-	 * aperture) for the object.  This should be used to fill relocation
-	 * entries when calling drm_intel_bo_emit_reloc()
+	 * Deprecated field containing (possibly the low 32-bits of) the last
+	 * seen virtual card address.  Use offset64 instead.
 	 */
 	unsigned long offset;
 
@@ -84,6 +83,13 @@ struct _drm_intel_bo {
 	 * MM-specific handle for accessing object
 	 */
 	int handle;
+
+	/**
+	 * Last seen card virtual address (offset from the beginning of the
+	 * aperture) for the object.  This should be used to fill relocation
+	 * entries when calling drm_intel_bo_emit_reloc()
+	 */
+	uint64_t offset64;
 };
 
 enum aub_dump_bmp_format {

@@ -44,6 +44,11 @@
 #include <time.h>
 #include <stdarg.h>
 
+/* Not all systems have MAP_FAILED defined */
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+
 #include "xf86drm.h"
 #include <kos32sys.h>
 

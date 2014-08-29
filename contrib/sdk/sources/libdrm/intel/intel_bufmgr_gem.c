@@ -213,6 +213,15 @@ struct _drm_intel_bo_gem {
 	bool reusable;
 
 	/**
+	 * Boolean of whether the GPU is definitely not accessing the buffer.
+	 *
+	 * This is only valid when reusable, since non-reusable
+	 * buffers are those that have been shared wth other
+	 * processes, so we don't know their state.
+	 */
+	bool idle;
+
+	/**
 	 * Size in bytes of this buffer and its relocation descendents.
 	 *
 	 * Used to avoid costly tree walking in
@@ -383,7 +392,7 @@ drm_intel_gem_dump_validation_list(drm_intel_bufmgr_gem *bufmgr_gem)
 			    (unsigned long long)bo_gem->relocs[j].offset,
 			    target_gem->gem_handle,
 			    target_gem->name,
-			    target_bo->offset,
+			    target_bo->offset64,
 			    bo_gem->relocs[j].delta);
 		}
 	}
@@ -568,11 +577,19 @@ drm_intel_gem_bo_busy(drm_intel_bo *bo)
 	struct drm_i915_gem_busy busy;
 	int ret;
 
+	if (bo_gem->reusable && bo_gem->idle)
+		return false;
+
 	VG_CLEAR(busy);
 	busy.handle = bo_gem->gem_handle;
 
 	ret = drmIoctl(bufmgr_gem->fd, DRM_IOCTL_I915_GEM_BUSY, &busy);
-
+	if (ret == 0) {
+		bo_gem->idle = !busy.busy;
+		return busy.busy;
+	} else {
+		return false;
+	}
 	return (ret == 0 && busy.busy);
 }
 
@@ -865,10 +882,6 @@ drm_intel_bo_gem_create_from_name(drm_intel_bufmgr *bufmgr,
 		}
 	}
 
-	bo_gem = calloc(1, sizeof(*bo_gem));
-	if (!bo_gem)
-		return NULL;
-
 	VG_CLEAR(open_arg);
 	open_arg.name = handle;
 	ret = drmIoctl(bufmgr_gem->fd,
@@ -877,11 +890,29 @@ drm_intel_bo_gem_create_from_name(drm_intel_bufmgr *bufmgr,
 	if (ret != 0) {
 		DBG("Couldn't reference %s handle 0x%08x: %s\n",
 		    name, handle, strerror(errno));
-		free(bo_gem);
 		return NULL;
 	}
+        /* Now see if someone has used a prime handle to get this
+         * object from the kernel before by looking through the list
+         * again for a matching gem_handle
+         */
+	for (list = bufmgr_gem->named.next;
+	     list != &bufmgr_gem->named;
+	     list = list->next) {
+		bo_gem = DRMLISTENTRY(drm_intel_bo_gem, list, name_list);
+		if (bo_gem->gem_handle == open_arg.handle) {
+			drm_intel_gem_bo_reference(&bo_gem->bo);
+			return &bo_gem->bo;
+		}
+	}
+
+	bo_gem = calloc(1, sizeof(*bo_gem));
+	if (!bo_gem)
+		return NULL;
+
 	bo_gem->bo.size = open_arg.size;
 	bo_gem->bo.offset = 0;
+	bo_gem->bo.offset64 = 0;
 	bo_gem->bo.virtual = NULL;
 	bo_gem->bo.bufmgr = bufmgr;
 	bo_gem->name = name;
@@ -1322,6 +1353,9 @@ int drm_intel_gem_bo_map_gtt(drm_intel_bo *bo)
 int drm_intel_gem_bo_map_unsynchronized(drm_intel_bo *bo)
 {
 	drm_intel_bufmgr_gem *bufmgr_gem = (drm_intel_bufmgr_gem *) bo->bufmgr;
+#ifdef HAVE_VALGRIND
+	drm_intel_bo_gem *bo_gem = (drm_intel_bo_gem *) bo;
+#endif
 	int ret;
 
 	/* If the CPU cache isn't coherent with the GTT, then use a
@@ -1662,7 +1696,7 @@ do_bo_emit_reloc(drm_intel_bo *bo, uint32_t offset,
 	    target_bo_gem->gem_handle;
 	bo_gem->relocs[bo_gem->reloc_count].read_domains = read_domains;
 	bo_gem->relocs[bo_gem->reloc_count].write_domain = write_domain;
-	bo_gem->relocs[bo_gem->reloc_count].presumed_offset = target_bo->offset;
+	bo_gem->relocs[bo_gem->reloc_count].presumed_offset = target_bo->offset64;
 
 	bo_gem->reloc_target_info[bo_gem->reloc_count].bo = target_bo;
 	if (target_bo != bo)
@@ -1813,11 +1847,12 @@ drm_intel_update_buffer_offsets(drm_intel_bufmgr_gem *bufmgr_gem)
 		drm_intel_bo_gem *bo_gem = (drm_intel_bo_gem *) bo;
 
 		/* Update the buffer offset */
-		if (bufmgr_gem->exec_objects[i].offset != bo->offset) {
+		if (bufmgr_gem->exec_objects[i].offset != bo->offset64) {
 			DBG("BO %d (%s) migrated: 0x%08lx -> 0x%08llx\n",
-			    bo_gem->gem_handle, bo_gem->name, bo->offset,
+			    bo_gem->gem_handle, bo_gem->name, bo->offset64,
 			    (unsigned long long)bufmgr_gem->exec_objects[i].
 			    offset);
+			bo->offset64 = bufmgr_gem->exec_objects[i].offset;
 			bo->offset = bufmgr_gem->exec_objects[i].offset;
 		}
 	}
@@ -1833,10 +1868,11 @@ drm_intel_update_buffer_offsets2 (drm_intel_bufmgr_gem *bufmgr_gem)
 		drm_intel_bo_gem *bo_gem = (drm_intel_bo_gem *)bo;
 
 		/* Update the buffer offset */
-		if (bufmgr_gem->exec2_objects[i].offset != bo->offset) {
+		if (bufmgr_gem->exec2_objects[i].offset != bo->offset64) {
 			DBG("BO %d (%s) migrated: 0x%08lx -> 0x%08llx\n",
-			    bo_gem->gem_handle, bo_gem->name, bo->offset,
+			    bo_gem->gem_handle, bo_gem->name, bo->offset64,
 			    (unsigned long long)bufmgr_gem->exec2_objects[i].offset);
+			bo->offset64 = bufmgr_gem->exec2_objects[i].offset;
 			bo->offset = bufmgr_gem->exec2_objects[i].offset;
 		}
 	}
@@ -2221,6 +2257,8 @@ skip_execution:
 		drm_intel_bo *bo = bufmgr_gem->exec_bos[i];
 		drm_intel_bo_gem *bo_gem = (drm_intel_bo_gem *)bo;
 
+		bo_gem->idle = false;
+
 		/* Disconnect the buffer from the validate list */
 		bo_gem->validate_index = -1;
 		bufmgr_gem->exec_bos[i] = NULL;
@@ -2274,6 +2312,7 @@ drm_intel_gem_bo_pin(drm_intel_bo *bo, uint32_t alignment)
 	if (ret != 0)
 		return -errno;
 
+	bo->offset64 = pin.offset;
 	bo->offset = pin.offset;
 	return 0;
 }
@@ -2488,7 +2527,8 @@ drm_intel_gem_bo_flink(drm_intel_bo *bo, uint32_t * name)
 		bo_gem->global_name = flink.name;
 		bo_gem->reusable = false;
 
-		DRMLISTADDTAIL(&bo_gem->name_list, &bufmgr_gem->named);
+		if (DRMLISTEMPTY(&bo_gem->name_list))
+			DRMLISTADDTAIL(&bo_gem->name_list, &bufmgr_gem->named);
 	}
 
 	*name = bo_gem->global_name;
@@ -2876,7 +2916,7 @@ drm_intel_bufmgr_gem_set_aub_dump(drm_intel_bufmgr *bufmgr, int enable)
 	aub_out(bufmgr_gem, 0); /* comment len */
 
 	/* Set up the GTT. The max we can handle is 256M */
-	aub_out(bufmgr_gem, CMD_AUB_TRACE_HEADER_BLOCK | (5 - 2));
+	aub_out(bufmgr_gem, CMD_AUB_TRACE_HEADER_BLOCK | ((bufmgr_gem->gen >= 8 ? 6 : 5) - 2));
 	aub_out(bufmgr_gem, AUB_TRACE_MEMTYPE_NONLOCAL | 0 | AUB_TRACE_OP_DATA_WRITE);
 	aub_out(bufmgr_gem, 0); /* subtype */
 	aub_out(bufmgr_gem, 0); /* offset */
@@ -2894,15 +2934,19 @@ drm_intel_gem_context_create(drm_intel_bufmgr *bufmgr)
 	drm_intel_context *context = NULL;
 	int ret;
 
+	context = calloc(1, sizeof(*context));
+	if (!context)
+		return NULL;
+
 	VG_CLEAR(create);
 	ret = drmIoctl(bufmgr_gem->fd, DRM_IOCTL_I915_GEM_CONTEXT_CREATE, &create);
 	if (ret != 0) {
 		DBG("DRM_IOCTL_I915_GEM_CONTEXT_CREATE failed: %s\n",
 		    strerror(errno));
+		free(context);
 		return NULL;
 	}
 
-	context = calloc(1, sizeof(*context));
 	context->ctx_id = create.ctx_id;
 	context->bufmgr = bufmgr;
 
@@ -3138,8 +3182,8 @@ drm_intel_bufmgr_gem_init(int fd, int batch_size)
 	bufmgr_gem->max_relocs = batch_size / sizeof(uint32_t) / 2 - 2;
 
 	bufmgr_gem->bufmgr.bo_alloc = drm_intel_gem_bo_alloc;
-//	bufmgr_gem->bufmgr.bo_alloc_for_render =
-//	    drm_intel_gem_bo_alloc_for_render;
+	bufmgr_gem->bufmgr.bo_alloc_for_render =
+	    drm_intel_gem_bo_alloc_for_render;
 	bufmgr_gem->bufmgr.bo_alloc_tiled = drm_intel_gem_bo_alloc_tiled;
 	bufmgr_gem->bufmgr.bo_reference = drm_intel_gem_bo_reference;
 	bufmgr_gem->bufmgr.bo_unreference = drm_intel_gem_bo_unreference;

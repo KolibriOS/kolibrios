@@ -441,10 +441,28 @@ struct blit_call
     int   stride;
 };
 
-void Blit(void *bitmap, int dst_x, int dst_y,
+static inline void Blit(void *bitmap, int dst_x, int dst_y,
                         int src_x, int src_y, int w, int h,
-                        int src_w, int src_h, int stride);
+                        int src_w, int src_h, int stride)
+{
+    volatile struct blit_call bc;
 
+    bc.dstx = dst_x;
+    bc.dsty = dst_y;
+    bc.w    = w;
+    bc.h    = h;
+    bc.srcx = src_x;
+    bc.srcy = src_y;
+    bc.srcw = src_w;
+    bc.srch = src_h;
+    bc.stride = stride;
+    bc.bitmap = bitmap;
+
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(73),"b"(0),"c"(&bc.dstx));
+
+};
 
 #endif
 

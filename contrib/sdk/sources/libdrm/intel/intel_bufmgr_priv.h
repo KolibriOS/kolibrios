@@ -56,10 +56,10 @@ struct _drm_intel_bufmgr {
 	 *
 	 * This is otherwise the same as bo_alloc.
 	 */
-//	drm_intel_bo *(*bo_alloc_for_render) (drm_intel_bufmgr *bufmgr,
-//					      const char *name,
-//					      unsigned long size,
-//					      unsigned int alignment);
+	drm_intel_bo *(*bo_alloc_for_render) (drm_intel_bufmgr *bufmgr,
+					      const char *name,
+					      unsigned long size,
+					      unsigned int alignment);
 
 	/**
 	 * Allocate a tiled buffer object.
