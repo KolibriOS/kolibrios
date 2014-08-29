@@ -631,7 +631,7 @@ probe:
         cmp     ax, 0x2627
         je      .L9
 
-        DEBUGF  1,"Invalid chip rev\n"
+        DEBUGF  2,"Invalid chip rev\n"
         jmp     .no_dev
   .L2:
         mov     [ebx + device.name], device_l2
@@ -1090,7 +1090,7 @@ int_handler:
         ret
 
   .got_it:
-        DEBUGF  2,"Device: %x status: %x\n", ebx, eax:4
+        DEBUGF  1,"Device: %x status: %x\n", ebx, eax:4
 
         push    ax
         test    ax, CSR_RINT
