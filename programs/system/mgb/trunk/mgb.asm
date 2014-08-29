@@ -270,7 +270,6 @@ align 4
 	jnz	.next_test
 	xor	dword [wFlags],1
 	mcall	68,13,[area_for_f36]
-	mcall	68,13,[params_f73.pointer]
 	mcall	-1
 ;---------------------------------------------------------------------
 draw_window:
@@ -338,9 +337,8 @@ testDrawPicture:
 	ret
 ;---------------------------------------------------------------------
 prepare_f73:
-	mcall	68,12,90*123*4
-	mov	[params_f73.pointer], eax
-	shr	ecx, 2
+	mov	ecx, 90*123
+	mov	eax, params_f73.data
 	mov	ebx, [area_for_f36]
 @@:
 	mov	edx, [ebx]
@@ -882,7 +880,7 @@ params_f73:
 .width_src	dd 90	; +24
 .height_src	dd 123	; +28
 ; other
-.pointer	dd 0	; 90*4	; +32
+.pointer	dd .data; 90*4	; +32
 .row_size	dd 90*4	; +36
 ;---------------------------------------------------------------------
 align 4
@@ -1038,6 +1036,6 @@ thread_stack1:
 ;---------------------------------------------------------------------
 align 4
 	rb 4096
-	rb 0x2884	; for F73 image size 123*90*4
 stacktop:
+params_f73.data	rb 123*90*4
 I_END:
