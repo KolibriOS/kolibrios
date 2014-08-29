@@ -5,14 +5,16 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-format MS COFF
+format PE DLL native 0.05
+entry START
 
-DEBUG           = 1
+        DEBUG = 1
 
-include 'proc32.inc'
-include 'imports.inc'
+section '.flat' code readable writable executable
+include '../proc32.inc'
 include '../struct.inc'
-
+include '../macros.inc'
+include '../peimport.inc'
 
 VID_INTEL         = 0x8086
 VID_NVIDIA        = 0x10DE
@@ -145,12 +147,6 @@ CTRL_RDC_R3010           =  0x3010
 
 CTRL_VMWARE_UNK1         =  0x1977
 
-API_VERSION             = 0x01000100
-
-public START
-public service_proc
-public version
-
 struct  SRV
         srv_name        rb 16    ;ASCIIZ string
         magic           dd ?     ;+0x10 ;'SRV '
@@ -164,17 +160,14 @@ struct  SRV
 ends
 
 
-section '.flat' code readable align 16
+proc START c, state:dword, cmdline:dword
 
-proc START stdcall, state:dword
-
-        mov     eax, [srv_entry]
         cmp     [state], 1
         jne     .stop
 
      if DEBUG
         mov     esi, msgInit
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
      end if
 
         test    eax, eax
@@ -191,26 +184,24 @@ proc START stdcall, state:dword
         ret
 endp
 
-align 4
 proc service_proc stdcall, ioctl:dword
 
         or      eax, -1
         ret
 endp
 
-align 4
 proc detect_controller
 
-           locals
-             last_bus dd ?
-             bus      dd ?
-             devfn    dd ?
-           endl
+locals
+        last_bus dd ?
+        bus      dd ?
+        devfn    dd ?
+endl
 
         xor     eax, eax
         mov     [bus], eax
         inc     eax
-        call    PciApi
+        invoke  PciApi
         cmp     eax, -1
         je      .err
 
@@ -219,7 +210,7 @@ proc detect_controller
   .next_bus:
         and     [devfn], 0
   .next_dev:
-        stdcall PciRead32, [bus], [devfn], dword 0
+        invoke  PciRead32, [bus], [devfn], dword 0
         test    eax, eax
         jz      .next
         cmp     eax, -1
@@ -250,16 +241,16 @@ proc detect_controller
 
      if DEBUG
         mov     esi, msgLoading
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
         mov     esi, dword[edi+4]
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
         mov     esi, msgNewline
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
      end if
 
-        stdcall GetService, dword[edi+4]
+        invoke  GetService, dword[edi+4]
         test    eax, eax
         jz      .err
 
@@ -270,7 +261,7 @@ proc detect_controller
   .err:
      if DEBUG
         mov     esi, msgFail
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
      end if
 
         xor     eax, eax
@@ -399,10 +390,8 @@ devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
 ; VMware
                 dd (CTRL_VMWARE_UNK1  shl 16)+VID_VMWARE, intelhda
 
-                dd 0    ;terminator
+                dd 0    ; terminator
 
-
-version         dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 srv_entry       dd 0
 
@@ -419,5 +408,6 @@ msgFail         db 'No compatible soundcard found!',13,10,0
 msgLoading      db 'Loading ',0
 msgNewline      db 13,10,0
 
-
-section '.data' data readable writable align 16
+align 4
+data fixups
+end data
