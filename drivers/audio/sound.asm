@@ -11,10 +11,10 @@ entry START
         DEBUG = 1
 
 section '.flat' code readable writable executable
+
 include '../proc32.inc'
 include '../struct.inc'
 include '../macros.inc'
-include '../peimport.inc'
 
 VID_INTEL         = 0x8086
 VID_NVIDIA        = 0x10DE
@@ -163,23 +163,17 @@ ends
 proc START c, state:dword, cmdline:dword
 
         cmp     [state], 1
-        jne     .stop
+        jne     .fail
 
      if DEBUG
         mov     esi, msgInit
         invoke  SysMsgBoardStr
      end if
 
-        test    eax, eax
-        jnz     .done
         call    detect_controller
         ret
-.stop:
-        test    eax, eax
-        jz      .done
-        leave
-        jmp     eax
-.done:
+
+  .fail:
         xor     eax, eax
         ret
 endp
@@ -235,6 +229,10 @@ endl
         mov     [bus], eax
         cmp     eax, [last_bus]
         jna     .next_bus
+     if DEBUG
+        mov     esi, msgNotFound
+        invoke  SysMsgBoardStr
+     end if
         xor     eax, eax
         ret
   .found:
@@ -404,10 +402,13 @@ emu10k1x        db 'EMU10K1X', 0
 intelhda        db 'INTEL_HDA', 0
 
 msgInit         db 'Detecting hardware...',13,10,0
-msgFail         db 'No compatible soundcard found!',13,10,0
+msgNotFound     db 'No compatible soundcard found!',13,10,0
+msgFail         db 'Failed',13,10,0
 msgLoading      db 'Loading ',0
 msgNewline      db 13,10,0
 
 align 4
 data fixups
 end data
+
+include '../peimport.inc'
