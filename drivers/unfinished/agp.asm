@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; simple AGP driver for KolibriOS                                 ;;
@@ -13,99 +13,78 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-format MS COFF
+format PE DLL native
+entry START
 
-DEBUG                   equ 1
-FAST_WRITE              equ 0           ; may cause problems with some motherboards
+        CURRENT_API             = 0x0200
+        COMPATIBLE_API          = 0x0100
+        API_VERSION             = (COMPATIBLE_API shl 16) + CURRENT_API
 
-include 'proc32.inc'
-include 'imports.inc'
+        FAST_WRITE              = 0     ; may cause problems with some motherboards
 
-struc IOCTL
-{  .handle      dd ?
-   .io_code     dd ?
-   .input       dd ?
-   .inp_size    dd ?
-   .output      dd ?
-   .out_size    dd ?
-}
+section '.flat' readable writable executable
 
-virtual at 0
-  IOCTL IOCTL
-end virtual
+include '../proc32.inc'
+include '../struct.inc'
+include '../macros.inc'
+include '../pci_pe.inc'
 
-public START
-public service_proc
-public version
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                        ;;
+;; proc START             ;;
+;;                        ;;
+;; (standard driver proc) ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-DRV_ENTRY       equ 1
-DRV_EXIT        equ -1
+proc START c, reason:dword, cmdline:dword
 
-SRV_GETVERSION  equ 0
-SRV_DETECT      equ 1
+        cmp     [reason], DRV_ENTRY
+        jne     .fail
 
-API_VERSION     equ 1
-
-section '.flat' code readable align 16
-
-proc START stdcall, state:dword
-
-        cmp     [state], 1
-        jne     .exit
-.entry:
-
-     if DEBUG
         mov     esi, msgInit
-        call    SysMsgBoardStr
-     end if
+        invoke  SysMsgBoardStr
+        invoke  RegService, my_service, service_proc
 
-        stdcall RegService, my_service, service_proc
+        call    detect
+
         ret
-.fail:
-.exit:
+
+  .fail:
         xor     eax, eax
         ret
+
 endp
 
-handle     equ  IOCTL.handle
-io_code    equ  IOCTL.io_code
-input      equ  IOCTL.input
-inp_size   equ  IOCTL.inp_size
-output     equ  IOCTL.output
-out_size   equ  IOCTL.out_size
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                        ;;
+;; proc SERVICE_PROC      ;;
+;;                        ;;
+;; (standard driver proc) ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 4
 proc service_proc stdcall, ioctl:dword
 
-        mov     ebx, [ioctl]
-        mov     eax, [ebx+io_code]
-        cmp     eax, SRV_GETVERSION
-        jne     @F
+        mov     edx, [ioctl]
+        mov     eax, [edx + IOCTL.io_code]
 
-        mov     eax, [ebx+output]
-        cmp     [ebx+out_size], 4
+;------------------------------------------------------
+
+        cmp     eax, 0 ;SRV_GETVERSION
         jne     .fail
+
+        cmp     [edx + IOCTL.out_size], 4
+        jb      .fail
+        mov     eax, [edx + IOCTL.output]
         mov     [eax], dword API_VERSION
+
         xor     eax, eax
         ret
-@@:
-        mov     ebx, [ioctl]
-        mov     eax, [ebx+io_code]
-        cmp     eax, SRV_DETECT
-        jne     @F
-        call    detect
-@@:
-.fail:
+
+  .fail:
         or      eax, -1
         ret
-endp
 
-restore   handle
-restore   io_code
-restore   input
-restore   inp_size
-restore   output
-restore   out_size
+endp
 
 align 4
 proc detect
@@ -114,12 +93,12 @@ proc detect
            endl
 
         mov     esi, msgSearch
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
         xor     eax, eax
         mov     [bus], eax
         inc     eax
-        call    PciApi          ; get last bus
+        invoke  PciApi          ; get last bus
         cmp     eax, -1
         je      .error
         mov     [last_bus], eax
@@ -127,14 +106,11 @@ proc detect
   .next_bus:
         and     [devfn], 0
   .next_dev:
-        stdcall PciRead16, [bus], [devfn], dword 0x0a   ; read class/subclass
-
+        invoke  PciRead16, [bus], [devfn], PCI_header.subclass  ; subclass/vendor
         cmp     ax, 0x0300      ; display controller - vga compatable controller
         je      .found
-
         cmp     ax, 0x0302      ; display controller - 3d controller
         je      .found
-
         cmp     ax, 0x0380      ; display controller - other display controller
         je      .found
 
@@ -150,14 +126,14 @@ proc detect
 
   .error:
         mov     esi, msgFail
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
         xor     eax, eax
         inc     eax
         ret
 
   .found:
-        stdcall PciRead8, [bus], [devfn], dword 0x06    ; read prog IF
+        invoke  PciRead8, [bus], [devfn], PCI_header00.prog_if
         test    al, 1 shl 4                             ; got capabilities list?
         jnz     .got_capabilities_list
 
@@ -167,12 +143,12 @@ proc detect
         jmp     .next
 
   .got_capabilities_list:
-        stdcall PciRead8, [bus], [devfn], dword 0x34    ; read capabilities offset
+        invoke  PciRead8, [bus], [devfn], PCI_header00.cap_ptr
         and     eax, 11111100b                          ; always dword aligned
         mov     edi, eax
 
   .read_capability:
-        stdcall PciRead32, [bus], [devfn], edi          ; read capability
+        invoke  PciRead32, [bus], [devfn], edi          ; read capability
         cmp     al, 0x02                                ; AGP
         je      .got_agp
         movzx   edi, ah                                 ; pointer to next capability
@@ -191,47 +167,45 @@ proc detect
 
   .agp_2:
         mov     esi, msgAGP2
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
-        stdcall PciRead32, [bus], [devfn], edi          ; read AGP status
+        invoke  PciRead32, [bus], [devfn], edi          ; read AGP status
   .agp_2_:
         test    al, 100b
         jnz     .100b
-
         test    al, 10b
         jnz     .010b
-
         test    al, 1b
         jz      .error
 
   .001b:
         mov     [cmd], 001b
         mov     esi, msg1
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .agp_go
 
   .010b:
         mov     [cmd], 010b
         mov     esi, msg2
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .agp_go
 
   .100b:
         mov     [cmd], 100b
         mov     esi, msg4
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .agp_go
 
   .agp_2m:
         mov     esi, msgAGP2m
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .agp_2_
 
   .agp_3:
         mov     esi, msgAGP3
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
-        stdcall PciRead32, [bus], [devfn], edi          ; read AGP status
+        invoke  PciRead32, [bus], [devfn], edi          ; read AGP status
         test    al, 1 shl 3
         jz      .agp_2m
 
@@ -239,13 +213,13 @@ proc detect
         jnz     .8x
         mov     [cmd], 01b
         mov     esi, msg4
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .agp_go
 
   .8x:
         mov     [cmd], 10b
         mov     esi, msg8
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
   .agp_go:
 
@@ -254,7 +228,7 @@ if FAST_WRITE
         jz      @f
         or      [cmd], 1 shl 4
         mov     esi, msgfast
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
   @@:
 end if
 
@@ -262,26 +236,28 @@ end if
         jz      @f
         or      [cmd], 1 shl 9
         mov     esi, msgside
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
   @@:
 
         add     edi, 4
         mov     eax, [cmd]
         or      eax, 1 shl 8                            ; enable AGP
-        stdcall PciWrite32, [bus], [devfn], edi, eax    ; write AGP cmd
+        invoke  PciWrite32, [bus], [devfn], edi, eax    ; write AGP cmd
 
         mov     esi, msgOK
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
 
         ret
 
 endp
 
 
-; initialized data
+; End of code
 
-align 4
-version         dd (5 shl 16) or (API_VERSION and 0xFFFF)
+data fixups
+end data
+
+include '../peimport.inc'
 
 my_service      db 'AGP', 0                             ; max 16 chars include zero
 
@@ -298,8 +274,6 @@ msg2            db '2x speed', 13, 10, 0
 msg1            db '1x speed', 13, 10, 0
 msgfast         db 'Fast Write', 13, 10, 0
 msgside         db 'Side band addressing', 13, 10, 0
-
-section '.data' data readable writable align 16
 
 ; uninitialized data
 
