@@ -107,9 +107,12 @@ ends
         PCI_BASE_ADDRESS_MEM_MASK       = 0xFFFFFFF0
 
 ; command bits
-        PCI_CMD_PIO                     = 1             ; bit0: io space control
-        PCI_CMD_MMIO                    = 2             ; bit1: memory space control
-        PCI_CMD_MASTER                  = 4             ; bit2: device acts as a PCI master
+        PCI_CMD_PIO                     = 0x01          ; bit0: io space control
+        PCI_CMD_MMIO                    = 0x02          ; bit1: memory space control
+        PCI_CMD_MASTER                  = 0x04          ; bit2: device acts as a PCI master
+
+; status bits
+        PCI_STATUS_CAPA                 = 0x10          ; bit4: new capabilities available
 
 
 if used PCI_find_io

@@ -17,9 +17,12 @@
         MII_BMSR                = 0x01          ; Basic mode status register
         MII_PHYSID1             = 0x02          ; PHYS ID 1
         MII_PHYSID2             = 0x03          ; PHYS ID 2
+
+        ; Auto negotiation registers
         MII_ADVERTISE           = 0x04          ; Advertisement control reg
         MII_LPA                 = 0x05          ; Link partner ability reg
         MII_EXPANSION           = 0x06          ; Expansion register
+
         MII_CTRL1000            = 0x09          ; 1000BASE-T control
         MII_STAT1000            = 0x0a          ; 1000BASE-T status
         MII_ESTATUS             = 0x0f          ; Extended Status

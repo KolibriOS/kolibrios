@@ -132,7 +132,6 @@ FASM_PROGRAMS:=\
  drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(KERNEL)/drivers/intelac97.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
- drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
@@ -206,6 +205,7 @@ endif
 # Same as above with PE stripping as extra step.
 FASM_PROGRAMS_PESTRIP:=\
  drivers/vidintel.sys:DRIVERS/VIDINTEL.SYS:$(REPOSITORY)/drivers/video/vidintel.asm \
+ drivers/3c59x.sys:DRIVERS/3C59X.SYS:$(REPOSITORY)/drivers/ethernet/3c59x.asm \
  drivers/dec21x4x.sys:DRIVERS/DEC21X4X.SYS:$(REPOSITORY)/drivers/ethernet/dec21x4x.asm \
  drivers/forcedeth.sys:DRIVERS/FORCEDETH.SYS:$(REPOSITORY)/drivers/ethernet/forcedeth.asm \
  drivers/i8254x.sys:DRIVERS/I8254X.SYS:$(REPOSITORY)/drivers/ethernet/i8254x.asm \
@@ -224,12 +224,12 @@ FASM_PROGRAMS_PESTRIP:=\
  drivers/usbhid.sys:DRIVERS/USBHID.SYS:$(REPOSITORY)/drivers/usb/usbhid/usbhid.asm \
  drivers/usbstor.sys:DRIVERS/USBSTOR.SYS:$(REPOSITORY)/drivers/usb/usbstor.asm \
  drivers/rdc.sys:DRIVERS/RDC.SYS:$(REPOSITORY)/drivers/video/rdc.asm \
+ drivers/commouse.sys:DRIVERS/COMMOUSE.SYS:$(REPOSITORY)/drivers/mouse/commouse.asm \
  drivers/ps2mouse.sys:DRIVERS/PS2MOUSE.SYS:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/tmpdisk.sys:DRIVERS/TMPDISK.SYS:$(REPOSITORY)/drivers/disk/tmpdisk.asm \
  drivers/intel_hda.sys:DRIVERS/intel_hda.sys:$(REPOSITORY)/drivers/audio/intel_hda/intel_hda.asm \
  drivers/sb16.sys:DRIVERS/SB16.SYS:$(REPOSITORY)/drivers/audio/sb16/sb16.asm \
  drivers/sound.sys:DRIVERS/SOUND.SYS:$(REPOSITORY)/drivers/audio/sound.asm \
- drivers/commouse.sys:DRIVERS/COMMOUSE.SYS:$(REPOSITORY)/drivers/mouse/commouse.asm \
 # end of list
 # The list of all FASM programs with one main FASM file for CD image.
 # Format of an item is exactly the same as in the previous list.
