@@ -26,48 +26,57 @@ include 'mii.inc'
 
         PAGESIZE        = 4096
 
-; network driver types
+; Network driver types
 
         NET_TYPE_ETH    = 1
         NET_TYPE_SLIP   = 2
 
-; link state
+; Link state
 
         ETH_LINK_DOWN   = 0             ; Link is down
-        ETH_LINK_UNKOWN = 1b            ; There could be an active link
+        ETH_LINK_UNKNOWN= 1b            ; There could be an active link
         ETH_LINK_FD     = 10b           ; full duplex flag
         ETH_LINK_10M    = 100b          ; 10 mbit
         ETH_LINK_100M   = 1000b         ; 100 mbit
-        ETH_LINK_1G     = 10000b        ; gigabit
+        ETH_LINK_1G     = 1100b         ; gigabit
 
+; Macro to easily set i/o addresses to access device.
+; In the beginning of a procedure (or ofter edx may have been destroyed),
+; always use set_io with offset 0 to reset the variables.
 
         LAST_IO = 0
-macro   set_io addr {
 
-        if      addr = 0
-        mov     edx, [device.io_addr]
-        else if addr = LAST_IO
+macro   set_io  baseaddr, offset {
+
+        if      offset = 0
+        mov     edx, baseaddr
+        else if offset = LAST_IO
         else
-        add     edx, addr - LAST_IO
+        add     edx, offset - LAST_IO
         end if
 
-        LAST_IO = addr
+        LAST_IO = offset
 }
+
+; Macro to allocate a contiguous buffer in memory
+; And initialise it to all zeros
+
+; This macro will destroy eax, ecx and edi !
 
 macro   allocate_and_clear dest, size, err {
 
-; We need to allocate at least 8 pages, if we want a continuous memory in ram
+; We need to allocate at least 8 pages, if we want a contiguous area in ram
         push    edx
     if (size < 8*4096) & (size > 4096)
-        stdcall KernelAlloc, 8*4096
+        invoke  KernelAlloc, 8*4096
     else
-        stdcall KernelAlloc, size
+        invoke  KernelAlloc, size
     end if
         pop     edx
 
         test    eax, eax
         jz      err
-        mov     dest, eax               ; Save the address to it into the device struct
+        mov     dest, eax
         mov     edi, eax                ; look at last part of code!
 
 ; Release the unused pages (if any)
@@ -75,7 +84,7 @@ macro   allocate_and_clear dest, size, err {
         add     eax, (size/4096+1)*4096
         mov     ecx, 8-(size/4096+1)
         push    edx
-        call    ReleasePages
+        invoke  ReleasePages
         pop     edx
     end if
 
@@ -92,59 +101,30 @@ macro   allocate_and_clear dest, size, err {
 }
 
 
-if used null_op
-align 4
-null_op:
-        or      eax, -1
-        ret
+struct  NET_DEVICE
 
-end if
+        type            dd ?    ; Type field
+        mtu             dd ?    ; Maximal Transmission Unit
+        name            dd ?    ; Ptr to 0 terminated string
 
+        unload          dd ?    ; Ptrs to driver functions
+        reset           dd ?    ;
+        transmit        dd ?    ;
 
-macro   GetRealAddr {             ; input and output is eax
+        bytes_tx        dq ?    ; Statistics, updated by the driver
+        bytes_rx        dq ?    ;
+        packets_tx      dd ?    ;
+        packets_rx      dd ?    ;
 
-        push    ax
-        call    GetPgAddr
-        and     word[esp], PAGESIZE - 1
-        or      ax, word[esp]
-        inc     esp
-        inc     esp
+        state           dd ?    ; link state (0 = no link)
+        hwacc           dd ?    ; bitmask stating enabled HW accelerations
 
-}
-
-macro   NET_DEVICE {
-
-        .type           dd ?    ; Type field
-        .mtu            dd ?    ; Maximal Transmission Unit
-        .name           dd ?    ; Ptr to 0 terminated string
-
-        .unload         dd ?    ; Ptrs to driver functions
-        .reset          dd ?    ;
-        .transmit       dd ?    ;
-
-        .bytes_tx       dq ?    ; Statistics, updated by the driver
-        .bytes_rx       dq ?    ;
-        .packets_tx     dd ?    ;
-        .packets_rx     dd ?    ;
-
-        .state          dd ?    ; link state (0 = no link)
-        .hwacc          dd ?    ; bitmask stating enabled HW accelerations
-
-        .end:
-}
+ends
 
 
-macro   ETH_DEVICE {
-        NET_DEVICE
+struct  ETH_DEVICE      NET_DEVICE
 
-        .mac            dp ?
+        mac             dp ?
                         dw ?    ; qword alignment
 
-}
-
-
-
-macro   SLIP_DEVICE {
-        NET_DEVICE
-
-}
+ends

@@ -50,7 +50,7 @@ include '../proc32.inc'
 include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
-include '../netdrv_pe.inc'
+include '../netdrv.inc'
 
 ;**************************************************************************
 ; forcedeth Register Definitions

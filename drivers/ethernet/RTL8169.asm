@@ -39,7 +39,7 @@ include '../proc32.inc'
 include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
-include '../netdrv_pe.inc'
+include '../netdrv.inc'
 
         REG_MAC0                = 0x0 ; Ethernet hardware address
         REG_MAR0                = 0x8 ; Multicast filter

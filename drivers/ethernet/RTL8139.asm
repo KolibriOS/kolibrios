@@ -41,7 +41,7 @@ include '../proc32.inc'
 include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
-include '../netdrv_pe.inc'
+include '../netdrv.inc'
 
         REG_IDR0                = 0x00
         REG_MAR0                = 0x08 ; multicast filter register 0

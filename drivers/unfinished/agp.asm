@@ -27,7 +27,7 @@ section '.flat' readable writable executable
 include '../proc32.inc'
 include '../struct.inc'
 include '../macros.inc'
-include '../pci_pe.inc'
+include '../pci.inc'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                        ;;
