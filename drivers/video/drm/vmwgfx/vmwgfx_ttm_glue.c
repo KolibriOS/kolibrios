@@ -53,7 +53,6 @@ static int vmw_ttm_mem_global_init(struct drm_global_reference *ref)
 
 static void vmw_ttm_mem_global_release(struct drm_global_reference *ref)
 {
-//   ttm_mem_global_release(ref->object);
 }
 
 int vmw_ttm_global_init(struct vmw_private *dev_priv)

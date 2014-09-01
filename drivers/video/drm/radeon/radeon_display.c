@@ -33,6 +33,23 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_edid.h>
 
+/* Greatest common divisor */
+unsigned long gcd(unsigned long a, unsigned long b)
+{
+        unsigned long r;
+
+        if (a < b)
+                swap(a, b);
+
+        if (!b)
+                return a;
+        while ((r = a % b) != 0) {
+                a = b;
+                b = r;
+        }
+        return b;
+}
+
 static void avivo_crtc_load_lut(struct drm_crtc *crtc)
 {
 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
@@ -63,7 +80,8 @@ static void avivo_crtc_load_lut(struct drm_crtc *crtc)
 			     (radeon_crtc->lut_b[i] << 0));
 	}
 
-	WREG32(AVIVO_D1GRPH_LUT_SEL + radeon_crtc->crtc_offset, radeon_crtc->crtc_id);
+	/* Only change bit 0 of LUT_SEL, other bits are set elsewhere */
+	WREG32_P(AVIVO_D1GRPH_LUT_SEL + radeon_crtc->crtc_offset, radeon_crtc->crtc_id, ~1);
 }
 
 static void dce4_crtc_load_lut(struct drm_crtc *crtc)
@@ -153,7 +171,13 @@ static void dce5_crtc_load_lut(struct drm_crtc *crtc)
 		NI_OUTPUT_CSC_OVL_MODE(NI_OUTPUT_CSC_BYPASS)));
 	/* XXX match this to the depth of the crtc fmt block, move to modeset? */
 	WREG32(0x6940 + radeon_crtc->crtc_offset, 0);
-
+	if (ASIC_IS_DCE8(rdev)) {
+		/* XXX this only needs to be programmed once per crtc at startup,
+		 * not sure where the best place for it is
+		 */
+		WREG32(CIK_ALPHA_CONTROL + radeon_crtc->crtc_offset,
+		       CIK_CURSOR_ALPHA_BLND_ENA);
+	}
 }
 
 static void legacy_crtc_load_lut(struct drm_crtc *crtc)
@@ -243,11 +267,51 @@ static void radeon_crtc_destroy(struct drm_crtc *crtc)
 	kfree(radeon_crtc);
 }
 
+static int
+radeon_crtc_set_config(struct drm_mode_set *set)
+{
+	struct drm_device *dev;
+	struct radeon_device *rdev;
+	struct drm_crtc *crtc;
+	bool active = false;
+	int ret;
+
+	if (!set || !set->crtc)
+		return -EINVAL;
+
+	dev = set->crtc->dev;
+
+	ret = drm_crtc_helper_set_config(set);
+
+	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+		if (crtc->enabled)
+			active = true;
+
+//   pm_runtime_mark_last_busy(dev->dev);
+
+	rdev = dev->dev_private;
+	/* if we have active crtcs and we don't have a power ref,
+	   take the current one */
+	if (active && !rdev->have_disp_power_ref) {
+		rdev->have_disp_power_ref = true;
+		return ret;
+	}
+	/* if we have no active crtcs, then drop the power ref
+	   we got before */
+	if (!active && rdev->have_disp_power_ref) {
+//       pm_runtime_put_autosuspend(dev->dev);
+		rdev->have_disp_power_ref = false;
+	}
+
+	/* drop the power reference we got coming in here */
+//   pm_runtime_put_autosuspend(dev->dev);
+	return ret;
+}
 static const struct drm_crtc_funcs radeon_crtc_funcs = {
     .cursor_set = NULL,
     .cursor_move = NULL,
 	.gamma_set = radeon_crtc_gamma_set,
-	.set_config = drm_crtc_helper_set_config,
+	.set_config = radeon_crtc_set_config,
 	.destroy = radeon_crtc_destroy,
 	.page_flip = NULL,
 };
@@ -268,6 +332,16 @@ static void radeon_crtc_init(struct drm_device *dev, int index)
 	radeon_crtc->crtc_id = index;
 	rdev->mode_info.crtcs[index] = radeon_crtc;
 
+	if (rdev->family >= CHIP_BONAIRE) {
+		radeon_crtc->max_cursor_width = CIK_CURSOR_WIDTH;
+		radeon_crtc->max_cursor_height = CIK_CURSOR_HEIGHT;
+	} else {
+		radeon_crtc->max_cursor_width = CURSOR_WIDTH;
+		radeon_crtc->max_cursor_height = CURSOR_HEIGHT;
+	}
+	dev->mode_config.cursor_width = radeon_crtc->max_cursor_width;
+	dev->mode_config.cursor_height = radeon_crtc->max_cursor_height;
+
 #if 0
 	radeon_crtc->mode_set.crtc = &radeon_crtc->base;
 	radeon_crtc->mode_set.connectors = (struct drm_connector **)(radeon_crtc + 1);
@@ -286,7 +360,7 @@ static void radeon_crtc_init(struct drm_device *dev, int index)
 		radeon_legacy_init_crtc(dev, radeon_crtc);
 }
 
-static const char *encoder_names[37] = {
+static const char *encoder_names[38] = {
 	"NONE",
 	"INTERNAL_LVDS",
 	"INTERNAL_TMDS1",
@@ -323,7 +397,8 @@ static const char *encoder_names[37] = {
 	"INTERNAL_UNIPHY2",
 	"NUTMEG",
 	"TRAVIS",
-	"INTERNAL_VCE"
+	"INTERNAL_VCE",
+	"INTERNAL_UNIPHY3",
 };
 
 static const char *hpd_names[6] = {
@@ -348,7 +423,7 @@ static void radeon_print_display_setup(struct drm_device *dev)
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		radeon_connector = to_radeon_connector(connector);
 		DRM_INFO("Connector %d:\n", i);
-		DRM_INFO("  %s\n", drm_get_connector_name(connector));
+		DRM_INFO("  %s\n", connector->name);
 		if (radeon_connector->hpd.hpd != RADEON_HPD_NONE)
 			DRM_INFO("  %s\n", hpd_names[radeon_connector->hpd.hpd]);
 		if (radeon_connector->ddc_bus) {
@@ -438,120 +513,90 @@ static bool radeon_setup_enc_conn(struct drm_device *dev)
 	return ret;
 }
 
-int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
-{
-	struct drm_device *dev = radeon_connector->base.dev;
-	struct radeon_device *rdev = dev->dev_private;
-	int ret = 0;
-
-	/* on hw with routers, select right port */
-	if (radeon_connector->router.ddc_valid)
-		radeon_router_select_ddc_port(radeon_connector);
-
-	if (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
-	    ENCODER_OBJECT_ID_NONE) {
-		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
-
-		if (dig->dp_i2c_bus)
-			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
-							      &dig->dp_i2c_bus->adapter);
-	} else if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
-		   (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP)) {
-		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
-
-		if ((dig->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT ||
-		     dig->dp_sink_type == CONNECTOR_OBJECT_ID_eDP) && dig->dp_i2c_bus)
-			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
-							      &dig->dp_i2c_bus->adapter);
-		else if (radeon_connector->ddc_bus && !radeon_connector->edid)
-			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
-							      &radeon_connector->ddc_bus->adapter);
-	} else {
-		if (radeon_connector->ddc_bus && !radeon_connector->edid)
-			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
-							      &radeon_connector->ddc_bus->adapter);
-	}
-
-	if (!radeon_connector->edid) {
-		if (rdev->is_atom_bios) {
-			/* some laptops provide a hardcoded edid in rom for LCDs */
-			if (((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_LVDS) ||
-			     (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP)))
-				radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
-		} else
-	/* some servers provide a hardcoded edid in rom for KVMs */
-			radeon_connector->edid = radeon_bios_get_hardcoded_edid(rdev);
-	}
-	if (radeon_connector->edid) {
-		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
-		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
-		return ret;
-	}
-	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
-	return 0;
-}
-
 /* avivo */
-static void avivo_get_fb_div(struct radeon_pll *pll,
-			     u32 target_clock,
-			     u32 post_div,
-			     u32 ref_div,
-			     u32 *fb_div,
-			     u32 *frac_fb_div)
+
+/**
+ * avivo_reduce_ratio - fractional number reduction
+ *
+ * @nom: nominator
+ * @den: denominator
+ * @nom_min: minimum value for nominator
+ * @den_min: minimum value for denominator
+ *
+ * Find the greatest common divisor and apply it on both nominator and
+ * denominator, but make nominator and denominator are at least as large
+ * as their minimum values.
+ */
+static void avivo_reduce_ratio(unsigned *nom, unsigned *den,
+			       unsigned nom_min, unsigned den_min)
 {
-	u32 tmp = post_div * ref_div;
+	unsigned tmp;
 
-	tmp *= target_clock;
-	*fb_div = tmp / pll->reference_freq;
-	*frac_fb_div = tmp % pll->reference_freq;
+	/* reduce the numbers to a simpler ratio */
+	tmp = gcd(*nom, *den);
+	*nom /= tmp;
+	*den /= tmp;
 
-        if (*fb_div > pll->max_feedback_div)
-		*fb_div = pll->max_feedback_div;
-        else if (*fb_div < pll->min_feedback_div)
-                *fb_div = pll->min_feedback_div;
-}
-
-static u32 avivo_get_post_div(struct radeon_pll *pll,
-			      u32 target_clock)
-{
-	u32 vco, post_div, tmp;
-
-	if (pll->flags & RADEON_PLL_USE_POST_DIV)
-		return pll->post_div;
-
-	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP) {
-		if (pll->flags & RADEON_PLL_IS_LCD)
-			vco = pll->lcd_pll_out_min;
-		else
-			vco = pll->pll_out_min;
-	} else {
-		if (pll->flags & RADEON_PLL_IS_LCD)
-			vco = pll->lcd_pll_out_max;
-		else
-			vco = pll->pll_out_max;
+	/* make sure nominator is large enough */
+        if (*nom < nom_min) {
+		tmp = DIV_ROUND_UP(nom_min, *nom);
+		*nom *= tmp;
+		*den *= tmp;
 	}
 
-	post_div = vco / target_clock;
-	tmp = vco % target_clock;
-
-	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP) {
-		if (tmp)
-			post_div++;
-	} else {
-		if (!tmp)
-			post_div--;
+	/* make sure the denominator is large enough */
+	if (*den < den_min) {
+		tmp = DIV_ROUND_UP(den_min, *den);
+		*nom *= tmp;
+		*den *= tmp;
 	}
-
-	if (post_div > pll->max_post_div)
-		post_div = pll->max_post_div;
-	else if (post_div < pll->min_post_div)
-		post_div = pll->min_post_div;
-
-	return post_div;
 }
 
-#define MAX_TOLERANCE 10
+/**
+ * avivo_get_fb_ref_div - feedback and ref divider calculation
+ *
+ * @nom: nominator
+ * @den: denominator
+ * @post_div: post divider
+ * @fb_div_max: feedback divider maximum
+ * @ref_div_max: reference divider maximum
+ * @fb_div: resulting feedback divider
+ * @ref_div: resulting reference divider
+ *
+ * Calculate feedback and reference divider for a given post divider. Makes
+ * sure we stay within the limits.
+ */
+static void avivo_get_fb_ref_div(unsigned nom, unsigned den, unsigned post_div,
+				 unsigned fb_div_max, unsigned ref_div_max,
+				 unsigned *fb_div, unsigned *ref_div)
+{
+	/* limit reference * post divider to a maximum */
+	ref_div_max = max(min(100 / post_div, ref_div_max), 1u);
 
+	/* get matching reference and feedback divider */
+	*ref_div = min(max(DIV_ROUND_CLOSEST(den, post_div), 1u), ref_div_max);
+	*fb_div = DIV_ROUND_CLOSEST(nom * *ref_div * post_div, den);
+
+	/* limit fb divider to its maximum */
+        if (*fb_div > fb_div_max) {
+		*ref_div = DIV_ROUND_CLOSEST(*ref_div * fb_div_max, *fb_div);
+		*fb_div = fb_div_max;
+	}
+}
+
+/**
+ * radeon_compute_pll_avivo - compute PLL paramaters
+ *
+ * @pll: information about the PLL
+ * @dot_clock_p: resulting pixel clock
+ * fb_div_p: resulting feedback divider
+ * frac_fb_div_p: fractional part of the feedback divider
+ * ref_div_p: resulting reference divider
+ * post_div_p: resulting reference divider
+ *
+ * Try to calculate the PLL parameters to generate the given frequency:
+ * dot_clock = (ref_freq * feedback_div) / (ref_div * post_div)
+ */
 void radeon_compute_pll_avivo(struct radeon_pll *pll,
 			      u32 freq,
 			      u32 *dot_clock_p,
@@ -560,53 +605,135 @@ void radeon_compute_pll_avivo(struct radeon_pll *pll,
 			      u32 *ref_div_p,
 			      u32 *post_div_p)
 {
-	u32 target_clock = freq / 10;
-	u32 post_div = avivo_get_post_div(pll, target_clock);
-	u32 ref_div = pll->min_ref_div;
-	u32 fb_div = 0, frac_fb_div = 0, tmp;
+	unsigned target_clock = pll->flags & RADEON_PLL_USE_FRAC_FB_DIV ?
+		freq : freq / 10;
 
-	if (pll->flags & RADEON_PLL_USE_REF_DIV)
-		ref_div = pll->reference_div;
+	unsigned fb_div_min, fb_div_max, fb_div;
+	unsigned post_div_min, post_div_max, post_div;
+	unsigned ref_div_min, ref_div_max, ref_div;
+	unsigned post_div_best, diff_best;
+	unsigned nom, den;
+
+	/* determine allowed feedback divider range */
+	fb_div_min = pll->min_feedback_div;
+	fb_div_max = pll->max_feedback_div;
 
 	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
-		avivo_get_fb_div(pll, target_clock, post_div, ref_div, &fb_div, &frac_fb_div);
-		frac_fb_div = (100 * frac_fb_div) / pll->reference_freq;
-		if (frac_fb_div >= 5) {
-			frac_fb_div -= 5;
-			frac_fb_div = frac_fb_div / 10;
-			frac_fb_div++;
-		}
-		if (frac_fb_div >= 10) {
-			fb_div++;
-			frac_fb_div = 0;
-		}
-	} else {
-		while (ref_div <= pll->max_ref_div) {
-			avivo_get_fb_div(pll, target_clock, post_div, ref_div,
-					 &fb_div, &frac_fb_div);
-			if (frac_fb_div >= (pll->reference_freq / 2))
-				fb_div++;
-			frac_fb_div = 0;
-			tmp = (pll->reference_freq * fb_div) / (post_div * ref_div);
-			tmp = (tmp * 10000) / target_clock;
+		fb_div_min *= 10;
+		fb_div_max *= 10;
+	}
 
-			if (tmp > (10000 + MAX_TOLERANCE))
-				ref_div++;
-			else if (tmp >= (10000 - MAX_TOLERANCE))
-				break;
-			else
-				ref_div++;
+	/* determine allowed ref divider range */
+	if (pll->flags & RADEON_PLL_USE_REF_DIV)
+		ref_div_min = pll->reference_div;
+	else
+		ref_div_min = pll->min_ref_div;
+
+	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV &&
+	    pll->flags & RADEON_PLL_USE_REF_DIV)
+		ref_div_max = pll->reference_div;
+		else
+		ref_div_max = pll->max_ref_div;
+
+	/* determine allowed post divider range */
+	if (pll->flags & RADEON_PLL_USE_POST_DIV) {
+		post_div_min = pll->post_div;
+		post_div_max = pll->post_div;
+	} else {
+		unsigned vco_min, vco_max;
+
+		if (pll->flags & RADEON_PLL_IS_LCD) {
+			vco_min = pll->lcd_pll_out_min;
+			vco_max = pll->lcd_pll_out_max;
+		} else {
+			vco_min = pll->pll_out_min;
+			vco_max = pll->pll_out_max;
+		}
+
+		if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
+			vco_min *= 10;
+			vco_max *= 10;
+	}
+
+		post_div_min = vco_min / target_clock;
+		if ((target_clock * post_div_min) < vco_min)
+			++post_div_min;
+		if (post_div_min < pll->min_post_div)
+			post_div_min = pll->min_post_div;
+
+		post_div_max = vco_max / target_clock;
+		if ((target_clock * post_div_max) > vco_max)
+			--post_div_max;
+		if (post_div_max > pll->max_post_div)
+			post_div_max = pll->max_post_div;
+	}
+
+	/* represent the searched ratio as fractional number */
+	nom = target_clock;
+	den = pll->reference_freq;
+
+	/* reduce the numbers to a simpler ratio */
+	avivo_reduce_ratio(&nom, &den, fb_div_min, post_div_min);
+
+	/* now search for a post divider */
+	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP)
+		post_div_best = post_div_min;
+	else
+		post_div_best = post_div_max;
+	diff_best = ~0;
+
+	for (post_div = post_div_min; post_div <= post_div_max; ++post_div) {
+		unsigned diff;
+		avivo_get_fb_ref_div(nom, den, post_div, fb_div_max,
+				     ref_div_max, &fb_div, &ref_div);
+		diff = abs(target_clock - (pll->reference_freq * fb_div) /
+			(ref_div * post_div));
+
+		if (diff < diff_best || (diff == diff_best &&
+		    !(pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP))) {
+
+			post_div_best = post_div;
+			diff_best = diff;
+		}
+	}
+	post_div = post_div_best;
+
+	/* get the feedback and reference divider for the optimal value */
+	avivo_get_fb_ref_div(nom, den, post_div, fb_div_max, ref_div_max,
+			     &fb_div, &ref_div);
+
+	/* reduce the numbers to a simpler ratio once more */
+	/* this also makes sure that the reference divider is large enough */
+	avivo_reduce_ratio(&fb_div, &ref_div, fb_div_min, ref_div_min);
+
+	/* avoid high jitter with small fractional dividers */
+	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV && (fb_div % 10)) {
+		fb_div_min = max(fb_div_min, (9 - (fb_div % 10)) * 20 + 50);
+		if (fb_div < fb_div_min) {
+			unsigned tmp = DIV_ROUND_UP(fb_div_min, fb_div);
+			fb_div *= tmp;
+			ref_div *= tmp;
 		}
 	}
 
-	*dot_clock_p = ((pll->reference_freq * fb_div * 10) + (pll->reference_freq * frac_fb_div)) /
+	/* and finally save the result */
+	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
+		*fb_div_p = fb_div / 10;
+		*frac_fb_div_p = fb_div % 10;
+	} else {
+		*fb_div_p = fb_div;
+		*frac_fb_div_p = 0;
+	}
+
+	*dot_clock_p = ((pll->reference_freq * *fb_div_p * 10) +
+			(pll->reference_freq * *frac_fb_div_p)) /
 		(ref_div * post_div * 10);
-	*fb_div_p = fb_div;
-	*frac_fb_div_p = frac_fb_div;
 	*ref_div_p = ref_div;
 	*post_div_p = post_div;
-	DRM_DEBUG_KMS("%d, pll dividers - fb: %d.%d ref: %d, post %d\n",
-		      *dot_clock_p, fb_div, frac_fb_div, ref_div, post_div);
+
+	DRM_DEBUG_KMS("%d - %d, pll dividers - fb: %d.%d ref: %d, post %d\n",
+		      freq, *dot_clock_p * 10, *fb_div_p, *frac_fb_div_p,
+		      ref_div, post_div);
 }
 
 /* pre-avivo */
@@ -809,6 +936,9 @@ static void radeon_user_framebuffer_destroy(struct drm_framebuffer *fb)
 {
 	struct radeon_framebuffer *radeon_fb = to_radeon_framebuffer(fb);
 
+	if (radeon_fb->obj) {
+		drm_gem_object_unreference_unlocked(radeon_fb->obj);
+	}
 	drm_framebuffer_cleanup(fb);
 	kfree(radeon_fb);
 }
@@ -874,6 +1004,18 @@ static struct drm_prop_enum_list radeon_underscan_enum_list[] =
 	{ UNDERSCAN_AUTO, "auto" },
 };
 
+static struct drm_prop_enum_list radeon_audio_enum_list[] =
+{	{ RADEON_AUDIO_DISABLE, "off" },
+	{ RADEON_AUDIO_ENABLE, "on" },
+	{ RADEON_AUDIO_AUTO, "auto" },
+};
+
+/* XXX support different dither options? spatial, temporal, both, etc. */
+static struct drm_prop_enum_list radeon_dither_enum_list[] =
+{	{ RADEON_FMT_DITHER_DISABLE, "off" },
+	{ RADEON_FMT_DITHER_ENABLE, "on" },
+};
+
 static int radeon_modeset_create_props(struct radeon_device *rdev)
 {
 	int sz;
@@ -924,6 +1066,18 @@ static int radeon_modeset_create_props(struct radeon_device *rdev)
 	if (!rdev->mode_info.underscan_vborder_property)
 		return -ENOMEM;
 
+	sz = ARRAY_SIZE(radeon_audio_enum_list);
+	rdev->mode_info.audio_property =
+		drm_property_create_enum(rdev->ddev, 0,
+					 "audio",
+					 radeon_audio_enum_list, sz);
+
+	sz = ARRAY_SIZE(radeon_dither_enum_list);
+	rdev->mode_info.dither_property =
+		drm_property_create_enum(rdev->ddev, 0,
+					 "dither",
+					 radeon_dither_enum_list, sz);
+
 	return 0;
 }
 
@@ -957,41 +1111,41 @@ static void radeon_afmt_init(struct radeon_device *rdev)
 	for (i = 0; i < RADEON_MAX_AFMT_BLOCKS; i++)
 		rdev->mode_info.afmt[i] = NULL;
 
-	if (ASIC_IS_DCE6(rdev)) {
-		/* todo */
+	if (ASIC_IS_NODCE(rdev)) {
+		/* nothing to do */
 	} else if (ASIC_IS_DCE4(rdev)) {
+		static uint32_t eg_offsets[] = {
+			EVERGREEN_CRTC0_REGISTER_OFFSET,
+			EVERGREEN_CRTC1_REGISTER_OFFSET,
+			EVERGREEN_CRTC2_REGISTER_OFFSET,
+			EVERGREEN_CRTC3_REGISTER_OFFSET,
+			EVERGREEN_CRTC4_REGISTER_OFFSET,
+			EVERGREEN_CRTC5_REGISTER_OFFSET,
+			0x13830 - 0x7030,
+		};
+		int num_afmt;
+
+		/* DCE8 has 7 audio blocks tied to DIG encoders */
+		/* DCE6 has 6 audio blocks tied to DIG encoders */
 		/* DCE4/5 has 6 audio blocks tied to DIG encoders */
 		/* DCE4.1 has 2 audio blocks tied to DIG encoders */
-		rdev->mode_info.afmt[0] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
-		if (rdev->mode_info.afmt[0]) {
-			rdev->mode_info.afmt[0]->offset = EVERGREEN_CRTC0_REGISTER_OFFSET;
-			rdev->mode_info.afmt[0]->id = 0;
-		}
-		rdev->mode_info.afmt[1] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
-		if (rdev->mode_info.afmt[1]) {
-			rdev->mode_info.afmt[1]->offset = EVERGREEN_CRTC1_REGISTER_OFFSET;
-			rdev->mode_info.afmt[1]->id = 1;
-		}
-		if (!ASIC_IS_DCE41(rdev)) {
-			rdev->mode_info.afmt[2] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
-			if (rdev->mode_info.afmt[2]) {
-				rdev->mode_info.afmt[2]->offset = EVERGREEN_CRTC2_REGISTER_OFFSET;
-				rdev->mode_info.afmt[2]->id = 2;
-			}
-			rdev->mode_info.afmt[3] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
-			if (rdev->mode_info.afmt[3]) {
-				rdev->mode_info.afmt[3]->offset = EVERGREEN_CRTC3_REGISTER_OFFSET;
-				rdev->mode_info.afmt[3]->id = 3;
-			}
-			rdev->mode_info.afmt[4] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
-			if (rdev->mode_info.afmt[4]) {
-				rdev->mode_info.afmt[4]->offset = EVERGREEN_CRTC4_REGISTER_OFFSET;
-				rdev->mode_info.afmt[4]->id = 4;
-			}
-			rdev->mode_info.afmt[5] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
-			if (rdev->mode_info.afmt[5]) {
-				rdev->mode_info.afmt[5]->offset = EVERGREEN_CRTC5_REGISTER_OFFSET;
-				rdev->mode_info.afmt[5]->id = 5;
+		if (ASIC_IS_DCE8(rdev))
+			num_afmt = 7;
+		else if (ASIC_IS_DCE6(rdev))
+			num_afmt = 6;
+		else if (ASIC_IS_DCE5(rdev))
+			num_afmt = 6;
+		else if (ASIC_IS_DCE41(rdev))
+			num_afmt = 2;
+		else /* DCE4 */
+			num_afmt = 6;
+
+		BUG_ON(num_afmt > ARRAY_SIZE(eg_offsets));
+		for (i = 0; i < num_afmt; i++) {
+			rdev->mode_info.afmt[i] = kzalloc(sizeof(struct radeon_afmt), GFP_KERNEL);
+			if (rdev->mode_info.afmt[i]) {
+				rdev->mode_info.afmt[i]->offset = eg_offsets[i];
+				rdev->mode_info.afmt[i]->id = i;
 			}
 		}
 	} else if (ASIC_IS_DCE3(rdev)) {
@@ -1038,6 +1192,8 @@ int radeon_modeset_init(struct radeon_device *rdev)
 {
 	int i;
 	int ret;
+
+ENTER();
 
 	drm_mode_config_init(rdev->ddev);
 	rdev->mode_info.mode_config_initialized = true;
@@ -1095,13 +1251,11 @@ int radeon_modeset_init(struct radeon_device *rdev)
 //   radeon_hpd_init(rdev);
 
 	/* setup afmt */
-//	radeon_afmt_init(rdev);
-
-	/* Initialize power management */
-//   radeon_pm_init(rdev);
+	radeon_afmt_init(rdev);
 
 	radeon_fbdev_init(rdev);
-//   drm_kms_helper_poll_init(rdev->ddev);
+
+LEAVE();
 
 	return 0;
 }
@@ -1181,7 +1335,7 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 			    (!(mode->flags & DRM_MODE_FLAG_INTERLACE)) &&
 			    ((radeon_encoder->underscan_type == UNDERSCAN_ON) ||
 			     ((radeon_encoder->underscan_type == UNDERSCAN_AUTO) &&
-			      drm_detect_hdmi_monitor(radeon_connector->edid) &&
+			      drm_detect_hdmi_monitor(radeon_connector_edid(connector)) &&
 			      is_hdtv_mode(mode)))) {
 				if (radeon_encoder->underscan_hborder != 0)
 					radeon_crtc->h_border = radeon_encoder->underscan_hborder;
@@ -1227,12 +1381,18 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 }
 
 /*
- * Retrieve current video scanout position of crtc on a given gpu.
+ * Retrieve current video scanout position of crtc on a given gpu, and
+ * an optional accurate timestamp of when query happened.
  *
  * \param dev Device to query.
  * \param crtc Crtc to query.
+ * \param flags Flags from caller (DRM_CALLED_FROM_VBLIRQ or 0).
  * \param *vpos Location where vertical scanout position should be stored.
  * \param *hpos Location where horizontal scanout position should go.
+ * \param *stime Target location for timestamp taken immediately before
+ *               scanout position query. Can be NULL to skip timestamp.
+ * \param *etime Target location for timestamp taken immediately after
+ *               scanout position query. Can be NULL to skip timestamp.
  *
  * Returns vpos as a positive number while in active scanout area.
  * Returns vpos as a negative number inside vblank, counting the number
@@ -1248,7 +1408,8 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
  * unknown small number of scanlines wrt. real scanout position.
  *
  */
-int radeon_get_crtc_scanoutpos(struct drm_device *dev, int crtc, int *vpos, int *hpos)
+int radeon_get_crtc_scanoutpos(struct drm_device *dev, int crtc, unsigned int flags,
+			       int *vpos, int *hpos, void *stime, void *etime)
 {
 	u32 stat_crtc = 0, vbl = 0, position = 0;
 	int vbl_start, vbl_end, vtotal, ret = 0;
@@ -1377,6 +1538,28 @@ int radeon_get_crtc_scanoutpos(struct drm_device *dev, int crtc, int *vpos, int 
 	/* In vblank? */
 	if (in_vbl)
 		ret |= DRM_SCANOUTPOS_INVBL;
+
+	/* Is vpos outside nominal vblank area, but less than
+	 * 1/100 of a frame height away from start of vblank?
+	 * If so, assume this isn't a massively delayed vblank
+	 * interrupt, but a vblank interrupt that fired a few
+	 * microseconds before true start of vblank. Compensate
+	 * by adding a full frame duration to the final timestamp.
+	 * Happens, e.g., on ATI R500, R600.
+	 *
+	 * We only do this if DRM_CALLED_FROM_VBLIRQ.
+	 */
+	if ((flags & DRM_CALLED_FROM_VBLIRQ) && !in_vbl) {
+		vbl_start = rdev->mode_info.crtcs[crtc]->base.hwmode.crtc_vdisplay;
+		vtotal = rdev->mode_info.crtcs[crtc]->base.hwmode.crtc_vtotal;
+
+		if (vbl_start - *vpos < vtotal / 100) {
+			*vpos -= vtotal;
+
+			/* Signal this correction as "applied". */
+			ret |= 0x8;
+		}
+	}
 
 	return ret;
 }

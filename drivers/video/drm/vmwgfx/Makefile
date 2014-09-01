@@ -1,4 +1,5 @@
 
+
 CC = gcc
 LD = ld
 AS = as
@@ -13,7 +14,7 @@ DRM_TOPDIR   = $(CURDIR)/..
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
 		-I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/uapi
 
-CFLAGS   = -c -O2 $(INCLUDES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS   = -c -Os $(INCLUDES) -fomit-frame-pointer -fno-builtin-printf
 CFLAGS+= -mno-ms-bitfields
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
@@ -47,7 +48,7 @@ NAME_SRC=							\
 			vmwgfx_fence.c				\
 			vmwgfx_fifo.c				\
 			vmwgfx_gmr.c				\
-			vmwgfx_gmrid_manager.c			\
+			vmwgfx_gmrid_manager.c		\
 			vmwgfx_irq.c				\
 			vmwgfx_kms.c				\
 			vmwgfx_marker.c				\
@@ -57,25 +58,25 @@ NAME_SRC=							\
 			vmwgfx_shader.c				\
 			vmwgfx_surface.c			\
 			vmwgfx_ttm_glue.c			\
-			../hdmi.c				\
+			../hdmi.c				    \
 			../i2c/i2c-core.c			\
 			../ttm/ttm_bo.c				\
-			../ttm/ttm_bo_manager.c			\
-			../ttm/ttm_execbuf_util.c		\
+			../ttm/ttm_bo_manager.c		\
+			../ttm/ttm_execbuf_util.c	\
 			../ttm/ttm_lock.c			\
 			../ttm/ttm_memory.c			\
 			../ttm/ttm_object.c			\
-			../ttm/ttm_page_alloc.c			\
+			../ttm/ttm_page_alloc.c		\
 			../ttm/ttm_tt.c				\
 			../drm_crtc.c				\
-			../drm_crtc_helper.c			\
+			../drm_crtc_helper.c		\
 			../drm_drv.c				\
 			../drm_edid.c				\
 			../drm_gem.c				\
 			../drm_global.c				\
 			../drm_hashtab.c			\
 			../drm_irq.c				\
-			../drm_mm.c				\
+			../drm_mm.c				    \
 			../drm_modes.c				\
 			../drm_pci.c				\
 			../drm_stub.c				\
@@ -93,7 +94,6 @@ all: $(NAME).dll
 
 $(NAME).dll: $(NAME_OBJS) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a vmw.lds Makefile
 	$(LD) -L$(LIBPATH) $(LDFLAGS) -T vmw.lds -o $@ $(NAME_OBJS) $(LIBS)
-	kpack $@  
 
 
 %.o : %.c $(HFILES) Makefile

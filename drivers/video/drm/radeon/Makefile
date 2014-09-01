@@ -34,18 +34,26 @@ HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 			$(DRV_INCLUDES)/drm/drmP.h		\
 			$(DRV_INCLUDES)/drm/drm_edid.h		\
 			$(DRV_INCLUDES)/drm/drm_crtc.h		\
-			$(DRV_INCLUDES)/drm/drm_mode.h		\
 			$(DRV_INCLUDES)/drm/drm_mm.h		\
 			atom.h					\
 			radeon.h				\
 			radeon_asic.h
 
 NAME_SRC=							\
+			main.c					\
 			pci.c					\
+			../ttm/ttm_bo.c				\
+			../ttm/ttm_bo_manager.c			\
+			../ttm/ttm_bo_util.c			\
+			../ttm/ttm_execbuf_util.c		\
+			../ttm/ttm_memory.c			\
+			../ttm/ttm_page_alloc.c			\
+			../ttm/ttm_tt.c				\
 			$(DRM_TOPDIR)/drm_cache.c		\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
+			$(DRM_TOPDIR)/drm_drv.c			\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_gem.c			\
@@ -53,26 +61,42 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_irq.c			\
 			$(DRM_TOPDIR)/drm_mm.c			\
 			$(DRM_TOPDIR)/drm_modes.c		\
+			$(DRM_TOPDIR)/drm_modeset_lock.c	\
 			$(DRM_TOPDIR)/drm_pci.c			\
+			$(DRM_TOPDIR)/drm_plane_helper.c	\
+			$(DRM_TOPDIR)/drm_probe_helper.c	\
+			$(DRM_TOPDIR)/drm_rect.c		\
 			$(DRM_TOPDIR)/drm_stub.c		\
+			$(DRM_TOPDIR)/drm_vma_manager.c		\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
-			bitmap.c				\
 			hmm.c					\
-			r700_vs.c				\
 			radeon_device.c				\
-			evergreen.c				\
-			evergreen_blit_shaders.c		\
-			evergreen_blit_kms.c			\
-			evergreen_hdmi.c			\
-			cayman_blit_shaders.c			\
-			radeon_clocks.c				\
 			atom.c					\
-			ni.c					\
 			atombios_crtc.c				\
 			atombios_dp.c				\
 			atombios_encoders.c			\
 			atombios_i2c.c				\
+			btc_dpm.c				\
+			cayman_blit_shaders.c			\
+			ci_dpm.c				\
+			ci_smc.c				\
+			cik.c					\
+			cik_blit_shaders.c			\
+			cik_sdma.c				\
+			cypress_dpm.c				\
+			dce3_1_afmt.c				\
+			dce6_afmt.c				\
+			evergreen.c				\
+			evergreen_blit_shaders.c		\
+			evergreen_cs.c				\
+			evergreen_dma.c				\
+			evergreen_hdmi.c			\
+			kv_dpm.c				\
+			kv_smc.c				\
+			ni.c					\
+			ni_dma.c				\
+			ni_dpm.c				\
 			radeon_agp.c				\
 			radeon_asic.c				\
 			radeon_atombios.c			\
@@ -80,6 +104,8 @@ NAME_SRC=							\
 			radeon_bios.c				\
 			radeon_combios.c			\
 			radeon_connectors.c			\
+			radeon_cs.c				\
+			radeon_clocks.c				\
 			radeon_display.c			\
 			radeon_encoders.c			\
 			radeon_fence.c				\
@@ -87,35 +113,65 @@ NAME_SRC=							\
 			radeon_gart.c				\
 			radeon_gem.c				\
 			radeon_i2c.c				\
+			radeon_ib.c				\
 			radeon_irq_kms.c			\
 			radeon_legacy_crtc.c			\
 			radeon_legacy_encoders.c		\
 			radeon_legacy_tv.c			\
-			radeon_object_kos.c			\
+			radeon_object.c				\
 			radeon_pm.c				\
 			radeon_ring.c				\
 			radeon_sa.c				\
 			radeon_semaphore.c			\
+			radeon_test.c				\
+			radeon_ttm.c				\
+			radeon_ucode.c				\
+			radeon_uvd.c				\
+			radeon_vce.c				\
+			radeon_vm.c				\
+			rdisplay_kms.c				\
 			r100.c					\
 			r200.c					\
 			r300.c					\
 			r420.c					\
 			rv515.c					\
+			rv730_dpm.c				\
+			rv740_dpm.c				\
 			r520.c					\
 			r600.c					\
-			r600_blit_kms.c				\
+			r600_audio.c				\
 			r600_blit_shaders.c			\
+			r600_cs.c				\
+			r600_dma.c				\
+			r600_dpm.c				\
 			r600_hdmi.c				\
 			rs400.c					\
 			rs600.c					\
 			rs690.c					\
+			rv6xx_dpm.c				\
+			rs780_dpm.c				\
 			rv770.c					\
+			rv770_dma.c				\
+			rv770_dpm.c				\
+			rv770_smc.c				\
 			rdisplay.c				\
-			rdisplay_kms.c				\
 			cmdline.c				\
 			si.c					\
 			si_blit_shaders.c			\
+			si_dma.c				\
+			si_dpm.c				\
+			si_smc.c				\
+			sumo_dpm.c				\
+			sumo_smc.c				\
+			trinity_dpm.c				\
+			trinity_smc.c				\
 			utils.c					\
+			uvd_v1_0.c				\
+			uvd_v2_2.c				\
+			uvd_v3_1.c				\
+			uvd_v4_2.c				\
+			vce_v1_0.c				\
+			vce_v2_0.c				\
 			fwblob.asm
 
 FW_BINS=							\

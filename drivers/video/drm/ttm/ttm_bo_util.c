@@ -27,16 +27,24 @@
 /*
  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
  */
+#define iowrite32(v, addr)      writel((v), (addr))
+#define ioread32(addr)          readl(addr)
 
 #include <drm/ttm/ttm_bo_driver.h>
 #include <drm/ttm/ttm_placement.h>
 #include <drm/drm_vma_manager.h>
-#include <linux/io.h>
-#include <linux/highmem.h>
+//#include <linux/io.h>
+//#include <linux/highmem.h>
 #include <linux/wait.h>
 #include <linux/slab.h>
-#include <linux/vmalloc.h>
+//#include <linux/vmalloc.h>
 #include <linux/module.h>
+
+#define __pgprot(x)     ((pgprot_t) { (x) } )
+#define PAGE_KERNEL                     __pgprot(3)
+
+void *vmap(struct page **pages, unsigned int count,
+           unsigned long flags, pgprot_t prot);
 
 void ttm_bo_free_old_node(struct ttm_buffer_object *bo)
 {
@@ -156,6 +164,7 @@ void ttm_mem_io_free(struct ttm_bo_device *bdev,
 }
 EXPORT_SYMBOL(ttm_mem_io_free);
 
+#if 0
 int ttm_mem_io_reserve_vm(struct ttm_buffer_object *bo)
 {
 	struct ttm_mem_reg *mem = &bo->mem;
@@ -175,6 +184,7 @@ int ttm_mem_io_reserve_vm(struct ttm_buffer_object *bo)
 	}
 	return 0;
 }
+#endif
 
 void ttm_mem_io_free_vm(struct ttm_buffer_object *bo)
 {
@@ -207,7 +217,7 @@ static int ttm_mem_reg_ioremap(struct ttm_bo_device *bdev, struct ttm_mem_reg *m
 		if (mem->placement & TTM_PL_FLAG_WC)
 			addr = ioremap_wc(mem->bus.base + mem->bus.offset, mem->bus.size);
 		else
-			addr = ioremap_nocache(mem->bus.base + mem->bus.offset, mem->bus.size);
+            addr = ioremap(mem->bus.base + mem->bus.offset, mem->bus.size);
 		if (!addr) {
 			(void) ttm_mem_io_lock(man, false);
 			ttm_mem_io_free(bdev, mem);
@@ -258,27 +268,14 @@ static int ttm_copy_io_ttm_page(struct ttm_tt *ttm, void *src,
 
 	src = (void *)((unsigned long)src + (page << PAGE_SHIFT));
 
-#ifdef CONFIG_X86
-	dst = kmap_atomic_prot(d, prot);
-#else
-	if (pgprot_val(prot) != pgprot_val(PAGE_KERNEL))
-		dst = vmap(&d, 1, 0, prot);
-	else
-		dst = kmap(d);
-#endif
+    dst = (void*)MapIoMem((addr_t)d, 4096, PG_SW);
+
 	if (!dst)
 		return -ENOMEM;
 
-	memcpy_fromio(dst, src, PAGE_SIZE);
+    memcpy(dst, src, PAGE_SIZE);
 
-#ifdef CONFIG_X86
-	kunmap_atomic(dst);
-#else
-	if (pgprot_val(prot) != pgprot_val(PAGE_KERNEL))
-		vunmap(dst);
-	else
-		kunmap(d);
-#endif
+    FreeKernelSpace(dst);
 
 	return 0;
 }
@@ -294,27 +291,15 @@ static int ttm_copy_ttm_io_page(struct ttm_tt *ttm, void *dst,
 		return -ENOMEM;
 
 	dst = (void *)((unsigned long)dst + (page << PAGE_SHIFT));
-#ifdef CONFIG_X86
-	src = kmap_atomic_prot(s, prot);
-#else
-	if (pgprot_val(prot) != pgprot_val(PAGE_KERNEL))
-		src = vmap(&s, 1, 0, prot);
-	else
-		src = kmap(s);
-#endif
+
+    src = (void*)MapIoMem((addr_t)s, 4096, PG_SW);
+
 	if (!src)
 		return -ENOMEM;
 
-	memcpy_toio(dst, src, PAGE_SIZE);
+    memcpy(dst, src, PAGE_SIZE);
 
-#ifdef CONFIG_X86
-	kunmap_atomic(src);
-#else
-	if (pgprot_val(prot) != pgprot_val(PAGE_KERNEL))
-		vunmap(src);
-	else
-		kunmap(s);
-#endif
+    FreeKernelSpace(src);
 
 	return 0;
 }
@@ -352,8 +337,12 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
 	/*
 	 * Don't move nonexistent data. Clear destination instead.
 	 */
-	if (old_iomap == NULL && ttm == NULL)
+	if (old_iomap == NULL &&
+	    (ttm == NULL || (ttm->state == tt_unpopulated &&
+			     !(ttm->page_flags & TTM_PAGE_FLAG_SWAPPED)))) {
+        memset(new_iomap, 0, new_mem->num_pages*PAGE_SIZE);
 		goto out2;
+	}
 
 	/*
 	 * TTM might be null for moves within the same region.
@@ -483,29 +472,6 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
 
 pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
 {
-#if defined(__i386__) || defined(__x86_64__)
-	if (caching_flags & TTM_PL_FLAG_WC)
-		tmp = pgprot_writecombine(tmp);
-	else if (boot_cpu_data.x86 > 3)
-		tmp = pgprot_noncached(tmp);
-
-#elif defined(__powerpc__)
-	if (!(caching_flags & TTM_PL_FLAG_CACHED)) {
-		pgprot_val(tmp) |= _PAGE_NO_CACHE;
-		if (caching_flags & TTM_PL_FLAG_UNCACHED)
-			pgprot_val(tmp) |= _PAGE_GUARDED;
-	}
-#endif
-#if defined(__ia64__)
-	if (caching_flags & TTM_PL_FLAG_WC)
-		tmp = pgprot_writecombine(tmp);
-	else
-		tmp = pgprot_noncached(tmp);
-#endif
-#if defined(__sparc__) || defined(__mips__)
-	if (!(caching_flags & TTM_PL_FLAG_CACHED))
-		tmp = pgprot_noncached(tmp);
-#endif
 	return tmp;
 }
 EXPORT_SYMBOL(ttm_io_prot);
@@ -526,7 +492,7 @@ static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
 			map->virtual = ioremap_wc(bo->mem.bus.base + bo->mem.bus.offset + offset,
 						  size);
 		else
-			map->virtual = ioremap_nocache(bo->mem.bus.base + bo->mem.bus.offset + offset,
+			map->virtual = ioremap(bo->mem.bus.base + bo->mem.bus.offset + offset,
 						       size);
 	}
 	return (!map->virtual) ? -ENOMEM : 0;
@@ -557,7 +523,7 @@ static int ttm_bo_kmap_ttm(struct ttm_buffer_object *bo,
 
 		map->bo_kmap_type = ttm_bo_map_kmap;
 		map->page = ttm->pages[start_page];
-		map->virtual = kmap(map->page);
+		map->virtual = (void*)MapIoMem(page_to_phys(map->page), 4096, PG_SW);
 	} else {
 		/*
 		 * We need to use vmap to get the desired page protection
@@ -621,10 +587,8 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map)
 		iounmap(map->virtual);
 		break;
 	case ttm_bo_map_vmap:
-		vunmap(map->virtual);
-		break;
 	case ttm_bo_map_kmap:
-		kunmap(map->page);
+        FreeKernelSpace(map->virtual);
 		break;
 	case ttm_bo_map_premapped:
 		break;
@@ -713,3 +677,25 @@ int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
 	return 0;
 }
 EXPORT_SYMBOL(ttm_bo_move_accel_cleanup);
+
+
+void *vmap(struct page **pages, unsigned int count,
+           unsigned long flags, pgprot_t prot)
+{
+    void *vaddr;
+    char *tmp;
+    int i;
+
+    vaddr = AllocKernelSpace(count << 12);
+    if(vaddr == NULL)
+        return NULL;
+
+    for(i = 0, tmp = vaddr; i < count; i++)
+    {
+        MapPage(tmp, page_to_phys(pages[i]), PG_SW);
+        tmp+= 4096;
+    };
+
+    return vaddr;
+};
+

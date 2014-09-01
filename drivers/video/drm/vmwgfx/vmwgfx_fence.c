@@ -701,7 +701,7 @@ int vmw_fence_obj_wait_ioctl(struct drm_device *dev, void *data,
 
 	if (!arg->cookie_valid) {
 		arg->cookie_valid = 1;
-        arg->kernel_cookie = GetTimerTicks() + wait_timeout;
+		arg->kernel_cookie = jiffies + wait_timeout;
 	}
 
 	base = ttm_base_object_lookup(tfile, arg->handle);
@@ -714,7 +714,7 @@ int vmw_fence_obj_wait_ioctl(struct drm_device *dev, void *data,
 
 	fence = &(container_of(base, struct vmw_user_fence, base)->fence);
 
-    timeout = GetTimerTicks();
+	timeout = jiffies;
 	if (time_after_eq(timeout, (unsigned long)arg->kernel_cookie)) {
 		ret = ((vmw_fence_obj_signaled(fence, arg->flags)) ?
 		       0 : -EBUSY);

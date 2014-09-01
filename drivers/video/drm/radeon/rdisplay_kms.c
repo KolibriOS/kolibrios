@@ -1,8 +1,8 @@
 
 #include <drm/drmP.h>
+#include <drm/radeon_drm.h>
 #include <drm.h>
 #include <drm_mm.h>
-#include "radeon_drm.h"
 #include "radeon.h"
 #include "radeon_object.h"
 #include "drm_fb_helper.h"
@@ -10,15 +10,10 @@
 #include "bitmap.h"
 #include "display.h"
 
-struct radeon_fbdev {
-    struct drm_fb_helper        helper;
-    struct radeon_framebuffer   rfb;
-    struct list_head fbdev_list;
-    struct radeon_device        *rdev;
-};
+extern struct drm_framebuffer *main_fb;
+extern struct drm_gem_object  *main_fb_obj;
 
-struct radeon_fbdev *kos_rfbdev;
-
+display_t *os_display;
 
 static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
 static void       __stdcall move_cursor_kms(cursor_t *cursor, int x, int y);
@@ -95,12 +90,12 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     cursor_t *old;
     uint32_t  gpu_addr;
 
-    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
-    radeon_crtc = to_radeon_crtc(rdisplay->crtc);
+    rdev = (struct radeon_device *)os_display->ddev->dev_private;
+    radeon_crtc = to_radeon_crtc(os_display->crtc);
 
-    old = rdisplay->cursor;
+    old = os_display->cursor;
 
-    rdisplay->cursor = cursor;
+    os_display->cursor = cursor;
     gpu_addr = radeon_bo_gpu_offset(cursor->robj);
 
     if (ASIC_IS_DCE4(rdev)) {
@@ -125,8 +120,8 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
 {
     struct radeon_device *rdev;
-    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
-    struct drm_crtc *crtc = rdisplay->crtc;
+    rdev = (struct radeon_device *)os_display->ddev->dev_private;
+    struct drm_crtc *crtc = os_display->crtc;
     struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 
     int hot_x = cursor->hot_x;
@@ -197,118 +192,109 @@ static char *manufacturer_name(unsigned char *x)
     return name;
 }
 
-bool set_mode(struct drm_device *dev, struct drm_connector *connector,
-              videomode_t *reqmode, bool strict)
+static int set_mode(struct drm_device *dev, struct drm_connector *connector,
+                    struct drm_crtc *crtc, videomode_t *reqmode, bool strict)
 {
     struct drm_display_mode  *mode = NULL, *tmpmode;
+    struct drm_framebuffer  *fb         = NULL;
+    struct drm_mode_set     set;
+    const char *con_name;
+    unsigned hdisplay, vdisplay;
+    int ret;
 
-    struct drm_fb_helper *fb_helper;
-
-    fb_helper = &kos_rfbdev->helper;
-
-
-    bool ret = false;
-
-    ENTER();
-
-    dbgprintf("width %d height %d vrefresh %d\n",
-               reqmode->width, reqmode->height, reqmode->freq);
+    drm_modeset_lock_all(dev);
 
     list_for_each_entry(tmpmode, &connector->modes, head)
     {
-        if( (drm_mode_width(tmpmode)    == reqmode->width)  &&
-            (drm_mode_height(tmpmode)   == reqmode->height) &&
+        if( (tmpmode->hdisplay == reqmode->width)  &&
+            (tmpmode->vdisplay == reqmode->height) &&
             (drm_mode_vrefresh(tmpmode) == reqmode->freq) )
         {
             mode = tmpmode;
             goto do_set;
         }
-    };
+	};
 
     if( (mode == NULL) && (strict == false) )
     {
         list_for_each_entry(tmpmode, &connector->modes, head)
         {
-            if( (drm_mode_width(tmpmode)  == reqmode->width)  &&
-                (drm_mode_height(tmpmode) == reqmode->height) )
+            if( (tmpmode->hdisplay == reqmode->width)  &&
+                (tmpmode->vdisplay == reqmode->height) )
             {
                 mode = tmpmode;
                 goto do_set;
             }
-        };
+       };
     };
+
+    DRM_ERROR("%s failed\n", __FUNCTION__);
+
+    return -1;
 
 do_set:
 
-    if( mode != NULL )
+    con_name = connector->name;
+
+    DRM_DEBUG_KMS("set mode %d %d: crtc %d connector %s\n",
+              reqmode->width, reqmode->height, crtc->base.id,
+              con_name);
+
+    drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
+
+    hdisplay = mode->hdisplay;
+    vdisplay = mode->vdisplay;
+
+    if (crtc->invert_dimensions)
+        swap(hdisplay, vdisplay);
+
+    fb = main_fb;
+
+    fb->width  = reqmode->width;
+    fb->height = reqmode->height;
+
+    fb->pitches[0] =
+    fb->pitches[1] =
+    fb->pitches[2] =
+    fb->pitches[3] = radeon_align_pitch(dev->dev_private, reqmode->width, 32, false) * ((32 + 1) / 8);
+    fb->bits_per_pixel = 32;
+    fb->depth = 24;
+
+    crtc->enabled = true;
+    os_display->crtc = crtc;
+
+    set.crtc = crtc;
+    set.x = 0;
+    set.y = 0;
+    set.mode = mode;
+    set.connectors = &connector;
+    set.num_connectors = 1;
+    set.fb = fb;
+
+    ret = drm_mode_set_config_internal(&set);
+
+    drm_modeset_unlock_all(dev);
+
+    select_cursor_kms(os_display->cursor);
+    radeon_show_cursor_kms(crtc);
+
+    if ( !ret )
     {
-        struct drm_framebuffer   *fb;
-        struct drm_encoder       *encoder;
-        struct drm_crtc          *crtc;
+        os_display->width    = fb->width;
+        os_display->height   = fb->height;
+        os_display->vrefresh = drm_mode_vrefresh(mode);
 
-//        char  con_edid[128];
-        char *con_name;
-        char *enc_name;
+        sysSetScreen(fb->width, fb->height, fb->pitches[0]);
 
-        encoder = connector->encoder;
-        crtc = encoder->crtc;
-
-//        fb = list_first_entry(&dev->mode_config.fb_kernel_list,
-//                              struct drm_framebuffer, filp_head);
-
-//        memcpy(con_edid, connector->edid_blob_ptr->data, 128);
-
-//        dbgprintf("Manufacturer: %s Model %x Serial Number %u\n",
-//        manufacturer_name(con_edid + 0x08),
-//        (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
-//        (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
-//            + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
-
-        con_name = drm_get_connector_name(connector);
-        enc_name = drm_get_encoder_name(encoder);
-
-        dbgprintf("set mode %d %d connector %s encoder %s\n",
-                   reqmode->width, reqmode->height, con_name, enc_name);
-
-        fb = fb_helper->fb;
-
-        fb->width  = reqmode->width;
-        fb->height = reqmode->height;
-
-        fb->pitches[0] = fb->pitches[1] = fb->pitches[2] =
-                         fb->pitches[3] = radeon_align_pitch(dev->dev_private, reqmode->width, 32, false) * ((32 + 1) / 8);
-        fb->bits_per_pixel = 32;
-        fb->depth = 24;
-
-        crtc->fb = fb;
-        crtc->enabled = true;
-        rdisplay->crtc = crtc;
-
-        ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
-
-        select_cursor_kms(rdisplay->cursor);
-        radeon_show_cursor_kms(crtc);
-
-        if (ret == true)
-        {
-            rdisplay->width    = fb->width;
-            rdisplay->height   = fb->height;
-            rdisplay->pitch    = fb->pitches[0];
-            rdisplay->vrefresh = drm_mode_vrefresh(mode);
-
-            sysSetScreen(fb->width, fb->height, fb->pitches[0]);
-
-            dbgprintf("new mode %d x %d pitch %d\n",
+        DRM_DEBUG_KMS("new mode %d x %d pitch %d\n",
                        fb->width, fb->height, fb->pitches[0]);
-        }
-        else
-            DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
-                       fb->width, fb->height, crtc);
     }
+    else
+        DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
+                   fb->width, fb->height, crtc);
 
-    LEAVE();
     return ret;
-};
+}
 
 static int count_connector_modes(struct drm_connector* connector)
 {
@@ -322,109 +308,125 @@ static int count_connector_modes(struct drm_connector* connector)
     return count;
 };
 
-static struct drm_connector* get_def_connector(struct drm_device *dev)
+static struct drm_crtc *get_possible_crtc(struct drm_device *dev, struct drm_encoder *encoder)
 {
-    struct drm_connector  *connector;
-    struct drm_connector_helper_funcs *connector_funcs;
+    struct drm_crtc *tmp_crtc;
+    int crtc_mask = 1;
 
-    struct drm_connector  *def_connector = NULL;
-
-    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+    list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
     {
-        struct drm_encoder  *encoder;
-        struct drm_crtc     *crtc;
-
-        if( connector->status != connector_status_connected)
-            continue;
-
-        connector_funcs = connector->helper_private;
-        encoder = connector_funcs->best_encoder(connector);
-        if( encoder == NULL)
-            continue;
-
-        connector->encoder = encoder;
-
-        crtc = encoder->crtc;
-
-        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x",
-                   connector, connector->base.id,
-                   connector->status, connector->encoder,
-                   crtc);
-
-//        if (crtc == NULL)
-//            continue;
-
-        def_connector = connector;
-
-        break;
+        if (encoder->possible_crtcs & crtc_mask)
+        {
+            encoder->crtc = tmp_crtc;
+            DRM_DEBUG_KMS("use CRTC %p ID %d\n", tmp_crtc, tmp_crtc->base.id);
+            return tmp_crtc;
+        };
+        crtc_mask <<= 1;
     };
-
-    return def_connector;
+    return NULL;
 };
 
-
-
-bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
+static int choose_config(struct drm_device *dev, struct drm_connector **boot_connector,
+                  struct drm_crtc **boot_crtc)
 {
-    struct drm_device   *dev;
-
-    struct drm_connector    *connector;
     struct drm_connector_helper_funcs *connector_funcs;
-    struct drm_encoder      *encoder;
-    struct drm_crtc         *crtc = NULL;
-    struct drm_framebuffer  *fb;
-    struct drm_display_mode *native;
-
-
-    cursor_t            *cursor;
-    bool                 retval = false;
-    u32_t                ifl;
-
-    struct radeon_fbdev  *rfbdev;
-    struct drm_fb_helper *fb_helper;
-
-    int i;
-
-    ENTER();
-
-    dev = rdev->ddev;
+    struct drm_connector *connector;
+    struct drm_encoder   *encoder;
+    struct drm_crtc      *crtc;
 
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
         if( connector->status != connector_status_connected)
             continue;
 
-        connector_funcs = connector->helper_private;
-        encoder = connector_funcs->best_encoder(connector);
-        if( encoder == NULL)
-        {
-            dbgprintf("CONNECTOR %x ID: %d no active encoders\n",
-                      connector, connector->base.id);
-            continue;
-        }
-        connector->encoder = encoder;
+        encoder = connector->encoder;
 
-        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x\n",
-               connector, connector->base.id,
-               connector->status, connector->encoder,
-               encoder->crtc);
+        if(encoder == NULL)
+        {
+            connector_funcs = connector->helper_private;
+            encoder = connector_funcs->best_encoder(connector);
+
+            if( encoder == NULL)
+            {
+                DRM_DEBUG_KMS("CONNECTOR %x ID: %d no active encoders\n",
+                        connector, connector->base.id);
+                continue;
+            };
+        }
 
         crtc = encoder->crtc;
-        break;
+        if(crtc == NULL)
+            crtc = get_possible_crtc(dev, encoder);
+
+        if(crtc != NULL)
+        {
+            *boot_connector = connector;
+            *boot_crtc = crtc;
+            connector->encoder = encoder;
+            DRM_DEBUG_KMS("CONNECTOR %p ID:%d status:%d ENCODER %p ID: %d CRTC %p ID:%d\n",
+                           connector, connector->base.id, connector->status,
+                           encoder, encoder->base.id, crtc, crtc->base.id );
+            return 0;
+        }
+        else
+            DRM_DEBUG_KMS("No CRTC for encoder %d\n", encoder->base.id);
+
     };
 
-    if(connector == NULL)
+    return -ENOENT;
+};
+
+static int get_boot_mode(struct drm_connector *connector, videomode_t *usermode)
+{
+    struct drm_display_mode *mode;
+
+    list_for_each_entry(mode, &connector->modes, head)
     {
-        dbgprintf("No active connectors!\n");
+        DRM_DEBUG_KMS("check mode w:%d h:%d %dHz\n",
+                mode->hdisplay, mode->vdisplay,
+                drm_mode_vrefresh(mode));
+
+        if( os_display->width  == mode->hdisplay &&
+            os_display->height == mode->vdisplay &&
+            drm_mode_vrefresh(mode) == 60)
+        {
+            usermode->width  = os_display->width;
+            usermode->height = os_display->height;
+            usermode->freq   = 60;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int init_display_kms(struct drm_device *dev, videomode_t *usermode)
+{
+    struct drm_connector_helper_funcs *connector_funcs;
+    struct drm_connector    *connector = NULL;
+    struct drm_crtc         *crtc = NULL;
+    struct drm_framebuffer  *fb;
+
+    cursor_t            *cursor;
+    u32_t                ifl;
+    int        ret;
+
+    mutex_lock(&dev->mode_config.mutex);
+
+    ret = choose_config(dev, &connector, &crtc);
+    if(ret)
+    {
+        DRM_DEBUG_KMS("No active connectors!\n");
+        mutex_unlock(&dev->mode_config.mutex);
         return -1;
     };
 
     {
-        struct drm_display_mode *tmp;
+        struct drm_display_mode *tmp, *native = NULL;
+        struct radeon_device *rdev = dev->dev_private;
 
         list_for_each_entry(tmp, &connector->modes, head) {
-            if (drm_mode_width(tmp) > 16384 ||
-                drm_mode_height(tmp) > 16384)
+            if (tmp->hdisplay > 16384 ||
+                tmp->vdisplay > 16384)
                 continue;
             if (tmp->type & DRM_MODE_TYPE_PREFERRED)
             {
@@ -432,122 +434,97 @@ bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
                 break;
             };
         }
+
+        if( ASIC_IS_AVIVO(rdev) && native )
+        {
+            struct radeon_encoder *radeon_encoder = to_radeon_encoder(connector->encoder);
+            radeon_encoder->rmx_type = RMX_FULL;
+            radeon_encoder->native_mode = *native;
+        };
     }
 
-    if( ASIC_IS_AVIVO(rdev) && native )
-    {
-        dbgprintf("native w %d h %d\n", native->hdisplay, native->vdisplay);
-        struct radeon_encoder *radeon_encoder = to_radeon_encoder(connector->encoder);
-        radeon_encoder->rmx_type = RMX_FULL;
-        radeon_encoder->native_mode = *native;
-    };
+#if 0
+    mutex_lock(&dev->object_name_lock);
+    idr_preload(GFP_KERNEL);
 
+    if (!main_fb_obj->name) {
+        ret = idr_alloc(&dev->object_name_idr, &main_fb_obj, 1, 0, GFP_NOWAIT);
 
-    if(crtc == NULL)
-    {
-        struct drm_crtc *tmp_crtc;
-        int crtc_mask = 1;
+        main_fb_obj->name = ret;
 
-        list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
-        {
-            if (encoder->possible_crtcs & crtc_mask)
-            {
-                crtc = tmp_crtc;
-                encoder->crtc = crtc;
-                break;
-            };
-            crtc_mask <<= 1;
-        };
-    };
+        /* Allocate a reference for the name table.  */
+        drm_gem_object_reference(main_fb_obj);
 
-    if(crtc == NULL)
-    {
-        dbgprintf("No CRTC for encoder %d\n", encoder->base.id);
-        return -1;
-    };
+        DRM_DEBUG_KMS("%s allocate fb name %d\n", __FUNCTION__, main_fb_obj->name );
+    }
 
+    idr_preload_end();
+    mutex_unlock(&dev->object_name_lock);
+    drm_gem_object_unreference(main_fb_obj);
+#endif
 
-    dbgprintf("[Select CRTC:%d]\n", crtc->base.id);
+    os_display = GetDisplay();
+    os_display->ddev = dev;
+    os_display->connector = connector;
+    os_display->crtc = crtc;
 
-
-//    drm_helper_connector_dpms(connector, DRM_MODE_DPMS_ON);
-
-    rdisplay = GetDisplay();
-    rdisplay->ddev = dev;
-    rdisplay->connector = connector;
-    rdisplay->crtc = crtc;
-
-    rdisplay->supported_modes = count_connector_modes(connector);
-
-
+    os_display->supported_modes = count_connector_modes(connector);
 
     ifl = safe_cli();
     {
-        list_for_each_entry(cursor, &rdisplay->cursors, list)
+        list_for_each_entry(cursor, &os_display->cursors, list)
         {
             init_cursor(cursor);
         };
 
+        os_display->restore_cursor(0,0);
+        os_display->init_cursor    = init_cursor;
+        os_display->select_cursor  = select_cursor_kms;
+        os_display->show_cursor    = NULL;
+        os_display->move_cursor    = move_cursor_kms;
+        os_display->restore_cursor = restore_cursor;
+        os_display->disable_mouse  = disable_mouse;
+        select_cursor_kms(os_display->cursor);
     };
     safe_sti(ifl);
 
 
-    dbgprintf("current mode %d x %d x %d\n",
-              rdisplay->width, rdisplay->height, rdisplay->vrefresh);
-    dbgprintf("user mode mode %d x %d x %d\n",
-              usermode->width, usermode->height, usermode->freq);
+//    dbgprintf("current mode %d x %d x %d\n",
+//              os_display->width, os_display->height, os_display->vrefresh);
+//    dbgprintf("user mode mode %d x %d x %d\n",
+//              usermode->width, usermode->height, usermode->freq);
 
-
-    if( (usermode->width  != 0) &&
-        (usermode->height != 0) &&
-        ( (usermode->width  != rdisplay->width)  ||
-          (usermode->height != rdisplay->height) ||
-          (usermode->freq   != rdisplay->vrefresh) ) )
+    if( (usermode->width == 0) ||
+        (usermode->height == 0))
     {
+        if( !get_boot_mode(connector, usermode))
+        {
+            struct drm_display_mode *mode;
 
-        retval = set_mode(dev, rdisplay->connector, usermode, false);
-    }
-    else
-    {
-        usermode->width  = rdisplay->width;
-        usermode->height = rdisplay->height;
-        usermode->freq   = 60;
-        retval = set_mode(dev, rdisplay->connector, usermode, false);
+            mode = list_entry(connector->modes.next, typeof(*mode), head);
+            usermode->width  = mode->hdisplay;
+            usermode->height = mode->vdisplay;
+            usermode->freq   = drm_mode_vrefresh(mode);
+        };
     };
 
-    ifl = safe_cli();
-    {
-        rdisplay->restore_cursor(0,0);
-        rdisplay->init_cursor    = init_cursor;
-        rdisplay->select_cursor  = select_cursor_kms;
-        rdisplay->show_cursor    = NULL;
-        rdisplay->move_cursor    = move_cursor_kms;
-        rdisplay->restore_cursor = restore_cursor;
-        rdisplay->disable_mouse  = disable_mouse;
+    mutex_unlock(&dev->mode_config.mutex);
 
-        select_cursor_kms(rdisplay->cursor);
-        radeon_show_cursor_kms(rdisplay->crtc);
-    };
-    safe_sti(ifl);
+    set_mode(dev, os_display->connector, os_display->crtc, usermode, false);
 
-//    init_bitmaps();
+    radeon_show_cursor_kms(os_display->crtc);
 
-    LEAVE();
-
-    return retval;
+    return 0;
 };
 
-int get_modes(videomode_t *mode, int *count)
+
+int get_videomodes(videomode_t *mode, int *count)
 {
     int err = -1;
 
-//    ENTER();
-
-    dbgprintf("mode %x count %d\n", mode, *count);
-
     if( *count == 0 )
     {
-        *count = rdisplay->supported_modes;
+        *count = os_display->supported_modes;
         err = 0;
     }
     else if( mode != NULL )
@@ -555,15 +532,15 @@ int get_modes(videomode_t *mode, int *count)
         struct drm_display_mode  *drmmode;
         int i = 0;
 
-        if( *count > rdisplay->supported_modes)
-            *count = rdisplay->supported_modes;
+        if( *count > os_display->supported_modes)
+            *count = os_display->supported_modes;
 
-        list_for_each_entry(drmmode, &rdisplay->connector->modes, head)
+        list_for_each_entry(drmmode, &os_display->connector->modes, head)
         {
             if( i < *count)
             {
-                mode->width  = drm_mode_width(drmmode);
-                mode->height = drm_mode_height(drmmode);
+                mode->width  = drmmode->hdisplay;
+                mode->height = drmmode->vdisplay;
                 mode->bpp    = 32;
                 mode->freq   = drm_mode_vrefresh(drmmode);
                 i++;
@@ -574,108 +551,29 @@ int get_modes(videomode_t *mode, int *count)
         *count = i;
         err = 0;
     };
-//    LEAVE();
     return err;
-}
+};
 
 int set_user_mode(videomode_t *mode)
 {
     int err = -1;
 
-//    ENTER();
-
-    dbgprintf("width %d height %d vrefresh %d\n",
-               mode->width, mode->height, mode->freq);
-
     if( (mode->width  != 0)  &&
         (mode->height != 0)  &&
         (mode->freq   != 0 ) &&
-        ( (mode->width   != rdisplay->width)  ||
-          (mode->height  != rdisplay->height) ||
-          (mode->freq    != rdisplay->vrefresh) ) )
+        ( (mode->width   != os_display->width)  ||
+          (mode->height  != os_display->height) ||
+          (mode->freq    != os_display->vrefresh) ) )
     {
-        if( set_mode(rdisplay->ddev, rdisplay->connector, mode, true) )
-            err = 0;
+        return set_mode(os_display->ddev, os_display->connector, os_display->crtc, mode, true);
     };
 
-//    LEAVE();
-    return err;
+    return -1;
 };
 
 
-int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
-                     struct drm_mode_fb_cmd2 *mode_cmd,
-                     struct drm_gem_object **gobj_p)
-{
-    struct radeon_device *rdev = rfbdev->rdev;
-    struct drm_gem_object *gobj = NULL;
-    struct radeon_bo *rbo = NULL;
-    bool fb_tiled = false; /* useful for testing */
-    u32 tiling_flags = 0;
-    int ret;
-    int aligned_size, size;
-    int height = mode_cmd->height;
-    u32 bpp, depth;
-
-    static struct radeon_bo kos_bo;
-    static struct drm_mm_node  vm_node;
 
 
-    drm_fb_get_bpp_depth(mode_cmd->pixel_format, &depth, &bpp);
-
-    /* need to align pitch with crtc limits */
-    mode_cmd->pitches[0] = radeon_align_pitch(rdev, mode_cmd->width, bpp,
-                          fb_tiled) * ((bpp + 1) / 8);
-
-    if (rdev->family >= CHIP_R600)
-        height = ALIGN(mode_cmd->height, 8);
-    size = mode_cmd->pitches[0] * height;
-    aligned_size = ALIGN(size, PAGE_SIZE);
-
-#ifndef __TTM__
-    ret = drm_gem_object_init(rdev->ddev, &kos_bo.gem_base, aligned_size);
-    if (unlikely(ret)) {
-        printk(KERN_ERR "failed to allocate framebuffer (%d)\n",
-               aligned_size);
-        return -ENOMEM;
-    }
-#endif
-
-    kos_bo.rdev = rdev;
-    kos_bo.gem_base.driver_private = NULL;
-    kos_bo.surface_reg = -1;
-//    kos_bo.domain = RADEON_GEM_DOMAIN_VRAM;
-
-    INIT_LIST_HEAD(&kos_bo.list);
-
-    gobj = &kos_bo.gem_base;
-    rbo = gem_to_radeon_bo(gobj);
-
-    if (fb_tiled)
-        tiling_flags = RADEON_TILING_MACRO;
-
-//    if (tiling_flags) {
-//        ret = radeon_bo_set_tiling_flags(rbo,
-//                         tiling_flags | RADEON_TILING_SURFACE,
-//                         mode_cmd->pitches[0]);
-//        if (ret)
-//            dev_err(rdev->dev, "FB failed to set tiling flags\n");
-//    }
-
-    vm_node.size = 0xC00000 >> 12;
-    vm_node.start = 0;
-    vm_node.mm = NULL;
-
-    rbo->tbo.vm_node = &vm_node;
-    rbo->tbo.offset  = rbo->tbo.vm_node->start << PAGE_SHIFT;
-    rbo->tbo.offset += (u64)rbo->rdev->mc.vram_start;
-    rbo->kptr        = (void*)0xFE000000;
-    rbo->pin_count   = 1;
-
-
-    *gobj_p = gobj;
-    return 0;
-}
 
 #if 0
 typedef struct
@@ -687,7 +585,7 @@ typedef struct
 }rect_t;
 
 extern struct hmm bm_mm;
-struct drm_device *main_drm_device;
+struct drm_device *main_device;
 
 void  FASTCALL GetWindowRect(rect_t *rc)__asm__("GetWindowRect");
 
@@ -697,7 +595,7 @@ static u32_t get_display_map()
 {
     u32_t   addr;
 
-    addr = (u32_t)rdisplay;
+    addr = (u32_t)os_display;
     addr+= sizeof(display_t);            /*  shoot me  */
     return *(u32_t*)addr;
 }
@@ -792,7 +690,7 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
         src_offset = (u8*)(src_y*bitmap->pitch + src_x*4);
         src_offset += (u32)bitmap->uaddr;
 
-        dst_offset = (u8*)(dst_y*rdisplay->width + dst_x);
+        dst_offset = (u8*)(dst_y*os_display->width + dst_x);
         dst_offset+= get_display_map();
 
         u32_t tmp_h = height;
@@ -806,7 +704,7 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
             u8*  tmp_dst = dst_offset;
 
             src_offset+= bitmap->pitch;
-            dst_offset+= rdisplay->width;
+            dst_offset+= os_display->width;
 
             while( tmp_w--)
             {
@@ -866,7 +764,7 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
                   RADEON_GMC_WR_MSK_DIS;
 
     ib->ptr[4] = ((bitmap->pitch/64) << 22) | (bitmap->gaddr >> 10);
-    ib->ptr[5] = ((rdisplay->pitch/64) << 22) | (rdev->mc.vram_start >> 10);
+    ib->ptr[5] = ((os_display->pitch/64) << 22) | (rdev->mc.vram_start >> 10);
     ib->ptr[6] = (0x1fff) | (0x1fff << 16);
     ib->ptr[7] = 0;
     ib->ptr[8] = (0x1fff) | (0x1fff << 16);

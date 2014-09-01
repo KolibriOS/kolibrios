@@ -122,7 +122,7 @@ static void vmw_resource_release(struct kref *kref)
 	if (res->backup) {
 		struct ttm_buffer_object *bo = &res->backup->base;
 
-		ttm_bo_reserve(bo, false, false, false, 0);
+		ttm_bo_reserve(bo, false, false, false, NULL);
 		if (!list_empty(&res->mob_head) &&
 		    res->func->unbind != NULL) {
 			struct ttm_validate_buffer val_buf;
@@ -136,8 +136,12 @@ static void vmw_resource_release(struct kref *kref)
 		vmw_dmabuf_unreference(&res->backup);
 	}
 
-	if (likely(res->hw_destroy != NULL))
+	if (likely(res->hw_destroy != NULL)) {
 		res->hw_destroy(res);
+		mutex_lock(&dev_priv->binding_mutex);
+		vmw_context_binding_res_list_kill(&res->binding_head);
+		mutex_unlock(&dev_priv->binding_mutex);
+	}
 
 	id = res->id;
 	if (res->res_free != NULL)
@@ -418,8 +422,7 @@ int vmw_dmabuf_init(struct vmw_private *dev_priv,
 	INIT_LIST_HEAD(&vmw_bo->res_list);
 
 	ret = ttm_bo_init(bdev, &vmw_bo->base, size,
-			  (user) ? ttm_bo_type_device :
-			  ttm_bo_type_kernel, placement,
+			  ttm_bo_type_device, placement,
 			  0, interruptible,
 			  NULL, acc_size, NULL, bo_free);
 	return ret;
@@ -532,8 +535,13 @@ int vmw_user_dmabuf_verify_access(struct ttm_buffer_object *bo,
 		return -EPERM;
 
 	vmw_user_bo = vmw_user_dma_buffer(bo);
-	return (vmw_user_bo->prime.base.tfile == tfile ||
-		vmw_user_bo->prime.base.shareable) ? 0 : -EPERM;
+
+	/* Check that the caller has opened the object. */
+	if (likely(ttm_ref_object_exists(tfile, &vmw_user_bo->prime.base)))
+		return 0;
+
+	DRM_ERROR("Could not grant buffer access.\n");
+	return -EPERM;
 }
 
 /**
@@ -553,7 +561,7 @@ static int vmw_user_dmabuf_synccpu_grab(struct vmw_user_dma_buffer *user_bo,
 {
 	struct ttm_buffer_object *bo = &user_bo->dma.base;
 	bool existed;
-    int ret=0;
+	int ret;
 
 	if (flags & drm_vmw_synccpu_allow_cs) {
 		struct ttm_bo_device *bdev = bo->bdev;
@@ -671,10 +679,9 @@ int vmw_dmabuf_alloc_ioctl(struct drm_device *dev, void *data,
 	struct drm_vmw_dmabuf_rep *rep = &arg->rep;
 	struct vmw_dma_buffer *dma_buf;
 	uint32_t handle;
-	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	int ret;
 
-	ret = ttm_read_lock(&vmaster->lock, true);
+	ret = ttm_read_lock(&dev_priv->reservation_sem, true);
 	if (unlikely(ret != 0))
 		return ret;
 
@@ -691,7 +698,7 @@ int vmw_dmabuf_alloc_ioctl(struct drm_device *dev, void *data,
 	vmw_dmabuf_unreference(&dma_buf);
 
 out_no_dmabuf:
-	ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
 
 	return ret;
 }
@@ -806,7 +813,7 @@ static void vmw_user_stream_free(struct vmw_resource *res)
 	    container_of(res, struct vmw_user_stream, stream.res);
 	struct vmw_private *dev_priv = res->dev_priv;
 
-//   ttm_base_object_kfree(stream, base);
+	ttm_base_object_kfree(stream, base);
 	ttm_mem_global_free(vmw_mem_glob(dev_priv),
 			    vmw_user_stream_size);
 }
@@ -870,7 +877,6 @@ int vmw_stream_claim_ioctl(struct drm_device *dev, void *data,
 	struct vmw_resource *tmp;
 	struct drm_vmw_stream_arg *arg = (struct drm_vmw_stream_arg *)data;
 	struct ttm_object_file *tfile = vmw_fpriv(file_priv)->tfile;
-	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	int ret;
 
 	/*
@@ -881,7 +887,7 @@ int vmw_stream_claim_ioctl(struct drm_device *dev, void *data,
 	if (unlikely(vmw_user_stream_size == 0))
 		vmw_user_stream_size = ttm_round_pot(sizeof(*stream)) + 128;
 
-	ret = ttm_read_lock(&vmaster->lock, true);
+	ret = ttm_read_lock(&dev_priv->reservation_sem, true);
 	if (unlikely(ret != 0))
 		return ret;
 
@@ -929,7 +935,7 @@ int vmw_stream_claim_ioctl(struct drm_device *dev, void *data,
 out_err:
 	vmw_resource_unreference(&res);
 out_unlock:
-	ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
 	return ret;
 }
 #endif
@@ -979,7 +985,7 @@ int vmw_dumb_create(struct drm_file *file_priv,
 	args->pitch = args->width * ((args->bpp + 7) / 8);
 	args->size = args->pitch * args->height;
 
-	ret = ttm_read_lock(&vmaster->lock, true);
+	ret = ttm_read_lock(&dev_priv->reservation_sem, true);
 	if (unlikely(ret != 0))
 		return ret;
 
@@ -991,7 +997,7 @@ int vmw_dumb_create(struct drm_file *file_priv,
 
 	vmw_dmabuf_unreference(&dma_buf);
 out_no_dmabuf:
-	ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
 	return ret;
 }
 #endif

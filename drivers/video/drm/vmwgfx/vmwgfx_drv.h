@@ -36,15 +36,15 @@
 //#include <linux/suspend.h>
 #include <drm/ttm/ttm_bo_driver.h>
 #include <drm/ttm/ttm_object.h>
-//#include <drm/ttm/ttm_lock.h>
+#include <drm/ttm/ttm_lock.h>
 #include <drm/ttm/ttm_execbuf_util.h>
 //#include <drm/ttm/ttm_module.h>
 #include "vmwgfx_fence.h"
 
-#define VMWGFX_DRIVER_DATE "20121114"
+#define VMWGFX_DRIVER_DATE "20140704"
 #define VMWGFX_DRIVER_MAJOR 2
-#define VMWGFX_DRIVER_MINOR 5
-#define VMWGFX_DRIVER_PATCHLEVEL 0
+#define VMWGFX_DRIVER_MINOR 6
+#define VMWGFX_DRIVER_PATCHLEVEL 1
 #define VMWGFX_FILE_PAGE_OFFSET 0x00100000
 #define VMWGFX_FIFO_STATIC_SIZE (1024*1024)
 #define VMWGFX_MAX_RELOCATIONS 2048
@@ -89,13 +89,12 @@ static inline u32 inl(u16 port)
     return v;
 }
 
-struct ttm_lock{};
-struct ww_acquire_ctx{};
 
 struct vmw_fpriv {
 //   struct drm_master *locked_master;
    struct ttm_object_file *tfile;
    struct list_head fence_events;
+	bool gb_aware;
 };
 
 struct vmw_dma_buffer {
@@ -137,6 +136,10 @@ struct vmw_resource {
 	void (*hw_destroy) (struct vmw_resource *res);
 };
 
+
+/*
+ * Resources that are managed using ioctls.
+ */
 enum vmw_res_type {
 	vmw_res_context,
 	vmw_res_surface,
@@ -144,6 +147,15 @@ enum vmw_res_type {
 	vmw_res_shader,
 	vmw_res_max
 };
+
+/*
+ * Resources that are managed using command streams.
+ */
+enum vmw_cmdbuf_res_type {
+	vmw_cmdbuf_res_compat_shader
+};
+
+struct vmw_cmdbuf_res_manager;
 
 struct vmw_cursor_snooper {
 	struct drm_crtc *crtc;
@@ -172,8 +184,8 @@ struct vmw_surface {
 
 struct vmw_marker_queue {
 	struct list_head head;
-	struct timespec lag;
-	struct timespec lag_time;
+	u64 lag;
+	u64 lag_time;
 	spinlock_t lock;
 };
 
@@ -289,6 +301,7 @@ struct vmw_ctx_bindinfo {
 	struct vmw_resource *ctx;
 	struct vmw_resource *res;
 	enum vmw_ctx_binding_type bt;
+	bool scrubbed;
 	union {
 		SVGA3dShaderType shader_type;
 		SVGA3dRenderTargetType rt_type;
@@ -335,7 +348,7 @@ struct vmw_sw_context{
 	struct drm_open_hash res_ht;
 	bool res_ht_initialized;
 	bool kernel; /**< is the called made from the kernel */
-	struct ttm_object_file *tfile;
+	struct vmw_fpriv *fp;
 	struct list_head validate_nodes;
 	struct vmw_relocation relocs[VMWGFX_MAX_RELOCATIONS];
 	uint32_t cur_reloc;
@@ -353,6 +366,7 @@ struct vmw_sw_context{
 	bool needs_post_query_barrier;
 	struct vmw_resource *error_resource;
 	struct vmw_ctx_binding_state staged_bindings;
+	struct list_head staged_cmd_res;
 };
 
 struct vmw_legacy_display;
@@ -397,6 +411,7 @@ struct vmw_private {
 	uint32_t max_gmr_ids;
 	uint32_t max_gmr_pages;
 	uint32_t max_mob_pages;
+	uint32_t max_mob_size;
 	uint32_t memory_size;
 	bool has_gmr;
 	bool has_mob;
@@ -497,6 +512,11 @@ struct vmw_private {
 	uint32_t num_3d_resources;
 
 	/*
+	 * Replace this with an rwsem as soon as we have down_xx_interruptible()
+	 */
+	struct ttm_lock reservation_sem;
+
+	/*
 	 * Query processing. These members
 	 * are protected by the cmdbuf mutex.
 	 */
@@ -586,6 +606,8 @@ struct vmw_user_resource_conv;
 
 extern void vmw_resource_unreference(struct vmw_resource **p_res);
 extern struct vmw_resource *vmw_resource_reference(struct vmw_resource *res);
+extern struct vmw_resource *
+vmw_resource_reference_unless_doomed(struct vmw_resource *res);
 extern int vmw_resource_validate(struct vmw_resource *res);
 extern int vmw_resource_reserve(struct vmw_resource *res, bool no_backup);
 extern bool vmw_resource_needs_backup(const struct vmw_resource *res);
@@ -960,6 +982,9 @@ extern void
 vmw_context_binding_state_transfer(struct vmw_resource *res,
 				   struct vmw_ctx_binding_state *cbs);
 extern void vmw_context_binding_res_list_kill(struct list_head *head);
+extern void vmw_context_binding_res_list_scrub(struct list_head *head);
+extern int vmw_context_rebind_all(struct vmw_resource *ctx);
+extern struct list_head *vmw_context_binding_list(struct vmw_resource *ctx);
 
 /*
  * Surface management - vmwgfx_surface.c
@@ -979,6 +1004,27 @@ extern int vmw_surface_validate(struct vmw_private *dev_priv,
  */
 
 extern const struct vmw_user_resource_conv *user_shader_converter;
+extern struct vmw_cmdbuf_res_manager *
+vmw_cmdbuf_res_man_create(struct vmw_private *dev_priv);
+extern void vmw_cmdbuf_res_man_destroy(struct vmw_cmdbuf_res_manager *man);
+extern size_t vmw_cmdbuf_res_man_size(void);
+extern struct vmw_resource *
+vmw_cmdbuf_res_lookup(struct vmw_cmdbuf_res_manager *man,
+		      enum vmw_cmdbuf_res_type res_type,
+		      u32 user_key);
+extern void vmw_cmdbuf_res_revert(struct list_head *list);
+extern void vmw_cmdbuf_res_commit(struct list_head *list);
+extern int vmw_cmdbuf_res_add(struct vmw_cmdbuf_res_manager *man,
+			      enum vmw_cmdbuf_res_type res_type,
+			      u32 user_key,
+			      struct vmw_resource *res,
+			      struct list_head *list);
+extern int vmw_cmdbuf_res_remove(struct vmw_cmdbuf_res_manager *man,
+				 enum vmw_cmdbuf_res_type res_type,
+				 u32 user_key,
+				 struct list_head *list);
+
+
 /**
  * Inline helper functions
  */
@@ -1012,7 +1058,7 @@ static inline void vmw_dmabuf_unreference(struct vmw_dma_buffer **buf)
 
 static inline struct vmw_dma_buffer *vmw_dmabuf_reference(struct vmw_dma_buffer *buf)
 {
-	if (ttm_bo_reference(&buf->base))
+    if (ttm_bo_reference(&buf->base))
 		return buf;
 	return NULL;
 }

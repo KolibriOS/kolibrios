@@ -1,8 +1,8 @@
 
 #include <drm/drmP.h>
+#include <drm/radeon_drm.h>
 #include <drm.h>
 #include <drm_mm.h>
-#include "radeon_drm.h"
 #include "radeon.h"
 #include "radeon_object.h"
 #include "bitmap.h"
@@ -11,7 +11,7 @@
 #include "r100d.h"
 
 
-display_t *rdisplay;
+display_t *os_display;
 
 static cursor_t*  __stdcall select_cursor(cursor_t *cursor);
 static void       __stdcall move_cursor(cursor_t *cursor, int x, int y);
@@ -31,10 +31,10 @@ int init_cursor(cursor_t *cursor)
     int       i,j;
     int       r;
 
-    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
+    rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
     r = radeon_bo_create(rdev, CURSOR_WIDTH*CURSOR_HEIGHT*4,
-                     PAGE_SIZE, false, RADEON_GEM_DOMAIN_VRAM, NULL, &cursor->robj);
+                     PAGE_SIZE, false, RADEON_GEM_DOMAIN_VRAM, 0, NULL, &cursor->robj);
 
     if (unlikely(r != 0))
         return r;
@@ -82,7 +82,7 @@ void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 
 static void radeon_show_cursor()
 {
-    struct radeon_device *rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
+    struct radeon_device *rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
 
     if (ASIC_IS_DCE4(rdev)) {
@@ -107,11 +107,11 @@ cursor_t* __stdcall select_cursor(cursor_t *cursor)
     cursor_t *old;
     uint32_t  gpu_addr;
 
-    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
+    rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
-    old = rdisplay->cursor;
+    old = os_display->cursor;
 
-    rdisplay->cursor = cursor;
+    os_display->cursor = cursor;
     gpu_addr = radeon_bo_gpu_offset(cursor->robj);
 
     if (ASIC_IS_DCE4(rdev))
@@ -136,7 +136,7 @@ static void radeon_lock_cursor(bool lock)
 {
     struct radeon_device *rdev;
 
-    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
+    rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
     uint32_t cur_lock;
 
@@ -168,7 +168,7 @@ static void radeon_lock_cursor(bool lock)
 void __stdcall move_cursor(cursor_t *cursor, int x, int y)
 {
     struct radeon_device *rdev;
-    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
+    rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
     int hot_x = cursor->hot_x;
     int hot_y = cursor->hot_y;
@@ -233,26 +233,26 @@ bool init_display(struct radeon_device *rdev, videomode_t *usermode)
 
     ENTER();
 
-    rdisplay = GetDisplay();
+    os_display = GetDisplay();
 
-    dev = rdisplay->ddev = rdev->ddev;
+    dev = os_display->ddev = rdev->ddev;
 
     ifl = safe_cli();
     {
-        list_for_each_entry(cursor, &rdisplay->cursors, list)
+        list_for_each_entry(cursor, &os_display->cursors, list)
         {
             init_cursor(cursor);
         };
 
-        rdisplay->restore_cursor(0,0);
-        rdisplay->init_cursor    = init_cursor;
-        rdisplay->select_cursor  = select_cursor;
-        rdisplay->show_cursor    = NULL;
-        rdisplay->move_cursor    = move_cursor;
-        rdisplay->restore_cursor = restore_cursor;
-        rdisplay->disable_mouse  = disable_mouse;
+        os_display->restore_cursor(0,0);
+        os_display->init_cursor    = init_cursor;
+        os_display->select_cursor  = select_cursor;
+        os_display->show_cursor    = NULL;
+        os_display->move_cursor    = move_cursor;
+        os_display->restore_cursor = restore_cursor;
+        os_display->disable_mouse  = disable_mouse;
 
-        select_cursor(rdisplay->cursor);
+        select_cursor(os_display->cursor);
         radeon_show_cursor();
     };
     safe_sti(ifl);

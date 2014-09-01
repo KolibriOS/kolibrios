@@ -47,7 +47,7 @@ struct tag_display
 
 };
 
-extern display_t *rdisplay;
+extern display_t *os_display;
 
 int   init_cursor(cursor_t *cursor);
 void  __stdcall restore_cursor(int x, int y);

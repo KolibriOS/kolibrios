@@ -31,21 +31,13 @@ struct drm_file   *drm_file_handlers[256];
 
 int vmw_init(void);
 int kms_init(struct drm_device *dev);
+void vmw_driver_thread();
 void kms_update();
-
 void cpu_detect();
 
 void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 
-int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
-               int src_x, int src_y, u32 w, u32 h);
-
-int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
-               int src_x, int src_y, u32 w, u32 h);
-
-int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
-             int src_x, int src_y, u32 w, u32 h);
 
 void get_pci_info(struct pci_device *dev);
 int gem_getparam(struct drm_device *dev, void *data);
@@ -63,23 +55,6 @@ int x86_clflush_size;
 unsigned int tsc_khz;
 
 int kms_modeset = 1;
-
-
-void vmw_driver_thread()
-{
-    dbgprintf("%s\n",__FUNCTION__);
-
-//    run_workqueue(dev_priv->wq);
-
-    while(driver_wq_state)
-    {
-        kms_update();
-        delay(1);
-    };
-     __asm__ __volatile__ (
-     "int $0x40"
-     ::"a"(-1));
-}
 
 u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
@@ -203,18 +178,18 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_ENUM_MODES:
-            dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
-                       inp, io->inp_size, io->out_size );
-            check_output(4);
+ //           dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
+ //                      inp, io->inp_size, io->out_size );
+ //           check_output(4);
 //            check_input(*outp * sizeof(videomode_t));
             if( kms_modeset)
                 retval = get_videomodes((videomode_t*)inp, outp);
             break;
 
         case SRV_SET_MODE:
-            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
-                       inp, io->inp_size);
-            check_input(sizeof(videomode_t));
+//            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
+//                       inp, io->inp_size);
+//            check_input(sizeof(videomode_t));
             if( kms_modeset )
                 retval = set_user_mode((videomode_t*)inp);
             break;
@@ -830,6 +805,7 @@ typedef struct
     uint32_t   hot_y;
 
     struct list_head   list;
+    void      *priv;
 }cursor_t;
 
 #define CURSOR_WIDTH 64
@@ -865,8 +841,7 @@ struct tag_display
     u32  check_m_pixel;
 };
 
-
-static display_t *os_display;
+display_t *os_display;
 
 static int count_connector_modes(struct drm_connector* connector)
 {
@@ -889,12 +864,15 @@ static void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
     struct vmw_private *dev_priv = vmw_priv(crtc->dev);
     struct vmw_display_unit *du = vmw_crtc_to_du(crtc);
 
+    du->cursor_x = x;
+    du->cursor_y = y;
     vmw_cursor_update_position(dev_priv, true, x,y);
 };
 
 static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 {
     struct vmw_private *dev_priv = vmw_priv(os_display->ddev);
+    struct vmw_display_unit *du = vmw_crtc_to_du(os_display->crtc);
     cursor_t *old;
 
     old = os_display->cursor;
@@ -902,29 +880,37 @@ static cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
 
     vmw_cursor_update_image(dev_priv, cursor->data,
                     64, 64, cursor->hot_x, cursor->hot_y);
-
-//    vmw_cursor_update_position(dev_priv, true,
-//                   du->cursor_x + du->hotspot_x,
-//                   du->cursor_y + du->hotspot_y);
-
+    vmw_cursor_update_position(dev_priv, true,
+                   du->cursor_x, du->cursor_y);
     return old;
 };
 
+void vmw_driver_thread()
+{
+    DRM_DEBUG_KMS("%s\n",__FUNCTION__);
+
+    select_cursor_kms(os_display->cursor);
+
+    while(driver_wq_state)
+    {
+        kms_update();
+        delay(2);
+    };
+     __asm__ __volatile__ (
+     "int $0x40"
+     ::"a"(-1));
+}
 
 int kms_init(struct drm_device *dev)
 {
     struct drm_connector    *connector;
-    struct drm_connector_helper_funcs *connector_funcs;
     struct drm_encoder      *encoder;
     struct drm_crtc         *crtc = NULL;
-    struct drm_framebuffer  *fb;
-
+    struct vmw_display_unit *du;
     cursor_t  *cursor;
     int        mode_count;
     u32_t      ifl;
     int        err;
-
-    ENTER();
 
     crtc = list_entry(dev->mode_config.crtc_list.next, typeof(*crtc), head);
     encoder = list_entry(dev->mode_config.encoder_list.next, typeof(*encoder), head);
@@ -944,39 +930,33 @@ int kms_init(struct drm_device *dev)
         mode_count++;
     };
 
-    printf("%s %d\n",__FUNCTION__, mode_count);
-
     DRM_DEBUG_KMS("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
                connector, connector->base.id,
                connector->status, connector->encoder,
                crtc, crtc->base.id );
 
-    DRM_DEBUG_KMS("[Select CRTC:%d]\n", crtc->base.id);
-
     os_display = GetDisplay();
+
+    os_display->ddev = dev;
+    os_display->connector = connector;
+    os_display->crtc = crtc;
+    os_display->supported_modes = mode_count;
 
     ifl = safe_cli();
     {
-        os_display->ddev = dev;
-        os_display->connector = connector;
-        os_display->crtc = crtc;
-        os_display->supported_modes = mode_count;
-
         os_display->restore_cursor(0,0);
         os_display->select_cursor  = select_cursor_kms;
         os_display->show_cursor    = NULL;
         os_display->move_cursor    = move_cursor_kms;
         os_display->restore_cursor = restore_cursor;
         os_display->disable_mouse  = disable_mouse;
-        select_cursor_kms(os_display->cursor);
     };
     safe_sti(ifl);
 
-#ifdef __HWA__
-    err = init_bitmaps();
-#endif
-
-    LEAVE();
+    du = vmw_crtc_to_du(os_display->crtc);
+    du->cursor_x = os_display->width/2;
+    du->cursor_y = os_display->height/2;
+    select_cursor_kms(os_display->cursor);
 
     return 0;
 };
@@ -986,6 +966,7 @@ void kms_update()
 {
     struct vmw_private *dev_priv = vmw_priv(main_device);
     size_t fifo_size;
+    u32_t  ifl;
     int i;
 
     struct {
@@ -1004,17 +985,16 @@ void kms_update()
     cmd->header = cpu_to_le32(SVGA_CMD_UPDATE);
     cmd->body.x = 0;
     cmd->body.y = 0;
-    cmd->body.width  = os_display->width; //cpu_to_le32(clips->x2 - clips->x1);
-    cmd->body.height = os_display->height; //cpu_to_le32(clips->y2 - clips->y1);
+    cmd->body.width  = os_display->width;
+    cmd->body.height = os_display->height;
 
     vmw_fifo_commit(dev_priv, fifo_size);
 }
 
 int get_videomodes(videomode_t *mode, int *count)
 {
+    struct drm_display_mode  *drmmode;
     int err = -1;
-
-    dbgprintf("mode %x count %d\n", mode, *count);
 
     if( *count == 0 )
     {
@@ -1023,7 +1003,6 @@ int get_videomodes(videomode_t *mode, int *count)
     }
     else if( mode != NULL )
     {
-        struct drm_display_mode  *drmmode;
         int i = 0;
 
         if( *count > os_display->supported_modes)
@@ -1036,15 +1015,17 @@ int get_videomodes(videomode_t *mode, int *count)
                 mode->width  = drm_mode_width(drmmode);
                 mode->height = drm_mode_height(drmmode);
                 mode->bpp    = 32;
-                mode->freq   = drm_mode_vrefresh(drmmode);
+                mode->freq   = drmmode->vrefresh;
                 i++;
                 mode++;
             }
             else break;
         };
+
         *count = i;
         err = 0;
     };
+
     return err;
 };
 

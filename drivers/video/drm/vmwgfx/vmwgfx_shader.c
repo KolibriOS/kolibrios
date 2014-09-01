@@ -29,6 +29,9 @@
 #include "vmwgfx_resource_priv.h"
 #include "ttm/ttm_placement.h"
 
+#define VMW_COMPAT_SHADER_HT_ORDER 12
+
+#if 0
 struct vmw_shader {
 	struct vmw_resource res;
 	SVGA3dShaderType type;
@@ -38,6 +41,50 @@ struct vmw_shader {
 struct vmw_user_shader {
 	struct ttm_base_object base;
 	struct vmw_shader shader;
+};
+
+/**
+ * enum vmw_compat_shader_state - Staging state for compat shaders
+ */
+enum vmw_compat_shader_state {
+	VMW_COMPAT_COMMITED,
+	VMW_COMPAT_ADD,
+	VMW_COMPAT_DEL
+};
+
+/**
+ * struct vmw_compat_shader - Metadata for compat shaders.
+ *
+ * @handle: The TTM handle of the guest backed shader.
+ * @tfile: The struct ttm_object_file the guest backed shader is registered
+ * with.
+ * @hash: Hash item for lookup.
+ * @head: List head for staging lists or the compat shader manager list.
+ * @state: Staging state.
+ *
+ * The structure is protected by the cmdbuf lock.
+ */
+struct vmw_compat_shader {
+	u32 handle;
+	struct ttm_object_file *tfile;
+	struct drm_hash_item hash;
+	struct list_head head;
+	enum vmw_compat_shader_state state;
+};
+
+/**
+ * struct vmw_compat_shader_manager - Compat shader manager.
+ *
+ * @shaders: Hash table containing staged and commited compat shaders
+ * @list: List of commited shaders.
+ * @dev_priv: Pointer to a device private structure.
+ *
+ * @shaders and @list are protected by the cmdbuf mutex for now.
+ */
+struct vmw_compat_shader_manager {
+	struct drm_open_hash shaders;
+	struct list_head list;
+	struct vmw_private *dev_priv;
 };
 
 static void vmw_user_shader_free(struct vmw_resource *res);
@@ -51,8 +98,6 @@ static int vmw_gb_shader_unbind(struct vmw_resource *res,
 				 bool readback,
 				 struct ttm_validate_buffer *val_buf);
 static int vmw_gb_shader_destroy(struct vmw_resource *res);
-
-static uint64_t vmw_user_shader_size;
 
 static const struct vmw_user_resource_conv user_shader_conv = {
 	.object_type = VMW_RES_SHADER,
@@ -258,7 +303,7 @@ static int vmw_gb_shader_destroy(struct vmw_resource *res)
 		return 0;
 
 	mutex_lock(&dev_priv->binding_mutex);
-	vmw_context_binding_res_list_kill(&res->binding_head);
+	vmw_context_binding_res_list_scrub(&res->binding_head);
 
 	cmd = vmw_fifo_reserve(dev_priv, sizeof(*cmd));
 	if (unlikely(cmd == NULL)) {
@@ -296,9 +341,9 @@ static void vmw_user_shader_free(struct vmw_resource *res)
 		container_of(res, struct vmw_user_shader, shader.res);
 	struct vmw_private *dev_priv = res->dev_priv;
 
-//   ttm_base_object_kfree(ushader, base);
-//   ttm_mem_global_free(vmw_mem_glob(dev_priv),
-//               vmw_user_shader_size);
+	ttm_base_object_kfree(ushader, base);
+	ttm_mem_global_free(vmw_mem_glob(dev_priv),
+			    vmw_user_shader_size);
 }
 
 /**
@@ -325,18 +370,84 @@ int vmw_shader_destroy_ioctl(struct drm_device *dev, void *data,
 					 TTM_REF_USAGE);
 }
 
-#if 0
+static int vmw_user_shader_alloc(struct vmw_private *dev_priv,
+		     struct vmw_dma_buffer *buffer,
+		     size_t shader_size,
+		     size_t offset,
+		     SVGA3dShaderType shader_type,
+		     struct ttm_object_file *tfile,
+		     u32 *handle)
+{
+	struct vmw_user_shader *ushader;
+	struct vmw_resource *res, *tmp;
+	int ret;
+
+	/*
+	 * Approximate idr memory usage with 128 bytes. It will be limited
+	 * by maximum number_of shaders anyway.
+	 */
+	if (unlikely(vmw_user_shader_size == 0))
+		vmw_user_shader_size =
+			ttm_round_pot(sizeof(struct vmw_user_shader)) + 128;
+
+	ret = ttm_mem_global_alloc(vmw_mem_glob(dev_priv),
+				   vmw_user_shader_size,
+				   false, true);
+	if (unlikely(ret != 0)) {
+		if (ret != -ERESTARTSYS)
+			DRM_ERROR("Out of graphics memory for shader "
+				  "creation.\n");
+		goto out;
+	}
+
+	ushader = kzalloc(sizeof(*ushader), GFP_KERNEL);
+	if (unlikely(ushader == NULL)) {
+		ttm_mem_global_free(vmw_mem_glob(dev_priv),
+				    vmw_user_shader_size);
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	res = &ushader->shader.res;
+	ushader->base.shareable = false;
+	ushader->base.tfile = NULL;
+
+	/*
+	 * From here on, the destructor takes over resource freeing.
+	 */
+
+	ret = vmw_gb_shader_init(dev_priv, res, shader_size,
+				 offset, shader_type, buffer,
+				 vmw_user_shader_free);
+	if (unlikely(ret != 0))
+		goto out;
+
+	tmp = vmw_resource_reference(res);
+	ret = ttm_base_object_init(tfile, &ushader->base, false,
+				   VMW_RES_SHADER,
+				   &vmw_user_shader_base_release, NULL);
+
+	if (unlikely(ret != 0)) {
+		vmw_resource_unreference(&tmp);
+		goto out_err;
+	}
+
+	if (handle)
+		*handle = ushader->base.hash.key;
+out_err:
+	vmw_resource_unreference(&res);
+out:
+	return ret;
+}
+
+
 int vmw_shader_define_ioctl(struct drm_device *dev, void *data,
 			     struct drm_file *file_priv)
 {
 	struct vmw_private *dev_priv = vmw_priv(dev);
-	struct vmw_user_shader *ushader;
-	struct vmw_resource *res;
-	struct vmw_resource *tmp;
 	struct drm_vmw_shader_create_arg *arg =
 		(struct drm_vmw_shader_create_arg *)data;
 	struct ttm_object_file *tfile = vmw_fpriv(file_priv)->tfile;
-	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	struct vmw_dma_buffer *buffer = NULL;
 	SVGA3dShaderType shader_type;
 	int ret;
@@ -374,70 +485,164 @@ int vmw_shader_define_ioctl(struct drm_device *dev, void *data,
 		goto out_bad_arg;
 	}
 
-	/*
-	 * Approximate idr memory usage with 128 bytes. It will be limited
-	 * by maximum number_of shaders anyway.
-	 */
-
-	if (unlikely(vmw_user_shader_size == 0))
-		vmw_user_shader_size = ttm_round_pot(sizeof(*ushader))
-			+ 128;
-
-	ret = ttm_read_lock(&vmaster->lock, true);
+	ret = ttm_read_lock(&dev_priv->reservation_sem, true);
 	if (unlikely(ret != 0))
-		return ret;
+		goto out_bad_arg;
 
-	ret = ttm_mem_global_alloc(vmw_mem_glob(dev_priv),
-				   vmw_user_shader_size,
-				   false, true);
-	if (unlikely(ret != 0)) {
-		if (ret != -ERESTARTSYS)
-			DRM_ERROR("Out of graphics memory for shader"
-				  " creation.\n");
-		goto out_unlock;
-	}
+	ret = vmw_user_shader_alloc(dev_priv, buffer, arg->size, arg->offset,
+			       shader_type, tfile, &arg->shader_handle);
 
-	ushader = kzalloc(sizeof(*ushader), GFP_KERNEL);
-	if (unlikely(ushader == NULL)) {
-		ttm_mem_global_free(vmw_mem_glob(dev_priv),
-				    vmw_user_shader_size);
-		ret = -ENOMEM;
-		goto out_unlock;
-	}
-
-	res = &ushader->shader.res;
-	ushader->base.shareable = false;
-	ushader->base.tfile = NULL;
-
-	/*
-	 * From here on, the destructor takes over resource freeing.
-	 */
-
-	ret = vmw_gb_shader_init(dev_priv, res, arg->size,
-				 arg->offset, shader_type, buffer,
-				 vmw_user_shader_free);
-	if (unlikely(ret != 0))
-		goto out_unlock;
-
-	tmp = vmw_resource_reference(res);
-	ret = ttm_base_object_init(tfile, &ushader->base, false,
-				   VMW_RES_SHADER,
-				   &vmw_user_shader_base_release, NULL);
-
-	if (unlikely(ret != 0)) {
-		vmw_resource_unreference(&tmp);
-		goto out_err;
-	}
-
-	arg->shader_handle = ushader->base.hash.key;
-out_err:
-	vmw_resource_unreference(&res);
-out_unlock:
-	ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
 out_bad_arg:
 	vmw_dmabuf_unreference(&buffer);
-
 	return ret;
+}
 
+/**
+ * vmw_compat_shader_id_ok - Check whether a compat shader user key and
+ * shader type are within valid bounds.
+ *
+ * @user_key: User space id of the shader.
+ * @shader_type: Shader type.
+ *
+ * Returns true if valid false if not.
+	 */
+static bool vmw_compat_shader_id_ok(u32 user_key, SVGA3dShaderType shader_type)
+{
+	return user_key <= ((1 << 20) - 1) && (unsigned) shader_type < 16;
+}
+
+/**
+ * vmw_compat_shader_key - Compute a hash key suitable for a compat shader.
+ *
+ * @user_key: User space id of the shader.
+ * @shader_type: Shader type.
+ *
+ * Returns a hash key suitable for a command buffer managed resource
+ * manager hash table.
+ */
+static u32 vmw_compat_shader_key(u32 user_key, SVGA3dShaderType shader_type)
+{
+	return user_key | (shader_type << 20);
+}
+
+/**
+ * vmw_compat_shader_remove - Stage a compat shader for removal.
+ *
+ * @man: Pointer to the compat shader manager identifying the shader namespace.
+ * @user_key: The key that is used to identify the shader. The key is
+ * unique to the shader type.
+ * @shader_type: Shader type.
+ * @list: Caller's list of staged command buffer resource actions.
+ */
+int vmw_compat_shader_remove(struct vmw_cmdbuf_res_manager *man,
+			     u32 user_key, SVGA3dShaderType shader_type,
+			     struct list_head *list)
+{
+	if (!vmw_compat_shader_id_ok(user_key, shader_type))
+		return -EINVAL;
+
+	return vmw_cmdbuf_res_remove(man, vmw_cmdbuf_res_compat_shader,
+				     vmw_compat_shader_key(user_key,
+							   shader_type),
+				     list);
+}
+
+/**
+ * vmw_compat_shader_add - Create a compat shader and stage it for addition
+ * as a command buffer managed resource.
+ *
+ * @man: Pointer to the compat shader manager identifying the shader namespace.
+ * @user_key: The key that is used to identify the shader. The key is
+ * unique to the shader type.
+ * @bytecode: Pointer to the bytecode of the shader.
+ * @shader_type: Shader type.
+ * @tfile: Pointer to a struct ttm_object_file that the guest-backed shader is
+ * to be created with.
+ * @list: Caller's list of staged command buffer resource actions.
+ *
+	 */
+int vmw_compat_shader_add(struct vmw_private *dev_priv,
+			  struct vmw_cmdbuf_res_manager *man,
+			  u32 user_key, const void *bytecode,
+			  SVGA3dShaderType shader_type,
+			  size_t size,
+			  struct list_head *list)
+{
+	struct vmw_dma_buffer *buf;
+	struct ttm_bo_kmap_obj map;
+	bool is_iomem;
+	int ret;
+	struct vmw_resource *res;
+
+	if (!vmw_compat_shader_id_ok(user_key, shader_type))
+		return -EINVAL;
+
+	/* Allocate and pin a DMA buffer */
+	buf = kzalloc(sizeof(*buf), GFP_KERNEL);
+	if (unlikely(buf == NULL))
+		return -ENOMEM;
+
+	ret = vmw_dmabuf_init(dev_priv, buf, size, &vmw_sys_ne_placement,
+			      true, vmw_dmabuf_bo_free);
+	if (unlikely(ret != 0))
+		goto out;
+
+	ret = ttm_bo_reserve(&buf->base, false, true, false, NULL);
+	if (unlikely(ret != 0))
+		goto no_reserve;
+
+	/* Map and copy shader bytecode. */
+	ret = ttm_bo_kmap(&buf->base, 0, PAGE_ALIGN(size) >> PAGE_SHIFT,
+			  &map);
+	if (unlikely(ret != 0)) {
+		ttm_bo_unreserve(&buf->base);
+		goto no_reserve;
+	}
+
+	memcpy(ttm_kmap_obj_virtual(&map, &is_iomem), bytecode, size);
+	WARN_ON(is_iomem);
+
+	ttm_bo_kunmap(&map);
+	ret = ttm_bo_validate(&buf->base, &vmw_sys_placement, false, true);
+	WARN_ON(ret != 0);
+	ttm_bo_unreserve(&buf->base);
+
+	res = vmw_shader_alloc(dev_priv, buf, size, 0, shader_type);
+	if (unlikely(ret != 0))
+		goto no_reserve;
+
+	ret = vmw_cmdbuf_res_add(man, vmw_cmdbuf_res_compat_shader,
+				 vmw_compat_shader_key(user_key, shader_type),
+				 res, list);
+	vmw_resource_unreference(&res);
+no_reserve:
+	vmw_dmabuf_unreference(&buf);
+out:
+	return ret;
+}
+
+/**
+ * vmw_compat_shader_lookup - Look up a compat shader
+ *
+ * @man: Pointer to the command buffer managed resource manager identifying
+ * the shader namespace.
+ * @user_key: The user space id of the shader.
+ * @shader_type: The shader type.
+ *
+ * Returns a refcounted pointer to a struct vmw_resource if the shader was
+ * found. An error pointer otherwise.
+ */
+struct vmw_resource *
+vmw_compat_shader_lookup(struct vmw_cmdbuf_res_manager *man,
+			 u32 user_key,
+			 SVGA3dShaderType shader_type)
+{
+	if (!vmw_compat_shader_id_ok(user_key, shader_type))
+		return ERR_PTR(-EINVAL);
+
+	return vmw_cmdbuf_res_lookup(man, vmw_cmdbuf_res_compat_shader,
+				     vmw_compat_shader_key(user_key,
+							   shader_type));
 }
 #endif

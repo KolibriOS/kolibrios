@@ -57,9 +57,12 @@ static void ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
 
 static void ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
 {
-	ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages, sizeof(void*));
-	ttm->dma_address = drm_calloc_large(ttm->ttm.num_pages,
-					    sizeof(*ttm->dma_address));
+	ttm->ttm.pages = drm_calloc_large(ttm->ttm.num_pages,
+					  sizeof(*ttm->ttm.pages) +
+					  sizeof(*ttm->dma_address) +
+					  sizeof(*ttm->cpu_address));
+	ttm->cpu_address = (void *) (ttm->ttm.pages + ttm->ttm.num_pages);
+	ttm->dma_address = (void *) (ttm->cpu_address + ttm->ttm.num_pages);
 }
 
 #ifdef CONFIG_X86
@@ -118,8 +121,8 @@ static int ttm_tt_set_caching(struct ttm_tt *ttm,
 		return 0;
 	}
 
-//   if (ttm->caching_state == tt_cached)
-//       drm_clflush_pages(ttm->pages, ttm->num_pages);
+	if (ttm->caching_state == tt_cached)
+		drm_clflush_pages(ttm->pages, ttm->num_pages);
 
 	for (i = 0; i < ttm->num_pages; ++i) {
 		cur_page = ttm->pages[i];
@@ -172,8 +175,8 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
 		ttm_tt_unbind(ttm);
 	}
 
-//   if (ttm->state == tt_unbound)
-//       ttm_tt_unpopulate(ttm);
+	if (ttm->state == tt_unbound)
+		ttm_tt_unpopulate(ttm);
 
 //   if (!(ttm->page_flags & TTM_PAGE_FLAG_PERSISTENT_SWAP) &&
 //       ttm->swap_storage)
@@ -230,7 +233,7 @@ int ttm_dma_tt_init(struct ttm_dma_tt *ttm_dma, struct ttm_bo_device *bdev,
 
 	INIT_LIST_HEAD(&ttm_dma->pages_list);
 	ttm_dma_tt_alloc_page_directory(ttm_dma);
-	if (!ttm->pages || !ttm_dma->dma_address) {
+	if (!ttm->pages) {
 		ttm_tt_destroy(ttm);
         printf("Failed allocating page table\n");
 		return -ENOMEM;
@@ -245,7 +248,7 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
 
 	drm_free_large(ttm->pages);
 	ttm->pages = NULL;
-	drm_free_large(ttm_dma->dma_address);
+	ttm_dma->cpu_address = NULL;
 	ttm_dma->dma_address = NULL;
 }
 EXPORT_SYMBOL(ttm_dma_tt_fini);
@@ -260,8 +263,6 @@ void ttm_tt_unbind(struct ttm_tt *ttm)
 		ttm->state = tt_unbound;
 	}
 }
-
-#if 0
 
 int ttm_tt_bind(struct ttm_tt *ttm, struct ttm_mem_reg *bo_mem)
 {
@@ -286,9 +287,8 @@ int ttm_tt_bind(struct ttm_tt *ttm, struct ttm_mem_reg *bo_mem)
 	return 0;
 }
 EXPORT_SYMBOL(ttm_tt_bind);
-#endif
 
-/*
+#if 0
 int ttm_tt_swapin(struct ttm_tt *ttm)
 {
 	struct address_space *swap_space;
@@ -380,7 +380,20 @@ out_err:
 
 	return ret;
 }
+#endif
 
-*/
+static void ttm_tt_clear_mapping(struct ttm_tt *ttm)
+{
+	pgoff_t i;
+	struct page **page = ttm->pages;
 
+}
 
+void ttm_tt_unpopulate(struct ttm_tt *ttm)
+{
+	if (ttm->state == tt_unpopulated)
+		return;
+
+	ttm_tt_clear_mapping(ttm);
+	ttm->bdev->driver->ttm_tt_unpopulate(ttm);
+}

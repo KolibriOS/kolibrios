@@ -35,10 +35,8 @@
 
 #include <drm/drm_fb_helper.h>
 
-
-int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
-                     struct drm_mode_fb_cmd2 *mode_cmd,
-                     struct drm_gem_object **gobj_p);
+struct drm_framebuffer *main_fb;
+struct drm_gem_object  *main_fb_obj;
 
 /* object hierarchy -
    this contains a helper + a radeon fb
@@ -88,10 +86,105 @@ int radeon_align_pitch(struct radeon_device *rdev, int width, int bpp, bool tile
 	return aligned;
 }
 
+static void radeonfb_destroy_pinned_object(struct drm_gem_object *gobj)
+{
+	struct radeon_bo *rbo = gem_to_radeon_bo(gobj);
+	int ret;
 
-static int radeonfb_create(struct radeon_fbdev *rfbdev,
+	ret = radeon_bo_reserve(rbo, false);
+	if (likely(ret == 0)) {
+		radeon_bo_kunmap(rbo);
+		radeon_bo_unpin(rbo);
+		radeon_bo_unreserve(rbo);
+	}
+	drm_gem_object_unreference_unlocked(gobj);
+}
+
+static int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
+                     struct drm_mode_fb_cmd2 *mode_cmd,
+                     struct drm_gem_object **gobj_p)
+{
+    struct radeon_device *rdev = rfbdev->rdev;
+    struct drm_gem_object *gobj = NULL;
+    struct radeon_bo *rbo = NULL;
+    bool fb_tiled = false; /* useful for testing */
+    u32 tiling_flags = 0;
+    int ret;
+    int aligned_size, size;
+    int height = mode_cmd->height;
+    u32 bpp, depth;
+
+    drm_fb_get_bpp_depth(mode_cmd->pixel_format, &depth, &bpp);
+
+    /* need to align pitch with crtc limits */
+    mode_cmd->pitches[0] = radeon_align_pitch(rdev, mode_cmd->width, bpp,
+                          fb_tiled) * ((bpp + 1) / 8);
+
+    if (rdev->family >= CHIP_R600)
+        height = ALIGN(mode_cmd->height, 8);
+    size = mode_cmd->pitches[0] * height;
+    aligned_size = ALIGN(size, PAGE_SIZE);
+
+	rbo = rdev->stollen_vga_memory;
+	gobj = &rbo->gem_base;
+	mutex_lock(&rdev->gem.mutex);
+	list_add_tail(&rbo->list, &rdev->gem.objects);
+	mutex_unlock(&rdev->gem.mutex);
+
+    rbo = gem_to_radeon_bo(gobj);
+
+    if (fb_tiled)
+        tiling_flags = RADEON_TILING_MACRO;
+
+#ifdef __BIG_ENDIAN
+	switch (bpp) {
+	case 32:
+		tiling_flags |= RADEON_TILING_SWAP_32BIT;
+		break;
+	case 16:
+		tiling_flags |= RADEON_TILING_SWAP_16BIT;
+	default:
+		break;
+	}
+#endif
+
+//    if (tiling_flags) {
+//        ret = radeon_bo_set_tiling_flags(rbo,
+//                         tiling_flags | RADEON_TILING_SURFACE,
+//                         mode_cmd->pitches[0]);
+//        if (ret)
+//            dev_err(rdev->dev, "FB failed to set tiling flags\n");
+//    }
+
+
+	ret = radeon_bo_reserve(rbo, false);
+	if (unlikely(ret != 0))
+		goto out_unref;
+	/* Only 27 bit offset for legacy CRTC */
+	ret = radeon_bo_pin_restricted(rbo, RADEON_GEM_DOMAIN_VRAM,
+				       ASIC_IS_AVIVO(rdev) ? 0 : 1 << 27,
+				       NULL);
+	if (ret) {
+		radeon_bo_unreserve(rbo);
+		goto out_unref;
+	}
+	radeon_bo_unreserve(rbo);
+	if (ret) {
+		goto out_unref;
+	}
+
+    *gobj_p = gobj;
+    return 0;
+out_unref:
+	radeonfb_destroy_pinned_object(gobj);
+	*gobj_p = NULL;
+	return ret;
+}
+
+static int radeonfb_create(struct drm_fb_helper *helper,
 			   struct drm_fb_helper_surface_size *sizes)
 {
+	struct radeon_fbdev *rfbdev = (struct radeon_fbdev *)helper;
 	struct radeon_device *rdev = rfbdev->rdev;
 	struct fb_info *info;
 	struct drm_framebuffer *fb = NULL;
@@ -101,8 +194,6 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 	struct device *device = &rdev->pdev->dev;
 	int ret;
 	unsigned long tmp;
-
-    ENTER();
 
 	mode_cmd.width = sizes->surface_width;
 	mode_cmd.height = sizes->surface_height;
@@ -125,7 +216,6 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 	/* okay we have an object now allocate the framebuffer */
 	info = framebuffer_alloc(0, device);
 	if (info == NULL) {
-        dbgprintf("framebuffer_alloc\n");
 		ret = -ENOMEM;
 		goto out_unref;
 	}
@@ -134,7 +224,7 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 
 	ret = radeon_framebuffer_init(rdev->ddev, &rfbdev->rfb, &mode_cmd, gobj);
 	if (ret) {
-		DRM_ERROR("failed to initalise framebuffer %d\n", ret);
+		DRM_ERROR("failed to initialize framebuffer %d\n", ret);
 		goto out_unref;
 	}
 
@@ -172,18 +262,15 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 
 	/* Use default scratch pixmap (info->pixmap.flags = FB_PIXMAP_SYSTEM) */
 
-//   if (info->screen_base == NULL) {
-//       ret = -ENOSPC;
-//       goto out_unref;
-//   }
+
 	DRM_INFO("fb mappable at 0x%lX\n",  info->fix.smem_start);
 	DRM_INFO("vram apper at 0x%lX\n",  (unsigned long)rdev->mc.aper_base);
 	DRM_INFO("size %lu\n", (unsigned long)radeon_bo_size(rbo));
 	DRM_INFO("fb depth is %d\n", fb->depth);
 	DRM_INFO("   pitch is %d\n", fb->pitches[0]);
 
-
-    LEAVE();
+    main_fb = fb;
+    main_fb_obj = gobj;
 
     return 0;
 
@@ -197,21 +284,7 @@ out_unref:
 	return ret;
 }
 
-static int radeon_fb_find_or_create_single(struct drm_fb_helper *helper,
-					   struct drm_fb_helper_surface_size *sizes)
-{
-	struct radeon_fbdev *rfbdev = (struct radeon_fbdev *)helper;
-	int new_fb = 0;
-	int ret;
 
-	if (!helper->fb) {
-		ret = radeonfb_create(rfbdev, sizes);
-		if (ret)
-			return ret;
-		new_fb = 1;
-	}
-	return new_fb;
-}
 static int radeon_fbdev_destroy(struct drm_device *dev, struct radeon_fbdev *rfbdev)
 {
 	struct fb_info *info;
@@ -233,21 +306,18 @@ static int radeon_fbdev_destroy(struct drm_device *dev, struct radeon_fbdev *rfb
 	return 0;
 }
 
-static struct drm_fb_helper_funcs radeon_fb_helper_funcs = {
+static const struct drm_fb_helper_funcs radeon_fb_helper_funcs = {
 	.gamma_set = radeon_crtc_fb_gamma_set,
 	.gamma_get = radeon_crtc_fb_gamma_get,
-	.fb_probe = radeon_fb_find_or_create_single,
+	.fb_probe = radeonfb_create,
 };
-
-extern struct radeon_fbdev *kos_rfbdev;
 
 int radeon_fbdev_init(struct radeon_device *rdev)
 {
 	struct radeon_fbdev *rfbdev;
 	int bpp_sel = 32;
 	int ret;
-
-    ENTER();
+ENTER();
 
 	/* select 8 bpp console on RN50 or 16MB cards */
 	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (32*1024*1024))
@@ -259,7 +329,9 @@ int radeon_fbdev_init(struct radeon_device *rdev)
 
 	rfbdev->rdev = rdev;
 	rdev->mode_info.rfbdev = rfbdev;
-	rfbdev->helper.funcs = &radeon_fb_helper_funcs;
+
+	drm_fb_helper_prepare(rdev->ddev, &rfbdev->helper,
+			      &radeon_fb_helper_funcs);
 
 	ret = drm_fb_helper_init(rdev->ddev, &rfbdev->helper,
 				 rdev->num_crtc,
@@ -270,11 +342,12 @@ int radeon_fbdev_init(struct radeon_device *rdev)
 	}
 
 	drm_fb_helper_single_add_all_connectors(&rfbdev->helper);
+
+	/* disable all the possible outputs/crtcs before entering KMS mode */
+	drm_helper_disable_unused_functions(rdev->ddev);
+
 	drm_fb_helper_initial_config(&rfbdev->helper, bpp_sel);
-
-    kos_rfbdev = rfbdev;
-
-    LEAVE();
+LEAVE();
 
 	return 0;
 }

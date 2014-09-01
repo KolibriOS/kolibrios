@@ -41,13 +41,13 @@ extern int irq_override;
 /**
  * radeon_driver_irq_handler_kms - irq handler for KMS
  *
- * @DRM_IRQ_ARGS: args
+ * @int irq, void *arg: args
  *
  * This is the irq handler for the radeon KMS driver (all asics).
  * radeon_irq_process is a macro that points to the per-asic
  * irq handler callback.
  */
-irqreturn_t radeon_driver_irq_handler_kms(DRM_IRQ_ARGS)
+irqreturn_t radeon_driver_irq_handler_kms(int irq, void *arg)
 {
 	struct drm_device *dev = (struct drm_device *) arg;
 	struct radeon_device *rdev = dev->dev_private;
@@ -73,6 +73,7 @@ void radeon_driver_irq_preinstall_kms(struct drm_device *dev)
     /* Disable *all* interrupts */
 	for (i = 0; i < RADEON_NUM_RINGS; i++)
 		atomic_set(&rdev->irq.ring_int[i], 0);
+	rdev->irq.dpm_thermal = false;
 	for (i = 0; i < RADEON_MAX_HPD_PINS; i++)
 		rdev->irq.hpd[i] = false;
 	for (i = 0; i < RADEON_MAX_CRTCS; i++) {
@@ -120,6 +121,7 @@ void radeon_driver_irq_uninstall_kms(struct drm_device *dev)
 	/* Disable *all* interrupts */
 	for (i = 0; i < RADEON_NUM_RINGS; i++)
 		atomic_set(&rdev->irq.ring_int[i], 0);
+	rdev->irq.dpm_thermal = false;
 	for (i = 0; i < RADEON_MAX_HPD_PINS; i++)
 		rdev->irq.hpd[i] = false;
 	for (i = 0; i < RADEON_MAX_CRTCS; i++) {
@@ -143,23 +145,20 @@ void radeon_driver_irq_uninstall_kms(struct drm_device *dev)
  */
 int radeon_irq_kms_init(struct radeon_device *rdev)
 {
-    int irq_line;
 	int r = 0;
-
-    ENTER();
-
 
 	spin_lock_init(&rdev->irq.lock);
 	/* enable msi */
 	rdev->msi_enabled = 0;
 
     rdev->irq.installed = true;
-	r = drm_irq_install(rdev->ddev);
+	r = drm_irq_install(rdev->ddev, rdev->ddev->pdev->irq);
     if (r) {
        rdev->irq.installed = false;
        FAIL();
        return r;
    }
+
 	DRM_INFO("radeon: irq initialized.\n");
 	return 0;
 }
@@ -180,7 +179,6 @@ void radeon_irq_kms_fini(struct radeon_device *rdev)
 //       if (rdev->msi_enabled)
 //			pci_disable_msi(rdev->pdev);
 	}
-//	flush_work(&rdev->hotplug_work);
 }
 
 /**
@@ -244,6 +242,9 @@ void radeon_irq_kms_enable_hpd(struct radeon_device *rdev, unsigned hpd_mask)
 	unsigned long irqflags;
 	int i;
 
+	if (!rdev->ddev->irq_enabled)
+		return;
+
 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
 	for (i = 0; i < RADEON_MAX_HPD_PINS; ++i)
 		rdev->irq.hpd[i] |= !!(hpd_mask & (1 << i));
@@ -264,6 +265,9 @@ void radeon_irq_kms_disable_hpd(struct radeon_device *rdev, unsigned hpd_mask)
 	unsigned long irqflags;
 	int i;
 
+	if (!rdev->ddev->irq_enabled)
+		return;
+
 	spin_lock_irqsave(&rdev->irq.lock, irqflags);
 	for (i = 0; i < RADEON_MAX_HPD_PINS; ++i)
 		rdev->irq.hpd[i] &= !(hpd_mask & (1 << i));
@@ -271,59 +275,3 @@ void radeon_irq_kms_disable_hpd(struct radeon_device *rdev, unsigned hpd_mask)
 	spin_unlock_irqrestore(&rdev->irq.lock, irqflags);
 }
 
-
-static struct drm_driver drm_driver = {
-    .irq_preinstall = radeon_driver_irq_preinstall_kms,
-    .irq_postinstall = radeon_driver_irq_postinstall_kms,
-    .irq_handler = radeon_driver_irq_handler_kms
-};
-
-static struct drm_driver *driver = &drm_driver;
-
-int drm_irq_install(struct drm_device *dev)
-{
-    unsigned long sh_flags = 0;
-    int irq_line;
-    int ret = 0;
-
-    char *irqname;
-
-    mutex_lock(&dev->struct_mutex);
-
-    /* Driver must have been initialized */
-    if (!dev->dev_private) {
-            mutex_unlock(&dev->struct_mutex);
-            return -EINVAL;
-    }
-
-    if (dev->irq_enabled) {
-            mutex_unlock(&dev->struct_mutex);
-            return -EBUSY;
-    }
-    dev->irq_enabled = 1;
-    mutex_unlock(&dev->struct_mutex);
-
-    irq_line   = drm_dev_to_irq(dev);
-
-    DRM_DEBUG("irq=%d\n", drm_dev_to_irq(dev));
-
-    /* Before installing handler */
-    if (driver->irq_preinstall)
-            driver->irq_preinstall(dev);
-
-    ret = AttachIntHandler(irq_line, driver->irq_handler, (u32)dev);
-
-    /* After installing handler */
-    if (driver->irq_postinstall)
-            ret = driver->irq_postinstall(dev);
-
-    if (ret < 0) {
-            DRM_ERROR(__FUNCTION__);
-    }
-
-    u16_t cmd = PciRead16(dev->pdev->busnr, dev->pdev->devfn, 4);
-    cmd&= ~(1<<10);
-    PciWrite16(dev->pdev->busnr, dev->pdev->devfn, 4, cmd);
-
-    return ret;
-}

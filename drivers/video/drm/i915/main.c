@@ -186,7 +186,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("\ni915 v3.17-rc2 build %s %s\nusage: i915 [options]\n"
+    printf("\ni915 v3.17-rc3 build %s %s\nusage: i915 [options]\n"
            "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 1 - true)\n",
            __DATE__, __TIME__);
     printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"

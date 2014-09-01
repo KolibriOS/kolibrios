@@ -114,8 +114,10 @@ static void vmw_resource_list_unreserve(struct list_head *list,
 		 * persistent context binding tracker.
 		 */
 		if (unlikely(val->staged_bindings)) {
+			if (!backoff) {
 			vmw_context_binding_state_transfer
 				(val->res, val->staged_bindings);
+			}
 			kfree(val->staged_bindings);
 			val->staged_bindings = NULL;
 		}
@@ -178,6 +180,44 @@ static int vmw_resource_val_add(struct vmw_sw_context *sw_context,
 }
 
 /**
+ * vmw_resource_context_res_add - Put resources previously bound to a context on
+ * the validation list
+ *
+ * @dev_priv: Pointer to a device private structure
+ * @sw_context: Pointer to a software context used for this command submission
+ * @ctx: Pointer to the context resource
+ *
+ * This function puts all resources that were previously bound to @ctx on
+ * the resource validation list. This is part of the context state reemission
+ */
+static int vmw_resource_context_res_add(struct vmw_private *dev_priv,
+					struct vmw_sw_context *sw_context,
+					struct vmw_resource *ctx)
+{
+	struct list_head *binding_list;
+	struct vmw_ctx_binding *entry;
+	int ret = 0;
+	struct vmw_resource *res;
+
+	mutex_lock(&dev_priv->binding_mutex);
+	binding_list = vmw_context_binding_list(ctx);
+
+	list_for_each_entry(entry, binding_list, ctx_list) {
+		res = vmw_resource_reference_unless_doomed(entry->bi.res);
+		if (unlikely(res == NULL))
+			continue;
+
+		ret = vmw_resource_val_add(sw_context, entry->bi.res, NULL);
+		vmw_resource_unreference(&res);
+		if (unlikely(ret != 0))
+			break;
+	}
+
+	mutex_unlock(&dev_priv->binding_mutex);
+	return ret;
+}
+
+/**
  * vmw_resource_relocation_add - Add a relocation to the relocation list
  *
  * @list: Pointer to head of relocation list.
@@ -233,8 +273,12 @@ static void vmw_resource_relocations_apply(uint32_t *cb,
 {
 	struct vmw_resource_relocation *rel;
 
-	list_for_each_entry(rel, list, head)
+	list_for_each_entry(rel, list, head) {
+		if (likely(rel->res != NULL))
 		cb[rel->offset] = rel->res->id;
+		else
+			cb[rel->offset] = SVGA_3D_CMD_NOP;
+	}
 }
 
 static int vmw_cmd_invalid(struct vmw_private *dev_priv,
@@ -378,6 +422,71 @@ static int vmw_resources_validate(struct vmw_sw_context *sw_context)
 	return 0;
 }
 
+
+/**
+ * vmw_cmd_res_reloc_add - Add a resource to a software context's
+ * relocation- and validation lists.
+ *
+ * @dev_priv: Pointer to a struct vmw_private identifying the device.
+ * @sw_context: Pointer to the software context.
+ * @res_type: Resource type.
+ * @id_loc: Pointer to where the id that needs translation is located.
+ * @res: Valid pointer to a struct vmw_resource.
+ * @p_val: If non null, a pointer to the struct vmw_resource_validate_node
+ * used for this resource is returned here.
+ */
+static int vmw_cmd_res_reloc_add(struct vmw_private *dev_priv,
+				 struct vmw_sw_context *sw_context,
+				 enum vmw_res_type res_type,
+				 uint32_t *id_loc,
+				 struct vmw_resource *res,
+				 struct vmw_resource_val_node **p_val)
+{
+	int ret;
+	struct vmw_resource_val_node *node;
+
+	*p_val = NULL;
+	ret = vmw_resource_relocation_add(&sw_context->res_relocations,
+					  res,
+					  id_loc - sw_context->buf_start);
+	if (unlikely(ret != 0))
+		goto out_err;
+
+	ret = vmw_resource_val_add(sw_context, res, &node);
+	if (unlikely(ret != 0))
+		goto out_err;
+
+	if (res_type == vmw_res_context && dev_priv->has_mob &&
+	    node->first_usage) {
+
+		/*
+		 * Put contexts first on the list to be able to exit
+		 * list traversal for contexts early.
+		 */
+		list_del(&node->head);
+		list_add(&node->head, &sw_context->resource_list);
+
+		ret = vmw_resource_context_res_add(dev_priv, sw_context, res);
+		if (unlikely(ret != 0))
+			goto out_err;
+		node->staged_bindings =
+			kzalloc(sizeof(*node->staged_bindings), GFP_KERNEL);
+		if (node->staged_bindings == NULL) {
+			DRM_ERROR("Failed to allocate context binding "
+				  "information.\n");
+			goto out_err;
+		}
+		INIT_LIST_HEAD(&node->staged_bindings->list);
+	}
+
+	if (p_val)
+		*p_val = node;
+
+out_err:
+	return ret;
+}
+
+
 /**
  * vmw_cmd_res_check - Check that a resource is present and if so, put it
  * on the resource validate list unless it's already there.
@@ -386,14 +495,17 @@ static int vmw_resources_validate(struct vmw_sw_context *sw_context)
  * @sw_context: Pointer to the software context.
  * @res_type: Resource type.
  * @converter: User-space visisble type specific information.
- * @id: Pointer to the location in the command buffer currently being
+ * @id_loc: Pointer to the location in the command buffer currently being
  * parsed from where the user-space resource id handle is located.
+ * @p_val: Pointer to pointer to resource validalidation node. Populated
+ * on exit.
  */
-static int vmw_cmd_res_check(struct vmw_private *dev_priv,
+static int
+vmw_cmd_res_check(struct vmw_private *dev_priv,
 			     struct vmw_sw_context *sw_context,
 			     enum vmw_res_type res_type,
 			     const struct vmw_user_resource_conv *converter,
-			     uint32_t *id,
+			 uint32_t *id_loc,
 			     struct vmw_resource_val_node **p_val)
 {
 	struct vmw_res_cache_entry *rcache =
@@ -402,7 +514,7 @@ static int vmw_cmd_res_check(struct vmw_private *dev_priv,
 	struct vmw_resource_val_node *node;
 	int ret;
 
-	if (*id == SVGA3D_INVALID_ID) {
+	if (*id_loc == SVGA3D_INVALID_ID) {
 		if (p_val)
 			*p_val = NULL;
 		if (res_type == vmw_res_context) {
@@ -417,7 +529,7 @@ static int vmw_cmd_res_check(struct vmw_private *dev_priv,
 	 * resource
 	 */
 
-	if (likely(rcache->valid && *id == rcache->handle)) {
+	if (likely(rcache->valid && *id_loc == rcache->handle)) {
 		const struct vmw_resource *res = rcache->res;
 
 		rcache->node->first_usage = false;
@@ -426,50 +538,33 @@ static int vmw_cmd_res_check(struct vmw_private *dev_priv,
 
 		return vmw_resource_relocation_add
 			(&sw_context->res_relocations, res,
-			 id - sw_context->buf_start);
+			 id_loc - sw_context->buf_start);
 	}
 
-	ret = vmw_user_resource_lookup_handle(dev_priv,
-					      sw_context->tfile,
-					      *id,
-					      converter,
-					      &res);
+   ret = vmw_user_resource_lookup_handle(dev_priv,
+                         sw_context->fp->tfile,
+					      *id_loc,
+                         converter,
+                         &res);
 	if (unlikely(ret != 0)) {
 		DRM_ERROR("Could not find or use resource 0x%08x.\n",
-			  (unsigned) *id);
-//       dump_stack();
+			  (unsigned) *id_loc);
+..		dump_stack();
 		return ret;
 	}
 
 	rcache->valid = true;
 	rcache->res = res;
-	rcache->handle = *id;
+	rcache->handle = *id_loc;
 
-	ret = vmw_resource_relocation_add(&sw_context->res_relocations,
-					  res,
-					  id - sw_context->buf_start);
-	if (unlikely(ret != 0))
-		goto out_no_reloc;
-
-	ret = vmw_resource_val_add(sw_context, res, &node);
+	ret = vmw_cmd_res_reloc_add(dev_priv, sw_context, res_type, id_loc,
+				    res, &node);
 	if (unlikely(ret != 0))
 		goto out_no_reloc;
 
 	rcache->node = node;
 	if (p_val)
 		*p_val = node;
-
-	if (node->first_usage && res_type == vmw_res_context) {
-		node->staged_bindings =
-			kzalloc(sizeof(*node->staged_bindings), GFP_KERNEL);
-		if (node->staged_bindings == NULL) {
-			DRM_ERROR("Failed to allocate context binding "
-				  "information.\n");
-			goto out_no_reloc;
-		}
-		INIT_LIST_HEAD(&node->staged_bindings->list);
-	}
-
 	vmw_resource_unreference(&res);
 	return 0;
 
@@ -478,6 +573,34 @@ out_no_reloc:
 	sw_context->error_resource = res;
 
 	return ret;
+}
+
+/**
+ * vmw_rebind_contexts - Rebind all resources previously bound to
+ * referenced contexts.
+ *
+ * @sw_context: Pointer to the software context.
+ *
+ * Rebind context binding points that have been scrubbed because of eviction.
+ */
+static int vmw_rebind_contexts(struct vmw_sw_context *sw_context)
+{
+	struct vmw_resource_val_node *val;
+	int ret;
+
+	list_for_each_entry(val, &sw_context->resource_list, head) {
+		if (unlikely(!val->staged_bindings))
+			break;
+
+		ret = vmw_context_rebind_all(val->res);
+		if (unlikely(ret != 0)) {
+			if (ret != -ERESTARTSYS)
+				DRM_ERROR("Failed to rebind context.\n");
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
 /**
@@ -496,7 +619,7 @@ static int vmw_cmd_cid_check(struct vmw_private *dev_priv,
 {
 	struct vmw_cid_cmd {
 		SVGA3dCmdHeader header;
-		__le32 cid;
+		uint32_t cid;
 	} *cmd;
 
 	cmd = container_of(header, struct vmw_cid_cmd, header);
@@ -767,7 +890,7 @@ static int vmw_translate_mob_ptr(struct vmw_private *dev_priv,
 	struct vmw_relocation *reloc;
 	int ret;
 
-	ret = vmw_user_dmabuf_lookup(sw_context->tfile, handle, &vmw_bo);
+	ret = vmw_user_dmabuf_lookup(sw_context->fp->tfile, handle, &vmw_bo);
 	if (unlikely(ret != 0)) {
 		DRM_ERROR("Could not find or use MOB buffer.\n");
 		return -EINVAL;
@@ -828,7 +951,7 @@ static int vmw_translate_guest_ptr(struct vmw_private *dev_priv,
 	struct vmw_relocation *reloc;
 	int ret;
 
-	ret = vmw_user_dmabuf_lookup(sw_context->tfile, handle, &vmw_bo);
+	ret = vmw_user_dmabuf_lookup(sw_context->fp->tfile, handle, &vmw_bo);
 	if (unlikely(ret != 0)) {
 		DRM_ERROR("Could not find or use GMR region.\n");
 		return -EINVAL;
@@ -1108,13 +1231,35 @@ static int vmw_cmd_dma(struct vmw_private *dev_priv,
 		SVGA3dCmdSurfaceDMA dma;
 	} *cmd;
 	int ret;
+	SVGA3dCmdSurfaceDMASuffix *suffix;
+	uint32_t bo_size;
 
 	cmd = container_of(header, struct vmw_dma_cmd, header);
+	suffix = (SVGA3dCmdSurfaceDMASuffix *)((unsigned long) &cmd->dma +
+					       header->size - sizeof(*suffix));
+
+	/* Make sure device and verifier stays in sync. */
+	if (unlikely(suffix->suffixSize != sizeof(*suffix))) {
+		DRM_ERROR("Invalid DMA suffix size.\n");
+		return -EINVAL;
+	}
+
 	ret = vmw_translate_guest_ptr(dev_priv, sw_context,
 				      &cmd->dma.guest.ptr,
 				      &vmw_bo);
 	if (unlikely(ret != 0))
 		return ret;
+
+	/* Make sure DMA doesn't cross BO boundaries. */
+	bo_size = vmw_bo->base.num_pages * PAGE_SIZE;
+	if (unlikely(cmd->dma.guest.ptr.offset > bo_size)) {
+		DRM_ERROR("Invalid DMA offset.\n");
+		return -EINVAL;
+	}
+
+	bo_size -= cmd->dma.guest.ptr.offset;
+	if (unlikely(suffix->maximumOffset > bo_size))
+		suffix->maximumOffset = bo_size;
 
 	ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_surface,
 				user_surface_converter, &cmd->dma.host.sid,
@@ -1478,6 +1623,7 @@ static int vmw_cmd_invalidate_gb_surface(struct vmw_private *dev_priv,
 				 &cmd->body.sid, NULL);
 }
 
+#if 0
 /**
  * vmw_cmd_set_shader - Validate an SVGA_3D_CMD_SET_SHADER
  * command
@@ -1494,7 +1640,9 @@ static int vmw_cmd_set_shader(struct vmw_private *dev_priv,
 		SVGA3dCmdHeader header;
 		SVGA3dCmdSetShader body;
 	} *cmd;
-	struct vmw_resource_val_node *ctx_node;
+	struct vmw_resource_val_node *ctx_node, *res_node = NULL;
+	struct vmw_ctx_bindinfo bi;
+	struct vmw_resource *res = NULL;
 	int ret;
 
 	cmd = container_of(header, struct vmw_set_shader_cmd,
@@ -1506,26 +1654,77 @@ static int vmw_cmd_set_shader(struct vmw_private *dev_priv,
 	if (unlikely(ret != 0))
 		return ret;
 
-	if (dev_priv->has_mob) {
-		struct vmw_ctx_bindinfo bi;
-		struct vmw_resource_val_node *res_node;
+	if (!dev_priv->has_mob)
+		return 0;
 
-		ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_shader,
+	if (cmd->body.shid != SVGA3D_INVALID_ID) {
+		res = vmw_compat_shader_lookup
+			(vmw_context_res_man(ctx_node->res),
+			 cmd->body.shid,
+			 cmd->body.type);
+
+		if (!IS_ERR(res)) {
+			ret = vmw_cmd_res_reloc_add(dev_priv, sw_context,
+						    vmw_res_shader,
+						    &cmd->body.shid, res,
+						    &res_node);
+			vmw_resource_unreference(&res);
+			if (unlikely(ret != 0))
+				return ret;
+		}
+	}
+
+	if (!res_node) {
+		ret = vmw_cmd_res_check(dev_priv, sw_context,
+					       vmw_res_shader,
 					user_shader_converter,
 					&cmd->body.shid, &res_node);
 	if (unlikely(ret != 0))
 		return ret;
+	}
 
 		bi.ctx = ctx_node->res;
 		bi.res = res_node ? res_node->res : NULL;
 		bi.bt = vmw_ctx_binding_shader;
 		bi.i1.shader_type = cmd->body.type;
 		return vmw_context_binding_add(ctx_node->staged_bindings, &bi);
-	}
+}
+#endif
+
+/**
+ * vmw_cmd_set_shader_const - Validate an SVGA_3D_CMD_SET_SHADER_CONST
+ * command
+ *
+ * @dev_priv: Pointer to a device private struct.
+ * @sw_context: The software context being used for this batch.
+ * @header: Pointer to the command header in the command stream.
+ */
+static int vmw_cmd_set_shader_const(struct vmw_private *dev_priv,
+				    struct vmw_sw_context *sw_context,
+				    SVGA3dCmdHeader *header)
+{
+	struct vmw_set_shader_const_cmd {
+		SVGA3dCmdHeader header;
+		SVGA3dCmdSetShaderConst body;
+	} *cmd;
+	int ret;
+
+	cmd = container_of(header, struct vmw_set_shader_const_cmd,
+			   header);
+
+	ret = vmw_cmd_res_check(dev_priv, sw_context, vmw_res_context,
+				user_context_converter, &cmd->body.cid,
+				NULL);
+	if (unlikely(ret != 0))
+		return ret;
+
+	if (dev_priv->has_mob)
+		header->id = SVGA_3D_CMD_SET_GB_SHADERCONSTS_INLINE;
 
 	return 0;
 }
 
+#if 0
 /**
  * vmw_cmd_bind_gb_shader - Validate an SVGA_3D_CMD_BIND_GB_SHADER
  * command
@@ -1551,6 +1750,7 @@ static int vmw_cmd_bind_gb_shader(struct vmw_private *dev_priv,
 				     &cmd->body.shid, &cmd->body.mobid,
 				     cmd->body.offsetInBytes);
 }
+#endif
 
 static int vmw_cmd_check_not_3d(struct vmw_private *dev_priv,
 				struct vmw_sw_context *sw_context,
@@ -1595,7 +1795,7 @@ static int vmw_cmd_check_not_3d(struct vmw_private *dev_priv,
 	return 0;
 }
 
-static const struct vmw_cmd_entry const vmw_cmd_entries[SVGA_3D_CMD_MAX] = {
+static const struct vmw_cmd_entry vmw_cmd_entries[SVGA_3D_CMD_MAX] = {
 	VMW_CMD_DEF(SVGA_3D_CMD_SURFACE_DEFINE, &vmw_cmd_invalid,
 		    false, false, false),
 	VMW_CMD_DEF(SVGA_3D_CMD_SURFACE_DESTROY, &vmw_cmd_invalid,
@@ -1634,14 +1834,14 @@ static const struct vmw_cmd_entry const vmw_cmd_entries[SVGA_3D_CMD_MAX] = {
 		    true, false, false),
 	VMW_CMD_DEF(SVGA_3D_CMD_PRESENT, &vmw_cmd_present_check,
 		    false, false, false),
-	VMW_CMD_DEF(SVGA_3D_CMD_SHADER_DEFINE, &vmw_cmd_cid_check,
-		    true, true, false),
-	VMW_CMD_DEF(SVGA_3D_CMD_SHADER_DESTROY, &vmw_cmd_cid_check,
-		    true, true, false),
-	VMW_CMD_DEF(SVGA_3D_CMD_SET_SHADER, &vmw_cmd_set_shader,
-		    true, false, false),
-	VMW_CMD_DEF(SVGA_3D_CMD_SET_SHADER_CONST, &vmw_cmd_cid_check,
-		    true, true, false),
+//   VMW_CMD_DEF(SVGA_3D_CMD_SHADER_DEFINE, &vmw_cmd_shader_define,
+//           true, false, false),
+//   VMW_CMD_DEF(SVGA_3D_CMD_SHADER_DESTROY, &vmw_cmd_shader_destroy,
+//           true, false, false),
+//   VMW_CMD_DEF(SVGA_3D_CMD_SET_SHADER, &vmw_cmd_set_shader,
+//           true, false, false),
+//   VMW_CMD_DEF(SVGA_3D_CMD_SET_SHADER_CONST, &vmw_cmd_set_shader_const,
+//           true, false, false),
 	VMW_CMD_DEF(SVGA_3D_CMD_DRAW_PRIMITIVES, &vmw_cmd_draw,
 		    true, false, false),
 	VMW_CMD_DEF(SVGA_3D_CMD_SETSCISSORRECT, &vmw_cmd_cid_check,
@@ -1726,8 +1926,8 @@ static const struct vmw_cmd_entry const vmw_cmd_entries[SVGA_3D_CMD_MAX] = {
 		    false, false, true),
 	VMW_CMD_DEF(SVGA_3D_CMD_DEFINE_GB_SHADER, &vmw_cmd_invalid,
 		    false, false, true),
-	VMW_CMD_DEF(SVGA_3D_CMD_BIND_GB_SHADER, &vmw_cmd_bind_gb_shader,
-		    true, false, true),
+//   VMW_CMD_DEF(SVGA_3D_CMD_BIND_GB_SHADER, &vmw_cmd_bind_gb_shader,
+//           true, false, true),
 	VMW_CMD_DEF(SVGA_3D_CMD_DESTROY_GB_SHADER, &vmw_cmd_invalid,
 		    false, false, true),
 	VMW_CMD_DEF(SVGA_3D_CMD_SET_OTABLE_BASE64, &vmw_cmd_invalid,
@@ -1792,6 +1992,9 @@ static int vmw_cmd_check(struct vmw_private *dev_priv,
 		goto out_invalid;
 
 	entry = &vmw_cmd_entries[cmd_id];
+	if (unlikely(!entry->func))
+		goto out_invalid;
+
 	if (unlikely(!entry->user_allow && !sw_context->kernel))
 		goto out_privileged;
 
@@ -2129,6 +2332,8 @@ vmw_execbuf_copy_fence_user(struct vmw_private *dev_priv,
 	}
 }
 
+
+
 int vmw_execbuf_process(struct drm_file *file_priv,
 			struct vmw_private *dev_priv,
 			void __user *user_commands,
@@ -2172,7 +2377,7 @@ int vmw_execbuf_process(struct drm_file *file_priv,
     } else  */
 		sw_context->kernel = true;
 
-	sw_context->tfile = vmw_fpriv(file_priv)->tfile;
+	sw_context->fp = vmw_fpriv(file_priv);
 	sw_context->cur_reloc = 0;
 	sw_context->cur_val_buf = 0;
 	sw_context->fence_flags = 0;
@@ -2189,16 +2394,17 @@ int vmw_execbuf_process(struct drm_file *file_priv,
 			goto out_unlock;
 		sw_context->res_ht_initialized = true;
 	}
+	INIT_LIST_HEAD(&sw_context->staged_cmd_res);
 
 	INIT_LIST_HEAD(&resource_list);
 	ret = vmw_cmd_check_all(dev_priv, sw_context, kernel_commands,
 				command_size);
 	if (unlikely(ret != 0))
-		goto out_err;
+		goto out_err_nores;
 
 	ret = vmw_resources_reserve(sw_context);
 	if (unlikely(ret != 0))
-		goto out_err;
+		goto out_err_nores;
 
 	ret = ttm_eu_reserve_buffers(&ticket, &sw_context->validate_nodes);
 	if (unlikely(ret != 0))
@@ -2224,6 +2430,12 @@ int vmw_execbuf_process(struct drm_file *file_priv,
 	if (unlikely(ret != 0)) {
 		ret = -ERESTARTSYS;
 		goto out_err;
+	}
+
+	if (dev_priv->has_mob) {
+		ret = vmw_rebind_contexts(sw_context);
+		if (unlikely(ret != 0))
+			goto out_unlock_binding;
 	}
 
 	cmd = vmw_fifo_reserve(dev_priv, command_size);
@@ -2277,6 +2489,7 @@ int vmw_execbuf_process(struct drm_file *file_priv,
 	}
 
 	list_splice_init(&sw_context->resource_list, &resource_list);
+	vmw_cmdbuf_res_commit(&sw_context->staged_cmd_res);
 	mutex_unlock(&dev_priv->cmdbuf_mutex);
 
 	/*
@@ -2290,10 +2503,11 @@ int vmw_execbuf_process(struct drm_file *file_priv,
 out_unlock_binding:
 	mutex_unlock(&dev_priv->binding_mutex);
 out_err:
+	ttm_eu_backoff_reservation(&ticket, &sw_context->validate_nodes);
+out_err_nores:
+	vmw_resource_list_unreserve(&sw_context->resource_list, true);
 	vmw_resource_relocations_free(&sw_context->res_relocations);
 	vmw_free_relocations(sw_context);
-	ttm_eu_backoff_reservation(&ticket, &sw_context->validate_nodes);
-	vmw_resource_list_unreserve(&sw_context->resource_list, true);
 	vmw_clear_validations(sw_context);
 	if (unlikely(dev_priv->pinned_bo != NULL &&
 		     !dev_priv->query_cid_valid))
@@ -2302,6 +2516,7 @@ out_unlock:
 	list_splice_init(&sw_context->resource_list, &resource_list);
 	error_resource = sw_context->error_resource;
 	sw_context->error_resource = NULL;
+	vmw_cmdbuf_res_revert(&sw_context->staged_cmd_res);
 	mutex_unlock(&dev_priv->cmdbuf_mutex);
 
 	/*
@@ -2458,7 +2673,6 @@ int vmw_execbuf_ioctl(struct drm_device *dev, void *data,
 {
 	struct vmw_private *dev_priv = vmw_priv(dev);
 	struct drm_vmw_execbuf_arg *arg = (struct drm_vmw_execbuf_arg *)data;
-//   struct vmw_master *vmaster = vmw_master(file_priv->master);
 	int ret;
 
 	/*
@@ -2475,7 +2689,7 @@ int vmw_execbuf_ioctl(struct drm_device *dev, void *data,
 		return -EINVAL;
 	}
 
-//   ret = ttm_read_lock(&vmaster->lock, true);
+	ret = ttm_read_lock(&dev_priv->reservation_sem, true);
 	if (unlikely(ret != 0))
 		return ret;
 
@@ -2491,6 +2705,6 @@ int vmw_execbuf_ioctl(struct drm_device *dev, void *data,
 //   vmw_kms_cursor_post_execbuf(dev_priv);
 
 out_unlock:
-//   ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
 	return ret;
 }

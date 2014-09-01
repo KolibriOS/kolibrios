@@ -128,7 +128,7 @@ int vmw_fallback_wait(struct vmw_private *dev_priv,
 	uint32_t count = 0;
 	uint32_t signal_seq;
 	int ret;
-    unsigned long end_jiffies = GetTimerTicks() + timeout;
+	unsigned long end_jiffies = jiffies + timeout;
 	bool (*wait_condition)(struct vmw_private *, uint32_t);
 	DEFINE_WAIT(__wait);
 
@@ -150,7 +150,7 @@ int vmw_fallback_wait(struct vmw_private *dev_priv,
 //               TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE);
 		if (wait_condition(dev_priv, seqno))
 			break;
-        if (time_after_eq(GetTimerTicks(), end_jiffies)) {
+		if (time_after_eq(jiffies, end_jiffies)) {
 			DRM_ERROR("SVGA device lockup.\n");
 			break;
 		}

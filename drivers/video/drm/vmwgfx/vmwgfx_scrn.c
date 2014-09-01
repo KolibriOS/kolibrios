@@ -100,7 +100,7 @@ static void vmw_sou_add_active(struct vmw_private *vmw_priv,
 /**
  * Send the fifo command to create a screen.
  */
-int vmw_sou_fifo_create(struct vmw_private *dev_priv,
+static int vmw_sou_fifo_create(struct vmw_private *dev_priv,
 			       struct vmw_screen_object_unit *sou,
 			       uint32_t x, uint32_t y,
 			       struct drm_display_mode *mode)
@@ -114,9 +114,7 @@ int vmw_sou_fifo_create(struct vmw_private *dev_priv,
 		SVGAScreenObject obj;
 	} *cmd;
 
-//   BUG_ON(!sou->buffer);
-
-    ENTER();
+	BUG_ON(!sou->buffer);
 
 	fifo_size = sizeof(*cmd);
 	cmd = vmw_fifo_reserve(dev_priv, fifo_size);
@@ -143,17 +141,12 @@ int vmw_sou_fifo_create(struct vmw_private *dev_priv,
 	}
 
 	/* Ok to assume that buffer is pinned in vram */
-//   vmw_bo_get_guest_ptr(&sou->buffer->base, &cmd->obj.backingStore.ptr);
-
-    cmd->obj.backingStore.ptr.gmrId = SVGA_GMR_FRAMEBUFFER;
-    cmd->obj.backingStore.ptr.offset = 0;
+	vmw_bo_get_guest_ptr(&sou->buffer->base, &cmd->obj.backingStore.ptr);
 	cmd->obj.backingStore.pitch = mode->hdisplay * 4;
 
 	vmw_fifo_commit(dev_priv, fifo_size);
 
 	sou->defined = true;
-
-    LEAVE();
 
 	return 0;
 }
@@ -314,7 +307,7 @@ static int vmw_sou_crtc_set_config(struct drm_mode_set *set)
 
 		connector->encoder = NULL;
 		encoder->crtc = NULL;
-		crtc->fb = NULL;
+		crtc->primary->fb = NULL;
 		crtc->x = 0;
 		crtc->y = 0;
 		crtc->enabled = false;
@@ -375,7 +368,7 @@ static int vmw_sou_crtc_set_config(struct drm_mode_set *set)
 
 		connector->encoder = NULL;
 		encoder->crtc = NULL;
-		crtc->fb = NULL;
+		crtc->primary->fb = NULL;
 		crtc->x = 0;
 		crtc->y = 0;
 		crtc->enabled = false;
@@ -388,7 +381,7 @@ static int vmw_sou_crtc_set_config(struct drm_mode_set *set)
 	connector->encoder = encoder;
 	encoder->crtc = crtc;
 	crtc->mode = *mode;
-	crtc->fb = fb;
+	crtc->primary->fb = fb;
 	crtc->x = set->x;
 	crtc->y = set->y;
 	crtc->enabled = true;
@@ -447,8 +440,6 @@ static int vmw_sou_init(struct vmw_private *dev_priv, unsigned unit)
 	struct drm_encoder *encoder;
 	struct drm_crtc *crtc;
 
-    ENTER();
-
 	sou = kzalloc(sizeof(*sou), GFP_KERNEL);
 	if (!sou)
 		return -ENOMEM;
@@ -476,6 +467,8 @@ static int vmw_sou_init(struct vmw_private *dev_priv, unsigned unit)
 	encoder->possible_crtcs = (1 << unit);
 	encoder->possible_clones = 0;
 
+	(void) drm_connector_register(connector);
+
 	drm_crtc_init(dev, crtc, &vmw_screen_object_crtc_funcs);
 
 	drm_mode_crtc_set_gamma_size(crtc, 256);
@@ -483,7 +476,7 @@ static int vmw_sou_init(struct vmw_private *dev_priv, unsigned unit)
 	drm_object_attach_property(&connector->base,
 				      dev->mode_config.dirty_info_property,
 				      1);
-    LEAVE();
+
 	return 0;
 }
 
@@ -491,8 +484,6 @@ int vmw_kms_init_screen_object_display(struct vmw_private *dev_priv)
 {
 	struct drm_device *dev = dev_priv->dev;
 	int i, ret;
-
-    ENTER();
 
 	if (dev_priv->sou_priv) {
 		DRM_INFO("sou system already on\n");
@@ -523,7 +514,6 @@ int vmw_kms_init_screen_object_display(struct vmw_private *dev_priv)
 
 	DRM_INFO("Screen objects system initialized\n");
 
-    LEAVE();
 	return 0;
 
 err_vblank_cleanup:
@@ -579,7 +569,7 @@ void vmw_kms_screen_object_update_implicit_fb(struct vmw_private *dev_priv,
 	BUG_ON(!sou->base.is_implicit);
 
 	dev_priv->sou_priv->implicit_fb =
-		vmw_framebuffer_to_vfb(sou->base.crtc.fb);
+		vmw_framebuffer_to_vfb(sou->base.crtc.primary->fb);
 }
 
 #include "bitmap.h"
@@ -638,8 +628,6 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
     display_t *os_display;
 
     bool ret = false;
-
-    ENTER();
 
 //    dbgprintf("width %d height %d vrefresh %d\n",
 //               reqmode->width, reqmode->height, reqmode->freq);
@@ -718,6 +706,7 @@ do_set:
         vmw_write(dev_priv,SVGA_REG_WIDTH,  mode->hdisplay);
         vmw_write(dev_priv,SVGA_REG_HEIGHT, mode->vdisplay);
         vmw_write(dev_priv,SVGA_REG_BITS_PER_PIXEL, 32);
+        os_display->select_cursor(os_display->cursor);
         ret = 0;
 #endif
         if (ret == 0)
@@ -737,6 +726,5 @@ do_set:
                        os_display->width, os_display->height, crtc);
     }
 
-    LEAVE();
     return ret;
 };

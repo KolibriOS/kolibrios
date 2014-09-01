@@ -36,6 +36,7 @@
  * @base:           The TTM base object handling user-space visibility.
  * @srf:            The surface metadata.
  * @size:           TTM accounting size for the surface.
+ * @master:         master of the creating client. Used for security check.
  */
 struct vmw_user_surface {
 	struct ttm_prime_object prime;
@@ -681,7 +682,6 @@ int vmw_surface_define_ioctl(struct drm_device *dev, void *data,
 	struct vmw_surface_offset *cur_offset;
 	uint32_t num_sizes;
 	uint32_t size;
-	struct vmw_master *vmaster = vmw_master(file_priv->master);
 	const struct svga3d_surface_desc *desc;
 
 	if (unlikely(vmw_user_surface_size == 0))
@@ -707,7 +707,7 @@ int vmw_surface_define_ioctl(struct drm_device *dev, void *data,
 		return -EINVAL;
 	}
 
-	ret = ttm_read_lock(&vmaster->lock, true);
+	ret = ttm_read_lock(&dev_priv->reservation_sem, true);
 	if (unlikely(ret != 0))
 		return ret;
 
@@ -828,7 +828,7 @@ int vmw_surface_define_ioctl(struct drm_device *dev, void *data,
 	rep->sid = user_srf->prime.base.hash.key;
 	vmw_resource_unreference(&res);
 
-	ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
 	return 0;
 out_no_copy:
 	kfree(srf->offsets);
@@ -839,7 +839,8 @@ out_no_sizes:
 out_no_user_srf:
 	ttm_mem_global_free(vmw_mem_glob(dev_priv), size);
 out_unlock:
-	ttm_read_unlock(&vmaster->lock);
+	ttm_read_unlock(&dev_priv->reservation_sem);
+
 	return ret;
 }
 
@@ -864,26 +865,15 @@ int vmw_surface_reference_ioctl(struct drm_device *dev, void *data,
 	struct vmw_user_surface *user_srf;
 	struct drm_vmw_size __user *user_sizes;
 	struct ttm_base_object *base;
-	int ret = -EINVAL;
+	int ret;
 
-	base = ttm_base_object_lookup_for_ref(dev_priv->tdev, req->sid);
-	if (unlikely(base == NULL)) {
-		DRM_ERROR("Could not find surface to reference.\n");
-		return -EINVAL;
-	}
-
-	if (unlikely(ttm_base_object_type(base) != VMW_RES_SURFACE))
-		goto out_bad_resource;
+	ret = vmw_surface_handle_reference(dev_priv, file_priv, req->sid,
+					   req->handle_type, &base);
+	if (unlikely(ret != 0))
+		return ret;
 
 	user_srf = container_of(base, struct vmw_user_surface, prime.base);
 	srf = &user_srf->srf;
-
-	ret = ttm_ref_object_add(tfile, &user_srf->prime.base,
-				 TTM_REF_USAGE, NULL);
-	if (unlikely(ret != 0)) {
-		DRM_ERROR("Could not add a reference to a surface.\n");
-		goto out_no_reference;
-	}
 
 	rep->flags = srf->flags;
 	rep->format = srf->format;
@@ -892,11 +882,12 @@ int vmw_surface_reference_ioctl(struct drm_device *dev, void *data,
 	    rep->size_addr;
 
 	if (user_sizes)
-		ret = copy_to_user(user_sizes, srf->sizes,
-				   srf->num_sizes * sizeof(*srf->sizes));
+		ret = copy_to_user(user_sizes, &srf->base_size,
+				   sizeof(srf->base_size));
 	if (unlikely(ret != 0)) {
 		DRM_ERROR("copy_to_user failed %p %u\n",
 			  user_sizes, srf->num_sizes);
+		ttm_ref_object_base_unref(tfile, base->hash.key, TTM_REF_USAGE);
 		ret = -EFAULT;
 	}
 out_bad_resource:

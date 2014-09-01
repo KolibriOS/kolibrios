@@ -725,7 +725,7 @@ static void atom_op_jump(atom_exec_context *ctx, int *ptr, int arg)
 	SDEBUG("   target: 0x%04X\n", target);
 	if (execute) {
 		if (ctx->last_jump == (ctx->start + target)) {
-			cjiffies = GetTimerTicks();
+			cjiffies = jiffies;
 			if (time_after(cjiffies, ctx->last_jump_jiffies)) {
 				cjiffies -= ctx->last_jump_jiffies;
 				if ((jiffies_to_msecs(cjiffies) > 5000)) {
@@ -734,11 +734,11 @@ static void atom_op_jump(atom_exec_context *ctx, int *ptr, int arg)
 				}
 			} else {
 				/* jiffies wrap around we will just wait a little longer */
-				ctx->last_jump_jiffies = GetTimerTicks();
+				ctx->last_jump_jiffies = jiffies;
 			}
 		} else {
 			ctx->last_jump = ctx->start + target;
-			ctx->last_jump_jiffies = GetTimerTicks();
+			ctx->last_jump_jiffies = jiffies;
 		}
 		*ptr = ctx->start + target;
 	}
@@ -1220,12 +1220,17 @@ int atom_execute_table(struct atom_context *ctx, int index, uint32_t * params)
 	int r;
 
 	mutex_lock(&ctx->mutex);
+	/* reset data block */
+	ctx->data_block = 0;
 	/* reset reg block */
 	ctx->reg_block = 0;
 	/* reset fb window */
 	ctx->fb_base = 0;
 	/* reset io mode */
 	ctx->io_mode = ATOM_IO_MM;
+	/* reset divmul */
+	ctx->divmul[0] = 0;
+	ctx->divmul[1] = 0;
 	r = atom_execute_table_locked(ctx, index, params);
 	mutex_unlock(&ctx->mutex);
 	return r;

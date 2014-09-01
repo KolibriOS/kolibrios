@@ -8,6 +8,12 @@
 #include <pci.h>
 #include <syscall.h>
 
+static inline __attribute__((const))
+bool is_power_of_2(unsigned long n)
+{
+    return (n != 0 && ((n & (n - 1)) == 0));
+}
+
 extern int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn);
 
 static LIST_HEAD(devices);
@@ -1050,4 +1056,53 @@ int pcie_capability_write_dword(struct pci_dev *dev, int pos, u32 val)
     return pci_write_config_dword(dev, pci_pcie_cap(dev) + pos, val);
 }
 EXPORT_SYMBOL(pcie_capability_write_dword);
+
+int pcie_capability_clear_and_set_word(struct pci_dev *dev, int pos,
+                                       u16 clear, u16 set)
+{
+        int ret;
+        u16 val;
+
+        ret = pcie_capability_read_word(dev, pos, &val);
+        if (!ret) {
+                val &= ~clear;
+                val |= set;
+                ret = pcie_capability_write_word(dev, pos, val);
+        }
+
+        return ret;
+}
+
+
+
+int pcie_get_readrq(struct pci_dev *dev)
+{
+        u16 ctl;
+
+        pcie_capability_read_word(dev, PCI_EXP_DEVCTL, &ctl);
+
+        return 128 << ((ctl & PCI_EXP_DEVCTL_READRQ) >> 12);
+}
+EXPORT_SYMBOL(pcie_get_readrq);
+
+/**
+ * pcie_set_readrq - set PCI Express maximum memory read request
+ * @dev: PCI device to query
+ * @rq: maximum memory read count in bytes
+ *    valid values are 128, 256, 512, 1024, 2048, 4096
+ *
+ * If possible sets maximum memory read request in bytes
+ */
+int pcie_set_readrq(struct pci_dev *dev, int rq)
+{
+        u16 v;
+
+        if (rq < 128 || rq > 4096 || !is_power_of_2(rq))
+                return -EINVAL;
+
+        v = (ffs(rq) - 8) << 12;
+
+        return pcie_capability_clear_and_set_word(dev, PCI_EXP_DEVCTL,
+                                                  PCI_EXP_DEVCTL_READRQ, v);
+}
 

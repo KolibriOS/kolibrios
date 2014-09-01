@@ -52,7 +52,6 @@ int vmw_dmabuf_to_placement(struct vmw_private *dev_priv,
 			    struct ttm_placement *placement,
 			    bool interruptible)
 {
-//   struct vmw_master *vmaster = dev_priv->active_master;
 	struct ttm_buffer_object *bo = &buf->base;
 	int ret;
 
@@ -62,7 +61,7 @@ int vmw_dmabuf_to_placement(struct vmw_private *dev_priv,
 
 	vmw_execbuf_release_pinned_bo(dev_priv);
 
-	ret = ttm_bo_reserve(bo, interruptible, false, false, 0);
+	ret = ttm_bo_reserve(bo, interruptible, false, false, NULL);
 	if (unlikely(ret != 0))
 		goto err;
 
@@ -95,7 +94,6 @@ int vmw_dmabuf_to_vram_or_gmr(struct vmw_private *dev_priv,
 			      struct vmw_dma_buffer *buf,
 			      bool pin, bool interruptible)
 {
-//   struct vmw_master *vmaster = dev_priv->active_master;
 	struct ttm_buffer_object *bo = &buf->base;
 	struct ttm_placement *placement;
 	int ret;
@@ -107,7 +105,7 @@ int vmw_dmabuf_to_vram_or_gmr(struct vmw_private *dev_priv,
 	if (pin)
 		vmw_execbuf_release_pinned_bo(dev_priv);
 
-	ret = ttm_bo_reserve(bo, interruptible, false, false, 0);
+	ret = ttm_bo_reserve(bo, interruptible, false, false, NULL);
 	if (unlikely(ret != 0))
 		goto err;
 
@@ -198,7 +196,6 @@ int vmw_dmabuf_to_start_of_vram(struct vmw_private *dev_priv,
 				struct vmw_dma_buffer *buf,
 				bool pin, bool interruptible)
 {
-//   struct vmw_master *vmaster = dev_priv->active_master;
 	struct ttm_buffer_object *bo = &buf->base;
 	struct ttm_placement placement;
 	int ret = 0;
@@ -215,7 +212,7 @@ int vmw_dmabuf_to_start_of_vram(struct vmw_private *dev_priv,
 
 	if (pin)
 		vmw_execbuf_release_pinned_bo(dev_priv);
-	ret = ttm_bo_reserve(bo, interruptible, false, false, 0);
+	ret = ttm_bo_reserve(bo, interruptible, false, false, NULL);
 	if (unlikely(ret != 0))
 		goto err_unlock;
 
