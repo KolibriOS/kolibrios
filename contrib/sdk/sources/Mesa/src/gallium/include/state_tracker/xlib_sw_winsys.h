@@ -2,7 +2,7 @@
 #define XLIB_SW_WINSYS_H
 
 #include "state_tracker/sw_winsys.h"
-#include <X11/Xlib.h>
+//#include <X11/Xlib.h>
 
 
 struct pipe_screen;

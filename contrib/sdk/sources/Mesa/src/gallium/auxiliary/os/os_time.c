@@ -62,3 +62,9 @@ os_time_sleep(int64_t usecs)
 }
 
 #endif
+
+void
+os_time_sleep(int64_t usecs)
+{
+
+}

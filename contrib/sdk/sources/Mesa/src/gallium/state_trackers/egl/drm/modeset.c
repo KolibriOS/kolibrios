@@ -61,6 +61,7 @@ drm_surface_validate(struct native_surface *nsurf, uint attachment_mask,
 static boolean
 drm_surface_init_framebuffers(struct native_surface *nsurf, boolean need_back)
 {
+#if 0
    struct drm_surface *drmsurf = drm_surface(nsurf);
    struct drm_display *drmdpy = drmsurf->drmdpy;
    int num_framebuffers = (need_back) ? 2 : 1;
@@ -115,17 +116,14 @@ drm_surface_init_framebuffers(struct native_surface *nsurf, boolean need_back)
    }
 
    return TRUE;
+#endif
+    return FALSE;
 }
 
 static boolean
 drm_surface_flush_frontbuffer(struct native_surface *nsurf)
 {
 #ifdef DRM_MODE_FEATURE_DIRTYFB
-   struct drm_surface *drmsurf = drm_surface(nsurf);
-   struct drm_display *drmdpy = drmsurf->drmdpy;
-
-   if (drmsurf->front_fb.is_passive)
-      drmModeDirtyFB(drmdpy->fd, drmsurf->front_fb.buffer_id, NULL, 0);
 #endif
 
    return TRUE;
@@ -153,6 +151,7 @@ drm_surface_copy_swap(struct native_surface *nsurf)
 static boolean
 drm_surface_swap_buffers(struct native_surface *nsurf)
 {
+#if 0
    struct drm_surface *drmsurf = drm_surface(nsurf);
    struct drm_crtc *drmcrtc = &drmsurf->current_crtc;
    struct drm_display *drmdpy = drmsurf->drmdpy;
@@ -187,6 +186,7 @@ drm_surface_swap_buffers(struct native_surface *nsurf)
    drmsurf->sequence_number++;
    drmdpy->event_handler->invalid_surface(&drmdpy->base,
          &drmsurf->base, drmsurf->sequence_number);
+#endif
 
    return TRUE;
 }
@@ -229,6 +229,7 @@ drm_surface_wait(struct native_surface *nsurf)
 static void
 drm_surface_destroy(struct native_surface *nsurf)
 {
+#if 0
    struct drm_surface *drmsurf = drm_surface(nsurf);
 
    resource_surface_wait(drmsurf->rsurf);
@@ -245,6 +246,7 @@ drm_surface_destroy(struct native_surface *nsurf)
 
    resource_surface_destroy(drmsurf->rsurf);
    FREE(drmsurf);
+#endif
 }
 
 static struct drm_surface *
@@ -311,7 +313,7 @@ drm_display_create_surface_from_resource(struct native_display *ndpy,
          PIPE_BIND_SAMPLER_VIEW |
          PIPE_BIND_DISPLAY_TARGET |
          PIPE_BIND_SCANOUT);
-   
+
    resource_surface_import_resource(drmsurf->rsurf, natt, resource);
 
    drmsurf->base.destroy = drm_surface_destroy;
@@ -321,7 +323,7 @@ drm_display_create_surface_from_resource(struct native_display *ndpy,
 
    return &drmsurf->base;
 }
-        
+
 
 /**
  * Choose a CRTC that supports all given connectors.
@@ -332,7 +334,7 @@ drm_display_choose_crtc(struct native_display *ndpy,
 {
    struct drm_display *drmdpy = drm_display(ndpy);
    int idx;
-
+#if 0
    for (idx = 0; idx < drmdpy->resources->count_crtcs; idx++) {
       boolean found_crtc = TRUE;
       int i, j;
@@ -377,6 +379,8 @@ drm_display_choose_crtc(struct native_display *ndpy,
    }
 
    return drmdpy->resources->crtcs[idx];
+#endif
+    return 0;
 }
 
 /**
@@ -392,7 +396,7 @@ drm_display_set_crtc(struct native_display *ndpy, int crtc_idx,
    struct drm_crtc *drmcrtc = &drmdpy->saved_crtcs[crtc_idx];
    uint32_t crtc_id;
    int err;
-
+#if 0
    if (drmcrtc->crtc) {
       crtc_id = drmcrtc->crtc->crtc_id;
    }
@@ -441,6 +445,9 @@ drm_display_set_crtc(struct native_display *ndpy, int crtc_idx,
    }
 
    return TRUE;
+#endif
+   return FALSE;
+
 }
 
 static boolean
@@ -449,6 +456,7 @@ drm_display_program(struct native_display *ndpy, int crtc_idx,
                     const struct native_connector **nconns, int num_nconns,
                     const struct native_mode *nmode)
 {
+#if 0
    struct drm_display *drmdpy = drm_display(ndpy);
    struct drm_surface *drmsurf = drm_surface(nsurf);
    const struct drm_mode *drmmode = drm_mode(nmode);
@@ -512,6 +520,9 @@ drm_display_program(struct native_display *ndpy, int crtc_idx,
    }
 
    return TRUE;
+#endif
+   return FALSE;
+
 }
 
 static const struct native_mode **
@@ -519,6 +530,7 @@ drm_display_get_modes(struct native_display *ndpy,
                       const struct native_connector *nconn,
                       int *num_modes)
 {
+#if 0
    struct drm_display *drmdpy = drm_display(ndpy);
    struct drm_connector *drmconn = drm_connector(nconn);
    const struct native_mode **nmodes_return;
@@ -572,12 +584,15 @@ drm_display_get_modes(struct native_display *ndpy,
    }
 
    return nmodes_return;
+#endif
+   return NULL;
 }
 
 static const struct native_connector **
 drm_display_get_connectors(struct native_display *ndpy, int *num_connectors,
                            int *num_crtc)
 {
+#if 0
    struct drm_display *drmdpy = drm_display(ndpy);
    const struct native_connector **connectors;
    int i;
@@ -610,6 +625,8 @@ drm_display_get_connectors(struct native_display *ndpy, int *num_connectors,
       *num_crtc = drmdpy->resources->count_crtcs;
 
    return connectors;
+#endif
+    return NULL;
 }
 
 static struct native_surface *
@@ -633,6 +650,7 @@ static struct native_display_modeset drm_display_modeset = {
 void
 drm_display_fini_modeset(struct native_display *ndpy)
 {
+#if 0
    struct drm_display *drmdpy = drm_display(ndpy);
    int i;
 
@@ -673,11 +691,13 @@ drm_display_fini_modeset(struct native_display *ndpy)
    }
 
    drmdpy->base.modeset = NULL;
+#endif
 }
 
 boolean
 drm_display_init_modeset(struct native_display *ndpy)
 {
+#if 0
    struct drm_display *drmdpy = drm_display(ndpy);
 
    /* resources are fixed, unlike crtc, connector, or encoder */
@@ -702,6 +722,6 @@ drm_display_init_modeset(struct native_display *ndpy)
    }
 
    drmdpy->base.modeset = &drm_display_modeset;
-
+#endif
    return TRUE;
 }

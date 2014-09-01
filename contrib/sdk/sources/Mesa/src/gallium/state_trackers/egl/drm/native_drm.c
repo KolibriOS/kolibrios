@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <kos32sys.h>
 
 #include "util/u_memory.h"
 #include "egllog.h"
@@ -138,8 +139,6 @@ drm_display_destroy(struct native_display *ndpy)
 
    if (drmdpy->own_gbm) {
       gbm_device_destroy(&drmdpy->gbmdrm->base.base);
-      if (drmdpy->fd >= 0)
-         close(drmdpy->fd);
    }
 
    FREE(drmdpy);
@@ -156,34 +155,6 @@ drm_get_device_name(int fd)
 {
    char *device_name = NULL;
 #ifdef HAVE_LIBUDEV
-   struct udev *udev;
-   struct udev_device *device;
-   struct stat buf;
-   const char *tmp;
-
-   udev = udev_new();
-   if (fstat(fd, &buf) < 0) {
-      _eglLog(_EGL_WARNING, "failed to stat fd %d", fd);
-      goto outudev;
-   }
-
-   device = udev_device_new_from_devnum(udev, 'c', buf.st_rdev);
-   if (device == NULL) {
-      _eglLog(_EGL_WARNING,
-              "could not create udev device for fd %d", fd);
-      goto outdevice;
-   }
-
-   tmp = udev_device_get_devnode(device);
-   if (!tmp)
-      goto outdevice;
-   device_name = strdup(tmp);
-
-outdevice:
-   udev_device_unref(device);
-outudev:
-   udev_unref(udev);
-
 #endif
    return device_name;
 }
@@ -220,7 +191,7 @@ drm_display_bind_wayland_display(struct native_display *ndpy,
 
    if (!ndpy->wl_server_drm)
       return FALSE;
-   
+
    return TRUE;
 }
 
@@ -314,26 +285,20 @@ native_create_display(void *dpy, boolean use_sw)
    gbm = dpy;
 
    if (gbm == NULL) {
-      const char *device_name="/dev/dri/card0";
-#ifdef O_CLOEXEC
-      fd = open(device_name, O_RDWR | O_CLOEXEC);
-      if (fd == -1 && errno == EINVAL)
-#endif
-      {
-         fd = open(device_name, O_RDWR);
-         if (fd != -1)
-            fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) | FD_CLOEXEC);
-      }
+      fd = get_service("DISPLAY");
+      if (fd == NULL)
+        return NULL;
+
       /* FIXME: Use an internal constructor to create a gbm
        * device with gallium backend directly, without setenv */
-      setenv("GBM_BACKEND", "gbm_gallium_drm.so", 1);
+//      setenv("GBM_BACKEND", "gbm_gallium_drm.so", 1);
       gbm = gbm_gallium_drm_device(gbm_create_device(fd));
       own_gbm = 1;
    }
 
    if (gbm == NULL)
       return NULL;
-   
+
    if (strcmp(gbm_device_get_backend_name(&gbm->base.base), "drm") != 0 ||
        gbm->base.type != GBM_DRM_DRIVER_TYPE_GALLIUM) {
       if (own_gbm)

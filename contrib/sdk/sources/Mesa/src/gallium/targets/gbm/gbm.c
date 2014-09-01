@@ -34,13 +34,9 @@
 static const char *
 get_library_search_path(void)
 {
-   const char *search_path = NULL;
+   const char *search_path;
 
-   /* don't allow setuid apps to use GBM_BACKENDS_PATH */
-   if (geteuid() == getuid())
-      search_path = getenv("GBM_BACKENDS_PATH");
-   if (search_path == NULL)
-      search_path = PIPE_SEARCH_DIR;
+   search_path = "/kolibrios/drivers/gallium-pipe/";
 
    return search_path;
 }

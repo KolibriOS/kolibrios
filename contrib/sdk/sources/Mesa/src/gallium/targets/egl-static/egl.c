@@ -309,3 +309,170 @@ _EGL_MAIN(const char *args)
 
    return drv;
 }
+
+EGLBoolean
+_eglError(EGLint errCode, const char *msg)
+{
+    return EGL_FALSE;
+}
+
+void
+_eglLog(EGLint level, const char *fmtStr, ...)
+{
+
+}
+
+void
+_eglDestroyArray(_EGLArray *array, void (*free_cb)(void *))
+{
+
+}
+
+void
+_eglInitScreen(_EGLScreen *screen, _EGLDisplay *dpy, EGLint num_modes)
+{
+}
+
+void
+_eglReleaseDisplayResources(_EGLDriver *drv, _EGLDisplay *display)
+{
+
+}
+
+EGLScreenMESA
+_eglLinkScreen(_EGLScreen *screen)
+{
+}
+
+EGLBoolean
+_eglValidateConfig(const _EGLConfig *conf, EGLBoolean for_matching)
+{
+    return EGL_FALSE;
+}
+
+void
+_eglInitConfig(_EGLConfig *conf, _EGLDisplay *dpy, EGLint id)
+{
+}
+void
+_eglCleanupDisplay(_EGLDisplay *disp)
+{
+
+}
+
+PUBLIC EGLConfig
+_eglLinkConfig(_EGLConfig *conf)
+{
+
+}
+
+EGLBoolean
+_eglPutResource(_EGLResource *res)
+{
+   return EGL_FALSE;
+}
+
+_EGLContext *
+_eglGetCurrentContext(void)
+{
+   return NULL;
+}
+
+EGLBoolean
+_eglInitSurface(_EGLSurface *surf, _EGLDisplay *dpy, EGLint type,
+                _EGLConfig *conf, const EGLint *attrib_list)
+{
+   return EGL_FALSE;
+}
+
+EGLBoolean
+_eglBindContext(_EGLContext *ctx, _EGLSurface *draw, _EGLSurface *read,
+                _EGLContext **old_ctx,
+                _EGLSurface **old_draw, _EGLSurface **old_read)
+{
+   return EGL_FALSE;
+}
+
+PUBLIC _EGLContext *
+_eglGetAPIContext(EGLenum api)
+{
+   return NULL;
+}
+
+EGLBoolean
+_eglInitContext(_EGLContext *ctx, _EGLDisplay *dpy, _EGLConfig *conf,
+                const EGLint *attrib_list)
+{
+   return EGL_FALSE;
+}
+
+EGLint
+_eglCompareConfigs(const _EGLConfig *conf1, const _EGLConfig *conf2,
+                   const _EGLConfig *criteria, EGLBoolean compare_id)
+{
+    return 0;
+}
+
+EGLBoolean
+_eglMatchConfig(const _EGLConfig *conf, const _EGLConfig *criteria)
+{
+   return EGL_FALSE;
+}
+
+EGLBoolean
+_eglParseConfigAttribList(_EGLConfig *conf, _EGLDisplay *dpy,
+                          const EGLint *attrib_list)
+{
+   return EGL_FALSE;
+}
+
+EGLBoolean
+_eglFilterConfigArray(_EGLArray *array, EGLConfig *configs,
+                      EGLint config_size, EGLint *num_configs,
+                      EGLBoolean (*match)(const _EGLConfig *, void *),
+                      EGLint (*compare)(const _EGLConfig *, const _EGLConfig *,
+                                        void *),
+                      void *priv_data)
+{
+   return EGL_FALSE;
+}
+
+EGLBoolean
+_eglInitImage(_EGLImage *img, _EGLDisplay *dpy)
+{
+
+   return EGL_TRUE;
+}
+
+EGLint
+_eglParseImageAttribList(_EGLImageAttribs *attrs, _EGLDisplay *dpy,
+                         const EGLint *attrib_list)
+{
+    return 0;
+}
+
+EGLBoolean
+_eglInitSync(_EGLSync *sync, _EGLDisplay *dpy, EGLenum type,
+             const EGLint *attrib_list)
+{
+
+   return EGL_TRUE;
+}
+
+void
+_eglGetResource(_EGLResource *res)
+{
+}
+
+EGLBoolean
+_eglCheckResource(void *res, int type, _EGLDisplay *dpy)
+{
+
+   return EGL_TRUE;
+}
+
+void
+_eglInitDriverFallbacks(_EGLDriver *drv)
+{
+}
+

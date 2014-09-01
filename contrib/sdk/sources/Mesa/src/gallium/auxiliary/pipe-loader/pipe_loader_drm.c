@@ -32,7 +32,7 @@
 
 #include <fcntl.h>
 #include <stdio.h>
-#include <libudev.h>
+//#include <libudev.h>
 #include <xf86drm.h>
 
 #ifdef HAVE_PIPE_LOADER_XCB
@@ -50,6 +50,20 @@
 
 #define DRIVER_MAP_GALLIUM_ONLY
 #include "pci_ids/pci_id_driver_map.h"
+#include <kos32sys.h>
+
+struct pci_device {
+    uint16_t    domain;
+    uint8_t     bus;
+    uint8_t     dev;
+    uint8_t     func;
+    uint16_t    vendor_id;
+    uint16_t    device_id;
+    uint16_t    subvendor_id;
+    uint16_t    subdevice_id;
+    uint32_t    device_class;
+    uint8_t     revision;
+};
 
 struct pipe_loader_drm_device {
    struct pipe_loader_device base;
@@ -62,41 +76,23 @@ struct pipe_loader_drm_device {
 static boolean
 find_drm_pci_id(struct pipe_loader_drm_device *ddev)
 {
-   struct udev *udev = NULL;
-   struct udev_device *parent, *device = NULL;
-   struct stat stat;
-   const char *pci_id;
+   struct pci_device device;
+   ioctl_t   io;
 
-   if (fstat(ddev->fd, &stat) < 0)
-      goto fail;
+   io.handle   = ddev->fd;
+   io.io_code  = SRV_GET_PCI_INFO;
+   io.input    = &device;
+   io.inp_size = sizeof(device);
+   io.output   = NULL;
+   io.out_size = 0;
 
-   udev = udev_new();
-   if (!udev)
-      goto fail;
+   if (call_service(&io)!=0)
+      return FALSE;
 
-   device = udev_device_new_from_devnum(udev, 'c', stat.st_rdev);
-   if (!device)
-      goto fail;
-
-   parent = udev_device_get_parent(device);
-   if (!parent)
-      goto fail;
-
-   pci_id = udev_device_get_property_value(parent, "PCI_ID");
-   if (!pci_id ||
-       sscanf(pci_id, "%x:%x", &ddev->base.u.pci.vendor_id,
-              &ddev->base.u.pci.chip_id) != 2)
-      goto fail;
+   ddev->base.u.pci.vendor_id = device.vendor_id;
+   ddev->base.u.pci.chip_id = device.device_id;
 
    return TRUE;
-
-  fail:
-   if (device)
-      udev_device_unref(device);
-   if (udev)
-      udev_unref(udev);
-
-   return FALSE;
 }
 
 static boolean
@@ -130,58 +126,6 @@ find_drm_driver_name(struct pipe_loader_drm_device *ddev)
 
 static struct pipe_loader_ops pipe_loader_drm_ops;
 
-static void
-pipe_loader_drm_x_auth(int fd)
-{
-#if HAVE_PIPE_LOADER_XCB
-   /* Try authenticate with the X server to give us access to devices that X
-    * is running on. */
-   xcb_connection_t *xcb_conn;
-   const xcb_setup_t *xcb_setup;
-   xcb_screen_iterator_t s;
-   xcb_dri2_connect_cookie_t connect_cookie;
-   xcb_dri2_connect_reply_t *connect;
-   drm_magic_t magic;
-   xcb_dri2_authenticate_cookie_t authenticate_cookie;
-   xcb_dri2_authenticate_reply_t *authenticate;
-
-   xcb_conn = xcb_connect(NULL,  NULL);
-
-   if(!xcb_conn)
-      return;
-
-   xcb_setup = xcb_get_setup(xcb_conn);
-
-  if (!xcb_setup)
-    goto disconnect;
-
-   s = xcb_setup_roots_iterator(xcb_setup);
-   connect_cookie = xcb_dri2_connect_unchecked(xcb_conn, s.data->root,
-                                               XCB_DRI2_DRIVER_TYPE_DRI);
-   connect = xcb_dri2_connect_reply(xcb_conn, connect_cookie, NULL);
-
-   if (!connect || connect->driver_name_length
-                   + connect->device_name_length == 0) {
-
-      goto disconnect;
-   }
-
-   if (drmGetMagic(fd, &magic))
-      goto disconnect;
-
-   authenticate_cookie = xcb_dri2_authenticate_unchecked(xcb_conn,
-                                                         s.data->root,
-                                                         magic);
-   authenticate = xcb_dri2_authenticate_reply(xcb_conn,
-                                              authenticate_cookie,
-                                              NULL);
-   FREE(authenticate);
-
-disconnect:
-   xcb_disconnect(xcb_conn);
-
-#endif
-}
 
 boolean
 pipe_loader_drm_probe_fd(struct pipe_loader_device **dev, int fd)
@@ -191,8 +135,6 @@ pipe_loader_drm_probe_fd(struct pipe_loader_device **dev, int fd)
    ddev->base.type = PIPE_LOADER_DEVICE_PCI;
    ddev->base.ops = &pipe_loader_drm_ops;
    ddev->fd = fd;
-
-   pipe_loader_drm_x_auth(fd);
 
    if (!find_drm_pci_id(ddev))
       goto fail;
@@ -208,26 +150,19 @@ pipe_loader_drm_probe_fd(struct pipe_loader_device **dev, int fd)
    return FALSE;
 }
 
-static int
-open_drm_minor(int minor)
-{
-   char path[PATH_MAX];
-   snprintf(path, sizeof(path), DRM_DEV_NAME, DRM_DIR_NAME, minor);
-   return open(path, O_RDWR, 0);
-}
 
 int
 pipe_loader_drm_probe(struct pipe_loader_device **devs, int ndev)
 {
    int i, j, fd;
 
-   for (i = 0, j = 0; i < DRM_MAX_MINOR; i++) {
-      fd = open_drm_minor(i);
-      if (fd < 0)
+   for (i = 0, j = 0; i < 1; i++) {
+      fd = get_service("DISPLAY");
+      if (fd == 0)
          continue;
 
       if (j >= ndev || !pipe_loader_drm_probe_fd(&devs[j], fd))
-         close(fd);
+         ;
 
       j++;
    }
@@ -240,10 +175,6 @@ pipe_loader_drm_release(struct pipe_loader_device **dev)
 {
    struct pipe_loader_drm_device *ddev = pipe_loader_drm_device(*dev);
 
-   if (ddev->lib)
-      util_dl_close(ddev->lib);
-
-   close(ddev->fd);
    FREE(ddev);
    *dev = NULL;
 }

@@ -31,7 +31,7 @@
 #include "util/u_dl.h"
 #include "sw/null/null_sw_winsys.h"
 #include "target-helpers/inline_sw_helper.h"
-#include "state_tracker/xlib_sw_winsys.h"
+//#include "state_tracker/xlib_sw_winsys.h"
 
 struct pipe_loader_sw_device {
    struct pipe_loader_device base;

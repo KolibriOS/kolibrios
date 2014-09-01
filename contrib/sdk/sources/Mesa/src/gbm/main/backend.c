@@ -44,8 +44,8 @@ struct backend_desc {
 };
 
 static const struct backend_desc backends[] = {
-   { "gbm_dri.so", &gbm_dri_backend }
-//   { "gbm_gallium_drm.so", NULL },
+   { "gbm_dri.dll", &gbm_dri_backend },
+   { "gbm_gallium_drm.dll", NULL },
 };
 
 #if 0
