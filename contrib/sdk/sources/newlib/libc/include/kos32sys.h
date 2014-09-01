@@ -212,25 +212,27 @@ uint32_t get_os_button()
 
 static inline uint32_t get_service(char *name)
 {
-  uint32_t retval = 0;
-  asm volatile ("int $0x40"
-      :"=a"(retval)
-      :"a"(68),"b"(16),"c"(name)
-      :"memory");
+    uint32_t retval = 0;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(retval)
+    :"a"(68),"b"(16),"c"(name)
+    :"memory");
 
-  return retval;
+    return retval;
 };
 
 static inline int call_service(ioctl_t *io)
 {
-  int retval;
+    int retval;
 
-  asm volatile("int $0x40"
-      :"=a"(retval)
-      :"a"(68),"b"(17),"c"(io)
-      :"memory","cc");
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(retval)
+    :"a"(68),"b"(17),"c"(io)
+    :"memory","cc");
 
-  return retval;
+    return retval;
 };
 
 
@@ -340,26 +342,26 @@ typedef union
 
 static inline ufile_t load_file(const char *path)
 {
-     ufile_t uf;
+    ufile_t uf;
 
-     __asm__ __volatile__ (
-     "int $0x40"
-     :"=A"(uf.raw)
-     :"a" (68), "b"(27),"c"(path));
+    __asm__ __volatile__ (
+    "int $0x40"
+    :"=A"(uf.raw)
+    :"a" (68), "b"(27),"c"(path));
 
-     return uf;
+    return uf;
 };
 static inline ufile_t LoadFile(const char *path) __attribute__ ((alias ("load_file")));
 
 static inline int GetScreenSize()
 {
-     int retval;
+    int retval;
 
-     __asm__ __volatile__(
-     "int $0x40"
-     :"=a"(retval)
-     :"a"(61), "b"(1));
-     return retval;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(retval)
+    :"a"(61), "b"(1));
+    return retval;
 }
 
 static inline
@@ -461,7 +463,6 @@ static inline void Blit(void *bitmap, int dst_x, int dst_y,
     __asm__ __volatile__(
     "int $0x40"
     ::"a"(73),"b"(0),"c"(&bc.dstx));
-
 };
 
 #endif

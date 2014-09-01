@@ -17,7 +17,7 @@ INC_I965:= -I$(SRC_DIR)/libdrm/intel -I$(SRC_DIR)/libdrm/include/drm
 
 LIBPATH:= -L$(SDK_DIR)/lib -L/home/autobuild/tools/win32/mingw32/lib
 
-LIBS:=  -ldll -lglsl -lGL.dll -lsupc++ -lgcc_eh -ldrm.dll -lexpat -lc.dll -lgcc
+LIBS:=  -ldll -lgallium -lc.dll -lgcc
 
 MESA_DEFS= -DMESA_DLL -DBUILD_GL32 -DMAPI_MODE_UTIL -DMAPI_TABLE_NUM_STATIC=87 -DUSE_X86_ASM -DUSE_MMX_ASM -DUSE_SSE_ASM -DMAPI_TABLE_NUM_DYNAMIC=256
 MESA_DEFS+= -DPACKAGE_NAME=\"Mesa\" -DPACKAGE_VERSION=\"9.2.5\" -DPACKAGE_BUGREPORT=\"https://bugs.freedesktop.org/enter_bug.cgi\?product=Mesa\"
@@ -156,27 +156,34 @@ GALLIUM_SRC:= 						\
 		auxiliary/vl/vl_video_buffer.c
 
 GBM_SRC = 						\
+		auxiliary/pipe-loader/pipe_loader.c	\
+		auxiliary/pipe-loader/pipe_loader_drm.c	\
+		auxiliary/pipe-loader/pipe_loader_sw.c	\
 		state_trackers/gbm/gbm_drm.c		\
-		targets/gbm/gbm.c
-
-WINSYS_SRC = 						\
+		targets/gbm/gbm.c			\
 		winsys/sw/null/null_sw_winsys.c
 
 I965_SRC = 					\
 	$(NULL)
 
 GALLIUM_OBJS =  $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(patsubst %.cpp, %.o, $(GALLIUM_SRC))))
+GBM_OBJS =  $(patsubst %.c, %.o, $(GBM_SRC))
+
 OSMESA_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(OSMESA_SRC)))
 I965_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(I965_SRC)))
 
 # targets
 
-all: libgallium.a
+all: libgallium.a gbm_gallium_drm.dll
 
 libgallium.a: $(GALLIUM_OBJS) Makefile
 	$(AR) crs $@ $(GALLIUM_OBJS)
 	mv -f $@ $(SDK_DIR)/lib
 
+gbm_gallium_drm.dll: libgallium.a $(GBM_OBJS) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(GBM_OBJS) gbm.def $(LIBS)
+	mv -f $@ $(SDK_DIR)/bin
+  
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
 	mv -f $@ $(SDK_DIR)/bin
