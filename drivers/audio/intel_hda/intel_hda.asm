@@ -500,10 +500,9 @@ include '../../peimport.inc'
 include 'CODEC_H.INC'
 
 entry START
-section '.flat' readable writable executable
 
-;proc START stdcall, state:dword
-proc START c, state:dword, cmdline:dword
+;proc START c, reason:dword, cmdline:dword
+proc START
 	push	ebx esi ; save used registers to be stdcall
 virtual at esp
 		rd	2 ; saved registers
@@ -512,8 +511,8 @@ virtual at esp
 .cmdline	dd	? ; normally NULL
 end virtual
 ; 1. Check the reason for the call, do nothing unless initializing.
-	;cmp [.reason], DRV_ENTRY
-	;jne .stop
+	cmp	[.reason], DRV_ENTRY
+	jne	.stop
 
 if DEBUG
 	mov	esi, msgTV

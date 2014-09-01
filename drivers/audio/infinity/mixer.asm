@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2006-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2006-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,7 +27,7 @@ proc new_mix stdcall, output:dword
 
         lea     eax, [fpu_state+16]
         and     eax, -16            ;must be 16b aligned
-        call    FpuSave
+        invoke  FpuSave
 
         call    update_streams
 .mix:
@@ -66,7 +66,7 @@ end if
 .exit:
         lea     eax, [fpu_state+16]
         and     eax, -16
-        call    FpuRestore
+        invoke  FpuRestore
         ret
 .done:
         mov     ecx, [main_count]
@@ -196,7 +196,7 @@ proc refill stdcall, str:dword
         mov     ebx, [ebx+STREAM.notify_id]
         mov     edx, EVENT_WATCHED
         xor     esi, esi
-        call    RaiseEvent   ;eax, ebx, edx, esi
+        invoke  RaiseEvent   ;eax, ebx, edx, esi
 .exit:
         ret
 endp
@@ -267,7 +267,7 @@ proc refill_ring stdcall, str:dword
 
         mov     ebx, [ebx+STREAM.notify_id]
         xor     edx, edx
-        call    RaiseEvent   ;eax, ebx, edx, esi
+        invoke  RaiseEvent   ;eax, ebx, edx, esi
 .exit:
         ret
 endp

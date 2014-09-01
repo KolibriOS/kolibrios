@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2006-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2006-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8,14 +8,10 @@
 ; Serge 2006-2008
 ; email: infinity_sound@mail.ru
 
-format MS COFF
+format PE DLL native 0.05
+entry START
 
 DEBUG             equ 1
-
-
-include 'proc32.inc'
-include 'main.inc'
-include 'imports.inc'
 
 
 CURRENT_API     equ   0x0101      ;1.01
@@ -38,10 +34,6 @@ OS_BASE           equ 0x80000000
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003
 
-public START
-public service_proc
-public version
-
 RT_INP_EMPTY      equ 0xFF000001
 RT_OUT_EMPTY      equ 0xFF000002
 RT_INP_FULL       equ 0xFF000003
@@ -57,32 +49,26 @@ DEV_STOP          equ 2
 DEV_CALLBACK      equ 3
 DEV_GET_POS       equ 9
 
-struc IOCTL
-{  .handle        dd ?
-   .io_code       dd ?
-   .input         dd ?
-   .inp_size      dd ?
-   .output        dd ?
-   .out_size      dd ?
-}
+section '.flat' code readable executable
+include '../../struct.inc'
+include '../../macros.inc'
+include '../../proc32.inc'
+include 'main.inc'
+include '../../peimport.inc'
 
-virtual at 0
-  IOCTL IOCTL
-end virtual
 
-section '.flat' code readable align 16
 
-proc START stdcall, state:dword
+proc START c uses ebx esi edi, state:dword, cmdline:dword
 
         cmp     [state], 1
         jne     .exit
 
-        stdcall GetService, szSound
+        invoke  GetService, szSound
         test    eax, eax
         jz      .fail
         mov     [hSound], eax
 
-        stdcall KernelAlloc, 16*512
+        invoke  KernelAlloc, 16*512
         test    eax, eax
         jz      .out_of_mem
         mov     [mix_buff], eax
@@ -133,12 +119,12 @@ end if
 end if
         stdcall set_handler, [hSound], new_mix
         mov     [eng_state], SND_STOP
-        stdcall RegService, szInfinity, service_proc
+        invoke  RegService, szInfinity, service_proc
         ret
 .fail:
      if DEBUG
         mov     esi, msgFail
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
      end if
 .exit:
         xor     eax, eax
@@ -147,20 +133,11 @@ end if
 .out_of_mem:
      if DEBUG
         mov     esi, msgMem
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
      end if
         xor     eax, eax
         ret
 endp
-
-handle     equ  IOCTL.handle
-io_code    equ  IOCTL.io_code
-input      equ  IOCTL.input
-inp_size   equ  IOCTL.inp_size
-output     equ  IOCTL.output
-out_size   equ  IOCTL.out_size
-
-
 
 align 4
 
@@ -189,7 +166,7 @@ srv_calls_end:
 proc service_proc stdcall, ioctl:dword
 
         mov     edi, [ioctl]
-        mov     eax, [edi+io_code]
+        mov     eax, [edi+IOCTL.io_code]
 
         cmp     eax, (srv_calls_end-srv_calls)/4
         ja      .fail
@@ -200,7 +177,7 @@ proc service_proc stdcall, ioctl:dword
 ;           cmp [edi+inp_size], 4
 ;           jb .fali
 
-        mov     ebx, [edi+input]
+        mov     ebx, [edi+IOCTL.input]
         mov     edx, [ebx]
 
         cmp     [edx+STREAM.magic], 'WAVE'
@@ -219,8 +196,8 @@ proc service_proc stdcall, ioctl:dword
 
 align 4
 .srv_getversion:
-        mov     eax, [edi+output]
-        cmp     [edi+out_size], 4
+        mov     eax, [edi+IOCTL.output]
+        cmp     [edi+IOCTL.out_size], 4
         jne     .fail
         mov     eax, [eax]
         mov     [eax], dword API_VERSION
@@ -229,10 +206,10 @@ align 4
 
 align 4
 .snd_create_buff:
-        mov     ebx, [edi+input]
+        mov     ebx, [edi+IOCTL.input]
         stdcall CreateBuffer, [ebx], [ebx+4]
         mov     edi, [ioctl]
-        mov     ecx, [edi+output]
+        mov     ecx, [edi+IOCTL.output]
         mov     ecx, [ecx]
         mov     [ecx], ebx
         ret
@@ -251,7 +228,7 @@ align 4
 align 4
 .snd_getformat:
         movzx   eax, word [edx+STREAM.format]
-        mov     ecx, [edi+output]
+        mov     ecx, [edi+IOCTL.output]
         mov     ecx, [ecx]
         mov     [ecx], eax
         xor     eax, eax
@@ -271,7 +248,7 @@ align 4
 .snd_getpos:
         stdcall GetBufferPos, edx
         mov     edi, [ioctl]
-        mov     ecx, [edi+output]
+        mov     ecx, [edi+IOCTL.output]
         mov     ecx, [ecx]
         mov     [ecx], ebx
         ret
@@ -305,7 +282,7 @@ align 4
 
 align 4
 .snd_getvolume:
-        mov     eax, [edi+output]
+        mov     eax, [edi+IOCTL.output]
         mov     ecx, [eax]
         mov     eax, [eax+4]
         stdcall GetBufferVol, edx, ecx, eax
@@ -318,7 +295,7 @@ align 4
 align 4
 .snd_getpan:
         mov     eax, [edx+STREAM.pan]
-        mov     ebx, [edi+output]
+        mov     ebx, [edi+IOCTL.output]
         mov     ebx, [ebx]
         mov     [ebx], eax
         xor     eax, eax
@@ -327,7 +304,7 @@ align 4
 align 4
 .snd_getbuffsize:
         mov     eax, [edx+STREAM.in_size]
-        mov     ecx, [edi+output]
+        mov     ecx, [edi+IOCTL.output]
         mov     ecx, [ecx]
         mov     [ecx], eax
         xor     eax, eax
@@ -339,13 +316,13 @@ align 4
         jz      .fail
 
         mov     ebx, [edx+STREAM.in_free]
-        mov     ecx, [edi+output]
+        mov     ecx, [edi+IOCTL.output]
         mov     [ecx], ebx
         xor     eax, eax
         ret
 align 4
 .snd_settimebase:
-        cmp     [edi+inp_size], 12
+        cmp     [edi+IOCTL.inp_size], 12
         jne     .fail
 
         mov     eax, [ebx+4]
@@ -364,7 +341,7 @@ align 4
 
 align 4
 .snd_gettimestamp:
-        cmp     [edi+out_size], 8
+        cmp     [edi+IOCTL.out_size], 8
         jne     .fail
 
         pushfd
@@ -393,7 +370,7 @@ align 4
         push    dword [hSound] ;.handle
         mov     eax, esp
 
-        stdcall ServiceHandler, eax
+        invoke  ServiceHandler, eax
         add     esp, 6*4
 
         pop     edi
@@ -407,7 +384,7 @@ align 4
 
         mov     dword [esp], 0  ; clear offset
 @@:
-        mov     edi, [edi+output]
+        mov     edi, [edi+IOCTL.output]
 
         emms
         fild    qword [edx+STREAM.time_stamp]
@@ -461,11 +438,11 @@ proc CreateBuffer stdcall, format:dword, size:dword
         jnz     .fail
 .test_ok:
 
-        call    GetPid
+        invoke  GetPid
         mov     ebx, eax
         mov     eax, STREAM.sizeof
 
-        call    CreateObject
+        invoke  CreateObject
         test    eax, eax
         jz      .fail
         mov     [str], eax
@@ -516,7 +493,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
         shr     ebx, 12
         mov     [ring_pages], ebx
 
-        stdcall CreateRingBuffer, eax, PG_SW
+        invoke  CreateRingBuffer, eax, PG_SW
 
         mov     edi, [str]
         mov     ecx, [ring_size]
@@ -536,7 +513,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
         mov     ecx, [size]
         add     ecx, 128         ;resampler required
         mov     [eax+STREAM.in_size], ecx
-        stdcall KernelAlloc, ecx
+        invoke  KernelAlloc, ecx
 
         mov     edi, [str]
         mov     [edi+STREAM.in_base], eax
@@ -550,7 +527,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
         mov     [edi+STREAM.in_top], eax
 
 .out_buff:
-        stdcall AllocKernelSpace, dword 128*1024
+        invoke  AllocKernelSpace, dword 128*1024
 
         mov     edi, [str]
         xor     ebx, ebx
@@ -569,19 +546,19 @@ proc CreateBuffer stdcall, format:dword, size:dword
         mov     dword [edi+STREAM.time_stamp+4], ebx
         mov     dword [edi+STREAM.last_ts], ebx
 
-        stdcall AllocPages, dword 64/4
+        invoke  AllocPages, dword 64/4
         mov     edi, [str]
         mov     ebx, [edi+STREAM.out_base]
         mov     ecx, 16
         or      eax, PG_SW
         push    eax
         push    ebx
-        call    CommitPages ;eax, ebx, ecx
+        invoke  CommitPages ;eax, ebx, ecx
         mov     ecx, 16
         pop     ebx
         pop     eax
         add     ebx, 64*1024
-        call    CommitPages    ;double mapped
+        invoke  CommitPages    ;double mapped
 
         mov     edi, [str]
         mov     ecx, [edi+STREAM.in_top]
@@ -599,7 +576,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
         xor     esi, esi
         mov     ecx, MANUAL_DESTROY
-        call    CreateEvent
+        invoke  CreateEvent
 
         mov     ebx, [str]
         mov     [ebx+STREAM.notify_event], eax
@@ -647,12 +624,12 @@ DestroyBuffer:
         mov     [ecx+STREAM.str_fd], ebx
         popf
 
-        stdcall KernelFree, [eax+STREAM.in_base]
+        invoke  KernelFree, [eax+STREAM.in_base]
         mov     eax, [.handle]
-        stdcall KernelFree, [eax+STREAM.out_base]
+        invoke  KernelFree, [eax+STREAM.out_base]
 
         pop     eax              ;restore stack
-        call    DestroyObject    ;eax= stream
+        invoke  DestroyObject    ;eax= stream
         xor     eax, eax
         ret
 .fail:
@@ -833,7 +810,7 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
         jne     @F
         lea     eax, [fpu_state+15]
         and     eax, -16
-        call    FpuSave
+        invoke  FpuSave
         mov     [state_saved], 1
 @@:
         stdcall refill, edx
@@ -853,7 +830,7 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
         mov     edx, [str]
         mov     eax, [edx+STREAM.notify_event]
         mov     ebx, [edx+STREAM.notify_id]
-        call    WaitEvent   ;eax ebx
+        invoke  WaitEvent   ;eax ebx
         jmp     .main_loop
 .done:
         cmp     [state_saved], 1
@@ -861,7 +838,7 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
 
         lea     eax, [fpu_state+15]
         and     eax, -16
-        call    FpuRestore
+        invoke  FpuRestore
 @@:
         xor     eax, eax
         ret
@@ -1156,7 +1133,7 @@ proc play_buffer stdcall, str:dword, flags:dword
 .wait:
         mov     eax, [edx+STREAM.notify_event]
         mov     ebx, [edx+STREAM.notify_id]
-        call    WaitEvent   ;eax ebx
+        invoke  WaitEvent   ;eax ebx
 
         mov     edx, [str]
         cmp     [edx+STREAM.flags], SND_STOP
@@ -1182,7 +1159,7 @@ proc stop_buffer stdcall, str:dword
 
         mov     eax, [edx+STREAM.notify_event]
         mov     ebx, [edx+STREAM.notify_id]
-        call    ClearEvent   ;eax ebx
+        invoke  ClearEvent   ;eax ebx
 
         xor     eax, eax
         ret
@@ -1315,7 +1292,7 @@ proc set_handler stdcall, hsrv:dword, handler_proc:dword
         mov     [out_size], 0
 
         lea     eax, [handler]
-        stdcall ServiceHandler, eax
+        invoke  ServiceHandler, eax
         ret
 endp
 
@@ -1342,7 +1319,7 @@ proc dev_play stdcall, hsrv:dword
         mov     [out_size], ebx
 
         lea     eax, [handle]
-        stdcall ServiceHandler, eax
+        invoke  ServiceHandler, eax
         ret
 endp
 
@@ -1441,7 +1418,6 @@ vol_min       dd 0x0000D8F0,0x0000D8F0
 pan_max       dd 0x00002710,0x00002710
 
 ;stream_map    dd 0xFFFF       ; 16
-version       dd (5 shl 16) or SOUND_VERSION
 
 szInfinity    db 'INFINITY',0
 szSound       db 'SOUND',0
@@ -1457,7 +1433,11 @@ msgWaveout    db 'Play waveout', 13,10,0
 msgSetVolume  db 'Set volume',13,10,0
 end if
 
-section '.data' data readable writable align 16
+align 4
+data fixups
+end data
+
+section '.data' data readable writable
 
 play_list     rd 16
 mix_input     rd 16

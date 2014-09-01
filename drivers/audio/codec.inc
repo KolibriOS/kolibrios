@@ -36,7 +36,7 @@ proc detect_codec
         mov     eax, [edi+4]
         mov     [codec.ac_vendor_ids], eax
         mov     esi, eax
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         stdcall detect_chip, [edi+8]
 
         ret
@@ -48,10 +48,10 @@ proc detect_codec
         mov     [codec.chip_ids], chip_unknown
 
         mov     esi, chip_unknown
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         mov     eax, [codec.chip_id]
         call    dword2str
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         ret
 endp
 
@@ -72,7 +72,7 @@ proc detect_chip stdcall, chip_tab:dword
         mov     eax, [edi+4]
         mov     [codec.chip_ids], eax
         mov     esi, eax
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         ret
 .next:
         add     edi, 8
@@ -80,10 +80,10 @@ proc detect_chip stdcall, chip_tab:dword
 .unknown:
         mov     [codec.chip_ids], chip_unknown
         mov     esi, chip_unknown
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         mov     eax, [codec.chip_id]
         call    dword2str
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         ret
 endp
 
