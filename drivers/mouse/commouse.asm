@@ -139,7 +139,7 @@ proc init_mouse stdcall port, irq
 ; Disable power and mouse interrupts
         mov     dx, bx
         add     dx, 4           ; modem control register
-        mov     al, 0           ; reset DTR, RTS, and OUT2
+        mov     al, 0           ; reset DTR, RTS, and AUX2
         out     dx, al
 
 ; Wait 5 ticks (0.2s)
@@ -158,9 +158,9 @@ proc init_mouse stdcall port, irq
         mov     dx, bx
         in      al, dx
 
-; set DTR, DTS and OUT2
+; Power on the mouse
         add     dx, 4
-        mov     al, 1011b
+        mov     al, 1011b       ; set DTR, DTS and AUX2
         out     dx, al
 
         mov     ecx, 0x1FFFF
@@ -279,12 +279,12 @@ irq_handler:
         mov     al, [esi + com_mouse_data.data+0]
         mov     ah, al
         shr     al, 3           ; right mouse button
-        and     al, 2           ;
+        and     al, 10b         ;
         shr     ah, 5           ; left mouse button
-        and     ah, 1           ;
-        add     al, ah
-        movzx   eax, al
-        mov     [BTN_DOWN], eax
+        and     ah, 1b          ;
+        or      al, ah
+        and     [BTN_DOWN], not 11b
+        or      byte[BTN_DOWN], al
 
         ; X coordinate
         mov     al, [esi + com_mouse_data.data+0]
@@ -309,12 +309,16 @@ irq_handler:
         ret
 
   .FourthByte:
+        cmp     [esi + com_mouse_data.offset], 2
+        jne     .end
         inc     [esi + com_mouse_data.offset]
 
+        and     [BTN_DOWN], not 100b
         test    al, 00100000b
-        jz      .end
-        or      [BTN_DOWN], 100b
-        invoke  SetMouseData, [BTN_DOWN], [MOUSE_X], [MOUSE_Y], 0, 0
+        jz      @f
+        or      byte[BTN_DOWN], 100b
+  @@:
+        invoke  SetMouseData, [BTN_DOWN], 0, 0, 0, 0
 
   .end:
         pop     esi
