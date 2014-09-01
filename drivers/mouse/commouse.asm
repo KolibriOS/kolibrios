@@ -31,6 +31,9 @@ include '../fdo.inc'
 ; 2nd byte    0    X5    X4    X3    X2    X1    X0
 ; 3rd byte    0    Y5    Y4    Y3    Y2    Y1    Y0
 
+; optional: (logitech extension protocol)
+; 4th byte    0    MB     0     0     0     0     0
+
 struct com_mouse_data
 
         port            dw ?
@@ -244,37 +247,35 @@ irq_handler:
         sub     dx, 5
         in      al, dx
         and     al, 01111111b   ; clear MSB (use 7 bit words)
+        test    al, 01000000b   ; First byte indicator set?
+        jnz     .FirstByte
 
 ; Check which data byte we are reading
-        cmp     [esi + com_mouse_data.offset], 2
-        ja      .reset
+        cmp     [esi + com_mouse_data.offset], 1
+        jb      .SecondByte
         je      .ThirdByte
-        jp      .SecondByte
+        ja      .FourthByte
 
 ; read first data byte
-        test    al, 01000000b   ; First byte indicator set?
-        jz      .reset
+  .FirstByte:
         mov     [esi + com_mouse_data.data+0], al
-        inc     [esi + com_mouse_data.offset]
+        mov     [esi + com_mouse_data.offset], 0
         jmp     .read_loop
 
 ; read second data byte
   .SecondByte:
-        test    al, 01000000b   ; First byte indicator set?
-        jnz     .reset
         mov     [esi + com_mouse_data.data+1], al
         inc     [esi + com_mouse_data.offset]
         jmp     .read_loop
 
 ; read third data byte
   .ThirdByte:
-        test    al, 01000000b   ; First byte indicator set?
-        jnz     .reset
         mov     [esi + com_mouse_data.data+2], al
+        inc     [esi + com_mouse_data.offset]
 
 ; Data packet is complete, parse it and set mouse data
 
-; Buttons
+        ; Left and Right Buttons
         mov     al, [esi + com_mouse_data.data+0]
         mov     ah, al
         shr     al, 3           ; right mouse button
@@ -285,14 +286,14 @@ irq_handler:
         movzx   eax, al
         mov     [BTN_DOWN], eax
 
-; X coordinate
+        ; X coordinate
         mov     al, [esi + com_mouse_data.data+0]
         shl     al, 6
         or      al, [esi + com_mouse_data.data+1]
         movsx   eax, al
         mov     [MOUSE_X], eax
 
-; Y coordinate
+        ; Y coordinate
         mov     al, [esi + com_mouse_data.data+0]
         and     al, 00001100b
         shl     al, 4
@@ -303,12 +304,24 @@ irq_handler:
 
         invoke  SetMouseData, [BTN_DOWN], [MOUSE_X], [MOUSE_Y], 0, 0
 
-  .reset:
-        mov     [esi + com_mouse_data.offset], 0
+        pop     esi
+        mov     al, 1
+        ret
+
+  .FourthByte:
+        inc     [esi + com_mouse_data.offset]
+
+        test    al, 00100000b
+        jz      .end
+        or      [BTN_DOWN], 100b
+        invoke  SetMouseData, [BTN_DOWN], [MOUSE_X], [MOUSE_Y], 0, 0
+
   .end:
         pop     esi
         mov     al, 1
         ret
+
+
 
 
 ; End of code
