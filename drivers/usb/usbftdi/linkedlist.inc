@@ -9,40 +9,37 @@ head    dd 0
 
 linkedlist_add:
     push    ebx
-	mov	    ebx, [head]				
-	mov	    [head], eax
-	mov	    [eax + node.next], ebx	
+    mov     ebx, [head]                
+    mov     [head], eax
+    mov     [eax + node.next], ebx    
     pop     ebx
-	ret
+    ret
 
-linkedlist_delete:
+linkedlist_unlink:
     push    ebx ecx
-	mov     ebx, eax	 ; eax - pointer to node for delete
-	cmp     eax, [head]
-	jz      .unlink_head
-
+    test    eax, eax
+    jz      .invalid_pointer
+    mov     ebx, eax     ; eax - pointer to node for unlink
+    cmp     eax, [head]
+    jz      .unlink_head
   .getnext:
-	cmp     [ebx+node.next], eax
-	jz      .unlink
-	cmp     [ebx+node.next], 0
-	jz      .invalid_pointer
-	mov     ebx, [ebx+node.next]
-	jmp     .getnext
-
+    cmp     [ebx+node.next], eax
+    jz      .unlink
+    cmp     [ebx+node.next], 0
+    jz      .invalid_pointer
+    mov     ebx, [ebx+node.next]
+    jmp     .getnext
   .unlink:
-	mov     ecx, [eax+node.next]
-	mov     [ebx+node.next], ecx
-	jmp     @f
-    
+    mov     ecx, [eax+node.next]
+    mov     [ebx+node.next], ecx
+    jmp     @f    
   .unlink_head:
-	mov     ebx, [eax+node.next]
-	mov     [head], ebx
+    mov     ebx, [eax+node.next]
+    mov     [head], ebx
   @@:
-	mov     ecx, eax
-	call    Kfree
   .invalid_pointer:
     pop     ecx ebx
-	ret
+    ret
     
 linkedlist_isvalid:       ;eax - pointer to check; returns zero if valid
     push    ebx ecx
@@ -65,8 +62,8 @@ linkedlist_isvalid:       ;eax - pointer to check; returns zero if valid
     ret
 
 linkedlist_gethead:
-  	mov     eax, [head]
-  	ret
+    mov     eax, [head]
+    ret
 
 restore node
 restore node.next
