@@ -12,7 +12,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-format MS COFF
+format PE DLL native 0.05
 
 DEBUG = 1
 
@@ -23,12 +23,9 @@ node equ ftdi_context
 node.next equ ftdi_context.next_context
 
 include '../../proc32.inc'
-include '../../imports.inc'
+include '../../peimport.inc'
 include '../../fdo.inc'
 include '../../struct.inc'
-
-public START
-public version
 
 ; USB constants
 DEVICE_DESCR_TYPE           = 1
@@ -178,14 +175,14 @@ wIndex                  dw      ?
 wLength                 dw      ?
 ends
 
-section '.flat' code readable align 16
+section '.flat' code readable executable
 ; The start procedure.
-proc START stdcall, .reason:DWORD
+proc START c, .reason:DWORD, .cmdline:DWORD
 
         xor     eax, eax        ; initialize return value
         cmp     [.reason], 1    ; compare the argument
         jnz     .nothing                
-        stdcall RegUSBDriver, my_driver, service_proc, usb_functions
+        invoke  RegUSBDriver, my_driver, service_proc, usb_functions
 
 .nothing:
         ret
@@ -194,20 +191,20 @@ endp
 
 proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD, .interface:DWORD
         
-        stdcall USBGetParam, [.config_pipe], 0
+        invoke  USBGetParam, [.config_pipe], 0
         mov     edx, eax
-        DEBUGF 1,'K : Detected device vendor: %x\n', [eax+usb_descr.idVendor]
+        DEBUGF 2,'K : Detected device vendor: 0x%x\n', [eax+usb_descr.idVendor]
         cmp     word[eax+usb_descr.idVendor], 0x0403
         jnz     .notftdi
         mov     eax, sizeof.ftdi_context
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jnz     @f
         mov     esi, nomemory_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .nothing
   @@:
-        DEBUGF 1,'K : Adding struct to list %x\n', eax
+        DEBUGF 2,'K : Adding struct to list 0x%x\n', eax
         call    linkedlist_add
         
         mov     ebx, [.config_pipe]
@@ -222,7 +219,7 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         jmp     .slow
         
         mov     cx, [edx+usb_descr.bcdDevice]
-        DEBUGF 1, 'K : Chip type %x\n', ecx
+        DEBUGF 2, 'K : Chip type 0x%x\n', ecx
         cmp     cx, 0x400
         jnz     @f
         mov     [eax + ftdi_context.chipType], TYPE_BM
@@ -262,11 +259,13 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         add     [eax + ftdi_context.maxPacketSize], 512-64
   .slow:    
         mov     ebx, eax
-        stdcall USBOpenPipe, [.config_pipe],  0x81,  [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
+        invoke  USBOpenPipe, [.config_pipe], 0x81, \
+                            [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
         test    eax, eax
         jz      .nothing
         mov     [ebx + ftdi_context.outEP], eax
-        stdcall USBOpenPipe, [.config_pipe],  0x02,  [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
+        invoke  USBOpenPipe, [.config_pipe], 0x02, \
+                            [ebx + ftdi_context.maxPacketSize],  BULK_PIPE, 0
         test    eax, eax
         jz      .nothing
         mov     [ebx + ftdi_context.inEP], eax
@@ -288,7 +287,6 @@ inp_size   equ  IOCTL.inp_size
 output     equ  IOCTL.output
 out_size   equ  IOCTL.out_size
 
-align 4
 proc service_proc stdcall uses ebx esi edi, ioctl:DWORD
 locals
 ConfPacket  rb  10
@@ -297,7 +295,7 @@ endl
         mov     edi, [ioctl]
         mov     eax, [edi+io_code]
         DEBUGF 1,'K : FTDI got the request: %d\n', eax
-        test    eax, eax           ;0
+        test    eax, eax            ;0
         jz      .version
         dec     eax                 ;1
         jz      .ftdi_get_list
@@ -347,7 +345,7 @@ endl
         xor     ecx, ecx
   .bulkevent:                
         xor     esi, esi
-        call    CreateEvent        
+        invoke  CreateEvent        
         mov     [EventData], eax
         mov     [EventData+4], edx
         pop     edi eax
@@ -402,19 +400,19 @@ endl
         ret
   .endswitch:
         xor     eax, eax
-	    ret
+        ret
         
   .eventdestroy:
         ;---Dirty hack begin
         test    eax, eax
         jz      @f
         mov     eax, dword[ConfPacket]
-        call    Kfree
+        invoke  Kfree
   @@:
         ;---Dirty hack end
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    DestroyEvent
+        invoke  DestroyEvent
         jmp     .endswitch
         
   .ftdi_out_control_transfer_withinp:               
@@ -428,75 +426,117 @@ endl
         mov     word[ConfPacket+6], cx
   .own_index:
         mov     ebx, [edi+4]
-        DEBUGF 1,'K : ConfPacket %x %x\n', [ConfPacket], [ConfPacket+4]          
+        DEBUGF 2,'K : ConfPacket 0x%x 0x%x\n', [ConfPacket], [ConfPacket+4]          
         lea     esi, [ConfPacket]
         lea     edi, [EventData]        
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0, 0, control_callback, edi, 0
+        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, 0,\
+                                            0, control_callback, edi, 0
         test    eax, eax        
         jz      .error
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent
+        invoke  WaitEvent
         mov     eax, [EventData+8]
         test    eax, eax
         jz      .endswitch
         jmp     .error
         
   .ftdi_setrtshigh:
-        ;DEBUGF 1,'K : FTDI Setting RTS pin HIGH\n'                     
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_HIGH shl 16)
+        DEBUGF 2,'K : FTDI Setting RTS pin HIGH PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_SET_MODEM_CTRL_REQUEST shl 8) \
+                                 + (SIO_SET_RTS_HIGH shl 16)
         jmp     .ftdi_out_control_transfer_noinp         
 
   .ftdi_setrtslow:
-        ;DEBUGF 1,'K : FTDI Setting RTS pin LOW\n'             
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_RTS_LOW shl 16)
+        DEBUGF 2,'K : FTDI Setting RTS pin LOW PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_SET_MODEM_CTRL_REQUEST shl 8) \
+                                 + (SIO_SET_RTS_LOW shl 16)
         jmp     .ftdi_out_control_transfer_noinp           
         
   .ftdi_setdtrhigh:
-        ;DEBUGF 1,'K : FTDI Setting DTR pin HIGH\n'                     
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_HIGH shl 16)
+        DEBUGF 2,'K : FTDI Setting DTR pin HIGH PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_SET_MODEM_CTRL_REQUEST shl 8) \
+                                 + (SIO_SET_DTR_HIGH shl 16)
         jmp     .ftdi_out_control_transfer_noinp           
 
   .ftdi_setdtrlow:
-        ;DEBUGF 1,'K : FTDI Setting DTR pin LOW\n'             
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_MODEM_CTRL_REQUEST shl 8) + (SIO_SET_DTR_LOW shl 16)
+        DEBUGF 2,'K : FTDI Setting DTR pin LOW PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_SET_MODEM_CTRL_REQUEST shl 8) \
+                                 + (SIO_SET_DTR_LOW shl 16)
         jmp     .ftdi_out_control_transfer_noinp           
         
   .ftdi_usb_reset:
-        ;DEBUGF 1,'K : FTDI Reseting\n'
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_SIO shl 16)
+        DEBUGF 2,'K : FTDI Reseting PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_RESET_REQUEST shl 8) \+
+                                   (SIO_RESET_SIO shl 16)
         jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_purge_rx_buf:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_PURGE_RX shl 16)
+        DEBUGF 2, 'K : FTDI Purge TX buffer PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_RESET_REQUEST shl 8) \
+                                 + (SIO_RESET_PURGE_RX shl 16)
         jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_purge_tx_buf:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_RESET_REQUEST shl 8) + (SIO_RESET_PURGE_TX shl 16)
+        DEBUGF 2, 'K : FTDI Purge RX buffer PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_RESET_REQUEST shl 8) \
+                                 + (SIO_RESET_PURGE_TX shl 16)
         jmp     .ftdi_out_control_transfer_noinp  
         
   .ftdi_set_bitmode:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BITMODE_REQUEST shl 8)                                       
+        DEBUGF 2, 'K : FTDI Set bitmode 0x%x, bitmask 0x%x %d PID: %d Dev handler 0x0x%x\n', \
+                                               [edi+8]:2,[edi+10]:2,[edi],[edi+4]
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                + (SIO_SET_BITMODE_REQUEST shl 8)                                       
         jmp     .ftdi_out_control_transfer_withinp        
      
   .ftdi_set_line_property:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_DATA_REQUEST shl 8)
+        DEBUGF 2, 'K : FTDI Set line property 0x%x PID: %d Dev handler 0x0x%x\n', \
+                                                          [edi+8]:4,[edi],[edi+4]
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                + (SIO_SET_DATA_REQUEST shl 8)
         jmp     .ftdi_out_control_transfer_withinp
         
   .ftdi_set_latency_timer:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_LATENCY_TIMER_REQUEST shl 8)        
+        DEBUGF 2, 'K : FTDI Set latency %d PID: %d Dev handler 0x0x%x\n', \
+                                                          [edi+8],[edi],[edi+4]
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                + (SIO_SET_LATENCY_TIMER_REQUEST shl 8)        
         jmp     .ftdi_out_control_transfer_withinp
         
   .ftdi_set_event_char:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_EVENT_CHAR_REQUEST shl 8)
+        DEBUGF 2, 'K : FTDI Set event char %c PID: %d Dev handler 0x0x%x\n', \
+                                                          [edi+8],[edi],[edi+4]
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                + (SIO_SET_EVENT_CHAR_REQUEST shl 8)
         jmp     .ftdi_out_control_transfer_withinp
 
   .ftdi_set_error_char:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_ERROR_CHAR_REQUEST shl 8)
+        DEBUGF 2, 'K : FTDI Set error char %c PID: %d Dev handler 0x0x%x\n', \
+                                                          [edi+8],[edi],[edi+4]
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                + (SIO_SET_ERROR_CHAR_REQUEST shl 8)
         jmp     .ftdi_out_control_transfer_withinp 
         
   .ftdi_setflowctrl:
-        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_FLOW_CTRL_REQUEST shl 8) + (0 shl 16)
+        DEBUGF 2, 'K : FTDI Set flow control PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
+        mov     dword[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                 + (SIO_SET_FLOW_CTRL_REQUEST shl 8) + (0 shl 16)
         mov     ebx, [edi+4]
         mov     cx, word[edi+8]   
         or      ecx, [ebx + ftdi_context.index]
@@ -505,9 +545,12 @@ endl
         mov     word[ConfPacket+6], cx
         jmp     .own_index
 
-  .ftdi_read_pins:                            
+  .ftdi_read_pins:
+        DEBUGF 2, 'K : FTDI Read pins PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                     [edi+4]
         mov     ebx, [edi+4] 
-        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_READ_PINS_REQUEST shl 8) + (0 shl 16)
+        mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) /
+                                 + (SIO_READ_PINS_REQUEST shl 8) + (0 shl 16)
         mov     ecx, [ebx + ftdi_context.index]
         mov     word[ConfPacket+4], cx
         mov     word[ConfPacket+6], 1
@@ -516,10 +559,11 @@ endl
         mov     ecx, esi
         add     ecx, 8
         mov     word[ConfPacket+8], 0
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 1, control_callback, edi, 0
+        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, /
+                                            1, control_callback, edi, 0
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent
+        invoke  WaitEvent
         xor     ebx, ebx
         mov     bx, word[ConfPacket+8]
         mov     ecx, [ioctl]
@@ -531,6 +575,8 @@ endl
         jmp     .error
         
   .ftdi_set_wchunksize:
+        DEBUGF 2, 'K : FTDI Set write chunksize %d bytes PID: %d Dev handler 0x0x%x\n', \
+                                                    [edi+8], [edi], [edi+4]
         mov     ebx, [edi+4]
         mov     ecx, [edi+8] 
         cmp     [ebx + ftdi_context.maxPacketSize], ecx
@@ -539,6 +585,8 @@ endl
         jmp     .endswitch
    
   .ftdi_get_wchunksize:
+        DEBUGF 2, 'K : FTDI Get write chunksize PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
         mov     esi, [edi+output]
         mov     edi, [edi+input]
         mov     ebx, [edi+4]
@@ -547,6 +595,8 @@ endl
         jmp     .endswitch
 
   .ftdi_set_rchunksize:
+        DEBUGF 2, 'K : FTDI Set read chunksize %d bytes PID: %d Dev handler 0x0x%x\n', \
+                                                    [edi+8], [edi], [edi+4]
         mov     ebx, [edi+4]
         mov     ecx, [edi+8]
         cmp     [ebx + ftdi_context.maxPacketSize], ecx
@@ -555,6 +605,8 @@ endl
         jmp     .endswitch
 
   .ftdi_get_rchunksize:
+        DEBUGF 2, 'K : FTDI Get read chunksize PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4]
         mov     esi, [edi+output]
         mov     edi, [edi+input]
         mov     ebx, [edi+4]
@@ -563,16 +615,18 @@ endl
         jmp     .endswitch        
 
   .ftdi_write_data:
+        DEBUGF 2, 'K : FTDI Write %d bytes PID: %d Dev handler 0x%x\n', [edi+8],\
+                                                            [edi], [edi+4]
         mov     esi, edi
         add     esi, 12        
         mov     ebx, [edi+4]
         ;---Dirty hack begin
         mov     eax, [edi+8]
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jnz     @f
         mov     esi, nomemory_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .eventdestroy
   @@:
         mov     dword[ConfPacket], eax
@@ -582,7 +636,7 @@ endl
         rep movsb
         pop     edi
         mov     esi, dword[ConfPacket]
-        ;---Dirty hack end
+        ;---Dirty hack end        
         xor     ecx, ecx        ; ecx - offset      
   .write_loop:
         mov     edx, [edi+8]    ; edx - write_size
@@ -594,10 +648,11 @@ endl
         add     esi, ecx
         lea     eax, [EventData]
         push    ecx ebx esi edi
-        stdcall USBNormalTransferAsync, [ebx + ftdi_context.inEP], esi, edx, bulk_callback, eax, 1        
+        invoke USBNormalTransferAsync, [ebx + ftdi_context.inEP], esi, edx, \
+                                            bulk_callback, eax, 1
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent
+        invoke  WaitEvent
         pop     edi esi ebx ecx
         cmp     [EventData+8], -1
         jz      .error
@@ -607,26 +662,28 @@ endl
         jmp     .write_loop
         
   .ftdi_read_data:
+        DEBUGF 2, 'K : FTDI Read %d bytes PID: %d Dev handler 0x%x\n', [edi+8],\
+                                                            [edi], [edi+4]
         mov     edi, [ioctl]
         mov     esi, [edi+input]
         mov     edi, [edi+output]
         mov     ebx, [esi+4]     
         ;---Dirty hack begin
         mov     eax, [esi+8]
-        call    Kmalloc
+        invoke  Kmalloc
         test    eax, eax
         jnz     @f
         mov     esi, nomemory_msg
-        call    SysMsgBoardStr
+        invoke  SysMsgBoardStr
         jmp     .eventdestroy
   @@:
         mov     edi, eax
-        push    edi eax
-        mov     ecx, [esi+8]
-        xor     eax, eax
-        rep     stosb
-        pop     eax edi
-        mov     dword[ConfPacket], eax ; Store in ConfPAcket ptr to allocated memory
+        ; push    edi eax
+        ; mov     ecx, [esi+8]
+        ; xor     eax, eax
+        ; rep     stosb
+        ; pop     eax edi
+        mov     dword[ConfPacket], eax ; Store in ConfPacket ptr to allocated memory
         ;---Dirty hack end        
         xor     ecx, ecx
   .read_loop:
@@ -641,10 +698,11 @@ endl
         lea     eax, [EventData]
         add     edi, ecx
         push    esi edi ecx ebx
-        stdcall USBNormalTransferAsync, [ebx + ftdi_context.outEP], edi, edx, bulk_callback, eax, 1        
+        invoke  USBNormalTransferAsync, [ebx + ftdi_context.outEP], edi, edx, \
+                                            bulk_callback, eax, 1        
         mov     eax, [EventData]
         mov     ebx, [EventData+4]        
-        call    WaitEvent
+        invoke  WaitEvent
         pop     ebx ecx edi esi
         cmp     [EventData+8], -1        
         jz      .error
@@ -661,9 +719,12 @@ endl
         jmp     .eventdestroy
         ;---Dirty hack end
         
-  .ftdi_poll_modem_status:                                 
+  .ftdi_poll_modem_status:
+        DEBUGF 2, 'K : FTDI Poll modem status PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4] 
         mov     ebx, [edi+4] 
-        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_POLL_MODEM_STATUS_REQUEST shl 8) + (0 shl 16)
+        mov     dword[ConfPacket], (FTDI_DEVICE_IN_REQTYPE) \
+                                 + (SIO_POLL_MODEM_STATUS_REQUEST shl 8) + (0 shl 16)
         mov     ecx, [ebx + ftdi_context.index]
         mov     word[ConfPacket+4], cx
         mov     word[ConfPacket+6], 1
@@ -671,19 +732,23 @@ endl
         lea     edi, [EventData]
         mov     ecx, [ioctl]
         mov     ecx, [ecx+output]
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 2, control_callback, edi, 0
+        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, \
+                                            2, control_callback, edi, 0
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent
+        invoke  WaitEvent
         mov     ax, word[ecx]
         xchg    ah, al
         and     ah, 0xFF
         mov     word[ecx], ax
         jmp     .endswitch
         
-  .ftdi_get_latency_timer:                                 
+  .ftdi_get_latency_timer:
+        DEBUGF 2, 'K : FTDI Get latency timer PID: %d Dev handler 0x0x%x\n', [edi],\
+                                                                        [edi+4] 
         mov     ebx, [edi+4] 
-        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE + (SIO_GET_LATENCY_TIMER_REQUEST shl 8) + (0 shl 16)
+        mov     dword[ConfPacket], FTDI_DEVICE_IN_REQTYPE \
+                                + (SIO_GET_LATENCY_TIMER_REQUEST shl 8) + (0 shl 16)
         mov     ecx, [ebx + ftdi_context.index]
         mov     word[ConfPacket+4], cx
         mov     word[ConfPacket+6], 1
@@ -691,13 +756,15 @@ endl
         lea     edi, [EventData]
         mov     ecx, [ioctl]
         mov     ecx, [ecx+output]
-        stdcall USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, 2, control_callback, edi, 0
+        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP],  esi, ecx, \
+                                            2, control_callback, edi, 0
         mov     eax, [EventData]
         mov     ebx, [EventData+4]
-        call    WaitEvent
+        invoke  WaitEvent
         jmp     .endswitch
                 
-  .ftdi_get_list:                               
+  .ftdi_get_list:
+        DEBUGF 2, 'K : FTDI devices\' list request\n'  
         mov     edi, [edi+output]
         xor     ecx, ecx
         call    linkedlist_gethead
@@ -725,8 +792,9 @@ endl
   .emptylist:
         mov     [edi], ecx
         jmp     .endswitch
-        	   
+
   .ftdi_lock:
+        DEBUGF 2, 'K : FTDI Lock PID: %d Dev handler 0x0x%x\n', [edi], [edi+4]  
         mov     esi, [edi+input]
         mov     ebx, [esi+4]
         mov     eax, [ebx + ftdi_context.lockPID]
@@ -740,6 +808,7 @@ endl
         jmp     .endswitch
         
   .ftdi_unlock:
+        DEBUGF 2, 'K : FTDI Unlock PID: %d Dev handler 0x0x%x\n', [edi], [edi+4]
         mov     esi, [edi+input]
         mov     edi, [edi+output]
         mov     ebx, [esi+4]
@@ -756,6 +825,8 @@ endl
 H_CLK = 120000000
 C_CLK = 48000000        
   .ftdi_set_baudrate:
+        DEBUGF 2, 'K : FTDI Set baudrate to %d PID: %d Dev handle: 0x%x\n',\
+                   [edi+8], [edi], [edi+4]
         mov     ebx, [edi+4]
         cmp     [ebx + ftdi_context.chipType], TYPE_2232H
         jl      .c_clk        
@@ -883,7 +954,8 @@ C_CLK = 48000000
         or      ecx, [ebx + ftdi_context.index]
         
   .preparepacket:
-        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) + (SIO_SET_BAUDRATE_REQUEST shl 8)
+        mov     word[ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                + (SIO_SET_BAUDRATE_REQUEST shl 8)
         mov     word[ConfPacket+2], ax
         mov     word[ConfPacket+4], cx
         mov     word[ConfPacket+6], 0
@@ -898,8 +970,8 @@ restore   output
 restore   out_size 
 
 
-align 4
-proc control_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD   
+proc control_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, \
+                               .buffer:DWORD, .length:DWORD, .calldata:DWORD   
    
         DEBUGF 1, 'K : status is %d\n', [.status] 
         mov     ecx, [.calldata]
@@ -909,11 +981,12 @@ proc control_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buf
         mov     [ecx+8], edx
         xor     esi, esi
         xor     edx, edx
-        call    RaiseEvent              
+        invoke  RaiseEvent              
         ret
 endp
 
-proc bulk_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buffer:DWORD, .length:DWORD, .calldata:DWORD
+proc bulk_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, \
+                            .buffer:DWORD, .length:DWORD, .calldata:DWORD
 
         DEBUGF 1, 'K : status is %d\n', [.status]        
         mov     ecx, [.calldata]
@@ -932,34 +1005,31 @@ proc bulk_callback stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, .buffer
   .ok:    
         xor     esi, esi
         xor     edx, edx
-        call    RaiseEvent            
+        invoke  RaiseEvent            
         ret
 endp
 
 proc DeviceDisconnected stdcall uses  ebx esi edi, .device_data:DWORD
 
-        DEBUGF 1, 'K : FTDI deleting device data %x\n', [.device_data]
+        DEBUGF 1, 'K : FTDI deleting device data 0x%x\n', [.device_data]
         mov     eax, [.device_data] 
-        call    linkedlist_delete
+        call    linkedlist_unlink
+        invoke  Kfree
         ret           
 endp
 
 include 'linkedlist.inc'
-        
-; Exported variable: kernel API version.
+
 align 4
-version dd      50005h
+
 ; Structure with callback functions.
 usb_functions:
         dd      12
         dd      AddDevice
         dd      DeviceDisconnected
 
+data fixups
+end data        
+        
 ;for DEBUGF macro
 include_debug_strings
-
-
-
-
-; for uninitialized data
-;section '.data' data readable writable align 16
