@@ -209,13 +209,13 @@ proc get_service stdcall, sz_name:dword
 
         stdcall strncmp, edx, [sz_name], 16
         test    eax, eax
-        je      .ok
+        mov     eax, edx
+        je      .nothing
 
         mov     edx, [edx+SRV.fd]
         jmp     @B
 .not_load:
         mov     eax, [sz_name]
-; Try to load .dll driver first. If not, fallback to .obj.
         push    edi
         sub     esp, 36
         mov     edi, esp
@@ -236,12 +236,6 @@ proc get_service stdcall, sz_name:dword
         stdcall load_pe_driver, edi, 0
         add     esp, 36
         pop     edi
-        test    eax, eax
-        jnz     .nothing
-        pop     ebp
-        jmp     load_driver
-.ok:
-        mov     eax, edx
 .nothing:
         ret
 endp
@@ -877,179 +871,6 @@ proc rebase_coff stdcall uses ebx esi, coff:dword, sym:dword, \
         dec     [n_sec]
         jnz     .fix_sec
 .exit:
-        ret
-endp
-
-align 4
-proc load_driver stdcall, driver_name:dword
-           locals
-             coff      dd ?
-             sym       dd ?
-             strings   dd ?
-             img_size  dd ?
-             img_base  dd ?
-             start     dd ?
-
-             file_name rb 13+16+4+1      ; '/sys/drivers/<up-to-16-chars>.obj'
-           endl
-
-        lea     edx, [file_name]
-        mov     dword [edx], '/sys'
-        mov     dword [edx+4], '/dri'
-        mov     dword [edx+8], 'vers'
-        mov     byte [edx+12], '/'
-        mov     esi, [driver_name]
-.redo:
-        lea     edx, [file_name]
-        lea     edi, [edx+13]
-        mov     ecx, 16
-@@:
-        lodsb
-        test    al, al
-        jz      @f
-        stosb
-        loop    @b
-@@:
-        mov     dword [edi], '.obj'
-        mov     byte [edi+4], 0
-        stdcall load_file, edx
-
-        test    eax, eax
-        jz      .exit
-
-        lea     edx, [file_name]
-        DEBUGF 1,'K : driver %s is COFF, deprecated\n',edx
-        mov     [coff], eax
-
-        movzx   ecx, [eax+COFF_HEADER.nSections]
-        xor     ebx, ebx
-
-        lea     edx, [eax+20]
-@@:
-        add     ebx, [edx+COFF_SECTION.SizeOfRawData]
-        add     ebx, 15
-        and     ebx, not 15
-        add     edx, sizeof.COFF_SECTION
-        dec     ecx
-        jnz     @B
-        mov     [img_size], ebx
-
-        stdcall kernel_alloc, ebx
-        test    eax, eax
-        jz      .fail
-        mov     [img_base], eax
-
-        mov     edi, eax
-        xor     eax, eax
-        mov     ecx, [img_size]
-        add     ecx, 4095
-        and     ecx, not 4095
-        shr     ecx, 2
-        cld
-        rep stosd
-
-        mov     edx, [coff]
-        movzx   ebx, [edx+COFF_HEADER.nSections]
-        mov     edi, [img_base]
-        lea     eax, [edx+20]
-@@:
-        mov     [eax+COFF_SECTION.VirtualAddress], edi
-        mov     esi, [eax+COFF_SECTION.PtrRawData]
-        test    esi, esi
-        jnz     .copy
-        add     edi, [eax+COFF_SECTION.SizeOfRawData]
-        jmp     .next
-.copy:
-        add     esi, edx
-        mov     ecx, [eax+COFF_SECTION.SizeOfRawData]
-        cld
-        rep movsb
-.next:
-        add     edi, 15
-        and     edi, not 15
-        add     eax, sizeof.COFF_SECTION
-        dec     ebx
-        jnz     @B
-
-        mov     ebx, [edx+COFF_HEADER.pSymTable]
-        add     ebx, edx
-        mov     [sym], ebx
-        mov     ecx, [edx+COFF_HEADER.nSymbols]
-        add     ecx, ecx
-        lea     ecx, [ecx+ecx*8];ecx*=18 = nSymbols*CSYM_SIZE
-        add     ecx, [sym]
-        mov     [strings], ecx
-
-        lea     eax, [edx+20]
-
-        stdcall fix_coff_symbols, eax, [sym], [edx+COFF_HEADER.nSymbols], \
-                [strings], __exports
-        test    eax, eax
-        jz      .link_fail
-
-        mov     ebx, [coff]
-        stdcall fix_coff_relocs, ebx, [sym], 0
-
-        stdcall get_coff_sym, [sym], [ebx+COFF_HEADER.nSymbols], szVersion
-        test    eax, eax
-        jz      .link_fail
-
-        mov     eax, [eax]
-        shr     eax, 16
-        cmp     eax, DRV_COMPAT
-        jb      .ver_fail
-
-        cmp     eax, DRV_CURRENT
-        ja      .ver_fail
-
-        mov     ebx, [coff]
-        stdcall get_coff_sym, [sym], [ebx+COFF_HEADER.nSymbols], szSTART
-        mov     [start], eax
-
-        stdcall kernel_free, [coff]
-
-        mov     ebx, [start]
-        stdcall ebx, DRV_ENTRY
-        test    eax, eax
-        jnz     .ok
-
-        stdcall kernel_free, [img_base]
-
-        xor     eax, eax
-        ret
-.ok:
-        mov     ebx, [img_base]
-        mov     [eax+SRV.base], ebx
-        mov     ecx, [start]
-        mov     [eax+SRV.entry], ecx
-        ret
-
-.ver_fail:
-        mov     esi, msg_CR
-        call    sys_msg_board_str
-        mov     esi, [driver_name]
-        call    sys_msg_board_str
-        mov     esi, msg_CR
-        call    sys_msg_board_str
-        mov     esi, msg_version
-        call    sys_msg_board_str
-        mov     esi, msg_www
-        call    sys_msg_board_str
-        jmp     .cleanup
-
-.link_fail:
-        mov     esi, msg_module
-        call    sys_msg_board_str
-        mov     esi, [driver_name]
-        call    sys_msg_board_str
-        mov     esi, msg_CR
-        call    sys_msg_board_str
-.cleanup:
-        stdcall kernel_free, [img_base]
-.fail:
-        stdcall kernel_free, [coff]
-.exit:
-        xor     eax, eax
         ret
 endp
 

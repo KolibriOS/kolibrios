@@ -140,11 +140,11 @@ end if
 start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
-msg_module     db 'in module ',0
-if ~ lang eq sp
-msg_version    db 'incompatible driver version',13,10,0
-msg_www        db 'please visit www.kolibrios.org',13,10,0
-end if
+;msg_module     db 'in module ',0
+;if ~ lang eq sp
+;msg_version    db 'incompatible driver version',13,10,0
+;msg_www        db 'please visit www.kolibrios.org',13,10,0
+;end if
 msg_CR         db  13,10,0
 
 szHwMouse       db 'ATI2D',0
@@ -154,7 +154,6 @@ szVidintel      db '/rd/1/drivers/vidintel.sys',0
 szUSB           db 'USB',0
 szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
-szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 sz_EXPORTS     db '_EXPORTS',0
 

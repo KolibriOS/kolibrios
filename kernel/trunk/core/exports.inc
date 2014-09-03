@@ -7,11 +7,6 @@
 
 $Revision$
 
-iglobal
-  szKernel            db 'KERNEL', 0
-  szVersion           db 'version',0
-endg
-
  align 4
 __exports:
           export 'KERNEL',   \
