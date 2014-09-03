@@ -118,7 +118,6 @@ end virtual
         add     [.sector_lo], eax
         adc     [.sector_hi], edx
 ; 5. If the cache is disabled, pass the request directly to the driver.
-        mov     edi, [.buffer]
         cmp     [ebx+DISKCACHE.pointer], 0
         jz      .nocache
 ; 6. Look for sectors in the cache, sequentially from the beginning.
@@ -137,13 +136,15 @@ end virtual
 ; release the lock and go to 7.
         jc      .not_found_in_cache
 ; The sector is found in cache.
-; 6d. Copy data for the caller.
-; Note that buffer in edi is advanced automatically.
-        mov     esi, ecx
-        shl     esi, 9
-        add     esi, [ebx+DISKCACHE.data]
-        mov     ecx, 512/4
+; 6d. Copy data for the caller, advance [.buffer].
+        mov     esi, edi
+        mov     edi, [.buffer]
+        mov     eax, 1
+        shl     eax, cl
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
+        mov     [.buffer], edi
 ; 6e. Advance the sector.
         add     [.sector_lo], 1
         adc     [.sector_hi], 0
@@ -177,6 +178,7 @@ end virtual
 ; However, for extra-large requests make an upper limit:
 ; do not use more than half of the free memory
 ; or more than CACHE_MAX_ALLOC_SIZE bytes.
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
         mov     ebx, [pg_data.pages_free]
         shr     ebx, 1
         jz      .nomemory
@@ -184,13 +186,15 @@ end virtual
         jbe     @f
         mov     ebx, CACHE_MAX_ALLOC_SIZE shr 12
 @@:
-        shl     ebx, 12 - 9
+        shl     ebx, 12
+        shr     ebx, cl
+        jz      .nomemory
         cmp     ebx, [.num_sectors]
         jbe     @f
         mov     ebx, [.num_sectors]
 @@:
         mov     eax, ebx
-        shl     eax, 9
+        shl     eax, cl
         stdcall kernel_alloc, eax
 ; If failed, return the appropriate error code.
         test    eax, eax
@@ -233,28 +237,31 @@ end virtual
         jz      @f
         mov     [.error_code+.local_vars2_size], eax
 @@:
-; 11. Copy data for the caller.
-; Note that buffer in edi is advanced automatically.
+; 11. Copy data for the caller, advance .buffer.
         cmp     [.current_num_sectors], 0
         jz      .copy_done
-        mov     ecx, [.current_num_sectors]
-        shl     ecx, 9-2
+        mov     ebx, [.cache+.local_vars2_size]
+        mov     eax, [.current_num_sectors]
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        shl     eax, cl
         mov     esi, [.allocated_buffer]
+        mov     edi, [.buffer+.local_vars2_size]
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
+        mov     [.buffer+.local_vars2_size], edi
 ; 12. Copy data to the cache.
 ; 12a. Acquire the lock.
-        mov     ebx, [.cache+.local_vars2_size]
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.CacheLock
         call    mutex_lock
-; 12b. Prepare for the loop: save edi and create a local variable that
+; 12b. Prepare for the loop: create a local variable that
 ; stores number of sectors to be copied.
-        push    edi
-        push    [.current_num_sectors+4]
+        push    [.current_num_sectors]
 .store_to_cache:
 ; 12c. For each sector, call the lookup function with adding to the cache, if not yet.
-        mov     eax, [.sector_lo+.local_vars2_size+8]
-        mov     edx, [.sector_hi+.local_vars2_size+8]
+        mov     eax, [.sector_lo+.local_vars2_size+4]
+        mov     edx, [.sector_hi+.local_vars2_size+4]
         call    cache_lookup_write
         test    eax, eax
         jnz     .cache_error
@@ -263,39 +270,39 @@ end virtual
 ; so rewrite data for the caller from the cache.
         cmp     [esi+CACHE_ITEM.Status], CACHE_ITEM_MODIFIED
         jnz     .not_modified
-        mov     esi, ecx
-        shl     esi, 9
-        add     esi, [ebx+DISKCACHE.data]
-        mov     edi, [esp+4]
-        mov     ecx, [esp]
-        shl     ecx, 9-2
-        sub     edi, ecx
-        mov     ecx, 512/4
+        mov     esi, edi
+        mov     edi, [.buffer+.local_vars2_size+4]
+        mov     eax, [esp]
+        shl     eax, cl
+        sub     edi, eax
+        mov     eax, 1
+        shl     eax, cl
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
-        add     [.current_buffer+8], 512
+        add     [.current_buffer+4], eax
         jmp     .sector_done
 .not_modified:
 ; 12e. For each not-modified sector,
 ; copy data, mark the item as not-modified copy of the disk,
 ; advance .current_buffer and .sector_hi:.sector_lo to the next sector.
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
-        mov     esi, [.current_buffer+8]
-        mov     edi, ecx
-        shl     edi, 9
-        add     edi, [ebx+DISKCACHE.data]
-        mov     ecx, 512/4
+        mov     eax, 1
+        shl     eax, cl
+        mov     esi, [.current_buffer+4]
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
-        mov     [.current_buffer+8], esi
+        mov     [.current_buffer+4], esi
 .sector_done:
-        add     [.sector_lo+.local_vars2_size+8], 1
-        adc     [.sector_hi+.local_vars2_size+8], 0
+        add     [.sector_lo+.local_vars2_size+4], 1
+        adc     [.sector_hi+.local_vars2_size+4], 0
 ; 12f. Continue the loop 12c-12e until all sectors are read.
         dec     dword [esp]
         jnz     .store_to_cache
 .cache_error:
-; 12g. Restore after the loop: pop the local variable and restore edi.
+; 12g. Restore after the loop: pop the local variable.
         pop     ecx
-        pop     edi
 ; 12h. Release the lock.
         mov     ecx, [ebp+PARTITION.Disk]
         add     ecx, DISK.CacheLock
@@ -328,7 +335,7 @@ end virtual
         push    eax             ; numsectors
         push    [.sector_hi+4]  ; startsector
         push    [.sector_lo+8]  ; startsector
-        push    edi     ; buffer
+        push    [.buffer+12]    ; buffer
         mov     esi, [ebp+PARTITION.Disk]
         mov     al, DISKFUNC.read
         call    disk_call_driver
@@ -440,11 +447,11 @@ end virtual
 ; 6c. For each sector, copy data, mark the item as modified and not saved,
 ; advance .current_buffer to the next sector.
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_MODIFIED
+        mov     eax, 1
+        shl     eax, cl
         mov     esi, [.cur_buffer]
-        mov     edi, ecx
-        shl     edi, 9
-        add     edi, [ebx+DISKCACHE.data]
-        mov     ecx, 512/4
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
         mov     [.cur_buffer], esi
 ; 6d. Remove the sector from the other cache.
@@ -592,11 +599,12 @@ end virtual
         jc      .not_found_in_cache
 .found_in_cache:
 ; 4c. Copy the data.
+        mov     esi, edi
         mov     edi, [.buffer]
-        mov     esi, ecx
-        shl     esi, 9
-        add     esi, [ebx+DISKCACHE.data]
-        mov     ecx, 512/4
+        mov     eax, 1
+        shl     eax, cl
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
 ; 4d. Release the lock and return success.
         mov     ecx, [ebp+PARTITION.Disk]
@@ -627,7 +635,10 @@ end virtual
         add     ecx, DISK.CacheLock
         call    mutex_unlock
 ; 7. Allocate buffer for CACHE_LEGACY_READ_SIZE sectors.
-        stdcall kernel_alloc, CACHE_LEGACY_READ_SIZE shl 9
+        mov     eax, CACHE_LEGACY_READ_SIZE
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        shl     eax, cl
+        stdcall kernel_alloc, eax
 ; If failed, return the corresponding error code.
         test    eax, eax
         jz      .nomemory
@@ -656,7 +667,11 @@ end virtual
 ; 10. Copy data for the caller.
         mov     esi, [.allocated_buffer]
         mov     edi, [.buffer+.local_vars2_size]
-        mov     ecx, 512/4
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        mov     eax, 1
+        shl     eax, cl
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
 ; 11. Store all sectors that were successfully read to the cache.
 ; 11a. Acquire the lock.
@@ -671,19 +686,19 @@ end virtual
         test    eax, eax
         jnz     .cache_error
 ; 11c. Ignore sectors marked as modified: for them the cache is more recent that disk data.
+        mov     eax, 1
+        shl     eax, cl
         cmp     [esi+CACHE_ITEM.Status], CACHE_ITEM_MODIFIED
         jnz     .not_modified
-        add     [.current_buffer], 512
+        add     [.current_buffer], eax
         jmp     .sector_done
 .not_modified:
 ; 11d. For each sector, copy data, mark the item as not-modified copy of the disk,
 ; advance .current_buffer and .sector_hi:.sector_lo to the next sector.
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
         mov     esi, [.current_buffer]
-        mov     edi, ecx
-        shl     edi, 9
-        add     edi, [ebx+DISKCACHE.data]
-        mov     ecx, 512/4
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
         mov     [.current_buffer], esi
 .sector_done:
@@ -721,16 +736,14 @@ end virtual
         call    cache_lookup_write
         test    eax, eax
         jnz     .floppy_cache_error
-        push    ecx
+        push    esi
 
 ; 14. Call the driver to read one sector.
         push    1
         push    esp
         push    edx
         push    [.sector_lo+16]
-        shl     ecx, 9
-        add     ecx, [ebx+DISKCACHE.data]
-        push    ecx
+        push    edi
         mov     esi, [ebp+PARTITION.Disk]
         mov     al, DISKFUNC.read
         call    disk_call_driver
@@ -740,10 +753,7 @@ end virtual
 ; 15. Get the slot and pointer to the cache item,
 ; change the status to not-modified copy of the disk
 ; and go to 4c.
-        pop     ecx
-        lea     esi, [ecx*sizeof.CACHE_ITEM/4]
-        shl     esi, 2
-        add     esi, [ebx+DISKCACHE.pointer]
+        pop     esi
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
         jmp     .found_in_cache
 
@@ -795,13 +805,14 @@ fs_write32_app:
 ; in: edx:eax = sector
 ; in: ebx -> DISKCACHE structure
 ; out: CF set if sector is not in cache
-; out: ecx = index in cache
+; out: ecx = sector_size_log
 ; out: esi -> sector:status
+; out: edi -> sector data
 proc cache_lookup_read
         mov     esi, [ebx+DISKCACHE.pointer]
         add     esi, sizeof.CACHE_ITEM
 
-        mov     ecx, 1
+        mov     edi, 1
 
 .hdreadcache:
 
@@ -812,14 +823,17 @@ proc cache_lookup_read
         jne     .nohdcache
         cmp     [esi+CACHE_ITEM.SectorHi], edx
         jne     .nohdcache
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        shl     edi, cl
+        add     edi, [ebx+DISKCACHE.data]
         clc
         ret
 
 .nohdcache:
 
         add     esi, sizeof.CACHE_ITEM
-        inc     ecx
-        cmp     ecx, [ebx+DISKCACHE.sad_size]
+        inc     edi
+        cmp     edi, [ebx+DISKCACHE.sad_size]
         jbe     .hdreadcache
         stc
         ret
@@ -832,8 +846,8 @@ endp
 ; in: ebx -> DISKCACHE structure
 ; in: ebp -> PARTITION structure
 ; out: eax = error code
-; out: ecx = index in cache
 ; out: esi -> sector:status
+; out: edi -> sector data
 proc cache_lookup_write
         call    cache_lookup_read
         jnc     .return0
@@ -874,6 +888,10 @@ proc cache_lookup_write
         popd    [esi+CACHE_ITEM.SectorLo]
         popd    [esi+CACHE_ITEM.SectorHi]
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_EMPTY
+        mov     edi, ecx
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        shl     edi, cl
+        add     edi, [ebx+DISKCACHE.data]
 .return0:
         xor     eax, eax        ; success
         ret
@@ -902,7 +920,7 @@ virtual at esp
 .sequential     dd      ?
 ; boolean variable, 1 if the current chain is sequential in the cache,
 ; 0 if additional buffer is needed to perform the operation
-.chain_start_pos dd     ?       ; slot of chain start item
+.chain_start_pos dd     ?       ; data of chain start item
 .chain_start_ptr dd     ?       ; pointer to chain start item
 .chain_size     dd      ?       ; chain size (thanks, C.O.)
 .iteration_size dd      ?
@@ -951,6 +969,9 @@ end virtual
         mov     eax, [ebx+DISKCACHE.sad_size]
         sub     eax, [.size_left]
         inc     eax
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        shl     eax, cl
+        add     eax, [ebx+DISKCACHE.data]
         mov     [.chain_start_pos], eax
         mov     [.chain_size], 0
         mov     [.sequential], 1
@@ -978,7 +999,7 @@ end virtual
 ; before returning to 6b; if there is a sequential block indeed, this saves some
 ; time instead of many full-fledged lookups.
         mov     [.sequential], 0
-        mov     [.chain_start_pos], ecx
+        mov     [.chain_start_pos], edi
 .look_backward:
 ; 6e. For each sector, update chain start pos/ptr, decrement sector number,
 ; look at the previous item.
@@ -1001,7 +1022,9 @@ end virtual
 ; ...expand the chain one sector backwards and continue the loop at 6e.
 ; Otherwise, advance to step 7 if the previous item describes the correct sector
 ; but is not modified, and return to step 6b otherwise.
-        dec     [.chain_start_pos]
+        mov     edi, 1
+        shl     edi, cl
+        sub     [.chain_start_pos], edi
         jmp     .look_backward
 .found_chain_start:
 ; 7. Expand the chain forward.
@@ -1046,14 +1069,11 @@ end virtual
 ; 9. Write a sequential chain to disk.
 ; 9a. Pass the entire chain to the driver.
         mov     eax, [.chain_start_ptr]
-        mov     edx, [.chain_start_pos]
-        shl     edx, 9
-        add     edx, [ebx+DISKCACHE.data]
         lea     ecx, [.chain_size]
         push    ecx     ; numsectors
         pushd   [eax+CACHE_ITEM.SectorHi]       ; startsector
         pushd   [eax+CACHE_ITEM.SectorLo]       ; startsector
-        push    edx     ; buffer
+        push    [.chain_start_pos+12]           ; buffer
         mov     esi, [ebp+PARTITION.Disk]
         mov     al, DISKFUNC.write
         call    disk_call_driver
@@ -1088,13 +1108,15 @@ end virtual
         jbe     @f
         mov     eax, CACHE_MAX_ALLOC_SIZE shr 12
 @@:
-        shl     eax, 12 - 9
+        shl     eax, 12
+        shr     eax, cl
+        jz      .nomemory
         cmp     eax, [.chain_size]
         jbe     @f
         mov     eax, [.chain_size]
 @@:
         mov     [.iteration_size], eax
-        shl     eax, 9
+        shl     eax, cl
         stdcall kernel_alloc, eax
         test    eax, eax
         jz      .nomemory
@@ -1123,10 +1145,13 @@ end virtual
 ; 13b. For each sector, copy the data.
 ; Note that edi is advanced automatically.
         mov     esi, [.chain_start_pos+24]
-        shl     esi, 9
-        add     esi, [ebx+DISKCACHE.data]
-        mov     ecx, 512/4
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
+        mov     eax, 1
+        shl     eax, cl
+        mov     ecx, eax
+        shr     ecx, 2
         rep movsd
+        mov     ecx, eax ; keep for 13e
 ; 13c. Mark the item as not-modified.
         mov     esi, [.chain_start_ptr+24]
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
@@ -1145,7 +1170,7 @@ end virtual
         jnz     .no_forward
 ; 13e. Increment position/pointer to the chain and
 ; continue the loop.
-        inc     [.chain_start_pos+24]
+        add     [.chain_start_pos+24], ecx
         mov     [.chain_start_ptr+24], esi
         dec     dword [esp]
         jnz     .copy_loop
@@ -1153,11 +1178,13 @@ end virtual
 .no_forward:
 ; 13f. Call the lookup function without adding to the cache.
 ; Update position/pointer with returned value.
-; Note: for the last sector in the chain, ecx/esi may contain
+; Note: for the last sector in the chain, edi/esi may contain
 ; garbage; we are not going to use them in this case.
+        push    edi
         call    cache_lookup_read
-        mov     [.chain_start_pos+24], ecx
-        mov     [.chain_start_ptr+24], esi
+        mov     [.chain_start_pos+28], edi
+        mov     [.chain_start_ptr+28], esi
+        pop     edi
         dec     dword [esp]
         jnz     .copy_loop
 .copy_done:
@@ -1203,13 +1230,32 @@ endp
 ; is most useful example of a non-trivial adjustment.
 ; esi = pointer to DISK structure
 disk_init_cache:
-; 1. Calculate the suggested cache size.
-; 1a. Get the size of free physical memory in pages.
+; 1. Verify sector size. The code requires it to be a power of 2 not less than 4.
+; In the name of sanity check that sector size is not too small or too large.
+        bsf     ecx, [esi+DISK.MediaInfo.SectorSize]
+        jz      .invalid_sector_size
+        mov     eax, 1
+        shl     eax, cl
+        cmp     eax, [esi+DISK.MediaInfo.SectorSize]
+        jnz     .invalid_sector_size
+        cmp     ecx, 6
+        jb      .invalid_sector_size
+        cmp     ecx, 14
+        jbe     .normal_sector_size
+.invalid_sector_size:
+        DEBUGF 1,'K : sector size %x is invalid\n',[esi+DISK.MediaInfo.SectorSize]
+        xor     eax, eax
+        ret
+.normal_sector_size:
+        mov     [esi+DISK.SysCache.sector_size_log], ecx
+        mov     [esi+DISK.AppCache.sector_size_log], ecx
+; 2. Calculate the suggested cache size.
+; 2a. Get the size of free physical memory in pages.
         mov     eax, [pg_data.pages_free]
-; 1b. Use the value to calculate the size.
+; 2b. Use the value to calculate the size.
         shl     eax, 12 - 5     ; 1/32 of it in bytes
         and     eax, -8*4096    ; round down to the multiple of 8 pages
-; 1c. Force lower and upper limits.
+; 2c. Force lower and upper limits.
         cmp     eax, 1024*1024
         jb      @f
         mov     eax, 1024*1024
@@ -1218,7 +1264,7 @@ disk_init_cache:
         ja      @f
         mov     eax, 128*1024
 @@:
-; 1d. Give a chance to the driver to adjust the size.
+; 2d. Give a chance to the driver to adjust the size.
         push    eax
         mov     al, DISKFUNC.adjust_cache_size
         call    disk_call_driver
@@ -1226,16 +1272,16 @@ disk_init_cache:
         mov     [esi+DISK.cache_size], eax
         test    eax, eax
         jz      .nocache
-; 2. Allocate memory for the cache.
-; 2a. Call the allocator.
+; 3. Allocate memory for the cache.
+; 3a. Call the allocator.
         stdcall kernel_alloc, eax
         test    eax, eax
         jnz     @f
-; 2b. If it failed, say a message and return with eax = 0.
+; 3b. If it failed, say a message and return with eax = 0.
         dbgstr 'no memory for disk cache'
         jmp     .nothing
 @@:
-; 3. Fill two DISKCACHE structures.
+; 4. Fill two DISKCACHE structures.
         mov     [esi+DISK.SysCache.pointer], eax
         lea     ecx, [esi+DISK.CacheLock]
         call    mutex_init
@@ -1252,9 +1298,7 @@ disk_init_cache:
         mov     [esi+DISK.AppCache.pointer], edx
 
         mov     eax, [esi+DISK.SysCache.data_size]
-        push    ebx
-        call    calculate_for_hd64
-        pop     ebx
+        call    calculate_cache_slots
         add     eax, [esi+DISK.SysCache.pointer]
         mov     [esi+DISK.SysCache.data], eax
         mov     [esi+DISK.SysCache.sad_size], ecx
@@ -1267,9 +1311,7 @@ disk_init_cache:
         pop     edi
 
         mov     eax, [esi+DISK.AppCache.data_size]
-        push    ebx
-        call    calculate_for_hd64
-        pop     ebx
+        call    calculate_cache_slots
         add     eax, [esi+DISK.AppCache.pointer]
         mov     [esi+DISK.AppCache.data], eax
         mov     [esi+DISK.AppCache.sad_size], ecx
@@ -1281,9 +1323,9 @@ disk_init_cache:
         rep stosd
         pop     edi
 
-; 4. Return with nonzero al.
+; 5. Return with nonzero al.
         mov     al, 1
-; 5. Return.
+; 6. Return.
 .nothing:
         ret
 ; No caching is required for this driver. Zero cache pointers and return with
@@ -1294,18 +1336,16 @@ disk_init_cache:
         mov     al, 1
         ret
 
-calculate_for_hd64:
+calculate_cache_slots:
         push    eax
-        mov     ebx, eax
-        shr     eax, 9
-        lea     eax, [eax*3]
-        shl     eax, 2
-        sub     ebx, eax
-        shr     ebx, 9
-        mov     ecx, ebx
-        shl     ebx, 9
+        mov     ecx, [esi+DISK.MediaInfo.SectorSize]
+        add     ecx, sizeof.CACHE_ITEM
+        xor     edx, edx
+        div     ecx
+        mov     ecx, eax
+        imul    eax, [esi+DISK.MediaInfo.SectorSize]
+        sub     [esp], eax
         pop     eax
-        sub     eax, ebx
         dec     ecx
         ret
 

@@ -108,6 +108,7 @@ struct  DISKCACHE
         data            dd ?
         sad_size        dd ?
         search_start    dd ?
+        sector_size_log dd ?
 ends
 
 ; This structure represents a disk device and its media for the kernel.
@@ -271,13 +272,13 @@ disk_list_mutex MUTEX
 endg
 
 iglobal
-; The function 'disk_scan_partitions' needs three 512-byte buffers for
+; The function 'disk_scan_partitions' needs three sector-sized buffers for
 ; MBR, bootsector and fs-temporary sector data. It can not use the static
 ; buffers always, since it can be called for two or more disks in parallel.
 ; However, this case is not typical. We reserve three static 512-byte buffers
 ; and a flag that these buffers are currently used. If 'disk_scan_partitions'
 ; detects that the buffers are currently used, it allocates buffers from the
-; heap.
+; heap. Also, the heap is used when sector size is other than 512.
 ; The flag is implemented as a global dword variable. When the static buffers
 ; are not used, the value is -1. When the static buffers are used, the value
 ; is normally 0 and temporarily can become greater. The function increments
@@ -638,28 +639,25 @@ disk_scan_partitions:
 ; 1. Initialize .NumPartitions and .Partitions fields as zeros: empty list.
         and     [esi+DISK.NumPartitions], 0
         and     [esi+DISK.Partitions], 0
-; 2. Currently we can work only with 512-bytes sectors. Check this restriction.
-; The only exception is 2048-bytes CD/DVD, but they are not supported yet by
-; this code.
-        cmp     [esi+DISK.MediaInfo.SectorSize], 512
-        jz      .doscan
-        DEBUGF 1,'K : sector size is %d, only 512 is supported\n',[esi+DISK.MediaInfo.SectorSize]
-        ret
-.doscan:
-; 3. Acquire the buffer for MBR and bootsector tests. See the comment before
+; 2. Acquire the buffer for MBR and bootsector tests. See the comment before
 ; the 'partition_buffer_users' variable.
+        mov     eax, [esi+DISK.MediaInfo.SectorSize]
+        cmp     eax, 512
+        jnz     @f
         mov     ebx, mbr_buffer         ; assume the global buffer is free
         lock inc [partition_buffer_users]
         jz      .buffer_acquired        ; yes, it is free
         lock dec [partition_buffer_users]       ; no, we must allocate
-        stdcall kernel_alloc, 512*3
+@@:
+        lea     eax, [eax*3]
+        stdcall kernel_alloc, eax
         test    eax, eax
         jz      .nothing
         xchg    eax, ebx
 .buffer_acquired:
 ; MBR/EBRs are organized in the chain. We use a loop over MBR/EBRs, but no
 ; more than MAX_NUM_PARTITION times.
-; 4. Prepare things for the loop.
+; 3. Prepare things for the loop.
 ; ebp will hold the sector number for current MBR/EBR.
 ; [esp] will hold the sector number for current extended partition, if there
 ; is one.
@@ -668,6 +666,10 @@ disk_scan_partitions:
         push    MAX_NUM_PARTITIONS      ; the counter of max MBRs to process
         xor     ebp, ebp        ; start from sector zero
         push    ebp             ; no extended partition yet
+; 4. MBR is 512 bytes long. If sector size is less than 512 bytes,
+; assume no MBR, no partitions and go to 10.
+        cmp     [esi+DISK.MediaInfo.SectorSize], 512
+        jb      .notmbr
 .new_mbr:
 ; 5. Read the current sector.
 ; Note that 'read' callback operates with 64-bit sector numbers, so we must
@@ -986,7 +988,7 @@ end virtual
 ; a three-sectors-sized buffer. This function saves ebx in the stack
 ; immediately before ebp.
         mov     ebx, [ebp-4] ; get buffer
-        add     ebx, 512     ; advance over MBR data to bootsector data
+        add     ebx, [esi+DISK.MediaInfo.SectorSize] ; advance over MBR data to bootsector data
         add     ebp, 8       ; ebp points to part of PARTITION structure
         xor     eax, eax     ; first sector of the partition
         call    fs_read32_sys
@@ -997,7 +999,7 @@ end virtual
 ; ebp -> first three fields of PARTITION structure, .start, .length, .disk;
 ; [esp] = error code after bootsector read: 0 = ok, otherwise = failed,
 ; ebx points to the buffer for bootsector,
-; ebx+512 points to 512-bytes buffer that can be used for anything.
+; ebx+[esi+DISK.MediaInfo.SectorSize] points to sector-sized buffer that can be used for anything.
         call    fat_create_partition
         test    eax, eax
         jnz     .success

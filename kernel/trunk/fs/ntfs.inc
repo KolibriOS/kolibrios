@@ -152,6 +152,8 @@ ntfs_test_bootsec:
         ret
 
 proc ntfs_create_partition
+        cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
+        jnz     .nope
         mov     edx, dword [ebp+PARTITION.Length]
         cmp     dword [esp+4], 0
         jz      .boot_read_ok
