@@ -1,3 +1,5 @@
+format binary as ""
+
 use32
 ; standard header
 	db	'MENUET01'	; signature
@@ -15,12 +17,12 @@ purge mov,add,sub
 include '../../../../proc32.inc'
 include '../../../../dll.inc'
 
-include '../network.inc'
+include '../../../../network.inc'
 
 ; entry point
 start:
 ; load libraries
-	stdcall	dll.Load, @IMPORT
+	stdcall dll.Load, @IMPORT
 	test	eax, eax
 	jnz	exit
 ; initialize console
@@ -116,10 +118,10 @@ str5	db	'Name resolution failed.',10,0
 align 4
 @IMPORT:
 
-library	network, 'network.obj', console, 'console.obj'
+library network, 'network.obj', console, 'console.obj'
 import	network,	\
 	getaddrinfo,	'getaddrinfo',	\
-	freeaddrinfo,	'freeaddrinfo',	\
+	freeaddrinfo,	'freeaddrinfo', \
 	inet_ntoa,	'inet_ntoa'
 import	console,	\
 	con_start,	'START',	\
