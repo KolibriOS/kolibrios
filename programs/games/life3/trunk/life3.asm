@@ -12,11 +12,10 @@ use32
 include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
-include '../../nu_pogodi/trunk/mem.inc'
-include '../../nu_pogodi/trunk/dll.inc'
+include '../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-hed db 'Life 23.03.12',0 ;подпись окна
+hed db 'Life 05.09.14',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
