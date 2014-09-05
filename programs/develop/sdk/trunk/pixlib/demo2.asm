@@ -1,5 +1,5 @@
 
-include 'proc32.inc'
+include '../../../../proc32.inc'
 
 struc system_colors
 {

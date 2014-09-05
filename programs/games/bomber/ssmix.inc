@@ -6,7 +6,7 @@ SSMIX_CHANMODE_WAITRESET equ 4
 
 include  'snd.inc'
 include  'snd_const.inc'
-include  'proc32.inc'
+include  '../../proc32.inc'
 ;include  'macros.inc'
 ;include  'debug.inc'
 

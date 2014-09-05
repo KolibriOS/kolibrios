@@ -20,7 +20,7 @@ use32
         dd      (I_END+100) and not 3
         dd      0x0,0x0
 
-include 'macros.inc'
+include '../../macros.inc'
 
 START:
         mcall   40,0x7

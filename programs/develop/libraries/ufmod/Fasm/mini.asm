@@ -36,14 +36,14 @@ uFMOD_MAX_VOL     = 25
 uFMOD_DEFAULT_VOL = 25
 
 ; The XM track.
-xm        file '..\ufmodlib\media\mini.xm'
+xm        file '..\media\mini.xm'
 xm_length = $ - xm
 
 ; Optimization:
 ; This header file is suitable for mini.xm track only!
 ; If you change the track, update the optimization header.
 ; (Use the standart eff.inc file for a general purpose player app.)
-include '..\ufmodlib\media\mini.eff.inc'
+include '..\media\mini.eff.inc'
 
 ; Include the GUI framework.
 FRMWRK_CALLBACK_ON equ 1 ; Enable callback
@@ -101,7 +101,7 @@ error:
 	; your main code to avoid naming conflicts, but still
 	; inside your code section.)
 	macro PUBLIC symbol {} ; hide all publics
-	include '..\ufmodlib\src\fasm.asm'
+	include '..\fasm.asm'
 
 align 4
 	rb 1020

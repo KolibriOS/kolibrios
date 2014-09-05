@@ -8,7 +8,7 @@ use32
     dd	0x4000
     dd	0x0,0x0
 
-include 'macros.inc'
+include '../../macros.inc'
 include 'lang.inc'
 include 'draw_window.inc'
 include 'ball_operations.inc'

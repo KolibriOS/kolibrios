@@ -1,5 +1,5 @@
 ; Battery Indicator v0.ALPHA by Gluk
-include "macros.inc"
+include "../../macros.inc"
 MEOS_APP_START
 CODE
 
