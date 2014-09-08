@@ -183,8 +183,7 @@ save:
         mov     ebp, [identifier]
         mov     eax, [ebp + http_msg.content_received]
         mov     [final_size], eax
-        lea     ebx, [ebp + http_msg.data]
-        add     ebx, [ebp + http_msg.header_length]
+        mov     ebx, [ebp + http_msg.content_ptr]
         mov     [final_buffer], ebx
         mcall   70, fileinfo
 
