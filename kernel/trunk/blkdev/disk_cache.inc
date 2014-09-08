@@ -49,7 +49,7 @@ CACHE_ITEM_MODIFIED = 2
 ; out: ecx = number of sectors that were read
 fs_read64_sys:
 ; Save ebx, set ebx to SysCache and let the common part do its work.
-        push    ebx
+        push    ebx ebx
         mov     ebx, [ebp+PARTITION.Disk]
         add     ebx, DISK.SysCache
         jmp     fs_read64_common
@@ -63,7 +63,7 @@ fs_read64_sys:
 ; out: ecx = number of sectors that were read
 fs_read64_app:
 ; Save ebx, set ebx to AppCache and let the common part do its work.
-        push    ebx
+        push    ebx ebx
         mov     ebx, [ebp+PARTITION.Disk]
         add     ebx, DISK.AppCache
 
@@ -162,7 +162,7 @@ end virtual
         sub     ecx, [.num_sectors]
 .nothing:
         add     esp, .local_vars_size
-        pop     edi esi ebx     ; restore used registers to be stdcall
+        pop     edi esi ebx ebx    ; restore used registers to be stdcall
         ret
 .not_found_in_cache:
 ; Release the lock acquired at 6a.
