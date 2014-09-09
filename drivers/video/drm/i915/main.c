@@ -220,6 +220,8 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         return 0;
     }
 
+    dmi_scan_machine();
+
     driver_wq_state = I915_DEV_INIT;
     CreateKernelThread(i915_driver_thread);
 

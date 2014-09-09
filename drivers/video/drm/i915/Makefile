@@ -3,7 +3,7 @@
 CC = gcc.exe
 FASM = e:/fasm/fasm.exe
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DRM_I915_FBDEV
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DRM_I915_FBDEV -DCONFIG_DMI
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
 DRV_INCLUDES    = /d/kos/kolibri/drivers/include

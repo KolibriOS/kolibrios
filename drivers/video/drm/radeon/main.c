@@ -5,6 +5,8 @@
 #include "radeon.h"
 #include "bitmap.h"
 
+void __init dmi_scan_machine(void);
+
 #define KMS_DEV_CLOSE 0
 #define KMS_DEV_INIT  1
 #define KMS_DEV_READY 2

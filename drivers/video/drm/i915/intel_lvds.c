@@ -28,7 +28,7 @@
  */
 
 //#include <acpi/button.h>
-//#include <linux/dmi.h>
+#include <linux/dmi.h>
 #include <linux/i2c.h>
 #include <linux/slab.h>
 #include <drm/drmP.h>
@@ -538,7 +538,7 @@ static const struct drm_encoder_funcs intel_lvds_enc_funcs = {
 	.destroy = intel_encoder_destroy,
 };
 
-static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
+static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
 {
 	DRM_INFO("Skipping LVDS initialization for %s\n", id->ident);
 	return 1;
@@ -845,8 +845,8 @@ static bool compute_is_dual_link_lvds(struct intel_lvds_encoder *lvds_encoder)
 	if (i915.lvds_channel_mode > 0)
 		return i915.lvds_channel_mode == 2;
 
-//	if (dmi_check_system(intel_dual_link_lvds))
-//		return true;
+	if (dmi_check_system(intel_dual_link_lvds))
+		return true;
 
 	/* BIOS should set the proper LVDS register value at boot, but
 	 * in reality, it doesn't set the value when the lid is closed;
@@ -904,8 +904,8 @@ void intel_lvds_init(struct drm_device *dev)
 		return;
 
 	/* Skip init on machines we know falsely report LVDS */
-//   if (dmi_check_system(intel_no_lvds))
-//       return false;
+	if (dmi_check_system(intel_no_lvds))
+		return;
 
 	pin = GMBUS_PORT_PANEL;
 	if (!lvds_is_present_in_vbt(dev, &pin)) {
