@@ -7,7 +7,7 @@ DRV_TOPDIR   = $(CURDIR)/..
 DRV_INCLUDES = $(DRV_TOPDIR)/include
 
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/asm
-DEFINES  = 	-DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 
+DEFINES  = 	-DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DMI
 CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf \
 -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2
 
@@ -24,6 +24,7 @@ NAME_SRCS:=  				\
            	io/ssize.c		\
            	io/write.c		\
 		linux/bitmap.c		\
+		linux/dmi.c		\
 		linux/idr.c		\
 		linux/interval_tree.c	\
 		linux/firmware.c	\
