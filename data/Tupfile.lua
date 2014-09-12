@@ -53,7 +53,6 @@ img_files = {
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
  {"GAMES/CHECKERS", build_type .. "/games/checkers"},
  {"GAMES/MEGAMAZE", build_type .. "/games/megamaze"},
- {"GAMES/REVERSI", build_type .. "/games/reversi"},
  {"GAMES/RFORCES", build_type .. "/games/rforces"},
  {"GAMES/XONIX", build_type .. "/games/xonix"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
@@ -457,6 +456,7 @@ if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
  {"3D/CUBELINE", PROGS .. "/demos/cubeline/trunk/cubeline"},
  {"3D/GEARS", PROGS .. "/demos/gears/trunk/gears"},
+ {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
  {"SHELL", PROGS .. "/system/shell/shell"},
 })
 tup.append_table(extra_files, {
