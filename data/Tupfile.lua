@@ -581,7 +581,7 @@ tup.definerule{inputs = input_deps, command =
   outputs = {"kolibri.iso"}}
 
 -- generate command and dependencies for distribution kit
-cp = "cp %f %o"
+cp = 'cp "%f" "%o"'
 tup.definerule{inputs = {"kolibri.img"}, command = cp, outputs = {"distribution_kit/kolibri.img"}}
 for i,v in ipairs(distr_extra_files) do
   if string.sub(v[1], -1) == "/"
