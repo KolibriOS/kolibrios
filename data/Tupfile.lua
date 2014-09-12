@@ -447,7 +447,7 @@ tup.append_table(img_files, {
  {"MEDIA/AC97SND", PROGS .. "/media/ac97snd/ac97snd.bin"},
  {"GAMES/KOSILKA", PROGS .. "/games/kosilka/kosilka"},
 })
-tup.append_table(iso_files, {
+tup.append_table(extra_files, {
  {"kolibrios/games/fara/fara", PROGS .. "/games/fara/trunk/fara"},
 })
 end -- tup.getconfig('NO_MSVC') ~= 'full'
