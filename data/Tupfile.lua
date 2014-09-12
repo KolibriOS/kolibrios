@@ -585,7 +585,7 @@ cp = "cp %f %o"
 tup.definerule{inputs = {"kolibri.img"}, command = cp, outputs = {"distribution_kit/kolibri.img"}}
 for i,v in ipairs(distr_extra_files) do
   if string.sub(v[1], -1) == "/"
-  then tup.definerule{inputs = v[2], command = cp, outputs = {"distribution_kit/" .. v[1] .. tup.file(v[2])}}
-  else tup.definerule{inputs = v[2], command = cp, outputs = {"distribution_kit/" .. v[1]}}
+  then tup.definerule{inputs = {v[2]}, command = cp, outputs = {"distribution_kit/" .. v[1] .. tup.file(v[2])}}
+  else tup.definerule{inputs = {v[2]}, command = cp, outputs = {"distribution_kit/" .. v[1]}}
   end
 end
