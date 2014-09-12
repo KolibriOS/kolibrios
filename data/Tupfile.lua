@@ -585,7 +585,7 @@ input_deps = {"kolibri.img"}
 output_deps = {"distribution_kit/kolibri.img"}
 make_distr_command = "ln -sr kolibri.img distribution_kit/kolibri.img"
 for i,v in ipairs(distr_extra_files) do
-  make_distr_command = make_distr_command .. ' && ln -sr "' .. v[2] .. '" "distribution_kit/' .. v[1] .. '"'
+  make_distr_command = make_distr_command .. ' && ln -sr "`realpath "' .. v[2] .. '"`" "distribution_kit/' .. v[1] .. '"'
   table.insert(input_deps, v[2])
   if string.sub(v[1], -1) == "/"
   then table.insert(output_deps, "distribution_kit/" .. v[1] .. tup.file(v[2]))
