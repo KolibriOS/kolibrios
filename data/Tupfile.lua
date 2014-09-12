@@ -43,8 +43,6 @@ img_files = {
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"SETTINGS/SETUP.DAT", build_type .. "/settings/setup.dat"},
  {"VMODE", "common/vmode"},
- {"3D/CUBELINE", PROGS .. "/demos/cubeline/trunk/cubeline"},
- {"3D/GEARS", PROGS .. "/demos/gears/trunk/gears"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"DEMOS/AK47.LIF", "common/demos/ak47.lif"},
  {"DEMOS/LIFE2", "common/demos/life2"},
@@ -135,7 +133,6 @@ extra_files = {
  {"kolibrios/emul/", "common/emul/scummvm"},
  {"kolibrios/emul/", "common/emul/zsnes"},
  {"kolibrios/games/doom/", "common/games/doom/*"},
- {"kolibrios/games/fara/fara", PROGS .. "/games/fara/trunk/fara"},
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/quake/", "common/games/quake/*"},
@@ -450,11 +447,16 @@ tup.append_table(img_files, {
  {"MEDIA/AC97SND", PROGS .. "/media/ac97snd/ac97snd.bin"},
  {"GAMES/KOSILKA", PROGS .. "/games/kosilka/kosilka"},
 })
+tup.append_table(iso_files, {
+ {"kolibrios/games/fara/fara", PROGS .. "/games/fara/trunk/fara"},
+})
 end -- tup.getconfig('NO_MSVC') ~= 'full'
 
 -- Programs that require GCC to compile.
 if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
+ {"3D/CUBELINE", PROGS .. "/demos/cubeline/trunk/cubeline"},
+ {"3D/GEARS", PROGS .. "/demos/gears/trunk/gears"},
  {"SHELL", PROGS .. "/system/shell/shell"},
 })
 tup.append_table(extra_files, {
