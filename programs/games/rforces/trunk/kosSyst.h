@@ -89,8 +89,10 @@ union sProcessInfo
 	} processInfo;
 };
 
+#ifndef AUTOBUILD
 //
 extern char *kosExePath;
+#endif
 
 //
 void crtStartUp();
