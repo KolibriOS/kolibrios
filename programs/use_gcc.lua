@@ -1,4 +1,4 @@
-CFLAGS = "-Os -fno-ident -fomit-frame-pointer -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -mpreferred-stack-boundary=2 -fno-exceptions -fno-asynchronous-unwind-tables -ffast-math"
+CFLAGS = "-Os -fno-ident -fomit-frame-pointer -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -mpreferred-stack-boundary=2 -fno-exceptions -fno-asynchronous-unwind-tables -ffast-math -mno-ms-bitfields"
 LDFLAGS = "-nostdlib -n --file-alignment=16 --section-alignment=16"
 INCLUDES = ""
 LIBS = ""
