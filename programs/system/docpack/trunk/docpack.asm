@@ -8,7 +8,7 @@
 FILE_COUNT=0
 DEF_FILE equ 'g'
 
-macro embed_file fn
+macro embed_docdir_file fn
 {
  forward
    local label,label2,label3
@@ -18,6 +18,19 @@ macro embed_file fn
    db fn
    label:
      file '%DOCDIR%' # fn
+   label2:
+   FILE_COUNT=FILE_COUNT+1
+}
+macro embed_local_file fn
+{
+ forward
+   local label,label2,label3
+   dd label2-label
+   dd label-label3
+   label3:
+   db fn
+   label:
+     file fn
    label2:
    FILE_COUNT=FILE_COUNT+1
 }
@@ -172,24 +185,24 @@ embedded:
 ; Please use only filenames w/o path!
 
 ; -- Start of embedding area ------
-  embed_file 'README.TXT'        ;a
+  embed_docdir_file 'README.TXT'       ;a
 if lang eq ru
-  embed_file 'GNU.TXT'           ;b
+  embed_docdir_file 'GNU.TXT'          ;b
 else
-  embed_file 'COPYING.TXT'       ;b
+  embed_docdir_file 'COPYING.TXT'      ;b
 end if
-  embed_file 'HOT_KEYS.TXT'      ;c
-  embed_file 'FASM.TXT'          ;d
-  embed_file 'MTDBG.TXT'         ;e
+  embed_docdir_file 'HOT_KEYS.TXT'     ;c
+  embed_local_file 'FASM.TXT'          ;d
+  embed_docdir_file 'MTDBG.TXT'        ;e
 if lang eq ru
-  embed_file 'SYSFUNCR.TXT'      ;f
+  embed_local_file 'SYSFUNCR.TXT'      ;f
 else
-  embed_file 'SYSFUNCS.TXT'      ;f
+  embed_local_file 'SYSFUNCS.TXT'      ;f
 end if
-  embed_file 'STACK.TXT'         ;g
-  embed_file 'KFAR_KEYS.TXT'     ;h
-  embed_file 'INI.TXT'           ;i
-  embed_file 'OPENDIAL.TXT'      ;j
+  embed_docdir_file 'STACK.TXT'        ;g
+  embed_docdir_file 'KFAR_KEYS.TXT'    ;h
+  embed_docdir_file 'INI.TXT'          ;i
+  embed_docdir_file 'OPENDIAL.TXT'     ;j
 ; -- End of embedding area  -------
 
   dd 0

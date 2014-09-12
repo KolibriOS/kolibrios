@@ -49,8 +49,8 @@ size_t	strxfrm(char *_s1, const char *_s2, size_t _n);
 #include <sys/movedata.h>
 
 int	bcmp(const void *_ptr1, const void *_ptr2, int _length);
-void *	bcopy(const void *_a, void *_b, size_t _len);
-void *	bzero(void *ptr, size_t _len);
+void	bcopy(const void *_a, void *_b, size_t _len);
+void	bzero(void *ptr, size_t _len);
 int	ffs(int _mask);
 char *  index(const char *_string, int _c);
 void *	memccpy(void *_to, const void *_from, int c, size_t n);

@@ -2480,18 +2480,18 @@ labellen:
 
 ;Texture pusck 32*32 256
 texpack_gif:
-file 'TEXPACK.gif'
+file 'texpack.gif'
 rb 50
 
 ;Ground texture
 bmp_texmap:
-file 'TEXMAP.bmp'
+file 'texmap.bmp'
 rb 50
 
 
 ; Ground livel map
 gif_file_area5:
-file 'MAP.gif' ;level map
+file 'map.gif' ;level map
 rb 50
 
 rb 8

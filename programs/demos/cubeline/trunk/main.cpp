@@ -16,10 +16,10 @@ iadn@bk.ru
 
 int Fps (long x, long y);
 extern "C"{
-void app_main(void);
+int main(void);
 }
 
-struct {
+static struct {
 	   int x,y;
 	   int dx,dy;
 	   } win;
@@ -29,19 +29,19 @@ struct {
 #define KEY_ESC       1
 #define KEY_F     	 33
 
-char *title1 = "TinyGL in KolibriOS";
-char *title2 = "F full screen";
-char *title3 = "ESC - exit";
-char *fps    = "FPS:";
+static char title1[] = "TinyGL in KolibriOS";
+static char title2[] = "F full screen";
+static char title3[] = "ESC - exit";
+static char fps[]    = "FPS:";
 
-unsigned char FullScreen = 0;
-unsigned char skin = 3;
+static unsigned char FullScreen = 0;
+static unsigned char skin = 3;
 
-float angle;
-process_table_entry_* pri;
-KOSGLContext cgl;
+static float angle;
+static process_table_entry_* pri;
+static KOSGLContext cgl;
 
-void draw_cube()
+static void draw_cube()
 {
   float x,y,z;
   glBegin(GL_LINES);
@@ -130,7 +130,7 @@ void draw_cube()
   glEnd();
 }
 
-void DrawGL() 
+static void DrawGL() 
 {
   glLoadIdentity();                                                                               // устанавливаем еденичную матрицу
   glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);           
@@ -145,7 +145,7 @@ void DrawGL()
   kosglSwapBuffers(); 
  } 
 
-void reshape()
+static void reshape()
 {
    __menuet__get_process_table((process_table_entry*)pri,-1);
    glViewport(0, 0, pri->winx_size, pri->winy_size-20);
@@ -156,13 +156,13 @@ void reshape()
    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );     
 } 
 
-void disabletgl()
+static void disabletgl()
 {
 	kosglDestroyContext(cgl); 
 	delete pri;
 }
 
-void Title()
+static void Title()
 {
      __menuet__write_text(300,8,0x10ffffff,fps,strlen(fps));
      __menuet__write_text(8,8,0x10ffffff,title1,strlen(title1));
@@ -170,7 +170,7 @@ void Title()
      __menuet__write_text(600,8,0x00ffffff,title3,strlen(title3));
 }
 
-void draw_window(void)
+static void draw_window(void)
 {
 	// start redraw
 	__menuet__window_redraw(1);
@@ -182,7 +182,7 @@ void draw_window(void)
     Title();
 }
 
-void app_main(void)          
+int main(void)
 {
 	 
   win.x = 100;
@@ -241,11 +241,11 @@ do{
 						  			break;
 		          
                            case KEY_ESC: disabletgl();
-						  				 return;}
+						  				 return 0;}
 						  				 break;
 						  			
 			  	  case 3: disabletgl();
-						  return;
+						  return 0;
 		      }
 }while(1);
 }

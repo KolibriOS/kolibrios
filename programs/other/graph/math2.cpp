@@ -43,6 +43,7 @@ extern "C" double _ftol(double x)
 	}
 }
 #endif
+#pragma function(ceil)
 double __cdecl ceil(double x)
 {
 	__asm {

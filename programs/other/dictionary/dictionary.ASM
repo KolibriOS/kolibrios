@@ -13,7 +13,7 @@ use32                ; транслятор, использующий 32 разрядных команды
 
 include "../../macros.inc"
 include "../../proc32.inc"
-include "API.inc"
+include "API.INC"
 include "../../dll.inc"
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/box_lib/load_lib.mac'

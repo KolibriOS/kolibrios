@@ -17,4 +17,8 @@ SECTIONS
     *(.bss)
    }
    Memory = . ;
+   /DISCARD/ : {
+    *(.comment)
+    *(.drectve)
+   }
 }

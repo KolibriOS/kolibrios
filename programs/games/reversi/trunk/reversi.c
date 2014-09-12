@@ -645,3 +645,6 @@ void main(void)
  }
 }
 
+/* We use LIBC only for strcpy/itoa, so we don't need CRT startup code */
+int __bss_count;
+void __crt1_startup() { main(); }

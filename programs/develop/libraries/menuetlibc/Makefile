@@ -11,7 +11,6 @@ endif
 	make -C src depend
 	make -C src
 	make -C stub
-	make -C programs
 
 genconfig:
 ifdef ON_MINGW
@@ -24,5 +23,4 @@ clean:
 	make -C src clean
 	make -C linuxtools clean
 	make -C stub clean
-	make -C programs clean
 	$(RM) mkversion$(EXESUFFIX)

@@ -7,6 +7,7 @@ public start
 EXTRN ___menuet__app_param_area
 EXTRN ___menuet__app_path_area
 EXTRN ___crt1_startup
+EXTRN ___memsize
 start:
 public ___menuet__app_header
 public ___menuet__memsize
@@ -22,7 +23,7 @@ end if
 ; dd _edata
  dd 0
 ___menuet__memsize:
- dd 0x400000
+ dd ___memsize
  dd app_stack
  dd ___menuet__app_param_area
  dd ___menuet__app_path_area
@@ -54,5 +55,6 @@ _libc_null_call:
 end if
 
 section '.bss' readable writeable
-rd 0x20000
+;rd 0x20000
+rb 0x10000
 app_stack:

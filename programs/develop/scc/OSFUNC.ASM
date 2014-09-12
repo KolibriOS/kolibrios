@@ -1,4 +1,4 @@
-include "macros.inc"
+include "MACROS.INC"
 ;
 ; OS function implementation
 ; SmallC for KolibriOS

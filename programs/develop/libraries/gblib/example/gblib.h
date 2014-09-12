@@ -1,11 +1,13 @@
 
+#pragma pack(push, 1)
 typedef struct 
 {
-int  w       __attribute__((packed));
-int  h       __attribute__((packed));
-char *bmp    __attribute__((packed));
-char *alpha  __attribute__((packed));
-} GB_BMP     __attribute__((packed));
+int  w;
+int  h;
+char *bmp;
+char *alpha;
+} GB_BMP;
+#pragma pack(pop)
 
 
 void (* __stdcall gb_pixel_set)(GB_BMP *b, int x, int y, unsigned c);

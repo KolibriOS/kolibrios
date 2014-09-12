@@ -22,7 +22,7 @@ iadn@bk.ru
 
 int Fps (long x, long y);
 extern "C"{
-void app_main(void);
+int main(void);
 }
 
 struct {
@@ -255,7 +255,7 @@ void draw_window(void)
     Title();
 }
 
-void app_main(void)          
+int main(void)          
 {
 
   win.x = 100;
@@ -335,11 +335,11 @@ do{
 						  			break;
 		          
                            case KEY_ESC: disabletgl();
-						  				 return;}
+						  				 return 0;}
 						  				 break;
 						  			
 			  	  case 3: disabletgl();
-						  return;
+						  return 0;
 		      }
 }while(1);
 }

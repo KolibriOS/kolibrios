@@ -1,5 +1,7 @@
-#include <string.h>
-#include <stdio.h>
+//#include <string.h>
+//#include <stdio.h>
+typedef unsigned int size_t;
+#define NULL ((void*)0)
 
 typedef int conv_t;
 typedef unsigned int ucs4_t;

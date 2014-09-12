@@ -1792,19 +1792,19 @@ edit1 edit_box 20,427,320,0xffffff,0x6a9480,0,0xAABBCC,0,2,txt.edbox,ed_focus,ed
 edit2 edit_box 240,2,2,0xffffff,0x6a9480,0,0xAABBCC,0,4096,buf_cmd_lin,ed_focus,2,0,0
 
 virtual at 0
-file 'MK_b3-34_hand.BMP':0xA,4
+file 'MK_b3-34_hand.bmp':0xA,4
 load offbits dword from 0
 end virtual
 
 palitra:
-	file 'MK_b3-34_hand.BMP':0x36,offbits-0x36
+	file 'MK_b3-34_hand.bmp':0x36,offbits-0x36
 
 sizey = 262
 sizex = 185 + 7
 smesh = 3
 
 bmp_file:
-    file 'MK_b3-34_hand.BMP':110
+    file 'MK_b3-34_hand.bmp':110
 repeat sizey/2
 y = % - 1
 z = sizey - %

@@ -1,0 +1,44 @@
+### Copy as tup.config and modify according to your needs.
+### tup.config should be in the same directory where you have said "tup init".
+### If there are several directories, tup.config-s are independent.
+
+### Generic configuration
+### interface language: en [default], ru, et, it, sp
+# CONFIG_LANG=en
+
+### Installed compilers.
+### Setting a variable to any non-empty value
+### prevents calls to the corresponding compiler
+### and disables build of corresponding binaries.
+### The concrete value matters only if CONFIG_BUILD_TYPE is also set;
+### "full" means that binaries will be excluded from final images,
+### anything other means that you have obtained binaries in some other way
+### and still want to have them in final images.
+# CONFIG_NO_FASM=full
+# CONFIG_NO_NASM=full
+# CONFIG_NO_GCC=full
+# CONFIG_NO_MSVC=full
+# CONFIG_NO_CMM=full
+
+### Optional postprocessing of binaries, where applicable.
+### By default, no postprocessing is used.
+### Windows variants
+# CONFIG_KPACK_CMD=&& kpack /nologo "%o"
+# CONFIG_KERPACK_CMD=&& kerpack %o
+# CONFIG_PESTRIP_CMD=&&set EXENAME=%o&&fasm $(ROOT)/data/common/pestrip.asm %o
+### Linux variants
+# CONFIG_KPACK_CMD=&& kpack --nologo "%o"
+# CONFIG_KERPACK_CMD=&& kerpack %o
+# CONFIG_PESTRIP_CMD=&& EXENAME=%o fasm $(ROOT)/data/common/pestrip.asm %o
+
+### BUILD_TYPE, if set, enables building kolibri.img and kolibri.iso.
+### Must match subdirectory name in $(ROOT)/data.
+### Requires Linux.
+# CONFIG_BUILD_TYPE=eng
+### If set, injects build date and revision number from data/.revision
+### to kernel.mnt to be displayed during boot screen.
+# CONFIG_INSERT_REVISION_ID=1
+
+### Use for single-program mode, when "tup init" selects
+### a directory of one program, as opposed to the entire repository.
+# CONFIG_HELPERDIR=.

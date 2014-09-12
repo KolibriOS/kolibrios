@@ -1480,7 +1480,7 @@ void SetEntryVars()
 
 
 //
-void ReleaseTop10()
+void __cdecl ReleaseTop10()
 {
 	//
 	if ( top10Heroes != NULL )

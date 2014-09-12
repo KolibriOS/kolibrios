@@ -1,1 +1,0 @@
-%define lang 'it'

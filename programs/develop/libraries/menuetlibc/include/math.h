@@ -74,7 +74,7 @@ long double modfl(long double _x, long double *_pint);
 double	pow10(double _x);
 double	pow2(double _x);
 double	powi(double, int);
-void	sincos(double *, double *, double);
+void	sincos(double, double *, double *);
 
 /* These are in libm.a (Cygnus).  You must link -lm to get these */
 /* See libm/math.h for comments */
@@ -100,7 +100,7 @@ extern double j0(double);
 extern double j1(double);
 extern double jn(int, double);
 extern double lgamma(double);
-extern double nan(void);
+extern double nan(const char*);
 extern double y0(double);
 extern double y1(double);
 extern double yn(int, double);
@@ -152,7 +152,7 @@ extern float j0f(float);
 extern float j1f(float);
 extern float jnf(int, float);
 extern float lgammaf(float);
-extern float nanf(void);
+extern float nanf(const char*);
 extern float y0f(float);
 extern float y1f(float);
 extern float ynf(int, float);

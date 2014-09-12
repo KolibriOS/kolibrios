@@ -3,8 +3,8 @@
 
 #undef bzero
 
-void *
+void
 bzero(void *a, size_t b)
 {
-  return memset(a,0,b);
+  memset(a,0,b);
 }

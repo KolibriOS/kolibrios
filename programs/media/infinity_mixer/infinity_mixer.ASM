@@ -18,7 +18,7 @@ use32
         dd      I_MEM           ; stack heap
         dd      0x0, 0x0
 
-include 'aspAPI.inc'
+include 'aspapi.INC'
 include '../../macros.inc'
 ;include 'string.inc'
 

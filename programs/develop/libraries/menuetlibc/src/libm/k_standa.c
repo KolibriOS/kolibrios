@@ -28,6 +28,8 @@ static char rcsid[] = "$Id: k_standard.c,v 1.4 1994/08/10 20:31:44 jtc Exp $";
 #undef fflush
 #endif	/* !defined(_USE_WRITE) */
 
+inline int fputs(const char* str, FILE* f) { return -1; }
+
 #ifdef __STDC__
 static const double zero = 0.0;	/* used as const */
 #else

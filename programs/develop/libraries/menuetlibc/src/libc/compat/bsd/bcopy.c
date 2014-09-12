@@ -3,8 +3,8 @@
 
 #undef bcopy
 
-void *
+void
 bcopy(const void *a, void *b, size_t len)
 {
-  return memmove(b, a, len);
+  memmove(b, a, len);
 }

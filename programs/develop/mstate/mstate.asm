@@ -77,11 +77,11 @@ STATE_VALUES_LEFT                 equ (MOUSE_WIDTH - STATE_VALUES_WIDTH) / 2 + M
 MENUET01                          db 'MENUET01'
 version                           dd 1
 program.start                     dd START
-program.end                       dd END
-program.memory                    dd END + PATH_SIZE + PARAMS_SIZE + STACK_SIZE
-program.stack                     dd END + PATH_SIZE + PARAMS_SIZE + STACK_SIZE
-program.params                    dd END + PATH_SIZE
-program.path                      dd END
+program.end                       dd _END
+program.memory                    dd _END + PATH_SIZE + PARAMS_SIZE + STACK_SIZE
+program.stack                     dd _END + PATH_SIZE + PARAMS_SIZE + STACK_SIZE
+program.params                    dd _END + PATH_SIZE
+program.path                      dd _END
 ; ---------------------------------------------------------------------------- ;
 mouse_body_color                  dd MOUSE_BODY_COLOR
 mouse_left_button_color           dd MOUSE_LEFT_BUTTON_COLOR
@@ -243,4 +243,4 @@ on_button: ; terminate because we have only one button(close button)
         int    64
 ; ---------------------------------------------------------------------------- ;
 align 4
-END:
+_END:

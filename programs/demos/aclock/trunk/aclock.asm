@@ -201,7 +201,7 @@ image_end:
 ;********************************************************************
 ;	uninitialized data
 ;********************************************************************
-	section .bss
+	section .bss align=4
 
 wndColors	resb	MOS_WNDCOLORS_size
 procInfo	resb	MOS_PROCESSINFO_size

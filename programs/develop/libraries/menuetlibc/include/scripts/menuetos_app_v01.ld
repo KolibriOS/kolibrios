@@ -5,6 +5,7 @@ SECTIONS
  .text 0x000000 : 
  {
   code = . ; _code = . ;
+  *(.A)
   *(.text)
   *(.fixup)
   *(.gnu.warning)
@@ -43,6 +44,24 @@ SECTIONS
  {
   *(.bss)
  }
- end = . ; _end = . ;
+ end = . ; _end = . ; ___memsize = . ;
+  /DISCARD/ :
+  {
+    *(.debug$S)
+    *(.debug$T)
+    *(.debug$F)
+    *(.drectve)
+    *(.note.GNU-stack)
+    *(.eh_frame)
+    *(.comment)
+    *(.debug_abbrev)
+    *(.debug_info)
+    *(.debug_line)
+    *(.debug_frame)
+    *(.debug_loc)
+    *(.debug_pubnames)
+    *(.debug_aranges)
+    *(.debug_ranges)
+  }
 }
  

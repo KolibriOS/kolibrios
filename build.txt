@@ -1,0 +1,242 @@
+Most programs in the repository are regularly and automatically compiled
+by the autobuild server, compiled binaries are available at
+http://builds.kolibrios.org. The autobuild server uses the build system Tup,
+data for it are located in files named Tupfile.lua over the repository.
+
+-------------------------------------------------------------------------------
+
+Q1. I want to build one program and I don't want to know anything about Tup.
+Q2. I want to build one program using Tup.
+Q3. I want to add a program to the autobuild.
+Q4. I want to build the entire system.
+Q5. I'm sure that I want to build the entire system.
+    The autobuild server does this, after all.
+Q6. I don't want to keep a zoo of compilers and tools required for Q5,
+    but I still want to build as many programs as possible with what I have.
+
+-------------------------------------------------------------------------------
+
+Q1. I want to build one program and I don't want to know anything about Tup.
+A1. Fine. You will need a corresponding compiler, obviously.
+
+  * For a FASM program, get FASM at http://flatassembler.net/download.php.
+    To compile, find the main .asm file of the program and run
+        path/to/fasm <input.asm>
+    The compiler will automatically select the name for output, using
+    base name of input and extension based on file format. Though, you can
+    give also output name explicitly, as the second argument.
+
+    If the compiler produces an error "file not found" regarding 'lang.inc',
+    the program can be compiled using different languages of interface.
+    Create a file 'lang.inc' in the same folder as <input.asm> like follows:
+        lang fix en
+    Here the last word selects the language. Valid languages are
+    en, ru, et, it, sp. Not all programs provide all translations,
+    en should always be available, ru is the most frequent after en.
+
+  * For a NASM program, get NASM at http://www.nasm.us/.
+    To compile, find the main .asm file of the program and run
+        path/to/nasm -f bin -o <output> <input.asm>
+    Multi-language is rarely supported in this category, but you could still
+    see sometimes an error "file not found" regarding 'lang_nasm.inc'. If so,
+    create a file 'lang_nasm.inc' in the same folder as <input.asm> like follows:
+        %define lang 'en'
+    Read the entry about fasm for description of valid languages.
+
+  * For a c-- program, try to avoid compiling it and instead rewrite the code
+    in a normal language like assembler or C. If you absolutely need
+    to compile, note that the compiler has been abandoned long ago, so
+    don't look for an official site. It is possible to find the compiler
+    somewhere on http://board.kolibrios.org, but be prepared to several tries
+    because there are several slightly different compiler versions, not all of
+    which are able to build all programs.
+    There is no Linux version, but Windows version runs fine under Wine.
+
+  * For a GCC program, get the toolchain at
+    http://ftp.kolibrios.org/users/Serge/new/Toolchain/.
+
+    Under Windows, you need the package with "msys" in name and MinGW;
+    after installing MinGW, unpack the package to
+    \MinGW\msys\1.0\home\autobuild\tools\win32, the package assumes
+    exactly this path. Run MinGW shell.
+
+    Under Linux, you need the package with "linux" in name
+    and runtime library cloog; e.g. for Debian-based distributives
+    use apt-get install libcloog-isl4. Unpack the package to
+    /home/autobuild/tools/win32, the package assumes exactly this path.
+
+    In both MinGW and Linux, make sure that the command
+        /home/autobuild/tools/win32/bin/kos32-gcc
+    invokes the compiler.
+
+    If the program uses libraries, you will also need to either compile
+    them separately or download SDK, if they are included to SDK.
+    Compiling is ultimately a sequence of calls to kos32-gcc and kos32-ld,
+    but filling exact parameters can be tricky, so maybe you want to
+    use Tup - proceed to Q2/A2 - or Make, if a maintainer has provided
+    Makefile.
+
+  * For a MSVC program, get the compiler as a part of Visual Studio,
+    Express Edition is fine, or as a part of Windows SDK.
+    For obvious reasons, there is no Linux version, but the compiler runs file
+    under Wine.
+
+    If the program uses libraries, you will also need to either compile
+    them separately or download SDK, if they are included to SDK.
+    Compiling is ultimately a sequence of calls to cl.exe and link.exe,
+    but filling exact parameters can be tricky, so maybe you want to
+    use Tup - proceed to Q2/A2 - or Make, if a maintainer has provided
+    Makefile.
+
+  * For any language, if the program is KolibriOS binary, the compiled binary
+    can optionally be compiled with kpack. Windows version of kpack
+    can be downloaded at http://diamond.kolibrios.org/prg/kpack.exe,
+    Linux version can be compiled from sources at
+    (repository)/programs/other/kpack/linux.
+
+  * The kernel can optionally be compiled with kerpack.
+    Linux version can be compiled from sources at
+    (repository)/programs/other/kpack/kerpack_linux.
+    There is no Windows version.
+
+Q2. I want to build one program using Tup.
+A2. You will still need the corresponding compiler as described in Q1/A1.
+    You will also need Tup, get it at http://gittup.org/tup/index.html.
+    Make sure that the corresponding compiler is somewhere in PATH
+    and can be invoked without explicit path. For Linux, note that
+    all programs are invoked without extension, like
+        fasm
+    or
+        kos32-gcc
+    with one exception: MSVC linker is invoked as link.exe to avoid conflict
+    with link from coreutils. Under Linux, c--, cl, link.exe should be scripts
+    invoking Wine with the corresponding binary. The interaction tup+wine
+    does not work by default; ultimately, invoking scripts should be like:
+        c--: WINEDEBUG=-all LD_PRELOAD=/path/to/nosetsid.so /path/to/wine /path/to/C--.exe $*
+        cl: WINEDEBUG=-all LD_PRELOAD=/path/to/nosetsid.so /path/to/wine /path/to/cl.exe -I/path/to/cl/include $*
+        link.exe: WINEDEBUG=-all LD_PRELOAD=/path/to/nosetsid.so /path/to/wine /path/to/link.exe $*
+    where nosetsid.so is compiled as a 32-bit shared library
+    from C file with one line "int setsid() { return -1; }".
+
+    If the program does not use any libraries, run
+        tup init
+    in the directory with the program. Then,
+        tup
+    without arguments will build the program with default settings.
+    Subsequent runs will not do anything unless any file that was used
+    during the compilation - not necessarily the main file - is changed;
+    after that, the program will be recompiled.
+    By default, tup will not track files outside the directory with "tup init";
+    if tracking files in program directory is not sufficient for you,
+    consider adding updater.full_deps=1 to tup config - see tup manual
+    for details, for Linux it requires setting tup as suid root - or extending
+    tup data to the entire repository as described in Q6/A6. 
+
+    Settings can be configured using the file tup.config. Look to
+    tup.config.template in the repository root for complete list;
+    for most programs, only CONFIG_LANG and CONFIG_KPACK_CMD have effect.
+
+    If the program uses libraries or helper files for gcc/msvc and you don't
+    want to build everything at once like Q6/A6, set
+        CONFIG_HELPERDIR=.
+    in tup.config, copy programs/use_gcc.lua or programs/use_msvc.lua
+    and helpers for used libraries, if any, to the directory of the program.
+    use_gcc.lua and use_msvc.lua do not require additional configuration;
+    in helpers for used libraries, set path to library in the first line.
+    Since copied helpers are local files not for the repository, you may use
+    absolute pathes specific for your machine.
+    This was designed so that no repository files need to be modified:
+    Tupfile.lua for the program is able to use either local helpers when
+    CONFIG_HELPERDIR is set, or repository helpers when the entire repository
+    is built.
+    You will also need compiled libraries. If they are included in SDK, use them.
+    Otherwise, compile them using the same process. Note that for a library,
+    "tup init" needs to be called in the library directory with include/ and lib/,
+    even if Tupfile.lua is present only in src/; libraries will be put in lib/.
+
+Q3. I want to add a program to the autobuild.
+A3. Select a program from repository which uses same language and libraries.
+    Copy Tupfile.lua from that program to your program.
+    Change names of source and binary files accordingly.
+    If external files are referenced, correct relative pathes accordingly:
+    e.g. when programs/develop/libraries/menuetlibc_example/Tupfile.lua
+    references ../../../use_menuetlibc.lua, it resolves to
+    programs/use_menuetlibc.lua, if your program is built by
+    programs/other/super_program/Tupfile.lua, the path should be
+    ../../use_menuetlibc.lua. Commit.
+
+    After that, the program will be built regularly.
+    To include the binary in kolibri.img or kolibri.iso, add it to one of
+    lists in data/Tupfile.lua. Select the section corresponding to the used
+    language so that people who build images without your compiler would still
+    be able to do so.
+
+Q4. I want to build the entire system.
+A4. Why? Even the person who has configured the autobuild server does not build
+    everything on her computer.
+
+    If you want to create your own image of the system, it is much simpler to
+    start from existing one and modify it, building only what is necessary.
+    If you don't know how to modify an image, don't expect that the build
+    system will magically do it for you. The build system uses mtools for
+    image manipulation; if you have configured mtools, you can just use them
+    directly. There are also other ways of image manipulation, which would
+    be closed for you once you decide to become attached to the build system.
+
+    If you want to verify or debug your changes in Q3/A3, it is normally
+    sufficient to build just what you have changed as in Q2/A2.
+    To be extra sure, you can build from the repository root as in Q6/A6
+    limiting to your compiler and FASM for some helper tasks;
+    any possible differences between this mode and actions of the autobuild
+    server are due to environment issues, like Windows vs Linux,
+    and would not be resolved anyway.
+
+    If you just want it, note that the full build requires all compilers
+    listed in Q1/A1 and Linux. MinGW and Cygwin will not help you.
+
+Q5. I'm sure that I want to build the entire system.
+    The autobuild server does this, after all.
+A5. The autobuild server has one concrete configuration with 64-bit Linux.
+    The developers are slightly interested in compiling programs in different
+    systems, but nobody needs portability of actions that only one server
+    does anyway.
+
+    So, don't expect support from developers. Though, here goes the instruction
+    in interest of completeness.
+
+  * Configure all compilers as described in Q2/A2.
+  * Configure kpack and kerpack as described in Q2/A2.
+    They are optional for Q2/A2, but required here,
+    the image just could not contain all programs in unpacked form.
+  * Configure mtools, so that mformat, mmd and mcopy are somewhere in PATH.
+  * Configure mkisofs.
+  * For full duplication of the autobuild server configure build variants:
+    create directories build-eng, build-rus, ... in the root of repository for
+    every subdirectory in data/ except data/common. Create files
+    build-eng/tup.config, build-rus/tup.config, ... with
+    CONFIG_BUILD_TYPE=eng, rus, ... correspondingly. This will switch
+    to out-of-tree builds for every variant. If one build type is sufficient
+    for you, you may skip this step.
+  * Run
+        tup init
+    in the root of repository.
+  * Run
+        tup
+    anywhere inside repository.
+  * If everything went good, there should be files kolibri.img and kolibri.iso
+    in every build-* directory. When you want to update,
+    rerun tup without arguments.
+
+Q6. I don't want to keep a zoo of compilers and tools required for Q5,
+    but I still want to build as many programs as possible with what I have.
+A6.
+  * Configure all compilers you want to use as described in Q2/A2.
+  * Create tup.config in the root of repository. Disable all compilers you
+    don't want to use there; comments in tup.config.template should help you.
+  * Optionally, configure kpack and kerpack as described in Q2/A2.
+  * Run
+        tup init
+    in the root of repository.
+  * Run
+        tup
+    anywhere inside repository.
