@@ -581,17 +581,11 @@ tup.definerule{inputs = input_deps, command =
   outputs = {"kolibri.iso"}}
 
 -- generate command and dependencies for distribution kit
-input_deps = {"kolibri.img"}
-output_deps = {"distribution_kit/kolibri.img"}
-make_distr_command = "ln -sr kolibri.img distribution_kit/kolibri.img"
+cp = "cp %f %o"
+tup.definerule{inputs = {"kolibri.img"}, command = cp, outputs = {"distribution_kit/kolibri.img"}}
 for i,v in ipairs(distr_extra_files) do
-  make_distr_command = make_distr_command .. ' && ln -sr "`realpath "' .. v[2] .. '"`" "distribution_kit/' .. v[1] .. '"'
-  table.insert(input_deps, v[2])
   if string.sub(v[1], -1) == "/"
-  then table.insert(output_deps, "distribution_kit/" .. v[1] .. tup.file(v[2]))
-  else table.insert(output_deps, "distribution_kit/" .. v[1])
+  then tup.definerule{inputs = v[2], command = cp, outputs = {"distribution_kit/" .. v[1] .. tup.file(v[2])}}
+  else tup.definerule{inputs = v[2], command = cp, outputs = {"distribution_kit/" .. v[1]}}
   end
 end
-
--- generate tup rule for distribution kit
-tup.definerule{inputs = input_deps, command = make_distr_command, outputs = output_deps}
