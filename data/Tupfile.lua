@@ -521,7 +521,8 @@ for i,v in ipairs(img_files) do
 end
 
 -- create empty 1.44M file
-make_img_command = "dd if=/dev/zero of=kolibri.img count=2880 bs=512 2>&1"
+make_img_command = '^ MKIMG kolibri.img^ ' -- for tup: don't write full command to logs
+make_img_command = make_img_command .. "dd if=/dev/zero of=kolibri.img count=2880 bs=512 2>&1"
 -- format it as a standard 1.44M floppy
 make_img_command = make_img_command .. " && mformat -f 1440 -i kolibri.img ::"
 -- copy bootloader
@@ -577,6 +578,7 @@ then volume_id = "KolibriOS r`cat .revision`"
 else volume_id = "KolibriOS"
 end
 tup.definerule{inputs = input_deps, command =
+  '^ MKISOFS kolibri.iso^ ' .. -- for tup: don't write full command to logs
   'mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points ' ..
   '-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "' .. volume_id .. '" -sysid "KOLIBRI" ' ..
   '-iso-level 3 -o kolibri.iso kolibri.img' .. iso_files_list .. ' 2>&1',
