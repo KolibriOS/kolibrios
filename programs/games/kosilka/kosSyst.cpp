@@ -4,6 +4,8 @@
 char stack[16384];
 char kosExePath[257];
 
+// must be alphabetically first in the image
+#pragma data_seg(".1seg")
 struct __MENUET_header_t
 {
 	char signature[8];
@@ -26,6 +28,7 @@ __MENUET_header_t __MENUET_header =
 	NULL,
 	&kosExePath
 };
+#pragma data_seg()
 
 #if 0
 #define atexitBufferSize	32
