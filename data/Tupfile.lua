@@ -53,7 +53,6 @@ img_files = {
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
  {"GAMES/CHECKERS", build_type .. "/games/checkers"},
  {"GAMES/MEGAMAZE", build_type .. "/games/megamaze"},
- {"GAMES/RFORCES", build_type .. "/games/rforces"},
  {"GAMES/XONIX", build_type .. "/games/xonix"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
  {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
@@ -445,6 +444,7 @@ tup.append_table(img_files, {
  {"TABLE", PROGS .. "/other/table/table"},
  {"MEDIA/AC97SND", PROGS .. "/media/ac97snd/ac97snd.bin"},
  {"GAMES/KOSILKA", PROGS .. "/games/kosilka/kosilka"},
+ {"GAMES/RFORCES", PROGS .. "/games/rforces/trunk/rforces"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/games/fara/fara", PROGS .. "/games/fara/trunk/fara"},
