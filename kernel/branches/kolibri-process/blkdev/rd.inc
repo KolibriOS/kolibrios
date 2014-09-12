@@ -6,7 +6,7 @@
 ;; RAMDISK functions                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 4273 $
+$Revision: 5057 $
 
 iglobal
 align 4
@@ -21,11 +21,6 @@ ramdisk_functions:
         dd      ramdisk_adjust_cache_size
 .size = $ - ramdisk_functions
 endg
-
-; See memmap.inc.
-; Currently size of memory allocated for the ramdisk is fixed.
-; This should be revisited when/if memory map would become more dynamic.
-RAMDISK_CAPACITY = 2880 ; in sectors
 
 iglobal
 align 4

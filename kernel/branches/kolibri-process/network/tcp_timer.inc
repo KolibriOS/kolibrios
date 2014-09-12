@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3143 $
+$Revision: 5013 $
 
 timer_flag_retransmission       = 1 shl 0
 timer_flag_keepalive            = 1 shl 1
@@ -61,13 +61,18 @@ local   .exit
 }
 
 
-;----------------------
-; 640 ms timer
-;----------------------
-macro   TCP_timer_640ms {                       ; TODO: implement timed wait timer!
+align 4
+proc TCP_timer_640ms            ; TODO: implement timed wait timer!
 
-local   .loop
-local   .exit
+        xor     esi, esi
+        mov     ecx, MANUAL_DESTROY
+        call    create_event
+        mov     [TCP_timer1_event], eax
+
+  .wait:
+        mov     eax, [TCP_timer1_event]
+        mov     ebx, [eax + EVENT.id]
+        call    wait_event
 
 ; Update TCP sequence number
 
@@ -81,7 +86,7 @@ local   .exit
         mov     eax, [eax + SOCKET.NextPtr]
   .check_only:
         or      eax, eax
-        jz      .exit
+        jz      .wait
 
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .loop
@@ -157,9 +162,8 @@ local   .exit
         mov     [eax + TCP_SOCKET.t_force], 0
 
         jmp     .loop
-  .exit:
 
-}
+endp
 
 
 

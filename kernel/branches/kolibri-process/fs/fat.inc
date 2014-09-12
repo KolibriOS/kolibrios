@@ -44,7 +44,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 4273 $
+$Revision: 5089 $
 
 
 cache_max equ 1919      ; max. is 1919*512+0x610000=0x6ffe00
@@ -154,6 +154,9 @@ fat_create_partition.return0:
         xor     eax, eax
         ret
 fat_create_partition:
+; sector size must be 512
+        cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
+        jnz     .return0
 ; bootsector must have been successfully read
         cmp     dword [esp+4], 0
         jnz     .return0

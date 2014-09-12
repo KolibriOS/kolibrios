@@ -5,12 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 4418 $
-
-iglobal
-  szKernel            db 'KERNEL', 0
-  szVersion           db 'version',0
-endg
+$Revision: 5088 $
 
  align 4
 __exports:
@@ -48,6 +43,7 @@ __exports:
           get_phys_addr,         'GetPhysAddr',        \      ; eax
           map_space,             'MapSpace',           \
           release_pages,         'ReleasePages',       \
+          alloc_dma24,           'AllocDMA24',         \      ; stdcall
 \
           mutex_init,            'MutexInit',          \      ; gcc fastcall
           mutex_lock,            'MutexLock',          \      ; gcc fastcall

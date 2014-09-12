@@ -7,7 +7,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 4891 $
+$Revision: 5089 $
 
 
 include 'ext2.inc'
@@ -59,6 +59,8 @@ endp
 ;---------------------------------------------------------------------
 proc ext2_create_partition
         push    ebx
+        cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
+        jnz     .fail
 
         mov     eax, 2                          ; Superblock starts at 1024-bytes.
         add     ebx, 512                        ; Get pointer to fs-specific buffer.

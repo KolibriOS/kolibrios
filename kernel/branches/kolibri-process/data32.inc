@@ -140,24 +140,20 @@ end if
 start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
-msg_module     db 'in module ',0
-if ~ lang eq sp
-msg_version    db 'incompatible driver version',13,10,0
-msg_www        db 'please visit www.kolibrios.org',13,10,0
-end if
+;msg_module     db 'in module ',0
+;if ~ lang eq sp
+;msg_version    db 'incompatible driver version',13,10,0
+;msg_www        db 'please visit www.kolibrios.org',13,10,0
+;end if
 msg_CR         db  13,10,0
 
-intel_str      db "GenuineIntel",0
-AMD_str        db "AuthenticAMD",0
-
 szHwMouse       db 'ATI2D',0
-szPS2MDriver    db 'PS2MOUSE',0
+szPS2MDriver    db '/rd/1/drivers/PS2MOUSE.SYS',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
-szVidintel      db 'vidintel',0
+szVidintel      db '/rd/1/drivers/vidintel.sys',0
 szUSB           db 'USB',0
 szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
-szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 sz_EXPORTS     db '_EXPORTS',0
 
@@ -529,16 +525,21 @@ end if
 
 org (OS_BASE+0x0100000)
 
-RAMDISK:                        rb 2880*512
-                                rb 2856*4               ; not used
+; Currently size of memory allocated for the ramdisk is fixed.
+; This should be revisited when/if memory map would become more dynamic.
+RAMDISK_CAPACITY = 2880 ; in sectors
+
+RAMDISK:                        rb RAMDISK_CAPACITY*512
 
 _CLEAN_ZONE:
 
+BgrAuxTable                     rb 32768
+align 65536
+SB16Buffer                      rb 65536
+
 align 4096
 _IDE_DMA                        rb 16*512
-BgrAuxTable                     rb 32768
 BUTTON_INFO                     rb 64*1024
 RESERVED_PORTS:                 rb 64*1024
-FLOPPY_BUFF:                    rb 18*512           ;one track
 
 sys_pgmap:                      rb 1024*1024/8

@@ -345,9 +345,6 @@ align 4
 proc test_cpu
            locals
               cpu_type   dd ?
-              cpu_id     dd ?
-              cpu_Intel  dd ?
-              cpu_AMD    dd ?
            endl
 
         xor     eax, eax
@@ -386,13 +383,7 @@ proc test_cpu
         mov     [cpu_vendor-OS_BASE], ebx
         mov     [cpu_vendor+4-OS_BASE], edx
         mov     [cpu_vendor+8-OS_BASE], ecx
-        cmp     ebx, dword [intel_str-OS_BASE]
-        jne     .check_AMD
-        cmp     edx, dword [intel_str+4-OS_BASE]
-        jne     .check_AMD
-        cmp     ecx, dword [intel_str+8-OS_BASE]
-        jne     .check_AMD
-        mov     [cpu_Intel], 1
+
         cmp     eax, 1
         jl      .end_cpuid
         mov     eax, 1
@@ -421,36 +412,6 @@ proc test_cpu
         ret
 .end_cpuid:
         mov     eax, [cpu_type]
-        ret
-
-.check_AMD:
-        cmp     ebx, dword [AMD_str-OS_BASE]
-        jne     .unknown
-        cmp     edx, dword [AMD_str+4-OS_BASE]
-        jne     .unknown
-        cmp     ecx, dword [AMD_str+8-OS_BASE]
-        jne     .unknown
-        mov     [cpu_AMD], 1
-        cmp     eax, 1
-        jl      .unknown
-        mov     eax, 1
-        cpuid
-        mov     [cpu_sign-OS_BASE], eax
-        mov     [cpu_info-OS_BASE], ebx
-        mov     [cpu_caps-OS_BASE], edx
-        mov     [cpu_caps+4-OS_BASE], ecx
-        shr     eax, 8
-        and     eax, 0x0f
-        ret
-.unknown:
-        mov     eax, 1
-        cpuid
-        mov     [cpu_sign-OS_BASE], eax
-        mov     [cpu_info-OS_BASE], ebx
-        mov     [cpu_caps-OS_BASE], edx
-        mov     [cpu_caps+4-OS_BASE], ecx
-        shr     eax, 8
-        and     eax, 0x0f
         ret
 endp
 

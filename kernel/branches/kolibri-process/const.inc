@@ -228,10 +228,6 @@ VGABasePtr          equ (OS_BASE+0x00A0000)
 CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
 IDE_DMA             equ (_IDE_DMA-OS_BASE)
 
-; unused?
-SB16Buffer          equ (OS_BASE+0x02A0000)
-SB16_Status         equ (OS_BASE+0x02B0000)
-
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 
 virtual at              (OS_BASE+0x05FFF80)
@@ -620,6 +616,28 @@ struct  COFF_SYM
         StorageClass    db ?
         NumAuxSymbols   db ?
 ends
+
+struct  STRIPPED_PE_HEADER
+        Signature           dw ?
+        Characteristics     dw ?
+        AddressOfEntryPoint dd ?
+        ImageBase           dd ?
+        SectionAlignmentLog db ?
+        FileAlignmentLog    db ?
+        MajorOSVersion      db ?
+        MinorOSVersion      db ?
+        SizeOfImage         dd ?
+        SizeOfStackReserve  dd ?
+        SizeOfHeapReserve   dd ?
+        SizeOfHeaders       dd ?
+        Subsystem           db ?
+        NumberOfRvaAndSizes db ?
+        NumberOfSections    dw ?
+ends
+STRIPPED_PE_SIGNATURE = 0x4503 ; 'PE' xor 'S'
+SPE_DIRECTORY_IMPORT    = 0
+SPE_DIRECTORY_EXPORT    = 1
+SPE_DIRECTORY_BASERELOC = 2
 
 struct  IOCTL
         handle          dd ?

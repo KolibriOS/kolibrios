@@ -74,8 +74,6 @@ include 'struct.inc'
 $Revision: 4381 $
 
 
-USE_FIX_FOR_INVALID_MS_VIRTUAL_PC_2007 equ 0
-
 USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 VESA_1_2_VIDEO  equ 0      ; enable vesa 1.2 bank switch functions
 
@@ -283,6 +281,25 @@ use16
 org $-0x10000
 include "boot/shutdown.inc" ; shutdown or restart
 org $+0x10000
+
+ap_init16:
+        cli
+        lgdt    [cs:gdts_ap-ap_init16]
+        mov     eax, [cs:cr3_ap-ap_init16]
+        mov     cr3, eax
+        mov     eax, [cs:cr4_ap-ap_init16]
+        mov     cr4, eax
+        mov     eax, CR0_PE+CR0_PG+CR0_WP
+        mov     cr0, eax
+        jmp     pword os_code:ap_init_high
+align 16
+gdts_ap:
+        dw     gdte-gdts-1
+        dd     gdts
+        dw     0
+cr3_ap  dd     ?
+cr4_ap  dd     ?
+ap_init16_size = $ - ap_init16
 use32
 
 __DEBUG__ fix 1
@@ -668,6 +685,69 @@ no_mode_0x12:
         mov     dword [current_slot], SLOT_BASE + 256*2
         mov     dword [TASK_BASE], CURRENT_TASK + 32*2
 
+; Move other CPUs to deep sleep, if it is useful
+uglobal
+use_mwait_for_idle db 0
+endg
+        cmp     [cpu_vendor+8], 'ntel'
+        jnz     .no_wake_cpus
+        bt      [cpu_caps+4], CAPS_MONITOR-32
+        jnc     .no_wake_cpus
+        dbgstr 'using mwait for idle loop'
+        inc     [use_mwait_for_idle]
+        mov     ebx, [cpu_count]
+        cmp     ebx, 1
+        jbe     .no_wake_cpus
+        call    create_trampoline_pgmap
+        mov     [cr3_ap+OS_BASE], eax
+        mov     eax, cr4
+        mov     [cr4_ap+OS_BASE], eax
+        mov     esi, OS_BASE + ap_init16
+        mov     edi, OS_BASE + 8000h
+        mov     ecx, (ap_init16_size + 3) / 4
+        rep movsd
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
+        mov     [LAPIC_BASE], eax
+        lea     edi, [eax+300h]
+        mov     esi, smpt+4
+        dec     ebx
+.wake_cpus_loop:
+        lodsd
+        push    esi
+        xor     esi, esi
+        inc     esi
+        shl     eax, 24
+        mov     [edi+10h], eax
+; assert INIT IPI
+        mov     dword [edi], 0C500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; deassert INIT IPI
+        mov     dword [edi], 8500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; send STARTUP IPI
+        mov     dword [edi], 600h + (8000h shr 12)
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+        pop     esi
+        dec     ebx
+        jnz     .wake_cpus_loop
+        mov     eax, [cpu_count]
+        dec     eax
+@@:
+        cmp     [ap_initialized], eax
+        jnz     @b
+        mov     eax, [cr3_ap+OS_BASE]
+        call    free_page
+.no_wake_cpus:
+
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
         mov     esi, boot_initirq
@@ -681,11 +761,6 @@ no_mode_0x12:
         mov     esi, boot_v86machine
         call    boot_log
 ; Initialize system V86 machine
-;        call    init_sys_v86
-
-        xchg    bx, bx
-
-;        call    v86_init
         call    init_sys_v86
 
         mov     esi, boot_inittimer
@@ -838,7 +913,7 @@ end if
 
 include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
-        stdcall load_driver, szVidintel
+        stdcall load_pe_driver, szVidintel, 0
 
         call    usb_init
 
@@ -877,6 +952,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     esi, 250            ; wait 1/4 a second
         call    delay_ms
         rdtsc
+        sti
 
         sub     eax, ecx
         xor     edx, edx
@@ -944,6 +1020,45 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         stdcall map_page, tss._io_map_1, \
                 [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
+; SET KEYBOARD PARAMETERS
+        mov     al, 0xf6       ; reset keyboard, scan enabled
+        call    kb_write_wait_ack
+        test    ah, ah
+        jnz     .no_keyboard
+
+iglobal
+align 4
+ps2_keyboard_functions:
+        dd      .end - $
+        dd      0       ; no close
+        dd      ps2_set_lights
+.end:
+endg
+        stdcall register_keyboard, ps2_keyboard_functions, 0
+       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
+       ; call  kb_write_wait_ack
+       ; mov   al, 111b
+       ; call  kb_write_wait_ack
+
+        mov     al, 0xF3     ; set repeat rate & delay
+        call    kb_write_wait_ack
+        mov     al, 0; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
+        call    kb_write_wait_ack
+     ;// mike.dld [
+        call    set_lights
+     ;// mike.dld ]
+        stdcall attach_int_handler, 1, irq1, 0
+        DEBUGF  1, "K : IRQ1 return code %x\n", eax
+.no_keyboard:
+
+; Load PS/2 mouse driver
+
+        stdcall load_pe_driver, szPS2MDriver, 0
+
+        mov     esi, boot_setmouse
+        call    boot_log
+        call    setmouse
+
 ; LOAD FIRST APPLICATION
         cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
         jnz     first_app_found
@@ -961,58 +1076,6 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         hlt
 
 first_app_found:
-
-        cli
-
-; SET KEYBOARD PARAMETERS
-        mov     al, 0xf6       ; reset keyboard, scan enabled
-        call    kb_write
-        test    ah, ah
-        jnz     .no_keyboard
-
-        ; wait until 8042 is ready
-        xor     ecx, ecx
-      @@:
-        in      al, 64h
-        and     al, 00000010b
-        loopnz  @b
-
-iglobal
-align 4
-ps2_keyboard_functions:
-        dd      .end - $
-        dd      0       ; no close
-        dd      ps2_set_lights
-.end:
-endg
-        stdcall register_keyboard, ps2_keyboard_functions, 0
-       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
-       ; call  kb_write
-       ; call  kb_read
-       ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
-
-        mov     al, 0xF3     ; set repeat rate & delay
-        call    kb_write
-;        call  kb_read
-        mov     al, 0; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
-        call    kb_write
-;        call  kb_read
-     ;// mike.dld [
-        call    set_lights
-     ;// mike.dld ]
-        stdcall attach_int_handler, 1, irq1, 0
-        DEBUGF  1, "K : IRQ1 return code %x\n", eax
-.no_keyboard:
-
-; Load PS/2 mouse driver
-
-        stdcall load_driver, szPS2MDriver
-
-        mov     esi, boot_setmouse
-        call    boot_log
-        call    setmouse
 
 ; START MULTITASKING
 
@@ -1036,6 +1099,27 @@ end if
 
 
         ; Fly :)
+
+uglobal
+align 4
+ap_initialized  dd      0
+endg
+
+ap_init_high:
+        mov     ax, os_stack
+        mov     bx, app_data
+        mov     cx, app_tls
+        mov     ss, ax
+        mov     ds, bx
+        mov     es, bx
+        mov     fs, cx
+        mov     gs, bx
+        xor     esp, esp
+        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
+        mov     cr3, eax
+        lock inc [ap_initialized]
+        jmp     idle_loop
+
 
 include 'unpacker.inc'
 
@@ -1171,13 +1255,35 @@ align 4
 osloop_nonperiodic_work dd      ?
 endg
 
-align 4
+uglobal
+align 64
+idle_addr       rb      64
+endg
+
 idle_thread:
         sti
-idle_loop:
-        hlt
-        jmp     idle_loop
 
+; The following code can be executed by all CPUs in the system.
+; All other parts of the kernel do not expect multi-CPU.
+; Also, APs don't even have a stack here.
+; Beware. Don't do anything here. Anything at all.
+idle_loop:
+        cmp     [use_mwait_for_idle], 0
+        jnz     idle_loop_mwait
+
+idle_loop_hlt:
+        hlt
+        jmp     idle_loop_hlt
+
+idle_loop_mwait:
+        mov     eax, idle_addr
+        xor     ecx, ecx
+        xor     edx, edx
+        monitor
+        xor     ecx, ecx
+        mov     eax, 20h        ; or 10h
+        mwait
+        jmp     idle_loop_mwait
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2246,10 +2352,10 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 ;* mouse centered - start code- Mario79
 ;mouse_centered:
 ;        push  eax
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         shr     eax, 1
         mov     [MOUSE_X], ax
-        mov     eax, [_display.height]
+        mov     eax, [Screen_Max_Y]
         shr     eax, 1
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
@@ -2291,11 +2397,11 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
 ;     cmp  ecx,4  ; set mouse pointer position
         dec     ecx
         jnz     .set_mouse_button
-        cmp     dx, word[_display.height]
-        jae     .end
+        cmp     dx, word[Screen_Max_Y]
+        ja      .end
         rol     edx, 16
-        cmp     dx, word[_display.width]
-        jae      .end
+        cmp     dx, word[Screen_Max_X]
+        ja      .end
         mov     [MOUSE_X], edx
         mov     [mouse_active], 1
         call    wakeup_osloop
@@ -2722,22 +2828,22 @@ nosb8:
         jnz     nosb9
 ; ecx = [left]*65536 + [right]
 ; edx = [top]*65536 + [bottom]
-        mov     eax, [_display.width]
-        mov     ebx, [_display.height]
+        mov     eax, [Screen_Max_X]
+        mov     ebx, [Screen_Max_Y]
 ; check [right]
         cmp     cx, ax
-        jae     .exit
+        ja      .exit
 ; check [left]
         ror     ecx, 16
         cmp     cx, ax
-        jae     .exit
+        ja      .exit
 ; check [bottom]
         cmp     dx, bx
-        jae     .exit
+        ja      .exit
 ; check [top]
         ror     edx, 16
         cmp     dx, bx
-        jae     .exit
+        ja      .exit
 
         movzx   eax, cx  ; [left]
         movzx   ebx, dx  ; [top]
@@ -4463,113 +4569,39 @@ putimage_get16bpp:
 ;        ret
 ;-----------------------------------------------------------------------------
 align 4
-kb_read:
-
-        push    ecx edx
-
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kr_loop:
-        in      al, 0x64
-        test    al, 1
-        jnz     kr_ready
-        loop    kr_loop
-        mov     ah, 1
-        jmp     kr_exit
-      kr_ready:
-        push    ecx
-        mov     ecx, 32
-      kr_delay:
-        loop    kr_delay
-        pop     ecx
-        in      al, 0x60
-        xor     ah, ah
-      kr_exit:
-
-        pop     edx ecx
-
-        ret
-;-----------------------------------------------------------------------------
-align 4
-kb_write:
+kb_write_wait_ack:
 
         push    ecx edx
 
         mov     dl, al
-;        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-;      kw_loop1:
-;        in      al,0x64
-;        test    al,0x20
-;        jz      kw_ok1
-;        loop    kw_loop1
-;        mov     ah,1
-;        jmp     kw_exit
-;      kw_ok1:
-        in      al, 0x60
         mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop:
+.wait_output_ready:
         in      al, 0x64
         test    al, 2
-        jz      kw_ok
-        loop    kw_loop
+        jz      @f
+        loop    .wait_output_ready
         mov     ah, 1
-        jmp     kw_exit
-      kw_ok:
+        jmp     .nothing
+@@:
         mov     al, dl
         out     0x60, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop3:
-        in      al, 0x64
-        test    al, 2
-        jz      kw_ok3
-        loop    kw_loop3
-        mov     ah, 1
-        jmp     kw_exit
-      kw_ok3:
-        mov     ah, 8
-      kw_loop4:
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop5:
+        mov     ecx, 0xfffff; last 0xffff, new value in view of fast CPU's
+.wait_ack:
         in      al, 0x64
         test    al, 1
-        jnz     kw_ok4
-        loop    kw_loop5
-        dec     ah
-        jnz     kw_loop4
-      kw_ok4:
+        jnz     @f
+        loop    .wait_ack
+        mov     ah, 1
+        jmp     .nothing
+@@:
+        in      al, 0x60
         xor     ah, ah
-      kw_exit:
 
+.nothing:
         pop     edx ecx
 
         ret
 ;-----------------------------------------------------------------------------
-align 4
-kb_cmd:
-
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      c_wait:
-        in      al, 0x64
-        test    al, 2
-        jz      c_send
-        loop    c_wait
-        jmp     c_error
-      c_send:
-        mov     al, bl
-        out     0x64, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      c_accept:
-        in      al, 0x64
-        test    al, 2
-        jz      c_ok
-        loop    c_accept
-      c_error:
-        mov     ah, 1
-        jmp     c_exit
-      c_ok:
-        xor     ah, ah
-      c_exit:
-        ret
-
 
 setmouse:  ; set mousepicture -pointer
            ; ps2 mouse enable
@@ -4707,9 +4739,9 @@ endg
         jnz     @f
         mov     word [msg_board_pos+2], (42*6)
         add     word [msg_board_pos], 10
-        mov     ax, word [_display.height]
+        mov     ax, word [Screen_Max_Y]
         cmp     word [msg_board_pos], ax
-        jb      @f
+        jbe     @f
         mov     word [msg_board_pos], 10
 @@:
 ; // end if
@@ -5092,10 +5124,10 @@ syscall_cdaudio:
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel_WinMap:                       ; GetPixel WinMap
-        cmp     ebx, [_display.width]
-        jb      @f
-        cmp     ecx, [_display.height]
-        jb      @f
+        cmp     ebx, [Screen_Max_X]
+        jbe     @f
+        cmp     ecx, [Screen_Max_Y]
+        jbe     @f
         xor     eax, eax
         jmp     .store
 ;--------------------------------------
@@ -5112,7 +5144,8 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel:                       ; GetPixel
-        mov     ecx, [_display.width]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
         xor     edx, edx
         mov     eax, ebx
         div     ecx
@@ -5487,6 +5520,39 @@ system_shutdown:          ; shut down the system
         call    stop_all_services
 
 yes_shutdown_param:
+; Shutdown other CPUs, if initialized
+        cmp     [ap_initialized], 0
+        jz      .no_shutdown_cpus
+        mov     edi, [LAPIC_BASE]
+        add     edi, 300h
+        mov     esi, smpt+4
+        mov     ebx, [cpu_count]
+        dec     ebx
+.shutdown_cpus_loop:
+        lodsd
+        push    esi
+        xor     esi, esi
+        inc     esi
+        shl     eax, 24
+        mov     [edi+10h], eax
+; assert INIT IPI
+        mov     dword [edi], 0C500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; deassert INIT IPI
+        mov     dword [edi], 8500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; don't send STARTUP IPI: let other CPUs be in wait-for-startup state
+        pop     esi
+        dec     ebx
+        jnz     .shutdown_cpus_loop
+.no_shutdown_cpus:
+
         cli
 
 if ~ defined extended_primary_loader
@@ -5510,22 +5576,6 @@ end if
 
         call    IRQ_mask_all
 
-if 0
-        mov     word [OS_BASE+0x467+0], pr_mode_exit
-        mov     word [OS_BASE+0x467+2], 0x1000
-
-        mov     al, 0x0F
-        out     0x70, al
-        mov     al, 0x05
-        out     0x71, al
-
-        mov     al, 0xFE
-        out     0x64, al
-
-        hlt
-        jmp     $-1
-
-else
         cmp     byte [OS_BASE + 0x9030], 2
         jnz     no_acpi_power_off
 
@@ -5671,21 +5721,6 @@ do_acpi_power_off:
         jmp     $
 
 
-no_acpi_power_off:
-        mov     word [OS_BASE+0x467+0], pr_mode_exit
-        mov     word [OS_BASE+0x467+2], 0x1000
-
-        mov     al, 0x0F
-        out     0x70, al
-        mov     al, 0x05
-        out     0x71, al
-
-        mov     al, 0xFE
-        out     0x64, al
-
-        hlt
-        jmp     $-1
-
 scan_rsdp:
         add     eax, OS_BASE
 .s:
@@ -5708,7 +5743,33 @@ scan_rsdp:
         stc
 .ok:
         ret
-end if
+
+no_acpi_power_off:
+        call    create_trampoline_pgmap
+        mov     cr3, eax
+        jmp     become_real+0x10000
+iglobal
+align 4
+realmode_gdt:
+; selector 0 - not used
+        dw      23
+        dd      realmode_gdt-OS_BASE
+        dw      0
+; selector 8 - code from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10011011b
+        db      00000000b
+        db      0
+; selector 10h - data from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10010011b
+        db      00000000b
+        db      0
+endg
 
 if ~ lang eq sp
 diff16 "end of .text segment",0,$

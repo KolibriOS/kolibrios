@@ -21,7 +21,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3523 $
+$Revision: 5013 $
 
 uglobal
         net_10ms        dd ?
@@ -313,9 +313,14 @@ stack_handler:
         test    [net_10ms], 0x3f        ; 640ms
         jnz     .exit
 
-        TCP_timer_640ms
         ARP_decrease_entry_ttls
         IPv4_decrease_fragment_ttls
+
+        xor     edx, edx
+        mov     eax, [TCP_timer1_event]
+        mov     ebx, [eax + EVENT.id]
+        xor     esi, esi
+        call    raise_event
 
   .exit:
         ret

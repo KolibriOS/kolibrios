@@ -23,6 +23,13 @@ $Revision: 3606 $
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
+;Screen_Max_X             equ     0xfe00
+;Screen_Max_Y            equ     0xfe04
+;BytesPerScanLine        equ     0xfe08
+;LFBAddress              equ     0xfe80
+;ScreenBPP               equ     0xfbf1
+
+
 
 ;-----------------------------------------------------------------------------
 ; getpixel
@@ -218,7 +225,8 @@ align 4
         add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 ; winmap new line increment
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
+        inc     eax
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
@@ -241,6 +249,8 @@ align 4
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [putimg.abs_cy]
+;        imul    eax, [Screen_Max_X]
+;        add     eax, [putimg.abs_cy]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [putimg.abs_cx]
@@ -685,11 +695,12 @@ __sys_putpixel:
                        ;            for example drawwindow_III and drawwindow_IV
 ; edi = 0x00000001 force
 
+;;;        mov  [novesachecksum], dword 0
         pushad
-        cmp     eax, [_display.width]
-        jae     .exit
-        cmp     ebx, [_display.height]
-        jae     .exit
+        cmp     [Screen_Max_X], eax
+        jb      .exit
+        cmp     [Screen_Max_Y], ebx
+        jb      .exit
         test    edi, 1           ; force ?
         jnz     .forced
 
@@ -878,6 +889,9 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 calculate_edi:
+;        mov     edi, ebx
+;        imul    edi, [Screen_Max_X]
+;        add     edi, ebx
         mov     edi, [d_width_calc_area + ebx*4]
         add     edi, eax
         ret
@@ -1209,8 +1223,9 @@ align 4
 .end_y:
         mov     [drbar.real_sy], ebx
 ; line_inc_map
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         sub     eax, [drbar.real_sx]
+        inc     eax
         mov     [drbar.line_inc_map], eax
 ; line_inc_scr
         mov     eax, [drbar.real_sx]
@@ -1924,7 +1939,8 @@ sdp4:
 ; advance edi, ebp to next scan line
         sub     eax, [draw_data+32+RECT.left]
         sub     ebp, eax
-        add     ebp, [_display.width]
+        add     ebp, [Screen_Max_X]
+        add     ebp, 1
         sub     edi, eax
         sub     edi, eax
         sub     edi, eax
@@ -1955,7 +1971,8 @@ align 4
         push    edi
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
-        mov     ecx, [_display.width]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
         rep movsd
         jmp     bgr_resmooth1
 ;--------------------------------------

@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 4850 $
+$Revision: 5089 $
 
 
 include 'xfs.inc'
@@ -25,6 +25,8 @@ include 'xfs.inc'
 ; returns 0 (not XFS or invalid) / pointer to partition structure
 xfs_create_partition:
         push    ebx ecx edx esi edi
+        cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
+        jnz     .error
         cmp     dword[ebx + xfs_sb.sb_magicnum], XFS_SB_MAGIC   ; signature
         jne     .error
 

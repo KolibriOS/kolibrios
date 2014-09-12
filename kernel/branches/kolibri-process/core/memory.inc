@@ -232,24 +232,12 @@ commit_pages:
         mov     edi, ebx
         shr     edi, 12
         lea     edi, [page_tabs+edi*4]
-
-if USE_FIX_FOR_INVALID_MS_VIRTUAL_PC_2007
-        mov     edx, eax
-@@:
-        mov     eax, edx
-        stosd
-        invlpg  [ebx]
-        add     edx, 0x1000
-        add     ebx, 0x1000
-        loop    @B
-else
 @@:
         stosd
         invlpg  [ebx]
         add     eax, 0x1000
         add     ebx, 0x1000
         loop    @B
-end if
 
         pop     edi
 
@@ -359,6 +347,59 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         add     eax, page_tabs
         invlpg  [eax]
         pop     ebx
+        ret
+endp
+
+uglobal
+sb16_buffer_allocated db 0
+endg
+
+; Allocates [.size] bytes so that the target memory block
+; is inside one 64K page for 24-bit DMA controller,
+; that is, somewhere between 00xx0000h and 00xxFFFFh.
+proc alloc_dma24
+; Implementation note.
+; The only user of that function is SB16 driver,
+; so just return a statically allocated buffer.
+virtual at esp
+                dd      ? ; return address
+.size           dd      ?
+end virtual
+        cmp     [sb16_buffer_allocated], 0
+        jnz     .fail
+        inc     [sb16_buffer_allocated]
+        mov     eax, SB16Buffer
+        ret     4
+.fail:
+        xor     eax, eax
+        ret     4
+endp
+
+; Allocates a physical page for master page table
+; that duplicates first Mb of OS_BASE at address 0;
+; used for starting APs and for shutting down,
+; where it is important to execute code in trivial-mapped pages.
+; Returns eax = allocated physical page.
+proc create_trampoline_pgmap
+; The only non-trivial moment:
+; we need a linear address to fill information,
+; but we don't need it outside of this function,
+; so we're returning physical address.
+; Therefore, allocate memory with kernel_alloc,
+; this will allocate physical page and a linear address somewhere,
+; and deallocate only linear address with free_kernel_space.
+        stdcall kernel_alloc, 0x1000
+        mov     edi, eax
+        mov     esi, master_tab
+        mov     ecx, 1024
+        rep movsd
+        mov     ecx, [master_tab+(OS_BASE shr 20)]
+        mov     [eax], ecx
+        mov     edi, eax
+        call    get_pg_addr
+        push    eax
+        stdcall free_kernel_space, edi
+        pop     eax
         ret
 endp
 

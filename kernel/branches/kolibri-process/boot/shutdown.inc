@@ -13,8 +13,24 @@
 
 $Revision: 2455 $
 
+use32
+become_real:
+        cli
+        lgdt    [realmode_gdt-OS_BASE]
+        jmp     8:@f
+use16
+@@:
+        mov     ax, 10h
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        mov     ss, ax
+        mov     eax, cr0
+        and     eax, not 80000001h
+        mov     cr0, eax
+        jmp     0x1000:pr_mode_exit
 
-align 4
 pr_mode_exit:
 
 ; setup stack

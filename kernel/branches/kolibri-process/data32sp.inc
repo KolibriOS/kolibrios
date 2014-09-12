@@ -47,8 +47,8 @@ if preboot_blogesc
   boot_tasking:     cp850   'Todo configurado - presiona ESC para iniciar',0
 end if
 
-msg_version:   cp850 'versión incompatible del controlador',13,10,0
-msg_www:       cp850 'por favor, visita www.kolibrios.org',13,10,0
+;msg_version:   cp850 'versión incompatible del controlador',13,10,0
+;msg_www:       cp850 'por favor, visita www.kolibrios.org',13,10,0
 
 ud_user_message:cp850 'Error: instrucción no soportada por el procesador',0
 mtrr_user_message cp850 '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
