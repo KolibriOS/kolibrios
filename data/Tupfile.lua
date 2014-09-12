@@ -135,7 +135,7 @@ extra_files = {
  {"kolibrios/emul/", "common/emul/scummvm"},
  {"kolibrios/emul/", "common/emul/zsnes"},
  {"kolibrios/games/doom/", "common/games/doom/*"},
- {"kolibrios/games/fara/fara", build_type .. "/games/fara"},
+ {"kolibrios/games/fara/fara", PROGS .. "/games/fara/trunk/fara"},
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/quake/", "common/games/quake/*"},
