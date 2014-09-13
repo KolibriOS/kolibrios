@@ -103,7 +103,6 @@ v86_create:
 
         mov     eax, 0xC0000+PG_UW
         mov     edi, page_tabs+0xC0*4
-        mov     edx, 0x1000
         mov     ecx, 64
 @@:
         stosd
@@ -145,10 +144,11 @@ v86_create:
 v86_get_lin_addr:
         push    ecx edx
         mov     ecx, eax
-        mov     edx, page_tabs
         shr     ecx, 12
+        mov     edx, [page_tabs+ecx*4]
         and     eax, 0xFFF
-        add     eax, [edx+ecx*4]        ; atomic operation, no mutex needed
+        and     edx, 0xFFFFF000
+        or      eax, edx
         pop     edx ecx
         ret
 
@@ -255,34 +255,35 @@ ends
 ; destroys: nothing
 v86_start:
 
-        xchg bx, bx
-
         pushad
 
         cli
 
-        mov     ecx, [CURRENT_TASK]
-        shl     ecx, 8
-        add     ecx, SLOT_BASE
+        mov     ecx, [current_slot]
 
-        mov     eax, [esi+V86_machine.iopm]
-        call    get_pg_addr
-        inc     eax
         push    dword [ecx+APPDATA.io_map]
         push    dword [ecx+APPDATA.io_map+4]
-        mov     dword [ecx+APPDATA.io_map], eax
-        mov     dword [page_tabs + (tss._io_map_0 shr 10)], eax
-        add     eax, 0x1000
-        mov     dword [ecx+APPDATA.io_map+4], eax
-        mov     dword [page_tabs + (tss._io_map_1 shr 10)], eax
-
         push    [ecx+APPDATA.process]
         push    [ecx+APPDATA.saved_esp0]
         mov     [ecx+APPDATA.saved_esp0], esp
         mov     [tss._esp0], esp
 
+        mov     eax, [esi+V86_machine.iopm]
+        call    get_pg_addr
+        inc     eax
+        mov     dword [ecx+APPDATA.io_map], eax
+        mov     dword [page_tabs + (tss._io_map_0 shr 10)], eax
+
+        mov     eax, [esi+V86_machine.iopm]
+        add     eax, 0x1000
+        call    get_pg_addr
+        inc     eax
+        mov     dword [ecx+APPDATA.io_map+4], eax
+        mov     dword [page_tabs + (tss._io_map_1 shr 10)], eax
+
         mov     eax, [esi+V86_machine.process]
         mov     [ecx+APPDATA.process], eax
+        mov     [current_process], eax
         mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
 
@@ -765,19 +766,20 @@ end if
         mov     esp, esi
 
         cli
-        mov     ecx, [CURRENT_TASK]
-        shl     ecx, 8
+        mov     ecx, [current_slot]
         pop     eax
-        mov     [SLOT_BASE+ecx+APPDATA.saved_esp0], eax
+
+        mov     [ecx+APPDATA.saved_esp0], eax
         mov     [tss._esp0], eax
         pop     eax
-        mov     [SLOT_BASE+ecx+APPDATA.process], eax
+        mov     [ecx+APPDATA.process], eax
         pop     ebx
-        mov     dword [SLOT_BASE+ecx+APPDATA.io_map+4], ebx
+        mov     dword [ecx+APPDATA.io_map+4], ebx
         mov     dword [page_tabs + (tss._io_map_1 shr 10)], ebx
         pop     ebx
-        mov     dword [SLOT_BASE+ecx+APPDATA.io_map], ebx
+        mov     dword [ecx+APPDATA.io_map], ebx
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
+        mov     [current_process], eax
         mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
         sti
@@ -906,74 +908,3 @@ v86_irq2:
         call    do_change_task
         popad
         iretd
-
-align 4
-
-v86_entry:
-        xchg bx, bx
-        mov     ebx, 100000
-        call    delay_hs
-        jmp     v86_entry
-
-align 4
-proc v86_init
-       locals
-         v86_slot      dd ?
-         v86_cmdline   dd ? ;0x00
-         v86_path      dd ? ;0x04
-         v86_eip       dd ? ;0x08
-         v86_esp       dd ? ;0x0C
-         v86_mem       dd ? ;0x10
-       endl
-
-
-        xor     eax, eax
-        mov     [v86_eip], v86_entry
-        mov     [v86_cmdline], eax
-        mov     [v86_esp], eax
-        mov     [v86_path], eax
-
-        call    lock_application_table
-
-        call    alloc_thread_slot
-        test    eax, eax
-        jz      .failed
-
-        mov     [v86_slot], eax
-
-        mov     edi, eax
-        shl     edi, 8
-        add     edi, SLOT_BASE
-        mov     esi, edi      ;edx=edi - pointer to extended infomation about new thread
-        mov     ecx, 256/4
-        xor     eax, eax
-        cld
-        rep stosd             ;clean extended information about new thread
-        mov     [esi], dword 'V86 '
-
-        stdcall create_process, 4096, OS_BASE, 4096
-        test    eax, eax
-        jz      .failed
-
-        mov     [eax+PROC.mem_used], 4096
-        mov     [esi+APPDATA.process], eax
-
-        lea     ebx, [esi+APPDATA.list]
-        lea     ecx, [eax+PROC.thr_list]
-        list_add_tail ebx, ecx               ;add thread to process child's list
-
-
-        lea     eax, [v86_cmdline]
-        stdcall set_app_params , [v86_slot], eax, 0, 0, 2
-
-        mov     eax, [process_number]           ;set result
-        call    unlock_application_table
-        ret
-.failed:
-        xor     eax, eax
-.failed1:
-        call    unlock_application_table
-        dec     eax     ;-1
-        ret
-endp
-
