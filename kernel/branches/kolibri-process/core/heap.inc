@@ -847,6 +847,7 @@ proc user_free stdcall, base:dword
         call    mutex_unlock
 
         xor     eax, eax
+        inc     eax
         pop     ebx
         pop     esi
         ret
@@ -857,7 +858,6 @@ proc user_free stdcall, base:dword
         jmp     .exit
 .fail:
         xor     eax, eax
-        inc     eax
         pop     esi
         ret
 endp
