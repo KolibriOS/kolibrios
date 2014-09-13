@@ -833,7 +833,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
 .map:
         stdcall safe_map_page, [slot], [req_access], [ofs]
         jnc     .exit
-        add     dword [ebp-4], PAGE_SIZE
+        add     [count], PAGE_SIZE
         add     [ofs], PAGE_SIZE
         dec     ecx
         jz      .exit
@@ -852,60 +852,71 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         stdcall map_page, esi, eax, PG_SW
         xor     edx, edx
         jmp     .map
-
 .exit:
-        pop     eax
+        mov     eax, [count]
         ret
 endp
 
 proc map_memEx stdcall, lin_addr:dword,slot:dword,\
                         ofs:dword,buf_size:dword,req_access:dword
-        push    0 ; initialize number of mapped bytes
+        locals
+             count   dd ?
+             process dd ?
+        endl
 
+        mov     [count], 0
         cmp     [buf_size], 0
         jz      .exit
 
         mov     eax, [slot]
         shl     eax, 8
         mov     eax, [SLOT_BASE+eax+APPDATA.process]
-        mov     eax, [eax+PROC.pdt_0_phys]
-        and     eax, 0xFFFFF000
-
-        stdcall map_page, [proc_mem_pdir], eax, PG_UW
-        mov     ebx, [ofs]
-        shr     ebx, 22
-        mov     esi, [proc_mem_pdir]
-        mov     edi, [proc_mem_tab]
-        mov     eax, [esi+ebx*4]
-        and     eax, 0xFFFFF000
         test    eax, eax
         jz      .exit
-        stdcall map_page, edi, eax, PG_UW
 
+        mov     [process], eax
+        mov     ebx, [ofs]
+        shr     ebx, 22
+        mov     eax, [eax+PROC.pdt_0+ebx*4]                 ;get page table
+        mov     esi, [proc_mem_tab]
+        and     eax, 0xFFFFF000
+        jz      .exit
+        stdcall map_page, esi, eax, PG_SW
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
         mov     ecx, [buf_size]
         add     ecx, 4095
         shr     ecx, 12
-        inc     ecx
+        inc     ecx                  ; ???????????
 
         mov     edx, [ofs]
         shr     edx, 12
         and     edx, 0x3FF
-        mov     esi, [proc_mem_tab]
-
 .map:
         stdcall safe_map_page, [slot], [req_access], [ofs]
         jnc     .exit
-        add     dword [ebp-4], 0x1000
-        add     edi, 0x1000
-        add     [ofs], 0x1000
-        inc     edx
+        add     [count], PAGE_SIZE
+        add     [ofs], PAGE_SIZE
         dec     ecx
+        jz      .exit
+
+        add     edi, PAGE_SIZE
+        inc     edx
+        cmp     edx, 1024
         jnz     .map
+
+        inc     ebx
+        mov     eax, [process]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]
+        and     eax, 0xFFFFF000
+        jz      .exit
+
+        stdcall map_page, esi, eax, PG_SW
+        xor     edx, edx
+        jmp     .map
 .exit:
-        pop     eax
+        mov     eax, [count]
         ret
 endp
 

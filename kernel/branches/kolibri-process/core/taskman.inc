@@ -701,6 +701,10 @@ check_region:
 ;result:
 ;  eax = 1 region lays in app memory
 ;  eax = 0 region don't lays in app memory
+
+        mov     eax, 1
+        ret
+if 0
         mov     eax, [CURRENT_TASK]
 ;     jmp  check_process_region
 ;-----------------------------------------------------------------------------
@@ -725,57 +729,13 @@ check_region:
 
         mov     eax, 1
         ret
-
-
-;    call MEM_Get_Linear_Address
-;    push ebx
-;    push ecx
-;    push edx
-;    mov  edx,ebx
-;    and  edx,not (4096-1)
-;    sub  ebx,edx
-;    add  ecx,ebx
-;    mov  ebx,edx
-;    add  ecx,(4096-1)
-;    and  ecx,not (4096-1)
-;.loop:
-;;eax - linear address of page directory
-;;ebx - current page
-;;ecx - current size
-;    mov  edx,ebx
-;    shr  edx,22
-;    mov  edx,[eax+4*edx]
-;    and  edx,not (4096-1)
-;    test edx,edx
-;    jz   .failed1
-;    push eax
-;    mov  eax,edx
-;    call MEM_Get_Linear_Address
-;    mov  edx,ebx
-;    shr  edx,12
-;    and  edx,(1024-1)
-;    mov  eax,[eax+4*edx]
-;    and  eax,not (4096-1)
-;    test eax,eax
-;    pop  eax
-;    jz   .failed1
-;    add  ebx,4096
-;    sub  ecx,4096
-;    jg   .loop
-;    pop  edx
-;    pop  ecx
-;    pop  ebx
 .ok:
         mov     eax, 1
         ret
-;
-;.failed1:
-;    pop  edx
-;    pop  ecx
-;    pop  ebx
 .failed:
         xor     eax, eax
         ret
+end if
 
 align 4
 proc read_process_memory
