@@ -748,7 +748,6 @@ destroy_thread:
 .xd1:
 ;release slot
 
-
         bts     [thr_slot_map], esi
 
         mov     ecx, [.process]

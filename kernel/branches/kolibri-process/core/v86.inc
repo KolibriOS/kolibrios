@@ -109,9 +109,10 @@ v86_create:
         add     eax, edx
         loop @b
 
-        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
-
-        mov     cr3, eax
+        mov     eax, sys_proc
+        push    ebx
+        call    set_cr3
+        pop     ebx
         popfd
 
         pop     edi
@@ -773,13 +774,13 @@ end if
         mov     [tss._esp0], eax
         pop     eax
         mov     [ecx+APPDATA.process], eax
+        mov     [current_process], eax
         pop     ebx
         mov     dword [ecx+APPDATA.io_map+4], ebx
         mov     dword [page_tabs + (tss._io_map_1 shr 10)], ebx
         pop     ebx
         mov     dword [ecx+APPDATA.io_map], ebx
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
-        mov     [current_process], eax
         mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
         sti

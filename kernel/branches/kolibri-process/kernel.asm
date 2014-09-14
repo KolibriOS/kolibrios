@@ -1180,6 +1180,10 @@ proc setup_os_slot
 
         mov     [edx + APPDATA.process], sys_proc
 
+        lea     ebx, [edx+APPDATA.list]
+        lea     ecx, [sys_proc+PROC.thr_list]
+        list_add_tail ebx, ecx
+
         mov     eax, edx
         shr     eax, 3
         add     eax, CURRENT_TASK - (SLOT_BASE shr 3)

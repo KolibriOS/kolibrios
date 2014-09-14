@@ -99,11 +99,11 @@ struct  DBG_REGS
 ends
 
 struct  PROC
-        list            LHEAD          ;
-        thr_list        LHEAD          ;
-        heap_lock       MUTEX          ;
-        heap_base       rd 1           ;
-        heap_top        rd 1           ;
+        list            LHEAD
+        thr_list        LHEAD
+        heap_lock       MUTEX
+        heap_base       rd 1
+        heap_top        rd 1
         mem_used        rd 1
         dlls_list_ptr   rd 1
         pdt_0_phys      rd 1
