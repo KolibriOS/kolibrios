@@ -686,8 +686,8 @@ proc transmit stdcall bufferptr, buffersize
         out     dx, eax
 
         DEBUGF  1, "Packet Sent!\n"
-        xor     eax, eax
         popf
+        xor     eax, eax
         ret
 
   .wait_to_send:
