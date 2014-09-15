@@ -1,19 +1,15 @@
 #ifndef _GRAPHIC_DRAW_H
 #define _GRAPHIC_DRAW_H
 
-#ifndef __MENUET__
 #include <limits.h>
 #include <string.h>
 
 #ifdef _Windows
 # include <windows.h>
 #endif
-#else
-#define LONG_MIN      (-2147483647L-1)  /* minimum signed   long value */
-#define INT_MIN LONG_MIN
-#endif
 
-class TGraphDraw
+template<class TRealGraphDraw>
+class TBaseGraphDraw
 {
 public:
   union event
@@ -24,7 +20,7 @@ public:
     struct evany
     {
       evtype type;
-      TGraphDraw *drw;
+      TRealGraphDraw *drw;
     } any;
 
     struct evbutton : public evany
@@ -43,41 +39,41 @@ public:
 
   enum {ret_setcapture = 0x10};
 public:
-  TGraphDraw(const char *s = 0) : title(0), about_info(0),
+  TBaseGraphDraw(const char *s = 0) : title(0), about_info(0),
                 evfunc(0), id(0), data(0) {CopyTitle(s);}
-  ~TGraphDraw() {FreeTitle();}
+  ~TBaseGraphDraw() {FreeTitle();}
 
-  virtual unsigned long GetBlackColor() {return 0;}
-  virtual unsigned long GetWhiteColor() {return 0xFFFFFFL;}
-  virtual unsigned long CreateColor(unsigned short red,
+  unsigned long GetBlackColor() {return 0;}
+  unsigned long GetWhiteColor() {return 0xFFFFFFL;}
+  unsigned long CreateColor(unsigned short red,
                          unsigned short green, unsigned short blue);
-  virtual void FreeColor(unsigned long c) {}
-  virtual unsigned long GetBgColor() {return GetWhiteColor();}
-  virtual void SetBgColor(unsigned long c) {}
+  void FreeColor(unsigned long c) {}
+  unsigned long GetBgColor() {return GetWhiteColor();}
+  void SetBgColor(unsigned long c) {}
 
-  virtual void SetTitle(const char *s) {CopyTitle(s);}
+  void SetTitle(const char *s) {CopyTitle(s);}
   const char *GetTitle() const {return title;}
 
-  virtual int GetStatus() {return 0;}  //1 - can draw, 0 - can't draw, <0 - error
-  virtual int Init() {return 0;}
-  virtual void UnInit() {}
-  virtual int Run(int evmask = 0, int w = INT_MIN, int h = INT_MIN) {return -100;}
+  int GetStatus() {return 0;}  //1 - can draw, 0 - can't draw, <0 - error
+  int Init() {return 0;}
+  void UnInit() {}
+  int Run(int evmask = 0, int w = INT_MIN, int h = INT_MIN) {return -100;}
 
-  virtual void GetSize(int &w, int &h) {w = 200; h = 200;}
-  virtual int OpenDraw() {return 0;}
-  virtual int IsDraw() {return 0;}
-  virtual void CloseDraw() {}
+  void GetSize(int &w, int &h) {w = 200; h = 200;}
+  int OpenDraw() {return 0;}
+  int IsDraw() {return 0;}
+  void CloseDraw() {}
 
-  virtual int SetColor(unsigned long c) {return 0;}
-  virtual int DrawLine(int x0, int y0, int x1, int y1) {return 0;}
-  virtual int DrawText(int x0, int y0, char *text) {return 0;}
-  virtual int DrawClear() {return 0;}
-  virtual int GetTextH(const char *s) {return 16;}
-  virtual int GetTextW(const char *s) {return 8 * strlen(s);}
-  virtual void Quit(int q = 1) {}
-  virtual void ResReinit(int w = INT_MIN, int h = INT_MIN) {}
-  virtual int GetAboutInfo() {return about_info;}
-  virtual void SetAboutInfo(int inf) {about_info = inf;}
+  int SetColor(unsigned long c) {return 0;}
+  int DrawLine(int x0, int y0, int x1, int y1) {return 0;}
+  int DrawText(int x0, int y0, char *text) {return 0;}
+  int DrawClear() {return 0;}
+  int GetTextH(const char *s) {return 16;}
+  int GetTextW(const char *s) {return 8 * strlen(s);}
+  void Quit(int q = 1) {}
+  void ResReinit(int w = INT_MIN, int h = INT_MIN) {}
+  int GetAboutInfo() {return about_info;}
+  void SetAboutInfo(int inf) {about_info = inf;}
 protected:
   void FreeTitle() {if (title) {delete[] title; title = 0;}}
   void CopyTitle(const char *s);
@@ -89,25 +85,27 @@ public:
   void *data;
 };
 
-unsigned long TGraphDraw::CreateColor(unsigned short red,
+template<class TRealGraphDraw>
+unsigned long TBaseGraphDraw<TRealGraphDraw>::CreateColor(unsigned short red,
                           unsigned short green, unsigned short blue)
 {
   return (unsigned long)(red >> 8) + ((unsigned long)(green >> 8) << 8) +
          ((unsigned long)(blue >> 8) << 16);
 }
 
-void TGraphDraw::CopyTitle(const char *s)
+template<class TRealGraphDraw>
+void TBaseGraphDraw<TRealGraphDraw>::CopyTitle(const char *s)
 {
   FreeTitle();
   if (s) {title = new char[strlen(s) + 1]; strcpy(title, s);}
 }
 
-#if defined __GNUC__
+#if defined _KOLIBRI
+# include "kolibri-draw.h"
+  typedef TKlbrGraphDraw TMainGraphDraw;
+#elif defined __GNUC__
 # include "gnu-draw.h"
   typedef TGnuGraphDraw TMainGraphDraw;
-#elif defined __MENUET__
-# include "mt-draw.h"
-  typedef TKlbrGraphDraw TMainGraphDraw;
 #elif defined _Windows
 # include "win-draw.h"
   typedef TWinGraphDraw TMainGraphDraw;
@@ -115,7 +113,8 @@ void TGraphDraw::CopyTitle(const char *s)
 # include "dos-draw.h"
   typedef TDosGraphDraw TMainGraphDraw;
 #else
-  typedef TGraphDraw TMainGraphDraw;
+#error "Unknown platform"
 #endif
+typedef TMainGraphDraw TGraphDraw;
 
 #endif  //_GRAPHIC_DRAW_H

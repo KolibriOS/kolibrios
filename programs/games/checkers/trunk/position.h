@@ -1,12 +1,10 @@
 #ifndef _HEADER_POSITION_H
 #define _HEADER_POSITION_H
 
-#ifndef __MENUET__
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#endif
 
 #define NELEM(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -226,7 +224,7 @@ char *Position::WriteMv(const unsigned char mv[], char WP[], int how)
       int x, y;
       NumToPole(mv[i], x, y);
       WP[j++] = char('a' + NW_CELL - 1 - x);
-      int r = sprintf(WP + j, "%d", 1 + y);
+      int r = itoa(WP + j, 1 + y);
       if (r > 0) j += r;
       if (i != nmv) WP[j++] = '-';
     }
@@ -333,7 +331,7 @@ int Position::WriteMvEx(const unsigned char mv[], char WP[], int how) const
       if (WP)
       {
         WP[L++] = char('a' + NW_CELL - 1 - x0);
-        int r = sprintf(WP + L, "%d", 1 + y0);
+        int r = itoa(WP + L, 1 + y0);
         if (r > 0) L += r;
       }
       else

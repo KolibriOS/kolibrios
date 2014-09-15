@@ -19,8 +19,9 @@
 
 #define main	OwlMain
 
-class TWinGraphDraw : public TGraphDraw
+class TWinGraphDraw : public TBaseGraphDraw<TWinGraphDraw>
 {
+  typedef TBaseGraphDraw<TWinGraphDraw> TGraphDraw;
 public:
   TWinGraphDraw(const char *s = 0);
   ~TWinGraphDraw();

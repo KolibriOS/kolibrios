@@ -4,7 +4,11 @@
 #undef assert
 #undef unimpl
 
+#ifdef NDEBUG
+#define assert(test) /*nothing*/
+#else
 #define assert(test) ((void)((test)||(__dj_assert(#test,__FILE__,__LINE__),0)))
+#endif
 #define unimpl()       __dj_unimp("Called unimplemented function in file \"" __FILE__ "\"\n")
 
 #ifndef __dj_include_assert_h_

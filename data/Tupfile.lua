@@ -51,7 +51,6 @@ img_files = {
  {"File Managers/EOLITE.INI", "common/File Managers/eolite.ini"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"File Managers/KFM.INI", "common/File Managers/kfm.ini"},
- {"GAMES/CHECKERS", build_type .. "/games/checkers"},
  {"GAMES/MEGAMAZE", build_type .. "/games/megamaze"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
  {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
@@ -456,6 +455,7 @@ if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
  {"3D/CUBELINE", PROGS .. "/demos/cubeline/trunk/cubeline"},
  {"3D/GEARS", PROGS .. "/demos/gears/trunk/gears"},
+ {"GAMES/CHECKERS", PROGS .. "/games/checkers/trunk/checkers"},
  {"GAMES/REVERSI", PROGS .. "/games/reversi/trunk/reversi"},
  {"SHELL", PROGS .. "/system/shell/shell"},
 })

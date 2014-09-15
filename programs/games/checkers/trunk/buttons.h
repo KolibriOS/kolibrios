@@ -1,11 +1,9 @@
 #ifndef _HEADER_BUTTONS_H
 #define _HEADER_BUTTONS_H
 
-#ifndef __MENUET__
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
-#endif
 #include "gr-draw.h"
 
 struct TXButton

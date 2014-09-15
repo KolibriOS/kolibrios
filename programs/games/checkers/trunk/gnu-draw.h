@@ -8,8 +8,9 @@
 #ifndef _GNU_GRAPHIC_DRAW_H
 #define _GNU_GRAPHIC_DRAW_H
 
-class TGnuGraphDraw : public TGraphDraw
+class TGnuGraphDraw : public TBaseGraphDraw<TGnuGraphDraw>
 {
+  typedef TBaseGraphDraw<TGnuGraphDraw> TGraphDraw;
 public:
   TGnuGraphDraw(const char *s = 0);
   ~TGnuGraphDraw();

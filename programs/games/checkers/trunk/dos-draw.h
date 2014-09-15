@@ -10,8 +10,9 @@
 #include <stdio.h>
 #include <limits.h>
 
-class TDosGraphDraw : public TGraphDraw
+class TDosGraphDraw : public TBaseGraphDraw<TDosGraphDraw>
 {
+  typedef TBaseGraphDraw<TDosGraphDraw> TGraphDraw;
 public:
   TDosGraphDraw(const char *s = 0);
   ~TDosGraphDraw() {}

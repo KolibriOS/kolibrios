@@ -1,14 +1,12 @@
 #ifndef _HEADER_BOARD_H
 #define _HEADER_BOARD_H
 
-#ifndef __MENUET__
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <limits.h>
-#endif
 #include "position.h"
 #include "history.h"
 #include "gr-draw.h"
@@ -527,7 +525,7 @@ int TChBoard::GetTextLineY() const
   return (y + height - delta_size.y) / 2;
 }
 
-#ifdef BUILD_RUS
+#ifdef LANG_RUS
 #define aCheckersGame   "Игра в шашки."
 #define aRedMoves       "Красные ходят."
 #define aBlueMoves      "Синие ходят."

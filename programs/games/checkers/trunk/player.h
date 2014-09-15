@@ -3,11 +3,9 @@
 
 #include "position.h"
 #include "sysproc.h"
-#ifndef __MENUET__
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#endif
 
 template <class tvalue>
 class TBaseCompPlayer : public TChPlayer

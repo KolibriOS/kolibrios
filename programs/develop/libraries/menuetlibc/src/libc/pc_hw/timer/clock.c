@@ -6,5 +6,7 @@
 
 clock_t clock(void)
 {
- return 0; 
+  unsigned result;
+  __asm__ __volatile__("int $0x40" : "=a"(result) : "a"(26), "b"(9));
+  return result;
 }

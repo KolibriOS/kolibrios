@@ -1,19 +1,13 @@
 #ifndef _HEADER_HISTORY_H
 #define _HEADER_HISTORY_H
 
-#ifndef __MENUET__
-#include <string.h>
-#include <stdio.h>
-#include <time.h>
-#include <stdlib.h>
-#endif
 #include "position.h"
 #include "hash.h"
 #include "sysproc.h"
 
 class THistory
 {
-#ifndef __MENUET__
+#ifndef NO_FILES
 public:
   static char FileName[1024];
 #endif
@@ -27,7 +21,7 @@ public:
   int Move(const Position &pos, const unsigned char mv[], int nmove) const;
   int Play(const PlayWrite &play) const;
 
-#ifndef __MENUET__
+#ifndef NO_FILES
   static int InitHFile(char *dname = 0);
   static int HRead(FILE *f, PlayWrite *&play);
 protected:
@@ -119,12 +113,12 @@ protected:
   };
 };
 
-#ifndef __MENUET__
+#ifndef NO_FILES
 char THistory::FileName[1024] = "history.che";
 #endif
 int THistory::NHid = 0;
 
-#ifndef __MENUET__
+#ifndef NO_FILES
 int THistory::Print(const char *str) const
 {
   char *line = new char[30 + strlen(str)];
@@ -150,9 +144,9 @@ int THistory::Print(const char *str) const
 
 int THistory::Start(const Position &pos) const
 {
+#ifndef NO_FILES
   char str[20 + NUM_CELL] = "Start ";
   if (!pos.Write(str + strlen(str), 1)) return 0;
-#ifndef __MENUET__
   if (!Print(str)) return 0;
 #endif
   return 1;
@@ -160,14 +154,14 @@ int THistory::Start(const Position &pos) const
 
 int THistory::Move(const Position &pos, const unsigned char mv[], int nmove) const
 {
+#ifndef NO_FILES
   char *str = new char[15 + pos.GetLenMvEx(mv, 11)];
   if (!str) return 0;
   sprintf(str, "%d.%s ", (nmove + 1) / 2, (nmove % 2 == 0) ? ".." : "");
   pos.WriteMvEx(mv, str + strlen(str), 11);
-#ifndef __MENUET__
   if (!Print(str)) {delete[] str; return 0;}
-#endif
   delete[] str;
+#endif
   return 1;
 }
 
@@ -188,7 +182,7 @@ int THistory::Play(const PlayWrite &play) const
   return 1;
 }
 
-#ifndef __MENUET__
+#ifndef NO_FILES
 int THistory::InitHFile(char *dname)
 {
   if (dname && dname[0])
@@ -262,7 +256,7 @@ int THistory::THash::operator()(const TStr &str) const
   return r;
 }
 
-#ifndef __MENUET__
+#ifndef NO_FILES
 int THistory::HRead(FILE *f, PlayWrite *&play)
 {
   const int MAX_INP_WORD = 100;

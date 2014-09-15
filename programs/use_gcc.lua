@@ -1,4 +1,6 @@
-CFLAGS = "-Os -fno-ident -fomit-frame-pointer -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -mpreferred-stack-boundary=2 -fno-exceptions -fno-asynchronous-unwind-tables -ffast-math -mno-ms-bitfields"
+CFLAGS = "-Os -fno-ident -fomit-frame-pointer -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -mpreferred-stack-boundary=2 -fno-exceptions -fno-asynchronous-unwind-tables -ffast-math -mno-ms-bitfields -march=pentium-mmx"
+CFLAGS_c = "" -- extra flags for *.c
+CFLAGS_cpp = " -fno-rtti" -- extra flags for *.cpp
 LDFLAGS = "-nostdlib -n --file-alignment=16 --section-alignment=16"
 INCLUDES = ""
 LIBS = ""
@@ -8,7 +10,7 @@ OBJS = {}
 function compile_gcc(input, output)
   if not output then output = '%B.o' end
   tup.append_table(OBJS,
-    tup.foreach_rule(input, "kos32-gcc -c " .. CFLAGS .. " " .. INCLUDES .. " -o %o %f", output)
+    tup.foreach_rule(input, "kos32-gcc -c " .. CFLAGS .. "$(CFLAGS_%e) " .. INCLUDES .. " -o %o %f", output)
   )
 end
 

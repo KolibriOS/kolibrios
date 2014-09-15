@@ -36,7 +36,6 @@ extern char __menuet__app_param_area[];
 void __crt1_startup(void)
 {
  init_brk();
- if(__menuet__app_param_area[0]!='\0')
  __crt0_setup_arguments();
  dosemu_inithandles();
  init_dir_stack();

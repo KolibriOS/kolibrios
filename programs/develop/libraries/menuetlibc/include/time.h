@@ -10,10 +10,7 @@ extern "C" {
 
 #ifndef __dj_ENFORCE_ANSI_FREESTANDING
 
-/* 65536(tics/hour) / 3600(sec/hour) * 5(scale) = 91.02
-   The 5 is to make it a whole number (18.2*5=91) so that
-   floating point ops aren't required to use it. */
-#define CLOCKS_PER_SEC	91
+#define CLOCKS_PER_SEC 100
 
 #include <sys/djtypes.h>
   

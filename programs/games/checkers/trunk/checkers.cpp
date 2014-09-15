@@ -1,254 +1,32 @@
-
-#ifndef AUTOBUILD
-#include "lang.h"
-#endif
-//#define BUILD_RUS
-#ifndef __MENUET__
+//#define LANG_RUS
+#define NDEBUG
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#else
-#include <menuet.h>
-#include <me_heap.h>
-using namespace Menuet;
-#define strlen StrLen
-#define strcpy StrCopy
-#define memcpy MemCopy
-#include <stdarg.h>
-const unsigned dectab[] = { 1000000000, 100000000, 10000000, 1000000, 100000,
-                   10000, 1000, 100, 10, 0 };
-int sprintf( char *Str, char* Format, ... )
-{
-        int i, fmtlinesize, j, k, flag;
-        unsigned head, tail;
-        char c;
-        va_list arglist;
-        //
-        va_start(arglist, Format);
 
-        //
-        fmtlinesize = strlen( Format );
-        //
-        if( fmtlinesize == 0 ) return 0;
-  
-        //
-        for( i = 0, j = 0; i < fmtlinesize; i++ )
-        {
-                //
-                c = Format[i];
-                //
-                if( c != '%' )
-                {
-                        Str[j++] = c;
-                        continue;
-                }
-                //
-                i++;
-                //
-                if( i >= fmtlinesize ) break;
-
-                //
-                flag = 0;
-                //
-                c = Format[i];
-                if (c == 'l') c = Format[++i];
-                //
-                switch( c )
-                {
-                //
-                case '%':
-                        Str[j++] = c;
-                        break;
-                // ÅòÅçÑ üêèçâï
-                case 's':
-                        char* str;
-                        str = va_arg(arglist, char*);
-                        for( k = 0; ( c = str[k] ) != 0; k++ )
-                        {
-                                Str[j++] = c;
-                        }
-                        break;
-                // ÅòÅçÑ üïãÅçäû
-                case 'c':
-                        Str[j++] = va_arg(arglist, int) & 0xFF;
-                        break;
-                // ÅòÅçÑ ÑÅçàåçñç üäçÅû Å ÑÖüöêïÇåçã ÅïÑÖ
-                case 'u':
-                case 'd':
-                        head = va_arg(arglist, unsigned);
-                        for( k = 0; dectab[k] != 0; k++ )
-                        {
-                                tail = head % dectab[k];
-                                head /= dectab[k];
-                                c = head + '0';
-                                if( c == '0' )
-                                {
-                                        if( flag ) Str[j++] = c;
-                                }
-                                else
-                                {
-                                        flag++;
-                                        Str[j++] = c;
-                                }
-                                //
-                                head = tail;
-                        }
-                        //
-                        c = head + '0';
-                        Str[j++] = c;
-                        break;
-                default:
-                        break;
-                }
-        }
-        //
-        Str[j] = 0;
-        return j;
-}
-int isdigit(int c)
+// sprintf is too heavy
+int itoa(char* dst, int number)
 {
-	return (c>='0' && c<='9');
-}
-int atoi(const char* string)
-{
-	int res=0;
-	int sign=0;
-	const char* ptr;
-	for (ptr=string; *ptr && *ptr<=' ';ptr++);
-	if (*ptr=='-') {sign=1;++ptr;}
-	while (*ptr >= '0' && *ptr <= '9')
-	{
-		res = res*10 + *ptr++ - '0';
+	int result = 0;
+	if (number < 0) {
+		result++;
+		*dst++ = '-';
+		number = -number;
 	}
-	if (sign) res = -res;
-	return res;
-}
-int islower(int c)
-{
-	return (c>='a' && c<='z');
-}
-int abs(int n)
-{
-	return (n<0)?-n:n;
-}
-int memcmp(const void* buf1, const void* buf2, unsigned count)
-{
-	const char* ptr1 = (const char*)buf1;
-	const char* ptr2 = (const char*)buf2;
-	unsigned i=0;
-	while (i<count && *ptr1==*ptr2) {++i;++ptr1;++ptr2;}
-	if (i==count)
-		return 0;
-	else if (*ptr1<*ptr2)
-		return -1;
-	else
-		return 1;
-}
-void strncpy(char* dest, const char* source, unsigned len)
-{
-	char* ptr1 = dest;
-	const char *ptr2 = source;
-	for (;len-- && *ptr2; *ptr1++=*ptr2++) ;
-}
-unsigned int rand_data[4];
-
-void randomize()
-{
-	rand_data[0] = (unsigned int)Clock();
-	rand_data[1] = (unsigned int)GetPackedTime();
-	rand_data[2] = (unsigned int)GetPackedDate();
-	rand_data[3] = (unsigned int)0xA3901BD2 ^ GetPid();
+	char digits[16];
+	int ndigits = 0;
+	do {
+		digits[ndigits++] = number % 10;
+		number /= 10;
+	} while (number);
+	result += ndigits;
+	for (; ndigits--; )
+		*dst++ = digits[ndigits] + '0';
+	return result;
 }
 
-unsigned int rand()
-{
-	rand_data[0] ^= _HashDword(rand_data[3] + 0x2835C013U);
-	rand_data[1] += _HashDword(rand_data[0]);
-	rand_data[2] -= _HashDword(rand_data[1]);
-	rand_data[3] ^= _HashDword(rand_data[2]);
-	return rand_data[3];
-}
-
-#define random(k)  (rand() % (k))
-#define floor Floor
-double fabs(double x)
-{
-	__asm	fld	x
-	__asm	fabs
-}
-#define M_PI       3.14159265358979323846
-double cos(double x)
-{
-	__asm	fld	x
-	__asm	fcos
-}
-double sin(double x)
-{
-	__asm	fld	x
-	__asm	fsin
-}
-/*inline void printf(const char* format, ...)
-{}*/
-#define printf /* nothing */
-inline void strcat(char* str1, const char* str2)
-{strcpy(str1+strlen(str1),str2);}
-int strncmp(const char* str1, const char* str2, unsigned len)
-{
-	for (;len--;)
-	{
-		if (*str1 != *str2) break;
-		if (*str1 == 0)
-			return 0;
-		++str1;++str2;
-	}
-	if (len==(unsigned)-1)
-		return 0;
-	if (*str1 < *str2)
-		return -1;
-	return 1;
-}
-#define clock Clock
-typedef unsigned int clock_t;
-#define CLOCKS_PER_SEC 100
-#define XK_Left		0xB0
-#define XK_Right	0xB3
-#define XK_Up		0xB2
-#define XK_Down		0xB1
-#define XK_Return	0x0D
-#define XK_space	0x20
-#define XK_Escape	0x1B
-#define XK_less		'<'
-#define XK_comma	','
-#define XK_period	'.'
-#define XK_greater	'>'
-#define XK_minus	'-'
-#define XK_equal	'='
-#define XK_underscore	'_'
-#define XK_plus		'+'
-#define XK_Delete	0xB6
-#define XK_F8		0x39
-#define XK_l		'l'
-#define XK_L		'L'
-#define XK_F2		0x33
-#define XK_s		's'
-#define XK_S		'S'
-#define XK_slash	'/'
-#define XK_question	'?'
-#define XK_n		'n'
-#define XK_N		'N'
-#define XK_t		't'
-#define XK_T		'T'
-#define XK_r		'r'
-#define XK_R		'R'
-#define XK_b		'b'
-#define XK_B		'B'
-#define XK_f		'f'
-#define XK_F		'F'
-#define assert(a) /* nothing */
-#include "qsort.c"
-#endif
 #include "gr-draw.h"
 #include "board.h"
 #include "player.h"
@@ -272,7 +50,7 @@ public:
   void Add(const PlayWrite &pl);
   PlayWrite &operator[](int i) {return play[i];}
   int GetNPlay() const {return nplay;}
-#ifndef __MENUET__
+#ifndef NO_FILES
   int OpenFile(const char *name, int kind);
   int MsgOpenFile(const char *name, int kind);
   int SaveFile(const char *name, int num, int kind);
@@ -285,7 +63,7 @@ protected:
   PlayWrite *play;
   int nplay, mplay;
 protected:
-#ifndef __MENUET__
+#ifndef NO_FILES
   static const char *const search[];
   static int AnalizeKind(FILE *f, const int w[], const char *smb = 0);
   static int ReadFileTo(FILE *f, char c);
@@ -294,8 +72,7 @@ protected:
 #endif
 };
 
-#ifndef __MENUET__
-#if LANG_RUS //Pending Russian Translations
+#ifdef LANG_RUS //Pending Russian Translations
     #define CHECKERS_CANT_OPEN_STR "\nò†Ë™®: ç• ¨Æ£„ Æ‚™‡Î‚Ï ‰†©´ \"%s\".\n"
     #define CHECKERS_FILE_EMPTY_STR "\nò†Ë™®: î†©´ \"%s\" Ø„·‚.\n"
     #define CHECKERS_INVALID_FILE_STR "\nò†Ë™®: î†©´ \"%s\" ÆË®°ÆÁ≠Î©.\n"
@@ -325,8 +102,10 @@ protected:
     #define EXIT_STR "exit"
     #define CHECKERS_INVALID_STR "Checkers: Invalid key %s\n"
 
+#ifndef NO_FILES
 const char *const TPlayArray::search[] =
   {"checkers-", "play:", "text", "bin_1.0\n", "history_", "1.0", "1.1"};
+#endif
 
 #else /*For all other languages except RUS*/
     #define CHECKERS_CANT_OPEN_STR "\nCheckers: Can't open the file \"%s\".\n"
@@ -357,10 +136,12 @@ const char *const TPlayArray::search[] =
     #define ROTATE_BOARD_STR "rotate board"
     #define EXIT_STR "exit"
     #define CHECKERS_INVALID_STR "Checkers: Invalid key %s\n"
+
+#ifndef NO_FILES
 const char *const TPlayArray::search[] =
      {"checkers-", "play:", "text", "bin_1.0\n", "history_", "1.0", "1.1"};
-
 #endif
+
 #endif
 void TPlayArray::Clear()
 {
@@ -392,7 +173,7 @@ void TPlayArray::Add(const PlayWrite &pl)
   nplay++;
 }
 
-#ifndef __MENUET__
+#ifndef NO_FILES
 int TPlayArray::AnalizeKind(FILE *f, const int w[], const char *smb)
 {
   int i, L, was1 = 1;
@@ -880,22 +661,22 @@ protected:
 
 void TMainDraw::InitButton()
 {
-  char newgame_literal[] = NEW_GAME_STR;
-  char list_literal[] = LIST_STR;
-  char delete_literal[] = DELETE_STR;
-  char clear_literal[] = CLEAR_STR;
-  char save_literal[] = SAVE_STR;
-  char rotateboard_literal[] = ROTATE_BOARD_STR;
-  char exit_literal[] = EXIT_STR;
+  static char newgame_literal[] = NEW_GAME_STR;
+  static char list_literal[] = LIST_STR;
+  static char delete_literal[] = DELETE_STR;
+  static char clear_literal[] = CLEAR_STR;
+  static char save_literal[] = SAVE_STR;
+  static char rotateboard_literal[] = ROTATE_BOARD_STR;
+  static char exit_literal[] = EXIT_STR;
 
-  char one_literal[] = "1";
-  char dash_literal[] = "-";
-  char plus_literal[] = "+";
-  char leftshift_literal[] = "<<";
-  char rightshift_literal[] = ">>";
-  char lessthan_literal[] = "<";
-  char greaterthan_literal[] = ">";
-  char xor_literal[] = "^";
+  static char one_literal[] = "1";
+  static char dash_literal[] = "-";
+  static char plus_literal[] = "+";
+  static char leftshift_literal[] = "<<";
+  static char rightshift_literal[] = ">>";
+  static char lessthan_literal[] = "<";
+  static char greaterthan_literal[] = ">";
+  static char xor_literal[] = "^";
 
   button.Add(1, 80, 22, newgame_literal);
   button.Add(6, 60, 22, list_literal);
@@ -909,7 +690,7 @@ void TMainDraw::InitButton()
   play_list->SetDefW();
   button.Add(play_list);
   button.Add(24, 50, 22, clear_literal);
-#ifndef __MENUET__
+#ifndef NO_FILES
   button.Add(25, 50, 22, save_literal);
 #endif
   button.Add(2, 120, 22, player_str[0]);
@@ -970,7 +751,7 @@ void TMainDraw::SetButtonKind(const TChBoard &board)
   if (bt1) bt1->drw = is_drw;
   bt1 = button.GetButton(7);
   if (bt1) bt1->drw = !is_drw;
-#ifndef __MENUET__
+#ifndef NO_FILES
   bt1 = button.GetButton(25);
   if (bt1) bt1->drw = !is_drw;
 #endif
@@ -982,20 +763,18 @@ void TMainDraw::SetButtonKind(const TChBoard &board)
   if (is_drw)
   {
     play_num[0][0] = 0; play_num[1][0] = 0;
-    if (cur_play >= 0) sprintf(play_num[0], "%d", cur_play + 1);
-    sprintf(play_num[1], "%d", play.GetNPlay());
+    if (cur_play >= 0) itoa(play_num[0], cur_play + 1);
+    itoa(play_num[1], play.GetNPlay());
     thick = (cur_play <= 0) ? 0 : 3;
-#define dynamic_cast static_cast
-    txb = dynamic_cast<TextButton*>(play_list->a.GetButton(21));
+    txb = static_cast<TextButton*>(play_list->a.GetButton(21));
     if (txb) txb->thick = thick;
-    txb = dynamic_cast<TextButton*>(play_list->a.GetButton(26));
+    txb = static_cast<TextButton*>(play_list->a.GetButton(26));
     if (txb) txb->thick = thick;
     thick = (cur_play >= play.GetNPlay() - 1) ? 0 : 3;
-    txb = dynamic_cast<TextButton*>(play_list->a.GetButton(22));
+    txb = static_cast<TextButton*>(play_list->a.GetButton(22));
     if (txb) txb->thick = thick;
-    txb = dynamic_cast<TextButton*>(play_list->a.GetButton(27));
+    txb = static_cast<TextButton*>(play_list->a.GetButton(27));
     if (txb) txb->thick = thick;
-#undef dynamic_cast
   }
 }
 
@@ -1073,7 +852,7 @@ void TMainDraw::PressLS(int n, TChBoard &board, TGraphDraw *drw)
     }
   }
   else if (n == 24) {play.Clear(); cur_play = 0; need_redraw = 1;}
-#ifndef __MENUET__
+#ifndef NO_FILES
   else if (n == 25)
   {
     if (play.GetNPlay() > 0) play.MsgSaveFile(def_savefile, -1, def_savekind);
@@ -1313,7 +1092,7 @@ int TMainData::EventFunction(const TGraphDraw::event &ev)
     else if (ev.key.k == XK_Delete) data.main_draw.PressLS(7, data.board, ev.button.drw);
     else if (ev.key.k == XK_F8) data.main_draw.PressLS(24, data.board, ev.button.drw);
     else if (ev.key.k == XK_l || ev.key.k == XK_L) data.main_draw.PressLS(6, data.board, ev.button.drw);
-#ifndef __MENUET__
+#ifndef NO_FILES
     else if (ev.key.k == XK_F2) data.main_draw.PressLS(25, data.board, ev.button.drw);
 #endif
     else if (ev.key.k == XK_s || ev.key.k == XK_S) data.main_draw.PressLS(28, data.board, ev.button.drw);
@@ -1342,11 +1121,12 @@ int TMainData::EventFunction(const TGraphDraw::event &ev)
   return ret;
 }
 
-#ifndef __MENUET__
 int main(int argc, char **argv)
 {
   randomize();
+#ifndef NO_FILES
   THistory::InitHFile(argv[0]);
+#endif
   TMainData data(-1);
   if (argv && argc >= 2)
   {
@@ -1376,7 +1156,9 @@ int main(int argc, char **argv)
       }
       else if (kx == 0 || kx == 1)
       {
+#ifndef NO_FILES
         data.main_draw.play.MsgOpenFile(argv[i], -1);
+#endif
       }
     }
   }
@@ -1391,65 +1173,3 @@ int main(int argc, char **argv)
             450 + 100 * ssf, 528);
   return 0;
 }
-#else
-
-TMainData* mdata;
-TMainGraphDraw* graph;
-
-bool MenuetOnStart(TStartData &me_start, TThreadData)
-{
-	mdata = new TMainData(-1);
-	graph = new TMainGraphDraw;
-	randomize();
-	mdata->InitDef();
-	static TTimerDraw timer_draw(&mdata->board, graph);
-	mdata->player.draw = TTimerDraw::draw; mdata->player.data = &timer_draw;
-	graph->data = mdata;
-	me_start.WinData.Title = CHECKERS_STR;
-	me_start.Width = 450 + 100*ssf;
-	me_start.Height = 528;
-	return true;
-}
-bool MenuetOnClose(TThreadData)
-{
-	delete mdata;
-	delete graph;
-	return true;
-}
-int MenuetOnIdle(TThreadData)
-{return -1;}
-void MenuetOnSize(int window_rect[], TThreadData)
-{mdata->board.Resize(window_rect[2]-window_rect[0], window_rect[3]-window_rect[1]);}
-void MenuetOnKeyPress(TThreadData)
-{
-	TGraphDraw::event ev;
-	ev.type = TGraphDraw::event::key_down;
-	ev.any.drw = graph;
-	ev.key.k = GetKey();
-	mdata->EventFunction(ev);
-}
-void MenuetOnDraw(void)
-{
-	TGraphDraw::event ev;
-	ev.type = TGraphDraw::event::draw;
-	ev.any.drw = graph;
-	mdata->EventFunction(ev);
-}
-void MenuetOnMouse(TThreadData)
-{
-	short x,y;
-	GetMousePosition(x,y);
-	int m = GetMouseButton() & 1;
-	static int mprev = 0;
-	if (m == mprev)
-		return;
-	mprev = m;
-	TGraphDraw::event ev;
-	ev.type = m ? TGraphDraw::event::button_down : TGraphDraw::event::button_up;
-	ev.any.drw = graph;
-	ev.button.n = 1;
-	ev.button.x = x;
-	ev.button.y = y;
-	mdata->EventFunction(ev);
-}
-#endif
