@@ -1098,8 +1098,8 @@ proc transmit stdcall bufferptr, buffersize
         add     dword [ebx + device.bytes_tx], eax
         adc     dword [ebx + device.bytes_tx + 4], 0
 
-        xor     eax, eax
         popf
+        xor     eax, eax
         ret
 
   .fail:
