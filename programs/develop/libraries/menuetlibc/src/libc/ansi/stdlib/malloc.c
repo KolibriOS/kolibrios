@@ -110,7 +110,7 @@ split_block(BLOCK *b, size_t size)
   return rv;
 }
 
-#define RET(rv) CHECK(rv); ENDSZ(rv) |= 1; rv->size |= 1; return DATA(rv)
+#define RET(rv) CHECK(rv); ENDSZ(rv) |= 1; rv->size |= 1; malloc_unlock(); return DATA(rv)
 
 void * malloc(size_t size)
 {
@@ -124,6 +124,8 @@ void * malloc(size_t size)
   printf("malloc(%u)\n", size);
 #endif
  
+  malloc_lock();
+
 #if NUMSMALL
   if (size < SMALL)
   {
@@ -131,6 +133,7 @@ void * malloc(size_t size)
     if (rv)
     {
       smallblocks[size/ALIGN] = rv->next;
+      malloc_unlock();
       return DATA(rv);
     }
   }
@@ -205,8 +208,10 @@ void * malloc(size_t size)
 
   chunk_size = size+16; /* two ends plus two placeholders */
   rv = (BLOCK *)sbrk(chunk_size);
-  if (rv == (BLOCK *)(-1))
+  if (rv == (BLOCK *)(-1)) {
+    malloc_unlock();
     return 0;
+  }
 #if DEBUG
   printf("sbrk(%d) -> %08x, expected %08x\n", chunk_size, rv, expected_sbrk);
 #endif
@@ -297,11 +302,14 @@ free(void *ptr)
     return;
   block = (BLOCK *)((char *)ptr-4);
 
+  malloc_lock();
+
 #if NUMSMALL
   if (block->size < SMALL)
   {
     block->next = smallblocks[block->size/ALIGN];
     smallblocks[block->size/ALIGN] = block;
+    malloc_unlock();
     return;
   }
 #endif
@@ -335,6 +343,7 @@ free(void *ptr)
   block->next = freelist[b];
   freelist[b] = block;
   CHECK(block);
+  malloc_unlock();
 }
 
 void * realloc(void *ptr, size_t size)
