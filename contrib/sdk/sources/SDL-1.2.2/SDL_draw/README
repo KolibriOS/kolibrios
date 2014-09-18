@@ -1,0 +1,117 @@
+
+SDL_draw 1.2.1
+~~~~~~~~~~~~~~
+The latest version of this library is available from:
+http://sdl-draw.sourceforge.net/
+
+This is a simple library to draw basic elements, like points, lines and
+circles, on SDL surfaces.
+
+Library API
+~~~~~~~~~~~
+#include "SDL_draw.h"
+
+//IMPORTANT: Call this function AFTER the call to 'SDL_SetVideoMode':
+Draw_Init(); //Register the functions for current bpp 
+
+
+void Draw_Pixel(SDL_Surface *super,
+                Sint16 x, Sint16 y, Uint32 color);
+
+  Draw a colored pixel on coordinates x,y.
+
+
+void Draw_Line(SDL_Surface *super,
+               Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2,
+               Uint32 color);
+
+  Draw a line from x1,y1 to x2,y2.
+
+
+void Draw_Circle(SDL_Surface *super,
+                 Sint16 x0, Sint16 y0, Uint16 r,
+                 Uint32 color);
+                                        
+  Draw a circle with center x0,y0 and radius r.
+
+
+void Draw_FillCircle(SDL_Surface *super,
+                     Sint16 x0, Sint16 y0, Uint16 r,
+                     Uint32 color);
+                     
+  Draw a filled circle with center x0,y0 and radius r.
+
+
+void Draw_HLine(SDL_Surface *super,
+                Sint16 x0,Sint16 y0, Sint16 x1,
+                Uint32 color);
+
+  Draw a horizontal line from x0,y0 to x1,y0.
+
+
+void Draw_VLine(SDL_Surface *super,
+                Sint16 x0,Sint16 y0, Sint16 y1,
+                Uint32 color);
+
+  Draw a vertical line from x0,y0 to x0,y1.
+
+
+void Draw_Rect(SDL_Surface *super,
+               Sint16 x,Sint16 y, Uint16 w,Uint16 h,
+               Uint32 color);
+
+  Draw a rectangle with upper left corner in x,y being w the width and h the
+  height.
+
+
+void Draw_FillRect(SDL_Surface *super,
+                   Sint16 x,Sint16 y, Uint16 w,Uint16 h,
+                   Uint32 color);
+
+  The same as above but the rectangle is filled. This function is equivalent 
+  to SDL_FillRect (is a MACRO).
+
+
+void Draw_Ellipse(SDL_Surface *super,
+                  Sint16 x0, Sint16 y0,
+                  Uint16 Xradius, Uint16 Yradius,
+                  Uint32 color);
+
+  Draw a ellipse with center in x0,y0. Xradius is the major axis and Yradius is
+  the minor axis.
+                  
+
+void Draw_FillEllipse(SDL_Surface *super,
+                      Sint16 x0, Sint16 y0,
+                      Uint16 Xradius, Uint16 Yradius,
+                      Uint32 color);
+
+  Draw a filled ellipse (same parameters as the above function).
+
+
+void Draw_Round(SDL_Surface *super,
+                Sint16 x0,Sint16 y0, Uint16 w,Uint16 h,
+                Uint16 corner, Uint32 color);
+
+  Draw a rectangle with rounded corners. x0,y0 is the upper left corner of the
+  rectangle, w is the width and h is the height. corner is the radius of the
+  corner.
+
+
+void Draw_Round(SDL_Surface *super,
+                Sint16 x0,Sint16 y0, Uint16 w,Uint16 h,
+                Uint16 corner, Uint32 color);
+  
+  The same as above but the rounded rectangle is filled.
+
+
+The file sdldrawtest.c is a example application for the library. You can
+compile it using (for GNU Compiler):
+
+$ export CFLAGS="`sdl-config --cflags` -I./include"
+$ export LIBS="`sdl-config --libs` ./src/.libs/libSDL_draw.a"
+$ gcc -o sdldrawtest sdldrawtest.c -Wall $CFLAGS $LIBS
+
+This library is under the GNU Library General Public License, see the file
+"COPYING" for details.
+

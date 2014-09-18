@@ -1,0 +1,27 @@
+
+This library is a wrapper around the excellent FreeType 1.2 library,
+available at:
+	http://www.freetype.org/
+
+WARNING: There may be patent issues with using the FreeType library.
+Check the FreeType website for up-to-date details.
+
+This library allows you to use TrueType fonts to render text in SDL
+applications.
+
+To make the library, first install the FreeType library, then type
+'make' to build the SDL truetype library and 'make all' to build
+the demo application.
+
+Be careful when including fonts with your application, as many of them
+are copyrighted.  The Microsoft fonts, for example, are not freely 
+redistributable and even the free "web" fonts they provide are only 
+redistributable in their special executable installer form (May 1998).
+There are plenty of freeware and shareware fonts available on the Internet
+though, and may suit your purposes.
+
+Please see the file "COPYING" for license information for this library.
+
+Enjoy!
+	-Sam Lantinga <slouken@devolution.com>		(5/1/98)
+

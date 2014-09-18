@@ -1,0 +1,5 @@
+OUTFILE = SDLtest
+OBJS = sdltest.o
+LIBS = -lSDL
+
+include $(MENUETDEV)/makefiles/Makefile_for_program

@@ -16,6 +16,10 @@ end
 
 function link_gcc(input, output)
   if not output then input,output = OBJS,input end
+  if STARTUP then
+    table.insert(LIBDEPS, STARTUP)
+    LDFLAGS = LDFLAGS .. " " .. STARTUP
+  end
   if tup.getconfig("HELPERDIR") == "" and #LIBDEPS then
     if type(input) == "string" then input = {input} end
     if not input.extra_inputs then input.extra_inputs = {} end

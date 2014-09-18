@@ -1,0 +1,9 @@
+TODO 07-2002
+~~~~~~~~~~~~
+
+- Draw_Arc
+- Draw_Pie (or Draw_FillArc)
+- Draw_Thick* (Thicks versions of the functions)
+- Implement __antialiasing__ version of the functions (ex: Draw_ALine)
+- Optimizations (Processor Pipeline and others)
+

@@ -1,0 +1,6 @@
+OUTFILE = showanim
+OBJS = showanim.o
+CFLAGS = -I. -I$(MENUETDEV)/include/SDL
+LIBS = -L. -lSDL -lpng -lz -lSDL_anim -lpng -lz
+
+include $(MENUETDEV)/makefiles/Makefile_for_program

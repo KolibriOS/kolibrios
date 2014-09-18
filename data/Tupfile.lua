@@ -131,7 +131,6 @@ extra_files = {
  {"kolibrios/games/doom/", "common/games/doom/*"},
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
- {"kolibrios/games/quake/", "common/games/quake/*"},
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
  {"kolibrios/lib/avcodec-55.dll", "common/lib/avcodec-55.dll"},
  {"kolibrios/lib/avdevice-55.dll", "common/lib/avdevice-55.dll"},
@@ -461,6 +460,8 @@ tup.append_table(img_files, {
 })
 tup.append_table(extra_files, {
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
+ {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
+ {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
 })
 end -- tup.getconfig('NO_GCC') ~= 'full'
 

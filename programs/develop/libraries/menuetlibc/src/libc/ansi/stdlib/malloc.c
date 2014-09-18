@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <menuet/sem.h>
 
 typedef struct BLOCK {
   size_t size;
@@ -23,7 +22,7 @@ typedef struct BLOCK {
 #define ALIGN		8
 #define SMALL		(NUMSMALL*ALIGN)
 
-DECLARE_STATIC_SEM(malloc_mutex)
+static int malloc_mutex = 0;
 
 static BLOCK *slop = 0;
 static BLOCK *freelist[30];
@@ -33,12 +32,13 @@ static BLOCK *smallblocks[NUMSMALL];
 
 static inline void malloc_lock(void)
 {
- sem_lock(&malloc_mutex);
+  while (__sync_lock_test_and_set(&malloc_mutex, 1))
+    __menuet__delay100(1);
 }
 
 static inline void malloc_unlock(void)
 {
- sem_unlock(&malloc_mutex);
+  __sync_lock_release(&malloc_mutex);
 }
 
 #define MIN_SAVE_EXTRA	64

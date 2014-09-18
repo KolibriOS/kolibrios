@@ -1,0 +1,35 @@
+
+SDL_anim 0.2
+
+The latest version of this library is available from:
+http://tamale.net/SDL_anim/
+
+This is a simple library to load animations and blit them to SDL surfaces.
+This library supports PNG anim files.
+
+API:
+#include "SDL_anim.h"
+
+	SDL_Animation *Anim_Load( const char *file );
+	int Anim_Free( SDL_Animation *anim );
+	int Anim_GetFrameNum( float start, float now );
+	int Anim_GetFrameRect( int frame, SDL_Rect *rect );
+	int Anim_BlitFrame( SDL_Surface dest, float start, float now );
+	int Anim_BlitFrameNum( SDL_Surface dest, int frame );
+	int Anim_DisplayFormat( SDL_Animation *anim );
+
+Two programs are included:
+
+	`showanim' is an example program that uses SDL_anim.
+	`makeanim' creates PNG anim files.
+
+SDL_anim requires:
+	libpng http://www.cdrom.com/pub/png/
+	zlib http://www.cdrom.com/pub/infozip/zlib/
+
+This library is under the GNU Library General Public License, see the file
+"LICENSE" for details.
+
+To build under unix: 
+
+gcc -I/home/mike/include/SDL/ -L/home/mike/lib Anim.c makeanim.c -o makeanim -lpng -lz -lSDL -lSDLmain -lpthread

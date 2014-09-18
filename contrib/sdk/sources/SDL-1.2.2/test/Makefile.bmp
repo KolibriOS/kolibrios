@@ -1,0 +1,6 @@
+OUTFILE = sdltestb
+OBJS = testbitmap.o
+CFLAGS = -I../include
+LIBS = -L../src -lSDL
+
+include $(MENUETDEV)/makefiles/Makefile_for_program

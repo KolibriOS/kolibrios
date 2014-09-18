@@ -1,0 +1,112 @@
+/* ANSI-C code produced by gperf version 2.7 */
+/* Command-line: gperf -c -C -l -L ANSI-C -f 0 -G -t bdf.in  */
+struct bdfword { char *name; int code; };
+
+#define TOTAL_KEYWORDS 21
+#define MIN_WORD_LENGTH 3
+#define MAX_WORD_LENGTH 15
+#define MIN_HASH_VALUE 3
+#define MAX_HASH_VALUE 37
+/* maximum key range = 35, duplicates = 0 */
+
+#ifdef __GNUC__
+__inline
+#endif
+static unsigned int
+hash (register const char *str, register unsigned int len)
+{
+  static const unsigned char asso_values[] =
+    {
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38,  5,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38,  0, 20,  5,  0,
+      15,  0,  0, 38, 38, 38, 38,  0,  0, 38,
+      10, 38, 15,  0,  0, 38, 15, 38,  0, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38, 38, 38, 38, 38,
+      38, 38, 38, 38, 38, 38
+    };
+  return len + asso_values[(unsigned char)str[len - 1]] + asso_values[(unsigned char)str[0]];
+}
+
+static const unsigned char lengthtable[] =
+  {
+     0,  0,  0,  3,  4,  0,  6,  7,  8,  9, 10,  6,  7, 13,
+     0, 15,  6,  7,  0,  4,  0,  0,  7,  0,  9,  5,  0,  7,
+     0,  0, 15,  0,  0,  0, 14,  0,  0,  7
+  };
+
+static const struct bdfword wordlist[] =
+  {
+    {""}, {""}, {""},
+    {"BBX",BBX},
+    {"SIZE",SIZE},
+    {""},
+    {"SWIDTH",SWIDTH},
+    {"ENDFONT",ENDFONT},
+    {"ENCODING",ENCODING},
+    {"STARTFONT",STARTFONT},
+    {"METRICSSET",METRICSSET},
+    {"DWIDTH",DWIDTH},
+    {"SWIDTH1",SWIDTH1},
+    {"ENDPROPERTIES",ENDPROPERTIES},
+    {""},
+    {"STARTPROPERTIES",STARTPROPERTIES},
+    {"BITMAP",BITMAP},
+    {"DWIDTH1",DWIDTH1},
+    {""},
+    {"FONT",FONT},
+    {""}, {""},
+    {"ENDCHAR",ENDCHAR},
+    {""},
+    {"STARTCHAR",STARTCHAR},
+    {"CHARS",CHARS},
+    {""},
+    {"COMMENT",COMMENT},
+    {""}, {""},
+    {"FONTBOUNDINGBOX",FONTBOUNDINGBOX},
+    {""}, {""}, {""},
+    {"CONTENTVERSION",CONTENTVERSION},
+    {""}, {""},
+    {"VVECTOR",VVECTOR}
+  };
+
+#ifdef __GNUC__
+__inline
+#endif
+const struct bdfword *
+in_word_set (register const char *str, register unsigned int len)
+{
+  if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
+    {
+      register int key = hash (str, len);
+
+      if (key <= MAX_HASH_VALUE && key >= 0)
+        if (len == lengthtable[key])
+          {
+            register const char *s = wordlist[key].name;
+
+            if (*str == *s && !strncmp (str + 1, s + 1, len - 1))
+              return &wordlist[key];
+          }
+    }
+  return 0;
+}
