@@ -413,23 +413,26 @@ endg
 
 align 4
 terminate: ; terminate application
+destroy_thread:
 
-           .slot equ esp   ;locals
+        .slot     equ esp+4             ;locals
+        .process  equ esp               ;ptr to parent process
+
 
         push    esi        ;save .slot
 
         shl     esi, 8
-        cmp     [SLOT_BASE+esi+APPDATA.dir_table], 0
-        jne     @F
+        mov     edx, [SLOT_BASE+esi+APPDATA.process]
+        test    edx, edx
+        jnz     @F
         pop     esi
         shl     esi, 5
         mov     [CURRENT_TASK+esi+TASKDATA.state], 9
         ret
 @@:
+        push    edx                     ;save .process
         lea     edx, [SLOT_BASE+esi]
         call    scheduler_remove_thread
-           ;mov    esi,process_terminating
-           ;call   sys_msg_board_str
         call    lock_application_table
 
 ; if the process is in V86 mode...
@@ -442,14 +445,14 @@ terminate: ; terminate application
 ; ...it has page directory for V86 mode
         mov     esi, [eax+SLOT_BASE+APPDATA.saved_esp0]
         mov     ecx, [esi+4]
-        mov     [eax+SLOT_BASE+APPDATA.dir_table], ecx
+        mov     [eax+SLOT_BASE+APPDATA.process], ecx
 ; ...and I/O permission map for V86 mode
         mov     ecx, [esi+12]
         mov     [eax+SLOT_BASE+APPDATA.io_map], ecx
         mov     ecx, [esi+8]
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 .nov86:
-
+;destroy per-thread kernel objects
         mov     esi, [.slot]
         shl     esi, 8
         add     esi, SLOT_BASE+APP_OBJ_OFFSET
@@ -467,11 +470,6 @@ terminate: ; terminate application
         pop     esi
         jmp     @B
 @@:
-
-        mov     eax, [.slot]
-        shl     eax, 8
-        stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
-
         mov     esi, [.slot]
         cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 2
         jne     @F
@@ -630,6 +628,9 @@ terminate: ; terminate application
         je      @F
         call    free_page
 @@:
+        lea     ebx, [edi+APPDATA.list]
+        list_del ebx                    ;destroys edx, ecx
+
         mov     eax, 0x20202020
         stosd
         stosd
@@ -745,7 +746,17 @@ terminate: ; terminate application
         add     ecx, 0x100
         jmp     .xd0
 .xd1:
-;    call  systest
+;release slot
+
+        bts     [thr_slot_map], esi
+
+        mov     ecx, [.process]
+        lea     eax, [ecx+PROC.thr_list]
+        cmp     eax, [eax+LHEAD.next]
+        jne     @F
+
+        call    destroy_process.internal
+@@:
         sti     ; .. and life goes on
 
         mov     eax, [draw_limits.left]
@@ -760,18 +771,10 @@ terminate: ; terminate application
         call    unlock_application_table
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
-        add     esp, 4
+        add     esp, 8
         ret
 restore .slot
-
-;build_scheduler:
-;        mov     esi, boot_sched_1
-;        call    boot_log
-;        call   build_process_gdt_tss_pointer
-
-;        mov    esi,boot_sched_2
-;        call   boot_log
-;        ret
+restore .process
 
 ; Three following procedures are used to guarantee that
 ; some part of kernel code will not be terminated from outside

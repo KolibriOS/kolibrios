@@ -448,7 +448,7 @@ proc init_LFB
         bt      [cpu_caps], CAPS_PSE
         jnc     .map_page_tables
         or      esi, PG_LARGE+PG_UW
-        mov     edx, sys_pgdir+(LFB_BASE shr 20)
+        mov     edx, sys_proc+PROC.pdt_0+(LFB_BASE shr 20)
 @@:
         mov     [edx], esi
         add     edx, 4
@@ -458,7 +458,7 @@ proc init_LFB
 
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
-        or      dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
+        or      dword [sys_proc+PROC.pdt_0+(LFB_BASE shr 20)], PG_GLOBAL
 @@:
         mov     dword [LFBAddress], LFB_BASE
         mov     eax, cr3      ;flush TLB
@@ -500,7 +500,9 @@ proc new_mem_resize stdcall, new_size:dword
         push    edi
 
         mov     edx, [current_slot]
-        cmp     [edx+APPDATA.heap_base], 0
+        mov     ebx, [edx+APPDATA.process]
+
+        cmp     [ebx+PROC.heap_base], 0
         jne     .exit
 
         mov     edi, [new_size]
@@ -508,7 +510,7 @@ proc new_mem_resize stdcall, new_size:dword
         and     edi, not 4095
         mov     [new_size], edi
 
-        mov     esi, [edx+APPDATA.mem_size]
+        mov     esi, [ebx+PROC.mem_used]
         add     esi, 4095
         and     esi, not 4095
 
@@ -543,7 +545,8 @@ proc new_mem_resize stdcall, new_size:dword
 .update_size:
         mov     edx, [current_slot]
         mov     ebx, [new_size]
-        call    update_mem_size
+        mov     edx, [edx+APPDATA.process]
+        mov     [edx+PROC.mem_used], ebx
 .exit:
         pop     edi
         pop     esi
@@ -619,38 +622,6 @@ proc new_mem_resize stdcall, new_size:dword
 endp
 
 
-align 4
-update_mem_size:
-; in: edx = slot base
-;     ebx = new memory size
-; destroys eax,ecx,edx
-
-        mov     [APPDATA.mem_size+edx], ebx
-;search threads and update
-;application memory size infomation
-        mov     ecx, [APPDATA.dir_table+edx]
-        mov     eax, 2
-
-.search_threads:
-;eax = current slot
-;ebx = new memory size
-;ecx = page directory
-        cmp     eax, [TASK_COUNT]
-        jg      .search_threads_end
-        mov     edx, eax
-        shl     edx, 5
-        cmp     word [CURRENT_TASK+edx+TASKDATA.state], 9  ;if slot empty?
-        jz      .search_threads_next
-        shl     edx, 3
-        cmp     [SLOT_BASE+edx+APPDATA.dir_table], ecx      ;if it is our thread?
-        jnz     .search_threads_next
-        mov     [SLOT_BASE+edx+APPDATA.mem_size], ebx      ;update memory size
-.search_threads_next:
-        inc     eax
-        jmp     .search_threads
-.search_threads_end:
-        ret
-
 ; param
 ;  eax= linear address
 ;
@@ -707,11 +678,6 @@ end if
         pop     ebx               ;restore exception number (#PF)
         ret
 
-;        xchg bx, bx
-;        add     esp,12 ;clear in stack: locals(.err_addr) + #PF + ret_to_caller
-;        restore_ring3_context
-;        iretd
-
 .user_space:
         test    eax, PG_MAP
         jnz     .err_access       ;Страница присутствует
@@ -751,9 +717,8 @@ end if
 ; access denied? this may be a result of copy-on-write protection for DLL
 ; check list of HDLLs
         and     ebx, not 0xFFF
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [current_process]
+        mov     eax, [eax+PROC.dlls_list_ptr]
         test    eax, eax
         jz      .fail
         mov     esi, [eax+HDLL.fd]
@@ -829,120 +794,129 @@ end if
 endp
 
 ; returns number of mapped bytes
-proc map_mem stdcall, lin_addr:dword,slot:dword,\
+proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
                       ofs:dword,buf_size:dword,req_access:dword
-        push    0 ; initialize number of mapped bytes
+        locals
+             count   dd ?
+             process dd ?
+        endl
 
+        mov     [count], 0
         cmp     [buf_size], 0
         jz      .exit
 
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dir_table]
-        and     eax, 0xFFFFF000
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
+        test    eax, eax
+        jz      .exit
 
-        stdcall map_page, [ipc_pdir], eax, PG_UW
+        mov     [process], eax
         mov     ebx, [ofs]
         shr     ebx, 22
-        mov     esi, [ipc_pdir]
-        mov     edi, [ipc_ptab]
-        mov     eax, [esi+ebx*4]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]                 ;get page table
+        mov     esi, [ipc_ptab]
         and     eax, 0xFFFFF000
         jz      .exit
-        stdcall map_page, edi, eax, PG_UW
-;           inc ebx
-;           add edi, 0x1000
-;           mov eax, [esi+ebx*4]
-;           test eax, eax
-;           jz @f
-;          and eax, 0xFFFFF000
-;           stdcall map_page, edi, eax
-
+        stdcall map_page, esi, eax, PG_SW
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
         mov     ecx, [buf_size]
         add     ecx, 4095
         shr     ecx, 12
-        inc     ecx
+        inc     ecx                  ; ???????????
 
         mov     edx, [ofs]
         shr     edx, 12
         and     edx, 0x3FF
-        mov     esi, [ipc_ptab]
-
 .map:
         stdcall safe_map_page, [slot], [req_access], [ofs]
         jnc     .exit
-        add     dword [ebp-4], 4096
-        add     [ofs], 4096
+        add     [count], PAGE_SIZE
+        add     [ofs], PAGE_SIZE
         dec     ecx
         jz      .exit
-        add     edi, 0x1000
+
+        add     edi, PAGE_SIZE
         inc     edx
-        cmp     edx, 0x400
+        cmp     edx, 1024
         jnz     .map
+
         inc     ebx
-        mov     eax, [ipc_pdir]
-        mov     eax, [eax+ebx*4]
+        mov     eax, [process]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]
         and     eax, 0xFFFFF000
         jz      .exit
-        stdcall map_page, esi, eax, PG_UW
+
+        stdcall map_page, esi, eax, PG_SW
         xor     edx, edx
         jmp     .map
-
 .exit:
-        pop     eax
+        mov     eax, [count]
         ret
 endp
 
 proc map_memEx stdcall, lin_addr:dword,slot:dword,\
                         ofs:dword,buf_size:dword,req_access:dword
-        push    0 ; initialize number of mapped bytes
+        locals
+             count   dd ?
+             process dd ?
+        endl
 
+        mov     [count], 0
         cmp     [buf_size], 0
         jz      .exit
 
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dir_table]
-        and     eax, 0xFFFFF000
-
-        stdcall map_page, [proc_mem_pdir], eax, PG_UW
-        mov     ebx, [ofs]
-        shr     ebx, 22
-        mov     esi, [proc_mem_pdir]
-        mov     edi, [proc_mem_tab]
-        mov     eax, [esi+ebx*4]
-        and     eax, 0xFFFFF000
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
         test    eax, eax
         jz      .exit
-        stdcall map_page, edi, eax, PG_UW
 
+        mov     [process], eax
+        mov     ebx, [ofs]
+        shr     ebx, 22
+        mov     eax, [eax+PROC.pdt_0+ebx*4]                 ;get page table
+        mov     esi, [proc_mem_tab]
+        and     eax, 0xFFFFF000
+        jz      .exit
+        stdcall map_page, esi, eax, PG_SW
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
         mov     ecx, [buf_size]
         add     ecx, 4095
         shr     ecx, 12
-        inc     ecx
+        inc     ecx                  ; ???????????
 
         mov     edx, [ofs]
         shr     edx, 12
         and     edx, 0x3FF
-        mov     esi, [proc_mem_tab]
-
 .map:
         stdcall safe_map_page, [slot], [req_access], [ofs]
         jnc     .exit
-        add     dword [ebp-4], 0x1000
-        add     edi, 0x1000
-        add     [ofs], 0x1000
-        inc     edx
+        add     [count], PAGE_SIZE
+        add     [ofs], PAGE_SIZE
         dec     ecx
+        jz      .exit
+
+        add     edi, PAGE_SIZE
+        inc     edx
+        cmp     edx, 1024
         jnz     .map
+
+        inc     ebx
+        mov     eax, [process]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]
+        and     eax, 0xFFFFF000
+        jz      .exit
+
+        stdcall map_page, esi, eax, PG_SW
+        xor     edx, edx
+        jmp     .map
 .exit:
-        pop     eax
+        mov     eax, [count]
         ret
 endp
 
@@ -988,7 +962,8 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         push    ebx ecx
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
+        mov     eax, [eax+PROC.dlls_list_ptr]
         test    eax, eax
         jz      .no_hdll
         mov     ecx, [eax+HDLL.fd]
@@ -1075,29 +1050,6 @@ sys_IPC:
         mov     [esp+32], eax
         ret
 
-;align 4
-;proc set_ipc_buff
-
-;           mov  eax,[current_slot]
-;           pushf
-;           cli
-;           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
-;           mov  [eax+APPDATA.ipc_size],ecx
-;
-;           add ecx, ebx
-;           add ecx, 4095
-;           and ecx, not 4095
-;
-;.touch:    mov eax, [ebx]
-;           add ebx, 0x1000
-;           cmp ebx, ecx
-;           jb  .touch
-;
-;           popf
-;           xor eax, eax
-;           ret
-;endp
-
 proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            locals
              dst_slot   dd ?
@@ -1116,7 +1068,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 
         mov     [dst_slot], eax
         shl     eax, 8
-        mov     edi, [eax+SLOT_BASE+0xa0] ;is ipc area defined?
+        mov     edi, [eax+SLOT_BASE+APPDATA.ipc_start] ;is ipc area defined?
         test    edi, edi
         jz      .no_ipc_area
 
@@ -1124,7 +1076,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         and     ebx, 0xFFF
         mov     [dst_offset], ebx
 
-        mov     esi, [eax+SLOT_BASE+0xa4]
+        mov     esi, [eax+SLOT_BASE+APPDATA.ipc_size]
         mov     [buf_size], esi
 
         mov     ecx, [ipc_tmp]
@@ -1137,7 +1089,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         pop     edi esi
 @@:
         mov     [used_buf], ecx
-        stdcall map_mem, ecx, [dst_slot], \
+        stdcall map_mem_ipc, ecx, [dst_slot], \
                 edi, esi, PG_SW
 
         mov     edi, [dst_offset]
@@ -1208,7 +1160,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 .ret:
         mov     eax, [used_buf]
         cmp     eax, [ipc_tmp]
-        jz      @f
+        je      @f
         stdcall free_kernel_space, eax
 @@:
         pop     eax

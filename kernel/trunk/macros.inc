@@ -89,6 +89,12 @@ macro Mov op1,op2,op3 ; op1 = op2 = op3
         mov     op1, op2
  }
 
+macro list_init head
+{
+        mov     [head+LHEAD.next], head
+        mov     [head+LHEAD.prev], head
+}
+
 macro __list_add new, prev, next
 {
         mov     [next+LHEAD.prev], new
@@ -111,10 +117,10 @@ macro list_add_tail new, head
 
 macro list_del entry
 {
-        mov     edx, [entry+list_fd]
-        mov     ecx, [entry+list_bk]
-        mov     [edx+list_bk], ecx
-        mov     [ecx+list_fd], edx
+        mov     edx, [entry+LHEAD.next]
+        mov     ecx, [entry+LHEAD.prev]
+        mov     [edx+LHEAD.prev], ecx
+        mov     [ecx+LHEAD.next], edx
 }
 
 ; MOV Immediate.

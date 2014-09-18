@@ -104,10 +104,11 @@ do_change_task:
         Mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)],eax,[ebx+APPDATA.io_map]
         Mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)],eax,[ebx+APPDATA.io_map+4]
 ; set new thread memory-map
-        mov     ecx, APPDATA.dir_table
-        mov     eax, [ebx+ecx]      ;offset>0x7F
-        cmp     eax, [esi+ecx]      ;offset>0x7F
+        mov     eax, [ebx+APPDATA.process]
+        cmp     eax, [current_process]
         je      @f
+        mov     [current_process], eax
+        mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
 @@:
 ; set tss.esp0
@@ -142,7 +143,7 @@ do_change_task:
         jz      @f
         xor     eax, eax
         mov     dr6, eax
-        lea     esi, [ebx+ecx+APPDATA.dbg_regs-APPDATA.dir_table];offset>0x7F
+        lea     esi, [ebx+APPDATA.dbg_regs]
         cld
   macro lodsReg [reg] {
         lodsd

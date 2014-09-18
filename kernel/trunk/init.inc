@@ -128,12 +128,12 @@ proc init_mem
         mov     [pg_data.kernel_tables-OS_BASE], edx
 
         xor     eax, eax
-        mov     edi, sys_pgdir-OS_BASE
-        mov     ecx, 4096/4
+        mov     edi, sys_proc-OS_BASE
+        mov     ecx, 8192/4
         cld
         rep stosd
 
-        mov     edx, (sys_pgdir-OS_BASE)+ 0x800; (OS_BASE shr 20)
+        mov     edx, (sys_proc-OS_BASE+PROC.pdt_0)+ 0x800; (OS_BASE shr 20)
         bt      [cpu_caps-OS_BASE], CAPS_PSE
         jnc     .no_PSE
 
@@ -177,9 +177,9 @@ proc init_mem
         dec     ecx
         jnz     .map_kernel_tabs
 
-        mov     dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
+        mov     dword [sys_proc-OS_BASE+PROC.pdt_0+(page_tabs shr 20)], sys_proc+PROC.pdt_0+PG_SW-OS_BASE
 
-        mov     edi, (sys_pgdir-OS_BASE)
+        mov     edi, (sys_proc+PROC.pdt_0-OS_BASE)
         lea     esi, [edi+(OS_BASE shr 20)]
         movsd
         movsd

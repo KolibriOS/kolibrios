@@ -177,7 +177,7 @@ kernel_file_load:
         dd      0       ; subfunction
         dq      0       ; offset in file
         dd      0x30000 ; number of bytes to read
-        dd      OS_BASE + 0x70000 ; buffer for data
+        dd      OS_BASE + 0x71000 ; buffer for data
         db      '/RD/1/KERNEL.MNT',0
 
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
@@ -345,6 +345,8 @@ mem_block_list      rd 64*2
 mem_used_list       rd 64*2
 mem_hash_cnt        rd 64
 
+thr_slot_map        rd 8
+
 cpu_freq            rq 1
 
 heap_mutex          MUTEX
@@ -436,14 +438,15 @@ proc_mem_map        rd 1
 proc_mem_pdir       rd 1
 proc_mem_tab        rd 1
 
-tmp_task_pdir       rd 1
 tmp_task_ptab       rd 1
 
 default_io_map      rd 1
 
 LFBSize             rd 1
 
-current_slot        rd 1
+current_process     rd 1
+current_slot        rd 1    ; i.e. cureent thread
+
 
 ; status
 hd1_status                      rd 1  ; 0 - free : other - pid

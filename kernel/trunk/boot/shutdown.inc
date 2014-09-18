@@ -182,7 +182,7 @@ restart_kernel_4000:
         pop     es
         mov     cx, 0x8000
         push    cx
-        push    0x7000
+        push    0x7100
         pop     ds
         xor     si, si
         xor     di, di

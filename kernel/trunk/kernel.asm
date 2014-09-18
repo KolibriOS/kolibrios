@@ -291,7 +291,7 @@ B32:
 
 ; ENABLE PAGING
 
-        mov     eax, sys_pgdir-OS_BASE
+        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
         mov     cr3, eax
 
         mov     eax, cr0
@@ -354,15 +354,15 @@ high_code:
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
-        or      dword [sys_pgdir+(OS_BASE shr 20)], PG_GLOBAL
+        or      dword [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], PG_GLOBAL
 
         mov     ebx, cr4
         or      ebx, CR4_PGE
         mov     cr4, ebx
 @@:
         xor     eax, eax
-        mov     dword [sys_pgdir], eax
-        mov     dword [sys_pgdir+4], eax
+        mov     dword [sys_proc+PROC.pdt_0], eax
+        mov     dword [sys_proc+PROC.pdt_0+4], eax
 
         mov     eax, cr3
         mov     cr3, eax          ; flush TLB
@@ -597,7 +597,7 @@ no_mode_0x12:
         call    init_fpu
         call    init_malloc
 
-        stdcall alloc_kernel_space, 0x51000
+        stdcall alloc_kernel_space, 0x50000         ; FIXME check size
         mov     [default_io_map], eax
 
         add     eax, 0x2000
@@ -612,9 +612,6 @@ no_mode_0x12:
 
         add     eax, ebx
         mov     [proc_mem_tab], eax
-
-        add     eax, ebx
-        mov     [tmp_task_pdir], eax
 
         add     eax, ebx
         mov     [tmp_task_ptab], eax
@@ -674,7 +671,26 @@ no_mode_0x12:
         mov     esi, boot_setostask
         call    boot_log
 
-        mov     edx, SLOT_BASE+256
+        mov     edi, sys_proc
+        list_init edi
+        lea     ecx, [edi+PROC.thr_list]
+        list_init ecx
+        mov     [edi+PROC.pdt_0_phys], sys_proc-OS_BASE+PROC.pdt_0
+
+        mov     eax, -1
+        mov     edi, thr_slot_map+4
+        mov     [edi-4], dword 0xFFFFFFF8
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
+
+        mov     [current_process], sys_proc
+
+        mov     edx, SLOT_BASE+256*1
         mov     ebx, [os_stack_seg]
         add     ebx, 0x2000
         call    setup_os_slot
@@ -1127,7 +1143,7 @@ ap_init_high:
         mov     fs, cx
         mov     gs, bx
         xor     esp, esp
-        mov     eax, sys_pgdir-OS_BASE
+        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
         mov     cr3, eax
         lock inc [ap_initialized]
         jmp     idle_loop
@@ -1190,7 +1206,11 @@ proc setup_os_slot
 
         mov     dword [edx+APPDATA.cur_dir], sysdir_path
 
-        mov     [edx + APPDATA.dir_table], sys_pgdir - OS_BASE
+        mov     [edx + APPDATA.process], sys_proc
+
+        lea     ebx, [edx+APPDATA.list]
+        lea     ecx, [sys_proc+PROC.thr_list]
+        list_add_tail ebx, ecx
 
         mov     eax, edx
         shr     eax, 3
@@ -2070,9 +2090,6 @@ restore_default_cursor_before_killing:
 
         movzx   eax, word [MOUSE_Y]
         movzx   ebx, word [MOUSE_X]
-;        mov     ecx, [Screen_Max_X]
-;        inc     ecx
-;        mul     ecx
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [_WinMapAddress]
@@ -3087,7 +3104,8 @@ sys_cpuusage:
         mov     edx, 0x100000*16
         cmp     ecx, 1 shl 5
         je      .os_mem
-        mov     edx, [SLOT_BASE+ecx*8+APPDATA.mem_size]
+        mov     edx, [SLOT_BASE+ecx*8+APPDATA.process]
+        mov     edx, [edx+PROC.mem_used]
         mov     eax, std_application_base_address
 .os_mem:
         stosd
@@ -3391,26 +3409,6 @@ modify_pce:
 ;---------------------------------------------------------------------------------------------
 
 
-; check if pixel is allowed to be drawn
-
-;checkpixel:
-;        push    eax edx
-
-;;        mov     edx, [Screen_Max_X] ; screen x size
-;;        inc     edx
-;;        imul    edx, ebx
-;        mov     edx, [d_width_calc_area + ebx*4]
-;        add     eax, [_WinMapAddress]
-;        mov     dl, [eax+edx]; lea eax, [...]
-
-;        xor     ecx, ecx
-;        mov     eax, [CURRENT_TASK]
-;        cmp     al, dl
-;        setne   cl
-
-;        pop     edx eax
-;        ret
-
 iglobal
   cpustring db 'CPU',0
 endg
@@ -3579,7 +3577,7 @@ markz:
         cmp     [edx+TASKDATA.state], 9
         jz      .nokill
         lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
-        cmp     [edx+APPDATA.dir_table], sys_pgdir - OS_BASE
+        cmp     [edx+APPDATA.process], sys_proc
         jz      .nokill
         call    request_terminate
         jmp     .common

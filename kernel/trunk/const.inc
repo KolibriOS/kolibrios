@@ -219,7 +219,7 @@ TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 
 TMP_STACK_TOP       equ 0x006CC00
 
-sys_pgdir           equ (OS_BASE+0x006F000)
+sys_proc            equ (OS_BASE+0x006F000)
 
 SLOT_BASE           equ (OS_BASE+0x0080000)
 
@@ -267,6 +267,8 @@ REG_ESI             equ (RING0_STACK_SIZE-48)
 REG_EDI             equ (RING0_STACK_SIZE-52)
 REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 
+
+PAGE_SIZE           equ 4096
 
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001

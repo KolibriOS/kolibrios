@@ -98,17 +98,33 @@ struct  DBG_REGS
         dr7             dd ?
 ends
 
+struct  PROC
+        list            LHEAD
+        thr_list        LHEAD
+        heap_lock       MUTEX
+        heap_base       rd 1
+        heap_top        rd 1
+        mem_used        rd 1
+        dlls_list_ptr   rd 1
+        pdt_0_phys      rd 1
+        pdt_1_phys      rd 1
+        io_map_0        rd 1
+        io_map_1        rd 1
+
+        unused          rb 4096-$
+        pdt_0           rd 1024
+ends
+
 struct  APPDATA
         app_name        rb 11
                         rb 5
 
-        fpu_state       dd ?            ;+16
-        ev_count_       dd ? ;unused    ;+20
-        exc_handler     dd ?            ;+24
-        except_mask     dd ?            ;+28
-        pl0_stack       dd ?            ;+32
-        heap_base       dd ?            ;+36
-        heap_top        dd ?            ;+40
+        list            LHEAD           ;+16
+        process         dd ?            ;+24
+        fpu_state       dd ?            ;+28
+        exc_handler     dd ?            ;+32
+        except_mask     dd ?            ;+36
+        pl0_stack       dd ?            ;+40
         cursor          dd ?            ;+44
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52
@@ -124,7 +140,7 @@ struct  APPDATA
         wait_test       dd ?            ;+96   +++
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
-        dlls_list_ptr   dd ?            ;+108
+                        dd ?            ;+108
         event_filter    dd ?            ;+112
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
@@ -133,7 +149,7 @@ struct  APPDATA
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
                         dd ?            ;+136
-        mem_size        dd ?            ;+140
+                        dd ?            ;+140
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
@@ -142,7 +158,7 @@ struct  APPDATA
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
                         rb 3
-        dir_table       dd ?            ;+184
+                        dd ?            ;+184
         dbg_event_mem   dd ?            ;+188
         dbg_regs        DBG_REGS        ;+192
         wnd_caption     dd ?            ;+212

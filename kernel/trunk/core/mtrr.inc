@@ -847,7 +847,7 @@ proc mtrr_validate
         dec     eax
 ; LFB is mapped to virtual address LFB_BASE,
 ; it uses global pages if supported by CPU.
-        mov     ebx, [sys_pgdir+(LFB_BASE shr 20)]
+        mov     ebx, [sys_proc+PROC.pdt_0+(LFB_BASE shr 20)]
         test    ebx, PG_LARGE
         jnz     @f
         mov     ebx, [page_tabs+(LFB_BASE shr 10)]
