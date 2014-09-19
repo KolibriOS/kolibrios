@@ -96,6 +96,7 @@ TCP_RTTVAR_SHIFT        = 2
 TCP_BIT_NEEDOUTPUT      = 1 shl 0
 TCP_BIT_TIMESTAMP       = 1 shl 1
 TCP_BIT_DROPSOCKET      = 1 shl 2
+TCP_BIT_FIN_IS_ACKED    = 1 shl 3
 
 TCP_BIT_SENDALOT        = 1 shl 0
 
@@ -119,13 +120,13 @@ ends
 
 struct  TCP_queue_entry
 
-        ip_ptr          dd ?
-        segment_ptr     dd ?
-        segment_size    dd ?
-        device_ptr      dd ?
+        ip_ptr                  dd ?
+        segment_ptr             dd ?
+        segment_size            dd ?
+        device_ptr              dd ?
 
-        buffer_ptr      dd ?
-        timestamp       dd ?
+        buffer_ptr              dd ?
+        timestamp               dd ?
 
 ends
 

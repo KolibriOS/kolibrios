@@ -1,13 +1,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
-;;    Based on the code of 4.4BSD                                  ;;
+;;    Based on the algorithms used in 4.4BSD                       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -531,11 +531,9 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.SND_UNA]
         jne     .not_uni_xfer
 
-; - The reassembly list of out-of-order segments for the connection is empty (seg_next equals tp).
-
-;;; TODO
-
-;       jnz     .not_uni_xfer
+; - The reassembly list of out-of-order segments for the connection is empty.
+        cmp     [ebx + TCP_SOCKET.seg_next], 0
+        jne     .not_uni_xfer
 
 ; Complete processing of received data
 
@@ -840,7 +838,7 @@ endl
         pop     word [ebx + TCP_SOCKET.SND_SCALE]
        @@:
 
-;;; TODO: call TCP_reassemble
+        call    TCP_reassemble
 
         mov     eax, [edx + TCP_header.SequenceNumber]
         dec     eax
@@ -1094,8 +1092,7 @@ endl
         pop     ebx edx ecx
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: our FIN is acked\n"
-        stc
-
+        or      [temp_bits], TCP_BIT_FIN_IS_ACKED
         jmp     .wakeup
 
   .finiacked:
@@ -1109,27 +1106,21 @@ endl
         pop     edx ecx
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: our FIN is not acked\n"
-        clc
 
 ;----------------------------------------
 ; Wake up process waiting on send buffer
 
   .wakeup:
-
-        pushf                   ; Keep the flags (Carry flag)
         mov     eax, ebx
         call    SOCKET_notify
 
 ; Update TCPS
-
         mov     eax, [edx + TCP_header.AckNumber]
         mov     [ebx + TCP_SOCKET.SND_UNA], eax
         cmp     eax, [ebx + TCP_SOCKET.SND_NXT]
         jb      @f
         mov     [ebx + TCP_SOCKET.SND_NXT], eax
        @@:
-
-        popf
 
 ; General ACK handling complete
 ; Now do the state-specific ones
@@ -1153,7 +1144,8 @@ endl
 
 
   .ack_fw1:
-        jnc     .ack_processed
+        test    [temp_bits], TCP_BIT_FIN_IS_ACKED
+        jz      .ack_processed
 
         test    [ebx + SOCKET.state], SS_CANTRCVMORE
         jnz     @f
@@ -1166,7 +1158,8 @@ endl
         jmp     .ack_processed
 
   .ack_c:
-        jnc     .ack_processed
+        test    [temp_bits], TCP_BIT_FIN_IS_ACKED
+        jz      .ack_processed
 
         mov     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
         mov     eax, ebx
@@ -1178,7 +1171,8 @@ endl
         jmp     .ack_processed
 
   .ack_la:
-        jnc     .ack_processed
+        test    [temp_bits], TCP_BIT_FIN_IS_ACKED
+        jz      .ack_processed
 
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
@@ -1252,7 +1246,7 @@ align 4
         call    SOCKET_notify
         popa
 
-        jmp     .trim_then_step6
+        jmp     .trim
 
 ;------------
 ; Active Open
@@ -1345,9 +1339,9 @@ align 4
 
         mov     eax, [ebx + TCP_SOCKET.t_rtt]
         test    eax, eax
-        je      .trim_then_step6
+        je      .trim
         call    TCP_xmit_timer
-        jmp     .trim_then_step6
+        jmp     .trim
 
   .simultaneous_open:
 
@@ -1358,8 +1352,7 @@ align 4
 ;-------------------------------------
 ; Common processing for receipt of SYN
 
-  .trim_then_step6:
-
+  .trim:
         inc     [edx + TCP_header.SequenceNumber]
 
 ; Drop any received data that doesnt fit in the receive window.
@@ -1372,17 +1365,12 @@ align 4
 ;;; TODO: update stats
 
   .dont_trim:
-
         mov     eax, [edx + TCP_header.SequenceNumber]
         mov     [ebx + TCP_SOCKET.RCV_UP], eax
         dec     eax
         mov     [ebx + TCP_SOCKET.SND_WL1], eax
 
-;-------
-; step 6
-
   .ack_processed:
-
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK processed\n"
 
 ;----------------------------------------------
@@ -1587,14 +1575,14 @@ align 4
         jnz     .need_output
 
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW
-        jz      .dumpit
+        jz      .done
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK now!\n"
 
   .need_output:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: need output\n"
         call    TCP_output
 
-  .dumpit:
+  .done:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
         call    NET_packet_free
@@ -1614,7 +1602,7 @@ align 4
         pop     eax edx
 
         test    [edx + TCP_header.Flags], TH_RST
-        jnz     .dumpit
+        jnz     .done
 
         or      [eax + TCP_SOCKET.t_flags], TF_ACKNOW
         jmp     .need_output
@@ -1628,7 +1616,7 @@ align 4
         pop     edx ebx
 
         test    [edx + TCP_header.Flags], TH_RST
-        jnz     .dumpit
+        jnz     .done
 
         ;;; if its a multicast/broadcast, also drop
 
@@ -1637,7 +1625,7 @@ align 4
 
         test    [edx + TCP_header.Flags], TH_SYN
         jnz     .respond_syn
-        jmp     .dumpit
+        jmp     .done
 
 ;---------
 ; Respond
@@ -1656,8 +1644,10 @@ align 4
         pop     ebx
         jmp     .destroy_new_socket
 
-  .no_socket:
+;-----------------------------------------
+; The connection has no associated socket
 
+  .no_socket:
         pusha
         mov     ecx, socket_mutex
         call    mutex_unlock
@@ -1687,8 +1677,8 @@ align 4
         call    TCP_respond_segment
         jmp     .drop_no_socket
 
-;-----
-; Drop
+;------------------------------------------------
+; Unlock socket mutex and prepare to drop segment
 
   .drop:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Dropping segment\n"
@@ -1698,12 +1688,18 @@ align 4
         call    mutex_unlock
         popa
 
+;--------------------------------------------
+; Destroy the newly created socket if needed
+
   .destroy_new_socket:
         test    [temp_bits], TCP_BIT_DROPSOCKET
         jz      .drop_no_socket
 
         mov     eax, ebx
         call    SOCKET_free
+
+;------------------
+; Drop the segment
 
   .drop_no_socket:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Drop (no socket)\n"
