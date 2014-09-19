@@ -99,7 +99,7 @@ static inline void DrawWindow(int x, int y, int w, int h, const char *name,
      "c"((y << 16) | ((h-1) & 0xFFFF)),
      "d"((style << 24) | (workcolor & 0xFFFFFF)),
      "D"(name),
-     "S"(0));
+     "S"(0) : "memory");
 };
 
 #define POS_SCREEN 0
@@ -275,7 +275,8 @@ void draw_text_sys(const char *text, int x, int y, int len, color_t color)
     "int $0x40"
     ::"a"(4),"d"(text),
       "b"((x << 16) | y),
-      "S"(len),"c"(color));
+      "S"(len),"c"(color)
+     :"memory");
 }
 
 static inline void yield(void)

@@ -19,6 +19,13 @@
 # CONFIG_NO_GCC=full
 # CONFIG_NO_MSVC=full
 # CONFIG_NO_CMM=full
+### Path to gcc toolchain library with -lgcc.
+### Normally, you should not modify it,
+### since the toolchain assumes the fixed path anyway.
+### default Windows variant
+# CONFIG_TOOLCHAIN_LIBPATH=C:\MinGW\msys\1.0\home\autobuild\tools\win32\mingw32\lib
+### default Linux variant
+# CONFIG_TOOLCHAIN_LIBPATH=/home/autobuild/tools/win32/mingw32/lib
 
 ### Optional postprocessing of binaries, where applicable.
 ### By default, no postprocessing is used.

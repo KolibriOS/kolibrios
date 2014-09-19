@@ -1,4 +1,12 @@
-CFLAGS = "-Os -fno-ident -fomit-frame-pointer -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -mpreferred-stack-boundary=2 -fno-exceptions -fno-asynchronous-unwind-tables -ffast-math -mno-ms-bitfields -march=pentium-mmx"
+CFLAGS_GENERIC = "-fno-ident -fomit-frame-pointer -fno-stack-check -fno-stack-protector -mno-stack-arg-probe -fno-exceptions -fno-asynchronous-unwind-tables -ffast-math -mno-ms-bitfields -march=pentium-mmx"
+CFLAGS_OPTIMIZE_SIZE = "-Os -mpreferred-stack-boundary=2 " .. CFLAGS_GENERIC
+CFLAGS_OPTIMIZE_SPEED = "-O2 -mpush-args -mno-accumulate-outgoing-args " .. CFLAGS_GENERIC
+-- The following could in specific cases be marginally faster CFLAGS_OPTIMIZE_SPEED,
+-- and in all cases gives a notable overhead in size.
+CFLAGS_OPTIMIZE_SPEED_INSANE = "-O2 " .. CFLAGS_GENERIC
+-- Default is optimizing by size. Override on per-project or per-file basis.
+CFLAGS = CFLAGS_OPTIMIZE_SIZE
+
 CFLAGS_c = "" -- extra flags for *.c
 CFLAGS_cpp = " -fno-rtti" -- extra flags for *.cpp
 LDFLAGS = "-nostdlib -n --file-alignment=16 --section-alignment=16"

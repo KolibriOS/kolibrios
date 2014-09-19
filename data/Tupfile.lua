@@ -97,11 +97,18 @@ if build_type == "it" then tup.append_table(img_files, {
 
 --[[
 Files to be included in kolibri.iso and distribution kit outside of kolibri.img.
+
 The first subitem of every item is name relative to the root of ISO or distribution kit,
 the second is name of local file.
+
 If the first subitem ends in /, the last component of local file name is appended.
 The last component of the second subitem may contain '*'; if so, it will be expanded
 according to usual rules, but without matching directories.
+
+Tup does not allow a direct dependency on a file that is generated in a directory
+other than where Tupfile.lua is and its children. Most files are generated
+in the directory with Tupfile.lua; for other files, the item should contain
+a named subitem "group=path/<groupname>" and the file should be put in <groupname>.
 --]]
 extra_files = {
  {"/", build_type .. "/distr_data/autorun.inf"},
@@ -137,7 +144,7 @@ extra_files = {
  {"kolibrios/lib/avformat-55.dll", "common/lib/avformat-55.dll"},
  {"kolibrios/lib/avutil-52.dll", "common/lib/avutil-52.dll"},
  {"kolibrios/lib/freetype.dll", "common/lib/freetype.dll"},
- {"kolibrios/lib/libc.dll", "common/lib/libc.dll"},
+ {"kolibrios/lib/libc.dll", "../contrib/sdk/bin/libc.dll", group = "../contrib/sdk/lib/<libc.dll.a>"},
  {"kolibrios/lib/pixlib.dll", "common/lib/pixlib.dll"},
  {"kolibrios/lib/swresample-0.dll", "common/lib/swresample-0.dll"},
  {"kolibrios/lib/swscale-2.dll", "common/lib/swscale-2.dll"},
@@ -477,13 +484,13 @@ function expand_extra_files(files)
     then
       local g = tup.glob(v[2])
       for j,x in ipairs(g) do
-        table.insert(result, {v[1], x})
+        table.insert(result, {v[1], x, group=v.group})
       end
     else
       if v.cp1251_from then
         tup.definerule{inputs = {v.cp1251_from}, command = 'iconv -f cp866 -t cp1251 "%f" > "%o"', outputs = {v[2]}}
       end
-      table.insert(result, {v[1], v[2]})
+      table.insert(result, {v[1], v[2], group=v.group})
     end
   end
   return result
@@ -517,7 +524,7 @@ for i,v in ipairs(img_files) do
 
   -- tup does not want to see hidden files as dependencies
   if not string.match(local_file, "/%.") then
-    table.insert(input_deps, local_file)
+    table.insert(input_deps, v.group or local_file)
   end
 end
 
@@ -570,7 +577,7 @@ input_deps = {"kolibri.img"}
 iso_files_list = ""
 for i,v in ipairs(iso_extra_files) do
   iso_files_list = iso_files_list .. ' "' .. v[1] .. '=' .. v[2] .. '"'
-  table.insert(input_deps, v[2])
+  table.insert(input_deps, v.group or v[2])
 end
 
 -- generate tup rule for kolibri.iso
@@ -589,8 +596,9 @@ tup.definerule{inputs = input_deps, command =
 cp = 'cp "%f" "%o"'
 tup.definerule{inputs = {"kolibri.img"}, command = cp, outputs = {"distribution_kit/kolibri.img"}}
 for i,v in ipairs(distr_extra_files) do
+  cmd = cp:gsub("%%f", v[2]) -- input can be a group, we can't rely on tup's expansion of %f in this case
   if string.sub(v[1], -1) == "/"
-  then tup.definerule{inputs = {v[2]}, command = cp, outputs = {"distribution_kit/" .. v[1] .. tup.file(v[2])}}
-  else tup.definerule{inputs = {v[2]}, command = cp, outputs = {"distribution_kit/" .. v[1]}}
+  then tup.definerule{inputs = {v.group or v[2]}, command = cmd, outputs = {"distribution_kit/" .. v[1] .. tup.file(v[2])}}
+  else tup.definerule{inputs = {v.group or v[2]}, command = cmd, outputs = {"distribution_kit/" .. v[1]}}
   end
 end
