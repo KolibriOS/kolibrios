@@ -136,8 +136,7 @@ typedef struct
 unsigned int _stdcall test_wav(WAVEHEADER *hdr);
 
 #ifdef __cplusplus
-extern "C"
-}
+} /* extern "C" */
 #endif
 
 #endif //_SOUND_H_
