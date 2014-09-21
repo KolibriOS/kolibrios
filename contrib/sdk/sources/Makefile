@@ -6,7 +6,7 @@ LIB_DIR:= $(abspath ../lib)
 # targets 
 
 all: 	newlib zlib libpng freetype pixman cairo	\
-	libdrm pixlib ffmpeg libsupc++ gcc_eh expat 	\
+	libdrm pixlib ffmpeg libsupc++ libstdc++ gcc_eh expat 	\
 	Mesa eglut sound		
 
 newlib: $(DLL_DIR)/libc.dll $(LIB_DIR)/libc.dll.a $(LIB_DIR)/libapp.a $(LIB_DIR)/libdll.a
@@ -87,7 +87,14 @@ $(DLL_DIR)/avcodec-55.dll $(DLL_DIR)/avdevice-55.dll \
 libsupc++: $(LIB_DIR)/libsupc++.a
 
 $(LIB_DIR)/libsupc++.a: newlib
-	$(MAKE) -C libsupc++
+	$(MAKE) -C libstdc++-v3/libsupc++
+
+#####################################
+
+libstdc++: $(LIB_DIR)/libstdc++.a
+
+$(LIB_DIR)/libstdc++.a: newlib
+	$(MAKE) -C libstdc++-v3
 
 #####################################
 
