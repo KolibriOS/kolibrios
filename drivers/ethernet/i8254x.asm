@@ -525,7 +525,7 @@ reset_dontstart:
         mov     dword[esi + REG_PBA], 0x00000004        ; PBA: set the RX buffer size to 4KB (TX buffer is calculated as 64-RX buffer)
         mov     dword[esi + REG_RDTR], 0                ; RDTR: set no delay
 
-        mov     dword[esi + REG_TXCW], 0x08008060       ; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Reqest)
+        mov     dword[esi + REG_TXCW], 0x80008060       ; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Reqest)
 
         mov     eax, [esi + REG_CTRL]
         or      eax, 1 shl 6 + 1 shl 5
@@ -738,11 +738,15 @@ proc transmit stdcall bufferptr, buffersize
         add     dword[ebx + device.bytes_tx], eax
         adc     dword[ebx + device.bytes_tx + 4], 0
 
+        call    clean_tx
+
         popf
         xor     eax, eax
         ret
 
   .fail:
+        call    clean_tx
+
         DEBUGF  2,"Send failed\n"
         invoke  KernelFree, [bufferptr]
         popf
@@ -858,6 +862,18 @@ int_handler:
 
         DEBUGF  1,"Transmit done\n"
 
+;        call    clean_tx
+
+  .no_tx:
+        pop     edi esi ebx
+        xor     eax, eax
+        inc     eax
+        ret
+
+
+
+clean_tx:
+
   .txdesc_loop:
         mov     edi, [ebx + device.last_tx]
         shl     edi, 4                                  ; edi = edi * sizeof.TDESC
@@ -880,9 +896,7 @@ int_handler:
         jmp     .txdesc_loop
 
   .no_tx:
-        pop     edi esi ebx
-        xor     eax, eax
-        inc     eax
+
         ret
 
 
