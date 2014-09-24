@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //#ifdef CONFIG_DEBUF
 //  #define DBG(format,...) printf(format,##__VA_ARGS__)
 //#else
@@ -440,7 +444,7 @@ struct blit_call
     int srcw;
     int srch;
 
-    unsigned char *bitmap;
+    void *bitmap;
     int   stride;
 };
 
@@ -465,6 +469,11 @@ static inline void Blit(void *bitmap, int dst_x, int dst_y,
     "int $0x40"
     ::"a"(73),"b"(0),"c"(&bc.dstx));
 };
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
 

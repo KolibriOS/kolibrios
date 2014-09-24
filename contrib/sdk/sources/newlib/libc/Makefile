@@ -130,6 +130,7 @@ CORE_SRCS:=                   			\
 			sys/lseek.c		\
 			sys/open.c		\
 			sys/read.c           	\
+			sys/stat.c		\
 			sys/unlink.c		\
 			sys/write.c          	\
 			sys/io_alloc.S		\
@@ -244,6 +245,8 @@ STDIO_SRCS=					\
 			fopen.c			\
 			fclose.c		\
 			fdopen.c		\
+			feof.c			\
+			ferror.c		\
 			fflush.c		\
 			flags.c			\
 			fileno.c		\
@@ -300,10 +303,11 @@ MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_
 		ef_jn.c ef_log.c ef_log10.c ef_pow.c ef_rem_pio2.c ef_remainder.c ef_scalb.c	\
 		ef_sinh.c ef_sqrt.c er_gamma.c er_lgamma.c erf_gamma.c erf_lgamma.c f_exp.c	\
 		f_expf.c f_llrint.c f_llrintf.c f_llrintl.c f_lrint.c f_lrintf.c f_lrintl.c	\
-		f_pow.c f_powf.c f_rint.c f_rintf.c f_rintl.c k_cos.c k_rem_pio2.c k_sin.c	\
-		k_standard.c k_tan.c kf_cos.c kf_rem_pio2.c kf_sin.c kf_tan.c s_asinh.c 	\
-		s_atan.c s_cbrt.c s_ceil.c s_copysign.c s_cos.c s_erf.c s_exp10.c s_expm1.c	\
-		s_fabs.c s_fdim.c s_finite.c s_floor.c s_fma.c s_fmax.c s_fmin.c s_fpclassify.c	\
+		f_pow.c f_powf.c f_rint.c f_rintf.c f_rintl.c feclearexcept.c fetestexcept.c	\
+		k_cos.c	k_rem_pio2.c k_sin.c k_standard.c k_tan.c kf_cos.c kf_rem_pio2.c	\
+		kf_sin.c kf_tan.c s_asinh.c s_atan.c s_cbrt.c s_ceil.c s_copysign.c s_cos.c	\
+		s_erf.c	s_exp10.c s_expm1.c s_fabs.c s_fdim.c s_finite.c s_floor.c s_fma.c	\
+		s_fmax.c s_fmin.c s_fpclassify.c						\
 		s_frexp.c s_ilogb.c s_infconst.c s_infinity.c s_isinf.c s_isinfd.c s_isnan.c	\
 		s_isnand.c s_ldexp.c s_lib_ver.c s_llrint.c s_llround.c s_log1p.c s_log2.c	\
 		s_logb.c s_lrint.c s_lround.c s_matherr.c s_modf.c s_nan.c s_nearbyint.c	\
