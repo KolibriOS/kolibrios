@@ -42,7 +42,6 @@ include 'str.inc'
 align 4
 START:
 ;---------------------------------------------------------------------
-	mcall  48,3,sc,sizeof.system_colors
 	mcall  68,11
 
 load_libraries l_libs_start,end_l_libs
@@ -199,7 +198,9 @@ doit:
 	cmp	byte[ecx+1],'r'
 	je	@f
 	cmp	byte[ecx+1],'R'
-	jne	not_rd
+	je	@f
+        cmp     byte[ecx],'/'
+	je	not_rd
 @@:
 	mov	edx,rdError
 	call	print_err
@@ -334,6 +335,7 @@ stdcall _lstrlen,check_dir
 ;---  Draw window  ---------------------------------------------------
 ;---------------------------------------------------------------------
 draw_window:
+	mcall  48,3,sc,sizeof.system_colors
 	mcall	12,1
 
 	mov	edx,[sc.work]
