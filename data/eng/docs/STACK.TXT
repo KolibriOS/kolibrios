@@ -115,27 +115,38 @@ bl = 8 (set socket options)
 
     in:
         ecx = socket number
-        edx = level
-        esi = optionname
-        edi = ptr to buffer
+        edx = ptr to optstruct
+
+  Optstruct: dd level
+             dd optionname
+             dd optlength
+             db options...
 
 The buffer's first dword is the length of the buffer, minus the first dword offcourse
 
     out:
         eax = -1 on error 
 
-bl = 9 (get socket options
+bl = 9 (get socket options)
 
     in:
         ecx = socket number
-        edx = level
-        esi = optionname
-        edi = ptr to buffer
+        edx = ptr to optstruct
 
-The buffer's first dword is the length of the buffer, minus the first dword offcourse
-
+  Optstruct: dd level
+             dd optionname
+             dd optlength
+             db options...
     out:
         eax = -1 on error, socket option otherwise 
+
+bl = 10 (get IPC socketpair)
+
+    in:
+	/
+    out:
+	eax = -1 on error, socketnum1 otherwise
+	ebx = socketnum2
 
 TIP
 

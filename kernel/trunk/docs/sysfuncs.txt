@@ -4032,12 +4032,6 @@ Parameters:
 Returned value:
   * eax = socketnum1, -1 on error
   * ebx = socketnum2, errorcode on error
-Remarks:
-
-  Optstruct: dd level
-             dd optionname
-             dd optlength
-             db options...
 
 ======================================================================
 =============== Function -1 - terminate thread/process ===============
