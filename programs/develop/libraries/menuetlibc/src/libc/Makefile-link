@@ -6,5 +6,5 @@ ifdef ON_MINGW
 else
 	../mks $(OUTFILE) < ../tmp_make > tmp_make.ars
 endif
-	ar -M < tmp_make.ars
+	kos32-ar -M < tmp_make.ars
 	$(RM) tmp_make.ars

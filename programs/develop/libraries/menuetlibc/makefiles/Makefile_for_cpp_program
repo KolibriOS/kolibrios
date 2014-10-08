@@ -3,23 +3,23 @@ include $(MENUETDEV)/osrules.mak
 .SUFFIXES: .asm;
 
 $(OUTFILE): $(OBJS)
-	$(MLD) $(OUTFILE) $(OBJS) -lcpp $(LIBS) $(LDFLAGS) $(LD32OPT)
+	$(MLD) -o $(OUTFILE) $(OBJS) -lcpp $(LIBS) $(LDFLAGS) -lc
 
 .c.o: 
-	$(MGCC) $*.c $*.o $(CFLAGS) $(GCC32OPT)
+	$(MGCC) $*.c -o $*.o $(CFLAGS)
 
 .cpp.o: 
-	$(MGPP) $*.cpp $*.o $(CPPFLAGS) $(GCC32OPT)
+	$(MGPP) $*.cpp -o $*.o $(CPPFLAGS)
 
 .cc.o: 
-	$(MGPP) $*.cc $*.o $(CPPFLAGS) $(GCC32OPT)
+	$(MGPP) $*.cc -o $*.o $(CPPFLAGS)
 
 .asm.o:
 	nasm $*.asm -f $(ASMFMT) -o $*.o
 
 .s.o:
-	cpp $*.s -o $*.asm -nostdinc -I$(MENUETDEV)/include $(SFLAGS)
-	as $*.asm $(AS32OPT) -o $*.o
+	kos32-cpp $*.s -o $*.asm -nostdinc -I$(MENUETDEV)/include $(SFLAGS)
+	kos32-as $*.asm -o $*.o
 	$(RM) $*.asm
 
 clean:

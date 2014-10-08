@@ -2,24 +2,24 @@ include $(MENUETDEV)/osrules.mak
 
 .SUFFIXES: .asm;
 
-AS = as
+AS = kos32-as
 NASM = nasm
-CPP = cpp
+CPP = kos32-cpp
 
 DEBUG = 0
 
 .c.o:
-	$(MGCC) $*.c $*.o $(CFLAGS) $(GCC32OPT)
+	$(MGCC) $*.c -o $*.o $(CFLAGS)
 
 .cpp.o:
-	$(MGPP) $*.cpp $*.o $(CPPFLAGS) $(GCC32OPT)
+	$(MGPP) $*.cpp -o $*.o $(CPPFLAGS)
 
 .asm.o:
 	$(NASM) $*.asm -o $*.o -f $(ASMFMT)
 	
 .s.o:
 	$(CPP) -nostdinc -I$(MENUETDEV)/include $*.s -o $*.sx $(CSFLAGS) -DMENUETDEV=$(MENUETDEV) -D__DEV_CONFIG_H=\"$(MENUETDEV)/config.h\"
-	as $*.sx $(AS32OPT) -o $*.o
+	$(AS) $*.sx -o $*.o
 	$(RM) $*.sx
 
 ATHIS_LIBC_OBJS += $(subst .c,.o,$(filter %.c,$(THIS_SRCS))) \
@@ -44,15 +44,8 @@ else
 	@echo "# nothing" > ./ldepend
 endif
 
-ifdef DJDIR	
-depend:
-	echo $(THIS_SRCS) > __tmp.1
-	$(MMKDEP) @__tmp.1 > ./ldepend
-	$(RM) __tmp.1
-else
 depend:
 	$(MMKDEP) $(THIS_SRCS) > ./ldepend
-endif
 
 ifeq ($(wildcard ./ldepend),)
 check_ldepend:
