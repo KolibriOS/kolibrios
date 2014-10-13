@@ -293,7 +293,7 @@ search_and_load_pointer_file_label:
 	dec	ecx
 	jnz	.next_entry
 ;--------------------------------------
-	DEBUGF	2, "Searchap: additional parttition is not found!\n"
+	DEBUGF	2, "Searchap: additional partition is not found!\n"
 ;--------------------------------------
 	ret
 .sucess:
@@ -323,7 +323,7 @@ compare_files_and_mount:
 	mov	[compare_flag],byte 0
 	pop	esi ecx
 ;--------------------------------------
-	DEBUGF	2, "Searchap: compare files sucess!\n"
+	DEBUGF	2, "Searchap: compare files - success!\n"
 	DEBUGF	2, "Searchap: mount directory: %s\n",esi
 	mov	[mount_dir],1
 ;--------------------------------------
@@ -347,7 +347,7 @@ compare_files_and_mount:
 	mov	[compare_flag],byte 1
 	pop	esi ecx
 ;--------------------------------------
-	DEBUGF	1, "Searchap: compare files is not match!\n"
+	DEBUGF	1, "Searchap: compared files doesn't match!\n"
 ;--------------------------------------
 	ret
 ;---------------------------------------------------------------------
