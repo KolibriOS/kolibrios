@@ -21,8 +21,10 @@ align 4
         jz      find_IDE_controller_done
 
         mov     eax, [esi+PCIDEV.class]
-        shr     eax, 4
-        cmp     eax, 0x01018
+;        shr     eax, 4
+;        cmp     eax, 0x01018
+        shr     eax, 7
+        cmp     eax, 0x010180 shr 7
         jnz     .loop
 ;--------------------------------------
 .found:
@@ -362,11 +364,14 @@ Init_IDE_ATA_controller_2:
         call    boot_log
 ;--------------------------------------
         mov     eax, [ecx+IDE_DATA.ProgrammingInterface]
-        cmp     ax, 0x0180
-        je      .pata_ide
+;        cmp     ax, 0x0180
+;        je      .pata_ide
 
-        cmp     ax, 0x018a
-        jne     .sata_ide
+;        cmp     ax, 0x018a
+;        jne     .sata_ide
+
+        test    al, 1 ; 0 - legacy PCI mode, 1 - native PCI mode
+        jnz     .sata_ide
 ;--------------------------------------
 .pata_ide:
         cmp     [ecx+IDE_DATA.RegsBaseAddres], 0
@@ -382,13 +387,13 @@ Init_IDE_ATA_controller_2:
         jmp     .end_set_interrupts
 ;--------------------------------------
 .sata_ide:
-        cmp     ax, 0x0185
-        je      .sata_ide_1
+;        cmp     ax, 0x0185
+;        je      .sata_ide_1
 
-        cmp     ax, 0x018f
-        jne     .end_set_interrupts
+;        cmp     ax, 0x018f
+;        jne     .end_set_interrupts
 ;--------------------------------------
-.sata_ide_1:
+;.sata_ide_1:
 ; Some weird controllers generate an interrupt even if IDE interrupts
 ; are disabled and no IDE devices. For example, notebook ASUS K72F -
 ; IDE controller 010185 generates false interrupt when we work with
