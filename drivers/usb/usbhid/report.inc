@@ -23,6 +23,8 @@ USAGE_GD_SLIDER      = 10036h
 USAGE_GD_DIAL        = 10037h
 USAGE_GD_WHEEL       = 10038h
 
+USAGE_GD_CONS_CTRL   = 0C0001h ; Consumer control (media keys)
+
 ; Keyboard/Keypad usage page
 USAGE_KBD_NOEVENT    = 70000h
 USAGE_KBD_ROLLOVER   = 70001h
@@ -45,6 +47,9 @@ USAGE_LED_SCROLLLOCK = 80003h
 ; Button usage page
 ; First button is USAGE_BUTTON_PAGE+1, second - USAGE_BUTTON_PAGE+2 etc.
 USAGE_BUTTON_PAGE    = 90000h
+
+; Consumer control usage page
+USAGE_CONSUMER       = 0C0000h
 
 ; Flags for input/output/feature fields
 HID_FIELD_CONSTANT   = 1 ; if not, then Data field
@@ -1009,6 +1014,9 @@ end if
         cmp     [edi+collection.usage], USAGE_GD_KEYBOARD
         jz      .has_driver
         cmp     [edi+collection.usage], USAGE_GD_KEYPAD
+        jz      .has_driver
+        mov     esi, multimedia_driver
+        cmp     [edi+collection.usage], USAGE_GD_CONS_CTRL
         jz      .has_driver
 if HID_DUMP_UNCLAIMED
         mov     esi, default_driver

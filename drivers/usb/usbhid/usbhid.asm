@@ -523,6 +523,7 @@ include 'sort.inc'
 include 'unclaimed.inc'
 include 'mouse.inc'
 include 'keyboard.inc'
+include 'multimedia.inc'
 
 ; strings
 my_driver       db      'usbhid',0
