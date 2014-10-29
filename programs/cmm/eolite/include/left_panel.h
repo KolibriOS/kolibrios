@@ -157,7 +157,7 @@ void SystemDiscsDraw()
 		}
 		strcat(#disc_name, #dev_name);
 		if (show_dev_name) WriteText(45,i*16+79,0x80,0,#disc_name); else WriteText(45,i*16+79,0x80,0,#dev_name);
-		_PutImage(21,i*16+76, 14,13, dev_icon*14*13*3+#devices);
+		_PutImage(23,i*16+76, 14,13, dev_icon*14*13*3+#devices);
 	}
 }
 
@@ -171,7 +171,7 @@ void ActionsDraw()
 		DefineButton(17,actions_y,159,lineh,actions[i*3]+BT_HIDE,0xE4DFE1);
 		WriteText(45,actions_y+4,0x80,0,actions[i*3+1]);
 		WriteText(-strlen(actions[i*3+2])*6+170,actions_y+4,0x80,0x999999,actions[i*3+2]);
-		_PutImage(21,actions_y+2, 14,13, i*14*13*3+#factions);
+		_PutImage(23,actions_y+2, 14,13, i*14*13*3+#factions);
 	}
 }
 
