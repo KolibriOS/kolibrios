@@ -1,4 +1,4 @@
-//Leency & Veliant 2008-2013
+//Leency & Veliant 2008-2014
 //GNU GPL licence.
 
 #ifndef AUTOBUILD
@@ -82,12 +82,12 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.36"
-#define ABOUT_TITLE "Eolite v2.36"
+#define TITLE "Eolite File Manager v2.38"
+#define ABOUT_TITLE "Eolite v2.38"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
-char tmp_disk_del_param[3]="d0";
+char tmp_disk_del_param[]="d0";
 struct path_string { char Item[4096]; };
 
 byte active_about=0;
@@ -341,12 +341,13 @@ void main()
 						DrawRectangle(17,id-100*16+74,159,16, 0xFFFFFF);
 						break;
 				case 130...160:
-						tmp_disk_del_param[1]=disk_list[id-130].Item[4];
+						tmp_disk_del_param[1] = id - 130 + 48;
 						RunProgram("/sys/tmpdisk", #tmp_disk_del_param);
 						pause(10);
 						SystemDiscsGet();
 						Open_Dir(#path,WITH_REDRAW);
 						DrawLeftPanel();
+						//m.get();
 						break;
 			}
 			break;

@@ -49,9 +49,9 @@ dword devbuf;
 
 void SystemDiscsGet()
 {
-	unsigned char dev_name[10], sys_discs[10];
-	unsigned int i1, j1, dev_num, dev_disc_num;
-	unsigned int nullbuf;
+	char dev_name[10], sys_discs[10];
+	int i1, j1, dev_num, dev_disc_num;
+	int nullbuf[32];
 	disc_num=0;
 	if (devbuf) free(devbuf);
 	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
@@ -59,7 +59,7 @@ void SystemDiscsGet()
 	dev_num = EBX;
 	for (i1=0; i1<dev_num; i1++)
 	{
-		strcpy(#dev_name, "/");                                 // /
+		strcpy(#dev_name, "/");               // /
 		strcat(#dev_name, i1*304+ devbuf+72); // /rd
 		strcat(#dev_name, "/");               // /rd/
 		Open_Dir(#dev_name, ONLY_OPEN);
@@ -67,15 +67,15 @@ void SystemDiscsGet()
 		//if (files.count<=0) copystr(#dev_name,#disk_list[disc_num].Item); else
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
-			strcpy(#sys_discs, #dev_name);                              // /rd/
+			strcpy(#sys_discs, #dev_name);           // /rd/
 			strcat(#sys_discs, j1*304+ buf+72);      // /rd/1
 			strcat(#sys_discs, "/");                 // /rd/1/
 			strcpy(#disk_list[disc_num].Item, #sys_discs);
 			disc_num++;
 		}
-		if (strcmp(#disk_list[disc_num-1].Item, "/rd/1/")==0) 
+		if (strcmp(#sys_discs, "/rd/1/")==0) 
 		{
-			if (GetDir(nullbuf, nullbuf, "/kolibrios/", DIRS_ALL)==0)
+			if (GetDir(#nullbuf, #nullbuf, "/kolibrios/", DIRS_ALL)==0)
 			{
 				strcpy(#disk_list[disc_num].Item, "/kolibrios/");
 				kolibrios_drive = true;
@@ -146,8 +146,8 @@ void SystemDiscsDraw()
 				break;
 			case 't':
 				dev_icon=4;
-				strcpy(#disc_name, "RAM disk ");				
-				DefineButton(17+143,i*16+74,16,16,i+130+BT_HIDE+BT_NOFRAME,0xFFFFFF);
+				strcpy(#disc_name, "RAM disk ");
+				DefineButton(17+143,i*16+74,16,16,dev_name[4]+130-48+BT_HIDE+BT_NOFRAME,0xFFFFFF);
 				WriteText(45+121,i*16+79,0x80,0xD63535,"-");
 				WriteText(45+121,i*16+79+1,0x80,0xBC2424,"-");
 				break;
