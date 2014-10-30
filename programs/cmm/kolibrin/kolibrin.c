@@ -14,6 +14,7 @@ void main()
 	signed int result;
 
 	mem_Init();
+	pause(200);
 	GetDir(#dirbuf, #fcount, "/", DIRS_ONLYREAL);
 
 	for (i=0; i<fcount; i++)
