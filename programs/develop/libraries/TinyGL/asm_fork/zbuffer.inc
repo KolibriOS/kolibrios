@@ -1,0 +1,178 @@
+;
+; Z buffer
+;
+
+include 'zfeatures.inc'
+
+ZB_Z_BITS equ 16
+
+ZB_POINT_Z_FRAC_BITS equ 14
+
+ZB_POINT_S_MIN equ ( (1 shl 13) )
+ZB_POINT_S_MAX equ ( (1 shl 22)-(1 shl 13) )
+ZB_POINT_T_MIN equ ( (1 shl 21) )
+ZB_POINT_T_MAX equ ( (1 shl 30)-(1 shl 21) )
+
+ZB_POINT_RED_MIN equ ( (1 shl 10) )
+ZB_POINT_RED_MAX equ ( (1 shl 16)-(1 shl 10) )
+ZB_POINT_GREEN_MIN equ ( (1 shl 9) )
+ZB_POINT_GREEN_MAX equ ( (1 shl 16)-(1 shl 9) )
+ZB_POINT_BLUE_MIN equ ( (1 shl 10) )
+ZB_POINT_BLUE_MAX equ ( (1 shl 16)-(1 shl 10) )
+
+; display modes
+ZB_MODE_5R6G5B equ 1  ; true color 16 bits
+ZB_MODE_INDEX  equ 2  ; color index 8 bits
+ZB_MODE_RGBA   equ 3  ; 32 bit rgba mode
+ZB_MODE_RGB24  equ 4  ; 24 bit rgb mode
+ZB_NB_COLORS   equ 225 ; number of colors for 8 bit display
+
+if TGL_FEATURE_RENDER_BITS eq 15
+
+;#define RGB_TO_PIXEL(r,g,b) \
+;  ((((r) >> 1) & 0x7c00) | (((g) >> 6) & 0x03e0) | ((b) >> 11))
+;typedef unsigned short PIXEL;
+;/* bytes per pixel */
+;PSZB equ 2
+;/* bits per pixel = (1 << PSZH) */
+;PSZSH equ 4
+
+else if TGL_FEATURE_RENDER_BITS eq 16
+
+;/* 16 bit mode */
+;#define RGB_TO_PIXEL(r,g,b) \
+;  (((r) & 0xF800) | (((g) >> 5) & 0x07E0) | ((b) >> 11))
+;typedef unsigned short PIXEL;
+;PSZB equ 2
+;PSZSH equ 4
+
+else if TGL_FEATURE_RENDER_BITS eq 24
+
+macro RGB_TO_PIXEL r,g,b
+{
+	mov eax,b
+	shr eax,8
+	push eax
+		mov eax,g
+		and eax,0xff00
+		or dword[esp],eax
+		mov eax,r
+		shl eax,8
+		or dword[esp],eax
+	pop eax
+}
+
+;typedef unsigned char PIXEL;
+PSZB equ 3
+PSZSH equ 5
+
+else if TGL_FEATURE_RENDER_BITS eq 32
+
+;#define RGB_TO_PIXEL(r,g,b) \
+;  ((((r) << 8) & 0xff0000) | ((g) & 0xff00) | ((b) >> 8))
+;typedef unsigned int PIXEL;
+;PSZB equ 4
+;PSZSH equ 5
+
+else
+
+;#error Incorrect number of bits per pixel
+
+end if
+
+struct ZBuffer
+	xsize dd ? ;int
+	ysize dd ? ;int
+	linesize dd ? ;int ;line size, in bytes
+	mode dd ? ;int
+    
+	zbuf dd ? ;*unsigned short
+	pbuf dd ? ;*PIXEL
+	frame_buffer_allocated dd ? ;int
+    
+	nb_colors dd ? ;int
+	dctable dd ? ;*unsigned char
+	ctable dd ? ;*int
+	current_texture dd ? ;*PIXEL
+ends
+
+offs_zbuf_xsize equ 0
+offs_zbuf_ysize equ 4
+offs_zbuf_linesize equ 8
+offs_zbuf_mode equ 16
+offs_zbuf_zbuf equ 20
+offs_zbuf_pbuf equ 24
+offs_zbuf_frame_buffer_allocated equ 28
+offs_zbuf_nb_colors equ 32
+offs_zbuf_dctable equ 36
+offs_zbuf_ctable equ 40
+offs_zbuf_current_texture equ 44
+
+struct ZBufferPoint
+	x dd ? ;int ;integer coordinates in the zbuffer
+	y dd ? ;int
+	z dd ? ;int
+	s dd ? ;int ;coordinates for the mapping
+	t dd ? ;int
+	r dd ? ;int ;color indexes
+	g dd ? ;int
+	b dd ? ;int
+
+	fsz dd ? ;float ;temporary coordinates for mapping
+	tz dd ? ;float
+ends
+
+offs_zbup_x equ  0
+offs_zbup_y equ  4
+offs_zbup_z equ  8
+offs_zbup_s equ 12
+offs_zbup_t equ 16
+offs_zbup_r equ 20
+offs_zbup_g equ 24
+offs_zbup_b equ 28
+offs_zbup_sz equ 32
+offs_zbup_tz equ 36
+
+; ztriangle.c
+
+;
+; Memory allocator for TinyGL
+;
+
+; modify these functions so that they suit your needs
+
+align 4
+proc gl_free uses ebx ecx, mptr:dword
+	mov ecx,[mptr]
+	or ecx,ecx
+	jz @f
+    @@:
+	mcall 68, 13
+	ret
+endp
+
+;description:
+; выделение памяти
+align 4
+proc gl_malloc uses ebx ecx, size:dword
+	mcall 68, 12, [size]
+	ret
+endp
+
+;description:
+; выделение очищеной памяти
+align 4
+proc gl_zalloc uses ebx ecx edi, size:dword
+	mov ecx,[size]
+	stdcall gl_malloc,ecx
+	cmp eax,0
+	je @f
+		mov ebx,eax
+		mov edi,eax
+		xor eax,eax
+		shr ecx,2
+		rep stosd ;очистка памяти (пишем везде 0)
+		mov eax,ebx
+	@@:
+	ret
+endp
