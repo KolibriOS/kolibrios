@@ -1235,9 +1235,13 @@ align 4
 
         lea     eax, [ebx + STREAM_SOCKET.snd]
         call    SOCKET_ring_create
+        test    eax, eax
+        jz      .drop
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
+        test    eax, eax
+        jz      .drop
 
         and     [temp_bits], not TCP_BIT_DROPSOCKET
 

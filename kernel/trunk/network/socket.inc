@@ -1223,10 +1223,13 @@ SOCKET_pair:
 
         lea     eax, [eax + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
+        test    eax, eax
+        jz      .nomem1
 
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_create
-        pop     eax
+        test    eax, eax
+        jz      .nomem2
 
         ret
 
@@ -1468,7 +1471,8 @@ SOCKET_input:
 
 ;--------------------------
 ;
-; eax = ptr to ring struct (just a buffer of the right size)
+; IN: eax = ptr to ring struct (just a buffer of the right size)
+; OUT: eax = unchanged / 0 on error
 ;
 align 4
 SOCKET_ring_create:
@@ -1479,6 +1483,8 @@ SOCKET_ring_create:
         push    edx
         stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SW
         pop     edx
+        test    eax, eax
+        jz      .fail
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_ring_created: %x\n", eax
 
@@ -1496,6 +1502,7 @@ SOCKET_ring_create:
         mov     eax, esi
         pop     esi
 
+  .fail:
         ret
 
 ;-----------------------------------------------------------------
@@ -1539,6 +1546,7 @@ SOCKET_ring_write:
         jb      @f
         sub     edi, SOCKET_MAXDATA                             ; WRAP
   @@:
+
         mov     [eax + RING_BUFFER.write_ptr], edi
         pop     edi
 
@@ -1954,8 +1962,14 @@ SOCKET_free:
         jnz     .no_tcp
 
         mov     ebx, eax
+        cmp     [ebx + STREAM_SOCKET.rcv.start_ptr], 0
+        je      @f
         stdcall kernel_free, [ebx + STREAM_SOCKET.rcv.start_ptr]
+  @@:
+        cmp     [ebx + STREAM_SOCKET.snd.start_ptr], 0
+        je      @f
         stdcall kernel_free, [ebx + STREAM_SOCKET.snd.start_ptr]
+  @@:
         mov     eax, ebx
   .no_tcp:
 
