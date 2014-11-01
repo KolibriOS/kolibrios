@@ -277,11 +277,9 @@ struct  device          ETH_DEVICE
         last_tx         dd ?
 
         rb 0x100 - ($ and 0xff) ; align 256
-
         rx_desc         rb RX_RING_SIZE*sizeof.RDESC*2
 
         rb 0x100 - ($ and 0xff) ; align 256
-
         tx_desc         rb TX_RING_SIZE*sizeof.TDESC*2
 
 ends
@@ -416,6 +414,8 @@ proc service_proc stdcall, ioctl:dword
         inc     [devices]                               ;
 
         call    start_i8254x
+        test    eax, eax
+        jnz     .destroy
 
         mov     [ebx + device.type], NET_TYPE_ETH
         invoke  NetRegDev
@@ -443,6 +443,7 @@ proc service_proc stdcall, ioctl:dword
         invoke  KernelFree, ebx
 
   .fail:
+        DEBUGF  2,"Loading driver failed\n"
         or      eax, -1
         ret
 
@@ -459,6 +460,9 @@ endp
 
 align 4
 unload:
+
+        DEBUGF  1,"Unload\n"
+
         ; TODO: (in this particular order)
         ;
         ; - Stop the device
@@ -469,7 +473,7 @@ unload:
 
         or      eax, -1
 
-ret
+        ret
 
 
 
@@ -540,9 +544,12 @@ reset_dontstart:
         stosd
 
         call    init_rx
+        test    eax, eax
+        jnz     .fail
         call    init_tx
 
         xor     eax, eax
+  .fail:
         ret
 
 
@@ -553,9 +560,10 @@ init_rx:
         lea     edi, [ebx + device.rx_desc]
         mov     ecx, RX_RING_SIZE
   .loop:
-        push    ecx
-        push    edi
+        push    ecx edi
         invoke  KernelAlloc, MAX_PKT_SIZE
+        test    eax, eax
+        jz      .out_of_mem
         DEBUGF  1,"RX buffer: 0x%x\n", eax
         pop     edi
         mov     dword[edi + RX_RING_SIZE*sizeof.RDESC], eax
@@ -582,7 +590,13 @@ init_rx:
         mov     dword[esi + REG_RDT], RX_RING_SIZE-1                    ; Receive Descriptor Tail
         mov     dword[esi + REG_RCTL], RCTL_SBP or RCTL_BAM or RCTL_SECRC or RCTL_UPE or RCTL_MPE
         ; Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet, Promiscuous mode
+        xor     eax, eax        ; success!
+        ret
 
+  .out_of_mem:
+        DEBUGF  2,"Out of memory!\n"
+        pop     edi ecx
+        or      eax, -1         ; error!
         ret
 
 
@@ -620,7 +634,12 @@ init_tx:
 align 4
 reset:
         call    reset_dontstart
+        test    eax, eax
+        je      start_i8254x
 
+        ret
+
+align 4
 start_i8254x:
 
         mov     esi, [ebx + device.mmio_addr]
@@ -826,6 +845,8 @@ int_handler:
         push    esi
         invoke  KernelAlloc, MAX_PKT_SIZE
         pop     esi
+        test    eax, eax
+        jz      .out_of_mem
         mov     dword[esi + RX_RING_SIZE*sizeof.RDESC], eax
         invoke  GetPhysAddr
         mov     [esi + RDESC.addr_l], eax
@@ -836,6 +857,15 @@ int_handler:
         mov     esi, [ebx + device.mmio_addr]
         mov     eax, [ebx + device.cur_rx]
         mov     [esi + REG_RDT], eax
+
+; Move to next rx desc
+        inc     [ebx + device.cur_rx]
+        and     [ebx + device.cur_rx], RX_RING_SIZE-1
+
+        jmp     [Eth_input]
+
+  .out_of_mem:
+        DEBUGF  2,"Out of memory!\n"
 
 ; Move to next rx desc
         inc     [ebx + device.cur_rx]
