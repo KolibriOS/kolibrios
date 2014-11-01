@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -580,6 +580,40 @@ align 4
 endp
 ;------------------------------------------------------------------------------
 align 4
+proc restore_16 stdcall, x:dword, y:dword
+
+        push    ebx
+
+        mov     ebx, [cur_saved_base]
+        mov     edx, [cur.h]
+        test    edx, edx
+        jz      .ret
+
+        push    esi
+        push    edi
+
+        mov     esi, cur_saved_data
+;--------------------------------------
+align 4
+@@:
+        mov     edi, ebx
+        add     ebx, [_display.pitch]
+
+        mov     ecx, [cur.w]
+        rep movsw
+        dec     edx
+        jnz     @B
+
+        pop     edi
+;--------------------------------------
+align 4
+.ret:
+        pop     esi
+        pop     ebx
+        ret
+endp
+;------------------------------------------------------------------------------
+align 4
 proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            locals
              h      dd ?
@@ -815,6 +849,129 @@ align 4
 endp
 ;------------------------------------------------------------------------------
 align 4
+proc move_cursor_16 stdcall, hcursor:dword, x:dword, y:dword
+           locals
+             h      dd ?
+             _dx     dd ?
+             _dy     dd ?
+           endl
+
+        mov     esi, [hcursor]
+        mov     ecx, [x]
+        mov     eax, [y]
+
+        xor     edx, edx
+        sub     ecx, [esi+CURSOR.hot_x]
+        lea     ebx, [ecx+32-1]
+        mov     [x], ecx
+        sets    dl
+        dec     edx
+        and     ecx, edx      ;clip x to 0<=x
+        mov     [cur.left], ecx
+        mov     edi, ecx
+        sub     edi, [x]
+        mov     [_dx], edi
+
+        xor     edx, edx
+        sub     eax, [esi+CURSOR.hot_y]
+        lea     edi, [eax+32-1]
+        mov     [y], eax
+        sets    dl
+        dec     edx
+        and     eax, edx      ;clip y to 0<=y
+        mov     [cur.top], eax
+        mov     edx, eax
+        sub     edx, [y]
+        mov     [_dy], edx
+
+;        mul     dword [BytesPerScanLine]
+        mov     eax, [BPSLine_calc_area+eax*4]
+        lea     edx, [LFB_BASE+eax+ecx*2]
+        mov     [cur_saved_base], edx
+
+        cmp     ebx, [Screen_Max_X]
+        jbe     @F
+        mov     ebx, [Screen_Max_X]
+;--------------------------------------
+align 4
+@@:
+        cmp     edi, [Screen_Max_Y]
+        jbe     @F
+        mov     edi, [Screen_Max_Y]
+;--------------------------------------
+align 4
+@@:
+        mov     [cur.right], ebx
+        mov     [cur.bottom], edi
+
+        sub     ebx, [x]
+        sub     edi, [y]
+        inc     ebx
+        inc     edi
+        sub     ebx, [_dx]
+        sub     edi, [_dy]
+
+        mov     [cur.w], ebx
+        mov     [cur.h], edi
+        mov     [h], edi
+
+        mov     eax, edi
+        mov     edi, cur_saved_data
+;--------------------------------------
+align 4
+@@:
+        mov     esi, edx
+        add     edx, [_display.pitch]
+        mov     ecx, [cur.w]
+
+        rep movsw
+        dec     eax
+        jnz     @B
+
+;draw cursor
+        mov     ebx, [cur_saved_base]
+        mov     eax, [_dy]
+        shl     eax, 5
+        add     eax, [_dx]
+
+        mov     esi, [hcursor]
+        mov     esi, [esi+CURSOR.base]
+        lea     edx, [esi+eax*4]
+;--------------------------------------
+align 4
+.row:
+        mov     ecx, [cur.w]
+        mov     esi, edx
+        mov     edi, ebx
+        add     edx, 32*4
+        add     ebx, [_display.pitch]
+;--------------------------------------
+align 4
+.pix:
+        lodsd
+        test    eax, 0xFF000000
+        jz      @F
+; convert to 16 bpp and store to real LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edi], ax
+;--------------------------------------
+align 4
+@@:
+        add     edi, 2
+        dec     ecx
+        jnz     .pix
+
+        dec     [h]
+        jnz     .row
+        ret
+endp
+;------------------------------------------------------------------------------
+align 4
 check_mouse_area_for_getpixel_new:
 ; in:
 ; eax = x
@@ -850,7 +1007,10 @@ check_mouse_area_for_getpixel_new:
         add     eax, ebx
         mov     ebx, eax
         shl     eax, 2
-        cmp     byte [_display.bpp], 32
+        cmp     byte [_display.bits_per_pixel], 32
+        je      @f
+        sub     eax, ebx
+        cmp     byte [_display.bits_per_pixel], 24
         je      @f
         sub     eax, ebx
 ;--------------------------------------
@@ -925,10 +1085,26 @@ align 4
         add     ecx, ebx
         mov     ebx, ecx
         shl     ecx, 2
-        cmp     byte [_display.bpp], 24
+        cmp     byte [_display.bits_per_pixel], 16
+        je      .16
+        cmp     byte [_display.bits_per_pixel], 24
         je      .24
         and     eax, 0xFFFFFF
         mov     [ecx + cur_saved_data], eax   ;store new color  to
+        jmp     @f
+;--------------------------------------
+align 4
+.16:
+        sub     ecx, ebx
+        sub     ecx, ebx
+; convert to 16 bpp and store to real LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [ecx + cur_saved_data], ax      ;store new color  to
         jmp     @f
 ;--------------------------------------
 align 4
@@ -999,9 +1175,9 @@ init_display:
         mov     ebx, restore_32
         mov     ecx, move_cursor_32
         mov     edx, Vesa20_putpixel32_new
-        mov     eax, [_display.bpp]
+        mov     eax, [_display.bits_per_pixel]
         cmp     al, 32
-        jne     .24
+        jne     .not_32bpp
 
 .set:
         mov     [_display.select_cursor], select_cursor
@@ -1020,12 +1196,30 @@ init_display:
         mov     [def_cursor], eax
         ret
 
-.24:
+.not_32bpp:
+        cmp     al, 24
+        jne     .not_24bpp
+
         mov     ebx, restore_24
         mov     ecx, move_cursor_24
         mov     edx, Vesa20_putpixel24_new
-        cmp     al, 24
-        je      .set
+        jmp     .set
+
+.not_24bpp:
+        cmp     al, 16
+        jne     .not_16bpp
+        mov     ebx, restore_16
+        mov     ecx, move_cursor_16
+        mov     edx, Vesa20_putpixel16_new
+        jmp     .set
+
+.not_16bpp:
+;        cmp     al, 15
+;        jne     .fail
+;        mov     ebx, restore_15
+;        mov     ecx, move_cursor_15
+;        mov     edx, Vesa20_putpixel15_new
+;        jmp     .set
 
 .fail:
         xor     eax, eax

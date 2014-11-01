@@ -308,7 +308,7 @@ end virtual
         test    edx, edx
         jz      .L57
 
-        cmp     [_display.bpp], 32
+        cmp     [_display.bits_per_pixel], 32
         jne     .core_24
 
         lea     edi, [edi+ebx*4]

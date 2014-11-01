@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -434,7 +434,7 @@ high_code:
         mov     al, [BOOT_VARS+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
         movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
-        mov     [_display.bpp], eax
+        mov     [_display.bits_per_pixel], eax
         mov     [_display.vrefresh], 60
         mov     al, [BOOT_VARS+BOOT_DEBUG_PRINT]    ; If nonzero, duplicates debug output to the screen
         mov     [debug_direct_print], al
@@ -480,34 +480,56 @@ high_code:
         mov     edi, BiosDisksData
         rep movsd
 
-; GRAPHICS ADDRESSES
+setvideomode:
 
         mov     eax, [BOOT_VARS+BOOT_LFB]
         mov     [LFBAddress], eax
 
-        cmp     [SCR_MODE], word 0100000000000000b
-        jge     setvesa20
-        cmp     [SCR_MODE], word 0x13  ; EGA 320*200 256 colors
-        je      v20ga32
-        jmp     v20ga24
+        cmp     word [SCR_MODE], 0x0012                 ; VGA (640x480 16 colors)
+        je      .vga
+        cmp     word [SCR_MODE], 0x0013                 ; MCGA (320*200 256 colors)
+        je      .32bpp
+        cmp     byte [_display.bits_per_pixel], 32
+        je      .32bpp
+        cmp     byte [_display.bits_per_pixel], 24
+        je      .24bpp
+        cmp     byte [_display.bits_per_pixel], 16
+        je      .16bpp
+;        cmp     byte [_display.bits_per_pixel], 15
+;        je      .15bpp
 
-setvesa20:
-        mov     [PUTPIXEL], dword Vesa20_putpixel24 ; Vesa 2.0
-        mov     [GETPIXEL], dword Vesa20_getpixel24
-        cmp     byte [_display.bpp], 24
-        jz      v20ga24
-v20ga32:
-        mov     [PUTPIXEL], dword Vesa20_putpixel32
-        mov     [GETPIXEL], dword Vesa20_getpixel32
-        jmp     no_mode_0x12
-v20ga24:
-        cmp     [SCR_MODE], word 0x12               ; 16 C VGA 640x480
-        jne     no_mode_0x12
-        mov     [PUTPIXEL], dword VGA_putpixel
-        mov     [GETPIXEL], dword Vesa20_getpixel32
-no_mode_0x12:
+  .vga:
+        mov     [PUTPIXEL], VGA_putpixel
+        mov     [GETPIXEL], Vesa20_getpixel32           ; Conversion buffer is 32 bpp
+        mov     [_display.bytes_per_pixel], 4           ; Conversion buffer is 32 bpp
+        jmp     .finish
 
-        mov     [MOUSE_PICTURE], dword mousepointer
+;  .15bpp:
+;        mov     [PUTPIXEL], Vesa20_putpixel15
+;        mov     [GETPIXEL], Vesa20_getpixel15
+;        mov     [_display.bytes_per_pixel], 2
+;        jmp     .finish
+
+  .16bpp:
+        mov     [PUTPIXEL], Vesa20_putpixel16
+        mov     [GETPIXEL], Vesa20_getpixel16
+        mov     [_display.bytes_per_pixel], 2
+        jmp     .finish
+
+  .24bpp:
+        mov     [PUTPIXEL], Vesa20_putpixel24
+        mov     [GETPIXEL], Vesa20_getpixel24
+        mov     [_display.bytes_per_pixel], 3
+        jmp     .finish
+
+  .32bpp:
+        mov     [PUTPIXEL], Vesa20_putpixel32
+        mov     [GETPIXEL], Vesa20_getpixel32
+        mov     [_display.bytes_per_pixel], 4
+;        jmp     .finish
+
+  .finish:
+        mov     [MOUSE_PICTURE], mousepointer
         mov     [_display.check_mouse], check_mouse_area_for_putpixel
         mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
@@ -4997,7 +5019,7 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 .2:                             ; bits per pixel
-        mov     eax, [_display.bpp]
+        mov     eax, [_display.bits_per_pixel]
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,14 +378,14 @@ _display            display_t
 _WinMapAddress      rd 1
 _WinMapSize         rd 1
 
-LFBAddress          rd 1
-Screen_Max_X        rd 1
-Screen_Max_Y        rd 1
+LFBAddress          dd ?
+Screen_Max_X        dd ?
+Screen_Max_Y        dd ?
 
 SCR_MODE            rw 2
 
-PUTPIXEL            rd 1
-GETPIXEL            rd 1
+PUTPIXEL            dd ?
+GETPIXEL            dd ?
 
 if VESA_1_2_VIDEO
 BANK_SWITCH         rd 1  reserved for vesa 1.2
@@ -401,7 +401,7 @@ d_width_calc_area   rd 1140
 
 mouseunder          rd 16*24
 
-MOUSE_PICTURE       rd 1
+MOUSE_PICTURE       dd ?
 
 MOUSE_SCROLL_H      rw 1
 MOUSE_X:            rw 1

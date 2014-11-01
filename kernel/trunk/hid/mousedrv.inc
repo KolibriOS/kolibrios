@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,29 +24,28 @@ $Revision$
 uglobal
 ;--------------------------------------
 align 4
-  mousecount  dd  0x0
-  mousedata   dd  0x0
-Y_UNDER_sub_CUR_hot_y_add_curh:
-        dw 0
-Y_UNDER_subtraction_CUR_hot_y:
-        dw 0
-X_UNDER_sub_CUR_hot_x_add_curh:
-        dw 0
-X_UNDER_subtraction_CUR_hot_x:
-        dw 0
+mousecount                      dd ?
+mousedata                       dd ?
+Y_UNDER_sub_CUR_hot_y_add_curh  dw ?
+Y_UNDER_subtraction_CUR_hot_y   dw ?
+X_UNDER_sub_CUR_hot_x_add_curh  dw ?
+X_UNDER_subtraction_CUR_hot_x   dw ?
 endg
 
 iglobal
 ;--------------------------------------
 align 4
-mouse_delay        dd 10
+mouse_delay             dd 10
 mouse_speed_factor:
-                    dd 3
-mouse_timer_ticks  dd 0
+                        dd 3
+mouse_timer_ticks       dd 0
 endg
+
 ;-----------------------------------------------------------------------------
+
 align 4
 draw_mouse_under:
+
         ; return old picture
         cmp     [_display.restore_cursor], 0
         je      @F
@@ -57,15 +56,13 @@ draw_mouse_under:
         stdcall [_display.restore_cursor], eax, ebx
         popad
         ret
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         pushad
         xor     ecx, ecx
         xor     edx, edx
-;--------------------------------------
-align 4
-mres:
+
+  mres:
         movzx   eax, word [X_UNDER]
         movzx   ebx, word [Y_UNDER]
         add     eax, ecx
@@ -97,7 +94,9 @@ mres:
         jnz     mres
         popad
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 save_draw_mouse:
         cmp     [_display.move_cursor], 0
@@ -173,11 +172,13 @@ drm:
         push    edx
         ; helloworld
         push    ecx
-        add     eax, ecx; save picture under mouse
+        add     eax, ecx        ; save picture under mouse
         add     ebx, edx
         push    ecx
-        or      ecx, 0x04000000  ; don't load to mouseunder area
-        call    getpixel
+        or      ecx, 0x04000000 ; don't load to mouseunder area
+        push    eax ebx edx edi
+        call    [GETPIXEL]
+        pop     edi edx ebx eax
         mov     [COLOR_TEMP], ecx
         pop     ecx
         mov     eax, edx
@@ -189,12 +190,12 @@ drm:
         and     ebx, 0xffffff
         mov     [eax], ebx
         pop     ecx
-        mov     edi, edx     ; y cycle
-        shl     edi, 4     ; *16 bytes per row
-        add     edi, ecx     ; x cycle
+        mov     edi, edx        ; y cycle
+        shl     edi, 4          ; *16 bytes per row
+        add     edi, ecx        ; x cycle
         mov     esi, edi
         add     edi, esi
-        add     edi, esi      ; *3
+        add     edi, esi        ; *3
         add     edi, [MOUSE_PICTURE]    ; we have our str address
         mov     esi, edi
         add     esi, 16*24*3
@@ -208,19 +209,19 @@ drm:
         pop     ecx
         pop     ebx
         pop     eax
-        add     eax, ecx     ; we have x coord+cycle
-        add     ebx, edx     ; and y coord+cycle
+        add     eax, ecx        ; we have x coord+cycle
+        add     ebx, edx        ; and y coord+cycle
         push    ecx
         mov     ecx, [MOUSE_COLOR_MEM]
         mov     edi, 1 ; force
-        or      ecx, 0x04000000  ; don't save to mouseunder area
+        or      ecx, 0x04000000 ; don't save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
         pop     ecx
         mov     ebx, [esp+0]    ; pure y coord again
         mov     eax, [esp+4]    ; and x
-        inc     ecx         ; +1 cycle
-        cmp     ecx, 16     ; if more than 16
+        inc     ecx             ; +1 cycle
+        cmp     ecx, 16         ; if more than 16
         jnz     drm
         xor     ecx, ecx
         inc     edx
@@ -229,7 +230,9 @@ drm:
         add     esp, 8
         popad
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 combine_colors:
       ; in
@@ -244,7 +247,7 @@ combine_colors:
         push    edx
         push    ecx
         xor     ecx, ecx
-         ; byte 2
+         ; byte 0
         mov     eax, 0xff
         sub     al, [esi+0]
         mov     ebx, [esp]
@@ -298,7 +301,9 @@ combine_colors:
         pop     ebx
         pop     eax
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 check_mouse_area_for_getpixel:
 ; in:
@@ -309,26 +314,26 @@ check_mouse_area_for_getpixel:
         push    eax ebx
 ; check for Y
         xor     ecx, ecx
-        mov     cx, [Y_UNDER]  ; [MOUSE_Y]
+        mov     cx, [Y_UNDER]   ; [MOUSE_Y]
 
         cmp     ebx, ecx
         jb      .no_mouse_area
-        add     ecx, 23  ; mouse cursor Y size
+        add     ecx, 23         ; mouse cursor Y size
         cmp     ebx, ecx
         ja      .no_mouse_area
 ; offset Y
-        sub     bx, [Y_UNDER]  ;[MOUSE_Y]
+        sub     bx, [Y_UNDER]   ; [MOUSE_Y]
 ;--------------------------------------
 ; check for X
         xor     ecx, ecx
-        mov     cx, [X_UNDER]  ;[MOUSE_X]
+        mov     cx, [X_UNDER]   ; [MOUSE_X]
         cmp     eax, ecx
         jb      .no_mouse_area
-        add     ecx, 15  ; mouse cursor X size
+        add     ecx, 15         ; mouse cursor X size
         cmp     eax, ecx
         ja      .no_mouse_area
 ; offset X
-        sub     ax, [X_UNDER]  ;[MOUSE_X]
+        sub     ax, [X_UNDER]   ; [MOUSE_X]
 ;--------------------------------------
 ; eax = offset x
 ; ebx = offset y
@@ -341,13 +346,14 @@ check_mouse_area_for_getpixel:
         or      ecx, 0xff000000
         pop     ebx eax
         ret
-;--------------------------------------
-align 4
-.no_mouse_area:
+
+  .no_mouse_area:
         xor     ecx, ecx
         pop     ebx eax
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 check_mouse_area_for_putpixel:
 ; in:
@@ -357,29 +363,29 @@ check_mouse_area_for_putpixel:
 ; eax = new color
         push    eax
 ; check for Y
-        mov     ax, [Y_UNDER]  ; [MOUSE_Y]
+        mov     ax, [Y_UNDER]   ; [MOUSE_Y]
         cmp     cx, ax
         jb      .no_mouse_area
-        add     ax, 23  ; mouse cursor Y size
+        add     ax, 23          ; mouse cursor Y size
         cmp     cx, ax
         ja      .no_mouse_area
 ; offset Y
-        sub     cx, [Y_UNDER]  ;[MOUSE_Y]
+        sub     cx, [Y_UNDER]   ; [MOUSE_Y]
         mov     ax, cx
         shl     eax, 16
-;--------------------------------------
+
 ; check for X
-        mov     ax, [X_UNDER]  ;[MOUSE_X]
+        mov     ax, [X_UNDER]   ; [MOUSE_X]
         shr     ecx, 16
         cmp     cx, ax
         jb      .no_mouse_area
-        add     ax, 15  ; mouse cursor X size
+        add     ax, 15          ; mouse cursor X size
         cmp     cx, ax
         ja      .no_mouse_area
 ; offset X
-        sub     cx, [X_UNDER]  ;[MOUSE_X]
+        sub     cx, [X_UNDER]   ; [MOUSE_X]
         mov     ax, cx
-;--------------------------------------
+
 ; eax = (offset y) shl 16 + (offset x)
 
         pop     ecx
@@ -387,8 +393,8 @@ check_mouse_area_for_putpixel:
         push    eax ebx
 
         mov     ebx, eax
-        shr     ebx, 16        ;y
-        and     eax, 0xffff    ;x
+        shr     ebx, 16         ; y
+        and     eax, 0xffff     ; x
 
         shl     ebx, 6
         shl     eax, 2
@@ -401,27 +407,25 @@ check_mouse_area_for_putpixel:
 
         push    esi edi
         rol     eax, 16
-        movzx   edi, ax     ; y cycle
-        shl     edi, 4     ; *16 bytes per row
+        movzx   edi, ax         ; y cycle
+        shl     edi, 4          ; *16 bytes per row
         shr     eax, 16
-        add     edi, eax     ; x cycle
+        add     edi, eax        ; x cycle
         lea     edi, [edi*3]
         add     edi, [MOUSE_PICTURE]    ; we have our str address
         mov     esi, edi
         add     esi, 16*24*3
         call    combine_colors
         pop     edi esi
-;--------------------------------------
-align 4
-.end:
         mov     eax, ecx
         ret
-;--------------------------------------
-align 4
-.no_mouse_area:
+
+  .no_mouse_area:
         pop     eax
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 __sys_draw_pointer:
         pushad
@@ -433,14 +437,14 @@ __sys_draw_pointer:
         je      @f
         mov     [redrawmouse_unconditional], 0
         jmp     redrawmouse
-;--------------------------------------
-align 4
-@@:
+  @@:
         cmp     eax, ecx
         jne     redrawmouse
         cmp     ebx, edx
         je      nodmp
+
 ;--------------------------------------
+
 align 4
 redrawmouse:
         pushfd
@@ -468,21 +472,19 @@ redrawmouse:
         mov     [X_UNDER_subtraction_CUR_hot_x], ax
         add     eax, [cur.w]
         mov     [X_UNDER_sub_CUR_hot_x_add_curh], ax
-;--------------------------------------
-align 4
-@@:
+  @@:
         popfd
-;--------------------------------------
-align 4
-nodmp:
+  nodmp:
         popad
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
 
         mov     eax, [BtnState]
-        and     eax, 0x3FFFFFFF ; Top 2 bits are used to flag absolute movements
+        and     eax, 0x3FFFFFFF         ; Top 2 bits are used to flag absolute movements
         mov     [BTN_DOWN], eax
 ;--------------------------------------
         mov     eax, [XMoving]
@@ -538,7 +540,9 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         call    wakeup_osloop
         ret
 endp
+
 ;-----------------------------------------------------------------------------
+
 align 4
 mouse_acceleration:
         push    eax
@@ -550,8 +554,5 @@ mouse_acceleration:
         ;push  edx
         imul    eax, [mouse_speed_factor]
         ;pop   edx
-;--------------------------------------
-align 4
-@@:
+  @@:
         ret
-;-----------------------------------------------------------------------------
