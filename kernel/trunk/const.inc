@@ -431,7 +431,6 @@ struct  display_t
         width           dd ?
         height          dd ?
         bits_per_pixel  dd ?
-        bytes_per_pixel dd ?
         vrefresh        dd ?
         pitch           dd ?
         lfb             dd ?
@@ -455,6 +454,8 @@ struct  display_t
         mask_seqno      dd ?
         check_mouse     dd ?
         check_m_pixel   dd ?
+
+        bytes_per_pixel dd ?
 ends
 
 struct  BOOT_DATA
