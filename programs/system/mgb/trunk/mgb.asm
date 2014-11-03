@@ -843,7 +843,7 @@ else
 
 	aTestText	db 'This is a 34-charachters test text'
 	aButtonsText	db 'Test      Comment+    Pattern+      Open        Save',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.81',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.82',0
 
 	aLeft	db 'Left    :',0
 	aRight	db 'Right   :',0
