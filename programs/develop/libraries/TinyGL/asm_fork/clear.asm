@@ -7,6 +7,7 @@ proc glopClearColor uses ecx esi edi, context:dword, p:dword
 	add edi,offs_cont_clear_color
 	mov ecx,4
 	rep movsd
+	ret
 endp
 
 align 4
@@ -19,17 +20,21 @@ proc glopClearDepth uses eax ebx, context:dword, p:dword
 endp
 
 align 4
+fl_65535 dd 65535.0
+
+align 4
 proc glopClear uses eax ebx, context:dword, p:dword
 	mov eax,[context]
-	mov ebx,[eax+offs_cont_clear_color+8] ;context.clear_color.v[2]
-	shl ebx,16
-	push ebx
-	mov ebx,[eax+offs_cont_clear_color+4] ;context.clear_color.v[1]
-	shl ebx,16
-	push ebx
-	mov ebx,[eax+offs_cont_clear_color] ;context.clear_color.v[0]
-	shl ebx,16
-	push ebx
+	fld dword[eax+offs_cont_clear_color+8] ;context.clear_color.v[2]
+	fmul dword[fl_65535]
+	fistp dword[esp-4]
+	fld dword[eax+offs_cont_clear_color+4] ;context.clear_color.v[1]
+	fmul dword[fl_65535]
+	fistp dword[esp-8]
+	fld dword[eax+offs_cont_clear_color] ;context.clear_color.v[0]
+	fmul dword[fl_65535]
+	fistp dword[esp-12]
+	sub esp,12
 
 	mov ebx,[p]
 	mov ebx,[ebx+4] ;ebx = p[1]

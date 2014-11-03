@@ -26,6 +26,7 @@ start:
 
 stdcall [kosglMakeCurrent], 10,10,300,225,ctx1
 stdcall [glEnable], GL_DEPTH_TEST
+stdcall [glClearColor], 0.2,0.0,0.2,0.0
 
 call draw_3d
 
