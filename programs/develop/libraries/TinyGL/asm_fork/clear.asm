@@ -18,17 +18,30 @@ proc glopClearDepth uses eax ebx, context:dword, p:dword
 	ret
 endp
 
-;void glopClear(GLContext *c,GLParam *p)
-;{
-;  int mask=p[1].i;
-;  int z=0;
-;  int r=(int)(c->clear_color.v[0]*65535);
-;  int g=(int)(c->clear_color.v[1]*65535);
-;  int b=(int)(c->clear_color.v[2]*65535);
-;
-;  /* TODO : correct value of Z */
-;
-;  ZB_clear(c->zb,mask & GL_DEPTH_BUFFER_BIT,z,
-;	   mask & GL_COLOR_BUFFER_BIT,r,g,b);
-;}
+align 4
+proc glopClear uses eax ebx, context:dword, p:dword
+	mov eax,[context]
+	mov ebx,[eax+offs_cont_clear_color+8] ;context.clear_color.v[2]
+	shl ebx,16
+	push ebx
+	mov ebx,[eax+offs_cont_clear_color+4] ;context.clear_color.v[1]
+	shl ebx,16
+	push ebx
+	mov ebx,[eax+offs_cont_clear_color] ;context.clear_color.v[0]
+	shl ebx,16
+	push ebx
+
+	mov ebx,[p]
+	mov ebx,[ebx+4] ;ebx = p[1]
+	and ebx,GL_COLOR_BUFFER_BIT
+	push ebx
+	mov ebx,[p]
+	mov ebx,[ebx+4] ;ebx = p[1]
+	and ebx,GL_DEPTH_BUFFER_BIT
+
+	; TODO : correct value of Z
+	stdcall ZB_clear,[eax+offs_cont_zb],ebx,0 ;,...,r,g,b
+	ret
+endp
+
 

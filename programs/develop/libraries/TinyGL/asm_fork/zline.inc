@@ -50,6 +50,7 @@ if INTERP_Z eq 1
 	mov edx,[ecx+offs_zbup_y]
 	imul edx,[sx]
 	add edx,[ecx+offs_zbup_x]
+	shl edx,1
 	add edx,[eax+offs_zbuf_zbuf]
 	mov [pz],edx ;pz = zb.zbuf + (p1.y*sx + p1.x)
 	mov edx,[ecx+offs_zbup_z]
@@ -98,28 +99,51 @@ local .end_0
 	mov eax,[z]
 	shr eax, ZB_POINT_Z_FRAC_BITS
 	mov [zz],eax
-	cmp eax,[pz]
+	mov ebx,[pz]
+	cmp ax,word[ebx]
 	jl .end_0
 		RGBPIXEL
 		mov eax,dword[zz]
-		mov [pz],eax
+		mov ebx,[pz]
+		mov word[ebx],ax
 	.end_0:
-else ; INTERP_Z
+else
 	RGBPIXEL
-end if ; INTERP_Z
+end if
 }
 
 macro DRAWLINE d_x,d_y,inc_1,inc_2
 {
+local .mz_0
+local .mz_1
+local .mz_2
+
 	mov eax,d_x
 	mov [n],eax
 if INTERP_Z eq 1
 	mov ebx,[p1]
 	mov eax,[p2]
 	mov eax,[eax+offs_zbup_z]
+	cmp eax,[ebx+offs_zbup_z]
+	jg .mz_0
+	je .mz_1
+		;if(p2.z<p1.z)
+		sub eax,[ebx+offs_zbup_z]
+		neg eax
+		inc eax
+		xor edx,edx
+		div dword[n]
+		neg eax
+		inc eax
+		jmp .mz_2
+	.mz_0:
 	sub eax,[ebx+offs_zbup_z]
 	xor edx,edx
 	div dword[n]
+	jmp .mz_2
+	.mz_1:
+		xor eax,eax
+	.mz_2:
 	mov [zinc],eax ;zinc=(p2.z-p1.z)/n
 end if
 	shl dword d_y,1
@@ -154,6 +178,7 @@ end if
 	add edi,[pp_inc_1]
 if INTERP_Z eq 1
 	mov eax,inc_1
+	shl eax,1
 	add [pz],eax
 end if
 	mov eax,d_x
@@ -164,6 +189,7 @@ end if
 	add edi,[pp_inc_2]
 if INTERP_Z eq 1
 	mov eax,inc_2
+	shl eax,1
 	add [pz],eax
 end if
 	mov eax,d_y

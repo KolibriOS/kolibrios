@@ -57,7 +57,7 @@ end if
 
 	mov ecx,[edi+offs_zbuf_xsize]
 	imul ecx,[edi+offs_zbuf_ysize]
-	shl ecx,2 ;*= sizeof(unsigned short)
+	shl ecx,1 ;*= sizeof(unsigned short)
 
 	stdcall gl_malloc, ecx
 	mov [edi+offs_zbuf_zbuf],eax
@@ -115,7 +115,7 @@ proc ZB_resize uses eax ebx ecx edi esi, zb:dword, frame_buffer:dword, xsize:dwo
 
 	mov ecx,edi
 	imul ecx,esi
-	shl ecx,2 ;*= sizeof(unsigned short)
+	shl ecx,1 ;*= sizeof(unsigned short)
 
 	stdcall gl_free,dword[ebx+offs_zbuf_zbuf]
 	stdcall gl_malloc,ecx
@@ -432,114 +432,135 @@ endp
 ;}
 ;
 ;#endif /* TGL_FEATURE_RENDER_BITS == 32 */
+
+
 ;
+; adr must be aligned on an 'int'
 ;
-;/*
-; * adr must be aligned on an 'int'
-; */
-;void memset_s(void *adr, int val, int count)
-;{
-;    int i, n, v;
-;    unsigned int *p;
-;    unsigned short *q;
-;
-;    p = adr;
-;    v = val | (val << 16);
-;
-;    n = count >> 3;
-;    for (i = 0; i < n; i++) {
-;	p[0] = v;
-;	p[1] = v;
-;	p[2] = v;
-;	p[3] = v;
-;	p += 4;
-;    }
-;
-;    q = (unsigned short *) p;
-;    n = count & 7;
-;    for (i = 0; i < n; i++)
-;	*q++ = val;
-;}
-;
-;void memset_l(void *adr, int val, int count)
-;{
-;    int i, n, v;
-;    unsigned int *p;
-;
-;    p = adr;
-;    v = val;
-;    n = count >> 2;
-;    for (i = 0; i < n; i++) {
-;	p[0] = v;
-;	p[1] = v;
-;	p[2] = v;
-;	p[3] = v;
-;	p += 4;
-;    }
-;
-;    n = count & 3;
-;    for (i = 0; i < n; i++)
-;	*p++ = val;
-;}
-;
-;/* count must be a multiple of 4 and >= 4 */
-;void memset_RGB24(void *adr,int r, int v, int b,long count)
-;{
-;    long i, n;
-;    register long v1,v2,v3,*pt=(long *)(adr);
-;    unsigned char *p,R=(unsigned char)r,V=(unsigned char)v,B=(unsigned char)b;
-;
-;    p=(unsigned char *)adr;
-;    *p++=R;
-;    *p++=V;
-;    *p++=B;
-;    *p++=R;
-;    *p++=V;
-;    *p++=B;
-;    *p++=R;
-;    *p++=V;
-;    *p++=B;
-;    *p++=R;
-;    *p++=V;
-;    *p++=B;
-;    v1=*pt++;
-;    v2=*pt++;
-;    v3=*pt++;
-;    n = count >> 2;
-;    for(i=1;i<n;i++) {
-;        *pt++=v1;
-;        *pt++=v2;
-;        *pt++=v3;
-;    }
-;}
-;
-;void ZB_clear(ZBuffer * zb, int clear_z, int z,
-;	      int clear_color, int r, int g, int b)
-;{
-;#if TGL_FEATURE_RENDER_BITS != 24
-;    int color;
-;#endif
-;    int y;
-;    PIXEL *pp;
-;
-;    if (clear_z) {
-;	memset_s(zb->zbuf, z, zb->xsize * zb->ysize);
-;    }
-;    if (clear_color) {
-;	pp = zb->pbuf;
-;	for (y = 0; y < zb->ysize; y++) {
-;#if TGL_FEATURE_RENDER_BITS == 15 || TGL_FEATURE_RENDER_BITS == 16
-;            color = RGB_TO_PIXEL(r, g, b);
-;	    memset_s(pp, color, zb->xsize);
-;#elif TGL_FEATURE_RENDER_BITS == 32
-;            color = RGB_TO_PIXEL(r, g, b);
-;	    memset_l(pp, color, zb->xsize);
-;#elif TGL_FEATURE_RENDER_BITS == 24 
-;            memset_RGB24(pp,r>>8,g>>8,b>>8,zb->xsize);
-;#else
-;#error TODO
-;#endif
-;	    pp = (PIXEL *) ((char *) pp + zb->linesize);
-;	}
-;    }
-;}
+align 4
+proc memset_s uses eax ecx edi, adr:dword, val:dword, count:dword
+	mov eax,[val]
+	mov di,ax
+	ror eax,16
+	mov ax,di
+	mov ecx,[count]
+	shr ecx,1
+	mov edi,[adr]
+	rep stosd
+
+	bt dword[count],0
+	jnc @f
+		stosw
+	@@:
+	ret
+endp
+
+align 4
+proc memset_l uses eax ecx edi, adr:dword, val:dword, count:dword
+	mov eax,[val]
+	mov ecx,[count]
+	mov edi,[adr]
+	rep stosd
+	ret
+endp
+
+; count must be a multiple of 4 and >= 4
+align 4
+proc memset_RGB24 uses eax ecx edi esi, adr:dword, r:dword, g:dword, b:dword, count:dword
+	mov esi,[adr]
+	mov eax,[r] ;копируем в буфер первые 12 байт (минимальное число кратное 3 и 4)
+	mov byte[esi],al
+	mov byte[esi+3],al
+	mov byte[esi+6],al
+	mov byte[esi+9],al
+	mov eax,[g]
+	mov byte[esi+1],al
+	mov byte[esi+4],al
+	mov byte[esi+7],al
+	mov byte[esi+10],al
+	mov eax,[b]
+	mov byte[esi+2],al
+	mov byte[esi+5],al
+	mov byte[esi+8],al
+	mov byte[esi+11],al
+
+	mov ecx,[count]
+	shr ecx,2
+	cmp ecx,1
+	jle .end_f ;если ширина буфера меньше 12 байт, то выходим
+	dec ecx
+	mov edi,esi
+	add edi,12
+
+	mov eax,[esi]
+	cmp eax,[esi+4]
+	jne @f
+		;если r=g и g=b и b=r
+		mov esi,ecx
+		shl ecx,2
+		sub ecx,esi ;ecx*=3
+		rep stosd
+		jmp .end_f
+	@@:
+
+	;если r!=g или g!=b или b!=r
+	@@:
+		movsd
+		movsd
+		movsd
+		sub esi,12
+	loop @b
+	.end_f:
+	ret
+endp
+
+align 4
+proc ZB_clear uses eax ebx ecx, zb:dword, clear_z:dword, z:dword, clear_color:dword,\
+	r:dword, g:dword, b:dword
+;if TGL_FEATURE_RENDER_BITS != 24
+;	color dd ?
+;end if
+
+	mov eax,[zb]
+	cmp dword[clear_z],0
+	je @f
+		mov ebx,[eax+offs_zbuf_xsize]
+		imul ebx,[eax+offs_zbuf_ysize]
+		stdcall memset_s, [eax+offs_zbuf_zbuf],[z],ebx
+	@@:
+	cmp dword[clear_color],0
+	je @f
+if TGL_FEATURE_RENDER_BITS eq 24
+		mov ebx,[eax+offs_zbuf_xsize]
+		push ebx
+		mov ebx,[b]
+		shr ebx,8
+		push ebx
+		mov ebx,[g]
+		shr ebx,8
+		push ebx
+		mov ebx,[r]
+		shr ebx,8
+		push ebx
+		add esp,16
+end if
+		mov ebx,[eax+offs_zbuf_pbuf]
+		mov ecx,[eax+offs_zbuf_ysize]
+		.cycle_0:
+if (TGL_FEATURE_RENDER_BITS eq 15) ;or (TGL_FEATURE_RENDER_BITS eq 16)
+			;color = RGB_TO_PIXEL(r, g, b);
+			;memset_s(ebx, color, zb->xsize);
+end if
+if TGL_FEATURE_RENDER_BITS eq 32
+			;color = RGB_TO_PIXEL(r, g, b);
+			;memset_l(ebx, color, zb->xsize);
+end if
+if TGL_FEATURE_RENDER_BITS eq 24
+			sub esp,16
+			stdcall memset_RGB24,ebx
+end if
+			add ebx,[eax+offs_zbuf_linesize]
+		loop .cycle_0
+	@@:
+	ret
+endp

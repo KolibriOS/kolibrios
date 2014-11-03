@@ -74,7 +74,6 @@ glGetFloatv: ;(int pname, float *v)
 
 ; ***
 glopLight:
-glopClear:
 glopCallList:
 
 if DEBUG

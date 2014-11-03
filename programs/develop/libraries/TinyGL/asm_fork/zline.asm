@@ -6,6 +6,7 @@ proc ZB_plot uses eax ebx ecx edx edi, zb:dword, p:dword
 	mov ecx,[ebx+offs_zbup_y]
 	imul ecx,[eax+offs_zbuf_xsize]
 	add ecx,[ebx+offs_zbup_x]
+	shl ecx,1
 	add ecx,[eax+offs_zbuf_zbuf]
 	mov edx,[eax+offs_zbuf_linesize]
 	imul edx,[ebx+offs_zbup_y]
@@ -15,7 +16,7 @@ proc ZB_plot uses eax ebx ecx edx edi, zb:dword, p:dword
 	add edx,[eax+offs_zbuf_pbuf]
 	mov edi,[ebx+offs_zbup_z]
 	shr edi,ZB_POINT_Z_FRAC_BITS
-	cmp edi,[ecx]
+	cmp di,word[ecx]
 	jl .end_f
 if TGL_FEATURE_RENDER_BITS eq 24
 	mov eax,[ebx+offs_zbup_r]
@@ -27,7 +28,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 else
 ;	*pp = RGB_TO_PIXEL(p->r, p->g, p->b);
 end if
-	mov [ecx],edi
+	mov word[ecx],di
 	.end_f:
 	ret
 endp
