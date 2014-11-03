@@ -402,6 +402,9 @@ align 4
         ret
 
 .core_24:
+        cmp     [_display.bits_per_pixel], 24
+        jne     .core_16
+
         lea     ebx, [ebx+ebx*2]
         lea     edi, [LFB_BASE+edi+ebx]
         mov     ebx, [CURRENT_TASK]
@@ -413,7 +416,7 @@ align 4
 
 align 4
 .inner24:
-        cmp     [ebp+ecx], bl
+        cmp     [ebp+ecx], bl           ; Does the process own this pixel?
         jne     .skip_1
 ;--------------------------------------
         push    eax
@@ -465,3 +468,72 @@ align 4
         jnz     .outer24
 
         jmp     .done
+
+
+
+.core_16:
+        lea     edi, [LFB_BASE+edi+ebx*2]
+        mov     ebx, [CURRENT_TASK]
+
+align 4
+.outer16:
+        mov     [esp+.extra_var1], edi
+        xor     ecx, ecx
+
+align 4
+.inner16:
+        cmp     [ebp+ecx], bl                   ; Does the process own this pixel?
+        jne     .skip_2
+;--------------------------------------
+        push    eax
+        mov     eax, [esi+ecx*4]
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder_2
+;--------------------------------------
+align 4
+@@:
+        push    ecx
+
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder_2:
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edi+ecx*2], ax
+        pop     eax
+;--------------------------------------
+align 4
+.skip_2:
+        mov     edi, [esp+.extra_var1]
+        inc     ecx
+        dec     edx
+        jnz     .inner16
+
+        add     esi, [esp+BLITTER.stride]
+        add     edi, [_display.pitch]
+        add     ebp, [_display.width]
+
+        mov     edx, [esp+BLITTER.w]
+        dec     [esp+BLITTER.h]
+        jnz     .outer16
+
+        jmp     .done
+
