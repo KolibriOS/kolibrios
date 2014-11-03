@@ -1,10 +1,15 @@
 ;=============================================================================
-; Kolibri Graphics Benchmark 0.81
+; Kolibri Graphics Benchmark 0.82
 ;--------------------------------------
 ; MGB - Menuet Graphics Benchmark 0.3
 ; Compile with FASM
 ;
 ;=============================================================================
+; version:	0.82
+; last update:  03/11/2014
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      fix "benchmark GS selector" for 16bpp (support SVN r.5154)
+;---------------------------------------------------------------------
 ; version:	0.81
 ; last update:  01/05/2014
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -374,6 +379,9 @@ testGetScreen_GS:
 	mcall	61,2
 	cmp	eax,24
 	je	get_area_with_GS_24
+	
+	cmp	eax,16
+	je	get_area_with_GS_16
 ;-----------------------------------------------------------------------------
 align 4
 get_area_with_GS_32:
@@ -446,6 +454,54 @@ align 4
 	mov	eax,[gs:esi]
 	mov	[edi],eax
 	add	esi,3
+	add	edi,3
+
+        dec     ecx
+        jnz     .start_x
+
+        dec     edx
+        jnz     .start_y
+
+	pop	edi
+	ret
+;-----------------------------------------------------------------------------
+align 4
+get_area_with_GS_16:
+	mcall	61,3
+	mov	ebx,eax
+
+	mov	esi,GS_start_y
+	imul	esi,eax
+
+	mov	eax,GS_start_x
+	shl	eax,1
+	add	esi,eax
+
+	mov	ebp,GS_size_x
+	mov	eax,ebp
+	shl	eax,1
+	sub	ebx,eax
+
+	mov	edx,GS_size_y
+	sub	esi,ebx
+;--------------------------------------
+align 4
+.start_y:
+	add	esi,ebx
+	mov	ecx,ebp
+;--------------------------------------
+align 4
+.start_x:
+	xor	eax,eax
+	mov	ax,[gs:esi]
+        shl     eax, 3
+        ror     eax, 8
+        shl     ax, 2
+        ror     eax, 8
+        shl     al, 3
+        rol     eax, 16
+	mov	[edi],eax
+	add	esi,2
 	add	edi,3
 
         dec     ecx
@@ -760,7 +816,7 @@ if lang eq it
 
 	aTestText	db 'This is a 34-charachters test text'
 	aButtonsText	db 'Test      Commenti    Pattern+     Apri        Salva',0
-	aCaption	db 'Kolibri Graphical Benchmark 0.81',0
+	aCaption	db 'Kolibri Graphical Benchmark 0.82',0
 
 	aLeft	db 'Sinistra:',0
 	aRight	db 'Destra  :',0
