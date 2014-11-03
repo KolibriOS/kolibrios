@@ -14,6 +14,8 @@
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
 ; 02.11.10 - Используется checkbox версии 2
 
+format binary as ""
+
 title equ 'Screenshooter v 1.2' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
