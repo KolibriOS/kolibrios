@@ -454,12 +454,12 @@ align 4
 ;--------------------------------------
 align 4
 .skip_1:
-        mov     edi, [esp+.extra_var1]
         inc     ecx
         dec     edx
         jnz     .inner24
 
         add     esi, [esp+BLITTER.stride]
+        mov     edi, [esp+.extra_var1]
         add     edi, [_display.pitch]
         add     ebp, [_display.width]
 
@@ -470,18 +470,15 @@ align 4
         jmp     .done
 
 
-
 .core_16:
         lea     edi, [LFB_BASE+edi+ebx*2]
         mov     ebx, [CURRENT_TASK]
 
-align 4
-.outer16:
+  .outer16:
         mov     [esp+.extra_var1], edi
         xor     ecx, ecx
 
-align 4
-.inner16:
+  .inner16:
         cmp     [ebp+ecx], bl                   ; Does the process own this pixel?
         jne     .skip_2
 ;--------------------------------------
@@ -494,8 +491,7 @@ align 4
         cmp     [_display.select_cursor], 0
         jne     .no_mouseunder_2
 ;--------------------------------------
-align 4
-@@:
+  @@:
         push    ecx
 
         mov     ecx, [esp+4]
@@ -508,8 +504,7 @@ align 4
         call    [_display.check_mouse]
         pop     ecx
 ;--------------------------------------
-align 4
-.no_mouseunder_2:
+  .no_mouseunder_2:
 ; convert to 16 bpp and store to LFB
         and     eax, 00000000111110001111110011111000b
         shr     ah, 2
@@ -520,14 +515,13 @@ align 4
         mov     [edi+ecx*2], ax
         pop     eax
 ;--------------------------------------
-align 4
-.skip_2:
-        mov     edi, [esp+.extra_var1]
+  .skip_2:
         inc     ecx
         dec     edx
         jnz     .inner16
 
         add     esi, [esp+BLITTER.stride]
+        mov     edi, [esp+.extra_var1]
         add     edi, [_display.pitch]
         add     ebp, [_display.width]
 
