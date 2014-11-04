@@ -396,7 +396,8 @@ end if
 ;        mov     word [home_cursor],ax
 ;        mov     word [preboot_graph],ax
 ;SET default video of mode first probe will fined a move of work 1024x768@32
-
+        mov     cx, 32
+  .find_mode:
         mov     ax, 1024
         mov     bx, 768
         mov     si, modes_table
@@ -415,6 +416,8 @@ end if
         call    .loops
         test    ax, ax
         jz      .ok_found_mode
+        sub     cx, 8
+        jnz     .find_mode
 
         mov     si, modes_table
 if ~ defined extended_primary_loader
@@ -478,20 +481,15 @@ end if
         jne     .next
         cmp     bx, word [es:si+2]
         jne     .next
-        cmp     word [es:si+8], 32
-        je      .ok
-        cmp     word [es:si+8], 24
-        je      .ok
-        cmp     word [es:si+8], 16
-        je      .ok
+        cmp     cx, word [es:si+8]
+        jne     .next
+        xor     ax, ax
+        ret
 .next:
         add     si, size_of_step
         cmp     word [es:si], -1
         je      .exit
         jmp     .loops
-.ok:
-        xor     ax, ax
-        ret
 .exit:
         or      ax, -1
         ret
