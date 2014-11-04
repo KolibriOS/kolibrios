@@ -130,9 +130,12 @@ struct GLParamBuffer
 	next dd ? ;struct GLParamBuffer*
 ends
 
+offs_gpbu_ops equ 0
+offs_gpbu_next equ 4*OP_BUFFER_MAX_SIZE
+
 struct GLList
 	first_op_buffer dd ? ;GLParamBuffer*
-;  /* TODO: extensions for an hash table or a better allocating scheme */
+	; TODO: extensions for an hash table or a better allocating scheme
 ends
 
 struct GLVertex

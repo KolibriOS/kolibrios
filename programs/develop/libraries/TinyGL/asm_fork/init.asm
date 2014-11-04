@@ -15,21 +15,17 @@ endp
 align 4
 proc endSharedState uses eax ebx, context:dword
 	mov ebx,[context]
-	mov ebx,[ebx+offs_cont_shared_state]
 
-	;  int i;
 ;  for(i=0;i<MAX_DISPLAY_LISTS;i++) {
 ;    /* TODO */
 ;  }
-	stdcall gl_free, dword[ebx] ;lists
-	stdcall gl_free, dword[ebx+4] ;texture_hash_table
+	stdcall gl_free, dword[ebx+offs_cont_shared_state] ;lists
+	stdcall gl_free, dword[ebx+offs_cont_shared_state+4] ;texture_hash_table
 	ret
 endp
 
 align 4
 proc glInit uses eax ebx ecx edx, zbuffer1:dword
-;  int i;
-
 	stdcall gl_zalloc,sizeof.GLContext
 	mov dword[gl_ctx],eax
 	mov edx,eax

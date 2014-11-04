@@ -64,9 +64,6 @@ glTexCoord3dv: ;(double *)
 glTexCoord4d: ;(double ,double ,double, double )
 glTexCoord4fv: ;(float *)
 glTexCoord4dv: ;(double *)
-glGenLists: ;(int range)
-glNewList: ;(unsigned int list,int mode)
-glEndList: ;(void)
 glGenTextures: ;(int n, unsigned int *textures)
 glDeleteTextures: ;(int n, const unsigned int *textures)
 glGetIntegerv: ;(int pname,int *params)
@@ -74,12 +71,12 @@ glGetFloatv: ;(int pname, float *v)
 
 ; ***
 glopLight:
-glopCallList:
 
 if DEBUG
 align 4
 txt_nl db 13,10,0
 txt_sp db ' ',0
+txt_op db 'Op_code',0
 txt_zp_sp db ', ',0
 m_1 db '(1)',13,10,0
 m_2 db '(2)',13,10,0
@@ -159,6 +156,11 @@ f_zb db ' ZB_line',0
 f_cl1 db ' ClipLine1',0
 f_m4m db 'gl_M4_Mul',0
 f_m4ml db 'gl_M4_MulLeft',0
+f_find_l db 'find_list',0
+f_alloc_l db 'alloc_list',0
+f_is_l db 'glIsList',0
+f_gen_l db 'glGenLists',0
+f_end_l db 'glEndList',0
 
 align 4
 proc dbg_print, fun:dword, mes:dword

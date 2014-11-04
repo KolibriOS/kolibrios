@@ -33,45 +33,75 @@ proc find_list uses ebx, context:dword, list:dword
 	shl ebx,2
 	add eax,ebx
 	mov eax,[eax]
+if DEBUG ;find_list
+push edi
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,f_find_l,buf_param
+pop edi
+end if
 	ret
 endp
 
-;static void delete_list(GLContext *c,int list)
-;{
-;  GLParamBuffer *pb,*pb1;
-;  GLList *l;
-
-;  l=find_list(c,list);
+align 4
+proc delete_list uses eax ebx ecx edx, context:dword, list:dword
+	mov ebx,[context]
+	stdcall find_list,ebx,[list]
+	mov edx,eax
 ;  assert(l != NULL);
 
-;  /* free param buffer */
-;  pb=l->first_op_buffer;
-;  while (pb!=NULL) {
-;    pb1=pb->next;
-;    gl_free(pb);
-;    pb=pb1;
-;  }
+	; free param buffer
+	mov eax,[edx] ;eax = GLList.first_op_buffer
+	@@:
+	cmp eax,0
+	je .end_w
+		mov ecx,[eax+offs_gpbu_next]
+		stdcall gl_free,eax
+		mov eax,ecx
+		jmp @b
+	.end_w:
 
-;  gl_free(l);
-;  c->shared_state.lists[list]=NULL;
-;}
+	stdcall gl_free,edx
+	mov ecx,[list]
+	shl ecx,2
+	mov ebx,[ebx+offs_cont_shared_state] ;ebx = &context.shared_state.lists
+	add ebx,ecx
+	mov dword[ebx],0 ;=NULL
+	ret
+endp
 
-;static GLList *alloc_list(GLContext *c,int list)
-;{
-;  GLList *l;
-;  GLParamBuffer *ob;
+align 4
+proc alloc_list uses ebx ecx, context:dword, list:dword
+	stdcall gl_zalloc,sizeof.GLParamBuffer
+	mov ecx,eax
+	stdcall gl_zalloc,sizeof.GLList
 
-;  l=gl_zalloc(sizeof(GLList));
-;  ob=gl_zalloc(sizeof(GLParamBuffer));
+	mov dword[ecx+offs_gpbu_next],0 ;ob.next=NULL
+	mov dword[eax],ecx ;l.first_op_buffer=ob
 
-;  ob->next=NULL;
-;  l->first_op_buffer=ob;
+	mov dword[ecx+offs_gpbu_ops],OP_EndList ;ob.ops[0].op=OP_EndList
 
-;  ob->ops[0].op=OP_EndList;
+	mov ebx,[context]
+	mov ebx,[ebx+offs_cont_shared_state]
+	mov ecx,[list]
+	shl ecx,2
+	add ebx,ecx
+	mov [ebx],eax ;context.shared_state.lists[list]=l
+if DEBUG ;alloc_list
+push edi
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
 
-;  c->shared_state.lists[list]=l;
-;  return l;
-;}
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,f_alloc_l,buf_param
+pop edi
+end if
+	ret
+endp
 
 ;void gl_print_op(FILE *f,GLParam *p)
 ;{
@@ -102,43 +132,55 @@ endp
 ;}
 
 align 4
-proc gl_compile_op uses eax ebx, context:dword, p:dword
-	mov eax,[context]
-;  int op,op_size;
-;  GLParamBuffer *ob,*ob1;
-;  int index,i;
+proc gl_compile_op, context:dword, p:dword
+pushad
+	mov edx,[context]
 
-;  op=p[0].op;
-;  op_size=op_table_size[op];
-;  index=c->current_op_buffer_index;
-;  ob=c->current_op_buffer;
+	lea ebx,[op_table_size]
+	mov ecx,[p]
+	mov ecx,[ecx]
+	shl ecx,2
+	add ecx,ebx
+	mov ecx,[ecx] ;ecx = кол-во параметров в компилируемой функции
+	mov ebx,[edx+offs_cont_current_op_buffer_index]
+	mov eax,[edx+offs_cont_current_op_buffer]
 
-;  /* we should be able to add a NextBuffer opcode */
-;  if ((index + op_size) > (OP_BUFFER_MAX_SIZE-2)) {
+	; we should be able to add a NextBuffer opcode
+	mov esi,ebx
+	add esi,ecx
+	cmp esi,(OP_BUFFER_MAX_SIZE-2)
+	jle @f
+		mov edi,eax
+		stdcall gl_zalloc,sizeof.GLParamBuffer
+		mov dword[eax+offs_gpbu_next],0 ;=NULL
 
-;    ob1=gl_zalloc(sizeof(GLParamBuffer));
-;    ob1->next=NULL;
+		mov dword[edi+offs_gpbu_next],eax
+		mov esi,ebx
+		shl esi,2
+		add esi,edi
+		mov dword[esi+offs_gpbu_ops],OP_NextBuffer
+		mov dword[esi+offs_gpbu_ops+4],eax
 
-;    ob->next=ob1;
-;    ob->ops[index].op=OP_NextBuffer;
-;    ob->ops[index+1].p=(void *)ob1;
+		mov dword[edx+offs_cont_current_op_buffer],eax
+		xor ebx,ebx
+	@@:
 
-;    c->current_op_buffer=ob1;
-;    ob=ob1;
-;    index=0;
-;  }
-
-;  for(i=0;i<op_size;i++) {
-;    ob->ops[index]=p[i];
-;    index++;
-;  }
-;  c->current_op_buffer_index=index;
+	mov esi,[p]
+	@@:
+		mov edi,ebx
+		shl edi,2
+		add edi,eax
+		movsd
+		inc ebx
+	loop @b
+	mov dword[edx+offs_cont_current_op_buffer_index],ebx
+popad
 	ret
 endp
 
 align 4
 proc gl_add_op uses eax ebx ecx, p:dword ;GLParam*
-if DEBUG
+if DEBUG ;gl_add_op
 push edi esi
 	mov ebx,[p]
 	mov ebx,[ebx]
@@ -209,6 +251,7 @@ end if
 		add ecx,ebx
 		call dword[ecx] ;op_table_func[op](c,p)
 	@@:
+	call gl_get_context
 	cmp dword[eax+offs_cont_compile_flag],0
 	je @f
 		stdcall gl_compile_op,eax,[p]
@@ -234,61 +277,107 @@ proc glopNextBuffer, context:dword, p:dword
 	ret
 endp
 
-;void glopCallList(GLContext *c,GLParam *p)
-;{
-;  GLList *l;
-;  int list,op;
+align 4
+proc glopCallList uses eax ebx ecx edx edi, context:dword, p:dword
+	mov edx,[context]
+	mov ebx,[p]
 
-;  list=p[1].ui;
-;  l=find_list(c,list);
-;  if (l == NULL) gl_fatal_error("list %d not defined",list);
-;  p=l->first_op_buffer->ops;
+	stdcall find_list,edx,[ebx+4]
+	cmp eax,0
+	jne @f
+		;if (eax == NULL) gl_fatal_error("list %d not defined",[ebx+4])
+	@@:
+	mov edi,[eax] ;edi = &GLList.first_op_buffer.ops
 
-;  while (1) {
-;    op=p[0].op;
-;    if (op == OP_EndList) break;
-;    if (op == OP_NextBuffer) {
-;      p=(GLParam *)p[1].p;
-;    } else {
-;      op_table_func[op](c,p);
-;      p+=op_table_size[op];
-;    }
-;  }
-;}
+align 4
+	.cycle_0: ;while (1)
+if DEBUG ;glopCallList
+push ecx edi
+	mov eax,[edi]
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
 
-;void glNewList(unsigned int list,int mode)
-;{
-;  GLList *l;
-;  GLContext *c=gl_get_context();
-;
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,txt_op,buf_param
+pop edi ecx
+end if
+	cmp dword[edi],OP_EndList
+	je .end_f ;if (op == OP_EndList) break
+	cmp dword[edi],OP_NextBuffer
+	jne .els_0 ;if (op == OP_NextBuffer)
+		mov edi,[edi+4] ;p=p[1].p
+		jmp .cycle_0
+	.els_0:
+		mov ecx,dword[edi] ;ecx = OP_...
+		shl ecx,2
+		lea ebx,[op_table_func]
+		add ecx,ebx
+		stdcall dword[ecx],edx,edi ;op_table_func[op](context,p)
+
+		mov ecx,dword[edi] ;ecx = OP_...
+		shl ecx,2
+		lea ebx,[op_table_size]
+		add ecx,ebx
+		mov ecx,[ecx]
+		shl ecx,2
+		add edi,ecx ;edi += op_table_size[op]
+	jmp .cycle_0
+	.end_f:
+	ret
+endp
+
+align 4
+proc glNewList uses eax ebx, list:dword, mode:dword
+	call gl_get_context
+	mov ebx,eax
+
 ;  assert(mode == GL_COMPILE || mode == GL_COMPILE_AND_EXECUTE);
-;  assert(c->compile_flag == 0);
-;
-;  l=find_list(c,list);
-;  if (l!=NULL) delete_list(c,list);
-;  l=alloc_list(c,list);
-;
-;  c->current_op_buffer=l->first_op_buffer;
-;  c->current_op_buffer_index=0;
-;  
-;  c->compile_flag=1;
-;  c->exec_flag=(mode == GL_COMPILE_AND_EXECUTE);
-;}
+;  assert(ebx->compile_flag == 0);
 
-;void glEndList(void)
-;{
-;  GLContext *c=gl_get_context();
-;  GLParam p[1];
+	stdcall find_list,ebx,[list]
+	cmp eax,0
+	je @f
+		stdcall delete_list,ebx,[list]
+	@@:
+	stdcall alloc_list,ebx,[list]
+
+	mov eax,[eax] ;eax = GLList.first_op_buffer
+	mov [ebx+offs_cont_current_op_buffer],eax
+	mov dword[ebx+offs_cont_current_op_buffer_index],0
+
+	mov dword[ebx+offs_cont_compile_flag],1
+	xor eax,eax
+	cmp dword[mode],GL_COMPILE_AND_EXECUTE
+	jne @f
+		inc eax ;eax = (mode == GL_COMPILE_AND_EXECUTE)
+	@@:
+	mov [ebx+offs_cont_exec_flag],eax
+	ret
+endp
+
+align 4
+proc glEndList uses eax ebx
+locals
+	p dd ?
+endl
+	call gl_get_context
 
 ;  assert(c->compile_flag == 1);
 
-;  /* end of list */
-;  p[0].op=OP_EndList;
-;  gl_compile_op(c,p);
+	; end of list
+	mov dword[p],OP_EndList
+	mov ebx,ebp
+	sub ebx,4 ;=sizeof(dd)
+	stdcall gl_compile_op,eax,ebx
 
-;  c->compile_flag=0;
-;  c->exec_flag=1;
-;}
+	mov dword[eax+offs_cont_compile_flag],0
+	mov dword[eax+offs_cont_exec_flag],1
+if DEBUG ;glEndList
+	stdcall dbg_print,f_end_l,txt_nl
+end if
+	ret
+endp
 
 ;output:
 ; eax = (find_list(gl_get_context,list) != NULL)
@@ -300,30 +389,60 @@ proc glIsList, list:dword
 	je @f
 		mov eax,1
 	@@:
+if DEBUG ;glIsList
+push edi
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,f_is_l,buf_param
+pop edi
+end if
 	ret
 endp
 
-;unsigned int glGenLists(int range)
-;{
-;  GLContext *c=gl_get_context();
-;  int count,i,list;
-;  GLList **lists;
+align 4
+proc glGenLists uses ebx ecx edx edi esi, range:dword
+	call gl_get_context
+	mov edi,eax
 
-;  lists=c->shared_state.lists;
-;  count=0;
-;  for(i=0;i<MAX_DISPLAY_LISTS;i++) {
-;    if (lists[i]==NULL) {
-;      count++;
-;      if (count == range) {
-;       list=i-range+1;
-;       for(i=0;i<range;i++) {
-;         alloc_list(c,list+i);
-;       }
-;       return list;
-;      }
-;    } else {
-;      count=0;
-;    }
-;  }
-;  return 0;
-;}
+	mov ebx,[eax+offs_cont_shared_state] ;ebx=context.shared_state.lists
+	xor edx,edx ;count=0
+	mov ecx,MAX_DISPLAY_LISTS
+	xor esi,esi
+	.cycle_0: ;for(esi=0;esi<MAX_DISPLAY_LISTS;esi++)
+		cmp dword[ebx],0 ;if (ebx[i]==NULL)
+		je .els_0
+			inc edx
+			cmp edx,[range] ;if (count == range)
+			jne .els_1
+			mov ecx,[range]
+			inc esi
+			sub esi,ecx ;esi = (esi-range+1)
+			.cycle_1: ;for(i=0;i<range;i++)
+				stdcall alloc_list,edi,esi
+				inc esi
+			loop .cycle_1
+			mov eax,esi
+			jmp .end_f
+		.els_0:
+			xor edx,edx ;count=0
+		.els_1:
+		add ebx,4
+		inc esi
+	loop .cycle_0
+	xor eax,eax
+	.end_f:
+if DEBUG ;glGenLists
+push edi
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,f_gen_l,buf_param
+pop edi
+end if
+	ret
+endp
