@@ -13,6 +13,7 @@ entry START
 section '.flat' code readable writable executable
 include '../proc32.inc'
 include '../struct.inc'
+include '../pci.inc'
 include '../macros.inc'
 include '../peimport.inc'
 
@@ -204,14 +205,14 @@ endl
         inc     eax
         invoke  PciApi
         cmp     eax, -1
-        je      .err
+        je      .no_pci
 
         mov     [last_bus], eax
 
   .next_bus:
         and     [devfn], 0
   .next_dev:
-        invoke  PciRead32, [bus], [devfn], dword 0
+        invoke  PciRead32, [bus], [devfn], PCI_header.vendor_id
         test    eax, eax
         jz      .next
         cmp     eax, -1
@@ -227,7 +228,16 @@ endl
         je      .found
         add     edi, 8
         jmp     @B
+
   .next:
+        test    [devfn], 7
+        jnz     .next_fn
+        invoke  PciRead32, [bus], [devfn], PCI_header.header_type
+        test    al, al
+        js      .next_fn
+        or      [devfn], 7
+
+  .next_fn:
         inc     [devfn]
         cmp     [devfn], 256
         jb      .next_dev
@@ -236,10 +246,31 @@ endl
         mov     [bus], eax
         cmp     eax, [last_bus]
         jna     .next_bus
-        xor     eax, eax
-        ret
-  .found:
 
+  .no_pci:
+     if DEBUG
+        mov     esi, msgFail
+        invoke  SysMsgBoardStr
+
+        mov     esi, msgLoading
+        invoke  SysMsgBoardStr
+
+        mov     esi, sb16
+        invoke  SysMsgBoardStr
+
+        mov     esi, msgNewline
+        invoke  SysMsgBoardStr
+     end if
+
+        invoke  GetService, sb16
+        test    eax, eax
+        jz      .fail
+
+        mov     edx, [eax+SRV.entry]
+        mov     [srv_entry], edx
+        ret
+
+  .found:
      if DEBUG
         mov     esi, msgLoading
         invoke  SysMsgBoardStr
@@ -253,18 +284,13 @@ endl
 
         invoke  GetService, dword[edi+4]
         test    eax, eax
-        jz      .err
+        jz      .next
 
         mov     edx, [eax+SRV.entry]
         mov     [srv_entry], edx
         ret
 
-  .err:
-     if DEBUG
-        mov     esi, msgFail
-        invoke  SysMsgBoardStr
-     end if
-
+  .fail:
         xor     eax, eax
         ret
 
@@ -403,9 +429,10 @@ fm801           db 'FM801', 0
 ensoniq         db 'ENSONIQ', 0
 emu10k1x        db 'EMU10K1X', 0
 intelhda        db 'INTEL_HDA', 0
+sb16            db 'SB16', 0
 
 msgInit         db 'Detecting hardware...',13,10,0
-msgFail         db 'No compatible soundcard found!',13,10,0
+msgFail         db 'No compatible PCI soundcard found!',13,10,0
 msgLoading      db 'Loading ',0
 msgNewline      db 13,10,0
 
