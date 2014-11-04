@@ -37,7 +37,7 @@ v86_create:
 ; allocate tables
         mov     ebx, eax
 
-        stdcall create_process, 4096, OS_BASE, 4096
+        stdcall create_process, 4096, eax, 4096       ;FIXME
         test    eax, eax
         jz      .fail2
 
