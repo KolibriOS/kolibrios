@@ -232,7 +232,7 @@ endl
   .next:
         test    [devfn], 7
         jnz     .next_fn
-        invoke  PciRead32, [bus], [devfn], PCI_header.header_type
+        invoke  PciRead8, [bus], [devfn], PCI_header.header_type
         test    al, al
         js      .next_fn
         or      [devfn], 7
