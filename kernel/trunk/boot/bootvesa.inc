@@ -370,6 +370,8 @@ if defined extended_primary_loader
         je      .ok_found_mode
         cmp     word [es:si+8], 24
         je      .ok_found_mode
+        cmp     word [es:si+8], 16
+        je      .ok_found_mode
 @@:
         add     si, size_of_step
         cmp     word [es:si], -1
@@ -479,6 +481,8 @@ end if
         cmp     word [es:si+8], 32
         je      .ok
         cmp     word [es:si+8], 24
+        je      .ok
+        cmp     word [es:si+8], 16
         je      .ok
 .next:
         add     si, size_of_step
