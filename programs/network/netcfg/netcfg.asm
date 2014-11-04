@@ -224,10 +224,9 @@ Start_Enum:
         mcall   62                      ; get ID's
 
         cmp     ax, 0                   ; Vendor ID should not be 0 or 0xFFFF
-        je      nextDev                 ; check next device if nothing exists here
-
+        je      .nextDev                ; check next device if nothing exists here
         cmp     ax, 0xffff              ;
-        je      nextDev                 ;
+        je      .nextDev                ;
 
         mov     [PCI_Vendor], ax        ; There is a device here, save the ID's
         shr     eax, 16                 ;
@@ -238,50 +237,57 @@ Start_Enum:
         mov     cl, 0x08                ; Register to read (Get Revision)
         mcall   62                      ; Read it
         mov     [PCI_Rev], al           ; Save it
+
         mov     cl, 0x0b                ; Register to read (Get class)
         mcall   62                      ; Read it
-        
         mov     [PCI_Class], al         ; Save it
+
         mov     cl, 0x0a                ; Register to read (Get Subclass)
         mcall   62                      ; Read it
         mov     [PCI_SubClass], al      ; Save it
+
         mov     cl, 0x09                ; Register to read (Get Interface)
         mcall   62                      ; Read it
         mov     [PCI_Interface], al     ; Save it
+
         mov     cl, 0x3c                ; Register to read (Get IRQ)
-@@:     mcall   62                      ; Read it
+        mcall   62                      ; Read it
         mov     [PCI_IRQ], al           ; Save it
 
+; Could it be a network card?
         cmp     [PCI_Class], 2          ; network controller
-        je      @f
+        je      .found
 
         cmp     [PCI_Class], 6          ; bridge type device
-        jne     nextDev
+        jne     .nextDev
         cmp     [PCI_SubClass], 0x80    ; PCI-other bridge (for nvidia chipset)
-        jne     nextDev
+        jne     .nextDev
         cmp     [PCI_Vendor], 0x10DE    ; nvidia
-        jne     nextDev
-       @@:
+        jne     .nextDev
 
-        cmp     byte[param], 0
+  .found:
+        cmp     byte[param], 0          ; Load network driver immediately?
         jne     load_and_start
 
+        call    Print_New_Device        ; print device info to screen
+
+  .nextDev:
+        test    [V_Dev], 7
+        jnz     .nextFn
+
+; Is this a multifunction device?
+        mov     bl, 4                   ; Read config byte
+        mov     bh, [V_Bus]             ; Bus #
+        mov     ch, [V_Dev]             ; Device # on bus
         mov     cl, 0x0e
         mcall   62
-        
-        push    eax
-        call    Print_New_Device        ; print device info to screen
-        pop     eax
         test    al, al
-        js      nextDev
+        js      .nextFn
 
-nextdev2:
-        test    [V_Dev], 7
-        jnz     nextDev
-        
+; Not a multifunction device, go to the next device
         or      [V_Dev], 7
 
-nextDev:
+  .nextFn:
         inc     [V_Dev]                 ; lower 3 bits are the function number
         jnz     Start_Enum              ; jump until we reach zero
 
@@ -321,7 +327,7 @@ load_and_start:
 
        .next:
         cmp     byte[param], 'A'
-        je      nextdev2
+        je      Start_Enum.nextDev
         jmp     exit
 
 
