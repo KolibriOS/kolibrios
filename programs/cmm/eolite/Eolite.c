@@ -19,6 +19,7 @@
 #include "..\lib\list_box.h"
 #include "..\lib\copyf.h"
 #include "..\lib\random.h"
+#include "..\lib\lib.obj\libini.h"
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
@@ -82,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.38"
-#define ABOUT_TITLE "Eolite v2.38"
+#define TITLE "Eolite File Manager v2.39"
+#define ABOUT_TITLE "Eolite v2.39"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -125,7 +126,6 @@ edit_box edit2 = {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_nam
 PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 0};
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
-#include "include\mark.h"
 #include "include\copy.h"
 #include "include\other.h"
 #include "include\sorting.h"
@@ -165,8 +165,8 @@ void main()
 	files.line_h=18;
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
+        if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
 	SystemDiscsGet();
-	mark_default();
 	GetIni(1);
 	SetAppColors();
 	if (param)
@@ -872,7 +872,6 @@ void Dir_Up()
 
 void Open()
 {
-	mark_default();
 	if (!files.count) return;
 	if (!itdir)
 	{

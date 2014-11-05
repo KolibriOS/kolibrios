@@ -9,12 +9,33 @@ Clipboard clipboard;
 
 void Copy(dword pcth, char cut)
 {
-	if (mark_active == 0) {
-		strlcpy(#elements_path.element_list[elements_path.count].Item, pcth);
-		elements_path.count++;
-	}
-	elements_path.size = sizeof(elements_path);
-	clipboard.SetSlotData(sizeof(elements_path), #elements_path);
+        dword selected_offset2;
+        byte copy_t[4096];
+        int cont = 0;
+        dword buff_data;
+        int ind = 0;
+        
+        for (i=0; i<files.count; i++) 
+        {
+                selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+                if (ESBYTE[selected_offset2]) cont++;
+        }
+        buff_data = malloc(cont*4096+10);
+        ESDWORD[buff_data] = cont*4096+10;
+        ESDWORD[buff_data+4] = 3;
+        ESINT[buff_data+8] = cont;
+        for (i=0; i<files.count; i++) 
+        {
+                selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+                if (ESBYTE[selected_offset2]) {
+                        strcpy(#copy_t, #path);
+                        strcat(#copy_t, file_mas[i]*304+buf+72);
+                        
+                        strlcpy(ind*4096+buff_data+10, #copy_t, 4096);
+                        ind++;
+                }
+        }
+        clipboard.SetSlotData(cont*4096+10, buff_data);
 	cut_active = cut;
 }
 
@@ -36,17 +57,15 @@ void Paste()
 {
 	char copy_rezult;
 	byte copy_from[4096];
-	int tst, count, j;
+	int j;
+        int cnt = 0;
 	dword buf;
 	
 	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
-	count = DSINT[buf+8];
-	if (DSDWORD[buf+4] != 3) return;
-	debugi(count);
-	
-	for (j = 0; j < count; j++) {
-		tst = j*4096;
-		strlcpy(#copy_from, buf+12+tst, 4096);
+        if (DSDWORD[buf+4] != 3) return;
+	cnt = ESINT[buf+8];
+        for (j = 0; j < cnt; j++) {
+		strlcpy(#copy_from, j*4096+buf+10, 4096);
 		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
@@ -77,7 +96,7 @@ void Paste()
 	{
 		cut_active=false;
 	}
-	mark_default();
+	//mark_default();
 	CopyExit();
 }
 
