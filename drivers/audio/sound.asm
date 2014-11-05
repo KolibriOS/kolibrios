@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,54 +200,27 @@ locals
         devfn    dd ?
 endl
 
-        xor     eax, eax
-        mov     [bus], eax
-        inc     eax
-        invoke  PciApi
-        cmp     eax, -1
-        je      .no_pci
+        invoke  GetPCIList
+        mov     edx, eax
 
-        mov     [last_bus], eax
-
-  .next_bus:
-        and     [devfn], 0
-  .next_dev:
-        invoke  PciRead32, [bus], [devfn], PCI_header.vendor_id
-        test    eax, eax
-        jz      .next
-        cmp     eax, -1
-        je      .next
-
+  .loop:
+        mov     ecx, [eax + PCIDEV.vendor_device_id]
         mov     edi, devices
   @@:
         mov     ebx, [edi]
         test    ebx, ebx
         jz      .next
 
-        cmp     eax, ebx
+        cmp     ecx, ebx
         je      .found
         add     edi, 8
-        jmp     @B
+        jmp     @b
 
   .next:
-        test    [devfn], 7
-        jnz     .next_fn
-        invoke  PciRead8, [bus], [devfn], PCI_header.header_type
-        test    al, al
-        js      .next_fn
-        or      [devfn], 7
+        mov     eax, [eax + PCIDEV.fd]
+        cmp     eax, edx
+        jne     .loop
 
-  .next_fn:
-        inc     [devfn]
-        cmp     [devfn], 256
-        jb      .next_dev
-        mov     eax, [bus]
-        inc     eax
-        mov     [bus], eax
-        cmp     eax, [last_bus]
-        jna     .next_bus
-
-  .no_pci:
      if DEBUG
         mov     esi, msgFail
         invoke  SysMsgBoardStr
