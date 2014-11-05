@@ -121,17 +121,25 @@ proc detect
   .next_bus:
         and     [devfn], 0
   .next_dev:
-        invoke  PciRead32, [bus], [devfn], PCI_header02.vendor_id
+        invoke  PciRead32, [bus], [devfn], PCI_header.vendor_id
         test    eax, eax
         jz      .next
         cmp     eax, -1
         je      .next
 
-        invoke  PciRead16, [bus], [devfn], 0x0a ; class & subclass
+        invoke  PciRead16, [bus], [devfn], PCI_header.subclass  ; class & subclass
         cmp     ax, 0x0607
         je      .found
 
   .next:
+        test    [devfn], 7
+        jnz     .next_fn
+        invoke  PciRead8, [bus], [devfn], PCI_header.header_type
+        test    al, al
+        js      .next_fn
+        or      [devfn], 7
+
+  .next_fn:
         inc     [devfn]
         cmp     [devfn], 256
         jb      .next_dev
@@ -150,6 +158,7 @@ proc detect
         DEBUGF  1, "Found cardbus bridge: bus=0x%x, dev=0x%x\n", [bus], [devfn]
 
         invoke  PciRead8, [bus], [devfn], PCI_header.header_type
+        and     al, not 0x80                                            ; Mask the multifunction device bit
         DEBUGF  1, "Header type=0x%x\n", eax:2
         cmp     al, 2
         jne     .next
