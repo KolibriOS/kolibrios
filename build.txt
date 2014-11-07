@@ -78,7 +78,7 @@ A1. Fine. You will need a corresponding compiler, obviously.
 
   * For a MSVC program, get the compiler as a part of Visual Studio,
     Express Edition is fine, or as a part of Windows SDK.
-    For obvious reasons, there is no Linux version, but the compiler runs file
+    For obvious reasons, there is no Linux version, but the compiler runs fine
     under Wine.
 
     If the program uses libraries, you will also need to either compile
