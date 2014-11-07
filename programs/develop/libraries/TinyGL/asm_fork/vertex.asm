@@ -236,7 +236,6 @@ pushad
 	je .els_0
 		; eye coordinates needed for lighting
 		mov ebx,dword[eax+offs_cont_matrix_stack_ptr]
-		;;;mov edx,[v]
 		finit
 		fld dword[edx+offs_vert_coord+offs_X]
 		fld dword[edx+offs_vert_coord+offs_Y]
@@ -251,13 +250,9 @@ pushad
 			fld dword[ebx+8]   ;st0 = m[2]
 			fmul st0,st3       ;st0 *= v.coord.Z
 			fadd dword[ebx+12] ;st0 += m[3]
-			fadd st0,st1       ;st0 += v.coord.Z * m[2] 
-			fadd st0,st2       ;st0 += v.coord.Y * m[1] 
+			faddp              ;st0 += v.coord.Z * m[2] 
+			faddp              ;st0 += v.coord.Y * m[1] 
 			fstp dword[edx+offs_vert_ec] ;v.ec.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
-			ffree st0
-			fincstp
-			ffree st0
-			fincstp
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_0
@@ -279,13 +274,9 @@ pushad
 			fld dword[ebx+8]   ;st0 = m[2]
 			fmul st0,st3       ;st0 *= v.ec.Z
 			fadd dword[ebx+12] ;st0 += m[3]
-			fadd st0,st1       ;st0 += v.ec.Z * m[2]
-			fadd st0,st2       ;st0 += v.ec.Y * m[1]
+			faddp              ;st0 += v.ec.Z * m[2]
+			faddp              ;st0 += v.ec.Y * m[1]
 			fstp dword[edx+offs_vert_pc] ;v.pc.X = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2] + m[3]
-			ffree st0
-			fincstp
-			ffree st0
-			fincstp
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_1
@@ -308,13 +299,9 @@ pushad
 			fmul st0,st3       ;st0 *= n.Y
 			fld dword[ebx+8]   ;st0 = m[2]
 			fmul st0,st3       ;st0 *= n.Z
-			fadd st0,st1       ;st0 += n.Z * m[2]
-			fadd st0,st2       ;st0 += n.Y * m[1]
+			faddp              ;st0 += n.Z * m[2]
+			faddp              ;st0 += n.Y * m[1]
 			fstp dword[edx+offs_vert_normal] ;v.normal.X = n.X * m[0] + n.Y * m[1] + n.Z * m[2]
-			ffree st0
-			fincstp
-			ffree st0
-			fincstp
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_2
@@ -329,7 +316,6 @@ pushad
 		mov ebx,eax
 		add ebx,offs_cont_matrix_model_projection
 
-		;;;mov edx,[v]
 		finit
 		fld dword[edx+offs_vert_coord+offs_X]
 		fld dword[edx+offs_vert_coord+offs_Y]
@@ -345,13 +331,10 @@ pushad
 		fld dword[ebx+8]   ;st0 = m[2]
 		fmul st0,st3       ;st0 *= v.coord.Z
 		fadd dword[ebx+12] ;st0 += m[3]
-		fadd st0,st1       ;st0 += v.coord.Z * m[2]
-		fadd st0,st2       ;st0 += v.coord.Y * m[1]
+		faddp              ;st0 += v.coord.Z * m[2]
+		faddp              ;st0 += v.coord.Y * m[1]
 		fstp dword[esi]    ;v.pc.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
-		ffree st0
-		fincstp
-		ffree st0
-		fincstp
+
 		fld dword[ebx+16]  ;st0 = m[4]
 		fmul st0,st3       ;st0 *= v.coord.X
 		fld dword[ebx+20]  ;st0 = m[5]
@@ -359,13 +342,10 @@ pushad
 		fld dword[ebx+24]  ;st0 = m[6]
 		fmul st0,st3       ;st0 *= v.coord.Z
 		fadd dword[ebx+28] ;st0 += m[7]
-		fadd st0,st1       ;st0 += v.coord.Z * m[6]
-		fadd st0,st2       ;st0 += v.coord.Y * m[5]
+		faddp              ;st0 += v.coord.Z * m[6]
+		faddp              ;st0 += v.coord.Y * m[5]
 		fstp dword[esi+4]  ;v.pc.X = v.coord.X * m[4] + v.coord.Y * m[5] + v.coord.Z * m[6] + m[7]
-		ffree st0
-		fincstp
-		ffree st0
-		fincstp
+
 		fld dword[ebx+32]  ;st0 = m[8]
 		fmul st0,st3       ;st0 *= v.coord.X
 		fld dword[ebx+36]  ;st0 = m[9]
@@ -373,8 +353,8 @@ pushad
 		fld dword[ebx+40]  ;st0 = m[10]
 		fmul st0,st3       ;st0 *= v.coord.Z
 		fadd dword[ebx+44] ;st0 += m[11]
-		fadd st0,st1       ;st0 += v.coord.Z * m[10]
-		fadd st0,st2       ;st0 += v.coord.Y * m[9]
+		faddp              ;st0 += v.coord.Z * m[10]
+		faddp              ;st0 += v.coord.Y * m[9]
 		fstp dword[esi+8]  ;v.pc.X = v.coord.X * m[8] + v.coord.Y * m[9] + v.coord.Z * m[10] + m[11]
 
 		cmp dword[eax+offs_cont_matrix_model_projection_no_w_transform],0
@@ -384,10 +364,6 @@ pushad
 			mov dword[esi+12],ebx ;v.pc.W = m[15]
 			jmp .end_els
 		.els_1:
-			ffree st0
-			fincstp
-			ffree st0
-			fincstp
 			fld dword[ebx+48]  ;st0 = m[12]
 			fmul st0,st3       ;st0 *= v.coord.X
 			fld dword[ebx+52]  ;st0 = m[13]
@@ -395,10 +371,17 @@ pushad
 			fld dword[ebx+56]  ;st0 = m[14]
 			fmul st0,st3       ;st0 *= v.coord.Z
 			fadd dword[ebx+60] ;st0 += m[15]
-			fadd st0,st1       ;st0 += v.coord.Z * m[14] 
-			fadd st0,st2       ;st0 += v.coord.Y * m[13] 
+			faddp              ;st0 += v.coord.Z * m[14] 
+			faddp              ;st0 += v.coord.Y * m[13] 
 			fstp dword[esi+12] ;v.pc.W = v.coord.X * m[12] + v.coord.Y * m[13] + v.coord.Z * m[14] + m[15]
 	.end_els:
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+
 if DEBUG ;gl_vertex_transform
 	stdcall dbg_print,f_vt,txt_nl
 	mov edx,[v]
@@ -509,8 +492,7 @@ pushad
 			mov eax,[edx+offs_cont_vertex]
 			push eax
 			add eax,sizeof.GLVertex
-			push eax
-			stdcall gl_draw_line, edx
+			stdcall gl_draw_line, edx, eax
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
@@ -534,8 +516,7 @@ pushad
 			mov eax,[edx+offs_cont_vertex]
 			push eax
 			add eax,sizeof.GLVertex
-			push eax
-			stdcall gl_draw_line, edx
+			stdcall gl_draw_line, edx, eax
 			mov edi,[edx+offs_cont_vertex]
 			mov esi,edi
 			add esi,sizeof.GLVertex
@@ -548,7 +529,12 @@ pushad
 	jne @f
 		cmp dword[n],3
 		jne .end_f
-;               gl_draw_triangle(c, &c->vertex[0], &c->vertex[1], &c->vertex[2]);
+			mov eax,[edx+offs_cont_vertex]
+			push eax
+			add eax,sizeof.GLVertex
+			push eax
+			add eax,sizeof.GLVertex
+			stdcall gl_draw_triangle, edx, eax
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f

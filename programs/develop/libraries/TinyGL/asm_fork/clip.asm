@@ -169,29 +169,29 @@ proc interpolate uses eax ebx ecx, q:dword,p0:dword,p1:dword,t:dword
 	fld dword[t]
 
 	; интерполяция по координатам
-	fld dword[ecx+offs_vert_pc]
-	fsub dword[ebx+offs_vert_pc]
+	fld dword[ecx+offs_vert_pc+offs_X]
+	fsub dword[ebx+offs_vert_pc+offs_X]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc]
-	fstp dword[eax+offs_vert_pc]
+	fadd dword[ebx+offs_vert_pc+offs_X]
+	fstp dword[eax+offs_vert_pc+offs_X]
 
-	fld dword[ecx+offs_vert_pc+4]
-	fsub dword[ebx+offs_vert_pc+4]
+	fld dword[ecx+offs_vert_pc+offs_Y]
+	fsub dword[ebx+offs_vert_pc+offs_Y]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+4]
-	fstp dword[eax+offs_vert_pc+4]
+	fadd dword[ebx+offs_vert_pc+offs_Y]
+	fstp dword[eax+offs_vert_pc+offs_Y]
 
-	fld dword[ecx+offs_vert_pc+8]
-	fsub dword[ebx+offs_vert_pc+8]
+	fld dword[ecx+offs_vert_pc+offs_Z]
+	fsub dword[ebx+offs_vert_pc+offs_Z]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+8]
-	fstp dword[eax+offs_vert_pc+8]
+	fadd dword[ebx+offs_vert_pc+offs_Z]
+	fstp dword[eax+offs_vert_pc+offs_Z]
 
-	fld dword[ecx+offs_vert_pc+12]
-	fsub dword[ebx+offs_vert_pc+12]
+	fld dword[ecx+offs_vert_pc+offs_W]
+	fsub dword[ebx+offs_vert_pc+offs_W]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+12]
-	fstp dword[eax+offs_vert_pc+12]
+	fadd dword[ebx+offs_vert_pc+offs_W]
+	fstp dword[eax+offs_vert_pc+offs_W]
 
 	; интерполяция по цвету
 	fld dword[ecx+offs_vert_color]
@@ -531,17 +531,17 @@ endl
 	mov edx,[a]
 	mov ebx,[b]
 	mov ecx,[c]
-	fld dword[ebx]
-	fsub dword[edx]
+	fld dword[ebx+offs_X]
+	fsub dword[edx+offs_X]
 	fstp dword[d_X] ;d_X = (b.X - a.X)
-	fld dword[ebx+4]
-	fsub dword[edx+4]
+	fld dword[ebx+offs_Y]
+	fsub dword[edx+offs_Y]
 	fstp dword[d_Y] ;d_Y = (b.Y - a.Y)
-	fld dword[ebx+8]
-	fsub dword[edx+8]
+	fld dword[ebx+offs_Z]
+	fsub dword[edx+offs_Z]
 	fstp dword[d_Z] ;d_Z = (b.Z - a.Z)
-	fld dword[ebx+12]
-	fsub dword[edx+12]
+	fld dword[ebx+offs_W]
+	fsub dword[edx+offs_W]
 	fst dword[d_W] ;d_W = (b.W - a.W)
 if sign eq 0
 	fadd dword[d#dir]
@@ -550,15 +550,13 @@ else
 end if
 
 	fldz
-	fcomp st1
+	fcompp
 	fstsw ax
 	sahf
 	ja @f
-		fincstp
 		fst dword[t] ;t=0
 		jmp .e_zero
 	@@: ;else
-		fincstp
 		fld dword[edx+offs#dir]
 if sign eq 0		
 		fchs
@@ -628,115 +626,189 @@ endp
 align 4
 clip_proc dd clip_xmin,clip_xmax, clip_ymin,clip_ymax, clip_zmin,clip_zmax
 
-;static inline void updateTmp(GLContext *c, GLVertex *q,GLVertex *p0,GLVertex *p1,float t)
-;{
-;  if (c->current_shade_model == GL_SMOOTH) {
+align 4
+proc updateTmp uses edx, context:dword, q:dword, p0:dword, p1:dword, t:dword
+	mov eax,[context]
+	cmp dword[edx+offs_cont_current_shade_model],GL_SMOOTH ;if (context.current_shade_model == GL_SMOOTH)
+	jne .els_0
 ;    q->color.v[0]=p0->color.v[0] + (p1->color.v[0]-p0->color.v[0])*t;
 ;    q->color.v[1]=p0->color.v[1] + (p1->color.v[1]-p0->color.v[1])*t;
 ;    q->color.v[2]=p0->color.v[2] + (p1->color.v[2]-p0->color.v[2])*t;
-;  } else {
+		jmp @f
+	.els_0:
 ;    q->color.v[0]=p0->color.v[0];
 ;    q->color.v[1]=p0->color.v[1];
 ;    q->color.v[2]=p0->color.v[2];
-;  }
+	@@:
 
-;  if (c->texture_2d_enabled) {
+	cmp dword[edx+offs_cont_texture_2d_enabled],0 ;if (context.texture_2d_enabled)
+	je @f
 ;    q->tex_coord.X=p0->tex_coord.X + (p1->tex_coord.X-p0->tex_coord.X)*t;
 ;    q->tex_coord.Y=p0->tex_coord.Y + (p1->tex_coord.Y-p0->tex_coord.Y)*t;
-;  }
+	@@:
 
 ;  q->clip_code=gl_clipcode(q->pc.X,q->pc.Y,q->pc.Z,q->pc.W);
 ;  if (q->clip_code==0){
 ;    gl_transform_to_viewport(c,q);
 ;    RGBFtoRGBI(q->color.v[0],q->color.v[1],q->color.v[2],q->zp.r,q->zp.g,q->zp.b);
 ;  }
-;}
+	ret
+endp
 
-;static void gl_draw_triangle_clip(GLContext *c, GLVertex *p0,GLVertex *p1,GLVertex *p2,int clip_bit);
+align 4
+proc gl_draw_triangle, context:dword, p0:dword, p1:dword, p2:dword
+locals
+	cc rd 3
+	front dd ?
+	norm dd ? ;float
+endl
+pushad
+	mov ebx,[p0]
+	mov ecx,[p1]
+	mov edx,[p2]
+	
+	mov edi,[ebx+offs_vert_clip_code]
+	mov dword[cc],edi
+	mov eax,[ecx+offs_vert_clip_code]
+	mov dword[cc+4],eax
+	or edi,eax
+	mov eax,[edx+offs_vert_clip_code]
+	mov dword[cc+8],eax
+	or edi,eax
 
-;void gl_draw_triangle(GLContext *c, GLVertex *p0,GLVertex *p1,GLVertex *p2)
-;{
-;  int co,c_and,cc[3],front;
-;  float norm;
-;  
-;  cc[0]=p0->clip_code;
-;  cc[1]=p1->clip_code;
-;  cc[2]=p2->clip_code;
-;  
-;  co=cc[0] | cc[1] | cc[2];
-;
-;  /* we handle the non clipped case here to go faster */
-;  if (co==0) {
-;    
-;      norm=(float)(p1->zp.x-p0->zp.x)*(float)(p2->zp.y-p0->zp.y)-
-;        (float)(p2->zp.x-p0->zp.x)*(float)(p1->zp.y-p0->zp.y);
-;      
-;      if (norm == 0) return;
-;
-;      front = norm < 0.0;
-;      front = front ^ c->current_front_face;
-;  
-;      /* back face culling */
-;      if (c->cull_face_enabled) {
-;        /* most used case first */
-;        if (c->current_cull_face == GL_BACK) {
-;          if (front == 0) return;
-;          c->draw_triangle_front(c,p0,p1,p2);
-;        } else if (c->current_cull_face == GL_FRONT) {
-;          if (front != 0) return;
-;          c->draw_triangle_back(c,p0,p1,p2);
-;        } else {
-;          return;
-;        }
-;      } else {
-;        /* no culling */
-;        if (front) {
-;          c->draw_triangle_front(c,p0,p1,p2);
-;        } else {
-;          c->draw_triangle_back(c,p0,p1,p2);
-;        }
-;      }
-;  } else {
-;    c_and=cc[0] & cc[1] & cc[2];
-;    if (c_and==0) {
-;      gl_draw_triangle_clip(c,p0,p1,p2,0);
-;    }
-;  }
-;}
+	; we handle the non clipped case here to go faster
+	cmp edi,0
+	jne .els_0
+		mov edi,dword[edx+offs_vert_zp+offs_zbup_x]
+		mov edi,dword[ebx+offs_vert_zp+offs_zbup_x]
+		mov dword[norm],edi
+		fild dword[norm]
+		mov esi,dword[ecx+offs_vert_zp+offs_zbup_y]
+		mov esi,dword[ebx+offs_vert_zp+offs_zbup_y]
+		mov dword[norm],edi
+		fimul dword[norm]
+		mov edi,dword[ecx+offs_vert_zp+offs_zbup_x]
+		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
+		mov dword[norm],edi
+		fild dword[norm]
+		mov edi,dword[edx+offs_vert_zp+offs_zbup_y]
+		mov edi,dword[ebx+offs_vert_zp+offs_zbup_y]
+		mov dword[norm],edi
+		fimul dword[norm]
+		fsub st0,st1
 
-;static void gl_draw_triangle_clip(GLContext *c, GLVertex *p0,GLVertex *p1,GLVertex *p2,int clip_bit)
-;{
-;  int co,c_and,co1,cc[3],edge_flag_tmp,clip_mask;
-;  GLVertex tmp1,tmp2,*q[3];
-;  float tt;
+		;st0 = (p1.zp.x-p0.zp.x)*(p2.zp.y-p0.zp.y) - (p2.zp.x-p0.zp.x)*(p1.zp.y-p0.zp.y)
 
-;  cc[0]=p0->clip_code;
-;  cc[1]=p1->clip_code;
-;  cc[2]=p2->clip_code;
+		mov dword[front],0
+		fldz
+		fcom st1
+		fstsw ax
+		sahf
+		je .end_f
+		jb @f
+			inc dword[front] ;front = 0.0 > norm
+		@@:
+		mov edi,[context]
+		mov eax,dword[edi+offs_cont_current_front_face]
+		xor dword[front],eax ;front ^= context.current_front_face
 
-;  co=cc[0] | cc[1] | cc[2];
-;  if (co == 0) {
-;    gl_draw_triangle(c,p0,p1,p2);
-;  } else {
-;    c_and=cc[0] & cc[1] & cc[2];
-;    /* the triangle is completely outside */
-;    if (c_and!=0) return;
+		; back face culling
+		cmp dword[edi+offs_cont_cull_face_enabled],0
+		je .els_1
+			; most used case first
+			cmp dword[edi+offs_cont_current_cull_face],GL_BACK
+			jne @f
+				cmp dword[front],0
+				je .end_f
+					stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
+				jmp .end_f
+			@@:
+			cmp dword[edi+offs_cont_current_cull_face],GL_FRONT
+			jne .end_f
+				cmp dword[front],0
+				jne .end_f
+					stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
+			jmp .end_f
+		.els_1:
+			; no culling
+			cmp dword[front],0
+			je @f
+				stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
+			@@:
+				stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
+		jmp .end_f
+	.els_0:
+		and eax,[cc]
+		and eax,[cc+4]
+		cmp eax,0
+		jne @f
+			stdcall gl_draw_triangle_clip, [context],ebx,ecx,edx,0
+	.end_f:
+	finit
+	@@:
+popad
+	ret
+endp
 
-;    /* find the next direction to clip */
+align 4
+proc gl_draw_triangle_clip, context:dword, p0:dword, p1:dword, p2:dword, clip_bit:dword
+locals
+	co dd ?
+	co1 dd ?
+	cc rd 3
+	edge_flag_tmp dd ?
+	clip_mask dd ?
+	tmp1 GLVertex ?
+	tmp2 GLVertex ?
+	q rd 3 ;GLVertex*
+	tt dd ? ;float
+endl
+pushad
+
+	mov ebx,[p0]
+	mov ecx,[p1]
+	mov edx,[p2]
+	
+	mov edi,[ebx+offs_vert_clip_code]
+	mov dword[cc],edi
+	mov eax,[ecx+offs_vert_clip_code]
+	mov dword[cc+4],eax
+	or edi,eax
+	mov eax,[edx+offs_vert_clip_code]
+	mov dword[cc+8],eax
+	or edi,eax
+	mov dword[co],edi
+
+	cmp edi,0
+	jne .els_0
+		stdcall gl_draw_triangle, [context],ebx,ecx,edx
+		jmp .end_f
+	.els_0:
+		and eax,[cc]
+		and eax,[cc+4]
+
+		; the triangle is completely outside
+		cmp eax,0
+		jne .end_f
+
+	; find the next direction to clip
 ;    while (clip_bit < 6 && (co & (1 << clip_bit)) == 0)  {
 ;      clip_bit++;
 ;    }
 
-;    /* this test can be true only in case of rounding errors */
-;    if (clip_bit == 6) {
-;#if 0
+	; this test can be true only in case of rounding errors
+	cmp dword[clip_bit],6
+if 0
+	jne @f
 ;      printf("Error:\n");
 ;      printf("%f %f %f %f\n",p0->pc.X,p0->pc.Y,p0->pc.Z,p0->pc.W);
 ;      printf("%f %f %f %f\n",p1->pc.X,p1->pc.Y,p1->pc.Z,p1->pc.W);
 ;      printf("%f %f %f %f\n",p2->pc.X,p2->pc.Y,p2->pc.Z,p2->pc.W);
-;#endif
-;      return;
-;    }
+		jmp .end_f
+	@@:
+else
+	je .end_f
+end if
 
 ;    clip_mask = 1 << clip_bit;
 ;    co1=(cc[0] ^ cc[1] ^ cc[2]) & clip_mask;
@@ -781,7 +853,10 @@ clip_proc dd clip_xmin,clip_xmax, clip_ymin,clip_ymax, clip_zmin,clip_zmax
 ;      gl_draw_triangle_clip(c,q[0],&tmp1,&tmp2,clip_bit+1);
 ;    }
 ;  }
-;}
+	.end_f:
+popad
+	ret
+endp
 
 align 4
 proc gl_draw_triangle_select uses eax, context:dword, p0:dword,p1:dword,p2:dword
@@ -795,14 +870,16 @@ proc gl_draw_triangle_select uses eax, context:dword, p0:dword,p1:dword,p2:dword
 	ret
 endp
 
-;#ifdef PROFILE
-;int count_triangles,count_triangles_textured,count_pixels;
-;#endif
+if PROFILE eq 1
+	count_triangles dd ?
+	count_triangles_textured dd ?
+	count_pixels dd ?
+end if
 
 align 4
-proc gl_draw_triangle_fill uses eax edx, context:dword, p0:dword,p1:dword,p2:dword
-;#ifdef PROFILE
-;  {
+proc gl_draw_triangle_fill, context:dword, p0:dword,p1:dword,p2:dword
+pushad
+if PROFILE eq 1
 ;    int norm;
 ;    assert(p0->zp.x >= 0 && p0->zp.x < c->zb->xsize);
 ;    assert(p0->zp.y >= 0 && p0->zp.y < c->zb->ysize);
@@ -814,32 +891,40 @@ proc gl_draw_triangle_fill uses eax edx, context:dword, p0:dword,p1:dword,p2:dwo
 ;    norm=(p1->zp.x-p0->zp.x)*(p2->zp.y-p0->zp.y)-
 ;      (p2->zp.x-p0->zp.x)*(p1->zp.y-p0->zp.y);
 ;    count_pixels+=abs(norm)/2;
-;    count_triangles++;
-;  }
-;#endif
+	inc dword[count_triangles]
+end if
 
+	mov ebx,[p1]
+	add ebx,offs_vert_zp
+	mov ecx,[p2]
+	add ecx,offs_vert_zp
 	mov edx,[context]
 	cmp dword[edx+offs_cont_texture_2d_enabled],0
 	je .els_i
 		;if (context.texture_2d_enabled)
-;#ifdef PROFILE
-;    count_triangles_textured++;
-;#endif
+if PROFILE eq 1
+	inc dword[count_triangles_textured]
+end if
 		mov eax,dword[edx+offs_cont_current_texture]
 		mov eax,[eax] ;переход по указателю
 		;так как offs_text_images+offs_imag_pixmap = 0 то context.current_texture.images[0].pixmap = [eax]
 		stdcall ZB_setTexture, dword[edx+offs_cont_zb],dword[eax]
-;    ZB_fillTriangleMappingPerspective, dword[edx+offs_cont_zb],&p0->zp,&p1->zp,&p2->zp);
+		mov eax,[p0]
+		add eax,offs_vert_zp
+		stdcall ZB_fillTriangleMappingPerspective, dword[edx+offs_cont_zb],eax,ebx,ecx
 		jmp .end_f
 	.els_i:
-	cmp dword[edx+offs_cont_current_shade_model],GL_SMOOTH
-	jne .els
-		;else if (context.current_shade_model == GL_SMOOTH)
-;    ZB_fillTriangleSmooth, dword[edx+offs_cont_zb],&p0->zp,&p1->zp,&p2->zp);
-		jmp .end_f
-	.els:
-;    ZB_fillTriangleFlat, dword[edx+offs_cont_zb],&p0->zp,&p1->zp,&p2->zp);
+		mov eax,[p0]
+		add eax,offs_vert_zp
+		cmp dword[edx+offs_cont_current_shade_model],GL_SMOOTH
+		jne .els
+			;else if (context.current_shade_model == GL_SMOOTH)
+			stdcall ZB_fillTriangleSmooth, dword[edx+offs_cont_zb],eax,ebx,ecx
+			jmp .end_f
+		.els:
+			stdcall ZB_fillTriangleFlat, dword[edx+offs_cont_zb],eax,ebx,ecx
 	.end_f:
+popad
 	ret
 endp
 

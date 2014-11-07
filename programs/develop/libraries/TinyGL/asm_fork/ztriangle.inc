@@ -6,13 +6,13 @@
 	pr2 dd ? ;ZBufferPoint*
 	l1 dd ? ;ZBufferPoint*
 	l2 dd ? ;ZBufferPoint*
-	fdx1 dd ?
-	fdx2 dd ?
-	fdy1 dd ?
-	fdy2 dd ?
-	fz dd ?
-	d1 dd ?
-	d2 dd ?
+	fdx1 dd ? ;float
+	fdx2 dd ? ;float
+	fdy1 dd ? ;float
+	fdy2 dd ? ;float
+	fz dd ? ;float
+	d1 dd ? ;float
+	d2 dd ? ;float
 	pz1 dd ? ;unsigned short*
 	pp1 dd ? ;PIXEL*
 	part dd ?
@@ -22,7 +22,6 @@
 	nb_lines dd ?
 	dx1 dd ?
 	dy1 dd ?
-	tmp dd ?
 	dx2 dd ?
 	dy2 dd ?
 
@@ -60,7 +59,7 @@ if INTERP_RGB eq 1
 	dbdl_max dd ?
 end if
 if INTERP_ST eq 1
-	;s1 dd ?
+	s1 dd ?
 	dsdx dd ?
 	dsdy dd ?
 	dsdl_min dd ?
@@ -72,344 +71,752 @@ if INTERP_ST eq 1
 	dtdl_max dd ?
 end if
 if INTERP_STZ eq 1
-	sz1 dd ?
-	dszdx dd ?
-	dszdy dd ?
-	dszdl_min dd ?
-	dszdl_max dd ?
-	tz1 dd ?
-	dtzdx dd ?
-	dtzdy dd ?
-	dtzdl_min dd ?
-	dtzdl_max dd ?
+	sz1 dd ? ;float
+	dszdx dd ? ;float
+	dszdy dd ? ;float
+	dszdl_min dd ? ;float
+	dszdl_max dd ? ;float
+	tz1 dd ? ;float
+	dtzdx dd ? ;float
+	dtzdy dd ? ;float
+	dtzdl_min dd ? ;float
+	dtzdl_max dd ? ;float
+end if
+
+if DRAW_LINE_M eq 1
+	DRAW_LINE 0 ;переменные делаются в макросе
+else
+	;edi = pp dd ?
+	n dd ? ;int
+if INTERP_Z eq 1
+	pz dd ? ;unsigned short *
+	z dd ? ;uint
+	zz dd ? ;uint
+end if
+if INTERP_RGB eq 1
+	or1 dd ? ;uint
+	og1 dd ? ;uint
+	ob1 dd ? ;uint
+end if
+if INTERP_ST eq 1
+	s dd ? ;uint
+	t dd ? ;uint
+end if
+if INTERP_STZ eq 1
+	s_z dd ? ;float
+	t_z dd ? ;float
+end if
 end if
 
 endl
 
-;  /* we sort the vertex with increasing y */
-;  if (p1->y < p0->y) {
-;    t = p0;
-;    p0 = p1;
-;    p1 = t;
-;  }
-;  if (p2->y < p0->y) {
-;    t = p2;
-;    p2 = p1;
-;    p1 = p0;
-;    p0 = t;
-;  } else if (p2->y < p1->y) {
-;    t = p1;
-;    p1 = p2;
-;    p2 = t;
-;  }
+	; we sort the vertex with increasing y
+	mov ebx,[p0]
+	mov ecx,[p1]
+	mov eax,[ebx+offs_zbup_y]
+	cmp [ecx+offs_zbup_y],eax
+	jge @f
+		;if (p1.y < p0.y)
+		mov [p0],ecx
+		mov [p1],ebx
+		xchg ebx,ecx
+		mov eax,[ebx+offs_zbup_y] ;обновляем p0.y для следующего сравнения
+	@@:
+	mov edx,[p2]
+	cmp [edx+offs_zbup_y],eax
+	jge @f
+		;if (p2.y < p0.y)
+		mov [p0],edx
+		mov [p1],ebx
+		mov [p2],ecx
+		mov ebx,[p0]
+		mov ecx,[p1]
+		mov edx,[p2]
+		jmp .end_e0
+	@@:
+	mov eax,[ecx+offs_zbup_y]
+	cmp [edx+offs_zbup_y],eax
+	jge .end_e0
+		;else if (p2.y < p1.y)
+		mov [p1],edx
+		mov [p2],ecx
+	.end_e0:
 
 	; we compute dXdx and dXdy for all interpolated values
 
-;  fdx1 = p1->x - p0->x;
-;  fdy1 = p1->y - p0->y;
+	mov eax,[ecx+offs_zbup_x]
+	sub eax,[ebx+offs_zbup_x]
+	mov [fdx1],eax ;p1.x - p0.x
+	mov eax,[ecx+offs_zbup_y]
+	sub eax,[ebx+offs_zbup_y]
+	mov [fdy1],eax ;p1.y - p0.y
 
-;  fdx2 = p2->x - p0->x;
-;  fdy2 = p2->y - p0->y;
+	mov eax,[edx+offs_zbup_x]
+	sub eax,[ebx+offs_zbup_x]
+	mov [fdx2],eax ;p2.x - p0.x
+	mov eax,[edx+offs_zbup_y]
+	sub eax,[ebx+offs_zbup_y]
+	mov [fdy2],eax ;p2.y - p0.y
 
-;  fz = fdx1 * fdy2 - fdx2 * fdy1;
-;  if (fz == 0)
-;    return;
-;  fz = 1.0 / fz;
+	fild dword[fdx2]
+	fst dword[fdx2]
+	fild dword[fdy1]
+	fst dword[fdy1]
+	fmulp
+	fild dword[fdx1]
+	fst dword[fdx1]
+	fild dword[fdy2]
+	fst dword[fdy2]
+	fmulp
+	fsubp ;st0 = st0-st1
+	fst dword[fz] ;fz = fdx1 * fdy2 - fdx2 * fdy1
+	fldz
+	fcompp ;if (fz == 0)
+	fstsw ax
+	sahf
+	je .end_f
+	fld1
+	fdiv dword[fz] ;fz = 1.0 / fz
+	fst dword[fz]  ;st0 = fz
 
-;  fdx1 *= fz;
-;  fdy1 *= fz;
-;  fdx2 *= fz;
-;  fdy2 *= fz;
+	fld dword[fdx1]
+	fmul st0,st1
+	fstp dword[fdx1] ;fdx1 *= fz
+	fld dword[fdy1]
+	fmul st0,st1
+	fstp dword[fdy1] ;fdy1 *= fz
+	fld dword[fdx2]
+	fmul st0,st1
+	fstp dword[fdx2] ;fdx2 *= fz
+	fld dword[fdy2]
+	fmul st0,st1
+	fstp dword[fdy2] ;fdy2 *= fz
+	ffree st0
+	fincstp
 
 if INTERP_Z eq 1
-;  d1 = p1->z - p0->z;
-;  d2 = p2->z - p0->z;
-;  dzdx = (int) (fdy2 * d1 - fdy1 * d2);
-;  dzdy = (int) (fdx1 * d2 - fdx2 * d1);
+	mov eax,[ecx+offs_zbup_z]
+	sub eax,[ebx+offs_zbup_z]
+	mov [d1],eax
+	mov eax,[edx+offs_zbup_z]
+	sub eax,[ebx+offs_zbup_z]
+	mov [d2],eax
+	fild dword[d1]
+	fst dword[d1] ;d1 = p1.z - p0.z
+	fild dword[d2]
+	fst dword[d2] ;d2 = p2.z - p0.z
+
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dzdx] ;dzdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dzdy] ;dzdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
 end if
 
 if INTERP_RGB eq 1
-;  d1 = p1->r - p0->r;
-;  d2 = p2->r - p0->r;
-;  drdx = (int) (fdy2 * d1 - fdy1 * d2);
-;  drdy = (int) (fdx1 * d2 - fdx2 * d1);
+	mov eax,[ecx+offs_zbup_r]
+	sub eax,[ebx+offs_zbup_r]
+	mov [d1],eax
+	mov eax,[edx+offs_zbup_r]
+	sub eax,[ebx+offs_zbup_r]
+	mov [d2],eax
+	fild dword[d1]
+	fst dword[d1] ;d1 = p1.r - p0.r
+	fild dword[d2]
+	fst dword[d2] ;d2 = p2.r - p0.r
 
-;  d1 = p1->g - p0->g;
-;  d2 = p2->g - p0->g;
-;  dgdx = (int) (fdy2 * d1 - fdy1 * d2);
-;  dgdy = (int) (fdx1 * d2 - fdx2 * d1);
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[drdx] ;drdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[drdy] ;drdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
 
-;  d1 = p1->b - p0->b;
-;  d2 = p2->b - p0->b;
-;  dbdx = (int) (fdy2 * d1 - fdy1 * d2);
-;  dbdy = (int) (fdx1 * d2 - fdx2 * d1);
+	mov eax,[ecx+offs_zbup_g]
+	sub eax,[ebx+offs_zbup_g]
+	mov [d1],eax
+	mov eax,[edx+offs_zbup_g]
+	sub eax,[ebx+offs_zbup_g]
+	mov [d2],eax
+	fild dword[d1]
+	fst dword[d1] ;d1 = p1.g - p0.g
+	fild dword[d2]
+	fst dword[d2] ;d2 = p2.g - p0.g
 
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dgdx] ;dgdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dgdy] ;dgdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
+
+	mov eax,[ecx+offs_zbup_b]
+	sub eax,[ebx+offs_zbup_b]
+	mov [d1],eax
+	mov eax,[edx+offs_zbup_b]
+	sub eax,[ebx+offs_zbup_b]
+	mov [d2],eax
+	fild dword[d1]
+	fst dword[d1] ;d1 = p1.b - p0.b
+	fild dword[d2]
+	fst dword[d2] ;d2 = p2.b - p0.b
+
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dbdx] ;dbdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dbdy] ;dbdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
 end if
 
 if INTERP_ST eq 1
-;  d1 = p1->s - p0->s;
-;  d2 = p2->s - p0->s;
-;  dsdx = (int) (fdy2 * d1 - fdy1 * d2);
-;  dsdy = (int) (fdx1 * d2 - fdx2 * d1);
+	mov eax,[ecx+offs_zbup_s]
+	sub eax,[ebx+offs_zbup_s]
+	mov [d1],eax
+	mov eax,[edx+offs_zbup_s]
+	sub eax,[ebx+offs_zbup_s]
+	mov [d2],eax
+	fild dword[d1]
+	fst dword[d1] ;d1 = p1.s - p0.s
+	fild dword[d2]
+	fst dword[d2] ;d2 = p2.s - p0.s
 
-;  d1 = p1->t - p0->t;
-;  d2 = p2->t - p0->t;
-;  dtdx = (int) (fdy2 * d1 - fdy1 * d2);
-;  dtdy = (int) (fdx1 * d2 - fdx2 * d1);
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dsdx] ;dsdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dsdy] ;dsdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
+
+	mov eax,[ecx+offs_zbup_t]
+	sub eax,[ebx+offs_zbup_t]
+	mov [d1],eax
+	mov eax,[edx+offs_zbup_t]
+	sub eax,[ebx+offs_zbup_t]
+	mov [d2],eax
+	fild dword[d1]
+	fst dword[d1] ;d1 = p1.t - p0.t
+	fild dword[d2]
+	fst dword[d2] ;d2 = p2.t - p0.t
+
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dtdx] ;dtdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dtdy] ;dtdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
 end if
 
 if INTERP_STZ eq 1
-;  {
-;    float zz;
-;    zz=(float) p0->z;
-;    p0->sz= (float) p0->s * zz;
-;    p0->tz= (float) p0->t * zz;
-;    zz=(float) p1->z;
-;    p1->sz= (float) p1->s * zz;
-;    p1->tz= (float) p1->t * zz;
-;    zz=(float) p2->z;
-;    p2->sz= (float) p2->s * zz;
-;    p2->tz= (float) p2->t * zz;
+	fild dword[ebx+offs_zbup_z]
+	fild dword[ebx+offs_zbup_s]
+	fmul st0,st1
+	fstp dword[ebx+offs_zbup_sz] ;p0.sz = (float) p0.s * p0.z
+	fild dword[ebx+offs_zbup_t]
+	fmul st0,st1
+	fstp dword[ebx+offs_zbup_tz] ;p0.tz = (float) p0.t * p0.z
+	ffree st0
+	fincstp
 
-;    d1 = p1->sz - p0->sz;
-;    d2 = p2->sz - p0->sz;
-;    dszdx = (fdy2 * d1 - fdy1 * d2);
-;    dszdy = (fdx1 * d2 - fdx2 * d1);
+	fild dword[ecx+offs_zbup_z]
+	fild dword[ecx+offs_zbup_s]
+	fmul st0,st1
+	fstp dword[ecx+offs_zbup_sz] ;p1.sz = (float) p1.s * p1.z
+	fild dword[ecx+offs_zbup_t]
+	fmul st0,st1
+	fstp dword[ecx+offs_zbup_tz] ;p1.tz = (float) p1.t * p1.z
+	ffree st0
+	fincstp
 
-;    d1 = p1->tz - p0->tz;
-;    d2 = p2->tz - p0->tz;
-;    dtzdx = (fdy2 * d1 - fdy1 * d2);
-;    dtzdy = (fdx1 * d2 - fdx2 * d1);
-;  }
+	fild dword[edx+offs_zbup_z]
+	fild dword[edx+offs_zbup_s]
+	fmul st0,st1
+	fstp dword[edx+offs_zbup_sz] ;p2.sz = (float) p2.s * p2.z
+	fild dword[edx+offs_zbup_t]
+	fmul st0,st1
+	fstp dword[edx+offs_zbup_tz] ;p2.tz = (float) p2.t * p2.z
+	ffree st0
+	fincstp
+
+	fld dword[ecx+offs_zbup_sz]
+	fsub dword[ebx+offs_zbup_sz]
+	fst dword[d1] ;d1 = p1.sz - p0.sz
+	fld dword[edx+offs_zbup_sz]
+	fsub dword[ebx+offs_zbup_sz]
+	fst dword[d2] ;d2 = p2.sz - p0.sz
+
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dszdx] ;dszdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dszdy] ;dszdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
+
+	fld dword[ecx+offs_zbup_tz]
+	fsub dword[ebx+offs_zbup_tz]
+	fst dword[d1] ;d1 = p1.tz - p0.tz
+	fld dword[edx+offs_zbup_tz]
+	fsub dword[ebx+offs_zbup_tz]
+	fst dword[d2] ;d2 = p2.tz - p0.tz
+
+	fld dword[fdy1]
+	fmul st0,st1
+	fld dword[fdy2]
+	fmul st0,st3
+	fsub st0,st1
+	fistp dword[dtzdx] ;dtzdx = (int) (fdy2*d1 - fdy1*d2)
+	ffree st0
+	fincstp
+	fld dword[fdx2]
+	fmul st0,st2
+	fld dword[fdx1]
+	fmul st0,st2
+	fsub st0,st1
+	fistp dword[dtzdy] ;dtzdy = (int) (fdx1*d2 - fdx2*d1)
+	ffree st0
+	fincstp
 end if
 
 	; screen coordinates
 
-;  pp1 = (PIXEL *) ((char *) zb->pbuf + zb->linesize * p0->y);
-;  pz1 = zb->zbuf + p0->y * zb->xsize;
+	mov eax,[zb]
+	mov edx,[eax+offs_zbuf_linesize]
+	imul edx,[ebx+offs_zbup_y]
+	add edx,[eax+offs_zbuf_pbuf]
+	mov [pp1],edx ;pp1 = zb.pbuf + zb.linesize * p0.y
+	mov edx,[eax+offs_zbuf_xsize]
+	imul edx,[ebx+offs_zbup_y]
+	shl edx,1
+	add edx,[eax+offs_zbuf_zbuf]
+	mov [pz1],edx ;pz1 = zb.zbuf + zb.xsize * p0.y
 
 	DRAW_INIT
 
-;  for(part=0;part<2;part++) {
-;    if (part == 0) {
-;      if (fz > 0) {
-;	update_left=1;
-;	update_right=1;
-;	l1=p0;
-;	l2=p2;
-;	pr1=p0;
-;	pr2=p1;
-;      } else {
-;	update_left=1;
-;	update_right=1;
-;	l1=p0;
-;	l2=p1;
-;	pr1=p0;
-;	pr2=p2;
-;      }
-;      nb_lines = p1->y - p0->y;
-;    } else {
-;      /* second part */
-;      if (fz > 0) {
-;	update_left=0;
-;	update_right=1;
-;	pr1=p1;
-;	pr2=p2;
-;      } else {
-;	update_left=1;
-;	update_right=0;
-;	l1=p1; 
-;	l2=p2;
-;      }
-;      nb_lines = p2->y - p1->y + 1;
-;    }
+	mov dword[part],0
+	.cycle_0:
+		mov ebx,[p0]
+		mov ecx,[p1]
+		mov edx,[p2]
+		cmp dword[part],0
+		jne .els_0
+			mov dword[update_left],1
+			mov dword[update_right],1
+			mov [l1],ebx
+			mov [pr1],ebx
+			fldz
+			fld dword[fz]
+			fcompp ;if (fz > 0)
+			fstsw ax
+			sahf
+			jbe .els_1
+				mov [l2],edx
+				mov [pr2],ecx
+				jmp .end_1
+			.els_1:
+				mov [l2],ecx
+				mov [pr2],edx
+			.end_1:
+			mov eax,[ecx+offs_zbup_y]
+			sub eax,[ebx+offs_zbup_y]
+			mov [nb_lines],eax ;nb_lines = p1.y - p0.y
+			jmp .end_0
+		.els_0:
+			; second part
+			mov dword[update_left],0
+			mov dword[update_right],1
+			fldz
+			fld dword[fz]
+			fcompp ;if (fz > 0)
+			fstsw ax
+			sahf
+			jbe .els_2
+				mov [pr1],ecx
+				mov [pr2],edx
+				jmp .end_2
+			.els_2:
+				mov [l1],ecx
+				mov [l2],edx
+			.end_2:
+			mov eax,[edx+offs_zbup_y]
+			sub eax,[ecx+offs_zbup_y]
+			inc eax
+			mov [nb_lines],eax ;nb_lines = p2.y - p1.y + 1
+		.end_0:
 
 	; compute the values for the left edge
 
-;    if (update_left) {
-;      dy1 = l2->y - l1->y;
-;      dx1 = l2->x - l1->x;
-;      if (dy1 > 0) 
-;	tmp = (dx1 << 16) / dy1;
-;      else
-;	tmp = 0;
-;      x1 = l1->x;
-;      error = 0;
-;      derror = tmp & 0x0000ffff;
-;      dxdy_min = tmp >> 16;
-;      dxdy_max = dxdy_min + 1;
+	cmp dword[update_left],0 ;if (update_left)
+	je .end_upd_l
+		mov ebx,[l1]
+		mov ecx,[l2]
+		mov eax,[ecx+offs_zbup_x]
+		sub eax,[ebx+offs_zbup_x]
+		mov [dx1],eax ;dx1 = l2.x - l1.x
+		mov eax,[ecx+offs_zbup_y]
+		sub eax,[ebx+offs_zbup_y]
+		mov [dy1],eax ;dy1 = l2.y - l1.y
+		cmp eax,0 ;if (dy1 > 0) 
+		jle .els_3
+			mov eax,[dx1]
+			shl eax,16
+			xor edx,edx
+			div dword[dy1] ;eax = (dx1 << 16) / dy1
+			jmp .end_3
+		.els_3:
+			xor eax,eax
+		.end_3:
+		mov edx,[ebx+offs_zbup_x]
+		mov [x1],edx
+		mov dword[error],0
+		mov dword[derror],eax
+		and dword[derror],0xffff
+		shr eax,16
+		mov [dxdy_min],eax
+		inc eax
+		mov [dxdy_max],eax
 
 if INTERP_Z eq 1
-;      z1=l1->z;
-;      dzdl_min=(dzdy + dzdx * dxdy_min); 
-;      dzdl_max=dzdl_min + dzdx;
+	mov eax,[l1]
+	mov eax,[eax+offs_zbup_z]
+	mov [z1],eax ;z1 = l1.z
+	mov eax,[dzdx]
+	imul eax,[dxdy_min]
+	add eax,[dzdy]
+	mov [dzdl_min],eax ;dzdl_min = (dzdy +dzdx*dxdy_min)
+	add eax,[dzdx]
+	mov [dzdl_max],eax ;dzdl_max = dzdl_min +dzdx
 end if
 if INTERP_RGB eq 1
-;      r1=l1->r;
-;      drdl_min=(drdy + drdx * dxdy_min);
-;      drdl_max=drdl_min + drdx;
+	mov ebx,[l1]
+	mov eax,[ebx+offs_zbup_r]
+	mov [r1],eax ;r1 = l1.r
+	mov eax,[drdx]
+	imul eax,[dxdy_min]
+	add eax,[drdy]
+	mov [drdl_min],eax ;drdl_min = (drdy +drdx*dxdy_min)
+	add eax,[drdx]
+	mov [drdl_max],eax ;drdl_max = drdl_min +drdx
 
-;      g1=l1->g;
-;      dgdl_min=(dgdy + dgdx * dxdy_min);
-;      dgdl_max=dgdl_min + dgdx;
+	mov eax,[ebx+offs_zbup_g]
+	mov [g1],eax ;g1 = l1.g
+	mov eax,[dgdx]
+	imul eax,[dxdy_min]
+	add eax,[dgdy]
+	mov [dgdl_min],eax ;dgdl_min = (dgdy +dgdx*dxdy_min)
+	add eax,[dgdx]
+	mov [dgdl_max],eax ;dgdl_max = dgdl_min +dgdx
 
-;      b1=l1->b;
-;      dbdl_min=(dbdy + dbdx * dxdy_min);
-;      dbdl_max=dbdl_min + dbdx;
+	mov eax,[ebx+offs_zbup_b]
+	mov [b1],eax ;b1 = l1.b
+	mov eax,[dbdx]
+	imul eax,[dxdy_min]
+	add eax,[dbdy]
+	mov [dbdl_min],eax ;dbdl_min = (dbdy +dbdx*dxdy_min)
+	add eax,[dbdx]
+	mov [dbdl_max],eax ;dbdl_max = dbdl_min +dbdx
+
 end if
 if INTERP_ST eq 1
-;      s1=l1->s;
-;      dsdl_min=(dsdy + dsdx * dxdy_min);
-;      dsdl_max=dsdl_min + dsdx;
+	mov ebx,[l1]
+	mov eax,[ebx+offs_zbup_s]
+	mov [s1],eax ;s1 = l1.s
+	mov eax,[dsdx]
+	imul eax,[dxdy_min]
+	add eax,[dsdy]
+	mov [dsdl_min],eax ;dsdl_min = (dsdy +dsdx*dxdy_min)
+	add eax,[dsdx]
+	mov [dsdl_max],eax ;dsdl_max = dsdl_min +dsdx
 
-;      t1=l1->t;
-;      dtdl_min=(dtdy + dtdx * dxdy_min);
-;      dtdl_max=dtdl_min + dtdx;
+	mov eax,[ebx+offs_zbup_t]
+	mov [t1],eax ;t1 = l1.t
+	mov eax,[dtdx]
+	imul eax,[dxdy_min]
+	add eax,[dtdy]
+	mov [dtdl_min],eax ;dtdl_min = (dtdy +dtdx*dxdy_min)
+	add eax,[dtdx]
+	mov [dtdl_max],eax ;dtdl_max = dtdl_min +dtdx
 end if
 if INTERP_STZ eq 1
-;      sz1=l1->sz;
-;      dszdl_min=(dszdy + dszdx * dxdy_min);
-;      dszdl_max=dszdl_min + dszdx;
+	mov ebx,[l1]
+	mov eax,[ebx+offs_zbup_sz]
+	mov [sz1],eax ;sz1 = l1.sz - преобразований нет, потому без сопроцессора
+	fild dword[dxdy_min]
+	fmul dword[dszdx]
+	fadd dword[dszdy]
+	fst dword[dszdl_min] ;dszdl_min = (dszdy +dszdx*dxdy_min)
+	fadd dword[dszdx]
+	fstp dword[dszdl_max] ;dszdl_max = dszdl_min +dszdx
 
-;      tz1=l1->tz;
-;      dtzdl_min=(dtzdy + dtzdx * dxdy_min);
-;      dtzdl_max=dtzdl_min + dtzdx;
+	mov eax,[ebx+offs_zbup_tz]
+	mov [tz1],eax ;tz1 = l1.tz - преобразований нет, потому без сопроцессора
+	fild dword[dxdy_min]
+	fmul dword[dtzdx]
+	fadd dword[dtzdy]
+	fst dword[dtzdl_min] ;dtzdl_min = (dtzdy +dtzdx*dxdy_min)
+	fadd dword[dtzdx]
+	fstp dword[dtzdl_max] ;dtzdl_max = dtzdl_min +dtzdx
 end if
-;    }
+	.end_upd_l:
 
-;    /* compute values for the right edge */
+	; compute values for the right edge
 
-;    if (update_right) {
-;      dx2 = (pr2->x - pr1->x);
-;      dy2 = (pr2->y - pr1->y);
-;      if (dy2>0) 
-;	dx2dy2 = ( dx2 << 16) / dy2;
-;      else
-;	dx2dy2 = 0;
-;      x2 = pr1->x << 16;
-;    }
+	cmp dword[update_right],0 ;if(update_right)
+	je .end_upd_r
+		mov ebx,[pr1]
+		mov ecx,[pr2]
+		mov eax,[ecx+offs_zbup_x]
+		sub eax,[ebx+offs_zbup_x]
+		mov [dx2],eax ;dx2 = pr2.x - pr1.x
+		mov eax,[ecx+offs_zbup_y]
+		sub eax,[ebx+offs_zbup_y]
+		mov [dy2],eax ;dy2 = pr2.y - pr1.y
+		cmp eax,0 ;if (dy2 > 0) 
+		jle .els_4
+			mov eax,[dx2]
+			shl eax,16
+			xor edx,edx
+			div dword[dy2] ;eax = (dx2 << 16) / dy2
+			jmp .end_4
+		.els_4:
+			xor eax,eax
+		.end_4:
+		mov [dx2dy2],eax
+		mov eax,[ebx+offs_zbup_x]
+		shl eax,16
+		mov [x2],eax ; x2 = pr1.x << 16
+	.end_upd_r:
 
-;    /* we draw all the scan line of the part */
+	; we draw all the scan line of the part
 
-;    while (nb_lines>0) {
-;      nb_lines--;
-;#ifndef DRAW_LINE
-;      /* generic draw line */
-;      {
-;          register PIXEL *pp;
-;          register int n;
+	.beg_w_lin:
+	cmp dword[nb_lines],0 ;while (nb_lines>0)
+	jle .end_w_lin
+		dec dword[nb_lines]
+if DRAW_LINE_M eq 1
+		DRAW_LINE 1
+else
+		; generic draw line
+		mov eax,[x2]
+		shr eax,16
+		mov edi,[x1]
+		sub eax,edi
+		mov [n],eax ;n = (x2 >> 16) - x1
+		imul edi,PSZB
+		add edi,[pp1] ;pp = pp1 + x1 * PSZB
 if INTERP_Z eq 1
-;          register unsigned short *pz;
-;          register unsigned int z,zz;
+		mov eax,[x1]
+		shl eax,1
+		add eax,[pz1]
+		mov [pz],eax
+		mov eax,[z1]
+		mov [z],eax
 end if
 if INTERP_RGB eq 1
-;          register unsigned int or1,og1,ob1;
+		mov eax,[r1]
+		mov [or1],eax
+		mov eax,[g1]
+		mov [og1],eax
+		mov eax,[b1]
+		mov [ob1],eax
 end if
 if INTERP_ST eq 1
-;          register unsigned int s,t;
+		mov eax,[s1]
+		mov [s],eax
+		mov eax,[t1]
+		mov [t],eax
 end if
 if INTERP_STZ eq 1
-;          float sz,tz;
+		mov eax,[sz1]
+		mov [s_z],eax
+		mov eax,[tz1]
+		mov [t_z],eax
 end if
-;          n=(x2 >> 16) - x1;
-;          pp=(PIXEL *)((char *)pp1 + x1 * PSZB);
+		.cycle_1: ;while (n>=3)
+			PUT_PIXEL 0
+			PUT_PIXEL 1
+			PUT_PIXEL 2
+			PUT_PIXEL 3
 if INTERP_Z eq 1
-;          pz=pz1+x1;
-;          z=z1;
+			add dword[pz],8 ;=4*sizeof(uint)
 end if
-if INTERP_RGB eq 1
-;          or1 = r1;
-;          og1 = g1;
-;          ob1 = b1;
-end if
-if INTERP_ST eq 1
-;          s=s1;
-;          t=t1;
-end if
-if INTERP_STZ eq 1
-;          sz=sz1;
-;          tz=tz1;
-end if
-;          while (n>=3) {
-;              PUT_PIXEL(0);
-;              PUT_PIXEL(1);
-;              PUT_PIXEL(2);
-;              PUT_PIXEL(3);
+			add edi,4*PSZB
+			sub dword[n],4
+			cmp dword[n],3
+		jge .cycle_1
+		.cycle_2: ;while (n>=0)
+			PUT_PIXEL 0
 if INTERP_Z eq 1
-;              pz+=4;
+			add dword[pz],2 ;=sizeof(uint)
 end if
-;              pp=(PIXEL *)((char *)pp + 4 * PSZB);
-;              n-=4;
-;          }
-;          while (n>=0) {
-;              PUT_PIXEL(0);
-if INTERP_Z eq 1
-;              pz+=1;
+			add edi,PSZB
+			dec dword[n]
+			cmp dword[n],0
+		jge .cycle_2
 end if
-;              pp=(PIXEL *)((char *)pp + PSZB);
-;              n-=1;
-;          }
-;      }
-;#else
-;      DRAW_LINE();
-;#endif
-;      
-;      /* left edge */
-;      error+=derror;
-;      if (error > 0) {
-;	error-=0x10000;
-;	x1+=dxdy_max;
+
+	; left edge
+	mov eax,[derror]
+	add [error],eax
+	cmp eax,0 ;if (error > 0)
+	jle .els_er
+		sub dword[error],0x10000
+		mov eax,[dxdy_max]
+		add [x1],eax
 if INTERP_Z eq 1
-;	z1+=dzdl_max;
+		mov eax,[dzdl_max]
+		add [z1],eax
 end if      
 if INTERP_RGB eq 1
-;	r1+=drdl_max;
-;	g1+=dgdl_max;
-;	b1+=dbdl_max;
+		mov eax,[drdl_max]
+		add [r1],eax
+		mov eax,[dgdl_max]
+		add [g1],eax
+		mov eax,[dbdl_max]
+		add [b1],eax
 end if
 if INTERP_ST eq 1
-;	s1+=dsdl_max;
-;	t1+=dtdl_max;
+		mov eax,[dsdl_max]
+		add [s1],eax
+		mov eax,[dtdl_max]
+		add [t1],eax
 end if
 if INTERP_STZ eq 1
-;	sz1+=dszdl_max;
-;	tz1+=dtzdl_max;
+		fld dword[dszdl_max]
+		fadd dword[sz1]
+		fstp dword[sz1]
+		fld dword[dtzdl_max]
+		fadd dword[tz1]
+		fstp dword[tz1]
 end if
-;      } else {
-;	x1+=dxdy_min;
+		jmp .end_er
+	.els_er:
+		mov eax,[dxdy_min]
+		add [x1],eax
 if INTERP_Z eq 1
-;	z1+=dzdl_min;
+		mov eax,[dzdl_min]
+		add [z1],eax
 end if
 if INTERP_RGB eq 1
-;	r1+=drdl_min;
-;	g1+=dgdl_min;
-;	b1+=dbdl_min;
+		mov eax,[drdl_min]
+		add [r1],eax
+		mov eax,[dgdl_min]
+		add [g1],eax
+		mov eax,[dbdl_min]
+		add [b1],eax
 end if
 if INTERP_ST eq 1
-;	s1+=dsdl_min;
-;	t1+=dtdl_min;
+		mov eax,[dsdl_min]
+		add [s1],eax
+		mov eax,[dtdl_min]
+		add [t1],eax
 end if
 if INTERP_STZ eq 1
-;	sz1+=dszdl_min;
-;	tz1+=dtzdl_min;
+		fld dword[dszdl_min]
+		fadd dword[sz1]
+		fstp dword[sz1]
+		fld dword[dtzdl_min]
+		fadd dword[tz1]
+		fstp dword[tz1]
 end if
-;      } 
-;      
-;      /* right edge */
-;      x2+=dx2dy2;
-;
-;      /* screen coordinates */
-;      pp1=(PIXEL *)((char *)pp1 + zb->linesize);
-;      pz1+=zb->xsize;
-;    }
-;  }
-;}
+	.end_er:
+
+			; right edge
+			mov eax,[dx2dy2]
+			add [x2],eax
+
+			; screen coordinates
+			mov ebx,[zb]
+			mov eax,[ebx+offs_zbuf_linesize]
+			add [pp1],eax
+			mov eax,[ebx+offs_zbuf_xsize]
+			shl eax,1
+			add [pz1],eax
+			jmp .beg_w_lin
+		.end_w_lin:
+		inc dword[part]
+		cmp dword[part],2
+		jl .cycle_0
+	.end_f:
+	ret
+endp
 
 restore INTERP_Z
 restore INTERP_RGB
 restore INTERP_ST
 restore INTERP_STZ
+restore DRAW_LINE_M
 
 purge DRAW_INIT
-purge DRAW_LINE  
+purge DRAW_LINE
 purge PUT_PIXEL

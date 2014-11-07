@@ -7,13 +7,13 @@ if TGL_FEATURE_RENDER_BITS eq 24
 	mov ecx,[p2]
 	mov eax,[ecx+offs_zbup_r]
 	shr eax,8
-	mov [colorR],eax ;colorR=p2.r>>8
+	mov [colorR],al ;colorR=p2.r>>8
 	mov eax,[ecx+offs_zbup_g]
 	shr eax,8
-	mov [colorG],eax ;colorG=p2.g>>8
+	mov [colorG],al ;colorG=p2.g>>8
 	mov eax,[ecx+offs_zbup_b]
 	shr eax,8
-	mov [colorB],eax ;colorB=p2.b>>8
+	mov [colorB],al ;colorB=p2.b>>8
 else
 ;  color=RGB_TO_PIXEL(p2->r,p2->g,p2->b);
 end if
@@ -21,19 +21,27 @@ end if
 
 macro PUT_PIXEL _a
 {
-;    zz=z >> ZB_POINT_Z_FRAC_BITS;
-;    if (zz >= pz[_a]) {
+local .end_0
+	mov eax,[z]
+	shr eax, ZB_POINT_Z_FRAC_BITS
+	mov [zz],eax
+	mov ebx,[pz]
+	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	jl .end_0
+		;edi = pp
 if TGL_FEATURE_RENDER_BITS eq 24
-;      pp[3 * _a]=colorR;
-;      pp[3 * _a + 1]=colorG;
-;      pp[3 * _a + 2]=colorB;
-;      pz[_a]=zz;
+		mov cl,[colorR]
+		mov ch,[colorG]
+		mov word[edi+3*_a],cx
+		mov cl,[colorB]
+		mov byte[edi+3*_a +2],cl
 else
 ;      pp[_a]=color;
-;      pz[_a]=zz;
 end if
-;    }
-;    z+=dzdx;
+		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
+	.end_0:
+	mov eax,[dzdx]
+	add [z],eax
 }
 
 align 4
@@ -47,8 +55,6 @@ else
 	color dd ? ;int
 end if
 include 'ztriangle.inc'
-	ret
-endp
 
 ;
 ; Smooth filled triangle.
@@ -69,7 +75,9 @@ end if
 
 macro PUT_PIXEL _a
 {
-;    zz=z >> ZB_POINT_Z_FRAC_BITS;
+	mov eax,[z]
+	shr eax,ZB_POINT_Z_FRAC_BITS
+	mov [zz],eax
 if TGL_FEATURE_RENDER_BITS eq 24
 ;    if (zz >= pz[_a]) {
 ;      pp[3 * _a]=or1 >> 8;
@@ -77,7 +85,8 @@ if TGL_FEATURE_RENDER_BITS eq 24
 ;      pp[3 * _a + 2]=ob1 >> 8;
 ;      pz[_a]=zz;
 ;    }
-;    z+=dzdx;
+	mov eax,[dzdx]
+	add [z],eax
 ;    og1+=dgdx;
 ;    or1+=drdx;
 ;    ob1+=dbdx;
@@ -94,20 +103,26 @@ else
 ;      pp[_a] = RGB_TO_PIXEL(or1, og1, ob1);
 ;      pz[_a]=zz;
 ;    }
-;    z+=dzdx;
+	mov eax,[dzdx]
+	add [z],eax
 ;    og1+=dgdx;
 ;    or1+=drdx;
 ;    ob1+=dbdx;
 end if
 }
 
-macro DRAW_LINE
+DRAW_LINE_M equ 1
+
+macro DRAW_LINE code
 {
 if TGL_FEATURE_RENDER_BITS eq 16
+if code eq 0
 ;  register unsigned short *pz;
 ;  register PIXEL *pp;
 ;  register unsigned int tmp,z,zz,rgb,drgbdx;
 ;  register int n;
+end if
+if code eq 1
 ;  n=(x2 >> 16) - x1;
 ;  pp=pp1+x1;
 ;  pz=pz1+x1;
@@ -132,12 +147,134 @@ if TGL_FEATURE_RENDER_BITS eq 16
 ;    n-=1;
 ;  }
 end if
+end if
+}
+
+align 4
+proc ZB_fillTriangleSmooth, zb:dword, p0:dword, p1:dword, p2:dword
+locals
+if TGL_FEATURE_RENDER_BITS eq 16
+	_drgbdx dd ? ;int
+end if
+include 'ztriangle.inc'
+
+align 4
+proc ZB_setTexture uses eax ebx, zb:dword, texture:dword
+	mov eax,[zb]
+	mov ebx,[texture]
+	mov dword[eax+offs_zbuf_current_texture],ebx
+	ret
+endp
+
+INTERP_Z equ 1
+INTERP_ST equ 1
+
+macro DRAW_INIT
+{
+;  texture=zb->current_texture;
+}
+
+macro PUT_PIXEL _a
+{
+;   zz=z >> ZB_POINT_Z_FRAC_BITS;
 if TGL_FEATURE_RENDER_BITS eq 24
-;  register unsigned short *pz;
-;  register PIXEL *pp;
-;  register unsigned int s,t,z,zz;
-;  register int n,dsdx,dtdx;
-;  float sz,tz,fz,zinv;
+;   unsigned char *ptr;
+;     if (zz >= pz[_a]) {
+;       ptr = texture + (((t & 0x3FC00000) | s) >> 14) * 3;
+;       pp[3 * _a]= ptr[0];
+;       pp[3 * _a + 1]= ptr[1];
+;       pp[3 * _a + 2]= ptr[2];
+;       pz[_a]=zz;
+;    }
+else
+;     if (zz >= pz[_a]) {
+;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
+;       pz[_a]=zz;
+;    }
+end if
+	mov eax,[dzdx]
+	add [z],eax
+	mov eax,[dsdx]
+	add [s],eax
+	mov eax,[dtdx]
+	add [t],eax
+}
+
+align 4
+proc ZB_fillTriangleMapping, zb:dword, p0:dword, p1:dword, p2:dword
+locals
+	texture dd ? ;PIXEL*
+include 'ztriangle.inc'
+
+;
+; Texture mapping with perspective correction.
+; We use the gradient method to make less divisions.
+; TODO: pipeline the division
+;
+if 1
+
+INTERP_Z equ 1
+INTERP_STZ equ 1
+
+NB_INTERP equ 8
+
+macro DRAW_INIT
+{
+;  texture=zb->current_texture;
+;  fdzdx=(float)dzdx;
+;  fndzdx=NB_INTERP * fdzdx;
+;  ndszdx=NB_INTERP * dszdx;
+;  ndtzdx=NB_INTERP * dtzdx;
+}
+
+macro PUT_PIXEL _a
+{
+;   zz=z >> ZB_POINT_Z_FRAC_BITS;
+if TGL_FEATURE_RENDER_BITS eq 24
+;   unsigned char *ptr;
+;     if (zz >= pz[_a]) {
+;       ptr = texture + (((t & 0x3FC00000) | (s & 0x003FC000)) >> 14) * 3;
+;       pp[3 * _a]= ptr[0];
+;       pp[3 * _a + 1]= ptr[1];
+;       pp[3 * _a + 2]= ptr[2];
+;       pz[_a]=zz;
+;    }
+else
+;     if (zz >= pz[_a]) {
+;       pp[_a]=*(PIXEL *)((char *)texture+
+;               (((t & 0x3FC00000) | (s & 0x003FC000)) >> (17 - PSZSH)));
+;       pz[_a]=zz;
+;    }
+end if
+	mov eax,[dzdx]
+	add [z],eax
+	mov eax,[dsdx]
+	add [s],eax
+	mov eax,[dtdx]
+	add [t],eax
+}
+
+DRAW_LINE_M equ 1
+
+macro DRAW_LINE code
+{
+if TGL_FEATURE_RENDER_BITS eq 24
+if code eq 0
+	pz dd ? ;uint *
+	;edi = pp dd ?
+	s dd ? ;uint
+	t dd ? ;uint
+	z dd ? ;uint
+	zz dd ? ;uint
+	n dd ? ;int
+	dsdx dd ? ;int
+	dtdx dd ? ;int
+	s_z dd ? ;float
+	t_z dd ? ;float
+	fz dd ? ;float
+	zinv dd ? ;float
+end if
+if code eq 1
 ;  n=(x2>>16)-x1;
 ;  fz=(float)z1;
 ;  zinv=1.0 / fz;
@@ -188,118 +325,18 @@ if TGL_FEATURE_RENDER_BITS eq 24
 ;    n-=1;
 ;  }
 end if
-}
-
-align 4
-proc ZB_fillTriangleSmooth, zb:dword, p0:dword, p1:dword, p2:dword
-locals
-if TGL_FEATURE_RENDER_BITS eq 16
-	_drgbdx dd ? ;int
 end if
-include 'ztriangle.inc'
-	ret
-endp
-
-align 4
-proc ZB_setTexture uses eax ebx, zb:dword, texture:dword
-	mov eax,[zb]
-	mov ebx,[texture]
-	mov dword[eax+offs_zbuf_current_texture],ebx
-	ret
-endp
-
-INTERP_Z equ 1
-INTERP_ST equ 1
-
-macro DRAW_INIT
-{
-;  texture=zb->current_texture;
-}
-
-macro PUT_PIXEL _a
-{
-;   zz=z >> ZB_POINT_Z_FRAC_BITS;
-if TGL_FEATURE_RENDER_BITS eq 24
-;   unsigned char *ptr;
-;     if (zz >= pz[_a]) {
-;       ptr = texture + (((t & 0x3FC00000) | s) >> 14) * 3;
-;       pp[3 * _a]= ptr[0];
-;       pp[3 * _a + 1]= ptr[1];
-;       pp[3 * _a + 2]= ptr[2];
-;       pz[_a]=zz;
-;    }
-else
-;     if (zz >= pz[_a]) {
-;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
-;       pz[_a]=zz;
-;    }
-end if
-;    z+=dzdx;
-;    s+=dsdx;
-;    t+=dtdx;
-}
-
-align 4
-proc ZB_fillTriangleMapping, zb:dword, p0:dword, p1:dword, p2:dword
-locals
-	texture dd ? ;PIXEL*
-include 'ztriangle.inc'
-	ret
-endp
-
-;
-; Texture mapping with perspective correction.
-; We use the gradient method to make less divisions.
-; TODO: pipeline the division
-;
-if 1
-
-INTERP_Z equ 1
-INTERP_STZ equ 1
-
-NB_INTERP equ 8
-
-macro DRAW_INIT
-{
-;  texture=zb->current_texture;
-;  fdzdx=(float)dzdx;
-;  fndzdx=NB_INTERP * fdzdx;
-;  ndszdx=NB_INTERP * dszdx;
-;  ndtzdx=NB_INTERP * dtzdx;
-}
-
-macro PUT_PIXEL _a
-{
-;   zz=z >> ZB_POINT_Z_FRAC_BITS;
-if TGL_FEATURE_RENDER_BITS eq 24
-;   unsigned char *ptr;
-;     if (zz >= pz[_a]) {
-;       ptr = texture + (((t & 0x3FC00000) | (s & 0x003FC000)) >> 14) * 3;
-;       pp[3 * _a]= ptr[0];
-;       pp[3 * _a + 1]= ptr[1];
-;       pp[3 * _a + 2]= ptr[2];
-;       pz[_a]=zz;
-;    }
-else
-;     if (zz >= pz[_a]) {
-;       pp[_a]=*(PIXEL *)((char *)texture+
-;               (((t & 0x3FC00000) | (s & 0x003FC000)) >> (17 - PSZSH)));
-;       pz[_a]=zz;
-;    }
-end if
-;    z+=dzdx;
-;    s+=dsdx;
-;    t+=dtdx;
 }
 
 align 4
 proc ZB_fillTriangleMappingPerspective, zb:dword, p0:dword, p1:dword, p2:dword
 locals
-;    PIXEL *texture;
-;    float fdzdx,fndzdx,ndszdx,ndtzdx;
+	texture dd ? ;PIXEL *
+	fdzdx dd ? ;float
+	fndzdx dd ?
+	ndszdx dd ?
+	ndtzdx dd ?
 include 'ztriangle.inc'
-	ret
-endp
 
 end if
 
@@ -328,9 +365,12 @@ macro PUT_PIXEL _a
 ;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
 ;       pz[_a]=zz;
 ;    }
-;    z+=dzdx;
-;    sz+=dszdx;
-;    tz+=dtzdx;
+	mov eax,[dzdx]
+	add [z],eax
+	mov eax,[dszdx]
+	add [sz],eax
+	mov eax,[dtzdx]
+	add [tz],eax
 }
 
 align 4
@@ -338,7 +378,5 @@ proc ZB_fillTriangleMappingPerspective, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 	texture dd ? ;PIXEL*
 include 'ztriangle.inc'
-	ret
-endp
 
 end if

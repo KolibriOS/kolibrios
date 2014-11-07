@@ -87,9 +87,9 @@ m_5 db '(5)',13,10,0
 buf_param rb 80
 
 align 4
-proc str_n_cat uses eax ecx edi esi, str1:dword, str2:dword, n:dword
+proc str_n_cat uses eax ecx edi esi, str1:dword, str2:dword, n_len:dword
 	mov esi,dword[str2]
-	mov ecx,dword[n]
+	mov ecx,dword[n_len]
 	mov edi,dword[str1]
 	stdcall str_len,edi
 	add edi,eax

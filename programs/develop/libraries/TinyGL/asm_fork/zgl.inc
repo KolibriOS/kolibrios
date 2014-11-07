@@ -2,19 +2,13 @@ include 'opengl_const.inc'
 include 'zbuffer.inc'
 include 'zmath.inc'
 
-;#define fputc(...) /*nothing*/
-;#define fprintf(...) /*nothing*/
-;#define vfprintf(...) /*nothing*/
-;#undef stderr
-;#define stderr ((FILE*)-1)
-
 
 ;enum { OP_ ## a , ... }
-s1 equ 0
+sum1 equ 0
 macro ADD_OP a,b,c
 {
-	OP_#a equ s1
-	s1 equ (s1+1)
+	OP_#a equ sum1
+	sum1 equ (sum1+1)
 }
 include 'opinfo.inc'
 

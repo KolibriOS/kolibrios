@@ -410,16 +410,18 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 		fmul st0,st3     ;m[1] * y
 		fld dword[ebx+8] ;m[2]
 		fmul st0,st3     ;m[2] * z
-		fadd st0,st1
-		fadd st0,st2
+		faddp
+		faddp
 		fadd dword[ebx+12] ;m[3]
 		fstp dword[ebx+12] ;m[3] = m[0] * x + m[1] * y + m[2] * z + m[3]
-		ffree st0
-		fincstp
-		ffree st0
-		fincstp
 		add ebx,16
 	loop @b
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
 
 if DEBUG ;glopTranslate
 	mov ebx,[eax+offs_cont_matrix_mode]
