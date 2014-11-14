@@ -726,7 +726,7 @@ end if
 ; 3d. Free old memory.
         call    free
         pop     eax
-; 4. Issue control transfer GET_DESCRIPTOR(DEVICE) for full descriptor.
+; 4. Issue control transfer GET_DESCRIPTOR(CONFIGURATION) for full descriptor.
         movzx   ecx, [eax+usb_device_data.DeviceDescrSize]
         mov     edx, [eax+usb_device_data.ConfigDataSize]
         lea     eax, [eax+ecx+sizeof.usb_device_data]
