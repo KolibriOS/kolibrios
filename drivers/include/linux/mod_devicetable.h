@@ -9,6 +9,7 @@
 
 #ifdef __KERNEL__
 #include <linux/types.h>
+#include <mutex.h>
 typedef unsigned long kernel_ulong_t;
 #endif
 

@@ -546,5 +546,11 @@ static inline __must_check long __copy_to_user(void __user *to,
 
 struct seq_file;
 
+void *kmap(struct page *page);
+void *kmap_atomic(struct page *page);
+void kunmap(struct page *page);
+void kunmap_atomic(void *vaddr);
+
+
 #endif
 

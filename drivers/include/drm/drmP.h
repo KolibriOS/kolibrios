@@ -1382,12 +1382,24 @@ static __inline__ void drm_core_dropmap(struct drm_local_map *map)
 
 #include <drm/drm_mem_util.h>
 
+struct drm_device *drm_dev_alloc(struct drm_driver *driver,
+				 struct device *parent);
+void drm_dev_ref(struct drm_device *dev);
+void drm_dev_unref(struct drm_device *dev);
+
 extern int drm_fill_in_dev(struct drm_device *dev,
 			   const struct pci_device_id *ent,
 			   struct drm_driver *driver);
 int drm_get_minor(struct drm_device *dev, struct drm_minor **minor, int type);
 /*@}*/
 
+/* PCI section */
+static __inline__ int drm_pci_device_is_agp(struct drm_device *dev)
+{
+
+	return pci_find_capability(dev->pdev, PCI_CAP_ID_AGP);
+}
+void drm_pci_agp_destroy(struct drm_device *dev);
 
 #if 0
 extern int drm_pci_init(struct drm_driver *driver, struct pci_driver *pdriver);
@@ -1403,10 +1415,6 @@ extern int drm_get_pci_dev(struct pci_dev *pdev,
 
 extern int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *speed_mask);
 
-static __inline__ int drm_device_is_agp(struct drm_device *dev)
-{
-    return pci_find_capability(dev->pdev, PCI_CAP_ID_AGP);
-}
 
 static __inline__ int drm_device_is_pcie(struct drm_device *dev)
 {
