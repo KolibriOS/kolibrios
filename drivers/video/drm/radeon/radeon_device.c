@@ -71,7 +71,7 @@ int radeon_deep_color = 0;
 int radeon_use_pflipirq = 2;
 int irq_override = 0;
 int radeon_bapm = -1;
-
+int radeon_backlight = 0; 
 
 extern display_t *os_display;
 extern struct drm_device *main_device;
@@ -183,6 +183,10 @@ static struct radeon_px_quirk radeon_px_quirk_list[] = {
 	 * https://bugzilla.kernel.org/show_bug.cgi?id=51381
 	 */
 	{ PCI_VENDOR_ID_ATI, 0x6741, 0x1043, 0x108c, RADEON_PX_QUIRK_DISABLE_PX },
+	/* Asus K53TK laptop with AMD A6-3420M APU and Radeon 7670m GPU
+	 * https://bugzilla.kernel.org/show_bug.cgi?id=51381
+	 */
+	{ PCI_VENDOR_ID_ATI, 0x6840, 0x1043, 0x2122, RADEON_PX_QUIRK_DISABLE_PX },
 	/* macbook pro 8.2 */
 	{ PCI_VENDOR_ID_ATI, 0x6741, PCI_VENDOR_ID_APPLE, 0x00e2, RADEON_PX_QUIRK_LONG_WAKEUP },
 	{ 0, 0, 0, 0, 0 },
@@ -1172,7 +1176,7 @@ static void radeon_check_arguments(struct radeon_device *rdev)
 	if (radeon_vm_block_size == -1) {
 
 		/* Total bits covered by PD + PTs */
-		unsigned bits = ilog2(radeon_vm_size) + 17;
+		unsigned bits = ilog2(radeon_vm_size) + 18;
 
 		/* Make sure the PD is 4K in size up to 8GB address space.
 		   Above that split equal between PD and PTs */
