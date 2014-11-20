@@ -51,6 +51,7 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
+include '../mii.inc'
 
 ;**************************************************************************
 ; forcedeth Register Definitions
@@ -279,47 +280,6 @@ NV_MIIPHY_DELAYMAX              = 10000
 NV_MAC_RESET_DELAY              = 64
 NV_WAKEUPPATTERNS               = 5
 NV_WAKEUPMASKENTRIES            = 4
-
-; Advertisement control register.
-ADVERTISE_SLCT                  = 0x001f  ; Selector bits
-ADVERTISE_CSMA                  = 0x0001  ; Only selector supported
-ADVERTISE_10HALF                = 0x0020  ; Try for 10mbps half-duplex
-ADVERTISE_10FULL                = 0x0040  ; Try for 10mbps full-duplex
-ADVERTISE_100HALF               = 0x0080  ; Try for 100mbps half-duplex
-ADVERTISE_100FULL               = 0x0100  ; Try for 100mbps full-duplex
-ADVERTISE_100BASE4              = 0x0200  ; Try for 100mbps 4k packets
-ADVERTISE_RESV                  = 0x1c00  ; Unused...
-ADVERTISE_RFAULT                = 0x2000  ; Say we can detect faults
-ADVERTISE_LPACK                 = 0x4000  ; Ack link partners response
-ADVERTISE_NPAGE                 = 0x8000  ; Next page bit
-
-ADVERTISE_FULL                  = (ADVERTISE_100FULL or ADVERTISE_10FULL or ADVERTISE_CSMA)
-ADVERTISE_ALL                   = (ADVERTISE_10HALF or ADVERTISE_10FULL or ADVERTISE_100HALF or ADVERTISE_100FULL)
-
-MII_1000BT_CR                   = 0x09
-MII_1000BT_SR                   = 0x0a
-ADVERTISE_1000FULL              = 0x0200
-ADVERTISE_1000HALF              = 0x0100
-
-BMCR_ANRESTART                  = 0x0200  ; Auto negotiation restart
-BMCR_ANENABLE                   = 0x1000  ; Enable auto negotiation
-BMCR_SPEED100                   = 0x2000  ; Select 100Mbps
-BMCR_LOOPBACK                   = 0x4000  ; TXD loopback bits
-BMCR_RESET                      = 0x8000  ; Reset the DP83840
-
-; Basic mode status register.
-BMSR_ERCAP                      = 0x0001  ; Ext-reg capability
-BMSR_JCD                        = 0x0002  ; Jabber detected
-BMSR_LSTATUS                    = 0x0004  ; Link status
-BMSR_ANEGCAPABLE                = 0x0008  ; Able to do auto-negotiation
-BMSR_RFAULT                     = 0x0010  ; Remote fault detected
-BMSR_ANEGCOMPLETE               = 0x0020  ; Auto-negotiation complete
-BMSR_RESV                       = 0x07c0  ; Unused...
-BMSR_10HALF                     = 0x0800  ; Can do 10mbps, half-duplex
-BMSR_10FULL                     = 0x1000  ; Can do 10mbps, full-duplex
-BMSR_100HALF                    = 0x2000  ; Can do 100mbps, half-duplex
-BMSR_100FULL                    = 0x4000  ; Can do 100mbps, full-duplex
-BMSR_100BASE4                   = 0x8000  ; Can do 100mbps, 4k packets
 
 struct  TxDesc
         PacketBuffer            dd ?
@@ -1171,7 +1131,7 @@ phy_init:
   .gigabit:
         mov     [ebx + device.gigabit], PHY_GIGABIT
 
-        mov     eax, MII_1000BT_CR
+        mov     eax, MII_CTRL1000
         mov     ecx, MII_READ
         call    mii_rw
         
@@ -1187,7 +1147,7 @@ phy_init:
 
   .next:
         mov     ecx, eax
-        mov     eax, MII_1000BT_CR
+        mov     eax, MII_CTRL1000
         call    mii_rw
 
         test    eax, eax
@@ -1614,13 +1574,13 @@ update_linkspeed:
         jne     .no_gigabit
 
         ;mov     edx, [ebx + device.phyaddr]
-        mov     eax, MII_1000BT_CR
+        mov     eax, MII_CTRL1000
         mov     ecx, MII_READ
         call    mii_rw
         push    eax
 
         ;mov     edx, [ebx + device.phyaddr]
-        mov     eax, MII_1000BT_SR
+        mov     eax, MII_STAT1000
         mov     ecx, MII_READ
         call    mii_rw
         pop     ecx
