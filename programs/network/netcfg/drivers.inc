@@ -138,8 +138,14 @@ dd  0x08911516
 dd  0x0
 
 db  'dec21x4x',0
+dd  0x00021011
 dd  0x00091011
+dd  0x00141011
 dd  0x00191011
+dd  0x000211AD
+dd  0x051210D9
+dd  0x053110D9
+dd  0x1400125B
 dd  0x09851317
 dd  0x0
 
@@ -195,5 +201,10 @@ dd  0x30651106
 dd  0x31061106
 dd  0x30531106
 dd  0x0
+
+db  'SKGE', 0
+dd  0x500511ab          ; Belkin
+dd  0x4b011186          ; D-Link DGE-530T (rev.B)
+
 
 dd  0x0 ; driverlist end
