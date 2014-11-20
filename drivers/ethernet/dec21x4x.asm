@@ -25,11 +25,8 @@ entry START
 
         MAX_DEVICES             = 16
 
-        RX_DES_COUNT            = 4     ; no of RX descriptors, must be power of 2
-        RX_BUFF_SIZE            = 2048  ; size of buffer for each descriptor, must be multiple of 4 and <= 2048 TDES1_TBS1_MASK
-
-        TX_DES_COUNT            = 4     ; no of TX descriptors, must be power of 2
-        TX_BUFF_SIZE            = 2048  ; size of buffer for each descriptor, used for memory allocation only
+        TX_RING_SIZE            = 4
+        RX_RING_SIZE            = 4
 
         __DEBUG__               = 1
         __DEBUG_LEVEL__         = 2     ; 1 = verbose, 2 = errors only
@@ -41,6 +38,24 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 include '../netdrv.inc'
+
+; Capability flags used in chiplist
+        FLAG_HAS_MII            = 1 shl 0
+        FLAG_HAS_MEDIA_TABLE    = 1 shl 1
+        FLAG_CSR12_IN_SROM      = 1 shl 2
+        FLAG_ALWAYS_CHECK_MII   = 1 shl 3
+        FLAG_HAS_ACPI           = 1 shl 4
+
+; Chip id's
+        DC21040                 = 0
+        DC21041                 = 1
+        DC21140                 = 2
+        DC21142                 = 3
+        DC21143                 = 3
+        LC82C168                = 4
+        MX98713                 = 5
+        MX98715                 = 6
+        MX98725                 = 7
 
 ;-------------------------------------------
 ; configuration registers
@@ -80,21 +95,23 @@ CSR0_CACHEALIGN_128     = 11b shl 14
 CSR0_DEFAULT            = CSR0_WIE + CSR0_RLE + CSR0_RML + CSR0_CACHEALIGN_NONE
 
 ;------- CSR5 -STATUS- bits --------------------------------
-CSR5_TI                 = 1 shl 0       ; Transmit interupt - frame transmition completed
-CSR5_TPS                = 1 shl 1       ; Transmit process stopped
-CSR5_TU                 = 1 shl 2       ; Transmit Buffer unavailable
-CSR5_TJT                = 1 shl 3       ; Transmit Jabber Timeout (transmitter had been excessively active)
-CSR5_UNF                = 1 shl 5       ; Transmit underflow - FIFO underflow
-CSR5_RI                 = 1 shl 6       ; Receive Interrupt
-CSR5_RU                 = 1 shl 7       ; Receive Buffer unavailable
-CSR5_RPS                = 1 shl 8       ; Receive Process stopped
-CSR5_RWT                = 1 shl 9       ; Receive Watchdow Timeout
-CSR5_ETI                = 1 shl 10      ; Early transmit Interrupt
-CSR5_GTE                = 1 shl 11      ; General Purpose Timer Expired
-CSR5_FBE                = 1 shl 13      ; Fatal bus error
-CSR5_ERI                = 1 shl 14      ; Early receive Interrupt
-CSR5_AIS                = 1 shl 15      ; Abnormal interrupt summary
-CSR5_NIS                = 1 shl 16      ; normal interrupt summary
+CSR5_TI                 = 0x00000001    ;1 shl 0        ; Transmit interupt - frame transmition completed
+CSR5_TPS                = 0x00000002    ;1 shl 1        ; Transmit process stopped
+CSR5_TU                 = 0x00000004    ;1 shl 2        ; Transmit Buffer unavailable
+CSR5_TJT                = 0x00000008    ;1 shl 3        ; Transmit Jabber Timeout (transmitter had been excessively active)
+CSR5_LP                 = 0x00000010    ;1 shl 4        ; Link pass
+CSR5_UNF                = 0x00000020    ;1 shl 5        ; Transmit underflow - FIFO underflow
+CSR5_RI                 = 0x00000040    ;1 shl 6        ; Receive Interrupt
+CSR5_RU                 = 0x00000080    ;1 shl 7        ; Receive Buffer unavailable
+CSR5_RPS                = 0x00000100    ;1 shl 8        ; Receive Process stopped
+CSR5_RWT                = 0x00000200    ;1 shl 9        ; Receive Watchdow Timeout
+CSR5_ETI                = 0x00000400    ;1 shl 10       ; Early transmit Interrupt
+CSR5_GTE                = 0x00000800    ;1 shl 11       ; General Purpose Timer Expired
+CSR5_LF                 = 0x00001000    ;1 shl 12       ; Link Fail
+CSR5_FBE                = 0x00002000    ;1 shl 13       ; Fatal bus error
+CSR5_ERI                = 0x00004000    ;1 shl 14       ; Early receive Interrupt
+CSR5_AIS                = 0x00008000    ;1 shl 15       ; Abnormal interrupt summary
+CSR5_NIS                = 0x00010000    ;1 shl 16       ; normal interrupt summary
 CSR5_RS_SH              = 17            ; Receive process state  -shift
 CSR5_RS_MASK            = 111b          ;                        -mask
 CSR5_TS_SH              = 20            ; Transmit process state -shift
@@ -118,7 +135,7 @@ CSR6_HO                 = 1 shl 2       ; Hash only Filtering mode
 CSR6_PB                 = 1 shl 3       ; Pass bad frames
 CSR6_IF                 = 1 shl 4       ; Inverse filtering
 CSR6_SB                 = 1 shl 5       ; Start/Stop backoff counter
-CSR6_PR                 = 1 shl 6       ; Promiscuos mode -default after reset
+CSR6_PR                 = 1 shl 6       ; Promiscuous mode -default after reset
 CSR6_PM                 = 1 shl 7       ; Pass all multicast
 CSR6_F                  = 1 shl 9       ; Full Duplex mode
 CSR6_OM_SH              = 10            ; Operating Mode -shift
@@ -217,35 +234,46 @@ TDES1_FS                = 1 shl 29              ; First segment - buffer is firs
 TDES1_LS                = 1 shl 30              ; Last segment
 TDES1_IC                = 1 shl 31              ; Interupt on completion (CSR5<0>=1) valid when TDES1<30>=1
 
-RX_MEM_TOTAL_SIZE       = RX_DES_COUNT*(sizeof.DES+RX_BUFF_SIZE)
-TX_MEM_TOTAL_SIZE       = TX_DES_COUNT*(sizeof.DES+TX_BUFF_SIZE)
-
+FULL_DUPLEX_MAGIC       = 0x6969
+;MAX_ETH_FRAME_SIZE      = 1514
 
 struct  device          ETH_DEVICE
-
-        rx_p_des        dd ?    ; descriptors ring with received packets
-        tx_p_des        dd ?    ; descriptors ring with 'to transmit' packets
-        tx_free_des     dd ?    ; Tx descriptors available
-        tx_wr_des       dd ?    ; Tx current descriptor to write data to
-        tx_rd_des       dd ?    ; Tx current descriptor to read TX completion
-        rx_crt_des      dd ?    ; Rx current descriptor
 
         io_addr         dd ?
         pci_bus         dd ?
         pci_dev         dd ?
         irq_line        db ?
+                        rb 3    ; alignment
+
+        id              dd ?    ; identification number
+        io_size         dd ?
+        flags           dd ?
+        csr6            dd ?
+        csr7            dd ?
+        if_port         dd ?
+        saved_if_port   dd ?
+        default_port    dd ?
+        mtable          dd ?
+        mii_cnt         dd ?
+
+        cur_rx          dd ?
+        cur_tx          dd ?    ; Tx current descriptor to write data to
+        last_tx         dd ?    ; Tx current descriptor to read TX completion
+
+        rb 0x100-($ and 0xff)   ; align 256
+        rx_ring         rb RX_RING_SIZE*2*sizeof.desc
+
+        rb 0x100-($ and 0xff)   ; align 256
+        tx_ring         rb TX_RING_SIZE*2*sizeof.desc
 
 ends
 
 ;----------- descriptor structure ---------------------
-struct  DES
+struct  desc
         status          dd ?    ; bit 31 is 'own' and rest is 'status'
         length          dd ?    ; control bits + bytes-count buffer 1 + bytes-count buffer 2
         buffer1         dd ?    ; pointer to buffer1
-        buffer2         dd ?    ; pointer to buffer2 or in this case to next descriptor, as we use a chained structure
-        virtaddr        dd ?
-
-        rb 0x40 - ($ and 0x3f)  ; align 64
+        buffer2         dd ?    ; pointer to buffer2
 ends
 
 ;=============================================================================
@@ -348,12 +376,12 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     .fail
 
-        cmp     [edx + IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
+        cmp     [edx + IOCTL.inp_size], 3                               ; Data input must be at least 3 bytes
         jb      .fail
 
         mov     eax, [edx + IOCTL.input]
-        cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
-        jne     .fail                                   ; other types arent supported for this card yet
+        cmp     byte [eax], 1                                           ; 1 means device number and bus number (pci) are given
+        jne     .fail                                                   ; other types arent supported for this card yet
 
 ; check if the device is already listed
 
@@ -362,14 +390,14 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [edx + IOCTL.input]                ; get the pci bus and device numbers
-        mov     ax, [eax+1]                             ;
+;        mov     eax, [edx + IOCTL.input]                                ; get the pci bus and device numbers
+        mov     ax, [eax+1]                                             ;
   .nextdevice:
         mov     ebx, [esi]
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                                         ; Device is already loaded, let's find it's device number
        @@:
         add     esi, 4
         loop    .nextdevice
@@ -377,25 +405,18 @@ proc service_proc stdcall, ioctl:dword
 
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
-        cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
+        cmp     [devices], MAX_DEVICES                                  ; First check if the driver can handle one more card
         jae     .fail
 
-        push    edx
-        invoke  KernelAlloc, sizeof.device              ; Allocate the buffer for eth_device structure
-        pop     edx
-        test    eax, eax
-        jz      .fail
-        mov     ebx, eax                                ; ebx is always used as a pointer to the structure (in driver, but also in kernel code)
+        allocate_and_clear ebx, sizeof.device, .fail
 
 ; Fill in the direct call addresses into the struct
-
         mov     [ebx + device.reset], reset
         mov     [ebx + device.transmit], transmit
         mov     [ebx + device.unload], unload
         mov     [ebx + device.name], my_service
 
 ; save the pci bus and device numbers
-
         mov     eax, [edx + IOCTL.input]
         movzx   ecx, byte[eax+1]
         mov     [ebx + device.pci_bus], ecx
@@ -403,20 +424,15 @@ proc service_proc stdcall, ioctl:dword
         mov     [ebx + device.pci_dev], ecx
 
 ; Now, it's time to find the base io addres of the PCI device
-
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
 
 ; We've found the io address, find IRQ now
-
         invoke  PciRead8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.interrupt_line
         mov     [ebx + device.irq_line], al
 
         DEBUGF  2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [ebx + device.pci_dev]:1,[ebx + device.pci_bus]:1,[ebx + device.irq_line]:1,[ebx + device.io_addr]:8
-
-        allocate_and_clear [ebx + device.rx_p_des], RX_DES_COUNT*(sizeof.DES+RX_BUFF_SIZE), .err
-        allocate_and_clear [ebx + device.tx_p_des], TX_DES_COUNT*(sizeof.DES+TX_BUFF_SIZE), .err
 
 ; Ok, the eth_device structure is ready, let's probe the device
 ; Because initialization fires IRQ, IRQ handler must be aware of this device
@@ -427,7 +443,6 @@ proc service_proc stdcall, ioctl:dword
         call    probe                                                   ; this function will output in eax
         test    eax, eax
         jnz     .err2                                                   ; If an error occured, exit
-
 
         mov     [ebx + device.type], NET_TYPE_ETH
         invoke  NetRegDev
@@ -456,10 +471,7 @@ proc service_proc stdcall, ioctl:dword
         dec     [devices]
   .err:
         DEBUGF  2,"removing device structure\n"
-        invoke  KernelFree, [ebx + device.rx_p_des]
-        invoke  KernelFree, [ebx + device.tx_p_des]
         invoke  KernelFree, ebx
-
 
   .fail:
         or      eax, -1
@@ -483,21 +495,12 @@ unload:
         ;
         ; - Stop the device
         ; - Detach int handler
-        ; - Remove device from local list (RTL8139_LIST)
+        ; - Remove device from local list
         ; - call unregister function in kernel
         ; - Remove all allocated structures and buffers the card used
 
-        or      eax,-1
-
-ret
-
-
-macro status {
-        set_io  [ebx + device.io_addr], CSR5
-        in      eax, dx
-        DEBUGF  1,"CSR5: %x\n", eax
-}
-
+        or      eax, -1
+        ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                         ;;
@@ -508,56 +511,45 @@ macro status {
 align 4
 probe:
 
-        DEBUGF  2,"Probing dec21x4x device: "
+        DEBUGF  2,"Probing\n"
 
-; Make the device a bus master
-        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
-        or      al, PCI_CMD_MASTER
-        invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
+        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], 0        ; get device/vendor id
+        mov     esi, chiplist
+  .loop:
+        cmp     dword[esi], eax
+        je      .got_it
+        add     esi, 6*4
+        cmp     dword[esi], 0
+        jne     .loop
+        DEBUGF  2, "Unknown chip: 0x%x aborting\n", eax
 
-; Check the vendor/device ID
-        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], 0                                ; get device/vendor id
-        DEBUGF  1,"Vendor id: 0x%x\n", ax
-
-        cmp     ax, 0x1011
-        je      .dec
-        cmp     ax, 0x1317
-        je      .admtek
-        jmp     .notfound
-
-  .dec:
-        shr     eax, 16
-        DEBUGF  1,"Vendor ok!, device id: 0x%x\n", ax                 ; TODO: use another method to detect chip!
-
-        cmp     ax, 0x0009
-        je      .supported_device
-
-        cmp     ax, 0x0019
-        je      .supported_device2
-
-  .admtek:
-        shr     eax, 16
-        DEBUGF  1,"Vendor ok!, device id: 0x%x\n", ax
-
-        cmp     ax, 0x0985
-        je      .supported_device
-
-  .notfound:
-        DEBUGF  1,"Device not supported!\n"
         or      eax, -1
         ret
 
-  .supported_device2:
+  .got_it:
+        lodsd
+        lodsd
+        mov     [ebx + device.id], eax
+        lodsd
+        mov     [ebx + device.io_size], eax
+        lodsd
+        mov     [ebx + device.csr7], eax
+        lodsd
+        mov     [ebx + device.name], eax
+        DEBUGF  1, "Detected chip = %s\n", eax
+        lodsd
+        mov     [ebx + device.flags], eax
 
-        ; wake up the 21143
+; PROBE1
 
+        test    [ebx + device.flags], FLAG_HAS_ACPI
+        jz      .no_acpi
+        DEBUGF  1, "Device has ACPI capabilities, time to wake it up\n"
         xor     eax, eax
-        invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], 0x40, eax
+        invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], 0x40, eax       ; wake up the 21143
+  .no_acpi:
 
-
-  .supported_device:
-        call    SROM_GetWidth           ; TODO: use this value returned in ecx
-                                        ; in the read_word routine!
+        call    SROM_GetWidth           ; TODO: use this value returned in ecx in the read_word routine!
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                         ;;
@@ -568,33 +560,124 @@ probe:
 align 4
 reset:
 
-        DEBUGF  2,"Resetting dec21x4x\n"
+        DEBUGF  2,"Reset\n"
 
-;-----------------------------------------------------------
-; board software reset - if fails, dont do nothing else
+; Make the device a bus master
+        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command
+        or      al, PCI_CMD_MASTER
+        invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
+; Stop TX and RX
         set_io  [ebx + device.io_addr], 0
-        status
+        set_io  [ebx + device.io_addr], CSR6
+        in      eax, dx
+        and     eax, not (CSR6_ST or CSR6_SR)
+        out     dx, eax
+
+; Clear missed packet counter
+        set_io  [ebx + device.io_addr], CSR8
+        in      eax, dx
+
+;; wait at least 50 PCI cycles
+;        mov     esi, 1000
+;        invoke  Sleep
+
+        cmp     [ebx + device.id], DC21041
+        jne     @f
+;        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR9
+        in      eax, dx
+        test    eax, 0x8000
+        jz      @f
+        DEBUGF  1, "21040 compatibility mode\n"
+        mov     [ebx + device.id], DC21040
+  @@:
+
+
+;;; Find connected mii xceivers? 993-1043
+
+; Reset the xcvr interface and turn on heartbeat.
+        cmp     [ebx + device.id], DC21041
+        jne     @f
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR14
+        dec     eax
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR15
+        inc     eax
+        mov     al, 8
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR6
+        in      eax, dx
+        or      ax, CSR6_ST
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        mov     ax, 0xEF05
+        out     dx, eax
+        jmp     .reset_done
+  @@:
+        cmp     [ebx + device.id], DC21040
+        jne     @f
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        out     dx, eax
+        mov     al, 4
+        out     dx, eax
+        jmp     .reset_done
+  @@:
+        cmp     [ebx + device.id], DC21140
+        jne     @f
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR12
+        mov     eax, 0x100
+        out     dx, eax
+        jmp     .reset_done
+  @@:
+        cmp     [ebx + device.id], DC21142
+        jne     @f
+        ; if tp->mii_cnt
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR6
+        mov     eax, 0x82020000
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR14
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR6
+        mov     eax, 0x820E0000
+        out     dx, eax
+        jmp     .reset_done
+        ;;;; TODO
+  @@:
+        cmp     [ebx + device.id], LC82C168
+        jne     @f
+        ; TODO
+  @@:
+        cmp     [ebx + device.id], MX98713
+        jne     @f
+        ; TODO
+  @@:
+
+  .reset_done:
+
+
+; OPEN
+
+; Reset chip
+        set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], CSR0
         mov     eax, CSR0_RESET
         out     dx, eax
 
 ; wait at least 50 PCI cycles
-        mov     esi, 1000
-        invoke  Sleep
-
-;-----------
-; setup CSR0
-
-        set_io  [ebx + device.io_addr], 0
-        status
-        set_io  [ebx + device.io_addr], CSR0
-        mov     eax, CSR0_DEFAULT
-        out     dx, eax
-
-
-; wait at least 50 PCI cycles
-        mov     esi, 1000
+        mov     esi, 100
         invoke  Sleep
 
 ;-----------------------------------
@@ -615,68 +698,141 @@ reset:
         ret
   @@:
 
+;----------------
+; Set cache modes
+
         set_io  [ebx + device.io_addr], 0
-        status
+        set_io  [ebx + device.io_addr], CSR0
+        mov     eax, 0x01A00000 or 0x4800 ; CSR0_DEFAULT
+        out     dx, eax
+
+        ; wait at least 50 PCI cycles
+        mov     esi, 100
+        invoke  Sleep
+
+;---------------------------
+; Initialize RX and TX rings
 
         call    init_ring
+        test    eax, eax
+        jnz     .err
+
+;-------------------
+; Set receive filter
+
+        call    create_setup_frame
 
 ;--------------------------------------------
 ; setup CSR3 & CSR4 (pointers to descriptors)
 
-        set_io  [ebx + device.io_addr], 0
-        status
-        set_io  [ebx + device.io_addr], CSR3
-        mov     eax, [ebx + device.rx_p_des]
+        lea     eax, [ebx + device.rx_ring]
         invoke  GetPhysAddr
         DEBUGF  1,"RX descriptor base address: %x\n", eax
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR3
         out     dx, eax
 
-        set_io  [ebx + device.io_addr], CSR4
-        mov     eax, [ebx + device.tx_p_des]
+        lea     eax, [ebx + device.tx_ring]
         invoke  GetPhysAddr
         DEBUGF  1,"TX descriptor base address: %x\n", eax
+        set_io  [ebx + device.io_addr], CSR4
         out     dx, eax
 
-;-------------------------------------------------------
-; setup interrupt mask register -expect IRQs from now on
+; Select media
+        push    [ebx + device.if_port]
+        pop     [ebx + device.saved_if_port]
+        cmp     [ebx + device.if_port], 0
+        jne     @f
+        push    [ebx + device.default_port]
+        pop     [ebx + device.if_port]
+  @@:
+        cmp     [ebx + device.id], DC21041
+        jne     @f
+        cmp     [ebx + device.if_port], 4
+        jbe     @f
+        ; invalid port, select inital TP, autosense, autonegotiate
+        mov     [ebx + device.if_port], 4                               ; CHECKME
+  @@:
 
-        status
-        DEBUGF  1,"Enabling interrupts\n"
-        set_io  [ebx + device.io_addr], CSR7
-        mov     eax, CSR7_DEFAULT
-        out     dx, eax
-        status
+; Allow selecting a default media
+        cmp     [ebx + device.mtable], 0
+        je      .media_picked
 
-;----------
-; enable RX
+        cmp     [ebx + device.if_port], 0
+        je      @f
+        ;; TODO
+        jmp     .media_picked
+  @@:
 
+  .media_picked:
+        mov     [ebx + device.csr6], 0
+
+        cmp     [ebx + device.id], DC21142
+        jne     @f
+        cmp     [ebx + device.if_port], 0
+        jne     @f
+        ;; TODO
+        mov     [ebx + device.csr6], 0x82420200
+        mov     [ebx + device.if_port], 11
         set_io  [ebx + device.io_addr], 0
-        status
-        DEBUGF  1,"Enable RX\n"
-
-        set_io  [ebx + device.io_addr], CSR6
-        Bit_Set CSR6_SR; or CSR6_PR or CSR6_ST
-        DEBUGF  1,"CSR6: %x\n", eax
-
-        status
-
-        call    start_link
-
-; wait a bit
-        mov     esi, 500
-        invoke  Sleep
-
-;----------------------------------------------------
-; send setup packet to notify the board about the MAC
-
-        call    Send_Setup_Packet
-
+        set_io  [ebx + device.io_addr], CSR14
+        mov     eax, 0x0003FFF
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR15
         xor     eax, eax
-; clear packet/byte counters
+        mov     al, 8
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR13
+        mov     al, 1
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR12
+        mov     ax, 0x1301
+        out     dx, eax
 
-        lea     edi, [ebx + device.bytes_tx]
-        mov     ecx, 6
-        rep     stosd
+  @@:
+        cmp     [ebx + device.id], LC82C168
+        jne     @f
+        ;; TODO
+  @@:
+        cmp     [ebx + device.id], MX98713
+        jne     @f
+
+  @@:
+;; wait a bit
+;        mov     esi, 500
+;        invoke  Sleep
+
+; else:
+        xor     eax, eax
+        inc     eax
+        call    select_media
+
+; Start the chip's tx to process setup frame
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR6
+        mov     eax, [ebx + device.csr6]
+        out     dx, eax
+        or      ax, CSR6_ST
+        out     dx, eax
+
+; Enable interrupts by setting the interrupt mask.
+        set_io  [ebx + device.io_addr], CSR5
+        mov     eax, [ebx + device.csr7]
+        DEBUGF  1, "Setting CSR7 to 0x%x\n", eax
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR7
+        out     dx, eax
+
+; Enable receiver
+        set_io  [ebx + device.io_addr], CSR6
+        mov     eax, [ebx + device.csr6]
+        or      eax, 0x2002 + CSR6_RA
+        out     dx, eax
+
+; RX poll demand
+        set_io  [ebx + device.io_addr], CSR2
+        xor     eax, eax
+        out     dx, eax
 
 ; Set the mtu, kernel will be able to send now
         mov     [ebx + device.mtu], 1514
@@ -684,8 +840,13 @@ reset:
 ; Set link state to unknown
         mov     [ebx + device.state], ETH_LINK_UNKNOWN
 
-        DEBUGF  1,"Reset done\n"
+        DEBUGF  1,"Reset completed\n"
+;        xor     eax, eax
+        ret
 
+  .err:
+        DEBUGF  2,"Reset failed\n"
+        or      eax, -1
         ret
 
 
@@ -693,75 +854,171 @@ reset:
 align 4
 init_ring:
 
-;------------------------------------------
-; Setup RX descriptors (use chained method)
+        DEBUGF  1,"Init ring\n"
 
-        mov     eax, [ebx + device.rx_p_des]
+;---------------------
+; Setup RX descriptors
+
+        lea     eax, [ebx + device.rx_ring]
         invoke  GetPhysAddr
         mov     edx, eax
         push    eax
-        lea     esi, [eax + RX_DES_COUNT*(sizeof.DES)]  ; jump over RX descriptors
-        mov     eax, [ebx + device.rx_p_des]
-        add     eax, RX_DES_COUNT*(sizeof.DES)          ; jump over RX descriptors
-        mov     edi, [ebx + device.rx_p_des]
-        mov     ecx, RX_DES_COUNT
+        lea     edi, [ebx + device.rx_ring]
+        mov     ecx, RX_RING_SIZE
   .loop_rx_des:
-        add     edx, sizeof.DES
-        mov     [edi + DES.status], DES0_OWN            ; hardware owns buffer
-        mov     [edi + DES.length], 1984 + RDES1_RCH    ; only size of first buffer, chained buffers
-        mov     [edi + DES.buffer1], esi                ; hw buffer address
-        mov     [edi + DES.buffer2], edx                ; pointer to next descriptor
-        mov     [edi + DES.virtaddr], eax               ; virtual buffer address
-        DEBUGF  1,"RX desc: buff addr: %x, next desc: %x, real buff addr: %x, real descr addr: %x \n", esi, edx, eax, edi
-
-        add     esi, RX_BUFF_SIZE
-        add     eax, RX_BUFF_SIZE
-        add     edi, sizeof.DES
+        DEBUGF  1,"RX descriptor 0x%x\n", edi
+        add     edx, sizeof.desc
+        mov     [edi + desc.status], DES0_OWN
+        mov     [edi + desc.length], 1536
+        push    edx edi ecx
+        invoke  KernelAlloc, 1536
+        pop     ecx edi edx
+        test    eax, eax
+        jz      .out_of_mem
+        mov     [edi + RX_RING_SIZE*sizeof.desc], eax
+        invoke  GetPhysAddr
+        mov     [edi + desc.buffer1], eax
+        mov     [edi + desc.buffer2], edx
+        add     edi, sizeof.desc
         dec     ecx
         jnz     .loop_rx_des
-
 ; set last descriptor as LAST
-        or      [edi - sizeof.DES + DES.length], RDES1_RER      ; EndOfRing
-        pop     [edi - sizeof.DES + DES.buffer2]                ; point it to the first descriptor
+        or      [edi - sizeof.desc + desc.length], RDES1_RER           ; EndOfRing
+        pop     [edi - sizeof.desc + desc.buffer2]                     ; point it to the first descriptor
 
 ;---------------------
 ; Setup TX descriptors
 
-        mov     eax, [ebx + device.tx_p_des]
+        lea     eax, [ebx + device.tx_ring]
         invoke  GetPhysAddr
         mov     edx, eax
         push    eax
-        lea     esi, [eax + TX_DES_COUNT*(sizeof.DES)]  ; jump over TX descriptors
-        mov     eax, [ebx + device.tx_p_des]
-        add     eax, TX_DES_COUNT*(sizeof.DES)          ; jump over TX descriptors
-        mov     edi, [ebx + device.tx_p_des]
-        mov     ecx, TX_DES_COUNT
+        lea     edi, [ebx + device.tx_ring]
+        mov     ecx, TX_RING_SIZE
   .loop_tx_des:
-        add     edx, sizeof.DES
-        mov     [edi + DES.status], 0                   ; owned by driver
-        mov     [edi + DES.length], TDES1_TCH           ; chained method
-        mov     [edi + DES.buffer1], esi                ; pointer to buffer
-        mov     [edi + DES.buffer2], edx                ; pointer to next descr
-        mov     [edi + DES.virtaddr], eax
-        DEBUGF  1,"TX desc: buff addr: %x, next desc: %x, virt buff addr: %x, virt descr addr: %x \n", esi, edx, eax, edi
-
-        add     esi, TX_BUFF_SIZE
-        add     eax, TX_BUFF_SIZE
-        add     edi, sizeof.DES
+        DEBUGF  1,"TX descriptor 0x%x\n", edi
+        add     edx, sizeof.desc
+        mov     [edi + desc.status], 0                                  ; owned by driver
+        mov     [edi + desc.length], 0
+        mov     [edi + desc.buffer1], 0
+        mov     [edi + desc.buffer2], edx                               ; pointer to next descr
+        add     edi, sizeof.desc
         dec     ecx
         jnz     .loop_tx_des
-        
 ; set last descriptor as LAST
-        or      [edi - sizeof.DES + DES.length], TDES1_TER      ; EndOfRing
-        pop     [edi - sizeof.DES + DES.buffer2]                ; point it to the first descriptor
+        or      [edi - sizeof.desc + desc.length], TDES1_TER            ; EndOfRing
+        pop     [edi - sizeof.desc + desc.buffer2]                      ; point it to the first descriptor
 
 ;------------------
 ; Reset descriptors
 
-        mov     [ebx + device.tx_wr_des], 0
-        mov     [ebx + device.tx_rd_des], 0
-        mov     [ebx + device.rx_crt_des], 0
-        mov     [ebx + device.tx_free_des], TX_DES_COUNT
+        xor     eax, eax
+        mov     [ebx + device.cur_tx], eax
+        mov     [ebx + device.last_tx], eax
+        mov     [ebx + device.cur_rx], eax
+
+        ret
+
+  .out_of_mem:
+        DEBUGF  2, "Out of memory!\n"
+        pop     eax
+        or      eax, -1
+        ret
+
+
+; IN: eax = startup
+align 4
+select_media:
+
+        DEBUGF  1, "Selecting media\n"
+
+        cmp     [ebx + device.mtable], 0
+        je      .no_mtable
+        DEBUGF  1, "Device has a media table\n"
+
+
+; default:
+        mov     eax, 0x020E0000
+        jmp     .update_csr6
+
+  .no_mtable:
+        DEBUGF  1, "Device has no media table\n"
+
+        cmp     [ebx + device.id], DC21041
+        jne     .not_41
+        DEBUGF  1, "DC21041\n"
+
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        out     dx, eax         ; reset serial interface
+        set_io  [ebx + device.io_addr], CSR14
+        mov     eax, 0x7F3F     ;0x7F3F     ;0x7F3D     ; 10T-FD
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR15
+        mov     eax, 0x0008     ;0x0008     ;0x0008     ; 10T-FD
+        out     dx, eax
+        set_io  [ebx + device.io_addr], CSR13
+        mov     eax, 0xEF05     ;0xEF01     ;0xEF09     ; 10T-FD
+        out     dx, eax
+        mov     eax, 0x80020000
+        jmp     .update_csr6
+  .not_41:
+        cmp     [ebx + device.id], LC82C168
+        jne     .not_LC
+        DEBUGF  1, "LC82C168\n"
+
+        ;; TODO
+
+        mov     eax, 0x812C0000
+        jmp     .update_csr6
+  .not_LC:
+        cmp     [ebx + device.id], DC21040
+        jne     .not_40
+        DEBUGF  1, "DC21040\n"
+
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], CSR11
+        mov     eax, FULL_DUPLEX_MAGIC
+        out     dx, eax
+        ; reset serial interface
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        out     dx, eax
+
+        set_io  [ebx + device.io_addr], CSR13
+        xor     eax, eax
+        cmp     [ebx + device.if_port], 0
+        je      @f
+        mov     al, 0xc
+        out     dx, eax
+        mov     eax, 0x01860000
+        jmp     .update_csr6
+  @@:
+        mov     al, 4
+        out     dx, eax
+        mov     eax, 0x00420000
+        jmp     .update_csr6
+
+  .not_40:
+        DEBUGF  1, "Unkown chip with no media table\n"
+
+        cmp     [ebx + device.default_port], 0
+        jne     .not_0
+        cmp     [ebx + device.mii_cnt], 0
+        je      @f
+        mov     [ebx + device.if_port], 11
+        jmp     .not_0
+  @@:
+        mov     [ebx + device.if_port], 3
+  .not_0:
+        mov     eax, 0x020E0000 ;;;;;
+
+  .update_csr6:
+        and     [ebx + device.csr6], 0xfdff
+        or      ax, 0x0200                     ;; FULL DUPLEX
+        or      [ebx + device.csr6], eax
+        DEBUGF  1, "new CSR6: 0x%x\n", [ebx + device.csr6]
 
         ret
 
@@ -782,125 +1039,50 @@ start_link:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
-Send_Setup_Packet:
+create_setup_frame:
 
-        DEBUGF  1,"Sending setup packet\n"
+        DEBUGF  1,"Creating setup packet\n"
 
-; if no descriptors available, out
-        mov     ecx, 1000
-@@loop_wait_desc:
-        cmp     [ebx + device.tx_free_des], 0
-        jne     @f
+        invoke  KernelAlloc, 192
+        test    eax, eax
+        jz      .err
 
-        dec     ecx
-        jnz     @@loop_wait_desc
+        push    eax
 
-        mov     eax, -1
-        ret
-      @@:
+        mov     edi, eax
+        xor     eax, eax
+        dec     ax
+        stosd
+        stosd
+        stosd
 
-; go to current send descriptor
-        mov     edi, [ebx + device.tx_p_des]
-        mov     eax, [ebx + device.tx_wr_des]
-        DEBUGF  1,"Got free descriptor: %u (%x)", eax, edi
-        mov     edx, sizeof.DES
-        mul     edx
-        add     edi, eax
-        DEBUGF  1,"=>%x\n",  edi
-
-; if NOT sending FIRST setup packet, must set current descriptor to 0 size for both buffers,
-;  and go to next descriptor for real setup packet...            ;; TODO: check if 2 descriptors are available
-
-;       cmp     [ebx + device.tx_packets], 0
-;       je      .first
-;               
-;       and     [edi+DES.des1], 0
-;       mov     [edi+DES.des0], DES0_OWN
-;               
-; go to next descriptor
-;        inc     [ebx + device.tx_wr_des]
-;        and     [ebx + device.tx_wr_des], TX_DES_COUNT-1
-;
-; dec free descriptors count
-;        cmp     [ebx + device.tx_free_des], 0
-;        jz      @f
-;        dec     [ebx + device.tx_free_des]
-;       @@:
-;
-;       ; recompute pointer to current descriptor
-;       mov     edi, [ebx + device.tx_p_des]
-;       mov     eax, [ebx + device.tx_wr_des]
-;       mov     edx, DES.size
-;       mul     edx
-;       add     edi, eax
-
-  .first:
-
-        push    edi
-; copy setup packet to current descriptor
-        mov     edi, [edi + DES.virtaddr]
-; copy the address once
-        lea     esi, [ebx + device.mac]
-        DEBUGF  1,"copying packet to %x from %x\n", edi, esi
-        mov     ecx, 3  ; mac is 6 bytes thus 3 words
+        mov     ecx, 15
   .loop:
-        DEBUGF  1,"%x ", [esi]:4
-        movsw
-        inc     edi
-        inc     edi
+        lea     esi, [ebx + device.mac]
+        lodsw
+        stosd
         dec     ecx
         jnz     .loop
 
-        DEBUGF  1,"\n"
-
-; copy 15 times the broadcast address
-        mov     ecx, 3*15
-        mov     eax, 0xffffffff
-        rep     stosd
-
-        pop     edi
+        pop     eax
 
 ; setup descriptor
-        DEBUGF  1,"setting up descriptor\n"
-        mov     [edi + DES.length], TDES1_IC + TDES1_SET + TDES1_TCH + 192        ; size must be EXACTLY 192 bytes
-        mov     [edi + DES.status], DES0_OWN
-
-        DEBUGF  1,"status: %x\n", [edi + DES.status]:8
-        DEBUGF  1,"length: %x\n", [edi + DES.length]:8
-        DEBUGF  1,"buffer1: %x\n", [edi + DES.buffer1]:8
-        DEBUGF  1,"buffer2: %x\n", [edi + DES.buffer2]:8
+        lea     edi, [ebx + device.tx_ring]
+        DEBUGF  1, "attaching setup packet 0x%x to descriptor 0x%x\n", eax, edi
+        mov     [edi + TX_RING_SIZE*sizeof.desc], eax
+        invoke  GetPhysAddr
+        mov     [edi + desc.buffer1], eax
+        mov     [edi + desc.length], TDES1_SET + 192        ; size must be EXACTLY 192 bytes + TDES1_IC
+        mov     [edi + desc.status], DES0_OWN
+        DEBUGF  1, "descriptor 0x%x\n", edi
 
 ; go to next descriptor
-        inc     [ebx + device.tx_wr_des]
-        and     [ebx + device.tx_wr_des], TX_DES_COUNT-1
+        inc     [ebx + device.cur_tx]
 
-; dec free descriptors count
-        cmp     [ebx + device.tx_free_des], 0
-        jz      @f
-        dec     [ebx + device.tx_free_des]
-       @@:
+        ret
 
-; start tx
-        set_io  [ebx + device.io_addr], 0
-        status
-        set_io  [ebx + device.io_addr], CSR6
-        in      eax, dx
-        test    eax, CSR6_ST            ; if NOT started, start now
-        jnz     .already_started
-        or      eax, CSR6_ST
-        DEBUGF  1,"Starting TX\n"
-        jmp     .do_it
-  .already_started:
-                                        ; if already started, issue a Transmit Poll command
-        set_io  [ebx + device.io_addr], CSR1
-        xor     eax, eax
-        DEBUGF  1,"Issuing transmit poll command\n"
-  .do_it:
-        out     dx, eax
-        status
-
-        DEBUGF  1,"Sending setup packet, completed!\n"
-
+  .err:
+        DEBUGF  2, "Out of memory!\n"
         ret
 
 
@@ -929,48 +1111,47 @@ proc transmit stdcall bufferptr, buffersize
 
         cmp     [buffersize], 1514
         ja      .fail
-        cmp     [buffersize], 60
-        jb      .fail
 
-;--------------------------
-; copy packet to crt buffer
-        
-        mov     eax, [ebx + device.tx_wr_des]
-        mov     edx, sizeof.DES
+        mov     eax, [ebx + device.cur_tx]
+        mov     edx, sizeof.desc
         mul     edx
-        add     eax, [ebx + device.tx_p_des]
-        mov     edi, [eax + DES.virtaddr]               ; pointer to buffer
-        mov     esi, [bufferptr]
-        mov     ecx, [buffersize]
-        DEBUGF  1,"copying %u bytes from %x to %x\n", ecx, esi, edi
-        rep     movsb
+        lea     esi, [ebx + device.tx_ring + eax]
+        test    [esi + desc.status], DES0_OWN
+        jnz     .fail
+
+        DEBUGF  1, "Descriptor is free\n"
+
+        mov     eax, [bufferptr]
+        mov     [esi + TX_RING_SIZE*sizeof.desc], eax
+        invoke  GetPhysAddr
+        mov     [esi + desc.buffer1], eax
 
 ; set packet size
-        mov     ecx, [eax+DES.length]
-        and     ecx, TDES1_TER                          ; preserve 'End of Ring' bit
-        or      ecx, [buffersize]                       ; set size
-        or      ecx, TDES1_FS or TDES1_LS or TDES1_IC or TDES1_TCH    ; first descr, last descr, interrupt on complete, chained modus
-        mov     [eax + DES.length], ecx
+        mov     eax, [esi + desc.length]
+        and     eax, TDES1_TER                          ; preserve 'End of Ring' bit
+        or      eax, [buffersize]                       ; set size
+        or      eax, TDES1_FS or TDES1_LS or TDES1_IC   ; first descr, last descr, interrupt on complete
+        mov     [esi + desc.length], eax
 
-; set descriptor info
-        mov     [eax + DES.status], DES0_OWN            ; say it is now owned by the 21x4x
+; set descriptor status
+        mov     [esi + desc.status], DES0_OWN            ; say it is now owned by the 21x4x
 
-; start tx
+; Check if transmitter is running
         set_io  [ebx + device.io_addr], 0
-        status
         set_io  [ebx + device.io_addr], CSR6
         in      eax, dx
-        test    eax, CSR6_ST            ; if NOT started, start now
+        test    eax, CSR6_ST                            ; if NOT started, start now
         jnz     .already_started
         or      eax, CSR6_ST
-        DEBUGF  1,"Starting TX\n"
+        DEBUGF  1,"(Re) starting TX\n"
         jmp     .do_it
   .already_started:
-                                        ; if already started, issues a Transmit Poll command
+
+; Trigger immediate transmit demand
         set_io  [ebx + device.io_addr], CSR1
-        mov     eax, -1
+        xor     eax, eax
   .do_it:
-        out     dx , eax
+        out     dx, eax
 
 ; Update stats
         inc     [ebx + device.packets_tx]
@@ -979,24 +1160,16 @@ proc transmit stdcall bufferptr, buffersize
         adc     dword [ebx + device.bytes_tx + 4], 0
 
 ; go to next descriptor
-        inc     [ebx + device.tx_wr_des]
-        and     [ebx + device.tx_wr_des], TX_DES_COUNT-1
+        inc     [ebx + device.cur_tx]
+        and     [ebx + device.cur_tx], TX_RING_SIZE-1
 
-; dec free descriptors count
-        test    [ebx + device.tx_free_des], -1
-        jz      .end
-        dec     [ebx + device.tx_free_des]
-  .end:
-        status
-
-        DEBUGF  1,"transmit ok\n"
-        invoke  KernelFree, [bufferptr]
+        DEBUGF  1,"Transmit ok\n"
         popf
         xor     eax, eax
         ret
 
   .fail:
-        DEBUGF  1,"transmit failed\n"
+        DEBUGF  2,"Transmit failed\n"
         invoke  KernelFree, [bufferptr]
         popf
         or      eax, -1
@@ -1015,7 +1188,7 @@ int_handler:
 
         push    ebx esi edi
 
-        DEBUGF  1,"\n%s int\n", my_service
+        DEBUGF  1,"INT\n"
 
 ; find pointer of device wich made IRQ occur
 
@@ -1028,9 +1201,9 @@ int_handler:
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], CSR5
-        in      ax, dx
-        test    ax, ax
-        out     dx, ax                                  ; send it back to ACK
+        in      eax, dx
+        and     eax, 0x0001ffff
+        out     dx, eax                                 ; send it back to ACK
         jnz     .got_it
   .continue:
         add     esi, 4
@@ -1043,73 +1216,47 @@ int_handler:
         ret                                             ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
-
-        DEBUGF  1,"Device: %x CSR5: %x ", ebx, ax
+        DEBUGF  1,"Device: %x CSR5: %x\n", ebx, eax
 
 ;----------------------------------
 ; TX ok?
 
-        test    ax, CSR5_TI
+        test    eax, CSR5_TI
         jz      .not_tx
-        push    ax esi ecx
 
-        DEBUGF 1,"TX ok!\n"
-                
-        ; go to current descriptor
-        mov     edi, [ebx + device.tx_p_des]
-
-        mov     eax, [ebx + device.tx_rd_des]
-        mov     edx, sizeof.DES
-        mul     edx
-        add     edi, eax
-                
+        push    eax esi ecx
+        DEBUGF  1,"TX ok!\n"
       .loop_tx:
-                
-        ; done if all desc are free
-        cmp     [ebx + device.tx_free_des], TX_DES_COUNT
-        jz      .end_tx
+        ; go to last descriptor
+        mov     eax, [ebx + device.last_tx]
+        mov     edx, sizeof.desc
+        mul     edx
+        lea     eax, [ebx + device.tx_ring + eax]
 
-        mov     eax, [edi + DES.status]
-
-        ; we stop at first desc that is owned be NIC
-        test    eax, DES0_OWN
+        DEBUGF  1,"descriptor 0x%x\n", eax
+        test    [eax + desc.status], DES0_OWN           ; owned by the card?
         jnz     .end_tx
+        cmp     [eax + desc.buffer1], 0                 ; empty descriptor?
+        je      .end_tx
 
-        ; detect is setup packet
-        cmp     eax, (0ffffffffh - DES0_OWN)            ; all other bits are 1
-        jne     .not_setup_packet
-        DEBUGF  1,"Setup Packet detected\n"
-      .not_setup_packet:
-
-        DEBUGF  1,"packet status: %x\n", eax
+        mov     [eax + desc.buffer1], 0
+        DEBUGF  1, "Free buffer 0x%x\n", [eax + TX_RING_SIZE*sizeof.desc]
+        invoke  KernelFree, [eax + TX_RING_SIZE*sizeof.desc]
 
         ; next descriptor
-        add     edi, sizeof.DES
-        inc     [ebx + device.tx_rd_des]
-        and     [ebx + device.tx_rd_des], TX_DES_COUNT-1
-
-        ; inc free desc
-        inc     [ebx + device.tx_free_des]
-        cmp     [ebx + device.tx_free_des], TX_DES_COUNT
-        jbe     @f
-        mov     [ebx + device.tx_free_des], TX_DES_COUNT
-       @@:
+        inc     [ebx + device.last_tx]
+        and     [ebx + device.last_tx], TX_RING_SIZE-1
 
         jmp     .loop_tx
-      .end_tx:
-                
-        ;------------------------------------------------------
-        ; here must be called standard Ethernet Tx Irq Handler
-        ;------------------------------------------------------
-
-        pop     ecx esi ax
+  .end_tx:
+        pop     ecx esi eax
+  .not_tx:
 
 ;----------------------------------
 ; RX irq
-  .not_tx:
-        test    ax, CSR5_RI
+        test    eax, CSR5_RI
         jz      .not_rx
-        push    ax esi ecx
+        push    eax esi ecx
 
         DEBUGF 1,"RX ok!\n"
 
@@ -1118,34 +1265,30 @@ int_handler:
         pop     ebx
 
         ; get current descriptor
-        mov     edi, [ebx + device.rx_p_des]
-        mov     eax, [ebx + device.rx_crt_des]
-        mov     edx, sizeof.DES
+        mov     eax, [ebx + device.cur_rx]
+        mov     edx, sizeof.desc
         mul     edx
-        add     edi, eax
+        lea     edi, [ebx + device.rx_ring + eax]
 
         ; now check status
-        mov     eax, [edi + DES.status]
+        mov     eax, [edi + desc.status]
 
         test    eax, DES0_OWN
         jnz     .end_rx                                 ; current desc is busy, nothing to do
-
         test    eax, RDES0_FS
         jz      .end_rx                                 ; current desc is NOT first packet, ERROR!
-
         test    eax, RDES0_LS                           ; if not last desc of packet, error for now
         jz      .end_rx
-
         test    eax, RDES0_ES
         jnz     .end_rx
 
-        mov     esi, [edi + DES.virtaddr]
-        mov     ecx, [edi + DES.status]
+        mov     esi, [edi + RX_RING_SIZE*sizeof.desc]
+        mov     ecx, [edi + desc.status]
         shr     ecx, RDES0_FL_SH
         and     ecx, RDES0_FL_MASK
         sub     ecx, 4                                  ; crc, we dont need it
 
-        DEBUGF  1,"Received packet!, size=%u, addr:%x\n", ecx, esi
+        DEBUGF  1,"size=%u, addr:0x%x\n", ecx, esi
 
         push    esi edi ecx
         invoke  KernelAlloc, ecx                        ; Allocate a buffer to put packet into
@@ -1156,34 +1299,34 @@ int_handler:
         push    ebx
         push    dword .rx_loop
         push    ecx eax
-        mov     edi, eax
+        xchg    edi, eax
 
 ; update statistics
         inc     [ebx + device.packets_rx]
-        add     dword [ebx + device.bytes_rx], ecx
-        adc     dword [ebx + device.bytes_rx + 4], 0
+        add     dword[ebx + device.bytes_rx], ecx
+        adc     dword[ebx + device.bytes_rx + 4], 0
 
 ; copy packet data
-        shr     cx , 1
+        shr     cx, 1
         jnc     .nb
         movsb
   .nb:
-        shr     cx , 1
+        shr     cx, 1
         jnc     .nw
         movsw
   .nw:
         rep     movsd
 
-        mov     [edi + DES.status], DES0_OWN            ; free descriptor
+        mov     [eax + desc.status], DES0_OWN           ; free descriptor
                 
-        inc     [ebx + device.rx_crt_des]                     ; next descriptor
-        and     [ebx + device.rx_crt_des], RX_DES_COUNT-1
+        inc     [ebx + device.cur_rx]                   ; next descriptor
+        and     [ebx + device.cur_rx], RX_RING_SIZE-1
 
         jmp     [Eth_input]
 
   .end_rx:
   .fail:
-        pop     ecx esi ax
+        pop     ecx esi eax
   .not_rx:
 
         pop     edi esi ebx
@@ -1194,7 +1337,7 @@ int_handler:
 align 4
 write_mac:      ; in: mac pushed onto stack (as 3 words)
 
-        DEBUGF  2,"Writing MAC: "
+        DEBUGF  1,"Writing MAC\n"
 
 ; write data into driver cache
         mov     esi, esp
@@ -1203,22 +1346,13 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         movsw
         add     esp, 6
         
-; send setup packet (only if driver is started)
-        call    Send_Setup_Packet
-
-align 4
-read_mac:
-
-        DEBUGF 1,"Read_mac\n"
-
-        ret
-
-
+;; send setup packet (only if driver is started)
+;;        call    Create_Setup_Packet
 
 align 4
 read_mac_eeprom:
 
-        DEBUGF 1,"Read_mac_eeprom\n"
+        DEBUGF  1,"Reading MAC from eeprom\n"
 
         lea     edi, [ebx + device.mac]
         mov     esi, 20/2               ; read words, start address is 20
@@ -1231,14 +1365,7 @@ read_mac_eeprom:
         cmp     esi, 26/2
         jb      .loop
 
-        DEBUGF  2,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
-
-        ret
-
-align 4
-write_mac_eeprom:
-
-        DEBUGF 1,"Write_mac_eeprom\n"
+        DEBUGF  1,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
 
         ret
 
@@ -1246,7 +1373,7 @@ write_mac_eeprom:
 align 4
 SROM_GetWidth:  ; should be 6 or 8 according to some manuals (returns in ecx)
 
-        DEBUGF 1,"SROM_GetWidth\n"
+;        DEBUGF 1,"SROM_GetWidth\n"
 
         call    SROM_Idle
         call    SROM_EnterAccessMode
@@ -1290,7 +1417,7 @@ SROM_GetWidth:  ; should be 6 or 8 according to some manuals (returns in ecx)
         jbe     .loop2
   .end_loop2:
         
-        DEBUGF 1,"Srom width=%u\n", ecx
+        DEBUGF  1,"SROM width=%u\n", ecx
         
         call    SROM_Idle
         call    SROM_EnterAccessMode
@@ -1316,7 +1443,7 @@ SROM_out:
 align 4
 SROM_EnterAccessMode:
 
-        DEBUGF 1,"SROM_EnterAccessMode\n"
+;        DEBUGF 1,"SROM_EnterAccessMode\n"
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], CSR9
@@ -1340,7 +1467,7 @@ SROM_EnterAccessMode:
 align 4
 SROM_Idle:
 
-        DEBUGF 1,"SROM_Idle\n"
+;        DEBUGF 1,"SROM_Idle\n"
 
         call    SROM_EnterAccessMode
         
@@ -1381,7 +1508,7 @@ SROM_Idle:
 align 4
 SROM_Read_Word:
 
-        DEBUGF 1,"SROM_Read_word at: %x result: ", esi
+;        DEBUGF 1,"SROM_Read_word at: %x\n", esi
 
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], CSR9
@@ -1439,17 +1566,9 @@ SROM_Read_Word:
         
         mov     eax, esi
 
-        DEBUGF 1,"%x\n", ax
+;        DEBUGF 1,"%x\n", ax
 
         ret
-
-
-
-
-
-
-
-;<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 
@@ -1470,12 +1589,12 @@ SROM_Read_Word:
 ; MDIO protocol.  It is just different enough from the EEPROM protocol
 ; to not share code.  The maxium data clock rate is 2.5 Mhz.
 
-MDIO_SHIFT_CLK          =        0x10000
-MDIO_DATA_WRITE0        =        0x00000
-MDIO_DATA_WRITE1        =        0x20000
-MDIO_ENB                =        0x00000         ; Ignore the 0x02000 databook setting.
-MDIO_ENB_IN             =        0x40000
-MDIO_DATA_READ          =        0x80000
+MDIO_SHIFT_CLK          = 0x10000
+MDIO_DATA_WRITE0        = 0x00000
+MDIO_DATA_WRITE1        = 0x20000
+MDIO_ENB                = 0x00000       ; Ignore the 0x02000 databook setting.
+MDIO_ENB_IN             = 0x40000
+MDIO_DATA_READ          = 0x80000
 
 ; MII transceiver control section.
 ; Read and write the MII registers using software-generated serial
@@ -1485,7 +1604,7 @@ MDIO_DATA_READ          =        0x80000
 align 4
 mdio_read:      ; phy_id:edx, location:esi
 
-        DEBUGF  1,"mdio read, phy=%x, location=%x", edx, esi
+        DEBUGF  1,"mdio read, phy=%x, location=%x\n", edx, esi
 
         shl     edx, 5
         or      esi, edx
@@ -1579,7 +1698,7 @@ mdio_read:      ; phy_id:edx, location:esi
         shr     esi, 1
         movzx   eax, si
 
-        DEBUGF  1,", data=%x\n", ax
+        DEBUGF  1,"data=%x\n", ax
 
         ret
 
@@ -1677,6 +1796,10 @@ mdio_write:     ;int phy_id: edx, int location: edi, int value: ax)
         ret
 
 
+
+
+
+
 ; End of code
 
 data fixups
@@ -1686,9 +1809,29 @@ include '../peimport.inc'
 
 my_service    db 'DEC21X4X',0                    ; max 16 chars include zero
 
+chiplist:
+;   PCI id's , chip ,IO size, CSR7      , name  ,  flags
+dd 0x00021011, DC21040,  128, 0x0001ebef, sz_040,  0
+dd 0x00141011, DC21041,  128, 0x0001ebef, sz_041,  FLAG_HAS_MEDIA_TABLE
+dd 0x00091011, DC21140,  128, 0x0001ebef, sz_140,  FLAG_HAS_MII or FLAG_HAS_MEDIA_TABLE or FLAG_CSR12_IN_SROM
+dd 0x00191011, DC21143,  128, 0x0001ebef, sz_143,  FLAG_HAS_MII or FLAG_HAS_MEDIA_TABLE or FLAG_ALWAYS_CHECK_MII or FLAG_HAS_ACPI
+dd 0x000211AD, LC82C168, 256, 0x0801fbff, sz_lite, FLAG_HAS_MII
+dd 0x051210D9, MX98713,  128, 0x0001ebef, sz_m512, FLAG_HAS_MII or FLAG_HAS_MEDIA_TABLE
+dd 0x053110D9, MX98715,  256, 0x0001ebef, sz_m513, FLAG_HAS_MEDIA_TABLE
+dd 0x1400125B, MX98725,  128, 0x0001fbff, sz_asix, FLAG_HAS_MII or FLAG_HAS_MEDIA_TABLE or FLAG_CSR12_IN_SROM
+dd 0
+
+sz_040  db "Digital DC21040 Tulip", 0
+sz_041  db "Digital DC21041 Tulip", 0
+sz_140  db "Digital DS21140 Tulip", 0
+sz_143  db "Digital DS21143 Tulip", 0
+sz_lite db "Lite-On 82c168 PNIC", 0
+sz_m512 db "Macronix 98713 PMAC", 0
+sz_m513 db "Macronix 987x5 PMAC", 0
+sz_asix db "ASIX AX88140", 0
+
 include_debug_strings                           ; All data wich FDO uses will be included here
 
 align 4
 devices         dd 0
 device_list     rd MAX_DEVICES                  ; This list contains all pointers to device structures the driver is handling
-
