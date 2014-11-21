@@ -1,3 +1,5 @@
+format binary as ""
+
 use32
 org 0x0
 
@@ -617,6 +619,8 @@ load_directory:
     jnz @b
     inc esi
     mov ecx, [esi]
+    cmp byte[esi+3], 0
+    jne .not_3
     or  ecx, 0x202020
     cmp ecx, 'jpg'
     jz  .copy
@@ -646,13 +650,15 @@ load_directory:
     jz  .copy
     cmp ecx, 'tif'
     jz  .copy
+  .not_3:
+    cmp byte[esi+4], 0
+    jne .nocopy
+    or  ecx, 0x20202020
     cmp ecx, 'tiff'
     jz  @f
     cmp ecx, 'wbmp'
     jz  @f
     cmp ecx, 'jpeg'
-    jz  @f
-    cmp ecx, 'jpeG'
     jnz .nocopy
 @@:
     cmp byte [esi+4], 0
@@ -1222,11 +1228,11 @@ OpenDialog_data:
 .filename_area      dd 0    ;+40
 .filter_area        dd Filter
 .x:
-.x_size			dw 420 ;+48 ; Window X size
-.x_start		dw 10 ;+50 ; Window X position
+.x_size                 dw 420 ;+48 ; Window X size
+.x_start                dw 10 ;+50 ; Window X position
 .y:
-.y_size			dw 320 ;+52 ; Window y size
-.y_start		dw 10 ;+54 ; Window Y position
+.y_size                 dw 320 ;+52 ; Window y size
+.y_start                dw 10 ;+54 ; Window Y position
 
 communication_area_name:
     db 'FFFFFFFF_open_dialog',0
