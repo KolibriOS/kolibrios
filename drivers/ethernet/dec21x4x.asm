@@ -1134,7 +1134,7 @@ proc transmit stdcall bufferptr, buffersize
         mov     [esi + desc.length], eax
 
 ; set descriptor status
-        mov     [esi + desc.status], DES0_OWN            ; say it is now owned by the 21x4x
+        mov     [esi + desc.status], DES0_OWN           ; say it is now owned by the 21x4x
 
 ; Check if transmitter is running
         set_io  [ebx + device.io_addr], 0
@@ -1227,7 +1227,7 @@ int_handler:
         push    eax esi ecx
         DEBUGF  1,"TX ok!\n"
       .loop_tx:
-        ; go to last descriptor
+        ; get last descriptor
         mov     eax, [ebx + device.last_tx]
         mov     edx, sizeof.desc
         mul     edx
@@ -1240,10 +1240,10 @@ int_handler:
         je      .end_tx
 
         mov     [eax + desc.buffer1], 0
-        DEBUGF  1, "Free buffer 0x%x\n", [eax + TX_RING_SIZE*sizeof.desc]
+        DEBUGF  1,"Free buffer 0x%x\n", [eax + TX_RING_SIZE*sizeof.desc]
         invoke  KernelFree, [eax + TX_RING_SIZE*sizeof.desc]
 
-        ; next descriptor
+        ; advance to next descriptor
         inc     [ebx + device.last_tx]
         and     [ebx + device.last_tx], TX_RING_SIZE-1
 
@@ -1254,6 +1254,7 @@ int_handler:
 
 ;----------------------------------
 ; RX irq
+
         test    eax, CSR5_RI
         jz      .not_rx
         push    eax esi ecx
@@ -1264,13 +1265,13 @@ int_handler:
   .rx_loop:
         pop     ebx
 
-        ; get current descriptor
+; get current descriptor
         mov     eax, [ebx + device.cur_rx]
         mov     edx, sizeof.desc
         mul     edx
         lea     edi, [ebx + device.rx_ring + eax]
 
-        ; now check status
+; Check current RX descriptor status
         mov     eax, [edi + desc.status]
 
         test    eax, DES0_OWN
@@ -1282,51 +1283,39 @@ int_handler:
         test    eax, RDES0_ES
         jnz     .end_rx
 
-        mov     esi, [edi + RX_RING_SIZE*sizeof.desc]
+; Calculate length
         mov     ecx, [edi + desc.status]
         shr     ecx, RDES0_FL_SH
         and     ecx, RDES0_FL_MASK
-        sub     ecx, 4                                  ; crc, we dont need it
+        sub     ecx, 4                                  ; throw away the CRC
+        DEBUGF  1,"got %u bytes\n", ecx
 
-        DEBUGF  1,"size=%u, addr:0x%x\n", ecx, esi
-
-        push    esi edi ecx
-        invoke  KernelAlloc, ecx                        ; Allocate a buffer to put packet into
-        pop     ecx edi esi
-        test    eax, eax
-        jz      .fail
-
+; Push arguments for Eth_input (and some more...)
         push    ebx
-        push    dword .rx_loop
-        push    ecx eax
-        xchg    edi, eax
+        push    .rx_loop                                ; return addr
+        push    ecx                                     ; packet size
+        push    dword[edi + RX_RING_SIZE*sizeof.desc]   ; packet ptr
 
 ; update statistics
         inc     [ebx + device.packets_rx]
         add     dword[ebx + device.bytes_rx], ecx
         adc     dword[ebx + device.bytes_rx + 4], 0
 
-; copy packet data
-        shr     cx, 1
-        jnc     .nb
-        movsb
-  .nb:
-        shr     cx, 1
-        jnc     .nw
-        movsw
-  .nw:
-        rep     movsd
+; Allocate new descriptor
+        push    edi ebx
+        invoke  KernelAlloc, 1536                       ; Allocate a buffer to put packet into
+        pop     ebx edi
+        mov     [edi + RX_RING_SIZE*sizeof.desc], eax
+        invoke  GetPhysAddr
+        mov     [edi + desc.buffer1], eax
+        mov     [edi + desc.status], DES0_OWN           ; mark descriptor as being free
 
-        mov     [eax + desc.status], DES0_OWN           ; free descriptor
-                
+; Move to next rx desc
         inc     [ebx + device.cur_rx]                   ; next descriptor
         and     [ebx + device.cur_rx], RX_RING_SIZE-1
 
         jmp     [Eth_input]
-
   .end_rx:
-  .fail:
-        pop     ecx esi eax
   .not_rx:
 
         pop     edi esi ebx
