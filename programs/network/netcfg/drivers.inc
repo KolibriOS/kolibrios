@@ -137,7 +137,7 @@ dd  0x08001516
 dd  0x08911516
 dd  0x0
 
-db  'dec21x4x',0
+db  'DEC21X4X',0
 dd  0x00021011
 dd  0x00091011
 dd  0x00141011
@@ -153,7 +153,7 @@ db  'R6040',0
 dd  0x604017F3
 dd  0x0
 
-db  'i8254x',0
+db  'I8254X',0
 dd  0x10008086             ; 82542 (Fiber)
 dd  0x10018086             ; 82543GC (Fiber)
 dd  0x10048086             ; 82543GC (Copper)

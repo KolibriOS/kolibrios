@@ -1157,7 +1157,7 @@ end data
 
 include '../peimport.inc'
 
-my_service      db 'mtd80x',0                   ; max 16 chars include zero
+my_service      db 'MTD80X',0                   ; max 16 chars include zero
 
 sz_mtd800       db "Myson MTD800", 0
 sz_mtd803       db "Surecom EP-320X", 0
