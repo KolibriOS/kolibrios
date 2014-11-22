@@ -43,6 +43,9 @@ endl
 	fadd dword[eax+offs_cont_viewport+offs_vpor_trans+offs_Z]
 	fistp dword[ebx+offs_vert_zp+offs_zbup_z] ;v.zp.z = st0, st0 = st1
 
+	ffree st0
+	fincstp
+
 	; color
 	bt dword[eax+offs_cont_lighting_enabled],0
 	jnc @f
@@ -695,13 +698,13 @@ pushad
 		mov edi,dword[ebx+offs_vert_zp+offs_zbup_y]
 		mov dword[norm],edi
 		fimul dword[norm]
-		fsub st0,st1
+		fsubp
 
 		;st0 = (p1.zp.x-p0.zp.x)*(p2.zp.y-p0.zp.y) - (p2.zp.x-p0.zp.x)*(p1.zp.y-p0.zp.y)
 
 		mov dword[front],0
 		fldz
-		fcom st1
+		fcompp
 		fstsw ax
 		sahf
 		je .end_f
@@ -741,11 +744,9 @@ pushad
 		and eax,[cc]
 		and eax,[cc+4]
 		cmp eax,0
-		jne @f
+		jne .end_f
 			stdcall gl_draw_triangle_clip, [context],ebx,ecx,edx,0
 	.end_f:
-	finit
-	@@:
 popad
 	ret
 endp
@@ -986,14 +987,14 @@ proc gl_draw_triangle_point uses eax ebx edx, context:dword, p0:dword,p1:dword,p
 		add ebx,offs_vert_zp
 		stdcall ZB_plot,dword[edx+offs_cont_zb],ebx
 	@@:
-	add eax,[p1]
+	mov eax,[p1]
 	cmp dword[eax+offs_vert_edge_flag],0
 	je @f
 		mov ebx,eax
 		add ebx,offs_vert_zp
 		stdcall ZB_plot,dword[edx+offs_cont_zb],ebx
 	@@:
-	add eax,[p2]
+	mov eax,[p2]
 	cmp dword[eax+offs_vert_edge_flag],0
 	je @f
 		mov ebx,eax

@@ -14,7 +14,7 @@ if TGL_FEATURE_RENDER_BITS eq 24
 	mov eax,[ecx+offs_zbup_b]
 	shr eax,8
 	mov [colorB],al ;colorB=p2.b>>8
-else
+;else
 ;  color=RGB_TO_PIXEL(p2->r,p2->g,p2->b);
 end if
 }
@@ -29,16 +29,16 @@ local .end_0
 	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
 	jl .end_0
 		;edi = pp
+		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
 		mov cl,[colorR]
 		mov ch,[colorG]
 		mov word[edi+3*_a],cx
 		mov cl,[colorB]
 		mov byte[edi+3*_a +2],cl
-else
+;else
 ;      pp[_a]=color;
 end if
-		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
@@ -75,55 +75,67 @@ end if
 
 macro PUT_PIXEL _a
 {
+local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	mov [zz],eax
+	mov ebx,[pz]
+	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	jl .end_0
+		;edi = pp
+		mov word[ebx+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
-;    if (zz >= pz[_a]) {
-;      pp[3 * _a]=or1 >> 8;
-;      pp[3 * _a + 1]=og1 >> 8;
-;      pp[3 * _a + 2]=ob1 >> 8;
-;      pz[_a]=zz;
-;    }
-	mov eax,[dzdx]
-	add [z],eax
-;    og1+=dgdx;
-;    or1+=drdx;
-;    ob1+=dbdx;
-elseif TGL_FEATURE_RENDER_BITS eq 16
-;    if (zz >= pz[_a]) {
+		mov eax,[or1]
+		mov cl,ah
+		mov eax,[og1]
+		mov ch,ah
+		mov word[edi+3*_a],cx
+		mov eax,[ob1]
+		mov byte[edi+3*_a +2],ah
+end if
+if TGL_FEATURE_RENDER_BITS eq 16
 ;      tmp=rgb & 0xF81F07E0;
 ;      pp[_a]=tmp | (tmp >> 16);
-;      pz[_a]=zz;
-;    }
-;    z+=dzdx;
-;    rgb=(rgb+drgbdx) & ( ~ 0x00200800);
-else
-;    if (zz >= pz[_a]) {
+;else
 ;      pp[_a] = RGB_TO_PIXEL(or1, og1, ob1);
-;      pz[_a]=zz;
-;    }
+end if
+	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
-;    og1+=dgdx;
-;    or1+=drdx;
-;    ob1+=dbdx;
+if TGL_FEATURE_RENDER_BITS eq 16
+;    rgb=(rgb+drgbdx) & ( ~ 0x00200800);
+end if
+if TGL_FEATURE_RENDER_BITS <> 16
+	mov eax,[dgdx]
+	add [og1],eax
+	mov eax,[drdx]
+	add [or1],eax
+	mov eax,[dbdx]
+	add [ob1],eax
 end if
 }
 
-DRAW_LINE_M equ 1
+;;;DRAW_LINE_M equ 1
 
 macro DRAW_LINE code
 {
+local .cycle_0
+local .cycle_1
 if TGL_FEATURE_RENDER_BITS eq 16
 if code eq 0
-;  register unsigned short *pz;
-;  register PIXEL *pp;
-;  register unsigned int tmp,z,zz,rgb,drgbdx;
-;  register int n;
+	pz dd ? ;uint*
+	tmp dd ? ;uint
+	z dd ? ;uint
+	zz dd ? ;uint
+	rgb dd ? ;uint
+	drgbdx dd ? ;uint
+	n dd ? ;int
 end if
 if code eq 1
-;  n=(x2 >> 16) - x1;
+	mov eax,[x2]
+	shr eax,16
+	sub eax,[x1]
+	mov [n],eax ;n = (x2 >> 16) - x1
 ;  pp=pp1+x1;
 ;  pz=pz1+x1;
 ;  z=z1;
@@ -131,21 +143,27 @@ if code eq 1
 ;  rgb|=(g1 >> 5) & 0x000007FF;
 ;  rgb|=(b1 << 5) & 0x001FF000;
 ;  drgbdx=_drgbdx;
-;  while (n>=3) {
-;    PUT_PIXEL(0);
-;    PUT_PIXEL(1);
-;    PUT_PIXEL(2);
-;    PUT_PIXEL(3);
-;    pz+=4;
-;    pp+=4;
-;    n-=4;
-;  }
-;  while (n>=0) {
-;    PUT_PIXEL(0);
-;    pz+=1;
-;    pp+=1;
-;    n-=1;
-;  }
+align 4
+	.cycle_0: ;while (n>=3)
+	cmp dword[n],3
+	jl .cycle_1
+		PUT_PIXEL 0
+		PUT_PIXEL 1
+		PUT_PIXEL 2
+		PUT_PIXEL 3
+		add dword[pz],8
+		add edi,4
+		sub [n],4
+	jmp .cycle_0
+	.cycle_1: ;while (n>=0)
+	cmp dword[n],0
+	jl .cycle_1_end
+		PUT_PIXEL 0
+		add dword[pz],2
+		inc edi
+		dec dword[n]
+		jmp .cycle_1
+	.cycle_1_end:
 end if
 end if
 }
@@ -171,27 +189,31 @@ INTERP_ST equ 1
 
 macro DRAW_INIT
 {
-;  texture=zb->current_texture;
+	mov eax,[zb]
+	mov eax,[eax+offs_zbuf_current_texture]
+	mov [texture],eax
 }
 
 macro PUT_PIXEL _a
 {
-;   zz=z >> ZB_POINT_Z_FRAC_BITS;
+local .end_0
+	mov eax,[z]
+	shr eax,ZB_POINT_Z_FRAC_BITS
+	mov [zz],eax
+	mov ebx,[pz]
+	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	jl .end_0
+;       pz[_a]=zz;
 if TGL_FEATURE_RENDER_BITS eq 24
 ;   unsigned char *ptr;
-;     if (zz >= pz[_a]) {
 ;       ptr = texture + (((t & 0x3FC00000) | s) >> 14) * 3;
 ;       pp[3 * _a]= ptr[0];
 ;       pp[3 * _a + 1]= ptr[1];
 ;       pp[3 * _a + 2]= ptr[2];
-;       pz[_a]=zz;
-;    }
 else
-;     if (zz >= pz[_a]) {
 ;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
-;       pz[_a]=zz;
-;    }
 end if
+	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
 	mov eax,[dsdx]
@@ -220,8 +242,11 @@ NB_INTERP equ 8
 
 macro DRAW_INIT
 {
-;  texture=zb->current_texture;
-;  fdzdx=(float)dzdx;
+	mov eax,[zb]
+	mov eax,[eax+offs_zbuf_current_texture]
+	mov [texture],eax
+	fild dword[dzdx]
+	fstp dword[fdzdx]
 ;  fndzdx=NB_INTERP * fdzdx;
 ;  ndszdx=NB_INTERP * dszdx;
 ;  ndtzdx=NB_INTERP * dtzdx;
@@ -229,23 +254,25 @@ macro DRAW_INIT
 
 macro PUT_PIXEL _a
 {
-;   zz=z >> ZB_POINT_Z_FRAC_BITS;
+local .end_0
+	mov eax,[z]
+	shr eax,ZB_POINT_Z_FRAC_BITS
+	mov [zz],eax
+	mov ebx,[pz]
+	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	jl .end_0
+;       pz[_a]=zz;
 if TGL_FEATURE_RENDER_BITS eq 24
 ;   unsigned char *ptr;
-;     if (zz >= pz[_a]) {
 ;       ptr = texture + (((t & 0x3FC00000) | (s & 0x003FC000)) >> 14) * 3;
 ;       pp[3 * _a]= ptr[0];
 ;       pp[3 * _a + 1]= ptr[1];
 ;       pp[3 * _a + 2]= ptr[2];
-;       pz[_a]=zz;
-;    }
 else
-;     if (zz >= pz[_a]) {
 ;       pp[_a]=*(PIXEL *)((char *)texture+
-;               (((t & 0x3FC00000) | (s & 0x003FC000)) >> (17 - PSZSH)));
-;       pz[_a]=zz;
-;    }
+;           (((t & 0x3FC00000) | (s & 0x003FC000)) >> (17 - PSZSH)));
 end if
+	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
 	mov eax,[dsdx]
@@ -261,12 +288,11 @@ macro DRAW_LINE code
 if TGL_FEATURE_RENDER_BITS eq 24
 if code eq 0
 	pz dd ? ;uint *
-	;edi = pp dd ?
 	s dd ? ;uint
 	t dd ? ;uint
 	z dd ? ;uint
 	zz dd ? ;uint
-	n dd ? ;int
+	n1 dd ? ;int - длинна горизонтальной линии в пикселях
 	dsdx dd ? ;int
 	dtdx dd ? ;int
 	s_z dd ? ;float
@@ -275,7 +301,7 @@ if code eq 0
 	zinv dd ? ;float
 end if
 if code eq 1
-;  n=(x2>>16)-x1;
+;  n1=(x2>>16)-x1;
 ;  fz=(float)z1;
 ;  zinv=1.0 / fz;
 ;  pp=(pp1 + x1 * PSZB);
@@ -283,7 +309,7 @@ if code eq 1
 ;  z=z1;
 ;  sz=sz1;
 ;  tz=tz1;
-;  while (n>=(NB_INTERP-1)) {
+;  while (n1>=(NB_INTERP-1)) {
 ;    {
 ;      float ss,tt;
 ;      ss=(sz * zinv);
@@ -305,7 +331,7 @@ if code eq 1
 ;    PUT_PIXEL(7);
 ;    pz+=NB_INTERP;
 ;    pp=(pp + NB_INTERP * PSZB);
-;    n-=NB_INTERP;
+;    n1-=NB_INTERP;
 ;    sz+=ndszdx;
 ;    tz+=ndtzdx;
 ;  }
@@ -318,11 +344,11 @@ if code eq 1
 ;      dsdx= (int)( (dszdx - ss*fdzdx)*zinv );
 ;      dtdx= (int)( (dtzdx - tt*fdzdx)*zinv );
 ;    }
-;  while (n>=0) {
-;    PUT_PIXEL(0);
+;  while (n1>=0) {
+;;;		PUT_PIXEL 0
 ;    pz+=1;
 ;    pp=(PIXEL *)((char *)pp + PSZB);
-;    n-=1;
+		dec dword[n1]
 ;  }
 end if
 end if
@@ -333,9 +359,9 @@ proc ZB_fillTriangleMappingPerspective, zb:dword, p0:dword, p1:dword, p2:dword
 locals
 	texture dd ? ;PIXEL *
 	fdzdx dd ? ;float
-	fndzdx dd ?
-	ndszdx dd ?
-	ndtzdx dd ?
+	fndzdx dd ? ;float
+	ndszdx dd ? ;float
+	ndtzdx dd ? ;float
 include 'ztriangle.inc'
 
 end if
@@ -350,27 +376,37 @@ INTERP_STZ equ 1
 
 macro DRAW_INIT
 {
-;  texture=zb->current_texture;
+	mov eax,[zb]
+	mov eax,[eax+offs_zbuf_current_texture]
+	mov [texture],eax
 }
 
 macro PUT_PIXEL _a
 {
-;   float zinv;
+local .end_0
 ;   int s,t;
-;   zz=z >> ZB_POINT_Z_FRAC_BITS;
-;     if (zz >= pz[_a]) {
-;       zinv= 1.0 / (float) z;
-;       s= (int) (sz * zinv);
-;       t= (int) (tz * zinv);
-;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
+	mov eax,[z]
+	shr eax,ZB_POINT_Z_FRAC_BITS
+	mov [zz],eax
+	mov ebx,[pz]
+	cmp ax,word[ebx+2*_a] ;if (zz >= pz[_a])
+	jl .end_0
 ;       pz[_a]=zz;
-;    }
+		fild dword[z]
+		fld dword[s_z]
+		fdiv st0,st1
+		;fistp dword[...s...] ;s = (int) (s_z / (float) z)
+;       t= (int) (t_z / (float) z);
+;       pp[_a]=texture[((t & 0x3FC00000) | s) >> 14];
+	.end_0:
 	mov eax,[dzdx]
 	add [z],eax
-	mov eax,[dszdx]
-	add [sz],eax
-	mov eax,[dtzdx]
-	add [tz],eax
+	fld dword[dszdx]
+	fadd dword[s_z]
+	fstp dword[s_z]
+	fld dword,[dtzdx]
+	fadd dword[t_z]
+	fstp dword[t_z]
 }
 
 align 4

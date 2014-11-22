@@ -19,27 +19,27 @@
 	update_left dd ?
 	update_right dd ?
 
-	nb_lines dd ?
+	nb_lines dd ? ;число горизонтальных линий в половине треугольника
 	dx1 dd ?
 	dy1 dd ?
-	dx2 dd ?
+	;dx2 dd ?
 	dy2 dd ?
 
-	error dd ?
-	derror dd ?
-	x1 dd ?
-	dxdy_min dd ?
-	dxdy_max dd ?
+	error dd ? ;int
+	derror dd ? ;int
+	x1 dd ? ;int
+	dxdy_min dd ? ;int
+	dxdy_max dd ? ;int
 	; warning: x2 is multiplied by 2^16
-	x2 dd ?
-	dx2dy2 dd ?
+	x2 dd ? ;int
+	dx2dy2 dd ? ;int
 
 if INTERP_Z eq 1
-	z1 dd ?
-	dzdx dd ?
-	dzdy dd ?
-	dzdl_min dd ?
-	dzdl_max dd ?
+	z1 dd ? ;int
+	dzdx dd ? ;int
+	dzdy dd ? ;int
+	dzdl_min dd ? ;int
+	dzdl_max dd ? ;int
 end if
 if INTERP_RGB eq 1
 	r1 dd ? ;int
@@ -59,16 +59,16 @@ if INTERP_RGB eq 1
 	dbdl_max dd ?
 end if
 if INTERP_ST eq 1
-	s1 dd ?
-	dsdx dd ?
-	dsdy dd ?
-	dsdl_min dd ?
-	dsdl_max dd ?
-	t1 dd ?
-	dtdx dd ?
-	dtdy dd ?
-	dtdl_min dd ?
-	dtdl_max dd ?
+	s1 dd ? ;int
+	dsdx dd ? ;int
+	dsdy dd ? ;int
+	dsdl_min dd ? ;int
+	dsdl_max dd ? ;int
+	t1 dd ? ;int
+	dtdx dd ? ;int
+	dtdy dd ? ;int
+	dtdl_min dd ? ;int
+	dtdl_max dd ? ;int
 end if
 if INTERP_STZ eq 1
 	sz1 dd ? ;float
@@ -83,11 +83,11 @@ if INTERP_STZ eq 1
 	dtzdl_max dd ? ;float
 end if
 
+
 if DRAW_LINE_M eq 1
 	DRAW_LINE 0 ;переменные делаются в макросе
 else
-	;edi = pp dd ?
-	n dd ? ;int
+	n dd ? ;int - длинна горизонтальной линии в пикселях
 if INTERP_Z eq 1
 	pz dd ? ;unsigned short *
 	z dd ? ;uint
@@ -109,41 +109,36 @@ end if
 end if
 
 endl
+pushad
+
+if DEBUG ;(1)
+stdcall dbg_print,f_fill_tr,m_1
+end if
 
 	; we sort the vertex with increasing y
 	mov ebx,[p0]
 	mov ecx,[p1]
-	mov eax,[ebx+offs_zbup_y]
-	cmp [ecx+offs_zbup_y],eax
-	jge @f
-		;if (p1.y < p0.y)
-		mov [p0],ecx
-		mov [p1],ebx
-		xchg ebx,ecx
-		mov eax,[ebx+offs_zbup_y] ;обновляем p0.y для следующего сравнения
-	@@:
 	mov edx,[p2]
-	cmp [edx+offs_zbup_y],eax
-	jge @f
-		;if (p2.y < p0.y)
-		mov [p0],edx
-		mov [p1],ebx
-		mov [p2],ecx
-		mov ebx,[p0]
-		mov ecx,[p1]
-		mov edx,[p2]
-		jmp .end_e0
+	mov eax,[edx+offs_zbup_y]
+	cmp [ecx+offs_zbup_y],eax ;(2-1)
+	jle @f
+		xchg edx,ecx
 	@@:
 	mov eax,[ecx+offs_zbup_y]
-	cmp [edx+offs_zbup_y],eax
-	jge .end_e0
-		;else if (p2.y < p1.y)
-		mov [p1],edx
-		mov [p2],ecx
-	.end_e0:
+	cmp [ebx+offs_zbup_y],eax ;(1-0)
+	jle @f
+		xchg ecx,ebx
+	@@:
+	mov eax,[edx+offs_zbup_y]
+	cmp [ecx+offs_zbup_y],eax ;(2-1)
+	jle @f
+		xchg edx,ecx
+	@@:
+	mov [p0],ebx
+	mov [p1],ecx
+	mov [p2],edx
 
 	; we compute dXdx and dXdy for all interpolated values
-
 	mov eax,[ecx+offs_zbup_x]
 	sub eax,[ebx+offs_zbup_x]
 	mov [fdx1],eax ;p1.x - p0.x
@@ -158,23 +153,26 @@ endl
 	sub eax,[ebx+offs_zbup_y]
 	mov [fdy2],eax ;p2.y - p0.y
 
-	fild dword[fdx2]
-	fst dword[fdx2]
-	fild dword[fdy1]
-	fst dword[fdy1]
-	fmulp
 	fild dword[fdx1]
 	fst dword[fdx1]
 	fild dword[fdy2]
 	fst dword[fdy2]
 	fmulp
-	fsubp ;st0 = st0-st1
+	fild dword[fdx2]
+	fst dword[fdx2]
+	fild dword[fdy1]
+	fst dword[fdy1]
+	fmulp
+	fsubp ;st0 = st1-st0
 	fst dword[fz] ;fz = fdx1 * fdy2 - fdx2 * fdy1
 	fldz
-	fcompp ;if (fz == 0)
+	fcompp ;if (fz == 0) return
 	fstsw ax
 	sahf
 	je .end_f
+if DEBUG ;(2)
+stdcall dbg_print,txt_sp,m_2
+end if
 	fld1
 	fdiv dword[fz] ;fz = 1.0 / fz
 	fst dword[fz]  ;st0 = fz
@@ -201,26 +199,24 @@ if INTERP_Z eq 1
 	mov eax,[edx+offs_zbup_z]
 	sub eax,[ebx+offs_zbup_z]
 	mov [d2],eax
-	fild dword[d1]
-	fst dword[d1] ;d1 = p1.z - p0.z
-	fild dword[d2]
-	fst dword[d2] ;d2 = p2.z - p0.z
+	fild dword[d1] ;d1 = p1.z - p0.z
+	fild dword[d2] ;d2 = p2.z - p0.z
 
-	fld dword[fdy1]
-	fmul st0,st1
 	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
 	fistp dword[dzdx] ;dzdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
-	fld dword[fdx2]
-	fmul st0,st2
 	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
+	fmul st0,st1
+	fld dword[fdx2]
+	fmul st0,st3
+	fsubp
 	fistp dword[dzdy] ;dzdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
 	fincstp
 end if
 
@@ -231,26 +227,24 @@ if INTERP_RGB eq 1
 	mov eax,[edx+offs_zbup_r]
 	sub eax,[ebx+offs_zbup_r]
 	mov [d2],eax
-	fild dword[d1]
-	fst dword[d1] ;d1 = p1.r - p0.r
-	fild dword[d2]
-	fst dword[d2] ;d2 = p2.r - p0.r
+	fild dword[d1] ;d1 = p1.r - p0.r
+	fild dword[d2] ;d2 = p2.r - p0.r
 
-	fld dword[fdy1]
-	fmul st0,st1
 	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
 	fistp dword[drdx] ;drdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
-	fld dword[fdx2]
-	fmul st0,st2
 	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
+	fmul st0,st1
+	fld dword[fdx2]
+	fmul st0,st3
+	fsubp
 	fistp dword[drdy] ;drdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
 	fincstp
 
 	mov eax,[ecx+offs_zbup_g]
@@ -259,26 +253,24 @@ if INTERP_RGB eq 1
 	mov eax,[edx+offs_zbup_g]
 	sub eax,[ebx+offs_zbup_g]
 	mov [d2],eax
-	fild dword[d1]
-	fst dword[d1] ;d1 = p1.g - p0.g
-	fild dword[d2]
-	fst dword[d2] ;d2 = p2.g - p0.g
+	fild dword[d1] ;d1 = p1.g - p0.g
+	fild dword[d2] ;d2 = p2.g - p0.g
 
-	fld dword[fdy1]
-	fmul st0,st1
 	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
 	fistp dword[dgdx] ;dgdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
-	fld dword[fdx2]
-	fmul st0,st2
 	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
+	fmul st0,st1
+	fld dword[fdx2]
+	fmul st0,st3
+	fsubp
 	fistp dword[dgdy] ;dgdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
 	fincstp
 
 	mov eax,[ecx+offs_zbup_b]
@@ -287,26 +279,24 @@ if INTERP_RGB eq 1
 	mov eax,[edx+offs_zbup_b]
 	sub eax,[ebx+offs_zbup_b]
 	mov [d2],eax
-	fild dword[d1]
-	fst dword[d1] ;d1 = p1.b - p0.b
-	fild dword[d2]
-	fst dword[d2] ;d2 = p2.b - p0.b
+	fild dword[d1] ;d1 = p1.b - p0.b
+	fild dword[d2] ;d2 = p2.b - p0.b
 
-	fld dword[fdy1]
-	fmul st0,st1
 	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
 	fistp dword[dbdx] ;dbdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
-	fld dword[fdx2]
-	fmul st0,st2
 	fld dword[fdx1]
-	fmul st0,st2
-	fsub st0,st1
+	fmul st0,st1
+	fld dword[fdx2]
+	fmul st0,st3
+	fsubp
 	fistp dword[dbdy] ;dbdy = (int) (fdx1*d2 - fdx2*d1)
-	ffree st0
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
 	fincstp
 end if
 
@@ -317,19 +307,15 @@ if INTERP_ST eq 1
 	mov eax,[edx+offs_zbup_s]
 	sub eax,[ebx+offs_zbup_s]
 	mov [d2],eax
-	fild dword[d1]
-	fst dword[d1] ;d1 = p1.s - p0.s
-	fild dword[d2]
-	fst dword[d2] ;d2 = p2.s - p0.s
+	fild dword[d1] ;d1 = p1.s - p0.s
+	fild dword[d2] ;d2 = p2.s - p0.s
 
-	fld dword[fdy1]
-	fmul st0,st1
 	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
 	fistp dword[dsdx] ;dsdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
 	fld dword[fdx2]
 	fmul st0,st2
 	fld dword[fdx1]
@@ -338,6 +324,10 @@ if INTERP_ST eq 1
 	fistp dword[dsdy] ;dsdy = (int) (fdx1*d2 - fdx2*d1)
 	ffree st0
 	fincstp
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
+	fincstp
 
 	mov eax,[ecx+offs_zbup_t]
 	sub eax,[ebx+offs_zbup_t]
@@ -345,10 +335,8 @@ if INTERP_ST eq 1
 	mov eax,[edx+offs_zbup_t]
 	sub eax,[ebx+offs_zbup_t]
 	mov [d2],eax
-	fild dword[d1]
-	fst dword[d1] ;d1 = p1.t - p0.t
-	fild dword[d2]
-	fst dword[d2] ;d2 = p2.t - p0.t
+	fild dword[d1] ;d1 = p1.t - p0.t
+	fild dword[d2] ;d2 = p2.t - p0.t
 
 	fld dword[fdy1]
 	fmul st0,st1
@@ -366,6 +354,10 @@ if INTERP_ST eq 1
 	fistp dword[dtdy] ;dtdy = (int) (fdx1*d2 - fdx2*d1)
 	ffree st0
 	fincstp
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
+	fincstp
 end if
 
 if INTERP_STZ eq 1
@@ -374,68 +366,60 @@ if INTERP_STZ eq 1
 	fmul st0,st1
 	fstp dword[ebx+offs_zbup_sz] ;p0.sz = (float) p0.s * p0.z
 	fild dword[ebx+offs_zbup_t]
-	fmul st0,st1
+	fmulp
 	fstp dword[ebx+offs_zbup_tz] ;p0.tz = (float) p0.t * p0.z
-	ffree st0
-	fincstp
 
 	fild dword[ecx+offs_zbup_z]
 	fild dword[ecx+offs_zbup_s]
 	fmul st0,st1
 	fstp dword[ecx+offs_zbup_sz] ;p1.sz = (float) p1.s * p1.z
 	fild dword[ecx+offs_zbup_t]
-	fmul st0,st1
+	fmulp
 	fstp dword[ecx+offs_zbup_tz] ;p1.tz = (float) p1.t * p1.z
-	ffree st0
-	fincstp
 
 	fild dword[edx+offs_zbup_z]
 	fild dword[edx+offs_zbup_s]
 	fmul st0,st1
 	fstp dword[edx+offs_zbup_sz] ;p2.sz = (float) p2.s * p2.z
 	fild dword[edx+offs_zbup_t]
-	fmul st0,st1
+	fmulp
 	fstp dword[edx+offs_zbup_tz] ;p2.tz = (float) p2.t * p2.z
-	ffree st0
-	fincstp
 
 	fld dword[ecx+offs_zbup_sz]
-	fsub dword[ebx+offs_zbup_sz]
-	fst dword[d1] ;d1 = p1.sz - p0.sz
+	fsub dword[ebx+offs_zbup_sz] ;d1 = p1.sz - p0.sz
 	fld dword[edx+offs_zbup_sz]
-	fsub dword[ebx+offs_zbup_sz]
-	fst dword[d2] ;d2 = p2.sz - p0.sz
+	fsub dword[ebx+offs_zbup_sz] ;d2 = p2.sz - p0.sz
 
-	fld dword[fdy1]
-	fmul st0,st1
 	fld dword[fdy2]
-	fmul st0,st3
-	fsub st0,st1
-	fistp dword[dszdx] ;dszdx = (int) (fdy2*d1 - fdy1*d2)
-	ffree st0
-	fincstp
+	fmul st0,st2
+	fld dword[fdy1]
+	fmul st0,st2
+	fsubp
+	fstp dword[dszdx] ;dszdx = (fdy2*d1 - fdy1*d2)
 	fld dword[fdx2]
 	fmul st0,st2
 	fld dword[fdx1]
 	fmul st0,st2
 	fsub st0,st1
-	fistp dword[dszdy] ;dszdy = (int) (fdx1*d2 - fdx2*d1)
+	fstp dword[dszdy] ;dszdy = (fdx1*d2 - fdx2*d1)
 	ffree st0
+	fincstp
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
 	fincstp
 
 	fld dword[ecx+offs_zbup_tz]
-	fsub dword[ebx+offs_zbup_tz]
-	fst dword[d1] ;d1 = p1.tz - p0.tz
+	fsub dword[ebx+offs_zbup_tz] ;d1 = p1.tz - p0.tz
 	fld dword[edx+offs_zbup_tz]
-	fsub dword[ebx+offs_zbup_tz]
-	fst dword[d2] ;d2 = p2.tz - p0.tz
+	fsub dword[ebx+offs_zbup_tz] ;d2 = p2.tz - p0.tz
 
 	fld dword[fdy1]
 	fmul st0,st1
 	fld dword[fdy2]
 	fmul st0,st3
 	fsub st0,st1
-	fistp dword[dtzdx] ;dtzdx = (int) (fdy2*d1 - fdy1*d2)
+	fstp dword[dtzdx] ;dtzdx = (fdy2*d1 - fdy1*d2)
 	ffree st0
 	fincstp
 	fld dword[fdx2]
@@ -443,13 +427,16 @@ if INTERP_STZ eq 1
 	fld dword[fdx1]
 	fmul st0,st2
 	fsub st0,st1
-	fistp dword[dtzdy] ;dtzdy = (int) (fdx1*d2 - fdx2*d1)
+	fstp dword[dtzdy] ;dtzdy = (fdx1*d2 - fdx2*d1)
 	ffree st0
+	fincstp
+	ffree st0 ;free d2
+	fincstp
+	ffree st0 ;free d1
 	fincstp
 end if
 
 	; screen coordinates
-
 	mov eax,[zb]
 	mov edx,[eax+offs_zbuf_linesize]
 	imul edx,[ebx+offs_zbup_y]
@@ -465,10 +452,13 @@ end if
 
 	mov dword[part],0
 	.cycle_0:
+if DEBUG ;(3)
+stdcall dbg_print,txt_sp,m_3
+end if
 		mov ebx,[p0]
 		mov ecx,[p1]
 		mov edx,[p2]
-		cmp dword[part],0
+		cmp dword[part],0 ;if (part == 0)
 		jne .els_0
 			mov dword[update_left],1
 			mov dword[update_right],1
@@ -493,18 +483,20 @@ end if
 			jmp .end_0
 		.els_0:
 			; second part
-			mov dword[update_left],0
-			mov dword[update_right],1
 			fldz
 			fld dword[fz]
 			fcompp ;if (fz > 0)
 			fstsw ax
 			sahf
 			jbe .els_2
+				mov dword[update_left],0
+				mov dword[update_right],1
 				mov [pr1],ecx
 				mov [pr2],edx
 				jmp .end_2
 			.els_2:
+				mov dword[update_left],1
+				mov dword[update_right],0
 				mov [l1],ecx
 				mov [l2],edx
 			.end_2:
@@ -515,36 +507,77 @@ end if
 		.end_0:
 
 	; compute the values for the left edge
-
 	cmp dword[update_left],0 ;if (update_left)
 	je .end_upd_l
 		mov ebx,[l1]
 		mov ecx,[l2]
+		mov edx,[ecx+offs_zbup_y]
+		sub edx,[ebx+offs_zbup_y]
+		mov [dy1],edx ;dy1 = l2.y - l1.y
 		mov eax,[ecx+offs_zbup_x]
 		sub eax,[ebx+offs_zbup_x]
 		mov [dx1],eax ;dx1 = l2.x - l1.x
-		mov eax,[ecx+offs_zbup_y]
-		sub eax,[ebx+offs_zbup_y]
-		mov [dy1],eax ;dy1 = l2.y - l1.y
-		cmp eax,0 ;if (dy1 > 0) 
+		cmp edx,0 ;if (dy1 > 0) 
 		jle .els_3
-			mov eax,[dx1]
-			shl eax,16
 			xor edx,edx
+			cmp eax,0
+			jl .otr_dx1
+			shl eax,16
 			div dword[dy1] ;eax = (dx1 << 16) / dy1
+			jmp .end_3
+			.otr_dx1:
+			neg eax
+			inc eax
+			shl eax,16
+			div dword[dy1] ;eax = (-dx1 << 16) / dy1
+			neg eax
+			inc eax
 			jmp .end_3
 		.els_3:
 			xor eax,eax
 		.end_3:
 		mov edx,[ebx+offs_zbup_x]
-		mov [x1],edx
-		mov dword[error],0
+		mov [x1],edx ;x1 = l1.x
+		mov dword[error],0 ;error = 0
 		mov dword[derror],eax
-		and dword[derror],0xffff
+		and dword[derror],0xffff ;derror = eax & 0x0000ffff
 		shr eax,16
-		mov [dxdy_min],eax
+		mov [dxdy_min],eax ;dxdy_min = eax >> 16
 		inc eax
 		mov [dxdy_max],eax
+
+if DEBUG ;(4) update_left [dx1], [dy1], [dxdy_min], [dxdy_max]
+push ecx edi
+	mov ecx,80
+	lea edi,[buf_param]
+	mov eax,[dx1]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov eax,[dy1]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov eax,[dxdy_min]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov eax,[dxdy_max]
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,m_4,buf_param
+pop edi ecx
+end if
 
 if INTERP_Z eq 1
 	mov eax,[l1]
@@ -585,7 +618,6 @@ if INTERP_RGB eq 1
 	mov [dbdl_min],eax ;dbdl_min = (dbdy +dbdx*dxdy_min)
 	add eax,[dbdx]
 	mov [dbdl_max],eax ;dbdl_max = dbdl_min +dbdx
-
 end if
 if INTERP_ST eq 1
 	mov ebx,[l1]
@@ -635,29 +667,85 @@ end if
 	je .end_upd_r
 		mov ebx,[pr1]
 		mov ecx,[pr2]
+		mov edx,[ebx+offs_zbup_x]
 		mov eax,[ecx+offs_zbup_x]
-		sub eax,[ebx+offs_zbup_x]
-		mov [dx2],eax ;dx2 = pr2.x - pr1.x
-		mov eax,[ecx+offs_zbup_y]
-		sub eax,[ebx+offs_zbup_y]
-		mov [dy2],eax ;dy2 = pr2.y - pr1.y
-		cmp eax,0 ;if (dy2 > 0) 
+		sub eax,edx
+		;mov [dx2],eax ;dx2 = pr2.x - pr1.x
+		shl edx,16
+		mov [x2],edx ; x2 = pr1.x << 16
+		mov edx,[ecx+offs_zbup_y]
+		sub edx,[ebx+offs_zbup_y]
+		mov [dy2],edx ;dy2 = pr2.y - pr1.y
+		cmp edx,0 ;if (dy2 > 0) 
 		jle .els_4
-			mov eax,[dx2]
-			shl eax,16
 			xor edx,edx
+			cmp eax,0
+			jl .otr_dx2
+			shl eax,16
 			div dword[dy2] ;eax = (dx2 << 16) / dy2
+			jmp .end_4
+			.otr_dx2:
+			neg eax
+			inc eax ;dx2 *= -1
+			shl eax,16
+			div dword[dy2] ;eax = (-dx2 << 16) / dy2
+			neg eax
+			inc eax
 			jmp .end_4
 		.els_4:
 			xor eax,eax
 		.end_4:
 		mov [dx2dy2],eax
-		mov eax,[ebx+offs_zbup_x]
-		shl eax,16
-		mov [x2],eax ; x2 = pr1.x << 16
+
+if DEBUG ;(5) update_right [dx2dy2], [dy2], [pr1.x], [pr2.x]
+push ecx edi
+	mov eax,[dx2dy2]
+	shr eax,16
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov eax,[dy2]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov ebx,[pr1]
+	mov eax,[ebx+offs_zbup_x]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov ebx,[pr2]
+	mov eax,[ebx+offs_zbup_x]
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,m_5,buf_param
+pop edi ecx
+end if
 	.end_upd_r:
 
 	; we draw all the scan line of the part
+if DEBUG ;[nb_lines]
+push ecx edi
+	mov eax,[nb_lines]
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,f_fill_tr_nl,buf_param
+pop edi ecx
+end if
 
 	.beg_w_lin:
 	cmp dword[nb_lines],0 ;while (nb_lines>0)
@@ -674,6 +762,34 @@ else
 		mov [n],eax ;n = (x2 >> 16) - x1
 		imul edi,PSZB
 		add edi,[pp1] ;pp = pp1 + x1 * PSZB
+
+if DEBUG ;[n], [x1], [x2]>>16
+push ecx edi
+	mov eax,[n]
+	mov ecx,80
+	lea edi,[buf_param]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov eax,[x1]
+	stdcall convert_int_to_str,ecx
+	stdcall str_n_cat,edi,txt_zp_sp,2
+	stdcall str_len,edi
+	add edi,eax
+	sub ecx,eax
+
+	mov eax,[x2]
+	shr eax,16
+	stdcall convert_int_to_str,ecx
+
+	stdcall str_n_cat,edi,txt_nl,2
+	stdcall dbg_print,f_fill_tr_nll,buf_param
+pop edi ecx
+end if
+
 if INTERP_Z eq 1
 		mov eax,[x1]
 		shl eax,1
@@ -702,7 +818,11 @@ if INTERP_STZ eq 1
 		mov eax,[tz1]
 		mov [t_z],eax
 end if
+
+align 4
 		.cycle_1: ;while (n>=3)
+		cmp dword[n],3
+		jl .cycle_2
 			PUT_PIXEL 0
 			PUT_PIXEL 1
 			PUT_PIXEL 2
@@ -712,23 +832,24 @@ if INTERP_Z eq 1
 end if
 			add edi,4*PSZB
 			sub dword[n],4
-			cmp dword[n],3
-		jge .cycle_1
+		jmp .cycle_1
 		.cycle_2: ;while (n>=0)
+		cmp dword[n],0
+		jl .cycle_2_end
 			PUT_PIXEL 0
 if INTERP_Z eq 1
 			add dword[pz],2 ;=sizeof(uint)
 end if
 			add edi,PSZB
 			dec dword[n]
-			cmp dword[n],0
-		jge .cycle_2
-end if
+		jmp .cycle_2
+		.cycle_2_end:
+end if ;проверка от макроса DRAW_LINE
 
 	; left edge
 	mov eax,[derror]
 	add [error],eax
-	cmp eax,0 ;if (error > 0)
+	cmp dword[error],0 ;if (error > 0)
 	jle .els_er
 		sub dword[error],0x10000
 		mov eax,[dxdy_max]
@@ -808,6 +929,7 @@ end if
 		cmp dword[part],2
 		jl .cycle_0
 	.end_f:
+popad
 	ret
 endp
 

@@ -83,6 +83,10 @@ m_2 db '(2)',13,10,0
 m_3 db '(3)',13,10,0
 m_4 db '(4)',13,10,0
 m_5 db '(5)',13,10,0
+m_6 db '(6)',13,10,0
+m_7 db '(7)',13,10,0
+m_8 db '(8)',13,10,0
+m_9 db '(9)',13,10,0
 
 buf_param rb 80
 
@@ -161,6 +165,11 @@ f_alloc_l db 'alloc_list',0
 f_is_l db 'glIsList',0
 f_gen_l db 'glGenLists',0
 f_end_l db 'glEndList',0
+;f_fill_trf db 'ZB_fillTriangleFlat',0
+;f_fill_trrgb db 'ZB_fillTriangleSmooth',0
+f_fill_tr db 'ZB_fillTriangle...',0
+f_fill_tr_nl db ' lines',0
+f_fill_tr_nll db ' len',0
 
 align 4
 proc dbg_print, fun:dword, mes:dword
