@@ -170,9 +170,7 @@ end if
 	fstsw ax
 	sahf
 	je .end_f
-if DEBUG ;(2)
-stdcall dbg_print,txt_sp,m_2
-end if
+
 	fld1
 	fdiv dword[fz] ;fz = 1.0 / fz
 	fst dword[fz]  ;st0 = fz
@@ -452,9 +450,6 @@ end if
 
 	mov dword[part],0
 	.cycle_0:
-if DEBUG ;(3)
-stdcall dbg_print,txt_sp,m_3
-end if
 		mov ebx,[p0]
 		mov ecx,[p1]
 		mov edx,[p2]
@@ -542,42 +537,13 @@ end if
 		mov dword[derror],eax
 		and dword[derror],0xffff ;derror = eax & 0x0000ffff
 		shr eax,16
+		bt eax,15
+		jnc @f
+			or eax,0xffff0000
+		@@:
 		mov [dxdy_min],eax ;dxdy_min = eax >> 16
 		inc eax
 		mov [dxdy_max],eax
-
-if DEBUG ;(4) update_left [dx1], [dy1], [dxdy_min], [dxdy_max]
-push ecx edi
-	mov ecx,80
-	lea edi,[buf_param]
-	mov eax,[dx1]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[dy1]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[dxdy_min]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[dxdy_max]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,m_4,buf_param
-pop edi ecx
-end if
 
 if INTERP_Z eq 1
 	mov eax,[l1]
@@ -696,42 +662,6 @@ end if
 			xor eax,eax
 		.end_4:
 		mov [dx2dy2],eax
-
-if DEBUG ;(5) update_right [dx2dy2], [dy2], [pr1.x], [pr2.x]
-push ecx edi
-	mov eax,[dx2dy2]
-	shr eax,16
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[dy2]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov ebx,[pr1]
-	mov eax,[ebx+offs_zbup_x]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov ebx,[pr2]
-	mov eax,[ebx+offs_zbup_x]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,m_5,buf_param
-pop edi ecx
-end if
 	.end_upd_r:
 
 	; we draw all the scan line of the part

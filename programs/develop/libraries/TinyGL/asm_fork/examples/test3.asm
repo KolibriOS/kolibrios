@@ -25,9 +25,9 @@ start:
 	mcall 40,0x27
 
 stdcall [kosglMakeCurrent], 10,10,300,225,ctx1
-;;;stdcall [glEnable], GL_DEPTH_TEST
+;stdcall [glEnable], GL_DEPTH_TEST
 stdcall [glClearColor], 0.2,0.0,0.2,0.0
-stdcall [glShadeModel],GL_FLAT
+;stdcall [glShadeModel],GL_FLAT
 
 call draw_3d
 
@@ -109,28 +109,29 @@ stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим б�
 stdcall [glPushMatrix]
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 
-stdcall [glColor3f],0.0, 0.0, 1.0
-	stdcall [glBegin],GL_LINE_LOOP
-	stdcall [glVertex3f], 0.0,    0.5, 0.3
-	stdcall [glVertex3f], 0.354,  0.354, 0.3
-	stdcall [glVertex3f], 0.5,    0.0, 0.3
-	stdcall [glEnd]
-;stdcall [glColor3f],1.0, 1.0, 0.0
-	stdcall [glBegin],GL_LINE_LOOP
-	stdcall [glVertex3f], 0.354, -0.354, 0.3
-	stdcall [glVertex3f], 0.0,   -0.5, 0.3
-	stdcall [glVertex3f], -0.354,-0.354, 0.3
-	stdcall [glEnd]
+	stdcall [glBegin],GL_TRIANGLES
+
+	stdcall [glColor3f],0.0, 0.0, 1.0
+	stdcall [glVertex3f], 0.0,   0.5,   0.1
+	stdcall [glVertex3f], 0.475, 0.823, 0.1
+	stdcall [glVertex3f], 0.433, 0.25,  0.1
+
+	stdcall [glColor3f],0.0, 1.0, 0.0
+	stdcall [glVertex3f], 0.5,   0.0,   0.1
+	stdcall [glVertex3f], 0.823,-0.475, 0.1
+	stdcall [glVertex3f], 0.25, -0.433, 0.1
 
 	stdcall [glColor3f],1.0, 0.0, 0.0
-	stdcall [glBegin],GL_TRIANGLES
-	stdcall [glVertex3f], 0.0,    0.5, 0.1
-	stdcall [glVertex3f], 0.354,  0.354, 0.1
-	stdcall [glVertex3f], 0.5,    0.0, 0.1
-stdcall [glColor3f],1.0, 1.0, 0.0
-	stdcall [glVertex3f], 0.354, -0.354, 0.1
-	stdcall [glVertex3f], 0.0,   -0.5, 0.1
-	stdcall [glVertex3f], -0.354,-0.354, 0.1
+	stdcall [glVertex3f], 0.0,  -0.5,   0.1
+	stdcall [glVertex3f], -0.475,-0.823,0.1
+	stdcall [glVertex3f], -0.433,-0.25, 0.1
+
+	stdcall [glVertex3f], -0.5,   0.0,   0.1
+	stdcall [glColor3f],1.0, 1.0, 0.0
+	stdcall [glVertex3f], -0.823, 0.475, 0.1
+	stdcall [glColor3f],1.0, 1.0, 1.0
+	stdcall [glVertex3f], -0.25,  0.433, 0.1
+
 	stdcall [glEnd]
 
 stdcall [glPopMatrix]
