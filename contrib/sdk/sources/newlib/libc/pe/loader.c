@@ -53,8 +53,8 @@ struct tag_module
 
     uint32_t    refcount;
 
-    void       *start;
-    uint32_t    end;
+    char       *start;
+    char       *end;
 
     void       *entry;
 
@@ -70,7 +70,6 @@ typedef struct
     int   path_len;
 }dll_path_t;
 
-module_t* load_library(const char *name);
 
 LIST_HEAD(path_list);
 
@@ -231,7 +230,7 @@ void init_loader(void *libc_image)
                    nt->OptionalHeader.DataDirectory[0].VirtualAddress);
 
     libc_dll.start = libc_image;
-    libc_dll.end   = MakePtr(uint32_t,libc_image, nt->OptionalHeader.SizeOfImage);
+    libc_dll.end   = MakePtr(char*,libc_image, nt->OptionalHeader.SizeOfImage);
 
     libc_dll.img_hdr  = nt;
     libc_dll.img_sec  = MakePtr(PIMAGE_SECTION_HEADER,nt, sizeof(IMAGE_NT_HEADERS32));
@@ -342,8 +341,6 @@ void* create_image(void *raw)
     return img_base;
 };
 
-//static jmp_buf loader_env;
-//static loader_recursion;
 
 int link_image(void *img_base, PIMAGE_IMPORT_DESCRIPTOR imp)
 {
@@ -456,7 +453,6 @@ int link_image(void *img_base, PIMAGE_IMPORT_DESCRIPTOR imp)
                         continue;
                     };
                 };
-
 
                 minn = 0;
                 maxn = exp->NumberOfNames - 1;
@@ -581,9 +577,10 @@ void* get_entry_point(void *raw)
 };
 
 
-void *get_proc_address(module_t *module, char *proc_name)
+void *get_proc_address(void *handle, const char *proc_name)
 {
 
+    module_t *module = handle;
     PIMAGE_DOS_HEADER        expdos;
     PIMAGE_NT_HEADERS32      expnt;
     PIMAGE_EXPORT_DIRECTORY  exp;
@@ -682,7 +679,7 @@ static void *load_lib_internal(const char *path)
     return img_base;
 }
 
-module_t* load_library(const char *name)
+void* load_library(const char *name)
 {
     PIMAGE_DOS_HEADER        dos;
     PIMAGE_NT_HEADERS32      nt;
@@ -738,10 +735,10 @@ module_t* load_library(const char *name)
     if( unlikely(img_base == NULL) )
     {
         printf("unable to load %s\n", name);
-        return NULL;
+        return 0;
     };
 
-    module = (module_t*)malloc(sizeof(module_t));
+    module = malloc(sizeof(module_t));
 
     if(unlikely(module == NULL))
     {
@@ -762,7 +759,7 @@ module_t* load_library(const char *name)
     exp =  MakePtr(PIMAGE_EXPORT_DIRECTORY, img_base,
                nt->OptionalHeader.DataDirectory[0].VirtualAddress);
 
-    module->end   = MakePtr(uint32_t,img_base, nt->OptionalHeader.SizeOfImage);
+    module->end   = MakePtr(char*,img_base, nt->OptionalHeader.SizeOfImage);
 
     module->img_hdr  = nt;
     module->img_sec  = MakePtr(PIMAGE_SECTION_HEADER,nt, sizeof(IMAGE_NT_HEADERS32));
@@ -802,7 +799,19 @@ err2:
 err1:
     user_free(img_base);
     return NULL;
-
 };
 
+void enumerate_libraries(int (*callback)(void *handle, const char* name,
+                                         uint32_t base, uint32_t size, void *user_data),
+                         void *user_data)
+{
+    module_t *mod = &libc_dll;
 
+    do
+    {
+        if(0 == callback(mod, mod->img_name, (uint32_t)mod->start,
+                         mod->end - mod->start, user_data))
+            break;
+        mod = (module_t*)mod->list.next;
+    }while(mod != &libc_dll);
+}

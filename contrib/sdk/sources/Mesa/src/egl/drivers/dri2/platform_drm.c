@@ -43,9 +43,6 @@
 
 #include "egl_dri2.h"
 
-void* load_library(const char *name);
-void *get_proc_address(void *module, char *proc_name);
-
 int (*blit_bitmap_from_handle)(bitmap_t *bitmap, uint32_t handle);
 void (*blit_set_bo_handle)(bitmap_t *bitmap, int handle);
 int (*blit_blit_tex)(bitmap_t *bitmap, int scale, int vsync, int dst_x, int dst_y,

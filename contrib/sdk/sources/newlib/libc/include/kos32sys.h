@@ -470,6 +470,14 @@ static inline void Blit(void *bitmap, int dst_x, int dst_y,
     ::"a"(73),"b"(0),"c"(&bc.dstx));
 };
 
+void* load_library(const char *name);
+
+void* get_proc_address(void *handle, const char *proc_name);
+
+void enumerate_libraries(int (*callback)(void *handle, const char* name,
+                                         uint32_t base, uint32_t size, void *user_data),
+                         void *user_data);
+
 #ifdef __cplusplus
 }
 #endif
