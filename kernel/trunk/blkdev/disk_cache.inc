@@ -623,10 +623,10 @@ end virtual
 ; Assume that devices < 3MB are floppies which are slow
 ; (ramdisk does not have a cache, so we don't even get here for ramdisk).
 ; This is a dirty hack, but the entire function is somewhat hacky. Use fs_read64*.
-        mov     eax, [ebp+PARTITION.Disk]
-        cmp     dword [eax+DISK.MediaInfo.Capacity+4], 0
+        mov     ecx, [ebp+PARTITION.Disk]
+        cmp     dword [ecx+DISK.MediaInfo.Capacity+4], 0
         jnz     @f
-        cmp     dword [eax+DISK.MediaInfo.Capacity], 3 shl (20-9)
+        cmp     dword [ecx+DISK.MediaInfo.Capacity], 3 shl (20-9)
         jb      .floppy
 @@:
 ; We want to prefetch CACHE_LEGACY_READ_SIZE sectors.
@@ -755,6 +755,7 @@ end virtual
 ; and go to 4c.
         pop     esi
         mov     [esi+CACHE_ITEM.Status], CACHE_ITEM_COPY
+        mov     ecx, [ebx+DISKCACHE.sector_size_log]
         jmp     .found_in_cache
 
 ; On error at steps 13-14, release the lock
