@@ -194,12 +194,6 @@ endp
 
 proc detect_controller
 
-locals
-        last_bus dd ?
-        bus      dd ?
-        devfn    dd ?
-endl
-
         invoke  GetPCIList
         mov     edx, eax
 
