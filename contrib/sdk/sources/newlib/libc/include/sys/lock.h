@@ -1,7 +1,7 @@
 #ifndef __SYS_LOCK_H__
 #define __SYS_LOCK_H__
 
-#define  _LIBC  1
+//#define  _LIBC  1
 #define  NOT_IN_libc 1
 
 #ifndef __USE_GNU
