@@ -620,7 +620,7 @@ create_ring:
         lea     eax, [ebx + device.txfd.status]
         invoke  GetPhysAddr
         mov     [ebx + device.txfd.link], eax
-        mov     [ebx + device.txfd.count], 0x02208000
+        mov     [ebx + device.txfd.count], 0x01208000
         lea     eax, [ebx + device.txfd.buf_addr0]
         invoke  GetPhysAddr
         mov     [ebx + device.txfd.desc_addr], eax
