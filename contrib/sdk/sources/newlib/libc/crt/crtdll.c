@@ -33,8 +33,6 @@ int link_app();
 void* get_entry_point(void *raw);
 int (*entry)(int, char **, char **);
 
-char  __appcwd[1024];
-int   __appcwdlen;
 char* __appenv;
 int   __appenv_size;
 
@@ -201,11 +199,6 @@ libc_crt_startup (void *libc_base)
 
     if( link_app() == 0)
         goto done;
-
-    __appcwdlen = strrchr(header->path, '/') - header->path;
-    __appcwdlen = __appcwdlen > 1022 ? 1022 : __appcwdlen;
-    memcpy(__appcwd, header->path, __appcwdlen);
-    set_cwd(__appcwd);
 
     if( header->cmdline[0] != 0)
     {

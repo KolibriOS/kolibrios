@@ -75,7 +75,7 @@ CORE_SRCS:=                   			\
 			ctype/iswalnum.c     	\
 			ctype/iswalpha.c     	\
 			ctype/iswblank.c     	\
-				ctype/iswcntrl.c     	\
+			ctype/iswcntrl.c     	\
          		ctype/iswdigit.c     	\
          		ctype/iswgraph.c     	\
          		ctype/iswlower.c     	\
@@ -272,6 +272,7 @@ STDIO_SRCS=					\
 			refill.c		\
 			rget.c			\
 			remove.c		\
+			rewind.c		\
 			setvbuf.c		\
 			stdio.c			\
 			tmpfile.c		\

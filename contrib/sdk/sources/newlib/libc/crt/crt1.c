@@ -37,9 +37,6 @@ extern int main (int, char **, char **);
 int   _errno;
 int   _fmode;
 
-char  __appcwd[1024];
-int   __appcwdlen;
-
 int    _argc;
 char **_argv;
 
@@ -97,13 +94,6 @@ __crt_startup (void)
 //  _fpreset ();              /* Supplied by the runtime library. */
 
     __do_global_ctors();
-
-    __appcwdlen = strrchr(&__pgmname[0], '/') - &__pgmname[0] + 1;
-    __appcwdlen = __appcwdlen > 1023 ? 1023 : __appcwdlen;
-    memcpy(__appcwd, &__pgmname, __appcwdlen);
-    __appcwd[__appcwdlen] = 0;
-
-    set_cwd(__appcwd);
 
     arg[0] = &__pgmname[0];
 

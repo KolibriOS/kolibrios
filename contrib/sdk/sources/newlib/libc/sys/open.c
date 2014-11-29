@@ -22,8 +22,89 @@
 #undef erro
 extern int errno;
 
+static inline int is_slash(char c)
+{
+    return c=='/' || c=='\\';
+}
+
+void fix_slashes(char * in,char * out)
+{
+    int slash_count;
+
+    for(slash_count=1;in && out && *in;in++)
+    {
+        if(is_slash(*in))
+        {
+            slash_count++;
+            continue;
+        }
+        else
+        {
+            if(slash_count)
+            {
+                slash_count=0;
+                *out++='/';
+            }
+            *out++=*in;
+        }
+    }
+    *out='\0';
+};
+
+
+void buildpath(char *buf, const char* file)
+{
+    char *ptr;
+
+    ptr = buf + strlen(buf);
+
+    while (*file)
+    {
+        if (file[0] == '.' && file[1] == 0)
+            break;
+
+        if (file[0] == '.' && file[1] == '/')
+        {
+            file+=2;
+            continue;
+        };
+
+        if (file[0] == '.' && file[1] == '.' &&
+            (file[2] == 0 || file[2] == '/'))
+        {
+            while (ptr > buf && ptr[-1] != '/')
+                --ptr;
+            file+=2;
+            if (*file == 0)
+                break;
+            ++file;
+            continue;
+        }
+        *ptr++ = '/';
+        if (*file == '/')
+            ++file;
+        while (*file && *file!='/')
+            *ptr++ = *file++;
+    }
+    *ptr = 0;
+};
+
+static char *getccwd(char *buf, size_t size)
+{
+    int bsize;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(bsize)
+    :"a"(30),"b"(2),"c"(buf), "d"(size)
+    :"memory");
+
+    return buf;
+};
+
 int open (const char * filename, int flags, ...)
 {
+    char buf[1024];
+
     __io_handle *ioh;
     fileinfo_t   info;
     int iomode, rwmode, offset;
@@ -37,9 +118,19 @@ int open (const char * filename, int flags, ...)
         return (-1);
     };
 
-//    path = getfullpath(name);
+    if (filename[0]=='/')
+    {
+        strcpy(buf,filename);
+    }
+    else
+    {
+        getccwd(buf, 1024);
+        buildpath(buf, filename);
+    }
 
-    err = get_fileinfo(filename, &info);
+//  printf("%s %s\n", __FUNCTION__, buf);
+
+    err = get_fileinfo(buf, &info);
 
     if( flags & O_EXCL &&
         flags & O_CREAT )
@@ -54,7 +145,7 @@ int open (const char * filename, int flags, ...)
     if( err )
     {
         if(flags & O_CREAT)
-            err=create_file(filename);
+            err=create_file(buf);
         if( err )
         {
             errno = EACCES;
@@ -63,7 +154,7 @@ int open (const char * filename, int flags, ...)
     };
 
     if( flags & O_TRUNC )
-        set_file_size(filename, 0);
+        set_file_size(buf, 0);
 
     ioh = &__io_tab[hid];
 
@@ -92,11 +183,13 @@ int open (const char * filename, int flags, ...)
     } else
         iomode |= _BINARY;
 
-    ioh->name   = strdup(filename);
+    ioh->name   = strdup(buf);
     ioh->offset = offset;
     ioh->mode   = iomode;
     ioh->read   = read_file;
     ioh->write  = write_file;
+
+//    printf("%s %s\n", __FUNCTION__, ioh->name);
 
     return hid;
 };
