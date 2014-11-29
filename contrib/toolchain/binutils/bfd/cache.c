@@ -76,23 +76,8 @@ static int max_open_files = 0;
 static int
 bfd_cache_max_open (void)
 {
-  if (max_open_files == 0)
-    {
-      int max;
-#ifdef HAVE_GETRLIMIT
-      struct rlimit rlim;
-      if (getrlimit (RLIMIT_NOFILE, &rlim) == 0
-	  && rlim.rlim_cur != RLIM_INFINITY)
-	max = rlim.rlim_cur / 8;
-      else
-#endif /* HAVE_GETRLIMIT */
-#ifdef _SC_OPEN_MAX
-	max = sysconf (_SC_OPEN_MAX) / 8;
-#else
-	max = 10;
-#endif /* _SC_OPEN_MAX */
-      max_open_files = max < 10 ? 10 : max;
-    }
+
+  max_open_files = 16;
 
   return max_open_files;
 }

@@ -82,7 +82,7 @@ relative prefix can be found, return @code{NULL}.
 #  define HAVE_DOS_BASED_FILE_SYSTEM
 #  define HAVE_HOST_EXECUTABLE_SUFFIX
 #  define HOST_EXECUTABLE_SUFFIX ".exe"
-#  ifndef DIR_SEPARATOR_2 
+#  ifndef DIR_SEPARATOR_2
 #    define DIR_SEPARATOR_2 '\\'
 #  endif
 #  define PATH_SEPARATOR ';'
@@ -235,77 +235,81 @@ make_relative_prefix_1 (const char *progname, const char *bin_prefix,
   char *ret = NULL, *ptr, *full_progname;
 
   if (progname == NULL || bin_prefix == NULL || prefix == NULL)
-    return NULL;
+        return NULL;
 
   /* If there is no full pathname, try to find the program by checking in each
      of the directories specified in the PATH environment variable.  */
-  if (lbasename (progname) == progname)
+    if (lbasename (progname) == progname)
     {
-      char *temp;
+        char *temp;
 
-      temp = getenv ("PATH");
-      if (temp)
-	{
-	  char *startp, *endp, *nstore;
-	  size_t prefixlen = strlen (temp) + 1;
-	  size_t len;
-	  if (prefixlen < 2)
-	    prefixlen = 2;
+#if 0
+        temp = getenv ("PATH");
 
-	  len = prefixlen + strlen (progname) + 1;
+        if (temp)
+        {
+            char *startp, *endp, *nstore;
+            size_t prefixlen = strlen (temp) + 1;
+            size_t len;
+            if (prefixlen < 2)
+                prefixlen = 2;
+
+            len = prefixlen + strlen (progname) + 1;
 #ifdef HAVE_HOST_EXECUTABLE_SUFFIX
-	  len += strlen (HOST_EXECUTABLE_SUFFIX);
+            len += strlen (HOST_EXECUTABLE_SUFFIX);
 #endif
-	  nstore = (char *) alloca (len);
+            nstore = (char *) alloca (len);
 
-	  startp = endp = temp;
-	  while (1)
-	    {
-	      if (*endp == PATH_SEPARATOR || *endp == 0)
-		{
-		  if (endp == startp)
-		    {
-		      nstore[0] = '.';
-		      nstore[1] = DIR_SEPARATOR;
-		      nstore[2] = '\0';
-		    }
-		  else
-		    {
-		      memcpy (nstore, startp, endp - startp);
-		      if (! IS_DIR_SEPARATOR (endp[-1]))
-			{
-			  nstore[endp - startp] = DIR_SEPARATOR;
-			  nstore[endp - startp + 1] = 0;
-			}
-		      else
-			nstore[endp - startp] = 0;
-		    }
-		  strcat (nstore, progname);
-		  if (! access (nstore, X_OK)
+            startp = endp = temp;
+            while (1)
+            {
+                if (*endp == PATH_SEPARATOR || *endp == 0)
+                {
+                    if (endp == startp)
+                    {
+                        nstore[0] = '.';
+                        nstore[1] = DIR_SEPARATOR;
+                        nstore[2] = '\0';
+                    }
+                    else
+                    {
+                        memcpy (nstore, startp, endp - startp);
+                        if (! IS_DIR_SEPARATOR (endp[-1]))
+                        {
+                            nstore[endp - startp] = DIR_SEPARATOR;
+                            nstore[endp - startp + 1] = 0;
+                        }
+                        else
+                            nstore[endp - startp] = 0;
+                     }
+                    strcat (nstore, progname);
+                    if (! access (nstore, X_OK)
 #ifdef HAVE_HOST_EXECUTABLE_SUFFIX
-                      || ! access (strcat (nstore, HOST_EXECUTABLE_SUFFIX), X_OK)
+                        || ! access (strcat (nstore, HOST_EXECUTABLE_SUFFIX), X_OK)
 #endif
-		      )
-		    {
+                        )
+                    {
 #if defined (HAVE_SYS_STAT_H) && defined (S_ISREG)
-		      struct stat st;
-		      if (stat (nstore, &st) >= 0 && S_ISREG (st.st_mode))
+                        struct stat st;
+                        if (stat (nstore, &st) >= 0 && S_ISREG (st.st_mode))
 #endif
-			{
-			  progname = nstore;
-			  break;
-			}
-		    }
+                        {
+                            progname = nstore;
+                            break;
+                        }
+                    }
 
-		  if (*endp == 0)
-		    break;
-		  endp = startp = endp + 1;
-		}
-	      else
-		endp++;
-	    }
-	}
-    }
+                    if (*endp == 0)
+                        break;
+                    endp = startp = endp + 1;
+                }
+                else
+                    endp++;
+            }
+        }
+#endif
+
+  }
 
   if (resolve_links)
     full_progname = lrealpath (progname);

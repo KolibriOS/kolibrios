@@ -36,7 +36,7 @@ all: libiberty.a
 
 libiberty.a : $(OBJS) MAkefile
 	$(AR) crs libiberty.a $(OBJS)
-#	mv -f libiberty.a $(SDK_DIR)/lib
+	mv -f libiberty.a $(SDK_DIR)/lib
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

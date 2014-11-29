@@ -69,15 +69,6 @@ real_fseek (FILE *file, file_ptr offset, int whence)
 static FILE *
 close_on_exec (FILE *file)
 {
-#if defined (HAVE_FILENO) && defined (F_GETFD)
-  if (file)
-    {
-      int fd = fileno (file);
-      int old = fcntl (fd, F_GETFD, 0);
-      if (old >= 0)
-	fcntl (fd, F_SETFD, old | FD_CLOEXEC);
-    }
-#endif
   return file;
 }
 

@@ -64,9 +64,9 @@ unlink_if_ordinary (const char *name)
 {
   struct stat st;
 
-  if (lstat (name, &st) == 0
-      && (S_ISREG (st.st_mode) || S_ISLNK (st.st_mode)))
-    return unlink (name);
+//  if (lstat (name, &st) == 0
+//      && (S_ISREG (st.st_mode) || S_ISLNK (st.st_mode)))
+//    return unlink (name);
 
   return 1;
 }

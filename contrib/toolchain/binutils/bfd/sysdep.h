@@ -27,6 +27,8 @@
 #error sysdep.h must be included in lieu of config.h
 #endif
 
+#include <stdarg.h>
+
 #include "config.h"
 
 #include "ansidecl.h"

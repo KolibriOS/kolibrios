@@ -8,6 +8,8 @@ INCLUDES=  -I. -I../include -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR
 
 DEFINES=  -DHAVE_CONFIG_H -DHAVE_i386pe_vec -DHAVE_i386pei_vec -DHAVE_bfd_elf32_i386_vec -DHAVE_bfd_elf32_little_generic_vec
 DEFINES+= -DHAVE_bfd_elf32_big_generic_vec -DBINDIR="/home/autobuild/tools/win32/bin"
+TDEFS=    -DDEFAULT_VECTOR=i386pe_vec "-DSELECT_VECS=&i386pe_vec,&i386pei_vec,&bfd_elf32_i386_vec,&bfd_elf32_little_generic_vec,&bfd_elf32_big_generic_vec"
+TDEFS+=   "-DSELECT_ARCHITECTURES=&bfd_i386_arch"
 
 SRCS = \
 	archive.c archures.c bfd.c bfdio.c	\
@@ -19,9 +21,9 @@ SRCS = \
 	elf-nacl.c elf-strtab.c elf-vxworks.c	\
 	format.c hash.c ihex.c init.c libbfd.c	\
 	linker.c merge.c opncls.c pe-i386.c	\
-	peigen.c reloc.c section.c simple.c	\
-	srec.c stabs.c stab-syms.c syms.c	\
-	targets.c tekhex.c verilog.c
+	peigen.c pei-i386.c reloc.c section.c	\
+	simple.c srec.c stabs.c stab-syms.c	\
+	syms.c targets.c tekhex.c verilog.c
 
 
 OBJS  =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(SRCS)))
@@ -32,13 +34,18 @@ all: libbfd.a
 
 libbfd.a : $(OBJS) MAkefile
 	$(AR) crs libbfd.a $(OBJS)
-#	mv -f libbfd.a $(SDK_DIR)/lib
+	mv -f libbfd.a $(SDK_DIR)/lib
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 dwarf2.o : dwarf2.c Makefile
-	$(CC) $(CFLAGS) $(DEFINES) -DDEBUGDIR=\"/home/autobuild/tools/win32/lib/debug\" $(INCLUDES) -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) -DDEBUGDIR='"/home/autobuild/tools/win32/lib/debug\"' $(INCLUDES) -o $@ $<
 
 
+targets.o : targets.c Makefile
+	$(CC) $(CFLAGS) $(DEFINES) $(TDEFS) $(INCLUDES) -o $@ $<
+
+archures.o : archures.c Makefile
+	$(CC) $(CFLAGS) $(DEFINES) $(TDEFS) $(INCLUDES) -o $@ $<
  

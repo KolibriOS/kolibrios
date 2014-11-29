@@ -673,12 +673,14 @@ _maybe_make_executable (bfd * abfd)
 	     which run tests with "ld [...] -o /dev/null".  */
 	  && S_ISREG(buf.st_mode))
 	{
-	  unsigned int mask = umask (0);
+/*
+        unsigned int mask = umask (0);
 
-	  umask (mask);
-	  chmod (abfd->filename,
+        umask (mask);
+        chmod (abfd->filename,
 		 (0777
 		  & (buf.st_mode | ((S_IXUSR | S_IXGRP | S_IXOTH) &~ mask))));
+*/
 	}
     }
 }
