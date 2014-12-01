@@ -421,8 +421,6 @@ align 4
 proc gl_clipcode uses ebx, x:dword, y:dword, z:dword, w1:dword
 	xor ebx,ebx
 
-	;ffree st0
-	;fincstp
 	fld1
 	fadd dword[CLIP_EPSILON]
 	fmul dword[w1]
@@ -465,6 +463,9 @@ proc gl_clipcode uses ebx, x:dword, y:dword, z:dword, w1:dword
 	jbe @f
 		or ebx,16
 	@@:
+
+	ffree st0
+	fincstp
 
 	mov eax,ebx
 if DEBUG ;gl_clipcode

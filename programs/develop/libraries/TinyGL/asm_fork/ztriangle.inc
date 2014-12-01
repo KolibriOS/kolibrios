@@ -536,11 +536,7 @@ end if
 		mov dword[error],0 ;error = 0
 		mov dword[derror],eax
 		and dword[derror],0xffff ;derror = eax & 0x0000ffff
-		shr eax,16
-		bt eax,15
-		jnc @f
-			or eax,0xffff0000
-		@@:
+		sar eax,16
 		mov [dxdy_min],eax ;dxdy_min = eax >> 16
 		inc eax
 		mov [dxdy_max],eax
@@ -686,39 +682,12 @@ if DRAW_LINE_M eq 1
 else
 		; generic draw line
 		mov eax,[x2]
-		shr eax,16
+		sar eax,16
 		mov edi,[x1]
 		sub eax,edi
 		mov [n],eax ;n = (x2 >> 16) - x1
 		imul edi,PSZB
 		add edi,[pp1] ;pp = pp1 + x1 * PSZB
-
-if DEBUG ;[n], [x1], [x2]>>16
-push ecx edi
-	mov eax,[n]
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[x1]
-	stdcall convert_int_to_str,ecx
-	stdcall str_n_cat,edi,txt_zp_sp,2
-	stdcall str_len,edi
-	add edi,eax
-	sub ecx,eax
-
-	mov eax,[x2]
-	shr eax,16
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_fill_tr_nll,buf_param
-pop edi ecx
-end if
 
 if INTERP_Z eq 1
 		mov eax,[x1]

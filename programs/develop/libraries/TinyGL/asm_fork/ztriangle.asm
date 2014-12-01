@@ -6,14 +6,11 @@ macro DRAW_INIT
 if TGL_FEATURE_RENDER_BITS eq 24
 	mov ecx,[p2]
 	mov eax,[ecx+offs_zbup_r]
-	shr eax,8
-	mov [colorR],al ;colorR=p2.r>>8
+	mov [colorR],ah ;colorR=p2.r>>8
 	mov eax,[ecx+offs_zbup_g]
-	shr eax,8
-	mov [colorG],al ;colorG=p2.g>>8
+	mov [colorG],ah ;colorG=p2.g>>8
 	mov eax,[ecx+offs_zbup_b]
-	shr eax,8
-	mov [colorB],al ;colorB=p2.b>>8
+	mov [colorB],ah ;colorB=p2.b>>8
 ;else
 ;  color=RGB_TO_PIXEL(p2->r,p2->g,p2->b);
 end if
@@ -133,7 +130,7 @@ if code eq 0
 end if
 if code eq 1
 	mov eax,[x2]
-	shr eax,16
+	sar eax,16
 	sub eax,[x1]
 	mov [n],eax ;n = (x2 >> 16) - x1
 ;  pp=pp1+x1;
