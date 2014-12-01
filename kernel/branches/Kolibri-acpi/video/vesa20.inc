@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -19,93 +19,130 @@
 
 $Revision$
 
-
-; If you're planning to write your own video driver I suggest
-; you replace the VESA12.INC file and see those instructions.
-
-
-;-----------------------------------------------------------------------------
-; getpixel
-;
-; in:
-; eax = x coordinate
-; ebx = y coordinate
-;
-; ret:
-; ecx = 00 RR GG BB
-;-----------------------------------------------------------------------------
+uglobal
 align 4
-getpixel:
-        push    eax ebx edx edi
-        call    dword [GETPIXEL]
-        pop     edi edx ebx eax
-        ret
-;-----------------------------------------------------------------------------
+        bgr_cur_line    rd 1920         ; maximum width of screen
+        bgr_next_line   rd 1920
+endg
+
+iglobal
 align 4
-Vesa20_getpixel24:
+        overlapping_of_points_ptr       dd overlapping_of_points
+endg
+
+
+;-----------------------------------------------------------------------------
 ; eax = x
 ; ebx = y
-;--------------------------------------
-; check for hardware cursor
+
+align 4
+Vesa20_getpixel16:
+
+        ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         je      @f
         cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
-;--------------------------------------
+  @@:
+
+        ; check mouse area for putpixel
+        test    ecx, 0x04000000         ; don't load to mouseunder area
+        jnz     .no_mouseunder
+        call    [_display.check_m_pixel]
+        test    ecx, ecx                ; 0xff000000
+        jnz     @f
+
+  .no_mouseunder:
+;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+        mov     ebx, [BPSLine_calc_area+ebx*4]
+        lea     edi, [eax*2]            ; edi = x*2
+        add     edi, ebx                ; edi = x*2+(y*y multiplier)
+
+        movzx   ecx, word[LFB_BASE+edi]
+        shl     ecx, 3
+        ror     ecx, 8
+        shl     cx, 2
+        ror     ecx, 8
+        shl     cl, 3
+        rol     ecx, 16
+  @@:
+        and     ecx, 0x00ffffff
+        ret
+
+;-----------------------------------------------------------------------------
+; eax = x
+; ebx = y
+
 align 4
-@@:
-; check mouse area for putpixel
+Vesa20_getpixel24:
+
+        ; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+  @@:
+
+        ; check mouse area for putpixel
         test    ecx, 0x04000000  ; don't load to mouseunder area
         jnz     .no_mouseunder
         call    [_display.check_m_pixel]
-        test    ecx, ecx        ;0xff000000
+        test    ecx, ecx                ; 0xff000000
         jnz     @f
-;--------------------------------------
-align 4
-.no_mouseunder:
-;--------------------------------------
+
+  .no_mouseunder:
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
         mov     ebx, [BPSLine_calc_area+ebx*4]
-        lea     edi, [eax+eax*2]; edi = x*3
+        lea     edi, [eax+eax*2]        ; edi = x*3
         add     edi, ebx      ; edi = x*3+(y*y multiplier)
+
         mov     ecx, [LFB_BASE+edi]
-;--------------------------------------
-align 4
-@@:
-        and     ecx, 0xffffff
+  @@:
+        and     ecx, 0x00ffffff
         ret
+
 ;-----------------------------------------------------------------------------
+; eax = x
+; ebx = y
+
 align 4
 Vesa20_getpixel32:
-;--------------------------------------
-; check for hardware cursor
+
+        ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         je      @f
         cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
-;--------------------------------------
-align 4
-@@:
-; check mouse area for putpixel
+  @@:
+
+        ; check mouse area for putpixel
         test    ecx, 0x04000000  ; don't load to mouseunder area
         jnz     .no_mouseunder
         call    [_display.check_m_pixel]
-        test    ecx, ecx        ;0xff000000
+        test    ecx, ecx                ; 0xff000000
         jnz     @f
-;--------------------------------------
-align 4
-.no_mouseunder:
-;--------------------------------------
+
+  .no_mouseunder:
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
         mov     ebx, [BPSLine_calc_area+ebx*4]
-        lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
+        lea     edi, [ebx+eax*4]        ; edi = x*4+(y*y multiplier)
+
         mov     ecx, [LFB_BASE+edi]
-;--------------------------------------
-align 4
-@@:
-        and     ecx, 0xffffff
+  @@:
+        and     ecx, 0x00ffffff
         ret
+
 ;-----------------------------------------------------------------------------
+; ebx = pointer
+; ecx = size [x|y]
+; edx = coordinates [x|y]
+; ebp = pointer to 'get' function
+; esi = pointer to 'init' function
+; edi = parameter for 'get' function
+
+align 16
+vesa20_putimage:
+
 virtual at esp
  putimg:
    .real_sx        dd ?
@@ -134,15 +171,7 @@ virtual at esp
    .ret_addr    dd      ?
    .arg_0       dd      ?
 end virtual
-;-----------------------------------------------------------------------------
-align 16
-; ebx = pointer
-; ecx = size [x|y]
-; edx = coordinates [x|y]
-; ebp = pointer to 'get' function
-; esi = pointer to 'init' function
-; edi = parameter for 'get' function
-vesa20_putimage:
+
         pushad
         sub     esp, putimg.stack_data
 ; save pointer to image
@@ -168,45 +197,34 @@ vesa20_putimage:
         add     ebx, [putimg.image_cy]
         mov     [putimg.abs_cy], ebx
 ; real_sx = MIN(wnd_sx-image_cx, image_sx);
-        mov     ebx, [eax-twdw + WDATA.box.width]; ebx = wnd_sx
-; \begin{diamond}[20.08.2006]
-; note that WDATA.box.width is one pixel less than real window x-size
-        inc     ebx
-; \end{diamond}[20.08.2006]
+        mov     ebx, [eax-twdw + WDATA.box.width]       ; ebx = wnd_sx
+        inc     ebx                                     ; WDATA.box.width is one pixel less than real window x-size
         sub     ebx, [putimg.image_cx]
         ja      @f
         add     esp, putimg.stack_data
         popad
         ret
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         cmp     ebx, [putimg.image_sx]
         jbe     .end_x
         mov     ebx, [putimg.image_sx]
-;--------------------------------------
-align 4
-.end_x:
+  .end_x:
         mov     [putimg.real_sx], ebx
 ; init real_sy
-        mov     ebx, [eax-twdw + WDATA.box.height]; ebx = wnd_sy
-; \begin{diamond}[20.08.2006]
+        mov     ebx, [eax-twdw + WDATA.box.height]      ; ebx = wnd_sy
         inc     ebx
-; \end{diamond}[20.08.2006]
         sub     ebx, [putimg.image_cy]
         ja      @f
         add     esp, putimg.stack_data
         popad
         ret
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         cmp     ebx, [putimg.image_sy]
         jbe     .end_y
         mov     ebx, [putimg.image_sy]
-;--------------------------------------
-align 4
-.end_y:
+  .end_y:
         mov     [putimg.real_sy], ebx
 ; line increment
         mov     eax, [putimg.image_sx]
@@ -218,13 +236,13 @@ align 4
         add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 ; winmap new line increment
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
+        inc     eax
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
         mov     eax, [_display.pitch]
-        mov     ebx, [_display.bpp]
-        shr     ebx, 3
+        mov     ebx, [_display.bytes_per_pixel]
         imul    ecx, ebx
         sub     eax, ecx
         mov     [putimg.screen_newline], eax
@@ -235,67 +253,268 @@ align 4
 ;        imul    edx, [BytesPerScanLine]
         mov     edx, [BPSLine_calc_area+edx*4]
         mov     eax, [putimg.abs_cx]
-;        movzx   ebx, byte [ScreenBPP]
-;        shr     ebx, 3
         imul    eax, ebx
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [putimg.abs_cy]
+;        imul    eax, [Screen_Max_X]
+;        add     eax, [putimg.abs_cy]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [putimg.abs_cx]
         add     eax, [_WinMapAddress]
         xchg    eax, ebp
-;--------------------------------------
+
         mov     ecx, [putimg.real_sx]
         add     ecx, [putimg.abs_cx]
         mov     [putimg.real_sx_and_abs_cx], ecx
         mov     ecx, [putimg.real_sy]
         add     ecx, [putimg.abs_cy]
         mov     [putimg.real_sy_and_abs_cy], ecx
-;--------------------------------------
+
 ; get process number
         mov     ebx, [CURRENT_TASK]
-        cmp     byte [_display.bpp], 32
+
+        cmp     byte [_display.bits_per_pixel], 16
+        je      put_image_end_16
+        cmp     byte [_display.bits_per_pixel], 24
+        je      put_image_end_24
+        cmp     byte [_display.bits_per_pixel], 32
         je      put_image_end_32
-;--------------------------------------
-put_image_end_24:
+
+;------------------------------------------------------------------------------
+
+put_image_end_16:
+
         mov     edi, [putimg.real_sy]
-;--------------------------------------
+
+; check for hardware cursor
+        mov     ecx, [_display.select_cursor]
+        cmp     ecx, select_cursor
+        je      put_image_end_16_new
+        cmp     ecx, 0
+        je      put_image_end_16_old
+  .new_line:
+        mov     ecx, [putimg.real_sx]
+  .new_x:
+        push    [putimg.edi]
+        mov     eax, [putimg.ebp+4]
+        call    eax
+        cmp     [ebp], bl
+        jne     .skip
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [LFB_BASE+edx], ax
+  .skip:
+        add     edx, 2
+        inc     ebp
+        dec     ecx
+        jnz     .new_x
+
+        add     esi, [putimg.line_increment]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
+
+        cmp     [putimg.ebp], putimage_get1bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get2bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get4bpp
+        jnz     @f
+  .correct:
+        mov     eax, [putimg.edi]
+        mov     byte [eax], 80h
+  @@:
+        dec     edi
+        jnz     .new_line
+  .finish:
+        add     esp, putimg.stack_data
+        popad
+        ret
+
+;------------------------------------------------------------------------------
+
+align 4
+put_image_end_16_old:
+
+  .new_line:
+        mov     ecx, [putimg.real_sx]
+  .new_x:
+        push    [putimg.edi]
+        mov     eax, [putimg.ebp+4]
+        call    eax
+        cmp     [ebp], bl
+        jne     .skip
+
+        push    ecx
+        neg     ecx
+        add     ecx, [putimg.real_sx_and_abs_cx + 4]
+        shl     ecx, 16
+        add     ecx, [putimg.real_sy_and_abs_cy + 4]
+        sub     ecx, edi
+
+; check mouse area for putpixel
+        call    check_mouse_area_for_putpixel
+        pop     ecx
+
+; convert to 16 bpp and store to LFB
+;;        and     eax, 00000000111110001111110011111000b
+;;        shr     ah, 2
+;;        shr     ax, 3
+;;        ror     eax, 8
+;;        add     al, ah
+;;        rol     eax, 8
+        mov     [LFB_BASE+edx], ax
+  .skip:
+        inc     edx
+        inc     edx
+        inc     ebp
+        dec     ecx
+        jnz     .new_x
+
+        add     esi, [putimg.line_increment]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
+
+        cmp     [putimg.ebp], putimage_get1bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get2bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get4bpp
+        jnz     @f
+  .correct:
+        mov     eax, [putimg.edi]
+        mov     byte [eax], 80h
+  @@:
+        dec     edi
+        jnz     .new_line
+        jmp     put_image_end_16.finish
+
+;------------------------------------------------------------------------------
+
+align 4
+put_image_end_16_new:
+
+  .new_line:
+        mov     ecx, [putimg.real_sx]
+
+  .new_x:
+        push    [putimg.edi]
+        mov     eax, [putimg.ebp+4]
+        call    eax
+
+        cmp     [ebp], bl
+        jne     .skip
+
+        push    ecx
+  .sh:
+        neg     ecx
+        add     ecx, [putimg.real_sx_and_abs_cx + 4]
+
+; check for X
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     .no_mouse_area
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        shl     ecx, 16
+        add     ecx, [putimg.real_sy_and_abs_cy + 4]
+        sub     ecx, edi
+
+; check for Y
+        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     .no_mouse_area
+
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
+
+; check mouse area for putpixel
+        call    check_mouse_area_for_putpixel_new.1
+        cmp     ecx, -1                 ; SHIT HAPPENS?
+        jne     .no_mouse_area
+
+        mov     ecx, [esp]
+        jmp     .sh
+
+  .no_mouse_area:
+        pop     ecx
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [LFB_BASE+edx], ax
+
+  .skip:
+        add     edx, 2
+        inc     ebp
+        dec     ecx
+        jnz     .new_x
+
+        add     esi, [putimg.line_increment]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
+
+        cmp     [putimg.ebp], putimage_get1bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get2bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get4bpp
+        jnz     @f
+
+  .correct:
+        mov     eax, [putimg.edi]
+        mov     byte [eax], 80h
+
+  @@:
+        dec     edi
+        jnz     .new_line
+        jmp     put_image_end_16.finish
+
+;------------------------------------------------------------------------------
+
+align 4
+put_image_end_24:
+
+        mov     edi, [putimg.real_sy]
+
 ; check for hardware cursor
         mov     ecx, [_display.select_cursor]
         cmp     ecx, select_cursor
         je      put_image_end_24_new
         cmp     ecx, 0
         je      put_image_end_24_old
-;--------------------------------------
-align 4
-.new_line:
+  .new_line:
         mov     ecx, [putimg.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         push    [putimg.edi]
         mov     eax, [putimg.ebp+4]
         call    eax
         cmp     [ebp], bl
         jne     .skip
-;--------------------------------------
-; store to real LFB
+
+; store to LFB
         mov     [LFB_BASE+edx], ax
         shr     eax, 16
         mov     [LFB_BASE+edx+2], al
-;--------------------------------------
-align 4
-.skip:
+
+  .skip:
         add     edx, 3
         inc     ebp
         dec     ecx
         jnz     .new_x
 
         add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline];[BytesPerScanLine]
-        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
 
         cmp     [putimg.ebp], putimage_get1bpp
         jz      .correct
@@ -303,28 +522,23 @@ align 4
         jz      .correct
         cmp     [putimg.ebp], putimage_get4bpp
         jnz     @f
-;--------------------------------------
-align 4
-.correct:
+  .correct:
         mov     eax, [putimg.edi]
         mov     byte [eax], 80h
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     edi
         jnz     .new_line
-;--------------------------------------
-align 4
-.finish:
+  .finish:
         add     esp, putimg.stack_data
         popad
         ret
+
 ;------------------------------------------------------------------------------
+
 align 4
 put_image_end_24_old:
-;--------------------------------------
-align 4
-.new_line:
+
+  .new_line:
         mov     ecx, [putimg.real_sx]
 ;--------------------------------------
 align 4
@@ -334,9 +548,8 @@ align 4
         call    eax
         cmp     [ebp], bl
         jne     .skip
-;--------------------------------------
-        push    ecx
 
+        push    ecx
         neg     ecx
         add     ecx, [putimg.real_sx_and_abs_cx + 4]
         shl     ecx, 16
@@ -346,21 +559,20 @@ align 4
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
         pop     ecx
-; store to real LFB
+; store to LFB
         mov     [LFB_BASE+edx], ax
         shr     eax, 16
         mov     [LFB_BASE+edx+2], al
-;--------------------------------------
-align 4
-.skip:
+
+  .skip:
         add     edx, 3
         inc     ebp
         dec     ecx
         jnz     .new_x
 
         add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline];[BytesPerScanLine]
-        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
 
         cmp     [putimg.ebp], putimage_get1bpp
         jz      .correct
@@ -368,40 +580,36 @@ align 4
         jz      .correct
         cmp     [putimg.ebp], putimage_get4bpp
         jnz     @f
-;--------------------------------------
-align 4
-.correct:
+
+  .correct:
         mov     eax, [putimg.edi]
         mov     byte [eax], 80h
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         dec     edi
         jnz     .new_line
         jmp     put_image_end_24.finish
+
 ;------------------------------------------------------------------------------
+
 align 4
 put_image_end_24_new:
-;--------------------------------------
-align 4
-.new_line:
+
+  .new_line:
         mov     ecx, [putimg.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+
+  .new_x:
         push    [putimg.edi]
         mov     eax, [putimg.ebp+4]
         call    eax
         cmp     [ebp], bl
         jne     .skip
-;--------------------------------------
+
         push    ecx
-;--------------------------------------
-align 4
-.sh:
+  .sh:
         neg     ecx
         add     ecx, [putimg.real_sx_and_abs_cx + 4]
-;--------------------------------------
+
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
@@ -413,40 +621,39 @@ align 4
 
         add     ecx, [putimg.real_sy_and_abs_cy + 4]
         sub     ecx, edi
-;--------------------------------------
+
 ; check for Y
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
 
         sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      .no_mouse_area
-;--------------------------------------
+
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1   ;SHIT HAPPENS?
+        cmp     ecx, -1         ; SHIT HAPPENS?
         jne     .no_mouse_area
 
         mov     ecx, [esp]
         jmp     .sh
-;--------------------------------------
-align 4
-.no_mouse_area:
+
+  .no_mouse_area:
         pop     ecx
-; store to real LFB
+
+; store to LFB
         mov     [LFB_BASE+edx], ax
         shr     eax, 16
         mov     [LFB_BASE+edx+2], al
-;--------------------------------------
-align 4
-.skip:
+
+  .skip:
         add     edx, 3
         inc     ebp
         dec     ecx
         jnz     .new_x
 
         add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline];[BytesPerScanLine]
-        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
 
         cmp     [putimg.ebp], putimage_get1bpp
         jz      .correct
@@ -454,54 +661,52 @@ align 4
         jz      .correct
         cmp     [putimg.ebp], putimage_get4bpp
         jnz     @f
-;--------------------------------------
-align 4
-.correct:
+
+  .correct:
         mov     eax, [putimg.edi]
         mov     byte [eax], 80h
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         dec     edi
         jnz     .new_line
         jmp     put_image_end_24.finish
+
 ;------------------------------------------------------------------------------
+
 align 4
 put_image_end_32:
+
         mov     edi, [putimg.real_sy]
-;--------------------------------------
+
 ; check for hardware cursor
         mov     ecx, [_display.select_cursor]
         cmp     ecx, select_cursor
         je      put_image_end_32_new
         cmp     ecx, 0
         je      put_image_end_32_old
-;--------------------------------------
-align 4
-.new_line:
+
+  .new_line:
         mov     ecx, [putimg.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+
+  .new_x:
         push    [putimg.edi]
         mov     eax, [putimg.ebp+4]
         call    eax
         cmp     [ebp], bl
         jne     .skip
-;--------------------------------------
-; store to real LFB
+
+; store to LFB
         mov     [LFB_BASE+edx], eax
-;--------------------------------------
-align 4
-.skip:
+
+  .skip:
         add     edx, 4
         inc     ebp
         dec     ecx
         jnz     .new_x
 
         add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline];[BytesPerScanLine]
-        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
 
         cmp     [putimg.ebp], putimage_get1bpp
         jz      .correct
@@ -509,47 +714,40 @@ align 4
         jz      .correct
         cmp     [putimg.ebp], putimage_get4bpp
         jnz     @f
-;--------------------------------------
-align 4
-.correct:
+
+  .correct:
         mov     eax, [putimg.edi]
         mov     byte [eax], 80h
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         dec     edi
         jnz     .new_line
-;--------------------------------------
-align 4
-.finish:
+
+  .finish:
         add     esp, putimg.stack_data
         popad
         cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA__putimage
-;--------------------------------------
-align 4
-@@:
+  @@:
         mov     [EGA_counter], 1
         ret
+
 ;------------------------------------------------------------------------------
+
 align 4
 put_image_end_32_old:
-;--------------------------------------
-align 4
-.new_line:
+
+  .new_line:
         mov     ecx, [putimg.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         push    [putimg.edi]
         mov     eax, [putimg.ebp+4]
         call    eax
         cmp     [ebp], bl
         jne     .skip
-;--------------------------------------
-        push    ecx
 
+        push    ecx
         neg     ecx
         add     ecx, [putimg.real_sx_and_abs_cx + 4]
         shl     ecx, 16
@@ -559,19 +757,18 @@ align 4
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
         pop     ecx
-; store to real LFB
+; store to LFB
         mov     [LFB_BASE+edx], eax
-;--------------------------------------
-align 4
-.skip:
+
+  .skip:
         add     edx, 4
         inc     ebp
         dec     ecx
         jnz     .new_x
 
         add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline];[BytesPerScanLine]
-        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
 
         cmp     [putimg.ebp], putimage_get1bpp
         jz      .correct
@@ -579,83 +776,76 @@ align 4
         jz      .correct
         cmp     [putimg.ebp], putimage_get4bpp
         jnz     @f
-;--------------------------------------
-align 4
-.correct:
+
+  .correct:
         mov     eax, [putimg.edi]
         mov     byte [eax], 80h
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         dec     edi
         jnz     .new_line
         jmp     put_image_end_32.finish
+
 ;------------------------------------------------------------------------------
+
 align 4
 put_image_end_32_new:
-;--------------------------------------
-align 4
-.new_line:
+
+  .new_line:
         mov     ecx, [putimg.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+
+  .new_x:
         push    [putimg.edi]
         mov     eax, [putimg.ebp+4]
         call    eax
         cmp     [ebp], bl
         jne     .skip
-;--------------------------------------
+
         push    ecx
-;--------------------------------------
-align 4
-.sh:
+
+  .sh:
         neg     ecx
         add     ecx, [putimg.real_sx_and_abs_cx + 4]
-;--------------------------------------
+
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
-
         sub     cx, [X_UNDER_subtraction_CUR_hot_x]
         jb      .no_mouse_area
-
         shl     ecx, 16
 
         add     ecx, [putimg.real_sy_and_abs_cy + 4]
         sub     ecx, edi
-;--------------------------------------
+
 ; check for Y
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
-
         sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      .no_mouse_area
-;--------------------------------------
+
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1   ;SHIT HAPPENS?
+        cmp     ecx, -1         ; SHIT HAPPENS?
         jne     .no_mouse_area
 
         mov     ecx, [esp]
         jmp     .sh
-;--------------------------------------
-align 4
-.no_mouse_area:
+
+  .no_mouse_area:
         pop     ecx
-; store to real LFB
+
+; store to LFB
         mov     [LFB_BASE+edx], eax
-;--------------------------------------
-align 4
-.skip:
+
+  .skip:
         add     edx, 4
         inc     ebp
         dec     ecx
         jnz     .new_x
 
         add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline];[BytesPerScanLine]
-        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
+        add     edx, [putimg.screen_newline]
+        add     ebp, [putimg.winmap_newline]
 
         cmp     [putimg.ebp], putimage_get1bpp
         jz      .correct
@@ -663,71 +853,155 @@ align 4
         jz      .correct
         cmp     [putimg.ebp], putimage_get4bpp
         jnz     @f
-;--------------------------------------
-align 4
-.correct:
+
+  .correct:
         mov     eax, [putimg.edi]
         mov     byte [eax], 80h
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         dec     edi
         jnz     .new_line
         jmp     put_image_end_32.finish
+
 ;------------------------------------------------------------------------------
+; eax = x coordinate
+; ebx = y coordinate
+; ecx = xx RR GG BB
+; xx flags:
+; 0x01000000 color inversion
+; 0x02000000 used for draw_rectangle without top line (for drawwindow_III and drawwindow_IV)
+; edi = 0x00000001 force
+
 align 4
 __sys_putpixel:
 
-; eax = x coordinate
-; ebx = y coordinate
-; ecx = ?? RR GG BB    ; 0x01000000 negation
-                       ; 0x02000000 used for draw_rectangle without top line
-                       ;            for example drawwindow_III and drawwindow_IV
-; edi = 0x00000001 force
-
         pushad
-        cmp     eax, [_display.width]
-        jae     .exit
-        cmp     ebx, [_display.height]
-        jae     .exit
+        cmp     [Screen_Max_X], eax
+        jb      .exit
+        cmp     [Screen_Max_Y], ebx
+        jb      .exit
         test    edi, 1           ; force ?
         jnz     .forced
 
-; not forced:
+; not forced
         mov     edx, [d_width_calc_area + ebx*4]
         add     edx, [_WinMapAddress]
         movzx   edx, byte [eax+edx]
         cmp     edx, [CURRENT_TASK]
         jne     .exit
-;--------------------------------------
-align 4
-.forced:
-; check if negation
+
+  .forced:
+; check for color inversion
         test    ecx, 0x01000000
-        jz      .noneg
+        jz      .no_inv
 
-        call    getpixel
+        push    eax ebx edx edi
+        call    [GETPIXEL]
+        pop     edi edx ebx eax
+
         not     ecx
-
         rol     ecx, 8
         mov     cl, [esp+32-8+3]
         ror     ecx, 8
         mov     [esp+32-8], ecx
-;--------------------------------------
-align 4
-.noneg:
-; OK to set pixel
-        call    dword [PUTPIXEL]; call the real put_pixel function
-;--------------------------------------
-align 4
-.exit:
+  .no_inv:
+        call    [PUTPIXEL]      ; call the real put_pixel function
+  .exit:
         popad
         ret
+
 ;-----------------------------------------------------------------------------
+; eax = x
+; ebx = y
+
+align 4
+Vesa20_putpixel16:
+
+        mov     ecx, eax
+        shl     ecx, 16
+        mov     cx, bx
+
+;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        mov     ebx, [BPSLine_calc_area+ebx*4]
+        lea     edi, [eax*2]; edi = x*2
+        mov     eax, [esp+32-8+4]
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     @f
+; check mouse area for putpixel
+        test    eax, 0x04000000
+        jnz     @f
+        call    check_mouse_area_for_putpixel
+  @@:
+; store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+
+        mov     [LFB_BASE+ebx+edi], ax
+        ret
+
+;-----------------------------------------------------------------------------
+; eax = x
+; ebx = y
+
+align 4
+Vesa20_putpixel16_new:
+
+        mov     ecx, eax
+        shl     ecx, 16
+        mov     cx, bx
+
+;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        mov     ebx, [BPSLine_calc_area+ebx*4]
+        lea     edi, [eax*2]; edi = x*2
+        mov     eax, [esp+32-8+4]
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     @f
+; check mouse area for putpixel
+        test    eax, 0x04000000
+        jnz     @f
+
+; check for Y
+        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     @f
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      @f
+        rol     ecx, 16
+
+; check for X
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     @f
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      @f
+        ror     ecx, 16
+
+        call    check_mouse_area_for_putpixel_new.1
+  @@:
+; store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+
+        mov     [LFB_BASE+ebx+edi], ax
+        ret
+
+;-----------------------------------------------------------------------------
+; eax = x
+; ebx = y
+
 align 4
 Vesa20_putpixel24:
-; eax = x
-; ebx = y
+
         mov     ecx, eax
         shl     ecx, 16
         mov     cx, bx
@@ -736,7 +1010,7 @@ Vesa20_putpixel24:
         mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
-;--------------------------------------
+
 ; check for hardware cursor
         cmp     [_display.select_cursor], 0
         jne     @f
@@ -744,19 +1018,21 @@ Vesa20_putpixel24:
         test    eax, 0x04000000
         jnz     @f
         call    check_mouse_area_for_putpixel
-;--------------------------------------
-align 4
-@@:
-; store to real LFB
+  @@:
+
+; store to LFB
         mov     [LFB_BASE+ebx+edi], ax
         shr     eax, 16
         mov     [LFB_BASE+ebx+edi+2], al
         ret
+
 ;-----------------------------------------------------------------------------
+; eax = x
+; ebx = y
+
 align 4
 Vesa20_putpixel24_new:
-; eax = x
-; ebx = y
+
         mov     ecx, eax
         shl     ecx, 16
         mov     cx, bx
@@ -765,55 +1041,52 @@ Vesa20_putpixel24_new:
         mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
-;--------------------------------------
+
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         jne     @f
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
-;--------------------------------------
+
 ; check for Y
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     @f
-
         sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      @f
-
         rol     ecx, 16
-;--------------------------------------
+
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     @f
-
         sub     cx, [X_UNDER_subtraction_CUR_hot_x]
         jb      @f
-
         ror     ecx, 16
 
         call    check_mouse_area_for_putpixel_new.1
-;--------------------------------------
-align 4
-@@:
-; store to real LFB
+  @@:
+; store to LFB
         mov     [LFB_BASE+ebx+edi], ax
         shr     eax, 16
         mov     [LFB_BASE+ebx+edi+2], al
         ret
+
 ;-----------------------------------------------------------------------------
-align 4
-Vesa20_putpixel32:
 ; eax = x
 ; ebx = y
+
+align 4
+Vesa20_putpixel32:
+
         mov     ecx, eax
         shl     ecx, 16
         mov     cx, bx
 
 ;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
         mov     ebx, [BPSLine_calc_area+ebx*4]
-        lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
-        mov     eax, [esp+32-8+4]; eax = color
-;--------------------------------------
+        lea     edi, [ebx+eax*4]        ; edi = x*4+(y*y multiplier)
+        mov     eax, [esp+32-8+4]       ; eax = color
+
 ; check for hardware cursor
         cmp     [_display.select_cursor], 0
         jne     @f
@@ -821,79 +1094,78 @@ Vesa20_putpixel32:
         test    eax, 0x04000000
         jnz     @f
         call    check_mouse_area_for_putpixel
-;--------------------------------------
-align 4
-@@:
+  @@:
         and     eax, 0xffffff
-; store to real LFB
+; store to LFB
         mov     [LFB_BASE+edi], eax
         ret
+
 ;-----------------------------------------------------------------------------
-align 4
-Vesa20_putpixel32_new:
 ; eax = x
 ; ebx = y
+
+align 4
+Vesa20_putpixel32_new:
+
         mov     ecx, eax
         shl     ecx, 16
         mov     cx, bx
 
 ;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
         mov     ebx, [BPSLine_calc_area+ebx*4]
-        lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
-        mov     eax, [esp+32-8+4]; eax = color
-;--------------------------------------
+        lea     edi, [ebx+eax*4]        ; edi = x*4+(y*y multiplier)
+        mov     eax, [esp+32-8+4]       ; eax = color
+
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         jne     @f
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
-;--------------------------------------
+
 ; check for Y
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     @f
-
         sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      @f
-
         rol     ecx, 16
-;--------------------------------------
+
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     @f
-
         sub     cx, [X_UNDER_subtraction_CUR_hot_x]
         jb      @f
-
         ror     ecx, 16
 
         call    check_mouse_area_for_putpixel_new.1
-;--------------------------------------
-align 4
-@@:
-        and     eax, 0xffffff
-; store to real LFB
+  @@:
+        and     eax, 0x00ffffff
+; store to LFB
         mov     [LFB_BASE+edi], eax
         ret
+
 ;-----------------------------------------------------------------------------
+
 align 4
 calculate_edi:
+;        mov     edi, ebx
+;        imul    edi, [Screen_Max_X]
+;        add     edi, ebx
         mov     edi, [d_width_calc_area + ebx*4]
         add     edi, eax
         ret
+
+
 ;-----------------------------------------------------------------------------
 ; DRAWLINE
 ;-----------------------------------------------------------------------------
-align 4
-__sys_draw_line:
-; draw a line
-; eax = HIWORD = x1
-;       LOWORD = x2
-; ebx = HIWORD = y1
-;       LOWORD = y2
+; eax = x1 shl 16 + x2
+; ebx = y1 shl 16 + y2
 ; ecx = color
 ; edi = force ?
-        pusha
+
+align 4
+__sys_draw_line:
 
 dl_x1 equ esp+20
 dl_y1 equ esp+16
@@ -901,6 +1173,8 @@ dl_x2 equ esp+12
 dl_y2 equ esp+8
 dl_dx equ esp+4
 dl_dy equ esp+0
+
+        pusha
 
         xor     edx, edx   ; clear edx
         xor     esi, esi   ; unpack arguments
@@ -922,31 +1196,27 @@ dl_dy equ esp+0
         call    vline
         push    edx ; necessary to rightly restore stack frame at .exit
         jmp     .exit
-;--------------------------------------
-align 4
-.x2lx1:
+
+  .x2lx1:
         neg     esi         ; get esi absolute value
-;--------------------------------------
-align 4
-.no_vline:
+
+  .no_vline:
 ; checking y-axis...
         sub     ebp, ebx    ; ebp = y2-y1
         push    ebp         ; save y2-y1
         jl      .y2ly1      ; is y2 less than y1 ?
         jg      .no_hline   ; y1 > y2 ?
-        mov     edx, [dl_x2]; else (if y1=y2)
+        mov     edx, [dl_x2]    ; else (if y1=y2)
         call    hline
         jmp     .exit
-;--------------------------------------
-align 4
-.y2ly1:
+
+  .y2ly1:
         neg     ebp         ; get ebp absolute value
-;--------------------------------------
-align 4
-.no_hline:
+
+  .no_hline:
         cmp     ebp, esi
         jle     .x_rules    ; |y2-y1| < |x2-x1|  ?
-        cmp     [dl_y2], ebx; make sure y1 is at the begining
+        cmp     [dl_y2], ebx    ; make sure y1 is at the begining
         jge     .no_reverse1
         neg     dword [dl_dx]
         mov     edx, [dl_x2]
@@ -955,30 +1225,24 @@ align 4
         mov     edx, [dl_y2]
         mov     [dl_y2], ebx
         mov     [dl_y1], edx
-;--------------------------------------
-align 4
-.no_reverse1:
+
+  .no_reverse1:
         mov     eax, [dl_dx]
         cdq                 ; extend eax sing to edx
         shl     eax, 16     ; using 16bit fix-point maths
         idiv    ebp         ; eax = ((x2-x1)*65536)/(y2-y1)
-;--------------------------------------
+
 ; correction for the remainder of the division
         shl     edx, 1
         cmp     ebp, edx
         jb      @f
         inc     eax
-;--------------------------------------
-align 4
-@@:
-;--------------------------------------
+  @@:
         mov     edx, ebp    ; edx = counter (number of pixels to draw)
-        mov     ebp, 1 *65536; <<16   ; ebp = dy = 1.0
+        mov     ebp, 1 shl 16   ; ebp = dy = 1.0
         mov     esi, eax    ; esi = dx
         jmp     .y_rules
-;--------------------------------------
-align 4
-.x_rules:
+  .x_rules:
         cmp     [dl_x2], eax ; make sure x1 is at the begining
         jge     .no_reverse2
         neg     dword [dl_dy]
@@ -988,61 +1252,45 @@ align 4
         mov     edx, [dl_y2]
         mov     [dl_y2], ebx
         mov     [dl_y1], edx
-;--------------------------------------
-align 4
-.no_reverse2:
+  .no_reverse2:
         xor     edx, edx
         mov     eax, [dl_dy]
         cdq                 ; extend eax sing to edx
         shl     eax, 16     ; using 16bit fix-point maths
         idiv    esi         ; eax = ((y2-y1)*65536)/(x2-x1)
-;--------------------------------------
 ; correction for the remainder of the division
         shl     edx, 1
         cmp     esi, edx
         jb      @f
         inc     eax
-;--------------------------------------
-align 4
-@@:
-;--------------------------------------
+  @@:
         mov     edx, esi    ; edx = counter (number of pixels to draw)
-        mov     esi, 1 *65536;<< 16   ; esi = dx = 1.0
+        mov     esi, 1 shl 16   ; esi = dx = 1.0
         mov     ebp, eax    ; ebp = dy
-;--------------------------------------
-align 4
-.y_rules:
+
+  .y_rules:
         mov     eax, [dl_x1]
         mov     ebx, [dl_y1]
         shl     eax, 16
         shl     ebx, 16
 
-        and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
-;-----------------------------------------------------------------------------
-align 4
-.draw:
+        and     ecx, 0xFBFFFFFF ; negate 0x04000000 save to mouseunder area
+  .draw:
         push    eax ebx
-;--------------------------------------
+
 ; correction for the remainder of the division
         test    ah, 0x80
         jz      @f
         add     eax, 1 shl 16
-;--------------------------------------
-align 4
-@@:
-;--------------------------------------
+  @@:
         shr     eax, 16
-;--------------------------------------
 ; correction for the remainder of the division
         test    bh, 0x80
         jz      @f
         add     ebx, 1 shl 16
-;--------------------------------------
-align 4
-@@:
-;--------------------------------------
+  @@:
         shr     ebx, 16
-;        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
+;        and     ecx, 0xFBFFFFFF  ; negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
         pop     ebx eax
@@ -1053,36 +1301,34 @@ align 4
 ; force last drawn pixel to be at (x2,y2)
         mov     eax, [dl_x2]
         mov     ebx, [dl_y2]
-;        and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
+;        and     ecx, 0xFBFFFFFF ;n egate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
-;--------------------------------------
-align 4
-.exit:
+
+  .exit:
         add     esp, 6*4
         popa
 ;        call    [draw_pointer]
         ret
+
 ;------------------------------------------------------------------------------
-align 4
-hline:
 ; draw an horizontal line
 ; eax = x1
 ; edx = x2
 ; ebx = y
 ; ecx = color
 ; edi = force ?
+
+align 4
+hline:
+
         push    eax edx
         cmp     edx, eax   ; make sure x2 is above x1
         jge     @f
         xchg    eax, edx
-;--------------------------------------
-align 4
-@@:
+  @@:
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-;--------------------------------------
-align 4
-@@:
+  @@:
 ;        call    [putpixel]
         call    __sys_putpixel
         inc     eax
@@ -1090,26 +1336,25 @@ align 4
         jle     @b
         pop     edx eax
         ret
+
 ;------------------------------------------------------------------------------
-align 4
-vline:
 ; draw a vertical line
 ; eax = x
 ; ebx = y1
 ; edx = y2
 ; ecx = color
 ; edi = force ?
+
+align 4
+vline:
+
         push    ebx edx
         cmp     edx, ebx   ; make sure y2 is above y1
         jge     @f
         xchg    ebx, edx
-;--------------------------------------
-align 4
-@@:
+  @@:
         and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
-;--------------------------------------
-align 4
-@@:
+  @@:
 ;        call    [putpixel]
         call    __sys_putpixel
         inc     ebx
@@ -1117,8 +1362,17 @@ align 4
         jle     @b
         pop     edx ebx
         ret
+
 ;------------------------------------------------------------------------------
+; eax   cx
+; ebx   cy
+; ecx   xe
+; edx   ye
+; edi   color
+
 align 4
+vesa20_drawbar:
+
 virtual at esp
 drbar:
      .bar_sx       dd ?
@@ -1136,61 +1390,43 @@ drbar:
      .real_sy_and_abs_cy dd ?
      .stack_data = 4*13
 end virtual
-;--------------------------------------
-align 4
-; eax   cx
-; ebx   cy
-; ecx   xe
-; edx   ye
-; edi   color
-vesa20_drawbar:
+
         pushad
         sub     esp, drbar.stack_data
         mov     [drbar.color], edi
         sub     edx, ebx
-        jle     .exit       ;// mike.dld, 2005-01-29
+        jle     .exit
         sub     ecx, eax
-        jle     .exit       ;// mike.dld, 2005-01-29
+        jle     .exit
         mov     [drbar.bar_sy], edx
         mov     [drbar.bar_sx], ecx
         mov     [drbar.bar_cx], eax
         mov     [drbar.bar_cy], ebx
         mov     edi, [TASK_BASE]
-        add     eax, [edi-twdw + WDATA.box.left]; win_cx
-        add     ebx, [edi-twdw + WDATA.box.top]; win_cy
+        add     eax, [edi-twdw + WDATA.box.left]        ; win_cx
+        add     ebx, [edi-twdw + WDATA.box.top]         ; win_cy
         mov     [drbar.abs_cx], eax
         mov     [drbar.abs_cy], ebx
 ; real_sx = MIN(wnd_sx-bar_cx, bar_sx);
-        mov     ebx, [edi-twdw + WDATA.box.width]; ebx = wnd_sx
-; \begin{diamond}[20.08.2006]
-; note that WDATA.box.width is one pixel less than real window x-size
-        inc     ebx
-; \end{diamond}[20.08.2006]
+        mov     ebx, [edi-twdw + WDATA.box.width]       ; ebx = wnd_sx
+        inc     ebx                                     ; WDATA.box.width is one pixel less than real window x-size
         sub     ebx, [drbar.bar_cx]
         ja      @f
-;--------------------------------------
-align 4
-.exit:                       ;// mike.dld, 2005-01-29
+  .exit:
         add     esp, drbar.stack_data
         popad
         xor     eax, eax
         inc     eax
         ret
-;--------------------------------------
-align 4
-@@:
+  @@:
         cmp     ebx, [drbar.bar_sx]
         jbe     .end_x
         mov     ebx, [drbar.bar_sx]
-;--------------------------------------
-align 4
-.end_x:
+  .end_x:
         mov     [drbar.real_sx], ebx
 ; real_sy = MIN(wnd_sy-bar_cy, bar_sy);
-        mov     ebx, [edi-twdw + WDATA.box.height]; ebx = wnd_sy
-; \begin{diamond}[20.08.2006]
+        mov     ebx, [edi-twdw + WDATA.box.height]      ; ebx = wnd_sy
         inc     ebx
-; \end{diamond}
         sub     ebx, [drbar.bar_cy]
         ja      @f
         add     esp, drbar.stack_data
@@ -1198,24 +1434,20 @@ align 4
         xor     eax, eax
         inc     eax
         ret
-;--------------------------------------
-align 4
-@@:
+  @@:
         cmp     ebx, [drbar.bar_sy]
         jbe     .end_y
         mov     ebx, [drbar.bar_sy]
-;--------------------------------------
-align 4
-.end_y:
+  .end_y:
         mov     [drbar.real_sy], ebx
 ; line_inc_map
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         sub     eax, [drbar.real_sx]
+        inc     eax
         mov     [drbar.line_inc_map], eax
 ; line_inc_scr
         mov     eax, [drbar.real_sx]
-        mov     ebx, [_display.bpp]
-        shr     ebx, 3
+        mov     ebx, [_display.bytes_per_pixel]
         imul    eax, ebx
         neg     eax
         add     eax, [_display.pitch]
@@ -1229,12 +1461,14 @@ align 4
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [drbar.abs_cy]
+;        imul    eax, [Screen_Max_X]
+;        add     eax, [drbar.abs_cy]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [drbar.abs_cx]
         add     eax, [_WinMapAddress]
         xchg    eax, ebp
-;--------------------------------------
+
         mov     ebx, [drbar.real_sx]
         add     ebx, [drbar.abs_cx]
         mov     [drbar.real_sx_and_abs_cx], ebx
@@ -1243,7 +1477,7 @@ align 4
         mov     [drbar.real_sy_and_abs_cy], ebx
 
         add     edx, LFB_BASE
-;--------------------------------------
+
 ; get process number
         mov     ebx, [CURRENT_TASK]  ; bl - process num
         mov     esi, [drbar.real_sy]
@@ -1251,41 +1485,42 @@ align 4
         rol     eax, 8
         mov     bh, al  ; 0x80 drawing gradient bars
         ror     eax, 8
-        cmp     byte [_display.bpp], 24
-        jne     draw_bar_end_32
+
+        cmp     byte [_display.bits_per_pixel], 16
+        je      draw_bar_end_16
+        cmp     byte [_display.bits_per_pixel], 24
+        je      draw_bar_end_24
+        cmp     byte [_display.bits_per_pixel], 32
+        je      draw_bar_end_32
+
 ;--------------------------------------
-align 4
-draw_bar_end_24:
 ; eax - color high   RRGGBB
 ; bl - process num
 ; ecx - temp
 ; edx - pointer to screen
 ; esi - counter
 ; edi - counter
-;--------------------------------------
+
+align 4
+draw_bar_end_24:
+
 ; check for hardware cursor
         mov     ecx, [_display.select_cursor]
         cmp     ecx, select_cursor
         je      draw_bar_end_24_new
         cmp     ecx, 0
         je      draw_bar_end_24_old
-;--------------------------------------
-align 4
-.new_y:
+  .new_y:
         mov     edi, [drbar.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         cmp     byte [ebp], bl
         jne     .skip
-;--------------------------------------
-; store to real LFB
+
+; store to LFB
         mov     [edx], ax
         shr     eax, 16
         mov     [edx + 2], al
-;--------------------------------------
-align 4
-.skip:
+  .skip:
 ; add pixel
         add     edx, 3
         inc     ebp
@@ -1300,31 +1535,26 @@ align 4
         test    al, al
         jz      @f
         dec     al
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     esi
         jnz     .new_y
-;--------------------------------------
-align 4
-.end:
+  .end:
         add     esp, drbar.stack_data
         popad
         xor     eax, eax
         ret
+
 ;------------------------------------------------------------------------------
+
 align 4
 draw_bar_end_24_old:
-;--------------------------------------
-align 4
-.new_y:
+
+  .new_y:
         mov     edi, [drbar.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         cmp     byte [ebp], bl
         jne     .skip
-;--------------------------------------
+
         mov     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
         shl     ecx, 16
@@ -1332,14 +1562,12 @@ align 4
         sub     ecx, esi
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
-; store to real LFB
+; store to LFB
         mov     [edx], ax
         shr     eax, 16
         mov     [edx + 2], al
         mov     eax, [drbar.color]
-;--------------------------------------
-align 4
-.skip:
+  .skip:
 ; add pixel
         add     edx, 3
         inc     ebp
@@ -1354,48 +1582,41 @@ align 4
         test    al, al
         jz      @f
         dec     al
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     esi
         jnz     .new_y
         jmp     draw_bar_end_24.end
+
 ;------------------------------------------------------------------------------
+
 align 4
 draw_bar_end_24_new:
-;--------------------------------------
-align 4
-.new_y:
+
+  .new_y:
         mov     edi, [drbar.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         cmp     byte [ebp], bl
         jne     .skip
-;--------------------------------------
+
         mov     ecx, [drbar.real_sy_and_abs_cy]
         sub     ecx, esi
-;--------------------------------------
+
 ; check for Y
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
-
         sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      .no_mouse_area
-
         rol     ecx, 16
         add     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
-;--------------------------------------
+
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
-
         sub     cx, [X_UNDER_subtraction_CUR_hot_x]
         jb      .no_mouse_area
-
         ror     ecx, 16
-;--------------------------------------
+
 ; check mouse area for putpixel
         push    eax
         call    check_mouse_area_for_putpixel_new.1
@@ -1404,115 +1625,102 @@ align 4
         mov     [edx + 2], al
         pop     eax
         jmp     .skip
-; store to real LFB
-;--------------------------------------
-align 4
-.no_mouse_area:
+
+  .no_mouse_area:
+; store to LFB
         mov     [edx], ax
         ror     eax, 16
         mov     [edx + 2], al
         rol     eax, 16
-;--------------------------------------
-align 4
-.skip:
+  .skip:
+
 ; add pixel
         add     edx, 3
         inc     ebp
         dec     edi
         jnz     .new_x
+
 ; add line
         add     edx, [drbar.line_inc_scr]
         add     ebp, [drbar.line_inc_map]
+
 ; drawing gradient bars
         test    bh, 0x80
         jz      @f
         test    al, al
         jz      @f
         dec     al
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     esi
         jnz     .new_y
         jmp     draw_bar_end_24.end
+
 ;------------------------------------------------------------------------------
-align 4
-draw_bar_end_32:
 ; eax - color high   RRGGBB
 ; bl - process num
 ; ecx - temp
 ; edx - pointer to screen
 ; esi - counter
 ; edi - counter
-;--------------------------------------
+
+draw_bar_end_32:
+
 ; check for hardware cursor
         mov     ecx, [_display.select_cursor]
         cmp     ecx, select_cursor
         je      draw_bar_end_32_new
         cmp     ecx, 0
         je      draw_bar_end_32_old
-;--------------------------------------
-align 4
-.new_y:
+
+  .new_y:
         mov     edi, [drbar.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         cmp     byte [ebp], bl
         jne     .skip
-;--------------------------------------
-; store to real LFB
+
+; store to LFB
         mov     [edx], eax
         mov     eax, [drbar.color]
-;--------------------------------------
-align 4
-.skip:
+  .skip:
+
 ; add pixel
         add     edx, 4
         inc     ebp
         dec     edi
         jnz     .new_x
+
 ; add line
         add     edx, [drbar.line_inc_scr]
         add     ebp, [drbar.line_inc_map]
+
 ; drawing gradient bars
         test    bh, 0x80
         jz      @f
         test    al, al
         jz      @f
         dec     al
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     esi
         jnz     .new_y
-;--------------------------------------
-align 4
-.end:
+  .end:
         add     esp, drbar.stack_data
         popad
         cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA_draw_bar
-;--------------------------------------
-align 4
-@@:
+  @@:
         xor     eax, eax
         mov     [EGA_counter], 1
         ret
-;------------------------------------------------------------------------------
-align 4
+
 draw_bar_end_32_old:
-;--------------------------------------
-align 4
-.new_y:
+
+  .new_y:
         mov     edi, [drbar.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         cmp     byte [ebp], bl
         jne     .skip
-;--------------------------------------
+
         mov     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
         shl     ecx, 16
@@ -1521,12 +1729,10 @@ align 4
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
-; store to real LFB
+; store to LFB
         mov     [edx], eax
         mov     eax, [drbar.color]
-;--------------------------------------
-align 4
-.skip:
+  .skip:
 ; add pixel
         add     edx, 4
         inc     ebp
@@ -1541,64 +1747,109 @@ align 4
         test    al, al
         jz      @f
         dec     al
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     esi
         jnz     .new_y
         jmp     draw_bar_end_32.end
+
 ;------------------------------------------------------------------------------
+
 align 4
 draw_bar_end_32_new:
-;--------------------------------------
-align 4
-.new_y:
+
+  .new_y:
         mov     edi, [drbar.real_sx]
-;--------------------------------------
-align 4
-.new_x:
+  .new_x:
         cmp     byte [ebp], bl
         jne     .skip
-;--------------------------------------
+
         mov     ecx, [drbar.real_sy_and_abs_cy]
         sub     ecx, esi
-;--------------------------------------
+
 ; check for Y
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
-
         sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      .no_mouse_area
-
         rol     ecx, 16
         add     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
-;--------------------------------------
+
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
-
         sub     cx, [X_UNDER_subtraction_CUR_hot_x]
         jb      .no_mouse_area
-
         ror     ecx, 16
-;--------------------------------------
+
 ; check mouse area for putpixel
         push    eax
         call    check_mouse_area_for_putpixel_new.1
         mov     [edx], eax
         pop     eax
         jmp     .skip
-; store to real LFB
-;--------------------------------------
-align 4
-.no_mouse_area:
+  .no_mouse_area:
+
+; store to LFB
         mov     [edx], eax
-;--------------------------------------
-align 4
-.skip:
+  .skip:
+
 ; add pixel
         add     edx, 4
+        inc     ebp
+        dec     edi
+        jnz     .new_x
+
+; add line
+        add     edx, [drbar.line_inc_scr]
+        add     ebp, [drbar.line_inc_map]
+
+; drawing gradient bars
+        test    bh, 0x80
+        jz      @f
+        test    al, al
+        jz      @f
+        dec     al
+  @@:
+        dec     esi
+        jnz     .new_y
+        jmp     draw_bar_end_32.end
+
+;------------------------------------------------------------------------------
+; eax - color high   RRGGBB
+; bl - process num
+; ecx - temp
+; edx - pointer to screen
+; esi - counter
+; edi - counter
+
+align 4
+draw_bar_end_16:
+
+; check for hardware cursor
+        mov     ecx, [_display.select_cursor]
+        cmp     ecx, select_cursor
+        je      draw_bar_end_16_new
+        cmp     ecx, 0
+        je      draw_bar_end_16_old
+  .new_y:
+        mov     edi, [drbar.real_sx]
+  .new_x:
+        cmp     byte [ebp], bl
+        jne     .skip
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edx], ax
+        mov     eax, [drbar.color]
+  .skip:
+
+; add pixel
+        add     edx, 2
         inc     ebp
         dec     edi
         jnz     .new_x
@@ -1611,21 +1862,159 @@ align 4
         test    al, al
         jz      @f
         dec     al
-;--------------------------------------
-align 4
-@@:
+  @@:
         dec     esi
         jnz     .new_y
-        jmp     draw_bar_end_32.end
+  .end:
+        add     esp, drbar.stack_data
+        popad
+        cmp     [SCR_MODE], 0x12
+        jne     @f
+        call    VGA_draw_bar
+  @@:
+        xor     eax, eax
+        mov     [EGA_counter], 1
+        ret
+
 ;------------------------------------------------------------------------------
+
+align 4
+draw_bar_end_16_old:
+
+  .new_y:
+        mov     edi, [drbar.real_sx]
+  .new_x:
+        cmp     byte [ebp], bl
+        jne     .skip
+
+        mov     ecx, [drbar.real_sx_and_abs_cx]
+        sub     ecx, edi
+        shl     ecx, 16
+        add     ecx, [drbar.real_sy_and_abs_cy]
+        sub     ecx, esi
+
+; check mouse area for putpixel
+        call    check_mouse_area_for_putpixel
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edx], ax
+        mov     eax, [drbar.color]
+.skip:
+
+; add pixel
+        add     edx, 2
+        inc     ebp
+        dec     edi
+        jnz     .new_x
+
+; add line
+        add     edx, [drbar.line_inc_scr]
+        add     ebp, [drbar.line_inc_map]
+
+; drawing gradient bars
+        test    bh, 0x80
+        jz      @f
+        test    al, al
+        jz      @f
+        dec     al
+  @@:
+        dec     esi
+        jnz     .new_y
+        jmp     draw_bar_end_16.end
+
+;------------------------------------------------------------------------------
+
+align 4
+draw_bar_end_16_new:
+
+  .new_y:
+        mov     edi, [drbar.real_sx]
+  .new_x:
+        cmp     byte [ebp], bl
+        jne     .skip
+
+        mov     ecx, [drbar.real_sy_and_abs_cy]
+        sub     ecx, esi
+
+; check for Y
+        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     .no_mouse_area
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
+        rol     ecx, 16
+        add     ecx, [drbar.real_sx_and_abs_cx]
+        sub     ecx, edi
+
+; check for X
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     .no_mouse_area
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+        ror     ecx, 16
+
+; check mouse area for putpixel
+        push    eax
+        call    check_mouse_area_for_putpixel_new.1
+        push    eax
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edx], ax
+        pop     eax
+        pop     eax
+        jmp     .skip
+
+  .no_mouse_area:
+; convert to 16 bpp and store to LFB
+        push    eax
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edx], ax
+        pop     eax
+  .skip:
+
+; add pixel
+        add     edx, 2
+        inc     ebp
+        dec     edi
+        jnz     .new_x
+
+; add line
+        add     edx, [drbar.line_inc_scr]
+        add     ebp, [drbar.line_inc_map]
+
+; drawing gradient bars
+        test    bh, 0x80
+        jz      @f
+        test    al, al
+        jz      @f
+        dec     al
+  @@:
+        dec     esi
+        jnz     .new_y
+        jmp     draw_bar_end_16.end
+
+;------------------------------------------------------------------------------
+
 align 4
 vesa20_drawbackground_tiled:
+
         pushad
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
-;--------------------------------------
-align 4
-dp2:
+  dp2:
         mov     ebp, [draw_data+32+RECT.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
 ;                       and LFB data (output for our function) [edi]
@@ -1635,13 +2024,14 @@ dp2:
         xchg    ebp, eax
         add     ebp, eax
         add     ebp, eax
+        cmp     byte [_display.bytes_per_pixel], 2
+        je      @f
         add     ebp, eax
-        cmp     byte [_display.bpp], 24    ; 24 or 32 bpp ? - x size
-        jz      @f
+        cmp     byte [_display.bytes_per_pixel], 3
+        je      @f
         add     ebp, eax
-;--------------------------------------
-align 4
-@@:
+
+  @@:
         add     ebp, LFB_BASE
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
@@ -1674,14 +2064,11 @@ align 4
 ; edx = 1
 ; esi -> bgr memory, edi -> output
 ; ebp = offset in WinMapAddress
-;--------------------------------------
-align 4
-dp3:
+  dp3:
         cmp     [ebp], dl
-        jnz     nbgp
-;--------------------------------------
-        push    eax ecx
+        jnz     .next_pix
 
+        push    eax ecx
         mov     ecx, eax
         shl     ecx, 16
         add     ecx, ebx
@@ -1693,47 +2080,52 @@ dp3:
         je      @f
         cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
-;--------------------------------------
-align 4
-@@:
+  @@:
         and     eax, 0xffffff
 ; check mouse area for putpixel
         call    [_display.check_mouse]
-;--------------------------------------
-align 4
-.no_mouseunder:
-; store to real LFB
+  .no_mouseunder:
+
+        cmp     byte [_display.bits_per_pixel], 16
+        je      .16bpp
+; store to LFB
         mov     [edi], ax
         shr     eax, 16
         mov     [edi+2], al
-
         pop     ecx eax
-;--------------------------------------
-align 4
-nbgp:
+        jmp     .next_pix
+
+  .16bpp:
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edi], ax
+        pop     ecx eax
+
+; Advance to next pixel
+  .next_pix:
         add     esi, 3
-        add     edi, 3
-;--------------------------------------
-align 4
-@@:
-        cmp     byte [_display.bpp], 25    ; 24 or 32 bpp?
-        sbb     edi, -1         ; +1 for 32 bpp
-; I do not use 'inc eax' because this is slightly slower then 'add eax,1'
+        add     edi, [_display.bytes_per_pixel]
+
         add     ebp, edx
         add     eax, edx
         cmp     eax, [draw_data+32+RECT.right]
         ja      dp4
         sub     ecx, edx
         jnz     dp3
+
 ; next tile block on x-axis
         mov     ecx, [BgrDataWidth]
         sub     esi, ecx
         sub     esi, ecx
         sub     esi, ecx
         jmp     dp3
-;--------------------------------------
-align 4
-dp4:
+
+  dp4:
 ; next scan line
         inc     ebx
         cmp     ebx, [draw_data+32+RECT.bottom]
@@ -1743,31 +2135,36 @@ dp4:
         cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA_drawbackground
-;--------------------------------------
-align 4
-@@:
+  @@:
         ret
+
 ;------------------------------------------------------------------------------
+
 align 4
 vesa20_drawbackground_stretch:
+
         pushad
 ; Helper variables
-; calculate 2^32*(BgrDataWidth) mod (ScreenWidth)
+; calculate 2^32*(BgrDataWidth-1) mod (ScreenWidth-1)
         mov     eax, [BgrDataWidth]
+        dec     eax
         xor     edx, edx
-        div     dword [_display.width]
+        div     dword [Screen_Max_X]
         push    eax     ; high
         xor     eax, eax
-        div     dword [_display.width]
+        div     dword [Screen_Max_X]
         push    eax     ; low
+
 ; the same for height
         mov     eax, [BgrDataHeight]
+        dec     eax
         xor     edx, edx
-        div     dword [_display.height]
+        div     dword [Screen_Max_Y]
         push    eax     ; high
         xor     eax, eax
-        div     dword [_display.height]
+        div     dword [Screen_Max_Y]
         push    eax     ; low
+
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
         mov     ebp, [draw_data+32+RECT.left]   ; x start
@@ -1779,16 +2176,18 @@ vesa20_drawbackground_stretch:
         xchg    ebp, eax
         add     ebp, eax
         add     ebp, eax
-        add     ebp, eax
-        cmp     byte [_display.bpp], 24    ; 24 or 32 bpp ? - x size
+        cmp     byte [_display.bytes_per_pixel], 2
         jz      @f
         add     ebp, eax
-;--------------------------------------
-align 4
-@@:
+        cmp     byte [_display.bytes_per_pixel], 3
+        jz      @f
+        add     ebp, eax
+  @@:
+
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
+
 ; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
         push    ebx
         push    eax
@@ -1814,19 +2213,17 @@ align 4
         push    eax
         push    edx
         push    esi
+
 ; 3) Smooth horizontal
-;--------------------------------------
-align 4
-bgr_resmooth0:
+  bgr_resmooth0:
         mov     ecx, [esp+8]
         mov     edx, [esp+4]
         mov     esi, [esp]
         push    edi
         mov     edi, bgr_cur_line
         call    smooth_line
-;--------------------------------------
-align 4
-bgr_resmooth1:
+
+  bgr_resmooth1:
         mov     eax, [esp+16+4]
         inc     eax
         cmp     eax, [BgrDataHeight]
@@ -1839,15 +2236,14 @@ bgr_resmooth1:
         add     esi, [BgrDataWidth]
         mov     edi, bgr_next_line
         call    smooth_line
-;--------------------------------------
-align 4
-bgr.no2nd:
+
+  bgr.no2nd:
         pop     edi
-;--------------------------------------
-align 4
-sdp3:
+
+  sdp3:
         xor     esi, esi
         mov     ecx, [esp+12]
+
 ; 4) Loop through redraw rectangle and copy background data
 ; Registers meaning:
 ; esi = offset in current line, edi -> output
@@ -1860,9 +2256,8 @@ sdp3:
 ; precalculated constants:
 ; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
-;--------------------------------------
-align 4
-sdp3a:
+
+  sdp3a:
         mov     eax, [_WinMapAddress]
         cmp     [ebp+eax], byte 1
         jnz     snbgp
@@ -1871,36 +2266,44 @@ sdp3a:
         jz      .novert
         mov     ebx, [bgr_next_line+esi]
         call    [overlapping_of_points_ptr]
-;--------------------------------------
-align 4
-.novert:
+
+  .novert:
         push    ecx
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
         je      @f
         cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
-;--------------------------------------
-align 4
-@@:
+  @@:
         mov     ecx, [esp+20+4]        ;x
         shl     ecx, 16
         add     ecx, [esp+24+4]        ;y
 ; check mouse area for putpixel
         call    [_display.check_mouse]
-;--------------------------------------
-align 4
-.no_mouseunder:
-; store to real LFB
+  .no_mouseunder:
+
+        cmp     [_display.bits_per_pixel], 16
+        jne     .not_16bpp
+; convert to 16 bpp and store to LFB
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [LFB_BASE+edi], ax
+        pop     ecx
+        jmp     snbgp
+  .not_16bpp:
+
+; store to LFB
         mov     [LFB_BASE+edi], ax
         shr     eax, 16
         mov     [LFB_BASE+edi+2], al
         pop     ecx
-;--------------------------------------
-align 4
-snbgp:
-        cmp     byte [_display.bpp], 25
-        sbb     edi, -4
+
+  snbgp:
+        add     edi, [_display.bytes_per_pixel]
         add     ebp, 1
         mov     eax, [esp+20]
         add     eax, 1
@@ -1908,28 +2311,30 @@ snbgp:
         add     esi, 4
         cmp     eax, [draw_data+32+RECT.right]
         jbe     sdp3a
-;--------------------------------------
-align 4
-sdp4:
+
+  sdp4:
 ; next y
         mov     ebx, [esp+24]
         add     ebx, 1
         mov     [esp+24], ebx
         cmp     ebx, [draw_data+32+RECT.bottom]
         ja      sdpdone
+
 ; advance edi, ebp to next scan line
         sub     eax, [draw_data+32+RECT.left]
         sub     ebp, eax
-        add     ebp, [_display.width]
+        add     ebp, [Screen_Max_X]
+        add     ebp, 1
         sub     edi, eax
         sub     edi, eax
-        sub     edi, eax
-        cmp     byte [_display.bpp], 24
+        cmp     byte [_display.bytes_per_pixel], 2
         jz      @f
         sub     edi, eax
-;--------------------------------------
-align 4
-@@:
+        cmp     byte [_display.bytes_per_pixel], 3
+        jz      @f
+        sub     edi, eax
+
+  @@:
         add     edi, [_display.pitch]
 ; restore ecx,edx; advance esi to next background line
         mov     eax, [esp+28]
@@ -1951,31 +2356,23 @@ align 4
         push    edi
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
-        mov     ecx, [_display.width]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
         rep movsd
         jmp     bgr_resmooth1
-;--------------------------------------
-align 4
-sdpdone:
+
+  sdpdone:
         add     esp, 44
         popad
         mov     [EGA_counter], 1
         cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA_drawbackground
-;--------------------------------------
-align 4
-@@:
+  @@:
         ret
 
-uglobal
 ;--------------------------------------
-align 4
-bgr_cur_line    rd      1920    ; maximum width of screen
-bgr_next_line   rd      1920
-;--------------------------------------
-endg
-;--------------------------------------
+
 align 4
 smooth_line:
         mov     al, [esi+2]
@@ -1986,9 +2383,7 @@ smooth_line:
         mov     ebx, [esi+2]
         shr     ebx, 8
         call    [overlapping_of_points_ptr]
-;--------------------------------------
-align 4
-@@:
+  @@:
         stosd
         mov     eax, [esp+20+8]
         add     eax, 1
@@ -2002,13 +2397,13 @@ align 4
         lea     eax, [eax*3]
         sub     esi, eax
         jmp     smooth_line
-;--------------------------------------
-align 4
-@@:
+  @@:
         mov     eax, [draw_data+32+RECT.left]
         mov     [esp+20+8], eax
         ret
+
 ;------------------------------------------------------------------------------
+
 align 16
 overlapping_of_points:
 if 0
@@ -2072,27 +2467,22 @@ else
         ret
 end if
 
-iglobal
-;--------------------------------------
-align 4
-overlapping_of_points_ptr       dd      overlapping_of_points
-;--------------------------------------
-endg
+
 ;------------------------------------------------------------------------------
+
 align 4
 init_background:
+
         mov     edi, BgrAuxTable
         xor     edx, edx
-;--------------------------------------
-align 4
-.loop2:
+
+  .loop2:
         mov     eax, edx
         shl     eax, 8
         neg     eax
         mov     ecx, 0x200
-;--------------------------------------
-align 4
-.loop1:
+
+  .loop1:
         mov     byte [edi], ah
         inc     edi
         add     eax, edx
@@ -2102,13 +2492,14 @@ align 4
         test    byte [cpu_caps+(CAPS_MMX/8)], 1 shl (CAPS_MMX mod 8)
         jz      @f
         mov     [overlapping_of_points_ptr], overlapping_of_points_mmx
-;--------------------------------------
-align 4
-@@:
+  @@:
         ret
+
 ;------------------------------------------------------------------------------
+
 align 16
 overlapping_of_points_mmx:
+
         movd    mm0, eax
         movd    mm4, eax
         movd    mm1, ebx
@@ -2125,5 +2516,7 @@ overlapping_of_points_mmx:
         packuswb mm1, mm2
         paddb   mm4, mm1
         movd    eax, mm4
+
         ret
+
 ;------------------------------------------------------------------------------

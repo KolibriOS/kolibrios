@@ -1,3 +1,13 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 4850 $
+
+
 ; Initialization of the USB subsystem.
 ; Provides usb_init procedure, includes all needed files.
 
@@ -55,7 +65,7 @@ proc usb_init
         mov     esi, pcidev_list
         push    0
 .kickoff:
-        mov     esi, [esi+PCIDEV.list.next]
+        mov     esi, [esi+PCIDEV.fd]
         cmp     esi, pcidev_list
         jz      .done_kickoff
         cmp     word [esi+PCIDEV.class+1], 0x0C03
@@ -108,7 +118,7 @@ proc usb_init
 ; for all EHCI controllers.
         mov     eax, pcidev_list
 .scan_ehci:
-        mov     eax, [eax+PCIDEV.list.next]
+        mov     eax, [eax+PCIDEV.fd]
         cmp     eax, pcidev_list
         jz      .done_ehci
         cmp     [eax+PCIDEV.class], 0x0C0320
@@ -120,7 +130,7 @@ proc usb_init
 ; for all UHCI and OHCI controllers.
         mov     eax, pcidev_list
 .scan_usb1:
-        mov     eax, [eax+PCIDEV.list.next]
+        mov     eax, [eax+PCIDEV.fd]
         cmp     eax, pcidev_list
         jz      .done_usb1
         cmp     [eax+PCIDEV.class], 0x0C0300

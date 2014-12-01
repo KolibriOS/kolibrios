@@ -7,11 +7,6 @@
 
 $Revision$
 
-iglobal
-  szKernel            db 'KERNEL', 0
-  szVersion           db 'version',0
-endg
-
  align 4
 __exports:
           export 'KERNEL',   \
@@ -48,6 +43,7 @@ __exports:
           get_phys_addr,         'GetPhysAddr',        \      ; eax
           map_space,             'MapSpace',           \
           release_pages,         'ReleasePages',       \
+          alloc_dma24,           'AllocDMA24',         \      ; stdcall
 \
           mutex_init,            'MutexInit',          \      ; gcc fastcall
           mutex_lock,            'MutexLock',          \      ; gcc fastcall
@@ -94,6 +90,7 @@ __exports:
           load_cursor,           'LoadCursor',         \      ;stdcall
 \
           get_curr_task,         'GetCurrentTask',     \
+          change_task,           'ChangeTask',         \
           load_file,             'LoadFile',           \      ;retval eax, ebx
           delay_ms,              'Sleep',              \
 \
@@ -105,6 +102,7 @@ __exports:
           strrchr,               'strrchr',            \
 \
           timer_hs,              'TimerHS',            \
+          timer_hs,              'TimerHs',            \      ; shit happens
           cancel_timer_hs,       'CancelTimerHS',      \
 \
           reg_usb_driver,        'RegUSBDriver',       \
@@ -120,6 +118,8 @@ __exports:
           NET_ptr_to_num,        'NetPtrToNum',        \
           NET_link_changed,      'NetLinkChanged',     \
           ETH_input,             'Eth_input',          \
+\
+          get_pcidev_list,       'GetPCIList',         \
 \
           0,                     'LFBAddress' ; must be the last one
 load kernel_exports_count dword from __exports + 24

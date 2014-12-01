@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -96,6 +96,7 @@ TCP_RTTVAR_SHIFT        = 2
 TCP_BIT_NEEDOUTPUT      = 1 shl 0
 TCP_BIT_TIMESTAMP       = 1 shl 1
 TCP_BIT_DROPSOCKET      = 1 shl 2
+TCP_BIT_FIN_IS_ACKED    = 1 shl 3
 
 TCP_BIT_SENDALOT        = 1 shl 0
 
@@ -119,13 +120,13 @@ ends
 
 struct  TCP_queue_entry
 
-        ip_ptr          dd ?
-        segment_ptr     dd ?
-        segment_size    dd ?
-        device_ptr      dd ?
+        ip_ptr                  dd ?
+        segment_ptr             dd ?
+        segment_size            dd ?
+        device_ptr              dd ?
 
-        buffer_ptr      dd ?
-        timestamp       dd ?
+        buffer_ptr              dd ?
+        timestamp               dd ?
 
 ends
 
@@ -141,6 +142,7 @@ align 4
         TCP_sequence_num        dd ?
         TCP_queue               rd (TCP_QUEUE_SIZE*sizeof.TCP_queue_entry + sizeof.queue)/4
         TCP_input_event         dd ?
+        TCP_timer1_event        dd ?
 endg
 
 uglobal
@@ -224,7 +226,15 @@ macro   TCP_init {
         call    new_sys_threads
         test    eax, eax
         jns     @f
-        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP, error %d\n', eax
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP input, error %d\n', eax
+  @@:
+
+        movi    ebx, 1
+        mov     ecx, TCP_timer_640ms
+        call    new_sys_threads
+        test    eax, eax
+        jns     @f
+        DEBUGF  DEBUG_NETWORK_ERROR,'K : cannot create kernel thread for TCP timer, error %d\n', eax
   @@:
 
 }
@@ -264,6 +274,8 @@ TCP_api:
         jz      .packets_missed ; 2
         dec     bl
         jz      .packets_dumped ; 3
+        dec     bl
+        jz      .packets_queued ; 4
 
   .error:
         mov     eax, -1
@@ -283,4 +295,8 @@ TCP_api:
 
   .packets_dumped:
         mov     eax, [TCP_segments_dumped + eax]
+        ret
+
+  .packets_queued:
+        mov     eax, [TCP_queue + queue.size]
         ret

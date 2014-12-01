@@ -1,3 +1,13 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 4850 $
+
+
   boot_initirq       latin1   'Algväärtustan IRQ',0
   boot_picinit       latin1   'Algväärtustan PIC',0
   boot_v86machine    latin1   'Algväärtustan süsteemi V86 masinat',0

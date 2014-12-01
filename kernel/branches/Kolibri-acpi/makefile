@@ -1,11 +1,10 @@
 FASM=fasm
 FLAGS=-m 65536
 languages=en|ru|ge|et|sp
-drivers_src=com_mouse emu10k1x fm801 infinity sis sound vt823x
 
-.PHONY: all kernel drivers bootloader clean
+.PHONY: all kernel bootloader clean
 
-all: kernel drivers bootloader
+all: kernel bootloader
 
 kernel: check_lang
 	@echo "*** building kernel with language '$(lang)' ..."
@@ -15,14 +14,6 @@ kernel: check_lang
 	@$(FASM) $(FLAGS) kernel.asm bin/kernel.mnt
 	@rm -f lang.inc
 
-drivers:
-	@echo "*** building drivers ..."
-	@mkdir -p bin/drivers
-	@cd drivers; for f in $(drivers_src); do \
-	  echo "--- building 'bin/drivers/$${f}.obj' ..."; \
-	  $(FASM) $(FLAGS) "$${f}.asm" "../bin/drivers/$${f}.obj" || exit $?; \
-	done
-
 bootloader: check_lang
 	@echo "*** building bootloader with language '$(lang)' ..."
 	@mkdir -p bin
@@ -30,7 +21,7 @@ bootloader: check_lang
 	@echo "--- building 'bin/boot_fat12.bin' ..."
 	@$(FASM) $(FLAGS) bootloader/boot_fat12.asm bin/boot_fat12.bin
 	@rm -f lang.inc
-
+		
 
 check_lang:
 	@case "$(lang)" in \

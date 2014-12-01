@@ -110,7 +110,7 @@ SS_MORETOCOME           = 0x4000
 SS_BLOCKED              = 0x8000
 
 
-SOCKET_MAXDATA          = 4096*8        ; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA          = 4096*64       ; must be 4096*(power of 2) where 'power of 2' is at least 8
 MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
@@ -313,9 +313,14 @@ stack_handler:
         test    [net_10ms], 0x3f        ; 640ms
         jnz     .exit
 
-        TCP_timer_640ms
         ARP_decrease_entry_ttls
         IPv4_decrease_fragment_ttls
+
+        xor     edx, edx
+        mov     eax, [TCP_timer1_event]
+        mov     ebx, [eax + EVENT.id]
+        xor     esi, esi
+        call    raise_event
 
   .exit:
         ret

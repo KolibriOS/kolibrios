@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
@@ -86,11 +86,7 @@ ETH_input:
         push    ebx
         mov     esi, esp
 
-        pushf
-        cli
         add_to_queue ETH_queue, ETH_QUEUE_SIZE, sizeof.ETH_queue_entry, .fail
-        popf
-
         add     esp, sizeof.ETH_queue_entry
 
         xor     edx, edx
@@ -102,10 +98,9 @@ ETH_input:
         ret
 
   .fail:
-        popf
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH incoming queue is full, discarding packet!\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "ETH incoming queue is full, discarding packet!\n"
 
-        add     esp, sizeof.ETH_queue_entry - 8
+        pop     ebx
         call    NET_packet_free
         add     esp, 4
 
@@ -150,14 +145,14 @@ ETH_process_input:
         cmp     ax, ETHER_PROTO_ARP
         je      ARP_input
 
-        cmp     ax, ETHER_PROTO_IPv6
-        je      IPv6_input
+;        cmp     ax, ETHER_PROTO_IPv6
+;        je      IPv6_input
 
-        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
-        je      PPPoE_discovery_input
+;        cmp     ax, ETHER_PROTO_PPP_DISCOVERY
+;        je      PPPoE_discovery_input
 
-        cmp     ax, ETHER_PROTO_PPP_SESSION
-        je      PPPoE_session_input
+;        cmp     ax, ETHER_PROTO_PPP_SESSION
+;        je      PPPoE_session_input
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_input: Unknown packet type=%x\n", ax
 
@@ -171,17 +166,16 @@ ETH_process_input:
 ;
 ; ETH_output
 ;
-; IN: eax = pointer to source mac
+; IN:  ax = protocol
 ;     ebx = device ptr
-;     ecx = packet size
+;     ecx = payload size
 ;     edx = pointer to destination mac
-;      di = protocol
 ;
-; OUT: edi = 0 on error, pointer to buffer otherwise
-;      eax = buffer start
-;      ebx = to device structure
-;      ecx = unchanged (packet size of embedded data)
-;      edx = size of complete buffer
+; OUT: eax = start of ethernet frame / 0 on error
+;      ebx = device ptr
+;      ecx = payload size
+;      edx = ethernet frame size
+;      edi = start of ethernet payload
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -189,11 +183,11 @@ ETH_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: size=%u device=%x\n", ecx, ebx
 
-        cmp     ecx, [ebx + NET_DEVICE.mtu]
+        cmp     ecx, [ebx + ETH_DEVICE.mtu]
         ja      .exit
 
         push    ecx
-        push    di eax edx
+        push    ax edx
 
         add     ecx, sizeof.ETH_header
         stdcall kernel_alloc, ecx
@@ -204,7 +198,7 @@ ETH_output:
         pop     esi
         movsd
         movsw
-        pop     esi
+        lea     esi, [ebx + ETH_DEVICE.mac]
         movsd
         movsw
         pop     ax
@@ -227,13 +221,13 @@ ETH_output:
 
   .out_of_ram:
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: Out of ram!\n"
-        add     esp, 4+4+2+4
-        sub     edi, edi
+        add     esp, 4+2+4
+        xor     eax, eax
         ret
 
   .exit:
         DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: Packet too large!\n"
-        sub     edi, edi
+        xor     eax, eax
         ret
 
 

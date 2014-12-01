@@ -394,145 +394,27 @@ sayerr:
 
         push    0
         popf
-        sti
 
 ; set up esp
         movzx   esp, sp
 
         push    0
         pop     es
-        xor     ax, ax
-        and     word [es:BOOT_IDE_BASE_ADDR], ax        ;0
-        and     word [es:BOOT_IDE_BAR0_16], ax  ;0
-        and     word [es:BOOT_IDE_BAR1_16], ax  ;0
-        and     word [es:BOOT_IDE_BAR2_16], ax  ;0
-        and     word [es:BOOT_IDE_BAR3_16], ax  ;0
-; \begin{Mario79}
-; find HDD IDE DMA PCI device
-; check for PCI BIOS
-        mov     ax, 0xB101
-        int     0x1A
-        jc      .nopci
-        cmp     edx, 'PCI '
-        jnz     .nopci
-; find PCI class code
-; class 1 = mass storage
-; subclass 1 = IDE controller
-; a) class 1, subclass 1, programming interface 0x80
-; This is a Parallel IDE Controller which uses IRQs 14 and 15.
-        mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x80
-        mov     [es:BOOT_IDE_PI_16], cx
-        xor     si, si  ; device index = 0
-        int     0x1A
-        jnc     .found_1 ; Parallel IDE Controller
-; b) class 1, subclass 1, programming interface 0x8f
-        mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x8f
-        mov     [es:BOOT_IDE_PI_16], cx
-        xor     si, si  ; device index = 0
-        int     0x1A
-        jnc     .found_1
-; c) class 1, subclass 1, programming interface 0x85
-        mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x85
-        mov     [es:BOOT_IDE_PI_16], cx
-        xor     si, si  ; device index = 0
-        int     0x1A
-        jnc     .found_1
-; d) class 1, subclass 1, programming interface 0x8A
-; This is a Parallel IDE Controller which uses IRQs 14 and 15.
-        mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x8A
-        mov     [es:BOOT_IDE_PI_16], cx
-        xor     si, si  ; device index = 0
-        int     0x1A
-        jnc     .found_1 ; Parallel IDE Controller
-; Controller not found!
-        xor     ax, ax
-        mov     [es:BOOT_IDE_PI_16], ax
-        jmp     .nopci
-;--------------------------------------
-.found_1:
-; get memory base BAR4
-        mov     ax, 0xB10A
-        mov     di, 0x20        ; memory base is config register at 0x20
-        push    cx
-        int     0x1A
-        jc      .no_BAR4        ;.nopci
-        and     cx, 0xFFFC      ; clear address decode type
-        mov     [es:BOOT_IDE_BASE_ADDR], cx
-.no_BAR4:
-        pop     cx
-;--------------------------------------
-.found:
-; get Interrupt Line
-        mov     ax, 0xB10A
-        mov     di, 0x3c        ; memory base is config register at 0x3c
-        push    cx
-        int     0x1A
-        jc      .no_Interrupt        ;.nopci
 
-        mov     [es:BOOT_IDE_INTERR_16], cx
-.no_Interrupt:
-        pop     cx
-;--------------------------------------
-; get memory base BAR0
-        mov     ax, 0xB10A
-        mov     di, 0x10        ; memory base is config register at 0x10
-        push    cx
-        int     0x1A
-        jc      .no_BAR0        ;.nopci
-
-        mov     [es:BOOT_IDE_BAR0_16], cx
-.no_BAR0:
-        pop     cx
-;--------------------------------------
-; get memory base BAR1
-        mov     ax, 0xB10A
-        mov     di, 0x14        ; memory base is config register at 0x14
-        push    cx
-        int     0x1A
-        jc      .no_BAR1        ;.nopci
-
-        mov     [es:BOOT_IDE_BAR1_16], cx
-.no_BAR1:
-        pop     cx
-;--------------------------------------
-; get memory base BAR2
-        mov     ax, 0xB10A
-        mov     di, 0x18        ; memory base is config register at 0x18
-        push    cx
-        int     0x1A
-        jc      .no_BAR2        ;.nopci
-
-        mov     [es:BOOT_IDE_BAR2_16], cx
-.no_BAR2:
-        pop     cx
-;--------------------------------------
-; get memory base BAR3
-        mov     ax, 0xB10A
-        mov     di, 0x1C        ; memory base is config register at 0x1c
-        push    cx
-        int     0x1A
-        jc      .no_BAR3        ;.nopci
-
-        mov     [es:BOOT_IDE_BAR3_16], cx
-.no_BAR3:
-        pop     cx
-;--------------------------------------
-.nopci:
-; \end{Mario79}
+        xor     cx, cx
+@@:
+        in      al, 64h
+        test    al, 2
+        loopnz  @b
 
         mov     al, 0xf6        ; Сброс клавиатуры, разрешить сканирование
         out     0x60, al
         xor     cx, cx
-wait_loop:       ; variant 2
-; reading state of port of 8042 controller
+@@:
         in      al, 64h
-        and     al, 00000010b  ; ready flag
-; wait until 8042 controller is ready
-        loopnz  wait_loop
+        test    al, 1
+        loopz   @b
+        in      al, 0x60
 
 ;;;/diamond today   5.02.2008
 ; set keyboard typematic rate & delay
@@ -541,16 +423,19 @@ wait_loop:       ; variant 2
         xor     cx, cx
 @@:
         in      al, 64h
-        test    al, 2
-        loopnz  @b
+        test    al, 1
+        loopz   @b
+        in      al, 0x60
         mov     al, 0
         out     0x60, al
         xor     cx, cx
 @@:
         in      al, 64h
-        test    al, 2
-        loopnz  @b
+        test    al, 1
+        loopz   @b
+        in      al, 0x60
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        sti
 ; --------------- APM ---------------------
         and     word [es:BOOT_APM_VERSION], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -291,7 +291,7 @@ B32:
 
 ; ENABLE PAGING
 
-        mov     eax, sys_pgdir-OS_BASE
+        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
         mov     cr3, eax
 
         mov     eax, cr0
@@ -309,6 +309,25 @@ use16
 org $-0x10000
 include "boot/shutdown.inc" ; shutdown or restart
 org $+0x10000
+
+ap_init16:
+        cli
+        lgdt    [cs:gdts_ap-ap_init16]
+        mov     eax, [cs:cr3_ap-ap_init16]
+        mov     cr3, eax
+        mov     eax, [cs:cr4_ap-ap_init16]
+        mov     cr4, eax
+        mov     eax, CR0_PE+CR0_PG+CR0_WP
+        mov     cr0, eax
+        jmp     pword os_code:ap_init_high
+align 16
+gdts_ap:
+        dw     gdte-gdts-1
+        dd     gdts
+        dw     0
+cr3_ap  dd     ?
+cr4_ap  dd     ?
+ap_init16_size = $ - ap_init16
 use32
 
 __DEBUG__ fix 1
@@ -335,15 +354,15 @@ high_code:
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
-        or      dword [sys_pgdir+(OS_BASE shr 20)], PG_GLOBAL
+        or      dword [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], PG_GLOBAL
 
         mov     ebx, cr4
         or      ebx, CR4_PGE
         mov     cr4, ebx
 @@:
         xor     eax, eax
-        mov     dword [sys_pgdir], eax
-        mov     dword [sys_pgdir+4], eax
+        mov     dword [sys_proc+PROC.pdt_0], eax
+        mov     dword [sys_proc+PROC.pdt_0+4], eax
 
         mov     eax, cr3
         mov     cr3, eax          ; flush TLB
@@ -369,78 +388,17 @@ high_code:
         call    mutex_init
         mov     ecx, ide_channel2_mutex
         call    mutex_init
+        mov     ecx, ide_channel3_mutex
+        call    mutex_init
+        mov     ecx, ide_channel4_mutex
+        call    mutex_init
+        mov     ecx, ide_channel5_mutex
+        call    mutex_init
+        mov     ecx, ide_channel6_mutex
+        call    mutex_init
 ;-----------------------------------------------------------------------------
 ; SAVE REAL MODE VARIABLES
 ;-----------------------------------------------------------------------------
-save_variables_IDE_controller:
-        xor     eax, eax
-        mov     ax, [BOOT_VARS + BOOT_IDE_INTERR_16]
-        mov     [IDE_Interrupt], ax
-;--------------------------------------
-        mov     ax, [BOOT_VARS + BOOT_IDE_PI_16]
-        mov     [IDEContrProgrammingInterface], ax
-;--------------------------------------
-        mov     ax, [BOOT_VARS + BOOT_IDE_BASE_ADDR]
-        mov     [IDEContrRegsBaseAddr], ax
-;--------------------------------------
-        mov     ax, [BOOT_VARS + BOOT_IDE_BAR0_16]
-        cmp     ax, 0
-        je      @f
-        cmp     ax, 1
-        jne     .no_PATA_BAR0
-@@:
-        mov     ax, 0x1F0
-        jmp     @f
-.no_PATA_BAR0:
-        and     ax, 0xFFFC
-@@:
-        mov     [StandardATABases], ax
-        mov     [hd_address_table], eax
-        mov     [hd_address_table+8], eax
-        mov     [IDE_BAR0_val], ax
-;--------------------------------------
-        mov     ax, [BOOT_VARS + BOOT_IDE_BAR1_16]
-        cmp     ax, 0
-        je      @f
-        cmp     ax, 1
-        jne     .no_PATA_BAR1
-@@:
-        mov     ax, 0x3F4
-        jmp     @f
-.no_PATA_BAR1:
-        and     ax, 0xFFFC
-@@:
-        mov     [IDE_BAR1_val], ax
-;--------------------------------------
-        mov     ax, [BOOT_VARS + BOOT_IDE_BAR2_16]
-        cmp     ax, 0
-        je      @f
-        cmp     ax, 1
-        jne     .no_PATA_BAR2
-@@:
-        mov     ax, 0x170
-        jmp     @f
-.no_PATA_BAR2:
-        and     ax, 0xFFFC
-@@:
-        mov     [StandardATABases+2], ax
-        mov     [hd_address_table+16], eax
-        mov     [hd_address_table+24], eax
-        mov     [IDE_BAR2_val], ax
-;--------------------------------------
-        mov     ax, [BOOT_VARS + BOOT_IDE_BAR3_16]
-        cmp     ax, 0
-        je      @f
-        cmp     ax, 1
-        jne     .no_PATA_BAR3
-@@:
-        mov     ax, 0x374
-        jmp     @f
-.no_PATA_BAR3:
-        and     ax, 0xFFFC
-@@:
-        mov     [IDE_BAR3_val], ax
-
 ; --------------- APM ---------------------
 
 ; init selectors
@@ -476,7 +434,7 @@ save_variables_IDE_controller:
         mov     al, [BOOT_VARS+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
         movzx   eax, byte [BOOT_VARS+BOOT_BPP]      ; bpp
-        mov     [_display.bpp], eax
+        mov     [_display.bits_per_pixel], eax
         mov     [_display.vrefresh], 60
         mov     al, [BOOT_VARS+BOOT_DEBUG_PRINT]    ; If nonzero, duplicates debug output to the screen
         mov     [debug_direct_print], al
@@ -486,11 +444,13 @@ save_variables_IDE_controller:
         mov     [_display.width], eax
         mov     [display_width_standard], eax
         dec     eax
+        mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
         movzx   eax, word [BOOT_VARS+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
         mov     [display_height_standard], eax
         dec     eax
+        mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
         movzx   eax, word [BOOT_VARS+BOOT_VESA_MODE] ; screen mode
         mov     dword [SCR_MODE], eax
@@ -520,34 +480,56 @@ save_variables_IDE_controller:
         mov     edi, BiosDisksData
         rep movsd
 
-; GRAPHICS ADDRESSES
+setvideomode:
 
         mov     eax, [BOOT_VARS+BOOT_LFB]
         mov     [LFBAddress], eax
 
-        cmp     [SCR_MODE], word 0100000000000000b
-        jge     setvesa20
-        cmp     [SCR_MODE], word 0x13  ; EGA 320*200 256 colors
-        je      v20ga32
-        jmp     v20ga24
+        cmp     word [SCR_MODE], 0x0012                 ; VGA (640x480 16 colors)
+        je      .vga
+        cmp     word [SCR_MODE], 0x0013                 ; MCGA (320*200 256 colors)
+        je      .32bpp
+        cmp     byte [_display.bits_per_pixel], 32
+        je      .32bpp
+        cmp     byte [_display.bits_per_pixel], 24
+        je      .24bpp
+        cmp     byte [_display.bits_per_pixel], 16
+        je      .16bpp
+;        cmp     byte [_display.bits_per_pixel], 15
+;        je      .15bpp
 
-setvesa20:
-        mov     [PUTPIXEL], dword Vesa20_putpixel24 ; Vesa 2.0
-        mov     [GETPIXEL], dword Vesa20_getpixel24
-        cmp     byte [_display.bpp], 24
-        jz      v20ga24
-v20ga32:
-        mov     [PUTPIXEL], dword Vesa20_putpixel32
-        mov     [GETPIXEL], dword Vesa20_getpixel32
-        jmp     no_mode_0x12
-v20ga24:
-        cmp     [SCR_MODE], word 0x12               ; 16 C VGA 640x480
-        jne     no_mode_0x12
-        mov     [PUTPIXEL], dword VGA_putpixel
-        mov     [GETPIXEL], dword Vesa20_getpixel32
-no_mode_0x12:
+  .vga:
+        mov     [PUTPIXEL], VGA_putpixel
+        mov     [GETPIXEL], Vesa20_getpixel32           ; Conversion buffer is 32 bpp
+        mov     [_display.bytes_per_pixel], 4           ; Conversion buffer is 32 bpp
+        jmp     .finish
 
-        mov     [MOUSE_PICTURE], dword mousepointer
+;  .15bpp:
+;        mov     [PUTPIXEL], Vesa20_putpixel15
+;        mov     [GETPIXEL], Vesa20_getpixel15
+;        mov     [_display.bytes_per_pixel], 2
+;        jmp     .finish
+
+  .16bpp:
+        mov     [PUTPIXEL], Vesa20_putpixel16
+        mov     [GETPIXEL], Vesa20_getpixel16
+        mov     [_display.bytes_per_pixel], 2
+        jmp     .finish
+
+  .24bpp:
+        mov     [PUTPIXEL], Vesa20_putpixel24
+        mov     [GETPIXEL], Vesa20_getpixel24
+        mov     [_display.bytes_per_pixel], 3
+        jmp     .finish
+
+  .32bpp:
+        mov     [PUTPIXEL], Vesa20_putpixel32
+        mov     [GETPIXEL], Vesa20_getpixel32
+        mov     [_display.bytes_per_pixel], 4
+;        jmp     .finish
+
+  .finish:
+        mov     [MOUSE_PICTURE], mousepointer
         mov     [_display.check_mouse], check_mouse_area_for_putpixel
         mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
@@ -637,7 +619,7 @@ no_mode_0x12:
         call    init_fpu
         call    init_malloc
 
-        stdcall alloc_kernel_space, 0x51000
+        stdcall alloc_kernel_space, 0x50000         ; FIXME check size
         mov     [default_io_map], eax
 
         add     eax, 0x2000
@@ -652,9 +634,6 @@ no_mode_0x12:
 
         add     eax, ebx
         mov     [proc_mem_tab], eax
-
-        add     eax, ebx
-        mov     [tmp_task_pdir], eax
 
         add     eax, ebx
         mov     [tmp_task_ptab], eax
@@ -714,7 +693,26 @@ no_mode_0x12:
         mov     esi, boot_setostask
         call    boot_log
 
-        mov     edx, SLOT_BASE+256
+        mov     edi, sys_proc
+        list_init edi
+        lea     ecx, [edi+PROC.thr_list]
+        list_init ecx
+        mov     [edi+PROC.pdt_0_phys], sys_proc-OS_BASE+PROC.pdt_0
+
+        mov     eax, -1
+        mov     edi, thr_slot_map+4
+        mov     [edi-4], dword 0xFFFFFFF8
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
+
+        mov     [current_process], sys_proc
+
+        mov     edx, SLOT_BASE+256*1
         mov     ebx, [os_stack_seg]
         add     ebx, 0x2000
         call    setup_os_slot
@@ -737,6 +735,69 @@ no_mode_0x12:
         mov     dword [current_slot], SLOT_BASE + 256*2
         mov     dword [TASK_BASE], CURRENT_TASK + 32*2
 
+; Move other CPUs to deep sleep, if it is useful
+uglobal
+use_mwait_for_idle db 0
+endg
+        cmp     [cpu_vendor+8], 'ntel'
+        jnz     .no_wake_cpus
+        bt      [cpu_caps+4], CAPS_MONITOR-32
+        jnc     .no_wake_cpus
+        dbgstr 'using mwait for idle loop'
+        inc     [use_mwait_for_idle]
+        mov     ebx, [cpu_count]
+        cmp     ebx, 1
+        jbe     .no_wake_cpus
+        call    create_trampoline_pgmap
+        mov     [cr3_ap+OS_BASE], eax
+        mov     eax, cr4
+        mov     [cr4_ap+OS_BASE], eax
+        mov     esi, OS_BASE + ap_init16
+        mov     edi, OS_BASE + 8000h
+        mov     ecx, (ap_init16_size + 3) / 4
+        rep movsd
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
+        mov     [LAPIC_BASE], eax
+        lea     edi, [eax+300h]
+        mov     esi, smpt+4
+        dec     ebx
+.wake_cpus_loop:
+        lodsd
+        push    esi
+        xor     esi, esi
+        inc     esi
+        shl     eax, 24
+        mov     [edi+10h], eax
+; assert INIT IPI
+        mov     dword [edi], 0C500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; deassert INIT IPI
+        mov     dword [edi], 8500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; send STARTUP IPI
+        mov     dword [edi], 600h + (8000h shr 12)
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+        pop     esi
+        dec     ebx
+        jnz     .wake_cpus_loop
+        mov     eax, [cpu_count]
+        dec     eax
+@@:
+        cmp     [ap_initialized], eax
+        jnz     @b
+        mov     eax, [cr3_ap+OS_BASE]
+        call    free_page
+.no_wake_cpus:
+
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
         mov     esi, boot_initirq
@@ -758,10 +819,12 @@ no_mode_0x12:
         call    PIT_init
 
 ; Register ramdisk file system
-        mov     esi, boot_initramdisk
-        call    boot_log
-        call    ramdisk_init
+        cmp     [boot_dev+OS_BASE+0x10000], 1
+        je      @f
 
+        call    register_ramdisk
+;--------------------------------------
+@@:
         mov     esi, boot_initapic
         call    boot_log
 ; Try to Initialize APIC
@@ -775,58 +838,77 @@ no_mode_0x12:
         stdcall enable_irq, 2               ; @#$%! PIC
         stdcall enable_irq, 13              ; co-processor
 
-        cmp     [IDEContrProgrammingInterface], 0
-        je      @f
+; Setup serial output console (if enabled)
+if defined debug_com_base
 
-        mov     esi, boot_disabling_ide
-        call    boot_log
-;--------------------------------------
-; Disable IDE interrupts, because the search
-; for IDE partitions is in the PIO mode.
-;--------------------------------------
-.disable_IDE_interrupt:
-; Disable interrupts in IDE controller for PIO
-        mov     al, 2
-        mov     dx, [IDE_BAR1_val] ;0x3F4
-        add     dx, 2 ;0x3F6
+        ; reserve port so nobody else will use it
+        xor     ebx, ebx
+        mov     ecx, debug_com_base
+        mov     edx, debug_com_base+7
+        call    r_f_port_area
+
+        ; enable Divisor latch
+        mov     dx, debug_com_base+3
+        mov     al, 1 shl 7
         out     dx, al
-        mov     dx, [IDE_BAR3_val] ;0x374
-        add     dx, 2 ;0x376
+
+        ; Set speed to 115200 baud (max speed)
+        mov     dx, debug_com_base
+        mov     al, 0x01
         out     dx, al
-@@:
+
+        mov     dx, debug_com_base+1
+        mov     al, 0x00
+        out     dx, al
+
+        ; No parity, 8bits words, one stop bit, dlab bit back to 0
+        mov     dx, debug_com_base+3
+        mov     al, 3
+        out     dx, al
+
+        ; disable interrupts
+        mov     dx, debug_com_base+1
+        mov     al, 0
+        out     dx, al
+
+        ; clear +  enable fifo (64 bits)
+        mov     dx, debug_com_base+2
+        mov     al, 0x7 + 1 shl 5
+        out     dx, al
+
+end if
+
+
 ;-----------------------------------------------------------------------------
-;!!!!!!!!!!!!!!!!!!!!!!!!!!
-;        mov     esi, boot_detectdisks
-;        call    boot_log
-;include 'detect/disks.inc'
+; show SVN version of kernel on the message board
+;-----------------------------------------------------------------------------
+        mov     eax, [version_inf.rev]
+        DEBUGF  1, "K : kernel SVN r%d\n", eax
+;-----------------------------------------------------------------------------
+; show CPU count on the message board
+;-----------------------------------------------------------------------------
+        mov     eax, [cpu_count]
+        test    eax, eax
+        jnz     @F
+        mov     al, 1                             ; at least one CPU
+@@:
+        DEBUGF  1, "K : %d CPU detected\n", eax
+;-----------------------------------------------------------------------------
+; detect Floppy drives
+;-----------------------------------------------------------------------------
         mov     esi, boot_detectfloppy
         call    boot_log
 include 'detect/dev_fd.inc'
-        mov     esi, boot_detecthdcd
-        call    boot_log
-include 'detect/dev_hdcd.inc'
-        mov     esi, boot_getcache
-        call    boot_log
-include 'detect/getcache.inc'
-        mov     esi, boot_detectpart
-        call    boot_log
-include 'detect/sear_par.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        mov     esi, boot_init_sys
-        call    boot_log
-        call    Parser_params
-
-if ~ defined extended_primary_loader
-; ramdisk image should be loaded by extended primary loader if it exists
-; READ RAMDISK IMAGE FROM HD
-
-;!!!!!!!!!!!!!!!!!!!!!!!
-include 'boot/rdload.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!
-end if
-;    mov    [dma_hdd],1
-
+;-----------------------------------------------------------------------------
+; create pci-devices list
+;-----------------------------------------------------------------------------
+        mov     [pci_access_enabled], 1
+        call    pci_enum
+;-----------------------------------------------------------------------------
+; initialisation IDE ATA code
+;-----------------------------------------------------------------------------
+include 'detect/init_ata.inc'
+;-----------------------------------------------------------------------------
 if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
@@ -877,10 +959,11 @@ end if
 ;        mov     esi, boot_devices
 ;        call    boot_log
 
-        mov     [pci_access_enabled], 1
-        call    pci_enum
+        call    clear_pci_ide_interrupts
 
-        stdcall load_driver, szVidintel
+include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
+
+        stdcall load_pe_driver, szVidintel, 0
 
         call    usb_init
 
@@ -919,6 +1002,7 @@ end if
         mov     esi, 250            ; wait 1/4 a second
         call    delay_ms
         rdtsc
+        sti
 
         sub     eax, ecx
         xor     edx, edx
@@ -986,6 +1070,45 @@ end if
         stdcall map_page, tss._io_map_1, \
                 [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
+; SET KEYBOARD PARAMETERS
+        mov     al, 0xf6       ; reset keyboard, scan enabled
+        call    kb_write_wait_ack
+        test    ah, ah
+        jnz     .no_keyboard
+
+iglobal
+align 4
+ps2_keyboard_functions:
+        dd      .end - $
+        dd      0       ; no close
+        dd      ps2_set_lights
+.end:
+endg
+        stdcall register_keyboard, ps2_keyboard_functions, 0
+       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
+       ; call  kb_write_wait_ack
+       ; mov   al, 111b
+       ; call  kb_write_wait_ack
+
+        mov     al, 0xF3     ; set repeat rate & delay
+        call    kb_write_wait_ack
+        mov     al, 0; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
+        call    kb_write_wait_ack
+     ;// mike.dld [
+        call    set_lights
+     ;// mike.dld ]
+        stdcall attach_int_handler, 1, irq1, 0
+        DEBUGF  1, "K : IRQ1 return code %x\n", eax
+.no_keyboard:
+
+; Load PS/2 mouse driver
+
+        stdcall load_pe_driver, szPS2MDriver, 0
+
+        mov     esi, boot_setmouse
+        call    boot_log
+        call    setmouse
+
 ; LOAD FIRST APPLICATION
         cmp     byte [launcher_start], 1        ; Check if starting LAUNCHER is selected on blue screen (1 = yes)
         jnz     first_app_found
@@ -1004,119 +1127,6 @@ end if
 
 first_app_found:
 
-        cli
-
-; SET KEYBOARD PARAMETERS
-        mov     al, 0xf6       ; reset keyboard, scan enabled
-        call    kb_write
-        test    ah, ah
-        jnz     .no_keyboard
-
-        ; wait until 8042 is ready
-        xor     ecx, ecx
-      @@:
-        in      al, 64h
-        and     al, 00000010b
-        loopnz  @b
-
-iglobal
-align 4
-ps2_keyboard_functions:
-        dd      .end - $
-        dd      0       ; no close
-        dd      ps2_set_lights
-.end:
-endg
-        stdcall register_keyboard, ps2_keyboard_functions, 0
-       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
-       ; call  kb_write
-       ; call  kb_read
-       ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
-
-        mov     al, 0xF3     ; set repeat rate & delay
-        call    kb_write
-;        call  kb_read
-        mov     al, 0; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
-        call    kb_write
-;        call  kb_read
-     ;// mike.dld [
-        call    set_lights
-     ;// mike.dld ]
-        stdcall attach_int_handler, 1, irq1, 0
-        DEBUGF  1, "K : IRQ1 error code %x\n", eax
-.no_keyboard:
-
-; SET MOUSE
-
-        stdcall load_driver, szPS2MDriver
-;        stdcall load_driver, szCOM_MDriver
-
-        mov     esi, boot_setmouse
-        call    boot_log
-        call    setmouse
-
-; Setup serial output console (if enabled)
-
-if defined debug_com_base
-
-        ; enable Divisor latch
-
-        mov     dx, debug_com_base+3
-        mov     al, 1 shl 7
-        out     dx, al
-
-        ; Set speed to 115200 baud (max speed)
-
-        mov     dx, debug_com_base
-        mov     al, 0x01
-        out     dx, al
-
-        mov     dx, debug_com_base+1
-        mov     al, 0x00
-        out     dx, al
-
-        ; No parity, 8bits words, one stop bit, dlab bit back to 0
-
-        mov     dx, debug_com_base+3
-        mov     al, 3
-        out     dx, al
-
-        ; disable interrupts
-
-        mov     dx, debug_com_base+1
-        mov     al, 0
-        out     dx, al
-
-        ; clear +  enable fifo (64 bits)
-
-        mov     dx, debug_com_base+2
-        mov     al, 0x7 + 1 shl 5
-        out     dx, al
-
-
-end if
-        mov     eax, [version_inf.rev]
-        DEBUGF  1, "K : kernel SVN r%d\n", eax
-
-        mov     eax, [cpu_count]
-        test    eax, eax
-        jnz     @F
-        mov     al, 1                             ; at least one CPU
-@@:
-        DEBUGF  1, "K : %d CPU detected\n", eax
-
-include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
-
-        DEBUGF  1, "K : BAR0 %x \n", [IDE_BAR0_val]:4
-        DEBUGF  1, "K : BAR1 %x \n", [IDE_BAR1_val]:4
-        DEBUGF  1, "K : BAR2 %x \n", [IDE_BAR2_val]:4
-        DEBUGF  1, "K : BAR3 %x \n", [IDE_BAR3_val]:4
-        DEBUGF  1, "K : BAR4 %x \n", [IDEContrRegsBaseAddr]:4
-        DEBUGF  1, "K : IDEContrProgrammingInterface %x \n", [IDEContrProgrammingInterface]:4
-        DEBUGF  1, "K : IDE_Interrupt %x \n", [IDE_Interrupt]:4
-
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -1129,103 +1139,37 @@ if preboot_blogesc
         jne     .bll1
 end if
 
-        push    eax edx
-        mov     dx, [IDEContrRegsBaseAddr]
-        xor     eax, eax
-        add     dx, 2
-        in      al, dx
-        DEBUGF  1, "K : Primary Bus Master IDE Status Register %x\n", eax
-
-        add     dx, 8
-        in      al, dx
-        DEBUGF  1, "K : Secondary Bus Master IDE Status Register %x\n", eax
-        pop     edx eax
-
-        cmp     [IDEContrRegsBaseAddr], 0
-        setnz   [dma_hdd]
-
-        cmp     [IDEContrProgrammingInterface], 0
-        je      set_interrupts_for_IDE_controllers.continue
-
-        mov     ax, [IDE_Interrupt]
-        cmp     al, 0xff
-        jne     @f
-
-        mov     [dma_hdd], 0
-        jmp     set_interrupts_for_IDE_controllers.end_set_interrupts
-@@:
-;-----------------------------------------------------------------------------
-; set interrupts for IDE Controller
-;-----------------------------------------------------------------------------
-        mov     esi, boot_set_int_IDE
-        call    boot_log
-set_interrupts_for_IDE_controllers:
-        mov     ax, [IDEContrProgrammingInterface]
-        cmp     ax, 0x0180
-        je      .pata_ide
-
-        cmp     ax, 0x018a
-        jne     .sata_ide
-;--------------------------------------
-.pata_ide:
-        cmp     [IDEContrRegsBaseAddr], 0
-        je      .end_set_interrupts
-
-        stdcall attach_int_handler, 14, IDE_irq_14_handler, 0
-        DEBUGF  1, "K : Set IDE IRQ14 return code %x\n", eax
-        stdcall attach_int_handler, 15, IDE_irq_15_handler, 0
-        DEBUGF  1, "K : Set IDE IRQ15 return code %x\n", eax
-        jmp     .enable_IDE_interrupt
-;--------------------------------------
-.sata_ide:
-        cmp     ax, 0x0185
-        je      .sata_ide_1
-
-        cmp     ax, 0x018f
-        jne     .end_set_interrupts
-;--------------------------------------
-.sata_ide_1:
-        cmp     [IDEContrRegsBaseAddr], 0
-        je      .end_set_interrupts
-
-        mov     ax, [IDE_Interrupt]
-        movzx   eax, al
-        stdcall attach_int_handler, eax, IDE_common_irq_handler, 0
-        DEBUGF  1, "K : Set IDE IRQ%d return code %x\n", [IDE_Interrupt]:1, eax
-;--------------------------------------
-.enable_IDE_interrupt:
-        mov     esi, boot_enabling_ide
-        call    boot_log
-; Enable interrupts in IDE controller for DMA
-        mov     al, 0
-        mov     dx, [IDE_BAR1_val] ;0x3F4
-        add     dx, 2 ;0x3F6
-        out     dx, al
-        mov     dx, [IDE_BAR3_val] ;0x374
-        add     dx, 2 ;0x376
-        out     dx, al
-;--------------------------------------
-.end_set_interrupts:
-;-----------------------------------------------------------------------------
-        cmp     [dma_hdd], 0
-        je      .print_pio
-.print_dma:
-        DEBUGF  1, "K : IDE DMA mode\n"
-        jmp     .continue
-
-.print_pio:
-        DEBUGF  1, "K : IDE PIO mode\n"
-.continue:
-
         mov     [timer_ticks_enable], 1         ; for cd driver
 
         sti
-;        call    change_task
+
+        call    mtrr_validate
 
         jmp     osloop
 
 
         ; Fly :)
+
+uglobal
+align 4
+ap_initialized  dd      0
+endg
+
+ap_init_high:
+        mov     ax, os_stack
+        mov     bx, app_data
+        mov     cx, app_tls
+        mov     ss, ax
+        mov     ds, bx
+        mov     es, bx
+        mov     fs, cx
+        mov     gs, bx
+        xor     esp, esp
+        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
+        mov     cr3, eax
+        lock inc [ap_initialized]
+        jmp     idle_loop
+
 
 include 'unpacker.inc'
 
@@ -1284,7 +1228,11 @@ proc setup_os_slot
 
         mov     dword [edx+APPDATA.cur_dir], sysdir_path
 
-        mov     [edx + APPDATA.dir_table], sys_pgdir - OS_BASE
+        mov     [edx + APPDATA.process], sys_proc
+
+        lea     ebx, [edx+APPDATA.list]
+        lea     ecx, [sys_proc+PROC.thr_list]
+        list_add_tail ebx, ecx
 
         mov     eax, edx
         shr     eax, 3
@@ -1309,18 +1257,20 @@ osloop:
         xchg    eax, [osloop_nonperiodic_work]
         test    eax, eax
         jz      .no_periodic
-;        call    [draw_pointer]
+
         call    __sys_draw_pointer
         call    window_check_events
         call    mouse_check_events
         call    checkmisc
         call    checkVga_N13
+;--------------------------------------
 .no_periodic:
         call    stack_handler
         call    check_fdd_motor_status
         call    check_ATAPI_device_event
         call    check_lights_state
         call    check_timers
+
         jmp     osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
@@ -1359,13 +1309,35 @@ align 4
 osloop_nonperiodic_work dd      ?
 endg
 
-align 4
+uglobal
+align 64
+idle_addr       rb      64
+endg
+
 idle_thread:
         sti
-idle_loop:
-        hlt
-        jmp     idle_loop
 
+; The following code can be executed by all CPUs in the system.
+; All other parts of the kernel do not expect multi-CPU.
+; Also, APs don't even have a stack here.
+; Beware. Don't do anything here. Anything at all.
+idle_loop:
+        cmp     [use_mwait_for_idle], 0
+        jnz     idle_loop_mwait
+
+idle_loop_hlt:
+        hlt
+        jmp     idle_loop_hlt
+
+idle_loop_mwait:
+        mov     eax, idle_addr
+        xor     ecx, ecx
+        xor     edx, edx
+        monitor
+        xor     ecx, ecx
+        mov     eax, 20h        ; or 10h
+        mwait
+        jmp     idle_loop_mwait
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1688,280 +1660,231 @@ draw_num_text:
         mov     eax, [esp+64+8]         ; background color (if given)
         mov     edi, [esp+64+4]
         jmp     dtext
-
-align 4
-
-sys_setup:
-
-; 1=roland mpu midi base , base io address
-; 2=keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
-; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 5=system language, 1eng 2fi 3ger 4rus
-; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 8=fat32 partition in hd
-; 9
-; 10 = sound dma channel
-; 11 = enable lba read
-; 12 = enable pci access
-
-
-        and     [esp+32], dword 0
-        dec     ebx                             ; MIDI
-        jnz     nsyse1
-        cmp     ecx, 0x100
-
-        jb      nsyse1
-        mov     esi, 65535
-        cmp     esi, ecx
-
-        jb      nsyse1
-        mov     [midi_base], cx ;bx
-        mov     word [mididp], cx;bx
-        inc     cx              ;bx
-        mov     word [midisp], cx;bx
-        ret
-
+;-----------------------------------------------------------------------------
 iglobal
 midi_base dw 0
 endg
+;-----------------------------------------------------------------------------
+align 4
+sys_setup:
+;  1 = roland mpu midi base , base io address
+;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
+;  3 = not used
+;  4 = not used
+;  5 = system language, 1eng 2fi 3ger 4rus
+;  6 = not used
+;  7 = not used
+;  8 = not used
+;  9 = not used
+; 10 = not used
+; 11 = enable lba read
+; 12 = enable pci access
+;-----------------------------------------------------------------------------
+        and     [esp+32], dword 0
+; F.21.1 - set MPU MIDI base port
+        dec     ebx
+        jnz     @f
 
-   nsyse1:
-        dec     ebx                              ; KEYBOARD
-        jnz     nsyse2
+        cmp     ecx, 0x100
+        jb      @f
+
+        mov     esi, 65535
+        cmp     esi, ecx
+        jb      @f
+
+        mov     [midi_base], cx
+        mov     word [mididp], cx
+        inc     cx
+        mov     word [midisp], cx
+        ret
+;--------------------------------------
+@@:
+; F.21.2 - set keyboard layout
+        dec     ebx
+        jnz     @f
+
         mov     edi, [TASK_BASE]
         mov     eax, [edi+TASKDATA.mem_start]
         add     eax, edx
-
+; 1 = normal layout
         dec     ecx
-        jnz     kbnobase
+        jnz     .shift
+
         mov     ebx, keymap
         mov     ecx, 128
         call    memmove
         ret
-   kbnobase:
+;--------------------------------------
+.shift:
+; 2 = layout at pressed Shift
         dec     ecx
-        jnz     kbnoshift
+        jnz     .alt
 
         mov     ebx, keymap_shift
         mov     ecx, 128
         call    memmove
         ret
-   kbnoshift:
+;--------------------------------------
+.alt:
+; 3 = layout at pressed Alt
         dec     ecx
-        jnz     kbnoalt
+        jnz     .country
+
         mov     ebx, keymap_alt
         mov     ecx, 128
         call    memmove
         ret
-   kbnoalt:
+;--------------------------------------
+.country:
+; country identifier
         sub     ecx, 6
-        jnz     kbnocountry
+        jnz     .error
+
         mov     word [keyboard], dx
         ret
-   kbnocountry:
-        mov     [esp+32], dword 1
-        ret
-   nsyse2:
-        dec     ebx                         ; CD
-        jnz     nsyse4
+;--------------------------------------
+@@:
+; F.21.5 - set system language
+        sub     ebx, 3
+        jnz     @f
 
-        test    ecx, ecx
-        jz      nosesl
-
-        cmp     ecx, 4
-        ja      nosesl
-        mov     [cd_base], cl
-
-        dec     ecx
-        jnz     noprma
-        mov     eax, [hd_address_table]
-        mov     [cdbase], eax   ;0x1f0
-        mov     [cdid], 0xa0
-noprma:
-
-        dec     ecx
-        jnz     noprsl
-        mov     eax, [hd_address_table]
-        mov     [cdbase], eax   ;0x1f0
-        mov     [cdid], 0xb0
-noprsl:
-        dec     ecx
-        jnz     nosema
-        mov     eax, [hd_address_table+16]
-        mov     [cdbase], eax   ;0x170
-        mov     [cdid], 0xa0
-nosema:
-        dec     ecx
-        jnz     nosesl
-        mov     eax, [hd_address_table+16]
-        mov     [cdbase], eax   ;0x170
-        mov     [cdid], 0xb0
-nosesl:
-        ret
-
-iglobal
-cd_base db 0
-
-endg
-   nsyse4:
-
-        sub     ebx, 2           ; SYSTEM LANGUAGE
-        jnz     nsyse5
         mov     [syslang], ecx
         ret
-   nsyse5:
-
-        sub     ebx, 2          ; HD BASE - obsolete
-        jnz     nsyse7
-
-   nosethd:
-        ret
-
-nsyse7:
-
-;     cmp  eax,8                      ; HD PARTITION - obsolete
-        dec     ebx
-        jnz     nsyse8
-        ret
-
-nsyse8:
-;     cmp  eax,11                     ; ENABLE LBA READ
+;--------------------------------------
+@@:
+; F.21.11 - enable/disable low-level access to HD
         and     ecx, 1
-        sub     ebx, 3
-        jnz     no_set_lba_read
+        sub     ebx, 6
+        jnz     @f
+
         mov     [lba_read_enabled], ecx
         ret
-
-no_set_lba_read:
-;     cmp  eax,12                     ; ENABLE PCI ACCESS
+;--------------------------------------
+@@:
+; F.21.12 - enable/disable low-level access to PCI
         dec     ebx
-        jnz     sys_setup_err
+        jnz     .error
+
         mov     [pci_access_enabled], ecx
         ret
-
-sys_setup_err:
+;--------------------------------------
+.error:
         or      [esp+32], dword -1
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
 sys_getsetup:
-
-; 1=roland mpu midi base , base io address
-; 2=keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
-; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 5=system language, 1eng 2fi 3ger 4rus
-; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 8=fat32 partition in hd
-; 9=get hs timer tic
-
-;     cmp  eax,1
+;  1 = roland mpu midi base , base io address
+;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
+;  3 = not used
+;  4 = not used
+;  5 = system language, 1eng 2fi 3ger 4rus
+;  6 = not used
+;  7 = not used
+;  8 = not used
+;  9 = get hs timer tic
+; 10 = not used
+; 11 = get the state "lba read"
+; 12 = get the state "pci access"
+;-----------------------------------------------------------------------------
+; F.26.1 - get MPU MIDI base port
         dec     ebx
-        jnz     ngsyse1
+        jnz     @f
+
         movzx   eax, [midi_base]
         mov     [esp+32], eax
         ret
-ngsyse1:
-;     cmp  eax,2
+;--------------------------------------
+@@:
+; F.26.2 - get keyboard layout
         dec     ebx
-        jnz     ngsyse2
+        jnz     @f
 
         mov     edi, [TASK_BASE]
         mov     ebx, [edi+TASKDATA.mem_start]
         add     ebx, edx
-
-;     cmp  ebx,1
+; 1 = normal layout
         dec     ecx
-        jnz     kbnobaseret
+        jnz     .shift
+
         mov     eax, keymap
         mov     ecx, 128
         call    memmove
         ret
-kbnobaseret:
-;     cmp  ebx,2
+;--------------------------------------
+.shift:
+; 2 = layout with pressed Shift
         dec     ecx
-        jnz     kbnoshiftret
+        jnz     .alt
 
         mov     eax, keymap_shift
         mov     ecx, 128
         call    memmove
         ret
-kbnoshiftret:
-;     cmp  ebx,3
+;--------------------------------------
+.alt:
+; 3 = layout with pressed Alt
         dec     ecx
-        jne     kbnoaltret
+        jne     .country
 
         mov     eax, keymap_alt
         mov     ecx, 128
         call    memmove
         ret
-kbnoaltret:
-;     cmp  ebx,9
+;--------------------------------------
+.country:
+; 9 = country identifier
         sub     ecx, 6
-        jnz     ngsyse2
+        jnz     .error
+
         movzx   eax, word [keyboard]
         mov     [esp+32], eax
         ret
+;--------------------------------------
+@@:
+; F.26.5 - get system language
+        sub     ebx, 3
+        jnz     @f
 
-
-ngsyse2:
-;         cmp  eax,3
-        dec     ebx
-        jnz     ngsyse3
-        movzx   eax, [cd_base]
-        mov     [esp+32], eax
-        ret
-ngsyse3:
-;         cmp  eax,5
-        sub     ebx, 2
-        jnz     ngsyse5
         mov     eax, [syslang]
         mov     [esp+32], eax
         ret
-ngsyse5:
-;     cmp  eax,7
+;--------------------------------------
+@@:
+; F.26.9 - get the value of the time counter
+        sub     ebx, 4
+        jnz     @f
+
+        mov     eax, [timer_ticks]
+        mov     [esp+32], eax
+        ret
+;--------------------------------------
+@@:
+; F.26.11 - Find out whether low-level HD access is enabled
         sub     ebx, 2
-        jnz     ngsyse7
-        xor     eax, eax
-        mov     [esp+32], eax
-        ret
-ngsyse7:
-;     cmp  eax,8
-        dec     ebx
-        jnz     ngsyse8
-        mov     eax, [fat32part]
-        mov     [esp+32], eax
-        ret
-ngsyse8:
-;     cmp  eax,9
-        dec     ebx
-        jnz     ngsyse9
-        mov     eax, [timer_ticks];[0xfdf0]
-        mov     [esp+32], eax
-        ret
-ngsyse9:
-;     cmp  eax,11
-        sub     ebx, 2
-        jnz     ngsyse11
+        jnz     @f
+
         mov     eax, [lba_read_enabled]
         mov     [esp+32], eax
         ret
-ngsyse11:
-;     cmp  eax,12
+;--------------------------------------
+@@:
+; F.26.12 - Find out whether low-level PCI access is enabled
         dec     ebx
-        jnz     ngsyse12
+        jnz     .error
+
         mov     eax, [pci_access_enabled]
         mov     [esp+32], eax
         ret
-ngsyse12:
-        mov     [esp+32], dword 1
+;--------------------------------------
+.error:
+        or      [esp+32], dword -1
         ret
-
-
+;-----------------------------------------------------------------------------
 get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
-
+;-----------------------------------------------------------------------------
 iglobal
 align 4
 mousefn dd msscreen, mswin, msbutton, msset
@@ -1970,7 +1893,7 @@ mousefn dd msscreen, mswin, msbutton, msset
         dd app_delete_cursor
         dd msz
 endg
-
+;-----------------------------------------------------------------------------
 readmousepos:
 
 ; eax=0 screen relative
@@ -2443,27 +2366,15 @@ sysfn_minimize:         ; 18.10 = minimize window
 ;------------------------------------------------------------------------------
 align 4
 sysfn_getdiskinfo:      ; 18.11 = get disk info table
-;     cmp  ecx,1
         dec     ecx
-        jnz     full_table
-  small_table:
-        call    for_all_tables
-        mov     ecx, 10
-        cld
-        rep movsb
-        ret
-   for_all_tables:
+        jnz     .exit
+.small_table:
         mov     edi, edx
         mov     esi, DRIVE_DATA
-        ret
-  full_table:
-;     cmp  ecx,2
-        dec     ecx
-        jnz     exit_for_anyone
-        call    for_all_tables
-        mov     ecx, DRIVE_DATA_SIZE/4
+        mov     ecx, DRIVE_DATA_SIZE ;10
         cld
-        rep movsd
+        rep movsb
+.exit:
         ret
 ;------------------------------------------------------------------------------
 sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
@@ -2495,10 +2406,10 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 ;* mouse centered - start code- Mario79
 ;mouse_centered:
 ;        push  eax
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         shr     eax, 1
         mov     [MOUSE_X], ax
-        mov     eax, [_display.height]
+        mov     eax, [Screen_Max_Y]
         shr     eax, 1
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
@@ -2540,12 +2451,13 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
 ;     cmp  ecx,4  ; set mouse pointer position
         dec     ecx
         jnz     .set_mouse_button
-        cmp     dx, word[_display.height]
-        jae     .end
+        cmp     dx, word[Screen_Max_Y]
+        ja      .end
         rol     edx, 16
-        cmp     dx, word[_display.width]
-        jae      .end
+        cmp     dx, word[Screen_Max_X]
+        ja      .end
         mov     [MOUSE_X], edx
+        mov     [mouse_active], 1
         call    wakeup_osloop
         ret
  .set_mouse_button:
@@ -2631,7 +2543,9 @@ sysfn_set_screen_sizes:
         mov     eax, ecx
         mov     ecx, [_display.pitch]
         mov     [_display.width], eax
+        dec     eax
         mov     [_display.height], edx
+        dec     edx
 ; eax - new Screen_Max_X
 ; edx - new Screen_Max_Y
         mov     [do_not_touch_winmap], 1
@@ -2968,22 +2882,22 @@ nosb8:
         jnz     nosb9
 ; ecx = [left]*65536 + [right]
 ; edx = [top]*65536 + [bottom]
-        mov     eax, [_display.width]
-        mov     ebx, [_display.height]
+        mov     eax, [Screen_Max_X]
+        mov     ebx, [Screen_Max_Y]
 ; check [right]
         cmp     cx, ax
-        jae     .exit
+        ja      .exit
 ; check [left]
         ror     ecx, 16
         cmp     cx, ax
-        jae     .exit
+        ja      .exit
 ; check [bottom]
         cmp     dx, bx
-        jae     .exit
+        ja      .exit
 ; check [top]
         ror     edx, 16
         cmp     dx, bx
-        jae     .exit
+        ja      .exit
 
         movzx   eax, cx  ; [left]
         movzx   ebx, dx  ; [top]
@@ -3021,8 +2935,8 @@ force_redraw_background:
         and     [draw_data+32 + RECT.left], 0
         and     [draw_data+32 + RECT.top], 0
         push    eax ebx
-        mov     eax, [_display.width]
-        mov     ebx, [_display.height]
+        mov     eax, [Screen_Max_X]
+        mov     ebx, [Screen_Max_Y]
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], ebx
         pop     ebx eax
@@ -3096,7 +3010,9 @@ sys_getkey:
         jne     .finish
         cmp     [KEY_COUNT], byte 0
         je      .finish
-        movzx   eax, byte [KEY_BUFF]
+        movzx   ax, byte [KEY_BUFF + 120 + 2]
+        shl     eax, 8
+        mov     al, byte [KEY_BUFF]
         shl     eax, 8
         push    eax
         dec     byte [KEY_COUNT]
@@ -3105,6 +3021,9 @@ sys_getkey:
         add     ecx, 2
         mov     eax, KEY_BUFF + 1
         mov     ebx, KEY_BUFF
+        call    memmove
+        add     eax, 120 + 2
+        add     ebx, 120 + 2
         call    memmove
         pop     eax
 ;--------------------------------------
@@ -3207,7 +3126,8 @@ sys_cpuusage:
         mov     edx, 0x100000*16
         cmp     ecx, 1 shl 5
         je      .os_mem
-        mov     edx, [SLOT_BASE+ecx*8+APPDATA.mem_size]
+        mov     edx, [SLOT_BASE+ecx*8+APPDATA.process]
+        mov     edx, [edx+PROC.mem_used]
         mov     eax, std_application_base_address
 .os_mem:
         stosd
@@ -3378,9 +3298,9 @@ sys_redrawstat:
         add     edx, draw_data - CURRENT_TASK
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         mov     [edx + RECT.right], eax
-        mov     eax, [_display.height]
+        mov     eax, [Screen_Max_Y]
         mov     [edx + RECT.bottom], eax
 
   srl1:
@@ -3679,7 +3599,7 @@ markz:
         cmp     [edx+TASKDATA.state], 9
         jz      .nokill
         lea     edx, [(edx-(CURRENT_TASK and 1FFFFFFFh))*8+SLOT_BASE]
-        cmp     [edx+APPDATA.dir_table], sys_pgdir - OS_BASE
+        cmp     [edx+APPDATA.process], sys_proc
         jz      .nokill
         call    request_terminate
         jmp     .common
@@ -4703,113 +4623,39 @@ putimage_get16bpp:
 ;        ret
 ;-----------------------------------------------------------------------------
 align 4
-kb_read:
-
-        push    ecx edx
-
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kr_loop:
-        in      al, 0x64
-        test    al, 1
-        jnz     kr_ready
-        loop    kr_loop
-        mov     ah, 1
-        jmp     kr_exit
-      kr_ready:
-        push    ecx
-        mov     ecx, 32
-      kr_delay:
-        loop    kr_delay
-        pop     ecx
-        in      al, 0x60
-        xor     ah, ah
-      kr_exit:
-
-        pop     edx ecx
-
-        ret
-;-----------------------------------------------------------------------------
-align 4
-kb_write:
+kb_write_wait_ack:
 
         push    ecx edx
 
         mov     dl, al
-;        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-;      kw_loop1:
-;        in      al,0x64
-;        test    al,0x20
-;        jz      kw_ok1
-;        loop    kw_loop1
-;        mov     ah,1
-;        jmp     kw_exit
-;      kw_ok1:
-        in      al, 0x60
         mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop:
+.wait_output_ready:
         in      al, 0x64
         test    al, 2
-        jz      kw_ok
-        loop    kw_loop
+        jz      @f
+        loop    .wait_output_ready
         mov     ah, 1
-        jmp     kw_exit
-      kw_ok:
+        jmp     .nothing
+@@:
         mov     al, dl
         out     0x60, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop3:
-        in      al, 0x64
-        test    al, 2
-        jz      kw_ok3
-        loop    kw_loop3
-        mov     ah, 1
-        jmp     kw_exit
-      kw_ok3:
-        mov     ah, 8
-      kw_loop4:
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      kw_loop5:
+        mov     ecx, 0xfffff; last 0xffff, new value in view of fast CPU's
+.wait_ack:
         in      al, 0x64
         test    al, 1
-        jnz     kw_ok4
-        loop    kw_loop5
-        dec     ah
-        jnz     kw_loop4
-      kw_ok4:
+        jnz     @f
+        loop    .wait_ack
+        mov     ah, 1
+        jmp     .nothing
+@@:
+        in      al, 0x60
         xor     ah, ah
-      kw_exit:
 
+.nothing:
         pop     edx ecx
 
         ret
 ;-----------------------------------------------------------------------------
-align 4
-kb_cmd:
-
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      c_wait:
-        in      al, 0x64
-        test    al, 2
-        jz      c_send
-        loop    c_wait
-        jmp     c_error
-      c_send:
-        mov     al, bl
-        out     0x64, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-      c_accept:
-        in      al, 0x64
-        test    al, 2
-        jz      c_ok
-        loop    c_accept
-      c_error:
-        mov     ah, 1
-        jmp     c_exit
-      c_ok:
-        xor     ah, ah
-      c_exit:
-        ret
-
 
 setmouse:  ; set mousepicture -pointer
            ; ps2 mouse enable
@@ -4947,9 +4793,9 @@ endg
         jnz     @f
         mov     word [msg_board_pos+2], (42*6)
         add     word [msg_board_pos], 10
-        mov     ax, word [_display.height]
+        mov     ax, word [Screen_Max_Y]
         cmp     word [msg_board_pos], ax
-        jb      @f
+        jbe     @f
         mov     word [msg_board_pos], 10
 @@:
 ; // end if
@@ -5166,14 +5012,14 @@ sys_gs:                         ; direct screen access
 
 
 .1:                             ; resolution
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         shl     eax, 16
-        mov     ax, word [_display.height]
+        mov     ax, word [Screen_Max_Y]
         add     eax, 0x00010001
         mov     [esp+32], eax
         ret
 .2:                             ; bits per pixel
-        mov     eax, [_display.bpp]
+        mov     eax, [_display.bits_per_pixel]
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline
@@ -5254,43 +5100,66 @@ syscall_drawrect:                       ; DrawRect
 
 align 4
 syscall_getscreensize:                  ; GetScreenSize
-        mov     ax, word [_display.width]
+        mov     ax, word [Screen_Max_X]
         shl     eax, 16
-        mov     ax, word [_display.height]
+        mov     ax, word [Screen_Max_Y]
         mov     [esp + 32], eax
         ret
-
+;-----------------------------------------------------------------------------
 align 4
+syscall_cdaudio:
+; ECX - position of CD/DVD-drive
+; from 0=Primary Master to 3=Secondary Slave for first IDE contr.
+; from 4=Primary Master to 7=Secondary Slave for second IDE contr.
+; from 8=Primary Master to 11=Secondary Slave for third IDE contr.
+        cmp     ecx, 11
+        ja      .exit
 
-syscall_cdaudio:                        ; CD
+        mov     eax, ecx
+        shr     eax, 2
+        lea     eax, [eax*5]
+        mov     al, [eax+DRIVE_DATA+1]
+
+        push    ecx ebx
+        mov     ebx, ecx
+        and     ebx, 11b
+        shl     ebx, 1
+        mov     cl, 6
+        sub     cl, bl
+        shr     al, cl
+        test    al, 2 ; it's not an ATAPI device
+        pop     ebx ecx
+
+        jz      .exit
 
         cmp     ebx, 4
-        jb      .audio
-        jz      .eject
+        je      .eject
+
         cmp     ebx, 5
-        jnz     .ret
+        je      .load
+;--------------------------------------
+.exit:
+        ret
+;--------------------------------------
 .load:
         call    .reserve
         call    LoadMedium
-        ;call    .free
         jmp     .free
-;        ret
+;--------------------------------------
 .eject:
         call    .reserve
         call    clear_CD_cache
         call    allow_medium_removal
         call    EjectMedium
-;        call    .free
         jmp     .free
-;        ret
-.audio:
-        call    sys_cd_audio
-        mov     [esp+36-4], eax
-.ret:
-        ret
-
+;--------------------------------------
 .reserve:
         call    reserve_cd
+
+        mov     ebx, ecx
+        inc     ebx
+        mov     [cdpos], ebx
+
         mov     eax, ecx
         shr     eax, 1
         and     eax, 1
@@ -5300,32 +5169,19 @@ syscall_cdaudio:                        ; CD
         and     eax, 1
         mov     [DiskNumber], al
         call    reserve_cd_channel
-        and     ebx, 3
-        inc     ebx
-        mov     [cdpos], ebx
-        add     ebx, ebx
-        mov     cl, 8
-        sub     cl, bl
-        mov     al, [DRIVE_DATA+1]
-        shr     al, cl
-        test    al, 2
-        jz      .free;.err
         ret
+;--------------------------------------
 .free:
         call    free_cd_channel
         and     [cd_status], 0
         ret
-.err:
-        call    .free
-;        pop     eax
-        ret
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel_WinMap:                       ; GetPixel WinMap
-        cmp     ebx, [_display.width]
-        jb      @f
-        cmp     ecx, [_display.height]
-        jb      @f
+        cmp     ebx, [Screen_Max_X]
+        jbe     @f
+        cmp     ecx, [Screen_Max_Y]
+        jbe     @f
         xor     eax, eax
         jmp     .store
 ;--------------------------------------
@@ -5342,7 +5198,8 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel:                       ; GetPixel
-        mov     ecx, [_display.width]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
         xor     edx, edx
         mov     eax, ebx
         div     ecx
@@ -5587,6 +5444,8 @@ set_screen:
         pushfd
         cli
 
+        mov     [Screen_Max_X], eax
+        mov     [Screen_Max_Y], edx
         mov     [_display.pitch], ecx
 
         mov     [screen_workarea.right], eax
@@ -5628,8 +5487,8 @@ set_screen:
         call    repos_windows
         xor     eax, eax
         xor     ebx, ebx
-        mov     ecx, [_display.width]
-        mov     edx, [_display.height]
+        mov     ecx, [Screen_Max_X]
+        mov     edx, [Screen_Max_Y]
         call    calculatescreen
         pop     edi
         pop     esi
@@ -5713,10 +5572,41 @@ system_shutdown:          ; shut down the system
         ret
 @@:
         call    stop_all_services
-        movi    eax, 3
-        call    sys_cd_audio
 
 yes_shutdown_param:
+; Shutdown other CPUs, if initialized
+        cmp     [ap_initialized], 0
+        jz      .no_shutdown_cpus
+        mov     edi, [LAPIC_BASE]
+        add     edi, 300h
+        mov     esi, smpt+4
+        mov     ebx, [cpu_count]
+        dec     ebx
+.shutdown_cpus_loop:
+        lodsd
+        push    esi
+        xor     esi, esi
+        inc     esi
+        shl     eax, 24
+        mov     [edi+10h], eax
+; assert INIT IPI
+        mov     dword [edi], 0C500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; deassert INIT IPI
+        mov     dword [edi], 8500h
+        call    delay_ms
+@@:
+        test    dword [edi], 1000h
+        jnz     @b
+; don't send STARTUP IPI: let other CPUs be in wait-for-startup state
+        pop     esi
+        dec     ebx
+        jnz     .shutdown_cpus_loop
+.no_shutdown_cpus:
+
         cli
 
 if ~ defined extended_primary_loader
@@ -5740,22 +5630,6 @@ end if
 
         call    IRQ_mask_all
 
-if 0
-        mov     word [OS_BASE+0x467+0], pr_mode_exit
-        mov     word [OS_BASE+0x467+2], 0x1000
-
-        mov     al, 0x0F
-        out     0x70, al
-        mov     al, 0x05
-        out     0x71, al
-
-        mov     al, 0xFE
-        out     0x64, al
-
-        hlt
-        jmp     $-1
-
-else
         cmp     byte [OS_BASE + 0x9030], 2
         jnz     no_acpi_power_off
 
@@ -5901,21 +5775,6 @@ do_acpi_power_off:
         jmp     $
 
 
-no_acpi_power_off:
-        mov     word [OS_BASE+0x467+0], pr_mode_exit
-        mov     word [OS_BASE+0x467+2], 0x1000
-
-        mov     al, 0x0F
-        out     0x70, al
-        mov     al, 0x05
-        out     0x71, al
-
-        mov     al, 0xFE
-        out     0x64, al
-
-        hlt
-        jmp     $-1
-
 scan_rsdp:
         add     eax, OS_BASE
 .s:
@@ -5938,7 +5797,33 @@ scan_rsdp:
         stc
 .ok:
         ret
-end if
+
+no_acpi_power_off:
+        call    create_trampoline_pgmap
+        mov     cr3, eax
+        jmp     become_real+0x10000
+iglobal
+align 4
+realmode_gdt:
+; selector 0 - not used
+        dw      23
+        dd      realmode_gdt-OS_BASE
+        dw      0
+; selector 8 - code from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10011011b
+        db      00000000b
+        db      0
+; selector 10h - data from 1000:0000 to 1000:FFFF
+        dw      0FFFFh
+        dw      0
+        db      1
+        db      10010011b
+        db      00000000b
+        db      0
+endg
 
 if ~ lang eq sp
 diff16 "end of .text segment",0,$

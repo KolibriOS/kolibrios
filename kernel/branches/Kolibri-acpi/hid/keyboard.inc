@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -25,8 +25,6 @@ VKEY_CONTROL  = 0000000000001100b
 VKEY_ALT      = 0000000000110000b
 
 uglobal
-  align 4
-  kb_state      dd 0
   ext_code      db 0
 
   keyboard_mode db 0
@@ -35,7 +33,6 @@ uglobal
   altmouseb     db 0
   ctrl_alt_del  db 0
 
-  kb_lights     db 0
   old_kb_lights db 0
 
 align 4
@@ -45,6 +42,13 @@ align 4
 endg
 
 iglobal
+  kb_lights     db 2
+  align 4
+  kb_state      dd VKEY_NUMLOCK
+endg
+
+iglobal
+align 4
 hotkey_tests    dd      hotkey_test0
                 dd      hotkey_test1
                 dd      hotkey_test2
@@ -457,19 +461,40 @@ send_scancode:
         test    bl, bl
         jz      .exit.irq1
 
-        test    [kb_state], VKEY_NUMLOCK
-        jz      .dowrite
+        cmp     cl, 0xE0        ; extended keycode
+        jne     @f
+
+        cmp     ch, 53
+        jne     .dowrite
         
-        cmp     cl, 0xE0
-        jz      .dowrite
+        mov     bl, '/'
+        jmp     .dowrite
+@@:
         
         cmp     ch, 55
-        jnz     @f
+        jne     @f
         
-        mov     bl, 0x2A        ;*
+        mov     bl, '*'
         jmp     .dowrite
-;--------------------------------------
 @@:
+
+        cmp     ch, 74
+        jne     @f
+        
+        mov     bl, '-'
+        jmp     .dowrite
+@@:
+
+        cmp     ch, 78
+        jne     @f
+        
+        mov     bl, '+'
+        jmp     .dowrite
+@@:
+
+        test    [kb_state], VKEY_NUMLOCK
+        jz      .dowrite
+
         cmp     ch, 71
         jb      .dowrite
         
@@ -488,7 +513,19 @@ send_scancode:
         jae     .exit.irq1
         inc     eax
         mov     [KEY_COUNT], al
-        mov     [KEY_COUNT+eax], bl
+; store ascii or scancode
+        mov     [KEY_COUNT+eax], bl ; actually KEY_BUFF + EAX - 1
+; store original scancode
+        add     eax, 120+2
+        push    ecx
+        cmp     [keyboard_mode], 0; return from keymap
+        je      @f
+
+        xor     ch, ch
+@@:
+        mov     [KEY_COUNT+eax], ch ; actually KEY_BUFF + EAX - 1
+        pop     ecx
+        sub     eax, 120+2
 .exit.irq1:
         ret
 ;---------------------------------------------------------------------
@@ -518,9 +555,9 @@ set_lights:
 ps2_set_lights:
         stdcall disable_irq, 1
         mov     al, 0xED
-        call    kb_write
+        call    kb_write_wait_ack
         mov     al, [esp+8]
-        call    kb_write
+        call    kb_write_wait_ack
         stdcall enable_irq, 1
         ret     8
 

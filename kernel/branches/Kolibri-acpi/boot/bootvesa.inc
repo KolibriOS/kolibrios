@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,11 +221,13 @@ calc_vmodes_table:
         cmp     [es:mi.BitsPerPixel], 32   ;It show only videomodes to have support 24 and 32 bpp
         jb      @f
 
-;        cmp     [es:mi.BitsPerPixel],16
-;        jne     .l0
-;        cmp     [es:mi.GreenMaskSize],5
-;        jne     .l0
+; 16 bpp might actually be 15 bpp
+        cmp     [es:mi.BitsPerPixel], 16 
+        jne     .l0
+        cmp     [es:mi.GreenMaskSize], 5
+        jne     .l0
 ;        mov     [es:mi.BitsPerPixel],15
+        jmp     @f                         ; 15 bpp isnt supported ATM
 
 
 .l0:
@@ -368,6 +370,8 @@ if defined extended_primary_loader
         je      .ok_found_mode
         cmp     word [es:si+8], 24
         je      .ok_found_mode
+        cmp     word [es:si+8], 16
+        je      .ok_found_mode
 @@:
         add     si, size_of_step
         cmp     word [es:si], -1
@@ -392,7 +396,8 @@ end if
 ;        mov     word [home_cursor],ax
 ;        mov     word [preboot_graph],ax
 ;SET default video of mode first probe will fined a move of work 1024x768@32
-
+        mov     cx, 32
+  .find_mode:
         mov     ax, 1024
         mov     bx, 768
         mov     si, modes_table
@@ -411,6 +416,8 @@ end if
         call    .loops
         test    ax, ax
         jz      .ok_found_mode
+        sub     cx, 8
+        jnz     .find_mode
 
         mov     si, modes_table
 if ~ defined extended_primary_loader
@@ -474,18 +481,15 @@ end if
         jne     .next
         cmp     bx, word [es:si+2]
         jne     .next
-        cmp     word [es:si+8], 32
-        je      .ok
-        cmp     word [es:si+8], 24
-        je      .ok
+        cmp     cx, word [es:si+8]
+        jne     .next
+        xor     ax, ax
+        ret
 .next:
         add     si, size_of_step
         cmp     word [es:si], -1
         je      .exit
         jmp     .loops
-.ok:
-        xor     ax, ax
-        ret
 .exit:
         or      ax, -1
         ret

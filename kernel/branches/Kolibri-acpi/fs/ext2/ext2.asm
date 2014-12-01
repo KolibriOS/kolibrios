@@ -2,10 +2,13 @@
 ;;                                                              ;;
 ;; Contains ext2 initialization, plus syscall handling code.    ;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
-;; Distributed under the terms of the new BSD license.          ;;
+;; Copyright (C) KolibriOS team 2013-2014. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 5089 $
+
 
 include 'ext2.inc'
 include 'blocks.inc'
@@ -56,6 +59,8 @@ endp
 ;---------------------------------------------------------------------
 proc ext2_create_partition
         push    ebx
+        cmp     dword [esi+DISK.MediaInfo.SectorSize], 512
+        jnz     .fail
 
         mov     eax, 2                          ; Superblock starts at 1024-bytes.
         add     ebx, 512                        ; Get pointer to fs-specific buffer.

@@ -136,9 +136,18 @@ debug_getcontext:
 ; ecx=pid
 ; edx=sizeof(CONTEXT)
 ; esi->CONTEXT
-; destroys eax,ecx,edx,esi,edi
-        cmp     edx, 28h
-        jnz     .ret
+; destroys eax,ebx,ecx,edx,esi,edi
+
+        xor     ebx, ebx            ; 0 - get only gp regs
+        cmp     edx, 40
+        je      .std_ctx
+
+        cmp     edx, 48+288
+        jne     .ret
+
+        inc     ebx                 ; 1 - get sse context
+                                  ; TODO legacy 32-bit FPU/MMX context
+.std_ctx:
 ;        push    ecx
 ;        mov     ecx, esi
         call    check_region
@@ -147,8 +156,15 @@ debug_getcontext:
         jnz     .ret
         call    get_debuggee_slot
         jc      .ret
+
+        shr     eax, 5
+        cmp     eax, [fpu_owner]
+        jne     @f
+        inc     bh                ; set swap context flag
+@@:
+        shl     eax, 8
         mov     edi, esi
-        mov     eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        mov     eax, [eax+SLOT_BASE+APPDATA.pl0_stack]
         lea     esi, [eax+RING0_STACK_SIZE]
 
 .ring0:
@@ -178,6 +194,29 @@ debug_getcontext:
         mov     [edi+4], eax
         lodsd                     ;esp
         mov     [edi+18h], eax
+
+        dec     bl
+        js      .ret
+        dec     bl
+        jns     .ret
+
+        test    bh, bh            ; check swap flag
+        jz      @F
+
+        ffree   st0               ; swap context
+@@:
+
+        add     esi, 4            ;top of ring0 stack
+                                  ;fpu/sse context saved here
+        add     edi, 40
+        mov     eax, 1            ;sse context
+        stosd
+        xor     eax, eax          ;reserved dword
+        stosd
+
+        mov     ecx, 288/4
+        rep movsd                 ;copy sse context
+
 .ret:
         sti
         ret

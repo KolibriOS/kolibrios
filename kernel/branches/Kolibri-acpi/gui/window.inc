@@ -26,7 +26,7 @@ macro FuncTable name, table_name, [label]
 }
 
 uglobal
-  common_colours rd 32
+  common_colours rd 48
   draw_limits    RECT
 endg
 
@@ -34,7 +34,7 @@ align 4
 ;------------------------------------------------------------------------------
 syscall_draw_window: ;///// system function 0 /////////////////////////////////
 ;------------------------------------------------------------------------------
-;? <description>
+;? <description>.
 ;------------------------------------------------------------------------------
         mov     eax, edx
         shr     eax, 24
@@ -173,7 +173,10 @@ align 4
 syscall_display_settings.02:
         dec     ebx
         mov     esi, ecx
-        and     edx, 127
+        cmp     edx, 192
+        jnae    @f
+        mov     edx, 192 ; max size
+      @@:
         mov     edi, common_colours
         mov     ecx, edx
         rep movsb
@@ -183,7 +186,10 @@ syscall_display_settings.02:
 align 4
 syscall_display_settings.03:
         mov     edi, ecx
-        and     edx, 127
+        cmp     edx, 192
+        jnae    @f
+        mov     edx, 192 ; max size
+      @@:
         mov     esi, common_colours
         mov     ecx, edx
         rep movsb
@@ -209,7 +215,7 @@ align 4
 syscall_display_settings.06:
         xor     esi, esi
 
-        mov     edi, [_display.width]
+        mov     edi, [Screen_Max_X]
         mov     eax, ecx
         movsx   ebx, ax
         sar     eax, 16
@@ -233,7 +239,7 @@ align 4
 ;--------------------------------------
 align 4
 .check_horizontal:
-        mov     edi, [_display.height]
+        mov     edi, [Screen_Max_Y]
         mov     eax, edx
         movsx   ebx, ax
         sar     eax, 16
@@ -294,8 +300,8 @@ align 4
 syscall_display_settings._.calculate_whole_screen:
         xor     eax, eax
         xor     ebx, ebx
-        mov     ecx, [_display.width]
-        mov     edx, [_display.height]
+        mov     ecx, [Screen_Max_X]
+        mov     edx, [Screen_Max_Y]
         jmp     calculatescreen
 ;------------------------------------------------------------------------------
 align 4
@@ -303,11 +309,9 @@ syscall_display_settings._.redraw_whole_screen:
         xor     eax, eax
         mov     [draw_limits.left], eax
         mov     [draw_limits.top], eax
-        mov     eax, [_display.width]
-        dec     eax
+        mov     eax, [Screen_Max_X]
         mov     [draw_limits.right], eax
-        mov     eax, [_display.height]
-        dec     eax
+        mov     eax, [Screen_Max_Y]
         mov     [draw_limits.bottom], eax
         mov     eax, window_data
         jmp     redrawscreen
@@ -586,9 +590,9 @@ align 4
 
         mov     eax, [edi + WDATA.box.left]
         add     eax, [edi + WDATA.box.width]
-        mov     ebx, [_display.width]
+        mov     ebx, [Screen_Max_X]
         cmp     eax, ebx
-        jl     .fix_vertical
+        jle     .fix_vertical
         mov     eax, [edi + WDATA.box.width]
         sub     eax, ebx
         jle     @f
@@ -603,9 +607,9 @@ align 4
 .fix_vertical:
         mov     eax, [edi + WDATA.box.top]
         add     eax, [edi + WDATA.box.height]
-        mov     ebx, [_display.height]
+        mov     ebx, [Screen_Max_Y]
         cmp     eax, ebx
-        jl     .fix_client_box
+        jle     .fix_client_box
         mov     eax, [edi + WDATA.box.height]
         sub     eax, ebx
         jle     @f
@@ -819,12 +823,8 @@ drawwindow_I: ;////////////////////////////////////////////////////////////////
         jnz     .exit
 
         ; does client area have a positive size on screen?
-        mov     edx, [esi + WDATA.box.top]
-        add     edx, 21 + 5
-        mov     ebx, [esi + WDATA.box.top]
-        add     ebx, [esi + WDATA.box.height]
-        cmp     edx, ebx
-        jg      .exit
+        cmp     [esi + WDATA.box.height], 21
+        jle     .exit
 
         ; okay, let's draw it
         mov     eax, 1
@@ -1718,9 +1718,9 @@ window._.check_window_position: ;//////////////////////////////////////////////
         mov     ecx, [edi + WDATA.box.width]
         mov     edx, [edi + WDATA.box.height]
 
-        mov     esi, [_display.width]
+        mov     esi, [Screen_Max_X]
         cmp     ecx, esi
-        jae     .fix_width_high
+        ja      .fix_width_high
 ;--------------------------------------
 align 4
 .check_left:
@@ -1732,9 +1732,9 @@ align 4
 ;--------------------------------------
 align 4
 .check_height:
-        mov     esi, [_display.height]
+        mov     esi, [Screen_Max_Y]
         cmp     edx, esi
-        jae     .fix_height_high
+        ja      .fix_height_high
 ;--------------------------------------
 align 4
 .check_top:
@@ -1992,7 +1992,7 @@ align 4
 
         sub     ebp, [ff_xsz]
         add     ebp, [ff_x]
-        add     ebp, [_display.width]  ; screen.x
+        add     ebp, [Screen_Max_X]  ; screen.x
         inc     ebp
         inc     ebx
         cmp     ebx, [ff_ysz]

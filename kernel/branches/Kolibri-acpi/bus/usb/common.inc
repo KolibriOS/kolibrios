@@ -6,7 +6,7 @@
 ; =============================================================================
 ; Version of all structures related to host controllers.
 ; Must be the same in kernel and *hci-drivers.
-USBHC_VERSION = 1
+USBHC_VERSION = 2
 
 ; USB device must have at least 100ms of stable power before initializing can
 ; proceed; one timer tick is 10ms, so enforce delay in 10 ticks
@@ -46,6 +46,7 @@ USB_STATUS_BUFUNDERRUN  = 13    ; underflow of internal controller buffer
 USB_STATUS_CLOSED       = 16    ; pipe closed
                                 ; either explicitly with USBClosePipe
                                 ; or implicitly due to device disconnect
+USB_STATUS_CANCELLED    = 17    ; transfer cancelled with USBAbortPipe
 
 ; Possible speeds of USB devices
 USB_SPEED_FS = 0 ; full-speed
@@ -63,6 +64,9 @@ USB_FLAG_CAN_FREE   = 2
 USB_FLAG_EXTRA_WAIT = 4
 ; The pipe was in wait list, while another event occured;
 ; when the first wait will be done, reinsert the pipe to wait list
+USB_FLAG_DISABLED   = 8
+; The pipe is temporarily disabled so that it is not visible to hardware
+; but still remains in software list. Used for usb_abort_pipe.
 USB_FLAG_CLOSED_BIT = 0 ; USB_FLAG_CLOSED = 1 shl USB_FLAG_CLOSED_BIT
 
 ; =============================================================================
@@ -136,6 +140,14 @@ NewDevice               dd      ?
 ; Initiate configuration of a new device (create pseudo-pipe describing that
 ; device and call usb_new_device).
 ; esi -> usb_controller, eax = speed (one of USB_SPEED_* constants).
+DisablePipe             dd      ?
+; This procedure temporarily removes the given pipe from hardware queue.
+; esi -> usb_controller, ebx -> usb_pipe
+EnablePipe              dd      ?
+; This procedure reinserts the given pipe to hardware queue
+; after DisablePipe, with clearing transfer queue.
+; esi -> usb_controller, ebx -> usb_pipe
+; edx -> current descriptor, eax -> new last descriptor
 ends
 
 ; pointers to kernel API functions that are called from *HCI-drivers
@@ -307,6 +319,8 @@ NextVirt        dd      ?
 PrevVirt        dd      ?
 ; Previous endpoint in the processing list.
 ; See also NextVirt field and the description before NextVirt field.
+BaseList                dd      ?
+; Pointer to head of the processing list.
 ;
 ; Every pipe has the associated transfer queue, that is, the double-linked
 ; list of Transfer Descriptors aka TD. For Control, Bulk and Interrupt
@@ -427,6 +441,8 @@ DeviceDescrSize db      ?
 ; Size of device descriptor.
 Speed           db      ?
 ; Device speed, one of USB_SPEED_*.
+Timer           dd      ?
+; Handle of timer that handles request timeout.
 NumInterfaces   dd      ?
 ; Number of interfaces.
 ConfigDataSize  dd      ?

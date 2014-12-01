@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
@@ -267,10 +267,9 @@ IPv4_input:                                                     ; TODO: add IPv4
         cmp     eax, 224
         je      .ip_ok
 
-        ; or a loopback address (127.0.0.0/8)
+        ; maybe we just dont have an IP yet and should accept everything on the IP level
 
-        and     eax, 0x00ffffff
-        cmp     eax, 127
+        cmp     [IP_LIST + edi], 0
         je      .ip_ok
 
         ; or it's just not meant for us.. :(
@@ -577,11 +576,11 @@ IPv4_find_fragment_slot:
 ;       edx = Source IP
 ;       di  = TTL shl 8 + protocol
 ;
-; OUT:  eax = pointer to buffer start
-;       ebx = pointer to device struct (needed for sending procedure)
-;       ecx = unchanged (packet size of embedded data)
-;       edx = size of complete buffer
-;       edi = pointer to start of data (0 on error)
+; OUT:  eax = pointer to buffer start / 0 on error
+;       ebx = device ptr (send packet through this device)
+;       ecx = data length
+;       edx = size of complete frame
+;       edi = start of IPv4 payload
 ;
 ;------------------------------------------------------------------
 align 4
@@ -595,7 +594,6 @@ IPv4_output:
         push    ecx di eax
         call    IPv4_route              ; outputs device number in edi, dest ip in eax, source IP in edx
         push    edx
-
         test    edi, edi
         jz      .loopback
 
@@ -607,12 +605,11 @@ IPv4_output:
 
         inc     [IPv4_packets_tx + edi]   ; update stats
 
+        mov     ax, ETHER_PROTO_IPv4
         mov     ebx, [NET_DRV_LIST + edi]
-        lea     eax, [ebx + ETH_DEVICE.mac]
-        mov     edx, esp
         mov     ecx, [esp + 6 + 8 + 2]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_PROTO_IPv4
+        mov     edx, esp
         call    ETH_output
         jz      .eth_error
         add     esp, 6                  ; pop the mac out of the stack
@@ -642,18 +639,18 @@ IPv4_output:
   .eth_error:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ethernet error\n"
         add     esp, 3*4+2+6
-        xor     edi, edi
+        xor     eax, eax
         ret
 
   .arp_error:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: ARP error=%x\n", eax
         add     esp, 3*4+2
-        xor     edi, edi
+        xor     eax, eax
         ret
 
   .too_large:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output: Packet too large!\n"
-        xor     edi, edi
+        xor     eax, eax
         ret
 
   .loopback:
@@ -675,7 +672,7 @@ IPv4_output:
 ;     ecx = data length
 ;     esi = data ptr
 ;
-; OUT: /
+; OUT: eax = -1 on error
 ;
 ;------------------------------------------------------------------
 align 4
@@ -699,15 +696,13 @@ IPv4_output_raw:
         push    ax
 
         inc     [IPv4_packets_tx + 4*edi]
+        mov     ax, ETHER_PROTO_IPv4
         mov     ebx, [NET_DRV_LIST + 4*edi]
-        lea     eax, [ebx + ETH_DEVICE.mac]
-        mov     edx, esp
         mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
-        mov     di, ETHER_PROTO_IPv4
+        mov     edx, esp
         call    ETH_output
         jz      .error
-
         add     esp, 6  ; pop the mac
 
         mov     dword[esp+4+4], edx
@@ -746,7 +741,7 @@ IPv4_output_raw:
         add     esp, 8+4+4
   .too_large:
         DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_output_raw: Failed\n"
-        sub     edi, edi
+        or      eax, -1
         ret
 
 
@@ -795,13 +790,9 @@ IPv4_fragment:
   .new_fragment:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "Ipv4_fragment: new fragment"
 
-
-        mov     eax, [esp + 3*4]
+        mov     ax, ETHER_PROTO_IPv4
         lea     ebx, [esp + 4*4]
-        mov     di , ETHER_PROTO_IPv4
         call    ETH_output
-
-        cmp     edi, -1
         jz      .err
 
 ; copy header

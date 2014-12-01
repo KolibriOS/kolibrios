@@ -123,13 +123,13 @@ proc get_service stdcall, sz_name:dword
 
         stdcall strncmp, edx, [sz_name], 16
         test    eax, eax
-        je      .ok
+        mov     eax, edx
+        je      .nothing
 
         mov     edx, [edx+SRV.fd]
         jmp     @B
 .not_load:
         mov     eax, [sz_name]
-; Try to load .dll driver first. If not, fallback to .obj.
         push    edi
         sub     esp, 36
         mov     edi, esp
@@ -150,12 +150,6 @@ proc get_service stdcall, sz_name:dword
         stdcall load_pe_driver, edi, 0
         add     esp, 36
         pop     edi
-        test    eax, eax
-        jnz     .nothing
-        pop     ebp
-        jmp     load_driver
-.ok:
-        mov     eax, edx
 .nothing:
         ret
 endp
@@ -794,177 +788,6 @@ proc rebase_coff stdcall uses ebx esi, coff:dword, sym:dword, \
         ret
 endp
 
-align 4
-proc load_driver stdcall, driver_name:dword
-           locals
-             coff      dd ?
-             sym       dd ?
-             strings   dd ?
-             img_size  dd ?
-             img_base  dd ?
-             start     dd ?
-
-             file_name rb 13+16+4+1      ; '/sys/drivers/<up-to-16-chars>.obj'
-           endl
-
-        lea     edx, [file_name]
-        mov     dword [edx], '/sys'
-        mov     dword [edx+4], '/dri'
-        mov     dword [edx+8], 'vers'
-        mov     byte [edx+12], '/'
-        mov     esi, [driver_name]
-.redo:
-        lea     edx, [file_name]
-        lea     edi, [edx+13]
-        mov     ecx, 16
-@@:
-        lodsb
-        test    al, al
-        jz      @f
-        stosb
-        loop    @b
-@@:
-        mov     dword [edi], '.obj'
-        mov     byte [edi+4], 0
-        stdcall load_file, edx
-
-        test    eax, eax
-        jz      .exit
-
-        mov     [coff], eax
-
-        movzx   ecx, [eax+COFF_HEADER.nSections]
-        xor     ebx, ebx
-
-        lea     edx, [eax+20]
-@@:
-        add     ebx, [edx+COFF_SECTION.SizeOfRawData]
-        add     ebx, 15
-        and     ebx, not 15
-        add     edx, sizeof.COFF_SECTION
-        dec     ecx
-        jnz     @B
-        mov     [img_size], ebx
-
-        stdcall kernel_alloc, ebx
-        test    eax, eax
-        jz      .fail
-        mov     [img_base], eax
-
-        mov     edi, eax
-        xor     eax, eax
-        mov     ecx, [img_size]
-        add     ecx, 4095
-        and     ecx, not 4095
-        shr     ecx, 2
-        cld
-        rep stosd
-
-        mov     edx, [coff]
-        movzx   ebx, [edx+COFF_HEADER.nSections]
-        mov     edi, [img_base]
-        lea     eax, [edx+20]
-@@:
-        mov     [eax+COFF_SECTION.VirtualAddress], edi
-        mov     esi, [eax+COFF_SECTION.PtrRawData]
-        test    esi, esi
-        jnz     .copy
-        add     edi, [eax+COFF_SECTION.SizeOfRawData]
-        jmp     .next
-.copy:
-        add     esi, edx
-        mov     ecx, [eax+COFF_SECTION.SizeOfRawData]
-        cld
-        rep movsb
-.next:
-        add     edi, 15
-        and     edi, not 15
-        add     eax, sizeof.COFF_SECTION
-        dec     ebx
-        jnz     @B
-
-        mov     ebx, [edx+COFF_HEADER.pSymTable]
-        add     ebx, edx
-        mov     [sym], ebx
-        mov     ecx, [edx+COFF_HEADER.nSymbols]
-        add     ecx, ecx
-        lea     ecx, [ecx+ecx*8];ecx*=18 = nSymbols*CSYM_SIZE
-        add     ecx, [sym]
-        mov     [strings], ecx
-
-        lea     eax, [edx+20]
-
-        stdcall fix_coff_symbols, eax, [sym], [edx+COFF_HEADER.nSymbols], \
-                [strings], __exports
-        test    eax, eax
-        jz      .link_fail
-
-        mov     ebx, [coff]
-        stdcall fix_coff_relocs, ebx, [sym], 0
-
-        stdcall get_coff_sym, [sym], [ebx+COFF_HEADER.nSymbols], szVersion
-        test    eax, eax
-        jz      .link_fail
-
-        mov     eax, [eax]
-        shr     eax, 16
-        cmp     eax, DRV_COMPAT
-        jb      .ver_fail
-
-        cmp     eax, DRV_CURRENT
-        ja      .ver_fail
-
-        mov     ebx, [coff]
-        stdcall get_coff_sym, [sym], [ebx+COFF_HEADER.nSymbols], szSTART
-        mov     [start], eax
-
-        stdcall kernel_free, [coff]
-
-        mov     ebx, [start]
-        stdcall ebx, DRV_ENTRY
-        test    eax, eax
-        jnz     .ok
-
-        stdcall kernel_free, [img_base]
-
-        xor     eax, eax
-        ret
-.ok:
-        mov     ebx, [img_base]
-        mov     [eax+SRV.base], ebx
-        mov     ecx, [start]
-        mov     [eax+SRV.entry], ecx
-        ret
-
-.ver_fail:
-        mov     esi, msg_CR
-        call    sys_msg_board_str
-        mov     esi, [driver_name]
-        call    sys_msg_board_str
-        mov     esi, msg_CR
-        call    sys_msg_board_str
-        mov     esi, msg_version
-        call    sys_msg_board_str
-        mov     esi, msg_www
-        call    sys_msg_board_str
-        jmp     .cleanup
-
-.link_fail:
-        mov     esi, msg_module
-        call    sys_msg_board_str
-        mov     esi, [driver_name]
-        call    sys_msg_board_str
-        mov     esi, msg_CR
-        call    sys_msg_board_str
-.cleanup:
-        stdcall kernel_free, [img_base]
-.fail:
-        stdcall kernel_free, [coff]
-.exit:
-        xor     eax, eax
-        ret
-endp
-
 ; in: edx -> COFF_SECTION struct
 ; out: eax = alignment as mask for bits to drop
 coff_get_align:
@@ -1009,10 +832,9 @@ proc load_library stdcall, file_name:dword
 ; ignore timestamp
         cli
 
-        mov     esi, [CURRENT_TASK]
-        shl     esi, 8
+        mov     esi, [current_process]
         lea     edi, [fullname]
-        mov     ebx, [esi+SLOT_BASE+APPDATA.dlls_list_ptr]
+        mov     ebx, [esi+PROC.dlls_list_ptr]
         test    ebx, ebx
         jz      .not_in_process
         mov     esi, [ebx+HDLL.fd]
@@ -1372,28 +1194,21 @@ endp
 ; out: eax = APPDATA.dlls_list_ptr if all is OK,
 ; NULL if memory allocation failed
 init_dlls_in_thread:
-        mov     ebx, [current_slot]
-        mov     eax, [ebx+APPDATA.dlls_list_ptr]
+        mov     ebx, [current_process]
+        mov     eax, [ebx+PROC.dlls_list_ptr]
         test    eax, eax
         jnz     .ret
-        push    [ebx+APPDATA.dir_table]
+
         mov     eax, 8
-        call    malloc
-        pop     edx
+        call    malloc                               ; FIXME
         test    eax, eax
         jz      .ret
+
         mov     [eax], eax
         mov     [eax+4], eax
-        mov     ecx, [TASK_COUNT]
-        mov     ebx, SLOT_BASE+256
-.set:
-        cmp     [ebx+APPDATA.dir_table], edx
-        jnz     @f
-        mov     [ebx+APPDATA.dlls_list_ptr], eax
-@@:
-        add     ebx, 256
-        dec     ecx
-        jnz     .set
+
+        mov     ebx, [current_process]
+        mov     [ebx+PROC.dlls_list_ptr], eax
 .ret:
         ret
 
@@ -1414,59 +1229,10 @@ dereference_dll:
 
 destroy_hdll:
         push    ebx ecx esi edi
-        push    eax
         mov     ebx, [eax+HDLL.base]
         mov     esi, [eax+HDLL.parent]
         mov     edx, [esi+DLLDESCR.size]
-; The following actions require the context of application where HDLL is mapped.
-; However, destroy_hdll can be called in the context of OS thread when
-; cleaning up objects created by the application which is destroyed.
-; So remember current cr3 and set it to page table of target.
-        mov     eax, [ecx+APPDATA.dir_table]
-; Because we cheat with cr3, disable interrupts: task switch would restore
-; page table from APPDATA of current thread.
-; Also set [current_slot] because it is used by user_free.
-        pushf
-        cli
-        push    [current_slot]
-        mov     [current_slot], ecx
-        mov     ecx, cr3
-        push    ecx
-        mov     cr3, eax
-        push    ebx     ; argument for user_free
-        mov     eax, ebx
-        shr     ebx, 12
-        push    ebx
-        mov     esi, [esi+DLLDESCR.data]
-        shr     esi, 12
-.unmap_loop:
-        push    eax
-        mov     eax, 2
-        xchg    eax, [page_tabs+ebx*4]
-        mov     ecx, [page_tabs+esi*4]
-        and     eax, not 0xFFF
-        and     ecx, not 0xFFF
-        cmp     eax, ecx
-        jz      @f
-        call    free_page
-@@:
-        pop     eax
-        invlpg  [eax]
-        add     eax, 0x1000
-        inc     ebx
-        inc     esi
-        sub     edx, 0x1000
-        ja      .unmap_loop
-        pop     ebx
-        and     dword [page_tabs+(ebx-1)*4], not DONT_FREE_BLOCK
-        call    user_free
-; Restore context.
-        pop     eax
-        mov     cr3, eax
-        pop     [current_slot]
-        popf
-; Ok, cheating is done.
-        pop     eax
+
         push    eax
         mov     esi, [eax+HDLL.parent]
         mov     eax, [eax+HDLL.refcount]

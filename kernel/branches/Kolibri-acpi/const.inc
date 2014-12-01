@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,8 +179,7 @@ struct  TSS
         _io_map_1   rb 4096
 ends
 
-PARTITION_COUNT     equ 64
-DRIVE_DATA_SIZE     equ (16+PARTITION_COUNT*100)
+DRIVE_DATA_SIZE     equ 16
 
 OS_BASE             equ 0x80000000
 
@@ -205,7 +204,7 @@ FDD_BUFF            equ (OS_BASE+0x000D000)     ;512
 
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)
 KEY_COUNT           equ (OS_BASE+0x000F400)
-KEY_BUFF            equ (OS_BASE+0x000F401)
+KEY_BUFF            equ (OS_BASE+0x000F401) ; 120*2 + 2*2 = 244 bytes, actually 255 bytes
 
 BTN_COUNT           equ (OS_BASE+0x000F500)
 BTN_BUFF            equ (OS_BASE+0x000F501)
@@ -220,11 +219,7 @@ TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 
 TMP_STACK_TOP       equ 0x006CC00
 
-sys_pgdir           equ (OS_BASE+0x006F000)
-lfb_pd_0            equ (OS_BASE+0x0070000)
-lfb_pd_1            equ (OS_BASE+0x0071000)
-lfb_pd_2            equ (OS_BASE+0x0072000)
-lfb_pd_3            equ (OS_BASE+0x0073000)
+sys_proc            equ (OS_BASE+0x006F000)
 
 SLOT_BASE           equ (OS_BASE+0x0080000)
 
@@ -232,10 +227,6 @@ VGABasePtr          equ (OS_BASE+0x00A0000)
 
 CLEAN_ZONE          equ (_CLEAN_ZONE-OS_BASE)
 IDE_DMA             equ (_IDE_DMA-OS_BASE)
-
-; unused?
-SB16Buffer          equ (OS_BASE+0x02A0000)
-SB16_Status         equ (OS_BASE+0x02B0000)
 
 UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 
@@ -252,7 +243,7 @@ kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
 LFB_BASE            equ 0xFE000000
-LFB_SIZE            equ 12*1024*1024
+
 
 new_app_base        equ 0;
 
@@ -276,6 +267,8 @@ REG_ESI             equ (RING0_STACK_SIZE-48)
 REG_EDI             equ (RING0_STACK_SIZE-52)
 REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 
+
+PAGE_SIZE           equ 4096
 
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001
@@ -306,7 +299,7 @@ BOOT_DEBUG_PRINT    equ 0x901E    ;byte   If nonzero, duplicates debug output to
 BOOT_DMA            equ 0x901F    ;
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
 BOOT_VRR            equ 0x9030    ;byte   VRR start enabled 1, 2-no
-BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr
+;BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr ; now free and is not used
 BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
 
 BOOT_APM_ENTRY      equ 0x9040
@@ -315,12 +308,12 @@ BOOT_APM_FLAGS      equ 0x9046    ;unused
 BOOT_APM_CODE_32    equ 0x9050
 BOOT_APM_CODE_16    equ 0x9052
 BOOT_APM_DATA_16    equ 0x9054
-BOOT_IDE_BAR0_16    equ 0x9056
-BOOT_IDE_BAR1_16    equ 0x9058
-BOOT_IDE_BAR2_16    equ 0x905A
-BOOT_IDE_BAR3_16    equ 0x905C
-BOOT_IDE_PI_16      equ 0x905E
-BOOT_IDE_INTERR_16  equ 0x9060
+;BOOT_IDE_BAR0_16    equ 0x9056 ; now free and is not used
+;BOOT_IDE_BAR1_16    equ 0x9058 ; now free and is not used
+;BOOT_IDE_BAR2_16    equ 0x905A ; now free and is not used
+;BOOT_IDE_BAR3_16    equ 0x905C ; now free and is not used
+;BOOT_IDE_PI_16      equ 0x905E ; now free and is not used
+;BOOT_IDE_INTERR_16  equ 0x9060 ; now free and is not used
 
 TMP_FILE_NAME       equ     0
 TMP_CMD_LINE        equ  1024
@@ -437,7 +430,7 @@ struct  display_t
         y               dd ?
         width           dd ?
         height          dd ?
-        bpp             dd ?
+        bits_per_pixel  dd ?
         vrefresh        dd ?
         pitch           dd ?
         lfb             dd ?
@@ -461,6 +454,8 @@ struct  display_t
         mask_seqno      dd ?
         check_mouse     dd ?
         check_m_pixel   dd ?
+
+        bytes_per_pixel dd ?
 ends
 
 struct  BOOT_DATA
@@ -507,14 +502,13 @@ struct  MUTEX
 ends
 
 struct  PCIDEV
-        list            LHEAD
-        vid_did         dd ?
+        bk              dd ?
+        fd              dd ?
+        vendor_device_id dd ?
         class           dd ?
-        svid_sdid       dd ?
         devfn           db ?
         bus             db ?
-        irq_line        db ?
-                        rb 1
+                        rb 2
         owner           dd ? ; pointer to SRV or 0
 ends
 
@@ -624,6 +618,28 @@ struct  COFF_SYM
         StorageClass    db ?
         NumAuxSymbols   db ?
 ends
+
+struct  STRIPPED_PE_HEADER
+        Signature           dw ?
+        Characteristics     dw ?
+        AddressOfEntryPoint dd ?
+        ImageBase           dd ?
+        SectionAlignmentLog db ?
+        FileAlignmentLog    db ?
+        MajorOSVersion      db ?
+        MinorOSVersion      db ?
+        SizeOfImage         dd ?
+        SizeOfStackReserve  dd ?
+        SizeOfHeapReserve   dd ?
+        SizeOfHeaders       dd ?
+        Subsystem           db ?
+        NumberOfRvaAndSizes db ?
+        NumberOfSections    dw ?
+ends
+STRIPPED_PE_SIGNATURE = 0x4503 ; 'PE' xor 'S'
+SPE_DIRECTORY_IMPORT    = 0
+SPE_DIRECTORY_EXPORT    = 1
+SPE_DIRECTORY_BASERELOC = 2
 
 struct  IOCTL
         handle          dd ?

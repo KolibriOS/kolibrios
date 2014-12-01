@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -244,6 +244,8 @@ UDP_input:
 ; IN: eax = socket pointer
 ;     ecx = number of bytes to send
 ;     esi = pointer to data
+;
+; OUT: eax = -1 on error
 ;
 ;-----------------------------------------------------------------
 

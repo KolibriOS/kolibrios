@@ -98,17 +98,35 @@ struct  DBG_REGS
         dr7             dd ?
 ends
 
+struct  PROC
+        list            LHEAD
+        thr_list        LHEAD
+        heap_lock       MUTEX
+        heap_base       rd 1
+        heap_top        rd 1
+        mem_used        rd 1
+        dlls_list_ptr   rd 1
+        pdt_0_phys      rd 1
+        pdt_1_phys      rd 1
+        io_map_0        rd 1
+        io_map_1        rd 1
+
+        ht_lock         rd 1
+        ht_next         rd 1
+        htab            rd (4096-$)/4
+        pdt_0           rd 1024
+ends
+
 struct  APPDATA
         app_name        rb 11
                         rb 5
 
-        fpu_state       dd ?            ;+16
-        ev_count_       dd ? ;unused    ;+20
-        exc_handler     dd ?            ;+24
-        except_mask     dd ?            ;+28
-        pl0_stack       dd ?            ;+32
-        heap_base       dd ?            ;+36
-        heap_top        dd ?            ;+40
+        list            LHEAD           ;+16
+        process         dd ?            ;+24
+        fpu_state       dd ?            ;+28
+        exc_handler     dd ?            ;+32
+        except_mask     dd ?            ;+36
+        pl0_stack       dd ?            ;+40
         cursor          dd ?            ;+44
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52
@@ -124,7 +142,7 @@ struct  APPDATA
         wait_test       dd ?            ;+96   +++
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
-        dlls_list_ptr   dd ?            ;+108
+                        dd ?            ;+108
         event_filter    dd ?            ;+112
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
@@ -133,7 +151,7 @@ struct  APPDATA
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
                         dd ?            ;+136
-        mem_size        dd ?            ;+140
+                        dd ?            ;+140
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
@@ -142,7 +160,7 @@ struct  APPDATA
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
                         rb 3
-        dir_table       dd ?            ;+184
+                        dd ?            ;+184
         dbg_event_mem   dd ?            ;+188
         dbg_regs        DBG_REGS        ;+192
         wnd_caption     dd ?            ;+212
@@ -152,6 +170,36 @@ struct  APPDATA
 
 ends
 
+struct  IDE_DATA
+        ProgrammingInterface dd ?
+        Interrupt            dw ?
+        RegsBaseAddres       dw ?
+        BAR0_val             dw ?
+        BAR1_val             dw ?
+        BAR2_val             dw ?
+        BAR3_val             dw ?
+        dma_hdd_channel_1    db ?
+        dma_hdd_channel_2    db ?
+ends
+
+struct  IDE_CACHE
+        pointer              dd ?
+        size                 dd ?   ; not use
+        data_pointer         dd ?
+        system_data_size     dd ?   ; not use
+        appl_data_size       dd ?   ; not use
+        system_data          dd ?
+        appl_data            dd ?
+        system_sad_size      dd ?
+        appl_sad_size        dd ?
+        search_start         dd ?
+        appl_search_start    dd ?
+ends
+
+struct  IDE_DEVICE
+        UDMA_possible_modes  db ?
+        UDMA_set_mode        db ?
+ends
 
 ; Core functions
 include "core/sync.inc"     ; macros for synhronization objects
@@ -160,6 +208,7 @@ include "core/sched.inc"    ; process scheduling
 include "core/syscall.inc"  ; system call
 include "core/fpu.inc"      ; all fpu/sse support
 include "core/memory.inc"
+include "core/mtrr.inc"
 include "core/heap.inc"     ; kernel and app heap
 include "core/malloc.inc"   ; small kernel heap
 include "core/taskman.inc"
@@ -242,7 +291,6 @@ include "blkdev/bd_drv.inc"
 
 ; CD drive controller
 
-include "blkdev/cdrom.inc"
 include "blkdev/cd_drv.inc"
 
 ; Character devices

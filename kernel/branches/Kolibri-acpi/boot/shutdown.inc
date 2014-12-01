@@ -13,8 +13,24 @@
 
 $Revision$
 
+use32
+become_real:
+        cli
+        lgdt    [realmode_gdt-OS_BASE]
+        jmp     8:@f
+use16
+@@:
+        mov     ax, 10h
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        mov     ss, ax
+        mov     eax, cr0
+        and     eax, not 80000001h
+        mov     cr0, eax
+        jmp     0x1000:pr_mode_exit
 
-align 4
 pr_mode_exit:
 
 ; setup stack
@@ -166,7 +182,7 @@ restart_kernel_4000:
         pop     es
         mov     cx, 0x8000
         push    cx
-        push    0x7000
+        push    0x7100
         pop     ds
         xor     si, si
         xor     di, di

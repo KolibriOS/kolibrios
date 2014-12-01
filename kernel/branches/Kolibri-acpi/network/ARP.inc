@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ARP.INC                                                        ;;
@@ -318,10 +318,9 @@ ARP_output_request:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: ip=%u.%u.%u.%u device=0x%x\n",\
         [esp]:1, [esp + 1]:1, [esp + 2]:1, [esp + 3]:1, ebx
 
-        lea     eax, [ebx + ETH_DEVICE.mac]     ; local device mac
-        mov     edx, ETH_BROADCAST              ; broadcast mac
+        mov     ax, ETHER_PROTO_ARP
         mov     ecx, sizeof.ARP_header
-        mov     di, ETHER_PROTO_ARP
+        mov     edx, ETH_BROADCAST              ; broadcast mac
         call    ETH_output
         jz      .exit
 

@@ -123,19 +123,19 @@ proc alloc_pages stdcall, count:dword
 endp
 
 align 4
-proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
+;proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
+map_page:
         push    ebx
-        mov     eax, [phis_addr]
+        mov     eax, [esp+12]               ; phis_addr
         and     eax, not 0xFFF
-        or      eax, [flags]
-        mov     ebx, [lin_addr]
+        or      eax, [esp+16]              ; flags
+        mov     ebx, [esp+8]               ; lin_addr
         shr     ebx, 12
         mov     [page_tabs+ebx*4], eax
-        mov     eax, [lin_addr]
-        invlpg  [eax]
+        mov     eax, [esp+8]               ; lin_addr
         pop     ebx
-        ret
-endp
+        invlpg  [eax]
+        ret     12
 
 align 4
 map_space:    ;not implemented
@@ -350,9 +350,64 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         ret
 endp
 
+uglobal
+sb16_buffer_allocated db 0
+endg
+
+; Allocates [.size] bytes so that the target memory block
+; is inside one 64K page for 24-bit DMA controller,
+; that is, somewhere between 00xx0000h and 00xxFFFFh.
+proc alloc_dma24
+; Implementation note.
+; The only user of that function is SB16 driver,
+; so just return a statically allocated buffer.
+virtual at esp
+                dd      ? ; return address
+.size           dd      ?
+end virtual
+        cmp     [sb16_buffer_allocated], 0
+        jnz     .fail
+        inc     [sb16_buffer_allocated]
+        mov     eax, SB16Buffer
+        ret     4
+.fail:
+        xor     eax, eax
+        ret     4
+endp
+
+; Allocates a physical page for master page table
+; that duplicates first Mb of OS_BASE at address 0;
+; used for starting APs and for shutting down,
+; where it is important to execute code in trivial-mapped pages.
+; Returns eax = allocated physical page.
+proc create_trampoline_pgmap
+; The only non-trivial moment:
+; we need a linear address to fill information,
+; but we don't need it outside of this function,
+; so we're returning physical address.
+; Therefore, allocate memory with kernel_alloc,
+; this will allocate physical page and a linear address somewhere,
+; and deallocate only linear address with free_kernel_space.
+        stdcall kernel_alloc, 0x1000
+        mov     edi, eax
+        mov     esi, master_tab
+        mov     ecx, 1024
+        rep movsd
+        mov     ecx, [master_tab+(OS_BASE shr 20)]
+        mov     [eax], ecx
+        mov     edi, eax
+        call    get_pg_addr
+        push    eax
+        stdcall free_kernel_space, edi
+        pop     eax
+        ret
+endp
+
 align 4
-init_LFB:
-        xchg bx, bx
+proc init_LFB
+           locals
+             pg_count dd ?
+           endl
 
         cmp     dword [LFBAddress], -1
         jne     @f
@@ -381,33 +436,61 @@ init_LFB:
 @@:
         call    init_mtrr
 
-        xor     edx, edx
-        mov     eax, [LFBAddress]
+        mov     edx, LFB_BASE
+        mov     esi, [LFBAddress]
+        mov     edi, 0x00C00000
+        mov     dword [exp_lfb+4], edx
+
+        shr     edi, 12
+        mov     [pg_count], edi
+        shr     edi, 10
+
+        bt      [cpu_caps], CAPS_PSE
+        jnc     .map_page_tables
+        or      esi, PG_LARGE+PG_UW
+        mov     edx, sys_proc+PROC.pdt_0+(LFB_BASE shr 20)
+@@:
+        mov     [edx], esi
+        add     edx, 4
+        add     esi, 0x00400000
+        dec     edi
+        jnz     @B
+
         bt      [cpu_caps], CAPS_PGE
-        setc    dh                            ;eliminate branch and
-        mov     ecx, LFB_SIZE/4096
-        mov     edi, lfb_pd_0
-        lea     eax, [eax+edx+PG_UW]          ;set PG_GLOBAL if supported
+        jnc     @F
+        or      dword [sys_proc+PROC.pdt_0+(LFB_BASE shr 20)], PG_GLOBAL
+@@:
+        mov     dword [LFBAddress], LFB_BASE
+        mov     eax, cr3      ;flush TLB
+        mov     cr3, eax
+        ret
 
-.map_pte:
+.map_page_tables:
+
+@@:
+        call    alloc_page
+        stdcall map_page_table, edx, eax
+        add     edx, 0x00400000
+        dec     edi
+        jnz     @B
+
+        mov     eax, [LFBAddress]
+        mov     edi, page_tabs + (LFB_BASE shr 10)
+        or      eax, PG_UW
+        mov     ecx, [pg_count]
+        cld
+@@:
         stosd
         add     eax, 0x1000
-        loop    .map_pte
+        dec     ecx
+        jnz     @B
 
-        mov     ecx, (LFB_SIZE/4096)/1024
-        mov     edi, sys_pgdir+(LFB_BASE shr 20)
-        lea     eax, [(lfb_pd_0-OS_BASE)+PG_UW]
-
-.map_pde:
-        stosd
-        add     eax, 0x1000
-        loop    .map_pde
-
-        mov     dword [exp_lfb+4], LFB_BASE
         mov     dword [LFBAddress], LFB_BASE
         mov     eax, cr3                      ;flush TLB
         mov     cr3, eax
+
         ret
+endp
 
 align 4
 proc new_mem_resize stdcall, new_size:dword
@@ -417,7 +500,9 @@ proc new_mem_resize stdcall, new_size:dword
         push    edi
 
         mov     edx, [current_slot]
-        cmp     [edx+APPDATA.heap_base], 0
+        mov     ebx, [edx+APPDATA.process]
+
+        cmp     [ebx+PROC.heap_base], 0
         jne     .exit
 
         mov     edi, [new_size]
@@ -425,7 +510,7 @@ proc new_mem_resize stdcall, new_size:dword
         and     edi, not 4095
         mov     [new_size], edi
 
-        mov     esi, [edx+APPDATA.mem_size]
+        mov     esi, [ebx+PROC.mem_used]
         add     esi, 4095
         and     esi, not 4095
 
@@ -460,7 +545,8 @@ proc new_mem_resize stdcall, new_size:dword
 .update_size:
         mov     edx, [current_slot]
         mov     ebx, [new_size]
-        call    update_mem_size
+        mov     edx, [edx+APPDATA.process]
+        mov     [edx+PROC.mem_used], ebx
 .exit:
         pop     edi
         pop     esi
@@ -536,38 +622,6 @@ proc new_mem_resize stdcall, new_size:dword
 endp
 
 
-align 4
-update_mem_size:
-; in: edx = slot base
-;     ebx = new memory size
-; destroys eax,ecx,edx
-
-        mov     [APPDATA.mem_size+edx], ebx
-;search threads and update
-;application memory size infomation
-        mov     ecx, [APPDATA.dir_table+edx]
-        mov     eax, 2
-
-.search_threads:
-;eax = current slot
-;ebx = new memory size
-;ecx = page directory
-        cmp     eax, [TASK_COUNT]
-        jg      .search_threads_end
-        mov     edx, eax
-        shl     edx, 5
-        cmp     word [CURRENT_TASK+edx+TASKDATA.state], 9  ;if slot empty?
-        jz      .search_threads_next
-        shl     edx, 3
-        cmp     [SLOT_BASE+edx+APPDATA.dir_table], ecx      ;if it is our thread?
-        jnz     .search_threads_next
-        mov     [SLOT_BASE+edx+APPDATA.mem_size], ebx      ;update memory size
-.search_threads_next:
-        inc     eax
-        jmp     .search_threads
-.search_threads_end:
-        ret
-
 ; param
 ;  eax= linear address
 ;
@@ -624,11 +678,6 @@ end if
         pop     ebx               ;restore exception number (#PF)
         ret
 
-;        xchg bx, bx
-;        add     esp,12 ;clear in stack: locals(.err_addr) + #PF + ret_to_caller
-;        restore_ring3_context
-;        iretd
-
 .user_space:
         test    eax, PG_MAP
         jnz     .err_access       ;Страница присутствует
@@ -668,9 +717,8 @@ end if
 ; access denied? this may be a result of copy-on-write protection for DLL
 ; check list of HDLLs
         and     ebx, not 0xFFF
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [current_process]
+        mov     eax, [eax+PROC.dlls_list_ptr]
         test    eax, eax
         jz      .fail
         mov     esi, [eax+HDLL.fd]
@@ -746,120 +794,129 @@ end if
 endp
 
 ; returns number of mapped bytes
-proc map_mem stdcall, lin_addr:dword,slot:dword,\
+proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
                       ofs:dword,buf_size:dword,req_access:dword
-        push    0 ; initialize number of mapped bytes
+        locals
+             count   dd ?
+             process dd ?
+        endl
 
+        mov     [count], 0
         cmp     [buf_size], 0
         jz      .exit
 
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dir_table]
-        and     eax, 0xFFFFF000
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
+        test    eax, eax
+        jz      .exit
 
-        stdcall map_page, [ipc_pdir], eax, PG_UW
+        mov     [process], eax
         mov     ebx, [ofs]
         shr     ebx, 22
-        mov     esi, [ipc_pdir]
-        mov     edi, [ipc_ptab]
-        mov     eax, [esi+ebx*4]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]                 ;get page table
+        mov     esi, [ipc_ptab]
         and     eax, 0xFFFFF000
         jz      .exit
-        stdcall map_page, edi, eax, PG_UW
-;           inc ebx
-;           add edi, 0x1000
-;           mov eax, [esi+ebx*4]
-;           test eax, eax
-;           jz @f
-;          and eax, 0xFFFFF000
-;           stdcall map_page, edi, eax
-
+        stdcall map_page, esi, eax, PG_SW
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
         mov     ecx, [buf_size]
         add     ecx, 4095
         shr     ecx, 12
-        inc     ecx
+        inc     ecx                  ; ???????????
 
         mov     edx, [ofs]
         shr     edx, 12
         and     edx, 0x3FF
-        mov     esi, [ipc_ptab]
-
 .map:
         stdcall safe_map_page, [slot], [req_access], [ofs]
         jnc     .exit
-        add     dword [ebp-4], 4096
-        add     [ofs], 4096
+        add     [count], PAGE_SIZE
+        add     [ofs], PAGE_SIZE
         dec     ecx
         jz      .exit
-        add     edi, 0x1000
+
+        add     edi, PAGE_SIZE
         inc     edx
-        cmp     edx, 0x400
+        cmp     edx, 1024
         jnz     .map
+
         inc     ebx
-        mov     eax, [ipc_pdir]
-        mov     eax, [eax+ebx*4]
+        mov     eax, [process]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]
         and     eax, 0xFFFFF000
         jz      .exit
-        stdcall map_page, esi, eax, PG_UW
+
+        stdcall map_page, esi, eax, PG_SW
         xor     edx, edx
         jmp     .map
-
 .exit:
-        pop     eax
+        mov     eax, [count]
         ret
 endp
 
 proc map_memEx stdcall, lin_addr:dword,slot:dword,\
                         ofs:dword,buf_size:dword,req_access:dword
-        push    0 ; initialize number of mapped bytes
+        locals
+             count   dd ?
+             process dd ?
+        endl
 
+        mov     [count], 0
         cmp     [buf_size], 0
         jz      .exit
 
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dir_table]
-        and     eax, 0xFFFFF000
-
-        stdcall map_page, [proc_mem_pdir], eax, PG_UW
-        mov     ebx, [ofs]
-        shr     ebx, 22
-        mov     esi, [proc_mem_pdir]
-        mov     edi, [proc_mem_tab]
-        mov     eax, [esi+ebx*4]
-        and     eax, 0xFFFFF000
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
         test    eax, eax
         jz      .exit
-        stdcall map_page, edi, eax, PG_UW
 
+        mov     [process], eax
+        mov     ebx, [ofs]
+        shr     ebx, 22
+        mov     eax, [eax+PROC.pdt_0+ebx*4]                 ;get page table
+        mov     esi, [proc_mem_tab]
+        and     eax, 0xFFFFF000
+        jz      .exit
+        stdcall map_page, esi, eax, PG_SW
 @@:
         mov     edi, [lin_addr]
         and     edi, 0xFFFFF000
         mov     ecx, [buf_size]
         add     ecx, 4095
         shr     ecx, 12
-        inc     ecx
+        inc     ecx                  ; ???????????
 
         mov     edx, [ofs]
         shr     edx, 12
         and     edx, 0x3FF
-        mov     esi, [proc_mem_tab]
-
 .map:
         stdcall safe_map_page, [slot], [req_access], [ofs]
         jnc     .exit
-        add     dword [ebp-4], 0x1000
-        add     edi, 0x1000
-        add     [ofs], 0x1000
-        inc     edx
+        add     [count], PAGE_SIZE
+        add     [ofs], PAGE_SIZE
         dec     ecx
+        jz      .exit
+
+        add     edi, PAGE_SIZE
+        inc     edx
+        cmp     edx, 1024
         jnz     .map
+
+        inc     ebx
+        mov     eax, [process]
+        mov     eax, [eax+PROC.pdt_0+ebx*4]
+        and     eax, 0xFFFFF000
+        jz      .exit
+
+        stdcall map_page, esi, eax, PG_SW
+        xor     edx, edx
+        jmp     .map
 .exit:
-        pop     eax
+        mov     eax, [count]
         ret
 endp
 
@@ -905,7 +962,8 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         push    ebx ecx
         mov     eax, [slot]
         shl     eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [SLOT_BASE+eax+APPDATA.process]
+        mov     eax, [eax+PROC.dlls_list_ptr]
         test    eax, eax
         jz      .no_hdll
         mov     ecx, [eax+HDLL.fd]
@@ -992,29 +1050,6 @@ sys_IPC:
         mov     [esp+32], eax
         ret
 
-;align 4
-;proc set_ipc_buff
-
-;           mov  eax,[current_slot]
-;           pushf
-;           cli
-;           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
-;           mov  [eax+APPDATA.ipc_size],ecx
-;
-;           add ecx, ebx
-;           add ecx, 4095
-;           and ecx, not 4095
-;
-;.touch:    mov eax, [ebx]
-;           add ebx, 0x1000
-;           cmp ebx, ecx
-;           jb  .touch
-;
-;           popf
-;           xor eax, eax
-;           ret
-;endp
-
 proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            locals
              dst_slot   dd ?
@@ -1033,7 +1068,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 
         mov     [dst_slot], eax
         shl     eax, 8
-        mov     edi, [eax+SLOT_BASE+0xa0] ;is ipc area defined?
+        mov     edi, [eax+SLOT_BASE+APPDATA.ipc_start] ;is ipc area defined?
         test    edi, edi
         jz      .no_ipc_area
 
@@ -1041,7 +1076,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         and     ebx, 0xFFF
         mov     [dst_offset], ebx
 
-        mov     esi, [eax+SLOT_BASE+0xa4]
+        mov     esi, [eax+SLOT_BASE+APPDATA.ipc_size]
         mov     [buf_size], esi
 
         mov     ecx, [ipc_tmp]
@@ -1054,7 +1089,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         pop     edi esi
 @@:
         mov     [used_buf], ecx
-        stdcall map_mem, ecx, [dst_slot], \
+        stdcall map_mem_ipc, ecx, [dst_slot], \
                 edi, esi, PG_SW
 
         mov     edi, [dst_offset]
@@ -1125,7 +1160,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 .ret:
         mov     eax, [used_buf]
         cmp     eax, [ipc_tmp]
-        jz      @f
+        je      @f
         stdcall free_kernel_space, eax
 @@:
         pop     eax
@@ -1326,113 +1361,6 @@ proc load_pe_driver stdcall, file:dword, cmdline:dword
 .fail:
         xor     eax, eax
         pop     esi
-        ret
-endp
-
-align 4
-proc init_mtrr
-
-        cmp     [BOOT_VARS+BOOT_MTRR], byte 2
-        je      .exit
-
-        bt      [cpu_caps], CAPS_MTRR
-        jnc     .exit
-
-        mov     eax, cr0
-        or      eax, 0x60000000 ;disable caching
-        mov     cr0, eax
-        wbinvd                  ;invalidate cache
-
-        mov     ecx, 0x2FF
-        rdmsr                   ;
-; has BIOS already initialized MTRRs?
-        test    ah, 8
-        jnz     .skip_init
-; rarely needed, so mainly placeholder
-; main memory - cached
-        push    eax
-
-        mov     eax, [MEM_AMOUNT]
-; round eax up to next power of 2
-        dec     eax
-        bsr     ecx, eax
-        mov     ebx, 2
-        shl     ebx, cl
-        dec     ebx
-; base of memory range = 0, type of memory range = MEM_WB
-        xor     edx, edx
-        mov     eax, MEM_WB
-        mov     ecx, 0x200
-        wrmsr
-; mask of memory range = 0xFFFFFFFFF - (size - 1), ebx = size - 1
-        mov     eax, 0xFFFFFFFF
-        mov     edx, 0x0000000F
-        sub     eax, ebx
-        sbb     edx, 0
-        or      eax, 0x800
-        inc     ecx
-        wrmsr
-; clear unused MTRRs
-        xor     eax, eax
-        xor     edx, edx
-@@:
-        inc     ecx
-        wrmsr
-        cmp     ecx, 0x20F
-        jb      @b
-; enable MTRRs
-        pop     eax
-        or      ah, 8
-        and     al, 0xF0; default memtype = UC
-        mov     ecx, 0x2FF
-        wrmsr
-.skip_init:
-        stdcall set_mtrr, [LFBAddress], [LFBSize], MEM_WC
-
-        wbinvd                  ;again invalidate
-
-        mov     eax, cr0
-        and     eax, not 0x60000000
-        mov     cr0, eax        ; enable caching
-.exit:
-        ret
-endp
-
-align 4
-proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
-; find unused register
-        mov     ecx, 0x201
-@@:
-        rdmsr
-        dec     ecx
-        test    ah, 8
-        jz      .found
-        rdmsr
-        mov     al, 0; clear memory type field
-        cmp     eax, [base]
-        jz      .ret
-        add     ecx, 3
-        cmp     ecx, 0x210
-        jb      @b
-; no free registers, ignore the call
-.ret:
-        ret
-.found:
-; found, write values
-        xor     edx, edx
-        mov     eax, [base]
-        or      eax, [mem_type]
-        wrmsr
-
-        mov     ebx, [size]
-        dec     ebx
-        mov     eax, 0xFFFFFFFF
-        mov     edx, 0x00000000
-        sub     eax, ebx
-        sbb     edx, 0
-        or      eax, 0x800
-        inc     ecx
-        wrmsr
         ret
 endp
 

@@ -70,7 +70,7 @@ proc fs_execute
          filename      rd 256   ;1024/4
          flags         dd ?
 
-         save_cr3      dd ?
+         save_proc     dd ?
          slot          dd ?
          slot_base     dd ?
          file_base     dd ?
@@ -215,7 +215,7 @@ proc fs_execute
 
         call    lock_application_table
 
-        call    get_new_process_place
+        call    alloc_thread_slot
         test    eax, eax
         mov     esi, -0x20 ; too many processes
         jz      .err
@@ -248,18 +248,23 @@ proc fs_execute
         loop    .copy_process_name_loop
 .copy_process_name_done:
 
-        mov     ebx, cr3
-        mov     [save_cr3], ebx
+        mov     ebx, [current_process]
+        mov     [save_proc], ebx
 
-        stdcall create_app_space, [hdr_mem], [file_base], [file_size]
+        stdcall create_process, [hdr_mem], [file_base], [file_size]
         mov     esi, -30; no memory
         test    eax, eax
         jz      .failed
 
+        mov     ebx, [hdr_mem]
+        mov     [eax+PROC.mem_used], ebx
+
         mov     ebx, [slot_base]
-        mov     [ebx+APPDATA.dir_table], eax
-        mov     eax, [hdr_mem]
-        mov     [ebx+APPDATA.mem_size], eax
+        mov     [ebx+APPDATA.process], eax
+
+        lea     edx, [ebx+APPDATA.list]
+        lea     ecx, [eax+PROC.thr_list]
+        list_add_tail edx, ecx
 
         xor     edx, edx
         cmp     word [6], '02'
@@ -292,7 +297,7 @@ end if
         lea     ecx, [filename]
         stdcall set_app_params , [slot], eax, ebx, ecx, [flags]
 
-        mov     eax, [save_cr3]
+        mov     eax, [save_proc]
         call    set_cr3
 
         mov     eax, [process_number];set result
@@ -301,7 +306,7 @@ end if
         jmp     .final
 
 .failed:
-        mov     eax, [save_cr3]
+        mov     eax, [save_proc]
         call    set_cr3
 .err:
 .err_hdr:
@@ -385,53 +390,55 @@ test_app_header:
         ret
 
 align 4
-proc get_new_process_place
+alloc_thread_slot:
 ;input:
 ;  none
 ;result:
-;  eax=[new_process_place]<>0 - ok
+;  eax=[new_thread_slot]<>0 - ok
 ;      0 - failed.
 ;This function find least empty slot.
 ;It doesn't increase [TASK_COUNT]!
-        mov     eax, CURRENT_TASK
-        mov     ebx, [TASK_COUNT]
-        inc     ebx
-        shl     ebx, 5
-        add     ebx, eax    ;ebx - address of process information for (last+1) slot
-.newprocessplace:
-;eax = address of process information for current slot
-        cmp     eax, ebx
-        jz      .endnewprocessplace ;empty slot after high boundary
-        add     eax, 0x20
-        cmp     word [eax+0xa], 9;check process state, 9 means that process slot is empty
-        jnz     .newprocessplace
-.endnewprocessplace:
-        mov     ebx, eax
-        sub     eax, CURRENT_TASK
-        shr     eax, 5      ;calculate slot index
-        cmp     eax, 256
-        jge     .failed     ;it should be <256
-        mov     word [ebx+0xa], 9;set process state to 9 (for slot after hight boundary)
-        ret
-.failed:
+
+
+        mov     edx, thr_slot_map
+        pushfd
+        cli
+.l1:
+        bsf     eax, [edx]
+        jnz     .found
+        add     edx, 4
+        cmp     edx, thr_slot_map+32
+        jb      .l1
+
+        popfd
         xor     eax, eax
         ret
-endp
+.found:
+        btr     [edx], eax
+        sub     edx, thr_slot_map
+        lea     eax, [eax+edx*8]
+        popfd
+        ret
+
 
 align 4
-proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
+proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
        locals
          app_pages   dd ?
          img_pages   dd ?
-         dir_addr    dd ?
+         process     dd ?
          app_tabs    dd ?
        endl
+
+        push    ebx
+        push    esi
+        push    edi
 
         mov     ecx, pg_data.mutex
         call    mutex_lock
 
         xor     eax, eax
-        mov     [dir_addr], eax
+        mov     [process], eax
 
         mov     eax, [app_size]
         add     eax, 4095
@@ -454,39 +461,59 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
         shr     ecx, 12
         mov     [img_pages], ecx
 
-if GREEDY_KERNEL
-        lea     eax, [ecx+ebx+2];only image size
-else
         lea     eax, [eax+ebx+2];all requested memory
-end if
+
         cmp     eax, [pg_data.pages_free]
         ja      .fail
 
-        call    alloc_page
+        stdcall kernel_alloc, 0x2000
         test    eax, eax
         jz      .fail
-        mov     [dir_addr], eax
-        stdcall map_page, [tmp_task_pdir], eax, dword PG_SW
+        mov     [process], eax
 
-        mov     edi, [tmp_task_pdir]
-        mov     ecx, (OS_BASE shr 20)/4
+        lea     edi, [eax+PROC.heap_lock]
+        mov     ecx, (PROC.ht_next-PROC.heap_lock)/4
+
+        list_init eax
+        add     eax, PROC.thr_list
+        list_init eax
+
         xor     eax, eax
         cld
         rep stosd
 
+        mov     ecx, (PROC.pdt_0 - PROC.htab)/4
+@@:
+        stosd
+        inc     eax
+        cmp     eax, ecx
+        jbe     @B
+
+        mov     [edi-4096+PROC.ht_next], 1      ;reserve handle 0
+        mov     eax, edi
+        call    get_pg_addr
+        mov     [edi-4096+PROC.pdt_0_phys], eax
+
         mov     ecx, (OS_BASE shr 20)/4
-        mov     esi, sys_pgdir+(OS_BASE shr 20)
+        xor     eax, eax
+        rep stosd
+
+        mov     ecx, (OS_BASE shr 20)/4
+        mov     esi, sys_proc+PROC.pdt_0+(OS_BASE shr 20)
         rep movsd
 
-        mov     eax, [dir_addr]
+        mov     eax, [edi-8192+PROC.pdt_0_phys]
         or      eax, PG_SW
         mov     [edi-4096+(page_tabs shr 20)], eax
 
-        and     eax, -4096
+        lea     eax, [edi-8192]
         call    set_cr3
 
-        mov     edx, [app_tabs]
-        mov     edi, new_app_base
+        mov     ecx, [app_tabs]
+        test    ecx, ecx
+        jz      .done
+
+        xor     edi, edi
 @@:
         call    alloc_page
         test    eax, eax
@@ -494,81 +521,81 @@ end if
 
         stdcall map_page_table, edi, eax
         add     edi, 0x00400000
-        dec     edx
-        jnz     @B
+        loop    @B
 
-        mov     edi, new_app_base
-        shr     edi, 10
-        add     edi, page_tabs
+        mov     edi, page_tabs
 
         mov     ecx, [app_tabs]
         shl     ecx, 10
         xor     eax, eax
         rep stosd
 
+        xor     edx, edx
         mov     ecx, [img_pages]
+        jcxz    .bss
+
+        sub     [app_pages], ecx
+
         mov     ebx, PG_UW
-        mov     edx, new_app_base
         mov     esi, [img_base]
-        mov     edi, new_app_base
         shr     esi, 10
-        shr     edi, 10
         add     esi, page_tabs
-        add     edi, page_tabs
+        mov     edi, page_tabs
 .remap:
         lodsd
         and     eax, 0xFFFFF000
         or      eax, ebx; force user level r/w access
         stosd
         add     edx, 0x1000
-        dec     [app_pages]
-        dec     ecx
-        jnz     .remap
-
-        mov     ecx, [app_pages]
-        test    ecx, ecx
+        loop    .remap
+.bss:
+        mov     ebx, [app_pages]
+        test    ebx, ebx
         jz      .done
 
-if GREEDY_KERNEL
-        mov     eax, 0x02
-        rep stosd
-else
-
-.alloc:
+.map_bss:
         call    alloc_page
         test    eax, eax
         jz      .fail
 
         stdcall map_page, edx, eax, dword PG_UW
         add     edx, 0x1000
-        dec     [app_pages]
-        jnz     .alloc
-end if
+        dec     ebx
+        jnz     .map_bss
 
 .done:
-        stdcall map_page, [tmp_task_pdir], dword 0, dword PG_UNMAP
-
         mov     ecx, pg_data.mutex
         call    mutex_unlock
-        mov     eax, [dir_addr]
+        mov     eax, [process]
+
+        pop     edi
+        pop     esi
+        pop     ebx
         ret
 .fail:
         mov     ecx, pg_data.mutex
         call    mutex_unlock
-        cmp     [dir_addr], 0
+        cmp     [process], 0
         je      @f
-        stdcall destroy_app_space, [dir_addr], 0
+;;        stdcall destroy_app_space, [dir_addr], 0
 @@:
         xor     eax, eax
+        pop     edi
+        pop     esi
+        pop     ebx
         ret
 endp
 
 align 4
 set_cr3:
-
+        pushfd
+        cli
         mov     ebx, [current_slot]
-        mov     [ebx+APPDATA.dir_table], eax
+        mov     [current_process], eax
+        mov     [ebx+APPDATA.process], eax
+        mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
+        popfd
         ret
 
 align 4
@@ -582,6 +609,8 @@ proc destroy_page_table stdcall, pg_tab:dword
         mov     eax, [esi]
         test    eax, 1
         jz      .next
+        test    eax, 2
+        jz      .next
         test    eax, 1 shl 9
         jnz     .next                     ;skip shared pages
         call    free_page
@@ -594,46 +623,25 @@ proc destroy_page_table stdcall, pg_tab:dword
 endp
 
 align 4
-proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
+destroy_process: ;fastcall ecx= ptr to process
 
-        xor     edx, edx
-        push    edx
-        mov     eax, 0x1
-        mov     ebx, [pg_dir]
-.loop:
-;eax = current slot of process
-        mov     ecx, eax
-        shl     ecx, 5
-        cmp     byte [CURRENT_TASK+ecx+0xa], 9;if process running?
-        jz      @f           ;skip empty slots
-        shl     ecx, 3
-        add     ecx, SLOT_BASE
-        cmp     [ecx+APPDATA.dir_table], ebx;compare page directory addresses
-        jnz     @f
-        mov     [ebp-4], ecx
-        inc     edx             ;thread found
-@@:
-        inc     eax
-        cmp     eax, [TASK_COUNT]   ;exit loop if we look through all processes
-        jle     .loop
+        lea     eax, [ecx+PROC.thr_list]
+        cmp     eax, [eax+LHEAD.next]
+        jne     .exit
 
-;edx = number of threads
-;our process is zombi so it isn't counted
-        pop     ecx
-        cmp     edx, 1
-        jg      .ret
-;if there isn't threads then clear memory.
-        mov     esi, [dlls_list]
-        call    destroy_all_hdlls;ecx=APPDATA
+align 4
+.internal:
+        push    ecx
 
-        mov     ecx, pg_data.mutex
-        call    mutex_lock
+        mov     esi, [ecx+PROC.dlls_list_ptr]
+        call    destroy_all_hdlls
 
-        mov     eax, [pg_dir]
-        and     eax, not 0xFFF
-        stdcall map_page, [tmp_task_pdir], eax, PG_SW
-        mov     esi, [tmp_task_pdir]
-        mov     edi, (OS_BASE shr 20)/4
+;        mov     ecx, pg_data.mutex
+;        call    mutex_lock
+
+        mov     esi, [esp]
+        add     esi, PROC.pdt_0
+        mov     edi, (0x80000000 shr 20)/4
 .destroy:
         mov     eax, [esi]
         test    eax, 1
@@ -648,16 +656,13 @@ proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
         dec     edi
         jnz     .destroy
 
-        mov     eax, [pg_dir]
-        call    free_page
-.exit:
+        call    kernel_free     ;ecx still in stack
         stdcall map_page, [tmp_task_ptab], 0, PG_UNMAP
-        stdcall map_page, [tmp_task_pdir], 0, PG_UNMAP
-        mov     ecx, pg_data.mutex
-        call    mutex_unlock
-.ret:
+ ;       mov     ecx, pg_data.mutex
+ ;       call    mutex_unlock
+
+.exit:
         ret
-endp
 
 align 4
 get_pid:
@@ -708,6 +713,10 @@ check_region:
 ;result:
 ;  eax = 1 region lays in app memory
 ;  eax = 0 region don't lays in app memory
+
+        mov     eax, 1
+        ret
+if 0
         mov     eax, [CURRENT_TASK]
 ;     jmp  check_process_region
 ;-----------------------------------------------------------------------------
@@ -732,57 +741,13 @@ check_region:
 
         mov     eax, 1
         ret
-
-
-;    call MEM_Get_Linear_Address
-;    push ebx
-;    push ecx
-;    push edx
-;    mov  edx,ebx
-;    and  edx,not (4096-1)
-;    sub  ebx,edx
-;    add  ecx,ebx
-;    mov  ebx,edx
-;    add  ecx,(4096-1)
-;    and  ecx,not (4096-1)
-;.loop:
-;;eax - linear address of page directory
-;;ebx - current page
-;;ecx - current size
-;    mov  edx,ebx
-;    shr  edx,22
-;    mov  edx,[eax+4*edx]
-;    and  edx,not (4096-1)
-;    test edx,edx
-;    jz   .failed1
-;    push eax
-;    mov  eax,edx
-;    call MEM_Get_Linear_Address
-;    mov  edx,ebx
-;    shr  edx,12
-;    and  edx,(1024-1)
-;    mov  eax,[eax+4*edx]
-;    and  eax,not (4096-1)
-;    test eax,eax
-;    pop  eax
-;    jz   .failed1
-;    add  ebx,4096
-;    sub  ecx,4096
-;    jg   .loop
-;    pop  edx
-;    pop  ecx
-;    pop  ebx
 .ok:
         mov     eax, 1
         ret
-;
-;.failed1:
-;    pop  edx
-;    pop  ecx
-;    pop  ebx
 .failed:
         xor     eax, eax
         ret
+end if
 
 align 4
 proc read_process_memory
@@ -954,7 +919,7 @@ proc new_sys_threads
 
         call    lock_application_table
 
-        call    get_new_process_place
+        call    alloc_thread_slot
         test    eax, eax
         jz      .failed
 
@@ -976,20 +941,12 @@ proc new_sys_threads
         mov     ecx, 11
         rep movsb             ;copy process name
 
-        mov     eax, [ebx+APPDATA.heap_base]
-        mov     [edx+APPDATA.heap_base], eax
+        mov     eax, [ebx+APPDATA.process]
+        mov     [edx+APPDATA.process], eax
 
-        mov     ecx, [ebx+APPDATA.heap_top]
-        mov     [edx+APPDATA.heap_top], ecx
-
-        mov     eax, [ebx+APPDATA.mem_size]
-        mov     [edx+APPDATA.mem_size], eax
-
-        mov     ecx, [ebx+APPDATA.dir_table]
-        mov     [edx+APPDATA.dir_table], ecx;copy page directory
-
-        mov     eax, [ebx+APPDATA.dlls_list_ptr]
-        mov     [edx+APPDATA.dlls_list_ptr], eax
+        lea     ebx, [edx+APPDATA.list]
+        lea     ecx, [eax+PROC.thr_list]
+        list_add_tail ebx, ecx               ;add thread to process child's list
 
         mov     eax, [ebx+APPDATA.tls_base]
         test    eax, eax
@@ -1118,8 +1075,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         add     eax, 256
         jc      @f
 
-        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
-        ja      @f
+;        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
+;        ja      @f
 
         mov     eax, [cmd_line]
 
@@ -1158,8 +1115,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     eax, edx
         add     eax, 1024
         jc      @f
-        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
-        ja      @f
+;        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
+;        ja      @f
         stdcall strncpy, edx, [app_path], 1024
 @@:
         mov     ebx, [slot]
@@ -1188,9 +1145,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         xor     eax, eax
         mov     [ecx+0], dword eax
         mov     [ecx+4], dword eax
-        mov     eax, [_display.width]
+        mov     eax, [Screen_Max_X]
         mov     [ecx+8], eax
-        mov     eax, [_display.height]
+        mov     eax, [Screen_Max_Y]
         mov     [ecx+12], eax
 
         mov     ebx, [pl0_stack]

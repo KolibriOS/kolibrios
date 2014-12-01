@@ -454,7 +454,11 @@ align 4
         cmp     al, 120
         jae     .result ;overflow
         inc     byte[KEY_COUNT]
-        mov     [KEY_COUNT+1+eax], dl
+        mov     [KEY_BUFF+eax], dl
+; store empty scancode
+        add     eax, 120+2
+        mov     [KEY_BUFF+eax], byte 0
+        sub     eax, 120+2
 ;--------------------------------------
 align 4
 .result:

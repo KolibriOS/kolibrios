@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 3514 $
+$Revision: 5015 $
 
 align 4
 iglobal
@@ -143,7 +143,7 @@ TCP_pull_out_of_band:
 ;
 ;-------------------------
 align 4
-TCP_drop:
+TCP_drop:    ; FIXME CHECKME TODO
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_drop: %x\n", eax
 
@@ -290,7 +290,6 @@ TCP_respond:
         mov     ecx, sizeof.TCP_header
         mov     di, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
-        test    edi, edi
         jz      .error
         pop     esi cx
         push    edx eax

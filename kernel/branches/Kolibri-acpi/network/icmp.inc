@@ -294,12 +294,12 @@ ICMP_input:
         call    mutex_unlock
         popa
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: no socket found\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "ICMP_input: no socket found\n"
         jmp     .dump
 
 
   .checksum_mismatch:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "checksum mismatch\n"
+        DEBUGF  DEBUG_NETWORK_ERROR, "ICMP_input: checksum mismatch\n"
 
   .dump:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ICMP_input: dumping\n"

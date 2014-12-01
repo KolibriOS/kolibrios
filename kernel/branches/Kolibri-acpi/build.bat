@@ -1,11 +1,10 @@
 @echo off
 cls
 set languages=en ru ge et sp
-set drivers=com_mouse emu10k1x fm801 infinity sis sound viasound vt823x
-set targets=all kernel drivers clean
+set targets=kernel clean
 
 call :Check_Target %1
-for %%a in (all kernel) do if %%a==%target% call :Check_Lang %2
+for %%a in (kernel) do if %%a==%target% call :Check_Lang %2
 call :Target_%target%
 
 if ERRORLEVEL 0 goto Exit_OK
@@ -56,51 +55,6 @@ goto :eof
 goto :eof
 
 
-:Target_all
-   call :Target_kernel
-   call :Target_drivers
-goto :eof
-
-
-:Target_drivers
-   echo *** building drivers ...
-
-   if not exist bin\drivers mkdir bin\drivers
-   cd drivers
-   for %%a in (%drivers%) do (
-     fasm -m 65536 %%a.asm ..\bin\drivers\%%a.obj
-     if not %errorlevel%==0 goto :Error_FasmFailed
-   )
-   cd ..
-
-kpack >nul 2>&1
-
-if %errorlevel%==9009 goto :Error_KpackFailed
-
-echo *
-echo ##############################################
-echo *
-echo Kpack KolibriOS drivers?
-echo *    
-
-set /P res=[y/n]?
-
-if "%res%"=="y" (
-
-  echo *
-  echo Compressing system
-
-  echo *
-  for %%a in (bin\drivers\*.obj) do (
-    echo ================== kpack %%a
-    kpack %%a
-    if not %errorlevel%==0 goto :Error_KpackFailed
-  )
-
-)
-goto :eof
-
-
 :Target_clean
    echo *** cleaning ...
    rmdir /S /Q bin
@@ -111,14 +65,6 @@ goto :Exit_OK
 echo error: fasm execution failed
 erase lang.inc >nul 2>&1
 echo.
-pause
-exit 1
-
-:Error_KpackFailed
-echo   *** NOTICE ***
-echo If you want to pack all applications you may 
-echo place "kpack" in accessible directory or system %PATH%.
-echo You can get this tool from KolibriOS distribution kit.
 pause
 exit 1
 

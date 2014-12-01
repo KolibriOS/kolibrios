@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,24 +140,20 @@ end if
 start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
-msg_module     db 'in module ',0
-if ~ lang eq sp
-msg_version    db 'incompatible driver version',13,10,0
-msg_www        db 'please visit www.kolibrios.org',13,10,0
-end if
+;msg_module     db 'in module ',0
+;if ~ lang eq sp
+;msg_version    db 'incompatible driver version',13,10,0
+;msg_www        db 'please visit www.kolibrios.org',13,10,0
+;end if
 msg_CR         db  13,10,0
 
-intel_str      db "GenuineIntel",0
-AMD_str        db "AuthenticAMD",0
-
 szHwMouse       db 'ATI2D',0
-szPS2MDriver    db 'PS2MOUSE',0
+szPS2MDriver    db '/rd/1/drivers/PS2MOUSE.SYS',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
-szVidintel      db 'vidintel',0
+szVidintel      db '/rd/1/drivers/vidintel.sys',0
 szUSB           db 'USB',0
 szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
-szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 sz_EXPORTS     db '_EXPORTS',0
 
@@ -168,8 +164,10 @@ firstapp       db  'LAUNCHER',0
 notifyapp      db '@notify',0
 if lang eq ru
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
+mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0
 else if ~ lang eq sp
 ud_user_message db 'Error: unsupported processor instruction',0
+mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
 
 vmode          db  '/sys/drivers/VMODE.MDR',0
@@ -179,7 +177,7 @@ kernel_file_load:
         dd      0       ; subfunction
         dq      0       ; offset in file
         dd      0x30000 ; number of bytes to read
-        dd      OS_BASE + 0x70000 ; buffer for data
+        dd      OS_BASE + 0x71000 ; buffer for data
         db      '/RD/1/KERNEL.MNT',0
 
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
@@ -347,6 +345,8 @@ mem_block_list      rd 64*2
 mem_used_list       rd 64*2
 mem_hash_cnt        rd 64
 
+thr_slot_map        rd 8
+
 cpu_freq            rq 1
 
 heap_mutex          MUTEX
@@ -378,12 +378,14 @@ _display            display_t
 _WinMapAddress      rd 1
 _WinMapSize         rd 1
 
-LFBAddress          rd 1
+LFBAddress          dd ?
+Screen_Max_X        dd ?
+Screen_Max_Y        dd ?
 
 SCR_MODE            rw 2
 
-PUTPIXEL            rd 1
-GETPIXEL            rd 1
+PUTPIXEL            dd ?
+GETPIXEL            dd ?
 
 if VESA_1_2_VIDEO
 BANK_SWITCH         rd 1  reserved for vesa 1.2
@@ -399,7 +401,7 @@ d_width_calc_area   rd 1140
 
 mouseunder          rd 16*24
 
-MOUSE_PICTURE       rd 1
+MOUSE_PICTURE       dd ?
 
 MOUSE_SCROLL_H      rw 1
 MOUSE_X:            rw 1
@@ -436,14 +438,15 @@ proc_mem_map        rd 1
 proc_mem_pdir       rd 1
 proc_mem_tab        rd 1
 
-tmp_task_pdir       rd 1
 tmp_task_ptab       rd 1
 
 default_io_map      rd 1
 
 LFBSize             rd 1
 
-current_slot        rd 1
+current_process     rd 1
+current_slot        rd 1    ; i.e. cureent thread
+
 
 ; status
 hd1_status                      rd 1  ; 0 - free : other - pid
@@ -460,8 +463,6 @@ cdid                            rd 1
 hdbase                          rd 1    ; for boot 0x1f0
 hdid                            rd 1
 hdpos                           rd 1    ; for boot 0x1
-label   known_part dword
-fat32part                       rd 1    ; for boot 0x1
 cdpos                           rd 1
 
 ;CPUID information
@@ -494,63 +495,12 @@ BgrDataHeight                   rd 1
 
 skin_data                       rd 1
 
-cache_ide0:
-cache_ide0_pointer              rd 1
-cache_ide0_size                 rd 1   ; not use
-cache_ide0_data_pointer         rd 1
-cache_ide0_system_data_size     rd 1   ; not use
-cache_ide0_appl_data_size       rd 1   ; not use
-cache_ide0_system_data          rd 1
-cache_ide0_appl_data            rd 1
-cache_ide0_system_sad_size      rd 1
-cache_ide0_appl_sad_size        rd 1
-cache_ide0_search_start         rd 1
-cache_ide0_appl_search_start    rd 1
-
-cache_ide1:
-cache_ide1_pointer              rd 1
-cache_ide1_size                 rd 1   ; not use
-cache_ide1_data_pointer         rd 1
-cache_ide1_system_data_size     rd 1   ; not use
-cache_ide1_appl_data_size       rd 1   ; not use
-cache_ide1_system_data          rd 1
-cache_ide1_appl_data            rd 1
-cache_ide1_system_sad_size      rd 1
-cache_ide1_appl_sad_size        rd 1
-cache_ide1_search_start         rd 1
-cache_ide1_appl_search_start    rd 1
-
-cache_ide2:
-cache_ide2_pointer              rd 1
-cache_ide2_size                 rd 1   ; not use
-cache_ide2_data_pointer         rd 1
-cache_ide2_system_data_size     rd 1   ; not use
-cache_ide2_appl_data_size       rd 1   ; not use
-cache_ide2_system_data          rd 1
-cache_ide2_appl_data            rd 1
-cache_ide2_system_sad_size      rd 1
-cache_ide2_appl_sad_size        rd 1
-cache_ide2_search_start         rd 1
-cache_ide2_appl_search_start    rd 1
-
-cache_ide3:
-cache_ide3_pointer              rd 1
-cache_ide3_size                 rd 1   ; not use
-cache_ide3_data_pointer         rd 1
-cache_ide3_system_data_size     rd 1   ; not use
-cache_ide3_appl_data_size       rd 1   ; not use
-cache_ide3_system_data          rd 1
-cache_ide3_appl_data            rd 1
-cache_ide3_system_sad_size      rd 1
-cache_ide3_appl_sad_size        rd 1
-cache_ide3_search_start         rd 1
-cache_ide3_appl_search_start    rd 1
-
 debug_step_pointer              rd 1
 
 lba_read_enabled                rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled              rd 1  ; 0 = disabled , 1 = enabled
 
+cpu_phys_addr_width             rb 1  ; also known as MAXPHYADDR in Intel manuals
 hdd_appl_data                   rb 1  ; 0 = system cache, 1 - application cache
 cd_appl_data                    rb 1  ; 0 = system cache, 1 - application cache
 
@@ -575,16 +525,21 @@ end if
 
 org (OS_BASE+0x0100000)
 
-RAMDISK:                        rb 2880*512
-                                rb 2856*4               ; not used
+; Currently size of memory allocated for the ramdisk is fixed.
+; This should be revisited when/if memory map would become more dynamic.
+RAMDISK_CAPACITY = 2880 ; in sectors
+
+RAMDISK:                        rb RAMDISK_CAPACITY*512
 
 _CLEAN_ZONE:
 
+BgrAuxTable                     rb 32768
+align 65536
+SB16Buffer                      rb 65536
+
 align 4096
 _IDE_DMA                        rb 16*512
-BgrAuxTable                     rb 32768
 BUTTON_INFO                     rb 64*1024
 RESERVED_PORTS:                 rb 64*1024
-FLOPPY_BUFF:                    rb 18*512           ;one track
 
 sys_pgmap:                      rb 1024*1024/8
