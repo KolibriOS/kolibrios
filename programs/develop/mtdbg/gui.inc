@@ -1702,7 +1702,7 @@ draw_disasm:
 ; TODO: cleanup of this function, make some global labels local
 update_disasm_eip:
 ; test if instruction at eip is showed
-        mov     ecx, [disasm_height_dd+4]
+        mov     ecx, [disasm_height_dd]
         mov     eax, [disasm_start_pos]
         mov     [disasm_cur_pos], eax
 

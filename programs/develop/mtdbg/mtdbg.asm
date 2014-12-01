@@ -995,25 +995,33 @@ OnStep:
 
 ;-----------------------------------------------------------------------------
 ;                       Proceed process event
+;Here we get [<number>] argument at do step <number> times
+OnProceedMultiple:
+        cmp     [bSuspended], 0
+        jz      OnStep.running
+        mov     [proc_num], 1
+        mov     esi, [curarg]
+        test    esi, esi
+        jz      .do
+        cmp     byte [esi], 0
+        jz      .do
+        call    get_hex_number
+        jc      .ret
+        cmp     eax, 0 ; check if lesser or equal than 0
+        jle     .ret
+        mov     [proc_num], eax
+        mov     [curarg], 0
+.do:
+        call    OnProceed
+        dec     [proc_num]
+        jnz     .do
+.ret:
+        ret
+
 
 OnProceed:
         cmp     [bSuspended], 0
         jz      OnStep.running
-        cmp     [proc_num], 0
-        jg      .procone
-        mov     esi, [curarg]
-        cmp     esi, 0
-        jz      .procone
-        cmp     byte [esi], 0
-        jz      .procone
-        call    get_hex_number
-        jc      .ret
-        cmp     eax, 0 ; check if lesser than 0
-        jle     .ret
-        mov     [proc_num], eax
-        mov     [curarg], 0
-
-    .procone:
         mov     esi, [_eip]
 
     @@:
@@ -1107,15 +1115,6 @@ OnProceed:
         jmp     OnStep.doit
 
     @@:
-        mov     eax, [proc_num]
-        dec     eax
-        cmp     eax, 0
-        jle     .ret
-        mov     [proc_num], eax
-        jmp     .procone
-
-    .ret:
-        mov     [proc_num], 0
         ret
 
 ;-----------------------------------------------------------------------------
@@ -2000,7 +1999,7 @@ commands:
         db      0Bh
         dd      aStep, OnStepMultiple, StepSyntax, StepHelp
         db      0Bh
-        dd      aProceed, OnProceed, ProceedSyntax, ProceedHelp
+        dd      aProceed, OnProceedMultiple, ProceedSyntax, ProceedHelp
         db      0Bh
         dd      aCalc, OnCalc, CalcSyntax, CalcHelp
         db      0Eh
