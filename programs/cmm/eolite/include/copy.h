@@ -20,23 +20,36 @@ void Copy(dword pcth, char cut)
                 selected_offset2 = file_mas[i]*304 + buf+32 + 7;
                 if (ESBYTE[selected_offset2]) cont++;
         }
-        buff_data = malloc(cont*4096+10);
-        ESDWORD[buff_data] = cont*4096+10;
-        ESDWORD[buff_data+4] = 3;
-        ESINT[buff_data+8] = cont;
-        for (i=0; i<files.count; i++) 
-        {
-                selected_offset2 = file_mas[i]*304 + buf+32 + 7;
-                if (ESBYTE[selected_offset2]) {
-                        strcpy(#copy_t, #path);
-                        strcat(#copy_t, file_mas[i]*304+buf+72);
-                        
-                        strlcpy(ind*4096+buff_data+10, #copy_t, 4096);
-                        ind++;
-                }
-        }
-        clipboard.SetSlotData(cont*4096+10, buff_data);
+		if (!cont)
+		{
+            buff_data = malloc(4106);
+            ESDWORD[buff_data] = 4106;
+            ESDWORD[buff_data+4] = 3;
+            ESINT[buff_data+8] = 1;
+            strlcpy(buff_data+10, #file_path, 4096);;
+			clipboard.SetSlotData(4106, buff_data);
+	    }
+		else
+		{
+            buff_data = malloc(cont*4096+10);
+            ESDWORD[buff_data] = cont*4096+10;
+            ESDWORD[buff_data+4] = 3;
+            ESINT[buff_data+8] = cont;
+            for (i=0; i<files.count; i++) 
+            {
+                    selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+                    if (ESBYTE[selected_offset2]) {
+                            strcpy(#copy_t, #path);
+                            strcat(#copy_t, file_mas[i]*304+buf+72);
+                            
+                            strlcpy(ind*4096+buff_data+10, #copy_t, 4096);;
+                            ind++;
+                    }
+            }
+			clipboard.SetSlotData(cont*4096+10, buff_data);
+		}
 	cut_active = cut;
+	free(buff_data);
 }
 
 void copyf_Draw_Progress(dword filename) {
@@ -58,14 +71,16 @@ void Paste()
 	char copy_rezult;
 	byte copy_from[4096];
 	int j;
-        int cnt = 0;
+    int cnt = 0;
 	dword buf;
 	
 	buf = clipboard.GetSlotData(clipboard.GetSlotCount()-1);
-        if (DSDWORD[buf+4] != 3) return;
+    if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
-        for (j = 0; j < cnt; j++) {
+    for (j = 0; j < cnt; j++) {
+	    debugi(j);
 		strlcpy(#copy_from, j*4096+buf+10, 4096);
+		debugln(#copy_from);
 		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
@@ -96,7 +111,6 @@ void Paste()
 	{
 		cut_active=false;
 	}
-	//mark_default();
 	CopyExit();
 }
 

@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.39"
-#define ABOUT_TITLE "Eolite v2.39"
+#define TITLE "Eolite File Manager v2.4"
+#define ABOUT_TITLE "Eolite v2.4"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
