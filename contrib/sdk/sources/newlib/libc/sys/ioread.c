@@ -26,6 +26,6 @@ int read_file(const char *path, void *buff,
     "addl $28, %%esp \n\t"
     :"=a" (retval)
     :"a"(path),"b"(buff),"c"(offset),"d"(count),"S"(reads));
-    return retval;
+    return retval == 6 ? 0 : retval;
 };
 

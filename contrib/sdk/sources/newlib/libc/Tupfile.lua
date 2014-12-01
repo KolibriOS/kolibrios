@@ -42,7 +42,7 @@ CORE_SRCS = {
   "reent/impure.c", "reent/init_reent.c", "reent/getreent.c", "reent/mutex.c",
   "reent/gettimeofdayr.c", "reent/isattyr.c", "reent/openr.c", "reent/closer.c",
   "reent/linkr.c", "reent/readr.c", "reent/lseekr.c", "reent/fstatr.c",
-  "reent/writer.c", "reent/timesr.c", "reent/unlinkr.c",
+  "reent/writer.c", "reent/timesr.c", "reent/unlinkr.c", "reent/renamer.c",
   "search/qsort.c", "search/bsearch.c",
   "signal/signal.c",
   "sys/close.c", "sys/create.c", "sys/delete.c", "sys/errno.c", "sys/finfo.c",
@@ -84,7 +84,7 @@ STDIO_SRCS = {
   "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c", "vasnprintf.c",
   "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c", "vsnprintf.c",
   "vsscanf.c", "makebuf.c", "wsetup.c", "wbuf.c", "sccl.c", "siprintf.c",
-  "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c"
+  "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c", "rename.c"
 }
 
 MATH_SRCS = {
