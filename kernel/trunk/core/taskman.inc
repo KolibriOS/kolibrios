@@ -472,7 +472,7 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         mov     [process], eax
 
         lea     edi, [eax+PROC.heap_lock]
-        mov     ecx, (4096-PROC.heap_lock)/4
+        mov     ecx, (PROC.ht_next-PROC.heap_lock)/4
 
         list_init eax
         add     eax, PROC.thr_list
@@ -482,6 +482,14 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         cld
         rep stosd
 
+        mov     ecx, (PROC.pdt_0 - PROC.htab)/4
+@@:
+        stosd
+        inc     eax
+        cmp     eax, ecx
+        jbe     @B
+
+        mov     [edi-4096+PROC.ht_next], 3      ;reserve handles for stdin stdout and stderr
         mov     eax, edi
         call    get_pg_addr
         mov     [edi-4096+PROC.pdt_0_phys], eax
