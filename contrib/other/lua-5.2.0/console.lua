@@ -1,0 +1,8 @@
+copen()
+cprintf("Console demo\n")
+cprintf("Who are you?\n")
+name=cgets()
+cprintf("Hello, mr.")
+cprintf(name)
+cprintf("!\n")
+cclose()
