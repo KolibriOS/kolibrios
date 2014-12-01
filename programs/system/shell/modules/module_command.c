@@ -301,10 +301,7 @@ if (quote == 0)
        	{
 	cmd[i] = CMD[i];
 	if (0 == cmd[i])
-		{
-		i = -2;
-		break;
-		}
+		return i;
 	if ( iswhite(cmd[i]) )
 		{
                 cmd[i] = '\0';
@@ -321,7 +318,7 @@ if (quote == 0)
 	cmd[len] = CMD[i];
 	if (0 == cmd[len])
 		{
-		len = -2;
+		i--;
 		break;
 		}
 	if ( cmd[len] == '"' )
@@ -332,7 +329,7 @@ if (quote == 0)
         len++;
 	}
    trim(cmd);
-   return len+2;
+   return i+1;
    }
 }
 
