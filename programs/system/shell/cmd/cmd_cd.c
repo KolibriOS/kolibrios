@@ -1,4 +1,12 @@
 
+static inline void set_cwd(const char* cwd)
+{
+    __asm__ __volatile__(
+    "int $0x40"
+    ::"a"(30),"b"(1),"c"(cwd));
+};
+
+
 int cmd_cd(char dir[])
 {
 
@@ -18,10 +26,11 @@ if (NULL == dir)
 if ( 0 == strcmp(dir, ".") )
 	return FALSE;
 
-if (  ( 0 == strcmp(dir, "..") ) && ( 0 != strcmp(cur_dir, "/")) ) 
+if (  ( 0 == strcmp(dir, "..") ) && ( 0 != strcmp(cur_dir, "/")) )
 	{
 	cur_dir[strlen(cur_dir)-1]='\0';
 	dir_truncate(cur_dir);
+    set_cwd(cur_dir);
 	return TRUE;
 	}
 
@@ -30,6 +39,7 @@ if ( '/' == dir[0])
 	if ( dir_check(dir) )
 		{
 		strcpy(cur_dir, dir);
+        set_cwd(cur_dir);
 		return TRUE;
 		}
 	return FALSE;
@@ -37,7 +47,7 @@ if ( '/' == dir[0])
 else
 	{
 	strcpy(temp, cur_dir);
-	if (cur_dir[strlen(cur_dir)-1] != '/') 
+	if (cur_dir[strlen(cur_dir)-1] != '/')
 		strcat(temp, "/");
 	strcat(temp, dir);
 
@@ -45,6 +55,7 @@ else
 		{
 
 		strcpy(cur_dir, temp);
+        set_cwd(cur_dir);
 		return TRUE;
 		}
 
