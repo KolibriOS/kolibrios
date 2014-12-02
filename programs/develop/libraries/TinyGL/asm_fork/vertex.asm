@@ -46,8 +46,8 @@ endl
 	rep movsd
 
 	mov eax,[context]
-	cmp dword[eax+offs_cont_color_material_enabled],1
-	jne @f
+	cmp dword[eax+offs_cont_color_material_enabled],0
+	je @f
 		mov dword[q],OP_Material
 		mov ecx,[eax+offs_cont_current_color_material_mode]
 		mov dword[q+4],ecx
@@ -55,7 +55,8 @@ endl
 		mov dword[q+8],ecx
 		mov esi,[p]
 		add esi,4
-		mov edi,dword[q+12] ;edi = [q3]
+		mov edi,ebp
+		sub edi,16 ;edi = &q[3]
 		mov ecx,4
 		rep movsd
 		stdcall glopMaterial, eax,[q]
@@ -147,11 +148,7 @@ endl
 		add ecx,offs_cont_matrix_model_projection
 		; precompute projection matrix
 		stdcall gl_M4_Mul, ecx,dword[edx+offs_cont_matrix_stack_ptr+4],dword[edx+offs_cont_matrix_stack_ptr]
-;if DEBUG ;glopBegin
-		;stdcall gl_print_matrix,ecx,4
-		;stdcall gl_print_matrix,[edx+offs_cont_matrix_stack_ptr+4],4
-		;stdcall gl_print_matrix,[edx+offs_cont_matrix_stack_ptr],4
-;end if
+
 		; test to accelerate computation
 		mov dword[edx+offs_cont_matrix_model_projection_no_w_transform],0
 		fldz
@@ -455,6 +452,10 @@ pushad
 	.els_0:
 		mov eax,[edx+offs_cont_current_color]
 		mov [ebx+offs_vert_color],eax
+		mov eax,[edx+offs_cont_current_color+4]
+		mov [ebx+offs_vert_color+4],eax
+		mov eax,[edx+offs_cont_current_color+8]
+		mov [ebx+offs_vert_color+8],eax
 	@@:
 
 	; tex coords
@@ -570,11 +571,23 @@ pushad
 	jne @f
 		cmp dword[n],4
 		jne .end_f
-;           c->vertex[2].edge_flag = 0;
-;           gl_draw_triangle(c, &c->vertex[0], &c->vertex[1], &c->vertex[2]);
-;           c->vertex[2].edge_flag = 1;
-;           c->vertex[0].edge_flag = 0;
-;           gl_draw_triangle(c, &c->vertex[0], &c->vertex[2], &c->vertex[3]);
+			mov eax,[edx+offs_cont_vertex]
+			add eax,2*sizeof.GLVertex
+			mov dword[eax+offs_vert_edge_flag],0 ;context.vertex[2].edge_flag = 0
+			push eax
+			sub eax,sizeof.GLVertex
+			push eax
+			sub eax,sizeof.GLVertex
+			stdcall gl_draw_triangle, edx,eax ;v0,v1,v2
+			mov dword[eax+offs_vert_edge_flag],0 ;context.vertex[0].edge_flag = 0
+			add eax,2*sizeof.GLVertex
+			mov dword[eax+offs_vert_edge_flag],1 ;context.vertex[2].edge_flag = 1
+			add eax,sizeof.GLVertex
+			push eax
+			sub eax,sizeof.GLVertex
+			push eax
+			sub eax,2*sizeof.GLVertex
+			stdcall gl_draw_triangle, edx,eax ;v0,v2,v3
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
@@ -591,10 +604,7 @@ pushad
 		jmp .end_f
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_POLYGON
-	jne @f
-		;...
-		jmp .end_f
-	@@:
+	je .end_f
 ;    default:
 ;       gl_fatal_error("glBegin: type %x not handled\n", c->begin_type);
 ;    }
@@ -607,7 +617,7 @@ popad
 endp
 
 align 4
-proc glopEnd uses eax ebx, context:dword, p:dword
+proc glopEnd uses eax ebx ecx, context:dword, p:dword
 	mov eax,[context]
 ;    assert(c->in_begin == 1);
 
@@ -628,8 +638,14 @@ proc glopEnd uses eax ebx, context:dword, p:dword
 		@@: ;while (ebx >= 3)
 		cmp ebx,3
 		jl .end_i
-		dec ebx
-;           gl_draw_triangle(c, &c->vertex[i], &c->vertex[0], &c->vertex[i - 1]);
+			dec ebx
+			mov ecx,ebx
+			imul ecx,sizeof.GLVertex
+			add ecx,[eax+offs_cont_vertex]
+			push ecx ;ecx = &context.vertex[i]
+			sub ecx,sizeof.GLVertex
+			push ecx ;ecx = &context.vertex[i-1]
+			stdcall gl_draw_triangle, eax,[eax+offs_cont_vertex]
 		jmp @b
 	.end_i:
 	mov dword[eax+offs_cont_in_begin],0

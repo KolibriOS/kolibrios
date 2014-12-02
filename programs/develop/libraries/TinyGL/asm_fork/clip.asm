@@ -702,7 +702,7 @@ pushad
 	mov ebx,[p0]
 	mov ecx,[p1]
 	mov edx,[p2]
-	
+
 	mov edi,[ebx+offs_vert_clip_code]
 	mov dword[cc],edi
 	mov eax,[ecx+offs_vert_clip_code]
@@ -719,8 +719,8 @@ pushad
 		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
 		mov dword[norm],edi
 		fild dword[norm]
-		mov esi,dword[ecx+offs_vert_zp+offs_zbup_y]
-		sub esi,dword[ebx+offs_vert_zp+offs_zbup_y]
+		mov edi,dword[ecx+offs_vert_zp+offs_zbup_y]
+		sub edi,dword[ebx+offs_vert_zp+offs_zbup_y]
 		mov dword[norm],edi
 		fimul dword[norm]
 		mov edi,dword[ecx+offs_vert_zp+offs_zbup_x]
@@ -770,6 +770,7 @@ pushad
 			cmp dword[front],0
 			je @f
 				stdcall dword[edi+offs_cont_draw_triangle_front], edi,ebx,ecx,edx
+				jmp .end_f
 			@@:
 				stdcall dword[edi+offs_cont_draw_triangle_back], edi,ebx,ecx,edx
 		jmp .end_f
@@ -800,20 +801,6 @@ pushad
 	mov ebx,[p0]
 	mov ecx,[p1]
 	mov edx,[p2]
-
-if DEBUG ;(1) gl_draw_triangle_clip
-pushad
-	stdcall dbg_print,txt_sp,m_1
-	add ebx,offs_vert_color
-	add ecx,offs_vert_color
-	add edx,offs_vert_color
-	stdcall gl_print_matrix,ebx,1
-	stdcall gl_print_matrix,ecx,1
-	stdcall gl_print_matrix,edx,1
-popad
-end if
-
-;	finit ;???
 
 	mov edi,[ebx+offs_vert_clip_code]
 	mov [cc],edi

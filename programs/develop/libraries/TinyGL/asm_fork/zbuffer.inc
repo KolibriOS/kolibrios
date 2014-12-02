@@ -8,17 +8,17 @@ ZB_Z_BITS equ 16
 
 ZB_POINT_Z_FRAC_BITS equ 14
 
-ZB_POINT_S_MIN equ ( (1 shl 13) )
+ZB_POINT_S_MIN equ (1 shl 13)
 ZB_POINT_S_MAX equ ( (1 shl 22)-(1 shl 13) )
-ZB_POINT_T_MIN equ ( (1 shl 21) )
+ZB_POINT_T_MIN equ (1 shl 21)
 ZB_POINT_T_MAX equ ( (1 shl 30)-(1 shl 21) )
 
-ZB_POINT_RED_MIN equ ( (1 shl 10) )
-ZB_POINT_RED_MAX equ ( (1 shl 16)-(1 shl 10) )
-ZB_POINT_GREEN_MIN equ ( (1 shl 9) )
-ZB_POINT_GREEN_MAX equ ( (1 shl 16)-(1 shl 9) )
-ZB_POINT_BLUE_MIN equ ( (1 shl 10) )
-ZB_POINT_BLUE_MAX equ ( (1 shl 16)-(1 shl 10) )
+ZB_POINT_RED_MIN equ (1 shl 8)
+ZB_POINT_RED_MAX equ ( (1 shl 16)-1 )
+ZB_POINT_GREEN_MIN equ (1 shl 8)
+ZB_POINT_GREEN_MAX equ ( (1 shl 16)-1 )
+ZB_POINT_BLUE_MIN equ (1 shl 8)
+ZB_POINT_BLUE_MAX equ ( (1 shl 16)-1 )
 
 ; display modes
 ZB_MODE_5R6G5B equ 1  ; true color 16 bits
