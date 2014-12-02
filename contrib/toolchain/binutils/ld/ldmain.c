@@ -184,23 +184,11 @@ ld_bfd_assert_handler (const char *fmt, const char *bfdver,
   config.make_executable = FALSE;
 }
 
-static inline void set_cwd(const char* cwd)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(30),"b"(1),"c"(cwd));
-};
-
-
 int
 main (int argc, char **argv)
 {
   char *emulation;
   long start_time = get_run_time ();
-
-  set_cwd("/kolibrios/contrib/toolchain/binutils/ld");
-
-
 #ifdef HAVE_SBRK
   char *start_sbrk = (char *) sbrk (0);
 #endif

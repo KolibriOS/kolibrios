@@ -399,8 +399,6 @@ ldfile_open_file (lang_input_statement_type *entry)
   if (entry->the_bfd != NULL)
     return;
 
-  printf("%s %s\n", __FUNCTION__, entry->filename);
-
   if (! entry->flags.search_dirs)
     {
       if (ldfile_try_open_bfd (entry->filename, entry))
