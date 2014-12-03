@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.4"
-#define ABOUT_TITLE "Eolite v2.4"
+#define TITLE "Eolite File Manager v2.41"
+#define ABOUT_TITLE "Eolite v2.41"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -432,7 +432,6 @@ void main()
 							Del_Form();
 							break;
 					case 185: //ins
-							//add_to_mark(#file_path);
 							selected_offset = file_mas[files.current+files.first]*304 + buf+32 + 7;
 							if (ESBYTE[selected_offset]) ESBYTE[selected_offset]=0; else ESBYTE[selected_offset] = 1;
 							List_Current(1);
@@ -787,15 +786,38 @@ int Del_File2(dword way)
 void Del_File(byte dodel)
 {   
 	byte del_from[4096];
-	int tst, count, j;
-	dword buf;
+	dword selected_offset2;
+	int tst, count, i;
+	int cont = 0;
 	
 	if (dodel==true)
 	{
 		del_active=2;
 		if (itdir) ShowMessage(WAIT_DELETING_FOLDER, 0);
 		del_error = 0;
-		Del_File2(#file_path);
+		
+		for (i=0; i<files.count; i++) 
+        {
+            selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+            if (ESBYTE[selected_offset2]) cont++;
+        }
+		if (!cont)
+		{
+		    Del_File2(#file_path);
+		}
+		else
+		{
+		   for (i=0; i<files.count; i++) 
+            {
+                    selected_offset2 = file_mas[i]*304 + buf+32 + 7;
+                    if (ESBYTE[selected_offset2]) {
+                            strcpy(#del_from, #path);
+                            strcat(#del_from, file_mas[i]*304+buf+72);
+                            Del_File2(#del_from);
+                    }
+            }
+			
+		}
 		if (del_error) Write_Error(del_error);
  	}
 	del_active=0;
