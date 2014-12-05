@@ -155,6 +155,14 @@ E_LIB glInit ;(void *zbuffer)
 E_LIB glClose ;(void)
 
 ;
+; glu functions
+;
+
+E_LIB gluNewQuadric
+E_LIB gluDeleteQuadric
+E_LIB gluSphere
+
+;
 ; Kolibri OS functions
 ;
 

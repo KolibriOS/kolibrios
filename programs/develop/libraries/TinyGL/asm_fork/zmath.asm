@@ -42,6 +42,8 @@ proc gl_M4_IsId uses ebx ecx, a:dword
 			test ah,0x40
 			je .not_1 ;если не равно 1.0 матрица не единичная
 		@@:
+		ffree st0
+		fincstp
 		add eax,4
 		inc ebx
 		btr ebx,2
@@ -53,6 +55,8 @@ proc gl_M4_IsId uses ebx ecx, a:dword
 	mov eax,1
 	jmp @f
 	.not_1:
+		ffree st0
+		fincstp
 		xor eax,eax
 	@@:
 	ret
@@ -235,7 +239,7 @@ proc gl_M4_Transpose uses eax ecx edx, a:dword, b:dword
 	ret
 endp
 
-;/* inversion of an orthogonal matrix of type Y=M.X+P */ 
+; inversion of an orthogonal matrix of type Y=M.X+P
 ;void gl_M4_InvOrtho(M4 *a,M4 b)
 ;{
 ;       int i,j;
@@ -250,8 +254,8 @@ endp
 ;       }
 ;}
 
-;/* Inversion of a general nxn matrix.
-;   Note : m is destroyed */
+; Inversion of a general nxn matrix.
+; Note : m is destroyed
 
 align 4
 proc Matrix_Inv uses ecx, r:dword, m:dword, n:dword ;(float *r,float *m,int n)
@@ -401,16 +405,42 @@ endp
 
 ; vector arithmetic
 
-;int gl_V3_Norm(V3 *a)
-;{
-;       float n;
-;       n=sqrt(a->X*a->X+a->Y*a->Y+a->Z*a->Z);
-;       if (n==0) return 1;
-;       a->X/=n;
-;       a->Y/=n;
-;       a->Z/=n;
-;       return 0;
-;}
+align 4
+proc gl_V3_Norm uses ebx, a:dword
+	mov ebx,[a]
+	fld dword[ebx]
+	fmul dword[ebx]
+	fld dword[ebx+4]
+	fmul dword[ebx+4]
+	faddp
+	fld dword[ebx+8]
+	fmul dword[ebx+8]
+	faddp
+	fsqrt ;st0 = sqrt(a.X^2 +a.Y^2 +a.Z^2)
+	fldz
+	fcomp
+	fstsw ax
+	sahf
+	je .r1 ;if (sqrt(...)==0) return 1
+		fld dword[ebx] ;offs_X = 0
+		fdiv st0,st1
+		fstp dword[ebx] ;a.X/=sqrt(...)
+		fld dword[ebx+4]
+		fdiv st0,st1
+		fstp dword[ebx+4] ;a.Y/=sqrt(...)
+		fld dword[ebx+8]
+		fdiv st0,st1
+		fstp dword[ebx+8] ;a.Z/=sqrt(...)
+		xor eax,eax
+		jmp @f
+	.r1:
+		xor eax,eax
+		inc eax
+	@@:
+	ffree st0
+	fincstp
+	ret
+endp
 
 macro gl_V3_New p_mem, x, y, z
 {

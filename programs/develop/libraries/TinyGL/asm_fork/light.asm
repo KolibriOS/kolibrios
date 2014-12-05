@@ -60,32 +60,56 @@ proc glopColorMaterial uses eax ebx ecx, context:dword, p:dword
 	ret
 endp
 
-;void glopLight(GLContext *c,GLParam *p)
-;{
-;  int light=p[1].i;
-;  int type=p[2].i;
+align 4
+proc glopLight uses eax ebx ecx edx, context:dword, p:dword
+	mov eax,[context]
+	mov ebx,[p]
+	mov edx,[ebx+4] ;edx = p[1]
+
 ;  V4 v;
-;  GLLight *l;
-;  int i;
-;  
-;  assert(light >= GL_LIGHT0 && light < GL_LIGHT0+MAX_LIGHTS );
-;
-;  l=&c->lights[light-GL_LIGHT0];
-;
-;  for(i=0;i<4;i++) v.v[i]=p[3+i].f;
-;
-;  switch(type) {
-;  case GL_AMBIENT:
-;    l->ambient=v;
-;    break;
-;  case GL_DIFFUSE:
-;    l->diffuse=v;
-;    break;
-;  case GL_SPECULAR:
-;    l->specular=v;
-;    break;
-;  case GL_POSITION:
+
+;  assert(edx >= GL_LIGHT0 && edx < GL_LIGHT0+MAX_LIGHTS );
+
+	sub edx,GL_LIGHT0
+	imul edx,sizeof.GLLight
+	add edx,eax
+	add edx,offs_cont_lights
+
+	mov ecx,[ebx+8] ;ecx = p[2]
+	cmp ecx,GL_AMBIENT
+	jne @f
+		mov esi,ebx
+		add esi,12
+		mov edi,edx
+		;add edi,offs_ligh_ambient ;offs_ligh_ambient = 0
+		mov ecx,4
+		rep movsd ;l.ambient=v
+		jmp .end_f
+	@@:
+	cmp ecx,GL_DIFFUSE
+	jne @f
+		mov esi,ebx
+		add esi,12
+		mov edi,edx
+		add edi,offs_ligh_diffuse
+		mov ecx,4
+		rep movsd ;l.diffuse=v
+		jmp .end_f
+	@@:
+	cmp ecx,GL_SPECULAR
+	jne @f
+		mov esi,ebx
+		add esi,12
+		mov edi,edx
+		add edi,offs_ligh_specular
+		mov ecx,4
+		rep movsd ;l.specular=v
+		jmp .end_f
+	@@:
+	cmp ecx,GL_POSITION
+	jne @f
 ;    {
+;  for(i=0;i<4;i++) v.v[i]=p[3+i].f;
 ;      V4 pos;
 ;      gl_M4_MulV4(&pos,c->matrix_stack_ptr[0],&v);
 ;
@@ -99,38 +123,62 @@ endp
 ;        gl_V3_Norm(&l->norm_position);
 ;      }
 ;    }
-;    break;
-;  case GL_SPOT_DIRECTION:
-;    for(i=0;i<3;i++) {
-;      l->spot_direction.v[i]=v.v[i];
-;      l->norm_spot_direction.v[i]=v.v[i];
-;    }
-;    gl_V3_Norm(&l->norm_spot_direction);
-;    break;
-;  case GL_SPOT_EXPONENT:
-;    l->spot_exponent=v.v[0];
-;    break;
-;  case GL_SPOT_CUTOFF:
+		jmp .end_f
+	@@:
+	cmp ecx,GL_SPOT_DIRECTION
+	jne @f
+		mov esi,ebx
+		add esi,12
+		mov edi,edx
+		add edi,offs_ligh_spot_direction
+		mov ecx,3
+		rep movsd ;l.spot_direction=v[0,1,2]
+		mov esi,ebx
+		add esi,12
+		mov edi,edx
+		add edi,offs_ligh_norm_spot_direction
+		mov ecx,3
+		rep movsd ;l.norm_spot_direction=v[0,1,2]
+		add edx,offs_ligh_norm_spot_direction
+		stdcall gl_V3_Norm,edx
+		jmp .end_f
+	@@:
+	cmp ecx,GL_SPOT_EXPONENT
+	jne @f
+		mov ecx,[ebx+12]
+		mov [edi+offs_ligh_spot_exponent],ecx ;l.spot_exponent=p[3]
+		jmp .end_f
+	@@:
+	cmp ecx,GL_SPOT_CUTOFF
+	jne @f
 ;    {
 ;      float a=v.v[0];
 ;      assert(a == 180 || (a>=0 && a<=90));
 ;      l->spot_cutoff=a;
 ;      if (a != 180) l->cos_spot_cutoff=cos(a * M_PI / 180.0);
 ;    }
-;    break;
-;  case GL_CONSTANT_ATTENUATION:
-;    l->attenuation[0]=v.v[0];
-;    break;
-;  case GL_LINEAR_ATTENUATION:
-;    l->attenuation[1]=v.v[0];
-;    break;
-;  case GL_QUADRATIC_ATTENUATION:
-;    l->attenuation[2]=v.v[0];
-;    break;
-;  default:
+		jmp .end_f
+	@@:
+	cmp ecx,GL_CONSTANT_ATTENUATION
+		mov ecx,[ebx+12]
+		mov [edi+offs_ligh_attenuation],ecx ;l->attenuation[0]=p[3]
+		jmp .end_f
+	@@:
+	cmp ecx,GL_LINEAR_ATTENUATION
+		mov ecx,[ebx+12]
+		mov [edi+offs_ligh_attenuation+4],ecx ;l->attenuation[1]=p[3]
+		jmp .end_f
+	@@:
+	cmp ecx,GL_QUADRATIC_ATTENUATION
+		mov ecx,[ebx+12]
+		mov [edi+offs_ligh_attenuation+8],ecx ;l->attenuation[2]=p[3]
+		jmp .end_f
+	@@: ;default:
 ;    assert(0);
-;  }
-;}
+	.end_f:
+	ret
+endp
+
   
 align 4
 proc glopLightModel uses ebx ecx esi edi, context:dword, p:dword

@@ -5,9 +5,9 @@ proc glopNormal uses ecx esi edi, context:dword, p:dword
 	add esi,4
 	mov edi,[context]
 	add edi,offs_cont_current_normal
-	mov ecx,4
+	mov ecx,3
 	rep movsd
-	mov dword[esi],0.0 ;context.current_normal.W = 0.0
+	mov dword[edi],0.0 ;context.current_normal.W = 0.0
 	ret
 endp
 
@@ -171,12 +171,12 @@ endl
 	.end_if_0:
 
 		; test if the texture matrix is not Identity
-		stdcall gl_M4_IsId,edx+offs_cont_matrix_stack_ptr+8
-		xor edx,1
-		mov ebx,[context]
-		mov dword[ebx+offs_cont_apply_texture_matrix],edx
+		mov eax,edx
+		add eax,offs_cont_matrix_stack_ptr+8
+		stdcall gl_M4_IsId,eax
+		xor eax,1
+		mov dword[edx+offs_cont_apply_texture_matrix],eax
 
-		mov edx,[context]
 		mov dword[edx+offs_cont_matrix_model_projection_updated],0
 	.end_mmpu:
 
@@ -253,11 +253,17 @@ pushad
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_0
+		ffree st0
+		fincstp
+		ffree st0
+		fincstp
+		ffree st0
+		fincstp
 
 		; projection coordinates
 		mov ebx,dword[eax+offs_cont_matrix_stack_ptr+4]
 		mov edx,[v]
-		finit
+
 		fld dword[edx+offs_vert_ec+offs_X]
 		fld dword[edx+offs_vert_ec+offs_Y]
 		fld dword[edx+offs_vert_ec+offs_Z]
@@ -277,27 +283,33 @@ pushad
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_1
+		ffree st0
+		fincstp
+		ffree st0
+		fincstp
+		ffree st0
+		fincstp
 
 		mov ebx,eax
 		add ebx,offs_cont_matrix_model_view_inv
 		mov edi,eax
 		add edi,offs_cont_current_normal
 		mov edx,[v]
-		finit
+
 		fld dword[edi+offs_X]
 		fld dword[edi+offs_Y]
 		fld dword[edi+offs_Z]
 
 		mov ecx,3
 		.cycle_2:
-			fld dword[ebx]     ;st0 = m[0]
-			fmul st0,st3       ;st0 *= n.X
-			fld dword[ebx+4]   ;st0 = m[1]
-			fmul st0,st3       ;st0 *= n.Y
-			fld dword[ebx+8]   ;st0 = m[2]
-			fmul st0,st3       ;st0 *= n.Z
-			faddp              ;st0 += n.Z * m[2]
-			faddp              ;st0 += n.Y * m[1]
+			fld dword[ebx]   ;st0 = m[0]
+			fmul st0,st3     ;st0 *= n.X
+			fld dword[ebx+4] ;st0 = m[1]
+			fmul st0,st3     ;st0 *= n.Y
+			fld dword[ebx+8] ;st0 = m[2]
+			fmul st0,st3     ;st0 *= n.Z
+			faddp            ;st0 += n.Z * m[2]
+			faddp            ;st0 += n.Y * m[1]
 			fstp dword[edx+offs_vert_normal] ;v.normal.X = n.X * m[0] + n.Y * m[1] + n.Z * m[2]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
@@ -305,7 +317,9 @@ pushad
 
 		cmp dword[eax+offs_cont_normalize_enabled],0
 		je .end_els
-;stdcall gl_V3_Norm(&v->normal)
+			mov edx,[v]
+			add edx,offs_vert_normal
+			stdcall gl_V3_Norm,edx
 		jmp .end_els
 	.els_0:
 		; no eye coordinates needed, no normal
@@ -516,11 +530,10 @@ pushad
 		jne .end_f ;else if (n == 2)
 			mov eax,[edx+offs_cont_vertex]
 			push eax
+			mov edi,eax
 			add eax,sizeof.GLVertex
+			mov esi,eax
 			stdcall gl_draw_line, edx, eax
-			mov edi,[edx+offs_cont_vertex]
-			mov esi,edi
-			add esi,sizeof.GLVertex
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
 			rep movsd ;context.vertex[0] = context.vertex[1]
 			mov dword[n],1
@@ -531,11 +544,13 @@ pushad
 		cmp dword[n],3
 		jne .end_f
 			mov eax,[edx+offs_cont_vertex]
-			push eax
+			mov [esp-4],eax
 			add eax,sizeof.GLVertex
-			push eax
+			mov [esp-8],eax
 			add eax,sizeof.GLVertex
-			stdcall gl_draw_triangle, edx, eax
+			mov [esp-12],eax
+			sub esp,12
+			stdcall gl_draw_triangle, edx
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
@@ -560,10 +575,20 @@ pushad
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_FAN
 	jne @f
-		cmp dword[n],2
+		cmp dword[n],3
 		jne .end_f
-;           gl_draw_triangle(c, &c->vertex[0], &c->vertex[1], &c->vertex[2]);
-;           c->vertex[1] = c->vertex[2];
+			mov eax,[edx+offs_cont_vertex]
+			mov [esp-4],eax
+			add eax,sizeof.GLVertex
+			mov [esp-8],eax
+			mov edi,eax
+			add eax,sizeof.GLVertex
+			mov [esp-12],eax
+			mov esi,eax
+			sub esp,12
+			stdcall gl_draw_triangle, edx
+			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
+			rep movsd ;context.vertex[1] = context.vertex[2]
 			mov dword[n],2
 		jmp .end_f
 	@@:
@@ -594,12 +619,27 @@ pushad
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_QUAD_STRIP
 	jne @f
-		cmp dword[n],2
+		cmp dword[n],4
 		jne .end_f
-;           gl_draw_triangle(c, &c->vertex[0], &c->vertex[1], &c->vertex[2]);
-;           gl_draw_triangle(c, &c->vertex[1], &c->vertex[3], &c->vertex[2]);
-;           for (i = 0; i < 2; i++)
-;               c->vertex[i] = c->vertex[i + 2];
+			mov eax,[edx+offs_cont_vertex]
+			mov [esp-4],eax
+			mov edi,eax
+			add eax,sizeof.GLVertex
+			mov [esp-8],eax
+			add eax,sizeof.GLVertex
+			mov [esp-12],eax
+			mov esi,eax
+			sub esp,12
+			stdcall gl_draw_triangle, edx ;v0,v1,v2
+			mov [esp-12],eax
+			add eax,sizeof.GLVertex
+			mov [esp-8],eax
+			sub eax,2*sizeof.GLVertex
+			mov [esp-4],eax
+			sub esp,12
+			stdcall gl_draw_triangle, edx ;v1,v3,v2
+			mov ecx,(sizeof.GLVertex)/2 ;((...)/2) копируем 2 вершины
+			rep movsd ;context.vertex[0] = context.vertex[2], context.vertex[1] = context.vertex[3]
 			mov dword[n],2
 		jmp .end_f
 	@@:

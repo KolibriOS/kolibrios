@@ -252,13 +252,13 @@ proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		ja .r0 ;if (t>*tmax) return 0
+		ja .r0_f2 ;if (t>*tmax) return 0
 
 		mov ebx,[tmin]
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		jbe .r1
+		jbe .r1_f2
 			fstp dword[ebx] ;if (t>*tmin) *tmin=t
 		jmp .r1
 
@@ -270,40 +270,36 @@ proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		jb .r0 ;if (t<*tmin) return 0
+		jb .r0_f2 ;if (t<*tmin) return 0
 
 		mov ebx,[tmax]
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		jae .r1
+		jae .r1_f2
 			fstp dword[ebx] ;if (t<*tmin) *tmax=t
 	jmp .r1
 
-	.r0: ;return 0
+	.r0_f2: ;return 0 & free st0,st1
+		ffree st0
+		fincstp
+	.r0: ;return 0 & free st0
 		xor eax,eax
 		jmp .end_f
-	.r1: ;return 1
+	.r1_f2: ;return 1 & free st0,st1
+		ffree st0
+		fincstp
+	.r1: ;return 1 & free st0
 		xor eax,eax
 		inc eax
 	.end_f:
-if DEBUG ;ClipLine1
-push edi
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_cl1,buf_param
-pop edi
-end if
-	ffree st0 ;профилактика для очистки стека
-	fincstp   ;как минимум одно значение в стеке уже есть
+	ffree st0
+	fincstp
 	ret
 endp
 
 align 4
-proc gl_draw_line uses eax ebx edx edi esi, context:dword, p1:dword, p2:dword
+proc gl_draw_line, context:dword, p1:dword, p2:dword
 locals
 	d_x dd ?
 	d_y dd ?
@@ -318,7 +314,7 @@ locals
 	tmin dd ? ;ebp-8
 	tmax dd ? ;ebp-4
 endl
-
+pushad
 	mov edx,[context]
 	mov edi,[p1]
 	mov esi,[p2]
@@ -355,7 +351,6 @@ endl
 		jne .end_f
 	.els_0:
 
-	finit
 	fld dword[esi+offs_vert_pc+offs_X]
 	fsub dword[edi+offs_vert_pc+offs_X]
 	fstp dword[d_x] ;d_x = p2.pc.X - p1.pc.X
@@ -500,6 +495,7 @@ endl
 	.els_3:
 		call ZB_line ;(context.zb,&q1.zp,&q2.zp)
 	.end_f:
+popad
 	ret
 endp
 
@@ -544,8 +540,7 @@ else
 	fsub dword[d#dir]
 end if
 
-	fldz
-	fcomp
+	ftst
 	fstsw ax
 	sahf
 	jne @f

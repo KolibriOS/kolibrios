@@ -32,14 +32,14 @@ if TGL_FEATURE_RENDER_BITS eq 15
 ;#define RGB_TO_PIXEL(r,g,b) \
 ;  ((((r) >> 1) & 0x7c00) | (((g) >> 6) & 0x03e0) | ((b) >> 11))
 ;typedef unsigned short PIXEL;
-;/* bytes per pixel */
+; bytes per pixel
 ;PSZB equ 2
-;/* bits per pixel = (1 << PSZH) */
+; bits per pixel = (1 << PSZH)
 ;PSZSH equ 4
 
 else if TGL_FEATURE_RENDER_BITS eq 16
 
-;/* 16 bit mode */
+; 16 bit mode
 ;#define RGB_TO_PIXEL(r,g,b) \
 ;  (((r) & 0xF800) | (((g) >> 5) & 0x07E0) | ((b) >> 11))
 ;typedef unsigned short PIXEL;
@@ -142,12 +142,12 @@ offs_zbup_tz equ 36
 ; modify these functions so that they suit your needs
 
 align 4
-proc gl_free uses ebx ecx, mptr:dword
+proc gl_free uses eax ebx ecx, mptr:dword
 	mov ecx,[mptr]
 	or ecx,ecx
 	jz @f
-    @@:
-	mcall 68, 13
+		mcall 68, 13
+	@@:
 	ret
 endp
 
@@ -165,8 +165,8 @@ align 4
 proc gl_zalloc uses ebx ecx edi, size:dword
 	mov ecx,[size]
 	stdcall gl_malloc,ecx
-	cmp eax,0
-	je @f
+	or eax,eax
+	jz @f
 		mov ebx,eax
 		mov edi,eax
 		xor eax,eax

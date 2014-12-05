@@ -31,6 +31,7 @@ include 'ztriangle.asm'
 include 'arrays.asm'
 
 include 'kosgl.asm'
+include 'glu.asm'
 
 if DEBUG
 include 'info_fun_float.inc'
@@ -68,9 +69,6 @@ glGenTextures: ;(int n, unsigned int *textures)
 glDeleteTextures: ;(int n, const unsigned int *textures)
 glGetIntegerv: ;(int pname,int *params)
 glGetFloatv: ;(int pname, float *v)
-
-; ***
-glopLight:
 
 if DEBUG
 align 4
@@ -157,7 +155,6 @@ f_vt db ' gl_vertex_transform',0
 f_ev db ' gl_eval_viewport',0
 f_zbz db ' ZB_line_z',0
 f_zb db ' ZB_line',0
-f_cl1 db ' ClipLine1',0
 f_m4m db 'gl_M4_Mul',0
 f_m4ml db 'gl_M4_MulLeft',0
 f_find_l db 'find_list',0
