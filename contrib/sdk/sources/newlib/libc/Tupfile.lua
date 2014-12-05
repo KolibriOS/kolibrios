@@ -9,7 +9,7 @@ SDK_DIR = "../../.."
 LIBC_TOPDIR = "."
 LIBC_INCLUDES = "include"
 NAME = "libc"
-DEFINES = "-D_IEEE_LIBM"
+DEFINES = "-D_IEEE_LIBM -DHAVE_RENAME"
 INCLUDES = "-Iinclude"
 
 TOOLCHAIN_LIBPATH = tup.getconfig("TOOLCHAIN_LIBPATH")
@@ -39,16 +39,18 @@ CORE_SRCS = {
   "ctype/wctrans.c", "ctype/wctype.c",
   "errno/errno.c",
   "locale/locale.c", "locale/lctype.c", "locale/ldpart.c",
-  "reent/impure.c", "reent/init_reent.c", "reent/getreent.c", "reent/mutex.c",
-  "reent/gettimeofdayr.c", "reent/isattyr.c", "reent/openr.c", "reent/closer.c",
-  "reent/linkr.c", "reent/readr.c", "reent/lseekr.c", "reent/fstatr.c",
-  "reent/writer.c", "reent/timesr.c", "reent/unlinkr.c", "reent/renamer.c",
+
+  "reent/closer.c", "reent/fstatr.c", "reent/getreent.c", "reent/gettimeofdayr.c",
+  "reent/impure.c", "reent/init_reent.c", "reent/isattyr.c", "reent/linkr.c",
+  "reent/lseekr.c", "reent/mutex.c", "reent/openr.c", "reent/readr.c",
+  "reent/renamer.c", "reent/statr.c", "reent/timesr.c", "reent/unlinkr.c",
+  "reent/writer.c",
   "search/qsort.c", "search/bsearch.c",
   "signal/signal.c",
-  "sys/close.c", "sys/create.c", "sys/delete.c", "sys/errno.c", "sys/finfo.c",
+  "sys/access.c", "sys/close.c", "sys/create.c", "sys/errno.c", "sys/finfo.c",
   "sys/fsize.c", "sys/fstat.c", "sys/gettod.c", "sys/io.c", "sys/ioread.c",
   "sys/iowrite.c", "sys/isatty.c", "sys/lseek.c", "sys/open.c", "sys/read.c",
-  "sys/stat.c", "sys/unlink.c", "sys/write.c", "sys/io_alloc.S",
+  "sys/_rename.c", "sys/stat.c", "sys/unlink.c", "sys/write.c", "sys/io_alloc.S",
   "time/asctime.c", "time/asctime_r.c", "time/clock.c", "time/ctime.c",
   "time/ctime_r.c", "time/difftime.c", "time/gettzinfo.c", "time/gmtime.c",
   "time/gmtime_r.c", "time/mktime.c", "time/mktm_r.c", "time/lcltime.c",
@@ -80,11 +82,11 @@ STDIO_SRCS = {
   "fileno.c", "findfp.c", "fiprintf.c", "fiscanf.c", "fprintf.c", "fputc.c",
   "fputs.c", "fputwc.c", "fread.c", "freopen.c", "fscanf.c", "fseek.c",
   "fseeko.c", "ftell.c", "ftello.c", "fwrite.c", "fvwrite.c", "fwalk.c",
-  "putc.c", "puts.c", "refill.c", "rget.c", "remove.c", "setvbuf.c", "stdio.c",
-  "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c", "vasnprintf.c",
-  "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c", "vsnprintf.c",
-  "vsscanf.c", "makebuf.c", "wsetup.c", "wbuf.c", "sccl.c", "siprintf.c",
-  "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c", "rename.c"
+  "mktemp.c", "putc.c", "puts.c", "refill.c", "rget.c", "remove.c", "rename.c",
+  "setvbuf.c", "stdio.c", "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c",
+  "vasnprintf.c", "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c",
+  "vsnprintf.c", "vsscanf.c", "makebuf.c", "wsetup.c", "wbuf.c", "sccl.c",
+  "siprintf.c", "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c"
 }
 
 MATH_SRCS = {
