@@ -89,7 +89,7 @@ static const char vartmp[] =
 
 #endif
 
-static char *memoized_tmpdir;
+//static char *memoized_tmpdir;
 
 /*
 
@@ -105,68 +105,7 @@ files in.
 char *
 choose_tmpdir (void)
 {
-  if (!memoized_tmpdir)
-    {
-#if !defined(_WIN32) || defined(__CYGWIN__)
-      const char *base = 0;
-      char *tmpdir;
-      unsigned int len;
-      
-#ifdef VMS
-      /* Try VMS standard temp logical.  */
-      base = try_dir ("/sys$scratch", base);
-#else
-      base = try_dir (getenv ("TMPDIR"), base);
-      base = try_dir (getenv ("TMP"), base);
-      base = try_dir (getenv ("TEMP"), base);
-#endif
-      
-#ifdef P_tmpdir
-      /* We really want a directory name here as if concatenated with say \dir
-	 we do not end up with a double \\ which defines an UNC path.  */
-      if (strcmp (P_tmpdir, "\\") == 0)
-	base = try_dir ("\\.", base);
-      else
-	base = try_dir (P_tmpdir, base);
-#endif
-
-      /* Try /var/tmp, /usr/tmp, then /tmp.  */
-      base = try_dir (vartmp, base);
-      base = try_dir (usrtmp, base);
-      base = try_dir (tmp, base);
-      
-      /* If all else fails, use the current directory!  */
-      if (base == 0)
-	base = ".";
-      /* Append DIR_SEPARATOR to the directory we've chosen
-	 and return it.  */
-      len = strlen (base);
-      tmpdir = XNEWVEC (char, len + 2);
-      strcpy (tmpdir, base);
-      tmpdir[len] = DIR_SEPARATOR;
-      tmpdir[len+1] = '\0';
-      memoized_tmpdir = tmpdir;
-#else /* defined(_WIN32) && !defined(__CYGWIN__) */
-      DWORD len;
-
-      /* Figure out how much space we need.  */
-      len = GetTempPath(0, NULL);
-      if (len)
-	{
-	  memoized_tmpdir = XNEWVEC (char, len);
-	  if (!GetTempPath(len, memoized_tmpdir))
-	    {
-	      XDELETEVEC (memoized_tmpdir);
-	      memoized_tmpdir = NULL;
-	    }
-	}
-      if (!memoized_tmpdir)
-	/* If all else fails, use the current directory.  */
-	memoized_tmpdir = xstrdup (".\\");
-#endif /* defined(_WIN32) && !defined(__CYGWIN__) */
-    }
-
-  return memoized_tmpdir;
+  return "/tmp0/1/";
 }
 
 /*

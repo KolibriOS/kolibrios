@@ -16,7 +16,7 @@ SRCS = \
 	fopen_unlocked.c getopt.c getopt1.c getpwd.c		\
 	getruntime.c hashtab.c hex.c index.c insque.c		\
 	lbasename.c lrealpath.c	make-relative-prefix.c		\
-	make-temp-file.c md5.c memmem.c mempcpy.c mkstemps.c	\
+	make-temp-file.c md5.c memmem.c mempcpy.c		\
 	objalloc.c obstack.c partition.c physmem.c random.c	\
 	regex.c rindex.c safe-ctype.c setenv.c setproctitle.c	\
 	sha1.c sigsetmask.c simple-object.c simple-object-coff.c\

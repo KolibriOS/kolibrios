@@ -4275,8 +4275,8 @@ yy_input (char *buf, int max_size)
       if (yyin)
 	{
 	  result = fread (buf, 1, max_size, yyin);
-//     if (result < max_size && ferror (yyin))
-//       einfo ("%F%P: read in flex scanner failed\n");
+	  if (result < max_size && ferror (yyin))
+	    einfo ("%F%P: read in flex scanner failed\n");
 	}
     }
   return result;

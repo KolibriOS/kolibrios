@@ -100,9 +100,9 @@ mkstemps (char *pattern, int suffix_len)
 #ifdef HAVE_GETTIMEOFDAY
   /* Get some more or less random data.  */
   gettimeofday (&tv, NULL);
-  value += ((gcc_uint64_t) tv.tv_usec << 16) ^ tv.tv_sec ^ getpid ();
+  value += ((gcc_uint64_t) tv.tv_usec << 16) ^ tv.tv_sec; // ^ getpid ();
 #else
-  value += getpid ();
+  value += 1;//getpid ();
 #endif
 
   for (count = 0; count < TMP_MAX; ++count)

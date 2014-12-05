@@ -15,7 +15,7 @@ CFLAGS   = -c $(CFLAGS_OPT)
 LDFLAGS = -nostdlib -shared -s --image-base 0 -T ../newlib/dll.lds -e _DllStartup
 LDFLAGS+= --out-implib
 
-SUBDIRS = libiberty bfd ld
+SUBDIRS = libiberty bfd binutils ld
 
 # targets 
 
