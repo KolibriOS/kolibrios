@@ -15,7 +15,7 @@ LIBC_INCLUDES = $(LIBC_TOPDIR)/include
 
 NAME:=	  libc
 
-DEFINES:= -D_IEEE_LIBM
+DEFINES:= -D_IEEE_LIBM -DHAVE_RENAME
 
 INCLUDES:=  -I $(LIBC_INCLUDES)
 
@@ -97,27 +97,29 @@ CORE_SRCS:=                   			\
 			locale/locale.c		\
 			locale/lctype.c		\
 			locale/ldpart.c		\
+			reent/closer.c       	\
+			reent/fstatr.c       	\
+			reent/getreent.c     	\
+			reent/gettimeofdayr.c	\
 			reent/impure.c       	\
 			reent/init_reent.c	\
-			reent/getreent.c     	\
-			reent/mutex.c		\
-			reent/gettimeofdayr.c	\
 			reent/isattyr.c		\
-			reent/openr.c        	\
-			reent/closer.c       	\
 			reent/linkr.c		\
-			reent/readr.c        	\
 			reent/lseekr.c       	\
-			reent/fstatr.c       	\
-			reent/writer.c       	\
+			reent/mutex.c		\
+			reent/openr.c        	\
+			reent/readr.c        	\
+			reent/renamer.c		\
+			reent/statr.c		\
 			reent/timesr.c		\
 			reent/unlinkr.c		\
+			reent/writer.c       	\
 			search/qsort.c       	\
 			search/bsearch.c     	\
 			signal/signal.c		\
+			sys/access.c		\
 			sys/close.c		\
 			sys/create.c         	\
-			sys/delete.c         	\
 			sys/errno.c		\
 			sys/finfo.c          	\
 			sys/fsize.c          	\
@@ -130,6 +132,7 @@ CORE_SRCS:=                   			\
 			sys/lseek.c		\
 			sys/open.c		\
 			sys/read.c           	\
+			sys/_rename.c		\
 			sys/stat.c		\
 			sys/unlink.c		\
 			sys/write.c          	\
@@ -267,11 +270,13 @@ STDIO_SRCS=					\
 			fwrite.c		\
 			fvwrite.c		\
 			fwalk.c			\
+			mktemp.c		\
 			putc.c			\
 			puts.c			\
 			refill.c		\
 			rget.c			\
 			remove.c		\
+			rename.c		\
 			rewind.c		\
 			setvbuf.c		\
 			stdio.c			\

@@ -19,16 +19,48 @@
 
 #include "glue.h"
 
-/*
- * unlink -- since we have no file system,
- *           we just return an error.
- */
+static int delete_file(const char *path)
+{
+     int retval;
+     __asm__ __volatile__ (
+     "pushl $0 \n\t"
+     "pushl $0 \n\t"
+     "movl %1, 1(%%esp) \n\t"
+     "pushl $0 \n\t"
+     "pushl $0 \n\t"
+     "pushl $0 \n\t"
+     "pushl $0 \n\t"
+     "pushl $8 \n\t"
+     "movl %%esp, %%ebx \n\t"
+     "movl $70, %%eax \n\t"
+     "int $0x40 \n\t"
+     "addl $28, %%esp \n\t"
+     :"=a" (retval)
+     :"r" (path)
+     :"ebx");
+  return retval;
+};
+
+
 int
 _DEFUN (unlink, (path),
         char * path)
 {
-  errno = EIO;
-  return (-1);
+    int err;
+
+    printf("%s %s\n", __FUNCTION__, path);
+
+    err = delete_file(path);
+
+    if (!err)
+        return 0;
+
+    if (err == 5)
+        errno = ENOENT;
+    else
+        errno = EIO;
+
+    return (-1);
 }
 
 int

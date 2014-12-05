@@ -31,6 +31,8 @@ _DEFUN (stat, (path, buf),
     fileinfo_t info;
     struct tm time;
 
+    printf("%s %s\n", __FUNCTION__, path);
+
     if( get_fileinfo(path, &info))
     {
         errno = ENOENT;

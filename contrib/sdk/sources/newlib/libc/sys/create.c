@@ -8,7 +8,7 @@ int create_file(const char *path)
      __asm__ __volatile__ (
      "pushl $0 \n\t"
      "pushl $0 \n\t"
-     "movl %0, 1(%%esp) \n\t"
+     "movl %1, 1(%%esp) \n\t"
      "pushl $0 \n\t"
      "pushl $0 \n\t"
      "pushl $0 \n\t"

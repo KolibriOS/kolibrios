@@ -128,8 +128,6 @@ int open (const char * filename, int flags, ...)
         buildpath(buf, filename);
     }
 
-//  printf("%s %s\n", __FUNCTION__, buf);
-
     err = get_fileinfo(buf, &info);
 
     if( flags & O_EXCL &&
@@ -188,8 +186,6 @@ int open (const char * filename, int flags, ...)
     ioh->mode   = iomode;
     ioh->read   = read_file;
     ioh->write  = write_file;
-
-//    printf("%s %s\n", __FUNCTION__, ioh->name);
 
     return hid;
 };

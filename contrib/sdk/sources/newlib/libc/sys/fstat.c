@@ -26,6 +26,8 @@ _DEFUN (fstat, (fd, buf),
        struct stat *buf)
 {
     fileinfo_t info;
+    struct tm time;
+
     __io_handle *ioh;
 
     if( (fd < 0) || (fd >=64) )
@@ -47,9 +49,44 @@ _DEFUN (fstat, (fd, buf),
         ioh = &__io_tab[fd];
         get_fileinfo(ioh->name, &info);
 
-        buf->st_mode = S_IFREG;
+        if (info.attr & 0x10)
+            buf->st_mode = S_IFDIR;
+        else
+        {
+            if (info.attr & 0x07)
+                buf->st_mode = S_IFREG|S_IRUSR|S_IXUSR;
+            else
+                buf->st_mode = S_IFREG|S_IRUSR|S_IWUSR|S_IXUSR;
+        }
         buf->st_blksize = 4096;
-        buf->st_size = info.size;
+
+        time.tm_sec   = info.atime.sec;
+        time.tm_min   = info.atime.min;
+        time.tm_hour  = info.atime.hour;
+        time.tm_mday  = info.adate.day;
+        time.tm_mon   = info.adate.month;
+        time.tm_year  = info.adate.year - 1900;
+        time.tm_isdst = -1;
+        buf->st_atime = mktime(&time);
+
+        time.tm_sec   = info.ctime.sec;
+        time.tm_min   = info.ctime.min;
+        time.tm_hour  = info.ctime.hour;
+        time.tm_mday  = info.cdate.day;
+        time.tm_mon   = info.cdate.month;
+        time.tm_year  = info.cdate.year - 1900;
+        time.tm_isdst = -1;
+        buf->st_ctime = mktime(&time);
+
+        time.tm_sec   = info.mtime.sec;
+        time.tm_min   = info.mtime.min;
+        time.tm_hour  = info.mtime.hour;
+        time.tm_mday  = info.mdate.day;
+        time.tm_mon   = info.mdate.month;
+        time.tm_year  = info.mdate.year - 1900;
+        time.tm_isdst = -1;
+        buf->st_mtime = mktime(&time);
+
     };
 
     return (0);
