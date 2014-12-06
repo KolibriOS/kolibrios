@@ -19,13 +19,13 @@ LDFLAGS = -static -nostdlib --stack 12582912 -T$(SDK_DIR)/sources/newlib/app.lds
 
 
 SRCS = \
-	arparse.c arlex.c ar.c		\
-	not-ranlib.c arsup.c		\
-	binemul.c emul_vanilla.c	\
-	objcopy.c not-strip.c rename.c	\
-	rddbg.c debug.c stabs.c ieee.c	\
-	rdcoff.c wrstabs.c bucomm.c	\
-	version.c filemode.c
+	ar.c arlex.c arparse.c arsup.c	\
+	binemul.c bucomm.c debug.c	\
+	emul_vanilla.c filemode.c ieee.c\
+	is-strip.c not-ranlib.c		\
+	not-strip.c objcopy.c rdcoff.c	\
+	rddbg.c rename.c stabs.c	\
+	version.c wrstabs.c
 
 OCOPY = \
 	objcopy.o not-strip.o rename.o	\
@@ -39,9 +39,15 @@ OAR = \
 	binemul.o emul_vanilla.o 	\
 	bucomm.o version.o filemode.o
 
+OSTRIP = \
+	objcopy.o is-strip.o rename.o	\
+	rddbg.o debug.o stabs.o ieee.o	\
+	rdcoff.o wrstabs.o bucomm.o	\
+	version.o filemode.o
+
 # targets
 
-all: objcopy ar
+all: objcopy ar strip
 
 objcopy: $(OCOPY) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OCOPY) $(LIBS)
@@ -49,6 +55,10 @@ objcopy: $(OCOPY) Makefile
 
 ar: $(OAR) Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OAR) $(LIBS)
+	kos32-objcopy $@ -O binary
+
+strip: $(OSTRIP) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OSTRIP) $(LIBS)
 	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile

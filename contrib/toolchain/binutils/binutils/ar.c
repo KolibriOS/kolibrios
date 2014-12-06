@@ -883,7 +883,7 @@ open_inarch (const char *archive_filename, const char *file)
       if (!operation_alters_arch)
 	{
 	  fprintf (stderr, "%s: ", program_name);
-//     perror (archive_filename);
+      perror (archive_filename);
 	  maybequit ();
 	  return NULL;
 	}
@@ -1050,7 +1050,7 @@ extract_file (bfd *abfd)
       ostream = fopen (bfd_get_filename (abfd), FOPEN_WB);
       if (ostream == NULL)
 	{
-//     perror (bfd_get_filename (abfd));
+      perror (bfd_get_filename (abfd));
 	  xexit (1);
 	}
 
@@ -1078,7 +1078,7 @@ extract_file (bfd *abfd)
 	    ostream = fopen (bfd_get_filename (abfd), FOPEN_WB);
 	    if (ostream == NULL)
 	      {
-//       perror (bfd_get_filename (abfd));
+        perror (bfd_get_filename (abfd));
 		xexit (1);
 	      }
 

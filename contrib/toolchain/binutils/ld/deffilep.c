@@ -2320,8 +2320,7 @@ def_file_parse (const char *filename, def_file *add_to)
   linenumber = 1;
   if (!the_file)
     {
-      //perror (filename);
-      printf("Error %s\n", filename);
+      perror (filename);
       return 0;
     }
   if (add_to)
