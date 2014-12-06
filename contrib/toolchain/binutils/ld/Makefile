@@ -5,7 +5,7 @@ LIB_DIR:= $(SDK_DIR)/lib
 CFLAGS_OPT = -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -U_MSC_VER -O2 
 CFLAGS_OPT+= -fomit-frame-pointer -fno-ident -mno-ms-bitfields
 CFLAGS_OPT+= -W -Wall -Wmissing-prototypes -Wno-format -Werror
-CFLAGS   = -c $(CFLAGS_OPT)
+CFLAGS   = -c -save-temps $(CFLAGS_OPT)
 
 INCLUDES= -I. -I../bfd -I../include -I$(SDK_DIR)/sources/newlib/libc/include 
 
