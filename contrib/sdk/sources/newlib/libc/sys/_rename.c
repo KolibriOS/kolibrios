@@ -25,9 +25,6 @@ int _rename (char *from, char *to)
     int f_to;
     int size;
 
-    printf("%s from %s to %s\n", __FUNCTION__,
-           from, to);
-
     f_from = open(from,O_RDONLY);
 
     if (f_from < 0)

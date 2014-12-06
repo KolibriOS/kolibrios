@@ -48,8 +48,6 @@ _DEFUN (unlink, (path),
 {
     int err;
 
-    printf("%s %s\n", __FUNCTION__, path);
-
     err = delete_file(path);
 
     if (!err)

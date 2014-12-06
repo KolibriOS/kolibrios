@@ -270,7 +270,10 @@ STDIO_SRCS=					\
 			fwrite.c		\
 			fvwrite.c		\
 			fwalk.c			\
+			makebuf.c		\
+			mbstowcs.c		\
 			mktemp.c		\
+			perror.c		\
 			putc.c			\
 			puts.c			\
 			refill.c		\
@@ -291,7 +294,6 @@ STDIO_SRCS=					\
 			vsprintf.c		\
 			vsnprintf.c		\
 			vsscanf.c		\
-			makebuf.c		\
 			wsetup.c		\
 			wbuf.c			\
 			sccl.c			\

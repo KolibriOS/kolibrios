@@ -82,11 +82,12 @@ STDIO_SRCS = {
   "fileno.c", "findfp.c", "fiprintf.c", "fiscanf.c", "fprintf.c", "fputc.c",
   "fputs.c", "fputwc.c", "fread.c", "freopen.c", "fscanf.c", "fseek.c",
   "fseeko.c", "ftell.c", "ftello.c", "fwrite.c", "fvwrite.c", "fwalk.c",
-  "mktemp.c", "putc.c", "puts.c", "refill.c", "rget.c", "remove.c", "rename.c",
-  "setvbuf.c", "stdio.c", "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c",
-  "vasnprintf.c", "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c",
-  "vsnprintf.c", "vsscanf.c", "makebuf.c", "wsetup.c", "wbuf.c", "sccl.c",
-  "siprintf.c", "sniprintf.c", "snprintf.c", "sprintf.c", "sscanf.c"
+  "makebuf.c", "mbstowcs.c", "mktemp.c", "perror.c", "putc.c", "puts.c",
+  "refill.c", "rget.c", "remove.c", "rename.c", "setvbuf.c", "stdio.c",
+  "tmpfile.c", "tmpnam.c", "ungetc.c", "vasniprintf.c", "vasnprintf.c",
+  "vdprintf.c", "vdiprintf.c", "vscanf.c", "vsprintf.c", "vsnprintf.c",
+  "vsscanf.c", "wsetup.c", "wbuf.c", "sccl.c", "siprintf.c", "sniprintf.c",
+  "snprintf.c", "sprintf.c", "sscanf.c"
 }
 
 MATH_SRCS = {
