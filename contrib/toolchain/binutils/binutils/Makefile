@@ -1,4 +1,3 @@
-NAME= objcopy-new
 
 LIB_DIR:= $(SDK_DIR)/lib
 
@@ -20,22 +19,37 @@ LDFLAGS = -static -nostdlib --stack 12582912 -T$(SDK_DIR)/sources/newlib/app.lds
 
 
 SRCS = \
+	arparse.c arlex.c ar.c		\
+	not-ranlib.c arsup.c		\
+	binemul.c emul_vanilla.c	\
 	objcopy.c not-strip.c rename.c	\
 	rddbg.c debug.c stabs.c ieee.c	\
 	rdcoff.c wrstabs.c bucomm.c	\
 	version.c filemode.c
 
+OCOPY = \
+	objcopy.o not-strip.o rename.o	\
+	rddbg.o debug.o stabs.o ieee.o	\
+	rdcoff.o wrstabs.o bucomm.o	\
+	version.o filemode.o
 
-
-OBJS  =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(SRCS)))
+OAR = \
+	arparse.o arlex.o ar.o 		\
+	not-ranlib.o arsup.o rename.o	\
+	binemul.o emul_vanilla.o 	\
+	bucomm.o version.o filemode.o
 
 # targets
 
-all: $(NAME)
+all: objcopy ar
 
-$(NAME): $(OBJS) Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OBJS) $(LIBS)
-	kos32-objcopy $@ kos32-objcopy -O binary
+objcopy: $(OCOPY) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OCOPY) $(LIBS)
+	kos32-objcopy $@ -O binary
+
+ar: $(OAR) Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(OAR) $(LIBS)
+	kos32-objcopy $@ -O binary
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
