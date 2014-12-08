@@ -136,6 +136,7 @@ extra_files = {
  {"kolibrios/emul/", "common/emul/scummvm"},
  {"kolibrios/emul/", "common/emul/zsnes"},
  {"kolibrios/games/doom/", "common/games/doom/*"},
+ {"kolibrios/games/heliothryx/", PROGS .. "/games/heliothryx/heliothryx"},
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
