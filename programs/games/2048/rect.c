@@ -9,45 +9,45 @@ __u8 rect_transform(rect* from, rect* to, __u16 step)
 {
     if (from->width < to->width)
     {
-        from->width += (ANIM_STEP << 1);
+        from->width += (step << 1);
         if (from->width > to->width) from->width = to->width;
     }
     else if (from->width > to->width)
     {
-        from->width -= (ANIM_STEP << 1);
+        from->width -= (step << 1);
         if (from->width < to->width) from->width = to->width;
     }
 
     if (from->height < to->height)
     {
-        from->height += (ANIM_STEP << 1);
+        from->height += (step << 1);
         if (from->height > to->height) from->height = to->height;
     }
     else if (from->height > to->height)
     {
-        from->height -= (ANIM_STEP << 1);
+        from->height -= (step << 1);
         if (from->height < to->height) from->height = to->height;
     }
 
     if (from->x < to->x)
     {
-        from->x += ANIM_STEP;
+        from->x += step;
         if (from->x > to->x) from->x = to->x;
     }
     else if (from->x > to->x)
     {
-        from->x -= ANIM_STEP;
+        from->x -= step;
         if (from->x < to->x) from->x = to->x;
     }
 
     if (from->y < to->y)
     {
-        from->y += ANIM_STEP;
+        from->y += step;
         if (from->y > to->y) from->y = to->y;
     }
     else if (from->y > to->y)
     {
-        from->y -= ANIM_STEP;
+        from->y -= step;
         if (from->y < to->y) from->y = to->y;
     }
 
@@ -90,7 +90,7 @@ void rect_draw_text(rect *r, char *txt, __u32 len, __u32 color)
                          0,txt,len);
 }
 
-void rect_draw_value(rect *r, __u32 v, __u32 color)
+void rect_draw_value(rect* r, __u32 v, __u32 color)
 {
     char buffer[16] = {0};
     __u32 length = strlen(itoa(v,buffer,10));

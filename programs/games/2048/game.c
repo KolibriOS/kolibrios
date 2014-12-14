@@ -79,6 +79,11 @@ void game_init()
     __menuet__window_redraw(2);
 }
 
+void game_exit()
+{
+    board_delete();
+}
+
 void game_redraw()
 {
     __menuet__get_process_table(&proc_info,PID_WHOAMI);
@@ -86,7 +91,6 @@ void game_redraw()
     // start redraw
     __menuet__window_redraw(1);
 
-    vsync();
     __menuet__define_window(0,              // __u16 x1     : ignored
                             0,              // __u16 y1     : ignored
                             0,              // __u16 xsize  : ignored

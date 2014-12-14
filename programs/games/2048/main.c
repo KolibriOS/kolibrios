@@ -47,6 +47,7 @@ void main()
                 game_init();
                 break;
             default : // close
+                game_exit();
                 return;
             }
         }

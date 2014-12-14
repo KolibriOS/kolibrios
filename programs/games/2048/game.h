@@ -12,6 +12,9 @@ static struct process_table_entry proc_info = {0};
 // Start a new game
 void game_init();
 
+// Exit game
+void game_exit();
+
 // Redraw game content
 void game_redraw();
 

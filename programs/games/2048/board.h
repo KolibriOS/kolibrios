@@ -7,6 +7,9 @@
 // Draw a new board
 void board_init(rect* r);
 
+// Free board resources
+void board_delete();
+
 // Redraw board and all content (animation will started if needed)
 void board_redraw();
 

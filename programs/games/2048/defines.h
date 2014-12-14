@@ -16,8 +16,9 @@ inline void vsync();
 #define FONT_WIDTH      (5)
 #define FONT_HEIGHT     (9)
 
-#define ANIM_DELAY      (5)             // time between animation redraw
-#define ANIM_STEP       (25)            // default step for animation
+#define ANI_DELAY       (2)             // time between animation redraw
+#define ANI_APPEAR_STEP (15)            // default step for appear animation
+#define ANI_MOVE_STEP   (25)            // default step for move animation
 
 #define START_COUNT     (2)             // tiles count for new game
 

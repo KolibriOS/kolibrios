@@ -2,7 +2,7 @@
 #define CELL_H
 
 #include "defines.h"
-#include "rect.h"
+#include "paint.h"
 
 typedef struct {
     rect    cell;       // current rect

@@ -3,7 +3,6 @@
 rect base_cell = {0};
 tile null_tile = {0};
 
-
 struct {
     rect    draw;                       // background rect
     rect    cell_map[BOARD_MAP_SIZE];   // background cells array
@@ -60,17 +59,20 @@ void board_init(rect* r)
     // seed for random number generator
     srand(__menuet__getsystemclock());
 
-    board.score = 0;
-    board.draw = *r;
-
     __u16 cell_size = (r->width - BOARD_SPACING * (BOARD_COUNT + 1)) / BOARD_COUNT;
     base_cell.width = cell_size;
     base_cell.height = cell_size;
 
     null_tile.value = 0;
     null_tile.animate = false;
-    null_tile.ani_step = ANIM_STEP;
+    null_tile.ani_step = ANI_APPEAR_STEP;
     null_tile.merged = false;
+
+    board.score = 0;
+    board.draw = *r;
+
+    canvas_init(r);
+    canvas_fill(BOARD_BG_COLOR);
 
     __u16 i = 0;
     for (i = 0; i < BOARD_MAP_SIZE; i++)
@@ -88,6 +90,11 @@ void board_init(rect* r)
     board_redraw();
 }
 
+void board_delete()
+{
+    canvas_delete();
+}
+
 void board_redraw()
 {
     __u16 i = 0;
@@ -95,12 +102,11 @@ void board_redraw()
     __u8 last_animate = false;
     do
     {
-        vsync();
-        rect_draw(&board.draw,BOARD_BG_COLOR);
+        canvas_fill(BOARD_BG_COLOR);
 
         for (i = 0; i < BOARD_MAP_SIZE; i++)
         {
-            rect_draw(&board.cell_map[i],CELL_COLOR);
+            canvas_draw_rect(&board.cell_map[i],CELL_COLOR);
         }
 
         animate = false;
@@ -115,9 +121,11 @@ void board_redraw()
             }
         }
 
+        canvas_paint();
+
         if (animate)
         {
-            __menuet__delay100(ANIM_DELAY);
+            __menuet__delay100(ANI_DELAY);
         }
     }
     while (animate);
@@ -333,7 +341,7 @@ __u8 board_add_random_tile()
         av_tile->value = (random_u32(10) < 9) ? 2 : 4;
 
         av_tile->animate = true;
-        av_tile->ani_step = 5;
+        av_tile->ani_step = ANI_APPEAR_STEP;
         av_tile->transition = position2cell(board_position(rnd_av));
         av_tile->cell.x = av_tile->transition.x + base_cell.width / 2;
         av_tile->cell.y = av_tile->transition.y + base_cell.height / 2;
@@ -460,6 +468,7 @@ void tempboard_move_tile(tile* temp[], __u16 from, __u16 to)
 {
     temp[to] = temp[from];
     temp[to]->animate = true;
+    temp[to]->ani_step = ANI_MOVE_STEP;
     temp[from] = 0;
 }
 

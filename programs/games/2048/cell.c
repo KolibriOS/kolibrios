@@ -29,8 +29,8 @@ __u8 tile_draw(tile* t)
         if (rect_transform(begin,end,t->ani_step))
             t->animate = false;
 
-        rect_draw(begin,bg_color);
-        rect_draw_value(begin,t->value,txt_color);
+        canvas_draw_rect(begin,bg_color);
+        canvas_draw_value(begin,t->value,txt_color);
 
         if (t->merged)
         {
@@ -42,8 +42,8 @@ __u8 tile_draw(tile* t)
                 t->value *= 2;
             }
 
-            rect_draw(&t->merged_rect,bg_color);
-            rect_draw_value(&t->merged_rect,t->value,txt_color);
+            canvas_draw_rect(&t->merged_rect,bg_color);
+            canvas_draw_value(&t->merged_rect,t->value,txt_color);
         }
     }
 
