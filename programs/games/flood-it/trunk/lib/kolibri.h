@@ -68,10 +68,22 @@ inline fastcall dword WaitEvent(){
 }
 
 
-inline fastcall word GetKey(){ //Gluk fix
- EAX = 2;              // just read it key from buffer
- $int  0x40
- EAX = EAX >> 8;	 
+inline fastcall word GetKey()  //+Gluk fix
+{
+		$push edx
+GETKEY:
+		$mov  eax,2
+		$int  0x40
+		$cmp eax,1
+		$jne GETKEYI
+		$mov ah,dh
+		$jmp GETKEYII //jz?
+GETKEYI:
+		$mov dh,ah
+		$jmp GETKEY
+GETKEYII:
+		$pop edx
+		$shr eax,8
 }
 
 inline fastcall word GetButtonID(){

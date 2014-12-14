@@ -1,4 +1,4 @@
-//Leency 06.10.2011, Flood-it! v2.4, GPL
+//Leency 06.10.2011, Flood-it! v2.41, GPL
 
 #include "lib\kolibri.h" 
 #include "lib\random.h"
