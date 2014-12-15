@@ -1,4 +1,5 @@
 #include "board.h"
+#include "config.h"
 
 rect base_cell = {0};
 tile null_tile = {0};
@@ -10,6 +11,7 @@ struct {
     __u16   empty_index[BOARD_MAP_SIZE];// empty cells indexes
     __u16   empty_count;                // empty cells count
     __u32   score;
+    __u32   highscore;
 } board = {0};
 
 // Get tile index for row and column
@@ -56,6 +58,10 @@ __u32 random_u32(__u32 max);
 
 void board_init(rect* r)
 {
+    __u32 high = config_load_highscore();
+    if (high > board.highscore)
+        board.highscore = high;
+
     // seed for random number generator
     srand(__menuet__getsystemclock());
 
@@ -92,6 +98,7 @@ void board_init(rect* r)
 
 void board_delete()
 {
+    config_save_highscore(board.highscore);
     canvas_delete();
 }
 
@@ -167,6 +174,8 @@ __u8 board_up()
                     {
                         moved = true;
                         board.score += indtile->value * 2;
+                        if (board.score > board.highscore)
+                            board.highscore = board.score;
                         tempboard_merge_tile(temp_board,ind,preind); 
                         row = 0;
                     }
@@ -217,6 +226,8 @@ __u8 board_down()
                     {
                         moved = true;
                         board.score += indtile->value * 2;
+                        if (board.score > board.highscore)
+                            board.highscore = board.score;
                         tempboard_merge_tile(temp_board,ind,preind);
                         row = BOARD_COUNT;
                     }
@@ -266,6 +277,8 @@ __u8 board_left()
                     {
                         moved = true;
                         board.score += indtile->value * 2;
+                        if (board.score > board.highscore)
+                            board.highscore = board.score;
                         tempboard_merge_tile(temp_board,ind,preind);
                         column = 0;
                     }
@@ -316,6 +329,8 @@ __u8 board_right()
                     {
                         moved = true;
                         board.score += indtile->value * 2;
+                        if (board.score > board.highscore)
+                            board.highscore = board.score;
                         tempboard_merge_tile(temp_board,ind,preind);
                         column = BOARD_COUNT;
                     }
@@ -394,6 +409,11 @@ __u8 board_has_moves()
 __u32 board_score()
 {
     return board.score;
+}
+
+__u32 board_highscore()
+{
+    return board.highscore;
 }
 
 void board_update_empty_info()

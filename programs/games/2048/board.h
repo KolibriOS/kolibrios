@@ -23,6 +23,7 @@ __u8 board_has_moves();
 
 // Get score
 __u32 board_score();
+__u32 board_highscore();
 
 // Try to move all tiles up
 // Will return true if something moved or false - if not

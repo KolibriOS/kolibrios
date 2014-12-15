@@ -2,6 +2,7 @@
 
 struct {
     rect    new_game_button;// new game button place
+    rect    highscore_rect; // highscore place
     rect    score_rect;     // score place
     __u8    over;           // flag for game over
 } game;
@@ -18,6 +19,9 @@ void game_draw_top()
                               BOARD_BG_COLOR);
         rect_draw_text(&game.new_game_button,"NEW GAME",8,GAME_BG_COLOR);
     }
+
+    rect_draw(&game.highscore_rect,BOARD_BG_COLOR);
+    rect_draw_value(&game.highscore_rect,board_highscore(),GAME_BG_COLOR);
 
     rect_draw(&game.score_rect,BOARD_BG_COLOR);
     rect_draw_value(&game.score_rect,board_score(),GAME_BG_COLOR);
@@ -66,12 +70,17 @@ void game_init()
 
     game.new_game_button.x = av_area.x;
     game.new_game_button.y = (av_area.y - SCORE_HEIGHT) / 2;
-    game.new_game_button.width = (av_area.width - BOARD_SPACING) / 2;
+    game.new_game_button.width = (av_area.width - BOARD_SPACING) / 3;
     game.new_game_button.height = SCORE_HEIGHT;
 
-    game.score_rect.x = av_area.x + (av_area.width + BOARD_SPACING) / 2;
+    game.highscore_rect.x = av_area.x + (av_area.width + BOARD_SPACING) / 3;
+    game.highscore_rect.y = (av_area.y - SCORE_HEIGHT) / 2;
+    game.highscore_rect.width = (av_area.width - BOARD_SPACING) / 3;
+    game.highscore_rect.height = SCORE_HEIGHT;
+
+    game.score_rect.x = av_area.x + (av_area.width + BOARD_SPACING) * 2 / 3;
     game.score_rect.y = (av_area.y - SCORE_HEIGHT) / 2;
-    game.score_rect.width = (av_area.width - BOARD_SPACING) / 2;
+    game.score_rect.width = (av_area.width - BOARD_SPACING) / 3;
     game.score_rect.height = SCORE_HEIGHT;
 
     game_draw_top();
