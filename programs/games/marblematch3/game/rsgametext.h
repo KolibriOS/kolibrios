@@ -30,6 +30,5 @@ void game_font_term();
 
 void game_textout(int x, int y, int font_index, char* s);
 void game_textout_adv(rs_texture_t *dest, int x, int y, int font_index, int draw_mode, char* s);
-//void game_textout_init(int set_to_ortho, int font_index);
 
 #endif

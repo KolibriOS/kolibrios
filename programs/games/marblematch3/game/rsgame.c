@@ -15,13 +15,6 @@
 #include "rs/rsplatform.h"
 
 
-#ifdef RS_USE_C_LIBS // linux version
-    #include <math.h>
-    #include <stdlib.h> 
-    #include <string.h>
-    
-    #include "rs/rskeyboard.h"
-#endif
 
 
 
@@ -80,7 +73,7 @@ void texture_draw(rs_texture_t *dest, rs_texture_t *src, int x, int y, int mode)
         for (i = istart; i < iend; i++) {
             for (j = jstart; j < jend; j++) {
                 for (k = 0; k < 4; k++) {
-                    dest->data[ 4 * ( (y+i)*dest->w + (x+j) ) + k ] = src->data[ (4*(i*src->w + j) + k) % modvalue ];
+                    dest->data[ 4 * ( (y+i)*dest->w + (x+j) ) + k ] = src->data[ (4*((i+ishift)*src->w + j + jshift) + k) % modvalue];
                 };
             };
         };
@@ -133,6 +126,16 @@ void texture_draw_vline(rs_texture_t *tex, int x, int y, int l, unsigned int col
     };
     for (i = 0; i < l; i++) {
         *((unsigned int*) &tex->data[ 4 * ( (y+i)*tex->w + (x) ) + 0 ]) = color;
+    };    
+};
+
+void texture_draw_hline(rs_texture_t *tex, int x, int y, int l, unsigned int color) {
+    int i;
+    if (x+l >= tex->w) {
+        l = tex->w - x;
+    };
+    for (i = 0; i < l; i++) {
+        *((unsigned int*) &tex->data[ 4 * ( (y)*tex->w + (x+i) ) + 0 ]) = color;
     };    
 };
 
@@ -214,6 +217,8 @@ void game_reg_init() {
     
     game.loader_counter = 0;
     
+    game.need_redraw = 1;
+    
     game.score = 0;
     game.time = 0;
 
@@ -282,7 +287,6 @@ int game_check_and_explode() {
             else {
                 if (match_count >= 2) {
                     found = 1;
-//                    DEBUG10f("found vert (x %d, y %d, count %d) \n", x, y, match_count);
                     for (i = y+1; i < y+1+match_count+1; i++) {
                         BIT_SET( FIELD_ITEM(x, i), CRYSTAL_EXPLODED_BIT );
                     };
@@ -318,7 +322,6 @@ int game_check_and_explode() {
             else {
                 if (match_count >= 2) {
                     found = 1;
-//                    DEBUG10f("found horiz (x %d, y %d, count %d) \n", x, y, match_count);
                     for (i = x+1; i < x+1+match_count+1; i++) {
                         BIT_SET( FIELD_ITEM(i, y), CRYSTAL_EXPLODED_BIT );
                     };
@@ -329,7 +332,6 @@ int game_check_and_explode() {
         };
         if (match_count >= 2) { // last
             found = 1;
-//            DEBUG10("found horiz (2)");
             for (i = x+1; i < x+1+match_count+1; i++) {
                 BIT_SET( FIELD_ITEM(i, y), CRYSTAL_EXPLODED_BIT );
             };
@@ -349,9 +351,13 @@ int game_check_and_explode() {
     
     if (game.score > 99) {
         game.status = STATUS_MENU;
+        game.need_redraw = 1;
     };
     
-//    DEBUG10f("found = %d \n", found);
+    if (found) {
+        game.need_redraw = 1;
+    };
+    
     return found;
 };
 
@@ -363,6 +369,7 @@ void game_fall() {
             fall |= !(FIELD_ITEM(x, y) & CRYSTAL_VISIBLE_BIT);
             if (fall) {
                 FIELD_ITEM(x, y) = FIELD_ITEM(x, y-1) | CRYSTAL_MOVING_BIT;
+                game.need_redraw = 1;
             }
             else {
                 BIT_CLEAR( FIELD_ITEM(x, y), CRYSTAL_MOVING_BIT );
@@ -382,49 +389,12 @@ void GameProcess() {
         game.loader_counter++;
         if (game.loader_counter == 2) {
                 
-//            texture_clear(&game.tex_bg, COLOR_SILVER);
-//             /*
-                
-            rs_gen_init(6, 512);
-            rs_gen_func_perlin(0, 8, 5, 0.5, 1100);
-            rs_gen_func_normalize(0, 0.0, 1.0);
-            rs_gen_func_perlin(1, 8, 5, 0.5, 1700);
-            rs_gen_func_normalize(1, 0.0, 1.0);
-            rs_gen_func_cell(2, 1360, 50, NULL, 1.0, 0.887, -0.333, 1.0, 0.0, 4.0);
-            rs_gen_func_normalize(2, 0.0, 0.5);
-
-            rs_gen_func_adr(3, 2, 0, 1, 1.0, 0.3);
-            
-            rs_gen_func_inv(3, 3, 7.5);
-            rs_gen_func_normalize(3, 0.0, 1.0);
-
-//            signed short c[] = { 0, 250, 250, 0, 500, 250, 250, 500};
-            signed short c[] = { 0, 0, 0, 512, 512, 0, 512, 512};
-//            signed short c[] = { 128, 128, 128, 384, 384, 128, 384, 384};
-            //rs_gen_func_cell(4, 0, 4, c, 0.0, 0.3, 1.0, 0.5, 0.0, 0.30);
-            rs_gen_func_cell(4, 0, 4, c, 1.0, 0.3, 0.0, 0.95, 0.0, 0.30);
-            rs_gen_func_normalize(4, 0.0, 1.0);
-
-//            rs_gen_func_radial(5, 0.5, 0.5, 0.60, 1.0, 4.0);
-//            rs_gen_func_add(4, 4, 5, 0.5, 0.5);
-//
-            rs_gen_func_mult(4, 4, 3);
-            
-            // coloring...
-            rs_gen_func_mult_add_value(0, 4, 0.8, 0.0);
-            rs_gen_func_add(0, 4, 1, 0.95, 0.05);
-            rs_gen_func_add(3, 4, 2, 0.95, 0.05);
-
-            
-            rs_gen_tex_out_rgba(4, 0, 3, -1, 0.9, 0.9, 0.9, 1.0);
-            memcpy(game.tex_bg.data, rs_gen_reg.tex_out, 512*512*4 );
-            rs_gen_term();
-            
-            // */
-            
+            game_textures_init_stage2();
+               
             
         
             game.status = STATUS_MENU;
+            game.need_redraw = 1;
 
         };
     }
@@ -441,6 +411,7 @@ void GameProcess() {
         
         int i;
         for (i = 0; i < game.explosions_count; i++) {
+            game.need_redraw = 1;
             game.explosions[i] = (game.explosions[i] & 0xFFFF) | ( ((game.explosions[i]>>16)+1) << 16 );
             if ( (game.explosions[i] >> 16) >= EXPLOSION_FRAMES_COUNT ) {
                 game.explosions[i] = game.explosions[game.explosions_count-1];
@@ -449,7 +420,14 @@ void GameProcess() {
             };
         };
         
+        if ((game.time+1)/25 != game.time/25) {
+            game.need_redraw = 1;
+        };
+        
         game.time++;
+        
+        
+        
 
     };
 
@@ -477,139 +455,7 @@ void GameInit() {
     
     game_font_init();
     
-    texture_init(&game.framebuffer, GAME_WIDTH, GAME_HEIGHT);
-    
-//    texture_init(&game.tex, 64, 64);
-//    rs_gen_init(1, 64);
-//    rs_gen_func_set(0, 0.0);
-//    rs_gen_func_cell(0, 1200, 10, NULL, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0);
-//    rs_gen_func_normalize(0, 0.0, 1.0);
-//    rs_gen_func_posterize(0, 5);
-//    rs_gen_tex_out_rgba(0, 0, 0, -1, 1.0, 1.0, 1.0, 1.0);
-//    memcpy(game.tex.data, rs_gen_reg.tex_out, 64*64*4 );
-//    rs_gen_term();
-    
-    texture_init(&game.tex_clouds, 128, 128);
-    rs_gen_init(1, 128);
-    rs_gen_func_perlin(0, 8, 5, 0.5, 1100);
-    rs_gen_func_normalize(0, 0.0, 1.0);
-    rs_gen_func_posterize(0, 6);
-    rs_gen_func_mult_add_value(0, 0, 0.6, 0.4);
-//    rs_gen_func_set(0, 1.0);
-    rs_gen_tex_out_rgba(0, 0, 0, -1, 1.0, 1.0, 1.0, 1.0);
-    memcpy(game.tex_clouds.data, rs_gen_reg.tex_out, 128*128*4 );
-    rs_gen_term();
-
-
-    
-
-    texture_init(&game.tex_logo, GAME_WIDTH, 128);
-    texture_clear(&game.tex_logo, COLOR_TRANSPARENT);
-    
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192, 3, 1, DRAW_MODE_REPLACE, "MARBLE");
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192, 63, 1, DRAW_MODE_REPLACE, "MATCH3");
-    texture_draw(&game.tex_logo, &game.tex_clouds, 0, 0, DRAW_MODE_MULT | DRAW_TILED_FLAG);
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192 - 4, 0, 1, DRAW_MODE_MULT, "MARBLE");
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192 - 4, 60, 1, DRAW_MODE_MULT, "MATCH3");
-    
-//    rs_gen_init(1, 128);
-//    rs_gen_func_perlin(0, 8, 5, 0.5, 1100);
-//    rs_gen_func_normalize(0, 0.0, 1.0);
-//    rs_gen_func_posterize(0, 4);
-//    rs_gen_func_normalize(0, 0.0, 0.50);
-//    rs_gen_tex_out_rgba(0, 0, 0, -1, 0.9, 0.7, 0.5, 1.0);
-//    memcpy(game.tex_clouds.data, rs_gen_reg.tex_out, 128*128*4 );
-//    rs_gen_term();
-
-    
-    texture_init(&game.tex_bg, 512, 512);
-    texture_clear(&game.tex_bg, COLOR_SILVER);
-    
-    texture_init(&game.tex_cursor, CRYSTAL_SIZE, CRYSTAL_SIZE);
-    texture_clear(&game.tex_cursor, COLOR_SEMI_TRANSPARENT);
-
-    
-
-    
-//    float cr_r[CRYSTALS_COUNT] = { 0.8, 0.2, 0.1, 0.6, 0.7, 0.0, 0.7 };
-//    float cr_g[CRYSTALS_COUNT] = { 0.1, 0.6, 0.4, 0.0, 0.6, 0.0, 0.8 };
-//    float cr_b[CRYSTALS_COUNT] = { 0.1, 0.1, 0.7, 0.7, 0.0, 0.3, 0.9 };
-
-//    float cr_r[CRYSTALS_COUNT] = { 0.9, 0.3, 0.1, 0.7, 0.8, 0.0, 0.8 };
-//    float cr_g[CRYSTALS_COUNT] = { 0.1, 0.8, 0.5, 0.0, 0.7, 0.0, 0.8 };
-//    float cr_b[CRYSTALS_COUNT] = { 0.0, 0.1, 0.9, 0.8, 0.0, 0.5, 0.9 };
-    
-    float cr_r[CRYSTALS_COUNT] = { 1.0, 0.4, 0.1, 0.9, 0.9, 0.2, 0.8 };
-    float cr_g[CRYSTALS_COUNT] = { 0.1, 1.0, 0.6, 0.1, 0.8, 0.2, 0.8 };
-    float cr_b[CRYSTALS_COUNT] = { 0.0, 0.1, 1.0, 1.0, 0.0, 0.9, 0.9 };
-    
-
-    rs_gen_init(5, CRYSTAL_SIZE);
-    for (i = 0; i < CRYSTALS_COUNT; i++) {
-    
-        texture_init(&(game.tex_crystals[i]), CRYSTAL_SIZE, CRYSTAL_SIZE);
-        
-        rs_gen_func_set(0, 0.0);
-        rs_gen_func_radial(0, 0.5, 0.5, 0.5, 0.75, 10.0);
-
-//        rs_gen_func_perlin(2, 33, 4, 0.5, 350+i);
-//        rs_gen_func_normalize(2, 0.0, 1.0);
-//        rs_gen_func_posterize(2, 4);
-//        
-//        rs_gen_func_cell(1, 410+i, 50, NULL, -2.0, 1.0, 1.0, 1.0, 0.0, 1.0);
-//        rs_gen_func_posterize(1, 2);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_add(1, 1, 2, 1.0, 0.5);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_posterize(1, 4);
-//
-//        rs_gen_func_add(1, 0, 1, 1.0, 1.0);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_mult(1, 0, 1);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_posterize(1, 4);
-        
-        rs_gen_func_set(1, 0.0);
-        rs_gen_func_cell(1, 110+100*i, 7+i, NULL, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0);
-        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_mult_add_value(1, 1, 0.9, 0.1);
-        
-//        rs_gen_func_normalmap(2, 3, 3, 1, 1.0);
-//        rs_gen_func_mult(1, 1, 2);
-        
-        //rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
-        //rs_gen_tex_out_rgba(1, 1, 1, 1, 0.5+ 0.03*(i%2), 0.7+ 0.03*(i%3) , 0.9, 1.0);
-//        rs_gen_tex_out_rgba_set(0.2 + 0.2*(i/3), 0.2 + 0.1*(i%5), 0.2 + 0.1*(i%7), 0.0);
-//        rs_gen_tex_out_rgba(1, 1, 1, 1, 0.0, 0.0, 0.0, 1.0);
-        
-        rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
-//        rs_gen_tex_out_rgba_set( cr_b[i], cr_g[i], cr_r[i], 0.0);
-        rs_gen_tex_out_rgba(1, 1, 1, 0, cr_b[i], cr_g[i], cr_r[i], 1.0);
-
-        memcpy(game.tex_crystals[i].data, rs_gen_reg.tex_out, CRYSTAL_SIZE*CRYSTAL_SIZE*4 );
-    };
-    rs_gen_term();
-    
-    
-    
-    rs_gen_init(3, EXPLOSION_SIZE);
-    for (i = 0; i < EXPLOSION_FRAMES_COUNT; i++) {
-            
-        texture_init(&(game.tex_explosion[i]), EXPLOSION_SIZE, EXPLOSION_SIZE);
-
-        rs_gen_func_set(0, 1.0);
-//        rs_gen_func_radial(0, 0.5, 0.5, 0.3 + 0.5*i/EXPLOSION_FRAMES_COUNT, 0.975, 4.0);
-//        rs_gen_func_set(0, 1.0);
-
-        rs_gen_func_set(1, 0.0);
-        rs_gen_func_radial(1, 0.5, 0.5, 0.1 + 0.4*i/EXPLOSION_FRAMES_COUNT, 1.0 - 1.0*i/EXPLOSION_FRAMES_COUNT, 2.5 + i%5);
-
-        rs_gen_tex_out_rgba_set( 0.0, 0.0, 0.0, 0.0);
-        rs_gen_tex_out_rgba(0, 0, 0, 1, 1.0, 1.0, 1.0, 1.0);
-
-        memcpy(game.tex_explosion[i].data, rs_gen_reg.tex_out, EXPLOSION_SIZE*EXPLOSION_SIZE*4 );
-    };
-    rs_gen_term();
+    game_textures_init_stage1();
     
     
 
@@ -646,19 +492,11 @@ void GameTerm() {
 
     game_font_term();
     
-    free(game.scaled_framebuffer);
+    game_textures_free();
     
-    texture_free(&game.framebuffer);
-    texture_free(&game.tex_logo);
-    texture_free(&game.tex_clouds);
-    texture_free(&game.tex_bg);
     
-//    texture_free(&game.tex_gui_line);
     
-//    int i;
-//    for (i = 0; i < ROCKS_COUNT; i++) {
-//        texture_free(&game.tex_rocks[i]);
-//    };
+
     
     soundbuf_free(&game.sound_test1);
     soundbuf_free(&game.sound_test2);
@@ -676,6 +514,11 @@ void GameTerm() {
 
 void GameKeyDown(int key, int first) {
     
+    if (key == RS_KEY_A) {
+    
+        game.need_redraw = 1;
+        
+    };    
     
     switch (key) {
         case RS_KEY_LEFT:
@@ -729,44 +572,15 @@ void GameKeyDown(int key, int first) {
     
     if (game.status == STATUS_PLAYING) {
         
-        if (key == RS_KEY_A) {
-        
-            
-            
-        };
+
         
         if (key == RS_KEY_SPACE) {
-            
-            // Check and explode match-3
-        
             
             game.score = 101;
             
             
         };
         
-            
-//        switch (key) {
-//            
-//            case RS_KEY_ESCAPE:
-//                game.status = STATUS_MENU;
-//                menu_open(0);
-//                break;
-//            case RS_KEY_A:
-//                
-////                if ( (game.tx > 0) && (game.ty > 5) && (game.tx < GAME_WIDTH-20) && (game.ty < GAME_HEIGHT-10) ) {
-////                
-////                    soundbuf_play(&game.sound_test1);
-////                    
-////                    game.bullet_index++;
-////                    game.bullet_index %= BULLETS_COUNT;
-////                    game.bullet_x[game.bullet_index] = game.tx + 12;
-////                    game.bullet_y[game.bullet_index] = game.ty + 3;
-////                };
-//                
-//                break;
-//            
-//        };
     };
 
 };
@@ -794,6 +608,9 @@ void GameKeyUp(int key) {
 };
 
 void GameMouseDown(int x, int y) {
+    
+    game.need_redraw = 1;
+    
     game.tx = x;
     game.ty = y;
     

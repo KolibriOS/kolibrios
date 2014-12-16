@@ -335,8 +335,8 @@ void game_font_init() {
     float radiuses[4] = { 0.9667, 0.997, 1.2, 0.87 };
     
     float colors_r[4] = { 0.3, 0.997, 1.0, 0.9 };
-    float colors_g[4] = { 0.2, 0.875, 1.0, 0.6 };
-    float colors_b[4] = { 0.1, 0.763, 1.0, 0.3 };
+    float colors_g[4] = { 0.2, 0.875, 1.0, 0.5 };
+    float colors_b[4] = { 0.1, 0.763, 1.0, 0.1 };
     // 1: 0.5, 0.74, 0.79
 
     DEBUG20(":: font init label-a");
@@ -448,33 +448,6 @@ void game_font_term() {
 
 };
 
-void game_textout_init(int set_to_ortho, int font_index) {
-    
-//    CHECK_GL("textout init: start");
-//
-//    glDisable(GL_DEPTH_TEST);
-//    CHECK_GL("textout init: disable depth test");
-//
-//    rs_sh_use(game.text_shader);
-//    CHECK_GL("textout init: use text shader");
-//    glBindTexture(GL_TEXTURE_2D, game.font_texture[font_index]);
-//    CHECK_GL("textout init: glBindTexture");
-//    glUniform1i( game.text_shader[RS_SH_SAMPLER0_ID], 0 );
-//    if (set_to_ortho) {
-//        rs_mx_ortho1h_proj();
-//    }
-//
-//    CHECK_GL("textout init: label d");
-//
-//    glUniformMatrix4fv( game.text_shader[RS_SH_PROJ_ID], 1, GL_FALSE, rs_reg.mx_proj );
-//
-//    CHECK_GL("textout init: label e");
-//
-//    glUniform4f( game.text_shader[RS_SH_COLOR_ID], 0.0, 0.0, 0.0, 0.0 );
-//
-//    CHECK_GL("textout init: end");
-};
-
 
 
 //float game_colors[4*7] = {
@@ -503,63 +476,6 @@ void game_textout_adv(rs_texture_t *dest, int x, int y, int font_index, int draw
         i++;
     };
     
-//    for (i = 0; i < 8; i++) {
-//        texture_draw(&game.framebuffer, &game.tex_font[i], 40+8+game.tx+i*game.tex_font[i].w, 80+game.ty, DRAW_MODE_ALPHA);
-//    }
-    
-    
-
-//    //char *s = "12345_QUICK_BROWN_FOX_JUMPS_OVER_A_LAZY_DOG";
-//
-//    float w = 2.0*h/3.0;
-//    int len = strlen(s);
-//
-//    x -= (float) align * 0.5 * len * w;
-//
-//    float sx = 0.0;
-//    float sy = 0.0;
-//
-//
-//
-//    int i;
-//    for (i = 0; i < len; i++) {
-//        unsigned char c = s[i];
-//
-//        if (c == '\n') {
-//            sx = 0.0;
-//            sy += h;
-//            continue;
-//        };
-//
-//        if (c == ' ') {
-//            sx += w;
-//            continue;
-//        };
-//
-//        c = (c-48)%64;
-//        float tx = 1.0 / 8.0 * (c % 8);
-//        float ty = 1.0 / 8.0 * (c / 8);
-//
-//        glUniform4fv( game.text_shader[RS_SH_SCALE_ID], 1, &(game_colors[4*0]) ); // black shadow
-//        glrsDrawRect_full(sx + x + h/12,
-//                          sy + y-h/2 + h/12,
-//                          sx + x + w + h/12,
-//                          sy + y+h/2 + h/12,
-//                          tx, ty, tx+1.0/8.0, ty+1.0/8.0,
-//                          game.text_shader[RS_SH_POS_ID], game.text_shader[RS_SH_UV_ID],
-//                          0.0, 0.0, 0.0 );
-//
-//        glUniform4fv( game.text_shader[RS_SH_SCALE_ID], 1, &(game_colors[4*color]) );
-////        glUniform3f( game.text_shader[RS_SH_TIME_ID], 1.0, 1.0, 0.0 );
-//        glrsDrawRect_full(sx + x,
-//                          sy + y-h/2,
-//                          sx + x + w,
-//                          sy + y+h/2,
-//                          tx, ty, tx+1.0/8.0, ty+1.0/8.0,
-//                          game.text_shader[RS_SH_POS_ID], game.text_shader[RS_SH_UV_ID],
-//                          0.0, 0.0, 0.0 );
-//        sx += w;
-//    }
 
 };
 

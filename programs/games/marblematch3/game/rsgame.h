@@ -116,11 +116,11 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 
 #define GAME_SHOOT_PERIOD   3
 
-#define FIELD_WIDTH     12
-#define FIELD_HEIGHT    9
+#define FIELD_WIDTH     10
+#define FIELD_HEIGHT    8
 #define FIELD_LENGTH    (FIELD_WIDTH * FIELD_HEIGHT)
-#define CRYSTAL_SIZE    32
-#define FIELD_X0     64
+#define CRYSTAL_SIZE    40
+#define FIELD_X0     56
 #define FIELD_Y0     128
 #define FIELD_ITEM(x,y)     (game.field[(y)*FIELD_WIDTH+(x)])
 
@@ -129,7 +129,7 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 #define CRYSTAL_EXPLODED_BIT    0x20
 #define CRYSTAL_MOVING_BIT      0x40
 
-#define EXPLOSION_FRAMES_COUNT      19
+#define EXPLOSION_FRAMES_COUNT      10
 #define EXPLOSION_SIZE      64
 
 #define EXPLOSIONS_MAX_COUNT        16
@@ -142,6 +142,8 @@ typedef struct rs_game_t {
     int loader_counter;
     
     rs_texture_t tex_bg;
+    rs_texture_t tex_bg_gameplay;
+    rs_texture_t tex_field;
     
     rs_texture_t tex_logo;
     rs_texture_t tex_clouds;
@@ -177,6 +179,8 @@ typedef struct rs_game_t {
     
     unsigned int explosions_count;
     unsigned int explosions[EXPLOSIONS_MAX_COUNT]; //0x00TTYYXX, TT = frame, YY = fieldY, XX = fieldX
+    
+    int need_redraw;
     
     int score;
     int time;
