@@ -468,6 +468,7 @@ tup.append_table(img_files, {
 tup.append_table(extra_files, {
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
  {"kolibrios/games/heliothryx/", PROGS .. "/games/heliothryx/heliothryx"},
+ {"kolibrios/games/2048/", PROGS .. "/games/2048/2048"},
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
 })
