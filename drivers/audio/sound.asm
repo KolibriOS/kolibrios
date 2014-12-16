@@ -251,7 +251,7 @@ proc detect_controller
 
         invoke  GetService, dword[edi+4]
         test    eax, eax
-        jz      .next
+        jz      .fail
 
         mov     edx, [eax+SRV.entry]
         mov     [srv_entry], edx
