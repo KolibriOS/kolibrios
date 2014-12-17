@@ -57,42 +57,29 @@ __u8 rect_transform(rect* from, rect* to, __u16 step)
             (from->height == to->height);
 }
 
-void rect_draw_text(rect *r, char *txt, __u32 len, __u32 color)
+void rect_draw_text(rect *r, char *txt, __u32 len, __u32 color, __u32 frame_color)
 {
-    __menuet__write_text(r->x + 1 + (r->width - len * FONT_WIDTH - len) / 2,
+    // right down shadow
+    __menuet__write_text(r->x + 1 + (r->width - text_length_px(len)) / 2,
                          r->y + 1 + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-    __menuet__write_text(r->x - 1 + (r->width - len * FONT_WIDTH - len) / 2,
-                         r->y - 1 + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-    __menuet__write_text(r->x - 1 + (r->width - len * FONT_WIDTH - len) / 2,
+                         frame_color,txt,len);
+    // right shadow
+    __menuet__write_text(r->x + 1 + (r->width - text_length_px(len)) / 2,
+                         r->y + (r->height - FONT_HEIGHT) / 2,
+                         frame_color,txt,len);
+    // down shadow
+    __menuet__write_text(r->x + (r->width - text_length_px(len)) / 2,
                          r->y + 1 + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-    __menuet__write_text(r->x + 1 + (r->width - len * FONT_WIDTH - len) / 2,
-                         r->y - 1 + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
+                         frame_color,txt,len);
 
-    __menuet__write_text(r->x + 1 + (r->width - len * FONT_WIDTH - len) / 2,
+    __menuet__write_text(r->x + (r->width - text_length_px(len)) / 2,
                          r->y + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-    __menuet__write_text(r->x - 1 + (r->width - len * FONT_WIDTH - len) / 2,
-                         r->y + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-    __menuet__write_text(r->x + (r->width - len * FONT_WIDTH - len) / 2,
-                         r->y + 1 + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-    __menuet__write_text(r->x + (r->width - len * FONT_WIDTH - len) / 2,
-                         r->y - 1 + (r->height - FONT_HEIGHT) / 2,
-                         0xFFFFFF,txt,len);
-
-    __menuet__write_text(r->x + (r->width - len * FONT_WIDTH - len) / 2,
-                         r->y + (r->height - FONT_HEIGHT) / 2,
-                         0,txt,len);
+                         color,txt,len);
 }
 
-void rect_draw_value(rect* r, __u32 v, __u32 color)
+void rect_draw_value(rect* r, __u32 v, __u32 color, __u32 frame_color)
 {
     char buffer[16] = {0};
     __u32 length = strlen(itoa(v,buffer,10));
-    rect_draw_text(r,buffer,length,color);
+    rect_draw_text(r,buffer,length,color,frame_color);
 }

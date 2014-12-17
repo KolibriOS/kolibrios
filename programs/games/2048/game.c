@@ -1,30 +1,49 @@
 #include "game.h"
 
 struct {
-    rect    new_game_button;// new game button place
+    rect    reset_button;   // new game button place
     rect    highscore_rect; // highscore place
     rect    score_rect;     // score place
+    rect    over_rect;      // game over window
     __u8    over;           // flag for game over
 } game;
 
-void game_draw_top()
+void game_draw_ui()
 {
-    if (game.over)
-    {
-        __menuet__make_button(game.new_game_button.x,
-                              game.new_game_button.y,
-                              game.new_game_button.width,
-                              game.new_game_button.height,
-                              NEW_GAME_BUTTON,
-                              BOARD_BG_COLOR);
-        rect_draw_text(&game.new_game_button,"NEW GAME",8,GAME_BG_COLOR);
-    }
+    __menuet__make_button(game.reset_button.x,
+                          game.reset_button.y,
+                          game.reset_button.width,
+                          game.reset_button.height,
+                          NEW_GAME_BUTTON,
+                          BOARD_BG_COLOR);
+    rect_draw_text(&game.reset_button,"Restart",7,GAME_BG_COLOR,0);
 
     rect_draw(&game.highscore_rect,BOARD_BG_COLOR);
-    rect_draw_value(&game.highscore_rect,board_highscore(),GAME_BG_COLOR);
+    rect_draw_value(&game.highscore_rect,board_highscore(),GAME_BG_COLOR,0);
 
     rect_draw(&game.score_rect,BOARD_BG_COLOR);
-    rect_draw_value(&game.score_rect,board_score(),GAME_BG_COLOR);
+    rect_draw_value(&game.score_rect,board_score(),GAME_BG_COLOR,0);
+
+    if (game.over)
+    {
+        __u16 line_step = FONT_HEIGHT * 2;
+        rect_draw(&game.over_rect,BOARD_BG_COLOR);
+
+        rect line_rect = {
+            .x = game.over_rect.x,
+            .y = game.over_rect.y + line_step,
+            .width = game.over_rect.width,
+            .height = line_step
+        };
+
+        rect_draw_text(&line_rect,"It looks like there is",22,0xFFFFFF,0);
+
+        line_rect.y += line_step;
+        rect_draw_text(&line_rect,"no more moves",13,0xFFFFFF,0);
+
+        line_rect.y += line_step;
+        rect_draw_text(&line_rect,"available",9,0xFFFFFF,0);
+    }
 }
 
 void game_init()
@@ -41,7 +60,7 @@ void game_init()
                             (screen_h - WND_HEIGHT) / 2,
                             WND_WIDTH,
                             WND_HEIGHT,
-                            GAME_BG_COLOR,
+                            0x34 << 24 | GAME_BG_COLOR,
                             0,
                             (__u32)header);
 
@@ -68,22 +87,29 @@ void game_init()
 
     board_init(&av_area);
 
-    game.new_game_button.x = av_area.x;
-    game.new_game_button.y = (av_area.y - SCORE_HEIGHT) / 2;
-    game.new_game_button.width = (av_area.width - BOARD_SPACING) / 3;
-    game.new_game_button.height = SCORE_HEIGHT;
+    rect top_base = {
+        .x = av_area.x,
+        .y = (av_area.y - SCORE_HEIGHT) / 2,
+        .width = (av_area.width - BOARD_SPACING * 2) / 3,
+        .height = SCORE_HEIGHT
+    };
 
-    game.highscore_rect.x = av_area.x + (av_area.width + BOARD_SPACING) / 3;
-    game.highscore_rect.y = (av_area.y - SCORE_HEIGHT) / 2;
-    game.highscore_rect.width = (av_area.width - BOARD_SPACING) / 3;
-    game.highscore_rect.height = SCORE_HEIGHT;
+    game.reset_button = top_base;
 
-    game.score_rect.x = av_area.x + (av_area.width + BOARD_SPACING) * 2 / 3;
-    game.score_rect.y = (av_area.y - SCORE_HEIGHT) / 2;
-    game.score_rect.width = (av_area.width - BOARD_SPACING) / 3;
-    game.score_rect.height = SCORE_HEIGHT;
+    top_base.x += top_base.width + BOARD_SPACING;
+    game.highscore_rect = top_base;
 
-    game_draw_top();
+    top_base.x += top_base.width + BOARD_SPACING;
+    game.score_rect = top_base;
+
+    av_area.x += av_area.width / 4;
+    av_area.y += av_area.height / 4;
+    av_area.width /= 2;
+    av_area.height /= 2;
+
+    game.over_rect = av_area;
+
+    game_draw_ui();
 
     __menuet__window_redraw(2);
 }
@@ -100,15 +126,15 @@ void game_redraw()
     // start redraw
     __menuet__window_redraw(1);
 
-    __menuet__define_window(0,              // __u16 x1     : ignored
-                            0,              // __u16 y1     : ignored
-                            0,              // __u16 xsize  : ignored
-                            0,              // __u16 ysize  : ignored
-                            GAME_BG_COLOR,  // __u32 body_color
-                            0,              // __u32 grab_color
-                            (__u32)header); // __u32 frame_color or header
+    __menuet__define_window(0,                          // __u16 x1     : ignored
+                            0,                          // __u16 y1     : ignored
+                            0,                          // __u16 xsize  : ignored
+                            0,                          // __u16 ysize  : ignored
+                            0x34 << 24 | GAME_BG_COLOR, // __u32 body_color
+                            0,                          // __u32 grab_color
+                            (__u32)header);             // __u32 frame_color or header
 
-    game_draw_top();
+    game_draw_ui();
     board_redraw();
 
     // end redraw
@@ -124,7 +150,7 @@ void game_move_up()
         board_redraw();
 
         game.over = !added || !board_has_moves();
-        game_draw_top();
+        game_draw_ui();
     }
 }
 
@@ -137,7 +163,7 @@ void game_move_down()
         board_redraw();
 
         game.over = !added || !board_has_moves();
-        game_draw_top();
+        game_draw_ui();
     }
 }
 
@@ -150,7 +176,7 @@ void game_move_left()
         board_redraw();
 
         game.over = !added || !board_has_moves();
-        game_draw_top();
+        game_draw_ui();
     }
 }
 
@@ -163,6 +189,6 @@ void game_move_right()
         board_redraw();
 
         game.over = !added || !board_has_moves();
-        game_draw_top();
+        game_draw_ui();
     }
 }

@@ -10,6 +10,8 @@ inline void enable_scancode();
 inline void clear_key_buffer();
 inline void vsync();
 
+inline __u32 text_length_px(__u32 len);
+
 #define false   (0)
 #define true    (1)
 
@@ -26,7 +28,7 @@ inline void vsync();
 #define WND_HEIGHT      (400)           // main window height
 
 #define GAME_BORDER     (30)            // minimum border size around board
-#define GAME_BG_COLOR   (0x34FAF8EF)    // main window background color
+#define GAME_BG_COLOR   (0xFAF8EF)      // main window background color
 
 #define SCORE_HEIGHT    (21)            // minimum height for score text
 

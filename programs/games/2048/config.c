@@ -22,7 +22,7 @@ __u32 config_load_highscore()
 
     fs_info cfg = {0};
     cfg.func = 0;
-    cfg.size = 4;
+    cfg.size = sizeof(__u32);
     cfg.data = (char*)&highscore;
     cfg.name = path;
 
@@ -31,7 +31,8 @@ __u32 config_load_highscore()
 
     __asm__ __volatile__("int $0x40":"=a"(ret),"=b"(rnum):
                          "a"(70),
-                         "b"((__u32)(&cfg)));
+                         "b"((__u32)(&cfg)):
+                         "memory");
 
     if (ret || (rnum != 4)) highscore = 0;
 
@@ -42,7 +43,7 @@ void config_save_highscore(__u32 score)
 {
     fs_info cfg = {0};
     cfg.func = 2;
-    cfg.size = 4;
+    cfg.size = sizeof(__u32);
     cfg.data = (char*)&score;
     cfg.name = path;
 
@@ -51,5 +52,6 @@ void config_save_highscore(__u32 score)
 
     __asm__ __volatile__("int $0x40":"=a"(ret),"=b"(wnum):
                          "a"(70),
-                         "b"((__u32)(&cfg)));
+                         "b"((__u32)(&cfg)):
+                         "memory");
 }

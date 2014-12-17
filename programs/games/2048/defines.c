@@ -16,3 +16,9 @@ inline void clear_key_buffer() {
 inline void vsync() {
     __asm__ __volatile__("int $0x40"::"a"(18),"b"(14));
 }
+
+// Get text length in pixels
+inline __u32 text_length_px(__u32 len)
+{
+    return len * FONT_WIDTH + len;
+}
