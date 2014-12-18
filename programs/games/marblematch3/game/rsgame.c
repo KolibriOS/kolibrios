@@ -217,6 +217,8 @@ void game_reg_init() {
     
     game.loader_counter = 0;
     
+    game.process_timer = 0;
+    
     game.need_redraw = 1;
     
     game.score = 0;
@@ -381,7 +383,7 @@ void game_fall() {
     };
 };
 
-int process_timer = 0;
+
 
 void GameProcess() {
     
@@ -400,13 +402,12 @@ void GameProcess() {
     }
     else if (game.status == STATUS_PLAYING) {
             
-            
-        process_timer++;
+        game.process_timer++;
 
-        if (process_timer > 3) {
+        if (game.process_timer > ANIMATION_PROCESS_TIMER_LIMIT) {
             game_check_and_explode();
             game_fall();
-            process_timer = 0;
+            game.process_timer = 0;
         };
         
         int i;
@@ -607,7 +608,15 @@ void GameKeyUp(int key) {
 
 };
 
+typedef struct {
+    int a;
+    int b;
+    unsigned short c;
+    unsigned short d;
+} cc_t;
+
 void GameMouseDown(int x, int y) {
+    
     
     game.need_redraw = 1;
     
@@ -657,7 +666,7 @@ void GameMouseDown(int x, int y) {
                 }
                 else {
                     // success
-                    process_timer = 0;
+                    game.process_timer = 0;
                 };
                 
             }

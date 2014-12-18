@@ -6,7 +6,10 @@
 
 unsigned int rskos_get_time();
 
-void rskos_draw_area(int x, int y, int w, int h, int k_scale, unsigned char *data, unsigned char *scaled_buffer);
+#define RSKOS_BGRA      32
+#define RSKOS_BGR       24
+
+void rskos_draw_area(int x, int y, int w, int h, int k_scale, unsigned char *data, unsigned char *scaled_buffer, int image_format);
 
 void rskos_resize_window(int w, int h);
 void rskos_get_screen_size(unsigned int *pw, unsigned int *ph);

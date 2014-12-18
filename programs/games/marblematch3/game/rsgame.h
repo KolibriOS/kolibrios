@@ -135,6 +135,8 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 #define EXPLOSIONS_MAX_COUNT        16
 //#define EXPLOSION_PACK(x,y,frame)   ( (x) | ( (y)<<8 ) |  (frame)<<16 )
 
+#define ANIMATION_PROCESS_TIMER_LIMIT   3
+
 typedef struct rs_game_t {
     rs_texture_t framebuffer; 
     unsigned char *scaled_framebuffer; // 24-bit BGRBGRBGR... for direct drawing
@@ -166,6 +168,8 @@ typedef struct rs_game_t {
     int menu_item_index;
     
     int window_scale;
+    
+    int process_timer;
     
     int tx;
     int ty;

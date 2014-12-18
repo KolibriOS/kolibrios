@@ -17,7 +17,10 @@ void game_draw() {
 	int w = GAME_WIDTH;
 	int h = GAME_HEIGHT;
 	
+	int continue_need_redraw = 0;
+	
 	if (game.need_redraw) {
+//    if (1) {
     
         
 
@@ -59,19 +62,24 @@ void game_draw() {
                 
             texture_draw(&game.framebuffer, &game.tex_bg_gameplay, 0, 0, DRAW_MODE_REPLACE);
             
-            int i, j;
+            int i, j, y_shift;
             for (i = 0; i < FIELD_HEIGHT; i++) {
                 for (j = 0; j < FIELD_WIDTH; j++) {
                     if ( IS_BIT_SET( game.field[i*FIELD_WIDTH + j], CRYSTAL_VISIBLE_BIT )) {
-                        texture_draw( &game.framebuffer, &game.tex_crystals[ game.field[i*FIELD_WIDTH + j] & CRYSTAL_INDEX_MASK ], FIELD_X0+ j*CRYSTAL_SIZE, FIELD_Y0+ i*CRYSTAL_SIZE, DRAW_MODE_ALPHA );
-                        if (game.selected) {
-                            if ( (j == game.selected_x) && (i == game.selected_y) ) {
-                                texture_draw( &game.framebuffer, &game.tex_cursor, FIELD_X0+ j*CRYSTAL_SIZE, FIELD_Y0+ i*CRYSTAL_SIZE, DRAW_MODE_ALPHA );
-                            };
+                        y_shift = 0;
+                        if ( IS_BIT_SET( game.field[i*FIELD_WIDTH + j], CRYSTAL_MOVING_BIT ) ) {
+                            y_shift = -CRYSTAL_SIZE + CRYSTAL_SIZE*(game.process_timer+1)/(ANIMATION_PROCESS_TIMER_LIMIT+1);
+                            continue_need_redraw = 1;
                         };
+                        texture_draw( &game.framebuffer, &game.tex_crystals[ game.field[i*FIELD_WIDTH + j] & CRYSTAL_INDEX_MASK ], FIELD_X0+ j*CRYSTAL_SIZE, y_shift + FIELD_Y0+ i*CRYSTAL_SIZE, DRAW_MODE_ALPHA );
                     };
                 };
             };
+            
+            if (game.selected) {
+                texture_draw( &game.framebuffer, &game.tex_cursor, FIELD_X0+ game.selected_x*CRYSTAL_SIZE, FIELD_Y0+ game.selected_y*CRYSTAL_SIZE, DRAW_MODE_ALPHA );
+            };
+            
             
             for (i = 0; i < game.explosions_count; i++) {
                 texture_draw( &game.framebuffer, &(game.tex_explosion[  (game.explosions[i]>>16) & 0xFF  ]), 
@@ -99,10 +107,13 @@ void game_draw() {
         };
 
 
-        rskos_draw_area(0, 0, w, h, game.window_scale, game.framebuffer.data, game.scaled_framebuffer);
+//        rskos_draw_area(0, 0, w, h, game.window_scale, game.framebuffer.data, NULL, RSKOS_BGRA);
+        rskos_draw_area(0, 0, w, h, game.window_scale, game.framebuffer.data, game.scaled_framebuffer, 0);
 	};
 	
-	game.need_redraw = 0;
+	if (!continue_need_redraw) {
+        game.need_redraw = 0;
+	};
 
 };
 
@@ -194,47 +205,51 @@ void game_textures_init_stage1() {
     float cr_b[CRYSTALS_COUNT] = { 0.0, 0.1, 1.0, 1.0, 0.0, 0.9, 0.9 };
     
 
+//    rs_gen_init(5, CRYSTAL_SIZE);
+//    for (i = 0; i < CRYSTALS_COUNT; i++) {
+//        texture_init(&(game.tex_crystals[i]), CRYSTAL_SIZE, CRYSTAL_SIZE);
+//        
+//        rs_gen_func_set(0, 0.0);
+//        rs_gen_func_radial(0, 0.5, 0.5, 0.5, 0.75, 10.0);
+//        
+//        rs_gen_func_set(1, 0.0);
+//        rs_gen_func_cell(1, 110+100*i, 7+i, NULL, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+//        rs_gen_func_normalize(1, 0.0, 1.0);
+//        
+//        rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
+//        rs_gen_tex_out_rgba(1, 1, 1, 0, cr_b[i], cr_g[i], cr_r[i], 1.0);
+//
+//        memcpy(game.tex_crystals[i].data, rs_gen_reg.tex_out, CRYSTAL_SIZE*CRYSTAL_SIZE*4 );
+//    };
+//    rs_gen_term();
+    
     rs_gen_init(5, CRYSTAL_SIZE);
     for (i = 0; i < CRYSTALS_COUNT; i++) {
-    
         texture_init(&(game.tex_crystals[i]), CRYSTAL_SIZE, CRYSTAL_SIZE);
         
         rs_gen_func_set(0, 0.0);
         rs_gen_func_radial(0, 0.5, 0.5, 0.5, 0.75, 10.0);
-
-//        rs_gen_func_perlin(2, 33, 4, 0.5, 350+i);
-//        rs_gen_func_normalize(2, 0.0, 1.0);
-//        rs_gen_func_posterize(2, 4);
-//        
-//        rs_gen_func_cell(1, 410+i, 50, NULL, -2.0, 1.0, 1.0, 1.0, 0.0, 1.0);
-//        rs_gen_func_posterize(1, 2);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_add(1, 1, 2, 1.0, 0.5);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_posterize(1, 4);
-//
-//        rs_gen_func_add(1, 0, 1, 1.0, 1.0);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_mult(1, 0, 1);
-//        rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_posterize(1, 4);
         
-        rs_gen_func_set(1, 0.0);
-        rs_gen_func_cell(1, 110+100*i, 7+i, NULL, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+        rs_gen_func_set(1, 1.0);
+        rs_gen_func_cell(1, 310+100*i, 5, NULL, -0.5, 1.0, 1.0, 0.0, -2.0, 2.0);
         rs_gen_func_normalize(1, 0.0, 1.0);
-//        rs_gen_func_mult_add_value(1, 1, 0.9, 0.1);
         
-//        rs_gen_func_normalmap(2, 3, 3, 1, 1.0);
-//        rs_gen_func_mult(1, 1, 2);
+        rs_gen_func_normalmap(2, 3, 4, 1, 1.0);
+        rs_gen_func_mult_add_value(3, 3, -1.0, 1.0);
         
-        //rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
-        //rs_gen_tex_out_rgba(1, 1, 1, 1, 0.5+ 0.03*(i%2), 0.7+ 0.03*(i%3) , 0.9, 1.0);
-//        rs_gen_tex_out_rgba_set(0.2 + 0.2*(i/3), 0.2 + 0.1*(i%5), 0.2 + 0.1*(i%7), 0.0);
-//        rs_gen_tex_out_rgba(1, 1, 1, 1, 0.0, 0.0, 0.0, 1.0);
+        rs_gen_func_clamp(2, 0.5, 1.0);
+        rs_gen_func_normalize(2, 0.0, 1.0);
+        rs_gen_func_clamp(3, 0.5, 1.0);
+        rs_gen_func_normalize(3, 0.0, 1.0);
+        
+        rs_gen_func_add(4, 2, 3, 0.5, 0.5);
+        rs_gen_func_mult(1, 1, 4);
+        rs_gen_func_normalize(1, 0.0, 1.0);
         
         rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
-//        rs_gen_tex_out_rgba_set( cr_b[i], cr_g[i], cr_r[i], 0.0);
         rs_gen_tex_out_rgba(1, 1, 1, 0, cr_b[i], cr_g[i], cr_r[i], 1.0);
+//        rs_gen_tex_out_rgba(4, 4, 4, 0, 0.8-0.8*cr_b[i], 0.8-0.8*cr_g[i], 0.8-0.8*cr_r[i], 0.0);
+//        rs_gen_tex_out_rgba(1, 1, 1, 0, 1.0, 1.0, 1.0, 1.0);
 
         memcpy(game.tex_crystals[i].data, rs_gen_reg.tex_out, CRYSTAL_SIZE*CRYSTAL_SIZE*4 );
     };
