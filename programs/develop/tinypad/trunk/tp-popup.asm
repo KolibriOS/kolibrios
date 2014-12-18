@@ -280,7 +280,8 @@ onshow:
 	test	[line_nums],1
 	jnz	@f
 	and	byte[mm.Options+8],0xFD
-    @@: ret
+    @@: stdcall save_settings
+	ret
 
 pi_sel	 dd ?
 pi_cur	 dd ?
