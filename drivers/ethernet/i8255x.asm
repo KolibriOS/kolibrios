@@ -187,21 +187,6 @@ struct  device          ETH_DEVICE
 
 ends
 
-macro delay {
-        push    eax
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        in      ax, dx
-        pop     eax
-}
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                        ;;
 ;; proc START             ;;
@@ -896,7 +881,7 @@ ee_read:        ; esi = address to read
 
         mov     al, EE_CS
         out     dx, al
-        delay
+        call    udelay
 
 ;-----------------------
 ; Write this to the chip
@@ -908,11 +893,11 @@ ee_read:        ; esi = address to read
         or      al, EE_DI
        @@:
         out     dx, al
-        delay
+        call    udelay
 
         and     al, not EE_SK
         out     dx, al
-        delay
+        call    udelay
 
         loop    .loop
 
@@ -926,7 +911,7 @@ ee_read:        ; esi = address to read
         shl     esi, 1
         mov     al, EE_CS + EE_SK
         out     dx, al
-        delay
+        call    udelay
 
         in      al, dx
         test    al, EE_DO
@@ -936,7 +921,7 @@ ee_read:        ; esi = address to read
 
         mov     al, EE_CS
         out     dx, al
-        delay
+        call    udelay
 
         loop    .loop2
 
@@ -985,11 +970,11 @@ ee_write:       ; esi = address to write to, di = data
         or      al, EE_DI
        @@:
         out     dx, al
-        delay
+        call    udelay
 
         and     al, not EE_SK
         out     dx, al
-        delay
+        call    udelay
 
         loop    .loop
 
@@ -1005,11 +990,11 @@ ee_write:       ; esi = address to write to, di = data
         or      al, EE_DI
        @@:
         out     dx, al
-        delay
+        call    udelay
 
         and     al, not EE_SK
         out     dx, al
-        delay
+        call    udelay
 
         loop    .loop2
 
@@ -1032,7 +1017,7 @@ ee_get_width:
 
         mov     al, EE_CS      ; activate eeprom
         out     dx, al
-        delay
+        call    udelay
 
         mov     si, EE_READ shl 13
         xor     ecx, ecx
@@ -1043,11 +1028,11 @@ ee_get_width:
         or      al, EE_DI
        @@:
         out     dx, al
-        delay
+        call    udelay
 
         and     al, not EE_SK
         out     dx, al
-        delay
+        call    udelay
 
         inc     ecx
 
@@ -1076,6 +1061,16 @@ ee_get_width:
         ret
 
 
+; Wait a minimum of 2µs
+udelay:
+        pusha
+        mov     esi, 1
+        invoke  Sleep
+        popa
+
+        ret
+
+
 
 ; cx = phy addr
 ; dx = phy reg addr
@@ -1099,7 +1094,7 @@ mdio_read:
         out     dx, eax
 
   .wait:
-        delay
+        call    udelay
         in      eax, dx
         test    eax, 1 shl 28           ; ready bit
         jz      .wait
@@ -1131,7 +1126,7 @@ mdio_write:
         out     dx, eax
 
   .wait:
-        delay
+        call    udelay
         in      eax, dx
         test    eax, 1 shl 28           ; ready bit
         jz      .wait
