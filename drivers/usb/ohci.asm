@@ -853,7 +853,7 @@ end virtual
 ; debugging output, not needed for work
 ;       test    eax, 1F0000h
 ;       jz      @f
-;       DEBUGF 1,'K : ohci irq [%d] status of port %d is %x\n',[timer_ticks],ecx,eax
+;       DEBUGF 1,'K : ohci %x status of port %d is %x\n',esi,ecx,eax
 ;@@:
 ; 11c. Ignore any events until all ports are powered up.
 ; They will be processed by ohci_init.
@@ -1323,6 +1323,10 @@ proc ohci_process_deferred
 ; 1. Initialize the return value.
         push    -1
 ; 2. Process disconnect events.
+; Capture NewConnected mask in the state before disconnect processing;
+; IRQ handler could asynchronously signal disconnect+connect event,
+; connect events should be handled after disconnect events.
+        push    [esi+usb_controller.NewConnected]
         invoke  usbhc_api.usb_disconnect_stage2
 ; 3. Check for connected devices.
 ; If there is a connected device which was connected less than
@@ -1330,10 +1334,10 @@ proc ohci_process_deferred
 ; Otherwise, call ohci_new_port.
         mov     edi, [esi+ohci_controller.MMIOBase-sizeof.ohci_controller]
         xor     ecx, ecx
-        cmp     [esi+usb_controller.NewConnected], ecx
+        cmp     [esp], ecx
         jz      .skip_newconnected
 .portloop:
-        bt      [esi+usb_controller.NewConnected], ecx
+        bt      [esp], ecx
         jnc     .noconnect
 ; If this port is shared with the EHCI companion and we see the connect event,
 ; then the device is USB1 dropped by EHCI,
@@ -1348,9 +1352,9 @@ proc ohci_process_deferred
         sub     eax, USB_CONNECT_DELAY
         jge     .connected
         neg     eax
-        cmp     [esp], eax
+        cmp     [esp+4], eax
         jb      .nextport
-        mov     [esp], eax
+        mov     [esp+4], eax
         jmp     .nextport
 .connected:
         lock btr [esi+usb_controller.NewConnected], ecx
@@ -1362,6 +1366,7 @@ proc ohci_process_deferred
         cmp     ecx, [esi+usb_controller.NumPorts]
         jb      .portloop
 .skip_newconnected:
+        pop     eax
 ; 4. Check for end of reset signalling. If so, call ohci_port_after_reset.
         cmp     [esi+usb_controller.ResettingStatus], 2
         jnz     .no_reset_recovery
