@@ -1,10 +1,6 @@
 
 HISTORY:
 
-4.0.9 (18/12/2014, Sergej Sakhno aka Punk_Joker)
-  new features:
-    - save/load settings to/from ini file
-
 4.0.8 (22/01/2014, Marat Zakiyanov aka Mario79, aka Mario)
   new features:
     - Support for kernel clipboard (f.54)
