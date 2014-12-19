@@ -323,20 +323,20 @@ void game_font_init() {
 //    float radiuses[4] = { 1.0, 1.1, 1.2, 0.87 };
     
     
-    float scales[4] = { 0.5, 2.0, 0.2, 2 }; // 2,1,1,1
+    float scales[4] = { 0.69, 2.0, 0.2, 0.5 }; // 2,1,1,1
     //float pows[4] = { 45.0, 100.0, 200.0, 22.0 };
-    float pows[4] = { 3.0, 7.0, 15.0, 22.0 };
+    float pows[4] = { 8.0, 7.0, 15.0, 22.0 };
     float ks1[4] = { 0.01, 0.05, 1.2, 0.90 }; // 0.75 straight
     float ks2[4] = { -3.75, -2.75, -1.0, -1.0 };
     float pows1[4] = { 1.0, 1.0, 1.0, 1.0 };
     float pows2[4] = { 0.6,  0.6, 1.0, 1.0 };
-    float clamp1[4] = { 0.45, 0.69, 0.65, 0.87 }; // 0.8 to 0.86
-    float clamp2[4] = { 0.90, 0.75, 0.85, 0.92 };
+    float clamp1[4] = { 0.65, 0.69, 0.65, 0.87 }; // 0.8 to 0.86
+    float clamp2[4] = { 0.85, 0.75, 0.85, 0.92 };
     float radiuses[4] = { 0.9667, 0.997, 1.2, 0.87 };
     
-    float colors_r[4] = { 0.3, 0.997, 1.0, 0.9 };
-    float colors_g[4] = { 0.2, 0.875, 1.0, 0.5 };
-    float colors_b[4] = { 0.1, 0.763, 1.0, 0.1 };
+    float colors_r[4] = { 0.15, 0.997, 1.0, 0.4 };
+    float colors_g[4] = { 0.10, 0.875, 1.0, 0.6 };
+    float colors_b[4] = { 0.05, 0.763, 1.0, 0.8 };
     // 1: 0.5, 0.74, 0.79
 
     DEBUG20(":: font init label-a");
@@ -385,9 +385,12 @@ void game_font_init() {
             }
             rs_gen_func_clamp(32+ch, (ch+ch/8)%2 ? 0.0 : 0.0, 1.0);
     //        rs_gen_func_set(32+ch, (ch+ch/8)%2 ? 0.5 : 0.0);
-    
+
+            rs_gen_func_set(96, 1.0);
+            
             rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
-            rs_gen_tex_out_rgba(32+ch, 32+ch, 32+ch, 32+ch, colors_b[font_index_color], colors_g[font_index_color], colors_r[font_index_color], 1.0);
+            //rs_gen_tex_out_rgba(32+ch, 32+ch, 32+ch, 32+ch, colors_b[font_index_color], colors_g[font_index_color], colors_r[font_index_color], 1.0);
+            rs_gen_tex_out_rgba(96, 96, 96, 32+ch, colors_b[font_index_color], colors_g[font_index_color], colors_r[font_index_color], 1.0);
             
             texture_init(&game.tex_font[font_index_color*64 + ch], char_tex_size, char_tex_size);
             memcpy(game.tex_font[font_index_color*64 + ch].data, rs_gen_reg.tex_out, char_tex_size*char_tex_size*4 );
@@ -465,7 +468,13 @@ void game_textout(int x, int y, int font_index, char* s) {
     game_textout_adv(&game.framebuffer, x, y, font_index, DRAW_MODE_ALPHA, s);
 };
 
+void game_textout_at_center(int x, int y, int font_index, char *s) {
+    x += (GAME_WIDTH - game.tex_font[font_index*64].w*strlen(s))/2; 
+    game_textout_adv(&game.framebuffer, x, y, font_index, DRAW_MODE_ALPHA, s);
+};
+
 void game_textout_adv(rs_texture_t *dest, int x, int y, int font_index, int draw_mode, char* s) {
+    
 
     int i = 0;
     while (*s) {

@@ -31,7 +31,7 @@ void game_draw() {
             if (game.menu_index == MENU_MAIN) {
                     
                 if (game.status == STATUS_LOADING) {
-                    game_textout( GAME_WIDTH/2 - 192, 240, 0, "        L0ADING```      " );
+                    game_textout_at_center( 0, 240, 0, "L0ADING```" );
                 }
                 else {
 
@@ -39,17 +39,20 @@ void game_draw() {
 
                     if (game.time) {
                         
-                        game_textout( GAME_WIDTH/2 - 192, 230, 3, "     LEVEL PA55ED     " );
+                        game_textout_at_center( 0, 230, 0, "LEVEL PA55ED" );
+                        game_textout_at_center( -3, 230-2, 3, "LEVEL PA55ED" );
                         
-                        char s[] = "     TIME: 000         ";
+                        char s[] = "TIME: 000";
                         int time_sec = game.time / 25;
-                        s[11] = '0' + (( time_sec / 100 ) % 10);
-                        s[12] = '0' + (( time_sec / 10 ) % 10);
-                        s[13] = '0' + (( time_sec / 1 ) % 10);
-                        game_textout( GAME_WIDTH/2 - 192, 260, 3, s );
+                        s[6] = '0' + (( time_sec / 100 ) % 10);
+                        s[7] = '0' + (( time_sec / 10 ) % 10);
+                        s[8] = '0' + (( time_sec / 1 ) % 10);
+                        game_textout_at_center( 0, 260, 0, s );
+                        game_textout_at_center( -3, 260-2, 3, s );
                     };
 
-                    game_textout( GAME_WIDTH/2 - 192, 300, 0, "     CLICK T0 5TART     " );
+                    game_textout_at_center( 0, 300, 0, "CLICK T0 5TART" );
+                    game_textout_at_center( -3, 300-2, 3, "CLICK T0 5TART" );
                     
                     
                 };
@@ -95,13 +98,17 @@ void game_draw() {
             str[7] = '0' + ( (time_sec / 10) % 10);
             str[8] = '0' + ( (time_sec / 1) % 10);
             
+            game_textout( 56+3, 32+2, 0, str );
+//            game_textout( 56-1, 32-1, 0, str );
             game_textout( 56, 32, 3, str );
+            
             
             char sstr[] = "5C0RE: 000 0F 100   ";
             sstr[7] = '0' + ( (game.score / 100) % 10);
             sstr[8] = '0' + ( (game.score / 10) % 10);
             sstr[9] = '0' + ( (game.score / 1) % 10);
             
+            game_textout( 56+3, 64+2, 0, sstr );
             game_textout( 56, 64, 3, sstr );
    
         };
@@ -147,17 +154,28 @@ void game_textures_init_stage1() {
     rs_gen_term();
 
 
+    rs_texture_t tex_shadow;
+    texture_init(&tex_shadow, 64, 64);
+    rs_gen_init(1, 64);
+    rs_gen_func_perlin(0, 21, 6, 0.5, 1000);
+    rs_gen_func_normalize(0, 0.0, 0.5);
+    rs_gen_tex_out_rgba(0, 0, 0, -1, 1.0, 1.0, 1.0, 1.0);
+    memcpy(tex_shadow.data, rs_gen_reg.tex_out, 64*64*4 );
+    rs_gen_term();
+    
     
 
     texture_init(&game.tex_logo, GAME_WIDTH, 128);
     texture_clear(&game.tex_logo, COLOR_TRANSPARENT);
     
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192, 3, 1, DRAW_MODE_REPLACE, "MARBLE");
+    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192, 4, 1, DRAW_MODE_REPLACE, "MARBLE");
     game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192, 63, 1, DRAW_MODE_REPLACE, "MATCH3");
+    texture_draw(&game.tex_logo, &tex_shadow, 0, 0, DRAW_MODE_MULT | DRAW_TILED_FLAG);
+    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192 - 5, 0, 1, DRAW_MODE_ALPHA, "MARBLE");
+    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192 - 4, 60, 1, DRAW_MODE_ALPHA, "MATCH3");
     texture_draw(&game.tex_logo, &game.tex_clouds, 0, 0, DRAW_MODE_MULT | DRAW_TILED_FLAG);
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192 - 4, 0, 1, DRAW_MODE_MULT, "MARBLE");
-    game_textout_adv( &game.tex_logo, GAME_WIDTH/2 - 192 - 4, 60, 1, DRAW_MODE_MULT, "MATCH3");
     
+    texture_free(&tex_shadow);
 
     
     texture_init(&game.tex_bg, 512, 512);
