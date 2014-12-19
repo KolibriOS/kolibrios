@@ -3,10 +3,16 @@
 
 #include "defines.h"
 
+typedef struct {
+    __u32 score;
+    __u32 highscore;
+    __u32 value_map[BOARD_COUNT * BOARD_COUNT];
+} config_state;
+
 // Get saved highscore
-__u32 config_load_highscore();
+__u8 config_load(config_state* st);
 
 // Save current highscore
-void config_save_highscore(__u32 score);
+__u8 config_save(config_state* st);
 
 #endif // CONFIG_H

@@ -16,14 +16,12 @@ typedef struct {
 
 char path[] = "/sys/games/2048.dat";
 
-__u32 config_load_highscore()
+__u8 config_load(config_state* st)
 {
-    __u32 highscore = 0;
-
     fs_info cfg = {0};
     cfg.func = 0;
-    cfg.size = sizeof(__u32);
-    cfg.data = (char*)&highscore;
+    cfg.size = sizeof(config_state);
+    cfg.data = (char*)st;
     cfg.name = path;
 
     __u32 ret = 0;
@@ -34,17 +32,15 @@ __u32 config_load_highscore()
                          "b"((__u32)(&cfg)):
                          "memory");
 
-    if (ret || (rnum != 4)) highscore = 0;
-
-    return highscore;
+    return !ret || (rnum == cfg.size);
 }
 
-void config_save_highscore(__u32 score)
+__u8 config_save(config_state* st)
 {
     fs_info cfg = {0};
     cfg.func = 2;
-    cfg.size = sizeof(__u32);
-    cfg.data = (char*)&score;
+    cfg.size = sizeof(config_state);
+    cfg.data = (char*)st;
     cfg.name = path;
 
     __u32 ret = 0;
@@ -54,4 +50,6 @@ void config_save_highscore(__u32 score)
                          "a"(70),
                          "b"((__u32)(&cfg)):
                          "memory");
+
+    return !ret || (wnum == cfg.size);
 }

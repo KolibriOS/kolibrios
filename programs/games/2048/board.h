@@ -17,6 +17,10 @@ void board_redraw();
 // Return true if tile added, false - if no more place for tile
 __u8 board_add_random_tile();
 
+// Add one tile with needed value to needed position
+// No return value. Used for loading from file.
+void board_add_tile(__u32 value, __u16 index);
+
 // Check for available moves
 // Return true if board has moves, false - if not
 __u8 board_has_moves();

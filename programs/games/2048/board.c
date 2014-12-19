@@ -1,6 +1,8 @@
 #include "board.h"
 #include "config.h"
 
+__u8 board_need_config = true;
+
 rect base_cell = {0};
 tile null_tile = {0};
 
@@ -58,10 +60,6 @@ __u32 random_u32(__u32 max);
 
 void board_init(rect* r)
 {
-    __u32 high = config_load_highscore();
-    if (high > board.highscore)
-        board.highscore = high;
-
     // seed for random number generator
     srand(__menuet__getsystemclock());
 
@@ -87,10 +85,37 @@ void board_init(rect* r)
         board.tile_map[i] = null_tile;
     }
 
-    i = 0;
-    for (i = 0; i < START_COUNT; i++)
+    __u8 loaded = false;
+    __u8 empty_config = true;
+    if (board_need_config)
     {
-        board_add_random_tile();
+        board_need_config = false;
+        config_state state = {0};
+        loaded = config_load(&state);
+        if(loaded)
+        {
+            board.score = state.score;
+            board.highscore = state.highscore;
+
+            i = 0;
+            for (i = 0; i < BOARD_MAP_SIZE; i++)
+            {
+                if (state.value_map[i])
+                {
+                    empty_config = false;
+                    board_add_tile(state.value_map[i],i);
+                }
+            }
+        }
+    }
+
+    if (!loaded || empty_config)
+    {
+        i = 0;
+        for (i = 0; i < START_COUNT; i++)
+        {
+            board_add_random_tile();
+        }
     }
 
     board_redraw();
@@ -98,7 +123,14 @@ void board_init(rect* r)
 
 void board_delete()
 {
-    config_save_highscore(board.highscore);
+    config_state state = {0};
+    state.score = board.score;
+    state.highscore = board.highscore;
+    int i = 0;
+    for (i = 0; i < BOARD_MAP_SIZE; i++)
+        state.value_map[i] = board.tile_map[i].value;
+    config_save(&state);
+
     canvas_delete();
 }
 
@@ -351,19 +383,25 @@ __u8 board_add_random_tile()
     {
         __u16 rnd_av = random_u32(board.empty_count);
         rnd_av = board.empty_index[rnd_av];
+        __u32 rnd_value = (random_u32(10) < 9) ? 2 : 4;
 
-        tile* av_tile = &board.tile_map[rnd_av];
-        av_tile->value = (random_u32(10) < 9) ? 2 : 4;
-
-        av_tile->animate = true;
-        av_tile->ani_step = ANI_APPEAR_STEP;
-        av_tile->transition = position2cell(board_position(rnd_av));
-        av_tile->cell.x = av_tile->transition.x + base_cell.width / 2;
-        av_tile->cell.y = av_tile->transition.y + base_cell.height / 2;
-        av_tile->cell.width = 0;
-        av_tile->cell.height = 0;
+        board_add_tile(rnd_value,rnd_av);
     }
     return board.empty_count;
+}
+
+void board_add_tile(__u32 value, __u16 index)
+{
+    tile* av_tile = &board.tile_map[index];
+    av_tile->value = value;
+
+    av_tile->animate = true;
+    av_tile->ani_step = ANI_APPEAR_STEP;
+    av_tile->transition = position2cell(board_position(index));
+    av_tile->cell.x = av_tile->transition.x + base_cell.width / 2;
+    av_tile->cell.y = av_tile->transition.y + base_cell.height / 2;
+    av_tile->cell.width = 0;
+    av_tile->cell.height = 0;
 }
 
 __u8 board_has_moves()
