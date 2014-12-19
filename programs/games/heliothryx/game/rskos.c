@@ -1,6 +1,6 @@
 #include "rskos.h"
 
-#ifdef RS_LINUX
+#ifndef RS_KOS
 
 #include "rs/rstexture.h"
 #include "rs/rsgl.h"

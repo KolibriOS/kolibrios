@@ -4,6 +4,8 @@
 
 #include "rskos.h"
 
+#include "strings.h"
+
 PRSFUNC0 menu_actions[] = {
     /* a */ &menu_action_start,     
     /* b */ &menu_action_exit,
@@ -12,27 +14,38 @@ PRSFUNC0 menu_actions[] = {
 
 char window_scale_str[] = "c< 2X >";
 
+/*
+    First char:
+    - letter a...z means action (a = 0th, b = 1st, c = 2nd, see menu_actions[] above)
+    - number 0...9 means goto menu #0, #1, #2... see menu_titles[] below
+    - space ' ' means no action, menu item is unselectable
+    - empty string "" is now allowed and can cause segfault
+    String from second char is label of menu item
+
+*/
+
+
 char* menu_main_titles[] = {
-    "a5TART",
-    "15ETTING5",
-    "2ABOUT",
-    "bQUIT",
+    "a"L_START,
+    "1"L_SETTINGS,
+    "2"L_ABOUT,
+    "b"L_QUIT,
     0
 };
 
 char* menu_settings_titles[] = {
-    " WINDOW SCALE:",
+    " "L_WINDOW_SCALE,
     window_scale_str,
     " ",
-    "0DONE",
+    "0"L_DONE,
     0
 };
 
 char* menu_about_titles[] = {
-    " DEVELOPED BY",
-    " ROMAN SHUVALOV",
+    " "L_DEVELOPED_BY,
+    " "L_ROMAN_SHUVALOV,
     " ",
-    "0DONE",
+    "0"L_DONE,
     0
 };
 
@@ -113,7 +126,7 @@ void menu_action_start() {
 };
 
 void menu_action_exit() {
-    #ifndef RS_LINUX
+    #ifdef RS_KOS
         GameTerm();
     #endif
     rskos_exit();

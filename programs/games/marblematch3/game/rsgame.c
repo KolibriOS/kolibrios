@@ -242,7 +242,7 @@ void game_reg_init() {
     
     game.status = STATUS_LOADING;
 
-    game.window_scale = 1;
+//    game.window_scale = 1;
     
 //    game.window_scale = 2;
 //    #ifndef RS_KOS
@@ -451,9 +451,8 @@ void GameInit() {
     };
 //    memset( game.field, 0, FIELD_LENGTH );
     
-    game.scaled_framebuffer = malloc(GAME_WIDTH*game.window_scale * GAME_HEIGHT*game.window_scale * 3);
-    DEBUG10f("scaled framebuffer: %d (window_scale = %d) \n", game.window_scale * GAME_WIDTH * GAME_HEIGHT * 3, game.window_scale);
-    
+    game.bgr_framebuffer = malloc(GAME_WIDTH * GAME_HEIGHT * 3);
+
     game_font_init();
     
     game_textures_init_stage1();
@@ -574,12 +573,17 @@ void GameKeyDown(int key, int first) {
     if (game.status == STATUS_PLAYING) {
         
 
-        
-        if (key == RS_KEY_SPACE) {
-            
-            game.score = 101;
-            
-            
+        #ifndef RS_KOS
+            if (key == RS_KEY_SPACE) {
+                game.score = 101;
+            };
+        #endif
+
+        if (key == RS_KEY_ESCAPE) {
+            game.time = 0;
+            game.score = 0;
+            game.status = STATUS_MENU;
+            game.need_redraw = 1;
         };
         
     };
@@ -624,6 +628,13 @@ void GameMouseDown(int x, int y) {
     game.ty = y;
     
     if (game.status == STATUS_MENU) {
+            
+        int i;
+        for (i = 0; i < FIELD_LENGTH; i++) {
+            game.field[i] = (unsigned char) (0.99 * fabs(rs_noise(i, seed*7 + 10)) * CRYSTALS_COUNT) | CRYSTAL_VISIBLE_BIT;
+        };
+        
+        game.selected = 0;
         game.time = 0;
         game.score = 0;
         game.status = STATUS_PLAYING;

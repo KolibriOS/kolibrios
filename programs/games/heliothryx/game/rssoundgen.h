@@ -3,9 +3,7 @@
 
 #include "rsgame.h"
 
-/*
-
-#include "rs/rsaudio.h"
+//#include "rs/rsaudio.h"
 
 typedef struct rs_sgen_reg_t {
     int wave_length;
@@ -40,6 +38,6 @@ void rs_sgen_func_shift(int dest, int src);
 
 //void rs_gen_func_mult_add_value(int dest, int src, float val_mult, float val_add);
 
-*/
+
 
 #endif

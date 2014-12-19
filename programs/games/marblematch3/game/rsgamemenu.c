@@ -27,25 +27,25 @@ char window_scale_str[] = "c< 2X >";
 
 char* menu_main_titles[] = {
     "a"L_START,
-    "1"L_SETTINGS,
-    "2"L_ABOUT,
-    "b"L_QUIT,
+//    "1"L_SETTINGS,
+//    "2"L_ABOUT,
+//    "b"L_QUIT,
     0
 };
 
 char* menu_settings_titles[] = {
-    " "L_WINDOW_SCALE,
-    window_scale_str,
-    " ",
-    "0"L_DONE,
+//    " "L_WINDOW_SCALE,
+//    window_scale_str,
+//    " ",
+//    "0"L_DONE,
     0
 };
 
 char* menu_about_titles[] = {
-    " "L_DEVELOPED_BY,
-    " "L_ROMAN_SHUVALOV,
-    " ",
-    "0"L_DONE,
+//    " "L_DEVELOPED_BY,
+//    " "L_ROMAN_SHUVALOV,
+//    " ",
+//    "0"L_DONE,
     0
 };
 

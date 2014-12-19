@@ -24,6 +24,7 @@
 #endif
 
 
+
 rs_game_t game;
 
 
@@ -162,6 +163,24 @@ void soundbuf_sin_fade(rs_soundbuf_t *snd, float freq) {
     for (i = 0; i < snd->length_samples; i++) {
 		snd->data[i] = ( 1.0 - 1.0*i/snd->length_samples ) * sin( ( (1.0 - 0.48*i/snd->length_samples) * freq ) *i) * amp;
 	};
+	
+	
+	/*
+	
+	// ok
+	
+	rs_sgen_init(2, snd->length_samples);
+	rs_sgen_func_pm(1, 880.0, 21.0, 0.3, 110.0, 0.3);
+	rs_sgen_func_normalize(1, 1.0);
+	rs_sgen_func_lowpass(0, 1, 1.0, 0.0, 1.0);
+	rs_sgen_wave_out(0);
+	
+	memcpy(snd->data, rs_sgen_reg.wave_out, snd->length_samples*2 );
+	
+	rs_sgen_term();
+	
+	*/
+	
 	rskos_snd_update_buffer(&snd->hbuf, snd->data, snd->length_samples);
 };
 
@@ -196,9 +215,9 @@ void game_reg_init() {
     game.status = STATUS_MENU;
     
     game.window_scale = 2;
-    #ifdef RS_LINUX
+    #ifndef RS_KOS
         game.window_scale = 3;
-        window_scale_str[3] = '3';
+        window_scale_str[3] = '3'; 
     #endif
     
     game.keyboard_state = 0;
@@ -421,7 +440,7 @@ void GameInit() {
     rs_gen_term();
     
 
-    #ifdef RS_LINUX
+    #ifndef RS_KOS
         rs_audio_init(RS_AUDIO_FMT_MONO16, RS_AUDIO_FREQ_16000, 0); 
     #endif
 
@@ -446,7 +465,7 @@ void GameTerm() {
 
     DEBUG10("--- Game Term ---");
 
-    #ifdef RS_LINUX
+    #ifndef RS_KOS
         rs_audio_term();
     #endif
 
@@ -511,6 +530,7 @@ void GameKeyDown(int key, int first) {
 
                 if ( (game.menu_index == MENU_SETTINGS) && (game.menu_item_index == MENU_ITEM_WINDOW_SCALE) ) {
                     game_change_window_scale(-1);
+                    game_ding(1);
                 };
 
                 //PlayBuffer(hBuff, 0);
@@ -520,6 +540,7 @@ void GameKeyDown(int key, int first) {
                 
                 if ( (game.menu_index == MENU_SETTINGS) && (game.menu_item_index == MENU_ITEM_WINDOW_SCALE) ) {
                     game_change_window_scale(1);
+                    game_ding(1);
                 };
 
                 //StopBuffer(hBuff);
@@ -591,6 +612,16 @@ void GameKeyUp(int key) {
 
 };
 
+void GameMouseDown(int x, int y) {
+    game.tx = x;
+    game.ty = y;
+    DEBUG10f("Mouse Down %d, %d \n", x, y);
+};
+
+void GameMouseUp(int x, int y) {
+    //
+};
+
 
 void game_change_window_scale(int d) {
     int scale = window_scale_str[3] - '0';
@@ -621,6 +652,9 @@ void game_change_window_scale(int d) {
     rskos_resize_window( GAME_WIDTH * scale, GAME_HEIGHT * scale );
 
     window_scale_str[3] = scale + '0';
+    
+    
+    
 };
 
 void game_ding(int i) {

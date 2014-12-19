@@ -139,7 +139,7 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 
 typedef struct rs_game_t {
     rs_texture_t framebuffer; 
-    unsigned char *scaled_framebuffer; // 24-bit BGRBGRBGR... for direct drawing
+    unsigned char *bgr_framebuffer; // 24-bit BGRBGRBGR... for direct drawing
     
     int loader_counter;
     
@@ -167,7 +167,7 @@ typedef struct rs_game_t {
     int menu_index;
     int menu_item_index;
     
-    int window_scale;
+//    int window_scale;
     
     int process_timer;
     

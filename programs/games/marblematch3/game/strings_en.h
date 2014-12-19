@@ -6,25 +6,17 @@
 // Be careful, only specific chars are available to use
 // See readme for details
 
-// Main Menu
-#define L_START     "5TART"
-#define L_SETTINGS  "5ETTING5"
-#define L_ABOUT     "CREDITS"
-#define L_QUIT      "QUIT"
+// Lower 'xxx' is used to detect number position, it will be replaced by numbers
 
-// Settings menu
-#define L_WINDOW_SCALE  "WINDOW SCALE:"
-#define L_DONE      "DONE"
+#define L_LOADING   "L0ADING```"
 
-// About menu
-#define L_DEVELOPED_BY  "DEVELOPED BY"
-#define L_ROMAN_SHUVALOV    "ROMAN SHUVALOV"
+#define  L_START     "CLICK T0 5TART"
 
-// Main screen
+#define  L_TIME     "TIME:  xxx"
+#define  L_SCORE    "5C0RE: xxx 0F 100"
+
+#define  L_LEVEL_PASSED     "LEVEL PA55ED"
+
 #define L_BOTTOM_LINE_DEVELOPER_INFO    "DEVELOPER: ROMAN SHUVALOV` TOGLIATTI_ 2014"
-
-// Gameplay
-#define L_TECHDEMO_LINE1        "THIS IS TECHDEMO` "
-#define L_TECHDEMO_LINE2        "USE ARROWS TO MOVE_ <A> TO SHOOT_ <E5C> TO EXIT` "
 
 #endif

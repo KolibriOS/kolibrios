@@ -50,4 +50,7 @@ void  free(void* pointer);
 void*  memset(void *mem, int c, unsigned size);
 void*  memcpy(void *dst, const void *src, unsigned size);
 
+char*  strchr(char* s, int c);
+unsigned int strlen ( char * str );
+
 #endif

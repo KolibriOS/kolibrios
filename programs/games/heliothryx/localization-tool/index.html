@@ -1,0 +1,201 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>Heliothryx Localization Tool: Text Converter</title>
+
+	<script type="text/javascript">
+
+	/*
+
+	Russian (Cyrilic) match:
+
+	Б b
+	Г g
+	Д d
+	Ж j
+	З o
+	И i
+	Й ^
+	Л l
+	П n
+	Ф f
+	Ц c
+	Ч - (4)
+	Ш h
+	Щ m
+	Ъ [
+	Ы \\
+	Ь ]
+	Э e
+	Ю k
+	Я a
+
+	*/
+
+		function convert() {
+	
+			ar = new Array;
+		
+			ar["A"] = "A";
+			ar["B"] = "B";
+			ar["C"] = "C";
+			ar["D"] = "D";
+			ar["E"] = "E";
+			ar["F"] = "F";
+			ar["G"] = "G";
+			ar["H"] = "H";
+			ar["I"] = "I";
+			ar["J"] = "J";
+			ar["K"] = "K";
+			ar["L"] = "L";
+			ar["M"] = "M";
+			ar["N"] = "N";
+			ar["O"] = "0"; 
+			ar["P"] = "P";
+			ar["Q"] = "Q";
+			ar["R"] = "R";
+			ar["S"] = "5"; 
+			ar["T"] = "T";
+			ar["U"] = "U";
+			ar["V"] = "V";
+			ar["W"] = "W";
+			ar["X"] = "X";
+			ar["Y"] = "Y";
+			ar["Z"] = "Z";
+		
+			ar[" "] = " ";
+
+			ar["0"] = "0";
+			ar["1"] = "1";
+			ar["2"] = "2";
+			ar["3"] = "3";
+			ar["4"] = "4";
+			ar["5"] = "5";
+			ar["6"] = "6";
+			ar["7"] = "7";
+			ar["8"] = "8";
+			ar["9"] = "9";
+
+			ar[":"] = ":";
+			ar[";"] = ";";
+			ar["<"] = "<";
+			ar["-"] = "=";
+			ar[">"] = ">";
+			ar["?"] = "?";
+			ar["/"] = "@";
+			ar["_"] = "_"; // comma (,)
+			ar["`"] = "`"; // dot (.)
+		
+		
+
+			// CYRILIC		
+			ar["А"] = "A";
+			ar["Б"] = "b";
+			ar["В"] = "B";
+			ar["Г"] = "g";
+			ar["Д"] = "d";
+			ar["Е"] = "E";
+			ar["Ё"] = "E";
+			ar["Ж"] = "j";
+			ar["З"] = "3";
+			ar["И"] = "i";
+			ar["Й"] = "^";
+			ar["К"] = "K";
+			ar["Л"] = "l";
+			ar["М"] = "M";
+			ar["Н"] = "H";
+			ar["О"] = "0";
+			ar["П"] = "n";
+			ar["Р"] = "P";
+			ar["С"] = "C";
+			ar["Т"] = "T";
+			ar["У"] = "Y";
+			ar["Ф"] = "f";
+			ar["Х"] = "X";
+			ar["Ц"] = "c";
+			ar["Ч"] = "4";
+			ar["Ш"] = "h";
+			ar["Щ"] = "m";
+			ar["Ъ"] = "[";
+			ar["Ы"] = "\\\\";
+			ar["Ь"] = "]";
+			ar["Э"] = "e";
+			ar["Ю"] = "k";
+			ar["Я"] = "a";
+		
+			ar["("] = "<";
+			ar[")"] = ">";
+			ar[","] = "_";
+			ar["."] = "`";
+		
+		
+			s = document.getElementById("inp").value;
+		
+			s = s.toUpperCase();
+		
+			s2 = '';
+			error = '';
+		
+			for (i in s) {
+				if (ar[s[i]] != undefined) {
+					s2 += ar[s[i]];
+				}
+				else {
+					s2 += "`";
+					error = 1;
+				};
+			};
+		
+			document.getElementById("outp").value = s2;
+		
+			document.getElementById("outp2").innerHTML = error ? '(disallowed symbols has been replaced with dot)' : '';
+	
+	
+		};
+
+	</script>
+
+</head>
+
+<body>
+
+<h1>Heliothryx Localization Tool: Text Converter</h1>
+
+<img align="right" src="font.png" style="margin-right: 1em; margin-bottom: 1em;">
+
+
+<p>This is procedural font. To minimize program size, only necessary characters are implemented:</p>
+
+<p>
+<ul>
+	<li>Numbers;</li>
+	<li>Latin characters from A to Z;</li>
+	<li>Cyrilic (Russian) characters which can't be replaced by matching Latin characters or numeric symbols;</li>
+	<li>Some punctuation.</li>
+</ul>
+</p>
+
+<p>Actually this is part of ASCII table starting from '0' (0x30). </p>
+
+<p>Note that not all latin characters are in fact implemented, for example, 'S' can be successfully replaced by number 5, so other symbol are placed in place of 'S'. Some punctuation symbols are also replaced, for example, dot (.) in ASCII table have 0x2E code which is outside our range, so it is implemented in place of useless grave accent symbol (`). </p>
+
+<p>To make process of writing string constants easier, this tool has been made. Write any text to first field, hit Enter and take string that you can use in your code. If you try to use unsupported characters, they will be replaced by dot and you will get warning. </p>
+
+
+<div style="clear: both;">&nbsp;</div>
+
+<form>
+
+	<div style="border: 1px solid #99CCAA; padding: 8px; background-color: #CCFFDD; display: table;">
+		<input size=40 id="inp"> <input type="submit" value="Convert (Enter)" onclick="convert(); return false;"> <br>
+		<input size=40 id="outp"> <span style="color: red; font-weight: bold;" id="outp2"></span>
+	</div>
+
+</form>
+
+<small>Developed by: Roman Shuvalov</small>
+
+</body>
+
+</html>

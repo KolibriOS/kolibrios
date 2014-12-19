@@ -170,5 +170,24 @@ void* memcpy(void *dst, const void *src, unsigned size)
 }
 
 
+char*  strchr(char* s, int c) {
 
+	while (*s) {
+		if (*s == (char) c) {
+			return s;
+		};
+		s++;
+	};
+	return NULL;
+
+};
+
+unsigned int strlen ( char * str ) {
+	unsigned int len = 0;
+	while ( *str ) {
+		len++;
+		str++;
+	};
+	return len;
+};
 

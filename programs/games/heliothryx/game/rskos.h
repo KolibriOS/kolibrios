@@ -16,7 +16,7 @@ void rskos_exit();
 // sound
 
 #ifndef SNDBUF
-    #ifdef RS_LINUX
+    #ifndef RS_KOS
         #include "rs/rsaudio.h"
         typedef rs_sound_t* SNDBUF;
     #else 

@@ -40,43 +40,52 @@
 #define RS_KEY_X		45
 
 
+unsigned int get_time();
+
+
 typedef void RSFUNC0(); 
-typedef void RSFUNC1i(int);
+/*typedef void RSFUNC1i(int);
 typedef void RSFUNC2i(int,int);
-typedef void RSFUNC1i1f(int,float);
+typedef void RSFUNC1i1f(int,float); */
 
 typedef RSFUNC0 *PRSFUNC0;
-typedef RSFUNC1i *PRSFUNC1i;
+/*typedef RSFUNC1i *PRSFUNC1i;
 typedef RSFUNC2i *PRSFUNC2i;
-typedef RSFUNC1i1f *PRSFUNC1i1f;
+typedef RSFUNC1i1f *PRSFUNC1i1f;*/
 
-
+/*
 void NullFunc0();
 void NullFunc1i(int i);
 void NullFunc2i(int i, int j);
 void NullFunc1i1f(int i, float f);
 
+*/
 
 typedef struct rs_app_t {
 
     unsigned short app_time;
     unsigned short delta_time;
-
-    PRSFUNC2i OnSize;
+    
+    /*
 
     PRSFUNC2i OnKeyDown;
     PRSFUNC1i OnKeyUp;
+    
+    PRSFUNC2i OnMouseDown;
+    PRSFUNC2i OnMouseUp;
 
     PRSFUNC0 OnAppProcess;
     
     PRSFUNC0 rsAppOnInitDisplay;
     PRSFUNC0 rsAppOnTermDisplay;
+    
+    */
 
 } rs_app_t;
 
 extern rs_app_t rs_app;
 
-void rsAppZero();
+//void rsAppZero();
 
 
 

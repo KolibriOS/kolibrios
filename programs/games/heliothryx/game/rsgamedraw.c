@@ -6,7 +6,7 @@
 
 #include "rsnoise.h"
 
-
+#include "strings.h"
 
 
 void game_draw() {
@@ -76,9 +76,9 @@ void game_draw() {
                 texture_draw(&game.framebuffer, &game.tex_rocks[i], 250+80*rs_noise(i,150), 60+60*rs_noise(i,1110), DRAW_MODE_ADDITIVE );
             };
                 
-            game_textout( GAME_WIDTH/2 - 100, 40, 1,  "HELIOTHRYX");
-            game_textout( GAME_WIDTH/2 - 8, 58, 3,  "TECHDEMO");
-            game_textout( 2, GAME_HEIGHT-10, 2,  "DEVELOPER: ROMAN SHUVALOV` TOGLIATTI_ 2014");
+            game_textout( GAME_WIDTH/2 - 100, 40, 1,  "HELI0THRYX");
+            game_textout( GAME_WIDTH/2 - 8, 58, 3,  "TECHDEM0");
+            game_textout( 2, GAME_HEIGHT-10, 2,  L_BOTTOM_LINE_DEVELOPER_INFO);
         };
     
     }
@@ -100,8 +100,8 @@ void game_draw() {
             };
         };
         
-        game_textout( 2, 2, 2,  "THIS IS TECHDEMO` ");
-        game_textout( 2, 12, 2,  "USE ARROWS TO MOVE_ <A> TO SHOOT_ <ESC> TO EXIT` ");
+        game_textout( 2, 2, 2, L_TECHDEMO_LINE1 );
+        game_textout( 2, 12, 2, L_TECHDEMO_LINE2 );
         
     };
 

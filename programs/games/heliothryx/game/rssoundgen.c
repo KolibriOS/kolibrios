@@ -1,13 +1,17 @@
 #include "rssoundgen.h"
 
-/*
-
 #include "rsnoise.h"
 
 #include "rs/rsmx.h"
 
-#include <math.h>
-#include <string.h>
+
+#ifdef RS_KOS
+    #include "rs/rsplatform.h"
+#else
+    #include <stdlib.h>
+    #include <math.h>
+    #include <string.h>
+#endif
 
 rs_sgen_reg_t rs_sgen_reg;
 
@@ -454,4 +458,4 @@ void rs_sgen_func_shift(int dest, int src) {
     };
 };
 
-*/
+

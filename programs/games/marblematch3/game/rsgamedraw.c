@@ -31,7 +31,8 @@ void game_draw() {
             if (game.menu_index == MENU_MAIN) {
                     
                 if (game.status == STATUS_LOADING) {
-                    game_textout_at_center( 0, 240, 0, "L0ADING```" );
+                    game_textout_at_center( 0, 240, 0, L_LOADING );
+                    game_textout_at_center( -3, 240-2, 3, L_LOADING );
                 }
                 else {
 
@@ -39,25 +40,26 @@ void game_draw() {
 
                     if (game.time) {
                         
-                        game_textout_at_center( 0, 230, 0, "LEVEL PA55ED" );
-                        game_textout_at_center( -3, 230-2, 3, "LEVEL PA55ED" );
+                        game_textout_at_center( 0, 230, 0, L_LEVEL_PASSED );
+                        game_textout_at_center( -3, 230-2, 3, L_LEVEL_PASSED );
                         
-                        char s[] = "TIME: 000";
+                        char s[] = L_TIME;
                         int time_sec = game.time / 25;
-                        s[6] = '0' + (( time_sec / 100 ) % 10);
-                        s[7] = '0' + (( time_sec / 10 ) % 10);
-                        s[8] = '0' + (( time_sec / 1 ) % 10);
+                        char *str_num = strchr(s, 'x');
+                        str_num[0] = '0' + (( time_sec / 100 ) % 10);
+                        str_num[1] = '0' + (( time_sec / 10 ) % 10);
+                        str_num[2] = '0' + (( time_sec / 1 ) % 10);
                         game_textout_at_center( 0, 260, 0, s );
                         game_textout_at_center( -3, 260-2, 3, s );
                     };
 
-                    game_textout_at_center( 0, 300, 0, "CLICK T0 5TART" );
-                    game_textout_at_center( -3, 300-2, 3, "CLICK T0 5TART" );
+                    game_textout_at_center( 0, 300, 0, L_START );
+                    game_textout_at_center( -3, 300-2, 3, L_START );
                     
                     
                 };
                 
-                game_textout( 2, GAME_HEIGHT-10, 2,  "DEVEL0PED BY R0MAN 5HUVAL0V");
+                game_textout( 2, GAME_HEIGHT-10, 2,  L_BOTTOM_LINE_DEVELOPER_INFO);
             };
         
         }
@@ -92,21 +94,23 @@ void game_draw() {
             };
 
 
-            char str[] = "TIME: 999    ";
+            char str[] = L_TIME;
             int time_sec = game.time / 25;
-            str[6] = '0' + ( (time_sec / 100) % 10);
-            str[7] = '0' + ( (time_sec / 10) % 10);
-            str[8] = '0' + ( (time_sec / 1) % 10);
+            char *str_num = strchr(str, 'x'); 
+            str_num[0] = '0' + ( (time_sec / 100) % 10);
+            str_num[1] = '0' + ( (time_sec / 10) % 10);
+            str_num[2] = '0' + ( (time_sec / 1) % 10);
             
             game_textout( 56+3, 32+2, 0, str );
 //            game_textout( 56-1, 32-1, 0, str );
             game_textout( 56, 32, 3, str );
             
             
-            char sstr[] = "5C0RE: 000 0F 100   ";
-            sstr[7] = '0' + ( (game.score / 100) % 10);
-            sstr[8] = '0' + ( (game.score / 10) % 10);
-            sstr[9] = '0' + ( (game.score / 1) % 10);
+            char sstr[] = L_SCORE;
+            str_num = strchr(sstr, 'x'); 
+            str_num[0] = '0' + ( (game.score / 100) % 10);
+            str_num[1] = '0' + ( (game.score / 10) % 10);
+            str_num[2] = '0' + ( (game.score / 1) % 10);
             
             game_textout( 56+3, 64+2, 0, sstr );
             game_textout( 56, 64, 3, sstr );
@@ -115,7 +119,7 @@ void game_draw() {
 
 
 //        rskos_draw_area(0, 0, w, h, game.window_scale, game.framebuffer.data, NULL, RSKOS_BGRA);
-        rskos_draw_area(0, 0, w, h, game.window_scale, game.framebuffer.data, game.scaled_framebuffer, 0);
+        rskos_draw_area(0, 0, w, h, 1, game.framebuffer.data, game.bgr_framebuffer, 0);
 	};
 	
 	if (!continue_need_redraw) {
@@ -218,9 +222,9 @@ void game_textures_init_stage1() {
 //    float cr_g[CRYSTALS_COUNT] = { 0.1, 0.8, 0.5, 0.0, 0.7, 0.0, 0.8 };
 //    float cr_b[CRYSTALS_COUNT] = { 0.0, 0.1, 0.9, 0.8, 0.0, 0.5, 0.9 };
     
-    float cr_r[CRYSTALS_COUNT] = { 1.0, 0.4, 0.1, 0.9, 0.9, 0.2, 0.8 };
-    float cr_g[CRYSTALS_COUNT] = { 0.1, 1.0, 0.6, 0.1, 0.8, 0.2, 0.8 };
-    float cr_b[CRYSTALS_COUNT] = { 0.0, 0.1, 1.0, 1.0, 0.0, 0.9, 0.9 };
+    float cr_r[CRYSTALS_COUNT] = { 1.0, 0.4, 0.10, 0.9, 1.0, 0.2, 0.8 };
+    float cr_g[CRYSTALS_COUNT] = { 0.1, 1.0, 0.75, 0.1, 0.9, 0.2, 0.8 };
+    float cr_b[CRYSTALS_COUNT] = { 0.0, 0.1, 1.00, 1.0, 0.1, 0.9, 0.9 };
     
 
 //    rs_gen_init(5, CRYSTAL_SIZE);
@@ -357,7 +361,7 @@ void game_textures_init_stage2() {
 };
 
 void game_textures_free() {
-    free(game.scaled_framebuffer);
+    free(game.bgr_framebuffer);
     
     //    texture_free(&game.tex_gui_line);
     

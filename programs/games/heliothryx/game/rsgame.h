@@ -8,6 +8,14 @@
 
 */
 
+#ifndef RS_LINUX
+    #ifndef RS_WIN32
+        #ifndef RS_KOS
+            #error Please specify platform
+        #endif
+    #endif
+#endif
+
 
 #include "rskos.h"
 #include "rs/rsplatform.h"
@@ -181,6 +189,9 @@ void GameTerm();
 
 void GameKeyDown(int key, int first);
 void GameKeyUp(int key);
+
+void GameMouseDown(int x, int y);
+void GameMouseUp(int x, int y);
 
 void game_change_window_scale(int d);
 
