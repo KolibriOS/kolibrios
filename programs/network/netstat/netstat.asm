@@ -767,6 +767,10 @@ draw_interfaces:
         mov     ecx, eax
         dec     al
         mov     [last_device], al
+        cmp     [device], al
+        jbe     @f
+        mov     [device], 0
+  @@:
 
         xor     ebx, ebx        ; get device type
   .loop:
@@ -815,11 +819,11 @@ draw_interfaces:
 ; DATA AREA
 
 name            db 'Network status', 0
-mode            dw 101
-device          db 0
-last_device     db 0
-device_type     dd 0
-last            dd 0
+mode            dw 101          ; currently selected protocol
+device          db 1            ; currently selected device
+last_device     db ?            ; last device available
+device_type     dd ?
+last            dd ?
 modes           db 'Physical    IPv4      ARP       ICMP      UDP       TCP', 0
 
 str_packets_tx  db 'Packets sent:', 0
