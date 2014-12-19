@@ -58,7 +58,7 @@ start:
         call    [con_init]
 ; main loop
         cmp     byte[s], 0
-        jne     resolve
+        jne     parse_param
 
         push    str_welcome
         call    [con_write_asciiz]
@@ -90,7 +90,44 @@ main:
         mov     [stats.rx], 0
         mov     [stats.time], 0
 
-resolve:
+parse_param:
+        mov     [count], 4      ; default number of pings to send
+
+; Check if any additional parameters were given
+        mov     esi, s
+        mov     ecx, 1024
+  .addrloop:
+        lodsb
+        test    al, al
+        jz      .resolve
+        cmp     al, ' '
+        jne     .addrloop
+        mov     byte[esi-1], 0
+        jmp     .param
+
+  .param_loop:
+        lodsb
+        test    al, al
+        jz      .resolve
+        cmp     al, ' '
+        jne     .invalid
+  .param:
+        lodsb
+        cmp     al, '-'
+        jne     .invalid
+        lodsb
+        cmp     al, 't'
+        jne     @f
+        mov     [count], -1     ; infinite
+        jmp     .param_loop
+  @@:
+        ; implement more parameters here
+  .invalid:
+        push    str13
+        call    [con_write_asciiz]
+        jmp     main
+
+  .resolve:
 ; resolve name
         push    esp     ; reserve stack place
         push    esp     ; fourth parameter
@@ -131,8 +168,6 @@ resolve:
         mcall   40, 1 shl 7 ; + 7
 ;        call    [con_cls]
 
-        mov     [count], 4
-
         push    str3
         call    [con_write_asciiz]
 
@@ -144,13 +179,17 @@ resolve:
         call    [con_printf]
 
 mainloop:
+        call    [con_get_flags]
+        test    eax, 0x200                      ; con window closed?
+        jnz     exit_now
+
         inc     [stats.tx]
-        mcall   26,9
+        mcall   26, 9
         mov     [time_reference], eax
         mcall   send, [socketnum], icmp_packet, icmp_packet.length, 0
 
         mcall   23, 300 ; 3 seconds time-out
-        mcall   26,9
+        mcall   26, 9
         sub     eax, [time_reference]
         xor     edx, edx
         mov     cx, 10
@@ -217,9 +256,11 @@ mainloop:
   .continue:
         inc     [icmp_packet.seq]
 
+        cmp     [count], -1
+        je      .forever
         dec     [count]
         jz      done
-
+  .forever:
         mcall   5, 100  ; wait a second
 
         jmp     mainloop
@@ -258,7 +299,7 @@ fail2:
 exit:
         push    1
         call    [con_exit]
-
+exit_now:
         mcall   -1
 
 
@@ -273,6 +314,7 @@ str3b   db      ' with %u data bytes',10,0
 str4    db      10,0
 str5    db      'Name resolution failed.',10,0
 str6    db      'Could not open socket',10,0
+str13   db      'Invalid parameter(s)',10,0
 
 str11   db      'Answer: ',0
 str7    db      'bytes=%u seq=%u time=%u ms',10,0
@@ -317,7 +359,8 @@ import  console,        \
         con_gets,       'con_gets',\
         con_cls,        'con_cls',\
         con_getch2,     'con_getch2',\
-        con_set_cursor_pos, 'con_set_cursor_pos'
+        con_set_cursor_pos, 'con_set_cursor_pos',\
+        con_get_flags,  'con_get_flags'
 
 socketnum       dd ?
 
