@@ -9,22 +9,22 @@
 // Main Menu
 #define L_START     "5TART"
 #define L_SETTINGS  "5ETTING5"
-#define L_ABOUT     "CREDITS"
+#define L_ABOUT     "CREDIT5"
 #define L_QUIT      "QUIT"
 
 // Settings menu
-#define L_WINDOW_SCALE  "WINDOW SCALE:"
-#define L_DONE      "DONE"
+#define L_WINDOW_SCALE  "WIND0W 5CALE:"
+#define L_DONE      "D0NE"
 
 // About menu
-#define L_DEVELOPED_BY  "DEVELOPED BY"
-#define L_ROMAN_SHUVALOV    "ROMAN SHUVALOV"
+#define L_DEVELOPED_BY  "DEVEL0PED BY"
+#define L_ROMAN_SHUVALOV    "R0MAN 5HUVAL0V"
 
 // Main screen
-#define L_BOTTOM_LINE_DEVELOPER_INFO    "DEVELOPER: ROMAN SHUVALOV` TOGLIATTI_ 2014"
+#define L_BOTTOM_LINE_DEVELOPER_INFO    "DEVEL0PER: R0MAN 5HUVAL0V` T0GLIATTI_ 2014"
 
 // Gameplay
-#define L_TECHDEMO_LINE1        "THIS IS TECHDEMO` "
-#define L_TECHDEMO_LINE2        "USE ARROWS TO MOVE_ <A> TO SHOOT_ <E5C> TO EXIT` "
+#define L_TECHDEMO_LINE1        "THI5 I5 TECHDEM0` "
+#define L_TECHDEMO_LINE2        "U5E ARR0W5 T0 M0VE_ <A> T0 5H00T_ <E5C> T0 EXIT` "
 
 #endif
