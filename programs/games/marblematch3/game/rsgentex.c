@@ -285,7 +285,7 @@ void rs_gen_func_normalmap(int dest_r, int dest_g, int dest_b, int src, float k)
 //////        };
 //////    };
 
-    DEBUG10f("\n\nmax val %.3f \nmin %.3f \n", max_val, min_val);
+//    DEBUG10f("\n\nmax val %.3f \nmin %.3f \n", max_val, min_val);
 
 };
 

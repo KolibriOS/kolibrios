@@ -17,5 +17,5 @@ end
 
 CFLAGS = CFLAGS .. " -DRS_KOS -D" .. C_LANG .. " "
 
-compile_gcc{ "system/kolibri.c", "game/rs/rsmicrolibc.c", "game/rs/rsplatform_kos.c", "game/rs/rsmx.c", "game/rsnoise.c", "game/rsgentex.c",  "game/rsgame.c", "game/rsgamedraw.c", "game/rskos.c", "game/rsgametext.c", "game/rsgamemenu.c"}
+compile_gcc{ "system/kolibri.c", "game/rs/rsmicrolibc.c", "game/rs/rsplatform_kos.c", "game/rs/rsmx.c", "game/rsnoise.c", "game/rssoundgen.c", "game/rsgentex.c",  "game/rsgame.c", "game/rsgamedraw.c", "game/rskos.c", "game/rsgametext.c", "game/rsgamemenu.c"}
 link_gcc ("marblematch3")

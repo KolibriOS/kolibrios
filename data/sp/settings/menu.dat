@@ -36,6 +36,7 @@ Sudoku                    /sys/games/sudoku
 Go-moku                   /sys/games/gomoku
 Reversi                   /sys/games/reversi
 Pharaoh's crypt           /KolibriOS/games/fara/fara
+Marble Match-3            /KolibriOS/games/marblematch3/marblematch3
 Sokoban                   /KolibriOS/games/soko/soko
 #3 **** ARCADES ****
 Tetris                    /sys/games/tetris

@@ -28,39 +28,43 @@ void game_draw() {
                 
             texture_draw(&game.framebuffer, &game.tex_bg, 0, 0, DRAW_MODE_REPLACE);
             
-            if (game.menu_index == MENU_MAIN) {
-                    
-                if (game.status == STATUS_LOADING) {
-                    game_textout_at_center( 0, 240, 0, L_LOADING );
-                    game_textout_at_center( -3, 240-2, 3, L_LOADING );
-                }
-                else {
+                  
+            if (game.status == STATUS_LOADING) {
+                game_textout_at_center( 0, 240, 0, L_LOADING );
+                game_textout_at_center( -3, 240-2, 3, L_LOADING );
+            }
+            else {
 
-                    texture_draw( &game.framebuffer, &game.tex_logo, 0, 50, DRAW_MODE_ALPHA );
+                texture_draw( &game.framebuffer, &game.tex_logo, 0, 50, DRAW_MODE_ALPHA );
 
-                    if (game.time) {
-                        
-                        game_textout_at_center( 0, 230, 0, L_LEVEL_PASSED );
-                        game_textout_at_center( -3, 230-2, 3, L_LEVEL_PASSED );
-                        
-                        char s[] = L_TIME;
-                        int time_sec = game.time / 25;
-                        char *str_num = strchr(s, 'x');
-                        str_num[0] = '0' + (( time_sec / 100 ) % 10);
-                        str_num[1] = '0' + (( time_sec / 10 ) % 10);
-                        str_num[2] = '0' + (( time_sec / 1 ) % 10);
-                        game_textout_at_center( 0, 260, 0, s );
-                        game_textout_at_center( -3, 260-2, 3, s );
-                    };
-
-                    game_textout_at_center( 0, 300, 0, L_START );
-                    game_textout_at_center( -3, 300-2, 3, L_START );
+                if (game.score) {
                     
                     
+                    game_textout_at_center( 0, 230, 0, L_GAME_OVER );
+                    game_textout_at_center( -3, 230-2, 3, L_GAME_OVER );
+                    
+                    char s[] = L_SCORE;
+                    char *str_num;
+                    str_num = strchr(s, 'x'); 
+                    str_num[0] = '0' + ( (game.score / 100) % 10);
+                    str_num[1] = '0' + ( (game.score / 10) % 10);
+                    str_num[2] = '0' + ( (game.score / 1) % 10);
+                    
+                    game_textout_at_center( 0, 260, 0, s );
+                    game_textout_at_center( -3, 260-2, 3, s );
+
                 };
                 
-                game_textout( 2, GAME_HEIGHT-10, 2,  L_BOTTOM_LINE_DEVELOPER_INFO);
+                if (!game.menu_replay_timeout) {
+                    game_textout_at_center( 0, 300, 0, L_START );
+                    game_textout_at_center( -3, 300-2, 3, L_START );
+                };
+                
+                
             };
+            
+            game_textout( 2, GAME_HEIGHT-10, 2,  L_BOTTOM_LINE_DEVELOPER_INFO);
+
         
         }
         else {
@@ -94,16 +98,33 @@ void game_draw() {
             };
 
 
-            char str[] = L_TIME;
-            int time_sec = game.time / 25;
-            char *str_num = strchr(str, 'x'); 
-            str_num[0] = '0' + ( (time_sec / 100) % 10);
-            str_num[1] = '0' + ( (time_sec / 10) % 10);
-            str_num[2] = '0' + ( (time_sec / 1) % 10);
+
+            int blink_visible = 0;
+            if (game.time > 10*25) {
+                blink_visible = 1;
+            }
+            else if (game.time > 5*25) {
+                blink_visible = (game.time / 8) & 1;
+                continue_need_redraw = 1;
+            }
+            else {
+                blink_visible = (game.time / 4) & 1;
+                continue_need_redraw = 1;
+            };
             
-            game_textout( 56+3, 32+2, 0, str );
-//            game_textout( 56-1, 32-1, 0, str );
-            game_textout( 56, 32, 3, str );
+            char *str_num;
+            if (blink_visible) {
+
+                char str[] = L_TIME;
+                int time_sec = game.time / 25;
+                str_num = strchr(str, 'x'); 
+                str_num[0] = '0' + ( (time_sec / 10) % 10);
+                str_num[1] = '0' + ( (time_sec / 1) % 10);
+//                str_num[2] = '0' + ( (time_sec / 1) % 10);
+                
+                game_textout( 56+3, 32+2, 0, str );
+                game_textout( 56, 32, 3, str );
+            };
             
             
             char sstr[] = L_SCORE;

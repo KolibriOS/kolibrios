@@ -148,6 +148,10 @@ void soundbuf_init(rs_soundbuf_t *snd, int length_samples) {
     rskos_snd_create_buffer(&snd->hbuf, snd->data, length_samples);
 };
 
+void soundbuf_update(rs_soundbuf_t *snd) {
+    rskos_snd_update_buffer(&snd->hbuf, snd->data, snd->length_samples);
+};
+
 void soundbuf_free(rs_soundbuf_t *snd) {
     snd->status = 0;
     free(snd->data);
@@ -217,21 +221,27 @@ void game_reg_init() {
     
     game.loader_counter = 0;
     
+    game.menu_replay_timeout = 0;
+    
     game.process_timer = 0;
+    
+    game.sound_index = 0;
     
     game.need_redraw = 1;
     
     game.score = 0;
     game.time = 0;
+    
+//    game.game_mode = GAME_MODE_RAMPAGE;
 
     game.selected = 0;
     game.selected_x = game.selected_y = 0;
     
     game.explosions_count = 0;
     
-    game.tx = 0;
-    game.ty = 0;
-    game.tz = 0;
+//    game.tx = 0;
+//    game.ty = 0;
+//    game.tz = 0;
 
 //    int i;
 //    for (i = 0; i < BULLETS_COUNT; i++) {
@@ -252,8 +262,8 @@ void game_reg_init() {
     
     game.keyboard_state = 0;
     
-    game.menu_index = 0;
-    game.menu_item_index = 0;
+//    game.menu_index = 0;
+//    game.menu_item_index = 0;
 };
 
 
@@ -351,17 +361,27 @@ int game_check_and_explode() {
         };
     };
     
-    if (game.score > 99) {
-        game.status = STATUS_MENU;
-        game.need_redraw = 1;
-    };
+//    if (game.score > 99) {
+//        game.status = STATUS_MENU;
+//        game.need_redraw = 1;
+//    };
     
     if (found) {
         game.need_redraw = 1;
+        soundbuf_play(&game.sound_explosion[ game.sound_index ]);
+        game.sound_index = (game.sound_index+1) % SOUND_EXPLOSION_COUNT;
     };
     
     return found;
 };
+
+
+//void game_check_and_explode_rampage() {
+//    
+//    
+//    
+//};
+
 
 void game_fall() {
     int x, y, fall;
@@ -392,8 +412,85 @@ void GameProcess() {
         if (game.loader_counter == 2) {
                 
             game_textures_init_stage2();
-               
             
+            
+            // Sounds...
+            
+            int soundlen = 40555;
+            
+            int freqs[SOUND_EXPLOSION_COUNT] = { 440, 523, 587, 698, 783, 880, 1046, 1174 };
+            
+            int i;
+            for (i = 0; i < SOUND_EXPLOSION_COUNT; i++) {
+
+                soundbuf_init(&game.sound_explosion[i], soundlen);
+
+
+                rs_sgen_init(3, soundlen);
+
+                rs_sgen_func_noise(2, 1000);
+                rs_sgen_func_phaser(0, 2, 0.9, 15.2 + 1.0*i/SOUND_EXPLOSION_COUNT, 6.0, 3.0, 2000.0, 1.73); 
+                rs_sgen_func_normalize(0, 1.0);
+
+
+                rs_sgen_func_sin(1, freqs[i], 110.3);
+                rs_sgen_func_sin(2, 1.5*freqs[i], 110.2);
+
+                rs_sgen_func_add(0, 0, 1, 1.0, 0.2);
+                rs_sgen_func_add(0, 0, 2, 1.0, 0.2);
+
+                rs_sgen_func_lowpass(2, 0, 1.0, 0.0, 20.0);
+                rs_sgen_func_normalize(2, 1.0);
+
+                rs_sgen_wave_out(2);
+
+                memcpy(game.sound_explosion[i].data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+                soundbuf_update(&game.sound_explosion[i]);
+
+                rs_sgen_term();
+            
+            };
+            
+
+            soundlen = 1024;
+            
+            soundbuf_init(&game.sound_tick, soundlen);
+        //    soundbuf_init(&game.sound_tack, soundlen);
+            
+            rs_sgen_init(2, soundlen);
+            rs_sgen_func_noise(1, 1000);
+            
+            rs_sgen_func_highpass(0, 1, 0.05, 0.0, 16.0);
+            rs_sgen_func_normalize(0, 1.0);
+            rs_sgen_wave_out(0);
+            memcpy(game.sound_tick.data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+            soundbuf_update(&game.sound_tick);
+
+        //    rs_sgen_func_lowpass(0, 1, 0.5, 0.0, 22.0);
+        //    rs_sgen_func_normalize(0, 1.0);
+        //    rs_sgen_wave_out(0);
+        //    memcpy(game.sound_tack.data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+        //    soundbuf_update(&game.sound_tack);
+
+            rs_sgen_term();
+            
+            soundlen = 123000; 
+            
+            soundbuf_init(&game.sound_bang, soundlen);
+            rs_sgen_init(2, soundlen);
+            rs_sgen_func_pm(1, 220.0, 1.2, 1.0, 880.0*4, 1.0 );
+            rs_sgen_func_lowpass(0, 1, 1.0, 0.0, 15.0);
+            rs_sgen_func_normalize(0, 1.0);
+            rs_sgen_wave_out(0);
+            memcpy(game.sound_bang.data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+            soundbuf_update(&game.sound_bang);
+            
+            
+            soundbuf_init(&game.sound_click, 1024);
+            soundbuf_sin(&game.sound_click, 0.25);
+            
+              
+            soundbuf_play(&game.sound_bang); // <-- Loaded. Bang!
         
             game.status = STATUS_MENU;
             game.need_redraw = 1;
@@ -421,15 +518,38 @@ void GameProcess() {
             };
         };
         
-        if ((game.time+1)/25 != game.time/25) {
+        if ((game.time-1)/25 != game.time/25) {
             game.need_redraw = 1;
+            
+            if (game.time < 10*25) {
+                soundbuf_play(&game.sound_tick);
+            };
+            
         };
         
-        game.time++;
+        game.time--;
         
+        if (game.time < 1) {
+            // Game Over
+            game.status = STATUS_MENU;
+            game.need_redraw = 1;
+            soundbuf_play(&game.sound_bang);
+            
+            game.menu_replay_timeout = 40;
+        };
         
         
 
+    }
+    else if (game.status == STATUS_MENU) {
+        
+        if (game.menu_replay_timeout > 0) {
+            game.menu_replay_timeout--;
+            if (game.menu_replay_timeout == 1) {
+                game.menu_replay_timeout = 0;
+                game.need_redraw = 1;
+            };
+        };
     };
 
     game_draw();
@@ -463,17 +583,8 @@ void GameInit() {
         rs_audio_init(RS_AUDIO_FMT_MONO16, RS_AUDIO_FREQ_16000, 0); 
     #endif
 
-    soundbuf_init(&game.sound_test1, 2048);
-//    soundbuf_fill(&game.sound_test1, 2, 50);
-    soundbuf_sin_fade(&game.sound_test1, 0.7);
 
-    soundbuf_init(&game.sound_test2, 1024);
-    //soundbuf_fill(&game.sound_test2, 8, 40);
-    soundbuf_sin(&game.sound_test2, 0.48);
-
-    soundbuf_init(&game.sound_test3, 1024);
-    //soundbuf_fill(&game.sound_test3, 12, 60);
-    soundbuf_sin(&game.sound_test3, 0.24);
+    
 
 
 };
@@ -495,12 +606,16 @@ void GameTerm() {
     game_textures_free();
     
     
-    
+    int i;
 
+    for (i = 0; i < SOUND_EXPLOSION_COUNT; i++) {
+        soundbuf_free(&game.sound_explosion[i]);
+    };
     
-    soundbuf_free(&game.sound_test1);
-    soundbuf_free(&game.sound_test2);
-    soundbuf_free(&game.sound_test3);
+    soundbuf_free(&game.sound_click);
+    soundbuf_free(&game.sound_tick);
+//    soundbuf_free(&game.sound_tack);
+    soundbuf_free(&game.sound_bang);
     
 
 };
@@ -540,35 +655,35 @@ void GameKeyDown(int key, int first) {
     };
     
     
-    if (game.status == STATUS_MENU) {
-    
-        switch (key) {
-            case RS_KEY_LEFT:
-                BIT_SET(game.keyboard_state, RS_ARROW_LEFT_MASK);
-                //PlayBuffer(hBuff, 0);
-                break;
-            case RS_KEY_RIGHT:
-                BIT_SET(game.keyboard_state, RS_ARROW_RIGHT_MASK);
-                //StopBuffer(hBuff);
-                break;
-            case RS_KEY_UP:
-                BIT_SET(game.keyboard_state, RS_ARROW_UP_MASK);
-                menu_cursor_up();
-                //ResetBuffer(hBuff, 0);
-                break;
-            case RS_KEY_DOWN:
-                BIT_SET(game.keyboard_state, RS_ARROW_DOWN_MASK);
-                menu_cursor_down();
-                break;
-            case RS_KEY_RETURN:
-                menu_cursor_click();
-                break;
-            case RS_KEY_ESCAPE:
-                menu_open(0);
-                break;
-        };
-
-    };
+//    if (game.status == STATUS_MENU) {
+//    
+//        switch (key) {
+//            case RS_KEY_LEFT:
+//                BIT_SET(game.keyboard_state, RS_ARROW_LEFT_MASK);
+//                //PlayBuffer(hBuff, 0);
+//                break;
+//            case RS_KEY_RIGHT:
+//                BIT_SET(game.keyboard_state, RS_ARROW_RIGHT_MASK);
+//                //StopBuffer(hBuff);
+//                break;
+//            case RS_KEY_UP:
+//                BIT_SET(game.keyboard_state, RS_ARROW_UP_MASK);
+//                menu_cursor_up();
+//                //ResetBuffer(hBuff, 0);
+//                break;
+//            case RS_KEY_DOWN:
+//                BIT_SET(game.keyboard_state, RS_ARROW_DOWN_MASK);
+//                menu_cursor_down();
+//                break;
+//            case RS_KEY_RETURN:
+//                menu_cursor_click();
+//                break;
+//            case RS_KEY_ESCAPE:
+//                menu_open(0);
+//                break;
+//        };
+//
+//    };
     
     if (game.status == STATUS_PLAYING) {
         
@@ -577,6 +692,7 @@ void GameKeyDown(int key, int first) {
             if (key == RS_KEY_SPACE) {
                 game.score = 101;
             };
+            
         #endif
 
         if (key == RS_KEY_ESCAPE) {
@@ -585,6 +701,13 @@ void GameKeyDown(int key, int first) {
             game.status = STATUS_MENU;
             game.need_redraw = 1;
         };
+        
+        if (key == RS_KEY_A) {
+            soundbuf_play(&game.sound_bang);
+        };
+//        if (key == RS_KEY_Z) {
+//            soundbuf_play(&game.sound_tack);
+//        };
         
     };
 
@@ -621,23 +744,31 @@ typedef struct {
 
 void GameMouseDown(int x, int y) {
     
+    x = (signed short) x;
+    y = (signed short) y;
     
     game.need_redraw = 1;
     
-    game.tx = x;
-    game.ty = y;
+//    game.tx = x;
+//    game.ty = y;
     
     if (game.status == STATUS_MENU) {
             
-        int i;
-        for (i = 0; i < FIELD_LENGTH; i++) {
-            game.field[i] = (unsigned char) (0.99 * fabs(rs_noise(i, seed*7 + 10)) * CRYSTALS_COUNT) | CRYSTAL_VISIBLE_BIT;
+        if ( (!game.menu_replay_timeout) && (y > 0) ) {
+            
+            int i;
+            for (i = 0; i < FIELD_LENGTH; i++) {
+                game.field[i] = (unsigned char) (0.99 * fabs(rs_noise(i, seed*7 + 10)) * CRYSTALS_COUNT) | CRYSTAL_VISIBLE_BIT;
+            };
+            
+            game.sound_index = 0;
+            game.selected = 0;
+            game.time = 25*60 - 1;
+            game.score = 0;
+            game.status = STATUS_PLAYING;
+        
         };
         
-        game.selected = 0;
-        game.time = 0;
-        game.score = 0;
-        game.status = STATUS_PLAYING;
         return;
     };
     
@@ -655,49 +786,59 @@ void GameMouseDown(int x, int y) {
         
         //FIELD_ITEM(field_x, field_y) = 0;
         
-        if (!game.selected) {
-            game.selected = 1;
-            game.selected_x = field_x;
-            game.selected_y = field_y;                                                                      
-            
-        }
-        else {
-            
-            if ( abs(game.selected_x - field_x) + abs(game.selected_y - field_y) == 1 ) {
-                game.selected = 0;
-                
-                // Trying to swap
-                int temp_crystal = FIELD_ITEM(field_x, field_y);
-                FIELD_ITEM(field_x, field_y) = FIELD_ITEM(game.selected_x, game.selected_y);
-                FIELD_ITEM(game.selected_x, game.selected_y) = temp_crystal;
-                
-                if ( !game_check_and_explode() ) {
-                    FIELD_ITEM(game.selected_x, game.selected_y) = FIELD_ITEM(field_x, field_y);
-                    FIELD_ITEM(field_x, field_y) = temp_crystal;
-                }
-                else {
-                    // success
-                    game.process_timer = 0;
-                };
-                
+        
+//        if (game.game_mode == GAME_MODE_MATCH3) {
+        
+        
+            if (!game.selected) {
+                game.selected = 1;
+                game.selected_x = field_x;
+                game.selected_y = field_y;                                                                      
+                soundbuf_play(&game.sound_click);
             }
             else {
-                if ( (game.selected_x != field_x) && (game.selected_y != field_y) ) {
-                    game.selected_x = field_x;
-                    game.selected_y = field_y;
+                
+                if ( abs(game.selected_x - field_x) + abs(game.selected_y - field_y) == 1 ) {
+                    game.selected = 0;
+                    
+                    // Trying to swap
+                    int temp_crystal = FIELD_ITEM(field_x, field_y);
+                    FIELD_ITEM(field_x, field_y) = FIELD_ITEM(game.selected_x, game.selected_y);
+                    FIELD_ITEM(game.selected_x, game.selected_y) = temp_crystal;
+                    
+                    if ( !game_check_and_explode() ) {
+                        FIELD_ITEM(game.selected_x, game.selected_y) = FIELD_ITEM(field_x, field_y);
+                        FIELD_ITEM(field_x, field_y) = temp_crystal;
+                    }
+                    else {
+                        // success
+                        game.process_timer = 0;
+                    };
+                    
                 }
                 else {
-                    game.selected = 0;
+                    soundbuf_play(&game.sound_click);
+                    if ( (game.selected_x != field_x) && (game.selected_y != field_y) ) {
+                        game.selected_x = field_x;
+                        game.selected_y = field_y;
+                    }
+                    else {
+                        game.selected = 0;
+                        
+                    };
                 };
+                
             };
             
-        };
-        
-//        int i;
-//        for (i = field_y; i > 0; i--) {
-//            FIELD_ITEM(field_x, i) = FIELD_ITEM(field_x, (i-1) );
+//        } else if (game.mode == GAME_MODE_RAMPAGE) {
+//            
+//            game.selected = 1;
+//            game.selected_x = field_x;
+//            game.selected_y = field_y;   
+//            
+//            game_check_and_explode_rampage();
+//            
 //        };
-//        FIELD_ITEM(field_x, 0) = 0;
         
     };
     
@@ -712,10 +853,10 @@ void game_ding(int i) {
     
     switch (i) {
         case 0:
-            soundbuf_play(&game.sound_test2);
+//            soundbuf_play(&game.sound_test2);
             break;
         case 1:
-            soundbuf_play(&game.sound_test3);
+//            soundbuf_play(&game.sound_test3);
             break;
     };
     

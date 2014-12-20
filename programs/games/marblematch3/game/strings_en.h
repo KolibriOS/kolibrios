@@ -12,10 +12,10 @@
 
 #define  L_START     "CLICK T0 5TART"
 
-#define  L_TIME     "TIME:  xxx"
-#define  L_SCORE    "5C0RE: xxx 0F 100"
+#define  L_TIME     "TIME:  0:xx"
+#define  L_SCORE    "5C0RE: xxx"
 
-#define  L_LEVEL_PASSED     "LEVEL PA55ED"
+#define  L_GAME_OVER     "GAME 0VER"
 
 #define L_BOTTOM_LINE_DEVELOPER_INFO    "DEVELOPER: ROMAN SHUVALOV` TOGLIATTI_ 2014"
 

@@ -57,46 +57,46 @@ char **menu_titles[] = {
 };
 
 
-void menu_cursor_down() {
-    int new_index = game.menu_item_index+1;
-    while ( (menu_titles[game.menu_index][new_index]) ) {
-        if ((menu_titles[game.menu_index][new_index][0] != ' ')) {
-            game.menu_item_index = new_index;
-            game_ding(1);
-            return;
-        };
-        new_index++;
-    };
-};
+//void menu_cursor_down() {
+//    int new_index = game.menu_item_index+1;
+//    while ( (menu_titles[game.menu_index][new_index]) ) {
+//        if ((menu_titles[game.menu_index][new_index][0] != ' ')) {
+//            game.menu_item_index = new_index;
+//            game_ding(1);
+//            return;
+//        };
+//        new_index++;
+//    };
+//};
+//
+//void menu_cursor_up() {
+//    int new_index = game.menu_item_index-1;
+//    while ( new_index+1 ) {
+//        if ((menu_titles[game.menu_index][new_index][0] != ' ')) {
+//            game.menu_item_index = new_index;
+//            game_ding(1);
+//            return;
+//        };
+//        new_index--;
+//    };
+//};
 
-void menu_cursor_up() {
-    int new_index = game.menu_item_index-1;
-    while ( new_index+1 ) {
-        if ((menu_titles[game.menu_index][new_index][0] != ' ')) {
-            game.menu_item_index = new_index;
-            game_ding(1);
-            return;
-        };
-        new_index--;
-    };
-};
-
-void menu_open(int i) {
-    
-    game.menu_index = i;
-    
-    game.menu_item_index = -1;
-    // (menu_cursor_down without sound)
-    int new_index = game.menu_item_index+1;
-    while ( (menu_titles[game.menu_index][new_index]) ) {
-        if ((menu_titles[game.menu_index][new_index][0] != ' ')) {
-            game.menu_item_index = new_index;
-            return;
-        };
-        new_index++;
-    };
-    
-};
+//void menu_open(int i) {
+//    
+//    game.menu_index = i;
+//    
+//    game.menu_item_index = -1;
+//    // (menu_cursor_down without sound)
+//    int new_index = game.menu_item_index+1;
+//    while ( (menu_titles[game.menu_index][new_index]) ) {
+//        if ((menu_titles[game.menu_index][new_index][0] != ' ')) {
+//            game.menu_item_index = new_index;
+//            return;
+//        };
+//        new_index++;
+//    };
+//    
+//};
 
 void menu_cursor_click() {
     
@@ -107,8 +107,8 @@ void menu_cursor_click() {
 void menu_action_start() {
     game.status = STATUS_PLAYING;
     
-    game.tx = GAME_WIDTH/2 - 50;
-    game.ty = GAME_HEIGHT/2 - 10;
+//    game.tx = GAME_WIDTH/2 - 50;
+//    game.ty = GAME_HEIGHT/2 - 10;
     
 };
 

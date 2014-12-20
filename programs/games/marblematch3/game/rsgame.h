@@ -116,11 +116,11 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 
 #define GAME_SHOOT_PERIOD   3
 
-#define FIELD_WIDTH     10
+#define FIELD_WIDTH     11
 #define FIELD_HEIGHT    8
 #define FIELD_LENGTH    (FIELD_WIDTH * FIELD_HEIGHT)
 #define CRYSTAL_SIZE    40
-#define FIELD_X0     56
+#define FIELD_X0     36
 #define FIELD_Y0     128
 #define FIELD_ITEM(x,y)     (game.field[(y)*FIELD_WIDTH+(x)])
 
@@ -136,6 +136,11 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 //#define EXPLOSION_PACK(x,y,frame)   ( (x) | ( (y)<<8 ) |  (frame)<<16 )
 
 #define ANIMATION_PROCESS_TIMER_LIMIT   3
+
+#define SOUND_EXPLOSION_COUNT   8
+
+//#define GAME_MODE_MATCH3    0
+//#define GAME_MODE_RAMPAGE   1
 
 typedef struct rs_game_t {
     rs_texture_t framebuffer; 
@@ -156,24 +161,27 @@ typedef struct rs_game_t {
     
     rs_texture_t tex_font[64*FONTS_COUNT];
     
-    rs_soundbuf_t sound_test1;
-    rs_soundbuf_t sound_test2;
-    rs_soundbuf_t sound_test3;
+    int sound_index;
+    rs_soundbuf_t sound_explosion[SOUND_EXPLOSION_COUNT];
+    rs_soundbuf_t sound_tick;
+//    rs_soundbuf_t sound_tack;
+    rs_soundbuf_t sound_click;
+    rs_soundbuf_t sound_bang;
     
     int status;
+//    int game_mode;
+    int menu_replay_timeout;
     
     unsigned int keyboard_state;
     
-    int menu_index;
-    int menu_item_index;
-    
-//    int window_scale;
+//    int menu_index;
+//    int menu_item_index;
     
     int process_timer;
     
-    int tx;
-    int ty;
-    int tz;
+//    int tx;
+//    int ty;
+//    int tz;
     
     unsigned char *field;
     
