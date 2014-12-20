@@ -71,9 +71,6 @@ void canvas_draw_rect(rect *r, __u32 color)
 
 void canvas_draw_text(rect* r, char* txt, __u32 len, __u32 color)
 {
-    __u16 x = r->x + (r->width - len * FONT_WIDTH - len) / 2 - canvas.area.x;
-    __u16 y = r->y + (r->height - FONT_HEIGHT) / 2 - canvas.area.y;
-
     __u32 w;
     __u32 h;
     char* mem;
@@ -94,6 +91,9 @@ void canvas_draw_text(rect* r, char* txt, __u32 len, __u32 color)
                           "S"(len),
                           "D"((__u32)(mem)));
 
+    __u16 x = r->x + (r->width - (len * FONT_WIDTH + len) * 2) / 2 - canvas.area.x;
+    __u16 y = r->y + (r->height - FONT_HEIGHT * 2) / 2 - canvas.area.y;
+
     int row = 0;
     int column = 0;
     __u32* __mem = (__u32*)(mem + 8);
@@ -104,7 +104,11 @@ void canvas_draw_text(rect* r, char* txt, __u32 len, __u32 color)
             __u32 c = __mem[column + row * w];
             if (c & 0xFF000000)
             {
-                canvas.image[canvas_index(row + y,column + x)] = *((rgb*)&c);
+                canvas.image[canvas_index(row * 2 + y,column * 2 + x)] = *((rgb*)&c);
+                canvas.image[canvas_index(row * 2 + y,column * 2 + 1 + x)] = *((rgb*)&c);
+
+                canvas.image[canvas_index(row * 2 + 1 + y,column * 2 + x)] = *((rgb*)&c);
+                canvas.image[canvas_index(row * 2 + 1 + y,column * 2 + 1 + x)] = *((rgb*)&c);
             }
         }
     }
