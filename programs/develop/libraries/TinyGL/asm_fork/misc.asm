@@ -182,13 +182,14 @@ proc glopEnableDisable uses eax ebx ecx, context:dword, p:dword
 			and dword[eax+offs_cont_offset_states],not TGL_OFFSET_LINE
 		jmp .end_f
 	.polygon_offset_line: ;default:
-		cmp ebx,GL_LIGHT0
-		jl .els_0
-		cmp ebx,GL_LIGHT0+MAX_LIGHTS
-		jge .els_0 ;if (GL_LIGHT0 <= ebx < GL_LIGHT0+MAX_LIGHTS)
-			stdcall gl_enable_disable_light, eax,ebx-GL_LIGHT0,ecx
-			jmp .end_f
-		.els_0:
+	cmp ebx,GL_LIGHT0
+	jl .els_0
+	cmp ebx,GL_LIGHT0+MAX_LIGHTS
+	jge .els_0 ;if (GL_LIGHT0 <= ebx < GL_LIGHT0+MAX_LIGHTS)
+		sub ebx,GL_LIGHT0
+		stdcall gl_enable_disable_light, eax,ebx,ecx
+		jmp .end_f
+	.els_0:
 ;//fprintf(stderr,"glEnableDisable: 0x%X not supported.\n",code);
 	.end_f:
 	ret

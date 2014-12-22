@@ -137,11 +137,25 @@ endl
 
 	cmp dword[edx+offs_cont_lighting_enabled],0 ;if(context.lighting_enabled)
 	je @f
+if DEBUG ;context.matrix_stack_ptr[0]
+	stdcall gl_print_matrix,dword[edx+offs_cont_matrix_stack_ptr],4
+end if
 		; precompute inverse modelview
 		mov ebx,ebp
 		sub ebx,64
-		stdcall gl_M4_Inv, ebx, edx+offs_cont_matrix_stack_ptr
-		stdcall gl_M4_Transpose, edx+offs_cont_matrix_model_view_inv, ebx
+		stdcall gl_M4_Inv, ebx,dword[edx+offs_cont_matrix_stack_ptr]
+if DEBUG ;tmp
+	stdcall dbg_print,txt_sp,txt_nl
+	stdcall gl_print_matrix,ebx,4
+end if
+		push ebx
+		mov ebx,edx
+		add ebx,offs_cont_matrix_model_view_inv
+		stdcall gl_M4_Transpose, ebx
+if DEBUG ;context.matrix_model_view_inv
+	stdcall dbg_print,txt_sp,txt_nl
+	stdcall gl_print_matrix,ebx,4
+end if
 		jmp .end_if_0
 	@@:
 		mov ecx,edx
@@ -296,7 +310,7 @@ pushad
 		add edi,offs_cont_current_normal
 		mov edx,[v]
 
-		fld dword[edi+offs_X]
+		fld dword[edi] ;edi = &n
 		fld dword[edi+offs_Y]
 		fld dword[edi+offs_Z]
 
@@ -458,7 +472,6 @@ pushad
 	stdcall gl_vertex_transform, edx, ebx
 
 	; color
-
 	cmp dword[edx+offs_cont_lighting_enabled],0
 	je .els_0
 		stdcall gl_shade_vertex, edx,ebx

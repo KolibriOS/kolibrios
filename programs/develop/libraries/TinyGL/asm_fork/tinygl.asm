@@ -29,6 +29,7 @@ include 'ztriangle.asm'
 ;include 'image_util.asm'
 ;include 'msghandling.asm'
 include 'arrays.asm'
+include 'specbuf.asm'
 
 include 'kosgl.asm'
 include 'glu.asm'

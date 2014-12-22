@@ -70,7 +70,6 @@ pushad
 	.cycle_0: ;i
 		xor ebx,ebx
 		.cycle_1: ;j
-			finit
 			fldz ;sum=0
 			xor ecx,ecx
 			M4_reg edi,[a],eax,0
@@ -79,7 +78,7 @@ pushad
 				add edi,4
 				M4_reg esi,[b],ecx,ebx
 				fmul dword[esi]
-				fadd st0,st1 ;sum += a[i][k] * b[k][j]
+				faddp ;sum += a[i][k] * b[k][j]
 				inc ecx
 				cmp ecx,4
 				jl .cycle_2
@@ -91,7 +90,6 @@ pushad
 		inc eax
 		cmp eax,4
 		jl .cycle_0
-	finit
 if DEBUG ;gl_M4_Mul
 	stdcall dbg_print,f_m4m,txt_nl
 	stdcall gl_print_matrix,[c],4
@@ -187,13 +185,42 @@ endp
 ;        a->Z=b->m[2][0]*c->X+b->m[2][1]*c->Y+b->m[2][2]*c->Z;
 ;}
 
-;void gl_M4_MulV4(V4 *a,M4 *b,V4 *c)
-;{
-;        a->X=b->m[0][0]*c->X+b->m[0][1]*c->Y+b->m[0][2]*c->Z+b->m[0][3]*c->W;
-;        a->Y=b->m[1][0]*c->X+b->m[1][1]*c->Y+b->m[1][2]*c->Z+b->m[1][3]*c->W;
-;        a->Z=b->m[2][0]*c->X+b->m[2][1]*c->Y+b->m[2][2]*c->Z+b->m[2][3]*c->W;
-;        a->W=b->m[3][0]*c->X+b->m[3][1]*c->Y+b->m[3][2]*c->Z+b->m[3][3]*c->W;
-;}
+align 4
+proc gl_M4_MulV4 uses ebx ecx edx, a:dword, b:dword, c:dword ;V4 *a, M4 *b, V4 *c
+	mov ebx,[b]
+	mov edx,[c]
+	fld dword[edx]
+	fld dword[edx+4]
+	fld dword[edx+8]
+	fld dword[edx+12]
+	mov edx,[a]
+	mov ecx,4
+	.cycle_1:
+		fld dword[ebx]    ;st0 = m[_][0]
+		fmul st0,st4      ;st0 *= c.X
+		fld dword[ebx+4]  ;st0 = m[_][1]
+		fmul st0,st4      ;st0 *= c.Y
+		faddp
+		fld dword[ebx+8]  ;st0 = m[_][2]
+		fmul st0,st3      ;st0 *= c.Z
+		faddp
+		fld dword[ebx+12] ;st0 += m[_][3]
+		fmul st0,st2      ;st0 *= c.Z
+		faddp
+		fstp dword[edx]   ;a.X = b.m[_][0]*c.X +b.m[_][1]*c.Y +b.m[_][2]*c.Z +b.m[_][3]*c.W
+		add ebx,16 ;следущая строка матрицы
+		add edx,4  ;следущая координата вектора
+	loop .cycle_1
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ret
+endp
 
 ; transposition of a 4x4 matrix
 align 4
@@ -258,58 +285,219 @@ endp
 ; Note : m is destroyed
 
 align 4
-proc Matrix_Inv uses ecx, r:dword, m:dword, n:dword ;(float *r,float *m,int n)
-;        int i,j,k,l;
-;        float max,tmp,t;
+proc Matrix_Inv uses ebx ecx edx edi esi, r:dword, m:dword, n:dword ;(float *r,float *m,int n)
+locals
+	max dd ? ;float
+	tmp dd ?
+endl
 
-;        /* identitйe dans r */
-;        for(i=0;i<n*n;i++) r[i]=0;
-;        for(i=0;i<n;i++) r[i*n+i]=1;
-	 
-;        for(j=0;j<n;j++) {
-			
-;                       /* recherche du nombre de plus grand module sur la colonne j */
-;                       max=m[j*n+j];
-;                       k=j;
-;                       for(i=j+1;i<n;i++)
-;                               if (fabs(m[i*n+j])>fabs(max)) {
-;                                        k=i;
-;                                        max=m[i*n+j];
-;                               }
+	; identitйe dans r
+	mov eax,0.0
+	mov ecx,[n]
+	imul ecx,ecx
+	mov edi,[r]
+	rep stosd ;for(i=0;i<n*n;i++) r[i]=0
+	mov eax,1.0
+	xor ebx,ebx
+	mov edi,[r]
+	mov ecx,[n]
+	shl ecx,2
+	@@: ;for(i=0;i<n;i++)
+		cmp ebx,[n]
+		jge .end_0
+		stosd ;r[i*n+i]=1
+		add edi,ecx
+		inc ebx
+		jmp @b
+	.end_0:
 
-;      /* non intersible matrix */
-;      if (max==0) return 1;
+	; ebx -> n
+	; ecx -> j
+	; edx -> k
+	; edi -> i
+	; esi -> l
+	mov ebx,[n]
+	xor ecx,ecx
+	.cycle_0: ;for(j=0;j<n;j++)
+	cmp ecx,ebx
+	jge .cycle_0_end
+		; recherche du nombre de plus grand module sur la colonne j
+		mov eax,ecx
+		imul eax,ebx
+		add eax,ecx
+		shl eax,2
+		add eax,[m]
+		mov eax,[eax]
+		mov [max],eax ;max=m[j*n+j]
+		mov edx,ecx ;k=j
+		mov edi,ecx
+		inc edi
+		.cycle_1: ;for(i=j+1;i<n;i++)
+		cmp edi,ebx
+		jge .cycle_1_end
+			mov eax,edi
+			imul eax,ebx
+			add eax,ecx
+			shl eax,2
+			add eax,[m]
+			fld dword[eax]
+			fcom dword[max] ;if (fabs(m[i*n+j])>fabs(max))
+			fstsw ax
+			sahf
+			jbe @f
+				mov edx,edi ;k=i
+				fst dword[max]
+			@@:
+			ffree st0
+			fincstp
+		inc edi
+		jmp .cycle_1
+		.cycle_1_end:
 
-;                       /* permutation des lignes j et k */
-;                       if (k!=j) {
-;                                for(i=0;i<n;i++) {
-;                                               tmp=m[j*n+i];
-;                                               m[j*n+i]=m[k*n+i];
-;                                               m[k*n+i]=tmp;
-;                                               
-;                                               tmp=r[j*n+i];
-;                                               r[j*n+i]=r[k*n+i];
-;                                               r[k*n+i]=tmp;
-;                                }
-;                       }
+		; non intersible matrix
+		fld dword[max]
+		ftst ;if (max==0)
+		fstsw ax
+		ffree st0
+		fincstp
+		sahf
+		jne @f
+			xor eax,eax
+			inc eax
+			jmp .end_f ;return 1
+		@@:
 
-;                       /* multiplication de la ligne j par 1/max */
-;                       max=1/max;
-;                       for(i=0;i<n;i++) {
-;                                m[j*n+i]*=max;
-;                                r[j*n+i]*=max;
-;                       }
+		; permutation des lignes j et k
+		cmp ecx,edx ;if (j!=k)
+		je .cycle_2_end
+			xor edi,edi
+			.cycle_2: ;for(i=0;i<n;i++)
+			cmp edi,ebx
+			jge .cycle_2_end
+				;тут пока esi != l
+				mov eax,ecx
+				imul eax,ebx
+				add eax,edi
+				shl eax,2
+				add eax,[m]
+				mov esi,[eax]
+				mov [tmp],esi ;tmp=m[j*n+i]
+				mov esi,edx
+				imul esi,ebx
+				add esi,edi
+				shl esi,2
+				add esi,[m]
+				m2m dword[eax],dword[esi] ;m[j*n+i]=m[k*n+i]
+				mov eax,[tmp]
+				mov [esi],eax ;m[k*n+i]=tmp
 
-;                       for(l=0;l<n;l++) if (l!=j) {
-;                                t=m[l*n+j];
-;                                for(i=0;i<n;i++) {
-;                                               m[l*n+i]-=m[j*n+i]*t;
-;                                               r[l*n+i]-=r[j*n+i]*t;
-;                                }
-;                       }
-;        }
+				mov eax,ecx
+				imul eax,ebx
+				add eax,edi
+				shl eax,2
+				add eax,[r]
+				mov esi,[eax]
+				mov [tmp],esi ;tmp=r[j*n+i]
+				mov esi,edx
+				imul esi,ebx
+				add esi,edi
+				shl esi,2
+				add esi,[r]
+				m2m dword[eax],dword[esi] ;r[j*n+i]=r[k*n+i]
+				mov eax,[tmp]
+				mov [esi],eax ;r[k*n+i]=tmp
+			inc edi
+			jmp .cycle_2
+		.cycle_2_end:
 
-;        return 0;
+		; multiplication de la ligne j par 1/max
+		fld1
+		fdiv dword[max]
+		fst dword[max] ;max=1/max
+		xor edi,edi
+		mov eax,ecx
+		imul eax,ebx
+		shl eax,2
+		.cycle_3: ;for(i=0;i<n;i++)
+		cmp edi,ebx
+		jge .cycle_3_end
+			add eax,[m]
+			fld dword[eax]
+			fmul st0,st1
+			fstp dword[eax] ;m[j*n+i]*=max
+			sub eax,[m]
+			add eax,[r]
+			fld dword[eax]
+			fmul st0,st1
+			fstp dword[eax] ;r[j*n+i]*=max
+			sub eax,[r]
+			add eax,4
+		inc edi
+		jmp .cycle_3
+		.cycle_3_end:
+		ffree st0 ;max
+		fincstp
+
+		xor esi,esi
+		.cycle_4: ;for(l=0;l<n;l++)
+		cmp esi,ebx
+		jge .cycle_4_end
+			cmp esi,ecx ;if (l!=j)
+			je .cycle_5_end
+			mov eax,esi
+			imul eax,ebx
+			add eax,ecx
+			shl eax,2
+			add eax,[m]
+			fld dword[eax] ;t=m[l*n+j]
+			xor edi,edi
+			.cycle_5: ;for(i=0;i<n;i++)
+			cmp edi,ebx
+			jge .cycle_5_end
+				mov eax,ecx
+				imul eax,ebx
+				add eax,edi
+				shl eax,2
+				add eax,[m]
+				fld dword[eax]
+				fmul st0,st1
+				mov eax,esi
+				imul eax,ebx
+				add eax,edi
+				shl eax,2
+				add eax,[m]
+				fsub dword[eax]
+				fchs
+				fstp dword[eax] ;m[l*n+i]-=m[j*n+i]*t
+				mov eax,ecx
+				imul eax,ebx
+				add eax,edi
+				shl eax,2
+				add eax,[r]
+				fld dword[eax]
+				fmul st0,st1
+				mov eax,esi
+				imul eax,ebx
+				add eax,edi
+				shl eax,2
+				add eax,[r]
+				fsub dword[eax]
+				fchs
+				fstp dword[eax] ;r[l*n+i]-=r[j*n+i]*t
+			inc edi
+			jmp .cycle_5
+			.cycle_5_end:
+			ffree st0 ;t
+			fincstp
+		inc esi
+		jmp .cycle_4
+		.cycle_4_end:
+	inc ecx
+	jmp .cycle_0
+	.cycle_0_end:
+
+	xor eax,eax ;return 0
+	.end_f:
 	ret
 endp
 
@@ -409,12 +597,12 @@ align 4
 proc gl_V3_Norm uses ebx, a:dword
 	mov ebx,[a]
 	fld dword[ebx]
-	fmul dword[ebx]
+	fmul st0,st0
 	fld dword[ebx+4]
-	fmul dword[ebx+4]
+	fmul st0,st0
 	faddp
 	fld dword[ebx+8]
-	fmul dword[ebx+8]
+	fmul st0,st0
 	faddp
 	fsqrt ;st0 = sqrt(a.X^2 +a.Y^2 +a.Z^2)
 	fldz

@@ -47,6 +47,11 @@ struct GLSpecBuf
 	next dd ? ;struct GLSpecBuf*
 ends
 
+offs_spec_shininess_i equ 0
+offs_spec_last_used equ 4
+offs_spec_buf equ 8
+offs_spec_next equ 8+4*(SPECULAR_BUFFER_SIZE+1)
+
 struct GLLight
 	ambient V4
 	diffuse V4
