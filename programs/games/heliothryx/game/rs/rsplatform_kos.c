@@ -23,6 +23,10 @@ int dt = 1;
 int draw_dt = 1;
 int area_width = 160;
 int area_height = 160;
+
+int low_performance_counter = 0;
+
+int logic_halted = 0;
  
 int w_plus = 0;
  
@@ -76,10 +80,17 @@ void wnd_draw()
         tmp[5] = '0' + ( (fps/10) % 10 );
         tmp[6] = '0' + ( (fps) % 10 );
  
-        kol_wnd_define(100, 100, window_width, window_height, 0x74ddddff, 0x34ddddff, "HELLO WINDOW");
-        kol_wnd_caption(tmp);
-       
-        GameProcess();
+        
+        if (!logic_halted) {
+	        kol_wnd_define(100, 100, window_width, window_height, 0x74ddddff, 0x34ddddff, "Heliothryx");
+	        kol_wnd_caption(tmp);
+        	GameProcess();
+        }
+        else {
+	        kol_wnd_define(100, 100, window_width, window_height, 0x34ddddff, 0x34ddddff, "Heliothryx");
+	        //kol_paint_bar(0, 0, window_width, window_height, 0xffffffff);
+        	kol_paint_string(20, 20, "Performance is too low. Halted. ", 0x902222ff);
+        };
  
         kol_paint_end();
  
@@ -171,12 +182,16 @@ void kol_main()
                                         key = (key & 0xff00)>>8;       
                                         key_up = key & 0x80;                           
                                         key = key & 0x7F;
+                                        
+                                        if (!logic_halted) {
                                        
-                                        if (key_up) {
-                                                GameKeyUp(key, 1);
-                                        }
-                                        else {
-                                                GameKeyDown(key);
+		                                    if (key_up) {
+		                                            GameKeyUp(key, 1);
+		                                    }
+		                                    else {
+		                                            GameKeyDown(key);
+		                                    };
+                                        
                                         };
                                
                                         break;
@@ -232,6 +247,24 @@ void kol_main()
                         wait_time = 1;
                 };
                 kol_sleep(wait_time);
+                
+                if (draw_dt > 10) {
+                	low_performance_counter++;
+                }
+                else {
+                	low_performance_counter--;
+                	if (low_performance_counter < 0) {
+                		low_performance_counter = 0;
+                	};
+                };
+                
+                if (low_performance_counter > 6) {
+                	logic_halted = 1;
+                	window_width = 280;
+                	window_height = 80;
+                	kol_wnd_caption("Heliothryx");
+                	kol_wnd_resize(window_width, window_height);
+                };
  
  
         }
