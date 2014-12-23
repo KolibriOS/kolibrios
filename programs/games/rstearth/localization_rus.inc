@@ -4,14 +4,6 @@
 title:
 	db 'Ржавая Земля (Прототип 1.5) 23.12.2014',0
 ;---------------------------------------------------------------------
-main_menu_text_pointers:
-	dd menu_game_label
-	dd menu_settings_label
-	dd menu_credits_label
-	dd menu_help_label
-	dd menu_exit_label
-	dd 0
-;---------------------------------------------------------------------
 menu_game_label:
 	db 'ИГРА',0
 ;--------------------------------------

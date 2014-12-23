@@ -259,4 +259,12 @@ protagonist_position:
 .x	dd 4
 .y	dd 4
 ;---------------------------------------------------------------------
+main_menu_text_pointers:
+	dd menu_game_label
+	dd menu_settings_label
+	dd menu_credits_label
+	dd menu_help_label
+	dd menu_exit_label
+	dd 0
+;---------------------------------------------------------------------
 
