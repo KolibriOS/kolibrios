@@ -219,11 +219,14 @@ unsigned char clamp_byte(int value) {
 
 void game_reg_init() {
     
+
     game.loader_counter = 0;
     
     game.menu_replay_timeout = 0;
     
     game.process_timer = 0;
+    
+    game.hiscore = 0;
     
     game.sound_index = 0;
     
@@ -410,7 +413,15 @@ void GameProcess() {
     if (game.status == STATUS_LOADING) {
         game.loader_counter++;
         if (game.loader_counter == 2) {
-                
+            
+            // Hiscore file...
+            
+            rskos_file_load(HISCORE_FILENAME, (unsigned char*)&game.hiscore, 4);
+            
+            DEBUG10f("hiscore: %d \n", game.hiscore);
+            
+            // Textures...
+            
             game_textures_init_stage2();
             
             
@@ -533,6 +544,12 @@ void GameProcess() {
             // Game Over
             game.status = STATUS_MENU;
             game.need_redraw = 1;
+            
+            if (game.score > game.hiscore) {
+                game.hiscore = game.score;
+                rskos_file_save(HISCORE_FILENAME, (unsigned char*)&game.hiscore, 4);
+            };
+            
             soundbuf_play(&game.sound_bang);
             
             game.menu_replay_timeout = 40;
@@ -631,7 +648,7 @@ void GameKeyDown(int key, int first) {
     
     if (key == RS_KEY_A) {
     
-        game.need_redraw = 1;
+        game.time = 50;
         
     };    
     

@@ -17,6 +17,9 @@
 
 #define  L_GAME_OVER     "GAME 0VER"
 
+#define  L_HISCORE      "REC0RD: xxx"
+#define  L_NEW_HISCORE  "NEW REC0RD"
+
 #define L_BOTTOM_LINE_DEVELOPER_INFO    "DEVELOPER: ROMAN SHUVALOV` TOGLIATTI_ 2014"
 
 #endif

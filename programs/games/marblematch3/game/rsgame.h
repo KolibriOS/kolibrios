@@ -142,6 +142,12 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 //#define GAME_MODE_MATCH3    0
 //#define GAME_MODE_RAMPAGE   1
 
+#ifdef RS_KOS
+    #define HISCORE_FILENAME    "/sys/games/marble-hiscore.dat"
+#else
+    #define HISCORE_FILENAME    "marble-hiscore.dat"
+#endif
+
 typedef struct rs_game_t {
     rs_texture_t framebuffer; 
     unsigned char *bgr_framebuffer; // 24-bit BGRBGRBGR... for direct drawing
@@ -178,6 +184,8 @@ typedef struct rs_game_t {
 //    int menu_item_index;
     
     int process_timer;
+    
+    int hiscore;
     
 //    int tx;
 //    int ty;

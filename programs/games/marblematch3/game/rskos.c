@@ -104,6 +104,46 @@ void rskos_exit() {
     rsAppExit();
 };
 
+
+
+
+int rskos_file_save(char *filename, unsigned char *data, int length) {
+    FILE *fp;
+    
+    fp = fopen(filename, "w");
+    if (!fp) {
+        return 0;
+    };
+    
+    fwrite(data, 1, length, fp);
+    fclose(fp);
+    
+    return 1;
+    
+};
+
+int rskos_file_load(char *filename, unsigned char *data, int length) {
+    FILE *fp;
+    
+    fp = fopen(filename, "r");
+    if (!fp) {
+        return 0;
+    };
+    
+    fread(data, 1, length, fp);
+    fclose(fp);
+    
+    return 1;
+};
+
+
+
+
+
+
+
+
+
 //void rskos_snd_init() {
 //    //
 //    
@@ -142,11 +182,86 @@ void rskos_snd_stop(SNDBUF *hbuf) {
 #else
 
     #include "rs/rsplatform.h"
+    
+    
+    #pragma pack(push,1)
+     
+    typedef struct rskos_file_struct_t {
+        
+        unsigned int func_num;
+        unsigned int offset;
+        unsigned int flags;
+        unsigned int length;
+        unsigned char *data;
+        unsigned char  zero;
+        char *filename;
+        
+    } rskos_file_struct_t;
+     
+    #pragma pack(pop)    
+    
 
 
     unsigned int rskos_get_time() {
         return 1;
     };
+    
+    
+    
+
+    
+    
+    
+    
+     
+    int rskos_file_load(char *filename, unsigned char *data, int length) {
+ 
+//        char filename_abs[] = "/sys/games/************************";
+//        memcpy( filename_abs[ strchr(filename_abs, "*") ], filename, strlen(filename)+1 );
+        
+        rskos_file_struct_t file_struct;
+        file_struct.func_num = 0;
+        file_struct.offset = 0;
+        file_struct.flags = 0;
+        file_struct.length = length;
+        file_struct.data = data;
+        file_struct.zero = 0;
+        file_struct.filename = filename;
+     
+        asm volatile ("int $0x40"::"a"(70), "b"(&file_struct) : "memory");
+        
+        return 1;
+    }
+    
+    
+    
+    int rskos_file_save(char *filename, unsigned char *data, int length) {
+
+//        char filename_abs[] = "/sys/games/************************";
+//        memcpy( filename_abs[ strchr(filename_abs, "*") ], filename, strlen(filename)+1 );
+        
+        rskos_file_struct_t file_struct;
+        file_struct.func_num = 2;
+        file_struct.offset = 0;
+        file_struct.flags = 0;
+        file_struct.length = length;
+        file_struct.data = data;
+        file_struct.zero = 0;
+        file_struct.filename = filename;
+     
+        asm volatile ("int $0x40"::"a"(70), "b"(&file_struct) : "memory" );
+        
+        return 1;
+    }
+    
+
+    
+    
+
+    
+    
+    
+    
 
     void rskos_draw_area(int x, int y, int w, int h, int k_scale, unsigned char *data, unsigned char *scaled_buffer, int image_format) {
 

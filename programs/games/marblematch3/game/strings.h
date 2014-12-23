@@ -2,7 +2,7 @@
 #define RS_STRINGS_H
 
 #ifndef RS_KOS
-	#include "strings_en.h" 
+	#include "strings_ru.h" 
 #else
 	
 	#ifdef LANG_RU

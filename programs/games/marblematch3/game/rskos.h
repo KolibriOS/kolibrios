@@ -16,6 +16,11 @@ void rskos_get_screen_size(unsigned int *pw, unsigned int *ph);
 
 void rskos_exit();
 
+// files
+
+int rskos_file_save(char *filename, unsigned char *data, int length);
+int rskos_file_load(char *filename, unsigned char *data, int length);
+
 // sound
 
 #ifndef SNDBUF

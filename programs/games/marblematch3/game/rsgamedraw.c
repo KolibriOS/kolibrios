@@ -52,12 +52,39 @@ void game_draw() {
                     
                     game_textout_at_center( 0, 260, 0, s );
                     game_textout_at_center( -3, 260-2, 3, s );
+                    
+                    if (game.score == game.hiscore) {
+                        game_textout_at_center( 0, 290, 0, L_NEW_HISCORE);
+                        game_textout_at_center( -3, 290-2, 3, L_NEW_HISCORE );
+                    }
+                    else {
+                        char hs[] = L_HISCORE;
+                        str_num = strchr(hs, 'x'); 
+                        str_num[0] = '0' + ( (game.hiscore / 100) % 10);
+                        str_num[1] = '0' + ( (game.hiscore / 10) % 10);
+                        str_num[2] = '0' + ( (game.hiscore / 1) % 10);
+                        game_textout_at_center( 0, 290, 0, hs);
+                        game_textout_at_center( -3, 290-2, 3, hs );
+                    };
 
+
+                }
+                else {
+                    if (game.hiscore) {
+                        char *str_num;
+                        char hs[] = L_HISCORE;
+                        str_num = strchr(hs, 'x'); 
+                        str_num[0] = '0' + ( (game.hiscore / 100) % 10);
+                        str_num[1] = '0' + ( (game.hiscore / 10) % 10);
+                        str_num[2] = '0' + ( (game.hiscore / 1) % 10);
+                        game_textout_at_center( 0, 230, 0, hs);
+                        game_textout_at_center( -3, 230-2, 3, hs );
+                    };
                 };
                 
                 if (!game.menu_replay_timeout) {
-                    game_textout_at_center( 0, 300, 0, L_START );
-                    game_textout_at_center( -3, 300-2, 3, L_START );
+                    game_textout_at_center( 0, 400, 0, L_START );
+                    game_textout_at_center( -3, 400-2, 3, L_START );
                 };
                 
                 
