@@ -347,25 +347,30 @@ endp
 align 4
 fl_1e_3 dd 1.0e-3
 
+if DEBUG
+txt_mate db 'Material',0
+txt_colo db 'Color',0
+end if
+
 ; non optimized lightening model
 align 4
 proc gl_shade_vertex, context:dword, v:dword
 locals
-	R dd ? ;float
-	G dd ? ;float
-	B dd ? ;float
-	A dd ? ;float
-	s V3
-	d V3
-	dist dd ? ;float
-	tmp dd ? ;float
-	att dd ? ;float
-	dot_spot dd ? ;float
-	lR dd ? ;float
-	lB dd ? ;float
-	lG dd ? ;float
-	twoside dd ? ;int
-	idx dd ? ;int
+	R dd ? ;float ebp-100
+	G dd ? ;float ebp-96
+	B dd ? ;float ebp-92
+	A dd ? ;float ebp-88
+	s V3 ;ebp-84
+	d V3 ;ebp-72
+	dist dd ? ;float ebp-60
+	tmp dd ? ;float ebp-56
+	att dd ? ;float ebp-52
+	dot_spot dd ? ;float ebp-48
+	lR dd ? ;float ebp-44
+	lB dd ? ;float ebp-40
+	lG dd ? ;float ebp-36
+	twoside dd ? ;int ebp-32
+	idx dd ? ;int ebp-28
 	n V3 ;ebp-24
 	vcoord V3 ;ebp-12
 endl
@@ -386,6 +391,20 @@ pushad
 	movsd ;n.Y=v.normal.Y
 	movsd ;n.Z=v.normal.Z
 	mov esi,[v]
+
+if DEBUG ;offs_mate_emission, offs_mate_ambient, offs_mate_specular, offs_mate_diffuse
+push ecx
+	stdcall dbg_print,txt_mate,txt_nl
+	add ecx,offs_mate_emission
+	stdcall gl_print_matrix,ecx,1
+	add ecx,offs_mate_ambient-offs_mate_emission
+	stdcall gl_print_matrix,ecx,1
+	add ecx,offs_mate_specular-offs_mate_ambient
+	stdcall gl_print_matrix,ecx,1
+	add ecx,offs_mate_diffuse-offs_mate_specular
+	stdcall gl_print_matrix,ecx,1
+pop ecx
+end if
 
 	fld dword[edx+offs_cont_ambient_light_model]
 	fmul dword[ecx+offs_mate_ambient]
@@ -409,7 +428,7 @@ pushad
 
 		; ambient
 		fld dword[ecx+offs_mate_ambient]
-		fmul dword[ebx+offs_ligh_ambient]
+		fmul dword[ebx] ;offs_ligh_ambient=0
 		fstp dword[lR] ;lR=l.ambient.v[0] * m.ambient.v[0]
 		fld dword[ecx+offs_mate_ambient+4]
 		fmul dword[ebx+offs_ligh_ambient+4]
@@ -658,7 +677,7 @@ pushad
 				; testing specular buffer code
 				; dot_spec= pow(dot_spec,m.shininess)
 				stdcall specbuf_get_buffer, edx, dword[ecx+offs_mate_shininess_i], dword[ecx+offs_mate_shininess]
-				;eax = specbuf
+				mov edi,eax ;edi = specbuf
 				mov dword[idx],SPECULAR_BUFFER_SIZE
 				fild dword[idx]
 				fld1
@@ -673,21 +692,21 @@ pushad
 				ffree st0 ;dot_spec
 				fincstp
 				shl dword[idx],2
-				add eax,dword[idx]
-				fld dword[eax+offs_spec_buf] ;dot_spec = specbuf.buf[idx]
+				add edi,dword[idx]
+				fld dword[edi+offs_spec_buf] ;dot_spec = specbuf.buf[idx]
 				fld dword[ebx+offs_ligh_specular]
 				fmul st0,st1
 				fmul dword[ecx+offs_mate_specular]
 				fadd dword[lR]
 				fstp dword[lR] ;lR+=dot_spec * l.specular.v[0] * m.specular.v[0]
-				fld dword[ebx+offs_ligh_specular+offs_Y]
+				fld dword[ebx+offs_ligh_specular+4]
 				fmul st0,st1
-				fmul dword[ecx+offs_mate_specular+offs_Y]
+				fmul dword[ecx+offs_mate_specular+4]
 				fadd dword[lG]
 				fstp dword[lG] ;lG+=dot_spec * l.specular.v[1] * m.specular.v[1]
-				fld dword[ebx+offs_ligh_specular+offs_Z]
+				fld dword[ebx+offs_ligh_specular+8]
 				fmul st0,st1
-				fmul dword[ecx+offs_mate_specular+offs_Z]
+				fmul dword[ecx+offs_mate_specular+8]
 				fadd dword[lB]
 				fstp dword[lB] ;lB+=dot_spec * l.specular.v[2] * m.specular.v[2]
 				ffree st0 ;dot_spec
@@ -725,6 +744,13 @@ pushad
 	mov [esi+offs_vert_color+8],eax ;v.color.v[2]=clampf(B,0,1)
 	mov eax,[A]
 	mov [esi+offs_vert_color+12],eax ;v.color.v[3]=A
+if DEBUG ;offs_vert_color
+push esi
+	stdcall dbg_print,txt_colo,txt_nl
+	add esi,offs_vert_color
+	stdcall gl_print_matrix,esi,1
+pop esi
+end if
 popad
 	ret
 endp

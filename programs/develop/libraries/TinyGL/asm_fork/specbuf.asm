@@ -10,6 +10,8 @@ endl
 	fld1
 	fidiv dword[f_inc]
 	fstp dword[f_inc] ;f_inc = 1.0f/SPECULAR_BUFFER_SIZE
+	mov ebx,[buf]
+	add ebx,offs_spec_buf
 	xor ecx,ecx
 align 4
 	.cycle_0: ;for (i = 0; i <= SPECULAR_BUFFER_SIZE; i++)
@@ -30,11 +32,8 @@ align 4
 		fxch st1
 		fstp st ;Результат остается на вершине стека st0
 
-		mov ebx,ecx
-		shl ebx,2
-		add ebx,offs_spec_buf
-		add ebx,[buf]
 		fstp dword[ebx] ;buf.buf[i] = pow(val, shininess)
+		add ebx,4
 
 		fld dword[val]
 		fadd dword[f_inc]

@@ -59,7 +59,9 @@ endl
 		sub edi,16 ;edi = &q[3]
 		mov ecx,4
 		rep movsd
-		stdcall glopMaterial, eax,[q]
+		;mov edi,ebp
+		sub edi,28 ;edi = &q
+		stdcall glopMaterial, eax,edi
 	@@:
 	ret
 endp
