@@ -267,4 +267,25 @@ main_menu_text_pointers:
 	dd menu_exit_label
 	dd 0
 ;---------------------------------------------------------------------
-
+menu_credits_text_pointers:
+	dd menu_credits_text.1
+	dd menu_credits_text.2
+	dd menu_credits_text.3
+	dd menu_credits_text.4
+	dd menu_credits_text.5
+	dd menu_credits_text.6
+	dd 0
+;---------------------------------------------------------------------
+menu_help_text_pointers:
+	dd menu_help_text.1
+	dd menu_help_text.2
+	dd menu_help_text.3
+	dd menu_help_text.4
+	dd 0
+;---------------------------------------------------------------------
+settings_menu_text_pointers:
+	dd menu_settings_sound_label
+	dd menu_settings_music_label
+	dd menu_setting_exit
+	dd 0
+;---------------------------------------------------------------------

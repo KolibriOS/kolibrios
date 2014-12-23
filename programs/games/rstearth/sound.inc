@@ -144,6 +144,14 @@ snd_wave_out_fail:
 	ret
 ;------------------------------------------------------------------------------
 snd_background_music_thread_start:
+	cmp	[music_flag],1
+	je	@f
+	
+	mcall	5,50
+	mcall	68,1
+	jmp	snd_background_music_thread_start
+;--------------------------------------		
+@@:
 	mov	eax,[background_music]
 	mov	ebp,[hBuff1]
 	call	wave_out
@@ -151,6 +159,9 @@ snd_background_music_thread_start:
 ;	mcall	-1
 ;------------------------------------------------------------------------------
 snd_kick_action:
+	cmp	[sounds_flag],1
+	jne	@f
+
 	cmp	[snd_kick_flag],1
 	je	@f
 

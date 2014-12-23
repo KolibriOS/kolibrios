@@ -98,6 +98,8 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[wav_for_test_end],ebx
 	call	initialize_sound_system
 	
+	mov	[sounds_flag],1
+	mov	[music_flag],1
 	mcall	51,1,snd_background_music_thread_start,snd_background_music_thread_stack
 ;---------------------------------------------------------------------
 menu_still:

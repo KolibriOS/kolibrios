@@ -7,8 +7,11 @@ current_cell_NPC	rb 1
 death_of_protagonist	rb 1
 target_detected		rb 1
 sound_flag		rb 1
+sounds_flag		rb 1
+music_flag		rb 1
 snd_kick_flag		rb 1
 main_menu_pointer	rb 1
+settings_menu_pointer	rb 1
 ;---------------------------------------------------------------------
 align 4
 N_error		rd 1
@@ -39,6 +42,9 @@ action_cell_x		rd 1
 action_cell_y		rd 1
 target_action_cell_x	rd 1
 target_action_cell_y	rd 1
+;------------------------------------------------------------------------------
+menu_text_pointers	rd 1
+text_step_Y		rd 1
 ;------------------------------------------------------------------------------
 align 4 
 version		rd 1	; версия интерфейса, текущая 0x0101
