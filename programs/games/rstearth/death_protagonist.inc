@@ -28,14 +28,18 @@ death_of_protagonist_start:
 	jnz	.still
 
 	cmp	ah,0xE0
-	jne	start_level_0
+	jne	.menu_still	; start_level_0
 
 	mov	[extended_key],1
 	jmp	.still
 ;---------------------------------------------------------------------
 .extended_key:
 	mov	[extended_key],0
-	jmp	start_level_0
+	jmp	.menu_still	; start_level_0
+;---------------------------------------------------------------------
+.menu_still:
+	mcall	5,200
+	jmp	menu_still
 ;---------------------------------------------------------------------
 .button:
 	mcall	17

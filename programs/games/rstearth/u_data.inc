@@ -8,6 +8,7 @@ death_of_protagonist	rb 1
 target_detected		rb 1
 sound_flag		rb 1
 snd_kick_flag		rb 1
+main_menu_pointer	rb 1
 ;---------------------------------------------------------------------
 align 4
 N_error		rd 1

@@ -243,11 +243,6 @@ error_fs_text_9:	db '9 - FAT table is destroyed',0
 error_fs_text_10:	db '10 - Access denied',0
 error_fs_text_11:	db '11 - Device error',0
 ;---------------------------------------------------------------------
-lsz title,\
-  ru,'Ржавая Земля (Прототип 1.4) 21.12.2014',\
-  en,'Rusty Earth (Prototype 1.4) 21.12.2014'
-  db 0
-;---------------------------------------------------------------------
 base_icons_file_name		db 'base_8bpp.png',0
 red_brick_icons_file_name	db 'red_brick_8bpp.png',0
 white_brick_icons_file_name	db 'white_brick_8bpp.png',0

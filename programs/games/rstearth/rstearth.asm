@@ -100,6 +100,9 @@ load_libraries	l_libs_start,end_l_libs
 	
 	mcall	51,1,snd_background_music_thread_start,snd_background_music_thread_stack
 ;---------------------------------------------------------------------
+menu_still:
+	jmp	main_menu_start
+;---------------------------------------------------------------------
 start_level_0:
 	mov	[death_of_protagonist],0
 	mov	[protagonist_route],2
@@ -201,6 +204,13 @@ include 'actions_white_bricks.inc'
 include 'random.inc'
 include 'snd_api.inc'
 include 'sound.inc'
+include 'menu.inc'
+;---------------------------------------------------------------------
+if lang eq ru
+	include 'localization_rus.inc'
+else
+	include 'localization_eng.inc'
+end if
 ;---------------------------------------------------------------------
 include 'i_data.inc'
 include 'levels.inc'
