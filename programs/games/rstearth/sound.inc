@@ -114,8 +114,11 @@ wave_out:
 	cmp	eax,-1
 	popa
 	je	snd_wave_out_fail
+	
+	ret
 ;--------------------------------------
 .exit:
+	popa
 	ret
 ;------------------------------------------------------------------------------
 snd_init_fail:
@@ -145,17 +148,61 @@ snd_wave_out_fail:
 ;------------------------------------------------------------------------------
 snd_background_music_thread_start:
 	cmp	[music_flag],1
-	je	@f
+	je	.start
 	
 	mcall	5,50
 	mcall	68,1
 	jmp	snd_background_music_thread_start
 ;--------------------------------------		
-@@:
+.start:
 	mov	eax,[background_music]
-	mov	ebp,[hBuff1]
-	call	wave_out
-	jmp	snd_background_music_thread_start
+;	call	wave_out
+;	pusha
+;	DEBUGF	1, "Wave out\n"
+; check for correct data_offset
+	push	eax
+	add	eax,[data_offset]	
+	sub	eax,4
+	cmp	[eax],dword 'data'
+	pop	eax
+	je	@f
+
+	mov	[wav_for_test],eax
+	mov	ebx,eax
+	add	ebx,1024
+	mov	[wav_for_test_end],ebx
+	call	find_data_offset
+	cmp	[sound_flag],0
+	jz	snd_background_music_thread_start	;.exit
+;--------------------------------------
+@@:
+	add	eax,[data_offset]
+	mov	ebx,[eax]
+	add	eax,4
+	mov	ebp,eax
+;	DEBUGF	1, "src EAX: %x size EBX: %x\n",eax,ebx
+;--------------------------------------
+.loop:	
+	cmp	[music_flag],0
+	je	snd_background_music_thread_start
+;	DEBUGF	1, "src EAX: %x size EBX: %x\n",eax,ebx
+;	stdcall	_WaveOut@12,[hBuff],eax,ebx
+	stdcall	_WaveOut@12,[hBuff1],ebp,8192
+;	DEBUGF	1, "return EAX: %x\n",eax
+	cmp	eax,-1
+;	popa
+	je	snd_wave_out_fail
+	
+	add	ebp,8192*2
+	cmp	ebx,ebp
+	jae	.start
+	
+	sub	ebp,8192
+	jmp	.loop
+;--------------------------------------
+;.exit:
+;	popa
+;	jmp	snd_background_music_thread_start
 ;	mcall	-1
 ;------------------------------------------------------------------------------
 snd_kick_action:

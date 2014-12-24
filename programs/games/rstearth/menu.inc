@@ -71,6 +71,7 @@ main_menu_start:
 	cmp	[main_menu_pointer],0
 	je	.still
 	
+	call	snd_kick_action
 	call	clear_old_pointer
 	dec	[main_menu_pointer]
 	call	draw_new_pointer
@@ -80,6 +81,7 @@ main_menu_start:
 	cmp	[main_menu_pointer],4
 	je	.still
 	
+	call	snd_kick_action
 	call	clear_old_pointer
 	inc	[main_menu_pointer]
 	call	draw_new_pointer
@@ -176,10 +178,12 @@ clear_screen:
 	ret
 ;---------------------------------------------------------------------
 menu_credits:
+	call	snd_kick_action
 	mov	[menu_text_pointers],menu_credits_text_pointers
 	jmp	menu_help.1
 ;---------------------------------------------------------------------
 menu_help:
+	call	snd_kick_action
 	mov	[menu_text_pointers],menu_help_text_pointers
 ;--------------------------------------	
 .1:	
@@ -239,6 +243,7 @@ menu_help:
 	jmp	button.exit
 ;---------------------------------------------------------------------
 settings_menu_start:
+	call	snd_kick_action
 	mov	al,[main_menu_pointer]
 	mov	[settings_menu_pointer],al
 	xor	al,al
@@ -314,6 +319,7 @@ settings_menu_start:
 	cmp	[main_menu_pointer],0
 	je	.still
 	
+	call	snd_kick_action
 	call	clear_old_pointer
 	dec	[main_menu_pointer]
 	call	draw_new_pointer
@@ -323,6 +329,7 @@ settings_menu_start:
 	cmp	[main_menu_pointer],2
 	je	.still
 	
+	call	snd_kick_action
 	call	clear_old_pointer
 	inc	[main_menu_pointer]
 	call	draw_new_pointer
@@ -348,6 +355,7 @@ settings_menu_start:
 	cmp	[main_menu_pointer],2	; exit
 	jne	.still
 	
+	call	snd_kick_action
 	mov	al,[settings_menu_pointer]
 	mov	[main_menu_pointer],al
 
