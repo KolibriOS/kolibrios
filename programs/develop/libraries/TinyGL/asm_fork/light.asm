@@ -1,3 +1,5 @@
+align 4
+sp128f dd 128.0
 
 align 4
 proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
@@ -14,7 +16,8 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 		stdcall glopMaterial,eax,edi
 		mov ecx,GL_BACK
 	@@:
-	mov edi,[eax+offs_cont_materials]
+	mov edi,eax
+	add edi,offs_cont_materials
 	cmp ecx,GL_FRONT ;if (mode == GL_FRONT) m=&context.materials[0]
 	je @f
 		add edi,sizeof.GLMaterial ;else m=&context.materials[1]
@@ -54,7 +57,7 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 		add edi,offs_mate_shininess
 		movsd
 		mov dword[edi],SPECULAR_BUFFER_RESOLUTION
-		fdiv dword[an180f]
+		fdiv dword[sp128f]
 		fimul dword[edi]
 		fistp dword[edi] ;m.shininess_i = (v[0]/128.0f)*SPECULAR_BUFFER_RESOLUTION
 		jmp .end_f
@@ -174,10 +177,12 @@ pushad
 		add edi,offs_ligh_spot_direction
 		mov ecx,3
 		rep movsd ;l.spot_direction=v[0,1,2]
-		mov esi,ebx
-		add esi,12
-		mov edi,edx
-		add edi,offs_ligh_norm_spot_direction
+		;mov esi,ebx
+		;add esi,12
+		sub esi,12
+		;mov edi,edx
+		;add edi,offs_ligh_norm_spot_direction
+		add edi,offs_ligh_norm_spot_direction-(offs_ligh_spot_direction+12)
 		mov ecx,3
 		rep movsd ;l.norm_spot_direction=v[0,1,2]
 		add edx,offs_ligh_norm_spot_direction
@@ -380,7 +385,8 @@ pushad
 ; esi -> GLVertex *v
 	mov esi,[v]
 	mov edx,[context]
-	mov ecx,[edx+offs_cont_materials] ;ecx(m) = &context.materials[0]
+	mov ecx,edx
+	add ecx,offs_cont_materials ;ecx(m) = &context.materials[0]
 	mov eax,[edx+offs_cont_light_model_two_side]
 	mov [twoside],eax
 
@@ -437,19 +443,26 @@ end if
 		fmul dword[ebx+offs_ligh_ambient+8]
 		fstp dword[lB] ;lB=l.ambient.v[2] * m.ambient.v[2]
 
-		cmp dword[ebx+offs_ligh_position+12],0 ;if (l.position.v[3] == 0)
+		fld dword[ebx+offs_ligh_position+offs_W]
+		ftst ;if (l.position.v[3] == 0)
+		fstsw ax
+		sahf
 		jne .els_0
 			; light at infinity
+			ffree st0 ;l.position.v[3]
+			fincstp
 			mov eax,[ebx+offs_ligh_position]
 			mov [d],eax ;d.X=l.position.v[0]
-			mov eax,[ebx+offs_ligh_position+4]
-			mov [d+4],eax ;d.Y=l.position.v[1]
-			mov eax,[ebx+offs_ligh_position+8]
-			mov [d+8],eax ;d.Z=l.position.v[2]
+			mov eax,[ebx+offs_ligh_position+offs_Y]
+			mov [d+offs_Y],eax ;d.Y=l.position.v[1]
+			mov eax,[ebx+offs_ligh_position+offs_Z]
+			mov [d+offs_Z],eax ;d.Z=l.position.v[2]
 			mov dword[att],1.0
 			jmp .els_0_end
 		.els_0:
 			; distance attenuation
+			ffree st0 ;l.position.v[3]
+			fincstp
 			fld dword[ebx+offs_ligh_position]
 			fsub dword[esi+offs_vert_ec]
 			fstp dword[d] ;d.X=l.position.v[0]-v.ec.v[0]
@@ -468,7 +481,7 @@ end if
 			fmul st0,st0
 			faddp
 			fsqrt
-			fst dword[dist] ;dist=sqrt(d.X^2+d^2+d^2)
+			fst dword[dist] ;dist=sqrt(d.X^2+d.Y^2+d.Z^2)
 			fcom dword[fl_1e_3]
 			fstsw ax
 			sahf
@@ -519,7 +532,7 @@ end if
 		ftst ;if (dot>0)
 		fstsw ax
 		sahf
-		jle .if0_end
+		jbe .if0_end
 			; diffuse light
 			fld dword[ecx+offs_mate_diffuse]
 			fmul dword[ebx+offs_ligh_diffuse]
@@ -654,7 +667,7 @@ end if
 			ftst ;if (dot_spec > 0)
 			fstsw ax
 			sahf
-			jae .if0_end
+			jbe .if0_end
 				fld dword[s]
 				fmul st0,st0
 				fld dword[s+offs_Y]
@@ -678,17 +691,16 @@ end if
 				; dot_spec= pow(dot_spec,m.shininess)
 				stdcall specbuf_get_buffer, edx, dword[ecx+offs_mate_shininess_i], dword[ecx+offs_mate_shininess]
 				mov edi,eax ;edi = specbuf
-				mov dword[idx],SPECULAR_BUFFER_SIZE
-				fild dword[idx]
+				mov dword[idx],SPECULAR_BUFFER_SIZE ;idx = SPECULAR_BUFFER_SIZE
 				fld1
 				fcomp
 				fstsw ax
+				fild dword[idx]
 				sahf
-				jae @f
-					fmul st0,st1
+				jae @f ;if(dot_spec < 1.0)
+					fmul st0,st1 ;idx *= dot_spec
 				@@:
-				fistp dword[idx] ;if (dot_spec < 1.0) idx = (int)(dot_spec*SPECULAR_BUFFER_SIZE)
-					;else idx = SPECULAR_BUFFER_SIZE;
+				fistp dword[idx]
 				ffree st0 ;dot_spec
 				fincstp
 				shl dword[idx],2

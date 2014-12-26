@@ -108,13 +108,6 @@ endl
 	mov dword[zsize],(1 shl ZB_POINT_Z_FRAC_BITS) / 2
 	fiadd dword[zsize]
 	fstp dword[eax+offs_vpor_trans+offs_Z]
-if DEBUG ;gl_eval_viewport
-	stdcall dbg_print,f_ev,txt_nl
-	add eax,offs_vpor_scale
-	stdcall gl_print_matrix,eax,1
-	add eax,8
-	stdcall gl_print_matrix,eax,1
-end if
 	ret
 endp
 
@@ -260,11 +253,11 @@ pushad
 			fmul st0,st3       ;st0 *= v.coord.X
 			fld dword[ebx+4]   ;st0 = m[1]
 			fmul st0,st3       ;st0 *= v.coord.Y
+			faddp              ;st0 = v.coord.X * m[0] + v.coord.Y * m[1]
 			fld dword[ebx+8]   ;st0 = m[2]
-			fmul st0,st3       ;st0 *= v.coord.Z
+			fmul st0,st2       ;st0 *= v.coord.Z
 			fadd dword[ebx+12] ;st0 += m[3]
-			faddp              ;st0 += v.coord.Z * m[2] 
-			faddp              ;st0 += v.coord.Y * m[1] 
+			faddp              ;st0 += v.ec.X
 			fstp dword[edx+offs_vert_ec] ;v.ec.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
@@ -290,11 +283,11 @@ pushad
 			fmul st0,st3       ;st0 *= v.ec.X
 			fld dword[ebx+4]   ;st0 = m[1]
 			fmul st0,st3       ;st0 *= v.ec.Y
+			faddp              ;st0 = v.ec.X * m[0] + v.ec.Y * m[1]
 			fld dword[ebx+8]   ;st0 = m[2]
-			fmul st0,st3       ;st0 *= v.ec.Z
+			fmul st0,st2       ;st0 *= v.ec.Z
 			fadd dword[ebx+12] ;st0 += m[3]
-			faddp              ;st0 += v.ec.Z * m[2]
-			faddp              ;st0 += v.ec.Y * m[1]
+			faddp              ;st0 = v.pc.X
 			fstp dword[edx+offs_vert_pc] ;v.pc.X = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2] + m[3]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
@@ -317,24 +310,24 @@ pushad
 		fld dword[edi+offs_Z]
 
 		mov ecx,3
+		add edx,offs_vert_normal
 		.cycle_2:
 			fld dword[ebx]   ;st0 = m[0]
 			fmul st0,st3     ;st0 *= n.X
 			fld dword[ebx+4] ;st0 = m[1]
 			fmul st0,st3     ;st0 *= n.Y
+			faddp            ;st0 = n.X * m[0] + n.Y * m[1]
 			fld dword[ebx+8] ;st0 = m[2]
-			fmul st0,st3     ;st0 *= n.Z
-			faddp            ;st0 += n.Z * m[2]
-			faddp            ;st0 += n.Y * m[1]
-			fstp dword[edx+offs_vert_normal] ;v.normal.X = n.X * m[0] + n.Y * m[1] + n.Z * m[2]
+			fmul st0,st2     ;st0 *= n.Z
+			faddp            ;st0 = v.normal.X
+			fstp dword[edx]  ;v.normal.X = n.X * m[0] + n.Y * m[1] + n.Z * m[2]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_2
 
 		cmp dword[eax+offs_cont_normalize_enabled],0
 		je .end_els
-			mov edx,[v]
-			add edx,offs_vert_normal
+			sub edx,12
 			stdcall gl_V3_Norm,edx
 		jmp .end_els
 	.els_0:
@@ -355,34 +348,34 @@ pushad
 		fmul st0,st3       ;st0 *= v.coord.X
 		fld dword[ebx+4]   ;st0 = m[1]
 		fmul st0,st3       ;st0 *= v.coord.Y
+		faddp              ;st0 = v.coord.X * m[0] + v.coord.Y * m[1]
 		fld dword[ebx+8]   ;st0 = m[2]
-		fmul st0,st3       ;st0 *= v.coord.Z
+		fmul st0,st2       ;st0 *= v.coord.Z
 		fadd dword[ebx+12] ;st0 += m[3]
-		faddp              ;st0 += v.coord.Z * m[2]
-		faddp              ;st0 += v.coord.Y * m[1]
+		faddp              ;st0 = v.pc.X
 		fstp dword[esi]    ;v.pc.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
 
 		fld dword[ebx+16]  ;st0 = m[4]
 		fmul st0,st3       ;st0 *= v.coord.X
 		fld dword[ebx+20]  ;st0 = m[5]
 		fmul st0,st3       ;st0 *= v.coord.Y
+		faddp              ;st0 = v.coord.X * m[4] + v.coord.Y * m[5]
 		fld dword[ebx+24]  ;st0 = m[6]
-		fmul st0,st3       ;st0 *= v.coord.Z
+		fmul st0,st2       ;st0 *= v.coord.Z
 		fadd dword[ebx+28] ;st0 += m[7]
-		faddp              ;st0 += v.coord.Z * m[6]
-		faddp              ;st0 += v.coord.Y * m[5]
-		fstp dword[esi+4]  ;v.pc.X = v.coord.X * m[4] + v.coord.Y * m[5] + v.coord.Z * m[6] + m[7]
+		faddp              ;st0 = v.pc.Y
+		fstp dword[esi+4]  ;v.pc.Y = v.coord.X * m[4] + v.coord.Y * m[5] + v.coord.Z * m[6] + m[7]
 
 		fld dword[ebx+32]  ;st0 = m[8]
 		fmul st0,st3       ;st0 *= v.coord.X
 		fld dword[ebx+36]  ;st0 = m[9]
 		fmul st0,st3       ;st0 *= v.coord.Y
+		faddp              ;st0 = v.coord.X * m[8] + v.coord.Y * m[9]
 		fld dword[ebx+40]  ;st0 = m[10]
-		fmul st0,st3       ;st0 *= v.coord.Z
+		fmul st0,st2       ;st0 *= v.coord.Z
 		fadd dword[ebx+44] ;st0 += m[11]
-		faddp              ;st0 += v.coord.Z * m[10]
-		faddp              ;st0 += v.coord.Y * m[9]
-		fstp dword[esi+8]  ;v.pc.X = v.coord.X * m[8] + v.coord.Y * m[9] + v.coord.Z * m[10] + m[11]
+		faddp              ;st0 = v.pc.Z
+		fstp dword[esi+8]  ;v.pc.Z = v.coord.X * m[8] + v.coord.Y * m[9] + v.coord.Z * m[10] + m[11]
 
 		cmp dword[eax+offs_cont_matrix_model_projection_no_w_transform],0
 		je .els_1
@@ -395,11 +388,11 @@ pushad
 			fmul st0,st3       ;st0 *= v.coord.X
 			fld dword[ebx+52]  ;st0 = m[13]
 			fmul st0,st3       ;st0 *= v.coord.Y
+			faddp              ;st0 = v.coord.X * m[12] + v.coord.Y * m[13]
 			fld dword[ebx+56]  ;st0 = m[14]
-			fmul st0,st3       ;st0 *= v.coord.Z
+			fmul st0,st2       ;st0 *= v.coord.Z
 			fadd dword[ebx+60] ;st0 += m[15]
-			faddp              ;st0 += v.coord.Z * m[14] 
-			faddp              ;st0 += v.coord.Y * m[13] 
+			faddp              ;st0 = v.pc.W
 			fstp dword[esi+12] ;v.pc.W = v.coord.X * m[12] + v.coord.Y * m[13] + v.coord.Z * m[14] + m[15]
 	.end_els:
 	ffree st0
@@ -492,11 +485,20 @@ pushad
 	je @f
 		cmp dword[edx+offs_cont_apply_texture_matrix],0
 		je .els_1
-;           gl_M4_MulV4(&v->tex_coord, c->matrix_stack_ptr[2], &c->current_tex_coord);
+			mov eax,edx
+			add eax,offs_cont_current_tex_coord
+			push eax ;&context.current_tex_coord
+			mov eax,ebx
+			add eax,offs_vert_tex_coord
+			stdcall gl_M4_MulV4, eax, dword[edx+offs_cont_matrix_stack_ptr+8]
 			jmp @f
 		.els_1:
-			mov eax,[edx+offs_cont_current_tex_coord]
-			mov [ebx+offs_vert_tex_coord],eax
+			mov esi,edx
+			add esi,offs_cont_current_tex_coord
+			mov edi,ebx
+			add edi,offs_vert_tex_coord
+			mov ecx,4
+			rep movsd
 	@@:
 
 	; precompute the mapping to the viewport
@@ -572,20 +574,33 @@ pushad
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_STRIP
 	jne @f
-;       if (c->vertex_cnt >= 3) {
-;           if (n == 3)
-;               n = 0;
-;            /* needed to respect triangle orientation */
-;            switch(c->vertex_cnt & 1) {
-;            case 0:
-;               gl_draw_triangle(c,&c->vertex[2],&c->vertex[1],&c->vertex[0]);
-;               break;
-;            default:
-;            case 1:
-;               gl_draw_triangle(c,&c->vertex[0],&c->vertex[1],&c->vertex[2]);
-;               break;
-;            }
-;       }
+		cmp dword[edx+offs_cont_vertex_cnt],3 ;if (context.vertex_cnt >= 3)
+		jl .end_f
+			cmp dword[n],3
+			jne .ts3
+				xor eax,eax
+				mov dword[n],eax
+			.ts3:
+			; needed to respect triangle orientation
+			mov eax,[edx+offs_cont_vertex]
+			bt dword[edx+offs_cont_vertex_cnt],0
+			jc .case_1
+				mov [esp-12],eax
+				add eax,sizeof.GLVertex
+				mov [esp-8],eax
+				add eax,sizeof.GLVertex
+				mov [esp-4],eax
+				sub esp,12
+				stdcall gl_draw_triangle, edx ;&v[2],&v[1],&v[0]
+				jmp .end_f
+			.case_1:
+				mov [esp-4],eax
+				add eax,sizeof.GLVertex
+				mov [esp-8],eax
+				add eax,sizeof.GLVertex
+				mov [esp-12],eax
+				sub esp,12
+				stdcall gl_draw_triangle, edx ;&v[0],&v[1],&v[2]
 		jmp .end_f
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_FAN

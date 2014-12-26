@@ -605,8 +605,7 @@ proc gl_V3_Norm uses ebx, a:dword
 	fmul st0,st0
 	faddp
 	fsqrt ;st0 = sqrt(a.X^2 +a.Y^2 +a.Z^2)
-	fldz
-	fcomp
+	ftst
 	fstsw ax
 	sahf
 	je .r1 ;if (sqrt(...)==0) return 1

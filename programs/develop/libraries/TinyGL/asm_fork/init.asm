@@ -39,12 +39,13 @@ proc glInit uses eax ebx ecx edx, zbuffer1:dword
 	mov dword[edx+offs_cont_vertex],eax
 
 	; viewport
-	mov dword[edx+offs_cont_viewport+offs_vpor_xmin],0
-	mov dword[edx+offs_cont_viewport+offs_vpor_ymin],0
+	xor eax,eax
+	mov dword[edx+offs_cont_viewport+offs_vpor_xmin],eax
+	mov dword[edx+offs_cont_viewport+offs_vpor_ymin],eax
 	mov eax,[ecx+offs_zbuf_xsize]
-	mov dword[edx+offs_cont_viewport+offs_vpor_xsize], eax
+	mov dword[edx+offs_cont_viewport+offs_vpor_xsize],eax
 	mov eax,[ecx+offs_zbuf_ysize]
-	mov dword[edx+offs_cont_viewport+offs_vpor_ysize], eax
+	mov dword[edx+offs_cont_viewport+offs_vpor_ysize],eax
 	mov dword[edx+offs_cont_viewport+offs_vpor_updated],1
 
 	; shared state
@@ -71,9 +72,7 @@ proc glInit uses eax ebx ecx edx, zbuffer1:dword
 		gl_V3_New eax+offs_ligh_norm_spot_direction, 0.0,0.0,-1.0
 		mov dword[eax+offs_ligh_spot_exponent],0.0
 		mov dword[eax+offs_ligh_spot_cutoff],180.0
-		mov dword[eax+offs_ligh_attenuation],1.0
-		mov dword[eax+offs_ligh_attenuation+4],0.0
-		mov dword[eax+offs_ligh_attenuation+8],0.0
+		gl_V3_New eax+offs_ligh_attenuation, 1.0,0.0,0.0
 		mov dword[eax+offs_ligh_enabled],0
 		add eax,sizeof.GLLight
 		dec ecx
@@ -107,25 +106,14 @@ proc glInit uses eax ebx ecx edx, zbuffer1:dword
 	stdcall glInitTextures,edx
 
 	; default state
-	mov dword[edx+offs_cont_current_color],1.0
-	mov dword[edx+offs_cont_current_color+4],1.0
-	mov dword[edx+offs_cont_current_color+8],1.0
-	mov dword[edx+offs_cont_current_color+12],1.0
-	mov dword[edx+offs_cont_longcurrent_color],65535
-	mov dword[edx+offs_cont_longcurrent_color+4],65535
-	mov dword[edx+offs_cont_longcurrent_color+8],65535
+	gl_V4_New edx+offs_cont_current_color, 1.0,1.0,1.0,1.0
+	gl_V3_New edx+offs_cont_longcurrent_color, 65535,65535,65535
 
-	mov dword[edx+offs_cont_current_normal],1.0
-	mov dword[edx+offs_cont_current_normal+4],0.0
-	mov dword[edx+offs_cont_current_normal+8],0.0
-	mov dword[edx+offs_cont_current_normal+12],0.0
+	gl_V4_New edx+offs_cont_current_normal, 1.0,0.0,0.0,0.0
 
 	mov dword[edx+offs_cont_current_edge_flag],1
   
-	mov dword[edx+offs_cont_current_tex_coord],0.0
-	mov dword[edx+offs_cont_current_tex_coord+4],0.0
-	mov dword[edx+offs_cont_current_tex_coord+8],0.0
-	mov dword[edx+offs_cont_current_tex_coord+12],1.0
+	gl_V4_New edx+offs_cont_current_tex_coord, 0.0,0.0,0.0,1.0
 
 	mov dword[edx+offs_cont_polygon_mode_front],GL_FILL
 	mov dword[edx+offs_cont_polygon_mode_back],GL_FILL
@@ -136,10 +124,7 @@ proc glInit uses eax ebx ecx edx, zbuffer1:dword
 	mov dword[edx+offs_cont_cull_face_enabled],0
   
 	; clear
-	mov dword[edx+offs_cont_clear_color],0.0
-	mov dword[edx+offs_cont_clear_color+4],0.0
-	mov dword[edx+offs_cont_clear_color+8],0.0
-	mov dword[edx+offs_cont_clear_color+12],0.0
+	gl_V4_New edx+offs_cont_clear_color, 0.0,0.0,0.0,0.0
 	mov dword[edx+offs_cont_clear_depth],0
 
 	; selection
@@ -150,9 +135,8 @@ proc glInit uses eax ebx ecx edx, zbuffer1:dword
 	; matrix
 	mov dword[edx+offs_cont_matrix_mode],0
 
-	mov dword[edx+offs_cont_matrix_stack_depth_max],MAX_MODELVIEW_STACK_DEPTH
-	mov dword[edx+offs_cont_matrix_stack_depth_max+4],MAX_PROJECTION_STACK_DEPTH
-	mov dword[edx+offs_cont_matrix_stack_depth_max+8],MAX_TEXTURE_STACK_DEPTH
+	gl_V3_New edx+offs_cont_matrix_stack_depth_max,\
+		MAX_MODELVIEW_STACK_DEPTH,MAX_PROJECTION_STACK_DEPTH,MAX_TEXTURE_STACK_DEPTH
 
 	mov ecx,3 ;for(i=0;i<3;i++)
 	mov ebx,edx

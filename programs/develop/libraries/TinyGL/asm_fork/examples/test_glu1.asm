@@ -24,8 +24,9 @@ start:
 
 	mcall 40,0x27
 
-stdcall [kosglMakeCurrent], 10,10,300,225,ctx1
+stdcall [kosglMakeCurrent], 10,10,400,325,ctx1
 stdcall [glEnable], GL_DEPTH_TEST
+stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 stdcall [gluNewQuadric]
 mov [qObj],eax
 
@@ -55,7 +56,7 @@ draw_window:
 	mcall 12,1
 
 	mov edx,0x33ffffff ;0x73ffffff
-	mcall 0,(50 shl 16)+330,(30 shl 16)+275,,,caption
+	mcall 0,(50 shl 16)+430,(30 shl 16)+375,,,caption
 	stdcall [kosglSwapBuffers]
 
 	mcall 12,2
@@ -150,15 +151,15 @@ stdcall [glPushMatrix]
 
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
-	stdcall [gluSphere], [qObj], 1.0, 16,16
+	stdcall [gluSphere], [qObj], 1.0, 32,32
 
 	stdcall [glColor3f], 1.0, 0.0, 0.0
 	stdcall [glTranslatef], -1.6,0.0,0.0
-	stdcall [gluSphere], [qObj], 0.55, 8,8
+	stdcall [gluSphere], [qObj], 0.55, 16,16
 
 	stdcall [glColor3f], 0.0, 0.0, 1.0
 	stdcall [glTranslatef], 3.2,0.0,0.0
-	stdcall [gluSphere], [qObj], 0.55, 8,8
+	stdcall [gluSphere], [qObj], 0.55, 16,16
 stdcall [glPopMatrix]
 ret
 

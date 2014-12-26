@@ -1,6 +1,10 @@
 
 if DEBUG
 align 4
+txt_gl_scal db 'glopScale',0
+txt_gl_tran db 'glopTranslate',0
+
+align 4
 proc gl_print_matrix uses eax ebx ecx edi, m:dword, rows:dword
 	mov ecx,[rows]
 	cmp ecx,1
@@ -380,6 +384,7 @@ proc glopScale uses eax ebx ecx, context:dword, p:dword
 	loop @b
 
 if DEBUG ;glopScale
+	stdcall dbg_print,txt_gl_scal,txt_nl
 	mov ebx,[eax+offs_cont_matrix_mode]
 	shl ebx,2
 	add ebx,eax
@@ -408,9 +413,9 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 		fmul st0,st3     ;m[0] * x
 		fld dword[ebx+4] ;m[1]
 		fmul st0,st3     ;m[1] * y
-		fld dword[ebx+8] ;m[2]
-		fmul st0,st3     ;m[2] * z
 		faddp
+		fld dword[ebx+8] ;m[2]
+		fmul st0,st2     ;m[2] * z
 		faddp
 		fadd dword[ebx+12] ;m[3]
 		fstp dword[ebx+12] ;m[3] = m[0] * x + m[1] * y + m[2] * z + m[3]
@@ -424,6 +429,7 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 	fincstp
 
 if DEBUG ;glopTranslate
+	stdcall dbg_print,txt_gl_tran,txt_nl
 	mov ebx,[eax+offs_cont_matrix_mode]
 	shl ebx,2
 	add ebx,eax
