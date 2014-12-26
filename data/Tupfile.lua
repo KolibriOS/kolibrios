@@ -142,6 +142,7 @@ extra_files = {
  {"kolibrios/games/rstearth/barret_8bpp.png", PROGS .. "/games/rstearth/resources/barret_8bpp.png"},
  {"kolibrios/games/rstearth/base_8bpp.png", PROGS .. "/games/rstearth/resources/base_8bpp.png"},
  {"kolibrios/games/rstearth/death_8bpp.png", PROGS .. "/games/rstearth/resources/death_8bpp.png"},
+ {"kolibrios/games/rstearth/font_russo_1bpp.png", PROGS .. "/games/rstearth/resources/font_russo_1bpp.png"},
  {"kolibrios/games/rstearth/ifrit_8bpp.png", PROGS .. "/games/rstearth/resources/ifrit_8bpp.png"},
  {"kolibrios/games/rstearth/miku_8bpp.png", PROGS .. "/games/rstearth/resources/miku_8bpp.png"},
  {"kolibrios/games/rstearth/red_brick_8bpp.png", PROGS .. "/games/rstearth/resources/red_brick_8bpp.png"},
