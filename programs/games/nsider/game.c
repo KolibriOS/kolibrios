@@ -78,11 +78,11 @@ int THE_END_COUNT=600;
 #include <stdlib.h>
 #include <string.h>
 #include <kolibrisys.h>
-#include <Gamealphabet.h>
+#include <GameAlphabet.h>
 #include <Shimath.h>
 #include <Draw2D.h>
 #include <Levels.h>
-#include <Gamefunctions.h>
+#include <GameFunctions.h>
 
 
 
