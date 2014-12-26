@@ -5,6 +5,7 @@ main_menu_start:
 .red:
 	mov	[menu_text_pointers],main_menu_text_pointers
 	mov	[text_step_Y],SPRITE_SIZE_Y
+	mov	[use_separate_draw_text],1
 	call	draw_menu_window
 	call	draw_new_pointer
 ;---------------------------------------------------------------------
@@ -116,7 +117,7 @@ main_menu_start:
 clear_old_pointer:
 	movzx	ecx,byte [main_menu_pointer]
 	imul	ecx,SPRITE_SIZE_Y
-	add	ecx,SPRITE_SIZE_Y*2 + 32
+	add	ecx,SPRITE_SIZE_Y*3 - 16
 	shl	ecx,16
 	mov	cx,SPRITE_SIZE_Y
 	mcall	13,<SPRITE_SIZE_X*2,SPRITE_SIZE_X>,,0
@@ -132,7 +133,7 @@ draw_new_pointer:
 
 	movzx	edx,byte [main_menu_pointer]
 	imul	edx,SPRITE_SIZE_Y
-	add	edx,SPRITE_SIZE_Y*2 + 32
+	add	edx,SPRITE_SIZE_Y*3 - 16
 	add	edx,SPRITE_SIZE_X*2 shl 16
 	
 	mov	eax,[npc_miku_icons]
@@ -162,7 +163,16 @@ draw_menu_window:
 	test	edx,edx
 	jz	.end
 
+	cmp	[use_separate_draw_text],1
+	je	.use_separate_draw_text
+
 	mcall
+	jmp	.continue
+;--------------------------------------		
+.use_separate_draw_text:
+	call	draw_font
+;--------------------------------------	
+.continue:
 	add	ebx,[text_step_Y]
 	add	esi,4
 	jmp	@b
@@ -186,10 +196,11 @@ menu_help:
 	call	snd_kick_action
 	mov	[menu_text_pointers],menu_help_text_pointers
 ;--------------------------------------	
-.1:	
+.1:
 	mov	[text_step_Y],20
 ;--------------------------------------	
 .red:
+	mov	[use_separate_draw_text],0
 	call	draw_menu_window
 ;---------------------------------------------------------------------
 .still:
@@ -253,6 +264,7 @@ settings_menu_start:
 	mov	[menu_text_pointers],settings_menu_text_pointers
 	mov	[text_step_Y],SPRITE_SIZE_Y
 	call	prepare_settings_text
+	mov	[use_separate_draw_text],1
 	call	draw_menu_window
 	call	draw_new_pointer
 ;---------------------------------------------------------------------

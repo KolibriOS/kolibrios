@@ -65,14 +65,7 @@ load_and_convert_current_icon_set:
 	mov	eax,[raw_pointer]
 	ret
 ;---------------------------------------------------------------------
-load_and_convert_all_icons:
-; load and convert base icons	
-	mov	ebx,base_icons_file_name
-	call	load_and_convert_current_icon_set
-	mov	[base_icons],eax
-;	DEBUGF	1, "base_icons: %x\n",eax
-
-; load and convert base icons	
+; load and convert icons	
 ;	mov	ebx,npc_miku_kick_icons_file_name
 ;	call	load_and_convert_current_icon_set
 ;	mov	[npc_miku_kick_icons],eax
@@ -88,6 +81,19 @@ load_and_convert_all_icons:
 ;	DEBUGF	1, "data size: %x\n",[eax+32]
 ;	DEBUGF	1, "transparency offset: %x\n",[eax+36]
 ;	DEBUGF	1, "transparency size: %x\n",[eax+40]
+;---------------------------------------------------------------------
+load_and_convert_all_icons:
+; load and convert font icons	
+	mov	ebx,font_icons_file_name
+	call	load_and_convert_current_icon_set
+	mov	[font_icons],eax
+;	DEBUGF	1, "font_icons: %x\n",eax
+
+; load and convert base icons	
+	mov	ebx,base_icons_file_name
+	call	load_and_convert_current_icon_set
+	mov	[base_icons],eax
+;	DEBUGF	1, "base_icons: %x\n",eax
 
 ; load and convert red brick
 	mov	ebx,red_brick_icons_file_name	

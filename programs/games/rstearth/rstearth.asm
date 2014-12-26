@@ -47,6 +47,10 @@ include '../../develop/libraries/box_lib/load_lib.mac'
 ;include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 @use_library
 ;---------------------------------------------------------------------
+FONT_SIZE_X = 32
+FONT_REAL_SIZE_X = 32
+FONT_SIZE_Y = 32
+;---------------------------------------------------------------------
 LEVEL_MAP_SIZE_X = 10
 LEVEL_MAP_SIZE_Y = 10
 SPRITE_SIZE_X = 64
@@ -207,6 +211,7 @@ include 'random.inc'
 include 'snd_api.inc'
 include 'sound.inc'
 include 'menu.inc'
+include 'font.inc'
 ;---------------------------------------------------------------------
 if lang eq ru
 	include 'localization_rus.inc'

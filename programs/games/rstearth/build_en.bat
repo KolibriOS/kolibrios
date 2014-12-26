@@ -4,6 +4,7 @@ if not exist bin mkdir rstearth_eng_bin
 @fasm -m 16384 rstearth.asm rstearth_eng_bin\rstearth.kex
 @erase lang.inc
 @kpack rstearth_eng_bin\rstearth.kex
+@copy resources\font_russo_1bpp.png rstearth_eng_bin\font_russo_1bpp.png
 @copy resources\base_8bpp.png rstearth_eng_bin\base_8bpp.png
 @copy resources\red_brick_8bpp.png rstearth_eng_bin\red_brick_8bpp.png
 @copy resources\white_brick_8bpp.png rstearth_eng_bin\white_brick_8bpp.png

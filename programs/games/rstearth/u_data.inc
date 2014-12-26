@@ -12,12 +12,14 @@ music_flag		rb 1
 snd_kick_flag		rb 1
 main_menu_pointer	rb 1
 settings_menu_pointer	rb 1
+use_separate_draw_text	rb 1
 ;---------------------------------------------------------------------
 align 4
 N_error		rd 1
 error_type	rd 1
 error_path	rd 1
 ;---------------------------------------------------------------------
+font_icons		rd 1
 base_icons		rd 1
 red_brick_icons		rd 1
 white_brick_icons	rd 1

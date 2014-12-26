@@ -180,12 +180,13 @@ snd_background_music_thread_start:
 	mov	ebx,[eax]
 	add	eax,4
 	mov	ebp,eax
-;	DEBUGF	1, "src EAX: %x size EBX: %x\n",eax,ebx
+	add	ebx,eax
+;	DEBUGF	1, "start EAX: %x\n",eax
 ;--------------------------------------
 .loop:	
 	cmp	[music_flag],0
 	je	snd_background_music_thread_start
-;	DEBUGF	1, "src EAX: %x size EBX: %x\n",eax,ebx
+;	DEBUGF	1, "src EBP: %x size EBX: %x\n",ebp,ebx
 ;	stdcall	_WaveOut@12,[hBuff],eax,ebx
 	stdcall	_WaveOut@12,[hBuff1],ebp,8192
 ;	DEBUGF	1, "return EAX: %x\n",eax
@@ -195,7 +196,7 @@ snd_background_music_thread_start:
 	
 	add	ebp,8192*2
 	cmp	ebx,ebp
-	jae	.start
+	jbe	.start
 	
 	sub	ebp,8192
 	jmp	.loop
