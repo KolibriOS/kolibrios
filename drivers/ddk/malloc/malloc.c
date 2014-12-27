@@ -522,7 +522,7 @@ MAX_RELEASE_CHECK_RATE   default: 4095 unless not HAVE_MMAP
 */
 
 #include <ddk.h>
-#include <mutex.h>
+#include <linux/mutex.h>
 #include <syscall.h>
 
 /* Version identifier to allow people to support multiple versions */

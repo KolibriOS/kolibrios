@@ -30,6 +30,8 @@
 #include <linux/list.h>
 #include <linux/dma-mapping.h>
 #include <linux/fs.h>
+#include <linux/fence.h>
+#include <linux/wait.h>
 
 struct device;
 struct dma_buf;

@@ -101,6 +101,22 @@ static inline struct page *sg_page(struct scatterlist *sg)
 	return (struct page *)((sg)->page_link & ~0x3);
 }
 
+/**
+ * sg_set_buf - Set sg entry to point at given data
+ * @sg:		 SG entry
+ * @buf:	 Data
+ * @buflen:	 Data length
+ *
+ **/
+//static inline void sg_set_buf(struct scatterlist *sg, const void *buf,
+//                 unsigned int buflen)
+//{
+//#ifdef CONFIG_DEBUG_SG
+//   BUG_ON(!virt_addr_valid(buf));
+//#endif
+//   sg_set_page(sg, virt_to_page(buf), buflen, offset_in_page(buf));
+//}
+
 /*
  * Loop over each sg element, following the pointer to a new list if necessary
  */
@@ -120,7 +136,7 @@ static inline struct page *sg_page(struct scatterlist *sg)
 static inline void sg_chain(struct scatterlist *prv, unsigned int prv_nents,
 			    struct scatterlist *sgl)
 {
-#ifndef ARCH_HAS_SG_CHAIN
+#ifndef CONFIG_ARCH_HAS_SG_CHAIN
 	BUG();
 #endif
 

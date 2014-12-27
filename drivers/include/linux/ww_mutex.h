@@ -17,8 +17,6 @@
 #include <linux/mutex.h>
 #include <syscall.h>
 
-#define current (void*)GetPid()
-
 struct ww_class {
 	atomic_long_t stamp;
 	struct lock_class_key acquire_key;

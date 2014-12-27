@@ -7,7 +7,7 @@
  * RCU-protected list version
  */
 #include <linux/list.h>
-//#include <linux/rcupdate.h>
+#include <linux/rcupdate.h>
 
 /*
  * Why is there no list_empty_rcu()?  Because list_empty() serves this
@@ -17,6 +17,21 @@
  * it is not necessary to use rcu_dereference(), so that list_empty() can
  * be used anywhere you would want to use a list_empty_rcu().
  */
+
+/*
+ * INIT_LIST_HEAD_RCU - Initialize a list_head visible to RCU readers
+ * @list: list to be initialized
+ *
+ * You should instead use INIT_LIST_HEAD() for normal initialization and
+ * cleanup tasks, when readers have no access to the list being initialized.
+ * However, if the list being initialized is visible to readers, you
+ * need to keep the compiler from being too mischievous.
+ */
+static inline void INIT_LIST_HEAD_RCU(struct list_head *list)
+{
+	ACCESS_ONCE(list->next) = list;
+	ACCESS_ONCE(list->prev) = list;
+}
 
 /*
  * return the ->next pointer of a list_head in an rcu safe
@@ -197,7 +212,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
 	 * instead of INIT_LIST_HEAD().
 	 */
 
-	INIT_LIST_HEAD(list);
+	INIT_LIST_HEAD_RCU(list);
 
 	/*
 	 * At this point, the list body still points to the source list.
@@ -226,7 +241,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
  * list_entry_rcu - get the struct for this entry
  * @ptr:        the &struct list_head pointer.
  * @type:       the type of the struct this is embedded in.
- * @member:     the name of the list_struct within the struct.
+ * @member:     the name of the list_head within the struct.
  *
  * This primitive may safely run concurrently with the _rcu list-mutation
  * primitives such as list_add_rcu() as long as it's guarded by rcu_read_lock().
@@ -263,7 +278,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
  * list_first_or_null_rcu - get the first element from a list
  * @ptr:        the list head to take the element from.
  * @type:       the type of the struct this is embedded in.
- * @member:     the name of the list_struct within the struct.
+ * @member:     the name of the list_head within the struct.
  *
  * Note that if the list is empty, it returns NULL.
  *
@@ -281,7 +296,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
  * list_for_each_entry_rcu	-	iterate over rcu list of given type
  * @pos:	the type * to use as a loop cursor.
  * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @member:	the name of the list_head within the struct.
  *
  * This list-traversal primitive may safely run concurrently with
  * the _rcu list-mutation primitives such as list_add_rcu()
@@ -296,7 +311,7 @@ static inline void list_splice_init_rcu(struct list_head *list,
  * list_for_each_entry_continue_rcu - continue iteration over list of given type
  * @pos:	the type * to use as a loop cursor.
  * @head:	the head for your list.
- * @member:	the name of the list_struct within the struct.
+ * @member:	the name of the list_head within the struct.
  *
  * Continue to iterate over list of given type, continuing after
  * the current position.
@@ -527,6 +542,15 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
 	     pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
 			typeof(*(pos)), member))
 
+/**
+ * hlist_for_each_entry_from_rcu - iterate over a hlist continuing from current point
+ * @pos:	the type * to use as a loop cursor.
+ * @member:	the name of the hlist_node within the struct.
+ */
+#define hlist_for_each_entry_from_rcu(pos, member)			\
+	for (; pos;							\
+	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+			typeof(*(pos)), member))
 
 #endif	/* __KERNEL__ */
 #endif

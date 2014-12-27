@@ -7,12 +7,9 @@
 #include <linux/dmi.h>
 #include <syscall.h>
 
-#define pr_debug dbgprintf
-#define pr_info  printf
-
 static void *dmi_alloc(unsigned len)
 {
-    return malloc(len);
+    return __builtin_malloc(len);
 };
 
 /*

@@ -1,6 +1,8 @@
 
 #include <linux/kernel.h>
+#include <linux/slab.h>
 #include <linux/byteorder/little_endian.h>
+#include <linux/gfp.h>
 #include <linux/errno.h>
 #include <linux/firmware.h>
 

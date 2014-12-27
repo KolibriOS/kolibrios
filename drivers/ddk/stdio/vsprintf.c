@@ -22,11 +22,12 @@
 #include <linux/string.h>
 #include <linux/ctype.h>
 #include <linux/kernel.h>
-#include <errno-base.h>
+
 #include <linux/ioport.h>
 #include <linux/export.h>
 
 #include <asm/div64.h>
+#include <asm/page.h>		/* for PAGE_SIZE */
 
 
 static inline u64 div_u64(u64 dividend, u32 divisor)
@@ -41,10 +42,6 @@ static inline s64 div_s64(s64 dividend, s32 divisor)
         return div_s64_rem(dividend, divisor, &remainder);
 }
 
-struct va_format {
-    const char *fmt;
-    va_list *va;
-};
 
 #define ZERO_SIZE_PTR ((void *)16)
 
@@ -61,13 +58,6 @@ const char hex_asc[] = "0123456789abcdef";
 
 /* Works only for digits and letters, but small and fast */
 #define TOLOWER(x) ((x) | 0x20)
-
-static inline char *hex_byte_pack(char *buf, u8 byte)
-{
-        *buf++ = hex_asc_hi(byte);
-        *buf++ = hex_asc_lo(byte);
-        return buf;
-}
 
 
 char *skip_spaces(const char *str)
@@ -1297,6 +1287,7 @@ qualifier:
  * %piS depending on sa_family of 'struct sockaddr *' print IPv4/IPv6 address
  * %pU[bBlL] print a UUID/GUID in big or little endian using lower or upper
  *   case.
+ * %*pE[achnops] print an escaped buffer
  * %*ph[CDN] a variable-length hex string with a separator (supports up to 64
  *           bytes of the input)
  * %n is ignored

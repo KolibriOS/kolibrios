@@ -14,14 +14,9 @@
 
 #include <syscall.h>
 #include <linux/types.h>
-#include <errno-base.h>
 #include <linux/bitops.h>
 //#include <linux/init.h>
-//#include <linux/rcupdate.h>
-#include <linux/spinlock.h>
-#include <linux/bitmap.h>
-#include <linux/bug.h>
-
+#include <linux/rcupdate.h>
 
 /*
  * We want shallower trees and thus more bits covered at each layer.  8

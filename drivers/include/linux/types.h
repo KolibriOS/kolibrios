@@ -1,22 +1,13 @@
 #ifndef _LINUX_TYPES_H
 #define _LINUX_TYPES_H
 
-#include <asm/types.h>
+#define __EXPORTED_HEADERS__
+#include <uapi/linux/types.h>
 
 #ifndef __ASSEMBLY__
-#ifdef	__KERNEL__
 
 #define DECLARE_BITMAP(name,bits) \
         unsigned long name[BITS_TO_LONGS(bits)]
-#else
-#ifndef __EXPORTED_HEADERS__
-#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
-#endif /* __EXPORTED_HEADERS__ */
-#endif
-
-#include <linux/posix_types.h>
-
-#ifdef __KERNEL__
 
 typedef __u32 __kernel_dev_t;
 
@@ -35,7 +26,7 @@ typedef __kernel_timer_t	timer_t;
 typedef __kernel_clockid_t	clockid_t;
 typedef __kernel_mqd_t		mqd_t;
 
-typedef _Bool			bool;
+typedef _Bool          bool;
 
 typedef __kernel_uid32_t	uid_t;
 typedef __kernel_gid32_t	gid_t;
@@ -158,48 +149,12 @@ typedef u64 dma_addr_t;
 typedef u32 dma_addr_t;
 #endif /* dma_addr_t */
 
-#endif /* __KERNEL__ */
-
-/*
- * Below are truly Linux-specific types that should never collide with
- * any application/library that wants linux/types.h.
- */
-
 #ifdef __CHECKER__
-#define __bitwise__ __attribute__((bitwise))
 #else
-#define __bitwise__
 #endif
 #ifdef __CHECK_ENDIAN__
-#define __bitwise __bitwise__
 #else
-#define __bitwise
 #endif
-
-typedef __u16 __bitwise __le16;
-typedef __u16 __bitwise __be16;
-typedef __u32 __bitwise __le32;
-typedef __u32 __bitwise __be32;
-typedef __u64 __bitwise __le64;
-typedef __u64 __bitwise __be64;
-
-typedef __u16 __bitwise __sum16;
-typedef __u32 __bitwise __wsum;
-
-/*
- * aligned_u64 should be used in defining kernel<->userspace ABIs to avoid
- * common 32/64-bit compat problems.
- * 64-bit values align to 4-byte boundaries on x86_32 (and possibly other
- * architectures) and to 8-byte boundaries on 64-bit architetures.  The new
- * aligned_64 type enforces 8-byte alignment so that structs containing
- * aligned_64 values have the same alignment on 32-bit and 64-bit architectures.
- * No conversions are necessary between 32-bit user-space and a 64-bit kernel.
- */
-#define __aligned_u64 __u64 __attribute__((aligned(8)))
-#define __aligned_be64 __be64 __attribute__((aligned(8)))
-#define __aligned_le64 __le64 __attribute__((aligned(8)))
-
-#ifdef __KERNEL__
 typedef unsigned __bitwise__ gfp_t;
 typedef unsigned __bitwise__ fmode_t;
 typedef unsigned __bitwise__ oom_flags_t;
@@ -247,111 +202,6 @@ struct ustat {
 	char			f_fpack[6];
 };
 
-#endif	/* __KERNEL__ */
-#endif /*  __ASSEMBLY__ */
-
-
-
-
-typedef unsigned char        u8_t;
-typedef unsigned short       u16_t;
-typedef unsigned long        u32_t;
-typedef unsigned long long   u64_t;
-
-typedef unsigned int         addr_t;
-typedef unsigned int         count_t;
-
-
-#define false                0
-#define true                 1
-
-
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
-
-#define BITS_PER_LONG 32
-
-#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
-
-
-#define BUILD_BUG_ON_ZERO(e) (sizeof(char[1 - 2 * !!(e)]) - 1)
-
-
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
-
-
-#define MTRR_TYPE_UNCACHABLE 0
-#define MTRR_TYPE_WRCOMB     1
-#define MTRR_TYPE_WRTHROUGH  4
-#define MTRR_TYPE_WRPROT     5
-#define MTRR_TYPE_WRBACK     6
-#define MTRR_NUM_TYPES       7
-
-int dbgprintf(const char* format, ...);
-
-#define GFP_KERNEL           0
-#define GFP_ATOMIC           0
-
-//#include <stdio.h>
-
-int snprintf(char *str, size_t size, const char *format, ...);
-
-
-//#include <string.h>
-
-void*   memcpy(void *s1, const void *s2, size_t n);
-void*   memset(void *s, int c, size_t n);
-size_t  strlen(const char *s);
-char *strcpy(char *s1, const char *s2);
-char *strncpy (char *dst, const char *src, size_t len);
-
-void *malloc(size_t size);
-void* realloc(void* oldmem, size_t bytes);
-
-#define kfree free
-
-static inline void *krealloc(void *p, size_t new_size, gfp_t flags)
-{
-    return realloc(p, new_size);
-}
-
-static inline void *kzalloc(size_t size, uint32_t flags)
-{
-    void *ret = malloc(size);
-    memset(ret, 0, size);
-    return ret;
-}
-
-#define kmalloc(s,f) kzalloc((s), (f))
-
-
-
-
-struct drm_file;
-
-
-#define PAGE_SHIFT      12
-#define PAGE_SIZE       (1UL << PAGE_SHIFT)
-#define PAGE_MASK       (~(PAGE_SIZE-1))
-
-
-
-#define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
-#define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
-
-struct timeval
-{
-  __kernel_time_t         tv_sec;         /* seconds */
-  __kernel_suseconds_t    tv_usec;        /* microseconds */
-};
-
-
-#define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
-
-#ifndef __read_mostly
-#define __read_mostly
-#endif
-
 /**
  * struct callback_head - callback structure for use with RCU and task_work
  * @next: next update requests in a list
@@ -363,4 +213,5 @@ struct callback_head {
 };
 #define rcu_head callback_head
 
+#endif /*  __ASSEMBLY__ */
 #endif /* _LINUX_TYPES_H */

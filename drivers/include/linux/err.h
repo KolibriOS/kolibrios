@@ -4,7 +4,7 @@
 #include <linux/compiler.h>
 #include <linux/types.h>
 
-#include <errno.h>
+#include <asm/errno.h>
 
 /*
  * Kernel pointers have redundant information, so we can use a

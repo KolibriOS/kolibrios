@@ -3,8 +3,6 @@
 #ifndef _DRM_INTEL_GTT_H
 #define	_DRM_INTEL_GTT_H
 
-struct agp_bridge_data;
-
 void intel_gtt_get(size_t *gtt_total, size_t *stolen_size,
 		   phys_addr_t *mappable_base, unsigned long *mappable_end);
 

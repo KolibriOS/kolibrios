@@ -17,9 +17,13 @@
 #define LINUX_PCI_H
 
 #include <linux/types.h>
-#include <list.h>
+#include <linux/list.h>
+#include <linux/compiler.h>
+#include <linux/errno.h>
+#include <linux/atomic.h>
+
 #include <linux/pci_regs.h>	/* The pci register defines */
-#include <ioport.h>
+#include <linux/ioport.h>
 
 
 #define PCI_CFG_SPACE_SIZE      256
@@ -311,6 +315,19 @@ enum pci_bus_flags {
     PCI_BUS_FLAGS_NO_MMRBC = (__force pci_bus_flags_t) 2,
 };
 
+/* These values come from the PCI Express Spec */
+enum pcie_link_width {
+	PCIE_LNK_WIDTH_RESRV	= 0x00,
+	PCIE_LNK_X1		= 0x01,
+	PCIE_LNK_X2		= 0x02,
+	PCIE_LNK_X4		= 0x04,
+	PCIE_LNK_X8		= 0x08,
+	PCIE_LNK_X12		= 0x0C,
+	PCIE_LNK_X16		= 0x10,
+	PCIE_LNK_X32		= 0x20,
+	PCIE_LNK_WIDTH_UNKNOWN  = 0xFF,
+};
+
 /* Based on the PCI Hotplug Spec, but some values are made up by us */
 enum pci_bus_speed {
 	PCI_SPEED_33MHz			= 0x00,
@@ -338,6 +355,23 @@ enum pci_bus_speed {
 	PCI_SPEED_UNKNOWN		= 0xff,
 };
 
+struct pci_cap_saved_data {
+	u16 cap_nr;
+	bool cap_extended;
+	unsigned int size;
+	u32 data[0];
+};
+
+struct pci_cap_saved_state {
+	struct hlist_node next;
+	struct pci_cap_saved_data cap;
+};
+
+struct pcie_link_state;
+struct pci_vpd;
+struct pci_sriov;
+struct pci_ats;
+
 /*
  * The pci_dev structure is used to describe PCI devices.
  */
@@ -349,7 +383,7 @@ struct pci_dev {
 	void		*sysdata;	/* hook for sys-specific extension */
 //    struct proc_dir_entry *procent; /* device entry in /proc/bus/pci */
 	struct pci_slot	*slot;		/* Physical slot this device is in */
-    u32_t           busnr;
+	u32           busnr;
 	unsigned int	devfn;		/* encoded device & function index */
 	unsigned short	vendor;
 	unsigned short	device;
@@ -365,7 +399,7 @@ struct pci_dev {
 	u16		pcie_flags_reg;	/* cached PCI-E Capabilities Register */
 
  //   struct pci_driver *driver;  /* which driver has allocated this device */
-    uint64_t     dma_mask;   /* Mask of the bits of bus address this
+    u64     dma_mask;   /* Mask of the bits of bus address this
                        device implements.  Normally this is
                        0xffffffff.  You only need to change
                        this if your device has broken DMA
@@ -548,7 +582,7 @@ static inline int pcibios_err_to_errno(int err)
 	case PCIBIOS_FUNC_NOT_SUPPORTED:
 		return -ENOENT;
 	case PCIBIOS_BAD_VENDOR_ID:
-		return -EINVAL;
+		return -ENOTTY;
 	case PCIBIOS_DEVICE_NOT_FOUND:
 		return -ENODEV;
 	case PCIBIOS_BAD_REGISTER_NUMBER:
@@ -559,7 +593,7 @@ static inline int pcibios_err_to_errno(int err)
 		return -ENOSPC;
 	}
 
-	return -ENOTTY;
+	return -ERANGE;
 }
 
 /* Low-level architecture-dependent routines */
@@ -569,6 +603,19 @@ struct pci_ops {
     int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
 };
 
+/*
+ * ACPI needs to be able to access PCI config space before we've done a
+ * PCI bus scan and created pci_bus structures.
+ */
+int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
+		 int reg, int len, u32 *val);
+int raw_pci_write(unsigned int domain, unsigned int bus, unsigned int devfn,
+		  int reg, int len, u32 val);
+
+struct pci_bus_region {
+	dma_addr_t start;
+	dma_addr_t end;
+};
 
 enum pci_bar_type {
     pci_bar_unknown,    /* Standard PCI BAR probe */

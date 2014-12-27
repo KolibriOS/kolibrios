@@ -1,11 +1,21 @@
+/*
+ * workqueue.h --- work queue handling for Linux.
+ */
+
 #ifndef _LINUX_WORKQUEUE_H
 #define _LINUX_WORKQUEUE_H
 
 #include <linux/list.h>
+#include <linux/linkage.h>
+#include <linux/lockdep.h>
+#include <linux/threads.h>
+
 #include <syscall.h>
+struct workqueue_struct;
 
 struct work_struct;
 typedef void (*work_func_t)(struct work_struct *work);
+void __stdcall delayed_work_timer_fn(unsigned long __data);
 
 /*
  * Workqueue flags and constants.  For details, please refer to
@@ -38,6 +48,9 @@ struct work_struct {
     struct list_head entry;
     struct workqueue_struct *data;
     work_func_t func;
+#ifdef CONFIG_LOCKDEP
+	struct lockdep_map lockdep_map;
+#endif
 };
 
 struct delayed_work {

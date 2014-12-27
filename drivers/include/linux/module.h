@@ -8,9 +8,13 @@
  */
 #include <linux/list.h>
 #include <linux/compiler.h>
+#include <linux/cache.h>
+#include <linux/compiler.h>
+
 #include <linux/kernel.h>
 #include <linux/moduleparam.h>
 #include <linux/export.h>
+#include <linux/printk.h>
 
 
 #define MODULE_FIRMWARE(x)

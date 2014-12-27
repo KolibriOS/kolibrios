@@ -1,4 +1,4 @@
-#include <jiffies.h>
+#include <linux/jiffies.h>
 
 
 
@@ -131,6 +131,7 @@ unsigned long msecs_to_jiffies(const unsigned int m)
         >> MSEC_TO_HZ_SHR32;
 #endif
 }
+EXPORT_SYMBOL(msecs_to_jiffies);
 
 unsigned long usecs_to_jiffies(const unsigned int u)
 {
@@ -145,12 +146,27 @@ unsigned long usecs_to_jiffies(const unsigned int u)
         >> USEC_TO_HZ_SHR32;
 #endif
 }
+EXPORT_SYMBOL(usecs_to_jiffies);
 
-unsigned long
-timespec_to_jiffies(const struct timespec *value)
+/*
+ * The TICK_NSEC - 1 rounds up the value to the next resolution.  Note
+ * that a remainder subtract here would not do the right thing as the
+ * resolution values don't fall on second boundries.  I.e. the line:
+ * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
+ * Note that due to the small error in the multiplier here, this
+ * rounding is incorrect for sufficiently large values of tv_nsec, but
+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
+ * OK.
+ *
+ * Rather, we just shift the bits off the right.
+ *
+ * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
+ * value to a scaled second value.
+ */
+static unsigned long
+__timespec_to_jiffies(unsigned long sec, long nsec)
 {
-    unsigned long sec = value->tv_sec;
-    long nsec = value->tv_nsec + TICK_NSEC - 1;
+	nsec = nsec + TICK_NSEC - 1;
 
     if (sec >= MAX_SEC_IN_JIFFIES){
             sec = MAX_SEC_IN_JIFFIES;
@@ -161,6 +177,28 @@ timespec_to_jiffies(const struct timespec *value)
              (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
 
 }
+
+unsigned long
+timespec_to_jiffies(const struct timespec *value)
+{
+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
+}
+
+EXPORT_SYMBOL(timespec_to_jiffies);
+
+void
+jiffies_to_timespec(const unsigned long jiffies, struct timespec *value)
+{
+	/*
+	 * Convert jiffies to nanoseconds and separate with
+	 * one divide.
+	 */
+	u32 rem;
+	value->tv_sec = div_u64_rem((u64)jiffies * TICK_NSEC,
+				    NSEC_PER_SEC, &rem);
+	value->tv_nsec = rem;
+}
+EXPORT_SYMBOL(jiffies_to_timespec);
 
 s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
 {

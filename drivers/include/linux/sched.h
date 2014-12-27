@@ -7,5 +7,6 @@
 #define TASK_COMM_LEN 16 
 
 #define schedule_timeout(x)  delay(x)
+#define MAX_SCHEDULE_TIMEOUT    LONG_MAX
 
 #endif

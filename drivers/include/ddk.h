@@ -3,10 +3,10 @@
 #ifndef __DDK_H__
 #define __DDK_H__
 
-#include <kernel.h>
+#include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/spinlock.h>
-#include <mutex.h>
+#include <linux/mutex.h>
 #include <linux/pci.h>
 
 
@@ -17,12 +17,6 @@
 #define PG_NOCACHE          0x018
 #define PG_SHARED           0x200
 
-#define _PAGE_PRESENT       (1<<0)
-#define _PAGE_RW            (1<<1)
-#define _PAGE_PWT           (1<<3)
-#define _PAGE_PCD           (1<<4)
-#define _PAGE_PAT           (1<<7)
-
 #define MANUAL_DESTROY      0x80000000
 
 #define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
@@ -31,24 +25,24 @@
 
 typedef struct
 {
-    u32_t  code;
-    u32_t  data[5];
+    u32  code;
+    u32  data[5];
 }kevent_t;
 
 typedef union
 {
     struct
     {
-        u32_t handle;
-        u32_t euid;
+        u32 handle;
+        u32 euid;
     };
-    u64_t raw;
+    u64 raw;
 }evhandle_t;
 
 typedef struct
 {
-  u32_t      handle;
-  u32_t      io_code;
+  u32      handle;
+  u32      io_code;
   void       *input;
   int        inp_size;
   void       *output;
@@ -65,16 +59,10 @@ struct ddk_params;
 
 int   ddk_init(struct ddk_params *params);
 
-u32_t drvEntry(int, char *)__asm__("_drvEntry");
+u32 drvEntry(int, char *)__asm__("_drvEntry");
 
 
 
-static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
-{
-//    if (size != 0 && n > SIZE_MAX / size)
-//        return NULL;
-    return kmalloc(n * size, flags);
-}
 
 
 #endif      /*    DDK_H    */

@@ -1,13 +1,18 @@
 
-
 CC = gcc
 AS = as
 
 DRV_TOPDIR   = $(CURDIR)/..
 DRV_INCLUDES = $(DRV_TOPDIR)/include
 
-INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/asm
-DEFINES  = 	-DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DMI
+
+INCLUDES =	-I$(DRV_INCLUDES)	\
+		-I$(DRV_INCLUDES)/asm 	\
+		-I$(DRV_INCLUDES)/uapi
+
+DEFINES = -DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DMI -DCONFIG_TINY_RCU
+DEFINES+= -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
+
 CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf \
 -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2
 
@@ -25,6 +30,7 @@ NAME_SRCS:=  				\
            	io/write.c		\
 		linux/bitmap.c		\
 		linux/dmi.c		\
+		linux/find_next_bit.c	\
 		linux/idr.c		\
 		linux/interval_tree.c	\
 		linux/firmware.c	\

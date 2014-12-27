@@ -77,8 +77,8 @@ extern int register_refined_jiffies(long clock_tick_rate);
  * without sampling the sequence number in jiffies_lock.
  * get_jiffies_64() will do this for you as appropriate.
  */
-extern u64 jiffies_64;
-extern unsigned long volatile jiffies;
+extern u64 __jiffy_data jiffies_64;
+extern unsigned long volatile __jiffy_data jiffies;
 
 #if (BITS_PER_LONG < 64)
 u64 get_jiffies_64(void);
@@ -262,23 +262,11 @@ extern unsigned long preset_lpj;
 #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
 #endif
 #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
-#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
 #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
                                 TICK_NSEC -1) / (u64)TICK_NSEC))
 
 #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
                                         TICK_NSEC -1) / (u64)TICK_NSEC))
-#define USEC_CONVERSION  \
-                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
-                                        TICK_NSEC -1) / (u64)TICK_NSEC))
-/*
- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
- * for more details.  It is the scaled resolution rounding value.  Note
- * that it is a 64-bit value.  Since, when it is applied, we are already
- * in jiffies (albit scaled), it is nothing but the bits we will shift
- * off.
- */
-#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
 /*
  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
  * into seconds.  The 64-bit case will overflow if we are not careful,
@@ -324,35 +312,6 @@ extern u64 jiffies_64_to_clock_t(u64 x);
 extern u64 nsec_to_clock_t(u64 x);
 extern u64 nsecs_to_jiffies64(u64 n);
 extern unsigned long nsecs_to_jiffies(u64 n);
-
-
-static unsigned long round_jiffies_common(unsigned long j, bool force_up)
-{
-    int rem;
-    unsigned long original = j;
-
-    rem = j % HZ;
-
-    /*
-     * If the target jiffie is just after a whole second (which can happen
-     * due to delays of the timer irq, long irq off times etc etc) then
-     * we should round down to the whole second, not up. Use 1/4th second
-     * as cutoff for this rounding as an extreme upper bound for this.
-     * But never round down if @force_up is set.
-     */
-    if (rem < HZ/4 && !force_up) /* round down */
-            j = j - rem;
-    else /* round up */
-            j = j - rem + HZ;
-
-    if (j <= GetTimerTicks()) /* rounding ate our timeout entirely; */
-            return original;
-    return j;
-}
-
-
-
-unsigned long round_jiffies_up_relative(unsigned long j);
 
 #define TIMESTAMP_SIZE	30
 

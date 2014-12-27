@@ -15,7 +15,11 @@
 #ifndef _KREF_H_
 #define _KREF_H_
 
-#include <linux/types.h>
+#include <linux/bug.h>
+#include <linux/atomic.h>
+#include <linux/kernel.h>
+#include <linux/mutex.h>
+#include <linux/spinlock.h>
 
 struct kref {
 	atomic_t refcount;

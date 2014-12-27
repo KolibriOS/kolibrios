@@ -1,6 +1,6 @@
 
 #include <ddk.h>
-#include <mutex.h>
+#include <linux/mutex.h>
 #include <syscall.h>
 
 #pragma pack(push, 1)

@@ -10,8 +10,12 @@
 #ifndef __LINUX_MUTEX_H
 #define __LINUX_MUTEX_H
 
+#include <asm/current.h>
 #include <linux/list.h>
 #include <asm/atomic.h>
+#include <linux/linkage.h>
+#include <linux/lockdep.h>
+#include <asm/processor.h>
 
 /*
  * Simple, straightforward mutexes with strict semantics:

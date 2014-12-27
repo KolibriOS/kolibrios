@@ -4,6 +4,9 @@
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
 
+typedef u32 addr_t;
+typedef u32 count_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define STDCALL  __attribute__ ((stdcall)) __attribute__ ((dllimport))
@@ -25,7 +28,7 @@
 
 void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
 void   STDCALL FreeKernelSpace(void *mem)__asm__("FreeKernelSpace");
-addr_t STDCALL MapIoMem(addr_t base, size_t size, u32_t flags)__asm__("MapIoMem");
+addr_t STDCALL MapIoMem(addr_t base, size_t size, u32 flags)__asm__("MapIoMem");
 void*  STDCALL KernelAlloc(size_t size)__asm__("KernelAlloc");
 void*  STDCALL KernelFree(void *mem)__asm__("KernelFree");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
@@ -33,27 +36,27 @@ int    STDCALL UserFree(void *mem)__asm__("UserFree");
 
 void*  STDCALL GetDisplay(void)__asm__("GetDisplay");
 
-u32_t  IMPORT  GetTimerTicks(void)__asm__("GetTimerTicks");
+u32  IMPORT  GetTimerTicks(void)__asm__("GetTimerTicks");
 
 addr_t STDCALL AllocPage(void)__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
 void   IMPORT  __attribute__((regparm(1)))
                FreePage(addr_t page)__asm__("FreePage");
-void   STDCALL MapPage(void *vaddr, addr_t paddr, u32_t flags)__asm__("MapPage");
+void   STDCALL MapPage(void *vaddr, addr_t paddr, u32 flags)__asm__("MapPage");
 
 
-void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
+void* STDCALL CreateRingBuffer(size_t size, u32 map)__asm__("CreateRingBuffer");
 
-u32_t STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
+u32 STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
 
-int   STDCALL AttachIntHandler(int irq, void *handler, u32_t access) __asm__("AttachIntHandler");
+int   STDCALL AttachIntHandler(int irq, void *handler, u32 access) __asm__("AttachIntHandler");
 
 void  FASTCALL MutexInit(struct mutex*)__asm__("MutexInit");
 void  FASTCALL MutexLock(struct mutex*)__asm__("MutexLock");
 void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 
 addr_t IMPORT  GetStackBase(void)__asm__("GetStackBase");
-u32_t  IMPORT  GetPid(void)__asm__("GetPid");
+u32  IMPORT  GetPid(void)__asm__("GetPid");
 
 u32 STDCALL TimerHS(u32 delay, u32 interval,
                     void *fn, void *data)asm("TimerHS");
@@ -67,16 +70,16 @@ u64 IMPORT GetCpuFreq()__asm__("GetCpuFreq");
 void   STDCALL SetMouseData(int btn, int x, int y,
                             int z, int h)__asm__("SetMouseData");
 
-void   FASTCALL SetKeyboardData(u32_t data)__asm__("SetKeyboardData");
+void   FASTCALL SetKeyboardData(u32 data)__asm__("SetKeyboardData");
 
 
-u8_t  STDCALL PciRead8 (u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead8");
-u16_t STDCALL PciRead16(u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead16");
-u32_t STDCALL PciRead32(u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead32");
+u8  STDCALL PciRead8 (u32 bus, u32 devfn, u32 reg)__asm__("PciRead8");
+u16 STDCALL PciRead16(u32 bus, u32 devfn, u32 reg)__asm__("PciRead16");
+u32 STDCALL PciRead32(u32 bus, u32 devfn, u32 reg)__asm__("PciRead32");
 
-u32_t STDCALL PciWrite8 (u32_t bus, u32_t devfn, u32_t reg,u8_t val) __asm__("PciWrite8");
-u32_t STDCALL PciWrite16(u32_t bus, u32_t devfn, u32_t reg,u16_t val)__asm__("PciWrite16");
-u32_t STDCALL PciWrite32(u32_t bus, u32_t devfn, u32_t reg,u32_t val)__asm__("PciWrite32");
+u32 STDCALL PciWrite8 (u32 bus, u32 devfn, u32 reg,u8 val) __asm__("PciWrite8");
+u32 STDCALL PciWrite16(u32 bus, u32 devfn, u32 reg,u16 val)__asm__("PciWrite16");
+u32 STDCALL PciWrite32(u32 bus, u32 devfn, u32 reg,u32 val)__asm__("PciWrite32");
 
 #define pciReadByte(tag, reg) \
         PciRead8(PCI_BUS_FROM_TAG(tag),PCI_DFN_FROM_TAG(tag),(reg))
@@ -158,7 +161,7 @@ static inline int CreateKernelThread(void *entry)
 };
 
 
-static inline evhandle_t CreateEvent(kevent_t *ev, u32_t flags)
+static inline evhandle_t CreateEvent(kevent_t *ev, u32 flags)
 {
      evhandle_t evh;
 
@@ -172,7 +175,7 @@ static inline evhandle_t CreateEvent(kevent_t *ev, u32_t flags)
      return evh;
 };
 
-static inline void RaiseEvent(evhandle_t evh, u32_t flags, kevent_t *ev)
+static inline void RaiseEvent(evhandle_t evh, u32 flags, kevent_t *ev)
 {
      __asm__ __volatile__ (
      "call *__imp__RaiseEvent"
@@ -209,9 +212,9 @@ static inline void DestroyEvent(evhandle_t evh)
      __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
 };
 
-static inline u32_t GetEvent(kevent_t *ev)
+static inline u32 GetEvent(kevent_t *ev)
 {
-    u32_t  handle;
+    u32  handle;
 
     __asm__ __volatile__ (
     "call *__imp__GetEvent"
@@ -253,9 +256,9 @@ static inline int GetScreenPitch(void)
   return retval;
 }
 
-static inline u32_t GetPgAddr(void *mem)
+static inline u32 GetPgAddr(void *mem)
 {
-     u32_t retval;
+     u32 retval;
 
      __asm__ __volatile__ (
      "call *__imp__GetPgAddr \n\t"
@@ -264,7 +267,7 @@ static inline u32_t GetPgAddr(void *mem)
      return retval;
 };
 
-static inline void CommitPages(void *mem, u32_t page, u32_t size)
+static inline void CommitPages(void *mem, u32 page, u32 size)
 {
      size = (size+4095) & ~4095;
      __asm__ __volatile__ (
@@ -284,7 +287,7 @@ static inline void UnmapPages(void *mem, size_t size)
      __asm__ __volatile__ ("":::"eax","ecx");
 };
 
-static inline void usleep(u32_t delay)
+static inline void usleep(u32 delay)
 {
      if( !delay )
         delay++;
@@ -297,7 +300,7 @@ static inline void usleep(u32_t delay)
         :::"eax","ebx","ecx","edx");
      };
 
-static inline void udelay(u32_t delay)
+static inline void udelay1(u32 delay)
 {
     if(!delay) delay++;
     delay*= 100;
@@ -311,7 +314,7 @@ static inline void udelay(u32_t delay)
     }
 }
 
-static inline void msleep(unsigned int msecs)
+static inline void msleep1(unsigned int msecs)
 {
     msecs /= 10;
     if(!msecs) msecs = 1;
@@ -324,7 +327,7 @@ static inline void msleep(unsigned int msecs)
 
 };
 
-static inline void mdelay(u32_t time)
+static inline void mdelay1(u32 time)
 {
     time /= 10;
     if(!time) time = 1;
@@ -337,9 +340,9 @@ static inline void mdelay(u32_t time)
 
 };
 
-static inline u32_t __PciApi(int cmd)
+static inline u32 __PciApi(int cmd)
 {
-     u32_t retval;
+     u32 retval;
 
      __asm__ __volatile__ (
      "call *__imp__PciApi \n\t"
@@ -351,7 +354,7 @@ static inline u32_t __PciApi(int cmd)
      return retval;
 };
 
-static inline void* __CreateObject(u32_t pid, size_t size)
+static inline void* __CreateObject(u32 pid, size_t size)
 {
      void *retval;
 
@@ -374,9 +377,9 @@ static inline void __DestroyObject(void *obj)
      :::"eax","ebx","ecx","edx","esi","edi","cc","memory");
 }
 
-static inline u32_t GetService(const char *name)
+static inline u32 GetService(const char *name)
 {
-    u32_t handle;
+    u32 handle;
 
     __asm__ __volatile__
     (
@@ -389,9 +392,9 @@ static inline u32_t GetService(const char *name)
   return handle;
 };
 
-static inline u32_t safe_cli(void)
+static inline u32 safe_cli(void)
 {
-     u32_t ifl;
+     u32 ifl;
      __asm__ __volatile__ (
      "pushf\n\t"
      "popl %0\n\t"
@@ -400,15 +403,15 @@ static inline u32_t safe_cli(void)
     return ifl;
 }
 
-static inline void safe_sti(u32_t efl)
+static inline void safe_sti(u32 efl)
 {
      if (efl & (1<<9))
         __asm__ __volatile__ ("sti");
 }
 
-static inline u32_t get_eflags(void)
+static inline u32 get_eflags(void)
 {
-    u32_t val;
+    u32 val;
     asm volatile (
     "pushfl\n\t"
     "popl %0\n"
@@ -418,7 +421,7 @@ static inline u32_t get_eflags(void)
 
 static inline void __clear (void * dst, unsigned len)
 {
-     u32_t tmp;
+     u32 tmp;
      __asm__ __volatile__ (
      "cld \n\t"
      "rep stosb \n"
@@ -427,43 +430,43 @@ static inline void __clear (void * dst, unsigned len)
      __asm__ __volatile__ ("":::"ecx","edi");
 };
 
-static inline void out8(const u16_t port, const u8_t val)
+static inline void out8(const u16 port, const u8 val)
 {
     __asm__ __volatile__
     ("outb  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-static inline void out16(const u16_t port, const u16_t val)
+static inline void out16(const u16 port, const u16 val)
 {
     __asm__ __volatile__
     ("outw  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-static inline void out32(const u16_t port, const u32_t val)
+static inline void out32(const u16 port, const u32 val)
 {
     __asm__ __volatile__
     ("outl  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-static inline u8_t in8(const u16_t port)
+static inline u8 in8(const u16 port)
 {
-    u8_t tmp;
+    u8 tmp;
     __asm__ __volatile__
     ("inb %1, %0\n" : "=a"(tmp) : "dN"(port));
     return tmp;
 };
 
-static inline u16_t in16(const u16_t port)
+static inline u16 in16(const u16 port)
 {
-    u16_t tmp;
+    u16 tmp;
     __asm__ __volatile__
     ("inw %1, %0\n" : "=a"(tmp) : "dN"(port));
     return tmp;
 };
 
-static inline u32_t in32(const u16_t port)
+static inline u32 in32(const u16 port)
 {
-    u32_t tmp;
+    u32 tmp;
     __asm__ __volatile__
     ("inl %1, %0\n" : "=a"(tmp) : "dN"(port));
     return tmp;
@@ -499,12 +502,12 @@ static inline void sysSetScreen(int width, int height, int pitch)
 
 int drm_order(unsigned long size);
 
-static inline void __iomem *ioremap(uint32_t offset, size_t size)
+static inline void __iomem *ioremap(u32 offset, size_t size)
 {
     return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE|0x100);
 }
 
-static inline void __iomem *ioremap_wc(uint32_t offset, size_t size)
+static inline void __iomem *ioremap_wc(u32 offset, size_t size)
 {
     return (void __iomem*) MapIoMem(offset, size, PG_SW|0x100);
 }

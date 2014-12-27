@@ -1,8 +1,15 @@
 #ifndef _LINUX_WAIT_H
 #define _LINUX_WAIT_H
-
-
+/*
+ * Linux wait queue related types and methods
+ */
 #include <linux/list.h>
+#include <linux/stddef.h>
+#include <linux/spinlock.h>
+#include <asm/current.h>
+
+
+
 #include <syscall.h>
 
 typedef struct __wait_queue wait_queue_t;
@@ -27,6 +34,10 @@ static inline int waitqueue_active(wait_queue_head_t *q)
 {
 	return !list_empty(&q->task_list);
 }
+
+extern void add_wait_queue(wait_queue_head_t *q, wait_queue_t *wait);
+extern void add_wait_queue_exclusive(wait_queue_head_t *q, wait_queue_t *wait);
+extern void remove_wait_queue(wait_queue_head_t *q, wait_queue_t *wait);
 
 static inline void __add_wait_queue(wait_queue_head_t *head, wait_queue_t *new)
 {
@@ -145,10 +156,10 @@ init_waitqueue_head(wait_queue_head_t *q)
 };
 
 
-struct completion {
-    unsigned int done;
-    wait_queue_head_t wait;
-};
+//struct completion {
+//    unsigned int done;
+//    wait_queue_head_t wait;
+//};
 
 int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
 

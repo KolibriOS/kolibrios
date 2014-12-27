@@ -25,7 +25,8 @@
 //#include <linux/kobject_ns.h>
 #include <linux/kernel.h>
 #include <linux/wait.h>
-//#include <linux/atomic.h>
+#include <linux/atomic.h>
+#include <linux/workqueue.h>
 
 #define UEVENT_HELPER_PATH_LEN		256
 #define UEVENT_NUM_ENVP			32	/* number of env pointers */

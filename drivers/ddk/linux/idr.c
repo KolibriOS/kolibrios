@@ -20,20 +20,16 @@
  * that id to this code and it returns your pointer.
  */
 
-#include <linux/kernel.h>
+#ifndef TEST                        // to test in user space...
+#include <linux/slab.h>
 #include <linux/export.h>
+#endif
+#include <linux/err.h>
 #include <linux/string.h>
-#include <linux/bitops.h>
 #include <linux/idr.h>
-//#include <stdlib.h>
+#include <linux/spinlock.h>
 
-static inline void * __must_check ERR_PTR(long error)
-{
-	return (void *) error;
-}
 
-unsigned long find_next_zero_bit(const unsigned long *addr, unsigned long size,
-                                 unsigned long offset);
 
 
 #define MAX_IDR_SHIFT		(sizeof(int) * 8 - 1)
@@ -132,7 +128,7 @@ static inline void free_layer(struct idr *idr, struct idr_layer *p)
 {
 	if (idr->hint == p)
 		RCU_INIT_POINTER(idr->hint, NULL);
-    idr_layer_rcu_free(&p->rcu_head);
+	call_rcu(&p->rcu_head, idr_layer_rcu_free);
 }
 
 /* only called when idp->lock is held */
@@ -500,7 +496,7 @@ static void sub_remove(struct idr *idp, int shift, int id)
 	n = id & IDR_MASK;
 	if (likely(p != NULL && test_bit(n, p->bitmap))) {
 		__clear_bit(n, p->bitmap);
-		rcu_assign_pointer(p->ary[n], NULL);
+		RCU_INIT_POINTER(p->ary[n], NULL);
 		to_free = NULL;
 		while(*paa && ! --((**paa)->count)){
 			if (to_free)
@@ -564,7 +560,7 @@ static void __idr_remove_all(struct idr *idp)
 
 	n = idp->layers * IDR_BITS;
 	*paa = idp->top;
-	rcu_assign_pointer(idp->top, NULL);
+	RCU_INIT_POINTER(idp->top, NULL);
 	max = idr_max(idp->layers);
 
 	id = 0;
@@ -599,7 +595,7 @@ static void __idr_remove_all(struct idr *idp)
  * idr_destroy().
  *
  * A typical clean-up sequence for objects stored in an idr tree will use
- * idr_for_each() to free all objects, if necessay, then idr_destroy() to
+ * idr_for_each() to free all objects, if necessary, then idr_destroy() to
  * free up the id mappings and cached idr_layers.
  */
 void idr_destroy(struct idr *idp)
@@ -1119,129 +1115,3 @@ void ida_init(struct ida *ida)
 
 }
 EXPORT_SYMBOL(ida_init);
-
-
-
-unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
-{
-        const unsigned long *p = addr;
-        unsigned long result = 0;
-        unsigned long tmp;
-
-        while (size & ~(BITS_PER_LONG-1)) {
-                if ((tmp = *(p++)))
-                        goto found;
-                result += BITS_PER_LONG;
-                size -= BITS_PER_LONG;
-        }
-        if (!size)
-                return result;
-
-        tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
-        if (tmp == 0UL)         /* Are any bits set? */
-                return result + size;   /* Nope. */
-found:
-        return result + __ffs(tmp);
-}
-
-unsigned long find_next_bit(const unsigned long *addr, unsigned long size,
-                            unsigned long offset)
-{
-        const unsigned long *p = addr + BITOP_WORD(offset);
-        unsigned long result = offset & ~(BITS_PER_LONG-1);
-        unsigned long tmp;
-
-        if (offset >= size)
-                return size;
-        size -= result;
-        offset %= BITS_PER_LONG;
-        if (offset) {
-                tmp = *(p++);
-                tmp &= (~0UL << offset);
-                if (size < BITS_PER_LONG)
-                        goto found_first;
-                if (tmp)
-                        goto found_middle;
-                size -= BITS_PER_LONG;
-                result += BITS_PER_LONG;
-        }
-        while (size & ~(BITS_PER_LONG-1)) {
-                if ((tmp = *(p++)))
-                        goto found_middle;
-                result += BITS_PER_LONG;
-                size -= BITS_PER_LONG;
-        }
-        if (!size)
-                return result;
-        tmp = *p;
-
-found_first:
-        tmp &= (~0UL >> (BITS_PER_LONG - size));
-        if (tmp == 0UL)         /* Are any bits set? */
-                return result + size;   /* Nope. */
-found_middle:
-        return result + __ffs(tmp);
-}
-
-unsigned long find_next_zero_bit(const unsigned long *addr, unsigned long size,
-                                 unsigned long offset)
-{
-        const unsigned long *p = addr + BITOP_WORD(offset);
-        unsigned long result = offset & ~(BITS_PER_LONG-1);
-        unsigned long tmp;
-
-        if (offset >= size)
-                return size;
-        size -= result;
-        offset %= BITS_PER_LONG;
-        if (offset) {
-                tmp = *(p++);
-                tmp |= ~0UL >> (BITS_PER_LONG - offset);
-                if (size < BITS_PER_LONG)
-                        goto found_first;
-                if (~tmp)
-                        goto found_middle;
-                size -= BITS_PER_LONG;
-                result += BITS_PER_LONG;
-        }
-        while (size & ~(BITS_PER_LONG-1)) {
-                if (~(tmp = *(p++)))
-                        goto found_middle;
-                result += BITS_PER_LONG;
-                size -= BITS_PER_LONG;
-        }
-        if (!size)
-                return result;
-        tmp = *p;
-
-found_first:
-        tmp |= ~0UL << size;
-        if (tmp == ~0UL)        /* Are any bits zero? */
-                return result + size;   /* Nope. */
-found_middle:
-        return result + ffz(tmp);
-}
-
-unsigned int hweight32(unsigned int w)
-{
-        unsigned int res = w - ((w >> 1) & 0x55555555);
-        res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
-        res = (res + (res >> 4)) & 0x0F0F0F0F;
-        res = res + (res >> 8);
-        return (res + (res >> 16)) & 0x000000FF;
-}
-
-unsigned long hweight64(__u64 w)
-{
-#if BITS_PER_LONG == 32
-        return hweight32((unsigned int)(w >> 32)) + hweight32((unsigned int)w);
-#elif BITS_PER_LONG == 64
-        __u64 res = w - ((w >> 1) & 0x5555555555555555ul);
-        res = (res & 0x3333333333333333ul) + ((res >> 2) & 0x3333333333333333ul);
-        res = (res + (res >> 4)) & 0x0F0F0F0F0F0F0F0Ful;
-        res = res + (res >> 8);
-        res = res + (res >> 16);
-        return (res + (res >> 32)) & 0x00000000000000FFul;
-#endif
-}
-

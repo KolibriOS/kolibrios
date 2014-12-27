@@ -24,9 +24,11 @@
 
 
 #include <ddk.h>
+#include <linux/slab.h>
 #include <linux/errno.h>
 #include <linux/mutex.h>
-#include <pci.h>
+#include <linux/pci.h>
+#include <linux/gfp.h>
 #include <syscall.h>
 
 
@@ -142,7 +144,7 @@ static struct dma_page *pool_alloc_page(struct dma_pool *pool)
 {
     struct dma_page *page;
 
-    page = malloc(sizeof(*page));
+    page = __builtin_malloc(sizeof(*page));
     if (!page)
         return NULL;
     page->vaddr = (void*)KernelAlloc(pool->allocation);
@@ -228,7 +230,7 @@ void dma_pool_destroy(struct dma_pool *pool)
 void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
              dma_addr_t *handle)
 {
-    u32_t   efl;
+    u32   efl;
     struct  dma_page *page;
     size_t  offset;
     void   *retval;
@@ -262,7 +264,7 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
 static struct dma_page *pool_find_page(struct dma_pool *pool, dma_addr_t dma)
 {
     struct dma_page *page;
-    u32_t  efl;
+    u32  efl;
 
     efl = safe_cli();
 
@@ -294,7 +296,7 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
     unsigned long flags;
     unsigned int offset;
 
-    u32_t efl;
+    u32 efl;
 
     page = pool_find_page(pool, dma);
     if (!page) {

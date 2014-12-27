@@ -1,7 +1,8 @@
 #ifndef _LINUX_STDDEF_H
 #define _LINUX_STDDEF_H
 
-#include <linux/compiler.h>
+#include <uapi/linux/stddef.h>
+
 
 #undef NULL
 #define NULL ((void *)0)
