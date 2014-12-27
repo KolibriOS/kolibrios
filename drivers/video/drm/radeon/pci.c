@@ -1,20 +1,12 @@
 
 #include <linux/kernel.h>
-#include <linux/types.h>
-#include <linux/export.h>
 #include <linux/mutex.h>
 #include <linux/mod_devicetable.h>
-#include <errno-base.h>
-#include <pci.h>
+#include <linux/slab.h>
+#include <linux/pci.h>
 #include <syscall.h>
 
-static inline __attribute__((const))
-bool is_power_of_2(unsigned long n)
-{
-    return (n != 0 && ((n & (n - 1)) == 0));
-}
-
-extern int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn);
+extern int pci_scan_filter(u32 id, u32 busnr, u32 devfn);
 
 static LIST_HEAD(devices);
 
@@ -39,9 +31,9 @@ static inline unsigned int pci_calc_resource_flags(unsigned int flags)
 }
 
 
-static u32_t pci_size(u32_t base, u32_t maxbase, u32_t mask)
+static u32 pci_size(u32 base, u32 maxbase, u32 mask)
 {
-    u32_t size = mask & maxbase;      /* Find the significant bits */
+    u32 size = mask & maxbase;      /* Find the significant bits */
 
     if (!size)
         return 0;
@@ -58,9 +50,9 @@ static u32_t pci_size(u32_t base, u32_t maxbase, u32_t mask)
     return size;
 }
 
-static u64_t pci_size64(u64_t base, u64_t maxbase, u64_t mask)
+static u64 pci_size64(u64 base, u64 maxbase, u64 mask)
 {
-    u64_t size = mask & maxbase;      /* Find the significant bits */
+    u64 size = mask & maxbase;      /* Find the significant bits */
 
     if (!size)
         return 0;
@@ -77,7 +69,7 @@ static u64_t pci_size64(u64_t base, u64_t maxbase, u64_t mask)
     return size;
 }
 
-static inline int is_64bit_memory(u32_t mask)
+static inline int is_64bit_memory(u32 mask)
 {
     if ((mask & (PCI_BASE_ADDRESS_SPACE|PCI_BASE_ADDRESS_MEM_TYPE_MASK)) ==
         (PCI_BASE_ADDRESS_SPACE_MEMORY|PCI_BASE_ADDRESS_MEM_TYPE_64))
@@ -87,15 +79,15 @@ static inline int is_64bit_memory(u32_t mask)
 
 static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
 {
-    u32_t  pos, reg, next;
-    u32_t  l, sz;
+    u32  pos, reg, next;
+    u32  l, sz;
     struct resource *res;
 
     for(pos=0; pos < howmany; pos = next)
     {
-        u64_t  l64;
-        u64_t  sz64;
-        u32_t  raw_sz;
+        u64  l64;
+        u64  sz64;
+        u32  raw_sz;
 
         next = pos + 1;
 
@@ -117,7 +109,7 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         if ((l & PCI_BASE_ADDRESS_SPACE) ==
                         PCI_BASE_ADDRESS_SPACE_MEMORY)
         {
-            sz = pci_size(l, sz, (u32_t)PCI_BASE_ADDRESS_MEM_MASK);
+            sz = pci_size(l, sz, (u32)PCI_BASE_ADDRESS_MEM_MASK);
             /*
              * For 64bit prefetchable memory sz could be 0, if the
              * real size is bigger than 4G, so we need to check
@@ -139,14 +131,14 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         res->flags |= pci_calc_resource_flags(l);
         if (is_64bit_memory(l))
         {
-            u32_t szhi, lhi;
+            u32 szhi, lhi;
 
             lhi = PciRead32(dev->busnr, dev->devfn, reg+4);
             PciWrite32(dev->busnr, dev->devfn, reg+4, ~0);
             szhi = PciRead32(dev->busnr, dev->devfn, reg+4);
             PciWrite32(dev->busnr, dev->devfn, reg+4, lhi);
-            sz64 = ((u64_t)szhi << 32) | raw_sz;
-            l64 = ((u64_t)lhi << 32) | l;
+            sz64 = ((u64)szhi << 32) | raw_sz;
+            l64 = ((u64)lhi << 32) | l;
             sz64 = pci_size64(l64, sz64, PCI_BASE_ADDRESS_MEM_MASK);
             next++;
 
@@ -170,7 +162,7 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
             {
                 /* 64-bit wide address, treat as disabled */
                 PciWrite32(dev->busnr, dev->devfn, reg,
-                        l & ~(u32_t)PCI_BASE_ADDRESS_MEM_MASK);
+                        l & ~(u32)PCI_BASE_ADDRESS_MEM_MASK);
                 PciWrite32(dev->busnr, dev->devfn, reg+4, 0);
                 res->start = 0;
                 res->end = sz;
@@ -194,7 +186,7 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
 
         if (sz && sz != 0xffffffff)
         {
-            sz = pci_size(l, sz, (u32_t)PCI_ROM_ADDRESS_MASK);
+            sz = pci_size(l, sz, (u32)PCI_ROM_ADDRESS_MASK);
 
             if (sz)
             {
@@ -210,7 +202,7 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
 
 static void pci_read_irq(struct pci_dev *dev)
 {
-    u8_t irq;
+    u8 irq;
 
     irq = PciRead8(dev->busnr, dev->devfn, PCI_INTERRUPT_PIN);
     dev->pin = irq;
@@ -222,7 +214,7 @@ static void pci_read_irq(struct pci_dev *dev)
 
 int pci_setup_device(struct pci_dev *dev)
 {
-    u32_t  class;
+    u32  class;
 
     class = PciRead32(dev->busnr, dev->devfn, PCI_CLASS_REVISION);
     dev->revision = class & 0xff;
@@ -254,7 +246,7 @@ int pci_setup_device(struct pci_dev *dev)
              */
             if (class == PCI_CLASS_STORAGE_IDE)
             {
-                u8_t progif;
+                u8 progif;
 
                 progif = PciRead8(dev->busnr, dev->devfn,PCI_CLASS_PROG);
                 if ((progif & 1) == 0)
@@ -319,12 +311,12 @@ int pci_setup_device(struct pci_dev *dev)
     return 0;
 };
 
-static pci_dev_t* pci_scan_device(u32_t busnr, int devfn)
+static pci_dev_t* pci_scan_device(u32 busnr, int devfn)
 {
     pci_dev_t  *dev;
 
-    u32_t   id;
-    u8_t    hdr;
+    u32   id;
+    u8    hdr;
 
     int     timeout = 10;
 
@@ -380,7 +372,7 @@ static pci_dev_t* pci_scan_device(u32_t busnr, int devfn)
 
 
 
-int pci_scan_slot(u32_t bus, int devfn)
+int pci_scan_slot(u32 bus, int devfn)
 {
     int  func, nr = 0;
 
@@ -488,8 +480,8 @@ int pci_find_capability(struct pci_dev *dev, int cap)
 int enum_pci_devices()
 {
     pci_dev_t  *dev;
-    u32_t       last_bus;
-    u32_t       bus = 0 , devfn = 0;
+    u32       last_bus;
+    u32       bus = 0 , devfn = 0;
 
 
     last_bus = PciApi(1);
@@ -672,11 +664,6 @@ void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
 }
 
 
-struct pci_bus_region {
-    resource_size_t start;
-    resource_size_t end;
-};
-
 static inline void
 pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
                          struct resource *res)
@@ -775,21 +762,11 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
     loff_t start;
     void __iomem *rom;
 
-//    ENTER();
-
-//    dbgprintf("resource start %x end %x flags %x\n",
-//               res->start, res->end, res->flags);
     /*
      * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
      * memory map if the VGA enable bit of the Bridge Control register is
      * set for embedded VGA.
      */
-
-    start = (loff_t)0xC0000;
-    *size = 0x20000; /* cover C000:0 through E000:0 */
-
-#if 0
-
     if (res->flags & IORESOURCE_ROM_SHADOW) {
         /* primary video rom always starts here */
         start = (loff_t)0xC0000;
@@ -801,21 +778,11 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
              return (void __iomem *)(unsigned long)
              pci_resource_start(pdev, PCI_ROM_RESOURCE);
         } else {
-                /* assign the ROM an address if it doesn't have one */
-//                        if (res->parent == NULL &&
-//                            pci_assign_resource(pdev,PCI_ROM_RESOURCE))
-                     return NULL;
-//                        start = pci_resource_start(pdev, PCI_ROM_RESOURCE);
-//                        *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
-//                        if (*size == 0)
-//                                return NULL;
+    				start = (loff_t)0xC0000;
+    				*size = 0x20000; /* cover C000:0 through E000:0 */
 
-             /* Enable ROM space decodes */
-//                        if (pci_enable_rom(pdev))
-//                                return NULL;
         }
     }
-#endif
 
     rom = ioremap(start, *size);
     if (!rom) {
@@ -833,7 +800,6 @@ void __iomem *pci_map_rom(struct pci_dev *pdev, size_t *size)
      * True size is important if the ROM is going to be copied.
      */
     *size = pci_get_rom_size(pdev, rom, *size);
-//    LEAVE();
     return rom;
 }
 
@@ -861,6 +827,8 @@ static void __pci_set_master(struct pci_dev *dev, bool enable)
     else
         cmd = old_cmd & ~PCI_COMMAND_MASTER;
     if (cmd != old_cmd) {
+            dbgprintf("%s bus mastering\n",
+                    enable ? "enabling" : "disabling");
         pci_write_config_word(dev, PCI_COMMAND, cmd);
         }
     dev->is_busmaster = enable;

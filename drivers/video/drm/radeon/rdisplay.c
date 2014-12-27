@@ -1,8 +1,6 @@
 
 #include <drm/drmP.h>
 #include <drm/radeon_drm.h>
-#include <drm.h>
-#include <drm_mm.h>
 #include "radeon.h"
 #include "radeon_object.h"
 #include "bitmap.h"
@@ -34,7 +32,7 @@ int init_cursor(cursor_t *cursor)
     rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
     r = radeon_bo_create(rdev, CURSOR_WIDTH*CURSOR_HEIGHT*4,
-                     PAGE_SIZE, false, RADEON_GEM_DOMAIN_VRAM, 0, NULL, &cursor->robj);
+                     4096, false, RADEON_GEM_DOMAIN_VRAM, 0, NULL, NULL, &cursor->robj);
 
     if (unlikely(r != 0))
         return r;
@@ -227,9 +225,9 @@ bool init_display(struct radeon_device *rdev, videomode_t *usermode)
 {
     struct drm_device   *dev;
 
-    cursor_t            *cursor;
-    bool                 retval = true;
-    u32_t                ifl;
+    cursor_t *cursor;
+    bool      retval = true;
+    u32       ifl;
 
     ENTER();
 

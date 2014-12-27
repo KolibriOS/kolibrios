@@ -32,7 +32,7 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
 	struct drm_connector *connector;
 	struct radeon_connector *radeon_connector = NULL;
 	u32 tmp;
-	u8 *sadb;
+	u8 *sadb = NULL;
 	int sad_count;
 
 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
@@ -165,7 +165,7 @@ void dce3_1_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode *m
 
 	/* disable audio prior to setting up hw */
 	dig->afmt->pin = r600_audio_get_pin(rdev);
-	r600_audio_enable(rdev, dig->afmt->pin, false);
+	r600_audio_enable(rdev, dig->afmt->pin, 0);
 
 	r600_audio_set_dto(encoder, mode->clock);
 
@@ -240,5 +240,5 @@ void dce3_1_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode *m
 	r600_hdmi_audio_workaround(encoder);
 
 	/* enable audio after to setting up hw */
-	r600_audio_enable(rdev, dig->afmt->pin, true);
+	r600_audio_enable(rdev, dig->afmt->pin, 0xf);
 }

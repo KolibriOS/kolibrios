@@ -1,8 +1,6 @@
 
 #include <drm/drmP.h>
 #include <drm/radeon_drm.h>
-#include <drm.h>
-#include <drm_mm.h>
 #include "radeon.h"
 #include "radeon_object.h"
 #include "drm_fb_helper.h"
@@ -406,8 +404,8 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     struct drm_crtc         *crtc = NULL;
     struct drm_framebuffer  *fb;
 
-    cursor_t            *cursor;
-    u32_t                ifl;
+    cursor_t  *cursor;
+    u32        ifl;
     int        ret;
 
     mutex_lock(&dev->mode_config.mutex);

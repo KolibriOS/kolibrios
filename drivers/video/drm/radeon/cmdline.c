@@ -1,7 +1,5 @@
 
 #include <drm/drmP.h>
-#include <drm.h>
-#include <drm_mm.h>
 #include <drm/radeon_drm.h>
 #include "radeon.h"
 #include "radeon_object.h"

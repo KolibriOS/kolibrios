@@ -29,15 +29,10 @@
  */
 
 #include <linux/export.h>
-#include <linux/scatterlist.h>
 #include <drm/drmP.h>
 
 extern int x86_clflush_size;
 
-static inline void clflush(volatile void *__p)
-{
-    asm volatile("clflush %0" : "+m" (*(volatile char*)__p));
-}
 
 #if 0
 static void

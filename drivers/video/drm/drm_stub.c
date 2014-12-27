@@ -33,11 +33,6 @@
 #include <drm/drmP.h>
 #include <drm/drm_core.h>
 
-struct va_format {
-    const char *fmt;
-    va_list *va;
-};
-
 unsigned int drm_debug = 0;	/* 1 to enable debug output */
 EXPORT_SYMBOL(drm_debug);
 
@@ -61,22 +56,21 @@ EXPORT_SYMBOL(drm_timestamp_precision);
 unsigned int drm_timestamp_monotonic = 1;
 
 struct idr drm_minors_idr;
-int drm_err(const char *func, const char *format, ...)
+
+void drm_err(const char *format, ...)
 {
-	struct va_format vaf;
-	va_list args;
-	int r;
+    struct va_format vaf;
+    va_list args;
 
-	va_start(args, format);
+    va_start(args, format);
 
-	vaf.fmt = format;
-	vaf.va = &args;
+    vaf.fmt = format;
+    vaf.va = &args;
 
-	r = printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* %pV", func, &vaf);
+    printk(KERN_ERR "[" DRM_NAME ":%pf] *ERROR* %pV",
+           __builtin_return_address(0), &vaf);
 
-	va_end(args);
-
-	return r;
+    va_end(args);
 }
 EXPORT_SYMBOL(drm_err);
 
@@ -561,10 +555,6 @@ int drm_order(unsigned long size)
 
 extern int x86_clflush_size;
 
-static inline void clflush(volatile void *__p)
-{
-    asm volatile("clflush %0" : "+m" (*(volatile char*)__p));
-}
 
 void drm_clflush_virt_range(void *addr, unsigned long length)
 {

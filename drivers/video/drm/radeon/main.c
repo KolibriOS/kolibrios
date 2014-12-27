@@ -29,7 +29,7 @@ struct drm_file   *drm_file_handlers[256];
 
 videomode_t usermode;
 
-void cpu_detect();
+void cpu_detect1();
 
 int _stdcall display_handler(ioctl_t *io);
 static char  log[256];
@@ -117,7 +117,7 @@ void ati_driver_thread()
     asm volatile ("int $0x40"::"a"(-1));
 }
 
-u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
+u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
     struct radeon_device *rdev = NULL;
 
@@ -134,7 +134,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("Radeon v3.17-rc5 cmdline %s\n", cmdline);
+    printf("Radeon v3.19-rc1 cmdline %s\n", cmdline);
 
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, &usermode, log, &radeon_modeset);
@@ -145,7 +145,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
         return 0;
     }
 
-    cpu_detect();
+    cpu_detect1();
 
     err = enum_pci_devices();
     if( unlikely(err != 0) )
@@ -217,8 +217,8 @@ int r600_video_blit(uint64_t src_offset, int  x, int y,
 int _stdcall display_handler(ioctl_t *io)
 {
     int    retval = -1;
-    u32_t *inp;
-    u32_t *outp;
+    u32 *inp;
+    u32 *outp;
 
     inp = io->input;
     outp = io->output;
@@ -273,10 +273,10 @@ int _stdcall display_handler(ioctl_t *io)
 #define PCI_CLASS_REVISION      0x08
 #define PCI_CLASS_DISPLAY_VGA   0x0300
 
-int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
+int pci_scan_filter(u32 id, u32 busnr, u32 devfn)
 {
-    u16_t vendor, device;
-    u32_t class;
+    u16 vendor, device;
+    u32 class;
     int   ret = 0;
 
     vendor   = id & 0xffff;

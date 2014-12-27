@@ -1,21 +1,23 @@
-
-
 CC = gcc
 LD = ld
 AS = as
 FASM = fasm.exe
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE
 
 DRV_TOPDIR   = $(CURDIR)/../../..
 DRM_TOPDIR   = $(CURDIR)/..
 
 DRV_INCLUDES = $(DRV_TOPDIR)/include
 
-INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
-		-I$(DRV_INCLUDES)/linux
+INCLUDES =	-I$(DRV_INCLUDES)	\
+		-I$(DRV_INCLUDES)/asm 	\
+		-I$(DRV_INCLUDES)/uapi	\
+		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
 
-CFLAGS   = -c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fno-ident -fomit-frame-pointer -fno-builtin-printf
+CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
@@ -30,7 +32,6 @@ NAME:=	  atikms
 HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 			$(DRV_INCLUDES)/linux/list.h		\
 			$(DRV_INCLUDES)/linux/pci.h		\
-			$(DRV_INCLUDES)/drm/drm.h		\
 			$(DRV_INCLUDES)/drm/drmP.h		\
 			$(DRV_INCLUDES)/drm/drm_edid.h		\
 			$(DRV_INCLUDES)/drm/drm_crtc.h		\
@@ -54,6 +55,7 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
 			$(DRM_TOPDIR)/drm_drv.c			\
+			$(DRM_TOPDIR)/drm_atomic.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_gem.c			\
@@ -123,6 +125,7 @@ NAME_SRC=							\
 			radeon_ring.c				\
 			radeon_sa.c				\
 			radeon_semaphore.c			\
+			radeon_sync.c				\
 			radeon_test.c				\
 			radeon_ttm.c				\
 			radeon_ucode.c				\
@@ -139,7 +142,6 @@ NAME_SRC=							\
 			rv740_dpm.c				\
 			r520.c					\
 			r600.c					\
-			r600_audio.c				\
 			r600_blit_shaders.c			\
 			r600_cs.c				\
 			r600_dma.c				\

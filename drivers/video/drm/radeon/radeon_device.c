@@ -71,7 +71,7 @@ int radeon_deep_color = 0;
 int radeon_use_pflipirq = 2;
 int irq_override = 0;
 int radeon_bapm = -1;
-int radeon_backlight = 0; 
+int radeon_backlight = 0;
 
 extern display_t *os_display;
 extern struct drm_device *main_device;
@@ -82,7 +82,7 @@ void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms);
 int init_display(struct radeon_device *rdev, videomode_t *mode);
 int init_display_kms(struct drm_device *dev, videomode_t *usermode);
 
-int get_modes(videomode_t *mode, u32_t *count);
+int get_modes(videomode_t *mode, u32 *count);
 int set_user_mode(videomode_t *mode);
 int r100_2D_test(struct radeon_device *rdev);
 
@@ -437,6 +437,37 @@ void radeon_doorbell_free(struct radeon_device *rdev, u32 doorbell)
 		__clear_bit(doorbell, rdev->doorbell.used);
 }
 
+/**
+ * radeon_doorbell_get_kfd_info - Report doorbell configuration required to
+ *                                setup KFD
+ *
+ * @rdev: radeon_device pointer
+ * @aperture_base: output returning doorbell aperture base physical address
+ * @aperture_size: output returning doorbell aperture size in bytes
+ * @start_offset: output returning # of doorbell bytes reserved for radeon.
+ *
+ * Radeon and the KFD share the doorbell aperture. Radeon sets it up,
+ * takes doorbells required for its own rings and reports the setup to KFD.
+ * Radeon reserved doorbells are at the start of the doorbell aperture.
+ */
+void radeon_doorbell_get_kfd_info(struct radeon_device *rdev,
+				  phys_addr_t *aperture_base,
+				  size_t *aperture_size,
+				  size_t *start_offset)
+{
+	/* The first num_doorbells are used by radeon.
+	 * KFD takes whatever's left in the aperture. */
+	if (rdev->doorbell.size > rdev->doorbell.num_doorbells * sizeof(u32)) {
+		*aperture_base = rdev->doorbell.base;
+		*aperture_size = rdev->doorbell.size;
+		*start_offset = rdev->doorbell.num_doorbells * sizeof(u32);
+	} else {
+		*aperture_base = 0;
+		*aperture_size = 0;
+		*start_offset = 0;
+	}
+}
+
 /*
  * radeon_wb_*()
  * Writeback is the the method by which the the GPU updates special pages
@@ -494,7 +525,7 @@ int radeon_wb_init(struct radeon_device *rdev)
 
 	if (rdev->wb.wb_obj == NULL) {
 		r = radeon_bo_create(rdev, RADEON_GPU_PAGE_SIZE, PAGE_SIZE, true,
-				     RADEON_GEM_DOMAIN_GTT, 0, NULL,
+				     RADEON_GEM_DOMAIN_GTT, 0, NULL, NULL,
 				     &rdev->wb.wb_obj);
 		if (r) {
 			dev_warn(rdev->dev, "(%d) create WB bo failed\n", r);
@@ -998,6 +1029,7 @@ int radeon_atombios_init(struct radeon_device *rdev)
 	}
 
 	mutex_init(&rdev->mode_info.atom_context->mutex);
+	mutex_init(&rdev->mode_info.atom_context->scratch_mutex);
     radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
 	atom_allocate_fb_scratch(rdev->mode_info.atom_context);
     return 0;
@@ -1234,6 +1266,7 @@ int radeon_device_init(struct radeon_device *rdev,
 	for (i = 0; i < RADEON_NUM_RINGS; i++) {
 		rdev->ring[i].idx = i;
 	}
+	rdev->fence_context = fence_context_alloc(RADEON_NUM_RINGS);
 
 	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X 0x%04X:0x%04X).\n",
 		radeon_family_name[rdev->family], pdev->vendor, pdev->device,
@@ -1248,9 +1281,13 @@ int radeon_device_init(struct radeon_device *rdev,
 	mutex_init(&rdev->pm.mutex);
 	mutex_init(&rdev->gpu_clock_mutex);
 	mutex_init(&rdev->srbm_mutex);
+	mutex_init(&rdev->grbm_idx_mutex);
+
 //   init_rwsem(&rdev->pm.mclk_lock);
 //   init_rwsem(&rdev->exclusive_lock);
 	init_waitqueue_head(&rdev->irq.vblank_queue);
+	mutex_init(&rdev->mn_lock);
+//	hash_init(rdev->mn_hash);
 	r = radeon_gem_init(rdev);
 	if (r)
 		return r;
@@ -1362,9 +1399,6 @@ int radeon_device_init(struct radeon_device *rdev,
 	if (r)
         return r;
 
-	r = radeon_ib_ring_tests(rdev);
-	if (r)
-		DRM_ERROR("ib ring test failed (%d).\n", r);
 
 
 	if (rdev->flags & RADEON_IS_AGP && !rdev->accel_working) {
@@ -1378,6 +1412,10 @@ int radeon_device_init(struct radeon_device *rdev,
 		if (r)
 		return r;
 	}
+
+//   r = radeon_ib_ring_tests(rdev);
+//   if (r)
+//       DRM_ERROR("ib ring test failed (%d).\n", r);
 
 	if ((radeon_testing & 1)) {
 		if (rdev->accel_working)
@@ -1436,7 +1474,6 @@ int radeon_gpu_reset(struct radeon_device *rdev)
         }
     }
 
-retry:
     r = radeon_asic_reset(rdev);
     if (!r) {
         dev_info(rdev->dev, "GPU reset succeeded, trying to resume\n");
@@ -1445,25 +1482,12 @@ retry:
 
     radeon_restore_bios_scratch_regs(rdev);
 
-    if (!r) {
         for (i = 0; i < RADEON_NUM_RINGS; ++i) {
+		if (!r && ring_data[i]) {
             radeon_ring_restore(rdev, &rdev->ring[i],
                         ring_sizes[i], ring_data[i]);
-            ring_sizes[i] = 0;
-            ring_data[i] = NULL;
-        }
-
-//        r = radeon_ib_ring_tests(rdev);
-//        if (r) {
-//            dev_err(rdev->dev, "ib ring test failed (%d).\n", r);
-//            if (saved) {
-//                saved = false;
-//                radeon_suspend(rdev);
-//                goto retry;
-//            }
-//        }
     } else {
-        for (i = 0; i < RADEON_NUM_RINGS; ++i) {
+			radeon_fence_driver_force_completion(rdev, i);
             kfree(ring_data[i]);
         }
     }

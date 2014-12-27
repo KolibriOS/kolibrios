@@ -41,7 +41,6 @@
 #include <linux/module.h>
 
 #define __pgprot(x)     ((pgprot_t) { (x) } )
-#define PAGE_KERNEL                     __pgprot(3)
 
 void *vmap(struct page **pages, unsigned int count,
            unsigned long flags, pgprot_t prot);
@@ -351,7 +350,7 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
 		ret = ttm->bdev->driver->ttm_tt_populate(ttm);
 		if (ret)
 			goto out1;
-		}
+	}
 
 	add = 0;
 	dir = 1;
@@ -378,7 +377,7 @@ int ttm_bo_move_memcpy(struct ttm_buffer_object *bo,
 			ret = ttm_copy_io_page(new_iomap, old_iomap, page);
 		if (ret)
 			goto out1;
-		}
+	}
 	mb();
 out2:
 	old_copy = *old_mem;
@@ -400,7 +399,7 @@ out:
 	 * On error, keep the mm node!
 	 */
 	if (!ret)
-	ttm_bo_mem_put(bo, &old_copy);
+		ttm_bo_mem_put(bo, &old_copy);
 	return ret;
 }
 EXPORT_SYMBOL(ttm_bo_move_memcpy);
@@ -429,8 +428,6 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
 				      struct ttm_buffer_object **new_obj)
 {
 	struct ttm_buffer_object *fbo;
-	struct ttm_bo_device *bdev = bo->bdev;
-	struct ttm_bo_driver *driver = bdev->driver;
 	int ret;
 
 	fbo = kmalloc(sizeof(*fbo), GFP_KERNEL);
@@ -451,12 +448,6 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
 	drm_vma_node_reset(&fbo->vma_node);
 	atomic_set(&fbo->cpu_writers, 0);
 
-	spin_lock(&bdev->fence_lock);
-	if (bo->sync_obj)
-		fbo->sync_obj = driver->sync_obj_ref(bo->sync_obj);
-	else
-		fbo->sync_obj = NULL;
-	spin_unlock(&bdev->fence_lock);
 	kref_init(&fbo->list_kref);
 	kref_init(&fbo->kref);
 	fbo->destroy = &ttm_transfered_destroy;
@@ -604,30 +595,20 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map)
 EXPORT_SYMBOL(ttm_bo_kunmap);
 
 int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
-			      void *sync_obj,
+			      struct fence *fence,
 			      bool evict,
 			      bool no_wait_gpu,
 			      struct ttm_mem_reg *new_mem)
 {
 	struct ttm_bo_device *bdev = bo->bdev;
-	struct ttm_bo_driver *driver = bdev->driver;
 	struct ttm_mem_type_manager *man = &bdev->man[new_mem->mem_type];
 	struct ttm_mem_reg *old_mem = &bo->mem;
 	int ret;
 	struct ttm_buffer_object *ghost_obj;
-	void *tmp_obj = NULL;
 
-	spin_lock(&bdev->fence_lock);
-	if (bo->sync_obj) {
-		tmp_obj = bo->sync_obj;
-		bo->sync_obj = NULL;
-	}
-	bo->sync_obj = driver->sync_obj_ref(sync_obj);
+	reservation_object_add_excl_fence(bo->resv, fence);
 	if (evict) {
 		ret = ttm_bo_wait(bo, false, false, false);
-		spin_unlock(&bdev->fence_lock);
-		if (tmp_obj)
-			driver->sync_obj_unref(&tmp_obj);
 		if (ret)
 			return ret;
 
@@ -648,13 +629,12 @@ int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
 		 */
 
 		set_bit(TTM_BO_PRIV_FLAG_MOVING, &bo->priv_flags);
-		spin_unlock(&bdev->fence_lock);
-		if (tmp_obj)
-			driver->sync_obj_unref(&tmp_obj);
 
 		ret = ttm_buffer_object_transfer(bo, &ghost_obj);
 		if (ret)
 			return ret;
+
+		reservation_object_add_excl_fence(ghost_obj->resv, fence);
 
 		/**
 		 * If we're not moving to fixed memory, the TTM object

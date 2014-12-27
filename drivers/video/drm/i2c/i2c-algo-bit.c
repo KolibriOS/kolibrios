@@ -12,25 +12,19 @@
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-    MA 02110-1301 USA.
  * ------------------------------------------------------------------------- */
 
 /* With some changes from Frodo Looijaard <frodol@dds.nl>, Kyösti Mälkki
-   <kmalkki@cc.hut.fi> and Jean Delvare <khali@linux-fr.org> */
+   <kmalkki@cc.hut.fi> and Jean Delvare <jdelvare@suse.de> */
 
-#include <types.h>
-#include <list.h>
 #include <linux/kernel.h>
-#include <linux/spinlock.h>
-#include <syscall.h>
-#include <linux/jiffies.h>
-#include <errno.h>
+#include <linux/module.h>
+#include <linux/delay.h>
+#include <linux/errno.h>
+#include <linux/sched.h>
 #include <linux/i2c.h>
 #include <linux/i2c-algo-bit.h>
+#include <syscall.h>
 
 #define I2C_FUNC_NOSTART                0x00000010 /* I2C_M_NOSTART */
 
@@ -49,11 +43,11 @@
 
 /* ----- global variables ---------------------------------------------	*/
 
-static int bit_test = 0;   /* see if the line-setting functions work   */
+static int bit_test;	/* see if the line-setting functions work	*/
+MODULE_PARM_DESC(bit_test, "lines testing - 0 off; 1 report; 2 fail if stuck");
 
 #ifdef DEBUG
 static int i2c_debug = 1;
-module_param(i2c_debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(i2c_debug,
 		 "debug level - 0 off; 1 normal; 2 verbose; 3 very verbose");
 #endif
@@ -97,14 +91,14 @@ static int sclhi(struct i2c_algo_bit_data *adap)
 	if (!adap->getscl)
 		goto done;
 
-    start = GetTimerTicks();
+	start = jiffies;
 	while (!getscl(adap)) {
 		/* This hw knows how to read the clock line, so we wait
 		 * until it actually gets high.  This is safer as some
 		 * chips may hold it low ("clock stretching") while they
 		 * are processing data internally.
 		 */
-		if (time_after(GetTimerTicks(), start + adap->timeout)) {
+		if (time_after(jiffies, start + adap->timeout)) {
 			/* Test one last time, as we may have been preempted
 			 * between last check and timeout test.
 			 */
@@ -112,8 +106,14 @@ static int sclhi(struct i2c_algo_bit_data *adap)
 				break;
            return -ETIMEDOUT;
 		}
-		asm volatile("rep; nop" ::: "memory");
+		cpu_relax();
     }
+#ifdef DEBUG
+	if (jiffies != start && i2c_debug >= 3)
+		pr_debug("i2c-algo-bit: needed %ld jiffies for SCL to go "
+			 "high\n", jiffies - start);
+#endif
+
 done:
 	udelay(adap->udelay);
 	return 0;
@@ -650,3 +650,6 @@ int i2c_bit_add_bus(struct i2c_adapter *adap)
 }
 
 
+MODULE_AUTHOR("Simon G. Vogl <simon@tk.uni-linz.ac.at>");
+MODULE_DESCRIPTION("I2C-Bus bit-banging algorithm");
+MODULE_LICENSE("GPL");

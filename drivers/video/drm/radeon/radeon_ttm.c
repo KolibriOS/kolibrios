@@ -166,12 +166,15 @@ static int radeon_init_mem_type(struct ttm_bo_device *bdev, uint32_t type,
 static void radeon_evict_flags(struct ttm_buffer_object *bo,
 				struct ttm_placement *placement)
 {
+	static struct ttm_place placements = {
+		.fpfn = 0,
+		.lpfn = 0,
+		.flags = TTM_PL_MASK_CACHING | TTM_PL_FLAG_SYSTEM
+	};
+
 	struct radeon_bo *rbo;
-	static u32 placements = TTM_PL_MASK_CACHING | TTM_PL_FLAG_SYSTEM;
 
 	if (!radeon_ttm_bo_is_radeon_bo(bo)) {
-		placement->fpfn = 0;
-		placement->lpfn = 0;
 		placement->placement = &placements;
 		placement->busy_placement = &placements;
 		placement->num_placement = 1;
@@ -181,9 +184,32 @@ static void radeon_evict_flags(struct ttm_buffer_object *bo,
 	rbo = container_of(bo, struct radeon_bo, tbo);
 	switch (bo->mem.mem_type) {
 	case TTM_PL_VRAM:
-		if (rbo->rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ready == false)
+		if (rbo->rdev->ring[radeon_copy_ring_index(rbo->rdev)].ready == false)
 			radeon_ttm_placement_from_domain(rbo, RADEON_GEM_DOMAIN_CPU);
-		else
+		else if (rbo->rdev->mc.visible_vram_size < rbo->rdev->mc.real_vram_size &&
+			 bo->mem.start < (rbo->rdev->mc.visible_vram_size >> PAGE_SHIFT)) {
+			unsigned fpfn = rbo->rdev->mc.visible_vram_size >> PAGE_SHIFT;
+			int i;
+
+			/* Try evicting to the CPU inaccessible part of VRAM
+			 * first, but only set GTT as busy placement, so this
+			 * BO will be evicted to GTT rather than causing other
+			 * BOs to be evicted from VRAM
+			 */
+			radeon_ttm_placement_from_domain(rbo, RADEON_GEM_DOMAIN_VRAM |
+							 RADEON_GEM_DOMAIN_GTT);
+			rbo->placement.num_busy_placement = 0;
+			for (i = 0; i < rbo->placement.num_placement; i++) {
+				if (rbo->placements[i].flags & TTM_PL_FLAG_VRAM) {
+					if (rbo->placements[0].fpfn < fpfn)
+						rbo->placements[0].fpfn = fpfn;
+				} else {
+					rbo->placement.busy_placement =
+						&rbo->placements[i];
+					rbo->placement.num_busy_placement = 1;
+				}
+			}
+		} else
 			radeon_ttm_placement_from_domain(rbo, RADEON_GEM_DOMAIN_GTT);
 		break;
 	case TTM_PL_TT:
@@ -216,6 +242,7 @@ static int radeon_move_blit(struct ttm_buffer_object *bo,
 	struct radeon_device *rdev;
 	uint64_t old_start, new_start;
 	struct radeon_fence *fence;
+	unsigned num_pages;
 	int r, ridx;
 
 	rdev = radeon_get_rdev(bo->bdev);
@@ -252,13 +279,12 @@ static int radeon_move_blit(struct ttm_buffer_object *bo,
 
 	BUILD_BUG_ON((PAGE_SIZE % RADEON_GPU_PAGE_SIZE) != 0);
 
-	/* sync other rings */
-	fence = bo->sync_obj;
-	r = radeon_copy(rdev, old_start, new_start,
-			new_mem->num_pages * (PAGE_SIZE / RADEON_GPU_PAGE_SIZE), /* GPU pages */
-			&fence);
-	/* FIXME: handle copy error */
-	r = ttm_bo_move_accel_cleanup(bo, (void *)fence,
+	num_pages = new_mem->num_pages * (PAGE_SIZE / RADEON_GPU_PAGE_SIZE);
+	fence = radeon_copy(rdev, old_start, new_start, num_pages, bo->resv);
+	if (IS_ERR(fence))
+		return PTR_ERR(fence);
+
+	r = ttm_bo_move_accel_cleanup(bo, &fence->base,
 				      evict, no_wait_gpu, new_mem);
 	radeon_fence_unref(&fence);
 	return r;
@@ -272,20 +298,20 @@ static int radeon_move_vram_ram(struct ttm_buffer_object *bo,
 	struct radeon_device *rdev;
 	struct ttm_mem_reg *old_mem = &bo->mem;
 	struct ttm_mem_reg tmp_mem;
-	u32 placements;
+	struct ttm_place placements;
 	struct ttm_placement placement;
 	int r;
 
 	rdev = radeon_get_rdev(bo->bdev);
 	tmp_mem = *new_mem;
 	tmp_mem.mm_node = NULL;
-	placement.fpfn = 0;
-	placement.lpfn = 0;
 	placement.num_placement = 1;
 	placement.placement = &placements;
 	placement.num_busy_placement = 1;
 	placement.busy_placement = &placements;
-	placements = TTM_PL_MASK_CACHING | TTM_PL_FLAG_TT;
+	placements.fpfn = 0;
+	placements.lpfn = 0;
+	placements.flags = TTM_PL_MASK_CACHING | TTM_PL_FLAG_TT;
 	r = ttm_bo_mem_space(bo, &placement, &tmp_mem,
 			     interruptible, no_wait_gpu);
 	if (unlikely(r)) {
@@ -320,19 +346,19 @@ static int radeon_move_ram_vram(struct ttm_buffer_object *bo,
 	struct ttm_mem_reg *old_mem = &bo->mem;
 	struct ttm_mem_reg tmp_mem;
 	struct ttm_placement placement;
-	u32 placements;
+	struct ttm_place placements;
 	int r;
 
 	rdev = radeon_get_rdev(bo->bdev);
 	tmp_mem = *new_mem;
 	tmp_mem.mm_node = NULL;
-	placement.fpfn = 0;
-	placement.lpfn = 0;
 	placement.num_placement = 1;
 	placement.placement = &placements;
 	placement.num_busy_placement = 1;
 	placement.busy_placement = &placements;
-	placements = TTM_PL_MASK_CACHING | TTM_PL_FLAG_TT;
+	placements.fpfn = 0;
+	placements.lpfn = 0;
+	placements.flags = TTM_PL_MASK_CACHING | TTM_PL_FLAG_TT;
 	r = ttm_bo_mem_space(bo, &placement, &tmp_mem,
 			     interruptible, no_wait_gpu);
 	if (unlikely(r)) {
@@ -471,31 +497,6 @@ static void radeon_ttm_io_mem_free(struct ttm_bo_device *bdev, struct ttm_mem_re
 {
 }
 
-static int radeon_sync_obj_wait(void *sync_obj, bool lazy, bool interruptible)
-{
-	return radeon_fence_wait((struct radeon_fence *)sync_obj, interruptible);
-}
-
-static int radeon_sync_obj_flush(void *sync_obj)
-{
-	return 0;
-}
-
-static void radeon_sync_obj_unref(void **sync_obj)
-{
-	radeon_fence_unref((struct radeon_fence **)sync_obj);
-}
-
-static void *radeon_sync_obj_ref(void *sync_obj)
-{
-	return radeon_fence_ref((struct radeon_fence *)sync_obj);
-}
-
-static bool radeon_sync_obj_signaled(void *sync_obj)
-{
-	return radeon_fence_signaled((struct radeon_fence *)sync_obj);
-}
-
 /*
  * TTM backend functions.
  */
@@ -503,6 +504,10 @@ struct radeon_ttm_tt {
 	struct ttm_dma_tt		ttm;
 	struct radeon_device		*rdev;
 	u64				offset;
+
+	uint64_t			userptr;
+	struct mm_struct		*usermm;
+	uint32_t			userflags;
 };
 
 static int radeon_ttm_backend_bind(struct ttm_tt *ttm,
@@ -580,10 +585,17 @@ static struct ttm_tt *radeon_ttm_tt_create(struct ttm_bo_device *bdev,
 	return &gtt->ttm.ttm;
 }
 
+static struct radeon_ttm_tt *radeon_ttm_tt_to_gtt(struct ttm_tt *ttm)
+{
+	if (!ttm || ttm->func != &radeon_backend_func)
+		return NULL;
+	return (struct radeon_ttm_tt *)ttm;
+}
+
 static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
 {
+	struct radeon_ttm_tt *gtt = radeon_ttm_tt_to_gtt(ttm);
 	struct radeon_device *rdev;
-	struct radeon_ttm_tt *gtt = (void *)ttm;
 	unsigned i;
 	int r;
 	bool slave = !!(ttm->page_flags & TTM_PAGE_FLAG_SG);
@@ -628,7 +640,7 @@ static int radeon_ttm_tt_populate(struct ttm_tt *ttm)
 static void radeon_ttm_tt_unpopulate(struct ttm_tt *ttm)
 {
 	struct radeon_device *rdev;
-	struct radeon_ttm_tt *gtt = (void *)ttm;
+	struct radeon_ttm_tt *gtt = radeon_ttm_tt_to_gtt(ttm);
 	unsigned i;
 	bool slave = !!(ttm->page_flags & TTM_PAGE_FLAG_SG);
 
@@ -663,11 +675,6 @@ static struct ttm_bo_driver radeon_bo_driver = {
 	.evict_flags = &radeon_evict_flags,
 	.move = &radeon_bo_move,
 	.verify_access = &radeon_verify_access,
-	.sync_obj_signaled = &radeon_sync_obj_signaled,
-	.sync_obj_wait = &radeon_sync_obj_wait,
-	.sync_obj_flush = &radeon_sync_obj_flush,
-	.sync_obj_unref = &radeon_sync_obj_unref,
-	.sync_obj_ref = &radeon_sync_obj_ref,
 	.move_notify = &radeon_bo_move_notify,
 //	.fault_reserve_notify = &radeon_bo_fault_reserve_notify,
 	.io_mem_reserve = &radeon_ttm_io_mem_reserve,
@@ -703,8 +710,8 @@ int radeon_ttm_init(struct radeon_device *rdev)
 	/* Change the size here instead of the init above so only lpfn is affected */
 	radeon_ttm_set_active_vram_size(rdev, rdev->mc.visible_vram_size);
 
-    r = radeon_bo_create(rdev, 16*1024*1024, PAGE_SIZE, true,
-			     RADEON_GEM_DOMAIN_VRAM, 0,
+	r = radeon_bo_create(rdev, 16 * 1024 * 1024, PAGE_SIZE, true,
+			     RADEON_GEM_DOMAIN_VRAM, 0, NULL,
 			     NULL, &rdev->stollen_vga_memory);
 	if (r) {
 		return r;

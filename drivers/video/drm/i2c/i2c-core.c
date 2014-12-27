@@ -27,43 +27,13 @@
 
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <list.h>
-#include <errno.h>
+#include <linux/list.h>
+#include <linux/errno.h>
 #include <linux/i2c.h>
-#include <syscall.h>
 #include <linux/jiffies.h>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#include <syscall.h>
 
 
 
@@ -327,7 +297,7 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
             if (ret != -EAGAIN)
                 break;
 
-            if (time_after(GetTimerTicks(), orig_jiffies + adap->timeout))
+            if (time_after((unsigned long)GetTimerTicks(), orig_jiffies + adap->timeout))
                 break;
 
             delay(1);
