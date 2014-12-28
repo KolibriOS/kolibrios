@@ -254,6 +254,7 @@ npc_ifrit_icons_file_name	db 'ifrit_8bpp.png',0
 npc_barret_icons_file_name	db 'barret_8bpp.png',0
 background_music_file_name	db 'walking_with_poseidon.wav',0
 stone_kick_sound_file_name	db 'flaunch.wav',0
+menu_sound_file_name		db 'misc_menu.wav',0
 ;---------------------------------------------------------------------
 protagonist_route	dd 2
 protagonist_position:

@@ -148,8 +148,125 @@ _CreateBuffer@12:   ;format:dword,size:dword,p_str:dword
 	pop	ecx ebx
 	ret	12
 ;------------------------------------------------------------------------------
+;align 4
+;_DestroyBuffer@4:     ;str:dword
+;	push	ebx ecx
+;	xor	eax,eax
+;	lea	ebx,[esp+12]   ;[stream]
+;	
+;	push	eax            ;.out_size
+;	push	eax            ;.output
+;	push	4              ;.inp_size
+;	push	ebx            ;.input
+;	push	SND_DESTROY_BUFF;.code
+;	push	[hSound]       ;.handle
+;	
+;	mov	ecx, esp        ;[handle]
+;	mcall	68,17
+;	add	esp,24
+;	pop	ecx ebx
+;	ret	4
+;------------------------------------------------------------------------------
+;align 4
+;_WaveOut@12:        ;str:dword, src:dword, size:dword
+;	push	ebx ecx
+;	xor	eax,eax
+;	lea	ebx,[esp+12]   ;[stream]
+;	
+;	push	eax            ;.out_size
+;	push	eax            ;.output
+;	push	12             ;.inp_size
+;	push	ebx            ;.input
+;	push	SND_OUT        ;.code
+;	push	dword [hSound] ;.handle
+;	
+;	mov	ecx,esp
+;	mcall	68,17
+;	add	esp,24
+;	pop	ecx ebx
+;	ret	12
+;------------------------------------------------------------------------------
 align 4
-_DestroyBuffer@4:     ;str:dword
+_GetBufferSize@8:      ;str:dword, p_size:dword
+	push	ebx ecx
+	lea	eax,[esp+16]
+	lea	ebx,[esp+12]   ;[stream]
+	
+	push	4              ;.out_size
+	push	eax            ;.output
+	push	4              ;.inp_size
+	push	ebx            ;.input
+	push	SND_GETBUFFSIZE;.code
+	push	dword [hSound] ;.handle
+	
+	mov	ecx,esp
+	mcall	68,17
+	add	esp,24
+	pop	ecx ebx
+	ret	8
+;------------------------------------------------------------------------------           
+;align 4
+;_GetBufferFree@8:      ;str:dword, p_free:dword
+;	push	ebx ecx
+;	lea	ebx,[esp+12]      ;[stream]
+;	push	0                 ;storage for free_space    
+;	mov	eax,esp
+;	
+;	push	4                 ;.out_size
+;	push	eax               ;.output
+;	push	4                 ;.inp_size
+;	push	ebx               ;.input
+;	push	SND_GETFREESPACE  ;.code
+;	push	dword [hSound]    ;.handle
+;	
+;	mov	ecx,esp
+;	mcall	68,17
+;	add	esp, 24
+;	mov	ecx,[esp+20]      ; p_free  
+;	pop	dword [ecx]
+;	pop	ecx ebx
+;	ret	8
+;------------------------------------------------------------------------------
+align 4
+_SetBuffer@16:   ;str:dword, src:dword, offs:dword, size:dword
+	push	ebx ecx
+	xor	eax,eax
+	lea	ebx,[esp+12]   ;[stream]
+
+	push	eax            ;.out_size
+	push	eax            ;.output
+	push	16             ;.inp_size
+	push	ebx            ;.input
+	push	SND_SETBUFF    ;.code
+	push	dword [hSound] ;.handle
+
+	mov	ecx,esp
+	mcall	68,17
+	add	esp,24
+	pop	ecx ebx
+	ret	16
+;------------------------------------------------------------------------------
+align 4
+_PlayBuffer@8:          ;str:dword,flags:dword
+	push	ebx ecx
+	xor	eax,eax
+	lea	ebx,[esp+12]   ;[stream]
+	
+	push	eax            ;.out_size
+	push	eax            ;.output
+	push	8              ;.inp_size
+	push	ebx            ;.input
+	push	SND_PLAY       ;.code
+	push	dword [hSound] ;.handle
+
+	mov	ecx, esp
+	mcall	68,17
+	add	esp, 24
+	pop	ecx ebx
+	ret	8
+;------------------------------------------------------------------------------
+align 4
+_StopBuffer@4:          ;str:dword
 	push	ebx ecx
 	xor	eax,eax
 	lea	ebx,[esp+12]   ;[stream]
@@ -158,33 +275,52 @@ _DestroyBuffer@4:     ;str:dword
 	push	eax            ;.output
 	push	4              ;.inp_size
 	push	ebx            ;.input
-	push	SND_DESTROY_BUFF;.code
-	push	[hSound]       ;.handle
-	
-	mov	ecx, esp        ;[handle]
-	mcall	68,17
-	add	esp,24
-	pop	ecx ebx
-	ret	4
-;------------------------------------------------------------------------------
-align 4
-_WaveOut@12:        ;str:dword, src:dword, size:dword
-	push	ebx ecx
-	xor	eax,eax
-	lea	ebx,[esp+12]   ;[stream]
-	
-	push	eax            ;.out_size
-	push	eax            ;.output
-	push	12             ;.inp_size
-	push	ebx            ;.input
-	push	SND_OUT        ;.code
+	push	SND_STOP       ;.code
 	push	dword [hSound] ;.handle
 	
 	mov	ecx,esp
 	mcall	68,17
 	add	esp,24
 	pop	ecx ebx
-	ret	12
+	ret	4
+;------------------------------------------------------------------------------
+;align 4
+;_GetBufferPos@8:     ;str:dword, p_pos:dword
+;	push	ebx ecx
+;	lea	eax,[esp+16]
+;	lea	ebx,[esp+12]   ;[stream]
+;	
+;	push	4              ;.out_size
+;	push	eax            ;.output
+;	push	4              ;.inp_size
+;	push	ebx            ;.input
+;	push	SND_GETPOS     ;.code
+;	push	dword [hSound] ;.handle
+;	
+;	mov	ecx,esp
+;	mcall	68,17
+;	add	esp,24
+;	pop	ecx ebx
+;	ret	8
+;------------------------------------------------------------------------------
+;align 4
+;_SetBufferPos@8:        ;str:dword, offs:dword
+;	push	ebx ecx
+;	xor	eax,eax
+;	lea	ebx,[esp+12]   ;[stream]
+;	
+;	push	eax            ;.out_size
+;	push	eax            ;.output
+;	push	8              ;.inp_size
+;	push	ebx            ;.input
+;	push	SND_SETPOS     ;.code
+;	push	dword [hSound] ;.handle
+;	
+;	mov	ecx,esp
+;	mcall	68,17
+;	add	esp,24
+;	pop	ecx ebx
+;	ret	8
 ;------------------------------------------------------------------------------
 align 4
 proc _test_wav@4 stdcall, hdr:dword

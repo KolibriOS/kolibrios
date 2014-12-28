@@ -100,16 +100,20 @@ load_libraries	l_libs_start,end_l_libs
 	mov	ebx,eax
 	add	ebx,1024
 	mov	[wav_for_test_end],ebx
-	call	initialize_sound_system
+	call	test_wav_file
 	
-	mov	[sounds_flag],1
 	mov	[music_flag],1
 	mcall	51,1,snd_background_music_thread_start,snd_background_music_thread_stack
+	
+	mov	[sounds_flag],1
+	mcall	51,1,snd_kick_action_thread_start,snd_kick_action_thread_stack
 ;---------------------------------------------------------------------
 menu_still:
 	jmp	main_menu_start
 ;---------------------------------------------------------------------
 start_level_0:
+	mov	eax,[stone_kick_sound]
+	mov	[sounds_sample],eax
 	mov	[death_of_protagonist],0
 	mov	[protagonist_route],2
 	mov	[protagonist_position.x],4
@@ -170,6 +174,8 @@ button:
 	mcall	51,1,thread_start,thread_stack
 ;--------------------------------------
 @@:
+	mov	[music_flag],2
+	mov	[sounds_flag],2
 	mcall	-1
 ;---------------------------------------------------------------------
 draw_window:

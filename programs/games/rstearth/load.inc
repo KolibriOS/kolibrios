@@ -154,6 +154,11 @@ load_all_sound_files:
 	mov	ebx,stone_kick_sound_file_name
 	call	load_sound
 	mov	[stone_kick_sound],eax
+	
+; load menu sound
+	mov	ebx,menu_sound_file_name
+	call	load_sound
+	mov	[menu_sound],eax
 
 	ret
 ;---------------------------------------------------------------------

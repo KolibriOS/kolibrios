@@ -15,4 +15,5 @@ if not exist bin mkdir rstearth_rus_bin
 @copy resources\barret_8bpp.png rstearth_rus_bin\barret_8bpp.png
 @copy resources\walking_with_poseidon.wav rstearth_rus_bin\walking_with_poseidon.wav
 @copy resources\flaunch.wav rstearth_rus_bin\flaunch.wav
+@copy resources\misc_menu.wav rstearth_rus_bin\misc_menu.wav
 @pause

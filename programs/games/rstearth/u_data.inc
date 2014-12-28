@@ -13,6 +13,7 @@ snd_kick_flag		rb 1
 main_menu_pointer	rb 1
 settings_menu_pointer	rb 1
 use_separate_draw_text	rb 1
+init_sound_busy_flag	rb 1
 ;---------------------------------------------------------------------
 align 4
 N_error		rd 1
@@ -30,7 +31,10 @@ npc_ifrit_icons		rd 1
 npc_barret_icons	rd 1
 ;---------------------------------------------------------------------
 background_music	rd 1
+sounds_sample		rd 1
+
 stone_kick_sound	rd 1
+menu_sound		rd 1
 ;---------------------------------------------------------------------
 show_tiles_iterations	rd 1
 characters_offset_x	rd 1
@@ -58,9 +62,20 @@ version		rd 1	; версия интерфейса, текущая 0x0101
 ; Окончательно формат устанавливается вызовом SetFormat.
 snd_format	rd 1	; формат данных 
 ; хэндл буфера
-;hBuff		rd 1
+hBuff_pointer			rd 1
+hBuff_buffer_size_pointer	rd 1
+
 hBuff1		rd 1
 hBuff2		rd 1
+
+hBuff1_buffer_size	rd 1
+hBuff2_buffer_size	rd 1
+
+hBuff1_buffer_offset	rd 1
+hBuff2_buffer_offset	rd 1
+
+hBuff1_driver_notify_struct	rd 6   ; структура события от драйвера
+hBuff2_driver_notify_struct	rd 6   ; структура события от драйвера
 
 data_offset	rd 1
 ;---------------------------------------------------------------------

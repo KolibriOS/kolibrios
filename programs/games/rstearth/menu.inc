@@ -1,6 +1,8 @@
 ;---------------------------------------------------------------------
 main_menu_start:
 	mov	[main_menu_pointer],0
+	mov	eax,[menu_sound]
+	mov	[sounds_sample],eax
 ;--------------------------------------		
 .red:
 	mov	[menu_text_pointers],main_menu_text_pointers
