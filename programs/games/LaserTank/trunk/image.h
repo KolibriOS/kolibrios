@@ -1,4 +1,4 @@
-#include <kosSyst.h>
+#include "smalllibc/kosSyst.h"
 
 #define DRAW_NONE			0
 #define DRAW_ALPHA			1

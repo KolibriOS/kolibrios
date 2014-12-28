@@ -1,4 +1,4 @@
-#include "kosSyst.h"
+#include "smalllibc/kosSyst.h"
 #include "render.h"
 
 CKosRender::CKosRender(int width, int height)

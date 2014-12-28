@@ -1,6 +1,6 @@
-#include "kosSyst.h"
+#include "smalllibc/kosSyst.h"
 #include "render.h"
-#include <func.h>
+#include "smalllibc/func.h"
 #include "image.h"
 //#include "mymath.h"
 
