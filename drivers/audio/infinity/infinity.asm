@@ -303,7 +303,13 @@ align 4
 
 align 4
 .snd_getbuffsize:
+        test    [edx+STREAM.format], PCM_RING
         mov     eax, [edx+STREAM.in_size]
+        jz      @F
+
+        mov     eax, [edx+STREAM.r_size]
+        add     eax, eax
+@@:
         mov     ecx, [edi+IOCTL.output]
         mov     ecx, [ecx]
         mov     [ecx], eax
