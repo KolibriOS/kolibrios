@@ -149,6 +149,7 @@ extra_files = {
  {"kolibrios/games/rstearth/skeleton_8bpp.png", PROGS .. "/games/rstearth/resources/skeleton_8bpp.png"},
  {"kolibrios/games/rstearth/white_brick_8bpp.png", PROGS .. "/games/rstearth/resources/white_brick_8bpp.png"},
  {"kolibrios/games/rstearth/flaunch.wav", PROGS .. "/games/rstearth/resources/flaunch.wav"},
+ {"kolibrios/games/rstearth/misc_menu.wav", PROGS .. "/games/rstearth/resources/misc_menu.wav"},
  {"kolibrios/games/rstearth/walking_with_poseidon.wav", PROGS .. "/games/rstearth/resources/walking_with_poseidon.wav"},
  {"kolibrios/lib/avcodec-55.dll", "common/lib/avcodec-55.dll"},
  {"kolibrios/lib/avdevice-55.dll", "common/lib/avdevice-55.dll"},
