@@ -52,7 +52,7 @@ use32			   ; транслятор, использующий 32 разрядных команды
 ;Область кода
 
 ;----------------- include -------------------------------------
-
+include 'lang.inc'
 include 'ssmix.inc'
 
 ;---------------------------------------------------------------------------
@@ -2343,9 +2343,11 @@ file_info:	      ; информационная структура для работы с файлами
   db 0
   _fi_pfilename dd ?
 
-
-;include 'ruslang.inc'
-include 'englang.inc'
+if lang eq ru
+	include 'ruslang.inc'
+else
+	include 'englang.inc'
+end if
 
 bmp_plane:
 file "plane.bmp":54
