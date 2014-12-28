@@ -137,6 +137,8 @@ extra_files = {
  {"kolibrios/emul/", "common/emul/zsnes"},
  {"kolibrios/games/doom/", "common/games/doom/*"},
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
+ {"kolibrios/games/LaserTank/", "common/games/LaserTank/levels.lvl"},
+ {"kolibrios/games/LaserTank/", "common/games/LaserTank/arh.pak"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/lrl/", "common/games/lrl/*"},
  {"kolibrios/games/rstearth/barret_8bpp.png", PROGS .. "/games/rstearth/resources/barret_8bpp.png"},
@@ -466,6 +468,7 @@ tup.append_table(img_files, {
 })
 tup.append_table(extra_files, {
  {"kolibrios/games/fara/fara", PROGS .. "/games/fara/trunk/fara"},
+ {"kolibrios/games/LaserTank/LaserTank", PROGS .. "/games/LaserTank/trunk/LaserTank"},
 })
 end -- tup.getconfig('NO_MSVC') ~= 'full'
 
