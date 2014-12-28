@@ -39,7 +39,7 @@
 #if defined(__KERNEL__) || defined(__linux__)
 
 #include <linux/types.h>
-//#include <asm/ioctl.h>
+#include <asm/ioctl.h>
 typedef unsigned int drm_handle_t;
 
 #else /* One of the BSDs */

@@ -607,14 +607,6 @@ static inline void *dev_get_drvdata(struct device *dev)
     return dev->driver_data;
 }
 
-#define preempt_disable()       do { } while (0)
-#define preempt_enable_no_resched() do { } while (0)
-#define preempt_enable()        do { } while (0)
-#define preempt_check_resched()     do { } while (0)
-
-#define preempt_disable_notrace()       do { } while (0)
-#define preempt_enable_no_resched_notrace() do { } while (0)
-#define preempt_enable_notrace()        do { } while (0)
 
 #define in_dbg_master() (0)
 
@@ -737,24 +729,6 @@ struct pagelist {
 
 
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
-
-//#define RCU_INIT_POINTER(p, v) \
-//        do { \
-//                p = (typeof(*v) __force __rcu *)(v); \
-//        } while (0)
-
-
-//#define rcu_dereference_raw(p)  ({ \
-//                                typeof(p) _________p1 = ACCESS_ONCE(p); \
-//                                (_________p1); \
-//                                })
-
-//#define rcu_assign_pointer(p, v) \
-//        ({ \
-//                if (!__builtin_constant_p(v) || \
-//                    ((v) != NULL)) \
-//                (p) = (v); \
-//        })
 
 
 

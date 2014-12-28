@@ -543,19 +543,5 @@ static inline void vfree(void *addr)
 
 static inline int power_supply_is_system_supplied(void) { return -1; }
 
-#define RWSEM_UNLOCKED_VALUE            0x00000000
-#define RWSEM_ACTIVE_BIAS               0x00000001
-#define RWSEM_ACTIVE_MASK               0x0000ffff
-#define RWSEM_WAITING_BIAS              (-0x00010000)
-#define RWSEM_ACTIVE_READ_BIAS          RWSEM_ACTIVE_BIAS
-#define RWSEM_ACTIVE_WRITE_BIAS         (RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
-
-
-//static void init_rwsem(struct rw_semaphore *sem)
-//{
-//    sem->count = RWSEM_UNLOCKED_VALUE;
-//    spin_lock_init(&sem->wait_lock);
-//    INIT_LIST_HEAD(&sem->wait_list);
-//}
 
 #endif

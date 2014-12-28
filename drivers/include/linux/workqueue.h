@@ -9,6 +9,7 @@
 #include <linux/linkage.h>
 #include <linux/lockdep.h>
 #include <linux/threads.h>
+#include <linux/atomic.h>
 
 #include <syscall.h>
 struct workqueue_struct;
