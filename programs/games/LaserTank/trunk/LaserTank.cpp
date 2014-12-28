@@ -1,6 +1,6 @@
 #include "smalllibc/kosSyst.h"
 #include "smalllibc/kosFile.h"
-#include "smalllibc/sprintf.cpp"
+#include "smalllibc/sprintf.h"
 #include "smalllibc/func.h"
 #include "render.h"
 #include "image.h"
