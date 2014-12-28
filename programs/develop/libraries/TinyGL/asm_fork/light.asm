@@ -203,7 +203,7 @@ pushad
 		fcom dword[an180f] ;if (a != 180)
 		fstsw ax
 		sahf
-		jne @f
+		je @f
 			fldpi
 			fmulp
 			fdiv dword[an180f]
@@ -289,7 +289,7 @@ local .end_m
 	fcompp
 	fstsw ax
 	sahf
-	jb .o_2
+	ja .o_2
 		mov eax,1.0
 		jmp .end_m ;return 1.0
 	.o_2:
@@ -355,19 +355,19 @@ fl_1e_3 dd 1.0e-3
 if DEBUG
 txt_mate db 'Material',0
 txt_colo db 'Color',0
+txt_rgba db 'R, G, B',0
 end if
 
 ; non optimized lightening model
 align 4
 proc gl_shade_vertex, context:dword, v:dword
 locals
-	R dd ? ;float ebp-100
-	G dd ? ;float ebp-96
-	B dd ? ;float ebp-92
-	A dd ? ;float ebp-88
-	s V3 ;ebp-84
-	d V3 ;ebp-72
-	dist dd ? ;float ebp-60
+	R dd ? ;float ebp-96
+	G dd ? ;float ebp-92
+	B dd ? ;float ebp-88
+	A dd ? ;float ebp-84
+	s V3 ;ebp-80
+	d V3 ;ebp-68
 	tmp dd ? ;float ebp-56
 	att dd ? ;float ebp-52
 	dot_spot dd ? ;float ebp-48
@@ -480,8 +480,7 @@ end if
 			fld dword[d+offs_Z]
 			fmul st0,st0
 			faddp
-			fsqrt
-			fst dword[dist] ;dist=sqrt(d.X^2+d.Y^2+d.Z^2)
+			fsqrt ;dist=sqrt(d.X^2+d.Y^2+d.Z^2)
 			fcom dword[fl_1e_3]
 			fstsw ax
 			sahf
@@ -557,7 +556,7 @@ end if
 			fcomp dword[an180f] ;if (l.spot_cutoff != 180)
 			fstsw ax
 			sahf
-			jne .if1_end
+			je .if1_end
 				fld dword[ebx+offs_ligh_norm_spot_direction]
 				fmul dword[d]
 				fld dword[ebx+offs_ligh_norm_spot_direction+4]
@@ -675,7 +674,7 @@ end if
 				faddp
 				fld dword[s+offs_Z]
 				fmul st0,st0
-				faddp
+				faddp ;st0 = s.X^2 +s.Y^2 +s.Z^2
 				fsqrt
 				fcom dword[fl_1e_3]
 				fstsw ax
@@ -697,7 +696,7 @@ end if
 				fstsw ax
 				fild dword[idx]
 				sahf
-				jae @f ;if(dot_spec < 1.0)
+				jbe @f ;if(dot_spec < 1.0) st0=1 st1=dot_spec
 					fmul st0,st1 ;idx *= dot_spec
 				@@:
 				fistp dword[idx]
@@ -711,16 +710,22 @@ end if
 				fmul dword[ecx+offs_mate_specular]
 				fadd dword[lR]
 				fstp dword[lR] ;lR+=dot_spec * l.specular.v[0] * m.specular.v[0]
+;ffree st0
+;fincstp
 				fld dword[ebx+offs_ligh_specular+4]
 				fmul st0,st1
 				fmul dword[ecx+offs_mate_specular+4]
 				fadd dword[lG]
 				fstp dword[lG] ;lG+=dot_spec * l.specular.v[1] * m.specular.v[1]
+;ffree st0
+;fincstp
 				fld dword[ebx+offs_ligh_specular+8]
 				fmul st0,st1
 				fmul dword[ecx+offs_mate_specular+8]
 				fadd dword[lB]
 				fstp dword[lB] ;lB+=dot_spec * l.specular.v[2] * m.specular.v[2]
+;ffree st0
+;fincstp
 				ffree st0 ;dot_spec
 				fincstp
 			jmp .if2_end

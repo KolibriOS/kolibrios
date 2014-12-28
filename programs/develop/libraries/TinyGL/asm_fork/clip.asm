@@ -227,74 +227,66 @@ endp
 ; tmin,tmax -> &float
 align 4
 proc ClipLine1 uses ebx, denom:dword,num:dword,tmin:dword,tmax:dword
-	fldz
-	fcom dword[denom]
+	fld dword[denom]
+	ftst
 	fstsw ax
 	sahf
-	je .u2
-	jmp @f
-	.u2:
-		fcom dword[num]
-		fstsw ax
-		sahf
-		jb .r0 ;if (denom==0 && num>0) return 0
-		jmp .r1
-	@@:
-
-	fcom dword[denom]
-	fstsw ax
-	sahf
-	ja .els_0 ;if (0<denom)
+	jbe .els_0 ;if (denom>0)
 		fld dword[num]
-		fdiv dword[denom]
-
+		fxch st1
+		fdivp ;t=num/denom
 		mov ebx,[tmax]
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		ja .r0_f2 ;if (t>*tmax) return 0
-
+		ja .r0_f1 ;if (t>*tmax) return 0
 		mov ebx,[tmin]
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		jbe .r1_f2
-			fstp dword[ebx] ;if (t>*tmin) *tmin=t
+		jbe .r1_f1 ;if (t>*tmin) *tmin=t
+			fstp dword[ebx] 
 		jmp .r1
-
-	.els_0: ;else if (0>denom)
+	.els_0: ;else if (denom<0)
+		jae .els_1
 		fld dword[num]
-		fdiv dword[denom]
-
+		fxch st1
+		fdivp ;t=num/denom
 		mov ebx,[tmin]
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		jb .r0_f2 ;if (t<*tmin) return 0
-
+		jb .r0_f1 ;if (t<*tmin) return 0
 		mov ebx,[tmax]
 		fcom dword[ebx]
 		fstsw ax
 		sahf
-		jae .r1_f2
+		jae .r1_f1
 			fstp dword[ebx] ;if (t<*tmin) *tmax=t
-	jmp .r1
+		jmp .r1
+	.els_1: ;else if (num>0)
+		ffree st0 ;denom
+		fincstp
+		fld dword[num]
+		ftst
+		fstsw ax
+		sahf
+		ja .r0_f1 ;if (num>0) return 0
+		jmp .r1_f1
 
-	.r0_f2: ;return 0 & free st0,st1
+	.r0_f1: ;return 0 & free st0
 		ffree st0
 		fincstp
-	.r0: ;return 0 & free st0
+	.r0: ;return 0
 		xor eax,eax
 		jmp .end_f
-	.r1_f2: ;return 1 & free st0,st1
+	.r1_f1: ;return 1 & free st0
 		ffree st0
 		fincstp
-	.r1: ;return 1 & free st0
+	.r1: ;return 1
 		xor eax,eax
 		inc eax
 	.end_f:
-	ffree st0
-	fincstp
 	ret
 endp
 

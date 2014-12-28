@@ -24,13 +24,13 @@ start:
 
 	mcall 40,0x27
 
-stdcall [kosglMakeCurrent], 10,10,400,325,ctx1
+stdcall [kosglMakeCurrent], 10,10,400,350,ctx1
 stdcall [glEnable], GL_DEPTH_TEST
 stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 stdcall [gluNewQuadric]
 mov [qObj],eax
 
-stdcall [glClearColor], 0.5,0.5,0.5,0.0
+stdcall [glClearColor], 0.25,0.25,0.25,0.0
 stdcall [glShadeModel], GL_SMOOTH
 
 call draw_3d
@@ -56,7 +56,7 @@ draw_window:
 	mcall 12,1
 
 	mov edx,0x33ffffff ;0x73ffffff
-	mcall 0,(50 shl 16)+430,(30 shl 16)+375,,,caption
+	mcall 0,(50 shl 16)+430,(30 shl 16)+400,,,caption
 	stdcall [kosglSwapBuffers]
 
 	mcall 12,2
@@ -141,14 +141,13 @@ align 4
 draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
-stdcall [glColor3f], 1.0, 1.0, 0.0
-
 stdcall [glPushMatrix]
 	call SetLight
 
 	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
 
+	stdcall [glColor3f], 1.0, 1.0, 0.0
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [gluSphere], [qObj], 1.0, 32,32
@@ -189,9 +188,10 @@ angle_z dd 0.0
 angle_y dd 0.0
 delt_size dd 3.0
 
-light_position dd 0.0, 0.0, 2.0, 1000.0 ; Расположение источника [0][1][2], чем ближе [3] к 0, тем ярче свет
+light_position dd 3.0, 2.0, -10.0, 1.0 ; Расположение источника [0][1][2]
+	;[3] = (0.0 - бесконечно удаленный источник, 1.0 - источник света на определенном расстоянии)
 light_dir dd 0.0,0.0,0.0 ;направление лампы
-mat_specular dd 0.3, 0.3, 0.3, 1.0 ; Цвет блика
+mat_specular dd 0.1, 0.1, 0.1, 1.0 ; Цвет блика
 mat_shininess dd 3.0 ; Размер блика (обратная пропорция)
 white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемого источником
 lmodel_ambient dd 0.2, 0.2, 0.2, 1.0 ; Параметры фонового освещения
