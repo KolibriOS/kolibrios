@@ -160,6 +160,8 @@ E_LIB glClose ;(void)
 
 E_LIB gluNewQuadric
 E_LIB gluDeleteQuadric
+E_LIB gluQuadricDrawStyle
+E_LIB gluQuadricOrientation
 E_LIB gluSphere
 
 ;

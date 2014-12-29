@@ -52,9 +52,56 @@ proc gluDeleteQuadric, state:dword
 	ret
 endp
 
-;void gluQuadricDrawStyle(GLUquadricObj *obj, int style)
-;{
-;}
+;
+; Set the drawing style to be GLU_FILL, GLU_LINE, GLU_SILHOUETTE,
+; or GLU_POINT.
+;
+align 4
+proc gluQuadricDrawStyle uses eax ebx, qobj:dword, drawStyle:dword
+	mov eax,[qobj]
+	or eax,eax
+	jz .err_q
+	mov ebx,[drawStyle]
+	cmp ebx,GLU_FILL
+	je @f
+	cmp ebx,GLU_LINE
+	je @f
+	cmp ebx,GLU_SILHOUETTE
+	je @f
+	cmp ebx,GLU_POINT
+	je @f
+	jmp .err_q
+	@@:
+		mov dword[eax+offs_qobj_DrawStyle],ebx
+		jmp @f
+	.err_q:
+		;quadric_error(qobj, GLU_INVALID_ENUM, "qluQuadricDrawStyle")
+	@@:
+	ret
+endp
+
+;
+; Set the orientation to GLU_INSIDE or GLU_OUTSIDE.
+;
+align 4
+proc gluQuadricOrientation uses eax ebx, qobj:dword, orientation:dword
+	mov eax,[qobj]
+	or eax,eax
+	jz .err_q
+	mov ebx,[orientation]
+	cmp ebx,GLU_INSIDE
+	je @f
+	cmp ebx,GLU_OUTSIDE
+	je @f
+	jmp .err_q
+	@@:
+		mov dword[eax+offs_qobj_Orientation],ebx
+		jmp @f
+	.err_q:
+		;quadric_error(qobj, GLU_INVALID_ENUM, "qluQuadricOrientation")
+	@@:
+	ret
+endp
 
 ;void gluCylinder(GLUquadricObj *qobj, GLdouble baseRadius, GLdouble topRadius, GLdouble height, GLint slices, GLint stacks )
 ;{
@@ -121,6 +168,9 @@ pushad
 	ffree st0
 	fincstp
 
+	cmp dword[eax+offs_qobj_DrawStyle],GLU_FILL ;if (qobj.DrawStyle==GLU_FILL)
+	jne .if_glu_line
+
 	; draw +Z end as a triangle fan
 	stdcall glBegin,GL_TRIANGLE_FAN
 	cmp dword[normals],GL_TRUE
@@ -174,11 +224,9 @@ align 4
 			fmul st0,st1
 			fstp dword[esp-8]
 			fld dword[x]
-			fmul st0,st1
+			fmulp
 			fstp dword[esp-12]
 			sub esp,12
-			ffree st0
-			fincstp
 			stdcall glNormal3f ;x*nsign, y*nsign, z*nsign
 		@@:
 		fld dword[radius]
@@ -189,16 +237,14 @@ align 4
 		fmul st0,st1
 		fstp dword[esp-8]
 		fld dword[x]
-		fmul st0,st1
+		fmulp
 		fstp dword[esp-12]
 		sub esp,12
-		ffree st0
-		fincstp
 		call glVertex3f ;x*radius, y*radius, z*radius
 		inc dword[j]
 		jmp .cycle_0
 	.cycle_0_end:
-	stdcall glEnd
+	call glEnd
 
 	fld1
 	fidiv dword[slices]
@@ -267,11 +313,9 @@ align 4
 			fmul st0,st1
 			fstp dword[esp-8]
 			fld dword[x]
-			fmul st0,st1
+			fmulp
 			fstp dword[esp-12]
 			sub esp,12
-			ffree st0
-			fincstp
 			stdcall glNormal3f ;x*nsign, y*nsign, z*nsign
 		@@:
 		cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
@@ -286,11 +330,9 @@ align 4
 		fmul st0,st1
 		fstp dword[esp-8]
 		fld dword[x]
-		fmul st0,st1
+		fmulp
 		fstp dword[esp-12]
 		sub esp,12
-		ffree st0
-		fincstp
 		call glVertex3f ;x*radius, y*radius, z*radius
 		fld dword[rho]
 		fadd dword[drho]
@@ -319,11 +361,9 @@ align 4
 			fmul st0,st1
 			fstp dword[esp-8]
 			fld dword[x]
-			fmul st0,st1
+			fmulp
 			fstp dword[esp-12]
 			sub esp,12
-			ffree st0
-			fincstp
 			stdcall glNormal3f ;x*nsign, y*nsign, z*nsign
 		@@:
 		cmp dword[eax+offs_qobj_TextureFlag],0 ;if (qobj.TextureFlag)
@@ -341,16 +381,14 @@ align 4
 		fmul st0,st1
 		fstp dword[esp-8]
 		fld dword[x]
-		fmul st0,st1
+		fmulp
 		fstp dword[esp-12]
 		sub esp,12
-		ffree st0
-		fincstp
 		call glVertex3f ;x*radius, y*radius, z*radius
 		inc dword[j]
 		jmp .cycle_2
 		.cycle_2_end:
-	stdcall glEnd
+	call glEnd
 	fld dword[t]
 	fsub dword[d_t]
 	fstp dword[t]
@@ -384,6 +422,7 @@ align 4
 	fmul dword[nsign]
 	fstp dword[z] ;z = nsign * cos(rho)
 	mov [j],ecx
+align 4
 	.cycle_3: ;for (j=slices;j>=0;j--)
 		cmp dword[j],0
 		jl .cycle_3_end
@@ -437,16 +476,254 @@ align 4
 		fmul st0,st1
 		fstp dword[esp-8]
 		fld dword[x]
-		fmul st0,st1
+		fmulp
 		fstp dword[esp-12]
 		sub esp,12
-		ffree st0
-		fincstp
 		call glVertex3f ;x*radius, y*radius, z*radius
 		dec dword[j]
 		jmp .cycle_3
 	.cycle_3_end:
-	stdcall glEnd
+	call glEnd
+	jmp .end_f
+
+	.if_glu_line:
+	cmp dword[eax+offs_qobj_DrawStyle],GLU_LINE ;if (qobj.DrawStyle==GLU_LINE)
+	je @f
+	cmp dword[eax+offs_qobj_DrawStyle],GLU_SILHOUETTE ;if (qobj.DrawStyle==GLU_SILHOUETTE)
+	je @f
+	jmp .if_glu_point
+	@@:
+
+	; draw stack lines
+	mov dword[i],1
+	mov ebx,[stacks]
+	mov ecx,[slices]
+align 4
+	.cycle_4: ;for (i=1;i<stacks;i++)
+		cmp dword[i],ebx
+		jge .cycle_4_end
+		; stack line at i==stacks-1 was missing here
+
+		fild dword[i]
+		fmul dword[drho]
+		fstp dword[rho] ;rho = i * drho
+		stdcall glBegin,GL_LINE_LOOP
+		mov dword[j],0
+align 4
+		.cycle_5: ;for (j=0;j<slices;j++)
+			cmp dword[j],ecx
+			jge .cycle_5_end
+			fild dword[j]
+			fmul dword[dtheta]
+			fst dword[theta] ;theta = j * dtheta;
+			fcos
+			fld dword[rho]
+			fsin
+			fxch ;толкаем sin(rho) в st1
+			fmul st0,st1
+			fstp dword[x] ;x = cos(theta) * sin(rho)
+			fld dword[theta]
+			fsin
+			fmulp ;множим на sin(rho) ранее записанный в st1
+			fstp dword[y] ;y = sin(theta) * sin(rho)
+			fld dword[rho]
+			fcos
+			fstp dword[z] ;z = cos(rho)
+			cmp dword[normals],GL_TRUE
+			jne @f
+				fld dword[nsign]
+				fld dword[z]
+				fmul st0,st1
+				fstp dword[esp-4]
+				fld dword[y]
+				fmul st0,st1
+				fstp dword[esp-8]
+				fld dword[x]
+				fmulp
+				fstp dword[esp-12]
+				sub esp,12
+				stdcall glNormal3f ;x*nsign, y*nsign, z*nsign
+			@@:
+			fld dword[radius]
+			fld dword[z]
+			fmul st0,st1
+			fstp dword[esp-4]
+			fld dword[y]
+			fmul st0,st1
+			fstp dword[esp-8]
+			fld dword[x]
+			fmulp
+			fstp dword[esp-12]
+			sub esp,12
+			call glVertex3f ;x*radius, y*radius, z*radius
+			inc dword[j]
+			jmp .cycle_5
+		.cycle_5_end:
+		call glEnd
+		inc dword[i]
+		jmp .cycle_4
+	.cycle_4_end:
+
+	; draw slice lines
+	mov dword[j],0
+align 4
+	.cycle_6: ;for (j=0;j<slices;j++)
+		cmp dword[j],ecx
+		jge .cycle_6_end
+		fild dword[j]
+		fmul dword[dtheta]
+		fstp dword[theta] ;theta = j * dtheta;
+		stdcall glBegin,GL_LINE_STRIP
+		mov dword[i],0
+align 4
+		.cycle_7: ;for (i=0;i<=stacks;i++)
+			cmp dword[i],ebx
+			jg .cycle_7_end
+			fild dword[i]
+			fmul dword[drho]
+			fst dword[rho] ;rho = i * drho
+			fsin
+			fld dword[theta]
+			fcos
+			fmul st0,st1
+			fstp dword[x] ;x = cos(theta) * sin(rho)
+			fld dword[theta]
+			fsin
+			fmulp
+			fstp dword[y] ;y = sin(theta) * sin(rho)
+			fld dword[rho]
+			fcos
+			fstp dword[z] ;z = cos(rho)
+			cmp dword[normals],GL_TRUE
+			jne @f
+				fld dword[nsign]
+				fld dword[z]
+				fmul st0,st1
+				fstp dword[esp-4]
+				fld dword[y]
+				fmul st0,st1
+				fstp dword[esp-8]
+				fld dword[x]
+				fmulp
+				fstp dword[esp-12]
+				sub esp,12
+				stdcall glNormal3f ;x*nsign, y*nsign, z*nsign
+			@@:
+			fld dword[radius]
+			fld dword[z]
+			fmul st0,st1
+			fstp dword[esp-4]
+			fld dword[y]
+			fmul st0,st1
+			fstp dword[esp-8]
+			fld dword[x]
+			fmulp
+			fstp dword[esp-12]
+			sub esp,12
+			call glVertex3f ;x*radius, y*radius, z*radius
+			inc dword[i]
+			jmp .cycle_7
+		.cycle_7_end:
+		call glEnd
+		inc dword[j]
+		jmp .cycle_6
+	.cycle_6_end:
+	jmp .end_f
+
+	.if_glu_point:
+	cmp dword[eax+offs_qobj_DrawStyle],GLU_POINT ;if (qobj.DrawStyle==GLU_POINT)
+	jne .end_f
+
+	; top and bottom-most points
+	stdcall glBegin,GL_POINTS
+	cmp dword[normals],GL_TRUE
+	jne @f
+		stdcall glNormal3f, 0.0,0.0,dword[nsign]
+	@@:
+	stdcall glVertex3f, 0.0,0.0,dword[radius]
+	cmp dword[normals],GL_TRUE
+	jne @f
+		sub esp,4
+		fld dword[nsign]
+		fchs
+		fstp dword[esp]
+		stdcall glNormal3f, 0.0,0.0 ;,-nsign
+	@@:
+	sub esp,4
+	fld dword[radius]
+	fchs
+	fstp dword[esp]
+	stdcall glVertex3f, 0.0,0.0 ;,-radius
+
+	; loop over stacks
+	mov dword[i],1
+	mov ebx,[stacks]
+	mov ecx,[slices]
+align 4
+	.cycle_8: ;for (i=1;i<stacks;i++)
+		cmp dword[i],ebx
+		jge .cycle_8_end
+		fild dword[i]
+		fmul dword[drho]
+		fstp dword[rho] ;rho = i * drho
+
+		mov dword[j],0
+align 4
+		.cycle_9: ;for (j=0;j<slices;j++)
+			cmp dword[j],ecx
+			jge .cycle_9_end
+			fild dword[j]
+			fmul dword[dtheta]
+			fst dword[theta] ;theta = j * dtheta;
+			fcos
+			fld dword[rho]
+			fsin
+			fxch ;толкаем sin(rho) в st1
+			fmul st0,st1
+			fstp dword[x] ;x = cos(theta) * sin(rho)
+			fld dword[theta]
+			fsin
+			fmulp ;множим на sin(rho) ранее записанный в st1
+			fstp dword[y] ;y = sin(theta) * sin(rho)
+			fld dword[rho]
+			fcos
+			fstp dword[z] ;z = cos(rho)
+			cmp dword[normals],GL_TRUE
+			jne @f
+				fld dword[nsign]
+				fld dword[z]
+				fmul st0,st1
+				fstp dword[esp-4]
+				fld dword[y]
+				fmul st0,st1
+				fstp dword[esp-8]
+				fld dword[x]
+				fmulp
+				fstp dword[esp-12]
+				sub esp,12
+				stdcall glNormal3f ;x*nsign, y*nsign, z*nsign
+			@@:
+			fld dword[radius]
+			fld dword[z]
+			fmul st0,st1
+			fstp dword[esp-4]
+			fld dword[y]
+			fmul st0,st1
+			fstp dword[esp-8]
+			fld dword[x]
+			fmulp
+			fstp dword[esp-12]
+			sub esp,12
+			call glVertex3f ;x*radius, y*radius, z*radius
+			inc dword[j]
+			jmp .cycle_9
+		.cycle_9_end:
+		inc dword[i]
+		jmp .cycle_8
+	.cycle_8_end:
+	call glEnd
+
+	.end_f:
 popad
 	ret
 endp
