@@ -15,12 +15,44 @@
 
 #define MOUSE_LEFT		0
 
+#define FIELD_NONE			0
+#define FIELD_WATER			1
+#define FIELD_GROUND		2
+#define FIELD_BRICK			3
+#define FIELD_WALL			4
+#define FIELD_BOX			5
+#define FIELD_MISSLE_0		6
+#define FIELD_MISSLE_1		7
+#define FIELD_MISSLE_2		8
+#define FIELD_MISSLE_3		9
+#define FIELD_HERO			10
+#define FIELD_FINISH		11
+#define FIELD_GUN_0			12
+#define FIELD_GUN_1			13
+#define FIELD_GUN_2			14
+#define FIELD_GUN_3			15
+#define FIELD_BOX_MISSLE_0	16
+#define FIELD_BOX_MISSLE_1	17
+#define FIELD_BOX_MISSLE_2	18
+#define FIELD_BOX_MISSLE_3	19
+#define FIELD_BRICK_DES		20
+#define FIELD_BOX_WATER		21
+
+
 char* header = "Laser Tank";
 
 struct Level
 {
-	char fileds[16][16];
+	Byte fileds[16][16];
 };
+
+void pause(int time)
+{
+	kos_Pause(time);
+	Byte keyCode;
+	for (int i = 0; i < 10; ++i)
+		kos_GetKey(keyCode);
+}
 
 Level *levels;
 int levelCount = 0;
@@ -28,26 +60,21 @@ int levelIndex = 0;
 
 RGBA img_tank[576];
 RGB img_water[576];
-RGB img_brick[576];
+RGB img_brick[11][576];
 RGB img_waterbox[576];
 RGB img_ground[576];
 RGB img_wall[576];
 RGB img_finish[576];
 RGBA img_box[576];
 RGBA img_laser[576];
-RGBA img_mirror[576];
-RGBA img_mirror90[576];
-RGBA img_mirror180[576];
-RGBA img_mirror270[576];
-RGBA img_mini_mirror[576];
-RGBA img_mini_mirror90[576];
-RGBA img_mini_mirror180[576];
-RGBA img_mini_mirror270[576];
+RGB img_mirror[4][576];
+RGBA img_mini_mirror[4][576];
 RGBA img_laser1[576];
 RGBA img_laser2[576];
 RGB img_brick1[576];
 RGB img_menu[147456];
 RGBA img_explosion[8064];
+RGBA img_gun[576];
 
 RGB img_button[7500];
 
@@ -62,18 +89,11 @@ CKosImage* objLaser1;
 CKosImage* objLaser2;
 
 CKosRender* renderMirror;
-CKosImage* objMirror;
-CKosImage* objMirror90;
-CKosImage* objMirror180;
-CKosImage* objMirror270;
-
-CKosImage* objMiniMirror;
-CKosImage* objMiniMirror90;
-CKosImage* objMiniMirror180;
-CKosImage* objMiniMirror270;
+CKosImage* objMiniMirror[4];
 
 CKosRender* renderBox;
 CKosImage* objBox;
+CKosImage* objGun;
 
 CKosRender* renderExplosion;
 CKosImage* objExplosion;
@@ -83,6 +103,7 @@ int gameStatus = GAME_NONE;
 
 void draw_window(); 
 void openLevel(int index);
+void Laser(Point pos, Point vec, RGB color);
 
 bool CollRecrVsPoint(Point point, Rect rect)
 {
@@ -106,8 +127,8 @@ Button ToExit("Exit", Rect(150, 321, 224, 50));
 
 struct LvlItem
 {
-	char s;
-	char d;
+	Byte s;
+	Byte d;
 	Byte l;
 };
 
@@ -115,7 +136,7 @@ LvlItem level[16][16];
 
 char GetField(Point position, bool din)
 {
-	if (din && level[position.Y][position.X].d != ' ')
+	if (din && level[position.Y][position.X].d != FIELD_NONE)
 		return level[position.Y][position.X].d;
 	return level[position.Y][position.X].s;
 }
@@ -124,44 +145,107 @@ RGB* GetImg(Point position, bool din)
 {
 	switch (GetField(position, din))
 	{
-	case 's':
+	case FIELD_WALL:
 		return (RGB*)img_wall;
-	case '7':
-		renderMirror->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
-		objMirror->Draw(Point(0, 0), 0);
-		return renderMirror->buffer;
-	case '9':
-		renderMirror->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
-		objMirror90->Draw(Point(0, 0), 0);
-		return renderMirror->buffer;
-	case '3':
-		renderMirror->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
-		objMirror180->Draw(Point(0, 0), 0);
-		return renderMirror->buffer;
-	case '1':
-		renderMirror->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
-		objMirror270->Draw(Point(0, 0), 0);
-		return renderMirror->buffer;
-	case 'h':
-	case 'g':
+	case FIELD_MISSLE_0:
+		return (RGB*)img_mirror[0];
+	case FIELD_MISSLE_1:
+		return (RGB*)img_mirror[1];
+	case FIELD_MISSLE_2:
+		return (RGB*)img_mirror[2];
+	case FIELD_MISSLE_3:
+		return (RGB*)img_mirror[3];
+	case FIELD_GUN_0:
+		renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
+		objGun->Draw(Point(0, 0), 0);
+		return renderBox->buffer;
+	case FIELD_GUN_1:
+		renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
+		objGun->Draw(Point(0, 0), 90);
+		return renderBox->buffer;
+	case FIELD_GUN_2:
+		renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
+		objGun->Draw(Point(0, 0), 180);
+		return renderBox->buffer;
+	case FIELD_GUN_3:
+		renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
+		objGun->Draw(Point(0, 0), 270);
+		return renderBox->buffer;
+	case FIELD_GROUND:
 		return (RGB*)img_ground;
-	case 'b':
-		renderBox->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
+	case FIELD_BOX:
+		renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
 		objBox->Draw(Point(0, 0), 0);
 		return renderBox->buffer;
 	//	return (RGB*)img_box;
-	case 'f':
+	case FIELD_FINISH:
 		return (RGB*)img_finish;
-	case 'x':
-		return (RGB*)img_brick;
-	case 'w':
+	case FIELD_BRICK:
+		return (RGB*)img_brick[level[position.Y][position.X].l];
+	case FIELD_WATER:
 		return (RGB*)img_water;
-	case 'e':
+	case FIELD_BOX_WATER:
 		return (RGB*)img_waterbox;
-	case 'y':
+	case FIELD_BRICK_DES:
 		return (RGB*)img_brick1;
 	}
 	return NULL;
+}
+
+Byte CollField(Point position)
+{
+	if (position.X < 0 || position.Y < 0 || position.X > 15 || position.Y > 15)
+		return 0;
+
+	switch (GetField(position, true))
+	{
+	case FIELD_NONE:
+	case FIELD_WATER:
+	case FIELD_GROUND:
+	case FIELD_BOX_WATER:
+	case FIELD_BRICK_DES:
+	case FIELD_FINISH:
+		return 1;
+	case FIELD_GUN_0:
+		return FIELD_GUN_0;
+	case FIELD_GUN_1:
+		return FIELD_GUN_1;
+	case FIELD_GUN_2:
+		return FIELD_GUN_2;
+	case FIELD_GUN_3:
+		return FIELD_GUN_3;
+	}
+	return 0;
+}
+
+bool ExistGun1(Point position, Point vec, int gun)
+{
+	rtlDebugOutString("ExistGun");
+	Point pos = position;
+	
+	Byte result = 1;
+	while (result == 1)
+	{
+		pos = pos + vec;
+		result = CollField(pos);
+	}
+	if (result == gun)
+	{
+		Laser(pos, vec * -1, (RGB)0x00CCFF);
+		return true;
+	}
+	return false;
+}
+
+void ExistGun(Point position)
+{
+	if (ExistGun1(position, Point(1, 0), FIELD_GUN_2))
+		return;
+	if (ExistGun1(position, Point(0, 1), FIELD_GUN_3))
+		return;
+	if (ExistGun1(position, Point(-1, 0), FIELD_GUN_0))
+		return;
+	ExistGun1(position, Point(0, -1), FIELD_GUN_1);
 }
 
 void DrawElevent(Point position, bool din)
@@ -171,21 +255,23 @@ void DrawElevent(Point position, bool din)
 
 void MoveBox(Point a, Point b)
 {
-	level[a.Y][a.X].d = ' ';
+	Byte code = GetField(a, true);
+	level[a.Y][a.X].d = FIELD_NONE;
 	DrawElevent(a, true);
-	if (level[b.Y][b.X].s == 'w')
+	if (level[b.Y][b.X].s == FIELD_WATER)
 	{
-		level[b.Y][b.X].s = 'e';
+		if (code = FIELD_BOX)
+			level[b.Y][b.X].s = FIELD_BOX_WATER;
 		DrawElevent(b, true);
 	}
 	else
 	{
-		level[b.Y][b.X].d = 'b';
+		level[b.Y][b.X].d = code;
 		DrawElevent(b, true);
 	}
 }
 
-void animation(Point vector, float angle)
+void animation(Point vector, float angle, int obj)
 {
 	for (int i = 2; i < 23; ++i)
 	{
@@ -196,17 +282,33 @@ void animation(Point vector, float angle)
 		renderPlayer->RenderImg(GetImg(player.position, true), Point(0, 0), 24, 24);
 		objPlayer->Draw(Point(0, 0), angle);
 		renderPlayer->Draw(player.position * 24 + vector * i);
-		if (level[player.position.Y + vector.Y][player.position.X + vector.X].d == 'b')
+		if (level[player.position.Y + vector.Y][player.position.X + vector.X].d == obj)
 		{
-			renderBox->RenderImg(GetImg(player.position, true), Point(0, 0), 24, 24);
-			objBox->Draw(Point(0, 0), 0);
+			renderBox->RenderImg(GetImg(player.position + vector, true), Point(0, 0), 24, 24);
+			switch (obj)
+			{
+			case FIELD_GUN_0:
+				objGun->Draw(Point(0, 0), 0);
+				break;
+			case FIELD_GUN_1:
+				objGun->Draw(Point(0, 0), 90);
+				break;
+			case FIELD_GUN_2:
+				objGun->Draw(Point(0, 0), 180);
+				break;
+			case FIELD_GUN_3:
+				objGun->Draw(Point(0, 0), 270);
+				break;
+			case FIELD_BOX:
+				objBox->Draw(Point(0, 0), 0);
+			}
 			renderBox->Draw((player.position + vector) * 24 + vector * i);
 		}
 		kos_WindowRedrawStatus(2);
-		kos_Pause(1);
+		pause(1);
 	}
 
-	if (level[player.position.Y + vector.Y][player.position.X + vector.X].d == 'b')
+	if (level[player.position.Y + vector.Y][player.position.X + vector.X].d == obj)
 		MoveBox(player.position + vector, player.position + vector * 2);
 
 	DrawElevent(player.position, true);
@@ -216,86 +318,51 @@ void animation(Point vector, float angle)
 	renderPlayer->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
 	objPlayer->Draw(Point(0, 0), angle);
 	renderPlayer->Draw(player.position * 24);
+	ExistGun(player.position);
 }
 
-void DrawLaser(Point position, int frame)
+void DrawLaser(Point position, int frame, RGB color)
 {
 	renderLaser->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
 	switch (frame)
 	{
 	case 1:
-		objLaser->Draw(Point(0, 0), 0, (RGB)0x00FF00);
-		break;
+		objLaser->Draw(Point(0, 0), 0, color);
+		break; 
 	case 2:
-		objLaser->Draw(Point(0, 0), 90, (RGB)0x00FF00);
+		objLaser->Draw(Point(0, 0), 90, color);
 		break;
 	case 3:
-		objLaser2->Draw(Point(0, 0), 0, (RGB)0x00FF00);
+		objLaser2->Draw(Point(0, 0), 0, color);
 		break;
 	default:
-		objLaser1->Draw(Point(-1, 0), (float)frame, (RGB)0x00FF00);
+		objLaser1->Draw(Point(-1, 0), (float)frame, color);
 	}
 	renderLaser->Draw(position * 24);
 	level[position.Y][position.X].l = 1;
 }
 
-void PlayerLaser(void)
+void Laser(Point pos, Point vec, RGB color)
 {
-	Point vector = player.vector;
-	Point position = player.position + vector;
+	Point vector = vec;
+	Point position = pos + vector;
 	bool en = true;
-
+	Byte code;
+	bool LaserGun = false;
+	
 	while (en)
 	{
-		switch (GetField(position, true))
+		code = GetField(position, true);
+		switch (code)
 		{
-		case 'b':
-			if (position + vector != player.position)
-				switch (GetField(position + vector, true))
-				{
-				case 'g':
-				case 'w':
-				case 'e':
-					for (int i = 2; i < 23; ++i)
-					{
-						DrawElevent(position, false);
-						DrawElevent(position + vector, true);
-						DrawLaser(position, (vector.X != 0) ? 1 : 2);
-						renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
-						objBox->Draw(Point(0, 0), 0);
-						renderBox->Draw((position) * 24 + vector * i);
-						kos_Pause(1);
-					}
-					MoveBox(position, position + vector);
-				}
-			en = false;
-			break;
-		case 'x':
-			for (int i = 0; i < 23; ++i)
+		case FIELD_BOX:
+		case FIELD_GUN_0:
+		case FIELD_GUN_1:
+		case FIELD_GUN_2:
+		case FIELD_GUN_3:
+			if (code == FIELD_GUN_0 && vector == Point(-1, 0) || code == FIELD_GUN_1 && vector == Point(0, -1)
+				|| code == FIELD_GUN_2 && vector == Point(1, 0) || code == FIELD_GUN_3 && vector == Point(0, 1))
 			{
-				if (i == 11 || i == 22)
-				{
-					level[position.Y][position.X].l -= 1;
-					if (level[position.Y][position.X].l == 2)
-					{
-						level[position.Y][position.X].s = 'y';
-						level[position.Y][position.X].l = 0;
-					}
-				//	rtlDebugOutString(ftoa(level[position.Y][position.X].l));
-
-					DrawElevent(position, false);
-				}
-				kos_Pause(1);
-			}
-			en = false;
-			break;
-		case 'g':
-		case 'w':
-		case 'y':
-		case 'e':
-			if (player.position == position)
-			{
-
 				for (int i = 2; i < 23; ++i)
 					kos_Pause(1);
 				for (int y = 0; y < 16; y++)
@@ -310,7 +377,88 @@ void PlayerLaser(void)
 					renderExplosion->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
 					objExplosion->Draw(Point(0, 0), 0, i);
 					renderExplosion->Draw((position)* 24);
-					kos_Pause(2);
+					pause(2);
+				}
+				level[position.Y][position.X].d = FIELD_NONE;
+				draw_window();
+				return;
+			}
+			else
+			if (position + vector != player.position)
+				switch (GetField(position + vector, true))
+				{
+				case FIELD_GROUND:
+				case FIELD_WATER:
+				case FIELD_BRICK_DES:
+				case FIELD_BOX_WATER:
+					for (int i = 2; i < 23; ++i)
+					{
+						DrawElevent(position, false);
+						DrawElevent(position + vector, true);
+						DrawLaser(position, (vector.X != 0) ? 1 : 2, color);
+						renderBox->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);			
+						switch (code)
+						{
+						case FIELD_GUN_0:
+							objGun->Draw(Point(0, 0), 0);
+							break;
+						case FIELD_GUN_1:
+							objGun->Draw(Point(0, 0), 90);
+							break;
+						case FIELD_GUN_2:
+							objGun->Draw(Point(0, 0), 180);
+							break;
+						case FIELD_GUN_3:
+							objGun->Draw(Point(0, 0), 270);
+							break;
+						case FIELD_BOX:
+							objBox->Draw(Point(0, 0), 0);
+						}
+						renderBox->Draw((position) * 24 + vector * i);
+						kos_Pause(1);
+					}
+					MoveBox(position, position + vector);
+					LaserGun = true;
+			}
+			en = false;
+			break;
+		case FIELD_BRICK:
+			for (int i = 0; i < 6; ++i)
+			{
+				level[position.Y][position.X].l += 1;
+				if (level[position.Y][position.X].l == 11)
+				{
+					level[position.Y][position.X].s = FIELD_BRICK_DES;
+					level[position.Y][position.X].l = 0;
+					LaserGun = true;
+				}
+				DrawElevent(position, false);
+				pause(5);
+			}
+			en = false;
+			break;
+		case FIELD_GROUND:
+		case FIELD_WATER:
+		case FIELD_FINISH:
+		case FIELD_BRICK_DES:
+		case FIELD_BOX_WATER:
+			if (player.position == position)
+			{
+				for (int i = 2; i < 23; ++i)
+					kos_Pause(1);
+				for (int y = 0; y < 16; y++)
+					for (int x = 0; x < 16; x++)
+						if (level[y][x].l == 1)
+						{
+							DrawElevent(Point(x, y), true);
+							level[y][x].l = 0;
+						}
+				for (int i = 0; i < 14; ++i)
+				{
+					renderExplosion->RenderImg(GetImg(position, false), Point(0, 0), 24, 24);
+					objExplosion->Draw(Point(0, 0), 0, i);
+					renderExplosion->Draw((position)* 24);
+					pause(2);
 				}
 				gameStatus = GAME_DEFEAT;
 				draw_window();
@@ -319,66 +467,66 @@ void PlayerLaser(void)
 			else
 			{
 				if (level[position.Y][position.X].l == 1)
-					DrawLaser(position, 3);
+					DrawLaser(position, 3, color);
 				else
-					DrawLaser(position, (vector.X != 0) ? 1 : 2);
+					DrawLaser(position, (vector.X != 0) ? 1 : 2, color);
 			}
 			break;
-		case '7':
+		case FIELD_MISSLE_0:
 			if (vector == Point(-1, 0) || vector == Point(0, -1))
 			{
 				vector = (vector.Y == -1) ? Point(1, 0) : Point(0, 1);
-				DrawLaser(position, 0);
+				DrawLaser(position, 0, color);
 			}
 			else
 			{
 				for (int i = 2; i < 23; ++i)
-					kos_Pause(1);
+					pause(1);
 				en = false;
 			}
 			break;
-		case '9':
+		case FIELD_MISSLE_1:
 			if (vector == Point(0, -1) || vector == Point(1, 0))
 			{
 				vector = (vector.Y == -1) ? Point(-1, 0) : Point(0, 1);
-				DrawLaser(position, 90);
+				DrawLaser(position, 90, color);
 			}
 			else
 			{
 				for (int i = 2; i < 23; ++i)
-					kos_Pause(1);
+					pause(1);
 				en = false;
 			}
 			break;
-		case '1':
+		case FIELD_MISSLE_3:
 			if (vector == Point(-1, 0) || vector == Point(0, 1))
 			{
 				vector = (vector.Y == 1) ? Point(1, 0) : Point(0, -1);
-				DrawLaser(position, 270);
+				DrawLaser(position, 270, color);
 			}
 			else
 			{
 				for (int i = 2; i < 23; ++i)
-					kos_Pause(1);
+					pause(1);
 				en = false;
 			}
 			break;
-		case '3':
+		case FIELD_MISSLE_2:
 			if (vector == Point(1, 0) || vector == Point(0, 1))
 			{
 				vector = (vector.Y == 1) ? Point(-1, 0) : Point(0, -1);
-				DrawLaser(position, 180);
+				DrawLaser(position, 180, color);
 			}
 			else
 			{
 				for (int i = 2; i < 23; ++i)
-					kos_Pause(1);
+					pause(1);
 				en = false;
 			}
 			break;
 		default:
 			for (int i = 2; i < 23; ++i)
-				kos_Pause(1);
+				pause(1);
 			en = false;
 		}
 		position = position + vector;
@@ -392,40 +540,47 @@ void PlayerLaser(void)
 				level[y][x].l = 0;
 			}
 	
+	if (LaserGun)
+		ExistGun(player.position);
 }
 
 void player_move(Point vector, float angle)
 {
 	if (player.vector == vector)
 	{
-		switch (GetField(player.position + vector, true))
+		Byte code = GetField(player.position + vector, true);
+		switch (code)
 		{
-		case 'b':
+		case FIELD_GUN_0:
+		case FIELD_GUN_1:
+		case FIELD_GUN_2:
+		case FIELD_GUN_3:
+		case FIELD_BOX:
 			switch (GetField(player.position + vector * 2, true))
 			{
-			case 'g':
-			case 'w':
-			case 'e':
-			case 'y':
-				animation(vector, angle);
+			case FIELD_GROUND:
+			case FIELD_WATER:
+			case FIELD_BOX_WATER:
+			case FIELD_BRICK_DES:
+				animation(vector, angle, code);
 				return;
 			}
 			break;
-		case 'f':
+		case FIELD_FINISH:
 			gameStatus = GAME_VICTORY;
 			draw_window();
 			break;
-		case ' ':
-		case 'x':
-		case 's':
-		case 'w':
-		case '7':
-		case '9':
-		case '3':
-		case '1':
+		case FIELD_NONE:
+		case FIELD_BRICK:
+		case FIELD_WALL:
+		case FIELD_WATER:
+		case FIELD_MISSLE_0:
+		case FIELD_MISSLE_1:
+		case FIELD_MISSLE_2:
+		case FIELD_MISSLE_3:
 			break;
 		default:
-			animation(vector, angle);
+			animation(vector, angle, -1);
 		}
 	}
 	else
@@ -452,7 +607,7 @@ void player_move(Point vector, float angle)
 			renderPlayer->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
 			objPlayer->Draw(Point(0, 0), player.angle);
 			renderPlayer->Draw(player.position * 24);
-			kos_Pause(1);
+			pause(1);
 		}
 
 		player.vector = vector;
@@ -507,9 +662,10 @@ void key_press(int key)
 			break;
 		case 32: // Space
 			if (gameStatus == GAME_NONE)
-				PlayerLaser();
+				Laser(player.position, player.vector, (RGB)0x00FF00);
 			break;
 		case 13:
+		//	openLevel(levelIndex + 1);
 			if (gameStatus == GAME_VICTORY)
 				openLevel(levelIndex + 1);
 			else
@@ -565,9 +721,9 @@ void draw_window(void)
 		for (int y = 0; y < 16; y++)
 			for (int x = 0; x < 16; x++)
 			{
-				if (level[y][x].s != ' ')
+				if (level[y][x].s != FIELD_NONE)
 					kos_PutImage(GetImg(Point(x, y), true), 24, 24, 24 * x, 24 * y);
-				if (level[y][x].d == 'b')
+				if (level[y][x].d == FIELD_BOX)
 				{
 					renderBox->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
 					objBox->Draw(Point(0, 0), 0);
@@ -628,52 +784,10 @@ void LevelsLoad()
 		for (int y = 0; y < 16; y++)
 			for (int x = 0; x < 16; x++)
 			{
-			//	if (block[k] != 0)
-			//		rtlDebugOutString(ftoa(block[k]));
-				switch (block[k])
-				{
-				case 0:
-					levels[i].fileds[y][x] = ' ';
-					break;
-				case 1:
-					levels[i].fileds[y][x] = 'w';
-					break;
-				case 2:
-					levels[i].fileds[y][x] = 'g';
-					break;
-				case 3:
-					levels[i].fileds[y][x] = 'x';
-					break;
-				case 4:
-					levels[i].fileds[y][x] = 's';
-					break;
-				case 5:
-					levels[i].fileds[y][x] = 'b';
-					break;
-				case 6:
-					levels[i].fileds[y][x] = '7';
-					break;
-				case 7:
-					levels[i].fileds[y][x] = '9';
-					break;
-				case 8:
-					levels[i].fileds[y][x] = '3';
-					break;
-				case 9:
-					levels[i].fileds[y][x] = '1';
-					break;
-				case 10:
-					levels[i].fileds[y][x] = 'h';
-					break;
-				case 11:
-					levels[i].fileds[y][x] = 'f';
-					break;
-				}
+				levels[i].fileds[y][x] = block[k];
 				k++;
 			}		
 	}
-
-
 }
 
 void openLevel(int index)
@@ -683,20 +797,24 @@ void openLevel(int index)
 		for (int x = 0; x < 16; x++)
 		{
 			level[y][x].s = levels[index].fileds[y][x];
-			level[y][x].d = ' ';
+			level[y][x].d = FIELD_NONE;
 			level[y][x].l = 0;
 			switch (levels[index].fileds[y][x])
 			{
-			case 'b':
-				level[y][x].s = 'g';
-				level[y][x].d = 'b';
+			case FIELD_BOX:
+			case FIELD_GUN_0:
+			case FIELD_GUN_1:
+			case FIELD_GUN_2:
+			case FIELD_GUN_3:
+				level[y][x].s = FIELD_GROUND;
+				level[y][x].d = levels[index].fileds[y][x];
 				break;
-			case 'h':
+			case FIELD_HERO:
 				player = Player(Point(x, y));
-				level[y][x].s = 'g';
+				level[y][x].s = FIELD_GROUND;
 				break;
-			case 'x':
-				level[y][x].l = 6;
+			case FIELD_BRICK:
+				level[y][x].l = 0;
 				break;
 			}
 		}
@@ -722,31 +840,29 @@ void kos_Main()
 	CKosFile *file = new CKosFile(kosExePath);
 
 	file->LoadTex((Byte*)img_box, 4, 24, 24);
-	file->LoadTex((Byte*)img_brick, 3, 24, 24);
+	for (int i = 0; i < 11; ++i)
+		file->LoadTex((Byte*)img_brick[i], 3, 24, 24);
+	file->LoadTex((Byte*)img_brick1, 3, 24, 24);
 	file->LoadTex((Byte*)img_finish, 3, 24, 24);
 	file->LoadTex((Byte*)img_ground, 3, 24, 24);
 	file->LoadTex((Byte*)img_laser, 4, 24, 24);	
 	file->LoadTex((Byte*)img_laser1, 4, 24, 24);
 	file->LoadTex((Byte*)img_laser2, 4, 24, 24);
 
-	file->LoadTex((Byte*)img_mirror, 4, 24, 24);
-	file->LoadTex((Byte*)img_mirror90, 4, 24, 24);
-	file->LoadTex((Byte*)img_mirror180, 4, 24, 24);
-	file->LoadTex((Byte*)img_mirror270, 4, 24, 24);
+	for (int i = 0; i < 4; ++i)
+		file->LoadTex((Byte*)img_mirror[i], 3, 24, 24);
 
-	file->LoadTex((Byte*)img_mini_mirror, 4, 24, 24);
-	file->LoadTex((Byte*)img_mini_mirror90, 4, 24, 24);
-	file->LoadTex((Byte*)img_mini_mirror180, 4, 24, 24);
-	file->LoadTex((Byte*)img_mini_mirror270, 4, 24, 24);
+	for (int i = 0; i < 4; ++i)
+		file->LoadTex((Byte*)img_mini_mirror[4], 4, 24, 24);
 
 	file->LoadTex((Byte*)img_tank, 4, 24, 24);
 	file->LoadTex((Byte*)img_wall, 3, 24, 24);
 	file->LoadTex((Byte*)img_water, 3, 24, 24);
 	file->LoadTex((Byte*)img_waterbox, 3, 24, 24);
-	file->LoadTex((Byte*)img_brick1, 3, 24, 24);
 	file->LoadTex((Byte*)img_menu, 3, 384, 384);
 	file->LoadTex((Byte*)img_button, 3, 150, 50);	
 	file->LoadTex((Byte*)img_explosion, 4, 24, 336);	
+	file->LoadTex((Byte*)img_gun, 4, 24, 24);	
 	
 	delete file;
 
@@ -762,18 +878,13 @@ void kos_Main()
 	objLaser2->SetMode(DRAW_ALPHA_ADD);
 			
 	renderMirror = new CKosRender(24, 24);
-	objMirror = new CKosImage(renderMirror, (RGBA*)img_mirror, 24, 24);
-	objMirror90 = new CKosImage(renderMirror, (RGBA*)img_mirror90, 24, 24);
-	objMirror180 = new CKosImage(renderMirror, (RGBA*)img_mirror180, 24, 24);
-	objMirror270 = new CKosImage(renderMirror, (RGBA*)img_mirror270, 24, 24);
 
-	objMiniMirror = new CKosImage(renderMirror, (RGBA*)img_mini_mirror, 24, 24);
-	objMiniMirror = new CKosImage(renderMirror, (RGBA*)img_mini_mirror90, 24, 24);
-	objMiniMirror = new CKosImage(renderMirror, (RGBA*)img_mini_mirror180, 24, 24);
-	objMiniMirror = new CKosImage(renderMirror, (RGBA*)img_mini_mirror270, 24, 24);
+	for (int i = 0; i < 4; ++i)
+		objMiniMirror[i] = new CKosImage(renderMirror, (RGBA*)img_mini_mirror[i], 24, 24);
 
 	renderBox = new CKosRender(24, 24);
 	objBox = new CKosImage(renderBox, (RGBA*)img_box, 24, 24);
+	objGun = new CKosImage(renderBox, (RGBA*)img_gun, 24, 24);	
 
 	renderExplosion = new CKosRender(24, 24);
 	objExplosion = new CKosImage(renderExplosion, (RGBA*)img_explosion, 24, 24);
