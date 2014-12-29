@@ -9,7 +9,7 @@ public __ksys_rewritefile
 public __ksys_appendtofile
 
 align 4
-proc __ksys_get_filesize stdcall, filename:dword
+proc __ksys_get_filesize stdcall uses ebx, filename:dword
 
         xor eax,eax
         mov ebx,[filename]
@@ -37,7 +37,7 @@ endp
 
 
 align 4
-proc __ksys_readfile stdcall,filename:dword,position:dword,sizeblock:dword,buffer:dword
+proc __ksys_readfile stdcall uses ebx,filename:dword,position:dword,sizeblock:dword,buffer:dword
 
         xor eax,eax
         mov ebx,[position]
@@ -60,7 +60,7 @@ proc __ksys_readfile stdcall,filename:dword,position:dword,sizeblock:dword,buffe
 endp
 
 align 4
-proc __ksys_rewritefile stdcall,filename:dword,sizeblock:dword,data_write:dword
+proc __ksys_rewritefile stdcall uses ebx,filename:dword,sizeblock:dword,data_write:dword
 
         xor eax,eax
         mov ebx,[sizeblock]
@@ -82,7 +82,7 @@ proc __ksys_rewritefile stdcall,filename:dword,sizeblock:dword,data_write:dword
 endp
 
 align 4
-proc __ksys_appendtofile stdcall,filename:dword,pos:dword,sizeblock:dword,data_append:dword
+proc __ksys_appendtofile stdcall uses ebx,filename:dword,pos:dword,sizeblock:dword,data_append:dword
 
         xor eax,eax
         mov ebx,[pos]
