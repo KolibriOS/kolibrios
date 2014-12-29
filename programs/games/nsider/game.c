@@ -416,7 +416,7 @@ void ShowHelp() {
 	DrawText (5,410,"sometimes it can be unstable",GLOBAL_FRONTCOLOR);
 	DrawText (5,430,"frame tech works slower but stable",GLOBAL_FRONTCOLOR);
 
-	 if (Key=='f') {
+	 if (Key=='f' && CURRENT_LEVEL<3) {
 		GAME_TYPE=3;
 		Panel=1;
 	}
