@@ -15,8 +15,8 @@ int DeltaH [8]={11,16,19,20,21,22,23,23};
 //-1-quit, 0-menu, 1-game
 int GAME_TYPE=0;
 
-int TactCount=0;
 int GLOBAL_SPEED=0;
+int Max_Speed=5;
 //colors
 int COLOR_INDEX=0;
 char RAINBOW_NAME[7][7]={"red","orange","yellow","green","blue","indigo","violet"};
@@ -66,13 +66,9 @@ int Tile_Type=0;
 int Q_SELECTED=0;
 char TILENAME[6][11]={"empty","block","spike","jump pad","checkpt","finish"};
 
-//TIMING
-int OLD_FPS=60;
-int NEW_FPS=60;
-
 //OTHER
 int THE_END_COUNT=600;
-
+char Arrow='0';
 //Libraries
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,6 +86,7 @@ int THE_END_COUNT=600;
 char getKey() {
 	int NewKey=_ksys_get_key();
 	NewKey/=256;
+	Arrow=(NewKey/256)%256;
 	return (NewKey%256);
 }
 void LoadData () {
@@ -169,17 +166,17 @@ void SaveData () {
 
 void MainMenu () {
 	if (Key==27) GAME_TYPE=-1;
-	if (MENU_SELECTED==10 && Key==' ') GAME_TYPE=-1;
-	if (Key=='s') MENU_SELECTED++;
-	if (Key=='w') MENU_SELECTED--;
-	if (MENU_SELECTED<0) MENU_SELECTED=10;
-	if (MENU_SELECTED>10) MENU_SELECTED=0;
-	if (MENU_SELECTED==0 && Key==' ') {
+	if (MENU_SELECTED==11 && (Key==' ' || Arrow==28)) GAME_TYPE=-1;
+	if (Key=='s' || Arrow=='P') MENU_SELECTED++;
+	if (Key=='w' || Arrow=='H') MENU_SELECTED--;
+	if (MENU_SELECTED<0) MENU_SELECTED=11;
+	if (MENU_SELECTED>11) MENU_SELECTED=0;
+	if (MENU_SELECTED==0 && (Key==' ' || Arrow==28)) {
 		GAME_TYPE=1;
 		GLOBAL_CHECKPOINT=0;
 		return;
 	}
-	if (MENU_SELECTED==3 && (Key=='a' || Key=='d')) {
+	if (MENU_SELECTED==3 && (Key=='a' || Key=='d' || Arrow=='K' || Arrow=='M')) {
 		if (GLOBAL_BACKGROUNDCOLOR==0) {
 			GLOBAL_BACKGROUNDCOLOR=0x00ffffff;
 			GLOBAL_FRONTCOLOR=0;
@@ -189,27 +186,27 @@ void MainMenu () {
 		}
 	}
 	if (MENU_SELECTED==1) {
-		if (Key=='a' && CURRENT_LEVEL>0) CURRENT_LEVEL--;
-		if (Key=='d' && CURRENT_LEVEL<MAX_LEVEL) CURRENT_LEVEL++;
+		if ((Key=='a' || Arrow=='K') && CURRENT_LEVEL>0) CURRENT_LEVEL--;
+		if ((Key=='d' || Arrow=='M') && CURRENT_LEVEL<MAX_LEVEL) CURRENT_LEVEL++;
 		HeroSides=LevelProps[CURRENT_LEVEL][2];
 	}
 	if (MENU_SELECTED==2) {
-		if (Key=='a' && COLOR_INDEX>0) COLOR_INDEX--;
-		if (Key=='d' && COLOR_INDEX<6) COLOR_INDEX++;
+		if ((Key=='a' || Arrow=='K') && COLOR_INDEX>0) COLOR_INDEX--;
+		if ((Key=='d' || Arrow=='M') && COLOR_INDEX<6) COLOR_INDEX++;
 		HeroColor=RAINBOW_TABLE [COLOR_INDEX][0];
 		GLOBAL_BLOCKCOLOR=RAINBOW_TABLE [COLOR_INDEX][1];
 		GLOBAL_BATUTCOLOR=RAINBOW_TABLE [COLOR_INDEX][2];
 		GLOBAL_PITCOLOR=RAINBOW_TABLE [COLOR_INDEX][3];
 		GLOBAL_FLAGCOLOR=RAINBOW_TABLE [COLOR_INDEX][4];
 	}
-	if (MENU_SELECTED==7 && (Key=='a' || Key=='d')) {
+	if (MENU_SELECTED==7 && (Key=='a' || Key=='d' || Arrow=='K' || Arrow=='M')) {
 		if (SAVE_FOLDER_TYPE==0) {
 			SAVE_FOLDER_TYPE=1;
 		} else {
 			SAVE_FOLDER_TYPE=0;
 		}
 	}
-	if (MENU_SELECTED==8 && (Key=='a' || Key=='d')) {
+	if (MENU_SELECTED==8 && (Key=='a' || Key=='d' || Arrow=='K' || Arrow=='M')) {
 		int i=0;
 		int j=0;
 		for (i=0; i<Width; i++) {
@@ -224,11 +221,14 @@ void MainMenu () {
 			DRAW_TECH=0;
 		}
 		Update();
-
 	}
-	if (MENU_SELECTED==4 && Key==' ') LoadData();
-	if (MENU_SELECTED==5 && Key==' ') SaveData();
-	if (MENU_SELECTED==6 && Key==' ') {
+	if (MENU_SELECTED==9) {
+		if ((Key=='a' || Arrow=='K') && Max_Speed>1) Max_Speed--;
+		if ((Key=='d' || Arrow=='M') && Max_Speed<14) Max_Speed++;
+	}
+	if (MENU_SELECTED==4 && (Key==' ' || Arrow==28)) LoadData();
+	if (MENU_SELECTED==5 && (Key==' ' || Arrow==28)) SaveData();
+	if (MENU_SELECTED==6 && (Key==' ' || Arrow==28)) {
 		if (CURRENT_LEVEL>=3) {
 			DrawText (300,300,"error",GLOBAL_FRONTCOLOR);
 			DrawText (30,320,"(choose level 0/1/2 to edit them)",GLOBAL_FRONTCOLOR);
@@ -244,7 +244,7 @@ void MainMenu () {
 		GAME_TYPE=3;
 		Panel=1;
 	}
-	if (MENU_SELECTED==9 && Key==' ') GAME_TYPE=2;
+	if (MENU_SELECTED==10 && (Key==' ' || Arrow==28)) GAME_TYPE=2;
 
 
 	DrawTitle (60,100,GLOBAL_FRONTCOLOR);
@@ -276,6 +276,9 @@ void MainMenu () {
 	} else {
 		DrawText (450,480,"lines",GLOBAL_FRONTCOLOR);
 	}
+	DrawText (100,500,"max speed <   >",GLOBAL_FRONTCOLOR);
+	IntToStr(Max_Speed,NUMBER);
+	DrawText (300,500,NUMBER,GLOBAL_FRONTCOLOR);
 	DrawText (100,520,"help",GLOBAL_FRONTCOLOR);
 	DrawText (100,540,"quit",GLOBAL_FRONTCOLOR);
 	DrawText (20,580,"developed by e_shi games 2014",GLOBAL_FRONTCOLOR);
@@ -289,8 +292,9 @@ void MainMenu () {
 	if (MENU_SELECTED==6) DrawText (100,440,"level editor",HeroColor);
 	if (MENU_SELECTED==7) DrawText (100,460,"saveload folder <          >",HeroColor);
 	if (MENU_SELECTED==8) DrawText (100,480,"redraw technology <        >",HeroColor);
-	if (MENU_SELECTED==9) DrawText (100,520,"help",HeroColor);
-	if (MENU_SELECTED==10) DrawText (100,540,"quit",HeroColor);
+	if (MENU_SELECTED==9) DrawText (100,500,"max speed <   >",HeroColor);
+	if (MENU_SELECTED==10) DrawText (100,520,"help",HeroColor);
+	if (MENU_SELECTED==11) DrawText (100,540,"quit",HeroColor);
 
 
 }
@@ -319,7 +323,7 @@ void GamePlay () {
 			if (TO_NEXT_LEVEL<500) {
 				TO_NEXT_LEVEL+=2;
 			} else {
-				if (Key==' ' && TO_NEXT_LEVEL<=504) {
+				if ((Key==' ' || Arrow==28) && TO_NEXT_LEVEL<=504) {
 					CURRENT_LEVEL++;
 					HeroSides=CURRENT_LEVEL;
 					if (CURRENT_LEVEL>MAX_LEVEL) MAX_LEVEL=CURRENT_LEVEL;
@@ -392,24 +396,25 @@ void GamePlay () {
 
 void ShowHelp() {
 	DrawText (5,10,"controls",HeroColor);
-	DrawText (5,30,"w/a/s/d_choose in menu/editor",GLOBAL_FRONTCOLOR);
-	DrawText (5,50,"space_select/jump",GLOBAL_FRONTCOLOR);
-	DrawText (5,70,"escape_return to menu/exit",GLOBAL_FRONTCOLOR);
-	DrawText (5,100,"level editor notes",HeroColor);
-	DrawText (5,120,"press e to switch grid/tools panel",GLOBAL_FRONTCOLOR);
-	DrawText (5,140,"press q to switch grid/properties",GLOBAL_FRONTCOLOR);
-	DrawText (5,160,"select save game to save all levels",GLOBAL_FRONTCOLOR);
-	DrawText (5,180,"select load game to load all levels",GLOBAL_FRONTCOLOR);
-	DrawText (5,200,"select level 0/1/2 to play/edit",GLOBAL_FRONTCOLOR);
-	DrawText (5,220,"use f to go to level editor quickly",GLOBAL_FRONTCOLOR);
-	DrawText (5,240+20,"use start column to test level from",GLOBAL_FRONTCOLOR);
-	DrawText (5,260+20,"desired place (note _ you can test",GLOBAL_FRONTCOLOR);
-	DrawText (5,280+20,"level from column which contains",GLOBAL_FRONTCOLOR);
-	DrawText (5,300+20,"checkpoint)",GLOBAL_FRONTCOLOR);
-	DrawText (5,360,"redraw technology notes",HeroColor);
-	DrawText (5,380,"lines tech works faster but",GLOBAL_FRONTCOLOR);
-	DrawText (5,400,"sometimes it can be unstable",GLOBAL_FRONTCOLOR);
-	DrawText (5,420,"frame tech works slower but stable",GLOBAL_FRONTCOLOR);
+	DrawText (5,30,"w/a/s/d or arrow keys to choose",GLOBAL_FRONTCOLOR);
+	DrawText (5,50,"space jump",GLOBAL_FRONTCOLOR);
+	DrawText (5,70,"space/enter to select",GLOBAL_FRONTCOLOR);
+	DrawText (5,90,"escape return to menu/exit",GLOBAL_FRONTCOLOR);
+	DrawText (5,130,"level editor notes",HeroColor);
+	DrawText (5,150,"press e to switch grid/tools panel",GLOBAL_FRONTCOLOR);
+	DrawText (5,170,"press q to switch grid/properties",GLOBAL_FRONTCOLOR);
+	DrawText (5,190,"select save game to save all levels",GLOBAL_FRONTCOLOR);
+	DrawText (5,210,"select load game to load all levels",GLOBAL_FRONTCOLOR);
+	DrawText (5,230,"select level 0/1/2 to play/edit",GLOBAL_FRONTCOLOR);
+	DrawText (5,250,"use f to go to level editor quickly",GLOBAL_FRONTCOLOR);
+	DrawText (5,270,"use start column to test level from",GLOBAL_FRONTCOLOR);
+	DrawText (5,290,"desired place (you can test",GLOBAL_FRONTCOLOR);
+	DrawText (5,310,"level from column which contains",GLOBAL_FRONTCOLOR);
+	DrawText (5,330,"checkpoint)",GLOBAL_FRONTCOLOR);
+	DrawText (5,370,"redraw technology notes",HeroColor);
+	DrawText (5,390,"lines tech works faster but",GLOBAL_FRONTCOLOR);
+	DrawText (5,410,"sometimes it can be unstable",GLOBAL_FRONTCOLOR);
+	DrawText (5,430,"frame tech works slower but stable",GLOBAL_FRONTCOLOR);
 
 	 if (Key=='f') {
 		GAME_TYPE=3;
@@ -471,11 +476,11 @@ void LevelEditor () {
 	int i=0;
 	int j=0;
 	if (Panel==0) {
-		if (Key=='d' && Tile_X<399) Tile_X++;
-		if (Key=='a' && Tile_X>0) Tile_X--;
-		if (Key=='s' && Tile_Y<8) Tile_Y++;
-		if (Key=='w' && Tile_Y>0) Tile_Y--;
-		if (Key==' ') {
+		if ((Key=='d' || Arrow=='M') && Tile_X<399) Tile_X++;
+		if ((Key=='a' || Arrow=='K') && Tile_X>0) Tile_X--;
+		if ((Key=='s' || Arrow=='P') && Tile_Y<8) Tile_Y++;
+		if ((Key=='w' || Arrow=='H') && Tile_Y>0) Tile_Y--;
+		if ((Key==' ' || Arrow==28)) {
 			if (Tile_Type==5) {
 				for (i=0; i<LEVEL_MAXLEN; i++) if (*(Levels[CURRENT_LEVEL]+0*LEVEL_MAXLEN+i)==5) *(Levels[CURRENT_LEVEL]+0*LEVEL_MAXLEN+i)=0;
 				*(Levels[CURRENT_LEVEL]+0*LEVEL_MAXLEN+Tile_X)=5;
@@ -485,13 +490,13 @@ void LevelEditor () {
 		}
 	}
 	if (Panel==1) {
-		if (Key=='s' && Tile_Type<5) Tile_Type++;
-		if (Key=='w' && Tile_Type>0) Tile_Type--;
+		if ((Key=='s' || Arrow=='P') && Tile_Type<5) Tile_Type++;
+		if ((Key=='w' || Arrow=='H') && Tile_Type>0) Tile_Type--;
 	}
 	if (Panel==2) {
-		if (Key=='s' && Q_SELECTED<5) Q_SELECTED++;
-		if (Key=='w' && Q_SELECTED>0) Q_SELECTED--;
-		if (Key==' ' && Q_SELECTED==0) {
+		if ((Key=='s' || Arrow=='P') && Q_SELECTED<5) Q_SELECTED++;
+		if ((Key=='w' || Arrow=='H') && Q_SELECTED>0) Q_SELECTED--;
+		if ((Key==' ' || Arrow==28) && Q_SELECTED==0) {
 			GAME_TYPE=1;
 			if (GLOBAL_CHECKPOINT>0) {
 				int isCheck=0;
@@ -525,23 +530,23 @@ void LevelEditor () {
 			}
 		}
 		if (Q_SELECTED==1) {
-			if (Key=='d' && GLOBAL_CHECKPOINT<399) GLOBAL_CHECKPOINT++;
-			if (Key=='a' && GLOBAL_CHECKPOINT>0) GLOBAL_CHECKPOINT--;
+			if ((Key=='d' || Arrow=='M') && GLOBAL_CHECKPOINT<399) GLOBAL_CHECKPOINT++;
+			if ((Key=='a' || Arrow=='K') && GLOBAL_CHECKPOINT>0) GLOBAL_CHECKPOINT--;
 		}
-		if (Key==' ' && Q_SELECTED==2) {
+		if ((Key==' ' || Arrow==28) && Q_SELECTED==2) {
 			for (i=0; i<9; i++) {
 				for (j=0; j<LEVEL_MAXLEN; j++) {
 					*(Levels[CURRENT_LEVEL]+i*LEVEL_MAXLEN+j)=0;
 				}
 			}
 		}
-		if (Key==' ' && Q_SELECTED==3) SaveArray();
+		if ((Key==' ' || Arrow==28) && Q_SELECTED==3) SaveArray();
 		if (Q_SELECTED==4) {
-			if (Key=='a' && LevelProps[CURRENT_LEVEL][2]>3) LevelProps[CURRENT_LEVEL][2]--;
-			if (Key=='d' && LevelProps[CURRENT_LEVEL][2]<10) LevelProps[CURRENT_LEVEL][2]++;
+			if ((Key=='a' || Arrow=='K') && LevelProps[CURRENT_LEVEL][2]>3) LevelProps[CURRENT_LEVEL][2]--;
+			if ((Key=='d' || Arrow=='M') && LevelProps[CURRENT_LEVEL][2]<10) LevelProps[CURRENT_LEVEL][2]++;
 			HeroSides=LevelProps[CURRENT_LEVEL][2];
 		}
-		if (Key==' ' && Q_SELECTED==5) GAME_TYPE=0;
+		if ((Key==' ' || Arrow==28) && Q_SELECTED==5) GAME_TYPE=0;
 	}
 	if (Key=='e') {
 		if (Panel==0) {
@@ -668,22 +673,13 @@ int main(int argc, char **argv) {
 	OffsetY=ScreenY/2-Height/2;
 	draw_window();
 
-	int TIME_START=0;
-	int TIME_END=0;
-	int Delta_Hz=0;
-
-	TIME_START=_ksys_get_system_clock();
 	while (!0) {
-		TIME_END=_ksys_get_system_clock();
-		if (TIME_START==TIME_END) {
-			Delta_Hz++;
-		} else {
-			OLD_FPS=NEW_FPS;
-			NEW_FPS=Delta_Hz;
-			TIME_START=TIME_END;
-			Delta_Hz=0;
+		if (GAME_TYPE==1) {
+		_ksys_delay(15-Max_Speed);
 		}
-		_ksys_delay((OLD_FPS+NEW_FPS)/120);
+		else {
+		_ksys_delay(1);
+		}
 		Key=getKey();
 		if (GAME_TYPE==-1) return 0;
 		if (GAME_TYPE==0) MainMenu ();
