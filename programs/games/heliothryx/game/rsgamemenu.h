@@ -10,6 +10,8 @@
 #define MENU_MAIN       0
 #define MENU_SETTINGS   1
 #define MENU_ABOUT      2
+#define MENU_LEVEL_PASSED   3
+#define MENU_GAME_OVER      4
 
 #define MENU_ITEM_WINDOW_SCALE  1
 
@@ -20,6 +22,7 @@ extern char **menu_titles[];
 extern PRSFUNC0 menu_actions[];
 
 extern char window_scale_str[];
+extern char level_passed_score_str[];
 
 void menu_cursor_down();
 void menu_cursor_up();

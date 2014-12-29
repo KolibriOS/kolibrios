@@ -15,6 +15,7 @@
 // Settings menu
 #define L_WINDOW_SCALE  "MAChTAb 0KHA:"
 #define L_DONE      "g0T0B0"
+#define L_BACK      "HA3Ad"
 
 // About menu
 #define L_DEVELOPED_BY  "PA3PAb0T4iK:"
@@ -24,8 +25,11 @@
 #define L_BOTTOM_LINE_DEVELOPER_INFO    "PA3PAb0T4iK: P0MAH hYBAl0B` T0l]aTTi_ 2014"
 
 // Gameplay
-#define L_TECHDEMO_LINE1        "eT0 TEXH0dEMKA` "
-#define L_TECHDEMO_LINE2        "CTPElKi = dBijEHiE_ <A> = B\\CTPEl_ <E5C> = B\\X0d` "
+//#define L_TECHDEMO_LINE1        "eT0 TEXH0dEMKA` "
+#define L_TECHDEMO_LINE1        "CTPElKi = dBijEHiE_ <A> = B\\CTPEl_ <E5C> = B\\X0d` "
 
+#define L_LEVEL_PASSED      "dEM0=YP0BEH] nP0^dEH"
+#define L_YOUR_SCORE        "04K0B HAbPAH0:"
+#define L_GAME_OVER         "igPA 0K0H4EHA"
 
 #endif

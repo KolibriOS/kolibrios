@@ -108,10 +108,54 @@ void soundbuf_sin_fade(rs_soundbuf_t *snd, float freq);
 void soundbuf_play(rs_soundbuf_t *snd);
 void soundbuf_stop(rs_soundbuf_t *snd);
 
+// Game Objects
+
+#define     GAME_OBJS_MAX_COUNT     1024
+
+#define     OBJ_PLAYER      0
+#define     OBJ_BULLET      1
+#define     OBJ_EXPLOSION   2
+#define     OBJ_ROCK        3
+#define     OBJ_MINIROCK    4
+#define     OBJ_TURRET      5
+#define     OBJ_RED_BULLET  6
+
+typedef struct game_obj_t {
+    int obj_type;
+    int flags;
+    int tag;
+    int radius;
+    
+    float x;
+    float y;
+    int t;
+    float f;
+    
+//    int health;
+//    int reserved0;
+//    int reserved1;
+//    int reserved2;
+} game_obj_t;
+
+#define OBJ_FLAG_DESTROYED      0x01
+#define OBJ_FLAG_ENEMY          0x02
+#define OBJ_FLAG_SIN            0x04
+#define OBJ_FLAG_BOSS           0x08 // draw health-bar above
+
+game_obj_t game_obj(int obj_type, int flags, int tag, int radius, float x, float y, int t, float f);
+
+int game_obj_add(game_obj_t obj);
+void game_obj_remove(int index);
+
+
+
 // Game Registry
 
-#define ROCKS_COUNT 3
+#define ROCKS_COUNT 8
+#define MINIROCKS_COUNT ROCKS_COUNT // must equal
 #define FONTS_COUNT 4
+#define EXPLOSIONS_COUNT    8
+#define EXPLOSION_RADIUS    16
 
 #define STATUS_MENU     0
 #define STATUS_PLAYING  1
@@ -124,9 +168,11 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 #define RS_ARROW_RIGHT_MASK	0x08
 #define RS_ATTACK_KEY_MASK  0x10
 
-#define BULLETS_COUNT   8
+//#define BULLETS_COUNT   8
 
 #define GAME_SHOOT_PERIOD   3
+
+#define GAME_FLAG_BOSS_DESTROYED    0x01
 
 typedef struct rs_game_t {
     rs_texture_t framebuffer; 
@@ -139,6 +185,9 @@ typedef struct rs_game_t {
     
     rs_texture_t tex_ship[4];
     rs_texture_t tex_rocks[ROCKS_COUNT];
+    rs_texture_t tex_minirocks[MINIROCKS_COUNT];
+    
+    rs_texture_t tex_explosions[EXPLOSIONS_COUNT];
     
     rs_texture_t tex_font[64*FONTS_COUNT];
     
@@ -150,6 +199,7 @@ typedef struct rs_game_t {
     rs_soundbuf_t sound_test3;
     
     int status;
+    int flags;
     
     unsigned int keyboard_state;
     
@@ -158,17 +208,37 @@ typedef struct rs_game_t {
     
     int window_scale;
     
-    int tx;
-    int ty;
+//    int tx1;
+//    int ty1;
     int tz;
     
-    int bullet_x[BULLETS_COUNT];
-    int bullet_y[BULLETS_COUNT];
-    int bullet_index;
+    int player_x;
+    int player_y;
+//    int player_z;
+    
+//    int bullet_x[BULLETS_COUNT];
+//    int bullet_y[BULLETS_COUNT];
+//    int bullet_index;
     int shoot_delay;
     int shoot_keypressed;
+    int shoot_restore_delay;
+    
+    int health;
+    int ammo;
+    int score;
+    
+//    int ammo_max;
+    
+    int stage;
+    int stage_timer;
+    
+    game_obj_t *objs;
+    int objs_count;
     
 } rs_game_t;
+
+#define GAME_HEALTH_MAX     8
+#define GAME_AMMO_MAX       24
 
 extern rs_game_t game;
 void game_reg_init();
@@ -180,7 +250,6 @@ void game_reg_init();
   \eeee/
 ------------------------------- */
 
-void GameProcess();
 
 void game_ding(int i);
 
@@ -194,5 +263,8 @@ void GameMouseDown(int x, int y);
 void GameMouseUp(int x, int y);
 
 void game_change_window_scale(int d);
+
+int is_key_pressed(int mask);
+unsigned short rs_rand();
 
 #endif // RSGAME_H_INCLUDED

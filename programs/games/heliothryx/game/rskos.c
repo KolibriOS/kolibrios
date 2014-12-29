@@ -147,7 +147,7 @@ void rskos_snd_stop(SNDBUF *hbuf) {
 
 
     unsigned int rskos_get_time() {
-        return 1;
+        return kol_system_time_get() * 10; // (1/0.01 sec) * 10 = (1/0.001 sec) = 1 ms
     };
 
     void rskos_draw_area(int x, int y, int w, int h, int k_scale, unsigned char *data, unsigned char *scaled_buffer) {

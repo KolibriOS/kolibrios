@@ -9,10 +9,12 @@
 PRSFUNC0 menu_actions[] = {
     /* a */ &menu_action_start,     
     /* b */ &menu_action_exit,
-    /* c */ &menu_action_change_window_scale
+    /* c */ &menu_action_change_window_scale,
+//    /* d */ &menu_action_
 };
 
 char window_scale_str[] = "c< 2X >";
+char level_passed_score_str[] = " 000   ";
 
 /*
     First char:
@@ -45,14 +47,34 @@ char* menu_about_titles[] = {
     " "L_DEVELOPED_BY,
     " "L_ROMAN_SHUVALOV,
     " ",
-    "0"L_DONE,
+    "0"L_BACK,
     0
 };
+
+char* menu_level_passed_titles[] = {
+    " "L_LEVEL_PASSED,
+    " "L_YOUR_SCORE,
+    level_passed_score_str,
+    " ",
+    "0"L_BACK,
+    0
+};
+
+char* menu_game_over_titles[] = {
+    " "L_GAME_OVER,
+    " ",
+    "0"L_BACK,
+    0
+};
+
+
 
 char **menu_titles[] = {
     /* 0 */ menu_main_titles,
     /* 1 */ menu_settings_titles,
     /* 2 */ menu_about_titles,
+    /* 3 */ menu_level_passed_titles,
+    /* 4 */ menu_game_over_titles,
     0
 };
 
@@ -120,8 +142,23 @@ void menu_cursor_click() {
 void menu_action_start() {
     game.status = STATUS_PLAYING;
     
-    game.tx = GAME_WIDTH/2 - 50;
-    game.ty = GAME_HEIGHT/2 - 10;
+    game.player_x = GAME_WIDTH/2 - 50;
+    game.player_y = GAME_HEIGHT/2 - 10;
+    
+    game.stage = 0;
+    game.stage_timer = 0;
+    
+    game.health = GAME_HEALTH_MAX;
+    game.ammo = GAME_AMMO_MAX;
+    
+    game.shoot_delay = 0;
+    game.shoot_keypressed = 0;
+    game.shoot_restore_delay = 0;
+    
+    game.score = 0;
+    game.flags = 0;
+    
+    game.objs_count = 0;
     
 };
 

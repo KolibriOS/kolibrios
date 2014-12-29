@@ -55,8 +55,6 @@ void game_draw() {
         texture_draw_vline(&game.tex_ground, i, 25 + rs_perlin(0,i+game.tz)*25 + 2, 999, 0xFF000000);
     };
     
-    texture_draw(&game.tex_ground, &game.tex_clouds, game.tz, 0, /* game.tx, game.ty, */ DRAW_MODE_ADDITIVE | DRAW_TILED_FLAG );
-    texture_draw(&game.framebuffer, &game.tex_ground, 0, GAME_HEIGHT-50, DRAW_MODE_ALPHA);
     
 
     if (game.status == STATUS_MENU) {
@@ -72,38 +70,136 @@ void game_draw() {
         
         if (game.menu_index == MENU_MAIN) {
                 
-            for (i = 0; i < ROCKS_COUNT; i++) {
+            for (i = 0; i < 3; i++) {
                 texture_draw(&game.framebuffer, &game.tex_rocks[i], 250+80*rs_noise(i,150), 60+60*rs_noise(i,1110), DRAW_MODE_ADDITIVE );
             };
                 
             game_textout( GAME_WIDTH/2 - 100, 40, 1,  "HELI0THRYX");
-            game_textout( GAME_WIDTH/2 - 8, 58, 3,  "TECHDEM0");
+//            game_textout( GAME_WIDTH/2 - 8, 58, 3,  "TECHDEM0");
             game_textout( 2, GAME_HEIGHT-10, 2,  L_BOTTOM_LINE_DEVELOPER_INFO);
         };
     
     }
     else {
         
-        texture_draw(&game.framebuffer, &game.tex_ship[0], game.tx-8, game.ty-4, DRAW_MODE_ALPHA);
-        texture_draw(&game.framebuffer, &game.tex_ship[1], game.tx-8, game.ty-4, DRAW_MODE_ALPHA);
-        texture_draw(&game.framebuffer, &game.tex_ship[2], game.tx, game.ty-4, DRAW_MODE_ALPHA);
-        texture_draw(&game.framebuffer, &game.tex_ship[3], game.tx, game.ty-4, DRAW_MODE_ALPHA);
-        
-        int i;
-        for (i = 0; i < BULLETS_COUNT; i++) {
-            if (game.bullet_y[i]) {
-                texture_set_pixel(&game.framebuffer, game.bullet_x[i]-4, game.bullet_y[i], 0xFF00BB00);
-                texture_set_pixel(&game.framebuffer, game.bullet_x[i]-3, game.bullet_y[i], 0xFF00CC00);
-                texture_set_pixel(&game.framebuffer, game.bullet_x[i]-2, game.bullet_y[i], 0xFF00DD00);
-                texture_set_pixel(&game.framebuffer, game.bullet_x[i]-1, game.bullet_y[i], 0xFF00EE00);
-                texture_set_pixel(&game.framebuffer, game.bullet_x[i]-0, game.bullet_y[i], 0xFF00FF00);
-            };
+        int i, j;
+        game_obj_t *obj;
+        for (i = 0; i < game.objs_count; i++) {
+            obj = &(game.objs[i]);
+            
+            if (obj->obj_type == OBJ_BULLET) {
+                    
+                texture_set_pixel(&game.framebuffer, obj->x-4, obj->y, 0xFF00BB00);
+                texture_set_pixel(&game.framebuffer, obj->x-3, obj->y, 0xFF00CC00);
+                texture_set_pixel(&game.framebuffer, obj->x-2, obj->y, 0xFF00DD00);
+                texture_set_pixel(&game.framebuffer, obj->x-1, obj->y, 0xFF00EE00);
+                texture_set_pixel(&game.framebuffer, obj->x-0, obj->y, 0xFF00FF00);
+                
+            }
+            else if (obj->obj_type == OBJ_RED_BULLET) {
+                    
+                texture_set_pixel(&game.framebuffer, obj->x-1, obj->y-0, 0xFFFF0000);
+                texture_set_pixel(&game.framebuffer, obj->x-1, obj->y-1, 0xFFFF6600);
+                texture_set_pixel(&game.framebuffer, obj->x-1, obj->y-0, 0xFFFF0000);
+                texture_set_pixel(&game.framebuffer, obj->x-0, obj->y-1, 0xFFFF0000);
+                texture_set_pixel(&game.framebuffer, obj->x-0, obj->y-0, 0xFFFF6600);
+                texture_set_pixel(&game.framebuffer, obj->x+1, obj->y-1, 0xFFFF0000);
+                texture_set_pixel(&game.framebuffer, obj->x+1, obj->y-0, 0xFFFF6600);
+                
+            }
+            else if (obj->obj_type == OBJ_EXPLOSION) {
+                
+//                char s[] = "00 ";
+//                s[0] += obj->t / 10;
+//                s[1] += obj->t % 10;
+//                game_textout( obj->x, obj->y, 0, s );
+
+                texture_draw( &game.framebuffer, &game.tex_explosions[ obj->t ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
+                
+            }
+            else if (obj->obj_type == OBJ_ROCK) {
+                texture_draw( &game.framebuffer, &game.tex_rocks[ obj->tag ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
+            }
+            else if (obj->obj_type == OBJ_MINIROCK) {
+                texture_draw( &game.framebuffer, &game.tex_minirocks[ obj->tag ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
+            }
+            else if (obj->obj_type == OBJ_TURRET) {
+                texture_draw( &game.framebuffer, &game.tex_rocks[ 0 ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
+                texture_draw( &game.framebuffer, &game.tex_rocks[ 0 ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ADDITIVE );
+                
+                for (j = 0; j < 1 + (obj->tag)/6; j++) {
+                    texture_draw_vline(&game.framebuffer, obj->x - obj->radius + j*4 + 0, obj->y - obj->radius - 16, 8, 0xFF993333 );
+                    texture_draw_vline(&game.framebuffer, obj->x - obj->radius + j*4 + 1, obj->y - obj->radius - 16, 8, 0xFF993333 );
+                    texture_draw_vline(&game.framebuffer, obj->x - obj->radius + j*4 + 2, obj->y - obj->radius - 16, 8, 0xFF993333 );
+                };
+                
+            }
+
         };
         
-        game_textout( 2, 2, 2, L_TECHDEMO_LINE1 );
-        game_textout( 2, 12, 2, L_TECHDEMO_LINE2 );
+ 
+        texture_draw(&game.framebuffer, &game.tex_ship[0], game.player_x-8, game.player_y-4, DRAW_MODE_ALPHA);
+        texture_draw(&game.framebuffer, &game.tex_ship[1], game.player_x-8, game.player_y-4, DRAW_MODE_ALPHA);
+        texture_draw(&game.framebuffer, &game.tex_ship[2], game.player_x, game.player_y-4, DRAW_MODE_ALPHA);
+        texture_draw(&game.framebuffer, &game.tex_ship[3], game.player_x, game.player_y-4, DRAW_MODE_ALPHA);
+        
+        
+        if ( game.stage == 0 ) {
+            game_textout_at_center( 0, GAME_HEIGHT + 50 - game.stage_timer*(GAME_HEIGHT+50)/50, 1, "LEVEL 1" );
+            game_textout_at_center( 0, GAME_HEIGHT*2/3, 2, L_TECHDEMO_LINE1 );
+        }
+        else {
+            
+            char s_score[] = "000";
+            s_score[0] += game.score / 100;
+            s_score[1] += (game.score / 10) % 10;
+            s_score[2] += (game.score / 1) % 10;
+            
+            game_textout_at_center(0, 10, 3, s_score);
+            
+            
+        };
+        
+        
+        
+        
+        char s_health[] = "HEALTH: 0 ";
+        char s_ammo[] = "AMM0: 00 ";
+        
+        s_health[8] += game.health;
+        s_ammo[6] += game.ammo / 10;
+        s_ammo[7] += game.ammo % 10;
+        
+        game_textout(8, 8, 2, s_health);
+        game_textout(GAME_WIDTH - 12 - GAME_AMMO_MAX*2 - 1, 8, 2, s_ammo);
+        
+        for (i = 0; i < game.ammo; i++) {
+            texture_draw_vline(&game.framebuffer, GAME_WIDTH - 12 - GAME_AMMO_MAX*2 + i*2, 20, 8, 0xFF3366FF );
+        };
+        
+        int health_color = 0xFF339933;
+        if (game.health < 5) {
+            health_color = 0xFF808010;
+        };
+        if (game.health < 3) {
+            health_color = 0xFFFF3300;
+        };
+
+        for (i = 0; i < game.health; i++) {
+            texture_draw_vline(&game.framebuffer, 8 + i*4 + 0, 20, 8, health_color  );
+            texture_draw_vline(&game.framebuffer, 8 + i*4 + 1, 20, 8, health_color  );
+            texture_draw_vline(&game.framebuffer, 8 + i*4 + 2, 20, 8, health_color  );
+        };
+        
+
+        
+        
+//        game_textout( 2, 12, 2, L_TECHDEMO_LINE2 );
         
     };
+
+    texture_draw(&game.tex_ground, &game.tex_clouds, game.tz, 0, /* game.tx, game.ty, */ DRAW_MODE_ADDITIVE | DRAW_TILED_FLAG );
+    texture_draw(&game.framebuffer, &game.tex_ground, 0, GAME_HEIGHT-50, DRAW_MODE_ALPHA);
 
 
 	rskos_draw_area(0, 0, w, h, game.window_scale, game.framebuffer.data, game.scaled_framebuffer);

@@ -487,12 +487,24 @@ float game_colors[4*7] = {
     0.6, 0.6, 0.6, 0.9,
 };
 
+
+
 void game_textout(int x, int y, int font_index, char* s) {
+    game_textout_adv(&game.framebuffer, x, y, font_index, DRAW_MODE_ALPHA, s);
+};
+
+void game_textout_at_center(int x, int y, int font_index, char *s) {
+    x += (GAME_WIDTH - game.tex_font[font_index*64].w*strlen(s))/2; 
+    game_textout_adv(&game.framebuffer, x, y, font_index, DRAW_MODE_ALPHA, s);
+};
+
+void game_textout_adv(rs_texture_t *dest, int x, int y, int font_index, int draw_mode, char* s) {
+//void game_textout(int x, int y, int font_index, char* s) {
     
     int i = 0;
     while (*s) {
         if (*s != ' ') {
-            texture_draw(&game.framebuffer, &game.tex_font[ 64*font_index + ((*s - 48) % 64) ], x+i*game.tex_font[64*font_index+0].w, y, DRAW_MODE_ALPHA);
+            texture_draw(&game.framebuffer, &game.tex_font[ 64*font_index + ((*s - 48) % 64) ], x+i*game.tex_font[64*font_index+0].w, y, draw_mode);
         };
         s++;
         i++;

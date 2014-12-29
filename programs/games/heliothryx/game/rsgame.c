@@ -28,6 +28,47 @@
 rs_game_t game;
 
 
+game_obj_t game_obj(int obj_type, int flags, int tag, int radius, float x, float y, int t, float f) {
+    game_obj_t obj;
+    obj.obj_type = obj_type;
+    obj.flags = flags;
+    obj.tag = tag;
+    obj.radius = radius;
+    obj.x = x;
+    obj.y = y;
+    obj.t = t;
+    obj.f = f;
+    return obj;
+};
+
+int game_obj_add(game_obj_t obj) {
+    if (game.objs_count < GAME_OBJS_MAX_COUNT) {
+        game.objs[game.objs_count++] = obj;
+        return game.objs_count-1;    
+    };
+    #ifdef RS_LINUX
+        DEBUG10("Error, max objects count is reached");
+    #endif
+    return 0; // Max objects count is reached
+};
+
+void game_obj_remove(int index) {
+    if (index == game.objs_count - 1) {
+        game.objs_count--;
+        return;
+    };
+    game.objs[index] = game.objs[ game.objs_count-1 ];
+    game.objs_count--;
+};
+
+
+
+
+
+
+
+
+
 void texture_init(rs_texture_t *tex, int w, int h) {
     tex->status = 1;
     tex->w = w;
@@ -121,6 +162,15 @@ void texture_draw_vline(rs_texture_t *tex, int x, int y, int l, unsigned int col
     if (y+l >= tex->h) {
         l = tex->h - y;
     };
+    
+    if (x < 0) {
+        return;
+    };
+    
+    if (x >= tex->w) {
+        return;
+    };
+    
     for (i = 0; i < l; i++) {
         *((unsigned int*) &tex->data[ 4 * ( (y+i)*tex->w + (x) ) + 0 ]) = color;
     };    
@@ -201,16 +251,22 @@ unsigned char clamp_byte(int value) {
 
 
 void game_reg_init() {
-    game.tx = 0;
-    game.ty = 0;
+//    game.tx = 0;
+//    game.ty = 0;
+//    game.tz = 0;
+    
+    game.player_x = 0;
+    game.player_y = 0;
     game.tz = 0;
 
-    int i;
-    for (i = 0; i < BULLETS_COUNT; i++) {
-        game.bullet_x[i] = 0;
-        game.bullet_y[i] = 0;
-    };
-    game.bullet_index = 0;
+//    int i;
+//    for (i = 0; i < BULLETS_COUNT; i++) {
+//        game.bullet_x[i] = 0;
+//        game.bullet_y[i] = 0;
+//    };
+//    game.bullet_index = 0;
+
+    game.objs = malloc( sizeof(game_obj_t) * GAME_OBJS_MAX_COUNT ); 
     
     game.status = STATUS_MENU;
     
@@ -232,64 +288,19 @@ int is_key_pressed(int mask) {
 };
 
 
-void GameProcess() {
+int seed = 0;
+
+unsigned short rs_rand() {
+    seed += 1000;
+    seed %= 56789;
     
-    if (game.status == STATUS_PLAYING) {
-            
-        // shoot
-
-        if ( (game.shoot_keypressed) || (is_key_pressed(RS_ATTACK_KEY_MASK)) ) {
-                
-            game.shoot_delay ++;
-                
-            if (game.shoot_delay > GAME_SHOOT_PERIOD) {
-        
-//                if ( (game.tx > 0) && (game.ty > 5) && (game.tx < GAME_WIDTH-20) && (game.ty < GAME_HEIGHT-10) ) {
-                        
-                    soundbuf_play(&game.sound_test1);
-                    
-                    game.bullet_index++;
-                    game.bullet_index %= BULLETS_COUNT;
-                    game.bullet_x[game.bullet_index] = game.tx + 5;
-                    game.bullet_y[game.bullet_index] = game.ty;
-//                };
-                
-                game.shoot_delay -= GAME_SHOOT_PERIOD;
-                game.shoot_keypressed = 0;
-            
-            };
-        };
-            
-            
-            
-        
-        int speed = 4;
-        int bullet_speed = 11;
-        
-        game.tx += speed * ( is_key_pressed(RS_ARROW_RIGHT_MASK) - is_key_pressed(RS_ARROW_LEFT_MASK) );
-        game.ty += speed * ( is_key_pressed(RS_ARROW_DOWN_MASK) - is_key_pressed(RS_ARROW_UP_MASK) );
-        
-        game.tx = rs_clamp_i(game.tx, 5, GAME_WIDTH-25);
-        game.ty = rs_clamp_i(game.ty, 5, GAME_HEIGHT - 25);
-        
-        game.tz += 1;
-
-        int i;
-        for (i = 0; i < BULLETS_COUNT; i++) {
-            if (game.bullet_y[i]) {
-                game.bullet_x[i] += bullet_speed;
-                if (game.bullet_x[i] > GAME_WIDTH) {
-                    game.bullet_y[i] = 0;
-                };
-            };
-        };
-        
-    };
-
-    game_draw();
-
-}
-
+    // from here, http://www.cplusplus.com/forum/general/85758/
+    // koef. changed
+    int n = rskos_get_time() + seed * 57 * 5; // no *2
+    n = (n << 13) ^ n;
+    return (n * (n * n * 15731 + 789221) + 1376312589) & 0xFFFF;
+    
+};
 
 
 
@@ -406,13 +417,9 @@ void GameInit() {
     int rock_size = 32;
     rs_gen_init(3, rock_size);
     for (i = 0; i < ROCKS_COUNT; i++) {
-            
-        DEBUG10f("loading %d ...\n", i);
     
         texture_init(&(game.tex_rocks[i]), rock_size, rock_size);
-        
-        DEBUG10f("loading %d z...\n", i);
-        
+
         rs_gen_func_set(0, 0.0);
         rs_gen_func_radial(0, 0.5, 0.5, 0.5, 0.75, 2.5 + i%5);
 
@@ -438,6 +445,62 @@ void GameInit() {
         memcpy(game.tex_rocks[i].data, rs_gen_reg.tex_out, rock_size*rock_size*4 );
     };
     rs_gen_term();
+    
+    
+    rock_size = 16;
+    rs_gen_init(3, rock_size);
+    for (i = 0; i < MINIROCKS_COUNT; i++) {
+    
+        texture_init(&(game.tex_minirocks[i]), rock_size, rock_size);
+
+        rs_gen_func_set(0, 0.0);
+        rs_gen_func_radial(0, 0.5, 0.5, 0.5, 0.75, 2.5 + i%5);
+
+        rs_gen_func_perlin(2, 33, 4, 0.5, 350+i);
+        rs_gen_func_normalize(2, 0.0, 1.0);
+        rs_gen_func_posterize(2, 4);
+        
+        rs_gen_func_cell(1, 410+i, 50, NULL, -2.0, 1.0, 1.0, 1.0, 0.0, 1.0);
+        rs_gen_func_posterize(1, 2);
+        rs_gen_func_normalize(1, 0.0, 1.0);
+        rs_gen_func_add(1, 1, 2, 1.0, 0.5);
+        rs_gen_func_normalize(1, 0.0, 1.0);
+        rs_gen_func_posterize(1, 4);
+
+        rs_gen_func_add(1, 0, 1, 1.0, 1.0);
+        rs_gen_func_normalize(1, 0.0, 1.0);
+        rs_gen_func_mult(1, 0, 1);
+        rs_gen_func_normalize(1, 0.0, 1.0);
+        rs_gen_func_posterize(1, 4);
+        rs_gen_tex_out_rgba_set(0.0, 0.0, 0.0, 0.0);
+        rs_gen_tex_out_rgba(1, 1, 1, -1, 0.7+ 0.01*(i%2), 0.7+ 0.01*(i%3) , 0.65, 1.0);
+
+        memcpy(game.tex_minirocks[i].data, rs_gen_reg.tex_out, rock_size*rock_size*4 );
+    };
+    rs_gen_term();
+    
+    
+    
+    
+    rs_gen_init(3, EXPLOSION_RADIUS*2);
+    for (i = 0; i < EXPLOSIONS_COUNT; i++) {
+            
+        texture_init(&(game.tex_explosions[i]), EXPLOSION_RADIUS*2, EXPLOSION_RADIUS*2);
+
+        rs_gen_func_set(0, 1.0);
+//        rs_gen_func_radial(0, 0.5, 0.5, 0.3 + 0.5*i/EXPLOSION_FRAMES_COUNT, 0.975, 4.0);
+//        rs_gen_func_set(0, 1.0);
+
+        rs_gen_func_set(1, 0.0);
+        rs_gen_func_radial(1, 0.5, 0.5, 0.1 + 0.4*i/EXPLOSIONS_COUNT, 1.0 - 1.0*i/EXPLOSIONS_COUNT, 2.5 + i%5);
+
+        rs_gen_tex_out_rgba_set( 0.0, 0.0, 0.0, 0.0);
+        rs_gen_tex_out_rgba(0, 0, 0, 1, 1.0, 1.0, 1.0, 1.0);
+
+        memcpy(game.tex_explosions[i].data, rs_gen_reg.tex_out, EXPLOSION_RADIUS*2*EXPLOSION_RADIUS*2*4 );
+    };
+    rs_gen_term();
+    
     
 
     #ifndef RS_KOS
@@ -472,6 +535,8 @@ void GameTerm() {
     game_font_term();
     
     free(game.scaled_framebuffer);
+    
+    free(game.objs);
     
     texture_free(&game.framebuffer);
     texture_free(&game.tex);
@@ -571,17 +636,16 @@ void GameKeyDown(int key, int first) {
                 game.status = STATUS_MENU;
                 menu_open(0);
                 break;
-            case RS_KEY_A:
+            case RS_KEY_SPACE:
                 
-//                if ( (game.tx > 0) && (game.ty > 5) && (game.tx < GAME_WIDTH-20) && (game.ty < GAME_HEIGHT-10) ) {
-//                
-//                    soundbuf_play(&game.sound_test1);
-//                    
-//                    game.bullet_index++;
-//                    game.bullet_index %= BULLETS_COUNT;
-//                    game.bullet_x[game.bullet_index] = game.tx + 12;
-//                    game.bullet_y[game.bullet_index] = game.ty + 3;
-//                };
+                #ifdef RS_LINUX
+                    game.stage_timer = 0;
+                    game.stage = 7;
+                #endif
+                
+                //game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, 0, game.tx + 80, game.ty - 10, 0, 0.0 ) );
+                
+//                game_obj_add( game_obj( OBJ_ROCK, 0, 0, 32, game.tx + 80, game.ty - 10, 0, 0.0 ) );
                 
                 break;
             
@@ -613,8 +677,8 @@ void GameKeyUp(int key) {
 };
 
 void GameMouseDown(int x, int y) {
-    game.tx = x;
-    game.ty = y;
+//    game.tx = x;
+//    game.ty = y;
     DEBUG10f("Mouse Down %d, %d \n", x, y);
 };
 

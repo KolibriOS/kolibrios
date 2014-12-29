@@ -15,6 +15,7 @@
 // Settings menu
 #define L_WINDOW_SCALE  "WIND0W 5CALE:"
 #define L_DONE      "D0NE"
+#define L_BACK      "BACK"
 
 // About menu
 #define L_DEVELOPED_BY  "DEVEL0PED BY"
@@ -24,7 +25,12 @@
 #define L_BOTTOM_LINE_DEVELOPER_INFO    "DEVEL0PER: R0MAN 5HUVAL0V` T0GLIATTI_ 2014"
 
 // Gameplay
-#define L_TECHDEMO_LINE1        "THI5 I5 TECHDEM0` "
-#define L_TECHDEMO_LINE2        "U5E ARR0W5 T0 M0VE_ <A> T0 5H00T_ <E5C> T0 EXIT` "
+//#define L_TECHDEMO_LINE1        "THI5 I5 TECHDEM0` "
+#define L_TECHDEMO_LINE1        "U5E ARR0W5 T0 M0VE_ <A> T0 5H00T_ <E5C> T0 EXIT` "
+
+#define L_LEVEL_PASSED      "DEM0=LEVEL PA55ED"
+#define L_YOUR_SCORE        "Y0UR 5C0RE:"
+
+#define L_GAME_OVER         "GAME 0VER"
 
 #endif
