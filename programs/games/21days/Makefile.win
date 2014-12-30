@@ -1,0 +1,27 @@
+OUTFILE = bin\21days
+CXX = g++
+OBJS = obj/main.o obj/game.o obj/interface.o obj/sys.o
+
+CXXFLAGS = -Wno-write-strings -D _WIN32
+
+all: $(OUTFILE)
+
+dirs: 
+	if not exist "bin" mkdir bin
+	if not exist "obj" mkdir obj
+	
+$(OUTFILE): dirs $(OBJS)
+	$(CXX) -o $@ $(OBJS)
+
+obj/%.o:  %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	if exist "obj\*.o" del /Q obj\*.o
+	if exist "bin\21days.exe" del /Q bin\21days.exe
+	if exist "bin" rd bin
+	if exist "obj" rd obj
+
+rebuild:  clean $(OUTFILE)
+
+.PHONY: dirs clean rebuild

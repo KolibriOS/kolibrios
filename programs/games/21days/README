@@ -1,0 +1,79 @@
+# 21 days: a game for programmers
+
+## Features
+
+* You start as a helpdesker.
+* Work in a big company.
+* Join a startup and launch a popular game (or not).
+* Study new courses.
+* Help your friends to repair their computer.
+
+* With the help of quantum space–time folder you can do all of this in 21 days!
+* Jump in time to change your choice and collect all achievements!
+
+## License
+
+21 days is licensed under GPL version 2.0. See COPYING in the same directory.
+
+## Author
+
+This program developed by Maxim Grishin (igevorse)
+
+## Installation
+
+This program does not require installation.
+See "Run" section below.
+
+## Run
+
+Open your favourite file manager and run the executable file.
+You can also use your shell: 
+
+* KolibriOS:
+
+        21days
+
+* Windows:
+
+        cd bin
+        21days
+        
+* Linux (you have to use a terminal supporting IBM866 code page(CP866)):
+
+        cd bin
+        ./21days
+
+## Building from sources
+
+If you want to build game from sources, you have to install GCC (Linux) and MinGW (Windows).
+
+* KolibriOS
+You have to install menuetlibc: see "Compilers GCC, G++." section at diamond.kolibrios.org/hll/hll_eng.htm.
+To build a binary file for KolibriOS under Linux type in a terminal:
+
+    make
+
+Binary file would appear in current directory.
+
+* Linux
+To build a Linux binary file:
+
+    make -f Makefile.linux
+
+Binary files would appear in bin directory.
+
+* Windows
+To build a Windows binary file you have to install MinGW (http://sourceforge.net/projects/mingw/files/) with mingw32-base, mingw32-gcc and mingw-gcc-g++ packages.
+Don't forget to add a path to a folder containing MinGW binary files to the Path environment variable ("C:\MinGW\bin" for me).
+
+  * If you don't have MSYS installed:
+
+      mingw32-make -f Makefile.win
+
+  * If you have MSYS installed:
+      
+      make -f Makefile.linux
+      
+Binary files would appear in bin directory.
+
+Have fun!
