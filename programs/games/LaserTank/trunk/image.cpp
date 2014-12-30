@@ -52,10 +52,19 @@ void CKosImage::Draw(Point position, float angle, int frame)
 	Draw(position, angle);
 }
 
+void CKosImage::Draw(Point position, float angle, int frame, RGB color)
+{
+	this->isColor = true;
+	this->color = color;
+	this->frame = frame;
+	Draw(position, angle);
+	this->isColor = false;
+}
+
 void CKosImage::Draw(Point position, float angle)
 {
 	float alpha;
-	Point p, p1;
+	Point p, p1, p2;
 	RGB pixel, newPixel;
 	RGBA addPixel;
 	int PixelID;
@@ -77,19 +86,22 @@ void CKosImage::Draw(Point position, float angle)
 	double SinRad = sin(a);
 	double CosRad = cos(a);
 
-	for (int y = 0; y < 24; ++y)
-		for (int x = 0; x < 24; ++x)
+	for (int y = 0; y < this->height; ++y)
+		for (int x = 0; x < this->width; ++x)
 		{
 			p1 = Point(x, y) - center;
 
 			p.X = roundInt(p1.X * CosRad - p1.Y * SinRad) + center.X;
 			p.Y = roundInt(p1.X * SinRad + p1.Y * CosRad) + center.Y;
 
-			if (p.X >= 0 && p.X < this->width && p.Y >= 0 && p.Y < this->height)
+			p2 = Point(x + fix.X + position.X, y + fix.Y + position.Y);
+
+			if (p.X >= 0 && p.X < this->width && p.Y >= 0 && p.Y < this->height 
+				&& p2.X >= 0 && p2.Y >= 0 && p2.X < this->render->width && p2.Y < this->render->height)
 			{
 				p.Y += this->frame * this->frameHeight;
 				addPixel = this->buffer[this->getPixel(p.X, p.Y)];
-				PixelID = this->render->getPixel(x + fix.X, y + fix.Y);
+				PixelID = this->render->getPixel(p2.X, p2.Y);
 				pixel = this->render->buffer[PixelID];
 
 				if (addPixel.a > 0)

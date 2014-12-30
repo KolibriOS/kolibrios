@@ -21,6 +21,7 @@ public:
 	void Draw(Point position, float angle, RGB color);
 	void Draw(Point position, float angle);
 	void Draw(Point position, float angle, int frame);
+	void Draw(Point position, float angle, int frame, RGB color);
 	void SetMode(int mode);
 	void SetFrameSize(int width, int height);
 protected:

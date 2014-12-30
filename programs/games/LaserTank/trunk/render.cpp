@@ -22,10 +22,10 @@ void CKosRender::Draw(Point position)
 
 void CKosRender::RenderImg(RGB *img, Point position, int width, int height)
 {
-	for (int i = 0; i < width * height; i++)
-		this->buffer[i] = img[i];
-		//	if ( )
-		//		this->buffer[getPixel(x, y)]
+	for (int y = position.Y; y < position.Y + height; y++)
+		for (int x = position.X; x < position.X + width; x++)
+			if (x >= 0 && y >= 0 && x < this->width && y < this->height)
+				this->buffer[y * width + x] = img[(y - position.Y) * width + (x - position.X)];
 }
 
 int CKosRender::getPixel(int x, int y)
