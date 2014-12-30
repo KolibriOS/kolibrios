@@ -34,7 +34,7 @@
   dd IM_END
   dd I_END
   dd stacktop
-  dd 0x0
+  dd bootparam
   dd path
 ;-----------------------------------------------------------------------------
 include 'lang.inc'
@@ -65,10 +65,10 @@ OBJECT_DEATH = 1
 OBJECT_SKELETON = 2
 OBJECT_IFRIT = 3
 OBJECT_BARRET = 4
-OBJECT_FINAL_MONSTER = 14
-OBJECT_PROTAGONIST = 15
-OBJECT_RED_BRICK = 16
-OBJECT_WHITE_BRICK = 17
+OBJECT_FINAL_MONSTER = 14 ; 0Eh
+OBJECT_PROTAGONIST = 15	; 0Fh
+OBJECT_RED_BRICK = 16	; 10h
+OBJECT_WHITE_BRICK = 17 ; 11h
 RED_BRICK_CRASH_1 = 0x80
 RED_BRICK_CRASH_2 = 0x81
 ;-----------------------------------------------------------------------------
@@ -93,6 +93,10 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[deflate_unpack],eax
 ;--------------------------------------
 	call	load_and_convert_all_icons
+	
+	cmp	[bootparam],dword 'NOSO'
+	je	menu_still
+
 	call	load_all_sound_files
 	
 	mov	eax,[background_music]
@@ -111,15 +115,69 @@ load_libraries	l_libs_start,end_l_libs
 menu_still:
 	jmp	main_menu_start
 ;---------------------------------------------------------------------
+show_game_stage:
+	mov	esi,map_level_game_stage
+	call	map_level_to_plan_level
+	call	draw_window
+	mov	eax,[level_counter]
+	inc	eax
+	mov	ebx,stage_text.1
+	call	decimal_string_2
+	mov	edx,stage_text
+	mov	ebx,SPRITE_SIZE_X*3 shl 16 + SPRITE_SIZE_Y*5
+	call	draw_font
+	mcall	5,300
+	ret
+;---------------------------------------------------------------------
+show_game_win:
+	mov	esi,map_level_game_stage
+	call	map_level_to_plan_level
+	call	draw_window
+	mov	edx,game_win_text
+	mov	ebx,SPRITE_SIZE_X*2 shl 16 + SPRITE_SIZE_Y*5
+	call	draw_font
+	mcall	5,1000
+	ret
+;---------------------------------------------------------------------
+death_of_protagonist_show:
+	mov	esi,map_level_game_over
+	call	map_level_to_plan_level
+	call	draw_window
+	mov	edx,protagonist_death_text
+	mov	ebx,SPRITE_SIZE_X*2 shl 16 + SPRITE_SIZE_Y*5
+	call	draw_font
+	mcall	5,500
+	jmp	main_menu_start
+;---------------------------------------------------------------------
 start_level_0:
+	xor	eax,eax
+	mov	[level_counter],eax
+;---------------------------------------------------------------------
+start_level:
+	mov	esi,[level_counter]
+	shl	esi,2
+	mov	esi,[esi+map_level_pointer]
+	test	esi,esi
+	jnz	@f
+	
+	call	show_game_win
+	jmp	main_menu_start
+;--------------------------------------		
+@@:
+	call	show_game_stage
 	mov	eax,[stone_kick_sound]
 	mov	[sounds_sample],eax
+;	xor	eax,eax
+;	mov	[level_counter],eax
 	mov	[death_of_protagonist],0
 	mov	[protagonist_route],2
 	mov	[protagonist_position.x],4
 	mov	[protagonist_position.y],4
 	
-	mov	esi,map_level_0
+	mov	esi,[level_counter]
+	shl	esi,2
+	mov	esi,[esi+map_level_pointer]
+;	mov	esi,map_level_0
 	call	map_level_to_plan_level
 	call	generate_objects_id
 	call	copy_plan_level_to_plan_level_old
@@ -145,8 +203,15 @@ still:
 	call	harvest_of_death
 	call	show_tiles_one_iteration
 	cmp	[death_of_protagonist],1
-	je	death_of_protagonist_start
+	je	death_of_protagonist_show
 	
+	cmp	[npc_alive],0
+	jne	@f
+
+	inc	byte [level_counter]
+	jmp	start_level
+;--------------------------------------	
+@@:
 	mov	eax,[protagonist_position.y]
 	imul	eax,LEVEL_MAP_SIZE_X*4
 	mov	ebx,[protagonist_position.x]
@@ -155,7 +220,7 @@ still:
 	add	eax,plan_level
 	mov	eax,[eax]
 	cmp	ah,OBJECT_PROTAGONIST
-	jne	death_of_protagonist_start
+	jne	death_of_protagonist_show
 
 	jmp	still
 ;---------------------------------------------------------------------
@@ -193,6 +258,46 @@ draw_window:
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------
+;       ……‚„ 10-›• —‘…‹ ‘ ‡€ ‚ ‘’‚›‰ ‚„
+;       ‚ε®¤:
+;               AX - η¨α«®
+;               EBX -  ¤ΰ¥α αβΰ®ª¨
+;       ‚λε®¤:
+;               αβΰ®ª  α®¤¥ΰ¦¨β η¨α«®, ª®­¥ζ ®β¬¥η¥­ ª®¤®¬ 0
+;------------------------------------------------------------------------------
+decimal_string_2:
+	push	eax ebx ecx edx
+	xor	ecx,ecx
+	mov	[ebx],byte '0'
+	inc	ebx
+;--------------------------------------
+.p3:
+	xor	edx,edx
+	push	ebx
+	mov	ebx,10
+	div	ebx
+	pop	ebx
+	add	edx,48
+	push	edx
+	inc	ecx
+	cmp	ax,0
+	jne	.p3
+
+	cmp	ecx,1
+	jbe	.p4
+
+	mov	ecx,2
+	dec	ebx
+;--------------------------------------
+.p4:
+	pop	edx
+	mov	[ebx],dl
+	inc	ebx
+	loop	.p4
+	pop	edx ecx ebx eax
+	ret
+;------------------------------------------------------------------------------
+;---------------------------------------------------------------------
 memory_free_error:
 	mov	[N_error],3
 	jmp	button.exit
@@ -205,7 +310,6 @@ include 'key.inc'
 include 'show_tiles.inc'
 include 'show_base.inc'
 include 'show_object.inc'
-include 'death_protagonist.inc'
 include 'load.inc'
 include 'icon_convert.inc'
 include 'error_window.inc'

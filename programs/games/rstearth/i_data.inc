@@ -256,11 +256,13 @@ background_music_file_name	db 'walking_with_poseidon.wav',0
 stone_kick_sound_file_name	db 'flaunch.wav',0
 menu_sound_file_name		db 'misc_menu.wav',0
 ;---------------------------------------------------------------------
+align	4
 protagonist_route	dd 2
 protagonist_position:
 .x	dd 4
 .y	dd 4
 ;---------------------------------------------------------------------
+align	4
 main_menu_text_pointers:
 	dd menu_game_label
 	dd menu_settings_label
@@ -269,6 +271,7 @@ main_menu_text_pointers:
 	dd menu_exit_label
 	dd 0
 ;---------------------------------------------------------------------
+align	4
 menu_credits_text_pointers:
 	dd menu_credits_text.1
 	dd menu_credits_text.2
@@ -278,6 +281,7 @@ menu_credits_text_pointers:
 	dd menu_credits_text.6
 	dd 0
 ;---------------------------------------------------------------------
+align	4
 menu_help_text_pointers:
 	dd menu_help_text.1
 	dd menu_help_text.2
@@ -285,9 +289,16 @@ menu_help_text_pointers:
 	dd menu_help_text.4
 	dd 0
 ;---------------------------------------------------------------------
+align	4
 settings_menu_text_pointers:
 	dd menu_settings_sound_label
 	dd menu_settings_music_label
 	dd menu_setting_exit
+	dd 0
+;---------------------------------------------------------------------
+align	4
+map_level_pointer:
+	dd map_level_0
+	dd map_level_1
 	dd 0
 ;---------------------------------------------------------------------

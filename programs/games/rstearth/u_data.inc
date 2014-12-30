@@ -5,6 +5,7 @@ extended_key		rb 1
 draw_all_level		rb 1
 current_cell_NPC	rb 1
 death_of_protagonist	rb 1
+npc_alive		rb 1
 target_detected		rb 1
 sound_flag		rb 1
 sounds_flag		rb 1
@@ -51,6 +52,8 @@ target_action_cell_y	rd 1
 ;------------------------------------------------------------------------------
 menu_text_pointers	rd 1
 text_step_Y		rd 1
+;------------------------------------------------------------------------------
+level_counter		rd 1
 ;------------------------------------------------------------------------------
 align 4 
 version		rd 1	; версия интерфейса, текущая 0x0101
@@ -115,10 +118,11 @@ align 4
 file_info:
 	rb 40
 ;---------------------------------------------------------------------
-;align 4
+align 4
+bootparam:
 ;procinfo:
 ;process_info:
-;	rb 1024
+	rb 1024
 ;---------------------------------------------------------------------
 align 4
 ; sound thread

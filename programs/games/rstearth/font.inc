@@ -1,5 +1,9 @@
 ;---------------------------------------------------------------------
 draw_font:
+; in:
+; ebx - X*65536 + Y
+; edx - text ASCII
+;  
 	pusha
 	xor	ebp,ebp
 	mov	esi,edx

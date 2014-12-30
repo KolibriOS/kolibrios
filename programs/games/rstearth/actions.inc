@@ -101,7 +101,9 @@ save_new_and_clear_old_position:
 	ret
 ;---------------------------------------------------------------------
 harvest_of_death:
-	mov	[death_of_protagonist],0
+	xor	eax,eax
+	mov	[death_of_protagonist],al
+	mov	[npc_alive],al
 	mov	esi,plan_level
 	mov	ecx,LEVEL_MAP_SIZE_X*LEVEL_MAP_SIZE_Y
 	cld
@@ -117,6 +119,11 @@ harvest_of_death:
 	
 	cmp	al,BASE_WATER
 	je	.base_water
+	
+	cmp	ah,OBJECT_FINAL_MONSTER
+	ja	.counter
+	
+	mov	[npc_alive],1
 ;--------------------------------------
 .counter:
 	dec	ecx
