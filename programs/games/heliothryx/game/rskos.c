@@ -132,12 +132,17 @@ void rskos_snd_update_buffer(SNDBUF *hbuf, signed short *buffer, unsigned int le
 
 void rskos_snd_play(SNDBUF *hbuf, unsigned int mode) {
     
-    rs_sound_play(*hbuf);
+//    rs_sound_play(*hbuf);
+    rs_sound_play_adv(*hbuf, mode==SND_MODE_LOOP ? 1 : 0, mode==SND_MODE_LOOP ? 0 : -1, 1.0);
     
 };
 
 void rskos_snd_stop(SNDBUF *hbuf) {
     rs_sound_stop(*hbuf);
+};
+
+void rskos_snd_check_loop(SNDBUF *phbuf) {
+    //
 };
 
 
@@ -208,11 +213,28 @@ void rskos_snd_stop(SNDBUF *hbuf) {
 
     void rskos_snd_play(SNDBUF *phbuf, unsigned int mode) {
         SetBufferPos(*phbuf, 0);
-        PlayBuffer(*phbuf, 0);
+        PlayBuffer(*phbuf, 0); // SND_MODE_LOOP
     };
 
     void rskos_snd_stop(SNDBUF *phbuf) {
         StopBuffer(*phbuf);
+    };
+    
+    void rskos_snd_check_loop(SNDBUF *phbuf) {
+        int offset;
+        int length;
+        
+        GetBufferPos(*phbuf, &offset);
+        //GetBufferSize(*phbuf, &length);
+        
+        // kol_board_puti(offset);
+        //kol_board_putc('\n');
+        
+        if (offset <= 0) {
+            SetBufferPos(*phbuf, 0); //offset - length/2);
+            PlayBuffer(*phbuf, 0); // SND_MODE_LOOP
+        };
+        
     };
 
 

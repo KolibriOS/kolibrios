@@ -24,10 +24,13 @@ void rskos_exit();
     #endif
 #endif
 
+#define SND_MODE_LOOP   1
+
 //void rskos_snd_init();
 void rskos_snd_create_buffer(SNDBUF *phbuf, signed short *buffer, unsigned int length_samples);
 void rskos_snd_update_buffer(SNDBUF *phbuf, signed short *buffer, unsigned int length_samples);
 void rskos_snd_play(SNDBUF *phbuf, unsigned int mode);
 void rskos_snd_stop(SNDBUF *phbuf);
+void rskos_snd_check_loop(SNDBUF *phbuf);
 
 #endif

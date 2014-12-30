@@ -90,11 +90,12 @@ void player_hit() {
     game.health--;
     game.bg_color = COLOR_DARK_RED;
     
-    soundbuf_play( &game.sound_hit );
+    soundbuf_play( &game.sound_hit, 0 );
 
     
     if (game.health < 1) {
         game.status = STATUS_MENU;
+        soundbuf_play( &game.sound_music, SND_MODE_LOOP );
         menu_open( MENU_GAME_OVER );
     };
     
@@ -117,7 +118,7 @@ void GameProcess() {
                     
                     game.shoot_restore_delay = 0;
                     game.ammo--;
-                    soundbuf_play(&game.sound_test1);
+                    soundbuf_play(&game.sound_test1, 0);
                     game_obj_add( game_obj( OBJ_BULLET, 0, 0, 0, game.player_x+5, game.player_y, 0, 0.0) );
                     
 //                };
@@ -275,6 +276,7 @@ void GameProcess() {
         else if (game.stage == 10) {
             
             game.status = STATUS_MENU;
+            soundbuf_play( &game.sound_music, SND_MODE_LOOP );
             menu_open( MENU_LEVEL_PASSED );
         
             level_passed_score_str[1] = '0' + (game.score / 100) % 10;
@@ -403,7 +405,7 @@ void GameProcess() {
         
         for (i = 0; i < game.objs_count; i++) {
             if ( IS_BIT_SET( game.objs[i].flags, OBJ_FLAG_DESTROYED ) ) {
-                soundbuf_play( &game.sound_explosions[ rs_rand() % SOUND_EXPLOSIONS_COUNT ] );
+                soundbuf_play( &game.sound_explosions[ rs_rand() % SOUND_EXPLOSIONS_COUNT ], 0 );
                 game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, EXPLOSION_RADIUS, game.objs[i].x, game.objs[i].y, 0, 0.0 ) );
                 game_obj_remove(i);
                 i--;
@@ -416,6 +418,10 @@ void GameProcess() {
     };
 
     game_draw();
+    
+    if (game.status == STATUS_MENU) {
+        soundbuf_loop_check( &game.sound_music );
+    };
 
 }
 

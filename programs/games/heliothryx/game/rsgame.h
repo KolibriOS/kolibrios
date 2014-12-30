@@ -95,7 +95,8 @@ void soundbuf_free(rs_soundbuf_t *snd);
 void soundbuf_fill(rs_soundbuf_t *snd, int amp, int freq_div);
 void soundbuf_sin(rs_soundbuf_t *snd, float freq);
 void soundbuf_sin_fade(rs_soundbuf_t *snd, float freq);
-void soundbuf_play(rs_soundbuf_t *snd);
+void soundbuf_play(rs_soundbuf_t *snd, int mode);
+void soundbuf_loop_check(rs_soundbuf_t *snd);
 void soundbuf_stop(rs_soundbuf_t *snd);
 
 // Game Objects
@@ -193,6 +194,9 @@ typedef struct rs_game_t {
     
     rs_soundbuf_t sound_explosions[SOUND_EXPLOSIONS_COUNT];
     rs_soundbuf_t sound_hit;
+    
+    rs_soundbuf_t sound_music;
+    rs_soundbuf_t sound_music2;
     
     int status;
     int flags;

@@ -104,7 +104,7 @@ void menu_cursor_up() {
 };
 
 void menu_open(int i) {
-    
+
     game.menu_index = i;
     
     game.menu_item_index = -1;
@@ -161,6 +161,8 @@ void menu_action_start() {
     game.objs_count = 0;
     
     game.bg_color = COLOR_BLACK;
+    
+    soundbuf_stop( &game.sound_music );
     
 };
 

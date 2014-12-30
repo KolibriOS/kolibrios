@@ -238,12 +238,16 @@ void soundbuf_sin_fade(rs_soundbuf_t *snd, float freq) {
 	rskos_snd_update_buffer(&snd->hbuf, snd->data, snd->length_samples);
 };
 
-void soundbuf_play(rs_soundbuf_t *snd) {
-    rskos_snd_play(&snd->hbuf, 0);
+void soundbuf_play(rs_soundbuf_t *snd, int mode) {
+    rskos_snd_play(&snd->hbuf, mode);
 };
 
 void soundbuf_stop(rs_soundbuf_t *snd) {
     rskos_snd_stop(&snd->hbuf);
+};
+
+void soundbuf_loop_check(rs_soundbuf_t *snd) {
+    rskos_snd_check_loop(&snd->hbuf);
 };
 
 
@@ -510,7 +514,7 @@ void GameInit() {
     
 
     #ifndef RS_KOS
-        rs_audio_init(RS_AUDIO_FMT_MONO16, RS_AUDIO_FREQ_16000, 0); 
+        rs_audio_init(RS_AUDIO_FMT_MONO16, RS_AUDIO_FREQ_16000, 2); 
     #endif
 
     soundbuf_init(&game.sound_test1, 2048);
@@ -545,7 +549,7 @@ void GameInit() {
         rs_sgen_func_normalize(0, 1.0);
 
         rs_sgen_func_lowpass(2, 0, 0.6, 0.0, 20.0);
-        rs_sgen_func_normalize(2, 1.0);
+        rs_sgen_func_normalize(2, 0.7);
 
         rs_sgen_wave_out(2);
 
@@ -567,7 +571,7 @@ void GameInit() {
     rs_sgen_func_normalize(0, 1.0);
 
     rs_sgen_func_highpass(2, 0, 1.0, 0.3, 20.0);
-    rs_sgen_func_normalize(2, 1.0);
+    rs_sgen_func_normalize(2, 0.6);
 
     rs_sgen_wave_out(2);
 
@@ -575,6 +579,74 @@ void GameInit() {
     soundbuf_update(&game.sound_hit);
 
     rs_sgen_term();
+    
+    
+    
+
+    #define NOTE(i) ( 3 << ( (i)/12) ) / ( 24 - ( (i) % 12) )
+    int amp = 70;
+    int t_shift = 0;
+    int t;
+
+    soundlen = 128 * 1024; 
+    
+
+
+    soundbuf_init(&game.sound_music, soundlen);
+    
+    for (t = t_shift; t < soundlen+t_shift; t++) {
+        game.sound_music.data[t-t_shift] = (0xFF & 
+            (                                        
+                ((t>>11) | (t>>7) | ( t>>5) | (t))
+
+            )                                   
+        ) * amp;
+    };
+    
+    soundbuf_update(&game.sound_music);
+    
+    
+    
+    int d[4] = { 5, 6, 1, 2 };
+    
+    
+    soundbuf_init(&game.sound_music2, soundlen);
+    
+    for (t = t_shift; t < soundlen+t_shift; t++) {
+            
+//        y = 1 + (t & 16383);
+//        x = (t * c[ (t>>13) & 3 ] / 24) & 127;
+            
+        game.sound_music2.data[t-t_shift] = (0xFF & 
+            (                                        
+           //( t*5 & t >> 7 ) | ( t*2 & t >> 10 )
+                                                    
+           // ( ((t*t*t/1000000 + t) % 127) | t>>4 | t>>5 | (t%127) ) + ( (t>>16) | t )
+           
+//           ((t>>11) | (t>>7) | ( t>>5) | (t))
+//           //+ 
+//           //(( (t*5) >>12) & ( (t*3)>>19))
+             
+//                (3000 / y) * 35
+//             + x*y*40000
+//             + ( ( ((t>>8) & (t>>10)) | (t >> 14) | x) & 63 )
+                                
+                 // (  ((6 * t / d[ (t>>13) & 15 ] ) & 127) * 10000 ) 
+                 //|( ( t>>3 ) )                
+             
+                    (t*NOTE( d[ (t>>13) & 3 ] )*10000)
+                    | ((t>>6)*20000) 
+             
+             )
+                                                    
+        ) * amp;
+    };
+    
+    soundbuf_update(&game.sound_music2);
+    
+    
+    soundbuf_play( &game.sound_music, SND_MODE_LOOP );    
+    
 
 };
 
@@ -639,7 +711,27 @@ void GameKeyDown(int key) {
         case RS_KEY_A:
             BIT_SET(game.keyboard_state, RS_ATTACK_KEY_MASK);
             game.shoot_keypressed = 1;
+            
+//            soundbuf_loop_check( &game.sound_music );
+            
             break;
+            
+        
+        
+//        case RS_KEY_SPACE:
+//                soundbuf_play( &game.sound_music, SND_MODE_LOOP );
+//            break;
+        
+//        #ifdef RS_LINUX
+//            
+//        case RS_KEY_Z:
+//                soundbuf_play( &game.sound_music2, 0 );
+//                break;
+//            
+//        #endif
+        
+
+            
     };
     
     
@@ -694,11 +786,6 @@ void GameKeyDown(int key) {
                 break;
             case RS_KEY_SPACE:
                 
-                #ifdef RS_LINUX
-                    
-                    soundbuf_play( &game.sound_hit );
-                    
-                #endif
                 
                 //game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, 0, game.tx + 80, game.ty - 10, 0, 0.0 ) );
                 
@@ -782,10 +869,10 @@ void game_ding(int i) {
     
     switch (i) {
         case 0:
-            soundbuf_play(&game.sound_test2);
+            soundbuf_play(&game.sound_test2, 0);
             break;
         case 1:
-            soundbuf_play(&game.sound_test3);
+            soundbuf_play(&game.sound_test3, 0);
             break;
     };
     
