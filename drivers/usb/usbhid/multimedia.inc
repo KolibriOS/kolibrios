@@ -148,8 +148,9 @@ end if
         test    edx, edx
         jz      .multimedia_key_released
 .multimedia_key_pressed:
+        mov     [edi+multimedia_device_data.last_pressed], eax
 ; The key is pressed.
-        push    ecx
+        push    eax
         mov     ecx, 0xE0
         invoke  SetKeyboardData
         pop     ecx
@@ -160,7 +161,7 @@ end if
         mov     [edi+multimedia_device_data.last_pressed], 0
 ; The key is released.
         or      cl, 0x80
-        push    ecx
+        push    eax
         mov     ecx, 0xE0
         invoke  SetKeyboardData
         pop     ecx
