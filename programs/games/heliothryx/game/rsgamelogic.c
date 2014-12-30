@@ -88,6 +88,9 @@ int check_collision_with_player(int obj1) {
 void player_hit() {
     
     game.health--;
+    game.bg_color = COLOR_DARK_RED;
+    
+    soundbuf_play( &game.sound_hit );
 
     
     if (game.health < 1) {
@@ -400,6 +403,7 @@ void GameProcess() {
         
         for (i = 0; i < game.objs_count; i++) {
             if ( IS_BIT_SET( game.objs[i].flags, OBJ_FLAG_DESTROYED ) ) {
+                soundbuf_play( &game.sound_explosions[ rs_rand() % SOUND_EXPLOSIONS_COUNT ] );
                 game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, EXPLOSION_RADIUS, game.objs[i].x, game.objs[i].y, 0, 0.0 ) );
                 game_obj_remove(i);
                 i--;

@@ -185,6 +185,10 @@ void soundbuf_init(rs_soundbuf_t *snd, int length_samples) {
     rskos_snd_create_buffer(&snd->hbuf, snd->data, length_samples);
 };
 
+void soundbuf_update(rs_soundbuf_t *snd) {
+    rskos_snd_update_buffer(&snd->hbuf, snd->data, snd->length_samples);
+};
+
 void soundbuf_free(rs_soundbuf_t *snd) {
     snd->status = 0;
     free(snd->data);
@@ -258,6 +262,8 @@ void game_reg_init() {
     game.player_x = 0;
     game.player_y = 0;
     game.tz = 0;
+    
+    game.bg_color = COLOR_BLACK;
 
 //    int i;
 //    for (i = 0; i < BULLETS_COUNT; i++) {
@@ -520,6 +526,56 @@ void GameInit() {
     soundbuf_sin(&game.sound_test3, 0.24);
 
 
+
+    
+    
+    int soundlen = 55000;
+            
+//    int freqs[SOUND_EXPLOSIONS_COUNT] = { 440, 523, 587, 698, 783, 880, 1046, 1174 };
+    
+    for (i = 0; i < SOUND_EXPLOSIONS_COUNT; i++) {
+
+        soundbuf_init(&game.sound_explosions[i], soundlen);
+
+        rs_sgen_init(3, soundlen);
+
+        rs_sgen_func_noise(2, 1000);
+        //rs_sgen_func_phaser(0, 2, 0.9, 15.2 + 1.0*i/SOUND_EXPLOSIONS_COUNT, 6.0, 3.0, 2000.0, 1.73); 
+        rs_sgen_func_phaser(0, 2, 0.9, 16.2 + 0.5*i/SOUND_EXPLOSIONS_COUNT, 6.0, 3.0, 900.0, 0.93); 
+        rs_sgen_func_normalize(0, 1.0);
+
+        rs_sgen_func_lowpass(2, 0, 0.6, 0.0, 20.0);
+        rs_sgen_func_normalize(2, 1.0);
+
+        rs_sgen_wave_out(2);
+
+        memcpy(game.sound_explosions[i].data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+        soundbuf_update(&game.sound_explosions[i]);
+
+        rs_sgen_term();
+    
+    };
+
+    soundlen = 17888;
+
+    soundbuf_init(&game.sound_hit, soundlen);
+
+    rs_sgen_init(3, soundlen);
+
+    rs_sgen_func_noise(2, 1000);
+    rs_sgen_func_phaser(0, 2, 0.9, 11.5, 16.0, 13.0, 1300.0, 1.93); 
+    rs_sgen_func_normalize(0, 1.0);
+
+    rs_sgen_func_highpass(2, 0, 1.0, 0.3, 20.0);
+    rs_sgen_func_normalize(2, 1.0);
+
+    rs_sgen_wave_out(2);
+
+    memcpy(game.sound_hit.data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+    soundbuf_update(&game.sound_hit);
+
+    rs_sgen_term();
+
 };
 
 
@@ -564,7 +620,7 @@ void GameTerm() {
 
 
 
-void GameKeyDown(int key, int first) {
+void GameKeyDown(int key) {
     
     
     switch (key) {
@@ -639,8 +695,9 @@ void GameKeyDown(int key, int first) {
             case RS_KEY_SPACE:
                 
                 #ifdef RS_LINUX
-                    game.stage_timer = 0;
-                    game.stage = 7;
+                    
+                    soundbuf_play( &game.sound_hit );
+                    
                 #endif
                 
                 //game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, 0, game.tx + 80, game.ty - 10, 0, 0.0 ) );

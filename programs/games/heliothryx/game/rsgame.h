@@ -19,22 +19,12 @@
 
 #include "rskos.h"
 #include "rs/rsplatform.h"
-//#include "rs/rstexture.h"
-//#include "rs/rsshader.h"
-//#include "rs/rsgl.h"
+
 #include "rs/rsdebug.h"
 #include "rs/rsbits.h"
 
-//#include "rs/rskeyboard.h"
+#include "rsgamelogic.h"
 
-//#include "rs/rsaudio.h"
-
-//#include "rs/rsfile.h"
-
-//#include "rs/rsvbo.h"
-//#include "rs/rsfbo.h"
-
-//#include "rs/rsthread.h"
 
 #include "rs/rsmx.h"
 
@@ -70,7 +60,7 @@ typedef union color_t {
 // for little-endian (ARGB)
 #define COLOR_BLACK     0xFF000000
 #define COLOR_TRANSPARENT   0x00000000
-#define COLOR_DARK_RED  0xFF660000
+#define COLOR_DARK_RED  0xFF401000
 
 
 
@@ -174,6 +164,8 @@ void game_obj_remove(int index);
 
 #define GAME_FLAG_BOSS_DESTROYED    0x01
 
+#define SOUND_EXPLOSIONS_COUNT      8
+
 typedef struct rs_game_t {
     rs_texture_t framebuffer; 
     unsigned char *scaled_framebuffer; // 24-bit BGRBGRBGR... for direct drawing
@@ -193,10 +185,14 @@ typedef struct rs_game_t {
     
     rs_texture_t tex_gui_line;
     
+    int bg_color;
     
     rs_soundbuf_t sound_test1;
     rs_soundbuf_t sound_test2;
     rs_soundbuf_t sound_test3;
+    
+    rs_soundbuf_t sound_explosions[SOUND_EXPLOSIONS_COUNT];
+    rs_soundbuf_t sound_hit;
     
     int status;
     int flags;
@@ -243,6 +239,14 @@ typedef struct rs_game_t {
 extern rs_game_t game;
 void game_reg_init();
 
+
+
+
+
+
+
+
+
 /*  __
    /cc\
   /aaaa\
@@ -251,12 +255,19 @@ void game_reg_init();
 ------------------------------- */
 
 
+
+
+
+
+
+
+
 void game_ding(int i);
 
 void GameInit();
 void GameTerm();
 
-void GameKeyDown(int key, int first);
+void GameKeyDown(int key);
 void GameKeyUp(int key);
 
 void GameMouseDown(int x, int y);

@@ -160,6 +160,8 @@ void menu_action_start() {
     
     game.objs_count = 0;
     
+    game.bg_color = COLOR_BLACK;
+    
 };
 
 void menu_action_exit() {

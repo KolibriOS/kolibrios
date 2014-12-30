@@ -15,7 +15,7 @@ then C_LANG = "LANG_SP" -- just for example, other languages are not implemented
 else C_LANG = "LANG_EN" -- default language is English
 end
 
-CFLAGS = CFLAGS .. " -DRS_KOS -D" .. C_LANG .. " "
+CFLAGS = CFLAGS .. " -Werror=implicit -DRS_KOS -D" .. C_LANG .. " "
 
-compile_gcc{ "system/kolibri.c", "game/rs/rsmicrolibc.c", "game/rs/rsplatform_kos.c", "game/rs/rsmx.c", "game/rsnoise.c", "game/rsgentex.c",  "game/rsgame.c", "game/rsgamedraw.c", "game/rsgamelogic.c", "game/rskos.c", "game/rsgametext.c", "game/rsgamemenu.c"}
+compile_gcc{ "system/kolibri.c", "game/rs/rsmicrolibc.c", "game/rs/rsplatform_kos.c", "game/rs/rsmx.c", "game/rsnoise.c", "game/rsgentex.c", "game/rssoundgen.c", "game/rsgame.c", "game/rsgamedraw.c", "game/rsgamelogic.c", "game/rskos.c", "game/rsgametext.c", "game/rsgamemenu.c"}
 link_gcc ("heliothryx")

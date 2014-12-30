@@ -1,4 +1,6 @@
 #include "rsplatform.h"
+
+#include "../rsgame.h"
  
 rs_app_t rs_app;
  
@@ -186,7 +188,7 @@ void kol_main()
                                         if (!logic_halted) {
                                        
 		                                    if (key_up) {
-		                                            GameKeyUp(key, 1);
+		                                            GameKeyUp(key);
 		                                    }
 		                                    else {
 		                                            GameKeyDown(key);

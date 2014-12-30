@@ -28,7 +28,10 @@ void game_draw() {
 //	};
 
 
-    texture_clear(&game.framebuffer, COLOR_BLACK);
+    texture_clear(&game.framebuffer, game.bg_color );
+    
+    game.bg_color = COLOR_BLACK;
+    
 //    texture_clear(&game.tex);
     
 //    texture_draw(&game.framebuffer, &game.tex, 40, 40, DRAW_MODE_ADDITIVE);
