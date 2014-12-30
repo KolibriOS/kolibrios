@@ -43,14 +43,14 @@ proc __ksys_readfile stdcall uses ebx,filename:dword,position:dword,sizeblock:dw
         mov ebx,[position]
         mov ecx,[sizeblock]
         mov edx,[buffer]
-        mov esi,[filename]
         mov [fileinfo.subproc],eax
         mov [fileinfo.offset_l],ebx
         mov [fileinfo.offset_h],eax
         mov [fileinfo.size],ecx
+        mov ecx,[filename]
         mov [fileinfo.data],edx
         mov [fileinfo.letter],al
-        mov [fileinfo.filename],esi
+        mov [fileinfo.filename],ecx
 
         mov eax,70
         mov ebx,fileinfo
@@ -88,14 +88,14 @@ proc __ksys_appendtofile stdcall uses ebx,filename:dword,pos:dword,sizeblock:dwo
         mov ebx,[pos]
         mov ecx,[sizeblock]
         mov edx,[data_append]
-        mov esi,[filename]
         mov [fileinfo.subproc],dword 3
         mov [fileinfo.offset_l],ebx
         mov [fileinfo.offset_h],eax
         mov [fileinfo.size],ecx
+        mov ecx,[filename]
         mov [fileinfo.data],edx
         mov [fileinfo.letter],al
-        mov [fileinfo.filename],esi
+        mov [fileinfo.filename],ecx
 
         mov eax,70
         mov ebx,fileinfo
