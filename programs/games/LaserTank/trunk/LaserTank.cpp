@@ -8,6 +8,7 @@
 #define MODE_MENU		0
 #define MODE_LEVELS		1
 #define MODE_GAME		2
+#define MODE_PAUSE		4
 
 #define GAME_NONE		0
 #define GAME_VICTORY	1
@@ -84,6 +85,7 @@ RGB img_menu[147456];
 RGBA img_explosion[8064];
 RGBA img_gun[576];
 RGB img_gamebg[9216];
+RGBA img_black[576];
 
 RGBA img_number_box[2550];
 RGBA img_numbers[3500];
@@ -92,10 +94,15 @@ RGBA img_button_arrow[375];
 
 RGB img_levels[147456];
 
+RGB img_buttons[3][13053];
+
+
+
 Player player;
 
 CKosRender* renderPlayer;
 CKosImage* objPlayer;
+CKosImage* objPlayer1;
 
 CKosRender* renderBox;
 
@@ -106,6 +113,8 @@ CKosImage* objMiniMirror;
 CKosImage* objBox;
 CKosImage* objGun;
 CKosImage* objExplosion; 
+
+CKosImage* objblack;
 
 CKosRender* renderLevels;
 CKosImage* objnumber_box;
@@ -155,6 +164,12 @@ char GetField(Point position, bool din)
 	if (din && level[position.Y][position.X].d != FIELD_NONE)
 		return level[position.Y][position.X].d;
 	return level[position.Y][position.X].s;
+}
+
+void SetMode(int mode)
+{
+	gameMode = mode;
+	draw_window();
 }
 
 RGB* GetImg(Point position, bool din)
@@ -575,7 +590,7 @@ void Laser(Point pos, Point vec, RGB color)
 				}
 				level[player.position.Y][player.position.X].s = FIELD_CRATER;
 				gameStatus = GAME_DEFEAT;
-				draw_window();
+				SetMode(MODE_PAUSE);
 				return;
 			}
 			else
@@ -779,6 +794,7 @@ void player_move(Point vector, float angle)
 			break;
 		case FIELD_FINISH:
 			gameStatus = GAME_VICTORY;
+			SetMode(MODE_PAUSE);
 			draw_window();
 			break;
 		case FIELD_NONE:
@@ -831,12 +847,6 @@ void player_move(Point vector, float angle)
 		objPlayer->Draw(Point(0, 0), player.angle);
 		renderPlayer->Draw(player.position * 24);
 	}
-}
-
-void SetMode(int mode)
-{
-	gameMode = mode;
-	draw_window();
 }
 
 void key_press(int key)
@@ -892,7 +902,7 @@ void key_press(int key)
 
 			break;
 		case 27:
-			SetMode(MODE_LEVELS);
+			SetMode(MODE_PAUSE);
 		}
 		break;
 	}
@@ -948,6 +958,22 @@ void MousePress(int button, Point position)
 			}
 		}
 		break;
+	case MODE_PAUSE:
+		if (CollRecrVsPoint(position, Rect(77, 318, 229, 57)))
+			SetMode(MODE_LEVELS);
+		else
+			if (CollRecrVsPoint(position, Rect(77, 255, 229, 57)))
+			{
+				openLevel(levelIndex);
+				SetMode(MODE_GAME);
+			}
+			else
+				if (gameStatus != GAME_DEFEAT && CollRecrVsPoint(position, Rect(77, 192, 229, 57)))
+				{
+					if (gameStatus == GAME_VICTORY)
+						openLevel(levelIndex + 1);
+					SetMode(MODE_GAME);
+				}
 	case MODE_GAME:
 
 		break;
@@ -1015,36 +1041,57 @@ void draw_window(void)
 		}
 
 		renderLevels->Draw(Point(0, 0));
+		//kos_PutImage((RGB*)img_ground, 24, 24, 100, 100);		
+		break;
+	case MODE_PAUSE:
+			for (int y = 0; y < 4; y++)
+				for (int x = 0; x < 4; x++)
+					renderLevels->RenderImg((RGB*)img_gamebg, Point(96 * x, 96 * y), 96, 96);
 
-		//kos_PutImage((RGB*)img_ground, 24, 24, 100, 100);
-		
+			for (int y = 0; y < 16; y++)
+				for (int x = 0; x < 16; x++)
+					if (level[y][x].s != FIELD_NONE)
+						renderLevels->RenderImg(GetImg(Point(x, y), true), Point(24 * x, 24 * y), 24, 24);
+
+			switch (gameStatus)
+			{
+			case GAME_NONE:
+				objPlayer1->Draw(player.position * 24, player.angle);
+				break;
+			case GAME_VICTORY:
+				kos_WriteTextToWindow(30, 10, 0x80, 0xFFFFFF, "VICTORY", 0);
+				break;
+			case GAME_DEFEAT:
+				kos_WriteTextToWindow(30, 10, 0x80, 0xFFFFFF, "DEFEAT", 0);
+				break;
+			}
+
+			for (int y = 0; y < 16; y++)
+				for (int x = 0; x < 16; x++)
+					objblack->Draw(Point(24 * x, 24 * y), 0);
+
+			if (gameStatus != GAME_DEFEAT)
+				renderLevels->RenderImg((RGB*)img_buttons[1], Point(77, 192), 229, 57);
+			renderLevels->RenderImg((RGB*)img_buttons[2], Point(77, 255), 229, 57);
+			renderLevels->RenderImg((RGB*)img_buttons[0], Point(77, 318), 229, 57);			 
+
+			renderLevels->Draw(Point(0, 0));
 		break;
 	case MODE_GAME:
 		for (int y = 0; y < 4; y++)
 			for (int x = 0; x < 4; x++)
 				kos_PutImage((RGB*)img_gamebg, 96, 96, 96 * x, 96 * y);
 		
-
 		for (int y = 0; y < 16; y++)
 			for (int x = 0; x < 16; x++)
-			{
 				if (level[y][x].s != FIELD_NONE)
-					kos_PutImage(GetImg(Point(x, y), true), 24, 24, 24 * x, 24 * y);			
-			}
+					kos_PutImage(GetImg(Point(x, y), true), 24, 24, 24 * x, 24 * y);	
 
-		switch (gameStatus)
+		if(gameStatus != GAME_DEFEAT)
 		{
-		case GAME_NONE:
 			renderPlayer->RenderImg(GetImg(player.position, false), Point(0, 0), 24, 24);
 			objPlayer->Draw(Point(0, 0), player.angle);
 			renderPlayer->Draw(player.position * 24);
-			break;
-		case GAME_VICTORY:
-			kos_WriteTextToWindow(30, 10, 0x80, 0xFFFFFF, "VICTORY", 0);
-			break;
-		case GAME_DEFEAT:
-			kos_WriteTextToWindow(30, 10, 0x80, 0xFFFFFF, "DEFEAT", 0);
-			break;
 		}
 	break;
 	}
@@ -1187,7 +1234,12 @@ void kos_Main()
 	file->LoadTex((Byte*)img_wall_x, 3, 24, 24);
 	
 	file->LoadTex((Byte*)img_crater, 3, 24, 24);
-	
+
+	file->LoadTex((Byte*)img_black, 4, 24, 24);
+
+	for (int i = 0; i < 3; ++i)
+		file->LoadTex((Byte*)img_buttons[i], 3, 229, 57);	
+
 	delete file;
 
 	renderPlayer = new CKosRender(24, 24);
@@ -1212,12 +1264,16 @@ void kos_Main()
 	objExplosion->SetFrameSize(24, 24);
 
 	renderLevels = new CKosRender(384, 384);
+
+	objPlayer1 = new CKosImage(renderLevels, (RGBA*)img_tank, 24, 24);
 	objnumber_box = new CKosImage(renderLevels, (RGBA*)img_number_box, 51, 50);
 	objnumbers = new CKosImage(renderLevels, (RGBA*)img_numbers, 14, 25);
 	objnumbers->SetFrameSize(14, 25);
 
 	objbutton1 = new CKosImage(renderLevels, (RGBA*)img_button1, 57, 57);
 	objbutton_arrow = new CKosImage(renderLevels, (RGBA*)img_button_arrow, 25, 15);
+	
+	objblack = new CKosImage(renderLevels, (RGBA*)img_black, 24, 24);
 
 	LevelsLoad();
 
