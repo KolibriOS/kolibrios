@@ -272,7 +272,7 @@ void drawWindow(string content, const char* title, string topline , string botto
 	  lines = 0;
 	  // Top line
 	  drawHBorder(lines, deltaX, winWidth);
-	  #ifdef _WIN32
+	  #if defined(_WIN32) && !defined(_KOS32)
 	  lines = 1;
 	  #else 
 	  lines = 2;
