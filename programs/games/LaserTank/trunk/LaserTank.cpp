@@ -933,12 +933,78 @@ void key_press(int key)
 	switch (gameMode)
 	{
 	case MODE_MENU:
-		if (key = 27)
+		if (key == 27)
 			kos_ExitApp();
+
+		if (key == 13 || key == 32)
+			SetMode(MODE_LEVELS);
 		break;
 	case MODE_LEVELS:
-		if (key = 27)
+		if (key == 27)
 			SetMode(MODE_MENU);
+
+		if (levelPage > 0 && key == 183)
+		{
+			levelIndex -= 30;
+			draw_window();
+		}
+		else
+			if (levelPage < (int)(levelCount / 30) && key == 184)
+			{
+				levelIndex += 30;
+				if (levelIndex >= levelCount)
+					levelIndex = levelCount - 1;
+				draw_window();
+			}
+
+	// 179, 100   D Right
+		if ((key == 179 || key == 100) && (levelIndex + 1) < levelCount)
+		{
+			levelIndex++;
+			draw_window();
+		}
+	// 176, 97    A  Left
+		if ((key == 176 || key == 97) && levelIndex > 0)
+		{
+			levelIndex--;
+			draw_window();
+		}
+	// 119, 178: W Up
+		if ((key == 119 || key == 178) && (levelIndex - 6) >= 0)
+		{
+			levelIndex -= 6;
+			draw_window();
+		}
+	// 177, 115    S Down
+		if ((key == 177 || key == 115) && (levelIndex + 6) < levelCount)
+		{
+			levelIndex += 6;
+			draw_window();
+		}
+
+		if (key == 13 || key == 32)
+		{
+			openLevel(levelIndex);
+			SetMode(MODE_GAME);
+		}
+
+		break;
+	case MODE_PAUSE:
+		if (key == 27)
+			SetMode(MODE_LEVELS);
+		else
+			if ((key == 32 || key == 13) && (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1))))
+			{
+				if (gameStatus == GAME_VICTORY)
+					openLevel(levelIndex + 1);
+				SetMode(MODE_GAME);
+			}
+			else
+				if (key == 114)
+				{
+					openLevel(levelIndex);
+					SetMode(MODE_GAME);
+				}
 		break;
 	case MODE_GAME:
 		switch (key)
@@ -1005,17 +1071,20 @@ void MousePress(int button, Point position)
 		else
 		if (levelPage > 0 && CollRecrVsPoint(position, Rect(9, 318, 57, 57)))
 		{
-			levelPage--;
+			levelIndex -= 30;
 			draw_window();
 		}
 		else
-		if (levelPage < (int)(levelCount / 30) && CollRecrVsPoint(position, Rect(70, 318, 57, 57)))
+			if (levelPage < (int)(levelCount / 30) && CollRecrVsPoint(position, Rect(70, 318, 57, 57)))
 		{
-			levelPage++;
+			levelIndex += 30;
+			if (levelIndex >= levelCount)
+				levelIndex = levelCount - 1;
 			draw_window();
 		}			
 		else
 		{
+			levelPage = (int)(levelIndex / 30);
 			for (int i = levelPage * 30; i < min(levelCount, (levelPage + 1) * 30); i++)
 			{
 
@@ -1045,7 +1114,7 @@ void MousePress(int button, Point position)
 				SetMode(MODE_GAME);
 			}
 			else
-				if (gameStatus != GAME_DEFEAT && CollRecrVsPoint(position, Rect(77, 192, 229, 57)))
+				if (CollRecrVsPoint(position, Rect(77, 192, 229, 57)) && (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1))))
 				{
 					if (gameStatus == GAME_VICTORY)
 						openLevel(levelIndex + 1);
@@ -1092,6 +1161,8 @@ void draw_window(void)
 		break;
 	case MODE_LEVELS:
 		renderLevels->RenderImg(img_levels, Point(0, 0), 384, 384);
+
+		levelPage = (int)(levelIndex / 30);
 		for (int i = levelPage * 30; i < min(levelCount, (levelPage + 1) * 30); i++)
 		{
 			if (i % 6 == 0 && i != levelPage * 30)
@@ -1099,8 +1170,16 @@ void draw_window(void)
 				level_pos.X = 0;
 				level_pos.Y++;
 			}
-			objnumber_box->Draw(Point(11 + level_pos.X * 62, 11 + 61 * level_pos.Y), 0);
-			draw_level_number(Point(11 + level_pos.X * 62, 11 + 61 * level_pos.Y), i + 1, (RGB)0x252317);
+			if (levelIndex != i)
+			{
+				objnumber_box->Draw(Point(11 + level_pos.X * 62, 11 + 61 * level_pos.Y), 0);
+				draw_level_number(Point(11 + level_pos.X * 62, 11 + 61 * level_pos.Y), i + 1, (RGB)0x252317);
+			}
+			else
+			{
+				objnumber_box->Draw(Point(11 + level_pos.X * 62, 11 + 61 * level_pos.Y), 0, (RGB)0xAA0000);
+				draw_level_number(Point(11 + level_pos.X * 62, 11 + 61 * level_pos.Y), i + 1, (RGB)0xAA0000);
+			}
 
 			level_pos.X++;
 		}
@@ -1147,7 +1226,7 @@ void draw_window(void)
 				for (int x = 0; x < 16; x++)
 					objblack->Draw(Point(24 * x, 24 * y), 0);
 
-			if (gameStatus != GAME_DEFEAT)
+			if (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1)))
 				renderLevels->RenderImg((RGB*)img_buttons[1], Point(77, 192), 229, 57);
 			renderLevels->RenderImg((RGB*)img_buttons[2], Point(77, 255), 229, 57);
 			renderLevels->RenderImg((RGB*)img_buttons[0], Point(77, 318), 229, 57);			 
@@ -1253,6 +1332,8 @@ void openLevel(int index)
 
 void kos_Main()
 {
+	//rtlDebugOutString(" ");
+	//rtlDebugOutString("kos_Main");
 	char *cPtr;
 	cPtr = strrchr(kosExePath, '/');
 	// проверка ;)
