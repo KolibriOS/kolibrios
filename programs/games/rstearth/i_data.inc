@@ -279,6 +279,15 @@ menu_credits_text_pointers:
 	dd menu_credits_text.4
 	dd menu_credits_text.5
 	dd menu_credits_text.6
+	dd menu_credits_text.7
+	dd menu_credits_text.8
+	dd menu_credits_text.9
+	dd menu_credits_text.10
+	dd menu_credits_text.11
+	dd menu_credits_text.12
+	dd menu_credits_text.13
+	dd menu_credits_text.14
+	dd menu_credits_text.15
 	dd 0
 ;---------------------------------------------------------------------
 align	4
@@ -300,5 +309,14 @@ align	4
 map_level_pointer:
 	dd map_level_0
 	dd map_level_1
+	dd map_level_2
+	dd map_level_3
+	dd map_level_4
+	dd map_level_5
+	dd map_level_6
+	dd map_level_7
+	dd map_level_8
+	dd map_level_9
+	dd map_level_10
 	dd 0
 ;---------------------------------------------------------------------

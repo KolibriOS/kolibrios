@@ -1,6 +1,6 @@
 ;---------------------------------------------------------------------
 title:
-	db 'Rusty Earth (Prototype 1.9) 30.12.2014',0
+	db 'Rusty Earth  31.12.2014',0
 ;---------------------------------------------------------------------
 menu_game_label:
 	db 'GAME',0
@@ -44,11 +44,20 @@ protagonist_death_text:
 ;---------------------------------------------------------------------
 menu_credits_text:
 .1:	db 'Hello KolibriOS Team!',0
-.2:	db 'The game used graphics and sound material',0
-.3:	db 'under a free license, borrowed from:',0
-.4:	db 'http://untamed.wild-refuge.net/',0
-.5:	db 'http://opengameart.org',0
-.6:	db 'https://wiki.themanaworld.org',0
+.2:	db ' Hello Habrahabr!',0
+.3:	db 0
+.4:	db 'The game used graphics and sound material',0
+.5:	db 'under a free license, borrowed from:',0
+.6:	db ' http://opengameart.org',0
+.7:	db 0
+.8:	db 'NPC sprites by',0
+.9:	db ' http://untamed.wild-refuge.net',0
+.10:	db 0
+.11:	db 'Hatsune Miku Sprites by',0
+.12:	db ' http://nekorandomnessqueen.deviantart.com',0
+.13:	db 0
+.14:	db 'Glyphs of Russo free font by',0
+.15:	db ' http://www.jovanny.ru',0
 ;---------------------------------------------------------------------
 menu_help_text:
 .1:	db 'Game control',0
