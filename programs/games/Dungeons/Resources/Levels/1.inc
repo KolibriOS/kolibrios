@@ -9,6 +9,7 @@ level1:
 W equ level1.Wall
 w equ level1.OtherWall
 _ equ level1.PassableArea
+. equ level1.OtherPassableArea
 0 equ level1.NotPassableArea
 % equ level1.WallWithCrazyWoodDoor
 I equ level1.IronDoor
@@ -36,18 +37,18 @@ dd W,_,_,_,W,_,_,_,_,_,_,_,W,W,W,W,W,W,W,W,W,%,W,W
 dd W,_,_,_,W,W,W,W,q,v,e,W,W,_,_,_,_,_,_,_,_,_,_,W
 dd W,_,_,_,_,_,_,_,_,_,_,_,W,_,W,W,W,W,W,W,W,W,W,W
 dd W,_,_,_,W,_,_,_,_,_,_,_,W,o,W,_,_,_,_,_,_,_,_,W
-dd W,_,_,_,W,W,W,W,W,W,W,W,W,0,W,W,W,W,_,_,_,_,_,W
-dd W,_,_,_,W,_,_,_,_,_,_,W,_,_,_,_,_,W,w,w,w,w,w,w
-dd W,_,_,_,_,_,_,_,_,_,_,W,_,_,_,_,_,_,_,_,_,_,_,w
-dd W,_,_,_,_,_,_,_,_,_,_,W,W,W,W,W,_,w,w,_,w,w,_,w
-dd W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,w,_,w,_,_,_,w,_,w
-dd W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,w,_,_,_,P,_,_,_,w
-dd W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,w,_,w,_,_,_,w,_,w
-dd W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,w,_,w,w,_,w,w,_,w
-dd W,_,_,_,_,_,_,_,_,_,_,_,_,_,_,w,_,_,_,_,_,_,_,w
-dd W,W,W,W,W,W,W,W,W,W,W,W,W,W,W,w,w,w,w,w,w,w,w,w
+dd W,_,_,_,W,W,W,W,W,W,W,W,W,0,W,w,w,w,_,_,_,_,_,W
+dd W,_,_,_,W,_,_,_,_,_,_,w,_,_,w,w,w,w,w,w,w,w,w,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,w,.,.,.,.,.,.,.,.,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,w,.,.,w,w,.,w,w,.,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,_,.,.,w,.,.,.,w,.,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,_,.,.,.,.,P,.,.,.,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,_,.,.,w,.,.,.,w,.,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,w,.,.,w,w,.,w,w,.,w
+dd W,_,_,_,_,_,_,_,_,_,_,w,_,_,w,.,.,.,.,.,.,.,.,w
+dd W,W,W,W,W,W,W,W,W,W,W,w,w,w,w,w,w,w,w,w,w,w,w,w
 
-restore W, w, _, 0, %, I, L, q, v, e, c, o, P
+restore W, w, _, ., 0, %, I, L, q, v, e, c, o, P
 
 .Chest                  akode.Object            textures.Chest, <13, 2>, 1, 0
 .Column1                akode.Object            textures.Column1, <16, 5>, 1, 0
@@ -130,6 +131,14 @@ restore W, w, _, 0, %, I, L, q, v, e, c, o, P
                                                 <textures.YellowStone1, 0>, \
                                                 1, 0
 
+.OtherPassableArea      akode.GridCell          <0, 0>,                  \
+                                                <0, 0>,                  \
+                                                <0, 0>,                  \
+                                                <0, 0>,                  \
+                                                <textures.RedStone1, 0>, \
+                                                <textures.RedStone1, 0>, \
+                                                1, 0
+
 .NotPassableArea        akode.GridCell          <0, 0>,                     \
                                                 <0, 0>,                     \
                                                 <0, 0>,                     \
@@ -154,12 +163,12 @@ restore W, w, _, 0, %, I, L, q, v, e, c, o, P
                                                 <textures.YellowStone1, 0>, \
                                                 1, level1.ogre
 
-.PortalArea             akode.GridCell          <0, 0>,                     \
-                                                <0, 0>,                     \
-                                                <0, 0>,                     \
-                                                <0, 0>,                     \
-                                                <textures.PortalFloor, 0>,  \
-                                                <textures.YellowStone1, 0>, \
+.PortalArea             akode.GridCell          <0, 0>,                    \
+                                                <0, 0>,                    \
+                                                <0, 0>,                    \
+                                                <0, 0>,                    \
+                                                <textures.PortalFloor, 0>, \
+                                                <textures.RedStone1, 0>,   \
                                                 1, level1.portal
 
 .CoinImagePtr           dd 0
@@ -345,7 +354,17 @@ endp
 
 proc level1.columns uses ebx ecx, action, cell_x, cell_y
         mov     eax, [action]
-        cmp     ax, ACTION.USE_OBJECT
+
+        cmp     ax, ACTION.DO_SOMETHING
+        jne     @f
+        mov     eax, .message_description
+        jmp     .exit
+.message_description                            langstr0 ru, < \
+'Перед вами стоит невысокая колонна с хорошо заметной   ', 10, \
+'надписью. Колонна стоит здесь явно не для поддержки    ', 10, \
+'потолка...                                             '      >
+
+@@:     cmp     ax, ACTION.USE_OBJECT
         jne     .exit_no_message
 
         shr     eax, 16
@@ -401,8 +420,8 @@ proc level1.columns uses ebx ecx, action, cell_x, cell_y
         ret
 
 .message_activated                              langstr0 ru, < \
-'Колонна начала светиться странным светом, а надпись    ', 10, \
-'исчезла.'                                                     >
+'Вы положили монету на колонну и она начала светиться   ', 10, \
+'странным светом.                                       '      >
 endp
 
 proc level1.ogre action, cell_x, cell_y

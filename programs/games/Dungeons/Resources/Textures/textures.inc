@@ -22,6 +22,7 @@ textures:
 .GreenStone2            akode.TextureDesc       AKODE_TEXTURE_TYPE.IMAGE, texture_files.GreenStone2, 0, 0, 0, AKODE_TEXTURE_USAGE.ENVIRONMENT
 
 .YellowStone1           akode.TextureDesc       AKODE_TEXTURE_TYPE.IMAGE, texture_files.YellowStone1, 0, 0, 0, AKODE_TEXTURE_USAGE.ENVIRONMENT
+.RedStone1              akode.TextureDesc       AKODE_TEXTURE_TYPE.IMAGE, texture_files.RedStone1, 0, 0, 0, AKODE_TEXTURE_USAGE.ENVIRONMENT
 
 .CrazyWoodDoor          akode.TextureDesc       AKODE_TEXTURE_TYPE.IMAGE, texture_files.CrazyWoodDoor, 0, 1, 0, AKODE_TEXTURE_USAGE.ENVIRONMENT
 .IronDoor               akode.TextureDesc       AKODE_TEXTURE_TYPE.IMAGE, texture_files.IronDoor, 0, 0, 0, AKODE_TEXTURE_USAGE.ENVIRONMENT
@@ -48,6 +49,7 @@ texture_files:
 .GreenStone2            db 'Resources/Textures/Environment/GreenStone2.jpg', 0
 
 .YellowStone1           db 'Resources/Textures/Environment/YellowStone1.jpg', 0
+.RedStone1              db 'Resources/Textures/Environment/RedStone1.jpg', 0
 
 .CrazyWoodDoor          db 'Resources/Textures/Environment/CrazyWoodDoor.png', 0
 .IronDoor               db 'Resources/Textures/Environment/IronDoor.jpg', 0

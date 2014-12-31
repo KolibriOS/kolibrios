@@ -3,7 +3,7 @@ Textures/HUD/* - Anton_K, CC BY-SA 4.0
 Textures/Environment/*.png - CC0 1.0 (Public Domain)
 Textures/Environment/IronDoor.jpg - CC0 1.0 (Public Domain)
 Textures/Environment/*Stone*.jpg - p0ss, GNU GPL 2.0, http://opengameart.org/content/117-stone-wall-tilable-textures-in-8-themes
-Textures/Environment/Portal.jpg - Clint Bellanger, CC BY 3.0, http://opengameart.org/content/teleporter-circle
+Textures/Environment/Portal.jpg - Clint Bellanger, modified by Anton_K, CC BY 3.0, http://opengameart.org/content/teleporter-circle
 
 Textures/Objects/*.png - CC0 1.0 (Public Domain)
 Textures/Objects/Chest.png - Daniel Cook, modified by Anton_K, CC BY 3.0, http://opengameart.org/content/planetcute-chest-closedpng
