@@ -68,7 +68,7 @@ macro inject.image name, bpp {
   local i, p, a, r, g, b,\
    x, y, w, h, wb
   virtual at 0
-    p:: file CD#'/media/'#name#'.BMP'
+    p:: file CD#'/media/'#name#'.bmp'
   END virtual
   IF ~bpp in <15,16,24,32>
     'Invalid BPP' name
@@ -125,7 +125,7 @@ macro inject.image.8 name {
   local i, p, a, c,\
    x, y, w, h, wb
   virtual at 0
-    p:: file CD#'/media/'#name#'.BMP'
+    p:: file CD#'/media/'#name#'.bmp'
   END virtual
   load a word from p:0
   IF a<>'BM'
