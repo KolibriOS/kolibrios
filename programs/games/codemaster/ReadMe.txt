@@ -28,7 +28,7 @@ _for_Kolibri_ on Windows
 * 24-27 years of programming experience,
 recreationally in my freetime. Made 1,000s of
 programs, given 100s of examples away for free
-while poor. Never been paid.
+while poor. Never been paid for programming.
 
 Thanks. Happy new years!
 ===========================================================

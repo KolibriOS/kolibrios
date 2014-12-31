@@ -49,7 +49,8 @@ function randomize.puzzle
   alias p=r0, x=r1
   . q=puzzle, n=(MAP.W*MAP.H)
   loop n
-    . x=ROTATE.L, p=q, (u32) *p=x, q+4
+    get x=get.random
+    . p=q, (u32) *p=x, q+4
   endl
 endf
 
