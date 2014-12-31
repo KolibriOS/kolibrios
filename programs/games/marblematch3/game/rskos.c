@@ -265,33 +265,17 @@ void rskos_snd_stop(SNDBUF *hbuf) {
 
     void rskos_draw_area(int x, int y, int w, int h, int k_scale, unsigned char *data, unsigned char *scaled_buffer, int image_format) {
 
-//        unsigned char *scaled_buffer = malloc(w*k_scale*h*k_scale*3);
-
-
-//        if (scaled_buffer != NULL) {
-
-            int i, j;
-            
-            for (i = 0; i < h*k_scale; i++) {
-                for (j = 0; j < w*k_scale; j++) {
-                    scaled_buffer[ (i*w*k_scale + j)*3 + 0] = data[ ( (i/k_scale)*w + (j/k_scale) )*4 + 0];
-                    scaled_buffer[ (i*w*k_scale + j)*3 + 1] = data[ ( (i/k_scale)*w + (j/k_scale) )*4 + 1];
-                    scaled_buffer[ (i*w*k_scale + j)*3 + 2] = data[ ( (i/k_scale)*w + (j/k_scale) )*4 + 2];
-                };
+        int i, j;
+        
+        for (i = 0; i < h*k_scale; i++) {
+            for (j = 0; j < w*k_scale; j++) {
+                scaled_buffer[ (i*w*k_scale + j)*3 + 0] = data[ ( (i/k_scale)*w + (j/k_scale) )*4 + 0];
+                scaled_buffer[ (i*w*k_scale + j)*3 + 1] = data[ ( (i/k_scale)*w + (j/k_scale) )*4 + 1];
+                scaled_buffer[ (i*w*k_scale + j)*3 + 2] = data[ ( (i/k_scale)*w + (j/k_scale) )*4 + 2];
             };
+        };
 
-            kol_paint_image(0, 0, w*k_scale, h*k_scale, scaled_buffer);
-//        }
-//        else {
-//            //kol_paint_image_pal(0, 0, w, h, data, &image_format)
-//            h/=4;
-//            asm volatile ("int $0x40"::"a"(65), "b"(data), "c"(w*65536+h), "d"(0*65536+0), "D"(0), "S"(24) );
-////            asm volatile ("int $0x40"::"a"(7), "c"(w*65536+h), "d"(x*65536+y), "b"(data));
-//        };
-//        
-////        free(image_data);
-	
-
+        kol_paint_image(0, 0, w*k_scale, h*k_scale, scaled_buffer);
 
     };
     

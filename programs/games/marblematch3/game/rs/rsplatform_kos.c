@@ -68,7 +68,7 @@ void kol_wnd_resize(unsigned w, unsigned h)
 void wnd_draw()
 {
 
-	char tmp[] = "Fps:000 | Marble Match-3 Beta by Roman Shuvalov";
+	char tmp[] = "Fps:000 | Marble Match-3 ";
 	
 	kol_paint_start();
 

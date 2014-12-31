@@ -211,12 +211,24 @@ typedef struct rs_game_t {
 extern rs_game_t game;
 void game_reg_init();
 
+
+
+
+
+
+
+
+
 /*  __
    /cc\
   /aaaa\
  |kkkkkk|  <-- Easter Egg
   \eeee/
 ------------------------------- */
+
+
+
+
 
 void GameProcess();
 

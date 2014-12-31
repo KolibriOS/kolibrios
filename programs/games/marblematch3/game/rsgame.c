@@ -646,11 +646,7 @@ void GameTerm() {
 
 void GameKeyDown(int key, int first) {
     
-    if (key == RS_KEY_A) {
-    
-        game.time = 50;
-        
-    };    
+  
     
     switch (key) {
         case RS_KEY_LEFT:
@@ -704,28 +700,13 @@ void GameKeyDown(int key, int first) {
     
     if (game.status == STATUS_PLAYING) {
         
-
-        #ifndef RS_KOS
-            if (key == RS_KEY_SPACE) {
-                game.score = 101;
-            };
-            
-        #endif
-
         if (key == RS_KEY_ESCAPE) {
             game.time = 0;
             game.score = 0;
             game.status = STATUS_MENU;
             game.need_redraw = 1;
         };
-        
-        if (key == RS_KEY_A) {
-            soundbuf_play(&game.sound_bang);
-        };
-//        if (key == RS_KEY_Z) {
-//            soundbuf_play(&game.sound_tack);
-//        };
-        
+                
     };
 
 };
