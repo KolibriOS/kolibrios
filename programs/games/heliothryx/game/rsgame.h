@@ -164,6 +164,7 @@ void game_obj_remove(int index);
 #define GAME_SHOOT_PERIOD   3
 
 #define GAME_FLAG_BOSS_DESTROYED    0x01
+#define GAME_FLAG_INSTRUCTIONS_PASSED   0x02
 
 #define SOUND_EXPLOSIONS_COUNT      8
 
@@ -188,7 +189,9 @@ typedef struct rs_game_t {
     
     int bg_color;
     
-    rs_soundbuf_t sound_test1;
+    rs_soundbuf_t sound_shoot;
+    rs_soundbuf_t sound_turret_shoot;
+    
     rs_soundbuf_t sound_test2;
     rs_soundbuf_t sound_test3;
     
@@ -196,7 +199,7 @@ typedef struct rs_game_t {
     rs_soundbuf_t sound_hit;
     
     rs_soundbuf_t sound_music;
-    rs_soundbuf_t sound_music2;
+//    rs_soundbuf_t sound_music2;
     
     int status;
     int flags;
@@ -229,8 +232,10 @@ typedef struct rs_game_t {
     
 //    int ammo_max;
     
-    int stage;
+    int stage; // (wave)
     int stage_timer;
+    
+    int stage_level; // (stage)
     
     game_obj_t *objs;
     int objs_count;

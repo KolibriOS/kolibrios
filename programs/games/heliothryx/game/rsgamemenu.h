@@ -5,14 +5,14 @@
 #include "rs/rsplatform.h"
 
 
-#define MENUS_COUNT     6
+#define MENUS_COUNT     5
 
 #define MENU_MAIN       0
 #define MENU_SETTINGS   1
 #define MENU_ABOUT      2
-#define MENU_LEVEL_PASSED   3
-#define MENU_GAME_OVER      4
-#define MENU_PAUSE      5
+//#define MENU_LEVEL_PASSED   3
+#define MENU_GAME_OVER      3
+#define MENU_PAUSE      4
 
 #define MENU_ITEM_WINDOW_SCALE  1
 

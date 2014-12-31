@@ -517,12 +517,9 @@ void GameInit() {
         rs_audio_init(RS_AUDIO_FMT_MONO16, RS_AUDIO_FREQ_16000, 2); 
     #endif
 
-    soundbuf_init(&game.sound_test1, 1536);
-//    soundbuf_fill(&game.sound_test1, 2, 50);
-//    soundbuf_sin_fade(&game.sound_test1, 0.7);
-    
-    
-	rs_sgen_init(2, game.sound_test1.length_samples);
+    soundbuf_init(&game.sound_shoot, 1536);
+ 
+	rs_sgen_init(2, game.sound_shoot.length_samples);
 	rs_sgen_func_pm(1, 2900.0, 1.70, 65.0, 17.0, 1.0);
 	rs_sgen_func_normalize(1, 0.6);
 //	rs_sgen_func_lowpass(0, 1, 1.0, 0.0, 4.0);
@@ -530,14 +527,29 @@ void GameInit() {
 
 	rs_sgen_wave_out(0);
 	
-	memcpy(game.sound_test1.data, (unsigned char*) rs_sgen_reg.wave_out, game.sound_test1.length_samples*2 );
+	memcpy(game.sound_shoot.data, (unsigned char*) rs_sgen_reg.wave_out, game.sound_shoot.length_samples*2 );
 	
 	rs_sgen_term();
-    soundbuf_update(&game.sound_test1);
+    soundbuf_update(&game.sound_shoot);
     
     
     
+    soundbuf_init(&game.sound_turret_shoot, 4096);
+	rs_sgen_init(2, game.sound_turret_shoot.length_samples);
+	rs_sgen_func_pm(1, 227.0, 4.70, 555.0, 150.0, 0.01);
+	rs_sgen_func_normalize(1, 0.6);
+//	rs_sgen_func_highpass(0, 1, 1.0, 0.0, 3.0);
+	rs_sgen_func_lowpass(0, 1, 1.0, 0.0, 3.0);
+
+	rs_sgen_wave_out(0);
+	
+	memcpy(game.sound_turret_shoot.data, (unsigned char*) rs_sgen_reg.wave_out, game.sound_turret_shoot.length_samples*2 );
+	
+	rs_sgen_term();
+    soundbuf_update(&game.sound_turret_shoot);
     
+    
+     
     
     
     
@@ -630,42 +642,42 @@ void GameInit() {
     
     
     
-    int d[4] = { 5, 6, 1, 2 };
+//    int d[4] = { 5, 6, 1, 2 };
     
     
-    soundbuf_init(&game.sound_music2, soundlen);
-    
-    for (t = t_shift; t < soundlen+t_shift; t++) {
-            
-//        y = 1 + (t & 16383);
-//        x = (t * c[ (t>>13) & 3 ] / 24) & 127;
-            
-        game.sound_music2.data[t-t_shift] = (0xFF & 
-            (                                        
-           //( t*5 & t >> 7 ) | ( t*2 & t >> 10 )
-                                                    
-           // ( ((t*t*t/1000000 + t) % 127) | t>>4 | t>>5 | (t%127) ) + ( (t>>16) | t )
-           
-//           ((t>>11) | (t>>7) | ( t>>5) | (t))
-//           //+ 
-//           //(( (t*5) >>12) & ( (t*3)>>19))
-             
-//                (3000 / y) * 35
-//             + x*y*40000
-//             + ( ( ((t>>8) & (t>>10)) | (t >> 14) | x) & 63 )
-                                
-                 // (  ((6 * t / d[ (t>>13) & 15 ] ) & 127) * 10000 ) 
-                 //|( ( t>>3 ) )                
-             
-                    (t*NOTE( d[ (t>>13) & 3 ] )*10000)
-                    | ((t>>6)*20000) 
-             
-             )
-                                                    
-        ) * amp;
-    };
-    
-    soundbuf_update(&game.sound_music2);
+//    soundbuf_init(&game.sound_music2, soundlen);
+//    
+//    for (t = t_shift; t < soundlen+t_shift; t++) {
+//            
+////        y = 1 + (t & 16383);
+////        x = (t * c[ (t>>13) & 3 ] / 24) & 127;
+//            
+//        game.sound_music2.data[t-t_shift] = (0xFF & 
+//            (                                        
+//           //( t*5 & t >> 7 ) | ( t*2 & t >> 10 )
+//                                                    
+//           // ( ((t*t*t/1000000 + t) % 127) | t>>4 | t>>5 | (t%127) ) + ( (t>>16) | t )
+//           
+////           ((t>>11) | (t>>7) | ( t>>5) | (t))
+////           //+ 
+////           //(( (t*5) >>12) & ( (t*3)>>19))
+//             
+////                (3000 / y) * 35
+////             + x*y*40000
+////             + ( ( ((t>>8) & (t>>10)) | (t >> 14) | x) & 63 )
+//                                
+//                 // (  ((6 * t / d[ (t>>13) & 15 ] ) & 127) * 10000 ) 
+//                 //|( ( t>>3 ) )                
+//             
+//                    (t*NOTE( d[ (t>>13) & 3 ] )*10000)
+//                    | ((t>>6)*20000) 
+//             
+//             )
+//                                                    
+//        ) * amp;
+//    };
+//    
+//    soundbuf_update(&game.sound_music2);
     
     
     soundbuf_play( &game.sound_music, SND_MODE_LOOP );    
@@ -701,7 +713,16 @@ void GameTerm() {
         texture_free(&game.tex_rocks[i]);
     };
     
-    soundbuf_free(&game.sound_test1);
+    soundbuf_free(&game.sound_hit);
+    soundbuf_free(&game.sound_music);
+    
+    for (i = 0; i < SOUND_EXPLOSIONS_COUNT; i++) {
+        soundbuf_free(&game.sound_explosions[i]);
+    };
+    
+    
+    soundbuf_free(&game.sound_shoot);
+    soundbuf_free(&game.sound_turret_shoot);
     soundbuf_free(&game.sound_test2);
     soundbuf_free(&game.sound_test3);
     
@@ -741,15 +762,16 @@ void GameKeyDown(int key) {
             
         
         
-//        case RS_KEY_SPACE:
-//                soundbuf_play( &game.sound_music, SND_MODE_LOOP );
-//            break;
+        case RS_KEY_SPACE:
+                soundbuf_play( &game.sound_turret_shoot, 0 );
+            break;
         
         #ifdef RS_LINUX
             
         case RS_KEY_Z:
-                soundbuf_stop( &game.sound_music );
-                soundbuf_play( &game.sound_music2, 0 );
+//                soundbuf_stop( &game.sound_music );
+//                soundbuf_play( &game.sound_music2, 0 );
+                game.stage = 7;
                 break;
             
         #endif

@@ -148,20 +148,37 @@ void game_draw() {
         
         
         if ( game.stage == 0 ) {
-            game_textout_at_center( 0, GAME_HEIGHT + 50 - game.stage_timer*(GAME_HEIGHT+50)/50, 1, "LEVEL 1" );
-            game_textout_at_center( 0, GAME_HEIGHT*2/3, 2, L_TECHDEMO_LINE1 );
+                
+            int stage_label_y = GAME_HEIGHT/3 - (game.stage_timer - 25)*(game.stage_timer - 25)*(game.stage_timer - 25)/100;
+                
+            //game_textout_at_center( 0, GAME_HEIGHT + 50 - game.stage_timer*(GAME_HEIGHT+50)/50, 1, "LEVEL 1" );
+            
+            char stage_str[] = "5TAGE xx";
+            char *stage_num = &stage_str[6];
+            
+            if ( (game.stage_level+1) > 9 ) {
+                stage_num[0] = '0' + (game.stage_level+1)/10;
+                stage_num[1] = '0' + (game.stage_level+1)%10;
+            }
+            else {
+                stage_num[0] = '0' + (game.stage_level+1)%10;
+                stage_num[1] = 0;
+            };
+            
+            game_textout_at_center( -10, stage_label_y, 1, stage_str );
+            
+            if ( IS_BIT_CLEARED ( game.flags, GAME_FLAG_INSTRUCTIONS_PASSED ) ) {
+                game_textout_at_center( 0, GAME_HEIGHT*3/4, 2, L_TECHDEMO_LINE1 );
+            };
         }
-        else {
-            
-            char s_score[] = "000";
-            s_score[0] += game.score / 100;
-            s_score[1] += (game.score / 10) % 10;
-            s_score[2] += (game.score / 1) % 10;
-            
-            game_textout_at_center(0, 10, 3, s_score);
-            
-            
-        };
+        
+        char s_score[] = "0000";
+        s_score[0] += (game.score / 1000) % 10;
+        s_score[1] += (game.score / 100) % 10;
+        s_score[2] += (game.score / 10) % 10;
+        s_score[3] += (game.score / 1) % 10;
+        
+        game_textout_at_center(0, 10, 3, s_score);
         
         
         

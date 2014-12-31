@@ -96,6 +96,12 @@ void player_hit() {
     if (game.health < 1) {
         game.status = STATUS_MENU;
         menu_open( MENU_GAME_OVER );
+        
+        level_passed_score_str[1] = '0' + (game.score / 1000) % 10;
+        level_passed_score_str[2] = '0' + (game.score / 100) % 10;
+        level_passed_score_str[3] = '0' + (game.score / 10) % 10;
+        level_passed_score_str[4] = '0' + (game.score / 1) % 10;
+        
     };
     
 };
@@ -104,6 +110,9 @@ void player_hit() {
 void GameProcess() {
     
     if (game.status == STATUS_PLAYING) {
+            
+        int c_shoot_restore_delay = (6 + 2*game.stage_level);
+        int c_shoot_restore_period = (game.stage_level < 2) ? (3 + game.stage_level) : 5;
             
         // shoot
 
@@ -117,12 +126,15 @@ void GameProcess() {
                     
                     game.shoot_restore_delay = 0;
                     game.ammo--;
-                    soundbuf_play(&game.sound_test1, 0);
+                    soundbuf_play(&game.sound_shoot, 0);
                     game_obj_add( game_obj( OBJ_BULLET, 0, 0, 0, game.player_x+5, game.player_y, 0, 0.0) );
                     
 //                };
                 
-                game.shoot_delay -= GAME_SHOOT_PERIOD;
+                game.shoot_delay = 1; // -= GAME_SHOOT_PERIOD;
+                
+                
+                
                 game.shoot_keypressed = 0;
             
             };
@@ -132,13 +144,13 @@ void GameProcess() {
             if (game.ammo < GAME_AMMO_MAX) {
                 game.shoot_restore_delay++;
                 
-                if (game.shoot_restore_delay > GAME_SHOOT_PERIOD * 2) {
+                if (game.shoot_restore_delay > c_shoot_restore_delay) {
                         
                     game.shoot_delay++;
 
-                    if (game.shoot_delay > GAME_SHOOT_PERIOD) {
+                    if (game.shoot_delay > c_shoot_restore_period) {
                         game.ammo++;
-                        game.shoot_delay -= GAME_SHOOT_PERIOD;
+                        game.shoot_delay -= c_shoot_restore_period;
                     };
                     
                 };
@@ -158,13 +170,15 @@ void GameProcess() {
         game.player_x += speed * ( is_key_pressed(RS_ARROW_RIGHT_MASK) - is_key_pressed(RS_ARROW_LEFT_MASK) );
         game.player_y += speed * ( is_key_pressed(RS_ARROW_DOWN_MASK) - is_key_pressed(RS_ARROW_UP_MASK) );
         
-        game.player_x = rs_clamp_i(game.player_x, 5, GAME_WIDTH-25);
-        game.player_y = rs_clamp_i(game.player_y, 5, GAME_HEIGHT - 25);
+        game.player_x = rs_clamp_i(game.player_x, 15, GAME_WIDTH - 45);
+        game.player_y = rs_clamp_i(game.player_y, 15, GAME_HEIGHT - 45);
         
         game.tz += 1;
         
         
 
+        int c_rocktimer_const = (game.stage_level < 4) ? (9 - 2*game.stage_level) : 4;
+        int c_rocktimer_var = (game.stage_level < 6) ? (16 - 2*game.stage_level) : 6;
         
         
         
@@ -185,9 +199,17 @@ void GameProcess() {
             // rocks
             next_rock_timer--;
             if (next_rock_timer < 1) {
-                next_rock_timer = 9 + rs_rand()%16;
+                next_rock_timer = c_rocktimer_const + rs_rand()%c_rocktimer_var;
                 //game_obj_add( game_obj( ((rs_rand() % 512) > 256) ? OBJ_ROCK : OBJ_MINIROCK, 0, rs_rand() % ROCKS_COUNT , 32, GAME_WIDTH + 100, 30 + rs_rand()%(GAME_HEIGHT-60), 0, 0.0 ) );
-                game_obj_add( game_obj( OBJ_ROCK, OBJ_FLAG_ENEMY, rs_rand() % ROCKS_COUNT , game.tex_rocks[0].w/2, GAME_WIDTH + 50, 30 + rs_rand()%(GAME_HEIGHT-90), 0, 0.0 ) );
+                
+                int flagsin = 0;
+                if ( game.stage_level > 4 ) {
+                    if ( rs_rand()%1024 < (16*game.stage_level) ) {
+                        flagsin = OBJ_FLAG_SIN;
+                    };
+                };
+                
+                game_obj_add( game_obj( OBJ_ROCK, OBJ_FLAG_ENEMY | flagsin, rs_rand() % ROCKS_COUNT , game.tex_rocks[0].w/2, GAME_WIDTH + 50, 30 + rs_rand()%(GAME_HEIGHT-90), 0, 0.0 ) );
             };
         
             next_stage_after_sec(12);
@@ -195,6 +217,8 @@ void GameProcess() {
         }
         
         if (game.stage == 2) {
+                
+            BIT_SET (game.flags, GAME_FLAG_INSTRUCTIONS_PASSED);
             
             next_stage_after_sec(4);
             
@@ -205,9 +229,17 @@ void GameProcess() {
             // rocks
             next_rock_timer--;
             if (next_rock_timer < 1) {
-                next_rock_timer = 10 + rs_rand()%16;
+                next_rock_timer = c_rocktimer_const + 1 + rs_rand()%c_rocktimer_var;
                 //game_obj_add( game_obj( ((rs_rand() % 512) > 256) ? OBJ_ROCK : OBJ_MINIROCK, 0, rs_rand() % ROCKS_COUNT , 32, GAME_WIDTH + 100, 30 + rs_rand()%(GAME_HEIGHT-60), 0, 0.0 ) );
-                game_obj_add( game_obj( OBJ_MINIROCK, OBJ_FLAG_ENEMY, rs_rand() % ROCKS_COUNT , game.tex_minirocks[0].w/2, GAME_WIDTH + 50, 30 + rs_rand()%(GAME_HEIGHT-90), 0, 0.0 ) );
+
+                int flagsin = 0;
+                if ( game.stage_level > 2 ) {
+                    if ( rs_rand()%1024 < (16*game.stage_level) ) {
+                        flagsin = OBJ_FLAG_SIN;
+                    };
+                };
+
+                game_obj_add( game_obj( OBJ_MINIROCK, OBJ_FLAG_ENEMY|flagsin, rs_rand() % ROCKS_COUNT , game.tex_minirocks[0].w/2, GAME_WIDTH + 50, 30 + rs_rand()%(GAME_HEIGHT-90), 0, 0.0 ) );
             };
         
             next_stage_after_sec(16);
@@ -239,9 +271,17 @@ void GameProcess() {
             // mix rocks
             next_rock_timer--;
             if (next_rock_timer < 1) {
-                next_rock_timer = 9 + rs_rand()%12;
+                next_rock_timer = c_rocktimer_const + rs_rand()%(c_rocktimer_var-3);
+                
+                int flagsin = 0;
+                if ( game.stage_level > 3 ) {
+                    if ( rs_rand()%1024 < (16*game.stage_level) ) {
+                        flagsin = OBJ_FLAG_SIN;
+                    };
+                };
+                
                 //game_obj_add( game_obj( ((rs_rand() % 512) > 256) ? OBJ_ROCK : OBJ_MINIROCK, 0, rs_rand() % ROCKS_COUNT , 32, GAME_WIDTH + 100, 30 + rs_rand()%(GAME_HEIGHT-60), 0, 0.0 ) );
-                game_obj_add( game_obj( rs_rand()%1024 < 768 ? OBJ_MINIROCK : OBJ_ROCK, OBJ_FLAG_ENEMY, rs_rand() % ROCKS_COUNT , 
+                game_obj_add( game_obj( rs_rand()%1024 < 768 ? OBJ_MINIROCK : OBJ_ROCK, OBJ_FLAG_ENEMY | flagsin, rs_rand() % ROCKS_COUNT , 
                                        rs_rand()%1024 < 768 ? game.tex_minirocks[0].w/2 : game.tex_rocks[0].w/2, GAME_WIDTH + 100, 30 + rs_rand()%(GAME_HEIGHT-90), 0, 0.0 ) );
             };
         
@@ -254,6 +294,8 @@ void GameProcess() {
             
             if (game.stage_timer > 3*25) {
                 next_stage_now();
+                
+                BIT_CLEAR(game.flags, GAME_FLAG_BOSS_DESTROYED);
                 
                 game_obj_add( game_obj( OBJ_TURRET, OBJ_FLAG_ENEMY | OBJ_FLAG_BOSS, 60, game.tex_rocks[0].w/2, GAME_WIDTH+60, GAME_HEIGHT/2, 0, 0.0 ) );
                 
@@ -274,12 +316,19 @@ void GameProcess() {
         }                
         else if (game.stage == 10) {
             
+            /*
             game.status = STATUS_MENU;
             menu_open( MENU_LEVEL_PASSED );
         
             level_passed_score_str[1] = '0' + (game.score / 100) % 10;
             level_passed_score_str[2] = '0' + (game.score / 10) % 10;
             level_passed_score_str[3] = '0' + (game.score / 1) % 10;
+            */
+            
+            game.stage_level++;
+            
+            game.stage = 0;
+            game.stage_timer = 0;
             
         };
         
@@ -389,10 +438,23 @@ void GameProcess() {
                     obj->y = GAME_HEIGHT * ( 0.5 + 0.3*sin(obj->f) );
                 };
                 
-                obj->t--;
-                if (obj->t < 1) {
-                    game_obj_add( game_obj( OBJ_RED_BULLET, 0, 0, 3, obj->x - 30, obj->y, 0, 0) );
-                    obj->t = 10 + rs_rand() % 20;
+                if ( obj->x < GAME_WIDTH*4/5 ) {
+                    // turret shoot
+                    obj->t--;
+                    if (obj->t < 1) {
+                        soundbuf_play(&game.sound_turret_shoot, 0);
+                        game_obj_add( game_obj( OBJ_RED_BULLET, 0, 0, 3, obj->x - 30, obj->y, 0, 0) );
+                        
+                        int c_const = (game.stage_level < 4) ? (10 - 2*game.stage_level) : 3;
+                        int c_var = (game.stage_level < 6) ? (20 - 3*game.stage_level) : 3;
+                        
+                        obj->t = c_const + rs_rand() % c_var;
+                        
+                        if ( (rs_rand()%1024) < 80 ) {
+                            obj->t += 18;
+                        };
+                        
+                    };
                 };
                 
             };

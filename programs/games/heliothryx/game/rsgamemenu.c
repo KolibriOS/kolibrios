@@ -14,7 +14,7 @@ PRSFUNC0 menu_actions[] = {
 };
 
 char window_scale_str[] = "c< 2X >";
-char level_passed_score_str[] = " 000   ";
+char level_passed_score_str[] = " 0000   ";
 
 /*
     First char:
@@ -51,8 +51,8 @@ char* menu_about_titles[] = {
     0
 };
 
-char* menu_level_passed_titles[] = {
-    " "L_LEVEL_PASSED,
+char* menu_game_over_titles[] = {
+    " "L_GAME_OVER,
     " "L_YOUR_SCORE,
     level_passed_score_str,
     " ",
@@ -60,12 +60,12 @@ char* menu_level_passed_titles[] = {
     0
 };
 
-char* menu_game_over_titles[] = {
-    " "L_GAME_OVER,
-    " ",
-    "0"L_BACK,
-    0
-};
+//char* menu_game_over_titles[] = {
+//    " "L_GAME_OVER,
+//    " ",
+//    "0"L_BACK,
+//    0
+//};
 
 char* menu_pause_titles[] = {
     " "L_PAUSE,
@@ -80,9 +80,9 @@ char **menu_titles[] = {
     /* 0 */ menu_main_titles,
     /* 1 */ menu_settings_titles,
     /* 2 */ menu_about_titles,
-    /* 3 */ menu_level_passed_titles,
-    /* 4 */ menu_game_over_titles,
-    /* 5 */ menu_pause_titles,
+//    /* 3 */ menu_level_passed_titles,
+    /* 3 */ menu_game_over_titles,
+    /* 4 */ menu_pause_titles,
     0
 };
 
@@ -113,7 +113,7 @@ void menu_cursor_up() {
 
 void menu_open(int i) {
     
-    if ( (game.menu_index == MENU_PAUSE) && (i != MENU_PAUSE) ){
+    if ( ((game.menu_index == MENU_PAUSE) && (i != MENU_PAUSE)) || (i == MENU_GAME_OVER) ) {
         soundbuf_play( &game.sound_music, SND_MODE_LOOP );
     };
 
@@ -169,6 +169,8 @@ void menu_action_start() {
     
     game.score = 0;
     game.flags = 0;
+    
+    game.stage_level = 0;
     
     game.objs_count = 0;
     
