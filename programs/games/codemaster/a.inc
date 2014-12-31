@@ -12,7 +12,7 @@
 ; prefix to assemble+run from SD in kolibri
 
  CD fix ''
-; CD fix '/usbhd0/1'
+; CD fix '/usbhd0/1/'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +41,7 @@ match x =kolibri, cpu {
  dd 1, !main, end.code,\
   4*MB, 32*KB, 0, 0
  postpone \{ end.code: \}
- include CD#'/include/a.inc'
+ include CD#'include/a.inc'
  WINDOW.X=(1024/2)-(WINDOW.W/2)
  WINDOW.Y=(768/2)-(WINDOW.H/2)
 }
