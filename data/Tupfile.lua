@@ -491,7 +491,7 @@ tup.append_table(extra_files, {
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(img_files, {
  {"kolibrios/games/21days/", PROGS .. "/games/21days/21days"},
-})
+}) end
 end -- tup.getconfig('NO_GCC') ~= 'full'
 
 -- Skins.
