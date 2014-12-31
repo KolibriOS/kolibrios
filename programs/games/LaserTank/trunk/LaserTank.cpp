@@ -1253,8 +1253,6 @@ void openLevel(int index)
 
 void kos_Main()
 {
-	rtlDebugOutString(" ");
-	rtlDebugOutString("kos_Main");
 	char *cPtr;
 	cPtr = strrchr(kosExePath, '/');
 	// проверка ;)
