@@ -58,6 +58,8 @@ menu_credits_text:
 .13:	db 0
 .14:	db 'Glyphs of Russo free font by',0
 .15:	db ' http://www.jovanny.ru',0
+.16:	db 0
+.17:	db 'Game author - Marat Zakyanov aka Mario79',0
 ;---------------------------------------------------------------------
 menu_help_text:
 .1:	db 'Game control',0

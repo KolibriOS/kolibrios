@@ -236,8 +236,11 @@ menu_help:
 @@:
 	cmp	ah,57	; space
 	je	main_menu_start.red
-	
+
 	cmp	ah,28	; enter
+	je	main_menu_start.red
+
+	cmp	ah,1	; esc
 	je	main_menu_start.red
 
 	jmp	.still
@@ -316,6 +319,9 @@ settings_menu_start:
 	
 	cmp	ah,28	; enter
 	je	.enter_to_point
+	
+	cmp	ah,1	; esc
+	je	.exit
 
 	jmp	.still
 ;---------------------------------------------------------------------
@@ -368,7 +374,9 @@ settings_menu_start:
 @@:
 	cmp	[main_menu_pointer],2	; exit
 	jne	.still
-	
+
+;--------------------------------------
+.exit:
 	call	snd_kick_action
 	mov	al,[settings_menu_pointer]
 	mov	[main_menu_pointer],al

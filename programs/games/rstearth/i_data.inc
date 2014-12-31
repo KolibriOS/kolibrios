@@ -288,6 +288,8 @@ menu_credits_text_pointers:
 	dd menu_credits_text.13
 	dd menu_credits_text.14
 	dd menu_credits_text.15
+	dd menu_credits_text.16
+	dd menu_credits_text.17
 	dd 0
 ;---------------------------------------------------------------------
 align	4
@@ -307,6 +309,7 @@ settings_menu_text_pointers:
 ;---------------------------------------------------------------------
 align	4
 map_level_pointer:
+	dd map_level_10
 	dd map_level_0
 	dd map_level_1
 	dd map_level_2

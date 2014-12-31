@@ -25,8 +25,8 @@ protagonist_route_up:
 	test	ah,ah
 	jnz	action_stop
 	
-	cmp	al,BASE_WATER
-	jz	action_stop
+;	cmp	al,BASE_WATER
+;	jz	action_stop
 	
 ;        DEBUGF  1, "protagonist good route up\n"
 	dec	[protagonist_position.y]
@@ -45,8 +45,8 @@ protagonist_route_down:
 	test	ah,ah
 	jnz	action_stop
 
-	cmp	al,BASE_WATER
-	jz	action_stop
+;	cmp	al,BASE_WATER
+;	jz	action_stop
 	
 ;        DEBUGF  1, "protagonist good route down\n"
 	inc	[protagonist_position.y]
@@ -65,8 +65,8 @@ protagonist_route_left:
 	test	ah,ah
 	jnz	action_stop
 
-	cmp	al,BASE_WATER
-	jz	action_stop
+;	cmp	al,BASE_WATER
+;	jz	action_stop
 	
 ;        DEBUGF  1, "protagonist good route left\n"
 	dec	[protagonist_position.x]
@@ -85,8 +85,8 @@ protagonist_route_right:
 	test	ah,ah
 	jnz	action_stop
 
-	cmp	al,BASE_WATER
-	jz	action_stop
+;	cmp	al,BASE_WATER
+;	jz	action_stop
 	
 ;        DEBUGF  1, "protagonist good route righ\n"
 	inc	[protagonist_position.x]

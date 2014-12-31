@@ -147,8 +147,8 @@ key:
 	add	eax,plan_level
 	mov	ebx,[eax]
 	
-	cmp	bh,OBJECT_FINAL_MONSTER	;OBJECT_PROTAGONIST
-	jbe	.kill
+;	cmp	bh,OBJECT_FINAL_MONSTER	;OBJECT_PROTAGONIST
+;	jbe	.kill
 
 	cmp	bh,OBJECT_WHITE_BRICK
 	je	.white_brick
@@ -181,12 +181,12 @@ key:
 ;	call	show_tiles_one_iteration
 	jmp	calculate_action_for_all.2	;still
 ;--------------------------------------	
-.kill:
-	and	ebx,0x000000ff
-	add	ebx,0x01000000
-	mov	[eax],ebx
-;	call	show_tiles_one_iteration
-	jmp	calculate_action_for_all.2
+;.kill:
+;	and	ebx,0x000000ff
+;	add	ebx,0x01000000
+;	mov	[eax],ebx
+;;	call	show_tiles_one_iteration
+;	jmp	calculate_action_for_all.2
 ;--------------------------------------	
 .white_brick:
 	ror	ebx,16
