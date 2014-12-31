@@ -186,6 +186,11 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"HD_Load/mtldr/", PROGS .. "/hd_load/mtldr/install.txt"},
  {"HD_Load/USB_Boot/", PROGS .. "/hd_load/usb_boot/readme.txt"},
  {"kolibrios/media/zsea/zsea_keys.txt", PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
+ {"kolibrios/games/Dungeons/Resources/Textures/Environment/", PROGS .. "/games/Dungeons/Resources/Textures/Environment/*"},
+ {"kolibrios/games/Dungeons/Resources/Textures/Objects/", PROGS .. "/games/Dungeons/Resources/Textures/Objects/*"},
+ {"kolibrios/games/Dungeons/Resources/Textures/HUD/", PROGS .. "/games/Dungeons/Resources/Textures/HUD/*"},
+ {"kolibrios/games/Dungeons/Resources/Textures/", PROGS .. "/games/Dungeons/Resources/Textures/Licenses.txt"},
+ {"kolibrios/games/Dungeons/", PROGS .. "/games/Dungeons/readme_ru.txt"},
 }) else tup.append_table(extra_files, {
  {"Docs/config.txt", build_type .. "/docs/CONFIG.TXT"},
  {"Docs/copying.txt", build_type .. "/docs/COPYING.TXT"},
@@ -427,6 +432,10 @@ if build_type == "rus" then tup.append_table(img_files, {
 }) else tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", PROGS .. "/develop/libraries/console/examples/testcon2_eng"},
  {"GAMES/SOKO", PROGS .. "/games/soko/trunk/SOKO"},
+}) end
+
+if build_type == "rus" then tup.append_table(extra_files, {
+ {"kolibrios/games/Dungeons/Dungeons", PROGS .. "/games/Dungeons/Dungeons"},
 }) end
 
 end -- tup.getconfig('NO_FASM') ~= 'full'
