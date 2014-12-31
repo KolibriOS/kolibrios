@@ -220,14 +220,14 @@ void drawWindow(string content, const char* title, string topline , string botto
     int winWidth, winHeight;
     getWinWH(winWidth, winHeight);
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_KOS32)
     int deltaX = 0;
 #else 
     int deltaX = 1;
 #endif
     
     // Total lines
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_KOS32)
     int lines = 0;
 #else 
     int lines = 1;
