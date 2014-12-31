@@ -21,7 +21,7 @@ char level_passed_score_str[] = " 0000   ";
     - letter a...z means action (a = 0th, b = 1st, c = 2nd, see menu_actions[] above)
     - number 0...9 means goto menu #0, #1, #2... see menu_titles[] below
     - space ' ' means no action, menu item is unselectable
-    - empty string "" is now allowed and can cause segfault
+    - empty string "" is not allowed and can cause segfault
     String from second char is label of menu item
 
 */
@@ -60,12 +60,6 @@ char* menu_game_over_titles[] = {
     0
 };
 
-//char* menu_game_over_titles[] = {
-//    " "L_GAME_OVER,
-//    " ",
-//    "0"L_BACK,
-//    0
-//};
 
 char* menu_pause_titles[] = {
     " "L_PAUSE,
@@ -80,7 +74,6 @@ char **menu_titles[] = {
     /* 0 */ menu_main_titles,
     /* 1 */ menu_settings_titles,
     /* 2 */ menu_about_titles,
-//    /* 3 */ menu_level_passed_titles,
     /* 3 */ menu_game_over_titles,
     /* 4 */ menu_pause_titles,
     0

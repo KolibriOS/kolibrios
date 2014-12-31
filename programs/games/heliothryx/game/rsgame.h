@@ -122,11 +122,7 @@ typedef struct game_obj_t {
     float y;
     int t;
     float f;
-    
-//    int health;
-//    int reserved0;
-//    int reserved1;
-//    int reserved2;
+
 } game_obj_t;
 
 #define OBJ_FLAG_DESTROYED      0x01
@@ -164,7 +160,6 @@ void game_obj_remove(int index);
 #define RS_ARROW_RIGHT_MASK	0x08
 #define RS_ATTACK_KEY_MASK  0x10
 
-//#define BULLETS_COUNT   8
 
 #define GAME_SHOOT_PERIOD   3
 
@@ -218,17 +213,11 @@ typedef struct rs_game_t {
     
     int window_scale;
     
-//    int tx1;
-//    int ty1;
     int tz;
     
     int player_x;
     int player_y;
-//    int player_z;
-    
-//    int bullet_x[BULLETS_COUNT];
-//    int bullet_y[BULLETS_COUNT];
-//    int bullet_index;
+
     int shoot_delay;
     int shoot_keypressed;
     int shoot_restore_delay;

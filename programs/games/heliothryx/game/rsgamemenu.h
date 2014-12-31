@@ -10,7 +10,6 @@
 #define MENU_MAIN       0
 #define MENU_SETTINGS   1
 #define MENU_ABOUT      2
-//#define MENU_LEVEL_PASSED   3
 #define MENU_GAME_OVER      3
 #define MENU_PAUSE      4
 

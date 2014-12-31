@@ -218,23 +218,6 @@ void soundbuf_sin_fade(rs_soundbuf_t *snd, float freq) {
 		snd->data[i] = ( 1.0 - 1.0*i/snd->length_samples ) * sin( ( (1.0 - 0.48*i/snd->length_samples) * freq ) *i) * amp;
 	};
 	
-	
-	/*
-	
-	// ok
-	
-	rs_sgen_init(2, snd->length_samples);
-	rs_sgen_func_pm(1, 880.0, 21.0, 0.3, 110.0, 0.3);
-	rs_sgen_func_normalize(1, 1.0);
-	rs_sgen_func_lowpass(0, 1, 1.0, 0.0, 1.0);
-	rs_sgen_wave_out(0);
-	
-	memcpy(snd->data, rs_sgen_reg.wave_out, snd->length_samples*2 );
-	
-	rs_sgen_term();
-	
-	*/
-	
 	rskos_snd_update_buffer(&snd->hbuf, snd->data, snd->length_samples);
 };
 
@@ -259,22 +242,12 @@ unsigned char clamp_byte(int value) {
 
 
 void game_reg_init() {
-//    game.tx = 0;
-//    game.ty = 0;
-//    game.tz = 0;
     
     game.player_x = 0;
     game.player_y = 0;
     game.tz = 0;
     
     game.bg_color = COLOR_BLACK;
-
-//    int i;
-//    for (i = 0; i < BULLETS_COUNT; i++) {
-//        game.bullet_x[i] = 0;
-//        game.bullet_y[i] = 0;
-//    };
-//    game.bullet_index = 0;
 
     game.objs = malloc( sizeof(game_obj_t) * GAME_OBJS_MAX_COUNT ); 
     

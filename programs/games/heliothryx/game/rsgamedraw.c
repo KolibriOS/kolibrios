@@ -16,34 +16,15 @@ void game_draw() {
 	
 
 	int kk = 20; // (rskos_get_time()/1) % 160;
-//	
-//	unsigned char *c = game.framebuffer.data;
-//	
-//	int i;
-//	for (i = 0; i < w*h*4; i+=4) {
-//	    c[i+0] = 10; //  i/w/3;
-//	    c[i+1] = (( (1*i)*(i + kk)/70) & 5) ? 70 : 0;
-//	    c[i+2] = 50;
-//	    c[i+3] = i % 128;
-//	};
 
 
     texture_clear(&game.framebuffer, game.bg_color );
     
     game.bg_color = COLOR_BLACK;
     
-//    texture_clear(&game.tex);
-    
-//    texture_draw(&game.framebuffer, &game.tex, 40, 40, DRAW_MODE_ADDITIVE);
-//    texture_draw(&game.framebuffer, &game.tex, 70, 50, DRAW_MODE_ADDITIVE);
-//    texture_draw(&game.framebuffer, &game.tex, 20, 60, DRAW_MODE_ADDITIVE);
-//    texture_draw(&game.framebuffer, &game.tex, 60, 70, DRAW_MODE_ADDITIVE);
-//    
-//    texture_draw(&game.framebuffer, &game.tex, 111, 150, DRAW_MODE_ADDITIVE);
 
     int i, c, c2, c3;
     for (i = 0; i < 100; i++) {
-//        DEBUG10f("i = %d, v1 = %.4f, v2 = %.4f \n", i, rs_noise(kk+100, kk+i)*10, rs_noise(kk+200, kk+i+300)*10);
         c = (0.5+0.45*rs_noise(kk+150, kk+i))*255;
         c2 = c + 0.05*rs_noise(kk+150, kk+i)*255;
         c3 = c2; // (0.5+0.49*rs_noise(kk+150, kk+i+2))*255;
@@ -208,9 +189,6 @@ void game_draw() {
         };
         
 
-        
-        
-//        game_textout( 2, 12, 2, L_TECHDEMO_LINE2 );
         
     };
 
