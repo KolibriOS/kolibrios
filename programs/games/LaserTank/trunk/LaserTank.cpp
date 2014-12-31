@@ -929,7 +929,7 @@ void player_move(Point vector, float angle)
 void key_press(int key)
 {
 	//rtlDebugOutString(ftoa(key));
-
+	 
 	switch (gameMode)
 	{
 	case MODE_MENU:
@@ -992,19 +992,19 @@ void key_press(int key)
 	case MODE_PAUSE:
 		if (key == 27)
 			SetMode(MODE_LEVELS);
-		else
-			if ((key == 32 || key == 13) && (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1))))
-			{
-				if (gameStatus == GAME_VICTORY)
-					openLevel(levelIndex + 1);
-				SetMode(MODE_GAME);
-			}
-			else
-				if (key == 114)
-				{
-					openLevel(levelIndex);
-					SetMode(MODE_GAME);
-				}
+	
+		if ((key == 32 || key == 13) && (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1))))
+		{
+			if (gameStatus == GAME_VICTORY)
+				openLevel(levelIndex + 1);
+			SetMode(MODE_GAME);
+		}
+
+		if (key == 114 || (gameStatus == GAME_DEFEAT && (key == 32 || key == 13)))
+		{
+			openLevel(levelIndex);
+			SetMode(MODE_GAME);
+		}
 		break;
 	case MODE_GAME:
 		switch (key)
