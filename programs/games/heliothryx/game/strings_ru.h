@@ -28,7 +28,6 @@
 //#define L_TECHDEMO_LINE1        "eT0 TEXH0dEMKA` "
 #define L_TECHDEMO_LINE1        "CTPElKi = dBijEHiE_ <A> = B\\CTPEl_ <E5C> = nAY3A "
 
-//#define L_LEVEL_PASSED      "dEM0=YP0BEH] nP0^dEH"
 #define L_YOUR_SCORE        "04K0B HAbPAH0:"
 #define L_GAME_OVER         "igPA 0K0H4EHA"
 

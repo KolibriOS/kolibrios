@@ -406,6 +406,18 @@ void GameProcess() {
                 };
                 
             }
+            
+            else if (obj->obj_type == OBJ_HUGE_EXPLOSION) {
+                
+                obj->t++;
+                if (obj->t >= HUGE_EXPLOSIONS_COUNT) {
+                    game_obj_remove(i);
+                    i--;
+                    continue;
+                };
+                
+            }
+            
             else if ( (obj->obj_type == OBJ_ROCK) || (obj->obj_type == OBJ_MINIROCK) ) {
                 
                 obj->x -= rock_speed;
@@ -443,7 +455,7 @@ void GameProcess() {
                     obj->t--;
                     if (obj->t < 1) {
                         soundbuf_play(&game.sound_turret_shoot, 0);
-                        game_obj_add( game_obj( OBJ_RED_BULLET, 0, 0, 3, obj->x - 30, obj->y, 0, 0) );
+                        game_obj_add( game_obj( OBJ_RED_BULLET, 0, 0, 3, obj->x - 5, obj->y, 0, 0) );
                         
                         int c_const = (game.stage_level < 4) ? (10 - 2*game.stage_level) : 3;
                         int c_var = (game.stage_level < 6) ? (20 - 3*game.stage_level) : 3;
@@ -465,8 +477,15 @@ void GameProcess() {
         
         for (i = 0; i < game.objs_count; i++) {
             if ( IS_BIT_SET( game.objs[i].flags, OBJ_FLAG_DESTROYED ) ) {
-                soundbuf_play( &game.sound_explosions[ rs_rand() % SOUND_EXPLOSIONS_COUNT ], 0 );
-                game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, EXPLOSION_RADIUS, game.objs[i].x, game.objs[i].y, 0, 0.0 ) );
+                    
+                if (game.objs[i].obj_type == OBJ_TURRET) {
+                    soundbuf_play( &game.sound_huge_explosion, 0 );
+                    game_obj_add( game_obj( OBJ_HUGE_EXPLOSION, 0, 0, HUGE_EXPLOSION_RADIUS, game.objs[i].x, game.objs[i].y, 0, 0.0 ) );
+                }
+                else {
+                    soundbuf_play( &game.sound_explosions[ rs_rand() % SOUND_EXPLOSIONS_COUNT ], 0 );
+                    game_obj_add( game_obj( OBJ_EXPLOSION, 0, 0, EXPLOSION_RADIUS, game.objs[i].x, game.objs[i].y, 0, 0.0 ) );
+                };
                 game_obj_remove(i);
                 i--;
                 

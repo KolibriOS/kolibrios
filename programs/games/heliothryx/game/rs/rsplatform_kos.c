@@ -74,7 +74,7 @@ void kol_wnd_resize(unsigned w, unsigned h)
 void wnd_draw()
 {
  
-        char tmp[] = "Fps:000 | Heliothryx Beta by Roman Shuvalov";
+        char tmp[] = "Fps:000 | Heliothryx ";
        
         kol_paint_start();
  

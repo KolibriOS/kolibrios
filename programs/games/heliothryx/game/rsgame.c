@@ -501,13 +501,44 @@ void GameInit() {
 //        rs_gen_func_radial(0, 0.5, 0.5, 0.3 + 0.5*i/EXPLOSION_FRAMES_COUNT, 0.975, 4.0);
 //        rs_gen_func_set(0, 1.0);
 
+        rs_gen_func_perlin(2, 10 + i, 7, 0.5, 100 + i*1000);
+        rs_gen_func_normalize(2, 0.0, 1.0);
+
         rs_gen_func_set(1, 0.0);
         rs_gen_func_radial(1, 0.5, 0.5, 0.1 + 0.4*i/EXPLOSIONS_COUNT, 1.0 - 1.0*i/EXPLOSIONS_COUNT, 2.5 + i%5);
+        
+        rs_gen_func_add(0, 0, 2, 1.0, -0.8);
 
         rs_gen_tex_out_rgba_set( 0.0, 0.0, 0.0, 0.0);
-        rs_gen_tex_out_rgba(0, 0, 0, 1, 1.0, 1.0, 1.0, 1.0);
+        rs_gen_tex_out_rgba(0, 0, 0, 1, 0.5*i/EXPLOSIONS_COUNT, 1.0 - 0.7*i/EXPLOSIONS_COUNT, 1.0, 1.0);
 
         memcpy(game.tex_explosions[i].data, rs_gen_reg.tex_out, EXPLOSION_RADIUS*2*EXPLOSION_RADIUS*2*4 );
+    };
+    rs_gen_term();
+    
+    
+    
+    rs_gen_init(3, HUGE_EXPLOSION_RADIUS*2);
+    for (i = 0; i < HUGE_EXPLOSIONS_COUNT; i++) {
+            
+        texture_init(&(game.tex_huge_explosions[i]), HUGE_EXPLOSION_RADIUS*2, HUGE_EXPLOSION_RADIUS*2);
+
+        rs_gen_func_set(0, 1.0);
+//        rs_gen_func_radial(0, 0.5, 0.5, 0.3 + 0.5*i/EXPLOSION_FRAMES_COUNT, 0.975, 4.0);
+//        rs_gen_func_set(0, 1.0);
+
+        rs_gen_func_perlin(2, 10 + i, 7, 0.5, 500 + i*2000);
+        rs_gen_func_normalize(2, 0.0, 1.0);
+
+        rs_gen_func_set(1, 0.0);
+        rs_gen_func_radial(1, 0.5, 0.5, 0.1 + 0.4*i/HUGE_EXPLOSIONS_COUNT, 1.0 - 1.0*i/HUGE_EXPLOSIONS_COUNT, 2.5 + i%5);
+        
+        rs_gen_func_add(0, 0, 2, 1.0, -0.8);
+
+        rs_gen_tex_out_rgba_set( 0.0, 0.0, 0.0, 0.0);
+        rs_gen_tex_out_rgba(0, 0, 0, 1, 0.88*i/HUGE_EXPLOSIONS_COUNT, 0.8 - 0.8*i/HUGE_EXPLOSIONS_COUNT, 1.0, 1.0);
+
+        memcpy(game.tex_huge_explosions[i].data, rs_gen_reg.tex_out, HUGE_EXPLOSION_RADIUS*2*HUGE_EXPLOSION_RADIUS*2*4 );
     };
     rs_gen_term();
     
@@ -594,6 +625,37 @@ void GameInit() {
         rs_sgen_term();
     
     };
+    
+    
+    
+    soundlen = 95000;
+    
+    soundbuf_init(&game.sound_huge_explosion, soundlen);
+
+    rs_sgen_init(3, soundlen);
+
+    rs_sgen_func_noise(2, 1000);
+    //rs_sgen_func_phaser(0, 2, 0.9, 15.2 + 1.0*i/SOUND_EXPLOSIONS_COUNT, 6.0, 3.0, 2000.0, 1.73); 
+    rs_sgen_func_phaser(0, 2, 0.9, 16.2 + 0.5, 6.0, 3.0, 100.0, 0.53); 
+    rs_sgen_func_normalize(0, 1.0);
+
+    rs_sgen_func_lowpass(2, 0, 0.8, 0.0, 10.0);
+    rs_sgen_func_normalize(2, 0.5);
+
+    rs_sgen_wave_out(2);
+
+    memcpy(game.sound_huge_explosion.data, (unsigned char*) rs_sgen_reg.wave_out, soundlen*2);
+    soundbuf_update(&game.sound_huge_explosion);
+
+    rs_sgen_term();
+    
+    
+    
+    
+    
+    
+    
+    
 
     soundlen = 17888;
 
@@ -713,6 +775,7 @@ void GameTerm() {
         texture_free(&game.tex_rocks[i]);
     };
     
+    soundbuf_free(&game.sound_huge_explosion);
     soundbuf_free(&game.sound_hit);
     soundbuf_free(&game.sound_music);
     
@@ -763,7 +826,7 @@ void GameKeyDown(int key) {
         
         
         case RS_KEY_SPACE:
-                soundbuf_play( &game.sound_turret_shoot, 0 );
+                soundbuf_play( &game.sound_huge_explosion, 0 );
             break;
         
         #ifdef RS_LINUX

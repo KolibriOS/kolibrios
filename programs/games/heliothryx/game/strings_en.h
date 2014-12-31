@@ -28,9 +28,8 @@
 //#define L_TECHDEMO_LINE1        "THI5 I5 TECHDEM0` "
 #define L_TECHDEMO_LINE1        "U5E ARR0W5 T0 M0VE_ <A> T0 5H00T_ <E5C> T0 PAU5E "
 
-#define L_GAME_OVER         "GAME 0VER"
-//#define L_LEVEL_PASSED      "DEM0=LEVEL PA55ED"
 #define L_YOUR_SCORE        "Y0UR 5C0RE:"
+#define L_GAME_OVER         "GAME 0VER"
 
 #define L_PAUSE             "PAU5E"
 #define L_RESUME            "RE5UME PLAYING"

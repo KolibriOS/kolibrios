@@ -110,6 +110,7 @@ void soundbuf_stop(rs_soundbuf_t *snd);
 #define     OBJ_MINIROCK    4
 #define     OBJ_TURRET      5
 #define     OBJ_RED_BULLET  6
+#define     OBJ_HUGE_EXPLOSION  7
 
 typedef struct game_obj_t {
     int obj_type;
@@ -148,6 +149,10 @@ void game_obj_remove(int index);
 #define EXPLOSIONS_COUNT    8
 #define EXPLOSION_RADIUS    16
 
+#define HUGE_EXPLOSIONS_COUNT    24
+#define HUGE_EXPLOSION_RADIUS    32
+
+
 #define STATUS_MENU     0
 #define STATUS_PLAYING  1
 #define STATUS_PAUSED   2
@@ -182,6 +187,7 @@ typedef struct rs_game_t {
     rs_texture_t tex_minirocks[MINIROCKS_COUNT];
     
     rs_texture_t tex_explosions[EXPLOSIONS_COUNT];
+    rs_texture_t tex_huge_explosions[HUGE_EXPLOSIONS_COUNT];
     
     rs_texture_t tex_font[64*FONTS_COUNT];
     
@@ -197,6 +203,7 @@ typedef struct rs_game_t {
     
     rs_soundbuf_t sound_explosions[SOUND_EXPLOSIONS_COUNT];
     rs_soundbuf_t sound_hit;
+    rs_soundbuf_t sound_huge_explosion;
     
     rs_soundbuf_t sound_music;
 //    rs_soundbuf_t sound_music2;

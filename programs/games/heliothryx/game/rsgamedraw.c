@@ -111,14 +111,10 @@ void game_draw() {
                 
             }
             else if (obj->obj_type == OBJ_EXPLOSION) {
-                
-//                char s[] = "00 ";
-//                s[0] += obj->t / 10;
-//                s[1] += obj->t % 10;
-//                game_textout( obj->x, obj->y, 0, s );
-
                 texture_draw( &game.framebuffer, &game.tex_explosions[ obj->t ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
-                
+            }
+            else if (obj->obj_type == OBJ_HUGE_EXPLOSION) {
+                texture_draw( &game.framebuffer, &game.tex_huge_explosions[ obj->t ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
             }
             else if (obj->obj_type == OBJ_ROCK) {
                 texture_draw( &game.framebuffer, &game.tex_rocks[ obj->tag ], obj->x - obj->radius, obj->y - obj->radius, DRAW_MODE_ALPHA );
