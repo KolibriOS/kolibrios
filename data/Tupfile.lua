@@ -497,6 +497,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/heliothryx/", PROGS .. "/games/heliothryx/heliothryx"},
  {"kolibrios/games/2048/", PROGS .. "/games/2048/2048"},
  {"kolibrios/games/marblematch3/", PROGS .. "/games/marblematch3/marblematch3"},
+ {"kolibrios/games/nsider/", PROGS .. "/games/nsider/nsider"},
  {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
 })
