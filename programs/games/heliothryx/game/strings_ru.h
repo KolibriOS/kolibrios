@@ -32,4 +32,8 @@
 #define L_YOUR_SCORE        "04K0B HAbPAH0:"
 #define L_GAME_OVER         "igPA 0K0H4EHA"
 
+#define L_PAUSE             "nAY3A"
+#define L_RESUME            "nP0d0ljiT]"
+#define L_EXIT_TO_MAIN_MENU     "B\\^Ti B glABH0E MEHk"
+
 #endif

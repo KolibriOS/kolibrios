@@ -250,7 +250,7 @@ void kol_main()
                 };
                 kol_sleep(wait_time);
                 
-                if (draw_dt > 10) {
+                if (draw_dt > 19) {
                 	low_performance_counter++;
                 }
                 else {

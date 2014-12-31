@@ -204,7 +204,7 @@ void soundbuf_fill(rs_soundbuf_t *snd, int amp, int freq_div) {
 
 void soundbuf_sin(rs_soundbuf_t *snd, float freq) {
     int i;
-    int amp = 29000;
+    int amp = 19000;
     for (i = 0; i < snd->length_samples; i++) {
 		snd->data[i] = ( 1.0 - 1.0*i/snd->length_samples ) * sin(freq*i) * amp;
 	};
@@ -213,7 +213,7 @@ void soundbuf_sin(rs_soundbuf_t *snd, float freq) {
 
 void soundbuf_sin_fade(rs_soundbuf_t *snd, float freq) {
     int i;
-    int amp = 29000;
+    int amp = 19000;
     for (i = 0; i < snd->length_samples; i++) {
 		snd->data[i] = ( 1.0 - 1.0*i/snd->length_samples ) * sin( ( (1.0 - 0.48*i/snd->length_samples) * freq ) *i) * amp;
 	};
@@ -517,9 +517,32 @@ void GameInit() {
         rs_audio_init(RS_AUDIO_FMT_MONO16, RS_AUDIO_FREQ_16000, 2); 
     #endif
 
-    soundbuf_init(&game.sound_test1, 2048);
+    soundbuf_init(&game.sound_test1, 1536);
 //    soundbuf_fill(&game.sound_test1, 2, 50);
-    soundbuf_sin_fade(&game.sound_test1, 0.7);
+//    soundbuf_sin_fade(&game.sound_test1, 0.7);
+    
+    
+	rs_sgen_init(2, game.sound_test1.length_samples);
+	rs_sgen_func_pm(1, 2900.0, 1.70, 65.0, 17.0, 1.0);
+	rs_sgen_func_normalize(1, 0.6);
+//	rs_sgen_func_lowpass(0, 1, 1.0, 0.0, 4.0);
+	rs_sgen_func_highpass(0, 1, 1.0, 0.0, 3.0);
+
+	rs_sgen_wave_out(0);
+	
+	memcpy(game.sound_test1.data, (unsigned char*) rs_sgen_reg.wave_out, game.sound_test1.length_samples*2 );
+	
+	rs_sgen_term();
+    soundbuf_update(&game.sound_test1);
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     soundbuf_init(&game.sound_test2, 1024);
     //soundbuf_fill(&game.sound_test2, 8, 40);
@@ -549,7 +572,7 @@ void GameInit() {
         rs_sgen_func_normalize(0, 1.0);
 
         rs_sgen_func_lowpass(2, 0, 0.6, 0.0, 20.0);
-        rs_sgen_func_normalize(2, 0.7);
+        rs_sgen_func_normalize(2, 0.5);
 
         rs_sgen_wave_out(2);
 
@@ -571,7 +594,7 @@ void GameInit() {
     rs_sgen_func_normalize(0, 1.0);
 
     rs_sgen_func_highpass(2, 0, 1.0, 0.3, 20.0);
-    rs_sgen_func_normalize(2, 0.6);
+    rs_sgen_func_normalize(2, 0.5);
 
     rs_sgen_wave_out(2);
 
@@ -722,13 +745,14 @@ void GameKeyDown(int key) {
 //                soundbuf_play( &game.sound_music, SND_MODE_LOOP );
 //            break;
         
-//        #ifdef RS_LINUX
-//            
-//        case RS_KEY_Z:
-//                soundbuf_play( &game.sound_music2, 0 );
-//                break;
-//            
-//        #endif
+        #ifdef RS_LINUX
+            
+        case RS_KEY_Z:
+                soundbuf_stop( &game.sound_music );
+                soundbuf_play( &game.sound_music2, 0 );
+                break;
+            
+        #endif
         
 
             
@@ -771,7 +795,13 @@ void GameKeyDown(int key) {
                 menu_cursor_click();
                 break;
             case RS_KEY_ESCAPE:
-                menu_open(0);
+                if (game.menu_index != MENU_PAUSE) {
+                    menu_open(0);
+                }
+                else {
+                    game.status = STATUS_PLAYING;
+                    return;
+                };
                 break;
         };
 
@@ -782,7 +812,7 @@ void GameKeyDown(int key) {
             
             case RS_KEY_ESCAPE:
                 game.status = STATUS_MENU;
-                menu_open(0);
+                menu_open(MENU_PAUSE);
                 break;
             case RS_KEY_SPACE:
                 

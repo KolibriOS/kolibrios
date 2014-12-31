@@ -10,7 +10,7 @@ PRSFUNC0 menu_actions[] = {
     /* a */ &menu_action_start,     
     /* b */ &menu_action_exit,
     /* c */ &menu_action_change_window_scale,
-//    /* d */ &menu_action_
+    /* d */ &menu_action_resume
 };
 
 char window_scale_str[] = "c< 2X >";
@@ -67,6 +67,13 @@ char* menu_game_over_titles[] = {
     0
 };
 
+char* menu_pause_titles[] = {
+    " "L_PAUSE,
+    " ",
+    "d"L_RESUME,
+    "0"L_EXIT_TO_MAIN_MENU,
+    0
+};
 
 
 char **menu_titles[] = {
@@ -75,6 +82,7 @@ char **menu_titles[] = {
     /* 2 */ menu_about_titles,
     /* 3 */ menu_level_passed_titles,
     /* 4 */ menu_game_over_titles,
+    /* 5 */ menu_pause_titles,
     0
 };
 
@@ -104,6 +112,10 @@ void menu_cursor_up() {
 };
 
 void menu_open(int i) {
+    
+    if ( (game.menu_index == MENU_PAUSE) && (i != MENU_PAUSE) ){
+        soundbuf_play( &game.sound_music, SND_MODE_LOOP );
+    };
 
     game.menu_index = i;
     
@@ -175,4 +187,10 @@ void menu_action_exit() {
 
 void menu_action_change_window_scale() {
     game_change_window_scale(1);
+};
+
+void menu_action_resume() {
+    
+    game.status = STATUS_PLAYING;
+    
 };

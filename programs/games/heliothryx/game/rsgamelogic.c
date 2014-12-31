@@ -95,7 +95,6 @@ void player_hit() {
     
     if (game.health < 1) {
         game.status = STATUS_MENU;
-        soundbuf_play( &game.sound_music, SND_MODE_LOOP );
         menu_open( MENU_GAME_OVER );
     };
     
@@ -276,7 +275,6 @@ void GameProcess() {
         else if (game.stage == 10) {
             
             game.status = STATUS_MENU;
-            soundbuf_play( &game.sound_music, SND_MODE_LOOP );
             menu_open( MENU_LEVEL_PASSED );
         
             level_passed_score_str[1] = '0' + (game.score / 100) % 10;
@@ -419,7 +417,7 @@ void GameProcess() {
 
     game_draw();
     
-    if (game.status == STATUS_MENU) {
+    if ( (game.status == STATUS_MENU) && (game.menu_index != MENU_PAUSE) ) {
         soundbuf_loop_check( &game.sound_music );
     };
 
