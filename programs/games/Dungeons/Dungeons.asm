@@ -22,7 +22,7 @@ DEBUG_FINE      = 0
 DEBUG_INFO      = 1
 DEBUG_ERR       = 2
 
-include 'macros.inc'
+include '../../macros.inc'
 purge   mov, add, sub
 
 ; ================================= Header =================================== ;
