@@ -309,7 +309,6 @@ settings_menu_text_pointers:
 ;---------------------------------------------------------------------
 align	4
 map_level_pointer:
-	dd map_level_10
 	dd map_level_0
 	dd map_level_1
 	dd map_level_2
