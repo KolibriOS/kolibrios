@@ -45,25 +45,29 @@ protagonist_death_text:
 menu_credits_text:
 .1:	db 'Hello KolibriOS Team!',0
 .2:	db ' Hello Habrahabr!',0
-.3:	db 0
-.4:	db 'The game used graphics and sound material',0
-.5:	db 'under a free license, borrowed from:',0
-.6:	db ' http://opengameart.org',0
-.7:	db 0
-.8:	db 'NPC sprites by',0
-.9:	db ' http://untamed.wild-refuge.net',0
-.10:	db 0
-.11:	db 'Hatsune Miku Sprites by',0
-.12:	db ' http://nekorandomnessqueen.deviantart.com',0
-.13:	db 0
-.14:	db 'Glyphs of Russo free font by',0
-.15:	db ' http://www.jovanny.ru',0
-.16:	db 0
-.17:	db 'Game author - Marat Zakyanov aka Mario79',0
+
+.3:	db 'The game used graphics and sound material',0
+.4:	db 'under a free license, borrowed from:',0
+.5:	db ' http://opengameart.org',0
+
+.6:	db 'NPC sprites by',0
+.7:	db ' http://untamed.wild-refuge.net',0
+
+.8:	db 'Hatsune Miku Sprites by',0
+.9:	db ' http://nekorandomnessqueen.deviantart.com',0
+
+.10:	db 'Glyphs of Russo free font by',0
+.11:	db ' http://www.jovanny.ru',0
+
+.12:	db 'Game author - Marat Zakiyanov aka Mario79',0
 ;---------------------------------------------------------------------
 menu_help_text:
-.1:	db 'Game control',0
-.2:	db 'Move the player:',0
-.3:	db 'WASD, Arrows or Num8462',0
-.4:	db 'Player kick : Space',0
+.1:	db ' Control',0
+.2:	db '  WASD',0
+.3:	db ' Arrows',0
+.4:	db ' Num8462',0
+.5:	db 'Kick SPACE',0
+;---------------------------------------------------------------------
+space_line:
+	db 0
 ;---------------------------------------------------------------------

@@ -273,23 +273,24 @@ main_menu_text_pointers:
 ;---------------------------------------------------------------------
 align	4
 menu_credits_text_pointers:
+	dd space_line
 	dd menu_credits_text.1
 	dd menu_credits_text.2
+	dd space_line	
 	dd menu_credits_text.3
 	dd menu_credits_text.4
 	dd menu_credits_text.5
+	dd space_line
 	dd menu_credits_text.6
 	dd menu_credits_text.7
+	dd space_line
 	dd menu_credits_text.8
 	dd menu_credits_text.9
+	dd space_line
 	dd menu_credits_text.10
 	dd menu_credits_text.11
+	dd space_line
 	dd menu_credits_text.12
-	dd menu_credits_text.13
-	dd menu_credits_text.14
-	dd menu_credits_text.15
-	dd menu_credits_text.16
-	dd menu_credits_text.17
 	dd 0
 ;---------------------------------------------------------------------
 align	4
@@ -298,6 +299,7 @@ menu_help_text_pointers:
 	dd menu_help_text.2
 	dd menu_help_text.3
 	dd menu_help_text.4
+	dd menu_help_text.5
 	dd 0
 ;---------------------------------------------------------------------
 align	4

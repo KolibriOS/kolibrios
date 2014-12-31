@@ -156,7 +156,13 @@ draw_menu_window:
 	call	clear_screen
 
 	mov	eax,4
-	mov	ebx,SPRITE_SIZE_X*3 shl 16 + SPRITE_SIZE_Y*3
+	mov	ebx,SPRITE_SIZE_X*3 shl 16 + SPRITE_SIZE_Y*2
+	cmp	[use_separate_draw_text],0
+	je	@f
+	
+	add	ebx,SPRITE_SIZE_Y
+;--------------------------------------	
+@@:	
 	mov	ecx,0x90ffffff
 	mov	esi,[menu_text_pointers]
 ;--------------------------------------	
@@ -192,17 +198,19 @@ clear_screen:
 menu_credits:
 	call	snd_kick_action
 	mov	[menu_text_pointers],menu_credits_text_pointers
+	mov	[use_separate_draw_text],0
+	mov	[text_step_Y],20
 	jmp	menu_help.1
 ;---------------------------------------------------------------------
 menu_help:
 	call	snd_kick_action
 	mov	[menu_text_pointers],menu_help_text_pointers
+	mov	[text_step_Y],SPRITE_SIZE_Y
 ;--------------------------------------	
 .1:
-	mov	[text_step_Y],20
+
 ;--------------------------------------	
 .red:
-	mov	[use_separate_draw_text],0
 	call	draw_menu_window
 ;---------------------------------------------------------------------
 .still:
