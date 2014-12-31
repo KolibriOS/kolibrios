@@ -5,7 +5,7 @@
 CKosFile::CKosFile(char *fileName)
 {
 	//
-	rtlDebugOutString(fileName);
+	//rtlDebugOutString(fileName);
 	this->fileInfo.bufferPtr = new Byte[FILE_BUFFER_SIZE];
 	//
 	this->filePointer = 0;

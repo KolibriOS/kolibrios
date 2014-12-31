@@ -87,6 +87,8 @@ RGBA img_gun[576];
 RGB img_gamebg[9216];
 RGBA img_black[576];
 
+RGB img_pandus[3][12];
+
 RGBA img_number_box[2550];
 RGBA img_numbers[3500];
 RGBA img_button1[3249];
@@ -105,6 +107,7 @@ CKosImage* objPlayer;
 CKosImage* objPlayer1;
 
 CKosRender* renderBox;
+CKosRender* renderWater;
 
 CKosImage* objLaser;
 CKosImage* objLaser1;
@@ -161,6 +164,9 @@ LvlItem level[16][16];
 
 char GetField(Point position, bool din)
 {
+	if (position.X < 0 || position.Y < 0 || position.X > 15 || position.Y > 15)
+		return FIELD_WALL;
+
 	if (din && level[position.Y][position.X].d != FIELD_NONE)
 		return level[position.Y][position.X].d;
 	return level[position.Y][position.X].s;
@@ -170,6 +176,75 @@ void SetMode(int mode)
 {
 	gameMode = mode;
 	draw_window();
+}
+
+bool IsWater(Point pos)
+{
+	if (pos.X < 0 || pos.Y < 0 || pos.X > 15 || pos.Y > 15)
+		return true;
+
+	Byte code = GetField(pos, false);
+	return (code == FIELD_WATER || code == FIELD_BOX_WATER);
+}
+
+void RenderPandus(Point pos)
+{
+	bool is[10];
+	for (int y = 0; y < 3; ++y)
+		for (int x = 0; x < 3; ++x)
+			is[y * 3 + x + 1] = IsWater(pos + Point(x-1, y-1));
+	
+	if (!is[6])
+	{
+		if (!is[2] || is[3])
+			renderWater->RenderImg((RGB*)img_pandus[0], Point(23, 0), 1, 12);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(23, 0), 1, 12);
+		
+		if (!is[8] || is[9])
+			renderWater->RenderImg((RGB*)img_pandus[2], Point(23, 12), 1, 12);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(23, 12), 1, 12);
+	}
+
+	if (!is[2])
+	{
+		if (!is[4] || is[1])
+			renderWater->RenderImg((RGB*)img_pandus[0], Point(0, 0), 12, 1);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(0, 0), 12, 1);
+
+		if (!is[6] || is[3])
+			renderWater->RenderImg((RGB*)img_pandus[2], Point(12, 0), 12, 1);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(12, 0), 12, 1);
+	}
+	
+	if (!is[4])
+	{
+		if (!is[8] || is[7])
+			renderWater->RenderImg((RGB*)img_pandus[2], Point(0, 12), 1, 12);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(0, 12), 1, 12);
+
+		if (!is[2] || is[1])
+			renderWater->RenderImg((RGB*)img_pandus[0], Point(0, 0), 1, 12);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(0, 0), 1, 12);
+	}
+
+	if (!is[8])
+	{
+		if (!is[6] || is[9])
+			renderWater->RenderImg((RGB*)img_pandus[0], Point(12, 23), 12, 1);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(12, 23), 12, 1);
+
+		if (!is[4] || is[7])
+			renderWater->RenderImg((RGB*)img_pandus[2], Point(0, 23), 12, 1);
+		else
+			renderWater->RenderImg((RGB*)img_pandus[1], Point(0, 23), 12, 1);
+	}
 }
 
 RGB* GetImg(Point position, bool din)
@@ -236,12 +311,18 @@ RGB* GetImg(Point position, bool din)
 		return (RGB*)img_finish;
 	case FIELD_BRICK:
 		return (RGB*)img_brick[level[position.Y][position.X].l];
-	case FIELD_WATER:
-		return (RGB*)img_water;
-	case FIELD_BOX_WATER:
-		return (RGB*)img_waterbox;
 	case FIELD_BRICK_DES:
 		return (RGB*)img_brick1;
+	case FIELD_BOX_WATER:
+	//	return (RGB*)img_waterbox;
+		renderWater->RenderImg((RGB*)img_waterbox, Point(0, 0), 24, 24);
+		RenderPandus(position);
+		return renderWater->buffer;
+	case FIELD_WATER:
+		renderWater->RenderImg((RGB*)img_water, Point(0, 0), 24, 24);
+		RenderPandus(position);
+		return renderWater->buffer;
+	//	return (RGB*)img_water;
 	}
 	return NULL;
 }
@@ -602,7 +683,6 @@ void Laser(Point pos, Point vec, RGB color)
 			}
 			break;
 		case FIELD_BOX_MISSLE_0:
-			rtlDebugOutString("FIELD_BOX_MISSLE_0");
 			if (vector == Point(-1, 0) || vector == Point(0, -1))
 			{
 				vector = (vector.Y == -1) ? Point(1, 0) : Point(0, 1);
@@ -621,7 +701,6 @@ void Laser(Point pos, Point vec, RGB color)
 			}
 			break;
 		case FIELD_BOX_MISSLE_1:
-			rtlDebugOutString("FIELD_BOX_MISSLE_1");
 			if (vector == Point(0, -1) || vector == Point(1, 0))
 			{
 				vector = (vector.Y == -1) ? Point(-1, 0) : Point(0, 1);
@@ -640,7 +719,6 @@ void Laser(Point pos, Point vec, RGB color)
 			}
 			break;
 		case FIELD_BOX_MISSLE_2:
-			rtlDebugOutString("FIELD_BOX_MISSLE_2");
 			if (vector == Point(1, 0) || vector == Point(0, 1))
 			{
 				vector = (vector.Y == 1) ? Point(-1, 0) : Point(0, -1);
@@ -659,7 +737,6 @@ void Laser(Point pos, Point vec, RGB color)
 			}
 			break;
 		case FIELD_BOX_MISSLE_3:
-			rtlDebugOutString("FIELD_BOX_MISSLE_3");
 			if (vector == Point(-1, 0) || vector == Point(0, 1))
 			{
 				vector = (vector.Y == 1) ? Point(1, 0) : Point(0, -1);
@@ -891,7 +968,7 @@ void key_press(int key)
 				Laser(player.position, player.vector, (RGB)0x00FF00);
 			break;
 		case 13:
-			rtlDebugOutString(ftoa(rtlRand()));
+			//rtlDebugOutString(ftoa(rtlRand()));
 			
 		//	openLevel(levelIndex + 1);
 			if (gameStatus == GAME_VICTORY)
@@ -1119,7 +1196,7 @@ void LevelsLoad()
 		levelCount++;
 	}
 	//levelCount++;
-	rtlDebugOutString(ftoa(levelCount));
+	//rtlDebugOutString(ftoa(levelCount));
 
 	levels = new Level[levelCount];
 
@@ -1215,6 +1292,7 @@ void kos_Main()
 	file->LoadTex((Byte*)img_explosion, 4, 24, 336);	
 	file->LoadTex((Byte*)img_gun, 4, 24, 24);	
 	file->LoadTex((Byte*)img_gamebg, 3, 96, 96);
+
 	
 	delete file;
 
@@ -1223,6 +1301,10 @@ void kos_Main()
 	file = new CKosFile(kosExePath);
 
 	file->LoadTex((Byte*)img_levels, 3, 384, 384);
+
+	for (int i = 0; i < 3; ++i)
+		file->LoadTex((Byte*)img_pandus[i], 3, 12, 1);
+
 	file->LoadTex((Byte*)img_number_box, 4, 51, 50);
 	file->LoadTex((Byte*)img_numbers, 4, 14, 250);
 	
@@ -1240,10 +1322,13 @@ void kos_Main()
 	for (int i = 0; i < 3; ++i)
 		file->LoadTex((Byte*)img_buttons[i], 3, 229, 57);	
 
+
 	delete file;
 
 	renderPlayer = new CKosRender(24, 24);
 	objPlayer = new CKosImage(renderPlayer, (RGBA*)img_tank, 24, 24);
+
+	renderWater = new CKosRender(24, 24);
 
 	renderBox = new CKosRender(24, 24);
 	objLaser = new CKosImage(renderBox, (RGBA*)img_laser, 24, 24);
