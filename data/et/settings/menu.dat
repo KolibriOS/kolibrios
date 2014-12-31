@@ -48,6 +48,7 @@ ArcanII                   /sys/games/arcanii
 Phenix                    /sys/games/phenix
 Snake                     /sys/games/snake
 Tanks                     /sys/games/tanks
+Heliothryx                /KolibriOS/games/heliothryx/heliothryx
 Loderunner                /KolibriOS/games/lrl/lrl
 Doom                      /KolibriOS/games/doom/doom
 Quake                     /KolibriOS/games/quake/sdlquake
