@@ -489,7 +489,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
 })
 -- For russian build, add russian-only programs.
-if build_type == "rus" then tup.append_table(img_files, {
+if build_type == "rus" then tup.append_table(extra_files, {
  {"kolibrios/games/21days/", PROGS .. "/games/21days/21days"},
 }) end
 end -- tup.getconfig('NO_GCC') ~= 'full'
