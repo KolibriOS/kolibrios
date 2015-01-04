@@ -41,20 +41,27 @@
 
 #define FASTCALL __attribute__ ((fastcall)) __attribute__ ((dllimport))
 
+void  FASTCALL InitRwsem(struct rw_semaphore *sem)__asm__("InitRwsem");
 void  FASTCALL DownRead(struct rw_semaphore *sem)__asm__("DownRead");
 void  FASTCALL DownWrite(struct rw_semaphore *sem)__asm__("DownWrite");
 void  FASTCALL UpRead(struct rw_semaphore *sem)__asm__("UpRead");
 void  FASTCALL UpWrite(struct rw_semaphore *sem)__asm__("UpWrite");
 
+static inline void __init_rwsem(struct rw_semaphore *sem, const char *name,
+                  struct lock_class_key *key)
+{
+    InitRwsem(sem);
+}
+
 /*
  * lock for reading
  */
-static inline void __down_read(struct rw_semaphore *sem)
+static inline void down_read(struct rw_semaphore *sem)
 {
     DownRead(sem);
 }
 
-static inline void __down_write(struct rw_semaphore *sem)
+static inline void down_write(struct rw_semaphore *sem)
 {
     DownWrite(sem);
 }
@@ -62,7 +69,7 @@ static inline void __down_write(struct rw_semaphore *sem)
 /*
  * unlock after reading
  */
-static inline void __up_read(struct rw_semaphore *sem)
+static inline void up_read(struct rw_semaphore *sem)
 {
     UpRead(sem);
 }
@@ -70,7 +77,7 @@ static inline void __up_read(struct rw_semaphore *sem)
 /*
  * unlock after writing
  */
-static inline void __up_write(struct rw_semaphore *sem)
+static inline void up_write(struct rw_semaphore *sem)
 {
     UpWrite(sem);
 }
