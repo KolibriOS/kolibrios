@@ -183,13 +183,8 @@ static int radeon_cs_parser_relocs(struct radeon_cs_parser *p)
 	if (p->cs_flags & RADEON_CS_USE_VM)
 		p->vm_bos = radeon_vm_get_bos(p->rdev, p->ib.vm,
 					      &p->validated);
-//	if (need_mmap_lock)
-//		down_read(&current->mm->mmap_sem);
 
 	r = radeon_bo_list_validate(p->rdev, &p->ticket, &p->validated, p->ring);
-
-//	if (need_mmap_lock)
-//		up_read(&current->mm->mmap_sem);
 
 	return r;
 }
@@ -649,9 +644,9 @@ int radeon_cs_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
 	struct radeon_cs_parser parser;
 	int r;
 
-//   down_read(&rdev->exclusive_lock);
+	down_read(&rdev->exclusive_lock);
 	if (!rdev->accel_working) {
-//       up_read(&rdev->exclusive_lock);
+		up_read(&rdev->exclusive_lock);
 		return -EBUSY;
 	}
 	/* initialize parser */
@@ -664,7 +659,7 @@ int radeon_cs_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
 	if (r) {
 		DRM_ERROR("Failed to initialize parser !\n");
 		radeon_cs_parser_fini(&parser, r, false);
-//       up_read(&rdev->exclusive_lock);
+		up_read(&rdev->exclusive_lock);
 		r = radeon_cs_handle_lockup(rdev, r);
 		return r;
 	}
@@ -678,7 +673,7 @@ int radeon_cs_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
 
 	if (r) {
 		radeon_cs_parser_fini(&parser, r, false);
-//       up_read(&rdev->exclusive_lock);
+		up_read(&rdev->exclusive_lock);
 		r = radeon_cs_handle_lockup(rdev, r);
 		return r;
 	}
@@ -695,7 +690,7 @@ int radeon_cs_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
 	}
 out:
 	radeon_cs_parser_fini(&parser, r, true);
-//   up_read(&rdev->exclusive_lock);
+	up_read(&rdev->exclusive_lock);
 	r = radeon_cs_handle_lockup(rdev, r);
 	return r;
 }

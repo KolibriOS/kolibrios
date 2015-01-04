@@ -229,10 +229,9 @@ int radeon_gem_set_domain_ioctl(struct drm_device *dev, void *data,
 	return r;
 }
 
-static int radeon_mode_mmap(struct drm_file *filp,
+int radeon_mode_dumb_mmap(struct drm_file *filp,
 			  struct drm_device *dev,
-			    uint32_t handle, bool dumb,
-			    uint64_t *offset_p)
+			  uint32_t handle, uint64_t *offset_p)
 {
 	struct drm_gem_object *gobj;
 	struct radeon_bo *robj;
@@ -241,14 +240,6 @@ static int radeon_mode_mmap(struct drm_file *filp,
 	if (gobj == NULL) {
 		return -ENOENT;
 	}
-
-	/*
-	 * We don't allow dumb mmaps on objects created using another
-	 * interface.
-	 */
-	WARN_ONCE(dumb && !(gobj->dumb || gobj->import_attach),
-		"Illegal dumb map of GPU buffer.\n");
-
 	robj = gem_to_radeon_bo(gobj);
 	*offset_p = radeon_bo_mmap_offset(robj);
 	drm_gem_object_unreference_unlocked(gobj);
@@ -260,8 +251,7 @@ int radeon_gem_mmap_ioctl(struct drm_device *dev, void *data,
 {
 	struct drm_radeon_gem_mmap *args = data;
 
-	return radeon_mode_mmap(filp, dev, args->handle, false,
-				&args->addr_ptr);
+	return radeon_mode_dumb_mmap(filp, dev, args->handle, &args->addr_ptr);
 }
 
 int radeon_gem_busy_ioctl(struct drm_device *dev, void *data,

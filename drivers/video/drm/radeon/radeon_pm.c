@@ -251,7 +251,7 @@ static void radeon_pm_set_clocks(struct radeon_device *rdev)
 		return;
 
 	mutex_lock(&rdev->ddev->struct_mutex);
-//   down_write(&rdev->pm.mclk_lock);
+	down_write(&rdev->pm.mclk_lock);
 	mutex_lock(&rdev->ring_lock);
 
 	/* wait for the rings to drain */
@@ -264,7 +264,7 @@ static void radeon_pm_set_clocks(struct radeon_device *rdev)
 		if (r) {
 			/* needs a GPU reset dont reset here */
 			mutex_unlock(&rdev->ring_lock);
-//			up_write(&rdev->pm.mclk_lock);
+			up_write(&rdev->pm.mclk_lock);
 			mutex_unlock(&rdev->ddev->struct_mutex);
 			return;
 		}
@@ -300,7 +300,7 @@ static void radeon_pm_set_clocks(struct radeon_device *rdev)
 	rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
 
 	mutex_unlock(&rdev->ring_lock);
-//   up_write(&rdev->pm.mclk_lock);
+	up_write(&rdev->pm.mclk_lock);
 	mutex_unlock(&rdev->ddev->struct_mutex);
 }
 
@@ -872,7 +872,7 @@ force:
 	}
 
 	mutex_lock(&rdev->ddev->struct_mutex);
-//   down_write(&rdev->pm.mclk_lock);
+	down_write(&rdev->pm.mclk_lock);
 	mutex_lock(&rdev->ring_lock);
 
 	/* update whether vce is active */
@@ -920,7 +920,7 @@ force:
 
 done:
 	mutex_unlock(&rdev->ring_lock);
-//   up_write(&rdev->pm.mclk_lock);
+	up_write(&rdev->pm.mclk_lock);
 	mutex_unlock(&rdev->ddev->struct_mutex);
 }
 

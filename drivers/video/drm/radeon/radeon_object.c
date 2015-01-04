@@ -241,11 +241,11 @@ int radeon_bo_create(struct radeon_device *rdev,
 
     radeon_ttm_placement_from_domain(bo, domain);
 	/* Kernel allocation are uninterruptible */
-//	down_read(&rdev->pm.mclk_lock);
+	down_read(&rdev->pm.mclk_lock);
 	r = ttm_bo_init(&rdev->mman.bdev, &bo->tbo, size, type,
 			&bo->placement, page_align, !kernel, NULL,
 			acc_size, sg, resv, &radeon_ttm_bo_destroy);
-//	up_read(&rdev->pm.mclk_lock);
+	up_read(&rdev->pm.mclk_lock);
 	if (unlikely(r != 0)) {
 		return r;
 	}
@@ -487,9 +487,6 @@ int radeon_bo_list_validate(struct radeon_device *rdev,
 			u32 allowed = lobj->allowed_domains;
 			u32 current_domain =
 				radeon_mem_type_to_domain(bo->tbo.mem.mem_type);
-
-			WARN_ONCE(bo->gem_base.dumb,
-				  "GPU use of dumb buffer is illegal.\n");
 
 			/* Check if this buffer will be moved and don't move it
 			 * if we have moved too many buffers for this IB already.

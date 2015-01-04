@@ -43,7 +43,7 @@
 #include <linux/slab.h>
 //#include <linux/dma-mapping.h>
 
-//#include <linux/atomic.h>
+#include <linux/atomic.h>
 
 #include <drm/ttm/ttm_bo_driver.h>
 #include <drm/ttm/ttm_page_alloc.h>

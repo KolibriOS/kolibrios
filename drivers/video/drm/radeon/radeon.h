@@ -73,6 +73,7 @@
 #include <ttm/ttm_placement.h>
 //#include <ttm/ttm_module.h>
 #include <ttm/ttm_execbuf_util.h>
+#include <linux/rwsem.h>
 
 #include <drm/drm_gem.h>
 
