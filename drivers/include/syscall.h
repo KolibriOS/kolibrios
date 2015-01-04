@@ -1,8 +1,7 @@
-
-#include <ddk.h>
-
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
+
+#include <ddk.h>
 
 typedef u32 addr_t;
 typedef u32 count_t;
@@ -54,6 +53,12 @@ int   STDCALL AttachIntHandler(int irq, void *handler, u32 access) __asm__("Atta
 void  FASTCALL MutexInit(struct mutex*)__asm__("MutexInit");
 void  FASTCALL MutexLock(struct mutex*)__asm__("MutexLock");
 void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
+
+void  FASTCALL InitRwsem(struct rw_semaphore *sem)__asm__("InitRwsem");
+void  FASTCALL DownRead(struct rw_semaphore *sem)__asm__("DownRead");
+void  FASTCALL DownWrite(struct rw_semaphore *sem)__asm__("DownWrite");
+void  FASTCALL UpRead(struct rw_semaphore *sem)__asm__("UpRead");
+void  FASTCALL UpWrite(struct rw_semaphore *sem)__asm__("UpWrite");
 
 addr_t IMPORT  GetStackBase(void)__asm__("GetStackBase");
 u32  IMPORT  GetPid(void)__asm__("GetPid");

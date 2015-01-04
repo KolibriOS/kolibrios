@@ -47,6 +47,11 @@
     .global _MutexInit
     .global _MutexLock
     .global _MutexUnlock
+    .global _InitRwsem
+    .global _DownRead
+    .global _DownWrite
+    .global _UpRead
+    .global _UpWrite
 
     .global _PciApi
     .global _PciRead16
@@ -120,6 +125,12 @@
     .def  _MutexLock;         .scl  2;  .type 32; .endef
     .def  _MutexUnlock;       .scl  2;  .type 32; .endef
 
+    .def _InitRwsem;          .scl  2;  .type 32; .endef
+    .def _DownRead;           .scl  2;  .type 32; .endef
+    .def _DownWrite;          .scl  2;  .type 32; .endef
+    .def _UpRead;             .scl  2;  .type 32; .endef
+    .def _UpWrite;            .scl  2;  .type 32; .endef
+
     .def  _PciApi;            .scl  2;  .type 32; .endef
     .def  _PciRead16;         .scl  2;  .type 32; .endef
     .def  _PciRead32;         .scl  2;  .type 32; .endef
@@ -190,6 +201,12 @@ _MapPage:
 _MutexInit:
 _MutexLock:
 _MutexUnlock:
+
+_InitRwsem:
+_DownRead:
+_DownWrite:
+_UpRead:
+_UpWrite:
 
 _PciApi:
 _PciRead16:
@@ -262,6 +279,12 @@ _WaitEventTimeout:
         .ascii " -export:MutexInit"            # fastcall
         .ascii " -export:MutexLock"            # fastcall
         .ascii " -export:MutexUnlock"          # fastcall
+
+        .ascii " -export:InitRwsem"            # fastcall
+        .ascii " -export:DownRead"             # fastcall
+        .ascii " -export:DownWrite"            # fastcall
+        .ascii " -export:UpRead"               # fastcall
+        .ascii " -export:UpWrite"              # fastcall
 
         .ascii " -export:PciApi"               #
         .ascii " -export:PciRead16"            # stdcall
