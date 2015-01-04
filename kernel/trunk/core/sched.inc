@@ -159,17 +159,17 @@ do_change_task:
 struct  MUTEX_WAITER
         list    LHEAD
         task    dd ?
+        type    dd ?
 ends
 
 ;void  __fastcall mutex_init(struct mutex *lock)
 
 align 4
 mutex_init:
-        mov     [ecx+MUTEX.lhead.next], ecx
-        mov     [ecx+MUTEX.lhead.prev], ecx
+        mov     [ecx+MUTEX.wait_list.next], ecx
+        mov     [ecx+MUTEX.wait_list.prev], ecx
         mov     [ecx+MUTEX.count], 1
         ret
-
 
 ;void  __fastcall mutex_lock(struct mutex *lock)
 
@@ -200,15 +200,13 @@ mutex_lock:
         call    change_task
         jmp     .forever
 @@:
-        mov     edx, [esp+MUTEX_WAITER.list.next]
-        mov     eax, [esp+MUTEX_WAITER.list.prev]
+        mov     eax, ecx
+        list_del esp
 
-        mov     [eax+MUTEX_WAITER.list.next], edx
-        mov     [edx+MUTEX_WAITER.list.prev], eax
-        cmp     [ecx+MUTEX.lhead.next], ecx
+        cmp     [eax+MUTEX.wait_list.next], eax
         jne     @F
 
-        mov     [ecx+MUTEX.count], 0
+        mov     [eax+MUTEX.count], 0
 @@:
         add     esp, sizeof.MUTEX_WAITER
 
@@ -224,7 +222,7 @@ mutex_unlock:
         pushfd
         cli
 
-        mov     eax, [ecx+MUTEX.lhead.next]
+        mov     eax, [ecx+MUTEX.wait_list.next]
         cmp     eax, ecx
         mov     [ecx+MUTEX.count], 1
         je      @F
@@ -235,6 +233,74 @@ mutex_unlock:
         popfd
         ret
 
+
+;void __fastcall down_read(struct rw_semaphore *sem)
+
+align 4
+down_read:
+        pushfd
+        cli
+
+        mov     eax, [ecx+RWSEM.count]
+        test    eax, eax
+        js      @F
+
+        cmp     ecx, [ecx+RWSEM.wait_list.next]
+        je      .ok
+@@:
+        sub     esp, sizeof.MUTEX_WAITER
+
+        mov     eax, [TASK_BASE]
+        mov     [esp+MUTEX_WAITER.task], eax
+        mov     [esp+MUTEX_WAITER.type], 1; RWSEM_WAITING_FOR_READ
+        mov     [eax+TASKDATA.state], 1
+
+        list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
+
+        call    change_task
+
+        add     esp, sizeof.MUTEX_WAITER
+        popfd
+        ret
+.ok:
+        inc     eax
+        mov     [ecx+RWSEM.count], eax
+
+        popfd
+        ret
+
+;void __fastcall down_write(struct rw_semaphore *sem)
+
+align 4
+down_write:
+        pushfd
+        cli
+        sub     esp, sizeof.MUTEX_WAITER
+
+        mov     edx, [TASK_BASE]
+        mov     [esp+MUTEX_WAITER.task], edx
+        mov     [esp+MUTEX_WAITER.type], 2; RWSEM_WAITING_FOR_WRITE
+        mov     [edx+TASKDATA.state], 1
+
+        list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
+
+        xor     eax, eax
+        not     eax
+
+.forever:
+        test    eax, [ecx+RWSEM.count]
+        jz      @F
+
+        mov     [edx+TASKDATA.state], 1
+        call    change_task
+        jmp     .forever
+@@:
+        mov     [ecx+RWSEM.count], eax
+        list_del esp
+
+        add     esp, sizeof.MUTEX_WAITER
+        popfd
+        ret
 
 purge MUTEX_WAITER
 

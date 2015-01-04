@@ -497,8 +497,13 @@ struct  LHEAD
 ends
 
 struct  MUTEX
-        lhead   LHEAD
-        count   dd ?
+        wait_list       LHEAD
+        count           dd ?
+ends
+
+struct  RWSEM
+        wait_list       LHEAD
+        count           dd ?
 ends
 
 struct  PCIDEV
