@@ -45,8 +45,11 @@ __exports:
           release_pages,         'ReleasePages',       \
           alloc_dma24,           'AllocDMA24',         \      ; stdcall
 \
+          init_rwsem,            'InitRwsem',          \      ; gcc fastcall
           down_read,             'DownRead',           \      ; gcc fastcall
           down_write,            'DownWrite',          \      ; gcc fastcall
+          up_read,               'UpRead',             \      ; gcc fastcall
+          up_write,              'UpWrite',            \      ; gcc fastacll
           mutex_init,            'MutexInit',          \      ; gcc fastcall
           mutex_lock,            'MutexLock',          \      ; gcc fastcall
           mutex_unlock,          'MutexUnlock',        \      ; gcc fastcall
