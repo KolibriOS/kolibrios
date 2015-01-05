@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -160,12 +160,12 @@ void D_PostEvent (event_t* ev)
 void D_ProcessEvents (void)
 {
     event_t*    ev;
-        
+
     // IF STORE DEMO, DO NOT ACCEPT INPUT
     if ( ( gamemode == commercial )
          && (W_CheckNumForName("map01")<0) )
       return;
-        
+
     for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
     {
         ev = &events[eventtail];
@@ -213,9 +213,9 @@ void D_Display (void)
     {
         XXX(0);
         return;                    // for comparative timing / profiling
-    }           
+    }
     redrawsbar = false;
-    
+
     // change the view size if needed
     if (setsizeneeded)
     {
@@ -233,7 +233,7 @@ void D_Display (void)
         wipe = true;
         wipe_StartScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
     }
-    else 
+    else
         wipe = false;
         XXX(6);
 
@@ -275,12 +275,12 @@ void D_Display (void)
         XXX(14);
         break;
     }
-    
+
     // draw buffered stuff to screen
         XXX(15);
     I_UpdateNoBlit ();
         XXX(16);
-    
+
     // draw the view directly
     if (gamestate == GS_LEVEL && !automapactive && gametic)
         R_RenderPlayerView (&players[displayplayer]);
@@ -289,7 +289,7 @@ void D_Display (void)
     if (gamestate == GS_LEVEL && gametic)
         HU_Drawer ();
         XXX(18);
-    
+
     // clean up border stuff
     if (gamestate != oldgamestate && gamestate != GS_LEVEL)
         I_SetPalette (W_CacheLumpName ("PLAYPAL",PU_CACHE));
@@ -326,7 +326,7 @@ void D_Display (void)
     viewactivestate = viewactive;
     inhelpscreensstate = inhelpscreens;
     oldgamestate = wipegamestate = gamestate;
-    
+
     // draw pause pic
     if (paused)
     {
@@ -356,7 +356,7 @@ void D_Display (void)
         return;
     }
         XXX(32);
-    
+
     // wipe update
     wipe_EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
         XXX(33);
@@ -395,23 +395,23 @@ void D_DoomLoop (void)
 {
     if (demorecording)
         G_BeginRecording ();
-                
+
     if (M_CheckParm ("-debugfile"))
     {
         char    filename[32];
         sprintf (filename,"debug%i.txt",consoleplayer);
         debugfile = fopen (filename,"w");
     }
-        
+
     I_InitGraphics ();
 
     while (1)
     {
         // frame syncronous IO operations
         XXX(100);
-        I_StartFrame ();                
+        I_StartFrame ();
         XXX(101);
-        
+
         // process one or more tics
         if (singletics)
         {
@@ -420,11 +420,11 @@ void D_DoomLoop (void)
           D_ProcessEvents ();
 
           G_BuildTiccmd (&netcmds[consoleplayer][maketic%BACKUPTICS]);
-                    
+
           if (advancedemo)
-          { 
+          {
              D_DoAdvanceDemo ();
-          };  
+          };
           M_Ticker ();
           G_Ticker ();
           gametic++;
@@ -436,7 +436,7 @@ void D_DoomLoop (void)
         S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
 
         D_Display ();
-    //    I_UpdateSound();        
+    //    I_UpdateSound();
         XXX(105);
     }
 }
@@ -498,7 +498,7 @@ void D_AdvanceDemo (void)
       demosequence = (demosequence+1)%7;
     else
       demosequence = (demosequence+1)%6;
-    
+
     switch (demosequence)
     {
       case 0:
@@ -579,13 +579,13 @@ void D_AddFile (char *file)
 {
     int     numwadfiles;
     char    *newfile;
-        
+
     for (numwadfiles = 0 ; wadfiles[numwadfiles] ; numwadfiles++)
         ;
 
     newfile = malloc (strlen(file)+1);
     strcpy (newfile, file);
-        
+
     wadfiles[numwadfiles] = newfile;
 }
 
@@ -619,11 +619,11 @@ void IdentifyVersion (void)
     // Retail.
     doomuwad = malloc(strlen(doomwaddir)+1+8+1);
     sprintf(doomuwad, "%s/doomu.wad", doomwaddir);
-    
+
     // Registered.
     doomwad = malloc(strlen(doomwaddir)+1+8+1);
     sprintf(doomwad, "%s/doom.wad", doomwaddir);
-    
+
     // Shareware.
     doom1wad = malloc(strlen(doomwaddir)+1+9+1);
     sprintf(doom1wad, "%s/doom1.wad", doomwaddir);
@@ -631,7 +631,7 @@ void IdentifyVersion (void)
      // Bug, dear Shawn.
     // Insufficient malloc, caused spurious realloc errors.
     plutoniawad = malloc(strlen(doomwaddir)+1+/*9*/12+1);
-    sprintf(plutoniawad, "%splutonia.wad", doomwaddir);
+    sprintf(plutoniawad, "%s/plutonia.wad", doomwaddir);
 
     tntwad = malloc(strlen(doomwaddir)+1+9+1);
     sprintf(tntwad, "%s/tnt.wad", doomwaddir);
@@ -679,7 +679,7 @@ void IdentifyVersion (void)
             D_AddFile (DEVDATA"tnt.wad");
         else*/
             D_AddFile (DEVDATA"doom2.wad");
-            
+
         D_AddFile (DEVMAPS"cdata/texture1.lmp");
         D_AddFile (DEVMAPS"cdata/pnames.lmp");
         strcpy (basedefault,DEVDATA"default.cfg");
@@ -753,7 +753,7 @@ void FindResponseFile (void)
 {
     int             i;
 #define MAXARGVS        100
-        
+
     for (i = 1;i < myargc;i++)
         if (myargv[i][0] == '@')
         {
@@ -766,7 +766,7 @@ void FindResponseFile (void)
             char    *file;
             char    *moreargs[20];
             char    *firstargv;
-                        
+
             // READ THE RESPONSE FILE INTO MEMORY
             handle = fopen (&myargv[i][1],"rb");
             if (!handle)
@@ -781,16 +781,16 @@ void FindResponseFile (void)
 //            file = malloc (size);
 //            fread (file,size,1,handle);
 //            fclose (handle);
-                        
+
             // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
             for (index = 0,k = i+1; k < myargc; k++)
                 moreargs[index++] = myargv[k];
-                        
+
             firstargv = myargv[0];
             myargv = malloc(sizeof(char *)*MAXARGVS);
             memset(myargv,0,sizeof(char *)*MAXARGVS);
             myargv[0] = firstargv;
-                        
+
             infile = file;
             indexinfile = k = 0;
             indexinfile++;  // SKIP PAST ARGV[0] (KEEP IT)
@@ -805,11 +805,11 @@ void FindResponseFile (void)
                       ((*(infile+k)<= ' ') || (*(infile+k)>'z')))
                     k++;
             } while(k < size);
-                        
+
             for (k = 0;k < index;k++)
                 myargv[indexinfile++] = moreargs[k];
             myargc = indexinfile;
-        
+
             // DISPLAY ARGS
 //          __libclog_printf("%d command-line args:\n",myargc);
 //            for (k=1;k<myargc;k++)
@@ -833,7 +833,7 @@ void D_DoomMain (void)
     IdentifyVersion ();
 
     modifiedgame = false;
-        
+
     nomonsters = M_CheckParm ("-nomonsters");
     respawnparm = M_CheckParm ("-respawn");
     fastparm = M_CheckParm ("-fast");
@@ -897,19 +897,19 @@ void D_DoomMain (void)
                  VERSION_NUM/100,VERSION_NUM%100);
         break;
     }
-    
+
 //    __libclog_printf ("%s\n",title);
 
     if (devparm)
       printf(D_DEVSTR);
-    
+
     // turbo option
     if ( (p=M_CheckParm ("-turbo")) )
     {
         int     scale = 200;
         extern int forwardmove[2];
         extern int sidemove[2];
-        
+
         if (p<myargc-1)
             scale = atoi (myargv[p+1]);
         if (scale < 10)
@@ -922,7 +922,7 @@ void D_DoomMain (void)
         sidemove[0] = sidemove[0]*scale/100;
         sidemove[1] = sidemove[1]*scale/100;
     }
-    
+
     // add any files specified on the command line with -file wadfile
     // to the wad list
     //
@@ -942,7 +942,7 @@ void D_DoomMain (void)
             sprintf (file,"~"DEVMAPS"E%cM%c.wad",
                      myargv[p+1][0], myargv[p+2][0]);
             break;
-            
+
           case commercial:
           default:
             p = atoi (myargv[p+1]);
@@ -954,7 +954,7 @@ void D_DoomMain (void)
         }
         D_AddFile (file);
     }
-        
+
     p = M_CheckParm ("-file");
     if (p)
     {
@@ -975,13 +975,13 @@ void D_DoomMain (void)
         sprintf (file,"%s.lmp", myargv[p+1]);
         D_AddFile (file);
     }
-    
+
     // get skill / episode / map from parms
     startskill = sk_medium;
     startepisode = 1;
     startmap = 1;
     autostart = false;
-                
+
     p = M_CheckParm ("-skill");
     if (p && p < myargc-1)
     {
@@ -996,7 +996,7 @@ void D_DoomMain (void)
         startmap = 1;
         autostart = true;
     }
-        
+
     p = M_CheckParm ("-timer");
     if (p && p < myargc-1 && deathmatch)
     {
@@ -1050,19 +1050,19 @@ void D_DoomMain (void)
             "dphoof","bfgga0","heada1","cybra1","spida1d1"
         };
         int i;
-        
+
         if ( gamemode == shareware)
             I_Error("\n\rYou cannot -file with the shareware "
                     "version. Register!");
 
         // Check for fake IWAD with right name,
-        // but w/o all the lumps of the registered version. 
+        // but w/o all the lumps of the registered version.
         if (gamemode == registered)
             for (i = 0;i < 23; i++)
                 if (W_CheckNumForName(name[i])<0)
                     I_Error("\n\rThis is not the registered version.");
     }
-    
+
     // Iff additonal PWAD files are used, print modified banner
     if (modifiedgame)
     {
@@ -1076,7 +1076,7 @@ void D_DoomMain (void)
 //          );
 //        getchar ();
     }
-        
+
 
     // Check and print which version is executed.
     switch ( gamemode )
@@ -1099,7 +1099,7 @@ void D_DoomMain (void)
 //          "===========================================================================\n\r"
 //      );
         break;
-        
+
       default:
         // Ouch.
         break;
@@ -1134,12 +1134,12 @@ void D_DoomMain (void)
     if (p && p<myargc-1)
     {
         // for statistics driver
-        extern  void*   statcopy;                            
+        extern  void*   statcopy;
 
         statcopy = (void*)atoi(myargv[p+1]);
         //printf ("External statistics registered.\n\r");
     }
-    
+
     // start the apropriate game based on parms
     p = M_CheckParm ("-record");
 
@@ -1148,7 +1148,7 @@ void D_DoomMain (void)
         G_RecordDemo (myargv[p+1]);
         autostart = true;
     }
-        
+
     p = M_CheckParm ("-playdemo");
     if (p && p < myargc-1)
     {
@@ -1156,14 +1156,14 @@ void D_DoomMain (void)
         G_DeferedPlayDemo (myargv[p+1]);
         D_DoomLoop ();  // never returns
     }
-        
+
     p = M_CheckParm ("-timedemo");
     if (p && p < myargc-1)
     {
         G_TimeDemo (myargv[p+1]);
         D_DoomLoop ();  // never returns
     }
-        
+
     p = M_CheckParm ("-loadgame");
     if (p && p < myargc-1)
     {
@@ -1173,7 +1173,7 @@ void D_DoomMain (void)
             sprintf(file, "doomsav%c.dsg",myargv[p+1][0]);
         G_LoadGame (file);
     }
-        
+
 
     if ( gameaction != ga_loadgame )
     {
