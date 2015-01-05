@@ -461,10 +461,10 @@ high_code:
         je      @f
         movzx   eax, word[BOOT_VARS+BOOT_PITCH]      ; for other modes
 @@:
-        mov     [_display.pitch], eax
+        mov     [_display.lfb_pitch], eax
         mov     eax, [_display.width]
         mul     [_display.height]
-        mov     [_WinMapSize], eax
+        mov     [_display.win_map_size], eax
 
         call    calculate_fast_getting_offset_for_WinMapAddress
 ; for Qemu or non standart video cards
@@ -659,8 +659,8 @@ setvideomode:
         mov     [graph_data_l+4], al
         mov     [graph_data_l+7], ah
 
-        stdcall kernel_alloc, [_WinMapSize]
-        mov     [_WinMapAddress], eax
+        stdcall kernel_alloc, [_display.win_map_size]
+        mov     [_display.win_map], eax
 
         xor     eax, eax
         inc     eax
@@ -2112,7 +2112,7 @@ restore_default_cursor_before_killing:
         movzx   ebx, word [MOUSE_X]
         mov     eax, [d_width_calc_area + eax*4]
 
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
@@ -2539,7 +2539,7 @@ sysfn_set_screen_sizes:
         pushfd
         cli
         mov     eax, ecx
-        mov     ecx, [_display.pitch]
+        mov     ecx, [_display.lfb_pitch]
         mov     [_display.width], eax
         dec     eax
         mov     [_display.height], edx
@@ -3823,7 +3823,7 @@ align 4
 .start_x:
         add     eax, ecx
         mov     ebp, [d_width_calc_area + ebx*4]
-        add     ebp, [_WinMapAddress]
+        add     ebp, [_display.win_map]
         movzx   ebp, byte[eax+ebp] ; get value for current point
         cmp     ebp, edi
         jne     @f
@@ -3868,9 +3868,9 @@ not_this_task:
 ;-----------------------------------------------------------------------------
 align 4
 calculatebackground:   ; background
-        mov     edi, [_WinMapAddress]              ; set os to use all pixels
+        mov     edi, [_display.win_map]              ; set os to use all pixels
         mov     eax, 0x01010101
-        mov     ecx, [_WinMapSize]
+        mov     ecx, [_display.win_map_size]
         shr     ecx, 2
         rep stosd
 
@@ -5026,7 +5026,7 @@ sys_gs:                         ; direct screen access
         mov     [esp+32], eax
         ret
 .3:                             ; bytes per scanline
-        mov     eax, [_display.pitch]
+        mov     eax, [_display.lfb_pitch]
         mov     [esp+32], eax
         ret
 
@@ -5193,7 +5193,7 @@ syscall_getpixel_WinMap:                       ; GetPixel WinMap
 align 4
 @@:
         mov     eax, [d_width_calc_area + ecx*4]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         movzx   eax, byte[eax+ebx]        ; get value for current point
 ;--------------------------------------
 align 4
@@ -5332,7 +5332,7 @@ align 4
 
         pushad
         mov     edx, [d_width_calc_area + ebx*4]
-        add     edx, [_WinMapAddress]
+        add     edx, [_display.win_map]
         movzx   edx, byte [eax+edx]
         cmp     dl, byte 1
         jne     @f
@@ -5433,7 +5433,7 @@ calculate_fast_getting_offset_for_LFB:
         cld
 @@:
         stosd
-        add     eax, [_display.pitch]
+        add     eax, [_display.lfb_pitch]
         dec     ecx
         jnz     @r
         ret
@@ -5448,7 +5448,7 @@ set_screen:
         pushfd
         cli
 
-        mov     [_display.pitch], ecx
+        mov     [_display.lfb_pitch], ecx
 
         mov     [screen_workarea.right], eax
         mov     [screen_workarea.bottom], edx
@@ -5462,14 +5462,14 @@ set_screen:
         cmp     [do_not_touch_winmap], 1
         je      @f
 
-        stdcall kernel_free, [_WinMapAddress]
+        stdcall kernel_free, [_display.win_map]
 
         mov     eax, [_display.width]
         mul     [_display.height]
-        mov     [_WinMapSize], eax
+        mov     [_display.win_map_size], eax
 
         stdcall kernel_alloc, eax
-        mov     [_WinMapAddress], eax
+        mov     [_display.win_map], eax
         test    eax, eax
         jz      .epic_fail
 ; store for f.18.24

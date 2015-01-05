@@ -115,7 +115,7 @@ save_draw_mouse:
 ;        mul     ecx
         mov     eax, [d_width_calc_area + eax*4]
 
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]

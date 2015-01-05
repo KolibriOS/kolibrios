@@ -842,7 +842,7 @@ proc mtrr_validate
 ; It must be write-combined.
         test    word [SCR_MODE], 0x4000
         jz      .exit
-        mov     eax, [_display.pitch]
+        mov     eax, [_display.lfb_pitch]
         mul     [_display.height]
         dec     eax
 ; LFB is mapped to virtual address LFB_BASE,

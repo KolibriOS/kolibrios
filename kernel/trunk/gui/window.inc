@@ -1893,7 +1893,7 @@ align 4
         mov     edi, [d_width_calc_area + ebx*4]
 
         add     edi, eax
-        add     edi, [_WinMapAddress]
+        add     edi, [_display.win_map]
         pop     eax
         mov     ah, al
         push    ax
@@ -1935,7 +1935,7 @@ align 4
         mov     eax, [d_width_calc_area + ebx*4]
 
         add     eax, [esp]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         mov     ebp, eax
 
         mov     edi, [edi + APPDATA.wnd_shape]

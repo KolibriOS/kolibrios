@@ -240,7 +240,7 @@ end virtual
         sub     eax, [putimg.real_sx]
         mov     [putimg.winmap_newline], eax
 ; screen new line increment
-        mov     eax, [_display.pitch]
+        mov     eax, [_display.lfb_pitch]
         mov     ebx, [_display.bytes_per_pixel]
         imul    ecx, ebx
         sub     eax, ecx
@@ -261,7 +261,7 @@ end virtual
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [putimg.abs_cx]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         xchg    eax, ebp
 
         mov     ecx, [putimg.real_sx]
@@ -884,7 +884,7 @@ __sys_putpixel:
 
 ; not forced
         mov     edx, [d_width_calc_area + ebx*4]
-        add     edx, [_WinMapAddress]
+        add     edx, [_display.win_map]
         movzx   edx, byte [eax+edx]
         cmp     edx, [CURRENT_TASK]
         jne     .exit
@@ -1448,7 +1448,7 @@ end virtual
         mov     ebx, [_display.bytes_per_pixel]
         imul    eax, ebx
         neg     eax
-        add     eax, [_display.pitch]
+        add     eax, [_display.lfb_pitch]
         mov     [drbar.line_inc_scr], eax
 ; pointer to screen
         mov     edx, [drbar.abs_cy]
@@ -1464,7 +1464,7 @@ end virtual
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [drbar.abs_cx]
-        add     eax, [_WinMapAddress]
+        add     eax, [_display.win_map]
         xchg    eax, ebp
 
         mov     ebx, [drbar.real_sx]
@@ -2034,7 +2034,7 @@ vesa20_drawbackground_tiled:
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
-        add     ebp, [_WinMapAddress]
+        add     ebp, [_display.win_map]
 ; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
 ; 2) Calculate offset in background memory block
         push    eax
@@ -2256,7 +2256,7 @@ vesa20_drawbackground_stretch:
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 
   sdp3a:
-        mov     eax, [_WinMapAddress]
+        mov     eax, [_display.win_map]
         cmp     [ebp+eax], byte 1
         jnz     snbgp
         mov     eax, [bgr_cur_line+esi]
@@ -2332,7 +2332,7 @@ vesa20_drawbackground_stretch:
         sub     edi, eax
 
   @@:
-        add     edi, [_display.pitch]
+        add     edi, [_display.lfb_pitch]
 ; restore ecx,edx; advance esi to next background line
         mov     eax, [esp+28]
         mov     ebx, [esp+32]

@@ -528,7 +528,7 @@ proc restore_24 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 
         mov     ecx, [esp]
         rep movsb
@@ -563,7 +563,7 @@ proc restore_32 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 
         mov     ecx, [cur.w]
         rep movsd
@@ -597,7 +597,7 @@ proc restore_16 stdcall, x:dword, y:dword
 align 4
 @@:
         mov     edi, ebx
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 
         mov     ecx, [cur.w]
         rep movsw
@@ -684,7 +684,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [_display.pitch]
+        add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
         lea     ecx, [ecx+ecx*2]
         rep movsb
@@ -707,7 +707,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 ;--------------------------------------
 align 4
 .pix:
@@ -797,7 +797,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [_display.pitch]
+        add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
         rep movsd
         dec     eax
@@ -819,7 +819,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 ;--------------------------------------
 align 4
 .pix:
@@ -907,7 +907,7 @@ align 4
 align 4
 @@:
         mov     esi, edx
-        add     edx, [_display.pitch]
+        add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
 
         rep movsw
@@ -930,7 +930,7 @@ align 4
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
-        add     ebx, [_display.pitch]
+        add     ebx, [_display.lfb_pitch]
 ;--------------------------------------
 align 4
 .pix:

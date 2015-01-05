@@ -425,38 +425,6 @@ struct  HDLL
         parent          dd ?   ;DLLDESCR
 ends
 
-struct  display_t
-        x               dd ?
-        y               dd ?
-        width           dd ?
-        height          dd ?
-        bits_per_pixel  dd ?
-        vrefresh        dd ?
-        pitch           dd ?
-        lfb             dd ?
-
-        modes           dd ?
-        ddev            dd ?
-        connector       dd ?
-        crtc            dd ?
-
-        cr_list.next    dd ?
-        cr_list.prev    dd ?
-
-        cursor          dd ?
-
-        init_cursor     dd ?
-        select_cursor   dd ?
-        show_cursor     dd ?
-        move_cursor     dd ?
-        restore_cursor  dd ?
-        disable_mouse   dd ?
-        mask_seqno      dd ?
-        check_mouse     dd ?
-        check_m_pixel   dd ?
-
-        bytes_per_pixel dd ?
-ends
 
 struct  BOOT_DATA
         bpp             dd ?
@@ -505,6 +473,45 @@ struct  RWSEM
         wait_list       LHEAD
         count           dd ?
 ends
+
+struct  display_t
+        x               dd ?
+        y               dd ?
+        width           dd ?
+        height          dd ?
+        bits_per_pixel  dd ?
+        vrefresh        dd ?
+        lfb             dd ?
+        lfb_pitch       dd ?
+
+        win_map_lock    RWSEM
+        win_map         dd ?
+        win_map_pitch   dd ?
+        win_map_size    dd ?
+
+        modes           dd ?
+        ddev            dd ?
+        connector       dd ?
+        crtc            dd ?
+
+        cr_list.next    dd ?
+        cr_list.prev    dd ?
+
+        cursor          dd ?
+
+        init_cursor     dd ?
+        select_cursor   dd ?
+        show_cursor     dd ?
+        move_cursor     dd ?
+        restore_cursor  dd ?
+        disable_mouse   dd ?
+        mask_seqno      dd ?
+        check_mouse     dd ?
+        check_m_pixel   dd ?
+
+        bytes_per_pixel dd ?
+ends
+
 
 struct  PCIDEV
         bk              dd ?

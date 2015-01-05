@@ -26,16 +26,26 @@ CURRENT_API     = 0x0200
 COMPATIBLE_API  = 0x0100
 API_VERSION     = (COMPATIBLE_API shl 16) + CURRENT_API
 
+struct  RWSEM
+        wait_list       LHEAD
+        count           dd ?
+ends
+
 ; Some structures
 struct  display_t
         x               dd ?
         y               dd ?
         width           dd ?
         height          dd ?
-        bpp             dd ?
+        bits_per_pixel  dd ?
         vrefresh        dd ?
-        pitch           dd ?
         lfb             dd ?
+        lfb_pitch       dd ?
+
+        win_map_lock    RWSEM
+        win_map         dd ?
+        win_map_pitch   dd ?
+        win_map_size    dd ?
 
         modes           dd ?
         ddev            dd ?
@@ -56,6 +66,8 @@ struct  display_t
         mask_seqno      dd ?
         check_mouse     dd ?
         check_m_pixel   dd ?
+
+        bytes_per_pixel dd ?
 ends
 
 struct  APPOBJ                  ; common object header

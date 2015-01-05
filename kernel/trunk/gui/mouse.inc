@@ -526,7 +526,7 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
         mov     esi, [mouse.state.pos.y]
         mov     esi, [d_width_calc_area + esi*4]
 
-        add     esi, [_WinMapAddress]
+        add     esi, [_display.win_map]
         add     esi, [mouse.state.pos.x]
         movzx   esi, byte[esi]
         mov     edi, esi
