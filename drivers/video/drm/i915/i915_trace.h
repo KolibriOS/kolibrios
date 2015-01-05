@@ -30,5 +30,12 @@
 #define trace_i915_gem_evict(dev, min_size, alignment, flags)
 #define trace_i915_gem_evict_vm(vm)
 #define trace_i915_gem_evict_everything(dev)
+#define trace_i915_context_free(ctx)
+#define trace_i915_context_create(ctx)
+#define trace_switch_mm(ring, to)
+#define trace_i915_ppgtt_create(base)
+#define trace_i915_ppgtt_release(base)
+
+
 
 #endif

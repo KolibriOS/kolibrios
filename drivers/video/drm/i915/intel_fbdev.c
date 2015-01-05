@@ -24,6 +24,7 @@
  *     David Airlie
  */
 
+#include <linux/async.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/errno.h>
@@ -31,7 +32,7 @@
 //#include <linux/mm.h>
 //#include <linux/tty.h>
 #include <linux/sysrq.h>
-//#include <linux/delay.h>
+#include <linux/delay.h>
 #include <linux/fb.h>
 //#include <linux/init.h>
 //#include <linux/vga_switcheroo.h>
@@ -70,11 +71,36 @@ struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
 #undef BYTES_PER_LONG
 }
 
+static int intel_fbdev_set_par(struct fb_info *info)
+{
+	struct drm_fb_helper *fb_helper = info->par;
+	struct intel_fbdev *ifbdev =
+		container_of(fb_helper, struct intel_fbdev, helper);
+	int ret;
+
+	ret = drm_fb_helper_set_par(info);
+
+	if (ret == 0) {
+		/*
+		 * FIXME: fbdev presumes that all callbacks also work from
+		 * atomic contexts and relies on that for emergency oops
+		 * printing. KMS totally doesn't do that and the locking here is
+		 * by far not the only place this goes wrong.  Ignore this for
+		 * now until we solve this for real.
+		 */
+		mutex_lock(&fb_helper->dev->struct_mutex);
+		ret = i915_gem_object_set_to_gtt_domain(ifbdev->fb->obj,
+							true);
+		mutex_unlock(&fb_helper->dev->struct_mutex);
+	}
+
+	return ret;
+}
 
 static struct fb_ops intelfb_ops = {
 	.owner = THIS_MODULE,
 	.fb_check_var = drm_fb_helper_check_var,
-	.fb_set_par = drm_fb_helper_set_par,
+	.fb_set_par = intel_fbdev_set_par,
 //   .fb_fillrect = cfb_fillrect,
 //   .fb_copyarea = cfb_copyarea,
 //   .fb_imageblit = cfb_imageblit,
@@ -103,40 +129,40 @@ static int intelfb_alloc(struct drm_fb_helper *helper,
 	mode_cmd.width = sizes->surface_width;
 	mode_cmd.height = sizes->surface_height;
 
-	mode_cmd.pitches[0] = ALIGN(mode_cmd.width * ((sizes->surface_bpp + 7) /
-                              8), 512);
+	mode_cmd.pitches[0] = ALIGN(mode_cmd.width *
+				    DIV_ROUND_UP(sizes->surface_bpp, 8), 64);
 	mode_cmd.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
 							  sizes->surface_depth);
 
 	size = mode_cmd.pitches[0] * mode_cmd.height;
 	size = ALIGN(size, PAGE_SIZE);
 	obj = main_fb_obj;
+    obj->stride = mode_cmd.pitches[0];
 	if (!obj) {
 		DRM_ERROR("failed to allocate framebuffer\n");
 		ret = -ENOMEM;
 		goto out;
 	}
-    obj->stride = mode_cmd.pitches[0];
-
-	/* Flush everything out, we'll be doing GTT only from now on */
-	ret = intel_pin_and_fence_fb_obj(dev, obj, NULL);
-	if (ret) {
-		DRM_ERROR("failed to pin obj: %d\n", ret);
-		goto out_unref;
-	}
 
 	fb = __intel_framebuffer_create(dev, &mode_cmd, obj);
 	if (IS_ERR(fb)) {
 		ret = PTR_ERR(fb);
-		goto out_unpin;
+		goto out_unref;
+	}
+
+	/* Flush everything out, we'll be doing GTT only from now on */
+	ret = intel_pin_and_fence_fb_obj(NULL, fb, NULL);
+	if (ret) {
+		DRM_ERROR("failed to pin obj: %d\n", ret);
+		goto out_fb;
 	}
 
 	ifbdev->fb = to_intel_framebuffer(fb);
 
 	return 0;
 
-out_unpin:
-	i915_gem_object_ggtt_unpin(obj);
+out_fb:
+	drm_framebuffer_remove(fb);
 out_unref:
 	drm_gem_object_unreference(&obj->base);
 out:
@@ -302,6 +328,7 @@ intel_fb_helper_crtc(struct drm_fb_helper *fb_helper, struct drm_crtc *crtc)
 static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 				    struct drm_fb_helper_crtc **crtcs,
 				    struct drm_display_mode **modes,
+				    struct drm_fb_offset *offsets,
 				    bool *enabled, int width, int height)
 {
 	struct drm_device *dev = fb_helper->dev;
@@ -310,24 +337,8 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 	bool fallback = true;
 	int num_connectors_enabled = 0;
 	int num_connectors_detected = 0;
-
-	/*
-	 * If the user specified any force options, just bail here
-	 * and use that config.
-	 */
-	for (i = 0; i < fb_helper->connector_count; i++) {
-		struct drm_fb_helper_connector *fb_conn;
-		struct drm_connector *connector;
-
-		fb_conn = fb_helper->connector_info[i];
-		connector = fb_conn->connector;
-
-		if (!enabled[i])
-			continue;
-
-		if (connector->force != DRM_FORCE_UNSPECIFIED)
-			return false;
-	}
+	uint64_t conn_configured = 0, mask;
+	int pass = 0;
 
 	save_enabled = kcalloc(dev->mode_config.num_connector, sizeof(bool),
 			       GFP_KERNEL);
@@ -335,7 +346,8 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 		return false;
 
 	memcpy(save_enabled, enabled, dev->mode_config.num_connector);
-
+	mask = (1 << fb_helper->connector_count) - 1;
+retry:
 	for (i = 0; i < fb_helper->connector_count; i++) {
 		struct drm_fb_helper_connector *fb_conn;
 		struct drm_connector *connector;
@@ -345,20 +357,38 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 		fb_conn = fb_helper->connector_info[i];
 		connector = fb_conn->connector;
 
+		if (conn_configured & (1 << i))
+			continue;
+
+		if (pass == 0 && !connector->has_tile)
+			continue;
+
 		if (connector->status == connector_status_connected)
 			num_connectors_detected++;
 
 		if (!enabled[i]) {
 			DRM_DEBUG_KMS("connector %s not enabled, skipping\n",
 				      connector->name);
+			conn_configured |= (1 << i);
+			continue;
+		}
+
+		if (connector->force == DRM_FORCE_OFF) {
+			DRM_DEBUG_KMS("connector %s is disabled by user, skipping\n",
+				      connector->name);
+			enabled[i] = false;
 			continue;
 		}
 
 		encoder = connector->encoder;
 		if (!encoder || WARN_ON(!encoder->crtc)) {
+			if (connector->force > DRM_FORCE_OFF)
+				goto bail;
+
 			DRM_DEBUG_KMS("connector %s has no encoder or crtc, skipping\n",
 				      connector->name);
 			enabled[i] = false;
+			conn_configured |= (1 << i);
 			continue;
 		}
 
@@ -374,8 +404,7 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 		for (j = 0; j < fb_helper->connector_count; j++) {
 			if (crtcs[j] == new_crtc) {
 				DRM_DEBUG_KMS("fallback: cloned configuration\n");
-				fallback = true;
-				goto out;
+				goto bail;
 			}
 		}
 
@@ -387,8 +416,8 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 
 		/* try for preferred next */
 		if (!modes[i]) {
-			DRM_DEBUG_KMS("looking for preferred mode on connector %s\n",
-				      connector->name);
+			DRM_DEBUG_KMS("looking for preferred mode on connector %s %d\n",
+				      connector->name, connector->has_tile);
 			modes[i] = drm_has_preferred_mode(fb_conn, width,
 							  height);
 		}
@@ -431,6 +460,12 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 			      modes[i]->flags & DRM_MODE_FLAG_INTERLACE ? "i" :"");
 
 		fallback = false;
+		conn_configured |= (1 << i);
+	}
+
+	if ((conn_configured & mask) != mask) {
+		pass++;
+		goto retry;
 	}
 
 	/*
@@ -446,8 +481,8 @@ static bool intel_fb_initial_config(struct drm_fb_helper *fb_helper,
 		fallback = true;
 	}
 
-out:
 	if (fallback) {
+bail:
 		DRM_DEBUG_KMS("Not using firmware configuration\n");
 		memcpy(enabled, save_enabled, dev->mode_config.num_connector);
 		kfree(save_enabled);
@@ -627,9 +662,9 @@ int intel_fbdev_init(struct drm_device *dev)
     return 0;
 }
 
-void intel_fbdev_initial_config(struct drm_device *dev)
+void intel_fbdev_initial_config(void *data, async_cookie_t cookie)
 {
-	struct drm_i915_private *dev_priv = dev->dev_private;
+	struct drm_i915_private *dev_priv = data;
 	struct intel_fbdev *ifbdev = dev_priv->fbdev;
 
 	/* Due to peculiar init order wrt to hpd handling this is separate. */

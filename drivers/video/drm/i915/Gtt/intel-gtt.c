@@ -18,15 +18,14 @@
 #include <syscall.h>
 
 #include <linux/module.h>
-#include <errno-base.h>
 #include <linux/pci.h>
 #include <linux/kernel.h>
+#include <linux/agp_backend.h>
+#include <linux/delay.h>
+#
 #include <linux/export.h>
 #include <linux/scatterlist.h>
 
-//#include <linux/pagemap.h>
-//#include <linux/agp_backend.h>
-//#include <asm/smp.h>
 #include <linux/spinlock.h>
 #include "agp.h"
 #include "intel-agp.h"

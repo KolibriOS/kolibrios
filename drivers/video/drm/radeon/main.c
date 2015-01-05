@@ -134,7 +134,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("Radeon v3.19-rc1 cmdline %s\n", cmdline);
+    printf("Radeon v3.19-rc2 cmdline %s\n", cmdline);
 
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, &usermode, log, &radeon_modeset);

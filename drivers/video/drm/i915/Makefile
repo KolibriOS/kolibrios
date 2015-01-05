@@ -1,16 +1,20 @@
 
 
-CC = gcc.exe
+CC = gcc
 FASM = e:/fasm/fasm.exe
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DRM_I915_FBDEV -DCONFIG_DMI
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6
+DEFINES += -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE -DCONFIG_DRM_I915_FBDEV -DCONFIG_DMI -DKBUILD_MODNAME=\"i915.dll\"
+
 
 DDK_TOPDIR      = /d/kos/kolibri/drivers/ddk
 DRV_INCLUDES    = /d/kos/kolibri/drivers/include
 DRM_TOPDIR   	= $(CURDIR)/..
 
-INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux \
-                -I$(DRV_INCLUDES)/linux/asm -I$(DRV_INCLUDES)/linux/uapi -I./
+INCLUDES =	-I$(DRV_INCLUDES)	\
+		-I$(DRV_INCLUDES)/asm 	\
+		-I$(DRV_INCLUDES)/uapi	\
+		-I$(DRV_INCLUDES)/drm -I./ -I$(DRV_INCLUDES)
 
 CFLAGS= -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -msse2 -fomit-frame-pointer -fno-ident -fno-builtin-printf
 CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields
@@ -62,6 +66,7 @@ NAME_SRC=		main.c					\
 			i915_gpu_error.c			\
 			i915_irq.c				\
 			i915_params.c				\
+			intel_audio.c				\
 			intel_bios.c				\
 			intel_crt.c				\
 			intel_ddi.c				\
@@ -74,16 +79,22 @@ NAME_SRC=		main.c					\
 			intel_dsi_pll.c				\
 			intel_dvo.c				\
 			intel_fbdev.c				\
+			intel_fifo_underrun.c			\
+			intel_frontbuffer.c			\
 			intel_hdmi.c				\
 			intel_i2c.c				\
+			intel_lrc.c				\
 			intel_lvds.c				\
 			intel_modes.c				\
 			intel_panel.c				\
 			intel_pm.c				\
+			intel_psr.c				\
 			intel_renderstate_gen6.c		\
 			intel_renderstate_gen7.c		\
 			intel_renderstate_gen8.c		\
+			intel_renderstate_gen9.c		\
 			intel_ringbuffer.c			\
+			intel_runtime_pm.c			\
 			intel_sdvo.c				\
 			intel_sideband.c			\
 			intel_sprite.c				\
@@ -104,6 +115,7 @@ NAME_SRC=		main.c					\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_helper.c		\
 			../drm_dp_mst_topology.c		\
+			$(DRM_TOPDIR)/drm_atomic.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_gem.c			\

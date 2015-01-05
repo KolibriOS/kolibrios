@@ -12,7 +12,7 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
     struct file *filep;
     int count;
 
-    filep = malloc(sizeof(*filep));
+    filep = __builtin_malloc(sizeof(*filep));
 
     if(unlikely(filep == NULL))
         return ERR_PTR(-ENOMEM);
@@ -248,7 +248,6 @@ static inline char _tolower(const char c)
 }
 
 
-
 //const char hex_asc[] = "0123456789abcdef";
 
 /**
@@ -478,35 +477,302 @@ void *kmemdup(const void *src, size_t len, gfp_t gfp)
 }
 
 
+#define KMAP_MAX    256
+
+static struct mutex kmap_mutex;
+static struct page* kmap_table[KMAP_MAX];
+static int kmap_av;
+static int kmap_first;
+static void* kmap_base;
+
+
+int kmap_init()
+{
+    kmap_base = AllocKernelSpace(KMAP_MAX*4096);
+    if(kmap_base == NULL)
+        return -1;
+
+    kmap_av = KMAP_MAX;
+    MutexInit(&kmap_mutex);
+    return 0;
+};
 
 void *kmap(struct page *page)
 {
-    void *vaddr;
+    void *vaddr = NULL;
+    int i;
 
-    vaddr = (void*)MapIoMem(page_to_phys(page), 4096, PG_SW);
+    do
+    {
+        MutexLock(&kmap_mutex);
+        if(kmap_av != 0)
+        {
+            for(i = kmap_first; i < KMAP_MAX; i++)
+            {
+                if(kmap_table[i] == NULL)
+                {
+                    kmap_av--;
+                    kmap_first = i;
+                    kmap_table[i] = page;
+                    vaddr = kmap_base + (i<<12);
+                    MapPage(vaddr,(addr_t)page,3);
+                    break;
+                };
+            };
+        };
+        MutexUnlock(&kmap_mutex);
+    }while(vaddr == NULL);
 
     return vaddr;
-}
+};
 
-unsigned long find_first_zero_bit(const unsigned long *addr, unsigned long size)
+void *kmap_atomic(struct page *page) __attribute__ ((alias ("kmap")));
+
+void kunmap(struct page *page)
 {
-        const unsigned long *p = addr;
-        unsigned long result = 0;
-        unsigned long tmp;
+    void *vaddr;
+    int   i;
 
-        while (size & ~(BITS_PER_LONG-1)) {
-                if (~(tmp = *(p++)))
-                        goto found;
-                result += BITS_PER_LONG;
-                size -= BITS_PER_LONG;
-        }
-        if (!size)
-                return result;
+    MutexLock(&kmap_mutex);
 
-        tmp = (*p) | (~0UL << size);
-        if (tmp == ~0UL)        /* Are any bits zero? */
-                return result + size;   /* Nope. */
-found:
-        return result + ffz(tmp);
+    for(i = 0; i < KMAP_MAX; i++)
+    {
+        if(kmap_table[i] == page)
+        {
+            kmap_av++;
+            if(i < kmap_first)
+                kmap_first = i;
+            kmap_table[i] = NULL;
+            vaddr = kmap_base + (i<<12);
+            MapPage(vaddr,0,0);
+            break;
+        };
+    };
+
+    MutexUnlock(&kmap_mutex);
+};
+
+void kunmap_atomic(void *vaddr)
+{
+    int i;
+
+    MapPage(vaddr,0,0);
+
+    i = (vaddr - kmap_base) >> 12;
+
+    MutexLock(&kmap_mutex);
+
+    kmap_av++;
+    if(i < kmap_first)
+        kmap_first = i;
+    kmap_table[i] = NULL;
+
+    MutexUnlock(&kmap_mutex);
 }
+
+size_t strlcat(char *dest, const char *src, size_t count)
+{
+        size_t dsize = strlen(dest);
+        size_t len = strlen(src);
+        size_t res = dsize + len;
+
+        /* This would be a bug */
+        BUG_ON(dsize >= count);
+
+        dest += dsize;
+        count -= dsize;
+        if (len >= count)
+                len = count-1;
+        memcpy(dest, src, len);
+        dest[len] = 0;
+        return res;
+}
+EXPORT_SYMBOL(strlcat);
+
+void msleep(unsigned int msecs)
+{
+    msecs /= 10;
+    if(!msecs) msecs = 1;
+
+     __asm__ __volatile__ (
+     "call *__imp__Delay"
+     ::"b" (msecs));
+     __asm__ __volatile__ (
+     "":::"ebx");
+
+};
+
+
+/* simple loop based delay: */
+static void delay_loop(unsigned long loops)
+{
+        asm volatile(
+                "       test %0,%0      \n"
+                "       jz 3f           \n"
+                "       jmp 1f          \n"
+
+                ".align 16              \n"
+                "1:     jmp 2f          \n"
+
+                ".align 16              \n"
+                "2:     dec %0          \n"
+                "       jnz 2b          \n"
+                "3:     dec %0          \n"
+
+                : /* we don't need output */
+                :"a" (loops)
+        );
+}
+
+
+static void (*delay_fn)(unsigned long) = delay_loop;
+
+void __delay(unsigned long loops)
+{
+        delay_fn(loops);
+}
+
+
+inline void __const_udelay(unsigned long xloops)
+{
+        int d0;
+
+        xloops *= 4;
+        asm("mull %%edx"
+                : "=d" (xloops), "=&a" (d0)
+                : "1" (xloops), ""
+                (loops_per_jiffy * (HZ/4)));
+
+        __delay(++xloops);
+}
+
+void __udelay(unsigned long usecs)
+{
+        __const_udelay(usecs * 0x000010c7); /* 2**32 / 1000000 (rounded up) */
+}
+
+unsigned int _sw_hweight32(unsigned int w)
+{
+#ifdef CONFIG_ARCH_HAS_FAST_MULTIPLIER
+        w -= (w >> 1) & 0x55555555;
+        w =  (w & 0x33333333) + ((w >> 2) & 0x33333333);
+        w =  (w + (w >> 4)) & 0x0f0f0f0f;
+        return (w * 0x01010101) >> 24;
+#else
+        unsigned int res = w - ((w >> 1) & 0x55555555);
+        res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
+        res = (res + (res >> 4)) & 0x0F0F0F0F;
+        res = res + (res >> 8);
+        return (res + (res >> 16)) & 0x000000FF;
+#endif
+}
+EXPORT_SYMBOL(_sw_hweight32);
+
+
+void usleep_range(unsigned long min, unsigned long max)
+{
+    udelay(max);
+}
+EXPORT_SYMBOL(usleep_range);
+
+
+static unsigned long round_jiffies_common(unsigned long j, int cpu,
+                bool force_up)
+{
+        int rem;
+        unsigned long original = j;
+
+        /*
+         * We don't want all cpus firing their timers at once hitting the
+         * same lock or cachelines, so we skew each extra cpu with an extra
+         * 3 jiffies. This 3 jiffies came originally from the mm/ code which
+         * already did this.
+         * The skew is done by adding 3*cpunr, then round, then subtract this
+         * extra offset again.
+         */
+        j += cpu * 3;
+
+        rem = j % HZ;
+
+        /*
+         * If the target jiffie is just after a whole second (which can happen
+         * due to delays of the timer irq, long irq off times etc etc) then
+         * we should round down to the whole second, not up. Use 1/4th second
+         * as cutoff for this rounding as an extreme upper bound for this.
+         * But never round down if @force_up is set.
+         */
+        if (rem < HZ/4 && !force_up) /* round down */
+                j = j - rem;
+        else /* round up */
+                j = j - rem + HZ;
+
+        /* now that we have rounded, subtract the extra skew again */
+        j -= cpu * 3;
+
+        /*
+         * Make sure j is still in the future. Otherwise return the
+         * unmodified value.
+         */
+        return time_is_after_jiffies(j) ? j : original;
+}
+
+
+unsigned long round_jiffies_up_relative(unsigned long j, int cpu)
+{
+        unsigned long j0 = jiffies;
+
+        /* Use j0 because jiffies might change while we run */
+        return round_jiffies_common(j + j0, 0, true) - j0;
+}
+EXPORT_SYMBOL_GPL(__round_jiffies_up_relative);
+
+
+#include <linux/rcupdate.h>
+
+struct rcu_ctrlblk {
+        struct rcu_head *rcucblist;     /* List of pending callbacks (CBs). */
+        struct rcu_head **donetail;     /* ->next pointer of last "done" CB. */
+        struct rcu_head **curtail;      /* ->next pointer of last CB. */
+//        RCU_TRACE(long qlen);           /* Number of pending CBs. */
+//        RCU_TRACE(unsigned long gp_start); /* Start time for stalls. */
+//        RCU_TRACE(unsigned long ticks_this_gp); /* Statistic for stalls. */
+//        RCU_TRACE(unsigned long jiffies_stall); /* Jiffies at next stall. */
+//        RCU_TRACE(const char *name);    /* Name of RCU type. */
+};
+
+/* Definition for rcupdate control block. */
+static struct rcu_ctrlblk rcu_sched_ctrlblk = {
+        .donetail       = &rcu_sched_ctrlblk.rcucblist,
+        .curtail        = &rcu_sched_ctrlblk.rcucblist,
+//        RCU_TRACE(.name = "rcu_sched")
+};
+
+static void __call_rcu(struct rcu_head *head,
+                       void (*func)(struct rcu_head *rcu),
+                       struct rcu_ctrlblk *rcp)
+{
+        unsigned long flags;
+
+//        debug_rcu_head_queue(head);
+        head->func = func;
+        head->next = NULL;
+
+        local_irq_save(flags);
+        *rcp->curtail = head;
+        rcp->curtail = &head->next;
+//        RCU_TRACE(rcp->qlen++);
+        local_irq_restore(flags);
+}
+
+/*
+ * Post an RCU callback to be invoked after the end of an RCU-sched grace
+ * period.  But since we have but one CPU, that would be after any
+ * quiescent state.
+ */
+void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+{
+        __call_rcu(head, func, &rcu_sched_ctrlblk);
+}
+
+
 

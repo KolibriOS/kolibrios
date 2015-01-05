@@ -4,7 +4,7 @@
 #include "radeon.h"
 #include "radeon_object.h"
 #include "bitmap.h"
-#include "display.h"
+#include <display.h>
 
 #include "r100d.h"
 
@@ -32,20 +32,20 @@ int init_cursor(cursor_t *cursor)
     rdev = (struct radeon_device *)os_display->ddev->dev_private;
 
     r = radeon_bo_create(rdev, CURSOR_WIDTH*CURSOR_HEIGHT*4,
-                     4096, false, RADEON_GEM_DOMAIN_VRAM, 0, NULL, NULL, &cursor->robj);
+                     4096, false, RADEON_GEM_DOMAIN_VRAM, 0, NULL, NULL, (struct radeon_bo**)&cursor->cobj);
 
     if (unlikely(r != 0))
         return r;
 
-    r = radeon_bo_reserve(cursor->robj, false);
+    r = radeon_bo_reserve(cursor->cobj, false);
     if (unlikely(r != 0))
         return r;
 
-    r = radeon_bo_pin(cursor->robj, RADEON_GEM_DOMAIN_VRAM, NULL);
+    r = radeon_bo_pin(cursor->cobj, RADEON_GEM_DOMAIN_VRAM, NULL);
     if (unlikely(r != 0))
         return r;
 
-    r = radeon_bo_kmap(cursor->robj, (void**)&bits);
+    r = radeon_bo_kmap(cursor->cobj, (void**)&bits);
     if (r) {
          DRM_ERROR("radeon: failed to map cursor (%d).\n", r);
          return r;
@@ -63,7 +63,7 @@ int init_cursor(cursor_t *cursor)
     for(i = 0; i < CURSOR_WIDTH*(CURSOR_HEIGHT-32); i++)
         *bits++ = 0;
 
-    radeon_bo_kunmap(cursor->robj);
+    radeon_bo_kunmap(cursor->cobj);
 
  //   cursor->header.destroy = destroy_cursor;
 
@@ -73,7 +73,7 @@ int init_cursor(cursor_t *cursor)
 void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
     list_del(&cursor->list);
-    radeon_bo_unpin(cursor->robj);
+    radeon_bo_unpin(cursor->cobj);
     KernelFree(cursor->data);
     __DestroyObject(cursor);
 };
@@ -110,7 +110,7 @@ cursor_t* __stdcall select_cursor(cursor_t *cursor)
     old = os_display->cursor;
 
     os_display->cursor = cursor;
-    gpu_addr = radeon_bo_gpu_offset(cursor->robj);
+    gpu_addr = radeon_bo_gpu_offset(cursor->cobj);
 
     if (ASIC_IS_DCE4(rdev))
     {
@@ -207,7 +207,7 @@ void __stdcall move_cursor(cursor_t *cursor, int x, int y)
         WREG32(RADEON_CUR_HORZ_VERT_POSN,
                (RADEON_CUR_LOCK | (x << 16) | y));
 
-        gpu_addr = radeon_bo_gpu_offset(cursor->robj);
+        gpu_addr = radeon_bo_gpu_offset(cursor->cobj);
 
         /* offset is from DISP(2)_BASE_ADDRESS */
         WREG32(RADEON_CUR_OFFSET,

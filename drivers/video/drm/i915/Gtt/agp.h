@@ -29,15 +29,7 @@
 #ifndef _AGP_BACKEND_PRIV_H
 #define _AGP_BACKEND_PRIV_H 1
 
-//#include <asm/agp.h>	/* for flush_agp_cache() */
-
-
-enum chipset_type {
-       NOT_SUPPORTED,
-       SUPPORTED,
-};
-
-struct agp_memory;
+#include <asm/agp.h>	/* for flush_agp_cache() */
 
 #define PFX "agpgart: "
 

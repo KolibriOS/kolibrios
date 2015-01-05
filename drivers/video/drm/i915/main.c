@@ -5,7 +5,6 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
-#include <errno-base.h>
 #include <linux/pci.h>
 #include <syscall.h>
 
@@ -33,7 +32,8 @@ struct drm_device *main_device;
 struct drm_file   *drm_file_handlers[256];
 videomode_t usermode;
 
-void cpu_detect();
+void cpu_detect1();
+int kmap_init();
 
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
@@ -170,7 +170,7 @@ void i915_driver_thread()
     asm volatile ("int $0x40"::"a"(-1));
 }
 
-u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
+u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
 {
     static pci_dev_t device;
     const struct pci_device_id  *ent;
@@ -186,7 +186,7 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("\ni915 v3.17-rc5 build %s %s\nusage: i915 [options]\n"
+    printf("\ni915 v3.19-rc2 build %s %s\nusage: i915 [options]\n"
            "-pm=<0,1>     Enable powersavings, fbc, downclocking, etc. (default: 1 - true)\n",
            __DATE__, __TIME__);
     printf("-rc6=<-1,0-7> Enable power-saving render C-state 6.\n"
@@ -210,13 +210,20 @@ u32_t  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
             return 0;
     }
 
-    cpu_detect();
+    cpu_detect1();
 //    dbgprintf("\ncache line size %d\n", x86_clflush_size);
 
     err = enum_pci_devices();
     if( unlikely(err != 0) )
     {
         dbgprintf("Device enumeration failed\n");
+        return 0;
+    }
+
+    err = kmap_init();
+    if( unlikely(err != 0) )
+    {
+        dbgprintf("kmap initialization failed\n");
         return 0;
     }
 
@@ -310,8 +317,8 @@ int _stdcall display_handler(ioctl_t *io)
     struct drm_file *file;
 
     int    retval = -1;
-    u32_t *inp;
-    u32_t *outp;
+    u32 *inp;
+    u32 *outp;
 
     inp = io->input;
     outp = io->output;
@@ -465,10 +472,10 @@ int _stdcall display_handler(ioctl_t *io)
 #define PCI_CLASS_BRIDGE_HOST   0x0600
 #define PCI_CLASS_BRIDGE_ISA    0x0601
 
-int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
+int pci_scan_filter(u32 id, u32 busnr, u32 devfn)
 {
-    u16_t vendor, device;
-    u32_t class;
+    u16 vendor, device;
+    u32 class;
     int   ret = 0;
 
     vendor   = id & 0xffff;
@@ -488,43 +495,17 @@ int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
 };
 
 
-
-
-static inline void __cpuid(unsigned int *eax, unsigned int *ebx,
-                unsigned int *ecx, unsigned int *edx)
-{
-    /* ecx is often an input as well as an output. */
-    asm volatile("cpuid"
-        : "=a" (*eax),
-          "=b" (*ebx),
-          "=c" (*ecx),
-          "=d" (*edx)
-        : "0" (*eax), "2" (*ecx)
-        : "memory");
-}
-
-
-
-static inline void cpuid(unsigned int op,
-                         unsigned int *eax, unsigned int *ebx,
-                         unsigned int *ecx, unsigned int *edx)
-{
-        *eax = op;
-        *ecx = 0;
-        __cpuid(eax, ebx, ecx, edx);
-}
-
 struct mtrr
 {
-    u64_t  base;
-    u64_t  mask;
+    u64  base;
+    u64  mask;
 };
 
 struct cpuinfo
 {
-    u64_t  caps;
-    u64_t  def_mtrr;
-    u64_t  mtrr_cap;
+    u64  caps;
+    u64  def_mtrr;
+    u64  mtrr_cap;
     int    var_mtrr_count;
     int    fix_mtrr_count;
     struct mtrr var_mtrr[9];
@@ -549,13 +530,13 @@ struct cpuinfo
 #define MTRR_WC                 1
 #define MTRR_WB                 6
 
-static inline u64_t read_msr(u32_t msr)
+static inline u64 read_msr(u32 msr)
 {
     union {
-        u64_t  val;
+        u64  val;
         struct {
-            u32_t low;
-            u32_t high;
+            u32 low;
+            u32 high;
         };
     }tmp;
 
@@ -566,13 +547,13 @@ static inline u64_t read_msr(u32_t msr)
     return tmp.val;
 }
 
-static inline void write_msr(u32_t msr, u64_t val)
+static inline void write_msr(u32 msr, u64 val)
 {
     union {
-        u64_t  val;
+        u64  val;
         struct {
-            u32_t low;
-            u32_t high;
+            u32 low;
+            u32 high;
         };
     }tmp;
 
@@ -581,24 +562,6 @@ static inline void write_msr(u32_t msr, u64_t val)
     asm volatile (
     "wrmsr"
     :: "a" (tmp.low), "d" (tmp.high), "c" (msr));
-}
-
-#define rdmsr(msr, low, high)                                   \
-do {                                                            \
-       u64 __val = read_msr((msr));                     \
-       (void)((low) = (u32)__val);                             \
-       (void)((high) = (u32)(__val >> 32));                    \
-} while (0)
-
-static inline void native_write_msr(unsigned int msr,
-                                    unsigned low, unsigned high)
-{
-    asm volatile("wrmsr" : : "c" (msr), "a"(low), "d" (high) : "memory");
-}
-
-static inline void wbinvd(void)
-{
-    asm volatile("wbinvd": : :"memory");
 }
 
 #define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
@@ -630,53 +593,16 @@ static void set_mtrr(unsigned int reg, unsigned long base,
     };
 }
 
-static unsigned long __force_order;
-
-static inline unsigned long read_cr0(void)
-{
-    unsigned long val;
-    asm volatile("mov %%cr0,%0\n\t" : "=r" (val), "=m" (__force_order));
-    return val;
-}
-
-static inline void write_cr0(unsigned long val)
-{
-    asm volatile("mov %0,%%cr0": : "r" (val), "m" (__force_order));
-}
-
-static inline unsigned long read_cr4(void)
-{
-    unsigned long val;
-    asm volatile("mov %%cr4,%0\n\t" : "=r" (val), "=m" (__force_order));
-    return val;
-}
-
-static inline void write_cr4(unsigned long val)
-{
-    asm volatile("mov %0,%%cr4": : "r" (val), "m" (__force_order));
-}
-
-static inline unsigned long read_cr3(void)
-{
-    unsigned long val;
-    asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
-    return val;
-}
-
-static inline void write_cr3(unsigned long val)
-{
-    asm volatile("mov %0,%%cr3": : "r" (val), "m" (__force_order));
-}
 
 static u32 deftype_lo, deftype_hi;
 
-void cpu_detect()
+void cpu_detect1()
 {
     struct cpuinfo cpuinfo;
 
     u32 junk, tfms, cap0, misc;
     int i;
-#if 0
+
     cpuid(0x00000001, &tfms, &misc, &junk, &cap0);
 
     if (cap0 & (1<<19))
@@ -684,6 +610,7 @@ void cpu_detect()
         x86_clflush_size = ((misc >> 8) & 0xff) * 8;
     }
 
+#if 0
     cpuid(0x80000002, (unsigned int*)&cpuinfo.model_name[0], (unsigned int*)&cpuinfo.model_name[4],
           (unsigned int*)&cpuinfo.model_name[8], (unsigned int*)&cpuinfo.model_name[12]);
     cpuid(0x80000003, (unsigned int*)&cpuinfo.model_name[16], (unsigned int*)&cpuinfo.model_name[20],
@@ -954,5 +881,4 @@ __asm__ __volatile__(
     : "dx", "di");
 return __res;
 }
-
 

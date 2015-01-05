@@ -2,18 +2,20 @@
  * Intel AGPGART routines.
  */
 
-#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
-#include <errno-base.h>
+#include <linux/gfp.h>
 #include <linux/pci.h>
-
-//#include <linux/agp_backend.h>
-//#include <asm/smp.h>
-#include <linux/spinlock.h>
-
+#include <linux/slab.h>
+#include <linux/kernel.h>
+#include <linux/agp_backend.h>
 #include "agp.h"
 #include "intel-agp.h"
+#include <drm/intel-gtt.h>
+
+#include <linux/spinlock.h>
+
+
 
 #include <syscall.h>
 

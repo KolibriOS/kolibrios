@@ -192,7 +192,7 @@ static void print_error_buffers(struct drm_i915_error_state_buf *m,
 				struct drm_i915_error_buffer *err,
 				int count)
 {
-	err_printf(m, "%s [%d]:\n", name, count);
+	err_printf(m, "  %s [%d]:\n", name, count);
 
 	while (count--) {
 		err_printf(m, "  %08x %8u %02x %02x %x %x",
@@ -208,7 +208,7 @@ static void print_error_buffers(struct drm_i915_error_state_buf *m,
 		err_puts(m, err->userptr ? " userptr" : "");
 		err_puts(m, err->ring != -1 ? " " : "");
 		err_puts(m, ring_str(err->ring));
-		err_puts(m, i915_cache_level_str(err->cache_level));
+		err_puts(m, i915_cache_level_str(m->i915, err->cache_level));
 
 		if (err->name)
 			err_printf(m, " (name: %d)", err->name);
@@ -229,6 +229,8 @@ static const char *hangcheck_action_to_str(enum intel_ring_hangcheck_action a)
 		return "wait";
 	case HANGCHECK_ACTIVE:
 		return "active";
+	case HANGCHECK_ACTIVE_LOOP:
+		return "active (loop)";
 	case HANGCHECK_KICK:
 		return "kick";
 	case HANGCHECK_HUNG:

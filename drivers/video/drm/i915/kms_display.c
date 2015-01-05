@@ -5,73 +5,25 @@
 #include <uapi/drm/drm.h>
 #include "i915_drv.h"
 #include "intel_drv.h"
-#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
-#include <errno-base.h>
 #include <linux/pci.h>
 
 #include <syscall.h>
 
 #include "bitmap.h"
-
-typedef struct
-{
-    kobj_t     header;
-
-    uint32_t  *data;
-    uint32_t   hot_x;
-    uint32_t   hot_y;
-
-    struct list_head   list;
-    struct drm_i915_gem_object  *cobj;
-}cursor_t;
-
-#define KMS_CURSOR_WIDTH 64
-#define KMS_CURSOR_HEIGHT 64
+#include <display.h>
 
 
-struct tag_display
-{
-    int  x;
-    int  y;
-    int  width;
-    int  height;
-    int  bpp;
-    int  vrefresh;
-    int  pitch;
-    int  lfb;
-
-    int  supported_modes;
-    struct drm_device    *ddev;
-    struct drm_connector *connector;
-    struct drm_crtc      *crtc;
-
-    struct list_head   cursors;
-
-    cursor_t   *cursor;
-    int       (*init_cursor)(cursor_t*);
-    cursor_t* (__stdcall *select_cursor)(cursor_t*);
-    void      (*show_cursor)(int show);
-    void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
-    void      (__stdcall *restore_cursor)(int x, int y);
-    void      (*disable_mouse)(void);
-    u32  mask_seqno;
-    u32  check_mouse;
-    u32  check_m_pixel;
-};
-
-
-static display_t *os_display;
+display_t *os_display;
 struct drm_i915_gem_object *main_fb_obj;
 
-u32_t cmd_buffer;
-u32_t cmd_offset;
+u32 cmd_buffer;
+u32 cmd_offset;
 
 void init_render();
 int  sna_init();
 
-int init_cursor(cursor_t *cursor);
 static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
 static void       __stdcall move_cursor_kms(cursor_t *cursor, int x, int y);
 
@@ -330,7 +282,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     struct drm_framebuffer  *fb;
 
     cursor_t  *cursor;
-    u32_t      ifl;
+    u32      ifl;
     int        ret;
 
     mutex_lock(&dev->mode_config.mutex);
@@ -484,12 +436,13 @@ void i915_dpms(struct drm_device *dev, int mode)
 
 void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
+    struct drm_i915_gem_object *obj = cursor->cobj;
     list_del(&cursor->list);
 
     i915_gem_object_ggtt_unpin(cursor->cobj);
 
     mutex_lock(&main_device->struct_mutex);
-    drm_gem_object_unreference(&cursor->cobj->base);
+    drm_gem_object_unreference(&obj->base);
     mutex_unlock(&main_device->struct_mutex);
 
     __DestroyObject(cursor);
@@ -645,15 +598,6 @@ typedef struct
 
 #define CURRENT_TASK             (0x80003000)
 
-static u32_t get_display_map()
-{
-    u32_t   addr;
-
-    addr = (u32_t)os_display;
-    addr+= sizeof(display_t);            /*  shoot me  */
-    return *(u32_t*)addr;
-}
-
 void  FASTCALL GetWindowRect(rect_t *rc)__asm__("GetWindowRect");
 
 int i915_mask_update(struct drm_device *dev, void *data,
@@ -719,12 +663,12 @@ int i915_mask_update(struct drm_device *dev, void *data,
 
 //        slot = 0x01;
 
+        src_offset = os_display->win_map;
+        src_offset+= winrc.top*os_display->width + winrc.left;
 
-        src_offset = (u8*)( winrc.top*os_display->width + winrc.left);
-        src_offset+= get_display_map();
         dst_offset = (u8*)mask->bo_map;
 
-        u32_t tmp_h = mask->height;
+        u32 tmp_h = mask->height;
 
         ifl = safe_cli();
         {
@@ -926,11 +870,11 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
 
         i915_gem_object_set_to_cpu_domain(to_intel_bo(obj), true);
 
-        src_offset = (u8*)( mt*os_display->width + ml);
-        src_offset+= get_display_map();
+        src_offset = os_display->win_map;
+        src_offset+= mt*os_display->width + ml;
         dst_offset = (u8*)mask->bo_map;
 
-        u32_t tmp_h = mask->height;
+        u32 tmp_h = mask->height;
 
         ifl = safe_cli();
         {
@@ -1145,21 +1089,5 @@ int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *
     return 1;
 }
 
-unsigned int hweight16(unsigned int w)
-{
-    unsigned int res = w - ((w >> 1) & 0x5555);
-    res = (res & 0x3333) + ((res >> 2) & 0x3333);
-    res = (res + (res >> 4)) & 0x0F0F;
-    return (res + (res >> 8)) & 0x00FF;
-}
-
-
-unsigned long round_jiffies_up_relative(unsigned long j)
-{
-    unsigned long j0 = GetTimerTicks();
-
-        /* Use j0 because jiffies might change while we run */
-    return round_jiffies_common(j + j0, true) - j0;
-}
 
 

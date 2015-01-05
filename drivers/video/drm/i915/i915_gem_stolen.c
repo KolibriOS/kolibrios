@@ -276,6 +276,7 @@ void i915_gem_cleanup_stolen(struct drm_device *dev)
 int i915_gem_init_stolen(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
+	u32 tmp;
 	int bios_reserved = 0;
 
 #ifdef CONFIG_INTEL_IOMMU
@@ -295,8 +296,16 @@ int i915_gem_init_stolen(struct drm_device *dev)
 	DRM_DEBUG_KMS("found %zd bytes of stolen memory at %08lx\n",
 		      dev_priv->gtt.stolen_size, dev_priv->mm.stolen_base);
 
-	if (IS_VALLEYVIEW(dev))
-		bios_reserved = 1024*1024; /* top 1M on VLV/BYT */
+	if (INTEL_INFO(dev)->gen >= 8) {
+		tmp = I915_READ(GEN7_BIOS_RESERVED);
+		tmp >>= GEN8_BIOS_RESERVED_SHIFT;
+		tmp &= GEN8_BIOS_RESERVED_MASK;
+		bios_reserved = (1024*1024) << tmp;
+	} else if (IS_GEN7(dev)) {
+		tmp = I915_READ(GEN7_BIOS_RESERVED);
+		bios_reserved = tmp & GEN7_BIOS_RESERVED_256K ?
+			256*1024 : 1024*1024;
+	}
 
 	if (WARN_ON(bios_reserved > dev_priv->gtt.stolen_size))
 		return 0;
@@ -511,7 +520,7 @@ i915_gem_object_create_stolen_for_preallocated(struct drm_device *dev,
 		}
 		}
 
-	obj->has_global_gtt_mapping = 1;
+	vma->bound |= GLOBAL_BIND;
 
 	list_add_tail(&obj->global_list, &dev_priv->mm.bound_list);
 	list_add_tail(&vma->mm_list, &ggtt->inactive_list);

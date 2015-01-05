@@ -6,7 +6,7 @@
 #include "drm_fb_helper.h"
 #include "hmm.h"
 #include "bitmap.h"
-#include "display.h"
+#include <display.h>
 
 extern struct drm_framebuffer *main_fb;
 extern struct drm_gem_object  *main_fb_obj;
@@ -94,7 +94,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     old = os_display->cursor;
 
     os_display->cursor = cursor;
-    gpu_addr = radeon_bo_gpu_offset(cursor->robj);
+    gpu_addr = radeon_bo_gpu_offset(cursor->cobj);
 
     if (ASIC_IS_DCE4(rdev)) {
         WREG32(EVERGREEN_CUR_SURFACE_ADDRESS_HIGH + radeon_crtc->crtc_offset,
@@ -169,7 +169,7 @@ void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
         WREG32(RADEON_CUR_HORZ_VERT_POSN,
                (RADEON_CUR_LOCK | (x << 16) | y));
 
-        gpu_addr = radeon_bo_gpu_offset(cursor->robj);
+        gpu_addr = radeon_bo_gpu_offset(cursor->cobj);
 
         /* offset is from DISP(2)_BASE_ADDRESS */
         WREG32(RADEON_CUR_OFFSET,
