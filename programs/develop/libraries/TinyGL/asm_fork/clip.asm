@@ -13,6 +13,10 @@ offs_Y equ 4
 offs_Z equ 8
 offs_W equ 12
 
+if DEBUG
+f_ttv db ' gl_transform_to_viewport',0
+end if
+
 align 4
 proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 locals
@@ -69,8 +73,8 @@ endl
 	.end_if:
   
 	; texture
-	bt dword[eax+offs_cont_texture_2d_enabled],0
-	jnc @f
+	cmp dword[eax+offs_cont_texture_2d_enabled],0
+	je @f
 		mov dword[point],dword(ZB_POINT_S_MAX - ZB_POINT_S_MIN)
 		fild dword[point]
 		fmul dword[ebx+offs_vert_tex_coord] ;st0 *= v.tex_coord.X
@@ -84,7 +88,7 @@ endl
 		add dword[ebx+offs_vert_zp+offs_zbup_s],ZB_POINT_T_MIN
 	@@:
 if DEBUG ;gl_transform_to_viewport
-push edi
+pushad
 	mov ecx,80
 	mov eax,[ebx+offs_vert_zp]
 	lea edi,[buf_param]
@@ -106,7 +110,7 @@ push edi
 
 	stdcall str_n_cat,edi,txt_nl,2
 	stdcall dbg_print,f_ttv,buf_param
-pop edi
+popad
 end if
 	ret
 endp
@@ -170,11 +174,11 @@ proc interpolate uses eax ebx ecx, q:dword,p0:dword,p1:dword,t:dword
 	fld dword[t]
 
 	; интерполяция по координатам
-	fld dword[ecx+offs_vert_pc+offs_X]
-	fsub dword[ebx+offs_vert_pc+offs_X]
+	fld dword[ecx+offs_vert_pc]
+	fsub dword[ebx+offs_vert_pc]
 	fmul st0,st1
-	fadd dword[ebx+offs_vert_pc+offs_X]
-	fstp dword[eax+offs_vert_pc+offs_X]
+	fadd dword[ebx+offs_vert_pc]
+	fstp dword[eax+offs_vert_pc] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
 
 	fld dword[ecx+offs_vert_pc+offs_Y]
 	fsub dword[ebx+offs_vert_pc+offs_Y]
@@ -663,8 +667,8 @@ proc updateTmp uses eax ebx ecx edx, context:dword, q:dword, p0:dword, p1:dword,
 	stdcall gl_clipcode, [ebx+offs_vert_pc+offs_X],[ebx+offs_vert_pc+offs_Y],\
 		[ebx+offs_vert_pc+offs_Z],[ebx+offs_vert_pc+offs_W]
 	mov dword[ebx+offs_vert_clip_code],eax
-	cmp eax,0 ;if (q.clip_code==0)
-	jne @f
+	or eax,eax ;if (q.clip_code==0)
+	jnz @f
 		stdcall gl_transform_to_viewport,[context],ebx
 		mov eax,ebx
 		add eax,offs_vert_zp+offs_zbup_b
@@ -689,7 +693,6 @@ pushad
 	mov ebx,[p0]
 	mov ecx,[p1]
 	mov edx,[p2]
-
 	mov edi,[ebx+offs_vert_clip_code]
 	mov dword[cc],edi
 	mov eax,[ecx+offs_vert_clip_code]
@@ -700,8 +703,9 @@ pushad
 	or edi,eax ;co = cc[0] | cc[1] | cc[2]
 
 	; we handle the non clipped case here to go faster
-	cmp edi,0 ;if (co==0)
-	jne .els_0
+	;or edi,___ - было выше
+	jnz .els_0
+		;if (co==0)
 		mov edi,dword[edx+offs_vert_zp+offs_zbup_x]
 		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
 		mov dword[norm],edi
@@ -728,13 +732,12 @@ pushad
 		fstsw ax
 		sahf
 		je .end_f
-		jb @f
+		jbe @f ;jb @f ???
 			inc dword[front] ;front = 0.0 > norm
 		@@:
 		mov edi,[context]
 		mov eax,dword[edi+offs_cont_current_front_face]
 		xor dword[front],eax ;front ^= context.current_front_face
-
 		; back face culling
 		cmp dword[edi+offs_cont_cull_face_enabled],0
 		je .els_1
@@ -765,8 +768,8 @@ pushad
 		;eax = cc[2]
 		and eax,[cc]
 		and eax,[cc+4] ;eax = c_and = cc[0] & cc[1] & cc[2]
-		cmp eax,0 ;if (c_and==0)
-		jne .end_f
+		or eax,eax ;if (c_and==0)
+		jnz .end_f
 			stdcall gl_draw_triangle_clip, [context],ebx,ecx,edx,0
 	.end_f:
 popad
@@ -799,8 +802,8 @@ pushad
 	or edi,eax
 	mov [co],edi ;co = cc[0] | cc[1] | cc[2]
 
-	cmp edi,0 ;if (co == 0)
-	jne .els_0
+	or edi,edi ;if (co == 0)
+	jnz .els_0
 		stdcall gl_draw_triangle, [context],ebx,ecx,edx
 		jmp .end_f
 	.els_0:
@@ -809,8 +812,8 @@ pushad
 		and eax,[cc+4] ;c_and = cc[0] & cc[1] & cc[2]
 
 		; the triangle is completely outside
-		cmp eax,0 ;if (c_and!=0) return
-		jne .end_f
+		or eax,eax ;if (c_and!=0) return
+		jnz .end_f
 
 		; find the next direction to clip
 		.cycle_0: ;while (clip_bit < 6 && (co & (1 << clip_bit)) == 0)
@@ -821,8 +824,8 @@ pushad
 		mov ecx,[clip_bit]
 		shl eax,cl
 		and eax,[co]
-		cmp eax,0
-		jne .cycle_0_end
+		or eax,eax
+		jnz .cycle_0_end
 			inc dword[clip_bit]
 			jmp .cycle_0
 		.cycle_0_end:
@@ -854,13 +857,13 @@ end if
 
 	mov ecx,[p1] ;востанавливаем после shl ___,cl
 
-	cmp eax,0 ;if (co1)
-	je .els_1
+	or eax,eax ;if (co1)
+	jz .els_1
 		; one point outside
 		mov eax,[cc]
 		and eax,[clip_mask]
-		cmp eax,0 ;if (cc[0] & clip_mask)
-		je .els_2
+		or eax,eax ;if (cc[0] & clip_mask)
+		jz .els_2
 			;q[0]=p0 q[1]=p1 q[2]=p2
 			mov [q],ebx
 			mov [q+4],ecx
@@ -869,8 +872,8 @@ end if
 		.els_2:
 		mov eax,[cc+4]
 		and eax,[clip_mask]
-		cmp eax,0 ;else if (cc[1] & clip_mask)
-		je .els_3
+		or eax,eax ;else if (cc[1] & clip_mask)
+		jz .els_3
 			;q[0]=p1 q[1]=p2 q[2]=p0
 			mov [q],ecx
 			mov [q+4],edx
@@ -917,7 +920,7 @@ end if
 		stdcall updateTmp,[context],edi,ebx,edx,eax ;updateTmp(c,&tmp2,q[0],q[2],tt)
 
 		mov eax,[ebx+offs_vert_edge_flag]
-		mov [tmp1+offs_vert_edge_flag],eax ;q[0].edge_flag
+		mov [tmp1.edge_flag],eax ;q[0].edge_flag
 		mov eax,[edx+offs_vert_edge_flag]
 		mov [edge_flag_tmp],eax	;q[2].edge_flag
 		mov dword[edx+offs_vert_edge_flag],0 ;q[2].edge_flag=0
@@ -992,11 +995,9 @@ end if
 		sub edi,offs_vert_pc
 		stdcall updateTmp,[context],edi,[q],[q+8],eax
 
-		mov edx,[q+8]
-
-		mov dword[tmp1+offs_vert_edge_flag],1
-		mov eax,[edx+offs_vert_edge_flag]
-		mov dword[tmp1+offs_vert_edge_flag],eax ;tmp2.edge_flag = q[2].edge_flag
+		mov dword[tmp1.edge_flag],1
+		mov eax,[edx+offs_vert_edge_flag-offs_vert_pc]
+		mov dword[tmp2.edge_flag],eax ;tmp2.edge_flag = q[2].edge_flag
 		mov eax,[clip_bit]
 		inc eax
 		push eax

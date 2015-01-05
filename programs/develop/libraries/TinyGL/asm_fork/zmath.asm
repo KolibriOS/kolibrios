@@ -3,6 +3,11 @@
 
 ; ******* Gestion des matrices 4x4 ******
 
+if DEBUG
+f_m4m db 'gl_M4_Mul',0
+f_m4ml db 'gl_M4_MulLeft',0
+end if
+
 align 4
 proc gl_M4_Id uses eax ecx edi, a:dword
 	mov edi,[a]
@@ -115,23 +120,21 @@ pushad
 
 	mov edx,[c]
 	mov dword[i],0
+	mov eax,ebp
+	sub eax,sizeof.M4
 	.cycle_0: ;i
-		xor ebx,ebx
+		xor ebx,ebx ;j=0
 		.cycle_1: ;j
-			finit
 			fldz ;sum=0
-			xor ecx,ecx
-			mov eax,ebp
-			sub eax,sizeof.M4
+			xor ecx,ecx ;k=0
 			M4_reg edi,eax,dword[i],0
 			.cycle_2: ;k
 				fld dword[edi]
 				add edi,4
 				M4_reg esi,[b],ecx,ebx
 				fmul dword[esi]
-				fadd st0,st1 ;sum += a[i][k] * b[k][j]
+				faddp ;sum += a[i][k] * b[k][j]
 				inc ecx
-				add eax,4
 				cmp ecx,4
 				jl .cycle_2
 			fstp dword[edx] ;c[i][j] = sum
@@ -142,7 +145,6 @@ pushad
 		inc dword[i]
 		cmp dword[i],4
 		jl .cycle_0
-	finit
 if DEBUG ;gl_M4_MulLeft
 	stdcall dbg_print,f_m4ml,txt_nl
 	stdcall gl_print_matrix,[c],4

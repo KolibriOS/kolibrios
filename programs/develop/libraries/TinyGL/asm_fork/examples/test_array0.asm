@@ -192,7 +192,7 @@ err_message_import db 'Error on load import library tinygl.obj',0
 ;--------------------------------------------------
 
 i_end:
-	rb 1024
+	rb 4096
 stacktop:
 cur_dir_path:
 	rb 4096

@@ -12,9 +12,9 @@ include 'zmath.asm'
 include 'clip.asm'
 include 'vertex.asm'
 include 'api.asm'
-include 'list.asm'
+include 'list.asm' ;gl_add_op
 include 'init.asm'
-include 'matrix.asm'
+include 'matrix.asm' ;gl_print_matrix
 include 'texture.asm'
 include 'misc.asm'
 include 'clear.asm'
@@ -36,42 +36,7 @@ include 'glu.asm'
 
 if DEBUG
 include 'info_fun_float.inc'
-end if
 
-; ***
-glVertex2d: ;(double ,double)
-glVertex2fv: ;(float *)
-glVertex2dv: ;(double *)
-glVertex3d: ;(double ,double ,double)
-glVertex3dv: ;(double *)
-glVertex4d: ;(double ,double ,double, double )
-glVertex4fv: ;(float *)
-glVertex4dv: ;(double *)
-glColor3d: ;(double ,double ,double)
-glColor3dv: ;(double *)
-glColor4d: ;(double ,double ,double, double )
-glColor4dv: ;(double *)
-glNormal3d: ;(double ,double ,double)
-glNormal3dv: ;(double *)
-glTexCoord1f: ;(float)
-glTexCoord1d: ;(double)
-glTexCoord1fv: ;(float *)
-glTexCoord1dv: ;(double *)
-glTexCoord2d: ;(double ,double)
-glTexCoord2dv: ;(double *)
-glTexCoord3f: ;(float ,float ,float)
-glTexCoord3d: ;(double ,double ,double)
-glTexCoord3fv: ;(float *)
-glTexCoord3dv: ;(double *)
-glTexCoord4d: ;(double ,double ,double, double )
-glTexCoord4fv: ;(float *)
-glTexCoord4dv: ;(double *)
-glGenTextures: ;(int n, unsigned int *textures)
-glDeleteTextures: ;(int n, const unsigned int *textures)
-glGetIntegerv: ;(int pname,int *params)
-glGetFloatv: ;(int pname, float *v)
-
-if DEBUG
 align 4
 txt_nl db 13,10,0
 txt_sp db ' ',0
@@ -140,6 +105,37 @@ align 4
 	ret	   ;пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 end if
 
+; ***
+glVertex2d: ;(double ,double)
+glVertex2dv: ;(double *)
+glVertex3d: ;(double ,double ,double)
+glVertex3dv: ;(double *)
+glVertex4d: ;(double ,double ,double, double )
+glVertex4dv: ;(double *)
+glColor3d: ;(double ,double ,double)
+glColor3dv: ;(double *)
+glColor4d: ;(double ,double ,double, double )
+glColor4dv: ;(double *)
+glNormal3d: ;(double ,double ,double)
+glNormal3dv: ;(double *)
+glTexCoord1f: ;(float)
+glTexCoord1d: ;(double)
+glTexCoord1fv: ;(float *)
+glTexCoord1dv: ;(double *)
+glTexCoord2d: ;(double ,double)
+glTexCoord2dv: ;(double *)
+glTexCoord3f: ;(float ,float ,float)
+glTexCoord3d: ;(double ,double ,double)
+glTexCoord3fv: ;(float *)
+glTexCoord3dv: ;(double *)
+glTexCoord4d: ;(double ,double ,double, double )
+glTexCoord4fv: ;(float *)
+glTexCoord4dv: ;(double *)
+glGenTextures: ;(int n, unsigned int *textures)
+glDeleteTextures: ;(int n, const unsigned int *textures)
+glGetIntegerv: ;(int pname,int *params)
+glGetFloatv: ;(int pname, float *v)
+
 align 4
 f_kosgl_1 db 'kosglMakeCurrent',0
 err_0 db 'Error while initializing Z buffer',13,10,0
@@ -151,20 +147,13 @@ f_vp db ' glViewport',0
 err_4 db 'error while resizing display',13,10,0
 err_5 db 'size too small',13,10,0
 f_clipcode db ' gl_clipcode',0
-f_ttv db ' gl_transform_to_viewport',0
-f_vt db ' gl_vertex_transform',0
-f_ev db ' gl_eval_viewport',0
 f_zbz db ' ZB_line_z',0
 f_zb db ' ZB_line',0
-f_m4m db 'gl_M4_Mul',0
-f_m4ml db 'gl_M4_MulLeft',0
 f_find_l db 'find_list',0
 f_alloc_l db 'alloc_list',0
 f_is_l db 'glIsList',0
 f_gen_l db 'glGenLists',0
 f_end_l db 'glEndList',0
-;f_fill_trf db 'ZB_fillTriangleFlat',0
-;f_fill_trrgb db 'ZB_fillTriangleSmooth',0
 f_fill_tr db 'ZB_fillTriangle...',0
 f_fill_tr_nl db ' lines',0
 f_fill_tr_nll db ' len',0

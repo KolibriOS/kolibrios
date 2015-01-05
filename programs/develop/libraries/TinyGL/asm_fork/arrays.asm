@@ -174,18 +174,23 @@ align 4
 			add esi,[edx+offs_cont_color_array] ;esi = &context.color_array[i]
 			mov edi,ebp
 			sub edi,28 ;edi = &p[1]
-			movsd ;p[1].f = context.color_array[i]
-			movsd
-			movsd
+			mov ebx,[esi+8]
+			mov [edi],ebx   ;p[1].f = context.color_array[i+2]
+			mov ebx,[esi+4]
+			mov [edi+4],ebx ;p[2].f = context.color_array[i+1]
+			mov ebx,[esi]
+			mov [edi+8],ebx ;p[3].f = context.color_array[i]
+			add edi,12
 			cmp dword[size],3
 			jle .e1
+				add esi,12
 				movsd
-				sub edi,20 ;&p[0]
 				jmp .e2
 			.e1:
 				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-				sub edi,16 ;&p[0]
 			.e2:
+			mov edi,ebp
+			sub edi,32 ;edi = &p[0]
 			mov ebx,ebp
 			sub ebx,12 ;ebp-12 = &p[5]
 			push ebx
@@ -256,6 +261,7 @@ align 4
 			.e6:
 				mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
 				add edi,4
+				jmp .e8 ;и 4-й тоже ставим по умолчанию
 			.e7:
 			cmp dword[size],3
 			jle .e8
@@ -302,7 +308,7 @@ endp
 align 4
 proc glopDrawElements uses eax ebx edx, context:dword, param:dword
 locals
-	p rd 5
+	p rd 8
 endl
 
 	mov edx,[context]
@@ -318,7 +324,7 @@ endl
 	mov eax,[ebx+4]
 	mov [p+4],eax ;p[1].i = param[1].i
 	mov eax,ebp
-	sub eax,20 ;=sizeof(dd)*5
+	sub eax,32 ;=sizeof(dd)*8
 	stdcall glopBegin, edx,eax
 
 ;  for (int ii=0; ii<count; ii++) {
@@ -360,7 +366,7 @@ endl
 ;    }
 ;  }
 	mov eax,ebp
-	sub eax,20 ;=sizeof(dd)*5
+	sub eax,32 ;=sizeof(dd)*8
 	stdcall glopEnd, edx,eax
 	ret
 endp

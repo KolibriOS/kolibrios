@@ -28,6 +28,13 @@ proc glVertex2f, x:dword, y:dword
 endp
 
 align 4
+proc glVertex2fv uses eax, v:dword
+	mov eax,[v]
+	stdcall glVertex4f,[eax],[eax+4],0.0,1.0
+	ret
+endp
+
+align 4
 proc glVertex3f, x:dword, y:dword, z:dword
 	stdcall glVertex4f,[x],[y],[z],1.0
 	ret
@@ -37,6 +44,13 @@ align 4
 proc glVertex3fv uses eax, v:dword
 	mov eax,[v]
 	stdcall glVertex4f,[eax],[eax+4],[eax+8],1.0
+	ret
+endp
+
+align 4
+proc glVertex4fv uses eax, v:dword
+	mov eax,[v]
+	stdcall glVertex4f,[eax],[eax+4],[eax+8],[eax+12]
 	ret
 endp
 
@@ -548,7 +562,7 @@ endl
 	ret
 endp
 
-;/* lightening */
+; lightening
 
 align 4
 proc glMaterialfv uses eax ecx, mode:dword, type:dword, v:dword
@@ -721,7 +735,7 @@ endl
 	ret
 endp
 
-;/* clear */
+; clear
 
 align 4
 proc glClear uses eax, mask:dword
@@ -775,7 +789,7 @@ endl
 	ret
 endp
 
-;/* textures */
+; textures
 
 align 4
 proc glTexImage2D uses ecx edi esi,\
@@ -879,7 +893,7 @@ endl
 	ret
 endp
 
-;/* selection */
+; selection
 
 align 4
 proc glInitNames uses eax
@@ -954,7 +968,7 @@ endl
 	ret
 endp
 
-;/* Special Functions */
+; Special Functions
 
 align 4
 proc glCallList uses eax, list:dword

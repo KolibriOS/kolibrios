@@ -384,11 +384,13 @@ proc glopScale uses eax ebx ecx, context:dword, p:dword
 	loop @b
 
 if DEBUG ;glopScale
+pushad
 	stdcall dbg_print,txt_gl_scal,txt_nl
 	mov ebx,[eax+offs_cont_matrix_mode]
 	shl ebx,2
 	add ebx,eax
 	stdcall gl_print_matrix,[ebx+offs_cont_matrix_stack_ptr],4
+popad
 end if
 	gl_matrix_update eax,ebx
 	ret
@@ -429,11 +431,13 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 	fincstp
 
 if DEBUG ;glopTranslate
+pushad
 	stdcall dbg_print,txt_gl_tran,txt_nl
 	mov ebx,[eax+offs_cont_matrix_mode]
 	shl ebx,2
 	add ebx,eax
 	stdcall gl_print_matrix,[ebx+offs_cont_matrix_stack_ptr],4
+popad
 end if
 	gl_matrix_update eax,ebx
 	ret

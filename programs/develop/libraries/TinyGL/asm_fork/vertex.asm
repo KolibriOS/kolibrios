@@ -1,3 +1,6 @@
+if DEBUG
+f_vt db ' gl_vertex_transform',0
+end if
 
 align 4
 proc glopNormal uses ecx esi edi, context:dword, p:dword
@@ -117,7 +120,7 @@ proc glopBegin uses eax ebx ecx edx, context:dword, p:dword
 locals
 	tmp M4
 endl
-;    assert(c->in_begin == 0);
+;assert(context.in_begin == 0)
 
 	mov edx,[context]
 	mov ebx,[p]
@@ -137,7 +140,7 @@ if DEBUG ;context.matrix_stack_ptr[0]
 end if
 		; precompute inverse modelview
 		mov ebx,ebp
-		sub ebx,64
+		sub ebx,sizeof.M4
 		stdcall gl_M4_Inv, ebx,dword[edx+offs_cont_matrix_stack_ptr]
 if DEBUG ;tmp
 	stdcall dbg_print,txt_sp,txt_nl
@@ -165,18 +168,21 @@ end if
 		fcomp st1
 		fstsw ax
 		sahf
-		jne .end_if_0
+		jne @f
 		fld dword[ecx+13*4]
 		fcomp st1
 		fstsw ax
 		sahf
-		jne .end_if_0
+		jne @f
 		fld dword[ecx+14*4]
 		fcomp st1
 		fstsw ax
 		sahf
-		jne .end_if_0
+		jne @f
 			mov dword[edx+offs_cont_matrix_model_projection_no_w_transform],1
+		@@:
+		ffree st0 ;0.0
+		fincstp
 	.end_if_0:
 
 		; test if the texture matrix is not Identity
