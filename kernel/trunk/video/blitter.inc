@@ -37,7 +37,7 @@ block_clip:
 ;esi= clip RECT ptr
 ;edi= RECT ptr
 ;return code:
-;eax= 0 - draw, 1 - don't draw
+;CF= 0 - draw, 1 - don't draw
 
         push    ebx
 
@@ -53,18 +53,15 @@ block_clip:
         jl      .fail
 
         cmp     eax, ecx                ;left >= clip.left
-        jae     @F
+        jge     @F
 
-        mov     eax, ecx
+        mov     [edi+RECT.left], ecx
 @@:
-        mov     [edi+RECT.left], eax
-
         cmp     ebx, edx                ;right <= clip.right
         jle     @f
-        mov     ebx, edx
-@@:
-        mov     [edi+RECT.right], ebx
 
+        mov     [edi+RECT.right], edx
+@@:
         mov     eax, [edi+RECT.top]
         mov     ebx, [edi+RECT.bottom]
         mov     ecx, [esi+RECT.top]     ;clip.top
@@ -77,28 +74,29 @@ block_clip:
         jl      .fail
 
         cmp     eax, ecx                ;top >= clip.top
-        jae     @F
+        jge     @F
 
-        mov     eax, ecx
+        mov     [edi+RECT.top], ecx
 @@:
-        mov     [edi+RECT.top], eax
-
         cmp     ebx, edx                ;bottom <= clip.bottom
         jle     @f
-        mov     ebx, edx
+
+        mov     [edi+RECT.bottom], edx
 @@:
-        mov     [edi+RECT.bottom], ebx
         pop     ebx
-        xor     eax, eax
+        clc
         ret
 .fail:
         pop     ebx
-        mov     eax, 1
+        stc
         ret
 
 
 align 4
 blit_clip:
+
+;return code:
+;CF= 0 - draw, 1 - don't draw
 
 .sx0   equ 8
 .sy0   equ 12
@@ -130,9 +128,7 @@ blit_clip:
         lea     esi, [ebx+BLITTER.sc]
 
         call    block_clip
-        test    eax, eax
-        mov     esi, 1
-        jnz     .done
+        jc      .done
 
         mov     edi, [esp+.sx0]
         mov     edx, [ebx+BLITTER.dst_x]
@@ -157,9 +153,7 @@ blit_clip:
         lea     edi, [esp+.dx0]
         lea     esi, [ebx+BLITTER.dc]
         call    block_clip
-        test    eax, eax
-        mov     esi, 1
-        jnz     .done
+        jc      .done
 
         mov     edx, [esp+.dx0]
         mov     eax, [esp+.dx1]
@@ -182,9 +176,8 @@ blit_clip:
         mov     [ebx+BLITTER.src_y], ecx
         mov     [ebx+BLITTER.dst_x], edx
         mov     [ebx+BLITTER.dst_y], eax
-        xor     esi, esi
+        clc
 .done:
-        mov     eax, esi
         add     esp, 40
         pop     ebx
         pop     esi
@@ -261,8 +254,7 @@ end virtual
 
         mov     ecx, esp
         call    blit_clip
-        test    eax, eax
-        jne     .L57
+        jc      .L57
 
         mov     eax, [TASK_BASE]
 
