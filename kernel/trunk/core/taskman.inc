@@ -1141,9 +1141,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         xor     eax, eax
         mov     [ecx+0], dword eax
         mov     [ecx+4], dword eax
-        mov     eax, [Screen_Max_X]
+        mov     eax, [screen_workarea.right]
         mov     [ecx+8], eax
-        mov     eax, [Screen_Max_Y]
+        mov     eax, [screen_workarea.bottom]
         mov     [ecx+12], eax
 
         mov     ebx, [pl0_stack]

@@ -379,8 +379,6 @@ _WinMapAddress      rd 1
 _WinMapSize         rd 1
 
 LFBAddress          dd ?
-Screen_Max_X        dd ?
-Screen_Max_Y        dd ?
 
 SCR_MODE            rw 2
 
@@ -425,8 +423,8 @@ cur_saved_base      rd 1
 cur.lock            rd 1   ;1 - lock update, 2- hide
 cur.left            rd 1   ;cursor clip box
 cur.top             rd 1
-cur.right           rd 1
-cur.bottom          rd 1
+;cur.right           rd 1
+;cur.bottom          rd 1
 cur.w               rd 1
 cur.h               rd 1
 

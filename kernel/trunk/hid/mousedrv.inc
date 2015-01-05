@@ -501,9 +501,10 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         mul     edx
         shr     eax, 15
  .check_x:
-        cmp     ax, word[Screen_Max_X]
+        cmp     ax, word[_display.width]
         jl      .set_x
-        mov     ax, word[Screen_Max_X]
+        mov     ax, word[_display.width]
+        dec     ax
  .set_x:
         mov     [MOUSE_X], ax
 ;--------------------------------------
@@ -522,9 +523,10 @@ proc set_mouse_data stdcall uses edx, BtnState:dword, XMoving:dword, YMoving:dwo
         mul     edx
         shr     eax, 15
  .check_y:
-        cmp     ax, word[Screen_Max_Y]
+        cmp     ax, word[_display.height]
         jl      .set_y
-        mov     ax, word[Screen_Max_Y]
+        mov     ax, word[_display.height]
+        dec     ax
  .set_y:
         mov     [MOUSE_Y], ax
 ;--------------------------------------

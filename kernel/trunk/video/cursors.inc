@@ -305,7 +305,7 @@ align 4
 align 4
 .end:
         mov     [redrawmouse_unconditional], 1
-        call    __sys_draw_pointer        
+        call    __sys_draw_pointer
         ret
 endp
 ;------------------------------------------------------------------------------
@@ -656,25 +656,21 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         add     edx, eax
         mov     [cur_saved_base], edx
 
-        cmp     ebx, [Screen_Max_X]
-        jbe     @F
-        mov     ebx, [Screen_Max_X]
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
 ;--------------------------------------
 align 4
 @@:
-        cmp     edi, [Screen_Max_Y]
-        jbe     @F
-        mov     edi, [Screen_Max_Y]
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
 ;--------------------------------------
 align 4
 @@:
-        mov     [cur.right], ebx
-        mov     [cur.bottom], edi
 
         sub     ebx, [x]
         sub     edi, [y]
-        inc     ebx
-        inc     edi
         sub     ebx, [_dx]
         sub     edi, [_dy]
 
@@ -774,25 +770,20 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         lea     edx, [LFB_BASE+eax+ecx*4]
         mov     [cur_saved_base], edx
 
-        cmp     ebx, [Screen_Max_X]
-        jbe     @F
-        mov     ebx, [Screen_Max_X]
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
 ;--------------------------------------
 align 4
 @@:
-        cmp     edi, [Screen_Max_Y]
-        jbe     @F
-        mov     edi, [Screen_Max_Y]
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
 ;--------------------------------------
 align 4
 @@:
-        mov     [cur.right], ebx
-        mov     [cur.bottom], edi
-
         sub     ebx, [x]
         sub     edi, [y]
-        inc     ebx
-        inc     edi
         sub     ebx, [_dx]
         sub     edi, [_dy]
 
@@ -889,25 +880,20 @@ proc move_cursor_16 stdcall, hcursor:dword, x:dword, y:dword
         lea     edx, [LFB_BASE+eax+ecx*2]
         mov     [cur_saved_base], edx
 
-        cmp     ebx, [Screen_Max_X]
-        jbe     @F
-        mov     ebx, [Screen_Max_X]
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
 ;--------------------------------------
 align 4
 @@:
-        cmp     edi, [Screen_Max_Y]
-        jbe     @F
-        mov     edi, [Screen_Max_Y]
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
 ;--------------------------------------
 align 4
 @@:
-        mov     [cur.right], ebx
-        mov     [cur.bottom], edi
-
         sub     ebx, [x]
         sub     edi, [y]
-        inc     ebx
-        inc     edi
         sub     ebx, [_dx]
         sub     edi, [_dy]
 
