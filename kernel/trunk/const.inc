@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2014. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,6 +98,9 @@ CAPS_ALTMOVCR8 equ    74 ;
 MSR_SYSENTER_CS         equ     0x174
 MSR_SYSENTER_ESP        equ     0x175
 MSR_SYSENTER_EIP        equ     0x176
+MSR_CR_PAT              equ     0x277
+MSR_MTRR_DEF_TYPE       equ     0x2FF
+
 MSR_AMD_EFER            equ     0xC0000080      ; Extended Feature Enable Register
 MSR_AMD_STAR            equ     0xC0000081      ; SYSCALL/SYSRET Target Address Register
 
@@ -276,7 +279,9 @@ PG_WRITE            equ 0x002
 PG_USER             equ 0x004
 PG_PCD              equ 0x008
 PG_PWT              equ 0x010
-
+PG_ACCESSED         equ 0x020
+PG_DIRTY            equ 0x040
+PG_PAT              equ 0x080
 PG_GLOBAL           equ 0x100
 PG_SHARED           equ 0x200
 
@@ -286,6 +291,18 @@ PG_UWR              equ 0x007 ; (PG_USER+PG_WRITE+PG_READ)
 PG_NOCACHE          equ 0x018 ; (PG_PCD+PG_PWT)
 
 PDE_LARGE           equ 0x080
+
+PAT_WB              equ 0x000
+PAT_WC              equ 0x008
+PAT_UCM             equ 0x010
+PAT_UC              equ 0x018
+
+PAT_TYPE_UC         equ 0
+PAT_TYPE_WC         equ 1
+PAT_TYPE_WB         equ 6
+PAT_TYPE_UCM        equ 7
+
+PAT_VALUE           equ 0x00070106; (UC<<24)|(UCM<<16)|(WC<<8)|WB
 
 ;;;;;;;;;;;boot time variables
 

@@ -25,21 +25,65 @@ endp
 
 ; Helper procedure for mtrr_reconfigure and set_mtrr,
 ; called before changes in MTRRs.
+; 1. disable and flush caches
+; 2. clear PGE bit in cr4
+; 3. flush TLB
+; 4. disable mtrr
+
 proc mtrr_begin_change
         mov     eax, cr0
         or      eax, 0x60000000 ;disable caching
         mov     cr0, eax
         wbinvd                  ;invalidate cache
+
+        bt      [cpu_caps], CAPS_PGE
+        jnc     .cr3_flush
+
+        mov     eax, cr4
+        btr     eax, 7          ;clear cr4.PGE
+        mov     cr4, eax        ;flush TLB
+        jmp     @F              ;skip extra serialization
+
+.cr3_flush:
+        mov     eax, cr3
+        mov     cr3, eax        ;flush TLB
+@@:
+        mov     ecx, MSR_MTRR_DEF_TYPE
+        rdmsr
+        btr     eax, 11         ;clear enable flag
+        wrmsr                   ;disable mtrr
         ret
 endp
 
 ; Helper procedure for mtrr_reconfigure and set_mtrr,
 ; called after changes in MTRRs.
+; 1. enable mtrr
+; 2. flush all caches
+; 3. flush TLB
+; 4. restore cr4.PGE flag, if required
+
 proc mtrr_end_change
+        mov     ecx, MSR_MTRR_DEF_TYPE
+        rdmsr
+        or      ah, 8           ; enable variable-ranges MTRR
+        and     al, 0xF0        ; default memtype = UC
+        wrmsr
+
         wbinvd                  ;again invalidate
         mov     eax, cr0
         and     eax, not 0x60000000
         mov     cr0, eax        ; enable caching
+
+        mov     eax, cr3
+        mov     cr3, eax        ;flush tlb
+
+        bt      [cpu_caps], CAPS_PGE
+        jnc     @F
+
+        mov     eax, cr4
+        bts     eax, 7          ;set cr4.PGE flag
+        mov     cr4, eax
+@@:
         ret
 endp
 
@@ -695,12 +739,15 @@ end virtual
         jmp     @b
 @@:
 
-; 9i. Configure MTRR_DEF_TYPE.
-        mov     ecx, 0x2FF
-        rdmsr
-        or      ah, 8   ; enable variable-ranges MTRR
-        and     al, 0xF0; default memtype = UC
+; 9i. Check PAT support and reprogram PAT_MASR for write combining memory
+        bt      [cpu_caps], CAPS_PAT
+        jnc     @F
+
+        mov     ecx, MSR_CR_PAT
+        mov     eax, PAT_VALUE  ;UC UCM WC WB
+        mov     edx, eax
         wrmsr
+@@:
 
 ; 9j. Changes are done.
         call    mtrr_end_change
@@ -738,7 +785,9 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
         ret
 .found:
 ; found, write values
+        push    ecx
         call    mtrr_begin_change
+        pop     ecx
         xor     edx, edx
         mov     eax, [base]
         or      eax, [mem_type]

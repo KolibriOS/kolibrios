@@ -351,17 +351,26 @@ high_code:
         mov     fs, cx
         mov     gs, bx
 
+        xor     eax, eax
+        mov     ebx, 0xFFFFF000+PG_SHARED+PG_NOCACHE+PG_UWR
+        bt      [cpu_caps], CAPS_PAT
+        setc    al
+        shl     eax, 7
+        or      ebx, eax
+
         mov     eax, PG_GLOBAL
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
         or      [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], eax
-        or      [pte_valid_mask], eax
+        or      ebx, eax
 
-        mov     ebx, cr4
-        or      ebx, CR4_PGE
-        mov     cr4, ebx
+        mov     eax, cr4
+        or      eax, CR4_PGE
+        mov     cr4, eax
 @@:
+        mov     [pte_valid_mask], ebx
+
         xor     eax, eax
         mov     dword [sys_proc+PROC.pdt_0], eax
         mov     dword [sys_proc+PROC.pdt_0+4], eax

@@ -219,8 +219,6 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 
 align 4
-pte_valid_mask dd 0xFFFFF000+PG_SHARED+PG_NOCACHE+PG_UWR
-
 keyboard   dd 1
 syslang    dd 1
 
@@ -363,6 +361,7 @@ next_memblock       rd 1
 
 mst                 MEM_STATE
 
+pte_valid_mask      rd 1
 page_start          rd 1
 page_end            rd 1
 sys_page_map        rd 1
