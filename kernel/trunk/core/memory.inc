@@ -126,9 +126,9 @@ align 4
 ;proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
 map_page:
         push    ebx
-        mov     eax, [esp+12]               ; phis_addr
-        and     eax, not 0xFFF
+        mov     eax, [esp+12]              ; phis_addr
         or      eax, [esp+16]              ; flags
+        and     eax, [pte_valid_mask]
         mov     ebx, [esp+8]               ; lin_addr
         shr     ebx, 12
         mov     [page_tabs+ebx*4], eax
@@ -191,8 +191,8 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
         mov     edx, [base]
         shr     eax, 12
         shr     ecx, 12
-        and     edx, -4096
         or      edx, [flags]
+        and     edx, [pte_valid_mask]
 @@:
         mov     [page_tabs+eax*4], edx
         invlpg  [ebx]
@@ -229,6 +229,7 @@ commit_pages:
         pop     ecx
         pop     eax
 
+        and     eax, [pte_valid_mask ]
         mov     edi, ebx
         shr     edi, 12
         lea     edi, [page_tabs+edi*4]
