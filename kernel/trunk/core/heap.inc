@@ -492,7 +492,7 @@ proc kernel_alloc stdcall, size:dword
         jz      .err
 
         mov     ecx, ebx
-        or      eax, PG_SWR
+        or      eax, PG_GLOBAL+PG_SWR
         mov     ebx, [lin_addr]
         call    commit_pages
 
@@ -506,7 +506,7 @@ proc kernel_alloc stdcall, size:dword
         test    eax, eax
         jz      .err
 
-        stdcall map_page, edx, eax, dword PG_SWR
+        stdcall map_page, edx, eax, dword (PG_GLOBAL+PG_SWR)
         add     edx, 0x1000
         dec     ebx
         jnz     @B

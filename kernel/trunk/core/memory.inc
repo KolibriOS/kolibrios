@@ -477,14 +477,14 @@ proc init_LFB
 
         mov     eax, [LFBAddress]
         mov     edi, page_tabs + (LFB_BASE shr 10)
-        or      eax, PG_UWR
+        or      eax, PG_GLOBAL+PG_UWR
+        and     eax, [pte_valid_mask]
         mov     ecx, [pg_count]
         cld
 @@:
         stosd
         add     eax, 0x1000
-        dec     ecx
-        jnz     @B
+        loop    @B
 
         mov     dword [LFBAddress], LFB_BASE
         mov     eax, cr3      ;flush TLB

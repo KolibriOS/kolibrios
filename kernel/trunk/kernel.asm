@@ -351,10 +351,12 @@ high_code:
         mov     fs, cx
         mov     gs, bx
 
+        mov     eax, PG_GLOBAL
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
-        or      dword [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], PG_GLOBAL
+        or      [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], eax
+        or      [pte_valid_mask], eax
 
         mov     ebx, cr4
         or      ebx, CR4_PGE
@@ -754,7 +756,7 @@ endg
         mov     edi, OS_BASE + 8000h
         mov     ecx, (ap_init16_size + 3) / 4
         rep movsd
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SWR+PG_NOCACHE
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
         mov     [LAPIC_BASE], eax
         lea     edi, [eax+300h]
         mov     esi, smpt+4
