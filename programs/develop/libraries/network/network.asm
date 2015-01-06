@@ -763,9 +763,13 @@ end virtual
         push    edi
         mcall   75, 7, , , 512, MSG_DONTWAIT
         pop     edi
-; 3. Ignore events for other socketnums (return if no data read)
-        test    eax, eax
-        jz      .ret.more_processing_required
+; 3. Check for socket errors
+        cmp     eax, -1
+        jne     @f
+        cmp     ebx, EWOULDBLOCK
+        je      .ret.more_processing_required
+        jmp     .ret.no_recovery
+  @@:
 ; 4. Sanity check: discard too short packets.
         xchg    ecx, eax        ; save packet length in ecx
         cmp     ecx, 12
