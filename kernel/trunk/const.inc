@@ -271,16 +271,21 @@ REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 PAGE_SIZE           equ 4096
 
 PG_UNMAP            equ 0x000
-PG_MAP              equ 0x001
+PG_READ             equ 0x001
 PG_WRITE            equ 0x002
-PG_SW               equ 0x003
-PG_USER             equ 0x005
-PG_UW               equ 0x007
-PG_NOCACHE          equ 0x018
-PG_LARGE            equ 0x080
-PG_GLOBAL           equ 0x100
+PG_USER             equ 0x004
+PG_PCD              equ 0x008
+PG_PWT              equ 0x010
 
+PG_GLOBAL           equ 0x100
 PG_SHARED           equ 0x200
+
+PG_SWR              equ 0x003 ; (PG_WRITE+PG_READ)
+PG_UR               equ 0x005 ; (PG_USER+PG_READ)
+PG_UWR              equ 0x007 ; (PG_USER+PG_WRITE+PG_READ)
+PG_NOCACHE          equ 0x018 ; (PG_PCD+PG_PWT)
+
+PDE_LARGE           equ 0x080
 
 ;;;;;;;;;;;boot time variables
 

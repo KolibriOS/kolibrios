@@ -603,7 +603,7 @@ proc load_file_umode stdcall, file_name:dword
         test    eax, eax
         jz      .err_3
 
-        or      eax, PG_UW
+        or      eax, PG_UWR
         stosd
         dec     edx
         jnz     @B
@@ -665,7 +665,7 @@ proc load_file_umode stdcall, file_name:dword
 @@:
         lodsd
         and     eax, 0xFFFFF000
-        or      eax, PG_UW
+        or      eax, PG_UWR
         stosd
         loop    @B
 
@@ -1230,7 +1230,7 @@ proc load_library stdcall, file_name:dword
 .map_pages_loop:
         mov     eax, [page_tabs+ecx*4]
         and     eax, not 0xFFF
-        or      al, PG_USER
+        or      al, PG_UR
         xchg    eax, [page_tabs+edx*4]
         test    al, 1
         jz      @f

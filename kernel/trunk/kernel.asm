@@ -575,11 +575,11 @@ setvideomode:
 .noSYSCALL:
 ; -----------------------------------------
         stdcall alloc_page
-        stdcall map_page, tss-0xF80, eax, PG_SW
+        stdcall map_page, tss-0xF80, eax, PG_SWR
         stdcall alloc_page
-        stdcall map_page, tss+0x80, eax, PG_SW
+        stdcall map_page, tss+0x80, eax, PG_SWR
         stdcall alloc_page
-        stdcall map_page, tss+0x1080, eax, PG_SW
+        stdcall map_page, tss+0x1080, eax, PG_SWR
 
 ; LOAD IDT
 
@@ -754,7 +754,7 @@ endg
         mov     edi, OS_BASE + 8000h
         mov     ecx, (ap_init16_size + 3) / 4
         rep movsd
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SWR+PG_NOCACHE
         mov     [LAPIC_BASE], eax
         lea     edi, [eax+300h]
         mov     esi, smpt+4
@@ -1059,14 +1059,14 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 ;protect io permission map
 
         mov     esi, [default_io_map]
-        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_MAP
+        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map], PG_READ
         add     esi, 0x1000
-        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
+        stdcall map_page, esi, [SLOT_BASE+256+APPDATA.io_map+4], PG_READ
 
         stdcall map_page, tss._io_map_0, \
-                [SLOT_BASE+256+APPDATA.io_map], PG_MAP
+                [SLOT_BASE+256+APPDATA.io_map], PG_READ
         stdcall map_page, tss._io_map_1, \
-                [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
+                [SLOT_BASE+256+APPDATA.io_map+4], PG_READ
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
@@ -2802,7 +2802,7 @@ align 4
 align 4
 @@:
         mov     eax, [page_tabs+esi*4]
-        or      al, PG_UW
+        or      al, PG_UWR
         mov     [page_tabs+ebx*4], eax
         mov     eax, ebx
         shl     eax, 12
@@ -5654,10 +5654,10 @@ end if
 .rsdp_found:
         mov     esi, [eax+16]   ; esi contains physical address of the RSDT
         mov     ebp, [ipc_tmp]
-        stdcall map_page, ebp, esi, PG_MAP
+        stdcall map_page, ebp, esi, PG_READ
         lea     eax, [esi+1000h]
         lea     edx, [ebp+1000h]
-        stdcall map_page, edx, eax, PG_MAP
+        stdcall map_page, edx, eax, PG_READ
         and     esi, 0xFFF
         add     esi, ebp
         cmp     dword [esi], 'RSDT'
@@ -5671,10 +5671,10 @@ end if
         lodsd
         mov     ebx, eax
         lea     eax, [ebp+2000h]
-        stdcall map_page, eax, ebx, PG_MAP
+        stdcall map_page, eax, ebx, PG_READ
         lea     eax, [ebp+3000h]
         add     ebx, 0x1000
-        stdcall map_page, eax, ebx, PG_MAP
+        stdcall map_page, eax, ebx, PG_READ
         and     ebx, 0xFFF
         lea     ebx, [ebx+ebp+2000h]
         cmp     dword [ebx], 'FACP'
@@ -5685,10 +5685,10 @@ end if
 ; ebx is linear address of FADT
         mov     edi, [ebx+40] ; physical address of the DSDT
         lea     eax, [ebp+4000h]
-        stdcall map_page, eax, edi, PG_MAP
+        stdcall map_page, eax, edi, PG_READ
         lea     eax, [ebp+5000h]
         lea     esi, [edi+0x1000]
-        stdcall map_page, eax, esi, PG_MAP
+        stdcall map_page, eax, esi, PG_READ
         and     esi, 0xFFF
         sub     edi, esi
         cmp     dword [esi+ebp+4000h], 'DSDT'
@@ -5736,8 +5736,8 @@ end if
         add     edi, 0x1000
         push    eax
         lea     eax, [ebp+4000h]
-        stdcall map_page, eax, edi, PG_MAP
-        push    PG_MAP
+        stdcall map_page, eax, edi, PG_READ
+        push    PG_READ
         lea     eax, [edi+1000h]
         push    eax
         lea     eax, [ebp+5000h]

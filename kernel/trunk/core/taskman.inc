@@ -503,7 +503,7 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         rep movsd
 
         mov     eax, [edi-8192+PROC.pdt_0_phys]
-        or      eax, PG_SW
+        or      eax, PG_SWR
         mov     [edi-4096+(page_tabs shr 20)], eax
 
         lea     eax, [edi-8192]
@@ -529,7 +529,7 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         rep stosd
 
         mov     ecx, [img_pages]
-        mov     ebx, PG_UW
+        mov     ebx, PG_UWR
         xor     edx, edx
         mov     esi, [img_base]
         shr     esi, 10
@@ -554,7 +554,7 @@ proc create_process stdcall, app_size:dword,img_base:dword,img_size:dword
         test    eax, eax
         jz      .fail
 
-        stdcall map_page, edx, eax, dword PG_UW
+        stdcall map_page, edx, eax, dword PG_UWR
         add     edx, 0x1000
         dec     [app_pages]
         jnz     .alloc
@@ -643,7 +643,7 @@ align 4
         test    eax, 1
         jz      .next
         and     eax, not 0xFFF
-        stdcall map_page, [tmp_task_ptab], eax, PG_SW
+        stdcall map_page, [tmp_task_ptab], eax, PG_SWR
         stdcall destroy_page_table, [tmp_task_ptab]
         mov     eax, [esi]
         call    free_page
@@ -788,7 +788,7 @@ proc read_process_memory
 
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_MAP
+                [slot], ebx, ecx, PG_READ
         pop     ecx
 
         mov     esi, [offset]
@@ -859,7 +859,7 @@ proc write_process_memory
       ;     add ebx, new_app_base
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_SW
+                [slot], ebx, ecx, PG_SWR
         pop     ecx
 
         mov     edi, [offset]

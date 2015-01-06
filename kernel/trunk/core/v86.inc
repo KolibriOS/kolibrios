@@ -78,7 +78,7 @@ v86_create:
 ; (I have seen one computer with EBDA segment = 0x9D80,
 ; all other computers use less memory)
 
-        mov     eax, PG_UW
+        mov     eax, PG_UWR
         mov     [page_tabs], eax
         invlpg  [eax]
 
@@ -89,7 +89,7 @@ v86_create:
         mov     byte [0x504], 0x10
         mov     byte [0x505], 0xF4
 
-        mov     eax, 0x99000+PG_UW
+        mov     eax, 0x99000+PG_UWR
         mov     edi, page_tabs+0x99*4
         mov     edx, 0x1000
         mov     ecx, 7
@@ -101,7 +101,7 @@ v86_create:
 ; addresses 0xC0000 - 0xFFFFF - BIOS code (shared between all machines!)
 ; physical address = 0xC0000
 
-        mov     eax, 0xC0000+PG_UW
+        mov     eax, 0xC0000+PG_UWR
         mov     edi, page_tabs+0xC0*4
         mov     ecx, 64
 @@:

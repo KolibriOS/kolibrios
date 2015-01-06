@@ -1481,7 +1481,7 @@ SOCKET_ring_create:
         mov     esi, eax
 
         push    edx
-        stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SW
+        stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SWR
         pop     edx
         test    eax, eax
         jz      .fail

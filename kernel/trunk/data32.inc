@@ -219,6 +219,8 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 
 align 4
+pte_valid_mask dd 0xFFFFF000+PG_SHARED+PG_NOCACHE+PG_UWR
+
 keyboard   dd 1
 syslang    dd 1
 

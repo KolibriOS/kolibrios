@@ -263,7 +263,7 @@ show_error_parameters:
         call    .check_ESP
         test    eax, eax
         jnz     .error_ESP
-        DEBUGF  1, " [ESP+08]: %x\n",[ebx]        
+        DEBUGF  1, " [ESP+08]: %x\n",[ebx]
         add     ebx, 4
         call    .check_ESP
         test    eax, eax
@@ -293,7 +293,7 @@ show_error_parameters:
         call    .check_ESP
         test    eax, eax
         jnz     .error_ESP
-        DEBUGF  1, " [ESP+32]: %x\n",[ebx]        
+        DEBUGF  1, " [ESP+32]: %x\n",[ebx]
         pop     edx ecx ebx eax
         ret
 .error_ESP:
@@ -308,18 +308,18 @@ show_error_parameters:
         mov     ecx, ebx
         shr     ecx, 10
         mov     edx, [master_tab+ecx*4]
-        test    edx, PG_MAP
+        test    edx, PG_READ
         jz      .fail             ;page table is not created
                                   ;incorrect address in the program
 
         mov     eax, [page_tabs+ebx*4]
         test    eax, 2
         jz      .fail             ;address not reserved for use. error
-        
-        pop     ebx        
+
+        pop     ebx
         xor     eax, eax
-        ret        
-        
+        ret
+
 .fail:
         pop     ebx
         xor     eax, eax
