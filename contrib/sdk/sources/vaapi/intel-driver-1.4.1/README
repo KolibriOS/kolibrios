@@ -1,0 +1,39 @@
+
+  libva-intel-driver
+  VA driver for Intel G45 & HD Graphics family
+
+  Copyright (C) 2009-2011 Intel Corporation
+
+
+License
+-------
+
+Please read the COPYING file available in this package.
+
+
+Overview
+--------
+
+libva-intel-driver is the VA-API implementation for Intel G45 chipsets
+and Intel HD Graphics for Intel Core processor family.
+
+Platform definitions:
+CTG: Cantiga, Intel GMA 4500MHD (GM45)
+ILK: Ironlake, Intel HD Graphics for 2010 Intel Core processor family
+SNB: Sandybridge, Intel HD Graphics for 2011 Intel Core processor family
+IVB: Ivybridge
+
+
+Codecs
+------
+
+H.264   D   ILK+
+H.264   E   SNB+
+MPEG-2  D   CTG+
+VC-1    D   SNB+
+
+
+Requirements
+------------
+
+libva >= 1.0.16
