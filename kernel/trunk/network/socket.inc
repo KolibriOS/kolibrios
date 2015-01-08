@@ -754,7 +754,7 @@ SOCKET_receive:
         pop     edi
 
         test    [eax + SOCKET.state], SS_CANTRCVMORE
-        jnz     .return
+        jnz     .last_data
 
         cmp     ebx, EWOULDBLOCK
         jne     .return
@@ -779,6 +779,11 @@ SOCKET_receive:
         mov     [esp+32], ecx
         ret
 
+  .last_data:
+        test    ecx, ecx
+        jz      .return
+        call    SOCKET_notify
+        jmp     .return
 
 
 
@@ -874,6 +879,13 @@ SOCKET_receive_stream:
         call    SOCKET_ring_free                                ; free read memory
         pop     eax
 
+        cmp     [eax + STREAM_SOCKET.rcv + RING_BUFFER.size], 0
+        jne     .more_data
+        xor     ebx, ebx                                        ; errorcode = 0 (no error)
+        ret
+
+  .more_data:
+        call    SOCKET_notify                                   ; Queue another network event
         xor     ebx, ebx                                        ; errorcode = 0 (no error)
         ret
 
