@@ -341,7 +341,7 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         shr     ebx, 22
         mov     eax, [phis_addr]
         and     eax, not 0xFFF
-        or      eax, PG_READ
+        or      eax, PG_UWR
         mov     dword [master_tab+ebx*4], eax
         mov     eax, [lin_addr]
         shr     eax, 10
