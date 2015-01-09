@@ -25,7 +25,6 @@
 #define _VA_X11_H_
 
 #include <va/va.h>
-#include <X11/Xlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,22 +33,19 @@ extern "C" {
 /*
  * Returns a suitable VADisplay for VA API
  */
-VADisplay vaGetDisplay (
-    Display *dpy
-);
+VADisplay va_open_display(void);
 
 /*
  * Output rendering
- * Following is the rendering interface for X windows, 
+ * Following is the rendering interface for X windows,
  * to get the decode output surface to a X drawable
- * It basically performs a de-interlacing (if needed), 
+ * It basically performs a de-interlacing (if needed),
  * color space conversion and scaling to the destination
  * rectangle
  */
 VAStatus vaPutSurface (
     VADisplay dpy,
-    VASurfaceID surface,	
-    Drawable draw, /* X Drawable */
+    VASurfaceID surface,
     short srcx,
     short srcy,
     unsigned short srcw,

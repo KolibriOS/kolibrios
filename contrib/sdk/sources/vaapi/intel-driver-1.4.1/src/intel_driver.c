@@ -45,7 +45,7 @@ intel_driver_get_param(struct intel_driver_data *intel, int param, int *value)
    gp.param = param;
    gp.value = value;
 
-   return drmIoctl(intel->fd, DRM_I915_GETPARAM, &gp) == 0;
+   return drmIoctl(intel->fd, DRM_IOCTL_I915_GETPARAM, &gp) == 0;
 
 //   return drmCommandWriteRead(intel->fd, DRM_I915_GETPARAM, &gp, sizeof(gp)) == 0;
 }
@@ -92,16 +92,9 @@ intel_driver_init(VADriverContextP ctx)
 //        fprintf(stderr, "g_intel_debug_option_flags:%x\n", g_intel_debug_option_flags);
 
     assert(drm_state);
-    assert(VA_CHECK_DRM_AUTH_TYPE(ctx, VA_DRM_AUTH_DRI1) ||
-           VA_CHECK_DRM_AUTH_TYPE(ctx, VA_DRM_AUTH_DRI2) ||
-           VA_CHECK_DRM_AUTH_TYPE(ctx, VA_DRM_AUTH_CUSTOM));
 
     intel->fd = drm_state->fd;
     intel->dri2Enabled = 1;
-
-    if (!intel->dri2Enabled) {
-        return false;
-    }
 
     intel->locked = 0;
 //    pthread_mutex_init(&intel->ctxmutex, NULL);

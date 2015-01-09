@@ -8,11 +8,11 @@
  * distribute, sub license, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice (including the
  * next paragraph) shall be included in all copies or substantial portions
  * of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
@@ -43,13 +43,13 @@ void pre()
     int height = 288;
     int surface_count = 4;
     total_surfaces = surface_count;
-    
+
     surfaces = malloc(total_surfaces * sizeof(VASurfaceID));
 
     // TODO: Don't assume VA_RT_FORMAT_YUV420 is supported / needed for each config
     va_status = vaCreateSurfaces(va_dpy, VA_RT_FORMAT_YUV420, width, height, surfaces, total_surfaces, NULL, 0);
     ASSERT( VA_STATUS_SUCCESS == va_status );
-    
+
     status("vaCreateContext with config %08x\n", config);
     int flags = 0;
     va_status = vaCreateContext( va_dpy, config, width, height, flags, surfaces, surface_count, &context );
@@ -59,7 +59,7 @@ void pre()
 void test_unique_buffers(VABufferID *buffer_list, int buffer_count)
 {
     int i,j;
-    
+
     for(i = 0; i < buffer_count; i++)
     {
         for(j = 0; j < i; j++)
@@ -84,7 +84,7 @@ VABufferType buffer_types[] =
 
 unsigned int buffer_sizes[] =
 {
-  sizeof(VAPictureParameterBufferMPEG4), 
+  sizeof(VAPictureParameterBufferMPEG4),
   sizeof(VAIQMatrixBufferH264),
   32*1024,
   48*1024,
@@ -112,13 +112,13 @@ void test()
 
         input_data[i] = malloc(buffer_sizes[i]+4);
         ASSERT(input_data[i]);
-        
+
         /* Generate input data */
         for(j = buffer_sizes[i] / 4; j--;)
         {
-            input_data[i][j] = random();
+            input_data[i][j] = 20; //random();
         }
-        
+
         /* Copy to secondary buffer */
         data = malloc(buffer_sizes[i]);
         ASSERT(data);
@@ -128,7 +128,7 @@ void test()
         va_status = vaCreateBuffer(va_dpy, context, buffer_types[i], buffer_sizes[i], 1, data, &buffer_ids[i]);
         ASSERT( VA_STATUS_SUCCESS == va_status );
         status("vaCreateBuffer created buffer %08x of type %d\n", buffer_ids[i], buffer_types[i]);
-        
+
         /* Wipe secondary buffer */
         memset(data, 0, buffer_sizes[i]);
         free(data);
@@ -142,10 +142,10 @@ void test()
         ASSERT( VA_STATUS_SUCCESS == va_status );
         status("vaMapBuffer mapped buffer %08x\n", buffer_ids[i]);
 
-        /* Compare data */        
+        /* Compare data */
         ASSERT( memcmp(input_data[i], data, buffer_sizes[i]) == 0 );
     }
-    
+
     for(i=0; i < NUM_BUFFER_TYPES; i++)
     {
         va_status = vaUnmapBuffer(va_dpy, buffer_ids[i]);
@@ -153,7 +153,7 @@ void test()
 
         va_status = vaDestroyBuffer(va_dpy, buffer_ids[i]);
         ASSERT( VA_STATUS_SUCCESS == va_status );
-        
+
         free(input_data[i]);
     }
 }
@@ -169,10 +169,10 @@ void post()
     status("vaDestroyConfig for config %08x\n", config);
     va_status = vaDestroyConfig( va_dpy, config );
     ASSERT( VA_STATUS_SUCCESS == va_status );
-    
+
     va_status = vaDestroySurfaces(va_dpy, surfaces, total_surfaces);
     ASSERT( VA_STATUS_SUCCESS == va_status );
-    
+
     free(surfaces);
 
     test_terminate();

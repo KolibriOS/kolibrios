@@ -32,43 +32,29 @@
 #endif
 #include "va_display.h"
 
-static int drm_fd = -1;
+static int drm_fd = 0;
 
 static VADisplay
 va_open_display_drm(void)
 {
     VADisplay va_dpy;
-    int i;
 
-    static const char *drm_device_paths[] = {
-        "/dev/dri/renderD128",
-        "/dev/dri/card0",
-        NULL
-    };
+    drm_fd = get_service("DISPLAY");
+    if (drm_fd == 0)
+        return NULL;
 
-    for (i = 0; drm_device_paths[i]; i++) {
-        drm_fd = open(drm_device_paths[i], O_RDWR);
-        if (drm_fd < 0)
-            continue;
+    va_dpy = vaGetDisplayDRM(drm_fd);
+    if (va_dpy)
+        return va_dpy;
 
-        va_dpy = vaGetDisplayDRM(drm_fd);
-        if (va_dpy)
-            return va_dpy;
-
-        close(drm_fd);
-        drm_fd = -1;
-    }
+    drm_fd = 0;
     return NULL;
 }
 
 static void
 va_close_display_drm(VADisplay va_dpy)
 {
-    if (drm_fd < 0)
-        return;
-
-    close(drm_fd);
-    drm_fd = -1;
+    drm_fd = 0;
 }
 
 

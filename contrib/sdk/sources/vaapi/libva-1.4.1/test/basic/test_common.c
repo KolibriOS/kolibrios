@@ -8,11 +8,11 @@
  * distribute, sub license, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice (including the
  * next paragraph) shall be included in all copies or substantial portions
  * of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <dlfcn.h>
 
 #define ASSERT	assert
 
@@ -45,11 +44,10 @@ void status(const char *msg, ...);
 #include "test_x11.c"
 #endif
 
-Display *dpy;
 VADisplay va_dpy;
 VAStatus va_status;
 int major_version, minor_version;
-int print_status = 0;
+int print_status = 1;
 int num_profiles;
 VAProfile *profiles = NULL;
 
@@ -143,14 +141,14 @@ void test_profiles()
     ASSERT(max_profiles > 0);
     profiles = malloc(max_profiles * sizeof(VAProfile));
     ASSERT(profiles);
-      
+
     va_status = vaQueryConfigProfiles(va_dpy, profiles, &num_profiles);
     ASSERT( VA_STATUS_SUCCESS == va_status );
-      
+
     status("vaQueryConfigProfiles reports %d profiles\n", num_profiles);
     ASSERT(num_profiles <= max_profiles);
     ASSERT(num_profiles > 0);
-    
+
     if (print_status)
     {
         for(i = 0; i < num_profiles; i++)

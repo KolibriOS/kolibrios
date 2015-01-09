@@ -192,4 +192,9 @@ struct intel_region
 #define IS_CHERRYVIEW(device_info)      (device_info->is_cherryview)
 #define IS_GEN8(device_info)            (device_info->gen == 8)
 
+#define ENTER()   printf("enter %s\n",__FUNCTION__)
+#define LEAVE()   printf("leave %s\n",__FUNCTION__)
+#define FAIL()    printf("fail %s\n",__FUNCTION__)
+
+
 #endif /* _INTEL_DRIVER_H_ */

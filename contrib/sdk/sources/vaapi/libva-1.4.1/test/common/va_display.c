@@ -8,11 +8,11 @@
  * distribute, sub license, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice (including the
  * next paragraph) shall be included in all copies or substantial portions
  * of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
@@ -30,26 +30,11 @@
 #include <va/va.h>
 #include "va_display.h"
 
-extern const VADisplayHooks va_display_hooks_android;
-extern const VADisplayHooks va_display_hooks_wayland;
-extern const VADisplayHooks va_display_hooks_x11;
 extern const VADisplayHooks va_display_hooks_drm;
 
 static const VADisplayHooks *g_display_hooks;
 static const VADisplayHooks *g_display_hooks_available[] = {
-#ifdef ANDROID
-    &va_display_hooks_android,
-#else
-#ifdef HAVE_VA_WAYLAND
-    &va_display_hooks_wayland,
-#endif
-#ifdef HAVE_VA_X11
-    &va_display_hooks_x11,
-#endif
-#ifdef HAVE_VA_DRM
     &va_display_hooks_drm,
-#endif
-#endif
     NULL
 };
 
