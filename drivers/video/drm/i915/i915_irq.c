@@ -4189,6 +4189,8 @@ void intel_irq_init(struct drm_i915_private *dev_priv)
 	else
 	dev_priv->pm_rps_events = GEN6_PM_RPS_EVENTS;
 
+	INIT_DELAYED_WORK(&dev_priv->hotplug_reenable_work,
+			  intel_hpd_irq_reenable_work);
 
 
 	if (IS_GEN2(dev_priv)) {

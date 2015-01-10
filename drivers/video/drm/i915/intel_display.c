@@ -2349,6 +2349,7 @@ static bool intel_alloc_plane_obj(struct intel_crtc *crtc,
 	if (!obj)
 		return false;
 
+    obj->map_and_fenceable=true;
     main_fb_obj = obj;
 
 	if (plane_config->tiled) {
@@ -6638,8 +6639,8 @@ static void i9xx_get_plane_config(struct intel_crtc *crtc,
 	aligned_height = intel_align_height(dev, crtc->base.primary->fb->height,
 					    plane_config->tiled);
 
-	plane_config->size = 16*1024*1024;
-
+	plane_config->size = PAGE_ALIGN(crtc->base.primary->fb->pitches[0] *
+					aligned_height);
 
 	DRM_DEBUG_KMS("pipe/plane %d/%d with fb: size=%dx%d@%d, offset=%x, pitch %d, size 0x%x\n",
 		      pipe, plane, crtc->base.primary->fb->width,
@@ -12666,6 +12667,12 @@ static struct intel_quirk intel_quirks[] = {
 	/* ThinkPad T60 needs pipe A force quirk (bug #16494) */
 	{ 0x2782, 0x17aa, 0x201a, quirk_pipea_force },
 
+	/* 830 needs to leave pipe A & dpll A up */
+	{ 0x3577, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force },
+
+	/* 830 needs to leave pipe B & dpll B up */
+	{ 0x3577, PCI_ANY_ID, PCI_ANY_ID, quirk_pipeb_force },
+
 	/* Lenovo U160 cannot use SSC on LVDS */
 	{ 0x0046, 0x17aa, 0x3920, quirk_ssc_force_disable },
 
@@ -12857,6 +12864,7 @@ void intel_modeset_init(struct drm_device *dev)
 			 * If the fb is shared between multiple heads, we'll
 			 * just get the first one.
 			 */
+            crtc->plane_config.size = 16*1024*1024;
 			intel_find_plane_obj(crtc, &crtc->plane_config);
 		}
 	}

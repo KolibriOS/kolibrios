@@ -220,7 +220,7 @@ i915_gem_get_aperture_ioctl(struct drm_device *dev, void *data,
 void *i915_gem_object_alloc(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
-	return kmalloc(sizeof(struct drm_i915_gem_object), 0);
+    return kzalloc(sizeof(struct drm_i915_gem_object), 0);
 }
 
 void i915_gem_object_free(struct drm_i915_gem_object *obj)
@@ -1480,7 +1480,7 @@ unpin:
     i915_gem_object_unpin_pages(obj);
 
 
-    *offset = mem;
+    *offset = (uint32_t)mem;
 
 out:
     drm_gem_object_unreference(&obj->base);
@@ -1646,7 +1646,6 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 	page_count = obj->base.size / PAGE_SIZE;
 	if (sg_alloc_table(st, page_count, GFP_KERNEL)) {
 		kfree(st);
-        FAIL();
 		return -ENOMEM;
 	}
 
@@ -1662,7 +1661,6 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 		if (IS_ERR(page)) {
             dbgprintf("%s invalid page %p\n", __FUNCTION__, page);
 			goto err_pages;
-
 		}
 #ifdef CONFIG_SWIOTLB
 		if (swiotlb_nr_tbl()) {
@@ -1688,6 +1686,11 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 		sg_mark_end(sg);
 	obj->pages = st;
 
+
+	if (obj->tiling_mode != I915_TILING_NONE &&
+	    dev_priv->quirks & QUIRK_PIN_SWIZZLED_PAGES)
+		i915_gem_object_pin_pages(obj);
+
 	return 0;
 
 err_pages:
@@ -1696,7 +1699,7 @@ err_pages:
 		page_cache_release(sg_page_iter_page(&sg_iter));
 	sg_free_table(st);
 	kfree(st);
-    FAIL();
+ 
 	return PTR_ERR(page);
 }
 
@@ -2511,9 +2514,11 @@ int i915_vma_unbind(struct i915_vma *vma)
 	struct drm_i915_gem_object *obj = vma->obj;
 	struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
 	int ret;
-
     if(obj == get_fb_obj())
+    {
+        WARN(1,"attempt to unbind fb object\n");
         return 0;
+    };
 
 	if (list_empty(&vma->vma_link))
 		return 0;

@@ -134,7 +134,7 @@ u32  __attribute__((externally_visible)) drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-    printf("Radeon v3.19-rc2 cmdline %s\n", cmdline);
+    printf("Radeon v3.19-rc3 cmdline %s\n", cmdline);
 
     if( cmdline && *cmdline )
         parse_cmdline(cmdline, &usermode, log, &radeon_modeset);
@@ -285,9 +285,9 @@ int pci_scan_filter(u32 id, u32 busnr, u32 devfn)
     if(vendor == 0x1002)
     {
         class = PciRead32(busnr, devfn, PCI_CLASS_REVISION);
-        class >>= 16;
+        class >>= 24;
 
-        if( class == PCI_CLASS_DISPLAY_VGA)
+        if( class ==PCI_BASE_CLASS_DISPLAY)
             ret = 1;
     }
     return ret;

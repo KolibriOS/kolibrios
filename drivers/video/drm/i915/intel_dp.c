@@ -1042,8 +1042,7 @@ intel_dp_aux_init(struct intel_dp *intel_dp, struct intel_connector *connector)
 	intel_dp->aux.dev = dev->dev;
 	intel_dp->aux.transfer = intel_dp_aux_transfer;
 
-	DRM_DEBUG_KMS("registering %s bus for %s\n", name,
-		      connector->base.kdev->kobj.name);
+	DRM_DEBUG_KMS("registering %s bus\n", name);
 
 	ret = drm_dp_aux_register(&intel_dp->aux);
 		if (ret < 0) {
@@ -1611,7 +1610,7 @@ static void edp_panel_vdd_schedule_off(struct intel_dp *intel_dp)
 	 * operations.
 	 */
 	delay = msecs_to_jiffies(intel_dp->panel_power_cycle_delay * 5);
-	schedule_delayed_work(&intel_dp->panel_vdd_work, delay);
+//   schedule_delayed_work(&intel_dp->panel_vdd_work, delay);
 }
 
 /*

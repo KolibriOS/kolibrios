@@ -3996,7 +3996,7 @@ EXPORT_SYMBOL(drm_mode_connector_set_tile_property);
  * connector's edid property.
  *
  * Returns:
- * Zero on success, errno on failure.
+ * Zero on success, negative errno on failure.
  */
 int drm_mode_connector_update_edid_property(struct drm_connector *connector,
 					    const struct edid *edid)

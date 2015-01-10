@@ -127,9 +127,26 @@ static unsigned long i915_stolen_to_physical(struct drm_device *dev)
 	r = devm_request_mem_region(dev->dev, base, dev_priv->gtt.stolen_size,
 				    "Graphics Stolen Memory");
 	if (r == NULL) {
+		/*
+		 * One more attempt but this time requesting region from
+		 * base + 1, as we have seen that this resolves the region
+		 * conflict with the PCI Bus.
+		 * This is a BIOS w/a: Some BIOS wrap stolen in the root
+		 * PCI bus, but have an off-by-one error. Hence retry the
+		 * reservation starting from 1 instead of 0.
+		 */
+		r = devm_request_mem_region(dev->dev, base + 1,
+					    dev_priv->gtt.stolen_size - 1,
+					    "Graphics Stolen Memory");
+		/*
+		 * GEN3 firmware likes to smash pci bridges into the stolen
+		 * range. Apparently this works.
+		 */
+		if (r == NULL && !IS_GEN3(dev)) {
 		DRM_ERROR("conflict detected with stolen region: [0x%08x - 0x%08x]\n",
 			  base, base + (uint32_t)dev_priv->gtt.stolen_size);
 		base = 0;
+	}
 	}
 #endif
 	return base;
@@ -226,6 +243,7 @@ err_fb:
 	kfree(compressed_llb);
 	drm_mm_remove_node(&dev_priv->fbc.compressed_fb);
 err_llb:
+	pr_info_once("drm: not enough stolen space for compressed buffer (need %d more bytes), disabling. Hint: you may be able to increase stolen memory size in the BIOS to avoid this.\n", size);
 	return -ENOSPC;
 }
 

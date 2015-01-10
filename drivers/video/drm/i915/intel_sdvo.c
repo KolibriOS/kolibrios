@@ -2384,6 +2384,16 @@ intel_sdvo_connector_init(struct intel_sdvo_connector *connector,
 	connector->base.unregister = intel_sdvo_connector_unregister;
 
 	intel_connector_attach_encoder(&connector->base, &encoder->base);
+	ret = drm_connector_register(drm_connector);
+	if (ret < 0)
+		goto err1;
+
+	return 0;
+
+err2:
+	drm_connector_unregister(drm_connector);
+err1:
+	drm_connector_cleanup(drm_connector);
 
 	return ret;
 }

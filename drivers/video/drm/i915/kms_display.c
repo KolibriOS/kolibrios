@@ -285,6 +285,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     u32      ifl;
     int        ret;
 
+    mutex_lock(&dev->struct_mutex);
     mutex_lock(&dev->mode_config.mutex);
 
     ret = choose_config(dev, &connector, &crtc);
@@ -357,6 +358,7 @@ int init_display_kms(struct drm_device *dev, videomode_t *usermode)
     };
 
     mutex_unlock(&dev->mode_config.mutex);
+    mutex_unlock(&dev->struct_mutex);
 
     set_mode(dev, os_display->connector, os_display->crtc, usermode, false);
 
@@ -805,6 +807,8 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
     if( mask_seqno[slot] == os_display->mask_seqno)
         return 0;
 
+    memset(mask->bo_map,0,mask->width * mask->height);
+
     GetWindowRect(&win);
     win.right+= 1;
     win.bottom+=  1;
@@ -847,7 +851,7 @@ int i915_mask_update_ex(struct drm_device *dev, void *data,
         return -EINVAL;
     }
 
-#if 0
+#if 1
     if(warn_count < 1000)
     {
         printf("left %d top %d right %d bottom %d\n",

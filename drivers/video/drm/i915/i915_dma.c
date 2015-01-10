@@ -275,7 +275,13 @@ static int i915_load_modeset_init(struct drm_device *dev)
     if (ret)
         DRM_INFO("failed to find VBIOS tables\n");
 
-
+	/* If we have > 1 VGA cards, then we need to arbitrate access
+	 * to the common VGA resources.
+	 *
+	 * If we are a secondary display controller (!PCI_DISPLAY_CLASS_VGA),
+	 * then we do not take part in VGA arbitration and the
+	 * vga_client_register() fails with -ENODEV.
+	 */
 
 	/* Initialise stolen first so that we may reserve preallocated
 	 * objects for the BIOS to KMS transition.
@@ -578,7 +584,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
      * so there is no point in running more than one instance of the
 	 * workqueue at any time.  Use an ordered one.
      */
-	dev_priv->wq = alloc_ordered_workqueue("i915", 0);
+    dev_priv->wq = (struct workqueue_struct *)alloc_ordered_workqueue("i915", 0);
 	if (dev_priv->wq == NULL) {
 		DRM_ERROR("Failed to create our workqueue.\n");
 		ret = -ENOMEM;
@@ -638,7 +644,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	if (IS_GEN5(dev))
 		intel_gpu_ips_init(dev_priv);
 
-	intel_runtime_pm_enable(dev_priv);
+//   intel_runtime_pm_enable(dev_priv);
 
     main_device = dev;
 
@@ -671,12 +677,6 @@ int i915_driver_unload(struct drm_device *dev)
 
 
 	intel_gpu_ips_teardown();
-
-		/* The i915.ko module is still not prepared to be loaded when
-		 * the power well is not enabled, so just enable it in case
-		 * we're going to unload/reload. */
-	intel_display_set_init_power(dev_priv, true);
-	intel_power_domains_remove(dev_priv);
 
 	i915_teardown_sysfs(dev);
 
