@@ -249,7 +249,7 @@ typedef struct _drm_i915_sarea {
 #define DRM_IOCTL_I915_GEM_UNPIN                SRV_I915_GEM_UNPIN
 #define DRM_IOCTL_I915_GEM_BUSY                 SRV_I915_GEM_BUSY
 #define DRM_IOCTL_I915_GEM_SET_CACHEING         SRV_I915_GEM_SET_CACHING
-#define DRM_IOCTL_I915_GEM_GET_CACHEING
+#define DRM_IOCTL_I915_GEM_GET_CACHEING         SRV_I915_GEM_GET_CACHING
 #define DRM_IOCTL_I915_GEM_THROTTLE             SRV_I915_GEM_THROTTLE
 #define DRM_IOCTL_I915_GEM_ENTERVT
 #define DRM_IOCTL_I915_GEM_LEAVEVT
@@ -339,6 +339,7 @@ typedef struct drm_i915_irq_wait {
 #define I915_PARAM_HAS_EXEC_HANDLE_LUT   26
 #define I915_PARAM_HAS_WT     	 	 27
 #define I915_PARAM_CMD_PARSER_VERSION	 28
+#define I915_PARAM_HAS_COHERENT_PHYS_GTT 29
 
 typedef struct drm_i915_getparam {
 	int param;
@@ -875,6 +876,12 @@ struct drm_i915_gem_get_tiling {
 	 * mmap mapping.
 	 */
 	__u32 swizzle_mode;
+
+	/**
+	 * Returned address bit 6 swizzling required for CPU access through
+	 * mmap mapping whilst bound.
+	 */
+	__u32 phys_swizzle_mode;
 };
 
 struct drm_i915_gem_get_aperture {

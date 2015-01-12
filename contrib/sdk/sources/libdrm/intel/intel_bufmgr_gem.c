@@ -74,13 +74,11 @@
 
 #if 0
 #define DBG(...) do {					\
-	if (bufmgr_gem->bufmgr.debug)			\
-		fprintf(stderr, __VA_ARGS__);		\
+    fprintf(stderr, __VA_ARGS__);       \
 } while (0)
-#endif
-
-//#define DBG(...) fprintf(stderr, __VA_ARGS__)
+#else
 #define DBG(...)
+#endif
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 

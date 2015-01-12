@@ -652,24 +652,26 @@ struct drm_prime_handle {
 #define SRV_DRM_GEM_OPEN                25
 #define SRV_I915_GEM_PIN                26
 #define SRV_I915_GEM_UNPIN              27
-#define SRV_I915_GEM_SET_CACHING        28
-#define SRV_I915_GEM_PWRITE             29
-#define SRV_I915_GEM_BUSY               30
-#define SRV_I915_GEM_SET_DOMAIN         31
-#define SRV_I915_GEM_MMAP               32
-#define SRV_I915_GEM_SET_TILING         33
-#define SRV_I915_GEM_GET_TILING         34
-#define SRV_I915_GEM_GET_APERTURE       35
-#define SRV_I915_GEM_MMAP_GTT           36
-#define SRV_I915_GEM_THROTTLE           37
-#define SRV_I915_GEM_EXECBUFFER2        38
-#define SRV_I915_GEM_WAIT               39
-#define SRV_I915_GEM_CONTEXT_CREATE     40
-#define SRV_I915_GEM_CONTEXT_DESTROY    41
-#define SRV_I915_REG_READ               42
+#define SRV_I915_GEM_GET_CACHING        28
+#define SRV_I915_GEM_SET_CACHING        29
+#define SRV_I915_GEM_PWRITE             30
+#define SRV_I915_GEM_BUSY               31
+#define SRV_I915_GEM_SET_DOMAIN         32
+#define SRV_I915_GEM_MMAP               33
+#define SRV_I915_GEM_SET_TILING         34
+#define SRV_I915_GEM_GET_TILING         35
+#define SRV_I915_GEM_GET_APERTURE       36
+#define SRV_I915_GEM_MMAP_GTT           37
+#define SRV_I915_GEM_THROTTLE           38
+#define SRV_I915_GEM_EXECBUFFER2        39
+#define SRV_I915_GEM_WAIT               40
+#define SRV_I915_GEM_CONTEXT_CREATE     41
+#define SRV_I915_GEM_CONTEXT_DESTROY    42
+#define SRV_I915_REG_READ               43
 
-#define SRV_FBINFO                      43
-#define SRV_MASK_UPDATE                 44
+#define SRV_FBINFO                      44
+#define SRV_MASK_UPDATE                 45
+#define SRV_MASK_UPDATE_EX              46
 
 
 
