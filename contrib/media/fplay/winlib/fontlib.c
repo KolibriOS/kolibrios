@@ -23,7 +23,7 @@ typedef unsigned int color_t;
 
 unsigned int ansi2utf32(unsigned char ch);
 
-void my_draw_bitmap(bitmap_t *win, FT_Bitmap *bitmap, int dstx, int dsty, int col)
+static void my_draw_bitmap(uint8_t *pixmap, uint32_t pitch, FT_Bitmap *bitmap, int dstx, int dsty, int col)
 {
     uint8_t *dst;
     uint8_t *src, *tmpsrc;
@@ -31,7 +31,7 @@ void my_draw_bitmap(bitmap_t *win, FT_Bitmap *bitmap, int dstx, int dsty, int co
     uint32_t  *tmpdst;
     int i, j;
 
-    dst = win->data + dsty * win->pitch + dstx*4;
+    dst = pixmap + dsty * pitch + dstx*4;
     src = bitmap->buffer;
 
     for( i = 0; i < bitmap->rows; i++ )
@@ -39,7 +39,7 @@ void my_draw_bitmap(bitmap_t *win, FT_Bitmap *bitmap, int dstx, int dsty, int co
         tmpdst = (uint32_t*)dst;
         tmpsrc = src;
 
-        dst+= win->pitch;
+        dst+= pitch;
         src+= bitmap->pitch;
 
         for( j = 0; j < bitmap->width; j++)
@@ -68,7 +68,7 @@ void my_draw_bitmap(bitmap_t *win, FT_Bitmap *bitmap, int dstx, int dsty, int co
 };
 
 
-int draw_text_ext(bitmap_t *winbitmap, FT_Face face, char *text, rect_t *rc, int color)
+int draw_text_ext(void *pixmap, uint32_t pitch, FT_Face face, char *text, rect_t *rc, int color)
 {
     FT_UInt glyph_index;
     FT_Bool use_kerning = 0;
@@ -107,8 +107,8 @@ int draw_text_ext(bitmap_t *winbitmap, FT_Face face, char *text, rect_t *rc, int
         if ( err )
             continue;
 
-        my_draw_bitmap(winbitmap, &face->glyph->bitmap, (x >> 6) + face->glyph->bitmap_left,
-                        y - face->glyph->bitmap_top, color);
+        my_draw_bitmap(pixmap, pitch, &face->glyph->bitmap, (x >> 6) + face->glyph->bitmap_left,
+                       y - face->glyph->bitmap_top, color);
 
         x += face->glyph->advance.x;
         previous = glyph_index;

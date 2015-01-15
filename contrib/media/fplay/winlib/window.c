@@ -79,7 +79,7 @@ window_t *create_window(char *caption, int style, int x, int y,
     if(handler==0) return 0;
 
     BeginDraw();
-    DrawWindow(x, y, w-1, h-1,
+    DrawWindow(x, y, w, h,
                NULL,0,0x41);
     EndDraw();
 
@@ -213,13 +213,14 @@ static int draw_window(window_t *win)
 
 void blit_client(window_t *win)
 {
+    ctx_t  *ctx = &win->ctx;
     int w, h;
 
     w = win->client.r - win->client.l;
     h = win->client.b - win->client.t;
 
-    Blit(win->ctx->pixmap->data, win->client.l, win->client.t,
-         0, 0, w, h, w, h,win->ctx->pixmap->pitch);
+    Blit(ctx->pixmap_data, win->client.l, win->client.t,
+         0, 0, w, h, w, h, ctx->pixmap_pitch);
 };
 
 
@@ -366,7 +367,6 @@ void do_sys_draw(window_t *win)
 
     BeginDraw();
     DrawWindow(0,0,0,0, NULL, 0x000000,0x41);
-//    DefineButton(15, 15, 0x00000001, 0);
     EndDraw();
 
     send_message((ctrl_t*)win, MSG_DRAW_CLIENT, 0, 0);
@@ -628,6 +628,8 @@ void  init_winlib(void)
 
 void update_rect(ctrl_t *ctrl)
 {
+    ctx_t  *ctx = ctrl->ctx;
+
     int ctx_w, ctx_h;
     int src_x, src_y;
 
@@ -637,34 +639,10 @@ void update_rect(ctrl_t *ctrl)
     ctx_w = ctrl->parent->w;
     ctx_h = ctrl->parent->h;
 
-    Blit(ctrl->ctx->pixmap->data, ctrl->rc.l, ctrl->rc.t, src_x, src_y,
-         ctrl->w, ctrl->h, ctx_w, ctx_h, ctrl->ctx->pixmap->pitch);
+    Blit(ctx->pixmap_data, ctrl->rc.l, ctrl->rc.t, src_x, src_y,
+         ctrl->w, ctrl->h, ctx_w, ctx_h, ctx->pixmap_pitch);
 
 //    need_update++;
-};
-
-
-void Blit(void *bitmap, int dst_x, int dst_y,
-                        int src_x, int src_y, int w, int h,
-                        int src_w, int src_h, int stride)
-{
-    volatile struct blit_call bc;
-
-    bc.dstx = dst_x;
-    bc.dsty = dst_y;
-    bc.w    = w;
-    bc.h    = h;
-    bc.srcx = src_x;
-    bc.srcy = src_y;
-    bc.srcw = src_w;
-    bc.srch = src_h;
-    bc.stride = stride;
-    bc.bitmap = bitmap;
-
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(73),"b"(0x20),"c"(&bc.dstx));
-
 };
 
 ctrl_t *get_child(ctrl_t *ctrl, int x, int y)

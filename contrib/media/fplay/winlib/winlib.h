@@ -36,7 +36,6 @@ typedef struct
 {
     ctrl_t     ctrl;
     ctx_t      ctx;
-    bitmap_t   bitmap;
     char      *text;
     ctrl_t    *child_over;
 
@@ -50,7 +49,6 @@ typedef struct
 {
     ctrl_t      ctrl;
     ctx_t       ctx;
-    bitmap_t    bitmap;
     rect_t      draw;
     ctrl_t     *child_over;
     int         layout;
@@ -73,7 +71,7 @@ typedef struct
     handler_t   *handler;
     ctrl_t      *parent;
 
-    ctx_t       *ctx;
+    ctx_t        ctx;
     uint32_t     id;
     uint32_t     style;
 
@@ -83,10 +81,6 @@ typedef struct
 
     rect_t       saved;
     rect_t       client;
-
-//    ctx_t        client_ctx;
-//    bitmap_t     bitmap;
-    bitmap_t     bitmap;
 
     char        *caption_txt;
     ctrl_t      *child_over;

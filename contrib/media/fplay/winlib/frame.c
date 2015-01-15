@@ -67,8 +67,12 @@ void init_frame(window_t *win)
 extern int res_border_left[];
 extern int res_border_right[];
 
+#if 0
 int draw_frame(window_t *win)
 {
+    void     *pixmap_data;
+    uint32_t  pixmap_pitch;
+
     int *pixmap, *src;
     int  i, j;
 
@@ -124,6 +128,8 @@ int draw_frame(window_t *win)
 
     return 0;
 };
+#endif
+
 
 int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {

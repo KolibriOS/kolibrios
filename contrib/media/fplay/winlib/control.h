@@ -1,7 +1,7 @@
 #ifndef __CONTROL_H__
 #define __CONTROL_H_
 
-#include <pixlib2.h>
+#include <pixlib3.h>
 #include "link.h"
 
 typedef struct
@@ -14,9 +14,10 @@ typedef struct
 
 typedef struct ctx
 {
-  bitmap_t *pixmap;
-  int      offset_x;
-  int      offset_y;
+  int  offset_x;
+  int  offset_y;
+  int *pixmap_data;
+  int  pixmap_pitch;
 }ctx_t;
 
 ctx_t *get_window_ctx();

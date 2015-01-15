@@ -1,5 +1,5 @@
 
-#include "pixlib2.h"
+#include "pixlib3.h"
 
 #define BLACK_MAGIC_SOUND
 #define BLACK_MAGIC_VIDEO
@@ -30,7 +30,7 @@ struct render
     rect_t     rcbottom;
 
     uint32_t   layout;
-    bitmap_t   bitmap[4];
+    bitmap_t  *bitmap[4];
     bitmap_t  *last_bitmap;
 
     uint32_t   ctx_format;
@@ -135,9 +135,7 @@ static inline void GetNotify(void *event)
 }
 
 
-
 int init_fontlib();
-int draw_text(bitmap_t *winbitmap, int face, char *text, int x, int y, int color);
-int draw_text_ext(bitmap_t *winbitmap, int face, char *text, rect_t *rc, int color);
+//int draw_text_ext(void *pixmap, uint32_t pitch, FT_Face face, char *text, rect_t *rc, int color);
 char *get_moviefile();
 

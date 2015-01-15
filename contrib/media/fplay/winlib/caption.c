@@ -44,19 +44,8 @@ int init_caption(window_t *win)
 
     cpt->text = win->caption_txt;
 
-    cpt->bitmap.width  = 1920;
-    cpt->bitmap.height = CAPTION_HEIGHT;
-    cpt->bitmap.flags  = 0;
-
-    if( create_bitmap(&cpt->bitmap) )
-    {
-        printf("not enough memory for caption bitmap\n");
-        return 0;
-    }
-
-
-//    printf("win_w %d win_h %d\n", win->w, win->h);
-    ctx->pixmap   = &cpt->bitmap;
+    ctx->pixmap_data = user_alloc(1920*CAPTION_HEIGHT*4);
+    ctx->pixmap_pitch= 1920*4;
     ctx->offset_x = 0;
     ctx->offset_y = 0;
 
@@ -92,10 +81,9 @@ int init_caption(window_t *win)
 void update_caption_size(window_t *win)
 {
     caption_t *cpt = &win->caption;
-    bitmap_t  *bitmap = &cpt->bitmap;
+    ctx_t     *ctx = &cpt->ctx;
 
-    bitmap->width = win->w;
-    resize_bitmap(bitmap);
+    ctx->pixmap_pitch = win->w * 4;
 
     cpt->ctrl.rc.l    = 0;
     cpt->ctrl.rc.t    = 0;
@@ -116,27 +104,24 @@ void update_caption_size(window_t *win)
     cpt->full_btn->ctrl.rc.l = win->w - 27 - 18 -18 - 5 - 5;
     cpt->full_btn->ctrl.rc.r = cpt->full_btn->ctrl.rc.l +
                            cpt->full_btn->ctrl.w;
-
 };
-
 
 extern int win_font;
 
 void draw_caption(caption_t *cpt)
 {
-    int *pixmap, *src;
-    rect_t rc;
-    int  i, j, w;
+    ctx_t  *ctx = &cpt->ctx;
+    int    *pixmap, *src;
+    rect_t  rc;
+    int     i, j, w;
 
-    lock_bitmap(&cpt->bitmap);
-
-    blit_raw(&cpt->ctx, res_caption_left, 0, 0,
+    blit_raw(ctx, res_caption_left, 0, 0,
              CAPTION_CORNER_W, CAPTION_HEIGHT, CAPTION_CORNER_W*4);
 
     w = cpt->ctrl.w - (2*CAPTION_CORNER_W);
     if( w > 0)
     {
-        pixmap = (int*)cpt->ctx.pixmap->data;
+        pixmap = (int*)ctx->pixmap_data;
         pixmap+= CAPTION_CORNER_W;
         src = res_caption_body;
 
@@ -144,16 +129,11 @@ void draw_caption(caption_t *cpt)
         {
             for(j = 0; j < w; j++)
                 pixmap[j] = src[i];
-            pixmap+= cpt->ctx.pixmap->pitch/4;
+            pixmap+= ctx->pixmap_pitch/4;
         }
-
-//        blit_raw(&cpt->ctx,res_caption_body, CAPTION_CORNER_W, 0,
-//                 w, CAPTION_HEIGHT, 0);
-
     };
 
-
-    blit_raw(&cpt->ctx,res_caption_right, cpt->ctrl.w - CAPTION_CORNER_W, 0,
+    blit_raw(ctx,res_caption_right, cpt->ctrl.w - CAPTION_CORNER_W, 0,
              CAPTION_CORNER_W, CAPTION_HEIGHT,CAPTION_CORNER_W*4);
 
     rc.l = 8;
@@ -161,7 +141,7 @@ void draw_caption(caption_t *cpt)
     rc.r = cpt->ctrl.w - 27 - 18 - 18 - 5 - 5 - 8;
     rc.b = 18;
 
-    draw_text_ext(cpt->ctx.pixmap, win_font, cpt->text, &rc, 0xFFFFFFFF);
+    draw_text_ext(ctx->pixmap_data, ctx->pixmap_pitch, win_font, cpt->text, &rc, 0xFFFFFFFF);
 
     ctrl_t *child;
     child  = (ctrl_t*)cpt->ctrl.child.next;
@@ -264,9 +244,8 @@ void blit_caption(caption_t *cpt)
 //    printf("%s w:%d h:%d stride: %d\n",__FUNCTION__,
 //            cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.stride);
 
-    lock_bitmap(&cpt->bitmap);
 
-    Blit(cpt->ctx.pixmap->data, 0, 0, 0, 0, cpt->ctrl.w, cpt->ctrl.h,
-         cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.pixmap->pitch);
+    Blit(cpt->ctx.pixmap_data, 0, 0, 0, 0, cpt->ctrl.w, cpt->ctrl.h,
+         cpt->ctrl.w, cpt->ctrl.h, cpt->ctx.pixmap_pitch);
 };
 

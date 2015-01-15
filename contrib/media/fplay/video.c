@@ -184,8 +184,6 @@ extern volatile enum player_state player_state;
 extern volatile enum player_state decoder_state;
 extern volatile enum player_state sound_state;
 
-//rect_t     win_rect;
-
 extern int64_t rewind_pos;
 
 static void player_stop()
@@ -219,7 +217,6 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
     switch(msg)
     {
         case MSG_SIZE:
-            //printf("MSG_SIZE\n");
             if(main_render)
             {
                 render_adjust_size(main_render, win);
@@ -268,10 +265,10 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                             win->win_state = win->saved_state;
                             window_update_layout(win);
 //                            if(win->saved_state == MAXIMIZED)
-                            {
-                                blit_caption(&win->caption);
-                                blit_panel(&win->panel);
-                            }
+//                            {
+//                                blit_caption(&win->caption);
+//                                blit_panel(&win->panel);
+//                            }
                         }
                         ent_down = 1;
                     };
@@ -567,6 +564,9 @@ int video_thread(void *param)
     AVCodecContext *ctx = param;
     window_t  *MainWindow;
 
+
+    printf("%s\n", __FUNCTION__);
+
     init_winlib();
 
     MainWindow = create_window(movie_file,0,
@@ -622,14 +622,14 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
     render->ctx_format = ctx->pix_fmt;
 
     mutex_lock(&driver_lock);
-    render->caps = init_pixlib(flags);
+    render->caps = pxInit(1);
     mutex_unlock(&driver_lock);
 
     right  = win->w;
     bottom = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
 
- //   printf("window width %d height %d\n",
- //                   right, bottom);
+    printf("window width %d height %d\n",
+                    right, bottom);
 
     render->win_state  = win->win_state;
 
@@ -653,13 +653,12 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
 
     render_set_size(render, draw_w, draw_h);
 
+    pxCreateClient(0, CAPTION_HEIGHT, right, bottom);
 
     if(render->caps==0)
     {
-        render->bitmap[0].width  = draw_w;
-        render->bitmap[0].height = draw_h;
-
-        if( create_bitmap(&render->bitmap[0]) != 0 )
+        render->bitmap[0] = pxCreateBitmap(draw_w, draw_h);
+        if(render->bitmap[0] == NULL)
         {
             free(render);
             return NULL;
@@ -668,31 +667,24 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
     }
     else
     {
-        int width, height, flags;
+        int width, height;
         int i;
 
         if(render->caps & HW_TEX_BLIT)
         {
-            sna_create_mask();
-
             width  = render->ctx_width;
             height = render->ctx_height;
-            flags  = HW_TEX_BLIT;
         }
         else
         {
             width  = draw_w;
             height = draw_h;;
-            flags  = HW_BIT_BLIT;
         }
 
         for( i=0; i < 2; i++)
         {
-            render->bitmap[i].width  = width;
-            render->bitmap[i].height = height;
-            render->bitmap[i].flags  = flags;
-
-            if( create_bitmap(&render->bitmap[i]) != 0 )
+            render->bitmap[i] = pxCreateBitmap(width, height);
+            if( render->bitmap[i] == NULL )
             {
                 player_state = CLOSED;
                 free(render);
@@ -705,15 +697,11 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
         render->draw   = draw_hw_picture;
     };
 
-
     printf("FPlay %s render engine: context %dx%d picture %dx%d\n",
            render->caps & HW_TEX_BLIT ? "hw_tex_blit":
            render->caps & HW_BIT_BLIT ? "hw_bit_blit":"software",
            render->ctx_width, render->ctx_height,
            draw_w, draw_h);
-
-//    if(init_hw_context(ctx) == 0)
-//        printf("create hardware decoder context\n");
 
     return render;
 };
@@ -721,12 +709,12 @@ render_t *create_render(window_t *win, AVCodecContext *ctx, uint32_t flags)
 void destroy_render(render_t *render)
 {
 
-    destroy_bitmap(&render->bitmap[0]);
+    pxDestroyBitmap(render->bitmap[0]);
 
     if(render->caps & (HW_BIT_BLIT|HW_TEX_BLIT))          /* hw blitter */
-        destroy_bitmap(&render->bitmap[1]);
+        pxDestroyBitmap(render->bitmap[1]);
 
-    done_pixlib();
+    pxFini();
 };
 
 void render_set_size(render_t *render, int width, int height)
@@ -830,28 +818,32 @@ void render_adjust_size(render_t *render, window_t *win)
     render_set_size(render, new_w, new_h);
 
     if(render->caps & HW_TEX_BLIT)          /*  hw scaler  */
-        return;
+    {
+        if(render->win->win_state == FULLSCREEN)
+            pxResizeClient(render->rcvideo.l, render->rcvideo.t, new_w, new_h);
+        else
+            pxResizeClient(render->rcvideo.l, render->rcvideo.t+CAPTION_HEIGHT, new_w, new_h);
 
-    render->bitmap[0].width  = new_w;
-    render->bitmap[0].height = new_h;
-    resize_bitmap(&render->bitmap[0]);
+        return;
+    };
+
+    pxResizeBitmap(render->bitmap[0], new_w, new_h);
 
     if(render->caps & HW_BIT_BLIT)          /* hw blitter */
-    {
-        render->bitmap[1].width  = new_w;
-        render->bitmap[1].height = new_h;
-        resize_bitmap(&render->bitmap[1]);
-    };
+        pxResizeBitmap(render->bitmap[1], new_w, new_h);
+
     return;
 };
 
 void draw_hw_picture(render_t *render, AVPicture *picture)
 {
-    int      dst_width, dst_height;
-    bitmap_t   *bitmap;
-    uint8_t    *data[4];
-    int      linesize[4];
-    int ret;
+    int       dst_width;
+    int       dst_height;
+    bitmap_t *bitmap;
+    uint8_t  *bitmap_data;
+    uint32_t  bitmap_pitch;
+    uint8_t  *data[4];
+    int       linesize[4];
 
     if(render->win->win_state == MINIMIZED ||
        render->win->win_state == ROLLED)
@@ -878,25 +870,25 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
         return ;
     };
 
-    bitmap = &render->bitmap[render->target];
+    bitmap = render->bitmap[render->target];
 
-    ret = lock_bitmap(bitmap);
-    if( ret != 0)
+    bitmap_data = pxLockBitmap(bitmap, &bitmap_pitch);
+    if( bitmap_data == NULL)
     {
         printf("Cannot lock bitmap!\n");
         return ;
     }
 
 //    printf("sws_getCachedContext\n");
-    data[0] = bitmap->data;
-    data[1] = bitmap->data+1;
-    data[2] = bitmap->data+2;
-    data[3] = bitmap->data+3;
+    data[0] = bitmap_data;
+    data[1] = bitmap_data+1;
+    data[2] = bitmap_data+2;
+    data[3] = bitmap_data+3;
 
-    linesize[0] = bitmap->pitch;
-    linesize[1] = bitmap->pitch;
-    linesize[2] = bitmap->pitch;
-    linesize[3] = bitmap->pitch;
+    linesize[0] = bitmap_pitch;
+    linesize[1] = bitmap_pitch;
+    linesize[2] = bitmap_pitch;
+    linesize[3] = bitmap_pitch;
 
     sws_scale(cvt_ctx, (const uint8_t* const *)picture->data,
               picture->linesize, 0, render->ctx_height, data, linesize);
@@ -907,20 +899,20 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     {
 
         if(render->win->win_state == FULLSCREEN)
-            fplay_blit_bitmap(bitmap,render->rcvideo.l,render->rcvideo.t,
-                 render->rcvideo.r, render->rcvideo.b);
+            pxBlitBitmap(bitmap,render->rcvideo.l,render->rcvideo.t,
+                 render->rcvideo.r, render->rcvideo.b,0,0);
         else
-            fplay_blit_bitmap(bitmap, render->rcvideo.l,
+            pxBlitBitmap(bitmap, render->rcvideo.l,
                     CAPTION_HEIGHT+render->rcvideo.t,
-                    render->rcvideo.r, render->rcvideo.b);
+                    render->rcvideo.r, render->rcvideo.b,0,0);
     }
     else
     {
         if(render->win->win_state == FULLSCREEN)
-            blit_bitmap(bitmap,render->rcvideo.l,render->rcvideo.t,
+            pxBlitBitmap(bitmap,render->rcvideo.l,render->rcvideo.t,
                     render->rcvideo.r, render->rcvideo.b, 0,0);
         else
-            blit_bitmap(bitmap, render->rcvideo.l,
+            pxBlitBitmap(bitmap, render->rcvideo.l,
                     CAPTION_HEIGHT+render->rcvideo.t,
                     render->rcvideo.r, render->rcvideo.b, 0, 0);
     };
@@ -932,6 +924,8 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
 
 void draw_sw_picture(render_t *render, AVPicture *picture)
 {
+    uint8_t  *bitmap_data;
+    uint32_t  bitmap_pitch;
     uint8_t     *data[4];
     int      linesize[4];
 
@@ -950,30 +944,30 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
         return ;
     }
 
-    lock_bitmap(&render->bitmap[0]);
+    bitmap_data = pxLockBitmap(render->bitmap[0],&bitmap_pitch);
 
-    data[0] = render->bitmap[0].data;
-    data[1] = render->bitmap[0].data+1;
-    data[2] = render->bitmap[0].data+2;
-    data[3] = render->bitmap[0].data+3;
+    data[0] = bitmap_data;
+    data[1] = bitmap_data+1;
+    data[2] = bitmap_data+2;
+    data[3] = bitmap_data+3;
 
-    linesize[0] = render->bitmap[0].pitch;
-    linesize[1] = render->bitmap[0].pitch;
-    linesize[2] = render->bitmap[0].pitch;
-    linesize[3] = render->bitmap[0].pitch;
+    linesize[0] = bitmap_pitch;
+    linesize[1] = bitmap_pitch;
+    linesize[2] = bitmap_pitch;
+    linesize[3] = bitmap_pitch;
 
      sws_scale(cvt_ctx, (const uint8_t* const *)picture->data,
               picture->linesize, 0, render->ctx_height, data, linesize);
 
     if(render->win->win_state == FULLSCREEN)
-        fplay_blit_bitmap(&render->bitmap[0],render->rcvideo.l,render->rcvideo.t,
-                 render->rcvideo.r, render->rcvideo.b);
+        pxBlitBitmap(render->bitmap[0],render->rcvideo.l,render->rcvideo.t,
+                 render->rcvideo.r, render->rcvideo.b,0,0);
     else
-        fplay_blit_bitmap(&render->bitmap[0], render->rcvideo.l,
+        pxBlitBitmap(render->bitmap[0], render->rcvideo.l,
                  CAPTION_HEIGHT+render->rcvideo.t,
-                 render->rcvideo.r, render->rcvideo.b);
+                 render->rcvideo.r, render->rcvideo.b,0,0);
 
-    render->last_bitmap = &render->bitmap[0];
+    render->last_bitmap = render->bitmap[0];
 }
 
 void render_draw_client(render_t *render)

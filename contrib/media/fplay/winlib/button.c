@@ -20,7 +20,6 @@ static int spinbtn_proc(ctrl_t *btn, uint32_t msg, uint32_t arg1, uint32_t arg2)
 ctrl_t *create_control(size_t size, int id, int x, int y,
                          int w, int h, ctrl_t *parent)
 {
-
     ctrl_t  *ctrl;
 
     if( !parent )
@@ -126,8 +125,6 @@ int draw_button_cairo(button_t *btn)
 
     ctx = btn->ctrl.ctx;
 
-    lock_bitmap(ctx->pixmap);
-    
     x = btn->ctrl.rc.l - ctx->offset_x;
     y = btn->ctrl.rc.t - ctx->offset_y;
 
@@ -258,8 +255,6 @@ int draw_progress(progress_t *prg, int background)
     int len = prg->ctrl.w;
 
     ctx = prg->ctrl.ctx;
-    
-    lock_bitmap(ctx->pixmap);
 
     x = prg->ctrl.rc.l - ctx->offset_x;
     y = prg->ctrl.rc.t - ctx->offset_y;
@@ -268,32 +263,31 @@ int draw_progress(progress_t *prg, int background)
     {
         src = res_progress_bar;
 
-        pixmap = (int*)ctx->pixmap->data;
-        pixmap+= y * ctx->pixmap->pitch/4 + x;
+        pixmap = (int*)ctx->pixmap_data;
+        pixmap+= y * ctx->pixmap_pitch/4 + x;
 
         for(i=0; i < 10; i++)
         {
             for(j = 0; j < len; j++)
                 pixmap[j] = *src;
 
-            pixmap+= ctx->pixmap->pitch/4;
+            pixmap+= ctx->pixmap_pitch/4;
             src++;
         };
     };
-
 
     len = prg->current*prg->ctrl.w/(prg->max - prg->min);
 
     src = res_prg_level;
 
-    pixmap = (int*)ctx->pixmap->data;
-    pixmap+= y*ctx->pixmap->pitch/4 + x;
+    pixmap = (int*)ctx->pixmap_data;
+    pixmap+= y*ctx->pixmap_pitch/4 + x;
 
     for(i=0; i < prg->ctrl.h ;i++)
     {
         for(j=0; j < len; j++)
             pixmap[j] = *src;
-        pixmap+= ctx->pixmap->pitch/4;
+        pixmap+= ctx->pixmap_pitch/4;
         src++;
     };
 
@@ -353,8 +347,8 @@ progress_t *create_progress(char *caption, int id, int x, int y,
 
 int draw_level(level_t *lvl)
 {
-    int *pixmap;
-    ctx_t *ctx;
+    int      *pixmap;
+    ctx_t    *ctx;
     int i, j;
     int x, y;
 
@@ -363,8 +357,6 @@ int draw_level(level_t *lvl)
 
     ctx = lvl->ctrl.ctx;
 
-    lock_bitmap(ctx->pixmap);
-    
     x = lvl->ctrl.rc.l - ctx->offset_x;
     y = lvl->ctrl.rc.t - ctx->offset_y;
 
@@ -377,15 +369,15 @@ int draw_level(level_t *lvl)
     if(len > 96)
         len = 96;
 
-    pixmap = (int*)ctx->pixmap->data;
+    pixmap = (int*)ctx->pixmap_data;
 
-    pixmap+=  y*ctx->pixmap->pitch/4 + x;
+    pixmap+=  y*ctx->pixmap_pitch/4 + x;
 
     for(i=0; i < 10; i++)
     {
         for(j = 0; j < 96; j++)
            pixmap[j] = 0xFF1C1C1C;
-           pixmap+= ctx->pixmap->pitch/4;
+           pixmap+= ctx->pixmap_pitch/4;
     };
 
     blit_raw(ctx, lvl->img_level, x, y, len, 10, 96*4);
@@ -397,7 +389,6 @@ int draw_level(level_t *lvl)
 int lvl_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {
     level_t *lvl = (level_t*)ctrl;
-//    int pos;
 
     switch( msg )
     {
@@ -444,7 +435,7 @@ level_t    *create_level(char *caption, int id, int x, int y,
 
 int draw_slider(slider_t *sld)
 {
-    int *pixmap;
+    int      *pixmap;
     ctx_t *ctx;
     int i, j;
     int x, y;
@@ -454,25 +445,22 @@ int draw_slider(slider_t *sld)
 
     ctx = sld->ctrl.ctx;
 
-    lock_bitmap(ctx->pixmap);
-    
     x = sld->ctrl.rc.l - ctx->offset_x;
     y = sld->ctrl.rc.t - ctx->offset_y;
 
     len = 96 + 12;
 
-    pixmap = (int*)ctx->pixmap->data;
-    pixmap+=  y*ctx->pixmap->pitch/4 + x;
+    pixmap = (int*)ctx->pixmap_data;
+    pixmap+=  y*ctx->pixmap_pitch/4 + x;
 
     for(i=0; i < 11; i++)
     {
         for(j = 0; j < len; j++)
            pixmap[j] = 0xFF1C1C1C;
-           pixmap+= ctx->pixmap->pitch/4;
+           pixmap+= ctx->pixmap_pitch/4;
     };
 
     blit_raw(ctx, sld->img_vol_slider, x+6, y+4, 96, 4, 96*4);
-
     blit_raw(ctx, res_slider, x+sld->pos, y, 12, 11, 12*4);
 
     return 0;

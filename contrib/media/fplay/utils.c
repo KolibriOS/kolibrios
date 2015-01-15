@@ -100,18 +100,18 @@ int get_packet(queue_t *q, AVPacket *pkt)
 
 void blit_raw(ctx_t *ctx, void *raw, int x, int y, int w, int h, int pitch)
 {
-    int *dst = (int*)ctx->pixmap->data;
+    int *dst;
     int *src = raw;
     int i, j;
 
-    dst+=  y * ctx->pixmap->pitch/4 + x;
-
+    dst = ctx->pixmap_data;
+    dst+=  y * ctx->pixmap_pitch/4 + x;
 
     for(i=0; i < h; i++)
     {
         for(j = 0; j < w; j++)
             dst[j] = src[j];
-        dst+= ctx->pixmap->pitch/4;
+        dst+= ctx->pixmap_pitch/4;
         src+= pitch/4;
     };
 };

@@ -19,7 +19,7 @@ LIB_DIR:= $(SDK_DIR)/lib
 INCLUDES= -I. -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/ffmpeg -I$(SDK_DIR)/sources/freetype/include
 
 LIBS:= -lavdevice.dll -lavformat.dll -lavcodec.dll -lavutil.dll -lswscale.dll
-LIBS+= -lswresample.dll -lsound -lpixlib.dll -lfreetype.dll -lgcc -lc.dll -lapp
+LIBS+= -lswresample.dll -lsound -lpixlib3 -lfreetype.dll -lgcc -lc.dll -lapp
 
 LIBPATH:= -L$(LIB_DIR) -L/home/autobuild/tools/win32/mingw32/lib
 
