@@ -104,7 +104,7 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
 #define set_256color(x) fprintf(stderr, "\033[48;5;%dm\033[38;5;%dm", (color[x] >> 16) & 0xff, (color[x] >> 8) & 0xff)
 #define reset_color() fprintf(stderr, "\033[0m")
 #endif
-static int use_color = -1;
+static int use_color = 0;
 
 static void colored_fputs(int level, const char *str)
 {
