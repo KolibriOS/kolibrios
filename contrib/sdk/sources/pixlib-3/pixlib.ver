@@ -1,0 +1,17 @@
+LIBDRM {
+    global: DllStartup;
+            init_pixlib;
+            done_pixlib;
+            create_bitmap;
+            resize_bitmap;
+            destroy_bitmap;
+            lock_bitmap;
+            blit_bitmap;
+
+    local:  __chkstk;
+    	    __chkstk_ms;
+    	    _alloca;
+            __uxa_lock;
+            _nm__tls_alloc;
+            *;
+};
