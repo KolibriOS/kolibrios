@@ -167,8 +167,8 @@ SetLight:
     stdcall [glLightfv], GL_LIGHT0, GL_POSITION, light_position
     stdcall [glLightfv], GL_LIGHT0, GL_SPOT_DIRECTION, light_dir
 
-    stdcall [glLightfv], GL_LIGHT0, GL_DIFFUSE, white_light
-    stdcall [glLightfv], GL_LIGHT0, GL_SPECULAR, white_light
+;    stdcall [glLightfv], GL_LIGHT0, GL_DIFFUSE, white_light
+;    stdcall [glLightfv], GL_LIGHT0, GL_SPECULAR, white_light
 
 	stdcall [glEnable], GL_COLOR_MATERIAL
 	stdcall [glColorMaterial], GL_FRONT, GL_AMBIENT_AND_DIFFUSE
@@ -177,7 +177,7 @@ SetLight:
     stdcall [glLightModelfv], GL_LIGHT_MODEL_AMBIENT, lmodel_ambient
   
 	stdcall [glEnable],GL_LIGHTING
-	stdcall [glEnable],GL_LIGHT0
+;        stdcall [glEnable],GL_LIGHT0
 ret
 
 qObj dd 0
