@@ -1174,8 +1174,3 @@ OSMesaColorClamp(GLboolean enable)
 #include "glapi/glapitemp.h"
 
 #endif /* GLX_INDIRECT_RENDERING */
-
-int atexit(void (*func)(void))
-{
-    return 0;
-};

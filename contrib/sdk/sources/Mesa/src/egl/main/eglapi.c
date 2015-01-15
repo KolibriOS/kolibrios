@@ -1625,8 +1625,3 @@ eglPostSubBufferNV(EGLDisplay dpy, EGLSurface surface,
 
    RETURN_EGL_EVAL(disp, ret);
 }
-
-int atexit(void (*func)(void))
-{
-    return 0;
-};

@@ -627,8 +627,3 @@ driUpdateFramebufferSize(struct gl_context *ctx, const __DRIdrawable *dPriv)
       assert(fb->Height == dPriv->h);
    }
 }
-
-int atexit(void (*func)(void))
-{
-    return 0;
-}

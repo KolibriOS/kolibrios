@@ -3647,8 +3647,8 @@ extern int MESA_VERBOSE;
 extern int MESA_DEBUG_FLAGS;
 # define MESA_FUNCTION __FUNCTION__
 #else
-# define ENTER() printf("ENTER %s\n", __FUNCTION__)
-# define LEAVE() printf("LEAVE %s\n", __FUNCTION__)
+# define ENTER()
+# define LEAVE()
 # define FAIL()
 # define MESA_VERBOSE 0
 # define MESA_DEBUG_FLAGS 0

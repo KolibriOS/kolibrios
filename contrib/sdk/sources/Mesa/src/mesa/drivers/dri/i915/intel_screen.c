@@ -769,7 +769,6 @@ intel_get_param(__DRIscreen *psp, int param, int *value)
    return true;
 }
 
-
 static bool
 intel_get_boolean(__DRIscreen *psp, int param)
 {

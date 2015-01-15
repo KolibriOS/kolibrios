@@ -371,16 +371,67 @@ I965_SRC = 					\
 	drivers/dri/i965/gen7_wm_surface_state.c\
 	$(NULL)
 
+I915_SRC = 					\
+	drivers/dri/common/dri_util.c		\
+	drivers/dri/common/utils.c		\
+	drivers/dri/common/xmlconfig.c		\
+	drivers/dri/i915/i830_context.c		\
+	drivers/dri/i915/i830_state.c		\
+	drivers/dri/i915/i830_texblend.c	\
+	drivers/dri/i915/i830_texstate.c	\
+	drivers/dri/i915/i830_vtbl.c		\
+	drivers/dri/i915/i915_context.c		\
+	drivers/dri/i915/i915_debug_fp.c	\
+	drivers/dri/i915/i915_fragprog.c	\
+	drivers/dri/i915/i915_program.c		\
+	drivers/dri/i915/i915_state.c		\
+	drivers/dri/i915/i915_tex_layout.c	\
+	drivers/dri/i915/i915_texstate.c	\
+	drivers/dri/i915/i915_vtbl.c		\
+	drivers/dri/i915/intel_batchbuffer.c	\
+	drivers/dri/i915/intel_blit.c		\
+	drivers/dri/i915/intel_buffer_objects.c	\
+	drivers/dri/i915/intel_buffers.c	\
+	drivers/dri/i915/intel_clear.c		\
+	drivers/dri/i915/intel_context.c	\
+	drivers/dri/i915/intel_extensions.c	\
+	drivers/dri/i915/intel_fbo.c		\
+	drivers/dri/i915/intel_mipmap_tree.c	\
+	drivers/dri/i915/intel_pixel.c		\
+	drivers/dri/i915/intel_pixel_bitmap.c	\
+	drivers/dri/i915/intel_pixel_copy.c	\
+	drivers/dri/i915/intel_pixel_draw.c	\
+	drivers/dri/i915/intel_pixel_read.c	\
+	drivers/dri/i915/intel_regions.c	\
+	drivers/dri/i915/intel_render.c		\
+	drivers/dri/i915/intel_screen.c		\
+	drivers/dri/i915/intel_state.c		\
+	drivers/dri/i915/intel_syncobj.c	\
+	drivers/dri/i915/intel_tex.c		\
+	drivers/dri/i915/intel_tex_copy.c	\
+	drivers/dri/i915/intel_tex_image.c	\
+	drivers/dri/i915/intel_tex_layout.c	\
+	drivers/dri/i915/intel_tex_subimage.c	\
+	drivers/dri/i915/intel_tex_validate.c	\
+	drivers/dri/i915/intel_tris.c
+
+
 MESA_OBJS =  $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(patsubst %.cpp, %.o, $(MAIN_SRC))))
 OSMESA_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(OSMESA_SRC)))
 I965_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(I965_SRC)))
+I915_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(I915_SRC)))
 
 # targets
 
-all: osmesa.dll i965_dri.drv
+all: osmesa.dll i965_dri.drv i915_dri.drv
 
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
 	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
+#	$(STRIP) $@
+	mv -f $@ $(SDK_DIR)/bin
+
+i915_dri.drv: $(I915_OBJS) $(MESA_OBJS) dri.def Makefile
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I915_OBJS) $(MESA_OBJS) dri.def $(LIBS)
 #	$(STRIP) $@
 	mv -f $@ $(SDK_DIR)/bin
 

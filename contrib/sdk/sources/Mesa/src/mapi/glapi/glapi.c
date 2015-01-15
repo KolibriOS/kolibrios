@@ -62,8 +62,3 @@ _glapi_set_dispatch(struct _glapi_table *dispatch)
 {
    u_current_set((const struct mapi_table *) dispatch);
 }
-
-int atexit(void (*func)(void))
-{
-    return 0;
-};
