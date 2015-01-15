@@ -15,7 +15,9 @@ extern "C" {
 //  #define DBG(format,...)
 //#endif
 
-#define TYPE_3_BORDER_WIDTH 5
+#define TYPE_3_BORDER_WIDTH  5
+#define WIN_STATE_MINIMIZED  0x02
+#define WIN_STATE_ROLLED     0x04
 
 typedef  unsigned int color_t;
 
@@ -428,7 +430,7 @@ void* user_realloc(void *mem, size_t size)
 
     return val;
 };
-static inline void* UserRrealloc(void *mem, size_t size) __attribute__ ((alias ("user_realloc")));
+static inline void* UserRealloc(void *mem, size_t size) __attribute__ ((alias ("user_realloc")));
 
 void *get_resource(void *data, uint32_t id);
 

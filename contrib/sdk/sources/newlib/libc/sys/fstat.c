@@ -59,6 +59,7 @@ _DEFUN (fstat, (fd, buf),
                 buf->st_mode = S_IFREG|S_IRUSR|S_IWUSR|S_IXUSR;
         }
         buf->st_blksize = 4096;
+        buf->st_size  = info.size;
 
         time.tm_sec   = info.atime.sec;
         time.tm_min   = info.atime.min;

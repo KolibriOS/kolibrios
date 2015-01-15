@@ -43,7 +43,6 @@ extern "C" {
 #define	O_NONBLOCK	_FNONBLOCK
 #define	O_NOCTTY	_FNOCTTY
 /* For machines which care - */
-#if defined (_WIN32) || defined (__CYGWIN__)
 #define _FBINARY        0x10000
 #define _FTEXT          0x20000
 #define _FNOINHERIT	0x40000
@@ -66,7 +65,6 @@ extern "C" {
 #define _O_BINARY	O_BINARY
 #define _O_RAW		O_BINARY
 #define _O_NOINHERIT	O_NOINHERIT
-#endif
 
 #ifndef	_POSIX_SOURCE
 
