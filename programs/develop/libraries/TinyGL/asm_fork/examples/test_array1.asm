@@ -24,16 +24,26 @@ start:
 
 	mcall 40,0x27
 
-stdcall [kosglMakeCurrent], 10,10,400,350,ctx1
-stdcall [glEnable], GL_DEPTH_TEST
-stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
-stdcall [gluNewQuadric]
-mov [qObj],eax
+	;заполняем массив индексов из файла house.3ds (который вшит внутрь данной программы)
+	mov esi,house_3ds
+	add esi,0x1798 ;смещение по которому идет информация о гранях в файле 3ds (получено с использованием программы info_3ds)
+	mov edi,Indices
+	mov eax,0x1a6 ;число граней в файле 3ds (получено с использованием программы info_3ds)
+	@@:
+		movsd
+		movsw
+		add esi,2 ;пропускаем свойства грани
+		dec eax
+		or eax,eax
+	jnz @b
 
-stdcall [glClearColor], 0.25,0.25,0.25,0.0
-stdcall [glShadeModel], GL_SMOOTH
+	;первоначальные настройки контекста tinygl
+	stdcall [kosglMakeCurrent], 10,10,400,350,ctx1
+	stdcall [glEnable], GL_DEPTH_TEST
+	stdcall [glClearColor], 0.0,0.0,0.0,0.0
+	stdcall [glShadeModel], GL_SMOOTH
 
-call draw_3d
+	call draw_3d
 
 align 4
 red_win:
@@ -55,7 +65,7 @@ draw_window:
 	pushad
 	mcall 12,1
 
-	mov edx,0x33ffffff ;0x73ffffff
+	mov edx,0x33ffffff
 	mcall 0,(50 shl 16)+430,(30 shl 16)+400,,,caption
 	stdcall [kosglSwapBuffers]
 
@@ -104,17 +114,17 @@ key:
 	@@:
 	cmp ah,176 ;Left
 	jne @f
-		fld dword[angle_z]
+		fld dword[angle_x]
 		fadd dword[delt_size]
-		fstp dword[angle_z]
+		fstp dword[angle_x]
 		call draw_3d
 		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,179 ;Right
 	jne @f
-		fld dword[angle_z]
+		fld dword[angle_x]
 		fsub dword[delt_size]
-		fstp dword[angle_z]
+		fstp dword[angle_x]
 		call draw_3d
 		stdcall [kosglSwapBuffers]
 	@@:
@@ -127,12 +137,11 @@ button:
 	cmp ah,1
 	jne still
 .exit:
-	stdcall [gluDeleteQuadric], [qObj]
 	mcall -1
 
 
 align 4
-caption db 'Test gluSphere, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
+caption db 'Test opengl 1.1 arrays, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
 align 4
 ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
 ;sizeof.TinyGLContext = 28
@@ -140,61 +149,39 @@ ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
 align 4
 draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
-
 stdcall [glPushMatrix]
-	call SetLight
 
+	;масштаб и повороты
 	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
-
-	stdcall [glColor3f], 1.0, 1.0, 0.0
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
-	stdcall [gluSphere], [qObj], 1.0, 32,32
+	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 
-	stdcall [glColor3f], 1.0, 0.0, 0.0
-	stdcall [glTranslatef], -1.6,0.0,0.0
-	stdcall [gluSphere], [qObj], 0.55, 16,16
+	;рисование через тндексный массив
+	mov eax,house_3ds ;начало внедренного файла 3ds
+	add eax,0xeb ;смещение по которому идут координаты вершин (получено с использованием программы info_3ds)
+	stdcall [glVertexPointer], 3, GL_FLOAT, 0, eax ;задаем массив для вершин, 3 - число координат для одной вершины
+	stdcall [glEnableClientState], GL_VERTEX_ARRAY ;включаем режим рисования вершин
+	stdcall [glDrawElements], GL_TRIANGLES, 0x1a6*3, GL_UNSIGNED_SHORT, Indices ;mode, count, type, *indices
+	stdcall [glDisableClientState], GL_VERTEX_ARRAY ;отключаем режим рисования вершин
 
-	stdcall [glColor3f], 0.0, 0.0, 1.0
-	stdcall [glTranslatef], 3.2,0.0,0.0
-	stdcall [gluSphere], [qObj], 0.55, 16,16
 stdcall [glPopMatrix]
 ret
 
 align 4
-SetLight:
-	stdcall [glLightfv], GL_LIGHT0, GL_POSITION, light_position
-	stdcall [glLightfv], GL_LIGHT0, GL_SPOT_DIRECTION, light_dir
-
-	stdcall [glLightfv], GL_LIGHT0, GL_DIFFUSE, white_light
-	stdcall [glLightfv], GL_LIGHT0, GL_SPECULAR, white_light
-
-	stdcall [glEnable], GL_COLOR_MATERIAL
-	stdcall [glColorMaterial], GL_FRONT, GL_AMBIENT_AND_DIFFUSE
-	stdcall [glMaterialfv], GL_FRONT, GL_SPECULAR, mat_specular
-	stdcall [glMaterialf], GL_FRONT, GL_SHININESS, mat_shininess
-	stdcall [glLightModelfv], GL_LIGHT_MODEL_AMBIENT, lmodel_ambient
-
-	stdcall [glEnable],GL_LIGHTING
-	stdcall [glEnable],GL_LIGHT0
-ret
-
-qObj dd 0
-
-scale dd 0.4
-delt_sc dd 0.05
-angle_z dd 0.0
-angle_y dd 0.0
+scale dd 0.0065 ;начальный масштаб (в идеальном случае должен вычислятся, но для даного примера подобран в ручную на глаз)
+delt_sc dd 0.0005
+angle_z dd 90.0
+angle_y dd 90.0
+angle_x dd 0.0
 delt_size dd 3.0
 
-light_position dd 3.0, 2.0, -10.0, 1.0 ; Расположение источника [0][1][2]
-	;[3] = (0.0 - бесконечно удаленный источник, 1.0 - источник света на определенном расстоянии)
-light_dir dd 0.0,0.0,0.0 ;направление лампы
-mat_specular dd 0.1, 0.1, 0.1, 1.0 ; Цвет блика
-mat_shininess dd 3.0 ; Размер блика (обратная пропорция)
-white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемого источником
-lmodel_ambient dd 0.2, 0.2, 0.2, 1.0 ; Параметры фонового освещения
+align 4
+house_3ds: ;внедряем файл внутрь программы (в идеальном случае должен открыватся через окно диалога, но для облегчения примера вшит внутрь)
+file '../../../../../demos/3DS/3ds_objects/house.3ds'
+align 4
+Indices rb 0x1a6*6 ;0x1a6 - число граней, на каждую грань по 3 точки, индекс точки 2 байта
 
 ;--------------------------------------------------
 align 4
@@ -222,7 +209,7 @@ err_message_import db 'Error on load import library tinygl.obj',0
 ;--------------------------------------------------
 
 i_end:
-	rb 1024
+	rb 4096
 stacktop:
 cur_dir_path:
 	rb 4096
