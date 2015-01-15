@@ -47,8 +47,8 @@ static bitmap_t *sw_create_bitmap(uint32_t width, uint32_t height)
     if (bitmap->buffer == NULL)
         goto err_1;
 
-    printf("create bitmap: %p %dx%d buffer: %p\n",
-            bitmap, bitmap->width, bitmap->height, bitmap->buffer);
+//    printf("create bitmap: %p %dx%d buffer: %p\n",
+//            bitmap, bitmap->width, bitmap->height, bitmap->buffer);
 
     return bitmap;
 
@@ -166,7 +166,6 @@ int pxCreateClient(int x, int y, uint32_t width, uint32_t height)
 
 int pxResizeClient(int x, int y, uint32_t width, uint32_t height)
 {
-    printf("resize client\n");
     return driver->resize_client(x, y, width, height);
 }
 

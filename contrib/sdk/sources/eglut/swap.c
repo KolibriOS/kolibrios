@@ -68,7 +68,7 @@ void render_swap_and_blit(struct render *render)
     update.bo_pitch = (render->width+15) & ~15;
     update.bo_map = (int)render->mask_buffer;
 
-    if(drm_ioctl(render->fd, 45, &update))
+    if(drm_ioctl(render->fd, SRV_MASK_UPDATE_EX, &update))
         return;
 
     if (!eglMakeCurrent(render->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, render->context))
