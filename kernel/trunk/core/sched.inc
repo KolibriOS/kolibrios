@@ -116,8 +116,6 @@ do_change_task:
         Mov     [tss._esp0],eax,[ebx+APPDATA.saved_esp0]
 
         mov     edx, [ebx+APPDATA.tls_base]
-        cmp     edx, [esi+APPDATA.tls_base]
-        je      @f
 
         mov     [tls_data_l+2], dx
         shr     edx, 16
@@ -126,7 +124,7 @@ do_change_task:
 
         mov     dx, app_tls
         mov     fs, dx
-@@:
+
 ; set gs selector unconditionally
         Mov     gs,ax,graph_data
       ; set CR0.TS
