@@ -582,6 +582,8 @@ cmove   fix     cmovz
 
 macro cmovz reg1, reg2 {
 
+        local   ..jumpaddr
+
 if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
         jnz     ..jumpaddr
         mov     reg1, reg2
@@ -596,6 +598,8 @@ cmovne  fix     cmovnz
 
 macro cmovnz reg1, reg2 {
 
+        local   ..jumpaddr
+
 if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
         jz      ..jumpaddr
         mov     reg1, reg2
@@ -608,6 +612,8 @@ end if
 
 macro cmovg reg1, reg2 {
 
+        local   ..jumpaddr
+
 if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
         jle     ..jumpaddr
         mov     reg1, reg2
@@ -618,6 +624,8 @@ end if
 }
 
 macro cmovl reg1, reg2 {
+
+        local   ..jumpaddr
 
 if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
         jge     ..jumpaddr
