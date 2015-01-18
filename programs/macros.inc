@@ -578,48 +578,55 @@ struct FILEINFO
   Size       dq ?
 ends
 
-
-if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
-
 cmove   fix     cmovz
+
 macro cmovz reg1, reg2 {
 
-local   .jumpaddr
-
-        jnz     .jumpaddr
+if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
+        jnz     ..jumpaddr
         mov     reg1, reg2
-       .jumpaddr:
+  ..jumpaddr:
+else
+        cmovz   reg1, reg2
+end if
+
 }
 
 cmovne  fix     cmovnz
+
 macro cmovnz reg1, reg2 {
 
-local   .jumpaddr
-
-        jz      .jumpaddr
+if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
+        jz      ..jumpaddr
         mov     reg1, reg2
-       .jumpaddr:
+  ..jumpaddr:
+else
+        cmovnz  reg1, reg2
+end if
+
 }
 
 macro cmovg reg1, reg2 {
 
-local   .jumpaddr
-
-        jle     .jumpaddr
+if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
+        jle     ..jumpaddr
         mov     reg1, reg2
-       .jumpaddr:
+  ..jumpaddr:
+else
+        cmovg   reg1, reg2
+end if
 }
 
 macro cmovl reg1, reg2 {
 
-local   .jumpaddr
-
-        jge     .jumpaddr
+if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
+        jge     ..jumpaddr
         mov     reg1, reg2
-       .jumpaddr:
-}
-
+  ..jumpaddr:
+else
+        cmovl   reg1, reg2
 end if
+}
 
 ; constants
 
