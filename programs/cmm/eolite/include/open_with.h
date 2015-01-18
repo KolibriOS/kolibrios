@@ -35,7 +35,7 @@ int GetListOfPrograms()
 			case '=': InfType=OPTION; break;
 			case 0x0a:
 			case 0x0d:
-				if (!strcmp(#section,"Associations")) && (option) && (InfType!=COMMENT)
+				if (!strcmp(#section,"Assoc")) && (option) && (InfType!=COMMENT)
 				{
 					for (ti=0; ti<app_list.count; ti++) //do not add duplications
 					{
