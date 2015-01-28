@@ -29,6 +29,7 @@ E_LIB glColor3f ;(float ,float ,float)
 E_LIB glColor3d ;(double ,double ,double)
 E_LIB glColor3fv ;(float *)
 E_LIB glColor3dv ;(double *)
+E_LIB glColor3ub
 E_LIB glColor4f ;(float ,float ,float, float )
 E_LIB glColor4d ;(double ,double ,double, double )
 E_LIB glColor4fv ;(float *)

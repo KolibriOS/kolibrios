@@ -158,6 +158,37 @@ proc glColor3fv uses eax, v:dword
 	ret
 endp
 
+align 4
+fl_255 dd 255.0
+
+align 4
+proc glColor3ub uses eax, r:dword, g:dword, b:dword
+	push dword 1.0
+	fld dword[fl_255]
+
+	movzx eax,byte[b]
+	mov dword[esp-4],eax
+	fild dword[esp-4]
+	fdiv st0,st1
+	fstp dword[esp-4] ;преобразовали int во float
+	movzx eax,byte[g]
+	mov dword[esp-8],eax
+	fild dword[esp-8]
+	fdiv st0,st1
+	fstp dword[esp-8]
+	movzx eax,byte[r]
+	mov dword[esp-12],eax
+	fild dword[esp-12]
+	fdiv st0,st1
+	fstp dword[esp-12]
+
+	ffree st0
+	fincstp
+	sub esp,12
+	call glColor4f
+	ret
+endp
+
 ; TexCoord
 
 align 4

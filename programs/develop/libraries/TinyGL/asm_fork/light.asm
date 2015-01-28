@@ -608,10 +608,11 @@ end if
 						fstp st ;Результат остается на вершине стека st0
 						fmul dword[att]
 						fstp dword[att] ;att=att*pow(dot_spot,l.spot_exponent)
-						jmp .if1_end
+						jmp .if1_end_f1
 					@@:
 					ffree st0 ;l.spot_exponent
 					fincstp
+					.if1_end_f1:
 					ffree st0 ;dot_spot
 					fincstp
 			.if1_end:
@@ -648,13 +649,13 @@ end if
 				fstp dword[s+offs_Z] ;s.Z=d.Z+1.0
 			.els_2_end:
 			fld dword[n]
-			fmul st0,st0
+			fmul dword[s]
 			fld dword[n+offs_Y]
-			fmul st0,st0
+			fmul dword[s+offs_Y]
 			faddp
 			fld dword[n+offs_Z]
-			fmul st0,st0
-			faddp ;dot_spec = n.X^2 +n.Y^2 +n.Z^2
+			fmul dword[s+offs_Z]
+			faddp ;dot_spec = n.X*s.X +n.Y*s.Y +n.Z*s.Z
 			cmp dword[twoside],0 ;if (twoside && dot_spec < 0)
 			je @f
 			ftst ;if (dot_spec < 0)
@@ -710,25 +711,16 @@ end if
 				fmul dword[ecx+offs_mate_specular]
 				fadd dword[lR]
 				fstp dword[lR] ;lR+=dot_spec * l.specular.v[0] * m.specular.v[0]
-;ffree st0
-;fincstp
 				fld dword[ebx+offs_ligh_specular+4]
 				fmul st0,st1
 				fmul dword[ecx+offs_mate_specular+4]
 				fadd dword[lG]
 				fstp dword[lG] ;lG+=dot_spec * l.specular.v[1] * m.specular.v[1]
-;ffree st0
-;fincstp
 				fld dword[ebx+offs_ligh_specular+8]
 				fmul st0,st1
 				fmul dword[ecx+offs_mate_specular+8]
 				fadd dword[lB]
 				fstp dword[lB] ;lB+=dot_spec * l.specular.v[2] * m.specular.v[2]
-;ffree st0
-;fincstp
-				ffree st0 ;dot_spec
-				fincstp
-			jmp .if2_end
 		.if0_end:
 		ffree st0 ;dot [or] dot_spec
 		fincstp
