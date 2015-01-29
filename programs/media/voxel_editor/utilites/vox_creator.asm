@@ -13,6 +13,7 @@ include '../../../../programs/macros.inc'
 include '../../../../programs/proc32.inc'
 include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
 include '../../../../programs/dll.inc'
+include '../trunk/str.inc'
 
 vox_offs_tree_table equ 4
 vox_offs_data equ 12
@@ -20,7 +21,7 @@ txt_buf rb 8
 include '../trunk/vox_rotate.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel creator 03.10.13',0 ;подпись окна
+caption db 'Voxel creator 29.01.15',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -397,20 +398,13 @@ pushad
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	xor eax,eax
-	mov ebx,(20 shl 16)+410
-	mov ecx,(20 shl 16)+520
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
-	mov edi,caption
-	int 0x40
+	mcall ,(20 shl 16)+410,(20 shl 16)+520,,,caption
 
 	; *** создание кнопок на панель ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,3
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -449,11 +443,8 @@ pushad
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
 	mov edx,(7 shl 16)+7 ;icon new
-	int 0x40
+	mcall 7,[image_data_toolbar],(16 shl 16)+16
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -504,8 +495,6 @@ align 4
 draw_pok:
 	;обновление подписи размера файла
 	mov edi,txt_f_size.size
-	mov dword[edi],0
-	mov dword[edi+4],0
 	mov eax,dword[vox_obj_size]
 	mov ebx,txt_pref
 	.cycle:
@@ -516,17 +505,15 @@ draw_pok:
 		jmp .cycle
 	@@:
 
-	call convert_int_to_str
+	stdcall convert_int_to_str, 16
 	stdcall str_cat, edi,ebx
 	stdcall str_cat, edi,txt_space ;завершающий пробел
 
-	mov eax,4 ;рисование текста
-	mov ebx,(275 shl 16)+7
+	;рисование текста
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 or (1 shl 30)
-	mov edx,txt_f_size
 	mov edi,[sc.work] ;цвет фона окна
-	int 0x40
+	mcall 4,(275 shl 16)+7,,txt_f_size
 
 	ret
 
@@ -1237,108 +1224,6 @@ proc open_image_in_buf, buf:dword
 	ret
 endp
 
-;input:
-; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
-;output:
-; eax - число
-align 4
-proc conv_str_to_int, buf:dword
-	xor eax,eax
-	push ebx ecx esi
-	xor ebx,ebx
-	mov esi,[buf]
-	;определение отрицательных чисел
-	xor ecx,ecx
-	inc ecx
-	cmp byte[esi],'-'
-	jne @f
-		dec ecx
-		inc esi
-	@@:
-
-	cmp word[esi],'0x'
-	je .load_digit_16
-
-	.load_digit_10: ;считывание 10-тичных цифр
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'9'
-		jg @f
-			sub bl,'0'
-			imul eax,10
-			add eax,ebx
-			inc esi
-			jmp .load_digit_10
-	jmp @f
-
-	.load_digit_16: ;считывание 16-ричных цифр
-		add esi,2
-	.cycle_16:
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'f'
-		jg @f
-		cmp bl,'9'
-		jle .us1
-			cmp bl,'A'
-			jl @f ;отсеиваем символы >'9' и <'A'
-		.us1: ;составное условие
-		cmp bl,'F'
-		jle .us2
-			cmp bl,'a'
-			jl @f ;отсеиваем символы >'F' и <'a'
-			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
-		.us2: ;составное условие
-			sub bl,'0'
-			cmp bl,9
-			jle .cor1
-				sub bl,7 ;convert 'A' to '10'
-			.cor1:
-			shl eax,4
-			add eax,ebx
-			inc esi
-			jmp .cycle_16
-	@@:
-	cmp ecx,0 ;если число отрицательное
-	jne @f
-		sub ecx,eax
-		mov eax,ecx
-	@@:
-	pop esi ecx ebx
-	ret
-endp
-
-align 4
-proc str_cat uses eax ecx edi esi, str1:dword, str2:dword
-	mov esi,dword[str2]
-	stdcall str_len,esi
-	mov ecx,eax
-	inc ecx
-	mov edi,dword[str1]
-	stdcall str_len,edi
-	add edi,eax
-	cld
-	repne movsb
-	ret
-endp
-
-;output:
-; eax = strlen
-align 4
-proc str_len, str1:dword
-	mov eax,[str1]
-	@@:
-		cmp byte[eax],0
-		je @f
-		inc eax
-		jmp @b
-	@@:
-	sub eax,[str1]
-	ret
-endp
-
 msgbox_0:
 	db 1,0
 	db 'Внимание',0
@@ -1691,38 +1576,7 @@ buf_vox:
 	rb BUF_STRUCT_SIZE*(2+1)
 
 
-
-;input:
-; eax = value
-; edi = string buffer
-;output:
-align 4
-convert_int_to_str:
-	pushad
-		cld
-		mov dword[edi+1],0
-		mov word[edi+5],0
-		call .str
-	popad
-	ret
-
-align 4
-.str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-	jb @f
-		xor edx,edx  ;очистить edx
-		div ecx      ;разделить - остаток в edx
-		push edx     ;положить в стек
-		;dec edi             ;смещение необходимое для записи с конца строки
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
-
+align 16
 i_end:
 		rb 2048
 	thread:

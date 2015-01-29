@@ -15,9 +15,10 @@ include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
 include '../../../../programs/dll.inc'
 include '../trunk/vox_draw.inc'
 include '../trunk/vox_rotate.inc'
+include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel mover 13.09.12',0 ;подпись окна
+caption db 'Voxel mover 29.01.15',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -32,7 +33,6 @@ ends
 run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
-fn_toolbar db 'toolbar_m.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*18
 image_data_toolbar dd 0
@@ -174,7 +174,7 @@ start:
 
 	stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z
 
-	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file 'toolbar_m.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
 
 	stdcall mem.Alloc,[max_open_file_size]
 	mov dword[open_file_vox],eax
@@ -352,16 +352,11 @@ pushad
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
-	mov edi,caption
-	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4]
+	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4],,,caption
 
 	; *** создание кнопок на панель ***
-	mov eax,8
-	mov ebx,(5 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,3
 	mov esi,[sc.work_button]
-	int 0x40
+	mcall 8,(5 shl 16)+20,(5 shl 16)+20,3
 
 	mov ebx,(30 shl 16)+20
 	mov edx,4
@@ -416,11 +411,8 @@ pushad
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
-	mov eax,7
-	mov ebx,[image_data_toolbar]
-	mov ecx,(16 shl 16)+16
 	mov edx,(7 shl 16)+7 ;icon new
-	int 0x40
+	mcall 7,[image_data_toolbar],(16 shl 16)+16
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon open
@@ -485,14 +477,10 @@ popad
 
 align 4
 draw_pok:
-	mov eax,47
-	mov ecx,[v_zoom]
-	mov ebx,(3 shl 16)+(1 shl 31)
-	mov edx,((350+6*9) shl 16)+OT_CAPT_Y_COLOR+2
 	mov esi,[sc.work_button_text]
 	or  esi,(1 shl 30)
 	mov edi,[sc.work_button]
-	int 0x40 ;масштаб
+	mcall 47, (3 shl 16)+(1 shl 31), [v_zoom], ((350+6*9) shl 16)+OT_CAPT_Y_COLOR+2 ;масштаб
 	mov ecx,[n_plane]
 	add edx,115 shl 16 ;9
 	int 0x40 ;номер сечения
@@ -501,11 +489,11 @@ draw_pok:
 	mov dword[txt_curor.size],0
 	mov eax,dword[v_cur_x]
 	mov edi,txt_curor.size
-	call convert_int_to_str
+	stdcall convert_int_to_str,10
 	stdcall str_cat, edi,txt_mull
 	mov eax,dword[v_cur_y]
 	mov edi,txt_buf
-	call convert_int_to_str
+	stdcall convert_int_to_str,16
 	stdcall str_cat, txt_curor.size,edi
 	stdcall str_cat, txt_curor.size,txt_space ;завершающий пробел
 
@@ -513,25 +501,23 @@ draw_pok:
 	mov dword[txt_mov_offs.size],0
 	mov eax,dword[mov_x]
 	mov edi,txt_mov_offs.size
-	call convert_int_to_str
+	stdcall convert_int_to_str,30
 	stdcall str_cat, edi,txt_space
 	mov eax,dword[mov_y]
 	mov edi,txt_buf
-	call convert_int_to_str
+	stdcall convert_int_to_str,16
 	stdcall str_cat, txt_mov_offs.size,edi
 	stdcall str_cat, txt_mov_offs.size,txt_space
 	mov eax,dword[mov_z]
 	mov edi,txt_buf
-	call convert_int_to_str
+	stdcall convert_int_to_str,16
 	stdcall str_cat, txt_mov_offs.size,edi
 	stdcall str_cat, txt_mov_offs.size,txt_space ;завершающий пробел
 
-	mov eax,4 ;рисование текста
-	mov ebx,(OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2
+	;рисование текста
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
-	mov edx,txt_color
-	int 0x40
+	mcall 4, (OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2,,txt_color
 
 	mov edx,txt_curor
 	add ebx,115 shl 16
@@ -559,16 +545,14 @@ on_change_color:
 pushad
 	mov ebx,((OT_CAPT_X_COLOR+35) shl 16)+16 ;по оси x
 	mov ecx,(OT_CAPT_Y_COLOR shl 16)+12 ;по оси y
-	mov edx,[v_color]
-	mcall 13
+	mcall 13,,,[v_color]
 
-	mov ebx,(1 shl 8)+(6 shl 16)
 	mov ecx,edx
 	mov edx,((OT_CAPT_X_COLOR+55) shl 16)+OT_CAPT_Y_COLOR+2
 	mov esi,[sc.work_text]
 	add esi,(1 shl 30)
 	mov edi,[sc.work]
-	mcall 47
+	mcall 47,(1 shl 8)+(6 shl 16)
 popad
 	ret
 
@@ -1319,150 +1303,6 @@ pushad
 popad
 	ret
 
-if 0
-;input:
-; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
-;output:
-; eax - число
-align 4
-proc conv_str_to_int, buf:dword
-	xor eax,eax
-	push ebx ecx esi
-	xor ebx,ebx
-	mov esi,[buf]
-	;определение отрицательных чисел
-	xor ecx,ecx
-	inc ecx
-	cmp byte[esi],'-'
-	jne @f
-		dec ecx
-		inc esi
-	@@:
-
-	cmp word[esi],'0x'
-	je .load_digit_16
-
-	.load_digit_10: ;считывание 10-тичных цифр
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'9'
-		jg @f
-			sub bl,'0'
-			imul eax,10
-			add eax,ebx
-			inc esi
-			jmp .load_digit_10
-	jmp @f
-
-	.load_digit_16: ;считывание 16-ричных цифр
-		add esi,2
-	.cycle_16:
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'f'
-		jg @f
-		cmp bl,'9'
-		jle .us1
-			cmp bl,'A'
-			jl @f ;отсеиваем символы >'9' и <'A'
-		.us1: ;составное условие
-		cmp bl,'F'
-		jle .us2
-			cmp bl,'a'
-			jl @f ;отсеиваем символы >'F' и <'a'
-			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
-		.us2: ;составное условие
-			sub bl,'0'
-			cmp bl,9
-			jle .cor1
-				sub bl,7 ;convert 'A' to '10'
-			.cor1:
-			shl eax,4
-			add eax,ebx
-			inc esi
-			jmp .cycle_16
-	@@:
-	cmp ecx,0 ;если число отрицательное
-	jne @f
-		sub ecx,eax
-		mov eax,ecx
-	@@:
-	pop esi ecx ebx
-	ret
-endp
-end if
-
-;input:
-; eax = value
-; edi = string buffer
-;output:
-align 4
-convert_int_to_str:
-	pushad
-		bt eax,31
-		jae @f
-			;если число отрицательное
-			neg eax
-			;inc eax
-			;clc
-			mov byte[edi],'-'
-			inc edi
-		@@:
-		mov dword[edi+1],0
-		mov word[edi+5],0
-		call .str
-	popad
-	ret
-
-align 4
-.str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-	jb @f
-		xor edx,edx  ;очистить edx
-		div ecx      ;разделить - остаток в edx
-		push edx     ;положить в стек
-		;dec edi             ;смещение необходимое для записи с конца строки
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
-
-align 4
-proc str_cat, str1:dword, str2:dword
-	push eax ecx edi esi
-	mov esi,dword[str2]
-	stdcall str_len,esi
-	mov ecx,eax
-	inc ecx
-	mov edi,dword[str1]
-	stdcall str_len,edi
-	add edi,eax
-	cld
-	repne movsb
-	pop esi edi ecx eax
-	ret
-endp
-
-;output:
-; eax = strlen
-align 4
-proc str_len, str1:dword
-	mov eax,[str1]
-	@@:
-		cmp byte[eax],0
-		je @f
-		inc eax
-		jmp @b
-	@@:
-	sub eax,[str1]
-	ret
-endp
 
 ;данные для диалога открытия файлов
 align 4
@@ -1744,6 +1584,7 @@ buf_vox:
 	db 6,7,4,3 ;w,h,h_osn,n
 	rb BUF_STRUCT_SIZE*(3+1)
 
+align 16
 i_end:
 	wnd_s_pos: ;место для настроек стартовой позиции окна
 		rq 0
