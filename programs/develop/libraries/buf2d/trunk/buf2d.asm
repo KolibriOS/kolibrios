@@ -1986,52 +1986,156 @@ proc buf_get_pixel uses ebx ecx edi, buf_struc:dword, coord_x:dword, coord_y:dwo
 	ret
 endp
 
+align 4
+proc buf_flip_h, buf_struc:dword
+pushad
+	mov edi,[buf_struc]
+	cmp buf2d_bits,24
+	jne .end_24
+		mov esi,buf2d_data
+		mov eax,buf2d_w
+		mov ecx,eax
+		shr ecx,1
+		dec eax
+		lea eax,[eax+eax*2]
+		mov ebx,buf2d_h
+		mov edi,esi		
+		add esi,eax
+		add eax,3
+		cld
+		.cycle_24:
+		push ecx edi esi
+align 4
+		@@:
+			;swap word[edi] <-> word[esi]
+			mov dx,[edi]
+			movsw
+			mov [esi-2],dx
+			;swap byte[edi] <-> byte[esi]
+			mov dl,[edi]
+			movsb
+			mov [esi-1],dl
+			sub esi,6
+		loop @b
+		pop esi edi ecx
+		add edi,eax
+		add esi,eax
+		dec ebx
+		or ebx,ebx
+		jnz .cycle_24
+		jmp .end_32
+	.end_24:
+	cmp buf2d_bits,32
+	jne .end_32
+		mov esi,buf2d_data
+		mov eax,buf2d_w
+		dec eax
+		shl eax,2
+		mov ebx,buf2d_h
+		mov edi,esi
+		add esi,eax
+		add eax,4
+		cld
+		.cycle_32:
+		mov ecx,eax
+		shr ecx,3
+		push edi esi
+align 4
+		@@:
+			;swap dword[edi] <-> dword[esi]
+			mov edx,[edi]
+			movsd
+			mov [esi-4],edx
+			sub esi,8
+		loop @b
+		pop esi edi
+		add edi,eax
+		add esi,eax
+		dec ebx
+		or ebx,ebx
+		jnz .cycle_32
+	.end_32:
+popad
+	ret
+endp
+
 ;отразить по вертикали (верх и низ меняются местами)
 align 4
 proc buf_flip_v, buf_struc:dword
 locals
-    line_pix dd ? ;кол. пикселей в линии буфера
-    line_2byte dd ? ;кол. байт в линии буфера * 2
+	line_pix dd ? ;кол. пикселей в линии буфера
+	line_2byte dd ? ;кол. байт в линии буфера * 2
 endl
 	pushad
 	mov edi,[buf_struc]
-    cmp buf2d_bits,24
-    jne .end_24
-        mov edx,buf2d_w
-        mov [line_pix],edx
-        mov ebx,buf2d_h
-        lea edx,[edx+edx*2]
-        mov esi,edx
-        imul esi,ebx
-        sub esi,edx
-        add esi,buf2d_data ;указатель на нижнюю линию
-        shr ebx,1 ;кол. линейных циклов
-        shl edx,1
-        mov [line_2byte],edx
-        mov edi,buf2d_data
-        xchg edi,esi
-        cld
-        .flip_24:
-        cmp ebx,0
-        jle .end_24
-        mov ecx,[line_pix]
-        @@:
-            lodsw
-            mov dx,word[edi]
-            mov word[esi-2],dx
-            mov [edi],ax
-            lodsb
-            mov ah,byte[edi+2]
-            mov byte[esi-1],ah
-            mov [edi+2],al
-            add edi,3
-            loop @b
-        sub edi,[line_2byte]
-        dec ebx
-        jmp .flip_24
-    .end_24:
-    popad
-    ret
+	cmp buf2d_bits,24
+	jne .end_24
+		mov edx,buf2d_w
+		mov [line_pix],edx
+		mov ebx,buf2d_h
+		lea edx,[edx+edx*2]
+		mov esi,edx
+		imul esi,ebx
+		sub esi,edx
+		add esi,buf2d_data ;указатель на нижнюю линию
+		shr ebx,1 ;кол. линейных циклов
+		shl edx,1
+		mov [line_2byte],edx
+		mov edi,buf2d_data
+		xchg edi,esi
+		cld
+		.flip_24:
+		cmp ebx,0
+		jle .end_32 ;здесь выход из функции (потому .end_24 не подходит)
+		mov ecx,[line_pix]
+align 4
+		@@:
+			lodsw
+			mov dx,word[edi]
+			mov word[esi-2],dx
+			stosw
+			lodsb
+			mov ah,byte[edi]
+			mov byte[esi-1],ah
+			stosb
+			loop @b
+		sub edi,[line_2byte]
+		dec ebx
+		jmp .flip_24
+	.end_24:
+	cmp buf2d_bits,32
+	jne .end_32
+		mov edx,buf2d_w
+		mov [line_pix],edx
+		mov ebx,buf2d_h
+		shl edx,2
+		mov esi,edx
+		imul esi,ebx
+		sub esi,edx
+		add esi,buf2d_data ;указатель на нижнюю линию
+		shr ebx,1 ;кол. линейных циклов
+		shl edx,1
+		mov [line_2byte],edx
+		mov edi,buf2d_data
+		xchg edi,esi
+		cld
+		.flip_32:
+		cmp ebx,0
+		jle .end_32
+		mov ecx,[line_pix]
+align 4
+		@@:
+			lodsd
+			mov edx,dword[edi]
+			mov dword[esi-4],edx
+			stosd
+			loop @b
+		sub edi,[line_2byte]
+		dec ebx
+		jmp .flip_32
+	.end_32:
+	popad
+	ret
 endp
 
 align 4
@@ -3318,14 +3422,13 @@ align 4
 line_len4i:
 	push ebp
 	mov ebp,esp
-		finit
 		fild word [ebp+8]
 		fisub word [ebp+12]
 		fmul st0,st0 ;st0=x^2
 		fild word [ebp+10]
 		fisub word [ebp+14]
 		fmul st0,st0 ;st0=y^2
-		fadd st0,st1
+		faddp
 		fsqrt
 		fstp dword [ebp+12]
 	pop ebp
@@ -3353,6 +3456,7 @@ proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 	xor ecx,ecx
 
 	finit
+	fldz
 
 	; calculate delta t
 	stdcall line_len4i, dword[coord_p1],dword[coord_p0]
@@ -3374,7 +3478,8 @@ proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 	@@:
 	fstp dword[delt_t]
 
-	finit
+	ffree st0 ;1.0
+	fincstp
 
 	;fild word[coord_p2+2] ;y2
 	fild word[coord_p1+2] ;y1
@@ -3400,10 +3505,9 @@ proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 		mov esi,dword[opr_param]
 		fstp dword[opr_param]
 
-		fldz
-		fadd st0,st1 ;0+t
-		fmul st0,st0 ;t*t
-		fmul st0,st5 ;...*x2
+		fld st0 ;st0=t
+		fmul st0,st0 ;t^2
+		fmul st0,st5 ;(t^2)*x2
 
 		fadd dword[opr_param]
 		mov dword[opr_param],esi
@@ -3424,10 +3528,9 @@ proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 		mov esi,dword[opr_param]
 		fstp dword[opr_param]
 
-		fldz
-		fadd st0,st1 ;0+t
-		fmul st0,st0 ;t*t
-		fimul word[coord_p2+2] ;...*y2
+		fld st0 ;st0=t
+		fmul st0,st0 ;t^2
+		fimul word[coord_p2+2] ;(t^2)*y2
 
 		fadd dword[opr_param]
 		mov dword[opr_param],esi
@@ -5270,6 +5373,7 @@ EXPORTS:
 	dd sz_buf2d_flood_fill, buf_flood_fill
 	dd sz_buf2d_set_pixel, buf_set_pixel
 	dd sz_buf2d_get_pixel, buf_get_pixel
+	dd sz_buf2d_flip_h, buf_flip_h
 	dd sz_buf2d_flip_v, buf_flip_v
 	dd sz_buf2d_filter_dither, buf_filter_dither
 	dd sz_buf2d_vox_brush_create, vox_brush_create
@@ -5311,6 +5415,7 @@ EXPORTS:
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
+	sz_buf2d_flip_h db 'buf2d_flip_h',0
 	sz_buf2d_flip_v db 'buf2d_flip_v',0
 	sz_buf2d_filter_dither db 'buf2d_filter_dither',0
 	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
