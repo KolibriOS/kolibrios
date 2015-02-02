@@ -15,9 +15,10 @@ include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
 include '../../../dll.inc'
 include 'vox_draw.inc'
 include 'vox_rotate.inc'
+include 'str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 03.10.13',0 ;подпись окна
+caption db 'Voxel editor 02.02.15',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -34,7 +35,7 @@ image_data dd 0 ;указатель на временную память. для нужен преобразования изображ
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*24
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*27
 image_data_toolbar dd 0
 cursors_count equ 4
 IMAGE_CURSORS_SIZE equ 4096*cursors_count ;размер картинки с курсорами
@@ -448,73 +449,82 @@ pushad
 	int 0x40
 
 	mov ebx,(30 shl 16)+20
-	mov edx,4
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,5
+	inc edx
 	int 0x40
 	add ebx,30 shl 16
-	mov edx,6
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,7
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,8
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,9
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,10
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,11
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,12
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,13
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,14
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,15
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,16
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,17
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,18
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,19
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,20
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,21
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,22
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,23
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,24
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,25
+	inc edx
 	int 0x40
 	add ebx,25 shl 16
-	mov edx,26
+	inc edx
+	int 0x40
+	add ebx,25 shl 16
+	inc edx
+	int 0x40
+	add ebx,25 shl 16
+	inc edx
+	int 0x40
+	add ebx,25 shl 16
+	inc edx
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
@@ -594,6 +604,15 @@ pushad
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;высота кисти +1
 	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;отразить кисть гор.
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;отразить кисть вер.
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;повернуть кисть 90 гр.
+	int 0x40
 
 	; *** рисование буферов ***
 	call draw_objects
@@ -621,11 +640,11 @@ draw_pok:
 	mov dword[txt_curor.size],0
 	mov eax,dword[v_cur_x]
 	mov edi,txt_curor.size
-	call convert_int_to_str
+	stdcall convert_int_to_str,10
 	stdcall str_cat, edi,txt_mull
 	mov eax,dword[v_cur_y]
 	mov edi,txt_buf
-	call convert_int_to_str
+	stdcall convert_int_to_str,16
 	stdcall str_cat, txt_curor.size,edi
 	stdcall str_cat, txt_curor.size,txt_space ;завершающий пробел
 
@@ -633,11 +652,11 @@ draw_pok:
 	mov dword[txt_brush.size],0
 	mov eax,dword[brush_w]
 	mov edi,txt_brush.size
-	call convert_int_to_str
+	stdcall convert_int_to_str,10
 	stdcall str_cat, edi,txt_mull
 	mov eax,dword[brush_h]
 	mov edi,txt_buf
-	call convert_int_to_str
+	stdcall convert_int_to_str,16
 	stdcall str_cat, txt_brush.size,edi
 	stdcall str_cat, txt_brush.size,txt_space ;завершающий пробел
 
@@ -795,6 +814,18 @@ button:
 	jne @f
 		call but_bru_h_p
 	@@:
+	cmp ah,27
+	jne @f
+		call but_bru_flip_h
+	@@:
+	cmp ah,28
+	jne @f
+		call but_bru_flip_v
+	@@:
+	cmp ah,29
+	jne @f
+		call but_bru_rot_90
+	@@:
 	cmp ah,1
 	jne still
 .exit:
@@ -833,6 +864,7 @@ endp
 
 align 4
 open_file_vox dd 0 ;указатель на область для открытия файлов
+open_b rb 560
 
 align 4
 but_open_file:
@@ -845,11 +877,31 @@ but_open_file:
 	;код при удачном открытии диалога
 
 	mov eax,70 ;70-я функция работа с файлами
+	mov [run_file_70.Function], 5
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov dword[run_file_70.Count], 0
+	mov dword[run_file_70.Buffer], open_b
+	mov byte[run_file_70+20], 0
+	mov dword[run_file_70.FileName], openfile_path
+	mov ebx,run_file_70
+	int 0x40
+
+	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
+	cmp ecx,[max_open_file_size] ;проверяем размер выделенной памяти
+	jle @f
+		mov [max_open_file_size],ecx
+		stdcall mem.ReAlloc,[open_file_vox],ecx
+		mov [open_file_vox],eax
+		notify_window_run txt_need_memory
+	@@:
+	
+	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	m2m dword[run_file_70.Count], dword[max_open_file_size]
-	m2m [run_file_70.Buffer], [open_file_vox]
+	mov dword[run_file_70.Count], ecx
+	m2m dword[run_file_70.Buffer], dword[open_file_vox]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
 	mov ebx,run_file_70
@@ -857,8 +909,6 @@ but_open_file:
 	cmp ebx,0xffffffff
 	je .end_open_file
 
-	;add ebx,[open_file_vox]
-	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
 	mcall 71,1,openfile_path
 
 	;---
@@ -891,7 +941,6 @@ but_save_file:
 
 		stdcall buf2d_vox_obj_get_size, ebx
 		mov dword[run_file_70.Count], eax ;размер файла
-		mov eax,70 ;70-я функция работа с файлами
 		mov [run_file_70.Function], 2
 		mov [run_file_70.Position], 0
 		mov [run_file_70.Flags], 0
@@ -899,8 +948,7 @@ but_save_file:
 		mov [run_file_70.Buffer], ebx
 		mov byte[run_file_70+20], 0
 		mov dword[run_file_70.FileName], openfile_path
-		mov ebx,run_file_70
-		int 0x40 ;загружаем файл изображения
+		mcall 70,run_file_70 ;загружаем файл изображения
 		cmp ebx,0xffffffff
 		je .end_save_file
 
@@ -1266,6 +1314,24 @@ but_bru_h_p:
 	ret
 
 align 4
+but_bru_flip_h:
+	stdcall [buf2d_flip_h],buf_brush
+	call draw_plane
+	ret
+
+align 4
+but_bru_flip_v:
+	stdcall [buf2d_flip_v],buf_brush
+	call draw_plane
+	ret
+
+align 4
+but_bru_rot_90:
+	stdcall [buf2d_rotate],buf_brush,90
+	call draw_plane
+	ret
+
+align 4
 but_brush_copy:
 	cmp dword[v_pen_mode],PEN_MODE_BRUSH
 	jne .end_f
@@ -1450,8 +1516,17 @@ cam_z dd 0
 scaled_zoom dd 5 ;масштаб после которого начинается рисование части изображения
 tile_size dd ? ;размер квадратика на плоскости с сечением
 max_open_file_size dd ?
+
+align 4
+buf_brush: ;буфер с прозрачностью для курсоров
+	dd brush_data ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
 brush_w dd 5 ;ширина кисти
 brush_h dd 5 ;высота кисти
+	dd 0 ;+16 color
+	db 32 ;+20 bit in pixel
+
 brush_data dd 1 shl 31,1 shl 30,1 shl 30,1 shl 30,1 shl 31
 dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
 dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
@@ -1469,6 +1544,9 @@ txt_brush: db 'Кисть: '
 txt_mull db '*',0
 txt_space db ' ',0
 txt_buf rb 16
+txt_need_memory db 'Мало памяти для работы с открываемым файлом.',13,10,\
+	'При редактировании файла программа может зависнуть.',13,10,\
+	'Увеличте размер переменной ',39,'file_size',39,' в файле ',39,'vox_editor.ini',39,'.',0
 
 ;рисование буфера с воксельными объектами
 align 4
@@ -1675,142 +1753,6 @@ proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword, hot_p:dword
 	ret
 endp
 
-if 0
-;input:
-; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
-;output:
-; eax - число
-align 4
-proc conv_str_to_int, buf:dword
-	xor eax,eax
-	push ebx ecx esi
-	xor ebx,ebx
-	mov esi,[buf]
-	;определение отрицательных чисел
-	xor ecx,ecx
-	inc ecx
-	cmp byte[esi],'-'
-	jne @f
-		dec ecx
-		inc esi
-	@@:
-
-	cmp word[esi],'0x'
-	je .load_digit_16
-
-	.load_digit_10: ;считывание 10-тичных цифр
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'9'
-		jg @f
-			sub bl,'0'
-			imul eax,10
-			add eax,ebx
-			inc esi
-			jmp .load_digit_10
-	jmp @f
-
-	.load_digit_16: ;считывание 16-ричных цифр
-		add esi,2
-	.cycle_16:
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'f'
-		jg @f
-		cmp bl,'9'
-		jle .us1
-			cmp bl,'A'
-			jl @f ;отсеиваем символы >'9' и <'A'
-		.us1: ;составное условие
-		cmp bl,'F'
-		jle .us2
-			cmp bl,'a'
-			jl @f ;отсеиваем символы >'F' и <'a'
-			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
-		.us2: ;составное условие
-			sub bl,'0'
-			cmp bl,9
-			jle .cor1
-				sub bl,7 ;convert 'A' to '10'
-			.cor1:
-			shl eax,4
-			add eax,ebx
-			inc esi
-			jmp .cycle_16
-	@@:
-	cmp ecx,0 ;если число отрицательное
-	jne @f
-		sub ecx,eax
-		mov eax,ecx
-	@@:
-	pop esi ecx ebx
-	ret
-endp
-end if
-
-;input:
-; eax = value
-; edi = string buffer
-;output:
-align 4
-convert_int_to_str:
-	pushad
-		mov dword[edi+1],0
-		mov word[edi+5],0
-		call .str
-	popad
-	ret
-
-align 4
-.str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-	jb @f
-		xor edx,edx  ;очистить edx
-		div ecx      ;разделить - остаток в edx
-		push edx     ;положить в стек
-		;dec edi             ;смещение необходимое для записи с конца строки
-		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-		pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
-
-align 4
-proc str_cat, str1:dword, str2:dword
-	push eax ecx edi esi
-	mov esi,dword[str2]
-	stdcall str_len,esi
-	mov ecx,eax
-	inc ecx
-	mov edi,dword[str1]
-	stdcall str_len,edi
-	add edi,eax
-	cld
-	repne movsb
-	pop esi edi ecx eax
-	ret
-endp
-
-;output:
-; eax = strlen
-align 4
-proc str_len, str1:dword
-	mov eax,[str1]
-	@@:
-		cmp byte[eax],0
-		je @f
-		inc eax
-		jmp @b
-	@@:
-	sub eax,[str1]
-	ret
-endp
-
 ;данные для диалога открытия файлов
 align 4
 OpenDialog_data:
@@ -1967,6 +1909,9 @@ import_buf2d:
 	buf2d_flood_fill dd sz_buf2d_flood_fill
 	buf2d_set_pixel dd sz_buf2d_set_pixel
 	buf2d_get_pixel dd sz_buf2d_get_pixel
+	buf2d_flip_h dd sz_buf2d_flip_h
+	buf2d_flip_v dd sz_buf2d_flip_v
+	buf2d_rotate dd sz_buf2d_rotate
 	buf2d_vox_brush_create dd sz_buf2d_vox_brush_create
 	buf2d_vox_brush_delete dd sz_buf2d_vox_brush_delete
 	buf2d_vox_obj_get_img_w_3g dd sz_buf2d_vox_obj_get_img_w_3g
@@ -2004,6 +1949,9 @@ import_buf2d:
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
+	sz_buf2d_flip_h db 'buf2d_flip_h',0
+	sz_buf2d_flip_v db 'buf2d_flip_v',0
+	sz_buf2d_rotate db 'buf2d_rotate',0
 	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
 	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0
 	sz_buf2d_vox_obj_get_img_w_3g db 'buf2d_vox_obj_get_img_w_3g',0
@@ -2123,6 +2071,7 @@ buf_vox_g2:
 	db 6,4,0,3 ;w,h,h_osn,n
 	rb BUF_STRUCT_SIZE*(3+1)
 
+align 16
 i_end:
 	wnd_s_pos: ;место для настроек стартовой позиции окна
 		rq 0
