@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2014. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  zeroconfig.asm - Zeroconfig service for KolibriOS              ;;
@@ -62,116 +62,84 @@ include '../../network.inc'
 include 'dhcp.inc'
 include '../../dll.inc'
 
-
-Ip2dword:
-    push    edx
-
-    ; This code validates if the query is an IP containing 4 numbers and 3 dots
-
-    xor     al, al            ; make al (dot count) zero
-
-   @@:
-    cmp     byte[edx],'0'     ; check if this byte is a number, if not jump to no_IP
-    jl      no_IP             ;
-    cmp     byte[edx],'9'     ;
-    jg      no_IP             ;
-
-    inc     edx               ; the byte was a number, so lets check the next byte
-
-    cmp     byte[edx],0       ; is this byte zero? (have we reached end of query?)
-    jz      @f                ; jump to next @@ then
-    cmp     byte[edx],':'
-    jz      @f
-
-    cmp     byte[edx],'.'     ; is this byte a dot?
-    jne     @r                ; if not, jump to previous @@
-
-    inc     al                ; the byte was a dot so increment al(dot count)
-    inc     edx               ; next byte
-    jmp     @r                ; lets check for numbers again (jump to previous @@)
-
-   @@:                        ; we reach this when end of query reached
-    cmp     al,3              ; check if there where 3 dots
-    jnz     no_IP             ; if not, jump to no_IP
-
-    ; The following code will convert this IP into a dword and output it in eax
-    ; If there is also a port number specified, this will be returned in ebx, otherwise ebx is -1
-
-    pop     esi               ; edx (query address) was pushed onto stack and is now popped in esi
-
-    xor     edx, edx          ; result
-    xor     eax, eax          ; current character
-    xor     ebx, ebx          ; current byte
-
-  .outer_loop:
-    shl     edx, 8
-    add     edx, ebx
-    xor     ebx, ebx
-  .inner_loop:
-    lodsb
-    test    eax, eax
-    jz      .finish
-    cmp     al, '.'
-    jz      .outer_loop
-    sub     eax, '0'
-    imul    ebx, 10
-    add     ebx, eax
-    jmp     .inner_loop
-  .finish:
-    shl     edx, 8
-    add     edx, ebx
-
-    bswap   edx               ; we want little endian order
-
-    ret
-
-no_IP:
-    pop     edx
-    xor     edx, edx
-
-    ret
-
-
-
-
-
-
 START:
-        mcall   40, EVM_STACK2
-
-        DEBUGF  2,"Zero-config service loaded\n"
-
-  .wait:
-        mov     ebx, API_ETH + 0
-        mov     bh, [device]
-        mcall   76                              ; get MAC of ethernet interface 1
-        cmp     eax, -1
-        jne     .start
-
-        mcall   10
-        jmp     .wait
-
-  .start:
-        mov     word[MAC], bx
-        mov     dword[MAC+2], eax
-        DEBUGF  1,"MAC: %x-%x-%x-%x-%x-%x\n", [MAC+0]:2, [MAC+1]:2, [MAC+2]:2, [MAC+3]:2, [MAC+4]:2, [MAC+5]:2
-
-        mcall   40, EVM_STACK
-
         mcall   68, 11
 
         stdcall dll.Load,@IMPORT
         or      eax, eax
-        jnz     try_dhcp
+        jnz     fail
+
+        DEBUGF  2,"Zero-config service loaded\n"
+
+        mcall   40, EVM_STACK2
+
+wait_for_link_up:
+        mov     bh, [device]
+        mov     bl, 0           ; Get device type
+        mcall   74
+        cmp     eax, 1          ; Ethernet
+        jne     .wait
+
+        mov     bl, 10          ; Get Link status
+        mcall   74
+        test    eax, eax
+        jnz     .go
+
+  .wait:
+        mcall   10
+        jmp     wait_for_link_up
+
+  .go:
+        mov     ebx, API_ETH + 0
+        mov     bh, [device]
+        mcall   76              ; get MAC of the ethernet interface
+        mov     word[MAC], bx
+        mov     dword[MAC+2], eax
+        DEBUGF  1,"MAC: %x-%x-%x-%x-%x-%x\n", [MAC+0]:2, [MAC+1]:2, [MAC+2]:2, [MAC+3]:2, [MAC+4]:2, [MAC+5]:2
 
         invoke  ini.get_str, path, str_ipconfig, str_type, inibuf, 16, 0
 
         cmp     dword[inibuf], 'stat'
-        jne     try_dhcp
+        je      static
+        jmp     try_dhcp
+
+wait_for_link_down:
+; TODO: detect ARP conflicts
+
+        mcall   40, EVM_STACK2
+  .loop:
+        mcall   10
+        mov     bh, [device]
+        mov     bl, 0           ; Get device type
+        mcall   74
+        cmp     eax, 0          ; No device
+        je      .down
+
+        mov     bl, 10          ; Get Link status
+        mcall   74
+        test    eax, eax
+        jnz     .loop
+
+  .down:
+        xor     ecx, ecx
+        mov     ebx, API_IPv4 + 3
+        mov     bh, [device]
+        mcall   76              ; ip
+        mov     bl, 5
+        mcall   76              ; dns
+        mov     bl, 7
+        mcall   76              ; subnet
+        mov     bl, 9
+        mcall   76              ; gateway
+
+        jmp     wait_for_link_up
+
+static:
+        DEBUGF  1,"Applying Static IP settings\n"
 
         invoke  ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
         mov     edx, inibuf
-        call    Ip2dword
+        call    ip_str_to_dword
         mov     ecx, edx
         mov     ebx, API_IPv4 + 3       ; set IP
         mov     bh, [device]
@@ -179,7 +147,7 @@ START:
 
         invoke  ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
         mov     edx, inibuf
-        call    Ip2dword
+        call    ip_str_to_dword
         mov     ecx, edx
         mov     ebx, API_IPv4 + 9       ; set gateway
         mov     bh, [device]
@@ -187,7 +155,7 @@ START:
 
         invoke  ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
         mov     edx, inibuf
-        call    Ip2dword
+        call    ip_str_to_dword
         mov     ecx, edx
         mov     ebx, API_IPv4 + 5       ; set DNS
         mov     bh, [device]
@@ -195,36 +163,39 @@ START:
 
         invoke  ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
         mov     edx, inibuf
-        call    Ip2dword
+        call    ip_str_to_dword
         mov     ecx, edx
         mov     ebx, API_IPv4 + 7       ; set subnet
         mov     bh, [device]
         mcall   76
 
-
-        mcall   -1
+        mov     [notify_struct.msg], str_connected
+        mcall   70, notify_struct
+        jmp     wait_for_link_down
 
 
 try_dhcp:
 
         DEBUGF  2,"Trying to contact DHCP server\n"
 
+        mcall   40, EVM_STACK
+
         mcall   75, 0, AF_INET4, SOCK_DGRAM, 0          ; open socket (parameters: domain, type, reserved)
         cmp     eax, -1
-        je      error
+        je      socket_error
         mov     [socketNum], eax
 
         DEBUGF  1,"Socket %x opened\n", eax
 
         mcall   75, 2, [socketNum], sockaddr1, 18       ; bind socket to local port 68
         cmp     eax, -1
-        je      error
+        je      socket_error
 
         DEBUGF  1,"Socket Bound to local port 68\n"
 
         mcall   75, 4, [socketNum], sockaddr2, 18       ; connect to 255.255.255.255 on port 67
         cmp     eax, -1
-        je      error
+        je      socket_error
 
         DEBUGF  1,"Connected to 255.255.255.255 on port 67\n"
 
@@ -242,18 +213,16 @@ build_request:                                          ; Creates a DHCP request
         DEBUGF  1,"Building request\n"
 
         stdcall mem.Alloc, BUFFER
-        mov     [dhcpMsg], eax
         test    eax, eax
-        jz      dhcp_error
-
-            ;;; todo: skip this bullcrap
+        jz      dhcp_fail2
+        mov     [dhcpMsg], eax
 
         mov     edi, eax
         mov     ecx, BUFFER
         xor     eax, eax
         rep     stosb
 
-            ;; todo: put this in a buffer instead of writing bytes and words!
+            ;; todo: put this in one buffer we can copy, instead of writing bytes and words!
 
         mov     edx, [dhcpMsg]
 
@@ -261,7 +230,7 @@ build_request:                                          ; Creates a DHCP request
         mov     [edx], byte 0x01                ; Boot request
         mov     [edx+1], byte 0x01              ; Ethernet
         mov     [edx+2], byte 0x06              ; Ethernet h/w len
-        mov     [edx+4], dword 0x11223344       ; xid                 ;;;;;;;
+        mov     [edx+4], dword 0x11223344       ; xid                 ;;;;;;;  FIXME
         mov     eax, [currTime]
         mov     [edx+8], eax                    ; secs, our uptime
         mov     [edx+10], byte 0x80             ; broadcast flag set
@@ -303,12 +272,12 @@ request_options:
 
 send_dhcpmsg:
         DEBUGF  1,"Sending DHCP discover/request\n"
-        mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]     ; write to socket ( send broadcast request )
+        mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]             ; write to socket (send broadcast request)
         mcall   26, 9
         add     eax, TIMEOUT*100
         mov     [timeout], eax
   .wait:
-        mcall   23, TIMEOUT                                             ; wait for data
+        mcall   23, TIMEOUT                                             ; wait for data (with timeout)
 
 read_data:                                                              ; we have data - this will be the response
         mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, MSG_DONTWAIT     ; read data from socket
@@ -322,7 +291,7 @@ read_data:                                                              ; we hav
         DEBUGF  2,"No answer from DHCP server\n"
         dec     [tries]
         jnz     send_dhcpmsg                    ; try again
-        jmp     dhcp_error                      ; fail
+        jmp     dhcp_fail
 
   @@:
         DEBUGF  1,"%d bytes received\n", eax
@@ -344,19 +313,15 @@ read_data:                                                              ; we hav
         cmp     [dhcpMsgType], 0x03             ; did we send a request?
         je      request
 
-        call    dhcp_end                        ; we should never reach here ;)
-        jmp     exit
+        ; we should never reach here ;)
+        jmp     fail
 
 discover:
         call    parse_response
 
         cmp     [dhcpMsgType2], 0x02            ; Was the response an offer?
-        je      send_request
+        jne     dhcp_fail
 
-        call    dhcp_end
-        jmp     link_local
-
-send_request:
         DEBUGF  1, "Got offer, making request\n"
         mov     [dhcpMsgType], 0x03             ; make it a request
         jmp     build_request
@@ -367,11 +332,11 @@ request:
         cmp     [dhcpMsgType2], 0x05            ; Was the response an ACK? It should be
         jne     read_data                       ; NO - read next packets
 
-        DEBUGF  2, "Setting IP using DHCP\n"
+        DEBUGF  2, "IP assigned by DHCP server successfully\n"
 
         mov     [notify_struct.msg], str_connected
         mcall   70, notify_struct
-        call    dhcp_end
+        call    dhcp_fail
 
         mov     ebx, API_IPv4 + 3
         mov     bh, [device]
@@ -383,13 +348,8 @@ request:
         mov     bl, 9
         mcall   76, , [dhcp.gateway]            ; gateway
 
-        jmp     exit
+        jmp     wait_for_link_down
 
-dhcp_end:
-        mcall   close, [socketNum]
-        stdcall mem.Free, [dhcpMsg]
-
-        ret
 
 ;***************************************************************************
 ;   Function
@@ -481,7 +441,7 @@ parse_response:
         mov     eax,[edx]
         bswap   eax
         mov     [dhcpLease],eax
-        DEBUGF  1,"lease: %d\n",eax
+        DEBUGF  1,"Lease: %d\n",eax
         popa
         jmp     .next_option
 
@@ -506,10 +466,13 @@ parse_response:
   .done:
         ret
 
+dhcp_fail:
 
+        mcall   close, [socketNum]
+        stdcall mem.Free, [dhcpMsg]
 
-dhcp_error:
-        call    dhcp_end
+dhcp_fail2:
+        DEBUGF  1,"DHCP failed\n"
 
 link_local:
         call    random
@@ -577,13 +540,13 @@ link_local:
         mcall   5, ANNOUNCE_INTERVAL*100
         jmp     announce_loop
    @@:
-        jmp     exit
+        jmp     wait_for_link_down
 
 
-error:
+socket_error:
         DEBUGF  2,"Socket error\n"
-exit:   ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
-        DEBUGF  2,"Exiting\n"
+fail:
+        DEBUGF  2,"Zeroconf failed!\n"
         mcall   -1
 
 
@@ -599,6 +562,76 @@ random:  ; Pseudo random actually
         mov     [generator], eax
 
         ret
+
+
+
+ip_str_to_dword:
+    push    edx
+
+    ; This code validates if the query is an IP containing 4 numbers and 3 dots
+
+    xor     al, al            ; make al (dot count) zero
+
+   @@:
+    cmp     byte[edx],'0'     ; check if this byte is a number, if not jump to no_IP
+    jl      no_IP             ;
+    cmp     byte[edx],'9'     ;
+    jg      no_IP             ;
+
+    inc     edx               ; the byte was a number, so lets check the next byte
+
+    cmp     byte[edx],0       ; is this byte zero? (have we reached end of query?)
+    jz      @f                ; jump to next @@ then
+    cmp     byte[edx],':'
+    jz      @f
+
+    cmp     byte[edx],'.'     ; is this byte a dot?
+    jne     @r                ; if not, jump to previous @@
+
+    inc     al                ; the byte was a dot so increment al(dot count)
+    inc     edx               ; next byte
+    jmp     @r                ; lets check for numbers again (jump to previous @@)
+
+   @@:                        ; we reach this when end of query reached
+    cmp     al,3              ; check if there where 3 dots
+    jnz     no_IP             ; if not, jump to no_IP
+
+    ; The following code will convert this IP into a dword and output it in eax
+    ; If there is also a port number specified, this will be returned in ebx, otherwise ebx is -1
+
+    pop     esi               ; edx (query address) was pushed onto stack and is now popped in esi
+
+    xor     edx, edx          ; result
+    xor     eax, eax          ; current character
+    xor     ebx, ebx          ; current byte
+
+  .outer_loop:
+    shl     edx, 8
+    add     edx, ebx
+    xor     ebx, ebx
+  .inner_loop:
+    lodsb
+    test    eax, eax
+    jz      .finish
+    cmp     al, '.'
+    jz      .outer_loop
+    sub     eax, '0'
+    imul    ebx, 10
+    add     ebx, eax
+    jmp     .inner_loop
+  .finish:
+    shl     edx, 8
+    add     edx, ebx
+
+    bswap   edx               ; we want little endian order
+
+    ret
+
+no_IP:
+    pop     edx
+    xor     edx, edx
+
+    ret
 
 ; DATA AREA
 
