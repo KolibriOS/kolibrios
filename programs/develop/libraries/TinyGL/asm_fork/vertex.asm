@@ -263,7 +263,7 @@ pushad
 			fld dword[ebx+8]   ;st0 = m[2]
 			fmul st0,st2       ;st0 *= v.coord.Z
 			fadd dword[ebx+12] ;st0 += m[3]
-			faddp              ;st0 += v.ec.X
+			faddp              ;st0 = v.ec.X
 			fstp dword[edx+offs_vert_ec] ;v.ec.X = v.coord.X * m[0] + v.coord.Y * m[1] + v.coord.Z * m[2] + m[3]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
@@ -282,22 +282,27 @@ pushad
 		fld dword[edx+offs_vert_ec+offs_X]
 		fld dword[edx+offs_vert_ec+offs_Y]
 		fld dword[edx+offs_vert_ec+offs_Z]
+		fld dword[edx+offs_vert_ec+offs_W]
 
 		mov ecx,4
 		.cycle_1:
 			fld dword[ebx]     ;st0 = m[0]
-			fmul st0,st3       ;st0 *= v.ec.X
+			fmul st0,st4       ;st0 *= v.ec.X
 			fld dword[ebx+4]   ;st0 = m[1]
-			fmul st0,st3       ;st0 *= v.ec.Y
+			fmul st0,st4       ;st0 *= v.ec.Y
 			faddp              ;st0 = v.ec.X * m[0] + v.ec.Y * m[1]
 			fld dword[ebx+8]   ;st0 = m[2]
-			fmul st0,st2       ;st0 *= v.ec.Z
-			fadd dword[ebx+12] ;st0 += m[3]
+			fmul st0,st3       ;st0 *= v.ec.Z
+			faddp              ;st0 = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2]
+			fld dword[ebx+12]  ;st0 = m[3]
+			fmul st0,st2       ;st0 *= v.ec.W
 			faddp              ;st0 = v.pc.X
-			fstp dword[edx+offs_vert_pc] ;v.pc.X = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2] + m[3]
+			fstp dword[edx+offs_vert_pc] ;v.pc.X = v.ec.X * m[0] + v.ec.Y * m[1] + v.ec.Z * m[2] + v.ec.W * m[3]
 			add ebx,16 ;следущая строка матрицы
 			add edx,4  ;следущая координата вектора
 		loop .cycle_1
+		ffree st0
+		fincstp
 		ffree st0
 		fincstp
 		ffree st0
@@ -315,25 +320,40 @@ pushad
 		fld dword[edi+offs_Y]
 		fld dword[edi+offs_Z]
 
-		mov ecx,3
 		add edx,offs_vert_normal
-		.cycle_2:
-			fld dword[ebx]   ;st0 = m[0]
-			fmul st0,st3     ;st0 *= n.X
-			fld dword[ebx+4] ;st0 = m[1]
-			fmul st0,st3     ;st0 *= n.Y
-			faddp            ;st0 = n.X * m[0] + n.Y * m[1]
-			fld dword[ebx+8] ;st0 = m[2]
-			fmul st0,st2     ;st0 *= n.Z
-			faddp            ;st0 = v.normal.X
-			fstp dword[edx]  ;v.normal.X = n.X * m[0] + n.Y * m[1] + n.Z * m[2]
-			add ebx,16 ;следущая строка матрицы
-			add edx,4  ;следущая координата вектора
-		loop .cycle_2
+
+		fld dword[ebx]   ;st0 = m[0]
+		fmul st0,st3     ;st0 *= n.X
+		fld dword[ebx+4] ;st0 = m[1]
+		fmul st0,st3     ;st0 *= n.Y
+		faddp            ;st0 = n.X * m[0] + n.Y * m[1]
+		fld dword[ebx+8] ;st0 = m[2]
+		fmul st0,st2     ;st0 *= n.Z
+		faddp            ;st0 = v.normal.X
+		fstp dword[edx]  ;v.normal.X = n.X * m[0] + n.Y * m[1] + n.Z * m[2]
+
+		fld dword[ebx+16];st0 = m[4]
+		fmul st0,st3     ;st0 *= n.X
+		fld dword[ebx+20];st0 = m[5]
+		fmul st0,st3     ;st0 *= n.Y
+		faddp            ;st0 = n.X * m[4] + n.Y * m[5]
+		fld dword[ebx+24];st0 = m[6]
+		fmul st0,st2     ;st0 *= n.Z
+		faddp            ;st0 = v.normal.X
+		fstp dword[edx+4];v.normal.X = n.X * m[4] + n.Y * m[5] + n.Z * m[6]
+
+		fld dword[ebx+32];st0 = m[8]
+		fmul st0,st3     ;st0 *= n.X
+		fld dword[ebx+36];st0 = m[9]
+		fmul st0,st3     ;st0 *= n.Y
+		faddp            ;st0 = n.X * m[8] + n.Y * m[9]
+		fld dword[ebx+40];st0 = m[10]
+		fmul st0,st2     ;st0 *= n.Z
+		faddp            ;st0 = v.normal.X
+		fstp dword[edx+8];v.normal.X = n.X * m[8] + n.Y * m[9] + n.Z * m[10]
 
 		cmp dword[eax+offs_cont_normalize_enabled],0
 		je .end_els
-			sub edx,12
 			stdcall gl_V3_Norm,edx
 		jmp .end_els
 	.els_0:
@@ -478,12 +498,12 @@ pushad
 		stdcall gl_shade_vertex, edx,ebx
 		jmp @f
 	.els_0:
-		mov eax,[edx+offs_cont_current_color]
-		mov [ebx+offs_vert_color],eax
-		mov eax,[edx+offs_cont_current_color+4]
-		mov [ebx+offs_vert_color+4],eax
-		mov eax,[edx+offs_cont_current_color+8]
-		mov [ebx+offs_vert_color+8],eax
+		mov esi,edx
+		add esi,offs_cont_current_color
+		mov edi,ebx
+		add edi,offs_vert_color ;edi = &v.color
+		mov ecx,4
+		rep movsd
 	@@:
 
 	; tex coords
