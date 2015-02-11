@@ -18,7 +18,7 @@ include 'vox_3d.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 29.01.15',0 ;подпись окна
+caption db 'Voxel viewer 11.02.15',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -34,7 +34,7 @@ run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*9
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*10
 image_data_toolbar dd 0
 
 offs_zbuf_pbuf equ 24
@@ -95,7 +95,10 @@ start:
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	load_image_file 'toolbar_t.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
+	load_image_file 'toolbar_t.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE*2 ;*2 for gray icons
+	mov eax,[image_data_toolbar]
+	add eax,IMAGE_TOOLBAR_SIZE
+	stdcall img_to_gray, [image_data_toolbar],eax,(IMAGE_TOOLBAR_SIZE)/3
 
 	mcall 26,9
 	mov [last_time],eax
@@ -198,6 +201,18 @@ pushad
 	mov edx,12
 	int 0x40
 
+	call draw_toolbar_i
+
+	stdcall [buf2d_draw], buf_0
+	stdcall [kosglSwapBuffers]
+
+	mcall 12,2
+popad
+	ret
+
+
+align 4
+draw_toolbar_i:
 	; *** рисование иконок на кнопках ***
 	mov edx,(7 shl 16)+7 ;icon new
 	mcall 7,[image_data_toolbar],(16 shl 16)+16
@@ -215,27 +230,49 @@ pushad
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;zoom -
 	int 0x40
+
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	cmp word[opt_light],0
+	jne @f
+		add ebx,IMAGE_TOOLBAR_SIZE ;make gray icon
+	@@:
 	add edx,(25 shl 16) ;light on/off
 	int 0x40
+	cmp word[opt_light],0
+	jne @f
+		sub ebx,IMAGE_TOOLBAR_SIZE
+	@@:
+
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	cmp word[opt_cube_box],0
+	jne @f
+		add ebx,IMAGE_TOOLBAR_SIZE ;make gray icon
+	@@:
 	add edx,(25 shl 16) ;box on/off
 	int 0x40
+	cmp word[opt_cube_box],0
+	jne @f
+		sub ebx,IMAGE_TOOLBAR_SIZE
+	@@:
+
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	cmp word[opt_auto_rotate],0
+	jne @f
+		add ebx,IMAGE_TOOLBAR_SIZE ;make gray icon
+	@@:
 	add edx,(25 shl 16) ;auto rotate on/off
 	int 0x40
+	cmp word[opt_auto_rotate],0
+	jne @f
+		sub ebx,IMAGE_TOOLBAR_SIZE
+	@@:
+
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;info voxels
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;refresh
 	int 0x40
-
-	stdcall [buf2d_draw], buf_0
-	stdcall [kosglSwapBuffers]
-
-	mcall 12,2
-popad
 	ret
 
 
@@ -245,33 +282,33 @@ key:
 
 	cmp ah,178 ;Up
 	jne @f
-		fld dword[angle_z]
+		fld dword[angle_x]
 		fadd dword[delt_size]
-		fstp dword[angle_z]
+		fstp dword[angle_x]
 		call draw_3d
 		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,177 ;Down
 	jne @f
-		fld dword[angle_z]
+		fld dword[angle_x]
 		fsub dword[delt_size]
-		fstp dword[angle_z]
+		fstp dword[angle_x]
 		call draw_3d
 		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,176 ;Left
 	jne @f
-		fld dword[angle_x]
+		fld dword[angle_y]
 		fadd dword[delt_size]
-		fstp dword[angle_x]
+		fstp dword[angle_y]
 		call draw_3d
 		stdcall [kosglSwapBuffers]
 	@@:
 	cmp ah,179 ;Right
 	jne @f
-		fld dword[angle_x]
+		fld dword[angle_y]
 		fsub dword[delt_size]
-		fstp dword[angle_x]
+		fstp dword[angle_y]
 		call draw_3d
 		stdcall [kosglSwapBuffers]
 	@@:
@@ -320,7 +357,7 @@ button:
 	@@:
 	cmp ah,12
 	jne @f
-		call but_7
+		call but_draw_cadr
 	@@:
 	cmp ah,1
 	jne still
@@ -334,9 +371,9 @@ button:
 
 align 4
 but_new_file:
-	mov dword[angle_x], 0.0
-	mov [angle_y], 0.0
-	mov [angle_z], 180.0
+	mov dword[angle_x], 30.0
+	mov dword[angle_y], 180.0
+	mov dword[angle_z], 180.0
 	ret
 
 align 4
@@ -474,7 +511,7 @@ draw_cadr_8:
 	ret
 
 align 4
-rot_angles dd 0,45,90,135,180,225,270,315
+rot_angles dd 180,225,270,315,0,45,90,135
 
 align 4
 draw_cadr:
@@ -554,7 +591,7 @@ proc but_zoom_m uses eax
 endp
 
 align 4
-proc but_3 uses eax
+proc but_3 uses eax ebx ecx edx
 	xor word[opt_light],1
 	cmp word[opt_light],0
 	je @f
@@ -565,22 +602,25 @@ proc but_3 uses eax
 		stdcall [glDisable], GL_LIGHTING
 		stdcall [glDisable], GL_LIGHT0
 	.end_light:
+	call draw_toolbar_i
 	call draw_3d
 	stdcall [kosglSwapBuffers]
 	ret
 endp
 
 align 4
-proc but_4 uses eax
+proc but_4 uses eax ebx ecx edx
 	xor word[opt_cube_box],1
+	call draw_toolbar_i
 	call draw_3d
 	stdcall [kosglSwapBuffers]
 	ret
 endp
 
 align 4
-proc but_5 uses eax
+proc but_5 uses eax ebx ecx edx
 	xor word[opt_auto_rotate],1
+	call draw_toolbar_i
 	ret
 endp
 
@@ -647,8 +687,19 @@ txt_stat_m2:
 .v: rb 20
 
 align 4
-proc but_7 uses eax
+proc but_draw_cadr uses eax ebx ecx edx
+	mov ebx,[angle_x]
+	mov ecx,[angle_y]
+	mov edx,[angle_z]
 	call draw_cadr_8
+	mov [angle_x],ebx
+	mov [angle_y],ecx
+	mov [angle_z],edx
+	cmp word[opt_auto_rotate],0
+	jne @f
+		call draw_3d
+		;stdcall [kosglSwapBuffers]
+	@@:
 	ret
 endp
 
@@ -666,8 +717,8 @@ draw_3d:
 		;но все же при поворотах будут отсекатся края, которые вылезут за пределы плоскостей отсечения
 		;в версии opengl под Win координаты идут от -1.0 до 1.0 потому там этого делать не нужно
 	stdcall [glScalef], [scale], [scale], [scale] ;увеличиваем воксельный объект, что-бы не был очень маленьким
-	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
+	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall draw_voxels_3d,[open_file_ogl]
 
@@ -695,78 +746,32 @@ proc SetLight
     ret
 endp
 
-;input:
-; buf - указатель на строку, число должно быть в 10 или 16 ричном виде
-;output:
-; eax - число
 align 4
-proc conv_str_to_int, buf:dword
-	xor eax,eax
-	push ebx ecx esi
-	xor ebx,ebx
-	mov esi,[buf]
-	;определение отрицательных чисел
-	xor ecx,ecx
-	inc ecx
-	cmp byte[esi],'-'
-	jne @f
-		dec ecx
-		inc esi
+proc img_to_gray, buf_rgb:dword, buf_g24:dword, pixels:dword
+pushad
+	mov esi,[buf_rgb]
+	mov edi,[buf_g24]
+	mov ecx,[pixels]
+	mov ebx,3
+align 4
 	@@:
-
-	cmp word[esi],'0x'
-	je .load_digit_16
-
-	.load_digit_10: ;считывание 10-тичных цифр
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'9'
-		jg @f
-			sub bl,'0'
-			imul eax,10
-			add eax,ebx
-			inc esi
-			jmp .load_digit_10
-	jmp @f
-
-	.load_digit_16: ;считывание 16-ричных цифр
-		add esi,2
-	.cycle_16:
-		mov bl,byte[esi]
-		cmp bl,'0'
-		jl @f
-		cmp bl,'f'
-		jg @f
-		cmp bl,'9'
-		jle .us1
-			cmp bl,'A'
-			jl @f ;отсеиваем символы >'9' и <'A'
-		.us1: ;составное условие
-		cmp bl,'F'
-		jle .us2
-			cmp bl,'a'
-			jl @f ;отсеиваем символы >'F' и <'a'
-			sub bl,32 ;переводим символы в верхний регистр, для упрощения их последущей обработки
-		.us2: ;составное условие
-			sub bl,'0'
-			cmp bl,9
-			jle .cor1
-				sub bl,7 ;convert 'A' to '10'
-			.cor1:
-			shl eax,4
-			add eax,ebx
-			inc esi
-			jmp .cycle_16
-	@@:
-	or ecx,ecx ;если число отрицательное
-	jnz @f
-		neg eax
-		inc eax
-	@@:
-	pop esi ecx ebx
+		movzx eax,byte[esi]
+		movzx edx,byte[esi+1]
+		add eax,edx
+		movzx edx,byte[esi+2]
+		add eax,edx
+		xor edx,edx
+		div ebx ;shr eax,2
+		mov ah,al
+		mov word[edi],ax
+		mov byte[edi+2],al
+		add esi,3
+		add edi,3
+		loop @b
+popad
 	ret
 endp
+
 
 ;данные для диалога открытия файлов
 align 4
@@ -1004,7 +1009,7 @@ delt_size dd 3.0
 
 opt_light dw 0 ;опция для включения/выключения света
 opt_cube_box dw 1 ;опция для рисования рамки вокруг объекта
-opt_auto_rotate dw 1 ;опция для автоматического поворота объекта
+opt_auto_rotate dw 0 ;опция для автоматического поворота объекта
 
 light_position dd 0.0, 0.0, 2.0, 1.0 ; Расположение источника [0][1][2]
 	;[3] = (0.0 - бесконечно удаленный источник, 1.0 - источник света на определенном расстоянии)

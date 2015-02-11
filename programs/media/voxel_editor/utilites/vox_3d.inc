@@ -2,6 +2,13 @@
 ; Функции нужные для отображения воксельного объекта через библиотеку tinygl
 ;
 
+normal_gran_z1 equ -1.0
+normal_gran_z0 equ  1.0
+normal_gran_y1 equ -1.0
+normal_gran_y0 equ  1.0
+normal_gran_x1 equ -1.0
+normal_gran_x0 equ  1.0
+
 ;марос коректировки вектора нормали для закругления крайних вокселей
 macro normal_gran param, gran
 {
@@ -573,9 +580,8 @@ align 4
 		;coord x
 		fild dword[eax+vox_ogl_x0]
 		fscale
-		fchs
 		fst dword[eax+vox_ogl_x0]
-		fsub st0,st2 ;добавляем ко второй точке размер масштабированной кубической грани
+		fadd st0,st2 ;добавляем ко второй точке размер масштабированной кубической грани
 		fstp dword[eax+vox_ogl_x1]
 		;coord y
 		fild dword[eax+vox_ogl_y0]
@@ -610,10 +616,10 @@ align 4
 	@@:
 		;coord x
 		fld dword[eax+vox_ogl_x0]
-		fadd st0,st1 ;+0.5
+		fsub st0,st1 ;-0.5
 		fstp dword[eax+vox_ogl_x0]
 		fld dword[eax+vox_ogl_x1]
-		fadd st0,st1 ;+0.5
+		fsub st0,st1 ;-0.5
 		fstp dword[eax+vox_ogl_x1]
 		;coord y
 		fld dword[eax+vox_ogl_y0]
@@ -1304,12 +1310,6 @@ proc vox_corect_coords_pl, v_obj:dword, v_size:dword
 	ret
 endp
 
-normal_gran_z1 equ -1.0
-normal_gran_z0 equ  1.0
-normal_gran_y1 equ  1.0
-normal_gran_y0 equ -1.0
-normal_gran_x1 equ -1.0
-normal_gran_x0 equ  1.0
 align 4
 p1 dd ?
 p2 dd ?
