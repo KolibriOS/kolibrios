@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.41"
-#define ABOUT_TITLE "Eolite v2.41"
+#define TITLE "Eolite File Manager v2.42"
+#define ABOUT_TITLE "Eolite v2.42"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -135,7 +135,6 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\history.h"
 #include "include\menu.h"
 #include "include\about.h"
-#include "include\open_with.h"
 
 void SetAppColors()
 {
@@ -897,7 +896,7 @@ void Open()
 	if (!files.count) return;
 	if (!itdir)
 	{
-		GetIni(0);
+		RunProgram("/sys/@open", #file_path);
 	} 
 	else
 	{
@@ -915,6 +914,14 @@ inline fastcall void GoBack()
 	char cur_folder[4096];
 	strcpy(#cur_folder, GetCurrentFolder());
 	if (HistoryPath(GO_BACK)) SelectFile(#cur_folder);
+}
+
+void ShowOpenWithDialog()
+{
+	byte param[4097];
+	param[0] = '~';
+	strcat(#param, #file_path);
+	RunProgram("/sys/@open", #param);
 }
 
 void FnProcess(char N)
