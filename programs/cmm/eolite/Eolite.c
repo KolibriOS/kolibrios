@@ -920,6 +920,7 @@ void ShowOpenWithDialog()
 {
 	byte param[4097];
 	param[0] = '~';
+	param[1] = '\0';
 	strcat(#param, #file_path);
 	RunProgram("/sys/@open", #param);
 }
