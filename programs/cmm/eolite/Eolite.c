@@ -12,6 +12,7 @@
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
+#include "..\lib\lib.obj\libini.h"
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\file_system.h"
 #include "..\lib\figures.h"
@@ -19,7 +20,6 @@
 #include "..\lib\list_box.h"
 #include "..\lib\copyf.h"
 #include "..\lib\random.h"
-#include "..\lib\lib.obj\libini.h"
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.42"
-#define ABOUT_TITLE "Eolite v2.42"
+#define TITLE "Eolite File Manager v2.43"
+#define ABOUT_TITLE "Eolite v2.43"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -164,7 +164,7 @@ void main()
 	files.line_h=18;
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
-        if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
+    if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
 	SystemDiscsGet();
 	GetIni(1);
 	SetAppColors();

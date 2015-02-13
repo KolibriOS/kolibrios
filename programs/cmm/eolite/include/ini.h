@@ -18,47 +18,17 @@ void GetIni(byte onload)
 		free(buff);
 		if (!GetFile(#buff, #fsize, abspath("Eolite.ini"))) notify("Eolite.ini not found. Defaults will be used.");
 	}
-	for (tj=0; tj<fsize; tj++;) 
-	{   
-		bukva = ESBYTE[buff+tj];
-		switch (bukva)
-		{
-			case ';': InfType=COMMENT; break;				
-			case '[': InfType=SECTION; section=NULL; break;
-			case ']': InfType=PARAM; break;
-			case '=': InfType=OPTION; break;
-			case 0x0a:
-			case 0x0d:
-				InfType=PARAM;
-				if (!strcmp(#parametr,"SelectionColor")) edit2.shift_color=col_selec=StrToCol(#option);
-				if (!strcmp(#parametr,"LineHeight")) files.line_h = atoi(#option);
-				if (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=atoi(#option);
-				if (!strcmp(#parametr,"RealFileNamesCase")) real_files_names_case=atoi(#option);
-				if (!strcmp(#parametr,"DrwRamDiskSpace")) drw_ram_disk_space=atoi(#option);
-				
-				if (parametr) && (!strcmpi(#file_name+strrchr(#file_name,'.'),#parametr)) && (!onload)
-				{
-					errornum = RunProgram(#option,#file_path);
-					if (errornum<0)
-					{
-						if (errornum==-5) ShowOpenWithDialog(); else Write_Error(errornum);
-					}
-					return;
-				}
-				parametr=option=NULL;
-				break;
-			default:
-				IF (InfType==SECTION) chrcat(#section, bukva);
-				IF (InfType==PARAM) chrcat(#parametr, bukva);
-				IF (InfType==OPTION) chrcat(#option, bukva);
-		}
-	}
-	if (file_path) && (!onload)
-	{
-		errornum = RunProgram(#file_path,NULL); 
-		if (errornum==-31) menu_action(201); else if (errornum<0) Write_Error(errornum);
-		return;
-	}
+	
+	ini_get_color stdcall (abspath("Eolite.ini"), "Config", "SelectionColor", 0x94AECE);
+	edit2.shift_color = EAX;
+	ini_get_int stdcall (abspath("Eolite.ini"), "Config", "LineHeight", 18);
+	files.line_h = EAX;
+	ini_get_int stdcall (abspath("Eolite.ini"), "Config", "ShowDeviceName", 1);
+	show_dev_name = EAX;
+	ini_get_int stdcall (abspath("Eolite.ini"), "Config", "RealFileNamesCase", 0);
+	real_files_names_case = EAX;
+	ini_get_int stdcall (abspath("Eolite.ini"), "Config", "DrwRamDiskSpace", 0);
+	drw_ram_disk_space = EAX;
 }
 
 
