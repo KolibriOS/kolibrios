@@ -58,7 +58,7 @@ void about_dialog()
 				#endif				
 				WriteText(39,130,0x80,0,"Leency & Veliant"); 
 				WriteText(45,140,0x80,0,"KolibriOS Team");
-				WriteText(61,150,0x80,0,"2008-2014");
+				WriteText(61,150,0x80,0,"2008-2015");
 				#ifdef LANG_RUS
 				WriteText(19,170,0x80,0,INTRO_TEXT_3);
 				#else

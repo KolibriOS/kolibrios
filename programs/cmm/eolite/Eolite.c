@@ -1,4 +1,4 @@
-//Leency & Veliant 2008-2014
+//Leency & Veliant 2008-2015
 //GNU GPL licence.
 
 #ifndef AUTOBUILD
@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.43"
-#define ABOUT_TITLE "Eolite v2.43"
+#define TITLE "Eolite File Manager v2.44"
+#define ABOUT_TITLE "Eolite v2.44"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -107,7 +107,6 @@ byte
 	rename_active=0,
 	del_active=0,
 	show_dev_name=1,
-	drw_ram_disk_space=0,
 	real_files_names_case=0,
 	sort_num=2,
 	itdir;
@@ -143,7 +142,7 @@ void SetAppColors()
 	sc.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
 	sc.work_button_text = 0x000000;
 	col_padding = 0xC8C9C9;
-	col_selec   = 0x94AECE;
+	//col_selec   = 0x94AECE;
 	col_lpanel  = 0x00699C;
 	/*
 	sc.get();
@@ -670,7 +669,6 @@ void Open_Dir(dword dir_path, redraw){
 		maxcount = sizeof(file_mas)/sizeof(dword)-1;
 		if (files.count>maxcount) files.count = maxcount;
 		if (files.count>0) && (files.current==-1) files.current=0;
-		if (drw_ram_disk_space) DrawRamDiskSpace();
 	}
 	if (files.count!=-1)
 	{
@@ -896,7 +894,7 @@ void Open()
 	if (!files.count) return;
 	if (!itdir)
 	{
-		RunProgram("/sys/@open", #file_path);
+		if (strrchr(#file_name, '.')==0) RunProgram(#file_path, ""); else RunProgram("/sys/@open", #file_path);
 	} 
 	else
 	{
