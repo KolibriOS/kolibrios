@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.1
+SOFTWARE CENTER v2.15
 */
 
 #define MEMSIZE 0x3E80
@@ -9,26 +9,35 @@ SOFTWARE CENTER v2.1
 #include "..\lib\file_system.h"
 #include "..\lib\dll.h"
 #include "..\lib\figures.h"
-
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\libimg_lib.h"
 #include "..\lib\lib.obj\libini.h"
+
 
 system_colors sc;
 proc_info Form;
 mouse m;
 
-int item_id_need_to_run=-1, current_item_id;
+int item_id_need_to_run=-1,
+    current_item_id;
 
-int col_max, cell_w, cell_h, list_pos, list_top;
-int row, col;
+int window_width,
+    window_height;
 
-char window_title[128];
-char settings_ini_path[256] = "/sys/settings/";
-int window_width;
-int window_height;
+int col_max,
+    cell_w,
+    cell_h, 
+    list_pos, 
+    list_top,
+    row,
+    col,
+    default_icon;
+
+char window_title[128],
+     settings_ini_path[256] = "/sys/settings/";
 
 #define LIST_BACKGROUND_COLOR 0xF3F3F3
+
 
 
 
@@ -63,6 +72,8 @@ void load_config()
 	cell_w = EAX;
 	ini_get_int stdcall (#settings_ini_path, "Config", "cell_h", 64);
 	cell_h = EAX;
+	ini_get_int stdcall (#settings_ini_path, "Config", "default_icon", 0);
+	default_icon = EAX;
 }
 
 
@@ -126,8 +137,9 @@ byte search_for_id_need_to_run(dword key_value, key_name, sec_name, f_name)
 
 byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 {
-	int tmp;
-	int icon_id;
+	int tmp,
+	    icon_id,
+	    icon_char_pos;
 
 	if (col==col_max) {
 		row++;
@@ -136,9 +148,11 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	if (col==0) DrawBar(0, row * cell_h + list_pos, Form.cwidth, cell_h, LIST_BACKGROUND_COLOR);
 	DefineButton(col*cell_w+6,row*cell_h + list_pos,cell_w,cell_h-5,current_item_id + 100 + BT_HIDE,0);
 	tmp = cell_w/2;
-	icon_id = atoi(key_value + strchr(key_value, ','));
+
+	icon_char_pos = strchr(key_value, ',');
+	if (icon_char_pos) icon_id = atoi(key_value + icon_char_pos); else icon_id = default_icon;
 	img_draw stdcall(skin.image, col*cell_w+tmp-10, row*cell_h+5 + list_pos, 32, 32, 0, icon_id*32);
-	WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xD4D4d4,key_name);
+	WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xDCDCDC,key_name);
 	WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
 	current_item_id++;
 	col++;
