@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.0
+SOFTWARE CENTER v2.1
 */
 
 #define MEMSIZE 0x3E80
@@ -18,9 +18,9 @@ system_colors sc;
 proc_info Form;
 mouse m;
 
-int item_id_need_to_run, current_item_id;
+int item_id_need_to_run=-1, current_item_id;
 
-int col_max, col_w=66, col_h=64, list_pos, list_top;
+int col_max, cell_w, cell_h, list_pos, list_top;
 int row, col;
 
 char window_title[128];
@@ -59,6 +59,10 @@ void load_config()
 	window_width = EAX;
 	ini_get_int stdcall (#settings_ini_path, "Config", "window_height", 540);
 	window_height = EAX;
+	ini_get_int stdcall (#settings_ini_path, "Config", "cell_w", 66);
+	cell_w = EAX;
+	ini_get_int stdcall (#settings_ini_path, "Config", "cell_h", 64);
+	cell_h = EAX;
 }
 
 
@@ -87,7 +91,7 @@ void main()
             	item_id_need_to_run = id - 100;
             	current_item_id = 0;
             	ini_enum_sections stdcall (#settings_ini_path, #draw_section);
-            	item_id_need_to_run = 0;
+            	item_id_need_to_run = -1;
             }
 			break;
 
@@ -96,11 +100,11 @@ void main()
 			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,sc.work," ");
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) break;
-			col_max = Form.cwidth - 10 / col_w;
+			col_max = Form.cwidth - 10 / cell_w;
 			current_item_id = 0;
 			draw_top_bar();
 			ini_enum_sections stdcall (#settings_ini_path, #draw_section);
-			DrawBar(0, row + 1 * col_h + list_pos, Form.cwidth, -row - 1 * col_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
+			DrawBar(0, row + 1 * cell_h + list_pos, Form.cwidth, -row - 1 * cell_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
 			break;
       }
 	}
@@ -108,9 +112,11 @@ void main()
 
 byte search_for_id_need_to_run(dword key_value, key_name, sec_name, f_name)
 {
+	int icon_char_pos;
 	if (item_id_need_to_run == current_item_id)
 	{
-		ESBYTE[key_value + strchr(key_value, ',') - 1] = 0; //delete icon from string
+		icon_char_pos = strchr(key_value, ',');
+		if (icon_char_pos) ESBYTE[key_value + icon_char_pos - 1] = 0; //delete icon from string
 		RunProgram(key_value, "");
 	}
 	current_item_id++;
@@ -127,13 +133,13 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		row++;
 		col=0;
 	}
-	if (col==0) DrawBar(0, row * col_h + list_pos, Form.cwidth, col_h, LIST_BACKGROUND_COLOR);
-	DefineButton(col*col_w+6,row*col_h + list_pos,col_w,col_h-5,current_item_id + 100 + BT_HIDE,0);
-	tmp = col_w/2;
+	if (col==0) DrawBar(0, row * cell_h + list_pos, Form.cwidth, cell_h, LIST_BACKGROUND_COLOR);
+	DefineButton(col*cell_w+6,row*cell_h + list_pos,cell_w,cell_h-5,current_item_id + 100 + BT_HIDE,0);
+	tmp = cell_w/2;
 	icon_id = atoi(key_value + strchr(key_value, ','));
-	img_draw stdcall(skin.image, col*col_w+tmp-10, row*col_h+5 + list_pos, 32, 32, 0, icon_id*32);
-	WriteTextCenter(col*col_w+7,row*col_h+47 + list_pos,col_w,0xD4D4d4,key_name);
-	WriteTextCenter(col*col_w+6,row*col_h+46 + list_pos,col_w,0x000000,key_name);
+	img_draw stdcall(skin.image, col*cell_w+tmp-10, row*cell_h+5 + list_pos, 32, 32, 0, icon_id*32);
+	WriteTextCenter(col*cell_w+7,row*cell_h+47 + list_pos,cell_w,0xD4D4d4,key_name);
+	WriteTextCenter(col*cell_w+6,row*cell_h+46 + list_pos,cell_w,0x000000,key_name);
 	current_item_id++;
 	col++;
 	return 1;
@@ -144,7 +150,7 @@ byte draw_section(dword sec_name, f_name)
 {
 	if (strcmp(sec_name, "Config")==0) return 1;
 
-	if (item_id_need_to_run)
+	if (item_id_need_to_run!=-1)
 	{
 		ini_enum_keys stdcall (f_name, sec_name, #search_for_id_need_to_run);
 	}
@@ -152,8 +158,8 @@ byte draw_section(dword sec_name, f_name)
 	{
 		row++;
 		col = 0;
-		DrawBar(0, row * col_h + list_pos, Form.cwidth , 20, LIST_BACKGROUND_COLOR);
-		WriteTextB(10, row * col_h + 9 + list_pos, 0x90, 0x000000, sec_name);
+		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 20, LIST_BACKGROUND_COLOR);
+		WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
 		list_pos += 20;
 		ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
 	}
