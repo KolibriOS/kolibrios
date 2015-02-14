@@ -128,7 +128,7 @@ void main()
 	
 	mem_Init();
 	CursorPointer.Load(#CursorFile);
-	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj");
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error: library doesn't exists - box_lib");
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
