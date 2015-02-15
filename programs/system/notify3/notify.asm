@@ -568,7 +568,7 @@
 		"C - component\n",	      \
 		"M - mail\n",		      \
 		"D - download\n",	      \
-		"P - audio player",	      \
+		"S - audio player",	      \
 		"' -td", 0
 
  ;----------------------------
