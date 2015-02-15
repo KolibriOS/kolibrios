@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.2
+SOFTWARE CENTER v2.21
 */
 
 #define MEMSIZE 0x3E80
@@ -9,10 +9,12 @@ SOFTWARE CENTER v2.2
 #include "..\lib\file_system.h"
 #include "..\lib\dll.h"
 #include "..\lib\figures.h"
+
 #include "..\lib\lib.obj\libio_lib.h"
 #include "..\lib\lib.obj\libimg_lib.h"
 #include "..\lib\lib.obj\libini.h"
 
+#include "..\lib\patterns\libimg_load_skin.h"
 
 system_colors sc;
 proc_info Form;
@@ -38,28 +40,7 @@ char window_title[128],
 
 #define LIST_BACKGROUND_COLOR 0xF3F3F3
 
-
-
-
-struct struct_skin {
-	dword image, w, h;
-	int load();
-} skin;
-
-
-int struct_skin::load()
-{
-	int i, max_i;
-	dword image_data;
-	skin.image = load_image("/sys/iconstrp.png");
-	if (!skin.image) notify("'iconstrp.png not found' -E");
-	skin.w = DSWORD[skin.image + 4];
-	skin.h = DSWORD[skin.image + 8];
-	image_data = DSDWORD[skin.image + 24];
-	sc.get();
-	max_i = w * h * 4 + image_data;
-	for (i = image_data; i < max_i; i += 4)	if (DSDWORD[i]==0) DSDWORD[i] = LIST_BACKGROUND_COLOR;
-}
+libimg_image skin;
 
 void load_config()
 {
@@ -79,12 +60,14 @@ void load_config()
 
 void main()
 {   
-	int id, key;
+	dword id, key;
 	mem_Init();
 	if (load_dll2(libio,  #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
-	skin.load();
+
+	Libimg_LoadImage(#skin, "/sys/iconstrp.png");
+	Libimg_FillTransparent(skin.image, skin.w, skin.h, LIST_BACKGROUND_COLOR);
 
 	if (param)
 	{
