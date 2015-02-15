@@ -86,7 +86,7 @@ void main()
 	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
 	skin.load();
 
-	if (#param)
+	if (param)
 	{
 		strcpy(#settings_ini_path, #param);
 	}
