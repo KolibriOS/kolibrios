@@ -26,17 +26,20 @@
 #include "..\lib\lib.obj\libimg_lib.h"
 #include "..\lib\lib.obj\http.h"
 
+//useful patterns
+#include "..\lib\patterns\libimg_load_skin.h"
+
 char homepage[] = FROM "html\homepage.htm";
 
 #ifdef LANG_RUS
-	char version[]=" Текстовый браузер 1.0 Beta 6.1";
+	char version[]=" Текстовый браузер 1.0 Beta 6.2";
 	?define IMAGES_CACHE_CLEARED "Кэш картинок очищен"
 	?define T_LAST_SLIDE "Это последний слайд"
 	char loading[] = "Загрузка страницы...<br>";
 	char page_not_found[] = FROM "html\page_not_found_ru.htm";
 	char accept_language[]= "Accept-Language: ru\n";
 #else
-	char version[]=" Text-based Browser 1.0 Beta 6.1";
+	char version[]=" Text-based Browser 1.0 Beta 6.2";
 	?define IMAGES_CACHE_CLEARED "Images cache cleared"
 	?define T_LAST_SLIDE "This slide is the last"
 	char loading[] = "Loading...<br>";
@@ -85,20 +88,12 @@ edit_box address_box = {250,55,34,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(U
 
 enum { BACK=300, FORWARD, REFRESH, HOME, NEWTAB, GOTOURL, SEARCHWEB, INPUT_CH, INPUT_BT, BTN_UP, BTN_DOWN };
 
-struct struct_skin {
-	dword image, w, h;
-	int Load();
-} skin;
+libimg_image skin;
 
-int struct_skin::Load()
+int SetSkinColors()
 {
 	dword image_data;
-	skin.image = load_image(abspath("wv_skin.png"));
-	if (!skin.image) notify("WebView skin file 'wv_skin.png' not found, program will terminate");
-	skin.w = DSWORD[skin.image+4];
-	skin.h = DSWORD[skin.image+8];
 	image_data = DSDWORD[skin.image+24];
-
 	col_bg = DSDWORD[image_data];
 	panel_color  = DSDWORD[skin.w*4*4 + image_data];
 	border_color = DSDWORD[skin.w*4*7 + image_data];
@@ -132,7 +127,8 @@ void main()
 	if (load_dll2(libio, #libio_init,1)!=0) notify("Error: library doesn't exists - libio");
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libHTTP, #http_lib_init,1)!=0) notify("Error: library doesn't exists - http");
-	skin.Load();
+	Libimg_LoadImage(#skin, abspath("wv_skin.png"));
+	SetSkinColors();
 	
 	Form.width=WIN_W;
 	Form.height=WIN_H;

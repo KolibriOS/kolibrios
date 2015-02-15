@@ -54,7 +54,7 @@ void menu_rmb()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
+				DefineAndDrawWindow(Form.left+m.x-6,Form.top+m.y+GetSkinHeight()+3,menu.w+2,menu.h+4,0x01, 0, 0, 0x01fffFFF);
 				DrawPopup(0,0,menu.w,menu.h+3,0, col_bg,border_color);
 				DrawMenuList();				
 	}
