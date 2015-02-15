@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.15
+SOFTWARE CENTER v2.2
 */
 
 #define MEMSIZE 0x3E80
@@ -86,8 +86,15 @@ void main()
 	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
 	skin.load();
 
-	strcat(#settings_ini_path, #program_path + strrchr(#program_path, '/'));
-	strcat(#settings_ini_path, ".ini");
+	if (#param)
+	{
+		strcpy(#settings_ini_path, #param);
+	}
+	else
+	{
+		strcat(#settings_ini_path, #program_path + strrchr(#program_path, '/'));
+		strcat(#settings_ini_path, ".ini");		
+	}
 	load_config();
 
 	loop()
@@ -108,9 +115,9 @@ void main()
 
          case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,sc.work," ");
+			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,sc.work,"");
 			GetProcessInfo(#Form, SelfInfo);
-			if (Form.status_window>2) break;
+			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
 			col_max = Form.cwidth - 10 / cell_w;
 			current_item_id = 0;
 			draw_top_bar();
