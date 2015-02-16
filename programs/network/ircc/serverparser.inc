@@ -63,12 +63,16 @@ server_commands:
         dd      '265 ', cmd_justprint
         dd      '266 ', cmd_justprint
 
+        dd      '311 ', cmd_justprint   ; RPL_WHOISUSER
+        dd      '312 ', cmd_justprint   ; RPL_WHOISSERVER
+        dd      '318 ', cmd_justprint   ; RPL_ENDOFWHOIS
         dd      '322 ', cmd_322         ; RPL_LIST
         dd      '323 ', cmd_323         ; RPL_LISTEND
-        dd      '324 ', cmd_justprint
+        dd      '324 ', cmd_justprint   ; RPL_CHANNELMODEIS
         dd      '328 ', cmd_justprint   ; RPL_CHANNEL_URL
-        dd      '329 ', cmd_justprint
-        dd      '332 ', cmd_topic
+        dd      '329 ', cmd_justprint   ; RPL_CREATIONTIME
+        dd      '330 ', cmd_justprint
+        dd      '332 ', cmd_topic       ; topic
         dd      '333 ', cmd_333         ; nickname and time of topic
         dd      '353 ', cmd_353         ; name reply
         dd      '366 ', cmd_366         ; end of names list
