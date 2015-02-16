@@ -33,16 +33,6 @@ proc find_list uses ebx, context:dword, list:dword
 	shl ebx,2
 	add eax,ebx
 	mov eax,[eax]
-if DEBUG ;find_list
-push edi
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_find_l,buf_param
-pop edi
-end if
 	ret
 endp
 
@@ -90,16 +80,6 @@ proc alloc_list uses ebx ecx, context:dword, list:dword
 	shl ecx,2
 	add ebx,ecx
 	mov [ebx],eax ;context.shared_state.lists[list]=l
-if DEBUG ;alloc_list
-push edi
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_alloc_l,buf_param
-pop edi
-end if
 	ret
 endp
 
@@ -291,17 +271,6 @@ proc glopCallList uses eax ebx ecx edx edi, context:dword, p:dword
 
 align 4
 	.cycle_0: ;while (1)
-if DEBUG ;glopCallList
-push ecx edi
-	mov eax,[edi]
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,txt_op,buf_param
-pop edi ecx
-end if
 	cmp dword[edi],OP_EndList
 	je .end_f ;if (op == OP_EndList) break
 	cmp dword[edi],OP_NextBuffer
@@ -373,9 +342,6 @@ endl
 
 	mov dword[eax+offs_cont_compile_flag],0
 	mov dword[eax+offs_cont_exec_flag],1
-if DEBUG ;glEndList
-	stdcall dbg_print,f_end_l,txt_nl
-end if
 	ret
 endp
 
@@ -389,16 +355,6 @@ proc glIsList, list:dword
 	je @f
 		mov eax,1
 	@@:
-if DEBUG ;glIsList
-push edi
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_is_l,buf_param
-pop edi
-end if
 	ret
 endp
 
@@ -413,7 +369,7 @@ proc glGenLists uses ebx ecx edx edi esi, range:dword
 	xor esi,esi
 	.cycle_0: ;for(esi=0;esi<MAX_DISPLAY_LISTS;esi++)
 		cmp dword[ebx],0 ;if (ebx[i]==NULL)
-		je .els_0
+		jne .els_0
 			inc edx
 			cmp edx,[range] ;if (count == range)
 			jne .els_1
@@ -434,15 +390,5 @@ proc glGenLists uses ebx ecx edx edi esi, range:dword
 	loop .cycle_0
 	xor eax,eax
 	.end_f:
-if DEBUG ;glGenLists
-push edi
-	mov ecx,80
-	lea edi,[buf_param]
-	stdcall convert_int_to_str,ecx
-
-	stdcall str_n_cat,edi,txt_nl,2
-	stdcall dbg_print,f_gen_l,buf_param
-pop edi
-end if
 	ret
 endp
