@@ -530,18 +530,17 @@ locals
 endl
 	mov eax,[u]
 	inc eax
-	mov dword [v],eax
-	cmp dword [v],2
+	cmp eax,2
 	jle @f
-		mov dword [v],0
+		xor eax,eax
 	@@:
-	mov eax,[v]
+	mov [v],eax
 	inc eax
-	mov dword [w],eax
-	cmp dword [w],2
+	cmp eax,2
 	jle @f
-		mov dword [w],0
+		xor eax,eax
 	@@:
+	mov [w],eax
 	fld dword [t]
 	fsin
 	fstp dword [s]

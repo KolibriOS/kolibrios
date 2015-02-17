@@ -18,7 +18,7 @@ include 'vox_3d.inc'
 include '../trunk/str.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel viewer 11.02.15',0 ;подпись окна
+caption db 'Voxel viewer 17.02.15',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -371,7 +371,7 @@ button:
 
 align 4
 but_new_file:
-	mov dword[angle_x], 30.0
+	mov dword[angle_x], -30.0
 	mov dword[angle_y], 180.0
 	mov dword[angle_z], 180.0
 	ret

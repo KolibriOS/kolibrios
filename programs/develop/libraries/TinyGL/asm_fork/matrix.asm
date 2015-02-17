@@ -187,7 +187,7 @@ proc glopPopMatrix uses eax ebx, context:dword, p:dword
 endp
 
 align 4
-proc glopRotate uses eax ebx ecx, context:dword, p:dword
+proc glopRotate uses eax ebx ecx edx, context:dword, p:dword
 locals
 	u0 dd ?
 	u1 dd ?
@@ -209,73 +209,86 @@ endl
 	fst dword[angle] ;angle = p[1].f * M_PI / 180.0
 	;st0 = angle
 
-	fldz
-	fild dword[ebx+8]
-	fstp dword[u0]
-	fild dword[ebx+12]
-	fstp dword[u1]
-	fild dword[ebx+16]
-	fst dword[u2]
-
 	; simple case detection
-	xor ebx,ebx
-	fcomp st1 ;u2 ... 0
+	xor edx,edx
+	fld dword[ebx+16]
+	ftst
 	fstsw ax
 	sahf
 	je @f
-		inc ebx
+		inc edx
 	@@:
-	fcom dword[u1] ;0 ... u1
+	fstp dword[u2]
+	fld dword[ebx+12]
+	ftst
 	fstsw ax
 	sahf
 	je @f
-		or ebx,2
+		or edx,2
 	@@:
-	fcom dword[u0] ;0 ... u0
+	fstp dword[u1]
+	fld dword[ebx+8]
+	ftst
 	fstsw ax
 	sahf
 	je @f
-		or ebx,4
+		or edx,4
 	@@:
-	;st0 = 0, st1 = angle
+	fstp dword[u0]
 
+	;st0 = angle
 	;ebx = ((u0 != 0)<<2) | ((u1 != 0)<<1) | (u2 != 0)
-	cmp ebx,0
-	je .end_f ;если нет поворотов выход из функции
-	cmp ebx,4
+	or edx,edx
+	jz .end_f ;если нет поворотов выход из функции
+	cmp edx,4
 	jne @f
-		fcomp dword[u0] ;0 ... u0
+		fld dword[u0]
+		ftst
 		fstsw ax
+		ffree st0
+		fincstp
 		sahf
 		jae .u0ch
-			fchs
-			fstp dword[angle] ;if (u0 < 0) angle *= -1
+			fchs ;if (u0 < 0) angle *= -1
 		.u0ch:
-		stdcall gl_M4_Rotate, ecx,[angle],0
+		push dword 0
+		fstp dword[esp-4]
+		sub esp,4
+		stdcall gl_M4_Rotate, ecx
 		jmp .end_sw
 	@@:
-	cmp ebx,2
+	cmp edx,2
 	jne @f
-		fcomp dword[u1] ;0 ... u1
+		fld dword[u1]
+		ftst
 		fstsw ax
+		ffree st0
+		fincstp
 		sahf
 		jae .u1ch
-			fchs
-			fstp dword[angle] ;if (u1 < 0) angle *= -1
+			fchs ;if (u1 < 0) angle *= -1
 		.u1ch:
-		stdcall gl_M4_Rotate, ecx,[angle],1
+		push dword 1
+		fstp dword[esp-4]
+		sub esp,4
+		stdcall gl_M4_Rotate, ecx
 		jmp .end_sw
 	@@:
-	cmp ebx,1
+	cmp edx,1
 	jne @f
-		fcomp dword[u2] ;0 ... u2
+		fld dword[u2]
+		ftst
 		fstsw ax
+		ffree st0
+		fincstp
 		sahf
 		jae .u2ch
-			fchs
-			fstp dword[angle] ;if (u2 < 0) angle *= -1
+			fchs ;if (u2 < 0) angle *= -1
 		.u2ch:
-		stdcall gl_M4_Rotate, ecx,[angle],2
+		push dword 2
+		fstp dword[esp-4]
+		sub esp,4
+		stdcall gl_M4_Rotate, ecx
 		jmp .end_sw
 	@@: ;default:
 if DEBUG ;glopRotete
@@ -287,19 +300,20 @@ end if
 		fmul st0,st0
 		fld dword[u1]
 		fmul st0,st0
+		faddp
 		fld dword[u2]
 		fmul st0,st0
-		fadd st0,st1
-		fadd st0,st2
+		faddp
 ;		fst dword[len] ;len = u0*u0+u1*u1+u2*u2
-		fcom st1
+		ftst
 		fstsw ax
 		sahf
-		je .end_f ;if (len == 0.0f) return
+		je .f2 ;if (len == 0.0f) return
 		fsqrt
 		fld1
-		fdiv st0,st1
-;		fst dword[len] ;len = 1.0f / sqrt(len)
+		fxch
+		fdivp ;len = 1.0f / sqrt(len)
+;		fst dword[len]
 		fld dword[u0]
 		fmul st0,st1
 		fstp dword[u0] ;u0 *= len
@@ -309,11 +323,11 @@ end if
 		fld dword[u2]
 		fmul st0,st1
 		fstp dword[u2] ;u2 *= len
-		;st0 = len, st1=..., st2=..., st3 = 0, st4 = angle
+		;st0 = len, st1 = angle
+		ffree st0
+		fincstp
 
 		; store cos and sin values
-		finit
-		fld dword[angle]
 		fcos
 		fst dword[cost] ;cost=cos(angle)
 		fld dword[angle]
@@ -332,15 +346,91 @@ end if
 		mov [ecx+3*16+12],ebx ;m[3][3]
 
 		; do the math
-;      m.m[0][0]=u[0]*u[0]+cost*(1-u[0]*u[0]);
-;      m.m[1][0]=u[0]*u[1]*(1-cost)-u[2]*sint;
-;      m.m[2][0]=u[2]*u[0]*(1-cost)+u[1]*sint;
-;      m.m[0][1]=u[0]*u[1]*(1-cost)+u[2]*sint;
-;      m.m[1][1]=u[1]*u[1]+cost*(1-u[1]*u[1]);
-;      m.m[2][1]=u[1]*u[2]*(1-cost)-u[0]*sint;
-;      m.m[0][2]=u[2]*u[0]*(1-cost)-u[1]*sint;
-;      m.m[1][2]=u[1]*u[2]*(1-cost)+u[0]*sint;
-;      m.m[2][2]=u[2]*u[2]+cost*(1-u[2]*u[2]);
+		fld dword[u0]
+		fmul st0,st0
+		fld1
+		fsub st0,st1
+		fmul st0,st3 ;st0 = cost*(1-u0^2)
+		faddp
+		fstp dword[ecx] ;m[0][0] = u0*u0+cost*(1-u0*u0)
+
+		fld1
+		fsub st0,st2 ;st0 = 1-cost
+
+		fld st0
+		fmul dword[u0]
+		fmul dword[u1]
+		fld dword[u2]
+		fmul st0,st3 ;st0 = u2*sint
+		fchs
+		faddp
+		fstp dword[ecx+16] ;m[1][0] = u0*u1*(1-cost)-u2*sint
+
+		fld st0
+		fmul dword[u0]
+		fmul dword[u2]
+		fld dword[u1]
+		fmul st0,st3 ;st0 = u1*sint
+		faddp
+		fstp dword[ecx+32] ;m.m[2][0]=u[2]*u[0]*(1-cost)+u[1]*sint
+
+		fld st0
+		fmul dword[u0]
+		fmul dword[u1]
+		fld dword[u2]
+		fmul st0,st3 ;st0 = u2*sint
+		faddp
+		fstp dword[ecx+4] ;m.m[0][1]=u[0]*u[1]*(1-cost)+u[2]*sint
+
+		fld dword[u1]
+		fmul st0,st0
+		fld1
+		fsub st0,st1
+		fmul st0,st4 ;st0 = cost*(1-u1^2)
+		faddp
+		fstp dword[ecx+20] ;m.m[1][1]=u[1]*u[1]+cost*(1-u[1]*u[1])
+
+		fld st0
+		fmul dword[u1]
+		fmul dword[u2]
+		fld dword[u0]
+		fmul st0,st3 ;st0 = u0*sint
+		fchs
+		faddp
+		fstp dword[ecx+36] ;m.m[2][1]=u[1]*u[2]*(1-cost)-u[0]*sint
+
+		fld st0
+		fmul dword[u0]
+		fmul dword[u2]
+		fld dword[u1]
+		fmul st0,st3 ;st0 = u1*sint
+		fchs
+		faddp
+		fstp dword[ecx+8] ;m.m[0][2]=u[2]*u[0]*(1-cost)-u[1]*sint
+
+		fld st0
+		fmul dword[u1]
+		fmul dword[u2]
+		fld dword[u0]
+		fmul st0,st3 ;st0 = u0*sint
+		faddp
+		fstp dword[ecx+24] ;m.m[1][2]=u[1]*u[2]*(1-cost)+u[0]*sint
+
+		ffree st0 ;1-cost
+		fincstp
+
+		fld dword[u2]
+		fmul st0,st0
+		fld1
+		fsub st0,st1
+		fmul st0,st3 ;st0 = cost*(1-u2^2)
+		faddp
+		fstp dword[ecx+40] ;m[2][2] = u2*u2+cost*(1-u2*u2)
+
+		ffree st0 ;sint
+  fincstp
+		ffree st0 ;cost
+  fincstp
 	.end_sw:
 
 	mov eax,[context]
@@ -352,6 +442,12 @@ if DEBUG ;glopRotete
 		stdcall gl_print_matrix,ecx,4
 end if
 	gl_matrix_update eax,ebx
+	jmp .end_f
+	.f2:
+		ffree st0 ;len
+		fincstp
+		ffree st0 ;angle
+		fincstp
 	.end_f:
 	ret
 endp
@@ -382,6 +478,12 @@ proc glopScale uses eax ebx ecx, context:dword, p:dword
 	fstp dword[ebx+8];m[2] *= z
 	add ebx,16
 	loop @b
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
 
 if DEBUG ;glopScale
 pushad
