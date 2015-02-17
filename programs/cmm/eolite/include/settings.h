@@ -12,10 +12,19 @@
 	?define CANCEL_T "Отмена"
 	?define APPLY_T "Применить"
 #elif LANG_EST
-	?define TITLE_SETT "Programmis Eolite"
+	?define TITLE_SETT "Настройки"
+	?define SET_1 "Показывать имена устройств"
+	?define SET_2 "Реальные имена"
+	?define SET_3 "Высота выделения"
+	?define CANCEL_T "Отмена"
+	?define APPLY_T "Применить"
 #else
-	?define TITLE_SETT "About Eolite"
-
+	?define TITLE_SETT "Настройки"
+	?define SET_1 "Показывать имена устройств"
+	?define SET_2 "Реальные имена"
+	?define SET_3 "Высота выделения"
+	?define CANCEL_T "Отмена"
+	?define APPLY_T "Применить"
 #endif
 
 int	mouse_ddd;
