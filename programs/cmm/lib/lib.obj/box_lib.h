@@ -21,6 +21,10 @@ dword PathShow_draw    = #aPathShow_draw;
 dword progressbar_draw = #aProgressbar_draw;
 dword progressbar_progress = #aProgressbar_progress;
 
+dword check_box_draw = #aCheck_box_draw;
+dword check_box_mouse = #aCheck_box_mouse;
+dword version_ch = #aVersion_ch;
+
 $DD 2 dup 0
 
 char aEdit_box_draw [9]     = "edit_box\0";
@@ -35,9 +39,9 @@ char aScrollbar_h_draw [17] = "scrollbar_h_draw\0";
 char aScrollbar_h_mouse[18] = "scrollbar_h_mouse\0";
 char aVersion_scrollbar[18] = "version_scrollbar\0";
 
-char aCheck_box_draw   [15] = "check_box_draw\0";
-char aCheck_box_mouse  [16] = "check_box_mouse\0";
-char aVersion_ch       [11] = "version_ch\0";
+char aCheck_box_draw   [15] = "check_box_draw2\0";
+char aCheck_box_mouse  [16] = "check_box_mouse2\0";
+char aVersion_ch       [11] = "version_ch2\0";
 
 char aOption_box_draw  [16] = "option_box_draw\0";
 char aOption_box_mouse [17] = "option_box_mouse\0";
@@ -77,6 +81,16 @@ struct edit_box{
 dword width, left, top, color, shift_color, focus_border_color, blur_border_color,
 text_color, max, text, mouse_variable, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
 };
+
+struct checkbox2{
+dword left_s, top_s, ch_text_margin, color, border_color, text_color, text, flags, size_of_str;
+};
+
+//flags for checkbox2
+#define CH_FLAG_EN 10b      
+#define CH_FLAG_TOP 0x0     
+#define CH_FLAG_MIDDLE 100b 
+#define CH_FLAG_BOTTOM 1000b 
 
 struct scroll_bar
 {

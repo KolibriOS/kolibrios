@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.44"
-#define ABOUT_TITLE "Eolite v2.44"
+#define TITLE "Eolite File Manager v2.45"
+#define ABOUT_TITLE "Eolite v2.45"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -93,6 +93,8 @@ struct path_string { char Item[4096]; };
 
 byte active_about=0;
 word about_window;
+byte active_settings=0;
+word settings_window;
 
 byte menu_call_mouse=0;
 
@@ -134,6 +136,7 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\history.h"
 #include "include\menu.h"
 #include "include\about.h"
+#include "include\settings.h"
 
 void SetAppColors()
 {
@@ -994,7 +997,16 @@ void FnProcess(char N)
 			}
 			break;
 		case 10: //F10
-			RunProgram(EDITOR_PATH, abspath("Eolite.ini"));
+			if (!active_settings) 
+			{
+				SwitchToAnotherThread();
+				settings_window=CreateThread(#settings_dialog,#about_stak+4092);
+				break;
+			}
+			else
+			{
+				ActivateWindow(GetProcessSlot(settings_window));
+			}
 			break;
 	}
 }
