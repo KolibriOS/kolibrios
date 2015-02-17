@@ -116,32 +116,8 @@ endp
 
 align 4
 proc glColor4fv uses eax ebx, v:dword
-locals
-	p rd 8
-endl
-	mov dword[p],OP_Color
 	mov eax,[v]
-	mov ebx,[eax+8]
-	mov dword[p+4],ebx
-	mov ebx,[eax+4]
-	mov dword[p+8],ebx
-	mov ebx,[eax]
-	mov dword[p+12],ebx
-	mov ebx,[eax+12]
-	mov dword[p+16],ebx
-	; direct convertion to integer to go faster if no shading
-	mov eax,ebp
-	sub eax,4
-	push eax ;&p[7]
-	sub eax,4
-	push eax ;&p[6]
-	sub eax,4
-	push eax ;&p[5]
-	stdcall RGBFtoRGBI,[eax+8],[eax+4],[eax] ;call: v[2],v[1],v[0],p[5],p[6],p[7]
-
-	mov eax,ebp
-	sub eax,32 ;=sizeof(dd)*8
-	stdcall gl_add_op,eax
+	stdcall glColor4f,[eax],[eax+4],[eax+8],[eax+12],1.0
 	ret
 endp
 

@@ -587,13 +587,13 @@ pushad
 		cmp dword[n],3
 		jne .end_f
 			mov eax,[edx+offs_cont_vertex]
-			mov [esp-4],eax
+			mov [esp-12],eax
 			add eax,sizeof.GLVertex
 			mov [esp-8],eax
 			add eax,sizeof.GLVertex
-			mov [esp-12],eax
+			mov [esp-4],eax
 			sub esp,12
-			stdcall gl_draw_triangle, edx
+			stdcall gl_draw_triangle, edx ;v0,v1,v2
 			xor eax,eax
 			mov dword[n],eax
 		jmp .end_f
@@ -611,22 +611,22 @@ pushad
 			mov eax,[edx+offs_cont_vertex]
 			bt dword[edx+offs_cont_vertex_cnt],0
 			jc .case_1
-				mov [esp-12],eax
+				mov [esp-4],eax
 				add eax,sizeof.GLVertex
 				mov [esp-8],eax
 				add eax,sizeof.GLVertex
-				mov [esp-4],eax
+				mov [esp-12],eax
 				sub esp,12
-				stdcall gl_draw_triangle, edx ;&v[2],&v[1],&v[0]
+				stdcall gl_draw_triangle, edx ;v2,v1,v0
 				jmp .end_f
 			.case_1:
-				mov [esp-4],eax
+				mov [esp-12],eax
 				add eax,sizeof.GLVertex
 				mov [esp-8],eax
 				add eax,sizeof.GLVertex
-				mov [esp-12],eax
+				mov [esp-4],eax
 				sub esp,12
-				stdcall gl_draw_triangle, edx ;&v[0],&v[1],&v[2]
+				stdcall gl_draw_triangle, edx ;v0,v1,v2
 		jmp .end_f
 	@@:
 	cmp dword[edx+offs_cont_begin_type],GL_TRIANGLE_FAN
@@ -634,15 +634,15 @@ pushad
 		cmp dword[n],3
 		jne .end_f
 			mov eax,[edx+offs_cont_vertex]
-			mov [esp-4],eax
+			mov [esp-12],eax
 			add eax,sizeof.GLVertex
 			mov [esp-8],eax
 			mov edi,eax
 			add eax,sizeof.GLVertex
-			mov [esp-12],eax
+			mov [esp-4],eax
 			mov esi,eax
 			sub esp,12
-			stdcall gl_draw_triangle, edx
+			stdcall gl_draw_triangle, edx ;v0,v1,v2
 			mov ecx,(sizeof.GLVertex)/4 ;((...)/4) что-бы использовать movsd вместо movsb
 			rep movsd ;context.vertex[1] = context.vertex[2]
 			mov dword[n],2
@@ -678,20 +678,20 @@ pushad
 		cmp dword[n],4
 		jne .end_f
 			mov eax,[edx+offs_cont_vertex]
-			mov [esp-4],eax
+			mov [esp-12],eax
 			mov edi,eax
 			add eax,sizeof.GLVertex
 			mov [esp-8],eax
 			add eax,sizeof.GLVertex
-			mov [esp-12],eax
+			mov [esp-4],eax
 			mov esi,eax
 			sub esp,12
 			stdcall gl_draw_triangle, edx ;v0,v1,v2
-			mov [esp-12],eax
+			mov [esp-4],eax
 			add eax,sizeof.GLVertex
 			mov [esp-8],eax
 			sub eax,2*sizeof.GLVertex
-			mov [esp-4],eax
+			mov [esp-12],eax
 			sub esp,12
 			stdcall gl_draw_triangle, edx ;v1,v3,v2
 			mov ecx,(sizeof.GLVertex)/2 ;((...)/2) копируем 2 вершины

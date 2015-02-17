@@ -1,10 +1,6 @@
 
 if DEBUG
 align 4
-txt_gl_scal db 'glopScale',0
-txt_gl_tran db 'glopTranslate',0
-
-align 4
 proc gl_print_matrix uses eax ebx ecx edi, m:dword, rows:dword
 	mov ecx,[rows]
 	cmp ecx,1
@@ -120,9 +116,6 @@ proc glopLoadIdentity uses eax ebx, context:dword, p:dword
 	add ebx,eax
 
 	stdcall gl_M4_Id,[ebx+offs_cont_matrix_stack_ptr]
-if DEBUG ;glopLoadIdentity
-	stdcall gl_print_matrix,[ebx+offs_cont_matrix_stack_ptr],4
-end if
 	gl_matrix_update eax,ebx
 	ret
 endp
@@ -291,9 +284,6 @@ endl
 		stdcall gl_M4_Rotate, ecx
 		jmp .end_sw
 	@@: ;default:
-if DEBUG ;glopRotete
-		stdcall dbg_print,txt_sp,m_1
-end if
 
 		; normalize vector
 		fld dword[u0]
@@ -438,9 +428,6 @@ end if
 	shl ebx,2
 	add ebx,eax
 	stdcall gl_M4_MulLeft,dword[ebx+offs_cont_matrix_stack_ptr],ecx
-if DEBUG ;glopRotete
-		stdcall gl_print_matrix,ecx,4
-end if
 	gl_matrix_update eax,ebx
 	jmp .end_f
 	.f2:
@@ -485,15 +472,6 @@ proc glopScale uses eax ebx ecx, context:dword, p:dword
 	ffree st0
 	fincstp
 
-if DEBUG ;glopScale
-pushad
-	stdcall dbg_print,txt_gl_scal,txt_nl
-	mov ebx,[eax+offs_cont_matrix_mode]
-	shl ebx,2
-	add ebx,eax
-	stdcall gl_print_matrix,[ebx+offs_cont_matrix_stack_ptr],4
-popad
-end if
 	gl_matrix_update eax,ebx
 	ret
 endp
@@ -532,15 +510,6 @@ proc glopTranslate uses eax ebx ecx, context:dword, p:dword
 	ffree st0
 	fincstp
 
-if DEBUG ;glopTranslate
-pushad
-	stdcall dbg_print,txt_gl_tran,txt_nl
-	mov ebx,[eax+offs_cont_matrix_mode]
-	shl ebx,2
-	add ebx,eax
-	stdcall gl_print_matrix,[ebx+offs_cont_matrix_stack_ptr],4
-popad
-end if
 	gl_matrix_update eax,ebx
 	ret
 endp
@@ -581,9 +550,9 @@ endl
 	fstp dword[B]      ;B = (top+bottom) / (top-bottom)
 	fld dword[ebx+24]
 	fsub dword[ebx+20] ;st0 = (farp-near)
-	fldz
-	fsub dword[ebx+24]
-	fsub dword[ebx+20] ;st0 = -(farp+near)
+	fld dword[ebx+24]
+	fadd dword[ebx+20]
+	fchs ;st0 = -(farp+near)
 	fdiv st0,st1
 	fstp dword[C]      ;C = -(farp+near) / (farp-near)
 	fld dword[ebx+24]
@@ -592,6 +561,12 @@ endl
 	fchs               ;st0 = -(2.0*farp*near)
 	fdiv st0,st1
 	fstp dword[D]      ;D = -(2.0*farp*near) / (farp-near)
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
+	ffree st0
+	fincstp
 
 	mov ecx,ebp
 	sub ecx,sizeof.M4

@@ -445,7 +445,7 @@ endl
 		cmp esi,ebx
 		jge .cycle_4_end
 			cmp esi,ecx ;if (l!=j)
-			je .cycle_5_end
+			je .if_end
 			mov eax,esi
 			imul eax,ebx
 			add eax,ecx
@@ -491,6 +491,7 @@ endl
 			.cycle_5_end:
 			ffree st0 ;t
 			fincstp
+			.if_end:
 		inc esi
 		jmp .cycle_4
 		.cycle_4_end:

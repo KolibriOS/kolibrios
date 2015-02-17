@@ -708,36 +708,38 @@ pushad
 		;if (co==0)
 		mov edi,dword[edx+offs_vert_zp+offs_zbup_x]
 		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
-		mov dword[norm],edi
+		mov dword[norm],edi ;p2.x-p0.x
 		fild dword[norm]
 		mov edi,dword[ecx+offs_vert_zp+offs_zbup_y]
 		sub edi,dword[ebx+offs_vert_zp+offs_zbup_y]
-		mov dword[norm],edi
+		mov dword[norm],edi ;p1.y-p0.y
 		fimul dword[norm]
+		fchs
 		mov edi,dword[ecx+offs_vert_zp+offs_zbup_x]
 		sub edi,dword[ebx+offs_vert_zp+offs_zbup_x]
-		mov dword[norm],edi
+		mov dword[norm],edi ;p1.x-p0.x
 		fild dword[norm]
 		mov edi,dword[edx+offs_vert_zp+offs_zbup_y]
 		sub edi,dword[ebx+offs_vert_zp+offs_zbup_y]
-		mov dword[norm],edi
+		mov dword[norm],edi ;p2.y-p0.y
 		fimul dword[norm]
-		fsubp
-
+		faddp
 		;st0 = (p1.zp.x-p0.zp.x)*(p2.zp.y-p0.zp.y) - (p2.zp.x-p0.zp.x)*(p1.zp.y-p0.zp.y)
 
 		mov dword[front],0
-		fldz
-		fcompp
+		ftst
 		fstsw ax
+		ffree st0
+		fincstp
 		sahf
 		je .end_f
-		jbe @f ;jb @f ???
-			inc dword[front] ;front = 0.0 > norm
+		jae @f
+			inc dword[front] ;front = norm < 0.0
 		@@:
 		mov edi,[context]
 		mov eax,dword[edi+offs_cont_current_front_face]
 		xor dword[front],eax ;front ^= context.current_front_face
+
 		; back face culling
 		cmp dword[edi+offs_cont_cull_face_enabled],0
 		je .els_1
