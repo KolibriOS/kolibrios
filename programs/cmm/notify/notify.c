@@ -51,15 +51,6 @@ void Text()
 	WriteBufText(TEXT_X, TEXT_Y, 0x88, 0xFFFfff, #param, shadow_buf_32);
 }
 
-inline fastcall int GetClientTop()
-{
-	$mov eax, 48
-	$mov ebx, 5
-	$int 0x40
-    $mov eax, ebx
-    $shr eax, 16
-}
-
 void from24to32(ESI, EDI, EAX, EBX) //src,dst,w,h
 {
 conv24to32:
