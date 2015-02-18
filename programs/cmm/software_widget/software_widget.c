@@ -69,7 +69,7 @@ void main()
 	if (load_dll2(libimg, #libimg_init,1)!=0) notify("Error: library doesn't exists - libimg");
 	if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
 
-	Libimg_LoadImage(#skin, "/sys/iconstrp.png");
+	Libimg_LoadImage(#skin, "/sys/icons32.png");
 	Libimg_FillTransparent(skin.image, skin.w, skin.h, LIST_BACKGROUND_COLOR);
 
 	if (param)

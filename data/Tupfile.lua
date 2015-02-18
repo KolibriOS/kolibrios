@@ -29,7 +29,7 @@ img_files = {
  {"SETTINGS/AUTORUN.DAT", build_type .. "/settings/autorun.dat"},
  {"DEFAULT.SKN", build_type .. "/default.skn"},
  {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
- {"ICONSTRP.PNG", "common/iconstrp.png"},
+ {"ICONS32.PNG", "common/icons32.png"},
  {"INDEX.HTM", build_type .. "/index_htm"},
  {"KERPACK", "common/kerpack"},
  {"SETTINGS/KEYMAP.KEY", build_type .. "/settings/keymap.key"},

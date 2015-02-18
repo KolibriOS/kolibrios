@@ -1,4 +1,4 @@
-ICON_STRIP	equ '/rd/1/iconstrp.png'
+ICON_STRIP	equ '/rd/1/icons32.png'
 ICON_INI	equ '/rd/1/settings/icon.ini'
 ICON_SIZE	equ 68	  ;размер области для иконки с надписью
 IMG_SIZE	equ 32	  ;размер иконок
@@ -51,18 +51,18 @@ START:		; start of execution
 	mov	eax,[unpack_DeflateUnpack2]
 	mov	[deflate_unpack],eax
 ;---------------------------------------------------------------------
-; get size of file ICONSTRP.PNG
+; get size of file icons32.png
 	mcall	70,fiStdIco
 	test	eax,eax
 	jnz	ErrorStrp
-; get memory for ICONSTRP.PNG
+; get memory for icons32.png
 	mov	ecx,dword[bufStdIco+32]
 	mov	[fiStdIco.size],ecx
 	mov	[img_size],ecx
 	mcall	68,12
 	mov	[fiStdIco.point],eax
 	mov	[image_file],eax
-; load ICONSTRP.PNG
+; load icons32.png
 	mov	dword[fiStdIco],0
 	mcall	70,fiStdIco
 	test	eax,eax
@@ -197,7 +197,7 @@ ErrLoadLibs:
 	;debug_newline
 	jmp	close
 ErrorStrp:
-	;dps     'Ошибка открытия iconstrp.png'
+	;dps     'Ошибка открытия icons32.png'
 	;debug_newline
 close:
 	mcall	-1
