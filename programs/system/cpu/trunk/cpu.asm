@@ -786,7 +786,7 @@ file_start:
         dd 0
         dd 0
         dd 0
-start_application: db '/sys/',0
+start_application: db '/sys/LAUNCHER',0
 start_application_e=$-start_application-1
 ;                   times 60 db 0
         rb 60
