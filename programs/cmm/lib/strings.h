@@ -272,7 +272,7 @@ unsigned int strcpyb(dword search_in, copyin, startstr, endstr)
 }
 
 
-/*void strcat(char *to, char *from) //Ã²Ã®Ã¦Ã¥ Ã°Ã Ã¡Ã®Ã²Ã Ã¥Ã²
+/*void strcat(char *to, char *from) 
 {
 	while(*to) to++;
 	while(*from)
@@ -313,8 +313,8 @@ inline fastcall strupr( ESI)
 	do{
 		AL=DSBYTE[ESI];
 		IF(AL>='a')IF(AL<='z')DSBYTE[ESI]=AL&0x5f;
-		IF (AL>=160) && (AL<=175) DSBYTE[ESI] = AL - 32;	//Ã -Ã¯
-		IF (AL>=224) && (AL<=239) DSBYTE[ESI] = AL - 80;	//Ã -Ã¯
+		IF (AL>=160) && (AL<=175) DSBYTE[ESI] = AL - 32;	//à-ï
+		IF (AL>=224) && (AL<=239) DSBYTE[ESI] = AL - 80;	//à-ï
  		ESI++;
 	}while(AL!=0);
 }
@@ -335,16 +335,17 @@ inline fastcall strttl( EDX)
 {
 	AL=DSBYTE[EDX];
 	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
-	IF (AL>=160) && (AL<=175) DSBYTE[EDX] = AL - 32;	//Ã -Ã¯
-	IF (AL>=224) && (AL<=239) DSBYTE[EDX] = AL - 80;	//Ã -Ã¯
+	IF (AL>=160) && (AL<=175) DSBYTE[EDX] = AL - 32;	//à-ï
+	IF (AL>=224) && (AL<=239) DSBYTE[EDX] = AL - 80;	//à-ï
 	do{
 		EDX++;
 		AL=DSBYTE[EDX];
 		IF(AL>='A')&&(AL<='Z'){DSBYTE[EDX]=AL|0x20; CONTINUE;}
-		IF(AL>='â‚¬')&&(AL<='Â')DSBYTE[EDX]=AL|0x20; //Â -Â¯
-		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//Ã -Ã¯
+		IF(AL>='€')&&(AL<='')DSBYTE[EDX]=AL|0x20; // -¯
+		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//à-ï
 	}while(AL!=0);
 }
+
 
 dword itoa( ESI)
 {

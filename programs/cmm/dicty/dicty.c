@@ -9,7 +9,7 @@
 
 
 unsigned char speaker[23*40*3]= FROM "speaker.raw";
-char title[]= "Dictionary v1.31";
+char title[]= "Dictionary v1.32";
 char direction[] = "Translate direction:";
 char translate_caption[] = "Translate";
 char dict_not_found[] = "Dictionary not found";
@@ -20,7 +20,8 @@ char empty_word[] = "Type a word to translate";
 system_colors sc;
 proc_info Form;
 
-char edword[256], search_word[256], translate_result[4096], dict_folder[4096], cur_dict[256];
+char edword[256], search_word[256], translate_result[4096], cur_dict[256];
+dword dict_folder;
 #define DICT_DIRECROTY "dictionaries"
 #define PRONOUNCED_FILE "/sys/pronounced.txt"
 #define SPEECH_PATH "/kolibrios/media/speech/speech"
@@ -35,11 +36,8 @@ void main()
 	int id, key;
    	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify("Error while loading GUI library /sys/lib/boxlib.obj");
-	
-	program_path[strrchr(#program_path, '/')] = 0;
-	strcpy(#dict_folder, #program_path);
-	strcat(#dict_folder, DICT_DIRECROTY);
-	SetCurDir(#dict_folder);
+
+	dict_folder = abspath(DICT_DIRECROTY);
 	OpenDictionary(0);
 	
 	if (param)
@@ -95,7 +93,8 @@ void main()
 			EAX=key<<8;
 			edit_box_key stdcall(#edit1);
 			
-			//LiveSearch();
+			// Translate();
+			// DrawTranslation();
 			break;
 			
          case evReDraw:
@@ -200,6 +199,7 @@ void Translate()
 
 void OpenDictionary(dword fileid)
 {
+	char open_file_path[4096];
 	KillProcess(speaker_id);
 	if (!dir_buf) ShowDictList();
 	if (!dir_buf) strcpy(#cur_dict, "none");
@@ -208,19 +208,23 @@ void OpenDictionary(dword fileid)
 
 	free(file_buf);
 	file_buf = malloc(fsize);
-	ReadFile(0, fsize, file_buf, #cur_dict);
+	strcpy(#open_file_path, dict_folder);
+	strcat(#open_file_path, "/");
+	strcat(#open_file_path, #cur_dict);
+	ReadFile(0, fsize, file_buf, #open_file_path);
 	IF (EAX<>0)
 	{
 		fsize = 0;
 		strcpy(#search_word, "Error #");
 		strcat(#search_word, itoa(EAX));
 		strcpy(#translate_result, #dict_not_found);
-		DrawWindowContent();
-		return;
-	}	
-	strcpy(#search_word, #cur_dict);
-	strcpy(#translate_result, #dict_opened);
-	DrawWindowContent();
+	}
+	else
+	{
+		strcpy(#search_word, #cur_dict);
+		strcpy(#translate_result, #dict_opened);
+	}
+	DrawWindowContent();	
 }
 
 
@@ -229,7 +233,7 @@ void ShowDictList()
 	int j, fcount, error;
 	
 	free(dir_buf);
-	error = GetDir(#dir_buf, #fcount, #dict_folder, DIRS_ONLYREAL);
+	error = GetDir(#dir_buf, #fcount, dict_folder, DIRS_ONLYREAL);
 	if (!error)
 	{
 		DefineButton(0,0, Form.width,Form.height, 12+BT_HIDE+BT_NOFRAME, sc.work_button);
