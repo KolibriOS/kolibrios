@@ -707,7 +707,7 @@ tbts:   db 'SEITE ZURUECK     SEITE VOR                        REBOOT SYSTEM'
 tbte:
 tbts_3  db 'START'
 tbte_2:
-check_text      db '@ on/off',0
+check_text      db 'System',0
 title   db 'Prozesse  - Ctrl/Alt/Del',0
 ;--------------------------------------
 else if lang eq et
@@ -720,7 +720,7 @@ tbts:   db 'EELMINE LEHT   JƒRGMINE LEHT                     REBOODI S‹STEEM'
 tbte:
 tbts_3  db 'START'
 tbte_2:
-check_text      db '@ sees/v‰l.',0
+check_text      db 'System',0
 title   db 'Protsessid - Ctrl/Alt/Del'
 ;--------------------------------------
 else if lang eq ru
@@ -733,7 +733,7 @@ tbts:   db 'èêÖÑ.ëíê        ëãÖÑ.ëíê                          èÖêÖáÄÉêìáäÄ'
 tbte:
 tbts_3  db 'áÄèìëä'
 tbte_2:
-check_text      db '@ ¢™´/¢Î™´',0
+check_text      db 'ë®·‚•¨≠Î•',0
 title   db 'Ñ®·Ø•‚Á•‡ Ø‡ÆÊ•··Æ¢ - Ctrl/Alt/Del',0
 ;--------------------------------------
 else if lang eq it
@@ -746,7 +746,7 @@ tbts:   db 'INDIETRO         AVANTI                           RIAVVIA SISTEMA'
 tbte:
 tbts_3  db 'START'
 tbte_2:
-check_text      db '@ on/off',0
+check_text      db 'System',0
 title   db 'Gestore processi  - Ctrl/Alt/Del',0
 ;--------------------------------------
 else
@@ -759,7 +759,7 @@ tbts:   db 'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
 tbte:
 tbts_3  db ' RUN'
 tbte_2:
-check_text      db '@ on/off',0
+check_text      db 'System',0
 title   db 'Process manager - Ctrl/Alt/Del',0
 
 end if
@@ -786,7 +786,7 @@ file_start:
         dd 0
         dd 0
         dd 0
-start_application: db '/sys/LAUNCHER',0
+start_application: db '/sys/',0
 start_application_e=$-start_application-1
 ;                   times 60 db 0
         rb 60
