@@ -199,30 +199,32 @@ try_dhcp:
 
         DEBUGF  1,"Connected to 255.255.255.255 on port 67\n"
 
-        mov     [dhcpMsgType], 0x01                     ; DHCP discover
+        mov     [dhcpMsgType_tx], 0x01                  ; DHCP discover
         mov     [dhcpLease], esi                        ; esi is still -1 (-1 = forever)
+
+        call    random
+        mov     [dhcpXID], eax
+
+build_request:                                          ; Creates a DHCP request packet.
+
+        DEBUGF  1,"Building request\n"
 
         mcall   26, 9                                   ; Get system time
         imul    eax, 100
         mov     [currTime], eax
 
-build_request:                                          ; Creates a DHCP request packet.
-
         mov     [tries], DHCP_TRIES
-
-        DEBUGF  1,"Building request\n"
 
         stdcall mem.Alloc, BUFFER
         test    eax, eax
         jz      dhcp_fail2
         mov     [dhcpMsg], eax
 
+        ; Fill buffer with zeros
         mov     edi, eax
         mov     ecx, BUFFER
         xor     eax, eax
         rep     stosb
-
-            ;; todo: put this in one buffer we can copy, instead of writing bytes and words!
 
         mov     edx, [dhcpMsg]
 
@@ -230,7 +232,8 @@ build_request:                                          ; Creates a DHCP request
         mov     [edx], byte 0x01                ; Boot request
         mov     [edx+1], byte 0x01              ; Ethernet
         mov     [edx+2], byte 0x06              ; Ethernet h/w len
-        mov     [edx+4], dword 0x11223344       ; xid                 ;;;;;;;  FIXME
+        mov     eax, [dhcpXID]
+        mov     [edx+4], eax                    ; xid
         mov     eax, [currTime]
         mov     [edx+8], eax                    ; secs, our uptime
         mov     [edx+10], byte 0x80             ; broadcast flag set
@@ -242,7 +245,7 @@ build_request:                                          ; Creates a DHCP request
         ; DHCP extension
         mov     [edx+236], dword 0x63538263     ; magic cookie
         mov     [edx+240], word 0x0135          ; option DHCP msg type
-        mov     al, [dhcpMsgType]
+        mov     al, [dhcpMsgType_tx]
         mov     [edx+240+2], al
         mov     [edx+240+3], word 0x0433        ; option Lease time = infinity
         mov     eax, [dhcpLease]
@@ -253,15 +256,15 @@ build_request:                                          ; Creates a DHCP request
         mov     [edx+240+15], word 0x0437       ; option request list
         mov     [edx+240+17], dword 0x0f060301
 
-        cmp     [dhcpMsgType], 0x01             ; Check which msg we are sending
-        jne     request_options
+        cmp     [dhcpMsgType_tx], 0x01          ; Check which msg we are sending
+        jne     .options
 
         mov     [edx+240+21], byte 0xff         ; end of options marker
 
         mov     [dhcpMsgLen], 262               ; length
         jmp     send_dhcpmsg
 
-request_options:
+  .options:
         mov     [edx+240+21], word 0x0436       ; server IP
         mov     eax, [dhcpServerIP]
         mov     [edx+240+23], eax
@@ -273,16 +276,18 @@ request_options:
 send_dhcpmsg:
         DEBUGF  1,"Sending DHCP discover/request\n"
         mcall   75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]             ; write to socket (send broadcast request)
+
+; Wait for data
         mcall   26, 9
         add     eax, TIMEOUT*100
         mov     [timeout], eax
   .wait:
-        mcall   23, TIMEOUT                                             ; wait for data (with timeout)
+        mcall   23, TIMEOUT
 
 read_data:                                                              ; we have data - this will be the response
         mcall   75, 7, [socketNum], [dhcpMsg], BUFFER, MSG_DONTWAIT     ; read data from socket
         cmp     eax, -1
-        jne     @f
+        jne     .got_data
 
         mcall   26, 9
         cmp     eax, [timeout]
@@ -291,9 +296,10 @@ read_data:                                                              ; we hav
         DEBUGF  2,"No answer from DHCP server\n"
         dec     [tries]
         jnz     send_dhcpmsg                    ; try again
+        stdcall mem.Free, [dhcpMsg]
         jmp     dhcp_fail
 
-  @@:
+  .got_data:
         DEBUGF  1,"%d bytes received\n", eax
         mov     [dhcpMsgLen], eax
 
@@ -307,36 +313,36 @@ read_data:                                                              ; we hav
 ;  1) If the response is DHCP ACK then
 ;  1.1) extract the DNS & subnet fields. Set them in the stack
 
-        cmp     [dhcpMsgType], 0x01             ; did we send a discover?
-        je      discover
+        cmp     [dhcpMsgType_tx], 0x01          ; did we send a discover?
+        je      discover_sent
 
-        cmp     [dhcpMsgType], 0x03             ; did we send a request?
-        je      request
+        cmp     [dhcpMsgType_tx], 0x03          ; did we send a request?
+        je      request_sent
 
         ; we should never reach here ;)
+        stdcall mem.Free, [dhcpMsg]
         jmp     fail
 
-discover:
+discover_sent:
         call    parse_response
-
-        cmp     [dhcpMsgType2], 0x02            ; Was the response an offer?
-        jne     dhcp_fail
+        cmp     [dhcpMsgType_rx], 0x02          ; Was the response an offer?
+        jne     read_data
 
         DEBUGF  1, "Got offer, making request\n"
-        mov     [dhcpMsgType], 0x03             ; make it a request
+        mov     [dhcpMsgType_tx], 0x03          ; make it a request
         jmp     build_request
 
-request:
+request_sent:
         call    parse_response
-
-        cmp     [dhcpMsgType2], 0x05            ; Was the response an ACK? It should be
+        cmp     [dhcpMsgType_rx], 0x05          ; Was the response an ACK? It should be
         jne     read_data                       ; NO - read next packets
 
         DEBUGF  2, "IP assigned by DHCP server successfully\n"
 
         mov     [notify_struct.msg], str_connected
         mcall   70, notify_struct
-        call    dhcp_fail
+
+        mcall   close, [socketNum]
 
         mov     ebx, API_IPv4 + 3
         mov     bh, [device]
@@ -366,9 +372,14 @@ request:
 ;***************************************************************************
 parse_response:
 
-        DEBUGF  1,"Data received, parsing response\n"
+        DEBUGF  1,"Parsing response\n"
         mov     edx, [dhcpMsg]
-        mov     [dhcpMsgType2], 0
+        mov     [dhcpMsgType_rx], 0
+
+; Verify if session ID matches
+        mov     eax, [dhcpXID]
+        cmp     dword[edx+4], eax
+        jne     .done
 
         push    dword [edx+16]
         pop     [dhcp.ip]
@@ -425,7 +436,7 @@ parse_response:
 
   .msgtype:
         mov     al, [edx]
-        mov     [dhcpMsgType2], al
+        mov     [dhcpMsgType_rx], al
 
         DEBUGF  1,"DHCP Msg type: %u\n", al
         jmp     .next_option                    ; Get next option
@@ -464,15 +475,17 @@ parse_response:
         jmp     .next_option
 
   .done:
+        stdcall mem.Free, [dhcpMsg]
         ret
+
 
 dhcp_fail:
 
         mcall   close, [socketNum]
-        stdcall mem.Free, [dhcpMsg]
 
 dhcp_fail2:
         DEBUGF  1,"DHCP failed\n"
+
 
 link_local:
         call    random
@@ -481,7 +494,7 @@ link_local:
         mov     cx, 0xfea9                              ; IP 169.254.0.0 link local net, see RFC3927
         mov     ebx, API_IPv4 + 3
         mov     bh, [device]
-        mcall   76, , ecx                   ; mask is 255.255.0.0
+        mcall   76, , ecx                               ; mask is 255.255.0.0
         DEBUGF  2,"Link Local IP assigned: 169.254.%u.%u\n", [generator+0]:1, [generator+1]:1
         mov     bl, 7
         mcall   76, , 0xffff
@@ -680,6 +693,7 @@ notify_struct:
         db '/sys/@notify', 0
 
 str_connected   db '"You are now connected to the network." -N', 0
+
 path            db '/sys/settings/network.ini',0
 
 IM_END:
@@ -688,8 +702,9 @@ device          db 1
 inibuf          rb 16
 tries           db ?
 
-dhcpMsgType     db ?    ; sent
-dhcpMsgType2    db ?    ; received
+dhcpMsgType_tx  db ?    ; sent
+dhcpMsgType_rx  db ?    ; received
+dhcpXID         dd ?
 dhcpLease       dd ?
 dhcpServerIP    dd ?
 
