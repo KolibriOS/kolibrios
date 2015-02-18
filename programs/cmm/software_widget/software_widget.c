@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.21
+SOFTWARE CENTER v2.3
 */
 
 #define MEMSIZE 0x3E80
@@ -20,6 +20,8 @@ system_colors sc;
 proc_info Form;
 mouse m;
 
+byte kolibrios_mounted;
+
 int item_id_need_to_run=-1,
     current_item_id;
 
@@ -32,6 +34,7 @@ int col_max,
     list_pos, 
     list_top,
     row,
+    old_row, //to detect empty sections
     col,
     default_icon;
 
@@ -91,7 +94,7 @@ void main()
             {
             	item_id_need_to_run = id - 100;
             	current_item_id = 0;
-            	ini_enum_sections stdcall (#settings_ini_path, #draw_section);
+            	ini_enum_sections stdcall (#settings_ini_path, #process_sections);
             	item_id_need_to_run = -1;
             }
 			break;
@@ -101,10 +104,11 @@ void main()
 			DefineAndDrawWindow(GetScreenWidth()-window_width/2,GetScreenHeight()-window_height/2,window_width,window_height,0x74,sc.work,"");
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window>2) { DrawTitle(#window_title); break; } else DrawTitle("");
+			kolibrios_mounted = isdir("/kolibrios");
 			col_max = Form.cwidth - 10 / cell_w;
 			current_item_id = 0;
 			draw_top_bar();
-			ini_enum_sections stdcall (#settings_ini_path, #draw_section);
+			ini_enum_sections stdcall (#settings_ini_path, #process_sections);
 			DrawBar(0, row + 1 * cell_h + list_pos, Form.cwidth, -row - 1 * cell_h - list_pos + Form.cheight, LIST_BACKGROUND_COLOR);
 			break;
       }
@@ -135,6 +139,10 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		row++;
 		col=0;
 	}
+
+	//do not show items located in /kolibrios/ if this directory not mounted
+	if (strncmp(key_value, "/kolibrios/", 11)==0) && (!kolibrios_mounted) return 1;
+
 	if (col==0) DrawBar(0, row * cell_h + list_pos, Form.cwidth, cell_h, LIST_BACKGROUND_COLOR);
 	DefineButton(col*cell_w+6,row*cell_h + list_pos,cell_w,cell_h-5,current_item_id + 100 + BT_HIDE,0);
 	tmp = cell_w/2;
@@ -150,7 +158,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 }
 
 
-byte draw_section(dword sec_name, f_name)
+byte process_sections(dword sec_name, f_name)
 {
 	if (strcmp(sec_name, "Config")==0) return 1;
 
@@ -160,8 +168,16 @@ byte draw_section(dword sec_name, f_name)
 	}
 	else
 	{
-		row++;
+		if ((col==0) && (row==old_row)) 
+		{
+			list_pos -= 20;
+		}
+		else
+		{
+			row++;
+		}
 		col = 0;
+		old_row = row;
 		DrawBar(0, row * cell_h + list_pos, Form.cwidth , 20, LIST_BACKGROUND_COLOR);
 		WriteTextB(10, row * cell_h + 9 + list_pos, 0x90, 0x000000, sec_name);
 		list_pos += 20;
