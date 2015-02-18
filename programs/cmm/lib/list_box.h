@@ -16,22 +16,22 @@ struct llist
 	int KeyEnd();
 	void SetSizes(int xx, yy, ww, hh, min_hh, line_hh);
 	int MouseScroll(dword scroll_state);
-	//void debug_values();
+	// void debug_values();
 }; 
 
-/*
-void llist::debug_values()
-{
-	debug("current: ");
-	debugi(current);
-	debug("first: ");
-	debugi(first);
-	debug("visible: ");
-	debugi(visible);
-	debug("count: ");
-	debugi(count);
-}
-*/
+
+// void llist::debug_values()
+// {
+// 	debug("current: ");
+// 	debugi(current);
+// 	debug("first: ");
+// 	debugi(first);
+// 	debug("visible: ");
+// 	debugi(visible);
+// 	debug("count: ");
+// 	debugi(count);
+// }
+
 
 
 void llist::ClearList()
@@ -65,7 +65,8 @@ int llist::MouseScroll(dword scroll_state)
 	} 
 	if (scroll_state == 1)
 	{
-		if (visible+first+3 >= count) first = count - visible; else first+=2;
+		if (visible + first == count) return 0;
+		if (visible+first+3 > count) first = count - visible; else first+=2;
 		return 1;
 	}
 	return 0;

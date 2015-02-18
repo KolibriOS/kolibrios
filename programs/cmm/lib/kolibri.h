@@ -240,6 +240,13 @@ inline fastcall void ActivateWindow( ECX)
 	$int 0x40
 }
 
+inline fastcall int MinimizeWindow()
+{
+	EAX = 18;
+	EBX = 10;
+	$int 0x40
+}
+
 inline fastcall int CreateThread( ECX,EDX)
 {
 	$mov eax,51
@@ -323,6 +330,24 @@ inline fastcall int GetScreenHeight()
 	$int 0x40
 	$and eax,0x0000FFFF
 }
+
+inline fastcall int GetClientTop()
+{
+	$mov eax, 48
+	$mov ebx, 5
+	$int 0x40
+    $mov eax, ebx
+    $shr eax, 16
+}
+
+inline fastcall int GetClientHeight()
+{
+	$mov eax, 48
+	$mov ebx, 5
+	$int 0x40
+    $mov eax, ebx
+}
+
 
 inline fastcall dword LoadLibrary( ECX)
 {

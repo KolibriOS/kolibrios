@@ -23,19 +23,6 @@ struct BDVK{
 	char	name[518];
 };
 
-inline fastcall void SetCurDir( ECX)
-{
-	$mov eax,30
-	$mov ebx,1
-	$int 0x40
-}
-
-inline fastcall void GetCurDir( ECX, EDX)
-{
-	$mov eax,30
-	$mov ebx,2
-	$int 0x40
-}
 
 ///////////////////////////
 //   ֿאנאלוענû פאיכא    //
@@ -227,9 +214,9 @@ enum
 	return error;
 }
 
-:void notify(dword notify_param)
+:dword notify(dword notify_param)
 {
-	RunProgram("@notify", notify_param);
+	return RunProgram("@notify", notify_param);
 }
 
 :dword abspath(dword relative_path) //GetAbsolutePathFromRelative()

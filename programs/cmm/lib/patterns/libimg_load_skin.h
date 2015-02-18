@@ -6,7 +6,7 @@ struct libimg_image {
 {
 	dword image_pointer;
 	image_pointer = load_image(file_path);
-	if (!image_pointer) notify("Error: Image not loaded");
+	if (!image_pointer) notify("'Error: Image not loaded' -E");
 	ESDWORD[struct_pointer] = image_pointer;
 	ESDWORD[struct_pointer+4] = DSWORD[image_pointer+4];
 	ESDWORD[struct_pointer+8] = DSWORD[image_pointer+8];
