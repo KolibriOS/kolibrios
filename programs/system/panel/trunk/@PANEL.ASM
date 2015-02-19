@@ -52,7 +52,7 @@
 ;               Win+D (restore/clear desktop), Win+R (start RUN application).
 ;               Using the library LibINI to set the parameters.
 ;               New style of panel. Start application Menu with boot options.
-;               two versions of the location of the panel - 
+;               two versions of the location of the panel -
 ;               the bottom of the desktop and on top of the desktop.
 ;------------------------------------------------------------------------------
 ; last update:  31/03/2012
@@ -107,7 +107,7 @@ handle_key:
 	mov	[active_process],eax
 
 	mcall	2
-	
+
 ;       dps     "panel key: "
 ;       dph     eax
 ;       newline
@@ -166,23 +166,23 @@ end if
 	cmp	al, 88	; Ctrl+Alt+F12
 	jz	start_end_application
 
-	
-	
+
+
 	cmp	al, 91	; RWin DOWN
 	jz	set_win_key_flag
 
 	cmp	al, 92	; LWin DOWN
 	jz	set_win_key_flag
-	
-	
+
+
 	cmp	al, 219 ; RWin UP
 	jz	cut_win_key_flag	;start_menu_application
 
 	cmp	al, 220 ; LWin UP
 	jz	cut_win_key_flag	;start_menu_application
-	
 
-	cmp	al, 62	; Alt+F4 
+
+	cmp	al, 62	; Alt+F4
 	jz	kill_active_application
 
 	cmp	al, 205
@@ -193,13 +193,13 @@ end if
 
 	cmp	al, 69	; Alt+Shift+NumLock
 	jz	start_mousemul_application
-	
+
 	cmp	al, 19	; Win+R
 	jz	start_run_application
 
 	cmp	al, 32	; Win+D
 	jz	minimize_all_windows
-	
+
 	cmp	al, 55	; PrintScreen DOWN
 	jz	start_PrintScreen_application
 ;--------------------------------------
@@ -207,7 +207,7 @@ align 4
 prod:
 ;       cmp     eax,0x20000
 ;       je      start_menu_application
-	
+
 ;       cmp     eax,0x40000
 ;       je      start_menu_application
 
@@ -312,7 +312,7 @@ start_run_application:
 align 4
 @@:
 	mov	[start_menu_flag],1
-	
+
 	mov	esi,run_name
 	call	algorithm_anti_duplication
 	test	eax,eax
@@ -375,7 +375,7 @@ align 4
 	jnz	@r
 	add	esi,2
 	mov	edx,esi
-	
+
 	mov	edi,1
 ;--------------------------------------
 align 4
@@ -391,7 +391,7 @@ align 4
 ;       and     eax,not 20202020h
 ;       cmp     eax,'SCRS'
 ;       jz      @f
-	
+
 ;       mov     eax,[ebx+14]
 ;       and     eax,not 20202020h
 ;       cmp     eax,'HOOT'
@@ -619,13 +619,13 @@ exit:
 START:
 	mcall	68,11
 	mcall	66,1,1
-	
+
 	mcall	9,process_info_buffer,-1
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
 	mov	[my_active_slot],eax	; WINDOW SLOT
-	
-	
+
+
 load_libraries l_libs_start,end_l_libs
 
 	test	eax,eax
@@ -634,15 +634,15 @@ load_libraries l_libs_start,end_l_libs
 	call	Get_ini
 
 	mcall	48,1,[button_style]
-	
+
 	mcall	66,4,0,2	; LShift+RShift
 	mcall	66,,,11h	; Ctrl+Shift
 	mcall	66,,88,110h	; Alt+Ctrl+F12
 ;       mcall   66,,75          ; Alt+Ctrl+ArrowLeft DOWN
-	mcall	66,,203 	; Alt+Ctrl+ArrowLeft UP
+;       mcall   66,,203         ; Alt+Ctrl+ArrowLeft UP
 ;       mcall   66,,77          ; Alt+Ctrl+ArrowRight DOWN
-	mcall	66,,205 	; Alt+Ctrl+ArrowRight UP
-	
+;       mcall   66,,205         ; Alt+Ctrl+ArrowRight UP
+
 	mcall	66,,91,0h	; RWin DOWN
 	mcall	66,,92		; LWin DOWN
 	mcall	66,,219 	; RWin UP
@@ -735,7 +735,7 @@ align 4
 align 4
 @@:
 	mcall	23,20
-	
+
 	push	eax
 	mcall	18,7
 	cmp	[my_active_slot],eax
@@ -746,7 +746,7 @@ align 4
 align 4
 @@:
 	pop	eax
-	
+
 	cmp	eax,1		; redraw ?
 	jz	red
 
@@ -760,7 +760,7 @@ align 4
 align 4
 @@:
 	pop	eax
-	
+
 	cmp	eax,2
 	jnz	@f
 	call	handle_key
@@ -802,7 +802,7 @@ align 4
 	mov	edx, eax
 ;--------------------------------------
 align 4
-.selected:	
+.selected:
 	mcall	48,6
 	ret
 ;------------------------------------------------------------------------------
@@ -860,7 +860,7 @@ button:
 	shl	ecx,2
 
 	mov	ecx,[app_list+ecx]
-	
+
 	mcall	9,process_info_buffer
 
 	test	[ebx+70],dword 10b	; window is minimized to panel
@@ -882,7 +882,7 @@ align 4
 align 4
 .task_switching:
 	mcall	68,1
-	jmp	still	
+	jmp	still
 ;------------------------------------------------------------------------------
 align 4
 right_mouse:
@@ -941,10 +941,10 @@ no_activate:
 ;--------------------------------------
 align 4
 clean_desktop_1:
-	call	clean_desktop	
+	call	clean_desktop
 	jmp	still
 ;--------------------------------------
-align 4 
+align 4
 noselect:
 	mov	ebx, exec_fileinfo
 	cmp	ah,byte 2	       ; start calendar
@@ -955,7 +955,7 @@ noselect:
 	test	eax,eax
 	jz	@f
 
-	mcall	18,2,edi	
+	mcall	18,2,edi
 	jmp	still
 ;--------------------------------------
 align 4
@@ -965,7 +965,7 @@ align 4
 	mcall	70
 	jmp	still
 ;--------------------------------------
-align 4 
+align 4
 noid15:
 	cmp	ah,16
 	jne	noid16
@@ -977,7 +977,7 @@ noid15:
 	call	draw_flag	; language
 	jmp	still
 ;--------------------------------------
-align 4 
+align 4
 noid16:
 ;       cmp     ah,17
 ;       jne     noid17
@@ -987,7 +987,7 @@ noid16:
 ;       mcall   70
 ;       jmp     still
 ;--------------------------------------
-;align 4        
+;align 4
 ;  noid17:
 	cmp	ah,18
 	jne	noid18
@@ -1000,14 +1000,14 @@ noid16:
 	mcall	18,2,edi
 	jmp	still
 ;--------------------------------------
-align 4 
+align 4
 @@:
 	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21], sysmeter_name
 	mcall	70
 	jmp	still
 ;--------------------------------------
-align 4 
+align 4
 noid18:
 ;       cmp     ah,19   ; speaker
 ;       jne     noid19
@@ -1016,7 +1016,7 @@ noid18:
 ;       mcall   15,3
 ;       jmp     red
 ;--------------------------------------
-;align 4        
+;align 4
 ;noid19:
 ;       cmp     ah,20              ; start system setup
 ;       jnz     noid20
@@ -1026,7 +1026,7 @@ noid18:
 ;       mcall   70
 ;       jmp     still
 ;--------------------------------------
-;align 4        
+;align 4
 ;noid20:
 	cmp	ah,21
 	jnz	noid21
@@ -1036,7 +1036,7 @@ noid18:
 	inc	[page_list]
 	jmp	red
 ;--------------------------------------
-align 4 
+align 4
 noid21:
 	cmp	ah,22
 	jnz	still
@@ -1054,7 +1054,7 @@ restore_desktop:
 	mov	ecx, 2
 	mov	edx, 2
 ;--------------------------------------
-align 4 
+align 4
 @@:
 	mcall	18, 22
 	inc	edx
@@ -1105,28 +1105,28 @@ align 4
 align 4
 menu_handler:
 	mov	edi,bootparam
-	
+
 	mov	eax,[menu_button_x.start]
 	call	conversion_HEX_to_ASCII
 
 	mov	eax,[menu_button_x.size]
 	call	conversion_HEX_to_ASCII
-	
+
 	mov	eax,[menu_button_y.start]
 	call	conversion_HEX_to_ASCII
-	
+
 	mov	eax,[menu_button_y.size]
 	call	conversion_HEX_to_ASCII
-	
+
 	mov	eax,[height]
 	call	conversion_HEX_to_ASCII
-	
+
 	mov	eax,[place_attachment]
 	call	conversion_HEX_to_ASCII
-	
+
 	xor	eax,eax ; terminator for boot parameters string
 	stosd
-	
+
 	mov	ebx, exec_fileinfo
 	mov	[ebx+21],dword menu_name
 	mov	[ebx+8],dword bootparam

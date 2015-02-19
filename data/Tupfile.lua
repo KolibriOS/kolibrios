@@ -235,6 +235,7 @@ if tup.getconfig('NO_FASM') ~= 'full' then
 tup.append_table(img_files, {
  {"KERNEL.MNT", "../kernel/trunk/kernel.mnt"},
  {"@MENU", PROGS .. "/system/menu/trunk/menu"},
+ {"@VOLUME", PROGS .. "/media/volume/volume"},
  {"@PANEL", PROGS .. "/system/panel/trunk/@PANEL"},
  {"@DOCKY", PROGS .. "/system/docky/trunk/docky"},
  {"@OPEN", PROGS .. "/system/open/open"},

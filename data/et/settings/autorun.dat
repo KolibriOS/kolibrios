@@ -11,6 +11,7 @@
 /SYS/NETWORK/NETCFG  A		  1    #
 /SYS/NETWORK/ZEROCONF ""	  1    # Network configuration
 /SYS/MEDIA/PALITRA   "H 007DCEDF 003C427F"	  1    # SET BG
+/SYS/@VOLUME      ""    1    # Start volume daemon
 /SYS/@PANEL	      ""	  1    # Start panel
 /SYS/@DOCKY	      ""	  1    # Start docky
 /SYS/SETUP	     BOOT	  1    # Load device settings
@@ -19,4 +20,4 @@
 /SYS/@SS	     ASSM	  1    # Screensaver
 /SYS/TMPDISK	      A0	 -1    # Add virtual RAM disk /tmp0/1
 /SYS/SEARCHAP	      ""	 -1    # Search and mount additional system directory
-### Hello, ASM World! ###
+### Hello, ASM World! ###

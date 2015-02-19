@@ -4,13 +4,14 @@
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
 #/SYS/CROPFLAT "XS800 YS480"	   1	# set limits of screen
-#/SYS/LOADDRV  "COMMOUSE"	   1	# serial mouse driver
+#/SYS/LOADDRV   "COMMOUSE"	   1	# serial mouse driver
 #/SYS/DEVELOP/BOARD   ""	   1	# Load DEBUG board
 #/SYS/refrscrn	      ""	   1	# Refresh screen
 /SYS/LOADDRV         "RDC"        1    # videodriver for RDC M2010/M2012
 /SYS/NETWORK/NETCFG  A		  1    #
 /SYS/NETWORK/ZEROCONF ""	  1    # Network configuration
-/SYS/MEDIA/PALITRA "H 007DCEDF 003C427F" 1 # SET BG
+/SYS/MEDIA/PALITRA   "H 007DCEDF 003C427F"    1    # SET BG
+/SYS/@VOLUME      ""    1    # Start volume daemon
 /SYS/@PANEL	      ""	  1    # Start panel
 /SYS/@DOCKY	      ""	  1    # Start docky
 /SYS/SETUP	     BOOT	  1    # Load device settings
@@ -19,4 +20,4 @@
 /SYS/@SS	     ASSM	  1    # Screensaver
 /SYS/TMPDISK	      A0	 -1    # Add virtual RAM disk /tmp0/1
 /SYS/SEARCHAP	      ""	 -1    # Search and mount additional system directory
-### Hello, ASM World! ###
+### Hello, ASM World! ###
