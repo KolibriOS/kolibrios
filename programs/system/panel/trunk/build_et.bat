@@ -1,6 +1,6 @@
 @erase lang.inc
 @echo lang fix et >lang.inc
-@fasm -m 16384 @panel.asm @panel
+@fasm -m 16384 panel.asm panel
 @erase lang.inc
-@kpack @panel
+@kpack panel
 @pause

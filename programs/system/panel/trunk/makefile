@@ -4,7 +4,7 @@
 FASM=/opt/bin/fasm
 KPACK=/opt/bin/kpack
 LANG=lang.inc
-FILE=@PANEL
+FILE=PANEL
 SOURCE=${FILE}.ASM
 OUT=${FILE}.bin
 
