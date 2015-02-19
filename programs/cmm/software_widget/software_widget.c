@@ -1,5 +1,5 @@
 /*
-SOFTWARE CENTER v2.3
+SOFTWARE CENTER v2.31
 */
 
 #define MEMSIZE 0x3E80
@@ -125,6 +125,7 @@ byte search_for_id_need_to_run(dword key_value, key_name, sec_name, f_name)
 		RunProgram(key_value, "");
 	}
 	current_item_id++;
+	if (strncmp(key_value, "/kolibrios/", 11)==0) && (!kolibrios_mounted) current_item_id--;
 	return 1;
 }
 
