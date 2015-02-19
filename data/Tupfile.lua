@@ -41,6 +41,8 @@ img_files = {
  {"SETTINGS/PANEL.INI", build_type .. "/settings/panel.ini"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
+ {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
+ {"SETTINGS/SYSTEM_PANEL.INI", "common/settings/system_panel.ini"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"SETTINGS/SETUP.DAT", build_type .. "/settings/setup.dat"},
  {"VMODE", "common/vmode"},
@@ -460,6 +462,8 @@ tup.append_table(img_files, {
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},
  {"NETWORK/WebView", PROGS .. "/cmm/browser/WebView.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
+ {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
+ {"SYSTEM_PANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
