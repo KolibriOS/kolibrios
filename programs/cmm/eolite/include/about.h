@@ -1,6 +1,5 @@
 //Leency 2008-2013
 
-#define EDITOR_PATH     "/sys/tinypad"
 #define BROWSER_PATH    "/sys/htmlv"
 #define BROWSER_LINK    "http://kolibri-n.org/index.php"
 

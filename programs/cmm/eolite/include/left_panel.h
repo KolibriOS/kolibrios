@@ -24,7 +24,7 @@
 	char *actions[] = {
 		57, "New file", "F7",
 		56, "New folder", "F6",
-		60, "Options", "F10",
+		60, "Settings", "F10",
 		0,0,0
 	};
 #endif
@@ -51,7 +51,6 @@ void SystemDiscsGet()
 {
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num, dev_disc_num;
-	int nullbuf[32];
 	disc_num=0;
 	if (devbuf) free(devbuf);
 	devbuf = malloc(10000); //буфер где-то на 10 девайсов в левой панели
@@ -75,7 +74,7 @@ void SystemDiscsGet()
 		}
 		if (strcmp(#sys_discs, "/rd/1/")==0) 
 		{
-			if (GetDir(#nullbuf, #nullbuf, "/kolibrios/", DIRS_ALL)==0)
+			if (isdir("/kolibrios"))
 			{
 				strcpy(#disk_list[disc_num].Item, "/kolibrios/");
 				kolibrios_drive = true;

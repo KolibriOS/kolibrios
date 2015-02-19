@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.45"
-#define ABOUT_TITLE "Eolite v2.45"
+#define TITLE "Eolite File Manager v2.46"
+#define ABOUT_TITLE "Eolite v2.46"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -131,30 +131,12 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\other.h"
 #include "include\sorting.h"
 #include "include\icons.h"
-#include "include\ini.h"
 #include "include\left_panel.h"
 #include "include\history.h"
 #include "include\menu.h"
 #include "include\about.h"
 #include "include\settings.h"
 
-void SetAppColors()
-{
-	sc.work = 0xE4DFE1;
-	sc.work_text = 0;
-	sc.work_graph  = 0x9098B0; //A0A0B8; //0x819FC5;
-	sc.work_button_text = 0x000000;
-	col_padding = 0xC8C9C9;
-	//col_selec   = 0x94AECE;
-	col_lpanel  = 0x00699C;
-	/*
-	sc.get();
-	for (i=0; i<=14; i++) col_palette[i] = sc.work;
-	toolbar_pal[0]= goto_about_pal[0] = sc.work = sc.work;
-	col_lpanel = sc.work_graph;
-	for (i=0; i<=99; i++) blue_hl_pal[i] = sc.work_graph;
-	*/
-}
 
 void main() 
 {
@@ -168,7 +150,7 @@ void main()
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
     if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
 	SystemDiscsGet();
-	GetIni(1);
+	GetIni();
 	SetAppColors();
 	if (param)
 	{
@@ -477,6 +459,7 @@ void menu_action(dword id)
 	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
+	if (id==300) { FnProcess(5); List_ReDraw(); }
 }
 
 
@@ -963,7 +946,7 @@ void FnProcess(char N)
 			Tip(56, T_DEVICES, 55, "-");
 			Open_Dir(#path,WITH_REDRAW);
 			pause(10);
-			GetIni(1);
+			GetIni();
 			SystemDiscsGet();
 			Open_Dir(#path,WITH_REDRAW);
 			DrawLeftPanel();
