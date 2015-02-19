@@ -1,60 +1,19 @@
 #0    **** MAIN ****
-Games              >      /@1
-Demos              >      /@4
-Graphics           >      /@6
-Multimedia         >      /@7
-Emulators          >      /@21
-Development        >      /@8
-System             >      /@10
-Data processing    >      /@14
-Network            >      /@15
-Other              >      /@18
+Game Center               /sys/game_center
+Demos              >      /@1
+Graphics           >      /@3
+Multimedia         >      /@4
+Emulators          >      /@18
+Development        >      /@5
+System             >      /@7
+Data processing    >      /@11
+Network            >      /@12
+Other              >      /@15
 Help                      /sys/docpack
 Run application           /sys/run
 Shutdown                  /sys/end
-#1    **** GAMES ****
-Logical games      >      /@2
-Arcades            >      /@3
-Memory Blocks             /sys/games/mblocks
-FreeCell                  /sys/games/freecell
-Pipes                     /sys/games/pipes
-Kosilka                   /sys/games/kosilka
-RockeT ForceS             /sys/games/rforces
-Find Numbers              /sys/games/FindNumbers
-#2 **** LOGICAL GAMES ****
-C4                        /sys/games/c4
-15                        /sys/games/15
-Mine                      /sys/games/mine
-Just Clicks               /sys/games/clicks
-Checkers                  /sys/games/checkers
-SQ_GAME                   /sys/games/sq_game
-Color Lines               /sys/games/lines
-Flood-it!                 /sys/games/flood-it
-MegaMaze                  /sys/games/megamaze
-Sea Fight                 /sys/games/sw
-Sudoku                    /sys/games/sudoku
-Go-moku                   /sys/games/gomoku
-Reversi                   /sys/games/reversi
-Pharaoh's crypt           /KolibriOS/games/fara/fara
-Marble Match-3            /KolibriOS/games/marblematch3/marblematch3
-Sokoban                   /KolibriOS/games/soko/soko
-#3 **** ARCADES ****
-Tetris                    /sys/games/tetris
-Pong                      /sys/games/pong
-New Pong                  /sys/games/pong3
-Red Square                /sys/games/rsquare
-Xonix                     /sys/games/xonix
-ArcanII                   /sys/games/arcanii
-Phenix                    /sys/games/phenix
-Snake                     /sys/games/snake
-Tanks                     /sys/games/tanks
-Heliothryx                /KolibriOS/games/heliothryx/heliothryx
-Loderunner                /KolibriOS/games/lrl/lrl
-Doom                      /KolibriOS/games/doom/doom
-Quake                     /KolibriOS/games/quake/sdlquake
-Jump&Bump                 /KolibriOS/games/jumpbump/JUMPBUMP.KEX
-#4    **** DEMOS ****
-3D                 >      /@5
+#1    **** DEMOS ****
+3D                 >      /@2
 Circle                    /sys/demos/circle
 Fractal                   /sys/demos/tinyfrac
 Color demo                /sys/demos/colorref
@@ -67,7 +26,7 @@ TranTest                  /sys/demos/trantest
 WEB                       /sys/demos/web
 FireWork                  /sys/demos/firework
 UnvWater                  /sys/demos/unvwater
-#5  **** 3D demos ****
+#2  **** 3D demos ****
 ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
 Heart                     /sys/3d/3dsheart
@@ -75,17 +34,17 @@ View3DS                   /sys/3d/view3ds
 CubeLine                  /sys/3d/cubeline
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
-#6   **** GRAPHICS ****
+#3   **** GRAPHICS ****
 Image viewer KIV          /sys/media/kiv
 Image viewer zSea         /KolibriOS/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
-#7   **** MULTIMEDIA ****
+#4   **** MULTIMEDIA ****
 Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
-#8    **** PROGRAMMING ****
-Examples           >      /@9
+#5    **** PROGRAMMING ****
+Examples           >      /@6
 Archiver KPack            /sys/kpack
 Flat Assembler            /sys/develop/fasm
 Debug Board               /sys/develop/board
@@ -93,57 +52,57 @@ Debugger                  /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
 ASCII-codes               /sys/develop/keyascii
 SCAN-codes                /sys/develop/scancode
-#9    **** EXAMPLES ****
+#6    **** EXAMPLES ****
 Threads                   /sys/develop/thread
 IPC                       /sys/develop/ipc
 Color slider              /sys/demos/cslide
 Console example 1         /sys/develop/testcon2
 Console example 2         /sys/develop/test_gets
 Message Boxes example     /sys/demos/use_mb
-#10    **** SYSTEM ****
-Settings           >      /@11
-System sensors     >      /@12
-Work with files    >      /@13
-Testing            >      /@19
-Accessibility opt. >      /@20
+#7    **** SYSTEM ****
+Settings           >      /@8
+System sensors     >      /@9
+Work with files    >      /@10
+Testing            >      /@16
+Accessibility opt. >      /@17
 Debug board               /sys/develop/board
 Terminal                  /sys/terminal
-#11    **** SETTINGS ****
+#8    **** SETTINGS ****
 Devices                   /sys/setup
 Background generator      /sys/media/palitra
 Colors & Skin             /sys/desktop
 Hot keys                  /sys/mykey
 Video mode for ATI        /sys/vmode
-#12    **** SYSTEM SENSORS ****
+#9    **** SYSTEM SENSORS ****
 Process manager           /sys/cpu
 PCI devices               /sys/pcidev
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD informer              /sys/hdd_info
-#13  **** WORK WITH FILES ****
+#10  **** WORK WITH FILES ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
 Virtual disks             /sys/tmpdisk
 SHELL console             /sys/shell
 Save RD image             /sys/rdsave
-#14 **** DATA PROCESSING ****
+#11 **** DATA PROCESSING ****
 Calculator                /sys/calc
 Tinypad                   /sys/tinypad
 TextEdit                  /sys/develop/t_edit
 Table Processor           /sys/table
 Graph builder             /sys/graph
 Hex-Editor                /sys/develop/heed
-#15    **** NET ****
-Servers            >      /@16
-Clients            >      /@17
+#12    **** NET ****
+Servers            >      /@13
+Clients            >      /@14
 Zero-Config               /sys/network/zeroconf
 Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
-#16    **** SERVERS ****
+#13    **** SERVERS ****
 FTP daemon                /sys/network/ftpd
-#17   **** CLIENTS ****
+#14   **** CLIENTS ****
 IRC client                /sys/network/ircc
 FTP client                /sys/network/ftpc
 TFTP client               /sys/network/tftpc
@@ -153,23 +112,23 @@ Synergy client            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
 Internet downloader       /sys/network/downloader
 Text-based browser        /sys/network/webview
-#18    **** OTHER ****
+#15    **** OTHER ****
 Analogue clock            /sys/demos/aclock
 Binary clock              /sys/demos/bcdclk
 Timer                     /sys/demos/timer
 ScrShoot                  /sys/scrshoot
 Calendar                  /sys/calendar
 RTF reader                /sys/rtfread
-#19    **** SYSTEM TESTS ****
+#16    **** SYSTEM TESTS ****
 Protection test           /sys/test
 Monitor test              /sys/disptest
 Test graphics speed       /sys/mgb
 FSPEED speed of FS        /sys/fspeed
-#20    **** SYSTEM SPECIAL ****
+#17    **** SYSTEM SPECIAL ****
 Screen magnifier          /sys/magnify
 Screen keyboard           /sys/zkey
 Character table           /sys/ASCIIVju
-#21    **** EMULATORS ****
+#18    **** EMULATORS ****
 DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
 FCE Ultra - NES           /KolibriOS/emul/fceu/fce

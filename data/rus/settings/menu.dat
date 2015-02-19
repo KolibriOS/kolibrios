@@ -1,65 +1,19 @@
 #0    **** Главное меню ****
-Игры               >      /@1
-Демки              >      /@4
-Графика            >      /@6
-Мультимедиа        >      /@7
-Эмуляторы          >      /@21
-Разработка         >      /@8
-Система            >      /@10
-Обработка данных   >      /@16
-Сеть               >      /@17
-Разное             >      /@20
+Игровой центр             /sys/game_center
+Демки              >      /@1
+Графика            >      /@3
+Мультимедиа        >      /@4
+Эмуляторы          >      /@18
+Разработка         >      /@5
+Система            >      /@7
+Обработка данных   >      /@13
+Сеть               >      /@14
+Разное             >      /@17
 Документация              /sys/docpack
 Запуск программы          /sys/run
 Завершение работы         /sys/end
-#1    **** Игры ****
-Логические         >      /@2
-Аркады             >      /@3
-21 days                   /KolibriOS/games/21days/21days
-RockeT ForceS             /sys/games/rforces
-Трубопровод               /sys/games/pipes
-Memory Blocks             /sys/games/mblocks
-FreeCell                  /sys/games/freecell
-Атака                     /sys/games/ataka
-Find Numbers              /sys/games/FindNumbers
-#2    **** Игры -> Логические ****
-Цветные линии             /sys/games/lines
-Морской бой               /sys/games/sw
-Шашки                     /sys/games/checkers
-Судоку                    /sys/games/sudoku
-Гомоку                    /sys/games/gomoku
-Just Clicks               /sys/games/clicks
-Миллионер                 /sys/games/whowtbam
-SQ_Game                   /sys/games/sq_game
-C4                        /sys/games/c4
-15                        /sys/games/15
-Flood-it!                 /sys/games/flood-it
-Реверси                   /sys/games/reversi
-Сапёр                     /sys/games/mine
-Лабиринт                  /sys/games/megamaze
-Подземелья Аугастеса      /KolibriOS/games/Dungeons/Dungeons
-#3    **** Игры -> Аркады ****
-ArcanII                   /sys/games/arcanii
-Pharaoh's crypt           /KolibriOS/games/fara/fara
-Marble Match-3            /KolibriOS/games/marblematch3/marblematch3
-Heliothryx                /KolibriOS/games/heliothryx/heliothryx
-Sokoban                   /KolibriOS/games/soko/soko
-Red Square                /sys/games/rsquare
-Падение                   /sys/games/padenie
-Косилка                   /sys/games/kosilka
-Змейка                    /sys/games/snake
-Тетрис                    /sys/games/tetris
-Xonix                     /sys/games/xonix
-PheniX                    /sys/games/phenix
-Новый Понг                /sys/games/pong3
-Понг                      /sys/games/pong
-Танчики                   /sys/games/tanks
-Loderunner                /KolibriOS/games/lrl/lrl
-Doom                      /KolibriOS/games/doom/doom
-Quake                     /KolibriOS/games/quake/sdlquake
-Jump&Bump                 /KolibriOS/games/jumpbump/JUMPBUMP.KEX
-#4    **** Демки ****
-Трёхмерные         >      /@5
+#1    **** Демки ****
+Трёхмерные         >      /@2
 Кружок                    /sys/demos/circle
 Фрактал Мандельброта      /sys/demos/tinyfrac
 Цвета                     /sys/demos/colorref
@@ -72,7 +26,7 @@ TranTest                  /sys/demos/trantest
 Паутинка                  /sys/demos/web
 Фейерверк                 /sys/demos/firework
 UnvWater                  /sys/demos/unvwater
-#5    **** Демки -> 3D ****
+#2    **** Демки -> 3D ****
 Скринсейвер               /sys/3d/crownscr
 3D-Лабиринт               /sys/3d/free3d04
 Сердце                    /sys/3d/3dsheart
@@ -81,17 +35,17 @@ CubeLine                  /sys/3d/cubeline
 Шестерёнки                /sys/3d/gears
 FlatWave                  /sys/3d/flatwav
 3D-Волны                  /sys/3d/3dwav
-#6    **** Графика ****
+#3    **** Графика ****
 Просмотр фото KIV         /sys/media/kiv
 Просмотр фото zSea        /KolibriOS/media/zsea/zsea
 Редактор Animage          /sys/media/animage
 Наложение фильтров        /sys/media/imgf/imgf
 Палитра                   /sys/media/palitra
-#7    **** Мультимедиа ****
+#4    **** Мультимедиа ****
 Видеоплеер Fplay          /KolibriOS/media/fplay-full
 Midi-плеер                /sys/media/midamp
-#8    **** Разработка ****
-Примеры            >      /@9
+#5    **** Разработка ****
+Примеры            >      /@6
 Упаковщик KPack           /sys/kpack
 Flat Assembler            /sys/develop/fasm
 Доска отладки             /sys/develop/board
@@ -100,66 +54,66 @@ Flat Assembler            /sys/develop/fasm
 Hex2Dec2Bin               /sys/develop/h2d2b
 ASCII-коды                /sys/develop/keyascii
 SCAN-коды                 /sys/develop/scancode
-#9    **** Разработка -> Примеры ****
+#6    **** Разработка -> Примеры ****
 Потоки                    /sys/develop/thread
 IPC                       /sys/develop/ipc
 Color Slider              /sys/demos/cslide
 Консольный пример 1       /sys/develop/testcon2
 Консольный пример 2       /sys/develop/test_gets
 Окна сообщений            /sys/demos/use_mb
-#10    **** Система ****
-Настройки          >      /@11
-Системные сенсоры  >      /@12
-Работа с файлами   >      /@13
-Тестирование       >      /@14
-Спец. возможности  >      /@15
+#7    **** Система ****
+Настройки          >      /@8
+Системные сенсоры  >      /@9
+Работа с файлами   >      /@10
+Тестирование       >      /@11
+Спец. возможности  >      /@12
 Доска отладки             /sys/develop/board
 Terminal                  /sys/terminal
-#11    **** Система -> Настройки ****
+#8    **** Система -> Настройки ****
 Устройства                /sys/setup
 Установить фон            /sys/media/palitra
 Стиль окон                /sys/desktop
 Горячие клавиши           /sys/mykey
 Видеорежим для ATI        /sys/vmode
-#12    **** Система -> Сенсоры ****
+#9    **** Система -> Сенсоры ****
 Диспетчер процессов       /sys/cpu
 PCI-устройства            /sys/pcidev
 CPUID                     /sys/cpuid
 GHOST Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD информер              /sys/hdd_info
-#13    **** Система -> Работа с файлами ****
+#10    **** Система -> Работа с файлами ****
 KFM                       /sys/File Managers/kfm
 KFAR                      /sys/File Managers/kfar
 Eolite                    /sys/File Managers/Eolite
 Виртуальные диски         /sys/tmpdisk
 Консоль SHELL             /sys/shell
 Сохранение образа         /sys/rdsave
-#14   **** Система -> Тестирование ****
+#11   **** Система -> Тестирование ****
 Тест защиты               /sys/test
 Тест монитора             /sys/disptest
 Графический бенчмарк      /sys/mgb
 FSPEED скорость ФС        /sys/fspeed
-#15   **** Система -> Спец.возможности ****
+#12   **** Система -> Спец.возможности ****
 Экранная лупа             /sys/magnify
 Экранная клавиатура       /sys/zkey
 Таблица символов          /sys/ASCIIVju
-#16    **** Обработка данных ****
+#13    **** Обработка данных ****
 Калькулятор               /sys/calc
 Редактор Tinypad          /sys/tinypad
 Редактор TextEdit         /sys/develop/t_edit
 Табличный процессор       /sys/table
 Построение графиков       /sys/graph
 HEX-редактор              /sys/develop/heed
-#17    **** Сеть ****
+#14    **** Сеть ****
 Серверы            >      /@18
 Клиенты            >      /@19
 Авто (network.ini)        /sys/network/zeroconf
 Настройки сети           /sys/network/netcfg
 Статус подключения        /sys/network/netstat
-#18   **** Сеть -> Серверы ****
+#15   **** Сеть -> Серверы ****
 FTP daemon                /sys/network/ftpd
-#19   **** Сеть -> Клиенты ****
+#16   **** Сеть -> Клиенты ****
 IRC клиент                /sys/network/ircc
 FTP клиент                /sys/network/ftpc
 TFTP клиент               /sys/network/tftpc
@@ -169,7 +123,7 @@ Synergy клиент            /sys/network/synergyc
 DNS lookup                /sys/network/nslookup
 Интернет загрузчик        /sys/network/downloader
 Текстовый браузер         /sys/network/webview
-#20   **** Разное ****
+#17   **** Разное ****
 Создание скриншотов       /sys/scrshoot
 Календарь                 /sys/calendar
 Аналоговые часы           /sys/demos/aclock
@@ -178,7 +132,7 @@ DNS lookup                /sys/network/nslookup
 Тренажёр KJ|ABuIIIA       /sys/games/klavisha
 Бинарные часы             /sys/demos/bcdclk
 Таймер                    /sys/demos/timer
-#21    **** Эмуляторы ****
+#18    **** Эмуляторы ****
 DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
 FCE Ultra - NES           /KolibriOS/emul/fceu/fce

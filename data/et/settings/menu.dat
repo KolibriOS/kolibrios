@@ -1,60 +1,19 @@
 #0    **** MAIN ****
-Mängud             >      /@1
-Demod              >      /@4
-Graafika           >      /@6
-Multimeedia        >      /@7
-Emulators          >      /@21
-Arendus            >      /@8
-Süsteem            >      /@10
-Andmetöötlus       >      /@14
-Võrk               >      /@15
-Teised             >      /@18
+Game center               /sys/game_center
+Demod              >      /@1
+Graafika           >      /@3
+Multimeedia        >      /@4
+Emulators          >      /@18
+Arendus            >      /@5
+Süsteem            >      /@7
+Andmetöötlus       >      /@11
+Võrk               >      /@12
+Teised             >      /@15
 Abi                       /sys/docpack
 Käivita programm          /sys/run
 Sule                      /sys/end
-#1    **** GAMES ****
-Loogika mängud     >      /@2
-Arcades            >      /@3
-Memory Blocks             /sys/games/mblocks
-FreeCell                  /sys/games/freecell
-Torud                     /sys/games/pipes
-Kosilka                   /sys/games/kosilka
-RockeT ForceS             /sys/games/rforces
-Find Numbers              /sys/games/FindNumbers
-#2 **** LOGICAL GAMES ****
-C4                        /sys/games/c4
-15                        /sys/games/15
-Mine                      /sys/games/mine
-Just Clicks               /sys/games/clicks
-Checkers                  /sys/games/checkers
-SQ_GAME                   /sys/games/sq_game
-Color Lines               /sys/games/lines
-Flood-it!                 /sys/games/flood-it
-MegaMaze                  /sys/games/megamaze
-Sea Fight                 /sys/games/sw
-Sudoku                    /sys/games/sudoku
-Go-moku                   /sys/games/gomoku
-Reversi                   /sys/games/reversi
-Pharaoh's crypt           /KolibriOS/games/fara/fara
-Marble Match-3            /KolibriOS/games/marblematch3/marblematch3
-Sokoban                   /KolibriOS/games/soko/soko
-#3 **** ARCADES ****
-Tetris                    /sys/games/tetris
-Pong                      /sys/games/pong
-New Pong                  /sys/games/pong3
-Red Square                /sys/games/rsquare
-Xonix                     /sys/games/xonix
-ArcanII                   /sys/games/arcanii
-Phenix                    /sys/games/phenix
-Snake                     /sys/games/snake
-Tanks                     /sys/games/tanks
-Heliothryx                /KolibriOS/games/heliothryx/heliothryx
-Loderunner                /KolibriOS/games/lrl/lrl
-Doom                      /KolibriOS/games/doom/doom
-Quake                     /KolibriOS/games/quake/sdlquake
-Jump&Bump                 /KolibriOS/games/jumpbump/JUMPBUMP.KEX
-#4    **** DEMOS ****
-3D                 >      /@5
+#1    **** DEMOS ****
+3D                 >      /@2
 Circle                    /sys/demos/circle
 Fractal                   /sys/demos/tinyfrac
 Color demo                /sys/demos/colorref
@@ -67,7 +26,7 @@ TranTest                  /sys/demos/trantest
 WEB                       /sys/demos/web
 FireWork                  /sys/demos/firework
 UnvWater                  /sys/demos/unvwater
-#5  **** 3D demos ****
+#2  **** 3D demos ****
 ScreenSaver               /sys/3d/crownscr
 3D-labyrinth              /sys/3d/free3d04
 Heart                     /sys/3d/3dsheart
@@ -75,17 +34,17 @@ View3DS                   /sys/3d/view3ds
 CubeLine                  /sys/3d/cubeline
 Gears                     /sys/3d/gears
 3D-waved area             /sys/3d/3dwav
-#6   **** GRAPHICS ****
+#3   **** GRAPHICS ****
 Image viewer KIV          /sys/media/kiv
 Image viewer zSea         /KolibriOS/media/zsea/zsea
 Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
-#7   **** MULTIMEDIA ****
+#4   **** MULTIMEDIA ****
 Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
-#8    **** PROGRAMMING ****
-Examples           >      /@9
+#5    **** PROGRAMMING ****
+Examples           >      /@6
 Arhivaator KPack          /sys/kpack
 Flat Assembler            /sys/develop/fasm
 Silumisaken               /sys/develop/board
@@ -93,14 +52,14 @@ Silur                     /sys/develop/mtdbg
 Hex2Dec2Bin               /sys/develop/h2d2b
 ASCII-koodid              /sys/develop/keyascii
 SCAN-koodid               /sys/develop/scancode
-#9    **** EXAMPLES ****
+#6    **** EXAMPLES ****
 Lõimed                    /sys/develop/thread
 IPC                       /sys/develop/ipc
 Color slider              /sys/demos/cslide
 Konsooli näide 1          /sys/develop/testcon2
 Konsooli näide 2          /sys/develop/test_gets
 Message Boxes example     /sys/demos/use_mb
-#10    **** SYSTEM ****
+#7    **** SYSTEM ****
 Sätted             >      /@11
 Süsteemi sensorid  >      /@12
 Töö failidega      >      /@13
@@ -108,42 +67,42 @@ Testimine          >      /@19
 Hõlbustus seaded   >      /@20
 Silumisaken               /sys/develop/board
 Terminal                  /sys/terminal
-#11    **** SETTINGS ****
+#8    **** SETTINGS ****
 Seadmed                   /sys/setup
 Tausta genereerija        /sys/media/palitra
 Värvid & Teemad           /sys/desktop
 MyKey                     /sys/mykey
 ATI video reziim          /sys/vmode
-#12    **** SYSTEM SENSORS ****
+#9    **** SYSTEM SENSORS ****
 Protsesside haldur        /sys/cpu
 PCI seadmed               /sys/pcidev
 CPUID                     /sys/cpuid
 Ghost Monitor             /sys/gmon
 K. Bus disconnected       /sys/kbd
 HDD info                  /sys/hdd_info
-#13  **** WORK WITH FILES ****
+#10  **** WORK WITH FILES ****
 KFAR                      /sys/File Managers/kfar
 KFM                       /sys/File Managers/kfm
 Eolite                    /sys/File Managers/Eolite
 Virtual disks             /sys/tmpdisk
 SHELL konsool             /sys/shell
 Salvesta RD tõmmis        /sys/rdsave
-#14 **** DATA PROCESSING ****
+#11 **** DATA PROCESSING ****
 Kalkulaator               /sys/calc
 Teksti redaktor           /sys/tinypad
 TextEdit                  /sys/develop/t_edit
 Tabelarvutus              /sys/table
 Graph builder             /sys/graph
 Hex-Editor                /sys/develop/heed
-#15    **** NET ****
-Teenused           >      /@16
-Kliendid           >      /@17
+#12    **** NET ****
+Teenused           >      /@13
+Kliendid           >      /@14
 Zero-Config               /sys/network/zeroconf
 Võrgu seadistus           /sys/network/netcfg
 Võrgu staatus             /sys/network/netstat
-#16    **** SERVERS ****
+#13    **** SERVERS ****
 FTP daemon                /sys/network/ftpd
-#17   **** CLIENTS ****
+#14   **** CLIENTS ****
 IRC klient                /sys/network/ircc
 FTP klient                /sys/network/ftpc
 TFTP klient               /sys/network/tftpc
@@ -153,23 +112,23 @@ Synergy klient            /sys/network/synergyc
 DNS otsing                /sys/network/nslookup
 Interneti allalaadija     /sys/network/downloader
 Tekstipõhine brauser      /sys/network/webview
-#18    **** OTHER ****
+#15    **** OTHER ****
 Analoogkell               /sys/demos/aclock
 Digitaalne kell           /sys/demos/bcdclk
 Taimer                    /sys/demos/timer
 Ekraani tõmmis            /sys/scrshoot
 Kalender                  /sys/calendar
 RTF faili lugeja          /sys/rtfread
-#19    **** SYSTEM TESTS ****
+#16    **** SYSTEM TESTS ****
 Protection test           /sys/test
 Monitor test              /sys/disptest
 Testi graafika kiirust    /sys/mgb
 FSPEED speed of FS        /sys/fspeed
-#20    **** SYSTEM SPECIAL ****
+#17    **** SYSTEM SPECIAL ****
 Ekraani suurendusklaas    /sys/magnify
 Ekraani klaviatuur        /sys/zkey
 Märgistiku tabel          /sys/ASCIIVju
-#21    **** EMULATORS ****
+#18    **** EMULATORS ****
 DOSBox DOS Emulator       /KolibriOS/emul/DosBox/dosbox
 e80 (ZX Spectrum)         /KolibriOS/emul/e80/e80
 FCE Ultra - NES           /KolibriOS/emul/fceu/fce
