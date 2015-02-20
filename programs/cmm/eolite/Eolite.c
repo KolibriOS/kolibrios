@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.48"
-#define ABOUT_TITLE "Eolite v2.48"
+#define TITLE "Eolite File Manager v2.49"
+#define ABOUT_TITLE "Eolite v2.49"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -832,7 +832,7 @@ void ReName(byte rename)
 		strcpy(#temp, #path);
 		strcpy(#edit_name, #file_name); //save edit name to select it later
 		strcat(#temp, #file_name);
-		if (strcmp(#file_path,#temp)!=0) && (file_name)
+		if (strcmpi(#file_path,#temp)!=0) && (file_name)
 		if (itdir)
 		{
 			if (del_rezult = DeleteFile(#file_path))
