@@ -84,18 +84,6 @@ void SystemDiscsGet()
 	}
 }
 
-void DrawRamDiskSpace()
-{
-	int free_rd_space = GetFreeRamDiskClusters() * 49 / ALL_RD_CLUSTERS;
-	DefineButton(120, 80, 49, 4, 27+BT_HIDE, 0);
-	if (!free_rd_space)
-		DrawBar(121, 81, 49-free_rd_space, 3, 0xFF0000);
-	else
-	{
-		DrawBar(121, 81, 49-free_rd_space, 3, 0x7A7F84);
-		DrawBar(121+49-free_rd_space, 81, free_rd_space, 3, 0xC4C4C4);
-	}
-}
 
 void SystemDiscsDraw()
 {    
@@ -201,4 +189,3 @@ void DrawLeftPanel()
 	ActionsDraw();
 	LeftPanelBgDraw();
 }
-

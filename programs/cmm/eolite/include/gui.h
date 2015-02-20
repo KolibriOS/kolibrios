@@ -1,31 +1,3 @@
-//Leency 2008-2013
-
-
-dword onLeft(dword right,left) {EAX=Form.width-right-left;}
-dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
-
-
-void ShowMessage(dword message, pause_duration)
-{
-	int form_x=files.w-220/2+files.x;
-	int form_y=160;
-	DrawPopup(form_x,form_y,220,80,1,sc.work,sc.work_graph);
-	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,sc.work_text,message);
-	pause(pause_duration);
-	if (pause_duration) List_ReDraw();
-}
-
-inline fastcall signed int _strrchr( ESI,BL)
-{
-	int jj=0, last=strlen(ESI);
-	do{
-		jj++;
-		$lodsb
-		IF(AL==BL) last=jj;
-	} while(AL!=0);
-	return last;
-}
-
 
 dword col_palette[14] = {0xD2D3D3,0xD4D4D4,0xD6D5D6,0xD8D7D8,0xDAD8D9,0xDCDADB,
 0xDFDCDD,0xE1DDDE,0xE2DEE0,0xE4DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1,0xE3DFE1};
@@ -76,37 +48,12 @@ void DrawFilledBar(dword x, y, w, h)
 	DrawBar(x, y+i, w, h-fill_h, col_palette[14-i]);		
 }
 
-
-
-
-
-
-struct rd_info
+void ShowMessage(dword message, pause_duration)
 {
-	dword function_number, reserved[4];
-	char path[4];
-} rd_info;
-
-#define ALL_RD_CLUSTERS 2847
-int GetFreeRamDiskClusters()
-{
-	dword free_size;
-	static dword old_free_size;
-
-	rd_info.function_number = 15;
-	strcpy(#rd_info.path, "/rd");
-	$mov eax,58
-	$mov ebx, #rd_info;
-	$int 0x40
-	if (EAX==0)
-	{
-		free_size=ECX;
-		old_free_size = ECX;
-	}
-	else
-	{
-		debugi(EAX);
-		free_size = old_free_size;
-	}
-	return free_size;
+	int form_x=files.w-220/2+files.x;
+	int form_y=160;
+	DrawPopup(form_x,form_y,220,80,1,sc.work,sc.work_graph);
+	WriteText(-strlen(message)*3+110+form_x,80/2-4+form_y,0x80,sc.work_text,message);
+	pause(pause_duration);
+	if (pause_duration) List_ReDraw();
 }

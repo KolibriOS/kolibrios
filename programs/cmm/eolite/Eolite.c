@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.46"
-#define ABOUT_TITLE "Eolite v2.46"
+#define TITLE "Eolite File Manager v2.47"
+#define ABOUT_TITLE "Eolite v2.47"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -128,7 +128,7 @@ PathShow_data PathShow = {0, 17,250, 6, 250, 0, 0, 0x0, 0xFFFfff, #path, #temp, 
 PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
 #include "include\copy.h"
-#include "include\other.h"
+#include "include\gui.h"
 #include "include\sorting.h"
 #include "include\icons.h"
 #include "include\left_panel.h"
@@ -440,6 +440,17 @@ void main()
 	}
 }
 
+
+inline fastcall signed int _strrchr( ESI,BL)
+{
+	int jj=0, last=strlen(ESI);
+	do{
+		jj++;
+		$lodsb
+		IF(AL==BL) last=jj;
+	} while(AL!=0);
+	return last;
+}
 
 
 void menu_action(dword id)
@@ -993,6 +1004,10 @@ void FnProcess(char N)
 			break;
 	}
 }
+
+//need to remove these functiones, they are a very old shit :)
+dword onLeft(dword right,left) {EAX=Form.width-right-left;}
+dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 
 stop:

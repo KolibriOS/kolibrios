@@ -3,6 +3,7 @@
 #define EDITOR_PATH     "/sys/tinypad"
 
 #ifdef LANG_RUS
+	?define EDIT_FILE_ASSOCIATIONS "Редактировать ассоциации файлов"
 	?define TITLE_SETT "Настройки"
 	?define SET_1 "Выводить названия класса устройств"
 	?define SET_2 "Показывать имена файлов не меняя регистр"
@@ -10,6 +11,7 @@
 	?define CANCEL_T "Отмена"
 	?define APPLY_T "Применить"
 #else
+	?define EDIT_FILE_ASSOCIATIONS "Edit file associations"
 	?define TITLE_SETT "Settings"
 	?define SET_1 "Show device class name"
 	?define SET_2 "Show real file names without changing case"
@@ -20,7 +22,7 @@
 
 int	mouse_ddd;
 char lineh_s[30]="18\0";
-edit_box LineHeight_ed = {50,10,70,0xffffff,0x94AECE,0x9098B0,0x9098B0,2,4,#lineh_s,#mouse_ddd, 1000000000000010b,2,2};
+edit_box LineHeight_ed = {52,10,70,0xffffff,0x94AECE,0xffc90E,0xffffff,2,4,#lineh_s,#mouse_ddd, 1000000000000000b,2,2};
 checkbox2 ShowDeviceName_chb = {10*65536+15, 10*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, SET_1, 110b};
 checkbox2 RealFileNamesCase_chb = {10*65536+15, 30*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, SET_2, 100b};
 
@@ -28,6 +30,7 @@ void settings_dialog()
 {   
 	byte id;
 	unsigned int key;
+	proc_info settings_form;
 	dword eolite_ini_path = abspath("Eolite.ini");
 	if (active_about) ExitProcess();
 	active_about=1;
@@ -52,6 +55,10 @@ void settings_dialog()
 					active_about=0;
 					ExitProcess();
 				}
+				if (id==5)
+				{
+					RunProgram("tinypad", "/sys/settings/assoc.ini");
+				}
 				break;
 				
 		case evKey:
@@ -74,6 +81,7 @@ void settings_dialog()
 			
 		case evReDraw:
 				DefineAndDrawWindow(Form.left + 100, 150, 300, 200+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
+				GetProcessInfo(#settings_form, SelfInfo);
 				
 				if (show_dev_name) ShowDeviceName_chb.flags = 110b;
 				ELSE  ShowDeviceName_chb.flags = 100b;
@@ -87,9 +95,11 @@ void settings_dialog()
 				check_box_draw stdcall (#ShowDeviceName_chb);
 				check_box_draw stdcall (#RealFileNamesCase_chb);
 				edit_box_draw stdcall (#LineHeight_ed);
-				WriteText(10, 55, 0x80, 0x000000, SET_3);
-				DrawFlatButton(128,160,70,22,10,0xE4DFE1, APPLY_T);
-				DrawFlatButton(208,160,70,22,11,0xE4DFE1, CANCEL_T);
+				DrawRectangle(LineHeight_ed.left-1, LineHeight_ed.top-1, LineHeight_ed.width+2, 16, sc.work_graph);
+				WriteText(10, 57, 0x80, 0x000000, SET_3);
+				DrawFlatButton(9, 100, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
+				DrawFlatButton(128, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, APPLY_T);
+				DrawFlatButton(208, settings_form.cheight - 34, 70, 22, 11, 0xE4DFE1, CANCEL_T);
 	}
 }
 
