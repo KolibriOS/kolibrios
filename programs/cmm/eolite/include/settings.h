@@ -23,8 +23,8 @@
 int	mouse_ddd;
 char lineh_s[30]="18\0";
 edit_box LineHeight_ed = {52,10,70,0xffffff,0x94AECE,0xffc90E,0xffffff,2,4,#lineh_s,#mouse_ddd, 1000000000000000b,2,2};
-checkbox2 ShowDeviceName_chb = {10*65536+15, 10*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, SET_1, 110b};
-checkbox2 RealFileNamesCase_chb = {10*65536+15, 30*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, SET_2, 100b};
+checkbox2 ShowDeviceName_chb = {10*65536+15, 10*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, SET_1, CH_FLAG_MIDDLE, 0};
+checkbox2 RealFileNamesCase_chb = {10*65536+15, 30*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, SET_2, CH_FLAG_MIDDLE, 0};
 
 void settings_dialog()
 {   
@@ -32,8 +32,13 @@ void settings_dialog()
 	unsigned int key;
 	proc_info settings_form;
 	dword eolite_ini_path = abspath("Eolite.ini");
+
 	if (active_about) ExitProcess();
 	active_about=1;
+
+	ShowDeviceName_chb.size_of_str = strlen(SET_1) * 6;
+	RealFileNamesCase_chb.size_of_str = strlen(SET_2) * 6;
+
 	SetEventMask(0x27);
 	loop() switch(WaitEvent())
 	{
