@@ -82,13 +82,10 @@ void settings_dialog()
 		case evReDraw:
 				DefineAndDrawWindow(Form.left + 100, 150, 300, 200+GetSkinHeight(),0x34,sc.work,TITLE_SETT);
 				GetProcessInfo(#settings_form, SelfInfo);
-				
-				if (show_dev_name) ShowDeviceName_chb.flags = 110b;
-				ELSE  ShowDeviceName_chb.flags = 100b;
-				
-				if (real_files_names_case) RealFileNamesCase_chb.flags = 110b;
-				ELSE RealFileNamesCase_chb.flags = 100b;
-				
+
+				ShowDeviceName_chb.flags |= 1 << show_dev_name;
+				RealFileNamesCase_chb.flags |= 1 << real_files_names_case;
+
 				key = itoa(files.line_h);
 				strcpy(#lineh_s, key);
 				
@@ -119,8 +116,8 @@ void LoadIniSettings()
 
 void SaveIniSettings()
 {
-	if (ShowDeviceName_chb.flags==6) show_dev_name=1; else show_dev_name=0;
-	if (RealFileNamesCase_chb.flags==6) real_files_names_case=1; else real_files_names_case=0;
+	show_dev_name = TestBit(ShowDeviceName_chb.flags, 1);
+	real_files_names_case = TestBit(RealFileNamesCase_chb.flags, 1);
 	ini_set_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", show_dev_name);
 	ini_set_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, "Config", "LineHeight", atoi(#lineh_s));

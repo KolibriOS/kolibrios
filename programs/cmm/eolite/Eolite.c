@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.51"
-#define ABOUT_TITLE "Eolite v2.51"
+#define TITLE "Eolite File Manager v2.5"
+#define ABOUT_TITLE "Eolite v2.52"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -502,9 +502,9 @@ void draw_window()
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
 	DrawLeftPanel();
 	//ListBox
-	DrawFlatButton(files.x,40,Form.cwidth + files.x - 159,16,31,sc.work,T_FILE);
-	DrawFlatButton(Form.cwidth + 159,40,73,16,32,sc.work,T_TYPE);
-	DrawFlatButton(Form.cwidth + 96,40,68,16,33,sc.work,T_SIZE);
+	DrawFlatButton(files.x,40,Form.cwidth - files.x - 159,16,31,sc.work,T_FILE);
+	DrawFlatButton(Form.cwidth - 159,40,73,16,32,sc.work,T_TYPE);
+	DrawFlatButton(Form.cwidth - 86,40,68,16,33,sc.work,T_SIZE);
 	DrawBar(files.x+files.w,files.y,1,onTop(22,files.y),sc.work_graph); //line to the left from the scroll
 	DrawFlatButton(files.x+files.w,40,16,16,0,sc.work,"\x18");
 	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
@@ -889,7 +889,7 @@ void Dir_Up()
 	SelectFile(#cur_folder);
 }
 
-void Open(int rez)
+void Open(byte rez)
 {
 	byte temp[4096];
 	if (rez)

@@ -1,6 +1,6 @@
 //BOX_LIB - Asper
 dword boxlib = #aEdit_box_lib;
-char aEdit_box_lib[22]="/sys/lib/box_lib.obj\0";
+char aEdit_box_lib[]="/sys/lib/box_lib.obj";
 
 dword box_lib_init   = #aboxlib_init;
 
@@ -25,49 +25,53 @@ dword check_box_draw = #aCheck_box_draw;
 dword check_box_mouse = #aCheck_box_mouse;
 dword version_ch = #aVersion_ch;
 
+dword frame_draw = #aFrame_draw;
+
 $DD 2 dup 0
 
-char aEdit_box_draw [9]     = "edit_box\0";
-char aEdit_box_key  [13]    = "edit_box_key\0";
-char aEdit_box_mouse[15]    = "edit_box_mouse\0";
-char aVersion_ed    [11]    = "version_ed\0";
+char aEdit_box_draw []     = "edit_box";
+char aEdit_box_key  []    = "edit_box_key";
+char aEdit_box_mouse[]    = "edit_box_mouse";
+char aVersion_ed    []    = "version_ed";
 
-char aboxlib_init[9]        = "lib_init\0";
-char aScrollbar_v_draw [17] = "scrollbar_v_draw\0";
-char aScrollbar_v_mouse[18] = "scrollbar_v_mouse\0";
-char aScrollbar_h_draw [17] = "scrollbar_h_draw\0";
-char aScrollbar_h_mouse[18] = "scrollbar_h_mouse\0";
-char aVersion_scrollbar[18] = "version_scrollbar\0";
+char aboxlib_init[]        = "lib_init";
+char aScrollbar_v_draw [] = "scrollbar_v_draw";
+char aScrollbar_v_mouse[] = "scrollbar_v_mouse";
+char aScrollbar_h_draw [] = "scrollbar_h_draw";
+char aScrollbar_h_mouse[] = "scrollbar_h_mouse";
+char aVersion_scrollbar[] = "version_scrollbar";
 
-char aCheck_box_draw   [15] = "check_box_draw2\0";
-char aCheck_box_mouse  [16] = "check_box_mouse2\0";
-char aVersion_ch       [11] = "version_ch2\0";
+char aCheck_box_draw   [] = "check_box_draw2";
+char aCheck_box_mouse  [] = "check_box_mouse2";
+char aVersion_ch       [] = "version_ch2";
 
-char aOption_box_draw  [16] = "option_box_draw\0";
-char aOption_box_mouse [17] = "option_box_mouse\0";
-char aVersion_op       [11] = "version_op\0" ;
+char aOption_box_draw  [] = "option_box_draw";
+char aOption_box_mouse [] = "option_box_mouse";
+char aVersion_op       [] = "version_op" ;
 
-char aPathShow_prepare [17] = "PathShow_prepare\0";
-char aPathShow_draw    [14] = "PathShow_draw\0";
+char aPathShow_prepare [] = "PathShow_prepare";
+char aPathShow_draw    [] = "PathShow_draw";
 
-char aProgressbar_draw  [17] = "progressbar_draw\0";
-char aProgressbar_progress[21] = "progressbar_progress\0";
+char aProgressbar_draw  [] = "progressbar_draw";
+char aProgressbar_progress[] = "progressbar_progress";
+
+char aFrame_draw[] = "frame_draw";
 
 
 struct PathShow_data
 {
-dword type;//			dd 0	;+0
-word start_y,//		dw 28	;+4
-	start_x,//		dw 172	;+6
-	font_size_x,//		dw 6	;+8	; 6 - for font 0, 8 - for font 1
-	area_size_x;//		dw 200	;+10
-dword font_number,//		dd 0	;+12	; 0 - monospace, 1 - variable
-	background_flag,//	dd 0	;+16
-	font_color,//		dd 0x0	;+20
-	background_color,//	dd 0x0	;+24
-	text_pointer,//		dd openfile_pach	;+28
-	work_area_pointer,//	dd text_work_area	;+32
-	temp_text_length;//	dd 0	;+36
+dword type;
+word start_y,
+	start_x,
+	font_size_x,    // 6 - for font 0, 8 - for font 1
+	area_size_x;
+dword font_number,  // 0 - monospace, 1 - variable
+	background_flag,
+	font_color,
+	background_color,
+	text_pointer,
+	work_area_pointer,
+	temp_text_length;
 };
 /*
 char temp[128];
@@ -82,8 +86,18 @@ dword width, left, top, color, shift_color, focus_border_color, blur_border_colo
 text_color, max, text, mouse_variable, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
 };
 
-struct checkbox2{
-dword left_s, top_s, ch_text_margin, color, border_color, text_color, text, flags, size_of_str;
+struct checkbox2
+{
+  dword
+	left_s,
+	top_s,
+	ch_text_margin,
+	color,
+	border_color,
+	text_color,
+	text,
+	flags,
+	size_of_str;
 };
 
 //flags for checkbox2
@@ -94,46 +108,65 @@ dword left_s, top_s, ch_text_margin, color, border_color, text_color, text, flag
 
 struct scroll_bar
 {
-word size_x,//  equ [edi]     
-start_x,//      equ [edi+2]
-size_y,//		equ [edi+4]
-start_y;//		equ [edi+6]
-dword btn_height, //equ [edi+8]
-type,//			equ [edi+12]
-max_area,//		equ [edi+16]
-cur_area,//		equ [edi+20]
-position,//		equ [edi+24]
-bckg_col,//		equ [edi+28]
-frnt_col,//		equ [edi+32]
-line_col,//		equ [edi+36]
-redraw;//		equ [edi+40]
-word delta,//		equ [edi+44]
-delta2,//		equ [edi+46]
-r_size_x,//		equ [edi+48]
-r_start_x,//	equ [edi+50]
-r_size_y,//		equ [edi+52]
-r_start_y;//	equ [edi+54]
-dword m_pos,//		equ [edi+56]
-m_pos_2,//		equ [edi+60]
-m_keys,//		equ [edi+64]
-run_size,//		equ [edi+68]
-position2,//	equ [edi+72]
-work_size,//	equ [edi+76]
-all_redraw,//	equ [edi+80]
-ar_offset;//	equ [edi+84]
+	word size_x,
+	start_x,
+	size_y,
+	start_y;
+	dword btn_height,
+	type,
+	max_area,
+	cur_area,
+	position,
+	bckg_col,
+	frnt_col,
+	line_col,
+	redraw;
+	word delta,
+	delta2,
+	r_size_x,
+	r_start_x,
+	r_size_y,
+	r_start_y;
+	dword m_pos,
+	m_pos_2,
+	m_keys,
+	run_size,
+	position2,
+	work_size,
+	all_redraw,
+	ar_offset;
 };
 
-struct pb //progressbar
+struct progress_bar
 {
-dword value,
-left,
-top,
-width,
-height,
-style,
-min,
-max,
-back_color,
-progress_color,
-frame_color;
+  dword
+	value,
+	left,
+	top,
+	width,
+	height,
+	style,
+	min,
+	max,
+	back_color,
+	progress_color,
+	frame_color;
 };
+
+struct frame
+{
+	dword type;
+	word size_x;                  
+	word start_x;                 
+	word size_y;                  
+	word start_y;                
+	dword ext_col;            
+	dword int_col;            
+	dword draw_text_flag;  // 0-not,1-yes
+	dword text_pointer;          
+	dword text_position;   //  0-up,1-bottom
+	dword font_number;     //  0-monospace,1-variable
+	dword font_size_y;           
+	dword font_color;            
+	dword font_backgr_color;
+};     
