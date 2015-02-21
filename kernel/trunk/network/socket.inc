@@ -98,9 +98,9 @@ struct  TCP_SOCKET              IP_SOCKET
 ;----------------------
 ; Transmit timing stuff
         t_idle                  dd ?
-        t_rtt                   dd ?
+        t_rtt                   dd ?    ; round trip time
         t_rtseq                 dd ?
-        t_srtt                  dd ?
+        t_srtt                  dd ?    ; smoothed round trip time
         t_rttvar                dd ?
         t_rttmin                dd ?
         max_sndwnd              dd ?
@@ -1974,14 +1974,8 @@ SOCKET_free:
         jnz     .no_tcp
 
         mov     ebx, eax
-        cmp     [ebx + STREAM_SOCKET.rcv.start_ptr], 0
-        je      @f
         stdcall kernel_free, [ebx + STREAM_SOCKET.rcv.start_ptr]
-  @@:
-        cmp     [ebx + STREAM_SOCKET.snd.start_ptr], 0
-        je      @f
         stdcall kernel_free, [ebx + STREAM_SOCKET.snd.start_ptr]
-  @@:
         mov     eax, ebx
   .no_tcp:
 

@@ -394,12 +394,17 @@ endl
 
         pop     ecx
         cmp     eax, TCP_PAWS_IDLE
-        jle     .drop_after_ack                         ; TODO: update stats
+        jle     .paws_drop
         push    ecx
-
         mov     [ebx + TCP_SOCKET.ts_recent], 0         ; timestamp was invalid, fix it.
   .no_paws:
         jmp     .opt_loop
+
+  .paws_drop:
+        inc     [TCPS_rcvduppack]                       ; update stats
+        add     [TCPS_rcvdupbyte], ecx
+        inc     [TCPS_pawsdrop]
+        jmp     .drop_after_ack
 
   .no_options:
 
@@ -630,6 +635,8 @@ endl
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
         mov     eax, ecx
 
+        inc     [TCPS_rcvpartduppack]
+
 ;;; TODO: update stats
 
 ;-----------------------------------------------
@@ -662,7 +669,7 @@ endl
 
         mov     eax, ebx
         call    TCP_close
-;;; TODO: update stats
+        inc     [TCPS_rcvafterclose]
         jmp     .respond_seg_reset
 
 ;----------------------------------------
@@ -985,17 +992,14 @@ endl
         mov     eax, [edx + TCP_header.AckNumber]
         cmp     eax, [ebx + TCP_SOCKET.SND_MAX]
         jbe     @f
-
-        ;;; TODO: update stats
+        inc     [TCPS_rcvacktoomuch]
         jmp     .drop_after_ack
-
        @@:
 
         mov     edi, [edx + TCP_header.AckNumber]
         sub     edi, [ebx + TCP_SOCKET.SND_UNA]         ; now we got the number of acked bytes in edi
-
-        ;;; TODO: update stats
-
+        inc     [TCPS_rcvackpack]
+        add     [TCPS_rcvackbyte], edi
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: acceptable ACK for %u bytes\n", edi
 
 ;------------------------------------------
@@ -1208,6 +1212,8 @@ align 4
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .drop
+
+        inc     [TCPS_accepts]                          ; update stats
 
 ;;; TODO: check if it's a broadcast or multicast, and drop if so
 

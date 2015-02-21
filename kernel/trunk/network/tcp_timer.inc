@@ -54,6 +54,8 @@ local   .exit
 ;        call    TCP_output                              ;;
         pop     ebx
 
+        inc     [TCPS_delack]                   ; update stats
+
         jmp     .loop
 
   .exit:

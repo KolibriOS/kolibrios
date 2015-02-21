@@ -89,6 +89,8 @@ TCP_connect:
         test    [eax + SOCKET.state], SS_ISCONNECTED
         jnz     .eisconn
 
+        inc     [TCPS_connattempt]                      ; update stats
+
         push    eax edx
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
