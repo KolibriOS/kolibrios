@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.49"
-#define ABOUT_TITLE "Eolite v2.49"
+#define TITLE "Eolite File Manager v2.50"
+#define ABOUT_TITLE "Eolite v2.50"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -112,6 +112,8 @@ byte
 	real_files_names_case=0,
 	sort_num=2,
 	itdir;
+
+dword eolite_ini_path;
 
 proc_info Form;
 system_colors sc;
@@ -142,15 +144,15 @@ void main()
 {
 	word key, id, can_show, can_select, m_selected;
 	dword selected_offset;
-	randomize();
 	rand_n = random(40);
 
 	files.line_h=18;
 	mem_Init();
 	if (load_dll2(boxlib, #box_lib_init,0)!=0) notify(ERROR_1);
     if (load_dll2(libini, #lib_init,1)!=0) notify("Error: library doesn't exists - libini");
-	SystemDiscsGet();
-	GetIni();
+	eolite_ini_path = abspath("Eolite.ini"); 
+	LoadIniSettings();
+	GetSystemDiscs();
 	SetAppColors();
 	if (param)
 	{
@@ -226,7 +228,7 @@ void main()
 
 			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>40) && (m.y<files.y)
 			{
-				IF (m.lkm==1) DrawRectangle3D(onLeft(26,0),41,14,14,0xC7C7C7,0xFFFFFF);
+				IF (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,41,14,14,0xC7C7C7,0xFFFFFF);
 				WHILE (m.lkm==1) && (files.first>0)
 				{
 					pause(8);
@@ -234,12 +236,12 @@ void main()
 					List_ReDraw();
 					m.get();
 				}
-				DrawRectangle3D(onLeft(26,0),41,14,14,0xFFFFFF,0xC7C7C7);
+				DrawRectangle3D(Form.cwidth - 17,41,14,14,0xFFFFFF,0xC7C7C7);
 			}
 
 			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>onTop(22,0)+1) && (m.y<onTop(22,0)+16)
 			{
-				IF (m.lkm==1) DrawRectangle3D(onLeft(26,0),onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
+				IF (m.lkm==1) DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
 				while (m.lkm==1) && (files.first<files.count-files.visible)
 				{
 					pause(8);
@@ -247,7 +249,7 @@ void main()
 					List_ReDraw();
 					m.get();
 				}
-				DrawRectangle3D(onLeft(26,0),onTop(21,0),14,14,0xFFFFFF,0xC7C7C7);
+				DrawRectangle3D(Form.cwidth - 17,onTop(21,0),14,14,0xFFFFFF,0xC7C7C7);
 			}
 
 			//Scrooll
@@ -327,7 +329,7 @@ void main()
 						tmp_disk_del_param[1] = id - 130 + 48;
 						RunProgram("/sys/tmpdisk", #tmp_disk_del_param);
 						pause(10);
-						SystemDiscsGet();
+						GetSystemDiscs();
 						Open_Dir(#path,WITH_REDRAW);
 						DrawLeftPanel();
 						//m.get();
@@ -479,7 +481,7 @@ void draw_window()
 	DefineAndDrawWindow(GetScreenWidth()-550/4+rand_n,rand_n+30,550,500,0x73,sc.work,TITLE,0);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
-	files.SetSizes(192, 57, onLeft(192,27), onTop(57,6), disc_num*16+195,files.line_h);
+	files.SetSizes(192, 57, Form.cwidth - 210, onTop(57,6), disc_num*16+195,files.line_h);
 	if (Form.height < files.min_h) MoveSize(OLD,OLD,OLD,files.min_h);
 	if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	GetProcessInfo(#Form, SelfInfo); //if win_size changed
@@ -488,10 +490,10 @@ void draw_window()
 	DrawBar(127, 8, 1, 25, sc.work_graph);
 	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,sc.work);
 	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,sc.work);
-	DrawBar(246,0,onLeft(246,60),12, sc.work); //upper editbox
-	DrawBar(246,29,onLeft(246,60),5,sc.work);  //under editbox
-	DrawRectangle(246,12,onLeft(66,246),16,sc.work_graph);
-	DefineButton(onLeft(34,0),6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
+	DrawBar(246,0,Form.cwidth - 297,12, sc.work); //upper editbox
+	DrawBar(246,29,Form.cwidth - 297,5,sc.work);  //under editbox
+	DrawRectangle(246,12,Form.cwidth - 303,16,sc.work_graph);
+	DefineButton(Form.cwidth - 25,6,27,28,51+BT_HIDE+BT_NOFRAME,0); //about
 	PutPaletteImage(#goto_about,56,34,Form.width-65,0,8,#goto_about_pal);
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,onTop(46,0),sc.work_graph);
@@ -499,9 +501,9 @@ void draw_window()
 	for (i=0; i<5; i++) DrawBar(0, 34+i, Form.cwidth, 1, col_palette[8-i]);	
 	DrawLeftPanel();
 	//ListBox
-	DrawFlatButton(files.x,40,onLeft(files.x,168),16,31,sc.work,T_FILE);
-	DrawFlatButton(onLeft(168,0),40,73,16,32,sc.work,T_TYPE);
-	DrawFlatButton(onLeft(95,0),40,68,16,33,sc.work,T_SIZE);
+	DrawFlatButton(files.x,40,Form.cwidth + files.x - 159,16,31,sc.work,T_FILE);
+	DrawFlatButton(Form.cwidth + 159,40,73,16,32,sc.work,T_TYPE);
+	DrawFlatButton(Form.cwidth + 96,40,68,16,33,sc.work,T_SIZE);
 	DrawBar(files.x+files.w,files.y,1,onTop(22,files.y),sc.work_graph); //line to the left from the scroll
 	DrawFlatButton(files.x+files.w,40,16,16,0,sc.work,"\x18");
 	DrawFlatButton(files.x+files.w,onTop(22,0),16,16,0,sc.work,"\x19");
@@ -614,7 +616,7 @@ void Line_ReDraw(dword color, filenum){
 	if (! TestBit(file.attr, 4) ) //file or folder?
 	{	
 		Put_icon(file_name_off+_strrchr(file_name_off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
-		WriteText(7-strlen(ConvertSize(file.sizelo))*6+onLeft(75,0),files.line_h-6/2+y,0x80,0,ConvertSize(file.sizelo));
+		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76,files.line_h-6/2+y,0x80,0,ConvertSize(file.sizelo));
 	}
 	else
 	{
@@ -957,8 +959,8 @@ void FnProcess(char N)
 			Tip(56, T_DEVICES, 55, "-");
 			Open_Dir(#path,WITH_REDRAW);
 			pause(10);
-			GetIni();
-			SystemDiscsGet();
+			LoadIniSettings();
+			GetSystemDiscs();
 			Open_Dir(#path,WITH_REDRAW);
 			DrawLeftPanel();
 			break;
@@ -1006,7 +1008,6 @@ void FnProcess(char N)
 }
 
 //need to remove these functiones, they are a very old shit :)
-dword onLeft(dword right,left) {EAX=Form.width-right-left;}
 dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 

@@ -31,7 +31,6 @@ void settings_dialog()
 	byte id;
 	unsigned int key;
 	proc_info settings_form;
-	dword eolite_ini_path = abspath("Eolite.ini");
 
 	if (active_about) ExitProcess();
 	active_about=1;
@@ -46,11 +45,7 @@ void settings_dialog()
 				id=GetButtonID();
 				if (id==10)
 				{
-					if ( asm test ShowDeviceName_chb.flags, 2) ini_set_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", 1);
-					ELSE  ini_set_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", 0);
-					if ( asm test RealFileNamesCase_chb.flags, 2) ini_set_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", 1);
-					ELSE ini_set_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", 0);
-					if (LineHeight_ed.size) ini_set_int stdcall (eolite_ini_path, "Config", "LineHeight", atoi(#lineh_s));
+					SaveIniSettings();
 					active_about=0;
 					action_buf = 300;
 					ExitProcess();
@@ -109,9 +104,8 @@ void settings_dialog()
 }
 
 
-void GetIni()
+void LoadIniSettings()
 {
-	dword eolite_ini_path = abspath("Eolite.ini"); 
 	ini_get_color stdcall (eolite_ini_path, "Config", "SelectionColor", 0x94AECE);
 	edit2.shift_color = EAX;
 	col_selec = EAX;
@@ -122,6 +116,16 @@ void GetIni()
 	ini_get_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", 0);
 	real_files_names_case = EAX;
 }
+
+void SaveIniSettings()
+{
+	if (ShowDeviceName_chb.flags==6) show_dev_name=1; else show_dev_name=0;
+	if (RealFileNamesCase_chb.flags==6) real_files_names_case=1; else real_files_names_case=0;
+	ini_set_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", show_dev_name);
+	ini_set_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", real_files_names_case);
+	ini_set_int stdcall (eolite_ini_path, "Config", "LineHeight", atoi(#lineh_s));
+}
+
 
 
 void Write_Error(int error_number)
@@ -147,11 +151,4 @@ void SetAppColors()
 	col_padding = 0xC8C9C9;
 	//col_selec   = 0x94AECE;
 	col_lpanel  = 0x00699C;
-	/*
-	sc.get();
-	for (i=0; i<=14; i++) col_palette[i] = sc.work;
-	toolbar_pal[0]= goto_about_pal[0] = sc.work = sc.work;
-	col_lpanel = sc.work_graph;
-	for (i=0; i<=99; i++) blue_hl_pal[i] = sc.work_graph;
-	*/
 }

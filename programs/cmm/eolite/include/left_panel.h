@@ -47,7 +47,7 @@ int disc_num;
 dword devbuf;
 
 
-void SystemDiscsGet()
+void GetSystemDiscs()
 {
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num, dev_disc_num;
@@ -85,7 +85,7 @@ void SystemDiscsGet()
 }
 
 
-void SystemDiscsDraw()
+void DrawSystemDiscs()
 {    
 	char dev_name[15], disc_name[100];
 	int i, dev_icon;
@@ -161,7 +161,7 @@ void ActionsDraw()
 }
 
 
-void LeftPanelBgDraw()
+void DrawLeftPanelBg()
 {
 	int actions_y=disc_num*16;
 	int start_y = actions_y+156;
@@ -185,7 +185,7 @@ void LeftPanelBgDraw()
 
 void DrawLeftPanel()
 {
-	SystemDiscsDraw();
+	DrawSystemDiscs();
 	ActionsDraw();
-	LeftPanelBgDraw();
+	DrawLeftPanelBg();
 }
