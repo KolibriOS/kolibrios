@@ -195,6 +195,9 @@ DReDraw:
 
 	;edit_boxes_set_sys_color edtIcon,endEdits,sc
 	edit_boxes_set_sys_color edtName,endEdits,sc
+	
+	m2m	[edtIcon.color],[sc.work]
+	m2m	[edtIcon.blur_border_color],[sc.work]
 
 	call	DRedrawWin
 
@@ -364,13 +367,13 @@ DMouse:
 	mov	dword[edtIcon.size],1
 	jmp	.RedrawNum
     .RedrawNum:
+	
+    ; stdcall [edit_box_draw],edtIcon
 
-
-      ;  stdcall [edit_box_draw],edtIcon
-
-
-	call	DrawSelIcon
-	jmp	DReDraw;DMessages;
+	; need to optimize redraw
+	; call	DrawSelIcon
+	; jmp	DMessages
+	jmp	DReDraw
 ;-------------------------------------------------------------------------------
 DSetExePath:
 	stdcall [OpenDialog_Start],OpenDialog_data
@@ -457,7 +460,7 @@ proc DRedrawWin
 	stdcall [edit_box_draw],edtName
 	stdcall [edit_box_draw],edtExePath
 	stdcall [edit_box_draw],edtParams
-;        stdcall [edit_box_draw],edtIcon
+    stdcall [edit_box_draw],edtIcon
 
 	call	DrawStdIcons
 

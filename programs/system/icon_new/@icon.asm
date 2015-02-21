@@ -12,7 +12,7 @@ MIN_NO_MOVING	equ 8	 ;через столько пикселей сдвига мыши начинается таскание ико
 ICONSX		equ 20
 ICONSY		equ 80
 ICONS_DRAW_COUNTW equ 10  ;количество иконок в ширину
-ICONS_DRAW_COUNTH equ 2   ;количество иконок в высоту
+ICONS_DRAW_COUNTH equ 4   ;количество иконок в высоту
 SPCW		equ 3	  ;пробел между иконками по горизонтали
 SPCH		equ 3
 END_ICONS_AREAW equ ICONSX+(IMG_SIZE+SPCW)*ICONS_DRAW_COUNTW-SPCW
@@ -1173,8 +1173,8 @@ edtExePath edit_box 281-3-20-IMG_SIZE,70+20+IMG_SIZE,26,0FFFFFFh,06F9480h,0FFh,0
 		DAreaPath,mouse_dd,0,0,0
 edtParams  edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,46,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
 		DAreaParams,mouse_dd,0,0,0
-edtIcon    edit_box 295-20-IMG_SIZE,70+20+IMG_SIZE,66,0FFFFFFh,06F9480h,0FFh,0h,0,255,\
-		DAreaIcon,mouse_dd,0,0,0
+edtIcon    edit_box 28,24,50,0FFFFFFh,0FFFFFFh,0FFh,0h,0,3,\
+		DAreaIcon,0,0,0,0
 endEdits:
 ;\
 
