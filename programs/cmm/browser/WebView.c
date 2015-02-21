@@ -70,7 +70,7 @@ dword col_bg;
 dword panel_color;
 dword border_color;
 
-pb progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
+progress_bar progress_bar = {0, 10, 83, 150, 12, 0, 0, 100, 0xeeeEEE, 8072B7EBh, 0x9F9F9F};
 byte souce_mode = false;
 
 #include "..\TWB\TWB.c"
