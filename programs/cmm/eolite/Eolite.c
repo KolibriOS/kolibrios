@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.50"
-#define ABOUT_TITLE "Eolite v2.50"
+#define TITLE "Eolite File Manager v2.51"
+#define ABOUT_TITLE "Eolite v2.51"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -201,7 +201,7 @@ void main()
 						if (id<files.visible) List_Current(id-files.current);
 					}
 					else
-						Open();
+						Open(0);
 				}
 			};
 			// } select/open file
@@ -385,7 +385,7 @@ void main()
 							break;
 					case 013: //Enter
 							IF (rename_active==1) {ReName(true); break;}
-							Open();
+							Open(0);
 							break; 
 					case 074: //menu
 							menu_call_mouse=0;
@@ -394,6 +394,7 @@ void main()
 							break;
 					case 173: //Ctrl+Enter
 							if (!itdir) ShowOpenWithDialog();
+							else Open(1);
 							break;
 					case 178: //up
 							List_Current(-1);
@@ -421,7 +422,7 @@ void main()
 							if (ESBYTE[selected_offset]) ESBYTE[selected_offset]=0; else ESBYTE[selected_offset] = 1;
 							List_Current(1);
 							break;
-					case 050...059: //F1-F10
+					case 048...059: //F1-F10
 							FnProcess(key-49);
 							break; 
 					default:    
@@ -462,7 +463,7 @@ void menu_action(dword id)
 		FnProcess(5);
 		SelectFile(#copy_to+strrchr(#copy_to,'/'));
 	}
-	if (id==100) Open();
+	if (id==100) Open(0);
 	if (id==201) ShowOpenWithDialog();
 	if (id==202) FnProcess(3); //F3
 	if (id==203) FnProcess(4); //F4
@@ -888,8 +889,17 @@ void Dir_Up()
 	SelectFile(#cur_folder);
 }
 
-void Open()
+void Open(int rez)
 {
+	byte temp[4096];
+	if (rez)
+	{
+		if (!strcmp(#file_name,"..")) return;
+		strcpy(#temp, #file_path);
+		if (path[strlen(#temp)-1]!='/') chrcat(#temp, '/'); //need "/" in the end
+		RunProgram("/sys/File Managers/Eolite", #temp);
+		return;
+	}
 	if (!files.count) return;
 	if (!itdir)
 	{
