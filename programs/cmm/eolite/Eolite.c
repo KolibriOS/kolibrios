@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.5"
-#define ABOUT_TITLE "Eolite v2.52"
+#define TITLE "Eolite File Manager v2.53"
+#define ABOUT_TITLE "Eolite v2.53"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -138,7 +138,7 @@ PathShow_data FileShow = {0, 56,215, 6, 100, 0, 0, 0x0, 0xFFFfff, #file_name, #t
 #include "include\menu.h"
 #include "include\about.h"
 #include "include\settings.h"
-
+#include "include\properties.h"
 
 void main() 
 {
@@ -473,6 +473,7 @@ void menu_action(dword id)
 	if (id==207) FnProcess(2);
 	if (id==108) Del_Form();
 	if (id==109) FnProcess(5);
+	if (id==110) FnProcess(8);
 	if (id==300) { FnProcess(5); List_ReDraw(); }
 }
 
@@ -1001,6 +1002,10 @@ void FnProcess(char N)
 				Write_Error(EAX);
 				ShowMessage(NOT_CREATE_FILE, 150);
 			}
+			break;
+		case 8:
+			SwitchToAnotherThread();
+			CreateThread(#properties_dialog,#about_stak+4092);
 			break;
 		case 10: //F10
 			if (!active_settings) 
