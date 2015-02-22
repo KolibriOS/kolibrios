@@ -1,20 +1,24 @@
+; 1.0.1
+
+ DEBUG equ 0
  WIN_SIZE equ 120
  TIMER equ 60
 
     use32
     org     0
     db	    'MENUET01'
-    dd	    1, @entry, @end, @memory, @stack, @params, 0
+    dd	    1, daemon_entry, @end, @memory, @stack, @params, 0
 
     include "../../macros.inc"
     include "../../proc32.inc"
     include "../../dll.inc"
-;    include "../../debug.inc"
     include "macros.inc"
-
+if DEBUG eq 1
+    include "../../debug.inc"
+end if
 ;=====================================================================
 
- @entry:
+ daemon_entry:
     mcall   68, 11
     mcall   68, 22, shm_name, 512, 5
     mov     [shm], eax
@@ -26,9 +30,14 @@
   @@:
     mcall   9, buffer, edi
     cmpe    dword[buffer + 30], esi, .next
-    cmpe    dword[buffer + 10], dword "@Vol", @open_1
-    cmpe    dword[buffer + 10], dword "@VOL", @open_1
-    cmpe    dword[buffer + 10], dword "@vol", @open_1
+    cmpe    dword[buffer + 10], dword "@Vol", open_1
+    cmpe    dword[buffer + 10], dword "@VOL", open_1
+    cmpe    dword[buffer + 10], dword "@vol", open_1
+if DEBUG eq 1
+    cmpe    dword[buffer + 10], dword "Volu", open_1
+    cmpe    dword[buffer + 10], dword "VOLu", open_1
+    cmpe    dword[buffer + 10], dword "volu", open_1
+end if
  .next:
     dec     edi
     jnz     @b
@@ -37,10 +46,12 @@
     mov     [eax], dword 0
     mcall   40, 10b
     mcall   66, 1, 1
-    ;mcall   66, 4, 16, 0x110
     mcall   66, 4, 77, 0x110
     mcall   66, 4, 75, 0x110
     mcall   66, 4, 80, 0x110
+if DEBUG eq 1
+    mcall   66, 4, 16, 0x110
+end if
 
     stdcall dll.Load, @imports
     stdcall dword[img.decode], icons, icons.size, 0
@@ -53,14 +64,21 @@
     mov     [snd_driver], eax
     cmpe    eax, 0, exit
 
- @update:
-    mcall   23, 5
-    cmpe    al, EV_KEY, @key
-    mov     eax, [shm]
-    cmpne   [eax], dword 0, @open_2
-    jmp     @update
+    mcall   70, is_load
+    cmpe    eax, 0, @f
+    mov     dword[volume], 5
+  @@:
+    mcall   70, is_save
+    call    set_sound_proc
 
- @open_1:
+ update:
+    mcall   23, 5
+    cmpe    al, EV_KEY, key
+    mov     eax, [shm]
+    cmpne   [eax], dword 0, open_2
+    jmp     update
+
+ open_1:
     mov     ebx, 1
     cmpne   [@params], byte '+', @f
     mov     ebx, 2
@@ -71,31 +89,30 @@
     cmpne   [@params], byte 'm', @f
     mov     ebx, 4
   @@:
-    cmpne   [@params], byte 's', @f
-    mov     ebx, 5
-  @@:
     mov     eax, [shm]
     mov     [eax], ebx
-    jmp     @exit
+    jmp     exit
 
- @open_2:
+ open_2:
     mov     eax, [shm]
     mov     ebx, [eax]
     mov     [command], ebx
     mov     [eax], dword 0
-    cmpne   [win.pid], dword 0, @update
+    cmpne   [win.pid], dword 0, update
     mcall   51, 1, _entry, _stack
-    jmp     @update
+    jmp     update
 
- @key:
+ key:
     mcall   2
-    ;cmpe    ah, 16, @exit
+if DEBUG
+    cmpe    ah, 16, exit
+end if
     mov     edx, [shm]
     cmpne   ah, 77, @f
  .cm_1:
     cmpne   [win.pid], 0, .else_1
     mov     [edx], dword 2
-    jmp     @open_2
+    jmp     open_2
  .else_1:
     mov     [command], 2
   @@:
@@ -103,18 +120,21 @@
  .cm_2:
     cmpne   [win.pid], 0, .else_2
     mov     [edx], dword 3
-    jmp     @open_2
+    jmp     open_2
  .else_2:
     mov     [command], 3
   @@:
     cmpne   ah, 80, @f
  .cm_3:
     mov     [edx], dword 4
-    jmp     @open_2
+    jmp     open_2
   @@:
-    jmp     @update
+    jmp     update
 
- @exit:
+ exit:
+if DEBUG eq 1
+    dps     "EXIT"
+end if
     mcall   -1
 
 ;=====================================================================
@@ -166,11 +186,9 @@
     jmp     .apply
   @@:
     cmpne   [command], 4, @f
-    mov     [mute], 1
-    jmp     .apply
-  @@:
-    cmpne   [command], 5, @f
-    mov     [mute], 0
+    mov     eax, 1
+    sub     eax, [mute]
+    mov     [mute], eax
     jmp     .apply
 
  .apply:
@@ -182,14 +200,17 @@
     mov     ecx, eax
     mcall   9, buffer
     mov     eax, dword[buffer + 30]
-    cmpne   [win.pid], eax, exit
+    cmpne   [win.pid], eax, _exit
 
     dec     dword[timer]
     jnz     _update
 
  ;----------------------------
 
- exit:
+ _exit:
+if DEBUG eq 1
+    dps     "CLOSE"
+end if
     mov     [win.pid], 0
     mcall   70, is_save
     mcall   -1
@@ -198,7 +219,7 @@
 
  _button:
     mcall   17
-    cmpe    ah, 1, exit
+    cmpe    ah, 1, _exit
     cmpe    ah, 3, toggle_mute
     jmp     _update
 
@@ -206,15 +227,13 @@
 
  _key:
     mcall   2
-    cmpe    ah, 027, exit
+    cmpe    ah, 027, _exit
     cmpe    ah, 176, dec_volume ; <-
     cmpe    ah, 183, dec_volume ; PgDown
     cmpe    ah, 179, inc_volume ; ->
     cmpe    ah, 184, inc_volume ; PgUp
-    cmpe    ah, 178, unmute_volume ; ^
-    cmpe    ah, 180, unmute_volume ; Home
-    cmpe    ah, 177, mute_volume ; v
-    cmpe    ah, 181, mute_volume ; End
+    cmpe    ah, 177, toggle_mute ; v
+    cmpe    ah, 181, toggle_mute ; End
 
     jmp     _update
 
@@ -244,10 +263,7 @@
  inc_volume:
     cmpe    dword[volume], 10, _update
     inc     dword[volume]
-
- unmute_volume:
-    mov     [mute], 0
-    jmp     @f
+    jmp     unmute_volume
 
  toggle_mute:
     mov     eax, 1
@@ -255,11 +271,18 @@
     mov     [mute], eax
     jmp     @f
 
- mute_volume:
-    mov     [mute], 1
+ unmute_volume:
+    mov     dword[mute], 0
 
  set_sound:
   @@:
+    call    set_sound_proc
+    mov     dword[timer], TIMER
+    call    draw_icon
+    call    draw_bar
+    jmp     _update
+
+ set_sound_proc:
     mov     [snd_driver.command], 6
     mov     [snd_driver.inputsz], 4
     mov     [snd_driver.output], 0
@@ -273,11 +296,7 @@
     neg     edi
     mov     dword[buffer], edi
     mcall   68, 17, snd_driver
-
-    mov     dword[timer], TIMER
-    call    draw_icon
-    call    draw_bar
-    jmp     _update
+    ret
 
  ;----------------------------
 
