@@ -844,8 +844,8 @@ align 4
 align 4
 button:
 	mcall	17
-	test	eax,0xfffffe00	; is it close button? (signal from @panel)
-	jz	still		; if so - wait for another event, because @panel shouldn't be closed
+	test	eax,0xfffffe00	; is it close button? (signal from @taskbar)
+	jz	still		; if so - wait for another event, because @taskbar shouldn't be closed
 
 	cmp	al, 0
 	jnz	right_mouse

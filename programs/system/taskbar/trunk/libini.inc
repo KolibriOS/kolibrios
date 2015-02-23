@@ -7,7 +7,7 @@ Get_ini:
 	mov	edi,library_path
 	call	copy_file_path
 ;------------------------------------------------------------------------------	
-; Get panel variables
+; Get taskbar variables
 ;------------------------------------------------------------------------------
 	invoke	ini_get_int,library_path,aVariables,aPanelHeight,20
 	cmp     eax,100
@@ -61,7 +61,7 @@ Get_ini:
 .button_bottom_offset:
 	mov	[button_bottom_offset],eax
 ;------------------------------------------------------------------------------
-; Get panel flags
+; Get taskbar flags
 ;------------------------------------------------------------------------------
 	invoke	ini_get_int,library_path,aFlags,aSoftenUp,1
 	cmp     eax,2

@@ -71,7 +71,7 @@ fasm system\launcher\trunk\launcher.asm %BIN%\launcher
 fasm system\menu\trunk\menu.asm %BIN%\@menu
 fasm system\mgb\trunk\mgb.asm %BIN%\mgb
 fasm system\mousemul\trunk\mousemul.asm %BIN%\mousemul
-fasm system\PANEL\trunk\@PANEL.ASM %BIN%\@PANEL
+fasm system\PANEL\trunk\@TASKBAR.ASM %BIN%\@TASKBAR
 fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
 fasm system\RB\trunk\@RB.ASM %BIN%\@RB
 fasm system\rdsave\trunk\rdsave.asm %BIN%\rdsave
@@ -284,7 +284,7 @@ kpack %BIN%\kbd
 kpack %BIN%\launcher
 kpack %BIN%\menu
 kpack %BIN%\mgb
-kpack %BIN%\@PANEL
+kpack %BIN%\@TASKBAR
 kpack %BIN%\pcidev
 kpack %BIN%\@RB
 kpack %BIN%\rdsave

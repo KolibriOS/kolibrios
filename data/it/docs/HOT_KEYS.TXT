@@ -1,6 +1,6 @@
 Le seguenti scorciatoie di tasiera sono valide in tutto il sistema
 1) Ctrl + Alt + Del          avvia il gestore dei processi mostranod i consumi del sistema
-start of the application CPU (the manager of processes), is a sole combination maintained on a level of a kernel, all rest "hot" key is realized at the expense of the application @PANEL.
+start of the application CPU (the manager of processes), is a sole combination maintained on a level of a kernel, all rest "hot" key is realized at the expense of the application @TASKBAR.
 2) Ctrl + Shift              cambia lingua della tastiera
 3) Win                       Apre il MENU
 4) Alt + Ctrl + F12          Fa partire l'applicazione END- start of the application END.
