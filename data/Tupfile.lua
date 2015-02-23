@@ -38,7 +38,7 @@ img_files = {
  {"LANG.INC", build_type .. "/lang.inc"},
  {"SETTINGS/MENU.DAT", build_type .. "/settings/menu.dat"},
  {"SETTINGS/KOLIBRI.LBL", build_type .. "/settings/kolibri.lbl"},
- {"SETTINGS/PANEL.INI", build_type .. "/settings/panel.ini"},
+ {"SETTINGS/TASKBAR.INI", build_type .. "/settings/taskbar.ini"},
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
  {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
  {"SETTINGS/GAME_CENTER.INI", "common/settings/game_center.ini"},
