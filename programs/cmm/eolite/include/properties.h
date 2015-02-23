@@ -1,5 +1,5 @@
 #ifdef LANG_RUS
-	?define WINDOW_TITLE_PROPERITIES "Свойства"
+	?define WINDOW_TITLE_PROPERTIES "Свойства"
 	?define BTN_CLOSE "Закрыть"
 	?define T_NAME "Имя:"
 	?define T_DEST "Расположение:"
@@ -15,7 +15,7 @@
 	?define T_SYSTEM "Системный"
 	?define T_ONLY_READ "Только чтение"
 #elif LANG_EST
-	?define WINDOW_TITLE_PROPERITIES "Свойства"
+	?define WINDOW_TITLE_PROPERTIES "Свойства"
 	?define BTN_CLOSE "Закрыть"
 	?define T_NAME "Имя:"
 	?define T_DEST "Расположение:"
@@ -31,7 +31,7 @@
 	?define T_SYSTEM "Системный"
 	?define T_ONLY_READ "Только чтение"
 #else
-	?define WINDOW_TITLE_PROPERITIES "Properities"
+	?define WINDOW_TITLE_PROPERTIES "Properties"
 	?define BTN_CLOSE "Close"
 	?define T_NAME "Name:"
 	?define T_DEST "Destination:"
@@ -133,7 +133,7 @@ void properties_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 150,150,300,238+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE_PROPERITIES);
+				DefineAndDrawWindow(Form.left + 150,150,300,238+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE_PROPERTIES);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawFlatButton(208, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
 				DrawBar(10, 10, 32, 32, 0xFFFfff);
