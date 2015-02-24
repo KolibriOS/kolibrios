@@ -232,6 +232,8 @@ end if
     cmpe    ah, 183, dec_volume ; PgDown
     cmpe    ah, 179, inc_volume ; ->
     cmpe    ah, 184, inc_volume ; PgUp
+    cmpe    ah, 178, unmute_volume ; ^
+    cmpe    ah, 180, unmute_volume ; Home
     cmpe    ah, 177, toggle_mute ; v
     cmpe    ah, 181, toggle_mute ; End
 
