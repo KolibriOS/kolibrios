@@ -1,51 +1,51 @@
 #ifdef LANG_RUS
 	?define WINDOW_TITLE_PROPERTIES "Свойства"
 	?define BTN_CLOSE "Закрыть"
-	?define T_NAME "Имя:"
-	?define T_DEST "Расположение:"
-	?define T_SIZE "Размер:"
+	?define PR_T_NAME "Имя:"
+	?define PR_T_DEST "Расположение:"
+	?define PR_T_SIZE "Размер:"
 	?define SET_3 "Создан"
 	?define SET_4 "Открыт"
 	?define SET_5 "Изменен"
 	?define SET_6 "Файлов: "
 	?define SET_7 " Папок: "
-	?define T_CONTAINS "Содержит: "
+	?define PR_T_CONTAINS "Содержит: "
 	?define FLAGS " Аттрибуты "
-	?define T_HIDDEN "Скрытый"
-	?define T_SYSTEM "Системный"
-	?define T_ONLY_READ "Только чтение"
+	?define PR_T_HIDDEN "Скрытый"
+	?define PR_T_SYSTEM "Системный"
+	?define PR_T_ONLY_READ "Только чтение"
 #elif LANG_EST
 	?define WINDOW_TITLE_PROPERTIES "Свойства"
 	?define BTN_CLOSE "Закрыть"
-	?define T_NAME "Имя:"
-	?define T_DEST "Расположение:"
-	?define T_SIZE "Размер:"
+	?define PR_T_NAME "Имя:"
+	?define PR_T_DEST "Расположение:"
+	?define PR_T_SIZE "Размер:"
 	?define SET_3 "Создан"
 	?define SET_4 "Открыт"
 	?define SET_5 "Изменен"
 	?define SET_6 "Файлов: "
 	?define SET_7 " Папок: "
-	?define T_CONTAINS "Содержит: "
+	?define PR_T_CONTAINS "Содержит: "
 	?define FLAGS " Аттрибуты "
-	?define T_HIDDEN "Скрытый"
-	?define T_SYSTEM "Системный"
-	?define T_ONLY_READ "Только чтение"
+	?define PR_T_HIDDEN "Скрытый"
+	?define PR_T_SYSTEM "Системный"
+	?define PR_T_ONLY_READ "Только чтение"
 #else
 	?define WINDOW_TITLE_PROPERTIES "Properties"
 	?define BTN_CLOSE "Close"
-	?define T_NAME "Name:"
-	?define T_DEST "Destination:"
-	?define T_SIZE "Size:"
+	?define PR_T_NAME "Name:"
+	?define PR_T_DEST "Destination:"
+	?define PR_T_SIZE "Size:"
 	?define SET_3 "Created"
 	?define SET_4 "Opened"
 	?define SET_5 "Modified"
 	?define SET_6 "Files: "
 	?define SET_7 " Folders: "
-	?define T_CONTAINS "Contains: "
+	?define PR_T_CONTAINS "Contains: "
 	?define FLAGS " Attributes "
-	?define T_HIDDEN "Hidden"
-	?define T_SYSTEM "System"
-	?define T_ONLY_READ "Read-only"
+	?define PR_T_HIDDEN "Hidden"
+	?define PR_T_SYSTEM "System"
+	?define PR_T_ONLY_READ "Read-only"
 #endif
 
 dword mouse_ddd2;
@@ -55,9 +55,9 @@ edit_box file_name_ed = {150,50,25,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#f
 edit_box path_to_file_ed = {150,100,46,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
 
 frame flags_frame = { 0, 180, 10, 80, 106, 0x000111, 0xFFFfff, 1, FLAGS, 0, 0, 6, 0x000111, 0xCCCccc };
-checkbox2 HIDDEN_chb = {22*65536+15, 120*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, T_HIDDEN, CH_FLAG_MIDDLE, 0};
-checkbox2 SYSTEM_chb = {22*65536+15, 140*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, T_SYSTEM, CH_FLAG_MIDDLE, 0};
-checkbox2 ONLY_READ_chb = {22*65536+15, 160*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, T_ONLY_READ, CH_FLAG_MIDDLE, 0};
+checkbox2 HIDDEN_chb = {22*65536+15, 120*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, PR_T_HIDDEN, CH_FLAG_MIDDLE, 0};
+checkbox2 SYSTEM_chb = {22*65536+15, 140*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, PR_T_SYSTEM, CH_FLAG_MIDDLE, 0};
+checkbox2 ONLY_READ_chb = {22*65536+15, 160*65536+15, 5, 0xffffff, 0x9098B0, 0x80000000, PR_T_ONLY_READ, CH_FLAG_MIDDLE, 0};
 
 int file_count, dir_count, size_dir;
 char folder_info[200];
@@ -142,10 +142,10 @@ void properties_dialog()
 				else 
 					Put_icon("<DIR>", 18, 20, 0xFFFfff, 0);
 
-				WriteText(50, 13, 0x80, 0x000000, T_NAME);				
+				WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);				
 				edit_box_draw stdcall (#file_name_ed);
 
-				WriteText(10, 50, 0x80, 0x000000, T_DEST);
+				WriteText(10, 50, 0x80, 0x000000, PR_T_DEST);
 				edit_box_draw stdcall (#path_to_file_ed);
 
 				/*WriteText(10, 63, 0x80, 0x000000, SET_3);
@@ -154,14 +154,14 @@ void properties_dialog()
 					WriteText(10, 78, 0x80, 0x000000, SET_4);
 					WriteText(10, 93, 0x80, 0x000000, SET_5);					
 				}*/
-				WriteText(10, 65, 0x80, 0x000000, T_SIZE);
+				WriteText(10, 65, 0x80, 0x000000, PR_T_SIZE);
 				if (!itdir)
 				{
 					WriteText(100, 65, 0x80, 0x000000, ConvertSize(file_info.sizelo));
 				}
 				else
 				{
-					WriteText(10, 80, 0x80, 0x000000, T_CONTAINS);				
+					WriteText(10, 80, 0x80, 0x000000, PR_T_CONTAINS);				
 					strcpy(#folder_info, SET_6);
 					strcat(#folder_info, itoa(file_count));
 					strcat(#folder_info, SET_7);
