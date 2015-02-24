@@ -83,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.55"
-#define ABOUT_TITLE "Eolite v2.55"
+#define TITLE "Eolite File Manager v2.56"
+#define ABOUT_TITLE "Eolite v2.56"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -1006,13 +1006,13 @@ void FnProcess(char N)
 			break;
 		case 8:
 			SwitchToAnotherThread();
-			CreateThread(#properties_dialog,#about_stak+4092);
+			CreateThread(#properties_dialog, #properties_stak+4092);
 			break;
 		case 10: //F10
 			if (!active_settings) 
 			{
 				SwitchToAnotherThread();
-				settings_window=CreateThread(#settings_dialog,#about_stak+4092);
+				settings_window=CreateThread(#settings_dialog, #settings_stak+4092);
 				break;
 			}
 			else
@@ -1033,3 +1033,5 @@ char menu_stak[4096];
 char copy_stak[4096];
 char open_with_stak[4096];
 char about_stak[4096];
+char properties_stak[4096];
+char settings_stak[4096];

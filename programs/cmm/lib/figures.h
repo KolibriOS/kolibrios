@@ -44,7 +44,7 @@
 :void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
 {
 	DefineButton(x-1, y-1, strlen(text)*6 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, graph_color);
-	WriteText(x+w+10, h / 2 + y -3, 0x80, text_color, text);
+	WriteText(x+w+8, h / 2 + y -3, 0x80, text_color, text);
 	DrawRectangle(x, y, w, h, graph_color);
 	if (is_checked == 1)
 	{
