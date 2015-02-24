@@ -32,6 +32,25 @@ char program_path[4096];
 #define BT_HIDE     0x40000000
 #define BT_NOFRAME  0x20000000
 
+//ASCII KEYS
+#define ASCII_KEY_BS    008
+#define ASCII_KEY_TAB   009
+#define ASCII_KEY_ENTER 013
+#define ASCII_KEY_ESC   027
+#define ASCII_KEY_DEL   182
+#define ASCII_KEY_INS   185
+#define ASCII_KEY_SPACE 032
+
+#define ASCII_KEY_LEFT  176
+#define ASCII_KEY_RIGHT 179
+#define ASCII_KEY_DOWN  177
+#define ASCII_KEY_UP    178
+#define ASCII_KEY_HOME  180
+#define ASCII_KEY_END   181
+#define ASCII_KEY_PGDN  183
+#define ASCII_KEY_PGUP  184
+
+
 //-------------------------------------------------------------------------
 
 struct mouse

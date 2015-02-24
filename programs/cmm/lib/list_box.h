@@ -97,10 +97,10 @@ int llist::ProcessKey(dword key)
 {
 	switch(key)
 	{
-		case 177: return KeyDown();
-		case 178: return KeyUp();
-		case 180: return KeyHome();
-		case 181: return KeyEnd();
+		case ASCII_KEY_DOWN: return KeyDown();
+		case ASCII_KEY_UP:   return KeyUp();
+		case ASCII_KEY_HOME: return KeyHome();
+		case ASCII_KEY_END:  return KeyEnd();
 	}
 	return 0;
 }
