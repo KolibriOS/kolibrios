@@ -833,7 +833,20 @@ exception:
         jmp     .put_msg_eax
 
     .notdbg:
+        pop     eax
+        push    eax
+        push    eax
         mov     esi, aException
+        call    put_message_nodraw
+        pop     eax
+
+        cmp     al, 16
+        ja      .suspended
+        mov     esi, [msg_fault_sel + eax*4]
+        call    put_message_nodraw
+
+    .suspended:
+        mov     esi, aSuspended
 
     .put_msg_eax:
         call    put_message_nodraw
@@ -842,12 +855,7 @@ exception:
         call    draw_messages
 
     .done:
-        ;push    18
-        ;pop     eax
-        ;push    3
-        ;pop     ebx
-        ;mov     ecx, [dbgwnd]
-        mcall    18, 3, [dbgwnd]    ; activate dbg window
+        mcall   18, 3, [dbgwnd]    ; activate dbg window
         call    redraw_title
         call    draw_registers.redraw
         call    draw_dump.redraw
@@ -2220,7 +2228,26 @@ load_succ_msg   db      'Program loaded successfully! PID=%4X. Use "g" to run.',
 need_debuggee   db      'No program loaded. Use "load" command.',10,0
 aAlreadyLoaded  db      'Program is already loaded. Use "terminate" or "detach" commands',10,0
 terminated_msg  db      'Program terminated.',10,0
-aException      db      'Debugged program caused an exception %2X. '
+aException      db      'Debugged program caused an exception %2X. ', 0
+msg_fault_sel   dd  aDivide, aDebug, aNonMask, aUndefined, aOverflow
+                dd  aBounds, aInvalid, aCoProcessorNA, aDoubleFault
+                dd  aUndefined, aInvalidTSS, aSegment, aStack
+                dd  aProtection, aPageFault, aUndefined, aCoProcessor
+aDivide         db      '(Divide error)',10,0
+aDebug          db      '(Single-step/debug exception)',10,0
+aNonMask        db      '(Nonmaskable interrupt)',10,0
+aOverflow       db      '(Overflow)',10,0
+aBounds         db      '(Bounds check)',10,0
+aInvalid        db      '(Invalid opcode)',10,0
+aCoProcessorNA  db      '(Coprocessor not available)',10,0
+aDoubleFault    db      '(Double fault)',10,0
+aUndefined      db      '(Undefined fault)',10,0
+aInvalidTSS     db      '(Invalid TSS)',10,0
+aSegment        db      '(Segment not present)',10,0
+aStack          db      '(Stack fault)',10,0
+aProtection     db      '(General protection fault)',10,0
+aPageFault      db      '(Page fault)',10,0
+aCoProcessor    db      '(Coprocessor error)',10,0
 aSuspended      db      'Suspended',10,0
 aContinued      db      'Continuing',10,0
 aRunningErr     db      'Program is running',10,0
