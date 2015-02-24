@@ -102,7 +102,7 @@ void DrawSettingsCheckBoxes()
 {
 	CheckBox2(10, 11, 20, SET_1,  show_dev_name);
 	CheckBox2(10, 33, 21, SET_2,  real_files_names_case);
-	CheckBox2(10, 55, 22, SET_3,  info_after_copy);
+	CheckBox2(10, 55, 22, SET_4,  info_after_copy);
 }
 
 
