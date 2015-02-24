@@ -1,5 +1,13 @@
 //Leency 2008-2014
 
+#ifdef LANG_RUS
+	?define INFO_AFTER_COPY "Копирование завершено"
+#elif LANG_EST
+	?define INFO_AFTER_COPY "Copy finished"
+#else
+	?define INFO_AFTER_COPY "Copy finished"
+#endif
+
 byte copy_to[4096];
 byte cut_active=0;
 
@@ -111,6 +119,7 @@ void Paste()
 	{
 		cut_active=false;
 	}
+	if (info_after_copy) notify(INFO_AFTER_COPY);
 	CopyExit();
 }
 
