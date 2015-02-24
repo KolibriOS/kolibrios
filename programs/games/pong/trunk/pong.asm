@@ -12,7 +12,7 @@
 ;    11.07.2008
 ;
 
-include '../../../macros.inc'
+format binary as ""
 
 CK_UP1 equ 16
 CK_DOWN1 equ 30
@@ -28,17 +28,16 @@ use32
                 dd      START                   ; program start
                 dd      I_END                   ; program image size
                 dd      0x2000                  ; required amount of memory
-                dd      0x2000                  ; esp = 0x7FFF0
                 dd      0x00000000              ; reserved=no extended header
 
-
+include '../../../macros.inc'
 
 START:
 
     mov  eax, 66
     mov  ebx, 1
     mov  ecx, 1
-    mcall		; установить режим сканкодов
+    mcall               ; установить режим сканкодов
 
     call draw_window
 
@@ -450,10 +449,10 @@ delay   dd 0x1          ;delay betw. frames
 scp1    dd 0x0
 scp2    dd 0x0
 
-is_up1	dd 0x0 ; \
-is_dn1	dd 0x0 ; | какие клавиши нажаты
-is_up2	dd 0x0 ; |
-is_dn2	dd 0x0 ; /
+is_up1  dd 0x0 ; \
+is_dn1  dd 0x0 ; | какие клавиши нажаты
+is_up2  dd 0x0 ; |
+is_dn2  dd 0x0 ; /
 
 include "lang.inc"
 if lang eq ru
