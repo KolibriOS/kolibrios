@@ -792,19 +792,22 @@ exception:
         jnz     .notdbg
     ; check for 0xCC byte at eip
         push    0
-        ;push    69
-        ;pop     eax
-        ;push    6
-        ;pop     ebx
-        ;mov     ecx, [debuggee_pid]
-        ;mov     edi, esp
-        ;mov     esi, [_eip]
-        ;push    1
-        ;pop     edx
-        mcall    69, 6, [debuggee_pid], 1, [_eip], esp
+        mcall   69, 6, [debuggee_pid], 1, [_eip], esp
         pop     eax
         cmp     al, 0xCC
-        jnz     .notdbg
+        je      .int3
+    ; check for 0xCD03 word at eip
+        push    0
+        inc     edx
+        mcall   69;, 6, [debuggee_pid], 2, [_eip], esp
+        pop     eax
+        cmp     ax, 0x03CD
+        jne     .notdbg
+        mov     eax, [_eip]
+        inc     [_eip]
+        inc     [_eip]
+        jmp     .user_int3_
+    .int3:
     ; this is either dbg breakpoint or int3 cmd in debuggee
         mov     eax, [_eip]
         call    find_enabled_breakpoint
@@ -822,6 +825,7 @@ exception:
     .user_int3:
         mov     eax, [_eip]
         inc     [_eip]
+    .user_int3_:
         pop     ecx
         push    eax
         call    set_context
@@ -2247,9 +2251,9 @@ aPaused         db      'Paused'
 
 aFPU            db      '[ FPU ]'
 aMMX            db      '[ MMX ]'
-aSSE            db      '[ SSE-32 ]'
-aSSE2           db      '[ SSE-64 ]'
-aMMX128         db      '[ MMX128 ]'
+aSSE            db      '[SSE32]'
+aSSE2           db      '[SSE64]'
+aMMX128         db      '[MMX128]'
 
 aAVX            db      '[ AVX ]'
 aMSR            db      '[ MSR ]'
