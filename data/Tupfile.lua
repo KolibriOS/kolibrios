@@ -183,7 +183,7 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp1251/install.txt", build_type .. "/docs/INSTALL.WIN.TXT", cp1251_from = build_type .. "/docs/INSTALL.TXT"},
  {"Docs/cp1251/readme.txt", build_type .. "/docs/README.WIN.TXT", cp1251_from = build_type .. "/docs/README.TXT"},
  {"Docs/cp1251/sysfuncr.txt", build_type .. "/docs/SYSFUNCR.WIN.TXT", cp1251_from = PROGS .. "/system/docpack/trunk/SYSFUNCR.TXT"},
- {"HD_Load/9x2klbr/f", PROGS .. "/hd_load/9x2klbr/readme_dos.txt"},
+ {"HD_Load/9x2klbr/", PROGS .. "/hd_load/9x2klbr/readme_dos.txt"},
  {"HD_Load/9x2klbr/", PROGS .. "/hd_load/9x2klbr/readme_win.txt"},
  {"HD_Load/mtldr/", PROGS .. "/hd_load/mtldr/install.txt"},
  {"HD_Load/USB_Boot/", PROGS .. "/hd_load/usb_boot/readme.txt"},
