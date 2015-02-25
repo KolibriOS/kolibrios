@@ -41,6 +41,7 @@ Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
+Pixie MP3 Player          /sys/media/pixie/pixie
 Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****

@@ -41,6 +41,7 @@ Animage                   /sys/media/animage
 Image Filtering           /sys/media/imgf/imgf
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
+Pixie MP3 Player          /sys/media/pixie/pixie
 Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
@@ -63,8 +64,8 @@ Message Boxes example     /sys/demos/use_mb
 Sätted             >      /@11
 Süsteemi sensorid  >      /@12
 Töö failidega      >      /@13
-Testimine          >      /@19
-Hõlbustus seaded   >      /@20
+Testimine          >      /@16
+Hõlbustus seaded   >      /@17
 Silumisaken               /sys/develop/board
 Terminal                  /sys/terminal
 #8    **** SETTINGS ****

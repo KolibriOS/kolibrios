@@ -42,7 +42,7 @@ struct struct_pixie_colors {
 void SetColorThemeDark()
 {
 	current_theme = THEME_DARK;
-	Libimg_LoadImage(#skin, abspath("pixie_dark.png"));
+	Libimg_LoadImage(#skin, abspath("s_dark.png"));
 	skin.w = 300;
 	theme.color_top_panel_text = 0xFCFFBE;
 	theme.color_list_bg = 0x313031;
@@ -62,7 +62,7 @@ void SetColorThemeDark()
 void SetColorThemeLight()
 {
 	current_theme = THEME_LIGHT;
-	Libimg_LoadImage(#skin, abspath("pixie_light.png"));
+	Libimg_LoadImage(#skin, abspath("s_light.png"));
 	skin.w = 300;
 	theme.color_top_panel_text = 0x85663F;
 	theme.color_list_bg = 0xE2E2E2;

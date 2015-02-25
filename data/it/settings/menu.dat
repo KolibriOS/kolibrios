@@ -40,6 +40,7 @@ Image viewer zSea         /KolibriOS/media/zsea/zsea
 Animage                   /sys/media/animage
 Palitra                   /sys/media/palitra
 #4   **** MULTIMEDIA ****
+Pixie MP3 Player          /sys/media/pixie/pixie
 Fplay - video             /KolibriOS/media/fplay-full
 MidAMP                    /sys/media/midamp
 #5    **** PROGRAMMING ****
@@ -94,8 +95,8 @@ Table Processor           /sys/table
 Graph builder             /sys/graph
 Hex-Editor                /sys/develop/heed
 #12    **** NET ****
-Servers            >      /@16
-Clients            >      /@17
+Servers            >      /@13
+Clients            >      /@14
 Zero-Config               /sys/network/zeroconf
 Network Config            /sys/network/netcfg
 Network status            /sys/network/netstat
