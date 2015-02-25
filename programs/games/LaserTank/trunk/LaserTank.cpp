@@ -44,6 +44,7 @@
 #define FIELD_CRATER		25
 
 char* header = "Laser Tank";
+bool w_redraw = true;
 
 struct Level
 {
@@ -54,14 +55,20 @@ void pause(int time)
 {
 	kos_Pause(time);
 	Byte keyCode;
+	Dword buttons;
+	int mX, mY;
 	for (int i = 0; i < 10; ++i)
+	{
 		kos_GetKey(keyCode);
+		kos_GetMouseState(buttons, mX, mY);
+	}
 }
 
 Level *levels;
 int levelCount = 0;
 int levelIndex = 0;
 int levelPage = 0;
+float clickTime = 0;
 
 RGBA img_tank[576];
 RGB img_water[576];
@@ -176,6 +183,8 @@ void SetMode(int mode)
 {
 	gameMode = mode;
 	draw_window();
+
+	pause(40);
 }
 
 bool IsWater(Point pos)
@@ -928,8 +937,12 @@ void player_move(Point vector, float angle)
 
 void key_press(int key)
 {
+	sProcessInfo sPI;
+	kos_ProcessInfo(&sPI);
+	if (sPI.rawData[70] & 0x04)
+		return;
 	//rtlDebugOutString(ftoa(key));
-	 
+
 	switch (gameMode)
 	{
 	case MODE_MENU:
@@ -992,19 +1005,19 @@ void key_press(int key)
 	case MODE_PAUSE:
 		if (key == 27)
 			SetMode(MODE_LEVELS);
-	
-		if ((key == 32 || key == 13) && (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1))))
-		{
-			if (gameStatus == GAME_VICTORY)
-				openLevel(levelIndex + 1);
-			SetMode(MODE_GAME);
-		}
-
-		if (key == 114 || (gameStatus == GAME_DEFEAT && (key == 32 || key == 13)))
-		{
-			openLevel(levelIndex);
-			SetMode(MODE_GAME);
-		}
+		else
+			if ((key == 32 || key == 13) && (gameStatus == GAME_NONE || (gameStatus == GAME_VICTORY && levelIndex < (levelCount - 1))))
+			{
+				if (gameStatus == GAME_VICTORY)
+					openLevel(levelIndex + 1);
+				SetMode(MODE_GAME);
+			}
+			else
+				if (key == 114)
+				{
+					openLevel(levelIndex);
+					SetMode(MODE_GAME);
+				}
 		break;
 	case MODE_GAME:
 		switch (key)
@@ -1147,8 +1160,17 @@ void draw_level_number(Point position, int number, RGB color) // 0x252317
 
 void draw_window(void)
 {
-	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10, 40, 384 + 9, 384 + 25, 0x33, 0x444444, 0, 0, (Dword)header);
+	if (w_redraw)
+	{
+		kos_WindowRedrawStatus(1);
+
+		//kos_DefineAndDrawWindow(50, 50, 640, 506 - 22 + kos_GetSkinHeight(), 0x74, 0xEEEEEE, 0, 0, (Dword)windowTitle);
+
+		kos_DefineAndDrawWindow(10, 40, 384 + 9, 384 + 25, 0x74, 0x444444, 0, 0, (Dword)header);
+		kos_WindowRedrawStatus(2);
+		w_redraw = false;
+	}
+
 	Point level_pos = Point(0, 0);
 	switch (gameMode)
 	{
@@ -1251,7 +1273,6 @@ void draw_window(void)
 		}
 	break;
 	}
-	kos_WindowRedrawStatus(2);
 }
 
 void LevelsLoad()
@@ -1449,6 +1470,7 @@ void kos_Main()
 		switch (kos_WaitForEvent())
 		{
 		case 1:
+			w_redraw = true;
 			draw_window();
 			break;
 		case 2:

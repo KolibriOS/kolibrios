@@ -315,7 +315,6 @@ void kos_WriteTextToWindow(
 	kos_sysfunc4(arg2, textPtr, arg1, textLen);
 }
 
-
 // функция 5 пауза, в сотых долях секунды
 void kos_Pause( Dword value )
 {
@@ -327,7 +326,6 @@ void kos_Pause( Dword value )
 		int 0x40
 	}
 }
-
 
 // функция 7 нарисовать изображение
 void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y )
@@ -517,9 +515,11 @@ void kos_GetMouseState( Dword & buttons, int & cursorX, int & cursorY )
 	//
 	kos_ProcessInfo( &sPI );
 	//
+	int left = (int)((sPI.processInfo.x_size - 384) / 2);
+	int top = sPI.processInfo.y_size - 384 - left;
 	buttons = mB;
-	cursorX = curX - sPI.processInfo.x_start;
-	cursorY = curY - sPI.processInfo.y_start;
+	cursorX = curX - sPI.processInfo.x_start - left;
+	cursorY = curY - sPI.processInfo.y_start - top;
 }
 
 

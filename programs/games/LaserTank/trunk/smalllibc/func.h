@@ -3,7 +3,7 @@
 
 #include "kosSyst.h"
 #include "kosFile.h"
-#include "mcsmemm.H"
+#include "mcsmemm.h"
 
 #include <stdarg.h>
 

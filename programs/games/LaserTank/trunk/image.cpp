@@ -115,14 +115,14 @@ void CKosImage::Draw(Point position, float angle)
 
 					alpha = (float)addPixel.a / 255.0f;
 
-					if (this->mode = DRAW_ALPHA)
+					if (this->mode == DRAW_ALPHA)
 					{
 						newPixel.r = di((double)(pixel.r * (1 - alpha) + addPixel.r * alpha));
 						newPixel.g = di((double)(pixel.g * (1 - alpha) + addPixel.g * alpha));
 						newPixel.b = di((double)(pixel.b * (1 - alpha) + addPixel.b * alpha));
 					}
 					else
-						if (this->mode = DRAW_ALPHA_ADD)
+						if (this->mode == DRAW_ALPHA_ADD)
 						{
 							newPixel.r = di(min(255, (double)(pixel.r * (1 - alpha) + addPixel.r * alpha)));
 							newPixel.g = di(min(255, (double)(pixel.g * (1 - alpha) + addPixel.g * alpha)));
