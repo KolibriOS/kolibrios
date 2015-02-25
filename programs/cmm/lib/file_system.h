@@ -27,7 +27,7 @@ struct BDVK{
 ///////////////////////////
 //   Параметры файла    //
 ///////////////////////////
-f70 getinfo_file_70;
+:f70 getinfo_file_70;
 :dword GetFileInfo(dword file_path, bdvk_struct)
 {    
     getinfo_file_70.func = 5;
@@ -45,8 +45,8 @@ f70 getinfo_file_70;
 ///////////////////////////
 //   Запуск программы    //
 ///////////////////////////
-f70 run_file_70;
-signed int RunProgram(dword run_path, run_param)
+:f70 run_file_70;
+:signed int RunProgram(dword run_path, run_param)
 {	
     run_file_70.func = 7;
     run_file_70.param1 = 
@@ -63,7 +63,7 @@ signed int RunProgram(dword run_path, run_param)
 ///////////////////////////
 //    Создание папки     //
 ///////////////////////////
-f70 create_dir_70;
+:f70 create_dir_70;
 :int CreateDir(dword new_folder_path)
 {
 	create_dir_70.func = 9;
@@ -81,7 +81,7 @@ f70 create_dir_70;
 ////////////////////////////
 //  Удаление файла/папки  //
 ////////////////////////////
-f70 del_file_70;	
+:f70 del_file_70;	
 :int DeleteFile(dword del_file_path)
 {    
 	del_file_70.func = 8;
@@ -99,7 +99,7 @@ f70 del_file_70;
 ////////////////////////////
 //     Прочитать файл     //
 ////////////////////////////
-f70 read_file_70; 
+:f70 read_file_70; 
 :int ReadFile(dword read_pos, read_file_size, read_buffer, read_file_path)
 {
 	read_file_70.func = 0;
@@ -117,7 +117,7 @@ f70 read_file_70;
 ////////////////////////////
 //     Записать файл      //
 ////////////////////////////
-f70 write_file_70; 
+:f70 write_file_70; 
 :int WriteFile(dword write_file_size, write_buffer, write_file_path)
 {
 	write_file_70.func = 2;
@@ -135,7 +135,7 @@ f70 write_file_70;
 ///////////////////////////
 //    Прочитать папку    //
 ///////////////////////////
-f70 read_dir_70;
+:f70 read_dir_70;
 :int ReadDir(dword file_count, read_buffer, dir_path)
 {
 	read_dir_70.func = 1;
@@ -150,7 +150,7 @@ f70 read_dir_70;
 	$int 0x40
 }
 
-char isdir(dword fpath)
+:char isdir(dword fpath)
 {
 	BDVK fpath_atr;
 	GetFileInfo(fpath, #fpath_atr);
