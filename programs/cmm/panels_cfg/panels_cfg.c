@@ -13,7 +13,7 @@
 
 #include "..\lib\patterns\libimg_load_skin.h"
 
-#define WINDOW_TITLE "System panels configuration"
+#define WINDOW_TITLE "Taskbar and Docky configuration"
 
 frame taskbar_frame = { 0, 000, 10, 188, 14, 0x000111, 0xFFFfff, 1, " Taskbar ", 0, 0, 6, 0x000111, 0xCCCccc };
 frame docky_frame = { 0, 000, 10, 73, 217, 0x000111, 0xFFFfff, 1, " Docky ", 0, 0, 6, 0x000111, 0xCCCccc };

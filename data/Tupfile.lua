@@ -467,6 +467,7 @@ tup.append_table(img_files, {
  {"GAMES/MINE", PROGS .. "/games/mine/trunk/mine"},
  {"NETWORK/WebView", PROGS .. "/cmm/browser/WebView.com"},
  {"MEDIA/PIXIE/PIXIE", PROGS .. "/cmm/pixie/pixie.com"},
+ {"PANELS_CFG", PROGS .. "/cmm/panels_cfg/panels_cfg.com"},
  {"TMPDISK", PROGS .. "/cmm/tmpdisk/tmpdisk.com"},
  {"GAME_CENTER", PROGS .. "/cmm/software_widget/software_widget.com"},
  {"SYSTEM_PANEL", PROGS .. "/cmm/software_widget/software_widget.com"},
