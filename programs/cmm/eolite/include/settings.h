@@ -22,9 +22,6 @@
 	?define APPLY_T "Apply"
 #endif
 
-int	mouse_ddd;
-char lineh_s[30]="18\0";
-edit_box LineHeight_ed = {52,10,97,0xffffff,0x94AECE,0xffc90E,0xffffff,2,4,#lineh_s,#mouse_ddd, 1000000000000000b,2,2};
 
 void settings_dialog()
 {   
@@ -35,7 +32,6 @@ void settings_dialog()
 	if (active_settings) ExitProcess();
 	active_settings=1;
 
-	SetEventMask(0x27);
 	loop() switch(WaitEvent())
 	{
 		case evButton: 
@@ -60,6 +56,8 @@ void settings_dialog()
 				if (id==20) show_dev_name ^= 1;
 				if (id==21) real_files_names_case ^= 1;
 				if (id==22) info_after_copy ^= 1;
+				if (id==25) files.line_h++;
+				if (id==26) && (files.line_h>8) files.line_h--;
 				DrawSettingsCheckBoxes();
 				break;
 				
@@ -71,12 +69,6 @@ void settings_dialog()
 					action_buf = 300;
 					ExitProcess();
 				}
-				EAX=key<<8;
-				edit_box_key stdcall(#LineHeight_ed);
-				break;
-				
-		case evMouse:
-				edit_box_mouse stdcall (#LineHeight_ed);
 				break;
 			
 		case evReDraw:
@@ -84,12 +76,6 @@ void settings_dialog()
 				GetProcessInfo(#settings_form, SelfInfo);
 
 				DrawSettingsCheckBoxes();
-
-				WriteText(10, 84, 0x80, 0x000000, SET_3);
-				key = itoa(files.line_h);
-				strcpy(#lineh_s, key);
-				edit_box_draw stdcall (#LineHeight_ed);
-				DrawRectangle(LineHeight_ed.left-1, LineHeight_ed.top-1, LineHeight_ed.width+2, 16, sc.work_graph);
 
 				DrawFlatButton(9, 127, strlen(EDIT_FILE_ASSOCIATIONS)+4*6, 22, 5, 0xE4DFE1, EDIT_FILE_ASSOCIATIONS);
 
@@ -103,6 +89,7 @@ void DrawSettingsCheckBoxes()
 	CheckBox2(10, 11, 20, SET_1,  show_dev_name);
 	CheckBox2(10, 33, 21, SET_2,  real_files_names_case);
 	CheckBox2(10, 55, 22, SET_4,  info_after_copy);
+	MoreLessBox(10, 82, 18, 25, 26, sc.work_graph, 0xD2D3D3, 0x000000, files.line_h, SET_3);
 }
 
 
@@ -126,7 +113,7 @@ void SaveIniSettings()
 	ini_set_int stdcall (eolite_ini_path, "Config", "ShowDeviceName", show_dev_name);
 	ini_set_int stdcall (eolite_ini_path, "Config", "RealFileNamesCase", real_files_names_case);
 	ini_set_int stdcall (eolite_ini_path, "Config", "InfoAfterCopy", info_after_copy);
-	ini_set_int stdcall (eolite_ini_path, "Config", "LineHeight", atoi(#lineh_s));
+	ini_set_int stdcall (eolite_ini_path, "Config", "LineHeight", files.line_h);
 }
 
 
