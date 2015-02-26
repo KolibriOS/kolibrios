@@ -64,7 +64,7 @@ struct akode.TextureDesc
         ImageDataPtr    dd ?
 
         HasMagicPink    db ?                            ; boolean
-        TileWalls       db ?                            ; boolean
+        TileWalls       db ?                            ; boolean, not supported yet
         Usage           db ?                            ; AKODE_TEXTURE_USAGE
         VirtualScale    db ?                            ; AKODE_VIRTUAL_SCALE_MODE, not supported yet
         VirtualSize     akode.Size                      ; (0, 0) for original size, not supported yet

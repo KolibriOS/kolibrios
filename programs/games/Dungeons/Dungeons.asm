@@ -79,6 +79,8 @@ end if
         test    eax, eax
         jz      .exit_fail_akode_init
 
+        stdcall akode.set_movement_speed, MOVEMENT_SPEED, 90
+
         mcall   68, 12                          ; alloc ecx bytes for image buffer
         test    eax, eax
         jz      .exit_fail_alloc

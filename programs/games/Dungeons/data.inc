@@ -22,6 +22,8 @@ FULLSCREEN                      = 0
 FSAA                            = 0
 DISABLE_SHADING                 = 0
 
+MOVEMENT_SPEED                  = BLOCK_BASE_SIZE + BLOCK_BASE_SIZE / 4
+
 FIELD_OF_VIEW                   = 60
 BLOCK_BASE_SIZE                 = 512
 BLOCK_HEIGHT                    = 512
@@ -39,7 +41,7 @@ OBJECT_IMAGE_HEIGHT             = 40
 
 GAME_MESSAGE_X                  = 150 + 15
 GAME_MESSAGE_Y                  = 15 + 15
-GAME_MESSAGE_COLOR              = 000000h
+GAME_MESSAGE_COLOR              = 0E4E2ADh
 
 if FULLSCREEN
         ;MAIN_WINDOW_X           = 0
@@ -49,10 +51,10 @@ if FULLSCREEN
         MAIN_WINDOW_STYLE       = (01000001b) shl 24
         MAIN_WINDOW_STYLE2      = 1           shl 24
 else
-        MAIN_WINDOW_X           = 150
-        MAIN_WINDOW_Y           = 150
-        MAIN_WINDOW_WIDTH       = 960
-        MAIN_WINDOW_HEIGHT      = 720
+        MAIN_WINDOW_X           = 20
+        MAIN_WINDOW_Y           = 20
+        MAIN_WINDOW_WIDTH       = 960                   ; client area width
+        MAIN_WINDOW_HEIGHT      = 712                   ; client area height
         MAIN_WINDOW_STYLE       = (01110100b) shl 24
         MAIN_WINDOW_STYLE2      = 0
 end if
