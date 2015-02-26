@@ -23,6 +23,8 @@
 void about_dialog()
 {   
 	byte id;
+	proc_info about_form;
+
 	IF (active_about) ExitProcess();
 	active_about=1;
 	loop() switch(WaitEvent())
@@ -47,22 +49,16 @@ void about_dialog()
 				
 		case evReDraw:
 				DefineAndDrawWindow(600,150,181,228+GetSkinHeight(),0x34,sc.work,INTRO_TEXT_1);
-				DrawBar(0,0,172,50,0x8494C4);
+				GetProcessInfo(#about_form, SelfInfo);
+				if (Form.status_window>2) break;
+				DrawBar(0,0,about_form.cwidth,50,0x8494C4);
 				PutPaletteImage(#logo,85,85,43,7,8,#logo_pal);
 				WriteTextB(46,100,0x90,0xBF40BF,ABOUT_TITLE);
-				#ifdef LANG_RUS
-				WriteText(50,120,0x80,0,INTRO_TEXT_2);
-				#else
-				WriteText(55,120,0x80,0,INTRO_TEXT_2);
-				#endif				
-				WriteText(39,130,0x80,0,"Leency & Veliant"); 
-				WriteText(45,140,0x80,0,"KolibriOS Team");
-				WriteText(61,150,0x80,0,"2008-2015");
-				#ifdef LANG_RUS
-				WriteText(19,170,0x80,0,INTRO_TEXT_3);
-				#else
-				WriteText(29,170,0x80,0,INTRO_TEXT_3);
-				#endif				
+				WriteTextCenter(0,120,about_form.cwidth,0,INTRO_TEXT_2);			
+				WriteTextCenter(0,130,about_form.cwidth,0,"Leency Veliant PunkJoker"); 
+				WriteTextCenter(0,140,about_form.cwidth,0,"KolibriOS Team");
+				WriteTextCenter(0,150,about_form.cwidth,0,"2008-2015");
+				WriteTextCenter(10,170,70,0,INTRO_TEXT_3);			
 				DrawLink(71,170,0x80,23, "kolibri-n.org");
 				DrawFlatButton(85,190,70,22,10,0xE4DFE1, INTRO_TEXT_4);
 	}

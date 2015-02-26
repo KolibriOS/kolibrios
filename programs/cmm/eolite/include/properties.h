@@ -95,8 +95,10 @@ void GetSizeDir(dword way)
 void properties_dialog()
 {
 	byte id;
-	unsigned int key;
+	byte key;
 	dword file_name_off;
+	dword element_size;
+	char element_size_label[32];
 	proc_info settings_form;
 	
 	strcpy(#folder_info, "\0");
@@ -157,7 +159,7 @@ void properties_dialog()
 				WriteText(10, 65, 0x80, 0x000000, PR_T_SIZE);
 				if (!itdir)
 				{
-					WriteText(100, 65, 0x80, 0x000000, ConvertSize(file_info_general.sizelo));
+					element_size = file_info_general.sizelo;
 				}
 				else
 				{
@@ -167,8 +169,15 @@ void properties_dialog()
 					strcat(#folder_info, SET_7);
 					strcat(#folder_info, itoa(dir_count));
 					WriteText(100, 80, 0x80, 0x000000, #folder_info);
-					WriteText(100, 65, 0x80, 0x000000, ConvertSize(size_dir));
+					element_size = size_dir;
 				}
+
+				EAX = ConvertSize(element_size);
+				strcpy(#element_size_label, EAX);
+				strcat(#element_size_label, " (");
+				strcat(#element_size_label, itoa(element_size));
+				strcat(#element_size_label, " b)");
+				WriteText(100, 65, 0x80, 0x000000, #element_size_label);
 
 				flags_frame.size_x = - flags_frame.start_x * 2 + settings_form.cwidth - 2;
 				flags_frame.font_color = sc.work_text;

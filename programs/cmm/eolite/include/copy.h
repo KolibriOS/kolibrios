@@ -86,9 +86,7 @@ void Paste()
     if (DSDWORD[buf+4] != 3) return;
 	cnt = ESINT[buf+8];
     for (j = 0; j < cnt; j++) {
-	    debugi(j);
 		strlcpy(#copy_from, j*4096+buf+10, 4096);
-		debugln(#copy_from);
 		if (!copy_from) CopyExit();
 		strcpy(#copy_to, #path);
 		strcat(#copy_to, #copy_from+strrchr(#copy_from,'/'));
