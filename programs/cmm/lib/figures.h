@@ -46,24 +46,37 @@
 	DefineButton(x-1, y-1, strlen(text)*6 + w + 17, h+2, bt_id+BT_HIDE+BT_NOFRAME, graph_color);
 	WriteText(x+w+8, h / 2 + y -3, 0x80, text_color, text);
 	DrawRectangle(x, y, w, h, graph_color);
-	if (is_checked == 1)
-	{
-		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
-		DrawBar(x+2, y+2, w-3, h-3, graph_color);	
-		return; //не дадим стрелять себе в ногу
-	}
-	if (is_checked == 2) //not active
-	{
-		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
-		DrawBar(x+2, y+2, w-3, h-3, 0x888888);	
-		return;
-	} 
-	else
+	if (is_checked == 0)
 	{
 		DrawRectangle3D(x+1, y+1, w-2, h-2, 0xDDDddd, 0xffffff);
 		DrawBar(x+2, y+2, w-3, h-3, 0xffffff);
 	} 
+	else if (is_checked == 1)
+	{
+		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
+		DrawBar(x+2, y+2, w-3, h-3, graph_color);
+	}
+	else if (is_checked == 2) //not active
+	{
+		DrawRectangle(x+1, y+1, w-2, h-2, 0xffffff);
+		DrawBar(x+2, y+2, w-3, h-3, 0x888888);	
+	}
 }
+
+
+:void MoreLessBox(dword x,y,s, bt_id_more, bt_id_less, color_border, color_button, color_text, value, text)
+{
+	#define VALUE_FIELD_W 26;
+	DrawRectangle(x, y, VALUE_FIELD_W, s, color_border);
+	DrawRectangle3D(x+1, y+1, VALUE_FIELD_W-2, s-2, 0xDDDddd, 0xffffff);
+	DrawBar(x+2, y+2, VALUE_FIELD_W-3, s-3, 0xffffff);
+	WriteText(x+6, s / 2 + y -3, 0x80, color_text, itoa(value));
+
+	DrawCaptButton(VALUE_FIELD_W + x + 1,     y, s, s, bt_id_more, color_button, color_text, "+");
+	DrawCaptButton(VALUE_FIELD_W + x + s + 2, y, s, s, bt_id_less, color_button, color_text, "-");
+	WriteText(x+VALUE_FIELD_W+s+s+10, s / 2 + y -3, 0x80, color_text, text);
+}
+
 
 :void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent)
 {

@@ -2,5 +2,6 @@
 cls
 c-- panels_cfg.c
 @rename panels_cfg.com panels_cfg
+@kpack panels_cfg
 @del warning.txt
 @pause

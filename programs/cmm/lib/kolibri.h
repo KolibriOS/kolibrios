@@ -53,13 +53,17 @@ char program_path[4096];
 
 //-------------------------------------------------------------------------
 
-struct mouse
+:struct raw_image {
+	dword w, h, data;
+};
+
+:struct mouse
 {
 	signed x,y,lkm,pkm,hor,vert;
 	void get();
 };
 
-void mouse::get()
+:void mouse::get()
 {
 	EAX = 37;
 	EBX = 1;
@@ -91,14 +95,14 @@ void mouse::get()
 }
 
 
-struct system_colors
+:struct system_colors
 {
 	dword frame,grab,grab_button,grab_button_text,grab_text,
 	      work,work_button,work_button_text,work_text,work_graph;
 	void get();
 };
 
-void system_colors::get()
+:void system_colors::get()
 {
 	EAX = 48;
 	EBX = 3;
