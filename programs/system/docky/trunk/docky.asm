@@ -34,6 +34,8 @@ main:
     mov     [dock_items.location], eax
     invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.fsize_name, 0
     mov     [dock_items.fsize], eax
+    invoke  ini.get_int, ini_data.file_name, ini_data.settings_name, ini_data.ashow_name, 0
+    mov     [dock_items.ashow], eax
 
     invoke  ini.sections, ini_data.file_name, sections_callback
 
@@ -265,6 +267,24 @@ main:
 
     mov     eax, [win.y_hdn]
     mov     [win.y], eax
+	
+    cmp     byte[dock_items.ashow],1
+    jne     .not_ashow
+
+    mov     eax, [win.width_opn]
+    mov     [win.width], eax
+
+    mov     eax, [win.x_opn]
+    mov     [win.x], eax
+
+    mov     eax, [win.height_opn]
+    mov     [win.height], eax
+
+    mov     eax, [win.y_opn]
+    mov     [win.y], eax
+
+ .not_ashow:
+
 
 ;-------------------------------------------------------------------------------
 ; ==== START ====
@@ -531,8 +551,12 @@ event_mouse:
     mov     eax, [win.y_opn]
     mov     [win.y], eax
 
+
+    cmp     byte[dock_items.ashow],1
+    je	   .change_nothing
     mcall   67, [win.x], [win.y], [win.width], [win.height]
 
+  .change_nothing:
     call    DRAW_WINDOW
     call    DRAW_SELECTION
     jmp     main_loop
@@ -549,6 +573,9 @@ wnd_hide:
     mov     byte[win.state], 0
     mov     byte[win.button_index], -1
 
+    cmp     byte[dock_items.ashow],1
+    je	   .do_no_hide
+
     mov     eax, [win.width_hdn]
     mov     [win.width], eax
 
@@ -563,6 +590,7 @@ wnd_hide:
 
     mcall   67, [win.x], [win.y], [win.width], [win.height]
 
+  .do_no_hide:
     call    DRAW_WINDOW
     jmp     main_loop
 ;-------------------------------------------------------------------------------

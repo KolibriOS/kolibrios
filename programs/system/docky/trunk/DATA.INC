@@ -21,6 +21,8 @@ ini_data:
     db	    "location", 0
  .fsize_name:
     db	    "fsize", 0
+ .ashow_name:
+    db	    "ashow", 0
 ;-------------------------------------------------------------------------------
 load_lib_start:
     lib1    l_libs img.name,	     \
