@@ -34,10 +34,6 @@
 
  @entry:
 
-    mcall   40, 101b
-
- ;----------------------------
-
   ;; CHECK FOR PARAMS
     cmpne   [@params], byte 0, parse
     mov     eax, @params
@@ -324,6 +320,7 @@
  update:
     mcall   23, 10
     cmpe    al, EV_REDRAW, redraw
+    cmpe    al, EV_KEY, key
     cmpe    al, EV_BUTTON, exit
 
     mov     eax, [timer.step]
@@ -344,6 +341,13 @@
     mcall   68, 23, sz_shname
 
     mcall   -1
+
+ ;----------------------------
+
+ key:
+    mcall   2
+    cmpne   ah, 27, update
+    jmp     exit
 
  ;----------------------------
 
