@@ -234,3 +234,16 @@ enum
 	}
 	return #absolute_path;
 }
+
+:dword ConvertSize(unsigned int bytes)
+{
+  unsigned char size_prefix[8], size_nm[4];
+  if (bytes>=1073741824) strcpy(#size_nm, " Gb");
+  else if (bytes>=1048576) strcpy(#size_nm, " Mb");
+  else if (bytes>=1024) strcpy(#size_nm, " Kb");
+  else strcpy(#size_nm, " b ");
+  while (bytes>1023) bytes/=1024;
+  itoa_(#size_prefix, bytes);
+  strcat(#size_prefix, #size_nm);
+  return #size_prefix;
+}

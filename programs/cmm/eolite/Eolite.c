@@ -16,7 +16,6 @@
 #include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\file_system.h"
 #include "..\lib\figures.h"
-#include "..\lib\encoding.h"
 #include "..\lib\list_box.h"
 #include "..\lib\copyf.h"
 #include "..\lib\random.h"
