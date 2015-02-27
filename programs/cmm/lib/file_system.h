@@ -1,4 +1,4 @@
-struct f70{
+:struct f70{
 	dword	func;
 	dword	param1;
 	dword	param2;
@@ -8,20 +8,46 @@ struct f70{
 	dword	name;
 };
 
-struct BDVK{
-	dword	attr;
+:struct date
+{
+	byte day;
+	byte month;
+	word year;
+};
+
+:struct BDVK {
+	dword	readonly:1, hidden:1, system:1, volume_label:1, isfolder:1, notarchived:1, :0;
 	byte	type_name;
 	byte	rez1, rez2, selected;
-	dword	timecreate;
-	dword	datecreate;
+	dword   timecreate;
+	date 	datecreate;
 	dword	timelastaccess;
-	dword	datelastaccess;
+	date	datelastaccess;
 	dword	timelastedit;
-	dword	datelastedit;
+	date	datelastedit;
 	dword	sizelo;
 	dword	sizehi;
 	char	name[518];
 };
+
+
+:void DrawDate(dword x, y, color, dword in_date)
+{
+	EDI = in_date;
+	EAX = 47;
+	EBX = 2<<16;
+	EDX = x<<16+y;
+	ESI = 0x80<<24+color;
+	ECX = EDI.date.day;
+	$int 0x40;
+	EDX += 18<<16;
+	ECX = EDI.date.month;
+	$int 0x40;
+	EDX += 18<<16;
+	EBX = 4<<16;
+	ECX = EDI.date.year;
+	$int 0x40;
+}
 
 
 ///////////////////////////
@@ -154,7 +180,7 @@ struct BDVK{
 {
 	BDVK fpath_atr;
 	GetFileInfo(fpath, #fpath_atr);
-	if (TestBit( fpath_atr.attr, 4)) return 1; else return 0;
+	return fpath_atr.isfolder;
 }
 
 :int GetFile(dword buf, filesize, read_path)

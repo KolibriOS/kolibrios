@@ -12,13 +12,14 @@
 #include "..\lib\strings.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
-#include "..\lib\lib.obj\libini.h"
-#include "..\lib\lib.obj\box_lib.h"
 #include "..\lib\file_system.h"
 #include "..\lib\figures.h"
 #include "..\lib\list_box.h"
 #include "..\lib\copyf.h"
 #include "..\lib\random.h"
+//obj
+#include "..\lib\lib.obj\libini.h"
+#include "..\lib\lib.obj\box_lib.h"
 //images
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
@@ -82,8 +83,8 @@
 
 enum {ONLY_SHOW, WITH_REDRAW, ONLY_OPEN}; //OpenDir
 
-#define TITLE "Eolite File Manager v2.58"
-#define ABOUT_TITLE "Eolite v2.58"
+#define TITLE "Eolite File Manager v2.6"
+#define ABOUT_TITLE "Eolite v2.6"
 dword col_padding, col_selec, col_lpanel;
 
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
@@ -597,7 +598,7 @@ void List_ReDraw()
 
 void Line_ReDraw(dword color, filenum){
 	dword text_col=0,
-	      ext1,
+	      ext1, attr,
 	      file_offet,
 	      file_name_off,
 	      y=filenum*files.line_h+files.y;
@@ -610,12 +611,12 @@ void Line_ReDraw(dword color, filenum){
 	if (files.line_h>15) DrawBar(files.x+3,y,16,files.line_h-15,color); 
 
 	file_offet = file_mas[filenum+files.first]*304 + buf+32;
-	file.attr     = ESDWORD[file_offet];
+	attr = ESDWORD[file_offet];
 	file.selected = ESBYTE[file_offet+7];
 	file.sizelo   = ESDWORD[file_offet+32];
 	file_name_off = file_offet+40;
 
-	if (! TestBit(file.attr, 4) ) //file or folder?
+	if (! TestBit(attr, 4) ) //file or folder?
 	{	
 		Put_icon(file_name_off+_strrchr(file_name_off,'.'), files.x+3, files.line_h/2-7+y, color, 0);
 		WriteText(7-strlen(ConvertSize(file.sizelo))*6+Form.cwidth - 76,files.line_h-6/2+y,0x80,0,ConvertSize(file.sizelo));
@@ -626,10 +627,10 @@ void Line_ReDraw(dword color, filenum){
 		Put_icon(ext1, files.x+3, files.line_h/2-7+y, color, 0);		
 	}
 
-	if (TestBit(file.attr, 1)) || (TestBit(file.attr, 2)) text_col=0xA6A6B7; //system or hiden?
+	if (TestBit(attr, 1)) || (TestBit(attr, 2)) text_col=0xA6A6B7; //system or hiden?
 	if (color!=0xFFFfff)
 	{
-		itdir = TestBit(file.attr, 4);
+		itdir = TestBit(attr, 4);
 		strcpy(#file_name, file_name_off);
 		strcpy(#file_path, #path);
 		strcat(#file_path, #file_name);

@@ -4,25 +4,9 @@
 	?define PR_T_NAME "Имя:"
 	?define PR_T_DEST "Расположение:"
 	?define PR_T_SIZE "Размер:"
-	?define SET_3 "Создан"
-	?define SET_4 "Открыт"
-	?define SET_5 "Изменен"
-	?define SET_6 "Файлов: "
-	?define SET_7 " Папок: "
-	?define PR_T_CONTAINS "Содержит: "
-	?define FLAGS " Аттрибуты "
-	?define PR_T_HIDDEN "Скрытый"
-	?define PR_T_SYSTEM "Системный"
-	?define PR_T_ONLY_READ "Только чтение"
-#elif LANG_EST
-	?define WINDOW_TITLE_PROPERTIES "Свойства"
-	?define BTN_CLOSE "Закрыть"
-	?define PR_T_NAME "Имя:"
-	?define PR_T_DEST "Расположение:"
-	?define PR_T_SIZE "Размер:"
-	?define SET_3 "Создан"
-	?define SET_4 "Открыт"
-	?define SET_5 "Изменен"
+	?define SET_3 "Создан:"
+	?define SET_4 "Открыт:"
+	?define SET_5 "Изменен:"
 	?define SET_6 "Файлов: "
 	?define SET_7 " Папок: "
 	?define PR_T_CONTAINS "Содержит: "
@@ -36,9 +20,9 @@
 	?define PR_T_NAME "Name:"
 	?define PR_T_DEST "Destination:"
 	?define PR_T_SIZE "Size:"
-	?define SET_3 "Created"
-	?define SET_4 "Opened"
-	?define SET_5 "Modified"
+	?define SET_3 "Created:"
+	?define SET_4 "Opened:"
+	?define SET_5 "Modified:"
 	?define SET_6 "Files: "
 	?define SET_7 " Folders: "
 	?define PR_T_CONTAINS "Contains: "
@@ -53,16 +37,13 @@ char path_to_file[4096]="\0";
 char file_name2[4096]="\0";
 edit_box file_name_ed = {195,50,25,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#file_name2,#mouse_ddd2, 1000000000000000b,2,2};
 edit_box path_to_file_ed = {145,100,46,0xffffff,0x94AECE,0x000000,0xffffff,2,4098,#path_to_file,#mouse_ddd2, 1000000000000000b,2,2};
-frame flags_frame = { 0, 280, 10, 83, 106, 0x000111, 0xFFFfff, 1, FLAGS, 0, 0, 6, 0x000111, 0xCCCccc };
-
-byte HIDDEN_chb,
-     SYSTEM_chb,
-     ONLY_READ_chb;
+frame flags_frame = { 0, 280, 10, 83, 151, 0x000111, 0xFFFfff, 1, FLAGS, 0, 0, 6, 0x000111, 0xCCCccc };
 
 int file_count, dir_count, size_dir;
 char folder_info[200];
 BDVK file_info_general;
 BDVK file_info_dirsize;
+
 
 void GetSizeDir(dword way)
 {
@@ -135,14 +116,14 @@ void properties_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(Form.left + 150,150,270,240+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE_PROPERTIES);
+				DefineAndDrawWindow(Form.left + 150,150,270,285+GetSkinHeight(),0x34,sc.work,WINDOW_TITLE_PROPERTIES);
 				GetProcessInfo(#settings_form, SelfInfo);
 				DrawFlatButton(settings_form.cwidth - 70 - 13, settings_form.cheight - 34, 70, 22, 10, 0xE4DFE1, BTN_CLOSE);
 				DrawBar(10, 10, 32, 32, 0xFFFfff);
-				if (! TestBit(file_info_general.attr, 4) ) 
-					Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 20, 0xFFFfff, 0);
-				else 
+				if ( file_info_general.isfolder ) 
 					Put_icon("<DIR>", 18, 20, 0xFFFfff, 0);
+				else 
+					Put_icon(#file_name2+strrchr(#file_name2,'.'), 18, 20, 0xFFFfff, 0);
 
 				WriteText(50, 13, 0x80, 0x000000, PR_T_NAME);				
 				edit_box_draw stdcall (#file_name_ed);
@@ -150,12 +131,6 @@ void properties_dialog()
 				WriteText(10, 50, 0x80, 0x000000, PR_T_DEST);
 				edit_box_draw stdcall (#path_to_file_ed);
 
-				/*WriteText(10, 63, 0x80, 0x000000, SET_3);
-				if (!itdir)
-				{
-					WriteText(10, 78, 0x80, 0x000000, SET_4);
-					WriteText(10, 93, 0x80, 0x000000, SET_5);					
-				}*/
 				WriteText(10, 65, 0x80, 0x000000, PR_T_SIZE);
 				if (!itdir)
 				{
@@ -171,6 +146,13 @@ void properties_dialog()
 					WriteText(100, 80, 0x80, 0x000000, #folder_info);
 					element_size = size_dir;
 				}
+
+				WriteText(10,  95, 0x80, 0x000000, SET_3);
+				WriteText(10, 110, 0x80, 0x000000, SET_4);
+				WriteText(10, 125, 0x80, 0x000000, SET_5);
+				DrawDate(100,  95, 0, #file_info_general.datecreate);
+				DrawDate(100, 110, 0, #file_info_general.datelastaccess);
+				DrawDate(100, 125, 0, #file_info_general.datelastedit);
 
 				EAX = ConvertSize(element_size);
 				strcpy(#element_size_label, EAX);
@@ -191,10 +173,7 @@ void properties_dialog()
 
 void DrawPropertiesCheckBoxes()
 {
-	ONLY_READ_chb = TestBit(file_info_general.attr, 0);
-	HIDDEN_chb = TestBit(file_info_general.attr, 1);
-	SYSTEM_chb = TestBit(file_info_general.attr, 2);
-	CheckBox2(22, 120, 20, PR_T_ONLY_READ,  ONLY_READ_chb);
-	CheckBox2(22, 142, 21, PR_T_HIDDEN,  HIDDEN_chb);
-	CheckBox2(22, 164, 22, PR_T_SYSTEM,  SYSTEM_chb);
+	CheckBox2(22, flags_frame.start_y + 14, 20, PR_T_ONLY_READ,  file_info_general.readonly);
+	CheckBox2(22, flags_frame.start_y + 36, 21, PR_T_HIDDEN,  file_info_general.hidden);
+	CheckBox2(22, flags_frame.start_y + 58, 22, PR_T_SYSTEM,  file_info_general.system);
 }

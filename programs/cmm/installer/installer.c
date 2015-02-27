@@ -17,6 +17,7 @@ void main()
 	RunProgram("/sys/media/kiv", "\\S__/kolibrios/res/Wallpapers/In the wind there is longing.png");
 	notify(T_END);
 	copyf(abspath("tmp"), "/tmp0/1");
+	copyf(abspath("sys"), "/sys");
 	ExitProcess();
 }
 
