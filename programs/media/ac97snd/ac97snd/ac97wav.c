@@ -761,9 +761,10 @@ DWORD test_m3u(char *buf) //Asper+
 DWORD test_mp3(char *buf)
 {  unsigned long hdr; 
     WAVEHEADER whdr; 
+    int attempts = 0;
      
-    while (1)
-    {  if(rd.filepos > 102400)
+    for (;;attempts++)
+    {  if(attempts > 1000)
           return 0; 
         if(!rd.head_read(&rd,&hdr))
                         return 0;

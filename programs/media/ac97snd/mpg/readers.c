@@ -949,9 +949,17 @@ int parse_new_id3(struct reader *rd, unsigned long header)
 	  return -1;
 
 
+	if(rd->strremain < length)
+	{
+		rd->filepos += length - rd->strremain;
+		rd->strremain = 0;
+	}
+	else
+	{
     rd->strpos+=length;
     rd->stream+=length;
     rd->strremain-=length;
+        }
 
 #if 0	  
 	/* skip if unknown version/scary flags, parse otherwise */
