@@ -67,7 +67,7 @@ end if
   0, 0, 0, 2
 
  cb_always check_box2 \
-  3 shl 16 + 10, (LIST_HEIGHT + 35) shl 16 + 10, 6, 0, 0, 0, checkbox_txt, ch_flag_middle
+  5 shl 16 + 16, (LIST_HEIGHT + 33) shl 16 + 16, 6, 0, 0, 0, checkbox_txt, ch_flag_middle
 
  opendialog:
   .type dd 0
