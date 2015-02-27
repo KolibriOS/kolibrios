@@ -215,7 +215,7 @@ unsigned int disk_pos_y[]={60,95,130, 60, 95, 130, 60, 95,130, 60, 85,130};
 void DrawTmpDisks()
 {
 	char free_ram_text[60];
-	int i;
+	byte i, real_id;
 	int FreeRAM=GetFreeRAM()/1024;
 
 	DrawBar(0,51, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
@@ -238,7 +238,8 @@ void DrawTmpDisks()
 	{
 		DefineButton(disk_pos_x[i], disk_pos_y[i], 65, 30, 20+i, 0xFFFfff);
 		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+6,  0x90, 0, #disk_list[i].Item);
-		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+19, 0x80, 0x888888, ConvertSize(disk_sizes[i]));
+		real_id = disk_list[i].Item[3] - '0';
+		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+19, 0x80, 0x888888, ConvertSize(disk_sizes[real_id]));
 		_PutImage(disk_pos_x[i]+5,disk_pos_y[i]+4, 14,14, 2*14*14*3+#icons);
 		if (selected==i) DrawRectangle(disk_pos_x[i], disk_pos_y[i], 65-1, 30-1, 0x00459A);
 	}
