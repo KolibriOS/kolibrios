@@ -33,6 +33,11 @@
 	sin_amplitude dd 50
 	sin_frq       dd 0.7
 	sin_delta     dd 0.07	 ; wave frequency granularity
+	convert_muler:
+		      dd 1, 10, 100, 1000, 10000
+	XYZpartices:
+		      db 'X','Y','Z'
+	i10	      dw 10
 
 
 	menu:
@@ -309,7 +314,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.064',0
+	db   ' 0.065',0
     labellen:
 	STRdata db '-1        '
 

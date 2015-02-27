@@ -1,11 +1,10 @@
-View3ds 0.064 - X 2012
-1. Bug fixes.
 
+View3ds 0.064 - Nov 2012
+1. Bug fixes.
 -----------------------------------------------------------------------------------
 
 View3ds 0.063 - X 2012
 1. Postprocessing effect - wave. Ability to change amplitude and frequency.
-
 -----------------------------------------------------------------------------------
 
 View3ds 0.062 - VII 2012.

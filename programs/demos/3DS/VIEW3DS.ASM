@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.064 - tiny .3ds files viewer.
+; application : View3ds ver. 0.065 - tiny .3ds and .asc files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -58,6 +58,9 @@ START:	  ; start of execution
 	call   read_from_disk	 ; read, if all is ok eax = 0
 	cmp    eax,0
 	jne    .gen
+	mov    esi,[fptr]
+	cmp    [esi],word 4D4Dh
+	jne    .asc
 	call   read_tp_variables ; init points and triangles count variables
 	cmp    eax,0
 	je     .gen
@@ -69,6 +72,12 @@ START:	  ; start of execution
 	call   alloc_mem_for_tp
      end if
 	call   generate_object
+	jmp    .opt
+    .asc:
+	mov    [triangles_count_var],10000
+	mov    [points_count_var],10000
+	call   alloc_mem_for_tp
+	call   read_asc
 	jmp    .opt
     .malloc:
      if USE_LFN
@@ -712,6 +721,7 @@ include "GRD_CAT.INC"
 include "BUMP_TEX.INC"
 include "GRD_TEX.INC"
 include "TWO_TEX.INC"
+include "ASC.INC"
 
 
 
